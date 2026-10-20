@@ -199,7 +199,7 @@ namespace
 					// ルート配置は自身の Id だけで個体を識別する。
 					FWorldEditorModelPreviewKey PreviewKey;
 					PreviewKey.ObjectIds.Add( Object.Id );
-					bShownModel = NWorldEditorUI::RecordModelObject( S, PreviewKey, Placed, Draw );
+					if ( NWorldEditorUI::RecordModelObject( S, PreviewKey, Placed, Draw ) ) bShownModel = true;
 				}
 				if ( Object.Billboard.IsSet() )
 				{
