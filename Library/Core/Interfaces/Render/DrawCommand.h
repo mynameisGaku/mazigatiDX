@@ -93,6 +93,7 @@ struct FDrawFlag
 	static constexpr uint8 AlignCenter = 1 << 3;   // TextFont: X が文字列の中央
 	static constexpr uint8 AlignRight = 1 << 4;    // TextFont: X が文字列の右端
 	static constexpr uint8 TwoSided = 1 << 5;      // Mesh3D: 裏も描く
+	static constexpr uint8 UseRegularCulling = 1 << 6; // 材質mesh: 通常メッシュの裏面除去設定を使う
 };
 
 //-----------------------------------------------------------------------------

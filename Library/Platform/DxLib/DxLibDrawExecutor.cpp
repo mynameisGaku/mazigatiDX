@@ -562,7 +562,7 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 				if ( !bUnsupportedMaterialMeshLogged ) { LOG( LogDxLibDraw, Warning, "現在の描画実装では材質付きメッシュを描画できません" ); bUnsupportedMaterialMeshLogged = true; }
 				break;
 			}
-			EffectMaterialRenderer.DrawMesh( Data, Vertices.GetData(), Indices.GetData() );
+			EffectMaterialRenderer.DrawMesh( Data, Vertices.GetData(), Indices.GetData(), Command.Has( FDrawFlag::UseRegularCulling ) );
 			break;
 		}
 		case EDrawCommand::Mesh3D:

@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <d3d11.h>
 #include <vector>
 
 #include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
@@ -12,6 +13,7 @@
 #include "Library/Framework/World/Mesh/EditMeshBuild.h"
 #include "Library/Framework/World/WorldRender.h"
 #include "Library/Platform/FileSystem.h"
+#include "Library/Platform/DxLib/DxLibInclude.h"
 
 namespace
 {
@@ -138,9 +140,9 @@ namespace
 		for ( int32 Y = 32; Y < 96; ++Y ) for ( int32 X = 32; X < 96; ++X ) Pixels.Add( MeshMaterialPixel( Soft, X, Y ) );
 		return Pixels;
 	}
-
-	// 固定時刻のrendererを実行し、結果の画像をSoftImageへ読む。
-	bool RenderMeshMaterial( FMeshRenderer& Renderer, IDrawExecutor& Executor, int32 Screen, int32 Soft, EDrawBlend InitialBlend = EDrawBlend::Alpha, const FTransform& World = FTransform::Identity )
+	// 固定時刻でmeshを描き、画素を読み取る。必要ならnative rasterのbindと復帰も記録する。
+	// RasterBeforeDraw: 実行直前にbindする状態。各bool出力: bind前後の一致結果。
+	bool RenderMeshMaterial( FMeshRenderer& Renderer, IDrawExecutor& Executor, int32 Screen, int32 Soft, EDrawBlend InitialBlend = EDrawBlend::Alpha, const FTransform& World = FTransform::Identity, ID3D11RasterizerState* RasterBeforeDraw = nullptr, bool* bRasterBoundBeforeDraw = nullptr, bool* bRasterRestoredAfterDraw = nullptr )
 	{
 		SetDrawScreen( Screen ); SetDrawAreaFull(); ClearDrawScreen();
 		FDrawBuffer Buffer;
@@ -148,7 +150,25 @@ namespace
 		Draw.Blend( InitialBlend, 255 );
 		Renderer.Record( Draw, World );
 		if ( Buffer.Words.empty() ) return false;
+		// 実行前後のnative rasterを調べるcontext。
+		ID3D11DeviceContext* NativeContext = const_cast<ID3D11DeviceContext*>( static_cast<const ID3D11DeviceContext*>( GetUseDirect3D11DeviceContext() ) );
+		if ( RasterBeforeDraw != nullptr )
+		{
+			if ( NativeContext == nullptr ) return false;
+			RenderVertex(); NativeContext->RSSetState( RasterBeforeDraw );
+			// 実行直前に現在bindされているraster。
+			ID3D11RasterizerState* BoundRaster = nullptr; NativeContext->RSGetState( &BoundRaster );
+			if ( bRasterBoundBeforeDraw != nullptr ) *bRasterBoundBeforeDraw = BoundRaster == RasterBeforeDraw;
+			if ( BoundRaster != nullptr ) BoundRaster->Release();
+		}
 		Executor.Execute( FDrawSpan{ Buffer.Words.data(), static_cast<int32>( Buffer.Words.size() ) } );
+		if ( RasterBeforeDraw != nullptr && NativeContext != nullptr )
+		{
+			// draw後に復帰したraster。
+			ID3D11RasterizerState* RestoredRaster = nullptr; NativeContext->RSGetState( &RestoredRaster );
+			if ( bRasterRestoredAfterDraw != nullptr ) *bRasterRestoredAfterDraw = RestoredRaster == RasterBeforeDraw;
+			if ( RestoredRaster != nullptr ) RestoredRaster->Release();
+		}
 		RenderVertex();
 		return GetDrawScreenSoftImage( 0, 0, 128, 128, Soft ) == 0;
 	}
@@ -165,15 +185,16 @@ namespace
 		}
 		return Different;
 	}
-
-	// 記録列から材質mesh headerと先頭頂点を読む。
-	bool ReadFirstMaterialMesh( const FDrawBuffer& Buffer, FDrawMaterialMeshData& OutHeader, FMeshVertex& OutVertex )
+	// 記録列からheader、先頭頂点を読み、指定時は通常culling flagも返す。
+	// bUseRegularCulling: flagの出力先。nullなら読み捨てる。
+	bool ReadFirstMaterialMesh( const FDrawBuffer& Buffer, FDrawMaterialMeshData& OutHeader, FMeshVertex& OutVertex, bool* bUseRegularCulling = nullptr )
 	{
 		bool bFound = false;
 		if ( !Buffer.Words.empty() ) ForEachDrawCommand( FDrawSpan{ Buffer.Words.data(), static_cast<int32>( Buffer.Words.size() ) }, [&]( const FDrawCommandView& Command )
 		{
 			if ( Command.Type != EDrawCommand::MaterialMesh3D || Command.NumDataWords < static_cast<int32>( sizeof( FDrawMaterialMeshData ) / 4 + sizeof( FMeshVertex ) / 4 ) ) return;
 			OutHeader = Command.Read<FDrawMaterialMeshData>();
+			if ( bUseRegularCulling != nullptr ) *bUseRegularCulling = Command.Has( FDrawFlag::UseRegularCulling );
 			std::memcpy( &OutVertex, Command.Data + sizeof( FDrawMaterialMeshData ) / 4, sizeof( OutVertex ) );
 			bFound = true;
 		} );
@@ -307,12 +328,14 @@ void NWorldTest::RunMeshMaterialRealTests( NAssetTest::FChecker& C, CAssetManage
 	const FTransform ExpectedTransform( FVector3( 3.0f, 2.0f, 1.0f ), FQuaternion::Identity, FVector3( -2.0f, 0.0f, 0.5f ) );
 	FDrawBuffer TransformBuffer; FDrawContext TransformDraw( TransformBuffer ); TransformRenderer.Record( TransformDraw, ExpectedTransform );
 	FDrawMaterialMeshData TransformHeader; FMeshVertex FirstVertex;
-	const bool bReadTransform = ReadFirstMaterialMesh( TransformBuffer, TransformHeader, FirstVertex );
+	// 3b rendererが通常culling flagを記録したか。
+	bool bRecordedRegularCulling = false;
+	const bool bReadTransform = ReadFirstMaterialMesh( TransformBuffer, TransformHeader, FirstVertex, &bRecordedRegularCulling );
 	const FEditMeshBuild LocalBuild = NEditMesh::BuildRenderMesh( TransformMesh );
 	const FVector3 ExpectedPosition = ExpectedTransform.TransformPoint( FVector3( LocalBuild.Vertices[0].Position[0], LocalBuild.Vertices[0].Position[1], LocalBuild.Vertices[0].Position[2] ) );
 	const FVector3 ExpectedNormal( LocalBuild.Vertices[0].Normal[0], LocalBuild.Vertices[0].Normal[1], LocalBuild.Vertices[0].Normal[2] );
 	const FVector3 ExpectedWorldNormal = FVector3( 0.0f, 0.0f, ExpectedNormal.z / ExpectedTransform.Scale.z ).Normalized();
-	C.Check( bReadTransform && std::abs( FirstVertex.Position[0] - ExpectedPosition.x ) < 1.0e-5f && std::abs( FirstVertex.Position[1] - ExpectedPosition.y ) < 1.0e-5f && std::abs( FirstVertex.Position[2] - ExpectedPosition.z ) < 1.0e-5f && std::abs( FirstVertex.Normal[0] - ExpectedWorldNormal.x ) < 1.0e-5f && std::abs( FirstVertex.Normal[1] - ExpectedWorldNormal.y ) < 1.0e-5f && std::abs( FirstVertex.Normal[2] - ExpectedWorldNormal.z ) < 1.0e-5f, "全XYZ位置とinverse-scale法線が負・非一様・zero scaleで一致: got p=%.3f,%.3f,%.3f n=%.3f,%.3f,%.3f expected p=%.3f,%.3f,%.3f n=%.3f,%.3f,%.3f", FirstVertex.Position[0], FirstVertex.Position[1], FirstVertex.Position[2], FirstVertex.Normal[0], FirstVertex.Normal[1], FirstVertex.Normal[2], ExpectedPosition.x, ExpectedPosition.y, ExpectedPosition.z, ExpectedWorldNormal.x, ExpectedWorldNormal.y, ExpectedWorldNormal.z );
+	C.Check( bReadTransform && bRecordedRegularCulling && std::abs( FirstVertex.Position[0] - ExpectedPosition.x ) < 1.0e-5f && std::abs( FirstVertex.Position[1] - ExpectedPosition.y ) < 1.0e-5f && std::abs( FirstVertex.Position[2] - ExpectedPosition.z ) < 1.0e-5f && std::abs( FirstVertex.Normal[0] - ExpectedWorldNormal.x ) < 1.0e-5f && std::abs( FirstVertex.Normal[1] - ExpectedWorldNormal.y ) < 1.0e-5f && std::abs( FirstVertex.Normal[2] - ExpectedWorldNormal.z ) < 1.0e-5f, "全XYZ位置とinverse-scale法線が負・非一様・zero scaleで一致: got p=%.3f,%.3f,%.3f n=%.3f,%.3f,%.3f expected p=%.3f,%.3f,%.3f n=%.3f,%.3f,%.3f", FirstVertex.Position[0], FirstVertex.Position[1], FirstVertex.Position[2], FirstVertex.Normal[0], FirstVertex.Normal[1], FirstVertex.Normal[2], ExpectedPosition.x, ExpectedPosition.y, ExpectedPosition.z, ExpectedWorldNormal.x, ExpectedWorldNormal.y, ExpectedWorldNormal.z );
 
 	// effect停止後のMesh3D flagも同じ材質slotの片面・両面指定を保つ。
 	FEditMesh OneSidedMesh = TransformMesh; OneSidedMesh.Materials[0].bTwoSided = false;
@@ -328,7 +351,17 @@ void NWorldTest::RunMeshMaterialRealTests( NAssetTest::FChecker& C, CAssetManage
 	TransformRenderer.StopEffects();
 	FMeshRenderer DisabledEffectPath = TransformRenderer;
 	DisabledEffectPath.Batches[0].bEffectRequested = false;
-	FDrawBuffer StoppedEffectBuffer; FDrawContext StoppedEffectDraw( StoppedEffectBuffer ); TransformRenderer.Record( StoppedEffectDraw, FTransform::Identity );
+	// 既定引数falseでflagなし命令を確認する記録buffer。
+	FDrawBuffer DefaultCullingBuffer;
+	// 旧flags=0の確認命令を書き込むcontext。
+	FDrawContext DefaultCullingDraw( DefaultCullingBuffer );
+	DefaultCullingDraw.MaterialMesh3D( TransformHeader, LocalBuild.Vertices.GetData(), LocalBuild.Indices.GetData() );
+	// 既定の3引数APIが旧flags=0を保つか。
+	if ( !DefaultCullingBuffer.Words.empty() ) ForEachDrawCommand( FDrawSpan{ DefaultCullingBuffer.Words.data(), static_cast<int32>( DefaultCullingBuffer.Words.size() ) }, [&]( const FDrawCommandView& Command ) { if ( Command.Type == EDrawCommand::MaterialMesh3D ) bDefaultCullingFlagClear = !Command.Has( FDrawFlag::UseRegularCulling ); } );
+	C.Check( bRecordedRegularCulling && bDefaultCullingFlagClear, "3b meshは通常culling flagを付け、既定APIは旧flags=0を保つ" );
+	FDrawBuffer StoppedEffectBuffer;
+	FDrawContext StoppedEffectDraw( StoppedEffectBuffer );
+	TransformRenderer.Record( StoppedEffectDraw, FTransform::Identity );
 	FDrawBuffer DisabledEffectBuffer; FDrawContext DisabledEffectDraw( DisabledEffectBuffer ); DisabledEffectPath.Record( DisabledEffectDraw, FTransform::Identity );
 	C.Check( !StoppedEffectBuffer.Words.empty() && StoppedEffectBuffer.Words == DisabledEffectBuffer.Words, "停止とEffect無効の両経路は同じlegacy Mesh3D命令byteを記録する" );
 
@@ -347,23 +380,78 @@ void NWorldTest::RunMeshMaterialRealTests( NAssetTest::FChecker& C, CAssetManage
 	const FTransform PositiveScale = FTransform::Identity;
 	const FTransform NegativeScale( FVector3::Zero, FQuaternion::Identity, FVector3( -1.0f, 1.0f, 1.0f ) );
 	SetUseBackCulling( DX_CULLING_LEFT );
-	const bool bEffectFrontDrawn = RenderMeshMaterial( OneSidedEffect, Executor, Screen, Soft, EDrawBlend::Alpha, PositiveScale );
+	// test用raster stateを作るnative device。
+	ID3D11Device* NativeDevice = const_cast<ID3D11Device*>( static_cast<const ID3D11Device*>( GetUseDirect3D11Device() ) );
+	// 実行前後のnative rasterを調べるcontext。
+	ID3D11DeviceContext* NativeContext = const_cast<ID3D11DeviceContext*>( static_cast<const ID3D11DeviceContext*>( GetUseDirect3D11DeviceContext() ) );
+	// このtest区間より前のnative raster。
+	ID3D11RasterizerState* PreviousRaster = nullptr;
+	// cullingなしを強制bindするtest用raster。
+	ID3D11RasterizerState* NoCullRaster = nullptr;
+	// caller descriptorを保ったcullingなし設定。
+	D3D11_RASTERIZER_DESC NoCullDesc{};
+	if ( NativeContext != nullptr ) NativeContext->RSGetState( &PreviousRaster );
+	if ( PreviousRaster != nullptr ) PreviousRaster->GetDesc( &NoCullDesc ); else { NoCullDesc.FillMode = D3D11_FILL_SOLID; NoCullDesc.DepthClipEnable = TRUE; }
+	NoCullDesc.CullMode = D3D11_CULL_NONE;
+	// test用rasterの作成結果。
+	const HRESULT NoCullResult = NativeDevice != nullptr ? NativeDevice->CreateRasterizerState( &NoCullDesc, &NoCullRaster ) : E_FAIL;
+	// device、context、sentinel rasterが揃ったか。
+	const bool bNativeCullingReady = NativeDevice != nullptr && NativeContext != nullptr && SUCCEEDED( NoCullResult ) && NoCullRaster != nullptr;
+	C.Check( bNativeCullingReady && NoCullDesc.CullMode == D3D11_CULL_NONE && GetUseBackCulling() == DX_CULLING_LEFT, "native raster NONEと論理LEFTを同時に用意する (HRESULT=0x%08X)", static_cast<unsigned int>( NoCullResult ) );
+	// 最初の描画直前・直後にsentinelがbindされていたか。
+	bool bNoCullBoundBeforeDraw = false;
+	bool bNoCullRestoredAfterDraw = false;
+	// LEFT設定で正scaleのone-sided shaderが描画まで成功したか。
+	const bool bEffectFrontDrawn = RenderMeshMaterial( OneSidedEffect, Executor, Screen, Soft, EDrawBlend::Alpha, PositiveScale, NoCullRaster, &bNoCullBoundBeforeDraw, &bNoCullRestoredAfterDraw );
+	// 描画後の中心画素と既知背景との差。
 	const int32 EffectFrontDistance = MeshMaterialColorDistance( MeshMaterialPixel( Soft, 64, 64 ), KnownBackground );
-	const bool bEffectMirrorDrawn = RenderMeshMaterial( OneSidedEffect, Executor, Screen, Soft, EDrawBlend::Alpha, NegativeScale );
+	C.Check( bNativeCullingReady && bNoCullBoundBeforeDraw && bNoCullRestoredAfterDraw, "最初のone-sided mesh直前はnative NONEで、draw後に同じnative rasterへ復帰する: bound=%d restored=%d", bNoCullBoundBeforeDraw, bNoCullRestoredAfterDraw );
+	// mirror描画の直前・直後にsentinelがbindされていたか。
+	bool bMirrorNoCullBoundBeforeDraw = false;
+	bool bMirrorNoCullRestoredAfterDraw = false;
+	const bool bEffectMirrorDrawn = RenderMeshMaterial( OneSidedEffect, Executor, Screen, Soft, EDrawBlend::Alpha, NegativeScale, NoCullRaster, &bMirrorNoCullBoundBeforeDraw, &bMirrorNoCullRestoredAfterDraw );
+	// 負scale描画後の中心画素と既知背景との差。
 	const int32 EffectMirrorDistance = MeshMaterialColorDistance( MeshMaterialPixel( Soft, 64, 64 ), KnownBackground );
+	C.Check( bMirrorNoCullBoundBeforeDraw && bMirrorNoCullRestoredAfterDraw, "mirror one-sided drawもnative NONEから始まり同じrasterへ復帰する: bound=%d restored=%d", bMirrorNoCullBoundBeforeDraw, bMirrorNoCullRestoredAfterDraw );
+	// two-sided shaderの負scale描画に成功したか。
 	const bool bEffectTwoSidedMirrorDrawn = RenderMeshMaterial( TwoSidedEffect, Executor, Screen, Soft, EDrawBlend::Alpha, NegativeScale );
+	// 描画後の中心画素と既知背景との差。
 	const int32 EffectTwoSidedMirrorDistance = MeshMaterialColorDistance( MeshMaterialPixel( Soft, 64, 64 ), KnownBackground );
+	// legacy片面meshの正負scale描画に成功したか。
 	const bool bLegacyFrontDrawn = RenderMeshMaterial( LegacyOneSided, Executor, Screen, Soft, EDrawBlend::Alpha, PositiveScale );
 	const int32 LegacyFrontDistance = MeshMaterialColorDistance( MeshMaterialPixel( Soft, 64, 64 ), KnownBackground );
 	const bool bLegacyMirrorDrawn = RenderMeshMaterial( LegacyOneSided, Executor, Screen, Soft, EDrawBlend::Alpha, NegativeScale );
 	const int32 LegacyMirrorDistance = MeshMaterialColorDistance( MeshMaterialPixel( Soft, 64, 64 ), KnownBackground );
+	// legacy両面meshの負scale描画に成功したか。
 	const bool bLegacyTwoSidedMirrorDrawn = RenderMeshMaterial( LegacyTwoSided, Executor, Screen, Soft, EDrawBlend::Alpha, NegativeScale );
 	const int32 LegacyTwoSidedMirrorDistance = MeshMaterialColorDistance( MeshMaterialPixel( Soft, 64, 64 ), KnownBackground );
+	// 中心画素が背景から変化したかで片面表示を判定する。
 	const bool bEffectPositiveVisible = EffectFrontDistance > 20;
 	const bool bEffectNegativeVisible = EffectMirrorDistance > 20;
 	const bool bLegacyPositiveVisible = LegacyFrontDistance > 20;
 	const bool bLegacyNegativeVisible = LegacyMirrorDistance > 20;
 	C.Check( bEffectFrontDrawn && bEffectMirrorDrawn && bEffectTwoSidedMirrorDrawn && bLegacyFrontDrawn && bLegacyMirrorDrawn && bLegacyTwoSidedMirrorDrawn && bEffectPositiveVisible == bLegacyPositiveVisible && bEffectNegativeVisible == bLegacyNegativeVisible && bEffectPositiveVisible != bEffectNegativeVisible && EffectTwoSidedMirrorDistance > 20 && LegacyTwoSidedMirrorDistance > 20, "初期 winding=0,3,2,1の正負scale可視反転と両面表示がlegacy Mesh3Dに一致: effect=%d,%d,%d legacy=%d,%d,%d", EffectFrontDistance, EffectMirrorDistance, EffectTwoSidedMirrorDistance, LegacyFrontDistance, LegacyMirrorDistance, LegacyTwoSidedMirrorDistance );
+	SetUseBackCulling( DX_CULLING_RIGHT );
+	// RIGHT設定の正負scale描画に成功したか。
+	const bool bRightPositiveDrawn = RenderMeshMaterial( OneSidedEffect, Executor, Screen, Soft, EDrawBlend::Alpha, PositiveScale, NoCullRaster );
+	// logical RIGHTの正scale中心画素と背景の距離。
+	const int32 RightPositiveDistance = MeshMaterialColorDistance( MeshMaterialPixel( Soft, 64, 64 ), KnownBackground );
+	const bool bRightNegativeDrawn = RenderMeshMaterial( OneSidedEffect, Executor, Screen, Soft, EDrawBlend::Alpha, NegativeScale, NoCullRaster );
+	// logical RIGHTの負scale中心画素と背景の距離。
+	const int32 RightNegativeDistance = MeshMaterialColorDistance( MeshMaterialPixel( Soft, 64, 64 ), KnownBackground );
+	SetUseBackCulling( DX_CULLING_NONE );
+	// NONE設定の正負scale描画に成功したか。
+	const bool bNoCullPositiveDrawn = RenderMeshMaterial( OneSidedEffect, Executor, Screen, Soft, EDrawBlend::Alpha, PositiveScale, NoCullRaster );
+	// logical NONEの正scale中心画素と背景の距離。
+	const int32 NoCullPositiveDistance = MeshMaterialColorDistance( MeshMaterialPixel( Soft, 64, 64 ), KnownBackground );
+	const bool bNoCullNegativeDrawn = RenderMeshMaterial( OneSidedEffect, Executor, Screen, Soft, EDrawBlend::Alpha, NegativeScale, NoCullRaster );
+	// logical NONEの負scale中心画素と背景の距離。
+	const int32 NoCullNegativeDistance = MeshMaterialColorDistance( MeshMaterialPixel( Soft, 64, 64 ), KnownBackground );
+	C.Check( bRightPositiveDrawn && bRightNegativeDrawn && ( RightPositiveDistance > 20 ) == bEffectNegativeVisible && ( RightNegativeDistance > 20 ) == bEffectPositiveVisible && ( RightPositiveDistance > 20 ) != ( RightNegativeDistance > 20 ), "logical RIGHTはLEFTと逆向きの表裏をnative NONEから選ぶ: right=%d,%d left=%d,%d", RightPositiveDistance, RightNegativeDistance, EffectFrontDistance, EffectMirrorDistance );
+	C.Check( bNoCullPositiveDrawn && bNoCullNegativeDrawn && NoCullPositiveDistance > 20 && NoCullNegativeDistance > 20, "logical NONEは正負scaleの両面をnative NONEから描く: distance=%d,%d", NoCullPositiveDistance, NoCullNegativeDistance );
+	if ( NativeContext != nullptr ) NativeContext->RSSetState( PreviousRaster );
+	if ( NoCullRaster != nullptr ) NoCullRaster->Release();
+	if ( PreviousRaster != nullptr ) PreviousRaster->Release();
 
 	SetDrawScreen( Saved.Screen ); DeleteSoftImage( Soft ); DeleteGraph( Screen );
 	CleanBase = FMeshRenderer(); EmissionTwo = FMeshRenderer(); UvBase = FMeshRenderer(); UvMoved = FMeshRenderer(); DistortionZero = FMeshRenderer(); DistortionOne = FMeshRenderer(); NoiseBase = FMeshRenderer(); NoiseMoved = FMeshRenderer(); OpacityOne = FMeshRenderer(); OpacityHalf = FMeshRenderer(); AddRenderer = FMeshRenderer(); MaskRenderer = FMeshRenderer(); EffectThenPlain = FMeshRenderer(); PlainControl = FMeshRenderer(); TransformRenderer = FMeshRenderer(); OneSidedRenderer = FMeshRenderer(); OneSidedEffect = FMeshRenderer(); TwoSidedEffect = FMeshRenderer(); LegacyOneSided = FMeshRenderer(); LegacyTwoSided = FMeshRenderer();

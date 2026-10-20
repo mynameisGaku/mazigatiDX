@@ -40,7 +40,8 @@ public:
 	// Vertices: Data.NumVertices個以上のworld頂点を持つ型付き配列。
 	// Indices: Data.NumIndices個以上の範囲内indexを持つ型付き配列。
 	// 不正値、画像不足、未対応blendや描画状態ではfalseを返す。
-	bool DrawMesh( const FDrawMaterialMeshData& Data, const FMeshVertex* Vertices, const uint32* Indices );
+	// bUseRegularCulling: trueなら論理設定を使い、falseなら呼出元のnative rasterを保つ。
+	bool DrawMesh( const FDrawMaterialMeshData& Data, const FMeshVertex* Vertices, const uint32* Indices, bool bUseRegularCulling );
 	// DxLib 終了前に所有している GPU 資源を解放する。
 	void Deinitialize();
 	// Direct3D 11 の GPU 資源を使用できるか返す。

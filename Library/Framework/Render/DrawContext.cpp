@@ -74,7 +74,7 @@ void FDrawContext::DistortedMaterialRibbon3D( const FDrawDistortedMaterialRibbon
 	std::memcpy( &Words[Begin + 1 + DataWords], Copied.GetData(), static_cast<size_t>( Header.Material.Ribbon.NumPoints ) * sizeof( FDrawDistortedMaterialRibbonData::FPoint ) );
 }
 
-void FDrawContext::MaterialMesh3D( const FDrawMaterialMeshData& Data, const FMeshVertex* Vertices, const uint32* Indices )
+void FDrawContext::MaterialMesh3D( const FDrawMaterialMeshData& Data, const FMeshVertex* Vertices, const uint32* Indices, bool bUseRegularCulling )
 {
 	// buffer再確保で入力headerが変わらないよう、固定設定を先に値として保持する。
 	FDrawMaterialMeshData Header{};
@@ -101,7 +101,9 @@ void FDrawContext::MaterialMesh3D( const FDrawMaterialMeshData& Data, const FMes
 	// 新しい命令を書き始める位置。
 	const size_t Begin = Words.size();
 	Words.resize( Begin + CommandWords );
-	Words[Begin] = NDrawCommand::MakeHeader( EDrawCommand::MaterialMesh3D, 0, static_cast<int32>( CommandWords ) );
+	// 材質meshの通常culling利用flag。
+	const uint8 Flags = bUseRegularCulling ? FDrawFlag::UseRegularCulling : 0;
+	Words[Begin] = NDrawCommand::MakeHeader( EDrawCommand::MaterialMesh3D, Flags, static_cast<int32>( CommandWords ) );
 	std::memcpy( &Words[Begin + 1], &Header, sizeof( Header ) );
 	std::memcpy( &Words[Begin + 1 + DataWords], CopiedVertices.GetData(), static_cast<size_t>( Header.NumVertices ) * sizeof( FMeshVertex ) );
 	std::memcpy( &Words[Begin + 1 + DataWords + VertexWords], CopiedIndices.GetData(), static_cast<size_t>( Header.NumIndices ) * sizeof( uint32 ) );

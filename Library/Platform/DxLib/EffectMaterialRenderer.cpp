@@ -779,7 +779,7 @@ Failed:
 	}
 
 	// index順に頂点属性を展開し、Ribbonと同じnative材質shaderでworld meshを描く。
-	bool DrawMesh( const FDrawMaterialMeshData& Data, const FMeshVertex* SourceVertices, const uint32* Indices )
+	bool DrawMesh( const FDrawMaterialMeshData& Data, const FMeshVertex* SourceVertices, const uint32* Indices, bool bUseRegularCulling )
 	{
 		if ( !NDrawMaterialMesh::IsValid( Data, SourceVertices, Indices ) )
 		{
@@ -913,12 +913,21 @@ Failed:
 		Context->IASetInputLayout( Layout ); Context->IASetVertexBuffers( 0, 1, &Vb, &Stride, &Offset ); Context->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 		Context->VSSetShader( VertexShader, nullptr, 0 ); Context->PSSetShader( PixelShader, nullptr, 0 ); Context->GSSetShader( nullptr, nullptr, 0 ); Context->HSSetShader( nullptr, nullptr, 0 ); Context->DSSetShader( nullptr, nullptr, 0 );
 		Context->VSSetConstantBuffers( 0, 1, &VsCb ); Context->PSSetConstantBuffers( 0, 1, &PsCb ); Context->PSSetShaderResources( 0, bUseDistortion ? 3u : 2u, Srvs ); Context->PSSetSamplers( 0, 1, &Sampler );
-		if ( Data.bTwoSided != 0 )
+		if ( Data.bTwoSided != 0 || bUseRegularCulling )
 		{
-			// 呼び出し元のraster設定を保ち、裏面も描く場合だけcullingを外す。
+			// callerのraster設定を保ち、必要なmesh cullingだけ一時反映する。
 			D3D11_RASTERIZER_DESC RasterDesc{};
 			if ( Saved.Raster != nullptr ) Saved.Raster->GetDesc( &RasterDesc ); else { RasterDesc.FillMode = D3D11_FILL_SOLID; RasterDesc.DepthClipEnable = TRUE; }
-			RasterDesc.CullMode = D3D11_CULL_NONE;
+			if ( Data.bTwoSided != 0 ) RasterDesc.CullMode = D3D11_CULL_NONE;
+			else
+			{
+				// 論理的な面除去設定をGPUの方式へ対応させる。
+				const int32 CallerCullMode = GetUseBackCulling();
+				if ( CallerCullMode == DX_CULLING_NONE ) RasterDesc.CullMode = D3D11_CULL_NONE;
+				else if ( CallerCullMode == DX_CULLING_LEFT ) RasterDesc.CullMode = D3D11_CULL_BACK;
+				else if ( CallerCullMode == DX_CULLING_RIGHT ) RasterDesc.CullMode = D3D11_CULL_FRONT;
+				else { Saved.Restore( Context ); return false; }
+			}
 			if ( !bRasterDescValid || std::memcmp( &RasterDescCache, &RasterDesc, sizeof( RasterDesc ) ) != 0 )
 			{
 				if ( Raster != nullptr ) Raster->Release();
@@ -946,5 +955,5 @@ bool FEffectMaterialRenderer::IsAvailable() const { return Impl != nullptr && Im
 bool FEffectMaterialRenderer::IsRibbonAvailable() const { return Impl != nullptr && Impl->VertexShader != nullptr && Impl->PixelShader != nullptr && Impl->Layout != nullptr && Impl->VertexBuffer != nullptr; }
 bool FEffectMaterialRenderer::IsUVDistortionAvailable() const { return Impl != nullptr && Impl->VertexShader != nullptr && Impl->PixelShader != nullptr && Impl->Layout != nullptr && Impl->VertexBuffer != nullptr && Impl->VertexConstants != nullptr && Impl->PixelConstants != nullptr && Impl->Sampler != nullptr && Impl->AlphaBlend != nullptr && Impl->AddBlend != nullptr && Impl->DepthStates[0] != nullptr && Impl->DepthStates[1] != nullptr && Impl->DepthStates[2] != nullptr && Impl->DepthStates[3] != nullptr; }
 bool FEffectMaterialRenderer::IsRibbonUVDistortionAvailable() const { return IsRibbonAvailable() && IsUVDistortionAvailable(); }
-bool FEffectMaterialRenderer::DrawMesh( const FDrawMaterialMeshData& Data, const FMeshVertex* Vertices, const uint32* Indices ) { return Impl != nullptr && Impl->DrawMesh( Data, Vertices, Indices ); }
+bool FEffectMaterialRenderer::DrawMesh( const FDrawMaterialMeshData& Data, const FMeshVertex* Vertices, const uint32* Indices, bool bUseRegularCulling ) { return Impl != nullptr && Impl->DrawMesh( Data, Vertices, Indices, bUseRegularCulling ); }
 bool FEffectMaterialRenderer::IsMeshAvailable() const { return IsRibbonAvailable() && IsUVDistortionAvailable(); }

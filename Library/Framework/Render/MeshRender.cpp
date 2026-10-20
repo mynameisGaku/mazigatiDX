@@ -239,7 +239,7 @@ void FMeshRenderer::Record( FDrawContext& Draw, const FTransform& World ) const
 		{
 			const FMeshMaterialEffectResources::FChunk& SourceChunk = Resources.Chunks[ChunkIndex];
 			const FDrawMaterialMeshData Data = MakeMeshEffectData( Resources, WorldVertices[ChunkIndex].Num(), SourceChunk.Indices.Num(), NormalizedTime, Batch.EffectUVOffset[0], Batch.EffectUVOffset[1], Batch.DistortionUVOffset[0], Batch.DistortionUVOffset[1] );
-			Draw.MaterialMesh3D( Data, WorldVertices[ChunkIndex].GetData(), SourceChunk.Indices.GetData() );
+			Draw.MaterialMesh3D( Data, WorldVertices[ChunkIndex].GetData(), SourceChunk.Indices.GetData(), true );
 		}
 		if ( PreviousBlend != Resources.Definition.Blend || PreviousBlendParam != 255 ) Draw.Blend( PreviousBlend, PreviousBlendParam );
 	}
