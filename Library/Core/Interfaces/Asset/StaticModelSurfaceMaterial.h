@@ -8,7 +8,7 @@
 // 照明・alpha test・UV変換など、元モデルのnative描画を再現する値ではない。
 struct FStaticModelSurfaceMaterial
 {
-	float32 Diffuse[4] = { 1.0f, 1.0f, 1.0f, 1.0f };  // 頂点色へ掛ける拡散色RGBA
+	float32 Diffuse[4] = { 1.0f, 1.0f, 1.0f, 1.0f };  // 元材質の拡散色RGBA。頂点reference色へ重ねて掛けない
 	int32 BorrowedDiffuseTexture = -1;                 // 元モデルが所有する拡散画像handle。削除しない
 };
 

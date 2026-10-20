@@ -85,14 +85,14 @@ namespace NAssetTest
 		}
 
 		// 成功後の既知の参照値が崩れていないかを確かめる。
-		bool HasExpectedVertex( const FStaticModelSurfaceData& Data, float32 X, float32 Y, float32 U, float32 V )
+		bool HasExpectedVertex( const FStaticModelSurfaceData& Data, float32 X, float32 Y, float32 U, float32 V, uint8 Red, uint8 Green, uint8 Blue, uint8 Alpha )
 		{
 			for ( const FMeshVertex& Vertex : Data.Vertices )
 			{
 				if ( std::fabs( Vertex.Position[0] - X ) > 0.001f || std::fabs( Vertex.Position[1] - Y ) > 0.001f || std::fabs( Vertex.Position[2] ) > 0.001f ) continue;
 				if ( std::fabs( Vertex.U - U ) > 0.001f || std::fabs( Vertex.V - V ) > 0.001f ) continue;
 				if ( std::fabs( Vertex.Normal[0] ) > 0.001f || std::fabs( Vertex.Normal[1] ) > 0.001f || std::fabs( Vertex.Normal[2] - 1.0f ) > 0.001f ) continue;
-				if ( Vertex.Color[0] == 255 && Vertex.Color[1] == 255 && Vertex.Color[2] == 255 && Vertex.Color[3] == 255 ) return true;
+				if ( Vertex.Color[0] == Red && Vertex.Color[1] == Green && Vertex.Color[2] == Blue && Vertex.Color[3] == Alpha ) return true;
 			}
 			return false;
 		}
@@ -338,20 +338,46 @@ namespace NAssetTest
 					if ( Section.SourceFrameIndex < 0 || Section.SourceFrameIndex >= MV1GetFrameNum( ModelHandle ) || Section.MaterialIndex < 0 || Section.MaterialIndex >= Data.Materials.Num() ) continue;
 					const char* FrameName = MV1GetFrameName( ModelHandle, Section.SourceFrameIndex );
 					if ( FrameName == nullptr ) continue;
+					// geometry frameが親fixture frameを指す実index。
+					const int32 ParentIndex = MV1GetFrameParent( ModelHandle, Section.SourceFrameIndex );
+					const char* ParentName = ParentIndex >= 0 && ParentIndex < MV1GetFrameNum( ModelHandle ) ? MV1GetFrameName( ModelHandle, ParentIndex ) : nullptr;
 					// sectionに対応する借用材質値。
 					const FStaticModelSurfaceMaterial& Material = Data.Materials[Section.MaterialIndex];
-					if ( std::strcmp( FrameName, "RootFrame" ) == 0 && Material.Diffuse[0] > Material.Diffuse[2] ) bRootUsesRed = true;
-					if ( std::strcmp( FrameName, "ChildTranslatedFrame" ) == 0 && Material.Diffuse[2] > Material.Diffuse[0] ) bChildUsesBlue = true;
+					if ( std::strcmp( FrameName, "RootTriangle" ) == 0 && ParentIndex == 0 && ParentName != nullptr && std::strcmp( ParentName, "RootFrame" ) == 0 && Section.SourceMeshIndex == 0 && Material.Diffuse[0] > Material.Diffuse[2] ) bRootUsesRed = true;
+					if ( std::strcmp( FrameName, "ChildTriangle" ) == 0 && ParentIndex == 2 && ParentName != nullptr && std::strcmp( ParentName, "ChildTranslatedFrame" ) == 0 && Section.SourceMeshIndex == 3 && Material.Diffuse[2] > Material.Diffuse[0] ) bChildUsesBlue = true;
 				}
 				bNamedSectionMapping = bRootUsesRed && bChildUsesBlue;
-				Checker.Check( bNamedSectionMapping, "RootFrameは赤材質、子frameは青材質のsectionへ対応" );
+				Checker.Check( bNamedSectionMapping, "RootTriangle(親RootFrame)とChildTriangle(親ChildTranslatedFrame)のsectionを赤青材質へ対応" );
 				// 空配列を成功と数えず、fixtureの正しいindex順も検証する。
 				bool bIndexOrderValid = Data.Indices.Num() == 6;
 				for ( int32 Index = 0; Index < Data.Indices.Num(); ++Index ) bIndexOrderValid = bIndexOrderValid && Data.Indices[Index] == static_cast<uint32>( Index );
 				Checker.Check( bIndexOrderValid, "fixtureの2triangle index順を保ち、頂点順を並べ替えない" );
 				// source frameの位置・法線・UV0・vertex diffuseの既知値。
-				const bool bKnownVertices = HasExpectedVertex( Data, 0.0f, 0.0f, 0.0f, 0.0f ) && HasExpectedVertex( Data, 2.0f, 0.0f, 1.0f, 0.0f ) && HasExpectedVertex( Data, 0.0f, 2.0f, 0.0f, 1.0f ) && HasExpectedVertex( Data, 4.0f, 0.0f, 0.0f, 0.0f ) && HasExpectedVertex( Data, 4.0f, 2.0f, 0.0f, 1.0f ) && HasExpectedVertex( Data, 2.0f, 0.0f, 1.0f, 0.0f );
+				const bool bKnownVertices = HasExpectedVertex( Data, 0.0f, 0.0f, 0.0f, 0.0f, 229, 51, 25, 255 ) && HasExpectedVertex( Data, 2.0f, 0.0f, 1.0f, 0.0f, 229, 51, 25, 255 ) && HasExpectedVertex( Data, 0.0f, 2.0f, 0.0f, 1.0f, 229, 51, 25, 255 ) && HasExpectedVertex( Data, 4.0f, 0.0f, 0.0f, 0.0f, 25, 76, 229, 255 ) && HasExpectedVertex( Data, 4.0f, 2.0f, 0.0f, 1.0f, 25, 76, 229, 255 ) && HasExpectedVertex( Data, 2.0f, 0.0f, 1.0f, 0.0f, 25, 76, 229, 255 );
 				Checker.Check( bKnownVertices, "frame変換後かつmodel world移動を含まない既知位置・法線・UV0・vertex diffuseを写す" );
+				if ( !bNamedSectionMapping || !bKnownVertices )
+				{
+					LOG( LogAssetSelfTest, Error, "surface diagnostic: vertices=%d sections=%d frames=%d meshes=%d materials=%d", Data.Vertices.Num(), Data.Sections.Num(), MV1GetFrameNum( ModelHandle ), MV1GetMeshNum( ModelHandle ), Data.Materials.Num() );
+					for ( int32 VertexIndex = 0; VertexIndex < Data.Vertices.Num(); ++VertexIndex )
+					{
+						// 失敗時に実際の変換結果を照合する頂点値。
+						const FMeshVertex& Vertex = Data.Vertices[VertexIndex];
+						LOG( LogAssetSelfTest, Error, "surface vertex[%d] P=(%.6f,%.6f,%.6f) N=(%.6f,%.6f,%.6f) UV=(%.6f,%.6f) Color=(%u,%u,%u,%u)", VertexIndex, Vertex.Position[0], Vertex.Position[1], Vertex.Position[2], Vertex.Normal[0], Vertex.Normal[1], Vertex.Normal[2], Vertex.U, Vertex.V, static_cast<unsigned int>( Vertex.Color[0] ), static_cast<unsigned int>( Vertex.Color[1] ), static_cast<unsigned int>( Vertex.Color[2] ), static_cast<unsigned int>( Vertex.Color[3] ) );
+					}
+					for ( int32 FrameIndex = 0; FrameIndex < MV1GetFrameNum( ModelHandle ); ++FrameIndex )
+					{
+						// DxLibが作る全frameの名前と親index。
+						const char* FrameName = MV1GetFrameName( ModelHandle, FrameIndex );
+						const int32 ParentIndex = MV1GetFrameParent( ModelHandle, FrameIndex );
+						LOG( LogAssetSelfTest, Error, "surface frame[%d] name='%s' parent=%d", FrameIndex, FrameName != nullptr ? FrameName : "<null>", ParentIndex );
+					}
+					for ( int32 SectionIndex = 0; SectionIndex < Data.Sections.Num(); ++SectionIndex )
+					{
+						// 各triangle runが参照するframe/mesh/material対応。
+						const FStaticModelSurfaceSection& Section = Data.Sections[SectionIndex];
+						LOG( LogAssetSelfTest, Error, "surface section[%d] first=%d count=%d frame=%d mesh=%d material=%d", SectionIndex, Section.FirstIndex, Section.NumIndices, Section.SourceFrameIndex, Section.SourceMeshIndex, Section.MaterialIndex );
+					}
+				}
 				// native材質写しの一致と色別positive control。
 				bool bMaterialsMatch = Data.Materials.Num() == MV1GetMaterialNum( ModelHandle );
 				bool bHasRed = false;
