@@ -1,6 +1,7 @@
 ﻿#include "WorldSelfTestScene.h"
 #include "WorldMeshSelfTestSupport.h"
 #include "WorldMeshMaterialSelfTestSupport.h"
+#include "WorldModelMaterialSelfTest.h"
 #include "WorldSelfTestSupport.h"
 
 #include <algorithm>
@@ -535,6 +536,7 @@ void CWorldSelfTestScene::OnEnter()
 	S.TempRoot = MakeTempDirectory();
 
 	NWorldTest::RunLogicTests( C );
+	NWorldTest::RunWorldModelMaterialDefinitionTests( C );
 	NWorldTest::RunEditorMathTests( C );
 	NWorldTest::RunEditorSessionTests( C );
 	NWorldTest::RunEditorInputTests( C );
@@ -589,6 +591,7 @@ void CWorldSelfTestScene::OnEnter()
 	S.Fake.TextureWidth = 128;
 	S.Fake.TextureHeight = 64;
 	S.Fake.NextModelData = { { "Idle", "Run" }, { 60.0f, 30.0f } };
+	NWorldTest::RunWorldModelMaterialSpawnFakeChecks( C, *Assets, S.Fake, S.Dir );
 
 	// アニメーション集（.modelanim.json）: クリップ "Sprint" は、モデルの "Run"
 	FModelAnimationDefinition AnimSet;
@@ -1674,6 +1677,7 @@ void CWorldSelfTestScene::RunRealChecks()
 	NWorldTest::RunEffectEditorRealTests( C, *Assets, *Executor, Dir );
 	NWorldTest::RunWorldMeshMaterialEditorTests( C, *Assets, Dir );
 	NWorldTest::RunMeshMaterialPlaybackTests( C, *Assets, Dir );
+	NWorldTest::RunWorldModelMaterialSpawnRealChecks( C, *Assets, *Executor, Dir );
 	NWorldTest::RunEffectPathPlaybackTests( C, *Assets, Dir );
 	NWorldTest::RunEffectMaterialPlaybackTests( C, *Assets, Dir );
 	NWorldTest::RunEffectUVDistortionPlaybackTests( C, *Assets, Dir );

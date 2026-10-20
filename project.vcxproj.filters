@@ -352,6 +352,9 @@
     <ClCompile Include="Library\Framework\World\WorldHierarchy.cpp">
       <Filter>Library\Framework\World</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\World\WorldModelMaterialEffect.cpp">
+      <Filter>Library\Framework\World</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\World\WorldRender.cpp">
       <Filter>Library\Framework\World</Filter>
     </ClCompile>
@@ -680,6 +683,9 @@
       <Filter>Source\Scene</Filter>
     </ClCompile>
     <ClCompile Include="Source\Scene\WorldMeshSelfTestOps.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene\WorldModelMaterialSelfTest.cpp">
       <Filter>Source\Scene</Filter>
     </ClCompile>
     <ClCompile Include="Source\Scene\WorldPrefabSelfTest.cpp">
@@ -1722,6 +1728,9 @@
     <ClInclude Include="Library\Framework\World\WorldHierarchy.h">
       <Filter>Library\Framework\World</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\World\WorldModelMaterialEffect.h">
+      <Filter>Library\Framework\World</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\World\WorldRender.h">
       <Filter>Library\Framework\World</Filter>
     </ClInclude>
@@ -1936,6 +1945,9 @@
       <Filter>Source\Scene</Filter>
     </ClInclude>
     <ClInclude Include="Source\Scene\WorldMeshSelfTestSupport.h">
+      <Filter>Source\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scene\WorldModelMaterialSelfTest.h">
       <Filter>Source\Scene</Filter>
     </ClInclude>
     <ClInclude Include="Source\Scene\WorldSelfTestScene.h">

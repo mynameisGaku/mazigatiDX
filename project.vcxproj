@@ -269,6 +269,7 @@
     <ClCompile Include="Library\Framework\World\WorldDefinition.cpp" />
     <ClCompile Include="Library\Framework\World\WorldEdit.cpp" />
     <ClCompile Include="Library\Framework\World\WorldHierarchy.cpp" />
+    <ClCompile Include="Library\Framework\World\WorldModelMaterialEffect.cpp" />
     <ClCompile Include="Library\Framework\World\WorldRender.cpp" />
     <ClCompile Include="Library\Framework\World\WorldSpawner.cpp" />
     <ClCompile Include="Library\Framework\World\WorldValidate.cpp" />
@@ -379,6 +380,7 @@
     <ClCompile Include="Source\Scene\WorldMeshSelfTestData.cpp" />
     <ClCompile Include="Source\Scene\WorldMeshSelfTestEditor.cpp" />
     <ClCompile Include="Source\Scene\WorldMeshSelfTestOps.cpp" />
+    <ClCompile Include="Source\Scene\WorldModelMaterialSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldPrefabSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldSelfTestLogic.cpp" />
     <ClCompile Include="Source\Scene\WorldSelfTestScene.cpp" />
@@ -727,6 +729,7 @@
     <ClInclude Include="Library\Framework\World\WorldDefinition.h" />
     <ClInclude Include="Library\Framework\World\WorldEdit.h" />
     <ClInclude Include="Library\Framework\World\WorldHierarchy.h" />
+    <ClInclude Include="Library\Framework\World\WorldModelMaterialEffect.h" />
     <ClInclude Include="Library\Framework\World\WorldRender.h" />
     <ClInclude Include="Library\Framework\World\WorldSpawner.h" />
     <ClInclude Include="Library\Framework\World\WorldValidate.h" />
@@ -799,6 +802,7 @@
     <ClInclude Include="Source\Scene\WorldEffectSelfTestSupport.h" />
     <ClInclude Include="Source\Scene\WorldMeshMaterialSelfTestSupport.h" />
     <ClInclude Include="Source\Scene\WorldMeshSelfTestSupport.h" />
+    <ClInclude Include="Source\Scene\WorldModelMaterialSelfTest.h" />
     <ClInclude Include="Source\Scene\WorldSelfTestScene.h" />
     <ClInclude Include="Source\Scene\WorldSelfTestSupport.h" />
     <ClInclude Include="VendorModules\ImGui\imconfig.h" />
