@@ -819,6 +819,8 @@ void CWorldSelfTestScene::OnEnter()
 		FWorldSpawnOptions MeshOptions;
 		MeshOptions.Registry = &S.Registry;
 		MeshOptions.Root = FTransform( FVector3( 3000.0f, 0.0f, 0.0f ) );
+		// この World Spawn が作った分だけを数えるための累積値
+		const int32 NumMeshBuffersMadeBeforeWorld = S.Fake.NumMeshBuffersMade;
 		S.MeshLevel = NWorld::Spawn( *this, BuildMeshWorld(), FWorldBindings(), MeshOptions );
 		const FWorldSpawnReport& MeshReport = S.MeshLevel.GetReport();
 		bool bNoModelWarning = false, bNoTrianglesWarning = false;
@@ -885,7 +887,7 @@ void CWorldSelfTestScene::OnEnter()
 				}
 				C.Check( NumRedCorners == B[0].NumIndices / 3 && NumGreyCorners == B[1].NumIndices / 3 && NumRedCorners == 8, "the material's colour is stored in the vertices of its batch (8 red triangles, 2 grey)" );
 			}
-			C.Check( S.Fake.NumMeshBuffersMade == 2 && S.Fake.VertexBuffers.size() == 2 && S.Fake.IndexBuffers.size() == 2, "two meshes made buffers (the empty one made none): %d made, %d live", S.Fake.NumMeshBuffersMade, static_cast<int32>( S.Fake.VertexBuffers.size() ) );
+			C.Check( S.Fake.NumMeshBuffersMade - NumMeshBuffersMadeBeforeWorld == 2 && S.Fake.VertexBuffers.size() == 2 && S.Fake.IndexBuffers.size() == 2, "two meshes made buffers (the empty one made none): %d made, %d live", S.Fake.NumMeshBuffersMade - NumMeshBuffersMadeBeforeWorld, static_cast<int32>( S.Fake.VertexBuffers.size() ) );
 			C.Group = "world-mesh-collider";
 		}
 
