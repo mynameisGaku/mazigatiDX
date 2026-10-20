@@ -24,7 +24,7 @@ namespace
 	FEditMesh MakeResourceMesh( const FString& Source, const FString& Mask, const FString& Noise )
 	{
 		FEditMesh Mesh = NEditMesh::MakePlane( 2.0f, 2.0f );
-		FEditMeshMaterial& Material = Mesh.Materials.Add();
+	FEditMeshMaterial& Material = Mesh.Materials[0];
 		Material.Texture = Source;
 		Material.Effect.Material.bEnabled = true;
 		Material.Effect.Material.bDissolve = true;
@@ -84,11 +84,25 @@ void NWorldTest::RunMeshMaterialResourceTests( NAssetTest::FChecker& C, CAssetMa
 	Renderer.Record( RecordContext, FTransform::Identity );
 	int32 ReadyMaterialCommands = 0;
 	if ( !Recorded.Words.empty() ) ForEachDrawCommand( FDrawSpan{ Recorded.Words.data(), static_cast<int32>( Recorded.Words.size() ) }, [&]( const FDrawCommandView& Command ) { if ( Command.Type == EDrawCommand::MaterialMesh3D ) ++ReadyMaterialCommands; } );
+	FDrawBuffer RecordedAgain;
+	FDrawContext RecordAgainContext( RecordedAgain );
+	Renderer.Record( RecordAgainContext, FTransform::Identity );
 	C.Check( ReadyMaterialCommands >= 1, "ready effect resourceから材質mesh命令を実際に記録する" );
-	C.Check( Fake.NumLoadingQueries == QueriesBeforeRecord && Fake.NumTextureLoads == LoadsBeforeRecord && Fake.NumMeshBuffersMade == BuffersBeforeRecord, "Recordはready再照会・画像読込・mesh資源作成を行わない" );
+	C.Check( Recorded.Words == RecordedAgain.Words && Fake.NumLoadingQueries == QueriesBeforeRecord && Fake.NumTextureLoads == LoadsBeforeRecord && Fake.NumMeshBuffersMade == BuffersBeforeRecord, "Record反復は同じcommand wordsを保ちready再照会・画像読込・mesh資源作成を行わない" );
 	Renderer = FMeshRenderer();
 	CollectMeshMaterialResources( Assets );
 	C.Check( Fake.Textures == InitialTextures && HasSameMeshBuffers( Fake, InitialVertexBuffers, InitialIndexBuffers ), "最後のrenderer解放後にfake画像とmesh bufferを残さない" );
+
+	// source・mask・noiseが同じpathなら、mesh内で一度だけ読み同じownerを共有する。
+	const FString SharedPath = "mesh-material-resource/shared.tga";
+	const bool bSharedSaved = NAssetTest::WriteFileBytes( Dir / SharedPath, MakeResourceTga() );
+	const int32 SharedLoadsBefore = Fake.NumTextureLoads;
+	FMeshRenderer SharedRenderer = NWorld::MakeMeshRenderer( MakeResourceMesh( SharedPath, SharedPath, SharedPath ), [&Assets]( const FString& Path ) { return Assets.LoadTexture( Path ); } );
+	const bool bSharedOwner = SharedRenderer.Batches.IsValidIndex( 0 ) && SharedRenderer.Batches[0].EffectResources.IsValid() && SharedRenderer.Batches[0].EffectResources->Texture == SharedRenderer.Batches[0].EffectResources->MaskTexture && SharedRenderer.Batches[0].EffectResources->Texture == SharedRenderer.Batches[0].EffectResources->DistortionTexture;
+	C.Check( bSharedSaved && bSharedOwner && Fake.NumTextureLoads == SharedLoadsBefore + 1, "source・mask・noiseの同一pathは一度だけ読み同じtexture ownerを共有する" );
+	SharedRenderer = FMeshRenderer();
+	CollectMeshMaterialResources( Assets );
+	C.Check( Fake.Textures == InitialTextures && HasSameMeshBuffers( Fake, InitialVertexBuffers, InitialIndexBuffers ), "同一path共有slotも最後のowner解放でhandle集合を復元する" );
 
 	// blank sourceは既存asset loader経由の組み込み白画像を保持する。
 	const FString WhitePath = "Effects/material_white.tga";
@@ -109,7 +123,6 @@ void NWorldTest::RunMeshMaterialResourceTests( NAssetTest::FChecker& C, CAssetMa
 		// 空・全zeroのstrengthではnoise画像無しを0強度として保持する。
 		FEditMesh EmptyStrengthMesh = MakeResourceMesh( FString(), FString(), FString() );
 		EmptyStrengthMesh.Materials[0].Effect.Material.bDissolve = false;
-		EmptyStrengthMesh.Materials[0].Effect.Material.Distortion.Texture.Clear();
 		EmptyStrengthMesh.Materials[0].Effect.Material.Distortion.Strength.Keys.Reset();
 		const int32 EmptyLoadsBefore = Fake.NumTextureLoads;
 		FMeshRenderer EmptyStrengthRenderer = NWorld::MakeMeshRenderer( EmptyStrengthMesh, [&Assets]( const FString& Path ) { return Assets.LoadTexture( Path ); } );
@@ -131,7 +144,6 @@ void NWorldTest::RunMeshMaterialResourceTests( NAssetTest::FChecker& C, CAssetMa
 
 		FEditMesh MissingNoiseMesh = MakeResourceMesh( FString(), FString(), FString() );
 		MissingNoiseMesh.Materials[0].Effect.Material.bDissolve = false;
-		MissingNoiseMesh.Materials[0].Effect.Material.Distortion.Texture.Clear();
 		FMeshRenderer MissingNoise = NWorld::MakeMeshRenderer( MissingNoiseMesh, [&Assets]( const FString& Path ) { return Assets.LoadTexture( Path ); } );
 		C.Check( MissingNoise.HasEffectPreparationFailures(), "正Strengthで空のNoise pathは部分資源を作らずslot準備を失敗する" );
 		MissingNoise = FMeshRenderer();
@@ -155,6 +167,28 @@ void NWorldTest::RunMeshMaterialResourceTests( NAssetTest::FChecker& C, CAssetMa
 	FailedMask = FMeshRenderer();
 	CollectMeshMaterialResources( Assets );
 
+	// 必須画像を一つずつ失敗させ、失敗slotがどの役割でも部分描画しない。
+	for ( int32 FailedRole = 0; FailedRole < 3; ++FailedRole )
+	{
+		// 役割ごとにcacheを共有しない読み込みpath。
+		const FString CasePrefix = FString::Printf( "mesh-material-resource/failed-%d", FailedRole );
+		const FString CaseSource = CasePrefix + "-source.tga";
+		const FString CaseMask = CasePrefix + "-mask.tga";
+		const FString CaseNoise = CasePrefix + "-noise.tga";
+		const bool bCaseSaved = NAssetTest::WriteFileBytes( Dir / CaseSource, MakeResourceTga() ) && NAssetTest::WriteFileBytes( Dir / CaseMask, MakeResourceTga() ) && NAssetTest::WriteFileBytes( Dir / CaseNoise, MakeResourceTga() );
+		const int32 PreviousFailureCall = Fake.FailTextureLoadCall;
+		Fake.FailTextureLoadCall = Fake.NumTextureLoads + FailedRole + 1;
+		FMeshRenderer FailedRenderer = NWorld::MakeMeshRenderer( MakeResourceMesh( CaseSource, CaseMask, CaseNoise ), [&Assets]( const FString& Path ) { return Assets.LoadTexture( Path ); } );
+		Fake.FailTextureLoadCall = PreviousFailureCall;
+		FDrawBuffer FailedBuffer;
+		FDrawContext FailedContext( FailedBuffer );
+		FailedRenderer.Record( FailedContext, FTransform::Identity );
+		C.Check( bCaseSaved && FailedRenderer.IsValid() && FailedRenderer.HasEffectPreparationFailures() && FailedBuffer.Words.empty(), "source・mask・noise各必須画像の読み込み失敗でeffect slot全体を描かない" );
+		FailedRenderer = FMeshRenderer();
+		CollectMeshMaterialResources( Assets );
+		C.Check( Fake.Textures == InitialTextures && HasSameMeshBuffers( Fake, InitialVertexBuffers, InitialIndexBuffers ), "画像失敗slotごとに既存fake handle集合へ戻る" );
+	}
+
 	// pending sourceは準備時点で拒否し、後からreadyになってもrendererへ採用しない。
 	const FString PendingPath = "mesh-material-resource/pending.tga";
 	const bool bPendingSaved = NAssetTest::WriteFileBytes( Dir / PendingPath, MakeResourceTga() );
@@ -175,6 +209,38 @@ void NWorldTest::RunMeshMaterialResourceTests( NAssetTest::FChecker& C, CAssetMa
 	Pending.Reset();
 	CollectMeshMaterialResources( Assets );
 	C.Check( !PendingWeak.Pin().IsValid(), "pending拒否後にownerが無くなればsource imageを解放する" );
+
+	// pending画像をmask位置へ置き、sourceだけがreadyでもeffect commandを作らない。
+	const FString PendingMaskPath = "mesh-material-resource/pending-mask.tga";
+	const bool bPendingMaskSaved = NAssetTest::WriteFileBytes( Dir / PendingMaskPath, MakeResourceTga() );
+	TSharedPtr<CTexture> PendingMask = Assets.LoadTexture( PendingMaskPath, true );
+	const int32 PendingMaskHandle = PendingMask.IsValid() ? PendingMask->GetHandle() : -1;
+	FMeshRenderer PendingMaskRenderer = NWorld::MakeMeshRenderer( MakeResourceMesh( SourcePath, PendingMaskPath, NoisePath ), [&Assets]( const FString& Path ) { return Assets.LoadTexture( Path ); } );
+	C.Check( bPendingMaskSaved && PendingMask.IsValid() && !PendingMask->IsReady() && PendingMaskRenderer.HasEffectPreparationFailures(), "pending maskだけが未readyでもeffect slot準備を失敗する" );
+	Fake.Loading.erase( PendingMaskHandle );
+	FDrawBuffer PendingMaskBuffer;
+	FDrawContext PendingMaskDraw( PendingMaskBuffer );
+	PendingMaskRenderer.Record( PendingMaskDraw, FTransform::Identity );
+	C.Check( PendingMaskBuffer.Words.empty(), "後からreadyになったmaskも既存rendererへ採用しない" );
+	PendingMaskRenderer = FMeshRenderer();
+	PendingMask.Reset();
+	CollectMeshMaterialResources( Assets );
+
+	// pending画像を正Strengthが要求するnoise位置へ置いて同じ失敗を確認する。
+	const FString PendingNoisePath = "mesh-material-resource/pending-noise.tga";
+	const bool bPendingNoiseSaved = NAssetTest::WriteFileBytes( Dir / PendingNoisePath, MakeResourceTga() );
+	TSharedPtr<CTexture> PendingNoise = Assets.LoadTexture( PendingNoisePath, true );
+	const int32 PendingNoiseHandle = PendingNoise.IsValid() ? PendingNoise->GetHandle() : -1;
+	FMeshRenderer PendingNoiseRenderer = NWorld::MakeMeshRenderer( MakeResourceMesh( SourcePath, MaskPath, PendingNoisePath ), [&Assets]( const FString& Path ) { return Assets.LoadTexture( Path ); } );
+	C.Check( bPendingNoiseSaved && PendingNoise.IsValid() && !PendingNoise->IsReady() && PendingNoiseRenderer.HasEffectPreparationFailures(), "pending noiseだけが未readyでもeffect slot準備を失敗する" );
+	Fake.Loading.erase( PendingNoiseHandle );
+	FDrawBuffer PendingNoiseBuffer;
+	FDrawContext PendingNoiseDraw( PendingNoiseBuffer );
+	PendingNoiseRenderer.Record( PendingNoiseDraw, FTransform::Identity );
+	C.Check( PendingNoiseBuffer.Words.empty(), "後からreadyになったnoiseも既存rendererへ採用しない" );
+	PendingNoiseRenderer = FMeshRenderer();
+	PendingNoise.Reset();
+	CollectMeshMaterialResources( Assets );
 	C.Check( Fake.Textures == InitialTextures && HasSameMeshBuffers( Fake, InitialVertexBuffers, InitialIndexBuffers ), "全resource失敗・停止経路の終了後にhandleを残さない" );
 	Assets.SetRootDirectory( PreviousRoot );
 }

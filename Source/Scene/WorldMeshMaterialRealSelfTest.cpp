@@ -9,14 +9,52 @@
 #include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Render/MeshRender.h"
-#include "Library/Framework/World/Mesh/EditMeshPrimitives.h"
+#include "Library/Framework/World/Mesh/EditMeshBuild.h"
 #include "Library/Framework/World/WorldRender.h"
 #include "Library/Platform/FileSystem.h"
 
 namespace
 {
-	// 左右上下で色が違う、繰返し可能な16x16 TGAを作る。
-	std::vector<uint8> MakeMeshMaterialColorTga( bool bNoise = false, bool bMask = false )
+	// 実機試験前のDxLib画面・camera・viewport・色・合成設定を退避する。
+	struct FMeshMaterialCallerState
+	{
+		int32 Screen = GetDrawScreen();
+		int32 ScreenReset = GetUseSetDrawScreenSettingReset();
+		int32 Culling = GetUseBackCulling();
+		float32 Near = GetCameraNear();
+		float32 Far = GetCameraFar();
+		float32 Aspect = GetCameraDotAspect();
+		float32 Center[2] = {};
+		MATRIX CameraView = GetCameraViewMatrix();
+		MATRIX CameraProjection = GetCameraProjectionMatrix();
+		MATRIX World{};
+		MATRIX View{};
+		MATRIX Projection{};
+		MATRIX Viewport{};
+		RECT Area{};
+		int32 Blend[2] = {};
+		int32 Bright[3] = {};
+		int32 Background[4] = {};
+
+		FMeshMaterialCallerState()
+		{
+			GetCameraScreenCenter( &Center[0], &Center[1] );
+			GetTransformToWorldMatrix( &World ); GetTransformToViewMatrix( &View ); GetTransformToProjectionMatrix( &Projection ); GetTransformToViewportMatrix( &Viewport ); GetDrawArea( &Area );
+			GetDrawBlendMode( &Blend[0], &Blend[1] ); GetDrawBright( &Bright[0], &Bright[1], &Bright[2] ); GetBackgroundColor( &Background[0], &Background[1], &Background[2], &Background[3] );
+			SetUseSetDrawScreenSettingReset( FALSE );
+		}
+
+		~FMeshMaterialCallerState()
+		{
+			RenderVertex(); SetDrawScreen( Screen );
+			SetCameraNearFar( Near, Far ); SetCameraDotAspect( Aspect ); SetCameraScreenCenter( Center[0], Center[1] ); SetCameraViewMatrix( CameraView ); SetupCamera_ProjectionMatrix( CameraProjection );
+			SetTransformToWorld( &World ); SetTransformToView( &View ); SetTransformToProjection( &Projection ); SetTransformToViewport( &Viewport ); SetDrawArea( Area.left, Area.top, Area.right, Area.bottom );
+			SetDrawBlendMode( Blend[0], Blend[1] ); SetDrawBright( Bright[0], Bright[1], Bright[2] ); SetBackgroundColor( Background[0], Background[1], Background[2], Background[3] ); SetUseBackCulling( Culling ); SetUseSetDrawScreenSettingReset( ScreenReset );
+		}
+	};
+
+	// 既知一色、非対称模様、二値mask、細かいnoiseを持つ16x16 TGAを作る。
+	std::vector<uint8> MakeMeshMaterialTga( int32 Kind )
 	{
 		constexpr int32 Width = 16;
 		constexpr int32 Height = 16;
@@ -25,19 +63,18 @@ namespace
 		{
 			for ( int32 X = 0; X < Width; ++X )
 			{
-				uint8 R = 0, G = 0, B = 0;
-				if ( bMask ) R = G = B = X < Width / 2 ? 0 : 255;
-				else if ( bNoise ) R = G = B = ( ( X / 2 + Y / 2 ) % 2 == 0 ) ? 32 : 224;
-				else if ( Y < Height / 2 ) { R = X < Width / 2 ? 120 : 30; G = X < Width / 2 ? 35 : 65; B = X < Width / 2 ? 25 : 120; }
-				else { R = X < Width / 2 ? 25 : 110; G = X < Width / 2 ? 105 : 85; B = X < Width / 2 ? 95 : 30; }
+				uint8 R = 80, G = 40, B = 20;
+				if ( Kind == 1 ) { R = static_cast<uint8>( 35 + ( X * 31 + Y * 17 ) % 180 ); G = static_cast<uint8>( 25 + ( X * 13 + Y * 41 ) % 190 ); B = static_cast<uint8>( 30 + ( X * 47 + Y * 7 ) % 170 ); }
+				if ( Kind == 2 ) R = G = B = X < Width / 2 ? 0 : 255;
+				if ( Kind == 3 ) R = G = B = ( ( X / 2 + Y / 2 ) % 2 == 0 ) ? 16 : 240;
 				Bytes.push_back( B ); Bytes.push_back( G ); Bytes.push_back( R ); Bytes.push_back( 255 );
 			}
 		}
 		return Bytes;
 	}
 
-	// 再生側と同じEditMesh経路で、手前向きのUV面を作る。
-	FEditMesh MakeRealMeshMaterialFixture( const FString& SourcePath, const FString& MaskPath, const FString& NoisePath )
+	// 指定された材質設定を持つ、表がカメラへ向く単一面を作る。
+	FEditMesh MakeMeshMaterialFixture( const FString& Source, const FString& Mask, const FString& Noise, float32 Opacity, float32 Emission, bool bDissolve, float32 Dissolve, float32 Distortion, const FVector2& UVScroll, const FVector2& NoiseScroll, EDrawBlend Blend )
 	{
 		FEditMesh Mesh;
 		Mesh.Vertices.Add( FVector3( -2.0f, -2.0f, 0.0f ) );
@@ -45,196 +82,290 @@ namespace
 		Mesh.Vertices.Add( FVector3( 2.0f, 2.0f, 0.0f ) );
 		Mesh.Vertices.Add( FVector3( -2.0f, 2.0f, 0.0f ) );
 		FEditMeshFace Face;
-		Face.Indices.Add( 0 ); Face.Indices.Add( 1 ); Face.Indices.Add( 2 ); Face.Indices.Add( 3 );
+		Face.Indices.Add( 0 ); Face.Indices.Add( 3 ); Face.Indices.Add( 2 ); Face.Indices.Add( 1 );
 		Mesh.Faces.Add( Face );
-		FEditMeshMaterial& Material = Mesh.Materials.Add();
-		Material.Texture = SourcePath;
+		FEditMeshMaterial& Material = Mesh.Materials[Mesh.Materials.Add( FEditMeshMaterial() )];
+		Material.Texture = Source;
+		Material.Color = FColor32( 255, 255, 255, 255 );
 		Material.Tile = 4.0f;
 		Material.bTwoSided = true;
 		Material.Effect.Material.bEnabled = true;
-		Material.Effect.Material.bDissolve = true;
-		Material.Effect.Material.MaskTexture = MaskPath;
+		Material.Effect.Material.bDissolve = bDissolve;
+		Material.Effect.Material.MaskTexture = Mask;
 		Material.Effect.Material.Dissolve.Interpolation = FEffectScalarCurve::EInterpolation::Linear;
-		Material.Effect.Material.Dissolve.Keys.Add( { 0.0f, 0.0f } );
-		Material.Effect.Material.Dissolve.Keys.Add( { 1.0f, 1.0f } );
+		Material.Effect.Material.Dissolve.Keys.Add( { 0.0f, Dissolve } );
+		Material.Effect.Material.Dissolve.Keys.Add( { 1.0f, Dissolve } );
 		Material.Effect.Material.Emission.Interpolation = FEffectScalarCurve::EInterpolation::Linear;
-		Material.Effect.Material.Emission.Keys.Add( { 0.0f, 1.0f } );
-		Material.Effect.Material.Emission.Keys.Add( { 1.0f, 3.0f } );
-		Material.Effect.Material.Distortion.bEnabled = true;
-		Material.Effect.Material.Distortion.Texture = NoisePath;
-		Material.Effect.Material.Distortion.Strength.Keys.Add( { 0.0f, 1.0f } );
-		Material.Effect.Material.Distortion.UVScroll = FVector2( 0.7f, -0.4f );
+		Material.Effect.Material.Emission.Keys.Add( { 0.0f, Emission } );
+		Material.Effect.Material.Emission.Keys.Add( { 1.0f, Emission } );
+		Material.Effect.Material.UVScroll = UVScroll;
+		Material.Effect.Material.Distortion.bEnabled = Distortion > 0.0f;
+		Material.Effect.Material.Distortion.Texture = Noise;
+		Material.Effect.Material.Distortion.UVScroll = NoiseScroll;
+		Material.Effect.Material.Distortion.Strength.Keys.Add( { 0.0f, Distortion } );
+		Material.Effect.Material.Distortion.Strength.Keys.Add( { 1.0f, Distortion } );
 		Material.Effect.Duration = 1.0f;
-		Material.Effect.Opacity = 1.0f;
+		Material.Effect.Opacity = Opacity;
+		Material.Effect.Blend = Blend;
 		return Mesh;
 	}
 
-	// 現在のSoftImageから指定画素をRGBA値で読む。
-	FColor32 ReadMeshMaterialPixel( int32 Soft, int32 X, int32 Y )
+	// SoftImageの一画素をRGBAへ読む。
+	FColor32 MeshMaterialPixel( int32 Soft, int32 X, int32 Y )
 	{
 		int32 R = 0, G = 0, B = 0, A = 0;
 		GetPixelSoftImage( Soft, X, Y, &R, &G, &B, &A );
 		return FColor32( static_cast<uint8>( R ), static_cast<uint8>( G ), static_cast<uint8>( B ), static_cast<uint8>( A ) );
 	}
 
-	// rendererの状態を実機へ記録し、画面全体をSoftImageへ読む。
-	bool RenderMeshMaterialRenderer( FMeshRenderer& Renderer, IDrawExecutor& Executor, int32 Screen, int32 Soft, EDrawBlend InitialBlend = EDrawBlend::Alpha, int32 BlendParam = 255 )
+	// 許容誤差内で画素のRGBが既知色に一致するか調べる。
+	bool IsMeshMaterialColorNear( const FColor32& Actual, const FColor32& Expected, int32 Tolerance )
+	{
+		return std::abs( static_cast<int32>( Actual.r ) - Expected.r ) <= Tolerance && std::abs( static_cast<int32>( Actual.g ) - Expected.g ) <= Tolerance && std::abs( static_cast<int32>( Actual.b ) - Expected.b ) <= Tolerance;
+	}
+
+	// 背景色と比べ、既知のmesh pixelが描かれた強さを返す。
+	int32 MeshMaterialColorDistance( const FColor32& Actual, const FColor32& Background )
+	{
+		return std::abs( static_cast<int32>( Actual.r ) - Background.r ) + std::abs( static_cast<int32>( Actual.g ) - Background.g ) + std::abs( static_cast<int32>( Actual.b ) - Background.b );
+	}
+
+	// 画面内の中央64x64領域から安定した比較用画素を取得する。
+	TArray<FColor32> CaptureMeshMaterialPixels( int32 Soft )
+	{
+		TArray<FColor32> Pixels;
+		Pixels.Reserve( 64 * 64 );
+		for ( int32 Y = 32; Y < 96; ++Y ) for ( int32 X = 32; X < 96; ++X ) Pixels.Add( MeshMaterialPixel( Soft, X, Y ) );
+		return Pixels;
+	}
+
+	// 固定時刻のrendererを実行し、結果の画像をSoftImageへ読む。
+	bool RenderMeshMaterial( FMeshRenderer& Renderer, IDrawExecutor& Executor, int32 Screen, int32 Soft, EDrawBlend InitialBlend = EDrawBlend::Alpha, const FTransform& World = FTransform::Identity )
 	{
 		SetDrawScreen( Screen ); SetDrawAreaFull(); ClearDrawScreen();
 		FDrawBuffer Buffer;
 		FDrawContext Draw( Buffer );
-		Draw.Blend( InitialBlend, BlendParam );
-		Renderer.Record( Draw, FTransform::Identity );
+		Draw.Blend( InitialBlend, 255 );
+		Renderer.Record( Draw, World );
 		if ( Buffer.Words.empty() ) return false;
 		Executor.Execute( FDrawSpan{ Buffer.Words.data(), static_cast<int32>( Buffer.Words.size() ) } );
 		RenderVertex();
 		return GetDrawScreenSoftImage( 0, 0, 128, 128, Soft ) == 0;
 	}
 
-	// 二画像の領域でRGB差がある画素数を数える。
-	int32 CountMeshMaterialPixelDifferences( int32 Soft, const TArray<FColor32>& Previous )
+	// 同一64x64領域のうちRGBが変わった画素数を数える。
+	int32 CountPixelDifferences( int32 Soft, const TArray<FColor32>& Previous )
 	{
 		int32 Different = 0;
-		for ( int32 Y = 32; Y < 96; ++Y )
+		for ( int32 Y = 32; Y < 96; ++Y ) for ( int32 X = 32; X < 96; ++X )
 		{
-			for ( int32 X = 32; X < 96; ++X )
-			{
-				const FColor32 Current = ReadMeshMaterialPixel( Soft, X, Y );
-				const FColor32& Before = Previous[( Y - 32 ) * 64 + X - 32];
-				if ( Current.r != Before.r || Current.g != Before.g || Current.b != Before.b ) ++Different;
-			}
+			const FColor32 Current = MeshMaterialPixel( Soft, X, Y );
+			const FColor32& Before = Previous[( Y - 32 ) * 64 + X - 32];
+			if ( Current.r != Before.r || Current.g != Before.g || Current.b != Before.b ) ++Different;
 		}
 		return Different;
 	}
 
-	// 固定領域のRGB画素を比較可能な配列へ複写する。
-	TArray<FColor32> CaptureMeshMaterialPixels( int32 Soft )
+	// 記録列から材質mesh headerと先頭頂点を読む。
+	bool ReadFirstMaterialMesh( const FDrawBuffer& Buffer, FDrawMaterialMeshData& OutHeader, FMeshVertex& OutVertex )
 	{
-		TArray<FColor32> Pixels;
-		Pixels.Reserve( 64 * 64 );
-		for ( int32 Y = 32; Y < 96; ++Y ) for ( int32 X = 32; X < 96; ++X ) Pixels.Add( ReadMeshMaterialPixel( Soft, X, Y ) );
-		return Pixels;
+		bool bFound = false;
+		if ( !Buffer.Words.empty() ) ForEachDrawCommand( FDrawSpan{ Buffer.Words.data(), static_cast<int32>( Buffer.Words.size() ) }, [&]( const FDrawCommandView& Command )
+		{
+			if ( Command.Type != EDrawCommand::MaterialMesh3D || Command.NumDataWords < static_cast<int32>( sizeof( FDrawMaterialMeshData ) / 4 + sizeof( FMeshVertex ) / 4 ) ) return;
+			OutHeader = Command.Read<FDrawMaterialMeshData>();
+			std::memcpy( &OutVertex, Command.Data + sizeof( FDrawMaterialMeshData ) / 4, sizeof( OutVertex ) );
+			bFound = true;
+		} );
+		return bFound;
 	}
 }
 
-// 実DxLib rendererの固定時刻でmesh材質の画素・transform・状態復元を確認する。
+// 実DxLib rendererで一つずつ条件を変え、固定時刻の画素と状態復元を確認する。
 void NWorldTest::RunMeshMaterialRealTests( NAssetTest::FChecker& C, CAssetManager& Assets, IDrawExecutor& Executor, const FString& Dir )
 {
 	C.Group = "world-mesh-material-effect-real";
 	C.Check( Executor.SupportsEffectMaterialMesh(), "実描画先が材質付きmeshをサポートする" );
 	if ( !Executor.SupportsEffectMaterialMesh() ) { C.Skip( "現在の描画先はmesh material effectに非対応" ); return; }
+	FMeshMaterialCallerState Saved;
 	const FString PreviousRoot = Assets.GetRootDirectory();
 	Assets.SetRootDirectory( Dir );
 	const FString FixtureDirectory = "mesh-material-real";
-	const FString SourcePath = FixtureDirectory / "source.tga";
+	const FString UniformPath = FixtureDirectory / "uniform.tga";
+	const FString PatternPath = FixtureDirectory / "pattern.tga";
 	const FString MaskPath = FixtureDirectory / "mask.tga";
 	const FString NoisePath = FixtureDirectory / "noise.tga";
-	const bool bFixturesSaved = NFileSystem::EnsureDirectory( Dir / FixtureDirectory ) && NAssetTest::WriteFileBytes( Dir / SourcePath, MakeMeshMaterialColorTga() ) && NAssetTest::WriteFileBytes( Dir / MaskPath, MakeMeshMaterialColorTga( false, true ) ) && NAssetTest::WriteFileBytes( Dir / NoisePath, MakeMeshMaterialColorTga( true ) );
-	C.Check( bFixturesSaved, "非対称source・mask・noise画像をtest sandboxへ保存する" );
+	const bool bFixturesSaved = NFileSystem::EnsureDirectory( Dir / FixtureDirectory ) && NAssetTest::WriteFileBytes( Dir / UniformPath, MakeMeshMaterialTga( 0 ) ) && NAssetTest::WriteFileBytes( Dir / PatternPath, MakeMeshMaterialTga( 1 ) ) && NAssetTest::WriteFileBytes( Dir / MaskPath, MakeMeshMaterialTga( 2 ) ) && NAssetTest::WriteFileBytes( Dir / NoisePath, MakeMeshMaterialTga( 3 ) );
+	C.Check( bFixturesSaved, "既知色・非対称source・二値mask・noise画像をtest sandboxへ保存する" );
 	if ( !bFixturesSaved ) { Assets.SetRootDirectory( PreviousRoot ); return; }
-	const int32 PreviousScreen = GetDrawScreen();
 	const int32 Screen = MakeScreen( 128, 128, TRUE );
 	const int32 Soft = MakeARGB8ColorSoftImage( 128, 128 );
-	C.Check( Screen >= 0 && Soft >= 0, "固定時刻のreadback用screenとSoftImageを作る" );
-	if ( Screen < 0 || Soft < 0 )	{ if ( Screen >= 0 ) DeleteGraph( Screen ); if ( Soft >= 0 ) DeleteSoftImage( Soft ); Assets.SetRootDirectory( PreviousRoot ); return; }
-	SetDrawScreen( Screen ); SetDrawAreaFull(); SetDrawBright( 255, 255, 255 ); SetBackgroundColor( 12, 20, 28, 255 ); SetCameraNearFar( 0.1f, 100.0f ); SetCameraDotAspect( 1.0f ); SetCameraScreenCenter( 64.0f, 64.0f ); SetupCamera_Ortho( 8.0f ); SetCameraPositionAndTarget_UpVecY( VGet( 0.0f, 0.0f, -10.0f ), VGet( 0.0f, 0.0f, 0.0f ) );
+	C.Check( Screen >= 0 && Soft >= 0, "画素比較用screenとSoftImageを作る" );
+	if ( Screen < 0 || Soft < 0 ) { if ( Screen >= 0 ) DeleteGraph( Screen ); if ( Soft >= 0 ) DeleteSoftImage( Soft ); Assets.SetRootDirectory( PreviousRoot ); return; }
+	SetDrawScreen( Screen ); SetDrawAreaFull(); SetDrawBright( 255, 255, 255 ); SetBackgroundColor( 20, 30, 40, 255 ); SetCameraNearFar( 0.1f, 100.0f ); SetCameraDotAspect( 1.0f ); SetCameraScreenCenter( 64.0f, 64.0f ); SetupCamera_Ortho( 8.0f ); SetCameraPositionAndTarget_UpVecY( VGet( 0.0f, 0.0f, -10.0f ), VGet( 0.0f, 0.0f, 0.0f ) );
 	MATRIX Viewport{}; CreateViewportMatrix( &Viewport, 64.0f, 64.0f, 128.0f, 128.0f ); SetTransformToViewport( &Viewport ); const MATRIX Identity = MGetIdent(); SetTransformToWorld( &Identity ); SetUseZBuffer3D( TRUE ); SetWriteZBuffer3D( FALSE );
-	FMeshRenderer Renderer = NWorld::MakeMeshRenderer( MakeRealMeshMaterialFixture( SourcePath, MaskPath, NoisePath ), [&Assets]( const FString& Path ) { return Assets.LoadTexture( Path ); } );
-	C.Check( Renderer.IsValid() && !Renderer.HasEffectPreparationFailures(), "本物のAssetManagerから3画像とmesh effect資源を準備する" );
-	if ( !Renderer.IsValid() || Renderer.HasEffectPreparationFailures() )
-	{
-		SetDrawScreen( PreviousScreen ); DeleteSoftImage( Soft ); DeleteGraph( Screen ); Renderer = FMeshRenderer(); Assets.ReleaseUnused(); Assets.Tick( 0.0f ); Assets.SetRootDirectory( PreviousRoot ); return;
-	}
-	SetUseZBuffer3D( TRUE ); SetWriteZBuffer3D( FALSE );
-	const bool bBaselineDrawn = RenderMeshMaterialRenderer( Renderer, Executor, Screen, Soft );
-	const FColor32 BaselineTopLeft = ReadMeshMaterialPixel( Soft, 48, 48 );
-	const FColor32 BaselineBottomRight = ReadMeshMaterialPixel( Soft, 80, 48 );
-	const TArray<FColor32> BaselinePixels = CaptureMeshMaterialPixels( Soft );
-	const int32 BaselineColorDifference = std::abs( static_cast<int32>( BaselineTopLeft.r ) - BaselineBottomRight.r ) + std::abs( static_cast<int32>( BaselineTopLeft.g ) - BaselineBottomRight.g ) + std::abs( static_cast<int32>( BaselineTopLeft.b ) - BaselineBottomRight.b );
-	C.Check( bBaselineDrawn && BaselineColorDifference > 100, "時刻0の実meshへ非対称な元画像が描かれる" );
+	const auto LoadTexture = [&Assets]( const FString& Path ) { return Assets.LoadTexture( Path ); };
 
-	// 0.5秒時点で曲線発光が元画素を明るくすることを確認する。
-	Renderer.Update( 0.5f );
-	const bool bEmissionDrawn = RenderMeshMaterialRenderer( Renderer, Executor, Screen, Soft );
-	const FColor32 EmissionPixel = ReadMeshMaterialPixel( Soft, 48, 48 );
-	C.Check( bEmissionDrawn && EmissionPixel.r > BaselineTopLeft.r + 35, "時刻0.5の発光曲線が実画素を明るくする" );
-	Renderer.RestartEffects();
+	// cleanBaseは白tint・Alpha・Opacity 1・Emission 1・Dissolve off・Distortion off・UV scroll 0。
+	FMeshRenderer CleanBase = NWorld::MakeMeshRenderer( MakeMeshMaterialFixture( UniformPath, FString(), FString(), 1.0f, 1.0f, false, 0.0f, 0.0f, FVector2( 0.0f, 0.0f ), FVector2( 0.0f, 0.0f ), EDrawBlend::Alpha ), LoadTexture );
+	CleanBase.Update( 0.5f );
+	const bool bCleanDrawn = CleanBase.IsValid() && RenderMeshMaterial( CleanBase, Executor, Screen, Soft );
+	const FColor32 CleanPixel = MeshMaterialPixel( Soft, 48, 48 );
+	C.Check( bCleanDrawn && CleanPixel.r >= 78 && CleanPixel.r <= 82 && CleanPixel.g >= 38 && CleanPixel.g <= 42 && CleanPixel.b >= 18 && CleanPixel.b <= 22, "cleanBaseの既知RGBが時刻0.5でも変わらない: got %d,%d,%d expected 80,40,20", CleanPixel.r, CleanPixel.g, CleanPixel.b );
 
-	// source画像のUV位相が固定時刻で左右上下の色配置を変えることを確認する。
-	FEditMesh UvMesh = MakeRealMeshMaterialFixture( SourcePath, MaskPath, NoisePath );
-	UvMesh.Materials[0].Effect.Material.UVScroll = FVector2( 0.75f, 0.0f );
-	UvMesh.Materials[0].Effect.Material.bDissolve = false;
-	UvMesh.Materials[0].Effect.Material.Distortion.bEnabled = false;
-	UvMesh.Materials[0].Effect.Material.Emission.Keys.Reset();
-	Renderer = NWorld::MakeMeshRenderer( UvMesh, [&Assets]( const FString& Path ) { return Assets.LoadTexture( Path ); } );
-	Renderer.Update( 0.25f );
-	const bool bUvDrawn = RenderMeshMaterialRenderer( Renderer, Executor, Screen, Soft );
-	const int32 UvDifferences = CountMeshMaterialPixelDifferences( Soft, BaselinePixels );
-	C.Check( bUvDrawn && UvDifferences > 700, "固定source UV位相が実画素の広い領域を変える" );
-	Renderer = NWorld::MakeMeshRenderer( MakeRealMeshMaterialFixture( SourcePath, MaskPath, NoisePath ), [&Assets]( const FString& Path ) { return Assets.LoadTexture( Path ); } );
-	Renderer.Update( 0.0f );
+	// 同時刻のEmission 1と2だけを比べ、8bitの既知RGB倍率を確認する。
+	FMeshRenderer EmissionTwo = NWorld::MakeMeshRenderer( MakeMeshMaterialFixture( UniformPath, FString(), FString(), 1.0f, 2.0f, false, 0.0f, 0.0f, FVector2( 0.0f, 0.0f ), FVector2( 0.0f, 0.0f ), EDrawBlend::Alpha ), LoadTexture );
+	EmissionTwo.Update( 0.5f );
+	const bool bEmissionDrawn = RenderMeshMaterial( EmissionTwo, Executor, Screen, Soft );
+	const FColor32 EmissionPixel = MeshMaterialPixel( Soft, 48, 48 );
+	C.Check( bEmissionDrawn && EmissionPixel.r >= 158 && EmissionPixel.r <= 162 && EmissionPixel.g >= 78 && EmissionPixel.g <= 82 && EmissionPixel.b >= 38 && EmissionPixel.b <= 42, "Emission 2は既知8bit RGBの2倍: got %d,%d,%d expected 160,80,40", EmissionPixel.r, EmissionPixel.g, EmissionPixel.b );
 
-	// maskの左右値と消失曲線を組み合わせて実際に半面を消す。
-	Renderer.Update( 0.5f );
-	const bool bMaskDrawn = RenderMeshMaterialRenderer( Renderer, Executor, Screen, Soft );
-	const FColor32 MaskLeft = ReadMeshMaterialPixel( Soft, 48, 64 );
-	const FColor32 MaskRight = ReadMeshMaterialPixel( Soft, 80, 64 );
-	const int32 MaskLeftBrightness = std::max( { MaskLeft.r, MaskLeft.g, MaskLeft.b } );
-	const int32 MaskRightBrightness = std::max( { MaskRight.r, MaskRight.g, MaskRight.b } );
-	C.Check( bMaskDrawn && ( MaskLeftBrightness < 30 ) != ( MaskRightBrightness < 30 ), "固定消失しきい値でmask片側に穴を作り、もう片側を残す" );
+	// 同時刻のUV scrollだけを変えた非対称画像を比べる。
+	FMeshRenderer UvBase = NWorld::MakeMeshRenderer( MakeMeshMaterialFixture( PatternPath, FString(), FString(), 1.0f, 1.0f, false, 0.0f, 0.0f, FVector2( 0.0f, 0.0f ), FVector2( 0.0f, 0.0f ), EDrawBlend::Alpha ), LoadTexture );
+	FMeshRenderer UvMoved = NWorld::MakeMeshRenderer( MakeMeshMaterialFixture( PatternPath, FString(), FString(), 1.0f, 1.0f, false, 0.0f, 0.0f, FVector2( 0.75f, 0.0f ), FVector2( 0.0f, 0.0f ), EDrawBlend::Alpha ), LoadTexture );
+	UvBase.Update( 0.5f ); UvMoved.Update( 0.5f );
+	const bool bUvBaseDrawn = RenderMeshMaterial( UvBase, Executor, Screen, Soft );
+	const TArray<FColor32> UvBasePixels = CaptureMeshMaterialPixels( Soft );
+	const bool bUvMovedDrawn = RenderMeshMaterial( UvMoved, Executor, Screen, Soft );
+	const int32 UvDifferentPixels = CountPixelDifferences( Soft, UvBasePixels );
+	C.Check( bUvBaseDrawn && bUvMovedDrawn && UvDifferentPixels > 700, "同時刻のsource UV scrollだけで模様が移動する: different=%d/4096 expected>700", UvDifferentPixels );
 
-	// opacityは頂점alphaへ掛かり、RGBはAlpha合成で背景との中間になる。
-	FEditMesh OpacityMesh = MakeRealMeshMaterialFixture( SourcePath, MaskPath, NoisePath );
-	OpacityMesh.Materials[0].Effect.Opacity = 0.5f;
-	OpacityMesh.Materials[0].Effect.Material.bDissolve = false;
-	OpacityMesh.Materials[0].Effect.Material.Distortion.bEnabled = false;
-	Renderer = NWorld::MakeMeshRenderer( OpacityMesh, [&Assets]( const FString& Path ) { return Assets.LoadTexture( Path ); } );
-	Renderer.Update( 0.0f );
-	const bool bOpacityDrawn = RenderMeshMaterialRenderer( Renderer, Executor, Screen, Soft, EDrawBlend::Alpha, 255 );
-	const FColor32 OpacityPixel = ReadMeshMaterialPixel( Soft, 48, 48 );
-	C.Check( bOpacityDrawn && OpacityPixel.r > 40 && OpacityPixel.r < BaselineTopLeft.r - 20 && OpacityPixel.b > 10, "opacityは既知の背景とのalpha合成へ作用しsource RGBを保つ" );
+	// 強度だけを0から1へ変え、source UV・発光・消失・noise UVを同じにして比べる。
+	FMeshRenderer DistortionZero = NWorld::MakeMeshRenderer( MakeMeshMaterialFixture( PatternPath, FString(), NoisePath, 1.0f, 1.0f, false, 0.0f, 0.0f, FVector2( 0.0f, 0.0f ), FVector2( 0.0f, 0.0f ), EDrawBlend::Alpha ), LoadTexture );
+	FMeshRenderer DistortionOne = NWorld::MakeMeshRenderer( MakeMeshMaterialFixture( PatternPath, FString(), NoisePath, 1.0f, 1.0f, false, 0.0f, 1.0f, FVector2( 0.0f, 0.0f ), FVector2( 0.0f, 0.0f ), EDrawBlend::Alpha ), LoadTexture );
+	DistortionZero.Update( 0.5f ); DistortionOne.Update( 0.5f );
+	const bool bDistortionZeroDrawn = RenderMeshMaterial( DistortionZero, Executor, Screen, Soft );
+	const TArray<FColor32> DistortionZeroPixels = CaptureMeshMaterialPixels( Soft );
+	const bool bDistortionOneDrawn = RenderMeshMaterial( DistortionOne, Executor, Screen, Soft );
+	const int32 DistortionDifferentPixels = CountPixelDifferences( Soft, DistortionZeroPixels );
+	C.Check( bDistortionZeroDrawn && bDistortionOneDrawn && DistortionDifferentPixels > 100, "同時刻に歪み強度だけを変えるとnoiseで画素が変わる: different=%d/4096 expected>100", DistortionDifferentPixels );
 
-	// noise画像を使う歪みを0.5秒で適用し、同じ点列の実画素変化を確認する。
-	FEditMesh NoiseMesh = MakeRealMeshMaterialFixture( SourcePath, MaskPath, NoisePath );
-	NoiseMesh.Materials[0].Effect.Material.bDissolve = false;
-	NoiseMesh.Materials[0].Effect.Material.Distortion.Strength.Keys.Reset();
-	NoiseMesh.Materials[0].Effect.Material.Distortion.Strength.Keys.Add( { 0.0f, 0.0f } );
-	NoiseMesh.Materials[0].Effect.Material.Distortion.Strength.Keys.Add( { 1.0f, 1.0f } );
-	NoiseMesh.Materials[0].Effect.Material.Distortion.UVScale = FVector2( 8.0f, 8.0f );
-	Renderer = NWorld::MakeMeshRenderer( NoiseMesh, [&Assets]( const FString& Path ) { return Assets.LoadTexture( Path ); } );
-	Renderer.Update( 0.0f );
-	const bool bNoiseBaseDrawn = RenderMeshMaterialRenderer( Renderer, Executor, Screen, Soft );
+	// 強度を1に固定し、noise UV scrollだけの違いを独立して測る。
+	FMeshRenderer NoiseBase = NWorld::MakeMeshRenderer( MakeMeshMaterialFixture( PatternPath, FString(), NoisePath, 1.0f, 1.0f, false, 0.0f, 1.0f, FVector2( 0.0f, 0.0f ), FVector2( 0.0f, 0.0f ), EDrawBlend::Alpha ), LoadTexture );
+	FMeshRenderer NoiseMoved = NWorld::MakeMeshRenderer( MakeMeshMaterialFixture( PatternPath, FString(), NoisePath, 1.0f, 1.0f, false, 0.0f, 1.0f, FVector2( 0.0f, 0.0f ), FVector2( 0.75f, -0.5f ), EDrawBlend::Alpha ), LoadTexture );
+	NoiseBase.Update( 0.5f ); NoiseMoved.Update( 0.5f );
+	const bool bNoiseBaseDrawn = RenderMeshMaterial( NoiseBase, Executor, Screen, Soft );
 	const TArray<FColor32> NoiseBasePixels = CaptureMeshMaterialPixels( Soft );
-	Renderer.Update( 0.5f );
-	const bool bDistortionDrawn = RenderMeshMaterialRenderer( Renderer, Executor, Screen, Soft );
-	const int32 DistortionDifferences = CountMeshMaterialPixelDifferences( Soft, NoiseBasePixels );
-	C.Check( bNoiseBaseDrawn && bDistortionDrawn && DistortionDifferences > 100, "ready noiseを使う固定歪み位相が実画素を変える" );
+	const bool bNoiseMovedDrawn = RenderMeshMaterial( NoiseMoved, Executor, Screen, Soft );
+	const int32 NoiseDifferentPixels = CountPixelDifferences( Soft, NoiseBasePixels );
+	C.Check( bNoiseBaseDrawn && bNoiseMovedDrawn && NoiseDifferentPixels > 100, "同時刻にnoise scrollだけを変えると参照模様が移動する: different=%d/4096 expected>100", NoiseDifferentPixels );
 
-	// effectの前後でcaller blendをDrawContext上へ戻し、後続通常meshも命令へ残す。
-	FMeshRenderer Mixed = NWorld::MakeMeshRenderer( MakeRealMeshMaterialFixture( SourcePath, MaskPath, NoisePath ), [&Assets]( const FString& Path ) { return Assets.LoadTexture( Path ); } );
-	FMeshRenderer Plain = Mixed;
-	Plain.Batches[0].bEffectRequested = false;
-	FDrawBuffer StateBuffer;
-	FDrawContext StateDraw( StateBuffer );
-	StateDraw.Blend( EDrawBlend::Add, 91 );
-	Mixed.Record( StateDraw, FTransform::Identity );
-	Plain.Record( StateDraw, FTransform::Identity );
-	int32 MaterialCommands = 0, PlainCommands = 0;
-	if ( !StateBuffer.Words.empty() ) ForEachDrawCommand( FDrawSpan{ StateBuffer.Words.data(), static_cast<int32>( StateBuffer.Words.size() ) }, [&]( const FDrawCommandView& Command ) { if ( Command.Type == EDrawCommand::MaterialMesh3D ) ++MaterialCommands; if ( Command.Type == EDrawCommand::Mesh3D ) ++PlainCommands; } );
-	C.Check( MaterialCommands > 0 && PlainCommands == 1 && StateDraw.GetBlendMode() == EDrawBlend::Add && StateDraw.GetBlendParam() == 91, "effect命令後も通常meshと呼出元Add 91状態を保つ" );
+	// opacity 1と.5を既知背景・既知色で比較し、出力RGBをalpha式と照合する。
+	FMeshRenderer OpacityOne = NWorld::MakeMeshRenderer( MakeMeshMaterialFixture( UniformPath, FString(), FString(), 1.0f, 1.0f, false, 0.0f, 0.0f, FVector2( 0.0f, 0.0f ), FVector2( 0.0f, 0.0f ), EDrawBlend::Alpha ), LoadTexture );
+	FMeshRenderer OpacityHalf = NWorld::MakeMeshRenderer( MakeMeshMaterialFixture( UniformPath, FString(), FString(), 0.5f, 1.0f, false, 0.0f, 0.0f, FVector2( 0.0f, 0.0f ), FVector2( 0.0f, 0.0f ), EDrawBlend::Alpha ), LoadTexture );
+	OpacityOne.Update( 0.5f ); OpacityHalf.Update( 0.5f );
+	const bool bOpacityOneDrawn = RenderMeshMaterial( OpacityOne, Executor, Screen, Soft );
+	const FColor32 OpacityOnePixel = MeshMaterialPixel( Soft, 48, 48 );
+	const bool bOpacityHalfDrawn = RenderMeshMaterial( OpacityHalf, Executor, Screen, Soft );
+	const FColor32 OpacityHalfPixel = MeshMaterialPixel( Soft, 48, 48 );
+	C.Check( bOpacityOneDrawn && bOpacityHalfDrawn && OpacityOnePixel.r >= 78 && OpacityOnePixel.r <= 82 && OpacityHalfPixel.r >= 49 && OpacityHalfPixel.r <= 51 && OpacityHalfPixel.g >= 34 && OpacityHalfPixel.g <= 36 && OpacityHalfPixel.b >= 29 && OpacityHalfPixel.b <= 31, "Opacity .5は既知背景との中間RGBを作る: full=%d,%d,%d half=%d,%d,%d expected half=50,35,30", OpacityOnePixel.r, OpacityOnePixel.g, OpacityOnePixel.b, OpacityHalfPixel.r, OpacityHalfPixel.g, OpacityHalfPixel.b );
 
-	// 変換を含む命令頂点が一度だけworld位置へ移ることを読む。
-	FDrawBuffer TransformBuffer;
-	FDrawContext TransformDraw( TransformBuffer );
-	Renderer.StopEffects();
-	Renderer.RestartEffects();
-	Renderer.Record( TransformDraw, FTransform( FVector3( 3.0f, 2.0f, 1.0f ) ) );
-	bool bTranslated = false;
-	if ( !TransformBuffer.Words.empty() ) ForEachDrawCommand( FDrawSpan{ TransformBuffer.Words.data(), static_cast<int32>( TransformBuffer.Words.size() ) }, [&]( const FDrawCommandView& Command ) { if ( Command.Type == EDrawCommand::MaterialMesh3D && Command.NumDataWords >= static_cast<int32>( sizeof( FDrawMaterialMeshData ) / 4 + sizeof( FMeshVertex ) / 4 ) ) { FMeshVertex Vertex{}; std::memcpy( &Vertex, Command.Data + sizeof( FDrawMaterialMeshData ) / 4, sizeof( Vertex ) ); bTranslated = std::abs( Vertex.Position[0] ) >= 1.0f && std::abs( Vertex.Position[1] ) >= 1.0f; } } );
-	C.Check( bTranslated, "実mesh effect頂点へworld transformを一度適用する" );
+	// 同じ既知source・背景でAlphaとAddの合成結果を照合する。
+	FMeshRenderer AddRenderer = NWorld::MakeMeshRenderer( MakeMeshMaterialFixture( UniformPath, FString(), FString(), 1.0f, 1.0f, false, 0.0f, 0.0f, FVector2( 0.0f, 0.0f ), FVector2( 0.0f, 0.0f ), EDrawBlend::Add ), LoadTexture );
+	AddRenderer.Update( 0.5f );
+	const bool bAddDrawn = RenderMeshMaterial( AddRenderer, Executor, Screen, Soft );
+	const FColor32 AddPixel = MeshMaterialPixel( Soft, 48, 48 );
+	C.Check( bAddDrawn && AddPixel.r >= 98 && AddPixel.r <= 102 && AddPixel.g >= 68 && AddPixel.g <= 72 && AddPixel.b >= 58 && AddPixel.b <= 62, "Addは既知背景へsource RGBを加える: got %d,%d,%d expected 100,70,60", AddPixel.r, AddPixel.g, AddPixel.b );
 
-	SetDrawScreen( PreviousScreen ); DeleteSoftImage( Soft ); DeleteGraph( Screen );
-	Renderer = FMeshRenderer(); Mixed = FMeshRenderer(); Plain = FMeshRenderer();
-	Assets.ReleaseUnused(); Assets.Tick( 0.0f );
-	Assets.SetRootDirectory( PreviousRoot );
+	// 固定消失値とmaskを同時刻で評価し、実画像の片側へ穴を作る。
+	FMeshRenderer MaskRenderer = NWorld::MakeMeshRenderer( MakeMeshMaterialFixture( UniformPath, MaskPath, FString(), 1.0f, 1.0f, true, 0.5f, 0.0f, FVector2( 0.0f, 0.0f ), FVector2( 0.0f, 0.0f ), EDrawBlend::Alpha ), LoadTexture );
+	MaskRenderer.Update( 0.5f );
+	const bool bMaskDrawn = RenderMeshMaterial( MaskRenderer, Executor, Screen, Soft );
+	const FColor32 MaskPixelA = MeshMaterialPixel( Soft, 48, 64 );
+	const FColor32 MaskPixelB = MeshMaterialPixel( Soft, 80, 64 );
+	const FColor32 KnownBackground( 20, 30, 40, 255 );
+	const FColor32 KnownSource( 80, 40, 20, 255 );
+	const bool bMaskPixelAIsHole = IsMeshMaterialColorNear( MaskPixelA, KnownBackground, 1 );
+	const bool bMaskPixelBIsHole = IsMeshMaterialColorNear( MaskPixelB, KnownBackground, 1 );
+	const bool bMaskPixelAIsSource = IsMeshMaterialColorNear( MaskPixelA, KnownSource, 1 );
+	const bool bMaskPixelBIsSource = IsMeshMaterialColorNear( MaskPixelB, KnownSource, 1 );
+	C.Check( bMaskDrawn && ( bMaskPixelAIsHole && bMaskPixelBIsSource || bMaskPixelBIsHole && bMaskPixelAIsSource ), "二値maskの一方は背景、他方はsource色になる: A=%d,%d,%d B=%d,%d,%d", MaskPixelA.r, MaskPixelA.g, MaskPixelA.b, MaskPixelB.r, MaskPixelB.g, MaskPixelB.b );
+
+	// 次のplain meshをeffect単独時と同じ位置で描き、合成state漏れを画素で比較する。
+	FMeshRenderer EffectThenPlain = NWorld::MakeMeshRenderer( MakeMeshMaterialFixture( UniformPath, FString(), FString(), 1.0f, 1.0f, false, 0.0f, 0.0f, FVector2( 0.0f, 0.0f ), FVector2( 0.0f, 0.0f ), EDrawBlend::Alpha ), LoadTexture );
+	FMeshRenderer PlainControl = EffectThenPlain;
+	PlainControl.Batches[0].bEffectRequested = false;
+	FDrawBuffer SequenceBuffer;
+	FDrawContext SequenceDraw( SequenceBuffer );
+	SequenceDraw.Blend( EDrawBlend::Alpha, 255 );
+	EffectThenPlain.Record( SequenceDraw, FTransform( FVector3( -1.5f, 0.0f, 0.0f ) ) );
+	PlainControl.Record( SequenceDraw, FTransform( FVector3( 1.5f, 0.0f, 0.0f ) ) );
+	const EDrawBlend BlendAfterEffect = SequenceDraw.GetBlendMode();
+	const int32 BlendParamAfterEffect = SequenceDraw.GetBlendParam();
+	SetDrawScreen( Screen ); SetDrawAreaFull(); ClearDrawScreen();
+	Executor.Execute( FDrawSpan{ SequenceBuffer.Words.data(), static_cast<int32>( SequenceBuffer.Words.size() ) } ); RenderVertex(); GetDrawScreenSoftImage( 0, 0, 128, 128, Soft );
+	const FColor32 PlainAfterEffect = MeshMaterialPixel( Soft, 80, 64 );
+	SetDrawScreen( Screen ); SetDrawAreaFull(); ClearDrawScreen();
+	FDrawBuffer PlainBuffer; FDrawContext PlainDraw( PlainBuffer ); PlainDraw.Blend( EDrawBlend::Alpha, 255 ); PlainControl.Record( PlainDraw, FTransform( FVector3( 1.5f, 0.0f, 0.0f ) ) ); Executor.Execute( FDrawSpan{ PlainBuffer.Words.data(), static_cast<int32>( PlainBuffer.Words.size() ) } ); RenderVertex(); GetDrawScreenSoftImage( 0, 0, 128, 128, Soft );
+	const FColor32 PlainAlone = MeshMaterialPixel( Soft, 80, 64 );
+	const bool bPlainPositiveControl = MeshMaterialColorDistance( PlainAlone, KnownBackground ) > 20;
+	C.Check( BlendAfterEffect == EDrawBlend::Alpha && BlendParamAfterEffect == 255 && bPlainPositiveControl && PlainAfterEffect.r == PlainAlone.r && PlainAfterEffect.g == PlainAlone.g && PlainAfterEffect.b == PlainAlone.b, "effect後の通常mesh画素は描画され単独時と一致: after=%d,%d,%d alone=%d,%d,%d background=%d,%d,%d", PlainAfterEffect.r, PlainAfterEffect.g, PlainAfterEffect.b, PlainAlone.r, PlainAlone.g, PlainAlone.b, KnownBackground.r, KnownBackground.g, KnownBackground.b );
+
+	// 非一様・負・ゼロscaleを含むworld頂点と逆scale法線を独立に照合する。
+	const FEditMesh TransformMesh = MakeMeshMaterialFixture( UniformPath, FString(), FString(), 1.0f, 1.0f, false, 0.0f, 0.0f, FVector2( 0.0f, 0.0f ), FVector2( 0.0f, 0.0f ), EDrawBlend::Alpha );
+	FMeshRenderer TransformRenderer = NWorld::MakeMeshRenderer( TransformMesh, LoadTexture );
+	const FTransform ExpectedTransform( FVector3( 3.0f, 2.0f, 1.0f ), FQuaternion::Identity, FVector3( -2.0f, 0.0f, 0.5f ) );
+	FDrawBuffer TransformBuffer; FDrawContext TransformDraw( TransformBuffer ); TransformRenderer.Record( TransformDraw, ExpectedTransform );
+	FDrawMaterialMeshData TransformHeader; FMeshVertex FirstVertex;
+	const bool bReadTransform = ReadFirstMaterialMesh( TransformBuffer, TransformHeader, FirstVertex );
+	const FEditMeshBuild LocalBuild = NEditMesh::BuildRenderMesh( TransformMesh );
+	const FVector3 ExpectedPosition = ExpectedTransform.TransformPoint( FVector3( LocalBuild.Vertices[0].Position[0], LocalBuild.Vertices[0].Position[1], LocalBuild.Vertices[0].Position[2] ) );
+	const FVector3 ExpectedNormal( LocalBuild.Vertices[0].Normal[0], LocalBuild.Vertices[0].Normal[1], LocalBuild.Vertices[0].Normal[2] );
+	const FVector3 ExpectedWorldNormal = FVector3( 0.0f, 0.0f, ExpectedNormal.z / ExpectedTransform.Scale.z ).Normalized();
+	C.Check( bReadTransform && std::abs( FirstVertex.Position[0] - ExpectedPosition.x ) < 1.0e-5f && std::abs( FirstVertex.Position[1] - ExpectedPosition.y ) < 1.0e-5f && std::abs( FirstVertex.Position[2] - ExpectedPosition.z ) < 1.0e-5f && std::abs( FirstVertex.Normal[0] - ExpectedWorldNormal.x ) < 1.0e-5f && std::abs( FirstVertex.Normal[1] - ExpectedWorldNormal.y ) < 1.0e-5f && std::abs( FirstVertex.Normal[2] - ExpectedWorldNormal.z ) < 1.0e-5f, "全XYZ位置とinverse-scale法線が負・非一様・zero scaleで一致: got p=%.3f,%.3f,%.3f n=%.3f,%.3f,%.3f expected p=%.3f,%.3f,%.3f n=%.3f,%.3f,%.3f", FirstVertex.Position[0], FirstVertex.Position[1], FirstVertex.Position[2], FirstVertex.Normal[0], FirstVertex.Normal[1], FirstVertex.Normal[2], ExpectedPosition.x, ExpectedPosition.y, ExpectedPosition.z, ExpectedWorldNormal.x, ExpectedWorldNormal.y, ExpectedWorldNormal.z );
+
+	// effect停止後のMesh3D flagも同じ材質slotの片面・両面指定を保つ。
+	FEditMesh OneSidedMesh = TransformMesh; OneSidedMesh.Materials[0].bTwoSided = false;
+	FMeshRenderer OneSidedRenderer = NWorld::MakeMeshRenderer( OneSidedMesh, LoadTexture );
+	OneSidedRenderer.StopEffects();
+	FDrawBuffer OneSidedBuffer; FDrawContext OneSidedDraw( OneSidedBuffer ); OneSidedRenderer.Record( OneSidedDraw, FTransform::Identity );
+	FMeshRenderer TwoSidedRenderer = TransformRenderer; TwoSidedRenderer.StopEffects();
+	FDrawBuffer TwoSidedBuffer; FDrawContext TwoSidedDraw( TwoSidedBuffer ); TwoSidedRenderer.Record( TwoSidedDraw, FTransform::Identity );
+	bool bOneSidedFlag = false, bTwoSidedFlag = false;
+	if ( !OneSidedBuffer.Words.empty() ) ForEachDrawCommand( FDrawSpan{ OneSidedBuffer.Words.data(), static_cast<int32>( OneSidedBuffer.Words.size() ) }, [&]( const FDrawCommandView& Command ) { if ( Command.Type == EDrawCommand::Mesh3D ) bOneSidedFlag = !Command.Has( FDrawFlag::TwoSided ); } );
+	if ( !TwoSidedBuffer.Words.empty() ) ForEachDrawCommand( FDrawSpan{ TwoSidedBuffer.Words.data(), static_cast<int32>( TwoSidedBuffer.Words.size() ) }, [&]( const FDrawCommandView& Command ) { if ( Command.Type == EDrawCommand::Mesh3D ) bTwoSidedFlag = Command.Has( FDrawFlag::TwoSided ); } );
+	C.Check( bOneSidedFlag && bTwoSidedFlag && TransformHeader.bTwoSided == 1, "effect meshとlegacy Mesh3Dが片面・両面契約を保つ" );
+	TransformRenderer.StopEffects();
+	FMeshRenderer DisabledEffectPath = TransformRenderer;
+	DisabledEffectPath.Batches[0].bEffectRequested = false;
+	FDrawBuffer StoppedEffectBuffer; FDrawContext StoppedEffectDraw( StoppedEffectBuffer ); TransformRenderer.Record( StoppedEffectDraw, FTransform::Identity );
+	FDrawBuffer DisabledEffectBuffer; FDrawContext DisabledEffectDraw( DisabledEffectBuffer ); DisabledEffectPath.Record( DisabledEffectDraw, FTransform::Identity );
+	C.Check( !StoppedEffectBuffer.Words.empty() && StoppedEffectBuffer.Words == DisabledEffectBuffer.Words, "停止とEffect無効の両経路は同じlegacy Mesh3D命令byteを記録する" );
+
+	// 正面向きと負scaleで表裏を反転し、material shaderとlegacy meshの実表示を比べる。
+	FEditMesh OneSidedEffectMesh = TransformMesh;
+	OneSidedEffectMesh.Materials[0].bTwoSided = false;
+	FMeshRenderer OneSidedEffect = NWorld::MakeMeshRenderer( OneSidedEffectMesh, LoadTexture );
+	FMeshRenderer TwoSidedEffect = NWorld::MakeMeshRenderer( TransformMesh, LoadTexture );
+	FEditMesh LegacyOneSidedMesh = TransformMesh;
+	LegacyOneSidedMesh.Materials[0].Effect.Material.bEnabled = false;
+	LegacyOneSidedMesh.Materials[0].bTwoSided = false;
+	FMeshRenderer LegacyOneSided = NWorld::MakeMeshRenderer( LegacyOneSidedMesh, LoadTexture );
+	FEditMesh LegacyTwoSidedMesh = LegacyOneSidedMesh;
+	LegacyTwoSidedMesh.Materials[0].bTwoSided = true;
+	FMeshRenderer LegacyTwoSided = NWorld::MakeMeshRenderer( LegacyTwoSidedMesh, LoadTexture );
+	const FTransform PositiveScale = FTransform::Identity;
+	const FTransform NegativeScale( FVector3::Zero, FQuaternion::Identity, FVector3( -1.0f, 1.0f, 1.0f ) );
+	SetUseBackCulling( DX_CULLING_LEFT );
+	const bool bEffectFrontDrawn = RenderMeshMaterial( OneSidedEffect, Executor, Screen, Soft, EDrawBlend::Alpha, PositiveScale );
+	const int32 EffectFrontDistance = MeshMaterialColorDistance( MeshMaterialPixel( Soft, 64, 64 ), KnownBackground );
+	const bool bEffectMirrorDrawn = RenderMeshMaterial( OneSidedEffect, Executor, Screen, Soft, EDrawBlend::Alpha, NegativeScale );
+	const int32 EffectMirrorDistance = MeshMaterialColorDistance( MeshMaterialPixel( Soft, 64, 64 ), KnownBackground );
+	const bool bEffectTwoSidedMirrorDrawn = RenderMeshMaterial( TwoSidedEffect, Executor, Screen, Soft, EDrawBlend::Alpha, NegativeScale );
+	const int32 EffectTwoSidedMirrorDistance = MeshMaterialColorDistance( MeshMaterialPixel( Soft, 64, 64 ), KnownBackground );
+	const bool bLegacyFrontDrawn = RenderMeshMaterial( LegacyOneSided, Executor, Screen, Soft, EDrawBlend::Alpha, PositiveScale );
+	const int32 LegacyFrontDistance = MeshMaterialColorDistance( MeshMaterialPixel( Soft, 64, 64 ), KnownBackground );
+	const bool bLegacyMirrorDrawn = RenderMeshMaterial( LegacyOneSided, Executor, Screen, Soft, EDrawBlend::Alpha, NegativeScale );
+	const int32 LegacyMirrorDistance = MeshMaterialColorDistance( MeshMaterialPixel( Soft, 64, 64 ), KnownBackground );
+	const bool bLegacyTwoSidedMirrorDrawn = RenderMeshMaterial( LegacyTwoSided, Executor, Screen, Soft, EDrawBlend::Alpha, NegativeScale );
+	const int32 LegacyTwoSidedMirrorDistance = MeshMaterialColorDistance( MeshMaterialPixel( Soft, 64, 64 ), KnownBackground );
+	const bool bEffectPositiveVisible = EffectFrontDistance > 20;
+	const bool bEffectNegativeVisible = EffectMirrorDistance > 20;
+	const bool bLegacyPositiveVisible = LegacyFrontDistance > 20;
+	const bool bLegacyNegativeVisible = LegacyMirrorDistance > 20;
+	C.Check( bEffectFrontDrawn && bEffectMirrorDrawn && bEffectTwoSidedMirrorDrawn && bLegacyFrontDrawn && bLegacyMirrorDrawn && bLegacyTwoSidedMirrorDrawn && bEffectPositiveVisible == bLegacyPositiveVisible && bEffectNegativeVisible == bLegacyNegativeVisible && bEffectPositiveVisible != bEffectNegativeVisible && EffectTwoSidedMirrorDistance > 20 && LegacyTwoSidedMirrorDistance > 20, "初期 winding=0,3,2,1の正負scale可視反転と両面表示がlegacy Mesh3Dに一致: effect=%d,%d,%d legacy=%d,%d,%d", EffectFrontDistance, EffectMirrorDistance, EffectTwoSidedMirrorDistance, LegacyFrontDistance, LegacyMirrorDistance, LegacyTwoSidedMirrorDistance );
+
+	SetDrawScreen( Saved.Screen ); DeleteSoftImage( Soft ); DeleteGraph( Screen );
+	CleanBase = FMeshRenderer(); EmissionTwo = FMeshRenderer(); UvBase = FMeshRenderer(); UvMoved = FMeshRenderer(); DistortionZero = FMeshRenderer(); DistortionOne = FMeshRenderer(); NoiseBase = FMeshRenderer(); NoiseMoved = FMeshRenderer(); OpacityOne = FMeshRenderer(); OpacityHalf = FMeshRenderer(); AddRenderer = FMeshRenderer(); MaskRenderer = FMeshRenderer(); EffectThenPlain = FMeshRenderer(); PlainControl = FMeshRenderer(); TransformRenderer = FMeshRenderer(); OneSidedRenderer = FMeshRenderer(); OneSidedEffect = FMeshRenderer(); TwoSidedEffect = FMeshRenderer(); LegacyOneSided = FMeshRenderer(); LegacyTwoSided = FMeshRenderer();
+	Assets.ReleaseUnused(); Assets.Tick( 0.0f ); Assets.SetRootDirectory( PreviousRoot );
 }
