@@ -116,7 +116,6 @@ namespace
 {
 	// この曲線で保存定義に反映する変更の有無。
 	bool bChanged = false;
-	if ( bInputEnded != nullptr ) *bInputEnded = false;
 	ImGui::PushID( Label );
 	ImGui::TextUnformatted( Label );
 	// 保存enumの順に並ぶ補間方式の表示名。
@@ -129,23 +128,29 @@ namespace
 	{
 		Curve.Interpolation = static_cast<FEffectScalarCurve::EInterpolation>( Interpolation );
 		bChanged = true;
+		if ( bInputEnded != nullptr ) *bInputEnded = true;
 	}
 	ImGui::SameLine();
 	ImGui::BeginDisabled( Curve.Keys.Num() >= FEffectScalarCurve::MaxKeys );
-	if ( ImGui::SmallButton( "Add key" ) ) bChanged |= AddScalarCurveKey( Curve, DefaultValue );
+	if ( ImGui::SmallButton( "Add key" ) )
+	{
+		const bool bAdded = AddScalarCurveKey( Curve, DefaultValue );
+		bChanged |= bAdded;
+		if ( bAdded && bInputEnded != nullptr ) *bInputEnded = true;
+	}
 	ImGui::EndDisabled();
 	ImGui::SameLine();
 	// Resetやキー削除で修復できる曲線の問題一覧。
 	const TArray<FString> CurveIssues = Curve.Validate();
 	// 既定曲線と違う値が保存されているか。
 	const bool bCurveNeedsReset = !Curve.Keys.IsEmpty() || Curve.Interpolation != FEffectScalarCurve::EInterpolation::Linear || !CurveIssues.IsEmpty();
-	if ( ImGui::SmallButton( "Reset" ) && bCurveNeedsReset ) { Curve = FEffectScalarCurve(); bChanged = true; }
+	if ( ImGui::SmallButton( "Reset" ) && bCurveNeedsReset ) { Curve = FEffectScalarCurve(); bChanged = true; if ( bInputEnded != nullptr ) *bInputEnded = true; }
 	if ( !CurveIssues.IsEmpty() ) ImGui::TextColored( ImVec4( 1.0f, 0.65f, 0.3f, 1.0f ), "Curve data is invalid. Remove a key or reset this curve." );
 	if ( Curve.Keys.IsEmpty() ) ImGui::TextDisabled( "No keys: uses %.3g for the whole lifetime", DefaultValue );
 	if ( Curve.Keys.Num() > FEffectScalarCurve::MaxKeys )
 	{
 		ImGui::TextColored( ImVec4( 1.0f, 0.65f, 0.3f, 1.0f ), "Only the first %d keys are shown.", FEffectScalarCurve::MaxKeys );
-		if ( ImGui::SmallButton( "Keep first 32 keys" ) ) { while ( Curve.Keys.Num() > FEffectScalarCurve::MaxKeys ) Curve.Keys.RemoveAt( Curve.Keys.Num() - 1 ); bChanged = true; }
+		if ( ImGui::SmallButton( "Keep first 32 keys" ) ) { while ( Curve.Keys.Num() > FEffectScalarCurve::MaxKeys ) Curve.Keys.RemoveAt( Curve.Keys.Num() - 1 ); bChanged = true; if ( bInputEnded != nullptr ) *bInputEnded = true; }
 	}
 	// 表示走査の後に削除するkey index。
 	int32 RemoveIndex = INDEX_NONE;
@@ -177,7 +182,7 @@ namespace
 			ImGui::SameLine();
 		}
 		else if ( bFiniteKey ) ImGui::TextColored( ImVec4( 1.0f, 0.65f, 0.3f, 1.0f ), "Invalid key order; remove or reset." );
-		if ( ImGui::SmallButton( "Remove" ) ) RemoveIndex = Index;
+		if ( ImGui::SmallButton( "Remove" ) ) { RemoveIndex = Index; if ( bInputEnded != nullptr ) *bInputEnded = true; }
 		ImGui::PopID();
 	}
 	if ( RemoveIndex != INDEX_NONE ) { Curve.Keys.RemoveAt( RemoveIndex ); bChanged = true; }
@@ -203,7 +208,11 @@ bool NEffectEditorUI::DrawScalarCurve( const char* Label, FEffectScalarCurve& Cu
 // World editorなど別の履歴documentからcurve入力終了を処理できるようにする。
 bool NEffectEditorUI::DrawScalarCurve( const char* Label, FEffectScalarCurve& Curve, float32 DefaultValue, float32 Minimum, float32 Maximum, bool& bInputEnded )
 {
-	return DrawScalarCurveValues( Label, Curve, DefaultValue, Minimum, Maximum, &bInputEnded );
+	// 同じpanel内の後続curve欄が先行欄の入力終了を消さないよう個別に集める。
+	bool bThisInputEnded = false;
+	const bool bChanged = DrawScalarCurveValues( Label, Curve, DefaultValue, Minimum, Maximum, &bThisInputEnded );
+	bInputEnded |= bThisInputEnded;
+	return bChanged;
 }
 
 // RGBA curveの各キーをfloat精度で編集し、時刻順を壊さない。

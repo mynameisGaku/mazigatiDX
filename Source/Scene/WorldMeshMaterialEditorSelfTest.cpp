@@ -180,6 +180,12 @@ namespace
 		}
 		// 全frameのwindowとNewFrame/Renderの対応を返す。
 		bool FramesBalanced() const { return bFramesBalanced; }
+		// 現在のkeyboard navigation targetを返す。
+		ImGuiID NavId() const { return Context->NavId; }
+		// 現在の入力active IDを返す。
+		ImGuiID ActiveId() const { return Context->ActiveId; }
+		// 数値欄の一時入力IDを返す。
+		ImGuiID TempInputId() const { return Context->TempInputId; }
 		// 独立font atlasを構築できたかを返す。
 		bool IsReady() const { return bFontsReady; }
 
@@ -283,21 +289,35 @@ namespace
 		C.Check( bSecondObjectFocused && SecondObject != nullptr && SecondObject->Mesh.GetValue().Materials[0].Effect.Material.bDissolve && State.Session.Document.GetNumUndo() == BeforeSecondObject + 1, "同じslot番号の別objectを実UIで変更して履歴を分ける" );
 		C.Check( State.Session.Document.Undo() && State.Session.Document.Get().FindObject( 2 )->Mesh.GetValue().Materials[0].Effect.IsDefault() && State.Session.Document.Get().FindObject( 1 )->Mesh.GetValue().Materials[0].Effect.Material.bEnabled, "Undoは別objectだけを戻す" );
 		C.Check( State.Session.Document.Redo(), "別objectの設定をRedoする" );
+		const FWorldObject* CurveBeforeAdd = State.Session.Document.Get().FindObject( 1 );
+		const int32 CurveKeysBeforeAdd = CurveBeforeAdd != nullptr && CurveBeforeAdd->Mesh.IsSet() && CurveBeforeAdd->Mesh.GetValue().Materials.IsValidIndex( 0 ) ? CurveBeforeAdd->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys.Num() : -1;
+		const float32 CurveFirstValueBeforeAdd = CurveKeysBeforeAdd > 0 ? CurveBeforeAdd->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys[0].Value : -1.0f;
 		const int32 BeforeCurve = State.Session.Document.GetNumUndo();
-		const bool bCurveAddFocused = Input.TabTo( State, Input.CurveItemId( "Emission curve", "Add key" ) );
+		const ImGuiID CurveAddId = Input.CurveItemId( "Emission curve", "Add key" );
+		const bool bCurveAddFocused = Input.TabTo( State, CurveAddId );
 		if ( bCurveAddFocused ) Input.Tap( State, ImGuiKey_Enter );
 		const FWorldObject* CurveObject = State.Session.Document.Get().FindObject( 1 );
-		const bool bCurveAdded = CurveObject != nullptr && CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys.Num() == 1;
-		C.Check( bCurveAddFocused && bCurveAdded && State.Session.Document.GetNumUndo() == BeforeCurve + 1, "実curve UIのAdd keyを一つのworld履歴へ記録する" );
+		const int32 CurveKeysAfterAdd = CurveObject != nullptr && CurveObject->Mesh.IsSet() && CurveObject->Mesh.GetValue().Materials.IsValidIndex( 0 ) ? CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys.Num() : -1;
+		const int32 UndoAfterCurveAdd = State.Session.Document.GetNumUndo();
+		C.Check( bCurveAddFocused && CurveKeysAfterAdd == CurveKeysBeforeAdd + 1 && UndoAfterCurveAdd == BeforeCurve + 1, "実curve UIのAdd keyを一つのworld履歴へ記録する: focused=%d nav=%u target=%u active=%u keys=%d beforeKeys=%d undo=%d before=%d", bCurveAddFocused, Input.NavId(), CurveAddId, Input.ActiveId(), CurveKeysAfterAdd, CurveKeysBeforeAdd, UndoAfterCurveAdd, BeforeCurve );
 		const int32 BeforeCurveValue = State.Session.Document.GetNumUndo();
 		const ImGuiID CurveValueId = Input.CurveItemId( "Emission curve", "Value", 0, 0 );
 		const bool bCurveValueFocused = Input.TabTo( State, CurveValueId );
 		const bool bCurveValueTyped = bCurveValueFocused && Input.ReplaceNumeric( State, CurveValueId, "2.35" );
 		Input.Tap( State, ImGuiKey_Tab );
 		CurveObject = State.Session.Document.Get().FindObject( 1 );
-		const bool bCurveValueSaved = CurveObject != nullptr && CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys.Num() == 1 && std::fabs( CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys[0].Value - 2.35f ) < 0.002f;
-		C.Check( bCurveValueTyped && bCurveValueSaved && State.Session.Document.GetNumUndo() == BeforeCurveValue + 1, "曲線値の文字入力をreleaseで独立した履歴へ確定する" );
-		C.Check( State.Session.Document.Undo() && std::fabs( State.Session.Document.Get().FindObject( 1 )->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys[0].Value - 1.0f ) < 0.002f && State.Session.Document.Redo() && std::fabs( State.Session.Document.Get().FindObject( 1 )->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys[0].Value - 2.35f ) < 0.002f, "曲線値のrelease履歴をUndo/Redoする" );
+		const bool bCurveValueSaved = CurveObject != nullptr && CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys.Num() == CurveKeysAfterAdd && std::fabs( CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys[0].Value - 2.35f ) < 0.002f;
+		const int32 CurveKeysAfterValue = CurveObject != nullptr && CurveObject->Mesh.IsSet() && CurveObject->Mesh.GetValue().Materials.IsValidIndex( 0 ) ? CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys.Num() : -1;
+		const float32 CurveValueAfterEdit = CurveKeysAfterValue > 0 ? CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys[0].Value : -1.0f;
+		const int32 UndoAfterCurveValue = State.Session.Document.GetNumUndo();
+		C.Check( bCurveValueTyped && bCurveValueSaved && UndoAfterCurveValue == BeforeCurveValue + 1, "曲線値の文字入力をreleaseで独立した履歴へ確定する: focused=%d typed=%d nav=%u target=%u active=%u temp=%u keys=%d value=%.6g undo=%d before=%d", bCurveValueFocused, bCurveValueTyped, Input.NavId(), CurveValueId, Input.ActiveId(), Input.TempInputId(), CurveKeysAfterValue, CurveValueAfterEdit, UndoAfterCurveValue, BeforeCurveValue );
+		const bool bCurveUndo = State.Session.Document.Undo();
+		const FWorldObject* CurveObjectAfterUndo = State.Session.Document.Get().FindObject( 1 );
+		const float32 CurveValueAfterUndo = CurveObjectAfterUndo != nullptr && CurveObjectAfterUndo->Mesh.IsSet() && CurveObjectAfterUndo->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys.Num() > 0 ? CurveObjectAfterUndo->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys[0].Value : -1.0f;
+		const bool bCurveRedo = State.Session.Document.Redo();
+		const FWorldObject* CurveObjectAfterRedo = State.Session.Document.Get().FindObject( 1 );
+		const float32 CurveValueAfterRedo = CurveObjectAfterRedo != nullptr && CurveObjectAfterRedo->Mesh.IsSet() && CurveObjectAfterRedo->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys.Num() > 0 ? CurveObjectAfterRedo->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys[0].Value : -1.0f;
+		C.Check( bCurveUndo && std::fabs( CurveValueAfterUndo - CurveFirstValueBeforeAdd ) < 0.002f && bCurveRedo && std::fabs( CurveValueAfterRedo - 2.35f ) < 0.002f, "曲線値のrelease履歴をUndo/Redoする: undo=%d undoValue=%.6g expectedUndo=%.6g redo=%d redoValue=%.6g", bCurveUndo, CurveValueAfterUndo, CurveFirstValueBeforeAdd, bCurveRedo, CurveValueAfterRedo );
 		// 世界asset managerがSaveWorldFileから使われる実装依存先と一致する。
 		C.Check( GetAppSubsystem<CAssetManager>() == &Assets, "SaveAs対象とtest asset managerが同じ" );
 		if ( GetAppSubsystem<CAssetManager>() != &Assets ) return;
