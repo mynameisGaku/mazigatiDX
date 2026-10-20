@@ -10,6 +10,7 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 #include "Library/Platform/DxLib/DxLibRibbonMesh.h"
+#include "Library/Math/Matrix4x4.h"
 
 #pragma comment(lib, "d3dcompiler")
 
@@ -779,7 +780,7 @@ Failed:
 	}
 
 	// index順に頂点属性を展開し、Ribbonと同じnative材質shaderでworld meshを描く。
-	bool DrawMesh( const FDrawMaterialMeshData& Data, const FMeshVertex* SourceVertices, const uint32* Indices, bool bUseRegularCulling )
+	bool DrawMeshInternal( const FDrawMaterialMeshData& Data, const FMeshVertex* SourceVertices, const uint32* Indices, bool bUseRegularCulling, const FMatrix4x4* World, int32 NativeCull, float32 Opacity, bool bOverrideNativeCull )
 	{
 		if ( !NDrawMaterialMesh::IsValid( Data, SourceVertices, Indices ) )
 		{
@@ -859,7 +860,8 @@ Failed:
 		// native viewport変換の重複を避ける逆行列。
 		const MATRIX ApiViewportInverse = MInverse( ApiViewport );
 		// shaderへ送るworld座標からclip座標への変換。
-		const MATRIX Wvp = MMult( MMult( MMult( View, Projection ), Viewport ), ApiViewportInverse );
+		MATRIX Wvp = MMult( MMult( MMult( View, Projection ), Viewport ), ApiViewportInverse );
+		if ( World != nullptr ) Wvp = MMult( static_cast<MATRIX>( *World ), Wvp );
 		for ( int Row = 0; Row < 4; ++Row ) for ( int Column = 0; Column < 4; ++Column ) if ( !std::isfinite( Wvp.m[Row][Column] ) ) { Saved.Restore( Context ); return false; }
 		// source・mask・noise graph領域をbase texture内へ写す値。
 		// 元画像のbase内矩形と半texel幅。
@@ -877,7 +879,9 @@ Failed:
 			FVertex& Output = Vertices[Index];
 			Output.Position[0] = Input.Position[0]; Output.Position[1] = Input.Position[1]; Output.Position[2] = Input.Position[2];
 			Output.UV[0] = Input.U; Output.UV[1] = Input.V;
-			Output.Color[0] = Input.Color[0] / 255.0f; Output.Color[1] = Input.Color[1] / 255.0f; Output.Color[2] = Input.Color[2] / 255.0f; Output.Color[3] = Input.Color[3] / 255.0f;
+			Output.Color[0] = Input.Color[0] / 255.0f; Output.Color[1] = Input.Color[1] / 255.0f; Output.Color[2] = Input.Color[2] / 255.0f;
+			if ( World != nullptr ) Output.Color[3] = Input.Color[3] / 255.0f * Opacity;
+			else Output.Color[3] = Input.Color[3] / 255.0f;
 			Output.Dissolve = Data.Dissolve; Output.Emission = Data.Emission;
 			Output.UVOffset[0] = Data.UVOffset[0]; Output.UVOffset[1] = Data.UVOffset[1];
 			if ( bUseDistortion ) { Output.DistortionOffset[0] = Data.DistortionUVOffset[0]; Output.DistortionOffset[1] = Data.DistortionUVOffset[1]; Output.DistortionStrength = Data.DistortionStrength; }
@@ -913,12 +917,19 @@ Failed:
 		Context->IASetInputLayout( Layout ); Context->IASetVertexBuffers( 0, 1, &Vb, &Stride, &Offset ); Context->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 		Context->VSSetShader( VertexShader, nullptr, 0 ); Context->PSSetShader( PixelShader, nullptr, 0 ); Context->GSSetShader( nullptr, nullptr, 0 ); Context->HSSetShader( nullptr, nullptr, 0 ); Context->DSSetShader( nullptr, nullptr, 0 );
 		Context->VSSetConstantBuffers( 0, 1, &VsCb ); Context->PSSetConstantBuffers( 0, 1, &PsCb ); Context->PSSetShaderResources( 0, bUseDistortion ? 3u : 2u, Srvs ); Context->PSSetSamplers( 0, 1, &Sampler );
-		if ( Data.bTwoSided != 0 || bUseRegularCulling )
+		if ( Data.bTwoSided != 0 || bUseRegularCulling || bOverrideNativeCull )
 		{
 			// callerのraster設定を保ち、必要なmesh cullingだけ一時反映する。
 			D3D11_RASTERIZER_DESC RasterDesc{};
 			if ( Saved.Raster != nullptr ) Saved.Raster->GetDesc( &RasterDesc ); else { RasterDesc.FillMode = D3D11_FILL_SOLID; RasterDesc.DepthClipEnable = TRUE; }
 			if ( Data.bTwoSided != 0 ) RasterDesc.CullMode = D3D11_CULL_NONE;
+			else if ( bOverrideNativeCull )
+			{
+				if ( NativeCull == DX_CULLING_NONE ) RasterDesc.CullMode = D3D11_CULL_NONE;
+				else if ( NativeCull == DX_CULLING_LEFT ) RasterDesc.CullMode = D3D11_CULL_BACK;
+				else if ( NativeCull == DX_CULLING_RIGHT ) RasterDesc.CullMode = D3D11_CULL_FRONT;
+				else { Saved.Restore( Context ); return false; }
+			}
 			else
 			{
 				// 論理的な面除去設定をGPUの方式へ対応させる。
@@ -941,6 +952,72 @@ Failed:
 		Saved.Restore( Context );
 		return true;
 	}
+
+	// 元mesh描画に必要なnative画像とUV変換が揃っているか事前確認する。
+	bool CanDrawModelMesh( const FDrawMaterialMeshData& Data, const FMatrix4x4* World )
+	{
+		if ( !NDrawMaterialMesh::IsValidHeader( Data ) || !Initialize() || Context == nullptr ) return false;
+		// 元画像へ接続するshader参照。
+		const ID3D11ShaderResourceView* Source = GetTexture( Data.Texture, SourceView, SourceHandle, SourceTextureIdentity );
+		if ( Source == nullptr ) return false;
+		if ( Data.Material.MaskTexture >= 0 )
+		{
+			// mask画像へ接続するshader参照。
+			const ID3D11ShaderResourceView* Mask = GetTexture( Data.Material.MaskTexture, MaskView, MaskHandle, MaskTextureIdentity );
+			if ( Mask == nullptr ) return false;
+		}
+		if ( Data.DistortionStrength > 0.0f )
+		{
+			// 変位画像へ接続するshader参照。
+			const ID3D11ShaderResourceView* Distortion = GetTexture( Data.DistortionTexture, DistortionView, DistortionHandle, DistortionTextureIdentity );
+			if ( Distortion == nullptr ) return false;
+		}
+		// graph矩形と半texel内側の値。
+		float32 Rect[4] = {}, Inset[4] = {};
+		if ( !GetGraphUvMapping( Data.Texture, Rect, Inset ) ) return false;
+		if ( Data.Material.MaskTexture >= 0 && !GetGraphUvMapping( Data.Material.MaskTexture, Rect, Inset ) ) return false;
+		if ( Data.DistortionStrength > 0.0f && !GetGraphUvMapping( Data.DistortionTexture, Rect, Inset ) ) return false;
+		// DxLibが保留した頂点をflushし、描画先とviewportをnativeへ反映する。
+		RenderVertex();
+		// DxLibが現在選んだ描画先。
+		const int32 DrawScreen = GetDrawScreen();
+		// 論理描画先に対応するnative target。
+		ID3D11RenderTargetView* ExpectedTarget = DrawScreen == DX_SCREEN_BACK ? const_cast<ID3D11RenderTargetView*>( static_cast<const ID3D11RenderTargetView*>( GetUseDirect3D11BackBufferRenderTargetView() ) ) : const_cast<ID3D11RenderTargetView*>( static_cast<const ID3D11RenderTargetView*>( GetGraphID3D11RenderTargetView( DrawScreen ) ) );
+		// native contextが参照するtarget。
+		ID3D11RenderTargetView* CurrentTarget = nullptr;
+		Context->OMGetRenderTargets( 1, &CurrentTarget, nullptr );
+		// DxLibが選んだ描画範囲。
+		RECT DrawArea{};
+		GetDrawArea( &DrawArea );
+		// native contextのviewport。
+		D3D11_VIEWPORT CurrentViewport{};
+		UINT ViewportCount = 1;
+		Context->RSGetViewports( &ViewportCount, &CurrentViewport );
+		const bool bTargetMatches = ExpectedTarget != nullptr && CurrentTarget == ExpectedTarget;
+		const bool bViewportMatches = ViewportCount == 1 && CurrentViewport.TopLeftX == static_cast<float32>( DrawArea.left ) && CurrentViewport.TopLeftY == static_cast<float32>( DrawArea.top ) && CurrentViewport.Width == static_cast<float32>( DrawArea.right - DrawArea.left ) && CurrentViewport.Height == static_cast<float32>( DrawArea.bottom - DrawArea.top );
+		if ( CurrentTarget != nullptr ) CurrentTarget->Release();
+		if ( !bTargetMatches || !bViewportMatches || const_cast<ID3D11DeviceContext*>( static_cast<const ID3D11DeviceContext*>( GetUseDirect3D11DeviceContext() ) ) != Context ) return false;
+		// view以降と個体行列を合成したclip変換。
+		MATRIX View{}, Projection{}, Viewport{}, ApiViewport{};
+		GetTransformToViewMatrix( &View ); GetTransformToProjectionMatrix( &Projection ); GetTransformToViewportMatrix( &Viewport ); GetTransformToAPIViewportMatrix( &ApiViewport );
+		MATRIX Wvp = MMult( MMult( MMult( View, Projection ), Viewport ), MInverse( ApiViewport ) );
+		if ( World != nullptr ) Wvp = MMult( static_cast<MATRIX>( *World ), Wvp );
+		for ( int32 Row = 0; Row < 4; ++Row ) for ( int32 Column = 0; Column < 4; ++Column ) if ( !std::isfinite( Wvp.m[Row][Column] ) ) return false;
+		return true;
+	}
+
+	// 元モデルのローカル形状を個体行列とalpha倍率で描く。
+	bool DrawModelMesh( const FDrawMaterialMeshData& Data, const FMeshVertex* SourceVertices, const uint32* Indices, const FMatrix4x4& World, int32 NativeCull, float32 Opacity )
+	{
+		if ( SourceVertices == nullptr || Indices == nullptr || !std::isfinite( Opacity ) || Opacity < 0.0f || Opacity > 1.0f || ( NativeCull != DX_CULLING_LEFT && NativeCull != DX_CULLING_RIGHT && NativeCull != DX_CULLING_NONE ) ) return false;
+		return DrawMeshInternal( Data, SourceVertices, Indices, false, &World, NativeCull, Opacity, true );
+	}
+
+	// 従来mesh命令を既存の頂点・world状態のまま描く。
+	bool DrawMesh( const FDrawMaterialMeshData& Data, const FMeshVertex* SourceVertices, const uint32* Indices, bool bUseRegularCulling )
+	{
+		return DrawMeshInternal( Data, SourceVertices, Indices, bUseRegularCulling, nullptr, 0, 1.0f, false );
+	}
 };
 
 FEffectMaterialRenderer::FEffectMaterialRenderer() : Impl( new FImpl() ) {}
@@ -956,4 +1033,6 @@ bool FEffectMaterialRenderer::IsRibbonAvailable() const { return Impl != nullptr
 bool FEffectMaterialRenderer::IsUVDistortionAvailable() const { return Impl != nullptr && Impl->VertexShader != nullptr && Impl->PixelShader != nullptr && Impl->Layout != nullptr && Impl->VertexBuffer != nullptr && Impl->VertexConstants != nullptr && Impl->PixelConstants != nullptr && Impl->Sampler != nullptr && Impl->AlphaBlend != nullptr && Impl->AddBlend != nullptr && Impl->DepthStates[0] != nullptr && Impl->DepthStates[1] != nullptr && Impl->DepthStates[2] != nullptr && Impl->DepthStates[3] != nullptr; }
 bool FEffectMaterialRenderer::IsRibbonUVDistortionAvailable() const { return IsRibbonAvailable() && IsUVDistortionAvailable(); }
 bool FEffectMaterialRenderer::DrawMesh( const FDrawMaterialMeshData& Data, const FMeshVertex* Vertices, const uint32* Indices, bool bUseRegularCulling ) { return Impl != nullptr && Impl->DrawMesh( Data, Vertices, Indices, bUseRegularCulling ); }
+bool FEffectMaterialRenderer::CanDrawModelMesh( const FDrawMaterialMeshData& Data, const FMatrix4x4* World ) { return Impl != nullptr && Impl->CanDrawModelMesh( Data, World ); }
+bool FEffectMaterialRenderer::DrawModelMesh( const FDrawMaterialMeshData& Data, const FMeshVertex* Vertices, const uint32* Indices, const FMatrix4x4& World, int32 NativeCull, float32 Opacity ) { return Impl != nullptr && Impl->DrawModelMesh( Data, Vertices, Indices, World, NativeCull, Opacity ); }
 bool FEffectMaterialRenderer::IsMeshAvailable() const { return IsRibbonAvailable() && IsUVDistortionAvailable(); }

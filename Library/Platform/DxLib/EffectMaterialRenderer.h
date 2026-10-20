@@ -9,6 +9,8 @@
 #include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
 #include "Library/Core/Interfaces/Render/DrawMaterialRibbon.h"
 
+struct FMatrix4x4;
+
 // DxLib executor が所有し、材質付き四角形・帯・meshで共有する Direct3D 11 資源を管理する。
 class FEffectMaterialRenderer
 {
@@ -42,6 +44,10 @@ public:
 	// 不正値、画像不足、未対応blendや描画状態ではfalseを返す。
 	// bUseRegularCulling: trueなら論理設定を使い、falseなら呼出元のnative rasterを保つ。
 	bool DrawMesh( const FDrawMaterialMeshData& Data, const FMeshVertex* Vertices, const uint32* Indices, bool bUseRegularCulling );
+	// 個体行列と不透明度を適用したmeshを描ける状態か調べる。
+	bool CanDrawModelMesh( const FDrawMaterialMeshData& Data, const FMatrix4x4* World );
+	// 元モデルのローカル頂点を個体行列で変換し、頂点alphaへOpacityを一度掛けて描く。
+	bool DrawModelMesh( const FDrawMaterialMeshData& Data, const FMeshVertex* Vertices, const uint32* Indices, const FMatrix4x4& World, int32 NativeCull, float32 Opacity );
 	// DxLib 終了前に所有している GPU 資源を解放する。
 	void Deinitialize();
 	// Direct3D 11 の GPU 資源を使用できるか返す。

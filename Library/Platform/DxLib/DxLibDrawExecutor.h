@@ -3,6 +3,8 @@
 #include "Library/Framework/Subsystem/AppSubsystem.h"
 #include "Library/Platform/DxLib/EffectMaterialRenderer.h"
 
+class CDxLibAssetBackend;
+
 //=============================================================================
 // CDxLibDrawExecutor
 //   IDrawExecutor の DxLib 実装。描画システムが（並列に）記録した描画コマンドを、メインスレッドで、記録された順に DxLib の
@@ -42,8 +44,14 @@ public:
 	bool SupportsEffectRibbonUVDistortion() const override;
 	// 現在のDirect3D環境で材質付き頂点メッシュを描画できるか返す。
 	bool SupportsEffectMaterialMesh() const override;
+	// 不変形状資源と材質mesh描画が同時に利用できるか返す。
+	bool SupportsModelMaterialEffects() const override;
 
 private:
 	// DxLibが動作中に解放する必要がある材質描画用GPU資源。
 	FEffectMaterialRenderer EffectMaterialRenderer;
+	// 選択材質の不変形状を引くplatform資源backend。
+	CDxLibAssetBackend* AssetBackend = nullptr;
+	// 固定payloadを検査し、残りをnativeモデル、選択材質を効果meshとして描く。
+	void ExecuteModelMaterial( const FDrawCommandView& Command );
 };

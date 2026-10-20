@@ -12,6 +12,7 @@
 #include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
+#include "Library/Platform/DxLib/DxLibAssetBackend.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 #include "Library/Platform/DxLib/DxLibRibbonMesh.h"
 
@@ -190,6 +191,8 @@ void CDxLibDrawExecutor::Initialize( FSubsystemCollection& Collection )
 {
 	// DxLib（プラットフォーム）が初期化されたあとに使う
 	Collection.InitializeDependency<IPlatform>();
+	// asset managerと同じ寿命のplatform geometry backendを確保する。
+	AssetBackend = Collection.InitializeDependency<CDxLibAssetBackend>();
 	// platformが有効な間にnative材質描画資源を作る。失敗時は能力がfalseのまま。
 	EffectMaterialRenderer.Initialize();
 }
@@ -198,6 +201,7 @@ void CDxLibDrawExecutor::Initialize( FSubsystemCollection& Collection )
 void CDxLibDrawExecutor::Deinitialize()
 {
 	EffectMaterialRenderer.Deinitialize();
+	AssetBackend = nullptr;
 }
 
 // 現在のDirect3D device上で材質描画用shaderが準備済みか返す。
@@ -224,6 +228,11 @@ bool CDxLibDrawExecutor::SupportsEffectRibbonUVDistortion() const
 bool CDxLibDrawExecutor::SupportsEffectMaterialMesh() const
 {
 	return EffectMaterialRenderer.IsMeshAvailable();
+}
+
+bool CDxLibDrawExecutor::SupportsModelMaterialEffects() const
+{
+	return AssetBackend != nullptr && EffectMaterialRenderer.IsMeshAvailable();
 }
 
 void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
@@ -325,6 +334,11 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			MV1SetMatrix( Data.Handle, ToMatrix( Data.M ) );
 			if ( Data.AnimIndex >= 0 ) MV1SetAttachAnimTime( Data.Handle, Data.AnimIndex, Data.AnimTime );
 			MV1DrawModel( Data.Handle );
+			break;
+		}
+		case EDrawCommand::ModelMaterial3D:
+		{
+			ExecuteModelMaterial( Command );
 			break;
 		}
 		case EDrawCommand::SpriteRect:

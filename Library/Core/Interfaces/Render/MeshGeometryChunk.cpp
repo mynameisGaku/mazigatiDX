@@ -3,6 +3,8 @@
 
 #include <utility>
 
+#include "Library/Core/Collection/Map.h"
+
 bool NMeshGeometry::BuildChunks( TArrayView<const FMeshVertex> Vertices, TArrayView<const uint32> Indices, TArray<FMeshGeometryChunk>& Out )
 {
 	if ( Vertices.Num() <= 0 || Vertices.GetData() == nullptr || Indices.Num() <= 0 || Indices.GetData() == nullptr || Indices.Num() % 3 != 0 ) return false;
@@ -14,11 +16,8 @@ bool NMeshGeometry::BuildChunks( TArrayView<const FMeshVertex> Vertices, TArrayV
 
 	// 完成するまで呼出元へ見せない作業用chunk列。
 	TArray<FMeshGeometryChunk> Built;
-	// 元頂点から現在chunk内の複製位置を引く配列。
-	TArray<int32> SourceToChunk;
-	SourceToChunk.Init( INDEX_NONE, Vertices.Num() );
-	// chunkを切り替える時に逆引き配列を戻す添字。
-	TArray<uint32> TouchedSources;
+	// 現在chunkに使った元頂点だけを記録する逆引き表。
+	TMap<uint32, int32> SourceToChunk;
 	// 現在の三角形で必要な異なる元頂点。
 	TArray<uint32> PendingSources;
 	PendingSources.Reserve( 3 );
@@ -35,14 +34,13 @@ bool NMeshGeometry::BuildChunks( TArrayView<const FMeshVertex> Vertices, TArrayV
 		{
 			// 三角形の現在cornerが参照する元頂点。
 			const uint32 SourceIndex = Indices[Triangle + Corner];
-			if ( SourceToChunk[static_cast<int32>( SourceIndex )] == INDEX_NONE && !PendingSources.Contains( SourceIndex ) ) PendingSources.Add( SourceIndex );
+			if ( SourceToChunk.Find( SourceIndex ) == nullptr && !PendingSources.Contains( SourceIndex ) ) PendingSources.Add( SourceIndex );
 		}
 
 		if ( Current.Indices.Num() + 3 > FDrawMaterialMeshData::MaxIndices || Current.Vertices.Num() + PendingSources.Num() > FDrawMaterialMeshData::MaxVertices )
 		{
 			Built.Add( std::move( Current ) );
-			for ( const uint32 SourceIndex : TouchedSources ) SourceToChunk[static_cast<int32>( SourceIndex )] = INDEX_NONE;
-			TouchedSources.Empty();
+			SourceToChunk.Reset();
 			Current = FMeshGeometryChunk();
 			Current.Vertices.Reserve( FDrawMaterialMeshData::MaxVertices );
 			Current.Indices.Reserve( FDrawMaterialMeshData::MaxIndices );
@@ -59,14 +57,15 @@ bool NMeshGeometry::BuildChunks( TArrayView<const FMeshVertex> Vertices, TArrayV
 		{
 			// 元三角形のcornerが指す頂点。
 			const uint32 SourceIndex = Indices[Triangle + Corner];
-			int32& ChunkIndex = SourceToChunk[static_cast<int32>( SourceIndex )];
-			if ( ChunkIndex == INDEX_NONE )
+			int32* ChunkIndex = SourceToChunk.Find( SourceIndex );
+			if ( ChunkIndex == nullptr )
 			{
-				ChunkIndex = Current.Vertices.Num();
+				const int32 NewChunkIndex = Current.Vertices.Num();
 				Current.Vertices.Add( Vertices[static_cast<int32>( SourceIndex )] );
-				TouchedSources.Add( SourceIndex );
+				SourceToChunk.Add( SourceIndex, NewChunkIndex );
+				ChunkIndex = SourceToChunk.Find( SourceIndex );
 			}
-			Current.Indices.Add( static_cast<uint32>( ChunkIndex ) );
+			Current.Indices.Add( static_cast<uint32>( *ChunkIndex ) );
 		}
 	}
 
