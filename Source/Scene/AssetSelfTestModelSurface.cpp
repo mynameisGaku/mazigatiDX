@@ -9,6 +9,7 @@
 #include "Library/Platform/DxLib/DxLibInclude.h"
 #include <cmath>
 #include <cstring>
+#include <limits>
 #include <map>
 #include <set>
 #include <string>
@@ -309,6 +310,48 @@ namespace NAssetTest
 			}
 			const FBackendMemoryInfo BeforeSnapshot = Assets.GetBackend() != nullptr ? Assets.GetBackend()->GetMemoryInfo() : FBackendMemoryInfo();
 			Checker.Check( BeforeSnapshot.NumModelHandles > BeforeLoad.NumModelHandles && BeforeSnapshot.NumTextureHandles > BeforeLoad.NumTextureHandles, "fixture loadはnative modelとembedded texture handleを増やす" );
+			// 最終材質変換後の失敗でもbackend出力が未公開かを試すnative状態。
+			const int32 MaterialCountBeforeNaNProbe = MV1GetMaterialNum( ModelHandle );
+			const COLOR_F OriginalDiffuse = MaterialCountBeforeNaNProbe > 0 ? MV1GetMaterialDifColor( ModelHandle, 0 ) : COLOR_F();
+			// NaN拒否結果と元材質復元結果。
+			bool bNaNFailureRejected = false;
+			bool bNaNMaterialRestored = MaterialCountBeforeNaNProbe > 0;
+			if ( MaterialCountBeforeNaNProbe > 0 && Assets.GetBackend() != nullptr )
+			{
+				// 元色のrだけを非有限値へ変えた入力。
+				COLOR_F InjectedDiffuse = OriginalDiffuse;
+				InjectedDiffuse.r = std::numeric_limits<float32>::quiet_NaN();
+				const bool bNaNSet = MV1SetMaterialDifColor( ModelHandle, 0, InjectedDiffuse ) >= 0;
+				// native setterがNaNを保持したか読む値。
+				const COLOR_F ReadBackNaN = MV1GetMaterialDifColor( ModelHandle, 0 );
+				const bool bNaNInputObserved = bNaNSet && std::isnan( ReadBackNaN.r );
+				Checker.Check( bNaNInputObserved, "native材質setterが拡散色NaNを保持しlate-failure入力を作れる" );
+				if ( bNaNInputObserved )
+				{
+					// backend失敗時に保持すべき全配列sentinel。
+					FStaticModelSurfaceData NaNSentinel = MakeFakeSurfaceData( 97.0f, 0.37f );
+					const FStaticModelSurfaceData NaNSentinelBefore = NaNSentinel;
+					// backendの直接応答とwrapperの公開結果。
+					const bool bBackendAcceptedNaN = Assets.GetBackend()->GetStaticModelSurface( ModelHandle, NaNSentinel );
+					const TSharedPtr<const FStaticModelSurface> NaNSurface = Model->CreateStaticSurfaceSnapshot();
+					bNaNFailureRejected = !bBackendAcceptedNaN && SameSurfaceData( NaNSentinel, NaNSentinelBefore ) && !NaNSurface.IsValid();
+					Checker.Check( bNaNFailureRejected, "NaN diffuseの後段変換失敗は値をpublishせずOutを保持しwrapperはnullptr" );
+				}
+				// 元のnative diffuseを必ず戻し、読み戻し値を照合する。
+				const int32 RestoreDiffuseResult = MV1SetMaterialDifColor( ModelHandle, 0, OriginalDiffuse );
+				const COLOR_F RestoredDiffuse = MV1GetMaterialDifColor( ModelHandle, 0 );
+				bNaNMaterialRestored = RestoreDiffuseResult >= 0 && std::isfinite( RestoredDiffuse.r ) && std::isfinite( RestoredDiffuse.g ) && std::isfinite( RestoredDiffuse.b ) && std::isfinite( RestoredDiffuse.a ) && std::fabs( RestoredDiffuse.r - OriginalDiffuse.r ) < 0.001f && std::fabs( RestoredDiffuse.g - OriginalDiffuse.g ) < 0.001f && std::fabs( RestoredDiffuse.b - OriginalDiffuse.b ) < 0.001f && std::fabs( RestoredDiffuse.a - OriginalDiffuse.a ) < 0.001f;
+				// NaN試験後の既存reference pointer/値と資源数。
+				const MV1_REF_POLYGONLIST ReferenceAfterNaNProbe = bReferenceReady ? MV1GetReferenceMesh( ModelHandle, -1, TRUE, FALSE ) : MV1_REF_POLYGONLIST();
+				const MATRIX MatrixAfterNaNProbe = MV1GetMatrix( ModelHandle );
+				const FBackendMemoryInfo AfterNaNProbe = Assets.GetBackend()->GetMemoryInfo();
+				const bool bNativeStatePreserved = SameMatrix( MatrixBeforeSnapshot, MatrixAfterNaNProbe ) && ReferenceAfterNaNProbe.Vertexs == ReferenceBefore.Vertexs && ReferenceAfterNaNProbe.Polygons == ReferenceBefore.Polygons && ReferenceAfterNaNProbe.VertexNum == ReferenceBefore.VertexNum && ReferenceAfterNaNProbe.PolygonNum == ReferenceBefore.PolygonNum && ( !bReferenceHasVertex || ( std::fabs( ReferenceAfterNaNProbe.Vertexs[0].Position.x - FirstReferencePosition.x ) < 0.001f && std::fabs( ReferenceAfterNaNProbe.Vertexs[0].Position.y - FirstReferencePosition.y ) < 0.001f && std::fabs( ReferenceAfterNaNProbe.Vertexs[0].Position.z - FirstReferencePosition.z ) < 0.001f ) ) && BeforeSnapshot.NumModelHandles == AfterNaNProbe.NumModelHandles && BeforeSnapshot.NumTextureHandles == AfterNaNProbe.NumTextureHandles;
+				Checker.Check( bNaNMaterialRestored && bNativeStatePreserved, "NaN失敗後にdiffuse・matrix・reference mesh・native handle数を復元/保持" );
+			}
+			else
+			{
+				Checker.Check( false, "実fixtureに有効材質とbackendがありNaN failure testを実行できる" );
+			}
 			// wrapperが返す値snapshotと取得後native状態。
 			TSharedPtr<const FStaticModelSurface> Surface = Model->CreateStaticSurfaceSnapshot();
 			const MV1_REF_POLYGONLIST ReferenceAfter = bReferenceReady ? MV1GetReferenceMesh( ModelHandle, -1, TRUE, FALSE ) : MV1_REF_POLYGONLIST();
