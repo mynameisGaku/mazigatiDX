@@ -70,6 +70,11 @@ TSharedPtr<CModelInstance> FAssetEditorInfo::GetModelInstance( const FString& Pa
 	return FindModel( Path ).Instance;
 }
 
+TSharedPtr<CModel> FAssetEditorInfo::GetModelSource( const FString& Path ) const
+{
+	return FindModel( Path ).Model;
+}
+
 TSharedPtr<CTexture> FAssetEditorInfo::GetTexture( const FString& Path ) const
 {
 	if ( const TSharedPtr<CTexture>* Found = Textures.Find( Path ) ) return *Found;

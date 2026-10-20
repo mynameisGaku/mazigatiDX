@@ -140,6 +140,7 @@ bool NDebugUI::OpenWorldFile( FWorldEditorState& S, const FString& AssetPath )
 	}
 	S.Session.Reset( Asset->GetDefinition(), Path );
 	S.MeshViews.Empty();   // 別worldで同じIdと形状が再生時計を引き継がないようにする
+	S.ModelPreviews.Empty(); // 前のworldの専用model instanceと効果資源を解放する
 	S.EffectPreviews.Empty();   // 同じ Id と部品でも、前のワールドで生まれた粒子は引き継がない
 	S.Collapsed.Empty();
 	S.LastClickedId = WorldNoId;
@@ -154,6 +155,7 @@ void NDebugUI::NewWorld( FWorldEditorState& S )
 {
 	S.Session.Reset( FWorldDefinition(), FString() );
 	S.MeshViews.Empty();   // 新しいworldへ前のpreview clockとbufferを持ち込まない
+	S.ModelPreviews.Empty(); // 新しいworldへ前のmodel instanceと効果資源を持ち込まない
 	S.EffectPreviews.Empty();   // 新しい文書では、前の再生と終了後の待ち時間を捨てる
 	S.Collapsed.Empty();
 	S.LastClickedId = WorldNoId;
@@ -205,6 +207,7 @@ bool NWorldEditorUI::MakePrefabFromSelection( FWorldEditorState& S, const FStrin
 		SetStatus( S, "Cannot save '" + File + "' (see the log)", true );
 		return false;
 	}
+	S.ModelPreviews.Empty(); // 古いworld cacheを消す前に専用instanceとsource参照を解放する
 	if ( S.AssetInfo.IsValid() ) S.AssetInfo->Clear();   // 同じファイルの古い中身を、捨てる
 	const int32 Id = Session.ReplaceSelectionWithPrefab( File, Origin, Name );
 	RescanFiles( S, true );
@@ -221,6 +224,7 @@ void NDebugUI::ReleaseWorldEditor( FWorldEditorState& S )
 {
 	NWorldEditorUI::ReleaseViewport( S );
 	S.MeshViews.Empty();   // 頂点バッファを、画像と同じく、アセットの片付けの前に手放す
+	S.ModelPreviews.Empty(); // model geometryとsource参照をasset cache解放前に手放す
 	S.EffectPreviews.Empty();   // 粒子の画像も同じ
 	S.AssetInfo.Reset();
 }
@@ -355,6 +359,7 @@ namespace
 			if ( ImGui::MenuItem( "Frame All" ) ) NWorldEditorUI::FrameAll( S );
 			if ( ImGui::MenuItem( "Reload Assets" ) )
 			{
+				S.ModelPreviews.Empty(); // reloadでsourceや効果画像を入れ替える前にpreviewを解放する
 				if ( S.AssetInfo.IsValid() ) S.AssetInfo->Clear();
 				NWorldEditorUI::RescanFiles( S, true );
 				S.IssuesRevision = ~0u;

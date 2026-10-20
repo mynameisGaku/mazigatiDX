@@ -857,6 +857,7 @@ void NWorldEditorUI::DrawAssetBrowser( FWorldEditorState& S )
 	if ( ImGui::Button( "Rescan" ) )
 	{
 		RescanFiles( S, true );
+		S.ModelPreviews.Empty(); // asset cacheを消す前に専用model instanceを解放する
 		if ( S.AssetInfo.IsValid() ) S.AssetInfo->Clear();
 		S.IssuesRevision = ~0u;
 	}

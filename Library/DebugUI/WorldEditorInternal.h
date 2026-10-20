@@ -78,6 +78,14 @@ namespace NWorldEditorUI
 	void UpdateMeshMaterialPreviews( FWorldEditorState& S, float32 DeltaTime );
 	// このフレームに見えたオブジェクトの Id 以外の、描く形を捨てる
 	void PruneMeshViews( FWorldEditorState& S, const TSet<int32>& Seen );
+	// 全配置の専用model instanceを更新・準備し、時計を記録前に進める。
+	void UpdateModelMaterialPreviews( FWorldEditorState& S, float32 DeltaTime, const IDrawExecutor* Executor );
+	// 対応する専用previewを記録し、native fallbackも含めて描画を扱えたか返す。
+	bool RecordModelObject( const FWorldEditorState& S, const FWorldEditorModelPreviewKey& Key, const FTransform& Placed, FDrawContext& Draw );
+	// このフレームに現れなかった個体preview ownerを解放する。
+	void PruneModelPreviews( FWorldEditorState& S, const TSet<FWorldEditorModelPreviewKey>& Seen );
+	// viewportとself-testが共有する、実sceneのcommand記録入口。
+	void RecordWorldScene( FWorldEditorState& S, FDrawContext& Draw );
 	// 編集中の頂点・辺・面の重ね描き（ImGui）。Origin はビューポートの左上
 	void DrawMeshOverlay( FWorldEditorState& S, ImDrawList* DrawList, const ImVec2& Origin );
 	// 編集中のツールバー（要素の種類・選ぶ・押し出し・差す・消す・つなぐ・割る・形を足す）

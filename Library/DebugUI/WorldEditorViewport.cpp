@@ -105,8 +105,8 @@ namespace
 		return static_cast<int32>( 0x40000000u | ( Hash & 0x3FFFFFFFu ) );
 	}
 
-	// 入れ子のワールド（Prefab 部品）の中身を描く。描けたら true（読み込めない・深すぎる・循環なら false）
-	bool RecordPrefabContents( FDrawContext& Draw, FState& S, const FString& Path, const FTransform& Host, TArray<FString>& Stack, TSet<int32>& SeenMeshes )
+	// 入れ子のワールド（Prefab 部品）の中身を描く。HostIds は最上位から現在の親までの配置 Id。
+	bool RecordPrefabContents( FDrawContext& Draw, FState& S, const FString& Path, const FTransform& Host, const TArray<int32>& HostIds, TArray<FString>& Stack, TSet<int32>& SeenMeshes )
 	{
 		FAssetEditorInfo* Info = S.AssetInfo.Get();
 		if ( Info == nullptr || Path.IsEmpty() || Stack.Num() >= WorldMaxPrefabDepth ) return false;
@@ -132,13 +132,23 @@ namespace
 			}
 			if ( Object.Model.IsSet() )
 			{
-				if ( const TSharedPtr<CModelInstance> Instance = Info->GetModelInstance( Object.Model.GetValue().Path ) ) Draw.Model( Instance->GetHandle(), Placed.ToMatrix() );
+				// Prefab の親配置鎖へ leaf Id を加え、別配置の個体と分ける。
+				FWorldEditorModelPreviewKey PreviewKey;
+				PreviewKey.ObjectIds = HostIds;
+				PreviewKey.ObjectIds.Add( Object.Id );
+				NWorldEditorUI::RecordModelObject( S, PreviewKey, Placed, Draw );
 			}
 			if ( Object.Billboard.IsSet() )
 			{
 				if ( const TSharedPtr<CTexture> Texture = Info->GetTexture( Object.Billboard.GetValue().Texture ); Texture.IsValid() && Texture->GetHandle() >= 0 ) NWorld::MakeBillboard( Object.Billboard.GetValue(), Texture ).Record( Draw, Placed );
 			}
-			if ( Object.Prefab.IsSet() ) RecordPrefabContents( Draw, S, Object.Prefab.GetValue().Path, Placed, Stack, SeenMeshes );
+			if ( Object.Prefab.IsSet() )
+			{
+				// 子 Prefab の host Id を末尾へ加え、配置階層をそのまま保持する。
+				TArray<int32> ChildHostIds = HostIds;
+				ChildHostIds.Add( Object.Id );
+				RecordPrefabContents( Draw, S, Object.Prefab.GetValue().Path, Placed, ChildHostIds, Stack, SeenMeshes );
+			}
 		}
 		Stack.RemoveAt( Stack.Num() - 1 );
 		return true;
@@ -176,18 +186,20 @@ namespace
 			if ( Object.Prefab.IsSet() && Object.bEnabled )
 			{
 				TArray<FString> Stack;
-				if ( RecordPrefabContents( Draw, S, Object.Prefab.GetValue().Path, Placed, Stack, SeenMeshes ) ) bShownModel = true;
+				// 配置元 Prefab を鎖の先頭にして、同一Prefabの複数配置を区別する。
+				TArray<int32> HostIds;
+				HostIds.Add( Object.Id );
+				if ( RecordPrefabContents( Draw, S, Object.Prefab.GetValue().Path, Placed, HostIds, Stack, SeenMeshes ) ) bShownModel = true;
 			}
 
 			if ( Object.bEnabled && Info != nullptr )
 			{
 				if ( Object.Model.IsSet() )
 				{
-					if ( const TSharedPtr<CModelInstance> Instance = Info->GetModelInstance( Object.Model.GetValue().Path ) )
-					{
-						Draw.Model( Instance->GetHandle(), Placed.ToMatrix() );
-						bShownModel = true;
-					}
+					// ルート配置は自身の Id だけで個体を識別する。
+					FWorldEditorModelPreviewKey PreviewKey;
+					PreviewKey.ObjectIds.Add( Object.Id );
+					bShownModel = NWorldEditorUI::RecordModelObject( S, PreviewKey, Placed, Draw );
 				}
 				if ( Object.Billboard.IsSet() )
 				{
@@ -302,10 +314,11 @@ namespace
 		SetCameraPositionAndTargetAndUpVec( Camera.GetEye(), Camera.Target, FVector3::Up );
 		// 材質meshの表示時間を現在frameへ反映してからscene commandを記録する。
 		NWorldEditorUI::UpdateMeshMaterialPreviews( S, ImGui::GetIO().DeltaTime );
+		NWorldEditorUI::UpdateModelMaterialPreviews( S, ImGui::GetIO().DeltaTime, Executor );
 
 		FDrawBuffer Buffer;
 		FDrawContext Draw( Buffer );
-		RecordScene( Draw, S );
+		NWorldEditorUI::RecordWorldScene( S, Draw );
 		Executor->Execute( FDrawSpan { Buffer.Words.data(), static_cast<int32>( Buffer.Words.size() ) } );
 
 		// エフェクトは、深度を書かない 2 回目で（半透明・加算の粒子が、後ろの粒子を隠さないように）。深度の比較は残るので、モデルの後ろでは隠れる
@@ -652,6 +665,11 @@ namespace
 		}
 		ImGui::EndDragDropTarget();
 	}
+}
+
+void NWorldEditorUI::RecordWorldScene( FWorldEditorState& S, FDrawContext& Draw )
+{
+	RecordScene( Draw, S );
 }
 
 void NWorldEditorUI::DrawViewport( FWorldEditorState& S )

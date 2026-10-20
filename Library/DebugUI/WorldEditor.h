@@ -9,6 +9,8 @@
 #include "Library/Framework/Asset/EditorAssetInfo.h"
 #include "Library/Framework/Effect/EffectBackend.h"
 #include "Library/Framework/Render/MeshRender.h"
+#include "Library/DebugUI/WorldEditorModelPreview.h"
+#include "Library/DebugUI/WorldEditorModelPreviewKey.h"
 #include "Library/Framework/World/Editor/EditorSession.h"
 #include "Library/Framework/World/WorldValidate.h"
 #include "VendorModules/ImGui/imgui.h"
@@ -126,6 +128,8 @@ struct FWorldEditorState
 		FMeshRenderer Renderer;
 	};
 	TMap<int32, FMeshView> MeshViews;
+	// 完全なPrefab host鎖とleaf Idで識別する、個体ごとのmodel描画owner。
+	TMap<FWorldEditorModelPreviewKey, FWorldEditorModelPreview> ModelPreviews;
 	FEditMeshHit HoverMeshHit;                  // 編集中、マウスの下の要素（最後に処理した入力から）
 	float32 MeshExtrudeDistance = 1.0f;         // ツールバーの入力
 	float32 MeshInsetAmount = 0.3f;
