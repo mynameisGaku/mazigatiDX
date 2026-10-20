@@ -8,6 +8,7 @@
 #include "Library/Core/Interfaces/Render/DrawRibbon.h"
 #include "Library/Core/Interfaces/Render/DrawMaterialQuad.h"
 #include "Library/Core/Interfaces/Render/DrawDistortedMaterialQuad.h"
+#include "Library/Core/Interfaces/Render/DrawDistortedMaterialRibbon.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
@@ -214,6 +215,11 @@ bool CDxLibDrawExecutor::SupportsEffectUVDistortion() const
 	return EffectMaterialRenderer.IsUVDistortionAvailable();
 }
 
+bool CDxLibDrawExecutor::SupportsEffectRibbonUVDistortion() const
+{
+	return EffectMaterialRenderer.IsRibbonUVDistortionAvailable();
+}
+
 void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 {
 	bool bBlendChanged = false;
@@ -381,6 +387,51 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 				break;
 			}
 			EffectMaterialRenderer.DrawDistorted( Command.Read<FDrawDistortedMaterialQuadData>() );
+			break;
+		}
+		case EDrawCommand::DistortedMaterialRibbon3D:
+		{
+			// ゆがみ付き材質帯の壊れたpayloadを一度だけ記録する状態。
+			static bool bInvalidDistortedRibbonCommandLogged = false;
+			// 固定headerに必要なword数。
+			constexpr int32 DataWords = sizeof( FDrawDistortedMaterialRibbonData ) / 4;
+			if ( Command.NumDataWords < DataWords )
+			{
+				if ( !bInvalidDistortedRibbonCommandLogged ) { LOG( LogDxLibDraw, Warning, "UVゆがみ付き材質帯の命令長が不正なため描画を読み飛ばしました" ); bInvalidDistortedRibbonCommandLogged = true; }
+				break;
+			}
+			// 点数を読む前にbyte列から固定headerを複写する。
+			FDrawDistortedMaterialRibbonData Data{};
+			std::memcpy( &Data, Command.Data, sizeof( Data ) );
+			if ( !NDrawDistortedMaterialRibbon::IsValidHeader( Data ) )
+			{
+				if ( !bInvalidDistortedRibbonCommandLogged ) { LOG( LogDxLibDraw, Warning, "UVゆがみ付き材質帯の点数または設定値が不正なため描画を読み飛ばしました" ); bInvalidDistortedRibbonCommandLogged = true; }
+				break;
+			}
+			// 最大点数検査後に計算する、完全なpayloadのword数。
+			const size_t ExpectedDataWords = static_cast<size_t>( DataWords ) + static_cast<size_t>( Data.Material.Ribbon.NumPoints ) * sizeof( FDrawDistortedMaterialRibbonData::FPoint ) / 4;
+			if ( ExpectedDataWords > static_cast<size_t>( NDrawCommand::MaxWords - 1 ) || Command.NumDataWords != static_cast<int32>( ExpectedDataWords ) )
+			{
+				if ( !bInvalidDistortedRibbonCommandLogged ) { LOG( LogDxLibDraw, Warning, "UVゆがみ付き材質帯の点数または命令長が不正なため描画を読み飛ばしました" ); bInvalidDistortedRibbonCommandLogged = true; }
+				break;
+			}
+			// 検証済み長さから作る、命令が所有する点列。
+			TArray<FDrawDistortedMaterialRibbonData::FPoint> Points;
+			Points.SetNum( Data.Material.Ribbon.NumPoints );
+			std::memcpy( Points.GetData(), Command.Data + DataWords, static_cast<size_t>( Data.Material.Ribbon.NumPoints ) * sizeof( FDrawDistortedMaterialRibbonData::FPoint ) );
+			if ( !NDrawDistortedMaterialRibbon::IsValid( Data, Points.GetData() ) )
+			{
+				if ( !bInvalidDistortedRibbonCommandLogged ) { LOG( LogDxLibDraw, Warning, "UVゆがみ付き材質帯の点または反復上限が不正なため描画を読み飛ばしました" ); bInvalidDistortedRibbonCommandLogged = true; }
+				break;
+			}
+			if ( !EffectMaterialRenderer.IsRibbonUVDistortionAvailable() )
+			{
+				// 未対応描画先の診断を重複させない状態。
+				static bool bUnsupportedDistortedRibbonLogged = false;
+				if ( !bUnsupportedDistortedRibbonLogged ) { LOG( LogDxLibDraw, Warning, "現在の描画実装では材質帯のUVゆがみを描画できません" ); bUnsupportedDistortedRibbonLogged = true; }
+				break;
+			}
+			EffectMaterialRenderer.DrawDistortedRibbon( Data, Points.GetData() );
 			break;
 		}
 		case EDrawCommand::MaterialRibbon3D:

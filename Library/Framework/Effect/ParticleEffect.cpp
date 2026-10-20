@@ -461,8 +461,7 @@ TArray<FParticleIssue> FParticleEffectDefinition::Validate() const
 		// 材質設定は表示方式に関わらず検証する。
 		for ( const FString& Message : E.Material.Validate() ) Add( true, i, Message );
 		// UV歪みは材質が無効でも値を、Material.Validate経由で検証する。
-		if ( E.Material.Distortion.bEnabled && !E.Material.bEnabled ) Add( false, i, "UV歪みは材質を有効にした四角形粒子で適用します。設定値は保持します" );
-		if ( E.Material.Distortion.bEnabled && E.Path.Kind != FEffectPathDefinition::EKind::None ) Add( false, i, "UV歪みは四角形粒子でのみ適用し、帯と雷では無視します" );
+		if ( E.Material.Distortion.bEnabled && !E.Material.bEnabled ) Add( false, i, "UV歪みを適用するには材質を有効にしてください。設定値は保持します" );
 		// 寿命に沿った倍率曲線は保存前に値域と順序を検証する。
 		for ( const FString& Message : E.Appearance.Validate() ) Add( true, i, FString( "Appearance: " ) + Message );
 		// コマ再生の保存値は無効中も検証し、帯や雷での未対応だけを警告する。
@@ -476,6 +475,14 @@ TArray<FParticleIssue> FParticleEffectDefinition::Validate() const
 			// 一番大きいUV速度。
 			const double MaximumScroll = std::max( std::fabs( static_cast<double>( E.Material.UVScroll.x ) ), std::fabs( static_cast<double>( E.Material.UVScroll.y ) ) );
 			if ( MaximumLifetime * MaximumScroll > 1.0e6 ) Add( true, i, "帯の材質では寿命×UV速度を 1000000 以下にしてください" );
+		}
+		if ( E.Material.bEnabled && E.Material.Distortion.bEnabled && E.Path.Kind == FEffectPathDefinition::EKind::Ribbon && std::isfinite( E.Lifetime.Min ) && std::isfinite( E.Lifetime.Max ) && E.Lifetime.Min > 0.0f && E.Lifetime.Max > 0.0f && std::isfinite( E.Material.Distortion.UVScroll.x ) && std::isfinite( E.Material.Distortion.UVScroll.y ) )
+		{
+			// UV位相の計算に使う最長寿命。
+			const double MaximumDistortionLifetime = std::max( static_cast<double>( E.Lifetime.Min ), static_cast<double>( E.Lifetime.Max ) );
+			// 横縦のnoise速度で大きい方。
+			const double MaximumDistortionScroll = std::max( std::fabs( static_cast<double>( E.Material.Distortion.UVScroll.x ) ), std::fabs( static_cast<double>( E.Material.Distortion.UVScroll.y ) ) );
+			if ( MaximumDistortionLifetime * MaximumDistortionScroll > 1.0e6 ) Add( true, i, "帯のUV歪みでは寿命×noise速度を 1000000 以下にしてください" );
 		}
 		if ( E.Path.Kind == FEffectPathDefinition::EKind::Lightning && E.MaxParticles > 64 ) Add( false, i, "雷は負荷を抑えるため、先頭の 64 個まで描画します" );
 		if ( E.MaxParticles < 1 || E.MaxParticles > MaxParticlesPerEmitter ) Add( true, i, FString::Printf( "MaxParticles must be between 1 and %d", MaxParticlesPerEmitter ) );

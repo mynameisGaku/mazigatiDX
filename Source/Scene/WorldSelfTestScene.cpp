@@ -547,6 +547,7 @@ void CWorldSelfTestScene::OnEnter()
 	NWorldTest::RunEffectPathTests( C );
 	NWorldTest::RunEffectMaterialTests( C );
 	NWorldTest::RunEffectUVDistortionTests( C );
+	NWorldTest::RunEffectRibbonUVDistortionCommandTests( C );
 	NWorldTest::RunEffectAppearanceTests( C );
 	NWorldTest::RunEffectFlipbookTests( C );
 	NWorldTest::RunEffectTreeLightningTests( C );
@@ -575,6 +576,7 @@ void CWorldSelfTestScene::OnEnter()
 	Assets->SetRootDirectory( S.Dir );
 	NWorldTest::RunEffectFlipbookResourceTests( C, *Assets, S.Fake, S.Dir );
 	NWorldTest::RunEffectUVDistortionResourceTests( C, *Assets, S.Fake, S.Dir );
+	NWorldTest::RunEffectRibbonUVDistortionResourceTests( C, *Assets, S.Fake, S.Dir );
 	Audio->SetBackendOverride( &S.Rec );
 	SetDrawExecutor( &S.Log );
 	for ( const char* Name : { "model.mv1", "a.png", "fire.wav", "only.mv1" } ) WriteFileText( S.Dir / Name, "x" );
@@ -1665,6 +1667,7 @@ void CWorldSelfTestScene::RunRealChecks()
 	NWorldTest::RunEffectPathPlaybackTests( C, *Assets, Dir );
 	NWorldTest::RunEffectMaterialPlaybackTests( C, *Assets, Dir );
 	NWorldTest::RunEffectUVDistortionPlaybackTests( C, *Assets, Dir );
+	NWorldTest::RunEffectRibbonUVDistortionPlaybackTests( C, *Assets, Dir );
 	NWorldTest::RunEffectMaterialPathPlaybackTests( C, *Assets, Dir );
 	NWorldTest::RunEffectAppearancePlaybackTests( C, *Assets, Dir );
 	NWorldTest::RunEffectFlipbookPlaybackTests( C, *Assets, Dir );
@@ -1672,6 +1675,7 @@ void CWorldSelfTestScene::RunRealChecks()
 	NWorldTest::RunEffectRibbonRealTests( C, *Executor );
 	NWorldTest::RunEffectMaterialRealTests( C, *Executor );
 	NWorldTest::RunEffectUVDistortionRealTests( C, *Assets, *Executor, Dir );
+	NWorldTest::RunEffectRibbonUVDistortionRealTests( C, *Assets, *Executor, Dir );
 	NWorldTest::RunEffectMaterialRibbonRealTests( C, *Executor );
 	NWorldTest::RunEffectAppearanceRealTests( C, *Assets, *Executor, Dir );
 	NWorldTest::RunEffectFlipbookRealTests( C, *Assets, *Executor, Dir );

@@ -4,6 +4,7 @@
 
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Core/Interfaces/Render/DrawDistortedMaterialQuad.h"
+#include "Library/Core/Interfaces/Render/DrawDistortedMaterialRibbon.h"
 #include "Library/Core/Interfaces/Render/DrawMaterialQuad.h"
 #include "Library/Core/Interfaces/Render/DrawMaterialRibbon.h"
 
@@ -28,6 +29,11 @@ public:
 	bool DrawDistorted( const FDrawDistortedMaterialQuadData& Data );
 	// 通常帯と同じmiter meshへ材質を補間して描く。未対応状態や不正資源では false。
 	bool DrawRibbon( const FDrawMaterialRibbonData& Data, const FDrawMaterialRibbonData::FPoint* Points );
+	// 固定設定と点列を受け取り、点ごとのUVゆがみを補間して帯を描く。
+	// Dataには描画設定とRibbon.NumPointsを指定する。
+	// PointsにはNumPoints個以上の有効な型付き配列を渡す。
+	// 無効値、画像資源不足、未対応状態ではfalseを返す。
+	bool DrawDistortedRibbon( const FDrawDistortedMaterialRibbonData& Data, const FDrawDistortedMaterialRibbonData::FPoint* Points );
 	// DxLib 終了前に所有している GPU 資源を解放する。
 	void Deinitialize();
 	// Direct3D 11 の GPU 資源を使用できるか返す。
@@ -36,6 +42,8 @@ public:
 	bool IsRibbonAvailable() const;
 	// Direct3D 11でゆがみ画像を使う描画資源が使用できるか返す。
 	bool IsUVDistortionAvailable() const;
+	// Direct3D 11で点ごとのUVゆがみを使う帯描画資源が使用できるか返す。
+	bool IsRibbonUVDistortionAvailable() const;
 
 private:
 	// Direct3D 11 の型を公開headerへ漏らさない実装。

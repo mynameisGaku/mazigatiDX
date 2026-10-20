@@ -284,12 +284,12 @@ void NWorldTest::RunEffectUVDistortionResourceTests( NAssetTest::FChecker& C, CA
 	C.Check( bRibbonFixtureSaved, "ribbon用main画像fixtureを保存する" );
 	// ribbon設定より前にbackendが読んだtexture数。
 	const int32 LoadsBeforeRibbon = Fake.NumTextureLoads;
-	// 歪みが有効でも四角形でないemitter。
+	// 歪みnoiseも必要な材質付きRibbon。
 	FParticleEmitterDefinition RibbonEmitter = MakeEmitter( RibbonMainPath, NoisePath );
 	RibbonEmitter.Path.Kind = FEffectPathDefinition::EKind::Ribbon;
-	// 歪みnoiseを読まずに帯を開始する再生。
+	// 対応経路ではmain画像とready noiseを開始時に読む再生。
 	TSharedPtr<IEffectPlayback> RibbonPlayback = NEffect::CreateParticlePlayback( NEffectTest::MakeEffect( { RibbonEmitter } ), &Assets, FEffectPlayParams(), FTransform::Identity, "uv-distortion-ribbon" );
-	C.Check( RibbonPlayback.IsValid() && Fake.NumTextureLoads == LoadsBeforeRibbon + 1, "非四角形経路ではDistortion noiseを読み込まない" );
+	C.Check( RibbonPlayback.IsValid() && Fake.NumTextureLoads == LoadsBeforeRibbon + 2, "材質付きRibbonはmain画像とready distortion noiseを開始時に読む" );
 	RibbonPlayback.Reset();
 	CollectTextures( Assets );
 	C.Check( HasOnlyTextures( Fake, InitialTextures ), "UV distortion resource tests後に生成textureを残さない" );

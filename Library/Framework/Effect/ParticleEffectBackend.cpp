@@ -32,7 +32,7 @@ namespace
 		return Blend == EParticleBlend::Add ? EDrawBlend::Add : EDrawBlend::Alpha;
 	}
 
-	// 曲線のどこかで幅が正なら、再生開始時にゆがみ画像を用意する。
+	// 曲線のどこかで強さが正なら、再生開始時にゆがみ画像を用意する。
 	bool NeedsDistortionTexture( const FEffectUVDistortionDefinition& Distortion )
 	{
 		if ( !Distortion.bEnabled ) return false;
@@ -61,7 +61,7 @@ namespace
 	}
 
 	// 一つの経路を既存の記録窓口へ渡す。描画や GPU 資源の操作は行わない。
-	void RecordPathStrip( FDrawContext& Draw, const FEffectPathGeometry::FStrip& Strip, int32 Texture, int32 MaskTexture, const FParticleEmitterDefinition& Emitter, float32 WidthScale = 1.0f, float32 Brightness = 1.0f, float32 EdgeScale = 1.0f )
+	void RecordPathStrip( FDrawContext& Draw, const FEffectPathGeometry::FStrip& Strip, int32 Texture, int32 MaskTexture, const FParticleEmitterDefinition& Emitter, int32 DistortionTexture, float32 WidthScale = 1.0f, float32 Brightness = 1.0f, float32 EdgeScale = 1.0f )
 	{
 		// 各記録スレッドだけが使う、描画契約への変換領域。
 		thread_local TArray<FDrawRibbonData::FPoint> Points;
@@ -69,11 +69,20 @@ namespace
 		thread_local TArray<FDrawMaterialRibbonData::FPoint> MaterialPoints;
 		// 先行chunkを書いた後で不正値が見つからないよう、全点を先に検証する。
 		thread_local TArray<FDrawMaterialRibbonData::FPoint> ValidatedMaterialPoints;
+		// UV歪みを使う帯だけが持つ、全点検証済みpayload。
+		thread_local TArray<FDrawDistortedMaterialRibbonData::FPoint> ValidatedDistortionPoints;
 		Points.Reset();
 		MaterialPoints.Reset();
 		ValidatedMaterialPoints.Reset();
+		ValidatedDistortionPoints.Reset();
 		// 材質payloadを記録するか。
 		const bool bMaterialEnabled = Emitter.Material.bEnabled;
+		// 材質付き経路だけで保存済みの歪み設定を読む。
+		const FEffectUVDistortionDefinition& Distortion = Emitter.Material.Distortion;
+		// 材質と歪みの両方が有効な経路か。
+		const bool bDistortionEnabled = bMaterialEnabled && Distortion.bEnabled;
+		// 全点で強さが0ならnoiseなしの旧命令を使う。
+		bool bAnyDistortionStrength = false;
 		// 全chunk共通の帯先頭秒齢。
 		const double AgeReference = !Strip.Points.IsEmpty() && std::isfinite( Strip.Points[0].AgeSeconds ) ? Strip.Points[0].AgeSeconds : 0.0;
 		// 距離方向の秒ごとの画像移動量。
@@ -130,8 +139,32 @@ namespace
 				const float32 ScaledMaskU = RibbonU * Emitter.Material.MaskScale;
 				if ( !std::isfinite( MaterialPoint.Path.Width ) || !std::isfinite( RibbonU ) || !std::isfinite( ScaledTextureU ) || !std::isfinite( ScaledMaskU ) || !std::isfinite( Dissolve ) || !std::isfinite( Emission ) || !std::isfinite( MaterialPoint.UVOffset[0] ) || !std::isfinite( MaterialPoint.UVOffset[1] ) ) return;
 				ValidatedMaterialPoints.Add( MaterialPoint );
+				if ( bDistortionEnabled )
+				{
+					if ( !Distortion.IsValidSettings() || !std::isfinite( Source.AgeSeconds ) || !std::isfinite( Source.NormalizedAge ) ) return;
+					// 元粒子の寿命割合でnoise強度を評価する。
+					const float32 Strength = Distortion.Strength.Evaluate( CurveAge, 0.05f );
+					if ( !std::isfinite( Strength ) || Strength < 0.0f || Strength > 1.0f ) return;
+					// 最初の点だけ秒齢を剰余し、後続点は連続差を足す。
+					const double NoiseBaseU = std::fmod( AgeReference * static_cast<double>( Distortion.UVScroll.x ), 1.0 );
+					const double NoiseBaseV = std::fmod( AgeReference * static_cast<double>( Distortion.UVScroll.y ), 1.0 );
+					const double NoiseOffsetU = NoiseBaseU + AgeDelta * static_cast<double>( Distortion.UVScroll.x );
+					const double NoiseOffsetV = NoiseBaseV + AgeDelta * static_cast<double>( Distortion.UVScroll.y );
+					if ( !std::isfinite( NoiseOffsetU ) || !std::isfinite( NoiseOffsetV ) || std::fabs( NoiseOffsetU ) > 1.0e6 || std::fabs( NoiseOffsetV ) > 1.0e6 ) return;
+					// 次の描画命令へ渡す検証済みノイズ付き一点。
+					FDrawDistortedMaterialRibbonData::FPoint DistortionPoint{};
+					DistortionPoint.Material = MaterialPoint;
+					DistortionPoint.Strength = Strength;
+					DistortionPoint.UVOffset[0] = static_cast<float32>( NoiseOffsetU );
+					DistortionPoint.UVOffset[1] = static_cast<float32>( NoiseOffsetV );
+					if ( !std::isfinite( DistortionPoint.UVOffset[0] ) || !std::isfinite( DistortionPoint.UVOffset[1] ) ) return;
+					ValidatedDistortionPoints.Add( DistortionPoint );
+					bAnyDistortionStrength |= Strength > 0.0f;
+				}
 				PreviousU = Source.U;
 			}
+			// 正の強さが一つでもあれば、noiseなしの帯は一部も記録しない。
+			if ( bAnyDistortionStrength && ( DistortionTexture < 0 || !Distortion.IsValidSettings() ) ) return;
 			// DrawContextが各chunkで拒否する画像反復数も、記録を始める前に全て数える。
 			int32 CheckedStart = 0;
 			while ( CheckedStart + 1 < Strip.Points.Num() )
@@ -224,7 +257,21 @@ namespace
 				Data.Material.EdgeEmission = Emitter.Material.EdgeEmission * EdgeScale;
 				Data.Material.EdgeColor = { Emitter.Material.EdgeColor.r, Emitter.Material.EdgeColor.g, Emitter.Material.EdgeColor.b, Emitter.Material.EdgeColor.a };
 				Data.Material.bDissolve = Emitter.Material.bDissolve ? 1 : 0;
-				Draw.MaterialRibbon3D( Data, MaterialPoints.GetData() );
+				if ( bAnyDistortionStrength )
+				{
+					// 既存材質設定とノイズ設定をまとめた帯命令。
+					FDrawDistortedMaterialRibbonData DistortedData;
+					DistortedData.Material = Data;
+					DistortedData.DistortionTexture = DistortionTexture;
+					DistortedData.UVScale[0] = Distortion.UVScale.x;
+					DistortedData.UVScale[1] = Distortion.UVScale.y;
+					// 現chunk用の検証済み点payload。
+					thread_local TArray<FDrawDistortedMaterialRibbonData::FPoint> ChunkDistortionPoints;
+					ChunkDistortionPoints.Reset();
+					for ( int32 Index = First; Index <= Last; ++Index ) ChunkDistortionPoints.Add( ValidatedDistortionPoints[Index] );
+					Draw.DistortedMaterialRibbon3D( DistortedData, ChunkDistortionPoints.GetData() );
+				}
+				else Draw.MaterialRibbon3D( Data, MaterialPoints.GetData() );
 			}
 			else Draw.Ribbon3D( Points.GetData(), Points.Num(), Texture, Emitter.Path.UVRepeat, JoinFlags );
 			VisibleStart = VisibleEnd;
@@ -232,7 +279,7 @@ namespace
 	}
 
 	// 同じ発生元の粒子を生まれた順に結ぶ。瞬間移動や消えた区間は別の帯にする。
-	void RecordRibbon( FDrawContext& Draw, const TArray<NParticle::FDrawParticle>& Particles, int32 EmitterIndex, const FParticleEmitterDefinition& Emitter, int32 Texture, int32 MaskTexture, float32 Scale )
+	void RecordRibbon( FDrawContext& Draw, const TArray<NParticle::FDrawParticle>& Particles, int32 EmitterIndex, const FParticleEmitterDefinition& Emitter, int32 Texture, int32 MaskTexture, int32 DistortionTexture, float32 Scale )
 	{
 		// このスレッドで組み立てている、一本の連続した帯。
 		thread_local FEffectPathGeometry::FStrip Strip;
@@ -244,13 +291,13 @@ namespace
 			if ( Particle.Emitter != EmitterIndex ) continue;
 			if ( !IsFinitePathPosition( Particle.Position ) || Particle.Size <= 0.0f || Particle.Color.a == 0 )
 			{
-				RecordPathStrip( Draw, Strip, Texture, MaskTexture, Emitter );
+				RecordPathStrip( Draw, Strip, Texture, MaskTexture, Emitter, DistortionTexture );
 				Strip.Points.Reset();
 				continue;
 			}
 			if ( !Strip.Points.IsEmpty() && ( Particle.Position - Strip.Points.Last().Position ).Length() > BreakDistance )
 			{
-				RecordPathStrip( Draw, Strip, Texture, MaskTexture, Emitter );
+				RecordPathStrip( Draw, Strip, Texture, MaskTexture, Emitter, DistortionTexture );
 				Strip.Points.Reset();
 			}
 			// 点が同じ場所なら、ゼロ面積の節を増やさず最新の幅と色を使う。
@@ -264,12 +311,12 @@ namespace
 			if ( !Strip.Points.IsEmpty() && ( Point.Position - Strip.Points.Last().Position ).LengthSquared() < 1.0e-10f ) Strip.Points.Last() = Point;
 			else Strip.Points.Add( Point );
 		}
-		RecordPathStrip( Draw, Strip, Texture, MaskTexture, Emitter );
+		RecordPathStrip( Draw, Strip, Texture, MaskTexture, Emitter, DistortionTexture );
 		Strip.Points.Reset();
 	}
 
 	// 主幹と枝を記録する。細い芯と淡い外側を重ね、帯の太さを画面で読みやすくする。
-	void RecordLightning( FDrawContext& Draw, const FParticleSimulation& Simulation, const TArray<NParticle::FDrawParticle>& Particles, int32 EmitterIndex, int32 Texture, int32 MaskTexture, uint32 Seed )
+	void RecordLightning( FDrawContext& Draw, const FParticleSimulation& Simulation, const TArray<NParticle::FDrawParticle>& Particles, int32 EmitterIndex, int32 Texture, int32 MaskTexture, int32 DistortionTexture, uint32 Seed )
 	{
 		// エミッターごとの雷の形と再生の変換。
 		const FParticleEmitterDefinition& Emitter = Simulation.Definition->Emitters[EmitterIndex];
@@ -285,8 +332,8 @@ namespace
 			if ( ++Count > 64 ) break;
 			NEffectPath::BuildLightning( Emitter.Path, Seed + static_cast<uint32>( EmitterIndex ) * 40503u + Particle.Serial * 7919u, Particle.Age, Particle.Position, Particle.Position + EndOffset, Particle.Size, Particle.Color, Geometry );
 			for ( FEffectPathGeometry::FStrip& Strip : Geometry.Strips ) for ( FEffectPathGeometry::FPoint& Point : Strip.Points ) { Point.AgeSeconds = Particle.Age; Point.NormalizedAge = Particle.NormalizedAge; }
-			for ( const FEffectPathGeometry::FStrip& Strip : Geometry.Strips ) RecordPathStrip( Draw, Strip, Texture, MaskTexture, Emitter, 3.0f, 0.18f, Emitter.Material.bEnabled ? 1.0f : 0.0f );
-			for ( const FEffectPathGeometry::FStrip& Strip : Geometry.Strips ) RecordPathStrip( Draw, Strip, Texture, MaskTexture, Emitter, 1.0f, 1.0f, 0.0f );
+			for ( const FEffectPathGeometry::FStrip& Strip : Geometry.Strips ) RecordPathStrip( Draw, Strip, Texture, MaskTexture, Emitter, DistortionTexture, 3.0f, 0.18f, Emitter.Material.bEnabled ? 1.0f : 0.0f );
+			for ( const FEffectPathGeometry::FStrip& Strip : Geometry.Strips ) RecordPathStrip( Draw, Strip, Texture, MaskTexture, Emitter, DistortionTexture, 1.0f, 1.0f, 0.0f );
 		}
 	}
 
@@ -300,7 +347,7 @@ namespace
 	};
 
 	// 全Tree Lightningエミッター共通の上限を適用し、成長・明滅の形を材質帯へ記録する。
-	void RecordTreeLightning( FDrawContext& Draw, const FParticleSimulation& Simulation, const TArray<NParticle::FDrawParticle>& Particles, const TArray<FTreeLightningParticleKey>& Selected, int32 EmitterIndex, int32 Texture, int32 MaskTexture, uint32 Seed )
+	void RecordTreeLightning( FDrawContext& Draw, const FParticleSimulation& Simulation, const TArray<NParticle::FDrawParticle>& Particles, const TArray<FTreeLightningParticleKey>& Selected, int32 EmitterIndex, int32 Texture, int32 MaskTexture, int32 DistortionTexture, uint32 Seed )
 	{
 		// このエミッターが持つ固定形状と表示設定。
 		const FParticleEmitterDefinition& Emitter = Simulation.Definition->Emitters[EmitterIndex];
@@ -318,8 +365,8 @@ namespace
 			NEffectPath::BuildTreeLightning( Emitter.Path, Seed + static_cast<uint32>( EmitterIndex ) * 40503u + Particle.Serial * 7919u, Particle.Age, Particle.Position, Particle.Position + EndOffset, Particle.Size, Particle.Color, Geometry );
 			// 全点で元粒子の秒齢と寿命割合を共有し、子枝だけ曲線時刻が変わらないようにする。
 			for ( FEffectPathGeometry::FStrip& Strip : Geometry.Strips ) for ( FEffectPathGeometry::FPoint& Point : Strip.Points ) { Point.AgeSeconds = Particle.Age; Point.NormalizedAge = Particle.NormalizedAge; }
-			for ( const FEffectPathGeometry::FStrip& Strip : Geometry.Strips ) RecordPathStrip( Draw, Strip, Texture, MaskTexture, Emitter, 3.0f, 0.18f, Emitter.Material.bEnabled ? 1.0f : 0.0f );
-			for ( const FEffectPathGeometry::FStrip& Strip : Geometry.Strips ) RecordPathStrip( Draw, Strip, Texture, MaskTexture, Emitter, 1.0f, 1.0f, 0.0f );
+			for ( const FEffectPathGeometry::FStrip& Strip : Geometry.Strips ) RecordPathStrip( Draw, Strip, Texture, MaskTexture, Emitter, DistortionTexture, 3.0f, 0.18f, Emitter.Material.bEnabled ? 1.0f : 0.0f );
+			for ( const FEffectPathGeometry::FStrip& Strip : Geometry.Strips ) RecordPathStrip( Draw, Strip, Texture, MaskTexture, Emitter, DistortionTexture, 1.0f, 1.0f, 0.0f );
 		}
 	}
 }
@@ -421,7 +468,7 @@ TSharedPtr<IEffectPlayback> NEffect::CreateParticlePlayback( const TSharedPtr<co
 	TArray<TSharedPtr<CTexture>> MaskTextures;
 	// コマ送りの時間軸と、再生開始時に作ったregionを保持する配列。
 	TArray<FEffectFlipbookFrames> FlipbookFrames;
-	// 有効な材質四角形が使う歪み画像を再生期間保持する配列。
+	// 材質付き四角形・帯・雷が使う歪み画像を再生期間保持する配列。
 	TArray<TSharedPtr<CTexture>> DistortionTextures;
 	for ( const FParticleEmitterDefinition& Emitter : Definition->Emitters )
 	{
@@ -459,10 +506,11 @@ TSharedPtr<IEffectPlayback> NEffect::CreateParticlePlayback( const TSharedPtr<co
 			if ( !MaskTexture.IsValid() ) LOG( LogAsset, Warning, "エフェクト '%s' のエミッター '%s' の材質マスク画像 '%s' を読み込めません。組み込みマスクを使います", *Label, *Emitter.Name, *Emitter.Material.MaskTexture );
 		}
 		MaskTextures.Add( MaskTexture );
-		// 材質が有効な四角形だけ、正の幅で必要なゆがみ画像を起動時に読む。
+		// 材質が有効な対応経路だけ、正の強さで必要なゆがみ画像を起動時に読む。
 		TSharedPtr<CTexture> DistortionTexture;
-		const bool bDistortionForQuad = Emitter.Path.Kind == FEffectPathDefinition::EKind::None && Emitter.Material.bEnabled && NeedsDistortionTexture( Emitter.Material.Distortion );
-		if ( bDistortionForQuad )
+		// 対応pathの材質でnoise画像が必要な条件か。
+		const bool bDistortionForPath = ( Emitter.Path.Kind == FEffectPathDefinition::EKind::None || Emitter.Path.Kind == FEffectPathDefinition::EKind::Ribbon || Emitter.Path.Kind == FEffectPathDefinition::EKind::Lightning || Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning ) && Emitter.Material.bEnabled && NeedsDistortionTexture( Emitter.Material.Distortion );
+		if ( bDistortionForPath )
 		{
 			if ( Emitter.Material.Distortion.IsValidSettings() ) DistortionTexture = Assets->LoadTexture( Emitter.Material.Distortion.Texture );
 			if ( DistortionTexture.IsValid() && !DistortionTexture->IsReady() ) DistortionTexture.Reset();
@@ -501,9 +549,13 @@ FParticlePlayback::FParticlePlayback( const TSharedPtr<const FParticleEffectDefi
 	NParticle::Start( Simulation, Snapshot, Params.Seed, Params.Scale, Params.Speed, Params.Loop );
 	if ( Snapshot.IsValid() ) for ( int32 Index = 0; Index < Snapshot->Emitters.Num(); ++Index )
 	{
-		// 正の強さがありながら、再生開始時に画像を持てなかった四角形材質。
+		// 正の強さがありながら、再生開始時に画像を持てなかった対応材質。
 		const FParticleEmitterDefinition& Emitter = Snapshot->Emitters[Index];
-		const bool bNeedsDistortion = Emitter.Path.Kind == FEffectPathDefinition::EKind::None && Emitter.Material.bEnabled && NeedsDistortionTexture( Emitter.Material.Distortion );
+		// このpathと材質でnoiseが必要か。
+		const bool bDistortionPath = Emitter.Path.Kind == FEffectPathDefinition::EKind::None || Emitter.Path.Kind == FEffectPathDefinition::EKind::Ribbon || Emitter.Path.Kind == FEffectPathDefinition::EKind::Lightning || Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning;
+		// 正のStrength設定があり対応pathを使うか。
+		const bool bNeedsDistortion = bDistortionPath && Emitter.Material.bEnabled && NeedsDistortionTexture( Emitter.Material.Distortion );
+		// 再生snapshotが有効なnoise handleを持つか。
 		const bool bHasDistortionTexture = DistortionTextures.IsValidIndex( Index ) && DistortionTextures[Index].IsValid() && DistortionTextures[Index]->GetHandle() >= 0;
 		if ( bNeedsDistortion && !bHasDistortionTexture ) LOG( LogAsset, Warning, "エミッター '%s' のUVゆがみ画像を準備できません。ゆがみが必要な粒子は描画しません", *Emitter.Name );
 	}
@@ -560,9 +612,9 @@ void FParticlePlayback::Record( FDrawContext& Draw ) const
 			// 再生が所有する材質マスクを、同じエミッターの経路記録へ渡す。
 			const TSharedPtr<CTexture>& MaskTexture = MaskTextures.IsValidIndex( CurrentEmitter ) ? MaskTextures[CurrentEmitter] : TSharedPtr<CTexture>();
 			const int32 MaskHandle = MaskTexture.IsValid() ? MaskTexture->GetHandle() : -1;
-			if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::Ribbon ) RecordRibbon( Draw, Particles, CurrentEmitter, Emitter, Texture->GetHandle(), MaskHandle, NParticle::GetEffectScale( Simulation ) );
-			if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::Lightning ) RecordLightning( Draw, Simulation, Particles, CurrentEmitter, Texture->GetHandle(), MaskHandle, PathSeed );
-			if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning ) RecordTreeLightning( Draw, Simulation, Particles, TreeLightningSelection, CurrentEmitter, Texture->GetHandle(), MaskHandle, PathSeed );
+			if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::Ribbon ) RecordRibbon( Draw, Particles, CurrentEmitter, Emitter, Texture->GetHandle(), MaskHandle, DistortionTextures.IsValidIndex( CurrentEmitter ) && DistortionTextures[CurrentEmitter].IsValid() ? DistortionTextures[CurrentEmitter]->GetHandle() : -1, NParticle::GetEffectScale( Simulation ) );
+			if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::Lightning ) RecordLightning( Draw, Simulation, Particles, CurrentEmitter, Texture->GetHandle(), MaskHandle, DistortionTextures.IsValidIndex( CurrentEmitter ) && DistortionTextures[CurrentEmitter].IsValid() ? DistortionTextures[CurrentEmitter]->GetHandle() : -1, PathSeed );
+			if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning ) RecordTreeLightning( Draw, Simulation, Particles, TreeLightningSelection, CurrentEmitter, Texture->GetHandle(), MaskHandle, DistortionTextures.IsValidIndex( CurrentEmitter ) && DistortionTextures[CurrentEmitter].IsValid() ? DistortionTextures[CurrentEmitter]->GetHandle() : -1, PathSeed );
 		}
 		if ( Emitter.Path.Kind != FEffectPathDefinition::EKind::None ) continue;
 

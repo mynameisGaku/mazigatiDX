@@ -2,6 +2,8 @@
 #ifndef LIBRARY_CORE_INTERFACES_RENDER_DRAWMATERIALRIBBON_H
 #define LIBRARY_CORE_INTERFACES_RENDER_DRAWMATERIALRIBBON_H
 
+#include <algorithm>
+#include <cmath>
 #include <type_traits>
 
 #include "DrawCommand.h"
@@ -56,5 +58,62 @@ struct FDrawMaterialRibbonData
 static_assert( sizeof( FDrawMaterialRibbonData::FMaterialSettings ) == 40 && std::is_trivially_copyable_v<FDrawMaterialRibbonData::FMaterialSettings>, "material ribbon settings must occupy ten words" );
 static_assert( sizeof( FDrawMaterialRibbonData::FPoint ) == 40 && std::is_trivially_copyable_v<FDrawMaterialRibbonData::FPoint>, "material ribbon point must occupy ten words" );
 static_assert( sizeof( FDrawMaterialRibbonData ) == 56 && sizeof( FDrawMaterialRibbonData ) % 4 == 0 && std::is_trivially_copyable_v<FDrawMaterialRibbonData>, "material ribbon header must occupy fourteen words" );
+
+namespace NDrawMaterialRibbon
+{
+	// 帯材質の固定設定が記録・実行可能な値かを調べる。
+	inline bool IsValidHeader( const FDrawMaterialRibbonData& Data )
+	{
+		// 帯形状の記録設定。
+		const FDrawRibbonData& Ribbon = Data.Ribbon;
+		// 既存の材質描画設定。
+		const FDrawMaterialRibbonData::FMaterialSettings& Material = Data.Material;
+		if ( Ribbon.NumPoints < 2 || Ribbon.NumPoints > FDrawRibbonData::MaxPoints || Ribbon.Texture < 0 || Material.MaskTexture < -1 || !std::isfinite( Ribbon.UVRepeat ) || Ribbon.UVRepeat <= 0.0f || Ribbon.JoinFlags < 0 || ( Ribbon.JoinFlags & ~( FDrawRibbonData::PreviousPoint | FDrawRibbonData::NextPoint ) ) != 0 || Ribbon.NumPoints - static_cast<int32>( ( Ribbon.JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) - static_cast<int32>( ( Ribbon.JoinFlags & FDrawRibbonData::NextPoint ) != 0 ) < 2 ) return false;
+		return std::isfinite( Material.UVScale[0] ) && std::isfinite( Material.UVScale[1] ) && Material.UVScale[0] > 0.0f && Material.UVScale[1] > 0.0f && Material.UVScale[0] <= 128.0f && Material.UVScale[1] <= 128.0f && std::isfinite( Material.MaskScale ) && Material.MaskScale > 0.0f && Material.MaskScale <= 128.0f && std::isfinite( Material.EdgeWidth ) && Material.EdgeWidth >= 0.0f && Material.EdgeWidth <= 1.0f && std::isfinite( Material.EdgeEmission ) && Material.EdgeEmission >= 0.0f && Material.EdgeEmission <= 32.0f && ( Material.bDissolve == 0 || Material.bDissolve == 1 ) && ( Material.DepthTest == 0 || Material.DepthTest == 1 ) && ( Material.DepthWrite == 0 || Material.DepthWrite == 1 );
+	}
+
+	// 位置・材質・連続UVを調べ、前点より距離が戻らないことを確認する。
+	inline bool IsValidPoint( const FDrawMaterialRibbonData& Data, const FDrawMaterialRibbonData::FPoint& Point, bool bHasPrevious, float32 PreviousU )
+	{
+		// この点列が共有する帯設定。
+		const FDrawRibbonData& Ribbon = Data.Ribbon;
+		// 元画像とmaskの倍率設定。
+		const FDrawMaterialRibbonData::FMaterialSettings& Material = Data.Material;
+		// 元画像の横座標へ反復倍率を適用した値。
+		const float32 BaseU = Point.Path.U * Ribbon.UVRepeat;
+		return std::isfinite( Point.Path.Pos[0] ) && std::isfinite( Point.Path.Pos[1] ) && std::isfinite( Point.Path.Pos[2] ) && std::isfinite( Point.Path.Width ) && Point.Path.Width >= 0.0f && std::isfinite( Point.Path.U ) && Point.Path.U >= 0.0f && std::isfinite( BaseU ) && std::isfinite( BaseU * Material.UVScale[0] + Point.UVOffset[0] ) && std::isfinite( BaseU * Material.MaskScale ) && std::isfinite( Point.Dissolve ) && Point.Dissolve >= 0.0f && Point.Dissolve <= 1.0f && std::isfinite( Point.Emission ) && Point.Emission >= 0.0f && Point.Emission <= 32.0f && std::isfinite( Point.UVOffset[0] ) && std::isfinite( Point.UVOffset[1] ) && std::abs( Point.UVOffset[0] ) <= 1.0e6f && std::abs( Point.UVOffset[1] ) <= 1.0e6f && ( !bHasPrevious || Point.Path.U >= PreviousU );
+	}
+
+	// 表示区間だけの画像反復数を加算し、8192区間の上限を守る。
+	inline bool AddTextureSections( const FDrawMaterialRibbonData& Data, float32 FirstU, float32 LastU, int32& InOutSections )
+	{
+		// 区間の先頭が属する画像反復番号。
+		const float64 FirstRepeat = std::floor( static_cast<float64>( FirstU * Data.Ribbon.UVRepeat ) );
+		// 終端までに必要な整数境界区間数。
+		const float64 Sections = std::max( 1.0, std::ceil( static_cast<float64>( LastU * Data.Ribbon.UVRepeat ) ) - FirstRepeat );
+		if ( !std::isfinite( Sections ) || Sections > static_cast<float64>( FDrawRibbonData::MaxTextureSections - InOutSections ) ) return false;
+		InOutSections += static_cast<int32>( Sections );
+		return true;
+	}
+
+	// 固定設定と点列全体を確認し、記録途中で不正値が残らないことを保証する。
+	inline bool IsValid( const FDrawMaterialRibbonData& Data, const FDrawMaterialRibbonData::FPoint* Points )
+	{
+		if ( Points == nullptr || !IsValidHeader( Data ) ) return false;
+		// 点列全体で使用する画像区間数。
+		int32 TextureSections = 0;
+		// 固定配列上限内の全経路点を順に検査する。
+		for ( int32 Index = 0; Index < Data.Ribbon.NumPoints; ++Index )
+		{
+			// 直前点と比較する現在点。
+			const FDrawMaterialRibbonData::FPoint& Point = Points[Index];
+			if ( !IsValidPoint( Data, Point, Index > 0, Index > 0 ? Points[Index - 1].Path.U : 0.0f ) ) return false;
+			// 接線用補助点が作る区間を除いた実描画区間。
+			const bool bVisibleSegment = Index > 0 && !( Index == 1 && ( Data.Ribbon.JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) && !( Index + 1 == Data.Ribbon.NumPoints && ( Data.Ribbon.JoinFlags & FDrawRibbonData::NextPoint ) != 0 );
+			if ( bVisibleSegment && !AddTextureSections( Data, Points[Index - 1].Path.U, Point.Path.U, TextureSections ) ) return false;
+		}
+		return true;
+	}
+}
 
 #endif

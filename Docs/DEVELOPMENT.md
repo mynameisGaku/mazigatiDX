@@ -6,6 +6,8 @@
 
 FrameworkからDxLibやImGuiの実装へ依存を追加せず、`IDrawExecutor`・`IAssetBackend`・入力など既存の窓口を使います。既存の型・所有・更新・終了処理を優先し、局所状態や単純な計算のためのsubsystemは作りません。
 
+帯と雷のUVディストーションは、既存の`Material.Distortion`を共有します。`FDrawDistortedMaterialRibbonData`を`FDrawContext::DistortedMaterialRibbon3D`で記録し、`IDrawExecutor::SupportsEffectRibbonUVDistortion()`で対応を問い合わせます。未対応実装の既定はfalseです。可変長命令の実行側は、固定部・点数・全長を検査してから点列を読みます。画像の取得と準備状態の固定は再生開始時に行い、描画の記録中には読み込みません。
+
 ## コードとコメント
 
 - 公開する主要な型は原則一つのヘッダーに置き、実装は同名cppへ分けます。templateの実装は同名ヘッダーまたはinlに置きます。
@@ -35,7 +37,9 @@ msbuild .\project.sln /p:Configuration=Release /p:Platform=x64 /m
 .\Tools\RunSelfTests.ps1 -Suite ecs -Configuration Debug
 ```
 
-2026-10-20の安定版の確認値はworld 2695、assetsはDebug 1019／Release 1017、ecsは各ワーカー7,867,833項目・ハッシュ`403b39415ba4b9a6`です。新しい確認を加えると項目数は増えるため、数値だけで合格とせず失敗・スキップ・正常終了を確認します。Debugはリーク報告も調べます。描画の変更は実GPUの既知画素、状態復元、資源の解放を確認します。
+2026-10-20のmain安定版の確認値はworld 2695、assetsはDebug 1019／Release 1017、ecsは各ワーカー7,867,833項目・ハッシュ`403b39415ba4b9a6`です。新しい確認を加えると項目数は増えるため、数値だけで合格とせず失敗・スキップ・正常終了を確認します。Debugはリーク報告も調べます。描画の変更は実GPUの既知画素、状態復元、資源の解放を確認します。
+
+Effectの帯・雷へのUVディストーションを含む統合版は、world 2845項目を両構成で確認しています。assetsとECSの確認値はmainと同じです。全スイート確認後に追加したのはworldの画素・資源検査だけで、追加後はworldを再実行しています。20種類の意図的な不具合も通常のテスト失敗として検出しました。
 
 ## 変更の統合
 

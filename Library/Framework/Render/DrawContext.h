@@ -4,6 +4,7 @@
 
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Core/Interfaces/Render/DrawDistortedMaterialQuad.h"
+#include "Library/Core/Interfaces/Render/DrawDistortedMaterialRibbon.h"
 #include "Library/Core/Interfaces/Render/DrawMaterialQuad.h"
 #include "Library/Core/Interfaces/Render/DrawMaterialRibbon.h"
 #include "Library/Core/Interfaces/Render/DrawRibbon.h"
@@ -248,6 +249,11 @@ public:
 
 	// マスクによる消失と境界発光を点ごとに補間する帯を記録する。無効値は命令を追加せずに拒否する。
 	void MaterialRibbon3D( const FDrawMaterialRibbonData& Data, const FDrawMaterialRibbonData::FPoint* Points );
+
+	// 材質帯のUVを点ごとのノイズでゆがめて記録し、無効値では追加しない。
+	// Data: 共有設定と必要な点数。
+	// Points: NumPoints個以上の有効な型付き配列。byte payloadは呼出側で完全長を先に検査する。
+	void DistortedMaterialRibbon3D( const FDrawDistortedMaterialRibbonData& Data, const FDrawDistortedMaterialRibbonData::FPoint* Points );
 
 	// 頂点バッファ・インデックスバッファの三角形（編集メッシュ）。各項目は FDrawMeshData を参照。World がローカル -> ワールドの変換行列
 	FORCEINLINE void Mesh3D( int32 VertexBuffer, int32 IndexBuffer, int32 NumVertices, int32 StartIndex, int32 NumIndices, int32 Texture, const FMatrix4x4& World, bool bTwoSided )

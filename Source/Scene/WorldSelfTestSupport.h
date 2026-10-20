@@ -55,6 +55,14 @@ namespace NWorldTest
 	void RunEffectMaterialTests( NAssetTest::FChecker& C );
 	// UV歪み設定の保存値、JSON、hash、値域と互換を確認する。
 	void RunEffectUVDistortionTests( NAssetTest::FChecker& C );
+	// 帯のUVゆがみ命令の可変長payload、拒否条件、既存帯命令のbyte互換を確認する。
+	void RunEffectRibbonUVDistortionCommandTests( NAssetTest::FChecker& C );
+	// UV歪み付き材質帯を実再生し、点ごとの強度・時間・分割を確認する。
+	void RunEffectRibbonUVDistortionPlaybackTests( NAssetTest::FChecker& C, CAssetManager& Assets, const FString& Dir );
+	// 偽backendで帯のノイズ画像の共有・欠落・所有寿命を確認する。
+	void RunEffectRibbonUVDistortionResourceTests( NAssetTest::FChecker& C, CAssetManager& Assets, NAssetTest::FFakeAssetBackend& Fake, const FString& Dir );
+	// 実GPUでUV歪み帯の穴・境界・既存描画への影響を確認する。
+	void RunEffectRibbonUVDistortionRealTests( NAssetTest::FChecker& C, CAssetManager& Assets, IDrawExecutor& Executor, const FString& Dir );
 	// UV歪み欄の実入力、履歴と不正値の修復を確認する。
 	void RunEffectUVDistortionInputTests( NAssetTest::FChecker& C );
 	// 実再生でUV歪みの画像資源と粒子別強度を確認する。

@@ -54,6 +54,8 @@ enum class EDrawCommand : uint8
 	MaterialQuad3D, // FDrawMaterialQuadData。画像とマスクを使う材質付きの 3D 四角形
 	MaterialRibbon3D, // FDrawMaterialRibbonData + 材質付き経路の点。画像とマスクを使う 3D の帯
 	DistortedMaterialQuad3D, // FDrawDistortedMaterialQuadData。ノイズ画像でUVをゆがめる材質付き四角形
+	// FDrawDistortedMaterialRibbonDataと点ごとの変位値で、材質付き帯のUVをゆがめる。
+	DistortedMaterialRibbon3D,
 };
 
 // Quad3D の向きの決め方
@@ -290,4 +292,6 @@ public:
 	virtual bool SupportsEffectMaterialRibbons() const { return false; }
 	// 実行先がノイズ画像によるUVゆがみを描画できるかを返す。未対応の実行先は従来どおり false。
 	virtual bool SupportsEffectUVDistortion() const { return false; }
+	// 実行先がノイズ画像による材質帯のUVゆがみを描画できるかを返す。未対応の実行先は false。
+	virtual bool SupportsEffectRibbonUVDistortion() const { return false; }
 };

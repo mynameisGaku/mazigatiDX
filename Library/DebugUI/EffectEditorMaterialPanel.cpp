@@ -71,7 +71,7 @@ namespace
 		return bChanged;
 	}
 
-	// 四角形材質の画像だけをずらす設定を編集し、必要なノイズ画像を一度だけ確認する。
+	// 四角形・帯材質の元画像UVを歪め、必要なノイズ画像を一度だけ確認する。
 	bool DrawUVDistortionValues( FEffectEditorState& State, FParticleEmitterDefinition& Emitter )
 	{
 		// 選択エミッターのUV歪み値。
@@ -122,13 +122,20 @@ namespace
 		bChanged |= NEffectEditorUI::DrawScalarCurve( "Distortion strength", Distortion.Strength, State.Document, 0.05f, 0.0f, 1.0f );
 		// 経路なしならエミッターは四角形粒子として描く。
 		const bool bQuad = Emitter.Path.Kind == FEffectPathDefinition::EKind::None;
-		// 材質と四角形経路の両方が有効なら歪みを再生へ使う。
-		const bool bCanApply = Distortion.bEnabled && Emitter.Material.bEnabled && bQuad;
+		// ribbonや二種類の雷は帯として歪み画像を参照する。
+		const bool bRibbonPath = Emitter.Path.Kind == FEffectPathDefinition::EKind::Ribbon || Emitter.Path.Kind == FEffectPathDefinition::EKind::Lightning || Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning;
+		// 描画記録が実装されている経路か。
+		const bool bSupportedPath = bQuad || bRibbonPath;
+		// 材質と対応経路の両方が有効なら歪みを再生へ使う。
+		const bool bCanApply = Distortion.bEnabled && Emitter.Material.bEnabled && bSupportedPath;
 		if ( Distortion.bEnabled && !Emitter.Material.bEnabled ) TextWarningWrapped( "Material is disabled; distortion is saved but not applied." );
-		if ( Distortion.bEnabled && !bQuad ) TextWarningWrapped( "Distortion currently applies to quad particles only; this path keeps the setting but ignores it." );
+		if ( Distortion.bEnabled && !bSupportedPath ) TextWarningWrapped( "This path does not support UV distortion; the setting is kept for editing." );
+		if ( bRibbonPath ) ImGui::TextWrapped( "Ribbon and lightning use each source particle's age. Noise phase stays continuous along split strips." );
 		// 現在登録されている描画実装の歪み対応状態。
 		IDrawExecutor* Executor = GetAppSubsystem<IDrawExecutor>();
-		if ( bCanApply && ( Executor == nullptr || !Executor->SupportsEffectUVDistortion() ) ) TextWarningWrapped( "The active renderer does not support UV distortion." );
+		// 選択中の経路が描画可能な歪み対応を持つか。
+		const bool bRendererSupportsDistortion = Executor != nullptr && ( bQuad ? Executor->SupportsEffectUVDistortion() : Executor->SupportsEffectRibbonUVDistortion() );
+		if ( bCanApply && !bRendererSupportsDistortion ) TextWarningWrapped( "The active renderer does not support UV distortion for this path." );
 		// テクスチャをメインスレッドで管理する既存のアセット窓口。
 		CAssetManager* Assets = GetAppSubsystem<CAssetManager>();
 		if ( bCanApply )

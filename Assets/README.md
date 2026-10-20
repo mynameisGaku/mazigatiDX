@@ -8,6 +8,8 @@
 - `material_dissolve`: マスクで穴を開け、境界を光らせる紋様。
 - `flipbook_sigil_burst`: 画像のコマ送りと消失を組み合わせた紋様。
 - `uv_distortion_energy_veil`: ノイズの移動で青紫の繊維と金線をゆがめる膜。
+- `uv_distortion_ribbon`: 軌跡に沿った模様をノイズでゆがめる帯。
+- `uv_distortion_tree_lightning`: 幹・枝・孫枝の形を固定し、長い点灯区間でノイズの流れを観察できる雷。
 
 Effect Editorの`Preset`は原本を未保存のコピーとして開きます。編集後は別名で保存し、World Editorのアセット一覧から配置できます。
 

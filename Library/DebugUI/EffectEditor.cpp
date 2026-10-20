@@ -123,6 +123,8 @@ namespace
 				if ( ImGui::MenuItem( "Pulse lightning" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/appearance_pulse_lightning.effect.json", pOpen );
 				if ( ImGui::MenuItem( "Flipbook sigil burst" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/flipbook_sigil_burst.effect.json", pOpen );
 				if ( ImGui::MenuItem( "Flowing energy veil" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/uv_distortion_energy_veil.effect.json", pOpen );
+				if ( ImGui::MenuItem( "Distorted ribbon trail" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/uv_distortion_ribbon.effect.json", pOpen );
+				if ( ImGui::MenuItem( "Flowing lightning tree" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/uv_distortion_tree_lightning.effect.json", pOpen );
 				ImGui::EndMenu();
 			}
 			if ( ImGui::BeginMenu( "Edit" ) )
@@ -281,11 +283,13 @@ bool NDebugUI::SaveEffectFile( FEffectEditorState& State, const FString& AssetPa
 	// 保存対象のemitterを順に確認する。
 	for ( int32 Index = 0; Index < State.Document.Get().Emitters.Num(); ++Index )
 	{
-		// 材質が有効な四角形で実際に使うnoiseだけを保存時に同期確認する。
+		// 材質が有効で歪みを使う対応経路のnoiseを保存時に同期確認する。
 		const FParticleEmitterDefinition& Emitter = State.Document.Get().Emitters[Index];
 		// このemitterの歪みnoise定義。
 		const FEffectUVDistortionDefinition& Distortion = Emitter.Material.Distortion;
-		if ( !Distortion.bEnabled || !Emitter.Material.bEnabled || Emitter.Path.Kind != FEffectPathDefinition::EKind::None ) continue;
+		// 現在のpath kindでnoise検証が必要か。
+		const bool bDistortionPath = Emitter.Path.Kind == FEffectPathDefinition::EKind::None || Emitter.Path.Kind == FEffectPathDefinition::EKind::Ribbon || Emitter.Path.Kind == FEffectPathDefinition::EKind::Lightning || Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning;
+		if ( !Distortion.bEnabled || !Emitter.Material.bEnabled || !bDistortionPath ) continue;
 		// 既存AssetManagerから同期で取得し、保存後すぐ使える画像か確認する。
 		const TSharedPtr<CTexture> NoiseTexture = Assets->LoadTexture( Distortion.Texture, false );
 		if ( !NoiseTexture.IsValid() || !NoiseTexture->IsReady() )

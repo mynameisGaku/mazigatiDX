@@ -31,6 +31,10 @@ namespace
 		float32 Emission = 0.0f;
 		// 帯で補間する未折返しの画像UV移動量。
 		float32 UVOffset[2] = {};
+		// 帯の各点から補間する未折返しnoise移動量。
+		float32 DistortionOffset[2] = {};
+		// 帯の各点から補間するUVずれの強さ。
+		float32 DistortionStrength = 0.0f;
 	};
 
 	// 頂点を画面へ移す変換行列を渡す値。
@@ -75,9 +79,9 @@ namespace
 	// 組み込み消失模様は4・16・64倍の周波数を重ね、画面全体に模様を散らす。
 	const char* ShaderSource = R"hlsl(
 cbuffer VertexConstants : register(b0) { row_major float4x4 Wvp; };
-struct VertexInput { float3 Position : POSITION; float2 Uv : TEXCOORD0; float4 Color : COLOR0; float Dissolve : TEXCOORD1; float Emission : TEXCOORD2; float2 UVOffset : TEXCOORD3; };
-struct VertexOutput { float4 Position : SV_POSITION; float2 Uv : TEXCOORD0; float4 Color : COLOR0; float Dissolve : TEXCOORD1; float Emission : TEXCOORD2; float2 UVOffset : TEXCOORD3; };
-VertexOutput VSMain(VertexInput Input) { VertexOutput Output; Output.Position = mul(float4(Input.Position, 1.0), Wvp); Output.Uv = Input.Uv; Output.Color = Input.Color; Output.Dissolve = Input.Dissolve; Output.Emission = Input.Emission; Output.UVOffset = Input.UVOffset; return Output; }
+struct VertexInput { float3 Position : POSITION; float2 Uv : TEXCOORD0; float4 Color : COLOR0; float Dissolve : TEXCOORD1; float Emission : TEXCOORD2; float2 UVOffset : TEXCOORD3; float2 DistortionOffset : TEXCOORD4; float DistortionStrength : TEXCOORD5; };
+struct VertexOutput { float4 Position : SV_POSITION; float2 Uv : TEXCOORD0; float4 Color : COLOR0; float Dissolve : TEXCOORD1; float Emission : TEXCOORD2; float2 UVOffset : TEXCOORD3; float2 DistortionOffset : TEXCOORD4; float DistortionStrength : TEXCOORD5; };
+VertexOutput VSMain(VertexInput Input) { VertexOutput Output; Output.Position = mul(float4(Input.Position, 1.0), Wvp); Output.Uv = Input.Uv; Output.Color = Input.Color; Output.Dissolve = Input.Dissolve; Output.Emission = Input.Emission; Output.UVOffset = Input.UVOffset; Output.DistortionOffset = Input.DistortionOffset; Output.DistortionStrength = Input.DistortionStrength; return Output; }
 Texture2D SourceTexture : register(t0);
 Texture2D MaskTexture : register(t1);
 Texture2D DistortionTexture : register(t2);
@@ -106,13 +110,15 @@ float4 PSMain(VertexOutput Input) : SV_TARGET
     float IsRibbon = Options.w;
     float2 SourceOffset = IsRibbon > 0.5 ? Input.UVOffset : UvScaleOffset.zw;
     float2 SourceLogicalUv = Input.Uv * UvScaleOffset.xy + SourceOffset;
-    if (IsRibbon < 0.5 && DistortionValues.y > 0.5)
+    if (DistortionValues.y > 0.5)
     {
-        float2 DistortionLogicalUv = frac(Input.Uv * DistortionScaleOffset.xy + DistortionScaleOffset.zw);
+        float2 PointDistortionOffset = IsRibbon > 0.5 ? Input.DistortionOffset : DistortionScaleOffset.zw;
+        float PointDistortionStrength = IsRibbon > 0.5 ? Input.DistortionStrength : DistortionValues.x;
+        float2 DistortionLogicalUv = frac(Input.Uv * DistortionScaleOffset.xy + PointDistortionOffset);
         DistortionLogicalUv = clamp(DistortionLogicalUv, DistortionInset.xy, 1.0 - DistortionInset.xy);
         float2 DistortionUv = DistortionRect.zw + DistortionLogicalUv * DistortionRect.xy;
         float2 Distortion = DistortionTexture.Sample(WrapSampler, DistortionUv).rg * 2.0 - 1.0;
-        SourceLogicalUv += Distortion * DistortionValues.x;
+        SourceLogicalUv += Distortion * PointDistortionStrength;
     }
     SourceLogicalUv = frac(SourceLogicalUv);
     SourceLogicalUv = clamp(SourceLogicalUv, SourceInset.xy, 1.0 - SourceInset.xy);
@@ -367,9 +373,9 @@ struct FEffectMaterialRenderer::FImpl
 		if ( !CompileShader( Device, "VSMain", "vs_4_0", &VsBlob ) || !CompileShader( Device, "PSMain", "ps_4_0", &PsBlob ) ) goto Failed;
 		if ( FAILED( Device->CreateVertexShader( VsBlob->GetBufferPointer(), VsBlob->GetBufferSize(), nullptr, &VertexShader ) ) || FAILED( Device->CreatePixelShader( PsBlob->GetBufferPointer(), PsBlob->GetBufferSize(), nullptr, &PixelShader ) ) ) goto Failed;
 		{
-			// vertex bufferの位置とUVをshader入力へ対応付ける。
-			const D3D11_INPUT_ELEMENT_DESC Elements[] = { { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }, { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }, { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 20, D3D11_INPUT_PER_VERTEX_DATA, 0 }, { "TEXCOORD", 1, DXGI_FORMAT_R32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0 }, { "TEXCOORD", 2, DXGI_FORMAT_R32_FLOAT, 0, 40, D3D11_INPUT_PER_VERTEX_DATA, 0 }, { "TEXCOORD", 3, DXGI_FORMAT_R32G32_FLOAT, 0, 44, D3D11_INPUT_PER_VERTEX_DATA, 0 } };
-			if ( FAILED( Device->CreateInputLayout( Elements, 6, VsBlob->GetBufferPointer(), VsBlob->GetBufferSize(), &Layout ) ) ) goto Failed;
+			// 頂点位置、色、材質値、source移動、noise移動と強さをshaderへ対応付ける。
+			const D3D11_INPUT_ELEMENT_DESC Elements[] = { { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }, { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }, { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 20, D3D11_INPUT_PER_VERTEX_DATA, 0 }, { "TEXCOORD", 1, DXGI_FORMAT_R32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0 }, { "TEXCOORD", 2, DXGI_FORMAT_R32_FLOAT, 0, 40, D3D11_INPUT_PER_VERTEX_DATA, 0 }, { "TEXCOORD", 3, DXGI_FORMAT_R32G32_FLOAT, 0, 44, D3D11_INPUT_PER_VERTEX_DATA, 0 }, { "TEXCOORD", 4, DXGI_FORMAT_R32G32_FLOAT, 0, 52, D3D11_INPUT_PER_VERTEX_DATA, 0 }, { "TEXCOORD", 5, DXGI_FORMAT_R32_FLOAT, 0, 60, D3D11_INPUT_PER_VERTEX_DATA, 0 } };
+			if ( FAILED( Device->CreateInputLayout( Elements, 8, VsBlob->GetBufferPointer(), VsBlob->GetBufferSize(), &Layout ) ) ) goto Failed;
 		}
 		if ( VsBlob != nullptr ) { VsBlob->Release(); VsBlob = nullptr; }
 		if ( PsBlob != nullptr ) { PsBlob->Release(); PsBlob = nullptr; }
@@ -610,10 +616,25 @@ Failed:
 	// 連続UVと点ごとの材質値を補間し、共有Ribbon meshをnative D3D11で描く。
 	bool DrawRibbon( const FDrawMaterialRibbonData& Data, const FDrawMaterialRibbonData::FPoint* Points )
 	{
+		return DrawRibbonInternal( Data, Points, nullptr, nullptr );
+	}
+
+	// 共通入力を検証し、帯へ点別のnoise移動と強さを渡す。
+	bool DrawDistortedRibbon( const FDrawDistortedMaterialRibbonData& Data, const FDrawDistortedMaterialRibbonData::FPoint* Points )
+	{
+		if ( !NDrawDistortedMaterialRibbon::IsValid( Data, Points ) ) return false;
+		return DrawRibbonInternal( Data.Material, nullptr, &Data, Points );
+	}
+
+	// 旧点列とゆがみ付き点列を同じmesh・native状態経路で描画する。
+	bool DrawRibbonInternal( const FDrawMaterialRibbonData& Data, const FDrawMaterialRibbonData::FPoint* Points, const FDrawDistortedMaterialRibbonData* DistortionData, const FDrawDistortedMaterialRibbonData::FPoint* DistortionPoints )
+	{
 		// mesh展開とshader設定へ渡すRibbon側の基本値。
 		const FDrawRibbonData& Ribbon = Data.Ribbon;
 		const FDrawMaterialRibbonData::FMaterialSettings& Material = Data.Material;
-		if ( Points == nullptr || Ribbon.NumPoints < 2 || Ribbon.NumPoints > FDrawRibbonData::MaxPoints || Ribbon.Texture < 0 || !std::isfinite( Ribbon.UVRepeat ) || Ribbon.UVRepeat <= 0.0f || ( Material.DepthTest != 0 && Material.DepthTest != 1 ) || ( Material.DepthWrite != 0 && Material.DepthWrite != 1 ) || Material.MaskTexture < -1 || ( Material.bDissolve != 0 && Material.bDissolve != 1 ) ) return false;
+		if ( ( Points == nullptr && DistortionPoints == nullptr ) || ( ( DistortionData == nullptr ) != ( DistortionPoints == nullptr ) ) || Ribbon.NumPoints < 2 || Ribbon.NumPoints > FDrawRibbonData::MaxPoints || Ribbon.Texture < 0 || !std::isfinite( Ribbon.UVRepeat ) || Ribbon.UVRepeat <= 0.0f || ( Material.DepthTest != 0 && Material.DepthTest != 1 ) || ( Material.DepthWrite != 0 && Material.DepthWrite != 1 ) || Material.MaskTexture < -1 || ( Material.bDissolve != 0 && Material.bDissolve != 1 ) ) return false;
+		// 呼び出し元の形式から既存材質部分を参照する関数。
+		const auto MaterialPoint = [&]( int32 Index ) -> const FDrawMaterialRibbonData::FPoint& { return DistortionPoints != nullptr ? DistortionPoints[Index].Material : Points[Index]; };
 		// 共通helperが作るworld位置・連続UV・三角形番号。
 		FDxLibRibbonMesh Mesh;
 		// 40byte材質点からhelperの旧24byte経路点だけを複写する配列。
@@ -622,7 +643,7 @@ Failed:
 		// index展開後にGPUへ送る非indexed頂点列。
 		TArray<FVertex> Vertices;
 		// 共通経路点へmiter形状を構築する変換loop。
-		for ( int32 Index = 0; Index < Ribbon.NumPoints; ++Index ) PathPoints[Index] = Points[Index].Path;
+		for ( int32 Index = 0; Index < Ribbon.NumPoints; ++Index ) PathPoints[Index] = MaterialPoint( Index ).Path;
 		if ( !NDxLibRibbonMesh::Build( Ribbon, PathPoints.GetData(), false, Mesh ) ) return false;
 		if ( Mesh.Indices.Num() < 3 || Mesh.Indices.Num() > ( Ribbon.NumPoints - 1 ) * 6 ) return false;
 		Vertices.SetNum( Mesh.Indices.Num() );
@@ -637,7 +658,7 @@ Failed:
 			// GPU頂点へ位置とUVを渡す元mesh頂点。
 			const VERTEX3D& Source = Mesh.Vertices[SourceIndex];
 			// 色・消失・発光・移動量を渡す元材質点。
-			const FDrawMaterialRibbonData::FPoint& Point = Points[PointIndex];
+			const FDrawMaterialRibbonData::FPoint& Point = MaterialPoint( PointIndex );
 			// GPUへ送る今回の三角形頂点。
 			FVertex& Vertex = Vertices[Index];
 			Vertex.Position[0] = Source.pos.x; Vertex.Position[1] = Source.pos.y; Vertex.Position[2] = Source.pos.z;
@@ -645,12 +666,14 @@ Failed:
 			Vertex.Color[0] = static_cast<float32>( Point.Path.Color & 0xFFu ) / 255.0f; Vertex.Color[1] = static_cast<float32>( ( Point.Path.Color >> 8 ) & 0xFFu ) / 255.0f; Vertex.Color[2] = static_cast<float32>( ( Point.Path.Color >> 16 ) & 0xFFu ) / 255.0f; Vertex.Color[3] = static_cast<float32>( ( Point.Path.Color >> 24 ) & 0xFFu ) / 255.0f;
 			Vertex.Dissolve = Point.Dissolve; Vertex.Emission = Point.Emission;
 			Vertex.UVOffset[0] = Point.UVOffset[0]; Vertex.UVOffset[1] = Point.UVOffset[1];
+			if ( DistortionPoints != nullptr ) { Vertex.DistortionOffset[0] = DistortionPoints[PointIndex].UVOffset[0]; Vertex.DistortionOffset[1] = DistortionPoints[PointIndex].UVOffset[1]; Vertex.DistortionStrength = DistortionPoints[PointIndex].Strength; }
 		}
 		if ( !Initialize() ) return false;
 		// graph crop領域を反映したsourceとoptional mask shader view。
 		const ID3D11ShaderResourceView* Source = GetTexture( Ribbon.Texture, SourceView, SourceHandle, SourceTextureIdentity );
 		const ID3D11ShaderResourceView* Mask = Material.MaskTexture >= 0 ? GetTexture( Material.MaskTexture, MaskView, MaskHandle, MaskTextureIdentity ) : nullptr;
-		if ( Source == nullptr || ( Material.MaskTexture >= 0 && Mask == nullptr ) )
+		const ID3D11ShaderResourceView* Distortion = DistortionData != nullptr ? GetTexture( DistortionData->DistortionTexture, DistortionView, DistortionHandle, DistortionTextureIdentity ) : nullptr;
+		if ( Source == nullptr || ( Material.MaskTexture >= 0 && Mask == nullptr ) || ( DistortionData != nullptr && Distortion == nullptr ) )
 		{
 			if ( !bFailedLogged ) { LOG( LogEffectMaterial, Warning, "材質付き帯の画像をDirect3D 11から取得できません" ); bFailedLogged = true; }
 			return false;
@@ -709,8 +732,8 @@ Failed:
 		MATRIX Wvp = MMult( MMult( MMult( View, Projection ), Viewport ), ApiViewportInverse );
 		for ( int Row = 0; Row < 4; ++Row ) for ( int Column = 0; Column < 4; ++Column ) if ( !std::isfinite( Wvp.m[Row][Column] ) ) { Saved.Restore( Context ); return false; }
 		// 派生画像のsource/mask領域とfilter端の漏れを避ける幅。
-		float32 SourceRect[4] = {}, SourceInset[4] = {}, MaskRect[4] = { 1.0f, 1.0f, 0.0f, 0.0f }, MaskInset[4] = {};
-		if ( !GetGraphUvMapping( Ribbon.Texture, SourceRect, SourceInset ) || ( Material.MaskTexture >= 0 && !GetGraphUvMapping( Material.MaskTexture, MaskRect, MaskInset ) ) ) { Saved.Restore( Context ); return false; }
+		float32 SourceRect[4] = {}, SourceInset[4] = {}, MaskRect[4] = { 1.0f, 1.0f, 0.0f, 0.0f }, MaskInset[4] = {}, DistortionRect[4] = { 1.0f, 1.0f, 0.0f, 0.0f }, DistortionInset[4] = {};
+		if ( !GetGraphUvMapping( Ribbon.Texture, SourceRect, SourceInset ) || ( Material.MaskTexture >= 0 && !GetGraphUvMapping( Material.MaskTexture, MaskRect, MaskInset ) ) || ( DistortionData != nullptr && !GetGraphUvMapping( DistortionData->DistortionTexture, DistortionRect, DistortionInset ) ) ) { Saved.Restore( Context ); return false; }
 		// map結果をvertexまたはconstant bufferへ順次書き込む領域。
 		D3D11_MAPPED_SUBRESOURCE Mapped{};
 		if ( FAILED( Context->Map( VertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &Mapped ) ) ) { Saved.Restore( Context ); return false; }
@@ -730,15 +753,16 @@ Failed:
 		PsConstants.BrightBlend[0] *= Bright[0] / 255.0f; PsConstants.BrightBlend[1] *= Bright[1] / 255.0f; PsConstants.BrightBlend[2] *= Bright[2] / 255.0f;
 		PsConstants.Options[0] = Material.MaskTexture >= 0 ? 1.0f : 0.0f; PsConstants.Options[1] = BlendParam / 255.0f; PsConstants.Options[3] = 1.0f;
 		std::memcpy( PsConstants.SourceRect, SourceRect, sizeof( SourceRect ) ); std::memcpy( PsConstants.SourceInset, SourceInset, sizeof( SourceInset ) ); std::memcpy( PsConstants.MaskRect, MaskRect, sizeof( MaskRect ) ); std::memcpy( PsConstants.MaskInset, MaskInset, sizeof( MaskInset ) );
+		if ( DistortionData != nullptr ) { PsConstants.DistortionScaleOffset[0] = DistortionData->UVScale[0]; PsConstants.DistortionScaleOffset[1] = DistortionData->UVScale[1]; PsConstants.DistortionValues[1] = 1.0f; std::memcpy( PsConstants.DistortionRect, DistortionRect, sizeof( DistortionRect ) ); std::memcpy( PsConstants.DistortionInset, DistortionInset, sizeof( DistortionInset ) ); }
 		if ( FAILED( Context->Map( VertexConstants, 0, D3D11_MAP_WRITE_DISCARD, 0, &Mapped ) ) ) { Saved.Restore( Context ); return false; }
 		std::memcpy( Mapped.pData, &VsConstants, sizeof( VsConstants ) ); Context->Unmap( VertexConstants, 0 );
 		if ( FAILED( Context->Map( PixelConstants, 0, D3D11_MAP_WRITE_DISCARD, 0, &Mapped ) ) ) { Saved.Restore( Context ); return false; }
 		std::memcpy( Mapped.pData, &PsConstants, sizeof( PsConstants ) ); Context->Unmap( PixelConstants, 0 );
 		// 先頭slotへ結び直す頂点stride・offset・buffer・shader resource群。
-		const UINT Stride = sizeof( FVertex ); const UINT Offset = 0; ID3D11Buffer* Vb = VertexBuffer; ID3D11Buffer* VsCb = VertexConstants; ID3D11Buffer* PsCb = PixelConstants; ID3D11ShaderResourceView* Srvs[2] = { const_cast<ID3D11ShaderResourceView*>( Source ), const_cast<ID3D11ShaderResourceView*>( Mask ) }; const FLOAT BlendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+		const UINT Stride = sizeof( FVertex ); const UINT Offset = 0; ID3D11Buffer* Vb = VertexBuffer; ID3D11Buffer* VsCb = VertexConstants; ID3D11Buffer* PsCb = PixelConstants; ID3D11ShaderResourceView* Srvs[3] = { const_cast<ID3D11ShaderResourceView*>( Source ), const_cast<ID3D11ShaderResourceView*>( Mask ), const_cast<ID3D11ShaderResourceView*>( Distortion ) }; const FLOAT BlendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 		Context->IASetInputLayout( Layout ); Context->IASetVertexBuffers( 0, 1, &Vb, &Stride, &Offset ); Context->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 		Context->VSSetShader( VertexShader, nullptr, 0 ); Context->PSSetShader( PixelShader, nullptr, 0 ); Context->GSSetShader( nullptr, nullptr, 0 ); Context->HSSetShader( nullptr, nullptr, 0 ); Context->DSSetShader( nullptr, nullptr, 0 );
-		Context->VSSetConstantBuffers( 0, 1, &VsCb ); Context->PSSetConstantBuffers( 0, 1, &PsCb ); Context->PSSetShaderResources( 0, 2, Srvs ); Context->PSSetSamplers( 0, 1, &Sampler );
+		Context->VSSetConstantBuffers( 0, 1, &VsCb ); Context->PSSetConstantBuffers( 0, 1, &PsCb ); Context->PSSetShaderResources( 0, DistortionData != nullptr ? 3u : 2u, Srvs ); Context->PSSetSamplers( 0, 1, &Sampler );
 		// caller raster設定を保ちつつ帯の両面を描くdescriptor。
 		D3D11_RASTERIZER_DESC RasterDesc{}; if ( Saved.Raster != nullptr ) Saved.Raster->GetDesc( &RasterDesc ); else { RasterDesc.FillMode = D3D11_FILL_SOLID; RasterDesc.DepthClipEnable = TRUE; }
 		RasterDesc.CullMode = D3D11_CULL_NONE;
@@ -761,7 +785,9 @@ bool FEffectMaterialRenderer::Initialize() { return Impl != nullptr && Impl->Ini
 bool FEffectMaterialRenderer::Draw( const FDrawMaterialQuadData& Data ) { return Impl != nullptr && Impl->Draw( Data ); }
 bool FEffectMaterialRenderer::DrawDistorted( const FDrawDistortedMaterialQuadData& Data ) { return Impl != nullptr && Impl->DrawDistorted( Data ); }
 bool FEffectMaterialRenderer::DrawRibbon( const FDrawMaterialRibbonData& Data, const FDrawMaterialRibbonData::FPoint* Points ) { return Impl != nullptr && Impl->DrawRibbon( Data, Points ); }
+bool FEffectMaterialRenderer::DrawDistortedRibbon( const FDrawDistortedMaterialRibbonData& Data, const FDrawDistortedMaterialRibbonData::FPoint* Points ) { return Impl != nullptr && Impl->DrawDistortedRibbon( Data, Points ); }
 void FEffectMaterialRenderer::Deinitialize() { if ( Impl != nullptr ) Impl->Deinitialize(); }
 bool FEffectMaterialRenderer::IsAvailable() const { return Impl != nullptr && Impl->VertexShader != nullptr; }
 bool FEffectMaterialRenderer::IsRibbonAvailable() const { return Impl != nullptr && Impl->VertexShader != nullptr && Impl->PixelShader != nullptr && Impl->Layout != nullptr && Impl->VertexBuffer != nullptr; }
 bool FEffectMaterialRenderer::IsUVDistortionAvailable() const { return Impl != nullptr && Impl->VertexShader != nullptr && Impl->PixelShader != nullptr && Impl->Layout != nullptr && Impl->VertexBuffer != nullptr && Impl->VertexConstants != nullptr && Impl->PixelConstants != nullptr && Impl->Sampler != nullptr && Impl->AlphaBlend != nullptr && Impl->AddBlend != nullptr && Impl->DepthStates[0] != nullptr && Impl->DepthStates[1] != nullptr && Impl->DepthStates[2] != nullptr && Impl->DepthStates[3] != nullptr; }
+bool FEffectMaterialRenderer::IsRibbonUVDistortionAvailable() const { return IsRibbonAvailable() && IsUVDistortionAvailable(); }

@@ -25,41 +25,15 @@ void FDrawContext::MaterialRibbon3D( const FDrawMaterialRibbonData& Data, const 
 	// 入力値が記録先の再確保で変わらないよう、固定設定を先に値として保持する。
 	FDrawMaterialRibbonData Header{};
 	std::memcpy( &Header, &Data, sizeof( Header ) );
-	// 検証と記録で共通して使う、所有済み経路設定と材質設定。
-	const FDrawRibbonData& Ribbon = Header.Ribbon;
-	const FDrawMaterialRibbonData::FMaterialSettings& Material = Header.Material;
-	if ( Points == nullptr || Ribbon.NumPoints < 2 || Ribbon.NumPoints > FDrawRibbonData::MaxPoints || Ribbon.Texture < 0 || Material.MaskTexture < -1 || !std::isfinite( Ribbon.UVRepeat ) || Ribbon.UVRepeat <= 0.0f || Ribbon.JoinFlags < 0 || ( Ribbon.JoinFlags & ~( FDrawRibbonData::PreviousPoint | FDrawRibbonData::NextPoint ) ) != 0 || Ribbon.NumPoints - static_cast<int32>( ( Ribbon.JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) - static_cast<int32>( ( Ribbon.JoinFlags & FDrawRibbonData::NextPoint ) != 0 ) < 2 ) return;
-	if ( !std::isfinite( Material.UVScale[0] ) || !std::isfinite( Material.UVScale[1] ) || Material.UVScale[0] <= 0.0f || Material.UVScale[1] <= 0.0f || Material.UVScale[0] > 128.0f || Material.UVScale[1] > 128.0f || !std::isfinite( Material.MaskScale ) || Material.MaskScale <= 0.0f || Material.MaskScale > 128.0f || !std::isfinite( Material.EdgeWidth ) || Material.EdgeWidth < 0.0f || Material.EdgeWidth > 1.0f || !std::isfinite( Material.EdgeEmission ) || Material.EdgeEmission < 0.0f || Material.EdgeEmission > 32.0f || ( Material.bDissolve != 0 && Material.bDissolve != 1 ) || ( Material.DepthTest != 0 && Material.DepthTest != 1 ) || ( Material.DepthWrite != 0 && Material.DepthWrite != 1 ) ) return;
-	// 任意のbyte列から来た点を、通常のFPoint寿命を持つ所有配列へ移す。
+	// 既存命令と同じ設定・点列条件を、記録前に一括で検査する。
+	if ( !NDrawMaterialRibbon::IsValidHeader( Header ) || Points == nullptr ) return;
 	TArray<FDrawMaterialRibbonData::FPoint> Copied;
-	Copied.SetNum( Ribbon.NumPoints );
-	std::memcpy( Copied.GetData(), Points, static_cast<size_t>( Ribbon.NumPoints ) * sizeof( FDrawMaterialRibbonData::FPoint ) );
-	// テクスチャ反復の上限を、旧Ribbonと同じ経路区間単位で数える。
-	int32 TextureSections = 0;
-	// 位置・距離・材質値を検査する点の番号。
-	for ( int32 Index = 0; Index < Ribbon.NumPoints; ++Index )
-	{
-		// 形状と材質を一緒に補間する今回の点。
-		const FDrawMaterialRibbonData::FPoint& Point = Copied[Index];
-		// UVRepeat適用後の連続横座標。
-		const float32 BaseU = Point.Path.U * Ribbon.UVRepeat;
-		if ( !std::isfinite( Point.Path.Pos[0] ) || !std::isfinite( Point.Path.Pos[1] ) || !std::isfinite( Point.Path.Pos[2] ) || !std::isfinite( Point.Path.Width ) || Point.Path.Width < 0.0f || !std::isfinite( Point.Path.U ) || Point.Path.U < 0.0f || !std::isfinite( BaseU ) || !std::isfinite( BaseU * Material.UVScale[0] + Point.UVOffset[0] ) || !std::isfinite( BaseU * Material.MaskScale ) || !std::isfinite( Point.Dissolve ) || Point.Dissolve < 0.0f || Point.Dissolve > 1.0f || !std::isfinite( Point.Emission ) || Point.Emission < 0.0f || Point.Emission > 32.0f || !std::isfinite( Point.UVOffset[0] ) || !std::isfinite( Point.UVOffset[1] ) || std::abs( Point.UVOffset[0] ) > 1.0e6f || std::abs( Point.UVOffset[1] ) > 1.0e6f ) return;
-		if ( Index > 0 && Point.Path.U < Copied[Index - 1].Path.U ) return;
-		// 接線補助用の端点を除く、表示区間だけの分割数。
-		const bool bVisibleSegment = Index > 0 && !( Index == 1 && ( Ribbon.JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) && !( Index + 1 == Ribbon.NumPoints && ( Ribbon.JoinFlags & FDrawRibbonData::NextPoint ) != 0 );
-		if ( bVisibleSegment )
-		{
-			// この表示区間で必要な画像反復数。
-			const float64 FirstRepeat = std::floor( static_cast<float64>( Copied[Index - 1].Path.U * Ribbon.UVRepeat ) );
-			const float64 Sections = std::max( 1.0, std::ceil( static_cast<float64>( Point.Path.U * Ribbon.UVRepeat ) ) - FirstRepeat );
-			if ( !std::isfinite( Sections ) || Sections > static_cast<float64>( FDrawRibbonData::MaxTextureSections - TextureSections ) ) return;
-			TextureSections += static_cast<int32>( Sections );
-		}
-	}
-		// 固定設定と全点を合わせた命令長。MaxPoints検査後なので積は安全な範囲。
+	Copied.Append( Points, Header.Ribbon.NumPoints );
+	if ( !NDrawMaterialRibbon::IsValid( Header, Copied.GetData() ) ) return;
+	// 固定設定と全点を合わせた命令長。MaxPoints検査後なので積は安全な範囲。
 	constexpr size_t DataWords = sizeof( FDrawMaterialRibbonData ) / 4;
 	// 全点を4byte word単位で記録する長さ。
-	const size_t PointWords = static_cast<size_t>( Ribbon.NumPoints ) * sizeof( FDrawMaterialRibbonData::FPoint ) / 4;
+	const size_t PointWords = static_cast<size_t>( Header.Ribbon.NumPoints ) * sizeof( FDrawMaterialRibbonData::FPoint ) / 4;
 	// command headerを含む最終word数。
 	const size_t CommandWords = 1 + DataWords + PointWords;
 	if ( CommandWords > static_cast<size_t>( NDrawCommand::MaxWords ) || Buffer->Words.size() > Buffer->Words.max_size() - CommandWords ) return;
@@ -70,7 +44,34 @@ void FDrawContext::MaterialRibbon3D( const FDrawMaterialRibbonData& Data, const 
 	Words.resize( Begin + CommandWords );
 	Words[Begin] = NDrawCommand::MakeHeader( EDrawCommand::MaterialRibbon3D, 0, static_cast<int32>( CommandWords ) );
 	std::memcpy( &Words[Begin + 1], &Header, sizeof( Header ) );
-	std::memcpy( &Words[Begin + 1 + DataWords], Copied.GetData(), static_cast<size_t>( Ribbon.NumPoints ) * sizeof( FDrawMaterialRibbonData::FPoint ) );
+	std::memcpy( &Words[Begin + 1 + DataWords], Copied.GetData(), static_cast<size_t>( Header.Ribbon.NumPoints ) * sizeof( FDrawMaterialRibbonData::FPoint ) );
+}
+
+void FDrawContext::DistortedMaterialRibbon3D( const FDrawDistortedMaterialRibbonData& Data, const FDrawDistortedMaterialRibbonData::FPoint* Points )
+{
+	// buffer再確保で入力headerが変わらないよう、固定設定を先に値で保持する。
+	FDrawDistortedMaterialRibbonData Header{};
+	std::memcpy( &Header, &Data, sizeof( Header ) );
+	if ( Points == nullptr || !NDrawDistortedMaterialRibbon::IsValidHeader( Header ) ) return;
+	// 入力配列を所有し、検証後に一括記録するための点列。
+	TArray<FDrawDistortedMaterialRibbonData::FPoint> Copied;
+	Copied.Append( Points, Header.Material.Ribbon.NumPoints );
+	if ( !NDrawDistortedMaterialRibbon::IsValid( Header, Copied.GetData() ) ) return;
+	// 固定headerと全点を含む描画命令のword数。
+	constexpr size_t DataWords = sizeof( FDrawDistortedMaterialRibbonData ) / 4;
+	// 1024点以下の可変payload word数。
+	const size_t PointWords = static_cast<size_t>( Header.Material.Ribbon.NumPoints ) * sizeof( FDrawDistortedMaterialRibbonData::FPoint ) / 4;
+	// command header込みの合計word数。
+	const size_t CommandWords = 1 + DataWords + PointWords;
+	if ( CommandWords > static_cast<size_t>( NDrawCommand::MaxWords ) || Buffer->Words.size() > Buffer->Words.max_size() - CommandWords ) return;
+	// 追記する描画命令が入る共有word buffer。
+	std::vector<uint32>& Words = Buffer->Words;
+	// 新命令を記録する開始位置。
+	const size_t Begin = Words.size();
+	Words.resize( Begin + CommandWords );
+	Words[Begin] = NDrawCommand::MakeHeader( EDrawCommand::DistortedMaterialRibbon3D, 0, static_cast<int32>( CommandWords ) );
+	std::memcpy( &Words[Begin + 1], &Header, sizeof( Header ) );
+	std::memcpy( &Words[Begin + 1 + DataWords], Copied.GetData(), static_cast<size_t>( Header.Material.Ribbon.NumPoints ) * sizeof( FDrawDistortedMaterialRibbonData::FPoint ) );
 }
 
 void FDrawContext::Ribbon3D( const FDrawRibbonData::FPoint* Points, int32 NumPoints, int32 Texture, float32 UVRepeat, int32 JoinFlags )

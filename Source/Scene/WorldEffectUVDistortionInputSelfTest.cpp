@@ -340,7 +340,71 @@ namespace
 		}
 	}
 
-	// 読めないnoiseを使う四角形材質の保存を拒否する。
+	// RibbonとTree Lightningの組み込みpresetを複製し、編集保存後に読み直す。
+	void TestRibbonAndTreeDistortionPresetSaves( NAssetTest::FChecker& C )
+	{
+		C.Group = "effect-uv-distortion-path-preset-save";
+		// presetと保存先を順に確認する固定path一覧。
+		const FString PresetPaths[] = { "Effects/uv_distortion_ribbon.effect.json", "Effects/uv_distortion_tree_lightning.effect.json" };
+		// save/parse処理に使う既存asset窓口。
+		CAssetManager* Assets = GetAppSubsystem<CAssetManager>();
+		C.Check( Assets != nullptr, "path preset保存試験にasset managerがある" );
+		if ( Assets == nullptr ) return;
+		for ( const FString& PresetPath : PresetPaths )
+		{
+			// 複製前のpreset原本を読む実path。
+			const TOptional<FString> PresetFullPath = Assets->ResolvePath( PresetPath );
+			// 保存前の原本JSON reader。
+			NJson::CJsonObject BeforeJson;
+			// preset原本JSONを読めたか。
+			const bool bReadBefore = PresetFullPath.IsSet() && BeforeJson.LoadFromFile( PresetFullPath.GetValue() );
+			C.Check( bReadBefore, "歪み付きpath preset原本を保存前に読む" );
+			if ( !bReadBefore ) continue;
+			// preset APIで作る未保存編集文書。
+			FEffectEditorState State;
+			// preset APIがcopyを作れたか。
+			const bool bCreatedCopy = NDebugUI::NewEffectFromPreset( State, PresetPath );
+			C.Check( bCreatedCopy && State.Document.IsDirty() && State.FilePath.IsEmpty(), "NewEffectFromPresetがpath presetを未保存copyにする" );
+			if ( !bCreatedCopy || !State.Document.Get().Emitters.IsValidIndex( 0 ) ) continue;
+			// 先頭emitterの歪み倍率だけを編集する値。
+			FParticleEmitterDefinition EditedEmitter = State.Document.Get().Emitters[0];
+			EditedEmitter.Material.Distortion.UVScale.x += 0.125f;
+			// 倍率編集をdocument historyへ記録した結果。
+			const bool bEdited = NParticleEdit::SetEmitter( State.Document, 0, EditedEmitter, "emitter-settings" );
+			C.Check( bEdited && State.Document.IsDirty(), "path presetのUV倍率編集をhistoryへ記録する" );
+			if ( !bEdited ) continue;
+			// 別名保存するpathと、元ファイルを保護する存在確認。
+			const FString CopyPath = PresetPath.Contains( "ribbon" ) ? "Effects/selftest_uv_distortion_ribbon_copy.effect.json" : "Effects/selftest_uv_distortion_tree_copy.effect.json";
+			// copy先がまだ存在せず上書きしない状態。
+			const bool bCopyPathAvailable = !Assets->ResolvePath( CopyPath ).IsSet();
+			C.Check( bCopyPathAvailable, "path preset copy保存先が空いていて既存ファイルを上書きしない" );
+			if ( !bCopyPathAvailable ) continue;
+			// 編集後にfresh parseと比較する保存snapshot。
+			const FParticleEffectDefinition EditedDefinition = State.Document.Get();
+			// copyを別名保存できたか。
+			const bool bSaved = NDebugUI::SaveEffectFile( State, CopyPath );
+			C.Check( bSaved && !State.Document.IsDirty() && State.FilePath == CopyPath && State.SaveSerial == 1, "歪み付きRibbon/Tree copyを保存して状態を更新する" );
+			// 実際に保存されたcopyの解決path。
+			const TOptional<FString> CopyFullPath = Assets->ResolvePath( CopyPath );
+			// 保存JSONを読むreader。
+			NJson::CJsonObject CopyJson;
+			// 保存JSONをreaderへ読み込めたか。
+			const bool bReadCopy = bSaved && CopyFullPath.IsSet() && CopyJson.LoadFromFile( CopyFullPath.GetValue() );
+			// fresh parseされた保存定義。
+			FParticleEffectDefinition FreshDefinition;
+			// 新しいdefinitionへのparse結果。
+			const bool bParsedCopy = bReadCopy && FParticleEffectDefinition::FromJson( CopyJson.GetRoot(), FreshDefinition );
+			C.Check( bParsedCopy && FreshDefinition.ComputeHash() == EditedDefinition.ComputeHash() && FreshDefinition.Emitters.IsValidIndex( 0 ) && FreshDefinition.Emitters[0].Material.Distortion.ComputeHash() == EditedDefinition.Emitters[0].Material.Distortion.ComputeHash(), "path presetの編集値とhashをfresh readで保つ" );
+			// 保存後も原本JSONの全fieldが同じか確かめるreader。
+			NJson::CJsonObject AfterJson;
+			// 保存後にpreset原本を読めたか。
+			const bool bReadAfter = AfterJson.LoadFromFile( PresetFullPath.GetValue() );
+			C.Check( bReadAfter && AfterJson.GetRoot() == BeforeJson.GetRoot(), "path presetのcopy保存後も原本JSONが不変" );
+			if ( bSaved && CopyFullPath.IsSet() ) C.Check( NFileSystem::RemoveFile( CopyFullPath.GetValue() ), "一時path preset copyを削除する" );
+		}
+	}
+
+	// 読めないnoiseを使う四角形・材質付きpathの保存を拒否する。
 	void TestUVDistortionMissingNoise( NAssetTest::FChecker& C )
 	{
 		C.Group = "effect-uv-distortion-save-missing-noise";
@@ -355,7 +419,7 @@ namespace
 		Emitter.Material.Distortion.bEnabled = true;
 		Emitter.Material.Distortion.Texture = "Effects/missing_uv_distortion_noise.tga";
 		// missing texture検証に使う有効な文書。
-		// NaN表示検証用のdocument定義。
+		// missing noiseを含めたdocument定義。
 		FParticleEffectDefinition Definition;
 		Definition.Emitters.Add( Emitter );
 		C.Check( !FParticleEffectDefinition::HasErrors( Definition.Validate() ), "missing noise fixtureはasset参照以外が有効" );
@@ -378,6 +442,24 @@ namespace
 		// missing noiseで保存を拒否する結果。
 		const bool bSaved = NDebugUI::SaveEffectFile( State, State.SaveAsPath );
 		C.Check( !bSaved && State.Document.IsDirty() && State.SaveSerial == 0 && State.FilePath.IsEmpty() && State.StatusMessage.Contains( "UV歪み用ノイズ画像" ) && State.StatusMessage.Contains( *EditedEmitter.Material.Distortion.Texture ), "missing noiseだけを理由に保存を拒み保存状態を維持する" );
+		// Ribbon経路でもmissing noise以外は有効な変更にする。
+		FParticleEmitterDefinition MissingRibbonEmitter = State.Document.Get().Emitters[0];
+		MissingRibbonEmitter.Path.Kind = FEffectPathDefinition::EKind::Ribbon;
+		MissingRibbonEmitter.Material.Distortion.Texture = "Effects/missing_ribbon_uv_noise.tga";
+		// Ribbon設定への編集結果。
+		const bool bRibbonEdited = NParticleEdit::SetEmitter( State.Document, 0, MissingRibbonEmitter, "emitter-settings" );
+		C.Check( bRibbonEdited && !FParticleEffectDefinition::HasErrors( State.Document.Get().Validate() ), "Ribbon missing noise fixtureは参照以外の定義が有効" );
+		if ( !bRibbonEdited ) return;
+		// Ribbonの失敗保存先を上書きから守る。
+		const FString MissingRibbonCopyPath = "Effects/selftest_uv_distortion_missing_ribbon.effect.json";
+		// Ribbonの失敗保存先がまだ存在しない状態。
+		const bool bRibbonOutputAvailable = !Assets->ResolvePath( MissingRibbonCopyPath ).IsSet();
+		C.Check( bRibbonOutputAvailable, "Ribbon missing-noise出力先が空いていて上書きしない" );
+		if ( !bRibbonOutputAvailable ) return;
+		// Ribbonのmissing noiseでも保存を拒否する結果。
+		// missing noise理由で保存できなかった結果。
+		const bool bRibbonSaved = NDebugUI::SaveEffectFile( State, MissingRibbonCopyPath );
+		C.Check( !bRibbonSaved && State.Document.IsDirty() && State.SaveSerial == 0 && State.FilePath.IsEmpty() && State.StatusMessage.Contains( "UV歪み用ノイズ画像" ) && State.StatusMessage.Contains( *MissingRibbonEmitter.Material.Distortion.Texture ), "Ribbonはmissing noiseだけを理由に保存を拒否する" );
 	}
 
 	// panel cacheが閉じるとnoiseを手放し文書だけを残す。
@@ -429,6 +511,7 @@ namespace NWorldTest
 		}
 		C.Check( ImGui::GetCurrentContext() == Previous, "UV歪み入力後に元のImGui contextへ戻る" );
 		TestUVDistortionSave( C );
+		TestRibbonAndTreeDistortionPresetSaves( C );
 		TestUVDistortionMissingNoise( C );
 	}
 }

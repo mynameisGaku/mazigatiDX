@@ -550,6 +550,18 @@
     <ClCompile Include="Source\Scene\WorldEffectRibbonRealSelfTest.cpp">
       <Filter>Source\Scene</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Scene\WorldEffectRibbonUVDistortionCommandSelfTest.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene\WorldEffectRibbonUVDistortionPlaybackSelfTest.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene\WorldEffectRibbonUVDistortionRealSelfTest.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene\WorldEffectRibbonUVDistortionResourceSelfTest.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Scene\WorldEffectSelfTestData.cpp">
       <Filter>Source\Scene</Filter>
     </ClCompile>
@@ -1228,6 +1240,9 @@
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\DrawDistortedMaterialQuad.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\DrawDistortedMaterialRibbon.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\DrawMaterialQuad.h">

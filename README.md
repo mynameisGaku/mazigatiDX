@@ -7,10 +7,10 @@ DxLibを使うWindows向けC++フレームワークです。描画・入力・�
 - 描画命令の記録と実行、ECS、ジョブ、入力、音声、プロファイラー。
 - 画像・モデル・アニメーションの管理と編集、ワールドとプレハブの配置・保存。
 - エフェクトの複製・編集・保存・配置。粒子、リボン、分岐する雷、固定経路を成長・明滅させる樹状の雷。
-- ディゾルブ、境界色、自己発光、UVスクロール、寿命に沿う曲線、四角形粒子のコマ送りとUVディストーション。
+- ディゾルブ、境界色、自己発光、UVスクロール、寿命に沿う曲線、四角形粒子のコマ送り、四角形・帯・雷のUVディストーション。
 - 編集できる組み込みエフェクトと、計算・資源・UI・実GPU画素を調べる自己確認。
 
-エフェクトのメッシュ適用、2D専用の制作操作、HDR・ブルームは今後の工程です。帯と雷のUVディストーションは`Effect`ブランチで開発します。
+エフェクトのメッシュ適用、2D専用の制作操作、HDR・ブルームは今後の工程です。
 
 ## ビルド
 
@@ -36,7 +36,7 @@ msbuild .\project.sln /p:Configuration=Release /p:Platform=x64 /m
 
 Effect Editorの`Preset`から元になる表現を選び、未保存のコピーを編集します。`File > Save as...`で`Effects/MyEffect.effect.json`などへ保存し、World Editorのアセット一覧から配置します。
 
-`Flowing energy veil`ではノイズの移動と強さの曲線によるUVディストーションを試せます。`Realistic lightning tree`と`Growing lightning tree`では枝・孫枝・成長・明滅を編集できます。サンプル原本は`Assets/Effects`にあります。
+`Flowing energy veil`、`Distorted ribbon trail`、`Flowing lightning tree`では、ノイズの移動と強さの曲線によるUVディストーションを試せます。帯は移動プレビューで軌跡を確認でき、ゲーム内では配置したオブジェクトを動かして使います。`Realistic lightning tree`と`Growing lightning tree`では枝・孫枝・成長・明滅を編集できます。サンプル原本は`Assets/Effects`にあります。
 
 ## ブランチ
 

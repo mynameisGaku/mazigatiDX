@@ -335,6 +335,10 @@
     <ClCompile Include="Source\Scene\WorldEffectPathPlaybackSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldEffectPathSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldEffectRibbonRealSelfTest.cpp" />
+    <ClCompile Include="Source\Scene\WorldEffectRibbonUVDistortionCommandSelfTest.cpp" />
+    <ClCompile Include="Source\Scene\WorldEffectRibbonUVDistortionPlaybackSelfTest.cpp" />
+    <ClCompile Include="Source\Scene\WorldEffectRibbonUVDistortionRealSelfTest.cpp" />
+    <ClCompile Include="Source\Scene\WorldEffectRibbonUVDistortionResourceSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldEffectSelfTestData.cpp" />
     <ClCompile Include="Source\Scene\WorldEffectSelfTestScene.cpp" />
     <ClCompile Include="Source\Scene\WorldEffectSelfTestSim.cpp" />
@@ -563,6 +567,7 @@
     <ClInclude Include="Library\Core\Interfaces\Profiler\IProfiler.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\DrawCommand.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\DrawDistortedMaterialQuad.h" />
+    <ClInclude Include="Library\Core\Interfaces\Render\DrawDistortedMaterialRibbon.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\DrawMaterialQuad.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\DrawMaterialRibbon.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\DrawRibbon.h" />

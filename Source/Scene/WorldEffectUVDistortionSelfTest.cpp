@@ -253,7 +253,22 @@ namespace
 		Effect.Emitters[0].Material.bEnabled = true;
 		Effect.Emitters[0].Path.Kind = FEffectPathDefinition::EKind::Ribbon;
 		const TArray<FParticleIssue> RibbonIssues = Effect.Validate();
-		C.Check( !FParticleEffectDefinition::HasErrors( RibbonIssues ) && HasIssue( RibbonIssues, "帯と雷", false ) && Effect.Emitters[0].Material.Distortion.bEnabled, "帯/雷では保存値を保持し未対応を警告する" );
+		C.Check( !FParticleEffectDefinition::HasErrors( RibbonIssues ) && !HasIssue( RibbonIssues, "無視", false ) && Effect.Emitters[0].Material.Distortion.bEnabled, "材質付きRibbonはUV歪みを適用し未対応警告を出さない" );
+		// Ribbonの歪みnoise位相上限だけを超える設定。
+		FParticleEffectDefinition ExcessiveRibbonDistortion = Effect;
+		ExcessiveRibbonDistortion.Emitters[0].Lifetime = { 20000.0f, 20000.0f };
+		ExcessiveRibbonDistortion.Emitters[0].Material.Distortion.UVScroll = FVector2( 50.1f, 0.0f );
+		const TArray<FParticleIssue> ExcessiveRibbonIssues = ExcessiveRibbonDistortion.Validate();
+		C.Check( HasIssue( ExcessiveRibbonIssues, "寿命×noise速度", true ), "Ribbon歪みは寿命×最大noise速度が1000000を超えると拒否する" );
+		// guard境界を満たすRibbonの設定。
+		ExcessiveRibbonDistortion.Emitters[0].Material.Distortion.UVScroll = FVector2( 50.0f, 0.0f );
+		const TArray<FParticleIssue> BoundaryRibbonIssues = ExcessiveRibbonDistortion.Validate();
+		C.Check( !HasIssue( BoundaryRibbonIssues, "寿命×noise速度", true ), "Ribbon歪みは1000000ちょうどを許可する" );
+		// Lightningは同じnoise速度でも新しい寿命上限を使わない。
+		ExcessiveRibbonDistortion.Emitters[0].Path.Kind = FEffectPathDefinition::EKind::Lightning;
+		ExcessiveRibbonDistortion.Emitters[0].Material.Distortion.UVScroll = FVector2( 50.1f, 0.0f );
+		const TArray<FParticleIssue> LightningScrollIssues = ExcessiveRibbonDistortion.Validate();
+		C.Check( !HasIssue( LightningScrollIssues, "寿命×noise速度", true ), "LightningにはRibbon専用noise寿命上限を適用しない" );
 	}
 }
 
