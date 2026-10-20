@@ -11,6 +11,7 @@
 #include "Library/Core/Interfaces/Asset/AssetBackend.h"
 #include "Library/Core/Interfaces/Audio/AudioBackend.h"
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
+#include "Library/Core/Interfaces/Render/MeshGeometryChunk.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 
@@ -125,6 +126,12 @@ namespace NAssetTest
 		bool bSupportStaticModelSurface = false;             // 静的モデル面の成功応答を返す設定
 		FStaticModelSurfaceData StaticModelSurfaceData;       // 成功時に返す面データの写し
 		int32 NumStaticModelSurfaceQueries = 0;               // 面データ取得APIの呼出し数
+		bool bSupportModelMaterialGeometry = false;             // 選択材質mesh資源の作成を許可する設定
+		int32 NumModelMaterialGeometryCreates = 0;               // 選択材質mesh資源を作った呼出し数
+		int32 FailModelMaterialGeometryCreateCall = 0;           // 指定番号の作成を失敗させる注入値
+		int32 NextModelMaterialGeometry = 50000;                  // fake mesh資源へ割り当てるhandle
+		std::map<int32, TArray<FMeshGeometryChunk>> ModelMaterialGeometries; // 選択材質のchunkを所有するfake資源
+		std::vector<int32> DeletedModelMaterialGeometries;       // backendへ解放を渡したmesh資源
 		// 作成試行へ渡された親ハンドルと矩形。
 		struct FTextureRegionRecord
 		{
@@ -295,6 +302,32 @@ namespace NAssetTest
 			if ( !bSupportStaticModelSurface || Models.count( Model ) == 0 ) return false;
 			Out = StaticModelSurfaceData;
 			return true;
+		}
+		// 選択材質の三角形だけをchunk化し、fake backendが独立コピーを所有する。
+		int32 CreateModelMaterialGeometry( const FStaticModelSurfaceData& Surface, int32 MaterialIndex ) override
+		{
+			++NumModelMaterialGeometryCreates;
+			if ( !bSupportModelMaterialGeometry || NumModelMaterialGeometryCreates == FailModelMaterialGeometryCreateCall || MaterialIndex < 0 || MaterialIndex >= Surface.Materials.Num() ) return -1;
+			// 指定材質sectionだけをつなげた三角形index列。
+			TArray<uint32> SelectedIndices;
+			for ( const FStaticModelSurfaceSection& Section : Surface.Sections )
+			{
+				if ( Section.MaterialIndex != MaterialIndex || Section.FirstIndex < 0 || Section.NumIndices < 0 || Section.FirstIndex > Surface.Indices.Num() - Section.NumIndices ) continue;
+				SelectedIndices.Append( Surface.Indices.GetData() + Section.FirstIndex, Section.NumIndices );
+			}
+			// 不正rangeや空sectionなら資源を作らないchunk出力。
+			TArray<FMeshGeometryChunk> Chunks;
+			if ( !NMeshGeometry::BuildChunks( TArrayView<const FMeshVertex>( Surface.Vertices ), TArrayView<const uint32>( SelectedIndices ), Chunks ) ) return -1;
+			// 作成成功後だけ割り当てる安定handle。
+			const int32 Handle = NextModelMaterialGeometry++;
+			ModelMaterialGeometries.emplace( Handle, std::move( Chunks ) );
+			return Handle;
+		}
+		// fake geometryの所有chunkを解放し履歴へ記録する。
+		void DeleteModelMaterialGeometry( int32 Geometry ) override
+		{
+			DeletedModelMaterialGeometries.push_back( Geometry );
+			ModelMaterialGeometries.erase( Geometry );
 		}
 		bool GetModelCollisionMesh( int32 Model, TArray<float32>& OutPositions, TArray<uint32>& OutIndices ) override
 		{

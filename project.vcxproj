@@ -155,6 +155,7 @@
     <ClCompile Include="Library\main.cpp" />
     <ClCompile Include="Library\Core\Collection\String.cpp" />
     <ClCompile Include="Library\Core\Interfaces\Input\GamepadState.cpp" />
+    <ClCompile Include="Library\Core\Interfaces\Render\MeshGeometryChunk.cpp" />
     <ClCompile Include="Library\Core\Interfaces\Tickable\ITickable.cpp" />
     <ClCompile Include="Library\Core\Log\LogManager.cpp" />
     <ClCompile Include="Library\Core\Log\LogSink.cpp" />
@@ -255,7 +256,10 @@
     <ClCompile Include="Library\Framework\Profiler\ProfilerSubsystem.cpp" />
     <ClCompile Include="Library\Framework\Render\Billboard.cpp" />
     <ClCompile Include="Library\Framework\Render\DrawContext.cpp" />
+    <ClCompile Include="Library\Framework\Render\MeshMaterialEffectPlayback.cpp" />
     <ClCompile Include="Library\Framework\Render\MeshRender.cpp" />
+    <ClCompile Include="Library\Framework\Render\ModelMaterialEffectRenderer.cpp" />
+    <ClCompile Include="Library\Framework\Render\ModelMaterialEffectResources.cpp" />
     <ClCompile Include="Library\Framework\Scene\Scene.cpp" />
     <ClCompile Include="Library\Framework\Scene\SceneManager.cpp" />
     <ClCompile Include="Library\Framework\Subsystem\Subsystem.cpp" />
@@ -296,10 +300,12 @@
     <ClCompile Include="Library\Platform\FileSystem.cpp" />
     <ClCompile Include="Library\Platform\LogArchive.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackend.cpp" />
+    <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackendModelMaterial.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackendModelSurface.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibAudioBackend.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibBackend.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibDrawExecutor.cpp" />
+    <ClCompile Include="Library\Platform\DxLib\DxLibDrawExecutorModelMaterial.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibInput.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibRibbonMesh.cpp" />
     <ClCompile Include="Library\Platform\DxLib\EffectMaterialRenderer.cpp" />
@@ -311,6 +317,8 @@
     <ClCompile Include="Source\Object\PhysicsObjects.cpp" />
     <ClCompile Include="Source\Scene\AssetSelfTestImport.cpp" />
     <ClCompile Include="Source\Scene\AssetSelfTestLogic.cpp" />
+    <ClCompile Include="Source\Scene\AssetSelfTestModelMaterial.cpp" />
+    <ClCompile Include="Source\Scene\AssetSelfTestModelMaterialBoundary.cpp" />
     <ClCompile Include="Source\Scene\AssetSelfTestModelSurface.cpp" />
     <ClCompile Include="Source\Scene\AssetSelfTestScene.cpp" />
     <ClCompile Include="Source\Scene\ConsoleSelfTest.cpp" />
@@ -591,7 +599,9 @@
     <ClInclude Include="Library\Core\Interfaces\Render\DrawMaterialMesh.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\DrawMaterialQuad.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\DrawMaterialRibbon.h" />
+    <ClInclude Include="Library\Core\Interfaces\Render\DrawModelMaterial.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\DrawRibbon.h" />
+    <ClInclude Include="Library\Core\Interfaces\Render\MeshGeometryChunk.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\MeshTypes.h" />
     <ClInclude Include="Library\Core\Interfaces\Tickable\ITickable.h" />
     <ClInclude Include="Library\Core\Log\Log.h" />
@@ -697,8 +707,11 @@
     <ClInclude Include="Library\Framework\Profiler\ProfilerSubsystem.h" />
     <ClInclude Include="Library\Framework\Render\Billboard.h" />
     <ClInclude Include="Library\Framework\Render\DrawContext.h" />
+    <ClInclude Include="Library\Framework\Render\MeshMaterialEffectPlayback.h" />
     <ClInclude Include="Library\Framework\Render\MeshMaterialEffectResources.h" />
     <ClInclude Include="Library\Framework\Render\MeshRender.h" />
+    <ClInclude Include="Library\Framework\Render\ModelMaterialEffectRenderer.h" />
+    <ClInclude Include="Library\Framework\Render\ModelMaterialEffectResources.h" />
     <ClInclude Include="Library\Framework\Scene\ISceneManager.h" />
     <ClInclude Include="Library\Framework\Scene\ObjectIterator.h" />
     <ClInclude Include="Library\Framework\Scene\Scene.h" />
@@ -761,6 +774,7 @@
     <ClInclude Include="Library\Platform\DxLib\DxLibDrawExecutor.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibInclude.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibInput.h" />
+    <ClInclude Include="Library\Platform\DxLib\DxLibModelMaterialGeometry.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibRibbonMesh.h" />
     <ClInclude Include="Library\Platform\DxLib\EffectMaterialRenderer.h" />
     <ClInclude Include="Library\Platform\DxLib\EffectPreviewSurface.h" />
@@ -770,6 +784,8 @@
     <ClInclude Include="Source\Object\OrbitMarker.h" />
     <ClInclude Include="Source\Object\PhysicsObjects.h" />
     <ClInclude Include="Source\Scene\AssetSelfTestFbx.h" />
+    <ClInclude Include="Source\Scene\AssetSelfTestModelMaterial.h" />
+    <ClInclude Include="Source\Scene\AssetSelfTestModelMaterialBoundary.h" />
     <ClInclude Include="Source\Scene\AssetSelfTestModelSurface.h" />
     <ClInclude Include="Source\Scene\AssetSelfTestScene.h" />
     <ClInclude Include="Source\Scene\AssetSelfTestSupport.h" />

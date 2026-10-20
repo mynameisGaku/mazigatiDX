@@ -10,6 +10,9 @@
     <ClCompile Include="Library\Core\Interfaces\Input\GamepadState.cpp">
       <Filter>Library\Core\Interfaces\Input</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Core\Interfaces\Render\MeshGeometryChunk.cpp">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Core\Interfaces\Tickable\ITickable.cpp">
       <Filter>Library\Core\Interfaces\Tickable</Filter>
     </ClCompile>
@@ -310,7 +313,16 @@
     <ClCompile Include="Library\Framework\Render\DrawContext.cpp">
       <Filter>Library\Framework\Render</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Render\MeshMaterialEffectPlayback.cpp">
+      <Filter>Library\Framework\Render</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Render\MeshRender.cpp">
+      <Filter>Library\Framework\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Render\ModelMaterialEffectRenderer.cpp">
+      <Filter>Library\Framework\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Render\ModelMaterialEffectResources.cpp">
       <Filter>Library\Framework\Render</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Scene\Scene.cpp">
@@ -433,6 +445,9 @@
     <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackend.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackendModelMaterial.cpp">
+      <Filter>Library\Platform\DxLib</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackendModelSurface.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
@@ -443,6 +458,9 @@
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\DxLibDrawExecutor.cpp">
+      <Filter>Library\Platform\DxLib</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\DxLibDrawExecutorModelMaterial.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\DxLibInput.cpp">
@@ -476,6 +494,12 @@
       <Filter>Source\Scene</Filter>
     </ClCompile>
     <ClCompile Include="Source\Scene\AssetSelfTestLogic.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene\AssetSelfTestModelMaterial.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene\AssetSelfTestModelMaterialBoundary.cpp">
       <Filter>Source\Scene</Filter>
     </ClCompile>
     <ClCompile Include="Source\Scene\AssetSelfTestModelSurface.cpp">
@@ -1314,7 +1338,13 @@
     <ClInclude Include="Library\Core\Interfaces\Render\DrawMaterialRibbon.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\DrawModelMaterial.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\DrawRibbon.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\MeshGeometryChunk.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\MeshTypes.h">
@@ -1632,10 +1662,19 @@
     <ClInclude Include="Library\Framework\Render\DrawContext.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Render\MeshMaterialEffectPlayback.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Render\MeshMaterialEffectResources.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\MeshRender.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\ModelMaterialEffectRenderer.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\ModelMaterialEffectResources.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Scene\ISceneManager.h">
@@ -1824,6 +1863,9 @@
     <ClInclude Include="Library\Platform\DxLib\DxLibInput.h">
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\DxLibModelMaterialGeometry.h">
+      <Filter>Library\Platform\DxLib</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\DxLibRibbonMesh.h">
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
@@ -1849,6 +1891,12 @@
       <Filter>Source\Object</Filter>
     </ClInclude>
     <ClInclude Include="Source\Scene\AssetSelfTestFbx.h">
+      <Filter>Source\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scene\AssetSelfTestModelMaterial.h">
+      <Filter>Source\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scene\AssetSelfTestModelMaterialBoundary.h">
       <Filter>Source\Scene</Filter>
     </ClInclude>
     <ClInclude Include="Source\Scene\AssetSelfTestModelSurface.h">

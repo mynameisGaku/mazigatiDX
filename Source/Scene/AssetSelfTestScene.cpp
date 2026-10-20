@@ -1,6 +1,8 @@
 ﻿#include "AssetSelfTestScene.h"
 #include "AssetSelfTestSupport.h"
 #include "AssetSelfTestFbx.h"
+#include "AssetSelfTestModelMaterial.h"
+#include "AssetSelfTestModelMaterialBoundary.h"
 #include "AssetSelfTestModelSurface.h"
 
 #include <algorithm>
@@ -239,6 +241,7 @@ void CAssetSelfTestScene::OnEnter()
 
 	RunLogicTests( C );
 	RunConsoleLogicTests( C );
+	RunStaticModelMaterialCoreChecks( C );
 	LOG( LogAssetSelfTest, Log, "Logic checks done: %lld check(s), %lld failure(s)", static_cast<long long>( C.NumChecked ), static_cast<long long>( C.NumFailed ) );
 
 	C.Group = "scene";
@@ -259,6 +262,8 @@ void CAssetSelfTestScene::OnEnter()
 	Audio->SetBackendOverride( &S.Rec );
 	SetDrawExecutor( &S.Log );
 	RunStaticModelSurfaceFakeChecks( C, *Assets, S.Fake, S.Dir );
+	RunStaticModelMaterialFakeChecks( C, *Assets, S.Fake, S.Dir );
+	RunStaticModelMaterialBoundaryFakeChecks( C, *Assets, S.Fake, S.Dir );
 
 	auto Touch = [&]( const char* Name ) { WriteFileText( S.Dir / Name, "x" ); };
 	Touch( "sheet.png" );
@@ -627,6 +632,8 @@ void CAssetSelfTestScene::RunRealChecks()
 	WriteFileBytes( Dir / "beep.wav", MakeWav( 0.5f, 22050 ) );
 	WriteFileText( Dir / "model.x", AnimatedModelText() );
 	RunStaticModelSurfaceRealChecks( C, *Assets, Dir );
+	RunStaticModelMaterialRealChecks( C, *Assets, *Executor, Dir );
+	RunStaticModelMaterialBoundaryRealChecks( C, *Assets, Dir );
 
 	//---------------------------------------------------------------------
 	// 画像

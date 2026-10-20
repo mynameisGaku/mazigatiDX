@@ -137,6 +137,15 @@ namespace NAssetTest
 		}
 	}
 
+	bool WriteStaticModelSurfaceFixture( const FString& Directory, const FString& ModelFileName )
+	{
+		// 同じ二triangle・四material fixtureのnative text。
+		const std::string ProbeText = MakeSurfaceProbeX();
+		// ChildTriangleだけが参照する既知2x2 TGA。
+		const std::vector<uint8> TgaBytes = { 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 24, 0, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255 };
+		return WriteFileText( Directory / ModelFileName, ProbeText.c_str() ) && WriteFileBytes( Directory / "probe_2x2.tga", TgaBytes );
+	}
+
 	void RunStaticModelSurfaceFakeChecks( FChecker& Checker, CAssetManager& Assets, FFakeAssetBackend& Fake, const FString& Directory )
 	{
 		// 呼出し元のcheck groupを保存し、以後の既存検査名を維持する。
