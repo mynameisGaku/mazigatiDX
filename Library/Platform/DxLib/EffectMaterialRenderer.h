@@ -1,0 +1,47 @@
+﻿// SPDX-License-Identifier: NOASSERTION
+#ifndef LIBRARY_PLATFORM_DXLIB_EFFECTMATERIALRENDERER_H
+#define LIBRARY_PLATFORM_DXLIB_EFFECTMATERIALRENDERER_H
+
+#include "Library/Core/Interfaces/Render/DrawCommand.h"
+#include "Library/Core/Interfaces/Render/DrawDistortedMaterialQuad.h"
+#include "Library/Core/Interfaces/Render/DrawMaterialQuad.h"
+#include "Library/Core/Interfaces/Render/DrawMaterialRibbon.h"
+
+// DxLib executor が所有し、材質付き四角形の Direct3D 11 資源を管理する。
+class FEffectMaterialRenderer
+{
+public:
+	// 実装領域を確保する。GPU資源はInitialize後に作る。
+	FEffectMaterialRenderer();
+	// DxLib終了前の明示解放も含め、残るGPU資源を閉じる。
+	~FEffectMaterialRenderer();
+	// GPU資源の所有権を複製するcopy構築を許可しない。
+	FEffectMaterialRenderer( const FEffectMaterialRenderer& ) = delete;
+	// GPU資源の所有権を複製するcopy代入を許可しない。
+	FEffectMaterialRenderer& operator=( const FEffectMaterialRenderer& ) = delete;
+
+	// GPU 資源を作る。Direct3D 11 が無効または作成に失敗した場合は false。
+	bool Initialize();
+	// 現在の DxLib 描画状態を尊重して一枚描く。未対応のブレンドや不正資源では false。
+	bool Draw( const FDrawMaterialQuadData& Data );
+	// ゆがみ画像を加えて材質四角形を一枚描く。入力値や画像を使えない場合は false。
+	bool DrawDistorted( const FDrawDistortedMaterialQuadData& Data );
+	// 通常帯と同じmiter meshへ材質を補間して描く。未対応状態や不正資源では false。
+	bool DrawRibbon( const FDrawMaterialRibbonData& Data, const FDrawMaterialRibbonData::FPoint* Points );
+	// DxLib 終了前に所有している GPU 資源を解放する。
+	void Deinitialize();
+	// Direct3D 11 の GPU 資源を使用できるか返す。
+	bool IsAvailable() const;
+	// 材質付き帯のGPU描画資源を使用できるか返す。
+	bool IsRibbonAvailable() const;
+	// Direct3D 11でゆがみ画像を使う描画資源が使用できるか返す。
+	bool IsUVDistortionAvailable() const;
+
+private:
+	// Direct3D 11 の型を公開headerへ漏らさない実装。
+	struct FImpl;
+	// DxLib終了前に解放するGPU資源の所有者。
+	FImpl* Impl = nullptr;
+};
+
+#endif

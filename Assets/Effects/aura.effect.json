@@ -1,0 +1,20 @@
+{
+	"Version": 1,
+	"Name": "Aura",
+	"Seed": 21,
+	"Emitters": [
+		{
+			"Name": "Glow",
+			"Blend": "Add",
+			"Space": "Local",
+			"MaxParticles": 80,
+			"Rate": 30,
+			"Lifetime": [0.8, 1.4],
+			"Speed": [0.05, 0.2],
+			"Shape": { "Type": "Sphere", "Radius": 0.6 },
+			"Gravity": [0, 0.5, 0],
+			"Size": { "Start": [0.12, 0.2], "End": 0 },
+			"Color": { "Start": "#60C8FFC0", "End": "#2060FF00" }
+		}
+	]
+}

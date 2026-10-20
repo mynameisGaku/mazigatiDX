@@ -1,0 +1,46 @@
+{
+	"Version": 1,
+	"Name": "Campfire",
+	"Seed": 11,
+	"Emitters": [
+		{
+			"Name": "Flames",
+			"Blend": "Add",
+			"MaxParticles": 150,
+			"Rate": 50,
+			"Lifetime": [0.5, 0.9],
+			"Speed": [0.3, 0.8],
+			"Shape": { "Type": "Cone", "Radius": 0.15, "Angle": 12 },
+			"Gravity": [0, 1.2, 0],
+			"Size": { "Start": [0.5, 0.75], "End": 0.1 },
+			"Color": { "Start": "#FF9020C0", "End": "#FF200000" }
+		},
+		{
+			"Name": "Smoke",
+			"Blend": "Alpha",
+			"MaxParticles": 60,
+			"Rate": 8,
+			"Lifetime": [1.5, 2.5],
+			"Speed": [0.3, 0.6],
+			"Shape": { "Type": "Cone", "Radius": 0.1, "Angle": 20 },
+			"Gravity": [0, 0.4, 0],
+			"Drag": 0.3,
+			"Size": { "Start": [0.4, 0.5], "End": 1.2 },
+			"Color": { "Start": "#5A5A5A60", "End": "#3C3C3C00" },
+			"Angle": [0, 360],
+			"Spin": [-30, 30]
+		},
+		{
+			"Name": "Embers",
+			"Blend": "Add",
+			"MaxParticles": 40,
+			"Rate": 6,
+			"Lifetime": [1.0, 2.0],
+			"Speed": [0.6, 1.6],
+			"Shape": { "Type": "Cone", "Radius": 0.1, "Angle": 35 },
+			"Gravity": [0, -0.8, 0],
+			"Size": { "Start": [0.04, 0.08], "End": 0 },
+			"Color": { "Start": "#FFD060FF", "End": "#FF400000" }
+		}
+	]
+}

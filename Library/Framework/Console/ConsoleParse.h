@@ -1,0 +1,48 @@
+﻿#pragma once
+#include "Library/Core/Collection/Array.h"
+#include "Library/Core/Collection/String.h"
+#include "Library/Core/Types/CompilerMacros.h"
+
+//=============================================================================
+// コンソールの入力の構文解析（純粋。画面・エンジンに依存しない）
+//
+//   書式:
+//     コマンド 引数 引数 ...        空白（スペース / タブ）で区切る
+//     "..."                        空白や ';' を含む引数。中では \" \\ \n \t が使える（それ以外の \ はそのまま。"C:\dir" と書ける）
+//     '...'                        そのままの文字列（エスケープなし）
+//     a"b c"d                      つなげて 1 つの引数（ab cd）になる
+//     コマンド ; コマンド           ';' で 1 行に複数のコマンド（引用符の中の ';' は区切りではない）
+//     # ...  または  // ...        行全体が注釈（行の先頭だけ。引数の途中の # は注釈ではない）
+//
+//   引用符の外の \ は、ふつうの文字（C:\dir\file.txt をそのまま書ける）。
+//   文字列は CP932（Shift-JIS）のバイト列。2 バイト文字の 2 バイト目が 0x5C（\）でも、エスケープとして扱わない。
+//=============================================================================
+namespace NConsole
+{
+	// CP932 の 2 バイト文字の 1 バイト目か
+	FORCEINLINE bool IsLeadByte( unsigned char Ch )
+	{
+		return ( Ch >= 0x81 && Ch <= 0x9F ) || ( Ch >= 0xE0 && Ch <= 0xFC );
+	}
+
+	// 1 つのコマンド（';' を含まない断片）を引数に分ける。閉じていない引用符・引用符の外の ';' は false（OutError に理由）
+	bool Tokenize( const FString& Text, TArray<FString>& OutTokens, FString& OutError );
+
+	// 1 行を、引用符の外の ';' で分ける。前後の空白は取り、空の断片は捨てる。注釈の行は空の配列
+	TArray<FString> SplitCommands( const FString& Line );
+
+	// 引数として安全な形にする。空・空白・引用符・';' を含むなら "..." で囲んでエスケープし、そうでなければそのまま
+	FString Quote( const FString& Text );
+
+	//-------------------------------------------------------------------------
+	// 補完用: 入力中の行の、いま入力しているところを調べる
+	//-------------------------------------------------------------------------
+	struct FInputAnalysis
+	{
+		TArray<FString> Tokens;        // 最後のコマンド（最後の ';' より後ろ）の、入力し終えた引数（コマンド名を含む）
+		FString CurrentPrefix;         // いま入力している引数の、ここまでの文字（引用符は外した値）。まだ何も打っていなければ空
+		int32 CurrentStart = 0;        // その引数の、行の中での位置（引用符の始まりを含む）。補完は、ここから行の終わりまでを置き換える
+		bool bInQuote = false;         // 閉じていない引用符の途中
+	};
+	FInputAnalysis AnalyzeInput( const FString& Line );
+}

@@ -1,0 +1,45 @@
+{
+  "Emitters": [
+    {
+      "Color": {
+        "End": "#3060FF00",
+        "Start": "#90E8FF"
+      },
+      "Gravity": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "Lifetime": 0.699999988079071,
+      "MaxParticles": 128,
+      "Name": "Blue trail",
+      "Path": {
+        "BranchLength": 0.44999998807907104,
+        "Branches": 4,
+        "BreakDistance": 2.0,
+        "End": [
+          0.0,
+          3.0,
+          0.0
+        ],
+        "Jitter": 0.30000001192092896,
+        "Kind": "Ribbon",
+        "RefreshHz": 12.0,
+        "Segments": 32,
+        "UVRepeat": 1.0
+      },
+      "Rate": 60.0,
+      "Shape": {
+        "Angle": 0.0
+      },
+      "Size": {
+        "End": 0.10000000149011612,
+        "Start": 0.10000000149011612
+      },
+      "Speed": 0.0
+    }
+  ],
+  "Name": "Ribbon trail",
+  "Seed": 23,
+  "Version": 1
+}
