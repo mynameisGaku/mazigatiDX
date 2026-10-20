@@ -357,6 +357,7 @@ void NWorldTest::RunMeshMaterialRealTests( NAssetTest::FChecker& C, CAssetManage
 	FDrawContext DefaultCullingDraw( DefaultCullingBuffer );
 	DefaultCullingDraw.MaterialMesh3D( TransformHeader, LocalBuild.Vertices.GetData(), LocalBuild.Indices.GetData() );
 	// 既定の3引数APIが旧flags=0を保つか。
+	bool bDefaultCullingFlagClear = false;
 	if ( !DefaultCullingBuffer.Words.empty() ) ForEachDrawCommand( FDrawSpan{ DefaultCullingBuffer.Words.data(), static_cast<int32>( DefaultCullingBuffer.Words.size() ) }, [&]( const FDrawCommandView& Command ) { if ( Command.Type == EDrawCommand::MaterialMesh3D ) bDefaultCullingFlagClear = !Command.Has( FDrawFlag::UseRegularCulling ); } );
 	C.Check( bRecordedRegularCulling && bDefaultCullingFlagClear, "3b meshは通常culling flagを付け、既定APIは旧flags=0を保つ" );
 	FDrawBuffer StoppedEffectBuffer;
