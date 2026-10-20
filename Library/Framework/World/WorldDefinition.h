@@ -3,6 +3,7 @@
 #include "Library/Core/Collection/Optional.h"
 #include "Library/Core/Collection/String.h"
 #include "Library/Framework/World/Mesh/EditMesh.h"
+#include "Library/Framework/World/WorldModelMaterialEffect.h"
 #include "Library/Json/JsonObject.h"
 #include "Library/Math/Color.h"
 #include "Library/Math/Transform.h"
@@ -135,6 +136,8 @@ struct FWorldModel
 	FString Animations;           // アニメーション集（.modelanim.json）。空なら、モデルのファイルに入っているアニメーション
 	FString Clip;                 // 最初に再生するクリップの名前。空なら再生しない
 	float32 Speed = 1.0f;         // 再生の速さ
+	// 省略可能な材質効果。無効化中も設定値を保存する。
+	TOptional<FWorldModelMaterialEffect> MaterialEffect;
 };
 
 // 画像（板）

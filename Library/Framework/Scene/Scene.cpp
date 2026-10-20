@@ -20,6 +20,11 @@ CScene::~CScene()
 	Subsystems.Deinitialize();
 }
 
+IDrawExecutor* CScene::GetDrawExecutor() const
+{
+	return DrawExecutorOverride != nullptr ? DrawExecutorOverride : GetAppSubsystem<IDrawExecutor>();
+}
+
 #pragma region Objects
 
 void CScene::AddObject( const TSharedPtr<CGameObject>& Object )
@@ -240,7 +245,7 @@ void CScene::DrawScene()
 	IDrawExecutor* Executor = nullptr;
 	if ( Systems.HasDrawSystems() )
 	{
-		Executor = DrawExecutorOverride != nullptr ? DrawExecutorOverride : GetAppSubsystem<IDrawExecutor>();
+		Executor = GetDrawExecutor();
 		if ( Executor != nullptr )
 		{
 			PROFILE_SCOPE_LAZY( RecordScope, FProfileScope( "Scene", ProfilerOwnerId, "Systems.Draw" ) );

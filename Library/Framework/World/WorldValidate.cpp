@@ -205,6 +205,22 @@ namespace
 			CheckOptionalAsset( Report, Assets, Id, "the animation set", Model.Animations );
 			if ( !IsFinite( Model.Speed ) ) Report.Error( EWorldIssueCode::NonFiniteValue, Id, "the model's animation speed is not a finite number" );
 			else if ( !Model.Clip.IsEmpty() && Model.Speed == 0.0f ) Report.Warning( EWorldIssueCode::BadModel, Id, "the model plays a clip at speed 0 (it will not move)" );
+			if ( Model.MaterialEffect.IsSet() )
+			{
+				// disabledでもbinding全体を検証し、項目名を報告へ付ける。
+				const FWorldModelMaterialEffect& Binding = Model.MaterialEffect.GetValue();
+				for ( const FString& Issue : Binding.Validate() ) Report.Error( EWorldIssueCode::BadModel, Id, "the model material effect: " + Issue );
+				if ( Binding.Effect.Material.bEnabled )
+				{
+					if ( Binding.Effect.Material.bDissolve ) CheckOptionalAsset( Report, Assets, Id, "the model material effect mask", Binding.Effect.Material.MaskTexture );
+					// 正の強度キーがあれば歪み画像の有無を調べる。
+					const FEffectUVDistortionDefinition& Distortion = Binding.Effect.Material.Distortion;
+					// 正の強度キーによってnoise画像が必要かを記録する。
+					bool bNeedsNoiseTexture = false;
+					for ( const FEffectScalarCurve::FKey& Key : Distortion.Strength.Keys ) bNeedsNoiseTexture = bNeedsNoiseTexture || Key.Value > 0.0f;
+					if ( Distortion.bEnabled && bNeedsNoiseTexture ) CheckOptionalAsset( Report, Assets, Id, "the model material effect distortion", Distortion.Texture );
+				}
+			}
 		}
 
 		// ビルボード

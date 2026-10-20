@@ -216,6 +216,8 @@ public:
 	FORCEINLINE void AddDrawSystem( const char* Name, TFunction&& Function ) { Systems.AddDraw( Name, std::forward<TFunction>( Function ) ); }
 	// 描画コマンドの実行先を差し替える（既定は、アプリの IDrawExecutor。記録するだけの実行先を渡して確かめる、など）。nullptr で既定に戻す
 	FORCEINLINE void SetDrawExecutor( IDrawExecutor* InExecutor ) { DrawExecutorOverride = InExecutor; }
+	// シーンが使う描画先を返す。差し替えがなければアプリの描画先を返し、所有権は持たない
+	IDrawExecutor* GetDrawExecutor() const;
 
 	// このシーンのサブシステム（T はクラスでもインターフェースでもよい）
 	template<typename T>

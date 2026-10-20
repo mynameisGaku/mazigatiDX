@@ -1,11 +1,13 @@
 ﻿#include <algorithm>
 
 #include "Library/Framework/Animation/ModelAnimator.h"
+#include "Library/Framework/Asset/Asset.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Audio/AudioComponents.h"
 #include "Library/Framework/Audio/AudioTypes.h"
 #include "Library/Framework/Effect/EffectComponent.h"
 #include "Library/Framework/Render/Billboard.h"
+#include "Library/Framework/World/WorldModelMaterialEffect.h"
 #include "Library/Framework/World/WorldRender.h"
 #include "Library/Framework/World/WorldSpawner.h"
 
@@ -56,6 +58,24 @@ namespace
 
 		Animator.Speed = Spec.Speed;
 		if ( !Spec.Clip.IsEmpty() && !Animator.Play( Spec.Clip, 0.0f ) ) Context.Warn( "the model has no clip named '" + Spec.Clip + "'" );
+		// 有効なモデル材質効果だけを設置時に準備し、失敗時はAnimatorの既定描画へ戻す。
+		if ( Spec.MaterialEffect.IsSet() )
+		{
+			// 保存された任意設定を参照し、無効中は従来のnative描画を保つ。
+			const FWorldModelMaterialEffect& Binding = Spec.MaterialEffect.GetValue();
+			if ( Binding.Effect.Material.bEnabled )
+			{
+				// 対応する実行先を一度だけ取得する借用ポインター。
+				IDrawExecutor* Executor = Context.Scene.GetDrawExecutor();
+				if ( !Binding.IsValidSettings() ) Context.Warn( FString::Printf( "モデル材質効果の材質%dの設定が不正なため、通常描画を使います", Binding.MaterialIndex ) );
+				else if ( Executor == nullptr ) Context.Warn( FString::Printf( "モデル材質効果の材質%dを使う描画先がないため、通常描画を使います", Binding.MaterialIndex ) );
+				else if ( !NAssetService::IsMainThread() ) Context.Warn( FString::Printf( "モデル材質効果の材質%dの準備はメインスレッドで行う必要があるため、通常描画を使います", Binding.MaterialIndex ) );
+				else if ( !Executor->SupportsModelMaterialEffects() ) Context.Warn( FString::Printf( "描画先がモデル材質効果の材質%dに対応していないため、通常描画を使います", Binding.MaterialIndex ) );
+				else if ( !Model->IsReady() ) Context.Warn( FString::Printf( "モデル材質効果の材質%dはモデルの読み込み完了前のため、通常描画を使います", Binding.MaterialIndex ) );
+				else if ( Animator.Instance->GetNumAttached() > 0 ) Context.Warn( FString::Printf( "モデル材質効果の材質%dはアニメーションが結び付いたモデルに準備できないため、通常描画を使います", Binding.MaterialIndex ) );
+				else if ( !Animator.PrepareMaterialEffect( Binding.MaterialIndex, Binding.Effect, [Assets = Context.Assets]( const FString& Path ) { return Assets->LoadTexture( Path ); }, *Executor, Binding.bTwoSided ) ) Context.Warn( FString::Printf( "モデル材質効果の材質%dは面情報または効果画像を準備できないため、通常描画を使います", Binding.MaterialIndex ) );
+			}
+		}
 		Context.Object.AddData( Animator );
 	}
 

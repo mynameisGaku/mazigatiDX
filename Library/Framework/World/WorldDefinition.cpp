@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 #include "Library/Json/JsonHelpers.h"
 #include "Library/Math/MathUtils.h"
@@ -125,6 +126,7 @@ namespace
 		if ( !Model.Animations.IsEmpty() ) Json["Animations"] = Model.Animations;
 		if ( !Model.Clip.IsEmpty() ) Json["Clip"] = Model.Clip;
 		if ( Model.Speed != 1.0f ) Json["Speed"] = NJson::Round4( Model.Speed );
+		if ( Model.MaterialEffect.IsSet() ) Json["MaterialEffect"] = Model.MaterialEffect.GetValue().ToJson();
 		return Json;
 	}
 
@@ -135,6 +137,13 @@ namespace
 		Model.Animations = NJson::GetOr<FString>( Json, "Animations", FString() );
 		Model.Clip = NJson::GetOr<FString>( Json, "Clip", FString() );
 		Model.Speed = NJson::GetOr<float32>( Json, "Speed", 1.0f );
+		if ( Json.contains( "MaterialEffect" ) )
+		{
+			// nullや配列も設定済みbindingとして残し、Validateへ渡す。
+			FWorldModelMaterialEffect MaterialEffect;
+			FWorldModelMaterialEffect::FromJson( Json["MaterialEffect"], MaterialEffect );
+			Model.MaterialEffect = std::move( MaterialEffect );
+		}
 		return Model;
 	}
 
