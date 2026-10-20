@@ -101,6 +101,7 @@ namespace
 			Context.Warn( "the mesh could not be made (the asset manager is not running, or the mesh is too big)" );
 			return;
 		}
+		if ( Renderer.HasEffectPreparationFailures() ) Context.Warn( "有効な材質効果の画像または描画用データを準備できず、該当slotは非表示になります" );
 		Context.Object.AddData( Renderer );
 	}
 

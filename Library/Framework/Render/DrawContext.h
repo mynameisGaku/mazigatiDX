@@ -5,6 +5,7 @@
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Core/Interfaces/Render/DrawDistortedMaterialQuad.h"
 #include "Library/Core/Interfaces/Render/DrawDistortedMaterialRibbon.h"
+#include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
 #include "Library/Core/Interfaces/Render/DrawMaterialQuad.h"
 #include "Library/Core/Interfaces/Render/DrawMaterialRibbon.h"
 #include "Library/Core/Interfaces/Render/DrawRibbon.h"
@@ -161,7 +162,14 @@ public:
 		Data.Mode = static_cast<int32>( Mode );
 		Data.Param = Param;
 		Push( EDrawCommand::Blend, 0, Data );
+		CurrentBlendMode = Mode;
+		CurrentBlendParam = Param;
 	}
+
+	// このDrawContextで最後に記録した合成方法。初期状態はOpaque。
+	FORCEINLINE EDrawBlend GetBlendMode() const { return CurrentBlendMode; }
+	// このDrawContextで最後に記録した合成倍率。初期状態は255。
+	FORCEINLINE int32 GetBlendParam() const { return CurrentBlendParam; }
 
 	//-------------------------------------------------------------------------
 	// 3D（ワールド座標）
@@ -255,6 +263,12 @@ public:
 	// Points: NumPoints個以上の有効な型付き配列。byte payloadは呼出側で完全長を先に検査する。
 	void DistortedMaterialRibbon3D( const FDrawDistortedMaterialRibbonData& Data, const FDrawDistortedMaterialRibbonData::FPoint* Points );
 
+	// 固定済みワールド頂点を材質付きで記録し、無効値では追加しない。
+	// Data: 共有材質と頂点・index数。
+	// Vertices: NumVertices個以上の有効な型付き頂点配列。nullなら何も追加しない。
+	// Indices: NumIndices個以上の有効な型付きindex配列。nullなら何も追加しない。
+	void MaterialMesh3D( const FDrawMaterialMeshData& Data, const FMeshVertex* Vertices, const uint32* Indices );
+
 	// 頂点バッファ・インデックスバッファの三角形（編集メッシュ）。各項目は FDrawMeshData を参照。World がローカル -> ワールドの変換行列
 	FORCEINLINE void Mesh3D( int32 VertexBuffer, int32 IndexBuffer, int32 NumVertices, int32 StartIndex, int32 NumIndices, int32 Texture, const FMatrix4x4& World, bool bTwoSided )
 	{
@@ -332,4 +346,8 @@ private:
 
 private:
 	FDrawBuffer* Buffer;
+	// Blend呼び出しで更新する、この記録窓口内の現在合成方法。
+	EDrawBlend CurrentBlendMode = EDrawBlend::Opaque;
+	// 現在合成方法に渡した倍率。
+	int32 CurrentBlendParam = 255;
 };

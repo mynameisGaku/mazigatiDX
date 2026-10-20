@@ -15,6 +15,13 @@ namespace
 		return bChanged;
 	}
 
+	// 入力終了を呼出側へ通知し、particle/world双方の履歴所有者を切り離す。
+	bool TrackInputEnd( bool bChanged, bool* bInputEnded )
+	{
+		if ( ImGui::IsItemDeactivatedAfterEdit() && bInputEnded != nullptr ) *bInputEnded = true;
+		return bChanged;
+	}
+
 	// scalar curveの最大空き区間へ、有限かつ重複しないキーを追加する。
 	bool AddScalarCurveKey( FEffectScalarCurve& Curve, float32 DefaultValue )
 	{
@@ -102,10 +109,14 @@ namespace
 }
 
 // 一つのscalar curveを補間方法・キー・グラフ付きで編集する。
-bool NEffectEditorUI::DrawScalarCurve( const char* Label, FEffectScalarCurve& Curve, TParticleEffectDocument& Document, float32 DefaultValue, float32 Minimum, float32 Maximum )
+namespace
+{
+	// 履歴の所有者を受け取らず、一つのscalar curve欄を描く。
+	bool DrawScalarCurveValues( const char* Label, FEffectScalarCurve& Curve, float32 DefaultValue, float32 Minimum, float32 Maximum, bool* bInputEnded )
 {
 	// この曲線で保存定義に反映する変更の有無。
 	bool bChanged = false;
+	if ( bInputEnded != nullptr ) *bInputEnded = false;
 	ImGui::PushID( Label );
 	ImGui::TextUnformatted( Label );
 	// 保存enumの順に並ぶ補間方式の表示名。
@@ -159,10 +170,10 @@ bool NEffectEditorUI::DrawScalarCurve( const char* Label, FEffectScalarCurve& Cu
 		if ( bFiniteKey && bOrderedKey && Earliest <= Latest )
 		{
 			ImGui::SetNextItemWidth( 100.0f );
-			if ( TrackInputEnd( ImGui::DragFloat( "Time", &Key.Time, 0.001f, Earliest, Latest, "%.9g", ImGuiSliderFlags_AlwaysClamp ), Document ) ) { Key.Time = std::clamp( Key.Time, Earliest, Latest ); bChanged = true; }
+			if ( TrackInputEnd( ImGui::DragFloat( "Time", &Key.Time, 0.001f, Earliest, Latest, "%.9g", ImGuiSliderFlags_AlwaysClamp ), bInputEnded ) ) { Key.Time = std::clamp( Key.Time, Earliest, Latest ); bChanged = true; }
 			ImGui::SameLine();
 			ImGui::SetNextItemWidth( 100.0f );
-			bChanged |= TrackInputEnd( ImGui::DragFloat( "Value", &Key.Value, 0.01f, Minimum, Maximum, "%.9g", ImGuiSliderFlags_AlwaysClamp ), Document );
+			bChanged |= TrackInputEnd( ImGui::DragFloat( "Value", &Key.Value, 0.01f, Minimum, Maximum, "%.9g", ImGuiSliderFlags_AlwaysClamp ), bInputEnded );
 			ImGui::SameLine();
 		}
 		else if ( bFiniteKey ) ImGui::TextColored( ImVec4( 1.0f, 0.65f, 0.3f, 1.0f ), "Invalid key order; remove or reset." );
@@ -176,6 +187,23 @@ bool NEffectEditorUI::DrawScalarCurve( const char* Label, FEffectScalarCurve& Cu
 	ImGui::PlotLines( "##CurveGraph", Samples, 64, 0, nullptr, Minimum, Maximum, ImVec2( -1.0f, 42.0f ) );
 	ImGui::PopID();
 	return bChanged;
+}
+}
+
+// 既存の粒子editor用wrapperはdocumentの履歴sessionを閉じる。
+bool NEffectEditorUI::DrawScalarCurve( const char* Label, FEffectScalarCurve& Curve, TParticleEffectDocument& Document, float32 DefaultValue, float32 Minimum, float32 Maximum )
+{
+	// 現在のImGui入力が終わったことをgeneric helperから受け取る。
+	bool bInputEnded = false;
+	const bool bChanged = DrawScalarCurveValues( Label, Curve, DefaultValue, Minimum, Maximum, &bInputEnded );
+	if ( bInputEnded ) Document.EndEditSession();
+	return bChanged;
+}
+
+// World editorなど別の履歴documentからcurve入力終了を処理できるようにする。
+bool NEffectEditorUI::DrawScalarCurve( const char* Label, FEffectScalarCurve& Curve, float32 DefaultValue, float32 Minimum, float32 Maximum, bool& bInputEnded )
+{
+	return DrawScalarCurveValues( Label, Curve, DefaultValue, Minimum, Maximum, &bInputEnded );
 }
 
 // RGBA curveの各キーをfloat精度で編集し、時刻順を壊さない。

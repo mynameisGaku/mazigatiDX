@@ -1,0 +1,49 @@
+{
+	"Version": 1,
+	"Name": "Mesh tilted veil",
+	"Duration": 3.4,
+	"Loop": true,
+	"Seed": 20261032,
+	"Emitters": [
+		{
+			"Name": "Inclined energy veil",
+			"Texture": "Effects/energy_veil_fibers.tga",
+			"Blend": "Add",
+			"Space": "World",
+			"MaxParticles": 1,
+			"Rate": 0,
+			"Bursts": [ { "Time": 0, "Count": 1 } ],
+			"Lifetime": [3.0, 3.0],
+			"Speed": [0, 0],
+			"Direction": [0, 1, 0],
+			"Gravity": [0, 0, 0],
+			"Size": { "Start": [4.0, 4.0], "End": [4.0, 4.0] },
+			"Color": { "Start": "#D7E8FFFF", "End": "#B4C8FFFF" },
+			"Spin": [-8, -8],
+			"Mesh": { "Kind": "Plane", "Rotation": [54, -18, 12] },
+			"Material": {
+				"Enabled": true,
+				"DissolveEnabled": true,
+				"UVScale": [1.0, 1.0],
+				"UVScroll": [-0.03, 0.04],
+				"MaskScale": 0.9,
+				"Dissolve": { "Interpolation": "Smooth", "Keys": [ { "Time": 0.0, "Value": 0.0 }, { "Time": 0.62, "Value": 0.0 }, { "Time": 0.86, "Value": 0.18 }, { "Time": 1.0, "Value": 0.68 } ] },
+				"Emission": { "Interpolation": "Smooth", "Keys": [ { "Time": 0.0, "Value": 0.4 }, { "Time": 0.15, "Value": 1.7 }, { "Time": 0.68, "Value": 1.35 }, { "Time": 1.0, "Value": 0.18 } ] },
+				"EdgeWidth": 0.045,
+				"EdgeColor": "#E5CB7AFF",
+				"EdgeEmission": 0.65,
+				"Distortion": {
+					"Enabled": true,
+					"Texture": "Effects/uv_distortion_flow.tga",
+					"UVScale": [1.5, 1.1],
+					"UVScroll": [-0.055, 0.035],
+					"Strength": { "Interpolation": "Smooth", "Keys": [ { "Time": 0.0, "Value": 0.015 }, { "Time": 0.2, "Value": 0.095 }, { "Time": 0.74, "Value": 0.11 }, { "Time": 1.0, "Value": 0.025 } ] }
+				}
+			},
+			"Appearance": {
+				"Size": { "Interpolation": "Smooth", "Keys": [ { "Time": 0.0, "Value": 0.58 }, { "Time": 0.16, "Value": 1.0 }, { "Time": 0.75, "Value": 0.9 }, { "Time": 1.0, "Value": 0.62 } ] },
+				"Color": { "Interpolation": "Smooth", "Keys": [ { "Time": 0.0, "Value": [0.68, 0.78, 1.0, 0.0] }, { "Time": 0.16, "Value": [0.8, 0.9, 1.0, 1.0] }, { "Time": 0.76, "Value": [1.0, 0.82, 0.58, 0.8] }, { "Time": 1.0, "Value": [0.65, 0.72, 1.0, 0.0] } ] }
+			}
+		}
+	]
+}

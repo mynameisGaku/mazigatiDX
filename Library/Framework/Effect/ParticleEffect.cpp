@@ -139,6 +139,8 @@ namespace
 		if ( Emitter.Appearance.ComputeHash() != Default.Appearance.ComputeHash() ) Json["Appearance"] = Emitter.Appearance.ToJson();
 		// 全項目が既定の Flipbook は省略して旧 JSON を保つ。
 		if ( !Emitter.Flipbook.IsDefault() ) Json["Flipbook"] = Emitter.Flipbook.ToJson();
+		// 完全な既定meshは省略して旧JSONを書き換えない。
+		if ( !Emitter.Mesh.IsDefault() ) Json["Mesh"] = Emitter.Mesh.ToJson();
 		if ( Emitter.MaxParticles != Default.MaxParticles ) Json["MaxParticles"] = Emitter.MaxParticles;
 		if ( Emitter.Delay != Default.Delay ) Json["Delay"] = Emitter.Delay;
 		if ( Emitter.Rate != Default.Rate ) Json["Rate"] = Emitter.Rate;
@@ -245,6 +247,13 @@ namespace
 			TArray<FString> FlipbookWarnings;
 			FEffectFlipbookDefinition::FromJson( Json["Flipbook"], Emitter.Flipbook, &FlipbookWarnings );
 			for ( const FString& Message : FlipbookWarnings ) Warn( Warnings, Where + ": Flipbook: " + Message );
+		}
+		if ( Json.contains( "Mesh" ) )
+		{
+			// meshの型違いと値域違いをemitterの検証へ残す。
+			TArray<FString> MeshWarnings;
+			FEffectMeshDefinition::FromJson( Json["Mesh"], Emitter.Mesh, &MeshWarnings );
+			for ( const FString& Message : MeshWarnings ) Warn( Warnings, Where + ": Mesh: " + Message );
 		}
 		Emitter.MaxParticles = NJson::GetOr<int32>( Json, "MaxParticles", Emitter.MaxParticles );
 		Emitter.Delay = NJson::GetOr<float32>( Json, "Delay", Emitter.Delay );
@@ -446,8 +455,12 @@ TArray<FParticleIssue> FParticleEffectDefinition::Validate() const
 	};
 	// Tree Lightningの全emitterが要求するparticle枠の合計。
 	int64 TreeParticleBudget = 0;
+	// Meshの全emitterが要求するparticle枠の合計。
+	int64 MeshParticleBudget = 0;
 	for ( const FParticleEmitterDefinition& Emitter : Emitters ) if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning ) TreeParticleBudget += std::max( 0, Emitter.MaxParticles );
+	for ( const FParticleEmitterDefinition& Emitter : Emitters ) if ( Emitter.Mesh.Kind != FEffectMeshDefinition::EKind::None ) MeshParticleBudget += std::max( 0, Emitter.MaxParticles );
 	if ( TreeParticleBudget > 4 ) Add( false, -1, "Tree Lightningは負荷を抑えるため、全エミッター合計で先頭4粒子まで描画します" );
+	if ( MeshParticleBudget > 64 ) Add( false, -1, "Mesh粒子は負荷を抑えるため、全エミッター合計で先頭64個まで描画します" );
 
 	if ( Emitters.IsEmpty() ) Add( false, -1, "the effect has no emitters (nothing is shown)" );
 	if ( Emitters.Num() > MaxEmitters ) Add( true, -1, FString::Printf( "the effect has %d emitters (the limit is %d)", Emitters.Num(), MaxEmitters ) );
@@ -467,6 +480,10 @@ TArray<FParticleIssue> FParticleEffectDefinition::Validate() const
 		// コマ再生の保存値は無効中も検証し、帯や雷での未対応だけを警告する。
 		for ( const FString& Message : E.Flipbook.Validate() ) Add( true, i, FString( "Flipbook: " ) + Message );
 		if ( E.Flipbook.bEnabled && E.Path.Kind != FEffectPathDefinition::EKind::None ) Add( false, i, "Flipbook は四角形粒子にだけ適用され、帯と雷の再生では無視します" );
+		// 保存されているmesh値はNone中も検証し、排他設定は自動で消さない。
+		for ( const FString& Message : E.Mesh.Validate() ) Add( true, i, Message );
+		if ( E.Mesh.Kind != FEffectMeshDefinition::EKind::None && E.Path.Kind != FEffectPathDefinition::EKind::None ) Add( true, i, "MeshはPathと同時に使えません。どちらかをNoneにしてください" );
+		if ( E.Mesh.Kind != FEffectMeshDefinition::EKind::None && E.Flipbook.bEnabled ) Add( true, i, "MeshはFlipbookと同時に使えません。どちらかを無効にしてください" );
 		// RibbonのUV位相はshaderへ連続floatで渡すため、寿命全体の移動量を制限する。
 		if ( E.Material.bEnabled && E.Path.Kind == FEffectPathDefinition::EKind::Ribbon && std::isfinite( E.Lifetime.Min ) && std::isfinite( E.Lifetime.Max ) && E.Lifetime.Min > 0.0f && E.Lifetime.Max > 0.0f && std::isfinite( E.Material.UVScroll.x ) && std::isfinite( E.Material.UVScroll.y ) )
 		{
@@ -564,6 +581,13 @@ uint64 FParticleEffectDefinition::ComputeHash() const
 		{
 			Hasher.Value( uint32( 0x464C4950u ) );
 			Hasher.Value( E.Flipbook.ComputeHash() );
+		}
+		// 既定meshは混ぜず、従来定義のhashを維持する。
+		if ( !E.Mesh.IsDefault() )
+		{
+			// 旧形式の項目との境界を識別するmeshタグ。
+			Hasher.Value( 0x4D455348u );
+			Hasher.Value( E.Mesh.ComputeHash() );
 		}
 		Hasher.Value( E.MaxParticles );
 		Hasher.Value( E.Delay );

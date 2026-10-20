@@ -1,19 +1,20 @@
 ﻿#pragma once
 #include "Library/Framework/Effect/EffectBackend.h"
 #include "Library/Framework/Effect/EffectFlipbookFrames.h"
+#include "Library/Framework/Effect/EffectMeshGeometry.h"
 #include "Library/Framework/Effect/ParticleSimulation.h"
 
 class CTexture;
 
 //=============================================================================
 // 内蔵のパーティクルのバックエンド（.effect.json を扱う）
-//   CAssetManager::LoadEffect で定義を読み、ParticleSimulation で動かす。Record は四角形・連続する帯・分岐する雷を描画命令へ記録する。
+//   CAssetManager::LoadEffect で定義を読み、ParticleSimulation で動かす。Record は四角形・連続する帯・分岐する雷・固定meshを描画命令へ記録する。
 //   画像はエミッターの Texture。省略時は四角形用の丸、または幅方向だけが柔らかく消える帯を共有して使う。
 //
 //   EffectBackend.h の窓口の、ひとつの実装。ふつうは FEffectBackendRegistry 経由で使う（直接使うなら FParticlePlayback を作る）。
 //
 //   描き方の約束:
-//   - 加算（Add）は、色のアルファを、色の明るさに掛けて描く（暗くなる = 消える。加算では、アルファで消えないため）。
+//   - 旧非材質の加算命令はRGBへalphaを掛ける。材質付き四角形・帯・meshは生RGBAを渡し、blend stateがalphaを適用する。
 //   - 粒子は、エミッターの順に、生まれた順に描く（カメラからの距離では並べない。透明な粒子が重なると、見え方が、描く順に依る）。
 	//   - 既存の四角形・帯・雷命令は DxLib の深度設定に従う。材質四角形は深度比較を行い、深度を書き込まない。
 //=============================================================================
@@ -57,8 +58,14 @@ private:
 	TArray<TSharedPtr<CTexture>> MaskTextures;
 	// エミッターごとの固定済み時間軸とコマ画像。
 	TArray<FEffectFlipbookFrames> FlipbookFrames;
-	// 材質四角形が使うゆがみ画像を再生終了まで保持する。
+	// 材質付き四角形・帯・雷・meshが使うゆがみ画像を再生終了まで保持する。
 	TArray<TSharedPtr<CTexture>> DistortionTextures;
+	// mesh命令のmask handleを再生開始時に固定する。
+	TArray<int32> MeshMaskHandles;
+	// mesh命令のsource texture handleを再生開始時に固定する。
+	TArray<int32> MeshTextureHandles;
+	// emitterごとに再生開始時に作った変更しないCPU形状。
+	TArray<FEffectMeshGeometry> MeshGeometries;
 	// 再生指定のシードを保持し、描画順や粒子更新の回数に雷の形を依存させない。
 	uint32 PathSeed = 1;
 };

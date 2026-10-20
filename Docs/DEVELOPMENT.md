@@ -1,4 +1,4 @@
-﻿# 開発手順
+# 開発手順
 
 ## 構成と依存
 
@@ -7,6 +7,8 @@
 FrameworkからDxLibやImGuiの実装へ依存を追加せず、`IDrawExecutor`・`IAssetBackend`・入力など既存の窓口を使います。既存の型・所有・更新・終了処理を優先し、局所状態や単純な計算のためのsubsystemは作りません。
 
 帯と雷のUVディストーションは、既存の`Material.Distortion`を共有します。`FDrawDistortedMaterialRibbonData`を`FDrawContext::DistortedMaterialRibbon3D`で記録し、`IDrawExecutor::SupportsEffectRibbonUVDistortion()`で対応を問い合わせます。未対応実装の既定はfalseです。可変長命令の実行側は、固定部・点数・全長を検査してから点列を読みます。画像の取得と準備状態の固定は再生開始時に行い、描画の記録中には読み込みません。
+
+メッシュ粒子は`FEffectMeshDefinition`と、再生開始時に作る`FEffectMeshGeometry`を使います。`FDrawContext::MaterialMesh3D`が96バイトの設定、ワールド座標の`FMeshVertex`、32bitの三角形indexを命令へ複写します。上限は1024頂点・3072 indexで、全長と全要素を検査してから追記します。描画時に呼出側のWorld行列を重ねません。`IDrawExecutor::SupportsEffectMaterialMesh()`の既定はfalseです。材質無効時も同じメッシュ形状を自己発光1・消失なし・UV移動なしで描きます。現在は照明を使わず、半透明・加算合成に対応します。GPU資源は既存の材質描画実装が所有します。
 
 ## コードとコメント
 
@@ -40,6 +42,8 @@ msbuild .\project.sln /p:Configuration=Release /p:Platform=x64 /m
 2026-10-20のmain安定版の確認値はworld 2695、assetsはDebug 1019／Release 1017、ecsは各ワーカー7,867,833項目・ハッシュ`403b39415ba4b9a6`です。新しい確認を加えると項目数は増えるため、数値だけで合格とせず失敗・スキップ・正常終了を確認します。Debugはリーク報告も調べます。描画の変更は実GPUの既知画素、状態復元、資源の解放を確認します。
 
 Effectの帯・雷へのUVディストーションを含む統合版は、world 2845項目を両構成で確認しています。assetsとECSの確認値はmainと同じです。全スイート確認後に追加したのはworldの画素・資源検査だけで、追加後はworldを再実行しています。20種類の意図的な不具合も通常のテスト失敗として検出しました。
+
+平面・円環のメッシュ粒子を含む作業版は、Debug／Releaseの全スイートを確認済みです。worldは両構成3028項目、assetsとECSは上記と同じで、失敗・スキップ・描画画素差は0でした。通常ビルドは警告・エラー0、Debugのリーク報告も0バイトです。形状・変換・材質・初期カメラの20種類の意図的な不具合を、正常終了したテストの失敗として検出しました。画像だけでなく、保存後の再利用、描画状態の復元、資源の寿命、実ジオメトリと更新後の粒子の投影も確認しています。
 
 ## 変更の統合
 

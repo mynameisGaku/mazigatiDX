@@ -72,6 +72,8 @@ namespace NWorldEditorUI
 	void ToggleMeshEdit( FWorldEditorState& S );
 	// メッシュを、実行時と同じ FMeshRenderer で描く（内容が変わったときだけ、作り直す）。描けたら true
 	bool RecordMeshObject( FWorldEditorState& S, const FWorldObject& Object, const FTransform& Placed, FDrawContext& Draw, int32 CacheKey );
+	// 記録前にmesh材質preview時計を一度だけ進める。
+	void UpdateMeshMaterialPreviews( FWorldEditorState& S, float32 DeltaTime );
 	// このフレームに見えたオブジェクトの Id 以外の、描く形を捨てる
 	void PruneMeshViews( FWorldEditorState& S, const TSet<int32>& Seen );
 	// 編集中の頂点・辺・面の重ね描き（ImGui）。Origin はビューポートの左上

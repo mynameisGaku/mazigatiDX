@@ -1,0 +1,49 @@
+{
+	"Version": 1,
+	"Name": "Mesh energy ring",
+	"Duration": 3.2,
+	"Loop": true,
+	"Seed": 20261031,
+	"Emitters": [
+		{
+			"Name": "Rotating energy ring",
+			"Texture": "Effects/material_ribbon_pattern.tga",
+			"Blend": "Add",
+			"Space": "World",
+			"MaxParticles": 1,
+			"Rate": 0,
+			"Bursts": [ { "Time": 0, "Count": 1 } ],
+			"Lifetime": [2.8, 2.8],
+			"Speed": [0, 0],
+			"Direction": [0, 1, 0],
+			"Gravity": [0, 0, 0],
+			"Size": { "Start": [3.2, 3.2], "End": [3.2, 3.2] },
+			"Color": { "Start": "#BFEAFFEE", "End": "#7CAFFFCC" },
+			"Spin": [24, 24],
+			"Mesh": { "Kind": "Ring", "Segments": 64, "InnerRadius": 0.72, "Rotation": [0, 0, 0] },
+			"Material": {
+				"Enabled": true,
+				"DissolveEnabled": true,
+				"UVScale": [1.0, 1.0],
+				"UVScroll": [0.08, -0.03],
+				"MaskScale": 1.0,
+				"Dissolve": { "Interpolation": "Smooth", "Keys": [ { "Time": 0.0, "Value": 0.0 }, { "Time": 0.55, "Value": 0.0 }, { "Time": 0.82, "Value": 0.25 }, { "Time": 1.0, "Value": 0.82 } ] },
+				"Emission": { "Interpolation": "Smooth", "Keys": [ { "Time": 0.0, "Value": 0.45 }, { "Time": 0.18, "Value": 1.8 }, { "Time": 0.66, "Value": 1.25 }, { "Time": 1.0, "Value": 0.2 } ] },
+				"EdgeWidth": 0.055,
+				"EdgeColor": "#83D9FFFF",
+				"EdgeEmission": 0.8,
+				"Distortion": {
+					"Enabled": true,
+					"Texture": "Effects/uv_distortion_flow.tga",
+					"UVScale": [1.2, 1.0],
+					"UVScroll": [0.06, -0.04],
+					"Strength": { "Interpolation": "Smooth", "Keys": [ { "Time": 0.0, "Value": 0.025 }, { "Time": 0.25, "Value": 0.08 }, { "Time": 0.75, "Value": 0.06 }, { "Time": 1.0, "Value": 0.02 } ] }
+				}
+			},
+			"Appearance": {
+				"Size": { "Interpolation": "Smooth", "Keys": [ { "Time": 0.0, "Value": 0.72 }, { "Time": 0.16, "Value": 1.0 }, { "Time": 0.82, "Value": 0.92 }, { "Time": 1.0, "Value": 0.7 } ] },
+				"Color": { "Interpolation": "Smooth", "Keys": [ { "Time": 0.0, "Value": [0.65, 0.8, 1.0, 0.0] }, { "Time": 0.16, "Value": [0.8, 0.92, 1.0, 1.0] }, { "Time": 0.82, "Value": [1.0, 0.88, 0.68, 0.86] }, { "Time": 1.0, "Value": [0.6, 0.76, 1.0, 0.0] } ] }
+			}
+		}
+	]
+}

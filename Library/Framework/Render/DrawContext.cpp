@@ -74,6 +74,39 @@ void FDrawContext::DistortedMaterialRibbon3D( const FDrawDistortedMaterialRibbon
 	std::memcpy( &Words[Begin + 1 + DataWords], Copied.GetData(), static_cast<size_t>( Header.Material.Ribbon.NumPoints ) * sizeof( FDrawDistortedMaterialRibbonData::FPoint ) );
 }
 
+void FDrawContext::MaterialMesh3D( const FDrawMaterialMeshData& Data, const FMeshVertex* Vertices, const uint32* Indices )
+{
+	// buffer再確保で入力headerが変わらないよう、固定設定を先に値として保持する。
+	FDrawMaterialMeshData Header{};
+	std::memcpy( &Header, &Data, sizeof( Header ) );
+	if ( Vertices == nullptr || Indices == nullptr || !NDrawMaterialMesh::IsValidHeader( Header ) ) return;
+	// 追記前に頂点payloadを所有し、入力aliasを切り離す配列。
+	TArray<FMeshVertex> CopiedVertices;
+	CopiedVertices.Append( Vertices, Header.NumVertices );
+	// 追記前にindex payloadを所有し、入力aliasを切り離す配列。
+	TArray<uint32> CopiedIndices;
+	CopiedIndices.Append( Indices, Header.NumIndices );
+	if ( !NDrawMaterialMesh::IsValid( Header, CopiedVertices.GetData(), CopiedIndices.GetData() ) ) return;
+	// 固定headerのword数。
+	constexpr size_t DataWords = sizeof( FDrawMaterialMeshData ) / 4;
+	// 頂点payloadのword数。
+	const size_t VertexWords = static_cast<size_t>( Header.NumVertices ) * sizeof( FMeshVertex ) / 4;
+	// index payloadのword数。
+	const size_t IndexWords = static_cast<size_t>( Header.NumIndices ) * sizeof( uint32 ) / 4;
+	// command headerを含めた全word数。
+	const size_t CommandWords = 1 + DataWords + VertexWords + IndexWords;
+	if ( CommandWords > static_cast<size_t>( NDrawCommand::MaxWords ) || Buffer->Words.size() > Buffer->Words.max_size() - CommandWords ) return;
+	// 所有コピー済みデータを一度のresizeで追記するword列。
+	std::vector<uint32>& Words = Buffer->Words;
+	// 新しい命令を書き始める位置。
+	const size_t Begin = Words.size();
+	Words.resize( Begin + CommandWords );
+	Words[Begin] = NDrawCommand::MakeHeader( EDrawCommand::MaterialMesh3D, 0, static_cast<int32>( CommandWords ) );
+	std::memcpy( &Words[Begin + 1], &Header, sizeof( Header ) );
+	std::memcpy( &Words[Begin + 1 + DataWords], CopiedVertices.GetData(), static_cast<size_t>( Header.NumVertices ) * sizeof( FMeshVertex ) );
+	std::memcpy( &Words[Begin + 1 + DataWords + VertexWords], CopiedIndices.GetData(), static_cast<size_t>( Header.NumIndices ) * sizeof( uint32 ) );
+}
+
 void FDrawContext::Ribbon3D( const FDrawRibbonData::FPoint* Points, int32 NumPoints, int32 Texture, float32 UVRepeat, int32 JoinFlags )
 {
 	if ( Points == nullptr || NumPoints < 2 || NumPoints > FDrawRibbonData::MaxPoints || Texture < -1 || !std::isfinite( UVRepeat ) || UVRepeat <= 0.0f || JoinFlags < 0 || ( JoinFlags & ~( FDrawRibbonData::PreviousPoint | FDrawRibbonData::NextPoint ) ) != 0 || NumPoints - static_cast<int32>( ( JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) - static_cast<int32>( ( JoinFlags & FDrawRibbonData::NextPoint ) != 0 ) < 2 ) return;

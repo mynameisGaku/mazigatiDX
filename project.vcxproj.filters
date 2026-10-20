@@ -49,6 +49,9 @@
     <ClCompile Include="Library\DebugUI\EffectEditorMaterialPanel.cpp">
       <Filter>Library\DebugUI</Filter>
     </ClCompile>
+    <ClCompile Include="Library\DebugUI\EffectEditorMeshPanel.cpp">
+      <Filter>Library\DebugUI</Filter>
+    </ClCompile>
     <ClCompile Include="Library\DebugUI\EffectEditorPanels.cpp">
       <Filter>Library\DebugUI</Filter>
     </ClCompile>
@@ -80,6 +83,9 @@
       <Filter>Library\DebugUI</Filter>
     </ClCompile>
     <ClCompile Include="Library\DebugUI\WorldEditorMesh.cpp">
+      <Filter>Library\DebugUI</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\WorldEditorMeshMaterialPanel.cpp">
       <Filter>Library\DebugUI</Filter>
     </ClCompile>
     <ClCompile Include="Library\DebugUI\WorldEditorPanels.cpp">
@@ -232,6 +238,12 @@
     <ClCompile Include="Library\Framework\Effect\EffectMaterialDefinition.cpp">
       <Filter>Library\Framework\Effect</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Effect\EffectMeshDefinition.cpp">
+      <Filter>Library\Framework\Effect</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Effect\EffectMeshGeometry.cpp">
+      <Filter>Library\Framework\Effect</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Effect\EffectPathDefinition.cpp">
       <Filter>Library\Framework\Effect</Filter>
     </ClCompile>
@@ -245,6 +257,9 @@
       <Filter>Library\Framework\Effect</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Effect\EffectUVDistortionDefinition.cpp">
+      <Filter>Library\Framework\Effect</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Effect\MeshMaterialEffectDefinition.cpp">
       <Filter>Library\Framework\Effect</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Effect\ParticleEffect.cpp">
@@ -541,6 +556,18 @@
     <ClCompile Include="Source\Scene\WorldEffectMaterialSelfTest.cpp">
       <Filter>Source\Scene</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Scene\WorldEffectMeshCommandSelfTest.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene\WorldEffectMeshRealSelfTest.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene\WorldEffectMeshResourceSelfTest.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene\WorldEffectMeshSelfTest.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Scene\WorldEffectPathPlaybackSelfTest.cpp">
       <Filter>Source\Scene</Filter>
     </ClCompile>
@@ -596,6 +623,21 @@
       <Filter>Source\Scene</Filter>
     </ClCompile>
     <ClCompile Include="Source\Scene\WorldEffectUVDistortionSelfTest.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene\WorldMeshMaterialDefinitionSelfTest.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene\WorldMeshMaterialEditorSelfTest.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene\WorldMeshMaterialPlaybackSelfTest.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene\WorldMeshMaterialRealSelfTest.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene\WorldMeshMaterialResourceSelfTest.cpp">
       <Filter>Source\Scene</Filter>
     </ClCompile>
     <ClCompile Include="Source\Scene\WorldMeshSelfTestData.cpp">
@@ -1245,6 +1287,9 @@
     <ClInclude Include="Library\Core\Interfaces\Render\DrawDistortedMaterialRibbon.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\DrawMaterialMesh.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\DrawMaterialQuad.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
@@ -1348,6 +1393,9 @@
       <Filter>Library\DebugUI</Filter>
     </ClInclude>
     <ClInclude Include="Library\DebugUI\WorldEditorInternal.h">
+      <Filter>Library\DebugUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\DebugUI\WorldEditorMeshMaterialPanel.h">
       <Filter>Library\DebugUI</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Animation\AnimationTimeline.h">
@@ -1497,6 +1545,12 @@
     <ClInclude Include="Library\Framework\Effect\EffectMaterialDefinition.h">
       <Filter>Library\Framework\Effect</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Effect\EffectMeshDefinition.h">
+      <Filter>Library\Framework\Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Effect\EffectMeshGeometry.h">
+      <Filter>Library\Framework\Effect</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Effect\EffectPathDefinition.h">
       <Filter>Library\Framework\Effect</Filter>
     </ClInclude>
@@ -1507,6 +1561,9 @@
       <Filter>Library\Framework\Effect</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Effect\EffectUVDistortionDefinition.h">
+      <Filter>Library\Framework\Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Effect\MeshMaterialEffectDefinition.h">
       <Filter>Library\Framework\Effect</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Effect\ParticleEffect.h">
@@ -1552,6 +1609,9 @@
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\DrawContext.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\MeshMaterialEffectResources.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\MeshRender.h">
@@ -1788,7 +1848,19 @@
     <ClInclude Include="Source\Scene\WorldEditorSelfTestSupport.h">
       <Filter>Source\Scene</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Scene\WorldEffectMeshCommandSelfTest.h">
+      <Filter>Source\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scene\WorldEffectMeshRealSelfTest.h">
+      <Filter>Source\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scene\WorldEffectMeshResourceSelfTest.h">
+      <Filter>Source\Scene</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Scene\WorldEffectSelfTestSupport.h">
+      <Filter>Source\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scene\WorldMeshMaterialSelfTestSupport.h">
       <Filter>Source\Scene</Filter>
     </ClInclude>
     <ClInclude Include="Source\Scene\WorldMeshSelfTestSupport.h">

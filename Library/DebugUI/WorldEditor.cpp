@@ -139,6 +139,7 @@ bool NDebugUI::OpenWorldFile( FWorldEditorState& S, const FString& AssetPath )
 		return false;
 	}
 	S.Session.Reset( Asset->GetDefinition(), Path );
+	S.MeshViews.Empty();   // 別worldで同じIdと形状が再生時計を引き継がないようにする
 	S.EffectPreviews.Empty();   // 同じ Id と部品でも、前のワールドで生まれた粒子は引き継がない
 	S.Collapsed.Empty();
 	S.LastClickedId = WorldNoId;
@@ -152,6 +153,7 @@ bool NDebugUI::OpenWorldFile( FWorldEditorState& S, const FString& AssetPath )
 void NDebugUI::NewWorld( FWorldEditorState& S )
 {
 	S.Session.Reset( FWorldDefinition(), FString() );
+	S.MeshViews.Empty();   // 新しいworldへ前のpreview clockとbufferを持ち込まない
 	S.EffectPreviews.Empty();   // 新しい文書では、前の再生と終了後の待ち時間を捨てる
 	S.Collapsed.Empty();
 	S.LastClickedId = WorldNoId;

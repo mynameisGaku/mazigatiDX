@@ -1,26 +1,15 @@
-﻿#pragma once
+﻿// SPDX-License-Identifier: NOASSERTION
+#ifndef FRAMEWORK_WORLD_MESH_EDITMESH_H
+#define FRAMEWORK_WORLD_MESH_EDITMESH_H
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
+#include "Library/Framework/Effect/MeshMaterialEffectDefinition.h"
 #include "Library/Json/JsonObject.h"
 #include "Library/Math/Color.h"
 #include "Library/Math/Vector2.h"
 #include "Library/Math/Vector3.h"
 
-//=============================================================================
-// 編集メッシュ（FEditMesh）
-//   レベル専用の、編集できる形（床・壁・階段・地形など）の、純粋なデータ。DxLib・シーン・物理・ImGui を使わない。
-//   .world のオブジェクトの Mesh 部品として、JSON で保存される（書式は ToJson の中）。描く（EditMeshBuild.h）・当たり判定にする（BuildTriangles）・編集する（EditMeshOps.h）。
-//
-//   考え方:
-//   - 頂点（位置）と面（頂点の番号の並び）。面は 3 つ以上の頂点を持てる（四角形のまま編集できる）。面は、凸で、平らに近いこと（三角形に分けるのは、先頭の頂点を中心にした扇形）。
-//   - 面の表は、**DxLib と同じ、見ている人から時計回りに頂点が並ぶ側**（左手系）。表の向き（法線）は (V1 - V0) x (V2 - V0)。物理のメッシュの表と同じ。
-//   - 画像の貼り方は、保存しない: 面の向きでいちばん大きい軸に沿って、ローカルの座標から作る（箱の貼り付け）。材質ごとの Tile（画像 1 枚の長さ）と Offset で決まる。
-//     なので、頂点を動かしても、貼り付けの情報を直さなくてよい。
-//   - 材質は、面ごとに 1 つ（色・画像・両面）。面の Material が範囲外なら、既定の材質になる。
-//
-//   FEditMesh Mesh = NEditMesh::MakeBox( FVector3( 4.0f, 1.0f, 4.0f ) );     // EditMeshPrimitives.h
-//   NlohmannJson Saved = Mesh.ToJson();
-//=============================================================================
+// 編集可能なmeshの頂点、面、材質と保存・検証操作をまとめる。
 
 // 材質
 struct FEditMeshMaterial
@@ -31,6 +20,8 @@ struct FEditMeshMaterial
 	float32 Tile = 1.0f;                                // 画像 1 枚が、ローカルのどれだけの長さに当たるか
 	FVector2 Offset = FVector2( 0.0f, 0.0f );           // 画像の貼る位置のずれ（画像の枚数。0..1 で 1 周）
 	bool bTwoSided = false;                             // true なら、裏も描く
+	// 無効が既定の、時間変化する材質効果。
+	FMeshMaterialEffectDefinition Effect;
 };
 
 // 面
@@ -93,8 +84,10 @@ struct FEditMesh
 
 	// JSON:
 	//   { "Vertices": [[x, y, z], ...], "Faces": [[i, j, k, ...], ...], "FaceMaterials": [0, 1, ...] (すべて 0 なら出さない),
-	//     "Materials": [{ "Name": "", "Color": "#C8C8C8", "Texture": "", "Tile": 1, "Offset": [0, 0], "TwoSided": false }], "Smooth": 30 (0 なら出さない) }
+	//     "Materials": [{ "Name": "", "Color": "#C8C8C8", "Texture": "", "Tile": 1, "Offset": [0, 0], "TwoSided": false, "Effect": { ... } (既定なら出さない) }], "Smooth": 30 (0 なら出さない) }
 	NlohmannJson ToJson() const;
 	// 読み込む。オブジェクトでなければ false（Out は変えない）。形の崩れは、読めるところまで読んで、Warnings に理由を足す
 	static bool FromJson( const NlohmannJson& Json, FEditMesh& Out, TArray<FString>* Warnings = nullptr );
 };
+
+#endif

@@ -30,6 +30,11 @@ void NEcs::RegisterBuiltinSystems( FSystemScheduler& Scheduler )
 	{
 		Animator.Update( DeltaTime );
 	} );
+	// mesh effectの個体時計だけを更新し、記録関数を純粋な読み取りに保つ。
+	Scheduler.Add( EPhase::PreUpdate, "Render.MeshEffect.Update", []( float32 DeltaTime, FMeshRenderer& Mesh )
+	{
+		Mesh.Update( DeltaTime );
+	} );
 
 	Scheduler.AddDraw( "Animation.Sprite.Draw", []( FDrawContext& Draw, const FTransformView& Transform, const FSpriteAnimator& Animator )
 	{

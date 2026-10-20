@@ -1,6 +1,8 @@
 ﻿#pragma once
 #include "AssetSelfTestSupport.h"
 #include "Library/Core/Memory/SharedPtr.h"
+#include "WorldEffectMeshCommandSelfTest.h"
+#include "WorldEffectMeshResourceSelfTest.h"
 
 class CTexture;
 class CScene;
@@ -57,6 +59,12 @@ namespace NWorldTest
 	void RunEffectUVDistortionTests( NAssetTest::FChecker& C );
 	// 帯のUVゆがみ命令の可変長payload、拒否条件、既存帯命令のbyte互換を確認する。
 	void RunEffectRibbonUVDistortionCommandTests( NAssetTest::FChecker& C );
+	// 材質meshの実再生、保存と編集履歴、buffer資源寿命を確認する。
+	void RunEffectMeshSelfTests( NAssetTest::FChecker& C, CAssetManager& Assets, const FString& Dir );
+	// fake backendでmesh画像の準備snapshot、共有、pendingと解放を確認する。
+	void RunEffectMeshResourceTests( NAssetTest::FChecker& C, CAssetManager& Assets, NAssetTest::FFakeAssetBackend& Fake, const FString& Dir );
+	// 実GPUで材質meshの画像・深度・旧描画互換を確認する。
+	void RunEffectMaterialMeshRealTests( NAssetTest::FChecker& C, IDrawExecutor& Executor );
 	// UV歪み付き材質帯を実再生し、点ごとの強度・時間・分割を確認する。
 	void RunEffectRibbonUVDistortionPlaybackTests( NAssetTest::FChecker& C, CAssetManager& Assets, const FString& Dir );
 	// 偽backendで帯のノイズ画像の共有・欠落・所有寿命を確認する。

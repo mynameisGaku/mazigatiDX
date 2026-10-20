@@ -18,12 +18,20 @@ namespace NEffectEditorUI
 	bool DrawAppearancePanel( FEffectEditorState& State, FParticleEmitterDefinition& Emitter );
 	// 四角形粒子のシート・クリップ・時計を編集し、選択資産の検証結果を表示する。
 	bool DrawFlipbookPanel( FEffectEditorState& State, FParticleEmitterDefinition& Emitter );
+	// 固定向きの平面・円環を編集し、描画能力と排他設定を表示する。
+	bool DrawMeshPanel( FEffectEditorState& State, FParticleEmitterDefinition& Emitter );
 	// カメラ操作を処理し、現在の試し再生を描画する。時間はここでは進めない。
 	void DrawPreview( FEffectEditorState& State );
 	// Treeの完成形と線幅を含む有限boundsへカメラを合わせる。無効・空なら元のカメラを保つ。
 	bool FocusCameraOnTree( FEffectEditorState& State, const FEditorViewport& Viewport );
 	// 実viewportが確定した後に保留中のTree focusを一度だけ適用する。
 	bool ApplyPendingTreeCameraFocus( FEffectEditorState& State, const FEditorViewport& Viewport );
+	// Treeと固定meshの有限boundsへカメラを合わせる。無効・空なら元のカメラを保つ。
+	bool FocusCameraOnEffectGeometry( FEffectEditorState& State, const FEditorViewport& Viewport );
+	// 実viewportが確定した後に保留中の全体focusを一度だけ適用する。
+	bool ApplyPendingEffectCameraFocus( FEffectEditorState& State, const FEditorViewport& Viewport );
+	// 開いた文書またはcamera reset後のTree・mesh focusを一度だけ保留する。
+	void SetPendingEffectCameraFocus( FEffectEditorState& State, const FParticleEffectDefinition& Definition );
 }
 
 #endif

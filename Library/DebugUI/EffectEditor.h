@@ -74,6 +74,8 @@ struct FEffectEditorState
 	FEditorCamera Camera;
 	// Tree文書を開くかcameraをresetした後、実viewportで一度だけ全体を合わせる印。
 	bool bTreeCameraFocusPending = false;
+	// TreeまたはMesh文書を開くかcamera reset後、実viewportで一度だけ全体を合わせる印。
+	bool bEffectGeometryCameraFocusPending = false;
 	// カメラへ渡す描画範囲。
 	FEditorViewport View;
 	// ツールが開いている間だけ所有する描画先。

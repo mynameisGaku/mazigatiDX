@@ -53,6 +53,7 @@ namespace
 		if ( Material.Tile != Default.Tile ) Json["Tile"] = NJson::Round4( Material.Tile );
 		if ( Material.Offset.x != 0.0f || Material.Offset.y != 0.0f ) Json["Offset"] = NlohmannJson::array( { NJson::Round4( Material.Offset.x ), NJson::Round4( Material.Offset.y ) } );
 		if ( Material.bTwoSided ) Json["TwoSided"] = true;
+		if ( !Material.Effect.IsDefault() ) Json["Effect"] = Material.Effect.ToJson();
 		return Json;
 	}
 
@@ -87,6 +88,7 @@ namespace
 			}
 		}
 		Material.bTwoSided = NJson::GetOr<bool>( Json, "TwoSided", false );
+		if ( Json.contains( "Effect" ) ) FMeshMaterialEffectDefinition::FromJson( Json["Effect"], Material.Effect, Warnings );
 		return Material;
 	}
 }
@@ -232,6 +234,12 @@ uint64 FEditMesh::ComputeHash() const
 		Hasher.Value( Material.Offset.x );
 		Hasher.Value( Material.Offset.y );
 		Hasher.Value( Material.bTwoSided );
+		if ( !Material.Effect.IsDefault() )
+		{
+			// 旧材質hashのbyte列を保ち、拡張時だけ固有tagと効果hashを加える。
+			Hasher.Value( uint32( 0x4D534546u ) );
+			Hasher.Value( Material.Effect.ComputeHash() );
+		}
 	}
 	Hasher.Value( SmoothAngle );
 	return Hasher.Hash;
@@ -263,6 +271,8 @@ TArray<FEditMeshIssue> FEditMesh::Validate() const
 		const FEditMeshMaterial& Material = Materials[i];
 		if ( !std::isfinite( Material.Tile ) || Material.Tile <= 0.0f ) Add( true, -1, FString::Printf( "material %d: the tile length must be greater than 0", i ) );
 		if ( !std::isfinite( Material.Offset.x ) || !std::isfinite( Material.Offset.y ) ) Add( true, -1, FString::Printf( "material %d: the offset is not a finite number", i ) );
+		// 追加材質効果の検証内容をmesh issueへ渡す。
+		for ( const FString& Issue : Material.Effect.Validate() ) Add( true, -1, FString::Printf( "material %d: %s", i, *Issue ) );
 	}
 
 	TArray<bool> Used;

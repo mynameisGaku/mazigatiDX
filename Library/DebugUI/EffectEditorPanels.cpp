@@ -248,6 +248,7 @@ namespace
 			bChanged = true;
 		}
 		bChanged |= NEffectEditorUI::DrawFlipbookPanel( S, Emitter );
+		bChanged |= NEffectEditorUI::DrawMeshPanel( S, Emitter );
 		// 定義の列挙値と同じ順序にある、合成方法の表示名。
 		static const char* BlendNames[] = { "Alpha", "Add" };
 		// 画面が編集中に使う合成方法の番号。
@@ -266,7 +267,8 @@ namespace
 			Emitter.Space = static_cast<EParticleSpace>( Space );
 			bChanged = true;
 		}
-		if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::None )
+		if ( Emitter.Mesh.Kind != FEffectMeshDefinition::EKind::None ) ImGui::TextDisabled( "Mesh orientation is fixed; Orientation is ignored." );
+		else if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::None )
 		{
 			// カメラに合わせる向きと、固定する向き。
 			static const char* OrientNames[] = { "Camera", "Camera Y", "Fixed" };
@@ -327,102 +329,186 @@ namespace
 	}
 }
 
-// 静止原点からのTree全seed形状とhaloを収める。発生範囲や粒子移動は対象外で、不正値なら元cameraを保つ。
+namespace
+{
+	// 中心・半径で渡されたgeometry sphereを、既存boundsへ包含する。
+	// float中心へ丸めた際の誤差も含め、失敗時はboundsを変更しない。
+	bool AddCameraBoundsSphere( FVector3 SphereCenter, float64 SphereRadius, FVector3& BoundsCenter, float64& BoundsRadius, bool& bHasBounds )
+	{
+		if ( !std::isfinite( SphereCenter.x ) || !std::isfinite( SphereCenter.y ) || !std::isfinite( SphereCenter.z ) || !std::isfinite( SphereRadius ) || SphereRadius <= 0.0 ) return false;
+		if ( !bHasBounds )
+		{
+			BoundsCenter = SphereCenter;
+			BoundsRadius = SphereRadius;
+			bHasBounds = true;
+			return true;
+		}
+		// 中心差をdoubleで計算し、距離の二乗overflowを避ける。
+		// 3軸の中心差。
+		const float64 DeltaX = static_cast<float64>( SphereCenter.x ) - BoundsCenter.x;
+		const float64 DeltaY = static_cast<float64>( SphereCenter.y ) - BoundsCenter.y;
+		const float64 DeltaZ = static_cast<float64>( SphereCenter.z ) - BoundsCenter.z;
+		// sphere中心間のdouble距離。
+		const float64 CenterDistance = std::sqrt( DeltaX * DeltaX + DeltaY * DeltaY + DeltaZ * DeltaZ );
+		if ( !std::isfinite( CenterDistance ) ) return false;
+		if ( CenterDistance + SphereRadius <= BoundsRadius ) return true;
+		if ( CenterDistance + BoundsRadius <= SphereRadius )
+		{
+			BoundsCenter = SphereCenter;
+			BoundsRadius = SphereRadius;
+			return true;
+		}
+		if ( CenterDistance <= 1.0e-12 )
+		{
+			BoundsRadius = std::max( BoundsRadius, SphereRadius );
+			return true;
+		}
+		// 二つのsphereを両方含む最小sphereの中心と半径。
+		// 二つを含めるための新半径と中心移動率。
+		const float64 NewRadius = ( CenterDistance + BoundsRadius + SphereRadius ) * 0.5;
+		const float64 Move = ( NewRadius - BoundsRadius ) / CenterDistance;
+		// 新しい球中心の3軸座標。
+		const float64 NewX = static_cast<float64>( BoundsCenter.x ) + DeltaX * Move;
+		const float64 NewY = static_cast<float64>( BoundsCenter.y ) + DeltaY * Move;
+		const float64 NewZ = static_cast<float64>( BoundsCenter.z ) + DeltaZ * Move;
+		if ( !std::isfinite( NewRadius ) || !std::isfinite( NewX ) || !std::isfinite( NewY ) || !std::isfinite( NewZ ) || NewRadius > ( std::numeric_limits<float32>::max )() ) return false;
+		// float中心へ丸めた差分も半径へ足し、包含を維持する。
+		const FVector3 RoundedCenter( static_cast<float32>( NewX ), static_cast<float32>( NewY ), static_cast<float32>( NewZ ) );
+		// float丸めで失う3軸の差。
+		const float64 RoundX = NewX - RoundedCenter.x;
+		const float64 RoundY = NewY - RoundedCenter.y;
+		const float64 RoundZ = NewZ - RoundedCenter.z;
+		const float64 RoundError = std::sqrt( RoundX * RoundX + RoundY * RoundY + RoundZ * RoundZ );
+		if ( !std::isfinite( RoundError ) || NewRadius + RoundError > ( std::numeric_limits<float32>::max )() ) return false;
+		BoundsCenter = RoundedCenter;
+		BoundsRadius = NewRadius + RoundError;
+		return true;
+	}
+
+	// bounds計算に使う範囲値が有限で昇順か調べる。bRequirePositiveMinimumで寿命下限も確認する。
+	bool IsValidCameraRange( const FParticleRange& Range, bool bRequirePositiveMinimum )
+	{
+		return std::isfinite( Range.Min ) && std::isfinite( Range.Max ) && Range.Min <= Range.Max && ( bRequirePositiveMinimum ? Range.Min > 0.0f : Range.Min >= 0.0f );
+	}
+
+	// bIncludeMeshがtrueなら固定meshも加え、原点・identity transformのboundsへfocusする。移動previewの円運動は対象外。
+	bool FocusCameraOnGeometry( FEffectEditorState& S, const FEditorViewport& Viewport, bool bIncludeMesh )
+	{
+		if ( !Viewport.IsValid() || !std::isfinite( Viewport.FovY ) || Viewport.FovY <= 0.0f || Viewport.FovY >= 3.14159265f || !std::isfinite( Viewport.Near ) || !std::isfinite( Viewport.Far ) || Viewport.Near <= 0.0f || Viewport.Far <= Viewport.Near ) return false;
+		// 複数emitterの保守sphereを包む中心。
+		FVector3 BoundsCenter = FVector3::Zero;
+		// 複数emitterの保守sphereを包むdouble半径。
+		float64 BoundsRadius = 0.0;
+		// Treeまたはmesh sphereを一つ以上追加したか。
+		bool bHasBounds = false;
+		// 空間範囲を調べる定義全体。
+		const FParticleEffectDefinition& Definition = S.Document.Get();
+		for ( int32 EmitterIndex = 0; EmitterIndex < Definition.Emitters.Num(); ++EmitterIndex )
+		{
+			// 今回のboundsへ加える定義。
+			const FParticleEmitterDefinition& Emitter = Definition.Emitters[EmitterIndex];
+			if ( bIncludeMesh && Emitter.Mesh.Kind != FEffectMeshDefinition::EKind::None && ( Emitter.Path.Kind != FEffectPathDefinition::EKind::None || Emitter.Flipbook.bEnabled ) ) return false;
+			if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning )
+			{
+				if ( !Emitter.Path.Validate().IsEmpty() || !Emitter.Appearance.Size.Validate().IsEmpty() ) return false;
+				// 粒子幅に使う開始時と終了時の最大値。
+				const float32 BaseSize = std::max( Emitter.StartSize.Max, Emitter.EndSize.Max );
+				if ( !IsValidCameraRange( Emitter.StartSize, false ) || !IsValidCameraRange( Emitter.EndSize, false ) || !std::isfinite( BaseSize ) || BaseSize <= 0.0f ) return false;
+				// Size曲線の最大倍率。空曲線は既定の一倍を使う。
+				float32 AppearanceScale = 1.0f;
+				if ( !Emitter.Appearance.Size.Keys.IsEmpty() )
+				{
+					AppearanceScale = 0.0f;
+					for ( const FEffectScalarCurve::FKey& Key : Emitter.Appearance.Size.Keys )
+					{
+						// Tree particle幅へ掛ける倍率候補。
+						if ( !std::isfinite( Key.Value ) || Key.Value < 0.0f || Key.Value > 32.0f ) return false;
+						AppearanceScale = std::max( AppearanceScale, Key.Value );
+					}
+				}
+				// 完成形treeを使い、粒子halo分も加えるPath copy。
+				FEffectPathDefinition CompletedPath = Emitter.Path;
+				CompletedPath.Tree.GrowthSeconds = 0.0f;
+				CompletedPath.Tree.BranchDelaySeconds = 0.0f;
+				// 最も太いparticle幅に対する最大halo半幅。
+				const float32 HaloPadding = BaseSize * AppearanceScale * 1.5f;
+				// Tree helperが返すemitter sphereの中心。
+				FVector3 EmitterCenter = FVector3::Zero;
+				// Tree helperが返すemitter sphereの半径。
+				float32 EmitterRadius = 0.0f;
+				if ( !std::isfinite( HaloPadding ) || HaloPadding <= 0.0f || !NEffectPath::GetTreeLightningBounds( CompletedPath, FVector3::Zero, CompletedPath.End, HaloPadding, EmitterCenter, EmitterRadius ) || !AddCameraBoundsSphere( EmitterCenter, EmitterRadius, BoundsCenter, BoundsRadius, bHasBounds ) ) return false;
+				continue;
+			}
+			if ( !bIncludeMesh || Emitter.Mesh.Kind == FEffectMeshDefinition::EKind::None ) continue;
+			if ( !Emitter.Mesh.IsValidSettings() || Emitter.Path.Kind != FEffectPathDefinition::EKind::None || Emitter.Flipbook.bEnabled || !Emitter.Flipbook.Validate().IsEmpty() || !Emitter.Appearance.Size.Validate().IsEmpty() ) return false;
+			if ( Emitter.Shape != EParticleShape::Cone && Emitter.Shape != EParticleShape::Sphere && Emitter.Shape != EParticleShape::Box ) return false;
+			if ( !IsValidCameraRange( Emitter.StartSize, false ) || !IsValidCameraRange( Emitter.EndSize, false ) || !IsValidCameraRange( Emitter.Lifetime, true ) || !IsValidCameraRange( Emitter.Speed, false ) || !std::isfinite( Emitter.ShapeRadius ) || Emitter.ShapeRadius < 0.0f || !std::isfinite( Emitter.BoxSize.x ) || !std::isfinite( Emitter.BoxSize.y ) || !std::isfinite( Emitter.BoxSize.z ) || Emitter.BoxSize.x < 0.0f || Emitter.BoxSize.y < 0.0f || Emitter.BoxSize.z < 0.0f || !std::isfinite( Emitter.Gravity.x ) || !std::isfinite( Emitter.Gravity.y ) || !std::isfinite( Emitter.Gravity.z ) || !std::isfinite( Emitter.Drag ) || Emitter.Drag < 0.0f ) return false;
+			if ( !std::isfinite( Emitter.ConeAngle ) || Emitter.ConeAngle < 0.0f || Emitter.ConeAngle > 180.0f || !std::isfinite( Emitter.Direction.x ) || !std::isfinite( Emitter.Direction.y ) || !std::isfinite( Emitter.Direction.z ) ) return false;
+			// doubleで計算したspawn軸の長さ二乗。
+			const float64 DirectionLengthSquared = static_cast<float64>( Emitter.Direction.x ) * Emitter.Direction.x + static_cast<float64>( Emitter.Direction.y ) * Emitter.Direction.y + static_cast<float64>( Emitter.Direction.z ) * Emitter.Direction.z;
+			if ( !std::isfinite( DirectionLengthSquared ) || DirectionLengthSquared < 1.0e-12 ) return false;
+			// meshの最大辺とAppearance倍率を有限精度で求める。
+			float64 AppearanceScale = 1.0;
+			if ( !Emitter.Appearance.Size.Keys.IsEmpty() )
+			{
+				AppearanceScale = 0.0;
+				for ( const FEffectScalarCurve::FKey& Key : Emitter.Appearance.Size.Keys )
+				{
+					// size倍率の上限候補。
+					if ( !std::isfinite( Key.Value ) || Key.Value < 0.0f || Key.Value > 32.0f ) return false;
+					AppearanceScale = std::max( AppearanceScale, static_cast<float64>( Key.Value ) );
+				}
+			}
+			// start/end sizeの最大値。
+			const float64 BaseSize = std::max( static_cast<float64>( Emitter.StartSize.Max ), static_cast<float64>( Emitter.EndSize.Max ) );
+			// Planeは半辺の対角、Ringは外半径の係数。
+			const float64 ShapeFactor = Emitter.Mesh.Kind == FEffectMeshDefinition::EKind::Plane ? std::sqrt( 0.5 ) : 0.5;
+			// sizeとAppearanceを反映したmesh半径。
+			const float64 MeshRadius = BaseSize * AppearanceScale * ShapeFactor;
+			// Cone・Sphereは半径、Boxは半対角をspawn範囲へ使う。
+			float64 SpawnRadius = Emitter.Shape == EParticleShape::Box ? 0.5 * std::sqrt( static_cast<float64>( Emitter.BoxSize.x ) * Emitter.BoxSize.x + static_cast<float64>( Emitter.BoxSize.y ) * Emitter.BoxSize.y + static_cast<float64>( Emitter.BoxSize.z ) * Emitter.BoxSize.z ) : static_cast<float64>( Emitter.ShapeRadius );
+			// 寿命全体の移動に使う最大時間。
+			const float64 Lifetime = Emitter.Lifetime.Max;
+			// 重力加速度ベクトルの長さ。
+			const float64 GravityLength = std::sqrt( static_cast<float64>( Emitter.Gravity.x ) * Emitter.Gravity.x + static_cast<float64>( Emitter.Gravity.y ) * Emitter.Gravity.y + static_cast<float64>( Emitter.Gravity.z ) * Emitter.Gravity.z );
+			// speedと重力が寿命中に作る保守移動距離。
+			const float64 TravelRadius = static_cast<float64>( Emitter.Speed.Max ) * Lifetime + GravityLength * Lifetime * Lifetime;
+			// mesh外周、spawn、移動の合計保守半径。
+			const float64 EmitterRadius = MeshRadius + SpawnRadius + TravelRadius;
+			if ( !std::isfinite( EmitterRadius ) || EmitterRadius <= 0.0 || EmitterRadius > ( std::numeric_limits<float32>::max )() || !AddCameraBoundsSphere( FVector3::Zero, EmitterRadius, BoundsCenter, BoundsRadius, bHasBounds ) ) return false;
+		}
+		if ( !bHasBounds || !std::isfinite( BoundsCenter.x ) || !std::isfinite( BoundsCenter.y ) || !std::isfinite( BoundsCenter.z ) || !std::isfinite( BoundsRadius ) || BoundsRadius <= 0.0 || BoundsRadius > FEditorCamera::MaxDistance ) return false;
+		// doubleで計算した範囲をcamera APIのfloatへ安全に渡す。
+		const float32 SafeBoundsRadius = static_cast<float32>( BoundsRadius );
+		if ( !std::isfinite( SafeBoundsRadius ) || SafeBoundsRadius <= 0.0f ) return false;
+		// focusで収まらない異常値を検出できるよう、変更前cameraを保存する。
+		const FEditorCamera PreviousCamera = S.Camera;
+		S.Camera.Focus( BoundsCenter, SafeBoundsRadius, Viewport );
+		// 球中心の奥行きと投影位置。
+		FVector2 CenterPixel;
+		// カメラ前方に沿った球中心までの距離。
+		float32 CenterDepth = 0.0f;
+		if ( !S.Camera.WorldToScreen( Viewport, BoundsCenter, CenterPixel, &CenterDepth ) || !std::isfinite( CenterDepth ) || !std::isfinite( CenterPixel.x ) || !std::isfinite( CenterPixel.y ) ) { S.Camera = PreviousCamera; return false; }
+		if ( CenterDepth - SafeBoundsRadius <= Viewport.Near || CenterDepth + SafeBoundsRadius >= Viewport.Far ) { S.Camera = PreviousCamera; return false; }
+		// 縦横の半視野角のうち狭い方を使った、球の角度方向の収まり。
+		const float32 HalfFovY = Viewport.FovY * 0.5f;
+		const float32 HalfFovX = std::atan( std::tan( HalfFovY ) * Viewport.GetAspect() );
+		const float32 LimitingHalfFov = std::min( HalfFovX, HalfFovY );
+		if ( !std::isfinite( LimitingHalfFov ) || LimitingHalfFov <= 0.0f || SafeBoundsRadius > CenterDepth * std::sin( LimitingHalfFov ) * 0.92f || CenterPixel.x < 1.0f || CenterPixel.y < 1.0f || CenterPixel.x > Viewport.Width - 1.0f || CenterPixel.y > Viewport.Height - 1.0f ) { S.Camera = PreviousCamera; return false; }
+		return true;
+	}
+}
+
+// Tree専用の完成形boundsを既存どおり使い、無効・空なら元cameraを保つ。
 bool NEffectEditorUI::FocusCameraOnTree( FEffectEditorState& S, const FEditorViewport& Viewport )
 {
-	if ( !Viewport.IsValid() || !std::isfinite( Viewport.FovY ) || Viewport.FovY <= 0.0f || Viewport.FovY >= 3.14159265f || !std::isfinite( Viewport.Near ) || !std::isfinite( Viewport.Far ) || Viewport.Near <= 0.0f || Viewport.Far <= Viewport.Near ) return false;
-	// 複数emitterの保守sphereを包む中心。
-	FVector3 BoundsCenter = FVector3::Zero;
-	// 複数emitterの保守sphereを包む半径。
-	float32 BoundsRadius = 0.0f;
-	// 有効なTree sphereが一つ以上追加されたか。
-	bool bFoundTreeBounds = false;
-	// seedと粒子寸法を調べる定義全体。
-	const FParticleEffectDefinition& Definition = S.Document.Get();
-	// 各Tree emitterの全seed boundsを順番に統合する。
-	for ( int32 EmitterIndex = 0; EmitterIndex < Definition.Emitters.Num(); ++EmitterIndex )
-	{
-		// 今回のboundsへ加える定義。
-		const FParticleEmitterDefinition& Emitter = Definition.Emitters[EmitterIndex];
-		if ( Emitter.Path.Kind != FEffectPathDefinition::EKind::TreeLightning ) continue;
-		if ( !Emitter.Path.Validate().IsEmpty() || !Emitter.Appearance.Size.Validate().IsEmpty() ) return false;
-		// 粒子幅に使う開始時と終了時の最大値。
-		const float32 BaseSize = std::max( Emitter.StartSize.Max, Emitter.EndSize.Max );
-		if ( !std::isfinite( Emitter.StartSize.Min ) || !std::isfinite( Emitter.StartSize.Max ) || !std::isfinite( Emitter.EndSize.Min ) || !std::isfinite( Emitter.EndSize.Max ) || Emitter.StartSize.Min < 0.0f || Emitter.StartSize.Max < Emitter.StartSize.Min || Emitter.EndSize.Min < 0.0f || Emitter.EndSize.Max < Emitter.EndSize.Min || !std::isfinite( BaseSize ) || BaseSize <= 0.0f ) return false;
-		// Size曲線の最大倍率。空曲線は既定の一倍を使う。
-		float32 AppearanceScale = 1.0f;
-		if ( !Emitter.Appearance.Size.Keys.IsEmpty() )
-		{
-			AppearanceScale = 0.0f;
-			// 評価に使う全キーの有限倍率を集める。
-			for ( const FEffectScalarCurve::FKey& Key : Emitter.Appearance.Size.Keys )
-			{
-				// このsize倍率が評価範囲内かを確認する。
-				if ( !std::isfinite( Key.Value ) || Key.Value < 0.0f || Key.Value > 32.0f ) return false;
-				AppearanceScale = std::max( AppearanceScale, Key.Value );
-			}
-		}
-		// 表示中に使う最も太いParticle幅。
-		const float32 ParticleWidth = BaseSize * AppearanceScale;
-		if ( !std::isfinite( AppearanceScale ) || AppearanceScale < 0.0f || !std::isfinite( ParticleWidth ) || ParticleWidth <= 0.0f ) return false;
-		// 成長と枝遅延を0にして、完成形boundsを求めるPath copy。
-		FEffectPathDefinition CompletedPath = Emitter.Path;
-		CompletedPath.Tree.GrowthSeconds = 0.0f;
-		CompletedPath.Tree.BranchDelaySeconds = 0.0f;
-		// 保守sphereに加える最大外側halo半幅。
-		const float32 HaloPadding = ParticleWidth * 1.5f;
-		// Coreが全seedとserialの枝先まで含むsphereを計算する。
-		FVector3 EmitterCenter = FVector3::Zero;
-		// Coreが返すemitter一つ分の保守半径。
-		float32 EmitterRadius = 0.0f;
-		if ( !std::isfinite( HaloPadding ) || !NEffectPath::GetTreeLightningBounds( CompletedPath, FVector3::Zero, CompletedPath.End, HaloPadding, EmitterCenter, EmitterRadius ) ) return false;
-		if ( !std::isfinite( EmitterCenter.x ) || !std::isfinite( EmitterCenter.y ) || !std::isfinite( EmitterCenter.z ) || !std::isfinite( EmitterRadius ) || EmitterRadius <= 0.0f ) return false;
-		if ( !bFoundTreeBounds )
-		{
-			BoundsCenter = EmitterCenter;
-			BoundsRadius = EmitterRadius;
-			bFoundTreeBounds = true;
-			continue;
-		}
-		// 既存sphereが今回のsphereを含む場合は中心と半径を保つ。
-		const FVector3 Delta = EmitterCenter - BoundsCenter;
-		const float32 CenterDistance = Delta.Length();
-		if ( !std::isfinite( CenterDistance ) ) return false;
-		if ( CenterDistance + EmitterRadius <= BoundsRadius ) continue;
-		// 新しいsphereが既存sphereを含む場合はその中心と半径を採用する。
-		if ( CenterDistance + BoundsRadius <= EmitterRadius )
-		{
-			BoundsCenter = EmitterCenter;
-			BoundsRadius = EmitterRadius;
-			continue;
-		}
-		if ( CenterDistance <= 1.0e-6f )
-		{
-			BoundsRadius = std::max( BoundsRadius, EmitterRadius );
-			continue;
-		}
-		// 二つのsphereを両方含む最小の中心移動量。
-		const float32 NewRadius = ( CenterDistance + BoundsRadius + EmitterRadius ) * 0.5f;
-		BoundsCenter += Delta * ( ( NewRadius - BoundsRadius ) / CenterDistance );
-		BoundsRadius = NewRadius;
-	}
-	if ( !bFoundTreeBounds || !std::isfinite( BoundsCenter.x ) || !std::isfinite( BoundsCenter.y ) || !std::isfinite( BoundsCenter.z ) || !std::isfinite( BoundsRadius ) || BoundsRadius <= 0.0f || BoundsRadius > FEditorCamera::MaxDistance ) return false;
-	// focusで収まらない異常値を検出できるよう、変更前cameraを保存する。
-	const FEditorCamera PreviousCamera = S.Camera;
-	S.Camera.Focus( BoundsCenter, BoundsRadius, Viewport );
-	// 球中心の奥行きと投影位置。
-	FVector2 CenterPixel;
-	// カメラ前方に沿った球中心までの距離。
-	float32 CenterDepth = 0.0f;
-	if ( !S.Camera.WorldToScreen( Viewport, BoundsCenter, CenterPixel, &CenterDepth ) || !std::isfinite( CenterDepth ) || !std::isfinite( CenterPixel.x ) || !std::isfinite( CenterPixel.y ) ) { S.Camera = PreviousCamera; return false; }
-	// 球の最前面と最後面がnear/far範囲に入るか。
-	if ( CenterDepth - BoundsRadius <= Viewport.Near || CenterDepth + BoundsRadius >= Viewport.Far ) { S.Camera = PreviousCamera; return false; }
-	// 縦横の半視野角のうち狭い方を使った、球の角度方向の収まり。
-	const float32 HalfFovY = Viewport.FovY * 0.5f;
-	const float32 HalfFovX = std::atan( std::tan( HalfFovY ) * Viewport.GetAspect() );
-	const float32 LimitingHalfFov = std::min( HalfFovX, HalfFovY );
-	if ( !std::isfinite( LimitingHalfFov ) || LimitingHalfFov <= 0.0f || BoundsRadius > CenterDepth * std::sin( LimitingHalfFov ) * 0.92f || CenterPixel.x < 1.0f || CenterPixel.y < 1.0f || CenterPixel.x > Viewport.Width - 1.0f || CenterPixel.y > Viewport.Height - 1.0f ) { S.Camera = PreviousCamera; return false; }
-	return true;
+	return FocusCameraOnGeometry( S, Viewport, false );
+}
+
+// Treeと固定meshを包むboundsへcameraを合わせ、無効・空なら元cameraを保つ。
+bool NEffectEditorUI::FocusCameraOnEffectGeometry( FEffectEditorState& S, const FEditorViewport& Viewport )
+{
+	return FocusCameraOnGeometry( S, Viewport, true );
 }
 
 // pending focusを消費して一度だけ適用し、その後の手動camera操作を保護する。
@@ -431,6 +517,28 @@ bool NEffectEditorUI::ApplyPendingTreeCameraFocus( FEffectEditorState& S, const 
 	if ( !S.bTreeCameraFocusPending ) return false;
 	S.bTreeCameraFocusPending = false;
 	return FocusCameraOnTree( S, Viewport );
+}
+
+// pending focusを消費して一度だけ適用し、その後の手動camera操作を保護する。
+bool NEffectEditorUI::ApplyPendingEffectCameraFocus( FEffectEditorState& S, const FEditorViewport& Viewport )
+{
+	if ( !S.bEffectGeometryCameraFocusPending ) return false;
+	S.bEffectGeometryCameraFocusPending = false;
+	S.bTreeCameraFocusPending = false;
+	return FocusCameraOnEffectGeometry( S, Viewport );
+}
+
+// 文書にTree・meshがある場合だけopen/reset後のfocusを一度保留する。
+void NEffectEditorUI::SetPendingEffectCameraFocus( FEffectEditorState& S, const FParticleEffectDefinition& Definition )
+{
+	S.bTreeCameraFocusPending = false;
+	S.bEffectGeometryCameraFocusPending = false;
+	for ( const FParticleEmitterDefinition& Emitter : Definition.Emitters )
+	{
+		// pending判定に使う現在のemitter。
+		if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning ) S.bTreeCameraFocusPending = true;
+		if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning || Emitter.Mesh.Kind != FEffectMeshDefinition::EKind::None ) S.bEffectGeometryCameraFocusPending = true;
+	}
 }
 
 // 全体設定と選択したエミッターを、親が用意したスクロール領域へ表示する。
@@ -466,9 +574,8 @@ void NEffectEditorUI::DrawPreview( FEffectEditorState& S )
 	{
 		S.Camera = FEditorCamera();
 		S.Camera.Distance = 5.0f;
-		// resetはTree文書だけ、viewport確定後に完成形へ一度合わせる。
-		S.bTreeCameraFocusPending = false;
-		for ( const FParticleEmitterDefinition& Emitter : S.Document.Get().Emitters ) if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning ) { S.bTreeCameraFocusPending = true; break; }
+		// reset後に実viewportで一度だけTree・meshの全体を合わせる。
+		NEffectEditorUI::SetPendingEffectCameraFocus( S, S.Document.Get() );
 	}
 	ImGui::TextDisabled( "Left drag: orbit | middle/right drag: pan | wheel: zoom" );
 	if ( !S.Issues.IsEmpty() )
@@ -494,7 +601,7 @@ void NEffectEditorUI::DrawPreview( FEffectEditorState& S )
 	S.View.Width = std::clamp( static_cast<int32>( Size.x * RenderScale ), 2, 2048 );
 	S.View.Height = std::clamp( static_cast<int32>( Size.y * RenderScale ), 2, 2048 );
 	// 実際のviewport比率が確定したこの時点で、open/reset時のfocusを一度だけ適用する。
-	NEffectEditorUI::ApplyPendingTreeCameraFocus( S, S.View );
+	NEffectEditorUI::ApplyPendingEffectCameraFocus( S, S.View );
 	ImGui::InvisibleButton( "##EffectPreview", Size, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonMiddle | ImGuiButtonFlags_MouseButtonRight );
 	// この領域の上で操作されたマウスだけをカメラへ渡す。
 	const ImGuiIO& Input = ImGui::GetIO();

@@ -1,5 +1,6 @@
 ﻿#include "WorldSelfTestScene.h"
 #include "WorldMeshSelfTestSupport.h"
+#include "WorldMeshMaterialSelfTestSupport.h"
 #include "WorldSelfTestSupport.h"
 
 #include <algorithm>
@@ -539,6 +540,7 @@ void CWorldSelfTestScene::OnEnter()
 	NWorldTest::RunEditorInputTests( C );
 	NWorldTest::RunMeshDataTests( C );
 	NWorldTest::RunMeshOpsTests( C );
+	NWorldTest::RunMeshMaterialEffectDefinitionTests( C );
 	NWorldTest::RunMeshEditorTests( C );
 	NWorldTest::RunPrefabLogicTests( C );
 	NWorldTest::RunEffectDataTests( C );
@@ -548,6 +550,7 @@ void CWorldSelfTestScene::OnEnter()
 	NWorldTest::RunEffectMaterialTests( C );
 	NWorldTest::RunEffectUVDistortionTests( C );
 	NWorldTest::RunEffectRibbonUVDistortionCommandTests( C );
+	NWorldTest::RunEffectMeshCommandTests( C );
 	NWorldTest::RunEffectAppearanceTests( C );
 	NWorldTest::RunEffectFlipbookTests( C );
 	NWorldTest::RunEffectTreeLightningTests( C );
@@ -577,6 +580,9 @@ void CWorldSelfTestScene::OnEnter()
 	NWorldTest::RunEffectFlipbookResourceTests( C, *Assets, S.Fake, S.Dir );
 	NWorldTest::RunEffectUVDistortionResourceTests( C, *Assets, S.Fake, S.Dir );
 	NWorldTest::RunEffectRibbonUVDistortionResourceTests( C, *Assets, S.Fake, S.Dir );
+	NWorldTest::RunEffectMeshSelfTests( C, *Assets, S.Dir );
+	NWorldTest::RunEffectMeshResourceTests( C, *Assets, S.Fake, S.Dir );
+	NWorldTest::RunMeshMaterialResourceTests( C, *Assets, S.Fake, S.Dir );
 	Audio->SetBackendOverride( &S.Rec );
 	SetDrawExecutor( &S.Log );
 	for ( const char* Name : { "model.mv1", "a.png", "fire.wav", "only.mv1" } ) WriteFileText( S.Dir / Name, "x" );
@@ -1664,6 +1670,8 @@ void CWorldSelfTestScene::RunRealChecks()
 	// エフェクトの粒子（組み込みの丸・加算 / アルファ・寿命の間の変化・回転・位置）を、本物の絵で
 	NWorldTest::RunEffectRealTests( C, *Assets, *Executor, Dir );
 	NWorldTest::RunEffectEditorRealTests( C, *Assets, *Executor, Dir );
+	NWorldTest::RunWorldMeshMaterialEditorTests( C, *Assets, Dir );
+	NWorldTest::RunMeshMaterialPlaybackTests( C, *Assets, Dir );
 	NWorldTest::RunEffectPathPlaybackTests( C, *Assets, Dir );
 	NWorldTest::RunEffectMaterialPlaybackTests( C, *Assets, Dir );
 	NWorldTest::RunEffectUVDistortionPlaybackTests( C, *Assets, Dir );
@@ -1673,6 +1681,8 @@ void CWorldSelfTestScene::RunRealChecks()
 	NWorldTest::RunEffectFlipbookPlaybackTests( C, *Assets, Dir );
 	NWorldTest::RunEffectAppearanceBoundaryTests( C, *Assets, Dir );
 	NWorldTest::RunEffectRibbonRealTests( C, *Executor );
+	NWorldTest::RunEffectMaterialMeshRealTests( C, *Executor );
+	NWorldTest::RunMeshMaterialRealTests( C, *Assets, *Executor, Dir );
 	NWorldTest::RunEffectMaterialRealTests( C, *Executor );
 	NWorldTest::RunEffectUVDistortionRealTests( C, *Assets, *Executor, Dir );
 	NWorldTest::RunEffectRibbonUVDistortionRealTests( C, *Assets, *Executor, Dir );

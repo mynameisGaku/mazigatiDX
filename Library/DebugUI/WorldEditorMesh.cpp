@@ -3,6 +3,7 @@
 
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/DebugUI/WorldEditorInternal.h"
+#include "Library/DebugUI/WorldEditorMeshMaterialPanel.h"
 #include "Library/Framework/Asset/EditorAssetInfo.h"
 #include "Library/Framework/World/Mesh/EditMeshPrimitives.h"
 #include "Library/Framework/World/WorldHierarchy.h"
@@ -70,6 +71,17 @@ void NWorldEditorUI::PruneMeshViews( FWorldEditorState& S, const TSet<int32>& Se
 		if ( !Seen.Contains( Pair.Key ) ) Gone.Add( Pair.Key );
 	}
 	for ( const int32 Id : Gone ) S.MeshViews.Remove( Id );
+}
+
+// 現在ownerが残っているmesh rendererの材質時計を一度だけ進める。
+void NWorldEditorUI::UpdateMeshMaterialPreviews( FWorldEditorState& S, float32 DeltaTime )
+{
+	// viewごとのrenderer clockをRecordSceneより前に更新する。
+	for ( auto& Pair : S.MeshViews )
+	{
+		FWorldEditorState::FMeshView& View = Pair.Value;
+		if ( View.bBuilt ) View.Renderer.Update( DeltaTime );
+	}
 }
 
 //=============================================================================
@@ -332,7 +344,8 @@ void NWorldEditorUI::DrawMeshComponentBody( FWorldEditorState& S, const FWorldOb
 	for ( int32 i = 0; i < Mesh.Materials.Num(); ++i )
 	{
 		ImGui::PushID( i );
-		const FEditMeshMaterial& Material = Mesh.Materials[i];
+		// UI変更でmaterial配列参照を保持しないslot設定値。
+		const FEditMeshMaterial Material = Mesh.Materials[i];
 		FString Title = FString::Printf( "%d  %s", i, Material.Name.IsEmpty() ? "(unnamed)" : *Material.Name );
 		const bool bOpen = ImGui::TreeNodeEx( "##Material", ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_DefaultOpen, "%s", UI_TEXT( Title ) );
 		ImGui::SameLine( ImGui::GetWindowWidth() - 36.0f );
@@ -369,19 +382,44 @@ void NWorldEditorUI::DrawMeshComponentBody( FWorldEditorState& S, const FWorldOb
 				if ( ImGui::Button( "Assign to chosen faces" ) ) Session.MeshSetMaterial( i );
 				ImGui::EndDisabled();
 			}
+			ImGui::Separator();
+			// 現在のslot効果を一時値で編集し、変更後に一度だけdocumentへ戻す。
+			FMeshMaterialEffectDefinition Effect = Material.Effect;
+			FString EffectTexture = Material.Texture;
+			// viewportが前frameまでに作った選択objectのpreview renderer。
+			FWorldEditorState::FMeshView* MeshView = S.MeshViews.Find( Id );
+			FMeshRenderer* PreviewRenderer = MeshView != nullptr && MeshView->bBuilt ? &MeshView->Renderer : nullptr;
+			// 切替と数値入力の終了を呼出側のworld履歴へ通知する。
+			bool bEffectInputEnded = false;
+			if ( NWorldEditorUI::DrawMeshMaterialEffectPanel( Effect, EffectTexture, S.TextureFiles, PreviewRenderer, bEffectInputEnded ) )
+			{
+				FWorldObject* EditedObject = NWorldEdit::EditObject( Session.Document, Id, *FString::Printf( "Inspector.Mesh.MaterialEffect.%d.%d", Id, i ) );
+				if ( EditedObject != nullptr && EditedObject->Mesh.IsSet() && EditedObject->Mesh.GetValue().Materials.IsValidIndex( i ) )
+				{
+					EditedObject->Mesh.GetValue().Materials[i].Effect = Effect;
+					EditedObject->Mesh.GetValue().Materials[i].Texture = EffectTexture;
+				}
+			}
+			if ( bEffectInputEnded ) Session.Document.EndEditSession();
 			ImGui::TreePop();
 		}
 		ImGui::PopID();
 	}
 	if ( RemoveIndex >= 0 )
 	{
-		FEditMesh Edited = Mesh;
+		// 同frameの入力で保存された変更を保つ最新documentから削除する。
+		const FWorldObject* CurrentObject = Session.Document.Get().FindObject( Id );
+		if ( CurrentObject == nullptr || !CurrentObject->Mesh.IsSet() ) return;
+		FEditMesh Edited = CurrentObject->Mesh.GetValue();
 		NEditMesh::RemoveMaterial( Edited, RemoveIndex );
 		NWorldEdit::EditObject( Session.Document, Id )->Mesh = Edited;
 	}
 	if ( ImGui::Button( "Add material" ) )
 	{
-		FEditMesh Edited = Mesh;
+		// 同frameの入力で保存された変更を保つ最新documentから追加する。
+		const FWorldObject* CurrentObject = Session.Document.Get().FindObject( Id );
+		if ( CurrentObject == nullptr || !CurrentObject->Mesh.IsSet() ) return;
+		FEditMesh Edited = CurrentObject->Mesh.GetValue();
 		FEditMeshMaterial Fresh;
 		Fresh.Name = FString::Printf( "Material %d", Edited.Materials.Num() );
 		// 材質が 0 個のとき、面は既定の材質を使っている。足した材質が、いまの見た目と同じ 0 番になるように、先に既定の 1 つを足す

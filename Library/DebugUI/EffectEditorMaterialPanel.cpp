@@ -35,11 +35,12 @@ namespace
 		bool bChanged = false; // 現在の欄で材質が変更されたか。
 		ImGui::SeparatorText( "Effect material" );
 		bChanged |= TrackInputEnd( ImGui::Checkbox( "Enable material", &Material.bEnabled ), State.Document );
-		ImGui::TextDisabled( "Material effects apply to Sprite quads, ribbons and branch lightning." );
+		ImGui::TextDisabled( "Material effects apply to quads, mesh particles, ribbons and branch lightning." );
 		IDrawExecutor* Executor = GetAppSubsystem<IDrawExecutor>(); // 描画実装の材質対応状態。
 		const bool bRibbonMaterial = Emitter.Path.Kind != FEffectPathDefinition::EKind::None; // 経路材質の描画能力を選ぶ。
-		const bool bMaterialSupported = Executor != nullptr && ( bRibbonMaterial ? Executor->SupportsEffectMaterialRibbons() : Executor->SupportsEffectMaterials() ); // 現在の描画方式で材質を使えるか。
-		if ( !bMaterialSupported ) ImGui::TextColored( ImVec4( 1.0f, 0.65f, 0.3f, 1.0f ), bRibbonMaterial ? "This renderer does not support effect-material ribbons." : "Requires the D3D11 effect-material renderer." );
+		const bool bMeshMaterial = Emitter.Mesh.Kind != FEffectMeshDefinition::EKind::None; // 固定mesh材質を選ぶ経路。
+		const bool bMaterialSupported = Executor != nullptr && ( bMeshMaterial ? Executor->SupportsEffectMaterialMesh() : ( bRibbonMaterial ? Executor->SupportsEffectMaterialRibbons() : Executor->SupportsEffectMaterials() ) ); // 現在の描画方式で材質を使えるか。
+		if ( !bMaterialSupported ) ImGui::TextColored( ImVec4( 1.0f, 0.65f, 0.3f, 1.0f ), bMeshMaterial ? "This renderer does not support material mesh particles." : ( bRibbonMaterial ? "This renderer does not support effect-material ribbons." : "Requires the D3D11 effect-material renderer." ) );
 		if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::Ribbon ) ImGui::TextDisabled( "Ribbon UV: U follows path distance, V follows width; scroll follows particle age." );
 		ImGui::TextDisabled( "Emission is LDR; bloom is not included." );
 		if ( ImGui::SmallButton( "Reset material" ) ) { Material = FEffectMaterialDefinition(); bChanged = true; }
@@ -121,11 +122,12 @@ namespace
 		}
 		bChanged |= NEffectEditorUI::DrawScalarCurve( "Distortion strength", Distortion.Strength, State.Document, 0.05f, 0.0f, 1.0f );
 		// 経路なしならエミッターは四角形粒子として描く。
-		const bool bQuad = Emitter.Path.Kind == FEffectPathDefinition::EKind::None;
+		const bool bMeshPath = Emitter.Path.Kind == FEffectPathDefinition::EKind::None && Emitter.Mesh.Kind != FEffectMeshDefinition::EKind::None;
+		const bool bQuad = Emitter.Path.Kind == FEffectPathDefinition::EKind::None && Emitter.Mesh.Kind == FEffectMeshDefinition::EKind::None;
 		// ribbonや二種類の雷は帯として歪み画像を参照する。
 		const bool bRibbonPath = Emitter.Path.Kind == FEffectPathDefinition::EKind::Ribbon || Emitter.Path.Kind == FEffectPathDefinition::EKind::Lightning || Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning;
 		// 描画記録が実装されている経路か。
-		const bool bSupportedPath = bQuad || bRibbonPath;
+		const bool bSupportedPath = bQuad || bRibbonPath || bMeshPath;
 		// 材質と対応経路の両方が有効なら歪みを再生へ使う。
 		const bool bCanApply = Distortion.bEnabled && Emitter.Material.bEnabled && bSupportedPath;
 		if ( Distortion.bEnabled && !Emitter.Material.bEnabled ) TextWarningWrapped( "Material is disabled; distortion is saved but not applied." );
@@ -134,7 +136,7 @@ namespace
 		// 現在登録されている描画実装の歪み対応状態。
 		IDrawExecutor* Executor = GetAppSubsystem<IDrawExecutor>();
 		// 選択中の経路が描画可能な歪み対応を持つか。
-		const bool bRendererSupportsDistortion = Executor != nullptr && ( bQuad ? Executor->SupportsEffectUVDistortion() : Executor->SupportsEffectRibbonUVDistortion() );
+		const bool bRendererSupportsDistortion = Executor != nullptr && ( bMeshPath ? Executor->SupportsEffectMaterialMesh() : ( bQuad ? Executor->SupportsEffectUVDistortion() : Executor->SupportsEffectRibbonUVDistortion() ) );
 		if ( bCanApply && !bRendererSupportsDistortion ) TextWarningWrapped( "The active renderer does not support UV distortion for this path." );
 		// テクスチャをメインスレッドで管理する既存のアセット窓口。
 		CAssetManager* Assets = GetAppSubsystem<CAssetManager>();

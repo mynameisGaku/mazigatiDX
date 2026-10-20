@@ -7,6 +7,7 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Effect/EffectPathGeometry.h"
+#include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
 #include "Library/Framework/Render/DrawContext.h"
 
 namespace
@@ -39,6 +40,48 @@ namespace
 		if ( Distortion.Strength.Keys.IsEmpty() ) return true;
 		for ( const FEffectScalarCurve::FKey& Key : Distortion.Strength.Keys ) if ( Key.Value > 0.0f ) return true;
 		return false;
+	}
+
+	// 材質評価値を固定mesh命令へ移し、必要なnoiseが無ければ呼び出しを失敗させる。
+	bool BuildMaterialMeshData( const FParticleEmitterDefinition& Emitter, const NParticle::FDrawParticle& Particle, int32 Texture, int32 MaskTexture, int32 DistortionTexture, FDrawMaterialMeshData& Out )
+	{
+		if ( Texture < 0 ) return false;
+		Out = FDrawMaterialMeshData();
+		Out.Texture = Texture;
+		Out.bTwoSided = 1;
+		if ( !Emitter.Material.bEnabled ) return true;
+		Out.Material.MaskTexture = MaskTexture;
+		Out.Material.UVScale[0] = std::isfinite( Emitter.Material.UVScale.x ) && Emitter.Material.UVScale.x > 0.0f ? Emitter.Material.UVScale.x : 1.0f;
+		Out.Material.UVScale[1] = std::isfinite( Emitter.Material.UVScale.y ) && Emitter.Material.UVScale.y > 0.0f ? Emitter.Material.UVScale.y : 1.0f;
+		Out.Material.MaskScale = std::isfinite( Emitter.Material.MaskScale ) && Emitter.Material.MaskScale > 0.0f ? Emitter.Material.MaskScale : 1.0f;
+		Out.Material.EdgeWidth = std::isfinite( Emitter.Material.EdgeWidth ) ? std::clamp( Emitter.Material.EdgeWidth, 0.0f, 1.0f ) : 0.08f;
+		Out.Material.EdgeEmission = std::isfinite( Emitter.Material.EdgeEmission ) ? std::clamp( Emitter.Material.EdgeEmission, 0.0f, 32.0f ) : 2.0f;
+		Out.Material.EdgeColor = { Emitter.Material.EdgeColor.r, Emitter.Material.EdgeColor.g, Emitter.Material.EdgeColor.b, Emitter.Material.EdgeColor.a };
+		Out.Material.bDissolve = Emitter.Material.bDissolve ? 1 : 0;
+		Out.Dissolve = Emitter.Material.Dissolve.Evaluate( Particle.NormalizedAge, 0.0f );
+		Out.Emission = std::clamp( Emitter.Material.Emission.Evaluate( Particle.NormalizedAge, 1.0f ), 0.0f, 32.0f );
+		// 秒齢からUVの一周未満の移動量を求める。
+		const double Age = std::isfinite( Particle.Age ) ? static_cast<double>( Particle.Age ) : 0.0;
+		const double ScrollU = std::isfinite( Emitter.Material.UVScroll.x ) ? std::fmod( Age * Emitter.Material.UVScroll.x, 1.0 ) : 0.0;
+		const double ScrollV = std::isfinite( Emitter.Material.UVScroll.y ) ? std::fmod( Age * Emitter.Material.UVScroll.y, 1.0 ) : 0.0;
+		Out.UVOffset[0] = static_cast<float32>( ScrollU < 0.0 ? ScrollU + 1.0 : ScrollU );
+		Out.UVOffset[1] = static_cast<float32>( ScrollV < 0.0 ? ScrollV + 1.0 : ScrollV );
+		const FEffectUVDistortionDefinition& Distortion = Emitter.Material.Distortion;
+		if ( !Distortion.bEnabled ) return true;
+		if ( !Distortion.IsValidSettings() || !std::isfinite( Particle.Age ) || !std::isfinite( Particle.NormalizedAge ) ) return false;
+		Out.DistortionStrength = Distortion.Strength.Evaluate( Particle.NormalizedAge, 0.05f );
+		if ( !std::isfinite( Out.DistortionStrength ) || Out.DistortionStrength < 0.0f || Out.DistortionStrength > 1.0f ) return false;
+		if ( Out.DistortionStrength <= 0.0f ) return true;
+		if ( DistortionTexture < 0 ) return false;
+		Out.DistortionTexture = DistortionTexture;
+		Out.DistortionUVScale[0] = Distortion.UVScale.x;
+		Out.DistortionUVScale[1] = Distortion.UVScale.y;
+		// noiseの移動量は秒齢で計算し、命令へ一周未満だけ渡す。
+		const double DistortionU = std::fmod( Age * Distortion.UVScroll.x, 1.0 );
+		const double DistortionV = std::fmod( Age * Distortion.UVScroll.y, 1.0 );
+		Out.DistortionUVOffset[0] = static_cast<float32>( DistortionU < 0.0 ? DistortionU + 1.0 : DistortionU );
+		Out.DistortionUVOffset[1] = static_cast<float32>( DistortionV < 0.0 ? DistortionV + 1.0 : DistortionV );
+		return true;
 	}
 
 	// 加算では不透明度を明るさへ移し、既存の粒子と同じ消え方にする。
@@ -472,17 +515,21 @@ TSharedPtr<IEffectPlayback> NEffect::CreateParticlePlayback( const TSharedPtr<co
 	TArray<TSharedPtr<CTexture>> DistortionTextures;
 	for ( const FParticleEmitterDefinition& Emitter : Definition->Emitters )
 	{
+		// このmesh定義が再生時に形状として使えるか。
+		const bool bMeshCompatible = Emitter.Mesh.Kind != FEffectMeshDefinition::EKind::None && Emitter.Mesh.IsValidSettings() && Emitter.Path.Kind == FEffectPathDefinition::EKind::None && !Emitter.Flipbook.bEnabled;
+		// meshが無効または他経路と競合するときは不要な画像を読まない。
+		const bool bMeshDefinitionCompatible = Emitter.Mesh.IsValidSettings() && ( Emitter.Mesh.Kind == FEffectMeshDefinition::EKind::None || bMeshCompatible );
 		// Flipbook非対応経路にも使う従来texture。
 		TSharedPtr<CTexture> Texture;
 		// spriteに有効なコマ送り設定があるか。
-		const bool bFlipbookForQuad = Emitter.Path.Kind == FEffectPathDefinition::EKind::None && Emitter.Flipbook.bEnabled;
-		if ( !bFlipbookForQuad && !Emitter.Texture.IsEmpty() )
+		const bool bFlipbookForQuad = bMeshDefinitionCompatible && Emitter.Path.Kind == FEffectPathDefinition::EKind::None && Emitter.Flipbook.bEnabled;
+		if ( bMeshDefinitionCompatible && !bFlipbookForQuad && !Emitter.Texture.IsEmpty() )
 		{
 			Texture = Assets->LoadTexture( Emitter.Texture );
 			if ( !Texture.IsValid() ) LOG( LogAsset, Warning, "Effect '%s': the image '%s' of emitter '%s' could not be loaded (a soft dot is used)", *Label, *Emitter.Texture, *Emitter.Name );
 		}
-		if ( !bFlipbookForQuad && !Texture.IsValid() && Emitter.Path.Kind == FEffectPathDefinition::EKind::None ) Texture = GetSoftDot( Assets );
-		if ( !Texture.IsValid() && Emitter.Path.Kind != FEffectPathDefinition::EKind::None )
+		if ( bMeshDefinitionCompatible && !bFlipbookForQuad && !Texture.IsValid() && Emitter.Path.Kind == FEffectPathDefinition::EKind::None ) Texture = GetSoftDot( Assets );
+		if ( bMeshDefinitionCompatible && !Texture.IsValid() && Emitter.Path.Kind != FEffectPathDefinition::EKind::None )
 		{
 			// 帯の進行方向には途切れず、幅だけが柔らかく消える画像。
 			const TArray<uint8> Image = NEffect::MakeRibbonImage();
@@ -500,7 +547,7 @@ TSharedPtr<IEffectPlayback> NEffect::CreateParticlePlayback( const TSharedPtr<co
 		FlipbookFrames.Add( PreparedFrames );
 		// マスクを再生期間保持する材質用texture。
 		TSharedPtr<CTexture> MaskTexture;
-		if ( Emitter.Material.bEnabled && !Emitter.Material.MaskTexture.IsEmpty() )
+		if ( bMeshDefinitionCompatible && Emitter.Material.bEnabled && !Emitter.Material.MaskTexture.IsEmpty() )
 		{
 			MaskTexture = Assets->LoadTexture( Emitter.Material.MaskTexture );
 			if ( !MaskTexture.IsValid() ) LOG( LogAsset, Warning, "エフェクト '%s' のエミッター '%s' の材質マスク画像 '%s' を読み込めません。組み込みマスクを使います", *Label, *Emitter.Name, *Emitter.Material.MaskTexture );
@@ -509,7 +556,7 @@ TSharedPtr<IEffectPlayback> NEffect::CreateParticlePlayback( const TSharedPtr<co
 		// 材質が有効な対応経路だけ、正の強さで必要なゆがみ画像を起動時に読む。
 		TSharedPtr<CTexture> DistortionTexture;
 		// 対応pathの材質でnoise画像が必要な条件か。
-		const bool bDistortionForPath = ( Emitter.Path.Kind == FEffectPathDefinition::EKind::None || Emitter.Path.Kind == FEffectPathDefinition::EKind::Ribbon || Emitter.Path.Kind == FEffectPathDefinition::EKind::Lightning || Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning ) && Emitter.Material.bEnabled && NeedsDistortionTexture( Emitter.Material.Distortion );
+		const bool bDistortionForPath = bMeshDefinitionCompatible && ( Emitter.Path.Kind == FEffectPathDefinition::EKind::None || Emitter.Path.Kind == FEffectPathDefinition::EKind::Ribbon || Emitter.Path.Kind == FEffectPathDefinition::EKind::Lightning || Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning ) && Emitter.Material.bEnabled && NeedsDistortionTexture( Emitter.Material.Distortion );
 		if ( bDistortionForPath )
 		{
 			if ( Emitter.Material.Distortion.IsValidSettings() ) DistortionTexture = Assets->LoadTexture( Emitter.Material.Distortion.Texture );
@@ -547,12 +594,36 @@ FParticlePlayback::FParticlePlayback( const TSharedPtr<const FParticleEffectDefi
 	TSharedPtr<const FParticleEffectDefinition> Snapshot; // 再生中に呼び出し側の編集を混ぜない定義の写し。
 	if ( Definition.IsValid() ) Snapshot = MakeShared<FParticleEffectDefinition>( *Definition );
 	NParticle::Start( Simulation, Snapshot, Params.Seed, Params.Scale, Params.Speed, Params.Loop );
+	MeshMaskHandles.Reserve( Snapshot.IsValid() ? Snapshot->Emitters.Num() : 0 );
+	MeshTextureHandles.Reserve( Snapshot.IsValid() ? Snapshot->Emitters.Num() : 0 );
+	if ( Snapshot.IsValid() ) for ( int32 Index = 0; Index < Snapshot->Emitters.Num(); ++Index )
+	{
+		// Mesh以外のemitterへ追加ready照会を行わない。
+		const FParticleEmitterDefinition& Emitter = Snapshot->Emitters[Index];
+		const bool bMeshCompatible = Emitter.Mesh.Kind != FEffectMeshDefinition::EKind::None && Emitter.Mesh.IsValidSettings() && Emitter.Path.Kind == FEffectPathDefinition::EKind::None && !Emitter.Flipbook.bEnabled;
+		const TSharedPtr<CTexture>& MaskTexture = MaskTextures.IsValidIndex( Index ) ? MaskTextures[Index] : TSharedPtr<CTexture>();
+		const TSharedPtr<CTexture>& MainTexture = Textures.IsValidIndex( Index ) ? Textures[Index] : TSharedPtr<CTexture>();
+		MeshMaskHandles.Add( bMeshCompatible && MaskTexture.IsValid() && MaskTexture->IsReady() ? MaskTexture->GetHandle() : -1 );
+		MeshTextureHandles.Add( bMeshCompatible && MainTexture.IsValid() && MainTexture->IsReady() ? MainTexture->GetHandle() : -1 );
+	}
+	if ( Snapshot.IsValid() )
+	{
+		MeshGeometries.Reserve( Snapshot->Emitters.Num() );
+		for ( const FParticleEmitterDefinition& Emitter : Snapshot->Emitters )
+		{
+			// public constructor経由でも再生開始時にmeshを固定する。
+			FEffectMeshGeometry Geometry;
+			if ( Emitter.Mesh.Kind != FEffectMeshDefinition::EKind::None && Emitter.Mesh.IsValidSettings() && Emitter.Path.Kind == FEffectPathDefinition::EKind::None && !Emitter.Flipbook.bEnabled ) NEffectMesh::BuildGeometry( Emitter.Mesh, Geometry );
+			MeshGeometries.Add( std::move( Geometry ) );
+		}
+	}
 	if ( Snapshot.IsValid() ) for ( int32 Index = 0; Index < Snapshot->Emitters.Num(); ++Index )
 	{
 		// 正の強さがありながら、再生開始時に画像を持てなかった対応材質。
 		const FParticleEmitterDefinition& Emitter = Snapshot->Emitters[Index];
 		// このpathと材質でnoiseが必要か。
-		const bool bDistortionPath = Emitter.Path.Kind == FEffectPathDefinition::EKind::None || Emitter.Path.Kind == FEffectPathDefinition::EKind::Ribbon || Emitter.Path.Kind == FEffectPathDefinition::EKind::Lightning || Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning;
+		const bool bMeshDefinitionCompatible = Emitter.Mesh.IsValidSettings() && ( Emitter.Mesh.Kind == FEffectMeshDefinition::EKind::None || ( Emitter.Mesh.Kind != FEffectMeshDefinition::EKind::None && Emitter.Path.Kind == FEffectPathDefinition::EKind::None && !Emitter.Flipbook.bEnabled ) );
+		const bool bDistortionPath = bMeshDefinitionCompatible && ( Emitter.Path.Kind == FEffectPathDefinition::EKind::None || Emitter.Path.Kind == FEffectPathDefinition::EKind::Ribbon || Emitter.Path.Kind == FEffectPathDefinition::EKind::Lightning || Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning );
 		// 正のStrength設定があり対応pathを使うか。
 		const bool bNeedsDistortion = bDistortionPath && Emitter.Material.bEnabled && NeedsDistortionTexture( Emitter.Material.Distortion );
 		// 再生snapshotが有効なnoise handleを持つか。
@@ -585,11 +656,33 @@ void FParticlePlayback::Record( FDrawContext& Draw ) const
 		Key.Serial = Particle.Serial;
 		TreeLightningSelection.Add( Key );
 	}
-	int32 CurrentEmitter = -1;
-	for ( const NParticle::FDrawParticle& Particle : Particles )
+	// alphaとsizeを見る前に固定するmesh粒子の再生全体64枠。
+	thread_local TArray<uint8> MeshParticleSelection;
+	MeshParticleSelection.Reset();
+	MeshParticleSelection.AddZeroed( Particles.Num() );
+	// emitter順・Serial順でmesh粒子を先頭から固定する。
+	int32 MeshParticleCount = 0;
+	for ( int32 ParticleIndex = 0; ParticleIndex < Particles.Num(); ++ParticleIndex )
 	{
+		// 選択判定に使う生成順particle。
+		const NParticle::FDrawParticle& Particle = Particles[ParticleIndex];
+		if ( !Simulation.Definition->Emitters.IsValidIndex( Particle.Emitter ) ) continue;
+		const FParticleEmitterDefinition& Emitter = Simulation.Definition->Emitters[Particle.Emitter];
+		if ( Emitter.Mesh.Kind == FEffectMeshDefinition::EKind::None || !Emitter.Mesh.IsValidSettings() || Emitter.Path.Kind != FEffectPathDefinition::EKind::None || Emitter.Flipbook.bEnabled ) continue;
+		if ( MeshParticleCount >= 64 ) break;
+		MeshParticleSelection[ParticleIndex] = 1;
+		++MeshParticleCount;
+	}
+	int32 CurrentEmitter = -1;
+	for ( int32 ParticleIndex = 0; ParticleIndex < Particles.Num(); ++ParticleIndex )
+	{
+		// 現在記録する生成順particle。
+		const NParticle::FDrawParticle& Particle = Particles[ParticleIndex];
 		if ( Particle.Size <= 0.0f || Particle.Color.a == 0 ) continue;
 		const FParticleEmitterDefinition& Emitter = Simulation.Definition->Emitters[Particle.Emitter];
+		// 壊れたmesh値や排他設定を別の形状へ黙って置き換えない。
+		const bool bMeshRequested = Emitter.Mesh.Kind != FEffectMeshDefinition::EKind::None;
+		if ( !Emitter.Mesh.IsValidSettings() || ( bMeshRequested && ( Emitter.Path.Kind != FEffectPathDefinition::EKind::None || Emitter.Flipbook.bEnabled ) ) ) continue;
 		// Quad経路でコマ送り画像を選ぶか。
 		const bool bUseFlipbook = Emitter.Path.Kind == FEffectPathDefinition::EKind::None && Emitter.Flipbook.bEnabled;
 		// 粒子時計で決めたコマtexture。未解決なら描画を飛ばす。
@@ -617,6 +710,56 @@ void FParticlePlayback::Record( FDrawContext& Draw ) const
 			if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning ) RecordTreeLightning( Draw, Simulation, Particles, TreeLightningSelection, CurrentEmitter, Texture->GetHandle(), MaskHandle, DistortionTextures.IsValidIndex( CurrentEmitter ) && DistortionTextures[CurrentEmitter].IsValid() ? DistortionTextures[CurrentEmitter]->GetHandle() : -1, PathSeed );
 		}
 		if ( Emitter.Path.Kind != FEffectPathDefinition::EKind::None ) continue;
+		if ( bMeshRequested && ( Emitter.Flipbook.bEnabled || !Emitter.Mesh.IsValidSettings() ) ) continue;
+		if ( bMeshRequested )
+		{
+			if ( !MeshParticleSelection.IsValidIndex( ParticleIndex ) || MeshParticleSelection[ParticleIndex] == 0 || !MeshGeometries.IsValidIndex( Particle.Emitter ) ) continue;
+			const FEffectMeshGeometry& Geometry = MeshGeometries[Particle.Emitter];
+			const int32 MeshTextureHandle = MeshTextureHandles.IsValidIndex( Particle.Emitter ) ? MeshTextureHandles[Particle.Emitter] : -1;
+			if ( Geometry.Vertices.IsEmpty() || Geometry.Indices.IsEmpty() || MeshTextureHandle < 0 ) continue;
+			// 描画呼出し間で使い回す粒子固有のワールド頂点。
+			thread_local TArray<FMeshVertex> WorldVertices;
+			WorldVertices.SetNum( Geometry.Vertices.Num() );
+			// 粒子回転、固定形状回転、effect回転を契約順に合成する。
+			const FQuaternion SpinRotation = FQuaternion::FromAxisAngle( FVector3::Forward, Particle.Angle );
+			const FVector3 MeshRadians = Emitter.Mesh.RotationDegrees * 0.01745329251994329577f;
+			const FQuaternion MeshRotation = FQuaternion::EulerToQuat( MeshRadians );
+			const FQuaternion MeshWorldRotation = Simulation.Transform.Rotation * MeshRotation * SpinRotation;
+			// 元形状の全頂点をコピーして粒子位置・寸法だけを反映する。
+			for ( int32 VertexIndex = 0; VertexIndex < Geometry.Vertices.Num(); ++VertexIndex )
+			{
+				// 書き換え先のparticle vertex。
+				FMeshVertex& Vertex = WorldVertices[VertexIndex];
+				// immutableな元頂点を参照し、共有geometryには触れない。
+				const FMeshVertex& SourceVertex = Geometry.Vertices[VertexIndex];
+				const FVector3 LocalPosition( SourceVertex.Position[0] * Particle.Size, SourceVertex.Position[1] * Particle.Size, SourceVertex.Position[2] * Particle.Size );
+				const FVector3 WorldPosition = Particle.Position + MeshWorldRotation.Rotate( LocalPosition );
+				const FVector3 LocalNormal( SourceVertex.Normal[0], SourceVertex.Normal[1], SourceVertex.Normal[2] );
+				const FVector3 WorldNormal = MeshWorldRotation.Rotate( LocalNormal );
+				Vertex = SourceVertex;
+				Vertex.Position[0] = WorldPosition.x;
+				Vertex.Position[1] = WorldPosition.y;
+				Vertex.Position[2] = WorldPosition.z;
+				Vertex.Normal[0] = WorldNormal.x;
+				Vertex.Normal[1] = WorldNormal.y;
+				Vertex.Normal[2] = WorldNormal.z;
+				Vertex.Color[0] = Particle.Color.r;
+				Vertex.Color[1] = Particle.Color.g;
+				Vertex.Color[2] = Particle.Color.b;
+				Vertex.Color[3] = Particle.Color.a;
+			}
+			// 再生開始時に固定したnoiseとmask handleだけをmesh命令へ渡す。
+			const int32 MeshMaskHandle = MeshMaskHandles.IsValidIndex( Particle.Emitter ) ? MeshMaskHandles[Particle.Emitter] : -1;
+			const TSharedPtr<CTexture>& MeshDistortionTexture = DistortionTextures.IsValidIndex( Particle.Emitter ) ? DistortionTextures[Particle.Emitter] : TSharedPtr<CTexture>();
+			const int32 MeshDistortionHandle = MeshDistortionTexture.IsValid() ? MeshDistortionTexture->GetHandle() : -1;
+			// 材質・transform検証で失敗した粒子はmeshもquadも記録しない。
+			FDrawMaterialMeshData MeshData;
+			if ( !BuildMaterialMeshData( Emitter, Particle, MeshTextureHandle, MeshMaskHandle, MeshDistortionHandle, MeshData ) ) continue;
+			MeshData.NumVertices = WorldVertices.Num();
+			MeshData.NumIndices = Geometry.Indices.Num();
+			Draw.MaterialMesh3D( MeshData, WorldVertices.GetData(), Geometry.Indices.GetData() );
+			continue;
+		}
 
 		FDrawQuad3DData Data;
 		Data.Pos[0] = Particle.Position.x;

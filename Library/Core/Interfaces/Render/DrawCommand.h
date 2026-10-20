@@ -56,6 +56,8 @@ enum class EDrawCommand : uint8
 	DistortedMaterialQuad3D, // FDrawDistortedMaterialQuadData。ノイズ画像でUVをゆがめる材質付き四角形
 	// FDrawDistortedMaterialRibbonDataと点ごとの変位値で、材質付き帯のUVをゆがめる。
 	DistortedMaterialRibbon3D,
+	// FDrawMaterialMeshDataと頂点・indexを所有コピーした材質メッシュ。
+	MaterialMesh3D,
 };
 
 // Quad3D の向きの決め方
@@ -294,4 +296,6 @@ public:
 	virtual bool SupportsEffectUVDistortion() const { return false; }
 	// 実行先がノイズ画像による材質帯のUVゆがみを描画できるかを返す。未対応の実行先は false。
 	virtual bool SupportsEffectRibbonUVDistortion() const { return false; }
+	// 実行先が材質付き頂点メッシュを描画できるかを返す。未対応の実行先は false。
+	virtual bool SupportsEffectMaterialMesh() const { return false; }
 };

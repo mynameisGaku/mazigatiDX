@@ -300,6 +300,8 @@ namespace
 		SetCameraNearFar( S.View.Near, S.View.Far );
 		SetupCamera_Perspective( S.View.FovY );
 		SetCameraPositionAndTargetAndUpVec( Camera.GetEye(), Camera.Target, FVector3::Up );
+		// 材質meshの表示時間を現在frameへ反映してからscene commandを記録する。
+		NWorldEditorUI::UpdateMeshMaterialPreviews( S, ImGui::GetIO().DeltaTime );
 
 		FDrawBuffer Buffer;
 		FDrawContext Draw( Buffer );

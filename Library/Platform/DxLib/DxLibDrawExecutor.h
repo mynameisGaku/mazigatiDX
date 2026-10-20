@@ -40,6 +40,8 @@ public:
 	bool SupportsEffectUVDistortion() const override;
 	// 現在のDirect3D環境で材質帯のUVゆがみを描画できるか返す。
 	bool SupportsEffectRibbonUVDistortion() const override;
+	// 現在のDirect3D環境で材質付き頂点メッシュを描画できるか返す。
+	bool SupportsEffectMaterialMesh() const override;
 
 private:
 	// DxLibが動作中に解放する必要がある材質描画用GPU資源。

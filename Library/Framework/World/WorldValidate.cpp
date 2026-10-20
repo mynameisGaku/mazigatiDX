@@ -295,7 +295,19 @@ namespace
 				if ( Issue.bError ) Report.Error( EWorldIssueCode::BadMesh, Id, "the mesh: " + Issue.Message );
 				else Report.Warning( EWorldIssueCode::BadMesh, Id, "the mesh: " + Issue.Message );
 			}
-			for ( const FEditMeshMaterial& Material : Mesh.Materials ) CheckOptionalAsset( Report, Assets, Id, "the mesh material's image", Material.Texture );
+			for ( const FEditMeshMaterial& Material : Mesh.Materials )
+			{
+				CheckOptionalAsset( Report, Assets, Id, "the mesh material's image", Material.Texture );
+				if ( !Material.Effect.Material.bEnabled ) continue;
+				if ( Material.Effect.Material.bDissolve ) CheckOptionalAsset( Report, Assets, Id, "the mesh effect's mask image", Material.Effect.Material.MaskTexture );
+				// 有効なmesh効果が参照するUV歪み設定。
+				const FEffectUVDistortionDefinition& Distortion = Material.Effect.Material.Distortion;
+				// 空の歪み曲線はこのMesh効果では強度0として扱う。
+				bool bNeedsNoiseTexture = false;
+				// 一つでも正の強度を持つキーがあれば歪み画像を使う。
+				for ( const FEffectScalarCurve::FKey& Key : Distortion.Strength.Keys ) bNeedsNoiseTexture = bNeedsNoiseTexture || Key.Value > 0.0f;
+				if ( Distortion.bEnabled && bNeedsNoiseTexture ) CheckOptionalAsset( Report, Assets, Id, "the mesh effect's distortion image", Distortion.Texture );
+			}
 		}
 
 		// 当たり判定の形

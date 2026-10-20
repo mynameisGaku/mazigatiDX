@@ -777,6 +777,161 @@ Failed:
 		Saved.Restore( Context );
 		return true;
 	}
+
+	// index順に頂点属性を展開し、Ribbonと同じnative材質shaderでworld meshを描く。
+	bool DrawMesh( const FDrawMaterialMeshData& Data, const FMeshVertex* SourceVertices, const uint32* Indices )
+	{
+		if ( !NDrawMaterialMesh::IsValid( Data, SourceVertices, Indices ) )
+		{
+			if ( !bInvalidDataLogged ) { LOG( LogEffectMaterial, Warning, "材質付きメッシュの頂点またはindexが不正なため描画を読み飛ばしました" ); bInvalidDataLogged = true; }
+			return false;
+		}
+		if ( !Initialize() ) return false;
+		// 元画像と任意のmask・noiseをnative shader用に取得する。
+		// 元画像を参照するSRV。
+		const ID3D11ShaderResourceView* Source = GetTexture( Data.Texture, SourceView, SourceHandle, SourceTextureIdentity );
+		// 消失maskがある場合だけ使うSRV。
+		const ID3D11ShaderResourceView* Mask = Data.Material.MaskTexture >= 0 ? GetTexture( Data.Material.MaskTexture, MaskView, MaskHandle, MaskTextureIdentity ) : nullptr;
+		// 正の変位強度でnoise画像を使うか。
+		const bool bUseDistortion = Data.DistortionStrength > 0.0f;
+		// ゆがみ画像を参照するSRV。
+		const ID3D11ShaderResourceView* Distortion = bUseDistortion ? GetTexture( Data.DistortionTexture, DistortionView, DistortionHandle, DistortionTextureIdentity ) : nullptr;
+		if ( Source == nullptr || ( Data.Material.MaskTexture >= 0 && Mask == nullptr ) || ( bUseDistortion && Distortion == nullptr ) )
+		{
+			if ( !bFailedLogged ) { LOG( LogEffectMaterial, Warning, "材質付きメッシュの画像をDirect3D 11から取得できません" ); bFailedLogged = true; }
+			return false;
+		}
+		// 描画設定から対応するalphaまたはadd合成stateを選ぶ。
+		// DxLibが設定した合成種類。
+		int32 BlendMode = DX_BLENDMODE_ALPHA;
+		// callerが設定した合成の強さ。
+		int32 BlendParam = 255;
+		GetDrawBlendMode( &BlendMode, &BlendParam );
+		BlendParam = ( std::min )( 255, ( std::max )( 0, BlendParam ) );
+		// 対応するalpha/add用native state。
+		ID3D11BlendState* BlendState = BlendMode == DX_BLENDMODE_ALPHA ? AlphaBlend : BlendMode == DX_BLENDMODE_ADD ? AddBlend : nullptr;
+		if ( BlendState == nullptr )
+		{
+			if ( !bUnsupportedBlendLogged ) { LOG( LogEffectMaterial, Warning, "材質付きメッシュはAlphaとAdd以外の合成方法を扱えません" ); bUnsupportedBlendLogged = true; }
+			return false;
+		}
+		// DxLibの保留中頂点を先にflushしてnative drawの順序を保つ。
+		RenderVertex();
+		// DxLib選択先のRTとviewportがnative contextへ反映済みか調べる。
+		// 現在DxLibが選んだ画面handle。
+		const int32 DrawScreen = GetDrawScreen();
+		// 描画先画面から得るべきnative target。
+		ID3D11RenderTargetView* ExpectedTarget = DrawScreen == DX_SCREEN_BACK ? const_cast<ID3D11RenderTargetView*>( static_cast<const ID3D11RenderTargetView*>( GetUseDirect3D11BackBufferRenderTargetView() ) ) : const_cast<ID3D11RenderTargetView*>( static_cast<const ID3D11RenderTargetView*>( GetGraphID3D11RenderTargetView( DrawScreen ) ) );
+		// contextから参照を取得する現在の描画先。
+		ID3D11RenderTargetView* CurrentTarget = nullptr;
+		Context->OMGetRenderTargets( 1, &CurrentTarget, nullptr );
+		// DxLibが論理的に指定しているpixel範囲。
+		RECT DrawArea{};
+		GetDrawArea( &DrawArea );
+		// contextが現在使っているviewport。
+		D3D11_VIEWPORT CurrentViewport{};
+		// viewport設定の件数。
+		UINT ViewportCount = 1;
+		Context->RSGetViewports( &ViewportCount, &CurrentViewport );
+		// 期待した描画先がcontextへ反映済みか。
+		const bool bTargetMatches = ExpectedTarget != nullptr && CurrentTarget == ExpectedTarget;
+		// native viewportがDxLibのDrawAreaに一致するか。
+		const bool bViewportMatches = ViewportCount == 1 && CurrentViewport.TopLeftX == static_cast<float32>( DrawArea.left ) && CurrentViewport.TopLeftY == static_cast<float32>( DrawArea.top ) && CurrentViewport.Width == static_cast<float32>( DrawArea.right - DrawArea.left ) && CurrentViewport.Height == static_cast<float32>( DrawArea.bottom - DrawArea.top );
+		if ( CurrentTarget != nullptr ) CurrentTarget->Release();
+		if ( !bTargetMatches || !bViewportMatches )
+		{
+			if ( !bStateMismatchLogged ) { LOG( LogEffectMaterial, Warning, "材質付きメッシュの描画先または表示範囲がDxLib設定と一致しません" ); bStateMismatchLogged = true; }
+			return false;
+		}
+		// native drawで変更する全stateを参照付きで退避する。
+		FNativeState Saved;
+		Saved.Save( Context );
+		{
+			// 描画直前にDxLibのimmediate contextが入れ替わっていないか確認する。
+			// DxLibから取得した現在context。
+			ID3D11DeviceContext* Current = const_cast<ID3D11DeviceContext*>( static_cast<const ID3D11DeviceContext*>( GetUseDirect3D11DeviceContext() ) );
+			if ( Current != Context ) { Saved.Restore( Context ); return false; }
+		}
+		// 入力頂点は既にworld座標なのでworld行列を掛けずview以降を合成する。
+		// DxLibが設定したview・projection・論理viewport。
+		MATRIX View{}, Projection{}, Viewport{}, ApiViewport{};
+		GetTransformToViewMatrix( &View ); GetTransformToProjectionMatrix( &Projection ); GetTransformToViewportMatrix( &Viewport ); GetTransformToAPIViewportMatrix( &ApiViewport );
+		// native viewport変換の重複を避ける逆行列。
+		const MATRIX ApiViewportInverse = MInverse( ApiViewport );
+		// shaderへ送るworld座標からclip座標への変換。
+		const MATRIX Wvp = MMult( MMult( MMult( View, Projection ), Viewport ), ApiViewportInverse );
+		for ( int Row = 0; Row < 4; ++Row ) for ( int Column = 0; Column < 4; ++Column ) if ( !std::isfinite( Wvp.m[Row][Column] ) ) { Saved.Restore( Context ); return false; }
+		// source・mask・noise graph領域をbase texture内へ写す値。
+		// 元画像のbase内矩形と半texel幅。
+		float32 SourceRect[4] = {}, SourceInset[4] = {}, MaskRect[4] = { 1.0f, 1.0f, 0.0f, 0.0f }, MaskInset[4] = {}, DistortionRect[4] = { 1.0f, 1.0f, 0.0f, 0.0f }, DistortionInset[4] = {};
+		if ( !GetGraphUvMapping( Data.Texture, SourceRect, SourceInset ) || ( Data.Material.MaskTexture >= 0 && !GetGraphUvMapping( Data.Material.MaskTexture, MaskRect, MaskInset ) ) || ( bUseDistortion && !GetGraphUvMapping( Data.DistortionTexture, DistortionRect, DistortionInset ) ) ) { Saved.Restore( Context ); return false; }
+		// index順に展開した非indexed頂点をGPUへ送る配列。
+		TArray<FVertex> Vertices;
+		Vertices.SetNum( Data.NumIndices );
+		// 各三角形頂点へ位置・色・UVと共通材質値を写す添字。
+		for ( int32 Index = 0; Index < Data.NumIndices; ++Index )
+		{
+			// 元meshから読む頂点。
+			const FMeshVertex& Input = SourceVertices[Indices[Index]];
+			// GPUへ送る展開済み頂点。
+			FVertex& Output = Vertices[Index];
+			Output.Position[0] = Input.Position[0]; Output.Position[1] = Input.Position[1]; Output.Position[2] = Input.Position[2];
+			Output.UV[0] = Input.U; Output.UV[1] = Input.V;
+			Output.Color[0] = Input.Color[0] / 255.0f; Output.Color[1] = Input.Color[1] / 255.0f; Output.Color[2] = Input.Color[2] / 255.0f; Output.Color[3] = Input.Color[3] / 255.0f;
+			Output.Dissolve = Data.Dissolve; Output.Emission = Data.Emission;
+			Output.UVOffset[0] = Data.UVOffset[0]; Output.UVOffset[1] = Data.UVOffset[1];
+			if ( bUseDistortion ) { Output.DistortionOffset[0] = Data.DistortionUVOffset[0]; Output.DistortionOffset[1] = Data.DistortionUVOffset[1]; Output.DistortionStrength = Data.DistortionStrength; }
+		}
+		// dynamic vertex bufferへ展開済み三角形を転送する。
+		D3D11_MAPPED_SUBRESOURCE Mapped{};
+		if ( FAILED( Context->Map( VertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &Mapped ) ) ) { Saved.Restore( Context ); return false; }
+		std::memcpy( Mapped.pData, Vertices.GetData(), static_cast<size_t>( Vertices.Num() ) * sizeof( FVertex ) ); Context->Unmap( VertexBuffer, 0 );
+		// 頂点shaderへ渡すworld座標からclip座標への変換。
+		FVertexConstants VsConstants{};
+		std::memcpy( VsConstants.Wvp, &Wvp, sizeof( VsConstants.Wvp ) );
+		// pixel shaderへ渡す元画像・mask・発光・ゆがみ設定。
+		FPixelConstants PsConstants{};
+		PsConstants.UvScaleOffset[0] = Data.Material.UVScale[0]; PsConstants.UvScaleOffset[1] = Data.Material.UVScale[1]; PsConstants.UvScaleOffset[2] = Data.UVOffset[0]; PsConstants.UvScaleOffset[3] = Data.UVOffset[1];
+		PsConstants.Values[1] = static_cast<float32>( Data.Material.bDissolve ); PsConstants.Values[2] = Data.Material.MaskScale;
+		PsConstants.Tint[0] = 1.0f; PsConstants.Tint[1] = 1.0f; PsConstants.Tint[2] = 1.0f; PsConstants.Tint[3] = 1.0f;
+		PsConstants.Edge[0] = Data.Material.EdgeColor.R / 255.0f * Data.Material.EdgeColor.A / 255.0f * Data.Material.EdgeEmission; PsConstants.Edge[1] = Data.Material.EdgeColor.G / 255.0f * Data.Material.EdgeColor.A / 255.0f * Data.Material.EdgeEmission; PsConstants.Edge[2] = Data.Material.EdgeColor.B / 255.0f * Data.Material.EdgeColor.A / 255.0f * Data.Material.EdgeEmission; PsConstants.Edge[3] = Data.Material.EdgeWidth;
+		PsConstants.BrightBlend[0] = 1.0f; PsConstants.BrightBlend[1] = 1.0f; PsConstants.BrightBlend[2] = 1.0f; PsConstants.BrightBlend[3] = 1.0f;
+		// 呼び出し元のDrawBrightを各RGBへ掛ける。
+		// callerの明度倍率を得るRGB値。
+		int32 Bright[3] = { 255, 255, 255 };
+		GetDrawBright( &Bright[0], &Bright[1], &Bright[2] );
+		PsConstants.BrightBlend[0] *= Bright[0] / 255.0f; PsConstants.BrightBlend[1] *= Bright[1] / 255.0f; PsConstants.BrightBlend[2] *= Bright[2] / 255.0f;
+		PsConstants.Options[0] = Data.Material.MaskTexture >= 0 ? 1.0f : 0.0f; PsConstants.Options[1] = BlendParam / 255.0f; PsConstants.Options[3] = 1.0f;
+		std::memcpy( PsConstants.SourceRect, SourceRect, sizeof( SourceRect ) ); std::memcpy( PsConstants.SourceInset, SourceInset, sizeof( SourceInset ) ); std::memcpy( PsConstants.MaskRect, MaskRect, sizeof( MaskRect ) ); std::memcpy( PsConstants.MaskInset, MaskInset, sizeof( MaskInset ) );
+		if ( bUseDistortion ) { PsConstants.DistortionScaleOffset[0] = Data.DistortionUVScale[0]; PsConstants.DistortionScaleOffset[1] = Data.DistortionUVScale[1]; PsConstants.DistortionValues[0] = Data.DistortionStrength; PsConstants.DistortionValues[1] = 1.0f; std::memcpy( PsConstants.DistortionRect, DistortionRect, sizeof( DistortionRect ) ); std::memcpy( PsConstants.DistortionInset, DistortionInset, sizeof( DistortionInset ) ); }
+		if ( FAILED( Context->Map( VertexConstants, 0, D3D11_MAP_WRITE_DISCARD, 0, &Mapped ) ) ) { Saved.Restore( Context ); return false; }
+		std::memcpy( Mapped.pData, &VsConstants, sizeof( VsConstants ) ); Context->Unmap( VertexConstants, 0 );
+		if ( FAILED( Context->Map( PixelConstants, 0, D3D11_MAP_WRITE_DISCARD, 0, &Mapped ) ) ) { Saved.Restore( Context ); return false; }
+		std::memcpy( Mapped.pData, &PsConstants, sizeof( PsConstants ) ); Context->Unmap( PixelConstants, 0 );
+		// native drawへ結ぶvertex buffer・constant buffer・SRVと合成係数。
+		const UINT Stride = sizeof( FVertex ); const UINT Offset = 0; ID3D11Buffer* Vb = VertexBuffer; ID3D11Buffer* VsCb = VertexConstants; ID3D11Buffer* PsCb = PixelConstants; ID3D11ShaderResourceView* Srvs[3] = { const_cast<ID3D11ShaderResourceView*>( Source ), const_cast<ID3D11ShaderResourceView*>( Mask ), const_cast<ID3D11ShaderResourceView*>( Distortion ) }; const FLOAT BlendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+		Context->IASetInputLayout( Layout ); Context->IASetVertexBuffers( 0, 1, &Vb, &Stride, &Offset ); Context->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
+		Context->VSSetShader( VertexShader, nullptr, 0 ); Context->PSSetShader( PixelShader, nullptr, 0 ); Context->GSSetShader( nullptr, nullptr, 0 ); Context->HSSetShader( nullptr, nullptr, 0 ); Context->DSSetShader( nullptr, nullptr, 0 );
+		Context->VSSetConstantBuffers( 0, 1, &VsCb ); Context->PSSetConstantBuffers( 0, 1, &PsCb ); Context->PSSetShaderResources( 0, bUseDistortion ? 3u : 2u, Srvs ); Context->PSSetSamplers( 0, 1, &Sampler );
+		if ( Data.bTwoSided != 0 )
+		{
+			// 呼び出し元のraster設定を保ち、裏面も描く場合だけcullingを外す。
+			D3D11_RASTERIZER_DESC RasterDesc{};
+			if ( Saved.Raster != nullptr ) Saved.Raster->GetDesc( &RasterDesc ); else { RasterDesc.FillMode = D3D11_FILL_SOLID; RasterDesc.DepthClipEnable = TRUE; }
+			RasterDesc.CullMode = D3D11_CULL_NONE;
+			if ( !bRasterDescValid || std::memcmp( &RasterDescCache, &RasterDesc, sizeof( RasterDesc ) ) != 0 )
+			{
+				if ( Raster != nullptr ) Raster->Release();
+				Raster = nullptr;
+				if ( FAILED( Device->CreateRasterizerState( &RasterDesc, &Raster ) ) ) { bRasterDescValid = false; Saved.Restore( Context ); return false; }
+				RasterDescCache = RasterDesc; bRasterDescValid = true;
+			}
+			Context->RSSetState( Raster );
+		}
+		Context->OMSetBlendState( BlendState, BlendFactor, 0xffffffffu ); Context->OMSetDepthStencilState( DepthStates[Data.Material.DepthTest | ( Data.Material.DepthWrite << 1 )], 0 ); Context->Draw( Vertices.Num(), 0 );
+		Saved.Restore( Context );
+		return true;
+	}
 };
 
 FEffectMaterialRenderer::FEffectMaterialRenderer() : Impl( new FImpl() ) {}
@@ -791,3 +946,5 @@ bool FEffectMaterialRenderer::IsAvailable() const { return Impl != nullptr && Im
 bool FEffectMaterialRenderer::IsRibbonAvailable() const { return Impl != nullptr && Impl->VertexShader != nullptr && Impl->PixelShader != nullptr && Impl->Layout != nullptr && Impl->VertexBuffer != nullptr; }
 bool FEffectMaterialRenderer::IsUVDistortionAvailable() const { return Impl != nullptr && Impl->VertexShader != nullptr && Impl->PixelShader != nullptr && Impl->Layout != nullptr && Impl->VertexBuffer != nullptr && Impl->VertexConstants != nullptr && Impl->PixelConstants != nullptr && Impl->Sampler != nullptr && Impl->AlphaBlend != nullptr && Impl->AddBlend != nullptr && Impl->DepthStates[0] != nullptr && Impl->DepthStates[1] != nullptr && Impl->DepthStates[2] != nullptr && Impl->DepthStates[3] != nullptr; }
 bool FEffectMaterialRenderer::IsRibbonUVDistortionAvailable() const { return IsRibbonAvailable() && IsUVDistortionAvailable(); }
+bool FEffectMaterialRenderer::DrawMesh( const FDrawMaterialMeshData& Data, const FMeshVertex* Vertices, const uint32* Indices ) { return Impl != nullptr && Impl->DrawMesh( Data, Vertices, Indices ); }
+bool FEffectMaterialRenderer::IsMeshAvailable() const { return IsRibbonAvailable() && IsUVDistortionAvailable(); }

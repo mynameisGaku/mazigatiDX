@@ -125,6 +125,8 @@ namespace
 				if ( ImGui::MenuItem( "Flowing energy veil" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/uv_distortion_energy_veil.effect.json", pOpen );
 				if ( ImGui::MenuItem( "Distorted ribbon trail" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/uv_distortion_ribbon.effect.json", pOpen );
 				if ( ImGui::MenuItem( "Flowing lightning tree" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/uv_distortion_tree_lightning.effect.json", pOpen );
+				if ( ImGui::MenuItem( "Mesh energy ring" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/mesh_energy_ring.effect.json", pOpen );
+				if ( ImGui::MenuItem( "Mesh tilted veil" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/mesh_tilted_veil.effect.json", pOpen );
 				ImGui::EndMenu();
 			}
 			if ( ImGui::BeginMenu( "Edit" ) )
@@ -203,9 +205,8 @@ bool NDebugUI::OpenEffectFile( FEffectEditorState& State, const FString& AssetPa
 	State.SelectedEmitter = State.Document.Get().Emitters.IsEmpty() ? INDEX_NONE : 0;
 	State.bInitialized = true;
 	State.bPreviewMotion = false;
-	// Treeを含む文書だけは、実viewport確定後に一度全体をcameraへ収める。
-	State.bTreeCameraFocusPending = false;
-	for ( const FParticleEmitterDefinition& Emitter : Definition.Emitters ) if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning ) { State.bTreeCameraFocusPending = true; break; }
+	// Treeまたはmeshを含む文書だけ、実viewport確定後に一度全体をcameraへ収める。
+	NEffectEditorUI::SetPendingEffectCameraFocus( State, Definition );
 	State.Camera.Distance = 6.0f;
 	RestartEffectPreview( State );
 	SetStatus( State, "エフェクトを開きました: " + Path );
@@ -223,6 +224,7 @@ void NDebugUI::NewEffect( FEffectEditorState& State )
 	State.bInitialized = true;
 	State.bPreviewMotion = false;
 	State.bTreeCameraFocusPending = false;
+	State.bEffectGeometryCameraFocusPending = false;
 	State.Camera = FEditorCamera();
 	State.Camera.Distance = 6.0f;
 	RestartEffectPreview( State );
@@ -409,7 +411,7 @@ void NDebugUI::DrawEffectEditor( FEffectEditorState& State, bool* pOpen )
 		if ( pOpen == nullptr || *pOpen )
 		{
 			ImGui::Text( "%s%s", State.FilePath.IsEmpty() ? "(new effect)" : UI_TEXT( State.FilePath ), State.Document.IsDirty() ? " *" : "" );
-			ImGui::TextDisabled( "Supported: sprites, ribbon trails and branch lightning" );
+			ImGui::TextDisabled( "Supported: sprites, ribbon trails, branch lightning, tree lightning and mesh particles" );
 			// 設定を十分な幅で読みつつ、小さい画面ではプレビュー領域も残す。
 			const float LeftWidth = std::min( 460.0f, ImGui::GetContentRegionAvail().x * 0.46f );
 			ImGui::BeginChild( "EffectDefinition", ImVec2( LeftWidth, -28.0f ), ImGuiChildFlags_Borders );

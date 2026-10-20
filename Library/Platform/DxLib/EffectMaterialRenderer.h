@@ -6,9 +6,10 @@
 #include "Library/Core/Interfaces/Render/DrawDistortedMaterialQuad.h"
 #include "Library/Core/Interfaces/Render/DrawDistortedMaterialRibbon.h"
 #include "Library/Core/Interfaces/Render/DrawMaterialQuad.h"
+#include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
 #include "Library/Core/Interfaces/Render/DrawMaterialRibbon.h"
 
-// DxLib executor が所有し、材質付き四角形の Direct3D 11 資源を管理する。
+// DxLib executor が所有し、材質付き四角形・帯・meshで共有する Direct3D 11 資源を管理する。
 class FEffectMaterialRenderer
 {
 public:
@@ -34,6 +35,12 @@ public:
 	// PointsにはNumPoints個以上の有効な型付き配列を渡す。
 	// 無効値、画像資源不足、未対応状態ではfalseを返す。
 	bool DrawDistortedRibbon( const FDrawDistortedMaterialRibbonData& Data, const FDrawDistortedMaterialRibbonData::FPoint* Points );
+	// 固定設定と頂点・index配列を受け取り、world座標の材質付き三角形を描く。
+	// Data: 頂点数、index数、材質と画像handleを含む固定設定。
+	// Vertices: Data.NumVertices個以上のworld頂点を持つ型付き配列。
+	// Indices: Data.NumIndices個以上の範囲内indexを持つ型付き配列。
+	// 不正値、画像不足、未対応blendや描画状態ではfalseを返す。
+	bool DrawMesh( const FDrawMaterialMeshData& Data, const FMeshVertex* Vertices, const uint32* Indices );
 	// DxLib 終了前に所有している GPU 資源を解放する。
 	void Deinitialize();
 	// Direct3D 11 の GPU 資源を使用できるか返す。
@@ -44,6 +51,8 @@ public:
 	bool IsUVDistortionAvailable() const;
 	// Direct3D 11で点ごとのUVゆがみを使う帯描画資源が使用できるか返す。
 	bool IsRibbonUVDistortionAvailable() const;
+	// 材質付き頂点メッシュの描画資源が使用可能かを返す。
+	bool IsMeshAvailable() const;
 
 private:
 	// Direct3D 11 の型を公開headerへ漏らさない実装。

@@ -717,7 +717,7 @@ int32 NEditMesh::TriangulateFaces( FEditMesh& Mesh, const TArray<int32>& Faces )
 //=============================================================================
 bool NEditMesh::IsSameMaterial( const FEditMeshMaterial& A, const FEditMeshMaterial& B )
 {
-	return A.Name == B.Name && A.Color.r == B.Color.r && A.Color.g == B.Color.g && A.Color.b == B.Color.b && A.Texture == B.Texture && A.Tile == B.Tile && A.Offset.x == B.Offset.x && A.Offset.y == B.Offset.y && A.bTwoSided == B.bTwoSided;
+	return A.Name == B.Name && A.Color.r == B.Color.r && A.Color.g == B.Color.g && A.Color.b == B.Color.b && A.Texture == B.Texture && A.Tile == B.Tile && A.Offset.x == B.Offset.x && A.Offset.y == B.Offset.y && A.bTwoSided == B.bTwoSided && A.Effect.IsSameAs( B.Effect );
 }
 
 void NEditMesh::SetFaceMaterial( FEditMesh& Mesh, const TArray<int32>& Faces, int32 Material )

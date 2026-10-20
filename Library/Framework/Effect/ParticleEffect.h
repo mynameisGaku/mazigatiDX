@@ -4,6 +4,7 @@
 #include "Library/Framework/Effect/EffectAppearanceDefinition.h"
 #include "Library/Framework/Effect/EffectFlipbookDefinition.h"
 #include "Library/Framework/Effect/EffectMaterialDefinition.h"
+#include "Library/Framework/Effect/EffectMeshDefinition.h"
 #include "Library/Framework/Effect/EffectPathDefinition.h"
 #include "Library/Json/JsonObject.h"
 #include "Library/Math/Color.h"
@@ -92,6 +93,8 @@ struct FParticleEmitterDefinition
 	FEffectAppearanceDefinition Appearance;
 	// 四角形粒子で共有するスプライトシートとコマ再生時計。
 	FEffectFlipbookDefinition Flipbook;
+	// 固定向きの平面または円環。Noneなら従来描画を保つ。
+	FEffectMeshDefinition Mesh;
 
 	int32 MaxParticles = 200;                          // 同時にいる粒子の上限（超える分は、出さない）
 	float32 Delay = 0.0f;                              // エフェクトが始まってから、動き出すまでの秒

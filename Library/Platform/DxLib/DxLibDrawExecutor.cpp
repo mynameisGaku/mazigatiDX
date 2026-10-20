@@ -9,6 +9,7 @@
 #include "Library/Core/Interfaces/Render/DrawMaterialQuad.h"
 #include "Library/Core/Interfaces/Render/DrawDistortedMaterialQuad.h"
 #include "Library/Core/Interfaces/Render/DrawDistortedMaterialRibbon.h"
+#include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
@@ -218,6 +219,11 @@ bool CDxLibDrawExecutor::SupportsEffectUVDistortion() const
 bool CDxLibDrawExecutor::SupportsEffectRibbonUVDistortion() const
 {
 	return EffectMaterialRenderer.IsRibbonUVDistortionAvailable();
+}
+
+bool CDxLibDrawExecutor::SupportsEffectMaterialMesh() const
+{
+	return EffectMaterialRenderer.IsMeshAvailable();
 }
 
 void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
@@ -506,6 +512,57 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 				break;
 			}
 			EffectMaterialRenderer.DrawRibbon( Data, Points.GetData() );
+			break;
+		}
+		case EDrawCommand::MaterialMesh3D:
+		{
+			// 固定headerに必要なword数。
+			constexpr int32 DataWords = sizeof( FDrawMaterialMeshData ) / 4;
+			// 壊れた固定header長を検出したことを記録する状態。
+			static bool bInvalidMaterialMeshCommandLogged = false;
+			if ( Command.NumDataWords < DataWords )
+			{
+				if ( !bInvalidMaterialMeshCommandLogged ) { LOG( LogDxLibDraw, Warning, "材質付きメッシュの命令headerが短いため描画を読み飛ばしました" ); bInvalidMaterialMeshCommandLogged = true; }
+				break;
+			}
+			// byte列から型付きheaderへ安全に複写する値。
+			FDrawMaterialMeshData Data{};
+			std::memcpy( &Data, Command.Data, sizeof( Data ) );
+			if ( !NDrawMaterialMesh::IsValidHeader( Data ) )
+			{
+				if ( !bInvalidMaterialMeshCommandLogged ) { LOG( LogDxLibDraw, Warning, "材質付きメッシュの頂点数または設定値が不正なため描画を読み飛ばしました" ); bInvalidMaterialMeshCommandLogged = true; }
+				break;
+			}
+			// 上限確認後に計算する正確なpayload長。
+			const size_t VertexWords = static_cast<size_t>( Data.NumVertices ) * sizeof( FMeshVertex ) / 4;
+			const size_t IndexWords = static_cast<size_t>( Data.NumIndices );
+			const size_t ExpectedDataWords = static_cast<size_t>( DataWords ) + VertexWords + IndexWords;
+			if ( ExpectedDataWords > static_cast<size_t>( NDrawCommand::MaxWords - 1 ) || Command.NumDataWords != static_cast<int32>( ExpectedDataWords ) )
+			{
+				if ( !bInvalidMaterialMeshCommandLogged ) { LOG( LogDxLibDraw, Warning, "材質付きメッシュの命令長が不正なため描画を読み飛ばしました" ); bInvalidMaterialMeshCommandLogged = true; }
+				break;
+			}
+			// byte列から寿命を持つ型付き頂点配列へ複写する。
+			TArray<FMeshVertex> Vertices;
+			Vertices.SetNum( Data.NumVertices );
+			std::memcpy( Vertices.GetData(), Command.Data + DataWords, static_cast<size_t>( Data.NumVertices ) * sizeof( FMeshVertex ) );
+			// 頂点配列直後のbyte列から所有index配列へ複写する。
+			TArray<uint32> Indices;
+			Indices.SetNum( Data.NumIndices );
+			std::memcpy( Indices.GetData(), Command.Data + DataWords + VertexWords, static_cast<size_t>( Data.NumIndices ) * sizeof( uint32 ) );
+			if ( !NDrawMaterialMesh::IsValid( Data, Vertices.GetData(), Indices.GetData() ) )
+			{
+				if ( !bInvalidMaterialMeshCommandLogged ) { LOG( LogDxLibDraw, Warning, "材質付きメッシュの頂点またはindexが不正なため描画を読み飛ばしました" ); bInvalidMaterialMeshCommandLogged = true; }
+				break;
+			}
+			if ( !EffectMaterialRenderer.IsMeshAvailable() )
+			{
+				// 非対応描画先を一度だけ記録する状態。
+				static bool bUnsupportedMaterialMeshLogged = false;
+				if ( !bUnsupportedMaterialMeshLogged ) { LOG( LogDxLibDraw, Warning, "現在の描画実装では材質付きメッシュを描画できません" ); bUnsupportedMaterialMeshLogged = true; }
+				break;
+			}
+			EffectMaterialRenderer.DrawMesh( Data, Vertices.GetData(), Indices.GetData() );
 			break;
 		}
 		case EDrawCommand::Mesh3D:

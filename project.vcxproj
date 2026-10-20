@@ -168,6 +168,7 @@
     <ClCompile Include="Library\DebugUI\EffectEditorCurveInput.cpp" />
     <ClCompile Include="Library\DebugUI\EffectEditorFlipbookPanel.cpp" />
     <ClCompile Include="Library\DebugUI\EffectEditorMaterialPanel.cpp" />
+    <ClCompile Include="Library\DebugUI\EffectEditorMeshPanel.cpp" />
     <ClCompile Include="Library\DebugUI\EffectEditorPanels.cpp" />
     <ClCompile Include="Library\DebugUI\ImGuiPropertyInspector.cpp" />
     <ClCompile Include="Library\DebugUI\ImGuiTexture.cpp" />
@@ -179,6 +180,7 @@
     <ClCompile Include="Library\DebugUI\WorldEditor.cpp" />
     <ClCompile Include="Library\DebugUI\WorldEditorEffects.cpp" />
     <ClCompile Include="Library\DebugUI\WorldEditorMesh.cpp" />
+    <ClCompile Include="Library\DebugUI\WorldEditorMeshMaterialPanel.cpp" />
     <ClCompile Include="Library\DebugUI\WorldEditorPanels.cpp" />
     <ClCompile Include="Library\DebugUI\WorldEditorViewport.cpp" />
     <ClCompile Include="Library\Framework\Animation\AnimationTimeline.cpp" />
@@ -229,11 +231,14 @@
     <ClCompile Include="Library\Framework\Effect\EffectFlipbookFrames.cpp" />
     <ClCompile Include="Library\Framework\Effect\EffectLightningTreeDefinition.cpp" />
     <ClCompile Include="Library\Framework\Effect\EffectMaterialDefinition.cpp" />
+    <ClCompile Include="Library\Framework\Effect\EffectMeshDefinition.cpp" />
+    <ClCompile Include="Library\Framework\Effect\EffectMeshGeometry.cpp" />
     <ClCompile Include="Library\Framework\Effect\EffectPathDefinition.cpp" />
     <ClCompile Include="Library\Framework\Effect\EffectPathGeometry.cpp" />
     <ClCompile Include="Library\Framework\Effect\EffectScalarCurve.cpp" />
     <ClCompile Include="Library\Framework\Effect\EffectTreeLightningGeometry.cpp" />
     <ClCompile Include="Library\Framework\Effect\EffectUVDistortionDefinition.cpp" />
+    <ClCompile Include="Library\Framework\Effect\MeshMaterialEffectDefinition.cpp" />
     <ClCompile Include="Library\Framework\Effect\ParticleEffect.cpp" />
     <ClCompile Include="Library\Framework\Effect\ParticleEffectBackend.cpp" />
     <ClCompile Include="Library\Framework\Effect\ParticleEffectEditing.cpp" />
@@ -332,6 +337,10 @@
     <ClCompile Include="Source\Scene\WorldEffectMaterialRealSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldEffectMaterialRibbonRealSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldEffectMaterialSelfTest.cpp" />
+    <ClCompile Include="Source\Scene\WorldEffectMeshCommandSelfTest.cpp" />
+    <ClCompile Include="Source\Scene\WorldEffectMeshRealSelfTest.cpp" />
+    <ClCompile Include="Source\Scene\WorldEffectMeshResourceSelfTest.cpp" />
+    <ClCompile Include="Source\Scene\WorldEffectMeshSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldEffectPathPlaybackSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldEffectPathSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldEffectRibbonRealSelfTest.cpp" />
@@ -351,6 +360,11 @@
     <ClCompile Include="Source\Scene\WorldEffectUVDistortionRealSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldEffectUVDistortionResourceSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldEffectUVDistortionSelfTest.cpp" />
+    <ClCompile Include="Source\Scene\WorldMeshMaterialDefinitionSelfTest.cpp" />
+    <ClCompile Include="Source\Scene\WorldMeshMaterialEditorSelfTest.cpp" />
+    <ClCompile Include="Source\Scene\WorldMeshMaterialPlaybackSelfTest.cpp" />
+    <ClCompile Include="Source\Scene\WorldMeshMaterialRealSelfTest.cpp" />
+    <ClCompile Include="Source\Scene\WorldMeshMaterialResourceSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldMeshSelfTestData.cpp" />
     <ClCompile Include="Source\Scene\WorldMeshSelfTestEditor.cpp" />
     <ClCompile Include="Source\Scene\WorldMeshSelfTestOps.cpp" />
@@ -568,6 +582,7 @@
     <ClInclude Include="Library\Core\Interfaces\Render\DrawCommand.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\DrawDistortedMaterialQuad.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\DrawDistortedMaterialRibbon.h" />
+    <ClInclude Include="Library\Core\Interfaces\Render\DrawMaterialMesh.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\DrawMaterialQuad.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\DrawMaterialRibbon.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\DrawRibbon.h" />
@@ -603,6 +618,7 @@
     <ClInclude Include="Library\DebugUI\SpriteSheetEditor.h" />
     <ClInclude Include="Library\DebugUI\WorldEditor.h" />
     <ClInclude Include="Library\DebugUI\WorldEditorInternal.h" />
+    <ClInclude Include="Library\DebugUI\WorldEditorMeshMaterialPanel.h" />
     <ClInclude Include="Library\Framework\Animation\AnimationTimeline.h" />
     <ClInclude Include="Library\Framework\Animation\ModelAnimator.h" />
     <ClInclude Include="Library\Framework\Animation\SpriteAnimator.h" />
@@ -652,10 +668,13 @@
     <ClInclude Include="Library\Framework\Effect\EffectFlipbookFrames.h" />
     <ClInclude Include="Library\Framework\Effect\EffectLightningTreeDefinition.h" />
     <ClInclude Include="Library\Framework\Effect\EffectMaterialDefinition.h" />
+    <ClInclude Include="Library\Framework\Effect\EffectMeshDefinition.h" />
+    <ClInclude Include="Library\Framework\Effect\EffectMeshGeometry.h" />
     <ClInclude Include="Library\Framework\Effect\EffectPathDefinition.h" />
     <ClInclude Include="Library\Framework\Effect\EffectPathGeometry.h" />
     <ClInclude Include="Library\Framework\Effect\EffectScalarCurve.h" />
     <ClInclude Include="Library\Framework\Effect\EffectUVDistortionDefinition.h" />
+    <ClInclude Include="Library\Framework\Effect\MeshMaterialEffectDefinition.h" />
     <ClInclude Include="Library\Framework\Effect\ParticleEffect.h" />
     <ClInclude Include="Library\Framework\Effect\ParticleEffectBackend.h" />
     <ClInclude Include="Library\Framework\Effect\ParticleEffectEditing.h" />
@@ -671,6 +690,7 @@
     <ClInclude Include="Library\Framework\Profiler\ProfilerSubsystem.h" />
     <ClInclude Include="Library\Framework\Render\Billboard.h" />
     <ClInclude Include="Library\Framework\Render\DrawContext.h" />
+    <ClInclude Include="Library\Framework\Render\MeshMaterialEffectResources.h" />
     <ClInclude Include="Library\Framework\Render\MeshRender.h" />
     <ClInclude Include="Library\Framework\Scene\ISceneManager.h" />
     <ClInclude Include="Library\Framework\Scene\ObjectIterator.h" />
@@ -749,7 +769,11 @@
     <ClInclude Include="Source\Scene\GameScene.h" />
     <ClInclude Include="Source\Scene\TitleScene.h" />
     <ClInclude Include="Source\Scene\WorldEditorSelfTestSupport.h" />
+    <ClInclude Include="Source\Scene\WorldEffectMeshCommandSelfTest.h" />
+    <ClInclude Include="Source\Scene\WorldEffectMeshRealSelfTest.h" />
+    <ClInclude Include="Source\Scene\WorldEffectMeshResourceSelfTest.h" />
     <ClInclude Include="Source\Scene\WorldEffectSelfTestSupport.h" />
+    <ClInclude Include="Source\Scene\WorldMeshMaterialSelfTestSupport.h" />
     <ClInclude Include="Source\Scene\WorldMeshSelfTestSupport.h" />
     <ClInclude Include="Source\Scene\WorldSelfTestScene.h" />
     <ClInclude Include="Source\Scene\WorldSelfTestSupport.h" />
