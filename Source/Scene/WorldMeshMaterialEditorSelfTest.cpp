@@ -5,14 +5,68 @@
 #include "Library/DebugUI/WorldEditorMeshMaterialPanel.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Asset/WorldAsset.h"
+#include "Library/Framework/Asset/EditorAssetInfo.h"
 #include "Library/Framework/Engine/Engine.h"
+#include "Library/Framework/Render/DrawContext.h"
 #include "Library/Framework/Render/MeshMaterialEffectResources.h"
 #include "Library/Framework/World/Mesh/EditMeshPrimitives.h"
+#include "Library/Framework/World/WorldRender.h"
 #include "Library/Platform/FileSystem.h"
 #include "VendorModules/ImGui/imgui_internal.h"
 
 namespace
 {
+	// AssetManagerのrootを自己確認用fixtureへ切り替え、scope終了時に戻す。
+	struct FMeshMaterialEditorAssetRoot
+	{
+		// fixtureへ切り替える前のasset root。
+		FString Previous;
+		// 対象worldを所有するasset manager。
+		CAssetManager& Assets;
+
+		// 現在rootを保存してfixture用rootを選ぶ。
+		FMeshMaterialEditorAssetRoot( CAssetManager& InAssets, const FString& Root ) : Previous( InAssets.GetRootDirectory() ), Assets( InAssets ) { Assets.SetRootDirectory( Root ); }
+		// fixture操作後に呼出元のasset rootへ戻す。
+		~FMeshMaterialEditorAssetRoot() { Assets.SetRootDirectory( Previous ); }
+	};
+
+	// 自己確認が作った画像fileをasset参照解放後に片付ける。
+	struct FMeshMaterialEditorFixtureFiles
+	{
+		// 画像参照を保持するasset manager。
+		CAssetManager& Assets;
+		// fixture作成時に専用rootへ保存した画像file paths。
+		TArray<FString> Paths;
+
+		// 画像asset参照を解放し、作成fileだけを削除する。
+		~FMeshMaterialEditorFixtureFiles()
+		{
+			Assets.ReleaseUnused();
+			Assets.Tick( 0.0f );
+			for ( const FString& Path : Paths ) NFileSystem::RemoveFile( Path );
+		}
+	};
+
+	// 2x2の不透明白TGAを作り、source・mask・noise・組み込み白に使う。
+	std::vector<uint8> MakeMeshMaterialEditorTga()
+	{
+		// 無圧縮32bit TGA headerと4つの白pixel。
+		std::vector<uint8> Bytes = { 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 32, 0x28 };
+		for ( int32 Index = 0; Index < 4; ++Index ) { Bytes.push_back( 255 ); Bytes.push_back( 255 ); Bytes.push_back( 255 ); Bytes.push_back( 255 ); }
+		return Bytes;
+	}
+
+	// draw command列から指定種別の数を返す。
+	int32 CountMeshMaterialEditorCommands( const FDrawBuffer& Buffer, EDrawCommand Type )
+	{
+		// 一致したmesh commandの数。
+		int32 Count = 0;
+		// draw buffer内のcommandを数える処理。
+		const auto CountCommand = [&]( const FDrawCommandView& Command ) { if ( Command.Type == Type ) ++Count; };
+		ForEachDrawCommand( FDrawSpan{ Buffer.Words.data(), static_cast<int32>( Buffer.Words.size() ) }, CountCommand );
+		return Count;
+	}
+
 	// 実際のmesh material panelを独立ImGui文脈で描き、world文書へ戻す。
 	class FMeshMaterialInputContext
 	{
@@ -143,9 +197,25 @@ namespace
 	};
 
 	// UIのpreset操作、Undo/Redoと保存後のfresh loadを一続きで確認する。
-	void TestMeshMaterialEditorSave( NAssetTest::FChecker& C, CAssetManager& Assets, FMeshMaterialInputContext& Input )
+	void TestMeshMaterialEditorSave( NAssetTest::FChecker& C, CAssetManager& Assets, FMeshMaterialInputContext& Input, const FString& TestDirectory )
 	{
 		C.Group = "world-mesh-material-editor-input-save";
+		// material effect画像を保存する専用asset root。
+		const FString FixtureRoot = TestDirectory / "world-mesh-material-editor-cache";
+		FMeshMaterialEditorAssetRoot AssetRoot( Assets, FixtureRoot );
+		// presetと組み込み白が参照するfixture image paths。
+		const FString SourcePath = "Effects/mesh_surface_lava.tga";
+		const FString MaskPath = "Effects/mesh_surface_barrier.tga";
+		const FString NoisePath = "Effects/uv_distortion_flow.tga";
+		const FString WhitePath = "Effects/material_white.tga";
+		FMeshMaterialEditorFixtureFiles FixtureFiles{ Assets };
+		FixtureFiles.Paths.Add( FixtureRoot / SourcePath );
+		FixtureFiles.Paths.Add( FixtureRoot / MaskPath );
+		FixtureFiles.Paths.Add( FixtureRoot / NoisePath );
+		FixtureFiles.Paths.Add( FixtureRoot / WhitePath );
+		const bool bImagesSaved = NFileSystem::EnsureDirectory( FixtureRoot / "Effects" ) && NAssetTest::WriteFileBytes( FixtureRoot, SourcePath, MakeMeshMaterialEditorTga() ) && NAssetTest::WriteFileBytes( FixtureRoot, MaskPath, MakeMeshMaterialEditorTga() ) && NAssetTest::WriteFileBytes( FixtureRoot, NoisePath, MakeMeshMaterialEditorTga() ) && NAssetTest::WriteFileBytes( FixtureRoot, WhitePath, MakeMeshMaterialEditorTga() );
+		C.Check( bImagesSaved, "mesh material editor cache用のsource・mask・noise・白画像をfixtureへ作成する" );
+		if ( !bImagesSaved ) return;
 		// 保存先として使う、既存でないtest専用world path。
 		const FString CopyPath = "Worlds/selftest_mesh_material_effect.world";
 		const bool bCopyPathAvailable = !Assets.ResolvePath( CopyPath ).IsSet();
@@ -177,6 +247,7 @@ namespace
 		FWorldEditorState State;
 		State.Session.Reset( World, FString() );
 		State.Session.Document.MarkSaved();
+		State.AssetInfo = MakeUnique<FAssetEditorInfo>( Assets );
 		// preset buttonを押す前にImGui navigationを初期化する。
 		C.Check( Input.Frame( State ), "material effect panelを初回描画する" );
 		C.Check( Input.TabTo( State, Input.ItemId( "Flowing lava" ) ), "Flowing lava presetへkeyboard focusする" );
@@ -245,6 +316,65 @@ namespace
 			const FEditMeshMaterial& SavedMaterial = State.Session.Document.Get().FindObject( 1 )->Mesh.GetValue().Materials[0];
 			C.Check( FreshMaterial.Effect.ComputeHash() == SavedMaterial.Effect.ComputeHash() && FreshMaterial.Effect.ToJson() == SavedMaterial.Effect.ToJson() && FreshMaterial.Texture == SavedMaterial.Texture, "SaveAsからfresh loadしたEffect設定とsourceが完全一致する" );
 			C.Check( FreshObject->Mesh.GetValue().Materials[1].Effect.ToJson() == State.Session.Document.Get().FindObject( 1 )->Mesh.GetValue().Materials[1].Effect.ToJson() && Fresh->GetDefinition().FindObject( 2 )->Mesh.GetValue().Materials[0].Effect.ToJson() == State.Session.Document.Get().FindObject( 2 )->Mesh.GetValue().Materials[0].Effect.ToJson(), "別slotと別objectの設定も同じworldへ保存する" );
+			// fresh loaded world objectが実MeshView cacheを作る境界を確認する。
+			C.Group = "world-mesh-material-editor-mesh-view-cache";
+			FDrawBuffer FirstBuffer;
+			FDrawContext FirstDraw( FirstBuffer );
+			const FTransform Placed;
+			const bool bRecorded = NWorldEditorUI::RecordMeshObject( State, *FreshObject, Placed, FirstDraw, 1 );
+			FWorldEditorState::FMeshView* FirstView = State.MeshViews.Find( 1 );
+			C.Check( bRecorded && FirstView != nullptr && FirstView->bBuilt && FirstView->Renderer.IsValid() && CountMeshMaterialEditorCommands( FirstBuffer, EDrawCommand::MaterialMesh3D ) > 0, "fresh loadしたmeshを実world editor MeshViewから材質mesh commandへ記録する" );
+			if ( FirstView != nullptr && FirstView->Renderer.IsValid() )
+			{
+				NWorldEditorUI::UpdateMeshMaterialPreviews( State, 0.25f );
+				const double FirstTime = FirstView->Renderer.GetEffectTime();
+				FDrawBuffer StableBufferA;
+				FDrawContext StableDrawA( StableBufferA );
+				const bool bStableRecordA = NWorldEditorUI::RecordMeshObject( State, *FreshObject, Placed, StableDrawA, 1 );
+				FDrawBuffer StableBufferB;
+				FDrawContext StableDrawB( StableBufferB );
+				const bool bStableRecordB = NWorldEditorUI::RecordMeshObject( State, *FreshObject, Placed, StableDrawB, 1 );
+				C.Check( std::fabs( FirstTime - 0.25 ) < 1.0e-6 && std::fabs( FirstView->Renderer.GetEffectTime() - FirstTime ) < 1.0e-6 && bStableRecordA && bStableRecordB && StableBufferA.Words == StableBufferB.Words, "preview時計を一度進めた後のRecord反復は時計とdraw wordsを変えない" );
+				// mesh definitionのhashが変わると同じownerのrendererを作り直す。
+				FWorldObject ChangedObject = *FreshObject;
+				ChangedObject.Mesh.GetValue().Materials[0].Effect.Opacity = 0.5f;
+				FDrawBuffer ChangedBuffer;
+				FDrawContext ChangedDraw( ChangedBuffer );
+				NWorldEditorUI::RecordMeshObject( State, ChangedObject, Placed, ChangedDraw, 1 );
+				FirstView = State.MeshViews.Find( 1 );
+				C.Check( FirstView != nullptr && FirstView->Hash == ChangedObject.Mesh.GetValue().ComputeHash() && std::fabs( FirstView->Renderer.GetEffectTime() ) < 1.0e-6, "mesh definition hash変更はMeshView rendererを先頭時刻で再構築する" );
+				// 複製とprefab instanceのsynthetic keyに別のrenderer ownerを割り当てる。
+				FWorldObject DuplicateObject = ChangedObject;
+				DuplicateObject.Id = 2;
+				FDrawBuffer DuplicateBuffer;
+				FDrawContext DuplicateDraw( DuplicateBuffer );
+				const bool bDuplicateRecorded = NWorldEditorUI::RecordMeshObject( State, DuplicateObject, Placed, DuplicateDraw, DuplicateObject.Id );
+				FWorldObject PrefabObject = DuplicateObject;
+				FDrawBuffer PrefabBuffer;
+				FDrawContext PrefabDraw( PrefabBuffer );
+				const bool bPrefabRecorded = NWorldEditorUI::RecordMeshObject( State, PrefabObject, Placed, PrefabDraw, 7001 );
+				NWorldEditorUI::UpdateMeshMaterialPreviews( State, 0.25f );
+				FWorldEditorState::FMeshView* DuplicateView = State.MeshViews.Find( 2 );
+				FWorldEditorState::FMeshView* PrefabView = State.MeshViews.Find( 7001 );
+				if ( DuplicateView != nullptr ) DuplicateView->Renderer.PauseEffects();
+				NWorldEditorUI::UpdateMeshMaterialPreviews( State, 0.1f );
+				FirstView = State.MeshViews.Find( 1 );
+				C.Check( bDuplicateRecorded && bPrefabRecorded && FirstView != nullptr && DuplicateView != nullptr && PrefabView != nullptr && FirstView->Renderer.GetEffectTime() > DuplicateView->Renderer.GetEffectTime() && DuplicateView->Renderer.IsEffectsPaused() && PrefabView->Renderer.GetEffectTime() > 0.25, "duplicateとsynthetic prefab keyは個別clock ownerとなりPauseも分離する" );
+				TSet<int32> VisibleObjects;
+				VisibleObjects.Add( 1 );
+				VisibleObjects.Add( 7001 );
+				NWorldEditorUI::PruneMeshViews( State, VisibleObjects );
+				C.Check( State.MeshViews.Contains( 1 ) && State.MeshViews.Contains( 7001 ) && !State.MeshViews.Contains( 2 ), "Pruneは見えないduplicate ownerを捨てsynthetic prefab ownerを保つ" );
+				VisibleObjects.Remove( 7001 );
+				NWorldEditorUI::PruneMeshViews( State, VisibleObjects );
+				C.Check( State.MeshViews.Contains( 1 ) && !State.MeshViews.Contains( 7001 ), "synthetic prefab keyもSeenから外れた時にpruneする" );
+				VisibleObjects.Empty();
+				NWorldEditorUI::PruneMeshViews( State, VisibleObjects );
+				C.Check( State.MeshViews.IsEmpty(), "削除されたmesh objectのMeshView ownerをpruneして解放する" );
+			}
+			State.AssetInfo->Clear();
+			Assets.ReleaseUnused();
+			Assets.Tick( 0.0f );
 		}
 		// 自分が作ったtest worldだけを実pathから片付ける。
 		const TOptional<FString> CopyFullPath = Assets.ResolvePath( CopyPath );
