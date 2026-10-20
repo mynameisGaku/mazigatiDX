@@ -906,14 +906,12 @@ namespace NAssetTest
 			Checker.Check( bDissolveHalfCaptured && DissolveHalfPixelsInROI > 0 && DissolveHalfPixelsInROI < AppearanceBasePixelsInROI && DissolveHalfOtherDifferences == 0, "既知二値maskのdissolve 0.5はselected triangleに穴を作り他materialを保つ" );
 			Checker.Check( bDissolveOneCaptured && DissolveOnePixelsInROI == 0 && DissolveOneOtherDifferences == 0, "dissolve 1は選択triangle全体を消し、非対象materialはnative RGBを保つ" );
 			// 発光倍率の丸め誤差だけを許し、飽和しないselected画素で1:2比を測る。
-			FMeshMaterialEffectDefinition EmissionQuarter = AppearanceBase; // 比較する0.25 emission
-			EmissionQuarter.Material.Emission.Keys[0].Value = 0.25f; EmissionQuarter.Material.Emission.Keys[1].Value = 0.25f;
-			FMeshMaterialEffectDefinition EmissionHalf = AppearanceBase; // 比較する0.5 emission
-			EmissionHalf.Material.Emission.Keys[0].Value = 0.5f; EmissionHalf.Material.Emission.Keys[1].Value = 0.5f;
-			TArray<FColor32> EmissionQuarterPixels; // emission 0.25のcapture
-			TArray<FColor32> EmissionHalfPixels; // emission 0.5のcapture
-			const bool bEmissionQuarterCaptured = CaptureMaterialDefinition( EmissionQuarter, 0.0f, CenteredWorld, "emission_quarter", EmissionQuarterPixels ); // 0.25 emission capture成否
-			const bool bEmissionHalfCaptured = CaptureMaterialDefinition( EmissionHalf, 0.0f, CenteredWorld, "emission_half", EmissionHalfPixels ); // 0.5 emission capture成否
+			FMeshMaterialEffectDefinition EmissionRamp = AppearanceBase; // 時刻で値が変わる発光curve
+			EmissionRamp.Material.Emission.Keys[0].Value = 0.25f; EmissionRamp.Material.Emission.Keys[1].Value = 0.75f;
+			TArray<FColor32> EmissionQuarterPixels; // 時刻0・発光0.25のcapture
+			TArray<FColor32> EmissionHalfPixels; // 時刻0.5・発光0.5のcapture
+			const bool bEmissionQuarterCaptured = CaptureMaterialDefinition( EmissionRamp, 0.0f, CenteredWorld, "emission_quarter", EmissionQuarterPixels ); // curve始点capture成否
+			const bool bEmissionHalfCaptured = CaptureMaterialDefinition( EmissionRamp, 0.5f, CenteredWorld, "emission_half", EmissionHalfPixels ); // curve中間capture成否
 			int32 EmissionSamples = 0; // 飽和せず倍率比較に使えた色channel数
 			int32 EmissionRatioMismatches = 0; // 2倍値から許容誤差を超えたchannel数
 			if ( EmissionQuarterPixels.Num() == 128 * 128 && EmissionHalfPixels.Num() == 128 * 128 && bCenteredTriangleProjected ) for ( int32 Y = 0; Y < 128; ++Y ) for ( int32 X = 0; X < 128; ++X )
@@ -969,6 +967,73 @@ namespace NAssetTest
 			const int32 DistortionZeroDifferences = CountModelMaterialTriangleRgbDifferences( AppearanceBasePixels, DistortionZeroPixels, CenteredTriangle ); // 強度0と通常画像の差分
 			const int32 DistortionPositiveDifferences = CountModelMaterialTriangleRgbDifferences( DistortionZeroPixels, DistortionPositivePixels, CenteredTriangle ); // 強度正値の差分
 			const int32 DistortionScrollDifferences = CountModelMaterialTriangleRgbDifferences( DistortionPositivePixels, DistortionScrolledPixels, CenteredTriangle ); // noise scrollだけの差分
+			// Model commandを読まずsnapshot頂点と手入力headerで旧MaterialMesh経路を作る独立reference。
+			const FStaticModelSurfaceSection* ReferenceSection = nullptr; // 選択triangleを含むsnapshot section
+			if ( Surface.IsValid() ) for ( const FStaticModelSurfaceSection& Section : Surface->GetData().Sections ) if ( Section.MaterialIndex == MaterialIndex && Section.SourceMeshIndex == SelectedMeshIndex && Section.NumIndices >= 3 && Section.FirstIndex >= 0 && Section.FirstIndex <= Surface->GetData().Indices.Num() - 3 ) { ReferenceSection = &Section; break; }
+			TArray<FMeshVertex> ReferenceVertices; // world位置へ一度変換した選択triangle
+			TArray<uint32> ReferenceIndices; // reference triangleの局所index
+			bool bReferenceGeometryReady = ReferenceSection != nullptr && Surface.IsValid(); // sectionとsnapshot配列の初期条件
+			if ( bReferenceGeometryReady ) for ( int32 Corner = 0; Corner < 3; ++Corner )
+			{
+				const uint32 SourceIndex = Surface->GetData().Indices[ReferenceSection->FirstIndex + Corner]; // snapshot index列の頂点番号
+				if ( SourceIndex >= static_cast<uint32>( Surface->GetData().Vertices.Num() ) ) { bReferenceGeometryReady = false; break; }
+				FMeshVertex Vertex = Surface->GetData().Vertices[static_cast<int32>( SourceIndex )]; // raw UV・normal・RGBAを保つ頂点
+				const float32 LocalX = Vertex.Position[0]; // snapshot頂点のmodel-local X
+				const float32 LocalY = Vertex.Position[1]; // snapshot頂点のmodel-local Y
+				const float32 LocalZ = Vertex.Position[2]; // snapshot頂点のmodel-local Z
+				Vertex.Position[0] = LocalX * CenteredWorld.m[0][0] + LocalY * CenteredWorld.m[1][0] + LocalZ * CenteredWorld.m[2][0] + CenteredWorld.m[3][0];
+				Vertex.Position[1] = LocalX * CenteredWorld.m[0][1] + LocalY * CenteredWorld.m[1][1] + LocalZ * CenteredWorld.m[2][1] + CenteredWorld.m[3][1];
+				Vertex.Position[2] = LocalX * CenteredWorld.m[0][2] + LocalY * CenteredWorld.m[1][2] + LocalZ * CenteredWorld.m[2][2] + CenteredWorld.m[3][2];
+				ReferenceVertices.Add( Vertex );
+				ReferenceIndices.Add( static_cast<uint32>( Corner ) );
+			}
+			const TSharedPtr<CTexture> ReferenceNoiseTexture = Assets.LoadTexture( "model_material_noise.tga" ); // capture中にhandleを保持するnoise owner
+			const bool bReferenceNoiseReady = ReferenceNoiseTexture.IsValid() && ReferenceNoiseTexture->IsReady() && ReferenceNoiseTexture->GetHandle() >= 0; // manual header用noise handleの準備状態
+			// 期待headerを引数値から独立に組み立て、旧MaterialMesh3Dでcaptureする。
+			const auto DrawMaterialMeshReference = [&]( float32 SourceOffsetU, float32 DistortionStrength, float32 NoiseOffsetU, TArray<FColor32>& Pixels, const char* CaptureName )
+			{
+				if ( !bReferenceGeometryReady || !bReferenceNoiseReady || !Surface.IsValid() || MaterialIndex < 0 || MaterialIndex >= Surface->GetData().Materials.Num() || ReferenceVertices.Num() != 3 || ReferenceIndices.Num() != 3 ) return false;
+				FDrawMaterialMeshData ReferenceData; // Model commandからコピーしない手動期待header
+				ReferenceData.Texture = Surface->GetData().Materials[MaterialIndex].BorrowedDiffuseTexture;
+				ReferenceData.NumVertices = ReferenceVertices.Num();
+				ReferenceData.NumIndices = ReferenceIndices.Num();
+				ReferenceData.Material.MaskTexture = -1;
+				ReferenceData.Material.UVScale[0] = 1.0f; ReferenceData.Material.UVScale[1] = 1.0f;
+				ReferenceData.Material.MaskScale = 1.0f;
+				ReferenceData.Material.EdgeWidth = 0.0f; ReferenceData.Material.EdgeEmission = 0.0f;
+				ReferenceData.Material.EdgeColor = { 255, 128, 32, 255 };
+				ReferenceData.Material.bDissolve = 0; ReferenceData.Material.DepthTest = 1; ReferenceData.Material.DepthWrite = 0;
+				ReferenceData.UVOffset[0] = SourceOffsetU; ReferenceData.UVOffset[1] = 0.0f;
+				ReferenceData.Dissolve = 0.0f; ReferenceData.Emission = 1.0f;
+				ReferenceData.DistortionTexture = DistortionStrength > 0.0f ? ReferenceNoiseTexture->GetHandle() : -1;
+				ReferenceData.DistortionStrength = DistortionStrength;
+				ReferenceData.DistortionUVScale[0] = 1.0f; ReferenceData.DistortionUVScale[1] = 1.0f;
+				ReferenceData.DistortionUVOffset[0] = NoiseOffsetU; ReferenceData.DistortionUVOffset[1] = 0.0f;
+				ReferenceData.bTwoSided = 1;
+				SetDrawScreen( Screen ); SetDrawAreaFull(); ClearDrawScreen();
+				FDrawBuffer ReferenceBuffer; // hand-built low-level draw commands
+				FDrawContext ReferenceDraw( ReferenceBuffer );
+				ReferenceDraw.Blend( EDrawBlend::Alpha, 255 );
+				ReferenceDraw.MaterialMesh3D( ReferenceData, ReferenceVertices.GetData(), ReferenceIndices.GetData(), false );
+				if ( ReferenceBuffer.Words.empty() ) return false;
+				Executor.Execute( FDrawSpan{ ReferenceBuffer.Words.data(), static_cast<int32>( ReferenceBuffer.Words.size() ) } );
+				RenderVertex();
+				const bool bCaptured = CaptureModelMaterialPixels( Screen, Soft, Pixels ); // reference image capture結果
+				if ( bCaptured ) SaveModelMaterialDiagnosticPng( CaptureName );
+				return bCaptured;
+			};
+			TArray<FColor32> SourceScrollReferencePixels; // sourceUV=.25・noise無効のmanual image
+			TArray<FColor32> DistortionPositiveReferencePixels; // sourceUV=0・noise強度.2・noiseUV=0のmanual image
+			TArray<FColor32> DistortionScrolledReferencePixels; // sourceUV=0・noise強度.2・noiseU=.25のmanual image
+			const bool bSourceScrollReferenceCaptured = DrawMaterialMeshReference( 0.25f, 0.0f, 0.0f, SourceScrollReferencePixels, "reference_source_uv" ); // 手入力source UV期待値のcapture成否
+			const bool bDistortionPositiveReferenceCaptured = DrawMaterialMeshReference( 0.0f, 0.2f, 0.0f, DistortionPositiveReferencePixels, "reference_noise_positive" ); // 手入力noise強度期待値のcapture成否
+			const bool bDistortionScrolledReferenceCaptured = DrawMaterialMeshReference( 0.0f, 0.2f, 0.25f, DistortionScrolledReferencePixels, "reference_noise_uv" ); // 手入力noise UV期待値のcapture成否
+			const int32 SourceScrollReferenceDifferences = bSourceScrollReferenceCaptured && bSourceScrollMovedCaptured ? CountModelMaterialTriangleRgbDifferences( SourceScrollReferencePixels, SourceScrollMovedPixels, CenteredTriangle ) : -1; // Model captureとのROI RGB差分
+			const int32 DistortionPositiveReferenceDifferences = bDistortionPositiveReferenceCaptured && bDistortionPositiveCaptured ? CountModelMaterialTriangleRgbDifferences( DistortionPositiveReferencePixels, DistortionPositivePixels, CenteredTriangle ) : -1; // noise強度referenceとの差分
+			const int32 DistortionScrolledReferenceDifferences = bDistortionScrolledReferenceCaptured && bDistortionScrolledCaptured ? CountModelMaterialTriangleRgbDifferences( DistortionScrolledReferencePixels, DistortionScrolledPixels, CenteredTriangle ) : -1; // noise UV referenceとの差分
+			Checker.Check( bReferenceGeometryReady && bReferenceNoiseReady && bSourceScrollReferenceCaptured && bSourceScrollMovedCaptured && CountModelMaterialTrianglePixels( SourceScrollReferencePixels, CenteredTriangle ) > 0 && SourceScrollReferenceDifferences == 0, "独立MaterialMesh referenceはsource U=.25のModel画像・選択ROIへ一致する" );
+			Checker.Check( bReferenceGeometryReady && bReferenceNoiseReady && bDistortionPositiveReferenceCaptured && bDistortionPositiveCaptured && CountModelMaterialTrianglePixels( DistortionPositiveReferencePixels, CenteredTriangle ) > 0 && DistortionPositiveReferenceDifferences == 0, "独立MaterialMesh referenceはnoise strength=.2・U=0のModel画像へ一致する" );
+			Checker.Check( bReferenceGeometryReady && bReferenceNoiseReady && bDistortionScrolledReferenceCaptured && bDistortionScrolledCaptured && CountModelMaterialTrianglePixels( DistortionScrolledReferencePixels, CenteredTriangle ) > 0 && DistortionScrolledReferenceDifferences == 0, "独立MaterialMesh referenceはnoise U=.25のModel画像へ一致する" );
 			Checker.Check( bProbeTexturesWritten && bDistortionZeroCaptured && DistortionZeroDifferences == 0, "noise強度0は同時刻のsource画像と一致する" );
 			Checker.Check( bDistortionPositiveCaptured && DistortionPositiveDifferences > 0 && CountModelMaterialTrianglePixels( DistortionPositivePixels, CenteredTriangle ) > 0, "noise正値はselected triangleのsource画素を歪める" );
 			Checker.Check( bDistortionScrolledCaptured && DistortionScrollDifferences > 0, "source UVを固定してもnoise UV scrollだけで歪み画素が変わる" );
@@ -1104,11 +1169,14 @@ namespace NAssetTest
 				TArray<FColor32> AffineNativePixels; // native full-model同位置positive control
 				TArray<FColor32> AffineHiddenPixels; // 選択材質効果Opacity 0の非対象基準
 				TArray<FColor32> AffineEffectPixels; // selected材質Opacity 1の実画素
-				const bool bNativeImageCaptured = DrawPixels( PlainAnimator, World, AffineNativePixels, "affine_native" ); // native image capture成否
+				const FString AffineNativeCaptureName = FString::Printf( "affine_%s_native", CaseName ); // case別native診断画像名
+				const FString AffineHiddenCaptureName = FString::Printf( "affine_%s_hidden", CaseName ); // case別透明診断画像名
+				const FString AffineEffectCaptureName = FString::Printf( "affine_%s_effect", CaseName ); // case別effect診断画像名
+				const bool bNativeImageCaptured = DrawPixels( PlainAnimator, World, AffineNativePixels, AffineNativeCaptureName.GetData() ); // native image capture成否
 				FMeshMaterialEffectDefinition AffineHiddenDefinition = AppearanceBase; // selected custom triangleを透明にする定義
 				AffineHiddenDefinition.Opacity = 0.0f;
-				const bool bHiddenImageCaptured = CaptureMaterialDefinition( AffineHiddenDefinition, 0.0f, World, "affine_hidden", AffineHiddenPixels ); // 透明基準capture成否
-				const bool bEffectImageCaptured = CaptureMaterialDefinition( AppearanceBase, 0.0f, World, "affine_effect", AffineEffectPixels ); // effect capture成否
+				const bool bHiddenImageCaptured = CaptureMaterialDefinition( AffineHiddenDefinition, 0.0f, World, AffineHiddenCaptureName.GetData(), AffineHiddenPixels ); // 透明基準capture成否
+				const bool bEffectImageCaptured = CaptureMaterialDefinition( AppearanceBase, 0.0f, World, AffineEffectCaptureName.GetData(), AffineEffectPixels ); // effect capture成否
 				const int32 NativeTargetPixels = bExpectedProjected && bNativeImageCaptured ? CountModelMaterialTrianglePixels( AffineNativePixels, ExpectedTriangle ) : -1; // native対象ROIの陽性画素
 				const int32 EffectTargetPixels = bExpectedProjected && bEffectImageCaptured ? CountModelMaterialTrianglePixels( AffineEffectPixels, ExpectedTriangle ) : -1; // effect対象ROIの陽性画素
 				const int32 NativeEffectSilhouetteDifferences = bExpectedProjected && bNativeImageCaptured && bEffectImageCaptured ? CountModelMaterialTriangleSilhouetteDifferences( AffineNativePixels, AffineEffectPixels, ExpectedTriangle ) : -1; // native/effect対象silhouette差
