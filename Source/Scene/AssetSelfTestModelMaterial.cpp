@@ -890,17 +890,30 @@ namespace NAssetTest
 					TArray<FColor32> CullOneSidedPixels; // 対応cullingの片面効果画素
 					TArray<FColor32> CullTwoSidedPixels; // 対応cullingの両面効果画素
 					const bool bCullNativeCaptured = DrawPixels( PlainAnimator, CenteredWorld, CullNativePixels, "native_culling" ); // native meshの画素取得結果
+					const int32 FirstCullBeforeOneSided = MV1GetMeshBackCulling( First->GetHandle(), SelectedMeshIndex ); // 片面effect前の対象個体culling
+					const int32 SourceCullBeforeOneSided = MV1GetMeshBackCulling( Model->GetHandle(), SelectedMeshIndex ); // 片面effect前のsource culling
+					const int32 SiblingCullBeforeOneSided = MV1GetMeshBackCulling( Sibling->GetHandle(), SelectedMeshIndex ); // 片面effect前の兄弟culling
+					const int32 GlobalCullBeforeOneSided = GetUseBackCulling(); // 片面effect前のglobal culling
 					const bool bCullOneSidedCaptured = CaptureEffectVariant( 1.0f, EDrawBlend::Alpha, false, "effect_one_sided_culling", CullOneSidedPixels ); // 片面effectの画素取得結果
+					const bool bOneSidedCullUnchanged = FirstCullBeforeOneSided >= 0 && SourceCullBeforeOneSided >= 0 && SiblingCullBeforeOneSided >= 0 && MV1GetMeshBackCulling( First->GetHandle(), SelectedMeshIndex ) == FirstCullBeforeOneSided && MV1GetMeshBackCulling( Model->GetHandle(), SelectedMeshIndex ) == SourceCullBeforeOneSided && MV1GetMeshBackCulling( Sibling->GetHandle(), SelectedMeshIndex ) == SiblingCullBeforeOneSided && GetUseBackCulling() == GlobalCullBeforeOneSided; // 片面effectがnative・global cullingを変えていないか
+					Checker.Check( bOneSidedCullUnchanged, "片面effect captureは対象・source・兄弟・globalのnative cullingを変更しない" );
+					const int32 FirstCullBeforeTwoSided = MV1GetMeshBackCulling( First->GetHandle(), SelectedMeshIndex ); // 両面effect前の対象個体culling
+					const int32 SourceCullBeforeTwoSided = MV1GetMeshBackCulling( Model->GetHandle(), SelectedMeshIndex ); // 両面effect前のsource culling
+					const int32 SiblingCullBeforeTwoSided = MV1GetMeshBackCulling( Sibling->GetHandle(), SelectedMeshIndex ); // 両面effect前の兄弟culling
+					const int32 GlobalCullBeforeTwoSided = GetUseBackCulling(); // 両面effect前のglobal culling
 					const bool bCullTwoSidedCaptured = CaptureEffectVariant( 1.0f, EDrawBlend::Alpha, true, "effect_two_sided_culling", CullTwoSidedPixels ); // 両面effectの画素取得結果
+					const bool bTwoSidedCullUnchanged = FirstCullBeforeTwoSided >= 0 && SourceCullBeforeTwoSided >= 0 && SiblingCullBeforeTwoSided >= 0 && MV1GetMeshBackCulling( First->GetHandle(), SelectedMeshIndex ) == FirstCullBeforeTwoSided && MV1GetMeshBackCulling( Model->GetHandle(), SelectedMeshIndex ) == SourceCullBeforeTwoSided && MV1GetMeshBackCulling( Sibling->GetHandle(), SelectedMeshIndex ) == SiblingCullBeforeTwoSided && GetUseBackCulling() == GlobalCullBeforeTwoSided; // 両面effectがnative・global cullingを変えていないか
+					Checker.Check( bTwoSidedCullUnchanged, "両面effect captureは対象・source・兄弟・globalのnative cullingを変更しない" );
 					const int32 CullNativeVisible = bCullProjected && bCullNativeCaptured ? CountModelMaterialTrianglePixels( CullNativePixels, CullTriangle ) : -1; // native triangleの表示数
 					const int32 CullOneSidedVisible = bCullProjected && bCullOneSidedCaptured ? CountModelMaterialTrianglePixels( CullOneSidedPixels, CullTriangle ) : -1; // 片面effectの表示数
 					const int32 CullTwoSidedVisible = bCullProjected && bCullTwoSidedCaptured ? CountModelMaterialTrianglePixels( CullTwoSidedPixels, CullTriangle ) : -1; // 両面effectの表示数
 					const int32 CullSilhouetteDifference = bCullProjected && bCullNativeCaptured && bCullOneSidedCaptured ? CountModelMaterialTriangleSilhouetteDifferences( CullNativePixels, CullOneSidedPixels, CullTriangle ) : -1; // nativeと片面effectのsilhouette差
 					LOG( LogAssetSelfTest, Log, "材質culling試験: meshCull=%d cameraSide=%s 投影=%d nativeCapture=%d nativePixels=%d oneSidedCapture=%d oneSidedPixels=%d silhouetteDiff=%d twoSidedCapture=%d twoSidedPixels=%d globalCull=%d", CullModes[CullIndex], SideIndex == 0 ? "正面" : "背面", bCullProjected ? 1 : 0, bCullNativeCaptured ? 1 : 0, CullNativeVisible, bCullOneSidedCaptured ? 1 : 0, CullOneSidedVisible, CullSilhouetteDifference, bCullTwoSidedCaptured ? 1 : 0, CullTwoSidedVisible, GetUseBackCulling() );
-				bCullCapturesValid = bCullCapturesValid && bCullProjected && bCullNativeCaptured && bCullOneSidedCaptured && bCullTwoSidedCaptured && CullNativeVisible >= 0 && CullOneSidedVisible >= 0 && CullTwoSidedVisible > 0 && CullSilhouetteDifference == 0 && GetUseBackCulling() == GlobalNativeCullBefore;
+					bCullCapturesValid = bCullCapturesValid && bCullProjected && bCullNativeCaptured && bCullOneSidedCaptured && bCullTwoSidedCaptured && bOneSidedCullUnchanged && bTwoSidedCullUnchanged && CullNativeVisible >= 0 && CullOneSidedVisible >= 0 && CullTwoSidedVisible > 0 && CullSilhouetteDifference == 0 && GetUseBackCulling() == GlobalNativeCullBefore;
 				CullSilhouetteMismatches += CullSilhouetteDifference < 0 ? 1 : CullSilhouetteDifference;
 				if ( CullTwoSidedVisible <= 0 ) ++TwoSidedMissingPixels;
 				if ( SideIndex == 0 ) NativeFrontPixels += std::max( CullNativeVisible, 0 ); else NativeBackPixels += std::max( CullNativeVisible, 0 );
+			}
 			}
 			if ( !RestoreNativeCull() ) bCullCapturesValid = false;
 			SetCameraPositionAndTarget_UpVecY( VGet( 2.0f, 1.0f, 10.0f ), VGet( 2.0f, 1.0f, 0.0f ) );
