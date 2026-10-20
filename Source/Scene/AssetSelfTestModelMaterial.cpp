@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstring>
 #include <limits>
+#include <vector>
 
 #include "Library/Core/Interfaces/Render/DrawModelMaterial.h"
 #include "Library/Core/Interfaces/Render/MeshGeometryChunk.h"
@@ -114,6 +115,35 @@ namespace NAssetTest
 			Definition.Opacity = Opacity;
 			Definition.Blend = Blend;
 			return Definition;
+		}
+
+		// mask用の二値画像とnoise用の非対称模様をsandboxへ書くTGA byte列を作る。
+		std::vector<uint8> MakeModelMaterialProbeTga( bool bNoise )
+		{
+			constexpr int32 Width = 16; // 生成する画像の横pixel数
+			constexpr int32 Height = 16; // 生成する画像の縦pixel数
+			std::vector<uint8> Bytes = { 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, Width, 0, Height, 0, 32, 0x28 }; // TGA headerを含む出力byte列
+			for ( int32 Y = 0; Y < Height; ++Y ) for ( int32 X = 0; X < Width; ++X ) // Yは行、Xは列を示すpixel位置
+			{
+				const uint8 Value = bNoise ? static_cast<uint8>( ( ( X * 37 + Y * 19 + X * Y * 7 ) % 224 ) + 16 ) : static_cast<uint8>( X < Width / 2 ? 0 : 255 ); // noise変化値または二値mask値
+				Bytes.push_back( bNoise ? static_cast<uint8>( 255 - Value ) : Value );
+				Bytes.push_back( Value );
+				Bytes.push_back( Value );
+				Bytes.push_back( 255 );
+			}
+			return Bytes;
+		}
+
+		// 二つの4x4行列の積を独立に計算し、Animator localとRecord worldの期待合成を作る。
+		FMatrix4x4 MultiplyModelMaterialMatrices( const FMatrix4x4& A, const FMatrix4x4& B )
+		{
+			FMatrix4x4 Result; // 積の各要素を書き込む行列
+			for ( int32 Row = 0; Row < 4; ++Row ) for ( int32 Column = 0; Column < 4; ++Column ) // Rowは出力行、Columnは出力列
+			{
+				Result.m[Row][Column] = 0.0f;
+				for ( int32 Inner = 0; Inner < 4; ++Inner ) Result.m[Row][Column] += A.m[Row][Inner] * B.m[Inner][Column]; // 積和に使う内側index
+			}
+			return Result;
 		}
 
 		// native visibilityを一時変更する実fixture値を保存し、失敗時も元へ戻す。
@@ -370,6 +400,19 @@ namespace NAssetTest
 				const bool bFirstVisible = First.r != 17 || First.g != 23 || First.b != 31;
 				const bool bSecondVisible = Second.r != 17 || Second.g != 23 || Second.b != 31;
 				if ( bFirstVisible != bSecondVisible ) ++Count;
+			}
+			return Count;
+		}
+
+		// 期待triangleより外側の全画素差を数え、図形のはみ出しを調べる。
+		int32 CountModelMaterialPixelDifferencesOutsideTriangle( const TArray<FColor32>& A, const TArray<FColor32>& B, const FModelMaterialTriangleProjection& Triangle )
+		{
+			if ( A.Num() != 128 * 128 || B.Num() != 128 * 128 ) return -1;
+			int32 Count = 0; // 期待triangle外で色が変わったpixel数
+			for ( int32 Y = 0; Y < 128; ++Y ) for ( int32 X = 0; X < 128; ++X ) // capture内の行・列pixel
+			{
+				if ( IsModelMaterialPixelInsideTriangle( static_cast<float32>( X ) + 0.5f, static_cast<float32>( Y ) + 0.5f, Triangle, -1.0f ) ) continue;
+				if ( std::memcmp( &A[Y * 128 + X], &B[Y * 128 + X], sizeof( FColor32 ) ) != 0 ) ++Count;
 			}
 			return Count;
 		}
@@ -670,6 +713,8 @@ namespace NAssetTest
 		FModelMaterialRealState SavedState; // caller画面状態を戻すguard
 		const int32 Screen = MakeScreen( 128, 128, TRUE ); // hidden native draw target
 		const int32 Soft = MakeSoftImage( 128, 128 ); // capture画像を読むCPU image
+		const bool bProbeTexturesWritten = NAssetTest::WriteFileBytes( Directory / "model_material_mask.tga", MakeModelMaterialProbeTga( false ) ) && NAssetTest::WriteFileBytes( Directory / "model_material_noise.tga", MakeModelMaterialProbeTga( true ) ); // mask・noise用fixture画像の保存結果
+		Checker.Check( bProbeTexturesWritten, "モデル効果用の既知mask・noise画像をsandboxへ保存する" );
 		const bool bPackOffFixtureWritten = NFileSystem::EnsureDirectory( Directory / "model_material_pack_off" ) && WriteStaticModelSurfaceFixture( Directory / "model_material_pack_off", "model.x" ); // pack OFF source fixture
 		const bool bPackOffSettingAccepted = MV1SetLoadModelUsePackDraw( FALSE ) >= 0; // load時のpack OFF設定結果
 		const FString ModelPath = "model_material_pack_off/model.x"; // manager root相対model path
@@ -795,6 +840,15 @@ namespace NAssetTest
 				const bool bVariantPrepared = FirstAnimator.PrepareMaterialEffect( MaterialIndex, Variant, [&]( const FString& Path ) { return Assets.LoadTexture( Path ); }, Executor, bTwoSided );
 				return bVariantPrepared && DrawPixels( FirstAnimator, CenteredWorld, Pixels, CaptureName );
 			};
+			// 定義と時間差だけを替え、現在のAnimator変換で効果画像を採る。
+			const auto CaptureMaterialDefinition = [&]( const FMeshMaterialEffectDefinition& Variant, float32 DeltaTime, const FMatrix4x4& World, const char* CaptureName, TArray<FColor32>& Pixels )
+			{
+				FirstAnimator.ClearMaterialEffect();
+				const bool bVariantPrepared = FirstAnimator.PrepareMaterialEffect( MaterialIndex, Variant, [&]( const FString& Path ) { return Assets.LoadTexture( Path ); }, Executor, true );
+				if ( !bVariantPrepared ) return false;
+				if ( DeltaTime > 0.0f ) FirstAnimator.GetMaterialEffect().Update( DeltaTime );
+				return DrawPixels( FirstAnimator, World, Pixels, CaptureName );
+			};
 			TArray<FColor32> OpacityOnePixels; // Opacity 1 Alpha結果
 			TArray<FColor32> OpacityHalfAlphaPixels; // Opacity 0.5 Alpha結果
 			TArray<FColor32> OpacityHalfAddPixels; // Opacity 0.5 Add結果
@@ -823,8 +877,106 @@ namespace NAssetTest
 			Checker.Check( bCenteredTriangleProjected && bNativeCaptured && !NativePixels.IsEmpty() && SelectedDifferences > 0 && NativeSelectedPixels > 0 && ZeroOpacityPixels == 0, "native fixtureに像がありOpacity 0の選択材質効果で対象triangleが透明になる" );
 			Checker.Check( bOtherTriangleProjected && NativeOtherPixels > 0 && bTransparentCaptured && bOpacityOneCaptured && bOpacityHalfAddCaptured && OtherOpacityZeroRgbDifferences == 0 && OtherOpacityOneRgbDifferences == 0 && OtherOpacityHalfAddRgbDifferences == 0, "同一effect個体の非対象材質はOpacity 0・1・half Addでもnative RGBを保つ" );
 			Checker.Check( bOpacityOneCaptured && bOpacityHalfAlphaCaptured && bOpacityHalfAddCaptured && FullOpacityPixels > 0 && HalfOpacityPixels > 0 && BlendDifferences > 0, "Opacity 1・0.5とAlpha・Addでselected triangleのpixel出力が変わる" );
+			// dissolve 0を同じ発光・Opacityの非dissolve効果と比べる基準。
+			FMeshMaterialEffectDefinition AppearanceBase = MakeModelMaterialDefinition( 1.0f, EDrawBlend::Alpha ); // 材質効果比較の基本設定
+			AppearanceBase.Material.Emission.Keys.Add( { 0.0f, 1.0f } ); AppearanceBase.Material.Emission.Keys.Add( { 1.0f, 1.0f } );
+			FMeshMaterialEffectDefinition DissolveZero = AppearanceBase; // 消失を有効にして曲線値0にした設定
+			DissolveZero.Material.bDissolve = true;
+			DissolveZero.Material.MaskTexture = "model_material_mask.tga";
+			DissolveZero.Material.Dissolve.Keys.Add( { 0.0f, 0.0f } ); DissolveZero.Material.Dissolve.Keys.Add( { 1.0f, 0.0f } );
+			FMeshMaterialEffectDefinition DissolveHalf = DissolveZero; // 二値maskの片側を消す中間設定
+			DissolveHalf.Material.Dissolve.Keys[0].Value = 0.5f; DissolveHalf.Material.Dissolve.Keys[1].Value = 0.5f;
+			FMeshMaterialEffectDefinition DissolveOne = DissolveZero; // 消失曲線の終端で全破棄する設定
+			DissolveOne.Material.Dissolve.Keys[0].Value = 1.0f; DissolveOne.Material.Dissolve.Keys[1].Value = 1.0f;
+			TArray<FColor32> AppearanceBasePixels; // non-dissolve shaderのselected画素
+			TArray<FColor32> DissolveZeroPixels; // dissolve 0のselected画素
+			TArray<FColor32> DissolveHalfPixels; // mask境界で一部消したselected画素
+			TArray<FColor32> DissolveOnePixels; // dissolve 1のselected画素
+			const bool bAppearanceBaseCaptured = CaptureMaterialDefinition( AppearanceBase, 0.0f, CenteredWorld, "appearance_base", AppearanceBasePixels ); // 非dissolve基準capture成否
+			const bool bDissolveZeroCaptured = bProbeTexturesWritten && CaptureMaterialDefinition( DissolveZero, 0.0f, CenteredWorld, "dissolve_zero", DissolveZeroPixels ); // dissolve 0 capture成否
+			const bool bDissolveHalfCaptured = bProbeTexturesWritten && CaptureMaterialDefinition( DissolveHalf, 0.0f, CenteredWorld, "dissolve_half", DissolveHalfPixels ); // dissolve 0.5 capture成否
+			const bool bDissolveOneCaptured = bProbeTexturesWritten && CaptureMaterialDefinition( DissolveOne, 0.0f, CenteredWorld, "dissolve_one", DissolveOnePixels ); // dissolve 1 capture成否
+			const int32 AppearanceBasePixelsInROI = bCenteredTriangleProjected && bAppearanceBaseCaptured ? CountModelMaterialTrianglePixels( AppearanceBasePixels, CenteredTriangle ) : -1; // selected shaderの既知陽性画素数
+			const int32 DissolveZeroPixelsInROI = bCenteredTriangleProjected && bDissolveZeroCaptured ? CountModelMaterialTrianglePixels( DissolveZeroPixels, CenteredTriangle ) : -1; // dissolve 0の残存画素数
+			const int32 DissolveHalfPixelsInROI = bCenteredTriangleProjected && bDissolveHalfCaptured ? CountModelMaterialTrianglePixels( DissolveHalfPixels, CenteredTriangle ) : -1; // dissolve 0.5の残存画素数
+			const int32 DissolveOnePixelsInROI = bCenteredTriangleProjected && bDissolveOneCaptured ? CountModelMaterialTrianglePixels( DissolveOnePixels, CenteredTriangle ) : -1; // dissolve 1の残存画素数
+			const int32 DissolveHalfOtherDifferences = bOtherTriangleProjected && bDissolveHalfCaptured ? CountModelMaterialTriangleRgbDifferences( NativePixels, DissolveHalfPixels, OtherTriangle ) : -1; // 非対象materialのRGB差分
+			const int32 DissolveOneOtherDifferences = bOtherTriangleProjected && bDissolveOneCaptured ? CountModelMaterialTriangleRgbDifferences( NativePixels, DissolveOnePixels, OtherTriangle ) : -1; // 全消失時の非対象RGB差分
+			Checker.Check( bAppearanceBaseCaptured && bDissolveZeroCaptured && AppearanceBasePixelsInROI > 0 && DissolveZeroPixelsInROI == AppearanceBasePixelsInROI && CountModelMaterialTriangleDifferences( AppearanceBasePixels, DissolveZeroPixels, CenteredTriangle ) == 0, "dissolve 0は同じ効果の非dissolve基準と選択ROI全画素が一致する" );
+			Checker.Check( bDissolveHalfCaptured && DissolveHalfPixelsInROI > 0 && DissolveHalfPixelsInROI < AppearanceBasePixelsInROI && DissolveHalfOtherDifferences == 0, "既知二値maskのdissolve 0.5はselected triangleに穴を作り他materialを保つ" );
+			Checker.Check( bDissolveOneCaptured && DissolveOnePixelsInROI == 0 && DissolveOneOtherDifferences == 0, "dissolve 1は選択triangle全体を消し、非対象materialはnative RGBを保つ" );
+			// 発光倍率の丸め誤差だけを許し、飽和しないselected画素で1:2比を測る。
+			FMeshMaterialEffectDefinition EmissionQuarter = AppearanceBase; // 比較する0.25 emission
+			EmissionQuarter.Material.Emission.Keys[0].Value = 0.25f; EmissionQuarter.Material.Emission.Keys[1].Value = 0.25f;
+			FMeshMaterialEffectDefinition EmissionHalf = AppearanceBase; // 比較する0.5 emission
+			EmissionHalf.Material.Emission.Keys[0].Value = 0.5f; EmissionHalf.Material.Emission.Keys[1].Value = 0.5f;
+			TArray<FColor32> EmissionQuarterPixels; // emission 0.25のcapture
+			TArray<FColor32> EmissionHalfPixels; // emission 0.5のcapture
+			const bool bEmissionQuarterCaptured = CaptureMaterialDefinition( EmissionQuarter, 0.0f, CenteredWorld, "emission_quarter", EmissionQuarterPixels ); // 0.25 emission capture成否
+			const bool bEmissionHalfCaptured = CaptureMaterialDefinition( EmissionHalf, 0.0f, CenteredWorld, "emission_half", EmissionHalfPixels ); // 0.5 emission capture成否
+			int32 EmissionSamples = 0; // 飽和せず倍率比較に使えた色channel数
+			int32 EmissionRatioMismatches = 0; // 2倍値から許容誤差を超えたchannel数
+			if ( EmissionQuarterPixels.Num() == 128 * 128 && EmissionHalfPixels.Num() == 128 * 128 && bCenteredTriangleProjected ) for ( int32 Y = 0; Y < 128; ++Y ) for ( int32 X = 0; X < 128; ++X )
+			{
+				if ( !IsModelMaterialPixelInsideTriangle( static_cast<float32>( X ) + 0.5f, static_cast<float32>( Y ) + 0.5f, CenteredTriangle, 2.0f ) ) continue;
+				const FColor32& Quarter = EmissionQuarterPixels[Y * 128 + X]; // 比率の基準画素
+				const FColor32& Half = EmissionHalfPixels[Y * 128 + X]; // 2倍発光画素
+				const uint8 QuarterChannels[3] = { Quarter.r, Quarter.g, Quarter.b }; // 低発光画像のRGB
+				const uint8 HalfChannels[3] = { Half.r, Half.g, Half.b }; // 高発光画像のRGB
+				// Channelは検査中のRGB成分番号。
+				for ( int32 Channel = 0; Channel < 3; ++Channel ) if ( QuarterChannels[Channel] > 2 && QuarterChannels[Channel] < 120 )
+				{
+					++EmissionSamples;
+					if ( std::abs( static_cast<int32>( HalfChannels[Channel] ) - static_cast<int32>( std::lround( QuarterChannels[Channel] * 2.0f ) ) ) > 2 ) ++EmissionRatioMismatches;
+				}
+			}
+			Checker.Check( bEmissionQuarterCaptured && bEmissionHalfCaptured && EmissionSamples > 20 && EmissionRatioMismatches == 0, "selected material shaderは非飽和pixelでEmission 0.25から0.5へRGBを2倍にする" );
+			// 同じsource UV模様を時間だけ進め、pause保持とrestart一致も画像で測る。
+			FMeshMaterialEffectDefinition SourceScroll = AppearanceBase; // source画像だけを動かす設定
+			SourceScroll.Material.UVScroll = FVector2( 0.5f, 0.0f );
+			TArray<FColor32> SourceScrollBasePixels; // UV offset 0の画像
+			TArray<FColor32> SourceScrollMovedPixels; // 時刻0.5でsource offsetを進めた画像
+			const bool bSourceScrollBaseCaptured = CaptureMaterialDefinition( AppearanceBase, 0.0f, CenteredWorld, "source_uv_zero", SourceScrollBasePixels ); // source UV基準capture成否
+			const bool bSourceScrollMovedCaptured = CaptureMaterialDefinition( SourceScroll, 0.5f, CenteredWorld, "source_uv_moved", SourceScrollMovedPixels ); // source UV移動capture成否
+			const int32 SourceScrollDifferences = bCenteredTriangleProjected ? CountModelMaterialTriangleRgbDifferences( SourceScrollBasePixels, SourceScrollMovedPixels, CenteredTriangle ) : -1; // source scrollの選択ROI RGB差分
+			FirstAnimator.ClearMaterialEffect();
+			const bool bSourceScrollPrepared = FirstAnimator.PrepareMaterialEffect( MaterialIndex, SourceScroll, [&]( const FString& Path ) { return Assets.LoadTexture( Path ); }, Executor, true ); // pause試験効果の準備結果
+			if ( bSourceScrollPrepared ) FirstAnimator.GetMaterialEffect().Update( 0.5f );
+			FirstAnimator.GetMaterialEffect().Pause();
+			FirstAnimator.GetMaterialEffect().Update( 0.25f );
+			TArray<FColor32> SourceScrollPausedPixels; // pause中の追加更新後画像
+			const bool bSourceScrollPausedCaptured = bSourceScrollPrepared && DrawPixels( FirstAnimator, CenteredWorld, SourceScrollPausedPixels, "source_uv_paused" ); // pause中の追加更新画像capture成否
+			FirstAnimator.GetMaterialEffect().Restart();
+			TArray<FColor32> SourceScrollRestartedPixels; // restart直後にoffset 0へ戻った画像
+			const bool bSourceScrollRestartedCaptured = bSourceScrollPrepared && DrawPixels( FirstAnimator, CenteredWorld, SourceScrollRestartedPixels, "source_uv_restarted" ); // restart後の画像capture成否
+			Checker.Check( bSourceScrollBaseCaptured && bSourceScrollMovedCaptured && SourceScrollDifferences > 0 && CountModelMaterialTrianglePixels( SourceScrollMovedPixels, CenteredTriangle ) > 0, "source UV scrollは同じborrowed画像を選択ROI内で移動する" );
+			Checker.Check( bSourceScrollPausedCaptured && CountModelMaterialPixelDifferences( SourceScrollMovedPixels, SourceScrollPausedPixels ) == 0 && bSourceScrollRestartedCaptured && CountModelMaterialPixelDifferences( SourceScrollBasePixels, SourceScrollRestartedPixels ) == 0, "source UV scrollはPause中に静止しRestart後に元画素へ戻る" );
+			// 強度0と正値、noise scrollだけの差を同じsource UVで比べる。
+			FMeshMaterialEffectDefinition DistortionZero = AppearanceBase; // textureを指定した強度0の対照
+			DistortionZero.Material.Distortion.bEnabled = true;
+			DistortionZero.Material.Distortion.Texture = "model_material_noise.tga";
+			DistortionZero.Material.Distortion.Strength.Keys.Add( { 0.0f, 0.0f } ); DistortionZero.Material.Distortion.Strength.Keys.Add( { 1.0f, 0.0f } );
+			FMeshMaterialEffectDefinition DistortionPositive = DistortionZero; // 正のnoise歪み値
+			DistortionPositive.Material.Distortion.Strength.Keys[0].Value = 0.2f; DistortionPositive.Material.Distortion.Strength.Keys[1].Value = 0.2f;
+			FMeshMaterialEffectDefinition DistortionScrolled = DistortionPositive; // source UV固定でnoise画像だけを移動
+			DistortionScrolled.Material.Distortion.UVScroll = FVector2( 0.5f, 0.0f );
+			TArray<FColor32> DistortionZeroPixels; // noise強度0の画像
+			TArray<FColor32> DistortionPositivePixels; // noise正値の画像
+			TArray<FColor32> DistortionScrolledPixels; // noise UVを進めた画像
+			const bool bDistortionZeroCaptured = bProbeTexturesWritten && CaptureMaterialDefinition( DistortionZero, 0.5f, CenteredWorld, "noise_strength_zero", DistortionZeroPixels ); // noise強度0 capture成否
+			const bool bDistortionPositiveCaptured = bProbeTexturesWritten && CaptureMaterialDefinition( DistortionPositive, 0.5f, CenteredWorld, "noise_strength_positive", DistortionPositivePixels ); // noise正値capture成否
+			const bool bDistortionScrolledCaptured = bProbeTexturesWritten && CaptureMaterialDefinition( DistortionScrolled, 0.5f, CenteredWorld, "noise_uv_scrolled", DistortionScrolledPixels ); // noise scroll capture成否
+			const int32 DistortionZeroDifferences = CountModelMaterialTriangleRgbDifferences( AppearanceBasePixels, DistortionZeroPixels, CenteredTriangle ); // 強度0と通常画像の差分
+			const int32 DistortionPositiveDifferences = CountModelMaterialTriangleRgbDifferences( DistortionZeroPixels, DistortionPositivePixels, CenteredTriangle ); // 強度正値の差分
+			const int32 DistortionScrollDifferences = CountModelMaterialTriangleRgbDifferences( DistortionPositivePixels, DistortionScrolledPixels, CenteredTriangle ); // noise scrollだけの差分
+			Checker.Check( bProbeTexturesWritten && bDistortionZeroCaptured && DistortionZeroDifferences == 0, "noise強度0は同時刻のsource画像と一致する" );
+			Checker.Check( bDistortionPositiveCaptured && DistortionPositiveDifferences > 0 && CountModelMaterialTrianglePixels( DistortionPositivePixels, CenteredTriangle ) > 0, "noise正値はselected triangleのsource画素を歪める" );
+			Checker.Check( bDistortionScrolledCaptured && DistortionScrollDifferences > 0, "source UVを固定してもnoise UV scrollだけで歪み画素が変わる" );
+			FirstAnimator.ClearMaterialEffect();
+			const bool bOriginalEffectDefinitionRestored = FirstAnimator.PrepareMaterialEffect( MaterialIndex, Definition, [&]( const FString& Path ) { return Assets.LoadTexture( Path ); }, Executor, true ); // 後続試験が使うOpacity 0定義の復元結果
+			Checker.Check( bOriginalEffectDefinitionRestored, "appearance試験後に後続command検査用のOpacity 0定義を再準備する" );
 			TArray<FColor32> VisibilityBaselinePixels; // opacity 1で全材質が表示されたinstance基準
-			const bool bVisibilityBaselineCaptured = CaptureEffectVariant( 1.0f, EDrawBlend::Alpha, true, "visibility_baseline", VisibilityBaselinePixels );
+			const bool bVisibilityBaselineCaptured = CaptureEffectVariant( 1.0f, EDrawBlend::Alpha, true, "visibility_baseline", VisibilityBaselinePixels ); // visibility試験前のeffect基準画像capture成否
 			const FModelMaterialVisibilitySnapshot VisibilityState( First->GetHandle(), SelectedMeshIndex, SelectedFrameIndex, SelectedFrameParent ); // visibilityを戻すinstance状態
 			const int32 SourceModelVisibleBeforeVisibility = MV1GetVisible( Model->GetHandle() ); // 元source model表示値
 			const int32 SourceMeshVisibleBeforeVisibility = MV1GetMeshVisible( Model->GetHandle(), SelectedMeshIndex ); // 元source mesh表示値
@@ -910,9 +1062,9 @@ namespace NAssetTest
 					const int32 CullSilhouetteDifference = bCullProjected && bCullNativeCaptured && bCullOneSidedCaptured ? CountModelMaterialTriangleSilhouetteDifferences( CullNativePixels, CullOneSidedPixels, CullTriangle ) : -1; // nativeと片面effectのsilhouette差
 					LOG( LogAssetSelfTest, Log, "材質culling試験: meshCull=%d cameraSide=%s 投影=%d nativeCapture=%d nativePixels=%d oneSidedCapture=%d oneSidedPixels=%d silhouetteDiff=%d twoSidedCapture=%d twoSidedPixels=%d globalCull=%d", CullModes[CullIndex], SideIndex == 0 ? "正面" : "背面", bCullProjected ? 1 : 0, bCullNativeCaptured ? 1 : 0, CullNativeVisible, bCullOneSidedCaptured ? 1 : 0, CullOneSidedVisible, CullSilhouetteDifference, bCullTwoSidedCaptured ? 1 : 0, CullTwoSidedVisible, GetUseBackCulling() );
 					bCullCapturesValid = bCullCapturesValid && bCullProjected && bCullNativeCaptured && bCullOneSidedCaptured && bCullTwoSidedCaptured && bOneSidedCullUnchanged && bTwoSidedCullUnchanged && CullNativeVisible >= 0 && CullOneSidedVisible >= 0 && CullTwoSidedVisible > 0 && CullSilhouetteDifference == 0 && GetUseBackCulling() == GlobalNativeCullBefore;
-				CullSilhouetteMismatches += CullSilhouetteDifference < 0 ? 1 : CullSilhouetteDifference;
-				if ( CullTwoSidedVisible <= 0 ) ++TwoSidedMissingPixels;
-				if ( SideIndex == 0 ) NativeFrontPixels += std::max( CullNativeVisible, 0 ); else NativeBackPixels += std::max( CullNativeVisible, 0 );
+					CullSilhouetteMismatches += CullSilhouetteDifference < 0 ? 1 : CullSilhouetteDifference;
+					if ( CullTwoSidedVisible <= 0 ) ++TwoSidedMissingPixels;
+					if ( SideIndex == 0 ) NativeFrontPixels += std::max( CullNativeVisible, 0 ); else NativeBackPixels += std::max( CullNativeVisible, 0 );
 			}
 			}
 			if ( !RestoreNativeCull() ) bCullCapturesValid = false;
@@ -926,6 +1078,72 @@ namespace NAssetTest
 			const bool bSourceAfterCullCaptured = DrawSourcePixels( CenteredWorld, SourcePixelsAfterCull, "source_culling_restored" ); // source再取得結果
 			const bool bCullPixelsRestored = bNativeCaptured && bNativeAfterCullCaptured && CountModelMaterialPixelDifferences( NativePixels, NativePixelsAfterCull ) == 0 && bSiblingCaptured && bSiblingAfterCullCaptured && CountModelMaterialPixelDifferences( SiblingPixelsBefore, SiblingPixelsAfterCull ) == 0 && bSourceCaptured && bSourceAfterCullCaptured && CountModelMaterialPixelDifferences( SourcePixelsBefore, SourcePixelsAfterCull ) == 0; // three native imageの復元一致
 			Checker.Check( bCullCapturesValid && CullSilhouetteMismatches == 0 && TwoSidedMissingPixels == 0 && NativeFrontPixels > 0 && NativeBackPixels > 0 && bCullStateRestored && bCullPixelsRestored, "LEFT・RIGHT・NONEでnativeと片面effectのculling領域が一致し、両面effectは前後cameraへ表示して設定とnative画像を戻す" );
+			// negative scaleもnative対照へ残るよう実fixture全handleの対象meshだけcullingなしにする。
+			const bool bAffineCullSet = MV1SetMeshBackCulling( First->GetHandle(), SelectedMeshIndex, DX_CULLING_NONE ) >= 0 && MV1SetMeshBackCulling( Model->GetHandle(), SelectedMeshIndex, DX_CULLING_NONE ) >= 0 && MV1SetMeshBackCulling( Sibling->GetHandle(), SelectedMeshIndex, DX_CULLING_NONE ) >= 0; // affine試験専用mesh culling設定
+			Checker.Check( bAffineCullSet && GetUseBackCulling() == GlobalNativeCullBefore, "affine pixel試験の前にfixture meshだけを両面表示へ揃える" );
+			const FVector3 OriginalModelOffset = FirstAnimator.ModelOffset; // affine試験前のeffect Animator offset
+			const FQuaternion OriginalModelRotation = FirstAnimator.ModelRotation; // affine試験前のeffect Animator rotation
+			const FVector3 OriginalModelScale = FirstAnimator.ModelScale; // affine試験前のeffect Animator scale
+			// local/world合成を独立投影し、nativeとcustomの実画像を比較する。
+			const auto RunAffinePixelCase = [&]( const char* CaseName, const FVector3& LocalOffset, const FQuaternion& LocalRotation, const FVector3& LocalScale, const FMatrix4x4& World, bool bExpectDegenerate, bool bCheckOrder )
+			{
+				FirstAnimator.ModelOffset = LocalOffset; FirstAnimator.ModelRotation = LocalRotation; FirstAnimator.ModelScale = LocalScale;
+				PlainAnimator.ModelOffset = LocalOffset; PlainAnimator.ModelRotation = LocalRotation; PlainAnimator.ModelScale = LocalScale;
+				const FMatrix4x4 Local = FMatrix4x4::TRS( LocalOffset, LocalRotation, LocalScale ); // Animatorが合成するlocal行列
+				const FMatrix4x4 ExpectedWorld = MultiplyModelMaterialMatrices( Local, World ); // 明示積で作る期待full affine行列
+				const FMatrix4x4 ReversedWorld = MultiplyModelMaterialMatrices( World, Local ); // 順序誤りを検出する逆積
+				FModelMaterialTriangleProjection ExpectedTriangle; // 期待full matrixから独立投影するROI
+				FModelMaterialTriangleProjection ExpectedOtherTriangle; // 非対象材質のfull matrix投影ROI
+				FModelMaterialTriangleProjection ReversedTriangle; // 逆順行列の比較用ROI
+				const bool bExpectedProjected = Surface.IsValid() && ProjectModelMaterialTriangle( Surface->GetData(), MaterialIndex, SelectedMeshIndex, ExpectedWorld, ExpectedTriangle ); // 対象triangle投影成否
+				const bool bOtherProjected = Surface.IsValid() && ProjectModelMaterialTriangle( Surface->GetData(), OtherMaterialIndex, OtherMeshIndex, ExpectedWorld, ExpectedOtherTriangle ); // 非対象triangle投影成否
+				const bool bReversedProjected = Surface.IsValid() && ProjectModelMaterialTriangle( Surface->GetData(), MaterialIndex, SelectedMeshIndex, ReversedWorld, ReversedTriangle ); // 逆順triangle投影成否
+				float32 OrderSeparationPixels = 0.0f; // 正順と逆順の頂点間最大画素距離
+				// Cornerは期待投影と逆順投影を比較する三角形頂点番号。
+				if ( bExpectedProjected && bReversedProjected ) for ( int32 Corner = 0; Corner < 3; ++Corner ) OrderSeparationPixels = std::max( OrderSeparationPixels, std::sqrt( std::pow( ExpectedTriangle.X[Corner] - ReversedTriangle.X[Corner], 2.0f ) + std::pow( ExpectedTriangle.Y[Corner] - ReversedTriangle.Y[Corner], 2.0f ) ) );
+				TArray<FColor32> AffineNativePixels; // native full-model同位置positive control
+				TArray<FColor32> AffineHiddenPixels; // 選択材質効果Opacity 0の非対象基準
+				TArray<FColor32> AffineEffectPixels; // selected材質Opacity 1の実画素
+				const bool bNativeImageCaptured = DrawPixels( PlainAnimator, World, AffineNativePixels, "affine_native" ); // native image capture成否
+				FMeshMaterialEffectDefinition AffineHiddenDefinition = AppearanceBase; // selected custom triangleを透明にする定義
+				AffineHiddenDefinition.Opacity = 0.0f;
+				const bool bHiddenImageCaptured = CaptureMaterialDefinition( AffineHiddenDefinition, 0.0f, World, "affine_hidden", AffineHiddenPixels ); // 透明基準capture成否
+				const bool bEffectImageCaptured = CaptureMaterialDefinition( AppearanceBase, 0.0f, World, "affine_effect", AffineEffectPixels ); // effect capture成否
+				const int32 NativeTargetPixels = bExpectedProjected && bNativeImageCaptured ? CountModelMaterialTrianglePixels( AffineNativePixels, ExpectedTriangle ) : -1; // native対象ROIの陽性画素
+				const int32 EffectTargetPixels = bExpectedProjected && bEffectImageCaptured ? CountModelMaterialTrianglePixels( AffineEffectPixels, ExpectedTriangle ) : -1; // effect対象ROIの陽性画素
+				const int32 NativeEffectSilhouetteDifferences = bExpectedProjected && bNativeImageCaptured && bEffectImageCaptured ? CountModelMaterialTriangleSilhouetteDifferences( AffineNativePixels, AffineEffectPixels, ExpectedTriangle ) : -1; // native/effect対象silhouette差
+				const int32 EffectOutsideDifferences = bExpectedProjected && bHiddenImageCaptured && bEffectImageCaptured ? CountModelMaterialPixelDifferencesOutsideTriangle( AffineHiddenPixels, AffineEffectPixels, ExpectedTriangle ) : -1; // 期待polygon外へのeffectはみ出し差分
+				const int32 OtherMaterialDifferences = bOtherProjected && bNativeImageCaptured && bEffectImageCaptured ? CountModelMaterialTriangleRgbDifferences( AffineNativePixels, AffineEffectPixels, ExpectedOtherTriangle ) : -1; // 非対象materialのRGB差分
+				const int32 NativeEffectFullDifferences = bNativeImageCaptured && bEffectImageCaptured ? CountModelMaterialPixelDifferences( AffineNativePixels, AffineEffectPixels ) : -1; // full image RGB差分診断
+				const bool bTransformCaptureValid = bAffineCullSet && bExpectedProjected && bOtherProjected && bNativeImageCaptured && bHiddenImageCaptured && bEffectImageCaptured && NativeTargetPixels >= 0 && EffectTargetPixels >= 0 && EffectOutsideDifferences >= 0 && OtherMaterialDifferences >= 0; // affine比較に必要な投影・画像・ROI計測が揃ったか
+				if ( bExpectDegenerate )
+				{
+					Checker.Check( bTransformCaptureValid && NativeTargetPixels == 0 && EffectTargetPixels == 0 && EffectOutsideDifferences == 0 && NativeEffectFullDifferences == 0, "zero Y scaleは選択・native triangleを退化させ、effectは画素を足さない" );
+				}
+				else
+				{
+					Checker.Check( bTransformCaptureValid && NativeTargetPixels > 0 && EffectTargetPixels > 0 && NativeEffectSilhouetteDifferences == 0 && EffectOutsideDifferences == 0 && OtherMaterialDifferences == 0, "affine native/effectは期待ROIへ一度だけ描き、polygon外と非対象材質を変えない" );
+				}
+				if ( bCheckOrder ) Checker.Check( bReversedProjected && OrderSeparationPixels > 5.0f && NativeTargetPixels > 0 && EffectTargetPixels > 0, "非可換なAnimator localとWorldの順序は独立投影で判別できる" );
+				LOG( LogAssetSelfTest, Log, "ModelMaterial affine %s: native=%d effect=%d silhouetteDiff=%d outsideDiff=%d otherDiff=%d orderSeparation=%.2f fullDiff=%d", CaseName, NativeTargetPixels, EffectTargetPixels, NativeEffectSilhouetteDifferences, EffectOutsideDifferences, OtherMaterialDifferences, OrderSeparationPixels, NativeEffectFullDifferences );
+				return bTransformCaptureValid;
+			};
+			const FMatrix4x4 RotatedNonUniformWorld = FMatrix4x4::TRS( FVector3( -2.0f, -1.0f, 0.0f ), FQuaternion::FromAxisAngle( FVector3::Up, -0.31f ), FVector3( 1.2f, 0.8f, 1.0f ) ); // 回転・非一様scale・translation world
+			const bool bRotatedNonUniform = RunAffinePixelCase( "rotation-nonuniform-translation", FVector3( 0.2f, -0.1f, 0.0f ), FQuaternion::FromAxisAngle( FVector3::Up, 0.24f ), FVector3( 0.85f, 1.1f, 1.0f ), RotatedNonUniformWorld, false, true ); // Animator localも合成する非可換試験
+			const FMatrix4x4 NegativeScaleWorld = FMatrix4x4::Translate( FVector3( 2.0f, -1.0f, 0.0f ) ); // 負scale後のgeometryを画面へ戻すtranslation
+			const bool bNegativeScale = RunAffinePixelCase( "negative-scale", FVector3::Zero, FQuaternion::Identity, FVector3( -1.0f, 1.0f, 1.0f ), NegativeScaleWorld, false, false ); // x方向mirror
+			FMatrix4x4 ShearWorld = FMatrix4x4::Identity; // せん断を含む生affine行列
+			ShearWorld.m[0][1] = 0.28f; ShearWorld.m[1][0] = -0.17f; ShearWorld.m[3][0] = -2.0f; ShearWorld.m[3][1] = -1.0f;
+			const bool bShear = RunAffinePixelCase( "shear", FVector3( 0.1f, 0.05f, 0.0f ), FQuaternion::FromAxisAngle( FVector3::Up, 0.12f ), FVector3( 1.0f, 0.9f, 1.0f ), ShearWorld, false, false ); // shearとlocal補正の合成
+			const bool bAffinePositiveControl = bRotatedNonUniform && bNegativeScale && bShear; // 退化scaleより前に成功した非zero変換群
+			const bool bZeroScaleY = RunAffinePixelCase( "zero-scale-y", FVector3::Zero, FQuaternion::Identity, FVector3( 1.0f, 0.0f, 1.0f ), CenteredWorld, true, false ); // 退化画像と上記非zero controlを対にする
+			FirstAnimator.ModelOffset = OriginalModelOffset; FirstAnimator.ModelRotation = OriginalModelRotation; FirstAnimator.ModelScale = OriginalModelScale;
+			PlainAnimator.ModelOffset = OriginalModelOffset; PlainAnimator.ModelRotation = OriginalModelRotation; PlainAnimator.ModelScale = OriginalModelScale;
+			const bool bAffineCullRestored = RestoreNativeCull() && GetUseBackCulling() == GlobalNativeCullBefore; // affine前の共有fixture culling復元
+			Checker.Check( bAffinePositiveControl && bZeroScaleY && bAffineCullRestored, "正の回転・負scale・shear control後にzero Y退化を検査しnative cullingを復元する" );
+			FirstAnimator.ClearMaterialEffect();
+			const bool bDefinitionRestoredAfterAffine = FirstAnimator.PrepareMaterialEffect( MaterialIndex, Definition, [&]( const FString& Path ) { return Assets.LoadTexture( Path ); }, Executor, true ); // malformed command検査用定義の復元結果
+			Checker.Check( bDefinitionRestoredAfterAffine, "affine試験後にmalformed command検査用のOpacity 0定義を戻す" );
 			FDrawBuffer ValidEffectBuffer; // executorへ渡す既知の有効fixed command
 			FDrawContext ValidEffectDraw( ValidEffectBuffer ); // 有効なeffect命令を記録するcontext
 			FirstAnimator.Record( ValidEffectDraw, CenteredWorld );

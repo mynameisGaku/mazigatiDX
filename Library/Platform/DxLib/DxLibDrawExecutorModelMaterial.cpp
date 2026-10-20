@@ -100,6 +100,8 @@ void CDxLibDrawExecutor::ExecuteModelMaterial( const FDrawCommandView& Command )
 	constexpr int32 DataWords = sizeof( FDrawModelMaterialData ) / 4;
 	// malformed commandを一度だけ診断する状態。
 	static bool bInvalidLogged = false;
+	// Model材質効果のchunk描画失敗を一度だけ知らせる状態。
+	static bool bModelMaterialDrawFailedLogged = false;
 	if ( Command.NumDataWords != DataWords )
 	{
 		if ( !bInvalidLogged ) { LOG( LogModelMaterialCommand, Warning, "モデル材質効果命令のpayload長が不正なため描画を読み飛ばしました" ); bInvalidLogged = true; }
@@ -213,7 +215,13 @@ void CDxLibDrawExecutor::ExecuteModelMaterial( const FDrawCommandView& Command )
 			FDrawMaterialMeshData MeshData = Data.Material;
 			MeshData.NumVertices = Chunk.Vertices.Num();
 			MeshData.NumIndices = Chunk.Indices.Num();
-			EffectMaterialRenderer.DrawModelMesh( MeshData, Chunk.Vertices.GetData(), Chunk.Indices.GetData(), World, NativeCull, Data.Opacity );
+			// 現在chunkのGPU描画が成功したかを示す結果。
+			const bool bDrawSucceeded = EffectMaterialRenderer.DrawModelMesh( MeshData, Chunk.Vertices.GetData(), Chunk.Indices.GetData(), World, NativeCull, Data.Opacity );
+			if ( !bDrawSucceeded && !bModelMaterialDrawFailedLogged )
+			{
+				LOG( LogModelMaterialCommand, Warning, "モデル材質効果のGPU描画に失敗しました (instance %d, geometry %d, mesh %d, source mesh %d)。このchunkは描画されません。", Data.Handle, Data.Geometry, MeshIndex, Mesh.SourceMeshIndex );
+				bModelMaterialDrawFailedLogged = true;
+			}
 		}
 	}
 	SetDrawBlendMode( PreviousBlend, PreviousBlendParam );
