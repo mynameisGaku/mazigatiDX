@@ -1,0 +1,18 @@
+﻿{
+  "Viewport": {
+    "Title": "CoG Framework",
+
+    "Offset": {
+      "X": 0,
+      "Y": 0
+    },
+
+    "Size": {
+      "Width": 1280,
+      "Height": 720
+    },
+
+    "ExtendRate": 1.0,
+    "WindowMode": "Windowed"
+  }
+}

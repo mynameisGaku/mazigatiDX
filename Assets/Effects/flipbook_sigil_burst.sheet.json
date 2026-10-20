@@ -1,0 +1,14 @@
+{
+	"Version": 1,
+	"Texture": "Effects/flipbook_sigil_burst.tga",
+	"Grid": { "Columns": 8, "Rows": 1, "CellWidth": 128, "CellHeight": 128 },
+	"Clips": [
+		{
+			"Name": "Burst",
+			"Range": [0, 7],
+			"Fps": 7.25,
+			"Loop": "PingPong",
+			"Durations": [0.09, 0.11, 0.13, 0.15, 0.16, 0.13, 0.12, 0.11]
+		}
+	]
+}

@@ -1,0 +1,10 @@
+﻿#pragma once
+#include "Library/Math/MathConstants.h"
+#include "Library/Math/MathUtils.h"
+#include "Library/Math/Vector2.h"
+#include "Library/Math/Vector3.h"
+#include "Library/Math/Vector4.h"
+#include "Library/Math/Quaternion.h"
+#include "Library/Math/Matrix4x4.h"
+#include "Library/Math/Transform.h"
+#include "Library/Math/Color.h"

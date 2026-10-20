@@ -1,0 +1,48 @@
+{
+	"Version": 1,
+	"Name": "Flipbook sigil burst",
+	"Duration": 1.6,
+	"Loop": true,
+	"Seed": 20261020,
+	"Emitters": [
+		{
+			"Name": "Opening sigil",
+			"Texture": "Effects/material_sigil.tga",
+			"Blend": "Add",
+			"Space": "World",
+			"MaxParticles": 1,
+			"Rate": 0,
+			"Bursts": [ { "Time": 0, "Count": 1 } ],
+			"Lifetime": [1.3, 1.3],
+			"Speed": [0, 0],
+			"Shape": { "Type": "Cone", "Radius": 0, "Angle": 0 },
+			"Direction": [0, 1, 0],
+			"Gravity": [0, 0, 0],
+			"Size": { "Start": [2.25, 2.25], "End": [2.25, 2.25] },
+			"Color": { "Start": "#FFFFFFFF", "End": "#FFFFFFFF" },
+			"Flipbook": {
+				"Enabled": true,
+				"Sheet": "Effects/flipbook_sigil_burst.sheet.json",
+				"Clip": "Burst",
+				"TimeMode": "Lifetime",
+				"Speed": 1.0
+			},
+			"Material": {
+				"Enabled": true,
+				"DissolveEnabled": true,
+				"UVScale": [1.0, 1.0],
+				"UVScroll": [0.004, -0.003],
+				"MaskScale": 1.0,
+				"Dissolve": { "Interpolation": "Smooth", "Keys": [ { "Time": 0.0, "Value": 0.0 }, { "Time": 0.58, "Value": 0.0 }, { "Time": 0.82, "Value": 0.22 }, { "Time": 1.0, "Value": 0.82 } ] },
+				"Emission": { "Interpolation": "Smooth", "Keys": [ { "Time": 0.0, "Value": 0.65 }, { "Time": 0.12, "Value": 1.5 }, { "Time": 0.55, "Value": 1.2 }, { "Time": 0.88, "Value": 0.3 }, { "Time": 1.0, "Value": 0.0 } ] },
+				"EdgeWidth": 0.08,
+				"EdgeColor": "#FFC75AFF",
+				"EdgeEmission": 1.3
+			},
+			"Appearance": {
+				"Size": { "Interpolation": "Smooth", "Keys": [ { "Time": 0.0, "Value": 0.22 }, { "Time": 0.14, "Value": 1.0 }, { "Time": 0.72, "Value": 1.04 }, { "Time": 1.0, "Value": 0.62 } ] },
+				"Color": { "Interpolation": "Smooth", "Keys": [ { "Time": 0.0, "Value": [0.72, 0.78, 1.0, 0.0] }, { "Time": 0.12, "Value": [1.0, 1.0, 1.0, 1.0] }, { "Time": 0.72, "Value": [0.88, 0.82, 1.0, 0.9] }, { "Time": 1.0, "Value": [0.52, 0.42, 0.9, 0.0] } ] }
+			}
+		}
+	]
+}

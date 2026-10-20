@@ -1,0 +1,70 @@
+{
+	"Version": 1,
+	"Name": "Dissolve sigil",
+	"Duration": 2.8,
+	"Loop": true,
+	"Seed": 37,
+	"Emitters": [
+		{
+			"Name": "Sigil / etched cyan",
+			"Texture": "Effects/material_sigil.tga",
+			"Blend": "Add",
+			"Space": "World",
+			"MaxParticles": 1,
+			"Rate": 0,
+			"Bursts": [ { "Time": 0, "Count": 1 } ],
+			"Lifetime": [2.6, 2.6],
+			"Speed": [0, 0],
+			"Shape": { "Type": "Cone", "Radius": 0, "Angle": 0 },
+			"Direction": [0, 1, 0],
+			"Gravity": [0, 0, 0],
+			"Size": { "Start": [2.8, 2.8], "End": [2.8, 2.8] },
+			"Color": { "Start": "#FFFFFFFF", "End": "#FFFFFFFF" },
+			"Material": {
+				"Enabled": true,
+				"DissolveEnabled": true,
+				"UVScale": [1.0, 1.0],
+				"UVScroll": [0.008, -0.005],
+				"MaskScale": 2.8,
+				"Dissolve": { "Interpolation": "Smooth", "Keys": [ { "Time": 0.0, "Value": 0.0 }, { "Time": 0.25, "Value": 0.0 }, { "Time": 0.72, "Value": 0.38 }, { "Time": 1.0, "Value": 1.0 } ] },
+				"Emission": { "Interpolation": "Smooth", "Keys": [ { "Time": 0.0, "Value": 0.8 }, { "Time": 0.24, "Value": 2.0 }, { "Time": 0.64, "Value": 1.35 }, { "Time": 0.92, "Value": 0.25 }, { "Time": 1.0, "Value": 0.0 } ] },
+				"EdgeWidth": 0.08,
+				"EdgeColor": "#FFB64AFF",
+				"EdgeEmission": 1.6
+			}
+		},
+		{
+			"Name": "Halo / quiet blue",
+			"Texture": "Effects/material_glow.tga",
+			"Blend": "Add",
+			"Space": "World",
+			"MaxParticles": 1,
+			"Rate": 0,
+			"Bursts": [ { "Time": 0, "Count": 1 } ],
+			"Lifetime": [2.6, 2.6],
+			"Speed": [0, 0],
+			"Shape": { "Type": "Cone", "Radius": 0, "Angle": 0 },
+			"Direction": [0, 1, 0],
+			"Gravity": [0, 0, 0],
+			"Size": { "Start": [2.7, 2.7], "End": [3.2, 3.2] },
+			"Color": { "Start": "#70B8E0C0", "End": "#3878B000" }
+		},
+		{
+			"Name": "Sparks / gold flecks",
+			"Texture": "Effects/material_glow.tga",
+			"Blend": "Add",
+			"Space": "World",
+			"MaxParticles": 12,
+			"Rate": 0,
+			"Bursts": [ { "Time": 0, "Count": 9 } ],
+			"Lifetime": [0.55, 0.9],
+			"Speed": [0.65, 1.45],
+			"Shape": { "Type": "Sphere", "Radius": 0.46 },
+			"Direction": [0, 1, 0],
+			"Gravity": [0, 0.15, 0],
+			"Drag": 0.2,
+			"Size": { "Start": [0.035, 0.065], "End": 0.0 },
+			"Color": { "Start": "#FFD07AFF", "End": "#B85A00FF" }
+		}
+	]
+}

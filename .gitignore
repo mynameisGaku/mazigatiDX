@@ -1,0 +1,17 @@
+/.git/
+/.vs/
+/.claude/
+/Saved/
+/Temp/
+/x64/
+/project/
+**/__pycache__/
+*.pdb
+*.obj
+*.log
+*.user
+*.suo
+imgui.ini
+Docs/AI_WORKFLOW.md
+Assets/Content/
+Assets/SaveCourse/

@@ -1,0 +1,36 @@
+{
+	"Version": 1,
+	"Name": "Material ribbon trail",
+	"Duration": 2.8,
+	"Loop": true,
+	"Seed": 61,
+	"Emitters": [
+		{
+			"Name": "Cyan current",
+			"Texture": "Effects/material_ribbon_pattern.tga",
+			"Blend": "Add",
+			"Space": "World",
+			"MaxParticles": 180,
+			"Rate": 40,
+			"Lifetime": [2.4, 2.4],
+			"Speed": [0, 0],
+			"Shape": { "Type": "Cone", "Radius": 0, "Angle": 0 },
+			"Gravity": [0, 0, 0],
+			"Size": { "Start": [0.32, 0.32], "End": [0.06, 0.06] },
+			"Color": { "Start": "#9CDBFFEE", "End": "#428ECBD0" },
+			"Path": { "Kind": "Ribbon", "Segments": 32, "Branches": 0, "Jitter": 0, "BranchLength": 0.45, "RefreshHz": 0, "UVRepeat": 2.0, "BreakDistance": 2.0 },
+			"Material": {
+				"Enabled": true,
+				"DissolveEnabled": true,
+				"UVScale": [1.0, 1.0],
+				"UVScroll": [-0.07, 0.01],
+				"MaskScale": 1.4,
+				"Dissolve": { "Interpolation": "Smooth", "Keys": [ { "Time": 0.0, "Value": 0.0 }, { "Time": 0.45, "Value": 0.0 }, { "Time": 0.8, "Value": 0.35 }, { "Time": 1.0, "Value": 1.0 } ] },
+				"Emission": { "Interpolation": "Smooth", "Keys": [ { "Time": 0.0, "Value": 0.75 }, { "Time": 0.2, "Value": 1.1 }, { "Time": 0.75, "Value": 0.75 }, { "Time": 1.0, "Value": 0.12 } ] },
+				"EdgeWidth": 0.13,
+				"EdgeColor": "#FFA64AFF",
+				"EdgeEmission": 1.5
+			}
+		}
+	]
+}
