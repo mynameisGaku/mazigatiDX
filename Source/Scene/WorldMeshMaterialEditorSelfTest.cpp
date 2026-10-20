@@ -264,6 +264,9 @@ namespace
 		if ( !bHasEditedSlot ) return;
 		const FEditMeshMaterial& EditedMaterial = EditedObject->Mesh.GetValue().Materials[0];
 		C.Check( EditedMaterial.Texture == "Effects/mesh_surface_lava.tga" && EditedMaterial.Effect.Material.bEnabled && EditedMaterial.Effect.Blend == EDrawBlend::Add && EditedMaterial.Effect.Material.Distortion.bEnabled, "Flowing lava presetがsource・発光・歪みを同じslotへ設定する" );
+		// presetが実際に書き込んだ発光曲線。
+		const FEffectScalarCurve& PresetEmission = EditedMaterial.Effect.Material.Emission;
+		C.Check( PresetEmission.Keys.Num() == 4 && std::fabs( PresetEmission.Keys[0].Time ) < 0.002f && std::fabs( PresetEmission.Keys[0].Value - 1.1f ) < 0.002f, "Flowing lava presetがEmissionに4keyと先頭(0, 1.1)を作る" );
 		C.Check( State.Session.Document.IsDirty() && State.Session.Document.GetNumUndo() == 1, "preset適用がdirtyな一つのworld履歴になる" );
 		C.Check( State.Session.Document.Undo() && State.Session.Document.Get().FindObject( 1 )->Mesh.GetValue().Materials[0].Effect.IsDefault() && State.Session.Document.Get().FindObject( 1 )->Mesh.GetValue().Materials[0].Texture.IsEmpty(), "preset適用全体を一度でUndoする" );
 		C.Check( State.Session.Document.Redo() && State.Session.Document.Get().FindObject( 1 )->Mesh.GetValue().Materials[0].Effect.Material.bEnabled && State.Session.Document.Get().FindObject( 1 )->Mesh.GetValue().Materials[0].Texture == "Effects/mesh_surface_lava.tga", "preset適用をRedoする" );
@@ -290,16 +293,42 @@ namespace
 		C.Check( State.Session.Document.Undo() && State.Session.Document.Get().FindObject( 2 )->Mesh.GetValue().Materials[0].Effect.IsDefault() && State.Session.Document.Get().FindObject( 1 )->Mesh.GetValue().Materials[0].Effect.Material.bEnabled, "Undoは別objectだけを戻す" );
 		C.Check( State.Session.Document.Redo(), "別objectの設定をRedoする" );
 		const FWorldObject* CurveBeforeAdd = State.Session.Document.Get().FindObject( 1 );
-		const int32 CurveKeysBeforeAdd = CurveBeforeAdd != nullptr && CurveBeforeAdd->Mesh.IsSet() && CurveBeforeAdd->Mesh.GetValue().Materials.IsValidIndex( 0 ) ? CurveBeforeAdd->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys.Num() : -1;
-		const float32 CurveFirstValueBeforeAdd = CurveKeysBeforeAdd > 0 ? CurveBeforeAdd->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys[0].Value : -1.0f;
+		// Add key直前に比較用として保存する発光キー列。
+		const TArray<FEffectScalarCurve::FKey> EmissionKeysBeforeAdd = CurveBeforeAdd != nullptr && CurveBeforeAdd->Mesh.IsSet() && CurveBeforeAdd->Mesh.GetValue().Materials.IsValidIndex( 0 ) ? CurveBeforeAdd->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys : TArray<FEffectScalarCurve::FKey>();
+		const int32 CurveKeysBeforeAdd = EmissionKeysBeforeAdd.Num();
+		const float32 CurveFirstValueBeforeAdd = CurveKeysBeforeAdd > 0 ? EmissionKeysBeforeAdd[0].Value : -1.0f;
 		const int32 BeforeCurve = State.Session.Document.GetNumUndo();
 		const ImGuiID CurveAddId = Input.CurveItemId( "Emission curve", "Add key" );
 		const bool bCurveAddFocused = Input.TabTo( State, CurveAddId );
 		if ( bCurveAddFocused ) Input.Tap( State, ImGuiKey_Enter );
 		const FWorldObject* CurveObject = State.Session.Document.Get().FindObject( 1 );
 		const int32 CurveKeysAfterAdd = CurveObject != nullptr && CurveObject->Mesh.IsSet() && CurveObject->Mesh.GetValue().Materials.IsValidIndex( 0 ) ? CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys.Num() : -1;
+		// 追加後の列で次に照合する既存キー番号。
+		int32 ExistingKeyIndex = 0;
+		// 既存キーと一致しない追加キーの位置。
+		int32 AddedKeyIndex = INDEX_NONE;
+		// 追加後も全既存キーが順序を保って残ったか。
+		bool bExistingKeysPreserved = CurveObject != nullptr && CurveObject->Mesh.IsSet() && CurveObject->Mesh.GetValue().Materials.IsValidIndex( 0 );
+		// 追加後のキー時刻が厳密な昇順か。
+		bool bKeysAscending = bExistingKeysPreserved;
+		if ( bExistingKeysPreserved )
+		{
+			// 実UIが追加した発光キー列。
+			const TArray<FEffectScalarCurve::FKey>& AddedKeys = CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys;
+			// キー時刻と値を旧列に照合するための番号。
+			for ( int32 Index = 0; Index < AddedKeys.Num(); ++Index )
+			{
+				if ( Index > 0 && !( AddedKeys[Index - 1].Time < AddedKeys[Index].Time ) ) bKeysAscending = false;
+				if ( ExistingKeyIndex < EmissionKeysBeforeAdd.Num() && std::fabs( AddedKeys[Index].Time - EmissionKeysBeforeAdd[ExistingKeyIndex].Time ) < 0.0001f && std::fabs( AddedKeys[Index].Value - EmissionKeysBeforeAdd[ExistingKeyIndex].Value ) < 0.0001f ) ++ExistingKeyIndex;
+				else if ( AddedKeyIndex == INDEX_NONE ) AddedKeyIndex = Index;
+				else bExistingKeysPreserved = false;
+			}
+			bExistingKeysPreserved &= ExistingKeyIndex == EmissionKeysBeforeAdd.Num();
+		}
+		// 新しいキーがpanelの既定値1.0を使ったか。
+		const bool bAddedKeyUsesDefaultValue = AddedKeyIndex != INDEX_NONE && std::fabs( CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys[AddedKeyIndex].Value - 1.0f ) < 0.002f;
 		const int32 UndoAfterCurveAdd = State.Session.Document.GetNumUndo();
-		C.Check( bCurveAddFocused && CurveKeysAfterAdd == CurveKeysBeforeAdd + 1 && UndoAfterCurveAdd == BeforeCurve + 1, "実curve UIのAdd keyを一つのworld履歴へ記録する: focused=%d nav=%u target=%u active=%u keys=%d beforeKeys=%d undo=%d before=%d", bCurveAddFocused, Input.NavId(), CurveAddId, Input.ActiveId(), CurveKeysAfterAdd, CurveKeysBeforeAdd, UndoAfterCurveAdd, BeforeCurve );
+		C.Check( bCurveAddFocused && CurveKeysAfterAdd == CurveKeysBeforeAdd + 1 && bExistingKeysPreserved && bKeysAscending && bAddedKeyUsesDefaultValue && UndoAfterCurveAdd == BeforeCurve + 1, "実curve UIのAdd keyが既存keyを保ち既定値を追加して一つのworld履歴を作る: focused=%d nav=%u target=%u active=%u keys=%d beforeKeys=%d preserved=%d ascending=%d addedIndex=%d default=%d undo=%d before=%d", bCurveAddFocused, Input.NavId(), CurveAddId, Input.ActiveId(), CurveKeysAfterAdd, CurveKeysBeforeAdd, bExistingKeysPreserved, bKeysAscending, AddedKeyIndex, bAddedKeyUsesDefaultValue, UndoAfterCurveAdd, BeforeCurve );
 		const int32 BeforeCurveValue = State.Session.Document.GetNumUndo();
 		const ImGuiID CurveValueId = Input.CurveItemId( "Emission curve", "Value", 0, 0 );
 		const bool bCurveValueFocused = Input.TabTo( State, CurveValueId );
