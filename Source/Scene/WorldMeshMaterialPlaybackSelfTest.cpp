@@ -163,6 +163,7 @@ void NWorldTest::RunMeshMaterialPlaybackTests( NAssetTest::FChecker& C, CAssetMa
 	{
 		if ( Command.Type != EDrawCommand::MaterialMesh3D || Command.NumDataWords < static_cast<int32>( sizeof( FDrawMaterialMeshData ) / 4 + sizeof( FMeshVertex ) / 4 ) ) return;
 		const FDrawMaterialMeshData Header = Command.Read<FDrawMaterialMeshData>();
+		// command payloadから読む頂点。
 		FMeshVertex Vertex;
 		std::memcpy( &Vertex, Command.Data + sizeof( FDrawMaterialMeshData ) / 4, sizeof( Vertex ) );
 		bFoundTranslatedPosition = Header.NumVertices >= 3 && std::abs( Vertex.Position[0] - 2.0f ) < 1.0e-5f && std::abs( Vertex.Position[1] ) < 1.0e-5f && std::abs( Vertex.Position[2] + 1.0f ) < 1.0e-5f && std::abs( Vertex.Normal[1] - 1.0f ) < 1.0e-5f;
@@ -175,6 +176,7 @@ void NWorldTest::RunMeshMaterialPlaybackTests( NAssetTest::FChecker& C, CAssetMa
 	const auto ReadMirroredVertex = [&]( const FDrawCommandView& Command )
 	{
 		if ( Command.Type != EDrawCommand::MaterialMesh3D || Command.NumDataWords < static_cast<int32>( sizeof( FDrawMaterialMeshData ) / 4 + sizeof( FMeshVertex ) / 4 ) ) return;
+		// command payloadから読む頂点。
 		FMeshVertex Vertex;
 		std::memcpy( &Vertex, Command.Data + sizeof( FDrawMaterialMeshData ) / 4, sizeof( Vertex ) );
 		bFoundMirroredVertex = std::abs( Vertex.Position[0] - 3.0f ) < 1.0e-5f && std::abs( Vertex.Position[1] ) < 1.0e-5f && std::abs( Vertex.Position[2] ) < 1.0e-5f && std::abs( Vertex.Normal[0] ) < 1.0e-5f && std::abs( Vertex.Normal[1] - 1.0f ) < 1.0e-5f && std::abs( Vertex.Normal[2] ) < 1.0e-5f;
@@ -215,6 +217,80 @@ void NWorldTest::RunMeshMaterialPlaybackTests( NAssetTest::FChecker& C, CAssetMa
 	const bool bInvalidDeltaFound = ReadMeshEffectHeader( RecordMeshEffectRenderer( LoopRenderer, FTransform::Identity, EDrawBlend::Opaque, 255 ), LoopHeader );
 	C.Check( bInvalidDeltaFound && LoopRenderer.GetEffectTime() == TimeBeforeInvalidDeltas && LoopHeader.UVOffset[0] == UvBeforeInvalidDeltas, "負数・NaN・無限deltaは時計もUVも変えない" );
 
+	// 周回時間を超えた一括・分割更新でも、曲線時計と二つのUV移動を独立して確認する。
+	FEditMesh WrappedUVMesh = MakePlaybackEffectMesh( true, 2.0f );
+	// 一括更新fixtureの材質とUV設定。
+	FEditMeshMaterial& WrappedUVMaterial = WrappedUVMesh.Materials[0];
+	WrappedUVMaterial.Effect.Material.UVScroll = FVector2( 0.125f, -0.25f );
+	WrappedUVMaterial.Effect.Material.Distortion.bEnabled = true;
+	WrappedUVMaterial.Effect.Material.Distortion.Texture = WhitePath;
+	WrappedUVMaterial.Effect.Material.Distortion.UVScroll = FVector2( 0.375f, -0.0625f );
+	WrappedUVMaterial.Effect.Material.Distortion.Strength.Keys.Add( { 0.0f, 0.5f } );
+	WrappedUVMaterial.Effect.Material.Distortion.Strength.Keys.Add( { 1.0f, 0.5f } );
+	// 一括5.25秒の移動結果を保持するrenderer。
+	FMeshRenderer SingleWrappedRenderer = NWorld::MakeMeshRenderer( WrappedUVMesh, LoadTexture );
+	// 同じ時間を3回に分けて進めるrenderer。
+	FMeshRenderer SplitWrappedRenderer = NWorld::MakeMeshRenderer( WrappedUVMesh, LoadTexture );
+	SingleWrappedRenderer.Update( 5.25f );
+	SplitWrappedRenderer.Update( 1.0f );
+	SplitWrappedRenderer.Update( 1.75f );
+	SplitWrappedRenderer.Update( 2.5f );
+	// 各rendererが記録した材質mesh header。
+	FDrawMaterialMeshData SingleWrappedHeader;
+	FDrawMaterialMeshData SplitWrappedHeader;
+	// 各rendererの記録headerを読み取れたか。
+	const bool bSingleWrappedHeaderFound = ReadMeshEffectHeader( RecordMeshEffectRenderer( SingleWrappedRenderer, FTransform::Identity, EDrawBlend::Alpha, 255 ), SingleWrappedHeader );
+	const bool bSplitWrappedHeaderFound = ReadMeshEffectHeader( RecordMeshEffectRenderer( SplitWrappedRenderer, FTransform::Identity, EDrawBlend::Alpha, 255 ), SplitWrappedHeader );
+	C.Check( SingleWrappedRenderer.IsValid() && !SingleWrappedRenderer.HasEffectPreparationFailures() && SplitWrappedRenderer.IsValid() && !SplitWrappedRenderer.HasEffectPreparationFailures(), "white noise texture付きUV周回fixtureを二つ準備する" );
+	C.Check( bSingleWrappedHeaderFound && bSplitWrappedHeaderFound && std::abs( SingleWrappedRenderer.GetEffectTime() - 1.25 ) < 1.0e-6 && std::abs( SplitWrappedRenderer.GetEffectTime() - 1.25 ) < 1.0e-6, "5.25秒の一括・分割更新後にDuration 2秒の時計を1.25秒へ折り返す" );
+	C.Check( bSingleWrappedHeaderFound && std::abs( SingleWrappedHeader.UVOffset[0] - 0.65625f ) < 1.0e-6f && std::abs( SingleWrappedHeader.UVOffset[1] - 0.6875f ) < 1.0e-6f && std::abs( SingleWrappedHeader.DistortionUVOffset[0] - 0.96875f ) < 1.0e-6f && std::abs( SingleWrappedHeader.DistortionUVOffset[1] - 0.671875f ) < 1.0e-6f, "一括更新のmain UVとnoise UVは5.25秒×各速度を独立に折り返す" );
+	C.Check( bSingleWrappedHeaderFound && bSplitWrappedHeaderFound && std::abs( SplitWrappedHeader.UVOffset[0] - 0.65625f ) < 1.0e-6f && std::abs( SplitWrappedHeader.UVOffset[1] - 0.6875f ) < 1.0e-6f && std::abs( SplitWrappedHeader.DistortionUVOffset[0] - 0.96875f ) < 1.0e-6f && std::abs( SplitWrappedHeader.DistortionUVOffset[1] - 0.671875f ) < 1.0e-6f && SplitWrappedHeader.UVOffset[0] == SingleWrappedHeader.UVOffset[0] && SplitWrappedHeader.UVOffset[1] == SingleWrappedHeader.UVOffset[1] && SplitWrappedHeader.DistortionUVOffset[0] == SingleWrappedHeader.DistortionUVOffset[0] && SplitWrappedHeader.DistortionUVOffset[1] == SingleWrappedHeader.DistortionUVOffset[1], "分割更新も独立期待値と一括更新の全UV位相へ一致する" );
+
+	// 傾斜した面法線を非一様scaleで変換し、inverse-scale結果を独立値と比べる。
+	FEditMesh ObliqueNormalMesh;
+	// 傾斜三角形で使う効果材質。
+	FEditMeshMaterial ObliqueNormalMaterial;
+	ObliqueNormalMaterial.Effect.Material.bEnabled = true;
+	ObliqueNormalMaterial.Effect.Duration = 2.0f;
+	ObliqueNormalMaterial.Effect.bLoop = true;
+	ObliqueNormalMesh.Materials.Add( ObliqueNormalMaterial );
+	// 外積が(-1,-1,1)になる三頂点。
+	ObliqueNormalMesh.Vertices.Add( FVector3( 0.0f, 0.0f, 0.0f ) );
+	ObliqueNormalMesh.Vertices.Add( FVector3( 1.0f, 0.0f, 1.0f ) );
+	ObliqueNormalMesh.Vertices.Add( FVector3( 0.0f, 1.0f, 1.0f ) );
+	// 頂点順で表の向きを固定する三角形。
+	FEditMeshFace ObliqueNormalFace;
+	ObliqueNormalFace.Indices.Add( 0 );
+	ObliqueNormalFace.Indices.Add( 1 );
+	ObliqueNormalFace.Indices.Add( 2 );
+	ObliqueNormalMesh.Faces.Add( ObliqueNormalFace );
+	// 非一様scaleを適用するeffect renderer。
+	FMeshRenderer ObliqueNormalRenderer = NWorld::MakeMeshRenderer( ObliqueNormalMesh, LoadTexture );
+	// 法線へ異なる軸倍率を適用するworld transform。
+	const FTransform ObliqueNormalWorld( FVector3::Zero, FQuaternion::Identity, FVector3( 2.0f, 3.0f, 4.0f ) );
+	// 変換後の材質mesh command列。
+	const FDrawBuffer ObliqueNormalBuffer = RecordMeshEffectRenderer( ObliqueNormalRenderer, ObliqueNormalWorld, EDrawBlend::Alpha, 255 );
+	// commandから法線を取得できたか。
+	bool bObliqueNormalFound = false;
+	// commandから読み取った変換後法線。
+	FVector3 ObliqueWorldNormal = FVector3::Zero;
+	// 材質mesh commandの先頭頂点から法線を読む処理。
+	const auto ReadObliqueNormal = [&]( const FDrawCommandView& Command )
+	{
+		if ( Command.Type != EDrawCommand::MaterialMesh3D || Command.NumDataWords < static_cast<int32>( sizeof( FDrawMaterialMeshData ) / 4 + sizeof( FMeshVertex ) / 4 ) ) return;
+		// command payloadから読む頂点。
+		FMeshVertex Vertex;
+		std::memcpy( &Vertex, Command.Data + sizeof( FDrawMaterialMeshData ) / 4, sizeof( Vertex ) );
+		ObliqueWorldNormal = FVector3( Vertex.Normal[0], Vertex.Normal[1], Vertex.Normal[2] );
+		bObliqueNormalFound = true;
+	};
+	ForEachDrawCommand( FDrawSpan{ ObliqueNormalBuffer.Words.data(), static_cast<int32>( ObliqueNormalBuffer.Words.size() ) }, ReadObliqueNormal );
+	// (-1/2,-1/3,1/4)をnormalizeする独立期待値。
+	const float32 ObliqueNormalInverseLength = 1.0f / std::sqrt( 61.0f );
+	// 独立計算した三成分を正規化係数で合わせた値。
+	const FVector3 ExpectedObliqueWorldNormal( -6.0f * ObliqueNormalInverseLength, -4.0f * ObliqueNormalInverseLength, 3.0f * ObliqueNormalInverseLength );
+	C.Check( ObliqueNormalRenderer.IsValid() && !ObliqueNormalRenderer.HasEffectPreparationFailures() && bObliqueNormalFound, "傾斜三角形を材質mesh commandへ記録する" );
+	C.Check( bObliqueNormalFound && std::abs( ObliqueWorldNormal.x - ExpectedObliqueWorldNormal.x ) < 1.0e-5f && std::abs( ObliqueWorldNormal.y - ExpectedObliqueWorldNormal.y ) < 1.0e-5f && std::abs( ObliqueWorldNormal.z - ExpectedObliqueWorldNormal.z ) < 1.0e-5f, "非一様scale後の斜め法線を手計算inverse-scale期待値へ一致させる: got=(%.6f,%.6f,%.6f) expected=(%.6f,%.6f,%.6f)", ObliqueWorldNormal.x, ObliqueWorldNormal.y, ObliqueWorldNormal.z, ExpectedObliqueWorldNormal.x, ExpectedObliqueWorldNormal.y, ExpectedObliqueWorldNormal.z );
 	// 同じrenderer内のslotはそれぞれ別Durationの時計と終端状態を持つ。
 	FEditMesh MultiSlotMesh = NEditMesh::MakePlane( 2.0f, 2.0f, 2, 1 );
 	MultiSlotMesh.Materials.Add( FEditMeshMaterial() );
