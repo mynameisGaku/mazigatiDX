@@ -282,7 +282,7 @@ void NWorldTest::RunMeshMaterialRealTests( NAssetTest::FChecker& C, CAssetManage
 	C.Check( bMaskDrawn && ( bMaskPixelAIsHole && bMaskPixelBIsSource || bMaskPixelBIsHole && bMaskPixelAIsSource ), "二値maskの一方は背景、他方はsource色になる: A=%d,%d,%d B=%d,%d,%d", MaskPixelA.r, MaskPixelA.g, MaskPixelA.b, MaskPixelB.r, MaskPixelB.g, MaskPixelB.b );
 
 	// 次のplain meshをeffect単独時と同じ位置で描き、合成state漏れを画素で比較する。
-	FMeshRenderer EffectThenPlain = NWorld::MakeMeshRenderer( MakeMeshMaterialFixture( UniformPath, FString(), FString(), 1.0f, 1.0f, false, 0.0f, 0.0f, FVector2( 0.0f, 0.0f ), FVector2( 0.0f, 0.0f ), EDrawBlend::Alpha ), LoadTexture );
+	FMeshRenderer EffectThenPlain = NWorld::MakeMeshRenderer( MakeMeshMaterialFixture( UniformPath, FString(), FString(), 1.0f, 1.0f, false, 0.0f, 0.0f, FVector2( 0.0f, 0.0f ), FVector2( 0.0f, 0.0f ), EDrawBlend::Add ), LoadTexture );
 	FMeshRenderer PlainControl = EffectThenPlain;
 	PlainControl.Batches[0].bEffectRequested = false;
 	FDrawBuffer SequenceBuffer;
