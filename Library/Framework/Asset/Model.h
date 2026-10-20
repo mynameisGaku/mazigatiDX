@@ -7,6 +7,7 @@
 
 class CModel;
 class CModelInstance;
+class FStaticModelSurface;
 
 //=============================================================================
 // FModelClipInfo
@@ -59,6 +60,8 @@ public:
 	// すべてのメッシュの三角形（モデルのローカル座標。描くときと同じ位置）。当たり判定を作るときや、エディタの枠線のために、必要なときだけ取る（大きいので覚えない）。
 	// Indices は 3 つで 1 三角形。読み込みが終わっていて、メッシュがあって、バックエンドが答えられるときだけ true
 	bool GetCollisionMesh( TArray<FVector3>& OutVertices, TArray<uint32>& OutIndices ) const;
+	// 静的モデル面の不変な写しを作る。未対応・未準備・メインスレッド外なら nullptr
+	TSharedPtr<const FStaticModelSurface> CreateStaticSurfaceSnapshot() const;
 	// 読み込みが終わっていて、メッシュが無く、アニメーションがある
 	bool IsAnimationOnly() const;
 	// 骨（フレーム）の名前。アニメーションは、名前が合う骨だけを動かす

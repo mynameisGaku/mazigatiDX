@@ -201,6 +201,7 @@
     <ClCompile Include="Library\Framework\Asset\ModelAnimationAsset.cpp" />
     <ClCompile Include="Library\Framework\Asset\Sound.cpp" />
     <ClCompile Include="Library\Framework\Asset\SpriteSheet.cpp" />
+    <ClCompile Include="Library\Framework\Asset\StaticModelSurface.cpp" />
     <ClCompile Include="Library\Framework\Asset\Texture.cpp" />
     <ClCompile Include="Library\Framework\Asset\WorldAsset.cpp" />
     <ClCompile Include="Library\Framework\Asset\Import\FbxImporter.cpp" />
@@ -295,6 +296,7 @@
     <ClCompile Include="Library\Platform\FileSystem.cpp" />
     <ClCompile Include="Library\Platform\LogArchive.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackend.cpp" />
+    <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackendModelSurface.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibAudioBackend.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibBackend.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibDrawExecutor.cpp" />
@@ -309,6 +311,7 @@
     <ClCompile Include="Source\Object\PhysicsObjects.cpp" />
     <ClCompile Include="Source\Scene\AssetSelfTestImport.cpp" />
     <ClCompile Include="Source\Scene\AssetSelfTestLogic.cpp" />
+    <ClCompile Include="Source\Scene\AssetSelfTestModelSurface.cpp" />
     <ClCompile Include="Source\Scene\AssetSelfTestScene.cpp" />
     <ClCompile Include="Source\Scene\ConsoleSelfTest.cpp" />
     <ClCompile Include="Source\Scene\EcsSelfTestScene.cpp" />
@@ -560,6 +563,9 @@
     <ClInclude Include="Library\Core\Collection\Sort.inl" />
     <ClInclude Include="Library\Core\Collection\String.h" />
     <ClInclude Include="Library\Core\Interfaces\Asset\AssetBackend.h" />
+    <ClInclude Include="Library\Core\Interfaces\Asset\StaticModelSurfaceData.h" />
+    <ClInclude Include="Library\Core\Interfaces\Asset\StaticModelSurfaceMaterial.h" />
+    <ClInclude Include="Library\Core\Interfaces\Asset\StaticModelSurfaceSection.h" />
     <ClInclude Include="Library\Core\Interfaces\Audio\AudioBackend.h" />
     <ClInclude Include="Library\Core\Interfaces\Input\EGamepadAxis.h" />
     <ClInclude Include="Library\Core\Interfaces\Input\EGamepadButton.h" />
@@ -635,6 +641,7 @@
     <ClInclude Include="Library\Framework\Asset\ModelAnimationAsset.h" />
     <ClInclude Include="Library\Framework\Asset\Sound.h" />
     <ClInclude Include="Library\Framework\Asset\SpriteSheet.h" />
+    <ClInclude Include="Library\Framework\Asset\StaticModelSurface.h" />
     <ClInclude Include="Library\Framework\Asset\Texture.h" />
     <ClInclude Include="Library\Framework\Asset\WorldAsset.h" />
     <ClInclude Include="Library\Framework\Asset\Import\FbxImporter.h" />
@@ -763,6 +770,7 @@
     <ClInclude Include="Source\Object\OrbitMarker.h" />
     <ClInclude Include="Source\Object\PhysicsObjects.h" />
     <ClInclude Include="Source\Scene\AssetSelfTestFbx.h" />
+    <ClInclude Include="Source\Scene\AssetSelfTestModelSurface.h" />
     <ClInclude Include="Source\Scene\AssetSelfTestScene.h" />
     <ClInclude Include="Source\Scene\AssetSelfTestSupport.h" />
     <ClInclude Include="Source\Scene\EcsSelfTestScene.h" />

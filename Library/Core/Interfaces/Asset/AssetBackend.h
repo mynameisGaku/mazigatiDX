@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
+#include "Library/Core/Interfaces/Asset/StaticModelSurfaceData.h"
 #include "Library/Core/Interfaces/Render/MeshTypes.h"
 #include "Library/Core/Types/TypeDefinition.h"
 
@@ -101,6 +102,12 @@ public:
 
 	// 形の情報。メッシュが 0 個ならアニメーションだけのファイル（モーション専用）。読み込み中なら 0
 	virtual int32 GetModelMeshCount( int32 Model ) = 0;
+	// 静的モデルの面データを写す。非対応・失敗時は false とし、Outを変更しない。
+	// 成功時はframe変換込み・world変換なしの位置とreference法線/UV0/頂点色を写し、三角形順を保つ。
+	// sectionはindex列を隙間なく覆い、同一frame/mesh/materialの連続runだけをまとめる。
+	// 照明・alpha test・UV変換等native描画の同等性は保証せず、借用画像handleを削除してはならない。
+	// 借用handleは元Modelと同じbackendの寿命内だけ有効で、この関数はメインスレッドから呼ぶ。
+	virtual bool GetStaticModelSurface( int32 /*Model*/, FStaticModelSurfaceData& /*Out*/ ) { return false; }
 	// モデル全体のローカルでの大きさ（すべてのメッシュを囲む、軸に平行な箱）。メッシュが 0 個・読み込み中・分からないなら false
 	virtual bool GetModelBounds( int32 /*Model*/, float32 ( & /*OutMin*/ )[3], float32 ( & /*OutMax*/ )[3] ) { return false; }
 	// モデルの三角形（当たり判定用。モデルのローカル座標で、フレームの変換を適用した、描くときと同じ位置）。OutPositions は x, y, z の並び、OutIndices は 3 つで 1 三角形（DxLib の描画と同じ向き）。

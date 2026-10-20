@@ -1,6 +1,8 @@
 ﻿#include "Model.h"
 
 #include "Library/Core/Log/Log.h"
+#include "Library/Framework/Asset/StaticModelSurface.h"
+#include <utility>
 
 DEFINE_LOG_CATEGORY_STATIC( LogModel, Log )
 
@@ -76,6 +78,19 @@ bool CModel::GetCollisionMesh( TArray<FVector3>& OutVertices, TArray<uint32>& Ou
 	for ( int32 i = 0; i + 2 < Positions.Num(); i += 3 ) OutVertices.Add( FVector3( Positions[i], Positions[i + 1], Positions[i + 2] ) );
 	OutIndices = Indices;
 	return true;
+}
+
+TSharedPtr<const FStaticModelSurface> CModel::CreateStaticSurfaceSnapshot() const
+{
+	if ( !NAssetService::IsMainThread() || Handle < 0 ) return nullptr;
+	// 読み込み済みモデルへ問い合わせるbackend。
+	IAssetBackend* Backend = NAssetService::GetBackend();
+	if ( Backend == nullptr || !IsReady() ) return nullptr;
+
+	// backendが成功時だけ書き込む面データ。
+	FStaticModelSurfaceData Data;
+	if ( !Backend->GetStaticModelSurface( Handle, Data ) ) return nullptr;
+	return MakeShared<FStaticModelSurface>( AsShared(), std::move( Data ) );
 }
 
 bool CModel::GetBounds( FVector3& OutMin, FVector3& OutMax ) const

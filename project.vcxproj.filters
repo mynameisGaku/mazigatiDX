@@ -148,6 +148,9 @@
     <ClCompile Include="Library\Framework\Asset\SpriteSheet.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\StaticModelSurface.cpp">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Texture.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
@@ -430,6 +433,9 @@
     <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackend.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackendModelSurface.cpp">
+      <Filter>Library\Platform\DxLib</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\DxLibAudioBackend.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
@@ -470,6 +476,9 @@
       <Filter>Source\Scene</Filter>
     </ClCompile>
     <ClCompile Include="Source\Scene\AssetSelfTestLogic.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene\AssetSelfTestModelSurface.cpp">
       <Filter>Source\Scene</Filter>
     </ClCompile>
     <ClCompile Include="Source\Scene\AssetSelfTestScene.cpp">
@@ -1221,6 +1230,15 @@
     <ClInclude Include="Library\Core\Interfaces\Asset\AssetBackend.h">
       <Filter>Library\Core\Interfaces\Asset</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Asset\StaticModelSurfaceData.h">
+      <Filter>Library\Core\Interfaces\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Asset\StaticModelSurfaceMaterial.h">
+      <Filter>Library\Core\Interfaces\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Asset\StaticModelSurfaceSection.h">
+      <Filter>Library\Core\Interfaces\Asset</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Audio\AudioBackend.h">
       <Filter>Library\Core\Interfaces\Audio</Filter>
     </ClInclude>
@@ -1444,6 +1462,9 @@
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\SpriteSheet.h">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\StaticModelSurface.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Texture.h">
@@ -1828,6 +1849,9 @@
       <Filter>Source\Object</Filter>
     </ClInclude>
     <ClInclude Include="Source\Scene\AssetSelfTestFbx.h">
+      <Filter>Source\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scene\AssetSelfTestModelSurface.h">
       <Filter>Source\Scene</Filter>
     </ClInclude>
     <ClInclude Include="Source\Scene\AssetSelfTestScene.h">

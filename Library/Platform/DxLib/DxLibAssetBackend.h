@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "Library/Core/Interfaces/Asset/AssetBackend.h"
+#include "Library/Core/Interfaces/Asset/StaticModelSurfaceData.h"
 #include "Library/Framework/Subsystem/AppSubsystem.h"
 
 //=============================================================================
@@ -38,6 +39,8 @@ public:
 	int32 GetModelMeshCount( int32 Model ) override;
 	bool GetModelBounds( int32 Model, float32 ( &OutMin )[3], float32 ( &OutMax )[3] ) override;
 	bool GetModelCollisionMesh( int32 Model, TArray<float32>& OutPositions, TArray<uint32>& OutIndices ) override;
+	// 元modelを変えず、静的な面・材質をCPU値へ写す。
+	bool GetStaticModelSurface( int32 Model, FStaticModelSurfaceData& Out ) override;
 	bool CreateMeshBuffers( const FMeshVertex* Vertices, int32 NumVertices, const uint32* Indices, int32 NumIndices, int32& OutVertexBuffer, int32& OutIndexBuffer ) override;
 	void DeleteVertexBuffer( int32 VertexBuffer ) override;
 	void DeleteIndexBuffer( int32 IndexBuffer ) override;

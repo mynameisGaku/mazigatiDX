@@ -1,6 +1,7 @@
 ﻿#include "AssetSelfTestScene.h"
 #include "AssetSelfTestSupport.h"
 #include "AssetSelfTestFbx.h"
+#include "AssetSelfTestModelSurface.h"
 
 #include <algorithm>
 #include <cmath>
@@ -257,6 +258,7 @@ void CAssetSelfTestScene::OnEnter()
 	Assets->SetRootDirectory( S.Dir );
 	Audio->SetBackendOverride( &S.Rec );
 	SetDrawExecutor( &S.Log );
+	RunStaticModelSurfaceFakeChecks( C, *Assets, S.Fake, S.Dir );
 
 	auto Touch = [&]( const char* Name ) { WriteFileText( S.Dir / Name, "x" ); };
 	Touch( "sheet.png" );
@@ -624,6 +626,7 @@ void CAssetSelfTestScene::RunRealChecks()
 	WriteFileBytes( Dir / "sheet.bmp", MakeSheetBmp() );
 	WriteFileBytes( Dir / "beep.wav", MakeWav( 0.5f, 22050 ) );
 	WriteFileText( Dir / "model.x", AnimatedModelText() );
+	RunStaticModelSurfaceRealChecks( C, *Assets, Dir );
 
 	//---------------------------------------------------------------------
 	// 画像

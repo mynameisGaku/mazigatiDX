@@ -122,6 +122,9 @@ namespace NAssetTest
 		int32 NumTextureRegionCalls = 0;
 		// 派生領域のUVを問い合わせた回数。
 		int32 NumTextureUvCalls = 0;
+		bool bSupportStaticModelSurface = false;             // 静的モデル面の成功応答を返す設定
+		FStaticModelSurfaceData StaticModelSurfaceData;       // 成功時に返す面データの写し
+		int32 NumStaticModelSurfaceQueries = 0;               // 面データ取得APIの呼出し数
 		// 作成試行へ渡された親ハンドルと矩形。
 		struct FTextureRegionRecord
 		{
@@ -285,6 +288,14 @@ namespace NAssetTest
 			Attached[Model].erase( AttachIndex );
 		}
 		int32 GetModelMeshCount( int32 Model ) override { return ModelData[Model].MeshCount; }
+		// 成功設定時だけfixtureの面値を返し、それ以外は出力を変えない。
+		bool GetStaticModelSurface( int32 Model, FStaticModelSurfaceData& Out ) override
+		{
+			++NumStaticModelSurfaceQueries;
+			if ( !bSupportStaticModelSurface || Models.count( Model ) == 0 ) return false;
+			Out = StaticModelSurfaceData;
+			return true;
+		}
 		bool GetModelCollisionMesh( int32 Model, TArray<float32>& OutPositions, TArray<uint32>& OutIndices ) override
 		{
 			const FModelData& Data = ModelData[Model];
