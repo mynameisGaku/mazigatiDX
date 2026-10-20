@@ -140,6 +140,7 @@ namespace NWorldTest
 		// 旧形式を読み書きしたときにMaterialEffect項目が増えない。
 		FWorldDefinition LegacyWorld; // binding未設定の旧形式world
 		LegacyWorld.Name = "Legacy";
+		LegacyWorld.NextId = 2; // 既存object idと整合する旧worldの次番号
 		LegacyWorld.Objects.Add( MakeWorldModelObject( 1, "legacy-model", "model.mv1", nullptr ) );
 		const std::string LegacyJson = LegacyWorld.ToJson().dump(); // 旧形式worldの保存文字列
 		FWorldDefinition LegacyReloaded; // 旧world JSONを再読した値
@@ -156,16 +157,23 @@ namespace NWorldTest
 		Complete.Effect.Material.MaskTexture = "Masks/model-mask.tga";
 		Complete.Effect.Material.UVScale = FVector2( 1.25f, 0.75f );
 		Complete.Effect.Material.UVScroll = FVector2( -0.125f, 0.0625f );
-		Complete.Effect.Material.Emission.Keys[0].Value = 0.375f;
-		Complete.Effect.Material.Emission.Keys[1].Value = 1.875f;
+		Complete.Effect.Material.Emission.Keys.Add( FEffectScalarCurve::FKey{ 0.0f, 0.375f } ); // emission開始key
+		Complete.Effect.Material.Emission.Keys.Add( FEffectScalarCurve::FKey{ 1.0f, 1.875f } ); // emission終端key
 		Complete.Effect.Material.Distortion.bEnabled = true;
 		Complete.Effect.Material.Distortion.Texture = "Noise/model-noise.tga";
-		Complete.Effect.Material.Distortion.Strength.Keys[0].Value = 0.25f;
-		Complete.Effect.Material.Distortion.Strength.Keys[1].Value = 0.75f;
+		Complete.Effect.Material.Distortion.Strength.Keys.Add( FEffectScalarCurve::FKey{ 0.0f, 0.25f } ); // noise強度開始key
+		Complete.Effect.Material.Distortion.Strength.Keys.Add( FEffectScalarCurve::FKey{ 1.0f, 0.75f } ); // noise強度終端key
 		const NlohmannJson CompleteJson = Complete.ToJson(); // 完全bindingの保存JSON
 		FWorldModelMaterialEffect CompleteReloaded; // 完全bindingを再読した値
 		const bool bCompleteParsed = FWorldModelMaterialEffect::FromJson( CompleteJson, CompleteReloaded ); // 完全binding JSONの読込結果
 		Checker.Check( bCompleteParsed && Complete.IsSameAs( CompleteReloaded ) && Complete.ComputeHash() == CompleteReloaded.ComputeHash() && CompleteJson == CompleteReloaded.ToJson(), "設定済みbindingは材質index・TwoSided・全効果curveとfloatを精度保持して往復する" );
+		FWorldModelMaterialEffect ChangedIndex = Complete; // hash差分を調べる材質番号変更値
+		ChangedIndex.MaterialIndex += 1;
+		FWorldModelMaterialEffect ChangedTwoSided = Complete; // hash差分を調べる両面設定変更値
+		ChangedTwoSided.bTwoSided = !ChangedTwoSided.bTwoSided;
+		FWorldModelMaterialEffect ChangedOpacity = Complete; // hash差分を調べるOpacity変更値
+		ChangedOpacity.Effect.Opacity += 0.125f;
+		Checker.Check( !Complete.IsSameAs( ChangedIndex ) && Complete.ComputeHash() != ChangedIndex.ComputeHash() && !Complete.IsSameAs( ChangedTwoSided ) && Complete.ComputeHash() != ChangedTwoSided.ComputeHash() && !Complete.IsSameAs( ChangedOpacity ) && Complete.ComputeHash() != ChangedOpacity.ComputeHash(), "MaterialIndex・TwoSided・Effect.Opacityの各単独変更はbinding hashへ反映される" );
 		const FWorldModelMaterialEffect DefaultBinding; // 既定無効bindingのpositive control
 		Checker.Check( !DefaultBinding.Effect.Material.bEnabled && DefaultBinding.IsValidSettings() && DefaultBinding.ToJson().is_object(), "既定bindingは無効のまま有効な保存値として扱う" );
 		NlohmannJson NullBindingWorldJson = LegacyWorld.ToJson(); // null bindingを埋め込むworld JSON
@@ -198,9 +206,12 @@ namespace NWorldTest
 		const uint64 TooLargeMaterialIndex = static_cast<uint64>( ( std::numeric_limits<int32>::max )() ) + 1ull; // int32最大値を超えるunsigned入力
 		const int64 UnsignedWrapCandidate = 4294967296ll; // int32へwrapし得るsigned 2^32入力
 		const int64 UnsignedWrapCandidatePlusTwo = 4294967298ll; // wrap後の小値が2となるsigned入力
+		const int64 SignedUnderflowCandidate = -2147483649ll; // int32最小値を一つ下回るsigned入力
+		const int64 SignedWrapCandidate = -4294967296ll; // int32へwrapすると0になるsigned入力
+		const int64 SignedWrapCandidateMinusTwo = -4294967298ll; // int32へwrapすると-2になるsigned入力
 		const uint64 UnsignedWrapCandidateUnsigned = 4294967296ull; // wrapし得るunsigned 2^32入力
 		const uint64 UnsignedWrapCandidatePlusTwoUnsigned = 4294967298ull; // wrap後の小値が2となるunsigned入力
-		for ( const NlohmannJson& BadIndex : { NlohmannJson( TooLargeMaterialIndex ), NlohmannJson( UnsignedWrapCandidate ), NlohmannJson( UnsignedWrapCandidatePlusTwo ), NlohmannJson( UnsignedWrapCandidateUnsigned ), NlohmannJson( UnsignedWrapCandidatePlusTwoUnsigned ), NlohmannJson( -1 ), NlohmannJson( 1.0 ), NlohmannJson( "1" ), NlohmannJson( true ), NlohmannJson( nullptr ) } )
+		for ( const NlohmannJson& BadIndex : { NlohmannJson( TooLargeMaterialIndex ), NlohmannJson( UnsignedWrapCandidate ), NlohmannJson( UnsignedWrapCandidatePlusTwo ), NlohmannJson( SignedUnderflowCandidate ), NlohmannJson( SignedWrapCandidate ), NlohmannJson( SignedWrapCandidateMinusTwo ), NlohmannJson( UnsignedWrapCandidateUnsigned ), NlohmannJson( UnsignedWrapCandidatePlusTwoUnsigned ), NlohmannJson( -1 ), NlohmannJson( 1.0 ), NlohmannJson( "1" ), NlohmannJson( true ), NlohmannJson( nullptr ) } )
 		{
 			NlohmannJson Invalid = CompleteJson; // 不正markerを作るためのJSON写し
 			Invalid["MaterialIndex"] = BadIndex;
@@ -290,7 +301,7 @@ namespace NWorldTest
 		const FString ModelFile = Directory / ModelPath; // fake model fileの出力先
 		const FString DiffuseFile = Directory / "world_model_material_fake.tga"; // fake borrowed diffuse画像の出力先
 		const std::vector<uint8> TinyTga = { 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 24, 0, 0, 255, 0 }; // 1pixel diffuse fixtureのbyte列
-		const bool bFixtureWritten = WriteFileText( ModelFile, "fake model" ) && WriteFileBytes( DiffuseFile, TinyTga ); // real .xと画像fixtureの書込結果
+		const bool bFixtureWritten = NAssetTest::WriteFileText( ModelFile, "fake model" ) && NAssetTest::WriteFileBytes( DiffuseFile, TinyTga ); // real .xと画像fixtureの書込結果
 		Assets.SetRootDirectory( Directory );
 		TSharedPtr<CTexture> Diffuse = bFixtureWritten ? Assets.LoadTexture( "world_model_material_fake.tga" ) : TSharedPtr<CTexture>(); // fake model materialへ貸す画像asset
 		Fake.bSupportStaticModelSurface = true;
@@ -312,7 +323,12 @@ namespace NWorldTest
 		FWorldDefinition SpawnWorld; // 複数個体とfallbackを含む定義
 		SpawnWorld.Name = "World model material fake";
 		const FWorldModelMaterialEffect ActiveBinding = MakeWorldModelMaterialBinding( 0 ); // 有効な対象material設定
-		const FWorldModelMaterialEffect DisabledBinding = MakeWorldModelMaterialBinding( 0, false ); // 資源準備不要な無効設定
+		FWorldModelMaterialEffect DisabledBinding = MakeWorldModelMaterialBinding( 0, false ); // 資源準備不要な無効設定
+		DisabledBinding.Effect.Material.bDissolve = true; // 無効でもmask設定を保存する状態
+		DisabledBinding.Effect.Material.MaskTexture = "missing-disabled-mask.tga"; // 無効中に読まれてはいけないmask
+		DisabledBinding.Effect.Material.Distortion.bEnabled = true; // 無効でもnoise設定を保存する状態
+		DisabledBinding.Effect.Material.Distortion.Texture = "missing-disabled-noise.tga"; // 無効中に読まれてはいけないnoise
+		DisabledBinding.Effect.Material.Distortion.Strength.Keys.Add( FEffectScalarCurve::FKey{ 0.0f, 0.25f } ); // noise textureを必要にする正強度key
 		FWorldModelMaterialEffect InvalidBinding = ActiveBinding; // validation拒否する負index設定
 		InvalidBinding.MaterialIndex = -1;
 		const int32 SecondActiveObjectId = 5; // 独立clockを持つ二つ目の個体id
@@ -324,7 +340,7 @@ namespace NWorldTest
 		const int32 QueriesBeforeSpawn = Fake.NumStaticModelSurfaceQueries; // spawn直前surface query数
 		const int32 CreatesBeforeSpawn = Fake.NumModelMaterialGeometryCreates; // spawn直前geometry作成数
 		const int32 ExpectedNextGeometry = Fake.NextModelMaterialGeometry; // 次の成功geometryへ割当てるfake handle
-		NWorld::FWorldSpawnOptions Options; // fake asset managerを使うspawn設定
+		FWorldSpawnOptions Options; // fake asset managerを使うspawn設定
 		Options.Assets = &Assets;
 		FWorldInstance Instance = NWorld::Spawn( ProbeScene, MakeShared<FWorldDefinition>( SpawnWorld ), FWorldBindings(), Options ); // 実worldのspawn結果と弱い参照群
 		TSharedPtr<CGameObject> ActiveObject = Instance.FindById( 1 ); // effect対象モデルobject
@@ -387,12 +403,13 @@ namespace NWorldTest
 		DisabledWorld.Objects.Add( MakeWorldModelObject( 1, "disabled-only", ModelPath, &DisabledBinding ) );
 		const int32 QueriesBeforeDisabled = Fake.NumStaticModelSurfaceQueries; // disabled spawn前のsurface query数
 		const int32 CreatesBeforeDisabled = Fake.NumModelMaterialGeometryCreates; // disabled spawn前のgeometry数
+		const int32 TextureLoadsBeforeDisabled = Fake.NumTextureLoads; // disabled spawn前のtexture load数
 		FWorldInstance DisabledInstance = NWorld::Spawn( ProbeScene, MakeShared<FWorldDefinition>( DisabledWorld ), FWorldBindings(), Options ); // disabled worldのspawn結果
-		Checker.Check( Fake.NumStaticModelSurfaceQueries == QueriesBeforeDisabled && Fake.NumModelMaterialGeometryCreates == CreatesBeforeDisabled, "disabled bindingだけのworldはsurface・geometry queryを増やさない" );
+		Checker.Check( Fake.NumStaticModelSurfaceQueries == QueriesBeforeDisabled && Fake.NumModelMaterialGeometryCreates == CreatesBeforeDisabled && Fake.NumTextureLoads == TextureLoadsBeforeDisabled, "disabled bindingは設定済みmask/noiseがあってもsurface・geometry queryとtexture loadを増やさない" );
 
 		// geometry作成失敗時も同じ個体のnative描画を残す。
 		const FString FailedModelFile = Directory / "world_model_material_geometry_fail.mv1"; // geometry失敗model fixtureのpath
-		WriteFileText( FailedModelFile, "fake model with failed geometry" );
+		NAssetTest::WriteFileText( FailedModelFile, "fake model with failed geometry" );
 		Fake.NextModelData = NAssetTest::FFakeAssetBackend::FModelData();
 		Fake.NextModelData.MeshCount = 1;
 		Fake.FailModelMaterialGeometryCreateCall = Fake.NumModelMaterialGeometryCreates + 1;
@@ -409,7 +426,7 @@ namespace NWorldTest
 
 		// animation clipを再生中の個体はmaterial effect準備から除外する。
 		const FString AnimatedModelFile = Directory / "world_model_material_animated_fake.mv1"; // animation付きmodel fixtureのpath
-		WriteFileText( AnimatedModelFile, "fake animated model" );
+		NAssetTest::WriteFileText( AnimatedModelFile, "fake animated model" );
 		Fake.NextModelData = NAssetTest::FFakeAssetBackend::FModelData();
 		Fake.NextModelData.MeshCount = 1;
 		Fake.NextModelData.Names = { "Idle" };
@@ -482,7 +499,7 @@ namespace NWorldTest
 
 		CScene ProbeScene; // spawn試験だけに使うisolated scene
 		ProbeScene.SetDrawExecutor( &Executor );
-		NWorld::FWorldSpawnOptions Options; // fake asset managerを使うspawn設定
+		FWorldSpawnOptions Options; // fake asset managerを使うspawn設定
 		Options.Assets = &Assets;
 		FWorldInstance Instance = FreshWorld.IsValid() ? NWorld::Spawn( ProbeScene, FreshWorld->GetDefinitionShared(), FWorldBindings(), Options ) : FWorldInstance(); // 実worldのspawn結果と弱い参照群
 		TSharedPtr<CGameObject> EffectObject = Instance.FindById( 1 ); // effect対象のreal model object
