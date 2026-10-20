@@ -154,7 +154,7 @@ namespace
 		// material slotを持つ編集用world。
 		FWorldDefinition World;
 		World.Name = "Mesh material effect editor self-test";
-		World.NextId = 2;
+		World.NextId = 3;
 		// mesh部品とmaterial slotを持つfixture object。
 		FWorldObject Object;
 		Object.Id = 1;

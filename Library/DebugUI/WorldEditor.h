@@ -1,4 +1,6 @@
-﻿#pragma once
+﻿// SPDX-License-Identifier: NOASSERTION
+#ifndef FRAMEWORK_DEBUGUI_WORLDEDITOR_H
+#define FRAMEWORK_DEBUGUI_WORLDEDITOR_H
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Collection/Set.h"
@@ -213,3 +215,5 @@ namespace NDebugUI
 	// 3D の視界に使った画面を片付ける（アプリの終了前に）
 	void ReleaseWorldEditor( FWorldEditorState& State );
 }
+
+#endif

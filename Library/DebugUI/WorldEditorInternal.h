@@ -1,4 +1,6 @@
-﻿#pragma once
+﻿// SPDX-License-Identifier: NOASSERTION
+#ifndef FRAMEWORK_DEBUGUI_WORLDEDITORINTERNAL_H
+#define FRAMEWORK_DEBUGUI_WORLDEDITORINTERNAL_H
 #include "Library/DebugUI/WorldEditor.h"
 
 class CAssetManager;
@@ -83,3 +85,5 @@ namespace NWorldEditorUI
 	// Inspector の Mesh 部品の中身（大きさ・材質）
 	void DrawMeshComponentBody( FWorldEditorState& S, const FWorldObject& Object );
 }
+
+#endif

@@ -1,4 +1,7 @@
-﻿#pragma once
+﻿// SPDX-License-Identifier: NOASSERTION
+#ifndef FRAMEWORK_RENDER_DRAWCONTEXT_H
+#define FRAMEWORK_RENDER_DRAWCONTEXT_H
+
 #include <cstring>
 #include <vector>
 
@@ -351,3 +354,5 @@ private:
 	// 現在合成方法に渡した倍率。
 	int32 CurrentBlendParam = 255;
 };
+
+#endif

@@ -1,4 +1,7 @@
-﻿#pragma once
+﻿// SPDX-License-Identifier: NOASSERTION
+#ifndef FRAMEWORK_RENDER_MESHRENDER_H
+#define FRAMEWORK_RENDER_MESHRENDER_H
+
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Framework/Asset/MeshBuffer.h"
@@ -80,3 +83,5 @@ struct FMeshRenderer
 	void Record( FDrawContext& Draw, const FTransform& World ) const;
 	void RecordAt( FDrawContext& Draw, const FTransformView& Transform ) const;
 };
+
+#endif

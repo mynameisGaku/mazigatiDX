@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: NOASSERTION
+﻿// SPDX-License-Identifier: NOASSERTION
 #include "WorldEditorMeshMaterialPanel.h"
 
 #include <algorithm>
