@@ -17,3 +17,5 @@
 Effect Editorの`Preset`は原本を未保存のコピーとして開きます。編集後は別名で保存し、World Editorのアセット一覧から配置できます。
 
 `Models`のモデルと画像、ルートのBMP・WAVは、アセット編集や表示・再生を試す素材として配置しています。エフェクト定義の画像パスは`Assets`からの相対パスです。
+
+`Worlds/mesh_surface_showcase.world`は、通常材質と溶岩を混ぜた床、脈動する結界、通常描画の台を並べた編集メッシュの例です。World Editorの材質ごとに`Pulsing barrier`／`Flowing lava`を適用し、ワールドへ保存できます。`Effects/mesh_surface_barrier.tga`と`mesh_surface_lava.tga`はその表示画像、`material_white.tga`は画像が空の材質効果に使う白画像です。
