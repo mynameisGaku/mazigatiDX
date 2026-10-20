@@ -407,6 +407,65 @@ namespace NWorldTest
 		FWorldInstance DisabledInstance = NWorld::Spawn( ProbeScene, MakeShared<FWorldDefinition>( DisabledWorld ), FWorldBindings(), Options ); // disabled worldのspawn結果
 		Checker.Check( Fake.NumStaticModelSurfaceQueries == QueriesBeforeDisabled && Fake.NumModelMaterialGeometryCreates == CreatesBeforeDisabled && Fake.NumTextureLoads == TextureLoadsBeforeDisabled, "disabled bindingは設定済みmask/noiseがあってもsurface・geometry queryとtexture loadを増やさない" );
 
+		// 有効なmask/noise画像を準備し、fixed commandへhandleと設定を渡す。
+		const FString ResourceMaskPath = "world_model_material_resource_mask.tga"; // 成功するmask画像の相対path
+		const FString ResourceNoisePath = "world_model_material_resource_noise.tga"; // 成功するnoise画像の相対path
+		const bool bResourceImagesWritten = NAssetTest::WriteFileBytes( Directory / ResourceMaskPath, TinyTga ) && NAssetTest::WriteFileBytes( Directory / ResourceNoisePath, TinyTga ); // mask/noise画像fixtureの書込結果
+		FWorldModelMaterialEffect ResourceBinding = MakeWorldModelMaterialBinding( 0 ); // 画像付き準備を行うbinding値
+		ResourceBinding.Effect.Material.bDissolve = true; // mask画像を使う設定
+		ResourceBinding.Effect.Material.MaskTexture = ResourceMaskPath;
+		ResourceBinding.Effect.Material.Distortion.bEnabled = true; // noise画像を使う設定
+		ResourceBinding.Effect.Material.Distortion.Texture = ResourceNoisePath;
+		ResourceBinding.Effect.Material.Distortion.Strength.Keys.Add( FEffectScalarCurve::FKey{ 0.0f, 0.25f } ); // 正強度を持つnoise key
+		const int32 ExpectedResourceMaskHandle = Fake.Next + 1; // 先行するmodel instance複製の次に割り当てるmask handle
+		const int32 ExpectedResourceNoiseHandle = Fake.Next + 2; // model複製とmask読込の次に割り当てるnoise handle
+		const int32 QueriesBeforeResourceSpawn = Fake.NumStaticModelSurfaceQueries; // 画像binding spawn前のsurface query数
+		const int32 CreatesBeforeResourceSpawn = Fake.NumModelMaterialGeometryCreates; // 画像binding spawn前のgeometry作成数
+		const int32 LoadsBeforeResourceSpawn = Fake.NumTextureLoads; // 画像binding spawn前のtexture load数
+		FWorldDefinition ResourceWorld; // effect対象とnative siblingの画像binding world
+		ResourceWorld.NextId = 3; // 二objectの範囲直後を次idにする値
+		ResourceWorld.Objects.Add( MakeWorldModelObject( 1, "resource-effect", ModelPath, &ResourceBinding ) );
+		ResourceWorld.Objects.Add( MakeWorldModelObject( 2, "resource-native-sibling", ModelPath, nullptr ) );
+		FWorldInstance ResourceInstance = bResourceImagesWritten ? NWorld::Spawn( ProbeScene, MakeShared<FWorldDefinition>( ResourceWorld ), FWorldBindings(), Options ) : FWorldInstance(); // 画像binding worldのspawn結果
+		TSharedPtr<CGameObject> ResourceObject = ResourceInstance.FindById( 1 ); // 画像effect対象object
+		TSharedPtr<CGameObject> ResourceSiblingObject = ResourceInstance.FindById( 2 ); // native sibling object
+		FModelAnimator* ResourceAnimator = ResourceObject.IsValid() ? ResourceObject->GetData<FModelAnimator>() : nullptr; // 画像effect対象animator
+		FModelAnimator* ResourceSiblingAnimator = ResourceSiblingObject.IsValid() ? ResourceSiblingObject->GetData<FModelAnimator>() : nullptr; // native sibling animator
+		const FDrawBuffer ResourceBuffer = ResourceAnimator != nullptr ? RecordWorldModelAnimator( *ResourceAnimator ) : FDrawBuffer(); // 画像effectの実command buffer
+		const FDrawBuffer ResourceSiblingBuffer = ResourceSiblingAnimator != nullptr ? RecordWorldModelAnimator( *ResourceSiblingAnimator ) : FDrawBuffer(); // 画像bindingと同居するnative sibling buffer
+		FDrawModelMaterialData ResourcePayload{}; // commandから読む画像handleと材質値
+		int32 ResourcePayloadCount = 0; // 固定ModelMaterial payloadの個数
+		if ( !ResourceBuffer.Words.empty() ) ForEachDrawCommand( FDrawSpan{ ResourceBuffer.Words.data(), static_cast<int32>( ResourceBuffer.Words.size() ) }, [&]( const FDrawCommandView& Command ) { if ( Command.Type == EDrawCommand::ModelMaterial3D && Command.NumDataWords == static_cast<int32>( sizeof( FDrawModelMaterialData ) / sizeof( uint32 ) ) ) { ResourcePayload = Command.Read<FDrawModelMaterialData>(); ++ResourcePayloadCount; } } );
+		const bool bImagesPreparedAndRecorded = ResourceAnimator != nullptr && ResourceAnimator->GetMaterialEffect().IsPrepared() && ResourcePayloadCount == 1 && ResourcePayload.Material.Material.MaskTexture == ExpectedResourceMaskHandle && ResourcePayload.Material.DistortionTexture == ExpectedResourceNoiseHandle && ResourcePayload.Material.Material.bDissolve == 1 && std::fabs( ResourcePayload.Material.DistortionStrength - 0.25f ) < 1.0e-6f; // 既知の画像handleと正noise強度が命令へ届いたか
+		const bool bResourceLoadsExact = Fake.NumTextureLoads == LoadsBeforeResourceSpawn + 2 && Fake.Textures.count( ExpectedResourceMaskHandle ) == 1 && Fake.Textures.count( ExpectedResourceNoiseHandle ) == 1; // 別path画像を二枚だけbackendへ読んだか
+		const bool bResourceSiblingRemainsNative = ResourceSiblingAnimator != nullptr && CountWorldModelMaterialCommands( ResourceSiblingBuffer, EDrawCommand::Model3D ) == 1 && CountWorldModelMaterialCommands( ResourceSiblingBuffer, EDrawCommand::ModelMaterial3D ) == 0; // resource worldの非対象個体がnativeか
+		Checker.Check( bResourceImagesWritten && bImagesPreparedAndRecorded && bResourceLoadsExact && Fake.NumStaticModelSurfaceQueries == QueriesBeforeResourceSpawn + 1 && Fake.NumModelMaterialGeometryCreates == CreatesBeforeResourceSpawn + 1, "有効mask/noiseをspawn時に二枚読み、既知handle・Dissolve・Strengthを準備済みcommandへ渡す" );
+		Checker.Check( bResourceSiblingRemainsNative, "画像付きeffect個体と同じworldのSiblingはnative Model3Dを保つ" );
+
+		// maskは読めるがnoiseが無い場合、途中の画像だけを解放してnativeへ戻る。
+		const FString FailureMaskPath = "world_model_material_failure_mask.tga"; // 部分準備失敗で先に読むmask path
+		const FString MissingNoisePath = "world_model_material_missing_noise.tga"; // 故意に書かないnoise path
+		const bool bFailureMaskWritten = NAssetTest::WriteFileBytes( Directory / FailureMaskPath, TinyTga ); // 部分失敗用mask fixtureの書込結果
+		FWorldModelMaterialEffect PartialFailureBinding = ResourceBinding; // mask読込後にnoiseで失敗させるbinding値
+		PartialFailureBinding.Effect.Material.MaskTexture = FailureMaskPath;
+		PartialFailureBinding.Effect.Material.Distortion.Texture = MissingNoisePath;
+		const int32 ExpectedFailureMaskHandle = Fake.Next + 1; // 先行model instance複製の次に割り当てる失敗mask handle
+		const int32 QueriesBeforeImageFailure = Fake.NumStaticModelSurfaceQueries; // 画像失敗spawn前のsurface query数
+		const int32 CreatesBeforeImageFailure = Fake.NumModelMaterialGeometryCreates; // 画像失敗spawn前のgeometry作成数
+		const int32 LoadsBeforeImageFailure = Fake.NumTextureLoads; // 画像失敗spawn前のtexture load数
+		FWorldDefinition ImageFailureWorld; // 画像失敗を試す単独world
+		ImageFailureWorld.NextId = 2; // 一objectの範囲直後を次idにする値
+		ImageFailureWorld.Objects.Add( MakeWorldModelObject( 1, "image-failure", ModelPath, &PartialFailureBinding ) );
+		FWorldInstance ImageFailureInstance = bFailureMaskWritten ? NWorld::Spawn( ProbeScene, MakeShared<FWorldDefinition>( ImageFailureWorld ), FWorldBindings(), Options ) : FWorldInstance(); // 欠落noise worldのspawn結果
+		TSharedPtr<CGameObject> ImageFailureObject = ImageFailureInstance.FindById( 1 ); // 画像失敗object
+		FModelAnimator* ImageFailureAnimator = ImageFailureObject.IsValid() ? ImageFailureObject->GetData<FModelAnimator>() : nullptr; // 画像失敗objectのanimator
+		const FDrawBuffer ImageFailureBuffer = ImageFailureAnimator != nullptr ? RecordWorldModelAnimator( *ImageFailureAnimator ) : FDrawBuffer(); // 画像失敗後のnative命令buffer
+		bool bImageFailureWarnsMaterialIndex = false; // SpawnReportが材質番号を知らせるか
+		for ( const FString& Warning : ImageFailureInstance.GetReport().Warnings ) bImageFailureWarnsMaterialIndex = bImageFailureWarnsMaterialIndex || Warning.Contains( "材質0" );
+		const bool bFailureMaskReleasedOnReturn = Fake.Textures.count( ExpectedFailureMaskHandle ) == 0 && std::find( Fake.DeletedTextures.begin(), Fake.DeletedTextures.end(), ExpectedFailureMaskHandle ) != Fake.DeletedTextures.end(); // Prepare失敗時に作業maskが即時破棄されたか
+		const bool bImageFailureFallsBack = ImageFailureAnimator != nullptr && !ImageFailureAnimator->GetMaterialEffect().IsPrepared() && CountWorldModelMaterialCommands( ImageFailureBuffer, EDrawCommand::Model3D ) == 1 && CountWorldModelMaterialCommands( ImageFailureBuffer, EDrawCommand::ModelMaterial3D ) == 0; // 画像準備失敗後native fallbackの成否
+		Checker.Check( bFailureMaskWritten && bImageFailureFallsBack && bImageFailureWarnsMaterialIndex && Fake.NumStaticModelSurfaceQueries == QueriesBeforeImageFailure + 1 && Fake.NumTextureLoads == LoadsBeforeImageFailure + 1 && bFailureMaskReleasedOnReturn && Fake.NumModelMaterialGeometryCreates == CreatesBeforeImageFailure, "欠落noiseは材質0をSpawnReportへ出し、途中maskだけ読みgeometryを作らずnative fallbackする" );
+
 		// geometry作成失敗時も同じ個体のnative描画を残す。
 		const FString FailedModelFile = Directory / "world_model_material_geometry_fail.mv1"; // geometry失敗model fixtureのpath
 		NAssetTest::WriteFileText( FailedModelFile, "fake model with failed geometry" );
@@ -447,9 +506,9 @@ namespace NWorldTest
 
 		// 所有者を外してから遅延解放を進め、fake geometryとsource handleを確認する。
 		const size_t DeletedBeforeCleanup = Fake.DeletedModelMaterialGeometries.size(); // cleanup前のfake geometry解放数
-		Instance.Despawn(); UnsupportedInstance.Despawn(); DisabledInstance.Despawn(); GeometryFailureInstance.Despawn(); AnimatedInstance.Despawn();
-		ActiveObject.Reset(); NativeObject.Reset(); DisabledObject.Reset(); InvalidObject.Reset(); OtherEffectObject.Reset(); UnsupportedObject.Reset(); GeometryFailureObject.Reset(); AnimatedObject.Reset();
-		ActiveAnimator = nullptr; NativeAnimator = nullptr; DisabledAnimator = nullptr; InvalidAnimator = nullptr; OtherEffectAnimator = nullptr; UnsupportedAnimator = nullptr; GeometryFailureAnimator = nullptr; AnimatedAnimator = nullptr;
+		Instance.Despawn(); ResourceInstance.Despawn(); ImageFailureInstance.Despawn(); UnsupportedInstance.Despawn(); DisabledInstance.Despawn(); GeometryFailureInstance.Despawn(); AnimatedInstance.Despawn();
+		ActiveObject.Reset(); NativeObject.Reset(); ResourceObject.Reset(); ResourceSiblingObject.Reset(); ImageFailureObject.Reset(); DisabledObject.Reset(); InvalidObject.Reset(); OtherEffectObject.Reset(); UnsupportedObject.Reset(); GeometryFailureObject.Reset(); AnimatedObject.Reset();
+		ActiveAnimator = nullptr; NativeAnimator = nullptr; ResourceAnimator = nullptr; ResourceSiblingAnimator = nullptr; ImageFailureAnimator = nullptr; DisabledAnimator = nullptr; InvalidAnimator = nullptr; OtherEffectAnimator = nullptr; UnsupportedAnimator = nullptr; GeometryFailureAnimator = nullptr; AnimatedAnimator = nullptr;
 		ProbeScene.DestroyAllObjects();
 		const bool bSourceReleased = SourceModelHandle >= 0 && Fake.Models.count( SourceModelHandle ) == 0; // spawn元model handleが解放されたか
 		Diffuse.Reset();
@@ -457,6 +516,8 @@ namespace NWorldTest
 		Assets.Tick( 0.0f );
 		const bool bBorrowedImageReleased = BorrowedDiffuseHandle >= 0 && std::find( Fake.DeletedTextures.begin(), Fake.DeletedTextures.end(), BorrowedDiffuseHandle ) != Fake.DeletedTextures.end(); // borrowed texture handleが解放されたか
 		Checker.Check( Fake.DeletedModelMaterialGeometries.size() > DeletedBeforeCleanup && Fake.ModelMaterialGeometries.empty() && bSourceReleased && bBorrowedImageReleased, "DestroyAllObjects・ReleaseUnused・Tick後にgeometry・元model・借用diffuse ownerを解放する" );
+		const bool bEffectImagesReleased = std::find( Fake.DeletedTextures.begin(), Fake.DeletedTextures.end(), ExpectedResourceMaskHandle ) != Fake.DeletedTextures.end() && std::find( Fake.DeletedTextures.begin(), Fake.DeletedTextures.end(), ExpectedResourceNoiseHandle ) != Fake.DeletedTextures.end() && std::find( Fake.DeletedTextures.begin(), Fake.DeletedTextures.end(), ExpectedFailureMaskHandle ) != Fake.DeletedTextures.end(); // 成功・部分失敗で読んだeffect画像の解放記録
+		Checker.Check( bEffectImagesReleased, "DestroyAllObjects・ReleaseUnused・Tick後にmask/noiseと部分準備maskのownerを解放する" );
 
 		Fake.bSupportStaticModelSurface = bOldSurfaceSupport;
 		Fake.StaticModelSurfaceData = OldSurface;
