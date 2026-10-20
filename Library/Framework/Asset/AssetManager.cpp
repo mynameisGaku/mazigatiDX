@@ -43,6 +43,7 @@ namespace
 	{
 		Texture,
 		Model,
+		ModelMaterialGeometry,
 		Font,
 		Sound,
 		VertexBuffer,
@@ -71,6 +72,7 @@ namespace
 		{
 		case EResource::Texture: Backend.DeleteTexture( Handle ); break;
 		case EResource::Model: Backend.DeleteModel( Handle ); break;
+		case EResource::ModelMaterialGeometry: Backend.DeleteModelMaterialGeometry( Handle ); break;
 		case EResource::Font: Backend.DeleteFont( Handle ); break;
 		case EResource::Sound: Backend.DeleteSound( Handle ); break;
 		case EResource::VertexBuffer: Backend.DeleteVertexBuffer( Handle ); break;
@@ -131,6 +133,7 @@ IAssetBackend* NAssetService::GetBackend() { return Service().Backend.load(); }
 bool NAssetService::IsMainThread() { return std::this_thread::get_id() == Service().MainThread; }
 void NAssetService::ReleaseTexture( int32 Handle ) { Release( EResource::Texture, Handle ); }
 void NAssetService::ReleaseModel( int32 Handle ) { Release( EResource::Model, Handle ); }
+void NAssetService::ReleaseModelMaterialGeometry( int32 Geometry ) { Release( EResource::ModelMaterialGeometry, Geometry ); }
 void NAssetService::ReleaseFont( int32 Handle ) { Release( EResource::Font, Handle ); }
 void NAssetService::ReleaseSound( int32 Handle ) { Release( EResource::Sound, Handle ); }
 void NAssetService::ReleaseVertexBuffer( int32 Handle ) { Release( EResource::VertexBuffer, Handle ); }

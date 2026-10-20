@@ -46,16 +46,22 @@ static_assert( sizeof( FMeshVertex ) == 36 && std::is_trivially_copyable_v<FMesh
 
 namespace NDrawMaterialMesh
 {
-	// 固定設定と配列数が命令上限内かを調べ、範囲外・非有限値ならfalseを返す。
-	inline bool IsValidHeader( const FDrawMaterialMeshData& Data )
+	// 材質設定と画像handleが利用可能か調べ、範囲外・非有限値ならfalseを返す。
+	inline bool IsValidSettings( const FDrawMaterialMeshData& Data )
 	{
 		// 材質の固定設定。
 		const FDrawMaterialRibbonData::FMaterialSettings& Material = Data.Material;
-		if ( Data.Texture < 0 || Data.NumVertices < 3 || Data.NumVertices > FDrawMaterialMeshData::MaxVertices || Data.NumIndices < 3 || Data.NumIndices > FDrawMaterialMeshData::MaxIndices || Data.NumIndices % 3 != 0 || Data.DistortionTexture < -1 || ( Data.bTwoSided != 0 && Data.bTwoSided != 1 ) ) return false;
+		if ( Data.Texture < 0 || Data.DistortionTexture < -1 || ( Data.bTwoSided != 0 && Data.bTwoSided != 1 ) ) return false;
 		if ( !std::isfinite( Material.UVScale[0] ) || !std::isfinite( Material.UVScale[1] ) || Material.UVScale[0] <= 0.0f || Material.UVScale[1] <= 0.0f || Material.UVScale[0] > 128.0f || Material.UVScale[1] > 128.0f || !std::isfinite( Material.MaskScale ) || Material.MaskScale <= 0.0f || Material.MaskScale > 128.0f || !std::isfinite( Material.EdgeWidth ) || Material.EdgeWidth < 0.0f || Material.EdgeWidth > 1.0f || !std::isfinite( Material.EdgeEmission ) || Material.EdgeEmission < 0.0f || Material.EdgeEmission > 32.0f || ( Material.bDissolve != 0 && Material.bDissolve != 1 ) || ( Material.DepthTest != 0 && Material.DepthTest != 1 ) || ( Material.DepthWrite != 0 && Material.DepthWrite != 1 ) || Material.MaskTexture < -1 ) return false;
 		if ( !std::isfinite( Data.UVOffset[0] ) || !std::isfinite( Data.UVOffset[1] ) || std::abs( Data.UVOffset[0] ) > 1.0e6f || std::abs( Data.UVOffset[1] ) > 1.0e6f || !std::isfinite( Data.Dissolve ) || Data.Dissolve < 0.0f || Data.Dissolve > 1.0f || !std::isfinite( Data.Emission ) || Data.Emission < 0.0f || Data.Emission > 32.0f ) return false;
 		if ( !std::isfinite( Data.DistortionStrength ) || Data.DistortionStrength < 0.0f || Data.DistortionStrength > 1.0f || ( Data.DistortionStrength > 0.0f && Data.DistortionTexture < 0 ) ) return false;
 		return std::isfinite( Data.DistortionUVScale[0] ) && std::isfinite( Data.DistortionUVScale[1] ) && Data.DistortionUVScale[0] > 0.0f && Data.DistortionUVScale[1] > 0.0f && Data.DistortionUVScale[0] <= 128.0f && Data.DistortionUVScale[1] <= 128.0f && std::isfinite( Data.DistortionUVOffset[0] ) && std::isfinite( Data.DistortionUVOffset[1] ) && std::abs( Data.DistortionUVOffset[0] ) <= 1.0e6f && std::abs( Data.DistortionUVOffset[1] ) <= 1.0e6f;
+	}
+
+	// 固定設定と配列数が命令上限内かを調べ、範囲外・非有限値ならfalseを返す。
+	inline bool IsValidHeader( const FDrawMaterialMeshData& Data )
+	{
+		return Data.NumVertices >= 3 && Data.NumVertices <= FDrawMaterialMeshData::MaxVertices && Data.NumIndices >= 3 && Data.NumIndices <= FDrawMaterialMeshData::MaxIndices && Data.NumIndices % 3 == 0 && IsValidSettings( Data );
 	}
 
 	// 全頂点・全indexが記録可能か調べ、無効値が一つでもあればfalseを返す。

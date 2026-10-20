@@ -58,6 +58,8 @@ enum class EDrawCommand : uint8
 	DistortedMaterialRibbon3D,
 	// FDrawMaterialMeshDataと頂点・indexを所有コピーした材質メッシュ。
 	MaterialMesh3D,
+	// FDrawModelMaterialDataを使い、選択材質以外の通常描画も保つモデル命令。
+	ModelMaterial3D,
 };
 
 // Quad3D の向きの決め方
@@ -299,4 +301,6 @@ public:
 	virtual bool SupportsEffectRibbonUVDistortion() const { return false; }
 	// 実行先が材質付き頂点メッシュを描画できるかを返す。未対応の実行先は false。
 	virtual bool SupportsEffectMaterialMesh() const { return false; }
+	// ModelMaterial3Dでモデル内の選択材質へ効果を描けるか返す。
+	virtual bool SupportsModelMaterialEffects() const { return false; }
 };

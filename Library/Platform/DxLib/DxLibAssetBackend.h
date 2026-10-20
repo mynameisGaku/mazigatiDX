@@ -1,7 +1,10 @@
 ﻿#pragma once
+#include "Library/Core/Collection/Map.h"
 #include "Library/Core/Interfaces/Asset/AssetBackend.h"
 #include "Library/Core/Interfaces/Asset/StaticModelSurfaceData.h"
+#include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Framework/Subsystem/AppSubsystem.h"
+#include "Library/Platform/DxLib/DxLibModelMaterialGeometry.h"
 
 //=============================================================================
 // CDxLibAssetBackend
@@ -18,6 +21,7 @@ class CDxLibAssetBackend : public CAppSubsystem, public IAssetBackend
 {
 public:
 	void Initialize( FSubsystemCollection& Collection ) override;
+	void Deinitialize() override;
 
 	int32 LoadTexture( const FString& Path, bool bAsync ) override;
 	int32 CreateTextureFromMemory( const void* FileImage, usize Size ) override;
@@ -41,6 +45,10 @@ public:
 	bool GetModelCollisionMesh( int32 Model, TArray<float32>& OutPositions, TArray<uint32>& OutIndices ) override;
 	// 元modelを変えず、静的な面・材質をCPU値へ写す。
 	bool GetStaticModelSurface( int32 Model, FStaticModelSurfaceData& Out ) override;
+	// 指定材質の静的面を不変chunk資源へ登録する。
+	int32 CreateModelMaterialGeometry( const FStaticModelSurfaceData& Surface, int32 MaterialIndex ) override;
+	// 登録済みの不変chunk資源を解放する。
+	void DeleteModelMaterialGeometry( int32 Geometry ) override;
 	bool CreateMeshBuffers( const FMeshVertex* Vertices, int32 NumVertices, const uint32* Indices, int32 NumIndices, int32& OutVertexBuffer, int32& OutIndexBuffer ) override;
 	void DeleteVertexBuffer( int32 VertexBuffer ) override;
 	void DeleteIndexBuffer( int32 IndexBuffer ) override;
@@ -65,4 +73,14 @@ public:
 
 	bool IsLoading( int32 Handle ) override;
 	int32 GetNumLoading() override;
+	// executorと検査がhandleから不変形状を読み取る。
+	const FDxLibModelMaterialGeometry* FindModelMaterialGeometry( int32 Geometry ) const;
+	// 現在backendが保持する不変形状資源数を返す。
+	int32 GetNumModelMaterialGeometries() const;
+
+private:
+	// effect描画から読む登録済みの不変形状を所有する。
+	TMap<int32, TSharedPtr<const FDxLibModelMaterialGeometry>> ModelMaterialGeometries;
+	// 重複を避けて次のbackend内部handleを割り当てる値。
+	int32 NextModelMaterialGeometry = 1;
 };

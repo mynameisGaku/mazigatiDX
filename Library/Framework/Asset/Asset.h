@@ -84,6 +84,7 @@ namespace NAssetService
 	// 資源を解放する。メインスレッドならすぐに、そうでなければ次の更新で
 	void ReleaseTexture( int32 Handle );
 	void ReleaseModel( int32 Handle );
+	void ReleaseModelMaterialGeometry( int32 Geometry );
 	void ReleaseFont( int32 Handle );
 	void ReleaseSound( int32 Handle );
 	void ReleaseVertexBuffer( int32 Handle );

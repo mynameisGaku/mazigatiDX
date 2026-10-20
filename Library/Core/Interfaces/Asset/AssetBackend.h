@@ -108,6 +108,11 @@ public:
 	// 照明・alpha test・UV変換等native描画の同等性は保証せず、借用画像handleを削除してはならない。
 	// 借用handleは元Modelと同じbackendの寿命内だけ有効で、この関数はメインスレッドから呼ぶ。
 	virtual bool GetStaticModelSurface( int32 /*Model*/, FStaticModelSurfaceData& /*Out*/ ) { return false; }
+	// 指定材質の静的model面をbackend内の不変handleへ登録し、未対応・不正入力では-1を返す。
+	// CPU値だけをコピーし、sourceや借用画像の所有権は呼出側が維持する。
+	virtual int32 CreateModelMaterialGeometry( const FStaticModelSurfaceData& /*Surface*/, int32 /*MaterialIndex*/ ) { return -1; }
+	// CreateModelMaterialGeometryで作った不変形状handleを解放する。呼出側はReleaseModelMaterialGeometryを使う。
+	virtual void DeleteModelMaterialGeometry( int32 /*Geometry*/ ) {}
 	// モデル全体のローカルでの大きさ（すべてのメッシュを囲む、軸に平行な箱）。メッシュが 0 個・読み込み中・分からないなら false
 	virtual bool GetModelBounds( int32 /*Model*/, float32 ( & /*OutMin*/ )[3], float32 ( & /*OutMax*/ )[3] ) { return false; }
 	// モデルの三角形（当たり判定用。モデルのローカル座標で、フレームの変換を適用した、描くときと同じ位置）。OutPositions は x, y, z の並び、OutIndices は 3 つで 1 三角形（DxLib の描画と同じ向き）。
