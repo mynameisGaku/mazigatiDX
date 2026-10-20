@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
 #include "WorldMeshMaterialSelfTestSupport.h"
 
+#include "Library/DebugUI/EffectEditorCurveInput.h"
 #include "Library/DebugUI/WorldEditorInternal.h"
 #include "Library/DebugUI/WorldEditorMeshMaterialPanel.h"
 #include "Library/Framework/Asset/AssetManager.h"
@@ -67,6 +68,21 @@ namespace
 		return Count;
 	}
 
+	// 同一frameで連続描画する二つのcurveと入力結果を保持する。
+	struct FScalarCurvePairInput
+	{
+		// Add操作を行う先行curve。
+		FEffectScalarCurve First;
+		// 無操作で後続するcurve。
+		FEffectScalarCurve Second;
+		// 両curve wrapperが返した入力終了通知。
+		bool bInputEnded = false;
+		// 先行curveが保存値を変更したか。
+		bool bFirstChanged = false;
+		// 後続curveが保存値を変更したか。
+		bool bSecondChanged = false;
+	};
+
 	// 実際のmesh material panelを独立ImGui文脈で描き、world文書へ戻す。
 	class FMeshMaterialInputContext
 	{
@@ -121,6 +137,29 @@ namespace
 			return bFramesBalanced;
 		}
 
+		// 同じImGui frameでgeneric wrapperへ二つのcurveを順に渡す。
+		bool FrameCurvePair( FScalarCurvePairInput& Pair )
+		{
+			Pair.bInputEnded = false;
+			Pair.bFirstChanged = false;
+			Pair.bSecondChanged = false;
+			ImGui::NewFrame();
+			ImGui::SetNextWindowPos( ImVec2( 0.0f, 0.0f ), ImGuiCond_Always );
+			ImGui::SetNextWindowSize( ImVec2( 1000.0f, 800.0f ), ImGuiCond_Always );
+			if ( ImGui::Begin( "WorldMeshMaterialCurvePairSelfTest", nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse ) )
+			{
+				Window = ImGui::GetCurrentWindow();
+				ImGui::PushID( "CurvePair" );
+				Pair.bFirstChanged = NEffectEditorUI::DrawScalarCurve( "First curve", Pair.First, 1.0f, 0.0f, 32.0f, Pair.bInputEnded );
+				Pair.bSecondChanged = NEffectEditorUI::DrawScalarCurve( "Second curve", Pair.Second, 1.0f, 0.0f, 32.0f, Pair.bInputEnded );
+				ImGui::PopID();
+			}
+			ImGui::End();
+			ImGui::Render();
+			bFramesBalanced = bFramesBalanced && !Context->WithinFrameScope && Context->CurrentWindowStack.Size == 0;
+			return bFramesBalanced;
+		}
+
 		// 指定keyを押して離し、両frameでpanelを更新する。
 		void Tap( FWorldEditorState& State, ImGuiKey Key, int32 ObjectId = 1 )
 		{
@@ -139,6 +178,27 @@ namespace
 				Tap( State, ImGuiKey_Tab, ObjectId );
 			}
 			return Context->NavId == Id;
+		}
+
+		// tab巡回でcurve-pairのwidgetへkeyboard focusを移す。
+		bool TabToCurvePair( FScalarCurvePairInput& Pair, ImGuiID Id )
+		{
+			// focusされるまで試すtab巡回回数。
+			for ( int32 Attempt = 0; Attempt < 256; ++Attempt )
+			{
+				if ( Context->NavId == Id ) return true;
+				TapCurvePair( Pair, ImGuiKey_Tab );
+			}
+			return Context->NavId == Id;
+		}
+
+		// curve-pairを両frame描きながら指定keyを押して離す。
+		void TapCurvePair( FScalarCurvePairInput& Pair, ImGuiKey Key )
+		{
+			ImGui::GetIO().AddKeyEvent( Key, true );
+			FrameCurvePair( Pair );
+			ImGui::GetIO().AddKeyEvent( Key, false );
+			FrameCurvePair( Pair );
 		}
 
 		// 現在のtest window内でpanel widgetのIDを得る。
@@ -161,6 +221,16 @@ namespace
 			const ImGuiID MaterialId = ImHashStr( "##Material", 0, SlotId );
 			ImGuiID CurveId = ImHashStr( CurveLabel, 0, MaterialId );
 			if ( KeyIndex >= 0 ) CurveId = ImHashData( &KeyIndex, sizeof( KeyIndex ), CurveId );
+			return ImHashStr( ItemLabel, 0, CurveId );
+		}
+
+		// curve-pair test window内の指定widget IDを返す。
+		ImGuiID CurvePairItemId( const char* CurveLabel, const char* ItemLabel ) const
+		{
+			// curve-pair modeが積むID seed。
+			const ImGuiID PairId = ImHashStr( "CurvePair", 0, Window->ID );
+			// 対象curve labelのID seed。
+			const ImGuiID CurveId = ImHashStr( CurveLabel, 0, PairId );
 			return ImHashStr( ItemLabel, 0, CurveId );
 		}
 
@@ -202,9 +272,49 @@ namespace
 		bool bFramesBalanced = true;
 	};
 
+	// 実Add操作の通知を後続curve wrapperが同frameで保持することを確認する。
+	void TestScalarCurveInputEndAggregation( NAssetTest::FChecker& C, FMeshMaterialInputContext& Input )
+	{
+		C.Group = "world-mesh-material-curve-input-end-aggregation";
+		// 同一frameへ順に描く二つの空曲線と入力結果。
+		FScalarCurvePairInput Pair;
+		// 初回のcurve-pair描画でwindowとwidget IDを作れたか。
+		const bool bInitialFrameBalanced = Input.FrameCurvePair( Pair );
+		// 先行curveのAdd key button ID。
+		const ImGuiID AddKeyId = Input.CurvePairItemId( "First curve", "Add key" );
+		// 実Add操作前に目的buttonへkeyboard focusしたか。
+		const bool bAddKeyFocused = Input.TabToCurvePair( Pair, AddKeyId );
+		ImGui::GetIO().AddKeyEvent( ImGuiKey_Enter, true );
+		// Add key押下frameの描画と二つのwrapper結果。
+		const bool bAddPressFrameBalanced = Input.FrameCurvePair( Pair );
+		// 押下frameで先行curveがAddを変更として返したか。
+		const bool bAddPressedChanged = Pair.bFirstChanged;
+		// 押下frameで後続wrapper後も終了通知が残ったか。
+		const bool bAddPressedEnded = Pair.bInputEnded;
+		// 押下frameで後続curveが無操作だったか。
+		const bool bAddPressedSecondUnchanged = !Pair.bSecondChanged;
+		ImGui::GetIO().AddKeyEvent( ImGuiKey_Enter, false );
+		// Add key解放frameの描画と二つのwrapper結果。
+		const bool bAddReleaseFrameBalanced = Input.FrameCurvePair( Pair );
+		// 解放frameで先行curveがAddを変更として返したか。
+		const bool bAddReleasedChanged = Pair.bFirstChanged;
+		// 解放frameで後続wrapper後も終了通知が残ったか。
+		const bool bAddReleasedEnded = Pair.bInputEnded;
+		// 解放frameで後続curveが無操作だったか。
+		const bool bAddReleasedSecondUnchanged = !Pair.bSecondChanged;
+		// 実Addが起きたframeで終了通知まで残ったか。
+		const bool bAddFrameEnded = ( bAddPressedChanged && bAddPressedEnded ) || ( bAddReleasedChanged && bAddReleasedEnded );
+		// どちらのEnter frameで実Addが起きたか。
+		const bool bFirstAddChanged = bAddPressedChanged || bAddReleasedChanged;
+		// 後続curveがどちらのEnter frameでも無操作か。
+		const bool bSecondCurveUnchanged = bAddPressedSecondUnchanged && bAddReleasedSecondUnchanged && Pair.Second.Keys.IsEmpty();
+		C.Check( bInitialFrameBalanced && bAddKeyFocused && bAddPressFrameBalanced && bAddReleaseFrameBalanced && bFirstAddChanged && Pair.First.Keys.Num() == 1 && bSecondCurveUnchanged && bAddFrameEnded, "実Add後に同frameで呼ぶ後続curveが終了通知を保持する: focused=%d changed=%d firstKeys=%d secondChanged=%d secondKeys=%d endedOnAddFrame=%d", bAddKeyFocused, bFirstAddChanged, Pair.First.Keys.Num(), Pair.bSecondChanged, Pair.Second.Keys.Num(), bAddFrameEnded );
+	}
+
 	// UIのpreset操作、Undo/Redoと保存後のfresh loadを一続きで確認する。
 	void TestMeshMaterialEditorSave( NAssetTest::FChecker& C, CAssetManager& Assets, FMeshMaterialInputContext& Input, const FString& TestDirectory )
 	{
+		TestScalarCurveInputEndAggregation( C, Input );
 		C.Group = "world-mesh-material-editor-input-save";
 		// material effect画像を保存する専用asset root。
 		const FString FixtureRoot = TestDirectory / "world-mesh-material-editor-cache";
@@ -325,28 +435,50 @@ namespace
 			}
 			bExistingKeysPreserved &= ExistingKeyIndex == EmissionKeysBeforeAdd.Num();
 		}
+		// 追加後に参照できる材質slotが存在するか。
+		const bool bCurveSlotAfterAdd = CurveObject != nullptr && CurveObject->Mesh.IsSet() && CurveObject->Mesh.GetValue().Materials.IsValidIndex( 0 );
 		// 新しいキーがpanelの既定値1.0を使ったか。
-		const bool bAddedKeyUsesDefaultValue = AddedKeyIndex != INDEX_NONE && std::fabs( CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys[AddedKeyIndex].Value - 1.0f ) < 0.002f;
+		const bool bAddedKeyUsesDefaultValue = bCurveSlotAfterAdd && AddedKeyIndex >= 0 && AddedKeyIndex < CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys.Num() && std::fabs( CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys[AddedKeyIndex].Value - 1.0f ) < 0.002f;
 		const int32 UndoAfterCurveAdd = State.Session.Document.GetNumUndo();
 		C.Check( bCurveAddFocused && CurveKeysAfterAdd == CurveKeysBeforeAdd + 1 && bExistingKeysPreserved && bKeysAscending && bAddedKeyUsesDefaultValue && UndoAfterCurveAdd == BeforeCurve + 1, "実curve UIのAdd keyが既存keyを保ち既定値を追加して一つのworld履歴を作る: focused=%d nav=%u target=%u active=%u keys=%d beforeKeys=%d preserved=%d ascending=%d addedIndex=%d default=%d undo=%d before=%d", bCurveAddFocused, Input.NavId(), CurveAddId, Input.ActiveId(), CurveKeysAfterAdd, CurveKeysBeforeAdd, bExistingKeysPreserved, bKeysAscending, AddedKeyIndex, bAddedKeyUsesDefaultValue, UndoAfterCurveAdd, BeforeCurve );
-		const int32 BeforeCurveValue = State.Session.Document.GetNumUndo();
-		const ImGuiID CurveValueId = Input.CurveItemId( "Emission curve", "Value", 0, 0 );
-		const bool bCurveValueFocused = Input.TabTo( State, CurveValueId );
-		const bool bCurveValueTyped = bCurveValueFocused && Input.ReplaceNumeric( State, CurveValueId, "2.35" );
-		Input.Tap( State, ImGuiKey_Tab );
-		CurveObject = State.Session.Document.Get().FindObject( 1 );
-		const bool bCurveValueSaved = CurveObject != nullptr && CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys.Num() == CurveKeysAfterAdd && std::fabs( CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys[0].Value - 2.35f ) < 0.002f;
-		const int32 CurveKeysAfterValue = CurveObject != nullptr && CurveObject->Mesh.IsSet() && CurveObject->Mesh.GetValue().Materials.IsValidIndex( 0 ) ? CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys.Num() : -1;
-		const float32 CurveValueAfterEdit = CurveKeysAfterValue > 0 ? CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys[0].Value : -1.0f;
-		const int32 UndoAfterCurveValue = State.Session.Document.GetNumUndo();
-		C.Check( bCurveValueTyped && bCurveValueSaved && UndoAfterCurveValue == BeforeCurveValue + 1, "曲線値の文字入力をreleaseで独立した履歴へ確定する: focused=%d typed=%d nav=%u target=%u active=%u temp=%u keys=%d value=%.6g undo=%d before=%d", bCurveValueFocused, bCurveValueTyped, Input.NavId(), CurveValueId, Input.ActiveId(), Input.TempInputId(), CurveKeysAfterValue, CurveValueAfterEdit, UndoAfterCurveValue, BeforeCurveValue );
-		const bool bCurveUndo = State.Session.Document.Undo();
-		const FWorldObject* CurveObjectAfterUndo = State.Session.Document.Get().FindObject( 1 );
-		const float32 CurveValueAfterUndo = CurveObjectAfterUndo != nullptr && CurveObjectAfterUndo->Mesh.IsSet() && CurveObjectAfterUndo->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys.Num() > 0 ? CurveObjectAfterUndo->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys[0].Value : -1.0f;
-		const bool bCurveRedo = State.Session.Document.Redo();
-		const FWorldObject* CurveObjectAfterRedo = State.Session.Document.Get().FindObject( 1 );
-		const float32 CurveValueAfterRedo = CurveObjectAfterRedo != nullptr && CurveObjectAfterRedo->Mesh.IsSet() && CurveObjectAfterRedo->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys.Num() > 0 ? CurveObjectAfterRedo->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys[0].Value : -1.0f;
-		C.Check( bCurveUndo && std::fabs( CurveValueAfterUndo - CurveFirstValueBeforeAdd ) < 0.002f && bCurveRedo && std::fabs( CurveValueAfterRedo - 2.35f ) < 0.002f, "曲線値のrelease履歴をUndo/Redoする: undo=%d undoValue=%.6g expectedUndo=%.6g redo=%d redoValue=%.6g", bCurveUndo, CurveValueAfterUndo, CurveFirstValueBeforeAdd, bCurveRedo, CurveValueAfterRedo );
+		// Add成功時だけ後続のkey値入力と履歴検査を実行する。
+		const bool bCurveAddSafeForValueChecks = bCurveAddFocused && bCurveSlotAfterAdd && CurveKeysAfterAdd == CurveKeysBeforeAdd + 1 && bExistingKeysPreserved && bKeysAscending && bAddedKeyUsesDefaultValue;
+		if ( bCurveAddSafeForValueChecks )
+		{
+			const int32 BeforeCurveValue = State.Session.Document.GetNumUndo();
+			const ImGuiID CurveValueId = Input.CurveItemId( "Emission curve", "Value", 0, 0 );
+			const bool bCurveValueFocused = Input.TabTo( State, CurveValueId );
+			const bool bCurveValueTyped = bCurveValueFocused && Input.ReplaceNumeric( State, CurveValueId, "2.35" );
+			Input.Tap( State, ImGuiKey_Tab );
+			CurveObject = State.Session.Document.Get().FindObject( 1 );
+			// 文字入力後も参照できる材質slotが残っているか。
+			const bool bCurveValueSlotExists = CurveObject != nullptr && CurveObject->Mesh.IsSet() && CurveObject->Mesh.GetValue().Materials.IsValidIndex( 0 );
+			// 文字入力後に保存された発光key数。
+			const int32 CurveKeysAfterValue = bCurveValueSlotExists ? CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys.Num() : -1;
+			// keyが存在するときだけ読む入力後の先頭値。
+			const float32 CurveValueAfterEdit = CurveKeysAfterValue > 0 ? CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys[0].Value : -1.0f;
+			// keyが存在し値が一致したときだけ入力保存成功とする。
+			const bool bCurveValueSaved = bCurveValueSlotExists && CurveKeysAfterValue > 0 && CurveKeysAfterValue == CurveKeysAfterAdd && std::fabs( CurveValueAfterEdit - 2.35f ) < 0.002f;
+			const int32 UndoAfterCurveValue = State.Session.Document.GetNumUndo();
+			C.Check( bCurveValueTyped && bCurveValueSaved && UndoAfterCurveValue == BeforeCurveValue + 1, "曲線値の文字入力をreleaseで独立した履歴へ確定する: focused=%d typed=%d nav=%u target=%u active=%u temp=%u keys=%d value=%.6g undo=%d before=%d", bCurveValueFocused, bCurveValueTyped, Input.NavId(), CurveValueId, Input.ActiveId(), Input.TempInputId(), CurveKeysAfterValue, CurveValueAfterEdit, UndoAfterCurveValue, BeforeCurveValue );
+			const bool bCurveUndo = State.Session.Document.Undo();
+			const FWorldObject* CurveObjectAfterUndo = State.Session.Document.Get().FindObject( 1 );
+			// Undo後も対象slotが存在するか。
+			const bool bCurveUndoSlotExists = CurveObjectAfterUndo != nullptr && CurveObjectAfterUndo->Mesh.IsSet() && CurveObjectAfterUndo->Mesh.GetValue().Materials.IsValidIndex( 0 );
+			// Undo後に残る発光key数。
+			const int32 CurveKeysAfterUndo = bCurveUndoSlotExists ? CurveObjectAfterUndo->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys.Num() : -1;
+			// keyが存在するときだけ読むUndo後の先頭値。
+			const float32 CurveValueAfterUndo = CurveKeysAfterUndo > 0 ? CurveObjectAfterUndo->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys[0].Value : -1.0f;
+			const bool bCurveRedo = State.Session.Document.Redo();
+			const FWorldObject* CurveObjectAfterRedo = State.Session.Document.Get().FindObject( 1 );
+			// Redo後も対象slotが存在するか。
+			const bool bCurveRedoSlotExists = CurveObjectAfterRedo != nullptr && CurveObjectAfterRedo->Mesh.IsSet() && CurveObjectAfterRedo->Mesh.GetValue().Materials.IsValidIndex( 0 );
+			// Redo後に残る発光key数。
+			const int32 CurveKeysAfterRedo = bCurveRedoSlotExists ? CurveObjectAfterRedo->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys.Num() : -1;
+			// keyが存在するときだけ読むRedo後の先頭値。
+			const float32 CurveValueAfterRedo = CurveKeysAfterRedo > 0 ? CurveObjectAfterRedo->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys[0].Value : -1.0f;
+			C.Check( bCurveUndo && std::fabs( CurveValueAfterUndo - CurveFirstValueBeforeAdd ) < 0.002f && bCurveRedo && std::fabs( CurveValueAfterRedo - 2.35f ) < 0.002f, "曲線値のrelease履歴をUndo/Redoする: undo=%d undoValue=%.6g expectedUndo=%.6g redo=%d redoValue=%.6g", bCurveUndo, CurveValueAfterUndo, CurveFirstValueBeforeAdd, bCurveRedo, CurveValueAfterRedo );
+		}
 		// 世界asset managerがSaveWorldFileから使われる実装依存先と一致する。
 		C.Check( GetAppSubsystem<CAssetManager>() == &Assets, "SaveAs対象とtest asset managerが同じ" );
 		if ( GetAppSubsystem<CAssetManager>() != &Assets ) return;
