@@ -257,7 +257,7 @@ float64 FModelMaterialEffectRenderer::GetEffectTime() const
 
 bool FModelMaterialEffectRenderer::Record( FDrawContext& Draw, const TSharedPtr<CModelInstance>& Instance, const FMatrix4x4& World ) const
 {
-	if ( EffectState == EEffectPlaybackState::Stopped || !Resources.IsValid() || !Instance.IsValid() || Instance->GetNumAttached() > 0 || Instance->GetSource().Get() != Resources->Source.Get() ) return false;
+	if ( EffectState == EEffectPlaybackState::Stopped || !Resources.IsValid() || !Instance.IsValid() || Instance->GetHandle() < 0 || Instance->GetNumAttached() > 0 || Instance->GetSource().Get() != Resources->Source.Get() ) return false;
 	// active effectが持つ不正行列でnative full Modelへ漏らさず、このframeの描画を抑止する。
 	// 変換行列全体が有限かを調べる行。
 	for ( int32 Row = 0; Row < 4; ++Row )
@@ -275,6 +275,5 @@ bool FModelMaterialEffectRenderer::Record( FDrawContext& Draw, const TSharedPtr<
 	Data.BlendMode = static_cast<int32>( Resources->Definition.Blend );
 	Data.Opacity = Resources->Definition.Opacity;
 	Data.Material = MakeModelEffectMaterial( *Resources, NormalizedTime, EffectUVOffset[0], EffectUVOffset[1], DistortionUVOffset[0], DistortionUVOffset[1] );
-	Draw.ModelMaterial( Data );
-	return true;
+	return Draw.ModelMaterial( Data );
 }

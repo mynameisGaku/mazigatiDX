@@ -4,6 +4,7 @@
 #include "AssetSelfTestSupport.h"
 #include "AssetSelfTestModelSurface.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <limits>
@@ -114,6 +115,48 @@ namespace NAssetTest
 			Definition.Blend = Blend;
 			return Definition;
 		}
+
+		// native visibilityを一時変更する実fixture値を保存し、失敗時も元へ戻す。
+		struct FModelMaterialVisibilitySnapshot
+		{
+			int32 Handle = -1; // visibilityを切り替えるinstance handle
+			int32 Mesh = -1; // 選択mesh番号
+			int32 Frame = -1; // 選択frame番号
+			int32 ParentFrame = -1; // 親frame番号
+			int32 ModelVisible = -1; // 元model表示値
+			int32 MeshVisible = -1; // 元mesh表示値
+			int32 FrameVisible = -1; // 元frame表示値
+			int32 ParentVisible = -1; // 元親frame表示値
+			int32 CategoryVisible = -1; // 元normal category表示値
+			bool bValid = false; // 全getterが有効値を返したか
+
+			FModelMaterialVisibilitySnapshot( int32 InHandle, int32 InMesh, int32 InFrame, int32 InParentFrame )
+				: Handle( InHandle ), Mesh( InMesh ), Frame( InFrame ), ParentFrame( InParentFrame )
+			{
+				if ( Handle < 0 || Mesh < 0 || Frame < 0 ) return;
+				ModelVisible = MV1GetVisible( Handle );
+				MeshVisible = MV1GetMeshVisible( Handle, Mesh );
+				FrameVisible = MV1GetFrameVisible( Handle, Frame );
+				ParentVisible = ParentFrame >= 0 ? MV1GetFrameVisible( Handle, ParentFrame ) : TRUE;
+				CategoryVisible = MV1GetMeshCategoryVisible( Handle, DX_MV1_MESHCATEGORY_NORMAL );
+				bValid = ( ModelVisible == FALSE || ModelVisible == TRUE ) && ( MeshVisible == FALSE || MeshVisible == TRUE ) && ( FrameVisible == FALSE || FrameVisible == TRUE ) && ( ParentVisible == FALSE || ParentVisible == TRUE ) && ( CategoryVisible == FALSE || CategoryVisible == TRUE );
+			}
+
+			~FModelMaterialVisibilitySnapshot() { Restore(); }
+
+			// 全visibilityを元値へ戻し、Setterの成否を返す。
+			bool Restore() const
+			{
+				if ( !bValid ) return false;
+				const bool bModelRestored = MV1SetVisible( Handle, ModelVisible ) >= 0;
+				const bool bMeshRestored = MV1SetMeshVisible( Handle, Mesh, MeshVisible ) >= 0;
+				const bool bFrameRestored = MV1SetFrameVisible( Handle, Frame, FrameVisible ) >= 0;
+				const bool bCategoryRestored = MV1SetMeshCategoryVisible( Handle, DX_MV1_MESHCATEGORY_NORMAL, CategoryVisible ) >= 0;
+				const bool bParentRestored = ParentFrame < 0 || MV1SetFrameVisible( Handle, ParentFrame, ParentVisible ) >= 0;
+				const bool bRestored = bModelRestored && bMeshRestored && bFrameRestored && bCategoryRestored && bParentRestored;
+				return bRestored && MV1GetVisible( Handle ) == ModelVisible && MV1GetMeshVisible( Handle, Mesh ) == MeshVisible && MV1GetFrameVisible( Handle, Frame ) == FrameVisible && MV1GetMeshCategoryVisible( Handle, DX_MV1_MESHCATEGORY_NORMAL ) == CategoryVisible && ( ParentFrame < 0 || MV1GetFrameVisible( Handle, ParentFrame ) == ParentVisible );
+			}
+		};
 
 		// 実画素試験の前後でDxLibの描画先・camera・world状態を戻す。
 		struct FModelMaterialRealState
@@ -295,6 +338,38 @@ namespace NAssetTest
 			for ( int32 Y = 0; Y < 128; ++Y ) for ( int32 X = 0; X < 128; ++X )
 			{
 				if ( IsModelMaterialPixelInsideTriangle( static_cast<float32>( X ) + 0.5f, static_cast<float32>( Y ) + 0.5f, Triangle, 1.5f ) && std::memcmp( &A[Y * 128 + X], &B[Y * 128 + X], sizeof( FColor32 ) ) != 0 ) ++Count;
+			}
+			return Count;
+		}
+
+		// projected triangle内でRGB値が異なるpixel数を数え、無効画像は-1を返す。
+		int32 CountModelMaterialTriangleRgbDifferences( const TArray<FColor32>& A, const TArray<FColor32>& B, const FModelMaterialTriangleProjection& Triangle )
+		{
+			if ( A.Num() != 128 * 128 || B.Num() != 128 * 128 ) return -1;
+			int32 Count = 0; // RGBのいずれかが違うpixel数
+			for ( int32 Y = 0; Y < 128; ++Y ) for ( int32 X = 0; X < 128; ++X )
+			{
+				if ( !IsModelMaterialPixelInsideTriangle( static_cast<float32>( X ) + 0.5f, static_cast<float32>( Y ) + 0.5f, Triangle, 1.5f ) ) continue;
+				const FColor32& First = A[Y * 128 + X]; // 比較元の画素
+				const FColor32& Second = B[Y * 128 + X]; // 比較先の画素
+				if ( First.r != Second.r || First.g != Second.g || First.b != Second.b ) ++Count;
+			}
+			return Count;
+		}
+
+		// projected triangle内で背景か図形かの差を数え、無効画像は-1を返す。
+		int32 CountModelMaterialTriangleSilhouetteDifferences( const TArray<FColor32>& A, const TArray<FColor32>& B, const FModelMaterialTriangleProjection& Triangle )
+		{
+			if ( A.Num() != 128 * 128 || B.Num() != 128 * 128 ) return -1;
+			int32 Count = 0; // 背景/図形の分類が異なるpixel数
+			for ( int32 Y = 0; Y < 128; ++Y ) for ( int32 X = 0; X < 128; ++X )
+			{
+				if ( !IsModelMaterialPixelInsideTriangle( static_cast<float32>( X ) + 0.5f, static_cast<float32>( Y ) + 0.5f, Triangle, 1.5f ) ) continue;
+				const FColor32& First = A[Y * 128 + X]; // native基準の画素
+				const FColor32& Second = B[Y * 128 + X]; // effect結果の画素
+				const bool bFirstVisible = First.r != 17 || First.g != 23 || First.b != 31;
+				const bool bSecondVisible = Second.r != 17 || Second.g != 23 || Second.b != 31;
+				if ( bFirstVisible != bSecondVisible ) ++Count;
 			}
 			return Count;
 		}
@@ -615,12 +690,21 @@ namespace NAssetTest
 		int32 MaterialIndex = INDEX_NONE; // 埋込画像を持つ材質index
 		int32 SelectedMeshIndex = INDEX_NONE; // 対象sectionのnative mesh index
 		int32 SelectedFrameIndex = INDEX_NONE; // 対象sectionを所有するnative frame index
+		int32 OtherMaterialIndex = INDEX_NONE; // 非対象材質pixelを比べるsection
+		int32 OtherMeshIndex = INDEX_NONE; // 非対象材質sectionのnative mesh
 		if ( Surface.IsValid() ) for ( const FStaticModelSurfaceSection& Section : Surface->GetData().Sections )
 		{
 			if ( Section.MaterialIndex < 0 || Section.MaterialIndex >= Surface->GetData().Materials.Num() || Surface->GetData().Materials[Section.MaterialIndex].BorrowedDiffuseTexture < 0 ) continue;
 			MaterialIndex = Section.MaterialIndex;
 			SelectedMeshIndex = Section.SourceMeshIndex;
 			SelectedFrameIndex = Section.SourceFrameIndex;
+			break;
+		}
+		if ( Surface.IsValid() && MaterialIndex >= 0 ) for ( const FStaticModelSurfaceSection& Section : Surface->GetData().Sections )
+		{
+			if ( Section.MaterialIndex == MaterialIndex || Section.MaterialIndex < 0 || Section.MaterialIndex >= Surface->GetData().Materials.Num() || Section.SourceMeshIndex < 0 || Section.NumIndices < 3 ) continue;
+			OtherMaterialIndex = Section.MaterialIndex;
+			OtherMeshIndex = Section.SourceMeshIndex;
 			break;
 		}
 		const bool bHasSelectedSection = MaterialIndex >= 0 && SelectedMeshIndex >= 0; // pixel試験へ進めるmesh selection
@@ -634,6 +718,8 @@ namespace NAssetTest
 			CenteredWorld.m[3][0] = -2.0f; CenteredWorld.m[3][1] = -1.0f;
 			FModelMaterialTriangleProjection CenteredTriangle; // native triangleの実screen位置から作るpixel ROI
 			const bool bCenteredTriangleProjected = Surface.IsValid() && ProjectModelMaterialTriangle( Surface->GetData(), MaterialIndex, SelectedMeshIndex, CenteredWorld, CenteredTriangle );
+			FModelMaterialTriangleProjection OtherTriangle; // 非対象材質triangleの独立ROI
+			const bool bOtherTriangleProjected = Surface.IsValid() && OtherMaterialIndex >= 0 && ProjectModelMaterialTriangle( Surface->GetData(), OtherMaterialIndex, OtherMeshIndex, CenteredWorld, OtherTriangle ); // 非対象材質triangleの投影結果
 			const int32 NativeMeshCount = MV1GetMeshNum( First->GetHandle() ); // native modelが所有するmesh数
 			const int32 NativeFrameCount = MV1GetFrameNum( First->GetHandle() ); // native modelが所有するframe数
 			const int32 SelectedNativeMaterial = SelectedMeshIndex >= 0 && SelectedMeshIndex < NativeMeshCount ? MV1GetMeshMaterial( First->GetHandle(), SelectedMeshIndex ) : -1; // selected meshのnative material mapping
@@ -648,6 +734,7 @@ namespace NAssetTest
 			LOG( LogAssetSelfTest, Log, "材質試験mapping: 対象材質=%d mesh=%d native材質=%d mesh表示=%d frame表示=%d frame=%d 親=%d 投影=%d p0=(%.2f,%.2f) p1=(%.2f,%.2f) p2=(%.2f,%.2f) 対照mesh=%d native材質=%d 裏面除去=%d/%d", MaterialIndex, SelectedMeshIndex, SelectedNativeMaterial, SelectedNativeVisible, SelectedFrameVisible, SelectedFrameIndex, SelectedFrameParent, bCenteredTriangleProjected ? 1 : 0, CenteredTriangle.X[0], CenteredTriangle.Y[0], CenteredTriangle.X[1], CenteredTriangle.Y[1], CenteredTriangle.X[2], CenteredTriangle.Y[2], OtherNativeMeshIndex, OtherNativeMaterial, SelectedNativeCulling, OtherNativeCulling );
 			FModelAnimator FirstAnimator( First ); // selected effectを持つ個体
 			FModelAnimator SiblingAnimator( Sibling ); // native-only兄弟個体
+			FModelAnimator PlainAnimator( First ); // effect未準備のnative positive control
 			const auto DrawPixels = [&]( const FModelAnimator& Animator, const FMatrix4x4& World, TArray<FColor32>& Pixels, const char* CaptureName )
 			{
 				SetDrawScreen( Screen ); SetDrawAreaFull(); ClearDrawScreen();
@@ -661,14 +748,35 @@ namespace NAssetTest
 				if ( bCaptured ) SaveModelMaterialDiagnosticPng( CaptureName );
 				return bCaptured;
 			};
+			// model本体handleを直接描き、source資源のnative画素を採る。
+			const auto DrawSourcePixels = [&]( const FMatrix4x4& World, TArray<FColor32>& Pixels, const char* CaptureName )
+			{
+				const MATRIX OldMatrix = MV1GetMatrix( Model->GetHandle() ); // source handleの元行列
+				const MATRIX NewMatrix = static_cast<MATRIX>( World ); // source captureへ使うinstance行列
+				RenderVertex(); SetDrawScreen( Screen ); SetDrawAreaFull(); ClearDrawScreen();
+				const bool bMatrixSet = MV1SetMatrix( Model->GetHandle(), NewMatrix ) >= 0;
+				if ( bMatrixSet ) MV1DrawModel( Model->GetHandle() );
+				RenderVertex();
+				const bool bCaptured = bMatrixSet && CaptureModelMaterialPixels( Screen, Soft, Pixels );
+				const bool bMatrixRestored = MV1SetMatrix( Model->GetHandle(), OldMatrix ) >= 0;
+				RenderVertex();
+				const MATRIX RestoredMatrix = MV1GetMatrix( Model->GetHandle() );
+				if ( bCaptured ) SaveModelMaterialDiagnosticPng( CaptureName );
+				return bCaptured && bMatrixRestored && std::memcmp( &RestoredMatrix, &OldMatrix, sizeof( MATRIX ) ) == 0;
+			};
 			// effect未準備のsourceと兄弟個体それぞれのnative positive baseline。
 			TArray<FColor32> NativePixels; // effect前の対象native image
 			TArray<FColor32> SiblingPixelsBefore; // effect前の兄弟native image
+			TArray<FColor32> SourcePixelsBefore; // effect前のsource model native image
 			const bool bNativeCaptured = DrawPixels( FirstAnimator, CenteredWorld, NativePixels, "native" );
 			const bool bSiblingCaptured = DrawPixels( SiblingAnimator, CenteredWorld, SiblingPixelsBefore, "sibling_before" );
+			const bool bSourceCaptured = DrawSourcePixels( CenteredWorld, SourcePixelsBefore, "source_before" );
 			const int32 NativeBaselineTrianglePixels = bCenteredTriangleProjected && bNativeCaptured ? CountModelMaterialTrianglePixels( NativePixels, CenteredTriangle ) : -1; // 効果準備前のnative三角形の可視画素数
+			const int32 NativeOtherTrianglePixels = bOtherTriangleProjected && bNativeCaptured ? CountModelMaterialTrianglePixels( NativePixels, OtherTriangle ) : -1; // 非対象native材質の基準表示数
 			LOG( LogAssetSelfTest, Log, "材質試験native基準: 撮影=%d 投影=%d 対象三角形の可視画素=%d 裏面除去=%d 対照mesh裏面除去=%d", bNativeCaptured ? 1 : 0, bCenteredTriangleProjected ? 1 : 0, NativeBaselineTrianglePixels, SelectedNativeCulling, OtherNativeCulling );
 			Checker.Check( bCenteredTriangleProjected && bNativeCaptured && NativeBaselineTrianglePixels > 0, "効果準備前のnative三角形が投影領域内に表示される" );
+			Checker.Check( bOtherTriangleProjected && bNativeCaptured && NativeOtherTrianglePixels > 0, "非対象材質のnative三角形も投影領域内に表示される" );
+			Checker.Check( bSourceCaptured && bCenteredTriangleProjected && CountModelMaterialTrianglePixels( SourcePixelsBefore, CenteredTriangle ) > 0, "source model handleからnative三角形を直接描ける" );
 			const FBackendMemoryInfo BeforePrepare = Assets.GetBackend() != nullptr ? Assets.GetBackend()->GetMemoryInfo() : FBackendMemoryInfo(); // prepare直前native handle数
 			FMeshMaterialEffectDefinition Definition = MakeModelMaterialDefinition( 0.0f, EDrawBlend::Alpha ); // 完全透明Alpha効果
 			Definition.Material.Emission.Keys.Add( { 0.0f, 1.0f } );
@@ -678,38 +786,191 @@ namespace NAssetTest
 			TArray<FColor32> TransparentPixels; // Opacity 0で消した対象画像
 			const bool bTransparentCaptured = DrawPixels( FirstAnimator, CenteredWorld, TransparentPixels, "opacity_zero" );
 			// 合成方式とOpacityだけを替え、同じselected triangleの実画素を採取する。
-			const auto CaptureEffectVariant = [&]( float32 Opacity, EDrawBlend Blend, TArray<FColor32>& Pixels )
+			const auto CaptureEffectVariant = [&]( float32 Opacity, EDrawBlend Blend, bool bTwoSided, const char* CaptureName, TArray<FColor32>& Pixels )
 			{
 				FirstAnimator.ClearMaterialEffect();
 				FMeshMaterialEffectDefinition Variant = MakeModelMaterialDefinition( Opacity, Blend );
 				Variant.Material.Emission.Keys.Add( { 0.0f, 1.0f } );
 				Variant.Material.Emission.Keys.Add( { 1.0f, 1.0f } );
-				const bool bVariantPrepared = FirstAnimator.PrepareMaterialEffect( MaterialIndex, Variant, [&]( const FString& Path ) { return Assets.LoadTexture( Path ); }, Executor, true );
-				return bVariantPrepared && DrawPixels( FirstAnimator, CenteredWorld, Pixels, Opacity == 1.0f ? "opacity_one" : Blend == EDrawBlend::Add ? "opacity_half_add" : "opacity_half_alpha" );
+				const bool bVariantPrepared = FirstAnimator.PrepareMaterialEffect( MaterialIndex, Variant, [&]( const FString& Path ) { return Assets.LoadTexture( Path ); }, Executor, bTwoSided );
+				return bVariantPrepared && DrawPixels( FirstAnimator, CenteredWorld, Pixels, CaptureName );
 			};
 			TArray<FColor32> OpacityOnePixels; // Opacity 1 Alpha結果
 			TArray<FColor32> OpacityHalfAlphaPixels; // Opacity 0.5 Alpha結果
 			TArray<FColor32> OpacityHalfAddPixels; // Opacity 0.5 Add結果
-			const bool bOpacityOneCaptured = CaptureEffectVariant( 1.0f, EDrawBlend::Alpha, OpacityOnePixels );
-			const bool bOpacityHalfAlphaCaptured = CaptureEffectVariant( 0.5f, EDrawBlend::Alpha, OpacityHalfAlphaPixels );
-			const bool bOpacityHalfAddCaptured = CaptureEffectVariant( 0.5f, EDrawBlend::Add, OpacityHalfAddPixels );
+			const bool bOpacityOneCaptured = CaptureEffectVariant( 1.0f, EDrawBlend::Alpha, true, "opacity_one", OpacityOnePixels );
+			const bool bOpacityHalfAlphaCaptured = CaptureEffectVariant( 0.5f, EDrawBlend::Alpha, true, "opacity_half_alpha", OpacityHalfAlphaPixels );
+			const bool bOpacityHalfAddCaptured = CaptureEffectVariant( 0.5f, EDrawBlend::Add, true, "opacity_half_add", OpacityHalfAddPixels );
 			const TArray<FColor32> SiblingPixelsAfterCapture = [&]() { TArray<FColor32> Pixels; DrawPixels( SiblingAnimator, CenteredWorld, Pixels, "sibling_after" ); return Pixels; }(); // 効果描画後もnative兄弟を再取得
 			int32 SelectedDifferences = bCenteredTriangleProjected ? CountModelMaterialTriangleDifferences( NativePixels, TransparentPixels, CenteredTriangle ) : -1; // 投影triangle内で変わったpixel数
 			int32 SiblingDifferences = 0; // 兄弟画像で変わったpixel数
 			SiblingDifferences = CountModelMaterialPixelDifferences( SiblingPixelsBefore, SiblingPixelsAfterCapture );
 			const int32 NativeSelectedPixels = NativeBaselineTrianglePixels;
+			const int32 NativeOtherPixels = NativeOtherTrianglePixels;
 			const int32 ZeroOpacityPixels = bCenteredTriangleProjected ? CountModelMaterialTrianglePixels( TransparentPixels, CenteredTriangle ) : -1;
 			const int32 FullOpacityPixels = bCenteredTriangleProjected ? CountModelMaterialTrianglePixels( OpacityOnePixels, CenteredTriangle ) : -1;
 			const int32 HalfOpacityPixels = bCenteredTriangleProjected ? CountModelMaterialTrianglePixels( OpacityHalfAlphaPixels, CenteredTriangle ) : -1;
+			const int32 OtherOpacityZeroRgbDifferences = bOtherTriangleProjected ? CountModelMaterialTriangleRgbDifferences( NativePixels, TransparentPixels, OtherTriangle ) : -1;
+			const int32 OtherOpacityOneRgbDifferences = bOtherTriangleProjected ? CountModelMaterialTriangleRgbDifferences( NativePixels, OpacityOnePixels, OtherTriangle ) : -1;
+			const int32 OtherOpacityHalfAddRgbDifferences = bOtherTriangleProjected ? CountModelMaterialTriangleRgbDifferences( NativePixels, OpacityHalfAddPixels, OtherTriangle ) : -1;
 			int32 BlendDifferences = 0;
 			if ( OpacityHalfAlphaPixels.Num() == 128 * 128 && OpacityHalfAddPixels.Num() == 128 * 128 ) for ( int32 Y = 0; Y < 128; ++Y ) for ( int32 X = 0; X < 128; ++X )
 			{
 				const int32 Index = Y * 128 + X;
 				if ( bCenteredTriangleProjected && IsModelMaterialPixelInsideTriangle( static_cast<float32>( X ) + 0.5f, static_cast<float32>( Y ) + 0.5f, CenteredTriangle, 1.5f ) && std::memcmp( &OpacityHalfAlphaPixels[Index], &OpacityHalfAddPixels[Index], sizeof( FColor32 ) ) != 0 ) ++BlendDifferences;
 			}
-			LOG( LogAssetSelfTest, Log, "model-material captures native=%d opacity0=%d op1=%d op0.5alpha=%d op0.5add=%d sibling=%d/%d prepare=%d selectedROI diff=%d native=%d opacity0=%d opacity1=%d opacity0.5=%d blendDiff=%d oldROI native=%d opacity0=%d", bNativeCaptured ? 1 : 0, bTransparentCaptured ? 1 : 0, bOpacityOneCaptured ? 1 : 0, bOpacityHalfAlphaCaptured ? 1 : 0, bOpacityHalfAddCaptured ? 1 : 0, bSiblingCaptured ? 1 : 0, SiblingDifferences, bPrepared ? 1 : 0, SelectedDifferences, NativeSelectedPixels, ZeroOpacityPixels, FullOpacityPixels, HalfOpacityPixels, BlendDifferences, CountModelMaterialVisiblePixels( NativePixels, 32, 32, 64, 96 ), CountModelMaterialVisiblePixels( TransparentPixels, 32, 32, 64, 96 ) );
+			LOG( LogAssetSelfTest, Log, "model-material captures native=%d opacity0=%d op1=%d op0.5alpha=%d op0.5add=%d sibling=%d/%d prepare=%d selectedROI diff=%d native=%d opacity0=%d opacity1=%d opacity0.5=%d blendDiff=%d otherMaterial=%d otherNative=%d RGB差分=%d/%d/%d", bNativeCaptured ? 1 : 0, bTransparentCaptured ? 1 : 0, bOpacityOneCaptured ? 1 : 0, bOpacityHalfAlphaCaptured ? 1 : 0, bOpacityHalfAddCaptured ? 1 : 0, bSiblingCaptured ? 1 : 0, SiblingDifferences, bPrepared ? 1 : 0, SelectedDifferences, NativeSelectedPixels, ZeroOpacityPixels, FullOpacityPixels, HalfOpacityPixels, BlendDifferences, OtherMaterialIndex, NativeOtherPixels, OtherOpacityZeroRgbDifferences, OtherOpacityOneRgbDifferences, OtherOpacityHalfAddRgbDifferences );
 			Checker.Check( bCenteredTriangleProjected && bNativeCaptured && !NativePixels.IsEmpty() && SelectedDifferences > 0 && NativeSelectedPixels > 0 && ZeroOpacityPixels == 0, "native fixtureに像がありOpacity 0の選択材質効果で対象triangleが透明になる" );
+			Checker.Check( bOtherTriangleProjected && NativeOtherPixels > 0 && bTransparentCaptured && bOpacityOneCaptured && bOpacityHalfAddCaptured && OtherOpacityZeroRgbDifferences == 0 && OtherOpacityOneRgbDifferences == 0 && OtherOpacityHalfAddRgbDifferences == 0, "同一effect個体の非対象材質はOpacity 0・1・half Addでもnative RGBを保つ" );
 			Checker.Check( bOpacityOneCaptured && bOpacityHalfAlphaCaptured && bOpacityHalfAddCaptured && FullOpacityPixels > 0 && HalfOpacityPixels > 0 && BlendDifferences > 0, "Opacity 1・0.5とAlpha・Addでselected triangleのpixel出力が変わる" );
+			TArray<FColor32> VisibilityBaselinePixels; // opacity 1で全材質が表示されたinstance基準
+			const bool bVisibilityBaselineCaptured = CaptureEffectVariant( 1.0f, EDrawBlend::Alpha, true, "visibility_baseline", VisibilityBaselinePixels );
+			const FModelMaterialVisibilitySnapshot VisibilityState( First->GetHandle(), SelectedMeshIndex, SelectedFrameIndex, SelectedFrameParent ); // visibilityを戻すinstance状態
+			const int32 SourceModelVisibleBeforeVisibility = MV1GetVisible( Model->GetHandle() ); // 元source model表示値
+			const int32 SourceMeshVisibleBeforeVisibility = MV1GetMeshVisible( Model->GetHandle(), SelectedMeshIndex ); // 元source mesh表示値
+			const int32 SourceCategoryVisibleBeforeVisibility = MV1GetMeshCategoryVisible( Model->GetHandle(), DX_MV1_MESHCATEGORY_NORMAL ); // 元source category表示値
+			// 個別visibilityを切って実画像と復元画像を比較する。
+			const auto CheckVisibilitySuppression = [&]( const char* Name, const char* HiddenName, const char* RestoredName, bool bApplicable, auto SetHidden )
+			{
+				TArray<FColor32> HiddenPixels; // visibilityを切ったeffect画素
+				TArray<FColor32> SiblingDuringPixels; // visibility切替中の兄弟native画素
+				TArray<FColor32> SourceDuringPixels; // visibility切替中のsource native画素
+				TArray<FColor32> RestoredPixels; // 元状態へ戻したeffect画素
+				const int32 SetResult = bApplicable ? SetHidden() : -1; // visibility setterの結果コード
+				const bool bHiddenCaptured = SetResult >= 0 && DrawPixels( FirstAnimator, CenteredWorld, HiddenPixels, HiddenName ); // hidden状態のeffect capture成否
+				const int32 HiddenTrianglePixels = bCenteredTriangleProjected && bHiddenCaptured ? CountModelMaterialTrianglePixels( HiddenPixels, CenteredTriangle ) : -1; // hidden状態で残った対象pixel数
+				const bool bSiblingDuringCaptured = SetResult >= 0 && DrawPixels( SiblingAnimator, CenteredWorld, SiblingDuringPixels, "sibling_visibility_during" ); // siblingの同時capture成否
+				const bool bSourceDuringCaptured = SetResult >= 0 && DrawSourcePixels( CenteredWorld, SourceDuringPixels, "source_visibility_during" ); // sourceの同時capture成否
+				const int32 SiblingDuringDifferences = bSiblingDuringCaptured ? CountModelMaterialPixelDifferences( SiblingPixelsBefore, SiblingDuringPixels ) : -1; // sibling baselineとの差分数
+				const int32 SourceDuringDifferences = bSourceDuringCaptured ? CountModelMaterialPixelDifferences( SourcePixelsBefore, SourceDuringPixels ) : -1; // source baselineとの差分数
+				const bool bRestored = VisibilityState.Restore(); // 全visibilityを保存値へ戻した結果
+				const bool bRestoredCaptured = bVisibilityBaselineCaptured && DrawPixels( FirstAnimator, CenteredWorld, RestoredPixels, RestoredName ); // 復元状態のcapture成否
+				const int32 RestoredDifferences = bRestoredCaptured ? CountModelMaterialPixelDifferences( VisibilityBaselinePixels, RestoredPixels ) : -1; // 復元画像との全差分数
+				LOG( LogAssetSelfTest, Log, "材質visibility試験: %s setter=%d hiddenCapture=%d hiddenPixels=%d sourceDiff=%d siblingDiff=%d restore=%d restoredCapture=%d restoredDiff=%d", Name, SetResult, bHiddenCaptured ? 1 : 0, HiddenTrianglePixels, SourceDuringDifferences, SiblingDuringDifferences, bRestored ? 1 : 0, bRestoredCaptured ? 1 : 0, RestoredDifferences );
+				Checker.Check( VisibilityState.bValid && bVisibilityBaselineCaptured && SetResult >= 0 && bHiddenCaptured && HiddenTrianglePixels == 0 && bSiblingDuringCaptured && SiblingDuringDifferences == 0 && bSourceDuringCaptured && SourceDuringDifferences == 0 && bRestored && bRestoredCaptured && RestoredDifferences == 0, "native visibility切替は対象材質だけを隠しsource・Siblingを保って復元する (%s)", Name );
+			};
+			Checker.Check( VisibilityState.bValid && SelectedFrameParent >= 0, "visibility試験fixtureは有効なmodel・mesh・frame・parentを持つ" );
+			CheckVisibilitySuppression( "model", "model_hidden", "model_restored", VisibilityState.bValid, [&]() { return MV1SetVisible( First->GetHandle(), FALSE ); } );
+			CheckVisibilitySuppression( "mesh", "mesh_hidden", "mesh_restored", VisibilityState.bValid, [&]() { return MV1SetMeshVisible( First->GetHandle(), SelectedMeshIndex, FALSE ); } );
+			CheckVisibilitySuppression( "frame", "frame_hidden", "frame_restored", VisibilityState.bValid, [&]() { return MV1SetFrameVisible( First->GetHandle(), SelectedFrameIndex, FALSE ); } );
+			CheckVisibilitySuppression( "parent frame", "parent_hidden", "parent_restored", VisibilityState.bValid && SelectedFrameParent >= 0, [&]() { return MV1SetFrameVisible( First->GetHandle(), SelectedFrameParent, FALSE ); } );
+			CheckVisibilitySuppression( "normal category", "category_hidden", "category_restored", VisibilityState.bValid, [&]() { return MV1SetMeshCategoryVisible( First->GetHandle(), DX_MV1_MESHCATEGORY_NORMAL, FALSE ); } );
+			TArray<FColor32> SiblingPixelsAfterVisibility; // visibility切替後の別個体画像
+			const bool bSiblingAfterVisibilityCaptured = DrawPixels( SiblingAnimator, CenteredWorld, SiblingPixelsAfterVisibility, "sibling_after_visibility" ); // 全切替後のsibling capture成否
+			const bool bSourceVisibilityUnchanged = MV1GetVisible( Model->GetHandle() ) == SourceModelVisibleBeforeVisibility && MV1GetMeshVisible( Model->GetHandle(), SelectedMeshIndex ) == SourceMeshVisibleBeforeVisibility && MV1GetMeshCategoryVisible( Model->GetHandle(), DX_MV1_MESHCATEGORY_NORMAL ) == SourceCategoryVisibleBeforeVisibility; // sourceの元表示値維持
+			Checker.Check( bSiblingCaptured && bSiblingAfterVisibilityCaptured && CountModelMaterialPixelDifferences( SiblingPixelsBefore, SiblingPixelsAfterVisibility ) == 0 && bSourceVisibilityUnchanged, "visibility切替はsourceと別instanceへ漏れずSibling画素も維持する" );
+			const int32 FirstNativeCullBefore = MV1GetMeshBackCulling( First->GetHandle(), SelectedMeshIndex ); // effect個体の元native culling
+			const int32 SourceNativeCullBefore = MV1GetMeshBackCulling( Model->GetHandle(), SelectedMeshIndex ); // sourceの元native culling
+			const int32 SiblingNativeCullBefore = MV1GetMeshBackCulling( Sibling->GetHandle(), SelectedMeshIndex ); // siblingの元native culling
+			const int32 GlobalNativeCullBefore = GetUseBackCulling(); // 描画全体へ設定された裏面判定
+			const int32 CullModes[3] = { DX_CULLING_LEFT, DX_CULLING_RIGHT, DX_CULLING_NONE }; // 比較するnative mesh culling値
+			int32 CullSilhouetteMismatches = 0; // nativeと片面effectで違ったsilhouette数
+			int32 TwoSidedMissingPixels = 0; // 両面effectで消えたpositive pixel数
+			int32 NativeFrontPixels = 0; // 正面cameraでnative表示された最大pixel数
+			int32 NativeBackPixels = 0; // 背面cameraでnative表示された最大pixel数
+			bool bCullCapturesValid = VisibilityState.bValid && FirstNativeCullBefore >= 0 && SourceNativeCullBefore >= 0 && SiblingNativeCullBefore >= 0; // culling試験の事前状態が有効か
+			// three handleに設定したnative cullingを各々の元値へ戻す。
+			const auto RestoreNativeCull = [&]()
+			{
+				const bool bFirstSet = MV1SetMeshBackCulling( First->GetHandle(), SelectedMeshIndex, FirstNativeCullBefore ) >= 0;
+				const bool bSourceSet = MV1SetMeshBackCulling( Model->GetHandle(), SelectedMeshIndex, SourceNativeCullBefore ) >= 0;
+				const bool bSiblingSet = MV1SetMeshBackCulling( Sibling->GetHandle(), SelectedMeshIndex, SiblingNativeCullBefore ) >= 0;
+				return bFirstSet && bSourceSet && bSiblingSet && MV1GetMeshBackCulling( First->GetHandle(), SelectedMeshIndex ) == FirstNativeCullBefore && MV1GetMeshBackCulling( Model->GetHandle(), SelectedMeshIndex ) == SourceNativeCullBefore && MV1GetMeshBackCulling( Sibling->GetHandle(), SelectedMeshIndex ) == SiblingNativeCullBefore;
+			};
+			for ( int32 CullIndex = 0; CullIndex < 3; ++CullIndex )
+			{
+				const int32 SetCullResult = MV1SetMeshBackCulling( First->GetHandle(), SelectedMeshIndex, CullModes[CullIndex] ); // 今回試すnative mesh cullingの設定結果
+				bCullCapturesValid = bCullCapturesValid && SetCullResult >= 0;
+				for ( int32 SideIndex = 0; SideIndex < 2; ++SideIndex )
+				{
+					SetCameraPositionAndTarget_UpVecY( VGet( 2.0f, 1.0f, SideIndex == 0 ? 10.0f : -10.0f ), VGet( 2.0f, 1.0f, 0.0f ) );
+					FModelMaterialTriangleProjection CullTriangle; // 現cameraでnativeとeffectを比べる投影範囲
+					const bool bCullProjected = Surface.IsValid() && ProjectModelMaterialTriangle( Surface->GetData(), MaterialIndex, SelectedMeshIndex, CenteredWorld, CullTriangle ); // 現cameraのtriangle投影結果
+					TArray<FColor32> CullNativePixels; // 対応cullingのnative pixel基準
+					TArray<FColor32> CullOneSidedPixels; // 対応cullingの片面効果画素
+					TArray<FColor32> CullTwoSidedPixels; // 対応cullingの両面効果画素
+					const bool bCullNativeCaptured = DrawPixels( PlainAnimator, CenteredWorld, CullNativePixels, "native_culling" ); // native meshの画素取得結果
+					const bool bCullOneSidedCaptured = CaptureEffectVariant( 1.0f, EDrawBlend::Alpha, false, "effect_one_sided_culling", CullOneSidedPixels ); // 片面effectの画素取得結果
+					const bool bCullTwoSidedCaptured = CaptureEffectVariant( 1.0f, EDrawBlend::Alpha, true, "effect_two_sided_culling", CullTwoSidedPixels ); // 両面effectの画素取得結果
+					const int32 CullNativeVisible = bCullProjected && bCullNativeCaptured ? CountModelMaterialTrianglePixels( CullNativePixels, CullTriangle ) : -1; // native triangleの表示数
+					const int32 CullOneSidedVisible = bCullProjected && bCullOneSidedCaptured ? CountModelMaterialTrianglePixels( CullOneSidedPixels, CullTriangle ) : -1; // 片面effectの表示数
+					const int32 CullTwoSidedVisible = bCullProjected && bCullTwoSidedCaptured ? CountModelMaterialTrianglePixels( CullTwoSidedPixels, CullTriangle ) : -1; // 両面effectの表示数
+					const int32 CullSilhouetteDifference = bCullProjected && bCullNativeCaptured && bCullOneSidedCaptured ? CountModelMaterialTriangleSilhouetteDifferences( CullNativePixels, CullOneSidedPixels, CullTriangle ) : -1; // nativeと片面effectのsilhouette差
+					LOG( LogAssetSelfTest, Log, "材質culling試験: meshCull=%d cameraSide=%s 投影=%d nativeCapture=%d nativePixels=%d oneSidedCapture=%d oneSidedPixels=%d silhouetteDiff=%d twoSidedCapture=%d twoSidedPixels=%d globalCull=%d", CullModes[CullIndex], SideIndex == 0 ? "正面" : "背面", bCullProjected ? 1 : 0, bCullNativeCaptured ? 1 : 0, CullNativeVisible, bCullOneSidedCaptured ? 1 : 0, CullOneSidedVisible, CullSilhouetteDifference, bCullTwoSidedCaptured ? 1 : 0, CullTwoSidedVisible, GetUseBackCulling() );
+				bCullCapturesValid = bCullCapturesValid && bCullProjected && bCullNativeCaptured && bCullOneSidedCaptured && bCullTwoSidedCaptured && CullNativeVisible >= 0 && CullOneSidedVisible >= 0 && CullTwoSidedVisible > 0 && CullSilhouetteDifference == 0 && GetUseBackCulling() == GlobalNativeCullBefore;
+				CullSilhouetteMismatches += CullSilhouetteDifference < 0 ? 1 : CullSilhouetteDifference;
+				if ( CullTwoSidedVisible <= 0 ) ++TwoSidedMissingPixels;
+				if ( SideIndex == 0 ) NativeFrontPixels += std::max( CullNativeVisible, 0 ); else NativeBackPixels += std::max( CullNativeVisible, 0 );
+			}
+			if ( !RestoreNativeCull() ) bCullCapturesValid = false;
+			SetCameraPositionAndTarget_UpVecY( VGet( 2.0f, 1.0f, 10.0f ), VGet( 2.0f, 1.0f, 0.0f ) );
+			const bool bCullStateRestored = RestoreNativeCull() && GetUseBackCulling() == GlobalNativeCullBefore; // source・instance・global設定の復元結果
+			TArray<FColor32> NativePixelsAfterCull; // culling設定復元後のnative positive image
+			TArray<FColor32> SiblingPixelsAfterCull; // culling設定復元後の兄弟native image
+			TArray<FColor32> SourcePixelsAfterCull; // culling設定復元後のsource native image
+			const bool bNativeAfterCullCaptured = DrawPixels( PlainAnimator, CenteredWorld, NativePixelsAfterCull, "native_culling_restored" ); // 元instanceのnative再取得結果
+			const bool bSiblingAfterCullCaptured = DrawPixels( SiblingAnimator, CenteredWorld, SiblingPixelsAfterCull, "sibling_culling_restored" ); // sibling再取得結果
+			const bool bSourceAfterCullCaptured = DrawSourcePixels( CenteredWorld, SourcePixelsAfterCull, "source_culling_restored" ); // source再取得結果
+			const bool bCullPixelsRestored = bNativeCaptured && bNativeAfterCullCaptured && CountModelMaterialPixelDifferences( NativePixels, NativePixelsAfterCull ) == 0 && bSiblingCaptured && bSiblingAfterCullCaptured && CountModelMaterialPixelDifferences( SiblingPixelsBefore, SiblingPixelsAfterCull ) == 0 && bSourceCaptured && bSourceAfterCullCaptured && CountModelMaterialPixelDifferences( SourcePixelsBefore, SourcePixelsAfterCull ) == 0; // three native imageの復元一致
+			Checker.Check( bCullCapturesValid && CullSilhouetteMismatches == 0 && TwoSidedMissingPixels == 0 && NativeFrontPixels > 0 && NativeBackPixels > 0 && bCullStateRestored && bCullPixelsRestored, "LEFT・RIGHT・NONEでnativeと片面effectのculling領域が一致し、両面effectは前後cameraへ表示して設定とnative画像を戻す" );
+			FDrawBuffer ValidEffectBuffer; // executorへ渡す既知の有効fixed command
+			FDrawContext ValidEffectDraw( ValidEffectBuffer ); // 有効なeffect命令を記録するcontext
+			FirstAnimator.Record( ValidEffectDraw, CenteredWorld );
+			const bool bValidEffectCommand = CountModelMaterialCommands( ValidEffectBuffer, EDrawCommand::ModelMaterial3D ) == 1 && ValidEffectBuffer.Words.size() == 41; // 既知有効命令の個数と長さ
+			const int32 MatrixVisibleBeforeMalformed = MV1GetVisible( First->GetHandle() ); // malformed試験前model表示
+			const int32 MeshVisibleBeforeMalformed = MV1GetMeshVisible( First->GetHandle(), SelectedMeshIndex ); // malformed試験前mesh表示
+			const int32 CullBeforeMalformed = MV1GetMeshBackCulling( First->GetHandle(), SelectedMeshIndex ); // malformed試験前mesh裏面設定
+			const MATRIX ModelMatrixBeforeMalformed = MV1GetMatrix( First->GetHandle() ); // malformed試験前instance行列
+			MATRIX WorldMatrixBeforeMalformed{}; // malformed試験前描画world行列
+			GetTransformToWorldMatrix( &WorldMatrixBeforeMalformed );
+			int32 BlendBeforeMalformed = DX_BLENDMODE_NOBLEND; // malformed試験前blend方式
+			int32 BlendParamBeforeMalformed = 0; // malformed試験前blend強度
+			GetDrawBlendMode( &BlendBeforeMalformed, &BlendParamBeforeMalformed );
+			// 直接executorへ渡した不正commandの後にscreenを読む。
+			const auto CaptureMalformedCommand = [&]( const FDrawBuffer& Buffer, TArray<FColor32>& Pixels )
+			{
+				if ( Buffer.Words.empty() ) return false;
+				SetDrawScreen( Screen ); SetDrawAreaFull(); ClearDrawScreen();
+				Executor.Execute( FDrawSpan{ Buffer.Words.data(), static_cast<int32>( Buffer.Words.size() ) } );
+				RenderVertex();
+				return CaptureModelMaterialPixels( Screen, Soft, Pixels );
+			};
+			FDrawBuffer TrailingWordBuffer = ValidEffectBuffer; // 不正な追加word付きcommand
+			bool bTrailingHeaderChanged = false; // 余分なwordをheader長へ含めたか
+			if ( !TrailingWordBuffer.Words.empty() )
+			{
+				const uint32 OriginalHeader = TrailingWordBuffer.Words[0]; // 元command flagsを残すheader
+				TrailingWordBuffer.Words[0] = NDrawCommand::MakeHeader( EDrawCommand::ModelMaterial3D, static_cast<uint8>( ( OriginalHeader >> 8 ) & 0xFFu ), 42 );
+				TrailingWordBuffer.Words.push_back( 0xDEADBEEFu );
+				bTrailingHeaderChanged = true;
+			}
+			TArray<FColor32> TrailingWordPixels; // 余分なwordを拒否した後の画面
+			const bool bTrailingWordCaptured = CaptureMalformedCommand( TrailingWordBuffer, TrailingWordPixels ); // 余分なword commandの描画後capture成否
+			FDrawBuffer NonFinitePayloadBuffer = ValidEffectBuffer; // matrixへNaNを含むcommand
+			bool bNonFinitePayloadChanged = false; // 非有限値をpayloadへ格納したか
+			if ( NonFinitePayloadBuffer.Words.size() == 41 )
+			{
+				FDrawModelMaterialData InvalidData{}; // 直接executorへ渡す不正payload
+				std::memcpy( &InvalidData, NonFinitePayloadBuffer.Words.data() + 1, sizeof( InvalidData ) );
+				InvalidData.M[0] = std::numeric_limits<float32>::quiet_NaN();
+				std::memcpy( NonFinitePayloadBuffer.Words.data() + 1, &InvalidData, sizeof( InvalidData ) );
+				bNonFinitePayloadChanged = true;
+			}
+			TArray<FColor32> NonFinitePixels; // NaN payloadを拒否した後の画面
+			const bool bNonFiniteCaptured = CaptureMalformedCommand( NonFinitePayloadBuffer, NonFinitePixels ); // 非有限payloadの描画後capture成否
+			MATRIX WorldMatrixAfterMalformed{}; // malformed実行後の描画world行列
+			GetTransformToWorldMatrix( &WorldMatrixAfterMalformed );
+			const MATRIX ModelMatrixAfterMalformed = MV1GetMatrix( First->GetHandle() ); // malformed実行後のinstance行列
+			int32 BlendAfterMalformed = DX_BLENDMODE_NOBLEND; // malformed実行後blend方式
+			int32 BlendParamAfterMalformed = 0; // malformed実行後blend強度
+			GetDrawBlendMode( &BlendAfterMalformed, &BlendParamAfterMalformed );
+			const bool bMalformedStateUnchanged = MV1GetVisible( First->GetHandle() ) == MatrixVisibleBeforeMalformed && MV1GetMeshVisible( First->GetHandle(), SelectedMeshIndex ) == MeshVisibleBeforeMalformed && MV1GetMeshBackCulling( First->GetHandle(), SelectedMeshIndex ) == CullBeforeMalformed && std::memcmp( &ModelMatrixAfterMalformed, &ModelMatrixBeforeMalformed, sizeof( MATRIX ) ) == 0 && std::memcmp( &WorldMatrixAfterMalformed, &WorldMatrixBeforeMalformed, sizeof( MATRIX ) ) == 0 && BlendAfterMalformed == BlendBeforeMalformed && BlendParamAfterMalformed == BlendParamBeforeMalformed && GetUseBackCulling() == GlobalNativeCullBefore;
+			const int32 TrailingWordVisiblePixels = bTrailingWordCaptured ? CountModelMaterialVisiblePixels( TrailingWordPixels, 0, 0, 128, 128 ) : -1;
+			const int32 NonFiniteVisiblePixels = bNonFiniteCaptured ? CountModelMaterialVisiblePixels( NonFinitePixels, 0, 0, 128, 128 ) : -1;
+			LOG( LogAssetSelfTest, Log, "材質不正command試験: validControl=%d trailing=%d header=%d trailingVisible=%d nonfinite=%d payload=%d nonfiniteVisible=%d stateRestored=%d", bValidEffectCommand ? 1 : 0, bTrailingWordCaptured ? 1 : 0, bTrailingHeaderChanged ? 1 : 0, TrailingWordVisiblePixels, bNonFiniteCaptured ? 1 : 0, bNonFinitePayloadChanged ? 1 : 0, NonFiniteVisiblePixels, bMalformedStateUnchanged ? 1 : 0 );
+			Checker.Check( bValidEffectCommand && bOpacityOneCaptured && FullOpacityPixels > 0, "不正command試験の前に有効なModelMaterial命令が実triangleを描く" );
+			Checker.Check( bTrailingHeaderChanged && bTrailingWordCaptured && TrailingWordVisiblePixels == 0 && bMalformedStateUnchanged, "fixed payload末尾にwordを足したcommandは描画せずnative状態を保つ" );
+			Checker.Check( bNonFinitePayloadChanged && bNonFiniteCaptured && NonFiniteVisiblePixels == 0 && bMalformedStateUnchanged, "NaN行列payloadを直接executorへ渡しても描画せずnative状態を保つ" );
 			Checker.Check( bPrepared && FirstAnimator.GetMaterialEffect().IsPrepared() && AfterPrepare.NumModelHandles == BeforePrepare.NumModelHandles && AfterPrepare.NumTextureHandles >= BeforePrepare.NumTextureHandles, "実Model material準備はnative modelを複製せず効果資源を保持する" );
 			Checker.Check( bSiblingCaptured && SiblingDifferences == 0, "別個体はeffect準備・描画後もnative画素を保つ" );
 				FirstAnimator.ClearMaterialEffect();
@@ -729,7 +990,6 @@ namespace NAssetTest
 				FModelMaterialTriangleProjection LaterTriangle; // 後続effect drawの実投影範囲
 				const bool bEarlierProjected = Surface.IsValid() && ProjectModelMaterialTriangle( Surface->GetData(), MaterialIndex, SelectedMeshIndex, EarlierWorld, EarlierTriangle );
 				const bool bLaterProjected = Surface.IsValid() && ProjectModelMaterialTriangle( Surface->GetData(), MaterialIndex, SelectedMeshIndex, LaterWorld, LaterTriangle );
-				FModelAnimator PlainAnimator( First ); // effect準備なしで同じinstanceをnative描画する値
 				TArray<FColor32> EarlierNativePixels; // 先行native位置だけのpositive image
 				TArray<FColor32> LaterNativePixels; // 後続effect位置のnative positive image
 				const bool bEarlierNativeCaptured = DrawPixels( PlainAnimator, EarlierWorld, EarlierNativePixels, "same_instance_earlier_native" );
@@ -753,12 +1013,46 @@ namespace NAssetTest
 				Checker.Check( bEarlierNativeCaptured && bLaterNativeCaptured && bEarlierProjected && bLaterProjected && bSequenceHasBothCommands && bSequenceCaptured && EarlierExpectedPixels > 0 && EarlierSequencePixels == EarlierExpectedPixels && LaterExpectedPixels > 0 && LaterTransparentPixels == 0, "native同instance先行drawはflush後も残り、後続Opacity 0の選択材質は実native領域から消える" );
 			}
 			// model packed drawを有効にした別sourceでも同じnative・effect・stop経路を確認する。
-			FModelAnimator PackOnAnimator( PackOnInstance );
-			TArray<FColor32> PackOnNativePixels;
-			TArray<FColor32> PackOnEffectPixels;
-			const bool bPackOnNativeCaptured = DrawPixels( PackOnAnimator, CenteredWorld, PackOnNativePixels, "pack_on_native" );
-			const bool bPackOnPrepared = PackOnAnimator.PrepareMaterialEffect( MaterialIndex, Definition, [&]( const FString& Path ) { return Assets.LoadTexture( Path ); }, Executor, true );
-			const bool bPackOnEffectCaptured = DrawPixels( PackOnAnimator, CenteredWorld, PackOnEffectPixels, "pack_on_effect" );
+			FModelAnimator PackOnAnimator( PackOnInstance ); // pack ON instanceのeffect playback
+			FModelAnimator PackOnPlainAnimator( PackOnInstance ); // pack ON instanceのnative positive control
+			TArray<FColor32> PackOnNativePixels; // pack ON effect前のnative image
+			TArray<FColor32> PackOnEffectPixels; // pack ON effect中のimage
+			const bool bPackOnNativeCaptured = DrawPixels( PackOnPlainAnimator, CenteredWorld, PackOnNativePixels, "pack_on_native" ); // pack ON native capture成否
+			const bool bPackOnPrepared = PackOnAnimator.PrepareMaterialEffect( MaterialIndex, Definition, [&]( const FString& Path ) { return Assets.LoadTexture( Path ); }, Executor, true ); // pack ON effect準備成否
+			const bool bPackOnEffectCaptured = DrawPixels( PackOnAnimator, CenteredWorld, PackOnEffectPixels, "pack_on_effect" ); // pack ON effect capture成否
+			if ( bPackOnPrepared )
+			{
+				FMatrix4x4 PackEarlierWorld = CenteredWorld; // 先行native描画を左へ置く行列
+				PackEarlierWorld.m[3][0] = -4.0f;
+				FMatrix4x4 PackLaterWorld = CenteredWorld; // 後続effect描画を右へ置く行列
+				PackLaterWorld.m[3][0] = 2.0f;
+				FModelMaterialTriangleProjection PackEarlierTriangle; // 先行native三角形の実ROI
+				FModelMaterialTriangleProjection PackLaterTriangle; // 後続effect三角形の実ROI
+				const bool bPackEarlierProjected = Surface.IsValid() && ProjectModelMaterialTriangle( Surface->GetData(), MaterialIndex, SelectedMeshIndex, PackEarlierWorld, PackEarlierTriangle ); // 先行位置のROI投影結果
+				const bool bPackLaterProjected = Surface.IsValid() && ProjectModelMaterialTriangle( Surface->GetData(), MaterialIndex, SelectedMeshIndex, PackLaterWorld, PackLaterTriangle ); // 後続位置のROI投影結果
+				TArray<FColor32> PackEarlierNativePixels; // 先行位置単独のnative positive control
+				TArray<FColor32> PackLaterNativePixels; // 後続位置単独のnative positive control
+				const bool bPackEarlierNativeCaptured = DrawPixels( PackOnPlainAnimator, PackEarlierWorld, PackEarlierNativePixels, "pack_on_earlier_native" ); // 先行native画素のcapture成否
+				const bool bPackLaterNativeCaptured = DrawPixels( PackOnPlainAnimator, PackLaterWorld, PackLaterNativePixels, "pack_on_later_native" ); // 後続native画素のcapture成否
+				PackOnAnimator.GetMaterialEffect().Restart();
+				FDrawBuffer PackSequence; // pack ON instanceへの連続native/effect command
+				FDrawContext PackSequenceDraw( PackSequence );
+				PackOnPlainAnimator.Record( PackSequenceDraw, PackEarlierWorld );
+				PackOnAnimator.Record( PackSequenceDraw, PackLaterWorld );
+				SetDrawScreen( Screen ); SetDrawAreaFull(); ClearDrawScreen();
+				const bool bPackSequenceHasBothCommands = CountModelMaterialCommands( PackSequence, EDrawCommand::Model3D ) == 1 && CountModelMaterialCommands( PackSequence, EDrawCommand::ModelMaterial3D ) == 1; // 両方のcommandが一件ずつあるか
+				if ( !PackSequence.Words.empty() ) Executor.Execute( FDrawSpan{ PackSequence.Words.data(), static_cast<int32>( PackSequence.Words.size() ) } );
+				RenderVertex();
+				TArray<FColor32> PackSequencePixels; // 連続描画後の合成画素
+				const bool bPackSequenceCaptured = CaptureModelMaterialPixels( Screen, Soft, PackSequencePixels ); // 連続描画後のcapture成否
+				if ( bPackSequenceCaptured ) SaveModelMaterialDiagnosticPng( "pack_on_same_instance_sequence" );
+				const int32 PackEarlierExpectedPixels = bPackEarlierProjected && bPackEarlierNativeCaptured ? CountModelMaterialTrianglePixels( PackEarlierNativePixels, PackEarlierTriangle ) : -1; // 先行native領域のpositive画素数
+				const int32 PackEarlierSequencePixels = bPackEarlierProjected && bPackSequenceCaptured ? CountModelMaterialTrianglePixels( PackSequencePixels, PackEarlierTriangle ) : -1; // 連続描画後に先行位置へ残った画素数
+				const int32 PackLaterExpectedPixels = bPackLaterProjected && bPackLaterNativeCaptured ? CountModelMaterialTrianglePixels( PackLaterNativePixels, PackLaterTriangle ) : -1; // 後続native領域のpositive画素数
+				const int32 PackLaterSequencePixels = bPackLaterProjected && bPackSequenceCaptured ? CountModelMaterialTrianglePixels( PackSequencePixels, PackLaterTriangle ) : -1; // 連続描画後に後続位置へ残った画素数
+				LOG( LogAssetSelfTest, Log, "材質pack連続試験: nativeCommand=%d effectCommand=%d capture=%d 先行ROI=%d/%d 後続ROI=%d/%d", CountModelMaterialCommands( PackSequence, EDrawCommand::Model3D ), CountModelMaterialCommands( PackSequence, EDrawCommand::ModelMaterial3D ), bPackSequenceCaptured ? 1 : 0, PackEarlierExpectedPixels, PackEarlierSequencePixels, PackLaterExpectedPixels, PackLaterSequencePixels );
+				Checker.Check( bPackEarlierProjected && bPackLaterProjected && bPackEarlierNativeCaptured && bPackLaterNativeCaptured && bPackSequenceHasBothCommands && bPackSequenceCaptured && PackEarlierExpectedPixels > 0 && PackEarlierSequencePixels == PackEarlierExpectedPixels && PackLaterExpectedPixels > 0 && PackLaterSequencePixels == 0, "pack ON同一instanceの先行native像を保ち、後続Opacity 0像だけを消す" );
+			}
 			PackOnAnimator.GetMaterialEffect().Stop();
 			TArray<FColor32> PackOnStoppedPixels;
 			const bool bPackOnStoppedCaptured = DrawPixels( PackOnAnimator, CenteredWorld, PackOnStoppedPixels, "pack_on_stopped" );

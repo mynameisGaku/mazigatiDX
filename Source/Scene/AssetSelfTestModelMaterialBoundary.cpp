@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits>
 #include <thread>
+#include <vector>
 
 #include "AssetSelfTestSupport.h"
 #include "Library/Core/Interfaces/Render/DrawModelMaterial.h"
@@ -281,7 +282,15 @@ namespace NAssetTest
 		// commandのfloat32 noise Vへ丸める独立期待値。
 		const float32 ExpectedPayloadNoiseV = static_cast<float32>( ExpectedBoundaryUVPhase( RendererDefinition.Material.Distortion.UVScroll.y, 10000.375f ) );
 		const bool bRendererClockAndScroll = bRecordHandled && bPayloadFound && std::abs( Renderer.GetEffectTime() - 0.375 ) < 1.0e-8 && std::abs( Payload.Material.UVOffset[0] - 0.09375f ) < 1.0e-6f && std::abs( Payload.Material.UVOffset[1] - 0.953125f ) < 1.0e-6f && std::abs( Payload.Material.DistortionUVOffset[0] - 0.140625f ) < 1.0e-6f && Payload.Material.DistortionUVOffset[1] == ExpectedPayloadNoiseV;
-		Checker.Check( bFixtureWritten && bPrepared && Instance.IsValid() && bRendererClockAndScroll && TextureLoaderCalls == 0 && Fake.NumStaticModelSurfaceQueries == QueriesBeforePrepare + 1 && Fake.NumModelMaterialGeometryCreates == CreatesBeforePrepare + 1 && Fake.ModelMaterialGeometries.size() == GeometryCountBeforePrepare + 1, "描画命令は大delta後のloop時刻と独立UV位相を持ち、借用画像を再読込しない" );
+		Checker.Check( bFixtureWritten && bPrepared && Instance.IsValid() && bRendererClockAndScroll && Buffer.Words.size() == 41 && TextureLoaderCalls == 0 && Fake.NumStaticModelSurfaceQueries == QueriesBeforePrepare + 1 && Fake.NumModelMaterialGeometryCreates == CreatesBeforePrepare + 1 && Fake.ModelMaterialGeometries.size() == GeometryCountBeforePrepare + 1, "描画命令は大delta後のloop時刻と独立UV位相を持ち、借用画像を再読込しない" );
+
+		// 無効handleの境界Recordが既存命令列を変更しないことを調べる。
+		TSharedPtr<CModelInstance> InvalidHandleInstance = MakeShared<CModelInstance>( Model, NAsset::InvalidHandle );
+		const std::vector<uint32> WordsBeforeInvalidRecord = Buffer.Words;
+		const bool bInvalidHandleHandled = Renderer.Record( Draw, InvalidHandleInstance, FMatrix4x4::Identity );
+		const bool bInvalidRecordPreservedBuffer = Buffer.Words == WordsBeforeInvalidRecord;
+		Checker.Check( !bInvalidHandleHandled && bInvalidRecordPreservedBuffer, "無効instance handleはnative fallbackへ戻し、既存draw bufferを保つ" );
+		InvalidHandleInstance.Reset();
 
 		// 最後のeffect ownerだけをworkerで外すための共有参照とhandle。
 		FModelMaterialEffectRenderer LastRenderer = Renderer;
