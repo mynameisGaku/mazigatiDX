@@ -8,6 +8,7 @@
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Core/Interfaces/Render/DrawDistortedMaterialQuad.h"
 #include "Library/Core/Interfaces/Render/DrawDistortedMaterialRibbon.h"
+#include "Library/Core/Interfaces/Render/DrawModelMaterial.h"
 #include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
 #include "Library/Core/Interfaces/Render/DrawMaterialQuad.h"
 #include "Library/Core/Interfaces/Render/DrawMaterialRibbon.h"
@@ -272,6 +273,9 @@ public:
 	// Indices: NumIndices個以上の有効な型付きindex配列。nullなら何も追加しない。
 	// bUseRegularCulling: falseならnative設定を保ち、trueなら通常meshの裏面除去設定を使う。
 	void MaterialMesh3D( const FDrawMaterialMeshData& Data, const FMeshVertex* Vertices, const uint32* Indices, bool bUseRegularCulling = false );
+
+	// 一材質だけを効果描画し、残りのModel面は実行側のnative経路へ任せる固定命令を記録する。
+	bool ModelMaterial( const FDrawModelMaterialData& Data );
 
 	// 頂点バッファ・インデックスバッファの三角形（編集メッシュ）。各項目は FDrawMeshData を参照。World がローカル -> ワールドの変換行列
 	FORCEINLINE void Mesh3D( int32 VertexBuffer, int32 IndexBuffer, int32 NumVertices, int32 StartIndex, int32 NumIndices, int32 Texture, const FMatrix4x4& World, bool bTwoSided )

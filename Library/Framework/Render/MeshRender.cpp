@@ -11,14 +11,6 @@ namespace
 {
 	using EPlaybackState = FMeshDrawBatch::EEffectPlaybackState;
 
-	// 一周期内へ負数も含めて折り返し、UVの小数位相を有限値で返す。
-	float64 WrapMeshUVPhase( float64 Phase, float64 Delta )
-	{
-		float64 Wrapped = std::fmod( Phase + std::fmod( Delta, 1.0 ), 1.0 );
-		if ( Wrapped < 0.0 ) Wrapped += 1.0;
-		return Wrapped;
-	}
-
 	// 元法線を逆スケール後に回転し、つぶれた軸を安全に0として扱う。
 	FVector3 TransformMeshNormal( const FVector3& Normal, const FTransform& World )
 	{
@@ -96,34 +88,14 @@ namespace
 		return true;
 	}
 
-	// loopなら有界のDuration内、one-shotなら終端までの進行秒を返す。
-	float64 AdvanceCurveTime( FMeshDrawBatch& Batch, float64 DeltaTime, float64 Duration )
-	{
-		if ( Batch.EffectResources->Definition.bLoop )
-		{
-			Batch.EffectTimeSeconds = std::fmod( Batch.EffectTimeSeconds + std::fmod( DeltaTime, Duration ), Duration );
-			return DeltaTime;
-		}
-		const float64 Applied = std::min( DeltaTime, std::max( 0.0, Duration - Batch.EffectTimeSeconds ) );
-		Batch.EffectTimeSeconds += Applied;
-		if ( Batch.EffectTimeSeconds >= Duration ) Batch.EffectState = EPlaybackState::Finished;
-		return Applied;
-	}
 }
 
 void FMeshRenderer::Update( float32 DeltaTime )
 {
-	if ( !std::isfinite( DeltaTime ) || DeltaTime <= 0.0f ) return;
-	const float64 SafeDelta = static_cast<float64>( DeltaTime );
 	for ( FMeshDrawBatch& Batch : Batches )
 	{
-		if ( Batch.EffectState != EPlaybackState::Playing || !Batch.EffectResources.IsValid() ) continue;
-		const float64 Duration = Batch.EffectResources->Definition.Duration;
-		const float64 Applied = AdvanceCurveTime( Batch, SafeDelta, Duration );
-		Batch.EffectUVOffset[0] = WrapMeshUVPhase( Batch.EffectUVOffset[0], Applied * Batch.EffectResources->Definition.Material.UVScroll.x );
-		Batch.EffectUVOffset[1] = WrapMeshUVPhase( Batch.EffectUVOffset[1], Applied * Batch.EffectResources->Definition.Material.UVScroll.y );
-		Batch.DistortionUVOffset[0] = WrapMeshUVPhase( Batch.DistortionUVOffset[0], Applied * Batch.EffectResources->Definition.Material.Distortion.UVScroll.x );
-		Batch.DistortionUVOffset[1] = WrapMeshUVPhase( Batch.DistortionUVOffset[1], Applied * Batch.EffectResources->Definition.Material.Distortion.UVScroll.y );
+		if ( !Batch.EffectResources.IsValid() ) continue;
+		Batch.Update( DeltaTime, Batch.EffectResources->Definition );
 	}
 }
 
@@ -132,19 +104,7 @@ void FMeshRenderer::PlayEffects()
 	for ( FMeshDrawBatch& Batch : Batches )
 	{
 		if ( !Batch.bEffectRequested ) continue;
-		if ( Batch.EffectState == EPlaybackState::Stopped )
-		{
-			Batch.EffectTimeSeconds = 0.0;
-			Batch.EffectUVOffset[0] = Batch.EffectUVOffset[1] = 0.0;
-			Batch.DistortionUVOffset[0] = Batch.DistortionUVOffset[1] = 0.0;
-		}
-		if ( Batch.EffectState == EPlaybackState::Finished )
-		{
-			Batch.EffectTimeSeconds = 0.0;
-			Batch.EffectUVOffset[0] = Batch.EffectUVOffset[1] = 0.0;
-			Batch.DistortionUVOffset[0] = Batch.DistortionUVOffset[1] = 0.0;
-		}
-		Batch.EffectState = EPlaybackState::Playing;
+		Batch.Play();
 	}
 }
 
@@ -162,7 +122,7 @@ bool FMeshRenderer::IsEffectsFinished() const
 
 void FMeshRenderer::PauseEffects()
 {
-	for ( FMeshDrawBatch& Batch : Batches ) if ( Batch.EffectState == EPlaybackState::Playing ) Batch.EffectState = EPlaybackState::Paused;
+	for ( FMeshDrawBatch& Batch : Batches ) Batch.Pause();
 }
 
 void FMeshRenderer::StopEffects()
@@ -170,10 +130,7 @@ void FMeshRenderer::StopEffects()
 	for ( FMeshDrawBatch& Batch : Batches )
 	{
 		if ( !Batch.bEffectRequested ) continue;
-		Batch.EffectState = EPlaybackState::Stopped;
-		Batch.EffectTimeSeconds = 0.0;
-		Batch.EffectUVOffset[0] = Batch.EffectUVOffset[1] = 0.0;
-		Batch.DistortionUVOffset[0] = Batch.DistortionUVOffset[1] = 0.0;
+		Batch.Stop();
 	}
 }
 
@@ -182,10 +139,7 @@ void FMeshRenderer::RestartEffects()
 	for ( FMeshDrawBatch& Batch : Batches )
 	{
 		if ( !Batch.bEffectRequested ) continue;
-		Batch.EffectState = EPlaybackState::Playing;
-		Batch.EffectTimeSeconds = 0.0;
-		Batch.EffectUVOffset[0] = Batch.EffectUVOffset[1] = 0.0;
-		Batch.DistortionUVOffset[0] = Batch.DistortionUVOffset[1] = 0.0;
+		Batch.Restart();
 	}
 }
 

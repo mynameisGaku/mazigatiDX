@@ -299,6 +299,8 @@ void FModelAnimator::Update( float32 DeltaTime )
 {
 	Events.Empty();
 	bFinishedThisUpdate = false;
+	// Model材質効果はanimation pauseとは独立した個体時計で更新する。
+	MaterialEffect.Update( DeltaTime );
 	if ( bPaused || DeltaTime <= 0.0f ) return;
 
 	for ( FLayer& Layer : Layers )
@@ -349,6 +351,31 @@ void FModelAnimator::Update( float32 DeltaTime )
 			bFinishedThisUpdate = true;
 		}
 	}
+}
+
+bool FModelAnimator::PrepareMaterialEffect( int32 MaterialIndex, const FMeshMaterialEffectDefinition& Definition, const std::function<TSharedPtr<CTexture>( const FString& )>& LoadTexture, const IDrawExecutor& Executor, bool bTwoSided )
+{
+	if ( !Instance.IsValid() )
+	{
+		MaterialEffect.Clear();
+		return false;
+	}
+	return MaterialEffect.Prepare( Instance->GetSource(), MaterialIndex, Definition, LoadTexture, Executor, bTwoSided );
+}
+
+void FModelAnimator::ClearMaterialEffect()
+{
+	MaterialEffect.Clear();
+}
+
+FModelMaterialEffectRenderer& FModelAnimator::GetMaterialEffect()
+{
+	return MaterialEffect;
+}
+
+const FModelMaterialEffectRenderer& FModelAnimator::GetMaterialEffect() const
+{
+	return MaterialEffect;
 }
 
 void FModelAnimator::Seek( float32 NormalizedTime )
@@ -441,10 +468,12 @@ bool FModelAnimator::ConsumeEvent( const FString& Name )
 void FModelAnimator::Record( FDrawContext& Draw, const FMatrix4x4& World ) const
 {
 	if ( !bVisible || !Instance.IsValid() ) return;
+	// このobject個体のnative model handle。
 	const int32 Handle = Instance->GetHandle();
 	if ( Handle < 0 ) return;
 
 	// 重みの合計を 1 にそろえて、付けているアニメーションすべての状態を毎回伝える（働いていないものは 0 にして、前の値を残さない）
+	// 有効層の重み合計。
 	float32 Sum = 0.0f;
 	for ( const FLayer& Layer : Layers )
 	{
@@ -453,13 +482,20 @@ void FModelAnimator::Record( FDrawContext& Draw, const FMatrix4x4& World ) const
 	for ( const FLayer& Layer : Layers )
 	{
 		if ( !Layer.bAttached ) continue;
+		// native層へ渡す正規化ブレンド率。
 		const float32 Rate = Sum > 0.0f && Layer.Weight > 0.0f ? Layer.Weight / Sum : 0.0f;
+		// DxLib時間単位へ変換した層の再生位置。
 		const float32 Time = NAnim::ToClipTime( Layer.Playhead, Layer.LengthSeconds, Layer.Loop ) * UnitsPerSecond;
 		Draw.ModelAnimLayer( Handle, Layer.AttachIndex, Time, Rate );
 	}
 
+	// Animator固有の補正行列。
 	const FMatrix4x4 Local = FMatrix4x4::TRS( ModelOffset, ModelRotation, ModelScale );
-	Draw.Model( Handle, Local * World );
+	// 既存のModelと材質効果の双方へ渡す完全なworld matrix。
+	const FMatrix4x4 ModelWorld = Local * World;
+	// 選択材質効果が記録を引き受けたときは全Model命令を重ねない。
+	if ( MaterialEffect.Record( Draw, Instance, ModelWorld ) ) return;
+	Draw.Model( Handle, ModelWorld );
 }
 
 void FModelAnimator::RecordAt( FDrawContext& Draw, const FTransformView& Transform ) const

@@ -7,6 +7,7 @@
 #include "Library/Framework/Asset/MeshBuffer.h"
 #include "Library/Framework/Asset/Texture.h"
 #include "Library/Framework/Render/DrawContext.h"
+#include "Library/Framework/Render/MeshMaterialEffectPlayback.h"
 #include "Library/Math/Color.h"
 #include "Library/Math/Transform.h"
 
@@ -22,16 +23,8 @@ struct FMeshMaterialEffectResources;
 //   色を変えたいときは、編集メッシュの材質を変えて、作り直す）。
 //   自分で描きたいときは bAutoDraw を false にして、描画システムの中で Record / RecordAt を呼ぶ。
 //=============================================================================
-struct FMeshDrawBatch
+struct FMeshDrawBatch : FMeshMaterialEffectPlayback
 {
-	// 一つのeffect slotに対する個体別再生状態。
-	enum class EEffectPlaybackState : uint8
-	{
-		Stopped,  // 従来の固定メッシュとして描く状態。
-		Playing,  // Updateで時刻とUVを進めながら描く状態。
-		Paused,   // 効果の表示を保ち時計を止めた状態。
-		Finished, // 非loop効果の最後の表示を保つ状態。
-	};
 	int32 StartIndex = 0;                 // インデックスバッファの何番目から
 	int32 NumIndices = 0;                 // 何個（3 の倍数）
 	TSharedPtr<CTexture> Texture;         // 画像。無ければ、頂点の色だけ
@@ -40,14 +33,6 @@ struct FMeshDrawBatch
 	bool bEffectRequested = false;
 	// Make時に完成した、複製間で共有するslot資源。
 	TSharedPtr<const FMeshMaterialEffectResources> EffectResources;
-	// このrenderer個体だけが進める再生状態。
-	EEffectPlaybackState EffectState = EEffectPlaybackState::Stopped;
-	// 曲線評価に使う、Duration内の秒数。
-	float64 EffectTimeSeconds = 0.0;
-	// 元画像UVの秒単位scrollを1周期内へ畳んだ値。
-	float64 EffectUVOffset[2] = {};
-	// ゆがみ画像UVの秒単位scrollを1周期内へ畳んだ値。
-	float64 DistortionUVOffset[2] = {};
 };
 
 struct FMeshRenderer

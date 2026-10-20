@@ -6,6 +6,7 @@
 
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
+#include "Library/Core/Interfaces/Render/MeshGeometryChunk.h"
 #include "Library/Framework/Render/MeshMaterialEffectResources.h"
 
 namespace
@@ -21,40 +22,11 @@ namespace
 	// 一つの元slotを、三角形境界を保つ最大1024頂点・3072 indexの列へ分ける。
 	bool BuildMeshEffectChunks( const FEditMeshBuild& Build, const FEditMeshBatch& Batch, FMeshMaterialEffectResources& Resources )
 	{
-		FMeshMaterialEffectResources::FChunk Current;
-		TMap<uint32, uint32> LocalIndices;
-		const auto Flush = [&]()
-		{
-			if ( Current.Indices.IsEmpty() ) return;
-			Resources.Chunks.Add( std::move( Current ) );
-			Current = FMeshMaterialEffectResources::FChunk();
-			LocalIndices.Reset();
-		};
-		for ( int32 Offset = 0; Offset < Batch.NumIndices; Offset += 3 )
-		{
-			uint32 SourceIndices[3] = {};
-			int32 MissingVertices = 0;
-			for ( int32 Corner = 0; Corner < 3; ++Corner )
-			{
-				const int32 GlobalIndex = Batch.StartIndex + Offset + Corner;
-				if ( GlobalIndex < 0 || GlobalIndex >= Build.Indices.Num() ) return false;
-				SourceIndices[Corner] = Build.Indices[GlobalIndex];
-				if ( SourceIndices[Corner] >= static_cast<uint32>( Build.Vertices.Num() ) ) return false;
-				if ( LocalIndices.Find( SourceIndices[Corner] ) == nullptr && ( Corner == 0 || SourceIndices[Corner] != SourceIndices[0] ) && ( Corner < 2 || SourceIndices[Corner] != SourceIndices[1] ) ) ++MissingVertices;
-			}
-			if ( Current.Vertices.Num() + MissingVertices > FDrawMaterialMeshData::MaxVertices || Current.Indices.Num() + 3 > FDrawMaterialMeshData::MaxIndices ) Flush();
-			for ( int32 Corner = 0; Corner < 3; ++Corner )
-			{
-				uint32* LocalIndex = LocalIndices.Find( SourceIndices[Corner] );
-				if ( LocalIndex == nullptr )
-				{
-					const uint32 AddedIndex = static_cast<uint32>( Current.Vertices.Add( Build.Vertices[static_cast<int32>( SourceIndices[Corner] )] ) );
-					LocalIndex = &LocalIndices.Add( SourceIndices[Corner], AddedIndex );
-				}
-				Current.Indices.Add( *LocalIndex );
-			}
-		}
-		Flush();
+		if ( Batch.StartIndex < 0 || Batch.NumIndices < 3 || Batch.NumIndices % 3 != 0 || Batch.StartIndex > Build.Indices.Num() - Batch.NumIndices ) return false;
+		// 現在の材質batchだけを共通上限制約で分割した作業結果。
+		TArray<FMeshGeometryChunk> Chunks;
+		if ( !NMeshGeometry::BuildChunks( TArrayView<const FMeshVertex>( Build.Vertices ), TArrayView<const uint32>( Build.Indices.GetData() + Batch.StartIndex, Batch.NumIndices ), Chunks ) ) return false;
+		Resources.Chunks = std::move( Chunks );
 		return !Resources.Chunks.IsEmpty();
 	}
 

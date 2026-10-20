@@ -1,4 +1,6 @@
 ﻿#pragma once
+#include <functional>
+
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/Optional.h"
 #include "Library/Core/Collection/String.h"
@@ -6,6 +8,7 @@
 #include "Library/Framework/Animation/AnimationTimeline.h"
 #include "Library/Framework/Asset/Model.h"
 #include "Library/Framework/Render/DrawContext.h"
+#include "Library/Framework/Render/ModelMaterialEffectRenderer.h"
 #include "Library/Math/Matrix4x4.h"
 #include "Library/Math/Quaternion.h"
 #include "Library/Math/Vector3.h"
@@ -60,6 +63,8 @@ struct FModelAnimator
 	// 設定（いつ変えてもよい）
 	//-------------------------------------------------------------------------
 	TSharedPtr<CModelInstance> Instance;
+	// 選択した静的Model材質の共有資源と、このAnimator個体の効果時計。
+	FModelMaterialEffectRenderer MaterialEffect;
 	float32 UnitsPerSecond = 30.0f;     // DxLib のモデルの時間 1 秒あたりの値
 	float32 Speed = 1.0f;               // 全体の速さの倍率
 	bool bVisible = true;
@@ -101,6 +106,13 @@ struct FModelAnimator
 	FORCEINLINE bool IsPaused() const { return bPaused; }
 	// 時間を進める（DeltaTime は秒）。重み（クロスフェード）・再生位置・出来事を更新する
 	void Update( float32 DeltaTime );
+	// 静的な選択材質効果を準備する。失敗時はnative Model描画へ戻る。
+	bool PrepareMaterialEffect( int32 MaterialIndex, const FMeshMaterialEffectDefinition& Definition, const std::function<TSharedPtr<CTexture>( const FString& )>& LoadTexture, const IDrawExecutor& Executor, bool bTwoSided = false );
+	// 選択材質効果を解放し、native Model描画へ戻す。
+	void ClearMaterialEffect();
+	// このAnimator個体の材質効果制御口を返す。
+	FModelMaterialEffectRenderer& GetMaterialEffect();
+	const FModelMaterialEffectRenderer& GetMaterialEffect() const;
 	// 主に再生中のクリップの再生位置を、0..1 の位置に動かす（出来事は起きない。エディタのシークバー用）。再生していなければ何もしない
 	void Seek( float32 NormalizedTime );
 

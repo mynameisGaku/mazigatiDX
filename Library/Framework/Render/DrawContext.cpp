@@ -74,6 +74,25 @@ void FDrawContext::DistortedMaterialRibbon3D( const FDrawDistortedMaterialRibbon
 	std::memcpy( &Words[Begin + 1 + DataWords], Copied.GetData(), static_cast<size_t>( Header.Material.Ribbon.NumPoints ) * sizeof( FDrawDistortedMaterialRibbonData::FPoint ) );
 }
 
+bool FDrawContext::ModelMaterial( const FDrawModelMaterialData& Data )
+{
+	// buffer再確保や呼出側aliasから独立させる固定命令payload。
+	FDrawModelMaterialData Header{};
+	std::memcpy( &Header, &Data, sizeof( Header ) );
+	if ( !NDrawModelMaterial::IsValid( Header ) ) return false;
+	// 追加後のword数が上限を超えないかを先に調べる。
+	constexpr size_t CommandWords = 1 + sizeof( FDrawModelMaterialData ) / 4;
+	if ( CommandWords > static_cast<size_t>( NDrawCommand::MaxWords ) || Buffer->Words.size() > Buffer->Words.max_size() - CommandWords ) return false;
+	// 固定命令を一度のresizeで追記する共有word列。
+	std::vector<uint32>& Words = Buffer->Words;
+	// 新命令を記録する開始位置。
+	const size_t Begin = Words.size();
+	Words.resize( Begin + CommandWords );
+	Words[Begin] = NDrawCommand::MakeHeader( EDrawCommand::ModelMaterial3D, 0, static_cast<int32>( CommandWords ) );
+	std::memcpy( &Words[Begin + 1], &Header, sizeof( Header ) );
+	return true;
+}
+
 void FDrawContext::MaterialMesh3D( const FDrawMaterialMeshData& Data, const FMeshVertex* Vertices, const uint32* Indices, bool bUseRegularCulling )
 {
 	// buffer再確保で入力headerが変わらないよう、固定設定を先に値として保持する。

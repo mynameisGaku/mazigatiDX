@@ -4,6 +4,7 @@
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Memory/SharedPtr.h"
+#include "Library/Core/Interfaces/Render/MeshGeometryChunk.h"
 #include "Library/Framework/Asset/Texture.h"
 #include "Library/Framework/Effect/MeshMaterialEffectDefinition.h"
 #include "Library/Core/Interfaces/Render/MeshTypes.h"
@@ -12,13 +13,8 @@
 struct FMeshMaterialEffectResources
 {
 	// 一命令の頂点・index上限に合わせて分割した、同じslot内の三角形群。
-	struct FChunk
-	{
-		// slot内の元三角形順で並べ替えたローカル頂点。
-		TArray<FMeshVertex> Vertices;
-		// Verticesを参照する、3個単位のローカルindex。
-		TArray<uint32> Indices;
-	};
+	// 既存effect APIとの互換名を保つ共通chunk型。
+	using FChunk = FMeshGeometryChunk;
 
 	// 生成後は変更しないslotの保存設定。
 	FMeshMaterialEffectDefinition Definition;
