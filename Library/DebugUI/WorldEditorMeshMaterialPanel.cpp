@@ -66,11 +66,11 @@ namespace
 		Effect.Material.UVScale = FVector2( 2.0f, 2.0f );
 		Effect.Material.UVScroll = FVector2( 0.04f, -0.17f );
 		Effect.Material.MaskScale = 2.2f;
-		Effect.Material.EdgeWidth = 0.24f;
+		Effect.Material.EdgeWidth = 0.045f;
 		Effect.Material.EdgeColor = FColor32( 255, 190, 48, 255 );
-		Effect.Material.EdgeEmission = 4.0f;
+		Effect.Material.EdgeEmission = 1.0f;
 		SetCurve( Effect.Material.Dissolve, { { 0.0f, 0.17f }, { 0.55f, 0.48f }, { 1.0f, 0.16f } } );
-		SetCurve( Effect.Material.Emission, { { 0.0f, 1.1f }, { 0.32f, 2.7f }, { 0.72f, 1.35f }, { 1.0f, 2.1f } } );
+		SetCurve( Effect.Material.Emission, { { 0.0f, 1.1f }, { 0.32f, 1.4f }, { 0.72f, 0.9f }, { 1.0f, 1.25f } } );
 		Effect.Material.Distortion.bEnabled = true;
 		Effect.Material.Distortion.Texture = "Effects/uv_distortion_flow.tga";
 		Effect.Material.Distortion.UVScale = FVector2( 2.0f, 2.0f );

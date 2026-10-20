@@ -40,10 +40,10 @@
 									"UVScroll": [0.035, -0.15],
 									"MaskScale": 2.0,
 									"Dissolve": { "Interpolation": "Smooth", "Keys": [{"Time":0.0,"Value":0.1},{"Time":0.55,"Value":0.42},{"Time":1.0,"Value":0.12}] },
-									"Emission": { "Interpolation": "Smooth", "Keys": [{"Time":0.0,"Value":1.0},{"Time":0.32,"Value":2.8},{"Time":0.72,"Value":1.4},{"Time":1.0,"Value":2.1}] },
-									"EdgeWidth": 0.22,
+									"Emission": { "Interpolation": "Smooth", "Keys": [{"Time":0.0,"Value":1.1},{"Time":0.32,"Value":1.4},{"Time":0.72,"Value":0.9},{"Time":1.0,"Value":1.25}] },
+									"EdgeWidth": 0.045,
 									"EdgeColor": "#FFFF58FF",
-									"EdgeEmission": 3.5,
+									"EdgeEmission": 1.0,
 									"Distortion": { "Enabled": true, "Texture": "Effects/uv_distortion_flow.tga", "UVScale": [2.0,1.5], "UVScroll": [0.07,0.16], "Strength": { "Interpolation": "Smooth", "Keys": [{"Time":0.0,"Value":0.04},{"Time":0.5,"Value":0.11},{"Time":1.0,"Value":0.05}] } }
 								},
 								"Duration": 1.9,
