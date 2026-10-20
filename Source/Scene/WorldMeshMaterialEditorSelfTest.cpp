@@ -213,7 +213,7 @@ namespace
 		FixtureFiles.Paths.Add( FixtureRoot / MaskPath );
 		FixtureFiles.Paths.Add( FixtureRoot / NoisePath );
 		FixtureFiles.Paths.Add( FixtureRoot / WhitePath );
-		const bool bImagesSaved = NFileSystem::EnsureDirectory( FixtureRoot / "Effects" ) && NAssetTest::WriteFileBytes( FixtureRoot, SourcePath, MakeMeshMaterialEditorTga() ) && NAssetTest::WriteFileBytes( FixtureRoot, MaskPath, MakeMeshMaterialEditorTga() ) && NAssetTest::WriteFileBytes( FixtureRoot, NoisePath, MakeMeshMaterialEditorTga() ) && NAssetTest::WriteFileBytes( FixtureRoot, WhitePath, MakeMeshMaterialEditorTga() );
+		const bool bImagesSaved = NFileSystem::EnsureDirectory( FixtureRoot / "Effects" ) && NAssetTest::WriteFileBytes( FixtureRoot / SourcePath, MakeMeshMaterialEditorTga() ) && NAssetTest::WriteFileBytes( FixtureRoot / MaskPath, MakeMeshMaterialEditorTga() ) && NAssetTest::WriteFileBytes( FixtureRoot / NoisePath, MakeMeshMaterialEditorTga() ) && NAssetTest::WriteFileBytes( FixtureRoot / WhitePath, MakeMeshMaterialEditorTga() );
 		C.Check( bImagesSaved, "mesh material editor cache用のsource・mask・noise・白画像をfixtureへ作成する" );
 		if ( !bImagesSaved ) return;
 		// 保存先として使う、既存でないtest専用world path。
@@ -432,11 +432,10 @@ namespace NWorldTest
 			// editor panelを別文脈で操作する入力器。
 			FMeshMaterialInputContext Input;
 			C.Check( Input.IsReady(), "mesh material editor用font atlasを構築する" );
-			if ( Input.IsReady() ) TestMeshMaterialEditorSave( C, Assets, Input );
+			if ( Input.IsReady() ) TestMeshMaterialEditorSave( C, Assets, Input, TestDirectory );
 			C.Check( Input.FramesBalanced(), "mesh material入力確認のframeが対応する" );
 		}
 		TestIndependentMeshEffectClock( C );
 		C.Check( ImGui::GetCurrentContext() == Previous, "mesh material入力確認後に元のImGui文脈へ戻る" );
-		(void)TestDirectory;
 	}
 }
