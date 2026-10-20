@@ -24,7 +24,7 @@ namespace
 	FEditMesh MakeResourceMesh( const FString& Source, const FString& Mask, const FString& Noise )
 	{
 		FEditMesh Mesh = NEditMesh::MakePlane( 2.0f, 2.0f );
-	FEditMeshMaterial& Material = Mesh.Materials[0];
+		FEditMeshMaterial& Material = Mesh.Materials[Mesh.Materials.Add( FEditMeshMaterial() )];
 		Material.Texture = Source;
 		Material.Effect.Material.bEnabled = true;
 		Material.Effect.Material.bDissolve = true;

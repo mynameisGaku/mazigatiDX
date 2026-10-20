@@ -58,7 +58,7 @@ namespace
 	{
 		// 一つの材質へ時間変化設定を付けた編集メッシュ。
 		FEditMesh Mesh = NEditMesh::MakePlane( 2.0f, 2.0f );
-		FEditMeshMaterial& Material = Mesh.Materials[0];
+		FEditMeshMaterial& Material = Mesh.Materials[Mesh.Materials.Add( FEditMeshMaterial() )];
 		Material.Effect.Material.bEnabled = true;
 		Material.Effect.Material.UVScroll = FVector2( 2.0f, 0.0f );
 		Material.Effect.Duration = Duration;
@@ -91,7 +91,7 @@ void NWorldTest::RunMeshMaterialPlaybackTests( NAssetTest::FChecker& C, CAssetMa
 	if ( !bSavedWhite ) { Assets.SetRootDirectory( PreviousRoot ); return; }
 	// 二分割した平面へ一つのeffect slotを付けるfixture。
 	FEditMesh Mesh = NEditMesh::MakePlane( 2.0f, 2.0f, 2, 2 );
-	FEditMeshMaterial& Material = Mesh.Materials[0];
+	FEditMeshMaterial& Material = Mesh.Materials[Mesh.Materials.Add( FEditMeshMaterial() )];
 	Material.Effect.Material.bEnabled = true;
 	Material.Effect.Material.UVScroll = FVector2( 2.0f, 0.0f );
 	Material.Effect.Material.bDissolve = true;
@@ -217,6 +217,7 @@ void NWorldTest::RunMeshMaterialPlaybackTests( NAssetTest::FChecker& C, CAssetMa
 
 	// 同じrenderer内のslotはそれぞれ別Durationの時計と終端状態を持つ。
 	FEditMesh MultiSlotMesh = NEditMesh::MakePlane( 2.0f, 2.0f, 2, 1 );
+	MultiSlotMesh.Materials.Add( FEditMeshMaterial() );
 	FEditMeshMaterial SecondSlotMaterial = MultiSlotMesh.Materials[0];
 	SecondSlotMaterial.Effect.Material.bEnabled = true;
 	SecondSlotMaterial.Effect.Duration = 0.75f;
