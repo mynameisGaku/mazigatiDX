@@ -3,6 +3,7 @@
 #include "WorldMeshMaterialSelfTestSupport.h"
 #include "WorldModelMaterialSelfTest.h"
 #include "WorldModelPreviewSelfTest.h"
+#include "WorldModelMaterialInspectorSelfTest.h"
 #include "WorldSelfTestSupport.h"
 
 #include <algorithm>
@@ -594,6 +595,7 @@ void CWorldSelfTestScene::OnEnter()
 	S.Fake.NextModelData = { { "Idle", "Run" }, { 60.0f, 30.0f } };
 	NWorldTest::RunWorldModelMaterialSpawnFakeChecks( C, *Assets, S.Fake, S.Dir );
 	NWorldTest::RunWorldModelPreviewFakeChecks( C, *Assets, S.Fake, S.Dir );
+	NWorldTest::RunWorldModelInspectorFakeChecks( C, *Assets, S.Fake, S.Dir );
 
 	// アニメーション集（.modelanim.json）: クリップ "Sprint" は、モデルの "Run"
 	FModelAnimationDefinition AnimSet;
@@ -1681,6 +1683,7 @@ void CWorldSelfTestScene::RunRealChecks()
 	NWorldTest::RunMeshMaterialPlaybackTests( C, *Assets, Dir );
 	NWorldTest::RunWorldModelMaterialSpawnRealChecks( C, *Assets, *Executor, Dir );
 	NWorldTest::RunWorldModelPreviewRealChecks( C, *Assets, *Executor, Dir );
+	NWorldTest::RunWorldModelInspectorEditorChecks( C, *Assets, *Executor, Dir );
 	NWorldTest::RunEffectPathPlaybackTests( C, *Assets, Dir );
 	NWorldTest::RunEffectMaterialPlaybackTests( C, *Assets, Dir );
 	NWorldTest::RunEffectUVDistortionPlaybackTests( C, *Assets, Dir );

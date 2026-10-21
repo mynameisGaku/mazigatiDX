@@ -182,6 +182,7 @@
     <ClCompile Include="Library\DebugUI\WorldEditorEffects.cpp" />
     <ClCompile Include="Library\DebugUI\WorldEditorMesh.cpp" />
     <ClCompile Include="Library\DebugUI\WorldEditorMeshMaterialPanel.cpp" />
+    <ClCompile Include="Library\DebugUI\WorldEditorModelMaterialPanel.cpp" />
     <ClCompile Include="Library\DebugUI\WorldEditorModelPreviewKey.cpp" />
     <ClCompile Include="Library\DebugUI\WorldEditorModels.cpp" />
     <ClCompile Include="Library\DebugUI\WorldEditorPanels.cpp" />
@@ -382,6 +383,8 @@
     <ClCompile Include="Source\Scene\WorldMeshSelfTestData.cpp" />
     <ClCompile Include="Source\Scene\WorldMeshSelfTestEditor.cpp" />
     <ClCompile Include="Source\Scene\WorldMeshSelfTestOps.cpp" />
+    <ClCompile Include="Source\Scene\WorldModelMaterialInspectorEditorSelfTest.cpp" />
+    <ClCompile Include="Source\Scene\WorldModelMaterialInspectorSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldModelMaterialSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldModelPreviewRealSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldModelPreviewSelfTest.cpp" />
@@ -641,6 +644,7 @@
     <ClInclude Include="Library\DebugUI\WorldEditor.h" />
     <ClInclude Include="Library\DebugUI\WorldEditorInternal.h" />
     <ClInclude Include="Library\DebugUI\WorldEditorMeshMaterialPanel.h" />
+    <ClInclude Include="Library\DebugUI\WorldEditorModelMaterialPanel.h" />
     <ClInclude Include="Library\DebugUI\WorldEditorModelPreview.h" />
     <ClInclude Include="Library\DebugUI\WorldEditorModelPreviewKey.h" />
     <ClInclude Include="Library\Framework\Animation\AnimationTimeline.h" />
@@ -808,6 +812,7 @@
     <ClInclude Include="Source\Scene\WorldEffectSelfTestSupport.h" />
     <ClInclude Include="Source\Scene\WorldMeshMaterialSelfTestSupport.h" />
     <ClInclude Include="Source\Scene\WorldMeshSelfTestSupport.h" />
+    <ClInclude Include="Source\Scene\WorldModelMaterialInspectorSelfTest.h" />
     <ClInclude Include="Source\Scene\WorldModelMaterialSelfTest.h" />
     <ClInclude Include="Source\Scene\WorldModelPreviewSelfTest.h" />
     <ClInclude Include="Source\Scene\WorldSelfTestScene.h" />

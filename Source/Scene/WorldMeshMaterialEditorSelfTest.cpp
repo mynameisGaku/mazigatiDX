@@ -160,6 +160,54 @@ namespace
 			return bFramesBalanced;
 		}
 
+		// 実common definition panelを独立frameで描き、入力終了を返す。
+		bool FrameCommonDefinition( FMeshMaterialEffectDefinition& Definition, const TArray<FString>& TextureFiles, bool& bChanged, bool& bInputEnded )
+		{
+			bChanged = false;
+			bInputEnded = false;
+			ImGui::NewFrame();
+			ImGui::SetNextWindowPos( ImVec2( 0.0f, 0.0f ), ImGuiCond_Always );
+			ImGui::SetNextWindowSize( ImVec2( 1000.0f, 800.0f ), ImGuiCond_Always );
+			if ( ImGui::Begin( "WorldMeshMaterialDefinitionInputSelfTest", nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse ) )
+			{
+				Window = ImGui::GetCurrentWindow();
+				bChanged = NWorldEditorUI::DrawMaterialEffectDefinitionPanel( Definition, TextureFiles, bInputEnded );
+			}
+			ImGui::End();
+			ImGui::Render();
+			bFramesBalanced = bFramesBalanced && !Context->WithinFrameScope && Context->CurrentWindowStack.Size == 0;
+			return bFramesBalanced;
+		}
+
+		// 共通definition欄のcurveとbuttonからImGui IDを組み立てる。
+		ImGuiID CommonDefinitionItemId( const char* CurveLabel, const char* ItemLabel ) const
+		{
+			// 実common panelがcurve labelで積むID。
+			const ImGuiID CurveId = ImHashStr( CurveLabel, 0, Window->ID );
+			return ImHashStr( ItemLabel, 0, CurveId );
+		}
+
+		// tab巡回でcommon definition panel内の指定widgetへfocusする。
+		bool TabToCommonDefinition( FMeshMaterialEffectDefinition& Definition, const TArray<FString>& TextureFiles, bool& bChanged, bool& bInputEnded, ImGuiID Id )
+		{
+			// 目的buttonへ移るまで許すtab巡回回数。
+			for ( int32 Attempt = 0; Attempt < 256; ++Attempt )
+			{
+				if ( Context->NavId == Id ) return true;
+				TapCommonDefinition( Definition, TextureFiles, bChanged, bInputEnded, ImGuiKey_Tab );
+			}
+			return Context->NavId == Id;
+		}
+
+		// common panelを描いたまま指定keyを押して離す。
+		void TapCommonDefinition( FMeshMaterialEffectDefinition& Definition, const TArray<FString>& TextureFiles, bool& bChanged, bool& bInputEnded, ImGuiKey Key )
+		{
+			ImGui::GetIO().AddKeyEvent( Key, true );
+			FrameCommonDefinition( Definition, TextureFiles, bChanged, bInputEnded );
+			ImGui::GetIO().AddKeyEvent( Key, false );
+			FrameCommonDefinition( Definition, TextureFiles, bChanged, bInputEnded );
+		}
+
 		// 指定keyを押して離し、両frameでpanelを更新する。
 		void Tap( FWorldEditorState& State, ImGuiKey Key, int32 ObjectId = 1 )
 		{
@@ -309,6 +357,36 @@ namespace
 		// 後続curveがどちらのEnter frameでも無操作か。
 		const bool bSecondCurveUnchanged = bAddPressedSecondUnchanged && bAddReleasedSecondUnchanged && Pair.Second.Keys.IsEmpty();
 		C.Check( bInitialFrameBalanced && bAddKeyFocused && bAddPressFrameBalanced && bAddReleaseFrameBalanced && bFirstAddChanged && Pair.First.Keys.Num() == 1 && bSecondCurveUnchanged && bAddFrameEnded, "実Add後に同frameで呼ぶ後続curveが終了通知を保持する: focused=%d changed=%d firstKeys=%d secondChanged=%d secondKeys=%d endedOnAddFrame=%d", bAddKeyFocused, bFirstAddChanged, Pair.First.Keys.Num(), Pair.bSecondChanged, Pair.Second.Keys.Num(), bAddFrameEnded );
+
+
+		C.Group = "world-mesh-material-common-curve-input-end";
+		// 実common panelへ保存documentを介さず渡す独立定義。
+		FMeshMaterialEffectDefinition Definition;
+		// texture pickerへ渡す空の選択候補。
+		const TArray<FString> TextureFiles;
+		// 実common panelが返す変更・終了通知。
+		bool bDefinitionChanged = false;
+		bool bDefinitionInputEnded = false;
+		// 初期frameでwindowとcurve widgetを登録できたか。
+		const bool bDefinitionFrameReady = Input.FrameCommonDefinition( Definition, TextureFiles, bDefinitionChanged, bDefinitionInputEnded );
+		// 実Emission curve内のAdd key button ID。
+		const ImGuiID EmissionAddKeyId = Input.CommonDefinitionItemId( "Emission curve", "Add key" );
+		// tab巡回でAdd keyへfocusできたか。
+		const bool bEmissionAddKeyFocused = Input.TabToCommonDefinition( Definition, TextureFiles, bDefinitionChanged, bDefinitionInputEnded, EmissionAddKeyId );
+		// 実クリック押下frameをcommon panelで描画する。
+		ImGui::GetIO().AddKeyEvent( ImGuiKey_Enter, true );
+		const bool bCommonAddPressFrameBalanced = Input.FrameCommonDefinition( Definition, TextureFiles, bDefinitionChanged, bDefinitionInputEnded );
+		const bool bCommonPressChanged = bDefinitionChanged; // press frameでAddが定義を変えたか
+		const bool bCommonPressEnded = bDefinitionInputEnded; // 後続curve後にもpress終了通知が残ったか
+		const int32 EmissionKeysAfterPress = Definition.Material.Emission.Keys.Num(); // press frame後の発光key数
+		// 実クリック解放frameでも同じpanelを描画する。
+		ImGui::GetIO().AddKeyEvent( ImGuiKey_Enter, false );
+		const bool bCommonAddReleaseFrameBalanced = Input.FrameCommonDefinition( Definition, TextureFiles, bDefinitionChanged, bDefinitionInputEnded );
+		const bool bCommonReleaseChanged = bDefinitionChanged; // release frameでAddが定義を変えたか
+		const bool bCommonReleaseEnded = bDefinitionInputEnded; // 後続curve後にもrelease終了通知が残ったか
+		const int32 EmissionKeysAfterAdd = Definition.Material.Emission.Keys.Num(); // 実Add後の発光key数
+		const bool bCommonAddFrameEnded = ( bCommonPressChanged && bCommonPressEnded && EmissionKeysAfterPress == 1 ) || ( bCommonReleaseChanged && bCommonReleaseEnded && EmissionKeysAfterAdd == 1 ); // 実Addが起きたframeで終了通知が保持されたか
+		C.Check( bDefinitionFrameReady && bEmissionAddKeyFocused && bCommonAddPressFrameBalanced && bCommonAddReleaseFrameBalanced && EmissionKeysAfterAdd == 1 && ( bCommonPressChanged || bCommonReleaseChanged ) && bCommonAddFrameEnded, "実common panelのEmission Add後に後続curveが無操作でも同frameのinput-endedを保持する: focus=%d press=(%d,%d,%d) release=(%d,%d,%d) keys=%d", bEmissionAddKeyFocused, bCommonPressChanged, bCommonPressEnded, EmissionKeysAfterPress, bCommonReleaseChanged, bCommonReleaseEnded, EmissionKeysAfterAdd, EmissionKeysAfterAdd );
 	}
 
 	// UIのpreset操作、Undo/Redoと保存後のfresh loadを一続きで確認する。
