@@ -282,6 +282,9 @@ void NWorldTest::RunEffectSceneStart( FChecker& C, CScene& Scene, CAssetManager&
 	Flow->Tick( 0.125f );
 	StreamTransform->SetLocalTransform( FTransform( FVector3( 9.0f, 0.0f, 0.0f ) ) );
 	Flow->Tick( 0.125f );
+	// 3 個の位置を明示更新で作ったあと発生を止め、長い更新でも個数が変わらないことを確認する。
+	Flow->Stop( false );
+	Flow->Tick( 0.25f );
 	if ( const TSharedPtr<IEffectPlayback> P = Flow->GetPlayback(); P.IsValid() )
 	{
 		FDrawBuffer Buffer;
