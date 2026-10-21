@@ -5,6 +5,7 @@
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/DebugUI/ImGuiTexture.h"
 #include "Library/DebugUI/WorldEditorInternal.h"
+#include "Library/DebugUI/WorldEditorModelMaterialPanel.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/World/Editor/EditorOutliner.h"
 #include "Library/Framework/World/WorldCollision.h"
@@ -526,6 +527,7 @@ namespace
 				}
 				ImGui::EndDisabled();
 				if ( ImGui::IsItemHovered( ImGuiHoveredFlags_AllowWhenDisabled ) ) ImGui::SetTooltip( "Replace the model by a Mesh component with the same triangles, so that it can be edited (images and colours are not carried over)" );
+				NWorldEditorUI::DrawModelMaterialEffectPanel( S, Id );
 			}
 			if ( bRemove ) NWorldEdit::EditObject( Session.Document, Id )->Model.Reset();
 			ImGui::PopID();

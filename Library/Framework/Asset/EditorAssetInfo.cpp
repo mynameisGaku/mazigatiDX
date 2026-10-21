@@ -1,5 +1,7 @@
 ﻿#include "EditorAssetInfo.h"
 
+#include "Library/Framework/Asset/StaticModelSurface.h"
+
 #include "Library/Framework/Asset/AssetManager.h"
 
 FAssetEditorInfo::FAssetEditorInfo( CAssetManager& InAssets )
@@ -73,6 +75,26 @@ TSharedPtr<CModelInstance> FAssetEditorInfo::GetModelInstance( const FString& Pa
 TSharedPtr<CModel> FAssetEditorInfo::GetModelSource( const FString& Path ) const
 {
 	return FindModel( Path ).Model;
+}
+
+TSharedPtr<const FStaticModelSurface> FAssetEditorInfo::PrepareModelSurface( const FString& Path ) const
+{
+	if ( !NAssetService::IsMainThread() ) return nullptr;
+	// Pathに対応するsourceとsnapshot状態を取得する。
+	const FModelEntry& Entry = FindModel( Path );
+	if ( Entry.bSurfaceSnapshotAttempted ) return Entry.SurfaceSnapshot;
+	if ( !Entry.Model.IsValid() || !Entry.Model->IsReady() ) return nullptr;
+
+	Entry.SurfaceSnapshot = Entry.Model->CreateStaticSurfaceSnapshot();
+	Entry.bSurfaceSnapshotAttempted = true;
+	return Entry.SurfaceSnapshot;
+}
+
+TSharedPtr<const FStaticModelSurface> FAssetEditorInfo::FindPreparedModelSurface( const FString& Path ) const
+{
+	// 既存entryだけを探し、記録済みのsnapshotを返す。
+	if ( const FModelEntry* Entry = Models.Find( Path ) ) return Entry->bSurfaceSnapshotAttempted ? Entry->SurfaceSnapshot : nullptr;
+	return nullptr;
 }
 
 TSharedPtr<CTexture> FAssetEditorInfo::GetTexture( const FString& Path ) const

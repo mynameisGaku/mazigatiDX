@@ -6,7 +6,9 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/DebugUI/WorldEditorInternal.h"
+#include "Library/Framework/Asset/EditorAssetInfo.h"
 #include "Library/Framework/Asset/AssetManager.h"
+#include "Library/Framework/Asset/StaticModelSurface.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/World/Editor/EditorPicking.h"
 #include "Library/Framework/World/WorldCollision.h"
@@ -668,6 +670,12 @@ void NDebugUI::DrawWorldEditor( FWorldEditorState& S, bool* pOpen )
 	NWorldEditorUI::RefreshIssues( S );
 	S.bAnyPanelFocused = false;
 	S.bCloseRequested = false;
+	if ( S.bShowInspector && S.AssetInfo.IsValid() )
+	{
+		// Viewportを描く前に選択Modelのsnapshotだけを準備する。
+		const FWorldObject* SelectedModel = S.Session.Document.Get().FindObject( S.Session.GetPrimary() );
+		if ( SelectedModel != nullptr && SelectedModel->Model.IsSet() ) S.AssetInfo->PrepareModelSurface( SelectedModel->Model.GetValue().Path );
+	}
 
 	// × ボタンで閉じようとしたとき、未保存の変更があれば確認する
 	const bool bWasOpen = pOpen == nullptr || *pOpen;

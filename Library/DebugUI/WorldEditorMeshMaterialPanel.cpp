@@ -83,6 +83,18 @@ namespace
 		SourceTexture = "Effects/mesh_surface_lava.tga";
 	}
 
+	// 曲線UIの終了通知を既存fieldの通知とORで集約する。
+	// Label: 曲線欄の表示名。Curve: 編集する保存値。数値: 表示範囲。bInputEnded: 既存通知を保持する。
+	bool DrawDefinitionCurve( const char* Label, FEffectScalarCurve& Curve, float32 DefaultValue, float32 Minimum, float32 Maximum, bool& bInputEnded )
+	{
+		// 曲線入力だけの終了通知。
+		bool bCurveInputEnded = false;
+		// 曲線値が変わったか。
+		const bool bChanged = NEffectEditorUI::DrawScalarCurve( Label, Curve, DefaultValue, Minimum, Maximum, bCurveInputEnded );
+		bInputEnded |= bCurveInputEnded;
+		return bChanged;
+	}
+
 	// 四成分が有限な色入力だけを保存色へ変換する。
 	bool IsFiniteColor( const float32 (&Color)[4] )
 	{
@@ -90,20 +102,14 @@ namespace
 	}
 }
 
-bool NWorldEditorUI::DrawMeshMaterialEffectPanel( FMeshMaterialEffectDefinition& Effect, FString& SourceTexture, const TArray<FString>& TextureFiles, FMeshRenderer* PreviewRenderer, bool& bInputEnded )
+bool NWorldEditorUI::DrawMaterialEffectDefinitionPanel( FMeshMaterialEffectDefinition& Effect, const TArray<FString>& TextureFiles, bool& bInputEnded )
 {
 	// 今回のpanelで保存定義が変わったか。
 	bool bChanged = false;
-	// 入力終了を呼出側で履歴sessionへ反映する状態。
+	// 入力終了通知をこのpanel内で集約する。
 	bInputEnded = false;
-	ImGui::SeparatorText( "Mesh material effect" );
-	ImGui::TextWrapped( "Uses the material Image above; an empty path uses the built-in white image." );
 	// 材質定義だけを有効化する唯一のflag。
 	bChanged |= TrackInputEnd( ImGui::Checkbox( "Enable material effect", &Effect.Material.bEnabled ), bInputEnded );
-	if ( ImGui::SmallButton( "Pulsing barrier" ) ) { ApplyBarrierPreset( Effect, SourceTexture ); bChanged = true; bInputEnded = true; }
-	ImGui::SameLine();
-	if ( ImGui::SmallButton( "Flowing lava" ) ) { ApplyLavaPreset( Effect, SourceTexture ); bChanged = true; bInputEnded = true; }
-	if ( ImGui::SmallButton( "Reset mesh effect" ) ) { Effect = FMeshMaterialEffectDefinition(); bChanged = true; bInputEnded = true; }
 	// 有限値だけを連続入力へ渡すduration。
 	float32 Duration = SafeValue( Effect.Duration, 2.0f, 0.001f, 3600.0f );
 	if ( TrackInputEnd( ImGui::DragFloat( "Duration (seconds)", &Duration, 0.02f, 0.001f, 3600.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp ), bInputEnded ) ) { Effect.Duration = std::clamp( Duration, 0.001f, 3600.0f ); bChanged = true; }
@@ -135,7 +141,7 @@ bool NWorldEditorUI::DrawMeshMaterialEffectPanel( FMeshMaterialEffectDefinition&
 	if ( Material.bDissolve )
 	{
 		ImGui::TextDisabled( "Dissolve: 0 keeps the mask; 1 removes it." );
-		bChanged |= NEffectEditorUI::DrawScalarCurve( "Dissolve curve", Material.Dissolve, 0.0f, 0.0f, 1.0f, bInputEnded );
+		bChanged |= DrawDefinitionCurve( "Dissolve curve", Material.Dissolve, 0.0f, 0.0f, 1.0f, bInputEnded );
 		// 有限値だけをedge width入力へ渡す。
 		float32 EdgeWidth = SafeValue( Material.EdgeWidth, 0.08f, 0.0f, 1.0f );
 		if ( TrackInputEnd( ImGui::DragFloat( "Edge width", &EdgeWidth, 0.005f, 0.0f, 1.0f, "%.5g", ImGuiSliderFlags_AlwaysClamp ), bInputEnded ) ) { Material.EdgeWidth = std::clamp( EdgeWidth, 0.0f, 1.0f ); bChanged = true; }
@@ -147,7 +153,7 @@ bool NWorldEditorUI::DrawMeshMaterialEffectPanel( FMeshMaterialEffectDefinition&
 		float32 EdgeEmission = SafeValue( Material.EdgeEmission, 2.0f, 0.0f, 32.0f );
 		if ( TrackInputEnd( ImGui::DragFloat( "Edge emission", &EdgeEmission, 0.01f, 0.0f, 32.0f, "%.5g", ImGuiSliderFlags_AlwaysClamp ), bInputEnded ) ) { Material.EdgeEmission = std::clamp( EdgeEmission, 0.0f, 32.0f ); bChanged = true; }
 	}
-	bChanged |= NEffectEditorUI::DrawScalarCurve( "Emission curve", Material.Emission, 1.0f, 0.0f, 32.0f, bInputEnded );
+	bChanged |= DrawDefinitionCurve( "Emission curve", Material.Emission, 1.0f, 0.0f, 32.0f, bInputEnded );
 	// ノイズ画像の設定を独立して編集する。
 	FEffectUVDistortionDefinition& Distortion = Material.Distortion;
 	bChanged |= TrackInputEnd( ImGui::Checkbox( "Enable UV distortion", &Distortion.bEnabled ), bInputEnded );
@@ -159,32 +165,51 @@ bool NWorldEditorUI::DrawMeshMaterialEffectPanel( FMeshMaterialEffectDefinition&
 	// 有限値だけを歪みscroll入力へ渡す。
 	float32 DistortionScroll[2] = { SafeValue( Distortion.UVScroll.x, 0.0f, -128.0f, 128.0f ), SafeValue( Distortion.UVScroll.y, 0.0f, -128.0f, 128.0f ) };
 	if ( TrackInputEnd( ImGui::DragFloat2( "Distortion scroll / second", DistortionScroll, 0.01f, -128.0f, 128.0f, "%.5g", ImGuiSliderFlags_AlwaysClamp ), bInputEnded ) ) { Distortion.UVScroll = FVector2( std::clamp( DistortionScroll[0], -128.0f, 128.0f ), std::clamp( DistortionScroll[1], -128.0f, 128.0f ) ); bChanged = true; }
-	bChanged |= NEffectEditorUI::DrawScalarCurve( "Distortion strength", Distortion.Strength, 0.0f, 0.0f, 1.0f, bInputEnded );
+	bChanged |= DrawDefinitionCurve( "Distortion strength", Distortion.Strength, 0.0f, 0.0f, 1.0f, bInputEnded );
 	// 保存定義の問題を編集者へそのまま示す。
 	const TArray<FString> Issues = Effect.Validate();
 	for ( const FString& Issue : Issues ) ImGui::TextWrapped( "%s", UI_TEXT( Issue ) );
+	return bChanged;
+}
+
+bool NWorldEditorUI::DrawMeshMaterialEffectPanel( FMeshMaterialEffectDefinition& Effect, FString& SourceTexture, const TArray<FString>& TextureFiles, FMeshRenderer* PreviewRenderer, bool& bInputEnded )
+{
+	// 今回のmesh panelで保存定義またはsource画像が変わったか。
+	bool bChanged = false;
+	// preset/resetの入力終了通知を保持する。
+	bInputEnded = false;
+	ImGui::SeparatorText( "Mesh material effect" );
+	ImGui::TextWrapped( "Uses the material Image above; an empty path uses the built-in white image." );
+	if ( ImGui::SmallButton( "Pulsing barrier" ) ) { ApplyBarrierPreset( Effect, SourceTexture ); bChanged = true; bInputEnded = true; }
+	ImGui::SameLine();
+	if ( ImGui::SmallButton( "Flowing lava" ) ) { ApplyLavaPreset( Effect, SourceTexture ); bChanged = true; bInputEnded = true; }
+	if ( ImGui::SmallButton( "Reset mesh effect" ) ) { Effect = FMeshMaterialEffectDefinition(); bChanged = true; bInputEnded = true; }
+	// 共通の保存定義UIが出した終了通知をmesh側へ足す。
+	bool bDefinitionInputEnded = false;
+	bChanged |= DrawMaterialEffectDefinitionPanel( Effect, TextureFiles, bDefinitionInputEnded );
+	bInputEnded |= bDefinitionInputEnded;
 	// 材質mesh描画を実装するexecutorが利用できるか。
 	IDrawExecutor* Executor = GetAppSubsystem<IDrawExecutor>();
 	if ( Effect.Material.bEnabled && ( Executor == nullptr || !Executor->SupportsEffectMaterialMesh() ) ) ImGui::TextWrapped( "The active renderer does not support mesh material effects; this slot is not drawn. Stop to return to the regular mesh." );
-		ImGui::TextDisabled( "Mesh material effects are unlit LDR; bloom is not included." );
-		if ( PreviewRenderer != nullptr )
-		{
-			ImGui::SeparatorText( "Preview transport" );
-			// transport操作がこのmeshの全effect slotへ共通に働くことを示す。
-			ImGui::TextWrapped( "Transport controls apply to every material-effect slot on this mesh." );
-			// mesh rendererの全slotに共通する再生状態を表示する。
-			const bool bPlaying = PreviewRenderer->IsEffectsPlaying();
-			const bool bPaused = PreviewRenderer->IsEffectsPaused();
-			const bool bFinished = PreviewRenderer->IsEffectsFinished();
-			if ( ImGui::Button( "Play" ) ) PreviewRenderer->PlayEffects();
+	ImGui::TextDisabled( "Mesh material effects are unlit LDR; bloom is not included." );
+	if ( PreviewRenderer != nullptr )
+	{
+		ImGui::SeparatorText( "Preview transport" );
+		// transport操作がこのmeshの全effect slotへ共通に働くことを示す。
+		ImGui::TextWrapped( "Transport controls apply to every material-effect slot on this mesh." );
+		// mesh rendererの全slotに共通する再生状態を表示する。
+		const bool bPlaying = PreviewRenderer->IsEffectsPlaying();
+		const bool bPaused = PreviewRenderer->IsEffectsPaused();
+		const bool bFinished = PreviewRenderer->IsEffectsFinished();
+		if ( ImGui::Button( "Play" ) ) PreviewRenderer->PlayEffects();
 		ImGui::SameLine();
 		if ( ImGui::Button( "Pause" ) ) PreviewRenderer->PauseEffects();
 		ImGui::SameLine();
 		if ( ImGui::Button( "Stop" ) ) PreviewRenderer->StopEffects();
 		ImGui::SameLine();
 		if ( ImGui::Button( "Restart" ) ) PreviewRenderer->RestartEffects();
-			const char* StateText = bPlaying ? "Playing" : ( bPaused ? "Paused" : ( bFinished ? "Finished (final frame held)" : "Stopped" ) );
-			ImGui::TextDisabled( "%s%s", StateText, bPaused ? " (time held)" : "" );
-		}
+		const char* StateText = bPlaying ? "Playing" : ( bPaused ? "Paused" : ( bFinished ? "Finished (final frame held)" : "Stopped" ) );
+		ImGui::TextDisabled( "%s%s", StateText, bPaused ? " (time held)" : "" );
+	}
 	return bChanged;
 }
