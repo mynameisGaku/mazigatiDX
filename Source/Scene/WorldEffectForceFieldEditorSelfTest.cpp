@@ -242,6 +242,7 @@ namespace
 		// AddボタンがTabとEnterで操作できたか。
 		const bool bAddFocused = Input.Press( State, "Add##ForceFieldAdd" );
 		C.Check( bAddFocused && State.Document.Get().Emitters[0].ForceFields.Num() == 2 && State.SelectedForceField == 1 && State.Document.Get().Emitters[0].ForceFields[1].Acceleration.x == 1.0f && State.Document.GetNumUndo() == 1, "Addは既定の一様加速度を末尾へ加えて一つ選び、独立した履歴を作る" );
+		if ( !State.Document.Get().Emitters[0].ForceFields.IsValidIndex( 1 ) ) return;
 		// Duplicateで値を保つ基準field。
 		FEffectForceFieldDefinition Custom;
 		Custom.Kind = FEffectForceFieldDefinition::EKind::Radial;
@@ -254,17 +255,24 @@ namespace
 		// Duplicateボタンの実入力結果。
 		const bool bDuplicateFocused = Input.Press( State, "Duplicate##ForceFieldDuplicate" );
 		C.Check( bDuplicateFocused && State.Document.Get().Emitters[0].ForceFields.Num() == 3 && State.SelectedForceField == 2 && State.Document.Get().Emitters[0].ForceFields[2].ComputeHash() == Custom.ComputeHash(), "Duplicateは選択中の全設定を保ち、直後へ追加する" );
-		C.Check( Input.Press( State, "Up##ForceFieldUp" ) && State.SelectedForceField == 1 && State.Document.Get().Emitters[0].ForceFields[1].ComputeHash() == Custom.ComputeHash(), "Upは選択したfieldを一つ前へ移し選択を保つ" );
-		C.Check( Input.Press( State, "Down##ForceFieldDown" ) && State.SelectedForceField == 2 && State.Document.Get().Emitters[0].ForceFields[2].ComputeHash() == Custom.ComputeHash(), "Downは選択したfieldを一つ後ろへ移し選択を保つ" );
+		if ( !State.Document.Get().Emitters[0].ForceFields.IsValidIndex( 2 ) ) return;
+		// 並べ替え対象を同値にせず履歴へ記録できるよう、複製後の値を区別する編集。
+		State.Document.BeginEdit().Emitters[0].ForceFields[2].Strength = -45.0f;
+		State.Document.EndEditSession();
+		Input.Frame( State );
+		C.Check( Input.Press( State, "Up##ForceFieldUp" ) && State.Document.Get().Emitters[0].ForceFields.Num() == 3 && State.Document.Get().Emitters[0].ForceFields.IsValidIndex( 1 ) && State.Document.Get().Emitters[0].ForceFields.IsValidIndex( 2 ) && State.SelectedForceField == 1 && State.Document.Get().Emitters[0].ForceFields[1].Strength == -45.0f && State.Document.Get().Emitters[0].ForceFields[2].Strength == -35.0f, "Upは異なるfield値を一つ前へ実際に移し、選択を保つ" );
+		C.Check( Input.Press( State, "Down##ForceFieldDown" ) && State.Document.Get().Emitters[0].ForceFields.Num() == 3 && State.Document.Get().Emitters[0].ForceFields.IsValidIndex( 1 ) && State.Document.Get().Emitters[0].ForceFields.IsValidIndex( 2 ) && State.SelectedForceField == 2 && State.Document.Get().Emitters[0].ForceFields[1].Strength == -35.0f && State.Document.Get().Emitters[0].ForceFields[2].Strength == -45.0f, "Downは異なるfield値を一つ後ろへ実際に移し、選択を保つ" );
 		C.Check( Input.Press( State, "Delete##ForceFieldDelete" ) && State.Document.Get().Emitters[0].ForceFields.Num() == 2 && State.SelectedForceField == 1, "末尾fieldの削除で残る最後のfieldを選択する" );
 		C.Check( Input.TabTo( State, Input.ItemId( "Add##ForceFieldAdd" ) ), "末尾削除後もTabで実際のAddボタンへ再び移動できる" );
 		C.Check( State.Document.Undo() && State.Document.Get().Emitters[0].ForceFields.Num() == 3 && State.Document.Redo() && State.Document.Get().Emitters[0].ForceFields.Num() == 2, "構造操作の最後の削除をUndo/Redoできる" );
-		C.Check( State.Document.Undo() && State.Document.Get().Emitters[0].ForceFields.Num() == 3 && State.Document.Get().Emitters[0].ForceFields[2].ComputeHash() == Custom.ComputeHash(), "Redo後に戻したfieldの設定値を復元する" );
-		C.Check( State.Document.Undo() && State.Document.Get().Emitters[0].ForceFields[1].ComputeHash() == Custom.ComputeHash(), "DownをUndoすると複製fieldが一つ前の位置へ戻る" );
-		C.Check( State.Document.Undo() && State.Document.Get().Emitters[0].ForceFields[2].ComputeHash() == Custom.ComputeHash(), "UpをUndoすると複製fieldが元の末尾へ戻る" );
-		C.Check( State.Document.Undo() && State.Document.Get().Emitters[0].ForceFields.Num() == 2 && State.Document.Get().Emitters[0].ForceFields[1].ComputeHash() == Custom.ComputeHash(), "DuplicateをUndoすると追加分だけが消える" );
-		C.Check( State.Document.Undo() && State.Document.Get().Emitters[0].ForceFields.Num() == 2 && State.Document.Get().Emitters[0].ForceFields[1].Acceleration.x == 1.0f, "構造操作前の直接編集も独立した履歴へ戻る" );
+		C.Check( State.Document.Undo() && State.Document.Get().Emitters[0].ForceFields.Num() == 3 && State.Document.Get().Emitters[0].ForceFields.IsValidIndex( 2 ) && State.Document.Get().Emitters[0].ForceFields[2].Strength == -45.0f, "Redo後に戻した末尾fieldの全設定を復元する" );
+		C.Check( State.Document.Undo() && State.Document.Get().Emitters[0].ForceFields.Num() == 3 && State.Document.Get().Emitters[0].ForceFields.IsValidIndex( 1 ) && State.Document.Get().Emitters[0].ForceFields.IsValidIndex( 2 ) && State.Document.Get().Emitters[0].ForceFields[1].Strength == -45.0f && State.Document.Get().Emitters[0].ForceFields[2].Strength == -35.0f, "DownをUndoすると二つの異なるfield値が元の順へ戻る" );
+		C.Check( State.Document.Undo() && State.Document.Get().Emitters[0].ForceFields.Num() == 3 && State.Document.Get().Emitters[0].ForceFields.IsValidIndex( 1 ) && State.Document.Get().Emitters[0].ForceFields.IsValidIndex( 2 ) && State.Document.Get().Emitters[0].ForceFields[1].Strength == -35.0f && State.Document.Get().Emitters[0].ForceFields[2].Strength == -45.0f, "UpをUndoすると二つの異なるfield値が元の順へ戻る" );
+		C.Check( State.Document.Undo() && State.Document.Get().Emitters[0].ForceFields.Num() == 3 && State.Document.Get().Emitters[0].ForceFields.IsValidIndex( 2 ) && State.Document.Get().Emitters[0].ForceFields[2].Strength == -35.0f, "複製後の値編集をUndoして複製元と同じ値へ戻す" );
+		C.Check( State.Document.Undo() && State.Document.Get().Emitters[0].ForceFields.Num() == 2 && State.Document.Get().Emitters[0].ForceFields.IsValidIndex( 1 ) && State.Document.Get().Emitters[0].ForceFields[1].ComputeHash() == Custom.ComputeHash(), "DuplicateをUndoすると追加分だけが消える" );
+		C.Check( State.Document.Undo() && State.Document.Get().Emitters[0].ForceFields.Num() == 2 && State.Document.Get().Emitters[0].ForceFields.IsValidIndex( 1 ) && State.Document.Get().Emitters[0].ForceFields[1].Acceleration.x == 1.0f, "構造操作前の直接編集も独立した履歴へ戻る" );
 		C.Check( State.Document.Undo() && State.Document.Get().Emitters[0].ForceFields.Num() == 1, "AddをUndoすると最初のfield数へ戻る" );
+		if ( !State.Document.Get().Emitters[0].ForceFields.IsValidIndex( 0 ) ) return;
 		// Reset確認用fieldを選択する状態。
 		State.SelectedForceField = 0;
 		// Reset前の保存値を書き換える文書参照。
@@ -278,7 +286,12 @@ namespace
 		// Reset後に照合するfield。
 		const FEffectForceFieldDefinition& Reset = State.Document.Get().Emitters[0].ForceFields[0];
 		C.Check( bResetFocused && Reset.Kind == FEffectForceFieldDefinition::EKind::Uniform && Reset.bEnabled && Reset.Position.x == 0.0f && Reset.Position.y == 0.0f && Reset.Position.z == 0.0f && Reset.Radius == 1.0f && Reset.Strength == 0.0f, "Resetは有効中のfield全体を既定値へ置き換える" );
-		C.Check( State.Document.Undo() && State.Document.Get().Emitters[0].ForceFields[0].Position.x == 5.0f && State.Document.Get().Emitters[0].ForceFields[0].Strength == -8.0f && State.Document.Redo() && State.Document.Get().Emitters[0].ForceFields[0].Radius == 1.0f, "Resetも値を保ったUndo/Redoができる" );
+		C.Check( State.Document.Undo() && State.Document.Get().Emitters[0].ForceFields.IsValidIndex( 0 ) && State.Document.Get().Emitters[0].ForceFields[0].Position.x == 5.0f && State.Document.Get().Emitters[0].ForceFields[0].Strength == -8.0f && State.Document.Redo() && State.Document.Get().Emitters[0].ForceFields.IsValidIndex( 0 ) && State.Document.Get().Emitters[0].ForceFields[0].Radius == 1.0f, "Resetも値を保ったUndo/Redoができる" );
+		C.Check( Input.Press( State, "Delete##ForceFieldDelete" ) && State.Document.Get().Emitters[0].ForceFields.IsEmpty(), "最後のfieldを実入力で削除して一覧を空にできる" );
+		// 空一覧で唯一有効なAdd項目へTab移動し、追加し直せるか。
+		const bool bEmptyAddFocused = Input.TabTo( State, Input.ItemId( "Add##ForceFieldAdd" ) );
+		const bool bEmptyAddRestored = bEmptyAddFocused && Input.Press( State, "Add##ForceFieldAdd" ) && State.Document.Get().Emitters[0].ForceFields.Num() == 1 && State.Document.Get().Emitters[0].ForceFields[0].Acceleration.x == 1.0f;
+		C.Check( bEmptyAddRestored, "最後のfield削除後もTabでAddへ移り新しいfieldを追加できる" );
 	}
 
 	// 非有限・型不正・上限超過をImGuiへ渡さず、削除とResetで復旧できる。
@@ -292,8 +305,8 @@ namespace
 		Emitter.ForceFields[0].Acceleration.x = ( std::numeric_limits<float32>::quiet_NaN )();
 		// JSON型不正の印を持つfield。
 		FEffectForceFieldDefinition InvalidType;
-		// radiusがnullの型不正入力。
-		const NlohmannJson InvalidJson = NlohmannJson::parse( "{\"Enabled\":false,\"Kind\":\"Radial\",\"Radius\":null,\"Strength\":-3}" );
+		// finite値を保ったままEnabledの型だけを壊した入力。
+		const NlohmannJson InvalidJson = NlohmannJson::parse( "{\"Enabled\":null,\"Kind\":\"Radial\",\"Radius\":8,\"Strength\":-3}" );
 		// invalid type markerを読取時に設定できたか。
 		const bool bInvalidRead = FEffectForceFieldDefinition::FromJson( InvalidJson, InvalidType );
 		Emitter.ForceFields.Add( InvalidType );
@@ -305,15 +318,32 @@ namespace
 		State.SelectedForceField = 0;
 		Input.Frame( State );
 		C.Check( bInvalidRead && State.Document.Get().Emitters[0].ForceFields.Num() == FEffectForceFieldDefinition::MaxFields + 1 && std::isnan( State.Document.Get().Emitters[0].ForceFields[0].Acceleration.x ) && Input.HasFiniteVertices(), "17件とNaNを保持したまま数値widgetへ渡さず有限なImGui描画を作る" );
-		C.Check( !Input.TabTo( State, Input.FieldItemId( "Strength (m/s2)##ForceFieldStrength" ), 96 ), "NaN fieldではStrength数値widgetをTab巡回へ加えない" );
+		// 上限超過でも有効なDelete項目へTabを送り、古いNavIdを切り替える。
+		const bool bNaNDeleteFocused = Input.TabTo( State, Input.ItemId( "Delete##ForceFieldDelete" ) );
+		// 既知の別項目からResetへ実Tab入力が届くか。
+		const bool bNaNResetFocused = bNaNDeleteFocused && Input.TabTo( State, Input.ItemId( "Reset##ForceFieldReset" ) );
+		// Resetから移動してNaN fieldのStrengthがTab候補に現れるか。
+		const bool bNaNStrengthFocused = Input.TabTo( State, Input.FieldItemId( "Strength (m/s2)##ForceFieldStrength" ), 128 );
+		C.Check( bNaNResetFocused && !bNaNStrengthFocused, "Resetへfocusを確定してからTabを巡回してもNaN fieldのStrength widgetは存在しない" );
 		C.Check( Input.Press( State, "Reset##ForceFieldReset" ) && State.Document.Get().Emitters[0].ForceFields.Num() == FEffectForceFieldDefinition::MaxFields + 1 && State.Document.Get().Emitters[0].ForceFields[0].Validate().IsEmpty() && std::isfinite( State.Document.Get().Emitters[0].ForceFields[0].Acceleration.x ), "NaNを含む場はResetで全体を既定値へ修復し、超過件数を残す" );
 		State.SelectedForceField = 1;
 		Input.Frame( State );
+		if ( !State.Document.Get().Emitters[0].ForceFields.IsValidIndex( 1 ) )
+		{
+			C.Check( false, "型不正fieldの配列位置をReset後も保持する" );
+			return;
+		}
 		// Reset前にJSON値を保持しているfield。
 		const FEffectForceFieldDefinition& RetainedInvalid = State.Document.Get().Emitters[0].ForceFields[1];
-		C.Check( RetainedInvalid.Validate().Num() > 0 && RetainedInvalid.ToJson().contains( "Radius" ) && RetainedInvalid.ToJson()["Radius"].is_null() && Input.HasFiniteVertices(), "型不正で無効なfieldは値を隠して警告し、nullと検証印を保持する" );
-		C.Check( !Input.TabTo( State, Input.FieldItemId( "Radius (m)##ForceFieldRadius" ), 96 ), "型不正fieldではRadius数値widgetをTab巡回へ加えない" );
-		C.Check( Input.Press( State, "Reset##ForceFieldReset" ) && State.Document.Get().Emitters[0].ForceFields[1].Validate().IsEmpty() && State.Document.Get().Emitters[0].ForceFields.Num() == FEffectForceFieldDefinition::MaxFields + 1, "型不正fieldはResetで修復し上限超過の既存配列を切り詰めない" );
+		C.Check( RetainedInvalid.Validate().Num() > 0 && RetainedInvalid.ToJson().contains( "Enabled" ) && RetainedInvalid.ToJson()["Enabled"].is_null() && Input.HasFiniteVertices(), "finite設定のまま型不正印を保持し、警告を表示する" );
+		// 型不正fieldでも使えるDeleteへTabを送り、選択変更前のNavIdを切り替える。
+		const bool bInvalidDeleteFocused = Input.TabTo( State, Input.ItemId( "Delete##ForceFieldDelete" ) );
+		// 既知の別項目からResetへ実Tab入力が届くか。
+		const bool bInvalidResetFocused = bInvalidDeleteFocused && Input.TabTo( State, Input.ItemId( "Reset##ForceFieldReset" ) );
+		// Resetから移動して型不正fieldのRadiusがTab候補に現れるか。
+		const bool bInvalidRadiusFocused = Input.TabTo( State, Input.FieldItemId( "Radius (m)##ForceFieldRadius" ), 128 );
+		C.Check( bInvalidResetFocused && !bInvalidRadiusFocused, "Resetへfocusを確定してからTabを巡回しても型不正fieldのRadius widgetは存在しない" );
+		C.Check( Input.Press( State, "Reset##ForceFieldReset" ) && State.Document.Get().Emitters[0].ForceFields.Num() == FEffectForceFieldDefinition::MaxFields + 1 && State.Document.Get().Emitters[0].ForceFields.IsValidIndex( 1 ) && State.Document.Get().Emitters[0].ForceFields[1].Validate().IsEmpty(), "型不正fieldはResetで修復し上限超過の既存配列を切り詰めない" );
 		State.SelectedForceField = State.Document.Get().Emitters[0].ForceFields.Num() - 1;
 		Input.Frame( State );
 		C.Check( Input.Press( State, "Delete##ForceFieldDelete" ) && State.Document.Get().Emitters[0].ForceFields.Num() == FEffectForceFieldDefinition::MaxFields, "上限超過中でも削除は使え、利用者が一件ずつ上限へ戻せる" );
