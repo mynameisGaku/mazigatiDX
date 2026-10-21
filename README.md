@@ -12,7 +12,7 @@ DxLibを使うWindows向けC++フレームワークです。描画・入力・�
 - 編集メッシュの材質ごとのディゾルブ・自己発光・UV移動・ゆがみと、再生・一時停止・停止。
 - 編集できる組み込みエフェクトと、計算・資源・UI・実GPU画素を調べる自己確認。
 
-静的な取り込みモデルの一個体・一材質へ効果を付け、ワールドへ保存して配置時に再生できます。ワールドのビューポートでも配置ごとに再生し、同じPrefabの複数配置を独立して表示します。使い方と対応範囲は[開発資料](Docs/DEVELOPMENT.md)を参照してください。モデル用Inspector、2D専用の制作操作、HDR・ブルームは今後の工程です。
+静的な取り込みモデルの一個体・一材質へ効果を付け、ワールドへ保存して配置時に再生できます。ワールドのビューポートでも配置ごとに再生し、同じPrefabの複数配置を独立して表示します。使い方と対応範囲は[開発資料](Docs/DEVELOPMENT.md)を参照してください。2D専用の制作操作、HDR・ブルームは今後の工程です。
 
 ## ビルド
 
@@ -43,6 +43,8 @@ Effect Editorの`Preset`から元になる表現を選び、未保存のコピ�
 平面・円環は`Mesh energy ring`と`Mesh tilted veil`から始められます。`Mesh geometry`で形状、円環の分割数と穴の比率、固定回転を変えます。大きさ・色・回転速度と材質の寿命曲線は粒子設定を共有します。MeshはPath・Flipbookと併用できません。描画上限は一つの再生全体で生成順の64粒子です。開いた直後と`Reset camera`時は、形状・発生範囲・粒子の移動分を画面へ一度だけ収め、その後の手動視点を保持します。`Move emitter preview`による円運動は、この自動調整の範囲に含みません。
 
 編集メッシュではWorld Editorで対象を選び、Inspectorの各材質にある`Mesh material effect`を開きます。`Pulsing barrier`または`Flowing lava`で画像と効果をまとめて設定し、色やUVの移動、消失・発光・ゆがみの強さの曲線を調整できます。変更はUndo／Redoでき、ワールドの保存で保持します。選択メッシュの再生を`Play`／`Pause`／`Stop`／`Restart`で確認でき、Stopは通常の材質描画へ戻します。試すワールドは`Worlds/mesh_surface_showcase.world`です。現在は照明を使わないLDRの半透明・加算合成です。自己発光の値を上げても、ブルームによる周囲への光の広がりはまだありません。
+
+取り込みモデルはWorld Editorで選び、Inspectorの`Model material effect`から`Add material effect (disabled)`を押します。実際の材質一覧で色・画像の有無を確認し、`Choose material slot`で対象を選び、`Enable material effect`を有効にして調整します。無効中の設定も保存され、`Remove material effect`で設定自体を取り除けます。`Placement preview transport`は選択した配置だけを操作し、再生操作ではワールドの保存値を変えません。静的モデルの一材質が対象で、アニメーションが結び付いた個体は通常のモデル描画になります。
 
 ## ブランチ
 
