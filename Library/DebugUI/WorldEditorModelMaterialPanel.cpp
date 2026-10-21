@@ -87,7 +87,7 @@ void NWorldEditorUI::DrawModelMaterialEffectPanel( FWorldEditorState& State, int
 
 	if ( !EditedModel.MaterialEffect.IsSet() )
 	{
-		if ( ImGui::Button( "Add material effect (disabled)" ) )
+		if ( ImGui::Button( "Add material effect (disabled)###ModelMaterialBinding" ) )
 		{
 			EditedModel.MaterialEffect = FWorldModelMaterialEffect();
 			bChanged = true;
@@ -96,7 +96,7 @@ void NWorldEditorUI::DrawModelMaterialEffectPanel( FWorldEditorState& State, int
 	}
 	else
 	{
-		if ( ImGui::Button( "Remove material effect" ) )
+		if ( ImGui::Button( "Remove material effect###ModelMaterialBinding" ) )
 		{
 			EditedModel.MaterialEffect.Reset();
 			bChanged = true;
