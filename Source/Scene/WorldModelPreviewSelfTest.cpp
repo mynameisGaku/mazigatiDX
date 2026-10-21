@@ -380,13 +380,13 @@ namespace NWorldTest
 		NWorldEditorUI::UpdateModelMaterialPreviews( State, 0.125f, &Executor );
 		const FWorldEditorModelPreviewKey PreviewKeys[3] = { RootKey, FirstNestedKey, SecondNestedKey }; // world行列を照合する三owner key
 		const float32 ExpectedWorldX[3] = { -10.0f, 15.0f, 35.0f }; // 配置値から独立に決めたworld x
-		bool bModelPayloadsMatch = true; // payload matrixが配置値と一致したか
+		bool bModelPayloadsMatch = true; // payload matrixと材質設定が既知値へ一致したか
 		for ( int32 Index = 0; Index < 3; ++Index ) // 各root/prefab ownerの検査位置
 		{
 			const FWorldEditorModelPreview* Preview = State.ModelPreviews.Find( PreviewKeys[Index] );
 			FDrawModelMaterialData Payload{}; // 現在ownerのModelMaterial payload
 			const bool bFound = Preview != nullptr && Preview->Animator.Instance.IsValid() && FindPreviewCommand( BufferA, Preview->Animator.Instance->GetHandle(), Payload ); // 指定instanceのcommandが記録されたか
-			bModelPayloadsMatch = bModelPayloadsMatch && bFound && std::fabs( Payload.M[9] - ExpectedWorldX[Index] ) < 0.001f && std::fabs( Payload.M[10] ) < 0.001f;
+			bModelPayloadsMatch = bModelPayloadsMatch && bFound && std::fabs( Payload.M[9] - ExpectedWorldX[Index] ) < 0.001f && std::fabs( Payload.M[10] ) < 0.001f && std::fabs( Payload.Opacity - 0.55f ) < 1.0e-6f && Payload.BlendMode == static_cast<int32>( EDrawBlend::Add ) && Payload.Material.bTwoSided == 1;
 		}
 		Checker.Check( bModelPayloadsMatch && CountPreviewCommands( BufferA, EDrawCommand::ModelMaterial3D ) == 4 && CountPreviewCommands( BufferA, EDrawCommand::Model3D ) == 4, "実world記録は個体別handleと既知位置を使いnative siblingと失敗fallbackを残す" );
 		FWorldEditorModelPreview* FirstPaused = State.ModelPreviews.Find( FirstNestedKey );
@@ -444,7 +444,12 @@ namespace NWorldTest
 		const int32 OldGeometry = BeforeEdit != nullptr && BeforeEdit->Animator.Instance.IsValid() && FindPreviewCommand( BeforeEditBuffer, BeforeEdit->Animator.Instance->GetHandle(), BeforeEditPayload ) ? BeforeEditPayload.Geometry : -1; // root ownerが編集前に使っていたgeometry
 		FWorldDefinition ChangedWorld = State.Session.Document.Get(); // root binding一つだけを変更するworld copy
 		FWorldObject* ChangedLeaf = ChangedWorld.FindObject( 7 ); // root ownerの変更対象object
-		if ( ChangedLeaf != nullptr && ChangedLeaf->Model.IsSet() && ChangedLeaf->Model.GetValue().MaterialEffect.IsSet() ) ChangedLeaf->Model.GetValue().MaterialEffect.GetValue().Effect.Opacity = 0.61f;
+		if ( ChangedLeaf != nullptr && ChangedLeaf->Model.IsSet() && ChangedLeaf->Model.GetValue().MaterialEffect.IsSet() )
+		{
+			FWorldModelMaterialEffect& ChangedBinding = ChangedLeaf->Model.GetValue().MaterialEffect.GetValue(); // payload検査用に変えるroot binding
+			ChangedBinding.Effect.Opacity = 0.61f;
+			ChangedBinding.bTwoSided = false;
+		}
 		State.Session.Reset( ChangedWorld, "model_preview_owners.world" );
 		NWorldEditorUI::UpdateModelMaterialPreviews( State, 0.0f, &Executor );
 		const FWorldEditorModelPreview* ChangedRoot = State.ModelPreviews.Find( RootKey );
@@ -452,6 +457,12 @@ namespace NWorldTest
 		const FWorldEditorModelPreview* ChangedSecondNested = State.ModelPreviews.Find( SecondNestedKey );
 		const bool bChangedDefinitionRebuilt = ChangedRoot != nullptr && ChangedFirstNested != nullptr && ChangedSecondNested != nullptr && ChangedRoot->Animator.GetMaterialEffect().IsPrepared() && ChangedFirstNested->Animator.GetMaterialEffect().IsPrepared() && ChangedSecondNested->Animator.GetMaterialEffect().IsPrepared() && Fake.NumModelMaterialGeometryCreates == GeometryBeforeEdit + 1; // binding値変更だけでrootを再準備したか
 		Checker.Check( bChangedDefinitionRebuilt && ( OldGeometry < 0 || std::find( Fake.DeletedModelMaterialGeometries.begin(), Fake.DeletedModelMaterialGeometries.end(), OldGeometry ) != Fake.DeletedModelMaterialGeometries.end() ), "sourceとexecutorを保ったbinding変更だけで対象ownerを再準備し古いgeometryを解放する" );
+		FDrawBuffer ChangedBindingBuffer; // 変更後bindingの個体命令列
+		FDrawContext ChangedBindingDraw( ChangedBindingBuffer ); // 変更後payloadのrecord context
+		const bool bChangedRootHandled = NWorldEditorUI::RecordModelObject( State, RootKey, World.Objects[0].Transform.ToTransform(), ChangedBindingDraw ); // 変更後rootがhandledを返すか
+		FDrawModelMaterialData ChangedPayload{}; // 変更後rootのpayload値
+		const bool bChangedPayloadFound = ChangedRoot != nullptr && ChangedRoot->Animator.Instance.IsValid() && FindPreviewCommand( ChangedBindingBuffer, ChangedRoot->Animator.Instance->GetHandle(), ChangedPayload ); // root handleのpayloadを読む
+		Checker.Check( bChangedRootHandled && bChangedPayloadFound && CountPreviewCommands( ChangedBindingBuffer, EDrawCommand::ModelMaterial3D ) == 1 && std::fabs( ChangedPayload.Opacity - 0.61f ) < 1.0e-6f && ChangedPayload.BlendMode == static_cast<int32>( EDrawBlend::Add ) && ChangedPayload.Material.bTwoSided == 0, "binding再準備後のroot命令はOpacity .61・Add・片面設定を保存値どおり記録する" );
 
 		// 失敗設定はnativeへ戻し、同じ失敗hashで毎frame再試行しない。
 		FWorldDefinition InvalidWorld = State.Session.Document.Get(); // 同じownerでinvalid設定を試すworld copy
