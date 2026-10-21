@@ -333,7 +333,7 @@ namespace
 		LocalFollowRadial.bFollowEmitter = true;
 		LocalFollowRadial.Position = FVector3( -1.0f, 0.0f, 0.0f );
 		LocalFollowRadial.Radius = 4.0f;
-		LocalFollowRadial.Strength = 8.0f;
+		LocalFollowRadial.Strength = -8.0f;
 		// ワールド空間で(0, 4, 0)を加える固定Uniform場（90度Z回転の逆回転で局所(4, 0, 0)になる）。
 		FEffectForceFieldDefinition WorldFixedUniform;
 		WorldFixedUniform.Kind = FEffectForceFieldDefinition::EKind::Uniform;
