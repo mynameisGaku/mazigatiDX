@@ -187,7 +187,7 @@ namespace
 				for ( int32 FieldIndex = 0; FieldIndex < NumForceFields; ++FieldIndex )
 				{
 					// この粒子位置でのfield加速度。
-					const FVector3 FieldAcceleration = Def.ForceFields[FieldIndex].EvaluateAcceleration( WorldPosition );
+					const FVector3 FieldAcceleration = Def.ForceFields[FieldIndex].EvaluateAcceleration( WorldPosition, Simulation.Transform, Simulation.Time );
 					// overflowしない場合の累積値。
 					FVector3 Sum;
 					if ( TryAddFinite( WorldFieldAcceleration, FieldAcceleration, Sum ) ) WorldFieldAcceleration = Sum;

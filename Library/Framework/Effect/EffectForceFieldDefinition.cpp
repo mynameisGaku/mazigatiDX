@@ -10,21 +10,47 @@
 namespace
 {
 	// EnabledのJSON型違いを保持するbit。
-	constexpr uint8 InvalidEnabled = 1u << 0;
+	constexpr uint16 InvalidEnabled = 1u << 0;
 	// KindのJSON型違いを保持するbit。
-	constexpr uint8 InvalidKind = 1u << 1;
+	constexpr uint16 InvalidKind = 1u << 1;
+	// FollowEmitterのJSON型違いを保持するbit。
+	constexpr uint16 InvalidFollowEmitter = 1u << 2;
 	// AccelerationのJSON型違いを保持するbit。
-	constexpr uint8 InvalidAcceleration = 1u << 2;
+	constexpr uint16 InvalidAcceleration = 1u << 3;
 	// PositionのJSON型違いを保持するbit。
-	constexpr uint8 InvalidPosition = 1u << 3;
+	constexpr uint16 InvalidPosition = 1u << 4;
+	// AxisのJSON型違いを保持するbit。
+	constexpr uint16 InvalidAxis = 1u << 5;
 	// RadiusのJSON型違いを保持するbit。
-	constexpr uint8 InvalidRadius = 1u << 4;
+	constexpr uint16 InvalidRadius = 1u << 6;
 	// StrengthのJSON型違いを保持するbit。
-	constexpr uint8 InvalidStrength = 1u << 5;
+	constexpr uint16 InvalidStrength = 1u << 7;
+	// FrequencyのJSON型違いを保持するbit。
+	constexpr uint16 InvalidFrequency = 1u << 8;
+	// ScrollSpeedのJSON型違いを保持するbit。
+	constexpr uint16 InvalidScrollSpeed = 1u << 9;
 	// field object自体が不正な場合に立てるbit一式。
-	constexpr uint8 InvalidAll = InvalidEnabled | InvalidKind | InvalidAcceleration | InvalidPosition | InvalidRadius | InvalidStrength;
+	constexpr uint16 InvalidAll = InvalidEnabled | InvalidKind | InvalidFollowEmitter | InvalidAcceleration | InvalidPosition | InvalidAxis | InvalidRadius | InvalidStrength | InvalidFrequency | InvalidScrollSpeed;
 	// 未知の種類をUniformとして動かさないための値。
 	constexpr uint8 InvalidKindValue = 0xFFu;
+
+	// 定義済みの力場種類かを判定する。
+	bool IsKnownKind( FEffectForceFieldDefinition::EKind Kind )
+	{
+		return Kind == FEffectForceFieldDefinition::EKind::Uniform || Kind == FEffectForceFieldDefinition::EKind::Radial || Kind == FEffectForceFieldDefinition::EKind::Vortex || Kind == FEffectForceFieldDefinition::EKind::Turbulence;
+	}
+
+	// 二乗和のoverflowを避けてdoubleでベクトルの長さ二乗を返す。
+	double VectorLengthSquared( const FVector3& Value )
+	{
+		// X成分をdoubleへ広げた値。
+		const double X = Value.x;
+		// Y成分をdoubleへ広げた値。
+		const double Y = Value.y;
+		// Z成分をdoubleへ広げた値。
+		const double Z = Value.z;
+		return X * X + Y * Y + Z * Z;
+	}
 
 	// 読み込み時の問題を呼び出し元へ伝える。
 	void Warn( TArray<FString>* Warnings, const char* Message )
@@ -83,35 +109,139 @@ const char* ToString( FEffectForceFieldDefinition::EKind Kind )
 	{
 	case FEffectForceFieldDefinition::EKind::Uniform: return "Uniform";
 	case FEffectForceFieldDefinition::EKind::Radial: return "Radial";
+	case FEffectForceFieldDefinition::EKind::Vortex: return "Vortex";
+	case FEffectForceFieldDefinition::EKind::Turbulence: return "Turbulence";
 	}
 	return "Invalid";
 }
 
 bool FEffectForceFieldDefinition::IsValidSettings() const
 {
+	// ベクトル三成分の有限性と上限を調べるラムダ。
 	const auto IsValidVector = []( const FVector3& Value )
 	{
 		// 各成分が許容範囲にあるか調べる。
 		return std::isfinite( Value.x ) && std::isfinite( Value.y ) && std::isfinite( Value.z ) && std::fabs( Value.x ) <= MaxMagnitude && std::fabs( Value.y ) <= MaxMagnitude && std::fabs( Value.z ) <= MaxMagnitude;
 	};
-	return InvalidFieldTypes == 0 && ( Kind == EKind::Uniform || Kind == EKind::Radial ) && IsValidVector( Acceleration ) && IsValidVector( Position ) && std::isfinite( Radius ) && Radius > 0.0f && Radius <= MaxMagnitude && std::isfinite( Strength ) && std::fabs( Strength ) <= MaxMagnitude;
+	// 回転軸ベクトルの長さ二乗。
+	const double AxisLengthSquared = VectorLengthSquared( Axis );
+	return InvalidFieldTypes == 0 && IsKnownKind( Kind ) && IsValidVector( Acceleration ) && IsValidVector( Position ) && IsValidVector( Axis ) && std::isfinite( AxisLengthSquared ) && AxisLengthSquared >= 1.0e-12 && std::isfinite( Radius ) && Radius > 0.0f && Radius <= MaxMagnitude && std::isfinite( Strength ) && std::fabs( Strength ) <= MaxMagnitude && std::isfinite( Frequency ) && Frequency > 0.0f && Frequency <= MaxMagnitude && std::isfinite( ScrollSpeed ) && std::fabs( ScrollSpeed ) <= MaxMagnitude;
 }
 
 FVector3 FEffectForceFieldDefinition::EvaluateAcceleration( const FVector3& WorldPosition ) const
 {
-	if ( !bEnabled || !IsValidSettings() || !std::isfinite( WorldPosition.x ) || !std::isfinite( WorldPosition.y ) || !std::isfinite( WorldPosition.z ) ) return FVector3::Zero;
-	if ( Kind == EKind::Uniform ) return Acceleration;
-	// World位置からfield中心までの差。
-	const double DeltaX = static_cast<double>( WorldPosition.x ) - Position.x;
-	const double DeltaY = static_cast<double>( WorldPosition.y ) - Position.y;
-	const double DeltaZ = static_cast<double>( WorldPosition.z ) - Position.z;
-	// 二乗和のoverflowを避けるdouble距離。
-	const double Distance = std::sqrt( DeltaX * DeltaX + DeltaY * DeltaY + DeltaZ * DeltaZ );
-	if ( !std::isfinite( Distance ) || Distance == 0.0 || Distance >= static_cast<double>( Radius ) ) return FVector3::Zero;
-	// 半径に比例して弱まる加速度の大きさ。
-	const double Magnitude = static_cast<double>( Strength ) * ( 1.0 - Distance / Radius );
-	// 中心からの向きへ大きさを適用した結果。
-	const FVector3 Result( static_cast<float32>( DeltaX / Distance * Magnitude ), static_cast<float32>( DeltaY / Distance * Magnitude ), static_cast<float32>( DeltaZ / Distance * Magnitude ) );
+	return EvaluateAcceleration( WorldPosition, FTransform::Identity, 0.0f );
+}
+
+FVector3 FEffectForceFieldDefinition::EvaluateAcceleration( const FVector3& WorldPosition, const FTransform& EffectTransform, float32 Time ) const
+{
+	if ( !bEnabled || !IsValidSettings() || !std::isfinite( WorldPosition.x ) || !std::isfinite( WorldPosition.y ) || !std::isfinite( WorldPosition.z ) || !std::isfinite( Time ) ) return FVector3::Zero;
+	// 追従時に局所座標と出力加速度へ適用する正規化済み回転。
+	FQuaternion FollowRotation = FQuaternion::Identity;
+	// 力場を評価する座標（追従時はエミッター局所、非追従時はワールド）。
+	FVector3 EvaluationPosition = WorldPosition;
+	if ( bFollowEmitter )
+	{
+		// 四元数X成分をdoubleへ広げた値。
+		const double QuatX = EffectTransform.Rotation.x;
+		// 四元数Y成分をdoubleへ広げた値。
+		const double QuatY = EffectTransform.Rotation.y;
+		// 四元数Z成分をdoubleへ広げた値。
+		const double QuatZ = EffectTransform.Rotation.z;
+		// 四元数W成分をdoubleへ広げた値。
+		const double QuatW = EffectTransform.Rotation.w;
+		// 四元数の長さ二乗。
+		const double QuatLenSq = QuatX * QuatX + QuatY * QuatY + QuatZ * QuatZ + QuatW * QuatW;
+		if ( !std::isfinite( EffectTransform.Position.x ) || !std::isfinite( EffectTransform.Position.y ) || !std::isfinite( EffectTransform.Position.z ) || !std::isfinite( QuatX ) || !std::isfinite( QuatY ) || !std::isfinite( QuatZ ) || !std::isfinite( QuatW ) || !std::isfinite( QuatLenSq ) || QuatLenSq <= 1.0e-12 ) return FVector3::Zero;
+		// 四元数を正規化する長さ。
+		const double QuatLen = std::sqrt( QuatLenSq );
+		if ( !std::isfinite( QuatLen ) || QuatLen <= 0.0 ) return FVector3::Zero;
+		FollowRotation = FQuaternion( static_cast<float32>( QuatX / QuatLen ), static_cast<float32>( QuatY / QuatLen ), static_cast<float32>( QuatZ / QuatLen ), static_cast<float32>( QuatW / QuatLen ) );
+		// エミッター位置からWorld位置へのX差。
+		const double OffsetX = static_cast<double>( WorldPosition.x ) - EffectTransform.Position.x;
+		// エミッター位置からWorld位置へのY差。
+		const double OffsetY = static_cast<double>( WorldPosition.y ) - EffectTransform.Position.y;
+		// エミッター位置からWorld位置へのZ差。
+		const double OffsetZ = static_cast<double>( WorldPosition.z ) - EffectTransform.Position.z;
+		// float32で表せる絶対値の上限。
+		const double FloatLimit = std::numeric_limits<float32>::max();
+		if ( !std::isfinite( OffsetX ) || !std::isfinite( OffsetY ) || !std::isfinite( OffsetZ ) || std::fabs( OffsetX ) > FloatLimit || std::fabs( OffsetY ) > FloatLimit || std::fabs( OffsetZ ) > FloatLimit ) return FVector3::Zero;
+		// 逆回転へ渡す有限な相対位置。
+		const FVector3 Offset( static_cast<float32>( OffsetX ), static_cast<float32>( OffsetY ), static_cast<float32>( OffsetZ ) );
+		EvaluationPosition = FollowRotation.UnrotateVector( Offset );
+		if ( !std::isfinite( EvaluationPosition.x ) || !std::isfinite( EvaluationPosition.y ) || !std::isfinite( EvaluationPosition.z ) ) return FVector3::Zero;
+	}
+	// 場の座標系で求めた加速度。
+	FVector3 LocalResult = FVector3::Zero;
+	if ( Kind == EKind::Uniform ) LocalResult = Acceleration;
+	else
+	{
+		// 評価位置からfield中心までのX差。
+		const double DeltaX = static_cast<double>( EvaluationPosition.x ) - Position.x;
+		// 評価位置からfield中心までのY差。
+		const double DeltaY = static_cast<double>( EvaluationPosition.y ) - Position.y;
+		// 評価位置からfield中心までのZ差。
+		const double DeltaZ = static_cast<double>( EvaluationPosition.z ) - Position.z;
+		// 二乗和のoverflowを避けるdouble距離。
+		const double Distance = std::sqrt( DeltaX * DeltaX + DeltaY * DeltaY + DeltaZ * DeltaZ );
+		if ( !std::isfinite( Distance ) || Distance >= static_cast<double>( Radius ) ) return FVector3::Zero;
+		// 中心で1、半径境界で0になる線形減衰係数。
+		const double Falloff = 1.0 - Distance / static_cast<double>( Radius );
+		// 半径に比例して弱まる加速度の大きさ。
+		const double Magnitude = static_cast<double>( Strength ) * Falloff;
+		if ( Kind == EKind::Radial )
+		{
+			if ( Distance == 0.0 ) return FVector3::Zero;
+			LocalResult = FVector3( static_cast<float32>( DeltaX / Distance * Magnitude ), static_cast<float32>( DeltaY / Distance * Magnitude ), static_cast<float32>( DeltaZ / Distance * Magnitude ) );
+		}
+		else if ( Kind == EKind::Vortex )
+		{
+			if ( Distance == 0.0 ) return FVector3::Zero;
+			// 回転軸の長さを求めるdouble値。
+			const double AxisLength = std::sqrt( VectorLengthSquared( Axis ) );
+			if ( !std::isfinite( AxisLength ) || AxisLength <= 0.0 ) return FVector3::Zero;
+			// 正規化した回転軸のX成分。
+			const double AxisX = static_cast<double>( Axis.x ) / AxisLength;
+			// 正規化した回転軸のY成分。
+			const double AxisY = static_cast<double>( Axis.y ) / AxisLength;
+			// 正規化した回転軸のZ成分。
+			const double AxisZ = static_cast<double>( Axis.z ) / AxisLength;
+			// UnitAxis × Delta のX成分。
+			const double CrossX = AxisY * DeltaZ - AxisZ * DeltaY;
+			// UnitAxis × Delta のY成分。
+			const double CrossY = AxisZ * DeltaX - AxisX * DeltaZ;
+			// UnitAxis × Delta のZ成分。
+			const double CrossZ = AxisX * DeltaY - AxisY * DeltaX;
+			// 外積ベクトルの長さ。
+			const double CrossLen = std::sqrt( CrossX * CrossX + CrossY * CrossY + CrossZ * CrossZ );
+			if ( !std::isfinite( CrossLen ) || CrossLen <= 1.0e-12 ) return FVector3::Zero;
+			LocalResult = FVector3( static_cast<float32>( CrossX / CrossLen * Magnitude ), static_cast<float32>( CrossY / CrossLen * Magnitude ), static_cast<float32>( CrossZ / CrossLen * Magnitude ) );
+		}
+		else if ( Kind == EKind::Turbulence )
+		{
+			// 空間周波数のdouble値。
+			const double Omega = static_cast<double>( Frequency );
+			// 時間スクロールによる共通位相。
+			const double Phase = static_cast<double>( Time ) * static_cast<double>( ScrollSpeed );
+			// X座標に対応する位相。
+			const double PhaseX = DeltaX * Omega + Phase;
+			// Y座標に対応する位相。
+			const double PhaseY = DeltaY * Omega + Phase;
+			// Z座標に対応する位相。
+			const double PhaseZ = DeltaZ * Omega + Phase;
+			if ( !std::isfinite( PhaseX ) || !std::isfinite( PhaseY ) || !std::isfinite( PhaseZ ) ) return FVector3::Zero;
+			// 3軸が独立に変化する決定論的Beltrami波のX成分。
+			const double WaveX = std::sin( PhaseY ) + std::cos( PhaseZ );
+			// 3軸が独立に変化する決定論的Beltrami波のY成分。
+			const double WaveY = std::sin( PhaseZ ) + std::cos( PhaseX );
+			// 3軸が独立に変化する決定論的Beltrami波のZ成分。
+			const double WaveZ = std::sin( PhaseX ) + std::cos( PhaseY );
+			LocalResult = FVector3( static_cast<float32>( WaveX * Magnitude ), static_cast<float32>( WaveY * Magnitude ), static_cast<float32>( WaveZ * Magnitude ) );
+		}
+		else return FVector3::Zero;
+	}
+	// 追従時はエミッターの回転でワールド向きへ戻した最終加速度。
+	const FVector3 Result = bFollowEmitter ? FollowRotation.Rotate( LocalResult ) : LocalResult;
 	if ( !std::isfinite( Result.x ) || !std::isfinite( Result.y ) || !std::isfinite( Result.z ) ) return FVector3::Zero;
 	return Result;
 }
@@ -121,11 +251,15 @@ NlohmannJson FEffectForceFieldDefinition::ToJson() const
 	// 保存するfield object。
 	NlohmannJson Json = NlohmannJson::object();
 	Json["Enabled"] = ( InvalidFieldTypes & InvalidEnabled ) != 0 ? NlohmannJson( nullptr ) : NlohmannJson( bEnabled );
-	Json["Kind"] = ( InvalidFieldTypes & InvalidKind ) != 0 || ( Kind != EKind::Uniform && Kind != EKind::Radial ) ? NlohmannJson( nullptr ) : NlohmannJson( ToString( Kind ) );
+	Json["Kind"] = ( InvalidFieldTypes & InvalidKind ) != 0 || !IsKnownKind( Kind ) ? NlohmannJson( nullptr ) : NlohmannJson( ToString( Kind ) );
+	Json["FollowEmitter"] = ( InvalidFieldTypes & InvalidFollowEmitter ) != 0 ? NlohmannJson( nullptr ) : NlohmannJson( bFollowEmitter );
 	Json["Acceleration"] = ( InvalidFieldTypes & InvalidAcceleration ) != 0 || !std::isfinite( Acceleration.x ) || !std::isfinite( Acceleration.y ) || !std::isfinite( Acceleration.z ) ? NlohmannJson( nullptr ) : NlohmannJson::array( { Acceleration.x, Acceleration.y, Acceleration.z } );
 	Json["Position"] = ( InvalidFieldTypes & InvalidPosition ) != 0 || !std::isfinite( Position.x ) || !std::isfinite( Position.y ) || !std::isfinite( Position.z ) ? NlohmannJson( nullptr ) : NlohmannJson::array( { Position.x, Position.y, Position.z } );
+	Json["Axis"] = ( InvalidFieldTypes & InvalidAxis ) != 0 || !std::isfinite( Axis.x ) || !std::isfinite( Axis.y ) || !std::isfinite( Axis.z ) ? NlohmannJson( nullptr ) : NlohmannJson::array( { Axis.x, Axis.y, Axis.z } );
 	Json["Radius"] = ( InvalidFieldTypes & InvalidRadius ) != 0 || !std::isfinite( Radius ) ? NlohmannJson( nullptr ) : NlohmannJson( Radius );
 	Json["Strength"] = ( InvalidFieldTypes & InvalidStrength ) != 0 || !std::isfinite( Strength ) ? NlohmannJson( nullptr ) : NlohmannJson( Strength );
+	Json["Frequency"] = ( InvalidFieldTypes & InvalidFrequency ) != 0 || !std::isfinite( Frequency ) ? NlohmannJson( nullptr ) : NlohmannJson( Frequency );
+	Json["ScrollSpeed"] = ( InvalidFieldTypes & InvalidScrollSpeed ) != 0 || !std::isfinite( ScrollSpeed ) ? NlohmannJson( nullptr ) : NlohmannJson( ScrollSpeed );
 	return Json;
 }
 
@@ -147,20 +281,30 @@ bool FEffectForceFieldDefinition::FromJson( const NlohmannJson& Json, FEffectFor
 	}
 	if ( Json.contains( "Kind" ) )
 	{
-		if ( !Json["Kind"].is_string() ) { Definition.InvalidFieldTypes |= InvalidKind; Definition.Kind = static_cast<EKind>( InvalidKindValue ); Warn( Warnings, "KindはUniformまたはRadialにしてください" ); }
+		if ( !Json["Kind"].is_string() ) { Definition.InvalidFieldTypes |= InvalidKind; Definition.Kind = static_cast<EKind>( InvalidKindValue ); Warn( Warnings, "KindはUniform、Radial、Vortex、Turbulenceのいずれかにしてください" ); }
 		else
 		{
 			// JSONに書かれたfieldの種類。
 			const FString Kind = NJson::GetOr<FString>( Json, "Kind", FString() );
 			if ( Kind == "Uniform" ) Definition.Kind = EKind::Uniform;
 			else if ( Kind == "Radial" ) Definition.Kind = EKind::Radial;
-			else { Definition.InvalidFieldTypes |= InvalidKind; Definition.Kind = static_cast<EKind>( InvalidKindValue ); Warn( Warnings, "KindはUniformまたはRadialにしてください" ); }
+			else if ( Kind == "Vortex" ) Definition.Kind = EKind::Vortex;
+			else if ( Kind == "Turbulence" ) Definition.Kind = EKind::Turbulence;
+			else { Definition.InvalidFieldTypes |= InvalidKind; Definition.Kind = static_cast<EKind>( InvalidKindValue ); Warn( Warnings, "KindはUniform、Radial、Vortex、Turbulenceのいずれかにしてください" ); }
 		}
+	}
+	if ( Json.contains( "FollowEmitter" ) )
+	{
+		if ( Json["FollowEmitter"].is_boolean() ) Definition.bFollowEmitter = Json["FollowEmitter"].get<bool>();
+		else { Definition.InvalidFieldTypes |= InvalidFollowEmitter; Warn( Warnings, "FollowEmitterはtrueまたはfalseにしてください" ); }
 	}
 	if ( Json.contains( "Acceleration" ) && !ReadVector( Json["Acceleration"], Definition.Acceleration ) ) { Definition.InvalidFieldTypes |= InvalidAcceleration; Warn( Warnings, "Accelerationは三つの数値配列にしてください" ); }
 	if ( Json.contains( "Position" ) && !ReadVector( Json["Position"], Definition.Position ) ) { Definition.InvalidFieldTypes |= InvalidPosition; Warn( Warnings, "Positionは三つの数値配列にしてください" ); }
+	if ( Json.contains( "Axis" ) && !ReadVector( Json["Axis"], Definition.Axis ) ) { Definition.InvalidFieldTypes |= InvalidAxis; Warn( Warnings, "Axisは三つの数値配列にしてください" ); }
 	if ( Json.contains( "Radius" ) && !ReadFloat( Json["Radius"], Definition.Radius ) ) { Definition.InvalidFieldTypes |= InvalidRadius; Warn( Warnings, "Radiusは数値にしてください" ); }
 	if ( Json.contains( "Strength" ) && !ReadFloat( Json["Strength"], Definition.Strength ) ) { Definition.InvalidFieldTypes |= InvalidStrength; Warn( Warnings, "Strengthは数値にしてください" ); }
+	if ( Json.contains( "Frequency" ) && !ReadFloat( Json["Frequency"], Definition.Frequency ) ) { Definition.InvalidFieldTypes |= InvalidFrequency; Warn( Warnings, "Frequencyは数値にしてください" ); }
+	if ( Json.contains( "ScrollSpeed" ) && !ReadFloat( Json["ScrollSpeed"], Definition.ScrollSpeed ) ) { Definition.InvalidFieldTypes |= InvalidScrollSpeed; Warn( Warnings, "ScrollSpeedは数値にしてください" ); }
 	Out = std::move( Definition );
 	return true;
 }
@@ -170,16 +314,23 @@ TArray<FString> FEffectForceFieldDefinition::Validate() const
 	// 保存前に修正が必要な値。
 	TArray<FString> Issues;
 	if ( ( InvalidFieldTypes & InvalidEnabled ) != 0 ) Issues.Add( "ForceField.Enabledはtrueまたはfalseにしてください" );
-	if ( ( InvalidFieldTypes & InvalidKind ) != 0 || ( Kind != EKind::Uniform && Kind != EKind::Radial ) ) Issues.Add( "ForceField.KindはUniformまたはRadialにしてください" );
-	const auto ValidateVector = [&]( const FVector3& Value, uint8 InvalidBit, const char* Name )
+	if ( ( InvalidFieldTypes & InvalidKind ) != 0 || !IsKnownKind( Kind ) ) Issues.Add( "ForceField.KindはUniform、Radial、Vortex、Turbulenceのいずれかにしてください" );
+	if ( ( InvalidFieldTypes & InvalidFollowEmitter ) != 0 ) Issues.Add( "ForceField.FollowEmitterはtrueまたはfalseにしてください" );
+	// ベクトル三成分の保存状態を検査するラムダ。
+	const auto ValidateVector = [&]( const FVector3& Value, uint16 InvalidBit, const char* Name )
 	{
 		// 未使用fieldを含む三成分の保存状態。
 		if ( ( InvalidFieldTypes & InvalidBit ) != 0 || !std::isfinite( Value.x ) || !std::isfinite( Value.y ) || !std::isfinite( Value.z ) || std::fabs( Value.x ) > MaxMagnitude || std::fabs( Value.y ) > MaxMagnitude || std::fabs( Value.z ) > MaxMagnitude ) Issues.Add( FString( "ForceField." ) + Name + "は有限で各成分の絶対値を1000000以下にしてください" );
 	};
 	ValidateVector( Acceleration, InvalidAcceleration, "Acceleration" );
 	ValidateVector( Position, InvalidPosition, "Position" );
+	// 回転軸ベクトルの長さ二乗。
+	const double AxisLengthSquared = VectorLengthSquared( Axis );
+	if ( ( InvalidFieldTypes & InvalidAxis ) != 0 || !std::isfinite( Axis.x ) || !std::isfinite( Axis.y ) || !std::isfinite( Axis.z ) || std::fabs( Axis.x ) > MaxMagnitude || std::fabs( Axis.y ) > MaxMagnitude || std::fabs( Axis.z ) > MaxMagnitude || !std::isfinite( AxisLengthSquared ) || AxisLengthSquared < 1.0e-12 ) Issues.Add( "ForceField.Axisはゼロでない有限ベクトルで各成分の絶対値を1000000以下にしてください" );
 	if ( ( InvalidFieldTypes & InvalidRadius ) != 0 || !std::isfinite( Radius ) || Radius <= 0.0f || Radius > MaxMagnitude ) Issues.Add( "ForceField.Radiusは0より大きく1000000以下にしてください" );
 	if ( ( InvalidFieldTypes & InvalidStrength ) != 0 || !std::isfinite( Strength ) || std::fabs( Strength ) > MaxMagnitude ) Issues.Add( "ForceField.Strengthは有限で絶対値を1000000以下にしてください" );
+	if ( ( InvalidFieldTypes & InvalidFrequency ) != 0 || !std::isfinite( Frequency ) || Frequency <= 0.0f || Frequency > MaxMagnitude ) Issues.Add( "ForceField.Frequencyは0より大きく1000000以下にしてください" );
+	if ( ( InvalidFieldTypes & InvalidScrollSpeed ) != 0 || !std::isfinite( ScrollSpeed ) || std::fabs( ScrollSpeed ) > MaxMagnitude ) Issues.Add( "ForceField.ScrollSpeedは有限で絶対値を1000000以下にしてください" );
 	return Issues;
 }
 
@@ -191,12 +342,18 @@ uint64 FEffectForceFieldDefinition::ComputeHash() const
 	const uint8 Enabled = bEnabled ? 1u : 0u;
 	// 未知値も識別できるkindのbyte値。
 	const uint8 KindValue = static_cast<uint8>( Kind );
+	// 追従フラグを固定幅へ変換した値。
+	const uint8 FollowEmitter = bFollowEmitter ? 1u : 0u;
 	MixValue( Hash, Enabled );
 	MixValue( Hash, KindValue );
+	MixValue( Hash, FollowEmitter );
 	MixVector( Hash, Acceleration );
 	MixVector( Hash, Position );
+	MixVector( Hash, Axis );
 	MixValue( Hash, Radius );
 	MixValue( Hash, Strength );
+	MixValue( Hash, Frequency );
+	MixValue( Hash, ScrollSpeed );
 	MixValue( Hash, InvalidFieldTypes );
 	return Hash;
 }

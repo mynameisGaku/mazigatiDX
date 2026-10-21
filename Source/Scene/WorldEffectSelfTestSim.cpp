@@ -142,18 +142,30 @@ namespace
 		FEffectForceFieldDefinition MaxSettings; // 上限ちょうどの設定
 		MaxSettings.Acceleration = FVector3::One * FEffectForceFieldDefinition::MaxMagnitude;
 		MaxSettings.Position = FVector3::One * FEffectForceFieldDefinition::MaxMagnitude;
+		MaxSettings.Axis = FVector3::One * FEffectForceFieldDefinition::MaxMagnitude;
 		MaxSettings.Radius = FEffectForceFieldDefinition::MaxMagnitude;
 		MaxSettings.Strength = FEffectForceFieldDefinition::MaxMagnitude;
+		MaxSettings.Frequency = FEffectForceFieldDefinition::MaxMagnitude;
+		MaxSettings.ScrollSpeed = -FEffectForceFieldDefinition::MaxMagnitude;
 		bool bLimitsValid = MaxSettings.IsValidSettings(); // 境界値と範囲外値の判定結果
-		FEffectForceFieldDefinition OutsideLimits[6]; // 半径と強度の範囲外設定
+		// 半径・強度・周波数・スクロール速度の範囲外設定。
+		FEffectForceFieldDefinition OutsideLimits[13];
 		OutsideLimits[0].Radius = 0.0f;
 		OutsideLimits[1].Radius = -1.0f;
 		OutsideLimits[2].Radius = FEffectForceFieldDefinition::MaxMagnitude + 1.0f;
 		OutsideLimits[3].Radius = std::numeric_limits<float32>::infinity();
 		OutsideLimits[4].Strength = std::numeric_limits<float32>::infinity();
 		OutsideLimits[5].Strength = FEffectForceFieldDefinition::MaxMagnitude + 1.0f;
+		OutsideLimits[6].Frequency = 0.0f;
+		OutsideLimits[7].Frequency = -1.0f;
+		OutsideLimits[8].Frequency = FEffectForceFieldDefinition::MaxMagnitude + 1.0f;
+		OutsideLimits[9].Frequency = std::numeric_limits<float32>::infinity();
+		OutsideLimits[10].ScrollSpeed = FEffectForceFieldDefinition::MaxMagnitude + 1.0f;
+		OutsideLimits[11].ScrollSpeed = -FEffectForceFieldDefinition::MaxMagnitude - 1.0f;
+		OutsideLimits[12].ScrollSpeed = std::numeric_limits<float32>::infinity();
 		for ( const FEffectForceFieldDefinition& Invalid : OutsideLimits ) bLimitsValid = bLimitsValid && !Invalid.IsValidSettings() && !Invalid.Validate().IsEmpty() && Near3( Invalid.EvaluateAcceleration( FVector3::Zero ), FVector3::Zero ); // 各範囲外設定を確認
-		FEffectForceFieldDefinition OutsideVectors[8]; // 両ベクトル各軸の範囲外値
+		// 加速度・中心・回転軸ベクトルの範囲外設定。
+		FEffectForceFieldDefinition OutsideVectors[14];
 		for ( int32 Axis = 0; Axis < 3; ++Axis ) // ベクトル成分番号
 		{
 			if ( Axis == 0 ) OutsideVectors[Axis].Acceleration.x = FEffectForceFieldDefinition::MaxMagnitude + 1.0f;
@@ -162,11 +174,184 @@ namespace
 			if ( Axis == 0 ) OutsideVectors[Axis + 3].Position.x = FEffectForceFieldDefinition::MaxMagnitude + 1.0f;
 			if ( Axis == 1 ) OutsideVectors[Axis + 3].Position.y = FEffectForceFieldDefinition::MaxMagnitude + 1.0f;
 			if ( Axis == 2 ) OutsideVectors[Axis + 3].Position.z = FEffectForceFieldDefinition::MaxMagnitude + 1.0f;
+			if ( Axis == 0 ) OutsideVectors[Axis + 6].Axis.x = FEffectForceFieldDefinition::MaxMagnitude + 1.0f;
+			if ( Axis == 1 ) OutsideVectors[Axis + 6].Axis.y = FEffectForceFieldDefinition::MaxMagnitude + 1.0f;
+			if ( Axis == 2 ) OutsideVectors[Axis + 6].Axis.z = FEffectForceFieldDefinition::MaxMagnitude + 1.0f;
 		}
-		OutsideVectors[6].Acceleration.y = std::numeric_limits<float32>::infinity();
-		OutsideVectors[7].Position.z = -std::numeric_limits<float32>::infinity();
+		OutsideVectors[9].Acceleration.y = std::numeric_limits<float32>::infinity();
+		OutsideVectors[10].Position.z = -std::numeric_limits<float32>::infinity();
+		OutsideVectors[11].Axis = FVector3::Zero;
+		OutsideVectors[12].Axis = FVector3( 1.0e-7f, 0.0f, 0.0f );
+		OutsideVectors[13].Axis.x = std::numeric_limits<float32>::infinity();
 		for ( const FEffectForceFieldDefinition& Invalid : OutsideVectors ) bLimitsValid = bLimitsValid && !Invalid.IsValidSettings() && !Invalid.Validate().IsEmpty() && Near3( Invalid.EvaluateAcceleration( FVector3::Zero ), FVector3::Zero ); // 全ベクトル成分を確認
-		C.Check( bLimitsValid && MaxSettings.Validate().IsEmpty(), "field settings accept the exact magnitude boundary and reject invalid radius, strength, and vector bounds" );
+		C.Check( bLimitsValid && MaxSettings.Validate().IsEmpty(), "field settings accept the exact magnitude boundary and reject invalid radius, strength, frequency, scroll speed, and vector bounds" );
+
+		// Vortex場の接線方向・Strength符号反転・非単位軸正規化・球半径減衰・軸上および境界外ゼロを3軸手計算で確認する。
+		// 解析式を確認する渦場。
+		FEffectForceFieldDefinition Vortex;
+		Vortex.Kind = FEffectForceFieldDefinition::EKind::Vortex;
+		Vortex.Position = FVector3::Zero;
+		Vortex.Axis = FVector3::Up;
+		Vortex.Radius = 4.0f;
+		Vortex.Strength = 8.0f;
+		// (1,0,0)での接線加速度: (0,1,0)x(1,0,0)=(0,0,-1)、減衰0.75、大きさ6。
+		const FVector3 VortexAtX = Vortex.EvaluateAcceleration( FVector3( 1.0f, 0.0f, 0.0f ) );
+		// (0,0,2)での接線加速度: (0,1,0)x(0,0,2)=(2,0,0)->(1,0,0)、減衰0.5、大きさ4。
+		const FVector3 VortexAtZ = Vortex.EvaluateAcceleration( FVector3( 0.0f, 0.0f, 2.0f ) );
+		Vortex.Strength = -8.0f;
+		// 負Strengthで逆向きになる接線加速度。
+		const FVector3 VortexReversed = Vortex.EvaluateAcceleration( FVector3( 1.0f, 0.0f, 0.0f ) );
+		C.Check( Near3( VortexAtX, FVector3( 0.0f, 0.0f, -6.0f ) ) && Near3( VortexAtZ, FVector3( 4.0f, 0.0f, 0.0f ) ) && Near3( VortexReversed, FVector3( 0.0f, 0.0f, 6.0f ) ), "a vortex field accelerates along UnitAxis x Delta and reverses direction when Strength is negative" );
+		Vortex.Radius = 10.0f;
+		Vortex.Strength = 20.0f;
+		// 軸から高さ4だけ外れた点(3,4,0)では球距離r=5で減衰0.5になり、円筒距離3の減衰0.7にならない。
+		const FVector3 VortexOffPlane = Vortex.EvaluateAcceleration( FVector3( 3.0f, 4.0f, 0.0f ) );
+		C.Check( Near3( VortexOffPlane, FVector3( 0.0f, 0.0f, -10.0f ) ) && Near3( Vortex.EvaluateAcceleration( FVector3::Zero ), FVector3::Zero ) && Near3( Vortex.EvaluateAcceleration( FVector3( 0.0f, 3.0f, 0.0f ) ), FVector3::Zero ) && Near3( Vortex.EvaluateAcceleration( FVector3( 0.0f, -2.0f, 0.0f ) ), FVector3::Zero ) && Near3( Vortex.EvaluateAcceleration( FVector3( 10.0f, 0.0f, 0.0f ) ), FVector3::Zero ) && Near3( Vortex.EvaluateAcceleration( FVector3( 12.0f, 0.0f, 0.0f ) ), FVector3::Zero ), "a vortex field uses spherical distance for linear falloff and returns zero at the centre, on the rotation axis, and at or beyond its radius" );
+		// 非単位の斜め回転軸を持つ渦場。
+		FEffectForceFieldDefinition TiltedVortex;
+		TiltedVortex.Kind = FEffectForceFieldDefinition::EKind::Vortex;
+		TiltedVortex.Position = FVector3( 1.0f, -2.0f, 3.0f );
+		TiltedVortex.Axis = FVector3( 0.0f, 3.0f, 4.0f );
+		TiltedVortex.Radius = 10.0f;
+		TiltedVortex.Strength = 25.0f;
+		// UnitAxis=(0,0.6,0.8)、Delta=(3,4,0)、r=5、Falloff=0.5、Magnitude=12.5に対するUnitAxis x Delta = (-3.2, 2.4, -1.8)。
+		const double TiltedCrossLen = std::sqrt( 3.2 * 3.2 + 2.4 * 2.4 + 1.8 * 1.8 );
+		// 3成分すべて非ゼロの手計算渦加速度。
+		const FVector3 ExpectedTiltedVortex( static_cast<float32>( -3.2 / TiltedCrossLen * 12.5 ), static_cast<float32>( 2.4 / TiltedCrossLen * 12.5 ), static_cast<float32>( -1.8 / TiltedCrossLen * 12.5 ) );
+		// 同じ向きで単位長の回転軸を持つ比較用渦場。
+		FEffectForceFieldDefinition UnitTiltedVortex = TiltedVortex;
+		UnitTiltedVortex.Axis = FVector3( 0.0f, 0.6f, 0.8f );
+		// 小さい有効長(0.002)の回転軸でも正規化後に軸近傍判定を行い、早まってゼロにしないことを確認する渦場。
+		FEffectForceFieldDefinition SmallAxisVortex = Vortex;
+		SmallAxisVortex.Axis = FVector3( 0.0f, 0.002f, 0.0f );
+		SmallAxisVortex.Radius = 4.0f;
+		SmallAxisVortex.Strength = 8.0f;
+		C.Check( Near3( TiltedVortex.EvaluateAcceleration( FVector3( 4.0f, 2.0f, 3.0f ) ), ExpectedTiltedVortex ) && Near3( TiltedVortex.EvaluateAcceleration( FVector3( 4.0f, 2.0f, 3.0f ) ), UnitTiltedVortex.EvaluateAcceleration( FVector3( 4.0f, 2.0f, 3.0f ) ) ) && Near3( TiltedVortex.EvaluateAcceleration( FVector3( 1.0f, 1.0f, 7.0f ) ), FVector3::Zero ) && Near3( SmallAxisVortex.EvaluateAcceleration( FVector3( 2.0e-10f, 1.0f, 0.0f ) ), FVector3( 0.0f, 0.0f, -6.0f ), 1.0e-4f ), "a vortex field normalizes a non-unit Axis before the axis-proximity check and matches the three-axis cross-product formula while returning zero along that axis" );
+
+		// Turbulence場の中心評価・Beltrami波3軸手計算・空間周波数・時間位相・境界外ゼロを確認する。
+		// 解析式を確認する乱流場。
+		FEffectForceFieldDefinition Turbulence;
+		Turbulence.Kind = FEffectForceFieldDefinition::EKind::Turbulence;
+		Turbulence.Position = FVector3( 1.0f, -1.0f, 0.5f );
+		Turbulence.Radius = 10.0f;
+		Turbulence.Strength = 16.0f;
+		Turbulence.Frequency = 0.5f;
+		Turbulence.ScrollSpeed = 2.0f;
+		// 中心(r=0, Time=0)ではPhaseX=PhaseY=PhaseZ=0、sin(0)+cos(0)=1、Falloff=1より(Strength, Strength, Strength)。
+		const FVector3 TurbulenceCenter = Turbulence.EvaluateAcceleration( Turbulence.Position, FTransform::Identity, 0.0f );
+		// 評価点(4,3,0.5)ではDelta=(3,4,0)、r=5、Falloff=0.5、Magnitude=8、Time=0.75でPhase=1.5、PhaseX=3.0、PhaseY=3.5、PhaseZ=1.5。
+		const FVector3 ExpectedTurbulence( static_cast<float32>( ( std::sin( 3.5 ) + std::cos( 1.5 ) ) * 8.0 ), static_cast<float32>( ( std::sin( 1.5 ) + std::cos( 3.0 ) ) * 8.0 ), static_cast<float32>( ( std::sin( 3.0 ) + std::cos( 3.5 ) ) * 8.0 ) );
+		// 時刻0での同じ位置の乱流加速度。
+		const FVector3 TurbulenceAtZeroTime = Turbulence.EvaluateAcceleration( FVector3( 4.0f, 3.0f, 0.5f ), FTransform::Identity, 0.0f );
+		// 時刻0.75での同じ位置の乱流加速度。
+		const FVector3 TurbulenceAtTime = Turbulence.EvaluateAcceleration( FVector3( 4.0f, 3.0f, 0.5f ), FTransform::Identity, 0.75f );
+		// Frequencyを変えた乱流場。
+		FEffectForceFieldDefinition HighFreqTurbulence = Turbulence;
+		HighFreqTurbulence.Frequency = 1.25f;
+		// ScrollSpeedを変えた乱流場。
+		FEffectForceFieldDefinition FastScrollTurbulence = Turbulence;
+		FastScrollTurbulence.ScrollSpeed = -1.5f;
+		C.Check( Near3( TurbulenceCenter, FVector3( 16.0f, 16.0f, 16.0f ) ) && Near3( TurbulenceAtTime, ExpectedTurbulence ) && !Near3( TurbulenceAtTime, TurbulenceAtZeroTime ) && !Near3( TurbulenceAtTime, HighFreqTurbulence.EvaluateAcceleration( FVector3( 4.0f, 3.0f, 0.5f ), FTransform::Identity, 0.75f ) ) && !Near3( TurbulenceAtTime, FastScrollTurbulence.EvaluateAcceleration( FVector3( 4.0f, 3.0f, 0.5f ), FTransform::Identity, 0.75f ) ) && Near3( Turbulence.EvaluateAcceleration( FVector3( 11.0f, -1.0f, 0.5f ), FTransform::Identity, 0.75f ), FVector3::Zero ) && Near3( Turbulence.EvaluateAcceleration( FVector3( 12.0f, -1.0f, 0.5f ), FTransform::Identity, 0.75f ), FVector3::Zero ) && Near3( Turbulence.EvaluateAcceleration( Turbulence.Position, FTransform::Identity, NaN ), FVector3::Zero ), "a turbulence field is non-zero at its centre, matches the deterministic 3-axis Beltrami wave with Frequency and Time * ScrollSpeed, and is zero at or beyond its radius or for non-finite time" );
+
+		// シミュレーション進行時にSimulation.TimeがTurbulenceへ渡り、手計算の速度と位置になることを確認する。
+		// 乱流場だけで粒子を動かすエミッター。
+		FParticleEmitterDefinition TurbEmitter = QuietEmitter();
+		TurbEmitter.Bursts.Add( Burst( 0.0f, 1 ) );
+		TurbEmitter.Speed = { 0.0f, 0.0f };
+		TurbEmitter.ForceFields.Add( Turbulence );
+		// 乱流シミュレーションの状態。
+		FParticleSimulation TurbSim;
+		TurbSim.Transform = FTransform( FVector3( 4.0f, 3.0f, 0.5f ) );
+		NParticle::Start( TurbSim, MakeEffect( { TurbEmitter } ) );
+		NParticle::Advance( TurbSim, 0.125f );
+		NParticle::Advance( TurbSim, 0.125f );
+		// 2回目のAdvance先頭ではSimulation.Time==0.125fで評価される乱流加速度。
+		const FVector3 StepTurbulenceAccel = Turbulence.EvaluateAcceleration( FVector3( 4.0f, 3.0f, 0.5f ), TurbSim.Transform, 0.125f );
+		// 1ステップ更新後の期待速度。
+		const FVector3 ExpectedTurbVelocity = StepTurbulenceAccel * 0.125f;
+		// 1ステップ更新後の期待位置。
+		const FVector3 ExpectedTurbPosition = FVector3( 4.0f, 3.0f, 0.5f ) + ExpectedTurbVelocity * 0.125f;
+		C.Check( TurbSim.GetNumParticles() == 1 && Near3( TurbSim.Emitters[0].Particles[0].Velocity, ExpectedTurbVelocity ) && Near3( DrawPosition( TurbSim ), ExpectedTurbPosition ) && !Near3( StepTurbulenceAccel, Turbulence.EvaluateAcceleration( FVector3( 4.0f, 3.0f, 0.5f ), TurbSim.Transform, 0.0f ) ), "ParticleSimulation passes Simulation.Time to Turbulence force fields during particle updates" );
+
+		// bFollowEmitter=falseではTransformの移動・回転に依らずワールド固定で評価し、bFollowEmitter=trueでは移動・回転に追従しScaleを掛けない。
+		// 90度Z回転の単位四元数。
+		const FQuaternion FollowTurn = FQuaternion::FromAxisAngle( FVector3::Forward, 1.57079632679f );
+		// 移動・回転・非一様Scaleを含むエミッター姿勢。
+		const FTransform FollowTransform( FVector3( 10.0f, 20.0f, 30.0f ), FollowTurn, FVector3( 2.0f, 3.0f, 4.0f ) );
+		// ワールド固定のUniform場。
+		FEffectForceFieldDefinition FixedUniform;
+		FixedUniform.Acceleration = FVector3( 1.0f, 2.0f, 3.0f );
+		// ワールド固定の比較姿勢。
+		const FEffectForceFieldDefinition FixedFields[] = { FixedUniform, Radial, TiltedVortex, Turbulence };
+		// bFollowEmitter=falseで全4種がTransformを無視するか。
+		bool bFixedIgnoresTransform = true;
+		for ( const FEffectForceFieldDefinition& FixedField : FixedFields )
+		{
+			// 検査用のワールド座標。
+			const FVector3 SamplePoint( 2.0f, 0.0f, 3.0f );
+			bFixedIgnoresTransform = bFixedIgnoresTransform && Near3( FixedField.EvaluateAcceleration( SamplePoint, FollowTransform, 0.5f ), FixedField.EvaluateAcceleration( SamplePoint, FTransform::Identity, 0.5f ) );
+		}
+		C.Check( bFixedIgnoresTransform, "force fields with bFollowEmitter=false remain fixed in world space when the emitter moves, rotates, or scales" );
+
+		// 追従するUniform場。
+		FEffectForceFieldDefinition FollowUniform;
+		FollowUniform.Kind = FEffectForceFieldDefinition::EKind::Uniform;
+		FollowUniform.bFollowEmitter = true;
+		FollowUniform.Acceleration = FVector3( 4.0f, -2.0f, 1.0f );
+		// 追従するRadial場。
+		FEffectForceFieldDefinition FollowRadial;
+		FollowRadial.Kind = FEffectForceFieldDefinition::EKind::Radial;
+		FollowRadial.bFollowEmitter = true;
+		FollowRadial.Position = FVector3( 1.0f, 2.0f, -1.0f );
+		FollowRadial.Radius = 8.0f;
+		FollowRadial.Strength = -12.0f;
+		// 追従するVortex場。
+		FEffectForceFieldDefinition FollowVortex = TiltedVortex;
+		FollowVortex.bFollowEmitter = true;
+		// 追従するTurbulence場。
+		FEffectForceFieldDefinition FollowTurbulence = Turbulence;
+		FollowTurbulence.bFollowEmitter = true;
+		// エミッター局所での評価座標。
+		const FVector3 LocalEvalPos( 4.0f, 2.0f, 3.0f );
+		// FollowTransformでワールド空間へ移した評価座標（Scaleは含めない）。
+		const FVector3 WorldEvalPos = FollowTransform.Position + FollowTurn.Rotate( LocalEvalPos );
+		// 非単位四元数を持つ姿勢（正規化の確認用）。
+		const FTransform UnnormalizedFollowTransform( FollowTransform.Position, FQuaternion( FollowTurn.x * 2.5f, FollowTurn.y * 2.5f, FollowTurn.z * 2.5f, FollowTurn.w * 2.5f ), FVector3( 5.0f, 6.0f, 7.0f ) );
+		// ゼロ四元数を持つ不正姿勢。
+		const FTransform ZeroQuatTransform( FollowTransform.Position, FQuaternion( 0.0f, 0.0f, 0.0f, 0.0f ) );
+		C.Check( Near3( FollowUniform.EvaluateAcceleration( WorldEvalPos, FollowTransform, 0.5f ), FollowTurn.Rotate( FollowUniform.Acceleration ) ) && Near3( FollowRadial.EvaluateAcceleration( WorldEvalPos, FollowTransform, 0.5f ), FollowTurn.Rotate( FollowRadial.EvaluateAcceleration( LocalEvalPos, FTransform::Identity, 0.5f ) ) ) && Near3( FollowVortex.EvaluateAcceleration( WorldEvalPos, FollowTransform, 0.5f ), FollowTurn.Rotate( FollowVortex.EvaluateAcceleration( LocalEvalPos, FTransform::Identity, 0.5f ) ) ) && Near3( FollowTurbulence.EvaluateAcceleration( WorldEvalPos, FollowTransform, 0.5f ), FollowTurn.Rotate( FollowTurbulence.EvaluateAcceleration( LocalEvalPos, FTransform::Identity, 0.5f ) ) ) && Near3( FollowVortex.EvaluateAcceleration( WorldEvalPos, UnnormalizedFollowTransform, 0.5f ), FollowVortex.EvaluateAcceleration( WorldEvalPos, FollowTransform, 0.5f ) ) && Near3( FollowVortex.EvaluateAcceleration( WorldEvalPos, ZeroQuatTransform, 0.5f ), FVector3::Zero ), "force fields with bFollowEmitter=true translate by EffectTransform.Position, rotate by normalized EffectTransform.Rotation, ignore EffectTransform.Scale, and guard zero quaternions" );
+
+		// EParticleSpace::Localの粒子とbFollowEmitter=true/falseの両方の場、および非一様Scale・再生Scale非干渉を確認する。
+		// Local空間で追従場とワールド固定場の両方を受けるエミッター。
+		FParticleEmitterDefinition LocalFollowEmitter = QuietEmitter();
+		LocalFollowEmitter.Space = EParticleSpace::Local;
+		LocalFollowEmitter.Bursts.Add( Burst( 0.0f, 1 ) );
+		LocalFollowEmitter.Speed = { 0.0f, 0.0f };
+		// エミッター局所の(-1, 0, 0)に中心を持つ追従Radial場（原点粒子を局所(-6, 0, 0)で引く）。
+		FEffectForceFieldDefinition LocalFollowRadial;
+		LocalFollowRadial.Kind = FEffectForceFieldDefinition::EKind::Radial;
+		LocalFollowRadial.bFollowEmitter = true;
+		LocalFollowRadial.Position = FVector3( -1.0f, 0.0f, 0.0f );
+		LocalFollowRadial.Radius = 4.0f;
+		LocalFollowRadial.Strength = 8.0f;
+		// ワールド空間で(0, 4, 0)を加える固定Uniform場（90度Z回転の逆回転で局所(4, 0, 0)になる）。
+		FEffectForceFieldDefinition WorldFixedUniform;
+		WorldFixedUniform.Kind = FEffectForceFieldDefinition::EKind::Uniform;
+		WorldFixedUniform.bFollowEmitter = false;
+		WorldFixedUniform.Acceleration = FVector3( 0.0f, 4.0f, 0.0f );
+		LocalFollowEmitter.ForceFields.Add( LocalFollowRadial );
+		LocalFollowEmitter.ForceFields.Add( WorldFixedUniform );
+		// Local粒子＋追従/固定場の運動状態。
+		FParticleSimulation LocalFollowSim;
+		LocalFollowSim.Transform = FollowTransform;
+		NParticle::Start( LocalFollowSim, MakeEffect( { LocalFollowEmitter } ), 0, 2.5f );
+		NParticle::Advance( LocalFollowSim, 0.125f );
+		NParticle::Advance( LocalFollowSim, 0.125f );
+		// 局所加速度は追従Radial(-6,0,0) + 逆回転した固定Uniform(4,0,0) = (-2,0,0)、dt=0.125で局所速度(-0.25,0,0)、局所位置(-0.03125,0,0)。
+		const FVector3 ExpectedLocalVelocity( -0.25f, 0.0f, 0.0f );
+		// 90度Z回転で局所(-0.03125,0,0)はワールド(0,-0.03125,0)へ移る。
+		const FVector3 ExpectedWorldDrawPos = FollowTransform.Position + FollowTurn.Rotate( FVector3( -0.03125f, 0.0f, 0.0f ) );
+		C.Check( LocalFollowSim.GetNumParticles() == 1 && Near3( LocalFollowSim.Emitters[0].Particles[0].Velocity, ExpectedLocalVelocity, 1.0e-4f ) && Near3( DrawPosition( LocalFollowSim ), ExpectedWorldDrawPos, 1.0e-4f ), "Local-space particles combine bFollowEmitter=true and bFollowEmitter=false force fields accurately without applying Transform.Scale or play Scale to field radii or accelerations" );
 
 		// 重力と一様加速度を合成し、速度を一度更新してからdragと位置へ反映する。
 		FParticleEmitterDefinition Combined = QuietEmitter(); // 重力・場・抵抗を合成するエミッター
@@ -838,6 +1023,22 @@ namespace
 		FEffectForceFieldDefinition RandomField; // 発生後の移動へ加える一様場
 		RandomField.Acceleration = FVector3( 1.0f, 2.0f, -3.0f );
 		WithForce.ForceFields.Add( RandomField );
+		// 追従する渦場。
+		FEffectForceFieldDefinition RandomVortex;
+		RandomVortex.Kind = FEffectForceFieldDefinition::EKind::Vortex;
+		RandomVortex.bFollowEmitter = true;
+		RandomVortex.Axis = FVector3( 0.0f, 3.0f, 4.0f );
+		RandomVortex.Radius = 12.0f;
+		RandomVortex.Strength = 5.0f;
+		WithForce.ForceFields.Add( RandomVortex );
+		// 決定論的Beltrami波の乱流場（RNGを一切消費しない）。
+		FEffectForceFieldDefinition RandomTurbulence;
+		RandomTurbulence.Kind = FEffectForceFieldDefinition::EKind::Turbulence;
+		RandomTurbulence.Radius = 15.0f;
+		RandomTurbulence.Strength = 6.0f;
+		RandomTurbulence.Frequency = 1.5f;
+		RandomTurbulence.ScrollSpeed = 2.5f;
+		WithForce.ForceFields.Add( RandomTurbulence );
 		FParticleSimulation WithoutForceSim, WithForceSim, WithForceAgain; // 場なし、場あり二回の状態
 		NParticle::Start( WithoutForceSim, MakeEffect( { NoForce }, 0.0f, true, 91 ) );
 		const TSharedPtr<FParticleEffectDefinition> WithForceDefinition = MakeEffect( { WithForce }, 0.0f, true, 91 ); // 再現性確認用の固定seed定義
