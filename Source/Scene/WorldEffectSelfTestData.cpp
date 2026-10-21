@@ -76,11 +76,8 @@ namespace
 		Warnings.Reset();
 		const bool bFieldsRead = FParticleEffectDefinition::FromJson( ParseJsonText( FieldsJson.dump().c_str() ), FieldsBack, &Warnings ); // JSON読込結果
 		const FParticleEmitterDefinition& FieldsResult = FieldsBack.Emitters.IsEmpty() ? FieldsEmitter : FieldsBack.Emitters[0]; // 読み戻したエミッター
-		C.Check( FieldsJson["Emitters"][0].contains( "ForceFields" ) && FieldsJson["Emitters"][0]["ForceFields"].is_array() && FieldsJson["Emitters"][0]["ForceFields"].size() == 2 && bFieldsRead && Warnings.IsEmpty() && FieldsBack.ToJson() == FieldsJson && FieldsBack.ComputeHash() == FieldsEffect.ComputeHash(),
-				 "uniform and radial force fields keep their order and round trip without warnings" );
-		C.Check( FieldsResult.ForceFields.Num() == 2 && FieldsResult.ForceFields[0].Kind == FEffectForceFieldDefinition::EKind::Uniform && FieldsResult.ForceFields[0].bEnabled && Near3( FieldsResult.ForceFields[0].Acceleration, FVector3( 1.25f, -2.5f, 3.75f ) )
-				 && FieldsResult.ForceFields[1].Kind == FEffectForceFieldDefinition::EKind::Radial && !FieldsResult.ForceFields[1].bEnabled && Near3( FieldsResult.ForceFields[1].Position, FVector3( -4.0f, 5.0f, -6.0f ) ) && FieldsResult.ForceFields[1].Radius == 7.5f && FieldsResult.ForceFields[1].Strength == -8.25f,
-				 "disabled force fields preserve every configured value" );
+		C.Check( FieldsJson["Emitters"][0].contains( "ForceFields" ) && FieldsJson["Emitters"][0]["ForceFields"].is_array() && FieldsJson["Emitters"][0]["ForceFields"].size() == 2 && bFieldsRead && Warnings.IsEmpty() && FieldsBack.ToJson() == FieldsJson && FieldsBack.ComputeHash() == FieldsEffect.ComputeHash(), "uniform and radial force fields keep their order and round trip without warnings" );
+		C.Check( FieldsResult.ForceFields.Num() == 2 && FieldsResult.ForceFields[0].Kind == FEffectForceFieldDefinition::EKind::Uniform && FieldsResult.ForceFields[0].bEnabled && Near3( FieldsResult.ForceFields[0].Acceleration, FVector3( 1.25f, -2.5f, 3.75f ) ) && FieldsResult.ForceFields[1].Kind == FEffectForceFieldDefinition::EKind::Radial && !FieldsResult.ForceFields[1].bEnabled && Near3( FieldsResult.ForceFields[1].Position, FVector3( -4.0f, 5.0f, -6.0f ) ) && FieldsResult.ForceFields[1].Radius == 7.5f && FieldsResult.ForceFields[1].Strength == -8.25f, "disabled force fields preserve every configured value" );
 		FParticleEffectDefinition ReorderedFields = FieldsEffect; // 順番だけを入れ替える定義
 		std::swap( ReorderedFields.Emitters[0].ForceFields[0], ReorderedFields.Emitters[0].ForceFields[1] );
 		C.Check( ReorderedFields.ComputeHash() != FieldsEffect.ComputeHash(), "force field order changes the effect hash" );
@@ -95,18 +92,7 @@ namespace
 			const char* Name; // 変更する場の項目名
 			std::function<void( FEffectForceFieldDefinition& )> Edit; // 項目を一つだけ変える処理
 		};
-		const FForceFieldHashCase ForceFieldHashCases[] = {
-			{ "enabled", []( FEffectForceFieldDefinition& F ) { F.bEnabled = false; } },
-			{ "kind", []( FEffectForceFieldDefinition& F ) { F.Kind = FEffectForceFieldDefinition::EKind::Radial; } },
-			{ "acceleration x", []( FEffectForceFieldDefinition& F ) { F.Acceleration.x += 1.0f; } },
-			{ "acceleration y", []( FEffectForceFieldDefinition& F ) { F.Acceleration.y += 1.0f; } },
-			{ "acceleration z", []( FEffectForceFieldDefinition& F ) { F.Acceleration.z += 1.0f; } },
-			{ "position x", []( FEffectForceFieldDefinition& F ) { F.Position.x += 1.0f; } },
-			{ "position y", []( FEffectForceFieldDefinition& F ) { F.Position.y += 1.0f; } },
-			{ "position z", []( FEffectForceFieldDefinition& F ) { F.Position.z += 1.0f; } },
-			{ "radius", []( FEffectForceFieldDefinition& F ) { F.Radius += 1.0f; } },
-			{ "strength", []( FEffectForceFieldDefinition& F ) { F.Strength += 1.0f; } },
-		};
+		const FForceFieldHashCase ForceFieldHashCases[] = { { "enabled", []( FEffectForceFieldDefinition& F ) { F.bEnabled = false; } }, { "kind", []( FEffectForceFieldDefinition& F ) { F.Kind = FEffectForceFieldDefinition::EKind::Radial; } }, { "acceleration x", []( FEffectForceFieldDefinition& F ) { F.Acceleration.x += 1.0f; } }, { "acceleration y", []( FEffectForceFieldDefinition& F ) { F.Acceleration.y += 1.0f; } }, { "acceleration z", []( FEffectForceFieldDefinition& F ) { F.Acceleration.z += 1.0f; } }, { "position x", []( FEffectForceFieldDefinition& F ) { F.Position.x += 1.0f; } }, { "position y", []( FEffectForceFieldDefinition& F ) { F.Position.y += 1.0f; } }, { "position z", []( FEffectForceFieldDefinition& F ) { F.Position.z += 1.0f; } }, { "radius", []( FEffectForceFieldDefinition& F ) { F.Radius += 1.0f; } }, { "strength", []( FEffectForceFieldDefinition& F ) { F.Strength += 1.0f; } }, };
 		FString UnchangedForceFields; // hashが変わらなかった値名
 		for ( const FForceFieldHashCase& Case : ForceFieldHashCases )
 		{
@@ -124,8 +110,7 @@ namespace
 		for ( int32 i = 0; i < FEffectForceFieldDefinition::MaxFields + 1; ++i ) TooManyEmitter.ForceFields.Add( Uniform );
 		TooManyFields.Emitters.Add( TooManyEmitter );
 		const NlohmannJson TooManyJson = TooManyFields.ToJson(); // 上限超過を保つJSON
-		C.Check( TooManyJson["Emitters"][0].contains( "ForceFields" ) && TooManyJson["Emitters"][0]["ForceFields"].is_array() && TooManyJson["Emitters"][0]["ForceFields"].size() == FEffectForceFieldDefinition::MaxFields + 1 && FParticleEffectDefinition::HasErrors( TooManyFields.Validate() ),
-				 "more than the runtime force field limit remains in JSON and is reported by validation" );
+		C.Check( TooManyJson["Emitters"][0].contains( "ForceFields" ) && TooManyJson["Emitters"][0]["ForceFields"].is_array() && TooManyJson["Emitters"][0]["ForceFields"].size() == FEffectForceFieldDefinition::MaxFields + 1 && FParticleEffectDefinition::HasErrors( TooManyFields.Validate() ), "more than the runtime force field limit remains in JSON and is reported by validation" );
 
 		// 型が壊れた設定はnullで往復し、次に読んでも不正状態が保たれる。
 		FParticleEffectDefinition InvalidFieldType; // 配列でない設定を読む定義
@@ -135,9 +120,7 @@ namespace
 		FParticleEffectDefinition InvalidFieldAgain; // 不正JSONを再読する定義
 		Warnings.Reset();
 		const bool bInvalidAgain = FParticleEffectDefinition::FromJson( ParseJsonText( InvalidFieldJson.dump().c_str() ), InvalidFieldAgain, &Warnings ); // 二度目の読込結果
-		C.Check( bInvalidRead && bInvalidAgain && InvalidFieldJson["Emitters"][0].contains( "ForceFields" ) && InvalidFieldJson["Emitters"][0]["ForceFields"].is_array() && InvalidFieldJson["Emitters"][0]["ForceFields"].size() == 1
-				 && InvalidFieldJson["Emitters"][0]["ForceFields"][0].is_object() && InvalidFieldJson["Emitters"][0]["ForceFields"][0].contains( "Kind" ) && InvalidFieldJson["Emitters"][0]["ForceFields"][0]["Kind"].is_null() && FParticleEffectDefinition::HasErrors( InvalidFieldType.Validate() ) && FParticleEffectDefinition::HasErrors( InvalidFieldAgain.Validate() ) && InvalidFieldAgain.ToJson() == InvalidFieldJson,
-				 "a force field with the wrong container type becomes one invalid entry and stays invalid after another read" );
+		C.Check( bInvalidRead && bInvalidAgain && InvalidFieldJson["Emitters"][0].contains( "ForceFields" ) && InvalidFieldJson["Emitters"][0]["ForceFields"].is_array() && InvalidFieldJson["Emitters"][0]["ForceFields"].size() == 1 && InvalidFieldJson["Emitters"][0]["ForceFields"][0].is_object() && InvalidFieldJson["Emitters"][0]["ForceFields"][0].contains( "Kind" ) && InvalidFieldJson["Emitters"][0]["ForceFields"][0]["Kind"].is_null() && FParticleEffectDefinition::HasErrors( InvalidFieldType.Validate() ) && FParticleEffectDefinition::HasErrors( InvalidFieldAgain.Validate() ) && InvalidFieldAgain.ToJson() == InvalidFieldJson, "a force field with the wrong container type becomes one invalid entry and stays invalid after another read" );
 		FParticleEffectDefinition ValidForceFieldType; // 同じエフェクトの正規JSON型
 		ValidForceFieldType.Emitters.Add( FParticleEmitterDefinition() );
 		C.Check( InvalidFieldType.ComputeHash() != ValidForceFieldType.ComputeHash(), "an invalid-field type marker contributes to the hash" );
@@ -145,18 +128,14 @@ namespace
 		Warnings.Reset();
 		const bool bInvalidObjectRead = FParticleEffectDefinition::FromJson( ParseJsonText( "{\"Emitters\":[{\"ForceFields\":{\"Kind\":\"Uniform\",\"Acceleration\":[1,0,0]}}]}" ), InvalidContainerObject, &Warnings );
 		const NlohmannJson InvalidContainerObjectJson = InvalidContainerObject.ToJson();
-		C.Check( bInvalidObjectRead && !Warnings.IsEmpty() && InvalidContainerObjectJson["Emitters"][0].contains( "ForceFields" ) && InvalidContainerObjectJson["Emitters"][0]["ForceFields"].is_array() && InvalidContainerObjectJson["Emitters"][0]["ForceFields"].size() == 1
-				 && InvalidContainerObjectJson["Emitters"][0]["ForceFields"][0].is_object() && InvalidContainerObjectJson["Emitters"][0]["ForceFields"][0].contains( "Kind" ) && InvalidContainerObjectJson["Emitters"][0]["ForceFields"][0]["Kind"].is_null() && InvalidContainerObjectJson["Emitters"][0]["ForceFields"][0].contains( "Acceleration" ) && InvalidContainerObjectJson["Emitters"][0]["ForceFields"][0]["Acceleration"].is_null()
-				 && FParticleEffectDefinition::HasErrors( InvalidContainerObject.Validate() ), "an object where the ForceFields array belongs is retained as one invalid field" );
+		C.Check( bInvalidObjectRead && !Warnings.IsEmpty() && InvalidContainerObjectJson["Emitters"][0].contains( "ForceFields" ) && InvalidContainerObjectJson["Emitters"][0]["ForceFields"].is_array() && InvalidContainerObjectJson["Emitters"][0]["ForceFields"].size() == 1 && InvalidContainerObjectJson["Emitters"][0]["ForceFields"][0].is_object() && InvalidContainerObjectJson["Emitters"][0]["ForceFields"][0].contains( "Kind" ) && InvalidContainerObjectJson["Emitters"][0]["ForceFields"][0]["Kind"].is_null() && InvalidContainerObjectJson["Emitters"][0]["ForceFields"][0].contains( "Acceleration" ) && InvalidContainerObjectJson["Emitters"][0]["ForceFields"][0]["Acceleration"].is_null() && FParticleEffectDefinition::HasErrors( InvalidContainerObject.Validate() ), "an object where the ForceFields array belongs is retained as one invalid field" );
 		FParticleEffectDefinition InvalidEntry; // 配列要素型が違う定義
 		Warnings.Reset();
 		const bool bInvalidEntryRead = FParticleEffectDefinition::FromJson( ParseJsonText( "{\"Emitters\":[{\"ForceFields\":[7]}]}" ), InvalidEntry, &Warnings );
 		const NlohmannJson InvalidEntryJson = InvalidEntry.ToJson(); // 不正要素を保持したJSON
 		FParticleEffectDefinition InvalidEntryAgain; // 保存JSONを再読する定義
 		const bool bInvalidEntryAgain = FParticleEffectDefinition::FromJson( InvalidEntryJson, InvalidEntryAgain );
-		C.Check( bInvalidEntryRead && bInvalidEntryAgain && !Warnings.IsEmpty() && InvalidEntryJson["Emitters"][0].contains( "ForceFields" ) && InvalidEntryJson["Emitters"][0]["ForceFields"].is_array() && InvalidEntryJson["Emitters"][0]["ForceFields"].size() == 1 && InvalidEntryJson["Emitters"][0]["ForceFields"][0].is_object() && InvalidEntryJson["Emitters"][0]["ForceFields"][0].contains( "Kind" ) && InvalidEntryJson["Emitters"][0]["ForceFields"][0]["Kind"].is_null()
-				 && FParticleEffectDefinition::HasErrors( InvalidEntry.Validate() ) && FParticleEffectDefinition::HasErrors( InvalidEntryAgain.Validate() ) && InvalidEntryAgain.ToJson() == InvalidEntryJson,
-				 "a non-object force field entry remains invalid through a JSON round trip" );
+		C.Check( bInvalidEntryRead && bInvalidEntryAgain && !Warnings.IsEmpty() && InvalidEntryJson["Emitters"][0].contains( "ForceFields" ) && InvalidEntryJson["Emitters"][0]["ForceFields"].is_array() && InvalidEntryJson["Emitters"][0]["ForceFields"].size() == 1 && InvalidEntryJson["Emitters"][0]["ForceFields"][0].is_object() && InvalidEntryJson["Emitters"][0]["ForceFields"][0].contains( "Kind" ) && InvalidEntryJson["Emitters"][0]["ForceFields"][0]["Kind"].is_null() && FParticleEffectDefinition::HasErrors( InvalidEntry.Validate() ) && FParticleEffectDefinition::HasErrors( InvalidEntryAgain.Validate() ) && InvalidEntryAgain.ToJson() == InvalidEntryJson, "a non-object force field entry remains invalid through a JSON round trip" );
 		const char* InvalidFields[] = { "{\"Enabled\":1}", "{\"Kind\":\"Attractor\"}", "{\"Acceleration\":[1,2]}", "{\"Position\":\"bad\"}", "{\"Radius\":\"large\"}", "{\"Strength\":\"large\"}" }; // 各設定の不正JSON
 		const char* InvalidKeys[] = { "Enabled", "Kind", "Acceleration", "Position", "Radius", "Strength" }; // null保存を調べる項目名
 		bool bInvalidValuesRoundTrip = true; // 全不正値が往復するか
@@ -184,9 +163,7 @@ namespace
 		const NlohmannJson DisabledInvalidJson = DisabledInvalid.ToJson(); // 無効項目を保持する保存JSON
 		FParticleEffectDefinition DisabledInvalidAgain; // 保存JSONを再読する定義
 		const bool bReadDisabledInvalidAgain = FParticleEffectDefinition::FromJson( DisabledInvalidJson, DisabledInvalidAgain ); // 再読結果
-		C.Check( bReadDisabledInvalid && bReadDisabledInvalidAgain && Warnings.IsEmpty() && DisabledInvalidJson["Emitters"][0].contains( "ForceFields" ) && DisabledInvalidJson["Emitters"][0]["ForceFields"].is_array() && DisabledInvalidJson["Emitters"][0]["ForceFields"].size() == 1 && DisabledInvalidJson["Emitters"][0]["ForceFields"][0].is_object() && DisabledInvalidJson["Emitters"][0]["ForceFields"][0].contains( "Enabled" ) && DisabledInvalidJson["Emitters"][0]["ForceFields"][0]["Enabled"] == false && DisabledInvalidJson["Emitters"][0]["ForceFields"][0].contains( "Radius" ) && DisabledInvalidJson["Emitters"][0]["ForceFields"][0]["Radius"] == 0
-				 && FParticleEffectDefinition::HasErrors( DisabledInvalid.Validate() ) && FParticleEffectDefinition::HasErrors( DisabledInvalidAgain.Validate() ) && DisabledInvalidAgain.ToJson() == DisabledInvalidJson,
-				 "a disabled force field retains its invalid configured radius for validation and serialization" );
+		C.Check( bReadDisabledInvalid && bReadDisabledInvalidAgain && Warnings.IsEmpty() && DisabledInvalidJson["Emitters"][0].contains( "ForceFields" ) && DisabledInvalidJson["Emitters"][0]["ForceFields"].is_array() && DisabledInvalidJson["Emitters"][0]["ForceFields"].size() == 1 && DisabledInvalidJson["Emitters"][0]["ForceFields"][0].is_object() && DisabledInvalidJson["Emitters"][0]["ForceFields"][0].contains( "Enabled" ) && DisabledInvalidJson["Emitters"][0]["ForceFields"][0]["Enabled"] == false && DisabledInvalidJson["Emitters"][0]["ForceFields"][0].contains( "Radius" ) && DisabledInvalidJson["Emitters"][0]["ForceFields"][0]["Radius"] == 0 && FParticleEffectDefinition::HasErrors( DisabledInvalid.Validate() ) && FParticleEffectDefinition::HasErrors( DisabledInvalidAgain.Validate() ) && DisabledInvalidAgain.ToJson() == DisabledInvalidJson, "a disabled force field retains its invalid configured radius for validation and serialization" );
 
 		// 範囲: 同じなら数 1 つで書く
 		FParticleEffectDefinition Single;

@@ -122,9 +122,7 @@ namespace
 		Radial.Radius = 4.0f;
 		Radial.Strength = -8.0f;
 		const FVector3 Pull = Radial.EvaluateAcceleration( FVector3( 1.0f, 0.0f, 0.0f ) ); // 半径1での引力
-		C.Check( Near3( Pull, FVector3( -6.0f, 0.0f, 0.0f ) ) && Near3( Radial.EvaluateAcceleration( FVector3::Zero ), FVector3::Zero )
-				 && Near3( Radial.EvaluateAcceleration( FVector3( 4.0f, 0.0f, 0.0f ) ), FVector3::Zero ) && Near3( Radial.EvaluateAcceleration( FVector3( 5.0f, 0.0f, 0.0f ) ), FVector3::Zero ),
-				 "a radial field fades linearly, pulls inward, and is zero at the centre and outside its radius" );
+		C.Check( Near3( Pull, FVector3( -6.0f, 0.0f, 0.0f ) ) && Near3( Radial.EvaluateAcceleration( FVector3::Zero ), FVector3::Zero ) && Near3( Radial.EvaluateAcceleration( FVector3( 4.0f, 0.0f, 0.0f ) ), FVector3::Zero ) && Near3( Radial.EvaluateAcceleration( FVector3( 5.0f, 0.0f, 0.0f ) ), FVector3::Zero ), "a radial field fades linearly, pulls inward, and is zero at the centre and outside its radius" );
 		Radial.Strength = 8.0f;
 		C.Check( Near3( Radial.EvaluateAcceleration( FVector3( 1.0f, 0.0f, 0.0f ) ), FVector3( 6.0f, 0.0f, 0.0f ) ), "a positive radial strength pushes outward" );
 		Radial.Position = FVector3( 10.0f, 20.0f, 30.0f );
@@ -138,12 +136,10 @@ namespace
 		C.Check( Near3( Radial.EvaluateAcceleration( FVector3( 1.0f, 0.0f, 0.0f ) ), FVector3::Zero ), "a disabled radial field contributes no acceleration" );
 		Radial.bEnabled = true;
 		const float32 NaN = std::numeric_limits<float32>::quiet_NaN(); // 不正値確認用の非数
-		C.Check( Near3( Radial.EvaluateAcceleration( FVector3( NaN, 0.0f, 0.0f ) ), FVector3::Zero ) && Near3( Radial.EvaluateAcceleration( FVector3( 1.0e30f, 0.0f, 0.0f ) ), FVector3::Zero ),
-				 "a non-finite or excessively distant world position is safe" );
+		C.Check( Near3( Radial.EvaluateAcceleration( FVector3( NaN, 0.0f, 0.0f ) ), FVector3::Zero ) && Near3( Radial.EvaluateAcceleration( FVector3( 1.0e30f, 0.0f, 0.0f ) ), FVector3::Zero ), "a non-finite or excessively distant world position is safe" );
 		FEffectForceFieldDefinition BadSettings; // 非有限加速度を持つ場
 		BadSettings.Acceleration.x = NaN;
-		C.Check( !BadSettings.IsValidSettings() && !BadSettings.Validate().IsEmpty() && Near3( BadSettings.EvaluateAcceleration( FVector3::Zero ), FVector3::Zero ),
-				 "invalid settings are reported and contribute zero" );
+		C.Check( !BadSettings.IsValidSettings() && !BadSettings.Validate().IsEmpty() && Near3( BadSettings.EvaluateAcceleration( FVector3::Zero ), FVector3::Zero ), "invalid settings are reported and contribute zero" );
 		FEffectForceFieldDefinition MaxSettings; // 上限ちょうどの設定
 		MaxSettings.Acceleration = FVector3::One * FEffectForceFieldDefinition::MaxMagnitude;
 		MaxSettings.Position = FVector3::One * FEffectForceFieldDefinition::MaxMagnitude;
@@ -196,12 +192,11 @@ namespace
 		const FVector3 InitialVelocity( 0.0f, 4.0f, 0.0f ); // 発生時の既知速度
 		const FVector3 ExpectedVelocity = ( InitialVelocity + ExpectedAcceleration * 0.125f ) * 0.875f; // 加速度後に抵抗を掛けた速度
 		const FVector3 ExpectedPosition = ExpectedVelocity * 0.125f; // 半陰的更新後の位置
-		C.Check( CombinedSim.GetNumParticles() == 1 && Near3( CombinedSim.Emitters[0].Particles[0].Velocity, ExpectedVelocity ) && Near3( DrawPosition( CombinedSim ), ExpectedPosition ),
-				 "gravity, uniform and radial acceleration combine on all axes before one drag and position update" );
+		C.Check( CombinedSim.GetNumParticles() == 1 && Near3( CombinedSim.Emitters[0].Particles[0].Velocity, ExpectedVelocity ) && Near3( DrawPosition( CombinedSim ), ExpectedPosition ), "gravity, uniform and radial acceleration combine on all axes before one drag and position update" );
 
 		// 旧JSONの省略と明示空配列は、同じ設定・hash・軌跡になる。
-		const NlohmannJson OmittedForceJson = ParseJsonText( "{\"Emitters\":[{\"Name\":\"Emitter\",\"Gravity\":[0,-10,0],\"Drag\":1,\"Bursts\":[{\"Time\":0,\"Count\":1}],\"Speed\":4}]}" ); // 旧形式の入力JSON
-		const NlohmannJson EmptyForceJson = ParseJsonText( "{\"Emitters\":[{\"Name\":\"Emitter\",\"Gravity\":[0,-10,0],\"Drag\":1,\"Bursts\":[{\"Time\":0,\"Count\":1}],\"Speed\":4,\"ForceFields\":[] }]}" ); // 空配列を明記した入力JSON
+		const NlohmannJson OmittedForceJson = NlohmannJson::parse( "{\"Emitters\":[{\"Name\":\"Emitter\",\"Gravity\":[0,-10,0],\"Drag\":1,\"Bursts\":[{\"Time\":0,\"Count\":1}],\"Speed\":4}]}" ); // 旧形式の入力JSON
+		const NlohmannJson EmptyForceJson = NlohmannJson::parse( "{\"Emitters\":[{\"Name\":\"Emitter\",\"Gravity\":[0,-10,0],\"Drag\":1,\"Bursts\":[{\"Time\":0,\"Count\":1}],\"Speed\":4,\"ForceFields\":[] }]}" ); // 空配列を明記した入力JSON
 		FParticleEffectDefinition OmittedForce, EmptyForce; // 比較する二つの定義
 		TArray<FString> ForceWarnings; // 旧形式読込の警告
 		const bool bReadOmitted = FParticleEffectDefinition::FromJson( OmittedForceJson, OmittedForce, &ForceWarnings ); // 旧形式の読込結果
@@ -212,8 +207,7 @@ namespace
 		NParticle::Start( EmptyForceSim, MakeShared<FParticleEffectDefinition>( EmptyForce ) );
 		Run( OmittedForceSim, 0.125f, 7 );
 		Run( EmptyForceSim, 0.125f, 7 );
-		C.Check( bReadOmitted && bReadEmpty && ForceWarnings.IsEmpty() && OmittedForce.ComputeHash() == EmptyForce.ComputeHash() && OmittedForce.ToJson() == EmptyForce.ToJson() && SameForceSimulation( OmittedForceSim, EmptyForceSim ),
-				 "legacy JSON without ForceFields and JSON with an empty array keep the same hash and complete particle trajectory" );
+		C.Check( bReadOmitted && bReadEmpty && ForceWarnings.IsEmpty() && OmittedForce.ComputeHash() == EmptyForce.ComputeHash() && OmittedForce.ToJson() == EmptyForce.ToJson() && SameForceSimulation( OmittedForceSim, EmptyForceSim ), "legacy JSON without ForceFields and JSON with an empty array keep the same hash and complete particle trajectory" );
 
 		// radial引力を、各刻みの現在位置から独立に計算する。
 		FParticleEmitterDefinition Pulled = QuietEmitter(); // 半径場で引くエミッター
@@ -233,8 +227,7 @@ namespace
 		const float32 SecondPullAcceleration = -8.0f * ( 1.0f - FirstPullPosition / 4.0f ); // 現位置の減衰を含む引力
 		const float32 SecondPullVelocity = FirstPullVelocity + SecondPullAcceleration * 0.125f; // 二回目の更新後の速度
 		const float32 SecondPullPosition = FirstPullPosition + SecondPullVelocity * 0.125f; // 二回目の更新後の位置
-		C.Check( std::fabs( PullSim.Emitters[0].Particles[0].Velocity.x - SecondPullVelocity ) < 1.0e-5f && std::fabs( DrawPosition( PullSim ).x - SecondPullPosition ) < 1.0e-5f,
-				 "radial motion uses the current particle position and the specified linear falloff" );
+		C.Check( std::fabs( PullSim.Emitters[0].Particles[0].Velocity.x - SecondPullVelocity ) < 1.0e-5f && std::fabs( DrawPosition( PullSim ).x - SecondPullPosition ) < 1.0e-5f, "radial motion uses the current particle position and the specified linear falloff" );
 
 		// 17番目以降は保存されるが、実行時には上限内の場だけを足す。
 		FParticleEmitterDefinition Limited = QuietEmitter(); // 力場数の上限を試すエミッター
@@ -253,8 +246,7 @@ namespace
 		NParticle::Start( LimitedSim, MakeEffect( { Limited } ) );
 		NParticle::Advance( LimitedSim, 0.125f );
 		NParticle::Advance( LimitedSim, 0.125f );
-		C.Check( Limited.ForceFields.Num() == FEffectForceFieldDefinition::MaxFields + 1 && std::fabs( LimitedSim.Emitters[0].Particles[0].Velocity.x - 2.0f ) < 1.0e-5f && std::fabs( DrawPosition( LimitedSim ).x - 0.25f ) < 1.0e-5f,
-				 "only the first MaxFields force fields affect particle motion" );
+		C.Check( Limited.ForceFields.Num() == FEffectForceFieldDefinition::MaxFields + 1 && std::fabs( LimitedSim.Emitters[0].Particles[0].Velocity.x - 2.0f ) < 1.0e-5f && std::fabs( DrawPosition( LimitedSim ).x - 0.25f ) < 1.0e-5f, "only the first MaxFields force fields affect particle motion" );
 
 		// Local粒子では現ワールド位置で評価してから逆回転し、translation/scaleを加速度へ混ぜない。
 		FParticleEmitterDefinition LocalField = QuietEmitter(); // Local粒子を出すエミッター
@@ -274,8 +266,7 @@ namespace
 		NParticle::Advance( LocalSim, 0.125f );
 		LocalSim.Transform = FTransform( FVector3( 10.0f, 20.0f, 0.0f ), QuarterTurn, FVector3( 2.0f, 3.0f, 4.0f ) );
 		NParticle::Advance( LocalSim, 0.125f );
-		C.Check( Near3( LocalSim.Emitters[0].Particles[0].Velocity, FVector3( -0.5f, 0.0f, 0.0f ) ) && Near3( DrawPosition( LocalSim ), FVector3( 10.0f, 19.9375f, 0.0f ), 2.0e-4f ),
-				 "a Local particle evaluates a radial force at its translated world position, inverse-rotates it, and does not apply non-uniform scale twice" );
+		C.Check( Near3( LocalSim.Emitters[0].Particles[0].Velocity, FVector3( -0.5f, 0.0f, 0.0f ) ) && Near3( DrawPosition( LocalSim ), FVector3( 10.0f, 19.9375f, 0.0f ), 2.0e-4f ), "a Local particle evaluates a radial force at its translated world position, inverse-rotates it, and does not apply non-uniform scale twice" );
 
 		// Speedはシミュレーション時間へ掛かり、力場による速度・移動も同じ刻みを使う。
 		FParticleEmitterDefinition Fast = QuietEmitter(); // 再生速度を試すエミッター
@@ -284,11 +275,11 @@ namespace
 		Uniform.Acceleration = FVector3( 0.0f, 4.0f, 0.0f );
 		Fast.ForceFields.Add( Uniform );
 		FParticleSimulation FastSim; // Speed倍率を適用する運動状態
-		NParticle::Start( FastSim, MakeEffect( { Fast } ), 0, 1.0f, 2.0f );
+		FastSim.Transform = FTransform( FVector3::Zero, FQuaternion::Identity, FVector3( 2.0f, 3.0f, 4.0f ) ); // 力場へ掛けない非一様の物体拡大
+		NParticle::Start( FastSim, MakeEffect( { Fast } ), 0, 1.5f, 2.0f );
 		NParticle::Advance( FastSim, 0.125f );
 		NParticle::Advance( FastSim, 0.125f );
-		C.Check( std::fabs( FastSim.Emitters[0].Particles[0].Velocity.y - 1.0f ) < 1.0e-5f && std::fabs( DrawPosition( FastSim ).y - 0.25f ) < 1.0e-5f,
-				 "play Speed scales elapsed time for force acceleration and movement" );
+		C.Check( std::fabs( FastSim.Emitters[0].Particles[0].Velocity.y - 1.0f ) < 1.0e-5f && std::fabs( DrawPosition( FastSim ).y - 0.25f ) < 1.0e-5f, "play Speed scales elapsed time for force acceleration and movement" );
 
 		// 停止後も残粒子だけは力を受け、即時停止は残粒子を消す。
 		FParticleEmitterDefinition Stoppable = QuietEmitter(); // 停止後の残粒子を出すエミッター
@@ -306,8 +297,7 @@ namespace
 		NParticle::Start( ImmediateStop, StopDefinition );
 		NParticle::Advance( ImmediateStop, 0.125f );
 		NParticle::Stop( ImmediateStop, true );
-		C.Check( GracefulStop.GetNumParticles() == 1 && std::fabs( GracefulStop.Emitters[0].Particles[0].Velocity.y - 0.5f ) < 1.0e-5f && std::fabs( DrawPosition( GracefulStop ).y - 0.0625f ) < 1.0e-5f
-				 && ImmediateStop.GetNumParticles() == 0 && ImmediateStop.IsFinished(), "Stop(false) keeps force-driven particles alive while Stop(true) removes them" );
+		C.Check( GracefulStop.GetNumParticles() == 1 && std::fabs( GracefulStop.Emitters[0].Particles[0].Velocity.y - 0.5f ) < 1.0e-5f && std::fabs( DrawPosition( GracefulStop ).y - 0.0625f ) < 1.0e-5f && ImmediateStop.GetNumParticles() == 0 && ImmediateStop.IsFinished(), "Stop(false) keeps force-driven particles alive while Stop(true) removes them" );
 
 		// 有限でも位置をfloatの範囲外へ押し出す力場は、その刻みだけ従来の重力計算へ戻す。
 		FParticleEmitterDefinition Overflow = QuietEmitter(); // 予測位置が範囲外になるエミッター
@@ -321,8 +311,7 @@ namespace
 		NParticle::Advance( OverflowSim, 0.125f );
 		NParticle::Advance( OverflowSim, 1.0e20f );
 		const FParticle& OverflowParticle = OverflowSim.Emitters[0].Particles[0]; // 更新後の粒子
-		C.Check( std::isfinite( OverflowParticle.Position.x ) && std::isfinite( OverflowParticle.Velocity.x ) && OverflowParticle.Position.x == 0.0f && OverflowParticle.Velocity.x == 0.0f,
-				 "a finite field acceleration cannot overflow the particle position; the invalid field contribution is skipped for that step" );
+		C.Check( std::isfinite( OverflowParticle.Position.x ) && std::isfinite( OverflowParticle.Velocity.x ) && OverflowParticle.Position.x == 0.0f && OverflowParticle.Velocity.x == 0.0f, "a finite field acceleration cannot overflow the particle position; the invalid field contribution is skipped for that step" );
 	}
 
 	//=========================================================================
@@ -873,10 +862,8 @@ namespace
 		Run( WithForceAgain, 0.125f, 6 );
 		const FParticleEmitterState& WithoutForceState = WithoutForceSim.Emitters[0]; // 場なし運動後の発生状態
 		const FParticleEmitterState& WithForceState = WithForceSim.Emitters[0]; // 場あり運動後の発生状態
-		C.Check( WithoutForceState.Random == WithForceState.Random && WithoutForceState.NextSerial == WithForceState.NextSerial && WithoutForceState.Carry == WithForceState.Carry && WithoutForceState.BurstsDone == WithForceState.BurstsDone,
-				 "force fields consume no extra random numbers or emission state while particles move" );
-		C.Check( SameForceSimulation( WithForceSim, WithForceAgain ),
-				 "force field motion remains deterministic for the same seed and steps" );
+		C.Check( WithoutForceState.Random == WithForceState.Random && WithoutForceState.NextSerial == WithForceState.NextSerial && WithoutForceState.Carry == WithForceState.Carry && WithoutForceState.BurstsDone == WithForceState.BurstsDone, "force fields consume no extra random numbers or emission state while particles move" );
+		C.Check( SameForceSimulation( WithForceSim, WithForceAgain ), "force field motion remains deterministic for the same seed and steps" );
 
 		// 2 つのエミッターは、同じ設定でも別の乱数
 		bool bSame = A.Emitters[0].Particles.Num() == A.Emitters[1].Particles.Num();
