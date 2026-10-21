@@ -91,6 +91,12 @@
     <ClCompile Include="Library\DebugUI\WorldEditorMeshMaterialPanel.cpp">
       <Filter>Library\DebugUI</Filter>
     </ClCompile>
+    <ClCompile Include="Library\DebugUI\WorldEditorModelPreviewKey.cpp">
+      <Filter>Library\DebugUI</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\WorldEditorModels.cpp">
+      <Filter>Library\DebugUI</Filter>
+    </ClCompile>
     <ClCompile Include="Library\DebugUI\WorldEditorPanels.cpp">
       <Filter>Library\DebugUI</Filter>
     </ClCompile>
@@ -686,6 +692,12 @@
       <Filter>Source\Scene</Filter>
     </ClCompile>
     <ClCompile Include="Source\Scene\WorldModelMaterialSelfTest.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene\WorldModelPreviewRealSelfTest.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene\WorldModelPreviewSelfTest.cpp">
       <Filter>Source\Scene</Filter>
     </ClCompile>
     <ClCompile Include="Source\Scene\WorldPrefabSelfTest.cpp">
@@ -1452,6 +1464,12 @@
     <ClInclude Include="Library\DebugUI\WorldEditorMeshMaterialPanel.h">
       <Filter>Library\DebugUI</Filter>
     </ClInclude>
+    <ClInclude Include="Library\DebugUI\WorldEditorModelPreview.h">
+      <Filter>Library\DebugUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\DebugUI\WorldEditorModelPreviewKey.h">
+      <Filter>Library\DebugUI</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Animation\AnimationTimeline.h">
       <Filter>Library\Framework\Animation</Filter>
     </ClInclude>
@@ -1948,6 +1966,9 @@
       <Filter>Source\Scene</Filter>
     </ClInclude>
     <ClInclude Include="Source\Scene\WorldModelMaterialSelfTest.h">
+      <Filter>Source\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scene\WorldModelPreviewSelfTest.h">
       <Filter>Source\Scene</Filter>
     </ClInclude>
     <ClInclude Include="Source\Scene\WorldSelfTestScene.h">

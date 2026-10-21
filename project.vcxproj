@@ -182,6 +182,8 @@
     <ClCompile Include="Library\DebugUI\WorldEditorEffects.cpp" />
     <ClCompile Include="Library\DebugUI\WorldEditorMesh.cpp" />
     <ClCompile Include="Library\DebugUI\WorldEditorMeshMaterialPanel.cpp" />
+    <ClCompile Include="Library\DebugUI\WorldEditorModelPreviewKey.cpp" />
+    <ClCompile Include="Library\DebugUI\WorldEditorModels.cpp" />
     <ClCompile Include="Library\DebugUI\WorldEditorPanels.cpp" />
     <ClCompile Include="Library\DebugUI\WorldEditorViewport.cpp" />
     <ClCompile Include="Library\Framework\Animation\AnimationTimeline.cpp" />
@@ -381,6 +383,8 @@
     <ClCompile Include="Source\Scene\WorldMeshSelfTestEditor.cpp" />
     <ClCompile Include="Source\Scene\WorldMeshSelfTestOps.cpp" />
     <ClCompile Include="Source\Scene\WorldModelMaterialSelfTest.cpp" />
+    <ClCompile Include="Source\Scene\WorldModelPreviewRealSelfTest.cpp" />
+    <ClCompile Include="Source\Scene\WorldModelPreviewSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldPrefabSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldSelfTestLogic.cpp" />
     <ClCompile Include="Source\Scene\WorldSelfTestScene.cpp" />
@@ -637,6 +641,8 @@
     <ClInclude Include="Library\DebugUI\WorldEditor.h" />
     <ClInclude Include="Library\DebugUI\WorldEditorInternal.h" />
     <ClInclude Include="Library\DebugUI\WorldEditorMeshMaterialPanel.h" />
+    <ClInclude Include="Library\DebugUI\WorldEditorModelPreview.h" />
+    <ClInclude Include="Library\DebugUI\WorldEditorModelPreviewKey.h" />
     <ClInclude Include="Library\Framework\Animation\AnimationTimeline.h" />
     <ClInclude Include="Library\Framework\Animation\ModelAnimator.h" />
     <ClInclude Include="Library\Framework\Animation\SpriteAnimator.h" />
@@ -803,6 +809,7 @@
     <ClInclude Include="Source\Scene\WorldMeshMaterialSelfTestSupport.h" />
     <ClInclude Include="Source\Scene\WorldMeshSelfTestSupport.h" />
     <ClInclude Include="Source\Scene\WorldModelMaterialSelfTest.h" />
+    <ClInclude Include="Source\Scene\WorldModelPreviewSelfTest.h" />
     <ClInclude Include="Source\Scene\WorldSelfTestScene.h" />
     <ClInclude Include="Source\Scene\WorldSelfTestSupport.h" />
     <ClInclude Include="VendorModules\ImGui\imconfig.h" />
