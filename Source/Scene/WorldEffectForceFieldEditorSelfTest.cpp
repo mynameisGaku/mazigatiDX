@@ -202,7 +202,7 @@ namespace
 		C.Check( bGuideFocused && !State.bShowForceFieldGuides && !State.Document.IsDirty() && State.Document.GetNumUndo() == InitialUndo && State.Document.Get().Emitters[0].ForceFields[0].ComputeHash() == InitialHash, "guide表示切替は実チェックボックスで文書dirty・履歴を作らない" );
 
 		// 実Enabled checkboxのImGui識別子。
-		const ImGuiID EnabledId = Input.FieldItemId( "Controls enabled##ForceFieldEnabled" );
+		const ImGuiID EnabledId = Input.FieldItemId( "Enable force field##ForceFieldEnabled" );
 		// Enabled checkboxへTabで移れたか。
 		const bool bEnabledFocused = Input.TabTo( State, EnabledId );
 		Input.Tap( State, ImGuiKey_Space );

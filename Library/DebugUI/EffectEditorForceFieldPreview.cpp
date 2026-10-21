@@ -133,6 +133,28 @@ namespace
 		Draw.Line3D( End, End - Unit * HeadLength + Side * HeadWidth, Color );
 		Draw.Line3D( End, End - Unit * HeadLength - Side * HeadWidth, Color );
 	}
+
+	// 指定した直交2軸と半径で、中心・半径が正確なguide円を32本の線で記録する。
+	void RecordForceFieldGuideCircle( FDrawContext& Draw, const FVector3& Center, float32 Radius, const FVector3& AxisA, const FVector3& AxisB, const FColor32& Color )
+	{
+		// 円周を分ける線分数。
+		constexpr int32 SegmentCount = 32;
+		// 一周をラジアンで表す定数。
+		constexpr float32 TwoPi = 6.283185307f;
+		// 円周上の隣り合う点を結ぶ線。
+		for ( int32 Index = 0; Index < SegmentCount; ++Index )
+		{
+			// 線分の始点角度。
+			const float32 Angle0 = TwoPi * static_cast<float32>( Index ) / SegmentCount;
+			// 線分の終点角度。
+			const float32 Angle1 = TwoPi * static_cast<float32>( Index + 1 ) / SegmentCount;
+			// 円周上の線分始点。
+			const FVector3 Point0 = Center + ( AxisA * std::cos( Angle0 ) + AxisB * std::sin( Angle0 ) ) * Radius;
+			// 円周上の線分終点。
+			const FVector3 Point1 = Center + ( AxisA * std::cos( Angle1 ) + AxisB * std::sin( Angle1 ) ) * Radius;
+			Draw.Line3D( Point0, Point1, Color );
+		}
+	}
 }
 
 // 全emitterと有効な力場範囲を包む球へ一度だけcameraを合わせる。無効・空・過大なboundsでは変更しない。
@@ -305,7 +327,10 @@ void NEffectEditorUI::RecordForceFieldGuides( const FEffectEditorState& State, F
 	const FColor32 Color = Field.bEnabled ? EnabledColor : DisabledColor;
 	if ( Field.Kind == FEffectForceFieldDefinition::EKind::Radial )
 	{
-		Draw.Sphere3D( Field.Position, Field.Radius, 32, Color, Color, false );
+		// XY・XZ・YZの大円だけで球の範囲を疎に示す。
+		RecordForceFieldGuideCircle( Draw, Field.Position, Field.Radius, FVector3::Right, FVector3::Up, Color );
+		RecordForceFieldGuideCircle( Draw, Field.Position, Field.Radius, FVector3::Right, FVector3::Forward, Color );
+		RecordForceFieldGuideCircle( Draw, Field.Position, Field.Radius, FVector3::Up, FVector3::Forward, Color );
 		if ( Field.Strength == 0.0f ) return;
 		// 半径境界上で符号による引力・反発方向を示す始点。
 		const FVector3 DirectionStart = Field.Position + FVector3::Right * ( Field.Radius * 0.52f );

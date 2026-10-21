@@ -254,6 +254,8 @@ namespace
 			Emitter.Texture.Empty();
 			bChanged = true;
 		}
+		bForceFieldChanged = NEffectEditorUI::DrawForceFieldPanel( S, Emitter, bForceFieldInputEnded, bForceFieldStructureChanged );
+		bChanged |= bForceFieldChanged;
 		bChanged |= NEffectEditorUI::DrawFlipbookPanel( S, Emitter );
 		bChanged |= NEffectEditorUI::DrawMeshPanel( S, Emitter );
 		// 定義の列挙値と同じ順序にある、合成方法の表示名。
@@ -318,8 +320,6 @@ namespace
 		bChanged |= TrackInputEnd( ImGui::DragFloat3( "Direction", &Emitter.Direction.x, 0.01f, -10000.0f, 10000.0f, "%.3f" ), S.Document );
 		bChanged |= TrackInputEnd( ImGui::DragFloat3( "Gravity", &Emitter.Gravity.x, 0.01f, -10000.0f, 10000.0f, "%.3f" ), S.Document );
 		bChanged |= TrackInputEnd( ImGui::DragFloat( "Drag", &Emitter.Drag, 0.01f, 0.0f, 10000.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp ), S.Document );
-		bForceFieldChanged = NEffectEditorUI::DrawForceFieldPanel( S, Emitter, bForceFieldInputEnded, bForceFieldStructureChanged );
-		bChanged |= bForceFieldChanged;
 		ImGui::SeparatorText( "Appearance" );
 		bChanged |= TrackInputEnd( DrawRange( "Start size (m)", Emitter.StartSize ), S.Document );
 		bChanged |= TrackInputEnd( DrawRange( "End size (m)", Emitter.EndSize ), S.Document );

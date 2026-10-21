@@ -33,8 +33,10 @@ bool NEffectEditorUI::DrawForceFieldPanel( FEffectEditorState& State, FParticleE
 	bool bShowGuides = State.bShowForceFieldGuides;
 	ImGui::SeparatorText( "Force fields" );
 	if ( ImGui::Checkbox( "Show force field guides", &bShowGuides ) ) State.bShowForceFieldGuides = bShowGuides;
-	ImGui::TextDisabled( "Centers and radii use fixed World coordinates; Local particles are affected in World space." );
-	ImGui::TextDisabled( "The emitter transform does not move these fields or scale their radii." );
+	ImGui::PushStyleColor( ImGuiCol_Text, ImGui::GetStyleColorVec4( ImGuiCol_TextDisabled ) );
+	ImGui::TextWrapped( "Centers and radii use fixed World coordinates; Local particles are affected in World space." );
+	ImGui::TextWrapped( "The emitter transform does not move these fields or scale their radii." );
+	ImGui::PopStyleColor();
 
 	// コピーに含まれる力場の個数。
 	const int32 FieldCount = Emitter.ForceFields.Num();
@@ -166,7 +168,7 @@ bool NEffectEditorUI::DrawForceFieldPanel( FEffectEditorState& State, FParticleE
 		}
 		else
 		{
-			bChanged |= TrackForceFieldInputEnd( ImGui::Checkbox( "Controls enabled##ForceFieldEnabled", &Field.bEnabled ), bInputEnded );
+			bChanged |= TrackForceFieldInputEnd( ImGui::Checkbox( "Enable force field##ForceFieldEnabled", &Field.bEnabled ), bInputEnded );
 			// UI表示順を定義の列挙値へ対応させる。
 			static const char* KindNames[] = { "Uniform", "Radial" };
 			// Comboで一時的に選ぶ種類の番号。
@@ -180,7 +182,9 @@ bool NEffectEditorUI::DrawForceFieldPanel( FEffectEditorState& State, FParticleE
 			bChanged |= TrackForceFieldInputEnd( ImGui::DragFloat3( "World center (m)##ForceFieldPosition", &Field.Position.x, 0.01f, -FEffectForceFieldDefinition::MaxMagnitude, FEffectForceFieldDefinition::MaxMagnitude, "%.3f", ImGuiSliderFlags_AlwaysClamp ), bInputEnded );
 			bChanged |= TrackForceFieldInputEnd( ImGui::DragFloat( "Radius (m)##ForceFieldRadius", &Field.Radius, 0.01f, 0.001f, FEffectForceFieldDefinition::MaxMagnitude, "%.3f", ImGuiSliderFlags_AlwaysClamp ), bInputEnded );
 			bChanged |= TrackForceFieldInputEnd( ImGui::DragFloat( "Strength (m/s2)##ForceFieldStrength", &Field.Strength, 0.01f, -FEffectForceFieldDefinition::MaxMagnitude, FEffectForceFieldDefinition::MaxMagnitude, "%.3f", ImGuiSliderFlags_AlwaysClamp ), bInputEnded );
-			ImGui::TextDisabled( "Radial strength: negative attracts, positive repels. Inactive values are editable and retained." );
+			ImGui::PushStyleColor( ImGuiCol_Text, ImGui::GetStyleColorVec4( ImGuiCol_TextDisabled ) );
+			ImGui::TextWrapped( "Radial strength: negative attracts, positive repels. Inactive values are editable and retained." );
+			ImGui::PopStyleColor();
 		}
 	}
 

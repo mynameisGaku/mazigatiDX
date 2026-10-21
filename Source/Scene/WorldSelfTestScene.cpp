@@ -966,12 +966,17 @@ void CWorldSelfTestScene::OnEnter()
 	LOG( LogWorldSelfTest, Log, "Scene checks started (%d object(s))", GetNumObjects() );
 }
 
-void CWorldSelfTestScene::OnTick( float32 )
+void CWorldSelfTestScene::OnTick( float32 DeltaTime )
 {
 	if ( !State ) return;
 	FState& S = *State;
 	++S.Frame;
 	if ( S.Phase == 0 || S.Phase == 6 ) S.Log.Clear();   // このフレームの描画コマンドだけを見る
+	// 画面スリープ等で垂直同期が効かず DeltaTime が極小でも、物理の落下確認には 1/60 秒ずつ進める
+	if ( S.Phase == 0 && S.Frame >= 4 && ( !S.bMeshChecked || !S.bPhysicsChecked ) && DeltaTime < 1.0f / 60.0f )
+	{
+		if ( CPhysicsSubsystem* Physics = GetSubsystem<CPhysicsSubsystem>() ) Physics->Update( 1.0f / 60.0f - DeltaTime );
+	}
 }
 
 void CWorldSelfTestScene::OnDraw()

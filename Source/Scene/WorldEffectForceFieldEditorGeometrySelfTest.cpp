@@ -194,6 +194,78 @@ namespace
 		return false;
 	}
 
+	// 浮動小数点座標を独立した許容差で比べる。
+	bool NearCoordinate( float64 A, float64 B, float64 Epsilon )
+	{
+		return std::fabs( A - B ) <= Epsilon;
+	}
+
+	// command列全体が指定RGBを維持するか確かめる。
+	bool AllLinesHaveColor( const FGuideReadback& Readback, uint8 R, uint8 G, uint8 Blue )
+	{
+		// 描画bufferに記録された全line。
+		for ( const FDrawLine3DData& Line : Readback.Lines ) if ( Line.Color.R != R || Line.Color.G != G || Line.Color.B != Blue ) return false;
+		return !Readback.Lines.IsEmpty();
+	}
+
+	// radial円線の実endpointから三平面・半径・色・既知軸点を確かめる。
+	bool HasRadialCircleGuides( const FGuideReadback& Readback, const FVector3& Center, float32 Radius, uint8 R, uint8 G, uint8 Blue )
+	{
+		// float三角関数の丸めを吸収する座標許容差。
+		const float64 Epsilon = std::max( 1.0e-6, static_cast<float64>( Radius ) * 1.0e-4 );
+		// XY円に属する線分数。
+		int32 XYCount = 0;
+		// XZ円に属する線分数。
+		int32 XZCount = 0;
+		// YZ円に属する線分数。
+		int32 YZCount = 0;
+		// 三円の実線分数。
+		int32 CircleCount = 0;
+		// 既知の正負X軸上の円endpointが見つかったか。
+		bool bPositiveX = false;
+		bool bNegativeX = false;
+		// 既知の正負Y軸上の円endpointが見つかったか。
+		bool bPositiveY = false;
+		bool bNegativeY = false;
+		// 既知の正負Z軸上の円endpointが見つかったか。
+		bool bPositiveZ = false;
+		bool bNegativeZ = false;
+		// 円線または矢印を含む実command列。
+		for ( const FDrawLine3DData& Line : Readback.Lines )
+		{
+			if ( Line.Color.R != R || Line.Color.G != G || Line.Color.B != Blue ) return false;
+			// commandに記録された円線の開始点。
+			const FVector3 P0 = LinePoint( Line.P0 );
+			// commandに記録された円線の終点。
+			const FVector3 P1 = LinePoint( Line.P1 );
+			// 両端点が指定半径の円周上にあるか。
+			const bool bBothOnRadius = NearCoordinate( std::sqrt( ( P0.x - Center.x ) * ( P0.x - Center.x ) + ( P0.y - Center.y ) * ( P0.y - Center.y ) + ( P0.z - Center.z ) * ( P0.z - Center.z ) ), Radius, Epsilon ) && NearCoordinate( std::sqrt( ( P1.x - Center.x ) * ( P1.x - Center.x ) + ( P1.y - Center.y ) * ( P1.y - Center.y ) + ( P1.z - Center.z ) * ( P1.z - Center.z ) ), Radius, Epsilon );
+			if ( !bBothOnRadius ) continue;
+			++CircleCount;
+			// 線分両端がXY平面にあるか。
+			const bool bInXY = NearCoordinate( P0.z, Center.z, Epsilon ) && NearCoordinate( P1.z, Center.z, Epsilon );
+			// 線分両端がXZ平面にあるか。
+			const bool bInXZ = NearCoordinate( P0.y, Center.y, Epsilon ) && NearCoordinate( P1.y, Center.y, Epsilon );
+			// 線分両端がYZ平面にあるか。
+			const bool bInYZ = NearCoordinate( P0.x, Center.x, Epsilon ) && NearCoordinate( P1.x, Center.x, Epsilon );
+			if ( bInXY ) ++XYCount;
+			if ( bInXZ ) ++XZCount;
+			if ( bInYZ ) ++YZCount;
+			if ( !bInXY && !bInXZ && !bInYZ ) return false;
+			// 円線端点が軸上の既知四分点に当たるか。
+			for ( const FVector3& Point : { P0, P1 } )
+			{
+				bPositiveX |= NearCoordinate( Point.x, Center.x + Radius, Epsilon ) && NearCoordinate( Point.y, Center.y, Epsilon ) && NearCoordinate( Point.z, Center.z, Epsilon );
+				bNegativeX |= NearCoordinate( Point.x, Center.x - Radius, Epsilon ) && NearCoordinate( Point.y, Center.y, Epsilon ) && NearCoordinate( Point.z, Center.z, Epsilon );
+				bPositiveY |= NearCoordinate( Point.x, Center.x, Epsilon ) && NearCoordinate( Point.y, Center.y + Radius, Epsilon ) && NearCoordinate( Point.z, Center.z, Epsilon );
+				bNegativeY |= NearCoordinate( Point.x, Center.x, Epsilon ) && NearCoordinate( Point.y, Center.y - Radius, Epsilon ) && NearCoordinate( Point.z, Center.z, Epsilon );
+				bPositiveZ |= NearCoordinate( Point.x, Center.x, Epsilon ) && NearCoordinate( Point.y, Center.y, Epsilon ) && NearCoordinate( Point.z, Center.z + Radius, Epsilon );
+				bNegativeZ |= NearCoordinate( Point.x, Center.x, Epsilon ) && NearCoordinate( Point.y, Center.y, Epsilon ) && NearCoordinate( Point.z, Center.z - Radius, Epsilon );
+			}
+		}
+		return CircleCount == 96 && XYCount == 32 && XZCount == 32 && YZCount == 32 && bPositiveX && bNegativeX && bPositiveY && bNegativeY && bPositiveZ && bNegativeZ;
+	}
+
 	// 生産presetの編集copyを保存し、fresh parseと通常playbackで値を確認する。
 	void TestOneForceFieldPreset( NAssetTest::FChecker& C, CAssetManager& Assets, IDrawExecutor& Executor, const FString& PresetPath, const FString& SavePath )
 	{
@@ -631,7 +703,7 @@ namespace NWorldTest
 		const float32 UniformLength = 1.25f;
 		// 加速度を正規化して手計算した矢印端点。
 		const FVector3 UniformEnd = FVector3( 0.0f, -3.0f, 4.0f ).Normalized() * UniformLength;
-		C.Check( UniformReadback.Lines.Num() == 3 && UniformReadback.Spheres.IsEmpty() && HasLine( UniformReadback, FVector3::Zero, UniformEnd, 40, 220, 230 ), "Uniform arrowはWorld原点から加速度を正規化した1.25m端点へ伸びる" );
+		C.Check( UniformReadback.Lines.Num() == 3 && UniformReadback.Spheres.IsEmpty() && AllLinesHaveColor( UniformReadback, 40, 220, 230 ) && HasLine( UniformReadback, FVector3::Zero, UniformEnd, 40, 220, 230 ), "Uniform arrowはWorld原点から加速度を正規化した1.25m端点へ伸びる" );
 		GuideState.SelectedForceField = 1;
 		// 負Radial guideの実command列。
 		FDrawBuffer RadialBuffer;
@@ -644,7 +716,7 @@ namespace NWorldTest
 		const FVector3 RadialStart( 7.0f + 2.0f * 0.52f, 8.0f, 9.0f );
 		// 負strengthが中心向きへ示す端点。
 		const FVector3 RadialEnd = RadialStart + FVector3::Left * 0.4f;
-		C.Check( RadialReadback.Spheres.Num() == 1 && RadialReadback.Spheres[0].Center[0] == 7.0f && RadialReadback.Spheres[0].Center[1] == 8.0f && RadialReadback.Spheres[0].Center[2] == 9.0f && RadialReadback.Spheres[0].Radius == 2.0f && RadialReadback.Lines.Num() == 3 && HasLine( RadialReadback, RadialStart, RadialEnd, 40, 220, 230 ), "負のRadialは固定World中心・半径と中心向きの矢印を実commandへ記録する" );
+		C.Check( RadialReadback.Spheres.IsEmpty() && RadialReadback.Lines.Num() == 99 && HasRadialCircleGuides( RadialReadback, FVector3( 7.0f, 8.0f, 9.0f ), 2.0f, 40, 220, 230 ) && HasLine( RadialReadback, RadialStart, RadialEnd, 40, 220, 230 ), "負RadialはWorld中心・半径2の三円と中心向き矢印を実commandへ記録する" );
 		GuideState.SelectedForceField = 2;
 		// tiny positive Radial guideの実command列。
 		FDrawBuffer TinyBuffer;
@@ -657,7 +729,7 @@ namespace NWorldTest
 		const FVector3 TinyStart( -2.0f + 0.001f * 0.52f, 1.0f, 0.5f );
 		// 正strengthが外向きへ示す最短端点。
 		const FVector3 TinyEnd = TinyStart + FVector3::Right * 0.25f;
-		C.Check( TinyReadback.Spheres.Num() == 1 && TinyReadback.Spheres[0].Center[0] == -2.0f && TinyReadback.Spheres[0].Radius == 0.001f && TinyReadback.Lines.Num() == 3 && HasLine( TinyReadback, TinyStart, TinyEnd, 40, 220, 230 ), "正のtiny radialは0.25m矢印を境界から外向きへ記録する" );
+		C.Check( TinyReadback.Spheres.IsEmpty() && TinyReadback.Lines.Num() == 99 && HasRadialCircleGuides( TinyReadback, FVector3( -2.0f, 1.0f, 0.5f ), 0.001f, 40, 220, 230 ) && HasLine( TinyReadback, TinyStart, TinyEnd, 40, 220, 230 ), "正tiny radialは三平面の半径.001円と0.25m外向き矢印を記録する" );
 		GuideState.SelectedForceField = 1;
 		GuideState.Document.BeginEdit().Emitters[0].ForceFields[1].bEnabled = false;
 		GuideState.Document.EndEditSession();
@@ -668,7 +740,7 @@ namespace NWorldTest
 		NEffectEditorUI::RecordForceFieldGuides( GuideState, DisabledDraw );
 		// bufferから読み直した無効field payload。
 		const FGuideReadback DisabledReadback = ReadGuides( DisabledBuffer );
-		C.Check( DisabledReadback.Spheres.Num() == 1 && DisabledReadback.Spheres[0].Diffuse.R == 125 && DisabledReadback.Spheres[0].Diffuse.G == 140 && DisabledReadback.Spheres[0].Diffuse.B == 150, "disabled radial guideは灰色commandにする" );
+		C.Check( DisabledReadback.Spheres.IsEmpty() && DisabledReadback.Lines.Num() == 99 && HasRadialCircleGuides( DisabledReadback, FVector3( 7.0f, 8.0f, 9.0f ), 2.0f, 125, 140, 150 ) && HasLine( DisabledReadback, RadialStart, RadialEnd, 125, 140, 150 ), "disabled radial guideの三円と矢印を灰色commandにする" );
 		GuideState.bShowForceFieldGuides = false;
 		// guide非表示の空出力確認buffer。
 		FDrawBuffer HiddenBuffer;
