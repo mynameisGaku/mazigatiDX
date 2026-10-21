@@ -28,8 +28,7 @@ namespace
 			{
 				const FParticle& ParticleA = StateA.Particles[i]; // 左側の粒子
 				const FParticle& ParticleB = StateB.Particles[i]; // 右側の粒子
-				if ( ParticleA.Position.x != ParticleB.Position.x || ParticleA.Position.y != ParticleB.Position.y || ParticleA.Position.z != ParticleB.Position.z || ParticleA.Velocity.x != ParticleB.Velocity.x || ParticleA.Velocity.y != ParticleB.Velocity.y || ParticleA.Velocity.z != ParticleB.Velocity.z
-						 || ParticleA.Age != ParticleB.Age || ParticleA.Lifetime != ParticleB.Lifetime || ParticleA.StartSize != ParticleB.StartSize || ParticleA.EndSize != ParticleB.EndSize || ParticleA.Angle != ParticleB.Angle || ParticleA.Spin != ParticleB.Spin || ParticleA.Serial != ParticleB.Serial ) return false;
+				if ( ParticleA.Position.x != ParticleB.Position.x || ParticleA.Position.y != ParticleB.Position.y || ParticleA.Position.z != ParticleB.Position.z || ParticleA.Velocity.x != ParticleB.Velocity.x || ParticleA.Velocity.y != ParticleB.Velocity.y || ParticleA.Velocity.z != ParticleB.Velocity.z || ParticleA.Age != ParticleB.Age || ParticleA.Lifetime != ParticleB.Lifetime || ParticleA.StartSize != ParticleB.StartSize || ParticleA.EndSize != ParticleB.EndSize || ParticleA.Angle != ParticleB.Angle || ParticleA.Spin != ParticleB.Spin || ParticleA.Serial != ParticleB.Serial ) return false;
 			}
 		}
 		return true;
@@ -847,8 +846,7 @@ namespace
 		NParticle::Advance( WithoutForceSim, 0.125f );
 		NParticle::Advance( WithForceSim, 0.125f );
 		NParticle::Advance( WithForceAgain, 0.125f );
-		bool bSpawnSame = WithoutForceSim.Emitters[0].Random == WithForceSim.Emitters[0].Random && WithoutForceSim.Emitters[0].NextSerial == WithForceSim.Emitters[0].NextSerial && WithoutForceSim.Emitters[0].Carry == WithForceSim.Emitters[0].Carry
-				 && WithoutForceSim.Emitters[0].BurstsDone == WithForceSim.Emitters[0].BurstsDone && WithoutForceSim.Emitters[0].Particles.Num() == WithForceSim.Emitters[0].Particles.Num();
+		bool bSpawnSame = WithoutForceSim.Emitters[0].Random == WithForceSim.Emitters[0].Random && WithoutForceSim.Emitters[0].NextSerial == WithForceSim.Emitters[0].NextSerial && WithoutForceSim.Emitters[0].Carry == WithForceSim.Emitters[0].Carry && WithoutForceSim.Emitters[0].BurstsDone == WithForceSim.Emitters[0].BurstsDone && WithoutForceSim.Emitters[0].Particles.Num() == WithForceSim.Emitters[0].Particles.Num();
 		for ( int32 i = 0; bSpawnSame && i < WithoutForceSim.Emitters[0].Particles.Num(); ++i ) // 発生直後の粒子番号
 		{
 			const FParticle& A = WithoutForceSim.Emitters[0].Particles[i]; // 場なしの生成粒子
