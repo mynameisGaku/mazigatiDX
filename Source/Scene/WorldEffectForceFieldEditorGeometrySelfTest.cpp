@@ -31,7 +31,7 @@ namespace
 			// 実行環境から見つけたsandbox Assets directory。
 			const TOptional<FString> FoundRoot = NFileSystem::FindDirectory( "Assets" );
 			if ( !FoundRoot.IsSet() ) return;
-			SandboxRoot = FoundRoot.GetValue();
+			SandboxRoot = NFileSystem::GetFullPath( FoundRoot.GetValue() );
 			Assets.SetRootDirectory( SandboxRoot );
 			bReady = Assets.GetRootDirectory() == SandboxRoot;
 		}
@@ -446,7 +446,7 @@ namespace NWorldTest
 		TravelField.Acceleration = FVector3( 2.0f, 0.0f, 0.0f );
 		TravelEmitter.ForceFields.Add( TravelField );
 		TravelDefinition.Emitters.Add( TravelEmitter );
-		C.Check( HasFocusedAxisExtents( TravelDefinition, Viewport, TravelExtent ), "speedMax*T+(gravityLength+uniformLength)*T²の単独travel boundsを六方向で投影する" );
+		C.Check( HasFocusedAxisExtents( TravelDefinition, Viewport, TravelExtent ), "speedMax*T+(gravityLength+uniformLength)*T^2の単独travel boundsを六方向で投影する" );
 
 		// box発生範囲だけを持つ検査definition。
 		FParticleEffectDefinition SpawnDefinition;
