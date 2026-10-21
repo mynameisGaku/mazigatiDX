@@ -25,6 +25,8 @@ struct FEffectEditorState
 	int32 SelectedForceField = 0;
 	// 力場の範囲表示を試し再生へ重ねるか。文書には保存しない。
 	bool bShowForceFieldGuides = true;
+	// 力場の構造操作後、Tab移動先を次frameに復旧する印。
+	bool bForceFieldFocusPending = false;
 	// 初めて表示した際の新規文書作成を済ませたか。
 	bool bInitialized = false;
 	// 操作結果を表示する文章。

@@ -39,6 +39,8 @@ bool NEffectEditorUI::DrawForceFieldPanel( FEffectEditorState& State, FParticleE
 	// コピーに含まれる力場の個数。
 	const int32 FieldCount = Emitter.ForceFields.Num();
 	State.SelectedForceField = FieldCount > 0 ? std::clamp( State.SelectedForceField, 0, FieldCount - 1 ) : 0;
+	// 前frameの構造操作で必要になったfocus復旧要求。
+	const bool bRestoreForceFieldFocus = State.bForceFieldFocusPending;
 	// 選択中の添字が現在のコピーにあるか。
 	const bool bHasSelection = Emitter.ForceFields.IsValidIndex( State.SelectedForceField );
 	// 新規作成と複製を止める上限判定。
@@ -52,6 +54,11 @@ bool NEffectEditorUI::DrawForceFieldPanel( FEffectEditorState& State, FParticleE
 	bool bReset = false;
 
 	ImGui::BeginDisabled( bAtLimit );
+	if ( bRestoreForceFieldFocus && !bHasSelection )
+	{
+		ImGui::SetKeyboardFocusHere();
+		State.bForceFieldFocusPending = false;
+	}
 	if ( ImGui::Button( "Add##ForceFieldAdd" ) ) bAdd = true;
 	ImGui::EndDisabled();
 	ImGui::SameLine();
@@ -75,10 +82,13 @@ bool NEffectEditorUI::DrawForceFieldPanel( FEffectEditorState& State, FParticleE
 	if ( ImGui::Button( "Reset##ForceFieldReset" ) ) bReset = true;
 	ImGui::EndDisabled();
 
+	// 次frameに選択行へ戻す必要がある配列操作。
+	const bool bStructuralOperation = bAdd || bDuplicate || bDelete || bMoveUp || bMoveDown;
 	if ( bAdd || bDuplicate || bDelete || bMoveUp || bMoveDown || bReset )
 	{
 		bInputEnded = true;
-		bStructureChanged |= bAdd || bDuplicate || bDelete || bMoveUp || bMoveDown;
+		bStructureChanged |= bStructuralOperation;
+		if ( bStructuralOperation ) State.bForceFieldFocusPending = true;
 		State.Document.EndEditSession();
 	}
 	if ( bAdd )
@@ -129,6 +139,11 @@ bool NEffectEditorUI::DrawForceFieldPanel( FEffectEditorState& State, FParticleE
 			ImGui::PushID( Index );
 			// 現在選択されている一覧行。
 			const bool bSelected = State.SelectedForceField == Index;
+			if ( bRestoreForceFieldFocus && !bStructuralOperation && bSelected )
+			{
+				ImGui::SetKeyboardFocusHere();
+				State.bForceFieldFocusPending = false;
+			}
 			if ( ImGui::Selectable( FString::Printf( "Force field %d", Index + 1 ).GetData(), bSelected ) ) State.SelectedForceField = Index;
 			ImGui::PopID();
 		}

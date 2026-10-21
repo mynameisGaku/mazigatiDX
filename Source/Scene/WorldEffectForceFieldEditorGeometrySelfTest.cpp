@@ -244,6 +244,8 @@ namespace
 		{
 			// APIへ渡す現在emitterの編集copy。
 			FParticleEmitterDefinition EditedEmitter = State.Document.Get().Emitters[EmitterIndex];
+			// 実presetに元からあるfieldだけを編集する件数。
+			const int32 OriginalFieldCount = EditedEmitter.ForceFields.Num();
 			if ( EditedEmitter.ForceFields.Num() < FEffectForceFieldDefinition::MaxFields )
 			{
 				// 無効状態の保持値を検査する追加radial field。
@@ -257,7 +259,7 @@ namespace
 				EditedEmitter.ForceFields.Add( DisabledField );
 			}
 			// 保存値と未使用値を含む各fieldを変更する。
-			for ( int32 FieldIndex = 0; FieldIndex < EditedEmitter.ForceFields.Num(); ++FieldIndex )
+			for ( int32 FieldIndex = 0; FieldIndex < OriginalFieldCount; ++FieldIndex )
 			{
 				// 編集対象のfield保存値。
 				FEffectForceFieldDefinition& Field = EditedEmitter.ForceFields[FieldIndex];
