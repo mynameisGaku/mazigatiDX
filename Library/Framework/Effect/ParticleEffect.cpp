@@ -156,6 +156,15 @@ namespace
 			}
 			Json["Bursts"] = Bursts;
 		}
+		// 空配列は省略して旧JSONを保つ。
+		if ( !Emitter.ForceFields.IsEmpty() )
+		{
+			// 保存順を保つfield配列。
+			NlohmannJson ForceFields = NlohmannJson::array();
+			// 定義順でfieldをJSONへ変換する。
+			for ( const FEffectForceFieldDefinition& Field : Emitter.ForceFields ) ForceFields.push_back( Field.ToJson() );
+			Json["ForceFields"] = ForceFields;
+		}
 		if ( !IsDefault( Emitter.Lifetime, Default.Lifetime ) ) Json["Lifetime"] = RangeToJson( Emitter.Lifetime );
 		if ( !IsDefault( Emitter.Speed, Default.Speed ) ) Json["Speed"] = RangeToJson( Emitter.Speed );
 
@@ -275,6 +284,28 @@ namespace
 			Emitter.SortBursts();
 		}
 		else if ( Json.contains( "Bursts" ) ) Warn( Warnings, Where + ": 'Bursts' is not an array" );
+		// 非配列と要素の不正状態を検証まで保持する。
+		if ( Json.contains( "ForceFields" ) && Json["ForceFields"].is_array() )
+		{
+			// field配列を順序どおり読み込む。
+			for ( const NlohmannJson& Item : Json["ForceFields"] )
+			{
+				// 読み込んだfieldとその警告。
+				FEffectForceFieldDefinition Field;
+				TArray<FString> FieldWarnings;
+				FEffectForceFieldDefinition::FromJson( Item, Field, &FieldWarnings );
+				for ( const FString& Message : FieldWarnings ) Warn( Warnings, Where + ": ForceFields: " + Message );
+				Emitter.ForceFields.Add( std::move( Field ) );
+			}
+		}
+		else if ( Json.contains( "ForceFields" ) )
+		{
+			// 非配列を消さずに保持するinvalid sentinel。
+			FEffectForceFieldDefinition InvalidField;
+			FEffectForceFieldDefinition::FromJson( NlohmannJson(), InvalidField, Warnings );
+			Emitter.ForceFields.Add( std::move( InvalidField ) );
+			Warn( Warnings, Where + ": ForceFieldsは配列にしてください" );
+		}
 		Emitter.Lifetime = ReadRange( Json, "Lifetime", Emitter.Lifetime, Warnings, Where );
 		Emitter.Speed = ReadRange( Json, "Speed", Emitter.Speed, Warnings, Where );
 		if ( Json.contains( "Shape" ) && Json["Shape"].is_object() )
@@ -482,6 +513,13 @@ TArray<FParticleIssue> FParticleEffectDefinition::Validate() const
 		if ( E.Flipbook.bEnabled && E.Path.Kind != FEffectPathDefinition::EKind::None ) Add( false, i, "Flipbook は四角形粒子にだけ適用され、帯と雷の再生では無視します" );
 		// 保存されているmesh値はNone中も検証し、排他設定は自動で消さない。
 		for ( const FString& Message : E.Mesh.Validate() ) Add( true, i, Message );
+		// 計算上限を超えたfield配列は保存状態を保ったままエラーにする。
+		if ( E.ForceFields.Num() > FEffectForceFieldDefinition::MaxFields ) Add( true, i, FString::Printf( "ForceFieldsは1エミッターあたり%d個以下にしてください", FEffectForceFieldDefinition::MaxFields ) );
+		for ( int32 FieldIndex = 0; FieldIndex < E.ForceFields.Num(); ++FieldIndex )
+		{
+			// 問題位置を示すfield番号。
+			for ( const FString& Message : E.ForceFields[FieldIndex].Validate() ) Add( true, i, FString::Printf( "ForceFields[%d]: %s", FieldIndex, Message.GetData() ) );
+		}
 		if ( E.Mesh.Kind != FEffectMeshDefinition::EKind::None && E.Path.Kind != FEffectPathDefinition::EKind::None ) Add( true, i, "MeshはPathと同時に使えません。どちらかをNoneにしてください" );
 		if ( E.Mesh.Kind != FEffectMeshDefinition::EKind::None && E.Flipbook.bEnabled ) Add( true, i, "MeshはFlipbookと同時に使えません。どちらかを無効にしてください" );
 		// RibbonのUV位相はshaderへ連続floatで渡すため、寿命全体の移動量を制限する。
@@ -613,6 +651,15 @@ uint64 FParticleEffectDefinition::ComputeHash() const
 		Hasher.Color( E.EndColor );
 		Hasher.Range( E.StartAngle );
 		Hasher.Range( E.Spin );
+		// 空配列では旧hashを保ち、非空だけtagged値を追加する。
+		if ( !E.ForceFields.IsEmpty() )
+		{
+			// 既存field列との境界を識別する専用tag。
+			Hasher.Value( uint32( 0x464F5243u ) );
+			Hasher.Value( E.ForceFields.Num() );
+			// fieldの順序と全保存値をhashへ含める。
+			for ( const FEffectForceFieldDefinition& Field : E.ForceFields ) Hasher.Value( Field.ComputeHash() );
+		}
 	}
 	return Hasher.Hash;
 }

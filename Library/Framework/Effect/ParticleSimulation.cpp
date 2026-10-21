@@ -1,7 +1,9 @@
-﻿#include "ParticleSimulation.h"
+﻿// SPDX-License-Identifier: NOASSERTION
+#include "ParticleSimulation.h"
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 #include "Library/Math/MathConstants.h"
 
@@ -10,7 +12,28 @@ namespace
 	constexpr float32 MinLifetime = 1.0e-3f;
 	constexpr int32 MaxWrapsPerAdvance = 8;   // 1 回の Advance で、ループを何周まで進めるか（Duration が極端に短いときの歯止め）
 
+	// 非有限値を安全な既定値へ置き換える。
 	float32 Sanitize( float32 Value, float32 Fallback = 0.0f ) { return std::isfinite( Value ) ? Value : Fallback; }
+
+	// ベクトルの三成分が有限か調べる。
+	bool IsFiniteVector( const FVector3& Value )
+	{
+		return std::isfinite( Value.x ) && std::isfinite( Value.y ) && std::isfinite( Value.z );
+	}
+
+	// 加算がfloat32の範囲に収まるときだけ結果を返す。
+	bool TryAddFinite( const FVector3& A, const FVector3& B, FVector3& Out )
+	{
+		// 各成分をfloat32へ狭める前の和。
+		const double X = static_cast<double>( A.x ) + B.x;
+		const double Y = static_cast<double>( A.y ) + B.y;
+		const double Z = static_cast<double>( A.z ) + B.z;
+		// float32で表せる絶対値の上限。
+		const double Limit = std::numeric_limits<float32>::max();
+		if ( !std::isfinite( X ) || !std::isfinite( Y ) || !std::isfinite( Z ) || std::fabs( X ) > Limit || std::fabs( Y ) > Limit || std::fabs( Z ) > Limit ) return false;
+		Out = FVector3( static_cast<float32>( X ), static_cast<float32>( Y ), static_cast<float32>( Z ) );
+		return true;
+	}
 
 	// xorshift32。状態は 0 にならない
 	struct FRandom
@@ -134,10 +157,19 @@ namespace
 		const FParticleEmitterDefinition& Def = Simulation.Definition->Emitters[EmitterIndex];
 		FParticleEmitterState& State = Simulation.Emitters[EmitterIndex];
 		if ( State.Particles.IsEmpty() ) return;
-		FVector3 Gravity = FVector3( Sanitize( Def.Gravity.x ), Sanitize( Def.Gravity.y ), Sanitize( Def.Gravity.z ) );
+		// 定義に保存されたWorld重力を有限値へ整える。
+		const FVector3 WorldGravity( Sanitize( Def.Gravity.x ), Sanitize( Def.Gravity.y ), Sanitize( Def.Gravity.z ) );
+		// 粒子空間で加える既存の重力。
+		FVector3 Gravity = WorldGravity;
 		if ( Def.Space == EParticleSpace::Local ) Gravity = Simulation.Transform.Rotation.UnrotateVector( Gravity );   // 重力は、ワールドの向き
+		// 既存の抵抗を速度へ掛ける倍率。
 		const float32 DragFactor = std::max( 1.0f - std::max( Sanitize( Def.Drag ), 0.0f ) * Step, 0.0f );
+		// 抵抗が定義されているか。
 		const bool bDrag = Def.Drag > 0.0f;
+		// 空配列なら既存の速度加算式をそのまま使う。
+		const bool bHasForceFields = !Def.ForceFields.IsEmpty();
+		// 保存上限を超えた定義も保持し、実行だけ先頭の上限内にする。
+		const int32 NumForceFields = std::min( Def.ForceFields.Num(), FEffectForceFieldDefinition::MaxFields );
 
 		int32 Kept = 0;
 		for ( int32 i = 0; i < State.Particles.Num(); ++i )
@@ -145,7 +177,35 @@ namespace
 			FParticle P = State.Particles[i];
 			P.Age += Step;
 			if ( P.Age >= P.Lifetime ) continue;
-			P.Velocity = P.Velocity + Gravity * Step;
+			if ( bHasForceFields )
+			{
+				// Local粒子は描画と同じ移動・回転でWorld位置へ戻す。
+				const FVector3 WorldPosition = Def.Space == EParticleSpace::Local ? Simulation.Transform.Position + Simulation.Transform.Rotation.Rotate( P.Position ) : P.Position;
+				// 適用中の場をWorld空間で合成する。
+				FVector3 WorldFieldAcceleration = FVector3::Zero;
+				// 上限内のfieldを保存順に評価する。
+				for ( int32 FieldIndex = 0; FieldIndex < NumForceFields; ++FieldIndex )
+				{
+					// この粒子位置でのfield加速度。
+					const FVector3 FieldAcceleration = Def.ForceFields[FieldIndex].EvaluateAcceleration( WorldPosition );
+					// overflowしない場合の累積値。
+					FVector3 Sum;
+					if ( TryAddFinite( WorldFieldAcceleration, FieldAcceleration, Sum ) ) WorldFieldAcceleration = Sum;
+				}
+				// Local粒子では加速度だけを粒子空間へ戻す。
+				FVector3 LocalFieldAcceleration = Def.Space == EParticleSpace::Local ? Simulation.Transform.Rotation.UnrotateVector( WorldFieldAcceleration ) : WorldFieldAcceleration;
+				if ( !IsFiniteVector( LocalFieldAcceleration ) ) LocalFieldAcceleration = FVector3::Zero;
+				// 重力へ場の加速度を加えた候補。
+				FVector3 Acceleration = Gravity;
+				if ( !TryAddFinite( Gravity, LocalFieldAcceleration, Acceleration ) ) Acceleration = Gravity;
+				// 場を加えた速度候補。
+				const FVector3 UpdatedVelocity = P.Velocity + Acceleration * Step;
+				// 抵抗後の位置まで有限なときだけfieldの寄与を採用する。
+				const FVector3 DraggedUpdatedVelocity = bDrag ? UpdatedVelocity * DragFactor : UpdatedVelocity;
+				const FVector3 UpdatedPosition = P.Position + DraggedUpdatedVelocity * Step;
+				P.Velocity = IsFiniteVector( UpdatedVelocity ) && IsFiniteVector( UpdatedPosition ) ? UpdatedVelocity : P.Velocity + Gravity * Step;
+			}
+			else P.Velocity = P.Velocity + Gravity * Step;
 			if ( bDrag ) P.Velocity = P.Velocity * DragFactor;
 			P.Position = P.Position + P.Velocity * Step;
 			P.Angle += P.Spin * Step;

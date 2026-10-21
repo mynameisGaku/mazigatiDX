@@ -234,6 +234,7 @@
     <ClCompile Include="Library\Framework\Effect\EffectComponent.cpp" />
     <ClCompile Include="Library\Framework\Effect\EffectFlipbookDefinition.cpp" />
     <ClCompile Include="Library\Framework\Effect\EffectFlipbookFrames.cpp" />
+    <ClCompile Include="Library\Framework\Effect\EffectForceFieldDefinition.cpp" />
     <ClCompile Include="Library\Framework\Effect\EffectLightningTreeDefinition.cpp" />
     <ClCompile Include="Library\Framework\Effect\EffectMaterialDefinition.cpp" />
     <ClCompile Include="Library\Framework\Effect\EffectMeshDefinition.cpp" />
@@ -695,6 +696,7 @@
     <ClInclude Include="Library\Framework\Effect\EffectComponent.h" />
     <ClInclude Include="Library\Framework\Effect\EffectFlipbookDefinition.h" />
     <ClInclude Include="Library\Framework\Effect\EffectFlipbookFrames.h" />
+    <ClInclude Include="Library\Framework\Effect\EffectForceFieldDefinition.h" />
     <ClInclude Include="Library\Framework\Effect\EffectLightningTreeDefinition.h" />
     <ClInclude Include="Library\Framework\Effect\EffectMaterialDefinition.h" />
     <ClInclude Include="Library\Framework\Effect\EffectMeshDefinition.h" />

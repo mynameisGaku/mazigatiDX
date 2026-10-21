@@ -247,6 +247,9 @@
     <ClCompile Include="Library\Framework\Effect\EffectFlipbookFrames.cpp">
       <Filter>Library\Framework\Effect</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Effect\EffectForceFieldDefinition.cpp">
+      <Filter>Library\Framework\Effect</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Effect\EffectLightningTreeDefinition.cpp">
       <Filter>Library\Framework\Effect</Filter>
     </ClCompile>
@@ -1624,6 +1627,9 @@
       <Filter>Library\Framework\Effect</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Effect\EffectFlipbookFrames.h">
+      <Filter>Library\Framework\Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Effect\EffectForceFieldDefinition.h">
       <Filter>Library\Framework\Effect</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Effect\EffectLightningTreeDefinition.h">

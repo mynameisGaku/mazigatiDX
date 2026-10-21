@@ -1,7 +1,9 @@
-﻿#pragma once
+﻿// SPDX-License-Identifier: NOASSERTION
+#pragma once
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
 #include "Library/Framework/Effect/EffectAppearanceDefinition.h"
+#include "Library/Framework/Effect/EffectForceFieldDefinition.h"
 #include "Library/Framework/Effect/EffectFlipbookDefinition.h"
 #include "Library/Framework/Effect/EffectMaterialDefinition.h"
 #include "Library/Framework/Effect/EffectMeshDefinition.h"
@@ -9,21 +11,7 @@
 #include "Library/Json/JsonObject.h"
 #include "Library/Math/Color.h"
 #include "Library/Math/Vector3.h"
-
-//=============================================================================
-// 粒子のエフェクトの定義（.effect.json）
-//   エフェクト = いくつかのエミッター（粒子を出すもの）の集まり。純粋なデータ（DxLib・シーン・ImGui を使わない）。
-//   JSON と相互に変換できる（書式は ParticleEffect.cpp の先頭）。動かす計算は ParticleSimulation.h、画面への出し方は ParticleEffectBackend.h。
-//
-//   FParticleEffectDefinition Effect;
-//   FParticleEffectDefinition::FromJson( Json, Effect );
-//   const TArray<FParticleIssue> Issues = Effect.Validate();
-//
-//   考え方:
-//   - 粒子の数・寿命・速さ・大きさ・色は、範囲（最小, 最大）でも書ける。生まれるときに、範囲の中のどれかになる（乱数は、シードから決まる: 同じシードなら同じ結果）。
-	//   - 寿命の間に、大きさと色は始めの値から終わりの値へ直線補間し、Appearance 曲線で倍率を調整できる（アルファも同様）。
-//   - 空間（Space）: World = 粒子は、生まれたあと、エフェクトの動きについて来ない（煙・火花）。Local = エフェクトに付いて動く（周りを回る光・盾）。
-//=============================================================================
+// 保存する.effect.jsonの書式番号。
 constexpr int32 ParticleEffectFormatVersion = 1;
 
 // 粒子を出す形（Direction の向きを軸にする）
@@ -78,6 +66,7 @@ struct FParticleBurst
 	int32 Count = 10;
 };
 
+// 粒子の発生・運動・描画設定をまとめるエミッター定義。
 struct FParticleEmitterDefinition
 {
 	FString Name = "Emitter";
@@ -100,6 +89,7 @@ struct FParticleEmitterDefinition
 	float32 Delay = 0.0f;                              // エフェクトが始まってから、動き出すまでの秒
 	float32 Rate = 20.0f;                              // 1 秒に出す数
 	TArray<FParticleBurst> Bursts;                     // Time の小さい順に並べて保つ（FromJson / Sort が保つ）
+	TArray<FEffectForceFieldDefinition> ForceFields;   // 粒子へ作用するWorld空間の力場。空なら従来の運動を保つ。
 
 	FParticleRange Lifetime = { 0.5f, 1.0f };          // 秒（0 より大きい）
 	FParticleRange Speed = { 1.0f, 2.0f };             // 生まれたときの速さ（m / 秒）
@@ -132,6 +122,7 @@ struct FParticleIssue
 	FString Message;
 };
 
+// 複数のエミッターと再生条件を持つ粒子エフェクト定義。
 struct FParticleEffectDefinition
 {
 	static constexpr int32 MaxEmitters = 16;
