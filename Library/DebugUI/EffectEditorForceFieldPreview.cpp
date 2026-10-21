@@ -1,0 +1,326 @@
+﻿// SPDX-License-Identifier: NOASSERTION
+#include "EffectEditorInternal.h"
+
+#include <algorithm>
+#include <cmath>
+#include <limits>
+
+#include "Library/Framework/Effect/EffectPathGeometry.h"
+#include "Library/Framework/Render/DrawContext.h"
+
+namespace
+{
+	// 3軸の長さをdoubleで求め、floatの二乗overflowを避ける。
+	float64 ForceFieldVectorLength( const FVector3& Value )
+	{
+		// 3成分をdoubleへ広げた値。
+		const float64 X = Value.x;
+		// 3成分をdoubleへ広げた値。
+		const float64 Y = Value.y;
+		// 3成分をdoubleへ広げた値。
+		const float64 Z = Value.z;
+		return std::sqrt( X * X + Y * Y + Z * Z );
+	}
+
+	// boundsへ加える座標が有限で、半径が有限かつ非負であることを確認する。
+	bool IsValidForceFieldSphere( const FVector3& Center, float64 Radius )
+	{
+		return std::isfinite( Center.x ) && std::isfinite( Center.y ) && std::isfinite( Center.z ) && std::isfinite( Radius ) && Radius >= 0.0 && Radius <= ( std::numeric_limits<float32>::max )();
+	}
+
+	// 中心と半径の球を既存の保守boundsへ加える。途中失敗では出力を変えない。
+	bool AddForceFieldBoundsSphere( const FVector3& SphereCenter, float64 SphereRadius, FVector3& BoundsCenter, float64& BoundsRadius, bool& bHasBounds )
+	{
+		if ( !IsValidForceFieldSphere( SphereCenter, SphereRadius ) ) return false;
+		if ( !bHasBounds )
+		{
+			BoundsCenter = SphereCenter;
+			BoundsRadius = SphereRadius;
+			bHasBounds = true;
+			return true;
+		}
+		// 球の中心差をdoubleで計算する。
+		const float64 DeltaX = static_cast<float64>( SphereCenter.x ) - BoundsCenter.x;
+		// 球の中心差をdoubleで計算する。
+		const float64 DeltaY = static_cast<float64>( SphereCenter.y ) - BoundsCenter.y;
+		// 球の中心差をdoubleで計算する。
+		const float64 DeltaZ = static_cast<float64>( SphereCenter.z ) - BoundsCenter.z;
+		// 中心間の距離。
+		const float64 Distance = std::sqrt( DeltaX * DeltaX + DeltaY * DeltaY + DeltaZ * DeltaZ );
+		if ( !std::isfinite( Distance ) ) return false;
+		if ( Distance + SphereRadius <= BoundsRadius ) return true;
+		if ( Distance + BoundsRadius <= SphereRadius )
+		{
+			BoundsCenter = SphereCenter;
+			BoundsRadius = SphereRadius;
+			return true;
+		}
+		if ( Distance <= 1.0e-12 )
+		{
+			BoundsRadius = std::max( BoundsRadius, SphereRadius );
+			return true;
+		}
+		// 二球を含める新しい球の半径と中心移動率。
+		const float64 NewRadius = ( Distance + BoundsRadius + SphereRadius ) * 0.5;
+		// 元の中心から新しい中心へ動かす割合。
+		const float64 Move = ( NewRadius - BoundsRadius ) / Distance;
+		// floatへ丸める前の新しい中心座標。
+		const float64 NewX = static_cast<float64>( BoundsCenter.x ) + DeltaX * Move;
+		// floatへ丸める前の新しい中心座標。
+		const float64 NewY = static_cast<float64>( BoundsCenter.y ) + DeltaY * Move;
+		// floatへ丸める前の新しい中心座標。
+		const float64 NewZ = static_cast<float64>( BoundsCenter.z ) + DeltaZ * Move;
+		if ( !std::isfinite( NewRadius ) || !std::isfinite( NewX ) || !std::isfinite( NewY ) || !std::isfinite( NewZ ) || NewRadius > ( std::numeric_limits<float32>::max )() ) return false;
+		// float中心へ丸めた際に失う距離。
+		const FVector3 RoundedCenter( static_cast<float32>( NewX ), static_cast<float32>( NewY ), static_cast<float32>( NewZ ) );
+		// 丸め誤差の3成分。
+		const float64 RoundX = NewX - RoundedCenter.x;
+		// 丸め誤差の3成分。
+		const float64 RoundY = NewY - RoundedCenter.y;
+		// 丸め誤差の3成分。
+		const float64 RoundZ = NewZ - RoundedCenter.z;
+		// 丸めで中心がずれる距離。
+		const float64 RoundError = std::sqrt( RoundX * RoundX + RoundY * RoundY + RoundZ * RoundZ );
+		if ( !std::isfinite( RoundError ) || NewRadius + RoundError > ( std::numeric_limits<float32>::max )() ) return false;
+		BoundsCenter = RoundedCenter;
+		BoundsRadius = NewRadius + RoundError;
+		return true;
+	}
+
+	// 寿命・速度・サイズ範囲がカメラ計算で使える値か調べる。
+	bool IsValidForceFieldRange( const FParticleRange& Range, bool bNeedPositiveMinimum )
+	{
+		return std::isfinite( Range.Min ) && std::isfinite( Range.Max ) && Range.Min <= Range.Max && ( bNeedPositiveMinimum ? Range.Min > 0.0f : Range.Min >= 0.0f );
+	}
+
+	// 視界へ合わせた後もboundsが投影範囲に収まり、clip面を越えないか確認する。
+	bool IsFocusedForceFieldBoundsVisible( const FEditorCamera& Camera, const FEditorViewport& Viewport, const FVector3& Center, float32 Radius )
+	{
+		// 中心の画面座標。
+		FVector2 Pixel;
+		// 中心の奥行き。
+		float32 Depth = 0.0f;
+		if ( !Camera.WorldToScreen( Viewport, Center, Pixel, &Depth ) || !std::isfinite( Depth ) || !std::isfinite( Pixel.x ) || !std::isfinite( Pixel.y ) ) return false;
+		if ( Depth - Radius <= Viewport.Near || Depth + Radius >= Viewport.Far || Pixel.x < 1.0f || Pixel.y < 1.0f || Pixel.x > Viewport.Width - 1.0f || Pixel.y > Viewport.Height - 1.0f ) return false;
+		// 縦横のうち狭い側の半視野角。
+		const float32 HalfFovY = Viewport.FovY * 0.5f;
+		// 横方向の半視野角。
+		const float32 HalfFovX = std::atan( std::tan( HalfFovY ) * Viewport.GetAspect() );
+		// 球の収まりを制限する半視野角。
+		const float32 HalfFov = std::min( HalfFovX, HalfFovY );
+		return std::isfinite( HalfFov ) && HalfFov > 0.0f && Radius <= Depth * std::sin( HalfFov ) * 0.92f;
+	}
+
+	// 矢印の先端に二本の短い線を記録し、World方向を見分けやすくする。
+	void RecordForceFieldArrow( FDrawContext& Draw, const FVector3& Start, const FVector3& Direction, float32 Length, const FColor32& Color )
+	{
+		// 矢印の方向をdoubleで正規化するための長さ。
+		const float64 Magnitude = ForceFieldVectorLength( Direction );
+		if ( !std::isfinite( Magnitude ) || Magnitude <= 1.0e-9 || !std::isfinite( Length ) || Length <= 0.0f ) return;
+		// World方向の単位ベクトル。
+		const FVector3 Unit( static_cast<float32>( Direction.x / Magnitude ), static_cast<float32>( Direction.y / Magnitude ), static_cast<float32>( Direction.z / Magnitude ) );
+		// 矢印の先端。
+		const FVector3 End = Start + Unit * Length;
+		// 上方向と平行にならない基準軸。
+		const FVector3 Reference = std::fabs( Unit.y ) < 0.85f ? FVector3::Up : FVector3::Right;
+		// 矢印の横方向。
+		const FVector3 Side = FVector3::Cross( Unit, Reference ).Normalized();
+		// 矢尻の長さ。
+		const float32 HeadLength = std::min( Length * 0.22f, 0.28f );
+		// 矢尻の半幅。
+		const float32 HeadWidth = HeadLength * 0.55f;
+		Draw.Line3D( Start, End, Color );
+		Draw.Line3D( End, End - Unit * HeadLength + Side * HeadWidth, Color );
+		Draw.Line3D( End, End - Unit * HeadLength - Side * HeadWidth, Color );
+	}
+}
+
+// 全emitterと有効な力場範囲を包む球へ一度だけcameraを合わせる。無効・空・過大なboundsでは変更しない。
+bool NEffectEditorUI::FocusCameraOnForceFields( FEffectEditorState& State, const FEditorViewport& Viewport )
+{
+	if ( !Viewport.IsValid() || !std::isfinite( Viewport.FovY ) || Viewport.FovY <= 0.0f || Viewport.FovY >= 3.14159265f || !std::isfinite( Viewport.Near ) || !std::isfinite( Viewport.Far ) || Viewport.Near <= 0.0f || Viewport.Far <= Viewport.Near ) return false;
+	// 少なくとも一つの力場を持つ定義だけをfocus対象にする。
+	bool bHasForceField = false;
+	// 力場の有無を調べるemitter。
+	for ( const FParticleEmitterDefinition& Emitter : State.Document.Get().Emitters ) if ( !Emitter.ForceFields.IsEmpty() ) { bHasForceField = true; break; }
+	if ( !bHasForceField ) return false;
+	// 画角計算に使う縦横比。
+	const float32 Aspect = Viewport.GetAspect();
+	if ( !std::isfinite( Aspect ) || Aspect <= 0.0f ) return false;
+	// 力場を含む編集中の定義。
+	const FParticleEffectDefinition& Definition = State.Document.Get();
+	// cameraへ収める空間範囲の中心。
+	FVector3 BoundsCenter = FVector3::Zero;
+	// cameraへ収める空間範囲の半径。
+	float64 BoundsRadius = 0.0;
+	// 一つ以上の範囲を追加したか。
+	bool bHasBounds = false;
+	// いま空間範囲を計算するemitter。
+	for ( const FParticleEmitterDefinition& Emitter : Definition.Emitters )
+	{
+		if ( Emitter.ForceFields.Num() > FEffectForceFieldDefinition::MaxFields || !IsValidForceFieldRange( Emitter.Lifetime, true ) || !IsValidForceFieldRange( Emitter.Speed, false ) || !IsValidForceFieldRange( Emitter.StartSize, false ) || !IsValidForceFieldRange( Emitter.EndSize, false ) ) return false;
+		if ( !std::isfinite( Emitter.Gravity.x ) || !std::isfinite( Emitter.Gravity.y ) || !std::isfinite( Emitter.Gravity.z ) || !std::isfinite( Emitter.Direction.x ) || !std::isfinite( Emitter.Direction.y ) || !std::isfinite( Emitter.Direction.z ) || !std::isfinite( Emitter.ShapeRadius ) || Emitter.ShapeRadius < 0.0f || !std::isfinite( Emitter.BoxSize.x ) || !std::isfinite( Emitter.BoxSize.y ) || !std::isfinite( Emitter.BoxSize.z ) || Emitter.BoxSize.x < 0.0f || Emitter.BoxSize.y < 0.0f || Emitter.BoxSize.z < 0.0f || !std::isfinite( Emitter.ConeAngle ) || Emitter.ConeAngle < 0.0f || Emitter.ConeAngle > 180.0f ) return false;
+		if ( Emitter.Mesh.Kind != FEffectMeshDefinition::EKind::None && ( Emitter.Path.Kind != FEffectPathDefinition::EKind::None || Emitter.Flipbook.bEnabled || !Emitter.Mesh.IsValidSettings() ) ) return false;
+		if ( !Emitter.Appearance.Size.Validate().IsEmpty() ) return false;
+		// 寿命中の最大時間。
+		const float64 Lifetime = Emitter.Lifetime.Max;
+		// 重力加速度の長さ。
+		const float64 GravityMagnitude = ForceFieldVectorLength( Emitter.Gravity );
+		// 全有効場の保守加速度上限。
+		float64 ForceAcceleration = 0.0;
+		// このemitterに保存された場。
+		for ( const FEffectForceFieldDefinition& Field : Emitter.ForceFields )
+		{
+			if ( !Field.IsValidSettings() ) return false;
+			if ( Field.Kind == FEffectForceFieldDefinition::EKind::Radial )
+			{
+				// guideに含めるfield球の半径。
+				float64 GuideRadius = Field.Radius;
+				if ( Field.Strength != 0.0f )
+				{
+					// wire球から出る方向矢印の長さ。
+					const float64 GuideArrowLength = std::clamp( static_cast<float64>( Field.Radius ) * 0.2, 0.25, 1.25 );
+					GuideRadius = std::max( GuideRadius, static_cast<float64>( Field.Radius ) * 0.52 + GuideArrowLength );
+				}
+				if ( !AddForceFieldBoundsSphere( Field.Position, GuideRadius, BoundsCenter, BoundsRadius, bHasBounds ) ) return false;
+			}
+			else if ( ForceFieldVectorLength( Field.Acceleration ) > 1.0e-9 && !AddForceFieldBoundsSphere( FVector3::Zero, 1.25, BoundsCenter, BoundsRadius, bHasBounds ) ) return false;
+			if ( !Field.bEnabled ) continue;
+			// fieldの加速度上限。
+			const float64 FieldMagnitude = Field.Kind == FEffectForceFieldDefinition::EKind::Uniform ? ForceFieldVectorLength( Field.Acceleration ) : std::fabs( static_cast<float64>( Field.Strength ) );
+			if ( !std::isfinite( FieldMagnitude ) ) return false;
+			ForceAcceleration += FieldMagnitude;
+			if ( !std::isfinite( ForceAcceleration ) ) return false;
+		}
+		// speedMax*T + (gravityLen + all enabled field limits)*T^2 の保守移動距離。
+		const float64 AccelerationMagnitude = GravityMagnitude + ForceAcceleration;
+		const float64 TravelRadius = static_cast<float64>( Emitter.Speed.Max ) * Lifetime + AccelerationMagnitude * Lifetime * Lifetime;
+		if ( !std::isfinite( TravelRadius ) ) return false;
+		// Cone・Sphereの発生範囲、またはBoxの半対角。
+		float64 SpawnRadius = static_cast<float64>( Emitter.ShapeRadius );
+		if ( Emitter.Shape == EParticleShape::Box ) SpawnRadius = 0.5 * std::sqrt( static_cast<float64>( Emitter.BoxSize.x ) * Emitter.BoxSize.x + static_cast<float64>( Emitter.BoxSize.y ) * Emitter.BoxSize.y + static_cast<float64>( Emitter.BoxSize.z ) * Emitter.BoxSize.z );
+		else if ( Emitter.Shape != EParticleShape::Cone && Emitter.Shape != EParticleShape::Sphere ) return false;
+		// 寿命全体で使うsize倍率の最大値。
+		float64 AppearanceScale = 1.0;
+		if ( !Emitter.Appearance.Size.Keys.IsEmpty() )
+		{
+			AppearanceScale = 0.0;
+			// size曲線上の倍率候補。
+			for ( const FEffectScalarCurve::FKey& Key : Emitter.Appearance.Size.Keys )
+			{
+				if ( !std::isfinite( Key.Value ) || Key.Value < 0.0f || Key.Value > 32.0f ) return false;
+				AppearanceScale = std::max( AppearanceScale, static_cast<float64>( Key.Value ) );
+			}
+		}
+		// 粒子の最大辺長。
+		const float64 BaseSize = std::max( static_cast<float64>( Emitter.StartSize.Max ), static_cast<float64>( Emitter.EndSize.Max ) );
+		// 四角形の半対角。Tree・帯の太さもこの値を元にする。
+		const float64 ParticleRadius = BaseSize * AppearanceScale * 0.7071067811865476;
+		// 固定meshの最大外周。
+		float64 MeshRadius = 0.0;
+		if ( Emitter.Mesh.Kind != FEffectMeshDefinition::EKind::None )
+		{
+			if ( !Emitter.Mesh.IsValidSettings() ) return false;
+			MeshRadius = BaseSize * AppearanceScale * ( Emitter.Mesh.Kind == FEffectMeshDefinition::EKind::Plane ? 0.7071067811865476 : 0.5 );
+		}
+		// Lightningの終点・揺れ・枝を含む形状半径。
+		float64 PathRadius = 0.0;
+		if ( Emitter.Path.Kind != FEffectPathDefinition::EKind::None )
+		{
+			if ( !Emitter.Path.Validate().IsEmpty() || !std::isfinite( Emitter.Path.End.x ) || !std::isfinite( Emitter.Path.End.y ) || !std::isfinite( Emitter.Path.End.z ) ) return false;
+			// path終点までの長さ。
+			const float64 EndLength = ForceFieldVectorLength( Emitter.Path.End );
+			if ( !std::isfinite( EndLength ) ) return false;
+			if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning )
+			{
+				// Treeが返す始点中心の球半径。
+				FVector3 TreeCenter = FVector3::Zero;
+				// Treeが返す始点中心の球半径。
+				float32 TreeRadius = 0.0f;
+				// 寿命曲線の揺れと枝幅を含むTreeの保守bounds。
+				const float32 TreePadding = static_cast<float32>( std::max( ParticleRadius, 0.001 ) );
+				if ( !NEffectPath::GetTreeLightningBounds( Emitter.Path, FVector3::Zero, Emitter.Path.End, TreePadding, TreeCenter, TreeRadius ) || !std::isfinite( TreeRadius ) || TreeRadius <= 0.0f ) return false;
+				PathRadius = ForceFieldVectorLength( TreeCenter ) + TreeRadius;
+			}
+			else if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::Lightning )
+			{
+				// 枝が作られる条件を描画側と同じ長さ・枝数で判定する。
+				const bool bHasBranches = Emitter.Path.Branches > 0 && Emitter.Path.BranchLength > 0.0f;
+				// 主幹横揺れと枝先までを包含する倍率。
+				const float64 SpreadFactor = 1.0 + std::sqrt( 2.0 ) * Emitter.Path.Jitter + ( bHasBranches ? Emitter.Path.BranchLength + std::sqrt( 2.0 ) * 0.35 * Emitter.Path.Jitter : 0.0 );
+				PathRadius = EndLength * SpreadFactor + ParticleRadius;
+			}
+			else if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::Ribbon ) PathRadius = ParticleRadius;
+			else return false;
+		}
+		// 発生範囲・寿命中移動・粒子形状を合算したemitter球。
+		const float64 EmitterRadius = SpawnRadius + TravelRadius + std::max( ParticleRadius, MeshRadius ) + PathRadius;
+		if ( !AddForceFieldBoundsSphere( FVector3::Zero, EmitterRadius, BoundsCenter, BoundsRadius, bHasBounds ) ) return false;
+	}
+	if ( !bHasBounds || !IsValidForceFieldSphere( BoundsCenter, BoundsRadius ) || BoundsRadius > FEditorCamera::MaxDistance ) return false;
+	// doubleの半径をcameraへ渡す有限float。
+	const float32 SafeRadius = static_cast<float32>( BoundsRadius );
+	if ( !std::isfinite( SafeRadius ) || SafeRadius <= 0.0f ) return false;
+	// focus結果の検査に失敗した場合へ戻すcamera。
+	const FEditorCamera PreviousCamera = State.Camera;
+	State.Camera.Focus( BoundsCenter, SafeRadius, Viewport );
+	// near面の手前へ球が出ないための正の余裕。
+	const float32 NearMargin = std::max( 0.01f, SafeRadius * 0.05f );
+	// 球の手前端をnear面より奥へ置く最小距離。
+	const float32 MinimumDistance = Viewport.Near + SafeRadius + NearMargin;
+	if ( !std::isfinite( MinimumDistance ) || MinimumDistance > FEditorCamera::MaxDistance )
+	{
+		State.Camera = PreviousCamera;
+		return false;
+	}
+	State.Camera.Distance = std::max( State.Camera.Distance, MinimumDistance );
+	if ( !std::isfinite( State.Camera.Distance ) || State.Camera.Distance > FEditorCamera::MaxDistance )
+	{
+		State.Camera = PreviousCamera;
+		return false;
+	}
+	if ( !IsFocusedForceFieldBoundsVisible( State.Camera, Viewport, BoundsCenter, SafeRadius ) )
+	{
+		State.Camera = PreviousCamera;
+		return false;
+	}
+	return true;
+}
+
+// 選択中の有効な力場だけをWorld座標のwire guideとして記録する。時間・文書・資源は変更しない。
+void NEffectEditorUI::RecordForceFieldGuides( const FEffectEditorState& State, FDrawContext& Draw )
+{
+	if ( !State.bShowForceFieldGuides || !State.Document.Get().Emitters.IsValidIndex( State.SelectedEmitter ) ) return;
+	// guideを表示する選択中emitter。
+	const FParticleEmitterDefinition& Emitter = State.Document.Get().Emitters[State.SelectedEmitter];
+	if ( !Emitter.ForceFields.IsValidIndex( State.SelectedForceField ) ) return;
+	// guideを表示する選択中field。
+	const FEffectForceFieldDefinition& Field = Emitter.ForceFields[State.SelectedForceField];
+	if ( !Field.IsValidSettings() ) return;
+	// 有効なfieldを粒子と分けて見せる青緑。
+	const FColor32 EnabledColor( 40, 220, 230, 255 );
+	// 無効fieldの範囲を控えめに示す灰色。
+	const FColor32 DisabledColor( 125, 140, 150, 255 );
+	// 今fieldの表示に使う色。
+	const FColor32 Color = Field.bEnabled ? EnabledColor : DisabledColor;
+	if ( Field.Kind == FEffectForceFieldDefinition::EKind::Radial )
+	{
+		Draw.Sphere3D( Field.Position, Field.Radius, 32, Color, Color, false );
+		if ( Field.Strength == 0.0f ) return;
+		// 半径境界上で符号による引力・反発方向を示す始点。
+		const FVector3 DirectionStart = Field.Position + FVector3::Right * ( Field.Radius * 0.52f );
+		// 正なら外向き、負なら中心向きにする方向。
+		const FVector3 Direction = Field.Strength >= 0.0f ? FVector3::Right : FVector3::Left;
+		// 大きい半径でも画面を横切りにくい矢印長さ。
+		const float32 ArrowLength = std::clamp( Field.Radius * 0.2f, 0.25f, 1.25f );
+		RecordForceFieldArrow( Draw, DirectionStart, Direction, ArrowLength, Color );
+	}
+	else if ( Field.Kind == FEffectForceFieldDefinition::EKind::Uniform )
+	{
+		// 一様加速度を表示する固定のWorld原点。
+		const FVector3 Origin = FVector3::Zero;
+		// 方向だけを示す固定長。
+		constexpr float32 ArrowLength = 1.25f;
+		RecordForceFieldArrow( Draw, Origin, Field.Acceleration, ArrowLength, Color );
+	}
+}

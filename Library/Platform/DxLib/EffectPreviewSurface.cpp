@@ -117,6 +117,48 @@ namespace
 		return std::isfinite( Eye.x ) && std::isfinite( Eye.y ) && std::isfinite( Eye.z );
 	}
 
+	// 力場guide用のLine3D / wire Sphere3Dだけを読み、長さと描画値が安全か確かめる。
+	bool IsValidGuideOverlay( const FDrawSpan& Overlay )
+	{
+		if ( Overlay.NumWords < 0 || Overlay.NumWords > NDrawCommand::MaxWords || ( Overlay.NumWords > 0 && Overlay.Words == nullptr ) ) return false;
+		// 現在検証している命令の開始位置。
+		int32 Offset = 0;
+		while ( Offset < Overlay.NumWords )
+		{
+			// 命令全体のword数を示すheader。
+			const uint32 Header = Overlay.Words[Offset];
+			// 命令全体のword数。
+			const int32 TotalWords = static_cast<int32>( Header >> 16 );
+			// 命令種別。
+			const EDrawCommand Type = static_cast<EDrawCommand>( Header & 0xFFu );
+			// 命令flag。
+			const uint8 Flags = static_cast<uint8>( ( Header >> 8 ) & 0xFFu );
+			if ( TotalWords < 1 || TotalWords > Overlay.NumWords - Offset ) return false;
+			// headerの次から始まるpayload。
+			const uint32* const Payload = Overlay.Words + Offset + 1;
+			if ( Type == EDrawCommand::Line3D )
+			{
+				if ( TotalWords != 1 + static_cast<int32>( sizeof( FDrawLine3DData ) / sizeof( uint32 ) ) || Flags != 0 ) return false;
+				// 読み取り済みの線分座標。
+				FDrawLine3DData Line;
+				std::memcpy( &Line, Payload, sizeof( Line ) );
+				for ( int32 Axis = 0; Axis < 3; ++Axis ) if ( !std::isfinite( Line.P0[Axis] ) || !std::isfinite( Line.P1[Axis] ) ) return false;
+			}
+			else if ( Type == EDrawCommand::Sphere3D )
+			{
+				if ( TotalWords != 1 + static_cast<int32>( sizeof( FDrawSphere3DData ) / sizeof( uint32 ) ) || ( Flags & FDrawFlag::Fill ) != 0 || ( Flags & ~FDrawFlag::Fill ) != 0 ) return false;
+				// 読み取り済みのwire sphere設定。
+				FDrawSphere3DData Sphere;
+				std::memcpy( &Sphere, Payload, sizeof( Sphere ) );
+				if ( !std::isfinite( Sphere.Radius ) || Sphere.Radius <= 0.0f || Sphere.Div < 3 || Sphere.Div > 128 ) return false;
+				for ( int32 Axis = 0; Axis < 3; ++Axis ) if ( !std::isfinite( Sphere.Center[Axis] ) ) return false;
+			}
+			else return false;
+			Offset += TotalWords;
+		}
+		return Offset == Overlay.NumWords;
+	}
+
 	// ワールドエディタと同じ距離刻みの床格子と、向きを示す3軸を記録する。
 	void RecordGrid( FDrawContext& Draw, const FEditorCamera& Camera )
 	{
@@ -169,6 +211,13 @@ FEffectPreviewSurface::~FEffectPreviewSurface()
 
 bool FEffectPreviewSurface::Render( const FEditorCamera& Camera, const FEditorViewport& View, const IEffectPlayback* Playback, IDrawExecutor& Executor )
 {
+	// 従来の呼び出しは追加命令なしの経路へ渡し、描画内容を保つ。
+	return Render( Camera, View, Playback, Executor, FDrawSpan() );
+}
+
+bool FEffectPreviewSurface::Render( const FEditorCamera& Camera, const FEditorViewport& View, const IEffectPlayback* Playback, IDrawExecutor& Executor, const FDrawSpan& Overlay )
+{
+	if ( !IsValidGuideOverlay( Overlay ) ) return false;
 	if ( !IsValidView( Camera, View ) ) return false;
 	// 呼び出し元の頂点と、作り直す画面への参照を先に描き終える。
 	RenderVertex();
@@ -237,6 +286,11 @@ bool FEffectPreviewSurface::Render( const FEditorCamera& Camera, const FEditorVi
 			SetWriteZBuffer3D( FALSE );
 			Executor.Execute( FDrawSpan { EffectBuffer.Words.data(), static_cast<int32>( EffectBuffer.Words.size() ) } );
 		}
+	}
+	if ( Overlay.NumWords > 0 )
+	{
+		SetWriteZBuffer3D( FALSE );
+		Executor.Execute( Overlay );
 	}
 	return true;
 }

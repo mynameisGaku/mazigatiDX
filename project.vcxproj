@@ -168,6 +168,8 @@
     <ClCompile Include="Library\DebugUI\EffectEditorAppearancePanel.cpp" />
     <ClCompile Include="Library\DebugUI\EffectEditorCurveInput.cpp" />
     <ClCompile Include="Library\DebugUI\EffectEditorFlipbookPanel.cpp" />
+    <ClCompile Include="Library\DebugUI\EffectEditorForceFieldPanel.cpp" />
+    <ClCompile Include="Library\DebugUI\EffectEditorForceFieldPreview.cpp" />
     <ClCompile Include="Library\DebugUI\EffectEditorMaterialPanel.cpp" />
     <ClCompile Include="Library\DebugUI\EffectEditorMeshPanel.cpp" />
     <ClCompile Include="Library\DebugUI\EffectEditorPanels.cpp" />
@@ -347,6 +349,8 @@
     <ClCompile Include="Source\Scene\WorldEffectFlipbookRealSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldEffectFlipbookResourceSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldEffectFlipbookSelfTest.cpp" />
+    <ClCompile Include="Source\Scene\WorldEffectForceFieldEditorGeometrySelfTest.cpp" />
+    <ClCompile Include="Source\Scene\WorldEffectForceFieldEditorSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldEffectMaterialInputSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldEffectMaterialPathPlaybackSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldEffectMaterialPlaybackSelfTest.cpp" />
@@ -808,6 +812,8 @@
     <ClInclude Include="Source\Scene\GameScene.h" />
     <ClInclude Include="Source\Scene\TitleScene.h" />
     <ClInclude Include="Source\Scene\WorldEditorSelfTestSupport.h" />
+    <ClInclude Include="Source\Scene\WorldEffectForceFieldEditorGeometrySelfTest.h" />
+    <ClInclude Include="Source\Scene\WorldEffectForceFieldEditorSelfTest.h" />
     <ClInclude Include="Source\Scene\WorldEffectMeshCommandSelfTest.h" />
     <ClInclude Include="Source\Scene\WorldEffectMeshRealSelfTest.h" />
     <ClInclude Include="Source\Scene\WorldEffectMeshResourceSelfTest.h" />

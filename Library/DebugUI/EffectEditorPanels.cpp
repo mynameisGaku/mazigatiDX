@@ -9,6 +9,7 @@
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Effect/EffectPathGeometry.h"
+#include "Library/Framework/Render/DrawContext.h"
 
 namespace
 {
@@ -240,6 +241,12 @@ namespace
 		FParticleEmitterDefinition Emitter = S.Document.Get().Emitters[S.SelectedEmitter];
 		// どれかの入力が変化した場合だけ、文書を更新する。
 		bool bChanged = TrackInputEnd( NDebugUI::InputString( "Emitter name", Emitter.Name ), S.Document );
+		// 力場UIから伝える入力終了の印。
+		bool bForceFieldInputEnded = false;
+		// Undo境界を追加する配列操作があったか。
+		bool bForceFieldStructureChanged = false;
+		// 力場の保存値が変わったか。
+		bool bForceFieldChanged = false;
 		bChanged |= TrackInputEnd( NDebugUI::FileCombo( "Image", Emitter.Texture, S.TextureFiles, "(soft dot)" ), S.Document );
 		bChanged |= TrackInputEnd( NDebugUI::InputString( "Image path", Emitter.Texture ), S.Document );
 		if ( ImGui::SmallButton( "Use soft dot" ) )
@@ -311,6 +318,8 @@ namespace
 		bChanged |= TrackInputEnd( ImGui::DragFloat3( "Direction", &Emitter.Direction.x, 0.01f, -10000.0f, 10000.0f, "%.3f" ), S.Document );
 		bChanged |= TrackInputEnd( ImGui::DragFloat3( "Gravity", &Emitter.Gravity.x, 0.01f, -10000.0f, 10000.0f, "%.3f" ), S.Document );
 		bChanged |= TrackInputEnd( ImGui::DragFloat( "Drag", &Emitter.Drag, 0.01f, 0.0f, 10000.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp ), S.Document );
+		bForceFieldChanged = NEffectEditorUI::DrawForceFieldPanel( S, Emitter, bForceFieldInputEnded, bForceFieldStructureChanged );
+		bChanged |= bForceFieldChanged;
 		ImGui::SeparatorText( "Appearance" );
 		bChanged |= TrackInputEnd( DrawRange( "Start size (m)", Emitter.StartSize ), S.Document );
 		bChanged |= TrackInputEnd( DrawRange( "End size (m)", Emitter.EndSize ), S.Document );
@@ -324,8 +333,8 @@ namespace
 			bChanged |= TrackInputEnd( DrawRange( "Start angle (deg)", Emitter.StartAngle, -360000.0f, 360000.0f ), S.Document );
 			bChanged |= TrackInputEnd( DrawRange( "Spin (deg/s)", Emitter.Spin, -360000.0f, 360000.0f ), S.Document );
 		}
-		if ( bAppearanceChanged ) NParticleEdit::SetEmitter( S.Document, S.SelectedEmitter, Emitter, "emitter-appearance" );
-		else if ( bChanged ) NParticleEdit::SetEmitter( S.Document, S.SelectedEmitter, Emitter, "emitter-settings" );
+		if ( bChanged ) NParticleEdit::SetEmitter( S.Document, S.SelectedEmitter, Emitter, bForceFieldChanged ? "emitter-force-fields" : bAppearanceChanged ? "emitter-appearance" : "emitter-settings" );
+		if ( bForceFieldInputEnded || bForceFieldStructureChanged ) S.Document.EndEditSession();
 	}
 }
 
@@ -508,6 +517,11 @@ bool NEffectEditorUI::FocusCameraOnTree( FEffectEditorState& S, const FEditorVie
 // Treeと固定meshを包むboundsへcameraを合わせ、無効・空なら元cameraを保つ。
 bool NEffectEditorUI::FocusCameraOnEffectGeometry( FEffectEditorState& S, const FEditorViewport& Viewport )
 {
+	for ( const FParticleEmitterDefinition& Emitter : S.Document.Get().Emitters )
+	{
+		// 現在の力場の有無だけを確かめる定義。
+		if ( !Emitter.ForceFields.IsEmpty() ) return FocusCameraOnForceFields( S, Viewport );
+	}
 	return FocusCameraOnGeometry( S, Viewport, true );
 }
 
@@ -528,7 +542,7 @@ bool NEffectEditorUI::ApplyPendingEffectCameraFocus( FEffectEditorState& S, cons
 	return FocusCameraOnEffectGeometry( S, Viewport );
 }
 
-// 文書にTree・meshがある場合だけopen/reset後のfocusを一度保留する。
+// 文書にTree・mesh・力場がある場合だけopen/reset後のfocusを一度保留する。
 void NEffectEditorUI::SetPendingEffectCameraFocus( FEffectEditorState& S, const FParticleEffectDefinition& Definition )
 {
 	S.bTreeCameraFocusPending = false;
@@ -537,7 +551,7 @@ void NEffectEditorUI::SetPendingEffectCameraFocus( FEffectEditorState& S, const 
 	{
 		// pending判定に使う現在のemitter。
 		if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning ) S.bTreeCameraFocusPending = true;
-		if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning || Emitter.Mesh.Kind != FEffectMeshDefinition::EKind::None ) S.bEffectGeometryCameraFocusPending = true;
+		if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning || Emitter.Mesh.Kind != FEffectMeshDefinition::EKind::None || !Emitter.ForceFields.IsEmpty() ) S.bEffectGeometryCameraFocusPending = true;
 	}
 }
 
@@ -613,8 +627,15 @@ void NEffectEditorUI::DrawPreview( FEffectEditorState& S )
 	if ( ImGui::IsItemHovered() && Input.MouseWheel != 0.0f ) S.Camera.Zoom( Input.MouseWheel );
 	// 描画の実行は既存の窓口へ渡し、描画先の作成と状態の復元は Surface に任せる。
 	IDrawExecutor* Executor = GetAppSubsystem<IDrawExecutor>();
-	// 描けなかったフレームに、以前の画像だけが残ることを避ける。
-	const bool bRendered = Executor != nullptr && S.Surface.Render( S.Camera, S.View, S.Playback.Get(), *Executor );
+	// 力場の範囲線を一時記録する描画buffer。
+	FDrawBuffer GuideBuffer;
+	// 力場の範囲線を記録する窓口。
+	FDrawContext GuideDraw( GuideBuffer );
+	NEffectEditorUI::RecordForceFieldGuides( S, GuideDraw );
+	// 寿命中にsurfaceへ渡す、範囲線コマンドのview。
+	const FDrawSpan GuideSpan { GuideBuffer.Words.data(), static_cast<int32>( GuideBuffer.Words.size() ) };
+	// 描画先へgrid・playback・力場範囲を描けたか。
+	const bool bRendered = Executor != nullptr && S.Surface.Render( S.Camera, S.View, S.Playback.Get(), *Executor, GuideSpan );
 	if ( bRendered && S.Surface.GetHandle() >= 0 ) ImGui::GetWindowDrawList()->AddImage( NDebugUI::GetImGuiTexture( S.Surface.GetHandle() ), Origin, ImVec2( Origin.x + Size.x, Origin.y + Size.y ) );
 	else ImGui::GetWindowDrawList()->AddText( ImVec2( Origin.x + 12.0f, Origin.y + 12.0f ), IM_COL32( 230, 230, 230, 255 ), "Preview unavailable" );
 }

@@ -127,6 +127,8 @@ namespace
 				if ( ImGui::MenuItem( "Flowing lightning tree" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/uv_distortion_tree_lightning.effect.json", pOpen );
 				if ( ImGui::MenuItem( "Mesh energy ring" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/mesh_energy_ring.effect.json", pOpen );
 				if ( ImGui::MenuItem( "Mesh tilted veil" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/mesh_tilted_veil.effect.json", pOpen );
+				if ( ImGui::MenuItem( "Force field wind" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_wind.effect.json", pOpen );
+				if ( ImGui::MenuItem( "Gravity well" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_gravity_well.effect.json", pOpen );
 				ImGui::EndMenu();
 			}
 			if ( ImGui::BeginMenu( "Edit" ) )
@@ -203,9 +205,10 @@ bool NDebugUI::OpenEffectFile( FEffectEditorState& State, const FString& AssetPa
 	State.FilePath = Path;
 	State.SaveAsPath = Path;
 	State.SelectedEmitter = State.Document.Get().Emitters.IsEmpty() ? INDEX_NONE : 0;
+	State.SelectedForceField = 0;
 	State.bInitialized = true;
 	State.bPreviewMotion = false;
-	// Treeまたはmeshを含む文書だけ、実viewport確定後に一度全体をcameraへ収める。
+	// Tree・mesh・力場を含む文書だけ、実viewport確定後に一度全体をcameraへ収める。
 	NEffectEditorUI::SetPendingEffectCameraFocus( State, Definition );
 	State.Camera.Distance = 6.0f;
 	RestartEffectPreview( State );
@@ -219,6 +222,7 @@ void NDebugUI::NewEffect( FEffectEditorState& State )
 	State.Document.Reset( FParticleEffectDefinition() );
 	NParticleEdit::SetProperties( State.Document, "NewEffect", 0.0f, true, 1u );
 	State.SelectedEmitter = NParticleEdit::AddEmitter( State.Document );
+	State.SelectedForceField = 0;
 	State.FilePath.Empty();
 	State.SaveAsPath = "Effects/NewEffect.effect.json";
 	State.bInitialized = true;
@@ -246,10 +250,10 @@ bool NDebugUI::NewEffectFromPreset( FEffectEditorState& State, const FString& Pr
 	const FString Base = Path.EndsWith( ".effect.json", ESearchCase::IgnoreCase ) ? Path.Left( Path.Len() - 12 ) : Path;
 	State.SaveAsPath = Base + "_copy.effect.json";
 	State.bPreviewMotion = false;
-	// ファイル名に依存せず、コピーした内容にリボンがあれば発生元の動きを見せる。
+	// 力場がないRibbonだけ、生成位置の円運動で従来の軌跡previewを見せる。
 	for ( const FParticleEmitterDefinition& Emitter : Copy.Emitters )
 	{
-		if ( Emitter.Path.Kind != FEffectPathDefinition::EKind::Ribbon ) continue;
+		if ( Emitter.Path.Kind != FEffectPathDefinition::EKind::Ribbon || !Emitter.ForceFields.IsEmpty() ) continue;
 		State.bPreviewMotion = true;
 		break;
 	}

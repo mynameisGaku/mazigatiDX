@@ -1,6 +1,5 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
-#ifndef FRAMEWORK_PLATFORM_DXLIB_EFFECT_PREVIEW_SURFACE_H
-#define FRAMEWORK_PLATFORM_DXLIB_EFFECT_PREVIEW_SURFACE_H
+#pragma once
 
 #include "Library/Core/Types/TypeDefinition.h"
 
@@ -9,6 +8,7 @@ struct FEditorCamera;
 struct FEditorViewport;
 class IEffectPlayback;
 class IDrawExecutor;
+struct FDrawSpan;
 
 // ツール用の描画先を所有する。DxLibの初期化から終了まで、メインスレッドだけで使う。
 class FEffectPreviewSurface
@@ -27,6 +27,9 @@ public:
 	// 不正な視界・カメラや描画先の確保失敗はfalse。Playbackがnullptrなら格子だけ描く。
 	// 元の描画先とカメラ・描画設定を戻し、3DのZ比較と書き込みは2Dの重ね描き用に無効にする。
 	bool Render( const FEditorCamera& Camera, const FEditorViewport& View, const IEffectPlayback* Playback, IDrawExecutor& Executor );
+	// 既存の格子・粒子を描いたあと、Line3D / Sphere3Dの範囲線だけを同じcameraで実行する。
+	// Overlayは呼び出し中だけ借用し、空なら追加描画なし。全体65535 words以内で他命令・壊れた並びはfalse。
+	bool Render( const FEditorCamera& Camera, const FEditorViewport& View, const IEffectPlayback* Playback, IDrawExecutor& Executor, const FDrawSpan& Overlay );
 	// 所有する描画先を解放する。呼び出し時の描画先として使っていないこと。
 	void Release();
 	// 表示用の描画先を返す。まだ確保していない場合は-1。
@@ -40,5 +43,3 @@ private:
 	// 現在の描画先の縦幅。
 	int32 Height = 0;
 };
-
-#endif

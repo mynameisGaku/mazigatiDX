@@ -5,6 +5,8 @@
 #include "WorldModelPreviewSelfTest.h"
 #include "WorldModelMaterialInspectorSelfTest.h"
 #include "WorldSelfTestSupport.h"
+#include "WorldEffectForceFieldEditorSelfTest.h"
+#include "WorldEffectForceFieldEditorGeometrySelfTest.h"
 
 #include <algorithm>
 #include <cmath>
@@ -559,6 +561,8 @@ void CWorldSelfTestScene::OnEnter()
 	NWorldTest::RunEffectFlipbookTests( C );
 	NWorldTest::RunEffectTreeLightningTests( C );
 	NWorldTest::RunEffectEditorInputTests( C );
+	NWorldTest::RunEffectForceFieldEditorInputTests( C );
+	NWorldTest::RunEffectForceFieldEditorGeometryTests( C );
 	NWorldTest::RunEffectMaterialInputTests( C );
 	NWorldTest::RunEffectUVDistortionInputTests( C );
 	NWorldTest::RunEffectAppearanceInputTests( C );
@@ -1679,6 +1683,8 @@ void CWorldSelfTestScene::RunRealChecks()
 	// エフェクトの粒子（組み込みの丸・加算 / アルファ・寿命の間の変化・回転・位置）を、本物の絵で
 	NWorldTest::RunEffectRealTests( C, *Assets, *Executor, Dir );
 	NWorldTest::RunEffectEditorRealTests( C, *Assets, *Executor, Dir );
+	NWorldTest::RunEffectForceFieldPreviewRealTests( C, *Assets, *Executor );
+	NWorldTest::RunEffectForceFieldEditorPresetRealTests( C, *Assets, *Executor );
 	NWorldTest::RunWorldMeshMaterialEditorTests( C, *Assets, Dir );
 	NWorldTest::RunMeshMaterialPlaybackTests( C, *Assets, Dir );
 	NWorldTest::RunWorldModelMaterialSpawnRealChecks( C, *Assets, *Executor, Dir );

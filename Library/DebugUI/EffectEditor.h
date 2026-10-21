@@ -1,6 +1,5 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
-#ifndef FRAMEWORK_DEBUGUI_EFFECTEDITOR_H
-#define FRAMEWORK_DEBUGUI_EFFECTEDITOR_H
+#pragma once
 
 #include "Library/Framework/Effect/EffectBackend.h"
 #include "Library/Framework/Effect/ParticleEffectEditing.h"
@@ -22,6 +21,10 @@ struct FEffectEditorState
 	FString OpenSelection;
 	// いま編集しているエミッターの番号。
 	int32 SelectedEmitter = 0;
+	// 力場一覧で選択中の番号。文書には保存しない。
+	int32 SelectedForceField = 0;
+	// 力場の範囲表示を試し再生へ重ねるか。文書には保存しない。
+	bool bShowForceFieldGuides = true;
 	// 初めて表示した際の新規文書作成を済ませたか。
 	bool bInitialized = false;
 	// 操作結果を表示する文章。
@@ -74,7 +77,7 @@ struct FEffectEditorState
 	FEditorCamera Camera;
 	// Tree文書を開くかcameraをresetした後、実viewportで一度だけ全体を合わせる印。
 	bool bTreeCameraFocusPending = false;
-	// TreeまたはMesh文書を開くかcamera reset後、実viewportで一度だけ全体を合わせる印。
+	// Tree、Meshまたは力場を含む文書を開くかcamera reset後、実viewportで一度だけ全体を合わせる印。
 	bool bEffectGeometryCameraFocusPending = false;
 	// カメラへ渡す描画範囲。
 	FEditorViewport View;
@@ -118,5 +121,3 @@ namespace NDebugUI
 	// 終了前に再生と描画先を解放する。文書と履歴は保持する。
 	void ReleaseEffectEditor( FEffectEditorState& State );
 }
-
-#endif

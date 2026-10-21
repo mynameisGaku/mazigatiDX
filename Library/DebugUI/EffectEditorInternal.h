@@ -1,8 +1,10 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
-#ifndef FRAMEWORK_DEBUGUI_EFFECTEDITORINTERNAL_H
-#define FRAMEWORK_DEBUGUI_EFFECTEDITORINTERNAL_H
+#pragma once
 
 #include "Library/DebugUI/EffectEditor.h"
+
+// 描画コマンドを追加する既存の記録先。
+class FDrawContext;
 
 namespace NEffectEditorUI
 {
@@ -20,18 +22,22 @@ namespace NEffectEditorUI
 	bool DrawFlipbookPanel( FEffectEditorState& State, FParticleEmitterDefinition& Emitter );
 	// 固定向きの平面・円環を編集し、描画能力と排他設定を表示する。
 	bool DrawMeshPanel( FEffectEditorState& State, FParticleEmitterDefinition& Emitter );
+	// 力場の一覧と保存値を編集する。戻り値はコピーの保存値変更、通知値は既存のtrueを保持する。
+	bool DrawForceFieldPanel( FEffectEditorState& State, FParticleEmitterDefinition& Emitter, bool& bInputEnded, bool& bStructureChanged );
 	// カメラ操作を処理し、現在の試し再生を描画する。時間はここでは進めない。
 	void DrawPreview( FEffectEditorState& State );
 	// Treeの完成形と線幅を含む有限boundsへカメラを合わせる。無効・空なら元のカメラを保つ。
 	bool FocusCameraOnTree( FEffectEditorState& State, const FEditorViewport& Viewport );
 	// 実viewportが確定した後に保留中のTree focusを一度だけ適用する。
 	bool ApplyPendingTreeCameraFocus( FEffectEditorState& State, const FEditorViewport& Viewport );
-	// Treeと固定meshの有限boundsへカメラを合わせる。無効・空なら元のカメラを保つ。
+	// 文書内の力場があればその範囲、無ければTreeと固定meshの有限boundsへカメラを合わせる。失敗時は元のカメラを保つ。
 	bool FocusCameraOnEffectGeometry( FEffectEditorState& State, const FEditorViewport& Viewport );
+	// 力場の有限な範囲へカメラを合わせる。場が無いか無効なら元のカメラを保つ。
+	bool FocusCameraOnForceFields( FEffectEditorState& State, const FEditorViewport& Viewport );
+	// 力場の範囲と中心を既存描画先へ記録する。
+	void RecordForceFieldGuides( const FEffectEditorState& State, FDrawContext& Draw );
 	// 実viewportが確定した後に保留中の全体focusを一度だけ適用する。
 	bool ApplyPendingEffectCameraFocus( FEffectEditorState& State, const FEditorViewport& Viewport );
-	// 開いた文書またはcamera reset後のTree・mesh focusを一度だけ保留する。
+	// 開いた文書またはcamera reset後のTree・mesh・力場focusを一度だけ保留する。
 	void SetPendingEffectCameraFocus( FEffectEditorState& State, const FParticleEffectDefinition& Definition );
 }
-
-#endif

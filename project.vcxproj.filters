@@ -49,6 +49,12 @@
     <ClCompile Include="Library\DebugUI\EffectEditorFlipbookPanel.cpp">
       <Filter>Library\DebugUI</Filter>
     </ClCompile>
+    <ClCompile Include="Library\DebugUI\EffectEditorForceFieldPanel.cpp">
+      <Filter>Library\DebugUI</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\EffectEditorForceFieldPreview.cpp">
+      <Filter>Library\DebugUI</Filter>
+    </ClCompile>
     <ClCompile Include="Library\DebugUI\EffectEditorMaterialPanel.cpp">
       <Filter>Library\DebugUI</Filter>
     </ClCompile>
@@ -584,6 +590,12 @@
       <Filter>Source\Scene</Filter>
     </ClCompile>
     <ClCompile Include="Source\Scene\WorldEffectFlipbookSelfTest.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene\WorldEffectForceFieldEditorGeometrySelfTest.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene\WorldEffectForceFieldEditorSelfTest.cpp">
       <Filter>Source\Scene</Filter>
     </ClCompile>
     <ClCompile Include="Source\Scene\WorldEffectMaterialInputSelfTest.cpp">
@@ -1963,6 +1975,12 @@
       <Filter>Source\Scene</Filter>
     </ClInclude>
     <ClInclude Include="Source\Scene\WorldEditorSelfTestSupport.h">
+      <Filter>Source\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scene\WorldEffectForceFieldEditorGeometrySelfTest.h">
+      <Filter>Source\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scene\WorldEffectForceFieldEditorSelfTest.h">
       <Filter>Source\Scene</Filter>
     </ClInclude>
     <ClInclude Include="Source\Scene\WorldEffectMeshCommandSelfTest.h">
