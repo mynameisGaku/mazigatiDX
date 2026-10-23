@@ -350,6 +350,129 @@ namespace
 		C.Check( !Input.Press( State, "Add##ForceFieldAdd", 96 ) && State.Document.Get().Emitters[0].ForceFields.Num() == FEffectForceFieldDefinition::MaxFields, "16件では追加を受け付けず件数を保つ" );
 		C.Check( !Input.Press( State, "Duplicate##ForceFieldDuplicate", 96 ) && State.Document.Get().Emitters[0].ForceFields.Num() == FEffectForceFieldDefinition::MaxFields, "16件では複製を受け付けず件数を保つ" );
 	}
+
+	// Comboを開き、現在の項目から指定数だけ下（正）または上（負）へ動かして確定する。
+	void ChooseForceFieldKind( FForceFieldInputContext& Input, FEffectEditorState& State, int32 Steps )
+	{
+		Input.Tap( State, ImGuiKey_Enter );
+		// 項目を動かす回数。
+		const int32 StepCount = Steps < 0 ? -Steps : Steps;
+		for ( int32 Step = 0; Step < StepCount; ++Step ) Input.Tap( State, Steps < 0 ? ImGuiKey_UpArrow : ImGuiKey_DownArrow );
+		Input.Tap( State, ImGuiKey_Enter );
+	}
+
+	// Vortex・Turbulence・追従・回転軸・周波数・スクロールを実入力で編集し、保存値・履歴・復旧を確かめる。
+	void TestForceFieldKindInputs( NAssetTest::FChecker& C, FForceFieldInputContext& Input )
+	{
+		C.Group = "effect-force-field-editor-kinds";
+		// 既知のRadial fieldを持つ編集状態。
+		FEffectEditorState State;
+		State.Document.Reset( MakeForceFieldInputDefinition() );
+		Input.Frame( State );
+		// 現在の編集対象fieldを毎回文書から読み直す関数。
+		const auto Field = [&State]() -> const FEffectForceFieldDefinition& { return State.Document.Get().Emitters[0].ForceFields[0]; };
+		// 入力前の履歴数。
+		const int32 InitialUndo = State.Document.GetNumUndo();
+		// Kind comboへTabで移れたか。
+		const bool bKindFocused = Input.TabTo( State, Input.FieldItemId( "Kind##ForceFieldKind" ) );
+		ChooseForceFieldKind( Input, State, 1 );
+		C.Check( bKindFocused && Field().Kind == FEffectForceFieldDefinition::EKind::Vortex && Field().Radius == 8.0f && Field().Strength == -9.0f && Field().Position == FVector3( 5.0f, 6.0f, 7.0f ) && State.Document.GetNumUndo() == InitialUndo + 1, "Kindを実Comboの下矢印でRadialからVortexへ変え、他の保存値を保つ" );
+		// Follow emitter checkboxへTabで移れたか。
+		const bool bFollowFocused = Input.TabTo( State, Input.FieldItemId( "Follow emitter##ForceFieldFollowEmitter" ) );
+		Input.Tap( State, ImGuiKey_Space );
+		C.Check( bFollowFocused && Field().bFollowEmitter && State.Document.GetNumUndo() == InitialUndo + 2, "Follow emitterを実チェックボックスで有効にし、履歴を一つ作る" );
+		// 回転軸3成分の入力結果。
+		const bool bAxisX = Input.ReplaceNumeric( State, Input.FieldItemId( "Axis##ForceFieldAxis", 0 ), "3" );
+		const bool bAxisZ = Input.ReplaceNumeric( State, Input.FieldItemId( "Axis##ForceFieldAxis", 2 ), "4" );
+		const bool bAxisY = Input.ReplaceNumeric( State, Input.FieldItemId( "Axis##ForceFieldAxis", 1 ), "0" );
+		C.Check( bAxisX && bAxisY && bAxisZ && Field().Axis == FVector3( 3.0f, 0.0f, 4.0f ) && Field().Validate().IsEmpty(), "Axisの3成分を実DragFloat3文字入力で編集する" );
+		Input.ReplaceNumeric( State, Input.FieldItemId( "Axis##ForceFieldAxis", 0 ), "0" );
+		Input.ReplaceNumeric( State, Input.FieldItemId( "Axis##ForceFieldAxis", 2 ), "0" );
+		C.Check( Field().Axis == FVector3( 0.0f, 0.0f, 4.0f ) && Field().Validate().IsEmpty(), "全成分がゼロになるAxis入力は保存へ反映せず、直前の有効な軸を保つ" );
+		Input.ReplaceNumeric( State, Input.FieldItemId( "Axis##ForceFieldAxis", 0 ), "3" );
+		// 周波数をゼロへ入力しても、UIの下限で正の値に保たれるか。
+		const bool bFrequencyZero = Input.ReplaceNumeric( State, Input.FieldItemId( "Frequency (rad/m)##ForceFieldFrequency" ), "0" );
+		C.Check( bFrequencyZero && Field().Frequency > 0.0f && Field().Frequency <= 0.0011f && Field().Validate().IsEmpty(), "Frequencyへ0を入力しても下限で正の値に保ち、検証エラーを作らない" );
+		const bool bFrequency = Input.ReplaceNumeric( State, Input.FieldItemId( "Frequency (rad/m)##ForceFieldFrequency" ), "2.5" );
+		const bool bScroll = Input.ReplaceNumeric( State, Input.FieldItemId( "Scroll speed (rad/s)##ForceFieldScrollSpeed" ), "-3" );
+		C.Check( bFrequency && bScroll && Field().Frequency == 2.5f && Field().ScrollSpeed == -3.0f && Field().Axis == FVector3( 3.0f, 0.0f, 4.0f ), "FrequencyとScroll speedを実数値入力で編集し、負のScroll speedも保存する" );
+		// Turbulenceへ切り替えた後に、使わない値も保たれるか。
+		Input.TabTo( State, Input.FieldItemId( "Kind##ForceFieldKind" ) );
+		ChooseForceFieldKind( Input, State, 1 );
+		C.Check( Field().Kind == FEffectForceFieldDefinition::EKind::Turbulence && Field().bFollowEmitter && Field().Axis == FVector3( 3.0f, 0.0f, 4.0f ) && Field().Frequency == 2.5f && Field().ScrollSpeed == -3.0f && Field().Radius == 8.0f, "KindをTurbulenceへ変えても全設定値を保つ" );
+		Input.TabTo( State, Input.FieldItemId( "Kind##ForceFieldKind" ) );
+		ChooseForceFieldKind( Input, State, -3 );
+		C.Check( Field().Kind == FEffectForceFieldDefinition::EKind::Uniform && Field().bFollowEmitter && Field().Axis == FVector3( 3.0f, 0.0f, 4.0f ) && Field().Frequency == 2.5f && Field().Strength == -9.0f, "Uniformへ戻しても、使わないAxis・Frequency・追従設定を保つ" );
+		// Reset前の履歴数。
+		const int32 BeforeReset = State.Document.GetNumUndo();
+		const bool bResetPressed = Input.Press( State, "Reset##ForceFieldReset" );
+		C.Check( bResetPressed && Field().Kind == FEffectForceFieldDefinition::EKind::Uniform && !Field().bFollowEmitter && Field().Axis == FVector3::Up && Field().Frequency == 1.0f && Field().ScrollSpeed == 1.0f && State.Document.GetNumUndo() == BeforeReset + 1, "Resetは追従・Axis・Frequency・Scroll speedも既定値へ戻し、履歴を一つ作る" );
+		C.Check( State.Document.Undo() && Field().bFollowEmitter && Field().Axis == FVector3( 3.0f, 0.0f, 4.0f ) && Field().Frequency == 2.5f && Field().ScrollSpeed == -3.0f, "ResetのUndoで追従・Axis・Frequency・Scroll speedが戻る" );
+		C.Check( Input.AreFramesBalanced(), "Vortex・Turbulence入力の確認中にImGui frameとwindow stackを閉じる" );
+	}
+
+	// ゼロ軸・非正の周波数・型違いの追従指定は数値入力を隠し、Resetで復旧できる。
+	void TestForceFieldKindInvalidInputs( NAssetTest::FChecker& C, FForceFieldInputContext& Input )
+	{
+		C.Group = "effect-force-field-editor-kind-invalid";
+		// ゼロ軸と非正の周波数を持つVortex。
+		FParticleEffectDefinition Definition = MakeForceFieldInputDefinition();
+		FEffectForceFieldDefinition& Zero = Definition.Emitters[0].ForceFields[0];
+		Zero.Kind = FEffectForceFieldDefinition::EKind::Vortex;
+		Zero.Axis = FVector3::Zero;
+		Zero.Frequency = 0.0f;
+		// 型違いのFollowEmitterを持つ二つ目のfield。
+		FEffectForceFieldDefinition InvalidFollow;
+		const bool bFollowRead = FEffectForceFieldDefinition::FromJson( NlohmannJson::parse( "{\"Kind\":\"Vortex\",\"FollowEmitter\":1,\"Radius\":4}" ), InvalidFollow );
+		Definition.Emitters[0].ForceFields.Add( InvalidFollow );
+		// 不正値を表示する編集状態。
+		FEffectEditorState State;
+		State.Document.Reset( Definition );
+		State.SelectedForceField = 0;
+		Input.Frame( State );
+		// 現在の編集対象fieldを毎回文書から読み直す関数。
+		const auto FieldAt = [&State]( int32 Index ) -> const FEffectForceFieldDefinition& { return State.Document.Get().Emitters[0].ForceFields[Index]; };
+		C.Check( bFollowRead && FieldAt( 0 ).Validate().Num() >= 2 && FieldAt( 1 ).Validate().Num() >= 1 && Input.HasFiniteVertices(), "ゼロ軸・非正のFrequency・型違いのFollowEmitterを検証で報告する" );
+		// ゼロ軸のAxis widgetが存在せず、Tab候補にならないか。
+		const bool bAxisReachable = Input.TabTo( State, Input.FieldItemId( "Axis##ForceFieldAxis", 0 ), 128 );
+		// 非正Frequencyのwidgetが存在せず、Tab候補にならないか。
+		const bool bFrequencyReachable = Input.TabTo( State, Input.FieldItemId( "Frequency (rad/m)##ForceFieldFrequency" ), 128 );
+		C.Check( !bAxisReachable && !bFrequencyReachable, "ゼロ軸・非正Frequencyのfieldでは数値widgetを隠す" );
+		C.Check( Input.Press( State, "Reset##ForceFieldReset" ) && FieldAt( 0 ).Validate().IsEmpty() && FieldAt( 0 ).Kind == FEffectForceFieldDefinition::EKind::Uniform && FieldAt( 0 ).Axis == FVector3::Up && FieldAt( 0 ).Frequency == 1.0f && FieldAt( 1 ).Validate().Num() >= 1, "Resetは選択したゼロ軸・非正Frequency fieldだけを既定値へ復旧する" );
+		State.SelectedForceField = 1;
+		Input.Frame( State );
+		// 型違い追従のfieldでもResetで復旧できるか。
+		const bool bFollowResetPressed = Input.Press( State, "Reset##ForceFieldReset" );
+		C.Check( bFollowResetPressed && FieldAt( 1 ).Validate().IsEmpty() && !FieldAt( 1 ).bFollowEmitter, "型違いのFollowEmitterもResetで復旧する" );
+		// 非有限のAxisを持つfield。
+		FEffectForceFieldDefinition NaNAxisField;
+		NaNAxisField.Axis.x = ( std::numeric_limits<float32>::quiet_NaN )();
+		Definition.Emitters[0].ForceFields.Add( NaNAxisField );
+		// 非有限のFrequencyを持つfield。
+		FEffectForceFieldDefinition NaNFreqField;
+		NaNFreqField.Frequency = ( std::numeric_limits<float32>::quiet_NaN )();
+		Definition.Emitters[0].ForceFields.Add( NaNFreqField );
+		// 非有限のScrollSpeedを持つfield。
+		FEffectForceFieldDefinition NaNSpeedField;
+		NaNSpeedField.ScrollSpeed = ( std::numeric_limits<float32>::quiet_NaN )();
+		Definition.Emitters[0].ForceFields.Add( NaNSpeedField );
+		State.Document.Reset( Definition );
+		// NaNのAxisを持つfieldの入力欄が隠れるか。
+		State.SelectedForceField = 2;
+		Input.Frame( State );
+		const bool bNaNAxisReachable = Input.TabTo( State, Input.FieldItemId( "Radius (m)##ForceFieldRadius" ), 64 );
+		C.Check( !bNaNAxisReachable && Input.Press( State, "Reset##ForceFieldReset" ) && std::isfinite( FieldAt( 2 ).Axis.x ), "NaNのAxisを持つfieldは数値widgetを隠し、Resetで有限値へ復旧する" );
+		// NaNのFrequencyを持つfieldの入力欄が隠れるか。
+		State.SelectedForceField = 3;
+		Input.Frame( State );
+		const bool bNaNFreqReachable = Input.TabTo( State, Input.FieldItemId( "Radius (m)##ForceFieldRadius" ), 64 );
+		C.Check( !bNaNFreqReachable && Input.Press( State, "Reset##ForceFieldReset" ) && std::isfinite( FieldAt( 3 ).Frequency ), "NaNのFrequencyを持つfieldは数値widgetを隠し、Resetで有限値へ復旧する" );
+		// NaNのScrollSpeedを持つfieldの入力欄が隠れるか。
+		State.SelectedForceField = 4;
+		Input.Frame( State );
+		const bool bNaNSpeedReachable = Input.TabTo( State, Input.FieldItemId( "Radius (m)##ForceFieldRadius" ), 64 );
+		C.Check( !bNaNSpeedReachable && Input.Press( State, "Reset##ForceFieldReset" ) && std::isfinite( FieldAt( 4 ).ScrollSpeed ), "NaNのScrollSpeedを持つfieldは数値widgetを隠し、Resetで有限値へ復旧する" );
+	}
 }
 
 namespace NWorldTest
@@ -369,6 +492,8 @@ namespace NWorldTest
 				TestForceFieldValueInputs( C, Input );
 				TestForceFieldStructureInputs( C, Input );
 				TestForceFieldInvalidInputs( C, Input );
+				TestForceFieldKindInputs( C, Input );
+				TestForceFieldKindInvalidInputs( C, Input );
 			}
 		}
 		C.Check( ImGui::GetCurrentContext() == Previous, "力場の入力確認後に呼出元のImGui contextへ戻す" );

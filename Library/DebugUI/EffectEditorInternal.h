@@ -34,8 +34,12 @@ namespace NEffectEditorUI
 	bool FocusCameraOnEffectGeometry( FEffectEditorState& State, const FEditorViewport& Viewport );
 	// 力場の有限な範囲へカメラを合わせる。場が無いか無効なら元のカメラを保つ。
 	bool FocusCameraOnForceFields( FEffectEditorState& State, const FEditorViewport& Viewport );
-	// 力場の範囲と中心を既存描画先へ記録する。
+	// 試し再生が使っているエミッター姿勢を返す。Move emitter previewが無効ならIdentityで、拡大は使わない。
+	FTransform GetPreviewEmitterTransform( const FEffectEditorState& State );
+	// 力場の範囲と中心を既存描画先へ記録する。追従する場は現在の試し再生の姿勢で描く。
 	void RecordForceFieldGuides( const FEffectEditorState& State, FDrawContext& Draw );
+	// 指定したエミッター姿勢で、追従する場の範囲と向きを描く。世界固定の場は姿勢に依らない。
+	void RecordForceFieldGuidesForTransform( const FEffectEditorState& State, FDrawContext& Draw, const FTransform& EmitterTransform );
 	// 実viewportが確定した後に保留中の全体focusを一度だけ適用する。
 	bool ApplyPendingEffectCameraFocus( FEffectEditorState& State, const FEditorViewport& Viewport );
 	// 開いた文書またはcamera reset後のTree・mesh・力場focusを一度だけ保留する。

@@ -443,6 +443,316 @@ namespace
 		const TOptional<FString> WorldFullPath = Assets.ResolvePath( WorldPath );
 		if ( WorldFullPath.IsSet() ) C.Check( NFileSystem::RemoveFile( WorldFullPath.GetValue() ), "sandboxの配置Worldを削除する" );
 	}
+
+	// endpointを許容差付きで照合する。正規化・回転で生じるfloatの丸めを吸収する。
+	bool HasLineNear( const FGuideReadback& Readback, const FVector3& A, const FVector3& B, uint8 R, uint8 G, uint8 Blue, float64 Epsilon = 1.0e-4 )
+	{
+		for ( const FDrawLine3DData& Line : Readback.Lines )
+		{
+			// commandに記録された始点と終点。
+			const FVector3 P0 = LinePoint( Line.P0 );
+			const FVector3 P1 = LinePoint( Line.P1 );
+			// 両端が期待座標に近いか。
+			const bool bNear = NearCoordinate( P0.x, A.x, Epsilon ) && NearCoordinate( P0.y, A.y, Epsilon ) && NearCoordinate( P0.z, A.z, Epsilon ) && NearCoordinate( P1.x, B.x, Epsilon ) && NearCoordinate( P1.y, B.y, Epsilon ) && NearCoordinate( P1.z, B.z, Epsilon );
+			if ( bNear && Line.Color.R == R && Line.Color.G == G && Line.Color.B == Blue ) return true;
+		}
+		return false;
+	}
+
+	// 二つのベクトルを成分ごとに許容差付きで比べる。
+	bool NearVector( const FVector3& A, const FVector3& B, float64 Epsilon = 1.0e-4 )
+	{
+		return NearCoordinate( A.x, B.x, Epsilon ) && NearCoordinate( A.y, B.y, Epsilon ) && NearCoordinate( A.z, B.z, Epsilon );
+	}
+
+	// 渦・乱流・追従する場のguideを、実commandの座標・色・本数から独立式で照合する。
+	void TestForceFieldKindGuides( NAssetTest::FChecker& C )
+	{
+		C.Group = "effect-force-field-editor-kind-guides";
+		// 検査対象のfieldを一つのemitterへ並べた文書。
+		FParticleEffectDefinition Definition;
+		FParticleEmitterDefinition Emitter;
+		// 非単位の斜め軸を持つ正のVortex。
+		FEffectForceFieldDefinition PositiveVortex;
+		PositiveVortex.Kind = FEffectForceFieldDefinition::EKind::Vortex;
+		PositiveVortex.Position = FVector3( 7.0f, 8.0f, 9.0f );
+		PositiveVortex.Axis = FVector3( 0.0f, 3.0f, 4.0f );
+		PositiveVortex.Radius = 2.0f;
+		PositiveVortex.Strength = 3.0f;
+		Emitter.ForceFields.Add( PositiveVortex );
+		// 周回方向が逆になる負のVortex。
+		FEffectForceFieldDefinition NegativeVortex = PositiveVortex;
+		NegativeVortex.Strength = -3.0f;
+		Emitter.ForceFields.Add( NegativeVortex );
+		// 3軸矢印を持つTurbulence。
+		FEffectForceFieldDefinition Gust;
+		Gust.Kind = FEffectForceFieldDefinition::EKind::Turbulence;
+		Gust.Position = FVector3( -2.0f, 1.0f, 0.5f );
+		Gust.Radius = 1.5f;
+		Gust.Strength = 2.0f;
+		Emitter.ForceFields.Add( Gust );
+		// 強さ0で矢印を描かないTurbulence。
+		FEffectForceFieldDefinition QuietGust = Gust;
+		QuietGust.Strength = 0.0f;
+		Emitter.ForceFields.Add( QuietGust );
+		// エミッター姿勢へ追従するRadial。
+		FEffectForceFieldDefinition FollowRadial;
+		FollowRadial.Kind = FEffectForceFieldDefinition::EKind::Radial;
+		FollowRadial.bFollowEmitter = true;
+		FollowRadial.Position = FVector3( 1.0f, 0.0f, 0.0f );
+		FollowRadial.Radius = 2.0f;
+		FollowRadial.Strength = -2.0f;
+		Emitter.ForceFields.Add( FollowRadial );
+		// エミッター姿勢へ追従するUniform。
+		FEffectForceFieldDefinition FollowUniform;
+		FollowUniform.bFollowEmitter = true;
+		FollowUniform.Acceleration = FVector3( 0.0f, 0.0f, 5.0f );
+		Emitter.ForceFields.Add( FollowUniform );
+		// エミッター姿勢へ追従するVortex。
+		FEffectForceFieldDefinition FollowVortex;
+		FollowVortex.Kind = FEffectForceFieldDefinition::EKind::Vortex;
+		FollowVortex.bFollowEmitter = true;
+		FollowVortex.Position = FVector3( 0.0f, 1.0f, 0.0f );
+		FollowVortex.Axis = FVector3( 0.0f, 1.0f, 0.0f );
+		FollowVortex.Radius = 2.0f;
+		FollowVortex.Strength = 1.0f;
+		Emitter.ForceFields.Add( FollowVortex );
+		// 強さ0でも回転軸矢印だけは描くVortex。
+		FEffectForceFieldDefinition QuietVortex = PositiveVortex;
+		QuietVortex.Strength = 0.0f;
+		Emitter.ForceFields.Add( QuietVortex );
+		Definition.Emitters.Add( Emitter );
+		// guide記録用の編集状態。
+		FEffectEditorState State;
+		State.Document.Reset( Definition );
+		// 90度Z回転・移動・非一様拡大を持つエミッター姿勢。拡大はguideへ使わない。
+		const FQuaternion Turn = FQuaternion::FromAxisAngle( FVector3::Forward, 1.57079632679f );
+		const FTransform EmitterTransform( FVector3( 10.0f, 20.0f, 30.0f ), Turn, FVector3( 2.0f, 3.0f, 4.0f ) );
+		// 指定fieldと姿勢でguideを記録して読み直す関数。
+		const auto Record = [&State]( int32 Index, const FTransform& Transform ) -> FGuideReadback
+		{
+			State.SelectedForceField = Index;
+			// 記録した命令列。
+			FDrawBuffer Buffer;
+			// 記録窓口。
+			FDrawContext Draw( Buffer );
+			NEffectEditorUI::RecordForceFieldGuidesForTransform( State, Draw, Transform );
+			return ReadGuides( Buffer );
+		};
+
+		// 正Vortex: 世界固定なので姿勢を変えても同じ。軸は(0,.6,.8)、周回矢印の始点は中心から-X側1.04m。
+		const FGuideReadback Positive = Record( 0, EmitterTransform );
+		const FGuideReadback PositiveIdentity = Record( 0, FTransform::Identity );
+		const FVector3 VortexCenter( 7.0f, 8.0f, 9.0f );
+		const FVector3 AxisEnd( 7.0f, 8.72f, 9.96f );
+		const FVector3 TangentStart( 5.96f, 8.0f, 9.0f );
+		const FVector3 PositiveTangentEnd( 5.96f, 7.68f, 9.24f );
+		C.Check( Positive.Spheres.IsEmpty() && Positive.Lines.Num() == 102 && HasRadialCircleGuides( Positive, VortexCenter, 2.0f, 40, 220, 230 ) && HasLineNear( Positive, VortexCenter, AxisEnd, 40, 220, 230 ) && HasLineNear( Positive, TangentStart, PositiveTangentEnd, 40, 220, 230 ), "世界固定のVortexはWorld中心・半径2の三円と、正規化軸の矢印・周回矢印を実commandへ記録する" );
+		C.Check( PositiveIdentity.Lines.Num() == Positive.Lines.Num() && HasLineNear( PositiveIdentity, VortexCenter, AxisEnd, 40, 220, 230 ) && HasLineNear( PositiveIdentity, TangentStart, PositiveTangentEnd, 40, 220, 230 ), "追従しないVortexのguideはエミッター姿勢に依らない" );
+		// 周回矢印が実際の加速度の向きと一致するか。
+		const FVector3 PositiveAcceleration = PositiveVortex.EvaluateAcceleration( TangentStart ).Normalized();
+		C.Check( NearVector( PositiveAcceleration, ( PositiveTangentEnd - TangentStart ).Normalized() ), "Vortexの周回矢印は、矢印始点での実際の加速度の向きと一致する" );
+		// 負Vortex: 周回矢印だけが反転する。
+		const FGuideReadback Negative = Record( 1, EmitterTransform );
+		const FVector3 NegativeTangentEnd( 5.96f, 8.32f, 8.76f );
+		const FVector3 NegativeAcceleration = NegativeVortex.EvaluateAcceleration( TangentStart ).Normalized();
+		C.Check( Negative.Lines.Num() == 102 && HasLineNear( Negative, VortexCenter, AxisEnd, 40, 220, 230 ) && HasLineNear( Negative, TangentStart, NegativeTangentEnd, 40, 220, 230 ) && !HasLineNear( Negative, TangentStart, PositiveTangentEnd, 40, 220, 230 ) && NearVector( NegativeAcceleration, ( NegativeTangentEnd - TangentStart ).Normalized() ), "負Strengthは周回矢印だけを逆向きにし、回転軸矢印を保つ" );
+		// 強さ0のVortex: 軸矢印だけが残る。
+		const FGuideReadback QuietVortexReadback = Record( 7, EmitterTransform );
+		C.Check( QuietVortexReadback.Lines.Num() == 99 && HasLineNear( QuietVortexReadback, VortexCenter, AxisEnd, 40, 220, 230 ) && !HasLineNear( QuietVortexReadback, TangentStart, PositiveTangentEnd, 40, 220, 230 ), "強さ0のVortexは三円と回転軸矢印だけを記録する" );
+		// Turbulence: 中心から3軸へ0.3mの矢印。
+		const FGuideReadback GustReadback = Record( 2, EmitterTransform );
+		const FVector3 GustCenter( -2.0f, 1.0f, 0.5f );
+		C.Check( GustReadback.Spheres.IsEmpty() && GustReadback.Lines.Num() == 105 && HasRadialCircleGuides( GustReadback, GustCenter, 1.5f, 40, 220, 230 ) && HasLineNear( GustReadback, GustCenter, FVector3( -1.7f, 1.0f, 0.5f ), 40, 220, 230 ) && HasLineNear( GustReadback, GustCenter, FVector3( -2.0f, 1.3f, 0.5f ), 40, 220, 230 ) && HasLineNear( GustReadback, GustCenter, FVector3( -2.0f, 1.0f, 0.8f ), 40, 220, 230 ), "TurbulenceはWorld中心・半径1.5の三円と、中心から3軸へ出る矢印を記録する" );
+		const FGuideReadback QuietGustReadback = Record( 3, EmitterTransform );
+		C.Check( QuietGustReadback.Lines.Num() == 96 && HasRadialCircleGuides( QuietGustReadback, GustCenter, 1.5f, 40, 220, 230 ), "強さ0のTurbulenceは三円だけを記録する" );
+		// 追従Radial: 中心がエミッター位置へ移り、局所X軸が世界Yへ回る。
+		const FGuideReadback FollowRadialReadback = Record( 4, EmitterTransform );
+		const FVector3 FollowCenter( 10.0f, 21.0f, 30.0f );
+		C.Check( FollowRadialReadback.Lines.Num() == 99 && HasRadialCircleGuides( FollowRadialReadback, FollowCenter, 2.0f, 40, 220, 230 ) && HasLineNear( FollowRadialReadback, FVector3( 10.0f, 22.04f, 30.0f ), FVector3( 10.0f, 21.64f, 30.0f ), 40, 220, 230 ), "追従Radialの三円と中心向き矢印はエミッターの移動・回転へ追従し、拡大率を半径へ掛けない" );
+		// 追従Uniform: 原点がエミッター位置へ移る。
+		const FGuideReadback FollowUniformReadback = Record( 5, EmitterTransform );
+		C.Check( FollowUniformReadback.Lines.Num() == 3 && HasLineNear( FollowUniformReadback, FVector3( 10.0f, 20.0f, 30.0f ), FVector3( 10.0f, 20.0f, 31.25f ), 40, 220, 230 ), "追従Uniformの矢印はエミッター位置から回転後の加速度方向へ伸びる" );
+		// 追従Vortex: 局所Y軸が世界-Xへ回り、周回矢印は世界-Y側へ向く。
+		const FGuideReadback FollowVortexReadback = Record( 6, EmitterTransform );
+		const FVector3 FollowVortexCenter( 9.0f, 20.0f, 30.0f );
+		const FVector3 FollowTangentStart( 9.0f, 20.0f, 28.96f );
+		const FVector3 FollowTangentEnd( 9.0f, 19.6f, 28.96f );
+		// 追従fieldの実際の加速度の向き。
+		const FVector3 FollowAcceleration = FollowVortex.EvaluateAcceleration( FollowTangentStart, EmitterTransform, 0.0f ).Normalized();
+		C.Check( FollowVortexReadback.Lines.Num() == 102 && HasRadialCircleGuides( FollowVortexReadback, FollowVortexCenter, 2.0f, 40, 220, 230 ) && HasLineNear( FollowVortexReadback, FollowVortexCenter, FVector3( 7.8f, 20.0f, 30.0f ), 40, 220, 230 ) && HasLineNear( FollowVortexReadback, FollowTangentStart, FollowTangentEnd, 40, 220, 230 ) && NearVector( FollowAcceleration, ( FollowTangentEnd - FollowTangentStart ).Normalized() ), "追従Vortexの中心・回転軸・周回矢印が姿勢に追従し、実際の加速度の向きと一致する" );
+		// 非有限・ゼロの回転では、追従するfieldだけが何も描かない。
+		const FTransform ZeroRotation( FVector3( 10.0f, 20.0f, 30.0f ), FQuaternion( 0.0f, 0.0f, 0.0f, 0.0f ) );
+		const FGuideReadback ZeroFollow = Record( 4, ZeroRotation );
+		const FGuideReadback ZeroFixed = Record( 0, ZeroRotation );
+		C.Check( ZeroFollow.Lines.IsEmpty() && ZeroFollow.Spheres.IsEmpty() && ZeroFixed.Lines.Num() == 102, "ゼロ回転の姿勢では追従fieldだけが描かれず、世界固定のfieldは影響を受けない" );
+		// 試し再生の移動が追従guideの姿勢になるか。
+		State.bPreviewMotion = false;
+		const FTransform StillTransform = NEffectEditorUI::GetPreviewEmitterTransform( State );
+		State.bPreviewMotion = true;
+		State.PreviewMotionTime = 0.5f;
+		const FTransform MovingTransform = NEffectEditorUI::GetPreviewEmitterTransform( State );
+		State.SelectedForceField = 5;
+		// 試し再生中の姿勢で記録したguide。
+		FDrawBuffer MotionBuffer;
+		FDrawContext MotionDraw( MotionBuffer );
+		NEffectEditorUI::RecordForceFieldGuides( State, MotionDraw );
+		const FGuideReadback MotionReadback = ReadGuides( MotionBuffer );
+		const FVector3 MotionOrigin( static_cast<float32>( std::cos( 0.5 ) * 1.2 ), 1.0f, static_cast<float32>( std::sin( 0.5 ) * 1.2 ) );
+		C.Check( StillTransform.Position == FVector3::Zero && NearVector( MovingTransform.Position, MotionOrigin ) && HasLineNear( MotionReadback, MotionOrigin, MotionOrigin + FVector3( 0.0f, 0.0f, 1.25f ), 40, 220, 230 ), "追従するfieldのguideは、Move emitter previewの現在の円運動の姿勢に付いて動く" );
+	}
+
+	// 1つの力場だけを持ち、他のbounds寄与を0にした検査文書を作る。
+	FParticleEffectDefinition MakeSingleFieldDefinition( const FEffectForceFieldDefinition& Field )
+	{
+		// 力場以外が範囲へ寄与しない文書。重力や発生球半径もゼロにして力場球範囲だけを取り出す。
+		FParticleEffectDefinition Definition;
+		FParticleEmitterDefinition Emitter;
+		Emitter.Lifetime = { 1.0f, 1.0f };
+		Emitter.Speed = { 0.0f, 0.0f };
+		Emitter.StartSize = { 0.0f, 0.0f };
+		Emitter.EndSize = { 0.0f, 0.0f };
+		Emitter.Gravity = FVector3::Zero;
+		Emitter.ShapeRadius = 0.0f;
+		Emitter.ForceFields.Add( Field );
+		Definition.Emitters.Add( Emitter );
+		return Definition;
+	}
+
+	// 渦・乱流の球範囲と加速度上限が、自動視点へ種類別に反映されるか確かめる。
+	void TestForceFieldKindFocus( NAssetTest::FChecker& C )
+	{
+		C.Group = "effect-force-field-editor-kind-focus";
+		// 既知の画角とclip距離を持つ検査viewport。
+		const FEditorViewport Viewport{ 1280, 720, 0.8f, 0.05f, 2000.0f };
+		// 強さ0・半径3のVortex。軸矢印(1.8m)は半径内にあり、範囲は球半径3になる。
+		FEffectForceFieldDefinition Vortex;
+		Vortex.Kind = FEffectForceFieldDefinition::EKind::Vortex;
+		Vortex.Radius = 3.0f;
+		Vortex.Strength = 0.0f;
+		C.Check( HasFocusedAxisExtents( MakeSingleFieldDefinition( Vortex ), Viewport, 3.0 ), "Vortexの球範囲を自動視点へ入れる" );
+		// 半径より軸矢印が長くなる極小Vortex。
+		FEffectForceFieldDefinition TinyVortex = Vortex;
+		TinyVortex.Radius = 0.001f;
+		C.Check( HasFocusedAxisExtents( MakeSingleFieldDefinition( TinyVortex ), Viewport, 0.3 ), "極小Vortexは回転軸矢印の長さ0.3mまで自動視点へ入れる" );
+		// 3軸が最大2|Strength|まで変わるTurbulence。移動範囲は2*sqrt(3)*|Strength|*T^2。
+		FEffectForceFieldDefinition Gust;
+		Gust.Kind = FEffectForceFieldDefinition::EKind::Turbulence;
+		Gust.Radius = 2.0f;
+		Gust.Strength = 1.0f;
+		C.Check( HasFocusedAxisExtents( MakeSingleFieldDefinition( Gust ), Viewport, 2.0 * std::sqrt( 3.0 ) ), "Turbulenceの移動範囲は各軸最大2|Strength|として自動視点へ入れる" );
+		// Vortexの使わないAccelerationが一様場の矢印範囲を足さないことを、同じ視点になるかで確かめる。
+		FEffectForceFieldDefinition PlainVortex;
+		PlainVortex.Kind = FEffectForceFieldDefinition::EKind::Vortex;
+		PlainVortex.Radius = 1.0f;
+		PlainVortex.Strength = 0.0f;
+		FEffectForceFieldDefinition AcceleratedVortex = PlainVortex;
+		AcceleratedVortex.Acceleration = FVector3( 0.0f, 5.0f, 0.0f );
+		FEffectEditorState Plain;
+		Plain.Document.Reset( MakeSingleFieldDefinition( PlainVortex ) );
+		FEffectEditorState Accelerated;
+		Accelerated.Document.Reset( MakeSingleFieldDefinition( AcceleratedVortex ) );
+		const bool bPlainFocused = NEffectEditorUI::FocusCameraOnForceFields( Plain, Viewport );
+		const bool bAcceleratedFocused = NEffectEditorUI::FocusCameraOnForceFields( Accelerated, Viewport );
+		C.Check( bPlainFocused && bAcceleratedFocused && SameCamera( Plain.Camera, Accelerated.Camera ), "Vortexの使わないAccelerationは自動視点の範囲へ影響しない" );
+		// 原点から離れたVortexの球が、視点に収まるか。
+		FEffectForceFieldDefinition FarVortex = Vortex;
+		FarVortex.Position = FVector3( 20.0f, 0.0f, 0.0f );
+		FarVortex.Strength = 4.0f;
+		FEffectEditorState Far;
+		Far.Document.Reset( MakeSingleFieldDefinition( FarVortex ) );
+		bool bFarVisible = NEffectEditorUI::FocusCameraOnForceFields( Far, Viewport );
+		for ( const FVector3& Point : { FVector3( 23.0f, 0.0f, 0.0f ), FVector3( 17.0f, 0.0f, 0.0f ), FVector3( 20.0f, 3.0f, 0.0f ), FVector3( 20.0f, -3.0f, 0.0f ), FVector3( 20.0f, 0.0f, 3.0f ), FVector3( 20.0f, 0.0f, -3.0f ) } ) bFarVisible = bFarVisible && IsProjectedInside( Far.Camera, Viewport, Point );
+		C.Check( bFarVisible, "原点から離れたVortexの球範囲も自動視点に入る" );
+	}
+
+	// presetをAsset sandboxから読み、definitionへ変換する。
+	bool LoadForceFieldPresetDefinition( CAssetManager& Assets, const FString& Path, FParticleEffectDefinition& Out, TArray<FString>& Warnings )
+	{
+		// sandbox内で解決したpresetの絶対path。
+		const TOptional<FString> FullPath = Assets.ResolvePath( Path );
+		NJson::CJsonObject Json;
+		return FullPath.IsSet() && Json.LoadFromFile( FullPath.GetValue() ) && FParticleEffectDefinition::FromJson( Json.GetRoot(), Out, &Warnings );
+	}
+
+	// 指定位置のエミッターで1秒進めた粒子状態を作る。
+	FParticleSimulation RunForceFieldPresetSimulation( const FParticleEffectDefinition& Definition, const FVector3& Position )
+	{
+		// 進める粒子状態。
+		FParticleSimulation Simulation;
+		Simulation.Transform = FTransform( Position );
+		NParticle::Start( Simulation, MakeShared<FParticleEffectDefinition>( Definition ) );
+		for ( int32 Step = 0; Step < 16; ++Step ) NParticle::Advance( Simulation, 0.0625f );
+		return Simulation;
+	}
+
+	// 全粒子について、指定中心まわりのY軸角運動量の和を求める。
+	float64 SumAngularMomentumY( const FParticleSimulation& Simulation, const FVector3& Center )
+	{
+		float64 Sum = 0.0;
+		for ( const FParticleEmitterState& State : Simulation.Emitters ) for ( const FParticle& P : State.Particles ) Sum += static_cast<float64>( P.Position.z - Center.z ) * P.Velocity.x - static_cast<float64>( P.Position.x - Center.x ) * P.Velocity.z;
+		return Sum;
+	}
+
+	// 同じ順序の粒子を、それぞれの基準位置からの相対位置で比べた最大差を返す。数が違えば大きな値を返す。
+	float64 MaxRelativeParticleDistance( const FParticleSimulation& A, const FVector3& CenterA, const FParticleSimulation& B, const FVector3& CenterB )
+	{
+		if ( A.GetNumParticles() != B.GetNumParticles() || A.Emitters.Num() != B.Emitters.Num() ) return 1.0e9;
+		float64 Worst = 0.0;
+		for ( int32 EmitterIndex = 0; EmitterIndex < A.Emitters.Num(); ++EmitterIndex ) for ( int32 ParticleIndex = 0; ParticleIndex < A.Emitters[EmitterIndex].Particles.Num(); ++ParticleIndex )
+		{
+			// 相対位置の差。
+			const FVector3 Delta = ( A.Emitters[EmitterIndex].Particles[ParticleIndex].Position - CenterA ) - ( B.Emitters[EmitterIndex].Particles[ParticleIndex].Position - CenterB );
+			Worst = std::max( Worst, static_cast<float64>( Delta.Length() ) );
+		}
+		return Worst;
+	}
+
+	// 渦・乱流の組み込み例が、保存値・追従・実際の粒子運動の両面で期待どおりか確かめる。
+	void TestKindPreset( NAssetTest::FChecker& C, CAssetManager& Assets, const FString& Path, FEffectForceFieldDefinition::EKind ExpectedKind )
+	{
+		C.Group = "effect-force-field-kind-preset-real";
+		FParticleEffectDefinition Original;
+		TArray<FString> Warnings;
+		const bool bLoaded = LoadForceFieldPresetDefinition( Assets, Path, Original, Warnings );
+		// 全emitterが期待した追従する場を一つだけ持つか。
+		bool bFields = bLoaded && Original.Emitters.Num() == 2;
+		for ( const FParticleEmitterDefinition& Emitter : Original.Emitters ) bFields = bFields && Emitter.ForceFields.Num() == 1 && Emitter.ForceFields[0].Kind == ExpectedKind && Emitter.ForceFields[0].bEnabled && Emitter.ForceFields[0].bFollowEmitter && Emitter.ForceFields[0].IsValidSettings() && Emitter.ForceFields[0].Radius > 0.0f && Emitter.ForceFields[0].Strength != 0.0f;
+		C.Check( bLoaded && Warnings.IsEmpty() && !FParticleEffectDefinition::HasErrors( Original.Validate() ) && bFields, "組み込み例は警告なしに読め、全emitterが期待した種類の有効な追従fieldを一つ持つ" );
+		// 保存と再読込で同じ定義・hashに戻るか。
+		FParticleEffectDefinition RoundTrip;
+		C.Check( FParticleEffectDefinition::FromJson( Original.ToJson(), RoundTrip ) && RoundTrip.ComputeHash() == Original.ComputeHash() && RoundTrip.ToJson() == Original.ToJson(), "組み込み例はJSON往復で同じ定義とhashに戻る" );
+		if ( !bFields ) return;
+		// 力場だけを無効にした比較定義と、追従をやめた比較定義。
+		FParticleEffectDefinition Disabled = Original;
+		FParticleEffectDefinition Fixed = Original;
+		for ( int32 EmitterIndex = 0; EmitterIndex < Original.Emitters.Num(); ++EmitterIndex )
+		{
+			Disabled.Emitters[EmitterIndex].ForceFields[0].bEnabled = false;
+			Fixed.Emitters[EmitterIndex].ForceFields[0].bFollowEmitter = false;
+		}
+		// エミッターを原点と、場から十分離れた位置へ置く。
+		const FVector3 Origin = FVector3::Zero;
+		const FVector3 Away( 6.0f, 0.0f, -3.0f );
+		const FParticleSimulation OnSim = RunForceFieldPresetSimulation( Original, Origin );
+		const FParticleSimulation OffSim = RunForceFieldPresetSimulation( Disabled, Origin );
+		const FParticleSimulation AwaySim = RunForceFieldPresetSimulation( Original, Away );
+		const FParticleSimulation FixedAwaySim = RunForceFieldPresetSimulation( Fixed, Away );
+		// 平行移動しても追従する場なら、相対的な運動が変わらない。
+		const float64 FollowDifference = MaxRelativeParticleDistance( OnSim, Origin, AwaySim, Away );
+		// 追従しない場は原点に残り、離れたエミッターの粒子へ届かない。
+		const float64 FixedDifference = MaxRelativeParticleDistance( OffSim, Origin, FixedAwaySim, Away );
+		// 場がある時とない時の運動の差。
+		const float64 FieldDifference = MaxRelativeParticleDistance( OnSim, Origin, OffSim, Origin );
+		C.Check( OnSim.GetNumParticles() > 40 && FollowDifference < 2.0e-3 && FixedDifference < 2.0e-3 && FieldDifference > 0.2, "組み込み例の場は、エミッターを平行移動しても相対運動を保ち、追従をやめると離れた粒子へ届かず、場なしと明らかに異なる運動を作る (%d particles, follow %.5f, fixed %.5f, field %.3f)", OnSim.GetNumParticles(), FollowDifference, FixedDifference, FieldDifference );
+		if ( ExpectedKind == FEffectForceFieldDefinition::EKind::Vortex )
+		{
+			// 正のStrengthでは、軸の周りに正の角運動量が生まれる。
+			const float64 OnSwirl = SumAngularMomentumY( OnSim, Origin );
+			const float64 OffSwirl = SumAngularMomentumY( OffSim, Origin );
+			C.Check( OnSwirl > OffSwirl + 5.0 && SumAngularMomentumY( AwaySim, Away ) > OffSwirl + 5.0, "渦の組み込み例は、場なしより明らかに大きい軸周りの角運動量を粒子へ与える (on %.3f, off %.3f)", OnSwirl, OffSwirl );
+		}
+	}
 }
 
 namespace NWorldTest
@@ -772,6 +1082,8 @@ namespace NWorldTest
 		C.Check( HiddenBuffer.Words.empty() && InvalidSelectionBuffer.Words.empty() && InvalidEmitterBuffer.Words.empty() && InvalidFieldBuffer.Words.empty(), "hidden・無効emitter/field選択・不正fieldではguide commandを作らない" );
 		C.Check( GuideState.Document.Get().ComputeHash() != GuideHash && GuideState.Document.GetNumUndo() == GuideUndo + 2, "guide記録は文書hashとUndo履歴に触れず、変化は明示編集だけが作る" );
 		C.Check( GuideState.PreviewMotionTime == GuideClock, "guide記録はpreview clockを進めない" );
+		TestForceFieldKindGuides( C );
+		TestForceFieldKindFocus( C );
 	}
 
 	// 実プリセット二種を編集し、保存後World配置とnative再生へ渡す。
@@ -784,6 +1096,10 @@ namespace NWorldTest
 		if ( !RootScope.IsReady() ) return;
 		TestOneForceFieldPreset( C, Assets, Executor, "Effects/force_field_wind.effect.json", "Effects/selftest_force_field_wind.effect.json" );
 		TestOneForceFieldPreset( C, Assets, Executor, "Effects/force_field_gravity_well.effect.json", "Effects/selftest_force_field_gravity_well.effect.json" );
+		TestOneForceFieldPreset( C, Assets, Executor, "Effects/force_field_whirlwind.effect.json", "Effects/selftest_force_field_whirlwind.effect.json" );
+		TestOneForceFieldPreset( C, Assets, Executor, "Effects/force_field_gust.effect.json", "Effects/selftest_force_field_gust.effect.json" );
+		TestKindPreset( C, Assets, "Effects/force_field_whirlwind.effect.json", FEffectForceFieldDefinition::EKind::Vortex );
+		TestKindPreset( C, Assets, "Effects/force_field_gust.effect.json", FEffectForceFieldDefinition::EKind::Turbulence );
 		// 全preset処理後に前のrootへ戻ったか。
 		const bool bRootRestored = RootScope.Restore();
 		C.Check( bRootRestored && Assets.GetRootDirectory() == RootScope.GetPreviousRoot(), "preset保存・World cleanup後にAssets rootを元へ戻す" );

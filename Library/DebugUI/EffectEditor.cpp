@@ -129,6 +129,8 @@ namespace
 				if ( ImGui::MenuItem( "Mesh tilted veil" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/mesh_tilted_veil.effect.json", pOpen );
 				if ( ImGui::MenuItem( "Force field wind" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_wind.effect.json", pOpen );
 				if ( ImGui::MenuItem( "Gravity well" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_gravity_well.effect.json", pOpen );
+				if ( ImGui::MenuItem( "Whirlwind" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_whirlwind.effect.json", pOpen );
+				if ( ImGui::MenuItem( "Gust" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_gust.effect.json", pOpen );
 				ImGui::EndMenu();
 			}
 			if ( ImGui::BeginMenu( "Edit" ) )
@@ -319,6 +321,12 @@ bool NDebugUI::SaveEffectFile( FEffectEditorState& State, const FString& AssetPa
 	return true;
 }
 
+FTransform NEffectEditorUI::GetPreviewEmitterTransform( const FEffectEditorState& State )
+{
+	if ( !State.bPreviewMotion ) return FTransform::Identity;
+	return FTransform( FVector3( std::cos( State.PreviewMotionTime ) * 1.2f, 1.0f, std::sin( State.PreviewMotionTime ) * 1.2f ) );
+}
+
 void NDebugUI::RestartEffectPreview( FEffectEditorState& State )
 {
 	State.Playback.Reset();
@@ -351,7 +359,7 @@ void NDebugUI::UpdateEffectEditor( FEffectEditorState& State, float32 DeltaTime 
 		// 一周で折り返し、長時間開いたままでも位置の計算精度を保つ。
 		constexpr float32 CirclePeriod = 6.283185307f;
 		State.PreviewMotionTime = std::fmod( State.PreviewMotionTime + Step, CirclePeriod );
-		State.Playback->SetTransform( FTransform( FVector3( std::cos( State.PreviewMotionTime ) * 1.2f, 1.0f, std::sin( State.PreviewMotionTime ) * 1.2f ) ) );
+		State.Playback->SetTransform( NEffectEditorUI::GetPreviewEmitterTransform( State ) );
 	}
 	else State.Playback->SetTransform( FTransform::Identity );
 	State.Playback->Update( Step );

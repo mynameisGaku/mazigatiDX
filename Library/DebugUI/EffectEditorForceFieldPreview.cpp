@@ -111,6 +111,12 @@ namespace
 		return std::isfinite( HalfFov ) && HalfFov > 0.0f && Radius <= Depth * std::sin( HalfFov ) * 0.92f;
 	}
 
+	// Vortexの回転軸矢印の長さ。半径に比例させ、極端に小さい・大きい場でも見える範囲へ収める。
+	float32 GetForceFieldAxisArrowLength( float32 Radius )
+	{
+		return std::clamp( Radius * 0.6f, 0.3f, 3.0f );
+	}
+
 	// 矢印の先端に二本の短い線を記録し、World方向を見分けやすくする。
 	void RecordForceFieldArrow( FDrawContext& Draw, const FVector3& Start, const FVector3& Direction, float32 Length, const FColor32& Color )
 	{
@@ -194,22 +200,28 @@ bool NEffectEditorUI::FocusCameraOnForceFields( FEffectEditorState& State, const
 		for ( const FEffectForceFieldDefinition& Field : Emitter.ForceFields )
 		{
 			if ( !Field.IsValidSettings() ) return false;
-			if ( Field.Kind == FEffectForceFieldDefinition::EKind::Radial )
+			if ( Field.Kind != FEffectForceFieldDefinition::EKind::Uniform )
 			{
 				// guideに含めるfield球の半径。
 				float64 GuideRadius = Field.Radius;
+				// Vortexだけが描く回転軸矢印は、強さに依らず含める。
+				if ( Field.Kind == FEffectForceFieldDefinition::EKind::Vortex ) GuideRadius = std::max( GuideRadius, static_cast<float64>( GetForceFieldAxisArrowLength( Field.Radius ) ) );
 				if ( Field.Strength != 0.0f )
 				{
 					// wire球から出る方向矢印の長さ。
 					const float64 GuideArrowLength = std::clamp( static_cast<float64>( Field.Radius ) * 0.2, 0.25, 1.25 );
-					GuideRadius = std::max( GuideRadius, static_cast<float64>( Field.Radius ) * 0.52 + GuideArrowLength );
+					// Turbulenceの矢印は中心から出る。RadialとVortexは半径境界付近から出る。
+					const float64 ArrowReach = Field.Kind == FEffectForceFieldDefinition::EKind::Turbulence ? GuideArrowLength : static_cast<float64>( Field.Radius ) * 0.52 + GuideArrowLength;
+					GuideRadius = std::max( GuideRadius, ArrowReach );
 				}
 				if ( !AddForceFieldBoundsSphere( Field.Position, GuideRadius, BoundsCenter, BoundsRadius, bHasBounds ) ) return false;
 			}
 			else if ( ForceFieldVectorLength( Field.Acceleration ) > 1.0e-9 && !AddForceFieldBoundsSphere( FVector3::Zero, 1.25, BoundsCenter, BoundsRadius, bHasBounds ) ) return false;
 			if ( !Field.bEnabled ) continue;
 			// fieldの加速度上限。
-			const float64 FieldMagnitude = Field.Kind == FEffectForceFieldDefinition::EKind::Uniform ? ForceFieldVectorLength( Field.Acceleration ) : std::fabs( static_cast<float64>( Field.Strength ) );
+			float64 FieldMagnitude = Field.Kind == FEffectForceFieldDefinition::EKind::Uniform ? ForceFieldVectorLength( Field.Acceleration ) : std::fabs( static_cast<float64>( Field.Strength ) );
+			// 乱流は3軸それぞれが最大2|Strength|まで変わるため、大きさの上限は2*sqrt(3)倍になる。
+			if ( Field.Kind == FEffectForceFieldDefinition::EKind::Turbulence ) FieldMagnitude *= 3.4641016151377544;
 			if ( !std::isfinite( FieldMagnitude ) ) return false;
 			ForceAcceleration += FieldMagnitude;
 			if ( !std::isfinite( ForceAcceleration ) ) return false;
@@ -312,6 +324,12 @@ bool NEffectEditorUI::FocusCameraOnForceFields( FEffectEditorState& State, const
 // 選択中の有効な力場だけをWorld座標のwire guideとして記録する。時間・文書・資源は変更しない。
 void NEffectEditorUI::RecordForceFieldGuides( const FEffectEditorState& State, FDrawContext& Draw )
 {
+	RecordForceFieldGuidesForTransform( State, Draw, GetPreviewEmitterTransform( State ) );
+}
+
+// 追従する場は渡されたエミッター姿勢の位置・回転で、世界固定の場はWorld座標のまま描く。拡大は使わない。
+void NEffectEditorUI::RecordForceFieldGuidesForTransform( const FEffectEditorState& State, FDrawContext& Draw, const FTransform& EmitterTransform )
+{
 	if ( !State.bShowForceFieldGuides || !State.Document.Get().Emitters.IsValidIndex( State.SelectedEmitter ) ) return;
 	// guideを表示する選択中emitter。
 	const FParticleEmitterDefinition& Emitter = State.Document.Get().Emitters[State.SelectedEmitter];
@@ -319,33 +337,77 @@ void NEffectEditorUI::RecordForceFieldGuides( const FEffectEditorState& State, F
 	// guideを表示する選択中field。
 	const FEffectForceFieldDefinition& Field = Emitter.ForceFields[State.SelectedForceField];
 	if ( !Field.IsValidSettings() ) return;
+	// 追従する場へ使うエミッター位置。
+	const FVector3& FollowPosition = EmitterTransform.Position;
+	// 追従する場へ使う回転。非有限・ゼロ回転の姿勢では何も描かない。
+	const FQuaternion& FollowRotation = EmitterTransform.Rotation;
+	if ( Field.bFollowEmitter && ( !std::isfinite( FollowPosition.x ) || !std::isfinite( FollowPosition.y ) || !std::isfinite( FollowPosition.z ) || !std::isfinite( FollowRotation.x ) || !std::isfinite( FollowRotation.y ) || !std::isfinite( FollowRotation.z ) || !std::isfinite( FollowRotation.w ) || FollowRotation.LengthSquared() <= 1.0e-12f ) ) return;
+	// guideを描く座標系の原点。世界固定の場はWorld原点。
+	const FVector3 FrameOrigin = Field.bFollowEmitter ? FollowPosition : FVector3::Zero;
+	// guideを描く座標系の回転。世界固定の場は回転しない。
+	const FQuaternion FrameRotation = Field.bFollowEmitter ? FollowRotation.Normalized() : FQuaternion::Identity;
 	// 有効なfieldを粒子と分けて見せる青緑。
 	const FColor32 EnabledColor( 40, 220, 230, 255 );
 	// 無効fieldの範囲を控えめに示す灰色。
 	const FColor32 DisabledColor( 125, 140, 150, 255 );
 	// 今fieldの表示に使う色。
 	const FColor32 Color = Field.bEnabled ? EnabledColor : DisabledColor;
-	if ( Field.Kind == FEffectForceFieldDefinition::EKind::Radial )
+	if ( Field.Kind == FEffectForceFieldDefinition::EKind::Uniform )
 	{
-		// XY・XZ・YZの大円だけで球の範囲を疎に示す。
-		RecordForceFieldGuideCircle( Draw, Field.Position, Field.Radius, FVector3::Right, FVector3::Up, Color );
-		RecordForceFieldGuideCircle( Draw, Field.Position, Field.Radius, FVector3::Right, FVector3::Forward, Color );
-		RecordForceFieldGuideCircle( Draw, Field.Position, Field.Radius, FVector3::Up, FVector3::Forward, Color );
-		if ( Field.Strength == 0.0f ) return;
-		// 半径境界上で符号による引力・反発方向を示す始点。
-		const FVector3 DirectionStart = Field.Position + FVector3::Right * ( Field.Radius * 0.52f );
-		// 正なら外向き、負なら中心向きにする方向。
-		const FVector3 Direction = Field.Strength >= 0.0f ? FVector3::Right : FVector3::Left;
-		// 大きい半径でも画面を横切りにくい矢印長さ。
-		const float32 ArrowLength = std::clamp( Field.Radius * 0.2f, 0.25f, 1.25f );
-		RecordForceFieldArrow( Draw, DirectionStart, Direction, ArrowLength, Color );
-	}
-	else if ( Field.Kind == FEffectForceFieldDefinition::EKind::Uniform )
-	{
-		// 一様加速度を表示する固定のWorld原点。
-		const FVector3 Origin = FVector3::Zero;
+		// 一様加速度を表示する原点。世界固定ならWorld原点、追従ならエミッター位置。
+		const FVector3 Origin = FrameOrigin;
 		// 方向だけを示す固定長。
 		constexpr float32 ArrowLength = 1.25f;
-		RecordForceFieldArrow( Draw, Origin, Field.Acceleration, ArrowLength, Color );
+		RecordForceFieldArrow( Draw, Origin, FrameRotation.Rotate( Field.Acceleration ), ArrowLength, Color );
+		return;
+	}
+	if ( Field.Kind != FEffectForceFieldDefinition::EKind::Radial && Field.Kind != FEffectForceFieldDefinition::EKind::Vortex && Field.Kind != FEffectForceFieldDefinition::EKind::Turbulence ) return;
+	// 場の中心のWorld座標。
+	const FVector3 Center = FrameOrigin + FrameRotation.Rotate( Field.Position );
+	// 場の局所X・Y・Z軸のWorld向き。
+	const FVector3 AxisX = FrameRotation.Rotate( FVector3::Right );
+	const FVector3 AxisY = FrameRotation.Rotate( FVector3::Up );
+	const FVector3 AxisZ = FrameRotation.Rotate( FVector3::Forward );
+	// XY・XZ・YZの大円だけで球の範囲を疎に示す。
+	RecordForceFieldGuideCircle( Draw, Center, Field.Radius, AxisX, AxisY, Color );
+	RecordForceFieldGuideCircle( Draw, Center, Field.Radius, AxisX, AxisZ, Color );
+	RecordForceFieldGuideCircle( Draw, Center, Field.Radius, AxisY, AxisZ, Color );
+	// 大きい半径でも画面を横切りにくい矢印長さ。
+	const float32 ArrowLength = std::clamp( Field.Radius * 0.2f, 0.25f, 1.25f );
+	if ( Field.Kind == FEffectForceFieldDefinition::EKind::Radial )
+	{
+		if ( Field.Strength == 0.0f ) return;
+		// 半径境界上で符号による引力・反発方向を示す始点。
+		const FVector3 DirectionStart = Center + AxisX * ( Field.Radius * 0.52f );
+		// 正なら外向き、負なら中心向きにする方向。
+		const FVector3 Direction = FrameRotation.Rotate( Field.Strength >= 0.0f ? FVector3::Right : FVector3::Left );
+		RecordForceFieldArrow( Draw, DirectionStart, Direction, ArrowLength, Color );
+	}
+	else if ( Field.Kind == FEffectForceFieldDefinition::EKind::Vortex )
+	{
+		// 回転軸の長さ。IsValidSettingsで有限かつゼロでないと確認済み。
+		const float64 AxisLength = ForceFieldVectorLength( Field.Axis );
+		// 局所座標での正規化した回転軸。
+		const FVector3 LocalAxis( static_cast<float32>( Field.Axis.x / AxisLength ), static_cast<float32>( Field.Axis.y / AxisLength ), static_cast<float32>( Field.Axis.z / AxisLength ) );
+		// 軸と平行にならない基準方向。
+		const FVector3 LocalReference = std::fabs( LocalAxis.y ) < 0.85f ? FVector3::Up : FVector3::Right;
+		// 回転軸に垂直で、周回方向の矢印を置く向き。
+		const FVector3 LocalPerpendicular = FVector3::Cross( LocalAxis, LocalReference ).Normalized();
+		// 回転軸の矢印は強さに依らず中心から出す。
+		RecordForceFieldArrow( Draw, Center, FrameRotation.Rotate( LocalAxis ), GetForceFieldAxisArrowLength( Field.Radius ), Color );
+		if ( Field.Strength == 0.0f ) return;
+		// 周回方向は正のStrengthでUnitAxis x Delta、負で逆向き。
+		const FVector3 LocalTangent = FVector3::Cross( LocalAxis, LocalPerpendicular ) * ( Field.Strength >= 0.0f ? 1.0f : -1.0f );
+		// 半径境界付近に置く周回矢印の始点。
+		const FVector3 TangentStart = Center + FrameRotation.Rotate( LocalPerpendicular ) * ( Field.Radius * 0.52f );
+		RecordForceFieldArrow( Draw, TangentStart, FrameRotation.Rotate( LocalTangent ), ArrowLength, Color );
+	}
+	else
+	{
+		if ( Field.Strength == 0.0f ) return;
+		// 乱流は特定の向きを持たないため、中心から3軸へ短い矢印を出して揺らぎの場であることを示す。
+		RecordForceFieldArrow( Draw, Center, AxisX, ArrowLength, Color );
+		RecordForceFieldArrow( Draw, Center, AxisY, ArrowLength, Color );
+		RecordForceFieldArrow( Draw, Center, AxisZ, ArrowLength, Color );
 	}
 }
