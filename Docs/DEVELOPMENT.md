@@ -44,7 +44,7 @@ DxLibでは個体の選択meshだけを一時非表示にし、残りを通常�
 
 ## 粒子の力場
 
-`FParticleEmitterDefinition::ForceFields`は、既存の粒子計算へ加えるWorld空間の力場を保持します。`FEffectForceFieldDefinition`は値の保存・検証・加速度の計算だけを持ち、描画やPhysicsへ依存しません。再生・停止・寿命は既存の`FParticleSimulation`と`IEffectPlayback`を使います。Effect Editorの`Force fields`から値を編集でき、`Force field wind`と`Gravity well`を未保存のコピーとして開けます。
+`FParticleEmitterDefinition::ForceFields`は、既存の粒子計算へ加えるWorld空間の力場を保持します。`FEffectForceFieldDefinition`は値の保存・検証・加速度の計算だけを持ち、描画やPhysicsへ依存しません。再生・停止・寿命は既存の`FParticleSimulation`と`IEffectPlayback`を使います。Effect Editorの`Force fields`から値を編集でき、`Force field wind`・`Gravity well`・`Whirlwind`・`Gust`を未保存のコピーとして開けます。
 
 各要素は`Enabled`、`Kind`、`Acceleration`、`Position`、`Radius`、`Strength`を保存します。`Uniform`は`Acceleration`をそのままWorld加速度として加えます。`Radial`は`Position`を中心とし、`Strength`が正なら外へ、負なら中心へ加速します。中心から距離rの点で、加速度の強さは`Strength * (1 - r / Radius)`です。中心ちょうどと半径以上では作用しません。乱数を使わず、重力と合成して速度、抵抗、位置の順に更新します。生成停止後の残粒子にも作用し、即時停止は従来どおり粒子を取り除きます。
 
@@ -62,7 +62,7 @@ Local粒子は、現在のエフェクトの回転と移動からWorld位置を�
 
 範囲線は`FDrawContext`へ記録し、既存の`IDrawExecutor`で実行します。`FEffectPreviewSurface::Render`の5引数版は、合計65,535ワード以内の追加の`Line3D`／wire `Sphere3D`命令を呼出中だけ借りて格子・粒子の後へ重ねます。他の命令や壊れた並びは失敗として返し、従来の4引数版は追加命令なしの経路を使います。範囲線の記録は粒子の時計・保存値・アセット資源を変更しません。
 
-Presetは原本を保ったまま編集し、`File > Save as...`で別名保存します。保存した`.effect.json`はWorld Editorのアセット一覧から配置し、Worldへ保存して通常の再生に使えます。場の中心はWorld固定なので、配置の移動に追従させたい場合は場の中心も編集してください。渦・乱流・配置への追従・2D専用操作・HDRとブルームは後続の範囲です。
+Presetは原本を保ったまま編集し、`File > Save as...`で別名保存します。保存した`.effect.json`はWorld Editorのアセット一覧から配置し、Worldへ保存して通常の再生に使えます。`FollowEmitter`を切った場はWorld固定、入れた場は配置の移動と回転に追従します。雷の動的終点接続・2D専用操作・HDRとブルームは後続の範囲です。
 
 ## コードとコメント
 
@@ -129,7 +129,7 @@ Effectの帯・雷へのUVディストーションを含む統合版は、world 
 
 渦・乱流・追従の定義と計算（Editor画面への追加は次の区切り）は、同じコード（`90fd711`）を使ったDebug／Releaseの全6実行で確認しました。worldは各3,480項目、assetsはDebug 1,176項目・Release 1,174項目、ECSは各構成のワーカー0／1／4／15でそれぞれ7,867,833項目です。ECSのハッシュは`403b39415ba4b9a6`、画素差0で、失敗・スキップ・timeout・shaderエラーはなく、受入ビルドは警告・エラー0、Debugのリーク報告は全て0バイトです。独立した三軸の手計算、非単位軸、移動・回転・非一様拡大・Local粒子との組み合わせ、旧JSONの既定値、10項目の型違いと無効中の値の保持、各値のハッシュ反映、乱数を消費しないことを検査し、20種類の意図的な不具合をすべて正常終了した狙いどおりの検査失敗として検出しました。
 
-渦・乱流・追従の制作UI・ガイド・組み込み例（4b2）は、Debug／Releaseの全6実行で確認しました。worldは各3,545項目、assetsはDebug 1,176項目・Release 1,174項目、ECSは各構成のワーカー0／1／4／15でそれぞれ7,867,833項目です。ECSのハッシュは`403b39415ba4b9a6`、画素差0で、失敗・スキップ・timeout・shaderエラーはなく、受入ビルドは警告・エラー0、Debugのリーク報告は全て0バイトです。実ImGui入力でのKind4択遷移・FollowEmitter切替・各値のDragFloat・Undo・Reset復旧、ガイドの座標・本数・符号・追従姿勢、自動視点の球範囲と矢印余裕、組み込みPresetのJSON往復・World配置・角運動量と相対運動保持を確認し、Preset画面キャプチャによる実画面検証と、20種類の意図的な不具合をすべて正常終了した狙いどおりの検査失敗として検出しました。
+渦・乱流・追従の制作UI・ガイド・組み込み例（4b2）は、同じコードとアセットを使ったDebug／Releaseの全6実行で確認しました。worldは各3,553項目、assetsはDebug 1,176項目・Release 1,174項目、ECSは各構成のワーカー0／1／4／15でそれぞれ7,867,833項目です。ECSのハッシュは`403b39415ba4b9a6`、画素差0で、失敗・スキップ・timeout・shaderエラーはなく、受入ビルドは警告・エラー0、Debugの全基準・変異実行と視覚確認でリーク報告が実在し0バイト、Releaseは報告なしです。実ImGui入力でのKind4択遷移・FollowEmitter切替・各値のDragFloat・Undo・Reset復旧、PresetメニューからのWhirlwind／Gust選択、ガイドの座標・本数・符号・追従姿勢、自動視点の球範囲と矢印余裕、組み込みPresetのJSON往復・World配置・螺旋旋回（角運動量）と相対運動保持を確認し、4種Presetの実画面キャプチャによる螺旋リボン・乱流S字帯・ガイド・設定欄の確認と、21種類の意図的な不具合をすべて正常終了した狙いどおりの検査失敗として検出しました。
 
 ## 変更の統合
 
