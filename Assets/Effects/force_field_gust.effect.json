@@ -11,22 +11,22 @@
 			"Blend": "Add",
 			"Space": "World",
 			"MaxParticles": 160,
-			"Rate": 46,
-			"Lifetime": [1.2, 1.2],
-			"Speed": [1.8, 1.8],
+			"Rate": 56,
+			"Lifetime": [0.82, 0.82],
+			"Speed": [1.9, 1.9],
 			"Shape": { "Type": "Cone", "Radius": 0.0, "Angle": 0.0 },
 			"Direction": [0.0, 1.0, 0.0],
-			"Gravity": [0.0, -0.2, 0.0],
-			"Drag": 0.15,
-			"Size": { "Start": [0.4, 0.4], "End": [0.08, 0.08] },
+			"Gravity": [0.0, 0.0, 0.0],
+			"Drag": 0.02,
+			"Size": { "Start": [0.42, 0.42], "End": [0.08, 0.08] },
 			"Color": { "Start": "#F2FFD8FF", "End": "#78E860E0" },
 			"Appearance": {
 				"Size": { "Interpolation": "Smooth", "Keys": [ { "Time": 0.0, "Value": 0.4 }, { "Time": 0.14, "Value": 1.45 }, { "Time": 0.75, "Value": 1.0 }, { "Time": 1.0, "Value": 0.0 } ] },
 				"Color": { "Interpolation": "Smooth", "Keys": [ { "Time": 0.0, "Value": [0.8, 1.0, 0.5, 0.0] }, { "Time": 0.08, "Value": [0.95, 1.0, 0.82, 1.0] }, { "Time": 0.76, "Value": [0.5, 0.92, 0.38, 0.95] }, { "Time": 1.0, "Value": [0.2, 0.6, 0.15, 0.0] } ] }
 			},
-			"Path": { "Kind": "Ribbon", "Segments": 32, "Branches": 0, "Jitter": 0.0, "BranchLength": 0.45, "RefreshHz": 0.0, "UVRepeat": 2.2, "BreakDistance": 2.4 },
+			"Path": { "Kind": "Ribbon", "Segments": 32, "Branches": 0, "Jitter": 0.0, "BranchLength": 0.45, "RefreshHz": 0.0, "UVRepeat": 2.2, "BreakDistance": 2.2 },
 			"ForceFields": [
-				{ "Enabled": true, "Kind": "Turbulence", "FollowEmitter": true, "Acceleration": [0.0, 0.0, 0.0], "Position": [0.0, 1.0, 0.0], "Axis": [0.0, 1.0, 0.0], "Radius": 3.2, "Strength": 3.6, "Frequency": 2.4, "ScrollSpeed": 2.8 }
+				{ "Enabled": true, "Kind": "Turbulence", "FollowEmitter": true, "Acceleration": [0.0, 0.0, 0.0], "Position": [0.0, 0.65, 0.0], "Axis": [0.0, 1.0, 0.0], "Radius": 2.4, "Strength": 2.2, "Frequency": 2.6, "ScrollSpeed": 6.2 }
 			],
 			"Material": {
 				"Enabled": true,
@@ -47,20 +47,20 @@
 			"Space": "World",
 			"MaxParticles": 120,
 			"Rate": 58,
-			"Lifetime": [0.9, 1.2],
-			"Speed": [1.0, 2.0],
-			"Shape": { "Type": "Cone", "Radius": 0.2, "Angle": 24.0 },
+			"Lifetime": [0.65, 0.82],
+			"Speed": [1.2, 2.0],
+			"Shape": { "Type": "Cone", "Radius": 0.22, "Angle": 22.0 },
 			"Direction": [0.0, 1.0, 0.0],
-			"Gravity": [0.0, -0.3, 0.0],
-			"Drag": 0.2,
-			"Size": { "Start": [0.065, 0.11], "End": [0.0, 0.0] },
+			"Gravity": [0.0, -0.2, 0.0],
+			"Drag": 0.06,
+			"Size": { "Start": [0.075, 0.12], "End": [0.0, 0.0] },
 			"Color": { "Start": "#ECFFC8FF", "End": "#68D850CC" },
 			"Appearance": {
 				"Size": { "Interpolation": "Smooth", "Keys": [ { "Time": 0.0, "Value": 0.0 }, { "Time": 0.16, "Value": 1.45 }, { "Time": 0.66, "Value": 0.9 }, { "Time": 1.0, "Value": 0.0 } ] },
 				"Color": { "Interpolation": "Smooth", "Keys": [ { "Time": 0.0, "Value": [0.75, 1.0, 0.45, 0.0] }, { "Time": 0.14, "Value": [0.92, 1.0, 0.78, 1.0] }, { "Time": 0.7, "Value": [0.45, 0.88, 0.32, 0.85] }, { "Time": 1.0, "Value": [0.18, 0.55, 0.12, 0.0] } ] }
 			},
 			"ForceFields": [
-				{ "Enabled": true, "Kind": "Turbulence", "FollowEmitter": true, "Acceleration": [0.0, 0.0, 0.0], "Position": [0.0, 1.0, 0.0], "Axis": [0.0, 1.0, 0.0], "Radius": 3.2, "Strength": 3.6, "Frequency": 2.4, "ScrollSpeed": 2.8 }
+				{ "Enabled": true, "Kind": "Turbulence", "FollowEmitter": true, "Acceleration": [0.0, 0.0, 0.0], "Position": [0.0, 0.65, 0.0], "Axis": [0.0, 1.0, 0.0], "Radius": 2.4, "Strength": 2.2, "Frequency": 2.6, "ScrollSpeed": 6.2 }
 			]
 		}
 	]

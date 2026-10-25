@@ -18,6 +18,7 @@
 #include "Library/Framework/Asset/WorldAsset.h"
 #include "Library/Json/JsonObject.h"
 #include "Library/Platform/FileSystem.h"
+#include "VendorModules/ImGui/imgui_internal.h"
 
 namespace
 {
@@ -753,6 +754,155 @@ namespace
 			C.Check( OnSwirl > OffSwirl + 5.0 && SumAngularMomentumY( AwaySim, Away ) > OffSwirl + 5.0, "渦の組み込み例は、場なしより明らかに大きい軸周りの角運動量を粒子へ与える (on %.3f, off %.3f)", OnSwirl, OffSwirl );
 		}
 	}
+
+	// 実Effect Editorのメニューバーをキーボード操作で検証する独立ImGui文脈。
+	class FEffectEditorMenuContext
+	{
+	public:
+		// 呼出元のImGui文脈を退避し、キーボード操作用の独立文脈を初期化する。
+		FEffectEditorMenuContext() : Previous( ImGui::GetCurrentContext() ), Context( ImGui::CreateContext() )
+		{
+			ImGui::SetCurrentContext( Context );
+			// メニューと両パネルが収まる画面寸法とキーボード設定。
+			ImGuiIO& Io = ImGui::GetIO();
+			Io.DisplaySize = ImVec2( 1600.0f, 1100.0f );
+			Io.DeltaTime = 1.0f / 60.0f;
+			Io.IniFilename = nullptr;
+			Io.LogFilename = nullptr;
+			Io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+			Io.ConfigInputTrickleEventQueue = false;
+			Io.Fonts->AddFontDefaultBitmap();
+			bFontsReady = Io.Fonts->Build();
+		}
+
+		// 独立文脈を破棄し、呼出元のImGui文脈を復元する。
+		~FEffectEditorMenuContext()
+		{
+			ImGui::DestroyContext( Context );
+			ImGui::SetCurrentContext( Previous );
+		}
+
+		// ImGui文脈の所有権を複製しない。
+		FEffectEditorMenuContext( const FEffectEditorMenuContext& ) = delete;
+		// ImGui文脈の所有権を代入しない。
+		FEffectEditorMenuContext& operator=( const FEffectEditorMenuContext& ) = delete;
+
+		// フォント構築が完了して描画可能か返す。
+		bool IsReady() const { return bFontsReady; }
+		// 全フレームが正しい開始・終了対応を保ったか返す。
+		bool AreFramesBalanced() const { return bFramesBalanced; }
+
+		// 実Effect Editorを1フレーム描画してImGuiフレームを完結させる。
+		void Frame( FEffectEditorState& State, bool& bOpen )
+		{
+			ImGui::NewFrame();
+			NDebugUI::DrawEffectEditor( State, &bOpen );
+			ImGui::Render();
+			bFramesBalanced = bFramesBalanced && !Context->WithinFrameScope && Context->CurrentWindowStack.Size == 0;
+		}
+
+		// メニュー初期化や折り返し移動がNavIdへ反映されるまでフレームを進める。
+		void SettleNav( FEffectEditorState& State, bool& bOpen )
+		{
+			// 保留中のナビゲーション要求を消化する反復。
+			for ( int32 Pass = 0; Pass < 4 && ( Context->NavMoveForwardToNextFrame || Context->NavMoveSubmitted || Context->NavInitRequest || Context->NavInitResult.ID != 0 ); ++Pass ) Frame( State, bOpen );
+		}
+
+		// Altキーを押して離し、Effect Editorのメニュー層へフォーカスを移す。
+		void TapAlt( FEffectEditorState& State, bool& bOpen )
+		{
+			ImGui::GetIO().AddKeyEvent( ImGuiMod_Alt, true );
+			ImGui::GetIO().AddKeyEvent( ImGuiKey_LeftAlt, true );
+			Frame( State, bOpen );
+			ImGui::GetIO().AddKeyEvent( ImGuiKey_LeftAlt, false );
+			ImGui::GetIO().AddKeyEvent( ImGuiMod_Alt, false );
+			Frame( State, bOpen );
+			SettleNav( State, bOpen );
+		}
+
+		// 指定キーを1回押して離し、ナビゲーション結果を確定させる。
+		void Tap( FEffectEditorState& State, bool& bOpen, ImGuiKey Key )
+		{
+			ImGui::GetIO().AddKeyEvent( Key, true );
+			Frame( State, bOpen );
+			ImGui::GetIO().AddKeyEvent( Key, false );
+			Frame( State, bOpen );
+			SettleNav( State, bOpen );
+		}
+
+		// メニューバーのPresetを開き、末尾方向へ指定回数移動して項目を確定する。
+		void SelectPresetFromMenu( FEffectEditorState& State, bool& bOpen, int32 UpCount )
+		{
+			TapAlt( State, bOpen );
+			Tap( State, bOpen, ImGuiKey_RightArrow );
+			Tap( State, bOpen, ImGuiKey_Enter );
+			// メニュー先頭から上方向折り返しで末尾側項目へ移動する反復。
+			for ( int32 Step = 0; Step < UpCount; ++Step ) Tap( State, bOpen, ImGuiKey_UpArrow );
+			Tap( State, bOpen, ImGuiKey_Enter );
+		}
+
+	private:
+		// 退避した呼出元のImGui文脈。
+		ImGuiContext* Previous = nullptr;
+		// このテスト専用の独立ImGui文脈。
+		ImGuiContext* Context = nullptr;
+		// フォントアトラスの構築成否。
+		bool bFontsReady = false;
+		// 全フレームのスコープ整合が保たれているか。
+		bool bFramesBalanced = true;
+	};
+
+	// スコープ終了時にEffect EditorのGPU描画先と再生資源を必ず解放するガード。
+	class FEffectEditorStateScope
+	{
+	public:
+		// 解放対象の編集状態を受け取る。
+		explicit FEffectEditorStateScope( FEffectEditorState& InState ) : State( InState ) {}
+		// スコープ終了時に描画先と再生資源を解放する。
+		~FEffectEditorStateScope() { NDebugUI::ReleaseEffectEditor( State ); }
+		// 状態ガードを複製しない。
+		FEffectEditorStateScope( const FEffectEditorStateScope& ) = delete;
+		// 状態ガードを代入しない。
+		FEffectEditorStateScope& operator=( const FEffectEditorStateScope& ) = delete;
+
+	private:
+		// 解放するEffect Editorの状態。
+		FEffectEditorState& State;
+	};
+
+	// 実Effect EditorのPresetメニューからGustとWhirlwindをキーボード選択できるか確かめる。
+	void TestForceFieldPresetMenu( NAssetTest::FChecker& C )
+	{
+		C.Group = "effect-force-field-preset-menu";
+		// テスト開始前の呼出元ImGui文脈。
+		ImGuiContext* PreviousContext = ImGui::GetCurrentContext();
+		{
+			// キーボード操作を流す独立ImGui文脈。
+			FEffectEditorMenuContext Menu;
+			C.Check( Menu.IsReady(), "Presetメニュー検査用の独立ImGui文脈を初期化する" );
+			if ( !Menu.IsReady() ) return;
+			// 実DrawEffectEditorへ渡す編集状態。
+			FEffectEditorState State;
+			// 途中終了でもGPU資源を漏らさない解放ガード。
+			FEffectEditorStateScope StateScope( State );
+			// Effect Editorウィンドウの開閉フラグ。
+			bool bOpen = true;
+			Menu.Frame( State, bOpen );
+			State.Document.MarkSaved();
+			Menu.SelectPresetFromMenu( State, bOpen, 1 );
+			// Gust選択直後に期待する状態一式が揃っているか。
+			const bool bGustSelected = bOpen && State.Document.IsDirty() && State.Document.Get().Name == "Gust" && State.FilePath.IsEmpty() && State.SaveAsPath == "Effects/force_field_gust_copy.effect.json" && State.Document.Get().Emitters.IsValidIndex( 0 ) && State.Document.Get().Emitters[0].ForceFields.IsValidIndex( 0 ) && State.Document.Get().Emitters[0].ForceFields[0].Kind == FEffectForceFieldDefinition::EKind::Turbulence;
+			C.Check( bGustSelected, "PresetメニューからGustを選ぶとTurbulence力場を持つ未保存コピーが作られる" );
+			State.Document.MarkSaved();
+			Menu.SelectPresetFromMenu( State, bOpen, 2 );
+			// Whirlwind選択直後に期待する状態一式が揃っているか。
+			const bool bWhirlwindSelected = bOpen && State.Document.IsDirty() && State.Document.Get().Name == "Whirlwind" && State.FilePath.IsEmpty() && State.SaveAsPath == "Effects/force_field_whirlwind_copy.effect.json" && State.Document.Get().Emitters.IsValidIndex( 0 ) && State.Document.Get().Emitters[0].ForceFields.IsValidIndex( 0 ) && State.Document.Get().Emitters[0].ForceFields[0].Kind == FEffectForceFieldDefinition::EKind::Vortex;
+			C.Check( bWhirlwindSelected, "PresetメニューからWhirlwindを選ぶとVortex力場を持つ未保存コピーが作られる" );
+			NDebugUI::ReleaseEffectEditor( State );
+			C.Check( !State.Playback.IsValid() && State.Surface.GetHandle() < 0 && Menu.AreFramesBalanced(), "Presetメニュー検証後にEffect Editorの再生資源とGPU描画先を解放する" );
+		}
+		C.Check( ImGui::GetCurrentContext() == PreviousContext, "Presetメニュー検証後に呼出元のImGui文脈を復元する" );
+	}
 }
 
 namespace NWorldTest
@@ -1100,6 +1250,7 @@ namespace NWorldTest
 		TestOneForceFieldPreset( C, Assets, Executor, "Effects/force_field_gust.effect.json", "Effects/selftest_force_field_gust.effect.json" );
 		TestKindPreset( C, Assets, "Effects/force_field_whirlwind.effect.json", FEffectForceFieldDefinition::EKind::Vortex );
 		TestKindPreset( C, Assets, "Effects/force_field_gust.effect.json", FEffectForceFieldDefinition::EKind::Turbulence );
+		TestForceFieldPresetMenu( C );
 		// 全preset処理後に前のrootへ戻ったか。
 		const bool bRootRestored = RootScope.Restore();
 		C.Check( bRootRestored && Assets.GetRootDirectory() == RootScope.GetPreviousRoot(), "preset保存・World cleanup後にAssets rootを元へ戻す" );
