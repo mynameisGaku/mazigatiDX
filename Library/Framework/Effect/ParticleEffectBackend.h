@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// SPDX-License-Identifier: NOASSERTION
+#pragma once
 #include "Library/Framework/Effect/EffectBackend.h"
 #include "Library/Framework/Effect/EffectFlipbookFrames.h"
 #include "Library/Framework/Effect/EffectMeshGeometry.h"
@@ -43,6 +44,10 @@ public:
 	FParticlePlayback( const TSharedPtr<const FParticleEffectDefinition>& Definition, const TArray<TSharedPtr<CTexture>>& InTextures, const FEffectPlayParams& Params, const FTransform& World, const TArray<TSharedPtr<CTexture>>& InMaskTextures, const TArray<FEffectFlipbookFrames>& InFlipbookFrames, const TArray<TSharedPtr<CTexture>>& InDistortionTextures );
 
 	void SetTransform( const FTransform& World ) override { Simulation.Transform = World; }
+	// 雷などの動的終点（ワールド座標）をシミュレーション状態へ設定する。
+	void SetTargetPosition( const FVector3& WorldTarget ) override;
+	// 動的終点の指定を解除し、定義側の終点へ戻す。
+	void ClearTargetPosition() override;
 	void Update( float32 DeltaTime ) override { NParticle::Advance( Simulation, DeltaTime ); }
 	void Record( FDrawContext& Draw ) const override;
 	void Stop( bool bImmediate ) override { NParticle::Stop( Simulation, bImmediate ); }

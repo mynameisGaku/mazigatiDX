@@ -52,6 +52,12 @@ namespace
 		FParticleEffectDefinition Legacy;
 		Legacy.Emitters.Add( FParticleEmitterDefinition() );
 		C.Check( !Legacy.ToJson()["Emitters"][0].contains( "Path" ), "既定の None は Path を書かず、既存の定義形式を保つ" );
+		// 既定の Path 定義。
+		const FEffectPathDefinition DefaultPath;
+		// 動的終点を使わない従来の Lightning 設定。
+		FEffectPathDefinition DefaultLightning;
+		DefaultLightning.Kind = FEffectPathDefinition::EKind::Lightning;
+		C.Check( !DefaultPath.bUseTarget && !DefaultPath.HasInvalidUseTarget() && !DefaultPath.ToJson().contains( "UseTarget" ) && DefaultPath.ComputeHash() == 0xDD139293FA3B301Dull && Legacy.ComputeHash() == 0xA811CEF10E93C86Eull && !DefaultLightning.ToJson().contains( "UseTarget" ) && DefaultLightning.ComputeHash() == 0x67A80EDB1E1C5D23ull, "既定の UseTarget 無効時は JSON キーを出さず、既存の全固定識別値を保つ" );
 		// 全項目を既定から変えた、保存対象の表示設定。
 		FEffectPathDefinition Full;
 		Full.Kind = FEffectPathDefinition::EKind::Lightning;
@@ -81,6 +87,30 @@ namespace
 		Warnings.Reset();
 		C.Check( FEffectPathDefinition::FromJson( NlohmannJson::object( { { "Kind", "rIbBoN" } } ), Back, &Warnings ) && Back.Kind == FEffectPathDefinition::EKind::Ribbon && Back.Segments == 32 && Back.RefreshHz == 12.0f && Warnings.IsEmpty(), "表示方式は大文字小文字を区別せず、不足項目には既定値を使う" );
 		C.Check( FEffectPathDefinition::FromJson( NlohmannJson::object( { { "Kind", "Unknown" } } ), Back, &Warnings ) && Back.Kind == FEffectPathDefinition::EKind::None && Warnings.Num() == 1, "未知の表示方式は警告を出して None を使う" );
+		// 動的終点を有効にした設定の JSON 往復確認元。
+		FEffectPathDefinition TargetEnabled = Full;
+		TargetEnabled.Kind = FEffectPathDefinition::EKind::Lightning;
+		TargetEnabled.bUseTarget = true;
+		// 動的終点設定の文字列経由の読み戻し先。
+		FEffectPathDefinition TargetBack;
+		Warnings.Reset();
+		// 動的終点設定を書き出した JSON。
+		const NlohmannJson TargetJson = TargetEnabled.ToJson();
+		C.Check( TargetJson.contains( "UseTarget" ) && TargetJson["UseTarget"].is_boolean() && TargetJson["UseTarget"].get<bool>() && FEffectPathDefinition::FromJson( NlohmannJson::parse( TargetJson.dump() ), TargetBack, &Warnings ) && Warnings.IsEmpty() && TargetBack.bUseTarget && !TargetBack.HasInvalidUseTarget() && TargetBack.ComputeHash() == TargetEnabled.ComputeHash() && TargetBack.ToJson() == TargetJson, "UseTarget 有効時は JSON の真偽値と識別値をそのまま往復保持する" );
+		Warnings.Reset();
+		// 明示的な false を読んだときの確認先。
+		FEffectPathDefinition ExplicitFalseBack;
+		C.Check( FEffectPathDefinition::FromJson( NlohmannJson::object( { { "Kind", "Lightning" }, { "UseTarget", false } } ), ExplicitFalseBack, &Warnings ) && Warnings.IsEmpty() && !ExplicitFalseBack.bUseTarget && !ExplicitFalseBack.HasInvalidUseTarget() && !ExplicitFalseBack.ToJson().contains( "UseTarget" ), "明示された UseTarget=false も警告なしで読み、再出力時は既定として省略する" );
+		// Kind が None のまま UseTarget だけを有効にしたエフェクト定義。
+		FParticleEffectDefinition TargetOnlyEffect;
+		TargetOnlyEffect.Emitters.Add( FParticleEmitterDefinition() );
+		TargetOnlyEffect.Emitters[0].Path.bUseTarget = true;
+		// エフェクト全体から再読込した確認先。
+		FParticleEffectDefinition TargetOnlyParsed;
+		Warnings.Reset();
+		// エフェクト全体の保存 JSON。
+		const NlohmannJson TargetOnlyJson = TargetOnlyEffect.ToJson();
+		C.Check( TargetOnlyJson["Emitters"][0].contains( "Path" ) && TargetOnlyJson["Emitters"][0]["Path"].contains( "UseTarget" ) && TargetOnlyJson["Emitters"][0]["Path"]["UseTarget"] == true && FParticleEffectDefinition::FromJson( NlohmannJson::parse( TargetOnlyJson.dump() ), TargetOnlyParsed, &Warnings ) && Warnings.IsEmpty() && TargetOnlyParsed.Emitters[0].Path.Kind == FEffectPathDefinition::EKind::None && TargetOnlyParsed.Emitters[0].Path.bUseTarget && TargetOnlyParsed.ComputeHash() == TargetOnlyEffect.ComputeHash(), "Kind が None でも UseTarget=true なら Path を省略せず往復保持する" );
 
 		// 各項目を一つずつ変更する確認項目。
 		struct FChange
@@ -103,6 +133,7 @@ namespace
 			{ "RefreshHz", []( FEffectPathDefinition& D ) { D.RefreshHz += 0.1f; } },
 			{ "UVRepeat", []( FEffectPathDefinition& D ) { D.UVRepeat += 0.1f; } },
 			{ "BreakDistance", []( FEffectPathDefinition& D ) { D.BreakDistance += 0.1f; } },
+			{ "UseTarget", []( FEffectPathDefinition& D ) { D.bUseTarget = true; } },
 		};
 		// 変更を識別する前の、表示設定の基準。
 		const FEffectPathDefinition Base;
@@ -164,6 +195,53 @@ namespace
 		}
 		Definition.End = FVector3::Zero;
 		C.Check( !Definition.Validate().IsEmpty(), "雷の終点が始点と同じならエラーにする" );
+		// 動的終点が有効でもフォールバック終点 End=(0,0,0) を拒否する Lightning 設定。
+		FParticleEffectDefinition ZeroFallbackLightning;
+		ZeroFallbackLightning.Emitters.Add( FParticleEmitterDefinition() );
+		ZeroFallbackLightning.Emitters[0].Path.Kind = FEffectPathDefinition::EKind::Lightning;
+		ZeroFallbackLightning.Emitters[0].Path.bUseTarget = true;
+		ZeroFallbackLightning.Emitters[0].Path.End = FVector3::Zero;
+		// 動的終点が有効でもフォールバック終点 End=(0,0,0) を拒否する TreeLightning 設定。
+		FParticleEffectDefinition ZeroFallbackTree;
+		ZeroFallbackTree.Emitters.Add( FParticleEmitterDefinition() );
+		ZeroFallbackTree.Emitters[0].Path.Kind = FEffectPathDefinition::EKind::TreeLightning;
+		ZeroFallbackTree.Emitters[0].Path.bUseTarget = true;
+		ZeroFallbackTree.Emitters[0].Path.End = FVector3::Zero;
+		C.Check( !ZeroFallbackLightning.Emitters[0].Path.Validate().IsEmpty() && FParticleEffectDefinition::HasErrors( ZeroFallbackLightning.Validate() ) && !ZeroFallbackTree.Emitters[0].Path.Validate().IsEmpty() && FParticleEffectDefinition::HasErrors( ZeroFallbackTree.Validate() ), "UseTarget=true でも Lightning と TreeLightning の End=(0,0,0) はフォールバック不正として拒否する" );
+		// UseTarget に渡す真偽値以外の誤型入力候補。
+		const NlohmannJson BadUseTargetValues[] = { NlohmannJson( "yes" ), NlohmannJson( 1 ) };
+		// 比較用に UseTarget=true を持つ正常な既定 Path。
+		FEffectPathDefinition ValidUseTargetPath;
+		ValidUseTargetPath.bUseTarget = true;
+		// 文字列や数値の誤型が警告・null 往復・検証エラー・フラグ解除まで通るか調べる。
+		for ( const NlohmannJson& BadValue : BadUseTargetValues )
+		{
+			// 誤型の UseTarget だけを持つ JSON オブジェクト。
+			NlohmannJson BadPathJson = NlohmannJson::object();
+			BadPathJson["UseTarget"] = BadValue;
+			// 読込時の警告を受け取る配列。
+			TArray<FString> BadWarnings;
+			// 誤型を読んだ Path 定義。
+			FEffectPathDefinition BadPath;
+			// 読込自体の成否。
+			const bool bReadBad = FEffectPathDefinition::FromJson( BadPathJson, BadPath, &BadWarnings );
+			// 誤型状態を保存した JSON。
+			const NlohmannJson SavedBadJson = BadPath.ToJson();
+			C.Check( bReadBad && BadWarnings.Num() == 1 && !BadPath.bUseTarget && BadPath.HasInvalidUseTarget() && SavedBadJson.contains( "UseTarget" ) && SavedBadJson["UseTarget"].is_null() && BadPath.Validate().Num() == 1 && BadPath.ComputeHash() != FEffectPathDefinition().ComputeHash() && BadPath.ComputeHash() != ValidUseTargetPath.ComputeHash(), "真偽値でない UseTarget は警告と型不正印を残し、null として保存して正常値と識別値を分ける" );
+			// エフェクト全体に載せて JSON 往復させる確認元。
+			FParticleEffectDefinition BadEffect;
+			BadEffect.Emitters.Add( FParticleEmitterDefinition() );
+			BadEffect.Emitters[0].Path = BadPath;
+			// 再読込後のエフェクト定義。
+			FParticleEffectDefinition ReloadedBadEffect;
+			// 再読込時の警告を受け取る配列。
+			TArray<FString> ReloadWarnings;
+			// 文字列化した JSON からの再読込成否。
+			const bool bReloadedBad = FParticleEffectDefinition::FromJson( NlohmannJson::parse( BadEffect.ToJson().dump() ), ReloadedBadEffect, &ReloadWarnings );
+			C.Check( bReloadedBad && !ReloadWarnings.IsEmpty() && ReloadedBadEffect.Emitters[0].Path.HasInvalidUseTarget() && ReloadedBadEffect.Emitters[0].Path.Validate().Num() == 1 && FParticleEffectDefinition::HasErrors( ReloadedBadEffect.Validate() ) && ReloadedBadEffect.ComputeHash() == BadEffect.ComputeHash(), "UseTarget の型不正はエフェクト JSON を往復した後もエラーと識別値を維持する" );
+			BadPath.ClearInvalidFlags();
+			C.Check( !BadPath.HasInvalidUseTarget() && BadPath.Validate().IsEmpty() && !BadPath.ToJson().contains( "UseTarget" ), "ClearInvalidFlags で UseTarget の型不正を解除して既定の有効状態へ戻せる" );
+		}
 		// 描画数の負荷制限を確認する雷。
 		FParticleEffectDefinition Crowd;
 		Crowd.Emitters.Add( FParticleEmitterDefinition() );

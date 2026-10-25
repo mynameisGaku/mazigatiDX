@@ -1,4 +1,5 @@
-﻿#include "ParticleEffectBackend.h"
+﻿// SPDX-License-Identifier: NOASSERTION
+#include "ParticleEffectBackend.h"
 
 #include <algorithm>
 #include <cmath>
@@ -363,6 +364,10 @@ namespace
 	{
 		// エミッターごとの雷の形と再生の変換。
 		const FParticleEmitterDefinition& Emitter = Simulation.Definition->Emitters[EmitterIndex];
+		if ( Emitter.Path.HasInvalidUseTarget() ) return;
+		// 定義と再生状態の両方で雷の動的終点が有効か。
+		const bool bUseDynamicTarget = Emitter.Path.bUseTarget && Simulation.bHasTarget;
+		if ( bUseDynamicTarget && !IsFinitePathPosition( Simulation.TargetPosition ) ) return;
 		// シードから作る経路。描画の記録は共有状態を変えない。
 		thread_local FEffectPathGeometry Geometry;
 		// 終点の指定はエフェクトのローカル座標で、実際の長さに直してから計算する。
@@ -373,7 +378,9 @@ namespace
 		{
 			if ( Particle.Emitter != EmitterIndex || Particle.Size <= 0.0f || Particle.Color.a == 0 ) continue;
 			if ( ++Count > 64 ) break;
-			NEffectPath::BuildLightning( Emitter.Path, Seed + static_cast<uint32>( EmitterIndex ) * 40503u + Particle.Serial * 7919u, Particle.Age, Particle.Position, Particle.Position + EndOffset, Particle.Size, Particle.Color, Geometry );
+			// この粒子から伸ばす雷のワールド終点座標。
+			const FVector3 TargetWorldEnd = bUseDynamicTarget ? Simulation.TargetPosition : ( Particle.Position + EndOffset );
+			NEffectPath::BuildLightning( Emitter.Path, Seed + static_cast<uint32>( EmitterIndex ) * 40503u + Particle.Serial * 7919u, Particle.Age, Particle.Position, TargetWorldEnd, Particle.Size, Particle.Color, Geometry );
 			for ( FEffectPathGeometry::FStrip& Strip : Geometry.Strips ) for ( FEffectPathGeometry::FPoint& Point : Strip.Points ) { Point.AgeSeconds = Particle.Age; Point.NormalizedAge = Particle.NormalizedAge; }
 			for ( const FEffectPathGeometry::FStrip& Strip : Geometry.Strips ) RecordPathStrip( Draw, Strip, Texture, MaskTexture, Emitter, DistortionTexture, 3.0f, 0.18f, Emitter.Material.bEnabled ? 1.0f : 0.0f );
 			for ( const FEffectPathGeometry::FStrip& Strip : Geometry.Strips ) RecordPathStrip( Draw, Strip, Texture, MaskTexture, Emitter, DistortionTexture, 1.0f, 1.0f, 0.0f );
@@ -394,6 +401,10 @@ namespace
 	{
 		// このエミッターが持つ固定形状と表示設定。
 		const FParticleEmitterDefinition& Emitter = Simulation.Definition->Emitters[EmitterIndex];
+		if ( Emitter.Path.HasInvalidUseTarget() ) return;
+		// 定義と再生状態の両方で樹状雷の動的終点が有効か。
+		const bool bUseDynamicTreeTarget = Emitter.Path.bUseTarget && Simulation.bHasTarget;
+		if ( bUseDynamicTreeTarget && !IsFinitePathPosition( Simulation.TargetPosition ) ) return;
 		// エフェクト空間で指定された終点をワールド方向へ変換する。
 		const FVector3 EndOffset = Simulation.Transform.Rotation.Rotate( Emitter.Path.End * NParticle::GetEffectScale( Simulation ) );
 		// Tree Lightningが作る全幹・枝の作業領域。
@@ -405,7 +416,9 @@ namespace
 			bool bSelected = false;
 			for ( const FTreeLightningParticleKey& Key : Selected ) if ( Key.Emitter == Particle.Emitter && Key.Serial == Particle.Serial ) { bSelected = true; break; }
 			if ( !bSelected || Particle.Size <= 0.0f || Particle.Color.a == 0 ) continue;
-			NEffectPath::BuildTreeLightning( Emitter.Path, Seed + static_cast<uint32>( EmitterIndex ) * 40503u + Particle.Serial * 7919u, Particle.Age, Particle.Position, Particle.Position + EndOffset, Particle.Size, Particle.Color, Geometry );
+			// この粒子から伸ばす樹状雷のワールド終点座標。
+			const FVector3 TreeTargetWorldEnd = bUseDynamicTreeTarget ? Simulation.TargetPosition : ( Particle.Position + EndOffset );
+			NEffectPath::BuildTreeLightning( Emitter.Path, Seed + static_cast<uint32>( EmitterIndex ) * 40503u + Particle.Serial * 7919u, Particle.Age, Particle.Position, TreeTargetWorldEnd, Particle.Size, Particle.Color, Geometry );
 			// 全点で元粒子の秒齢と寿命割合を共有し、子枝だけ曲線時刻が変わらないようにする。
 			for ( FEffectPathGeometry::FStrip& Strip : Geometry.Strips ) for ( FEffectPathGeometry::FPoint& Point : Strip.Points ) { Point.AgeSeconds = Particle.Age; Point.NormalizedAge = Particle.NormalizedAge; }
 			for ( const FEffectPathGeometry::FStrip& Strip : Geometry.Strips ) RecordPathStrip( Draw, Strip, Texture, MaskTexture, Emitter, DistortionTexture, 3.0f, 0.18f, Emitter.Material.bEnabled ? 1.0f : 0.0f );
@@ -630,6 +643,18 @@ FParticlePlayback::FParticlePlayback( const TSharedPtr<const FParticleEffectDefi
 		const bool bHasDistortionTexture = DistortionTextures.IsValidIndex( Index ) && DistortionTextures[Index].IsValid() && DistortionTextures[Index]->GetHandle() >= 0;
 		if ( bNeedsDistortion && !bHasDistortionTexture ) LOG( LogAsset, Warning, "エミッター '%s' のUVゆがみ画像を準備できません。ゆがみが必要な粒子は描画しません", *Emitter.Name );
 	}
+}
+
+void FParticlePlayback::SetTargetPosition( const FVector3& WorldTarget )
+{
+	Simulation.TargetPosition = WorldTarget;
+	Simulation.bHasTarget = true;
+}
+
+void FParticlePlayback::ClearTargetPosition()
+{
+	Simulation.TargetPosition = FVector3::Zero;
+	Simulation.bHasTarget = false;
 }
 
 void FParticlePlayback::Record( FDrawContext& Draw ) const

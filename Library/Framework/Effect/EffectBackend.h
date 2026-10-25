@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// SPDX-License-Identifier: NOASSERTION
+#pragma once
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Memory/SharedPtr.h"
@@ -43,6 +44,10 @@ public:
 
 	// エフェクトの、ワールドでの位置・向き・大きさ
 	virtual void SetTransform( const FTransform& World ) = 0;
+	// 雷などの動的終点（ワールド座標）を指定する
+	virtual void SetTargetPosition( const FVector3& WorldTarget ) { (void)WorldTarget; }
+	// 動的終点の指定を解除し、定義側の終点へ戻す
+	virtual void ClearTargetPosition() {}
 	// 時間を進める（毎フレーム 1 回）
 	virtual void Update( float32 DeltaTime ) = 0;
 	// 描くものを記録する。状態を変えない（描画システムが、並列に呼んでよい）

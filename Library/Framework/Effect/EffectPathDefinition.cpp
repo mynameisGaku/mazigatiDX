@@ -83,6 +83,8 @@ NlohmannJson FEffectPathDefinition::ToJson() const
 	Json["UVRepeat"] = UVRepeat;
 	Json["BreakDistance"] = BreakDistance;
 	if ( !Tree.IsDefault() ) Json["Tree"] = Tree.ToJson();
+	if ( bInvalidUseTarget ) Json["UseTarget"] = NlohmannJson( nullptr );
+	else if ( bUseTarget ) Json["UseTarget"] = true;
 	return Json;
 }
 
@@ -108,6 +110,17 @@ bool FEffectPathDefinition::FromJson( const NlohmannJson& Json, FEffectPathDefin
 	Definition.UVRepeat = bStrictTreeKind ? ReadTreeFloat( Json, "UVRepeat", Definition.UVRepeat ) : NJson::GetOr<float32>( Json, "UVRepeat", Definition.UVRepeat );
 	Definition.BreakDistance = bStrictTreeKind ? ReadTreeFloat( Json, "BreakDistance", Definition.BreakDistance ) : NJson::GetOr<float32>( Json, "BreakDistance", Definition.BreakDistance );
 	if ( Json.contains( "Tree" ) ) FEffectLightningTreeDefinition::FromJson( Json["Tree"], Definition.Tree, Warnings );
+	if ( Json.contains( "UseTarget" ) )
+	{
+		// 動的終点の有効指定として渡された JSON 値。
+		const NlohmannJson& UseTargetValue = Json["UseTarget"];
+		if ( UseTargetValue.is_boolean() ) Definition.bUseTarget = UseTargetValue.get<bool>();
+		else
+		{
+			Definition.bInvalidUseTarget = true;
+			if ( Warnings != nullptr ) Warnings->Add( "Path.UseTarget は真偽値にしてください" );
+		}
+	}
 	Out = Definition;
 	return true;
 }
@@ -127,6 +140,7 @@ TArray<FString> FEffectPathDefinition::Validate() const
 	if ( !std::isfinite( UVRepeat ) || UVRepeat <= 0.0f ) Issues.Add( "Path.UVRepeat は有限の正の繰り返し回数にしてください" );
 	if ( !std::isfinite( BreakDistance ) || BreakDistance <= 0.0f ) Issues.Add( "Path.BreakDistance は有限の正の距離にしてください" );
 	for ( const FString& Issue : Tree.Validate() ) Issues.Add( Issue );
+	if ( bInvalidUseTarget ) Issues.Add( "Path.UseTarget は真偽値にしてください" );
 	return Issues;
 }
 
@@ -165,6 +179,15 @@ uint64 FEffectPathDefinition::ComputeHash() const
 		const uint64 TreeHash = Tree.ComputeHash();
 		Mix( TreeTag );
 		Mix( TreeHash );
+	}
+	if ( bUseTarget || bInvalidUseTarget )
+	{
+		// 旧hashとの互換を守り、動的終点設定だけを識別するtag。
+		const uint32 TargetTag = 0x54524754u;
+		// 有効と型不正を区別する状態値。
+		const uint8 TargetState = bInvalidUseTarget ? 2u : 1u;
+		Mix( TargetTag );
+		Mix( TargetState );
 	}
 	return Hash;
 }

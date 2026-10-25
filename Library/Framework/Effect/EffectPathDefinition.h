@@ -1,6 +1,5 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
-#ifndef FRAMEWORK_EFFECT_EFFECTPATHDEFINITION_H
-#define FRAMEWORK_EFFECT_EFFECTPATHDEFINITION_H
+#pragma once
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
@@ -33,6 +32,8 @@ struct FEffectPathDefinition
 	EKind Kind = EKind::None;
 	// 雷の始点から終点への、エフェクト内の移動量。
 	FVector3 End = FVector3( 0.0f, 3.0f, 0.0f );
+	// 再生側から動的ワールド終点が渡されたとき、雷の終点をそちらへ接続するか（未指定時は End へ戻す）。
+	bool bUseTarget = false;
 	// 雷の主幹を分ける区間数。
 	int32 Segments = 32;
 	// 主幹の途中から分かれる枝の数。
@@ -50,6 +51,11 @@ struct FEffectPathDefinition
 	// TreeLightningだけが使う枝数・成長・放電設定。他kindでも値を保持する。
 	FEffectLightningTreeDefinition Tree;
 
+	// UseTarget に真偽値以外の不正な型が読み込まれたか返す。
+	bool HasInvalidUseTarget() const { return bInvalidUseTarget; }
+	// 型不正フラグを消去し、リセットや再編集後の保存検証を通せるようにする。
+	void ClearInvalidFlags() { bInvalidUseTarget = false; }
+
 	// 全項目を精度を落とさず JSON にする。
 	NlohmannJson ToJson() const;
 	// オブジェクトを読み、不足項目は既定値にする。オブジェクトでなければ false。
@@ -58,11 +64,13 @@ struct FEffectPathDefinition
 	TArray<FString> Validate() const;
 	// 表示方式を含む全項目から、変更を判定する識別値を求める。
 	uint64 ComputeHash() const;
+
+private:
+	// JSON 読込時に UseTarget が真偽値でなかったことを保持する印。
+	bool bInvalidUseTarget = false;
 };
 
 // 大文字小文字を区別せず表示方式を読む。知らない名前なら Out を変えず false。
 bool TryParse( const FString& Text, FEffectPathDefinition::EKind& Out );
 // 表示方式の保存名を返す。未知の値は None、Tree付き不正状態は専用名にする。
 const char* ToString( FEffectPathDefinition::EKind Kind );
-
-#endif

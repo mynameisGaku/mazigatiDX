@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// SPDX-License-Identifier: NOASSERTION
+#pragma once
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Framework/Effect/ParticleEffect.h"
@@ -56,6 +57,10 @@ struct FParticleSimulation
 	bool bLoop = true;
 	bool bEmitting = false;
 	bool bStarted = false;
+	// 雷の動的終点として使うワールド座標。
+	FVector3 TargetPosition = FVector3::Zero;
+	// 動的終点が指定されているか。
+	bool bHasTarget = false;
 
 	int32 GetNumParticles() const;
 	// 出し終えて（止めた・ループなしで Duration を過ぎた・エミッターが無い）、粒子も全部消えた
