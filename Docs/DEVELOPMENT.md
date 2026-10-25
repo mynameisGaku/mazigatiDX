@@ -62,7 +62,15 @@ Local粒子は、現在のエフェクトの回転と移動からWorld位置を�
 
 範囲線は`FDrawContext`へ記録し、既存の`IDrawExecutor`で実行します。`FEffectPreviewSurface::Render`の5引数版は、合計65,535ワード以内の追加の`Line3D`／wire `Sphere3D`命令を呼出中だけ借りて格子・粒子の後へ重ねます。他の命令や壊れた並びは失敗として返し、従来の4引数版は追加命令なしの経路を使います。範囲線の記録は粒子の時計・保存値・アセット資源を変更しません。
 
-Presetは原本を保ったまま編集し、`File > Save as...`で別名保存します。保存した`.effect.json`はWorld Editorのアセット一覧から配置し、Worldへ保存して通常の再生に使えます。`FollowEmitter`を切った場はWorld固定、入れた場は配置の移動と回転に追従します。雷の動的終点接続・2D専用操作・HDRとブルームは後続の範囲です。
+Presetは原本を保ったまま編集し、`File > Save as...`で別名保存します。保存した`.effect.json`はWorld Editorのアセット一覧から配置し、Worldへ保存して通常の再生に使えます。`FollowEmitter`を切った場はWorld固定、入れた場は配置の移動と回転に追従します。2D専用操作・HDRとブルームは後続の範囲です。
+
+## 雷の動的終点接続
+
+`FEffectPathDefinition::bUseTarget`（JSONでは`Path.UseTarget`）を有効にした`Lightning`と`TreeLightning`は、再生側から動的ワールド終点が指定されている間、固定オフセット`Path.End`の代わりにそのワールド座標を終点として主幹と枝を生成します。既定の`false`ではJSONキーとハッシュ混合を省略し、既存の全`.effect.json`および既定ハッシュを維持します。`UseTarget`が真偽値でない場合は`null`として往復保持して検証エラーにし、記録も抑止します。`Path.End`は動的終点未指定時のフォールバックとして常に検証します。
+
+`IEffectPlayback`には既定の空実装を持つ`SetTargetPosition(const FVector3&)`と`ClearTargetPosition()`を追加し、`FParticlePlayback`が`FParticleSimulation`へ反映します。動的終点はすでにワールド座標であるため、再生姿勢の回転や拡大率を二重に掛けません。非有限の終点座標が渡された場合は`Path.End`へ誤フォールバックせず、そのエミッターの雷記録を抑止します。同一エフェクト内で`bUseTarget`が有効なエミッターと無効なエミッターを混在させられます。
+
+`CEffectComponent`は直接ワールド座標を指定する`SetTargetPosition`、別オブジェクトの`CTransformComponent`へローカル空間オフセット付きで追従する`SetTargetObject`（`TWeakPtr<CGameObject>`で保持し寿命を延ばさない）、指定を解除する`ClearTarget`、現在有効な終点を取得する`TryGetTargetPosition`を持ちます。`Play()`直後と毎フレームの`Tick()`更新前に再生へ同期し、追従先オブジェクトが破棄・未生存・変換なしになったフレームでは自動的に`ClearTargetPosition()`へ戻します。Effect Editorの入力欄・プレビュー終点操作・World保存とInspector・組み込みPresetは次の区切りの範囲です。
 
 ## コードとコメント
 
@@ -130,6 +138,8 @@ Effectの帯・雷へのUVディストーションを含む統合版は、world 
 渦・乱流・追従の定義と計算（Editor画面への追加は次の区切り）は、同じコード（`90fd711`）を使ったDebug／Releaseの全6実行で確認しました。worldは各3,480項目、assetsはDebug 1,176項目・Release 1,174項目、ECSは各構成のワーカー0／1／4／15でそれぞれ7,867,833項目です。ECSのハッシュは`403b39415ba4b9a6`、画素差0で、失敗・スキップ・timeout・shaderエラーはなく、受入ビルドは警告・エラー0、Debugのリーク報告は全て0バイトです。独立した三軸の手計算、非単位軸、移動・回転・非一様拡大・Local粒子との組み合わせ、旧JSONの既定値、10項目の型違いと無効中の値の保持、各値のハッシュ反映、乱数を消費しないことを検査し、20種類の意図的な不具合をすべて正常終了した狙いどおりの検査失敗として検出しました。
 
 渦・乱流・追従の制作UI・ガイド・組み込み例（4b2）は、同じコードとアセットを使ったDebug／Releaseの全6実行で確認しました。worldは各3,553項目、assetsはDebug 1,176項目・Release 1,174項目、ECSは各構成のワーカー0／1／4／15でそれぞれ7,867,833項目です。ECSのハッシュは`403b39415ba4b9a6`、画素差0で、失敗・スキップ・timeout・shaderエラーはなく、受入ビルドは警告・エラー0、Debugの全基準・変異実行と視覚確認でリーク報告が実在し0バイト、Releaseは報告なしです。実ImGui入力でのKind4択遷移・FollowEmitter切替・各値のDragFloat・Undo・Reset復旧、PresetメニューからのWhirlwind／Gust選択、ガイドの座標・本数・符号・追従姿勢、自動視点の球範囲と矢印余裕、組み込みPresetのJSON往復・World配置・螺旋旋回（角運動量）と相対運動保持を確認し、4種Presetの実画面キャプチャによる螺旋リボン・乱流S字帯・ガイド・設定欄の確認と、21種類の意図的な不具合をすべて正常終了した狙いどおりの検査失敗として検出しました。
+
+雷・樹状雷の動的終点接続の定義・再生窓口・部品追従（4c1、制作UI・World保存・組み込みPresetは次の4c2）は、同じコードを使ったDebug／Releaseの全6実行で確認しました。worldは各3,592項目、assetsはDebug 1,176項目・Release 1,174項目、ECSは各構成のワーカー0／1／4／15でそれぞれ7,867,833項目です。ECSのハッシュは`403b39415ba4b9a6`、画素差0で、失敗・スキップ・timeout・shaderエラーはなく、受入ビルドは警告・エラー0、Debugの全基準・変異実行でリーク報告が実在し0バイト、Releaseは報告なしです。既定JSON省略と既存固定ハッシュ保持、`UseTarget`のJSON往復・型違い`null`保持・検証エラー、`Lightning`と非材質／材質付き`TreeLightning`での動的終点到達・回転拡大の非二重適用・解除復帰、混在エミッター、非有限終点と型不正定義の描画抑止、および独立シーンでの`CEffectComponent`の対象追従（ローカルオフセット回転拡大変換）・移動追従・破棄時フォールバック・直接座標切替・再Play維持を確認し、20種類の意図的な不具合をすべて正常終了した狙いどおりの検査失敗として検出しました。
 
 ## 変更の統合
 
