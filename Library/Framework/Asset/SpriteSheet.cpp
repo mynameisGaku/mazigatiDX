@@ -94,7 +94,12 @@ namespace
 			bRange = ( Step == 1 || Step == -1 ) && Clip.Frames[i] - Clip.Frames[i - 1] == Step;
 		}
 		if ( bRange ) Json["Range"] = NlohmannJson::array( { Clip.Frames.First(), Clip.Frames.Last() } );
-		else Json["Frames"] = std::vector<int32>( Clip.Frames.begin(), Clip.Frames.end() );
+		else
+		{
+			NlohmannJson Frames = NlohmannJson::array();
+			for ( const int32 Frame : Clip.Frames ) Frames.push_back( Frame );
+			Json["Frames"] = Frames;
+		}
 
 		Json["Fps"] = NJson::Round4( Clip.Fps );
 		Json["Loop"] = ToString( Clip.Loop );

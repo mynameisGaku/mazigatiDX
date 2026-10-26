@@ -5,10 +5,10 @@
 #include <cstdint>
 #include <cstring>
 #include <unordered_map>
-#include <vector>
 
 #include "VendorModules/ufbx/ufbx.h"
 
+#include "Library/Core/Collection/Array.h"
 #include "Library/Core/Types/Numeric.h"
 
 namespace
@@ -77,16 +77,16 @@ namespace
 		}
 
 	private:
-		int32 GetNodeIndex( const ufbx_node* Node ) const { return Node != nullptr && Node->typed_id < NodeMap.size() ? NodeMap[Node->typed_id] : -1; }
+		int32 GetNodeIndex( const ufbx_node* Node ) const { return Node != nullptr && Node->typed_id < static_cast<size_t>( NodeMap.Num() ) ? NodeMap[static_cast<int32>( Node->typed_id )] : -1; }
 
 		void BuildNodes()
 		{
-			NodeMap.assign( Source.nodes.count, -1 );
+			NodeMap.Init( -1, static_cast<int32>( Source.nodes.count ) );
 			for ( size_t i = 0; i < Source.nodes.count; ++i )
 			{
 				const ufbx_node* Node = Source.nodes.data[i];
 				if ( Node->is_root ) continue;   // 根は変換を持たない（空の入れ物）
-				NodeMap[i] = Out.Nodes.Num();
+				NodeMap[static_cast<int32>( i )] = Out.Nodes.Num();
 				FImportedNode Imported;
 				Imported.Name = ToFString( Node->name );
 				Imported.Local = ToImportMatrix( Node->node_to_parent );
@@ -95,8 +95,8 @@ namespace
 			for ( size_t i = 0; i < Source.nodes.count; ++i )
 			{
 				const ufbx_node* Node = Source.nodes.data[i];
-				if ( NodeMap[i] < 0 ) continue;
-				Out.Nodes[NodeMap[i]].Parent = Node->parent != nullptr && !Node->parent->is_root ? GetNodeIndex( Node->parent ) : -1;
+				if ( NodeMap[static_cast<int32>( i )] < 0 ) continue;
+				Out.Nodes[NodeMap[static_cast<int32>( i )]].Parent = Node->parent != nullptr && !Node->parent->is_root ? GetNodeIndex( Node->parent ) : -1;
 			}
 		}
 
@@ -169,8 +169,8 @@ namespace
 			for ( size_t NodeIndex = 0; NodeIndex < Source.nodes.count; ++NodeIndex )
 			{
 				const ufbx_node* Node = Source.nodes.data[NodeIndex];
-				if ( Node->mesh == nullptr || NodeMap[NodeIndex] < 0 ) continue;
-				BuildMesh( *Node, *Node->mesh, NodeMap[NodeIndex] );
+				if ( Node->mesh == nullptr || NodeMap[static_cast<int32>( NodeIndex )] < 0 ) continue;
+				BuildMesh( *Node, *Node->mesh, NodeMap[static_cast<int32>( NodeIndex )] );
 			}
 		}
 
@@ -187,31 +187,32 @@ namespace
 			const bool bHasNormal = Mesh.vertex_normal.exists;
 
 			// 頂点ごとの骨の影響（元の頂点の番号ごと。多すぎる分は切って、合計を 1 にしてある）
-			std::vector<TArray<FImportInfluence>> Influences;
+			TArray<TArray<FImportInfluence>> Influences;
 			if ( Skin != nullptr )
 			{
-				Influences.resize( Mesh.num_vertices );
+				Influences.SetNum( static_cast<int32>( Mesh.num_vertices ) );
 				for ( size_t Vertex = 0; Vertex < Mesh.num_vertices && Vertex < Skin->vertices.count; ++Vertex )
 				{
 					const ufbx_skin_vertex& SkinVertex = Skin->vertices.data[Vertex];
 					for ( uint32_t k = 0; k < SkinVertex.num_weights; ++k )
 					{
 						const ufbx_skin_weight& Weight = Skin->weights.data[SkinVertex.weight_begin + k];
-						Influences[Vertex].Add( FImportInfluence { static_cast<int32>( Weight.cluster_index ), static_cast<float32>( Weight.weight ) } );
+						Influences[static_cast<int32>( Vertex )].Add( FImportInfluence { static_cast<int32>( Weight.cluster_index ), static_cast<float32>( Weight.weight ) } );
 					}
-					NImportedScene::LimitInfluences( Influences[Vertex] );
+					NImportedScene::LimitInfluences( Influences[static_cast<int32>( Vertex )] );
 				}
 			}
 
 			std::unordered_map<FCornerKey, int32, FCornerKeyHash> VertexMap;
-			std::vector<uint32_t> ControlPoints;   // 出力の頂点ごとの、元の頂点の番号
-			std::vector<uint32_t> Triangles( NMath::Max<size_t>( Mesh.max_face_triangles * 3, 3 ) );
+			TArray<uint32_t> ControlPoints;   // 出力の頂点ごとの、元の頂点の番号
+			TArray<uint32_t> Triangles;
+			Triangles.SetNum( static_cast<int32>( NMath::Max<size_t>( Mesh.max_face_triangles * 3, 3 ) ) );
 
 			for ( size_t FaceIndex = 0; FaceIndex < Mesh.faces.count; ++FaceIndex )
 			{
 				const ufbx_face Face = Mesh.faces.data[FaceIndex];
 				if ( Face.num_indices < 3 ) continue;
-				const uint32_t NumTriangles = ufbx_triangulate_face( Triangles.data(), Triangles.size(), &Mesh, Face );
+				const uint32_t NumTriangles = ufbx_triangulate_face( Triangles.GetData(), Triangles.Num(), &Mesh, Face );
 
 				int32 Material = -1;
 				if ( Mesh.face_material.count > FaceIndex )
@@ -248,7 +249,7 @@ namespace
 								const ufbx_vec2 UV = Mesh.vertex_uv.values.data[Key.UV];
 								Imported.UVs.Add( FVector2( static_cast<float32>( UV.x ), 1.0f - static_cast<float32>( UV.y ) ) );   // FBX は下が 0、DirectX は上が 0
 							}
-							ControlPoints.push_back( Mesh.vertex_indices.data[Index] );
+							ControlPoints.Add( Mesh.vertex_indices.data[Index] );
 							Found = VertexMap.emplace( Key, Imported.Positions.Num() - 1 ).first;
 						}
 						Imported.Indices.Add( Found->second );
@@ -300,7 +301,7 @@ namespace
 				for ( size_t NodeIndex = 0; NodeIndex < Source.nodes.count; ++NodeIndex )
 				{
 					const ufbx_node* Node = Source.nodes.data[NodeIndex];
-					const int32 Imported = NodeMap[NodeIndex];
+					const int32 Imported = NodeMap[static_cast<int32>( NodeIndex )];
 					if ( Imported < 0 ) continue;
 
 					FImportedTrack Track;
@@ -323,7 +324,7 @@ namespace
 		const ufbx_scene& Source;
 		const FImportOptions& Options;
 		FImportedScene& Out;
-		std::vector<int32> NodeMap;                 // ufbx のノードの番号 -> FImportedScene::Nodes の番号（根は -1）
+		TArray<int32> NodeMap;                 // ufbx のノードの番号 -> FImportedScene::Nodes の番号（根は -1）
 		std::unordered_map<uint32_t, int32> TextureMap;
 	};
 }

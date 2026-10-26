@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include <string>
-#include <vector>
 
+#include "Library/Core/Collection/Array.h"
 #include "Library/Core/Types/TypeDefinition.h"
 #include "Library/Json/JsonObject.h"
 
@@ -42,8 +42,8 @@ public:
 	void Reset( const TDefinition& InDefinition )
 	{
 		Definition = InDefinition;
-		UndoStack.clear();
-		RedoStack.clear();
+		UndoStack.Reset();
+		RedoStack.Reset();
 		LastKey.clear();
 		SavedSnapshot = Snapshot();
 		bDirty = false;
@@ -107,33 +107,33 @@ public:
 		TDefinitionDocument& Document;
 	};
 
-	bool CanUndo() const { return !UndoStack.empty(); }
-	bool CanRedo() const { return !RedoStack.empty(); }
+	bool CanUndo() const { return !UndoStack.IsEmpty(); }
+	bool CanRedo() const { return !RedoStack.IsEmpty(); }
 
 	bool Undo()
 	{
-		if ( UndoStack.empty() || BatchDepth > 0 ) return false;
-		RedoStack.push_back( Snapshot() );
-		Restore( UndoStack.back() );
-		UndoStack.pop_back();
+		if ( UndoStack.IsEmpty() || BatchDepth > 0 ) return false;
+		RedoStack.Add( Snapshot() );
+		Restore( UndoStack.Last() );
+		UndoStack.Pop();
 		return true;
 	}
 
 	bool Redo()
 	{
-		if ( RedoStack.empty() || BatchDepth > 0 ) return false;
-		UndoStack.push_back( Snapshot() );
-		Restore( RedoStack.back() );
-		RedoStack.pop_back();
+		if ( RedoStack.IsEmpty() || BatchDepth > 0 ) return false;
+		UndoStack.Add( Snapshot() );
+		Restore( RedoStack.Last() );
+		RedoStack.Pop();
 		return true;
 	}
 
 	// 最後の編集を元に戻して、やり直しにも残さない（編集の途中でやめたとき。ドラッグを Esc で取り消すなど）
 	bool UndoAndForget()
 	{
-		if ( UndoStack.empty() || BatchDepth > 0 ) return false;
-		Restore( UndoStack.back() );
-		UndoStack.pop_back();
+		if ( UndoStack.IsEmpty() || BatchDepth > 0 ) return false;
+		Restore( UndoStack.Last() );
+		UndoStack.Pop();
 		return true;
 	}
 
@@ -146,7 +146,7 @@ public:
 	}
 	// 編集・元に戻す・やり直すのたびに増える（表示のキャッシュを作り直す目印）
 	uint32 GetRevision() const { return Revision; }
-	int32 GetNumUndo() const { return static_cast<int32>( UndoStack.size() ); }
+	int32 GetNumUndo() const { return UndoStack.Num(); }
 
 	static constexpr size_t MaxHistory = 200;
 
@@ -155,9 +155,9 @@ private:
 
 	void PushUndoSnapshot()
 	{
-		UndoStack.push_back( Snapshot() );
-		if ( UndoStack.size() > MaxHistory ) UndoStack.erase( UndoStack.begin() );
-		RedoStack.clear();
+		UndoStack.Add( Snapshot() );
+		if ( UndoStack.Num() > MaxHistory ) UndoStack.RemoveAt( 0 );
+		RedoStack.Reset();
 	}
 
 	void Restore( const std::string& Json )
@@ -170,8 +170,8 @@ private:
 	}
 
 	TDefinition Definition;
-	std::vector<std::string> UndoStack;
-	std::vector<std::string> RedoStack;
+	TArray<std::string> UndoStack;
+	TArray<std::string> RedoStack;
 	std::string LastKey;
 	std::string SavedSnapshot;
 	int32 BatchDepth = 0;

@@ -39,8 +39,8 @@ void NEcs::FSystemScheduler::AddSystem( FSystem&& System )
 	{
 		if ( Existing.Phase == System.Phase && Conflicts( Existing, System ) ) System.Stage = NMath::Max( System.Stage, Existing.Stage + 1 );
 	}
-	if ( System.Phase == EPhase::Draw ) DrawSystems.push_back( static_cast<int32>( Systems.size() ) );
-	Systems.push_back( MoveTemp( System ) );
+	if ( System.Phase == EPhase::Draw ) DrawSystems.Add( Systems.Num() );
+	Systems.Add( MoveTemp( System ) );
 }
 
 int32 NEcs::FSystemScheduler::GetStage( const char* Name ) const
@@ -65,19 +65,19 @@ int32 NEcs::FSystemScheduler::GetNumStages( EPhase Phase ) const
 void NEcs::FSystemScheduler::Run( EPhase Phase, float32 DeltaTime, uint64 MaxObjectId, FEcsWorld& World, FTransformWorld& Transforms, IJobSystem* Jobs )
 {
 	const int32 NumStages = GetNumStages( Phase );
-	thread_local std::vector<FWorkItem> Items;
+	thread_local TArray<FWorkItem> Items;
 
 	// 描画システムはワールド値を読むだけにしたいので、先に全部を最新にしておく（古いものが無ければ、すぐ戻る）
 	if ( Phase == EPhase::Draw )
 	{
 		Transforms.Update( Jobs );
-		ActiveDrawRunners.clear();
+		ActiveDrawRunners.Reset();
 	}
 
 	for ( int32 Stage = 0; Stage < NumStages; ++Stage )
 	{
 		// この段のシステム（互いに触るデータが無い）の仕事を、塊に分けて 1 つの一覧にする
-		Items.clear();
+		Items.Reset();
 		for ( FSystem& System : Systems )
 		{
 			if ( System.Phase != Phase || System.Stage != Stage ) continue;
@@ -85,7 +85,7 @@ void NEcs::FSystemScheduler::Run( EPhase Phase, float32 DeltaTime, uint64 MaxObj
 			const int32 Count = System.Runner->Prepare( World, Transforms, DeltaTime, MaxObjectId );
 			if ( Phase == EPhase::Draw && Count > 0 )
 			{
-				ActiveDrawRunners.push_back( System.Runner.get() );
+				ActiveDrawRunners.Add( System.Runner.get() );
 			}
 			if ( IProfiler* Recorder = NProfiler::GRecorder )
 			{
@@ -93,12 +93,12 @@ void NEcs::FSystemScheduler::Run( EPhase Phase, float32 DeltaTime, uint64 MaxObj
 			}
 			for ( int32 Begin = 0; Begin < Count; Begin += EntitiesPerBatch )
 			{
-				Items.push_back( { System.Runner.get(), System.Name, Begin, NMath::Min( Begin + EntitiesPerBatch, Count ) } );
+				Items.Add( { System.Runner.get(), System.Name, Begin, NMath::Min( Begin + EntitiesPerBatch, Count ) } );
 			}
 		}
-		if ( Items.empty() ) continue;
+		if ( Items.IsEmpty() ) continue;
 
-		const FWorkItem* WorkData = Items.data();
+		const FWorkItem* WorkData = Items.GetData();
 		const auto Body = [WorkData]( int32 First, int32 Last )
 		{
 			for ( int32 i = First; i < Last; ++i )
@@ -108,8 +108,8 @@ void NEcs::FSystemScheduler::Run( EPhase Phase, float32 DeltaTime, uint64 MaxObj
 				Item.Runner->RunRange( Item.Begin, Item.End );
 			}
 		};
-		if ( Jobs != nullptr && Jobs->GetNumWorkers() > 0 ) Jobs->ParallelForRange( static_cast<int32>( Items.size() ), 1, "Systems", Body );
-		else Body( 0, static_cast<int32>( Items.size() ) );
+		if ( Jobs != nullptr && Jobs->GetNumWorkers() > 0 ) Jobs->ParallelForRange( Items.Num(), 1, "Systems", Body );
+		else Body( 0, Items.Num() );
 
 		// 並列に溜めた「ワールド値を古くする」「破棄の予約」を、メインスレッドでまとめて反映する（次の段の前に）
 		if ( Phase != EPhase::Draw )

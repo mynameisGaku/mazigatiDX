@@ -52,18 +52,18 @@ void FTransformWorld::MarkDirtySlow( int32 Slot )
 	if ( Node.FirstChild == INDEX_NONE ) return;   // 子がなければ、これだけ
 
 	// 子孫を、深さ優先で立てる（スタックは使い回す。毎回確保しない）
-	thread_local std::vector<int32> Stack;
-	Stack.clear();
-	Stack.push_back( Slot );
-	while ( !Stack.empty() )
+	thread_local TArray<int32> Stack;
+	Stack.Reset();
+	Stack.Add( Slot );
+	while ( !Stack.IsEmpty() )
 	{
-		const int32 Current = Stack.back();
-		Stack.pop_back();
+		const int32 Current = Stack.Last();
+		Stack.Pop();
 		for ( int32 Child = Nodes[Current].FirstChild; Child != INDEX_NONE; Child = Nodes[Child].NextSibling )
 		{
 			if ( !Nodes.IsAlive( Child ) || Nodes[Child].bDirty ) continue;
 			Nodes[Child].bDirty = true;
-			Stack.push_back( Child );
+			Stack.Add( Child );
 		}
 	}
 }
@@ -72,13 +72,13 @@ void FTransformWorld::MarkDirtySlow( int32 Slot )
 
 void FTransformWorld::FlushDeferredDirty()
 {
-	for ( std::vector<int32>& PerThread : DeferredDirty )
+	for ( TArray<int32>& PerThread : DeferredDirty )
 	{
 		for ( const int32 Slot : PerThread )
 		{
 			if ( Nodes.IsAlive( Slot ) ) MarkDirty( Slot );
 		}
-		PerThread.clear();
+		PerThread.Reset();
 	}
 }
 
@@ -100,7 +100,7 @@ void FTransformWorld::RebuildHierarchy()
 	const int32 NumSlots = Nodes.GetNumSlots();
 
 	// 1) 親を探し直す。付け替わったものは、ワールド値が変わるので後で dirty にする
-	std::vector<int32> Changed;
+	TArray<int32> Changed;
 	for ( int32 Slot = 0; Slot < NumSlots; ++Slot )
 	{
 		if ( !Nodes.IsAlive( Slot ) ) continue;
@@ -109,7 +109,7 @@ void FTransformWorld::RebuildHierarchy()
 		if ( NewParent != Node.Parent )
 		{
 			Node.Parent = NewParent;
-			Changed.push_back( Slot );
+			Changed.Add( Slot );
 		}
 	}
 
@@ -129,36 +129,36 @@ void FTransformWorld::RebuildHierarchy()
 	}
 
 	// 3) 根から深さ順に並べる（幅優先）。同じ親の子が隣り合うので、Update で親のワールド値がキャッシュに乗る
-	Entries.clear();
-	Entries.reserve( static_cast<size_t>( Nodes.GetNumAlive() ) );
-	LevelStart.clear();
-	LevelStart.push_back( 0 );
+	Entries.Reset();
+	Entries.Reserve( static_cast<size_t>( Nodes.GetNumAlive() ) );
+	LevelStart.Reset();
+	LevelStart.Add( 0 );
 	for ( int32 Slot = 0; Slot < NumSlots; ++Slot )
 	{
 		if ( !Nodes.IsAlive( Slot ) ) continue;
 		FTransformNode& Node = Nodes[Slot];
 		if ( Node.Parent != INDEX_NONE ) continue;
 		Node.Depth = 0;
-		Entries.push_back( { &Node, nullptr } );
+		Entries.Add( { &Node, nullptr } );
 	}
-	LevelStart.push_back( static_cast<int32>( Entries.size() ) );
+	LevelStart.Add( Entries.Num() );
 
 	for ( int32 Depth = 1; ; ++Depth )
 	{
-		const int32 PrevBegin = LevelStart[static_cast<size_t>( Depth - 1 )];
-		const int32 PrevEnd = LevelStart[static_cast<size_t>( Depth )];
+		const int32 PrevBegin = LevelStart[Depth - 1];
+		const int32 PrevEnd = LevelStart[Depth];
 		for ( int32 i = PrevBegin; i < PrevEnd; ++i )
 		{
-			const FTransformNode* ParentNode = Entries[static_cast<size_t>( i )].Node;
+			const FTransformNode* ParentNode = Entries[i].Node;
 			for ( int32 Child = ParentNode->FirstChild; Child != INDEX_NONE; Child = Nodes[Child].NextSibling )
 			{
 				FTransformNode& ChildNode = Nodes[Child];
 				ChildNode.Depth = Depth;
-				Entries.push_back( { &ChildNode, ParentNode } );
+				Entries.Add( { &ChildNode, ParentNode } );
 			}
 		}
-		if ( static_cast<int32>( Entries.size() ) == PrevEnd ) break;
-		LevelStart.push_back( static_cast<int32>( Entries.size() ) );
+		if ( Entries.Num() == PrevEnd ) break;
+		LevelStart.Add( Entries.Num() );
 	}
 
 	// 4) 付け替わったものと、その子孫のワールド値を古くする（子の一覧を作り直したあとなので、新しい子孫まで届く）
@@ -222,9 +222,9 @@ void FTransformWorld::Update( IJobSystem* Jobs )
 	if ( !bAnyDirty.Load( EMemoryOrder::Relaxed ) ) return;
 
 	// 浅い階層から順に。同じ階層の要素は互いに独立（親は前の階層で終わっている）なので、階層ごとに一斉に計算できる
-	const size_t NumLevels = LevelStart.empty() ? 0 : LevelStart.size() - 1;
-	const FLevelEntry* AllEntries = Entries.data();
-	for ( size_t Level = 0; Level < NumLevels; ++Level )
+	const int32 NumLevels = LevelStart.IsEmpty() ? 0 : LevelStart.Num() - 1;
+	const FLevelEntry* AllEntries = Entries.GetData();
+	for ( int32 Level = 0; Level < NumLevels; ++Level )
 	{
 		const int32 Begin = LevelStart[Level];
 		const int32 Count = LevelStart[Level + 1] - Begin;

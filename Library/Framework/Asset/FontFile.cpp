@@ -2,7 +2,8 @@
 
 #include <cstdio>
 #include <cstring>
-#include <vector>
+
+#include "Library/Core/Collection/Array.h"
 
 namespace
 {
@@ -32,10 +33,10 @@ namespace
 	// UTF-16BE の文字列から FString を作る
 	FString FromUtf16BE( const FReader& Reader, usize Offset, usize Length )
 	{
-		std::vector<wchar_t> Wide;
-		for ( usize i = 0; i + 1 < Length; i += 2 ) Wide.push_back( static_cast<wchar_t>( Reader.U16( Offset + i ) ) );
-		Wide.push_back( L'\0' );
-		return FString( Wide.data() );
+		TArray<wchar_t> Wide;
+		for ( usize i = 0; i + 1 < Length; i += 2 ) Wide.Add( static_cast<wchar_t>( Reader.U16( Offset + i ) ) );
+		Wide.Add( L'\0' );
+		return FString( Wide.GetData() );
 	}
 
 	FString FromMacRoman( const FReader& Reader, usize Offset, usize Length )
@@ -130,11 +131,11 @@ bool NFontFile::ReadFaceName( const FString& Path, FString& OutFaceName )
 	FILE* File = nullptr;
 	if ( fopen_s( &File, *Path, "rb" ) != 0 || File == nullptr ) return false;
 
-	std::vector<uint8> Bytes;
+	TArray<uint8> Bytes;
 	uint8 Chunk[8192];
 	usize Read = 0;
-	while ( ( Read = std::fread( Chunk, 1, sizeof( Chunk ), File ) ) > 0 ) Bytes.insert( Bytes.end(), Chunk, Chunk + Read );
+	while ( ( Read = std::fread( Chunk, 1, sizeof( Chunk ), File ) ) > 0 ) Bytes.Append( Chunk, static_cast<int32>( Read ) );
 	std::fclose( File );
 
-	return ReadFaceNameFromMemory( Bytes.data(), Bytes.size(), OutFaceName );
+	return ReadFaceNameFromMemory( Bytes.GetData(), static_cast<usize>( Bytes.Num() ), OutFaceName );
 }

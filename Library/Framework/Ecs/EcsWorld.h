@@ -1,10 +1,10 @@
 ﻿#pragma once
-#include <memory>
 #include <utility>
-#include <vector>
 
+#include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/CollectionCommon.h"
 #include "Library/Core/Interfaces/Job/IJobSystem.h"
+#include "Library/Core/Memory/UniquePtr.h"
 #include "Library/Core/Thread/Atomic.h"
 #include "Library/Core/Types/CompilerMacros.h"
 #include "Library/Core/Types/TypeDefinition.h"
@@ -69,22 +69,22 @@ public:
 
 	FORCEINLINE int32 GetTypeId() const { return StorageTypeId; }
 	FORCEINLINE const void* GetTypeKey() const { return StorageTypeKey; }
-	FORCEINLINE int32 Num() const { return static_cast<int32>( DenseEntity.size() ); }
+	FORCEINLINE int32 Num() const { return DenseEntity.Num(); }
 	// Dense の i 番目を持つエンティティの番号
-	FORCEINLINE int32 EntityAt( int32 DenseIndex ) const { return DenseEntity[static_cast<size_t>( DenseIndex )]; }
-	FORCEINLINE const int32* GetEntities() const { return DenseEntity.data(); }
+	FORCEINLINE int32 EntityAt( int32 DenseIndex ) const { return DenseEntity[DenseIndex]; }
+	FORCEINLINE const int32* GetEntities() const { return DenseEntity.GetData(); }
 	// このエンティティの Dense の位置（持っていなければ INDEX_NONE）
 	FORCEINLINE int32 IndexOf( int32 Entity ) const
 	{
-		return static_cast<uint32>( Entity ) < static_cast<uint32>( Sparse.size() ) ? Sparse[static_cast<size_t>( Entity )] : INDEX_NONE;
+		return static_cast<uint32>( Entity ) < static_cast<uint32>( Sparse.Num() ) ? Sparse[Entity] : INDEX_NONE;
 	}
 	FORCEINLINE bool Has( int32 Entity ) const { return IndexOf( Entity ) != INDEX_NONE; }
 
 	virtual void Remove( int32 Entity ) = 0;
 
 protected:
-	std::vector<int32> Sparse;        // エンティティの番号 -> Dense の位置（持っていなければ INDEX_NONE）
-	std::vector<int32> DenseEntity;   // Dense の位置 -> エンティティの番号
+	TArray<int32> Sparse;        // エンティティの番号 -> Dense の位置（持っていなければ INDEX_NONE）
+	TArray<int32> DenseEntity;   // Dense の位置 -> エンティティの番号
 	int32 StorageTypeId = INDEX_NONE;
 	const void* StorageTypeKey = nullptr;
 };
@@ -98,94 +98,94 @@ public:
 	// 追加する（すでに持っていれば上書き）。戻り値は、次に構造を変えるまで有効
 	T* Add( int32 Entity, const T& Value )
 	{
-		if ( Entity >= static_cast<int32>( Sparse.size() ) ) Sparse.resize( static_cast<size_t>( Entity ) + 1, INDEX_NONE );
-		int32& DenseIndex = Sparse[static_cast<size_t>( Entity )];
+		if ( Entity >= Sparse.Num() ) Sparse.SetNum( static_cast<size_t>( Entity ) + 1, INDEX_NONE );
+		int32& DenseIndex = Sparse[Entity];
 		if ( DenseIndex != INDEX_NONE )
 		{
-			Dense[static_cast<size_t>( DenseIndex )] = Value;
-			return &Dense[static_cast<size_t>( DenseIndex )];
+			Dense[DenseIndex] = Value;
+			return &Dense[DenseIndex];
 		}
-		DenseIndex = static_cast<int32>( Dense.size() );
-		Dense.push_back( Value );
-		DenseEntity.push_back( Entity );
-		return &Dense.back();
+		DenseIndex = Dense.Num();
+		Dense.Add( Value );
+		DenseEntity.Add( Entity );
+		return &Dense.Last();
 	}
 
 	// コンストラクタ引数を渡してその場で構築する（すでに持っていれば上書き）
 	template<typename... TArgs>
 	T* Emplace( int32 Entity, TArgs&&... Args )
 	{
-		if ( Entity >= static_cast<int32>( Sparse.size() ) ) Sparse.resize( static_cast<size_t>( Entity ) + 1, INDEX_NONE );
-		int32& DenseIndex = Sparse[static_cast<size_t>( Entity )];
+		if ( Entity >= Sparse.Num() ) Sparse.SetNum( static_cast<size_t>( Entity ) + 1, INDEX_NONE );
+		int32& DenseIndex = Sparse[Entity];
 		if ( DenseIndex != INDEX_NONE )
 		{
-			Dense[static_cast<size_t>( DenseIndex )] = T( Forward<TArgs>( Args )... );
-			return &Dense[static_cast<size_t>( DenseIndex )];
+			Dense[DenseIndex] = T( Forward<TArgs>( Args )... );
+			return &Dense[DenseIndex];
 		}
-		DenseIndex = static_cast<int32>( Dense.size() );
-		Dense.emplace_back( Forward<TArgs>( Args )... );
-		DenseEntity.push_back( Entity );
-		return &Dense.back();
+		DenseIndex = Dense.Num();
+		Dense.Emplace( Forward<TArgs>( Args )... );
+		DenseEntity.Add( Entity );
+		return &Dense.Last();
 	}
 
 	// すでに持っていればそれを返し、無ければ新しく作って返す
 	template<typename... TArgs>
 	T& GetOrAdd( int32 Entity, TArgs&&... Args )
 	{
-		if ( Entity >= static_cast<int32>( Sparse.size() ) ) Sparse.resize( static_cast<size_t>( Entity ) + 1, INDEX_NONE );
-		int32& DenseIndex = Sparse[static_cast<size_t>( Entity )];
-		if ( DenseIndex != INDEX_NONE ) return Dense[static_cast<size_t>( DenseIndex )];
-		DenseIndex = static_cast<int32>( Dense.size() );
-		Dense.emplace_back( Forward<TArgs>( Args )... );
-		DenseEntity.push_back( Entity );
-		return Dense.back();
+		if ( Entity >= Sparse.Num() ) Sparse.SetNum( static_cast<size_t>( Entity ) + 1, INDEX_NONE );
+		int32& DenseIndex = Sparse[Entity];
+		if ( DenseIndex != INDEX_NONE ) return Dense[DenseIndex];
+		DenseIndex = Dense.Num();
+		Dense.Emplace( Forward<TArgs>( Args )... );
+		DenseEntity.Add( Entity );
+		return Dense.Last();
 	}
 
 	FORCEINLINE T* Find( int32 Entity )
 	{
-		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Sparse.size() ) ) return nullptr;
-		const int32 DenseIndex = Sparse[static_cast<size_t>( Entity )];
-		return DenseIndex != INDEX_NONE ? &Dense[static_cast<size_t>( DenseIndex )] : nullptr;
+		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Sparse.Num() ) ) return nullptr;
+		const int32 DenseIndex = Sparse[Entity];
+		return DenseIndex != INDEX_NONE ? &Dense[DenseIndex] : nullptr;
 	}
 
 	FORCEINLINE const T* Find( int32 Entity ) const
 	{
-		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Sparse.size() ) ) return nullptr;
-		const int32 DenseIndex = Sparse[static_cast<size_t>( Entity )];
-		return DenseIndex != INDEX_NONE ? &Dense[static_cast<size_t>( DenseIndex )] : nullptr;
+		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Sparse.Num() ) ) return nullptr;
+		const int32 DenseIndex = Sparse[Entity];
+		return DenseIndex != INDEX_NONE ? &Dense[DenseIndex] : nullptr;
 	}
 
 	// Dense の i 番目を直接取る（Driver の走査では Sparse を引かずに連続アクセスできる）
-	FORCEINLINE T& GetDenseAt( int32 DenseIndex ) { return Dense[static_cast<size_t>( DenseIndex )]; }
-	FORCEINLINE const T& GetDenseAt( int32 DenseIndex ) const { return Dense[static_cast<size_t>( DenseIndex )]; }
-	FORCEINLINE T* GetDenseData() { return Dense.data(); }
-	FORCEINLINE const T* GetDenseData() const { return Dense.data(); }
+	FORCEINLINE T& GetDenseAt( int32 DenseIndex ) { return Dense[DenseIndex]; }
+	FORCEINLINE const T& GetDenseAt( int32 DenseIndex ) const { return Dense[DenseIndex]; }
+	FORCEINLINE T* GetDenseData() { return Dense.GetData(); }
+	FORCEINLINE const T* GetDenseData() const { return Dense.GetData(); }
 
 	// Has( Entity ) や ComponentMask で持っていることが分かっているときの高速アクセス
-	FORCEINLINE T& GetUnchecked( int32 Entity ) { return Dense[static_cast<size_t>( Sparse[static_cast<size_t>( Entity )] )]; }
-	FORCEINLINE const T& GetUnchecked( int32 Entity ) const { return Dense[static_cast<size_t>( Sparse[static_cast<size_t>( Entity )] )]; }
+	FORCEINLINE T& GetUnchecked( int32 Entity ) { return Dense[Sparse[Entity]]; }
+	FORCEINLINE const T& GetUnchecked( int32 Entity ) const { return Dense[Sparse[Entity]]; }
 
 	void Remove( int32 Entity ) override
 	{
-		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Sparse.size() ) ) return;
-		const int32 DenseIndex = Sparse[static_cast<size_t>( Entity )];
+		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Sparse.Num() ) ) return;
+		const int32 DenseIndex = Sparse[Entity];
 		if ( DenseIndex == INDEX_NONE ) return;
 
 		// 最後の要素を空いたところへ移す（Dense に隙間を作らない）
-		const int32 LastIndex = static_cast<int32>( Dense.size() ) - 1;
+		const int32 LastIndex = Dense.Num() - 1;
 		if ( DenseIndex != LastIndex )
 		{
-			Dense[static_cast<size_t>( DenseIndex )] = MoveTemp( Dense[static_cast<size_t>( LastIndex )] );
-			DenseEntity[static_cast<size_t>( DenseIndex )] = DenseEntity[static_cast<size_t>( LastIndex )];
-			Sparse[static_cast<size_t>( DenseEntity[static_cast<size_t>( DenseIndex )] )] = DenseIndex;
+			Dense[DenseIndex] = MoveTemp( Dense[LastIndex] );
+			DenseEntity[DenseIndex] = DenseEntity[LastIndex];
+			Sparse[DenseEntity[DenseIndex]] = DenseIndex;
 		}
-		Dense.pop_back();
-		DenseEntity.pop_back();
-		Sparse[static_cast<size_t>( Entity )] = INDEX_NONE;
+		Dense.Pop();
+		DenseEntity.Pop();
+		Sparse[Entity] = INDEX_NONE;
 	}
 
 private:
-	std::vector<T> Dense;
+	TArray<T> Dense;
 };
 
 //=============================================================================
@@ -219,14 +219,14 @@ public:
 
 	FORCEINLINE bool IsAlive( int32 Entity ) const
 	{
-		return static_cast<uint32>( Entity ) < static_cast<uint32>( Records.size() ) && Records[static_cast<size_t>( Entity )].bAlive;
+		return static_cast<uint32>( Entity ) < static_cast<uint32>( Records.Num() ) && Records[Entity].bAlive;
 	}
-	FORCEINLINE CGameObject* GetEntityObject( int32 Entity ) const { return Records[static_cast<size_t>( Entity )].Object; }
-	FORCEINLINE const FEntityRecord& GetRecord( int32 Entity ) const { return Records[static_cast<size_t>( Entity )]; }
-	FORCEINLINE FEntityRecord& GetRecordMutable( int32 Entity ) { return Records[static_cast<size_t>( Entity )]; }
-	FORCEINLINE const FEntityRecord* GetRecords() const { return Records.data(); }
+	FORCEINLINE CGameObject* GetEntityObject( int32 Entity ) const { return Records[Entity].Object; }
+	FORCEINLINE const FEntityRecord& GetRecord( int32 Entity ) const { return Records[Entity]; }
+	FORCEINLINE FEntityRecord& GetRecordMutable( int32 Entity ) { return Records[Entity]; }
+	FORCEINLINE const FEntityRecord* GetRecords() const { return Records.GetData(); }
 	// 使われたことのある番号の上限（エンティティを端から端まで回すときの範囲）
-	FORCEINLINE int32 GetNumEntitySlots() const { return static_cast<int32>( Records.size() ); }
+	FORCEINLINE int32 GetNumEntitySlots() const { return Records.Num(); }
 	FORCEINLINE int32 GetNumEntities() const { return NumAlive; }
 
 	// T の入れ物（O(1) で引く。無ければ作る。メインスレッドから）
@@ -234,9 +234,9 @@ public:
 	FORCEINLINE TComponentStorage<T>& GetStorage()
 	{
 		const int32 Id = NEcs::TypeId<T>();
-		if ( static_cast<uint32>( Id ) < static_cast<uint32>( StorageById.size() ) )
+		if ( static_cast<uint32>( Id ) < static_cast<uint32>( StorageById.Num() ) )
 		{
-			if ( IComponentStorage* Found = StorageById[static_cast<size_t>( Id )] )
+			if ( IComponentStorage* Found = StorageById[Id] )
 			{
 				return *static_cast<TComponentStorage<T>*>( Found );
 			}
@@ -249,8 +249,8 @@ public:
 	FORCEINLINE TComponentStorage<T>* FindStorage()
 	{
 		const int32 Id = NEcs::TypeId<T>();
-		return static_cast<uint32>( Id ) < static_cast<uint32>( StorageById.size() )
-			? static_cast<TComponentStorage<T>*>( StorageById[static_cast<size_t>( Id )] )
+		return static_cast<uint32>( Id ) < static_cast<uint32>( StorageById.Num() )
+			? static_cast<TComponentStorage<T>*>( StorageById[Id] )
 			: nullptr;
 	}
 
@@ -258,8 +258,8 @@ public:
 	FORCEINLINE const TComponentStorage<T>* FindStorage() const
 	{
 		const int32 Id = NEcs::TypeId<T>();
-		return static_cast<uint32>( Id ) < static_cast<uint32>( StorageById.size() )
-			? static_cast<const TComponentStorage<T>*>( StorageById[static_cast<size_t>( Id )] )
+		return static_cast<uint32>( Id ) < static_cast<uint32>( StorageById.Num() )
+			? static_cast<const TComponentStorage<T>*>( StorageById[Id] )
 			: nullptr;
 	}
 
@@ -269,30 +269,30 @@ public:
 	template<typename T>
 	FORCEINLINE T* AddData( int32 Entity, const T& Value )
 	{
-		Records[static_cast<size_t>( Entity )].ComponentMask |= NEcs::TypeBit<T>();
+		Records[Entity].ComponentMask |= NEcs::TypeBit<T>();
 		return GetStorage<T>().Add( Entity, Value );
 	}
 
 	template<typename T, typename... TArgs>
 	FORCEINLINE T* EmplaceData( int32 Entity, TArgs&&... Args )
 	{
-		Records[static_cast<size_t>( Entity )].ComponentMask |= NEcs::TypeBit<T>();
+		Records[Entity].ComponentMask |= NEcs::TypeBit<T>();
 		return GetStorage<T>().Emplace( Entity, Forward<TArgs>( Args )... );
 	}
 
 	template<typename T, typename... TArgs>
 	FORCEINLINE T& GetOrAddData( int32 Entity, TArgs&&... Args )
 	{
-		Records[static_cast<size_t>( Entity )].ComponentMask |= NEcs::TypeBit<T>();
+		Records[Entity].ComponentMask |= NEcs::TypeBit<T>();
 		return GetStorage<T>().GetOrAdd( Entity, Forward<TArgs>( Args )... );
 	}
 
 	template<typename T>
 	FORCEINLINE T* GetData( int32 Entity )
 	{
-		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Records.size() ) ) return nullptr;
+		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Records.Num() ) ) return nullptr;
 		const uint64 Bit = NEcs::TypeBit<T>();
-		if ( Bit != 0ull && ( Records[static_cast<size_t>( Entity )].ComponentMask & Bit ) == 0ull ) return nullptr;
+		if ( Bit != 0ull && ( Records[Entity].ComponentMask & Bit ) == 0ull ) return nullptr;
 		TComponentStorage<T>* Storage = FindStorage<T>();
 		return Storage != nullptr ? ( Bit != 0ull ? &Storage->GetUnchecked( Entity ) : Storage->Find( Entity ) ) : nullptr;
 	}
@@ -300,9 +300,9 @@ public:
 	template<typename T>
 	FORCEINLINE const T* GetData( int32 Entity ) const
 	{
-		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Records.size() ) ) return nullptr;
+		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Records.Num() ) ) return nullptr;
 		const uint64 Bit = NEcs::TypeBit<T>();
-		if ( Bit != 0ull && ( Records[static_cast<size_t>( Entity )].ComponentMask & Bit ) == 0ull ) return nullptr;
+		if ( Bit != 0ull && ( Records[Entity].ComponentMask & Bit ) == 0ull ) return nullptr;
 		const TComponentStorage<T>* Storage = FindStorage<T>();
 		return Storage != nullptr ? ( Bit != 0ull ? &Storage->GetUnchecked( Entity ) : Storage->Find( Entity ) ) : nullptr;
 	}
@@ -310,9 +310,9 @@ public:
 	template<typename T>
 	FORCEINLINE bool HasData( int32 Entity ) const
 	{
-		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Records.size() ) ) return false;
+		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Records.Num() ) ) return false;
 		const uint64 Bit = NEcs::TypeBit<T>();
-		if ( Bit != 0ull ) return ( Records[static_cast<size_t>( Entity )].ComponentMask & Bit ) != 0ull;
+		if ( Bit != 0ull ) return ( Records[Entity].ComponentMask & Bit ) != 0ull;
 		const TComponentStorage<T>* Storage = FindStorage<T>();
 		return Storage != nullptr && Storage->Has( Entity );
 	}
@@ -320,13 +320,13 @@ public:
 	template<typename T>
 	FORCEINLINE void RemoveData( int32 Entity )
 	{
-		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Records.size() ) ) return;
-		Records[static_cast<size_t>( Entity )].ComponentMask &= ~NEcs::TypeBit<T>();
+		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Records.Num() ) ) return;
+		Records[Entity].ComponentMask &= ~NEcs::TypeBit<T>();
 		if ( TComponentStorage<T>* Storage = FindStorage<T>() ) Storage->Remove( Entity );
 	}
 
 	// システムの中から、このエンティティのゲームオブジェクトの破棄を予約する（スレッドごとの一覧に溜める）
-	FORCEINLINE void RequestDestroy( int32 Entity ) { DeferredDestroy[static_cast<size_t>( IJobSystem::GetCurrentThreadIndex() )].push_back( Entity ); }
+	FORCEINLINE void RequestDestroy( int32 Entity ) { DeferredDestroy[IJobSystem::GetCurrentThreadIndex()].Add( Entity ); }
 	// 予約された破棄を実行する（メインスレッド、システムの実行が終わったあと。番号順に、重複なく）
 	void FlushDeferred();
 
@@ -334,21 +334,21 @@ private:
 	template<typename T>
 	TComponentStorage<T>& GetOrCreateStorageSlow( int32 Id )
 	{
-		if ( Id >= static_cast<int32>( StorageById.size() ) ) StorageById.resize( static_cast<size_t>( Id ) + 1, nullptr );
-		auto Created = std::make_unique<TComponentStorage<T>>();
-		TComponentStorage<T>* Raw = Created.get();
-		StorageById[static_cast<size_t>( Id )] = Raw;
-		if ( Id >= 64 ) OverflowStorages.push_back( Raw );
-		Storages.push_back( MoveTemp( Created ) );
+		if ( Id >= StorageById.Num() ) StorageById.SetNum( Id + 1, nullptr );
+		auto Created = MakeUnique<TComponentStorage<T>>();
+		TComponentStorage<T>* Raw = Created.Get();
+		StorageById[Id] = Raw;
+		if ( Id >= 64 ) OverflowStorages.Add( Raw );
+		Storages.Add( MoveTemp( Created ) );
 		return *Raw;
 	}
 
 private:
-	std::vector<FEntityRecord> Records;
-	std::vector<int32> FreeSlots;
+	TArray<FEntityRecord> Records;
+	TArray<int32> FreeSlots;
 	int32 NumAlive = 0;
-	std::vector<std::unique_ptr<IComponentStorage>> Storages;
-	std::vector<IComponentStorage*> StorageById;        // TypeId -> 入れ物（O(1) 検索）
-	std::vector<IComponentStorage*> OverflowStorages;   // TypeId >= 64 の入れ物（通常は空）
-	std::vector<int32> DeferredDestroy[NEcs::MaxThreads];
+	TArray<TUniquePtr<IComponentStorage>> Storages;
+	TArray<IComponentStorage*> StorageById;        // TypeId -> 入れ物（O(1) 検索）
+	TArray<IComponentStorage*> OverflowStorages;   // TypeId >= 64 の入れ物（通常は空）
+	TArray<int32> DeferredDestroy[NEcs::MaxThreads];
 };

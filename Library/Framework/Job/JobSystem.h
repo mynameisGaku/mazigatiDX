@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include <deque>
-#include <vector>
 
+#include "Library/Core/Collection/Array.h"
 #include "Library/Core/Interfaces/Job/IJobSystem.h"
 #include "Library/Core/Thread/Atomic.h"
 #include "Library/Core/Thread/Mutex.h"
@@ -28,7 +28,7 @@ public:
 	//-------------------------------------------------------------------------
 	// IJobSystem
 	//-------------------------------------------------------------------------
-	FORCEINLINE int32 GetNumWorkers() const override { return static_cast<int32>( Workers.size() ); }
+	FORCEINLINE int32 GetNumWorkers() const override { return Workers.Num(); }
 	void RunParallelRange( int32 Count, int32 MinBatchSize, FRangeFunction Body, const char* Name ) override;
 	FJobHandle Schedule( std::function<void()> Function, const char* Name, const FJobHandle& Dependency ) override;
 	void Wait( const FJobHandle& Handle ) override;
@@ -57,10 +57,10 @@ private:
 	void Enqueue( const std::shared_ptr<FJobState>& Job );
 
 private:
-	std::vector<FThread> Workers;
+	TArray<FThread> Workers;
 	FMutex Mutex;
 	FConditionVariable WorkAvailable;
-	std::vector<FGroup*> Groups;                    // 実行中の ParallelFor
+	TArray<FGroup*> Groups;                    // 実行中の ParallelFor
 	std::deque<std::shared_ptr<FJobState>> ReadyJobs;   // 実行できる単発のジョブ
 	bool bStopping = false;
 };

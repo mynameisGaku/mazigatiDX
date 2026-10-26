@@ -2,8 +2,8 @@
 
 #include <algorithm>
 #include <cstdio>
-#include <vector>
 
+#include "Library/Core/Collection/Array.h"
 #include "Library/Core/Time/PlatformTime.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Framework/Asset/Import/FbxImporter.h"
@@ -45,7 +45,7 @@ namespace
 		return P.StartsWith( "/" ) || ( P.Len() >= 2 && P[1] == ':' );
 	}
 
-	bool ReadFileBytes( const FString& Path, std::vector<uint8>& OutBytes )
+	bool ReadFileBytes( const FString& Path, TArray<uint8>& OutBytes )
 	{
 		FILE* File = nullptr;
 		const TArray<wchar_t> Wide = Path.ToWide();
@@ -53,10 +53,10 @@ namespace
 		fseek( File, 0, SEEK_END );
 		const long Size = ftell( File );
 		fseek( File, 0, SEEK_SET );
-		OutBytes.assign( Size > 0 ? static_cast<size_t>( Size ) : 0, 0 );
-		const size_t Read = OutBytes.empty() ? 0 : fread( OutBytes.data(), 1, OutBytes.size(), File );
+		OutBytes.Init( 0, Size > 0 ? static_cast<int32>( Size ) : 0 );
+		const size_t Read = OutBytes.IsEmpty() ? 0 : fread( OutBytes.GetData(), 1, OutBytes.Num(), File );
 		fclose( File );
-		return Read == OutBytes.size();
+		return Read == static_cast<size_t>( OutBytes.Num() );
 	}
 
 	bool WriteFileBytes( const FString& Path, const void* Data, size_t Size )
@@ -201,14 +201,14 @@ FModelExportResult NModelExport::Export( IAssetBackend& Backend, const FString& 
 	FString TemporaryX;
 	if ( Kind == EModelFileKind::Imported )
 	{
-		std::vector<uint8> Bytes;
+		TArray<uint8> Bytes;
 		if ( !ReadFileBytes( Result.SourcePath, Bytes ) ) return Fail( Result, "could not read the file" );
 
 		FImportOptions ImportOptions;
 		ImportOptions.AnimFps = Options.AnimFps;
 		FImportedScene Scene;
 		FString ImportError;
-		if ( !NModelImport::ImportFromMemory( Bytes.data(), Bytes.size(), Result.SourcePath, ImportOptions, Scene, ImportError ) ) return Fail( Result, "could not read it as a model: " + ImportError );
+		if ( !NModelImport::ImportFromMemory( Bytes.GetData(), Bytes.Num(), Result.SourcePath, ImportOptions, Scene, ImportError ) ) return Fail( Result, "could not read it as a model: " + ImportError );
 		const TArray<FString> Problems = NImportedScene::Validate( Scene );
 		if ( !Problems.IsEmpty() ) return Fail( Result, "the imported data is inconsistent: " + Problems[0] );
 		if ( Scene.Nodes.IsEmpty() ) return Fail( Result, "the file has no nodes (no model)" );

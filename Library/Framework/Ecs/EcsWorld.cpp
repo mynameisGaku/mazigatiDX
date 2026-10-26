@@ -1,6 +1,5 @@
 ﻿#include "EcsWorld.h"
 
-#include <algorithm>
 #include <intrin.h>
 
 #include "Library/Framework/Object/GameObject.h"
@@ -8,17 +7,17 @@
 int32 FEcsWorld::CreateEntity( CGameObject* Object, uint64 ObjectId, bool bTickEnabled, bool bVisible )
 {
 	int32 Entity;
-	if ( !FreeSlots.empty() )
+	if ( !FreeSlots.IsEmpty() )
 	{
-		Entity = FreeSlots.back();
-		FreeSlots.pop_back();
+		Entity = FreeSlots.Last();
+		FreeSlots.Pop();
 	}
 	else
 	{
-		Entity = static_cast<int32>( Records.size() );
-		Records.emplace_back();
+		Entity = Records.Num();
+		Records.Emplace();
 	}
-	FEntityRecord& Record = Records[static_cast<size_t>( Entity )];
+	FEntityRecord& Record = Records[Entity];
 	Record.Object = Object;
 	Record.TransformNode = nullptr;
 	Record.ObjectId = ObjectId;
@@ -35,7 +34,7 @@ int32 FEcsWorld::CreateEntity( CGameObject* Object, uint64 ObjectId, bool bTickE
 void FEcsWorld::DestroyEntity( int32 Entity )
 {
 	if ( !IsAlive( Entity ) ) return;
-	FEntityRecord& Record = Records[static_cast<size_t>( Entity )];
+	FEntityRecord& Record = Records[Entity];
 
 	// 持っているデータコンポーネントの入れ物だけを外す（全入れ物を毎回走査しない）
 	uint64 Mask = Record.ComponentMask;
@@ -44,33 +43,38 @@ void FEcsWorld::DestroyEntity( int32 Entity )
 		unsigned long BitIndex = 0;
 		_BitScanForward64( &BitIndex, Mask );
 		Mask &= ( Mask - 1ull );
-		if ( BitIndex < StorageById.size() && StorageById[BitIndex] != nullptr )
+		if ( static_cast<int32>( BitIndex ) < StorageById.Num() && StorageById[static_cast<int32>( BitIndex )] != nullptr )
 		{
-			StorageById[BitIndex]->Remove( Entity );
+			StorageById[static_cast<int32>( BitIndex )]->Remove( Entity );
 		}
 	}
 	for ( IComponentStorage* Overflow : OverflowStorages ) Overflow->Remove( Entity );
 
 	Record = FEntityRecord{};
 	--NumAlive;
-	FreeSlots.push_back( Entity );
+	FreeSlots.Add( Entity );
 }
 
 void FEcsWorld::FlushDeferred()
 {
-	std::vector<int32> Merged;
-	for ( std::vector<int32>& PerThread : DeferredDestroy )
+	TArray<int32> Merged;
+	for ( TArray<int32>& PerThread : DeferredDestroy )
 	{
-		Merged.insert( Merged.end(), PerThread.begin(), PerThread.end() );
-		PerThread.clear();
+		Merged.Append( PerThread );
+		PerThread.Reset();
 	}
-	if ( Merged.empty() ) return;
+	if ( Merged.IsEmpty() ) return;
 
 	// どのスレッドが予約したかに関わらず、同じ順序・同じ内容で実行する
-	std::sort( Merged.begin(), Merged.end() );
-	Merged.erase( std::unique( Merged.begin(), Merged.end() ), Merged.end() );
+	Merged.Sort();
+	int32 NumUnique = 0;
+	for ( int32 i = 0; i < Merged.Num(); ++i )
+	{
+		if ( i == 0 || Merged[i] != Merged[i - 1] ) Merged[NumUnique++] = Merged[i];
+	}
+	Merged.SetNum( NumUnique );
 	for ( const int32 Entity : Merged )
 	{
-		if ( IsAlive( Entity ) && Records[static_cast<size_t>( Entity )].Object != nullptr ) Records[static_cast<size_t>( Entity )].Object->Destroy();
+		if ( IsAlive( Entity ) && Records[Entity].Object != nullptr ) Records[Entity].Object->Destroy();
 	}
 }

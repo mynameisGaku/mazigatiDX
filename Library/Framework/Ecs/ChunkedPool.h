@@ -1,7 +1,6 @@
 ﻿#pragma once
-#include <memory>
-#include <vector>
-
+#include "Library/Core/Collection/Array.h"
+#include "Library/Core/Memory/UniquePtr.h"
 #include "Library/Core/Types/CompilerMacros.h"
 #include "Library/Core/Types/TypeDefinition.h"
 
@@ -26,16 +25,16 @@ public:
 	int32 Allocate()
 	{
 		int32 Slot;
-		if ( !FreeSlots.empty() )
+		if ( !FreeSlots.IsEmpty() )
 		{
-			Slot = FreeSlots.back();
-			FreeSlots.pop_back();
+			Slot = FreeSlots.Last();
+			FreeSlots.Pop();
 		}
 		else
 		{
 			Slot = NumSlots++;
-			if ( ( Slot >> ChunkShift ) >= static_cast<int32>( Chunks.size() ) ) Chunks.push_back( std::make_unique<T[]>( ChunkSize ) );
-			Alive.push_back( 0 );
+			if ( ( Slot >> ChunkShift ) >= Chunks.Num() ) Chunks.Add( MakeUnique<T[]>( ChunkSize ) );
+			Alive.Add( 0 );
 		}
 		( *this )[Slot] = T();
 		Alive[Slot] = 1;
@@ -49,7 +48,7 @@ public:
 		( *this )[Slot] = T();   // 持っていたものを手放す
 		Alive[Slot] = 0;
 		--NumAlive;
-		FreeSlots.push_back( Slot );
+		FreeSlots.Add( Slot );
 	}
 
 	FORCEINLINE T& operator[]( int32 Slot ) { return Chunks[Slot >> ChunkShift][Slot & ChunkMask]; }
@@ -62,9 +61,9 @@ public:
 	FORCEINLINE int32 GetNumAlive() const { return NumAlive; }
 
 private:
-	std::vector<std::unique_ptr<T[]>> Chunks;
-	std::vector<uint8> Alive;
-	std::vector<int32> FreeSlots;
+	TArray<TUniquePtr<T[]>> Chunks;
+	TArray<uint8> Alive;
+	TArray<int32> FreeSlots;
 	int32 NumSlots = 0;
 	int32 NumAlive = 0;
 };

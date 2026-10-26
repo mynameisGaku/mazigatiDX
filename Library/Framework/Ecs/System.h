@@ -4,8 +4,8 @@
 #include <tuple>
 #include <type_traits>
 #include <utility>
-#include <vector>
 
+#include "Library/Core/Collection/Array.h"
 #include "Library/Core/Interfaces/Job/IJobSystem.h"
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Core/Types/CompilerMacros.h"
@@ -93,7 +93,7 @@ namespace NEcs
 	public:
 		virtual ~ISystemRunner() = default;
 
-		virtual void GetAccess( std::vector<FAccess>& Out ) const = 0;
+		virtual void GetAccess( TArray<FAccess>& Out ) const = 0;
 		// 実行の前にメインスレッドで呼ぶ。入れ物を見つけ、回す対象の数を返す。
 		// MaxObjectId より後に生成されたオブジェクト（今フレームはまだ Tick されないもの）は対象にしない
 		virtual int32 Prepare( FEcsWorld& World, FTransformWorld& Transforms, float32 DeltaTime, uint64 MaxObjectId ) = 0;
@@ -106,7 +106,7 @@ namespace NEcs
 			const int32 Index = Driver != nullptr ? Driver->IndexOf( Entity ) : Entity;
 			if ( static_cast<uint32>( Index ) >= static_cast<uint32>( NumPrepared ) ) return false;
 
-			const FDrawRange& Range = Ranges[static_cast<size_t>( Index )];
+			const FDrawRange& Range = Ranges[Index];
 			if ( Range.Entity != Entity || Range.End <= Range.Begin ) return false;   // 記録していない（または、記録のあとで構造が変わった）
 
 			const FDrawBuffer& Buffer = Buffers[static_cast<size_t>( static_cast<uint32>( Index ) >> DrawBatchShift )];
@@ -118,8 +118,8 @@ namespace NEcs
 	protected:
 		IComponentStorage* Driver = nullptr;
 		int32 NumPrepared = 0;
-		std::vector<FDrawBuffer> Buffers;   // 描画システムだけ: 塊ごと
-		std::vector<FDrawRange> Ranges;     // 描画システムだけ: 回した対象（Driver の Dense の位置）ごと
+		TArray<FDrawBuffer> Buffers;   // 描画システムだけ: 塊ごと
+		TArray<FDrawRange> Ranges;     // 描画システムだけ: 回した対象（Driver の Dense の位置）ごと
 	};
 
 	//-------------------------------------------------------------------------
@@ -199,7 +199,7 @@ namespace NEcs
 	public:
 		explicit TSystemRunner( TFunction InFunction ) : Function( MoveTemp( InFunction ) ) {}
 
-		void GetAccess( std::vector<FAccess>& Out ) const override
+		void GetAccess( TArray<FAccess>& Out ) const override
 		{
 			( AddAccess<TArgs>( Out ), ... );
 		}
@@ -230,10 +230,10 @@ namespace NEcs
 			if constexpr ( bDraw )
 			{
 				// 塊ごとの記録先と、エンティティごとの範囲を用意する（確保した領域は使い回し、書き込みはワーカー側で行う）
-				const size_t NumBatches = static_cast<size_t>( ( Count + EntitiesPerBatch - 1 ) >> DrawBatchShift );
-				if ( Buffers.size() < NumBatches ) Buffers.resize( NumBatches );
-				for ( size_t i = 0; i < NumBatches; ++i ) Buffers[i].Clear();
-				if ( Ranges.size() < static_cast<size_t>( Count ) ) Ranges.resize( static_cast<size_t>( Count ) );
+				const int32 NumBatches = ( Count + EntitiesPerBatch - 1 ) >> DrawBatchShift;
+				if ( Buffers.Num() < NumBatches ) Buffers.SetNum( NumBatches );
+				for ( int32 i = 0; i < NumBatches; ++i ) Buffers[i].Clear();
+				if ( Ranges.Num() < Count ) Ranges.SetNum( Count );
 			}
 			return Count;
 		}
@@ -269,11 +269,11 @@ namespace NEcs
 
 	private:
 		template<typename TArg>
-		static void AddAccess( std::vector<FAccess>& Out )
+		static void AddAccess( TArray<FAccess>& Out )
 		{
-			if constexpr ( IsComponentArg<TArg> ) Out.push_back( { TypeKey<TComponentType<TArg>>(), IsWriteArg<TArg> } );
-			else if constexpr ( IsTransformArg<TArg> ) Out.push_back( { TypeKey<FTransformAccess>(), IsWriteRefArg<TArg> } );
-			else if constexpr ( IsViewArg<TArg> ) Out.push_back( { TypeKey<FTransformAccess>(), false } );
+			if constexpr ( IsComponentArg<TArg> ) Out.Add( { TypeKey<TComponentType<TArg>>(), IsWriteArg<TArg> } );
+			else if constexpr ( IsTransformArg<TArg> ) Out.Add( { TypeKey<FTransformAccess>(), IsWriteRefArg<TArg> } );
+			else if constexpr ( IsViewArg<TArg> ) Out.Add( { TypeKey<FTransformAccess>(), false } );
 		}
 
 		template<size_t... Is>
@@ -359,12 +359,12 @@ namespace NEcs
 		template<size_t... Is>
 		FORCEINLINE void RunEntity( int32 Entity, [[maybe_unused]] int32 Index, [[maybe_unused]] FDrawContext* Context, std::index_sequence<Is...> )
 		{
-			const FEcsWorld::FEntityRecord& Record = Records[static_cast<size_t>( Entity )];
+			const FEcsWorld::FEntityRecord& Record = Records[Entity];
 			if constexpr ( NumRequired == 0 )
 			{
 				if ( !Record.bAlive )
 				{
-					if constexpr ( bDraw ) Ranges[static_cast<size_t>( Index )].Entity = INDEX_NONE;
+					if constexpr ( bDraw ) Ranges[Index].Entity = INDEX_NONE;
 					return;
 				}
 			}
@@ -374,7 +374,7 @@ namespace NEcs
 				// オブジェクトの Draw と同じ条件: 破棄が予約されていない・見えている
 				if ( Record.bPendingDestroy || !Record.bVisible )
 				{
-					Ranges[static_cast<size_t>( Index )].Entity = INDEX_NONE;
+					Ranges[Index].Entity = INDEX_NONE;
 					return;
 				}
 			}
@@ -388,12 +388,12 @@ namespace NEcs
 			{
 				if ( ( ( Record.ComponentMask & RequiredMask ) != RequiredMask ) || ( ( Record.ComponentMask & ExcludedMask ) != 0ull ) )
 				{
-					if constexpr ( bDraw ) Ranges[static_cast<size_t>( Index )].Entity = INDEX_NONE;
+					if constexpr ( bDraw ) Ranges[Index].Entity = INDEX_NONE;
 					return;
 				}
 				if ( !bFastMaskCheck && !( HasArgSlow<Is>( Entity ) && ... ) )
 				{
-					if constexpr ( bDraw ) Ranges[static_cast<size_t>( Index )].Entity = INDEX_NONE;
+					if constexpr ( bDraw ) Ranges[Index].Entity = INDEX_NONE;
 					return;
 				}
 			}
@@ -405,7 +405,7 @@ namespace NEcs
 				FTransformNode* Node = Record.TransformNode;
 				if ( Node == nullptr )
 				{
-					if constexpr ( bDraw ) Ranges[static_cast<size_t>( Index )].Entity = INDEX_NONE;
+					if constexpr ( bDraw ) Ranges[Index].Entity = INDEX_NONE;
 					return;
 				}
 				Access = FTransformAccess( Node, Transforms, Record.TransformSlot );
@@ -416,7 +416,7 @@ namespace NEcs
 			{
 				const uint32 First = static_cast<uint32>( Context->GetNumWords() );
 				Function( Resolve<Is>( Entity, Index, Record, Access, View, Context )... );
-				Ranges[static_cast<size_t>( Index )] = FDrawRange{ First, static_cast<uint32>( Context->GetNumWords() ), Entity };
+				Ranges[Index] = FDrawRange{ First, static_cast<uint32>( Context->GetNumWords() ), Entity };
 			}
 			else
 			{
@@ -692,7 +692,7 @@ namespace NEcs
 		for ( int32 i = 0; i < Num; ++i )
 		{
 			const int32 Entity = Entities[i];
-			const FEcsWorld::FEntityRecord& Record = Records[static_cast<size_t>( Entity )];
+			const FEcsWorld::FEntityRecord& Record = Records[Entity];
 			if ( !Record.bAlive || Record.bPendingDestroy ) continue;
 			if ( ( Record.ComponentMask & Mask ) != Mask ) continue;
 			if ( !bFast && !( World.HasData<TFirst>( Entity ) && ( World.HasData<TRest>( Entity ) && ... ) ) ) continue;
@@ -736,7 +736,7 @@ namespace NEcs
 		//---------------------------------------------------------------------
 		// 描画システムの出力
 		//---------------------------------------------------------------------
-		FORCEINLINE bool HasDrawSystems() const { return !DrawSystems.empty(); }
+		FORCEINLINE bool HasDrawSystems() const { return !DrawSystems.IsEmpty(); }
 		// 直前の Run( Draw ) でこのエンティティについて記録されたコマンドを、描画システムの登録順に Executor へ渡す（メインスレッドから）
 		FORCEINLINE void ReplayDraw( int32 Entity, IDrawExecutor& Executor ) const
 		{
@@ -750,11 +750,11 @@ namespace NEcs
 		//---------------------------------------------------------------------
 		// 確認用
 		//---------------------------------------------------------------------
-		int32 GetNumSystems() const { return static_cast<int32>( Systems.size() ); }
+		int32 GetNumSystems() const { return Systems.Num(); }
 		// 登録順の Index 番目のシステムの情報（コンソールなどの表示用）
-		const char* GetSystemName( int32 Index ) const { return Systems[static_cast<size_t>( Index )].Name; }
-		EPhase GetSystemPhase( int32 Index ) const { return Systems[static_cast<size_t>( Index )].Phase; }
-		int32 GetSystemStage( int32 Index ) const { return Systems[static_cast<size_t>( Index )].Stage; }
+		const char* GetSystemName( int32 Index ) const { return Systems[Index].Name; }
+		EPhase GetSystemPhase( int32 Index ) const { return Systems[Index].Phase; }
+		int32 GetSystemStage( int32 Index ) const { return Systems[Index].Stage; }
 		// Name の段（見つからなければ INDEX_NONE）
 		int32 GetStage( const char* Name ) const;
 		int32 GetNumStages( EPhase Phase ) const;
@@ -764,7 +764,7 @@ namespace NEcs
 		{
 			const char* Name = "System";
 			EPhase Phase = EPhase::PreUpdate;
-			std::vector<FAccess> Access;
+			TArray<FAccess> Access;
 			std::unique_ptr<ISystemRunner> Runner;
 			int32 Stage = 0;
 		};
@@ -784,8 +784,8 @@ namespace NEcs
 		static bool Conflicts( const FSystem& A, const FSystem& B );
 
 	private:
-		std::vector<FSystem> Systems;                        // 登録順
-		std::vector<int32> DrawSystems;                      // 描画システムの Systems の中の位置（登録順）
-		std::vector<const ISystemRunner*> ActiveDrawRunners; // 直前の Run( Draw ) で対象が 1 つ以上あった描画システム（登録順）
+		TArray<FSystem> Systems;                        // 登録順
+		TArray<int32> DrawSystems;                      // 描画システムの Systems の中の位置（登録順）
+		TArray<const ISystemRunner*> ActiveDrawRunners; // 直前の Run( Draw ) で対象が 1 つ以上あった描画システム（登録順）
 	};
 }

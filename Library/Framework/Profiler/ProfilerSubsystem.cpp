@@ -56,7 +56,7 @@ void CProfilerSubsystem::Deinitialize()
 	bRecording = false;
 	bEnabled = false;
 	LOG( LogProfiler, Log, "Shutdown (%d frame(s) stored, %u string(s) interned, %d worker thread(s) seen)", GetNumFrames(), NumStrings.Load(),
-		 static_cast<int32>( WorkerBuffers.size() ) );
+		 WorkerBuffers.Num() );
 
 	// このスレッドの控えがこのプロファイラーを指したままにならないように
 	if ( GThreadBufferOwner == this )
@@ -66,7 +66,7 @@ void CProfilerSubsystem::Deinitialize()
 	}
 	{
 		FScopedLock Lock( WorkerRegistryMutex );
-		WorkerBuffers.clear();
+		WorkerBuffers.Reset();
 	}
 	for ( TAtomic<FString*>& Block : StringBlocks )
 	{
@@ -490,12 +490,12 @@ FProfilerWorkerBuffer* CProfilerSubsystem::GetWorkerBuffer()
 {
 	if ( GThreadBufferOwner == this ) return GThreadBuffer;
 
-	std::unique_ptr<FProfilerWorkerBuffer> Buffer = std::make_unique<FProfilerWorkerBuffer>();
+	TUniquePtr<FProfilerWorkerBuffer> Buffer = MakeUnique<FProfilerWorkerBuffer>();
 	Buffer->ThreadId = NPlatformTime::GetCurrentThreadId();
-	FProfilerWorkerBuffer* Raw = Buffer.get();
+	FProfilerWorkerBuffer* Raw = Buffer.Get();
 	{
 		FScopedLock Lock( WorkerRegistryMutex );
-		WorkerBuffers.push_back( MoveTemp( Buffer ) );
+		WorkerBuffers.Add( MoveTemp( Buffer ) );
 	}
 	GThreadBuffer = Raw;
 	GThreadBufferOwner = this;
@@ -551,11 +551,11 @@ void CProfilerSubsystem::EndWorkerSample( int64 SampleId )
 
 void CProfilerSubsystem::CollectWorkerSamples()
 {
-	std::vector<FProfilerWorkerBuffer*> Buffers;
+	TArray<FProfilerWorkerBuffer*> Buffers;
 	{
 		FScopedLock Lock( WorkerRegistryMutex );
-		Buffers.reserve( WorkerBuffers.size() );
-		for ( const std::unique_ptr<FProfilerWorkerBuffer>& Buffer : WorkerBuffers ) Buffers.push_back( Buffer.get() );
+		Buffers.Reserve( WorkerBuffers.Num() );
+		for ( const TUniquePtr<FProfilerWorkerBuffer>& Buffer : WorkerBuffers ) Buffers.Add( Buffer.Get() );
 	}
 
 	TArray<FProfileSample> Taken;
@@ -655,7 +655,7 @@ void CProfilerSubsystem::AddWorkerTree( const FProfilerWorkerBuffer& Buffer, con
 void CProfilerSubsystem::ClearWorkerBuffers()
 {
 	FScopedLock RegistryLock( WorkerRegistryMutex );
-	for ( const std::unique_ptr<FProfilerWorkerBuffer>& Buffer : WorkerBuffers )
+	for ( const TUniquePtr<FProfilerWorkerBuffer>& Buffer : WorkerBuffers )
 	{
 		FScopedLock Lock( Buffer->Mutex );
 		Buffer->BaseId += Buffer->Samples.Num();   // 開いたままのサンプルの EndSample は、番号が範囲外になって無視される

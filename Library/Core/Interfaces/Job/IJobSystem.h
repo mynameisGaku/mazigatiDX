@@ -3,8 +3,8 @@
 #include <memory>
 #include <type_traits>
 #include <utility>
-#include <vector>
 
+#include "Library/Core/Collection/Array.h"
 #include "Library/Core/Thread/Atomic.h"
 #include "Library/Core/Thread/Mutex.h"
 #include "Library/Core/Types/CompilerMacros.h"
@@ -22,7 +22,7 @@ struct FJobState
 	TAtomic<int32> NumPending{ 0 };   // 自分の実行待ち 1 + 終わっていない依存先の数。0 になったら実行できる
 	TAtomic<bool> bDone{ false };
 	FMutex Mutex;                     // bDone の切り替えと Dependents を守る
-	std::vector<std::shared_ptr<FJobState>> Dependents;   // このジョブが終わったら実行できるようになるジョブ
+	TArray<std::shared_ptr<FJobState>> Dependents;   // このジョブが終わったら実行できるようになるジョブ
 };
 
 class FJobHandle

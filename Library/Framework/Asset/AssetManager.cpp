@@ -1,7 +1,8 @@
 ﻿#include "AssetManager.h"
 
-#include <vector>
 
+#include "Library/Core/Collection/Array.h"
+#include "Library/Core/Collection/Pair.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Profiler/ProfilerScope.h"
 #include "Library/Core/Thread/Atomic.h"
@@ -55,7 +56,7 @@ namespace
 		TAtomic<IAssetBackend*> Backend { nullptr };
 		uint64 MainThread = 0;   // メインスレッドの識別子（NThread::GetCurrentThreadId）
 		FMutex Mutex;
-		std::vector<std::pair<EResource, int32>> Deferred;   // 別スレッドで手放されたもの（メインスレッドで解放する）
+		TArray<TPair<EResource, int32>> Deferred;   // 別スレッドで手放されたもの（メインスレッドで解放する）
 		TAtomic<int32> NumDeferredReleased { 0 };        // 上のうち、解放したものの累計（統計用）
 		TMap<FString, int32> FontFileUsers;                  // メインスレッドだけ
 	};
@@ -93,21 +94,21 @@ namespace
 			return;
 		}
 		FScopedLock Lock( S.Mutex );
-		S.Deferred.emplace_back( Kind, Handle );
+		S.Deferred.Add( { Kind, Handle } );
 	}
 
 	void FlushDeferred()
 	{
 		FService& S = Service();
 		IAssetBackend* Backend = S.Backend.Load();
-		std::vector<std::pair<EResource, int32>> Local;
+		TArray<TPair<EResource, int32>> Local;
 		{
 			FScopedLock Lock( S.Mutex );
-			Local.swap( S.Deferred );
+			Local = MoveTemp( S.Deferred );
 		}
 		if ( Backend == nullptr ) return;
-		for ( const auto& Entry : Local ) ReleaseNow( *Backend, Entry.first, Entry.second );
-		S.NumDeferredReleased.FetchAdd( static_cast<int32>( Local.size() ) );
+		for ( const auto& Entry : Local ) ReleaseNow( *Backend, Entry.Key, Entry.Value );
+		S.NumDeferredReleased.FetchAdd( Local.Num() );
 	}
 
 	// 読み込みの計測（プロファイラーのサンプルに、パスを表示名として付ける）

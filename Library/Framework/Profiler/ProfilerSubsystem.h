@@ -1,9 +1,10 @@
 ﻿#pragma once
 #include <memory>
-#include <vector>
 
+#include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Interfaces/Profiler/IProfiler.h"
+#include "Library/Core/Memory/UniquePtr.h"
 #include "Library/Core/Thread/Atomic.h"
 #include "Library/Core/Thread/Mutex.h"
 #include "Library/Framework/Subsystem/AppSubsystem.h"
@@ -138,7 +139,7 @@ private:
 
 	// 別スレッドの記録
 	FMutex WorkerRegistryMutex;
-	std::vector<std::unique_ptr<FProfilerWorkerBuffer>> WorkerBuffers;
+	TArray<TUniquePtr<FProfilerWorkerBuffer>> WorkerBuffers;
 
 	// 文字列の表（ID = 番号。0 は空文字列）。別スレッドからも引くので、一度入れた文字列は動かさない（ブロックごとに確保する）
 	static constexpr int32 StringBlockSize = 1024;

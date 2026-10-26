@@ -57,8 +57,8 @@ void CJobSystem::Initialize( FSubsystemCollection& Collection )
 	if ( Requested >= 0 ) NumWorkers = Requested;
 	NumWorkers = NMath::Min( NumWorkers, MaxWorkers );
 
-	Workers.reserve( static_cast<size_t>( NumWorkers ) );
-	for ( int32 i = 0; i < NumWorkers; ++i ) Workers.emplace_back( [this, i] { WorkerMain( i ); } );
+	Workers.Reserve( NumWorkers );
+	for ( int32 i = 0; i < NumWorkers; ++i ) Workers.Emplace( [this, i] { WorkerMain( i ); } );
 
 	LOG( LogJob, Log, "Ready (%d worker thread(s)%s)", NumWorkers, NumWorkers == 0 ? ": everything runs on the calling thread" : "" );
 }
@@ -72,10 +72,10 @@ void CJobSystem::Deinitialize()
 	WorkAvailable.NotifyAll();
 	for ( FThread& Worker : Workers ) Worker.Join();
 
-	LOG( LogJob, Log, "Shutdown (%d worker thread(s) stopped)", static_cast<int32>( Workers.size() ) );
-	Workers.clear();
+	LOG( LogJob, Log, "Shutdown (%d worker thread(s) stopped)", Workers.Num() );
+	Workers.Reset();
 	ReadyJobs.clear();
-	Groups.clear();
+	Groups.Reset();
 }
 
 #pragma endregion
@@ -166,7 +166,7 @@ void CJobSystem::RunParallelRange( int32 Count, int32 MinBatchSize, FRangeFuncti
 	const int32 NumBatches = ( Count + BatchSize - 1 ) / BatchSize;
 
 	// 小さな仕事、またはワーカーがいないときは、呼び出したスレッドだけで（同じ分け方で）順番に実行する
-	if ( Workers.empty() || NumBatches <= 1 )
+	if ( Workers.IsEmpty() || NumBatches <= 1 )
 	{
 		for ( int32 Batch = 0; Batch < NumBatches; ++Batch )
 		{
@@ -185,7 +185,7 @@ void CJobSystem::RunParallelRange( int32 Count, int32 MinBatchSize, FRangeFuncti
 	Group.NumBatches = NumBatches;
 	{
 		FScopedLock Lock( Mutex );
-		Groups.push_back( &Group );
+		Groups.Add( &Group );
 	}
 	WorkAvailable.NotifyAll();
 
@@ -205,7 +205,7 @@ void CJobSystem::RunParallelRange( int32 Count, int32 MinBatchSize, FRangeFuncti
 
 	{
 		FScopedLock Lock( Mutex );
-		Groups.erase( std::find( Groups.begin(), Groups.end(), &Group ) );
+		Groups.RemoveSingle( &Group );
 	}
 	// 登録を外したあとは新しく使う者はいない。使っている最中のワーカーが抜けるまで待つ（Group は呼び出しスレッドの上にあるため）
 	while ( Group.Users.Load( EMemoryOrder::Acquire ) > 0 ) NThread::YieldToOthers();
@@ -227,7 +227,7 @@ FJobHandle CJobSystem::Schedule( std::function<void()> Function, const char* Nam
 		FScopedLock Lock( Dependency.State->Mutex );
 		if ( !Dependency.State->bDone.Load( EMemoryOrder::Relaxed ) )
 		{
-			Dependency.State->Dependents.push_back( Job );
+			Dependency.State->Dependents.Add( Job );
 			Job->NumPending.FetchAdd( 1, EMemoryOrder::Relaxed );
 		}
 	}
@@ -244,7 +244,7 @@ void CJobSystem::ReleaseJob( const std::shared_ptr<FJobState>& Job )
 void CJobSystem::Enqueue( const std::shared_ptr<FJobState>& Job )
 {
 	// ワーカーがいないときは、その場で実行する（依存先もその場で終わっているので、順番は守られる）
-	if ( Workers.empty() )
+	if ( Workers.IsEmpty() )
 	{
 		RunJob( Job );
 		return;
@@ -265,11 +265,11 @@ void CJobSystem::RunJob( const std::shared_ptr<FJobState>& Job )
 	}
 	Job->Function = nullptr;   // 取り込んだものを早く手放す
 
-	std::vector<std::shared_ptr<FJobState>> Dependents;
+	TArray<std::shared_ptr<FJobState>> Dependents;
 	{
 		FScopedLock Lock( Job->Mutex );
 		Job->bDone.Store( true, EMemoryOrder::Release );
-		Dependents.swap( Job->Dependents );
+		Dependents = MoveTemp( Job->Dependents );
 	}
 	for ( const std::shared_ptr<FJobState>& Dependent : Dependents ) ReleaseJob( Dependent );
 }

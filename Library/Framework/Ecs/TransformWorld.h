@@ -1,6 +1,5 @@
 ﻿#pragma once
-#include <vector>
-
+#include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/CollectionCommon.h"
 #include "Library/Core/Interfaces/Job/IJobSystem.h"
 #include "Library/Core/Thread/Atomic.h"
@@ -85,7 +84,7 @@ public:
 		}
 		if ( !Node.bDirty )
 		{
-			DeferredDirty[static_cast<size_t>( IJobSystem::GetCurrentThreadIndex() )].push_back( Slot );
+			DeferredDirty[IJobSystem::GetCurrentThreadIndex()].Add( Slot );
 		}
 	}
 	FORCEINLINE void MarkDirtyDeferred( int32 Slot )
@@ -113,7 +112,7 @@ public:
 	void Update( IJobSystem* Jobs );
 
 	FORCEINLINE int32 GetNumNodes() const { return Nodes.GetNumAlive(); }
-	FORCEINLINE int32 GetMaxDepth() const { return LevelStart.empty() ? 0 : static_cast<int32>( LevelStart.size() ) - 2; }
+	FORCEINLINE int32 GetMaxDepth() const { return LevelStart.IsEmpty() ? 0 : LevelStart.Num() - 2; }
 
 private:
 	// 階層順の並びの 1 要素。プールの要素はアドレスが動かないので、Update で毎回チャンクを引かずに直接指しておく
@@ -140,9 +139,9 @@ private:
 	TAtomic<bool> bAnyDirty{ false };   // 並列に動くシステムも立てる
 
 	// 階層の浅い順に並べた生きている要素。同じ親の子は隣り合う。LevelStart[d] .. LevelStart[d + 1] が深さ d（最後に終端が 1 つ）
-	std::vector<FLevelEntry> Entries;
-	std::vector<int32> LevelStart;
+	TArray<FLevelEntry> Entries;
+	TArray<int32> LevelStart;
 
 	// システムが溜めた、ローカルを書き換えたノード（スレッドごと）
-	std::vector<int32> DeferredDirty[32];
+	TArray<int32> DeferredDirty[32];
 };

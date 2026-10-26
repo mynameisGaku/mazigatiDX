@@ -1,6 +1,5 @@
 ﻿#pragma once
 #include <string>
-#include <vector>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
