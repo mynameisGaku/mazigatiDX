@@ -3,11 +3,11 @@
 #define LIBRARY_CORE_INTERFACES_RENDER_DRAWDISTORTEDMATERIALRIBBON_H
 
 #include <cmath>
-#include <type_traits>
 
 #include "DrawMaterialRibbon.h"
 
 #include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/TypeTraits.h"
 
 // 既存材質帯へ、共通ノイズ画像と点ごとの変位量を加えて記録する値。
 struct FDrawDistortedMaterialRibbonData
@@ -66,7 +66,7 @@ namespace NDrawDistortedMaterialRibbon
 	}
 }
 
-static_assert( sizeof( FDrawDistortedMaterialRibbonData::FPoint ) == 52 && std::is_trivially_copyable_v<FDrawDistortedMaterialRibbonData::FPoint>, "distorted material ribbon point must occupy thirteen words" );
-static_assert( sizeof( FDrawDistortedMaterialRibbonData ) == 68 && sizeof( FDrawDistortedMaterialRibbonData ) % 4 == 0 && std::is_trivially_copyable_v<FDrawDistortedMaterialRibbonData>, "distorted material ribbon header must occupy seventeen words" );
+static_assert( sizeof( FDrawDistortedMaterialRibbonData::FPoint ) == 52 && bIsTriviallyCopyable<FDrawDistortedMaterialRibbonData::FPoint>, "distorted material ribbon point must occupy thirteen words" );
+static_assert( sizeof( FDrawDistortedMaterialRibbonData ) == 68 && sizeof( FDrawDistortedMaterialRibbonData ) % 4 == 0 && bIsTriviallyCopyable<FDrawDistortedMaterialRibbonData>, "distorted material ribbon header must occupy seventeen words" );
 
 #endif

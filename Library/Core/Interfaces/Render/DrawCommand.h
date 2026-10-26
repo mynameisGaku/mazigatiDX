@@ -1,9 +1,9 @@
 ﻿#pragma once
 #include <cstring>
-#include <type_traits>
 
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Types/TypeDefinition.h"
+#include "Library/Core/Types/TypeTraits.h"
 
 //=============================================================================
 // 描画コマンド（描画の「記録」）
@@ -185,7 +185,7 @@ struct FDrawMeshData
 };
 
 #define DRAW_DATA_CHECK( Type ) \
-	static_assert( sizeof( Type ) % 4 == 0 && std::is_trivially_copyable_v<Type>, #Type " must be made of 4-byte words with no padding" )
+	static_assert( sizeof( Type ) % 4 == 0 && bIsTriviallyCopyable<Type>, #Type " must be made of 4-byte words with no padding" )
 DRAW_DATA_CHECK( FDrawBoxData );
 DRAW_DATA_CHECK( FDrawCircleData );
 DRAW_DATA_CHECK( FDrawLineData );

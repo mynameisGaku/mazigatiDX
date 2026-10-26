@@ -6,20 +6,21 @@
 #include <utility>
 
 #include "Library/Core/Types/TypeDefinition.h"
+#include "Library/Core/Types/TypeTraits.h"
 
 // 元の要素への参照と 0 始まりの番号を組にして走査する。要素はコピーしない。
 template<typename ContainerType>
 class TEnumerateRange
 {
 	// 元の入れ物が返す反復子。
-	using SourceIterator = decltype( std::begin( std::declval<ContainerType&>() ) );
+	using SourceIterator = decltype( std::begin( DeclVal<ContainerType&>() ) );
 	// ループの構造化束縛に渡す番号と参照。
 	struct FEntry
 	{
 		// 走査順に振った番号。
 		int32 Index;
 		// const を保った元の要素。
-		decltype( *std::declval<SourceIterator&>() ) Value;
+		decltype( *DeclVal<SourceIterator&>() ) Value;
 	};
 	// 元の反復子と番号を一緒に進める。
 	class FIterator

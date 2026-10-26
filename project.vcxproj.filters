@@ -1242,6 +1242,9 @@
     <ClInclude Include="Library\Core\Types\TypeDefinition.h">
       <Filter>Library\Core\Types</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Types\TypeTraits.h">
+      <Filter>Library\Core\Types</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Types\Utility.h">
       <Filter>Library\Core\Types</Filter>
     </ClInclude>

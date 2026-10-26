@@ -3,13 +3,13 @@
 #define FRAMEWORK_CORE_COLLECTION_ARRAY_H
 #include "Library/Core/Types/CompilerMacros.h"
 #include <initializer_list>
-#include <type_traits>
 #include <utility>
 
 #include "Library/Core/Collection/CollectionCommon.h"
 #include "Library/Core/Collection/Iterator.h"
 #include "Library/Core/Collection/Sort.h"
 #include "Library/Core/Memory/Memory.h"
+#include "Library/Core/Types/TypeTraits.h"
 #include "Library/Core/Types/Utility.h"
 
 //=============================================================================
@@ -45,7 +45,7 @@ public:
 	FORCEINLINE TArray( std::initializer_list<T> List ) { Append( List.begin(), static_cast<int32>( List.size() ) ); }
 	FORCEINLINE TArray( const T* Ptr, int32 Count ) { Append( Ptr, Count ); }
 
-	template<typename InputIt, typename = std::enable_if_t<!std::is_integral_v<InputIt>>>
+	template<typename InputIt, typename = TEnableIfT<!bIsIntegral<InputIt>>>
 	FORCEINLINE TArray( InputIt First, InputIt Last )
 	{
 		for ( ; First != Last; ++First ) Emplace( *First );
@@ -195,7 +195,7 @@ public:
 	// ゼロ埋めした要素を Count 個追加（トリビアル型向け）
 	FORCEINLINE int32 AddZeroed( int32 Count = 1 )
 	{
-		static_assert( std::is_trivially_copyable_v<T>, "AddZeroed requires a trivially copyable type" );
+		static_assert( bIsTriviallyCopyable<T>, "AddZeroed requires a trivially copyable type" );
 		const int32 Index = ArrayNum;
 		GrowTo( ArrayNum + Count );
 		FMemory::Memzero( Data + ArrayNum, sizeof( T ) * static_cast<usize>( Count ) );
@@ -206,7 +206,7 @@ public:
 	// 未初期化の要素を Count 個追加（後で必ず上書きすること。トリビアル型向け）
 	FORCEINLINE int32 AddUninitialized( int32 Count = 1 )
 	{
-		static_assert( std::is_trivially_copyable_v<T>, "AddUninitialized requires a trivially copyable type" );
+		static_assert( bIsTriviallyCopyable<T>, "AddUninitialized requires a trivially copyable type" );
 		const int32 Index = ArrayNum;
 		GrowTo( ArrayNum + Count );
 		ArrayNum += Count;
@@ -394,7 +394,7 @@ public:
 	template<typename Func>
 	FORCEINLINE auto Map( Func&& Fn ) const
 	{
-		using U = std::decay_t<std::invoke_result_t<Func, const T&>>;
+		using U = TDecayT<TInvokeResultT<Func, const T&>>;
 		TArray<U> Result;
 		Result.Reserve( ArrayNum );
 		for ( int32 i = 0; i < ArrayNum; ++i ) Result.Add( Fn( Data[i] ) );

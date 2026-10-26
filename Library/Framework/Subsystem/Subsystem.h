@@ -1,6 +1,5 @@
 ﻿#pragma once
 #include "Library/Core/Types/CompilerMacros.h"
-#include <type_traits>
 #include <typeinfo>
 
 #include "Library/Core/Collection/Array.h"

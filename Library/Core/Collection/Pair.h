@@ -1,9 +1,9 @@
 ﻿#pragma once
 #include "Library/Core/Types/CompilerMacros.h"
-#include <type_traits>
 #include <utility>
 
 #include "Library/Core/Collection/Hash.h"
+#include "Library/Core/Types/TypeTraits.h"
 #include "Library/Core/Types/Utility.h"
 
 //=============================================================================
@@ -25,7 +25,7 @@ struct TPair
 };
 
 template<typename K, typename V>
-FORCEINLINE TPair<std::decay_t<K>, std::decay_t<V>> MakePair( K&& Key, V&& Value )
+FORCEINLINE TPair<TDecayT<K>, TDecayT<V>> MakePair( K&& Key, V&& Value )
 {
 	return { Forward<K>( Key ), Forward<V>( Value ) };
 }

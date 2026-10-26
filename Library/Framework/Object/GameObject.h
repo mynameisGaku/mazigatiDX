@@ -1,6 +1,5 @@
 ﻿#pragma once
 #include "Library/Core/Types/CompilerMacros.h"
-#include <type_traits>
 #include <utility>
 
 #include "Library/Core/Collection/Array.h"
@@ -8,6 +7,7 @@
 #include "Library/Core/Log/LogCategory.h"
 #include "Library/Core/Memory/UniquePtr.h"
 #include "Library/Core/Profiler/ProfilerScope.h"
+#include "Library/Core/Types/TypeTraits.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Component/Component.h"
 #include "Library/Framework/Ecs/EcsWorld.h"
@@ -97,7 +97,7 @@ public:
 	template<typename T, typename... Args>
 	FORCEINLINE T* AddComponent( Args&&... args )
 	{
-		static_assert( std::is_base_of_v<CComponent, T>, "AddComponent<T>: T must derive from CComponent" );
+		static_assert( bIsBaseOf<CComponent, T>, "AddComponent<T>: T must derive from CComponent" );
 		TUniquePtr<T> Component = MakeUnique<T>( Forward<Args>( args )... );
 		T* Raw = Component.Get();
 		AddComponentInternal( TUniquePtr<CComponent>( MoveTemp( Component ) ) );
@@ -142,7 +142,7 @@ public:
 		return World != nullptr ? World->AddData<T>( EntitySlot, Value ) : nullptr;
 	}
 
-	template<typename T, typename... TArgs, typename = std::enable_if_t<!( sizeof...( TArgs ) == 1 && ( std::is_same_v<std::decay_t<TArgs>, T> && ... ) )>>
+	template<typename T, typename... TArgs, typename = TEnableIfT<!( sizeof...( TArgs ) == 1 && ( bIsSame<TDecayT<TArgs>, T> && ... ) )>>
 	FORCEINLINE T* AddData( TArgs&&... Args )
 	{
 		FEcsWorld* World = GetEcsWorldForData( "AddData" );
@@ -160,7 +160,7 @@ public:
 	template<typename... TComps>
 	FORCEINLINE void AddDataAll( TComps&&... Comps )
 	{
-		( AddData<std::decay_t<TComps>>( Forward<TComps>( Comps ) ), ... );
+		( AddData<TDecayT<TComps>>( Forward<TComps>( Comps ) ), ... );
 	}
 
 	template<typename T>

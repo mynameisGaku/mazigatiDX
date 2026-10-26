@@ -3,10 +3,10 @@
 #define FRAMEWORK_CORE_INTERFACES_RENDER_DRAWMODELMATERIAL_H
 
 #include <cmath>
-#include <type_traits>
 
 #include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
 #include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/TypeTraits.h"
 
 // MV1モデルの一材質を効果付きで描き、残りを通常描画する固定命令。
 struct FDrawModelMaterialData
@@ -25,7 +25,7 @@ struct FDrawModelMaterialData
 	FDrawMaterialMeshData Material;
 };
 
-static_assert( sizeof( FDrawModelMaterialData ) == 160 && std::is_trivially_copyable_v<FDrawModelMaterialData>, "model material command data must occupy forty words" );
+static_assert( sizeof( FDrawModelMaterialData ) == 160 && bIsTriviallyCopyable<FDrawModelMaterialData>, "model material command data must occupy forty words" );
 
 namespace NDrawModelMaterial
 {

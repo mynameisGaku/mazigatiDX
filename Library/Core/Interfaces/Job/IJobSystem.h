@@ -1,7 +1,6 @@
 ﻿#pragma once
 #include <functional>
 #include <memory>
-#include <type_traits>
 #include <utility>
 
 #include "Library/Core/Collection/Array.h"
@@ -89,7 +88,7 @@ public:
 	template<typename TFunction>
 	FORCEINLINE void ParallelForRange( int32 Count, int32 MinBatchSize, const char* Name, TFunction&& Function )
 	{
-		using TDecayed = std::remove_reference_t<TFunction>;
+		using TDecayed = TRemoveReferenceT<TFunction>;
 		FRangeFunction Body;
 		Body.Object = const_cast<void*>( static_cast<const void*>( &Function ) );
 		Body.Invoke = []( void* Object, int32 Begin, int32 End ) { ( *static_cast<TDecayed*>( Object ) )( Begin, End ); };

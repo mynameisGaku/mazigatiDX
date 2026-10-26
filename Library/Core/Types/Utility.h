@@ -5,7 +5,7 @@
 
 //=============================================================================
 // 型の補助（右辺値参照の受け渡し）
-//   <utility> の std::move / std::forward の代わり。標準ライブラリに依存しない。
+//   <utility> の std::move / std::forward、<new> の std::launder、<memory> の std::addressof の代わり。標準ライブラリに依存しない。
 //
 //   Name = MoveTemp( Other );                            // Other の中身を移す（Other は使い終わったものとして扱う）
 //   template<typename T> void Add( T&& Value ) { Items.Add( Forward<T>( Value ) ); }   // 左辺値・右辺値をそのまま渡す
@@ -57,4 +57,18 @@ template<typename T>
 FORCEINLINE constexpr T&& Forward( TRemoveReferenceT<T>&& Object ) noexcept
 {
 	return static_cast<T&&>( Object );
+}
+
+// 生の記憶領域に作ったオブジェクトを指すポインターを、最適化に惑わされずに得る。std::launder の代わり。
+template<typename T>
+FORCEINLINE constexpr T* Launder( T* Pointer ) noexcept
+{
+	return __builtin_launder( Pointer );
+}
+
+// operator& を上書きしている型でも、本当のアドレスを返す。std::addressof の代わり。
+template<typename T>
+FORCEINLINE constexpr T* AddressOf( T& Object ) noexcept
+{
+	return __builtin_addressof( Object );
 }

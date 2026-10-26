@@ -1,10 +1,10 @@
 ﻿#pragma once
 #include "Library/Core/Types/CompilerMacros.h"
-#include <type_traits>
 #include <utility>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Memory/SmartPointer.h"
+#include "Library/Core/Types/TypeTraits.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Component/TransformComponent.h"
 #include "Library/Framework/Ecs/EcsWorld.h"
@@ -55,7 +55,7 @@ public:
 	template<typename T, typename... Args>
 	FORCEINLINE TSharedPtr<T> SpawnObject( Args&&... args )
 	{
-		static_assert( std::is_base_of_v<CGameObject, T>, "SpawnObject<T>: T must derive from CGameObject" );
+		static_assert( bIsBaseOf<CGameObject, T>, "SpawnObject<T>: T must derive from CGameObject" );
 		TSharedPtr<T> Object = MakeShared<T>( Forward<Args>( args )... );
 		AddObject( Object );
 		return Object;

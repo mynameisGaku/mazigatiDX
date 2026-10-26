@@ -2,10 +2,10 @@
 #include <malloc.h>
 #include <cstring>
 #include <new>
-#include <type_traits>
 #include <utility>
 
 #include "Library/Core/Types/TypeDefinition.h"
+#include "Library/Core/Types/TypeTraits.h"
 
 //=============================================================================
 // FMemory
@@ -51,7 +51,7 @@ struct FMemory
 namespace NMemoryOps
 {
 	template<typename T>
-	inline constexpr bool bIsBitwiseRelocatable = std::is_trivially_copyable_v<T>;
+	inline constexpr bool bIsBitwiseRelocatable = bIsTriviallyCopyable<T>;
 
 	// 値初期化で Count 個構築（POD はゼロ）
 	template<typename T>
@@ -63,7 +63,7 @@ namespace NMemoryOps
 	template<typename T>
 	FORCEINLINE void CopyConstructItems( T* Dest, const T* Src, int32 Count )
 	{
-		if constexpr ( std::is_trivially_copyable_v<T> )
+		if constexpr ( bIsTriviallyCopyable<T> )
 		{
 			FMemory::Memcpy( Dest, Src, sizeof( T ) * static_cast<usize>( Count ) );
 		}
@@ -76,7 +76,7 @@ namespace NMemoryOps
 	template<typename T>
 	FORCEINLINE void DestructItems( T* Items, int32 Count )
 	{
-		if constexpr ( !std::is_trivially_destructible_v<T> )
+		if constexpr ( !bIsTriviallyDestructible<T> )
 		{
 			for ( int32 i = 0; i < Count; ++i ) Items[i].~T();
 		}
@@ -85,7 +85,7 @@ namespace NMemoryOps
 	template<typename T>
 	FORCEINLINE void DestructItem( T* Item )
 	{
-		if constexpr ( !std::is_trivially_destructible_v<T> ) Item->~T();
+		if constexpr ( !bIsTriviallyDestructible<T> ) Item->~T();
 	}
 
 	// Src から Dest（未初期化・重ならない）へ移動し、Src を破棄する

@@ -2,9 +2,9 @@
 #ifndef FRAMEWORK_CORE_INTERFACES_RENDER_DRAW_RIBBON_H
 #define FRAMEWORK_CORE_INTERFACES_RENDER_DRAW_RIBBON_H
 
-#include <type_traits>
 
 #include "Library/Core/Types/TypeDefinition.h"
+#include "Library/Core/Types/TypeTraits.h"
 
 // カメラへ面を向ける帯の記録。直後にNumPoints個のFPointが続く。
 struct FDrawRibbonData
@@ -41,7 +41,7 @@ struct FDrawRibbonData
 	int32 JoinFlags = 0;
 };
 
-static_assert( sizeof( FDrawRibbonData ) == 16 && std::is_trivially_copyable_v<FDrawRibbonData>, "ribbon header must occupy four words" );
-static_assert( sizeof( FDrawRibbonData::FPoint ) == 24 && std::is_trivially_copyable_v<FDrawRibbonData::FPoint>, "ribbon point must occupy six words" );
+static_assert( sizeof( FDrawRibbonData ) == 16 && bIsTriviallyCopyable<FDrawRibbonData>, "ribbon header must occupy four words" );
+static_assert( sizeof( FDrawRibbonData::FPoint ) == 24 && bIsTriviallyCopyable<FDrawRibbonData::FPoint>, "ribbon point must occupy six words" );
 
 #endif

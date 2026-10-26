@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "Library/Core/Types/TypeTraits.h"
 #include "Library/Core/Types/Utility.h"
 
 // Optional.h の大きなテンプレート関数の定義（インライン展開しても速くならないのでクラス定義から分離）
@@ -22,7 +23,7 @@ auto TOptional<T>::operator=( const TOptional& Other ) -> TOptional&
 }
 
 template<typename T>
-auto TOptional<T>::operator=( TOptional&& Other ) noexcept( std::is_nothrow_move_assignable_v<T> ) -> TOptional&
+auto TOptional<T>::operator=( TOptional&& Other ) noexcept( bIsNothrowMoveAssignable<T> ) -> TOptional&
 {
 	if ( this == &Other ) return *this;
 	if ( Other.bIsSet )

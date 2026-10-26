@@ -1,8 +1,8 @@
 ﻿#pragma once
 #include "Library/Core/Types/CompilerMacros.h"
-#include <type_traits>
 
 #include "Library/Core/Memory/UniquePtr.h"
+#include "Library/Core/Types/TypeTraits.h"
 #include "Library/Framework/Engine/TimeControl.h"
 #include "Library/Framework/GameInstance/GameInstance.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
@@ -44,7 +44,7 @@ public:
 	template<typename TGameInstance>
 	FORCEINLINE int32 Run( const FWindowSettings& InStartupSettings )
 	{
-		static_assert( std::is_base_of_v<CGameInstance, TGameInstance>, "Run<T>: T must derive from CGameInstance" );
+		static_assert( bIsBaseOf<CGameInstance, TGameInstance>, "Run<T>: T must derive from CGameInstance" );
 		return Run( MakeUnique<TGameInstance>(), InStartupSettings );
 	}
 

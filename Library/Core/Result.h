@@ -2,12 +2,12 @@
 #include <cassert>
 #include <cstdlib>
 #include <new>
-#include <type_traits>
 #include <utility>
 
 #include "Library/Core/Types/TypeDefinition.h"
 #include "Library/Core/Collection/Optional.h"
 #include "Library/Core/Collection/String.h"
+#include "Library/Core/Types/TypeTraits.h"
 #include "Library/Core/Types/Utility.h"
 
 //=============================================================================
@@ -30,10 +30,10 @@ class TResult;
 namespace NResultDetail
 {
 	template<typename R>
-	struct TIsResult : std::false_type {};
+	struct TIsResult : TFalseType {};
 
 	template<typename T, typename E>
-	struct TIsResult<TResult<T, E>> : std::true_type {};
+	struct TIsResult<TResult<T, E>> : TTrueType {};
 
 	[[noreturn]] FORCENOINLINE inline void Panic( const char* Message )
 	{
@@ -52,8 +52,8 @@ namespace NResultDetail
 template<typename T, typename E>
 class TResult
 {
-	static_assert( !std::is_reference_v<T>, "TResult<T&> is not supported" );
-	static_assert( !std::is_reference_v<E>, "TResult<T, E&> is not supported" );
+	static_assert( !bIsReference<T>, "TResult<T&> is not supported" );
+	static_assert( !bIsReference<E>, "TResult<T, E&> is not supported" );
 
 	template<typename, typename>
 	friend class TResult;
@@ -77,7 +77,7 @@ public:
 		else new ( Storage ) E( Other.ErrRef() );
 	}
 
-	TResult( TResult&& Other ) noexcept( std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E> )
+	TResult( TResult&& Other ) noexcept( bIsNothrowMoveConstructible<T> && bIsNothrowMoveConstructible<E> )
 		: bIsOk( Other.bIsOk )
 	{
 		if ( bIsOk ) new ( Storage ) T( MoveTemp( Other.OkRef() ) );
@@ -98,7 +98,7 @@ public:
 		return *this;
 	}
 
-	FORCEINLINE TResult& operator=( TResult&& Other ) noexcept( std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E> )
+	FORCEINLINE TResult& operator=( TResult&& Other ) noexcept( bIsNothrowMoveConstructible<T> && bIsNothrowMoveConstructible<E> )
 	{
 		if ( this != &Other )
 		{
@@ -216,22 +216,22 @@ private:
 		else ErrRef().~E();
 	}
 
-	FORCEINLINE T& OkRef() noexcept { return *std::launder( reinterpret_cast<T*>( Storage ) ); }
-	FORCEINLINE const T& OkRef() const noexcept { return *std::launder( reinterpret_cast<const T*>( Storage ) ); }
-	FORCEINLINE E& ErrRef() noexcept { return *std::launder( reinterpret_cast<E*>( Storage ) ); }
-	FORCEINLINE const E& ErrRef() const noexcept { return *std::launder( reinterpret_cast<const E*>( Storage ) ); }
+	FORCEINLINE T& OkRef() noexcept { return *Launder( reinterpret_cast<T*>( Storage ) ); }
+	FORCEINLINE const T& OkRef() const noexcept { return *Launder( reinterpret_cast<const T*>( Storage ) ); }
+	FORCEINLINE E& ErrRef() noexcept { return *Launder( reinterpret_cast<E*>( Storage ) ); }
+	FORCEINLINE const E& ErrRef() const noexcept { return *Launder( reinterpret_cast<const E*>( Storage ) ); }
 
 	// Self の値カテゴリ（lvalue / rvalue）を保ったまま成功値・エラー値を取り出す
 	template<typename Self>
 	FORCEINLINE static decltype( auto ) ForwardOk( Self&& This )
 	{
-		if constexpr ( std::is_lvalue_reference_v<Self> ) return ( This.OkRef() );
+		if constexpr ( bIsLvalueReference<Self> ) return ( This.OkRef() );
 		else return MoveTemp( This.OkRef() );
 	}
 	template<typename Self>
 	FORCEINLINE static decltype( auto ) ForwardErr( Self&& This )
 	{
-		if constexpr ( std::is_lvalue_reference_v<Self> ) return ( This.ErrRef() );
+		if constexpr ( bIsLvalueReference<Self> ) return ( This.ErrRef() );
 		else return MoveTemp( This.ErrRef() );
 	}
 
@@ -241,7 +241,7 @@ private:
 	template<typename Self, typename F>
 	FORCEINLINE static auto MapErrImpl( Self&& This, F&& Func )
 	{
-		using E2  = std::decay_t<std::invoke_result_t<F, decltype( ForwardErr( Forward<Self>( This ) ) )>>;
+		using E2  = TDecayT<TInvokeResultT<F, decltype( ForwardErr( Forward<Self>( This ) ) )>>;
 		using Out = TResult<T, E2>;
 		if ( This.IsOk() ) return Out::Ok( ForwardOk( Forward<Self>( This ) ) );
 		return Out::Err( Forward<F>( Func )( ForwardErr( Forward<Self>( This ) ) ) );
@@ -250,9 +250,9 @@ private:
 	template<typename Self, typename F>
 	FORCEINLINE static auto AndThenImpl( Self&& This, F&& Func )
 	{
-		using Out = std::decay_t<std::invoke_result_t<F, decltype( ForwardOk( Forward<Self>( This ) ) )>>;
-		static_assert( NResultDetail::TIsResult<Out>::value, "AndThen: callback must return TResult" );
-		static_assert( std::is_same_v<typename Out::ErrorType, E>, "AndThen: callback must return the same error type" );
+		using Out = TDecayT<TInvokeResultT<F, decltype( ForwardOk( Forward<Self>( This ) ) )>>;
+		static_assert( NResultDetail::TIsResult<Out>::Value, "AndThen: callback must return TResult" );
+		static_assert( bIsSame<typename Out::ErrorType, E>, "AndThen: callback must return the same error type" );
 		if ( This.IsErr() ) return Out::Err( ForwardErr( Forward<Self>( This ) ) );
 		return Forward<F>( Func )( ForwardOk( Forward<Self>( This ) ) );
 	}
@@ -260,9 +260,9 @@ private:
 	template<typename Self, typename F>
 	FORCEINLINE static auto OrElseImpl( Self&& This, F&& Func )
 	{
-		using Out = std::decay_t<std::invoke_result_t<F, decltype( ForwardErr( Forward<Self>( This ) ) )>>;
-		static_assert( NResultDetail::TIsResult<Out>::value, "OrElse: callback must return TResult" );
-		static_assert( std::is_same_v<typename Out::ValueType, T>, "OrElse: callback must return the same value type" );
+		using Out = TDecayT<TInvokeResultT<F, decltype( ForwardErr( Forward<Self>( This ) ) )>>;
+		static_assert( NResultDetail::TIsResult<Out>::Value, "OrElse: callback must return TResult" );
+		static_assert( bIsSame<typename Out::ValueType, T>, "OrElse: callback must return the same value type" );
 		if ( This.IsOk() ) return Out::Ok( ForwardOk( Forward<Self>( This ) ) );
 		return Forward<F>( Func )( ForwardErr( Forward<Self>( This ) ) );
 	}
@@ -277,7 +277,7 @@ private:
 template<typename E>
 class TResult<void, E>
 {
-	static_assert( !std::is_reference_v<E>, "TResult<void, E&> is not supported" );
+	static_assert( !bIsReference<E>, "TResult<void, E&> is not supported" );
 
 public:
 	using ValueType = void;
@@ -331,7 +331,7 @@ public:
 	template<typename F>
 	FORCEINLINE auto MapErr( F&& Func ) const
 	{
-		using E2  = std::decay_t<std::invoke_result_t<F, const E&>>;
+		using E2  = TDecayT<TInvokeResultT<F, const E&>>;
 		using Out = TResult<void, E2>;
 		if ( IsOk() ) return Out::Ok();
 		return Out::Err( Forward<F>( Func )( Error.GetValue() ) );
@@ -341,9 +341,9 @@ public:
 	template<typename F>
 	FORCEINLINE auto AndThen( F&& Func ) const
 	{
-		using Out = std::decay_t<std::invoke_result_t<F>>;
-		static_assert( NResultDetail::TIsResult<Out>::value, "AndThen: callback must return TResult" );
-		static_assert( std::is_same_v<typename Out::ErrorType, E>, "AndThen: callback must return the same error type" );
+		using Out = TDecayT<TInvokeResultT<F>>;
+		static_assert( NResultDetail::TIsResult<Out>::Value, "AndThen: callback must return TResult" );
+		static_assert( bIsSame<typename Out::ErrorType, E>, "AndThen: callback must return the same error type" );
 		if ( IsErr() ) return Out::Err( Error.GetValue() );
 		return Forward<F>( Func )();
 	}
@@ -352,9 +352,9 @@ public:
 	template<typename F>
 	FORCEINLINE auto OrElse( F&& Func ) const
 	{
-		using Out = std::decay_t<std::invoke_result_t<F, const E&>>;
-		static_assert( NResultDetail::TIsResult<Out>::value, "OrElse: callback must return TResult" );
-		static_assert( std::is_void_v<typename Out::ValueType>, "OrElse: callback must return TResult<void, ...>" );
+		using Out = TDecayT<TInvokeResultT<F, const E&>>;
+		static_assert( NResultDetail::TIsResult<Out>::Value, "OrElse: callback must return TResult" );
+		static_assert( bIsVoid<typename Out::ValueType>, "OrElse: callback must return TResult<void, ...>" );
 		if ( IsOk() ) return Out::Ok();
 		return Forward<F>( Func )( Error.GetValue() );
 	}

@@ -3,12 +3,12 @@
 #define LIBRARY_CORE_INTERFACES_RENDER_DRAWMATERIALMESH_H
 
 #include <cmath>
-#include <type_traits>
 
 #include "DrawMaterialRibbon.h"
 #include "MeshTypes.h"
 
 #include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/TypeTraits.h"
 
 // 固定済みワールド頂点と材質設定を所有コピーする三角形命令。
 struct FDrawMaterialMeshData
@@ -43,8 +43,8 @@ struct FDrawMaterialMeshData
 	static constexpr int32 MaxIndices = 3072;
 };
 
-static_assert( sizeof( FDrawMaterialMeshData ) == 96 && sizeof( FDrawMaterialMeshData ) % 4 == 0 && std::is_trivially_copyable_v<FDrawMaterialMeshData>, "material mesh header must occupy twenty-four words" );
-static_assert( sizeof( FMeshVertex ) == 36 && std::is_trivially_copyable_v<FMeshVertex>, "material mesh vertex must occupy nine words" );
+static_assert( sizeof( FDrawMaterialMeshData ) == 96 && sizeof( FDrawMaterialMeshData ) % 4 == 0 && bIsTriviallyCopyable<FDrawMaterialMeshData>, "material mesh header must occupy twenty-four words" );
+static_assert( sizeof( FMeshVertex ) == 36 && bIsTriviallyCopyable<FMeshVertex>, "material mesh vertex must occupy nine words" );
 
 namespace NDrawMaterialMesh
 {

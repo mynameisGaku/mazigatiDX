@@ -4,12 +4,12 @@
 
 #include <algorithm>
 #include <cmath>
-#include <type_traits>
 
 #include "DrawCommand.h"
 #include "DrawRibbon.h"
 
 #include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/TypeTraits.h"
 
 // 既存の帯の形状に、画像マスク・発光・点ごとの値を加えて記録する材質設定。
 struct FDrawMaterialRibbonData
@@ -57,9 +57,9 @@ struct FDrawMaterialRibbonData
 	FMaterialSettings Material;
 };
 
-static_assert( sizeof( FDrawMaterialRibbonData::FMaterialSettings ) == 40 && std::is_trivially_copyable_v<FDrawMaterialRibbonData::FMaterialSettings>, "material ribbon settings must occupy ten words" );
-static_assert( sizeof( FDrawMaterialRibbonData::FPoint ) == 40 && std::is_trivially_copyable_v<FDrawMaterialRibbonData::FPoint>, "material ribbon point must occupy ten words" );
-static_assert( sizeof( FDrawMaterialRibbonData ) == 56 && sizeof( FDrawMaterialRibbonData ) % 4 == 0 && std::is_trivially_copyable_v<FDrawMaterialRibbonData>, "material ribbon header must occupy fourteen words" );
+static_assert( sizeof( FDrawMaterialRibbonData::FMaterialSettings ) == 40 && bIsTriviallyCopyable<FDrawMaterialRibbonData::FMaterialSettings>, "material ribbon settings must occupy ten words" );
+static_assert( sizeof( FDrawMaterialRibbonData::FPoint ) == 40 && bIsTriviallyCopyable<FDrawMaterialRibbonData::FPoint>, "material ribbon point must occupy ten words" );
+static_assert( sizeof( FDrawMaterialRibbonData ) == 56 && sizeof( FDrawMaterialRibbonData ) % 4 == 0 && bIsTriviallyCopyable<FDrawMaterialRibbonData>, "material ribbon header must occupy fourteen words" );
 
 namespace NDrawMaterialRibbon
 {

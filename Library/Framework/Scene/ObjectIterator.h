@@ -2,15 +2,15 @@
 #ifndef FRAMEWORK_SCENE_OBJECT_ITERATOR_H
 #define FRAMEWORK_SCENE_OBJECT_ITERATOR_H
 
-#include <type_traits>
 
+#include "Library/Core/Types/TypeTraits.h"
 #include "Library/Framework/Scene/Scene.h"
 
 // シーンで生存中の指定型と派生型を生成順に走査する。作成後の追加は含めない。
 template<typename T>
 class TObjectIterator
 {
-	static_assert( std::is_base_of_v<CGameObject, std::remove_const_t<T>>, "TObjectIterator<T> requires a CGameObject type" );
+	static_assert( bIsBaseOf<CGameObject, TRemoveConstT<T>>, "TObjectIterator<T> requires a CGameObject type" );
 
 public:
 	// シーンは走査終了まで生存させる。走査中は Destroy 予約と SpawnObject を使える。
@@ -36,7 +36,7 @@ private:
 	{
 		while ( Index < Limit && Index < Objects.Num() )
 		{
-			if ( Objects[Index]->IsAlive() && Objects[Index]->template IsA<std::remove_const_t<T>>() ) break;
+			if ( Objects[Index]->IsAlive() && Objects[Index]->template IsA<TRemoveConstT<T>>() ) break;
 			++Index;
 		}
 	}

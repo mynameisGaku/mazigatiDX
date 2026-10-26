@@ -8,6 +8,7 @@
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/HashTable.h"
 #include "Library/Core/Collection/Pair.h"
+#include "Library/Core/Types/TypeTraits.h"
 #include "Library/Core/Types/Utility.h"
 
 //=============================================================================
@@ -44,7 +45,7 @@ public:
 	class TIterator
 	{
 		// 内部テーブルの対応する反復子。
-		using SourceIterator = std::conditional_t<bConst, typename TableType::const_iterator, typename TableType::iterator>;
+		using SourceIterator = TConditionalT<bConst, typename TableType::const_iterator, typename TableType::iterator>;
 	public:
 		// 既存の走査位置をマップ用に包む。
 		FORCEINLINE explicit TIterator( SourceIterator InCurrent ) : Current( InCurrent ) {}

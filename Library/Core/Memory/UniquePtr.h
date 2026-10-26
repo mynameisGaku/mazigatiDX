@@ -1,9 +1,9 @@
 ﻿#pragma once
 #include "Library/Core/Types/CompilerMacros.h"
-#include <type_traits>
 #include <utility>
 
 #include "Library/Core/Collection/Hash.h"
+#include "Library/Core/Types/TypeTraits.h"
 #include "Library/Core/Types/Utility.h"
 
 //=============================================================================
@@ -15,7 +15,7 @@ struct TDefaultDelete
 	TDefaultDelete() = default;
 
 	// TDefaultDelete<Derived> -> TDefaultDelete<Base>
-	template<typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
+	template<typename U, typename = TEnableIfT<bIsConvertible<U*, T*>>>
 	FORCEINLINE TDefaultDelete( const TDefaultDelete<U>& ) {}
 
 	FORCEINLINE void operator()( T* Ptr ) const
@@ -72,7 +72,7 @@ public:
 	}
 
 	// TUniquePtr<Derived> -> TUniquePtr<Base>
-	template<typename U, typename E, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
+	template<typename U, typename E, typename = TEnableIfT<bIsConvertible<U*, T*>>>
 	TUniquePtr( TUniquePtr<U, E>&& Other ) noexcept
 		: Deleter( MoveTemp( Other.GetDeleter() ) ), Ptr( Other.Ptr )
 	{
@@ -91,7 +91,7 @@ public:
 		return *this;
 	}
 
-	template<typename U, typename E, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
+	template<typename U, typename E, typename = TEnableIfT<bIsConvertible<U*, T*>>>
 	FORCEINLINE TUniquePtr& operator=( TUniquePtr<U, E>&& Other ) noexcept
 	{
 		Reset( Other.Release() );
@@ -213,15 +213,15 @@ private:
 //   auto P = MakeUnique<CEnemy>( Args... );
 //   auto A = MakeUnique<int32[]>( 16 );   // 値初期化された配列
 //=============================================================================
-template<typename T, typename... Args, typename = std::enable_if_t<!std::is_array_v<T>>>
+template<typename T, typename... Args, typename = TEnableIfT<!bIsArray<T>>>
 FORCEINLINE TUniquePtr<T> MakeUnique( Args&&... args )
 {
 	return TUniquePtr<T>( new T( Forward<Args>( args )... ) );
 }
 
-template<typename T, typename = std::enable_if_t<std::is_array_v<T> && std::extent_v<T> == 0>>
+template<typename T, typename = TEnableIfT<bIsArray<T> && ArrayExtent<T> == 0>>
 FORCEINLINE TUniquePtr<T> MakeUnique( int32 Count )
 {
-	using ElementT = std::remove_extent_t<T>;
+	using ElementT = TRemoveExtentT<T>;
 	return TUniquePtr<T>( new ElementT[static_cast<usize>( Count )]() );
 }

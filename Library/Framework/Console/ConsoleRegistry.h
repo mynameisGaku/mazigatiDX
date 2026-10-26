@@ -11,6 +11,7 @@
 #include "Library/Core/Collection/Pair.h"
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Result.h"
+#include "Library/Core/Types/TypeTraits.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Console/ConsoleArgs.h"
 #include "Library/Framework/Console/ConsoleConfig.h"
@@ -190,12 +191,12 @@ namespace NConsoleDetail
 	template<typename... A> struct TSplit
 	{
 		static constexpr bool bHasContext = false;
-		using Values = std::tuple<std::decay_t<A>...>;
+		using Values = std::tuple<TDecayT<A>...>;
 	};
 	template<typename... A> struct TSplit<FConsoleContext&, A...>
 	{
 		static constexpr bool bHasContext = true;
-		using Values = std::tuple<std::decay_t<A>...>;
+		using Values = std::tuple<TDecayT<A>...>;
 	};
 
 	template<typename F> struct TFunctionTraits : TFunctionTraits<decltype( &F::operator() )> {};
@@ -231,7 +232,7 @@ namespace NConsoleDetail
 	}
 
 	template<typename Tuple, size_t... I>
-	void DescribeAll( TArray<FConsoleArgDesc>& Out, const TArray<FConsoleArgSpec>& Specs, std::index_sequence<I...> )
+	void DescribeAll( TArray<FConsoleArgDesc>& Out, const TArray<FConsoleArgSpec>& Specs, TIndexSequence<I...> )
 	{
 		( DescribeOne<std::tuple_element_t<I, Tuple>>( Out, Specs, static_cast<int32>( I ) ), ... );
 	}
@@ -268,7 +269,7 @@ namespace NConsoleDetail
 	}
 
 	template<typename Tuple, size_t... I>
-	bool ParseAll( Tuple& Values, const TArray<FString>& Tokens, int32& Cursor, const TArray<FConsoleArgDesc>& Descs, FString& Error, std::index_sequence<I...> )
+	bool ParseAll( Tuple& Values, const TArray<FString>& Tokens, int32& Cursor, const TArray<FConsoleArgDesc>& Descs, FString& Error, TIndexSequence<I...> )
 	{
 		return ( ParseOne( std::get<I>( Values ), Tokens, Cursor, Descs[static_cast<int32>( I )], Error ) && ... );
 	}
@@ -295,7 +296,7 @@ namespace NConsoleDetail
 		return std::apply(
 			[&]( auto&... V ) -> EConsoleResult
 			{
-				if constexpr ( std::is_void_v<typename Traits::Return> )
+				if constexpr ( bIsVoid<typename Traits::Return> )
 				{
 					if constexpr ( Split::bHasContext ) Function( Context, V... );
 					else Function( V... );
@@ -338,27 +339,27 @@ public:
 	template<typename TFunction>
 	FConsoleRegistration Add( const FString& Name, const FString& Description, TFunction&& Function, const TArray<FConsoleArgSpec>& Args = TArray<FConsoleArgSpec>(), const FString& Category = FString() )
 	{
-		using Traits = NConsoleDetail::TFunctionTraits<std::decay_t<TFunction>>;
+		using Traits = NConsoleDetail::TFunctionTraits<TDecayT<TFunction>>;
 		using Values = typename Traits::Split::Values;
 
 		FEntry Entry;
 		Entry.Info.Name = Name;
 		Entry.Info.Description = Description;
 		Entry.Info.Category = Category;
-		NConsoleDetail::DescribeAll<Values>( Entry.Info.Args, Args, std::make_index_sequence<std::tuple_size_v<Values>>() );
+		NConsoleDetail::DescribeAll<Values>( Entry.Info.Args, Args, TMakeIndexSequence<std::tuple_size_v<Values>>() );
 		const TArray<FConsoleArgDesc> Descs = Entry.Info.Args;
 
-		Entry.Handler = std::make_shared<FHandler>( [Function = std::decay_t<TFunction>( Forward<TFunction>( Function ) ), Descs]( FConsoleContext& Context, const TArray<FString>& Tokens, FString& OutError ) mutable -> EConsoleResult
+		Entry.Handler = std::make_shared<FHandler>( [Function = TDecayT<TFunction>( Forward<TFunction>( Function ) ), Descs]( FConsoleContext& Context, const TArray<FString>& Tokens, FString& OutError ) mutable -> EConsoleResult
 		{
 			Values Parsed{};
 			int32 Cursor = 0;
-			if ( !NConsoleDetail::ParseAll( Parsed, Tokens, Cursor, Descs, OutError, std::make_index_sequence<std::tuple_size_v<Values>>() ) ) return EConsoleResult::BadArguments;
+			if ( !NConsoleDetail::ParseAll( Parsed, Tokens, Cursor, Descs, OutError, TMakeIndexSequence<std::tuple_size_v<Values>>() ) ) return EConsoleResult::BadArguments;
 			if ( Cursor < Tokens.Num() )
 			{
 				OutError = Descs.IsEmpty() ? FString( "this command takes no arguments" ) : "too many arguments (unexpected '" + Tokens[Cursor] + "')";
 				return EConsoleResult::BadArguments;
 			}
-			return NConsoleDetail::Call<std::decay_t<decltype( Function )>, Traits>( Function, Context, Parsed );
+			return NConsoleDetail::Call<TDecayT<decltype( Function )>, Traits>( Function, Context, Parsed );
 		} );
 		return Register( MoveTemp( Entry ) );
 	}
@@ -390,7 +391,7 @@ public:
 					return;
 				}
 				T Value = NewValue.GetValue();
-				if constexpr ( std::is_arithmetic_v<T> )
+				if constexpr ( bIsArithmetic<T> )
 				{
 					if ( Options.Min.IsSet() && Value < Options.Min.GetValue() ) Value = Options.Min.GetValue();
 					if ( Options.Max.IsSet() && Value > Options.Max.GetValue() ) Value = Options.Max.GetValue();

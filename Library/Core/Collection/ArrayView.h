@@ -1,9 +1,9 @@
 ﻿#pragma once
 #include "Library/Core/Types/CompilerMacros.h"
 #include <initializer_list>
-#include <type_traits>
 
 #include "Library/Core/Collection/Array.h"
+#include "Library/Core/Types/TypeTraits.h"
 
 //=============================================================================
 // TArrayView<T>
@@ -19,7 +19,7 @@
 template<typename T>
 class TArrayView
 {
-	using MutableT = std::remove_const_t<T>;
+	using MutableT = TRemoveConstT<T>;
 
 public:
 	using ElementType = T;
@@ -32,15 +32,15 @@ public:
 
 	FORCEINLINE TArrayView( TArray<MutableT>& Array ) : DataPtr( Array.GetData() ), Count( Array.Num() ) {}
 
-	template<typename U = T, typename = std::enable_if_t<std::is_const_v<U>>>
+	template<typename U = T, typename = TEnableIfT<bIsConst<U>>>
 	FORCEINLINE TArrayView( const TArray<MutableT>& Array ) : DataPtr( Array.GetData() ), Count( Array.Num() ) {}
 
 	// 一時的な初期化子リスト（呼び出し式の間だけ有効）
-	template<typename U = T, typename = std::enable_if_t<std::is_const_v<U>>>
+	template<typename U = T, typename = TEnableIfT<bIsConst<U>>>
 	FORCEINLINE TArrayView( std::initializer_list<MutableT> List ) : DataPtr( List.begin() ), Count( static_cast<int32>( List.size() ) ) {}
 
 	// TArrayView<T> -> TArrayView<const T>
-	template<typename U, typename = std::enable_if_t<std::is_same_v<const U, T> && !std::is_same_v<U, T>>>
+	template<typename U, typename = TEnableIfT<bIsSame<const U, T> && !bIsSame<U, T>>>
 	FORCEINLINE constexpr TArrayView( const TArrayView<U>& Other ) : DataPtr( Other.GetData() ), Count( Other.Num() ) {}
 
 	FORCEINLINE constexpr int32 Num() const noexcept { return Count; }

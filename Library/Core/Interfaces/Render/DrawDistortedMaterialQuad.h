@@ -4,6 +4,7 @@
 
 #include "Library/Core/Interfaces/Render/DrawMaterialQuad.h"
 #include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/TypeTraits.h"
 
 // 画像領域と独立したノイズ画像で、材質四角形の表示UVを曲げる値。
 struct FDrawDistortedMaterialQuadData
@@ -31,6 +32,6 @@ namespace NDrawDistortedMaterialQuad
 	}
 }
 
-static_assert( sizeof( FDrawDistortedMaterialQuadData ) % 4 == 0 && std::is_trivially_copyable_v<FDrawDistortedMaterialQuadData>, "FDrawDistortedMaterialQuadData must be 4-byte words" );
+static_assert( sizeof( FDrawDistortedMaterialQuadData ) % 4 == 0 && bIsTriviallyCopyable<FDrawDistortedMaterialQuadData>, "FDrawDistortedMaterialQuadData must be 4-byte words" );
 
 #endif

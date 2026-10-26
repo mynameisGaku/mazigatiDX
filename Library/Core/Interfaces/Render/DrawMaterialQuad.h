@@ -7,6 +7,7 @@
 #include <cmath>
 
 #include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/TypeTraits.h"
 
 // 画像と任意のマスクを使い、消失・境界発光・UV移動を指定する値。
 struct FDrawMaterialQuadData
@@ -56,6 +57,6 @@ namespace NDrawMaterialQuad
 	}
 }
 
-static_assert( sizeof( FDrawMaterialQuadData ) % 4 == 0 && std::is_trivially_copyable_v<FDrawMaterialQuadData>, "FDrawMaterialQuadData must be 4-byte words" );
+static_assert( sizeof( FDrawMaterialQuadData ) % 4 == 0 && bIsTriviallyCopyable<FDrawMaterialQuadData>, "FDrawMaterialQuadData must be 4-byte words" );
 
 #endif

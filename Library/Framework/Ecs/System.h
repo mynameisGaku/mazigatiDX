@@ -9,6 +9,7 @@
 #include "Library/Core/Interfaces/Job/IJobSystem.h"
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Core/Types/CompilerMacros.h"
+#include "Library/Core/Types/TypeTraits.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Ecs/EcsWorld.h"
 #include "Library/Framework/Ecs/SystemParams.h"
@@ -125,11 +126,11 @@ namespace NEcs
 	//-------------------------------------------------------------------------
 	// 引数の種類の判定
 	//-------------------------------------------------------------------------
-	template<typename TArg> using TBare = std::remove_cv_t<std::remove_reference_t<TArg>>;
-	template<typename TArg> using TPointee = std::remove_cv_t<std::remove_pointer_t<std::remove_reference_t<TArg>>>;
+	template<typename TArg> using TBare = TRemoveCVT<TRemoveReferenceT<TArg>>;
+	template<typename TArg> using TPointee = TRemoveCVT<TRemovePointerT<TRemoveReferenceT<TArg>>>;
 
 	template<typename T>
-	struct TIsWithout : std::false_type
+	struct TIsWithout : TFalseType
 	{
 		static FORCEINLINE uint64 Mask() { return 0ull; }
 		static FORCEINLINE bool AllIn64() { return true; }
@@ -138,38 +139,38 @@ namespace NEcs
 	};
 
 	template<typename... TExcluded>
-	struct TIsWithout<TWithout<TExcluded...>> : std::true_type
+	struct TIsWithout<TWithout<TExcluded...>> : TTrueType
 	{
-		static FORCEINLINE uint64 Mask() { return ( TypeBit<std::remove_cv_t<TExcluded>>() | ... | 0ull ); }
-		static FORCEINLINE bool AllIn64() { return ( ( TypeBit<std::remove_cv_t<TExcluded>>() != 0ull ) && ... ); }
-		static FORCEINLINE bool HasAny( const FEcsWorld& World, int32 Entity ) { return ( World.HasData<std::remove_cv_t<TExcluded>>( Entity ) || ... ); }
+		static FORCEINLINE uint64 Mask() { return ( TypeBit<TRemoveCVT<TExcluded>>() | ... | 0ull ); }
+		static FORCEINLINE bool AllIn64() { return ( ( TypeBit<TRemoveCVT<TExcluded>>() != 0ull ) && ... ); }
+		static FORCEINLINE bool HasAny( const FEcsWorld& World, int32 Entity ) { return ( World.HasData<TRemoveCVT<TExcluded>>( Entity ) || ... ); }
 	};
 
-	template<typename TArg> constexpr bool IsDeltaArg = std::is_same_v<TBare<TArg>, float32>;
-	template<typename TArg> constexpr bool IsEntityArg = std::is_same_v<TBare<TArg>, FEntityRef>;
-	template<typename TArg> constexpr bool IsObjectRefArg = std::is_same_v<TBare<TArg>, CGameObject> && std::is_reference_v<TArg>;
-	template<typename TArg> constexpr bool IsObjectPtrArg = std::is_pointer_v<std::remove_reference_t<TArg>> && std::is_same_v<TPointee<TArg>, CGameObject>;
-	template<typename TArg> constexpr bool IsTransformArg = std::is_same_v<TBare<TArg>, FTransformAccess>;
-	template<typename TArg> constexpr bool IsDrawArg = std::is_same_v<TBare<TArg>, FDrawContext>;
-	template<typename TArg> constexpr bool IsViewArg = std::is_same_v<TBare<TArg>, FTransformView>;
-	template<typename TArg> constexpr bool IsWithoutArg = TIsWithout<TBare<TArg>>::value;
-	template<typename TArg> constexpr bool IsOptionalComponentArg = std::is_pointer_v<std::remove_reference_t<TArg>> && !IsObjectPtrArg<TArg>;
+	template<typename TArg> constexpr bool IsDeltaArg = bIsSame<TBare<TArg>, float32>;
+	template<typename TArg> constexpr bool IsEntityArg = bIsSame<TBare<TArg>, FEntityRef>;
+	template<typename TArg> constexpr bool IsObjectRefArg = bIsSame<TBare<TArg>, CGameObject> && bIsReference<TArg>;
+	template<typename TArg> constexpr bool IsObjectPtrArg = bIsPointer<TRemoveReferenceT<TArg>> && bIsSame<TPointee<TArg>, CGameObject>;
+	template<typename TArg> constexpr bool IsTransformArg = bIsSame<TBare<TArg>, FTransformAccess>;
+	template<typename TArg> constexpr bool IsDrawArg = bIsSame<TBare<TArg>, FDrawContext>;
+	template<typename TArg> constexpr bool IsViewArg = bIsSame<TBare<TArg>, FTransformView>;
+	template<typename TArg> constexpr bool IsWithoutArg = TIsWithout<TBare<TArg>>::Value;
+	template<typename TArg> constexpr bool IsOptionalComponentArg = bIsPointer<TRemoveReferenceT<TArg>> && !IsObjectPtrArg<TArg>;
 	template<typename TArg> constexpr bool IsRequiredComponentArg =
 		!IsDeltaArg<TArg> && !IsEntityArg<TArg> && !IsObjectRefArg<TArg> && !IsObjectPtrArg<TArg> &&
 		!IsTransformArg<TArg> && !IsDrawArg<TArg> && !IsViewArg<TArg> && !IsWithoutArg<TArg> && !IsOptionalComponentArg<TArg>;
 	template<typename TArg> constexpr bool IsComponentArg = IsRequiredComponentArg<TArg> || IsOptionalComponentArg<TArg>;
 
-	template<typename TArg> constexpr bool IsWriteRefArg = std::is_reference_v<TArg> && !std::is_const_v<std::remove_reference_t<TArg>>;
-	template<typename TArg> constexpr bool IsWritePtrArg = std::is_pointer_v<std::remove_reference_t<TArg>> && !std::is_const_v<std::remove_pointer_t<std::remove_reference_t<TArg>>>;
+	template<typename TArg> constexpr bool IsWriteRefArg = bIsReference<TArg> && !bIsConst<TRemoveReferenceT<TArg>>;
+	template<typename TArg> constexpr bool IsWritePtrArg = bIsPointer<TRemoveReferenceT<TArg>> && !bIsConst<TRemovePointerT<TRemoveReferenceT<TArg>>>;
 	template<typename TArg> constexpr bool IsWriteArg = IsOptionalComponentArg<TArg> ? IsWritePtrArg<TArg> : IsWriteRefArg<TArg>;
 
 	template<typename TArg>
-	using TComponentType = std::conditional_t<IsOptionalComponentArg<TArg>, TPointee<TArg>, TBare<TArg>>;
+	using TComponentType = TConditionalT<IsOptionalComponentArg<TArg>, TPointee<TArg>, TBare<TArg>>;
 
 	template<typename TArg>
 	struct TStoragePointer
 	{
-		using Type = std::conditional_t<IsComponentArg<TArg>, TComponentStorage<TComponentType<TArg>>*, std::nullptr_t>;
+		using Type = TConditionalT<IsComponentArg<TArg>, TComponentStorage<TComponentType<TArg>>*, std::nullptr_t>;
 	};
 
 	//-------------------------------------------------------------------------
@@ -179,11 +180,11 @@ namespace NEcs
 	template<bool bDraw, typename TFunction, typename... TArgs>
 	class TSystemRunner final : public ISystemRunner
 	{
-		static_assert( ( ( !IsRequiredComponentArg<TArgs> || std::is_reference_v<TArgs> ) && ... ), "A system's required component parameters must be references (T& or const T&), or pointers (T* / const T*) for optional components." );
-		static_assert( ( ( !IsTransformArg<TArgs> || std::is_reference_v<TArgs> ) && ... ), "FTransformAccess must be taken by reference." );
-		static_assert( ( ( !IsDrawArg<TArgs> || ( std::is_lvalue_reference_v<TArgs> && !std::is_const_v<std::remove_reference_t<TArgs>> ) ) && ... ),
+		static_assert( ( ( !IsRequiredComponentArg<TArgs> || bIsReference<TArgs> ) && ... ), "A system's required component parameters must be references (T& or const T&), or pointers (T* / const T*) for optional components." );
+		static_assert( ( ( !IsTransformArg<TArgs> || bIsReference<TArgs> ) && ... ), "FTransformAccess must be taken by reference." );
+		static_assert( ( ( !IsDrawArg<TArgs> || ( bIsLvalueReference<TArgs> && !bIsConst<TRemoveReferenceT<TArgs>> ) ) && ... ),
 					   "FDrawContext must be taken as FDrawContext&." );
-		static_assert( ( ( !IsViewArg<TArgs> || ( std::is_lvalue_reference_v<TArgs> && std::is_const_v<std::remove_reference_t<TArgs>> ) ) && ... ),
+		static_assert( ( ( !IsViewArg<TArgs> || ( bIsLvalueReference<TArgs> && bIsConst<TRemoveReferenceT<TArgs>> ) ) && ... ),
 					   "FTransformView must be taken as const FTransformView&." );
 		static_assert( bDraw || !( ( IsDrawArg<TArgs> || IsViewArg<TArgs> ) || ... ), "FDrawContext / FTransformView can only be used by draw systems (AddDrawSystem) or Scene.ForEach." );
 		static_assert( !bDraw || ( ( !IsDeltaArg<TArgs> && !IsEntityArg<TArgs> && !IsTransformArg<TArgs> && !IsObjectRefArg<TArgs> && !IsObjectPtrArg<TArgs> ) && ... ),
@@ -218,7 +219,7 @@ namespace NEcs
 
 			// 必要なコンポーネントのうち、一番数が少ない入れ物から回す（持っていないものは、回るあいだにビットマスクで弾かれる）
 			int32 Best = INT_MAX;
-			PrepareImpl( Best, std::index_sequence_for<TArgs...>{} );
+			PrepareImpl( Best, TIndexSequenceFor<TArgs...>{} );
 			const int32 Count = Driver != nullptr ? Driver->Num() : ( NumRequired == 0 ? InWorld.GetNumEntitySlots() : 0 );
 			NumPrepared = Count;
 
@@ -247,22 +248,22 @@ namespace NEcs
 				FDrawContext Context( Buffers[static_cast<size_t>( static_cast<uint32>( Begin ) >> DrawBatchShift )] );
 				if ( Entities != nullptr )
 				{
-					for ( int32 i = Begin; i < End; ++i ) RunEntity( Entities[i], i, &Context, std::index_sequence_for<TArgs...>{} );
+					for ( int32 i = Begin; i < End; ++i ) RunEntity( Entities[i], i, &Context, TIndexSequenceFor<TArgs...>{} );
 				}
 				else
 				{
-					for ( int32 i = Begin; i < End; ++i ) RunEntity( i, i, &Context, std::index_sequence_for<TArgs...>{} );
+					for ( int32 i = Begin; i < End; ++i ) RunEntity( i, i, &Context, TIndexSequenceFor<TArgs...>{} );
 				}
 			}
 			else
 			{
 				if ( Entities != nullptr )
 				{
-					for ( int32 i = Begin; i < End; ++i ) RunEntity( Entities[i], i, nullptr, std::index_sequence_for<TArgs...>{} );
+					for ( int32 i = Begin; i < End; ++i ) RunEntity( Entities[i], i, nullptr, TIndexSequenceFor<TArgs...>{} );
 				}
 				else
 				{
-					for ( int32 i = Begin; i < End; ++i ) RunEntity( i, i, nullptr, std::index_sequence_for<TArgs...>{} );
+					for ( int32 i = Begin; i < End; ++i ) RunEntity( i, i, nullptr, TIndexSequenceFor<TArgs...>{} );
 				}
 			}
 		}
@@ -277,7 +278,7 @@ namespace NEcs
 		}
 
 		template<size_t... Is>
-		void PrepareImpl( int32& Best, std::index_sequence<Is...> )
+		void PrepareImpl( int32& Best, TIndexSequence<Is...> )
 		{
 			( BindStorage<Is>( Best ), ... );
 		}
@@ -357,7 +358,7 @@ namespace NEcs
 		}
 
 		template<size_t... Is>
-		FORCEINLINE void RunEntity( int32 Entity, [[maybe_unused]] int32 Index, [[maybe_unused]] FDrawContext* Context, std::index_sequence<Is...> )
+		FORCEINLINE void RunEntity( int32 Entity, [[maybe_unused]] int32 Index, [[maybe_unused]] FDrawContext* Context, TIndexSequence<Is...> )
 		{
 			const FEcsWorld::FEntityRecord& Record = Records[Entity];
 			if constexpr ( NumRequired == 0 )
@@ -464,7 +465,7 @@ namespace NEcs
 			bool bFastMaskCheck = true;
 			int32 Best = INT_MAX;
 
-			if ( !BindAll( World, Storages, Driver, RequiredMask, ExcludedMask, bFastMaskCheck, Best, std::index_sequence_for<TArgs...>{} ) )
+			if ( !BindAll( World, Storages, Driver, RequiredMask, ExcludedMask, bFastMaskCheck, Best, TIndexSequenceFor<TArgs...>{} ) )
 			{
 				return 0;
 			}
@@ -486,7 +487,7 @@ namespace NEcs
 				if constexpr ( NumRequired > 1 || bHasWithout )
 				{
 					if ( ( ( Record.ComponentMask & RequiredMask ) != RequiredMask ) || ( ( Record.ComponentMask & ExcludedMask ) != 0ull ) ) continue;
-					if ( !bFastMaskCheck && !HasAllSlow( World, Storages, Entity, std::index_sequence_for<TArgs...>{} ) ) continue;
+					if ( !bFastMaskCheck && !HasAllSlow( World, Storages, Entity, TIndexSequenceFor<TArgs...>{} ) ) continue;
 				}
 
 				FTransformAccess Access;
@@ -501,7 +502,7 @@ namespace NEcs
 				}
 
 				++NumVisited;
-				if ( !InvokeOne( World, Storages, Function, Entity, i, Record, Access, View, std::index_sequence_for<TArgs...>{} ) ) break;
+				if ( !InvokeOne( World, Storages, Function, Entity, i, Record, Access, View, TIndexSequenceFor<TArgs...>{} ) ) break;
 			}
 
 			if constexpr ( bWritesTransform ) Transforms.FlushDeferredDirty();
@@ -512,7 +513,7 @@ namespace NEcs
 	private:
 		template<size_t... Is>
 		static bool BindAll( FEcsWorld& World, TStorageTuple& Storages, IComponentStorage*& Driver,
-							 uint64& RequiredMask, uint64& ExcludedMask, bool& bFastMaskCheck, int32& Best, std::index_sequence<Is...> )
+							 uint64& RequiredMask, uint64& ExcludedMask, bool& bFastMaskCheck, int32& Best, TIndexSequence<Is...> )
 		{
 			return ( BindOne<Is>( World, Storages, Driver, RequiredMask, ExcludedMask, bFastMaskCheck, Best ) && ... );
 		}
@@ -551,7 +552,7 @@ namespace NEcs
 		}
 
 		template<size_t... Is>
-		static bool HasAllSlow( const FEcsWorld& World, const TStorageTuple& Storages, int32 Entity, std::index_sequence<Is...> )
+		static bool HasAllSlow( const FEcsWorld& World, const TStorageTuple& Storages, int32 Entity, TIndexSequence<Is...> )
 		{
 			return ( HasOneSlow<Is>( World, Storages, Entity ) && ... );
 		}
@@ -596,10 +597,10 @@ namespace NEcs
 
 		template<size_t... Is>
 		static FORCEINLINE bool InvokeOne( FEcsWorld& World, TStorageTuple& Storages, TFunction& Function, int32 Entity, int32 Index,
-										   const FEcsWorld::FEntityRecord& Record, FTransformAccess& Access, FTransformView& View, std::index_sequence<Is...> )
+										   const FEcsWorld::FEntityRecord& Record, FTransformAccess& Access, FTransformView& View, TIndexSequence<Is...> )
 		{
-			using TReturn = std::invoke_result_t<TFunction&, decltype( ResolveOne<Is>( World, Storages, Entity, Index, Record, Access, View ) )...>;
-			if constexpr ( std::is_same_v<TReturn, bool> )
+			using TReturn = TInvokeResultT<TFunction&, decltype( ResolveOne<Is>( World, Storages, Entity, Index, Record, Access, View ) )...>;
+			if constexpr ( bIsSame<TReturn, bool> )
 			{
 				return Function( ResolveOne<Is>( World, Storages, Entity, Index, Record, Access, View )... );
 			}
@@ -623,7 +624,7 @@ namespace NEcs
 		template<bool bDraw, typename TFunction>
 		static std::unique_ptr<ISystemRunner> Make( TFunction&& Function )
 		{
-			return std::make_unique<TSystemRunner<bDraw, std::decay_t<TFunction>, TArgs...>>( Forward<TFunction>( Function ) );
+			return std::make_unique<TSystemRunner<bDraw, TDecayT<TFunction>, TArgs...>>( Forward<TFunction>( Function ) );
 		}
 
 		template<typename TFunction>
@@ -639,7 +640,7 @@ namespace NEcs
 		template<bool bDraw, typename TFunction>
 		static std::unique_ptr<ISystemRunner> Make( TFunction&& Function )
 		{
-			return std::make_unique<TSystemRunner<bDraw, std::decay_t<TFunction>, TArgs...>>( Forward<TFunction>( Function ) );
+			return std::make_unique<TSystemRunner<bDraw, TDecayT<TFunction>, TArgs...>>( Forward<TFunction>( Function ) );
 		}
 
 		template<typename TFunction>
@@ -655,7 +656,7 @@ namespace NEcs
 		template<bool bDraw, typename TFunction>
 		static std::unique_ptr<ISystemRunner> Make( TFunction&& Function )
 		{
-			return std::make_unique<TSystemRunner<bDraw, std::decay_t<TFunction>, TArgs...>>( Forward<TFunction>( Function ) );
+			return std::make_unique<TSystemRunner<bDraw, TDecayT<TFunction>, TArgs...>>( Forward<TFunction>( Function ) );
 		}
 
 		template<typename TFunction>
@@ -669,7 +670,7 @@ namespace NEcs
 	template<typename TFunction>
 	FORCEINLINE int32 ForEach( FEcsWorld& World, FTransformWorld& Transforms, TFunction&& Function )
 	{
-		return TFunctionTraits<std::decay_t<TFunction>>::RunForEach( World, Transforms, Forward<TFunction>( Function ) );
+		return TFunctionTraits<TDecayT<TFunction>>::RunForEach( World, Transforms, Forward<TFunction>( Function ) );
 	}
 
 	// 指定したすべてのコンポーネントを持つ生きているエンティティの数を返す
@@ -775,7 +776,7 @@ namespace NEcs
 			FSystem System;
 			System.Name = Name;
 			System.Phase = Phase;
-			System.Runner = TFunctionTraits<std::decay_t<TFunction>>::template Make<bDraw>( Forward<TFunction>( Function ) );
+			System.Runner = TFunctionTraits<TDecayT<TFunction>>::template Make<bDraw>( Forward<TFunction>( Function ) );
 			System.Runner->GetAccess( System.Access );
 			AddSystem( MoveTemp( System ) );
 		}

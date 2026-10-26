@@ -1,8 +1,8 @@
 ﻿#pragma once
-#include <type_traits>
 
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Types/TypeDefinition.h"
+#include "Library/Core/Types/TypeTraits.h"
 
 class IPropertyInspector;
 
@@ -55,13 +55,13 @@ private:
 template<typename To, typename From>
 FORCEINLINE To* Cast( From* Object )
 {
-	static_assert( std::is_base_of_v<CObject, To>, "Cast<T>: T must derive from CObject" );
+	static_assert( bIsBaseOf<CObject, To>, "Cast<T>: T must derive from CObject" );
 	return dynamic_cast<To*>( Object );
 }
 
 template<typename To, typename From>
 FORCEINLINE const To* Cast( const From* Object )
 {
-	static_assert( std::is_base_of_v<CObject, To>, "Cast<T>: T must derive from CObject" );
+	static_assert( bIsBaseOf<CObject, To>, "Cast<T>: T must derive from CObject" );
 	return dynamic_cast<const To*>( Object );
 }

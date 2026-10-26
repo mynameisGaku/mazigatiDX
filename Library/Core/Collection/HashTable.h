@@ -2,12 +2,12 @@
 #ifndef FRAMEWORK_CORE_COLLECTION_HASHTABLE_H
 #define FRAMEWORK_CORE_COLLECTION_HASHTABLE_H
 #include "Library/Core/Types/CompilerMacros.h"
-#include <type_traits>
 #include <utility>
 
 #include "Library/Core/Collection/CollectionCommon.h"
 #include "Library/Core/Collection/Hash.h"
 #include "Library/Core/Memory/Memory.h"
+#include "Library/Core/Types/TypeTraits.h"
 
 //=============================================================================
 // THashTable（TSet / TMap の内部実装）
@@ -42,9 +42,9 @@ public:
 	template<bool bConst>
 	class TIterator
 	{
-		using TableType = std::conditional_t<bConst, const THashTable, THashTable>;
-		using RefType   = std::conditional_t<bConst, const ElementType&, ElementType&>;
-		using PtrType   = std::conditional_t<bConst, const ElementType*, ElementType*>;
+		using TableType = TConditionalT<bConst, const THashTable, THashTable>;
+		using RefType   = TConditionalT<bConst, const ElementType&, ElementType&>;
+		using PtrType   = TConditionalT<bConst, const ElementType*, ElementType*>;
 
 	public:
 		// bEnd = true で終端（範囲 for の end() 用）

@@ -1,9 +1,9 @@
 ﻿#pragma once
 #include <cstring>
-#include <type_traits>
 
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Types/TypeDefinition.h"
+#include "Library/Core/Types/TypeTraits.h"
 
 //=============================================================================
 // ハッシュ関数
@@ -95,10 +95,10 @@ FORCEINLINE uint32 GetTypeHash( T* Ptr )
 }
 
 // enum
-template<typename T, typename = std::enable_if_t<std::is_enum_v<T>>>
+template<typename T, typename = TEnableIfT<bIsEnum<T>>>
 FORCEINLINE constexpr uint32 GetTypeHash( T Value )
 {
-	return GetTypeHash( static_cast<std::underlying_type_t<T>>( Value ) );
+	return GetTypeHash( static_cast<TUnderlyingTypeT<T>>( Value ) );
 }
 
 //-----------------------------------------------------------------------------

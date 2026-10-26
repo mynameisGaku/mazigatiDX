@@ -7,6 +7,7 @@
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/HashTable.h"
+#include "Library/Core/Types/TypeTraits.h"
 #include "Library/Core/Types/Utility.h"
 
 //=============================================================================
@@ -34,7 +35,7 @@ public:
 	class TIterator
 	{
 		// 削除可否に対応するテーブルの反復子。
-		using SourceIterator = std::conditional_t<bConst, typename TableType::const_iterator, typename TableType::iterator>;
+		using SourceIterator = TConditionalT<bConst, typename TableType::const_iterator, typename TableType::iterator>;
 	public:
 		// 既存の走査位置を集合用に包む。
 		FORCEINLINE explicit TIterator( SourceIterator InCurrent ) : Current( InCurrent ) {}

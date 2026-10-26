@@ -1,11 +1,11 @@
 ﻿#pragma once
 #include <functional>
-#include <type_traits>
 #include <utility>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Memory/SmartPointer.h"
+#include "Library/Core/Types/TypeTraits.h"
 #include "Library/Framework/Object/GameObject.h"
 #include "Library/Framework/Scene/Scene.h"
 #include "Library/Framework/World/WorldDefinition.h"
@@ -80,7 +80,7 @@ public:
 	template<typename T>
 	void Add( const FString& Tag )
 	{
-		static_assert( std::is_base_of_v<CGameObject, T>, "FWorldBindings::Add<T>: T must derive from CGameObject" );
+		static_assert( bIsBaseOf<CGameObject, T>, "FWorldBindings::Add<T>: T must derive from CGameObject" );
 		Add( Tag, []( const FWorldBindContext& Context ) { return TSharedPtr<CGameObject>( Context.Scene.SpawnObject<T>() ); } );
 	}
 

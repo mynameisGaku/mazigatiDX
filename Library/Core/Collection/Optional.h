@@ -1,10 +1,10 @@
 ﻿#pragma once
 #include "Library/Core/Types/CompilerMacros.h"
 #include <new>
-#include <type_traits>
 #include <utility>
 
 #include "Library/Core/Collection/CollectionCommon.h"
+#include "Library/Core/Types/TypeTraits.h"
 #include "Library/Core/Types/Utility.h"
 
 // 「値なし」を表すタグ:  TOptional<int32> X = NullOpt;
@@ -25,7 +25,7 @@ inline constexpr FNullOpt NullOpt { 0 };
 template<typename T>
 class TOptional
 {
-	static_assert( !std::is_reference_v<T>, "TOptional<T&> is not supported" );
+	static_assert( !bIsReference<T>, "TOptional<T&> is not supported" );
 
 public:
 	using ElementType = T;
@@ -42,7 +42,7 @@ public:
 	{
 		if ( Other.bIsSet ) Emplace( Other.Ref() );
 	}
-	FORCEINLINE TOptional( TOptional&& Other ) noexcept( std::is_nothrow_move_constructible_v<T> )
+	FORCEINLINE TOptional( TOptional&& Other ) noexcept( bIsNothrowMoveConstructible<T> )
 	{
 		if ( Other.bIsSet ) Emplace( MoveTemp( Other.Ref() ) );
 	}
@@ -51,7 +51,7 @@ public:
 
 	TOptional& operator=( const TOptional& Other );
 
-	TOptional& operator=( TOptional&& Other ) noexcept( std::is_nothrow_move_assignable_v<T> );
+	TOptional& operator=( TOptional&& Other ) noexcept( bIsNothrowMoveAssignable<T> );
 
 	FORCEINLINE TOptional& operator=( const T& InValue )
 	{
@@ -141,8 +141,8 @@ public:
 	friend bool operator!=( const TOptional& A, const TOptional& B ) { return !( A == B ); }
 
 private:
-	FORCEINLINE T& Ref() noexcept { return *std::launder( reinterpret_cast<T*>( Storage ) ); }
-	FORCEINLINE const T& Ref() const noexcept { return *std::launder( reinterpret_cast<const T*>( Storage ) ); }
+	FORCEINLINE T& Ref() noexcept { return *Launder( reinterpret_cast<T*>( Storage ) ); }
+	FORCEINLINE const T& Ref() const noexcept { return *Launder( reinterpret_cast<const T*>( Storage ) ); }
 
 	alignas( T ) unsigned char Storage[sizeof( T )];
 	bool bIsSet = false;
@@ -150,9 +150,9 @@ private:
 
 // 型推論付きで作る: auto Opt = MakeOptional( 3 );
 template<typename T>
-FORCEINLINE TOptional<std::decay_t<T>> MakeOptional( T&& InValue )
+FORCEINLINE TOptional<TDecayT<T>> MakeOptional( T&& InValue )
 {
-	return TOptional<std::decay_t<T>>( Forward<T>( InValue ) );
+	return TOptional<TDecayT<T>>( Forward<T>( InValue ) );
 }
 
 #include "Optional.inl"

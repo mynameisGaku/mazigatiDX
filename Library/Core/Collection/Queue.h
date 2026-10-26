@@ -4,6 +4,7 @@
 
 #include "Library/Core/Collection/CollectionCommon.h"
 #include "Library/Core/Memory/Memory.h"
+#include "Library/Core/Types/TypeTraits.h"
 #include "Library/Core/Types/Utility.h"
 
 //=============================================================================
@@ -27,8 +28,8 @@ public:
 	template<bool bConst>
 	class TIterator
 	{
-		using QueueType = std::conditional_t<bConst, const TQueue, TQueue>;
-		using RefType   = std::conditional_t<bConst, const T&, T&>;
+		using QueueType = TConditionalT<bConst, const TQueue, TQueue>;
+		using RefType   = TConditionalT<bConst, const T&, T&>;
 
 	public:
 		FORCEINLINE TIterator( QueueType* InQueue, int32 InIndex ) : Queue( InQueue ), Index( InIndex ) {}

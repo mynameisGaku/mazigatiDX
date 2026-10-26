@@ -567,6 +567,7 @@
     <ClInclude Include="Library\Core\Types\CompilerMacros.h" />
     <ClInclude Include="Library\Core\Types\Numeric.h" />
     <ClInclude Include="Library\Core\Types\TypeDefinition.h" />
+    <ClInclude Include="Library\Core\Types\TypeTraits.h" />
     <ClInclude Include="Library\Core\Types\Utility.h" />
     <ClInclude Include="Library\DebugUI\AssetTools.h" />
     <ClInclude Include="Library\DebugUI\ConsoleWindow.h" />

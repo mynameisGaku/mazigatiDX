@@ -1,12 +1,12 @@
 ﻿#pragma once
 #include "Library/Core/Types/CompilerMacros.h"
-#include <type_traits>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Memory/SmartPointer.h"
+#include "Library/Core/Types/TypeTraits.h"
 #include "Library/Framework/Scene/ISceneManager.h"
 #include "Library/Framework/Scene/Scene.h"
 
@@ -45,8 +45,8 @@ public:
 	template<typename T>
 	FORCEINLINE void RegisterScene( const FString& Name )
 	{
-		static_assert( std::is_base_of_v<CScene, T>, "RegisterScene<T>: T must derive from CScene" );
-		static_assert( std::is_default_constructible_v<T>, "RegisterScene<T>: T must be default constructible" );
+		static_assert( bIsBaseOf<CScene, T>, "RegisterScene<T>: T must derive from CScene" );
+		static_assert( bIsDefaultConstructible<T>, "RegisterScene<T>: T must be default constructible" );
 		RegisterSceneFactory( Name, []() -> TUniquePtr<CScene> { return MakeUnique<T>(); } );
 	}
 

@@ -2,12 +2,12 @@
 #include "Library/Core/Thread/Atomic.h"
 #include "Library/Core/Types/CompilerMacros.h"
 #include <new>
-#include <type_traits>
 #include <utility>
 
 #include "Library/Core/Collection/CollectionCommon.h"
 #include "Library/Core/Collection/Hash.h"
 #include "Library/Core/Memory/UniquePtr.h"
+#include "Library/Core/Types/TypeTraits.h"
 #include "Library/Core/Types/Utility.h"
 
 template<typename T> class TSharedPtr;
@@ -97,7 +97,7 @@ namespace NSharedPtrDetail
 			new ( Storage ) T( Forward<Args>( args )... );
 		}
 
-		FORCEINLINE T* GetObjectPtr() noexcept { return std::launder( reinterpret_cast<T*>( Storage ) ); }
+		FORCEINLINE T* GetObjectPtr() noexcept { return Launder( reinterpret_cast<T*>( Storage ) ); }
 
 	private:
 		void DestroyObject() noexcept override { GetObjectPtr()->~T(); }
@@ -146,13 +146,13 @@ public:
 	FORCEINLINE TSharedPtr( decltype( nullptr ) ) noexcept {}
 
 	// 生ポインタの所有権を受け取る（delete で破棄）
-	template<typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
+	template<typename U, typename = TEnableIfT<bIsConvertible<U*, T*>>>
 	explicit TSharedPtr( U* InObject )
 		: TSharedPtr( InObject, TDefaultDelete<U>() )
 	{}
 
 	// 生ポインタの所有権を受け取る（Deleter( Ptr ) で破棄）
-	template<typename U, typename Deleter, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
+	template<typename U, typename Deleter, typename = TEnableIfT<bIsConvertible<U*, T*>>>
 	FORCEINLINE TSharedPtr( U* InObject, Deleter InDeleter )
 	{
 		if ( !InObject ) return;
@@ -162,7 +162,7 @@ public:
 	}
 
 	// TUniquePtr から所有権を移す
-	template<typename U, typename E, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
+	template<typename U, typename E, typename = TEnableIfT<bIsConvertible<U*, T*>>>
 	TSharedPtr( TUniquePtr<U, E>&& Unique )
 		: TSharedPtr( Unique.Get(), Unique.GetDeleter() )
 	{
@@ -181,13 +181,13 @@ public:
 	}
 
 	// TSharedPtr<Derived> -> TSharedPtr<Base>
-	template<typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
+	template<typename U, typename = TEnableIfT<bIsConvertible<U*, T*>>>
 	FORCEINLINE TSharedPtr( const TSharedPtr<U>& Other ) noexcept : Object( Other.Object ), Controller( Other.Controller )
 	{
 		if ( Controller ) Controller->AddShared();
 	}
 
-	template<typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
+	template<typename U, typename = TEnableIfT<bIsConvertible<U*, T*>>>
 	FORCEINLINE TSharedPtr( TSharedPtr<U>&& Other ) noexcept : Object( Other.Object ), Controller( Other.Controller )
 	{
 		Other.Object     = nullptr;
@@ -216,13 +216,13 @@ public:
 		TSharedPtr( MoveTemp( Other ) ).SwapWith( *this );
 		return *this;
 	}
-	template<typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
+	template<typename U, typename = TEnableIfT<bIsConvertible<U*, T*>>>
 	FORCEINLINE TSharedPtr& operator=( const TSharedPtr<U>& Other ) noexcept
 	{
 		TSharedPtr( Other ).SwapWith( *this );
 		return *this;
 	}
-	template<typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
+	template<typename U, typename = TEnableIfT<bIsConvertible<U*, T*>>>
 	FORCEINLINE TSharedPtr& operator=( TSharedPtr<U>&& Other ) noexcept
 	{
 		TSharedPtr( MoveTemp( Other ) ).SwapWith( *this );
@@ -322,7 +322,7 @@ public:
 	TWeakPtr() noexcept = default;
 	FORCEINLINE TWeakPtr( decltype( nullptr ) ) noexcept {}
 
-	template<typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
+	template<typename U, typename = TEnableIfT<bIsConvertible<U*, T*>>>
 	FORCEINLINE TWeakPtr( const TSharedPtr<U>& Shared ) noexcept : Object( Shared.Object ), Controller( Shared.Controller )
 	{
 		if ( Controller ) Controller->AddWeak();
@@ -339,7 +339,7 @@ public:
 		Other.Controller = nullptr;
 	}
 
-	template<typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
+	template<typename U, typename = TEnableIfT<bIsConvertible<U*, T*>>>
 	FORCEINLINE TWeakPtr( const TWeakPtr<U>& Other ) noexcept : Object( Other.Object ), Controller( Other.Controller )
 	{
 		if ( Controller ) Controller->AddWeak();
@@ -360,7 +360,7 @@ public:
 		TWeakPtr( MoveTemp( Other ) ).SwapWith( *this );
 		return *this;
 	}
-	template<typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
+	template<typename U, typename = TEnableIfT<bIsConvertible<U*, T*>>>
 	FORCEINLINE TWeakPtr& operator=( const TSharedPtr<U>& Shared ) noexcept
 	{
 		TWeakPtr( Shared ).SwapWith( *this );
