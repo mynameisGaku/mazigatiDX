@@ -65,8 +65,8 @@ namespace
 		Out.Emission = NMath::Clamp( Emitter.Material.Emission.Evaluate( Particle.NormalizedAge, 1.0f ), 0.0f, 32.0f );
 		// 秒齢からUVの一周未満の移動量を求める。
 		const double Age = NMath::IsFinite( Particle.Age ) ? static_cast<double>( Particle.Age ) : 0.0;
-		const double ScrollU = NMath::IsFinite( Emitter.Material.UVScroll.x ) ? std::fmod( Age * Emitter.Material.UVScroll.x, 1.0 ) : 0.0;
-		const double ScrollV = NMath::IsFinite( Emitter.Material.UVScroll.y ) ? std::fmod( Age * Emitter.Material.UVScroll.y, 1.0 ) : 0.0;
+		const double ScrollU = NMath::IsFinite( Emitter.Material.UVScroll.x ) ? NMath::Fmod( Age * Emitter.Material.UVScroll.x, 1.0 ) : 0.0;
+		const double ScrollV = NMath::IsFinite( Emitter.Material.UVScroll.y ) ? NMath::Fmod( Age * Emitter.Material.UVScroll.y, 1.0 ) : 0.0;
 		Out.UVOffset[0] = static_cast<float32>( ScrollU < 0.0 ? ScrollU + 1.0 : ScrollU );
 		Out.UVOffset[1] = static_cast<float32>( ScrollV < 0.0 ? ScrollV + 1.0 : ScrollV );
 		const FEffectUVDistortionDefinition& Distortion = Emitter.Material.Distortion;
@@ -80,8 +80,8 @@ namespace
 		Out.DistortionUVScale[0] = Distortion.UVScale.x;
 		Out.DistortionUVScale[1] = Distortion.UVScale.y;
 		// noiseの移動量は秒齢で計算し、命令へ一周未満だけ渡す。
-		const double DistortionU = std::fmod( Age * Distortion.UVScroll.x, 1.0 );
-		const double DistortionV = std::fmod( Age * Distortion.UVScroll.y, 1.0 );
+		const double DistortionU = NMath::Fmod( Age * Distortion.UVScroll.x, 1.0 );
+		const double DistortionV = NMath::Fmod( Age * Distortion.UVScroll.y, 1.0 );
 		Out.DistortionUVOffset[0] = static_cast<float32>( DistortionU < 0.0 ? DistortionU + 1.0 : DistortionU );
 		Out.DistortionUVOffset[1] = static_cast<float32>( DistortionV < 0.0 ? DistortionV + 1.0 : DistortionV );
 		return true;
@@ -136,9 +136,9 @@ namespace
 		// 幅方向の秒ごとの画像移動量。
 		const double ScrollV = Emitter.Material.UVScroll.y;
 		// 剰余済みの基準横位相。
-		const double BaseU = NMath::IsFinite( ScrollU ) ? std::fmod( AgeReference * ScrollU, 1.0 ) : 0.0;
+		const double BaseU = NMath::IsFinite( ScrollU ) ? NMath::Fmod( AgeReference * ScrollU, 1.0 ) : 0.0;
 		// 剰余済みの基準縦位相。
-		const double BaseV = NMath::IsFinite( ScrollV ) ? std::fmod( AgeReference * ScrollV, 1.0 ) : 0.0;
+		const double BaseV = NMath::IsFinite( ScrollV ) ? NMath::Fmod( AgeReference * ScrollV, 1.0 ) : 0.0;
 		if ( bMaterialEnabled )
 		{
 			if ( Texture < 0 || MaskTexture < -1 || !NMath::IsFinite( AgeReference ) || !NMath::IsFinite( ScrollU ) || !NMath::IsFinite( ScrollV ) || !NMath::IsFinite( Emitter.Path.UVRepeat ) || Emitter.Path.UVRepeat <= 0.0f || !NMath::IsFinite( Emitter.Material.UVScale.x ) || !NMath::IsFinite( Emitter.Material.UVScale.y ) || Emitter.Material.UVScale.x <= 0.0f || Emitter.Material.UVScale.y <= 0.0f || Emitter.Material.UVScale.x > 128.0f || Emitter.Material.UVScale.y > 128.0f || !NMath::IsFinite( Emitter.Material.MaskScale ) || Emitter.Material.MaskScale <= 0.0f || Emitter.Material.MaskScale > 128.0f || !NMath::IsFinite( Emitter.Material.EdgeWidth ) || Emitter.Material.EdgeWidth < 0.0f || Emitter.Material.EdgeWidth > 1.0f || !NMath::IsFinite( Emitter.Material.EdgeEmission ) || Emitter.Material.EdgeEmission < 0.0f || Emitter.Material.EdgeEmission > 32.0f ) return;
@@ -192,8 +192,8 @@ namespace
 					const float32 Strength = Distortion.Strength.Evaluate( CurveAge, 0.05f );
 					if ( !NMath::IsFinite( Strength ) || Strength < 0.0f || Strength > 1.0f ) return;
 					// 最初の点だけ秒齢を剰余し、後続点は連続差を足す。
-					const double NoiseBaseU = std::fmod( AgeReference * static_cast<double>( Distortion.UVScroll.x ), 1.0 );
-					const double NoiseBaseV = std::fmod( AgeReference * static_cast<double>( Distortion.UVScroll.y ), 1.0 );
+					const double NoiseBaseU = NMath::Fmod( AgeReference * static_cast<double>( Distortion.UVScroll.x ), 1.0 );
+					const double NoiseBaseV = NMath::Fmod( AgeReference * static_cast<double>( Distortion.UVScroll.y ), 1.0 );
 					const double NoiseOffsetU = NoiseBaseU + AgeDelta * static_cast<double>( Distortion.UVScroll.x );
 					const double NoiseOffsetV = NoiseBaseV + AgeDelta * static_cast<double>( Distortion.UVScroll.y );
 					if ( !NMath::IsFinite( NoiseOffsetU ) || !NMath::IsFinite( NoiseOffsetV ) || NMath::Abs( NoiseOffsetU ) > 1.0e6 || NMath::Abs( NoiseOffsetV ) > 1.0e6 ) return;
@@ -239,9 +239,9 @@ namespace
 					// 区間の画像終点。
 					const float32 CurrentU = Strip.Points[Index].U * Emitter.Path.UVRepeat;
 					// 始点の反復番号。
-					const double FirstRepeat = std::floor( static_cast<double>( PreviousU ) );
+					const double FirstRepeat = NMath::Floor( static_cast<double>( PreviousU ) );
 					// GPU側と同じ分割数。
-					const double Sections = NMath::Max( 1.0, std::ceil( static_cast<double>( CurrentU ) ) - FirstRepeat );
+					const double Sections = NMath::Max( 1.0, NMath::Ceil( static_cast<double>( CurrentU ) ) - FirstRepeat );
 					if ( !NMath::IsFinite( Sections ) || Sections > static_cast<double>( FDrawRibbonData::MaxTextureSections - TextureSections ) ) return;
 					TextureSections += static_cast<int32>( Sections );
 				}
@@ -461,7 +461,7 @@ TArray<uint8> NEffect::MakeSoftDotImage()
 		{
 			const float32 Dx = ( static_cast<float32>( X ) - Center ) / ( Center + 0.5f );
 			const float32 Dy = ( static_cast<float32>( Y ) - Center ) / ( Center + 0.5f );
-			const float32 Distance = std::sqrt( Dx * Dx + Dy * Dy );
+			const float32 Distance = NMath::Sqrt( Dx * Dx + Dy * Dy );
 			const float32 Falloff = Distance >= 1.0f ? 0.0f : ( 1.0f - Distance ) * ( 1.0f - Distance );
 			const uint32 Alpha = static_cast<uint32>( std::lround( Falloff * 255.0f ) );
 			Put8( 255 );     // B
@@ -478,7 +478,7 @@ TArray<uint8> NEffect::MakeRibbonImage()
 	// 幅方向だけが柔らかく消え、長さ方向へ繰り返しても継ぎ目が出ない TGA。
 	TArray<uint8> Bytes;
 	Bytes.SetNum( 18 + 64 * 2 * 4 );
-	std::memset( Bytes.GetData(), 0, static_cast<usize>( Bytes.Num() ) );
+	FMemory::Memset( Bytes.GetData(), 0, static_cast<usize>( Bytes.Num() ) );
 	Bytes[2] = 2;
 	Bytes[12] = 2;
 	Bytes[14] = 64;
@@ -493,7 +493,7 @@ TArray<uint8> NEffect::MakeRibbonImage()
 			// 色の三成分と不透明度の先頭。
 			const int32 Offset = 18 + ( Y * 2 + X ) * 4;
 			Bytes[Offset] = Bytes[Offset + 1] = Bytes[Offset + 2] = 255;
-			Bytes[Offset + 3] = static_cast<uint8>( std::lround( std::pow( 1.0f - Across, 0.7f ) * 255.0f ) );
+			Bytes[Offset + 3] = static_cast<uint8>( std::lround( NMath::Pow( 1.0f - Across, 0.7f ) * 255.0f ) );
 		}
 	}
 	return Bytes;
@@ -805,7 +805,7 @@ void FParticlePlayback::Record( FDrawContext& Draw ) const
 		if ( Emitter.Orient == EParticleOrient::Fixed )
 		{
 			// 板の向きに粒子の回転を反映する。材質と従来描画で同じ向きを使う。
-			const float32 C = std::cos( Particle.Angle ), S = std::sin( Particle.Angle );
+			const float32 C = NMath::Cos( Particle.Angle ), S = NMath::Sin( Particle.Angle );
 			const FVector3 Right = FixedRight * C + FixedUp * S;
 			const FVector3 Up = FixedUp * C - FixedRight * S;
 			Data.Right[0] = Right.x;
@@ -841,9 +841,9 @@ void FParticlePlayback::Record( FDrawContext& Draw ) const
 			// 秒齢とスクロール速度の積。double の剰余で長時間後も小数部だけにする。
 			const double Age = NMath::IsFinite( Particle.Age ) ? static_cast<double>( Particle.Age ) : 0.0;
 			// 横方向へ一周させた UV 移動量。
-			const double ScrollU = NMath::IsFinite( Emitter.Material.UVScroll.x ) ? std::fmod( Age * Emitter.Material.UVScroll.x, 1.0 ) : 0.0;
+			const double ScrollU = NMath::IsFinite( Emitter.Material.UVScroll.x ) ? NMath::Fmod( Age * Emitter.Material.UVScroll.x, 1.0 ) : 0.0;
 			// 縦方向へ一周させた UV 移動量。
-			const double ScrollV = NMath::IsFinite( Emitter.Material.UVScroll.y ) ? std::fmod( Age * Emitter.Material.UVScroll.y, 1.0 ) : 0.0;
+			const double ScrollV = NMath::IsFinite( Emitter.Material.UVScroll.y ) ? NMath::Fmod( Age * Emitter.Material.UVScroll.y, 1.0 ) : 0.0;
 			MaterialData.UVOffset[0] = static_cast<float32>( ScrollU < 0.0 ? ScrollU + 1.0 : ScrollU );
 			MaterialData.UVOffset[1] = static_cast<float32>( ScrollV < 0.0 ? ScrollV + 1.0 : ScrollV );
 			// ゆがみは四角形材質だけで評価し、0なら旧命令へ戻してbyte互換を保つ。
@@ -860,8 +860,8 @@ void FParticlePlayback::Record( FDrawContext& Draw ) const
 					if ( !DistortionTexture.IsValid() || DistortionTexture->GetHandle() < 0 ) continue;
 					// 粒子秒齢と速度の積をdouble剰余し、長時間後も小数位相だけを渡す。
 					const double DistortionAge = static_cast<double>( Particle.Age );
-					const double DistortionScrollU = std::fmod( DistortionAge * DistortionDefinition.UVScroll.x, 1.0 );
-					const double DistortionScrollV = std::fmod( DistortionAge * DistortionDefinition.UVScroll.y, 1.0 );
+					const double DistortionScrollU = NMath::Fmod( DistortionAge * DistortionDefinition.UVScroll.x, 1.0 );
+					const double DistortionScrollV = NMath::Fmod( DistortionAge * DistortionDefinition.UVScroll.y, 1.0 );
 					const double WrappedU = DistortionScrollU < 0.0 ? DistortionScrollU + 1.0 : DistortionScrollU;
 					const double WrappedV = DistortionScrollV < 0.0 ? DistortionScrollV + 1.0 : DistortionScrollV;
 					// 0..1へ丸めた移動量と、画像・強さの独立設定。

@@ -55,10 +55,10 @@ namespace
 	void RecordGrid( FDrawContext& Draw, const FEditorCamera& Camera )
 	{
 		// 注視点までの距離に合わせた 1, 10, 100 ... の間隔。10 本ごとに濃い線
-		const float32 Cell = std::pow( 10.0f, std::floor( std::log10( NMath::Max( Camera.Distance * 0.25f, 0.01f ) ) ) );
+		const float32 Cell = NMath::Pow( 10.0f, NMath::Floor( NMath::Log10( NMath::Max( Camera.Distance * 0.25f, 0.01f ) ) ) );
 		constexpr int32 Half = 24;
-		const int32 CenterX = static_cast<int32>( std::round( Camera.Target.x / Cell ) );
-		const int32 CenterZ = static_cast<int32>( std::round( Camera.Target.z / Cell ) );
+		const int32 CenterX = static_cast<int32>( NMath::Round( Camera.Target.x / Cell ) );
+		const int32 CenterZ = static_cast<int32>( NMath::Round( Camera.Target.z / Cell ) );
 		const float32 MinX = static_cast<float32>( CenterX - Half ) * Cell, MaxX = static_cast<float32>( CenterX + Half ) * Cell;
 		const float32 MinZ = static_cast<float32>( CenterZ - Half ) * Cell, MaxZ = static_cast<float32>( CenterZ + Half ) * Cell;
 		const FColor32 Minor( 58, 61, 70, 255 ), Major( 82, 86, 98, 255 );
@@ -390,7 +390,7 @@ namespace
 	void DrawArrowHead( const FOverlay& O, const ImVec2& From, const ImVec2& To, ImU32 Color )
 	{
 		const ImVec2 Delta( To.x - From.x, To.y - From.y );
-		const float32 Length = std::sqrt( Delta.x * Delta.x + Delta.y * Delta.y );
+		const float32 Length = NMath::Sqrt( Delta.x * Delta.x + Delta.y * Delta.y );
 		if ( Length < 4.0f ) return;
 		const ImVec2 Direction( Delta.x / Length, Delta.y / Length );
 		const ImVec2 Perpendicular( -Direction.y, Direction.x );
@@ -423,7 +423,7 @@ namespace
 				for ( int32 i = 1; i <= Segments; ++i )
 				{
 					const float32 Angle = NMath::TWO_PI * static_cast<float32>( i ) / static_cast<float32>( Segments );
-					const FVector3 Point = Frame.Origin + ( U * std::cos( Angle ) + V * std::sin( Angle ) ) * Radius;
+					const FVector3 Point = Frame.Origin + ( U * NMath::Cos( Angle ) + V * NMath::Sin( Angle ) ) * Radius;
 					const bool bFront = FVector3::Dot( Point - Frame.Origin, ToCamera ) >= 0.0f;
 					O.Line( Previous, Point, bFront ? Color : WithAlpha( Color, 70 ), bFront ? ( bHighlight ? 4.0f : 3.0f ) : 1.0f );
 					Previous = Point;
@@ -567,7 +567,7 @@ namespace
 		DrawList->PopClipRect();
 
 		// 左上の情報
-		const FString Info = FString::Printf( "Distance %.1f   Grid %.3g", S.Session.Camera.Distance, std::pow( 10.0f, std::floor( std::log10( NMath::Max( S.Session.Camera.Distance * 0.25f, 0.01f ) ) ) ) );
+		const FString Info = FString::Printf( "Distance %.1f   Grid %.3g", S.Session.Camera.Distance, NMath::Pow( 10.0f, NMath::Floor( NMath::Log10( NMath::Max( S.Session.Camera.Distance * 0.25f, 0.01f ) ) ) ) );
 		DrawList->AddText( ImVec2( Origin.x + 8.0f, Origin.y + 6.0f ), IM_COL32( 200, 205, 220, 200 ), UI_TEXT( Info ) );
 
 		// 当たり判定の凡例（色の意味）
@@ -684,8 +684,8 @@ void NWorldEditorUI::DrawViewport( FWorldEditorState& S )
 		S.ViewSize = ImVec2( 0.0f, 0.0f );
 		return;
 	}
-	Size.x = std::floor( Size.x );
-	Size.y = std::floor( Size.y );
+	Size.x = NMath::Floor( Size.x );
+	Size.y = NMath::Floor( Size.y );
 	S.ViewOrigin = Origin;
 	S.ViewSize = Size;
 	S.View.Width = static_cast<int32>( Size.x );

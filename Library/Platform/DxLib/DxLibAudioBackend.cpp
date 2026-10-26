@@ -49,7 +49,7 @@ void CDxLibAudioBackend::SetPan( int32 Voice, float32 Pan )
 {
 	// 遠い側の音量を (1 - |Pan|) 倍にする。DxLib の値は、正で右寄り・負で左寄り（100 分の 1 デシベル単位）
 	const float32 Far = NMath::Max( 1.0f - NMath::Abs( Pan ), 1.0e-5f );
-	const int32 Attenuation = NMath::Min( 10000, static_cast<int32>( std::lround( -2000.0f * std::log10( Far ) ) ) );
+	const int32 Attenuation = NMath::Min( 10000, static_cast<int32>( std::lround( -2000.0f * NMath::Log10( Far ) ) ) );
 	SetPanSoundMem( Pan >= 0.0f ? Attenuation : -Attenuation, Voice );
 }
 

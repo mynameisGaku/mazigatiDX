@@ -44,7 +44,7 @@ namespace
 
 	float32 SnapTo( float32 Value, float32 Step )
 	{
-		return Step > 0.0f ? std::round( Value / Step ) * Step : Value;
+		return Step > 0.0f ? NMath::Round( Value / Step ) * Step : Value;
 	}
 }
 

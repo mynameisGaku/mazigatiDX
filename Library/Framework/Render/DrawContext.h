@@ -349,7 +349,7 @@ private:
 		const size_t Begin = Words.size();
 		Words.resize( Begin + 1 + DataWords );
 		Words[Begin] = NDrawCommand::MakeHeader( Type, Flags, static_cast<int32>( 1 + DataWords ) );
-		std::memcpy( &Words[Begin + 1], &Data, sizeof( TData ) );
+		FMemory::Memcpy( &Words[Begin + 1], &Data, sizeof( TData ) );
 	}
 
 private:

@@ -138,7 +138,7 @@ namespace
 		const FVector3 Scale( NMath::Abs( Definition.Scale.x ), NMath::Abs( Definition.Scale.y ), NMath::Abs( Definition.Scale.z ) );
 		const FVector3 Center = ( S.BoundsMin + S.BoundsMax ) * 0.5f;
 		const FVector3 Extent = ( S.BoundsMax - S.BoundsMin ) * 0.5f;
-		float32 Radius = NMath::Max( std::sqrt( Extent.x * Scale.x * Extent.x * Scale.x + Extent.y * Scale.y * Extent.y * Scale.y + Extent.z * Scale.z * Extent.z * Scale.z ), 0.01f );
+		float32 Radius = NMath::Max( NMath::Sqrt( Extent.x * Scale.x * Extent.x * Scale.x + Extent.y * Scale.y * Extent.y * Scale.y + Extent.z * Scale.z * Extent.z * Scale.z ), 0.01f );
 		FVector3 Middle = FVector3( Center.x * Scale.x, Center.y * Scale.y, Center.z * Scale.z ) + Definition.Offset;
 
 		// 動き回るアニメーション（歩いて前に進む、など）でも画面に収まるように、通る範囲まで含める
@@ -147,7 +147,7 @@ namespace
 		{
 			const FVector3 MotionCenter = ( MotionMin + MotionMax ) * 0.5f;
 			const FVector3 MotionExtent = ( MotionMax - MotionMin ) * 0.5f;
-			const float32 MotionRadius = std::sqrt( MotionExtent.x * MotionExtent.x + MotionExtent.y * MotionExtent.y + MotionExtent.z * MotionExtent.z );
+			const float32 MotionRadius = NMath::Sqrt( MotionExtent.x * MotionExtent.x + MotionExtent.y * MotionExtent.y + MotionExtent.z * MotionExtent.z );
 			if ( MotionRadius > Radius * 0.05f )
 			{
 				Middle = MotionCenter;
@@ -316,15 +316,15 @@ namespace
 		SetUseZBuffer3D( TRUE );
 		SetWriteZBuffer3D( TRUE );
 
-		const float32 CosPitch = std::cos( S.Pitch );
+		const float32 CosPitch = NMath::Cos( S.Pitch );
 		const VECTOR Target = VGet( S.Target.x, S.Target.y, S.Target.z );
-		const VECTOR Eye = VGet( S.Target.x + S.Distance * CosPitch * std::sin( S.Yaw ), S.Target.y + S.Distance * std::sin( S.Pitch ), S.Target.z - S.Distance * CosPitch * std::cos( S.Yaw ) );
+		const VECTOR Eye = VGet( S.Target.x + S.Distance * CosPitch * NMath::Sin( S.Yaw ), S.Target.y + S.Distance * NMath::Sin( S.Pitch ), S.Target.z - S.Distance * CosPitch * NMath::Cos( S.Yaw ) );
 		SetCameraNearFar( NMath::Max( S.Distance * 0.01f, 0.001f ), S.Distance * 200.0f );
 		SetupCamera_Perspective( 0.8f );
 		SetCameraPositionAndTargetAndUpVec( Eye, Target, VGet( 0.0f, 1.0f, 0.0f ) );
 
 		// 床の格子と軸（モデルの大きさに合わせる）
-		const float32 Cell = NMath::Max( std::pow( 10.0f, std::floor( std::log10( NMath::Max( S.Distance * 0.25f, 0.001f ) ) ) ), 0.001f );
+		const float32 Cell = NMath::Max( NMath::Pow( 10.0f, NMath::Floor( NMath::Log10( NMath::Max( S.Distance * 0.25f, 0.001f ) ) ) ), 0.001f );
 		if ( S.bShowFloor )
 		{
 			const int N = 10;
@@ -391,7 +391,7 @@ namespace
 			{
 				// 画面に平行に動かす
 				const float32 Scale = S.Distance * 0.0016f;
-				const FVector3 Right( std::cos( S.Yaw ), 0.0f, std::sin( S.Yaw ) );
+				const FVector3 Right( NMath::Cos( S.Yaw ), 0.0f, NMath::Sin( S.Yaw ) );
 				const FVector3 Up( 0.0f, 1.0f, 0.0f );
 				S.Target = S.Target - Right * ( IO.MouseDelta.x * Scale ) + Up * ( IO.MouseDelta.y * Scale );
 			}

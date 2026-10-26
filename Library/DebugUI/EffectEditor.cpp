@@ -343,7 +343,7 @@ bool NDebugUI::SaveEffectFile( FEffectEditorState& State, const FString& AssetPa
 FTransform NEffectEditorUI::GetPreviewEmitterTransform( const FEffectEditorState& State )
 {
 	if ( !State.bPreviewMotion ) return FTransform::Identity;
-	return FTransform( FVector3( std::cos( State.PreviewMotionTime ) * 1.2f, 1.0f, std::sin( State.PreviewMotionTime ) * 1.2f ) );
+	return FTransform( FVector3( NMath::Cos( State.PreviewMotionTime ) * 1.2f, 1.0f, NMath::Sin( State.PreviewMotionTime ) * 1.2f ) );
 }
 
 void NDebugUI::RestartEffectPreview( FEffectEditorState& State )
@@ -385,7 +385,7 @@ void NDebugUI::UpdateEffectEditor( FEffectEditorState& State, float32 DeltaTime 
 	{
 		// 一周で折り返し、長時間開いたままでも位置の計算精度を保つ。
 		constexpr float32 CirclePeriod = 6.283185307f;
-		State.PreviewMotionTime = std::fmod( State.PreviewMotionTime + Step, CirclePeriod );
+		State.PreviewMotionTime = NMath::Fmod( State.PreviewMotionTime + Step, CirclePeriod );
 		State.Playback->SetTransform( NEffectEditorUI::GetPreviewEmitterTransform( State ) );
 	}
 	else State.Playback->SetTransform( FTransform::Identity );

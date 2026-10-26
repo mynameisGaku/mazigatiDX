@@ -162,7 +162,7 @@ float32 FSpriteAnimator::GetNormalizedTime() const
 
 	float64 Time = Playhead;
 	if ( Timeline->Loop == EAnimLoopMode::Once ) Time = NMath::Clamp( Time, 0.0, static_cast<float64>( Timeline->Total ) );
-	else Time -= std::floor( Time / Timeline->Total ) * Timeline->Total;
+	else Time -= NMath::Floor( Time / Timeline->Total ) * Timeline->Total;
 	return static_cast<float32>( Time / Timeline->Total );
 }
 
@@ -201,7 +201,7 @@ void FSpriteAnimator::RecordAt( FDrawContext& Draw, const FTransformView& Transf
 	const FQuaternion& Q = Transform.GetWorldRotation();
 
 	// Z 軸まわりの回転角（ほかの軸の回転は、2D のスプライトでは使わない）
-	float32 Angle = std::atan2( 2.0f * ( Q.w * Q.z + Q.x * Q.y ), 1.0f - 2.0f * ( Q.y * Q.y + Q.z * Q.z ) );
+	float32 Angle = NMath::Atan2( 2.0f * ( Q.w * Q.z + Q.x * Q.y ), 1.0f - 2.0f * ( Q.y * Q.y + Q.z * Q.z ) );
 	// 縦横の一方だけ反転する変換では、回る向きも逆になる
 	if ( Space.PixelsPerUnit.x * Space.PixelsPerUnit.y < 0.0f ) Angle = -Angle;
 

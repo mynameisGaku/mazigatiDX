@@ -34,6 +34,7 @@ struct FMemory
 	FORCEINLINE static void Memcpy( void* Dest, const void* Src, usize Size ) { if ( Size > 0 ) std::memcpy( Dest, Src, Size ); }
 	FORCEINLINE static void Memmove( void* Dest, const void* Src, usize Size ) { if ( Size > 0 ) std::memmove( Dest, Src, Size ); }
 	FORCEINLINE static void Memzero( void* Dest, usize Size ) { if ( Size > 0 ) std::memset( Dest, 0, Size ); }
+	FORCEINLINE static void Memset( void* Dest, int32 Value, usize Size ) { if ( Size > 0 ) std::memset( Dest, Value, Size ); }
 	FORCEINLINE static int32 Memcmp( const void* A, const void* B, usize Size ) { return Size > 0 ? std::memcmp( A, B, Size ) : 0; }
 
 	// T 型 Count 個分の未初期化メモリ

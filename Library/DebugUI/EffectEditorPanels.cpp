@@ -370,7 +370,7 @@ namespace
 		const float64 DeltaY = static_cast<float64>( SphereCenter.y ) - BoundsCenter.y;
 		const float64 DeltaZ = static_cast<float64>( SphereCenter.z ) - BoundsCenter.z;
 		// sphere中心間のdouble距離。
-		const float64 CenterDistance = std::sqrt( DeltaX * DeltaX + DeltaY * DeltaY + DeltaZ * DeltaZ );
+		const float64 CenterDistance = NMath::Sqrt( DeltaX * DeltaX + DeltaY * DeltaY + DeltaZ * DeltaZ );
 		if ( !NMath::IsFinite( CenterDistance ) ) return false;
 		if ( CenterDistance + SphereRadius <= BoundsRadius ) return true;
 		if ( CenterDistance + BoundsRadius <= SphereRadius )
@@ -399,7 +399,7 @@ namespace
 		const float64 RoundX = NewX - RoundedCenter.x;
 		const float64 RoundY = NewY - RoundedCenter.y;
 		const float64 RoundZ = NewZ - RoundedCenter.z;
-		const float64 RoundError = std::sqrt( RoundX * RoundX + RoundY * RoundY + RoundZ * RoundZ );
+		const float64 RoundError = NMath::Sqrt( RoundX * RoundX + RoundY * RoundY + RoundZ * RoundZ );
 		if ( !NMath::IsFinite( RoundError ) || NewRadius + RoundError > TNumericLimits<float32>::Max() ) return false;
 		BoundsCenter = RoundedCenter;
 		BoundsRadius = NewRadius + RoundError;
@@ -483,15 +483,15 @@ namespace
 			// start/end sizeの最大値。
 			const float64 BaseSize = NMath::Max( static_cast<float64>( Emitter.StartSize.Max ), static_cast<float64>( Emitter.EndSize.Max ) );
 			// Planeは半辺の対角、Ringは外半径の係数。
-			const float64 ShapeFactor = Emitter.Mesh.Kind == FEffectMeshDefinition::EKind::Plane ? std::sqrt( 0.5 ) : 0.5;
+			const float64 ShapeFactor = Emitter.Mesh.Kind == FEffectMeshDefinition::EKind::Plane ? NMath::Sqrt( 0.5 ) : 0.5;
 			// sizeとAppearanceを反映したmesh半径。
 			const float64 MeshRadius = BaseSize * AppearanceScale * ShapeFactor;
 			// Cone・Sphereは半径、Boxは半対角をspawn範囲へ使う。
-			float64 SpawnRadius = Emitter.Shape == EParticleShape::Box ? 0.5 * std::sqrt( static_cast<float64>( Emitter.BoxSize.x ) * Emitter.BoxSize.x + static_cast<float64>( Emitter.BoxSize.y ) * Emitter.BoxSize.y + static_cast<float64>( Emitter.BoxSize.z ) * Emitter.BoxSize.z ) : static_cast<float64>( Emitter.ShapeRadius );
+			float64 SpawnRadius = Emitter.Shape == EParticleShape::Box ? 0.5 * NMath::Sqrt( static_cast<float64>( Emitter.BoxSize.x ) * Emitter.BoxSize.x + static_cast<float64>( Emitter.BoxSize.y ) * Emitter.BoxSize.y + static_cast<float64>( Emitter.BoxSize.z ) * Emitter.BoxSize.z ) : static_cast<float64>( Emitter.ShapeRadius );
 			// 寿命全体の移動に使う最大時間。
 			const float64 Lifetime = Emitter.Lifetime.Max;
 			// 重力加速度ベクトルの長さ。
-			const float64 GravityLength = std::sqrt( static_cast<float64>( Emitter.Gravity.x ) * Emitter.Gravity.x + static_cast<float64>( Emitter.Gravity.y ) * Emitter.Gravity.y + static_cast<float64>( Emitter.Gravity.z ) * Emitter.Gravity.z );
+			const float64 GravityLength = NMath::Sqrt( static_cast<float64>( Emitter.Gravity.x ) * Emitter.Gravity.x + static_cast<float64>( Emitter.Gravity.y ) * Emitter.Gravity.y + static_cast<float64>( Emitter.Gravity.z ) * Emitter.Gravity.z );
 			// speedと重力が寿命中に作る保守移動距離。
 			const float64 TravelRadius = static_cast<float64>( Emitter.Speed.Max ) * Lifetime + GravityLength * Lifetime * Lifetime;
 			// mesh外周、spawn、移動の合計保守半径。
@@ -513,9 +513,9 @@ namespace
 		if ( CenterDepth - SafeBoundsRadius <= Viewport.Near || CenterDepth + SafeBoundsRadius >= Viewport.Far ) { S.Camera = PreviousCamera; return false; }
 		// 縦横の半視野角のうち狭い方を使った、球の角度方向の収まり。
 		const float32 HalfFovY = Viewport.FovY * 0.5f;
-		const float32 HalfFovX = std::atan( std::tan( HalfFovY ) * Viewport.GetAspect() );
+		const float32 HalfFovX = NMath::Atan( NMath::Tan( HalfFovY ) * Viewport.GetAspect() );
 		const float32 LimitingHalfFov = NMath::Min( HalfFovX, HalfFovY );
-		if ( !NMath::IsFinite( LimitingHalfFov ) || LimitingHalfFov <= 0.0f || SafeBoundsRadius > CenterDepth * std::sin( LimitingHalfFov ) * 0.92f || CenterPixel.x < 1.0f || CenterPixel.y < 1.0f || CenterPixel.x > Viewport.Width - 1.0f || CenterPixel.y > Viewport.Height - 1.0f ) { S.Camera = PreviousCamera; return false; }
+		if ( !NMath::IsFinite( LimitingHalfFov ) || LimitingHalfFov <= 0.0f || SafeBoundsRadius > CenterDepth * NMath::Sin( LimitingHalfFov ) * 0.92f || CenterPixel.x < 1.0f || CenterPixel.y < 1.0f || CenterPixel.x > Viewport.Width - 1.0f || CenterPixel.y > Viewport.Height - 1.0f ) { S.Camera = PreviousCamera; return false; }
 		return true;
 	}
 }

@@ -28,7 +28,7 @@ namespace
 	// Saved: 現在の保存値。Prepared: 前回更新時の値。一致しなければfalse。
 	bool SameModelSettings( const FWorldModel& Saved, const FWorldModel& Prepared )
 	{
-		if ( Saved.Path != Prepared.Path || Saved.Animations != Prepared.Animations || Saved.Clip != Prepared.Clip || std::memcmp( &Saved.Speed, &Prepared.Speed, sizeof( float32 ) ) != 0 ) return false;
+		if ( Saved.Path != Prepared.Path || Saved.Animations != Prepared.Animations || Saved.Clip != Prepared.Clip || FMemory::Memcmp( &Saved.Speed, &Prepared.Speed, sizeof( float32 ) ) != 0 ) return false;
 		if ( Saved.MaterialEffect.IsSet() != Prepared.MaterialEffect.IsSet() ) return false;
 		if ( !Saved.MaterialEffect.IsSet() ) return true;
 		// 保存値側のoptional内binding。

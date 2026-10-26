@@ -56,14 +56,14 @@ void CDxLibInput::Tick( float32 DeltaTime )
 	const HWND MainWindow = GetMainWindowHandle();
 	const bool bFocused = ( MainWindow != nullptr ) && ( GetForegroundWindow() == MainWindow );
 
-	std::memcpy( Previous, Current, sizeof( Current ) );
+	FMemory::Memcpy( Previous, Current, sizeof( Current ) );
 	if ( bFocused )
 	{
 		GetHitKeyStateAll( Current );
 	}
 	else
 	{
-		std::memset( Current, 0, sizeof( Current ) );
+		FMemory::Memset( Current, 0, sizeof( Current ) );
 	}
 
 	// ホイール回転量は非フォーカス中も読み捨てておき、復帰時にまとめて飛ばないようにする

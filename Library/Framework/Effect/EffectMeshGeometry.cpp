@@ -64,8 +64,8 @@ bool NEffectMesh::BuildGeometry( const FEffectMeshDefinition& Definition, FEffec
 			// 同一点の角度を最初と最後で共有する。
 			const float32 Angle = U * 6.2831853071795864769f;
 			// 内外円の共通方向成分。
-			const float32 Cosine = std::cos( Angle );
-			const float32 Sine = std::sin( Angle );
+			const float32 Cosine = NMath::Cos( Angle );
+			const float32 Sine = NMath::Sin( Angle );
 			Geometry.Vertices.Add( MakeVertex( Cosine * 0.5f * Definition.InnerRadius, Sine * 0.5f * Definition.InnerRadius, U, 0.0f ) );
 			Geometry.Vertices.Add( MakeVertex( Cosine * 0.5f, Sine * 0.5f, U, 1.0f ) );
 		}

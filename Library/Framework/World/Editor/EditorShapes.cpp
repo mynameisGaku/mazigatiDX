@@ -142,8 +142,8 @@ void NWorldEditor::ComputeBillboardAxes( EWorldBillboardMode Mode, const FTransf
 	{
 		// オブジェクトの Roll を、視線まわりの回転にする（FBillboard::Record と、実行側（DrawQuad3D）と同じ）
 		const float32 Angle = WorldTransform.Rotation.ToEuler().z;
-		const float32 Cos = std::cos( Angle );
-		const float32 Sin = std::sin( Angle );
+		const float32 Cos = NMath::Cos( Angle );
+		const float32 Sin = NMath::Sin( Angle );
 		OutRight = CameraRight * Cos + CameraUp * Sin;
 		OutUp = CameraUp * Cos + CameraRight * -Sin;
 		break;
@@ -259,11 +259,11 @@ namespace
 	// Center のまわりの、U と V の平面の円弧（開始角から終了角まで）
 	void AppendArc( TArray<FVector3>& OutLines, const FVector3& Center, const FVector3& U, const FVector3& V, float32 Radius, float32 StartAngle, float32 EndAngle, int32 Segments )
 	{
-		FVector3 Previous = Center + ( U * std::cos( StartAngle ) + V * std::sin( StartAngle ) ) * Radius;
+		FVector3 Previous = Center + ( U * NMath::Cos( StartAngle ) + V * NMath::Sin( StartAngle ) ) * Radius;
 		for ( int32 i = 1; i <= Segments; ++i )
 		{
 			const float32 Angle = StartAngle + ( EndAngle - StartAngle ) * static_cast<float32>( i ) / static_cast<float32>( Segments );
-			const FVector3 Point = Center + ( U * std::cos( Angle ) + V * std::sin( Angle ) ) * Radius;
+			const FVector3 Point = Center + ( U * NMath::Cos( Angle ) + V * NMath::Sin( Angle ) ) * Radius;
 			OutLines.Add( Previous );
 			OutLines.Add( Point );
 			Previous = Point;

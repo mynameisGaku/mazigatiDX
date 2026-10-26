@@ -20,7 +20,7 @@ namespace
 		const float64 Y = Value.y;
 		// 3成分をdoubleへ広げた値。
 		const float64 Z = Value.z;
-		return std::sqrt( X * X + Y * Y + Z * Z );
+		return NMath::Sqrt( X * X + Y * Y + Z * Z );
 	}
 
 	// boundsへ加える座標が有限で、半径が有限かつ非負であることを確認する。
@@ -47,7 +47,7 @@ namespace
 		// 球の中心差をdoubleで計算する。
 		const float64 DeltaZ = static_cast<float64>( SphereCenter.z ) - BoundsCenter.z;
 		// 中心間の距離。
-		const float64 Distance = std::sqrt( DeltaX * DeltaX + DeltaY * DeltaY + DeltaZ * DeltaZ );
+		const float64 Distance = NMath::Sqrt( DeltaX * DeltaX + DeltaY * DeltaY + DeltaZ * DeltaZ );
 		if ( !NMath::IsFinite( Distance ) ) return false;
 		if ( Distance + SphereRadius <= BoundsRadius ) return true;
 		if ( Distance + BoundsRadius <= SphereRadius )
@@ -81,7 +81,7 @@ namespace
 		// 丸め誤差の3成分。
 		const float64 RoundZ = NewZ - RoundedCenter.z;
 		// 丸めで中心がずれる距離。
-		const float64 RoundError = std::sqrt( RoundX * RoundX + RoundY * RoundY + RoundZ * RoundZ );
+		const float64 RoundError = NMath::Sqrt( RoundX * RoundX + RoundY * RoundY + RoundZ * RoundZ );
 		if ( !NMath::IsFinite( RoundError ) || NewRadius + RoundError > TNumericLimits<float32>::Max() ) return false;
 		BoundsCenter = RoundedCenter;
 		BoundsRadius = NewRadius + RoundError;
@@ -106,10 +106,10 @@ namespace
 		// 縦横のうち狭い側の半視野角。
 		const float32 HalfFovY = Viewport.FovY * 0.5f;
 		// 横方向の半視野角。
-		const float32 HalfFovX = std::atan( std::tan( HalfFovY ) * Viewport.GetAspect() );
+		const float32 HalfFovX = NMath::Atan( NMath::Tan( HalfFovY ) * Viewport.GetAspect() );
 		// 球の収まりを制限する半視野角。
 		const float32 HalfFov = NMath::Min( HalfFovX, HalfFovY );
-		return NMath::IsFinite( HalfFov ) && HalfFov > 0.0f && Radius <= Depth * std::sin( HalfFov ) * 0.92f;
+		return NMath::IsFinite( HalfFov ) && HalfFov > 0.0f && Radius <= Depth * NMath::Sin( HalfFov ) * 0.92f;
 	}
 
 	// Vortexの回転軸矢印の長さ。半径に比例させ、極端に小さい・大きい場でも見える範囲へ収める。
@@ -156,9 +156,9 @@ namespace
 			// 線分の終点角度。
 			const float32 Angle1 = TwoPi * static_cast<float32>( Index + 1 ) / SegmentCount;
 			// 円周上の線分始点。
-			const FVector3 Point0 = Center + ( AxisA * std::cos( Angle0 ) + AxisB * std::sin( Angle0 ) ) * Radius;
+			const FVector3 Point0 = Center + ( AxisA * NMath::Cos( Angle0 ) + AxisB * NMath::Sin( Angle0 ) ) * Radius;
 			// 円周上の線分終点。
-			const FVector3 Point1 = Center + ( AxisA * std::cos( Angle1 ) + AxisB * std::sin( Angle1 ) ) * Radius;
+			const FVector3 Point1 = Center + ( AxisA * NMath::Cos( Angle1 ) + AxisB * NMath::Sin( Angle1 ) ) * Radius;
 			Draw.Line3D( Point0, Point1, Color );
 		}
 	}
@@ -233,7 +233,7 @@ bool NEffectEditorUI::FocusCameraOnForceFields( FEffectEditorState& State, const
 		if ( !NMath::IsFinite( TravelRadius ) ) return false;
 		// Cone・Sphereの発生範囲、またはBoxの半対角。
 		float64 SpawnRadius = static_cast<float64>( Emitter.ShapeRadius );
-		if ( Emitter.Shape == EParticleShape::Box ) SpawnRadius = 0.5 * std::sqrt( static_cast<float64>( Emitter.BoxSize.x ) * Emitter.BoxSize.x + static_cast<float64>( Emitter.BoxSize.y ) * Emitter.BoxSize.y + static_cast<float64>( Emitter.BoxSize.z ) * Emitter.BoxSize.z );
+		if ( Emitter.Shape == EParticleShape::Box ) SpawnRadius = 0.5 * NMath::Sqrt( static_cast<float64>( Emitter.BoxSize.x ) * Emitter.BoxSize.x + static_cast<float64>( Emitter.BoxSize.y ) * Emitter.BoxSize.y + static_cast<float64>( Emitter.BoxSize.z ) * Emitter.BoxSize.z );
 		else if ( Emitter.Shape != EParticleShape::Cone && Emitter.Shape != EParticleShape::Sphere ) return false;
 		// 寿命全体で使うsize倍率の最大値。
 		float64 AppearanceScale = 1.0;
@@ -282,7 +282,7 @@ bool NEffectEditorUI::FocusCameraOnForceFields( FEffectEditorState& State, const
 				// 枝が作られる条件を描画側と同じ長さ・枝数で判定する。
 				const bool bHasBranches = Emitter.Path.Branches > 0 && Emitter.Path.BranchLength > 0.0f;
 				// 主幹横揺れと枝先までを包含する倍率。
-				const float64 SpreadFactor = 1.0 + std::sqrt( 2.0 ) * Emitter.Path.Jitter + ( bHasBranches ? Emitter.Path.BranchLength + std::sqrt( 2.0 ) * 0.35 * Emitter.Path.Jitter : 0.0 );
+				const float64 SpreadFactor = 1.0 + NMath::Sqrt( 2.0 ) * Emitter.Path.Jitter + ( bHasBranches ? Emitter.Path.BranchLength + NMath::Sqrt( 2.0 ) * 0.35 * Emitter.Path.Jitter : 0.0 );
 				PathRadius = EndLength * SpreadFactor + ParticleRadius;
 			}
 			else if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::Ribbon ) PathRadius = ParticleRadius;

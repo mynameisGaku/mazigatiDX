@@ -42,7 +42,7 @@ namespace
 	// 刻みに丸める（Step <= 0 なら、そのまま）
 	float32 SnapValue( float32 Value, float32 Step )
 	{
-		return Step > 0.0f ? std::round( Value / Step ) * Step : Value;
+		return Step > 0.0f ? NMath::Round( Value / Step ) * Step : Value;
 	}
 
 	// 軸の線分と光線の距離を、画面の太さの許容で比べる
@@ -253,7 +253,7 @@ FEditorGizmoDelta FEditorGizmoDrag::Update( const FEditorRay& Ray, float32 Snap 
 		const FVector3 From = StartPoint - Frame.Origin;
 		const FVector3 To = Point - Frame.Origin;
 		if ( To.LengthSquared() < 1.0e-10f ) return Last;
-		const float32 Raw = std::atan2( FVector3::Dot( PlaneNormal, FVector3::Cross( From, To ) ), FVector3::Dot( From, To ) );
+		const float32 Raw = NMath::Atan2( FVector3::Dot( PlaneNormal, FVector3::Cross( From, To ) ), FVector3::Dot( From, To ) );
 		AccumulatedAngle += WrapPi( Raw - LastRawAngle );   // 1 周を超えても、続けて数える
 		LastRawAngle = Raw;
 		const float32 Angle = SnapValue( AccumulatedAngle, Snap );

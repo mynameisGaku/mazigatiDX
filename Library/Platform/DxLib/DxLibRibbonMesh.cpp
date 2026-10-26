@@ -6,6 +6,7 @@
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
+#include "Library/Math/MathUtils.h"
 
 namespace
 {
@@ -19,7 +20,7 @@ namespace
 		// 終点と始点の差をfloatの桁あふれ前に広げるZ成分。
 		const float64 Z = static_cast<float64>( To.z ) - From.z;
 		// 安全に単位化するための三次元距離。
-		const float64 Length = std::sqrt( X * X + Y * Y + Z * Z );
+		const float64 Length = NMath::Sqrt( X * X + Y * Y + Z * Z );
 		if ( !NMath::IsFinite( Length ) || Length <= 1.0e-8 ) return Fallback;
 		return VGet( static_cast<float32>( X / Length ), static_cast<float32>( Y / Length ), static_cast<float32>( Z / Length ) );
 	}
@@ -67,9 +68,9 @@ namespace
 			// 現区間が画像座標上で終わる位置。
 			const float64 EndU = Mesh.Vertices[( Index + 1 ) * 2].u;
 			// 現区間の最初の整数反復番号。
-			const float64 FirstRepeat = std::floor( StartU );
+			const float64 FirstRepeat = NMath::Floor( StartU );
 			// 現区間を整数境界で分けるときに必要な区間数。
-			const float64 Required = NMath::Max( 1.0, std::ceil( EndU ) - FirstRepeat );
+			const float64 Required = NMath::Max( 1.0, NMath::Ceil( EndU ) - FirstRepeat );
 			if ( !NMath::IsFinite( Required ) || Required > static_cast<float64>( FDrawRibbonData::MaxTextureSections - TotalSections ) ) return false;
 			// 上限確認後に整数化した現区間の反復数。
 			const int32 Sections = static_cast<int32>( Required );

@@ -60,7 +60,7 @@ FEditMeshBuild NEditMesh::BuildRenderMesh( const FEditMesh& Mesh )
 			for ( const int32 Index : Indices ) VertexFaces[Index].Add( Face );
 		}
 	}
-	const float32 CosLimit = std::cos( NMath::Clamp( Mesh.SmoothAngle, 0.0f, 180.0f ) * NMath::DEG2RAD ) - 1.0e-5f;   // 角度ちょうどの面も混ぜる
+	const float32 CosLimit = NMath::Cos( NMath::Clamp( Mesh.SmoothAngle, 0.0f, 180.0f ) * NMath::DEG2RAD ) - 1.0e-5f;   // 角度ちょうどの面も混ぜる
 
 	// 材質ごとの三角形（頂点は共通の配列に）
 	TArray<int32> Slots;   // 材質の番号の、出てきた順ではなく、小さい順に並べるための一覧

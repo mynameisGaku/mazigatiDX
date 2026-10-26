@@ -109,7 +109,7 @@ void CDxLibDrawExecutor::ExecuteModelMaterial( const FDrawCommandView& Command )
 	}
 	// command bytesから型付き固定値へ複写するheader。
 	FDrawModelMaterialData Data{};
-	std::memcpy( &Data, Command.Data, sizeof( Data ) );
+	FMemory::Memcpy( &Data, Command.Data, sizeof( Data ) );
 	if ( !NDrawModelMaterial::IsValid( Data ) )
 	{
 		if ( !bInvalidLogged ) { LOG( LogModelMaterialCommand, Warning, "モデル材質効果命令の設定値が不正なため描画を読み飛ばしました" ); bInvalidLogged = true; }

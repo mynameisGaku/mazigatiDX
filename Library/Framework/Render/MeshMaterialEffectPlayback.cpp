@@ -11,7 +11,7 @@ namespace
 	float64 WrapMeshUVPhase( float64 Phase, float64 Delta )
 	{
 		// 秒単位scrollを減らしてから加算する折返し値。
-		float64 Wrapped = std::fmod( Phase + std::fmod( Delta, 1.0 ), 1.0 );
+		float64 Wrapped = NMath::Fmod( Phase + NMath::Fmod( Delta, 1.0 ), 1.0 );
 		if ( Wrapped < 0.0 ) Wrapped += 1.0;
 		return Wrapped;
 	}
@@ -21,7 +21,7 @@ namespace
 	{
 		if ( bLoop )
 		{
-			Playback.EffectTimeSeconds = std::fmod( Playback.EffectTimeSeconds + std::fmod( DeltaTime, Duration ), Duration );
+			Playback.EffectTimeSeconds = NMath::Fmod( Playback.EffectTimeSeconds + NMath::Fmod( DeltaTime, Duration ), Duration );
 			return DeltaTime;
 		}
 		// one-shotの終端より先へ進めない実適用秒数。

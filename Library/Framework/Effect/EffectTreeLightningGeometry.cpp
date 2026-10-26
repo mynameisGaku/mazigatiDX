@@ -235,9 +235,9 @@ void NEffectPath::BuildTreeLightning( const FEffectPathDefinition& Definition, u
 		// 枝の立体角を設定角と独立して±0.16radへ収める。
 		const float32 BranchDepthAngle = SignedNoise( Seed, 0x12000u + static_cast<uint32>( Branch ) ) * 0.16f;
 		// 横・奥行き面で単位長となる枝の側方向。
-		const FVector3 BranchLateral = LocalSide * ( Sign * static_cast<float32>( std::cos( BranchDepthAngle ) ) ) + LocalDepth * static_cast<float32>( std::sin( BranchDepthAngle ) );
+		const FVector3 BranchLateral = LocalSide * ( Sign * static_cast<float32>( NMath::Cos( BranchDepthAngle ) ) ) + LocalDepth * static_cast<float32>( NMath::Sin( BranchDepthAngle ) );
 		// 設定角度を親接線との実角として保つ枝方向。
-		const FVector3 Direction = ( Tangent * static_cast<float32>( std::cos( BranchAngle ) ) + BranchLateral * static_cast<float32>( std::sin( BranchAngle ) ) ).Normalized();
+		const FVector3 Direction = ( Tangent * static_cast<float32>( NMath::Cos( BranchAngle ) ) + BranchLateral * static_cast<float32>( NMath::Sin( BranchAngle ) ) ).Normalized();
 		// 主幹の接続点から引き継ぐ全幅。
 		const float32 ParentWidth = Nodes[0].Strip.Points[Attachment].Width;
 		// 主幹の接続点から引き継ぐalpha。
@@ -276,9 +276,9 @@ void NEffectPath::BuildTreeLightning( const FEffectPathDefinition& Definition, u
 			// 二次枝の立体角を設定角から独立して±0.16radへ収める。
 			const float32 ChildDepthAngle = SignedNoise( Seed, ChildTag + 1u ) * 0.16f;
 			// 横・奥行き面で単位長となる二次枝の側方向。
-			const FVector3 ChildLateral = ChildSide * ( ChildSign * static_cast<float32>( std::cos( ChildDepthAngle ) ) ) + ChildDepth * static_cast<float32>( std::sin( ChildDepthAngle ) );
+			const FVector3 ChildLateral = ChildSide * ( ChildSign * static_cast<float32>( NMath::Cos( ChildDepthAngle ) ) ) + ChildDepth * static_cast<float32>( NMath::Sin( ChildDepthAngle ) );
 			// 設定角度を親接線との実角として保つ二次枝方向。
-			const FVector3 ChildDirection = ( ChildTangent * static_cast<float32>( std::cos( ChildAngle ) ) + ChildLateral * static_cast<float32>( std::sin( ChildAngle ) ) ).Normalized();
+			const FVector3 ChildDirection = ( ChildTangent * static_cast<float32>( NMath::Cos( ChildAngle ) ) + ChildLateral * static_cast<float32>( NMath::Sin( ChildAngle ) ) ).Normalized();
 			// 親の実際のchordの半分を上限にseed固有の長さを選ぶ。
 			const float32 SecondaryLengthScale = 0.55f + UnitNoise( Seed, ChildTag + 2u ) * 0.45f;
 			const float32 ChildLength = BranchLength * 0.5f * SecondaryLengthScale;
@@ -347,7 +347,7 @@ bool NEffectPath::GetTreeLightningBounds( const FEffectPathDefinition& Definitio
 	// z成分をdoubleで二乗して長さ丸め誤差を避ける。
 	const float64 DeltaZ = static_cast<float64>( Delta.z );
 	// float中心とboundsの計算に使う正確なchord長。
-	const float64 Length = std::sqrt( DeltaX * DeltaX + DeltaY * DeltaY + DeltaZ * DeltaZ );
+	const float64 Length = NMath::Sqrt( DeltaX * DeltaX + DeltaY * DeltaY + DeltaZ * DeltaZ );
 	if ( !IsFinite( Delta ) || !NMath::IsFinite( Length ) || Length <= 1.0e-6 ) return false;
 	// 公開するfloat中心を確定し、その丸めを半径計算へ反映する。
 	const FVector3 Center = Start + Delta * 0.5f;
@@ -364,9 +364,9 @@ bool NEffectPath::GetTreeLightningBounds( const FEffectPathDefinition& Definitio
 	// 同じ終点差計算のz成分。
 	const float64 EndZ = static_cast<float64>( End.z ) - static_cast<float64>( Center.z );
 	// 丸められた中心から始点までの実距離を二乗和で求める。
-	const float64 StartRadius = std::sqrt( StartX * StartX + StartY * StartY + StartZ * StartZ );
+	const float64 StartRadius = NMath::Sqrt( StartX * StartX + StartY * StartY + StartZ * StartZ );
 	// 丸められた中心から終点までの実距離を二乗和で求める。
-	const float64 EndRadius = std::sqrt( EndX * EndX + EndY * EndY + EndZ * EndZ );
+	const float64 EndRadius = NMath::Sqrt( EndX * EndX + EndY * EndY + EndZ * EndZ );
 	// 両端を収めるために必要な最大距離。
 	const float64 EndpointRadius = NMath::Max( StartRadius, EndRadius );
 	// 深さと枝数に応じて必要な最大枝長だけを加算する。

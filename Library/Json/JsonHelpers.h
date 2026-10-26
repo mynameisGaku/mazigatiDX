@@ -33,7 +33,7 @@ namespace NJson
 	// 4 桁で丸めた double（float の誤差が保存したファイルに出ないように）
 	inline double Round4( float32 Value )
 	{
-		return std::round( static_cast<double>( Value ) * 10000.0 ) / 10000.0;
+		return NMath::Round( static_cast<double>( Value ) * 10000.0 ) / 10000.0;
 	}
 
 	inline NlohmannJson ToJson( const FVector3& V )

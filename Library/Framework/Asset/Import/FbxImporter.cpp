@@ -295,7 +295,7 @@ namespace
 				FImportedAnimation Animation;
 				Animation.Name = ToFString( Stack->name );
 				Animation.Fps = static_cast<float32>( Fps );
-				Animation.NumKeys = NMath::Max( static_cast<int32>( std::floor( ( End - Begin ) * Fps + 0.5 ) ) + 1, 2 );
+				Animation.NumKeys = NMath::Max( static_cast<int32>( NMath::Floor( ( End - Begin ) * Fps + 0.5 ) ) + 1, 2 );
 
 				for ( size_t NodeIndex = 0; NodeIndex < Source.nodes.count; ++NodeIndex )
 				{

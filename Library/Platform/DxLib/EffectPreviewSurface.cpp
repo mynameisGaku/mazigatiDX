@@ -142,7 +142,7 @@ namespace
 				if ( TotalWords != 1 + static_cast<int32>( sizeof( FDrawLine3DData ) / sizeof( uint32 ) ) || Flags != 0 ) return false;
 				// 読み取り済みの線分座標。
 				FDrawLine3DData Line;
-				std::memcpy( &Line, Payload, sizeof( Line ) );
+				FMemory::Memcpy( &Line, Payload, sizeof( Line ) );
 				for ( int32 Axis = 0; Axis < 3; ++Axis ) if ( !NMath::IsFinite( Line.P0[Axis] ) || !NMath::IsFinite( Line.P1[Axis] ) ) return false;
 			}
 			else if ( Type == EDrawCommand::Sphere3D )
@@ -150,7 +150,7 @@ namespace
 				if ( TotalWords != 1 + static_cast<int32>( sizeof( FDrawSphere3DData ) / sizeof( uint32 ) ) || ( Flags & FDrawFlag::Fill ) != 0 || ( Flags & ~FDrawFlag::Fill ) != 0 ) return false;
 				// 読み取り済みのwire sphere設定。
 				FDrawSphere3DData Sphere;
-				std::memcpy( &Sphere, Payload, sizeof( Sphere ) );
+				FMemory::Memcpy( &Sphere, Payload, sizeof( Sphere ) );
 				if ( !NMath::IsFinite( Sphere.Radius ) || Sphere.Radius <= 0.0f || Sphere.Div < 3 || Sphere.Div > 128 ) return false;
 				for ( int32 Axis = 0; Axis < 3; ++Axis ) if ( !NMath::IsFinite( Sphere.Center[Axis] ) ) return false;
 			}
@@ -164,13 +164,13 @@ namespace
 	void RecordGrid( FDrawContext& Draw, const FEditorCamera& Camera )
 	{
 		// 視点の距離に応じた、10の整数乗の格子間隔。
-		const float32 Cell = std::pow( 10.0f, std::floor( std::log10( NMath::Max( Camera.Distance * 0.25f, 0.01f ) ) ) );
+		const float32 Cell = NMath::Pow( 10.0f, NMath::Floor( NMath::Log10( NMath::Max( Camera.Distance * 0.25f, 0.01f ) ) ) );
 		// 中心から片側へ引く格子線の数。
 		constexpr int32 Half = 24;
 		// 大きな注視点でも整数への変換で範囲を超えないよう、格子番号は実数で持つ。
-		const float64 CenterX = std::round( static_cast<float64>( Camera.Target.x ) / Cell );
+		const float64 CenterX = NMath::Round( static_cast<float64>( Camera.Target.x ) / Cell );
 		// 注視点を中心にしたZ方向の格子番号。
-		const float64 CenterZ = std::round( static_cast<float64>( Camera.Target.z ) / Cell );
+		const float64 CenterZ = NMath::Round( static_cast<float64>( Camera.Target.z ) / Cell );
 		// 格子のX方向の始点。
 		const float32 MinX = static_cast<float32>( ( CenterX - Half ) * Cell );
 		// 格子のX方向の終点。
@@ -198,8 +198,8 @@ namespace
 			const float32 X = static_cast<float32>( IndexX * Cell );
 			// 今回のX軸と平行な線の位置。
 			const float32 Z = static_cast<float32>( IndexZ * Cell );
-			Draw.Line3D( FVector3( X, 0.0f, MinZ ), FVector3( X, 0.0f, MaxZ ), IndexX == 0.0 ? AxisZ : std::fmod( IndexX, 10.0 ) == 0.0 ? Major : Minor );
-			Draw.Line3D( FVector3( MinX, 0.0f, Z ), FVector3( MaxX, 0.0f, Z ), IndexZ == 0.0 ? AxisX : std::fmod( IndexZ, 10.0 ) == 0.0 ? Major : Minor );
+			Draw.Line3D( FVector3( X, 0.0f, MinZ ), FVector3( X, 0.0f, MaxZ ), IndexX == 0.0 ? AxisZ : NMath::Fmod( IndexX, 10.0 ) == 0.0 ? Major : Minor );
+			Draw.Line3D( FVector3( MinX, 0.0f, Z ), FVector3( MaxX, 0.0f, Z ), IndexZ == 0.0 ? AxisX : NMath::Fmod( IndexZ, 10.0 ) == 0.0 ? Major : Minor );
 		}
 		Draw.Line3D( FVector3::Zero, FVector3::Up * ( Cell * 3.0f ), FColor32( 75, 185, 100, 255 ) );
 	}

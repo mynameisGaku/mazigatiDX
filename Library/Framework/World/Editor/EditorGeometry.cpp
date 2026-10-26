@@ -19,7 +19,7 @@ namespace
 		if ( A < Tiny ) return false;
 		const float32 Discriminant = B * B - A * C;
 		if ( Discriminant < 0.0f ) return false;
-		const float32 T = ( -B - std::sqrt( Discriminant ) ) / A;
+		const float32 T = ( -B - NMath::Sqrt( Discriminant ) ) / A;
 		if ( T < 0.0f ) return false;
 		OutT = T;
 		return true;
@@ -113,7 +113,7 @@ bool NWorldEditor::RayVsCapsule( const FEditorRay& Ray, const FVector3& A, const
 		const float32 Discriminant = Linear * Linear - Quadratic * Constant;
 		if ( Discriminant >= 0.0f )
 		{
-			const float32 T = ( -Linear - std::sqrt( Discriminant ) ) / Quadratic;
+			const float32 T = ( -Linear - NMath::Sqrt( Discriminant ) ) / Quadratic;
 			const float32 Along = OriginAlong + T * DirectionAlong;
 			if ( T >= 0.0f && Along > 0.0f && Along < AxisLengthSquared ) Best = T;
 		}

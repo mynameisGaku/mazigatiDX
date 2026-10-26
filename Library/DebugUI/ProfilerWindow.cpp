@@ -7,6 +7,7 @@
 #include "Library/Core/Time/PlatformTime.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Profiler/ProfilerExport.h"
+#include "Library/Math/MathUtils.h"
 #include "VendorModules/ImGui/imgui.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogProfilerUI, Log )
@@ -58,7 +59,7 @@ namespace
 	// 文字列 ID ごとに色を決める（同じ Category は同じ色）
 	ImU32 IdColor( uint32 Id, float Value = 0.80f, float Alpha = 1.0f )
 	{
-		const float Hue = std::fmod( static_cast<float>( Id ) * 0.61803398875f, 1.0f );
+		const float Hue = NMath::Fmod( static_cast<float>( Id ) * 0.61803398875f, 1.0f );
 		ImVec4 Color( 0, 0, 0, Alpha );
 		ImGui::ColorConvertHSVtoRGB( Hue, 0.55f, Value, Color.x, Color.y, Color.z );
 		return ImGui::ColorConvertFloat4ToU32( Color );

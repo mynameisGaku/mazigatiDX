@@ -90,7 +90,7 @@ float32 NAudio::ShapeFade( EFadeCurve Curve, float32 T, bool bRising )
 	{
 		constexpr float32 HalfPi = 1.57079632679f;
 		// 上がる側は sin(t)、下がる側は cos(t)（値 = From * cos なので、変化の割合は 1 - cos）
-		return bRising ? std::sin( T * HalfPi ) : 1.0f - std::cos( T * HalfPi );
+		return bRising ? NMath::Sin( T * HalfPi ) : 1.0f - NMath::Cos( T * HalfPi );
 	}
 	}
 	return T;
@@ -135,5 +135,5 @@ FVector3 NAudio::ListenerRight( const FAudioListener& Listener )
 int32 NAudio::VolumeToDecibel100( float32 Volume )
 {
 	if ( Volume <= 1.0e-5f ) return MinDecibel100;
-	return NMath::Max( MinDecibel100, static_cast<int32>( std::lround( 2000.0f * std::log10( Volume ) ) ) );
+	return NMath::Max( MinDecibel100, static_cast<int32>( std::lround( 2000.0f * NMath::Log10( Volume ) ) ) );
 }

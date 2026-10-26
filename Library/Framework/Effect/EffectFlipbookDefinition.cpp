@@ -229,7 +229,7 @@ int32 NEffectFlipbook::EvaluateStep( const FEffectFlipbookDefinition& Definition
 	if ( Timeline.Loop == EAnimLoopMode::Once ) Time = NMath::Clamp( Playhead, 0.0, static_cast<float64>( Timeline.Total ) );
 	else
 	{
-		Time = std::fmod( Playhead, static_cast<float64>( Timeline.Total ) );
+		Time = NMath::Fmod( Playhead, static_cast<float64>( Timeline.Total ) );
 		if ( !NMath::IsFinite( Time ) ) return INDEX_NONE;
 		if ( Time < 0.0 ) Time += static_cast<float64>( Timeline.Total );
 	}

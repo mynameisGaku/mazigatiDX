@@ -75,7 +75,7 @@ namespace
 
 	float64 Round6( float64 Value )
 	{
-		return std::round( Value * 1000000.0 ) / 1000000.0;
+		return NMath::Round( Value * 1000000.0 ) / 1000000.0;
 	}
 
 	bool IsNearlyEqual( const FVector3& A, const FVector3& B )
@@ -758,7 +758,7 @@ FWorldTransform FWorldTransform::FromTransform( const FTransform& Transform )
 	FWorldTransform Result;
 	Result.Position = Transform.Position;
 	// 人が読む・書く値なので、計算の誤差（0.0000013 や -0.0）は整える（小数第 4 位まで。-0 は +0 にする）
-	const auto Tidy = []( float32 Radians ) { return std::round( NMath::ToDegrees( Radians ) * 10000.0f ) / 10000.0f + 0.0f; };
+	const auto Tidy = []( float32 Radians ) { return NMath::Round( NMath::ToDegrees( Radians ) * 10000.0f ) / 10000.0f + 0.0f; };
 	Result.RotationDegrees = FVector3( Tidy( Radians.x ), Tidy( Radians.y ), Tidy( Radians.z ) );
 	Result.Scale = Transform.Scale;
 	return Result;

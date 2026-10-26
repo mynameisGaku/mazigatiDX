@@ -25,7 +25,7 @@ void FDrawContext::MaterialRibbon3D( const FDrawMaterialRibbonData& Data, const 
 {
 	// 入力値が記録先の再確保で変わらないよう、固定設定を先に値として保持する。
 	FDrawMaterialRibbonData Header{};
-	std::memcpy( &Header, &Data, sizeof( Header ) );
+	FMemory::Memcpy( &Header, &Data, sizeof( Header ) );
 	// 既存命令と同じ設定・点列条件を、記録前に一括で検査する。
 	if ( !NDrawMaterialRibbon::IsValidHeader( Header ) || Points == nullptr ) return;
 	TArray<FDrawMaterialRibbonData::FPoint> Copied;
@@ -44,15 +44,15 @@ void FDrawContext::MaterialRibbon3D( const FDrawMaterialRibbonData& Data, const 
 	const size_t Begin = Words.size();
 	Words.resize( Begin + CommandWords );
 	Words[Begin] = NDrawCommand::MakeHeader( EDrawCommand::MaterialRibbon3D, 0, static_cast<int32>( CommandWords ) );
-	std::memcpy( &Words[Begin + 1], &Header, sizeof( Header ) );
-	std::memcpy( &Words[Begin + 1 + DataWords], Copied.GetData(), static_cast<size_t>( Header.Ribbon.NumPoints ) * sizeof( FDrawMaterialRibbonData::FPoint ) );
+	FMemory::Memcpy( &Words[Begin + 1], &Header, sizeof( Header ) );
+	FMemory::Memcpy( &Words[Begin + 1 + DataWords], Copied.GetData(), static_cast<size_t>( Header.Ribbon.NumPoints ) * sizeof( FDrawMaterialRibbonData::FPoint ) );
 }
 
 void FDrawContext::DistortedMaterialRibbon3D( const FDrawDistortedMaterialRibbonData& Data, const FDrawDistortedMaterialRibbonData::FPoint* Points )
 {
 	// buffer再確保で入力headerが変わらないよう、固定設定を先に値で保持する。
 	FDrawDistortedMaterialRibbonData Header{};
-	std::memcpy( &Header, &Data, sizeof( Header ) );
+	FMemory::Memcpy( &Header, &Data, sizeof( Header ) );
 	if ( Points == nullptr || !NDrawDistortedMaterialRibbon::IsValidHeader( Header ) ) return;
 	// 入力配列を所有し、検証後に一括記録するための点列。
 	TArray<FDrawDistortedMaterialRibbonData::FPoint> Copied;
@@ -71,15 +71,15 @@ void FDrawContext::DistortedMaterialRibbon3D( const FDrawDistortedMaterialRibbon
 	const size_t Begin = Words.size();
 	Words.resize( Begin + CommandWords );
 	Words[Begin] = NDrawCommand::MakeHeader( EDrawCommand::DistortedMaterialRibbon3D, 0, static_cast<int32>( CommandWords ) );
-	std::memcpy( &Words[Begin + 1], &Header, sizeof( Header ) );
-	std::memcpy( &Words[Begin + 1 + DataWords], Copied.GetData(), static_cast<size_t>( Header.Material.Ribbon.NumPoints ) * sizeof( FDrawDistortedMaterialRibbonData::FPoint ) );
+	FMemory::Memcpy( &Words[Begin + 1], &Header, sizeof( Header ) );
+	FMemory::Memcpy( &Words[Begin + 1 + DataWords], Copied.GetData(), static_cast<size_t>( Header.Material.Ribbon.NumPoints ) * sizeof( FDrawDistortedMaterialRibbonData::FPoint ) );
 }
 
 bool FDrawContext::ModelMaterial( const FDrawModelMaterialData& Data )
 {
 	// buffer再確保や呼出側aliasから独立させる固定命令payload。
 	FDrawModelMaterialData Header{};
-	std::memcpy( &Header, &Data, sizeof( Header ) );
+	FMemory::Memcpy( &Header, &Data, sizeof( Header ) );
 	if ( !NDrawModelMaterial::IsValid( Header ) ) return false;
 	// 追加後のword数が上限を超えないかを先に調べる。
 	constexpr size_t CommandWords = 1 + sizeof( FDrawModelMaterialData ) / 4;
@@ -90,7 +90,7 @@ bool FDrawContext::ModelMaterial( const FDrawModelMaterialData& Data )
 	const size_t Begin = Words.size();
 	Words.resize( Begin + CommandWords );
 	Words[Begin] = NDrawCommand::MakeHeader( EDrawCommand::ModelMaterial3D, 0, static_cast<int32>( CommandWords ) );
-	std::memcpy( &Words[Begin + 1], &Header, sizeof( Header ) );
+	FMemory::Memcpy( &Words[Begin + 1], &Header, sizeof( Header ) );
 	return true;
 }
 
@@ -98,7 +98,7 @@ void FDrawContext::MaterialMesh3D( const FDrawMaterialMeshData& Data, const FMes
 {
 	// buffer再確保で入力headerが変わらないよう、固定設定を先に値として保持する。
 	FDrawMaterialMeshData Header{};
-	std::memcpy( &Header, &Data, sizeof( Header ) );
+	FMemory::Memcpy( &Header, &Data, sizeof( Header ) );
 	if ( Vertices == nullptr || Indices == nullptr || !NDrawMaterialMesh::IsValidHeader( Header ) ) return;
 	// 追記前に頂点payloadを所有し、入力aliasを切り離す配列。
 	TArray<FMeshVertex> CopiedVertices;
@@ -124,9 +124,9 @@ void FDrawContext::MaterialMesh3D( const FDrawMaterialMeshData& Data, const FMes
 	// 材質meshの通常culling利用flag。
 	const uint8 Flags = bUseRegularCulling ? FDrawFlag::UseRegularCulling : 0;
 	Words[Begin] = NDrawCommand::MakeHeader( EDrawCommand::MaterialMesh3D, Flags, static_cast<int32>( CommandWords ) );
-	std::memcpy( &Words[Begin + 1], &Header, sizeof( Header ) );
-	std::memcpy( &Words[Begin + 1 + DataWords], CopiedVertices.GetData(), static_cast<size_t>( Header.NumVertices ) * sizeof( FMeshVertex ) );
-	std::memcpy( &Words[Begin + 1 + DataWords + VertexWords], CopiedIndices.GetData(), static_cast<size_t>( Header.NumIndices ) * sizeof( uint32 ) );
+	FMemory::Memcpy( &Words[Begin + 1], &Header, sizeof( Header ) );
+	FMemory::Memcpy( &Words[Begin + 1 + DataWords], CopiedVertices.GetData(), static_cast<size_t>( Header.NumVertices ) * sizeof( FMeshVertex ) );
+	FMemory::Memcpy( &Words[Begin + 1 + DataWords + VertexWords], CopiedIndices.GetData(), static_cast<size_t>( Header.NumIndices ) * sizeof( uint32 ) );
 }
 
 void FDrawContext::Ribbon3D( const FDrawRibbonData::FPoint* Points, int32 NumPoints, int32 Texture, float32 UVRepeat, int32 JoinFlags )
@@ -146,9 +146,9 @@ void FDrawContext::Ribbon3D( const FDrawRibbonData::FPoint* Points, int32 NumPoi
 		if ( Texture >= 0 && bVisibleSegment )
 		{
 			// 始点側で使い始める画像の反復番号。
-			const float64 First = std::floor( static_cast<float64>( Points[Index - 1].U * UVRepeat ) );
+			const float64 First = NMath::Floor( static_cast<float64>( Points[Index - 1].U * UVRepeat ) );
 			// 終点までに必要な反復数。整数境界と一致する終点では余分な区間を作らない。
-			const float64 Sections = NMath::Max( 1.0, std::ceil( static_cast<float64>( Point.U * UVRepeat ) ) - First );
+			const float64 Sections = NMath::Max( 1.0, NMath::Ceil( static_cast<float64>( Point.U * UVRepeat ) ) - First );
 			if ( Sections > static_cast<float64>( FDrawRibbonData::MaxTextureSections - TextureSections ) ) return;
 			TextureSections += static_cast<int32>( Sections );
 		}
@@ -175,8 +175,8 @@ void FDrawContext::Ribbon3D( const FDrawRibbonData::FPoint* Points, int32 NumPoi
 	const size_t Begin = Words.size();
 	Words.resize( Begin + CommandWords );
 	Words[Begin] = NDrawCommand::MakeHeader( EDrawCommand::Ribbon3D, 0, static_cast<int32>( CommandWords ) );
-	std::memcpy( &Words[Begin + 1], &Data, sizeof( Data ) );
-	std::memcpy( &Words[Begin + 1 + DataWords], Copied.GetData(), static_cast<size_t>( NumPoints ) * sizeof( FDrawRibbonData::FPoint ) );
+	FMemory::Memcpy( &Words[Begin + 1], &Data, sizeof( Data ) );
+	FMemory::Memcpy( &Words[Begin + 1 + DataWords], Copied.GetData(), static_cast<size_t>( NumPoints ) * sizeof( FDrawRibbonData::FPoint ) );
 }
 
 void FDrawContext::Text( int32 X, int32 Y, const char* String, const FColor32& Color )
@@ -198,8 +198,8 @@ void FDrawContext::Text( int32 X, int32 Y, const char* String, const FColor32& C
 	const size_t Begin = Words.size();
 	Words.resize( Begin + 1 + DataWords + CharWords );   // 0 で埋まる（終端の '\0' と、境界までの隙間）
 	Words[Begin] = NDrawCommand::MakeHeader( EDrawCommand::Text, 0, static_cast<int32>( 1 + DataWords + CharWords ) );
-	std::memcpy( &Words[Begin + 1], &Data, sizeof( Data ) );
-	if ( Length > 0 ) std::memcpy( &Words[Begin + 1 + DataWords], String, Length );
+	FMemory::Memcpy( &Words[Begin + 1], &Data, sizeof( Data ) );
+	if ( Length > 0 ) FMemory::Memcpy( &Words[Begin + 1 + DataWords], String, Length );
 }
 
 void FDrawContext::TextWithFont( int32 FontHandle, int32 X, int32 Y, const char* String, const FColor32& Color, EDrawTextAlign Align, const FColor32& EdgeColor )
@@ -226,8 +226,8 @@ void FDrawContext::TextWithFont( int32 FontHandle, int32 X, int32 Y, const char*
 	const size_t Begin = Words.size();
 	Words.resize( Begin + 1 + DataWords + CharWords );
 	Words[Begin] = NDrawCommand::MakeHeader( EDrawCommand::TextFont, Flags, static_cast<int32>( 1 + DataWords + CharWords ) );
-	std::memcpy( &Words[Begin + 1], &Data, sizeof( Data ) );
-	if ( Length > 0 ) std::memcpy( &Words[Begin + 1 + DataWords], String, Length );
+	FMemory::Memcpy( &Words[Begin + 1], &Data, sizeof( Data ) );
+	if ( Length > 0 ) FMemory::Memcpy( &Words[Begin + 1 + DataWords], String, Length );
 }
 
 void FDrawContext::TextF( int32 X, int32 Y, const FColor32& Color, const char* Format, ... )

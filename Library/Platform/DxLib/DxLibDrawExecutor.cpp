@@ -13,6 +13,7 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
+#include "Library/Math/MathUtils.h"
 #include "Library/Platform/DxLib/DxLibAssetBackend.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 #include "Library/Platform/DxLib/DxLibRibbonMesh.h"
@@ -76,8 +77,8 @@ namespace
 		{
 			const VECTOR CameraRight = GetCameraRightVector();
 			const VECTOR CameraUp = GetCameraUpVector();
-			const float Cos = std::cos( Data.Angle );
-			const float Sin = std::sin( Data.Angle );
+			const float Cos = NMath::Cos( Data.Angle );
+			const float Sin = NMath::Sin( Data.Angle );
 			// Angle だけ回す。正の向きは、オブジェクトを視線（Forward）の軸まわりに正の Roll で回したときと同じ（右向きが、上へ傾く）
 			Right = VAdd( VScale( CameraRight, Cos ), VScale( CameraUp, Sin ) );
 			Up = VAdd( VScale( CameraUp, Cos ), VScale( CameraRight, -Sin ) );
@@ -152,7 +153,7 @@ namespace
 		if ( Command.NumDataWords != DataWords + Data.NumPoints * static_cast<int32>( sizeof( FDrawRibbonData::FPoint ) / 4 ) ) return;
 		TArray<FDrawRibbonData::FPoint> Points;
 		Points.SetNum( Data.NumPoints );
-		std::memcpy( Points.GetData(), Command.Data + DataWords, static_cast<size_t>( Data.NumPoints ) * sizeof( FDrawRibbonData::FPoint ) );
+		FMemory::Memcpy( Points.GetData(), Command.Data + DataWords, static_cast<size_t>( Data.NumPoints ) * sizeof( FDrawRibbonData::FPoint ) );
 		for ( int32 Index = 0; Index < Data.NumPoints; ++Index )
 		{
 			const FDrawRibbonData::FPoint& Point = Points[Index];
@@ -423,7 +424,7 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			}
 			// 点数を読む前にbyte列から固定headerを複写する。
 			FDrawDistortedMaterialRibbonData Data{};
-			std::memcpy( &Data, Command.Data, sizeof( Data ) );
+			FMemory::Memcpy( &Data, Command.Data, sizeof( Data ) );
 			if ( !NDrawDistortedMaterialRibbon::IsValidHeader( Data ) )
 			{
 				if ( !bInvalidDistortedRibbonCommandLogged ) { LOG( LogDxLibDraw, Warning, "UVゆがみ付き材質帯の点数または設定値が不正なため描画を読み飛ばしました" ); bInvalidDistortedRibbonCommandLogged = true; }
@@ -439,7 +440,7 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			// 検証済み長さから作る、命令が所有する点列。
 			TArray<FDrawDistortedMaterialRibbonData::FPoint> Points;
 			Points.SetNum( Data.Material.Ribbon.NumPoints );
-			std::memcpy( Points.GetData(), Command.Data + DataWords, static_cast<size_t>( Data.Material.Ribbon.NumPoints ) * sizeof( FDrawDistortedMaterialRibbonData::FPoint ) );
+			FMemory::Memcpy( Points.GetData(), Command.Data + DataWords, static_cast<size_t>( Data.Material.Ribbon.NumPoints ) * sizeof( FDrawDistortedMaterialRibbonData::FPoint ) );
 			if ( !NDrawDistortedMaterialRibbon::IsValid( Data, Points.GetData() ) )
 			{
 				if ( !bInvalidDistortedRibbonCommandLogged ) { LOG( LogDxLibDraw, Warning, "UVゆがみ付き材質帯の点または反復上限が不正なため描画を読み飛ばしました" ); bInvalidDistortedRibbonCommandLogged = true; }
@@ -468,7 +469,7 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			}
 			// 点を読む前にbyte列から型付き所有headerへ複写する。
 			FDrawMaterialRibbonData Data{};
-			std::memcpy( &Data, Command.Data, sizeof( Data ) );
+			FMemory::Memcpy( &Data, Command.Data, sizeof( Data ) );
 			// 検証に使う経路値と材質値。
 			const FDrawRibbonData& Ribbon = Data.Ribbon;
 			const FDrawMaterialRibbonData::FMaterialSettings& Material = Data.Material;
@@ -485,7 +486,7 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			// 命令payloadから作る、通常寿命を持つ所有点列。
 			TArray<FDrawMaterialRibbonData::FPoint> Points;
 			Points.SetNum( Ribbon.NumPoints );
-			std::memcpy( Points.GetData(), Command.Data + DataWords, static_cast<size_t>( Ribbon.NumPoints ) * sizeof( FDrawMaterialRibbonData::FPoint ) );
+			FMemory::Memcpy( Points.GetData(), Command.Data + DataWords, static_cast<size_t>( Ribbon.NumPoints ) * sizeof( FDrawMaterialRibbonData::FPoint ) );
 			// 反復上限と点の妥当性を検査する累積区間数。
 			int32 TextureSections = 0;
 			// 点列全体が描画条件を満たすかを示す結果。
@@ -507,9 +508,9 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 				if ( bVisibleSegment )
 				{
 					// 始点で使う画像反復番号。
-					const float64 FirstRepeat = std::floor( static_cast<float64>( Points[Index - 1].Path.U * Ribbon.UVRepeat ) );
+					const float64 FirstRepeat = NMath::Floor( static_cast<float64>( Points[Index - 1].Path.U * Ribbon.UVRepeat ) );
 					// 終点までに必要な整数反復区間数。
-					const float64 Sections = NMath::Max( 1.0, std::ceil( static_cast<float64>( Point.Path.U * Ribbon.UVRepeat ) ) - FirstRepeat );
+					const float64 Sections = NMath::Max( 1.0, NMath::Ceil( static_cast<float64>( Point.Path.U * Ribbon.UVRepeat ) ) - FirstRepeat );
 					if ( !NMath::IsFinite( Sections ) || Sections > static_cast<float64>( FDrawRibbonData::MaxTextureSections - TextureSections ) ) { bValidPoints = false; break; }
 					TextureSections += static_cast<int32>( Sections );
 				}
@@ -542,7 +543,7 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			}
 			// byte列から型付きheaderへ安全に複写する値。
 			FDrawMaterialMeshData Data{};
-			std::memcpy( &Data, Command.Data, sizeof( Data ) );
+			FMemory::Memcpy( &Data, Command.Data, sizeof( Data ) );
 			if ( !NDrawMaterialMesh::IsValidHeader( Data ) )
 			{
 				if ( !bInvalidMaterialMeshCommandLogged ) { LOG( LogDxLibDraw, Warning, "材質付きメッシュの頂点数または設定値が不正なため描画を読み飛ばしました" ); bInvalidMaterialMeshCommandLogged = true; }
@@ -560,11 +561,11 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			// byte列から寿命を持つ型付き頂点配列へ複写する。
 			TArray<FMeshVertex> Vertices;
 			Vertices.SetNum( Data.NumVertices );
-			std::memcpy( Vertices.GetData(), Command.Data + DataWords, static_cast<size_t>( Data.NumVertices ) * sizeof( FMeshVertex ) );
+			FMemory::Memcpy( Vertices.GetData(), Command.Data + DataWords, static_cast<size_t>( Data.NumVertices ) * sizeof( FMeshVertex ) );
 			// 頂点配列直後のbyte列から所有index配列へ複写する。
 			TArray<uint32> Indices;
 			Indices.SetNum( Data.NumIndices );
-			std::memcpy( Indices.GetData(), Command.Data + DataWords + VertexWords, static_cast<size_t>( Data.NumIndices ) * sizeof( uint32 ) );
+			FMemory::Memcpy( Indices.GetData(), Command.Data + DataWords + VertexWords, static_cast<size_t>( Data.NumIndices ) * sizeof( uint32 ) );
 			if ( !NDrawMaterialMesh::IsValid( Data, Vertices.GetData(), Indices.GetData() ) )
 			{
 				if ( !bInvalidMaterialMeshCommandLogged ) { LOG( LogDxLibDraw, Warning, "材質付きメッシュの頂点またはindexが不正なため描画を読み飛ばしました" ); bInvalidMaterialMeshCommandLogged = true; }

@@ -156,7 +156,7 @@ FVector3 FEffectForceFieldDefinition::EvaluateAcceleration( const FVector3& Worl
 		const double QuatLenSq = QuatX * QuatX + QuatY * QuatY + QuatZ * QuatZ + QuatW * QuatW;
 		if ( !NMath::IsFinite( EffectTransform.Position.x ) || !NMath::IsFinite( EffectTransform.Position.y ) || !NMath::IsFinite( EffectTransform.Position.z ) || !NMath::IsFinite( QuatX ) || !NMath::IsFinite( QuatY ) || !NMath::IsFinite( QuatZ ) || !NMath::IsFinite( QuatW ) || !NMath::IsFinite( QuatLenSq ) || QuatLenSq <= 1.0e-12 ) return FVector3::Zero;
 		// 四元数を正規化する長さ。
-		const double QuatLen = std::sqrt( QuatLenSq );
+		const double QuatLen = NMath::Sqrt( QuatLenSq );
 		if ( !NMath::IsFinite( QuatLen ) || QuatLen <= 0.0 ) return FVector3::Zero;
 		FollowRotation = FQuaternion( static_cast<float32>( QuatX / QuatLen ), static_cast<float32>( QuatY / QuatLen ), static_cast<float32>( QuatZ / QuatLen ), static_cast<float32>( QuatW / QuatLen ) );
 		// エミッター位置からWorld位置へのX差。
@@ -185,7 +185,7 @@ FVector3 FEffectForceFieldDefinition::EvaluateAcceleration( const FVector3& Worl
 		// 評価位置からfield中心までのZ差。
 		const double DeltaZ = static_cast<double>( EvaluationPosition.z ) - Position.z;
 		// 二乗和のoverflowを避けるdouble距離。
-		const double Distance = std::sqrt( DeltaX * DeltaX + DeltaY * DeltaY + DeltaZ * DeltaZ );
+		const double Distance = NMath::Sqrt( DeltaX * DeltaX + DeltaY * DeltaY + DeltaZ * DeltaZ );
 		if ( !NMath::IsFinite( Distance ) || Distance >= static_cast<double>( Radius ) ) return FVector3::Zero;
 		// 中心で1、半径境界で0になる線形減衰係数。
 		const double Falloff = 1.0 - Distance / static_cast<double>( Radius );
@@ -200,7 +200,7 @@ FVector3 FEffectForceFieldDefinition::EvaluateAcceleration( const FVector3& Worl
 		{
 			if ( Distance == 0.0 ) return FVector3::Zero;
 			// 回転軸の長さを求めるdouble値。
-			const double AxisLength = std::sqrt( VectorLengthSquared( Axis ) );
+			const double AxisLength = NMath::Sqrt( VectorLengthSquared( Axis ) );
 			if ( !NMath::IsFinite( AxisLength ) || AxisLength <= 0.0 ) return FVector3::Zero;
 			// 正規化した回転軸のX成分。
 			const double AxisX = static_cast<double>( Axis.x ) / AxisLength;
@@ -215,7 +215,7 @@ FVector3 FEffectForceFieldDefinition::EvaluateAcceleration( const FVector3& Worl
 			// UnitAxis × Delta のZ成分。
 			const double CrossZ = AxisX * DeltaY - AxisY * DeltaX;
 			// 外積ベクトルの長さ。
-			const double CrossLen = std::sqrt( CrossX * CrossX + CrossY * CrossY + CrossZ * CrossZ );
+			const double CrossLen = NMath::Sqrt( CrossX * CrossX + CrossY * CrossY + CrossZ * CrossZ );
 			if ( !NMath::IsFinite( CrossLen ) || CrossLen <= 1.0e-12 ) return FVector3::Zero;
 			LocalResult = FVector3( static_cast<float32>( CrossX / CrossLen * Magnitude ), static_cast<float32>( CrossY / CrossLen * Magnitude ), static_cast<float32>( CrossZ / CrossLen * Magnitude ) );
 		}
@@ -233,11 +233,11 @@ FVector3 FEffectForceFieldDefinition::EvaluateAcceleration( const FVector3& Worl
 			const double PhaseZ = DeltaZ * Omega + Phase;
 			if ( !NMath::IsFinite( PhaseX ) || !NMath::IsFinite( PhaseY ) || !NMath::IsFinite( PhaseZ ) ) return FVector3::Zero;
 			// 3軸が独立に変化する決定論的Beltrami波のX成分。
-			const double WaveX = std::sin( PhaseY ) + std::cos( PhaseZ );
+			const double WaveX = NMath::Sin( PhaseY ) + NMath::Cos( PhaseZ );
 			// 3軸が独立に変化する決定論的Beltrami波のY成分。
-			const double WaveY = std::sin( PhaseZ ) + std::cos( PhaseX );
+			const double WaveY = NMath::Sin( PhaseZ ) + NMath::Cos( PhaseX );
 			// 3軸が独立に変化する決定論的Beltrami波のZ成分。
-			const double WaveZ = std::sin( PhaseX ) + std::cos( PhaseY );
+			const double WaveZ = NMath::Sin( PhaseX ) + NMath::Cos( PhaseY );
 			LocalResult = FVector3( static_cast<float32>( WaveX * Magnitude ), static_cast<float32>( WaveY * Magnitude ), static_cast<float32>( WaveZ * Magnitude ) );
 		}
 		else return FVector3::Zero;

@@ -108,22 +108,22 @@ namespace
 		{
 		case EParticleShape::Cone:
 		{
-			const float32 Distance = Radius * std::sqrt( Random.Next() );
+			const float32 Distance = Radius * NMath::Sqrt( Random.Next() );
 			const float32 Theta = Random.Next() * NMath::TWO_PI;
-			LocalPosition = ( U * std::cos( Theta ) + V * std::sin( Theta ) ) * Distance;
-			const float32 CosLimit = std::cos( NMath::Clamp( Sanitize( Def.ConeAngle ), 0.0f, 180.0f ) * NMath::DEG2RAD );
+			LocalPosition = ( U * NMath::Cos( Theta ) + V * NMath::Sin( Theta ) ) * Distance;
+			const float32 CosLimit = NMath::Cos( NMath::Clamp( Sanitize( Def.ConeAngle ), 0.0f, 180.0f ) * NMath::DEG2RAD );
 			const float32 CosPolar = 1.0f - Random.Next() * ( 1.0f - CosLimit );   // 立体角に対して、一様
-			const float32 SinPolar = std::sqrt( NMath::Max( 1.0f - CosPolar * CosPolar, 0.0f ) );
+			const float32 SinPolar = NMath::Sqrt( NMath::Max( 1.0f - CosPolar * CosPolar, 0.0f ) );
 			const float32 Phi = Random.Next() * NMath::TWO_PI;
-			LocalDirection = Axis * CosPolar + ( U * std::cos( Phi ) + V * std::sin( Phi ) ) * SinPolar;
+			LocalDirection = Axis * CosPolar + ( U * NMath::Cos( Phi ) + V * NMath::Sin( Phi ) ) * SinPolar;
 			break;
 		}
 		case EParticleShape::Sphere:
 		{
 			const float32 Z = Random.Next() * 2.0f - 1.0f;
 			const float32 Phi = Random.Next() * NMath::TWO_PI;
-			const float32 Ring = std::sqrt( NMath::Max( 1.0f - Z * Z, 0.0f ) );
-			const FVector3 Unit( Ring * std::cos( Phi ), Z, Ring * std::sin( Phi ) );
+			const float32 Ring = NMath::Sqrt( NMath::Max( 1.0f - Z * Z, 0.0f ) );
+			const FVector3 Unit( Ring * NMath::Cos( Phi ), Z, Ring * NMath::Sin( Phi ) );
 			LocalPosition = Unit * ( Radius * std::cbrt( Random.Next() ) );
 			LocalDirection = Unit;
 			break;
@@ -240,7 +240,7 @@ namespace
 			const float32 Rate = NMath::Max( Sanitize( Def.Rate ), 0.0f );
 			State.Carry += static_cast<float64>( Rate ) * static_cast<float64>( LocalNow - NMath::Max( LocalPrevious, 0.0f ) );
 			// 空きに収まらない分も含めた整数個数。巨大な値でも整数型へ変換しない。
-			const float64 FromRate = std::floor( State.Carry + 1.0e-9 );
+			const float64 FromRate = NMath::Floor( State.Carry + 1.0e-9 );
 			// 実際に作る数だけを整数型で保持する。
 			int32 NumToEmit = static_cast<int32>( NMath::Min( FromRate, static_cast<float64>( Available ) ) );
 			State.Carry -= FromRate;

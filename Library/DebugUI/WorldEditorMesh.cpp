@@ -31,7 +31,7 @@ namespace
 
 	FColor32 ToColor32( const float ( &Rgb )[3] )
 	{
-		const auto Byte = [] ( float V ) { return static_cast<uint8>( NMath::Clamp( static_cast<int32>( std::round( V * 255.0f ) ), 0, 255 ) ); };
+		const auto Byte = [] ( float V ) { return static_cast<uint8>( NMath::Clamp( static_cast<int32>( NMath::Round( V * 255.0f ) ), 0, 255 ) ); };
 		return FColor32( Byte( Rgb[0] ), Byte( Rgb[1] ), Byte( Rgb[2] ), 255 );
 	}
 

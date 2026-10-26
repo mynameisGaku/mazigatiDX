@@ -12,8 +12,8 @@ FVector3 FEditorCamera::GetEye() const
 
 FVector3 FEditorCamera::GetForward() const
 {
-	const float32 CosPitch = std::cos( Pitch );
-	return FVector3( -CosPitch * std::sin( Yaw ), -std::sin( Pitch ), CosPitch * std::cos( Yaw ) );
+	const float32 CosPitch = NMath::Cos( Pitch );
+	return FVector3( -CosPitch * NMath::Sin( Yaw ), -NMath::Sin( Pitch ), CosPitch * NMath::Cos( Yaw ) );
 }
 
 FVector3 FEditorCamera::GetRight() const
@@ -50,7 +50,7 @@ void FEditorCamera::Pan( const FEditorViewport& Viewport, float32 DeltaX, float3
 
 void FEditorCamera::Zoom( float32 WheelSteps, float32 Rate )
 {
-	Distance = NMath::Clamp( Distance * std::pow( 1.0f - Rate, WheelSteps ), MinDistance, MaxDistance );
+	Distance = NMath::Clamp( Distance * NMath::Pow( 1.0f - Rate, WheelSteps ), MinDistance, MaxDistance );
 }
 
 void FEditorCamera::MoveLocal( const FVector3& Move )
@@ -62,9 +62,9 @@ void FEditorCamera::Focus( const FVector3& Center, float32 Radius, const FEditor
 {
 	// 縦と横の、狭いほうの視野に収める
 	const float32 HalfFovY = Viewport.FovY * 0.5f;
-	const float32 HalfFovX = std::atan( std::tan( HalfFovY ) * Viewport.GetAspect() );
+	const float32 HalfFovX = NMath::Atan( NMath::Tan( HalfFovY ) * Viewport.GetAspect() );
 	const float32 HalfFov = NMath::Min( HalfFovY, HalfFovX );
-	const float32 Fit = NMath::Max( Radius, 0.01f ) / std::sin( NMath::Max( HalfFov, 0.01f ) ) * 1.15f;
+	const float32 Fit = NMath::Max( Radius, 0.01f ) / NMath::Sin( NMath::Max( HalfFov, 0.01f ) ) * 1.15f;
 	Target = Center;
 	Distance = NMath::Clamp( Fit, MinDistance, MaxDistance );
 }
@@ -86,7 +86,7 @@ bool FEditorCamera::WorldToScreen( const FEditorViewport& Viewport, const FVecto
 	const float32 Depth = FVector3::Dot( Offset, GetForward() );
 	if ( Depth <= Viewport.Near ) return false;
 
-	const float32 TanHalf = std::tan( Viewport.FovY * 0.5f );
+	const float32 TanHalf = NMath::Tan( Viewport.FovY * 0.5f );
 	const float32 NdcX = FVector3::Dot( Offset, GetRight() ) / ( Depth * TanHalf * Viewport.GetAspect() );
 	const float32 NdcY = FVector3::Dot( Offset, GetUp() ) / ( Depth * TanHalf );
 	OutPixel = FVector2( ( NdcX * 0.5f + 0.5f ) * static_cast<float32>( Viewport.Width ), ( 0.5f - NdcY * 0.5f ) * static_cast<float32>( Viewport.Height ) );
@@ -113,7 +113,7 @@ bool FEditorCamera::ProjectSegment( const FEditorViewport& Viewport, const FVect
 
 FEditorRay FEditorCamera::ScreenToRay( const FEditorViewport& Viewport, float32 PixelX, float32 PixelY ) const
 {
-	const float32 TanHalf = std::tan( Viewport.FovY * 0.5f );
+	const float32 TanHalf = NMath::Tan( Viewport.FovY * 0.5f );
 	const float32 NdcX = ( PixelX / static_cast<float32>( NMath::Max( Viewport.Width, 1 ) ) ) * 2.0f - 1.0f;
 	const float32 NdcY = 1.0f - ( PixelY / static_cast<float32>( NMath::Max( Viewport.Height, 1 ) ) ) * 2.0f;
 
@@ -126,5 +126,5 @@ FEditorRay FEditorCamera::ScreenToRay( const FEditorViewport& Viewport, float32 
 float32 FEditorCamera::GetPixelSize( const FEditorViewport& Viewport, const FVector3& Point ) const
 {
 	const float32 Depth = NMath::Max( FVector3::Dot( Point - GetEye(), GetForward() ), Viewport.Near );
-	return 2.0f * Depth * std::tan( Viewport.FovY * 0.5f ) / static_cast<float32>( NMath::Max( Viewport.Height, 1 ) );
+	return 2.0f * Depth * NMath::Tan( Viewport.FovY * 0.5f ) / static_cast<float32>( NMath::Max( Viewport.Height, 1 ) );
 }

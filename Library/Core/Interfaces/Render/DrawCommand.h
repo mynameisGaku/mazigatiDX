@@ -2,6 +2,7 @@
 #include <cstring>
 #include <type_traits>
 
+#include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Types/TypeDefinition.h"
 
 //=============================================================================
@@ -243,7 +244,7 @@ struct FDrawCommandView
 	FORCEINLINE TData Read() const
 	{
 		TData Value;
-		std::memcpy( &Value, Data, sizeof( TData ) );
+		FMemory::Memcpy( &Value, Data, sizeof( TData ) );
 		return Value;
 	}
 

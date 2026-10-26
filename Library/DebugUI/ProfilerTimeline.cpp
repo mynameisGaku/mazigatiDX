@@ -8,6 +8,7 @@
 #include "Library/Core/Time/PlatformTime.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Profiler/ProfilerAnalyzer.h"
+#include "Library/Math/MathUtils.h"
 #include "VendorModules/ImGui/imgui.h"
 
 namespace
@@ -49,7 +50,7 @@ namespace
 	// 文字列 ID ごとに色を決める（同じ Category は同じ色）
 	ImU32 IdColor( uint32 Id, float Value = 0.78f, float Alpha = 1.0f )
 	{
-		const float Hue = std::fmod( static_cast<float>( Id ) * 0.61803398875f, 1.0f );
+		const float Hue = NMath::Fmod( static_cast<float>( Id ) * 0.61803398875f, 1.0f );
 		ImVec4 Color( 0, 0, 0, Alpha );
 		ImGui::ColorConvertHSVtoRGB( Hue, 0.55f, Value, Color.x, Color.y, Color.z );
 		return ImGui::ColorConvertFloat4ToU32( Color );
@@ -71,7 +72,7 @@ namespace
 	float64 NiceStep( float64 Raw )
 	{
 		if ( Raw <= 0.0 ) return 1.0;
-		const float64 Magnitude = std::pow( 10.0, std::floor( std::log10( Raw ) ) );
+		const float64 Magnitude = NMath::Pow( 10.0, NMath::Floor( NMath::Log10( Raw ) ) );
 		const float64 Fraction = Raw / Magnitude;
 		const float64 Nice = Fraction <= 1.0 ? 1.0 : ( Fraction <= 2.0 ? 2.0 : ( Fraction <= 5.0 ? 5.0 : 10.0 ) );
 		return Nice * Magnitude;
@@ -336,7 +337,7 @@ namespace
 	void ZoomAt( FProfilerTimelineState& State, int32 Mode, bool bFollow, float AnchorFraction, float Wheel, float64 MaxSpanMs )
 	{
 		const float64 OldSpan = State.ViewSpanMs[Mode];
-		const float64 NewSpan = NMath::Clamp( OldSpan * std::pow( 0.78, static_cast<float64>( Wheel ) ), State.MinSpanMs, MaxSpanMs );
+		const float64 NewSpan = NMath::Clamp( OldSpan * NMath::Pow( 0.78, static_cast<float64>( Wheel ) ), State.MinSpanMs, MaxSpanMs );
 		if ( Mode == ModeContinuous && bFollow )
 		{
 			// 追従中は右端（最新）を動かさない
@@ -448,7 +449,7 @@ namespace
 		const float64 MsPerPixel = Area.SpanMs / static_cast<float64>( Area.Width );
 		float64 Step = NiceStep( MsPerPixel * 90.0 );
 		if ( Step < 0.001 ) Step = NiceStep( MsPerPixel * 135.0 );   // ごく細かいときは、ラベル（小数の桁数）が長くなるので間隔を広げる
-		const float64 First = std::floor( Area.StartMs / Step ) * Step;
+		const float64 First = NMath::Floor( Area.StartMs / Step ) * Step;
 
 		DL->AddRectFilled( ImVec2( Area.Origin.x, Y ), ImVec2( Area.Right(), Y + RulerHeight ), IM_COL32( 26, 26, 26, 255 ) );
 
@@ -470,14 +471,14 @@ namespace
 			char Label[48];
 			if ( bStacked )
 			{
-				const int32 Decimals = Step >= 1.0 ? 0 : NMath::Clamp( static_cast<int32>( std::ceil( -std::log10( Step ) ) ), 0, 8 );
+				const int32 Decimals = Step >= 1.0 ? 0 : NMath::Clamp( static_cast<int32>( NMath::Ceil( -NMath::Log10( Step ) ) ), 0, 8 );
 				std::snprintf( Label, sizeof( Label ), "%.*f ms", Decimals, T );
 			}
 			else
 			{
 				// 秒で表示する。目盛りの細かさに合わせて小数の桁数を決める
 				const float64 StepSeconds = Step / 1000.0;
-				const int32 Decimals = StepSeconds >= 1.0 ? 0 : NMath::Clamp( static_cast<int32>( std::ceil( -std::log10( StepSeconds ) ) ), 0, 10 );
+				const int32 Decimals = StepSeconds >= 1.0 ? 0 : NMath::Clamp( static_cast<int32>( NMath::Ceil( -NMath::Log10( StepSeconds ) ) ), 0, 10 );
 				std::snprintf( Label, sizeof( Label ), "%.*f s", Decimals, T / 1000.0 );
 			}
 			if ( X >= Area.Origin.x ) DL->AddText( ImVec2( X + 3.0f, Y + 2.0f ), IM_COL32( 220, 220, 220, 255 ), Label );
@@ -1132,8 +1133,8 @@ namespace
 
 		const float ScrollY = ImGui::GetScrollY();
 		FHit Hit;
-		const int32 FirstGroup = NMath::Max( 0, static_cast<int32>( std::floor( ScrollY / Stride ) ) );
-		const int32 LastGroup = NMath::Min( TopIndex, static_cast<int32>( std::floor( ( ScrollY + ChildHeight ) / Stride ) ) );
+		const int32 FirstGroup = NMath::Max( 0, static_cast<int32>( NMath::Floor( ScrollY / Stride ) ) );
+		const int32 LastGroup = NMath::Min( TopIndex, static_cast<int32>( NMath::Floor( ( ScrollY + ChildHeight ) / Stride ) ) );
 		for ( int32 Group = FirstGroup; Group <= LastGroup; ++Group )   // 見えない段は描かない
 		{
 			const int32 FrameIndex = TopIndex - Group;

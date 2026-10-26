@@ -602,7 +602,7 @@ int32 NEditMesh::WeldVertices( FEditMesh& Mesh, const TArray<int32>& Vertices, f
 	TArray<int32> Parent;
 	for ( int32 i = 0; i < Mesh.Vertices.Num(); ++i ) Parent.Add( i );
 
-	const auto CellOf = [&]( float32 Value ) { return static_cast<int64>( std::floor( Value / Reach ) ); };
+	const auto CellOf = [&]( float32 Value ) { return static_cast<int64>( NMath::Floor( Value / Reach ) ); };
 	const auto KeyOf = [&]( int64 X, int64 Y, int64 Z ) { return ( X * 73856093ll ) ^ ( Y * 19349663ll ) ^ ( Z * 83492791ll ); };
 	TMap<int64, TArray<int32>> Grid;
 	const float32 ReachSquared = Reach * Reach;
@@ -790,7 +790,7 @@ FEditMesh NEditMesh::MakeFromTriangles( TArrayView<const FVector3> Positions, TA
 	Remap.Init( -1, Positions.Num() );
 	const float32 Reach = NMath::Max( WeldDistance, 0.0f );
 	const bool bWeld = Reach > 0.0f;
-	const auto CellOf = [&]( float32 Value ) { return static_cast<int64>( std::floor( Value / Reach ) ); };
+	const auto CellOf = [&]( float32 Value ) { return static_cast<int64>( NMath::Floor( Value / Reach ) ); };
 	const auto KeyOf = [&]( int64 X, int64 Y, int64 Z ) { return ( X * 73856093ll ) ^ ( Y * 19349663ll ) ^ ( Z * 83492791ll ); };
 	TMap<int64, TArray<int32>> Grid;
 	const float32 ReachSquared = Reach * Reach;

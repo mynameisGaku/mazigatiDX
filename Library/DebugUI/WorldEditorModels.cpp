@@ -16,7 +16,7 @@ namespace
 	// floatのbit列を比較し、同じNaN設定でも毎frame再構築しない。
 	bool SameFloatBits( float32 Left, float32 Right )
 	{
-		return std::memcmp( &Left, &Right, sizeof( float32 ) ) == 0;
+		return FMemory::Memcmp( &Left, &Right, sizeof( float32 ) ) == 0;
 	}
 
 	// bindingの存在と全保存値を比較し、不正値も安定した失敗設定として扱う。

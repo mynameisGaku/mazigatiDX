@@ -553,7 +553,7 @@ Failed:
 		else if ( static_cast<EDrawQuadOrient>( Data.Quad.Orient ) == EDrawQuadOrient::Camera )
 		{
 			// camera facingの横・上軸をAngleだけ回す。
-			const VECTOR CameraRight = GetCameraRightVector(); const VECTOR CameraUp = GetCameraUpVector(); const float32 Cos = std::cos( Data.Quad.Angle ); const float32 Sin = std::sin( Data.Quad.Angle );
+			const VECTOR CameraRight = GetCameraRightVector(); const VECTOR CameraUp = GetCameraUpVector(); const float32 Cos = NMath::Cos( Data.Quad.Angle ); const float32 Sin = NMath::Sin( Data.Quad.Angle );
 			Right = VAdd( VScale( CameraRight, Cos ), VScale( CameraUp, Sin ) ); Up = VAdd( VScale( CameraUp, Cos ), VScale( CameraRight, -Sin ) );
 		}
 		// pivotを基準にした四隅の左右・上下距離。
@@ -569,10 +569,10 @@ Failed:
 		// CPU更新中のvertex buffer内データ位置。
 		D3D11_MAPPED_SUBRESOURCE Mapped{};
 		if ( FAILED( Context->Map( VertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &Mapped ) ) ) { Saved.Restore( Context ); return false; }
-		std::memcpy( Mapped.pData, Vertices, sizeof( Vertices ) ); Context->Unmap( VertexBuffer, 0 );
+		FMemory::Memcpy( Mapped.pData, Vertices, sizeof( Vertices ) ); Context->Unmap( VertexBuffer, 0 );
 		// vertex shaderへ渡すworldからclipまでの変換。
 		FVertexConstants VsConstants{};
-		std::memcpy( VsConstants.Wvp, &Wvp, sizeof( VsConstants.Wvp ) );
+		FMemory::Memcpy( VsConstants.Wvp, &Wvp, sizeof( VsConstants.Wvp ) );
 		// pixel shaderへ渡すuv・色・消失・発光の設定一式。
 		FPixelConstants PsConstants{};
 		PsConstants.UvScaleOffset[0] = Data.UVScale[0]; PsConstants.UvScaleOffset[1] = Data.UVScale[1]; PsConstants.UvScaleOffset[2] = Data.UVOffset[0]; PsConstants.UvScaleOffset[3] = Data.UVOffset[1];
@@ -584,17 +584,17 @@ Failed:
 		int32 Bright[3] = { 255, 255, 255 }; GetDrawBright( &Bright[0], &Bright[1], &Bright[2] );
 		PsConstants.BrightBlend[0] *= Bright[0] / 255.0f; PsConstants.BrightBlend[1] *= Bright[1] / 255.0f; PsConstants.BrightBlend[2] *= Bright[2] / 255.0f;
 		PsConstants.Options[0] = Data.MaskTexture >= 0 ? 1.0f : 0.0f; PsConstants.Options[1] = BlendParam / 255.0f;
-		std::memcpy( PsConstants.SourceRect, SourceRect, sizeof( SourceRect ) ); std::memcpy( PsConstants.SourceInset, SourceInset, sizeof( SourceInset ) ); std::memcpy( PsConstants.MaskRect, MaskRect, sizeof( MaskRect ) ); std::memcpy( PsConstants.MaskInset, MaskInset, sizeof( MaskInset ) );
+		FMemory::Memcpy( PsConstants.SourceRect, SourceRect, sizeof( SourceRect ) ); FMemory::Memcpy( PsConstants.SourceInset, SourceInset, sizeof( SourceInset ) ); FMemory::Memcpy( PsConstants.MaskRect, MaskRect, sizeof( MaskRect ) ); FMemory::Memcpy( PsConstants.MaskInset, MaskInset, sizeof( MaskInset ) );
 		if ( DistortionData != nullptr )
 		{
 			PsConstants.DistortionScaleOffset[0] = DistortionData->UVScale[0]; PsConstants.DistortionScaleOffset[1] = DistortionData->UVScale[1]; PsConstants.DistortionScaleOffset[2] = DistortionData->UVOffset[0]; PsConstants.DistortionScaleOffset[3] = DistortionData->UVOffset[1];
 			PsConstants.DistortionValues[0] = DistortionData->Strength; PsConstants.DistortionValues[1] = 1.0f;
-			std::memcpy( PsConstants.DistortionRect, DistortionRect, sizeof( DistortionRect ) ); std::memcpy( PsConstants.DistortionInset, DistortionInset, sizeof( DistortionInset ) );
+			FMemory::Memcpy( PsConstants.DistortionRect, DistortionRect, sizeof( DistortionRect ) ); FMemory::Memcpy( PsConstants.DistortionInset, DistortionInset, sizeof( DistortionInset ) );
 		}
 		if ( FAILED( Context->Map( VertexConstants, 0, D3D11_MAP_WRITE_DISCARD, 0, &Mapped ) ) ) { Saved.Restore( Context ); return false; }
-		std::memcpy( Mapped.pData, &VsConstants, sizeof( VsConstants ) ); Context->Unmap( VertexConstants, 0 );
+		FMemory::Memcpy( Mapped.pData, &VsConstants, sizeof( VsConstants ) ); Context->Unmap( VertexConstants, 0 );
 		if ( FAILED( Context->Map( PixelConstants, 0, D3D11_MAP_WRITE_DISCARD, 0, &Mapped ) ) ) { Saved.Restore( Context ); return false; }
-		std::memcpy( Mapped.pData, &PsConstants, sizeof( PsConstants ) ); Context->Unmap( PixelConstants, 0 );
+		FMemory::Memcpy( Mapped.pData, &PsConstants, sizeof( PsConstants ) ); Context->Unmap( PixelConstants, 0 );
 		// native drawへ渡すvertex・constant・SRV参照とblend係数。
 		const UINT Stride = sizeof( FVertex ); const UINT Offset = 0; ID3D11Buffer* Vb = VertexBuffer; ID3D11Buffer* VsCb = VertexConstants; ID3D11Buffer* PsCb = PixelConstants; ID3D11ShaderResourceView* Srvs[3] = { const_cast<ID3D11ShaderResourceView*>( Source ), const_cast<ID3D11ShaderResourceView*>( Mask ), const_cast<ID3D11ShaderResourceView*>( Distortion ) }; const FLOAT BlendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 		Context->IASetInputLayout( Layout ); Context->IASetVertexBuffers( 0, 1, &Vb, &Stride, &Offset ); Context->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
@@ -603,7 +603,7 @@ Failed:
 		// callerのraster設定を保ち、両面描画に必要な項目だけ変える。
 		D3D11_RASTERIZER_DESC RasterDesc{}; if ( Saved.Raster != nullptr ) Saved.Raster->GetDesc( &RasterDesc ); else { RasterDesc.FillMode = D3D11_FILL_SOLID; RasterDesc.DepthClipEnable = TRUE; }
 		RasterDesc.CullMode = D3D11_CULL_NONE;
-		if ( !bRasterDescValid || std::memcmp( &RasterDescCache, &RasterDesc, sizeof( RasterDesc ) ) != 0 )
+		if ( !bRasterDescValid || FMemory::Memcmp( &RasterDescCache, &RasterDesc, sizeof( RasterDesc ) ) != 0 )
 		{
 			if ( Raster != nullptr ) Raster->Release();
 			Raster = nullptr;
@@ -739,10 +739,10 @@ Failed:
 		// map結果をvertexまたはconstant bufferへ順次書き込む領域。
 		D3D11_MAPPED_SUBRESOURCE Mapped{};
 		if ( FAILED( Context->Map( VertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &Mapped ) ) ) { Saved.Restore( Context ); return false; }
-		std::memcpy( Mapped.pData, Vertices.GetData(), static_cast<size_t>( Vertices.Num() ) * sizeof( FVertex ) ); Context->Unmap( VertexBuffer, 0 );
+		FMemory::Memcpy( Mapped.pData, Vertices.GetData(), static_cast<size_t>( Vertices.Num() ) * sizeof( FVertex ) ); Context->Unmap( VertexBuffer, 0 );
 		// vertex shaderの行列bufferへ渡す値。
 		FVertexConstants VsConstants{};
-		std::memcpy( VsConstants.Wvp, &Wvp, sizeof( VsConstants.Wvp ) );
+		FMemory::Memcpy( VsConstants.Wvp, &Wvp, sizeof( VsConstants.Wvp ) );
 		// pixel shaderのUV・mask・edge・blend設定値。
 		FPixelConstants PsConstants{};
 		PsConstants.UvScaleOffset[0] = Material.UVScale[0]; PsConstants.UvScaleOffset[1] = Material.UVScale[1];
@@ -754,12 +754,12 @@ Failed:
 		int32 Bright[3] = { 255, 255, 255 }; GetDrawBright( &Bright[0], &Bright[1], &Bright[2] );
 		PsConstants.BrightBlend[0] *= Bright[0] / 255.0f; PsConstants.BrightBlend[1] *= Bright[1] / 255.0f; PsConstants.BrightBlend[2] *= Bright[2] / 255.0f;
 		PsConstants.Options[0] = Material.MaskTexture >= 0 ? 1.0f : 0.0f; PsConstants.Options[1] = BlendParam / 255.0f; PsConstants.Options[3] = 1.0f;
-		std::memcpy( PsConstants.SourceRect, SourceRect, sizeof( SourceRect ) ); std::memcpy( PsConstants.SourceInset, SourceInset, sizeof( SourceInset ) ); std::memcpy( PsConstants.MaskRect, MaskRect, sizeof( MaskRect ) ); std::memcpy( PsConstants.MaskInset, MaskInset, sizeof( MaskInset ) );
-		if ( DistortionData != nullptr ) { PsConstants.DistortionScaleOffset[0] = DistortionData->UVScale[0]; PsConstants.DistortionScaleOffset[1] = DistortionData->UVScale[1]; PsConstants.DistortionValues[1] = 1.0f; std::memcpy( PsConstants.DistortionRect, DistortionRect, sizeof( DistortionRect ) ); std::memcpy( PsConstants.DistortionInset, DistortionInset, sizeof( DistortionInset ) ); }
+		FMemory::Memcpy( PsConstants.SourceRect, SourceRect, sizeof( SourceRect ) ); FMemory::Memcpy( PsConstants.SourceInset, SourceInset, sizeof( SourceInset ) ); FMemory::Memcpy( PsConstants.MaskRect, MaskRect, sizeof( MaskRect ) ); FMemory::Memcpy( PsConstants.MaskInset, MaskInset, sizeof( MaskInset ) );
+		if ( DistortionData != nullptr ) { PsConstants.DistortionScaleOffset[0] = DistortionData->UVScale[0]; PsConstants.DistortionScaleOffset[1] = DistortionData->UVScale[1]; PsConstants.DistortionValues[1] = 1.0f; FMemory::Memcpy( PsConstants.DistortionRect, DistortionRect, sizeof( DistortionRect ) ); FMemory::Memcpy( PsConstants.DistortionInset, DistortionInset, sizeof( DistortionInset ) ); }
 		if ( FAILED( Context->Map( VertexConstants, 0, D3D11_MAP_WRITE_DISCARD, 0, &Mapped ) ) ) { Saved.Restore( Context ); return false; }
-		std::memcpy( Mapped.pData, &VsConstants, sizeof( VsConstants ) ); Context->Unmap( VertexConstants, 0 );
+		FMemory::Memcpy( Mapped.pData, &VsConstants, sizeof( VsConstants ) ); Context->Unmap( VertexConstants, 0 );
 		if ( FAILED( Context->Map( PixelConstants, 0, D3D11_MAP_WRITE_DISCARD, 0, &Mapped ) ) ) { Saved.Restore( Context ); return false; }
-		std::memcpy( Mapped.pData, &PsConstants, sizeof( PsConstants ) ); Context->Unmap( PixelConstants, 0 );
+		FMemory::Memcpy( Mapped.pData, &PsConstants, sizeof( PsConstants ) ); Context->Unmap( PixelConstants, 0 );
 		// 先頭slotへ結び直す頂点stride・offset・buffer・shader resource群。
 		const UINT Stride = sizeof( FVertex ); const UINT Offset = 0; ID3D11Buffer* Vb = VertexBuffer; ID3D11Buffer* VsCb = VertexConstants; ID3D11Buffer* PsCb = PixelConstants; ID3D11ShaderResourceView* Srvs[3] = { const_cast<ID3D11ShaderResourceView*>( Source ), const_cast<ID3D11ShaderResourceView*>( Mask ), const_cast<ID3D11ShaderResourceView*>( Distortion ) }; const FLOAT BlendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 		Context->IASetInputLayout( Layout ); Context->IASetVertexBuffers( 0, 1, &Vb, &Stride, &Offset ); Context->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
@@ -768,7 +768,7 @@ Failed:
 		// caller raster設定を保ちつつ帯の両面を描くdescriptor。
 		D3D11_RASTERIZER_DESC RasterDesc{}; if ( Saved.Raster != nullptr ) Saved.Raster->GetDesc( &RasterDesc ); else { RasterDesc.FillMode = D3D11_FILL_SOLID; RasterDesc.DepthClipEnable = TRUE; }
 		RasterDesc.CullMode = D3D11_CULL_NONE;
-		if ( !bRasterDescValid || std::memcmp( &RasterDescCache, &RasterDesc, sizeof( RasterDesc ) ) != 0 )
+		if ( !bRasterDescValid || FMemory::Memcmp( &RasterDescCache, &RasterDesc, sizeof( RasterDesc ) ) != 0 )
 		{
 			if ( Raster != nullptr ) Raster->Release();
 			Raster = nullptr;
@@ -890,10 +890,10 @@ Failed:
 		// dynamic vertex bufferへ展開済み三角形を転送する。
 		D3D11_MAPPED_SUBRESOURCE Mapped{};
 		if ( FAILED( Context->Map( VertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &Mapped ) ) ) { Saved.Restore( Context ); return false; }
-		std::memcpy( Mapped.pData, Vertices.GetData(), static_cast<size_t>( Vertices.Num() ) * sizeof( FVertex ) ); Context->Unmap( VertexBuffer, 0 );
+		FMemory::Memcpy( Mapped.pData, Vertices.GetData(), static_cast<size_t>( Vertices.Num() ) * sizeof( FVertex ) ); Context->Unmap( VertexBuffer, 0 );
 		// 頂点shaderへ渡すworld座標からclip座標への変換。
 		FVertexConstants VsConstants{};
-		std::memcpy( VsConstants.Wvp, &Wvp, sizeof( VsConstants.Wvp ) );
+		FMemory::Memcpy( VsConstants.Wvp, &Wvp, sizeof( VsConstants.Wvp ) );
 		// pixel shaderへ渡す元画像・mask・発光・ゆがみ設定。
 		FPixelConstants PsConstants{};
 		PsConstants.UvScaleOffset[0] = Data.Material.UVScale[0]; PsConstants.UvScaleOffset[1] = Data.Material.UVScale[1]; PsConstants.UvScaleOffset[2] = Data.UVOffset[0]; PsConstants.UvScaleOffset[3] = Data.UVOffset[1];
@@ -907,12 +907,12 @@ Failed:
 		GetDrawBright( &Bright[0], &Bright[1], &Bright[2] );
 		PsConstants.BrightBlend[0] *= Bright[0] / 255.0f; PsConstants.BrightBlend[1] *= Bright[1] / 255.0f; PsConstants.BrightBlend[2] *= Bright[2] / 255.0f;
 		PsConstants.Options[0] = Data.Material.MaskTexture >= 0 ? 1.0f : 0.0f; PsConstants.Options[1] = BlendParam / 255.0f; PsConstants.Options[3] = 1.0f;
-		std::memcpy( PsConstants.SourceRect, SourceRect, sizeof( SourceRect ) ); std::memcpy( PsConstants.SourceInset, SourceInset, sizeof( SourceInset ) ); std::memcpy( PsConstants.MaskRect, MaskRect, sizeof( MaskRect ) ); std::memcpy( PsConstants.MaskInset, MaskInset, sizeof( MaskInset ) );
-		if ( bUseDistortion ) { PsConstants.DistortionScaleOffset[0] = Data.DistortionUVScale[0]; PsConstants.DistortionScaleOffset[1] = Data.DistortionUVScale[1]; PsConstants.DistortionValues[0] = Data.DistortionStrength; PsConstants.DistortionValues[1] = 1.0f; std::memcpy( PsConstants.DistortionRect, DistortionRect, sizeof( DistortionRect ) ); std::memcpy( PsConstants.DistortionInset, DistortionInset, sizeof( DistortionInset ) ); }
+		FMemory::Memcpy( PsConstants.SourceRect, SourceRect, sizeof( SourceRect ) ); FMemory::Memcpy( PsConstants.SourceInset, SourceInset, sizeof( SourceInset ) ); FMemory::Memcpy( PsConstants.MaskRect, MaskRect, sizeof( MaskRect ) ); FMemory::Memcpy( PsConstants.MaskInset, MaskInset, sizeof( MaskInset ) );
+		if ( bUseDistortion ) { PsConstants.DistortionScaleOffset[0] = Data.DistortionUVScale[0]; PsConstants.DistortionScaleOffset[1] = Data.DistortionUVScale[1]; PsConstants.DistortionValues[0] = Data.DistortionStrength; PsConstants.DistortionValues[1] = 1.0f; FMemory::Memcpy( PsConstants.DistortionRect, DistortionRect, sizeof( DistortionRect ) ); FMemory::Memcpy( PsConstants.DistortionInset, DistortionInset, sizeof( DistortionInset ) ); }
 		if ( FAILED( Context->Map( VertexConstants, 0, D3D11_MAP_WRITE_DISCARD, 0, &Mapped ) ) ) { Saved.Restore( Context ); return false; }
-		std::memcpy( Mapped.pData, &VsConstants, sizeof( VsConstants ) ); Context->Unmap( VertexConstants, 0 );
+		FMemory::Memcpy( Mapped.pData, &VsConstants, sizeof( VsConstants ) ); Context->Unmap( VertexConstants, 0 );
 		if ( FAILED( Context->Map( PixelConstants, 0, D3D11_MAP_WRITE_DISCARD, 0, &Mapped ) ) ) { Saved.Restore( Context ); return false; }
-		std::memcpy( Mapped.pData, &PsConstants, sizeof( PsConstants ) ); Context->Unmap( PixelConstants, 0 );
+		FMemory::Memcpy( Mapped.pData, &PsConstants, sizeof( PsConstants ) ); Context->Unmap( PixelConstants, 0 );
 		// native drawへ結ぶvertex buffer・constant buffer・SRVと合成係数。
 		const UINT Stride = sizeof( FVertex ); const UINT Offset = 0; ID3D11Buffer* Vb = VertexBuffer; ID3D11Buffer* VsCb = VertexConstants; ID3D11Buffer* PsCb = PixelConstants; ID3D11ShaderResourceView* Srvs[3] = { const_cast<ID3D11ShaderResourceView*>( Source ), const_cast<ID3D11ShaderResourceView*>( Mask ), const_cast<ID3D11ShaderResourceView*>( Distortion ) }; const FLOAT BlendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 		Context->IASetInputLayout( Layout ); Context->IASetVertexBuffers( 0, 1, &Vb, &Stride, &Offset ); Context->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
@@ -940,7 +940,7 @@ Failed:
 				else if ( CallerCullMode == DX_CULLING_RIGHT ) RasterDesc.CullMode = D3D11_CULL_FRONT;
 				else { Saved.Restore( Context ); return false; }
 			}
-			if ( !bRasterDescValid || std::memcmp( &RasterDescCache, &RasterDesc, sizeof( RasterDesc ) ) != 0 )
+			if ( !bRasterDescValid || FMemory::Memcmp( &RasterDescCache, &RasterDesc, sizeof( RasterDesc ) ) != 0 )
 			{
 				if ( Raster != nullptr ) Raster->Release();
 				Raster = nullptr;

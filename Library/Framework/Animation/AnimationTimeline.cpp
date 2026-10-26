@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "Library/Core/Types/Numeric.h"
+#include "Library/Math/MathUtils.h"
 
 namespace
 {
@@ -75,7 +76,7 @@ FAnimLocation NAnim::Locate( const FAnimTimeline& Timeline, float64 Playhead )
 	}
 	else
 	{
-		const float64 CycleCount = std::floor( Playhead / Total );
+		const float64 CycleCount = NMath::Floor( Playhead / Total );
 		Cycles = static_cast<int64>( CycleCount );
 		Time = Playhead - CycleCount * Total;
 	}
@@ -101,10 +102,10 @@ float32 NAnim::ToClipTime( float64 Playhead, float32 Length, EAnimLoopMode Mode 
 	case EAnimLoopMode::Once:
 		return static_cast<float32>( NMath::Clamp( Playhead, 0.0, L ) );
 	case EAnimLoopMode::Loop:
-		return static_cast<float32>( Playhead - std::floor( Playhead / L ) * L );
+		return static_cast<float32>( Playhead - NMath::Floor( Playhead / L ) * L );
 	case EAnimLoopMode::PingPong:
 	{
-		const float64 Wrapped = Playhead - std::floor( Playhead / ( 2.0 * L ) ) * 2.0 * L;   // 0..2L
+		const float64 Wrapped = Playhead - NMath::Floor( Playhead / ( 2.0 * L ) ) * 2.0 * L;   // 0..2L
 		return static_cast<float32>( Wrapped <= L ? Wrapped : 2.0 * L - Wrapped );
 	}
 	}
@@ -134,8 +135,8 @@ int32 NAnim::CountMarkerCrossings( float64 FromPlayhead, float64 ToPlayhead, flo
 	auto CountSeries = [&]( float64 Offset )
 	{
 		// Position = Offset + k * Period が (Low, High] にある k の数
-		const float64 KFirst = std::floor( ( Low - Offset ) / Period ) + 1.0;
-		const float64 KLast = std::floor( ( High - Offset ) / Period );
+		const float64 KFirst = NMath::Floor( ( Low - Offset ) / Period ) + 1.0;
+		const float64 KLast = NMath::Floor( ( High - Offset ) / Period );
 		// 閉じ方が前進と後退で違う分は、端にちょうど乗る場合だけ補正する
 		float64 First = KFirst;
 		float64 Last = KLast;

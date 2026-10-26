@@ -263,7 +263,7 @@ namespace
 		if ( S.bFitRequested )
 		{
 			S.Zoom = NMath::Clamp( NMath::Min( ( Size.x - 16.0f ) / static_cast<float>( TexW ), ( Size.y - 28.0f ) / static_cast<float>( TexH ) ), 0.25f, 32.0f );
-			if ( S.Zoom >= 2.0f ) S.Zoom = std::floor( S.Zoom );   // 2 倍以上の拡大は整数倍にして、ドットを揃える
+			if ( S.Zoom >= 2.0f ) S.Zoom = NMath::Floor( S.Zoom );   // 2 倍以上の拡大は整数倍にして、ドットを揃える
 			S.Pan = ImVec2( ( Size.x - static_cast<float>( TexW ) * S.Zoom ) * 0.5f, ( Size.y - static_cast<float>( TexH ) * S.Zoom ) * 0.5f );
 			S.bFitRequested = false;
 		}
@@ -361,11 +361,11 @@ namespace
 		if ( bHovered && bShift && ImGui::IsMouseClicked( ImGuiMouseButton_Left ) )
 		{
 			S.bDrawing = true;
-			S.DrawStart = ImVec2( std::floor( Mouse.x ), std::floor( Mouse.y ) );
+			S.DrawStart = ImVec2( NMath::Floor( Mouse.x ), NMath::Floor( Mouse.y ) );
 		}
 		if ( S.bDrawing )
 		{
-			const ImVec2 End( std::floor( Mouse.x ), std::floor( Mouse.y ) );
+			const ImVec2 End( NMath::Floor( Mouse.x ), NMath::Floor( Mouse.y ) );
 			const int32 X0 = NMath::Clamp( static_cast<int32>( NMath::Min( S.DrawStart.x, End.x ) ), 0, TexW );
 			const int32 Y0 = NMath::Clamp( static_cast<int32>( NMath::Min( S.DrawStart.y, End.y ) ), 0, TexH );
 			const int32 X1 = NMath::Clamp( static_cast<int32>( NMath::Max( S.DrawStart.x, End.x ) ) + 1, 0, TexW );
@@ -405,8 +405,8 @@ namespace
 
 		// 下端の案内
 		char Info[200];
-		const int32 Px = static_cast<int32>( std::floor( Mouse.x ) );
-		const int32 Py = static_cast<int32>( std::floor( Mouse.y ) );
+		const int32 Px = static_cast<int32>( NMath::Floor( Mouse.x ) );
+		const int32 Py = static_cast<int32>( NMath::Floor( Mouse.y ) );
 		if ( bHovered && Px >= 0 && Py >= 0 && Px < TexW && Py < TexH )
 		{
 			std::snprintf( Info, sizeof( Info ), "pixel (%d, %d)   frame %s   |   click: select   Ctrl+click: add to clip   Shift+drag: new frame   wheel: zoom   middle-drag: pan", Px, Py,

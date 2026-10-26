@@ -55,7 +55,7 @@ namespace
 	private:
 		static int64 Quantize( const FVector3& P )
 		{
-			const auto Cell = [] ( float32 V ) { return static_cast<int64>( std::floor( V * 1000.0f ) ); };
+			const auto Cell = [] ( float32 V ) { return static_cast<int64>( NMath::Floor( V * 1000.0f ) ); };
 			return ( Cell( P.x ) * 73856093ll ) ^ ( Cell( P.y ) * 19349663ll ) ^ ( Cell( P.z ) * 83492791ll );
 		}
 
@@ -122,7 +122,7 @@ FEditMesh NEditMesh::MakeCylinder( float32 Radius, float32 Height, int32 Segment
 	const auto Ring = [&]( int32 Step, float32 Y )
 	{
 		const float32 Angle = NMath::TWO_PI * static_cast<float32>( Step % N ) / static_cast<float32>( N );
-		return FVector3( R * std::cos( Angle ), Y, R * std::sin( Angle ) );
+		return FVector3( R * NMath::Cos( Angle ), Y, R * NMath::Sin( Angle ) );
 	};
 	FBuilder B;
 	for ( int32 i = 0; i < N; ++i ) B.Face( { Ring( i, 0.0f ), Ring( i, H ), Ring( i + 1, H ), Ring( i + 1, 0.0f ) } );
@@ -149,7 +149,7 @@ FEditMesh NEditMesh::MakeSphere( float32 Radius, int32 Segments, int32 Rings )
 	{
 		const float32 Polar = NMath::PI * static_cast<float32>( Ring ) / static_cast<float32>( M );
 		const float32 Angle = NMath::TWO_PI * static_cast<float32>( Step % N ) / static_cast<float32>( N );
-		return FVector3( R * std::sin( Polar ) * std::cos( Angle ), R + R * std::cos( Polar ), R * std::sin( Polar ) * std::sin( Angle ) );
+		return FVector3( R * NMath::Sin( Polar ) * NMath::Cos( Angle ), R + R * NMath::Cos( Polar ), R * NMath::Sin( Polar ) * NMath::Sin( Angle ) );
 	};
 	FBuilder B;
 	for ( int32 s = 0; s < N; ++s ) B.Face( { Top, Point( 1, s + 1 ), Point( 1, s ) } );

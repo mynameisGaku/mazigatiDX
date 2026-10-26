@@ -36,12 +36,12 @@ namespace
 		// 有限な float 二つの積なので double の範囲内に収まる位相。
 		const float64 Phase = Seconds * Rate;
 		// 現在の更新区間の整数番号。
-		const float64 Frame = std::floor( Phase );
+		const float64 Frame = NMath::Floor( Phase );
 		// 二つの形状の間の進み具合。
 		const float32 Fraction = static_cast<float32>( Phase - Frame );
 		// 大きな時刻でも整数変換を範囲内に保つ更新状態。
 		FNoiseTime Result;
-		Result.Previous = static_cast<uint32>( std::fmod( Frame, 4294967296.0 ) );
+		Result.Previous = static_cast<uint32>( NMath::Fmod( Frame, 4294967296.0 ) );
 		Result.Next = Result.Previous + 1u;
 		Result.Blend = Fraction * Fraction * ( 3.0f - 2.0f * Fraction );
 		return Result;
@@ -84,7 +84,7 @@ namespace
 			// この段での、線の始点からの区間位置。
 			const float32 Coordinate = T * static_cast<float32>( 2u << Level );
 			// 揺れの格子の左側の番号。
-			const uint32 Cell = static_cast<uint32>( std::floor( Coordinate ) );
+			const uint32 Cell = static_cast<uint32>( NMath::Floor( Coordinate ) );
 			// 格子の二つの値を混ぜる割合。
 			const float32 Fraction = Coordinate - static_cast<float32>( Cell );
 			// 粗い曲がりは滑らかにし、細い段は線形で小さな折れを残す。
