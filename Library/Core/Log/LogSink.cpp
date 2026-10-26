@@ -6,6 +6,8 @@
 #include <ctime>
 #include <share.h>
 
+#include "Library/Core/Types/Utility.h"
+
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -201,12 +203,12 @@ void CImGuiLogSink::Write( const FLogMessage& Message )
 	FEntry Entry { Message.Verbosity, ToUtf8( Message.FormattedLine ) };
 	if ( Entries.Num() < MaxLines )
 	{
-		Entries.Add( std::move( Entry ) );
+		Entries.Add( MoveTemp( Entry ) );
 	}
 	else
 	{
 		// 満杯なら最も古い要素を上書き
-		Entries[Head] = std::move( Entry );
+		Entries[Head] = MoveTemp( Entry );
 		Head = ( Head + 1 ) % MaxLines;
 	}
 }

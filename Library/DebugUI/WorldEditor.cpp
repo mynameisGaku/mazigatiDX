@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/DebugUI/WorldEditorInternal.h"
 #include "Library/Framework/Asset/EditorAssetInfo.h"
@@ -91,7 +92,7 @@ void NWorldEditorUI::FrameAll( FWorldEditorState& S )
 	Context.Assets = S.AssetInfo.Get();
 	FVector3 Center;
 	float32 Radius = 0.0f;
-	if ( NWorldEditor::ComputeBoundingSphere( Session.Document.Get(), All, Context, Center, Radius ) ) Session.Camera.Focus( Center, std::max( Radius, 2.0f ), S.View );
+	if ( NWorldEditor::ComputeBoundingSphere( Session.Document.Get(), All, Context, Center, Radius ) ) Session.Camera.Focus( Center, NMath::Max( Radius, 2.0f ), S.View );
 	else Session.Camera = FEditorCamera();
 }
 

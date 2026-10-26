@@ -4,6 +4,9 @@
 #include <limits>
 #include <utility>
 
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
+
 namespace
 {
 	// 材質番号の型違いを保持するbit。
@@ -38,7 +41,7 @@ namespace
 			{
 				// 符号なし入力の値。
 				const uint64 Number = Json.get<uint64>();
-				if ( Number > static_cast<uint64>( ( std::numeric_limits<int32>::max )() ) ) return false;
+				if ( Number > static_cast<uint64>( TNumericLimits<int32>::Max() ) ) return false;
 				Out = static_cast<int32>( Number );
 				return true;
 			}
@@ -52,7 +55,7 @@ namespace
 		{
 			// 符号付き入力の値。
 			const int64 Number = Json.get<int64>();
-			if ( Number < static_cast<int64>( ( std::numeric_limits<int32>::min )() ) || Number > static_cast<int64>( ( std::numeric_limits<int32>::max )() ) ) return false;
+			if ( Number < static_cast<int64>( TNumericLimits<int32>::Min() ) || Number > static_cast<int64>( TNumericLimits<int32>::Max() ) ) return false;
 			Out = static_cast<int32>( Number );
 			return true;
 		}
@@ -83,7 +86,7 @@ bool FWorldModelMaterialEffect::FromJson( const NlohmannJson& Json, FWorldModelM
 		Definition.bInvalidRoot = true;
 		Definition.InvalidFieldTypes = InvalidAll;
 		if ( Warnings != nullptr ) Warnings->Add( "MaterialEffect はobjectにしてください" );
-		Out = std::move( Definition );
+		Out = MoveTemp( Definition );
 		return true;
 	}
 	if ( Json.contains( "MaterialIndex" ) && !ReadMaterialIndex( Json["MaterialIndex"], Definition.MaterialIndex ) )
@@ -105,7 +108,7 @@ bool FWorldModelMaterialEffect::FromJson( const NlohmannJson& Json, FWorldModelM
 			if ( Warnings != nullptr ) Warnings->Add( "MaterialEffect.TwoSided はtrue/falseにしてください" );
 		}
 	}
-	Out = std::move( Definition );
+	Out = MoveTemp( Definition );
 	return true;
 }
 

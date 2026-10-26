@@ -5,6 +5,8 @@
 #include <thread>
 
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Animation/AnimationTimeline.h"
 #include "Library/Framework/Animation/ModelAnimator.h"
 #include "Library/Framework/Animation/SpriteAnimator.h"
@@ -169,7 +171,7 @@ namespace
 		C.Near( NAudio::ListenerRight( Listener ).z, -1.0, 1.0e-6, "listener facing +X has its right at -Z" );
 
 		C.Check( NAudio::VolumeToDecibel100( 1.0f ) == 0, "1.0 is 0 dB" );
-		C.Check( std::abs( NAudio::VolumeToDecibel100( 0.5f ) + 602 ) <= 1, "0.5 is about -6 dB" );
+		C.Check( NMath::Abs( NAudio::VolumeToDecibel100( 0.5f ) + 602 ) <= 1, "0.5 is about -6 dB" );
 		C.Check( NAudio::VolumeToDecibel100( 0.0f ) == NAudio::MinDecibel100, "0 is the minimum" );
 	}
 
@@ -798,7 +800,7 @@ namespace
 		F.Touch( "foreign.png" );
 		TSharedPtr<CTexture> ForeignOnly = Assets.LoadTexture( "foreign.png" );
 		const int32 ForeignHandle = ForeignOnly->GetHandle();
-		std::thread Worker( [Moved = std::move( ForeignOnly )]() mutable { Moved.Reset(); } );
+		std::thread Worker( [Moved = MoveTemp( ForeignOnly )]() mutable { Moved.Reset(); } );
 		Worker.join();
 		C.Check( Fake.Textures.count( ForeignHandle ) == 1, "a release on another thread is deferred (the backend is not touched)" );
 		Assets.Tick( 0.0f );

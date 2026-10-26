@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <vector>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Render/DrawContext.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
@@ -116,8 +117,8 @@ namespace
 		{
 			int32 PixelR = 0, PixelG = 0, PixelB = 0, PixelA = 0;
 			GetPixelSoftImage( Soft, X, Y, &PixelR, &PixelG, &PixelB, &PixelA );
-			if ( std::abs( PixelR - Background ) + std::abs( PixelG - Background ) + std::abs( PixelB - Background ) < 12 ) continue;
-			Left = std::min( Left, X ); Top = std::min( Top, Y ); Right = std::max( Right, X ); Bottom = std::max( Bottom, Y );
+			if ( NMath::Abs( PixelR - Background ) + NMath::Abs( PixelG - Background ) + NMath::Abs( PixelB - Background ) < 12 ) continue;
+			Left = NMath::Min( Left, X ); Top = NMath::Min( Top, Y ); Right = NMath::Max( Right, X ); Bottom = NMath::Max( Bottom, Y );
 		}
 		if ( Right >= Left && Bottom >= Top ) { Result.Width = Right - Left + 1; Result.Height = Bottom - Top + 1; Result.bRendered = true; }
 		return Result;
@@ -135,7 +136,7 @@ namespace
 	// 二つの実機readbackが画素のRGB/範囲でほぼ一致するか比較する。
 	bool SimilarAppearancePixels( const FAppearancePixelResult& A, const FAppearancePixelResult& B )
 	{
-		return A.bRendered && B.bRendered && std::abs( static_cast<int32>( A.Center.r ) - B.Center.r ) <= 5 && std::abs( static_cast<int32>( A.Center.g ) - B.Center.g ) <= 5 && std::abs( static_cast<int32>( A.Center.b ) - B.Center.b ) <= 5 && std::abs( static_cast<int32>( A.Middle.r ) - B.Middle.r ) <= 5 && std::abs( static_cast<int32>( A.Middle.g ) - B.Middle.g ) <= 5 && std::abs( static_cast<int32>( A.Middle.b ) - B.Middle.b ) <= 5 && std::abs( A.Width - B.Width ) <= 2 && std::abs( A.Height - B.Height ) <= 2;
+		return A.bRendered && B.bRendered && NMath::Abs( static_cast<int32>( A.Center.r ) - B.Center.r ) <= 5 && NMath::Abs( static_cast<int32>( A.Center.g ) - B.Center.g ) <= 5 && NMath::Abs( static_cast<int32>( A.Center.b ) - B.Center.b ) <= 5 && NMath::Abs( static_cast<int32>( A.Middle.r ) - B.Middle.r ) <= 5 && NMath::Abs( static_cast<int32>( A.Middle.g ) - B.Middle.g ) <= 5 && NMath::Abs( static_cast<int32>( A.Middle.b ) - B.Middle.b ) <= 5 && NMath::Abs( A.Width - B.Width ) <= 2 && NMath::Abs( A.Height - B.Height ) <= 2;
 	}
 }
 
@@ -202,8 +203,8 @@ void NWorldTest::RunEffectAppearanceRealTests( NAssetTest::FChecker& C, CAssetMa
 			// 既知の暗背景上で実際のparticleを描画したreadback。
 			const FAppearancePixelResult Pixel = DrawAppearancePlayback( Playback, Executor, Screen, Soft, 24, BlendIndex != 0 );
 			C.Check( Pixel.bRendered, "simulation→Playback→DrawContext→Executor→GPU画素の経路が粒子を描く" );
-			if ( BlendIndex == 0 && PhaseIndex == 0 ) C.Check( std::abs( static_cast<int32>( Pixel.Center.r ) - 26 ) <= 8 && std::abs( static_cast<int32>( Pixel.Center.g ) - 204 ) <= 12 && Pixel.Center.b > 235, "寿命四分の一のcyanは背景24からRGB=(26,204,255)へ合成される (got %u,%u,%u)", Pixel.Center.r, Pixel.Center.g, Pixel.Center.b );
-			if ( BlendIndex == 0 && PhaseIndex == 1 ) C.Check( std::abs( static_cast<int32>( Pixel.Center.r ) - 140 ) <= 10 && std::abs( static_cast<int32>( Pixel.Center.g ) - 44 ) <= 8 && std::abs( static_cast<int32>( Pixel.Center.b ) - 25 ) <= 8, "寿命四分の三の色は背景24へ合成される (got %u,%u,%u)", Pixel.Center.r, Pixel.Center.g, Pixel.Center.b );
+			if ( BlendIndex == 0 && PhaseIndex == 0 ) C.Check( NMath::Abs( static_cast<int32>( Pixel.Center.r ) - 26 ) <= 8 && NMath::Abs( static_cast<int32>( Pixel.Center.g ) - 204 ) <= 12 && Pixel.Center.b > 235, "寿命四分の一のcyanは背景24からRGB=(26,204,255)へ合成される (got %u,%u,%u)", Pixel.Center.r, Pixel.Center.g, Pixel.Center.b );
+			if ( BlendIndex == 0 && PhaseIndex == 1 ) C.Check( NMath::Abs( static_cast<int32>( Pixel.Center.r ) - 140 ) <= 10 && NMath::Abs( static_cast<int32>( Pixel.Center.g ) - 44 ) <= 8 && NMath::Abs( static_cast<int32>( Pixel.Center.b ) - 25 ) <= 8, "寿命四分の三の色は背景24へ合成される (got %u,%u,%u)", Pixel.Center.r, Pixel.Center.g, Pixel.Center.b );
 			if ( MaterialIndex == 1 && PhaseIndex == 0 ) C.Check( Pixel.Width > 35, "大きさ倍率2を使う早期particleのGPU範囲を読む (got %d x %d)", Pixel.Width, Pixel.Height );
 			if ( MaterialIndex == 1 && PhaseIndex == 1 ) C.Check( Pixel.Width > 10 && Pixel.Width < 30, "縮小した後期particleのGPU範囲を読む (got %d x %d)", Pixel.Width, Pixel.Height );
 			Playback.Reset();
@@ -274,8 +275,8 @@ void NWorldTest::RunEffectAppearanceRealTests( NAssetTest::FChecker& C, CAssetMa
 		}
 		C.Check( PlainAppearancePixels.bRendered && ( PathPixels[1].Width > PlainAppearancePixels.Width + 2 || PathPixels[1].Height > PlainAppearancePixels.Height + 2 ), "Appearanceの非線形サイズ倍率が同じRibbon/Lightningの実画素幅を変える (curve %d x %d, base %d x %d)", PathPixels[1].Width, PathPixels[1].Height, PlainAppearancePixels.Width, PlainAppearancePixels.Height );
 		C.Check( SimilarAppearancePixels( PathPixels[0], PathPixels[1] ), "材質ON/OFFのRibbon/Lightningで色と画素範囲を維持する" );
-		if ( BlendIndex == 0 && PathIndex == 1 ) C.Check( std::abs( static_cast<int32>( PathPixels[1].Middle.r ) - 97 ) <= 14 && std::abs( static_cast<int32>( PathPixels[1].Middle.g ) - 52 ) <= 14 && std::abs( static_cast<int32>( PathPixels[1].Middle.b ) - 141 ) <= 18, "曲がったRibbon中央は背景24へ合成される (got %u,%u,%u)", PathPixels[1].Middle.r, PathPixels[1].Middle.g, PathPixels[1].Middle.b );
-		if ( BlendIndex == 0 && PathIndex == 2 ) C.Check( std::abs( static_cast<int32>( PathPixels[1].Center.r ) - 76 ) <= 14 && std::abs( static_cast<int32>( PathPixels[1].Center.g ) - 44 ) <= 14 && std::abs( static_cast<int32>( PathPixels[1].Center.b ) - 108 ) <= 18, "Lightning中央は背景24へ合成される (got %u,%u,%u)", PathPixels[1].Center.r, PathPixels[1].Center.g, PathPixels[1].Center.b );
+		if ( BlendIndex == 0 && PathIndex == 1 ) C.Check( NMath::Abs( static_cast<int32>( PathPixels[1].Middle.r ) - 97 ) <= 14 && NMath::Abs( static_cast<int32>( PathPixels[1].Middle.g ) - 52 ) <= 14 && NMath::Abs( static_cast<int32>( PathPixels[1].Middle.b ) - 141 ) <= 18, "曲がったRibbon中央は背景24へ合成される (got %u,%u,%u)", PathPixels[1].Middle.r, PathPixels[1].Middle.g, PathPixels[1].Middle.b );
+		if ( BlendIndex == 0 && PathIndex == 2 ) C.Check( NMath::Abs( static_cast<int32>( PathPixels[1].Center.r ) - 76 ) <= 14 && NMath::Abs( static_cast<int32>( PathPixels[1].Center.g ) - 44 ) <= 14 && NMath::Abs( static_cast<int32>( PathPixels[1].Center.b ) - 108 ) <= 18, "Lightning中央は背景24へ合成される (got %u,%u,%u)", PathPixels[1].Center.r, PathPixels[1].Center.g, PathPixels[1].Center.b );
 	}
 	// test所有screenを削除する前に呼出側の描画先へ戻す。
 	RenderVertex();

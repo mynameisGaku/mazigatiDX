@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "Library/Core/Types/Utility.h"
+
 // Queue.h の大きなテンプレート関数の定義（インライン展開しても速くならないのでクラス定義から分離）
 // Queue.h の末尾から include される。直接 include しない
 
@@ -29,16 +31,16 @@ T& TQueue<T>::Emplace( Args&&... args )
 	if ( Count == Capacity )
 	{
 		// args が自分の要素を参照していても安全なよう、先に値を作る
-		T NewItem( std::forward<Args>( args )... );
+		T NewItem( Forward<Args>( args )... );
 		Grow( Capacity < 4 ? 8 : Capacity * 2 );
 		T* Slot = Data + PhysicalIndex( Count );
-		new ( Slot ) T( std::move( NewItem ) );
+		new ( Slot ) T( MoveTemp( NewItem ) );
 		++Count;
 		return *Slot;
 	}
 
 	T* Slot = Data + PhysicalIndex( Count );
-	new ( Slot ) T( std::forward<Args>( args )... );
+	new ( Slot ) T( Forward<Args>( args )... );
 	++Count;
 	return *Slot;
 }

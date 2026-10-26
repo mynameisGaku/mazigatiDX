@@ -3,6 +3,7 @@
 #include <limits>
 
 #include "Library/Core/Collection/Map.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/World/Mesh/EditMesh.h"
 #include "Library/Framework/World/Mesh/EditMeshBuild.h"
 #include "Library/Framework/World/Mesh/EditMeshPrimitives.h"
@@ -20,7 +21,7 @@ using namespace NWorldMeshTest;
 //=============================================================================
 namespace
 {
-	bool Near( float32 A, float32 B, float32 Tolerance = 1.0e-3f ) { return std::fabs( A - B ) <= Tolerance; }
+	bool Near( float32 A, float32 B, float32 Tolerance = 1.0e-3f ) { return NMath::Abs( A - B ) <= Tolerance; }
 	bool Near3( const FVector3& A, const FVector3& B, float32 Tolerance = 1.0e-3f ) { return Near( A.x, B.x, Tolerance ) && Near( A.y, B.y, Tolerance ) && Near( A.z, B.z, Tolerance ); }
 
 	// 面を、頂点の位置で 1 つ足す（番号を気にせずに、小さな形を作る）
@@ -232,7 +233,7 @@ namespace
 			const FVector3 Geometric = FVector3::Cross( FVector3( B.Position[0] - A.Position[0], B.Position[1] - A.Position[1], B.Position[2] - A.Position[2] ), FVector3( D.Position[0] - A.Position[0], D.Position[1] - A.Position[1], D.Position[2] - A.Position[2] ) ).Normalized();
 			const FVector3 Stored( A.Normal[0], A.Normal[1], A.Normal[2] );
 			bWindingMatches = bWindingMatches && FVector3::Dot( Geometric, Stored ) > 0.999f;
-			bFlat = bFlat && Near( Stored.Length(), 1.0f ) && ( std::fabs( Stored.x ) > 0.999f || std::fabs( Stored.y ) > 0.999f || std::fabs( Stored.z ) > 0.999f );
+			bFlat = bFlat && Near( Stored.Length(), 1.0f ) && ( NMath::Abs( Stored.x ) > 0.999f || NMath::Abs( Stored.y ) > 0.999f || NMath::Abs( Stored.z ) > 0.999f );
 		}
 		C.Check( bWindingMatches && bFlat, "each triangle's winding agrees with its stored normal, and a box's normals are flat and along the axes" );
 
@@ -286,7 +287,7 @@ namespace
 			for ( const FMeshVertex& V : B.Vertices )
 			{
 				const FVector3 Radial = ( FVector3( V.Position[0], V.Position[1] - 1.0f, V.Position[2] ) ).Normalized();
-				Worst = std::min( Worst, FVector3::Dot( Radial, FVector3( V.Normal[0], V.Normal[1], V.Normal[2] ) ) );
+				Worst = NMath::Min( Worst, FVector3::Dot( Radial, FVector3( V.Normal[0], V.Normal[1], V.Normal[2] ) ) );
 			}
 			return Worst;
 		};
@@ -297,13 +298,13 @@ namespace
 		FEditMesh Hard = NEditMesh::MakeBox( FVector3::One );
 		Hard.SmoothAngle = 60.0f;
 		bool bAxis = true;
-		for ( const FMeshVertex& V : NEditMesh::BuildRenderMesh( Hard ).Vertices ) bAxis = bAxis && ( std::fabs( V.Normal[0] ) > 0.999f || std::fabs( V.Normal[1] ) > 0.999f || std::fabs( V.Normal[2] ) > 0.999f );
+		for ( const FMeshVertex& V : NEditMesh::BuildRenderMesh( Hard ).Vertices ) bAxis = bAxis && ( NMath::Abs( V.Normal[0] ) > 0.999f || NMath::Abs( V.Normal[1] ) > 0.999f || NMath::Abs( V.Normal[2] ) > 0.999f );
 		Hard.SmoothAngle = 91.0f;
 		bool bMixed = true;
-		for ( const FMeshVertex& V : NEditMesh::BuildRenderMesh( Hard ).Vertices ) bMixed = bMixed && Near( std::fabs( V.Normal[0] ), 0.57735f, 0.01f ) && Near( std::fabs( V.Normal[1] ), 0.57735f, 0.01f ) && Near( std::fabs( V.Normal[2] ), 0.57735f, 0.01f );
+		for ( const FMeshVertex& V : NEditMesh::BuildRenderMesh( Hard ).Vertices ) bMixed = bMixed && Near( NMath::Abs( V.Normal[0] ), 0.57735f, 0.01f ) && Near( NMath::Abs( V.Normal[1] ), 0.57735f, 0.01f ) && Near( NMath::Abs( V.Normal[2] ), 0.57735f, 0.01f );
 		Hard.SmoothAngle = 90.0f;
 		bool bExact = true;
-		for ( const FMeshVertex& V : NEditMesh::BuildRenderMesh( Hard ).Vertices ) bExact = bExact && Near( std::fabs( V.Normal[0] ), 0.57735f, 0.01f ) && Near( std::fabs( V.Normal[1] ), 0.57735f, 0.01f );
+		for ( const FMeshVertex& V : NEditMesh::BuildRenderMesh( Hard ).Vertices ) bExact = bExact && Near( NMath::Abs( V.Normal[0] ), 0.57735f, 0.01f ) && Near( NMath::Abs( V.Normal[1] ), 0.57735f, 0.01f );
 		C.Check( bAxis && bMixed && bExact, "a box keeps its sharp edges below the 90-degree limit, and shares the corner normals at and above it" );
 
 		// 画像の座標: 面の向きでいちばん大きい軸に沿って。Tile で割り、Offset を足す
@@ -338,10 +339,10 @@ namespace
 		float32 MinU = 1.0e9f, MaxU = -1.0e9f;
 		for ( const FMeshVertex& V : NEditMesh::BuildRenderMesh( Wall ).Vertices )
 		{
-			if ( std::fabs( V.Normal[2] ) > 0.99f )
+			if ( NMath::Abs( V.Normal[2] ) > 0.99f )
 			{
-				MinU = std::min( MinU, V.U );
-				MaxU = std::max( MaxU, V.U );
+				MinU = NMath::Min( MinU, V.U );
+				MaxU = NMath::Max( MaxU, V.U );
 			}
 		}
 		C.Check( Near( MaxU - MinU, 1.0f ), "a 4 m wall with a 4 m tile shows the picture once from end to end (%.3f)", MaxU - MinU );
@@ -497,7 +498,7 @@ namespace
 		C.Check( CountIssues( R, false, "2 vertex(es) are not used" ) == 1, "vertices no face uses are one warning, with the count" );
 		R = Issues( []( FEditMesh& M ) { M.Vertices.Add( FVector3::One ); M.Faces[1].Indices[2] = 40; } );
 		C.Check( CountIssues( R, false, "not used" ) == 0 && CountIssues( R, true, "does not exist" ) == 1, "with a broken face, unused vertices are not reported (they may belong to it)" );
-		R = Issues( []( FEditMesh& M ) { M.Vertices[3].y = std::numeric_limits<float32>::quiet_NaN(); } );
+		R = Issues( []( FEditMesh& M ) { M.Vertices[3].y = TNumericLimits<float32>::QuietNaN(); } );
 		C.Check( CountIssues( R, true, "not finite" ) == 1, "a vertex that is not a number is an error" );
 		R = Issues( []( FEditMesh& M ) { M.Faces[0].Material = -2; } );
 		C.Check( CountIssues( R, true, "negative material" ) == 1, "a negative material number is an error" );

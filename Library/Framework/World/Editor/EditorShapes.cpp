@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "Library/Core/Collection/Set.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/World/WorldCollision.h"
 #include "Library/Framework/World/WorldHierarchy.h"
 
@@ -11,7 +12,7 @@ namespace
 {
 	constexpr float32 MinBillboardSize = 1.0e-4f;
 
-	FVector3 Abs3( const FVector3& V ) { return FVector3( std::fabs( V.x ), std::fabs( V.y ), std::fabs( V.z ) ); }
+	FVector3 Abs3( const FVector3& V ) { return FVector3( NMath::Abs( V.x ), NMath::Abs( V.y ), NMath::Abs( V.z ) ); }
 
 	float32 GetMarkerRadius( const FEditorShapeContext& Context, const FVector3& Position )
 	{
@@ -153,7 +154,7 @@ void NWorldEditor::ComputeBillboardAxes( EWorldBillboardMode Mode, const FTransf
 FEditorShape NWorldEditor::MakeColliderShape( const FWorldCollider& Collider, const FTransform& WorldTransform )
 {
 	const FVector3 Scale = Abs3( WorldTransform.Scale );
-	const float32 MaxScale = std::max( { Scale.x, Scale.y, Scale.z } );
+	const float32 MaxScale = NMath::Max( Scale.x, Scale.y, Scale.z );
 
 	FEditorShape Shape;
 	Shape.Role = EEditorShapeRole::Collider;
@@ -179,11 +180,11 @@ FEditorShape NWorldEditor::MakeColliderShape( const FWorldCollider& Collider, co
 	case EWorldColliderShape::Capsule:
 	{
 		Shape.Kind = EEditorShapeKind::Capsule;
-		const float32 HalfCylinder = std::max( ( Collider.Height - Collider.Radius * 2.0f ) * 0.5f, 1.0e-3f ) * Scale.y;
+		const float32 HalfCylinder = NMath::Max( ( Collider.Height - Collider.Radius * 2.0f ) * 0.5f, 1.0e-3f ) * Scale.y;
 		const FVector3 Axis = WorldTransform.Rotation.Rotate( FVector3::Up );
 		Shape.A = Shape.Center - Axis * HalfCylinder;
 		Shape.B = Shape.Center + Axis * HalfCylinder;
-		Shape.Radius = Collider.Radius * std::max( Scale.x, Scale.z );
+		Shape.Radius = Collider.Radius * NMath::Max( Scale.x, Scale.z );
 		break;
 	}
 	}
@@ -208,8 +209,8 @@ TArray<FEditorShape> NWorldEditor::GatherShapes( const FWorldObject& Object, con
 	if ( Object.Billboard.IsSet() )
 	{
 		const FWorldBillboard& Billboard = Object.Billboard.GetValue();
-		const float32 Width = Billboard.Size.x * std::fabs( WorldTransform.Scale.x );
-		const float32 Height = Billboard.Size.y * std::fabs( WorldTransform.Scale.y );
+		const float32 Width = Billboard.Size.x * NMath::Abs( WorldTransform.Scale.x );
+		const float32 Height = Billboard.Size.y * NMath::Abs( WorldTransform.Scale.y );
 		if ( Width > MinBillboardSize && Height > MinBillboardSize )
 		{
 			FVector3 Right = WorldTransform.Rotation.Rotate( FVector3::Right );
@@ -250,7 +251,7 @@ namespace
 	// 軸に垂直な、互いに直交する 2 つの単位ベクトル
 	void MakePerpendicular( const FVector3& Axis, FVector3& OutU, FVector3& OutV )
 	{
-		const FVector3 Helper = std::fabs( Axis.y ) < 0.9f ? FVector3::Up : FVector3::Right;
+		const FVector3 Helper = NMath::Abs( Axis.y ) < 0.9f ? FVector3::Up : FVector3::Right;
 		OutU = FVector3::Cross( Helper, Axis ).Normalized();
 		OutV = FVector3::Cross( Axis, OutU ).Normalized();
 	}
@@ -272,7 +273,7 @@ namespace
 
 void NWorldEditor::AppendShapeWireLines( const FEditorShape& Shape, int32 CircleSegments, TArray<FVector3>& OutLines )
 {
-	const int32 Segments = std::max( CircleSegments, 4 );
+	const int32 Segments = NMath::Max( CircleSegments, 4 );
 	switch ( Shape.Kind )
 	{
 	case EEditorShapeKind::Box:
@@ -325,7 +326,7 @@ void NWorldEditor::AppendShapeWireLines( const FEditorShape& Shape, int32 Circle
 			OutLines.Add( Shape.B + Side * Shape.Radius );
 		}
 		// 両端の半円（U 方向と V 方向の 2 枚ずつ）。先端は軸の外向き
-		const int32 HalfSegments = std::max( Segments / 2, 2 );
+		const int32 HalfSegments = NMath::Max( Segments / 2, 2 );
 		AppendArc( OutLines, Shape.B, U, Direction, Shape.Radius, 0.0f, NMath::PI, HalfSegments );
 		AppendArc( OutLines, Shape.B, V, Direction, Shape.Radius, 0.0f, NMath::PI, HalfSegments );
 		AppendArc( OutLines, Shape.A, U, -Direction, Shape.Radius, 0.0f, NMath::PI, HalfSegments );
@@ -397,7 +398,7 @@ FVector3 NWorldEditor::GetShapeCenter( const FEditorShape& Shape )
 
 bool NWorldEditor::AppendEditMeshWireLines( const FEditMesh& Mesh, const FTransform& Transform, int32 MaxFaces, TArray<FVector3>& OutLines )
 {
-	const int32 NumUsed = std::min( Mesh.GetNumFaces(), std::max( MaxFaces, 0 ) );
+	const int32 NumUsed = NMath::Min( Mesh.GetNumFaces(), NMath::Max( MaxFaces, 0 ) );
 	TSet<int64> Done;   // 描いた縁（小さい頂点の番号 << 32 | 大きい番号）
 	for ( int32 Face = 0; Face < NumUsed; ++Face )
 	{
@@ -407,7 +408,7 @@ bool NWorldEditor::AppendEditMeshWireLines( const FEditMesh& Mesh, const FTransf
 		{
 			const int32 A = Indices[i];
 			const int32 B = Indices[( i + 1 ) % Indices.Num()];
-			const int64 Key = ( static_cast<int64>( std::min( A, B ) ) << 32 ) | static_cast<int64>( std::max( A, B ) );
+			const int64 Key = ( static_cast<int64>( NMath::Min( A, B ) ) << 32 ) | static_cast<int64>( NMath::Max( A, B ) );
 			if ( !Done.Add( Key ) ) continue;
 			OutLines.Add( Transform.TransformPoint( Mesh.Vertices[A] ) );
 			OutLines.Add( Transform.TransformPoint( Mesh.Vertices[B] ) );
@@ -419,7 +420,7 @@ bool NWorldEditor::AppendEditMeshWireLines( const FEditMesh& Mesh, const FTransf
 bool NWorldEditor::AppendMeshWireLines( const FEditorCollisionMesh& Mesh, const FTransform& Transform, int32 MaxTriangles, TArray<FVector3>& OutLines )
 {
 	const int32 NumTriangles = Mesh.GetNumTriangles();
-	const int32 NumUsed = std::min( NumTriangles, std::max( MaxTriangles, 0 ) );
+	const int32 NumUsed = NMath::Min( NumTriangles, NMath::Max( MaxTriangles, 0 ) );
 	TSet<int64> Done;   // 描いた辺（小さい番号 << 32 | 大きい番号）。共有している辺を 2 度描かない
 	const auto Vertex = [&]( uint32 Index ) { return Mesh.Vertices.IsValidIndex( static_cast<int32>( Index ) ) ? Mesh.Vertices[static_cast<int32>( Index )] : FVector3::Zero; };
 	for ( int32 Triangle = 0; Triangle < NumUsed; ++Triangle )
@@ -428,7 +429,7 @@ bool NWorldEditor::AppendMeshWireLines( const FEditorCollisionMesh& Mesh, const 
 		{
 			const uint32 A = Mesh.Indices[Triangle * 3 + Edge];
 			const uint32 B = Mesh.Indices[Triangle * 3 + ( Edge + 1 ) % 3];
-			const int64 Key = ( static_cast<int64>( std::min( A, B ) ) << 32 ) | static_cast<int64>( std::max( A, B ) );
+			const int64 Key = ( static_cast<int64>( NMath::Min( A, B ) ) << 32 ) | static_cast<int64>( NMath::Max( A, B ) );
 			if ( !Done.Add( Key ) ) continue;
 			OutLines.Add( Transform.TransformPoint( Vertex( A ) ) );
 			OutLines.Add( Transform.TransformPoint( Vertex( B ) ) );

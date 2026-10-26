@@ -1,5 +1,6 @@
 ﻿#include "WorldValidate.h"
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/World/WorldCollision.h"
 
 #include <cmath>
@@ -58,7 +59,7 @@ FString FWorldIssue::ToDisplayString() const
 
 namespace
 {
-	bool IsFinite( float32 Value ) { return std::isfinite( Value ); }
+	bool IsFinite( float32 Value ) { return NMath::IsFinite( Value ); }
 	bool IsFinite( const FVector3& V ) { return IsFinite( V.x ) && IsFinite( V.y ) && IsFinite( V.z ); }
 
 	struct FReporter
@@ -180,7 +181,7 @@ namespace
 			switch ( Prop.Type )
 			{
 			case EWorldPropType::Float:
-				if ( !std::isfinite( Prop.FloatValue ) ) Report.Error( EWorldIssueCode::BadPropValue, Id, "the property '" + Prop.Name + "' is not a finite number" );
+				if ( !NMath::IsFinite( Prop.FloatValue ) ) Report.Error( EWorldIssueCode::BadPropValue, Id, "the property '" + Prop.Name + "' is not a finite number" );
 				break;
 			case EWorldPropType::Vector3:
 				if ( !IsFinite( Prop.VectorValue ) ) Report.Error( EWorldIssueCode::BadPropValue, Id, "the property '" + Prop.Name + "' has a value that is not a finite number" );

@@ -5,6 +5,7 @@
 #include <cmath>
 #include <vector>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Effect/EffectFlipbookFrames.h"
 #include "Library/Framework/Effect/ParticleEffectBackend.h"
@@ -114,7 +115,7 @@ void NWorldTest::RunEffectFlipbookPlaybackTests( NAssetTest::FChecker& C, CAsset
 	const CTexture& NestedUvSource = NestedRegion.IsValid() ? *NestedRegion : *ExpectedRegions[1];
 	const float32 ( &NestedSourceUV )[4] = NestedUvSource.GetPolygonUvBounds();
 	for ( int32 Index = 0; Index < 4; ++Index ) NestedUV[Index] = NestedSourceUV[Index];
-	C.Check( NestedRegion.IsValid() && std::abs( NestedUV[0] - NestedUV[2] ) < 1.0e-6f && std::abs( NestedUV[1] - NestedUV[3] ) < 1.0e-6f && NestedUV[0] > 0.45f && NestedUV[0] < 0.55f && NestedUV[1] > 0.2f && NestedUV[1] < 0.8f, "nestedの1pixel regionは元atlas上の該当pixel中央を指すUVを持つ" );
+	C.Check( NestedRegion.IsValid() && NMath::Abs( NestedUV[0] - NestedUV[2] ) < 1.0e-6f && NMath::Abs( NestedUV[1] - NestedUV[3] ) < 1.0e-6f && NestedUV[0] > 0.45f && NestedUV[0] < 0.55f && NestedUV[1] > 0.2f && NestedUV[1] < 0.8f, "nestedの1pixel regionは元atlas上の該当pixel中央を指すUVを持つ" );
 	// sheetに親textureが保持されている間の弱参照。
 	TWeakPtr<CTexture> ParentWeak = Sheet->GetTexture();
 	// 既存の画像pathを指定しても、有効flipbookではsheetのregionを使う。
@@ -138,7 +139,7 @@ void NWorldTest::RunEffectFlipbookPlaybackTests( NAssetTest::FChecker& C, CAsset
 		C.Check( ReadRecordedTexture( MidBuffer, EDrawCommand::Quad3D ) == ExpectedRegions[1]->GetHandle(), "寿命割合の中間時刻でclipの2段目regionを記録する" );
 		const FDrawQuad3DData LegacyQuad = ReadRecordedQuad( MidBuffer );
 		const float32 ( &ExpectedUV )[4] = ExpectedRegions[1]->GetPolygonUvBounds();
-		C.Check( std::abs( LegacyQuad.U0 - ExpectedUV[0] ) < 1.0e-6f && std::abs( LegacyQuad.V0 - ExpectedUV[1] ) < 1.0e-6f && std::abs( LegacyQuad.U1 - ExpectedUV[2] ) < 1.0e-6f && std::abs( LegacyQuad.V1 - ExpectedUV[3] ) < 1.0e-6f, "legacy Quadへ派生領域のbase texture UVを記録する" );
+		C.Check( NMath::Abs( LegacyQuad.U0 - ExpectedUV[0] ) < 1.0e-6f && NMath::Abs( LegacyQuad.V0 - ExpectedUV[1] ) < 1.0e-6f && NMath::Abs( LegacyQuad.U1 - ExpectedUV[2] ) < 1.0e-6f && NMath::Abs( LegacyQuad.V1 - ExpectedUV[3] ) < 1.0e-6f, "legacy Quadへ派生領域のbase texture UVを記録する" );
 		const int32 HandlesBeforeRecord = Assets.GetBackend()->GetMemoryInfo().NumTextureHandles;
 		const FDrawBuffer RepeatBuffer = RecordFlipbookPlayback( LifetimePlayback );
 		const int32 HandlesAfterRecord = Assets.GetBackend()->GetMemoryInfo().NumTextureHandles;

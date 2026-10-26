@@ -2,6 +2,7 @@
 #include <cmath>
 #include <limits>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/DefinitionDocument.h"
 #include "Library/Framework/Effect/EffectAppearanceDefinition.h"
 #include "Library/Framework/Effect/ParticleEffect.h"
@@ -41,7 +42,7 @@ namespace
 		AddColorKey( Curve, 1.0f, FColor( 1.0f, 0.6f, 0.2f, 0.0f ) );
 		// 中間の独立した RGBA 期待値。
 		const FColor Linear = Curve.Evaluate( 0.5f, FColor::White );
-		C.Check( std::fabs( Linear.r - 0.5f ) < 1.0e-6f && std::fabs( Linear.g - 0.4f ) < 1.0e-6f && std::fabs( Linear.b - 0.3f ) < 1.0e-6f && std::fabs( Linear.a - 0.3f ) < 1.0e-6f, "Linear は RGBA 各成分を独立に補間する" );
+		C.Check( NMath::Abs( Linear.r - 0.5f ) < 1.0e-6f && NMath::Abs( Linear.g - 0.4f ) < 1.0e-6f && NMath::Abs( Linear.b - 0.3f ) < 1.0e-6f && NMath::Abs( Linear.a - 0.3f ) < 1.0e-6f, "Linear は RGBA 各成分を独立に補間する" );
 		C.Check( Curve.Evaluate( -1.0f, FColor::White ).g == 0.2f && Curve.Evaluate( 2.0f, FColor::White ).b == 0.2f, "曲線の外側は最初と最後のキー色を返す" );
 		Curve.Interpolation = FEffectScalarCurve::EInterpolation::Step;
 		// 境界前に保つ左キー色。
@@ -50,14 +51,14 @@ namespace
 		Curve.Interpolation = FEffectScalarCurve::EInterpolation::Smooth;
 		// smoothstep係数0.15625の期待値。
 		const FColor Smooth = Curve.Evaluate( 0.25f, FColor::White );
-		C.Check( std::fabs( Smooth.r - 0.15625f ) < 1.0e-6f && std::fabs( Smooth.a - 0.50625f ) < 1.0e-6f, "Smooth は smoothstep 係数で RGBA を補間する" );
-		C.Check( std::isfinite( Curve.Evaluate( std::numeric_limits<float32>::quiet_NaN(), FColor::White ).r ), "非有限時刻でも色評価は有限値を返す" );
+		C.Check( NMath::Abs( Smooth.r - 0.15625f ) < 1.0e-6f && NMath::Abs( Smooth.a - 0.50625f ) < 1.0e-6f, "Smooth は smoothstep 係数で RGBA を補間する" );
+		C.Check( NMath::IsFinite( Curve.Evaluate( TNumericLimits<float32>::QuietNaN(), FColor::White ).r ), "非有限時刻でも色評価は有限値を返す" );
 		// 順序不正・同時刻を直接渡す曲線。
 		FEffectColorCurve Unsorted;
 		AddColorKey( Unsorted, 0.75f, FColor( 0.8f, 0.8f, 0.8f, 0.8f ) );
 		AddColorKey( Unsorted, 0.25f, FColor( 0.2f, 0.2f, 0.2f, 0.2f ) );
 		AddColorKey( Unsorted, 0.25f, FColor( 0.9f, 0.9f, 0.9f, 0.9f ) );
-		C.Check( Unsorted.Evaluate( 0.25f, FColor::White ).r == 0.2f && std::isfinite( Unsorted.Evaluate( 0.5f, FColor::White ).a ) && !Unsorted.Validate().IsEmpty(), "順序不正でも評価を安全に保ち、重複と降順を検証する" );
+		C.Check( Unsorted.Evaluate( 0.25f, FColor::White ).r == 0.2f && NMath::IsFinite( Unsorted.Evaluate( 0.5f, FColor::White ).a ) && !Unsorted.Validate().IsEmpty(), "順序不正でも評価を安全に保ち、重複と降順を検証する" );
 		// 33番目の色が探索へ混ざらないことを確認する曲線。
 		FEffectColorCurve TooMany;
 		for ( int32 Index = 0; Index < FEffectColorCurve::MaxKeys; ++Index ) AddColorKey( TooMany, static_cast<float32>( Index ) / 32.0f, FColor::Black );
@@ -271,10 +272,10 @@ namespace
 		C.Check( LegacyDraw.Num() == 1 && LegacyDraw[0].Size == 1.5f && LegacyDraw[0].Color.r == 43 && LegacyDraw[0].Color.g == 60 && LegacyDraw[0].Color.b == 60 && LegacyDraw[0].Color.a == 160, "空 Appearance は従来の補間・丸め結果を維持する" );
 		// 直接壊れた基準値を試す複製。
 		FParticleSimulation NaNSimulation = Simulation;
-		NaNSimulation.Emitters[0].Particles[0].StartSize = std::numeric_limits<float32>::quiet_NaN();
-		NaNSimulation.Emitters[0].Particles[0].EndSize = std::numeric_limits<float32>::infinity();
+		NaNSimulation.Emitters[0].Particles[0].StartSize = TNumericLimits<float32>::QuietNaN();
+		NaNSimulation.Emitters[0].Particles[0].EndSize = TNumericLimits<float32>::Infinity();
 		NParticle::CollectDrawParticles( NaNSimulation, Draw );
-		C.Check( Draw.Num() == 1 && std::isfinite( Draw[0].Size ) && Draw[0].Size == 0.0f, "壊れた大きさ入力でも有効曲線経路は有限な描画値を返す" );
+		C.Check( Draw.Num() == 1 && NMath::IsFinite( Draw[0].Size ) && Draw[0].Size == 0.0f, "壊れた大きさ入力でも有効曲線経路は有限な描画値を返す" );
 		Definition->Emitters[0].Appearance.Size.Keys[0].Value = 32.0f;
 		// 上限倍率を使う大きさ検査。
 		FParticleSimulation HugeSimulation = Simulation;

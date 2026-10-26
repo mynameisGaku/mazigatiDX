@@ -8,6 +8,7 @@
 #include "Library/Core/Log/LogCategory.h"
 #include "Library/Core/Memory/UniquePtr.h"
 #include "Library/Core/Profiler/ProfilerScope.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Component/Component.h"
 #include "Library/Framework/Ecs/EcsWorld.h"
 #include "Library/Framework/Object/Object.h"
@@ -97,9 +98,9 @@ public:
 	FORCEINLINE T* AddComponent( Args&&... args )
 	{
 		static_assert( std::is_base_of_v<CComponent, T>, "AddComponent<T>: T must derive from CComponent" );
-		TUniquePtr<T> Component = MakeUnique<T>( std::forward<Args>( args )... );
+		TUniquePtr<T> Component = MakeUnique<T>( Forward<Args>( args )... );
 		T* Raw = Component.Get();
-		AddComponentInternal( TUniquePtr<CComponent>( std::move( Component ) ) );
+		AddComponentInternal( TUniquePtr<CComponent>( MoveTemp( Component ) ) );
 		return Raw;
 	}
 
@@ -145,7 +146,7 @@ public:
 	FORCEINLINE T* AddData( TArgs&&... Args )
 	{
 		FEcsWorld* World = GetEcsWorldForData( "AddData" );
-		return World != nullptr ? World->EmplaceData<T>( EntitySlot, std::forward<TArgs>( Args )... ) : nullptr;
+		return World != nullptr ? World->EmplaceData<T>( EntitySlot, Forward<TArgs>( Args )... ) : nullptr;
 	}
 
 	template<typename T, typename... TArgs>
@@ -153,13 +154,13 @@ public:
 	{
 		FEcsWorld* World = GetEcsWorldForData( "GetOrAddData" );
 		COLLECTION_CHECK( World != nullptr, "GetOrAddData<T>: object must be in a scene" );
-		return World->GetOrAddData<T>( EntitySlot, std::forward<TArgs>( Args )... );
+		return World->GetOrAddData<T>( EntitySlot, Forward<TArgs>( Args )... );
 	}
 
 	template<typename... TComps>
 	FORCEINLINE void AddDataAll( TComps&&... Comps )
 	{
-		( AddData<std::decay_t<TComps>>( std::forward<TComps>( Comps ) ), ... );
+		( AddData<std::decay_t<TComps>>( Forward<TComps>( Comps ) ), ... );
 	}
 
 	template<typename T>

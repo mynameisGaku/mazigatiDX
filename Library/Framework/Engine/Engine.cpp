@@ -5,6 +5,7 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Profiler/ProfilerScope.h"
 #include "Library/Core/Time/PlatformTime.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Subsystem/AppSubsystem.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogEngine, Log )
@@ -53,7 +54,7 @@ int32 CEngine::Run( TUniquePtr<CGameInstance> InGameInstance, const FWindowSetti
 	IProfiler* Profiler = GetSubsystem<IProfiler>();
 	if ( Profiler == nullptr ) LOG( LogEngine, Warning, "No profiler is available. Profiling is disabled." );
 
-	GameInstance = std::move( InGameInstance );
+	GameInstance = MoveTemp( InGameInstance );
 	GameInstance->Init( this );
 
 	const int64 StartTick = NPlatformTime::GetTicks();

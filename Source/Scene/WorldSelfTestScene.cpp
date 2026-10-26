@@ -17,6 +17,7 @@
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Animation/ModelAnimator.h"
 #include "Library/Framework/Audio/AudioComponents.h"
@@ -70,7 +71,7 @@ namespace
 
 	bool Near3( const FVector3& A, const FVector3& B, float32 Tolerance = 1.0e-3f )
 	{
-		return std::fabs( A.x - B.x ) <= Tolerance && std::fabs( A.y - B.y ) <= Tolerance && std::fabs( A.z - B.z ) <= Tolerance;
+		return NMath::Abs( A.x - B.x ) <= Tolerance && NMath::Abs( A.y - B.y ) <= Tolerance && NMath::Abs( A.z - B.z ) <= Tolerance;
 	}
 
 	FWorldObject MakeObject( int32 Id, const char* Name, int32 Parent = WorldNoId )
@@ -414,7 +415,7 @@ namespace
 		{
 			int PR = 0, PG = 0, PB = 0;
 			At( X, Y, PR, PG, PB );
-			return std::abs( PR - R ) <= Tolerance && std::abs( PG - G ) <= Tolerance && std::abs( PB - B ) <= Tolerance;
+			return NMath::Abs( PR - R ) <= Tolerance && NMath::Abs( PG - G ) <= Tolerance && NMath::Abs( PB - B ) <= Tolerance;
 		}
 		bool IsBlack( int X, int Y ) const { return IsColor( X, Y, 0, 0, 0, 2 ); }
 		// 光っている（黒でない）ピクセルの外接矩形
@@ -431,10 +432,10 @@ namespace
 					int R = 0, G = 0, B = 0;
 					At( X, Y, R, G, B );
 					if ( R + G + B <= 6 ) continue;
-					OutLeft = std::min( OutLeft, X );
-					OutTop = std::min( OutTop, Y );
-					OutRight = std::max( OutRight, X );
-					OutBottom = std::max( OutBottom, Y );
+					OutLeft = NMath::Min( OutLeft, X );
+					OutTop = NMath::Min( OutTop, Y );
+					OutRight = NMath::Max( OutRight, X );
+					OutBottom = NMath::Max( OutBottom, Y );
 				}
 			}
 			return OutRight >= 0;
@@ -741,7 +742,7 @@ void CWorldSelfTestScene::OnEnter()
 	const FBillboard* TorchBoard = Torch->GetData<FBillboard>();
 	C.Check( TorchBoard != nullptr && TorchBoard->Texture.IsValid() && TorchBoard->Size.x == 2.0f && TorchBoard->Pivot.y == 1.0f && TorchBoard->Orient == EDrawQuadOrient::CameraY && TorchBoard->Tint.g == 128 && TorchBoard->Tint.a == 200 && TorchBoard->bFlipX && !TorchBoard->bFlipY,
 			 "a billboard component carries its fields" );
-	C.Check( TorchBoard != nullptr && std::fabs( TorchBoard->U0 - 0.125f ) < 1.0e-5f && std::fabs( TorchBoard->V0 - 0.125f ) < 1.0e-5f && std::fabs( TorchBoard->U1 - 0.375f ) < 1.0e-5f && std::fabs( TorchBoard->V1 - 0.375f ) < 1.0e-5f,
+	C.Check( TorchBoard != nullptr && NMath::Abs( TorchBoard->U0 - 0.125f ) < 1.0e-5f && NMath::Abs( TorchBoard->V0 - 0.125f ) < 1.0e-5f && NMath::Abs( TorchBoard->U1 - 0.375f ) < 1.0e-5f && NMath::Abs( TorchBoard->V1 - 0.375f ) < 1.0e-5f,
 			 "the pixel rectangle (16, 8, 32, 16) of the 128 x 64 image is UV (0.125, 0.125)-(0.375, 0.375)" );
 	C.Check( Torch->GetComponent<CAudioSourceComponent>() != nullptr, "a sound component becomes an audio source" );
 
@@ -757,7 +758,7 @@ void CWorldSelfTestScene::OnEnter()
 		C.Check( Near3( Body->GetPosition(), FVector3( 101.0f, 2.0f, 2.0f ) ), "the body is at the world position plus the scaled offset (%s)", *Body->GetPosition().ToString() );
 		C.Check( Near3( Body->GetRotation().Rotate( FVector3::Forward ), FVector3( 1.0f, 0.0f, 0.0f ) ), "and has the object's rotation (yaw 90 turns forward to +X)" );
 		const JPH::Vec3 Extent = Physics->GetBodyInterface().GetShape( Body->GetBodyID() )->GetLocalBounds().GetExtent();
-		C.Check( std::fabs( Extent.GetX() - 1.0f ) < 0.01f && std::fabs( Extent.GetY() - 2.0f ) < 0.01f && std::fabs( Extent.GetZ() - 1.0f ) < 0.01f, "its box is the collider size times the object's scale: half extents (1, 2, 1) (%.3f, %.3f, %.3f)", Extent.GetX(),
+		C.Check( NMath::Abs( Extent.GetX() - 1.0f ) < 0.01f && NMath::Abs( Extent.GetY() - 2.0f ) < 0.01f && NMath::Abs( Extent.GetZ() - 1.0f ) < 0.01f, "its box is the collider size times the object's scale: half extents (1, 2, 1) (%.3f, %.3f, %.3f)", Extent.GetX(),
 				 Extent.GetY(), Extent.GetZ() );
 		C.Check( Body->GetUserDataAs<CGameObject>() == Statue.Get(), "the body's user data is the placed object" );
 	}
@@ -791,9 +792,9 @@ void CWorldSelfTestScene::OnEnter()
 		JPH::Vec3 CapsuleExtent, SphereExtent;
 		const bool bCapsule = HalfExtents( "Capsule", CapsuleExtent );
 		const bool bSphere = HalfExtents( "Sphere", SphereExtent );
-		C.Check( bCapsule && std::fabs( CapsuleExtent.GetX() - 0.5f ) < 0.01f && std::fabs( CapsuleExtent.GetY() - 1.0f ) < 0.01f && std::fabs( CapsuleExtent.GetZ() - 0.5f ) < 0.01f, "a capsule collider (radius 0.5, total height 2) is 1 unit tall from its centre (%.3f, %.3f, %.3f)",
+		C.Check( bCapsule && NMath::Abs( CapsuleExtent.GetX() - 0.5f ) < 0.01f && NMath::Abs( CapsuleExtent.GetY() - 1.0f ) < 0.01f && NMath::Abs( CapsuleExtent.GetZ() - 0.5f ) < 0.01f, "a capsule collider (radius 0.5, total height 2) is 1 unit tall from its centre (%.3f, %.3f, %.3f)",
 				 CapsuleExtent.GetX(), CapsuleExtent.GetY(), CapsuleExtent.GetZ() );
-		C.Check( bSphere && std::fabs( SphereExtent.GetX() - 1.5f ) < 0.01f && std::fabs( SphereExtent.GetY() - 1.5f ) < 0.01f, "a sphere collider takes the object's scale: radius 0.75 x 2 = 1.5 (%.3f)", SphereExtent.GetX() );
+		C.Check( bSphere && NMath::Abs( SphereExtent.GetX() - 1.5f ) < 0.01f && NMath::Abs( SphereExtent.GetY() - 1.5f ) < 0.01f, "a sphere collider takes the object's scale: radius 0.75 x 2 = 1.5 (%.3f)", SphereExtent.GetX() );
 	}
 	for ( int32 i = 0; i < 4; ++i )
 	{
@@ -864,8 +865,8 @@ void CWorldSelfTestScene::OnEnter()
 		JPH::Vec3 FloorExtent, ScaledExtent;
 		const bool bFloor = Extent( "MeshFloor", FloorExtent );
 		const bool bScaled = Extent( "ScaledFloor", ScaledExtent );
-		C.Check( bFloor && std::fabs( FloorExtent.GetX() - 10.0f ) < 0.05f && std::fabs( FloorExtent.GetZ() - 10.0f ) < 0.05f, "a mesh collider has the model's size (a 20 x 20 floor: half extents 10, 10)" );
-		C.Check( bScaled && std::fabs( ScaledExtent.GetX() - 20.0f ) < 0.05f && std::fabs( ScaledExtent.GetZ() - 20.0f ) < 0.05f, "and the object's scale is baked in (scale 2: 20, 20)" );
+		C.Check( bFloor && NMath::Abs( FloorExtent.GetX() - 10.0f ) < 0.05f && NMath::Abs( FloorExtent.GetZ() - 10.0f ) < 0.05f, "a mesh collider has the model's size (a 20 x 20 floor: half extents 10, 10)" );
+		C.Check( bScaled && NMath::Abs( ScaledExtent.GetX() - 20.0f ) < 0.05f && NMath::Abs( ScaledExtent.GetZ() - 20.0f ) < 0.05f, "and the object's scale is baked in (scale 2: 20, 20)" );
 		const TSharedPtr<CGameObject> MeshOnly = S.MeshLevel.FindByName( "MeshOnly" );
 		C.Check( MeshOnly.IsValid() && MeshOnly->GetComponent<CWorldColliderComponent>() != nullptr && MeshOnly->GetData<FModelAnimator>() == nullptr, "an object with only a mesh collider has the body and no model" );
 
@@ -886,7 +887,7 @@ void CWorldSelfTestScene::OnEnter()
 				bool bUnitNormals = Record != S.Fake.MeshRecords.end();
 				if ( bUnitNormals )
 				{
-					for ( const FMeshVertex& V : Record->second.Vertices ) bUnitNormals = bUnitNormals && std::fabs( V.Normal[0] * V.Normal[0] + V.Normal[1] * V.Normal[1] + V.Normal[2] * V.Normal[2] - 1.0f ) < 1.0e-4f;
+					for ( const FMeshVertex& V : Record->second.Vertices ) bUnitNormals = bUnitNormals && NMath::Abs( V.Normal[0] * V.Normal[0] + V.Normal[1] * V.Normal[1] + V.Normal[2] * V.Normal[2] - 1.0f ) < 1.0e-4f;
 				}
 				C.Check( Record != S.Fake.MeshRecords.end() && Record->second.NumVertices == 24 && Record->second.NumIndices == 36 && bUnitNormals && Renderer->Buffer->GetNumVertices() == 24 && Renderer->Buffer->GetNumIndices() == 36 && S.Fake.IndexBuffers.count( Renderer->Buffer->GetIndexBuffer() ) == 1,
 						 "the backend got the box's 24 corner vertices and 36 indices (unit normals), in the buffers the component holds" );
@@ -1035,7 +1036,7 @@ void CWorldSelfTestScene::OnDraw()
 			} );
 			C.Group = "world-mesh-draw";
 			C.Check( NumDraws == 4 && NumTwoSided == 1 && NumTextured == 1 && NumFloor == 1, "the built-in draw system records one Mesh3D per material: 4 draws, 1 two-sided, 1 with an image, 1 whole box (%d, %d, %d, %d)", NumDraws, NumTwoSided, NumTextured, NumFloor );
-			C.Check( std::fabs( FloorX - 4100.0f ) < 1.0e-3f, "and the matrix places the floor at the object's world position (x %.2f)", FloorX );
+			C.Check( NMath::Abs( FloorX - 4100.0f ) < 1.0e-3f, "and the matrix places the floor at the object's world position (x %.2f)", FloorX );
 			C.Group = "world-draw";
 		}
 		const int32 TextureHandle = S.Texture.IsValid() ? S.Texture->GetHandle() : -1;
@@ -1051,13 +1052,13 @@ void CWorldSelfTestScene::OnDraw()
 				C.Check( Near3( Pos, FVector3( 103.0f, 1.0f, 0.0f ) ) && D.Handle == TextureHandle && D.Width == 2.0f && D.Height == 1.0f && D.PivotX == 0.5f && D.PivotY == 1.0f, "the torch's quad: position, image, size and pivot" );
 				C.Check( D.Color.R == 255 && D.Color.G == 128 && D.Color.B == 0 && D.Color.A == 200, "its tint" );
 				// 左右反転: U の始まりと終わりが入れ替わる（矩形 (16, 8, 32, 16) / 画像 128 x 64）
-				C.Check( std::fabs( D.U0 - 0.375f ) < 1.0e-5f && std::fabs( D.U1 - 0.125f ) < 1.0e-5f && std::fabs( D.V0 - 0.125f ) < 1.0e-5f && std::fabs( D.V1 - 0.375f ) < 1.0e-5f, "flipped horizontally: U runs from 0.375 to 0.125 (%.3f..%.3f)", D.U0, D.U1 );
+				C.Check( NMath::Abs( D.U0 - 0.375f ) < 1.0e-5f && NMath::Abs( D.U1 - 0.125f ) < 1.0e-5f && NMath::Abs( D.V0 - 0.125f ) < 1.0e-5f && NMath::Abs( D.V1 - 0.375f ) < 1.0e-5f, "flipped horizontally: U runs from 0.375 to 0.125 (%.3f..%.3f)", D.U0, D.U1 );
 			}
 			else if ( D.Orient == static_cast<int32>( EDrawQuadOrient::Fixed ) )
 			{
 				bSign = true;
 				// 看板: 位置 (100,0,5)、Yaw 90（横の向きが -Z）、拡大 (2,3,1) -> 大きさ (1.5 x 2, 1 x 3)
-				C.Check( Near3( Pos, FVector3( 100.0f, 0.0f, 5.0f ) ) && std::fabs( D.Width - 3.0f ) < 1.0e-4f && std::fabs( D.Height - 3.0f ) < 1.0e-4f, "the world-fixed quad: position, and size times the object's scale" );
+				C.Check( Near3( Pos, FVector3( 100.0f, 0.0f, 5.0f ) ) && NMath::Abs( D.Width - 3.0f ) < 1.0e-4f && NMath::Abs( D.Height - 3.0f ) < 1.0e-4f, "the world-fixed quad: position, and size times the object's scale" );
 				C.Check( Near3( FVector3( D.Right[0], D.Right[1], D.Right[2] ), FVector3( 0.0f, 0.0f, -1.0f ) ) && Near3( FVector3( D.Up[0], D.Up[1], D.Up[2] ), FVector3( 0.0f, 1.0f, 0.0f ) ), "its horizontal / vertical axes come from the object's rotation (%.2f %.2f %.2f)", D.Right[0],
 						 D.Right[1], D.Right[2] );
 				C.Check( D.U0 == 0.0f && D.U1 == 1.0f && D.V0 == 0.0f && D.V1 == 1.0f && D.Color.A == 255 && D.Color.R == 255, "no rectangle, no flip, white tint by default" );
@@ -1065,7 +1066,7 @@ void CWorldSelfTestScene::OnDraw()
 			else if ( D.Orient == static_cast<int32>( EDrawQuadOrient::Camera ) )
 			{
 				bRoll = true;
-				C.Check( Near3( Pos, FVector3( 100.0f, 3.0f, 0.0f ) ) && std::fabs( std::fabs( D.Angle ) - 1.5707964f ) < 1.0e-3f, "the camera-facing quad uses the object's roll (90 degrees) as its angle (%.3f)", D.Angle );
+				C.Check( Near3( Pos, FVector3( 100.0f, 3.0f, 0.0f ) ) && NMath::Abs( NMath::Abs( D.Angle ) - 1.5707964f ) < 1.0e-3f, "the camera-facing quad uses the object's roll (90 degrees) as its angle (%.3f)", D.Angle );
 			}
 		} );
 		C.Check( bTorch && bSign && bRoll, "all three kinds of quad were recorded" );
@@ -1076,7 +1077,7 @@ void CWorldSelfTestScene::OnDraw()
 		if ( S.Rec.LastStarted >= 0 )
 		{
 			const FRecordingAudioBackend::FVoiceState& Voice = S.Rec.Voices[S.Rec.LastStarted];
-			C.Check( Voice.bLoop && std::fabs( Voice.Pitch - 1.5f ) < 0.01f && Voice.Volume > 0.0f && Voice.Volume <= 0.5f + 1.0e-4f, "looping, pitch 1.5, volume at most 0.5 and audible at 3 units (pitch %.3f, volume %.3f)", Voice.Pitch, Voice.Volume );
+			C.Check( Voice.bLoop && NMath::Abs( Voice.Pitch - 1.5f ) < 0.01f && Voice.Volume > 0.0f && Voice.Volume <= 0.5f + 1.0e-4f, "looping, pitch 1.5, volume at most 0.5 and audible at 3 units (pitch %.3f, volume %.3f)", Voice.Pitch, Voice.Volume );
 		}
 	}
 
@@ -1088,7 +1089,7 @@ void CWorldSelfTestScene::OnDraw()
 		const auto Rests = [&]( int32 Index, float32 Y )
 		{
 			const FRigidBody* Ball = S.MeshBalls[Index];
-			return Ball != nullptr && std::fabs( Ball->GetPosition().y - Y ) < 0.05f && Ball->GetLinearVelocity().Length() < 0.2f;
+			return Ball != nullptr && NMath::Abs( Ball->GetPosition().y - Y ) < 0.05f && Ball->GetLinearVelocity().Length() < 0.2f;
 		};
 		const auto Fell = [&]( int32 Index ) { return S.MeshBalls[Index] != nullptr && S.MeshBalls[Index]->GetPosition().y < -2.0f; };
 		const bool bReady = Rests( FState::MeshFloorBall, 1.5f ) && Rests( FState::ScaledHitBall, 0.5f ) && Fell( FState::ScaledMissBall ) && Rests( FState::MeshOnlyBall, 0.5f ) && Rests( FState::ZoneBall, -4.5f )
@@ -1150,7 +1151,7 @@ void CWorldSelfTestScene::OnDraw()
 	{
 		const auto Settled = [&]( int32 Index )
 		{
-			return S.Balls[Index] != nullptr && std::fabs( S.Balls[Index]->GetPosition().y - 0.5f ) < 0.05f && S.Balls[Index]->GetLinearVelocity().Length() < 0.2f;
+			return S.Balls[Index] != nullptr && NMath::Abs( S.Balls[Index]->GetPosition().y - 0.5f ) < 0.05f && S.Balls[Index]->GetLinearVelocity().Length() < 0.2f;
 		};
 		const bool bBothSettled = Settled( 0 ) && Settled( 2 );
 		const bool bFellThrough = S.Balls[1] != nullptr && S.Balls[3] != nullptr && S.Balls[1]->GetPosition().y < -2.0f && S.Balls[3]->GetPosition().y < -2.0f;
@@ -1334,7 +1335,7 @@ void CWorldSelfTestScene::RunRealChecks()
 		for ( int i = 0; i < 4; ++i ) Capture.At( Xs[i % 2], Ys[i / 2], Out[i].R, Out[i].G, Out[i].B );
 		return true;
 	};
-	const auto Near = [&]( const FRgb& A, const FRgb& B, int Tolerance = 8 ) { return std::abs( A.R - B.R ) <= Tolerance && std::abs( A.G - B.G ) <= Tolerance && std::abs( A.B - B.B ) <= Tolerance; };
+	const auto Near = [&]( const FRgb& A, const FRgb& B, int Tolerance = 8 ) { return NMath::Abs( A.R - B.R ) <= Tolerance && NMath::Abs( A.G - B.G ) <= Tolerance && NMath::Abs( A.B - B.B ) <= Tolerance; };
 	const auto QuadrantsAre = [&]( const FRgb& TL, const FRgb& TR, const FRgb& BL, const FRgb& BR, int Tolerance = 8 )
 	{
 		FRgb Pixels[4];
@@ -1343,12 +1344,12 @@ void CWorldSelfTestScene::RunRealChecks()
 	const auto SizeIs = [&]( int ExpectedWidth, int ExpectedHeight, int Tolerance = 2 )
 	{
 		int L, T, R, B;
-		return Capture.LitBounds( L, T, R, B ) && std::abs( ( R - L + 1 ) - ExpectedWidth ) <= Tolerance && std::abs( ( B - T + 1 ) - ExpectedHeight ) <= Tolerance;
+		return Capture.LitBounds( L, T, R, B ) && NMath::Abs( ( R - L + 1 ) - ExpectedWidth ) <= Tolerance && NMath::Abs( ( B - T + 1 ) - ExpectedHeight ) <= Tolerance;
 	};
 	const auto BoundsAre = [&]( int ExpectedLeft, int ExpectedTop, int ExpectedRight, int ExpectedBottom, int Tolerance = 2 )
 	{
 		int L, T, R, B;
-		return Capture.LitBounds( L, T, R, B ) && std::abs( L - ExpectedLeft ) <= Tolerance && std::abs( T - ExpectedTop ) <= Tolerance && std::abs( R - ExpectedRight ) <= Tolerance && std::abs( B - ExpectedBottom ) <= Tolerance;
+		return Capture.LitBounds( L, T, R, B ) && NMath::Abs( L - ExpectedLeft ) <= Tolerance && NMath::Abs( T - ExpectedTop ) <= Tolerance && NMath::Abs( R - ExpectedRight ) <= Tolerance && NMath::Abs( B - ExpectedBottom ) <= Tolerance;
 	};
 
 	FBillboard Base;
@@ -1733,8 +1734,8 @@ void CWorldSelfTestScene::RunRealChecks()
 		bool bIndicesOk = true;
 		for ( const FVector3& Vertex : Vertices )
 		{
-			Low = FVector3( std::min( Low.x, Vertex.x ), std::min( Low.y, Vertex.y ), std::min( Low.z, Vertex.z ) );
-			High = FVector3( std::max( High.x, Vertex.x ), std::max( High.y, Vertex.y ), std::max( High.z, Vertex.z ) );
+			Low = FVector3( NMath::Min( Low.x, Vertex.x ), NMath::Min( Low.y, Vertex.y ), NMath::Min( Low.z, Vertex.z ) );
+			High = FVector3( NMath::Max( High.x, Vertex.x ), NMath::Max( High.y, Vertex.y ), NMath::Max( High.z, Vertex.z ) );
 		}
 		for ( const uint32 Index : Indices ) bIndicesOk = bIndicesOk && Index < static_cast<uint32>( Vertices.Num() );
 		FVector3 BoundsMin, BoundsMax;
@@ -1767,12 +1768,12 @@ void CWorldSelfTestScene::RunRealChecks()
 			if ( Body != nullptr && Body->GetBody() != nullptr )
 			{
 				const JPH::Vec3 Extent = Physics->GetBodyInterface().GetShape( Body->GetBody()->GetBodyID() )->GetLocalBounds().GetExtent();
-				C.Check( std::fabs( Extent.GetX() - 2.0f ) < 0.05f && std::fabs( Extent.GetY() - 1.0f ) < 0.05f && std::fabs( Extent.GetZ() - 2.0f ) < 0.05f, "its shape is the block scaled by (2,1,2): half extents (2,1,2) (%.3f, %.3f, %.3f)", Extent.GetX(), Extent.GetY(), Extent.GetZ() );
+				C.Check( NMath::Abs( Extent.GetX() - 2.0f ) < 0.05f && NMath::Abs( Extent.GetY() - 1.0f ) < 0.05f && NMath::Abs( Extent.GetZ() - 2.0f ) < 0.05f, "its shape is the block scaled by (2,1,2): half extents (2,1,2) (%.3f, %.3f, %.3f)", Extent.GetX(), Extent.GetY(), Extent.GetZ() );
 			}
 			FRigidBody* Hit = Physics->CreateBody( FCollisionShape::Sphere( 0.5f ), EBodyType::Dynamic, FTransform( FVector3( 5001.5f, 6.0f, 0.0f ) ) );
 			FRigidBody* Miss = Physics->CreateBody( FCollisionShape::Sphere( 0.5f ), EBodyType::Dynamic, FTransform( FVector3( 5003.5f, 6.0f, 0.0f ) ) );
 			for ( int32 i = 0; i < 240; ++i ) Physics->Update( 1.0f / 60.0f );
-			C.Check( Hit != nullptr && std::fabs( Hit->GetPosition().y - 3.5f ) < 0.05f && Hit->GetLinearVelocity().Length() < 0.2f, "a ball dropped on the block's top face (the model drawn at y = 1 and 2 high) rests on it (y %.3f)", Hit != nullptr ? Hit->GetPosition().y : -999.0f );
+			C.Check( Hit != nullptr && NMath::Abs( Hit->GetPosition().y - 3.5f ) < 0.05f && Hit->GetLinearVelocity().Length() < 0.2f, "a ball dropped on the block's top face (the model drawn at y = 1 and 2 high) rests on it (y %.3f)", Hit != nullptr ? Hit->GetPosition().y : -999.0f );
 			C.Check( Miss != nullptr && Miss->GetPosition().y < 0.0f, "and one dropped beside the turned, scaled block falls past it (y %.3f)", Miss != nullptr ? Miss->GetPosition().y : -999.0f );
 			if ( Hit != nullptr ) Physics->DestroyBody( Hit );
 			if ( Miss != nullptr ) Physics->DestroyBody( Miss );

@@ -4,6 +4,8 @@
 #include <cstring>
 
 #include "Library/Core/Profiler/ProfilerScope.h"
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 
 namespace
 {
@@ -35,10 +37,10 @@ void NEcs::FSystemScheduler::AddSystem( FSystem&& System )
 	System.Stage = 0;
 	for ( const FSystem& Existing : Systems )
 	{
-		if ( Existing.Phase == System.Phase && Conflicts( Existing, System ) ) System.Stage = std::max( System.Stage, Existing.Stage + 1 );
+		if ( Existing.Phase == System.Phase && Conflicts( Existing, System ) ) System.Stage = NMath::Max( System.Stage, Existing.Stage + 1 );
 	}
 	if ( System.Phase == EPhase::Draw ) DrawSystems.push_back( static_cast<int32>( Systems.size() ) );
-	Systems.push_back( std::move( System ) );
+	Systems.push_back( MoveTemp( System ) );
 }
 
 int32 NEcs::FSystemScheduler::GetStage( const char* Name ) const
@@ -55,7 +57,7 @@ int32 NEcs::FSystemScheduler::GetNumStages( EPhase Phase ) const
 	int32 NumStages = 0;
 	for ( const FSystem& System : Systems )
 	{
-		if ( System.Phase == Phase ) NumStages = std::max( NumStages, System.Stage + 1 );
+		if ( System.Phase == Phase ) NumStages = NMath::Max( NumStages, System.Stage + 1 );
 	}
 	return NumStages;
 }
@@ -91,7 +93,7 @@ void NEcs::FSystemScheduler::Run( EPhase Phase, float32 DeltaTime, uint64 MaxObj
 			}
 			for ( int32 Begin = 0; Begin < Count; Begin += EntitiesPerBatch )
 			{
-				Items.push_back( { System.Runner.get(), System.Name, Begin, std::min( Begin + EntitiesPerBatch, Count ) } );
+				Items.push_back( { System.Runner.get(), System.Name, Begin, NMath::Min( Begin + EntitiesPerBatch, Count ) } );
 			}
 		}
 		if ( Items.empty() ) continue;

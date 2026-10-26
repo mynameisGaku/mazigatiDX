@@ -6,6 +6,8 @@
 #include <limits>
 #include <utility>
 
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Json/JsonHelpers.h"
 
 namespace
@@ -36,7 +38,7 @@ namespace
 	bool ReadFloat( const NlohmannJson& Json, float32& Out )
 	{
 		// 読めない値が検証で見つかるよう、失敗値を NaN にする。
-		Out = std::numeric_limits<float32>::quiet_NaN();
+		Out = TNumericLimits<float32>::QuietNaN();
 		if ( !Json.is_number() ) return false;
 		try
 		{
@@ -66,10 +68,10 @@ namespace
 float32 FEffectScalarCurve::Evaluate( float32 Time, float32 DefaultValue ) const
 {
 	// 返す既定値にも非有限値を通さない。
-	const float32 SafeDefault = std::isfinite( DefaultValue ) ? DefaultValue : 0.0f;
-	if ( !std::isfinite( Time ) || Keys.IsEmpty() ) return SafeDefault;
+	const float32 SafeDefault = NMath::IsFinite( DefaultValue ) ? DefaultValue : 0.0f;
+	if ( !NMath::IsFinite( Time ) || Keys.IsEmpty() ) return SafeDefault;
 	// 壊れた直接入力でも計算量と参照範囲を固定する。
-	const int32 Count = std::min( Keys.Num(), MaxKeys );
+	const int32 Count = NMath::Min( Keys.Num(), MaxKeys );
 	int32 FirstIndex = INDEX_NONE; // 有限なキーのうち最小時刻を持つ位置。
 	int32 LastIndex = INDEX_NONE; // 有限なキーのうち最大時刻を持つ位置。
 	int32 LowerIndex = INDEX_NONE; // 評価時刻以下で最も近いキーの位置。
@@ -78,7 +80,7 @@ float32 FEffectScalarCurve::Evaluate( float32 Time, float32 DefaultValue ) const
 	for ( int32 Index = 0; Index < Count; ++Index )
 	{
 		const FKey& Key = Keys[Index]; // 今回調べる有限値候補。
-		if ( !std::isfinite( Key.Time ) || !std::isfinite( Key.Value ) ) continue;
+		if ( !NMath::IsFinite( Key.Time ) || !NMath::IsFinite( Key.Value ) ) continue;
 		if ( FirstIndex == INDEX_NONE || Key.Time < Keys[FirstIndex].Time || ( Key.Time == Keys[FirstIndex].Time && Index < FirstIndex ) ) FirstIndex = Index;
 		if ( LastIndex == INDEX_NONE || Key.Time > Keys[LastIndex].Time || ( Key.Time == Keys[LastIndex].Time && Index < LastIndex ) ) LastIndex = Index;
 		if ( Key.Time <= Time && ( LowerIndex == INDEX_NONE || Key.Time > Keys[LowerIndex].Time || ( Key.Time == Keys[LowerIndex].Time && Index < LowerIndex ) ) ) LowerIndex = Index;
@@ -93,10 +95,10 @@ float32 FEffectScalarCurve::Evaluate( float32 Time, float32 DefaultValue ) const
 	if ( Interpolation == EInterpolation::Step ) return Lower.Value;
 	// double で差を計算し、有限な float32 端点の補間中も桁あふれを避ける。
 	double Alpha = ( static_cast<double>( Time ) - Lower.Time ) / ( static_cast<double>( Upper.Time ) - Lower.Time ); // 二つのキーの間での割合。
-	Alpha = std::clamp( Alpha, 0.0, 1.0 );
+	Alpha = NMath::Clamp( Alpha, 0.0, 1.0 );
 	if ( Interpolation == EInterpolation::Smooth ) Alpha = Alpha * Alpha * ( 3.0 - 2.0 * Alpha );
 	const double Value = static_cast<double>( Lower.Value ) + ( static_cast<double>( Upper.Value ) - Lower.Value ) * Alpha; // 補間後の有限な値。
-	return std::isfinite( Value ) ? static_cast<float32>( Value ) : SafeDefault;
+	return NMath::IsFinite( Value ) ? static_cast<float32>( Value ) : SafeDefault;
 }
 
 NlohmannJson FEffectScalarCurve::ToJson() const
@@ -133,8 +135,8 @@ bool FEffectScalarCurve::FromJson( const NlohmannJson& Json, FEffectScalarCurve&
 		{
 			if ( Warnings != nullptr ) Warnings->Add( "Keys は配列にしてください。Validate で修正してください" );
 			FKey InvalidKey; // 不正な配列を Validate で検出させるキー。
-			InvalidKey.Time = std::numeric_limits<float32>::quiet_NaN();
-			InvalidKey.Value = std::numeric_limits<float32>::quiet_NaN();
+			InvalidKey.Time = TNumericLimits<float32>::QuietNaN();
+			InvalidKey.Value = TNumericLimits<float32>::QuietNaN();
 			Curve.Keys.Add( InvalidKey );
 		}
 		else
@@ -145,8 +147,8 @@ bool FEffectScalarCurve::FromJson( const NlohmannJson& Json, FEffectScalarCurve&
 				FKey Key; // JSON の時刻と値を保持するキー。
 				if ( !Item.is_object() )
 				{
-					Key.Time = std::numeric_limits<float32>::quiet_NaN();
-					Key.Value = std::numeric_limits<float32>::quiet_NaN();
+					Key.Time = TNumericLimits<float32>::QuietNaN();
+					Key.Value = TNumericLimits<float32>::QuietNaN();
 				}
 				else
 				{
@@ -154,8 +156,8 @@ bool FEffectScalarCurve::FromJson( const NlohmannJson& Json, FEffectScalarCurve&
 					const auto Value = Item.find( "Value" ); // 値フィールドの有無と値。
 					const bool bTimeValid = Time != Item.end() ? ReadFloat( *Time, Key.Time ) : false; // 時刻を正しく読めたか。
 					const bool bValueValid = Value != Item.end() ? ReadFloat( *Value, Key.Value ) : false; // 値を正しく読めたか。
-					if ( Time == Item.end() ) Key.Time = std::numeric_limits<float32>::quiet_NaN();
-					if ( Value == Item.end() ) Key.Value = std::numeric_limits<float32>::quiet_NaN();
+					if ( Time == Item.end() ) Key.Time = TNumericLimits<float32>::QuietNaN();
+					if ( Value == Item.end() ) Key.Value = TNumericLimits<float32>::QuietNaN();
 					if ( ( !bTimeValid || !bValueValid ) && Warnings != nullptr ) Warnings->Add( FString::Printf( "Keys[%d] の Time / Value は数値が必要です", Index ) );
 				}
 				if ( !Item.is_object() && Warnings != nullptr ) Warnings->Add( FString::Printf( "Keys[%d] はオブジェクトにしてください", Index ) );
@@ -163,7 +165,7 @@ bool FEffectScalarCurve::FromJson( const NlohmannJson& Json, FEffectScalarCurve&
 			}
 		}
 	}
-	Out = std::move( Curve );
+	Out = MoveTemp( Curve );
 	return true;
 }
 
@@ -177,7 +179,7 @@ TArray<FString> FEffectScalarCurve::Validate() const
 	for ( int32 Index = 0; Index < Keys.Num(); ++Index )
 	{
 		const FKey& Key = Keys[Index]; // 検証するキー。
-		if ( !std::isfinite( Key.Time ) || !std::isfinite( Key.Value ) )
+		if ( !NMath::IsFinite( Key.Time ) || !NMath::IsFinite( Key.Value ) )
 		{
 			Issues.Add( FString::Printf( "Keys[%d] の Time / Value は有限値にしてください", Index ) );
 			continue;

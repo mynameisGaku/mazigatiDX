@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Asset/SpriteSheet.h"
 #include "Library/Framework/Effect/EffectFlipbookFrames.h"
@@ -353,7 +354,7 @@ namespace
 			FString Error;
 			const bool bHasClip = Changed.Clips.IsValidIndex( 0 );
 			const bool bHasDuration = bHasClip && Changed.Clips[0].Durations.IsValidIndex( 0 );
-			if ( bHasDuration ) Changed.Clips[0].Durations[0] = std::numeric_limits<float32>::quiet_NaN();
+			if ( bHasDuration ) Changed.Clips[0].Durations[0] = TNumericLimits<float32>::QuietNaN();
 			if ( Sheet.IsValid() ) Sheet->SetDefinition( Changed );
 			const bool bBuilt = NEffectFlipbook::BuildFrames( MakeFlipbook( "flipbook-resource-nan-duration" ), Assets, Out, &Error );
 			C.Check( bHasDuration && CachedAgain.IsValid() && CachedAgain.Get() == Sheet.Get() && !bBuilt && !Error.IsEmpty() && Fake.NumTextureRegionCalls == CallsBefore, "同pathのcached sheetへ直接入れたNaN durationを領域作成前に拒否する" );
@@ -380,7 +381,7 @@ namespace
 			FString Error;
 			const bool bHasClip = Changed.Clips.IsValidIndex( 0 );
 			const bool bNoDurations = bHasClip && Changed.Clips[0].Durations.IsEmpty();
-			if ( bHasClip ) Changed.Clips[0].Fps = std::numeric_limits<float32>::quiet_NaN();
+			if ( bHasClip ) Changed.Clips[0].Fps = TNumericLimits<float32>::QuietNaN();
 			if ( Sheet.IsValid() ) Sheet->SetDefinition( Changed );
 			const bool bBuilt = NEffectFlipbook::BuildFrames( MakeFlipbook( "flipbook-resource-nan-fps-missing-duration" ), Assets, Out, &Error );
 			C.Check( bNoDurations && CachedAgain.IsValid() && CachedAgain.Get() == Sheet.Get() && !bBuilt && !Error.IsEmpty() && Fake.NumTextureRegionCalls == CallsBefore, "duration未指定時のNaN fallback FPSを領域作成前に拒否する" );
@@ -403,7 +404,7 @@ namespace
 			const int32 CallsBefore = Fake.NumTextureRegionCalls;
 			// 構築時の警告文字列。
 			FString Error;
-			if ( Changed.Clips.IsValidIndex( 0 ) ) Changed.Clips[0].Fps = std::numeric_limits<float32>::quiet_NaN();
+			if ( Changed.Clips.IsValidIndex( 0 ) ) Changed.Clips[0].Fps = TNumericLimits<float32>::QuietNaN();
 			if ( Sheet.IsValid() ) Sheet->SetDefinition( Changed );
 			const bool bBuilt = NEffectFlipbook::BuildFrames( MakeFlipbook( "flipbook-resource-nan-fps-explicit" ), Assets, Out, &Error );
 			C.Check( Sheet.IsValid() && Changed.Clips.IsValidIndex( 0 ) && Changed.Clips[0].Durations.Num() == 2 && bBuilt && Out.Timeline.StepEnd.Num() == 2 && Out.Timeline.StepEnd[0] == 0.25f && Out.Timeline.StepEnd[1] == 0.75f && Fake.NumTextureRegionCalls == CallsBefore + 2, "全duration指定時は未使用のNaN FPSを許可する" );

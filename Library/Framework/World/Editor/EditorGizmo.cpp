@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
+
 namespace
 {
 	constexpr float32 HitPixels = 7.0f;            // 取っ手に当たったとみなす、画面での太さ（半径のピクセル）
@@ -95,7 +97,7 @@ float32 NWorldEditor::GetGizmoRingRadius( const FEditorGizmoFrame& Frame )
 
 float32 NWorldEditor::GetGizmoCenterRadius( const FEditorGizmoFrame& Frame )
 {
-	return std::max( Frame.Length * 0.12f, Frame.PixelSize * HitPixels );
+	return NMath::Max( Frame.Length * 0.12f, Frame.PixelSize * HitPixels );
 }
 
 EEditorGizmoHandle NWorldEditor::HitTestGizmo( const FEditorGizmoFrame& Frame, EEditorGizmoMode Mode, const FEditorRay& Ray, float32* OutT )
@@ -113,7 +115,7 @@ EEditorGizmoHandle NWorldEditor::HitTestGizmo( const FEditorGizmoFrame& Frame, E
 			float32 T = 0.0f;
 			if ( !RayVsPlane( Ray, Frame.Origin, Frame.Axes[Axis], T ) ) continue;
 			const FVector3 Offset = Ray.PointAt( T ) - Frame.Origin;
-			if ( std::fabs( Offset.Length() - Radius ) > Tolerance ) continue;
+			if ( NMath::Abs( Offset.Length() - Radius ) > Tolerance ) continue;
 			if ( FVector3::Dot( Offset, Ray.Origin - Frame.Origin ) < 0.0f ) continue;
 			if ( T < BestT )
 			{
@@ -193,7 +195,7 @@ bool FEditorGizmoDrag::Begin( const FEditorGizmoFrame& InFrame, EEditorGizmoMode
 	if ( bAxis && Mode != EEditorGizmoMode::Rotate )
 	{
 		// 軸に沿って動かす: 軸の直線の上の、光線にいちばん近い点
-		if ( std::fabs( FVector3::Dot( StartRay.Direction, Frame.Axes[AxisIndex] ) ) >= AxisParallelLimit ) return false;
+		if ( NMath::Abs( FVector3::Dot( StartRay.Direction, Frame.Axes[AxisIndex] ) ) >= AxisParallelLimit ) return false;
 		float32 RayT = 0.0f;
 		if ( !NWorldEditor::ClosestPointsOnLines( StartRay.Origin, StartRay.Direction, Frame.Origin, Frame.Axes[AxisIndex], RayT, StartAxisParam ) ) return false;
 		bActive = true;
@@ -206,7 +208,7 @@ bool FEditorGizmoDrag::Begin( const FEditorGizmoFrame& InFrame, EEditorGizmoMode
 	else PlaneNormal = -Camera.GetForward();
 	DiagonalDirection = ( Camera.GetRight() + Camera.GetUp() ).Normalized();
 
-	if ( std::fabs( FVector3::Dot( StartRay.Direction, PlaneNormal ) ) < ParallelLimit ) return false;
+	if ( NMath::Abs( FVector3::Dot( StartRay.Direction, PlaneNormal ) ) < ParallelLimit ) return false;
 	float32 T = 0.0f;
 	if ( !NWorldEditor::RayVsPlane( StartRay, Frame.Origin, PlaneNormal, T ) ) return false;
 	StartPoint = StartRay.PointAt( T );
@@ -221,7 +223,7 @@ FEditorGizmoDelta FEditorGizmoDrag::Update( const FEditorRay& Ray, float32 Snap 
 
 	if ( IsAxisHandle( Handle ) && Mode != EEditorGizmoMode::Rotate )
 	{
-		if ( std::fabs( FVector3::Dot( Ray.Direction, Frame.Axes[AxisIndex] ) ) >= AxisParallelLimit ) return Last;
+		if ( NMath::Abs( FVector3::Dot( Ray.Direction, Frame.Axes[AxisIndex] ) ) >= AxisParallelLimit ) return Last;
 		float32 RayT = 0.0f, Param = 0.0f;
 		if ( !NWorldEditor::ClosestPointsOnLines( Ray.Origin, Ray.Direction, Frame.Origin, Frame.Axes[AxisIndex], RayT, Param ) ) return Last;
 
@@ -233,14 +235,14 @@ FEditorGizmoDelta FEditorGizmoDrag::Update( const FEditorRay& Ray, float32 Snap 
 		else
 		{
 			// 手前へ反転して出している軸は、表示している向き（外側）へ引くと大きくなる
-			const float32 Factor = std::max( 1.0f + SnapValue( Frame.Flip[AxisIndex] * ( Param - StartAxisParam ) / Frame.Length, Snap ), MinFactor );
+			const float32 Factor = NMath::Max( 1.0f + SnapValue( Frame.Flip[AxisIndex] * ( Param - StartAxisParam ) / Frame.Length, Snap ), MinFactor );
 			SetComponent( Delta.Scale, AxisIndex, Factor );
 		}
 		Last = Delta;
 		return Last;
 	}
 
-	if ( std::fabs( FVector3::Dot( Ray.Direction, PlaneNormal ) ) < ParallelLimit ) return Last;
+	if ( NMath::Abs( FVector3::Dot( Ray.Direction, PlaneNormal ) ) < ParallelLimit ) return Last;
 	float32 T = 0.0f;
 	if ( !NWorldEditor::RayVsPlane( Ray, Frame.Origin, PlaneNormal, T ) ) return Last;
 	const FVector3 Point = Ray.PointAt( T );
@@ -270,7 +272,7 @@ FEditorGizmoDelta FEditorGizmoDrag::Update( const FEditorRay& Ray, float32 Snap 
 	{
 		// まとめて拡大: 画面の右上へ動かすと大きく、左下へ動かすと小さく
 		const float32 Amount = FVector3::Dot( Point - StartPoint, DiagonalDirection ) / Frame.Length;
-		const float32 Factor = std::max( 1.0f + SnapValue( Amount, Snap ), MinFactor );
+		const float32 Factor = NMath::Max( 1.0f + SnapValue( Amount, Snap ), MinFactor );
 		Delta.Scale = FVector3( Factor, Factor, Factor );
 	}
 	Last = Delta;
@@ -320,9 +322,9 @@ FTransform NWorldEditor::ApplyGizmoDelta( const FTransform& Start, const FEditor
 			else
 			{
 				// ギズモの軸ごとの倍率を、オブジェクト自身の軸に、向きの近さに応じて配る
-				for ( int32 Axis = 0; Axis < 3; ++Axis ) Factor += ( Component( Delta.Scale, Axis ) - 1.0f ) * std::fabs( FVector3::Dot( ObjectAxes[Local], Frame.Axes[Axis] ) );
+				for ( int32 Axis = 0; Axis < 3; ++Axis ) Factor += ( Component( Delta.Scale, Axis ) - 1.0f ) * NMath::Abs( FVector3::Dot( ObjectAxes[Local], Frame.Axes[Axis] ) );
 			}
-			SetComponent( Factors, Local, std::max( Factor, MinFactor ) );
+			SetComponent( Factors, Local, NMath::Max( Factor, MinFactor ) );
 		}
 		Result.Scale = Start.Scale * Factors;
 		break;

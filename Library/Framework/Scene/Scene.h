@@ -5,6 +5,7 @@
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Memory/SmartPointer.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Component/TransformComponent.h"
 #include "Library/Framework/Ecs/EcsWorld.h"
 #include "Library/Framework/Ecs/System.h"
@@ -55,7 +56,7 @@ public:
 	FORCEINLINE TSharedPtr<T> SpawnObject( Args&&... args )
 	{
 		static_assert( std::is_base_of_v<CGameObject, T>, "SpawnObject<T>: T must derive from CGameObject" );
-		TSharedPtr<T> Object = MakeShared<T>( std::forward<Args>( args )... );
+		TSharedPtr<T> Object = MakeShared<T>( Forward<Args>( args )... );
 		AddObject( Object );
 		return Object;
 	}
@@ -67,7 +68,7 @@ public:
 	{
 		TSharedPtr<CGameObject> Object = SpawnObject<CGameObject>();
 		Object->AddComponent<CTransformComponent>();
-		Object->AddDataAll( std::forward<TComps>( Comps )... );
+		Object->AddDataAll( Forward<TComps>( Comps )... );
 		return Object;
 	}
 
@@ -77,7 +78,7 @@ public:
 	{
 		TSharedPtr<CGameObject> Object = SpawnObject<CGameObject>();
 		Object->AddComponent<CTransformComponent>()->SetLocalPosition( Position );
-		Object->AddDataAll( std::forward<TComps>( Comps )... );
+		Object->AddDataAll( Forward<TComps>( Comps )... );
 		return Object;
 	}
 
@@ -86,7 +87,7 @@ public:
 	{
 		TSharedPtr<CGameObject> Object = SpawnObject<CGameObject>();
 		Object->AddComponent<CTransformComponent>()->SetLocalTransform( LocalTransform );
-		Object->AddDataAll( std::forward<TComps>( Comps )... );
+		Object->AddDataAll( Forward<TComps>( Comps )... );
 		return Object;
 	}
 
@@ -150,13 +151,13 @@ public:
 	//   ForEach( []( CGameObject& Obj, FHealth& Health, const FShield* Shield, NEcs::TWithout<FInvincible> ) { ... } );
 	//-------------------------------------------------------------------------
 	template<typename TFunction>
-	FORCEINLINE void AddSystem( NEcs::EPhase Phase, const char* Name, TFunction&& Function ) { Systems.Add( Phase, Name, std::forward<TFunction>( Function ) ); }
+	FORCEINLINE void AddSystem( NEcs::EPhase Phase, const char* Name, TFunction&& Function ) { Systems.Add( Phase, Name, Forward<TFunction>( Function ) ); }
 	template<typename TFunction>
-	FORCEINLINE void AddSystem( const char* Name, TFunction&& Function ) { Systems.Add( NEcs::EPhase::PreUpdate, Name, std::forward<TFunction>( Function ) ); }
+	FORCEINLINE void AddSystem( const char* Name, TFunction&& Function ) { Systems.Add( NEcs::EPhase::PreUpdate, Name, Forward<TFunction>( Function ) ); }
 
 	// 条件に合う生きているオブジェクトをその場で走査し、処理した件数を返す（bool を返すラムダなら false で途中終了）
 	template<typename TFunction>
-	FORCEINLINE int32 ForEach( TFunction&& Function ) { return NEcs::ForEach( EcsWorld, TransformWorld, std::forward<TFunction>( Function ) ); }
+	FORCEINLINE int32 ForEach( TFunction&& Function ) { return NEcs::ForEach( EcsWorld, TransformWorld, Forward<TFunction>( Function ) ); }
 
 	// 指定したすべてのデータコンポーネントを持つ、生きているオブジェクトの数を返す
 	template<typename TFirst, typename... TRest>
@@ -213,7 +214,7 @@ public:
 	//   } );
 	//-------------------------------------------------------------------------
 	template<typename TFunction>
-	FORCEINLINE void AddDrawSystem( const char* Name, TFunction&& Function ) { Systems.AddDraw( Name, std::forward<TFunction>( Function ) ); }
+	FORCEINLINE void AddDrawSystem( const char* Name, TFunction&& Function ) { Systems.AddDraw( Name, Forward<TFunction>( Function ) ); }
 	// 描画コマンドの実行先を差し替える（既定は、アプリの IDrawExecutor。記録するだけの実行先を渡して確かめる、など）。nullptr で既定に戻す
 	FORCEINLINE void SetDrawExecutor( IDrawExecutor* InExecutor ) { DrawExecutorOverride = InExecutor; }
 	// シーンが使う描画先を返す。差し替えがなければアプリの描画先を返し、所有権は持たない

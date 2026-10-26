@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Effect/ParticleEffectBackend.h"
 #include "Library/Framework/Render/DrawContext.h"
@@ -160,7 +161,7 @@ namespace
 			FMeshVertex FirstVertex;
 			const bool bReadMesh = ReadFirstMaterialMesh( Buffer, Data, FirstVertex );
 			C.Check( Playback.IsValid() && Playback->GetNumParticles() > 0 && CountMeshCommands( Buffer, EDrawCommand::MaterialMesh3D ) == 1 && CountMeshCommands( Buffer, EDrawCommand::Quad3D ) == 0 && CountMeshCommands( Buffer, EDrawCommand::MaterialQuad3D ) == 0 && bReadMesh, "Plane/Ring再生はmesh commandを一つ記録しquadへfallbackしない (kind=%d particles=%d)", static_cast<int32>( Kinds[Index] ), Playback.IsValid() ? Playback->GetNumParticles() : -1 );
-			C.Check( bReadMesh && Data.Texture >= 0 && Data.Material.MaskTexture >= 0 && Data.DistortionTexture >= 0 && Data.NumVertices >= 3 && Data.NumIndices >= 3 && std::isfinite( FirstVertex.Position[0] ), "ready mesh commandはmain/mask/noise handleと有効なgeometryを保持する (kind=%d)", static_cast<int32>( Kinds[Index] ) );
+			C.Check( bReadMesh && Data.Texture >= 0 && Data.Material.MaskTexture >= 0 && Data.DistortionTexture >= 0 && Data.NumVertices >= 3 && Data.NumIndices >= 3 && NMath::IsFinite( FirstVertex.Position[0] ), "ready mesh commandはmain/mask/noise handleと有効なgeometryを保持する (kind=%d)", static_cast<int32>( Kinds[Index] ) );
 			C.Check( SameMeshResourceCounters( Fake, LoadsBeforeRecord, QueriesBeforeRecord, RegionsBeforeRecord, UvBeforeRecord, NextBeforeRecord, HandlesBeforeRecord ), "mesh Recordはtexture読込・ready照会・handle作成を行わない (kind=%d)", static_cast<int32>( Kinds[Index] ) );
 			ReleaseMeshPlayback( Playback );
 			CollectMeshTextures( Assets );
@@ -197,7 +198,7 @@ namespace
 		const bool bSecondRead = ReadFirstMaterialMesh( SecondBuffer, SecondData, SecondVertex );
 		C.Check( First.IsValid() && Second.IsValid() && bFirstRead && bSecondRead, "共有資源の二Playbackがそれぞれmesh commandを記録する" );
 		C.Check( bFirstRead && bSecondRead && FirstData.Texture == SecondData.Texture && FirstData.Material.MaskTexture == SecondData.Material.MaskTexture && FirstData.DistortionTexture == SecondData.DistortionTexture, "二Playbackは同じready main/mask/noise handleを共有する" );
-		C.Check( bFirstRead && bSecondRead && std::fabs( FirstVertex.Position[0] - SecondVertex.Position[0] ) > 4.0f && FirstData.Emission != SecondData.Emission, "二PlaybackのtransformとAge由来Emissionは個別に反映される (x=%.3f/%.3f emission=%.3f/%.3f)", FirstVertex.Position[0], SecondVertex.Position[0], FirstData.Emission, SecondData.Emission );
+		C.Check( bFirstRead && bSecondRead && NMath::Abs( FirstVertex.Position[0] - SecondVertex.Position[0] ) > 4.0f && FirstData.Emission != SecondData.Emission, "二PlaybackのtransformとAge由来Emissionは個別に反映される (x=%.3f/%.3f emission=%.3f/%.3f)", FirstVertex.Position[0], SecondVertex.Position[0], FirstData.Emission, SecondData.Emission );
 		ReleaseMeshPlayback( First );
 		ReleaseMeshPlayback( Second );
 		CollectMeshTextures( Assets );
@@ -430,14 +431,14 @@ namespace
 		C.Check( MaximumRotation.IsValidSettings() && MaximumRotation.Validate().IsEmpty() && NegativeMaximumRotation.IsValidSettings() && NegativeMaximumRotation.Validate().IsEmpty(), "Mesh回転の各軸で±360000度を受け付ける" );
 		// 各軸を最大値の次の表現可能floatへ進めた設定。
 		const FVector3 InvalidRotations[] = {
-			FVector3( std::nextafter( 360000.0f, std::numeric_limits<float32>::infinity() ), 0.0f, 0.0f ),
-			FVector3( std::nextafter( -360000.0f, -std::numeric_limits<float32>::infinity() ), 0.0f, 0.0f ),
-			FVector3( 0.0f, std::nextafter( 360000.0f, std::numeric_limits<float32>::infinity() ), 0.0f ),
-			FVector3( 0.0f, std::nextafter( -360000.0f, -std::numeric_limits<float32>::infinity() ), 0.0f ),
-			FVector3( 0.0f, 0.0f, std::nextafter( 360000.0f, std::numeric_limits<float32>::infinity() ) ),
-			FVector3( 0.0f, 0.0f, std::nextafter( -360000.0f, -std::numeric_limits<float32>::infinity() ) ),
-			FVector3( std::numeric_limits<float32>::quiet_NaN(), 0.0f, 0.0f ),
-			FVector3( 0.0f, std::numeric_limits<float32>::infinity(), 0.0f ),
+			FVector3( std::nextafter( 360000.0f, TNumericLimits<float32>::Infinity() ), 0.0f, 0.0f ),
+			FVector3( std::nextafter( -360000.0f, -TNumericLimits<float32>::Infinity() ), 0.0f, 0.0f ),
+			FVector3( 0.0f, std::nextafter( 360000.0f, TNumericLimits<float32>::Infinity() ), 0.0f ),
+			FVector3( 0.0f, std::nextafter( -360000.0f, -TNumericLimits<float32>::Infinity() ), 0.0f ),
+			FVector3( 0.0f, 0.0f, std::nextafter( 360000.0f, TNumericLimits<float32>::Infinity() ) ),
+			FVector3( 0.0f, 0.0f, std::nextafter( -360000.0f, -TNumericLimits<float32>::Infinity() ) ),
+			FVector3( TNumericLimits<float32>::QuietNaN(), 0.0f, 0.0f ),
+			FVector3( 0.0f, TNumericLimits<float32>::Infinity(), 0.0f ),
 		};
 		// 非有限または上限超過を個別設定で検証する集約結果。
 		bool bEveryRotationRejected = true;

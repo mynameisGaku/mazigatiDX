@@ -4,6 +4,7 @@
 #include <cmath>
 #include <vector>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Effect/ParticleEffectBackend.h"
 #include "Library/Framework/Render/DrawContext.h"
@@ -78,7 +79,7 @@ void NWorldTest::RunEffectUVDistortionPlaybackTests( NAssetTest::FChecker& C, CA
 	Playback->Update( 1.0f );
 	// 独立にsimulation粒子の秒齢を確認し、scroll期待値の基準を固定する。
 	const FParticlePlayback* ConcretePlayback = static_cast<const FParticlePlayback*>( Playback.Get() );
-	const bool bAgeIsOneSecond = ConcretePlayback->GetSimulation().Emitters.IsValidIndex( 0 ) && ConcretePlayback->GetSimulation().Emitters[0].Particles.Num() == 1 && std::abs( ConcretePlayback->GetSimulation().Emitters[0].Particles[0].Age - 1.0f ) < 1.0e-5f;
+	const bool bAgeIsOneSecond = ConcretePlayback->GetSimulation().Emitters.IsValidIndex( 0 ) && ConcretePlayback->GetSimulation().Emitters[0].Particles.Num() == 1 && NMath::Abs( ConcretePlayback->GetSimulation().Emitters[0].Particles[0].Age - 1.0f ) < 1.0e-5f;
 	C.Check( bAgeIsOneSecond, "scroll検査対象の粒子は実simulationで秒齢1.0になる" );
 	// 実際に記録したdataと同一Playbackでの再記録を比較する。
 	const FDrawBuffer First = RecordDistortionPlayback( Playback );
@@ -88,8 +89,8 @@ void NWorldTest::RunEffectUVDistortionPlaybackTests( NAssetTest::FChecker& C, CA
 	if ( Commands.Num() == 1 )
 	{
 		const FDrawDistortedMaterialQuadData& Data = Commands[0];
-		C.Check( Data.DistortionTexture >= 0 && std::abs( Data.Strength - 0.5f ) < 1.0e-5f && std::abs( Data.UVScale[0] - 2.5f ) < 1.0e-5f && std::abs( Data.UVScale[1] - 1.5f ) < 1.0e-5f, "材質曲線の中間強度とゆがみ倍率を命令へ渡す" );
-		C.Check( std::abs( Data.UVOffset[0] - 0.5f ) < 1.0e-4f && std::abs( Data.UVOffset[1] - 0.25f ) < 1.0e-4f, "負の横scrollと縦scrollを粒子秒齢で折り返す" );
+		C.Check( Data.DistortionTexture >= 0 && NMath::Abs( Data.Strength - 0.5f ) < 1.0e-5f && NMath::Abs( Data.UVScale[0] - 2.5f ) < 1.0e-5f && NMath::Abs( Data.UVScale[1] - 1.5f ) < 1.0e-5f, "材質曲線の中間強度とゆがみ倍率を命令へ渡す" );
+		C.Check( NMath::Abs( Data.UVOffset[0] - 0.5f ) < 1.0e-4f && NMath::Abs( Data.UVOffset[1] - 0.25f ) < 1.0e-4f, "負の横scrollと縦scrollを粒子秒齢で折り返す" );
 		C.Check( NDrawDistortedMaterialQuad::IsValid( Data ), "記録payloadが実行側の完全検証を通る" );
 	}
 	// 材質は有効でも強度0なら旧命令を使い、payload byteを変えない。

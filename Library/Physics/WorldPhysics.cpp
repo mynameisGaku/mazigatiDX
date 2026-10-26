@@ -4,6 +4,8 @@
 #include <cmath>
 
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Object/GameObject.h"
 #include "Library/Framework/Scene/Scene.h"
@@ -42,7 +44,7 @@ namespace
 
 		// 大きさは、剛体の形に焼き込まれる。負の拡大は絶対値で、0 に近い拡大は作れない
 		const FTransform& World = Context.WorldTransform;
-		const FVector3 Scale( std::fabs( World.Scale.x ), std::fabs( World.Scale.y ), std::fabs( World.Scale.z ) );
+		const FVector3 Scale( NMath::Abs( World.Scale.x ), NMath::Abs( World.Scale.y ), NMath::Abs( World.Scale.z ) );
 		if ( Scale.x < MinScale || Scale.y < MinScale || Scale.z < MinScale )
 		{
 			Context.Warn( "the collider was not placed: the object's scale has a component that is (almost) 0" );
@@ -55,7 +57,7 @@ namespace
 		{
 		case EWorldColliderShape::Box: Shape = FCollisionShape::Box( Spec.Size * 0.5f ); break;
 		case EWorldColliderShape::Sphere: Shape = FCollisionShape::Sphere( Spec.Radius ); break;
-		case EWorldColliderShape::Capsule: Shape = FCollisionShape::Capsule( std::max( ( Spec.Height - Spec.Radius * 2.0f ) * 0.5f, 1.0e-3f ), Spec.Radius ); break;
+		case EWorldColliderShape::Capsule: Shape = FCollisionShape::Capsule( NMath::Max( ( Spec.Height - Spec.Radius * 2.0f ) * 0.5f, 1.0e-3f ), Spec.Radius ); break;
 		case EWorldColliderShape::Mesh:
 		{
 			// 三角形そのまま（モデル・編集メッシュの座標のまま。ずれ（Offset）は使わない）
@@ -263,7 +265,7 @@ bool NPhysicsWorld::SetTriggerCallbacks( CGameObject& Trigger, CWorldColliderCom
 {
 	CWorldColliderComponent* Component = Trigger.GetComponent<CWorldColliderComponent>();
 	if ( Component == nullptr || !Component->IsTrigger() ) return false;
-	Component->SetOnEnter( std::move( OnEnter ) );
-	Component->SetOnExit( std::move( OnExit ) );
+	Component->SetOnEnter( MoveTemp( OnEnter ) );
+	Component->SetOnExit( MoveTemp( OnExit ) );
 	return true;
 }

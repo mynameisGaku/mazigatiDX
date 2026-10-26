@@ -11,6 +11,7 @@
 #include "Library/Core/Interfaces/Render/DrawDistortedMaterialRibbon.h"
 #include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 #include "Library/Platform/DxLib/DxLibAssetBackend.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
@@ -147,7 +148,7 @@ namespace
 		constexpr int32 DataWords = sizeof( FDrawRibbonData ) / 4;
 		if ( Command.NumDataWords < DataWords ) return;
 		const FDrawRibbonData Data = Command.Read<FDrawRibbonData>();
-		if ( Data.NumPoints < 2 || Data.NumPoints > FDrawRibbonData::MaxPoints || Data.Texture < -1 || !std::isfinite( Data.UVRepeat ) || Data.UVRepeat <= 0.0f || Data.JoinFlags < 0 || ( Data.JoinFlags & ~( FDrawRibbonData::PreviousPoint | FDrawRibbonData::NextPoint ) ) != 0 || Data.NumPoints - static_cast<int32>( ( Data.JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) - static_cast<int32>( ( Data.JoinFlags & FDrawRibbonData::NextPoint ) != 0 ) < 2 ) return;
+		if ( Data.NumPoints < 2 || Data.NumPoints > FDrawRibbonData::MaxPoints || Data.Texture < -1 || !NMath::IsFinite( Data.UVRepeat ) || Data.UVRepeat <= 0.0f || Data.JoinFlags < 0 || ( Data.JoinFlags & ~( FDrawRibbonData::PreviousPoint | FDrawRibbonData::NextPoint ) ) != 0 || Data.NumPoints - static_cast<int32>( ( Data.JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) - static_cast<int32>( ( Data.JoinFlags & FDrawRibbonData::NextPoint ) != 0 ) < 2 ) return;
 		if ( Command.NumDataWords != DataWords + Data.NumPoints * static_cast<int32>( sizeof( FDrawRibbonData::FPoint ) / 4 ) ) return;
 		TArray<FDrawRibbonData::FPoint> Points;
 		Points.SetNum( Data.NumPoints );
@@ -155,7 +156,7 @@ namespace
 		for ( int32 Index = 0; Index < Data.NumPoints; ++Index )
 		{
 			const FDrawRibbonData::FPoint& Point = Points[Index];
-			if ( !std::isfinite( Point.Pos[0] ) || !std::isfinite( Point.Pos[1] ) || !std::isfinite( Point.Pos[2] ) || !std::isfinite( Point.Width ) || Point.Width < 0.0f || !std::isfinite( Point.U ) || Point.U < 0.0f || !std::isfinite( Point.U * Data.UVRepeat ) || ( Index > 0 && Point.U < Points[Index - 1].U ) ) return;
+			if ( !NMath::IsFinite( Point.Pos[0] ) || !NMath::IsFinite( Point.Pos[1] ) || !NMath::IsFinite( Point.Pos[2] ) || !NMath::IsFinite( Point.Width ) || Point.Width < 0.0f || !NMath::IsFinite( Point.U ) || Point.U < 0.0f || !NMath::IsFinite( Point.U * Data.UVRepeat ) || ( Index > 0 && Point.U < Points[Index - 1].U ) ) return;
 		}
 		FDxLibRibbonMesh Mesh;
 		if ( !NDxLibRibbonMesh::Build( Data, Points.GetData(), true, Mesh ) ) return;
@@ -471,12 +472,12 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			// 検証に使う経路値と材質値。
 			const FDrawRibbonData& Ribbon = Data.Ribbon;
 			const FDrawMaterialRibbonData::FMaterialSettings& Material = Data.Material;
-			if ( Ribbon.NumPoints < 2 || Ribbon.NumPoints > FDrawRibbonData::MaxPoints || Ribbon.Texture < 0 || Material.MaskTexture < -1 || !std::isfinite( Ribbon.UVRepeat ) || Ribbon.UVRepeat <= 0.0f || Ribbon.JoinFlags < 0 || ( Ribbon.JoinFlags & ~( FDrawRibbonData::PreviousPoint | FDrawRibbonData::NextPoint ) ) != 0 || Ribbon.NumPoints - static_cast<int32>( ( Ribbon.JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) - static_cast<int32>( ( Ribbon.JoinFlags & FDrawRibbonData::NextPoint ) != 0 ) < 2 || Command.NumDataWords != DataWords + Ribbon.NumPoints * static_cast<int32>( sizeof( FDrawMaterialRibbonData::FPoint ) / 4 ) )
+			if ( Ribbon.NumPoints < 2 || Ribbon.NumPoints > FDrawRibbonData::MaxPoints || Ribbon.Texture < 0 || Material.MaskTexture < -1 || !NMath::IsFinite( Ribbon.UVRepeat ) || Ribbon.UVRepeat <= 0.0f || Ribbon.JoinFlags < 0 || ( Ribbon.JoinFlags & ~( FDrawRibbonData::PreviousPoint | FDrawRibbonData::NextPoint ) ) != 0 || Ribbon.NumPoints - static_cast<int32>( ( Ribbon.JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) - static_cast<int32>( ( Ribbon.JoinFlags & FDrawRibbonData::NextPoint ) != 0 ) < 2 || Command.NumDataWords != DataWords + Ribbon.NumPoints * static_cast<int32>( sizeof( FDrawMaterialRibbonData::FPoint ) / 4 ) )
 			{
 				if ( !bInvalidMaterialRibbonCommandLogged ) { LOG( LogDxLibDraw, Warning, "材質付き帯の点数または命令長が不正なため描画を読み飛ばしました" ); bInvalidMaterialRibbonCommandLogged = true; }
 				break;
 			}
-			if ( !std::isfinite( Material.UVScale[0] ) || !std::isfinite( Material.UVScale[1] ) || Material.UVScale[0] <= 0.0f || Material.UVScale[1] <= 0.0f || Material.UVScale[0] > 128.0f || Material.UVScale[1] > 128.0f || !std::isfinite( Material.MaskScale ) || Material.MaskScale <= 0.0f || Material.MaskScale > 128.0f || !std::isfinite( Material.EdgeWidth ) || Material.EdgeWidth < 0.0f || Material.EdgeWidth > 1.0f || !std::isfinite( Material.EdgeEmission ) || Material.EdgeEmission < 0.0f || Material.EdgeEmission > 32.0f || ( Material.bDissolve != 0 && Material.bDissolve != 1 ) || ( Material.DepthTest != 0 && Material.DepthTest != 1 ) || ( Material.DepthWrite != 0 && Material.DepthWrite != 1 ) )
+			if ( !NMath::IsFinite( Material.UVScale[0] ) || !NMath::IsFinite( Material.UVScale[1] ) || Material.UVScale[0] <= 0.0f || Material.UVScale[1] <= 0.0f || Material.UVScale[0] > 128.0f || Material.UVScale[1] > 128.0f || !NMath::IsFinite( Material.MaskScale ) || Material.MaskScale <= 0.0f || Material.MaskScale > 128.0f || !NMath::IsFinite( Material.EdgeWidth ) || Material.EdgeWidth < 0.0f || Material.EdgeWidth > 1.0f || !NMath::IsFinite( Material.EdgeEmission ) || Material.EdgeEmission < 0.0f || Material.EdgeEmission > 32.0f || ( Material.bDissolve != 0 && Material.bDissolve != 1 ) || ( Material.DepthTest != 0 && Material.DepthTest != 1 ) || ( Material.DepthWrite != 0 && Material.DepthWrite != 1 ) )
 			{
 				if ( !bInvalidMaterialRibbonCommandLogged ) { LOG( LogDxLibDraw, Warning, "材質付き帯の設定値が不正なため描画を読み飛ばしました" ); bInvalidMaterialRibbonCommandLogged = true; }
 				break;
@@ -496,7 +497,7 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 				const FDrawMaterialRibbonData::FPoint& Point = Points[Index];
 				// 画像反復を加えた連続横座標。
 				const float32 BaseU = Point.Path.U * Ribbon.UVRepeat;
-				if ( !std::isfinite( Point.Path.Pos[0] ) || !std::isfinite( Point.Path.Pos[1] ) || !std::isfinite( Point.Path.Pos[2] ) || !std::isfinite( Point.Path.Width ) || Point.Path.Width < 0.0f || !std::isfinite( Point.Path.U ) || Point.Path.U < 0.0f || !std::isfinite( BaseU ) || !std::isfinite( BaseU * Material.UVScale[0] + Point.UVOffset[0] ) || !std::isfinite( BaseU * Material.MaskScale ) || !std::isfinite( Point.Dissolve ) || Point.Dissolve < 0.0f || Point.Dissolve > 1.0f || !std::isfinite( Point.Emission ) || Point.Emission < 0.0f || Point.Emission > 32.0f || !std::isfinite( Point.UVOffset[0] ) || !std::isfinite( Point.UVOffset[1] ) || std::abs( Point.UVOffset[0] ) > 1.0e6f || std::abs( Point.UVOffset[1] ) > 1.0e6f || ( Index > 0 && Point.Path.U < Points[Index - 1].Path.U ) )
+				if ( !NMath::IsFinite( Point.Path.Pos[0] ) || !NMath::IsFinite( Point.Path.Pos[1] ) || !NMath::IsFinite( Point.Path.Pos[2] ) || !NMath::IsFinite( Point.Path.Width ) || Point.Path.Width < 0.0f || !NMath::IsFinite( Point.Path.U ) || Point.Path.U < 0.0f || !NMath::IsFinite( BaseU ) || !NMath::IsFinite( BaseU * Material.UVScale[0] + Point.UVOffset[0] ) || !NMath::IsFinite( BaseU * Material.MaskScale ) || !NMath::IsFinite( Point.Dissolve ) || Point.Dissolve < 0.0f || Point.Dissolve > 1.0f || !NMath::IsFinite( Point.Emission ) || Point.Emission < 0.0f || Point.Emission > 32.0f || !NMath::IsFinite( Point.UVOffset[0] ) || !NMath::IsFinite( Point.UVOffset[1] ) || NMath::Abs( Point.UVOffset[0] ) > 1.0e6f || NMath::Abs( Point.UVOffset[1] ) > 1.0e6f || ( Index > 0 && Point.Path.U < Points[Index - 1].Path.U ) )
 				{
 					bValidPoints = false;
 					break;
@@ -508,8 +509,8 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 					// 始点で使う画像反復番号。
 					const float64 FirstRepeat = std::floor( static_cast<float64>( Points[Index - 1].Path.U * Ribbon.UVRepeat ) );
 					// 終点までに必要な整数反復区間数。
-					const float64 Sections = std::max( 1.0, std::ceil( static_cast<float64>( Point.Path.U * Ribbon.UVRepeat ) ) - FirstRepeat );
-					if ( !std::isfinite( Sections ) || Sections > static_cast<float64>( FDrawRibbonData::MaxTextureSections - TextureSections ) ) { bValidPoints = false; break; }
+					const float64 Sections = NMath::Max( 1.0, std::ceil( static_cast<float64>( Point.Path.U * Ribbon.UVRepeat ) ) - FirstRepeat );
+					if ( !NMath::IsFinite( Sections ) || Sections > static_cast<float64>( FDrawRibbonData::MaxTextureSections - TextureSections ) ) { bValidPoints = false; break; }
 					TextureSections += static_cast<int32>( Sections );
 				}
 			}

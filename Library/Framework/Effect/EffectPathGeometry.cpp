@@ -4,6 +4,9 @@
 #include <algorithm>
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
+
 namespace
 {
 	// 二つの更新形状と、その間の補間率。
@@ -20,16 +23,16 @@ namespace
 	// 三つの座標が有限かを確かめる。
 	bool IsFinite( const FVector3& Value )
 	{
-		return std::isfinite( Value.x ) && std::isfinite( Value.y ) && std::isfinite( Value.z );
+		return NMath::IsFinite( Value.x ) && NMath::IsFinite( Value.y ) && NMath::IsFinite( Value.z );
 	}
 
 	// 時刻を整数へ直接変換せず、更新番号と滑らかな補間率へ分ける。
 	FNoiseTime GetNoiseTime( float32 Time, float32 RefreshHz )
 	{
 		// 負や非数の時刻は最初の形状を使う。
-		const float64 Seconds = std::isfinite( Time ) ? std::max( static_cast<float64>( Time ), 0.0 ) : 0.0;
+		const float64 Seconds = NMath::IsFinite( Time ) ? NMath::Max( static_cast<float64>( Time ), 0.0 ) : 0.0;
 		// 負や非数の更新速度は静止として扱う。
-		const float64 Rate = std::isfinite( RefreshHz ) ? std::max( static_cast<float64>( RefreshHz ), 0.0 ) : 0.0;
+		const float64 Rate = NMath::IsFinite( RefreshHz ) ? NMath::Max( static_cast<float64>( RefreshHz ), 0.0 ) : 0.0;
 		// 有限な float 二つの積なので double の範囲内に収まる位相。
 		const float64 Phase = Seconds * Rate;
 		// 現在の更新区間の整数番号。
@@ -103,7 +106,7 @@ namespace
 	void MakeBasis( const FVector3& Axis, FVector3& Right, FVector3& Up )
 	{
 		// 軸と平行に近くならない補助の向き。
-		const FVector3 Helper = std::fabs( Axis.y ) < 0.95f ? FVector3::Up : FVector3::Right;
+		const FVector3 Helper = NMath::Abs( Axis.y ) < 0.95f ? FVector3::Up : FVector3::Right;
 		Right = FVector3::Cross( Axis, Helper ).Normalized();
 		Up = FVector3::Cross( Right, Axis );
 	}
@@ -115,7 +118,7 @@ namespace
 		const FVector3 Delta = End - Start;
 		// 主幹または枝の長さ。
 		const float32 Length = Delta.Length();
-		if ( !IsFinite( Delta ) || !std::isfinite( Length ) || Length <= 0.0f || !std::isfinite( Amplitude ) ) return false;
+		if ( !IsFinite( Delta ) || !NMath::IsFinite( Length ) || Length <= 0.0f || !NMath::IsFinite( Amplitude ) ) return false;
 		// 揺れの一方向。
 		FVector3 Right;
 		// 揺れのもう一方向。
@@ -140,7 +143,7 @@ namespace
 			if ( bBranch ) Point.Color.a = static_cast<uint8>( std::lround( static_cast<float32>( Color.a ) * ( 1.0f - T ) ) );
 			if ( Index > 0 ) Distance += ( Point.Position - Out.Points.Last().Position ).Length();
 			Point.U = Distance;
-			if ( !IsFinite( Point.Position ) || !std::isfinite( Point.Width ) || !std::isfinite( Point.U ) ) return false;
+			if ( !IsFinite( Point.Position ) || !NMath::IsFinite( Point.Width ) || !NMath::IsFinite( Point.U ) ) return false;
 			Out.Points.Add( Point );
 		}
 		return true;
@@ -150,27 +153,27 @@ namespace
 void NEffectPath::BuildLightning( const FEffectPathDefinition& Definition, uint32 Seed, float32 Time, const FVector3& Start, const FVector3& End, float32 Width, const FColor32& Color, FEffectPathGeometry& Out )
 {
 	Out.Strips.Reset();
-	if ( Definition.Kind != FEffectPathDefinition::EKind::Lightning || !IsFinite( Start ) || !IsFinite( End ) || !std::isfinite( Width ) || Width <= 0.0f ) return;
+	if ( Definition.Kind != FEffectPathDefinition::EKind::Lightning || !IsFinite( Start ) || !IsFinite( End ) || !NMath::IsFinite( Width ) || Width <= 0.0f ) return;
 	// 主幹の軸となる、ワールドの両端の差。
 	const FVector3 Delta = End - Start;
 	// 幅の比率を実際の距離へ変えるための、主幹の長さ。
 	const float32 Length = Delta.Length();
-	if ( !IsFinite( Delta ) || !std::isfinite( Length ) || Length <= 0.0f ) return;
+	if ( !IsFinite( Delta ) || !NMath::IsFinite( Length ) || Length <= 0.0f ) return;
 	// 不正な定義を直接渡されても、点数を上限内に保つ区間数。
-	const int32 Segments = std::clamp( Definition.Segments, 2, FEffectPathDefinition::MaxSegments );
+	const int32 Segments = NMath::Clamp( Definition.Segments, 2, FEffectPathDefinition::MaxSegments );
 	// 揺れの比率を、ワールド距離へ変えた幅。
-	const float32 Amplitude = ( std::isfinite( Definition.Jitter ) ? std::max( Definition.Jitter, 0.0f ) : 0.0f ) * Length;
+	const float32 Amplitude = ( NMath::IsFinite( Definition.Jitter ) ? NMath::Max( Definition.Jitter, 0.0f ) : 0.0f ) * Length;
 	// 枝の比率を、ワールド距離へ変えた長さ。
-	const float32 BranchLength = ( std::isfinite( Definition.BranchLength ) ? std::max( Definition.BranchLength, 0.0f ) : 0.0f ) * Length;
-	if ( !std::isfinite( Amplitude ) || !std::isfinite( BranchLength ) ) return;
+	const float32 BranchLength = ( NMath::IsFinite( Definition.BranchLength ) ? NMath::Max( Definition.BranchLength, 0.0f ) : 0.0f ) * Length;
+	if ( !NMath::IsFinite( Amplitude ) || !NMath::IsFinite( BranchLength ) ) return;
 	// 今回の再生時刻で使う、二つの更新番号と補間率。
 	const FNoiseTime NoiseTime = GetNoiseTime( Time, Definition.RefreshHz );
 	// 生成順で先頭になる、両端の固定された主幹。
 	FEffectPathGeometry::FStrip Main;
 	if ( !BuildStrip( Start, End, Segments, Amplitude, Width, Color, Seed, NoiseTime, false, Main ) ) return;
-	Out.Strips.Add( std::move( Main ) );
+	Out.Strips.Add( MoveTemp( Main ) );
 	// 長さ 0 の枝は作らず、それ以外は設定数を安全な範囲にする。
-	const int32 Branches = BranchLength > 0.0f ? std::clamp( Definition.Branches, 0, FEffectPathDefinition::MaxBranches ) : 0;
+	const int32 Branches = BranchLength > 0.0f ? NMath::Clamp( Definition.Branches, 0, FEffectPathDefinition::MaxBranches ) : 0;
 	// 枝を横へ伸ばす一方向。
 	FVector3 Right;
 	// 枝を横へ伸ばすもう一方向。
@@ -182,7 +185,7 @@ void NEffectPath::BuildLightning( const FEffectPathDefinition& Definition, uint3
 		// 区間数を変えても枝の位置が大きく飛ばない、シードで決まる幹上の割合。
 		const float32 AttachmentT = 0.1f + static_cast<float32>( HashValue( Seed, 0u, static_cast<uint32>( Branch ) + 991u ) >> 8 ) * ( 0.8f / 16777216.0f );
 		// 主幹の両端を避け、その割合に最も近い主幹点へ枝を接続する。
-		const int32 Attachment = std::clamp( static_cast<int32>( std::lround( AttachmentT * static_cast<float32>( Segments ) ) ), 1, Segments - 1 );
+		const int32 Attachment = NMath::Clamp( static_cast<int32>( std::lround( AttachmentT * static_cast<float32>( Segments ) ) ), 1, Segments - 1 );
 		// 生成中の主幹の座標をそのまま共有する、枝の付け根。
 		const FVector3 Origin = Out.Strips[0].Points[Attachment].Position;
 		// 枝ごとに、主幹と違う形状を作るシード。
@@ -194,11 +197,11 @@ void NEffectPath::BuildLightning( const FEffectPathDefinition& Definition, uint3
 		if ( Tip == Origin ) continue;
 		// 幹と同じ時刻の揺れを使うが、独立した一点列として描く枝。
 		FEffectPathGeometry::FStrip Strip;
-		if ( !BuildStrip( Origin, Tip, std::max( Segments / 3, 2 ), Amplitude * 0.35f, Width * 0.55f, Color, BranchSeed, NoiseTime, true, Strip ) )
+		if ( !BuildStrip( Origin, Tip, NMath::Max( Segments / 3, 2 ), Amplitude * 0.35f, Width * 0.55f, Color, BranchSeed, NoiseTime, true, Strip ) )
 		{
 			Out.Strips.Reset();
 			return;
 		}
-		Out.Strips.Add( std::move( Strip ) );
+		Out.Strips.Add( MoveTemp( Strip ) );
 	}
 }

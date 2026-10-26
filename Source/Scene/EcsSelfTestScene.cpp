@@ -12,6 +12,7 @@
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Time/PlatformTime.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Component/TransformComponent.h"
 #include "Library/Framework/Ecs/BuiltinSystems.h"
 #include "Library/Framework/Ecs/System.h"
@@ -417,7 +418,7 @@ namespace
 		}
 		const int32 X = 320 + static_cast<int32>( P.x * 10.0f + Wobble );
 		const int32 Y = 240 + static_cast<int32>( P.y * 10.0f - Wobble );
-		const int32 H = static_cast<int32>( Box.HalfSize + ( Box.bHeavy != 0 ? std::fabs( Wobble ) : 0.0f ) );
+		const int32 H = static_cast<int32>( Box.HalfSize + ( Box.bHeavy != 0 ? NMath::Abs( Wobble ) : 0.0f ) );
 		Draw.Box( X - H, Y - H, X + H, Y + H, Box.Color );
 	}
 
@@ -1229,7 +1230,7 @@ void CEcsSelfTestScene::RunBenchmark()
 		}
 		const int64 Start = NPlatformTime::GetTicks();
 		World.Update( Jobs );
-		BestMs = std::min( BestMs, NPlatformTime::TicksToMs( NPlatformTime::GetTicks() - Start ) );
+		BestMs = NMath::Min( BestMs, NPlatformTime::TicksToMs( NPlatformTime::GetTicks() - Start ) );
 	}
 	LOG( LogEcsSelfTest, Log, "BENCH: Update of %d transform(s) (max depth %d): %.3f ms (best of %d), job workers %d", World.GetNumNodes(), World.GetMaxDepth(), BestMs, NumRuns,
 		 Jobs ? Jobs->GetNumWorkers() : -1 );
@@ -1249,11 +1250,11 @@ void CEcsSelfTestScene::RunBenchmark()
 	{
 		int64 Start = NPlatformTime::GetTicks();
 		GetSystems().Run( NEcs::EPhase::PreUpdate, 0.016f, ~0ull, GetEcsWorld(), GetTransformWorld(), Jobs );
-		SystemMs = std::min( SystemMs, NPlatformTime::TicksToMs( NPlatformTime::GetTicks() - Start ) );
+		SystemMs = NMath::Min( SystemMs, NPlatformTime::TicksToMs( NPlatformTime::GetTicks() - Start ) );
 
 		Start = NPlatformTime::GetTicks();
 		for ( const TSharedPtr<CGameObject>& Node : TickNodes ) Node->Tick( 0.016f );
-		TickMs = std::min( TickMs, NPlatformTime::TicksToMs( NPlatformTime::GetTicks() - Start ) );
+		TickMs = NMath::Min( TickMs, NPlatformTime::TicksToMs( NPlatformTime::GetTicks() - Start ) );
 	}
 	LOG( LogEcsSelfTest, Log, "BENCH: rotating %d object(s): system %.3f ms, virtual Tick loop %.3f ms (best of %d), job workers %d", NumBench, SystemMs, TickMs, NumRuns,
 		 Jobs ? Jobs->GetNumWorkers() : -1 );
@@ -1315,15 +1316,15 @@ void CEcsSelfTestScene::RunDrawBenchmark()
 				for ( const int32 Entity : Entities ) GetSystems().ReplayDraw( Entity, *Executor );
 				RenderVertex();   // DxLib に溜まった頂点を吐き出すところまで含める
 				const int64 Replayed = NPlatformTime::GetTicks();
-				RecordMs = std::min( RecordMs, NPlatformTime::TicksToMs( Recorded - Start ) );
-				ReplayMs = std::min( ReplayMs, NPlatformTime::TicksToMs( Replayed - Recorded ) );
-				SystemTotalMs = std::min( SystemTotalMs, NPlatformTime::TicksToMs( Replayed - Start ) );
+				RecordMs = NMath::Min( RecordMs, NPlatformTime::TicksToMs( Recorded - Start ) );
+				ReplayMs = NMath::Min( ReplayMs, NPlatformTime::TicksToMs( Replayed - Recorded ) );
+				SystemTotalMs = NMath::Min( SystemTotalMs, NPlatformTime::TicksToMs( Replayed - Start ) );
 
 				ClearDrawScreen();
 				Start = NPlatformTime::GetTicks();
 				for ( const TSharedPtr<CDrawBenchLegacyNode>& Node : LegacyNodes ) Node->Draw();
 				RenderVertex();
-				LegacyMs = std::min( LegacyMs, NPlatformTime::TicksToMs( NPlatformTime::GetTicks() - Start ) );
+				LegacyMs = NMath::Min( LegacyMs, NPlatformTime::TicksToMs( NPlatformTime::GetTicks() - Start ) );
 			}
 			LOG( LogEcsSelfTest, Log, "BENCH: drawing %d box(es) [%s per-object work]: draw system = record %.3f ms (parallel) + DxLib replay %.3f ms = %.3f ms, direct virtual Draw() loop %.3f ms (best of %d), job workers %d",
 				 NumBench, Heavy != 0 ? "heavy" : "light", RecordMs, ReplayMs, SystemTotalMs, LegacyMs, NumRuns, Jobs ? Jobs->GetNumWorkers() : -1 );

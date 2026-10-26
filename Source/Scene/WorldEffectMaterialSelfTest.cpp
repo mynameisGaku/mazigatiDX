@@ -2,6 +2,7 @@
 #include <cmath>
 #include <limits>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/DefinitionDocument.h"
 #include "Library/Framework/Effect/EffectMaterialDefinition.h"
 #include "Library/Framework/Effect/ParticleEffect.h"
@@ -27,7 +28,7 @@ namespace
 		// 途中で補間方法を切り替えながら評価する曲線。
 		FEffectScalarCurve Curve;
 		C.Near( Curve.Evaluate( 0.5f, 7.0f ), 7.0, 0.0, "空の曲線は呼び出し元の既定値を返す" );
-		C.Near( Curve.Evaluate( 0.5f, std::numeric_limits<float32>::infinity() ), 0.0, 0.0, "空の曲線の非有限既定値は有限な 0 に置き換える" );
+		C.Near( Curve.Evaluate( 0.5f, TNumericLimits<float32>::Infinity() ), 0.0, 0.0, "空の曲線の非有限既定値は有限な 0 に置き換える" );
 		AddKey( Curve, 0.0f, 2.0f );
 		AddKey( Curve, 0.5f, 4.0f );
 		AddKey( Curve, 1.0f, 6.0f );
@@ -44,8 +45,8 @@ namespace
 		AddKey( Curve, 1.0f, 6.0f );
 		Curve.Interpolation = FEffectScalarCurve::EInterpolation::Smooth;
 		C.Near( Curve.Evaluate( 0.25f, 0.0f ), 2.625, 1.0e-6, "Smooth は smoothstep の係数で値を補間する" );
-		C.Near( Curve.Evaluate( std::numeric_limits<float32>::quiet_NaN(), 9.0f ), 9.0, 0.0, "非有限の時刻は安全な既定値を返す" );
-		C.Near( Curve.Evaluate( 0.5f, std::numeric_limits<float32>::infinity() ), 4.0, 0.0, "キーがある曲線は未使用の非有限既定値を参照しない" );
+		C.Near( Curve.Evaluate( TNumericLimits<float32>::QuietNaN(), 9.0f ), 9.0, 0.0, "非有限の時刻は安全な既定値を返す" );
+		C.Near( Curve.Evaluate( 0.5f, TNumericLimits<float32>::Infinity() ), 4.0, 0.0, "キーがある曲線は未使用の非有限既定値を参照しない" );
 		FEffectScalarCurve Unsorted; // 順番と時刻重複への耐性を調べる曲線。
 		AddKey( Unsorted, 0.75f, 7.0f );
 		AddKey( Unsorted, 0.25f, 3.0f );
@@ -66,24 +67,24 @@ namespace
 		FEffectScalarCurve Invalid; // 順序・有限性・時刻範囲を壊した曲線。
 		AddKey( Invalid, 0.7f, 1.0f );
 		AddKey( Invalid, 0.2f, 2.0f );
-		AddKey( Invalid, 0.2f, std::numeric_limits<float32>::infinity() );
+		AddKey( Invalid, 0.2f, TNumericLimits<float32>::Infinity() );
 		AddKey( Invalid, 1.1f, 4.0f );
 		for ( int32 Index = 0; Index < FEffectScalarCurve::MaxKeys; ++Index ) AddKey( Invalid, 0.5f, 1.0f );
 		C.Check( Invalid.Validate().Num() >= 4, "重複・降順・範囲外・非有限・キー数上限超過を検出する" );
 		FEffectScalarCurve BelowRange; // 一つの時刻だけを下限より外した曲線。
 		AddKey( BelowRange, -0.1f, 2.0f );
-		C.Check( BelowRange.Validate().Num() == 1 && std::isfinite( BelowRange.Evaluate( 0.5f, 0.0f ) ), "時刻 -0.1 だけを持つ曲線は単独で範囲エラーになり、安全に評価できる" );
+		C.Check( BelowRange.Validate().Num() == 1 && NMath::IsFinite( BelowRange.Evaluate( 0.5f, 0.0f ) ), "時刻 -0.1 だけを持つ曲線は単独で範囲エラーになり、安全に評価できる" );
 		FEffectScalarCurve AboveRange; // 一つの時刻だけを上限より外した曲線。
 		AddKey( AboveRange, 1.1f, 2.0f );
-		C.Check( AboveRange.Validate().Num() == 1 && std::isfinite( AboveRange.Evaluate( 0.5f, 0.0f ) ), "時刻 1.1 だけを持つ曲線は単独で範囲エラーになり、安全に評価できる" );
+		C.Check( AboveRange.Validate().Num() == 1 && NMath::IsFinite( AboveRange.Evaluate( 0.5f, 0.0f ) ), "時刻 1.1 だけを持つ曲線は単独で範囲エラーになり、安全に評価できる" );
 		FEffectScalarCurve DuplicateTime; // 同じ時刻だけで順序条件を壊す曲線。
 		AddKey( DuplicateTime, 0.4f, 1.0f );
 		AddKey( DuplicateTime, 0.4f, 2.0f );
-		C.Check( DuplicateTime.Validate().Num() == 1 && std::isfinite( DuplicateTime.Evaluate( 0.4f, 0.0f ) ), "同時刻の二キーだけを持つ曲線を単独で検出し、安全に評価する" );
+		C.Check( DuplicateTime.Validate().Num() == 1 && NMath::IsFinite( DuplicateTime.Evaluate( 0.4f, 0.0f ) ), "同時刻の二キーだけを持つ曲線を単独で検出し、安全に評価する" );
 		FEffectScalarCurve DescendingTime; // 昇順だけを壊した曲線。
 		AddKey( DescendingTime, 0.8f, 1.0f );
 		AddKey( DescendingTime, 0.2f, 2.0f );
-		C.Check( DescendingTime.Validate().Num() == 1 && std::isfinite( DescendingTime.Evaluate( 0.5f, 0.0f ) ), "降順の二キーだけを持つ曲線を単独で検出し、安全に評価する" );
+		C.Check( DescendingTime.Validate().Num() == 1 && NMath::IsFinite( DescendingTime.Evaluate( 0.5f, 0.0f ) ), "降順の二キーだけを持つ曲線を単独で検出し、安全に評価する" );
 		FEffectScalarCurve TooMany; // 33 個目の値を評価で無視する曲線。
 		for ( int32 Index = 0; Index <= FEffectScalarCurve::MaxKeys; ++Index ) AddKey( TooMany, static_cast<float32>( Index ) / FEffectScalarCurve::MaxKeys, 0.0f );
 		TooMany.Keys.Last().Value = 99.0f;
@@ -97,7 +98,7 @@ namespace
 		FEffectScalarCurve Malformed; // 不正 JSON の検出対象。
 		TArray<FString> Warnings; // 読み込み内容の警告。
 		const NlohmannJson MalformedJson = NlohmannJson::parse( R"({"Interpolation":"Cubic","Keys":[{"Time":"bad","Value":0.5}]})" ); // 型と補間名を壊した入力。
-		C.Check( FEffectScalarCurve::FromJson( MalformedJson, Malformed, &Warnings ) && !Warnings.IsEmpty() && !Malformed.Validate().IsEmpty() && std::isfinite( Malformed.Evaluate( 0.5f, 4.0f ) ), "未知補間と文字列の時刻を不正状態として残し、評価だけは安全にする" );
+		C.Check( FEffectScalarCurve::FromJson( MalformedJson, Malformed, &Warnings ) && !Warnings.IsEmpty() && !Malformed.Validate().IsEmpty() && NMath::IsFinite( Malformed.Evaluate( 0.5f, 4.0f ) ), "未知補間と文字列の時刻を不正状態として残し、評価だけは安全にする" );
 		C.Check( FEffectScalarCurve::FromJson( NlohmannJson::object( { { "Keys", 1 } } ), Malformed ) && !Malformed.Validate().IsEmpty(), "配列でない Keys を有効な空曲線へ変換しない" );
 	}
 

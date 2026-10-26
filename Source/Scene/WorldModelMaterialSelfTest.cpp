@@ -13,6 +13,7 @@
 #include "AssetSelfTestSupport.h"
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Core/Interfaces/Render/DrawModelMaterial.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Animation/ModelAnimator.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Asset/StaticModelSurface.h"
@@ -203,7 +204,7 @@ namespace NWorldTest
 			const bool bReread = FWorldModelMaterialEffect::FromJson( SavedJson, Reread ); // marker付きJSONの再読結果
 			Checker.Check( bParsed && bReread && !Parsed.IsValidSettings() && !Reread.IsValidSettings() && Parsed.IsSameAs( Reread ) && SavedJson == Reread.ToJson(), "型不正はmarkerを保存再読後も保持する: %s", CaseName );
 		};
-		const uint64 TooLargeMaterialIndex = static_cast<uint64>( ( std::numeric_limits<int32>::max )() ) + 1ull; // int32最大値を超えるunsigned入力
+		const uint64 TooLargeMaterialIndex = static_cast<uint64>( TNumericLimits<int32>::Max() ) + 1ull; // int32最大値を超えるunsigned入力
 		const int64 UnsignedWrapCandidate = 4294967296ll; // int32へwrapし得るsigned 2^32入力
 		const int64 UnsignedWrapCandidatePlusTwo = 4294967298ll; // wrap後の小値が2となるsigned入力
 		const int64 SignedUnderflowCandidate = -2147483649ll; // int32最小値を一つ下回るsigned入力
@@ -235,7 +236,7 @@ namespace NWorldTest
 		CheckInvalidRoundTrip( InvalidEffectRoot, "Effect root type" );
 
 		// int32境界値は変換で欠落せず、負のsemantic値だけValidateが拒否する。
-		for ( const int32 BoundaryIndex : { ( std::numeric_limits<int32>::min )(), ( std::numeric_limits<int32>::max )() } )
+		for ( const int32 BoundaryIndex : { TNumericLimits<int32>::Min(), TNumericLimits<int32>::Max() } )
 		{
 			FWorldModelMaterialEffect Boundary = Complete; // int32端を試すbinding値
 			Boundary.MaterialIndex = BoundaryIndex;
@@ -378,7 +379,7 @@ namespace NWorldTest
 		ProbeScene.GetSystems().Run( NEcs::EPhase::PreUpdate, 0.25f, ~0ull, ProbeScene.GetEcsWorld(), ProbeScene.GetTransformWorld(), nullptr );
 		const double TimeAfterUpdate = ActiveAnimator != nullptr ? ActiveAnimator->GetMaterialEffect().GetEffectTime() : -1.0; // real PreUpdate後のeffect clock
 		const double OtherPausedTime = OtherEffectAnimator != nullptr ? OtherEffectAnimator->GetMaterialEffect().GetEffectTime() : -1.0; // pause側個体のPreUpdate後clock
-		Checker.Check( ActiveAnimator != nullptr && OtherEffectAnimator != nullptr && std::fabs( TimeBeforeUpdate ) < 1.0e-9 && std::fabs( TimeAfterUpdate - 0.25 ) < 1.0e-6 && std::fabs( OtherPausedTime ) < 1.0e-9, "ECS PreUpdateは一個体の時計を進め、pauseした別個体時計を独立保持する" );
+		Checker.Check( ActiveAnimator != nullptr && OtherEffectAnimator != nullptr && NMath::Abs( TimeBeforeUpdate ) < 1.0e-9 && NMath::Abs( TimeAfterUpdate - 0.25 ) < 1.0e-6 && NMath::Abs( OtherPausedTime ) < 1.0e-9, "ECS PreUpdateは一個体の時計を進め、pauseした別個体時計を独立保持する" );
 
 		FDrawBuffer NativeBeforeStop; // Stop後に復帰したreal native command
 		if ( ActiveAnimator != nullptr ) { ActiveAnimator->GetMaterialEffect().Stop(); NativeBeforeStop = RecordWorldModelAnimator( *ActiveAnimator ); }
@@ -436,7 +437,7 @@ namespace NWorldTest
 		FDrawModelMaterialData ResourcePayload{}; // commandから読む画像handleと材質値
 		int32 ResourcePayloadCount = 0; // 固定ModelMaterial payloadの個数
 		if ( !ResourceBuffer.Words.empty() ) ForEachDrawCommand( FDrawSpan{ ResourceBuffer.Words.data(), static_cast<int32>( ResourceBuffer.Words.size() ) }, [&]( const FDrawCommandView& Command ) { if ( Command.Type == EDrawCommand::ModelMaterial3D && Command.NumDataWords == static_cast<int32>( sizeof( FDrawModelMaterialData ) / sizeof( uint32 ) ) ) { ResourcePayload = Command.Read<FDrawModelMaterialData>(); ++ResourcePayloadCount; } } );
-		const bool bImagesPreparedAndRecorded = ResourceAnimator != nullptr && ResourceAnimator->GetMaterialEffect().IsPrepared() && ResourcePayloadCount == 1 && ResourcePayload.Material.Material.MaskTexture == ExpectedResourceMaskHandle && ResourcePayload.Material.DistortionTexture == ExpectedResourceNoiseHandle && ResourcePayload.Material.Material.bDissolve == 1 && std::fabs( ResourcePayload.Material.DistortionStrength - 0.25f ) < 1.0e-6f; // 既知の画像handleと正noise強度が命令へ届いたか
+		const bool bImagesPreparedAndRecorded = ResourceAnimator != nullptr && ResourceAnimator->GetMaterialEffect().IsPrepared() && ResourcePayloadCount == 1 && ResourcePayload.Material.Material.MaskTexture == ExpectedResourceMaskHandle && ResourcePayload.Material.DistortionTexture == ExpectedResourceNoiseHandle && ResourcePayload.Material.Material.bDissolve == 1 && NMath::Abs( ResourcePayload.Material.DistortionStrength - 0.25f ) < 1.0e-6f; // 既知の画像handleと正noise強度が命令へ届いたか
 		const bool bResourceLoadsExact = Fake.NumTextureLoads == LoadsBeforeResourceSpawn + 2 && Fake.Textures.count( ExpectedResourceMaskHandle ) == 1 && Fake.Textures.count( ExpectedResourceNoiseHandle ) == 1; // 別path画像を二枚だけbackendへ読んだか
 		const bool bResourceSiblingRemainsNative = ResourceSiblingAnimator != nullptr && CountWorldModelMaterialCommands( ResourceSiblingBuffer, EDrawCommand::Model3D ) == 1 && CountWorldModelMaterialCommands( ResourceSiblingBuffer, EDrawCommand::ModelMaterial3D ) == 0; // resource worldの非対象個体がnativeか
 		Checker.Check( bResourceImagesWritten && bImagesPreparedAndRecorded && bResourceLoadsExact && Fake.NumStaticModelSurfaceQueries == QueriesBeforeResourceSpawn + 1 && Fake.NumModelMaterialGeometryCreates == CreatesBeforeResourceSpawn + 1, "有効mask/noiseをspawn時に二枚読み、既知handle・Dissolve・Strengthを準備済みcommandへ渡す" );
@@ -584,7 +585,7 @@ namespace NWorldTest
 		const double TimeBeforeUpdate = EffectAnimator != nullptr ? EffectAnimator->GetMaterialEffect().GetEffectTime() : -1.0; // real PreUpdate前のeffect clock
 		ProbeScene.GetSystems().Run( NEcs::EPhase::PreUpdate, 0.2f, ~0ull, ProbeScene.GetEcsWorld(), ProbeScene.GetTransformWorld(), nullptr );
 		const double TimeAfterUpdate = EffectAnimator != nullptr ? EffectAnimator->GetMaterialEffect().GetEffectTime() : -1.0; // real PreUpdate後のeffect clock
-		Checker.Check( EffectAnimator != nullptr && std::fabs( TimeBeforeUpdate ) < 1.0e-9 && std::fabs( TimeAfterUpdate - 0.2 ) < 1.0e-6, "実world spawnのModelAnimatorはECS PreUpdateでbinding固有clockを進める" );
+		Checker.Check( EffectAnimator != nullptr && NMath::Abs( TimeBeforeUpdate ) < 1.0e-9 && NMath::Abs( TimeAfterUpdate - 0.2 ) < 1.0e-6, "実world spawnのModelAnimatorはECS PreUpdateでbinding固有clockを進める" );
 
 		FDrawBuffer NativeBeforeStop; // Stop後に復帰したreal native command
 		if ( EffectAnimator != nullptr ) { EffectAnimator->GetMaterialEffect().Stop(); NativeBeforeStop = RecordWorldModelAnimator( *EffectAnimator ); }

@@ -5,6 +5,7 @@
 #include <limits>
 #include <string>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/DefinitionDocument.h"
 #include "Library/Framework/Effect/EffectUVDistortionDefinition.h"
 #include "Library/Framework/Effect/ParticleEffect.h"
@@ -131,7 +132,7 @@ namespace
 		C.Check( !MissingTexture.IsValidSettings() && !MissingTexture.Validate().IsEmpty(), "有効Distortionの空Textureを拒否する" );
 		// 1項目ずつ壊した設定がvalidationで拒否されることを調べる。
 		const auto CheckInvalid = [&C]( const FEffectUVDistortionDefinition& Value, const char* Description ) { C.Check( !Value.IsValidSettings() && !Value.Validate().IsEmpty(), Description ); };
-		const float32 InvalidFloatValues[] = { 0.0f, -0.25f, 128.01f, std::numeric_limits<float32>::quiet_NaN(), std::numeric_limits<float32>::infinity() };
+		const float32 InvalidFloatValues[] = { 0.0f, -0.25f, 128.01f, TNumericLimits<float32>::QuietNaN(), TNumericLimits<float32>::Infinity() };
 		for ( int32 Axis = 0; Axis < 2; ++Axis )
 		{
 			for ( const float32 Value : InvalidFloatValues )
@@ -142,7 +143,7 @@ namespace
 				else InvalidScale.UVScale.y = Value;
 				CheckInvalid( InvalidScale, "UVScaleの各成分は非正・128超・NaN・Infを個別に拒否する" );
 			}
-			for ( const float32 Value : { -128.01f, 128.01f, std::numeric_limits<float32>::quiet_NaN(), std::numeric_limits<float32>::infinity() } )
+			for ( const float32 Value : { -128.01f, 128.01f, TNumericLimits<float32>::QuietNaN(), TNumericLimits<float32>::Infinity() } )
 			{
 				// 一成分だけ範囲外のUVScroll。
 				FEffectUVDistortionDefinition InvalidScroll;
@@ -168,7 +169,7 @@ namespace
 		AddStrength( HighStrength, 0.5f, 1.01f );
 		CheckInvalid( HighStrength, "1を超えるStrength値を拒否する" );
 		FEffectUVDistortionDefinition NonFiniteStrength;
-		AddStrength( NonFiniteStrength, 0.5f, std::numeric_limits<float32>::quiet_NaN() );
+		AddStrength( NonFiniteStrength, 0.5f, TNumericLimits<float32>::QuietNaN() );
 		CheckInvalid( NonFiniteStrength, "非有限Strength値を拒否する" );
 		FEffectUVDistortionDefinition BelowTime;
 		AddStrength( BelowTime, -0.1f, 0.5f );
@@ -177,7 +178,7 @@ namespace
 		AddStrength( AboveTime, 1.1f, 0.5f );
 		CheckInvalid( AboveTime, "1を超えるStrength時刻を拒否する" );
 		FEffectUVDistortionDefinition NaNTime;
-		AddStrength( NaNTime, std::numeric_limits<float32>::quiet_NaN(), 0.5f );
+		AddStrength( NaNTime, TNumericLimits<float32>::QuietNaN(), 0.5f );
 		CheckInvalid( NaNTime, "非有限Strength時刻を拒否する" );
 		FEffectUVDistortionDefinition DuplicateTimes;
 		AddStrength( DuplicateTimes, 0.5f, 0.25f );

@@ -6,6 +6,7 @@
 #include <limits>
 
 #include "AssetSelfTestSupport.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EffectEditor.h"
 #include "Library/DebugUI/EffectEditorInternal.h"
 #include "Library/Framework/Asset/AssetManager.h"
@@ -198,7 +199,7 @@ namespace
 	// 浮動小数点座標を独立した許容差で比べる。
 	bool NearCoordinate( float64 A, float64 B, float64 Epsilon )
 	{
-		return std::fabs( A - B ) <= Epsilon;
+		return NMath::Abs( A - B ) <= Epsilon;
 	}
 
 	// command列全体が指定RGBを維持するか確かめる。
@@ -213,7 +214,7 @@ namespace
 	bool HasRadialCircleGuides( const FGuideReadback& Readback, const FVector3& Center, float32 Radius, uint8 R, uint8 G, uint8 Blue )
 	{
 		// float三角関数の丸めを吸収する座標許容差。
-		const float64 Epsilon = std::max( 1.0e-6, static_cast<float64>( Radius ) * 1.0e-4 );
+		const float64 Epsilon = NMath::Max( 1.0e-6, static_cast<float64>( Radius ) * 1.0e-4 );
 		// XY円に属する線分数。
 		int32 XYCount = 0;
 		// XZ円に属する線分数。
@@ -421,7 +422,7 @@ namespace
 		// native playbackが所有する読み取り専用simulation。
 		const FParticleSimulation* Simulation = ParticlePlayback != nullptr ? &ParticlePlayback->GetSimulation() : nullptr;
 		// 半秒の一様加速後に期待する速度。
-		const bool bForceApplied = Simulation != nullptr && Simulation->Emitters.IsValidIndex( 0 ) && Simulation->Emitters[0].Particles.IsValidIndex( 0 ) && std::fabs( Simulation->Emitters[0].Particles[0].Velocity.x - 1.0f ) < 1.0e-4f;
+		const bool bForceApplied = Simulation != nullptr && Simulation->Emitters.IsValidIndex( 0 ) && Simulation->Emitters[0].Particles.IsValidIndex( 0 ) && NMath::Abs( Simulation->Emitters[0].Particles[0].Velocity.x - 1.0f ) < 1.0e-4f;
 		C.Check( bForceApplied, "通常IEffectPlaybackの固定刻みで保存済み一様場を適用する" );
 		if ( Playback.IsValid() )
 		{
@@ -704,7 +705,7 @@ namespace
 		{
 			// 相対位置の差。
 			const FVector3 Delta = ( A.Emitters[EmitterIndex].Particles[ParticleIndex].Position - CenterA ) - ( B.Emitters[EmitterIndex].Particles[ParticleIndex].Position - CenterB );
-			Worst = std::max( Worst, static_cast<float64>( Delta.Length() ) );
+			Worst = NMath::Max( Worst, static_cast<float64>( Delta.Length() ) );
 		}
 		return Worst;
 	}
@@ -946,17 +947,17 @@ namespace NWorldTest
 		// size余白込みLightning最大距離。
 		const float64 LightningRadius = EndLength * Spread + ParticleRadius;
 		// spawn・travel・粒子・pathを合算した球半径。
-		const float64 EmitterRadius = SpawnRadius + Travel + std::max( ParticleRadius, 0.0 ) + LightningRadius;
+		const float64 EmitterRadius = SpawnRadius + Travel + NMath::Max( ParticleRadius, 0.0 ) + LightningRadius;
 		// 六方向の独立投影結果を集約する値。
 		bool bEmitterExtremesVisible = bFocused;
 		for ( const FVector3& Point : { FVector3( static_cast<float32>( EmitterRadius ), 0.0f, 0.0f ), FVector3( -static_cast<float32>( EmitterRadius ), 0.0f, 0.0f ), FVector3( 0.0f, static_cast<float32>( EmitterRadius ), 0.0f ), FVector3( 0.0f, -static_cast<float32>( EmitterRadius ), 0.0f ), FVector3( 0.0f, 0.0f, static_cast<float32>( EmitterRadius ) ), FVector3( 0.0f, 0.0f, -static_cast<float32>( EmitterRadius ) ) } ) bEmitterExtremesVisible = bEmitterExtremesVisible && IsProjectedInside( State.Camera, Viewport, Point );
 		// 小半径radialの球と矢印を含む手計算範囲。
-		const float64 TinyGuide = std::max( 0.001 * 0.52 + std::clamp( 0.001 * 0.2, 0.25, 1.25 ), 0.001 );
+		const float64 TinyGuide = NMath::Max( 0.001 * 0.52 + NMath::Clamp( 0.001 * 0.2, 0.25, 1.25 ), 0.001 );
 		// radial guide外周の投影結果を集約する値。
 		bool bTinyFieldVisible = bFocused;
 		for ( const FVector3& Point : { FVector3( static_cast<float32>( 2.0 + TinyGuide ), -1.0f, 3.0f ), FVector3( static_cast<float32>( 2.0 - TinyGuide ), -1.0f, 3.0f ), FVector3( 2.0f, static_cast<float32>( -1.0 + TinyGuide ), 3.0f ), FVector3( 2.0f, static_cast<float32>( -1.0 - TinyGuide ), 3.0f ), FVector3( 2.0f, -1.0f, static_cast<float32>( 3.0 + TinyGuide ) ), FVector3( 2.0f, -1.0f, static_cast<float32>( 3.0 - TinyGuide ) ) } ) bTinyFieldVisible = bTinyFieldVisible && IsProjectedInside( State.Camera, Viewport, Point );
 		// 正Radialの球と最短矢印を手計算した合成半径。
-		const float64 PositiveGuide = std::max( 0.25, 0.25 * 0.52 + std::clamp( 0.25 * 0.2, 0.25, 1.25 ) );
+		const float64 PositiveGuide = NMath::Max( 0.25, 0.25 * 0.52 + NMath::Clamp( 0.25 * 0.2, 0.25, 1.25 ) );
 		// 正Radial guide外周の六方向projectionを集約する値。
 		bool bPositiveFieldVisible = bFocused;
 		for ( const FVector3& Point : { FVector3( static_cast<float32>( -3.0 + PositiveGuide ), 1.0f, 2.0f ), FVector3( static_cast<float32>( -3.0 - PositiveGuide ), 1.0f, 2.0f ), FVector3( -3.0f, static_cast<float32>( 1.0 + PositiveGuide ), 2.0f ), FVector3( -3.0f, static_cast<float32>( 1.0 - PositiveGuide ), 2.0f ), FVector3( -3.0f, 1.0f, static_cast<float32>( 2.0 + PositiveGuide ) ), FVector3( -3.0f, 1.0f, static_cast<float32>( 2.0 - PositiveGuide ) ) } ) bPositiveFieldVisible = bPositiveFieldVisible && IsProjectedInside( State.Camera, Viewport, Point );
@@ -1109,7 +1110,7 @@ namespace NWorldTest
 		FEffectEditorState Invalid;
 		// 非有限radiusを含む失敗用definition。
 		FParticleEffectDefinition InvalidDefinition = MakeForceFieldGeometryDefinition();
-		InvalidDefinition.Emitters[0].ForceFields[1].Radius = std::numeric_limits<float32>::quiet_NaN();
+		InvalidDefinition.Emitters[0].ForceFields[1].Radius = TNumericLimits<float32>::QuietNaN();
 		Invalid.Document.Reset( InvalidDefinition );
 		// 不正入力検査前に保つ元camera。
 		const FEditorCamera InvalidCamera = Invalid.Camera;
@@ -1222,7 +1223,7 @@ namespace NWorldTest
 		FDrawContext InvalidEmitterDraw( InvalidEmitterBuffer );
 		NEffectEditorUI::RecordForceFieldGuides( GuideState, InvalidEmitterDraw );
 		GuideState.SelectedEmitter = 0;
-		GuideState.Document.BeginEdit().Emitters[0].ForceFields[0].Strength = std::numeric_limits<float32>::infinity();
+		GuideState.Document.BeginEdit().Emitters[0].ForceFields[0].Strength = TNumericLimits<float32>::Infinity();
 		GuideState.Document.EndEditSession();
 		// 保存値不正fieldの空出力確認buffer。
 		FDrawBuffer InvalidFieldBuffer;

@@ -4,6 +4,7 @@
 #include <cmath>   // std::isfinite: フレームワークに同等の関数がまだ無い
 #include <limits>  // std::numeric_limits<float32>::quiet_NaN: フレームワークに NaN の定数がまだ無い
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EffectEditor.h"
 #include "Library/DebugUI/EffectEditorInternal.h"
 #include "Library/Framework/Asset/AssetManager.h"
@@ -107,10 +108,10 @@ namespace
 		{
 			bInvalidKept = bInvalidKept && Object.Effect.IsSet() && Object.Effect.GetValue().Target == -1;
 		}
-		C.Check( bInvalidKept && !std::isfinite( Odd.Objects[0].Effect.GetValue().TargetOffset.x ) && !std::isfinite( Odd.Objects[1].Effect.GetValue().TargetOffset.x ), "文字列・範囲外・小数の Target は -1、型違いの TargetOffset は有限でない値として残り、勝手に既定値へ直さない" );
+		C.Check( bInvalidKept && !NMath::IsFinite( Odd.Objects[0].Effect.GetValue().TargetOffset.x ) && !NMath::IsFinite( Odd.Objects[1].Effect.GetValue().TargetOffset.x ), "文字列・範囲外・小数の Target は -1、型違いの TargetOffset は有限でない値として残り、勝手に既定値へ直さない" );
 		// 壊れた値をもう一度書いて読んだ定義。
 		FWorldDefinition OddBack;
-		C.Check( FWorldDefinition::FromJson( ParseJsonText( Odd.ToJson().dump().c_str() ), OddBack ) && OddBack.Objects.Num() == 3 && OddBack.Objects[0].Effect.GetValue().Target == -1 && !std::isfinite( OddBack.Objects[0].Effect.GetValue().TargetOffset.x ) && OddBack.ToJson().dump() == Odd.ToJson().dump(), "壊れた値も書き戻しと読み直しで、書き出した内容が変わらない（NaN は JSON 値として等しくならないため、文字列で比べる）" );
+		C.Check( FWorldDefinition::FromJson( ParseJsonText( Odd.ToJson().dump().c_str() ), OddBack ) && OddBack.Objects.Num() == 3 && OddBack.Objects[0].Effect.GetValue().Target == -1 && !NMath::IsFinite( OddBack.Objects[0].Effect.GetValue().TargetOffset.x ) && OddBack.ToJson().dump() == Odd.ToJson().dump(), "壊れた値も書き戻しと読み直しで、書き出した内容が変わらない（NaN は JSON 値として等しくならないため、文字列で比べる）" );
 	}
 
 	// 自己参照・存在しない対象・有限でないずれを、エラーとして報告する。
@@ -217,7 +218,7 @@ namespace
 		// 共有シーンを汚さない、テスト専用のシーン。
 		CScene SpawnScene;
 		// 発射元(1)・標的(2)・存在しない標的(3)・自分自身(4)・有限でないずれ(5)。発射元は標的より前に並べ、生成順に依存しないことも確かめる。
-		FWorldDefinition World = MakeTargetWorld( { MakeTargetObject( 1, "Caster", 2, FVector3( 0.0f, 1.0f, 0.0f ) ), MakePlainObject( 2, "Target", FVector3( 5.0f, 0.0f, 0.0f ) ), MakeTargetObject( 3, "Missing", 9 ), MakeTargetObject( 4, "Self", 4 ), MakeTargetObject( 5, "Infinite", 2, FVector3( std::numeric_limits<float32>::quiet_NaN(), 0.0f, 0.0f ) ) } );
+		FWorldDefinition World = MakeTargetWorld( { MakeTargetObject( 1, "Caster", 2, FVector3( 0.0f, 1.0f, 0.0f ) ), MakePlainObject( 2, "Target", FVector3( 5.0f, 0.0f, 0.0f ) ), MakeTargetObject( 3, "Missing", 9 ), MakeTargetObject( 4, "Self", 4 ), MakeTargetObject( 5, "Infinite", 2, FVector3( TNumericLimits<float32>::QuietNaN(), 0.0f, 0.0f ) ) } );
 		for ( FWorldObject& Object : World.Objects )
 		{
 			if ( !Object.Effect.IsSet() ) continue;
@@ -338,7 +339,7 @@ namespace
 		C.Check( bPlaced && State.bPreviewTargetEnabled && NMath::Abs( State.PreviewTargetPosition.y ) < 1.0e-3f && State.Camera.WorldToScreen( State.View, State.PreviewTargetPosition, Back ) && NMath::Abs( Back.x - 400.0f ) < 1.0f && NMath::Abs( Back.y - 300.0f ) < 1.0f, "画面の位置をクリックすると、その位置の水平面（y = 0）上へ終点を置き、有効にする" );
 		// 画面外・非有限の位置。
 		const FVector3 BeforeFailure = State.PreviewTargetPosition;
-		C.Check( !NEffectEditorUI::SetPreviewTargetFromScreenRay( State, -1.0f, 10.0f ) && !NEffectEditorUI::SetPreviewTargetFromScreenRay( State, 10.0f, 600.0f ) && !NEffectEditorUI::SetPreviewTargetFromScreenRay( State, std::numeric_limits<float32>::quiet_NaN(), 10.0f ) && Near3( State.PreviewTargetPosition, BeforeFailure ), "画面の外・非有限の位置では置かず、終点を変えない" );
+		C.Check( !NEffectEditorUI::SetPreviewTargetFromScreenRay( State, -1.0f, 10.0f ) && !NEffectEditorUI::SetPreviewTargetFromScreenRay( State, 10.0f, 600.0f ) && !NEffectEditorUI::SetPreviewTargetFromScreenRay( State, TNumericLimits<float32>::QuietNaN(), 10.0f ) && Near3( State.PreviewTargetPosition, BeforeFailure ), "画面の外・非有限の位置では置かず、終点を変えない" );
 		// 終点を使わない文書では置けない。
 		FEffectEditorState PlainState;
 		PlainState.Document.Reset( FParticleEffectDefinition() );
@@ -376,7 +377,7 @@ namespace
 		FDrawContext HiddenDraw( Hidden );
 		NEffectEditorUI::RecordPreviewTargetGuides( State, HiddenDraw );
 		State.bShowPreviewTargetGuides = true;
-		State.PreviewTargetPosition = FVector3( std::numeric_limits<float32>::quiet_NaN(), 0.0f, 0.0f );
+		State.PreviewTargetPosition = FVector3( TNumericLimits<float32>::QuietNaN(), 0.0f, 0.0f );
 		FDrawBuffer Invalid;
 		FDrawContext InvalidDraw( Invalid );
 		NEffectEditorUI::RecordPreviewTargetGuides( State, InvalidDraw );

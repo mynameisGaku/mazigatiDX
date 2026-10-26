@@ -8,6 +8,7 @@
 #include "Library/Core/Types/TypeDefinition.h"
 #include "Library/Core/Collection/Optional.h"
 #include "Library/Core/Collection/String.h"
+#include "Library/Core/Types/Utility.h"
 
 //=============================================================================
 // TResult<T, E>
@@ -65,10 +66,10 @@ public:
 	// 生成・破棄
 	//-------------------------------------------------------------------------
 	template<typename... Args>
-	FORCEINLINE static TResult Ok( Args&&... args ) { return TResult( NResultDetail::FOkTag(), std::forward<Args>( args )... ); }
+	FORCEINLINE static TResult Ok( Args&&... args ) { return TResult( NResultDetail::FOkTag(), Forward<Args>( args )... ); }
 
 	template<typename... Args>
-	FORCEINLINE static TResult Err( Args&&... args ) { return TResult( NResultDetail::FErrTag(), std::forward<Args>( args )... ); }
+	FORCEINLINE static TResult Err( Args&&... args ) { return TResult( NResultDetail::FErrTag(), Forward<Args>( args )... ); }
 
 	FORCEINLINE TResult( const TResult& Other ) : bIsOk( Other.bIsOk )
 	{
@@ -79,8 +80,8 @@ public:
 	TResult( TResult&& Other ) noexcept( std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_constructible_v<E> )
 		: bIsOk( Other.bIsOk )
 	{
-		if ( bIsOk ) new ( Storage ) T( std::move( Other.OkRef() ) );
-		else new ( Storage ) E( std::move( Other.ErrRef() ) );
+		if ( bIsOk ) new ( Storage ) T( MoveTemp( Other.OkRef() ) );
+		else new ( Storage ) E( MoveTemp( Other.ErrRef() ) );
 	}
 
 	FORCEINLINE ~TResult() { Destroy(); }
@@ -103,8 +104,8 @@ public:
 		{
 			Destroy();
 			bIsOk = Other.bIsOk;
-			if ( bIsOk ) new ( Storage ) T( std::move( Other.OkRef() ) );
-			else new ( Storage ) E( std::move( Other.ErrRef() ) );
+			if ( bIsOk ) new ( Storage ) T( MoveTemp( Other.OkRef() ) );
+			else new ( Storage ) E( MoveTemp( Other.ErrRef() ) );
 		}
 		return *this;
 	}
@@ -133,7 +134,7 @@ public:
 	FORCEINLINE T&& Unwrap() &&
 	{
 		if ( !bIsOk ) NResultDetail::Panic( "TResult::Unwrap() called on Err" );
-		return std::move( OkRef() );
+		return MoveTemp( OkRef() );
 	}
 
 	// 成功時に呼ぶと abort する
@@ -150,16 +151,16 @@ public:
 	FORCEINLINE E&& UnwrapErr() &&
 	{
 		if ( bIsOk ) NResultDetail::Panic( "TResult::UnwrapErr() called on Ok" );
-		return std::move( ErrRef() );
+		return MoveTemp( ErrRef() );
 	}
 
 	template<typename U>
-	FORCEINLINE T UnwrapOr( U&& Default ) const& { return bIsOk ? OkRef() : static_cast<T>( std::forward<U>( Default ) ); }
+	FORCEINLINE T UnwrapOr( U&& Default ) const& { return bIsOk ? OkRef() : static_cast<T>( Forward<U>( Default ) ); }
 	template<typename U>
-	FORCEINLINE T UnwrapOr( U&& Default ) && { return bIsOk ? std::move( OkRef() ) : static_cast<T>( std::forward<U>( Default ) ); }
+	FORCEINLINE T UnwrapOr( U&& Default ) && { return bIsOk ? MoveTemp( OkRef() ) : static_cast<T>( Forward<U>( Default ) ); }
 
 	template<typename F>
-	FORCEINLINE T UnwrapOrElse( F&& Func ) const& { return bIsOk ? OkRef() : static_cast<T>( std::forward<F>( Func )( ErrRef() ) ); }
+	FORCEINLINE T UnwrapOrElse( F&& Func ) const& { return bIsOk ? OkRef() : static_cast<T>( Forward<F>( Func )( ErrRef() ) ); }
 
 	// 値へのポインタ（エラー時は nullptr）
 	FORCEINLINE T* TryGet() noexcept { return bIsOk ? &OkRef() : nullptr; }
@@ -174,39 +175,39 @@ public:
 	//-------------------------------------------------------------------------
 	// Ok(T) -> Ok(F(T))、Err はそのまま
 	template<typename F>
-	FORCEINLINE auto Map( F&& Func ) const& { return MapImpl( *this, std::forward<F>( Func ) ); }
+	FORCEINLINE auto Map( F&& Func ) const& { return MapImpl( *this, Forward<F>( Func ) ); }
 	template<typename F>
-	FORCEINLINE auto Map( F&& Func ) && { return MapImpl( std::move( *this ), std::forward<F>( Func ) ); }
+	FORCEINLINE auto Map( F&& Func ) && { return MapImpl( MoveTemp( *this ), Forward<F>( Func ) ); }
 
 	// Err(E) -> Err(F(E))、Ok はそのまま
 	template<typename F>
-	FORCEINLINE auto MapErr( F&& Func ) const& { return MapErrImpl( *this, std::forward<F>( Func ) ); }
+	FORCEINLINE auto MapErr( F&& Func ) const& { return MapErrImpl( *this, Forward<F>( Func ) ); }
 	template<typename F>
-	FORCEINLINE auto MapErr( F&& Func ) && { return MapErrImpl( std::move( *this ), std::forward<F>( Func ) ); }
+	FORCEINLINE auto MapErr( F&& Func ) && { return MapErrImpl( MoveTemp( *this ), Forward<F>( Func ) ); }
 
 	// Ok(T) -> F(T) (F は TResult<U, E> を返す)、Err はそのまま
 	template<typename F>
-	FORCEINLINE auto AndThen( F&& Func ) const& { return AndThenImpl( *this, std::forward<F>( Func ) ); }
+	FORCEINLINE auto AndThen( F&& Func ) const& { return AndThenImpl( *this, Forward<F>( Func ) ); }
 	template<typename F>
-	FORCEINLINE auto AndThen( F&& Func ) && { return AndThenImpl( std::move( *this ), std::forward<F>( Func ) ); }
+	FORCEINLINE auto AndThen( F&& Func ) && { return AndThenImpl( MoveTemp( *this ), Forward<F>( Func ) ); }
 
 	// Err(E) -> F(E) (F は TResult<T, E2> を返す)、Ok はそのまま
 	template<typename F>
-	FORCEINLINE auto OrElse( F&& Func ) const& { return OrElseImpl( *this, std::forward<F>( Func ) ); }
+	FORCEINLINE auto OrElse( F&& Func ) const& { return OrElseImpl( *this, Forward<F>( Func ) ); }
 	template<typename F>
-	FORCEINLINE auto OrElse( F&& Func ) && { return OrElseImpl( std::move( *this ), std::forward<F>( Func ) ); }
+	FORCEINLINE auto OrElse( F&& Func ) && { return OrElseImpl( MoveTemp( *this ), Forward<F>( Func ) ); }
 
 private:
 	template<typename... Args>
 	FORCEINLINE explicit TResult( NResultDetail::FOkTag, Args&&... args ) : bIsOk( true )
 	{
-		new ( Storage ) T( std::forward<Args>( args )... );
+		new ( Storage ) T( Forward<Args>( args )... );
 	}
 
 	template<typename... Args>
 	FORCEINLINE explicit TResult( NResultDetail::FErrTag, Args&&... args ) : bIsOk( false )
 	{
-		new ( Storage ) E( std::forward<Args>( args )... );
+		new ( Storage ) E( Forward<Args>( args )... );
 	}
 
 	FORCEINLINE void Destroy() noexcept
@@ -225,13 +226,13 @@ private:
 	FORCEINLINE static decltype( auto ) ForwardOk( Self&& This )
 	{
 		if constexpr ( std::is_lvalue_reference_v<Self> ) return ( This.OkRef() );
-		else return std::move( This.OkRef() );
+		else return MoveTemp( This.OkRef() );
 	}
 	template<typename Self>
 	FORCEINLINE static decltype( auto ) ForwardErr( Self&& This )
 	{
 		if constexpr ( std::is_lvalue_reference_v<Self> ) return ( This.ErrRef() );
-		else return std::move( This.ErrRef() );
+		else return MoveTemp( This.ErrRef() );
 	}
 
 	template<typename Self, typename F>
@@ -240,30 +241,30 @@ private:
 	template<typename Self, typename F>
 	FORCEINLINE static auto MapErrImpl( Self&& This, F&& Func )
 	{
-		using E2  = std::decay_t<std::invoke_result_t<F, decltype( ForwardErr( std::forward<Self>( This ) ) )>>;
+		using E2  = std::decay_t<std::invoke_result_t<F, decltype( ForwardErr( Forward<Self>( This ) ) )>>;
 		using Out = TResult<T, E2>;
-		if ( This.IsOk() ) return Out::Ok( ForwardOk( std::forward<Self>( This ) ) );
-		return Out::Err( std::forward<F>( Func )( ForwardErr( std::forward<Self>( This ) ) ) );
+		if ( This.IsOk() ) return Out::Ok( ForwardOk( Forward<Self>( This ) ) );
+		return Out::Err( Forward<F>( Func )( ForwardErr( Forward<Self>( This ) ) ) );
 	}
 
 	template<typename Self, typename F>
 	FORCEINLINE static auto AndThenImpl( Self&& This, F&& Func )
 	{
-		using Out = std::decay_t<std::invoke_result_t<F, decltype( ForwardOk( std::forward<Self>( This ) ) )>>;
+		using Out = std::decay_t<std::invoke_result_t<F, decltype( ForwardOk( Forward<Self>( This ) ) )>>;
 		static_assert( NResultDetail::TIsResult<Out>::value, "AndThen: callback must return TResult" );
 		static_assert( std::is_same_v<typename Out::ErrorType, E>, "AndThen: callback must return the same error type" );
-		if ( This.IsErr() ) return Out::Err( ForwardErr( std::forward<Self>( This ) ) );
-		return std::forward<F>( Func )( ForwardOk( std::forward<Self>( This ) ) );
+		if ( This.IsErr() ) return Out::Err( ForwardErr( Forward<Self>( This ) ) );
+		return Forward<F>( Func )( ForwardOk( Forward<Self>( This ) ) );
 	}
 
 	template<typename Self, typename F>
 	FORCEINLINE static auto OrElseImpl( Self&& This, F&& Func )
 	{
-		using Out = std::decay_t<std::invoke_result_t<F, decltype( ForwardErr( std::forward<Self>( This ) ) )>>;
+		using Out = std::decay_t<std::invoke_result_t<F, decltype( ForwardErr( Forward<Self>( This ) ) )>>;
 		static_assert( NResultDetail::TIsResult<Out>::value, "OrElse: callback must return TResult" );
 		static_assert( std::is_same_v<typename Out::ValueType, T>, "OrElse: callback must return the same value type" );
-		if ( This.IsOk() ) return Out::Ok( ForwardOk( std::forward<Self>( This ) ) );
-		return std::forward<F>( Func )( ForwardErr( std::forward<Self>( This ) ) );
+		if ( This.IsOk() ) return Out::Ok( ForwardOk( Forward<Self>( This ) ) );
+		return Forward<F>( Func )( ForwardErr( Forward<Self>( This ) ) );
 	}
 
 	alignas( T ) alignas( E ) unsigned char Storage[sizeof( T ) > sizeof( E ) ? sizeof( T ) : sizeof( E )];
@@ -288,7 +289,7 @@ public:
 	FORCEINLINE static TResult Err( Args&&... args )
 	{
 		TResult Result;
-		Result.Error.Emplace( std::forward<Args>( args )... );
+		Result.Error.Emplace( Forward<Args>( args )... );
 		return Result;
 	}
 
@@ -316,7 +317,7 @@ public:
 	FORCEINLINE E&& UnwrapErr() &&
 	{
 		if ( IsOk() ) NResultDetail::Panic( "TResult::UnwrapErr() called on Ok" );
-		return std::move( Error ).GetValue();
+		return MoveTemp( Error ).GetValue();
 	}
 
 	FORCEINLINE E* TryGetErr() noexcept { return Error.GetPtrOrNull(); }
@@ -333,7 +334,7 @@ public:
 		using E2  = std::decay_t<std::invoke_result_t<F, const E&>>;
 		using Out = TResult<void, E2>;
 		if ( IsOk() ) return Out::Ok();
-		return Out::Err( std::forward<F>( Func )( Error.GetValue() ) );
+		return Out::Err( Forward<F>( Func )( Error.GetValue() ) );
 	}
 
 	// Ok() -> F() (F は TResult<U, E> を返す)、Err はそのまま
@@ -344,7 +345,7 @@ public:
 		static_assert( NResultDetail::TIsResult<Out>::value, "AndThen: callback must return TResult" );
 		static_assert( std::is_same_v<typename Out::ErrorType, E>, "AndThen: callback must return the same error type" );
 		if ( IsErr() ) return Out::Err( Error.GetValue() );
-		return std::forward<F>( Func )();
+		return Forward<F>( Func )();
 	}
 
 	// Err(E) -> F(E) (F は TResult<void, E2> を返す)、Ok はそのまま
@@ -355,7 +356,7 @@ public:
 		static_assert( NResultDetail::TIsResult<Out>::value, "OrElse: callback must return TResult" );
 		static_assert( std::is_void_v<typename Out::ValueType>, "OrElse: callback must return TResult<void, ...>" );
 		if ( IsOk() ) return Out::Ok();
-		return std::forward<F>( Func )( Error.GetValue() );
+		return Forward<F>( Func )( Error.GetValue() );
 	}
 
 private:

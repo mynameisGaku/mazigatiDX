@@ -6,6 +6,8 @@
 #include <utility>
 
 #include "Library/Core/Collection/Map.h"
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 
 void CDxLibAssetBackend::Deinitialize()
 {
@@ -22,14 +24,14 @@ int32 CDxLibAssetBackend::CreateModelMaterialGeometry( const FStaticModelSurface
 	{
 		// snapshotに保存された元材質の拡散色と借用画像handle。
 		const FStaticModelSurfaceMaterial& Material = Surface.Materials[MaterialArrayIndex];
-		if ( Material.BorrowedDiffuseTexture < -1 || !std::isfinite( Material.Diffuse[0] ) || !std::isfinite( Material.Diffuse[1] ) || !std::isfinite( Material.Diffuse[2] ) || !std::isfinite( Material.Diffuse[3] ) ) return -1;
+		if ( Material.BorrowedDiffuseTexture < -1 || !NMath::IsFinite( Material.Diffuse[0] ) || !NMath::IsFinite( Material.Diffuse[1] ) || !NMath::IsFinite( Material.Diffuse[2] ) || !NMath::IsFinite( Material.Diffuse[3] ) ) return -1;
 	}
 	// 全source vertexの有限性を調べる配列位置。
 	for ( int32 VertexIndex = 0; VertexIndex < Surface.Vertices.Num(); ++VertexIndex )
 	{
 		// geometry資源へコピーする頂点の位置・法線・UV。
 		const FMeshVertex& Vertex = Surface.Vertices[VertexIndex];
-		if ( !std::isfinite( Vertex.Position[0] ) || !std::isfinite( Vertex.Position[1] ) || !std::isfinite( Vertex.Position[2] ) || !std::isfinite( Vertex.Normal[0] ) || !std::isfinite( Vertex.Normal[1] ) || !std::isfinite( Vertex.Normal[2] ) || !std::isfinite( Vertex.U ) || !std::isfinite( Vertex.V ) ) return -1;
+		if ( !NMath::IsFinite( Vertex.Position[0] ) || !NMath::IsFinite( Vertex.Position[1] ) || !NMath::IsFinite( Vertex.Position[2] ) || !NMath::IsFinite( Vertex.Normal[0] ) || !NMath::IsFinite( Vertex.Normal[1] ) || !NMath::IsFinite( Vertex.Normal[2] ) || !NMath::IsFinite( Vertex.U ) || !NMath::IsFinite( Vertex.V ) ) return -1;
 	}
 	// 全source indexの範囲を調べる配列位置。
 	for ( int32 Index = 0; Index < Surface.Indices.Num(); ++Index )
@@ -93,7 +95,7 @@ int32 CDxLibAssetBackend::CreateModelMaterialGeometry( const FStaticModelSurface
 			NewMesh.SourceMeshIndex = Section.SourceMeshIndex;
 			NewMesh.SourceFrameIndex = Section.SourceFrameIndex;
 			NewMesh.MaterialIndex = Section.MaterialIndex;
-			MeshPosition = BuiltMeshes.Add( std::move( NewMesh ) );
+			MeshPosition = BuiltMeshes.Add( MoveTemp( NewMesh ) );
 		}
 		// 同じsource meshの連続runを足す集約先。
 		FDxLibModelMaterialGeometry::FMesh& Mesh = BuiltMeshes[MeshPosition];
@@ -105,21 +107,21 @@ int32 CDxLibAssetBackend::CreateModelMaterialGeometry( const FStaticModelSurface
 		const TArrayView<const uint32> SectionIndices( Surface.Indices.GetData() + Section.FirstIndex, Section.NumIndices );
 		if ( !NMeshGeometry::BuildChunks( Surface.Vertices, SectionIndices, SectionChunks ) ) return -1;
 		// 完成済みsection chunkを順にmesh資源へ移す添字。
-		for ( int32 ChunkIndex = 0; ChunkIndex < SectionChunks.Num(); ++ChunkIndex ) Mesh.Chunks.Add( std::move( SectionChunks[ChunkIndex] ) );
+		for ( int32 ChunkIndex = 0; ChunkIndex < SectionChunks.Num(); ++ChunkIndex ) Mesh.Chunks.Add( MoveTemp( SectionChunks[ChunkIndex] ) );
 	}
 	if ( ExpectedFirstIndex != Surface.Indices.Num() || BuiltMeshes.IsEmpty() || NextModelMaterialGeometry <= 0 ) return -1;
 
 	// 登録前に完成させ、失敗時はbackend mapを変更しないimmutable geometry。
 	// const共有化前に完成配列を格納する一時所有者。
 	TSharedPtr<FDxLibModelMaterialGeometry> MutableGeometry = MakeShared<FDxLibModelMaterialGeometry>();
-	MutableGeometry->Meshes = std::move( BuiltMeshes );
+	MutableGeometry->Meshes = MoveTemp( BuiltMeshes );
 	// map登録後に変更しない共有参照。
 	TSharedPtr<const FDxLibModelMaterialGeometry> Geometry = MutableGeometry;
 	// 登録済みhandleとの衝突を避ける番号。
 	const int32 Handle = NextModelMaterialGeometry;
 	if ( ModelMaterialGeometries.Contains( Handle ) ) return -1;
-	ModelMaterialGeometries.Add( Handle, std::move( Geometry ) );
-	NextModelMaterialGeometry = Handle == ( std::numeric_limits<int32>::max )() ? -1 : Handle + 1;
+	ModelMaterialGeometries.Add( Handle, MoveTemp( Geometry ) );
+	NextModelMaterialGeometry = Handle == TNumericLimits<int32>::Max() ? -1 : Handle + 1;
 	return Handle;
 }
 

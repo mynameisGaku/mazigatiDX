@@ -11,6 +11,7 @@
 #include "Library/Core/Collection/Pair.h"
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Result.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Console/ConsoleArgs.h"
 #include "Library/Framework/Console/ConsoleConfig.h"
 #include "Library/Framework/Console/ConsoleTypes.h"
@@ -147,7 +148,7 @@ public:
 	FConsoleRegistration() = default;
 	FConsoleRegistration( const FConsoleRegistration& ) = delete;
 	FConsoleRegistration& operator=( const FConsoleRegistration& ) = delete;
-	FConsoleRegistration( FConsoleRegistration&& Other ) noexcept { *this = std::move( Other ); }
+	FConsoleRegistration( FConsoleRegistration&& Other ) noexcept { *this = MoveTemp( Other ); }
 	FConsoleRegistration& operator=( FConsoleRegistration&& Other ) noexcept
 	{
 		if ( this != &Other )
@@ -347,7 +348,7 @@ public:
 		NConsoleDetail::DescribeAll<Values>( Entry.Info.Args, Args, std::make_index_sequence<std::tuple_size_v<Values>>() );
 		const TArray<FConsoleArgDesc> Descs = Entry.Info.Args;
 
-		Entry.Handler = std::make_shared<FHandler>( [Function = std::decay_t<TFunction>( std::forward<TFunction>( Function ) ), Descs]( FConsoleContext& Context, const TArray<FString>& Tokens, FString& OutError ) mutable -> EConsoleResult
+		Entry.Handler = std::make_shared<FHandler>( [Function = std::decay_t<TFunction>( Forward<TFunction>( Function ) ), Descs]( FConsoleContext& Context, const TArray<FString>& Tokens, FString& OutError ) mutable -> EConsoleResult
 		{
 			Values Parsed{};
 			int32 Cursor = 0;
@@ -359,7 +360,7 @@ public:
 			}
 			return NConsoleDetail::Call<std::decay_t<decltype( Function )>, Traits>( Function, Context, Parsed );
 		} );
-		return Register( std::move( Entry ) );
+		return Register( MoveTemp( Entry ) );
 	}
 
 	// 自分で引数を読むコマンド（Context.GetArgs()）。Args は、使い方の表示・補完用（空なら自由な形）

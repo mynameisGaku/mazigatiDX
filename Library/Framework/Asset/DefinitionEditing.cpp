@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
+
 //=============================================================================
 // 名前
 //=============================================================================
@@ -46,7 +48,7 @@ namespace
 
 	void InsertStepInternal( FSpriteClip& Clip, int32 At, int32 SheetFrame )
 	{
-		At = std::clamp( At, 0, Clip.Frames.Num() );
+		At = NMath::Clamp( At, 0, Clip.Frames.Num() );
 		const bool bHasDurations = !Clip.Durations.IsEmpty();
 		const float32 Default = Clip.Fps > 0.0f ? 1.0f / Clip.Fps : 0.1f;
 		if ( bHasDurations )
@@ -167,7 +169,7 @@ void NSpriteSheetEdit::SetClipFps( TSpriteSheetDocument& Document, int32 ClipInd
 	FSpriteSheetDefinition& Definition = Document.BeginEdit( CoalesceKey );
 	FSpriteClip& Clip = Definition.Clips[ClipIndex];
 	// コマごとの表示時間を持っていないクリップだけ、速さが変わる。持っているクリップは、その時間のまま
-	Clip.Fps = std::max( Fps, 0.01f );
+	Clip.Fps = NMath::Max( Fps, 0.01f );
 }
 
 void NSpriteSheetEdit::SetClipLoop( TSpriteSheetDocument& Document, int32 ClipIndex, EAnimLoopMode Loop )
@@ -237,7 +239,7 @@ void NSpriteSheetEdit::SetStepDuration( TSpriteSheetDocument& Document, int32 Cl
 {
 	if ( !Document.Get().Clips.IsValidIndex( ClipIndex ) || !Document.Get().Clips[ClipIndex].Frames.IsValidIndex( Step ) ) return;
 	FSpriteClip& Clip = Document.BeginEdit( CoalesceKey ).Clips[ClipIndex];
-	Clip.SetDuration( Step, std::max( Seconds, 0.001f ) );
+	Clip.SetDuration( Step, NMath::Max( Seconds, 0.001f ) );
 	Clip.NormalizeDurations();
 }
 
@@ -252,7 +254,7 @@ int32 NSpriteSheetEdit::AddEvent( TSpriteSheetDocument& Document, int32 ClipInde
 	if ( !Document.Get().Clips.IsValidIndex( ClipIndex ) || Document.Get().Clips[ClipIndex].Frames.IsEmpty() ) return INDEX_NONE;
 	FSpriteClip& Clip = Document.BeginEdit().Clips[ClipIndex];
 	FSpriteAnimEvent Event;
-	Event.Step = std::clamp( Step, 0, Clip.Frames.Num() - 1 );
+	Event.Step = NMath::Clamp( Step, 0, Clip.Frames.Num() - 1 );
 	Event.Name = Name;
 	return Clip.Events.Add( Event );
 }
@@ -261,7 +263,7 @@ void NSpriteSheetEdit::SetEvent( TSpriteSheetDocument& Document, int32 ClipIndex
 {
 	if ( !Document.Get().Clips.IsValidIndex( ClipIndex ) || !Document.Get().Clips[ClipIndex].Events.IsValidIndex( EventIndex ) ) return;
 	FSpriteClip& Clip = Document.BeginEdit( CoalesceKey ).Clips[ClipIndex];
-	Clip.Events[EventIndex].Step = std::clamp( Step, 0, std::max( Clip.Frames.Num() - 1, 0 ) );
+	Clip.Events[EventIndex].Step = NMath::Clamp( Step, 0, NMath::Max( Clip.Frames.Num() - 1, 0 ) );
 	Clip.Events[EventIndex].Name = Name;
 }
 
@@ -380,7 +382,7 @@ void NModelAnimationEdit::SetPreviewModelPath( TModelAnimationDocument& Document
 
 void NModelAnimationEdit::SetUnitsPerSecond( TModelAnimationDocument& Document, float32 UnitsPerSecond, const char* CoalesceKey )
 {
-	Document.BeginEdit( CoalesceKey ).UnitsPerSecond = std::max( UnitsPerSecond, 0.001f );
+	Document.BeginEdit( CoalesceKey ).UnitsPerSecond = NMath::Max( UnitsPerSecond, 0.001f );
 }
 
 void NModelAnimationEdit::SetPlacement( TModelAnimationDocument& Document, const FVector3& Offset, const FVector3& RotationDegrees, const FVector3& Scale, const char* CoalesceKey )
@@ -446,7 +448,7 @@ void NModelAnimationEdit::SetClipSettings( TModelAnimationDocument& Document, in
 	Target.AnimName = Clip.AnimName;
 	Target.Loop = Clip.Loop;
 	Target.Speed = Clip.Speed;
-	Target.FadeTime = std::max( Clip.FadeTime, 0.0f );
+	Target.FadeTime = NMath::Max( Clip.FadeTime, 0.0f );
 }
 
 int32 NModelAnimationEdit::AddEvent( TModelAnimationDocument& Document, int32 ClipIndex, float32 Time, const FString& Name )
@@ -454,7 +456,7 @@ int32 NModelAnimationEdit::AddEvent( TModelAnimationDocument& Document, int32 Cl
 	if ( !Document.Get().Clips.IsValidIndex( ClipIndex ) ) return INDEX_NONE;
 	TArray<FModelEventDef>& Events = Document.BeginEdit().Clips[ClipIndex].Events;
 	FModelEventDef Event;
-	Event.Time = std::clamp( Time, 0.0f, 1.0f );
+	Event.Time = NMath::Clamp( Time, 0.0f, 1.0f );
 	Event.Name = Name;
 	const int32 Added = Events.Add( Event );
 	return SortEvents( Events, Added );
@@ -464,7 +466,7 @@ int32 NModelAnimationEdit::SetEvent( TModelAnimationDocument& Document, int32 Cl
 {
 	if ( !Document.Get().Clips.IsValidIndex( ClipIndex ) || !Document.Get().Clips[ClipIndex].Events.IsValidIndex( EventIndex ) ) return INDEX_NONE;
 	TArray<FModelEventDef>& Events = Document.BeginEdit( CoalesceKey ).Clips[ClipIndex].Events;
-	Events[EventIndex].Time = std::clamp( Time, 0.0f, 1.0f );
+	Events[EventIndex].Time = NMath::Clamp( Time, 0.0f, 1.0f );
 	Events[EventIndex].Name = Name;
 	return SortEvents( Events, EventIndex );
 }

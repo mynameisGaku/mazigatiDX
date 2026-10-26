@@ -6,6 +6,8 @@
 #include <stdexcept>
 #include <utility>
 
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Json/JsonHelpers.h"
 
 namespace
@@ -42,7 +44,7 @@ namespace
 	bool ReadFloat( const NlohmannJson& Json, float32& Out )
 	{
 		// 読み取り不能を保存検証で見つける値。
-		Out = std::numeric_limits<float32>::quiet_NaN();
+		Out = TNumericLimits<float32>::QuietNaN();
 		if ( !Json.is_number() ) return false;
 		try { Out = Json.get<float32>(); return true; }
 		catch ( const nlohmann::json::exception& ) { return false; }
@@ -52,7 +54,7 @@ namespace
 	bool ReadRotation( const NlohmannJson& Json, FVector3& Out )
 	{
 		// 読み取り不能を保存検証で見つける成分。
-		const float32 Invalid = std::numeric_limits<float32>::quiet_NaN();
+		const float32 Invalid = TNumericLimits<float32>::QuietNaN();
 		Out = FVector3( Invalid, Invalid, Invalid );
 		if ( !Json.is_array() || Json.size() != 3 || !Json[0].is_number() || !Json[1].is_number() || !Json[2].is_number() ) return false;
 		try { Out = FVector3( Json[0].get<float32>(), Json[1].get<float32>(), Json[2].get<float32>() ); return true; }
@@ -78,7 +80,7 @@ bool FEffectMeshDefinition::IsDefault() const
 
 bool FEffectMeshDefinition::IsValidSettings() const
 {
-	return InvalidFieldTypes == 0 && ( Kind == EKind::None || Kind == EKind::Plane || Kind == EKind::Ring ) && Segments >= 3 && Segments <= 128 && std::isfinite( InnerRadius ) && InnerRadius >= 0.05f && InnerRadius <= 0.95f && std::isfinite( RotationDegrees.x ) && std::isfinite( RotationDegrees.y ) && std::isfinite( RotationDegrees.z ) && std::fabs( RotationDegrees.x ) <= 360000.0f && std::fabs( RotationDegrees.y ) <= 360000.0f && std::fabs( RotationDegrees.z ) <= 360000.0f;
+	return InvalidFieldTypes == 0 && ( Kind == EKind::None || Kind == EKind::Plane || Kind == EKind::Ring ) && Segments >= 3 && Segments <= 128 && NMath::IsFinite( InnerRadius ) && InnerRadius >= 0.05f && InnerRadius <= 0.95f && NMath::IsFinite( RotationDegrees.x ) && NMath::IsFinite( RotationDegrees.y ) && NMath::IsFinite( RotationDegrees.z ) && NMath::Abs( RotationDegrees.x ) <= 360000.0f && NMath::Abs( RotationDegrees.y ) <= 360000.0f && NMath::Abs( RotationDegrees.z ) <= 360000.0f;
 }
 
 NlohmannJson FEffectMeshDefinition::ToJson() const
@@ -87,8 +89,8 @@ NlohmannJson FEffectMeshDefinition::ToJson() const
 	NlohmannJson Json = NlohmannJson::object();
 	Json["Kind"] = ( InvalidFieldTypes & InvalidKind ) != 0 ? NlohmannJson( nullptr ) : NlohmannJson( ToString( Kind ) );
 	Json["Segments"] = ( InvalidFieldTypes & InvalidSegments ) != 0 ? NlohmannJson( nullptr ) : NlohmannJson( Segments );
-	Json["InnerRadius"] = ( InvalidFieldTypes & InvalidInnerRadius ) != 0 || !std::isfinite( InnerRadius ) ? NlohmannJson( nullptr ) : NlohmannJson( InnerRadius );
-	Json["Rotation"] = ( InvalidFieldTypes & InvalidRotation ) != 0 || !std::isfinite( RotationDegrees.x ) || !std::isfinite( RotationDegrees.y ) || !std::isfinite( RotationDegrees.z ) ? NlohmannJson( nullptr ) : NlohmannJson::array( { RotationDegrees.x, RotationDegrees.y, RotationDegrees.z } );
+	Json["InnerRadius"] = ( InvalidFieldTypes & InvalidInnerRadius ) != 0 || !NMath::IsFinite( InnerRadius ) ? NlohmannJson( nullptr ) : NlohmannJson( InnerRadius );
+	Json["Rotation"] = ( InvalidFieldTypes & InvalidRotation ) != 0 || !NMath::IsFinite( RotationDegrees.x ) || !NMath::IsFinite( RotationDegrees.y ) || !NMath::IsFinite( RotationDegrees.z ) ? NlohmannJson( nullptr ) : NlohmannJson::array( { RotationDegrees.x, RotationDegrees.y, RotationDegrees.z } );
 	return Json;
 }
 
@@ -100,7 +102,7 @@ bool FEffectMeshDefinition::FromJson( const NlohmannJson& Json, FEffectMeshDefin
 	{
 		Definition.InvalidFieldTypes = InvalidAll;
 		Warn( Warnings, "Mesh はobjectにしてください" );
-		Out = std::move( Definition );
+		Out = MoveTemp( Definition );
 		return true;
 	}
 	if ( Json.contains( "Kind" ) )
@@ -143,7 +145,7 @@ bool FEffectMeshDefinition::FromJson( const NlohmannJson& Json, FEffectMeshDefin
 	}
 	if ( Json.contains( "InnerRadius" ) && !ReadFloat( Json["InnerRadius"], Definition.InnerRadius ) ) { Definition.InvalidFieldTypes |= InvalidInnerRadius; Warn( Warnings, "InnerRadiusは数値にしてください" ); }
 	if ( Json.contains( "Rotation" ) && !ReadRotation( Json["Rotation"], Definition.RotationDegrees ) ) { Definition.InvalidFieldTypes |= InvalidRotation; Warn( Warnings, "Rotationは三つの数値配列にしてください" ); }
-	Out = std::move( Definition );
+	Out = MoveTemp( Definition );
 	return true;
 }
 
@@ -153,8 +155,8 @@ TArray<FString> FEffectMeshDefinition::Validate() const
 	TArray<FString> Issues;
 	if ( ( InvalidFieldTypes & InvalidKind ) != 0 || ( Kind != EKind::None && Kind != EKind::Plane && Kind != EKind::Ring ) ) Issues.Add( "Mesh.KindはNone、Plane、Ringのいずれかにしてください" );
 	if ( ( InvalidFieldTypes & InvalidSegments ) != 0 || Segments < 3 || Segments > 128 ) Issues.Add( "Mesh.Segmentsは3から128にしてください" );
-	if ( ( InvalidFieldTypes & InvalidInnerRadius ) != 0 || !std::isfinite( InnerRadius ) || InnerRadius < 0.05f || InnerRadius > 0.95f ) Issues.Add( "Mesh.InnerRadiusは0.05から0.95にしてください" );
-	if ( ( InvalidFieldTypes & InvalidRotation ) != 0 || !std::isfinite( RotationDegrees.x ) || !std::isfinite( RotationDegrees.y ) || !std::isfinite( RotationDegrees.z ) || std::fabs( RotationDegrees.x ) > 360000.0f || std::fabs( RotationDegrees.y ) > 360000.0f || std::fabs( RotationDegrees.z ) > 360000.0f ) Issues.Add( "Mesh.Rotationは有限で各軸の絶対値を360000度以下にしてください" );
+	if ( ( InvalidFieldTypes & InvalidInnerRadius ) != 0 || !NMath::IsFinite( InnerRadius ) || InnerRadius < 0.05f || InnerRadius > 0.95f ) Issues.Add( "Mesh.InnerRadiusは0.05から0.95にしてください" );
+	if ( ( InvalidFieldTypes & InvalidRotation ) != 0 || !NMath::IsFinite( RotationDegrees.x ) || !NMath::IsFinite( RotationDegrees.y ) || !NMath::IsFinite( RotationDegrees.z ) || NMath::Abs( RotationDegrees.x ) > 360000.0f || NMath::Abs( RotationDegrees.y ) > 360000.0f || NMath::Abs( RotationDegrees.z ) > 360000.0f ) Issues.Add( "Mesh.Rotationは有限で各軸の絶対値を360000度以下にしてください" );
 	return Issues;
 }
 

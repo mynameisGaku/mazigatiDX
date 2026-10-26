@@ -5,10 +5,11 @@
 
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Collection/Set.h"
+#include "Library/Core/Types/Numeric.h"
 
 int64 NEditMesh::MakeEdgeKey( int32 A, int32 B )
 {
-	const int32 Low = std::min( A, B ), High = std::max( A, B );
+	const int32 Low = NMath::Min( A, B ), High = NMath::Max( A, B );
 	return ( static_cast<int64>( Low ) << 32 ) | static_cast<int64>( static_cast<uint32>( High ) );
 }
 
@@ -467,7 +468,7 @@ FEditMeshSelection NEditMesh::ExtrudeFaces( FEditMesh& Mesh, const TArray<int32>
 
 FEditMeshSelection NEditMesh::InsetFaces( FEditMesh& Mesh, const TArray<int32>& Faces, float32 Amount )
 {
-	const float32 Shrink = std::clamp( Amount, 0.0f, 0.95f );
+	const float32 Shrink = NMath::Clamp( Amount, 0.0f, 0.95f );
 	FEditMeshSelection Result = ExtrudeFaces( Mesh, Faces, 0.0f, true );
 	for ( const int32 Face : Result.Faces )
 	{
@@ -592,7 +593,7 @@ int32 NEditMesh::MergeVertices( FEditMesh& Mesh, const TArray<int32>& Vertices )
 
 int32 NEditMesh::WeldVertices( FEditMesh& Mesh, const TArray<int32>& Vertices, float32 Distance )
 {
-	const float32 Reach = std::max( Distance, 1.0e-6f );
+	const float32 Reach = NMath::Max( Distance, 1.0e-6f );
 	TArray<int32> Candidates = Vertices.IsEmpty() ? TArray<int32>() : ValidVertices( Mesh, Vertices );
 	if ( Vertices.IsEmpty() )
 	{
@@ -760,7 +761,7 @@ int32 NEditMesh::AppendMesh( FEditMesh& Destination, const FEditMesh& Source, co
 
 	// 材質の対応（元の番号 -> こちらの番号）
 	TArray<int32> MaterialMap;
-	const int32 NumSourceMaterials = std::max( Source.Materials.Num(), 1 );
+	const int32 NumSourceMaterials = NMath::Max( Source.Materials.Num(), 1 );
 	for ( int32 i = 0; i < NumSourceMaterials; ++i )
 	{
 		const FEditMeshMaterial& Material = Source.GetMaterial( i );
@@ -787,7 +788,7 @@ FEditMesh NEditMesh::MakeFromTriangles( TArrayView<const FVector3> Positions, TA
 	FEditMesh Mesh;
 	TArray<int32> Remap;
 	Remap.Init( -1, Positions.Num() );
-	const float32 Reach = std::max( WeldDistance, 0.0f );
+	const float32 Reach = NMath::Max( WeldDistance, 0.0f );
 	const bool bWeld = Reach > 0.0f;
 	const auto CellOf = [&]( float32 Value ) { return static_cast<int64>( std::floor( Value / Reach ) ); };
 	const auto KeyOf = [&]( int64 X, int64 Y, int64 Z ) { return ( X * 73856093ll ) ^ ( Y * 19349663ll ) ^ ( Z * 83492791ll ); };

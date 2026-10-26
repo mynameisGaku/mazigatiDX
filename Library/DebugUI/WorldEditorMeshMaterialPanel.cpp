@@ -7,6 +7,7 @@
 
 #include "EffectEditorCurveInput.h"
 #include "EditorCommon.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Engine/Engine.h"
 
 namespace
@@ -21,7 +22,7 @@ namespace
 	// finite値だけをImGuiへ渡す範囲付き表示値。
 	float32 SafeValue( float32 Value, float32 Fallback, float32 Minimum, float32 Maximum )
 	{
-		return std::isfinite( Value ) ? std::clamp( Value, Minimum, Maximum ) : Fallback;
+		return NMath::IsFinite( Value ) ? NMath::Clamp( Value, Minimum, Maximum ) : Fallback;
 	}
 
 	// 材質曲線へ決定済みの時刻と値を設定する。
@@ -98,7 +99,7 @@ namespace
 	// 四成分が有限な色入力だけを保存色へ変換する。
 	bool IsFiniteColor( const float32 (&Color)[4] )
 	{
-		return std::isfinite( Color[0] ) && std::isfinite( Color[1] ) && std::isfinite( Color[2] ) && std::isfinite( Color[3] );
+		return NMath::IsFinite( Color[0] ) && NMath::IsFinite( Color[1] ) && NMath::IsFinite( Color[2] ) && NMath::IsFinite( Color[3] );
 	}
 }
 
@@ -112,12 +113,12 @@ bool NWorldEditorUI::DrawMaterialEffectDefinitionPanel( FMeshMaterialEffectDefin
 	bChanged |= TrackInputEnd( ImGui::Checkbox( "Enable material effect", &Effect.Material.bEnabled ), bInputEnded );
 	// 有限値だけを連続入力へ渡すduration。
 	float32 Duration = SafeValue( Effect.Duration, 2.0f, 0.001f, 3600.0f );
-	if ( TrackInputEnd( ImGui::DragFloat( "Duration (seconds)", &Duration, 0.02f, 0.001f, 3600.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp ), bInputEnded ) ) { Effect.Duration = std::clamp( Duration, 0.001f, 3600.0f ); bChanged = true; }
+	if ( TrackInputEnd( ImGui::DragFloat( "Duration (seconds)", &Duration, 0.02f, 0.001f, 3600.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp ), bInputEnded ) ) { Effect.Duration = NMath::Clamp( Duration, 0.001f, 3600.0f ); bChanged = true; }
 	// ループする保存設定。
 	bChanged |= TrackInputEnd( ImGui::Checkbox( "Loop", &Effect.bLoop ), bInputEnded );
 	// 有限値だけをopacity入力へ渡す。
 	float32 Opacity = SafeValue( Effect.Opacity, 1.0f, 0.0f, 1.0f );
-	if ( TrackInputEnd( ImGui::SliderFloat( "Opacity", &Opacity, 0.0f, 1.0f, "%.3f" ), bInputEnded ) ) { Effect.Opacity = std::clamp( Opacity, 0.0f, 1.0f ); bChanged = true; }
+	if ( TrackInputEnd( ImGui::SliderFloat( "Opacity", &Opacity, 0.0f, 1.0f, "%.3f" ), bInputEnded ) ) { Effect.Opacity = NMath::Clamp( Opacity, 0.0f, 1.0f ); bChanged = true; }
 	// 許可blendだけを選ぶ番号。
 	int32 Blend = Effect.Blend == EDrawBlend::Add ? 1 : 0;
 	if ( ImGui::Combo( "Blend", &Blend, "Alpha\0Add\0" ) ) { Effect.Blend = Blend == 1 ? EDrawBlend::Add : EDrawBlend::Alpha; bChanged = true; }
@@ -131,27 +132,27 @@ bool NWorldEditorUI::DrawMaterialEffectDefinitionPanel( FMeshMaterialEffectDefin
 	bChanged |= TrackInputEnd( NDebugUI::InputString( "Mask path", Material.MaskTexture ), bInputEnded );
 	// 有限値だけをUV scale入力へ渡す。
 	float32 UVScale[2] = { SafeValue( Material.UVScale.x, 1.0f, 0.001f, 128.0f ), SafeValue( Material.UVScale.y, 1.0f, 0.001f, 128.0f ) };
-	if ( TrackInputEnd( ImGui::DragFloat2( "UV scale", UVScale, 0.01f, 0.001f, 128.0f, "%.5g", ImGuiSliderFlags_AlwaysClamp ), bInputEnded ) ) { Material.UVScale = FVector2( std::clamp( UVScale[0], 0.001f, 128.0f ), std::clamp( UVScale[1], 0.001f, 128.0f ) ); bChanged = true; }
+	if ( TrackInputEnd( ImGui::DragFloat2( "UV scale", UVScale, 0.01f, 0.001f, 128.0f, "%.5g", ImGuiSliderFlags_AlwaysClamp ), bInputEnded ) ) { Material.UVScale = FVector2( NMath::Clamp( UVScale[0], 0.001f, 128.0f ), NMath::Clamp( UVScale[1], 0.001f, 128.0f ) ); bChanged = true; }
 	// 有限値だけをUV scroll入力へ渡す。
 	float32 UVScroll[2] = { SafeValue( Material.UVScroll.x, 0.0f, -128.0f, 128.0f ), SafeValue( Material.UVScroll.y, 0.0f, -128.0f, 128.0f ) };
-	if ( TrackInputEnd( ImGui::DragFloat2( "UV scroll / second", UVScroll, 0.01f, -128.0f, 128.0f, "%.5g", ImGuiSliderFlags_AlwaysClamp ), bInputEnded ) ) { Material.UVScroll = FVector2( std::clamp( UVScroll[0], -128.0f, 128.0f ), std::clamp( UVScroll[1], -128.0f, 128.0f ) ); bChanged = true; }
+	if ( TrackInputEnd( ImGui::DragFloat2( "UV scroll / second", UVScroll, 0.01f, -128.0f, 128.0f, "%.5g", ImGuiSliderFlags_AlwaysClamp ), bInputEnded ) ) { Material.UVScroll = FVector2( NMath::Clamp( UVScroll[0], -128.0f, 128.0f ), NMath::Clamp( UVScroll[1], -128.0f, 128.0f ) ); bChanged = true; }
 	// 有限値だけをmask scale入力へ渡す。
 	float32 MaskScale = SafeValue( Material.MaskScale, 1.0f, 0.001f, 128.0f );
-	if ( TrackInputEnd( ImGui::DragFloat( "Mask scale", &MaskScale, 0.01f, 0.001f, 128.0f, "%.5g", ImGuiSliderFlags_AlwaysClamp ), bInputEnded ) ) { Material.MaskScale = std::clamp( MaskScale, 0.001f, 128.0f ); bChanged = true; }
+	if ( TrackInputEnd( ImGui::DragFloat( "Mask scale", &MaskScale, 0.01f, 0.001f, 128.0f, "%.5g", ImGuiSliderFlags_AlwaysClamp ), bInputEnded ) ) { Material.MaskScale = NMath::Clamp( MaskScale, 0.001f, 128.0f ); bChanged = true; }
 	if ( Material.bDissolve )
 	{
 		ImGui::TextDisabled( "Dissolve: 0 keeps the mask; 1 removes it." );
 		bChanged |= DrawDefinitionCurve( "Dissolve curve", Material.Dissolve, 0.0f, 0.0f, 1.0f, bInputEnded );
 		// 有限値だけをedge width入力へ渡す。
 		float32 EdgeWidth = SafeValue( Material.EdgeWidth, 0.08f, 0.0f, 1.0f );
-		if ( TrackInputEnd( ImGui::DragFloat( "Edge width", &EdgeWidth, 0.005f, 0.0f, 1.0f, "%.5g", ImGuiSliderFlags_AlwaysClamp ), bInputEnded ) ) { Material.EdgeWidth = std::clamp( EdgeWidth, 0.0f, 1.0f ); bChanged = true; }
+		if ( TrackInputEnd( ImGui::DragFloat( "Edge width", &EdgeWidth, 0.005f, 0.0f, 1.0f, "%.5g", ImGuiSliderFlags_AlwaysClamp ), bInputEnded ) ) { Material.EdgeWidth = NMath::Clamp( EdgeWidth, 0.0f, 1.0f ); bChanged = true; }
 		// RGBA境界色を有限値で編集する。
 		float32 EdgeColor[4] = { Material.EdgeColor.r / 255.0f, Material.EdgeColor.g / 255.0f, Material.EdgeColor.b / 255.0f, Material.EdgeColor.a / 255.0f };
 		const bool bColorChanged = ImGui::ColorEdit4( "Edge color", EdgeColor );
-		if ( TrackInputEnd( bColorChanged, bInputEnded ) && IsFiniteColor( EdgeColor ) ) { Material.EdgeColor = FColor32( static_cast<uint8>( std::clamp( EdgeColor[0], 0.0f, 1.0f ) * 255.0f + 0.5f ), static_cast<uint8>( std::clamp( EdgeColor[1], 0.0f, 1.0f ) * 255.0f + 0.5f ), static_cast<uint8>( std::clamp( EdgeColor[2], 0.0f, 1.0f ) * 255.0f + 0.5f ), static_cast<uint8>( std::clamp( EdgeColor[3], 0.0f, 1.0f ) * 255.0f + 0.5f ) ); bChanged = true; }
+		if ( TrackInputEnd( bColorChanged, bInputEnded ) && IsFiniteColor( EdgeColor ) ) { Material.EdgeColor = FColor32( static_cast<uint8>( NMath::Clamp( EdgeColor[0], 0.0f, 1.0f ) * 255.0f + 0.5f ), static_cast<uint8>( NMath::Clamp( EdgeColor[1], 0.0f, 1.0f ) * 255.0f + 0.5f ), static_cast<uint8>( NMath::Clamp( EdgeColor[2], 0.0f, 1.0f ) * 255.0f + 0.5f ), static_cast<uint8>( NMath::Clamp( EdgeColor[3], 0.0f, 1.0f ) * 255.0f + 0.5f ) ); bChanged = true; }
 		// 有限値だけをedge emission入力へ渡す。
 		float32 EdgeEmission = SafeValue( Material.EdgeEmission, 2.0f, 0.0f, 32.0f );
-		if ( TrackInputEnd( ImGui::DragFloat( "Edge emission", &EdgeEmission, 0.01f, 0.0f, 32.0f, "%.5g", ImGuiSliderFlags_AlwaysClamp ), bInputEnded ) ) { Material.EdgeEmission = std::clamp( EdgeEmission, 0.0f, 32.0f ); bChanged = true; }
+		if ( TrackInputEnd( ImGui::DragFloat( "Edge emission", &EdgeEmission, 0.01f, 0.0f, 32.0f, "%.5g", ImGuiSliderFlags_AlwaysClamp ), bInputEnded ) ) { Material.EdgeEmission = NMath::Clamp( EdgeEmission, 0.0f, 32.0f ); bChanged = true; }
 	}
 	bChanged |= DrawDefinitionCurve( "Emission curve", Material.Emission, 1.0f, 0.0f, 32.0f, bInputEnded );
 	// ノイズ画像の設定を独立して編集する。
@@ -161,10 +162,10 @@ bool NWorldEditorUI::DrawMaterialEffectDefinitionPanel( FMeshMaterialEffectDefin
 	bChanged |= TrackInputEnd( NDebugUI::InputString( "Noise path", Distortion.Texture ), bInputEnded );
 	// 有限値だけを歪みscale入力へ渡す。
 	float32 DistortionScale[2] = { SafeValue( Distortion.UVScale.x, 1.0f, 0.001f, 128.0f ), SafeValue( Distortion.UVScale.y, 1.0f, 0.001f, 128.0f ) };
-	if ( TrackInputEnd( ImGui::DragFloat2( "Distortion scale", DistortionScale, 0.01f, 0.001f, 128.0f, "%.5g", ImGuiSliderFlags_AlwaysClamp ), bInputEnded ) ) { Distortion.UVScale = FVector2( std::clamp( DistortionScale[0], 0.001f, 128.0f ), std::clamp( DistortionScale[1], 0.001f, 128.0f ) ); bChanged = true; }
+	if ( TrackInputEnd( ImGui::DragFloat2( "Distortion scale", DistortionScale, 0.01f, 0.001f, 128.0f, "%.5g", ImGuiSliderFlags_AlwaysClamp ), bInputEnded ) ) { Distortion.UVScale = FVector2( NMath::Clamp( DistortionScale[0], 0.001f, 128.0f ), NMath::Clamp( DistortionScale[1], 0.001f, 128.0f ) ); bChanged = true; }
 	// 有限値だけを歪みscroll入力へ渡す。
 	float32 DistortionScroll[2] = { SafeValue( Distortion.UVScroll.x, 0.0f, -128.0f, 128.0f ), SafeValue( Distortion.UVScroll.y, 0.0f, -128.0f, 128.0f ) };
-	if ( TrackInputEnd( ImGui::DragFloat2( "Distortion scroll / second", DistortionScroll, 0.01f, -128.0f, 128.0f, "%.5g", ImGuiSliderFlags_AlwaysClamp ), bInputEnded ) ) { Distortion.UVScroll = FVector2( std::clamp( DistortionScroll[0], -128.0f, 128.0f ), std::clamp( DistortionScroll[1], -128.0f, 128.0f ) ); bChanged = true; }
+	if ( TrackInputEnd( ImGui::DragFloat2( "Distortion scroll / second", DistortionScroll, 0.01f, -128.0f, 128.0f, "%.5g", ImGuiSliderFlags_AlwaysClamp ), bInputEnded ) ) { Distortion.UVScroll = FVector2( NMath::Clamp( DistortionScroll[0], -128.0f, 128.0f ), NMath::Clamp( DistortionScroll[1], -128.0f, 128.0f ) ); bChanged = true; }
 	bChanged |= DrawDefinitionCurve( "Distortion strength", Distortion.Strength, 0.0f, 0.0f, 1.0f, bInputEnded );
 	// 保存定義の問題を編集者へそのまま示す。
 	const TArray<FString> Issues = Effect.Validate();

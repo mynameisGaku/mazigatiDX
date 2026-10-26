@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Framework/World/WorldDefinition.h"
 #include "Library/Json/JsonHelpers.h"
 
@@ -295,7 +297,7 @@ namespace
 				TArray<FString> FieldWarnings;
 				FEffectForceFieldDefinition::FromJson( Item, Field, &FieldWarnings );
 				for ( const FString& Message : FieldWarnings ) Warn( Warnings, Where + ": ForceFields: " + Message );
-				Emitter.ForceFields.Add( std::move( Field ) );
+				Emitter.ForceFields.Add( MoveTemp( Field ) );
 			}
 		}
 		else if ( Json.contains( "ForceFields" ) )
@@ -303,7 +305,7 @@ namespace
 			// 非配列を消さずに保持するinvalid sentinel。
 			FEffectForceFieldDefinition InvalidField;
 			FEffectForceFieldDefinition::FromJson( NlohmannJson(), InvalidField, Warnings );
-			Emitter.ForceFields.Add( std::move( InvalidField ) );
+			Emitter.ForceFields.Add( MoveTemp( InvalidField ) );
 			Warn( Warnings, Where + ": ForceFieldsは配列にしてください" );
 		}
 		Emitter.Lifetime = ReadRange( Json, "Lifetime", Emitter.Lifetime, Warnings, Where );
@@ -337,7 +339,7 @@ namespace
 		return Emitter;
 	}
 
-	bool IsFinite( float32 Value ) { return std::isfinite( Value ); }
+	bool IsFinite( float32 Value ) { return NMath::IsFinite( Value ); }
 	bool IsFinite( const FVector3& V ) { return IsFinite( V.x ) && IsFinite( V.y ) && IsFinite( V.z ); }
 }
 
@@ -469,7 +471,7 @@ bool FParticleEffectDefinition::FromJson( const NlohmannJson& Json, FParticleEff
 		for ( const NlohmannJson& Item : Json["Emitters"] ) Effect.Emitters.Add( EmitterFromJson( Item, OutWarnings, Index++ ) );
 	}
 	else if ( Json.contains( "Emitters" ) ) Warn( OutWarnings, "'Emitters' is not an array" );
-	OutDefinition = std::move( Effect );
+	OutDefinition = MoveTemp( Effect );
 	return true;
 }
 
@@ -488,8 +490,8 @@ TArray<FParticleIssue> FParticleEffectDefinition::Validate() const
 	int64 TreeParticleBudget = 0;
 	// Meshの全emitterが要求するparticle枠の合計。
 	int64 MeshParticleBudget = 0;
-	for ( const FParticleEmitterDefinition& Emitter : Emitters ) if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning ) TreeParticleBudget += std::max( 0, Emitter.MaxParticles );
-	for ( const FParticleEmitterDefinition& Emitter : Emitters ) if ( Emitter.Mesh.Kind != FEffectMeshDefinition::EKind::None ) MeshParticleBudget += std::max( 0, Emitter.MaxParticles );
+	for ( const FParticleEmitterDefinition& Emitter : Emitters ) if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning ) TreeParticleBudget += NMath::Max( 0, Emitter.MaxParticles );
+	for ( const FParticleEmitterDefinition& Emitter : Emitters ) if ( Emitter.Mesh.Kind != FEffectMeshDefinition::EKind::None ) MeshParticleBudget += NMath::Max( 0, Emitter.MaxParticles );
 	if ( TreeParticleBudget > 4 ) Add( false, -1, "Tree Lightningは負荷を抑えるため、全エミッター合計で先頭4粒子まで描画します" );
 	if ( MeshParticleBudget > 64 ) Add( false, -1, "Mesh粒子は負荷を抑えるため、全エミッター合計で先頭64個まで描画します" );
 
@@ -523,20 +525,20 @@ TArray<FParticleIssue> FParticleEffectDefinition::Validate() const
 		if ( E.Mesh.Kind != FEffectMeshDefinition::EKind::None && E.Path.Kind != FEffectPathDefinition::EKind::None ) Add( true, i, "MeshはPathと同時に使えません。どちらかをNoneにしてください" );
 		if ( E.Mesh.Kind != FEffectMeshDefinition::EKind::None && E.Flipbook.bEnabled ) Add( true, i, "MeshはFlipbookと同時に使えません。どちらかを無効にしてください" );
 		// RibbonのUV位相はshaderへ連続floatで渡すため、寿命全体の移動量を制限する。
-		if ( E.Material.bEnabled && E.Path.Kind == FEffectPathDefinition::EKind::Ribbon && std::isfinite( E.Lifetime.Min ) && std::isfinite( E.Lifetime.Max ) && E.Lifetime.Min > 0.0f && E.Lifetime.Max > 0.0f && std::isfinite( E.Material.UVScroll.x ) && std::isfinite( E.Material.UVScroll.y ) )
+		if ( E.Material.bEnabled && E.Path.Kind == FEffectPathDefinition::EKind::Ribbon && NMath::IsFinite( E.Lifetime.Min ) && NMath::IsFinite( E.Lifetime.Max ) && E.Lifetime.Min > 0.0f && E.Lifetime.Max > 0.0f && NMath::IsFinite( E.Material.UVScroll.x ) && NMath::IsFinite( E.Material.UVScroll.y ) )
 		{
 			// 並べ替え前後を問わない最長秒数。
-			const double MaximumLifetime = std::max( static_cast<double>( E.Lifetime.Min ), static_cast<double>( E.Lifetime.Max ) );
+			const double MaximumLifetime = NMath::Max( static_cast<double>( E.Lifetime.Min ), static_cast<double>( E.Lifetime.Max ) );
 			// 一番大きいUV速度。
-			const double MaximumScroll = std::max( std::fabs( static_cast<double>( E.Material.UVScroll.x ) ), std::fabs( static_cast<double>( E.Material.UVScroll.y ) ) );
+			const double MaximumScroll = NMath::Max( NMath::Abs( static_cast<double>( E.Material.UVScroll.x ) ), NMath::Abs( static_cast<double>( E.Material.UVScroll.y ) ) );
 			if ( MaximumLifetime * MaximumScroll > 1.0e6 ) Add( true, i, "帯の材質では寿命×UV速度を 1000000 以下にしてください" );
 		}
-		if ( E.Material.bEnabled && E.Material.Distortion.bEnabled && E.Path.Kind == FEffectPathDefinition::EKind::Ribbon && std::isfinite( E.Lifetime.Min ) && std::isfinite( E.Lifetime.Max ) && E.Lifetime.Min > 0.0f && E.Lifetime.Max > 0.0f && std::isfinite( E.Material.Distortion.UVScroll.x ) && std::isfinite( E.Material.Distortion.UVScroll.y ) )
+		if ( E.Material.bEnabled && E.Material.Distortion.bEnabled && E.Path.Kind == FEffectPathDefinition::EKind::Ribbon && NMath::IsFinite( E.Lifetime.Min ) && NMath::IsFinite( E.Lifetime.Max ) && E.Lifetime.Min > 0.0f && E.Lifetime.Max > 0.0f && NMath::IsFinite( E.Material.Distortion.UVScroll.x ) && NMath::IsFinite( E.Material.Distortion.UVScroll.y ) )
 		{
 			// UV位相の計算に使う最長寿命。
-			const double MaximumDistortionLifetime = std::max( static_cast<double>( E.Lifetime.Min ), static_cast<double>( E.Lifetime.Max ) );
+			const double MaximumDistortionLifetime = NMath::Max( static_cast<double>( E.Lifetime.Min ), static_cast<double>( E.Lifetime.Max ) );
 			// 横縦のnoise速度で大きい方。
-			const double MaximumDistortionScroll = std::max( std::fabs( static_cast<double>( E.Material.Distortion.UVScroll.x ) ), std::fabs( static_cast<double>( E.Material.Distortion.UVScroll.y ) ) );
+			const double MaximumDistortionScroll = NMath::Max( NMath::Abs( static_cast<double>( E.Material.Distortion.UVScroll.x ) ), NMath::Abs( static_cast<double>( E.Material.Distortion.UVScroll.y ) ) );
 			if ( MaximumDistortionLifetime * MaximumDistortionScroll > 1.0e6 ) Add( true, i, "帯のUV歪みでは寿命×noise速度を 1000000 以下にしてください" );
 		}
 		if ( E.Path.Kind == FEffectPathDefinition::EKind::Lightning && E.MaxParticles > 64 ) Add( false, i, "雷は負荷を抑えるため、先頭の 64 個まで描画します" );
@@ -556,7 +558,7 @@ TArray<FParticleIssue> FParticleEffectDefinition::Validate() const
 				return;
 			}
 			if ( Range.Min > Range.Max ) Add( false, i, FString( What ) + ": the minimum is larger than the maximum (they are swapped)" );
-			if ( bMustBePositive && std::min( Range.Min, Range.Max ) <= 0.0f ) Add( true, i, FString( What ) + " must be greater than 0" );
+			if ( bMustBePositive && NMath::Min( Range.Min, Range.Max ) <= 0.0f ) Add( true, i, FString( What ) + " must be greater than 0" );
 		};
 		CheckRange( E.Lifetime, "the lifetime", true );
 		CheckRange( E.Speed, "the speed", false );
@@ -564,15 +566,15 @@ TArray<FParticleIssue> FParticleEffectDefinition::Validate() const
 		CheckRange( E.EndSize, "the end size", false );
 		CheckRange( E.StartAngle, "the start angle", false );
 		CheckRange( E.Spin, "the spin", false );
-		if ( std::min( E.Speed.Min, E.Speed.Max ) < 0.0f ) Add( true, i, "the speed must not be negative" );
-		if ( std::min( E.StartSize.Min, E.StartSize.Max ) < 0.0f || std::min( E.EndSize.Min, E.EndSize.Max ) < 0.0f ) Add( true, i, "a size must not be negative" );
+		if ( NMath::Min( E.Speed.Min, E.Speed.Max ) < 0.0f ) Add( true, i, "the speed must not be negative" );
+		if ( NMath::Min( E.StartSize.Min, E.StartSize.Max ) < 0.0f || NMath::Min( E.EndSize.Min, E.EndSize.Max ) < 0.0f ) Add( true, i, "a size must not be negative" );
 		if ( !IsFinite( E.ShapeRadius ) || E.ShapeRadius < 0.0f ) Add( true, i, "the shape radius must not be negative" );
 		if ( !IsFinite( E.ConeAngle ) || E.ConeAngle < 0.0f || E.ConeAngle > 180.0f ) Add( true, i, "the cone angle must be between 0 and 180 degrees" );
 		if ( !IsFinite( E.BoxSize ) || E.BoxSize.x < 0.0f || E.BoxSize.y < 0.0f || E.BoxSize.z < 0.0f ) Add( true, i, "the box size must not be negative" );
 		if ( !IsFinite( E.Direction ) || E.Direction.LengthSquared() < 1.0e-12f ) Add( true, i, "the direction must not be zero" );
 		if ( !IsFinite( E.Gravity ) ) Add( true, i, "the gravity is not a finite number" );
 		if ( !IsFinite( E.Drag ) || E.Drag < 0.0f ) Add( true, i, "the drag must not be negative" );
-		if ( E.Rate > 0.0f && E.MaxParticles >= 1 && E.Rate * std::max( E.Lifetime.Max, E.Lifetime.Min ) > static_cast<float32>( E.MaxParticles ) * 1.01f )
+		if ( E.Rate > 0.0f && E.MaxParticles >= 1 && E.Rate * NMath::Max( E.Lifetime.Max, E.Lifetime.Min ) > static_cast<float32>( E.MaxParticles ) * 1.01f )
 		{
 			Add( false, i, FString::Printf( "at this rate and lifetime more than %d particles would be alive at once (the extra ones are not emitted)", E.MaxParticles ) );
 		}

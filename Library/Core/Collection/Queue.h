@@ -4,6 +4,7 @@
 
 #include "Library/Core/Collection/CollectionCommon.h"
 #include "Library/Core/Memory/Memory.h"
+#include "Library/Core/Types/Utility.h"
 
 //=============================================================================
 // TQueue<T>
@@ -102,7 +103,7 @@ public:
 	// 追加・取り出し
 	//-------------------------------------------------------------------------
 	FORCEINLINE void Enqueue( const T& Item ) { Emplace( Item ); }
-	FORCEINLINE void Enqueue( T&& Item ) { Emplace( std::move( Item ) ); }
+	FORCEINLINE void Enqueue( T&& Item ) { Emplace( MoveTemp( Item ) ); }
 
 	template<typename... Args>
 	T& Emplace( Args&&... args );
@@ -111,7 +112,7 @@ public:
 	FORCEINLINE bool Dequeue( T& OutItem )
 	{
 		if ( Count == 0 ) return false;
-		OutItem = std::move( Data[Head] );
+		OutItem = MoveTemp( Data[Head] );
 		Pop();
 		return true;
 	}

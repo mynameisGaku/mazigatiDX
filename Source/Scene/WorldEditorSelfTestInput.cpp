@@ -1,5 +1,6 @@
 ﻿#include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/WorldEditor.h"
 #include "Library/Framework/World/Editor/EditorGizmo.h"
 #include "Library/Framework/World/WorldHierarchy.h"
@@ -325,7 +326,7 @@ namespace
 		Mouse.MoveToPixel( F.Pixel( Turned ) );
 		const float32 Yaw = F.Get( F.Side ).Transform.RotationDegrees.y;
 		Mouse.ReleaseLeft();
-		C.Check( std::fabs( std::fabs( Yaw ) - 90.0f ) < 1.0f, "dragging a quarter of the ring turns the object about 90 degrees (%.1f)", Yaw );
+		C.Check( NMath::Abs( NMath::Abs( Yaw ) - 90.0f ) < 1.0f, "dragging a quarter of the ring turns the object about 90 degrees (%.1f)", Yaw );
 	}
 
 	void TestCameraByMouse( NAssetTest::FChecker& C )
@@ -343,7 +344,7 @@ namespace
 		Mouse.PressLeft();
 		C.Check( S.MouseMode == EMouseMode::Orbit, "Alt + left button orbits" );
 		Mouse.MoveTo( 430, 310 );
-		C.Check( std::fabs( Camera.Yaw - 0.3f ) < 1e-4f && std::fabs( Camera.Pitch - 0.55f ) < 1e-4f && Near3( Camera.Target, FVector3( 1, 2, 3 ) ), "a (30, 10) pixel drag changes the yaw by -0.3 and the pitch by +0.1 and keeps the target" );
+		C.Check( NMath::Abs( Camera.Yaw - 0.3f ) < 1e-4f && NMath::Abs( Camera.Pitch - 0.55f ) < 1e-4f && Near3( Camera.Target, FVector3( 1, 2, 3 ) ), "a (30, 10) pixel drag changes the yaw by -0.3 and the pitch by +0.1 and keeps the target" );
 		Mouse.bAlt = false;
 		Mouse.ReleaseLeft();
 		C.Check( S.MouseMode == EMouseMode::None && S.Session.GetSelection().IsEmpty(), "releasing ends it (and selects nothing)" );
@@ -358,7 +359,7 @@ namespace
 		Mouse.MoveTo( 450, 280 );
 		Mouse.ReleaseMiddle();
 		Camera.WorldToScreen( S.View, Target, After );
-		C.Check( std::fabs( After.x - Before.x - 50.0f ) < 0.1f && std::fabs( After.y - Before.y + 20.0f ) < 0.1f, "the previously centred point follows the mouse by (50, -20) pixels (%.2f, %.2f)", After.x - Before.x, After.y - Before.y );
+		C.Check( NMath::Abs( After.x - Before.x - 50.0f ) < 0.1f && NMath::Abs( After.y - Before.y + 20.0f ) < 0.1f, "the previously centred point follows the mouse by (50, -20) pixels (%.2f, %.2f)", After.x - Before.x, After.y - Before.y );
 
 		// 見回す・飛ぶ: 右ボタン
 		const FVector3 Eye = Camera.GetEye();
@@ -367,7 +368,7 @@ namespace
 		C.Check( S.MouseMode == EMouseMode::Look, "the right button looks around" );
 		Mouse.MoveTo( 420, 300 );
 		C.Check( Near3( Camera.GetEye(), Eye, 1e-3f ), "looking around keeps the eye" );
-		C.Check( std::fabs( Camera.Yaw - 0.1f ) < 1e-4f, "and turns the view: a 20 pixel drag right lowers the yaw by 0.2 (%.4f)", Camera.Yaw );
+		C.Check( NMath::Abs( Camera.Yaw - 0.1f ) < 1e-4f, "and turns the view: a 20 pixel drag right lowers the yaw by 0.2 (%.4f)", Camera.Yaw );
 		const FVector3 EyeBeforeFly = Camera.GetEye();
 		const FVector3 Forward = Camera.GetForward();
 		Mouse.Fly = FVector3( 0, 0, 1 );
@@ -378,7 +379,7 @@ namespace
 		const FVector3 EyeAfterFly = Camera.GetEye();
 		Mouse.bShift = true;
 		Mouse.Idle();
-		C.Check( std::fabs( ( Camera.GetEye() - EyeAfterFly ).Length() - Speed * 0.5f * 3.0f ) < 1e-3f, "Shift triples the speed" );
+		C.Check( NMath::Abs( ( Camera.GetEye() - EyeAfterFly ).Length() - Speed * 0.5f * 3.0f ) < 1e-3f, "Shift triples the speed" );
 		Mouse.bShift = false;
 		Mouse.Fly = FVector3::Zero;
 		Mouse.ReleaseRight();
@@ -391,7 +392,7 @@ namespace
 		// ホイール
 		const float32 Distance = Camera.Distance;
 		Mouse.Wheel( 2.0f );
-		C.Check( std::fabs( Camera.Distance - Distance * 0.81f ) < 1e-3f, "two wheel steps close in by 19%% (%.3f -> %.3f)", Distance, Camera.Distance );
+		C.Check( NMath::Abs( Camera.Distance - Distance * 0.81f ) < 1e-3f, "two wheel steps close in by 19%% (%.3f -> %.3f)", Distance, Camera.Distance );
 		Mouse.PressRight();
 		const float32 Distance2 = Camera.Distance;
 		Mouse.Wheel( 3.0f );

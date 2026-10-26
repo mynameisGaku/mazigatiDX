@@ -3,6 +3,7 @@
 
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Effect/EffectFlipbookFrames.h"
@@ -104,7 +105,7 @@ bool NEffectEditorUI::DrawFlipbookPanel( FEffectEditorState& State, FParticleEmi
 	if ( Emitter.Flipbook.TimeMode == FEffectFlipbookDefinition::ETimeMode::Seconds )
 	{
 		// 不正なfloatをDragFloatへ渡すとImGuiのassertや破損を招くため入力を止める。
-		if ( std::isfinite( Emitter.Flipbook.Speed ) && Emitter.Flipbook.Speed >= 0.0f && Emitter.Flipbook.Speed <= 128.0f ) bChanged |= TrackFlipbookInputEnd( ImGui::DragFloat( "Seconds speed", &Emitter.Flipbook.Speed, 0.01f, 0.0f, 128.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp ), State.Document );
+		if ( NMath::IsFinite( Emitter.Flipbook.Speed ) && Emitter.Flipbook.Speed >= 0.0f && Emitter.Flipbook.Speed <= 128.0f ) bChanged |= TrackFlipbookInputEnd( ImGui::DragFloat( "Seconds speed", &Emitter.Flipbook.Speed, 0.01f, 0.0f, 128.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp ), State.Document );
 		else ImGui::TextColored( ImVec4( 1.0f, 0.65f, 0.3f, 1.0f ), "Seconds speed is invalid; reset flipbook to repair it." );
 	}
 	ImGui::TextWrapped( "Lifetime plays the clip order once from birth to end, then holds the last frame. Seconds follows the clip loop mode at age times speed." );

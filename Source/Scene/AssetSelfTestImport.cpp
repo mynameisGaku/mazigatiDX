@@ -7,6 +7,7 @@
 #include <cstring>
 #include <string>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Animation/ModelAnimator.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Asset/DefinitionEditing.h"
@@ -47,8 +48,8 @@ namespace
 		{
 			for ( const FVector3& P : Mesh.Positions )
 			{
-				Bounds.Min = FVector3( std::min( Bounds.Min.x, P.x ), std::min( Bounds.Min.y, P.y ), std::min( Bounds.Min.z, P.z ) );
-				Bounds.Max = FVector3( std::max( Bounds.Max.x, P.x ), std::max( Bounds.Max.y, P.y ), std::max( Bounds.Max.z, P.z ) );
+				Bounds.Min = FVector3( NMath::Min( Bounds.Min.x, P.x ), NMath::Min( Bounds.Min.y, P.y ), NMath::Min( Bounds.Min.z, P.z ) );
+				Bounds.Max = FVector3( NMath::Max( Bounds.Max.x, P.x ), NMath::Max( Bounds.Max.y, P.y ), NMath::Max( Bounds.Max.z, P.z ) );
 			}
 		}
 		return Bounds;
@@ -86,8 +87,8 @@ namespace
 			for ( const FVector3& P : Mesh.Positions )
 			{
 				const FVector3 W = TransformPoint( World, P );
-				Bounds.Min = FVector3( std::min( Bounds.Min.x, W.x ), std::min( Bounds.Min.y, W.y ), std::min( Bounds.Min.z, W.z ) );
-				Bounds.Max = FVector3( std::max( Bounds.Max.x, W.x ), std::max( Bounds.Max.y, W.y ), std::max( Bounds.Max.z, W.z ) );
+				Bounds.Min = FVector3( NMath::Min( Bounds.Min.x, W.x ), NMath::Min( Bounds.Min.y, W.y ), NMath::Min( Bounds.Min.z, W.z ) );
+				Bounds.Max = FVector3( NMath::Max( Bounds.Max.x, W.x ), NMath::Max( Bounds.Max.y, W.y ), NMath::Max( Bounds.Max.z, W.z ) );
 			}
 		}
 		return Bounds;
@@ -95,8 +96,8 @@ namespace
 
 	bool BoundsNear( const FBounds& Bounds, float32 MinX, float32 MinY, float32 MinZ, float32 MaxX, float32 MaxY, float32 MaxZ, float32 Tolerance = 1.0e-4f )
 	{
-		return std::fabs( Bounds.Min.x - MinX ) <= Tolerance && std::fabs( Bounds.Min.y - MinY ) <= Tolerance && std::fabs( Bounds.Min.z - MinZ ) <= Tolerance
-			   && std::fabs( Bounds.Max.x - MaxX ) <= Tolerance && std::fabs( Bounds.Max.y - MaxY ) <= Tolerance && std::fabs( Bounds.Max.z - MaxZ ) <= Tolerance;
+		return NMath::Abs( Bounds.Min.x - MinX ) <= Tolerance && NMath::Abs( Bounds.Min.y - MinY ) <= Tolerance && NMath::Abs( Bounds.Min.z - MinZ ) <= Tolerance
+			   && NMath::Abs( Bounds.Max.x - MaxX ) <= Tolerance && NMath::Abs( Bounds.Max.y - MaxY ) <= Tolerance && NMath::Abs( Bounds.Max.z - MaxZ ) <= Tolerance;
 	}
 
 	int32 CountOf( const FString& Text, const char* Needle )
@@ -278,11 +279,11 @@ namespace
 		NImportedScene::LimitInfluences( Influences );
 		float32 Sum = 0.0f;
 		for ( const FImportInfluence& Influence : Influences ) Sum += Influence.Weight;
-		C.Check( Influences.Num() == 4 && Influences[0].Cluster == 0 && Influences[3].Cluster == 3 && std::fabs( Sum - 1.0f ) < 1.0e-5f, "the 4 strongest bones are kept and the weights sum to 1" );
+		C.Check( Influences.Num() == 4 && Influences[0].Cluster == 0 && Influences[3].Cluster == 3 && NMath::Abs( Sum - 1.0f ) < 1.0e-5f, "the 4 strongest bones are kept and the weights sum to 1" );
 		C.Near( Influences[0].Weight, 6.0 / 18.0, 1.0e-5, "the weights keep their proportions" );
 		TArray<FImportInfluence> Half { FImportInfluence { 0, 0.25f }, FImportInfluence { 1, 0.25f } };
 		NImportedScene::LimitInfluences( Half );
-		C.Check( Half.Num() == 2 && std::fabs( Half[0].Weight - 0.5f ) < 1.0e-5f, "weights that sum to less than 1 are scaled up" );
+		C.Check( Half.Num() == 2 && NMath::Abs( Half[0].Weight - 0.5f ) < 1.0e-5f, "weights that sum to less than 1 are scaled up" );
 		TArray<FImportInfluence> Zeros { FImportInfluence { 0, 0.0f }, FImportInfluence { 1, -1.0f } };
 		NImportedScene::LimitInfluences( Zeros );
 		C.Check( Zeros.IsEmpty(), "zero and negative weights are dropped" );
@@ -440,12 +441,12 @@ namespace
 		for ( const FVector2& UV : Mesh.UVs )
 		{
 			// ファイルの V は 0 / 0.25（下が 0）。DirectX は上が 0 なので、1 / 0.75 になる
-			bFlippedUV = bFlippedUV && ( UV.x == 0.0f || UV.x == 1.0f ) && ( std::fabs( UV.y - 1.0f ) < 1.0e-5f || std::fabs( UV.y - 0.75f ) < 1.0e-5f );
+			bFlippedUV = bFlippedUV && ( UV.x == 0.0f || UV.x == 1.0f ) && ( NMath::Abs( UV.y - 1.0f ) < 1.0e-5f || NMath::Abs( UV.y - 0.75f ) < 1.0e-5f );
 		}
 		C.Check( bFlippedUV, "UVs are flipped vertically (V = 1 - V)" );
 
 		// マテリアルと画像
-		C.Check( Scene.Materials.Num() == 1 && std::fabs( Scene.Materials[0].Diffuse[0] - 0.25f ) < 1.0e-5f && std::fabs( Scene.Materials[0].Diffuse[2] - 0.75f ) < 1.0e-5f, "the material's diffuse colour" );
+		C.Check( Scene.Materials.Num() == 1 && NMath::Abs( Scene.Materials[0].Diffuse[0] - 0.25f ) < 1.0e-5f && NMath::Abs( Scene.Materials[0].Diffuse[2] - 0.75f ) < 1.0e-5f, "the material's diffuse colour" );
 		C.Check( Scene.Textures.Num() == 1 && Scene.Textures[0].File == "sheet.bmp" && Scene.Materials[0].Texture == 0 && Scene.Textures[0].EmbeddedData.IsEmpty(), "the diffuse texture is referenced by file name" );
 		bool bAllMaterial0 = true;
 		for ( const int32 Material : Mesh.TriangleMaterials ) bAllMaterial0 = bAllMaterial0 && Material == 0;
@@ -460,7 +461,7 @@ namespace
 			for ( const FImportedCluster& Cluster : Mesh.Clusters )
 				for ( int32 i = 0; i < Cluster.Vertices.Num(); ++i ) Totals[Cluster.Vertices[i]] += Cluster.Weights[i];
 			bool bNormalised = true;
-			for ( const float32 Total : Totals ) bNormalised = bNormalised && std::fabs( Total - 1.0f ) < 1.0e-4f;
+			for ( const float32 Total : Totals ) bNormalised = bNormalised && NMath::Abs( Total - 1.0f ) < 1.0e-4f;
 			C.Check( bNormalised, "the weights of every vertex sum to 1" );
 			const FImportedCluster* ForBone1 = Mesh.Clusters[0].BoneNode == Bone1 ? &Mesh.Clusters[0] : &Mesh.Clusters[1];
 			const FImportedCluster* ForBone2 = Mesh.Clusters[0].BoneNode == Bone2 ? &Mesh.Clusters[0] : &Mesh.Clusters[1];
@@ -477,7 +478,7 @@ namespace
 					const float32 Y = Mesh.Positions[Cluster.Vertices[i]].y;
 					if ( Y == 0.0f && !( Cluster.BoneNode == Bone1 && Cluster.Weights[i] == 1.0f ) ) bRings = false;
 					if ( Y == 2.0f && !( Cluster.BoneNode == Bone2 && Cluster.Weights[i] == 1.0f ) ) bRings = false;
-					if ( Y == 1.0f && std::fabs( Cluster.Weights[i] - 0.5f ) > 1.0e-5f ) bRings = false;
+					if ( Y == 1.0f && NMath::Abs( Cluster.Weights[i] - 0.5f ) > 1.0e-5f ) bRings = false;
 				}
 			}
 			C.Check( bRings, "bottom ring -> Bone1, top ring -> Bone2, middle ring half and half" );
@@ -491,10 +492,10 @@ namespace
 			C.Check( Track.Node == Bone2 && Track.Keys.Num() == 31, "only Bone2 moves (Bone1 and Bar have no track)" );
 			C.Check( Track.Keys[0].NearlyEquals( Scene.Nodes[Bone2].Local, 1.0e-4f ), "the first key is the rest pose" );
 			const FImportMatrix& Last = Track.Keys[30];
-			C.Check( std::fabs( Last.M[0] ) < 1.0e-4f && std::fabs( Last.M[1] - 1.0f ) < 1.0e-4f && std::fabs( Last.M[4] + 1.0f ) < 1.0e-4f && std::fabs( Last.M[13] - 1.0f ) < 1.0e-4f,
+			C.Check( NMath::Abs( Last.M[0] ) < 1.0e-4f && NMath::Abs( Last.M[1] - 1.0f ) < 1.0e-4f && NMath::Abs( Last.M[4] + 1.0f ) < 1.0e-4f && NMath::Abs( Last.M[13] - 1.0f ) < 1.0e-4f,
 					 "the last key is a 90 degree turn around Z, still at (0, 1, 0)" );
 			const FImportMatrix& Middle = Track.Keys[15];
-			C.Check( std::fabs( Middle.M[0] - 0.70710678f ) < 2.0e-3f && std::fabs( Middle.M[1] - 0.70710678f ) < 2.0e-3f, "the middle key is 45 degrees (the curve is symmetric)" );
+			C.Check( NMath::Abs( Middle.M[0] - 0.70710678f ) < 2.0e-3f && NMath::Abs( Middle.M[1] - 0.70710678f ) < 2.0e-3f, "the middle key is 45 degrees (the curve is symmetric)" );
 		}
 		else
 		{

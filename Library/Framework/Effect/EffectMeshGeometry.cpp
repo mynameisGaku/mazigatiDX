@@ -4,6 +4,8 @@
 #include <cmath>
 #include <utility>
 
+#include "Library/Core/Types/Utility.h"
+
 namespace
 {
 	// XY面の頂点へ位置・法線・UVをまとめて設定する。
@@ -83,7 +85,7 @@ bool NEffectMesh::BuildGeometry( const FEffectMeshDefinition& Definition, FEffec
 		if ( Error != nullptr ) *Error = "meshの種類が未対応です";
 		return false;
 	}
-	Out = std::move( Geometry );
+	Out = MoveTemp( Geometry );
 	if ( Error != nullptr ) Error->Empty();
 	return true;
 }

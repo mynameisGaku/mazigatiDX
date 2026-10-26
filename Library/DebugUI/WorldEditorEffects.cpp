@@ -1,5 +1,6 @@
 ﻿#include <algorithm>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/WorldEditorInternal.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Render/DrawContext.h"
@@ -46,7 +47,7 @@ namespace
 		FEffectPlayParams Params;
 		Params.Scale = Effect.Scale;
 		Params.Speed = Effect.Speed;
-		Params.Seed = static_cast<uint32>( std::max( Effect.Seed, 0 ) );
+		Params.Seed = static_cast<uint32>( NMath::Max( Effect.Seed, 0 ) );
 		Params.Loop = Effect.Loop;
 		return Params;
 	}
@@ -61,7 +62,7 @@ void NWorldEditorUI::UpdateEffectPreviews( FWorldEditorState& S, float32 DeltaTi
 		return;
 	}
 	const FWorldDefinition& World = S.Session.Document.Get();
-	const float32 Step = std::clamp( DeltaTime, 0.0f, MaxStep );
+	const float32 Step = NMath::Clamp( DeltaTime, 0.0f, MaxStep );
 	TSet<int32> Seen;
 	TArray<FTransform> Transforms;
 	for ( int32 Index = 0; Index < World.Objects.Num(); ++Index )
@@ -93,10 +94,10 @@ void NWorldEditorUI::UpdateEffectPreviews( FWorldEditorState& S, float32 DeltaTi
 			if ( Spec.Target != WorldNoId )
 			{
 				const int32 TargetIndex = World.FindIndexById( Spec.Target );
-				if ( TargetIndex != INDEX_NONE && TargetIndex < Transforms.Num() && std::isfinite( Spec.TargetOffset.x ) && std::isfinite( Spec.TargetOffset.y ) && std::isfinite( Spec.TargetOffset.z ) && Spec.Target != Object.Id )
+				if ( TargetIndex != INDEX_NONE && TargetIndex < Transforms.Num() && NMath::IsFinite( Spec.TargetOffset.x ) && NMath::IsFinite( Spec.TargetOffset.y ) && NMath::IsFinite( Spec.TargetOffset.z ) && Spec.Target != Object.Id )
 				{
 					const FVector3 TargetPosition = Transforms[TargetIndex].TransformPoint( Spec.TargetOffset );
-					if ( std::isfinite( TargetPosition.x ) && std::isfinite( TargetPosition.y ) && std::isfinite( TargetPosition.z ) ) Preview.Playback->SetTargetPosition( TargetPosition );
+					if ( NMath::IsFinite( TargetPosition.x ) && NMath::IsFinite( TargetPosition.y ) && NMath::IsFinite( TargetPosition.z ) ) Preview.Playback->SetTargetPosition( TargetPosition );
 					else Preview.Playback->ClearTargetPosition();
 				}
 				else Preview.Playback->ClearTargetPosition();

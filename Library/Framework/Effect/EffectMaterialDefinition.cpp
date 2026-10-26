@@ -4,6 +4,8 @@
 #include <cmath>
 #include <limits>
 
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Json/JsonHelpers.h"
 #include "Library/Framework/World/WorldDefinition.h"
 
@@ -25,7 +27,7 @@ namespace
 	// 数値を丸めず FVector2 へ読む。配列や成分が不正なら false にする。
 	bool ReadVector2( const NlohmannJson& Json, FVector2& Out )
 	{
-		const float32 Invalid = std::numeric_limits<float32>::quiet_NaN(); // 不正値を検証へ残す値。
+		const float32 Invalid = TNumericLimits<float32>::QuietNaN(); // 不正値を検証へ残す値。
 		Out = FVector2( Invalid, Invalid );
 		if ( !Json.is_array() || Json.size() < 2 || !Json[0].is_number() || !Json[1].is_number() ) return false;
 		try
@@ -43,7 +45,7 @@ namespace
 	bool ReadFloat( const NlohmannJson& Json, float32& Out )
 	{
 		// 読めない値が検証で見つかるよう、失敗値を NaN にする。
-		Out = std::numeric_limits<float32>::quiet_NaN();
+		Out = TNumericLimits<float32>::QuietNaN();
 		if ( !Json.is_number() ) return false;
 		try
 		{
@@ -137,23 +139,23 @@ bool FEffectMaterialDefinition::FromJson( const NlohmannJson& Json, FEffectMater
 		for ( const FString& Message : DistortionWarnings ) if ( Warnings != nullptr ) Warnings->Add( FString( "Distortion: " ) + Message );
 	}
 	if ( bReadError ) Material.Dissolve.Interpolation = static_cast<FEffectScalarCurve::EInterpolation>( 0xFFu );
-	Out = std::move( Material );
+	Out = MoveTemp( Material );
 	return true;
 }
 
 TArray<FString> FEffectMaterialDefinition::Validate() const
 {
 	TArray<FString> Issues; // 見つかった材質の問題。
-	if ( !std::isfinite( UVScale.x ) || !std::isfinite( UVScale.y ) || UVScale.x <= 0.0f || UVScale.y <= 0.0f || UVScale.x > 128.0f || UVScale.y > 128.0f ) Issues.Add( "UVScale は有限の 0 より大きく 128 以下にしてください" );
-	if ( !std::isfinite( UVScroll.x ) || !std::isfinite( UVScroll.y ) || std::fabs( UVScroll.x ) > 128.0f || std::fabs( UVScroll.y ) > 128.0f ) Issues.Add( "UVScroll は有限で各成分の絶対値を 128 以下にしてください" );
-	if ( !std::isfinite( MaskScale ) || MaskScale <= 0.0f || MaskScale > 128.0f ) Issues.Add( "MaskScale は有限の 0 より大きく 128 以下にしてください" );
+	if ( !NMath::IsFinite( UVScale.x ) || !NMath::IsFinite( UVScale.y ) || UVScale.x <= 0.0f || UVScale.y <= 0.0f || UVScale.x > 128.0f || UVScale.y > 128.0f ) Issues.Add( "UVScale は有限の 0 より大きく 128 以下にしてください" );
+	if ( !NMath::IsFinite( UVScroll.x ) || !NMath::IsFinite( UVScroll.y ) || NMath::Abs( UVScroll.x ) > 128.0f || NMath::Abs( UVScroll.y ) > 128.0f ) Issues.Add( "UVScroll は有限で各成分の絶対値を 128 以下にしてください" );
+	if ( !NMath::IsFinite( MaskScale ) || MaskScale <= 0.0f || MaskScale > 128.0f ) Issues.Add( "MaskScale は有限の 0 より大きく 128 以下にしてください" );
 	for ( const FString& Issue : Dissolve.Validate() ) Issues.Add( "Dissolve: " + Issue );
-	for ( const FEffectScalarCurve::FKey& Key : Dissolve.Keys ) if ( std::isfinite( Key.Value ) && ( Key.Value < 0.0f || Key.Value > 1.0f ) ) Issues.Add( "Dissolve の値は 0 から 1 にしてください" );
+	for ( const FEffectScalarCurve::FKey& Key : Dissolve.Keys ) if ( NMath::IsFinite( Key.Value ) && ( Key.Value < 0.0f || Key.Value > 1.0f ) ) Issues.Add( "Dissolve の値は 0 から 1 にしてください" );
 	for ( const FString& Issue : Emission.Validate() ) Issues.Add( "Emission: " + Issue );
-	for ( const FEffectScalarCurve::FKey& Key : Emission.Keys ) if ( std::isfinite( Key.Value ) && ( Key.Value < 0.0f || Key.Value > 32.0f ) ) Issues.Add( "Emission の値は 0 から 32 にしてください" );
+	for ( const FEffectScalarCurve::FKey& Key : Emission.Keys ) if ( NMath::IsFinite( Key.Value ) && ( Key.Value < 0.0f || Key.Value > 32.0f ) ) Issues.Add( "Emission の値は 0 から 32 にしてください" );
 	for ( const FString& Issue : Distortion.Validate() ) Issues.Add( FString( "Distortion: " ) + Issue );
-	if ( !std::isfinite( EdgeWidth ) || EdgeWidth < 0.0f || EdgeWidth > 1.0f ) Issues.Add( "EdgeWidth は有限の 0 から 1 にしてください" );
-	if ( !std::isfinite( EdgeEmission ) || EdgeEmission < 0.0f || EdgeEmission > 32.0f ) Issues.Add( "EdgeEmission は有限の 0 から 32 にしてください" );
+	if ( !NMath::IsFinite( EdgeWidth ) || EdgeWidth < 0.0f || EdgeWidth > 1.0f ) Issues.Add( "EdgeWidth は有限の 0 から 1 にしてください" );
+	if ( !NMath::IsFinite( EdgeEmission ) || EdgeEmission < 0.0f || EdgeEmission > 32.0f ) Issues.Add( "EdgeEmission は有限の 0 から 32 にしてください" );
 	return Issues;
 }
 

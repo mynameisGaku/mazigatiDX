@@ -5,6 +5,8 @@
 #include <limits>
 #include <utility>
 
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Json/JsonHelpers.h"
 
 namespace
@@ -62,7 +64,7 @@ namespace
 	bool ReadVector( const NlohmannJson& Json, FVector3& Out )
 	{
 		// Validateで読み取り失敗を検出する値。
-		const float32 Invalid = std::numeric_limits<float32>::quiet_NaN();
+		const float32 Invalid = TNumericLimits<float32>::QuietNaN();
 		Out = FVector3( Invalid, Invalid, Invalid );
 		if ( !Json.is_array() || Json.size() != 3 || !Json[0].is_number() || !Json[1].is_number() || !Json[2].is_number() ) return false;
 		try { Out = FVector3( Json[0].get<float32>(), Json[1].get<float32>(), Json[2].get<float32>() ); return true; }
@@ -73,7 +75,7 @@ namespace
 	bool ReadFloat( const NlohmannJson& Json, float32& Out )
 	{
 		// Validateで読み取り失敗を検出する値。
-		Out = std::numeric_limits<float32>::quiet_NaN();
+		Out = TNumericLimits<float32>::QuietNaN();
 		if ( !Json.is_number() ) return false;
 		try { Out = Json.get<float32>(); return true; }
 		catch ( const nlohmann::json::exception& ) { return false; }
@@ -121,11 +123,11 @@ bool FEffectForceFieldDefinition::IsValidSettings() const
 	const auto IsValidVector = []( const FVector3& Value )
 	{
 		// 各成分が許容範囲にあるか調べる。
-		return std::isfinite( Value.x ) && std::isfinite( Value.y ) && std::isfinite( Value.z ) && std::fabs( Value.x ) <= MaxMagnitude && std::fabs( Value.y ) <= MaxMagnitude && std::fabs( Value.z ) <= MaxMagnitude;
+		return NMath::IsFinite( Value.x ) && NMath::IsFinite( Value.y ) && NMath::IsFinite( Value.z ) && NMath::Abs( Value.x ) <= MaxMagnitude && NMath::Abs( Value.y ) <= MaxMagnitude && NMath::Abs( Value.z ) <= MaxMagnitude;
 	};
 	// 回転軸ベクトルの長さ二乗。
 	const double AxisLengthSquared = VectorLengthSquared( Axis );
-	return InvalidFieldTypes == 0 && IsKnownKind( Kind ) && IsValidVector( Acceleration ) && IsValidVector( Position ) && IsValidVector( Axis ) && std::isfinite( AxisLengthSquared ) && AxisLengthSquared >= 1.0e-12 && std::isfinite( Radius ) && Radius > 0.0f && Radius <= MaxMagnitude && std::isfinite( Strength ) && std::fabs( Strength ) <= MaxMagnitude && std::isfinite( Frequency ) && Frequency > 0.0f && Frequency <= MaxMagnitude && std::isfinite( ScrollSpeed ) && std::fabs( ScrollSpeed ) <= MaxMagnitude;
+	return InvalidFieldTypes == 0 && IsKnownKind( Kind ) && IsValidVector( Acceleration ) && IsValidVector( Position ) && IsValidVector( Axis ) && NMath::IsFinite( AxisLengthSquared ) && AxisLengthSquared >= 1.0e-12 && NMath::IsFinite( Radius ) && Radius > 0.0f && Radius <= MaxMagnitude && NMath::IsFinite( Strength ) && NMath::Abs( Strength ) <= MaxMagnitude && NMath::IsFinite( Frequency ) && Frequency > 0.0f && Frequency <= MaxMagnitude && NMath::IsFinite( ScrollSpeed ) && NMath::Abs( ScrollSpeed ) <= MaxMagnitude;
 }
 
 FVector3 FEffectForceFieldDefinition::EvaluateAcceleration( const FVector3& WorldPosition ) const
@@ -135,7 +137,7 @@ FVector3 FEffectForceFieldDefinition::EvaluateAcceleration( const FVector3& Worl
 
 FVector3 FEffectForceFieldDefinition::EvaluateAcceleration( const FVector3& WorldPosition, const FTransform& EffectTransform, float32 Time ) const
 {
-	if ( !bEnabled || !IsValidSettings() || !std::isfinite( WorldPosition.x ) || !std::isfinite( WorldPosition.y ) || !std::isfinite( WorldPosition.z ) || !std::isfinite( Time ) ) return FVector3::Zero;
+	if ( !bEnabled || !IsValidSettings() || !NMath::IsFinite( WorldPosition.x ) || !NMath::IsFinite( WorldPosition.y ) || !NMath::IsFinite( WorldPosition.z ) || !NMath::IsFinite( Time ) ) return FVector3::Zero;
 	// 追従時に局所座標と出力加速度へ適用する正規化済み回転。
 	FQuaternion FollowRotation = FQuaternion::Identity;
 	// 力場を評価する座標（追従時はエミッター局所、非追従時はワールド）。
@@ -152,10 +154,10 @@ FVector3 FEffectForceFieldDefinition::EvaluateAcceleration( const FVector3& Worl
 		const double QuatW = EffectTransform.Rotation.w;
 		// 四元数の長さ二乗。
 		const double QuatLenSq = QuatX * QuatX + QuatY * QuatY + QuatZ * QuatZ + QuatW * QuatW;
-		if ( !std::isfinite( EffectTransform.Position.x ) || !std::isfinite( EffectTransform.Position.y ) || !std::isfinite( EffectTransform.Position.z ) || !std::isfinite( QuatX ) || !std::isfinite( QuatY ) || !std::isfinite( QuatZ ) || !std::isfinite( QuatW ) || !std::isfinite( QuatLenSq ) || QuatLenSq <= 1.0e-12 ) return FVector3::Zero;
+		if ( !NMath::IsFinite( EffectTransform.Position.x ) || !NMath::IsFinite( EffectTransform.Position.y ) || !NMath::IsFinite( EffectTransform.Position.z ) || !NMath::IsFinite( QuatX ) || !NMath::IsFinite( QuatY ) || !NMath::IsFinite( QuatZ ) || !NMath::IsFinite( QuatW ) || !NMath::IsFinite( QuatLenSq ) || QuatLenSq <= 1.0e-12 ) return FVector3::Zero;
 		// 四元数を正規化する長さ。
 		const double QuatLen = std::sqrt( QuatLenSq );
-		if ( !std::isfinite( QuatLen ) || QuatLen <= 0.0 ) return FVector3::Zero;
+		if ( !NMath::IsFinite( QuatLen ) || QuatLen <= 0.0 ) return FVector3::Zero;
 		FollowRotation = FQuaternion( static_cast<float32>( QuatX / QuatLen ), static_cast<float32>( QuatY / QuatLen ), static_cast<float32>( QuatZ / QuatLen ), static_cast<float32>( QuatW / QuatLen ) );
 		// エミッター位置からWorld位置へのX差。
 		const double OffsetX = static_cast<double>( WorldPosition.x ) - EffectTransform.Position.x;
@@ -164,12 +166,12 @@ FVector3 FEffectForceFieldDefinition::EvaluateAcceleration( const FVector3& Worl
 		// エミッター位置からWorld位置へのZ差。
 		const double OffsetZ = static_cast<double>( WorldPosition.z ) - EffectTransform.Position.z;
 		// float32で表せる絶対値の上限。
-		const double FloatLimit = std::numeric_limits<float32>::max();
-		if ( !std::isfinite( OffsetX ) || !std::isfinite( OffsetY ) || !std::isfinite( OffsetZ ) || std::fabs( OffsetX ) > FloatLimit || std::fabs( OffsetY ) > FloatLimit || std::fabs( OffsetZ ) > FloatLimit ) return FVector3::Zero;
+		const double FloatLimit = TNumericLimits<float32>::Max();
+		if ( !NMath::IsFinite( OffsetX ) || !NMath::IsFinite( OffsetY ) || !NMath::IsFinite( OffsetZ ) || NMath::Abs( OffsetX ) > FloatLimit || NMath::Abs( OffsetY ) > FloatLimit || NMath::Abs( OffsetZ ) > FloatLimit ) return FVector3::Zero;
 		// 逆回転へ渡す有限な相対位置。
 		const FVector3 Offset( static_cast<float32>( OffsetX ), static_cast<float32>( OffsetY ), static_cast<float32>( OffsetZ ) );
 		EvaluationPosition = FollowRotation.UnrotateVector( Offset );
-		if ( !std::isfinite( EvaluationPosition.x ) || !std::isfinite( EvaluationPosition.y ) || !std::isfinite( EvaluationPosition.z ) ) return FVector3::Zero;
+		if ( !NMath::IsFinite( EvaluationPosition.x ) || !NMath::IsFinite( EvaluationPosition.y ) || !NMath::IsFinite( EvaluationPosition.z ) ) return FVector3::Zero;
 	}
 	// 場の座標系で求めた加速度。
 	FVector3 LocalResult = FVector3::Zero;
@@ -184,7 +186,7 @@ FVector3 FEffectForceFieldDefinition::EvaluateAcceleration( const FVector3& Worl
 		const double DeltaZ = static_cast<double>( EvaluationPosition.z ) - Position.z;
 		// 二乗和のoverflowを避けるdouble距離。
 		const double Distance = std::sqrt( DeltaX * DeltaX + DeltaY * DeltaY + DeltaZ * DeltaZ );
-		if ( !std::isfinite( Distance ) || Distance >= static_cast<double>( Radius ) ) return FVector3::Zero;
+		if ( !NMath::IsFinite( Distance ) || Distance >= static_cast<double>( Radius ) ) return FVector3::Zero;
 		// 中心で1、半径境界で0になる線形減衰係数。
 		const double Falloff = 1.0 - Distance / static_cast<double>( Radius );
 		// 半径に比例して弱まる加速度の大きさ。
@@ -199,7 +201,7 @@ FVector3 FEffectForceFieldDefinition::EvaluateAcceleration( const FVector3& Worl
 			if ( Distance == 0.0 ) return FVector3::Zero;
 			// 回転軸の長さを求めるdouble値。
 			const double AxisLength = std::sqrt( VectorLengthSquared( Axis ) );
-			if ( !std::isfinite( AxisLength ) || AxisLength <= 0.0 ) return FVector3::Zero;
+			if ( !NMath::IsFinite( AxisLength ) || AxisLength <= 0.0 ) return FVector3::Zero;
 			// 正規化した回転軸のX成分。
 			const double AxisX = static_cast<double>( Axis.x ) / AxisLength;
 			// 正規化した回転軸のY成分。
@@ -214,7 +216,7 @@ FVector3 FEffectForceFieldDefinition::EvaluateAcceleration( const FVector3& Worl
 			const double CrossZ = AxisX * DeltaY - AxisY * DeltaX;
 			// 外積ベクトルの長さ。
 			const double CrossLen = std::sqrt( CrossX * CrossX + CrossY * CrossY + CrossZ * CrossZ );
-			if ( !std::isfinite( CrossLen ) || CrossLen <= 1.0e-12 ) return FVector3::Zero;
+			if ( !NMath::IsFinite( CrossLen ) || CrossLen <= 1.0e-12 ) return FVector3::Zero;
 			LocalResult = FVector3( static_cast<float32>( CrossX / CrossLen * Magnitude ), static_cast<float32>( CrossY / CrossLen * Magnitude ), static_cast<float32>( CrossZ / CrossLen * Magnitude ) );
 		}
 		else if ( Kind == EKind::Turbulence )
@@ -229,7 +231,7 @@ FVector3 FEffectForceFieldDefinition::EvaluateAcceleration( const FVector3& Worl
 			const double PhaseY = DeltaY * Omega + Phase;
 			// Z座標に対応する位相。
 			const double PhaseZ = DeltaZ * Omega + Phase;
-			if ( !std::isfinite( PhaseX ) || !std::isfinite( PhaseY ) || !std::isfinite( PhaseZ ) ) return FVector3::Zero;
+			if ( !NMath::IsFinite( PhaseX ) || !NMath::IsFinite( PhaseY ) || !NMath::IsFinite( PhaseZ ) ) return FVector3::Zero;
 			// 3軸が独立に変化する決定論的Beltrami波のX成分。
 			const double WaveX = std::sin( PhaseY ) + std::cos( PhaseZ );
 			// 3軸が独立に変化する決定論的Beltrami波のY成分。
@@ -242,7 +244,7 @@ FVector3 FEffectForceFieldDefinition::EvaluateAcceleration( const FVector3& Worl
 	}
 	// 追従時はエミッターの回転でワールド向きへ戻した最終加速度。
 	const FVector3 Result = bFollowEmitter ? FollowRotation.Rotate( LocalResult ) : LocalResult;
-	if ( !std::isfinite( Result.x ) || !std::isfinite( Result.y ) || !std::isfinite( Result.z ) ) return FVector3::Zero;
+	if ( !NMath::IsFinite( Result.x ) || !NMath::IsFinite( Result.y ) || !NMath::IsFinite( Result.z ) ) return FVector3::Zero;
 	return Result;
 }
 
@@ -253,13 +255,13 @@ NlohmannJson FEffectForceFieldDefinition::ToJson() const
 	Json["Enabled"] = ( InvalidFieldTypes & InvalidEnabled ) != 0 ? NlohmannJson( nullptr ) : NlohmannJson( bEnabled );
 	Json["Kind"] = ( InvalidFieldTypes & InvalidKind ) != 0 || !IsKnownKind( Kind ) ? NlohmannJson( nullptr ) : NlohmannJson( ToString( Kind ) );
 	Json["FollowEmitter"] = ( InvalidFieldTypes & InvalidFollowEmitter ) != 0 ? NlohmannJson( nullptr ) : NlohmannJson( bFollowEmitter );
-	Json["Acceleration"] = ( InvalidFieldTypes & InvalidAcceleration ) != 0 || !std::isfinite( Acceleration.x ) || !std::isfinite( Acceleration.y ) || !std::isfinite( Acceleration.z ) ? NlohmannJson( nullptr ) : NlohmannJson::array( { Acceleration.x, Acceleration.y, Acceleration.z } );
-	Json["Position"] = ( InvalidFieldTypes & InvalidPosition ) != 0 || !std::isfinite( Position.x ) || !std::isfinite( Position.y ) || !std::isfinite( Position.z ) ? NlohmannJson( nullptr ) : NlohmannJson::array( { Position.x, Position.y, Position.z } );
-	Json["Axis"] = ( InvalidFieldTypes & InvalidAxis ) != 0 || !std::isfinite( Axis.x ) || !std::isfinite( Axis.y ) || !std::isfinite( Axis.z ) ? NlohmannJson( nullptr ) : NlohmannJson::array( { Axis.x, Axis.y, Axis.z } );
-	Json["Radius"] = ( InvalidFieldTypes & InvalidRadius ) != 0 || !std::isfinite( Radius ) ? NlohmannJson( nullptr ) : NlohmannJson( Radius );
-	Json["Strength"] = ( InvalidFieldTypes & InvalidStrength ) != 0 || !std::isfinite( Strength ) ? NlohmannJson( nullptr ) : NlohmannJson( Strength );
-	Json["Frequency"] = ( InvalidFieldTypes & InvalidFrequency ) != 0 || !std::isfinite( Frequency ) ? NlohmannJson( nullptr ) : NlohmannJson( Frequency );
-	Json["ScrollSpeed"] = ( InvalidFieldTypes & InvalidScrollSpeed ) != 0 || !std::isfinite( ScrollSpeed ) ? NlohmannJson( nullptr ) : NlohmannJson( ScrollSpeed );
+	Json["Acceleration"] = ( InvalidFieldTypes & InvalidAcceleration ) != 0 || !NMath::IsFinite( Acceleration.x ) || !NMath::IsFinite( Acceleration.y ) || !NMath::IsFinite( Acceleration.z ) ? NlohmannJson( nullptr ) : NlohmannJson::array( { Acceleration.x, Acceleration.y, Acceleration.z } );
+	Json["Position"] = ( InvalidFieldTypes & InvalidPosition ) != 0 || !NMath::IsFinite( Position.x ) || !NMath::IsFinite( Position.y ) || !NMath::IsFinite( Position.z ) ? NlohmannJson( nullptr ) : NlohmannJson::array( { Position.x, Position.y, Position.z } );
+	Json["Axis"] = ( InvalidFieldTypes & InvalidAxis ) != 0 || !NMath::IsFinite( Axis.x ) || !NMath::IsFinite( Axis.y ) || !NMath::IsFinite( Axis.z ) ? NlohmannJson( nullptr ) : NlohmannJson::array( { Axis.x, Axis.y, Axis.z } );
+	Json["Radius"] = ( InvalidFieldTypes & InvalidRadius ) != 0 || !NMath::IsFinite( Radius ) ? NlohmannJson( nullptr ) : NlohmannJson( Radius );
+	Json["Strength"] = ( InvalidFieldTypes & InvalidStrength ) != 0 || !NMath::IsFinite( Strength ) ? NlohmannJson( nullptr ) : NlohmannJson( Strength );
+	Json["Frequency"] = ( InvalidFieldTypes & InvalidFrequency ) != 0 || !NMath::IsFinite( Frequency ) ? NlohmannJson( nullptr ) : NlohmannJson( Frequency );
+	Json["ScrollSpeed"] = ( InvalidFieldTypes & InvalidScrollSpeed ) != 0 || !NMath::IsFinite( ScrollSpeed ) ? NlohmannJson( nullptr ) : NlohmannJson( ScrollSpeed );
 	return Json;
 }
 
@@ -271,7 +273,7 @@ bool FEffectForceFieldDefinition::FromJson( const NlohmannJson& Json, FEffectFor
 	{
 		Definition.InvalidFieldTypes = InvalidAll;
 		Warn( Warnings, "力場はオブジェクトにしてください" );
-		Out = std::move( Definition );
+		Out = MoveTemp( Definition );
 		return true;
 	}
 	if ( Json.contains( "Enabled" ) )
@@ -305,7 +307,7 @@ bool FEffectForceFieldDefinition::FromJson( const NlohmannJson& Json, FEffectFor
 	if ( Json.contains( "Strength" ) && !ReadFloat( Json["Strength"], Definition.Strength ) ) { Definition.InvalidFieldTypes |= InvalidStrength; Warn( Warnings, "Strengthは数値にしてください" ); }
 	if ( Json.contains( "Frequency" ) && !ReadFloat( Json["Frequency"], Definition.Frequency ) ) { Definition.InvalidFieldTypes |= InvalidFrequency; Warn( Warnings, "Frequencyは数値にしてください" ); }
 	if ( Json.contains( "ScrollSpeed" ) && !ReadFloat( Json["ScrollSpeed"], Definition.ScrollSpeed ) ) { Definition.InvalidFieldTypes |= InvalidScrollSpeed; Warn( Warnings, "ScrollSpeedは数値にしてください" ); }
-	Out = std::move( Definition );
+	Out = MoveTemp( Definition );
 	return true;
 }
 
@@ -320,17 +322,17 @@ TArray<FString> FEffectForceFieldDefinition::Validate() const
 	const auto ValidateVector = [&]( const FVector3& Value, uint16 InvalidBit, const char* Name )
 	{
 		// 未使用fieldを含む三成分の保存状態。
-		if ( ( InvalidFieldTypes & InvalidBit ) != 0 || !std::isfinite( Value.x ) || !std::isfinite( Value.y ) || !std::isfinite( Value.z ) || std::fabs( Value.x ) > MaxMagnitude || std::fabs( Value.y ) > MaxMagnitude || std::fabs( Value.z ) > MaxMagnitude ) Issues.Add( FString( "ForceField." ) + Name + "は有限で各成分の絶対値を1000000以下にしてください" );
+		if ( ( InvalidFieldTypes & InvalidBit ) != 0 || !NMath::IsFinite( Value.x ) || !NMath::IsFinite( Value.y ) || !NMath::IsFinite( Value.z ) || NMath::Abs( Value.x ) > MaxMagnitude || NMath::Abs( Value.y ) > MaxMagnitude || NMath::Abs( Value.z ) > MaxMagnitude ) Issues.Add( FString( "ForceField." ) + Name + "は有限で各成分の絶対値を1000000以下にしてください" );
 	};
 	ValidateVector( Acceleration, InvalidAcceleration, "Acceleration" );
 	ValidateVector( Position, InvalidPosition, "Position" );
 	// 回転軸ベクトルの長さ二乗。
 	const double AxisLengthSquared = VectorLengthSquared( Axis );
-	if ( ( InvalidFieldTypes & InvalidAxis ) != 0 || !std::isfinite( Axis.x ) || !std::isfinite( Axis.y ) || !std::isfinite( Axis.z ) || std::fabs( Axis.x ) > MaxMagnitude || std::fabs( Axis.y ) > MaxMagnitude || std::fabs( Axis.z ) > MaxMagnitude || !std::isfinite( AxisLengthSquared ) || AxisLengthSquared < 1.0e-12 ) Issues.Add( "ForceField.Axisはゼロでない有限ベクトルで各成分の絶対値を1000000以下にしてください" );
-	if ( ( InvalidFieldTypes & InvalidRadius ) != 0 || !std::isfinite( Radius ) || Radius <= 0.0f || Radius > MaxMagnitude ) Issues.Add( "ForceField.Radiusは0より大きく1000000以下にしてください" );
-	if ( ( InvalidFieldTypes & InvalidStrength ) != 0 || !std::isfinite( Strength ) || std::fabs( Strength ) > MaxMagnitude ) Issues.Add( "ForceField.Strengthは有限で絶対値を1000000以下にしてください" );
-	if ( ( InvalidFieldTypes & InvalidFrequency ) != 0 || !std::isfinite( Frequency ) || Frequency <= 0.0f || Frequency > MaxMagnitude ) Issues.Add( "ForceField.Frequencyは0より大きく1000000以下にしてください" );
-	if ( ( InvalidFieldTypes & InvalidScrollSpeed ) != 0 || !std::isfinite( ScrollSpeed ) || std::fabs( ScrollSpeed ) > MaxMagnitude ) Issues.Add( "ForceField.ScrollSpeedは有限で絶対値を1000000以下にしてください" );
+	if ( ( InvalidFieldTypes & InvalidAxis ) != 0 || !NMath::IsFinite( Axis.x ) || !NMath::IsFinite( Axis.y ) || !NMath::IsFinite( Axis.z ) || NMath::Abs( Axis.x ) > MaxMagnitude || NMath::Abs( Axis.y ) > MaxMagnitude || NMath::Abs( Axis.z ) > MaxMagnitude || !NMath::IsFinite( AxisLengthSquared ) || AxisLengthSquared < 1.0e-12 ) Issues.Add( "ForceField.Axisはゼロでない有限ベクトルで各成分の絶対値を1000000以下にしてください" );
+	if ( ( InvalidFieldTypes & InvalidRadius ) != 0 || !NMath::IsFinite( Radius ) || Radius <= 0.0f || Radius > MaxMagnitude ) Issues.Add( "ForceField.Radiusは0より大きく1000000以下にしてください" );
+	if ( ( InvalidFieldTypes & InvalidStrength ) != 0 || !NMath::IsFinite( Strength ) || NMath::Abs( Strength ) > MaxMagnitude ) Issues.Add( "ForceField.Strengthは有限で絶対値を1000000以下にしてください" );
+	if ( ( InvalidFieldTypes & InvalidFrequency ) != 0 || !NMath::IsFinite( Frequency ) || Frequency <= 0.0f || Frequency > MaxMagnitude ) Issues.Add( "ForceField.Frequencyは0より大きく1000000以下にしてください" );
+	if ( ( InvalidFieldTypes & InvalidScrollSpeed ) != 0 || !NMath::IsFinite( ScrollSpeed ) || NMath::Abs( ScrollSpeed ) > MaxMagnitude ) Issues.Add( "ForceField.ScrollSpeedは有限で絶対値を1000000以下にしてください" );
 	return Issues;
 }
 

@@ -6,6 +6,9 @@
 #include <limits>
 #include <utility>
 
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
+
 namespace
 {
 	// 完成形の一本と、親からの成長開始時刻をまとめて持つ。
@@ -22,7 +25,7 @@ namespace
 	// 座標・幅・時刻の計算に使う有限値判定。
 	bool IsFinite( const FVector3& Value )
 	{
-		return std::isfinite( Value.x ) && std::isfinite( Value.y ) && std::isfinite( Value.z );
+		return NMath::IsFinite( Value.x ) && NMath::IsFinite( Value.y ) && NMath::IsFinite( Value.z );
 	}
 
 	// seedと階層内番号から呼び出し順に依存しない32bit値を作る。
@@ -53,7 +56,7 @@ namespace
 	void MakeBasis( const FVector3& Axis, FVector3& Side, FVector3& Depth )
 	{
 		// 正面から見た左右を優先し、主軸と平行なら上方向へ切り替える。
-		const FVector3 PreferredNormal = std::fabs( FVector3::Dot( Axis, FVector3::Forward ) ) < 0.9f ? FVector3::Forward : FVector3::Up;
+		const FVector3 PreferredNormal = NMath::Abs( FVector3::Dot( Axis, FVector3::Forward ) ) < 0.9f ? FVector3::Forward : FVector3::Up;
 		Side = FVector3::Cross( PreferredNormal, Axis ).Normalized();
 		Depth = FVector3::Cross( Axis, Side ).Normalized();
 	}
@@ -70,7 +73,7 @@ namespace
 		// 横方向は必ず一定以上の強さを持ち、seedで左右を決める。
 		const float32 SideRandom = SignedNoise( Seed, Tag + 1u );
 		// seedごとの横ずれの絶対量を0.35..1.0へ収める。
-		const float32 SideMagnitude = 0.35f + std::fabs( SideRandom ) * 0.65f;
+		const float32 SideMagnitude = 0.35f + NMath::Abs( SideRandom ) * 0.65f;
 		// hash符号を横ずれの向きへ使う。
 		const float32 SideComponent = SideRandom < 0.0f ? -SideMagnitude : SideMagnitude;
 		// 奥行き方向は横方向より弱くし、立体感だけを加える。
@@ -95,7 +98,7 @@ namespace
 		// このnodeの端点間差と長さ。
 		const FVector3 Delta = End - Start;
 		const float32 Length = Delta.Length();
-		if ( !IsFinite( Start ) || !IsFinite( End ) || !IsFinite( Delta ) || !std::isfinite( Length ) || Length <= 1.0e-6f || !std::isfinite( RootWidth ) || RootWidth <= 0.0f || !std::isfinite( UBase ) ) return false;
+		if ( !IsFinite( Start ) || !IsFinite( End ) || !IsFinite( Delta ) || !NMath::IsFinite( Length ) || Length <= 1.0e-6f || !NMath::IsFinite( RootWidth ) || RootWidth <= 0.0f || !NMath::IsFinite( UBase ) ) return false;
 		// nodeの軸と、その左右・奥行き方向。
 		const FVector3 Axis = Delta / Length;
 		FVector3 Side;
@@ -124,7 +127,7 @@ namespace
 			Point.Color.a = bTaper ? static_cast<uint8>( std::lround( static_cast<float64>( RootAlpha ) * ( 1.0 - static_cast<float64>( T ) ) ) ) : RootAlpha;
 			if ( Index > 0 ) Distance += ( Point.Position - Positions[Index - 1] ).Length();
 			Point.U = Distance;
-			if ( !IsFinite( Point.Position ) || !std::isfinite( Point.Width ) || !std::isfinite( Point.U ) ) return false;
+			if ( !IsFinite( Point.Position ) || !NMath::IsFinite( Point.Width ) || !NMath::IsFinite( Point.U ) ) return false;
 			Out.Points.Add( Point );
 		}
 		return true;
@@ -138,7 +141,7 @@ namespace
 		Point.Position = FVector3::Lerp( A.Position, B.Position, T );
 		Point.Width = A.Width + ( B.Width - A.Width ) * T;
 		Point.Color = A.Color;
-		Point.Color.a = static_cast<uint8>( std::clamp( static_cast<int32>( std::lround( static_cast<float32>( A.Color.a ) + ( static_cast<float32>( B.Color.a ) - A.Color.a ) * T ) ), 0, 255 ) );
+		Point.Color.a = static_cast<uint8>( NMath::Clamp( static_cast<int32>( std::lround( static_cast<float32>( A.Color.a ) + ( static_cast<float32>( B.Color.a ) - A.Color.a ) * T ) ), 0, 255 ) );
 		Point.U = A.U + ( B.U - A.U ) * T;
 		return Point;
 	}
@@ -164,7 +167,7 @@ namespace
 			if ( Span > 0.0 && Age > PreviousArrival )
 			{
 				// 現在の先端位置を同じ距離割合で補間する。
-				const float32 T = static_cast<float32>( std::clamp( ( Age - PreviousArrival ) / Span, 0.0, 1.0 ) );
+				const float32 T = static_cast<float32>( NMath::Clamp( ( Age - PreviousArrival ) / Span, 0.0, 1.0 ) );
 				Out.Points.Add( InterpolatePoint( Node.Strip.Points[Index - 1], Node.Strip.Points[Index], T ) );
 			}
 			break;
@@ -175,32 +178,32 @@ namespace
 	// alphaだけへ全体のLeader倍率を適用し、RGBは未加工で残す。
 	void ScaleAlpha( FEffectPathGeometry::FStrip& Strip, float32 Scale )
 	{
-		for ( FEffectPathGeometry::FPoint& Point : Strip.Points ) Point.Color.a = static_cast<uint8>( std::clamp( static_cast<int32>( std::lround( static_cast<float32>( Point.Color.a ) * Scale ) ), 0, 255 ) );
+		for ( FEffectPathGeometry::FPoint& Point : Strip.Points ) Point.Color.a = static_cast<uint8>( NMath::Clamp( static_cast<int32>( std::lround( static_cast<float32>( Point.Color.a ) * Scale ) ), 0, 255 ) );
 	}
 }
 
 void NEffectPath::BuildTreeLightning( const FEffectPathDefinition& Definition, uint32 Seed, float32 Age, const FVector3& Start, const FVector3& End, float32 Width, const FColor32& Color, FEffectPathGeometry& Out )
 {
 	Out.Strips.Reset();
-	if ( Definition.Kind != FEffectPathDefinition::EKind::TreeLightning || !std::isfinite( Age ) || Age < 0.0f || !IsFinite( Start ) || !IsFinite( End ) || !std::isfinite( Width ) || Width <= 0.0f ) return;
+	if ( Definition.Kind != FEffectPathDefinition::EKind::TreeLightning || !NMath::IsFinite( Age ) || Age < 0.0f || !IsFinite( Start ) || !IsFinite( End ) || !NMath::IsFinite( Width ) || Width <= 0.0f ) return;
 	// 始点と終点の間の有限な主幹長。
 	const FVector3 MainDelta = End - Start;
 	const float32 MainLength = MainDelta.Length();
-	if ( !IsFinite( MainDelta ) || !std::isfinite( MainLength ) || MainLength <= 1.0e-6f || !std::isfinite( Definition.Jitter ) || Definition.Jitter < 0.0f || Definition.Jitter > 1.0f || !std::isfinite( Definition.BranchLength ) || Definition.BranchLength < 0.0f || Definition.BranchLength > 2.0f || !Definition.Tree.Validate().IsEmpty() ) return;
+	if ( !IsFinite( MainDelta ) || !NMath::IsFinite( MainLength ) || MainLength <= 1.0e-6f || !NMath::IsFinite( Definition.Jitter ) || Definition.Jitter < 0.0f || Definition.Jitter > 1.0f || !NMath::IsFinite( Definition.BranchLength ) || Definition.BranchLength < 0.0f || Definition.BranchLength > 2.0f || !Definition.Tree.Validate().IsEmpty() ) return;
 	// 範囲外の直接入力でも点数と再帰深度を制限する設定。
-	const int32 RootSegments = std::clamp( Definition.Segments, 2, FEffectPathDefinition::MaxSegments );
-	const int32 PrimarySegments = std::max( RootSegments / 3, 2 );
-	const int32 SecondarySegments = std::max( PrimarySegments / 3, 2 );
-	const int32 BranchCount = std::clamp( Definition.Branches, 0, FEffectPathDefinition::MaxBranches );
-	const int32 ChildCount = std::clamp( Definition.Tree.ChildBranches, 0, 4 );
-	const int32 Depth = std::clamp( Definition.Tree.Depth, 0, 2 );
+	const int32 RootSegments = NMath::Clamp( Definition.Segments, 2, FEffectPathDefinition::MaxSegments );
+	const int32 PrimarySegments = NMath::Max( RootSegments / 3, 2 );
+	const int32 SecondarySegments = NMath::Max( PrimarySegments / 3, 2 );
+	const int32 BranchCount = NMath::Clamp( Definition.Branches, 0, FEffectPathDefinition::MaxBranches );
+	const int32 ChildCount = NMath::Clamp( Definition.Tree.ChildBranches, 0, 4 );
+	const int32 Depth = NMath::Clamp( Definition.Tree.Depth, 0, 2 );
 	// 保存済み角度を安全な主枝基準角へ変換する。
-	const float64 BaseAngle = std::clamp( static_cast<float64>( Definition.Tree.BranchAngleDegrees ), 5.0, 85.0 ) * 0.017453292519943295;
-	const float32 Growth = std::clamp( Definition.Tree.GrowthSeconds, 0.0f, 10.0f );
-	const float32 Delay = std::clamp( Definition.Tree.BranchDelaySeconds, 0.0f, 1.0f );
-	const float32 Interval = std::clamp( Definition.Tree.StrokeInterval, 0.001f, 2.0f );
-	const float32 StrokeLength = std::clamp( Definition.Tree.StrokeSeconds, 0.0001f, Interval );
-	const int32 StrokeCount = std::clamp( Definition.Tree.StrokeCount, 1, 8 );
+	const float64 BaseAngle = NMath::Clamp( static_cast<float64>( Definition.Tree.BranchAngleDegrees ), 5.0, 85.0 ) * 0.017453292519943295;
+	const float32 Growth = NMath::Clamp( Definition.Tree.GrowthSeconds, 0.0f, 10.0f );
+	const float32 Delay = NMath::Clamp( Definition.Tree.BranchDelaySeconds, 0.0f, 1.0f );
+	const float32 Interval = NMath::Clamp( Definition.Tree.StrokeInterval, 0.001f, 2.0f );
+	const float32 StrokeLength = NMath::Clamp( Definition.Tree.StrokeSeconds, 0.0001f, Interval );
+	const int32 StrokeCount = NMath::Clamp( Definition.Tree.StrokeCount, 1, 8 );
 	float64 Speed = 0.0;
 	// 主幹と全ての枝をまず完成させ、Ageによるclipより先に予算を確認する。
 	TArray<FTreeLightningNode> Nodes;
@@ -210,13 +213,13 @@ void NEffectPath::BuildTreeLightning( const FEffectPathDefinition& Definition, u
 	if ( !BuildNodeStrip( Start, End, RootSegments, Definition.Jitter, Width, Color.a, Color, Seed, 0.0f, false, Main.Strip ) ) return;
 	Speed = Growth > 0.0f ? static_cast<float64>( Main.Strip.Points.Last().U ) / Growth : 0.0;
 	Main.EndSeconds = Growth;
-	Nodes.Add( std::move( Main ) );
+	Nodes.Add( MoveTemp( Main ) );
 	for ( int32 Branch = 0; Branch < BranchCount && Depth >= 1; ++Branch )
 	{
 		// hashから主幹内側20..80%の整数頂点を選ぶ。
-		const int32 AttachMin = std::max( 1, ( RootSegments + 4 ) / 5 );
-		const int32 AttachMax = std::min( RootSegments - 1, ( RootSegments * 4 ) / 5 );
-		const int32 AttachRange = std::max( AttachMax - AttachMin + 1, 1 );
+		const int32 AttachMin = NMath::Max( 1, ( RootSegments + 4 ) / 5 );
+		const int32 AttachMax = NMath::Min( RootSegments - 1, ( RootSegments * 4 ) / 5 );
+		const int32 AttachRange = NMath::Max( AttachMax - AttachMin + 1, 1 );
 		const int32 Attachment = AttachMin + static_cast<int32>( HashValue( Seed, static_cast<uint32>( Branch ) + 1u ) % static_cast<uint32>( AttachRange ) );
 		// 枝の根元と親の接線方向。
 		const FVector3 Origin = Nodes[0].Strip.Points[Attachment].Position;
@@ -228,7 +231,7 @@ void NEffectPath::BuildTreeLightning( const FEffectPathDefinition& Definition, u
 		const float32 BranchSide = ( HashValue( Seed, 0x10000u ) & 1u ) == 0u ? -1.0f : 1.0f;
 		const float32 Sign = BranchSide * ( Branch % 2 == 0 ? 1.0f : -1.0f );
 		// 枝ごとの角度倍率を0.8..1.2へ収める。
-		const float64 BranchAngle = std::clamp( BaseAngle * ( 0.8 + static_cast<float64>( UnitNoise( Seed, 0x11000u + static_cast<uint32>( Branch ) ) ) * 0.4 ), 5.0 * 0.017453292519943295, 85.0 * 0.017453292519943295 );
+		const float64 BranchAngle = NMath::Clamp( BaseAngle * ( 0.8 + static_cast<float64>( UnitNoise( Seed, 0x11000u + static_cast<uint32>( Branch ) ) ) * 0.4 ), 5.0 * 0.017453292519943295, 85.0 * 0.017453292519943295 );
 		// 枝の立体角を設定角と独立して±0.16radへ収める。
 		const float32 BranchDepthAngle = SignedNoise( Seed, 0x12000u + static_cast<uint32>( Branch ) ) * 0.16f;
 		// 横・奥行き面で単位長となる枝の側方向。
@@ -249,14 +252,14 @@ void NEffectPath::BuildTreeLightning( const FEffectPathDefinition& Definition, u
 		if ( BranchLength <= 1.0e-6f ) continue;
 		Primary.EndSeconds = Primary.StartSeconds + ( Speed > 0.0 ? static_cast<float64>( Primary.Strip.Points.Last().U - Primary.Strip.Points[0].U ) / Speed : 0.0 );
 		if ( Nodes.Num() + Primary.Strip.Points.Num() > FEffectPathGeometry::MaxPoints ) return;
-		Nodes.Add( std::move( Primary ) );
+		Nodes.Add( MoveTemp( Primary ) );
 		const int32 PrimaryIndex = Nodes.Num() - 1;
 		for ( int32 Child = 0; Child < ChildCount && Depth >= 2; ++Child )
 		{
 			// 子枝を親枝の内側20..80%へ接続する整数頂点。
-			const int32 ChildAttachMin = std::max( 1, ( PrimarySegments + 4 ) / 5 );
-			const int32 ChildAttachMax = std::min( PrimarySegments - 1, ( PrimarySegments * 4 ) / 5 );
-			const int32 ChildAttachRange = std::max( ChildAttachMax - ChildAttachMin + 1, 1 );
+			const int32 ChildAttachMin = NMath::Max( 1, ( PrimarySegments + 4 ) / 5 );
+			const int32 ChildAttachMax = NMath::Min( PrimarySegments - 1, ( PrimarySegments * 4 ) / 5 );
+			const int32 ChildAttachRange = NMath::Max( ChildAttachMax - ChildAttachMin + 1, 1 );
 			const int32 ChildAttachment = ChildAttachMin + static_cast<int32>( HashValue( Seed, 0x30000u + static_cast<uint32>( Branch * 7 + Child ) ) % static_cast<uint32>( ChildAttachRange ) );
 			const FEffectPathGeometry::FStrip& ParentStrip = Nodes[PrimaryIndex].Strip;
 			const FVector3 ChildOrigin = ParentStrip.Points[ChildAttachment].Position;
@@ -269,7 +272,7 @@ void NEffectPath::BuildTreeLightning( const FEffectPathDefinition& Definition, u
 		// 二次枝ごとに独立した角度と長さを選ぶhash番号。
 			const uint32 ChildTag = 0x41000u + static_cast<uint32>( Branch * 7 + Child );
 			// 二次枝の角度倍率を0.8..1.2へ収める。
-			const float64 ChildAngle = std::clamp( BaseAngle * ( 0.8 + static_cast<float64>( UnitNoise( Seed, ChildTag ) ) * 0.4 ), 5.0 * 0.017453292519943295, 85.0 * 0.017453292519943295 );
+			const float64 ChildAngle = NMath::Clamp( BaseAngle * ( 0.8 + static_cast<float64>( UnitNoise( Seed, ChildTag ) ) * 0.4 ), 5.0 * 0.017453292519943295, 85.0 * 0.017453292519943295 );
 			// 二次枝の立体角を設定角から独立して±0.16radへ収める。
 			const float32 ChildDepthAngle = SignedNoise( Seed, ChildTag + 1u ) * 0.16f;
 			// 横・奥行き面で単位長となる二次枝の側方向。
@@ -288,7 +291,7 @@ void NEffectPath::BuildTreeLightning( const FEffectPathDefinition& Definition, u
 			if ( !BuildNodeStrip( ChildOrigin, ChildOrigin + ChildDirection * ChildLength, SecondarySegments, Definition.Jitter, ChildWidth, ChildAlpha, Color, HashValue( Seed, 0x50000u + static_cast<uint32>( Branch * 7 + Child ) ), ParentStrip.Points[ChildAttachment].U, true, Secondary.Strip ) ) return;
 			Secondary.EndSeconds = Secondary.StartSeconds + ( Speed > 0.0 ? static_cast<float64>( Secondary.Strip.Points.Last().U - Secondary.Strip.Points[0].U ) / Speed : 0.0 );
 			if ( Nodes.Num() + Secondary.Strip.Points.Num() > FEffectPathGeometry::MaxPoints ) return;
-			Nodes.Add( std::move( Secondary ) );
+			Nodes.Add( MoveTemp( Secondary ) );
 		}
 	}
 	// 完成形が許容点数・strip数内に収まることを確かめる。
@@ -297,7 +300,7 @@ void NEffectPath::BuildTreeLightning( const FEffectPathDefinition& Definition, u
 	for ( const FTreeLightningNode& Node : Nodes )
 	{
 		TotalPoints += Node.Strip.Points.Num();
-		GrowthEnd = std::max( GrowthEnd, Node.EndSeconds );
+		GrowthEnd = NMath::Max( GrowthEnd, Node.EndSeconds );
 	}
 	if ( TotalPoints > FEffectPathGeometry::MaxPoints || Nodes.Num() > 81 ) return;
 	// 成長中はleaderを暗くし、完成後は指定された放電窓だけを明るくする。
@@ -327,14 +330,14 @@ void NEffectPath::BuildTreeLightning( const FEffectPathDefinition& Definition, u
 		const bool bVisible = bGrowing ? ClipGrowingStrip( Node, Age, Speed, Visible ) : ( Visible = Node.Strip, true );
 		if ( !bVisible || Visible.Points.Num() < 2 ) continue;
 		ScaleAlpha( Visible, Brightness );
-		Built.Strips.Add( std::move( Visible ) );
+		Built.Strips.Add( MoveTemp( Visible ) );
 	}
-	Out = std::move( Built );
+	Out = MoveTemp( Built );
 }
 
 bool NEffectPath::GetTreeLightningBounds( const FEffectPathDefinition& Definition, const FVector3& Start, const FVector3& End, float32 Padding, FVector3& OutCenter, float32& OutRadius )
 {
-	if ( Definition.Kind != FEffectPathDefinition::EKind::TreeLightning || !IsFinite( Start ) || !IsFinite( End ) || !std::isfinite( Padding ) || Padding < 0.0f || !std::isfinite( Definition.Jitter ) || Definition.Jitter < 0.0f || Definition.Jitter > 1.0f || !std::isfinite( Definition.BranchLength ) || Definition.BranchLength < 0.0f || Definition.BranchLength > 2.0f || Definition.Segments < 2 || Definition.Segments > FEffectPathDefinition::MaxSegments || Definition.Branches < 0 || Definition.Branches > FEffectPathDefinition::MaxBranches || !Definition.Tree.Validate().IsEmpty() ) return false;
+	if ( Definition.Kind != FEffectPathDefinition::EKind::TreeLightning || !IsFinite( Start ) || !IsFinite( End ) || !NMath::IsFinite( Padding ) || Padding < 0.0f || !NMath::IsFinite( Definition.Jitter ) || Definition.Jitter < 0.0f || Definition.Jitter > 1.0f || !NMath::IsFinite( Definition.BranchLength ) || Definition.BranchLength < 0.0f || Definition.BranchLength > 2.0f || Definition.Segments < 2 || Definition.Segments > FEffectPathDefinition::MaxSegments || Definition.Branches < 0 || Definition.Branches > FEffectPathDefinition::MaxBranches || !Definition.Tree.Validate().IsEmpty() ) return false;
 	// 始点から終点への有限なchordを計算する。
 	const FVector3 Delta = End - Start;
 	// x成分をdoubleで二乗して長さ丸め誤差を避ける。
@@ -345,7 +348,7 @@ bool NEffectPath::GetTreeLightningBounds( const FEffectPathDefinition& Definitio
 	const float64 DeltaZ = static_cast<float64>( Delta.z );
 	// float中心とboundsの計算に使う正確なchord長。
 	const float64 Length = std::sqrt( DeltaX * DeltaX + DeltaY * DeltaY + DeltaZ * DeltaZ );
-	if ( !IsFinite( Delta ) || !std::isfinite( Length ) || Length <= 1.0e-6 ) return false;
+	if ( !IsFinite( Delta ) || !NMath::IsFinite( Length ) || Length <= 1.0e-6 ) return false;
 	// 公開するfloat中心を確定し、その丸めを半径計算へ反映する。
 	const FVector3 Center = Start + Delta * 0.5f;
 	// float中心の丸め後も両端を含めるため、始点との差をdoubleで測る。
@@ -365,7 +368,7 @@ bool NEffectPath::GetTreeLightningBounds( const FEffectPathDefinition& Definitio
 	// 丸められた中心から終点までの実距離を二乗和で求める。
 	const float64 EndRadius = std::sqrt( EndX * EndX + EndY * EndY + EndZ * EndZ );
 	// 両端を収めるために必要な最大距離。
-	const float64 EndpointRadius = std::max( StartRadius, EndRadius );
+	const float64 EndpointRadius = NMath::Max( StartRadius, EndRadius );
 	// 深さと枝数に応じて必要な最大枝長だけを加算する。
 	const float64 MaximumPrimaryChord = Definition.Tree.Depth >= 1 && Definition.Branches > 0 ? Length * static_cast<float64>( Definition.BranchLength ) : 0.0;
 	const float64 MaximumSecondaryChord = Definition.Tree.Depth >= 2 && Definition.Tree.ChildBranches > 0 && Definition.Branches > 0 ? MaximumPrimaryChord * 0.5 : 0.0;
@@ -374,9 +377,9 @@ bool NEffectPath::GetTreeLightningBounds( const FEffectPathDefinition& Definitio
 	// 幹の両端からの距離、幹の乱れ、枝の乱れ、利用者paddingを含む半径。
 	const float64 Radius = EndpointRadius + Length * Jitter + MaximumPrimaryChord * ( 1.0 + Jitter ) + MaximumSecondaryChord * ( 1.0 + Jitter ) + static_cast<float64>( Padding );
 	// float出力へ安全に収まる値だけを呼び出し側へ渡す。
-	if ( !std::isfinite( Radius ) || Radius > static_cast<float64>( std::numeric_limits<float32>::max() ) || !IsFinite( Center ) ) return false;
+	if ( !NMath::IsFinite( Radius ) || Radius > static_cast<float64>( TNumericLimits<float32>::Max() ) || !IsFinite( Center ) ) return false;
 	OutCenter = Center;
 	OutRadius = static_cast<float32>( Radius );
-	if ( static_cast<float64>( OutRadius ) < Radius ) OutRadius = std::nextafter( OutRadius, std::numeric_limits<float32>::infinity() );
-	return std::isfinite( OutRadius );
+	if ( static_cast<float64>( OutRadius ) < Radius ) OutRadius = std::nextafter( OutRadius, TNumericLimits<float32>::Infinity() );
+	return NMath::IsFinite( OutRadius );
 }

@@ -12,6 +12,7 @@
 
 #include "Library/Core/Interfaces/Render/DrawModelMaterial.h"
 #include "Library/Core/Interfaces/Render/MeshGeometryChunk.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Asset/Model.h"
 #include "Library/Framework/Asset/StaticModelSurface.h"
@@ -304,7 +305,7 @@ namespace NAssetTest
 				const float32 WorldZ = Vertex.Position[0] * World.m[0][2] + Vertex.Position[1] * World.m[1][2] + Vertex.Position[2] * World.m[2][2] + World.m[3][2];
 				// native cameraで投影した画面座標。
 				const VECTOR Screen = ConvWorldPosToScreenPos( VGet( WorldX, WorldY, WorldZ ) );
-				if ( !std::isfinite( Screen.x ) || !std::isfinite( Screen.y ) || !std::isfinite( Screen.z ) ) return false;
+				if ( !NMath::IsFinite( Screen.x ) || !NMath::IsFinite( Screen.y ) || !NMath::IsFinite( Screen.z ) ) return false;
 				Out.X[Corner] = Screen.x;
 				Out.Y[Corner] = Screen.y;
 			}
@@ -322,7 +323,7 @@ namespace NAssetTest
 				const int32 Next = ( Edge + 1 ) % 3;
 				Area += Triangle.X[Edge] * Triangle.Y[Next] - Triangle.Y[Edge] * Triangle.X[Next];
 			}
-			if ( std::abs( Area ) <= 1.0e-4f ) return false;
+			if ( NMath::Abs( Area ) <= 1.0e-4f ) return false;
 			// 向きが時計回りかを揃える係数。
 			const float32 Direction = Area > 0.0f ? 1.0f : -1.0f;
 			for ( int32 Edge = 0; Edge < 3; ++Edge )
@@ -459,7 +460,7 @@ namespace NAssetTest
 		// 失敗時に前のcommand buffer全体が保たれる基準値。
 		const std::vector<uint32> BeforeInvalid = Buffer.Words;
 		FDrawModelMaterialData Invalid = MakeValidModelMaterialCommand();
-		Invalid.Opacity = std::numeric_limits<float32>::quiet_NaN();
+		Invalid.Opacity = TNumericLimits<float32>::QuietNaN();
 		Checker.Check( !Draw.ModelMaterial( Invalid ) && Buffer.Words == BeforeInvalid, "非有限Opacityを拒否し記録済みcommandを変更しない" );
 		Invalid = MakeValidModelMaterialCommand();
 		Invalid.Material.NumVertices = 3;
@@ -628,7 +629,7 @@ namespace NAssetTest
 		FDrawBuffer InvalidWorldBuffer;
 		FDrawContext InvalidWorldDraw( InvalidWorldBuffer );
 		FMatrix4x4 InvalidWorld = FMatrix4x4::Identity;
-		InvalidWorld.m[0][0] = std::numeric_limits<float32>::quiet_NaN();
+		InvalidWorld.m[0][0] = TNumericLimits<float32>::QuietNaN();
 		const bool bInvalidWorldHandled = FirstAnimator.GetMaterialEffect().Record( InvalidWorldDraw, FirstInstance, InvalidWorld );
 		// 別sourceとanimation attached状態を確認するnative fallback。
 		WriteFileText( Directory / "model-material-fake/other.mv1", "other fake static surface" );
@@ -648,13 +649,13 @@ namespace NAssetTest
 		FirstAnimator.Update( 0.2f );
 		FModelMaterialEffectRenderer IndependentClock = FirstAnimator.GetMaterialEffect();
 		IndependentClock.Update( 0.4f );
-		const bool bIndependentClock = std::abs( FirstAnimator.GetMaterialEffect().GetEffectTime() - 0.2 ) < 1.0e-6 && std::abs( IndependentClock.GetEffectTime() - 0.6 ) < 1.0e-6;
+		const bool bIndependentClock = NMath::Abs( FirstAnimator.GetMaterialEffect().GetEffectTime() - 0.2 ) < 1.0e-6 && NMath::Abs( IndependentClock.GetEffectTime() - 0.6 ) < 1.0e-6;
 		IndependentClock.Pause();
 		IndependentClock.Update( 0.2f );
-		const bool bPauseRetainsClock = std::abs( IndependentClock.GetEffectTime() - 0.6 ) < 1.0e-6;
+		const bool bPauseRetainsClock = NMath::Abs( IndependentClock.GetEffectTime() - 0.6 ) < 1.0e-6;
 		IndependentClock.Play();
 		IndependentClock.Update( 0.1f );
-		const bool bPlayResumesClock = std::abs( IndependentClock.GetEffectTime() - 0.7 ) < 1.0e-6;
+		const bool bPlayResumesClock = NMath::Abs( IndependentClock.GetEffectTime() - 0.7 ) < 1.0e-6;
 		IndependentClock.Restart();
 		const bool bRestartStartsAtZero = IndependentClock.GetEffectTime() == 0.0;
 		IndependentClock.Update( 0.15f );
@@ -925,7 +926,7 @@ namespace NAssetTest
 				for ( int32 Channel = 0; Channel < 3; ++Channel ) if ( QuarterChannels[Channel] > 2 && QuarterChannels[Channel] < 120 )
 				{
 					++EmissionSamples;
-					if ( std::abs( static_cast<int32>( HalfChannels[Channel] ) - static_cast<int32>( std::lround( QuarterChannels[Channel] * 2.0f ) ) ) > 2 ) ++EmissionRatioMismatches;
+					if ( NMath::Abs( static_cast<int32>( HalfChannels[Channel] ) - static_cast<int32>( std::lround( QuarterChannels[Channel] * 2.0f ) ) ) > 2 ) ++EmissionRatioMismatches;
 				}
 			}
 			Checker.Check( bEmissionQuarterCaptured && bEmissionHalfCaptured && EmissionSamples > 20 && EmissionRatioMismatches == 0, "selected material shaderは非飽和pixelでEmission 0.25から0.5へRGBを2倍にする" );
@@ -1129,7 +1130,7 @@ namespace NAssetTest
 					bCullCapturesValid = bCullCapturesValid && bCullProjected && bCullNativeCaptured && bCullOneSidedCaptured && bCullTwoSidedCaptured && bOneSidedCullUnchanged && bTwoSidedCullUnchanged && CullNativeVisible >= 0 && CullOneSidedVisible >= 0 && CullTwoSidedVisible > 0 && CullSilhouetteDifference == 0 && GetUseBackCulling() == GlobalNativeCullBefore;
 					CullSilhouetteMismatches += CullSilhouetteDifference < 0 ? 1 : CullSilhouetteDifference;
 					if ( CullTwoSidedVisible <= 0 ) ++TwoSidedMissingPixels;
-					if ( SideIndex == 0 ) NativeFrontPixels += std::max( CullNativeVisible, 0 ); else NativeBackPixels += std::max( CullNativeVisible, 0 );
+					if ( SideIndex == 0 ) NativeFrontPixels += NMath::Max( CullNativeVisible, 0 ); else NativeBackPixels += NMath::Max( CullNativeVisible, 0 );
 			}
 			}
 			if ( !RestoreNativeCull() ) bCullCapturesValid = false;
@@ -1165,7 +1166,7 @@ namespace NAssetTest
 				const bool bReversedProjected = Surface.IsValid() && ProjectModelMaterialTriangle( Surface->GetData(), MaterialIndex, SelectedMeshIndex, ReversedWorld, ReversedTriangle ); // 逆順triangle投影成否
 				float32 OrderSeparationPixels = 0.0f; // 正順と逆順の頂点間最大画素距離
 				// Cornerは期待投影と逆順投影を比較する三角形頂点番号。
-				if ( bExpectedProjected && bReversedProjected ) for ( int32 Corner = 0; Corner < 3; ++Corner ) OrderSeparationPixels = std::max( OrderSeparationPixels, std::sqrt( std::pow( ExpectedTriangle.X[Corner] - ReversedTriangle.X[Corner], 2.0f ) + std::pow( ExpectedTriangle.Y[Corner] - ReversedTriangle.Y[Corner], 2.0f ) ) );
+				if ( bExpectedProjected && bReversedProjected ) for ( int32 Corner = 0; Corner < 3; ++Corner ) OrderSeparationPixels = NMath::Max( OrderSeparationPixels, std::sqrt( std::pow( ExpectedTriangle.X[Corner] - ReversedTriangle.X[Corner], 2.0f ) + std::pow( ExpectedTriangle.Y[Corner] - ReversedTriangle.Y[Corner], 2.0f ) ) );
 				TArray<FColor32> AffineNativePixels; // native full-model同位置positive control
 				TArray<FColor32> AffineHiddenPixels; // 選択材質効果Opacity 0の非対象基準
 				TArray<FColor32> AffineEffectPixels; // selected材質Opacity 1の実画素
@@ -1251,7 +1252,7 @@ namespace NAssetTest
 			{
 				FDrawModelMaterialData InvalidData{}; // 直接executorへ渡す不正payload
 				std::memcpy( &InvalidData, NonFinitePayloadBuffer.Words.data() + 1, sizeof( InvalidData ) );
-				InvalidData.M[0] = std::numeric_limits<float32>::quiet_NaN();
+				InvalidData.M[0] = TNumericLimits<float32>::QuietNaN();
 				std::memcpy( NonFinitePayloadBuffer.Words.data() + 1, &InvalidData, sizeof( InvalidData ) );
 				bNonFinitePayloadChanged = true;
 			}

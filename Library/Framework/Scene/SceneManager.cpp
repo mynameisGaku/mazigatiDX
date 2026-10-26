@@ -1,6 +1,7 @@
 ﻿#include "SceneManager.h"
 
 #include "Library/Core/Profiler/ProfilerScope.h"
+#include "Library/Core/Types/Utility.h"
 
 DEFINE_LOG_CATEGORY( LogScene )
 
@@ -98,7 +99,7 @@ void CSceneManager::ApplyRequests()
 			{
 				while ( !SceneStack.IsEmpty() ) PopSceneNow();
 			}
-			PushSceneNow( std::move( Scene ) );
+			PushSceneNow( MoveTemp( Scene ) );
 			break;
 		}
 
@@ -124,7 +125,7 @@ void CSceneManager::PushSceneNow( TUniquePtr<CScene> Scene )
 	if ( CScene* Top = GetCurrentScene() ) Top->OnPause();
 
 	CScene* Raw = Scene.Get();
-	SceneStack.Add( std::move( Scene ) );
+	SceneStack.Add( MoveTemp( Scene ) );
 	LOG( LogScene, Log, "Enter: %s (stack depth %d)", *Raw->GetName(), SceneStack.Num() );
 	Raw->Enter( this );
 }

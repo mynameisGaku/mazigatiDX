@@ -7,6 +7,8 @@
 
 #include "Library/Core/Interfaces/Render/DrawMaterialQuad.h"
 #include "Library/Core/Interfaces/Render/DrawMaterialRibbon.h"
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Render/DrawContext.h"
 
@@ -60,7 +62,7 @@ namespace
 				Points.SetNum( Header.NumPoints );
 				std::memcpy( Points.GetData(), reinterpret_cast<const uint8*>( Command.Data ) + sizeof( Header ), static_cast<usize>( Points.Num() ) * sizeof( FDrawRibbonData::FPoint ) );
 				Result.PlainRibbonHeaders.Add( Header );
-				Result.PlainRibbonPoints.Add( std::move( Points ) );
+				Result.PlainRibbonPoints.Add( MoveTemp( Points ) );
 				++Result.PlainRibbons;
 			}
 			if ( Command.Type != EDrawCommand::MaterialRibbon3D || Command.NumDataWords * 4 < static_cast<int32>( sizeof( FDrawMaterialRibbonData ) ) ) return;
@@ -75,7 +77,7 @@ namespace
 			Points.SetNum( Header.Ribbon.NumPoints );
 			std::memcpy( Points.GetData(), reinterpret_cast<const uint8*>( Command.Data ) + sizeof( Header ), static_cast<usize>( Points.Num() ) * sizeof( FDrawMaterialRibbonData::FPoint ) );
 			Result.Ribbons.Add( Header );
-			Result.RibbonPoints.Add( std::move( Points ) );
+			Result.RibbonPoints.Add( MoveTemp( Points ) );
 		} );
 		return Result;
 	}
@@ -135,7 +137,7 @@ void NWorldTest::RunEffectAppearancePlaybackTests( NAssetTest::FChecker& C, CAss
 			if ( Values.Quads.Num() == 1 )
 			{
 				const FDrawMaterialQuadData& Quad = Values.Quads[0];
-				C.Check( std::fabs( Quad.Quad.Width - 3.0f ) < 1.0e-5f && std::fabs( Quad.Quad.Height - 3.0f ) < 1.0e-5f, "Age 0.5秒のStart/End幅1.5へAppearance倍率2を掛けて3を渡す" );
+				C.Check( NMath::Abs( Quad.Quad.Width - 3.0f ) < 1.0e-5f && NMath::Abs( Quad.Quad.Height - 3.0f ) < 1.0e-5f, "Age 0.5秒のStart/End幅1.5へAppearance倍率2を掛けて3を渡す" );
 				C.Check( Quad.Quad.Color.R == 21 && Quad.Quad.Color.G == 15 && Quad.Quad.Color.B == 45 && Quad.Quad.Color.A == 80, "基本RGBAをfloat補間後に倍率して最後に一度だけbyte化する" );
 				C.Check( Quad.Quad.Color.R != 22, "先に8bitへ丸めてから倍率を掛ける誤差を出さない" );
 			}
@@ -157,7 +159,7 @@ void NWorldTest::RunEffectAppearancePlaybackTests( NAssetTest::FChecker& C, CAss
 			{
 				// 古い粒子から順に並ぶ、材質Ribbonの3点。
 				const TArray<FDrawMaterialRibbonData::FPoint>& Points = Values.RibbonPoints[0];
-				C.Check( std::fabs( Points[0].Path.Width - 3.0f ) < 1.0e-5f && std::fabs( Points[1].Path.Width - 1.875f ) < 1.0e-5f && std::fabs( Points[2].Path.Width - 1.0f ) < 1.0e-5f, "Ribbon点幅はAge .5/.25/0の基礎幅へ倍率2/1.5/1を掛ける" );
+				C.Check( NMath::Abs( Points[0].Path.Width - 3.0f ) < 1.0e-5f && NMath::Abs( Points[1].Path.Width - 1.875f ) < 1.0e-5f && NMath::Abs( Points[2].Path.Width - 1.0f ) < 1.0e-5f, "Ribbon点幅はAge .5/.25/0の基礎幅へ倍率2/1.5/1を掛ける" );
 				C.Check( Points[0].Path.Color == 0x502D0F15u && Points[1].Path.Color == 0x872C1914u && Points[2].Path.Color == 0xC828140Au, "材質Ribbon点はRGBA (21,15,45,80)/(20,25,44,135)/(10,20,40,200)を保つ" );
 			}
 		}
@@ -189,10 +191,10 @@ void NWorldTest::RunEffectAppearancePlaybackTests( NAssetTest::FChecker& C, CAss
 				C.Check( BranchHalo.Num() >= 3 && BranchCore.Num() == BranchHalo.Num(), "Lightning枝halo/coreは同じ3点以上を持つ" );
 				if ( MainHalo.Num() > 0 && MainCore.Num() > 0 )
 				{
-					C.Check( std::fabs( MainHalo[0].Path.Width - 9.0f ) < 1.0e-4f && MainHalo[0].Path.Color == 0x0E2D0F15u, "Lightning主幹halo先頭は幅9・RGBA21/15/45/14を保つ" );
-					C.Check( std::fabs( MainCore[0].Path.Width - 3.0f ) < 1.0e-4f && MainCore[0].Path.Color == 0x502D0F15u, "Lightning主幹core先頭は幅3・RGBA21/15/45/80を保つ" );
-					bFoundHalo = std::fabs( MainHalo[0].Path.Width - 9.0f ) < 1.0e-4f && MainHalo[0].Path.Color == 0x0E2D0F15u;
-					bFoundCore = std::fabs( MainCore[0].Path.Width - 3.0f ) < 1.0e-4f && MainCore[0].Path.Color == 0x502D0F15u;
+					C.Check( NMath::Abs( MainHalo[0].Path.Width - 9.0f ) < 1.0e-4f && MainHalo[0].Path.Color == 0x0E2D0F15u, "Lightning主幹halo先頭は幅9・RGBA21/15/45/14を保つ" );
+					C.Check( NMath::Abs( MainCore[0].Path.Width - 3.0f ) < 1.0e-4f && MainCore[0].Path.Color == 0x502D0F15u, "Lightning主幹core先頭は幅3・RGBA21/15/45/80を保つ" );
+					bFoundHalo = NMath::Abs( MainHalo[0].Path.Width - 9.0f ) < 1.0e-4f && MainHalo[0].Path.Color == 0x0E2D0F15u;
+					bFoundCore = NMath::Abs( MainCore[0].Path.Width - 3.0f ) < 1.0e-4f && MainCore[0].Path.Color == 0x502D0F15u;
 				}
 				C.Check( Values.Ribbons[2].Material.EdgeEmission == 0.0f && Values.Ribbons[3].Material.EdgeEmission == 0.0f, "Lightningの2つのcoreだけ境界発光を止める" );
 				if ( BranchHalo.Num() == BranchCore.Num() && BranchCore.Num() >= 3 )
@@ -208,8 +210,8 @@ void NWorldTest::RunEffectAppearancePlaybackTests( NAssetTest::FChecker& C, CAss
 						// 材質payloadのRGBA byte並びを期待値へ詰める。
 						const uint32 ExpectedCore = static_cast<uint32>( CoreAlpha ) << 24 | 0x002D0F15u;
 						const uint32 ExpectedHalo = static_cast<uint32>( HaloAlpha ) << 24 | 0x002D0F15u;
-						C.Check( std::fabs( BranchCore[PointIndex].Path.Width - 1.65f * ( 1.0f - T ) ) < 1.0e-4f && BranchCore[PointIndex].Path.Color == ExpectedCore, "Lightning枝core点%dは幅1.65*(1-t)とalpha lround(80*(1-t))を保つ (got %.4f,0x%08X)", PointIndex, BranchCore[PointIndex].Path.Width, BranchCore[PointIndex].Path.Color );
-						C.Check( std::fabs( BranchHalo[PointIndex].Path.Width - 4.95f * ( 1.0f - T ) ) < 1.0e-4f && BranchHalo[PointIndex].Path.Color == ExpectedHalo, "Lightning枝halo点%dは幅4.95*(1-t)とalpha trunc(core*.18)を保つ (got %.4f,0x%08X)", PointIndex, BranchHalo[PointIndex].Path.Width, BranchHalo[PointIndex].Path.Color );
+						C.Check( NMath::Abs( BranchCore[PointIndex].Path.Width - 1.65f * ( 1.0f - T ) ) < 1.0e-4f && BranchCore[PointIndex].Path.Color == ExpectedCore, "Lightning枝core点%dは幅1.65*(1-t)とalpha lround(80*(1-t))を保つ (got %.4f,0x%08X)", PointIndex, BranchCore[PointIndex].Path.Width, BranchCore[PointIndex].Path.Color );
+						C.Check( NMath::Abs( BranchHalo[PointIndex].Path.Width - 4.95f * ( 1.0f - T ) ) < 1.0e-4f && BranchHalo[PointIndex].Path.Color == ExpectedHalo, "Lightning枝halo点%dは幅4.95*(1-t)とalpha trunc(core*.18)を保つ (got %.4f,0x%08X)", PointIndex, BranchHalo[PointIndex].Path.Width, BranchHalo[PointIndex].Path.Color );
 					}
 				}
 			}
@@ -226,8 +228,8 @@ void NWorldTest::RunEffectAppearancePlaybackTests( NAssetTest::FChecker& C, CAss
 				const uint32 ExpectedHalo = BlendIndex == 0 ? 0x0E2D0F15u : 0xFF020001u;
 				// 選択中の合成方式で旧pathが記録するcore色。
 				const uint32 ExpectedCore = BlendIndex == 0 ? 0x502D0F15u : 0xFF0E0406u;
-				if ( std::fabs( Point.Width - 9.0f ) < 1.0e-4f && Point.Color == ExpectedHalo ) bFoundHalo = true;
-				if ( std::fabs( Point.Width - 3.0f ) < 1.0e-4f && Point.Color == ExpectedCore ) bFoundCore = true;
+				if ( NMath::Abs( Point.Width - 9.0f ) < 1.0e-4f && Point.Color == ExpectedHalo ) bFoundHalo = true;
+				if ( NMath::Abs( Point.Width - 3.0f ) < 1.0e-4f && Point.Color == ExpectedCore ) bFoundCore = true;
 			}
 			C.Check( bFoundHalo && bFoundCore, "材質OFF LightningはAlpha/Add別の旧halo・core色変換を保つ" );
 		}

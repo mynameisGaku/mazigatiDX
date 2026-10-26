@@ -1,4 +1,5 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EffectEditorInternal.h"
 #include "VendorModules/ImGui/imgui_internal.h"
 #include "AssetSelfTestSupport.h"
@@ -270,7 +271,7 @@ namespace
 
 		FParticleEffectDefinition InvalidDefinition; // 非有限値と逆順を持つ定義。
 		FParticleEmitterDefinition InvalidEmitter; // Emission 曲線の不正値。
-		InvalidEmitter.Material.Emission.Keys.Add( { 0.8f, std::numeric_limits<float32>::quiet_NaN() } );
+		InvalidEmitter.Material.Emission.Keys.Add( { 0.8f, TNumericLimits<float32>::QuietNaN() } );
 		InvalidEmitter.Material.Emission.Keys.Add( { 0.2f, 3.0f } );
 		InvalidDefinition.Emitters.Add( InvalidEmitter );
 		State.Document.Reset( InvalidDefinition );

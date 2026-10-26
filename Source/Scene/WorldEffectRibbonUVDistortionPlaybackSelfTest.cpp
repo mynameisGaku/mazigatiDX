@@ -8,6 +8,8 @@
 #include <vector>
 
 #include "Library/Core/Interfaces/Render/DrawDistortedMaterialRibbon.h"
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Effect/ParticleEffectBackend.h"
 #include "Library/Framework/Render/DrawContext.h"
@@ -53,7 +55,7 @@ namespace
 			Item.Header = Header;
 			Item.Points.SetNum( Header.Material.Ribbon.NumPoints );
 			std::memcpy( Item.Points.GetData(), reinterpret_cast<const uint8*>( Command.Data ) + sizeof( Header ), static_cast<size_t>( Item.Points.Num() ) * sizeof( Item.Points[0] ) );
-			Result.Add( std::move( Item ) );
+			Result.Add( MoveTemp( Item ) );
 		} );
 		return Result;
 	}
@@ -113,7 +115,7 @@ namespace
 		for ( const NParticle::FDrawParticle& Particle : Particles )
 		{
 			if ( Particle.Emitter != 0 ) continue;
-			if ( std::fabs( Particle.Position.x - Position.x ) > 1.0e-5f || std::fabs( Particle.Position.y - Position.y ) > 1.0e-5f || std::fabs( Particle.Position.z - Position.z ) > 1.0e-5f ) continue;
+			if ( NMath::Abs( Particle.Position.x - Position.x ) > 1.0e-5f || NMath::Abs( Particle.Position.y - Position.y ) > 1.0e-5f || NMath::Abs( Particle.Position.z - Position.z ) > 1.0e-5f ) continue;
 			OutAge = Particle.Age;
 			OutNormalizedAge = Particle.NormalizedAge;
 			return true;
@@ -136,7 +138,7 @@ namespace
 			if ( bHasPrevious ) AccumulatedU += ( Particle.Position - PreviousPosition ).Length();
 			PreviousPosition = Particle.Position;
 			bHasPrevious = true;
-			if ( std::fabs( Particle.Position.x - Position.x ) <= 1.0e-5f && std::fabs( Particle.Position.y - Position.y ) <= 1.0e-5f && std::fabs( Particle.Position.z - Position.z ) <= 1.0e-5f ) { OutU = AccumulatedU; return true; }
+			if ( NMath::Abs( Particle.Position.x - Position.x ) <= 1.0e-5f && NMath::Abs( Particle.Position.y - Position.y ) <= 1.0e-5f && NMath::Abs( Particle.Position.z - Position.z ) <= 1.0e-5f ) { OutU = AccumulatedU; return true; }
 		}
 		return false;
 	}
@@ -215,7 +217,7 @@ void NWorldTest::RunEffectRibbonUVDistortionPlaybackTests( NAssetTest::FChecker&
 		float32 ReferenceNormalizedAge = 0.0f;
 		// payload先頭をsource粒子列へ対応付けた結果。
 		const bool bReferenceFound = FindParticleAge( SourceParticles, FVector3( RibbonCommands[0].Points[0].Material.Path.Pos[0], RibbonCommands[0].Points[0].Material.Path.Pos[1], RibbonCommands[0].Points[0].Material.Path.Pos[2] ), ReferenceAge, ReferenceNormalizedAge );
-		C.Check( bReferenceFound && std::isfinite( ReferenceNormalizedAge ), "noise帯先頭点を実simulation粒子へ対応付ける" );
+		C.Check( bReferenceFound && NMath::IsFinite( ReferenceNormalizedAge ), "noise帯先頭点を実simulation粒子へ対応付ける" );
 		if ( bReferenceFound )
 		{
 			// strip共通基準の横ノイズ位相。
@@ -246,7 +248,7 @@ void NWorldTest::RunEffectRibbonUVDistortionPlaybackTests( NAssetTest::FChecker&
 					float32 SourceU = 0.0f;
 					// 元simulation点から累積Uを独立算出した結果。
 					const bool bFoundSourceU = FindRibbonSourceU( SourceParticles, Position, SourceU );
-					bSourceUKept &= bFoundSourceU && std::fabs( Point.Material.Path.U - SourceU ) < 1.0e-5f;
+					bSourceUKept &= bFoundSourceU && NMath::Abs( Point.Material.Path.U - SourceU ) < 1.0e-5f;
 					// 点自身の寿命割合で評価するnoise強度。
 					const float32 ExpectedStrength = RibbonEmitter.Material.Distortion.Strength.Evaluate( PointNormalizedAge, 0.05f );
 					// 基準からの連続秒齢差。点ごとのfmodは行わない。
@@ -255,7 +257,7 @@ void NWorldTest::RunEffectRibbonUVDistortionPlaybackTests( NAssetTest::FChecker&
 					const double ExpectedU = BaseU + AgeDelta * RibbonEmitter.Material.Distortion.UVScroll.x;
 					// V方向の期待noise位相。
 					const double ExpectedV = BaseV + AgeDelta * RibbonEmitter.Material.Distortion.UVScroll.y;
-					bAgeAndPhaseMatch &= std::fabs( Point.Strength - ExpectedStrength ) < 1.0e-5f && std::fabs( Point.UVOffset[0] - ExpectedU ) < 2.0e-4 && std::fabs( Point.UVOffset[1] - ExpectedV ) < 2.0e-4;
+					bAgeAndPhaseMatch &= NMath::Abs( Point.Strength - ExpectedStrength ) < 1.0e-5f && NMath::Abs( Point.UVOffset[0] - ExpectedU ) < 2.0e-4 && NMath::Abs( Point.UVOffset[1] - ExpectedV ) < 2.0e-4;
 					bMonotonicU &= PreviousU < 0.0f || Point.Material.Path.U >= PreviousU;
 					PreviousU = Point.Material.Path.U;
 				}
@@ -370,7 +372,7 @@ void NWorldTest::RunEffectRibbonUVDistortionPlaybackTests( NAssetTest::FChecker&
 				// 元particleの寿命割合で求めた期待強度。
 				const float32 ExpectedStrength = Emitter.Material.Distortion.Strength.Evaluate( ParticleNormalizedAge, 0.05f );
 				// 時刻・noise・strip内Uがすべて一致する点。
-				const bool bPointMatches = std::fabs( Point.Strength - ExpectedStrength ) < 1.0e-5f && std::fabs( Point.UVOffset[0] - ExpectedU ) < 1.0e-5 && std::fabs( Point.UVOffset[1] - ExpectedV ) < 1.0e-5 && ( PreviousU < 0.0f || Point.Material.Path.U >= PreviousU );
+				const bool bPointMatches = NMath::Abs( Point.Strength - ExpectedStrength ) < 1.0e-5f && NMath::Abs( Point.UVOffset[0] - ExpectedU ) < 1.0e-5 && NMath::Abs( Point.UVOffset[1] - ExpectedV ) < 1.0e-5 && ( PreviousU < 0.0f || Point.Material.Path.U >= PreviousU );
 				if ( !bPointMatches && SourceClockMismatchCount == 0 )
 				{
 					FirstMismatchU = Point.Material.Path.U;

@@ -2,6 +2,7 @@
 #include "AssetSelfTestSupport.h"
 #include "AssetSelfTestFbx.h"
 #include "AssetSelfTestModelMaterial.h"
+#include "AssetSelfTestCore.h"
 #include "AssetSelfTestModelMaterialBoundary.h"
 #include "AssetSelfTestModelSurface.h"
 
@@ -14,6 +15,7 @@
 #include "Library/Core/Interfaces/Profiler/IProfiler.h"
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Animation/ModelAnimator.h"
 #include "Library/Framework/Animation/SpriteAnimator.h"
 #include "Library/Framework/Asset/AssetManager.h"
@@ -82,7 +84,7 @@ namespace
 					const uint32 Pixel = At( X, Y );
 					for ( int Shift = 0; Shift <= 16; Shift += 8 )
 					{
-						if ( std::abs( static_cast<int>( ( Pixel >> Shift ) & 0xFF ) - static_cast<int>( ( Color >> Shift ) & 0xFF ) ) > Tolerance ) return false;
+						if ( NMath::Abs( static_cast<int>( ( Pixel >> Shift ) & 0xFF ) - static_cast<int>( ( Color >> Shift ) & 0xFF ) ) > Tolerance ) return false;
 					}
 				}
 			}
@@ -107,8 +109,8 @@ namespace
 				for ( int X = 0; X < Width; ++X )
 				{
 					if ( At( X, Y ) == 0 ) continue;
-					OutLeft = std::min( OutLeft, X );
-					OutRight = std::max( OutRight, X );
+					OutLeft = NMath::Min( OutLeft, X );
+					OutRight = NMath::Max( OutRight, X );
 				}
 			}
 			return OutRight >= 0;
@@ -122,10 +124,10 @@ namespace
 				for ( int X = 0; X < Width; ++X )
 				{
 					if ( At( X, Y ) == 0 ) continue;
-					Left = std::min( Left, X );
-					Right = std::max( Right, X );
-					Top = std::min( Top, Y );
-					Bottom = std::max( Bottom, Y );
+					Left = NMath::Min( Left, X );
+					Right = NMath::Max( Right, X );
+					Top = NMath::Min( Top, Y );
+					Bottom = NMath::Max( Bottom, Y );
 				}
 			}
 			return Right < 0 ? FString( "(nothing)" ) : FString::Printf( "x %d..%d, y %d..%d", Left, Right, Top, Bottom );
@@ -240,6 +242,7 @@ void CAssetSelfTestScene::OnEnter()
 	S.TempRoot = MakeTempDirectory();
 
 	RunLogicTests( C );
+	RunCoreNumericTests( C );
 	RunConsoleLogicTests( C );
 	RunStaticModelMaterialCoreChecks( C );
 	LOG( LogAssetSelfTest, Log, "Logic checks done: %lld check(s), %lld failure(s)", static_cast<long long>( C.NumChecked ), static_cast<long long>( C.NumFailed ) );
@@ -815,7 +818,7 @@ void CAssetSelfTestScene::RunRealChecks()
 			Large->Draw( 200, 10, "WWWW", FColor32::White, EDrawTextAlign::Center );
 			Capture.Read();
 			Capture.FindLitColumns( Left, Right );
-			C.Check( std::abs( ( Left + Right ) / 2 - 200 ) <= 6, "center alignment: the text is centred on X (lit %d..%d)", Left, Right );
+			C.Check( NMath::Abs( ( Left + Right ) / 2 - 200 ) <= 6, "center alignment: the text is centred on X (lit %d..%d)", Left, Right );
 
 			// 縁取り: 縁の色が出る
 			FFontStyle Edge;
@@ -1023,7 +1026,7 @@ void CAssetSelfTestScene::RunRealChecks()
 				MV1RefreshReferenceMesh( H, -1, TRUE );
 				MV1_REF_POLYGONLIST Ref0 = MV1GetReferenceMesh( H, -1, TRUE );
 				float32 MaxAbsXStart = 0.0f;
-				for ( int32 v = 0; v < Ref0.VertexNum; ++v ) MaxAbsXStart = std::max( MaxAbsXStart, std::fabs( Ref0.Vertexs[v].Position.x ) );
+				for ( int32 v = 0; v < Ref0.VertexNum; ++v ) MaxAbsXStart = NMath::Max( MaxAbsXStart, NMath::Abs( Ref0.Vertexs[v].Position.x ) );
 				C.Near( MaxAbsXStart, 0.5, 0.08, "at the start of Wave, the skinned mesh stays within |x| <= 0.5" );
 
 				Anim.Seek( 1.0f );
@@ -1033,7 +1036,7 @@ void CAssetSelfTestScene::RunRealChecks()
 				MV1RefreshReferenceMesh( H, -1, TRUE );
 				MV1_REF_POLYGONLIST Ref1 = MV1GetReferenceMesh( H, -1, TRUE );
 				float32 MaxAbsXEnd = 0.0f;
-				for ( int32 v = 0; v < Ref1.VertexNum; ++v ) MaxAbsXEnd = std::max( MaxAbsXEnd, std::fabs( Ref1.Vertexs[v].Position.x ) );
+				for ( int32 v = 0; v < Ref1.VertexNum; ++v ) MaxAbsXEnd = NMath::Max( MaxAbsXEnd, NMath::Abs( Ref1.Vertexs[v].Position.x ) );
 				C.Check( MaxAbsXEnd > 0.85f, "at the end of Wave (90 deg bend), the top ring of the skinned mesh bends past |x| = 0.85 (got %.2f)", MaxAbsXEnd );
 				MV1TerminateReferenceMesh( H, -1, TRUE );
 			}
@@ -1100,7 +1103,7 @@ void CAssetSelfTestScene::RunRealChecks()
 				MV1RefreshReferenceMesh( H, -1, TRUE );
 				MV1_REF_POLYGONLIST Ref = MV1GetReferenceMesh( H, -1, TRUE );
 				float32 MaxAbsX = 0.0f;
-				for ( int32 v = 0; v < Ref.VertexNum; ++v ) MaxAbsX = std::max( MaxAbsX, std::fabs( Ref.Vertexs[v].Position.x ) );
+				for ( int32 v = 0; v < Ref.VertexNum; ++v ) MaxAbsX = NMath::Max( MaxAbsX, NMath::Abs( Ref.Vertexs[v].Position.x ) );
 				C.Check( MaxAbsX > 0.85f, "the animation-only .mv1 deforms the separate character mesh in DxLib (max |x| = %.2f)", MaxAbsX );
 				MV1TerminateReferenceMesh( H, -1, TRUE );
 			}
@@ -1136,8 +1139,8 @@ void CAssetSelfTestScene::RunRealChecks()
 			};
 			const auto CheckBounds = [&]( const MV1_REF_POLYGONLIST& Ref, const float32 Expected[6], const char* What )
 			{
-				const bool bOk = std::fabs( Ref.MinPosition.x - Expected[0] ) < 0.03 && std::fabs( Ref.MinPosition.y - Expected[1] ) < 0.03 && std::fabs( Ref.MinPosition.z - Expected[2] ) < 0.03
-								 && std::fabs( Ref.MaxPosition.x - Expected[3] ) < 0.03 && std::fabs( Ref.MaxPosition.y - Expected[4] ) < 0.03 && std::fabs( Ref.MaxPosition.z - Expected[5] ) < 0.03;
+				const bool bOk = NMath::Abs( Ref.MinPosition.x - Expected[0] ) < 0.03 && NMath::Abs( Ref.MinPosition.y - Expected[1] ) < 0.03 && NMath::Abs( Ref.MinPosition.z - Expected[2] ) < 0.03
+								 && NMath::Abs( Ref.MaxPosition.x - Expected[3] ) < 0.03 && NMath::Abs( Ref.MaxPosition.y - Expected[4] ) < 0.03 && NMath::Abs( Ref.MaxPosition.z - Expected[5] ) < 0.03;
 				C.Check( bOk, "%s: bounds (%.3f %.3f %.3f) - (%.3f %.3f %.3f), expected (%.3f %.3f %.3f) - (%.3f %.3f %.3f)", What, Ref.MinPosition.x, Ref.MinPosition.y, Ref.MinPosition.z, Ref.MaxPosition.x,
 						 Ref.MaxPosition.y, Ref.MaxPosition.z, Expected[0], Expected[1], Expected[2], Expected[3], Expected[4], Expected[5] );
 			};
@@ -1158,7 +1161,7 @@ void CAssetSelfTestScene::RunRealChecks()
 				for ( int32 v = 0; v < End.VertexNum; ++v )
 				{
 					const VECTOR& P = End.Vertexs[v].Position;
-					if ( std::fabs( P.x - Corner[0] ) < 0.03f && std::fabs( P.y - Corner[1] ) < 0.03f && std::fabs( P.z - Corner[2] ) < 0.03f )
+					if ( NMath::Abs( P.x - Corner[0] ) < 0.03f && NMath::Abs( P.y - Corner[1] ) < 0.03f && NMath::Abs( P.z - Corner[2] ) < 0.03f )
 					{
 						++NumMiddle;
 						break;
@@ -1181,7 +1184,7 @@ void CAssetSelfTestScene::RunRealChecks()
 		{
 			const VECTOR Min = MV1GetMeshMinPosition( RawModel->GetHandle(), 0 );
 			const VECTOR Max = MV1GetMeshMaxPosition( RawModel->GetHandle(), 0 );
-			C.Check( std::fabs( Min.z + 1.5f ) < 1.0e-3f && std::fabs( Max.z - 0.5f ) < 1.0e-3f && std::fabs( Max.y - 2.0f ) < 1.0e-3f, "and keeps the coordinates exactly (z %.4f .. %.4f)", Min.z, Max.z );
+			C.Check( NMath::Abs( Min.z + 1.5f ) < 1.0e-3f && NMath::Abs( Max.z - 0.5f ) < 1.0e-3f && NMath::Abs( Max.y - 2.0f ) < 1.0e-3f, "and keeps the coordinates exactly (z %.4f .. %.4f)", Min.z, Max.z );
 		}
 
 		// 上の軸が Z の FBX（軸の変換がフレームの行列に入る）: 同じ形で、Y が上になる
@@ -1198,8 +1201,8 @@ void CAssetSelfTestScene::RunRealChecks()
 			MV1SetupReferenceMesh( H, -1, TRUE );
 			MV1RefreshReferenceMesh( H, -1, TRUE );
 			const MV1_REF_POLYGONLIST Ref = MV1GetReferenceMesh( H, -1, TRUE );
-			C.Check( std::fabs( Ref.MinPosition.x + 0.5f ) < 0.03f && std::fabs( Ref.MinPosition.y ) < 0.03f && std::fabs( Ref.MinPosition.z + 1.5f ) < 0.03f && std::fabs( Ref.MaxPosition.x - 0.5f ) < 0.03f
-						 && std::fabs( Ref.MaxPosition.y - 2.0f ) < 0.03f && std::fabs( Ref.MaxPosition.z - 0.5f ) < 0.03f,
+			C.Check( NMath::Abs( Ref.MinPosition.x + 0.5f ) < 0.03f && NMath::Abs( Ref.MinPosition.y ) < 0.03f && NMath::Abs( Ref.MinPosition.z + 1.5f ) < 0.03f && NMath::Abs( Ref.MaxPosition.x - 0.5f ) < 0.03f
+						 && NMath::Abs( Ref.MaxPosition.y - 2.0f ) < 0.03f && NMath::Abs( Ref.MaxPosition.z - 0.5f ) < 0.03f,
 					 "a Z-up FBX is upright in DxLib too: (%.3f %.3f %.3f) - (%.3f %.3f %.3f)", Ref.MinPosition.x, Ref.MinPosition.y, Ref.MinPosition.z, Ref.MaxPosition.x, Ref.MaxPosition.y, Ref.MaxPosition.z );
 			MV1TerminateReferenceMesh( H, -1, TRUE );
 		}
@@ -1260,7 +1263,7 @@ void CAssetSelfTestScene::RunRealChecks()
 					MV1RefreshReferenceMesh( H, -1, TRUE );
 					return MV1GetReferenceMesh( H, -1, TRUE );
 				};
-				const auto BoundsAre = [&]( const MV1_REF_POLYGONLIST& Ref, float32 MinX, float32 MaxY ) { return std::fabs( Ref.MinPosition.x - MinX ) < 0.04f && std::fabs( Ref.MaxPosition.y - MaxY ) < 0.04f; };
+				const auto BoundsAre = [&]( const MV1_REF_POLYGONLIST& Ref, float32 MinX, float32 MaxY ) { return NMath::Abs( Ref.MinPosition.x - MinX ) < 0.04f && NMath::Abs( Ref.MaxPosition.y - MaxY ) < 0.04f; };
 				const float32 Half = std::sqrt( 0.5f );
 
 				// 1. Once: 0.1 秒ずつ進める。出来事は 1 回だけ、1 秒で終わり、最後の姿勢は 90 度
@@ -1278,7 +1281,7 @@ void CAssetSelfTestScene::RunRealChecks()
 					// 曲がるほど、頂点の x の平均は左へ行く（最小の x は 63 度あたりで折り返すので使えない）
 					float32 MeanX = 0.0f;
 					for ( int32 v = 0; v < Ref.VertexNum; ++v ) MeanX += Ref.Vertexs[v].Position.x;
-					MeanX /= static_cast<float32>( std::max( Ref.VertexNum, 1 ) );
+					MeanX /= static_cast<float32>( NMath::Max( Ref.VertexNum, 1 ) );
 					bMonotonic = bMonotonic && MeanX <= PreviousMeanX + 1.0e-3f;
 					PreviousMeanX = MeanX;
 				}
@@ -1311,9 +1314,9 @@ void CAssetSelfTestScene::RunRealChecks()
 				{
 					Sum += Layer.Weight;
 					bBoth = bBoth && Layer.Weight > 0.05f && Layer.Weight < 0.95f;
-					bBoth = bBoth && std::fabs( MV1GetAttachAnimBlendRate( H, Layer.AttachIndex ) - Layer.Weight ) < 1.0e-3f;
+					bBoth = bBoth && NMath::Abs( MV1GetAttachAnimBlendRate( H, Layer.AttachIndex ) - Layer.Weight ) < 1.0e-3f;
 				}
-				C.Check( bBoth && std::fabs( Sum - 1.0f ) < 1.0e-3f, "mid-fade both animations are attached to the DxLib model with their weights (%d layer(s), total %.3f)", Layers.Num(), Sum );
+				C.Check( bBoth && NMath::Abs( Sum - 1.0f ) < 1.0e-3f, "mid-fade both animations are attached to the DxLib model with their weights (%d layer(s), total %.3f)", Layers.Num(), Sum );
 				for ( int32 Step = 0; Step < 6; ++Step ) Anim.Update( 0.1f );
 				C.Check( Anim.GetNumActiveLayers() == 1 && Anim.GetCurrentClip() == "WaveFromMotion", "after the fade only the new clip is left" );
 				MV1TerminateReferenceMesh( H, -1, TRUE );

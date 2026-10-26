@@ -2,6 +2,7 @@
 #include <cmath>
 
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/DebugUI/WorldEditorInternal.h"
 #include "Library/Framework/Engine/Engine.h"
@@ -34,7 +35,7 @@ namespace
 
 	ImU32 WithAlpha( ImU32 Color, int32 Alpha )
 	{
-		return ( Color & ~IM_COL32_A_MASK ) | ( static_cast<ImU32>( std::clamp( Alpha, 0, 255 ) ) << IM_COL32_A_SHIFT );
+		return ( Color & ~IM_COL32_A_MASK ) | ( static_cast<ImU32>( NMath::Clamp( Alpha, 0, 255 ) ) << IM_COL32_A_SHIFT );
 	}
 
 	ImU32 AxisColor( int32 Axis ) { return Axis == 0 ? NWorldEditorUI::ColorAxisX : Axis == 1 ? NWorldEditorUI::ColorAxisY : NWorldEditorUI::ColorAxisZ; }
@@ -54,7 +55,7 @@ namespace
 	void RecordGrid( FDrawContext& Draw, const FEditorCamera& Camera )
 	{
 		// 注視点までの距離に合わせた 1, 10, 100 ... の間隔。10 本ごとに濃い線
-		const float32 Cell = std::pow( 10.0f, std::floor( std::log10( std::max( Camera.Distance * 0.25f, 0.01f ) ) ) );
+		const float32 Cell = std::pow( 10.0f, std::floor( std::log10( NMath::Max( Camera.Distance * 0.25f, 0.01f ) ) ) );
 		constexpr int32 Half = 24;
 		const int32 CenterX = static_cast<int32>( std::round( Camera.Target.x / Cell ) );
 		const int32 CenterZ = static_cast<int32>( std::round( Camera.Target.z / Cell ) );
@@ -231,7 +232,7 @@ namespace
 					if ( NWorld::UsesEditMeshCollider( Object ) )
 					{
 						TArray<FVector3> Lines;
-						const int32 NumFaces = std::min( Object.Mesh.GetValue().GetNumFaces(), MeshTrianglesLeft );
+						const int32 NumFaces = NMath::Min( Object.Mesh.GetValue().GetNumFaces(), MeshTrianglesLeft );
 						if ( !NWorldEditor::AppendEditMeshWireLines( Object.Mesh.GetValue(), Placed, NumFaces, Lines ) ) S.bMeshWireTruncated = true;
 						MeshTrianglesLeft -= NumFaces;
 						for ( int32 i = 0; i + 1 < Lines.Num(); i += 2 ) Draw.Line3D( Lines[i], Lines[i + 1], Color );
@@ -243,7 +244,7 @@ namespace
 						if ( const FEditorCollisionMesh* Mesh = Info->GetCollisionMesh( NWorld::GetColliderMeshPath( Object ) ) )
 						{
 							TArray<FVector3> Lines;
-							const int32 NumTriangles = std::min( Mesh->GetNumTriangles(), MeshTrianglesLeft );
+							const int32 NumTriangles = NMath::Min( Mesh->GetNumTriangles(), MeshTrianglesLeft );
 							if ( !NWorldEditor::AppendMeshWireLines( *Mesh, Placed, NumTriangles, Lines ) ) S.bMeshWireTruncated = true;
 							MeshTrianglesLeft -= NumTriangles;
 							for ( int32 i = 0; i + 1 < Lines.Num(); i += 2 ) Draw.Line3D( Lines[i], Lines[i + 1], Color );
@@ -289,8 +290,8 @@ namespace
 		if ( Executor == nullptr || S.ViewScreen < 0 ) return;
 		const FEditorCamera& Camera = S.Session.Camera;
 
-		S.View.Near = std::max( Camera.Distance * 0.01f, 0.01f );
-		S.View.Far = std::max( Camera.Distance * 300.0f, 500.0f );
+		S.View.Near = NMath::Max( Camera.Distance * 0.01f, 0.01f );
+		S.View.Far = NMath::Max( Camera.Distance * 300.0f, 500.0f );
 
 		const float32 OldNear = GetCameraNear();
 		const float32 OldFar = GetCameraFar();
@@ -566,7 +567,7 @@ namespace
 		DrawList->PopClipRect();
 
 		// 左上の情報
-		const FString Info = FString::Printf( "Distance %.1f   Grid %.3g", S.Session.Camera.Distance, std::pow( 10.0f, std::floor( std::log10( std::max( S.Session.Camera.Distance * 0.25f, 0.01f ) ) ) ) );
+		const FString Info = FString::Printf( "Distance %.1f   Grid %.3g", S.Session.Camera.Distance, std::pow( 10.0f, std::floor( std::log10( NMath::Max( S.Session.Camera.Distance * 0.25f, 0.01f ) ) ) ) );
 		DrawList->AddText( ImVec2( Origin.x + 8.0f, Origin.y + 6.0f ), IM_COL32( 200, 205, 220, 200 ), UI_TEXT( Info ) );
 
 		// 当たり判定の凡例（色の意味）
@@ -786,7 +787,7 @@ void NDebugUI::ProcessWorldEditorInput( FWorldEditorState& S, const FWorldEditor
 		break;
 	case EMouseMode::Pending:
 	{
-		const float32 Moved = std::max( std::fabs( Input.MouseX - S.PressPosition.x ), std::fabs( Input.MouseY - S.PressPosition.y ) );
+		const float32 Moved = NMath::Max( NMath::Abs( Input.MouseX - S.PressPosition.x ), NMath::Abs( Input.MouseY - S.PressPosition.y ) );
 		if ( !Input.bLeftDown )
 		{
 			// クリック: 同じものを続けて押すと、重なった次のもの。編集メッシュの編集中は、メッシュの要素を選ぶ

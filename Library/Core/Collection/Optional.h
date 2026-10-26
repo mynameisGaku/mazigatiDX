@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "Library/Core/Collection/CollectionCommon.h"
+#include "Library/Core/Types/Utility.h"
 
 // 「値なし」を表すタグ:  TOptional<int32> X = NullOpt;
 struct FNullOpt
@@ -35,7 +36,7 @@ public:
 	TOptional() noexcept = default;
 	FORCEINLINE TOptional( FNullOpt ) noexcept {}
 	FORCEINLINE TOptional( const T& InValue ) { Emplace( InValue ); }
-	FORCEINLINE TOptional( T&& InValue ) { Emplace( std::move( InValue ) ); }
+	FORCEINLINE TOptional( T&& InValue ) { Emplace( MoveTemp( InValue ) ); }
 
 	FORCEINLINE TOptional( const TOptional& Other )
 	{
@@ -43,7 +44,7 @@ public:
 	}
 	FORCEINLINE TOptional( TOptional&& Other ) noexcept( std::is_nothrow_move_constructible_v<T> )
 	{
-		if ( Other.bIsSet ) Emplace( std::move( Other.Ref() ) );
+		if ( Other.bIsSet ) Emplace( MoveTemp( Other.Ref() ) );
 	}
 
 	FORCEINLINE ~TOptional() { Reset(); }
@@ -60,8 +61,8 @@ public:
 	}
 	FORCEINLINE TOptional& operator=( T&& InValue )
 	{
-		if ( bIsSet ) Ref() = std::move( InValue );
-		else Emplace( std::move( InValue ) );
+		if ( bIsSet ) Ref() = MoveTemp( InValue );
+		else Emplace( MoveTemp( InValue ) );
 		return *this;
 	}
 	TOptional& operator=( FNullOpt ) noexcept { Reset(); return *this; }
@@ -89,14 +90,14 @@ public:
 	FORCEINLINE T&& GetValue() &&
 	{
 		COLLECTION_CHECK( bIsSet, "TOptional::GetValue() called on unset optional" );
-		return std::move( Ref() );
+		return MoveTemp( Ref() );
 	}
 
 	// 未設定なら Default を返す
 	template<typename U>
-	FORCEINLINE T Get( U&& Default ) const& { return bIsSet ? Ref() : static_cast<T>( std::forward<U>( Default ) ); }
+	FORCEINLINE T Get( U&& Default ) const& { return bIsSet ? Ref() : static_cast<T>( Forward<U>( Default ) ); }
 	template<typename U>
-	FORCEINLINE T Get( U&& Default ) && { return bIsSet ? std::move( Ref() ) : static_cast<T>( std::forward<U>( Default ) ); }
+	FORCEINLINE T Get( U&& Default ) && { return bIsSet ? MoveTemp( Ref() ) : static_cast<T>( Forward<U>( Default ) ); }
 
 	// 値へのポインタ（未設定なら nullptr）
 	FORCEINLINE T* GetPtrOrNull() noexcept { return bIsSet ? &Ref() : nullptr; }
@@ -104,7 +105,7 @@ public:
 
 	FORCEINLINE T& operator*() & { return GetValue(); }
 	FORCEINLINE const T& operator*() const& { return GetValue(); }
-	FORCEINLINE T&& operator*() && { return std::move( *this ).GetValue(); }
+	FORCEINLINE T&& operator*() && { return MoveTemp( *this ).GetValue(); }
 	FORCEINLINE T* operator->() { return &GetValue(); }
 	FORCEINLINE const T* operator->() const { return &GetValue(); }
 
@@ -115,7 +116,7 @@ public:
 	FORCEINLINE T& Emplace( Args&&... args )
 	{
 		Reset();
-		new ( Storage ) T( std::forward<Args>( args )... );
+		new ( Storage ) T( Forward<Args>( args )... );
 		bIsSet = true;
 		return Ref();
 	}
@@ -151,7 +152,7 @@ private:
 template<typename T>
 FORCEINLINE TOptional<std::decay_t<T>> MakeOptional( T&& InValue )
 {
-	return TOptional<std::decay_t<T>>( std::forward<T>( InValue ) );
+	return TOptional<std::decay_t<T>>( Forward<T>( InValue ) );
 }
 
 #include "Optional.inl"

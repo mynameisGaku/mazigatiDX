@@ -5,6 +5,7 @@
 #include <cmath>
 #include <limits>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Effect/ParticleEffectEditing.h"
 #include "Library/Framework/Effect/EffectPathGeometry.h"
 
@@ -38,7 +39,7 @@ namespace
 		{
 			TotalPoints += Strip.Points.Num();
 			if ( Strip.Points.Num() < 2 || Strip.Points.Num() > FEffectPathDefinition::MaxSegments + 1 ) return false;
-			for ( const FEffectPathGeometry::FPoint& Point : Strip.Points ) if ( !std::isfinite( Point.Position.x ) || !std::isfinite( Point.Position.y ) || !std::isfinite( Point.Position.z ) || !std::isfinite( Point.Width ) || !std::isfinite( Point.U ) || Point.Width < 0.0f ) return false;
+			for ( const FEffectPathGeometry::FPoint& Point : Strip.Points ) if ( !NMath::IsFinite( Point.Position.x ) || !NMath::IsFinite( Point.Position.y ) || !NMath::IsFinite( Point.Position.z ) || !NMath::IsFinite( Point.Width ) || !NMath::IsFinite( Point.U ) || Point.Width < 0.0f ) return false;
 		}
 		return TotalPoints <= FEffectPathGeometry::MaxPoints && Geometry.Strips.Num() <= 81;
 	}
@@ -50,7 +51,7 @@ namespace
 		const FVector3 Delta = End - Start;
 		// 射影率の分母に使うchord長の二乗。
 		const float32 Denominator = FVector3::Dot( Delta, Delta );
-		if ( Denominator <= 0.0f ) return std::numeric_limits<float32>::infinity();
+		if ( Denominator <= 0.0f ) return TNumericLimits<float32>::Infinity();
 		// Pointからchord方向へ進む最近点の比率。
 		const float32 T = FVector3::Dot( Point - Start, Delta ) / Denominator;
 		return ( Point - ( Start + Delta * T ) ).Length();
@@ -161,7 +162,7 @@ namespace
 		const FBadTreeFloat BadTreeFloats[] = {
 			{ "GrowthSeconds", "bad" },
 			{ "BranchAngleDegrees", nullptr },
-			{ "GrowthSeconds", std::numeric_limits<float32>::quiet_NaN() },
+			{ "GrowthSeconds", TNumericLimits<float32>::QuietNaN() },
 		};
 		for ( const FBadTreeFloat& Case : BadTreeFloats )
 		{
@@ -194,7 +195,7 @@ namespace
 			{ "End", NlohmannJson::array( { 0.0, nullptr, 0.0 } ) },
 			{ "Segments", 12.5 },
 			{ "Branches", 3.5 },
-			{ "Segments", std::numeric_limits<uint64>::max() },
+			{ "Segments", TNumericLimits<uint64>::Max() },
 			{ "Jitter", "bad" },
 			{ "BranchLength", nullptr },
 			{ "RefreshHz", "bad" },
@@ -214,7 +215,7 @@ namespace
 		FParticleEffectDefinition InvalidEffect;
 		InvalidEffect.Emitters.Add( FParticleEmitterDefinition() );
 		InvalidEffect.Emitters[0].Path.Kind = FEffectPathDefinition::EKind::TreeLightning;
-		InvalidEffect.Emitters[0].Path.Jitter = std::numeric_limits<float32>::quiet_NaN();
+		InvalidEffect.Emitters[0].Path.Jitter = TNumericLimits<float32>::QuietNaN();
 		TParticleEffectDocument Document;
 		Document.Reset( InvalidEffect );
 		Document.BeginEdit().Emitters[0].Path.Tree.ChildBranches = 3;
@@ -250,16 +251,16 @@ namespace
 				if ( Primary.Points.Num() < 2 ) { bAttachments = false; continue; }
 				int32 Attachment = INDEX_NONE;
 				for ( int32 Point = 1; Point < Geometry.Strips[0].Points.Num() - 1; ++Point ) if ( Geometry.Strips[0].Points[Point].Position == Primary.Points[0].Position ) Attachment = Point;
-				bAttachments = bAttachments && Attachment >= 2 && Attachment <= 10 && std::fabs( Primary.Points[0].U - Geometry.Strips[0].Points[Attachment].U ) < 1.0e-5f;
+				bAttachments = bAttachments && Attachment >= 2 && Attachment <= 10 && NMath::Abs( Primary.Points[0].U - Geometry.Strips[0].Points[Attachment].U ) < 1.0e-5f;
 				if ( Attachment >= 1 && Attachment + 1 < Geometry.Strips[0].Points.Num() )
 				{
 					// 主幹接続点の折線接線。
 					const FVector3 Tangent = ( Geometry.Strips[0].Points[Attachment + 1].Position - Geometry.Strips[0].Points[Attachment - 1].Position ).Normalized();
 					// 枝の方向が主幹接線と平行でないこと。
 					const FVector3 BranchDirection = ( Primary.Points.Last().Position - Primary.Points[0].Position ).Normalized();
-					bAttachments = bAttachments && std::fabs( FVector3::Dot( Tangent, BranchDirection ) ) < 0.95f && Primary.Points[0].Width > 0.0f && Primary.Points.Last().Width == 0.0f && Primary.Points.Last().Color.a == 0 && Primary.Points[0].Color.r == Color.r && Primary.Points[0].Color.g == Color.g && Primary.Points[0].Color.b == Color.b;
-					if ( Branch == 1 ) FirstPrimaryAngle = std::acos( std::clamp( FVector3::Dot( Tangent, BranchDirection ), -1.0f, 1.0f ) );
-					if ( Branch == 4 ) SecondPrimaryAngle = std::acos( std::clamp( FVector3::Dot( Tangent, BranchDirection ), -1.0f, 1.0f ) );
+					bAttachments = bAttachments && NMath::Abs( FVector3::Dot( Tangent, BranchDirection ) ) < 0.95f && Primary.Points[0].Width > 0.0f && Primary.Points.Last().Width == 0.0f && Primary.Points.Last().Color.a == 0 && Primary.Points[0].Color.r == Color.r && Primary.Points[0].Color.g == Color.g && Primary.Points[0].Color.b == Color.b;
+					if ( Branch == 1 ) FirstPrimaryAngle = std::acos( NMath::Clamp( FVector3::Dot( Tangent, BranchDirection ), -1.0f, 1.0f ) );
+					if ( Branch == 4 ) SecondPrimaryAngle = std::acos( NMath::Clamp( FVector3::Dot( Tangent, BranchDirection ), -1.0f, 1.0f ) );
 				}
 			}
 			// 全ての子枝接続とU連続を個別に数える状態。
@@ -283,7 +284,7 @@ namespace
 					const FEffectPathGeometry::FPoint& ParentPoint = Geometry.Strips[Parent].Points[Point];
 					if ( ParentPoint.Position != Secondary.Points[0].Position ) continue;
 					bChildPositionAttached = true;
-					bChildUvAttached = ParentPoint.U > 0.0f && Secondary.Points[0].U > 0.0f && std::fabs( ParentPoint.U - Secondary.Points[0].U ) < 1.0e-5f;
+					bChildUvAttached = ParentPoint.U > 0.0f && Secondary.Points[0].U > 0.0f && NMath::Abs( ParentPoint.U - Secondary.Points[0].U ) < 1.0e-5f;
 					break;
 				}
 				const bool bChildShapeValid = bChildPositionAttached && bChildUvAttached && Secondary.Points.Last().Width == 0.0f && Secondary.Points.Last().Color.a == 0;
@@ -304,18 +305,18 @@ namespace
 				// 同じ親から左右へ開く二つの子枝方向。
 				const FVector3 ChildDirectionA = ( SplitGeometry.Strips[2].Points.Last().Position - SplitGeometry.Strips[2].Points[0].Position ).Normalized();
 				const FVector3 ChildDirectionB = ( SplitGeometry.Strips[3].Points.Last().Position - SplitGeometry.Strips[3].Points[0].Position ).Normalized();
-				bAttachments = bAttachments && std::fabs( FVector3::Dot( ChildDirectionA, ChildDirectionB ) ) < 0.8f;
+				bAttachments = bAttachments && NMath::Abs( FVector3::Dot( ChildDirectionA, ChildDirectionB ) ) < 0.8f;
 			}
 			// seed差を比べる一つ目の一次枝長。
 			const float32 FirstPrimaryLength = StripChordLength( Geometry.Strips[1] );
 			// seed差を比べる二つ目の一次枝長。
 			const float32 SecondPrimaryLength = StripChordLength( Geometry.Strips[4] );
 			// 二本の一次枝長に視認できる差があるか。
-			const bool bDifferentPrimaryLengths = std::fabs( FirstPrimaryLength - SecondPrimaryLength ) > 0.05f;
+			const bool bDifferentPrimaryLengths = NMath::Abs( FirstPrimaryLength - SecondPrimaryLength ) > 0.05f;
 			// 二本の一次枝角度にseed由来の差があるか。
-			const bool bDifferentPrimaryAngles = std::fabs( FirstPrimaryAngle - SecondPrimaryAngle ) > 0.005f;
+			const bool bDifferentPrimaryAngles = NMath::Abs( FirstPrimaryAngle - SecondPrimaryAngle ) > 0.005f;
 			// 同じ親から出る二次枝長にも差があるか。
-			const bool bDifferentSecondaryLengths = std::fabs( StripChordLength( Geometry.Strips[2] ) - StripChordLength( Geometry.Strips[3] ) ) > 0.02f;
+			const bool bDifferentSecondaryLengths = NMath::Abs( StripChordLength( Geometry.Strips[2] ) - StripChordLength( Geometry.Strips[3] ) ) > 0.02f;
 			bAttachments = bAttachments && bDifferentPrimaryLengths && bDifferentPrimaryAngles && bDifferentSecondaryLengths;
 			C.Check( bAttachments, "枝を親の内側頂点とUへ接続し、角度・長さをseedで変えながら先端を絞る" );
 			// 直線主幹では一次枝2本が正面投影で必ず左右へ分かれる。
@@ -335,7 +336,7 @@ namespace
 				const float32 FirstSide = PrimarySplitGeometry.Strips[1].Points.Last().Position.x - PrimarySplitGeometry.Strips[1].Points[0].Position.x;
 				// もう一方の一次枝の正面方向成分。
 				const float32 SecondSide = PrimarySplitGeometry.Strips[2].Points.Last().Position.x - PrimarySplitGeometry.Strips[2].Points[0].Position.x;
-				C.Check( FirstSide * SecondSide < 0.0f && std::fabs( FirstSide ) > 0.5f && std::fabs( SecondSide ) > 0.5f, "直線主幹の兄弟枝は正面から見て左右へ有意に開く" );
+				C.Check( FirstSide * SecondSide < 0.0f && NMath::Abs( FirstSide ) > 0.5f && NMath::Abs( SecondSide ) > 0.5f, "直線主幹の兄弟枝は正面から見て左右へ有意に開く" );
 			}
 			// 同じseedで再生成した完成形。
 			FEffectPathGeometry Again;
@@ -352,7 +353,7 @@ namespace
 		// 異seedの中点位置を比較するための先行値。
 		FVector3 FirstSeedMidpoint = FVector3::Zero;
 		// 複数seedの粗い折れ幅の最小値。
-		float32 MinimumCoarseDisplacement = std::numeric_limits<float32>::max();
+		float32 MinimumCoarseDisplacement = TNumericLimits<float32>::Max();
 		// 複数seedの粗い折れ幅の最大値。
 		float32 MaximumCoarseDisplacement = 0.0f;
 		// 形状差を確認するseed群。
@@ -369,7 +370,7 @@ namespace
 			float32 MaximumChordDistance = 0.0f;
 			// 局所的な折れ角を一つでも確認したか。
 			bool bHasSharpTurn = false;
-			for ( int32 Point = 1; Point < SeedGeometry.Strips[0].Points.Num() - 1; ++Point ) MaximumChordDistance = std::max( MaximumChordDistance, DistanceFromChord( SeedGeometry.Strips[0].Points[Point].Position, Start, End ) );
+			for ( int32 Point = 1; Point < SeedGeometry.Strips[0].Points.Num() - 1; ++Point ) MaximumChordDistance = NMath::Max( MaximumChordDistance, DistanceFromChord( SeedGeometry.Strips[0].Points[Point].Position, Start, End ) );
 			for ( int32 Point = 1; Point < SeedGeometry.Strips[0].Points.Num() - 1; ++Point )
 			{
 				// 隣接線分の向きを比べ、鋭い折れが存在するか調べる。
@@ -380,8 +381,8 @@ namespace
 			bStrongIrregularity = bStrongIrregularity && MaximumChordDistance > 0.15f * ( End - Start ).Length() && bHasSharpTurn;
 			// seedごとに異なる粗い中央折れの実距離。
 			const float32 CoarseDisplacement = DistanceFromChord( SeedGeometry.Strips[0].Points[6].Position, Start, End );
-			MinimumCoarseDisplacement = std::min( MinimumCoarseDisplacement, CoarseDisplacement );
-			MaximumCoarseDisplacement = std::max( MaximumCoarseDisplacement, CoarseDisplacement );
+			MinimumCoarseDisplacement = NMath::Min( MinimumCoarseDisplacement, CoarseDisplacement );
+			MaximumCoarseDisplacement = NMath::Max( MaximumCoarseDisplacement, CoarseDisplacement );
 			if ( Seed == 991u ) FirstSeedMidpoint = SeedGeometry.Strips[0].Points[6].Position;
 			if ( Seed == 992u ) bStrongIrregularity = bStrongIrregularity && FirstSeedMidpoint != SeedGeometry.Strips[0].Points[6].Position;
 		}
@@ -409,11 +410,11 @@ namespace
 				const FVector3 Tangent = ( AngleGeometry.Strips[0].Points[2].Position - AngleGeometry.Strips[0].Points[0].Position ).Normalized();
 				const FVector3 BranchDirection = ( AngleGeometry.Strips[1].Points.Last().Position - AngleGeometry.Strips[1].Points[0].Position ).Normalized();
 				// 親接線との角度を度へ変換した実測値。
-				const float32 ActualAngle = std::acos( std::clamp( FVector3::Dot( Tangent, BranchDirection ), -1.0f, 1.0f ) ) * 57.29577951308232f;
+				const float32 ActualAngle = std::acos( NMath::Clamp( FVector3::Dot( Tangent, BranchDirection ), -1.0f, 1.0f ) ) * 57.29577951308232f;
 				// hash倍率と設定角clampが許す最小角。
-				const float32 MinimumAngle = std::max( RequestedAngle * 0.8f, 5.0f );
+				const float32 MinimumAngle = NMath::Max( RequestedAngle * 0.8f, 5.0f );
 				// hash倍率と設定角clampが許す最大角。
-				const float32 MaximumAngle = std::min( RequestedAngle * 1.2f, 85.0f );
+				const float32 MaximumAngle = NMath::Min( RequestedAngle * 1.2f, 85.0f );
 				C.Check( ActualAngle >= MinimumAngle - 0.05f && ActualAngle <= MaximumAngle + 0.05f, "奥行き乱れを含む実角度を許容範囲内へ保つ (actual=%.3f min=%.3f max=%.3f)", ActualAngle, MinimumAngle, MaximumAngle );
 			}
 		}
@@ -425,7 +426,7 @@ namespace
 		NEffectPath::BuildTreeLightning( Definition, 44u, 0.04f, Start, End, 0.8f, Color, Early );
 		NEffectPath::BuildTreeLightning( Definition, 44u, 0.08f, Start, End, 0.8f, Color, Later );
 		// Earlyの最終点は移動中の補間先端なので、完成済み頂点だけを比較する数。
-		const int32 StablePointCount = Early.Strips.IsEmpty() ? 0 : std::max( Early.Strips[0].Points.Num() - 1, 0 );
+		const int32 StablePointCount = Early.Strips.IsEmpty() ? 0 : NMath::Max( Early.Strips[0].Points.Num() - 1, 0 );
 		// 既に完成していた頂点がAge変更で動いていないか。
 		bool bStablePrefix = IsSafeGeometry( Early ) && IsSafeGeometry( Later ) && Early.Strips.Num() == 1 && Later.Strips.Num() == 1 && StablePointCount <= Later.Strips[0].Points.Num();
 		for ( int32 Point = 0; bStablePrefix && Point < StablePointCount; ++Point ) bStablePrefix = Early.Strips[0].Points[Point].Position == Later.Strips[0].Points[Point].Position;
@@ -492,13 +493,13 @@ namespace
 		for ( const FEffectPathGeometry::FStrip& Strip : Geometry.Strips ) PointCount += Strip.Points.Num();
 		C.Check( Geometry.Strips.Num() == 81 && PointCount == 1777 && IsSafeGeometry( Geometry ), "最大設定でも81strip・1777点以内へ収め、全値を有限に保つ (strips=%d points=%d)", Geometry.Strips.Num(), PointCount );
 		// 不正な直接呼び出しの入力を安全に空へする。
-		Maximum.Tree.BranchAngleDegrees = std::numeric_limits<float32>::quiet_NaN();
+		Maximum.Tree.BranchAngleDegrees = TNumericLimits<float32>::QuietNaN();
 		NEffectPath::BuildTreeLightning( Maximum, 7u, 0.0f, FVector3::Zero, Maximum.End, 0.4f, Color, Geometry );
 		C.Check( Geometry.Strips.IsEmpty(), "NaN設定は空形状へ安全に拒否する" );
 		Maximum = MakeTreePath();
-		NEffectPath::BuildTreeLightning( Maximum, 7u, std::numeric_limits<float32>::max(), FVector3::Zero, Maximum.End, 0.4f, Color, Geometry );
+		NEffectPath::BuildTreeLightning( Maximum, 7u, TNumericLimits<float32>::Max(), FVector3::Zero, Maximum.End, 0.4f, Color, Geometry );
 		C.Check( Geometry.Strips.IsEmpty(), "巨大な有限Ageを整数変換せず放電後の空形状にする" );
-		NEffectPath::BuildTreeLightning( Maximum, 7u, std::numeric_limits<float32>::quiet_NaN(), FVector3::Zero, Maximum.End, 0.4f, Color, Geometry );
+		NEffectPath::BuildTreeLightning( Maximum, 7u, TNumericLimits<float32>::QuietNaN(), FVector3::Zero, Maximum.End, 0.4f, Color, Geometry );
 		C.Check( Geometry.Strips.IsEmpty(), "非有限Ageを空形状へ安全に拒否する" );
 		NEffectPath::BuildTreeLightning( Maximum, 7u, 0.0f, FVector3::Zero, FVector3::Zero, 0.4f, Color, Geometry );
 		C.Check( Geometry.Strips.IsEmpty(), "同じ始点と終点では空形状を返す" );
@@ -573,9 +574,9 @@ namespace
 		// 丸め後の中心と端点を含む球が計算できたか。
 		const bool bRoundedBounds = NEffectPath::GetTreeLightningBounds( Straight, RoundedStart, RoundedEnd, RoundedPadding, RoundedCenter, RoundedRadius );
 		// 公開centerから終点までdouble精度で測る実距離。
-		const float64 RoundedEndDistance = std::fabs( static_cast<float64>( RoundedEnd.x ) - static_cast<float64>( RoundedCenter.x ) );
+		const float64 RoundedEndDistance = NMath::Abs( static_cast<float64>( RoundedEnd.x ) - static_cast<float64>( RoundedCenter.x ) );
 		// 公開centerから始点までdouble精度で測る実距離。
-		const float64 RoundedStartDistance = std::fabs( static_cast<float64>( RoundedStart.x ) - static_cast<float64>( RoundedCenter.x ) );
+		const float64 RoundedStartDistance = NMath::Abs( static_cast<float64>( RoundedStart.x ) - static_cast<float64>( RoundedCenter.x ) );
 		C.Check( bRoundedBounds && RoundedStartDistance + static_cast<float64>( RoundedPadding ) <= static_cast<float64>( RoundedRadius ) && RoundedEndDistance + static_cast<float64>( RoundedPadding ) <= static_cast<float64>( RoundedRadius ), "float中心の丸め後も両端距離とpaddingをbounds内へ含める" );
 		// 偶数・奇数segmentで再帰二分が同じ偏差上限を守る設定。
 		bool bDisplacementBounded = true;
@@ -605,8 +606,8 @@ namespace
 		float32 InvalidRadius = 0.0f;
 		C.Check( !NEffectPath::GetTreeLightningBounds( Definition, Start, End, -0.1f, InvalidCenter, InvalidRadius ), "負paddingを拒否する" );
 		C.Check( !NEffectPath::GetTreeLightningBounds( Definition, Start, Start, Padding, InvalidCenter, InvalidRadius ), "zero lengthのchordを拒否する" );
-		C.Check( !NEffectPath::GetTreeLightningBounds( Definition, FVector3( std::numeric_limits<float32>::quiet_NaN(), 0.0f, 0.0f ), End, Padding, InvalidCenter, InvalidRadius ), "非有限座標を拒否する" );
-		Definition.Jitter = std::numeric_limits<float32>::infinity();
+		C.Check( !NEffectPath::GetTreeLightningBounds( Definition, FVector3( TNumericLimits<float32>::QuietNaN(), 0.0f, 0.0f ), End, Padding, InvalidCenter, InvalidRadius ), "非有限座標を拒否する" );
+		Definition.Jitter = TNumericLimits<float32>::Infinity();
 		C.Check( !NEffectPath::GetTreeLightningBounds( Definition, Start, End, Padding, InvalidCenter, InvalidRadius ), "非有限Jitterを拒否する" );
 	}
 }

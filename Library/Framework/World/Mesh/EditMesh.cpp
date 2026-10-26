@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Framework/World/WorldDefinition.h"
 #include "Library/Json/JsonHelpers.h"
 
@@ -12,7 +14,7 @@ namespace
 
 	bool IsFinite( const FVector3& V )
 	{
-		return std::isfinite( V.x ) && std::isfinite( V.y ) && std::isfinite( V.z );
+		return NMath::IsFinite( V.x ) && NMath::IsFinite( V.y ) && NMath::IsFinite( V.z );
 	}
 
 	void Warn( TArray<FString>* Warnings, const FString& Message )
@@ -260,7 +262,7 @@ TArray<FEditMeshIssue> FEditMesh::Validate() const
 	if ( Vertices.Num() > MaxVertices ) Add( true, -1, FString::Printf( "the mesh has %d vertices (the limit is %d)", Vertices.Num(), MaxVertices ) );
 	if ( Faces.Num() > MaxFaces ) Add( true, -1, FString::Printf( "the mesh has %d faces (the limit is %d)", Faces.Num(), MaxFaces ) );
 	if ( Faces.IsEmpty() ) Add( false, -1, "the mesh has no faces (nothing is drawn, and a mesh collider has nothing to collide with)" );
-	if ( !std::isfinite( SmoothAngle ) || SmoothAngle < 0.0f || SmoothAngle > 180.0f ) Add( true, -1, "the smoothing angle must be between 0 and 180 degrees" );
+	if ( !NMath::IsFinite( SmoothAngle ) || SmoothAngle < 0.0f || SmoothAngle > 180.0f ) Add( true, -1, "the smoothing angle must be between 0 and 180 degrees" );
 
 	int32 NumNonFinite = 0;
 	for ( const FVector3& V : Vertices ) NumNonFinite += IsFinite( V ) ? 0 : 1;
@@ -269,8 +271,8 @@ TArray<FEditMeshIssue> FEditMesh::Validate() const
 	for ( int32 i = 0; i < Materials.Num(); ++i )
 	{
 		const FEditMeshMaterial& Material = Materials[i];
-		if ( !std::isfinite( Material.Tile ) || Material.Tile <= 0.0f ) Add( true, -1, FString::Printf( "material %d: the tile length must be greater than 0", i ) );
-		if ( !std::isfinite( Material.Offset.x ) || !std::isfinite( Material.Offset.y ) ) Add( true, -1, FString::Printf( "material %d: the offset is not a finite number", i ) );
+		if ( !NMath::IsFinite( Material.Tile ) || Material.Tile <= 0.0f ) Add( true, -1, FString::Printf( "material %d: the tile length must be greater than 0", i ) );
+		if ( !NMath::IsFinite( Material.Offset.x ) || !NMath::IsFinite( Material.Offset.y ) ) Add( true, -1, FString::Printf( "material %d: the offset is not a finite number", i ) );
 		// 追加材質効果の検証内容をmesh issueへ渡す。
 		for ( const FString& Issue : Material.Effect.Validate() ) Add( true, -1, FString::Printf( "material %d: %s", i, *Issue ) );
 	}
@@ -305,7 +307,7 @@ TArray<FEditMeshIssue> FEditMesh::Validate() const
 			continue;
 		}
 		if ( Item.Material < 0 ) Add( true, Face, FString::Printf( "face %d has a negative material number", Face ) );
-		else if ( Item.Material >= std::max( Materials.Num(), 1 ) ) Add( false, Face, FString::Printf( "face %d uses material %d, which does not exist (the default material is used)", Face, Item.Material ) );
+		else if ( Item.Material >= NMath::Max( Materials.Num(), 1 ) ) Add( false, Face, FString::Printf( "face %d uses material %d, which does not exist (the default material is used)", Face, Item.Material ) );
 
 		const FVector3 Normal = ComputeFaceNormal( Face );
 		if ( Normal.IsNearlyZero() )
@@ -434,6 +436,6 @@ bool FEditMesh::FromJson( const NlohmannJson& Json, FEditMesh& Out, TArray<FStri
 	}
 	Mesh.SmoothAngle = NJson::GetOr<float32>( Json, "Smooth", 0.0f );
 
-	Out = std::move( Mesh );
+	Out = MoveTemp( Mesh );
 	return true;
 }

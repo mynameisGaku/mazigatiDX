@@ -8,6 +8,7 @@
 #include "Library/Core/Interfaces/Job/IJobSystem.h"
 #include "Library/Core/Types/CompilerMacros.h"
 #include "Library/Core/Types/TypeDefinition.h"
+#include "Library/Core/Types/Utility.h"
 
 class CGameObject;
 struct FTransformNode;
@@ -118,11 +119,11 @@ public:
 		int32& DenseIndex = Sparse[static_cast<size_t>( Entity )];
 		if ( DenseIndex != INDEX_NONE )
 		{
-			Dense[static_cast<size_t>( DenseIndex )] = T( std::forward<TArgs>( Args )... );
+			Dense[static_cast<size_t>( DenseIndex )] = T( Forward<TArgs>( Args )... );
 			return &Dense[static_cast<size_t>( DenseIndex )];
 		}
 		DenseIndex = static_cast<int32>( Dense.size() );
-		Dense.emplace_back( std::forward<TArgs>( Args )... );
+		Dense.emplace_back( Forward<TArgs>( Args )... );
 		DenseEntity.push_back( Entity );
 		return &Dense.back();
 	}
@@ -135,7 +136,7 @@ public:
 		int32& DenseIndex = Sparse[static_cast<size_t>( Entity )];
 		if ( DenseIndex != INDEX_NONE ) return Dense[static_cast<size_t>( DenseIndex )];
 		DenseIndex = static_cast<int32>( Dense.size() );
-		Dense.emplace_back( std::forward<TArgs>( Args )... );
+		Dense.emplace_back( Forward<TArgs>( Args )... );
 		DenseEntity.push_back( Entity );
 		return Dense.back();
 	}
@@ -174,7 +175,7 @@ public:
 		const int32 LastIndex = static_cast<int32>( Dense.size() ) - 1;
 		if ( DenseIndex != LastIndex )
 		{
-			Dense[static_cast<size_t>( DenseIndex )] = std::move( Dense[static_cast<size_t>( LastIndex )] );
+			Dense[static_cast<size_t>( DenseIndex )] = MoveTemp( Dense[static_cast<size_t>( LastIndex )] );
 			DenseEntity[static_cast<size_t>( DenseIndex )] = DenseEntity[static_cast<size_t>( LastIndex )];
 			Sparse[static_cast<size_t>( DenseEntity[static_cast<size_t>( DenseIndex )] )] = DenseIndex;
 		}
@@ -276,14 +277,14 @@ public:
 	FORCEINLINE T* EmplaceData( int32 Entity, TArgs&&... Args )
 	{
 		Records[static_cast<size_t>( Entity )].ComponentMask |= NEcs::TypeBit<T>();
-		return GetStorage<T>().Emplace( Entity, std::forward<TArgs>( Args )... );
+		return GetStorage<T>().Emplace( Entity, Forward<TArgs>( Args )... );
 	}
 
 	template<typename T, typename... TArgs>
 	FORCEINLINE T& GetOrAddData( int32 Entity, TArgs&&... Args )
 	{
 		Records[static_cast<size_t>( Entity )].ComponentMask |= NEcs::TypeBit<T>();
-		return GetStorage<T>().GetOrAdd( Entity, std::forward<TArgs>( Args )... );
+		return GetStorage<T>().GetOrAdd( Entity, Forward<TArgs>( Args )... );
 	}
 
 	template<typename T>
@@ -338,7 +339,7 @@ private:
 		TComponentStorage<T>* Raw = Created.get();
 		StorageById[static_cast<size_t>( Id )] = Raw;
 		if ( Id >= 64 ) OverflowStorages.push_back( Raw );
-		Storages.push_back( std::move( Created ) );
+		Storages.push_back( MoveTemp( Created ) );
 		return *Raw;
 	}
 

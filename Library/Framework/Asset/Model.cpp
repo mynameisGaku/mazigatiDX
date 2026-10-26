@@ -1,6 +1,7 @@
 ﻿#include "Model.h"
 
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Asset/StaticModelSurface.h"
 #include <utility>
 
@@ -90,7 +91,7 @@ TSharedPtr<const FStaticModelSurface> CModel::CreateStaticSurfaceSnapshot() cons
 	// backendが成功時だけ書き込む面データ。
 	FStaticModelSurfaceData Data;
 	if ( !Backend->GetStaticModelSurface( Handle, Data ) ) return nullptr;
-	return MakeShared<FStaticModelSurface>( AsShared(), std::move( Data ) );
+	return MakeShared<FStaticModelSurface>( AsShared(), MoveTemp( Data ) );
 }
 
 bool CModel::GetBounds( FVector3& OutMin, FVector3& OutMax ) const

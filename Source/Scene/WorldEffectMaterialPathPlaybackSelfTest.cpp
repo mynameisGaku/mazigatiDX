@@ -5,6 +5,8 @@
 #include <cstring>
 #include <vector>
 
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/DebugUI/EffectEditor.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Effect/ParticleEffectBackend.h"
@@ -41,7 +43,7 @@ namespace
 			Item.Header = Header;
 			Item.Points.SetNum( Header.Ribbon.NumPoints );
 			std::memcpy( Item.Points.GetData(), reinterpret_cast<const uint8*>( Command.Data ) + sizeof( Header ), Item.Points.Num() * sizeof( FDrawMaterialRibbonData::FPoint ) );
-			Result.Add( std::move( Item ) );
+			Result.Add( MoveTemp( Item ) );
 		} );
 		return Result;
 	}
@@ -166,14 +168,14 @@ void NWorldTest::RunEffectMaterialPathPlaybackTests( NAssetTest::FChecker& C, CA
 			// 比較する一点。
 			const FDrawMaterialRibbonData::FPoint& Point = Command.Points[Index];
 			bAgesVary = bAgesVary || Point.Dissolve > 0.0f;
-			bCurveValuesMatch = bCurveValuesMatch && std::isfinite( Point.Dissolve ) && std::isfinite( Point.Emission ) && std::fabs( Point.Emission - ( 1.0f + 3.125f * Point.Dissolve ) ) < 1.0e-4f;
+			bCurveValuesMatch = bCurveValuesMatch && NMath::IsFinite( Point.Dissolve ) && NMath::IsFinite( Point.Emission ) && NMath::Abs( Point.Emission - ( 1.0f + 3.125f * Point.Dissolve ) ) < 1.0e-4f;
 			// 最初の点の秒齢を曲線値から戻す。
 			const double ReferenceAge = static_cast<double>( Command.Points[0].Dissolve ) * 2.0;
 			// signed fmod の共通基準位相。
 			const double ExpectedBase = std::fmod( ReferenceAge * -4.0, 1.0 );
 			// 点間の秒齢差だけを足す。
 			const double ExpectedU = ExpectedBase + ( static_cast<double>( Point.Dissolve ) - Command.Points[0].Dissolve ) * 2.0 * -4.0;
-			bScrollContinuous = bScrollContinuous && std::fabs( Point.UVOffset[0] - ExpectedU ) < 0.02f;
+			bScrollContinuous = bScrollContinuous && NMath::Abs( Point.UVOffset[0] - ExpectedU ) < 0.02f;
 		}
 		C.Check( bAgesVary && bCurveValuesMatch && Command.Points[0].Path.Color == 0xB4D2965Au, "材質点は点ごとの曲線値と元の未加工RGBAを記録する" );
 		C.Check( bScrollContinuous && Command.Header.Ribbon.UVRepeat == Ribbon.Path.UVRepeat && Command.Header.Material.UVScale[0] == Ribbon.Material.UVScale.x && Command.Header.Material.UVScale[1] == Ribbon.Material.UVScale.y, "負のUV移動を経過秒差として連続記録し、距離Uと倍率を保つ" );
@@ -181,7 +183,7 @@ void NWorldTest::RunEffectMaterialPathPlaybackTests( NAssetTest::FChecker& C, CA
 		const double ReferenceAge = static_cast<double>( Command.Points[0].Dissolve ) * 2.0;
 		// 負数を正規化しない共通基準。
 		const double ExpectedSignedBase = std::fmod( ReferenceAge * -4.0, 1.0 );
-		C.Check( ExpectedSignedBase < 0.0 && std::fabs( Command.Points[0].UVOffset[0] - ExpectedSignedBase ) < 0.02, "負のUV基準位相はsigned fmodの値をそのまま記録する" );
+		C.Check( ExpectedSignedBase < 0.0 && NMath::Abs( Command.Points[0].UVOffset[0] - ExpectedSignedBase ) < 0.02, "負のUV基準位相はsigned fmodの値をそのまま記録する" );
 	}
 	MaskOwner.Reset();
 	C.Check( MaskWeak.IsValid(), "材質Ribbon再生中はmask画像をshared保持する" );
@@ -271,9 +273,9 @@ void NWorldTest::RunEffectMaterialPathPlaybackTests( NAssetTest::FChecker& C, CA
 			// 実測秒齢から計算した連続V。
 			const double ExpectedV = BaseV + ( static_cast<double>( LongAgeParticles[Index].Age ) - ReferenceAge ) * LongAgeRibbon.Material.UVScroll.y;
 			// 大きな絶対秒齢を小さい位相差として保持する。
-			bLongAgeOffsetMatches = bLongAgeOffsetMatches && std::fabs( Point.UVOffset[0] - ExpectedU ) < 1.0e-3 && std::fabs( Point.UVOffset[1] - ExpectedV ) < 1.0e-3 && std::fabs( Point.UVOffset[0] ) < 0.2f && std::fabs( Point.UVOffset[1] ) < 0.2f;
+			bLongAgeOffsetMatches = bLongAgeOffsetMatches && NMath::Abs( Point.UVOffset[0] - ExpectedU ) < 1.0e-3 && NMath::Abs( Point.UVOffset[1] - ExpectedV ) < 1.0e-3 && NMath::Abs( Point.UVOffset[0] ) < 0.2f && NMath::Abs( Point.UVOffset[1] ) < 0.2f;
 		}
-		bLongAgeHasPointPhaseDifference = std::fabs( Command.Points.Last().UVOffset[0] - Command.Points[0].UVOffset[0] ) > 0.02f || std::fabs( Command.Points.Last().UVOffset[1] - Command.Points[0].UVOffset[1] ) > 0.02f;
+		bLongAgeHasPointPhaseDifference = NMath::Abs( Command.Points.Last().UVOffset[0] - Command.Points[0].UVOffset[0] ) > 0.02f || NMath::Abs( Command.Points.Last().UVOffset[1] - Command.Points[0].UVOffset[1] ) > 0.02f;
 	}
 	C.Check( bLongAgeOffsetMatches && bLongAgeHasPointPhaseDifference, "秒齢20000秒付近でも実際の近接粒子ageから求めたsigned fmod位相と差を保つ" );
 	// 材質を外した場合は同じRibbon命令と同じ点列だけを記録する。
@@ -351,7 +353,7 @@ void NWorldTest::RunEffectMaterialPathPlaybackTests( NAssetTest::FChecker& C, CA
 		const double ExpectedOffsetV = std::fmod( static_cast<double>( LatestParticle.Age ) * DedupRibbon.Material.UVScroll.y, 1.0 );
 		// 最新色のpacked RGBA。
 		const uint32 ExpectedColor = static_cast<uint32>( LatestParticle.Color.r ) | ( static_cast<uint32>( LatestParticle.Color.g ) << 8 ) | ( static_cast<uint32>( LatestParticle.Color.b ) << 16 ) | ( static_cast<uint32>( LatestParticle.Color.a ) << 24 );
-		bDedupLatestValue = std::fabs( MergedPoint.Dissolve - LatestParticle.NormalizedAge ) < 1.0e-4f && std::fabs( MergedPoint.Emission - DedupRibbon.Material.Emission.Evaluate( LatestParticle.NormalizedAge, 1.0f ) ) < 1.0e-4f && std::fabs( MergedPoint.UVOffset[0] - ExpectedOffsetU ) < 1.0e-4 && std::fabs( MergedPoint.UVOffset[1] - ExpectedOffsetV ) < 1.0e-4 && std::fabs( MergedPoint.Path.Width - LatestParticle.Size ) < 1.0e-4f && MergedPoint.Path.Color == ExpectedColor;
+		bDedupLatestValue = NMath::Abs( MergedPoint.Dissolve - LatestParticle.NormalizedAge ) < 1.0e-4f && NMath::Abs( MergedPoint.Emission - DedupRibbon.Material.Emission.Evaluate( LatestParticle.NormalizedAge, 1.0f ) ) < 1.0e-4f && NMath::Abs( MergedPoint.UVOffset[0] - ExpectedOffsetU ) < 1.0e-4 && NMath::Abs( MergedPoint.UVOffset[1] - ExpectedOffsetV ) < 1.0e-4 && NMath::Abs( MergedPoint.Path.Width - LatestParticle.Size ) < 1.0e-4f && MergedPoint.Path.Color == ExpectedColor;
 	}
 	C.Check( bDedupLatestValue, "同位置を統合したRibbon点は最新粒子のDissolve・Emission・phase・幅・色へ更新する" );
 	// Lightningの芯と外側は同じ粒子齢を使い、境界発光は外側だけへ渡す。
@@ -383,7 +385,7 @@ void NWorldTest::RunEffectMaterialPathPlaybackTests( NAssetTest::FChecker& C, CA
 		const FMaterialRibbonCommand& Command = BoltCommands[Index];
 		bCore = bCore || Command.Header.Material.EdgeEmission == 0.0f;
 		bHalo = bHalo || Command.Header.Material.EdgeEmission == Lightning.Material.EdgeEmission;
-		for ( const FDrawMaterialRibbonData::FPoint& Point : Command.Points ) bBoltAgesMatch = bBoltAgesMatch && std::fabs( Point.Dissolve - 0.2f ) < 0.03f && std::fabs( Point.Emission - 2.8f ) < 0.2f && std::isfinite( Point.UVOffset[0] ) && std::isfinite( Point.UVOffset[1] );
+		for ( const FDrawMaterialRibbonData::FPoint& Point : Command.Points ) bBoltAgesMatch = bBoltAgesMatch && NMath::Abs( Point.Dissolve - 0.2f ) < 0.03f && NMath::Abs( Point.Emission - 2.8f ) < 0.2f && NMath::IsFinite( Point.UVOffset[0] ) && NMath::IsFinite( Point.UVOffset[1] );
 	}
 	C.Check( BoltCommands.Num() >= 8 && bCore && bHalo && bBoltAgesMatch, "Lightning主幹と枝の芯・外側は同じ寿命曲線を使い、境界発光だけ外側へ一度渡す" );
 	// 同じstrip順でhaloとcoreを対応できるか。

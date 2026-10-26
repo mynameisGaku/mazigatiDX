@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/World/Mesh/EditMesh.h"
 #include "Library/Framework/World/Mesh/EditMeshOps.h"
 #include "Library/Framework/World/WorldEdit.h"
@@ -209,8 +210,8 @@ void NWorldTest::RunMeshMaterialEffectDefinitionTests( NAssetTest::FChecker& C )
 	// 直接代入された非有限値も検証し、JSONへ出して再読後に無効状態を保つ。
 	// NaN/Infを持つinvalid定義。
 	FMeshMaterialEffectDefinition NonFinite = DefaultEffect;
-	NonFinite.Duration = std::numeric_limits<float32>::infinity();
-	NonFinite.Opacity = std::numeric_limits<float32>::quiet_NaN();
+	NonFinite.Duration = TNumericLimits<float32>::Infinity();
+	NonFinite.Opacity = TNumericLimits<float32>::QuietNaN();
 	// JSONから戻すinvalid定義。
 	FMeshMaterialEffectDefinition NonFiniteRoundTrip;
 	// 非有限値をnull経由で読み直せたか。

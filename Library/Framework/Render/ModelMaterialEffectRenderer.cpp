@@ -7,6 +7,7 @@
 #include "Library/Core/Interfaces/Asset/AssetBackend.h"
 #include "Library/Core/Interfaces/Render/DrawModelMaterial.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/Asset.h"
 #include "Library/Framework/Asset/Model.h"
 #include "Library/Framework/Asset/StaticModelSurface.h"
@@ -263,10 +264,10 @@ bool FModelMaterialEffectRenderer::Record( FDrawContext& Draw, const TSharedPtr<
 	for ( int32 Row = 0; Row < 4; ++Row )
 	{
 		// 現在行の有限性を確かめる列。
-		for ( int32 Column = 0; Column < 4; ++Column ) if ( !std::isfinite( World.m[Row][Column] ) ) return true;
+		for ( int32 Column = 0; Column < 4; ++Column ) if ( !NMath::IsFinite( World.m[Row][Column] ) ) return true;
 	}
 	// curve評価へ渡す正規化時刻。
-	const float32 NormalizedTime = std::clamp( static_cast<float32>( EffectTimeSeconds / Resources->Definition.Duration ), 0.0f, 1.0f );
+	const float32 NormalizedTime = NMath::Clamp( static_cast<float32>( EffectTimeSeconds / Resources->Definition.Duration ), 0.0f, 1.0f );
 	// 固定命令へ詰めるModel・材質・効果値。
 	FDrawModelMaterialData Data;
 	Data.Handle = Instance->GetHandle();

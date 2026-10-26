@@ -12,6 +12,8 @@
 #include "Library/Core/Interfaces/Profiler/IProfiler.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Profiler/ProfilerScope.h"
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogJob, Log )
@@ -47,10 +49,10 @@ void CJobSystem::Initialize( FSubsystemCollection& Collection )
 	// プロファイラーより後に初期化させる（終了はその逆なので、ワーカーが止まってからプロファイラーが片付く）
 	Collection.InitializeDependency<IProfiler>();
 
-	int32 NumWorkers = std::max( 0, static_cast<int32>( std::thread::hardware_concurrency() ) - 1 );
+	int32 NumWorkers = NMath::Max( 0, static_cast<int32>( std::thread::hardware_concurrency() ) - 1 );
 	const int32 Requested = ReadJobThreadsArgument();
 	if ( Requested >= 0 ) NumWorkers = Requested;
-	NumWorkers = std::min( NumWorkers, MaxWorkers );
+	NumWorkers = NMath::Min( NumWorkers, MaxWorkers );
 
 	Workers.reserve( static_cast<size_t>( NumWorkers ) );
 	for ( int32 i = 0; i < NumWorkers; ++i ) Workers.emplace_back( &CJobSystem::WorkerMain, this, i );
@@ -120,7 +122,7 @@ bool CJobSystem::RunOneLocked( std::unique_lock<std::mutex>& Lock, bool bAllowJo
 
 	if ( bAllowJobs && !ReadyJobs.empty() )
 	{
-		std::shared_ptr<FJobState> Job = std::move( ReadyJobs.front() );
+		std::shared_ptr<FJobState> Job = MoveTemp( ReadyJobs.front() );
 		ReadyJobs.pop_front();
 		Lock.unlock();
 		RunJob( Job );
@@ -138,7 +140,7 @@ void CJobSystem::RunBatches( FGroup& Group )
 		if ( Batch >= Group.NumBatches ) return;
 
 		const int32 Begin = Batch * Group.BatchSize;
-		const int32 End = std::min( Begin + Group.BatchSize, Group.Count );
+		const int32 End = NMath::Min( Begin + Group.BatchSize, Group.Count );
 		{
 			PROFILE_SCOPE_CAT( "Job", Group.Name );
 			Group.Body.Invoke( Group.Body.Object, Begin, End );
@@ -156,8 +158,8 @@ void CJobSystem::RunParallelRange( int32 Count, int32 MinBatchSize, FRangeFuncti
 	if ( Count <= 0 ) return;
 
 	// バッチの分け方は Count と MinBatchSize だけで決まる（ワーカーの数に依存しない）
-	const int32 MinBatch = std::max( MinBatchSize, 1 );
-	const int32 BatchSize = std::max( MinBatch, ( Count + MaxBatchesPerCall - 1 ) / MaxBatchesPerCall );
+	const int32 MinBatch = NMath::Max( MinBatchSize, 1 );
+	const int32 BatchSize = NMath::Max( MinBatch, ( Count + MaxBatchesPerCall - 1 ) / MaxBatchesPerCall );
 	const int32 NumBatches = ( Count + BatchSize - 1 ) / BatchSize;
 
 	// 小さな仕事、またはワーカーがいないときは、呼び出したスレッドだけで（同じ分け方で）順番に実行する
@@ -167,7 +169,7 @@ void CJobSystem::RunParallelRange( int32 Count, int32 MinBatchSize, FRangeFuncti
 		{
 			const int32 Begin = Batch * BatchSize;
 			PROFILE_SCOPE_CAT( "Job", Name );
-			Body.Invoke( Body.Object, Begin, std::min( Begin + BatchSize, Count ) );
+			Body.Invoke( Body.Object, Begin, NMath::Min( Begin + BatchSize, Count ) );
 		}
 		return;
 	}
@@ -213,7 +215,7 @@ void CJobSystem::RunParallelRange( int32 Count, int32 MinBatchSize, FRangeFuncti
 FJobHandle CJobSystem::Schedule( std::function<void()> Function, const char* Name, const FJobHandle& Dependency )
 {
 	std::shared_ptr<FJobState> Job = std::make_shared<FJobState>();
-	Job->Function = std::move( Function );
+	Job->Function = MoveTemp( Function );
 	Job->Name = Name;
 	Job->NumPending.store( 1, std::memory_order_relaxed );   // 登録が終わるまで実行されないよう、自分の分を 1 つ持っておく
 

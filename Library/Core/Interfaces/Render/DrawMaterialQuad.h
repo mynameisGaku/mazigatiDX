@@ -6,6 +6,8 @@
 
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
+
 // 画像と任意のマスクを使い、消失・境界発光・UV移動を指定する値。
 struct FDrawMaterialQuadData
 {
@@ -45,12 +47,12 @@ namespace NDrawMaterialQuad
 		// 検証対象となる四角形の形状・画像座標。
 		const FDrawQuad3DData& Quad = Data.Quad;
 		// 三成分の位置・方向に非有限値がないか調べる。
-		const auto Finite3 = []( const float32 ( &Values )[3] ) { return std::isfinite( Values[0] ) && std::isfinite( Values[1] ) && std::isfinite( Values[2] ); };
-		if ( Quad.Handle < 0 || Data.MaskTexture < -1 || !Finite3( Quad.Pos ) || !Finite3( Quad.Right ) || !Finite3( Quad.Up ) || !std::isfinite( Quad.Width ) || !std::isfinite( Quad.Height ) || Quad.Width <= 0.0f || Quad.Height <= 0.0f || Quad.Width > 1.0e6f || Quad.Height > 1.0e6f ) return false;
-		if ( !std::isfinite( Quad.PivotX ) || !std::isfinite( Quad.PivotY ) || Quad.PivotX < 0.0f || Quad.PivotX > 1.0f || Quad.PivotY < 0.0f || Quad.PivotY > 1.0f || !std::isfinite( Quad.Angle ) || !std::isfinite( Quad.U0 ) || !std::isfinite( Quad.V0 ) || !std::isfinite( Quad.U1 ) || !std::isfinite( Quad.V1 ) || Quad.U0 < 0.0f || Quad.V0 < 0.0f || Quad.U1 > 1.0f || Quad.V1 > 1.0f || Quad.U0 >= Quad.U1 || Quad.V0 >= Quad.V1 ) return false;
+		const auto Finite3 = []( const float32 ( &Values )[3] ) { return NMath::IsFinite( Values[0] ) && NMath::IsFinite( Values[1] ) && NMath::IsFinite( Values[2] ); };
+		if ( Quad.Handle < 0 || Data.MaskTexture < -1 || !Finite3( Quad.Pos ) || !Finite3( Quad.Right ) || !Finite3( Quad.Up ) || !NMath::IsFinite( Quad.Width ) || !NMath::IsFinite( Quad.Height ) || Quad.Width <= 0.0f || Quad.Height <= 0.0f || Quad.Width > 1.0e6f || Quad.Height > 1.0e6f ) return false;
+		if ( !NMath::IsFinite( Quad.PivotX ) || !NMath::IsFinite( Quad.PivotY ) || Quad.PivotX < 0.0f || Quad.PivotX > 1.0f || Quad.PivotY < 0.0f || Quad.PivotY > 1.0f || !NMath::IsFinite( Quad.Angle ) || !NMath::IsFinite( Quad.U0 ) || !NMath::IsFinite( Quad.V0 ) || !NMath::IsFinite( Quad.U1 ) || !NMath::IsFinite( Quad.V1 ) || Quad.U0 < 0.0f || Quad.V0 < 0.0f || Quad.U1 > 1.0f || Quad.V1 > 1.0f || Quad.U0 >= Quad.U1 || Quad.V0 >= Quad.V1 ) return false;
 		if ( Quad.Orient < static_cast<int32>( EDrawQuadOrient::Camera ) || Quad.Orient > static_cast<int32>( EDrawQuadOrient::Fixed ) ) return false;
-		if ( !std::isfinite( Data.UVScale[0] ) || !std::isfinite( Data.UVScale[1] ) || !std::isfinite( Data.UVOffset[0] ) || !std::isfinite( Data.UVOffset[1] ) || std::abs( Data.UVScale[0] ) > 1.0e4f || std::abs( Data.UVScale[1] ) > 1.0e4f || std::abs( Data.UVOffset[0] ) > 1.0e6f || std::abs( Data.UVOffset[1] ) > 1.0e6f ) return false;
-		return std::isfinite( Data.MaskScale ) && Data.MaskScale > 0.0f && Data.MaskScale <= 1.0e4f && std::isfinite( Data.Dissolve ) && Data.Dissolve >= 0.0f && Data.Dissolve <= 1.0f && std::isfinite( Data.Emission ) && Data.Emission >= 0.0f && Data.Emission <= 64.0f && std::isfinite( Data.EdgeWidth ) && Data.EdgeWidth >= 0.0f && Data.EdgeWidth <= 1.0f && std::isfinite( Data.EdgeEmission ) && Data.EdgeEmission >= 0.0f && Data.EdgeEmission <= 64.0f && ( Data.bDissolve == 0 || Data.bDissolve == 1 ) && ( Data.DepthTest == 0 || Data.DepthTest == 1 ) && ( Data.DepthWrite == 0 || Data.DepthWrite == 1 );
+		if ( !NMath::IsFinite( Data.UVScale[0] ) || !NMath::IsFinite( Data.UVScale[1] ) || !NMath::IsFinite( Data.UVOffset[0] ) || !NMath::IsFinite( Data.UVOffset[1] ) || NMath::Abs( Data.UVScale[0] ) > 1.0e4f || NMath::Abs( Data.UVScale[1] ) > 1.0e4f || NMath::Abs( Data.UVOffset[0] ) > 1.0e6f || NMath::Abs( Data.UVOffset[1] ) > 1.0e6f ) return false;
+		return NMath::IsFinite( Data.MaskScale ) && Data.MaskScale > 0.0f && Data.MaskScale <= 1.0e4f && NMath::IsFinite( Data.Dissolve ) && Data.Dissolve >= 0.0f && Data.Dissolve <= 1.0f && NMath::IsFinite( Data.Emission ) && Data.Emission >= 0.0f && Data.Emission <= 64.0f && NMath::IsFinite( Data.EdgeWidth ) && Data.EdgeWidth >= 0.0f && Data.EdgeWidth <= 1.0f && NMath::IsFinite( Data.EdgeEmission ) && Data.EdgeEmission >= 0.0f && Data.EdgeEmission <= 64.0f && ( Data.bDissolve == 0 || Data.bDissolve == 1 ) && ( Data.DepthTest == 0 || Data.DepthTest == 1 ) && ( Data.DepthWrite == 0 || Data.DepthWrite == 1 );
 	}
 }
 

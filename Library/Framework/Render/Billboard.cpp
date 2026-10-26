@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Ecs/SystemParams.h"
 
 bool FBillboard::SetRect( int32 X, int32 Y, int32 Width, int32 Height )
@@ -34,8 +35,8 @@ void FBillboard::Record( FDrawContext& Draw, const FTransform& World ) const
 	Data.Pos[1] = World.Position.y;
 	Data.Pos[2] = World.Position.z;
 	// 拡大は、大きさに掛ける（負の拡大で裏返しにはしない。反転は bFlipX / bFlipY で）
-	Data.Width = Size.x * std::fabs( World.Scale.x );
-	Data.Height = Size.y * std::fabs( World.Scale.y );
+	Data.Width = Size.x * NMath::Abs( World.Scale.x );
+	Data.Height = Size.y * NMath::Abs( World.Scale.y );
 	Data.PivotX = Pivot.x;
 	Data.PivotY = Pivot.y;
 	Data.Orient = static_cast<int32>( Orient );

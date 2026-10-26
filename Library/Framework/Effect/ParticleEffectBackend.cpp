@@ -6,6 +6,8 @@
 #include <cstring>
 
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Effect/EffectPathGeometry.h"
 #include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
@@ -26,7 +28,7 @@ namespace
 	EDrawQuadOrient ToQuadOrient( EParticleOrient Orient )
 	{
 		static const EDrawQuadOrient Table[] = { EDrawQuadOrient::Camera, EDrawQuadOrient::CameraY, EDrawQuadOrient::Fixed };
-		return Table[std::clamp( static_cast<int32>( Orient ), 0, 2 )];
+		return Table[NMath::Clamp( static_cast<int32>( Orient ), 0, 2 )];
 	}
 
 	EDrawBlend ToDrawBlend( EParticleBlend Blend )
@@ -52,26 +54,26 @@ namespace
 		Out.bTwoSided = 1;
 		if ( !Emitter.Material.bEnabled ) return true;
 		Out.Material.MaskTexture = MaskTexture;
-		Out.Material.UVScale[0] = std::isfinite( Emitter.Material.UVScale.x ) && Emitter.Material.UVScale.x > 0.0f ? Emitter.Material.UVScale.x : 1.0f;
-		Out.Material.UVScale[1] = std::isfinite( Emitter.Material.UVScale.y ) && Emitter.Material.UVScale.y > 0.0f ? Emitter.Material.UVScale.y : 1.0f;
-		Out.Material.MaskScale = std::isfinite( Emitter.Material.MaskScale ) && Emitter.Material.MaskScale > 0.0f ? Emitter.Material.MaskScale : 1.0f;
-		Out.Material.EdgeWidth = std::isfinite( Emitter.Material.EdgeWidth ) ? std::clamp( Emitter.Material.EdgeWidth, 0.0f, 1.0f ) : 0.08f;
-		Out.Material.EdgeEmission = std::isfinite( Emitter.Material.EdgeEmission ) ? std::clamp( Emitter.Material.EdgeEmission, 0.0f, 32.0f ) : 2.0f;
+		Out.Material.UVScale[0] = NMath::IsFinite( Emitter.Material.UVScale.x ) && Emitter.Material.UVScale.x > 0.0f ? Emitter.Material.UVScale.x : 1.0f;
+		Out.Material.UVScale[1] = NMath::IsFinite( Emitter.Material.UVScale.y ) && Emitter.Material.UVScale.y > 0.0f ? Emitter.Material.UVScale.y : 1.0f;
+		Out.Material.MaskScale = NMath::IsFinite( Emitter.Material.MaskScale ) && Emitter.Material.MaskScale > 0.0f ? Emitter.Material.MaskScale : 1.0f;
+		Out.Material.EdgeWidth = NMath::IsFinite( Emitter.Material.EdgeWidth ) ? NMath::Clamp( Emitter.Material.EdgeWidth, 0.0f, 1.0f ) : 0.08f;
+		Out.Material.EdgeEmission = NMath::IsFinite( Emitter.Material.EdgeEmission ) ? NMath::Clamp( Emitter.Material.EdgeEmission, 0.0f, 32.0f ) : 2.0f;
 		Out.Material.EdgeColor = { Emitter.Material.EdgeColor.r, Emitter.Material.EdgeColor.g, Emitter.Material.EdgeColor.b, Emitter.Material.EdgeColor.a };
 		Out.Material.bDissolve = Emitter.Material.bDissolve ? 1 : 0;
 		Out.Dissolve = Emitter.Material.Dissolve.Evaluate( Particle.NormalizedAge, 0.0f );
-		Out.Emission = std::clamp( Emitter.Material.Emission.Evaluate( Particle.NormalizedAge, 1.0f ), 0.0f, 32.0f );
+		Out.Emission = NMath::Clamp( Emitter.Material.Emission.Evaluate( Particle.NormalizedAge, 1.0f ), 0.0f, 32.0f );
 		// 秒齢からUVの一周未満の移動量を求める。
-		const double Age = std::isfinite( Particle.Age ) ? static_cast<double>( Particle.Age ) : 0.0;
-		const double ScrollU = std::isfinite( Emitter.Material.UVScroll.x ) ? std::fmod( Age * Emitter.Material.UVScroll.x, 1.0 ) : 0.0;
-		const double ScrollV = std::isfinite( Emitter.Material.UVScroll.y ) ? std::fmod( Age * Emitter.Material.UVScroll.y, 1.0 ) : 0.0;
+		const double Age = NMath::IsFinite( Particle.Age ) ? static_cast<double>( Particle.Age ) : 0.0;
+		const double ScrollU = NMath::IsFinite( Emitter.Material.UVScroll.x ) ? std::fmod( Age * Emitter.Material.UVScroll.x, 1.0 ) : 0.0;
+		const double ScrollV = NMath::IsFinite( Emitter.Material.UVScroll.y ) ? std::fmod( Age * Emitter.Material.UVScroll.y, 1.0 ) : 0.0;
 		Out.UVOffset[0] = static_cast<float32>( ScrollU < 0.0 ? ScrollU + 1.0 : ScrollU );
 		Out.UVOffset[1] = static_cast<float32>( ScrollV < 0.0 ? ScrollV + 1.0 : ScrollV );
 		const FEffectUVDistortionDefinition& Distortion = Emitter.Material.Distortion;
 		if ( !Distortion.bEnabled ) return true;
-		if ( !Distortion.IsValidSettings() || !std::isfinite( Particle.Age ) || !std::isfinite( Particle.NormalizedAge ) ) return false;
+		if ( !Distortion.IsValidSettings() || !NMath::IsFinite( Particle.Age ) || !NMath::IsFinite( Particle.NormalizedAge ) ) return false;
 		Out.DistortionStrength = Distortion.Strength.Evaluate( Particle.NormalizedAge, 0.05f );
-		if ( !std::isfinite( Out.DistortionStrength ) || Out.DistortionStrength < 0.0f || Out.DistortionStrength > 1.0f ) return false;
+		if ( !NMath::IsFinite( Out.DistortionStrength ) || Out.DistortionStrength < 0.0f || Out.DistortionStrength > 1.0f ) return false;
 		if ( Out.DistortionStrength <= 0.0f ) return true;
 		if ( DistortionTexture < 0 ) return false;
 		Out.DistortionTexture = DistortionTexture;
@@ -89,19 +91,19 @@ namespace
 	uint32 PackPathColor( FColor32 Color, EParticleBlend Blend, float32 Brightness = 1.0f )
 	{
 		// 輝きの外側だけを弱める倍率。
-		const float32 Factor = Blend == EParticleBlend::Add ? std::clamp( Brightness, 0.0f, 1.0f ) * Color.a / 255.0f : 1.0f;
+		const float32 Factor = Blend == EParticleBlend::Add ? NMath::Clamp( Brightness, 0.0f, 1.0f ) * Color.a / 255.0f : 1.0f;
 		Color.r = static_cast<uint8>( Color.r * Factor );
 		Color.g = static_cast<uint8>( Color.g * Factor );
 		Color.b = static_cast<uint8>( Color.b * Factor );
 		if ( Blend == EParticleBlend::Add ) Color.a = 255;
-		else Color.a = static_cast<uint8>( Color.a * std::clamp( Brightness, 0.0f, 1.0f ) );
+		else Color.a = static_cast<uint8>( Color.a * NMath::Clamp( Brightness, 0.0f, 1.0f ) );
 		return static_cast<uint32>( Color.r ) | ( static_cast<uint32>( Color.g ) << 8 ) | ( static_cast<uint32>( Color.b ) << 16 ) | ( static_cast<uint32>( Color.a ) << 24 );
 	}
 
 	// 記録する値が描画系へ非有限の座標を持ち込まないか確認する。
 	bool IsFinitePathPosition( const FVector3& Position )
 	{
-		return std::isfinite( Position.x ) && std::isfinite( Position.y ) && std::isfinite( Position.z );
+		return NMath::IsFinite( Position.x ) && NMath::IsFinite( Position.y ) && NMath::IsFinite( Position.z );
 	}
 
 	// 一つの経路を既存の記録窓口へ渡す。描画や GPU 資源の操作は行わない。
@@ -128,80 +130,80 @@ namespace
 		// 全点で強さが0ならnoiseなしの旧命令を使う。
 		bool bAnyDistortionStrength = false;
 		// 全chunk共通の帯先頭秒齢。
-		const double AgeReference = !Strip.Points.IsEmpty() && std::isfinite( Strip.Points[0].AgeSeconds ) ? Strip.Points[0].AgeSeconds : 0.0;
+		const double AgeReference = !Strip.Points.IsEmpty() && NMath::IsFinite( Strip.Points[0].AgeSeconds ) ? Strip.Points[0].AgeSeconds : 0.0;
 		// 距離方向の秒ごとの画像移動量。
 		const double ScrollU = Emitter.Material.UVScroll.x;
 		// 幅方向の秒ごとの画像移動量。
 		const double ScrollV = Emitter.Material.UVScroll.y;
 		// 剰余済みの基準横位相。
-		const double BaseU = std::isfinite( ScrollU ) ? std::fmod( AgeReference * ScrollU, 1.0 ) : 0.0;
+		const double BaseU = NMath::IsFinite( ScrollU ) ? std::fmod( AgeReference * ScrollU, 1.0 ) : 0.0;
 		// 剰余済みの基準縦位相。
-		const double BaseV = std::isfinite( ScrollV ) ? std::fmod( AgeReference * ScrollV, 1.0 ) : 0.0;
+		const double BaseV = NMath::IsFinite( ScrollV ) ? std::fmod( AgeReference * ScrollV, 1.0 ) : 0.0;
 		if ( bMaterialEnabled )
 		{
-			if ( Texture < 0 || MaskTexture < -1 || !std::isfinite( AgeReference ) || !std::isfinite( ScrollU ) || !std::isfinite( ScrollV ) || !std::isfinite( Emitter.Path.UVRepeat ) || Emitter.Path.UVRepeat <= 0.0f || !std::isfinite( Emitter.Material.UVScale.x ) || !std::isfinite( Emitter.Material.UVScale.y ) || Emitter.Material.UVScale.x <= 0.0f || Emitter.Material.UVScale.y <= 0.0f || Emitter.Material.UVScale.x > 128.0f || Emitter.Material.UVScale.y > 128.0f || !std::isfinite( Emitter.Material.MaskScale ) || Emitter.Material.MaskScale <= 0.0f || Emitter.Material.MaskScale > 128.0f || !std::isfinite( Emitter.Material.EdgeWidth ) || Emitter.Material.EdgeWidth < 0.0f || Emitter.Material.EdgeWidth > 1.0f || !std::isfinite( Emitter.Material.EdgeEmission ) || Emitter.Material.EdgeEmission < 0.0f || Emitter.Material.EdgeEmission > 32.0f ) return;
+			if ( Texture < 0 || MaskTexture < -1 || !NMath::IsFinite( AgeReference ) || !NMath::IsFinite( ScrollU ) || !NMath::IsFinite( ScrollV ) || !NMath::IsFinite( Emitter.Path.UVRepeat ) || Emitter.Path.UVRepeat <= 0.0f || !NMath::IsFinite( Emitter.Material.UVScale.x ) || !NMath::IsFinite( Emitter.Material.UVScale.y ) || Emitter.Material.UVScale.x <= 0.0f || Emitter.Material.UVScale.y <= 0.0f || Emitter.Material.UVScale.x > 128.0f || Emitter.Material.UVScale.y > 128.0f || !NMath::IsFinite( Emitter.Material.MaskScale ) || Emitter.Material.MaskScale <= 0.0f || Emitter.Material.MaskScale > 128.0f || !NMath::IsFinite( Emitter.Material.EdgeWidth ) || Emitter.Material.EdgeWidth < 0.0f || Emitter.Material.EdgeWidth > 1.0f || !NMath::IsFinite( Emitter.Material.EdgeEmission ) || Emitter.Material.EdgeEmission < 0.0f || Emitter.Material.EdgeEmission > 32.0f ) return;
 			// 一つ前に検査した累積距離。
 			float32 PreviousU = 0.0f;
 			for ( int32 Index = 0; Index < Strip.Points.Num(); ++Index )
 			{
 				// 検査する元の経路点。
 				const FEffectPathGeometry::FPoint& Source = Strip.Points[Index];
-				if ( !IsFinitePathPosition( Source.Position ) || !std::isfinite( Source.Width ) || Source.Width < 0.0f || !std::isfinite( Source.U ) || Source.U < 0.0f || Source.U < PreviousU || !std::isfinite( Source.AgeSeconds ) || !std::isfinite( Source.NormalizedAge ) ) return;
+				if ( !IsFinitePathPosition( Source.Position ) || !NMath::IsFinite( Source.Width ) || Source.Width < 0.0f || !NMath::IsFinite( Source.U ) || Source.U < 0.0f || Source.U < PreviousU || !NMath::IsFinite( Source.AgeSeconds ) || !NMath::IsFinite( Source.NormalizedAge ) ) return;
 				// paddingも初期化してshaderへ渡す検証済みの一点。
 				FDrawMaterialRibbonData::FPoint MaterialPoint{};
 				MaterialPoint.Path.Pos[0] = Source.Position.x;
 				MaterialPoint.Path.Pos[1] = Source.Position.y;
 				MaterialPoint.Path.Pos[2] = Source.Position.z;
-				MaterialPoint.Path.Width = std::max( Source.Width * WidthScale, 0.0f );
+				MaterialPoint.Path.Width = NMath::Max( Source.Width * WidthScale, 0.0f );
 				MaterialPoint.Path.U = Source.U;
 				// 描画側と同じ精度で計算する累積画像座標。
 				const float32 RibbonU = Source.U * Emitter.Path.UVRepeat;
 				// 材質shaderへ渡す未加工色。
 				FColor32 RawColor = Source.Color;
-				RawColor.a = static_cast<uint8>( RawColor.a * std::clamp( Brightness, 0.0f, 1.0f ) );
+				RawColor.a = static_cast<uint8>( RawColor.a * NMath::Clamp( Brightness, 0.0f, 1.0f ) );
 				MaterialPoint.Path.Color = PackPathColor( RawColor, EParticleBlend::Alpha );
 				// 粒子の寿命割合。
-				const float32 CurveAge = std::clamp( Source.NormalizedAge, 0.0f, 1.0f );
+				const float32 CurveAge = NMath::Clamp( Source.NormalizedAge, 0.0f, 1.0f );
 				// この点の消失曲線値。
 				const float32 Dissolve = Emitter.Material.Dissolve.Evaluate( CurveAge, 0.0f );
 				// この点の発光曲線値。
 				const float32 Emission = Emitter.Material.Emission.Evaluate( CurveAge, 1.0f );
-				MaterialPoint.Dissolve = std::isfinite( Dissolve ) ? std::clamp( Dissolve, 0.0f, 1.0f ) : 0.0f;
-				MaterialPoint.Emission = std::isfinite( Emission ) ? std::clamp( Emission, 0.0f, 32.0f ) : 1.0f;
+				MaterialPoint.Dissolve = NMath::IsFinite( Dissolve ) ? NMath::Clamp( Dissolve, 0.0f, 1.0f ) : 0.0f;
+				MaterialPoint.Emission = NMath::IsFinite( Emission ) ? NMath::Clamp( Emission, 0.0f, 32.0f ) : 1.0f;
 				// 剰余前の連続した秒齢差。
 				const double AgeDelta = static_cast<double>( Source.AgeSeconds ) - AgeReference;
 				// 剰余前の横方向移動量。
 				const double OffsetU = BaseU + AgeDelta * ScrollU;
 				// 剰余前の縦方向移動量。
 				const double OffsetV = BaseV + AgeDelta * ScrollV;
-				if ( !std::isfinite( OffsetU ) || !std::isfinite( OffsetV ) || std::fabs( OffsetU ) > 1.0e6 || std::fabs( OffsetV ) > 1.0e6 ) return;
+				if ( !NMath::IsFinite( OffsetU ) || !NMath::IsFinite( OffsetV ) || NMath::Abs( OffsetU ) > 1.0e6 || NMath::Abs( OffsetV ) > 1.0e6 ) return;
 				MaterialPoint.UVOffset[0] = static_cast<float32>( OffsetU );
 				MaterialPoint.UVOffset[1] = static_cast<float32>( OffsetV );
 				// 描画側と同じfloat順序で求める表示座標。
 				const float32 ScaledTextureU = RibbonU * Emitter.Material.UVScale.x + MaterialPoint.UVOffset[0];
 				// 描画側で使うmask座標。
 				const float32 ScaledMaskU = RibbonU * Emitter.Material.MaskScale;
-				if ( !std::isfinite( MaterialPoint.Path.Width ) || !std::isfinite( RibbonU ) || !std::isfinite( ScaledTextureU ) || !std::isfinite( ScaledMaskU ) || !std::isfinite( Dissolve ) || !std::isfinite( Emission ) || !std::isfinite( MaterialPoint.UVOffset[0] ) || !std::isfinite( MaterialPoint.UVOffset[1] ) ) return;
+				if ( !NMath::IsFinite( MaterialPoint.Path.Width ) || !NMath::IsFinite( RibbonU ) || !NMath::IsFinite( ScaledTextureU ) || !NMath::IsFinite( ScaledMaskU ) || !NMath::IsFinite( Dissolve ) || !NMath::IsFinite( Emission ) || !NMath::IsFinite( MaterialPoint.UVOffset[0] ) || !NMath::IsFinite( MaterialPoint.UVOffset[1] ) ) return;
 				ValidatedMaterialPoints.Add( MaterialPoint );
 				if ( bDistortionEnabled )
 				{
-					if ( !Distortion.IsValidSettings() || !std::isfinite( Source.AgeSeconds ) || !std::isfinite( Source.NormalizedAge ) ) return;
+					if ( !Distortion.IsValidSettings() || !NMath::IsFinite( Source.AgeSeconds ) || !NMath::IsFinite( Source.NormalizedAge ) ) return;
 					// 元粒子の寿命割合でnoise強度を評価する。
 					const float32 Strength = Distortion.Strength.Evaluate( CurveAge, 0.05f );
-					if ( !std::isfinite( Strength ) || Strength < 0.0f || Strength > 1.0f ) return;
+					if ( !NMath::IsFinite( Strength ) || Strength < 0.0f || Strength > 1.0f ) return;
 					// 最初の点だけ秒齢を剰余し、後続点は連続差を足す。
 					const double NoiseBaseU = std::fmod( AgeReference * static_cast<double>( Distortion.UVScroll.x ), 1.0 );
 					const double NoiseBaseV = std::fmod( AgeReference * static_cast<double>( Distortion.UVScroll.y ), 1.0 );
 					const double NoiseOffsetU = NoiseBaseU + AgeDelta * static_cast<double>( Distortion.UVScroll.x );
 					const double NoiseOffsetV = NoiseBaseV + AgeDelta * static_cast<double>( Distortion.UVScroll.y );
-					if ( !std::isfinite( NoiseOffsetU ) || !std::isfinite( NoiseOffsetV ) || std::fabs( NoiseOffsetU ) > 1.0e6 || std::fabs( NoiseOffsetV ) > 1.0e6 ) return;
+					if ( !NMath::IsFinite( NoiseOffsetU ) || !NMath::IsFinite( NoiseOffsetV ) || NMath::Abs( NoiseOffsetU ) > 1.0e6 || NMath::Abs( NoiseOffsetV ) > 1.0e6 ) return;
 					// 次の描画命令へ渡す検証済みノイズ付き一点。
 					FDrawDistortedMaterialRibbonData::FPoint DistortionPoint{};
 					DistortionPoint.Material = MaterialPoint;
 					DistortionPoint.Strength = Strength;
 					DistortionPoint.UVOffset[0] = static_cast<float32>( NoiseOffsetU );
 					DistortionPoint.UVOffset[1] = static_cast<float32>( NoiseOffsetV );
-					if ( !std::isfinite( DistortionPoint.UVOffset[0] ) || !std::isfinite( DistortionPoint.UVOffset[1] ) ) return;
+					if ( !NMath::IsFinite( DistortionPoint.UVOffset[0] ) || !NMath::IsFinite( DistortionPoint.UVOffset[1] ) ) return;
 					ValidatedDistortionPoints.Add( DistortionPoint );
 					bAnyDistortionStrength |= Strength > 0.0f;
 				}
@@ -220,7 +222,7 @@ namespace
 				// このchunkの可視終点。
 				const int32 CheckedEnd = CheckedRemaining <= FDrawRibbonData::MaxPoints ? Strip.Points.Num() - 1 : CheckedFirst + FDrawRibbonData::MaxPoints - 2;
 				// 後側ghostを含む終点。
-				const int32 CheckedLast = std::min( CheckedEnd + 1, Strip.Points.Num() - 1 );
+				const int32 CheckedLast = NMath::Min( CheckedEnd + 1, Strip.Points.Num() - 1 );
 				// 接線だけに使う端点。
 				const int32 CheckedJoinFlags = ( CheckedFirst < CheckedStart ? FDrawRibbonData::PreviousPoint : 0 ) | ( CheckedLast > CheckedEnd ? FDrawRibbonData::NextPoint : 0 );
 				// このchunkが使う画像反復区間数。
@@ -239,8 +241,8 @@ namespace
 					// 始点の反復番号。
 					const double FirstRepeat = std::floor( static_cast<double>( PreviousU ) );
 					// GPU側と同じ分割数。
-					const double Sections = std::max( 1.0, std::ceil( static_cast<double>( CurrentU ) ) - FirstRepeat );
-					if ( !std::isfinite( Sections ) || Sections > static_cast<double>( FDrawRibbonData::MaxTextureSections - TextureSections ) ) return;
+					const double Sections = NMath::Max( 1.0, std::ceil( static_cast<double>( CurrentU ) ) - FirstRepeat );
+					if ( !NMath::IsFinite( Sections ) || Sections > static_cast<double>( FDrawRibbonData::MaxTextureSections - TextureSections ) ) return;
 					TextureSections += static_cast<int32>( Sections );
 				}
 				CheckedStart = CheckedEnd;
@@ -257,7 +259,7 @@ namespace
 			const int32 RemainingPoints = Strip.Points.Num() - First;
 			const int32 VisibleEnd = RemainingPoints <= FDrawRibbonData::MaxPoints ? Strip.Points.Num() - 1 : First + FDrawRibbonData::MaxPoints - 2;
 			// 後側の接線用の点までを含めた、記録範囲の終点。
-			const int32 Last = std::min( VisibleEnd + 1, Strip.Points.Num() - 1 );
+			const int32 Last = NMath::Min( VisibleEnd + 1, Strip.Points.Num() - 1 );
 			// 補助点の区間は描かず、接続部分の形の計算だけへ使う。
 			const int32 JoinFlags = ( First < VisibleStart ? FDrawRibbonData::PreviousPoint : 0 ) | ( Last > VisibleEnd ? FDrawRibbonData::NextPoint : 0 );
 			Points.Reset();
@@ -273,13 +275,13 @@ namespace
 				}
 				else
 				{
-					if ( !IsFinitePathPosition( Source.Position ) || !std::isfinite( Source.Width ) ) return;
+					if ( !IsFinitePathPosition( Source.Position ) || !NMath::IsFinite( Source.Width ) ) return;
 					// 従来帯の点と同じ幅・色変換を維持する。
 					FDrawRibbonData::FPoint Point;
 					Point.Pos[0] = Source.Position.x;
 					Point.Pos[1] = Source.Position.y;
 					Point.Pos[2] = Source.Position.z;
-					Point.Width = std::max( Source.Width * WidthScale, 0.0f );
+					Point.Width = NMath::Max( Source.Width * WidthScale, 0.0f );
 					Point.U = Source.U;
 					Point.Color = PackPathColor( Source.Color, Emitter.Blend, Brightness );
 					Points.Add( Point );
@@ -329,7 +331,7 @@ namespace
 		thread_local FEffectPathGeometry::FStrip Strip;
 		Strip.Points.Reset();
 		// 設定した長さを超えた飛びは、帯を伸ばさず分断する。
-		const float32 BreakDistance = std::max( Emitter.Path.BreakDistance * Scale, 0.001f );
+		const float32 BreakDistance = NMath::Max( Emitter.Path.BreakDistance * Scale, 0.001f );
 		for ( const NParticle::FDrawParticle& Particle : Particles )
 		{
 			if ( Particle.Emitter != EmitterIndex ) continue;
@@ -487,7 +489,7 @@ TArray<uint8> NEffect::MakeRibbonImage()
 		for ( int32 X = 0; X < 2; ++X )
 		{
 			// 画像の縦方向が帯の幅に対応する。横は経路に沿って繰り返す。
-			const float32 Across = std::fabs( ( Y + 0.5f ) / 32.0f - 1.0f );
+			const float32 Across = NMath::Abs( ( Y + 0.5f ) / 32.0f - 1.0f );
 			// 色の三成分と不透明度の先頭。
 			const int32 Offset = 18 + ( Y * 2 + X ) * 4;
 			Bytes[Offset] = Bytes[Offset + 1] = Bytes[Offset + 2] = 255;
@@ -627,7 +629,7 @@ FParticlePlayback::FParticlePlayback( const TSharedPtr<const FParticleEffectDefi
 			// public constructor経由でも再生開始時にmeshを固定する。
 			FEffectMeshGeometry Geometry;
 			if ( Emitter.Mesh.Kind != FEffectMeshDefinition::EKind::None && Emitter.Mesh.IsValidSettings() && Emitter.Path.Kind == FEffectPathDefinition::EKind::None && !Emitter.Flipbook.bEnabled ) NEffectMesh::BuildGeometry( Emitter.Mesh, Geometry );
-			MeshGeometries.Add( std::move( Geometry ) );
+			MeshGeometries.Add( MoveTemp( Geometry ) );
 		}
 	}
 	if ( Snapshot.IsValid() ) for ( int32 Index = 0; Index < Snapshot->Emitters.Num(); ++Index )
@@ -827,30 +829,30 @@ void FParticlePlayback::Record( FDrawContext& Draw ) const
 			// この再生が保持しているマスク。未指定・読み込み失敗は組み込みへ渡す。
 			const TSharedPtr<CTexture>& MaskTexture = MaskTextures.IsValidIndex( Particle.Emitter ) ? MaskTextures[Particle.Emitter] : TSharedPtr<CTexture>();
 			MaterialData.MaskTexture = MaskTexture.IsValid() ? MaskTexture->GetHandle() : -1;
-			MaterialData.UVScale[0] = std::isfinite( Emitter.Material.UVScale.x ) && Emitter.Material.UVScale.x > 0.0f ? Emitter.Material.UVScale.x : 1.0f;
-			MaterialData.UVScale[1] = std::isfinite( Emitter.Material.UVScale.y ) && Emitter.Material.UVScale.y > 0.0f ? Emitter.Material.UVScale.y : 1.0f;
-			MaterialData.MaskScale = std::isfinite( Emitter.Material.MaskScale ) && Emitter.Material.MaskScale > 0.0f ? Emitter.Material.MaskScale : 1.0f;
+			MaterialData.UVScale[0] = NMath::IsFinite( Emitter.Material.UVScale.x ) && Emitter.Material.UVScale.x > 0.0f ? Emitter.Material.UVScale.x : 1.0f;
+			MaterialData.UVScale[1] = NMath::IsFinite( Emitter.Material.UVScale.y ) && Emitter.Material.UVScale.y > 0.0f ? Emitter.Material.UVScale.y : 1.0f;
+			MaterialData.MaskScale = NMath::IsFinite( Emitter.Material.MaskScale ) && Emitter.Material.MaskScale > 0.0f ? Emitter.Material.MaskScale : 1.0f;
 			MaterialData.Dissolve = Emitter.Material.Dissolve.Evaluate( Particle.NormalizedAge, 0.0f );
-			MaterialData.Emission = std::clamp( Emitter.Material.Emission.Evaluate( Particle.NormalizedAge, 1.0f ), 0.0f, 32.0f );
-			MaterialData.EdgeWidth = std::isfinite( Emitter.Material.EdgeWidth ) ? std::clamp( Emitter.Material.EdgeWidth, 0.0f, 1.0f ) : 0.08f;
-			MaterialData.EdgeEmission = std::isfinite( Emitter.Material.EdgeEmission ) ? std::clamp( Emitter.Material.EdgeEmission, 0.0f, 32.0f ) : 2.0f;
+			MaterialData.Emission = NMath::Clamp( Emitter.Material.Emission.Evaluate( Particle.NormalizedAge, 1.0f ), 0.0f, 32.0f );
+			MaterialData.EdgeWidth = NMath::IsFinite( Emitter.Material.EdgeWidth ) ? NMath::Clamp( Emitter.Material.EdgeWidth, 0.0f, 1.0f ) : 0.08f;
+			MaterialData.EdgeEmission = NMath::IsFinite( Emitter.Material.EdgeEmission ) ? NMath::Clamp( Emitter.Material.EdgeEmission, 0.0f, 32.0f ) : 2.0f;
 			MaterialData.EdgeColor = { Emitter.Material.EdgeColor.r, Emitter.Material.EdgeColor.g, Emitter.Material.EdgeColor.b, Emitter.Material.EdgeColor.a };
 			MaterialData.bDissolve = Emitter.Material.bDissolve ? 1 : 0;
 			// 秒齢とスクロール速度の積。double の剰余で長時間後も小数部だけにする。
-			const double Age = std::isfinite( Particle.Age ) ? static_cast<double>( Particle.Age ) : 0.0;
+			const double Age = NMath::IsFinite( Particle.Age ) ? static_cast<double>( Particle.Age ) : 0.0;
 			// 横方向へ一周させた UV 移動量。
-			const double ScrollU = std::isfinite( Emitter.Material.UVScroll.x ) ? std::fmod( Age * Emitter.Material.UVScroll.x, 1.0 ) : 0.0;
+			const double ScrollU = NMath::IsFinite( Emitter.Material.UVScroll.x ) ? std::fmod( Age * Emitter.Material.UVScroll.x, 1.0 ) : 0.0;
 			// 縦方向へ一周させた UV 移動量。
-			const double ScrollV = std::isfinite( Emitter.Material.UVScroll.y ) ? std::fmod( Age * Emitter.Material.UVScroll.y, 1.0 ) : 0.0;
+			const double ScrollV = NMath::IsFinite( Emitter.Material.UVScroll.y ) ? std::fmod( Age * Emitter.Material.UVScroll.y, 1.0 ) : 0.0;
 			MaterialData.UVOffset[0] = static_cast<float32>( ScrollU < 0.0 ? ScrollU + 1.0 : ScrollU );
 			MaterialData.UVOffset[1] = static_cast<float32>( ScrollV < 0.0 ? ScrollV + 1.0 : ScrollV );
 			// ゆがみは四角形材質だけで評価し、0なら旧命令へ戻してbyte互換を保つ。
 			const FEffectUVDistortionDefinition& DistortionDefinition = Emitter.Material.Distortion;
 			if ( DistortionDefinition.bEnabled )
 			{
-				if ( !DistortionDefinition.IsValidSettings() || !std::isfinite( Particle.Age ) || !std::isfinite( Particle.NormalizedAge ) ) continue;
+				if ( !DistortionDefinition.IsValidSettings() || !NMath::IsFinite( Particle.Age ) || !NMath::IsFinite( Particle.NormalizedAge ) ) continue;
 				const float32 Strength = DistortionDefinition.Strength.Evaluate( Particle.NormalizedAge, 0.05f );
-				if ( !std::isfinite( Strength ) || Strength < 0.0f || Strength > 1.0f ) continue;
+				if ( !NMath::IsFinite( Strength ) || Strength < 0.0f || Strength > 1.0f ) continue;
 				if ( Strength > 0.0f )
 				{
 					// 再生開始時に保持できなかった画像では、通常画像へ黙って切り替えない。

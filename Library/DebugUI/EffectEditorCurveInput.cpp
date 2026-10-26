@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EditorCommon.h"
 
 namespace
@@ -31,7 +32,7 @@ namespace
 		{
 			// 検証する既存キーの時刻。
 			const float32 Time = Curve.Keys[Index].Time;
-			if ( !std::isfinite( Time ) || Time < 0.0f || Time > 1.0f || ( Index > 0 && Time <= Curve.Keys[Index - 1].Time ) ) return false;
+			if ( !NMath::IsFinite( Time ) || Time < 0.0f || Time > 1.0f || ( Index > 0 && Time <= Curve.Keys[Index - 1].Time ) ) return false;
 		}
 		// 最大の空き区間の先頭時刻。
 		float32 BestStart = 0.0f;
@@ -50,11 +51,11 @@ namespace
 		}
 		// 最大区間の中央に置く新しいキー時刻。
 		const float32 Time = BestStart + BestWidth * 0.5f;
-		if ( !std::isfinite( Time ) || Time <= BestStart || Time >= BestEnd ) return false;
+		if ( !NMath::IsFinite( Time ) || Time <= BestStart || Time >= BestEnd ) return false;
 		// 新しいscalar keyへ時刻と初期値を格納する。
 		FEffectScalarCurve::FKey Key;
 		Key.Time = Time;
-		Key.Value = std::clamp( DefaultValue, 0.0f, 32.0f );
+		Key.Value = NMath::Clamp( DefaultValue, 0.0f, 32.0f );
 		// 昇順を保つ挿入先index。
 		int32 InsertAt = 0;
 		while ( InsertAt < Curve.Keys.Num() && Curve.Keys[InsertAt].Time < Time ) ++InsertAt;
@@ -70,7 +71,7 @@ namespace
 		for ( int32 Index = 0; Index < Curve.Keys.Num(); ++Index )
 		{
 			const FEffectColorCurve::FKey& Key = Curve.Keys[Index];
-			if ( !std::isfinite( Key.Time ) || Key.Time < 0.0f || Key.Time > 1.0f || ( Index > 0 && Key.Time <= Curve.Keys[Index - 1].Time ) ) return false;
+			if ( !NMath::IsFinite( Key.Time ) || Key.Time < 0.0f || Key.Time > 1.0f || ( Index > 0 && Key.Time <= Curve.Keys[Index - 1].Time ) ) return false;
 		}
 		// 最大の空き区間の先頭時刻。
 		float32 BestStart = 0.0f;
@@ -89,7 +90,7 @@ namespace
 		}
 		// 最大区間の中央に置く新しいキー時刻。
 		const float32 Time = BestStart + BestWidth * 0.5f;
-		if ( !std::isfinite( Time ) || Time <= BestStart || Time >= BestEnd ) return false;
+		if ( !NMath::IsFinite( Time ) || Time <= BestStart || Time >= BestEnd ) return false;
 		// 新しいcolor keyへ時刻と既存曲線の評価色を格納する。
 		FEffectColorCurve::FKey Key;
 		Key.Time = Time;
@@ -104,7 +105,7 @@ namespace
 	// 入力へ渡す倍率を表示範囲へ収め、定義の不正値は表示中に変更しない。
 	bool IsFiniteNormalizedColor( const FColor& Color )
 	{
-		return std::isfinite( Color.r ) && std::isfinite( Color.g ) && std::isfinite( Color.b ) && std::isfinite( Color.a ) && Color.r >= 0.0f && Color.r <= 1.0f && Color.g >= 0.0f && Color.g <= 1.0f && Color.b >= 0.0f && Color.b <= 1.0f && Color.a >= 0.0f && Color.a <= 1.0f;
+		return NMath::IsFinite( Color.r ) && NMath::IsFinite( Color.g ) && NMath::IsFinite( Color.b ) && NMath::IsFinite( Color.a ) && Color.r >= 0.0f && Color.r <= 1.0f && Color.g >= 0.0f && Color.g <= 1.0f && Color.b >= 0.0f && Color.b <= 1.0f && Color.a >= 0.0f && Color.a <= 1.0f;
 	}
 }
 
@@ -154,28 +155,28 @@ namespace
 	}
 	// 表示走査の後に削除するkey index。
 	int32 RemoveIndex = INDEX_NONE;
-	for ( int32 Index = 0; Index < std::min( Curve.Keys.Num(), FEffectScalarCurve::MaxKeys ); ++Index )
+	for ( int32 Index = 0; Index < NMath::Min( Curve.Keys.Num(), FEffectScalarCurve::MaxKeys ); ++Index )
 	{
 		ImGui::PushID( Index );
 		// 編集中のscalar key。
 		FEffectScalarCurve::FKey& Key = Curve.Keys[Index];
 		// 前のキーが有限なときに使う左境界。
-		const float32 Previous = Index > 0 && std::isfinite( Curve.Keys[Index - 1].Time ) ? std::clamp( Curve.Keys[Index - 1].Time, 0.0f, 1.0f ) : 0.0f;
+		const float32 Previous = Index > 0 && NMath::IsFinite( Curve.Keys[Index - 1].Time ) ? NMath::Clamp( Curve.Keys[Index - 1].Time, 0.0f, 1.0f ) : 0.0f;
 		// 次のキーが有限なときに使う右境界。
-		const float32 Next = Index + 1 < Curve.Keys.Num() && std::isfinite( Curve.Keys[Index + 1].Time ) ? std::clamp( Curve.Keys[Index + 1].Time, 0.0f, 1.0f ) : 1.0f;
+		const float32 Next = Index + 1 < Curve.Keys.Num() && NMath::IsFinite( Curve.Keys[Index + 1].Time ) ? NMath::Clamp( Curve.Keys[Index + 1].Time, 0.0f, 1.0f ) : 1.0f;
 		// 隣の時刻と重ならない最小入力値。
 		const float32 Earliest = Index > 0 ? std::nextafter( Previous, 1.0f ) : 0.0f;
 		// 隣の時刻と重ならない最大入力値。
 		const float32 Latest = Index + 1 < Curve.Keys.Num() ? std::nextafter( Next, 0.0f ) : 1.0f;
 		// TimeとValueが安全な数値として保存されているか。
-		const bool bFiniteKey = std::isfinite( Key.Time ) && std::isfinite( Key.Value );
+		const bool bFiniteKey = NMath::IsFinite( Key.Time ) && NMath::IsFinite( Key.Value );
 		// 前後のキーとの厳密な順序が保たれているか。
-		const bool bOrderedKey = ( Index == 0 || ( std::isfinite( Curve.Keys[Index - 1].Time ) && Curve.Keys[Index - 1].Time < Key.Time ) ) && ( Index + 1 >= Curve.Keys.Num() || ( std::isfinite( Curve.Keys[Index + 1].Time ) && Key.Time < Curve.Keys[Index + 1].Time ) );
+		const bool bOrderedKey = ( Index == 0 || ( NMath::IsFinite( Curve.Keys[Index - 1].Time ) && Curve.Keys[Index - 1].Time < Key.Time ) ) && ( Index + 1 >= Curve.Keys.Num() || ( NMath::IsFinite( Curve.Keys[Index + 1].Time ) && Key.Time < Curve.Keys[Index + 1].Time ) );
 		if ( !bFiniteKey ) ImGui::TextColored( ImVec4( 1.0f, 0.65f, 0.3f, 1.0f ), "Invalid key values" );
 		if ( bFiniteKey && bOrderedKey && Earliest <= Latest )
 		{
 			ImGui::SetNextItemWidth( 100.0f );
-			if ( TrackInputEnd( ImGui::DragFloat( "Time", &Key.Time, 0.001f, Earliest, Latest, "%.9g", ImGuiSliderFlags_AlwaysClamp ), bInputEnded ) ) { Key.Time = std::clamp( Key.Time, Earliest, Latest ); bChanged = true; }
+			if ( TrackInputEnd( ImGui::DragFloat( "Time", &Key.Time, 0.001f, Earliest, Latest, "%.9g", ImGuiSliderFlags_AlwaysClamp ), bInputEnded ) ) { Key.Time = NMath::Clamp( Key.Time, Earliest, Latest ); bChanged = true; }
 			ImGui::SameLine();
 			ImGui::SetNextItemWidth( 100.0f );
 			bChanged |= TrackInputEnd( ImGui::DragFloat( "Value", &Key.Value, 0.01f, Minimum, Maximum, "%.9g", ImGuiSliderFlags_AlwaysClamp ), bInputEnded );
@@ -244,28 +245,28 @@ bool NEffectEditorUI::DrawColorCurve( const char* Label, FEffectColorCurve& Curv
 	if ( Curve.Keys.Num() >= FEffectColorCurve::MaxKeys ) ImGui::TextDisabled( "Maximum 32 color keys" );
 	// 表示走査の後に削除するkey index。
 	int32 RemoveIndex = INDEX_NONE;
-	for ( int32 Index = 0; Index < std::min( Curve.Keys.Num(), FEffectColorCurve::MaxKeys ); ++Index )
+	for ( int32 Index = 0; Index < NMath::Min( Curve.Keys.Num(), FEffectColorCurve::MaxKeys ); ++Index )
 	{
 		ImGui::PushID( Index );
 		// 編集中のcolor key。
 		FEffectColorCurve::FKey& Key = Curve.Keys[Index];
 		// 前のキーが有限なときに使う左境界。
-		const float32 Previous = Index > 0 && std::isfinite( Curve.Keys[Index - 1].Time ) ? std::clamp( Curve.Keys[Index - 1].Time, 0.0f, 1.0f ) : 0.0f;
+		const float32 Previous = Index > 0 && NMath::IsFinite( Curve.Keys[Index - 1].Time ) ? NMath::Clamp( Curve.Keys[Index - 1].Time, 0.0f, 1.0f ) : 0.0f;
 		// 次のキーが有限なときに使う右境界。
-		const float32 Next = Index + 1 < Curve.Keys.Num() && std::isfinite( Curve.Keys[Index + 1].Time ) ? std::clamp( Curve.Keys[Index + 1].Time, 0.0f, 1.0f ) : 1.0f;
+		const float32 Next = Index + 1 < Curve.Keys.Num() && NMath::IsFinite( Curve.Keys[Index + 1].Time ) ? NMath::Clamp( Curve.Keys[Index + 1].Time, 0.0f, 1.0f ) : 1.0f;
 		// 隣の時刻と重ならない最小入力値。
 		const float32 Earliest = Index > 0 ? std::nextafter( Previous, 1.0f ) : 0.0f;
 		// 隣の時刻と重ならない最大入力値。
 		const float32 Latest = Index + 1 < Curve.Keys.Num() ? std::nextafter( Next, 0.0f ) : 1.0f;
 		// ColorEditと時刻欄へ渡せる有限時刻か。
-		const bool bFiniteTime = std::isfinite( Key.Time );
+		const bool bFiniteTime = NMath::IsFinite( Key.Time );
 		// 前後のキーとの厳密な順序が保たれているか。
-		const bool bOrderedKey = ( Index == 0 || ( std::isfinite( Curve.Keys[Index - 1].Time ) && Curve.Keys[Index - 1].Time < Key.Time ) ) && ( Index + 1 >= Curve.Keys.Num() || ( std::isfinite( Curve.Keys[Index + 1].Time ) && Key.Time < Curve.Keys[Index + 1].Time ) );
+		const bool bOrderedKey = ( Index == 0 || ( NMath::IsFinite( Curve.Keys[Index - 1].Time ) && Curve.Keys[Index - 1].Time < Key.Time ) ) && ( Index + 1 >= Curve.Keys.Num() || ( NMath::IsFinite( Curve.Keys[Index + 1].Time ) && Key.Time < Curve.Keys[Index + 1].Time ) );
 		if ( !bFiniteTime || !IsFiniteNormalizedColor( Key.Value ) ) ImGui::TextColored( ImVec4( 1.0f, 0.65f, 0.3f, 1.0f ), "Invalid key values; remove or reset." );
 		if ( bFiniteTime && bOrderedKey && Earliest <= Latest )
 		{
 			ImGui::SetNextItemWidth( 100.0f );
-			if ( TrackInputEnd( ImGui::DragFloat( "Time", &Key.Time, 0.001f, Earliest, Latest, "%.9g", ImGuiSliderFlags_AlwaysClamp ), Document ) ) { Key.Time = std::clamp( Key.Time, Earliest, Latest ); bChanged = true; }
+			if ( TrackInputEnd( ImGui::DragFloat( "Time", &Key.Time, 0.001f, Earliest, Latest, "%.9g", ImGuiSliderFlags_AlwaysClamp ), Document ) ) { Key.Time = NMath::Clamp( Key.Time, Earliest, Latest ); bChanged = true; }
 			ImGui::SameLine();
 			if ( ImGui::SmallButton( "Remove" ) ) RemoveIndex = Index;
 			if ( IsFiniteNormalizedColor( Key.Value ) )
@@ -275,13 +276,13 @@ bool NEffectEditorUI::DrawColorCurve( const char* Label, FEffectColorCurve& Curv
 				// 入力欄で色成分が変更されたか。
 				const float32 ColorLabelWidth = ImGui::CalcTextSize( "Multiplier" ).x + ImGui::GetStyle().ItemInnerSpacing.x;
 				// 表示ラベル分を除き、色入力全体がpanel幅に収まるようにする。
-				ImGui::SetNextItemWidth( std::max( 1.0f, ImGui::GetContentRegionAvail().x - ColorLabelWidth ) );
+				ImGui::SetNextItemWidth( NMath::Max( 1.0f, ImGui::GetContentRegionAvail().x - ColorLabelWidth ) );
 				const bool bColorChanged = ImGui::ColorEdit4( "Multiplier", Value, ImGuiColorEditFlags_AlphaPreview | ImGuiColorEditFlags_Float );
 				// ImGuiから返った色4成分が有限か。
 				bool bFiniteColor = true;
 				// 各成分を保存する前に有限値だけを許す。
-				for ( const float32 Component : Value ) if ( !std::isfinite( Component ) ) bFiniteColor = false;
-				if ( TrackInputEnd( bColorChanged, Document ) && bFiniteColor ) { Key.Value = FColor( std::clamp( Value[0], 0.0f, 1.0f ), std::clamp( Value[1], 0.0f, 1.0f ), std::clamp( Value[2], 0.0f, 1.0f ), std::clamp( Value[3], 0.0f, 1.0f ) ); bChanged = true; }
+				for ( const float32 Component : Value ) if ( !NMath::IsFinite( Component ) ) bFiniteColor = false;
+				if ( TrackInputEnd( bColorChanged, Document ) && bFiniteColor ) { Key.Value = FColor( NMath::Clamp( Value[0], 0.0f, 1.0f ), NMath::Clamp( Value[1], 0.0f, 1.0f ), NMath::Clamp( Value[2], 0.0f, 1.0f ), NMath::Clamp( Value[3], 0.0f, 1.0f ) ); bChanged = true; }
 				else if ( bColorChanged ) ImGui::TextColored( ImVec4( 1.0f, 0.65f, 0.3f, 1.0f ), "Color input must be finite." );
 			}
 		}

@@ -4,6 +4,7 @@
 
 #include "Library/Core/Interfaces/Inspector/IPropertyInspector.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Ecs/TransformWorld.h"
 #include "Library/Framework/Scene/Scene.h"
 
@@ -150,7 +151,7 @@ void CGameObject::AddComponentInternal( TUniquePtr<CComponent> Component )
 {
 	CComponent* Raw = Component.Get();
 	Raw->Owner = this;
-	Components.Add( { std::move( Component ), dynamic_cast<ITickable*>( Raw ) } );
+	Components.Add( { MoveTemp( Component ), dynamic_cast<ITickable*>( Raw ) } );
 	Raw->OnAttach();
 	LOG( LogGameObject, Verbose, "Component %s added to %s%s", *Raw->GetTypeName(), *GetDebugName(), Components.Last().Tickable ? " (ticks)" : "" );
 }

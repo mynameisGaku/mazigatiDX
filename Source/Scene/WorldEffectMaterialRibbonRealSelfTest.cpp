@@ -7,6 +7,7 @@
 
 #include "Library/Core/Interfaces/Render/DrawMaterialRibbon.h"
 #include "Library/Core/Interfaces/Render/DrawMaterialQuad.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Render/DrawContext.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 #include "Library/Platform/DxLib/DxLibRibbonMesh.h"
@@ -146,7 +147,7 @@ namespace
 		Points[0] = MakePoint( 0.0f, 0.0f, 0.0f, 0xFFFFFFFFu ); Points[1] = MakePoint( 1.0f, 0.0f, 1.0f, 0xFFFFFFFFu );
 		Data.Ribbon.NumPoints = 1; Draw.MaterialRibbon3D( Data, Points );
 		Data.Ribbon.NumPoints = 2; Data.Material.DepthWrite = 2; Draw.MaterialRibbon3D( Data, Points );
-		Data.Material.DepthWrite = 0; Points[1].Dissolve = ( std::numeric_limits<float32>::quiet_NaN )(); Draw.MaterialRibbon3D( Data, Points );
+		Data.Material.DepthWrite = 0; Points[1].Dissolve = TNumericLimits<float32>::QuietNaN(); Draw.MaterialRibbon3D( Data, Points );
 		Points[1].Dissolve = 0.0f; Points[1].Path.U = -1.0f; Draw.MaterialRibbon3D( Data, Points );
 		Points[0].Path.U = Points[1].Path.U = 1.0e38f; Data.Material.UVScale[0] = 128.0f; Draw.MaterialRibbon3D( Data, Points );
 		C.Check( Draw.GetNumWords() == BeforeInvalid, "点数・深度flag・非有限消失値・負の累積距離を記録前に拒否する" );
@@ -437,7 +438,7 @@ namespace
 		BadData.Ribbon.NumPoints = FDrawRibbonData::MaxPoints + 1; C.Check( SendForged( BadData, nullptr, 15, 14 ), "偽造した最大点数超過を点配列確保前に拒否する" );
 		BadData = MakeData( White, -1, 2 ); BadData.Ribbon.JoinFlags = 4; C.Check( SendForged( BadData, BadPoints, 35, 34 ), "偽造JoinFlagsを描画前に拒否する" );
 		BadData.Ribbon.JoinFlags = 0; BadData.Material.DepthWrite = 3; C.Check( SendForged( BadData, BadPoints, 35, 34 ), "偽造DepthWriteを描画前に拒否する" );
-		BadData.Material.DepthWrite = 0; BadPoints[1].Emission = ( std::numeric_limits<float32>::quiet_NaN )(); C.Check( SendForged( BadData, BadPoints, 35, 34 ), "点の非有限Emissionを描画前に拒否する" );
+		BadData.Material.DepthWrite = 0; BadPoints[1].Emission = TNumericLimits<float32>::QuietNaN(); C.Check( SendForged( BadData, BadPoints, 35, 34 ), "点の非有限Emissionを描画前に拒否する" );
 		BadPoints[1] = MakePoint( 2.0f, 0.0f, 1.0f, 0xFFFFFFFFu ); BadPoints[0].Path.U = BadPoints[1].Path.U = 1.0e38f; BadData.Material.UVScale[0] = 128.0f; C.Check( SendForged( BadData, BadPoints, 35, 34 ), "有限入力のscale積がoverflowするpayloadを描画前に拒否する" );
 		// 専用sentinel native状態の中で材質Ribbon自身が描画され、全状態を戻すcallback。
 		FDrawMaterialQuadData SentinelQuad;

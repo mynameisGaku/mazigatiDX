@@ -5,6 +5,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Render/DrawContext.h"
 #include "WorldEffectMeshCommandSelfTest.h"
 #include "WorldSelfTestSupport.h"
@@ -185,7 +186,7 @@ namespace
 		AtomicDraw.MaterialMesh3D( Data, Vertices.GetData(), Indices.GetData() );
 		C.Check( AtomicBuffer.Words == BeforeInvalid, "最後の頂点UVが上限外ならbufferへ一部も追加しない" );
 		MakeValidMesh( Data, Vertices, Indices );
-		Vertices[Vertices.Num() - 1].Normal[1] = std::numeric_limits<float32>::quiet_NaN();
+		Vertices[Vertices.Num() - 1].Normal[1] = TNumericLimits<float32>::QuietNaN();
 		AtomicDraw.MaterialMesh3D( Data, Vertices.GetData(), Indices.GetData() );
 		C.Check( AtomicBuffer.Words == BeforeInvalid, "最後の頂点に非有限法線があればbufferへ一部も追加しない" );
 

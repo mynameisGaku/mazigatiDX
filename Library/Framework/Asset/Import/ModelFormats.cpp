@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "Library/Core/Collection/Set.h"
+#include "Library/Core/Types/Numeric.h"
 
 namespace
 {
@@ -23,7 +24,7 @@ namespace
 	{
 		const int32 Dot = Path.FindLast( "." );
 		if ( Dot == INDEX_NONE ) return FString();
-		const int32 Separator = std::max( Path.FindLast( "/" ), Path.FindLast( "\\" ) );
+		const int32 Separator = NMath::Max( Path.FindLast( "/" ), Path.FindLast( "\\" ) );
 		if ( Separator > Dot ) return FString();
 		return Path.Mid( Dot ).ToLower();
 	}

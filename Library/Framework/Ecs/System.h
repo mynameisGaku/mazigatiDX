@@ -9,6 +9,7 @@
 #include "Library/Core/Interfaces/Job/IJobSystem.h"
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Core/Types/CompilerMacros.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Ecs/EcsWorld.h"
 #include "Library/Framework/Ecs/SystemParams.h"
 #include "Library/Framework/Ecs/TransformWorld.h"
@@ -196,7 +197,7 @@ namespace NEcs
 		static constexpr bool bHasWithout = ( IsWithoutArg<TArgs> || ... );
 
 	public:
-		explicit TSystemRunner( TFunction InFunction ) : Function( std::move( InFunction ) ) {}
+		explicit TSystemRunner( TFunction InFunction ) : Function( MoveTemp( InFunction ) ) {}
 
 		void GetAccess( std::vector<FAccess>& Out ) const override
 		{
@@ -622,13 +623,13 @@ namespace NEcs
 		template<bool bDraw, typename TFunction>
 		static std::unique_ptr<ISystemRunner> Make( TFunction&& Function )
 		{
-			return std::make_unique<TSystemRunner<bDraw, std::decay_t<TFunction>, TArgs...>>( std::forward<TFunction>( Function ) );
+			return std::make_unique<TSystemRunner<bDraw, std::decay_t<TFunction>, TArgs...>>( Forward<TFunction>( Function ) );
 		}
 
 		template<typename TFunction>
 		static int32 RunForEach( FEcsWorld& World, FTransformWorld& Transforms, TFunction&& Function )
 		{
-			return TForEachRunner<TFunction, TArgs...>::Run( World, Transforms, std::forward<TFunction>( Function ) );
+			return TForEachRunner<TFunction, TArgs...>::Run( World, Transforms, Forward<TFunction>( Function ) );
 		}
 	};
 
@@ -638,13 +639,13 @@ namespace NEcs
 		template<bool bDraw, typename TFunction>
 		static std::unique_ptr<ISystemRunner> Make( TFunction&& Function )
 		{
-			return std::make_unique<TSystemRunner<bDraw, std::decay_t<TFunction>, TArgs...>>( std::forward<TFunction>( Function ) );
+			return std::make_unique<TSystemRunner<bDraw, std::decay_t<TFunction>, TArgs...>>( Forward<TFunction>( Function ) );
 		}
 
 		template<typename TFunction>
 		static int32 RunForEach( FEcsWorld& World, FTransformWorld& Transforms, TFunction&& Function )
 		{
-			return TForEachRunner<TFunction, TArgs...>::Run( World, Transforms, std::forward<TFunction>( Function ) );
+			return TForEachRunner<TFunction, TArgs...>::Run( World, Transforms, Forward<TFunction>( Function ) );
 		}
 	};
 
@@ -654,13 +655,13 @@ namespace NEcs
 		template<bool bDraw, typename TFunction>
 		static std::unique_ptr<ISystemRunner> Make( TFunction&& Function )
 		{
-			return std::make_unique<TSystemRunner<bDraw, std::decay_t<TFunction>, TArgs...>>( std::forward<TFunction>( Function ) );
+			return std::make_unique<TSystemRunner<bDraw, std::decay_t<TFunction>, TArgs...>>( Forward<TFunction>( Function ) );
 		}
 
 		template<typename TFunction>
 		static int32 RunForEach( FEcsWorld& World, FTransformWorld& Transforms, TFunction&& Function )
 		{
-			return TForEachRunner<TFunction, TArgs...>::Run( World, Transforms, std::forward<TFunction>( Function ) );
+			return TForEachRunner<TFunction, TArgs...>::Run( World, Transforms, Forward<TFunction>( Function ) );
 		}
 	};
 
@@ -668,7 +669,7 @@ namespace NEcs
 	template<typename TFunction>
 	FORCEINLINE int32 ForEach( FEcsWorld& World, FTransformWorld& Transforms, TFunction&& Function )
 	{
-		return TFunctionTraits<std::decay_t<TFunction>>::RunForEach( World, Transforms, std::forward<TFunction>( Function ) );
+		return TFunctionTraits<std::decay_t<TFunction>>::RunForEach( World, Transforms, Forward<TFunction>( Function ) );
 	}
 
 	// 指定したすべてのコンポーネントを持つ生きているエンティティの数を返す
@@ -717,14 +718,14 @@ namespace NEcs
 		{
 			COLLECTION_CHECK( Phase != EPhase::Draw, "Draw systems are registered with AddDraw" );
 			if ( Phase == EPhase::Draw ) return;
-			AddInternal<false>( Phase, Name, std::forward<TFunction>( Function ) );
+			AddInternal<false>( Phase, Name, Forward<TFunction>( Function ) );
 		}
 
 		// 描画システムを登録する（読むだけ。FDrawContext& が必要）
 		template<typename TFunction>
 		void AddDraw( const char* Name, TFunction&& Function )
 		{
-			AddInternal<true>( EPhase::Draw, Name, std::forward<TFunction>( Function ) );
+			AddInternal<true>( EPhase::Draw, Name, Forward<TFunction>( Function ) );
 		}
 
 		// フェーズのシステムを、段の順に実行する。Jobs が null（またはワーカーがいない）なら、呼び出したスレッドだけで、同じ順序で。
@@ -774,9 +775,9 @@ namespace NEcs
 			FSystem System;
 			System.Name = Name;
 			System.Phase = Phase;
-			System.Runner = TFunctionTraits<std::decay_t<TFunction>>::template Make<bDraw>( std::forward<TFunction>( Function ) );
+			System.Runner = TFunctionTraits<std::decay_t<TFunction>>::template Make<bDraw>( Forward<TFunction>( Function ) );
 			System.Runner->GetAccess( System.Access );
-			AddSystem( std::move( System ) );
+			AddSystem( MoveTemp( System ) );
 		}
 
 		void AddSystem( FSystem&& System );

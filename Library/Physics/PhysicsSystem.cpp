@@ -6,6 +6,8 @@
 #include <thread>
 
 #include "Library/Core/Profiler/ProfilerScope.h"
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Physics/ContactListener.h"
 
 #pragma push_macro( "min" )
@@ -155,7 +157,7 @@ TResult<void> CPhysicsSystem::Init( const FPhysicsSettings& InSettings )
 
 	const int32 NumThreads = Settings.NumThreads >= 0
 		? Settings.NumThreads
-		: std::max( 1, static_cast<int32>( std::thread::hardware_concurrency() ) - 1 );
+		: NMath::Max( 1, static_cast<int32>( std::thread::hardware_concurrency() ) - 1 );
 
 	TempAllocator = MakeUnique<JPH::TempAllocatorImpl>( Settings.TempAllocatorSize );
 	JobSystem     = MakeUnique<JPH::JobSystemThreadPool>( JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, NumThreads );
@@ -198,7 +200,7 @@ void CPhysicsSystem::Update( float32 DeltaTime )
 
 	// 処理落ち時に無限にステップを重ねないよう上限を設ける
 	const float32 MaxAccumulated = Settings.FixedDeltaTime * static_cast<float32>( Settings.MaxSubSteps );
-	Accumulator = std::min( Accumulator + std::max( DeltaTime, 0.0f ), MaxAccumulated );
+	Accumulator = NMath::Min( Accumulator + NMath::Max( DeltaTime, 0.0f ), MaxAccumulated );
 
 	while ( Accumulator >= Settings.FixedDeltaTime )
 	{
@@ -258,7 +260,7 @@ FRigidBody* CPhysicsSystem::CreateBody( const FCollisionShape& Shape, EBodyType 
 		auto Scaled = Shape.Scaled( Transform.Scale );
 		if ( Scaled.IsOk() )
 		{
-			FinalShape = std::move( Scaled ).Unwrap();
+			FinalShape = MoveTemp( Scaled ).Unwrap();
 			FinalScale = Transform.Scale;
 		}
 		else
@@ -299,7 +301,7 @@ FRigidBody* CPhysicsSystem::CreateBody( const FCollisionShape& Shape, EBodyType 
 
 	auto Body = MakeUnique<FRigidBody>( BodyInterface, BodyID, Type, FinalScale );
 	FRigidBody* Raw = Body.Get();
-	Bodies.Add( BodyID.GetIndexAndSequenceNumber(), std::move( Body ) );
+	Bodies.Add( BodyID.GetIndexAndSequenceNumber(), MoveTemp( Body ) );
 	LOG( LogPhysics, Verbose, "Created %s body #%u (%d body(ies) in the world)", BodyTypeToString( Type ), BodyID.GetIndex(), Bodies.Num() );
 	return Raw;
 }

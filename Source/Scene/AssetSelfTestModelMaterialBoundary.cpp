@@ -8,6 +8,7 @@
 
 #include "AssetSelfTestSupport.h"
 #include "Library/Core/Interfaces/Render/DrawModelMaterial.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Asset/Model.h"
 #include "Library/Framework/Render/DrawContext.h"
@@ -206,7 +207,7 @@ namespace NAssetTest
 		const bool bPausedFrozen = LoopPlayback.EffectTimeSeconds == PausedTime && LoopPlayback.EffectUVOffset[0] == PausedSourceU && LoopPlayback.DistortionUVOffset[1] == PausedNoiseV;
 		LoopPlayback.Play();
 		LoopPlayback.Update( 0.25f, LoopDefinition );
-		const bool bPausedResumed = std::abs( LoopPlayback.EffectTimeSeconds - 0.625 ) < 1.0e-8;
+		const bool bPausedResumed = NMath::Abs( LoopPlayback.EffectTimeSeconds - 0.625 ) < 1.0e-8;
 		Checker.Check( bPausedFrozen && bPausedResumed, "一時停止中は曲線と二組のUV位相を保ち再開後に同じ時計を進める" );
 
 		// one-shot終了後のcurve終端と残り時間分だけ進むUV基準。
@@ -217,7 +218,7 @@ namespace NAssetTest
 		OncePlayback.Restart();
 		OncePlayback.Update( 5.0f, OnceDefinition );
 		const bool bFinishedAtEnd = OncePlayback.EffectState == FMeshMaterialEffectPlayback::EEffectPlaybackState::Finished && OncePlayback.EffectTimeSeconds == 1.25 && OnceDefinition.Material.Emission.Evaluate( 1.0f, 0.0f ) == 0.75f;
-		const bool bOneShotOffsetsUseRemaining = std::abs( OncePlayback.EffectUVOffset[0] - 0.3125 ) < 1.0e-8 && std::abs( OncePlayback.EffectUVOffset[1] - 0.84375 ) < 1.0e-8 && std::abs( OncePlayback.DistortionUVOffset[0] - 0.46875 ) < 1.0e-8 && std::abs( OncePlayback.DistortionUVOffset[1] - 0.75 ) < 1.0e-6;
+		const bool bOneShotOffsetsUseRemaining = NMath::Abs( OncePlayback.EffectUVOffset[0] - 0.3125 ) < 1.0e-8 && NMath::Abs( OncePlayback.EffectUVOffset[1] - 0.84375 ) < 1.0e-8 && NMath::Abs( OncePlayback.DistortionUVOffset[0] - 0.46875 ) < 1.0e-8 && NMath::Abs( OncePlayback.DistortionUVOffset[1] - 0.75 ) < 1.0e-6;
 		OncePlayback.Play();
 		const bool bFinishedPlayRestarts = OncePlayback.EffectState == FMeshMaterialEffectPlayback::EEffectPlaybackState::Playing && OncePlayback.EffectTimeSeconds == 0.0 && OncePlayback.EffectUVOffset[0] == 0.0 && OncePlayback.DistortionUVOffset[1] == 0.0;
 		OncePlayback.Update( 0.25f, OnceDefinition );
@@ -231,11 +232,11 @@ namespace NAssetTest
 		InvalidInputPlayback.Update( 0.25f, LoopDefinition );
 		const float64 BeforeInvalidTime = InvalidInputPlayback.EffectTimeSeconds;
 		const float64 BeforeInvalidUV = InvalidInputPlayback.EffectUVOffset[0];
-		for ( const float32 InvalidDelta : { -1.0f, std::numeric_limits<float32>::quiet_NaN(), std::numeric_limits<float32>::infinity(), -std::numeric_limits<float32>::infinity() } ) InvalidInputPlayback.Update( InvalidDelta, LoopDefinition );
+		for ( const float32 InvalidDelta : { -1.0f, TNumericLimits<float32>::QuietNaN(), TNumericLimits<float32>::Infinity(), -TNumericLimits<float32>::Infinity() } ) InvalidInputPlayback.Update( InvalidDelta, LoopDefinition );
 		FMeshMaterialEffectDefinition InvalidDuration = LoopDefinition;
 		InvalidDuration.Duration = 0.0f;
 		InvalidInputPlayback.Update( 0.5f, InvalidDuration );
-		InvalidDuration.Duration = std::numeric_limits<float32>::quiet_NaN();
+		InvalidDuration.Duration = TNumericLimits<float32>::QuietNaN();
 		InvalidInputPlayback.Update( 0.5f, InvalidDuration );
 		Checker.Check( InvalidInputPlayback.EffectTimeSeconds == BeforeInvalidTime && InvalidInputPlayback.EffectUVOffset[0] == BeforeInvalidUV, "負・非有限deltaと不正Durationを無視する" );
 
@@ -281,7 +282,7 @@ namespace NAssetTest
 		} );
 		// commandのfloat32 noise Vへ丸める独立期待値。
 		const float32 ExpectedPayloadNoiseV = static_cast<float32>( ExpectedBoundaryUVPhase( RendererDefinition.Material.Distortion.UVScroll.y, 10000.375f ) );
-		const bool bRendererClockAndScroll = bRecordHandled && bPayloadFound && std::abs( Renderer.GetEffectTime() - 0.375 ) < 1.0e-8 && std::abs( Payload.Material.UVOffset[0] - 0.09375f ) < 1.0e-6f && std::abs( Payload.Material.UVOffset[1] - 0.953125f ) < 1.0e-6f && std::abs( Payload.Material.DistortionUVOffset[0] - 0.140625f ) < 1.0e-6f && Payload.Material.DistortionUVOffset[1] == ExpectedPayloadNoiseV;
+		const bool bRendererClockAndScroll = bRecordHandled && bPayloadFound && NMath::Abs( Renderer.GetEffectTime() - 0.375 ) < 1.0e-8 && NMath::Abs( Payload.Material.UVOffset[0] - 0.09375f ) < 1.0e-6f && NMath::Abs( Payload.Material.UVOffset[1] - 0.953125f ) < 1.0e-6f && NMath::Abs( Payload.Material.DistortionUVOffset[0] - 0.140625f ) < 1.0e-6f && Payload.Material.DistortionUVOffset[1] == ExpectedPayloadNoiseV;
 		Checker.Check( bFixtureWritten && bPrepared && Instance.IsValid() && bRendererClockAndScroll && Buffer.Words.size() == 41 && TextureLoaderCalls == 0 && Fake.NumStaticModelSurfaceQueries == QueriesBeforePrepare + 1 && Fake.NumModelMaterialGeometryCreates == CreatesBeforePrepare + 1 && Fake.ModelMaterialGeometries.size() == GeometryCountBeforePrepare + 1, "描画命令は大delta後のloop時刻と独立UV位相を持ち、借用画像を再読込しない" );
 
 		// 無効handleの境界Recordが既存命令列を変更しないことを調べる。
@@ -372,10 +373,10 @@ namespace NAssetTest
 		Invalid.Indices[5] = 99;
 		Reject( Invalid, 0, "source indexが頂点範囲を超える" );
 		Invalid = Surface;
-		Invalid.Vertices[5].Position[1] = std::numeric_limits<float32>::quiet_NaN();
+		Invalid.Vertices[5].Position[1] = TNumericLimits<float32>::QuietNaN();
 		Reject( Invalid, 0, "source頂点に非有限値がある" );
 		Invalid = Surface;
-		Invalid.Materials[1].Diffuse[2] = std::numeric_limits<float32>::quiet_NaN();
+		Invalid.Materials[1].Diffuse[2] = TNumericLimits<float32>::QuietNaN();
 		Reject( Invalid, 0, "未選択materialに非有限値がある" );
 		Invalid = Surface;
 		Invalid.Indices.Add( 0 );

@@ -1,4 +1,5 @@
-﻿#include "Library/Framework/Asset/AssetManager.h"
+﻿#include "Library/Core/Types/Numeric.h"
+#include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Component/TransformComponent.h"
 #include "Library/Framework/Effect/EffectComponent.h"
 #include "Library/Framework/Object/GameObject.h"
@@ -297,7 +298,7 @@ void NWorldTest::RunEffectSceneStart( FChecker& C, CScene& Scene, CAssetManager&
 		{
 			if ( Command.Type == EDrawCommand::Quad3D ) Xs.Add( Command.Read<FDrawQuad3DData>().Pos[0] );
 		} );
-		C.Check( Xs.Num() == 3 && std::fabs( Xs[0] - 1.0f ) < 1.0e-4f && std::fabs( Xs[1] - 5.0f ) < 1.0e-4f && std::fabs( Xs[2] - 9.0f ) < 1.0e-4f, "each tick's particle is born where the object is at that tick (x = 1, 5, 9; %d particles)", Xs.Num() );
+		C.Check( Xs.Num() == 3 && NMath::Abs( Xs[0] - 1.0f ) < 1.0e-4f && NMath::Abs( Xs[1] - 5.0f ) < 1.0e-4f && NMath::Abs( Xs[2] - 9.0f ) < 1.0e-4f, "each tick's particle is born where the object is at that tick (x = 1, 5, 9; %d particles)", Xs.Num() );
 	}
 	else C.Check( false, "the stream plays" );
 
@@ -509,7 +510,7 @@ void NWorldTest::RunEffectRealTests( FChecker& C, CAssetManager& Assets, IDrawEx
 		GetPixelSoftImage( Soft, X, Y, &Result.R, &Result.G, &Result.B, &A );
 		return Result;
 	};
-	const auto Near = [&]( const FRgb& A, const FRgb& B, int Tolerance = 8 ) { return std::abs( A.R - B.R ) <= Tolerance && std::abs( A.G - B.G ) <= Tolerance && std::abs( A.B - B.B ) <= Tolerance; };
+	const auto Near = [&]( const FRgb& A, const FRgb& B, int Tolerance = 8 ) { return NMath::Abs( A.R - B.R ) <= Tolerance && NMath::Abs( A.G - B.G ) <= Tolerance && NMath::Abs( A.B - B.B ) <= Tolerance; };
 	// 背景と違う（光っている）ピクセルの外接矩形
 	const auto Bounds = [&]( int Background, int& OutLeft, int& OutTop, int& OutRight, int& OutBottom )
 	{
@@ -522,11 +523,11 @@ void NWorldTest::RunEffectRealTests( FChecker& C, CAssetManager& Assets, IDrawEx
 			for ( int X = 0; X < Size; ++X )
 			{
 				const FRgb P = Pixel( X, Y );
-				if ( std::abs( P.R - Background ) + std::abs( P.G - Background ) + std::abs( P.B - Background ) <= 6 ) continue;
-				OutLeft = std::min( OutLeft, X );
-				OutTop = std::min( OutTop, Y );
-				OutRight = std::max( OutRight, X );
-				OutBottom = std::max( OutBottom, Y );
+				if ( NMath::Abs( P.R - Background ) + NMath::Abs( P.G - Background ) + NMath::Abs( P.B - Background ) <= 6 ) continue;
+				OutLeft = NMath::Min( OutLeft, X );
+				OutTop = NMath::Min( OutTop, Y );
+				OutRight = NMath::Max( OutRight, X );
+				OutBottom = NMath::Max( OutBottom, Y );
 			}
 		}
 		return OutRight >= 0;
@@ -577,11 +578,11 @@ void NWorldTest::RunEffectRealTests( FChecker& C, CAssetManager& Assets, IDrawEx
 	const FRgb Rim = Pixel( 64 + 29, 64 );
 	int L, T, R, B;
 	const bool bBounds = Bounds( 0, L, T, R, B );
-	C.Check( Centre.R >= 215 && std::abs( Centre.R - Centre.G ) <= 3 && std::abs( Centre.G - Centre.B ) <= 3, "on black, the middle of a white additive dot is bright and grey (%d, %d, %d)", Centre.R, Centre.G, Centre.B );
+	C.Check( Centre.R >= 215 && NMath::Abs( Centre.R - Centre.G ) <= 3 && NMath::Abs( Centre.G - Centre.B ) <= 3, "on black, the middle of a white additive dot is bright and grey (%d, %d, %d)", Centre.R, Centre.G, Centre.B );
 	C.Check( Ring.R >= 44 && Ring.R <= 90, "half way to the edge it is about a quarter as bright (%d)", Ring.R );
 	C.Check( Rim.R <= 16 && Pixel( 64 + 40, 64 ).R == 0 && Pixel( 64, 64 - 40 ).R == 0, "near the edge it is dark (%d), and outside the quad nothing is added", Rim.R );
 	C.Check( Near( Pixel( 48, 64 ), Ring, 10 ) && Near( Pixel( 64, 48 ), Ring, 10 ) && Near( Pixel( 64, 80 ), Ring, 10 ), "it is round: the four points at the same distance are about equally bright" );
-	C.Check( bBounds && R - L + 1 >= 40 && R - L + 1 <= 66 && std::abs( ( L + R ) / 2 - 64 ) <= 2 && std::abs( ( T + B ) / 2 - 64 ) <= 2, "and it is centred on the particle's position (%d..%d, %d..%d)", L, R, T, B );
+	C.Check( bBounds && R - L + 1 >= 40 && R - L + 1 <= 66 && NMath::Abs( ( L + R ) / 2 - 64 ) <= 2 && NMath::Abs( ( T + B ) / 2 - 64 ) <= 2, "and it is centred on the particle's position (%d..%d, %d..%d)", L, R, T, B );
 
 	// 色
 	Render( Effect( One( EParticleBlend::Add, FColor32( 255, 0, 0, 255 ) ) ), "px_red.effect.json", 0 );
@@ -590,7 +591,7 @@ void NWorldTest::RunEffectRealTests( FChecker& C, CAssetManager& Assets, IDrawEx
 	// 加算のアルファは、暗さになる
 	Render( Effect( One( EParticleBlend::Add, FColor32( 255, 255, 255, 128 ) ) ), "px_half.effect.json", 0 );
 	const FRgb HalfCentre = Pixel( 64, 64 );
-	C.Check( HalfCentre.R >= 100 && HalfCentre.R <= 136 && std::abs( HalfCentre.R * 2 - Centre.R ) <= 24, "an additive dot with alpha 128 is about half as bright (%d against %d)", HalfCentre.R, Centre.R );
+	C.Check( HalfCentre.R >= 100 && HalfCentre.R <= 136 && NMath::Abs( HalfCentre.R * 2 - Centre.R ) <= 24, "an additive dot with alpha 128 is about half as bright (%d against %d)", HalfCentre.R, Centre.R );
 	// 重なると足される
 	FParticleEmitterDefinition Pair = One( EParticleBlend::Add, FColor32( 255, 255, 255, 64 ) );
 	Render( Effect( Pair ), "px_single.effect.json", 0 );
@@ -598,7 +599,7 @@ void NWorldTest::RunEffectRealTests( FChecker& C, CAssetManager& Assets, IDrawEx
 	Pair.Bursts[0].Count = 2;
 	Render( Effect( Pair ), "px_double.effect.json", 0 );
 	const int Double = Pixel( 64, 64 ).R;
-	C.Check( Single >= 40 && Single <= 80 && std::abs( Double - 2 * Single ) <= 12, "two particles on the same spot add up (%d, then %d)", Single, Double );
+	C.Check( Single >= 40 && Single <= 80 && NMath::Abs( Double - 2 * Single ) <= 12, "two particles on the same spot add up (%d, then %d)", Single, Double );
 
 	//-------------------------------------------------------------------------
 	// アルファ: 背景に重なる
@@ -620,10 +621,10 @@ void NWorldTest::RunEffectRealTests( FChecker& C, CAssetManager& Assets, IDrawEx
 	Fade.EndSize = { 0.0f, 0.0f };
 	Fade.EndColor = FColor32( 255, 255, 255, 0 );
 	Render( Effect( Fade ), "px_fade0.effect.json", 0 );
-	const bool bNew = Bounds( 0, L, T, R, B ) && std::abs( ( R - L + 1 ) - 64 ) <= 2 && std::abs( ( B - T + 1 ) - 64 ) <= 2;
+	const bool bNew = Bounds( 0, L, T, R, B ) && NMath::Abs( ( R - L + 1 ) - 64 ) <= 2 && NMath::Abs( ( B - T + 1 ) - 64 ) <= 2;
 	const FRgb NewTopLeft = Pixel( 48, 48 );
 	Render( Effect( Fade ), "px_fade1.effect.json", 0, 1.0f );
-	const bool bHalf = Bounds( 0, L, T, R, B ) && std::abs( ( R - L + 1 ) - 32 ) <= 2 && std::abs( ( B - T + 1 ) - 32 ) <= 2 && std::abs( ( L + R ) / 2 - 64 ) <= 2;
+	const bool bHalf = Bounds( 0, L, T, R, B ) && NMath::Abs( ( R - L + 1 ) - 32 ) <= 2 && NMath::Abs( ( B - T + 1 ) - 32 ) <= 2 && NMath::Abs( ( L + R ) / 2 - 64 ) <= 2;
 	const FRgb HalfTopLeft = Pixel( 56, 56 );
 	C.Check( bNew && bHalf, "the size shrinks from 4 to 0 over the life: 64 pixels when new, 32 half way" );
 	C.Check( Near( NewTopLeft, FRgb { 255, 0, 0 }, 6 ) && Near( HalfTopLeft, FRgb { 128, 0, 0 }, 10 ), "and the alpha fades 255 -> 0: the red corner is full (%d) when new and half (%d) half way", NewTopLeft.R, HalfTopLeft.R );
@@ -663,7 +664,7 @@ void NWorldTest::RunEffectRealTests( FChecker& C, CAssetManager& Assets, IDrawEx
 	C.Check( bSame && !Near( ByCamera[0], Red ), "a start angle of 90 degrees turns it (the corner is no longer red), the same way for a camera-facing particle, a fixed one, and a fixed one on an effect turned by 90 degrees" );
 	int SpinLeft, SpinTop, SpinRight, SpinBottom;
 	Render( Effect( Spin ), "px_spin_size.effect.json", 0, 0.0f, FTransform( FVector3::Zero, FQuaternion::FromAxisAngle( FVector3::Forward, 1.5707964f ) ) );
-	C.Check( Bounds( 0, SpinLeft, SpinTop, SpinRight, SpinBottom ) && std::abs( ( SpinRight - SpinLeft + 1 ) - 32 ) <= 2 && std::abs( ( SpinBottom - SpinTop + 1 ) - 32 ) <= 2, "and it is still 32 pixels square" );
+	C.Check( Bounds( 0, SpinLeft, SpinTop, SpinRight, SpinBottom ) && NMath::Abs( ( SpinRight - SpinLeft + 1 ) - 32 ) <= 2 && NMath::Abs( ( SpinBottom - SpinTop + 1 ) - 32 ) <= 2, "and it is still 32 pixels square" );
 
 	//-------------------------------------------------------------------------
 	// 位置: 動いた先に出る（x = 2 -> 画面の中央から右へ 32 ピクセル）
@@ -673,9 +674,9 @@ void NWorldTest::RunEffectRealTests( FChecker& C, CAssetManager& Assets, IDrawEx
 	Move.Speed = { 2.0f, 2.0f };
 	Move.Direction = FVector3( 1.0f, 0.0f, 0.0f );
 	Render( Effect( Move ), "px_move.effect.json", 0, 1.0f );
-	C.Check( Bounds( 0, L, T, R, B ) && std::abs( ( L + R ) / 2 - 96 ) <= 2 && std::abs( ( T + B ) / 2 - 64 ) <= 2, "a particle that has flown 2 units to the right is 32 pixels right of the middle (%d..%d, %d..%d)", L, R, T, B );
+	C.Check( Bounds( 0, L, T, R, B ) && NMath::Abs( ( L + R ) / 2 - 96 ) <= 2 && NMath::Abs( ( T + B ) / 2 - 64 ) <= 2, "a particle that has flown 2 units to the right is 32 pixels right of the middle (%d..%d, %d..%d)", L, R, T, B );
 	Render( Effect( Move ), "px_where.effect.json", 0, 1.0f, FTransform( FVector3( 0.0f, 1.0f, 0.0f ) ) );
-	C.Check( Bounds( 0, L, T, R, B ) && std::abs( ( L + R ) / 2 - 96 ) <= 2 && std::abs( ( T + B ) / 2 - 48 ) <= 2, "and when the effect itself is 1 unit up, 16 pixels higher (%d..%d, %d..%d)", L, R, T, B );
+	C.Check( Bounds( 0, L, T, R, B ) && NMath::Abs( ( L + R ) / 2 - 96 ) <= 2 && NMath::Abs( ( T + B ) / 2 - 48 ) <= 2, "and when the effect itself is 1 unit up, 16 pixels higher (%d..%d, %d..%d)", L, R, T, B );
 
 	SetDrawScreen( DX_SCREEN_BACK );
 	SetBackgroundColor( OldR, OldG, OldB );

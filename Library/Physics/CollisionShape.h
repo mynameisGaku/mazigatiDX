@@ -2,6 +2,7 @@
 #include "Library/Core/Types/CompilerMacros.h"
 #include "Library/Core/Collection/ArrayView.h"
 #include "Library/Core/Collection/String.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Physics/PhysicsTypes.h"
 
 #pragma push_macro( "min" )
@@ -29,7 +30,7 @@ class FCollisionShape
 {
 public:
 	FCollisionShape() = default;
-	FORCEINLINE explicit FCollisionShape( PhysShapeRef InShape ) : Shape( std::move( InShape ) ) {}
+	FORCEINLINE explicit FCollisionShape( PhysShapeRef InShape ) : Shape( MoveTemp( InShape ) ) {}
 
 	//-------------------------------------------------------------------------
 	// プリミティブ
@@ -87,7 +88,7 @@ private:
 			Message += ": ";
 			Message += Result.GetError().c_str();
 			LOG( LogPhysics, Error, "Failed to create a collision shape: %s", *Message );
-			return TResult<FCollisionShape>::Err( std::move( Message ) );
+			return TResult<FCollisionShape>::Err( MoveTemp( Message ) );
 		}
 		return TResult<FCollisionShape>::Ok( FCollisionShape( Result.Get() ) );
 	}

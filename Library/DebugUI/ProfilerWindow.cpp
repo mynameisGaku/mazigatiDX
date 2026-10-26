@@ -5,6 +5,7 @@
 
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Time/PlatformTime.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Profiler/ProfilerExport.h"
 #include "VendorModules/ImGui/imgui.h"
 
@@ -138,7 +139,7 @@ namespace
 			const int32 Found = FindFrameIndex( Profiler, State.GraphEndFrameNumber );
 			if ( Found != INDEX_NONE ) EndIndex = Found + 1;
 		}
-		const int32 NumBars = std::min( EndIndex, GraphMaxFrames );
+		const int32 NumBars = NMath::Min( EndIndex, GraphMaxFrames );
 		const int32 FirstIndex = EndIndex - NumBars;
 		const uint64 FirstNumber = Profiler.GetFrame( FirstIndex ).FrameNumber;
 
@@ -769,7 +770,7 @@ void NDebugUI::DrawProfilerWindow( IProfiler& Profiler, FProfilerWindowState& St
 {
 	const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
 	ImGui::SetNextWindowPos( ImVec2( MainViewport->Pos.x + 24.0f, MainViewport->Pos.y + 44.0f ), ImGuiCond_FirstUseEver );
-	ImGui::SetNextWindowSize( ImVec2( std::min( 1000.0f, MainViewport->Size.x - 48.0f ), std::min( 660.0f, MainViewport->Size.y - 60.0f ) ), ImGuiCond_FirstUseEver );
+	ImGui::SetNextWindowSize( ImVec2( NMath::Min( 1000.0f, MainViewport->Size.x - 48.0f ), NMath::Min( 660.0f, MainViewport->Size.y - 60.0f ) ), ImGuiCond_FirstUseEver );
 	if ( !ImGui::Begin( "Profiler", pOpen ) )
 	{
 		ImGui::End();

@@ -6,6 +6,7 @@
 #include <limits>
 #include <vector>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EffectEditorInternal.h"
 #include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
 #include "Library/Framework/Asset/AssetManager.h"
@@ -164,7 +165,7 @@ namespace
 				// 実indexが指す最初の三角形の内外UVとwindingを確認する。
 				const FMeshVertex& Inner = RingGeometry.Vertices[static_cast<int32>( RingGeometry.Indices[0] )];
 				const FMeshVertex& Outer = RingGeometry.Vertices[static_cast<int32>( RingGeometry.Indices[1] )];
-				C.Check( bSeamMatches && bTrianglesValid && std::fabs( Inner.Position[0] - 0.2f ) < 1.0e-6f && std::fabs( Outer.Position[0] - 0.5f ) < 1.0e-6f && Inner.V == 0.0f && Outer.V == 1.0f && FirstTriangleArea > 0.0f, "Ringは実穴・外半径・UV・実index正面winding・byte一致seamを持つ" );
+				C.Check( bSeamMatches && bTrianglesValid && NMath::Abs( Inner.Position[0] - 0.2f ) < 1.0e-6f && NMath::Abs( Outer.Position[0] - 0.5f ) < 1.0e-6f && Inner.V == 0.0f && Outer.V == 1.0f && FirstTriangleArea > 0.0f, "Ringは実穴・外半径・UV・実index正面winding・byte一致seamを持つ" );
 			}
 			else C.Check( false, "Ring最初の三角形のindexが頂点範囲内にある" );
 		}
@@ -228,10 +229,10 @@ namespace
 			const FQuaternion ExpectedRotation = World.Rotation * ShapeRotation * Spin;
 			const FVector3 LocalFirst( -0.5f * Particle.Size, -0.5f * Particle.Size, 0.0f );
 			const FVector3 ExpectedFirst = Particle.Position + ExpectedRotation.Rotate( LocalFirst );
-			const bool bPositionMatches = std::fabs( Recorded.Vertices[0].Position[0] - ExpectedFirst.x ) < 1.0e-4f && std::fabs( Recorded.Vertices[0].Position[1] - ExpectedFirst.y ) < 1.0e-4f && std::fabs( Recorded.Vertices[0].Position[2] - ExpectedFirst.z ) < 1.0e-4f;
+			const bool bPositionMatches = NMath::Abs( Recorded.Vertices[0].Position[0] - ExpectedFirst.x ) < 1.0e-4f && NMath::Abs( Recorded.Vertices[0].Position[1] - ExpectedFirst.y ) < 1.0e-4f && NMath::Abs( Recorded.Vertices[0].Position[2] - ExpectedFirst.z ) < 1.0e-4f;
 			// mesh command先頭頂点が粒子RGBAを変えず持つか。
 			const bool bVertexColorMatches = Recorded.Vertices[0].Color[0] == 210 && Recorded.Vertices[0].Color[1] == 150 && Recorded.Vertices[0].Color[2] == 100 && Recorded.Vertices[0].Color[3] == 128;
-			C.Check( bPositionMatches && std::fabs( Particle.Size - 4.0f ) < 1.0e-4f && bVertexColorMatches, "mesh頂点へ粒子のRGBAをそのまま写しsizeと回転順を保つ" );
+			C.Check( bPositionMatches && NMath::Abs( Particle.Size - 4.0f ) < 1.0e-4f && bVertexColorMatches, "mesh頂点へ粒子のRGBAをそのまま写しsizeと回転順を保つ" );
 			C.Check( Recorded.Data.Texture == Texture->GetHandle() && Recorded.Data.bTwoSided == 1 && Recorded.Data.Material.UVScale[0] == 1.0f && Recorded.Data.Material.MaskScale == 1.0f && Recorded.Data.DistortionTexture == -1 && Recorded.Data.DistortionStrength == 0.0f && Recorded.Data.Emission == 1.0f, "材質OFF meshはneutral材質と固定sourceを使う" );
 		}
 		// 同じstateの繰り返し記録は完全に同じbytesを作る。
@@ -545,7 +546,7 @@ namespace
 				// 外周点の投影位置と奥行き。
 				FVector2 Pixel;
 				float32 Depth = 0.0f;
-				if ( !Camera.WorldToScreen( View, Point, Pixel, &Depth ) || !std::isfinite( Pixel.x ) || !std::isfinite( Pixel.y ) || !std::isfinite( Depth ) || Pixel.x < 1.0f || Pixel.y < 1.0f || Pixel.x > View.Width - 1.0f || Pixel.y > View.Height - 1.0f || Depth <= View.Near || Depth >= View.Far ) return false;
+				if ( !Camera.WorldToScreen( View, Point, Pixel, &Depth ) || !NMath::IsFinite( Pixel.x ) || !NMath::IsFinite( Pixel.y ) || !NMath::IsFinite( Depth ) || Pixel.x < 1.0f || Pixel.y < 1.0f || Pixel.x > View.Width - 1.0f || Pixel.y > View.Height - 1.0f || Depth <= View.Near || Depth >= View.Far ) return false;
 			}
 			return true;
 		};
@@ -603,7 +604,7 @@ namespace
 						ProjectedVertices.Add( MeshRotation.Rotate( LocalPoint ) );
 					}
 				}
-				C.Check( bGeometryBuilt && bFocused && ProjectsInside( State.Camera, View, ProjectedVertices ) && std::fabs( State.Camera.Distance - ExpectedShapeCamera.Distance ) < 1.0e-4f, "実mesh geometryの回転後頂点がAppearance最大倍率のbounds内へ投影される" );
+				C.Check( bGeometryBuilt && bFocused && ProjectsInside( State.Camera, View, ProjectedVertices ) && NMath::Abs( State.Camera.Distance - ExpectedShapeCamera.Distance ) < 1.0e-4f, "実mesh geometryの回転後頂点がAppearance最大倍率のbounds内へ投影される" );
 			}
 		}
 		// Sphere spawn、速さ、重力、Appearance倍率の保守半径。
@@ -626,7 +627,7 @@ namespace
 		// 期待半径から直接計算したcamera。
 		FEditorCamera ExpectedMotionCamera;
 		ExpectedMotionCamera.Focus( FVector3::Zero, ExpectedMotionRadius, Landscape );
-		C.Check( bMotionFocused && std::fabs( MotionState.Camera.Distance - ExpectedMotionCamera.Distance ) < 1.0e-4f, "Sphere spawn・速さ・重力・Appearance倍率をfocus余裕へ加える" );
+		C.Check( bMotionFocused && NMath::Abs( MotionState.Camera.Distance - ExpectedMotionCamera.Distance ) < 1.0e-4f, "Sphere spawn・速さ・重力・Appearance倍率をfocus余裕へ加える" );
 		// Boxの半対角をspawn半径へ使う。
 		MotionEmitter.Shape = EParticleShape::Box;
 		MotionEmitter.BoxSize = FVector3( 4.0f, 0.0f, 0.0f );
@@ -636,7 +637,7 @@ namespace
 		MotionState.Document.Reset( MotionDefinition );
 		const bool bBoxFocused = NEffectEditorUI::FocusCameraOnEffectGeometry( MotionState, Landscape );
 		ExpectedMotionCamera.Focus( FVector3::Zero, std::sqrt( 0.5f ) * 3.0f + 2.0f, Landscape );
-		C.Check( bBoxFocused && std::fabs( MotionState.Camera.Distance - ExpectedMotionCamera.Distance ) < 1.0e-4f, "Box spawnの半対角をfocus余裕へ加える" );
+		C.Check( bBoxFocused && NMath::Abs( MotionState.Camera.Distance - ExpectedMotionCamera.Distance ) < 1.0e-4f, "Box spawnの半対角をfocus余裕へ加える" );
 		// 実simulationの粒子を不等stepで進め、Recordと同じmesh変換後全頂点を投影する。
 		const auto SimulateAndProject = [&]( FParticleEmitterDefinition Emitter, const TArray<float32>& Steps, uint32 Seed, const char* CheckName )
 		{
@@ -763,7 +764,7 @@ namespace
 		// mesh原点とTree bounds中心間の距離。
 		const float32 BoundsCenterDistance = ( TreeBoundsCenter - FVector3::Zero ).Length();
 		// どちらのbounds sphereも他方を完全には含まないこと。
-		const bool bBoundsDoNotContain = bTreeBoundsBuilt && BoundsCenterDistance > std::fabs( TreeBoundsRadius - MeshBoundsRadius ) && BoundsCenterDistance < TreeBoundsRadius + MeshBoundsRadius;
+		const bool bBoundsDoNotContain = bTreeBoundsBuilt && BoundsCenterDistance > NMath::Abs( TreeBoundsRadius - MeshBoundsRadius ) && BoundsCenterDistance < TreeBoundsRadius + MeshBoundsRadius;
 		// Treeとmeshを同時に持つ検査用文書。
 		FParticleEffectDefinition MixedDefinition;
 		MixedDefinition.Emitters.Add( TreeEmitter );
@@ -828,17 +829,17 @@ namespace
 		InvalidState.Document.Reset( InvalidDefinition );
 		C.Check( !NEffectEditorUI::FocusCameraOnEffectGeometry( InvalidState, Landscape ) && CameraMatches( InvalidState.Camera, PreviousCamera ), "Tree Path競合meshはTreeへfallbackせずcameraを保つ" );
 		InvalidEmitter = BaseEmitter;
-		InvalidEmitter.Gravity.x = std::numeric_limits<float32>::infinity();
+		InvalidEmitter.Gravity.x = TNumericLimits<float32>::Infinity();
 		InvalidDefinition.Emitters[0] = InvalidEmitter;
 		InvalidState.Document.Reset( InvalidDefinition );
 		C.Check( !NEffectEditorUI::FocusCameraOnEffectGeometry( InvalidState, Landscape ) && CameraMatches( InvalidState.Camera, PreviousCamera ), "非有限移動値ではcamera全fieldを変更しない" );
 		InvalidEmitter = BaseEmitter;
-		InvalidEmitter.StartSize.Max = std::numeric_limits<float32>::infinity();
+		InvalidEmitter.StartSize.Max = TNumericLimits<float32>::Infinity();
 		InvalidDefinition.Emitters[0] = InvalidEmitter;
 		InvalidState.Document.Reset( InvalidDefinition );
 		C.Check( !NEffectEditorUI::FocusCameraOnEffectGeometry( InvalidState, Landscape ) && CameraMatches( InvalidState.Camera, PreviousCamera ), "非有限sizeではcamera全fieldを変更しない" );
 		InvalidEmitter = BaseEmitter;
-		InvalidEmitter.Appearance.Size.Keys.Add( { 0.0f, std::numeric_limits<float32>::infinity() } );
+		InvalidEmitter.Appearance.Size.Keys.Add( { 0.0f, TNumericLimits<float32>::Infinity() } );
 		InvalidDefinition.Emitters[0] = InvalidEmitter;
 		InvalidState.Document.Reset( InvalidDefinition );
 		C.Check( !NEffectEditorUI::FocusCameraOnEffectGeometry( InvalidState, Landscape ) && CameraMatches( InvalidState.Camera, PreviousCamera ), "非有限Appearance倍率ではcamera全fieldを変更しない" );

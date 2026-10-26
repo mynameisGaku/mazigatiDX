@@ -6,6 +6,7 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Profiler/ProfilerScope.h"
 #include "Library/Core/Time/PlatformTime.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Profiler/ProfilerAnalyzer.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogProfiler, Log )
@@ -297,7 +298,7 @@ void CProfilerSubsystem::FinishFrame()
 	Stored.NumDropped = Current.NumDropped;
 	Stored.MaxDepth = Current.MaxDepth;
 	Stored.Samples.Append( Current.Samples.GetData(), Current.Samples.Num() );
-	Stored.Threads = std::move( Current.Threads );
+	Stored.Threads = MoveTemp( Current.Threads );
 	{
 		std::lock_guard<std::mutex> Lock( CounterMutex );
 		Stored.Counters.Append( Current.Counters.GetData(), Current.Counters.Num() );
@@ -492,7 +493,7 @@ FProfilerWorkerBuffer* CProfilerSubsystem::GetWorkerBuffer()
 	FProfilerWorkerBuffer* Raw = Buffer.get();
 	{
 		std::lock_guard<std::mutex> Lock( WorkerRegistryMutex );
-		WorkerBuffers.push_back( std::move( Buffer ) );
+		WorkerBuffers.push_back( MoveTemp( Buffer ) );
 	}
 	GThreadBuffer = Raw;
 	GThreadBufferOwner = this;

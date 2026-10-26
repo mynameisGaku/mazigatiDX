@@ -9,6 +9,8 @@
 
 #include "VendorModules/ufbx/ufbx.h"
 
+#include "Library/Core/Types/Numeric.h"
+
 namespace
 {
 	FImportMatrix ToImportMatrix( const ufbx_matrix& Source )
@@ -33,7 +35,7 @@ namespace
 	// ディレクトリ部分を除いたファイル名
 	FString GetFileNameOnly( const FString& Path )
 	{
-		const int32 Separator = std::max( Path.FindLast( "/" ), Path.FindLast( "\\" ) );
+		const int32 Separator = NMath::Max( Path.FindLast( "/" ), Path.FindLast( "\\" ) );
 		return Separator == INDEX_NONE ? Path : Path.Mid( Separator + 1 );
 	}
 
@@ -203,7 +205,7 @@ namespace
 
 			std::unordered_map<FCornerKey, int32, FCornerKeyHash> VertexMap;
 			std::vector<uint32_t> ControlPoints;   // 出力の頂点ごとの、元の頂点の番号
-			std::vector<uint32_t> Triangles( std::max<size_t>( Mesh.max_face_triangles * 3, 3 ) );
+			std::vector<uint32_t> Triangles( NMath::Max<size_t>( Mesh.max_face_triangles * 3, 3 ) );
 
 			for ( size_t FaceIndex = 0; FaceIndex < Mesh.faces.count; ++FaceIndex )
 			{
@@ -283,7 +285,7 @@ namespace
 
 		void BuildAnimations()
 		{
-			const double Fps = static_cast<double>( std::max( Options.AnimFps, 1.0f ) );
+			const double Fps = static_cast<double>( NMath::Max( Options.AnimFps, 1.0f ) );
 			for ( size_t StackIndex = 0; StackIndex < Source.anim_stacks.count; ++StackIndex )
 			{
 				const ufbx_anim_stack* Stack = Source.anim_stacks.data[StackIndex];
@@ -293,7 +295,7 @@ namespace
 				FImportedAnimation Animation;
 				Animation.Name = ToFString( Stack->name );
 				Animation.Fps = static_cast<float32>( Fps );
-				Animation.NumKeys = std::max( static_cast<int32>( std::floor( ( End - Begin ) * Fps + 0.5 ) ) + 1, 2 );
+				Animation.NumKeys = NMath::Max( static_cast<int32>( std::floor( ( End - Begin ) * Fps + 0.5 ) ) + 1, 2 );
 
 				for ( size_t NodeIndex = 0; NodeIndex < Source.nodes.count; ++NodeIndex )
 				{
@@ -306,7 +308,7 @@ namespace
 					bool bAnimated = false;
 					for ( int32 Key = 0; Key < Animation.NumKeys; ++Key )
 					{
-						const double Time = std::min( Begin + static_cast<double>( Key ) / Fps, End );
+						const double Time = NMath::Min( Begin + static_cast<double>( Key ) / Fps, End );
 						const ufbx_transform Transform = ufbx_evaluate_transform( Stack->anim, Node, Time );
 						const ufbx_matrix Matrix = ufbx_transform_to_matrix( &Transform );
 						Track.Keys.Add( ToImportMatrix( Matrix ) );

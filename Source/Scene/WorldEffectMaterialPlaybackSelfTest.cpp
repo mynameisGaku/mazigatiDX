@@ -4,6 +4,7 @@
 #include <cstring>
 #include <vector>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EffectEditor.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Render/DrawContext.h"
@@ -103,7 +104,7 @@ void NWorldTest::RunEffectMaterialPlaybackTests( NAssetTest::FChecker& C, CAsset
 	const FVector3 FixedUp = ParentRotation.Rotate( FVector3::Up ); // 親回転後の基準Up。
 	const FVector3 ExpectedRight = FixedRight * std::cos( FixedParticles.IsEmpty() ? 0.0f : FixedParticles[0].Angle ) + FixedUp * std::sin( FixedParticles.IsEmpty() ? 0.0f : FixedParticles[0].Angle ); // 粒子角を加えたRight。
 	const FVector3 ExpectedUp = FixedUp * std::cos( FixedParticles.IsEmpty() ? 0.0f : FixedParticles[0].Angle ) - FixedRight * std::sin( FixedParticles.IsEmpty() ? 0.0f : FixedParticles[0].Angle ); // 粒子角を加えたUp。
-	C.Check( FixedQuads.Num() == 1 && !FixedParticles.IsEmpty() && std::fabs( FixedQuads[0].Quad.Right[0] - ExpectedRight.x ) < 1.0e-5f && std::fabs( FixedQuads[0].Quad.Right[1] - ExpectedRight.y ) < 1.0e-5f && std::fabs( FixedQuads[0].Quad.Right[2] - ExpectedRight.z ) < 1.0e-5f && std::fabs( FixedQuads[0].Quad.Up[0] - ExpectedUp.x ) < 1.0e-5f && std::fabs( FixedQuads[0].Quad.Up[1] - ExpectedUp.y ) < 1.0e-5f && std::fabs( FixedQuads[0].Quad.Up[2] - ExpectedUp.z ) < 1.0e-5f, "Fixed 向きの材質四角形へ親回転と粒子角を反映する" );
+	C.Check( FixedQuads.Num() == 1 && !FixedParticles.IsEmpty() && NMath::Abs( FixedQuads[0].Quad.Right[0] - ExpectedRight.x ) < 1.0e-5f && NMath::Abs( FixedQuads[0].Quad.Right[1] - ExpectedRight.y ) < 1.0e-5f && NMath::Abs( FixedQuads[0].Quad.Right[2] - ExpectedRight.z ) < 1.0e-5f && NMath::Abs( FixedQuads[0].Quad.Up[0] - ExpectedUp.x ) < 1.0e-5f && NMath::Abs( FixedQuads[0].Quad.Up[1] - ExpectedUp.y ) < 1.0e-5f && NMath::Abs( FixedQuads[0].Quad.Up[2] - ExpectedUp.z ) < 1.0e-5f, "Fixed 向きの材質四角形へ親回転と粒子角を反映する" );
 	FParticleEmitterDefinition LegacyFixedEmitter = FixedEmitter;
 	LegacyFixedEmitter.Material = FEffectMaterialDefinition();
 	TSharedPtr<IEffectPlayback> LegacyFixedPlayback = NEffect::CreateParticlePlayback( MakeEffect( { LegacyFixedEmitter } ), &Assets, FEffectPlayParams(), FTransform( FVector3::Zero, ParentRotation ), "material-legacy-fixed" );

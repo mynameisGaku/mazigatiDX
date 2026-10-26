@@ -5,6 +5,7 @@
 
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Profiler/ProfilerScope.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 
 DEFINE_LOG_CATEGORY( LogAudio )
@@ -150,7 +151,7 @@ int32 CAudioSystem::AllocateSlot( int32 NewPriority )
 		const FVoice& Best = Voices[Victim];
 		if ( Candidate.Priority != Best.Priority ) { if ( Candidate.Priority < Best.Priority ) Victim = Index; continue; }
 		if ( Candidate.bLoop != Best.bLoop ) { if ( !Candidate.bLoop ) Victim = Index; continue; }
-		if ( std::fabs( Candidate.FinalVolume - Best.FinalVolume ) > ChangeEpsilon ) { if ( Candidate.FinalVolume < Best.FinalVolume ) Victim = Index; continue; }
+		if ( NMath::Abs( Candidate.FinalVolume - Best.FinalVolume ) > ChangeEpsilon ) { if ( Candidate.FinalVolume < Best.FinalVolume ) Victim = Index; continue; }
 		if ( Candidate.StartTime < Best.StartTime ) Victim = Index;
 	}
 	if ( Victim == INDEX_NONE || Voices[Victim].Priority > NewPriority ) return INDEX_NONE;
@@ -222,9 +223,9 @@ FSoundHandle CAudioSystem::Play( const TSharedPtr<CSound>& Sound, const FSoundPl
 	float32 Pitch = Params.Pitch;
 	if ( Params.VolumeVariation > 0.0f ) Volume *= 1.0f + Params.VolumeVariation * NextRandom();
 	if ( Params.PitchVariation > 0.0f ) Pitch *= 1.0f + Params.PitchVariation * NextRandom();
-	Voice.Volume.Reset( std::max( Volume, 0.0f ) );
-	Voice.Pitch.Reset( std::max( Pitch, 0.01f ) );
-	Voice.Pan.Reset( std::clamp( Params.Pan, -1.0f, 1.0f ) );
+	Voice.Volume.Reset( NMath::Max( Volume, 0.0f ) );
+	Voice.Pitch.Reset( NMath::Max( Pitch, 0.01f ) );
+	Voice.Pan.Reset( NMath::Clamp( Params.Pan, -1.0f, 1.0f ) );
 	Voice.Gain.Reset( 1.0f );
 	if ( Params.FadeInTime > 0.0f )
 	{
@@ -237,7 +238,7 @@ FSoundHandle CAudioSystem::Play( const TSharedPtr<CSound>& Sound, const FSoundPl
 	Voice.MinDistance = Params.MinDistance;
 	Voice.MaxDistance = Params.MaxDistance;
 	Voice.Rolloff = Params.Rolloff;
-	Voice.PanStrength = std::clamp( Params.SpatialPanStrength, 0.0f, 1.0f );
+	Voice.PanStrength = NMath::Clamp( Params.SpatialPanStrength, 0.0f, 1.0f );
 
 	++NumActive;
 	LastPlayTime.Add( Sound.Get(), Clock );
@@ -319,17 +320,17 @@ bool CAudioSystem::IsPlaying( FSoundHandle Handle ) const
 //=============================================================================
 void CAudioSystem::SetVolume( FSoundHandle Handle, float32 Volume, float32 FadeTime, EFadeCurve Curve )
 {
-	if ( FVoice* Voice = Resolve( Handle ) ) Voice->Volume.FadeTo( std::max( Volume, 0.0f ), FadeTime, Curve );
+	if ( FVoice* Voice = Resolve( Handle ) ) Voice->Volume.FadeTo( NMath::Max( Volume, 0.0f ), FadeTime, Curve );
 }
 
 void CAudioSystem::SetPitch( FSoundHandle Handle, float32 Pitch, float32 FadeTime, EFadeCurve Curve )
 {
-	if ( FVoice* Voice = Resolve( Handle ) ) Voice->Pitch.FadeTo( std::max( Pitch, 0.01f ), FadeTime, Curve );
+	if ( FVoice* Voice = Resolve( Handle ) ) Voice->Pitch.FadeTo( NMath::Max( Pitch, 0.01f ), FadeTime, Curve );
 }
 
 void CAudioSystem::SetPan( FSoundHandle Handle, float32 Pan, float32 FadeTime, EFadeCurve Curve )
 {
-	if ( FVoice* Voice = Resolve( Handle ) ) Voice->Pan.FadeTo( std::clamp( Pan, -1.0f, 1.0f ), FadeTime, Curve );
+	if ( FVoice* Voice = Resolve( Handle ) ) Voice->Pan.FadeTo( NMath::Clamp( Pan, -1.0f, 1.0f ), FadeTime, Curve );
 }
 
 void CAudioSystem::SetPosition( FSoundHandle Handle, const FVector3& Position )
@@ -364,7 +365,7 @@ void CAudioSystem::Resume( FSoundHandle Handle )
 //=============================================================================
 void CAudioSystem::SetBusVolume( EAudioBus Bus, float32 Volume, float32 FadeTime, EFadeCurve Curve )
 {
-	Buses[static_cast<int32>( Bus )].Volume.FadeTo( std::max( Volume, 0.0f ), FadeTime, Curve );
+	Buses[static_cast<int32>( Bus )].Volume.FadeTo( NMath::Max( Volume, 0.0f ), FadeTime, Curve );
 }
 
 float32 CAudioSystem::GetBusVolume( EAudioBus Bus ) const
@@ -512,23 +513,23 @@ void CAudioSystem::Apply( FVoice& Voice, bool bForce )
 		SpatialPan = NAudio::SpatialPan( ToSource, NAudio::ListenerRight( Listener ), Voice.PanStrength );
 	}
 
-	const float32 Volume = std::max( Voice.Volume.Value * Voice.Gain.Value * GetBusGain( Voice.Bus ) * SpatialGain, 0.0f );
-	const float32 Pan = std::clamp( Voice.Pan.Value + SpatialPan, -1.0f, 1.0f );
-	const float32 Pitch = std::max( Voice.Pitch.Value, 0.01f );
+	const float32 Volume = NMath::Max( Voice.Volume.Value * Voice.Gain.Value * GetBusGain( Voice.Bus ) * SpatialGain, 0.0f );
+	const float32 Pan = NMath::Clamp( Voice.Pan.Value + SpatialPan, -1.0f, 1.0f );
+	const float32 Pitch = NMath::Max( Voice.Pitch.Value, 0.01f );
 	Voice.FinalVolume = Volume;
 	Voice.FinalPan = Pan;
 
-	if ( bForce || std::fabs( Volume - Voice.SentVolume ) > ChangeEpsilon )
+	if ( bForce || NMath::Abs( Volume - Voice.SentVolume ) > ChangeEpsilon )
 	{
 		B->SetVolume( Voice.BackendVoice, Volume );
 		Voice.SentVolume = Volume;
 	}
-	if ( bForce || std::fabs( Pan - Voice.SentPan ) > ChangeEpsilon )
+	if ( bForce || NMath::Abs( Pan - Voice.SentPan ) > ChangeEpsilon )
 	{
 		B->SetPan( Voice.BackendVoice, Pan );
 		Voice.SentPan = Pan;
 	}
-	if ( bForce || std::fabs( Pitch - Voice.SentPitch ) > ChangeEpsilon )
+	if ( bForce || NMath::Abs( Pitch - Voice.SentPitch ) > ChangeEpsilon )
 	{
 		B->SetPitch( Voice.BackendVoice, Pitch );
 		Voice.SentPitch = Pitch;

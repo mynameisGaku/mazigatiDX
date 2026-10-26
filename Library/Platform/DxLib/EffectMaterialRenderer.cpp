@@ -8,6 +8,7 @@
 #include <d3dcompiler.h>
 
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 #include "Library/Platform/DxLib/DxLibRibbonMesh.h"
 #include "Library/Math/Matrix4x4.h"
@@ -471,7 +472,7 @@ Failed:
 	{
 		// 既存quadの位置、向き、寸法、元画像情報。
 		const FDrawQuad3DData& Quad = Data.Quad;
-		if ( ( Data.DepthTest != 0 && Data.DepthTest != 1 ) || ( Data.DepthWrite != 0 && Data.DepthWrite != 1 ) || Quad.Handle < 0 || Data.MaskTexture < -1 || !std::isfinite( Quad.Width ) || !std::isfinite( Quad.Height ) || Quad.Width <= 0.0f || Quad.Height <= 0.0f || !std::isfinite( Data.UVScale[0] ) || !std::isfinite( Data.UVScale[1] ) || !std::isfinite( Data.UVOffset[0] ) || !std::isfinite( Data.UVOffset[1] ) || !std::isfinite( Data.MaskScale ) || Data.MaskScale <= 0.0f || !std::isfinite( Data.Dissolve ) || Data.Dissolve < 0.0f || Data.Dissolve > 1.0f || !std::isfinite( Data.Emission ) || Data.Emission < 0.0f || !std::isfinite( Data.EdgeWidth ) || Data.EdgeWidth < 0.0f || !std::isfinite( Data.EdgeEmission ) || Data.EdgeEmission < 0.0f || ( Data.bDissolve != 0 && Data.bDissolve != 1 ) )
+		if ( ( Data.DepthTest != 0 && Data.DepthTest != 1 ) || ( Data.DepthWrite != 0 && Data.DepthWrite != 1 ) || Quad.Handle < 0 || Data.MaskTexture < -1 || !NMath::IsFinite( Quad.Width ) || !NMath::IsFinite( Quad.Height ) || Quad.Width <= 0.0f || Quad.Height <= 0.0f || !NMath::IsFinite( Data.UVScale[0] ) || !NMath::IsFinite( Data.UVScale[1] ) || !NMath::IsFinite( Data.UVOffset[0] ) || !NMath::IsFinite( Data.UVOffset[1] ) || !NMath::IsFinite( Data.MaskScale ) || Data.MaskScale <= 0.0f || !NMath::IsFinite( Data.Dissolve ) || Data.Dissolve < 0.0f || Data.Dissolve > 1.0f || !NMath::IsFinite( Data.Emission ) || Data.Emission < 0.0f || !NMath::IsFinite( Data.EdgeWidth ) || Data.EdgeWidth < 0.0f || !NMath::IsFinite( Data.EdgeEmission ) || Data.EdgeEmission < 0.0f || ( Data.bDissolve != 0 && Data.bDissolve != 1 ) )
 		{
 			if ( !bInvalidDataLogged ) { LOG( LogEffectMaterial, Warning, "不正な材質付き四角形を描画せずに読み飛ばしました" ); bInvalidDataLogged = true; }
 			return false;
@@ -490,7 +491,7 @@ Failed:
 		int32 BlendMode = DX_BLENDMODE_ALPHA;
 		int32 BlendParam = 255;
 		GetDrawBlendMode( &BlendMode, &BlendParam );
-		BlendParam = ( std::min )( 255, ( std::max )( 0, BlendParam ) );
+		BlendParam = NMath::Min( 255, NMath::Max( 0, BlendParam ) );
 		ID3D11BlendState* BlendState = BlendMode == DX_BLENDMODE_ALPHA ? AlphaBlend : BlendMode == DX_BLENDMODE_ADD ? AddBlend : nullptr;
 		if ( BlendState == nullptr )
 		{
@@ -536,7 +537,7 @@ Failed:
 		// DxLib native viewport変換を逆にし、logical viewportの変換だけを残す。
 		const MATRIX ApiViewportInverse = MInverse( ApiViewport );
 		MATRIX Wvp = MMult( MMult( MMult( MMult( World, View ), Projection ), Viewport ), ApiViewportInverse );
-		for ( int Row = 0; Row < 4; ++Row ) for ( int Column = 0; Column < 4; ++Column ) if ( !std::isfinite( Wvp.m[Row][Column] ) ) { Saved.Restore( Context ); return false; }
+		for ( int Row = 0; Row < 4; ++Row ) for ( int Column = 0; Column < 4; ++Column ) if ( !NMath::IsFinite( Wvp.m[Row][Column] ) ) { Saved.Restore( Context ); return false; }
 		// quad位置と既定方向を既存DrawQuad3Dと同じ基準で用意する。
 		const VECTOR Position = ArrayVector( Data.Quad.Pos );
 		VECTOR Right = ArrayVector( Data.Quad.Right );
@@ -633,7 +634,7 @@ Failed:
 		// mesh展開とshader設定へ渡すRibbon側の基本値。
 		const FDrawRibbonData& Ribbon = Data.Ribbon;
 		const FDrawMaterialRibbonData::FMaterialSettings& Material = Data.Material;
-		if ( ( Points == nullptr && DistortionPoints == nullptr ) || ( ( DistortionData == nullptr ) != ( DistortionPoints == nullptr ) ) || Ribbon.NumPoints < 2 || Ribbon.NumPoints > FDrawRibbonData::MaxPoints || Ribbon.Texture < 0 || !std::isfinite( Ribbon.UVRepeat ) || Ribbon.UVRepeat <= 0.0f || ( Material.DepthTest != 0 && Material.DepthTest != 1 ) || ( Material.DepthWrite != 0 && Material.DepthWrite != 1 ) || Material.MaskTexture < -1 || ( Material.bDissolve != 0 && Material.bDissolve != 1 ) ) return false;
+		if ( ( Points == nullptr && DistortionPoints == nullptr ) || ( ( DistortionData == nullptr ) != ( DistortionPoints == nullptr ) ) || Ribbon.NumPoints < 2 || Ribbon.NumPoints > FDrawRibbonData::MaxPoints || Ribbon.Texture < 0 || !NMath::IsFinite( Ribbon.UVRepeat ) || Ribbon.UVRepeat <= 0.0f || ( Material.DepthTest != 0 && Material.DepthTest != 1 ) || ( Material.DepthWrite != 0 && Material.DepthWrite != 1 ) || Material.MaskTexture < -1 || ( Material.bDissolve != 0 && Material.bDissolve != 1 ) ) return false;
 		// 呼び出し元の形式から既存材質部分を参照する関数。
 		const auto MaterialPoint = [&]( int32 Index ) -> const FDrawMaterialRibbonData::FPoint& { return DistortionPoints != nullptr ? DistortionPoints[Index].Material : Points[Index]; };
 		// 共通helperが作るworld位置・連続UV・三角形番号。
@@ -683,7 +684,7 @@ Failed:
 		int32 BlendMode = DX_BLENDMODE_ALPHA;
 		int32 BlendParam = 255;
 		GetDrawBlendMode( &BlendMode, &BlendParam );
-		BlendParam = ( std::min )( 255, ( std::max )( 0, BlendParam ) );
+		BlendParam = NMath::Min( 255, NMath::Max( 0, BlendParam ) );
 		// shaderへ設定するAlphaまたはAdd専用blend state。
 		ID3D11BlendState* BlendState = BlendMode == DX_BLENDMODE_ALPHA ? AlphaBlend : BlendMode == DX_BLENDMODE_ADD ? AddBlend : nullptr;
 		if ( BlendState == nullptr )
@@ -731,7 +732,7 @@ Failed:
 		const MATRIX ApiViewportInverse = MInverse( ApiViewport );
 		// 頂点shaderへ渡すview・projection・論理viewport補正の積。
 		MATRIX Wvp = MMult( MMult( MMult( View, Projection ), Viewport ), ApiViewportInverse );
-		for ( int Row = 0; Row < 4; ++Row ) for ( int Column = 0; Column < 4; ++Column ) if ( !std::isfinite( Wvp.m[Row][Column] ) ) { Saved.Restore( Context ); return false; }
+		for ( int Row = 0; Row < 4; ++Row ) for ( int Column = 0; Column < 4; ++Column ) if ( !NMath::IsFinite( Wvp.m[Row][Column] ) ) { Saved.Restore( Context ); return false; }
 		// 派生画像のsource/mask領域とfilter端の漏れを避ける幅。
 		float32 SourceRect[4] = {}, SourceInset[4] = {}, MaskRect[4] = { 1.0f, 1.0f, 0.0f, 0.0f }, MaskInset[4] = {}, DistortionRect[4] = { 1.0f, 1.0f, 0.0f, 0.0f }, DistortionInset[4] = {};
 		if ( !GetGraphUvMapping( Ribbon.Texture, SourceRect, SourceInset ) || ( Material.MaskTexture >= 0 && !GetGraphUvMapping( Material.MaskTexture, MaskRect, MaskInset ) ) || ( DistortionData != nullptr && !GetGraphUvMapping( DistortionData->DistortionTexture, DistortionRect, DistortionInset ) ) ) { Saved.Restore( Context ); return false; }
@@ -808,7 +809,7 @@ Failed:
 		// callerが設定した合成の強さ。
 		int32 BlendParam = 255;
 		GetDrawBlendMode( &BlendMode, &BlendParam );
-		BlendParam = ( std::min )( 255, ( std::max )( 0, BlendParam ) );
+		BlendParam = NMath::Min( 255, NMath::Max( 0, BlendParam ) );
 		// 対応するalpha/add用native state。
 		ID3D11BlendState* BlendState = BlendMode == DX_BLENDMODE_ALPHA ? AlphaBlend : BlendMode == DX_BLENDMODE_ADD ? AddBlend : nullptr;
 		if ( BlendState == nullptr )
@@ -862,7 +863,7 @@ Failed:
 		// shaderへ送るworld座標からclip座標への変換。
 		MATRIX Wvp = MMult( MMult( MMult( View, Projection ), Viewport ), ApiViewportInverse );
 		if ( World != nullptr ) Wvp = MMult( static_cast<MATRIX>( *World ), Wvp );
-		for ( int Row = 0; Row < 4; ++Row ) for ( int Column = 0; Column < 4; ++Column ) if ( !std::isfinite( Wvp.m[Row][Column] ) ) { Saved.Restore( Context ); return false; }
+		for ( int Row = 0; Row < 4; ++Row ) for ( int Column = 0; Column < 4; ++Column ) if ( !NMath::IsFinite( Wvp.m[Row][Column] ) ) { Saved.Restore( Context ); return false; }
 		// source・mask・noise graph領域をbase texture内へ写す値。
 		// 元画像のbase内矩形と半texel幅。
 		float32 SourceRect[4] = {}, SourceInset[4] = {}, MaskRect[4] = { 1.0f, 1.0f, 0.0f, 0.0f }, MaskInset[4] = {}, DistortionRect[4] = { 1.0f, 1.0f, 0.0f, 0.0f }, DistortionInset[4] = {};
@@ -1002,14 +1003,14 @@ Failed:
 		GetTransformToViewMatrix( &View ); GetTransformToProjectionMatrix( &Projection ); GetTransformToViewportMatrix( &Viewport ); GetTransformToAPIViewportMatrix( &ApiViewport );
 		MATRIX Wvp = MMult( MMult( MMult( View, Projection ), Viewport ), MInverse( ApiViewport ) );
 		if ( World != nullptr ) Wvp = MMult( static_cast<MATRIX>( *World ), Wvp );
-		for ( int32 Row = 0; Row < 4; ++Row ) for ( int32 Column = 0; Column < 4; ++Column ) if ( !std::isfinite( Wvp.m[Row][Column] ) ) return false;
+		for ( int32 Row = 0; Row < 4; ++Row ) for ( int32 Column = 0; Column < 4; ++Column ) if ( !NMath::IsFinite( Wvp.m[Row][Column] ) ) return false;
 		return true;
 	}
 
 	// 元モデルのローカル形状を個体行列とalpha倍率で描く。
 	bool DrawModelMesh( const FDrawMaterialMeshData& Data, const FMeshVertex* SourceVertices, const uint32* Indices, const FMatrix4x4& World, int32 NativeCull, float32 Opacity )
 	{
-		if ( SourceVertices == nullptr || Indices == nullptr || !std::isfinite( Opacity ) || Opacity < 0.0f || Opacity > 1.0f || ( NativeCull != DX_CULLING_LEFT && NativeCull != DX_CULLING_RIGHT && NativeCull != DX_CULLING_NONE ) ) return false;
+		if ( SourceVertices == nullptr || Indices == nullptr || !NMath::IsFinite( Opacity ) || Opacity < 0.0f || Opacity > 1.0f || ( NativeCull != DX_CULLING_LEFT && NativeCull != DX_CULLING_RIGHT && NativeCull != DX_CULLING_NONE ) ) return false;
 		return DrawMeshInternal( Data, SourceVertices, Indices, false, &World, NativeCull, Opacity, true );
 	}
 

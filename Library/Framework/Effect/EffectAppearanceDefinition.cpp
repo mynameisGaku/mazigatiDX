@@ -6,6 +6,9 @@
 #include <limits>
 #include <utility>
 
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
+
 namespace
 {
 	// FNV-1a へ値のバイトだけを加える。
@@ -27,7 +30,7 @@ float32 FEffectAppearanceDefinition::EvaluateSizeScale( float32 Time ) const
 	// 曲線評価を 0..32 に制限し、直接壊れた定義も有限値にする。
 	// 寿命位置の大きさ倍率。
 	const float32 Value = Size.Evaluate( Time, 1.0f );
-	return std::isfinite( Value ) ? std::clamp( Value, 0.0f, 32.0f ) : 1.0f;
+	return NMath::IsFinite( Value ) ? NMath::Clamp( Value, 0.0f, 32.0f ) : 1.0f;
 }
 
 FColor FEffectAppearanceDefinition::EvaluateColorScale( float32 Time ) const
@@ -35,7 +38,7 @@ FColor FEffectAppearanceDefinition::EvaluateColorScale( float32 Time ) const
 	// 曲線評価を RGBA ごとに 0..1 へ収める。
 	// 寿命位置の RGBA 倍率。
 	const FColor Value = Color.Evaluate( Time, FColor::White );
-	return FColor( std::isfinite( Value.r ) ? std::clamp( Value.r, 0.0f, 1.0f ) : 1.0f, std::isfinite( Value.g ) ? std::clamp( Value.g, 0.0f, 1.0f ) : 1.0f, std::isfinite( Value.b ) ? std::clamp( Value.b, 0.0f, 1.0f ) : 1.0f, std::isfinite( Value.a ) ? std::clamp( Value.a, 0.0f, 1.0f ) : 1.0f );
+	return FColor( NMath::IsFinite( Value.r ) ? NMath::Clamp( Value.r, 0.0f, 1.0f ) : 1.0f, NMath::IsFinite( Value.g ) ? NMath::Clamp( Value.g, 0.0f, 1.0f ) : 1.0f, NMath::IsFinite( Value.b ) ? NMath::Clamp( Value.b, 0.0f, 1.0f ) : 1.0f, NMath::IsFinite( Value.a ) ? NMath::Clamp( Value.a, 0.0f, 1.0f ) : 1.0f );
 }
 
 NlohmannJson FEffectAppearanceDefinition::ToJson() const
@@ -74,7 +77,7 @@ bool FEffectAppearanceDefinition::FromJson( const NlohmannJson& Json, FEffectApp
 		}
 		for ( const FString& Warning : CurveWarnings ) if ( Warnings != nullptr ) Warnings->Add( FString( "Color: " ) + Warning );
 	}
-	Out = std::move( Appearance );
+	Out = MoveTemp( Appearance );
 	return true;
 }
 
@@ -83,7 +86,7 @@ TArray<FString> FEffectAppearanceDefinition::Validate() const
 	// 見つかった表示倍率の問題。
 	TArray<FString> Issues;
 	for ( const FString& Issue : Size.Validate() ) Issues.Add( FString( "Size: " ) + Issue );
-	for ( const FEffectScalarCurve::FKey& Key : Size.Keys ) if ( std::isfinite( Key.Value ) && ( Key.Value < 0.0f || Key.Value > 32.0f ) ) Issues.Add( "Size の値は 0 から 32 にしてください" );
+	for ( const FEffectScalarCurve::FKey& Key : Size.Keys ) if ( NMath::IsFinite( Key.Value ) && ( Key.Value < 0.0f || Key.Value > 32.0f ) ) Issues.Add( "Size の値は 0 から 32 にしてください" );
 	for ( const FString& Issue : Color.Validate() ) Issues.Add( FString( "Color: " ) + Issue );
 	return Issues;
 }

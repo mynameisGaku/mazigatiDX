@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Render/MeshRender.h"
 #include "Library/Framework/World/Mesh/EditMeshBuild.h"
@@ -123,13 +124,13 @@ namespace
 	// 許容誤差内で画素のRGBが既知色に一致するか調べる。
 	bool IsMeshMaterialColorNear( const FColor32& Actual, const FColor32& Expected, int32 Tolerance )
 	{
-		return std::abs( static_cast<int32>( Actual.r ) - Expected.r ) <= Tolerance && std::abs( static_cast<int32>( Actual.g ) - Expected.g ) <= Tolerance && std::abs( static_cast<int32>( Actual.b ) - Expected.b ) <= Tolerance;
+		return NMath::Abs( static_cast<int32>( Actual.r ) - Expected.r ) <= Tolerance && NMath::Abs( static_cast<int32>( Actual.g ) - Expected.g ) <= Tolerance && NMath::Abs( static_cast<int32>( Actual.b ) - Expected.b ) <= Tolerance;
 	}
 
 	// 背景色と比べ、既知のmesh pixelが描かれた強さを返す。
 	int32 MeshMaterialColorDistance( const FColor32& Actual, const FColor32& Background )
 	{
-		return std::abs( static_cast<int32>( Actual.r ) - Background.r ) + std::abs( static_cast<int32>( Actual.g ) - Background.g ) + std::abs( static_cast<int32>( Actual.b ) - Background.b );
+		return NMath::Abs( static_cast<int32>( Actual.r ) - Background.r ) + NMath::Abs( static_cast<int32>( Actual.g ) - Background.g ) + NMath::Abs( static_cast<int32>( Actual.b ) - Background.b );
 	}
 
 	// 画面内の中央64x64領域から安定した比較用画素を取得する。
@@ -335,7 +336,7 @@ void NWorldTest::RunMeshMaterialRealTests( NAssetTest::FChecker& C, CAssetManage
 	const FVector3 ExpectedPosition = ExpectedTransform.TransformPoint( FVector3( LocalBuild.Vertices[0].Position[0], LocalBuild.Vertices[0].Position[1], LocalBuild.Vertices[0].Position[2] ) );
 	const FVector3 ExpectedNormal( LocalBuild.Vertices[0].Normal[0], LocalBuild.Vertices[0].Normal[1], LocalBuild.Vertices[0].Normal[2] );
 	const FVector3 ExpectedWorldNormal = FVector3( 0.0f, 0.0f, ExpectedNormal.z / ExpectedTransform.Scale.z ).Normalized();
-	C.Check( bReadTransform && bRecordedRegularCulling && std::abs( FirstVertex.Position[0] - ExpectedPosition.x ) < 1.0e-5f && std::abs( FirstVertex.Position[1] - ExpectedPosition.y ) < 1.0e-5f && std::abs( FirstVertex.Position[2] - ExpectedPosition.z ) < 1.0e-5f && std::abs( FirstVertex.Normal[0] - ExpectedWorldNormal.x ) < 1.0e-5f && std::abs( FirstVertex.Normal[1] - ExpectedWorldNormal.y ) < 1.0e-5f && std::abs( FirstVertex.Normal[2] - ExpectedWorldNormal.z ) < 1.0e-5f, "全XYZ位置とinverse-scale法線が負・非一様・zero scaleで一致: got p=%.3f,%.3f,%.3f n=%.3f,%.3f,%.3f expected p=%.3f,%.3f,%.3f n=%.3f,%.3f,%.3f", FirstVertex.Position[0], FirstVertex.Position[1], FirstVertex.Position[2], FirstVertex.Normal[0], FirstVertex.Normal[1], FirstVertex.Normal[2], ExpectedPosition.x, ExpectedPosition.y, ExpectedPosition.z, ExpectedWorldNormal.x, ExpectedWorldNormal.y, ExpectedWorldNormal.z );
+	C.Check( bReadTransform && bRecordedRegularCulling && NMath::Abs( FirstVertex.Position[0] - ExpectedPosition.x ) < 1.0e-5f && NMath::Abs( FirstVertex.Position[1] - ExpectedPosition.y ) < 1.0e-5f && NMath::Abs( FirstVertex.Position[2] - ExpectedPosition.z ) < 1.0e-5f && NMath::Abs( FirstVertex.Normal[0] - ExpectedWorldNormal.x ) < 1.0e-5f && NMath::Abs( FirstVertex.Normal[1] - ExpectedWorldNormal.y ) < 1.0e-5f && NMath::Abs( FirstVertex.Normal[2] - ExpectedWorldNormal.z ) < 1.0e-5f, "全XYZ位置とinverse-scale法線が負・非一様・zero scaleで一致: got p=%.3f,%.3f,%.3f n=%.3f,%.3f,%.3f expected p=%.3f,%.3f,%.3f n=%.3f,%.3f,%.3f", FirstVertex.Position[0], FirstVertex.Position[1], FirstVertex.Position[2], FirstVertex.Normal[0], FirstVertex.Normal[1], FirstVertex.Normal[2], ExpectedPosition.x, ExpectedPosition.y, ExpectedPosition.z, ExpectedWorldNormal.x, ExpectedWorldNormal.y, ExpectedWorldNormal.z );
 
 	// effect停止後のMesh3D flagも同じ材質slotの片面・両面指定を保つ。
 	FEditMesh OneSidedMesh = TransformMesh; OneSidedMesh.Materials[0].bTwoSided = false;

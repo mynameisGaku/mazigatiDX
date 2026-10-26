@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/MeshBuffer.h"
 #include "Library/Framework/Render/DrawContext.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
@@ -484,7 +485,7 @@ void NWorldTest::RunEffectMaterialMeshRealTests( NAssetTest::FChecker& C, IDrawE
 	const FColor32 VertexAlphaPixel = Pixel( 48, 64 );
 	Render( Data, ColoredVertices, Indices, nullptr, nullptr, EDrawBlend::Add );
 	const FColor32 VertexAddPixel = Pixel( 48, 64 );
-	C.Check( std::abs( static_cast<int32>( VertexAlphaPixel.r ) - 70 ) <= 7 && std::abs( static_cast<int32>( VertexAlphaPixel.g ) - 38 ) <= 7 && std::abs( static_cast<int32>( VertexAlphaPixel.b ) - 22 ) <= 7 && std::abs( static_cast<int32>( VertexAddPixel.r ) - 76 ) <= 7 && std::abs( static_cast<int32>( VertexAddPixel.g ) - 44 ) <= 7 && std::abs( static_cast<int32>( VertexAddPixel.b ) - 28 ) <= 7, "頂点RGBAとalpha/add合成は既知背景12・source128/64/32から独立期待値になる (alpha=%d,%d,%d add=%d,%d,%d)", VertexAlphaPixel.r, VertexAlphaPixel.g, VertexAlphaPixel.b, VertexAddPixel.r, VertexAddPixel.g, VertexAddPixel.b );
+	C.Check( NMath::Abs( static_cast<int32>( VertexAlphaPixel.r ) - 70 ) <= 7 && NMath::Abs( static_cast<int32>( VertexAlphaPixel.g ) - 38 ) <= 7 && NMath::Abs( static_cast<int32>( VertexAlphaPixel.b ) - 22 ) <= 7 && NMath::Abs( static_cast<int32>( VertexAddPixel.r ) - 76 ) <= 7 && NMath::Abs( static_cast<int32>( VertexAddPixel.g ) - 44 ) <= 7 && NMath::Abs( static_cast<int32>( VertexAddPixel.b ) - 28 ) <= 7, "頂点RGBAとalpha/add合成は既知背景12・source128/64/32から独立期待値になる (alpha=%d,%d,%d add=%d,%d,%d)", VertexAlphaPixel.r, VertexAlphaPixel.g, VertexAlphaPixel.b, VertexAddPixel.r, VertexAddPixel.g, VertexAddPixel.b );
 	Data.Texture = DimGraph;
 	// 四角い穴を持つringの頂点配列と24個の三角形index。
 	FMeshVertex RingVertices[8]{};
@@ -712,7 +713,7 @@ void NWorldTest::RunEffectMaterialMeshRealTests( NAssetTest::FChecker& C, IDrawE
 	C.Check( AfterLateIndex.first.r < 20 && AfterLateIndex.first.g < 20 && AfterLateIndex.second.b > 150 && AfterLateIndex.second.r < 60, "後半index違反の左meshを拒否し右の正常meshを描く (left=%d,%d,%d right=%d,%d,%d)", AfterLateIndex.first.r, AfterLateIndex.first.g, AfterLateIndex.first.b, AfterLateIndex.second.r, AfterLateIndex.second.g, AfterLateIndex.second.b );
 	// 最後の頂点位置をNaNにし、先頭triangleが部分描画されないことを確かめる。
 	std::vector<uint32> NonFiniteVertexCommand = InvalidBuffer.Words;
-	const float32 InvalidPosition = std::numeric_limits<float32>::quiet_NaN();
+	const float32 InvalidPosition = TNumericLimits<float32>::QuietNaN();
 	const size_t LastVertexPositionWord = MeshDataOffset + FixedMeshWords + 3 * ( sizeof( FMeshVertex ) / 4 );
 	std::memcpy( NonFiniteVertexCommand.data() + LastVertexPositionWord, &InvalidPosition, sizeof( InvalidPosition ) );
 	const auto AfterNonFiniteVertex = RenderMalformedThenValid( NonFiniteVertexCommand );

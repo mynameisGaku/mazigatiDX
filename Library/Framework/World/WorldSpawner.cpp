@@ -2,6 +2,8 @@
 
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Asset/WorldAsset.h"
 #include "Library/Framework/Component/TransformComponent.h"
@@ -30,14 +32,14 @@ void FWorldBindings::Add( const FString& Tag, FWorldBindFactory Factory )
 	{
 		if ( Entry.Tag == Tag )
 		{
-			Entry.Factory = std::move( Factory );
+			Entry.Factory = MoveTemp( Factory );
 			return;
 		}
 	}
 	FEntry Entry;
 	Entry.Tag = Tag;
-	Entry.Factory = std::move( Factory );
-	Entries.Add( std::move( Entry ) );
+	Entry.Factory = MoveTemp( Factory );
+	Entries.Add( MoveTemp( Entry ) );
 }
 
 const FWorldBindFactory* FWorldBindings::Find( const FString& Tag ) const
@@ -58,14 +60,14 @@ void FWorldSpawnerRegistry::Add( const FString& Name, FWorldComponentSpawner Spa
 	{
 		if ( Entry.Name == Name )
 		{
-			Entry.Spawner = std::move( Spawner );
+			Entry.Spawner = MoveTemp( Spawner );
 			return;
 		}
 	}
 	FEntry Entry;
 	Entry.Name = Name;
-	Entry.Spawner = std::move( Spawner );
-	Entries.Add( std::move( Entry ) );
+	Entry.Spawner = MoveTemp( Spawner );
+	Entries.Add( MoveTemp( Entry ) );
 }
 
 bool FWorldSpawnerRegistry::Remove( const FString& Name )
@@ -111,7 +113,7 @@ void FWorldInstance::AddPlaceholder( int32 ObjectId, const TSharedPtr<CGameObjec
 	FEntry Entry;
 	Entry.ObjectId = ObjectId;
 	Entry.Placeholder = Placeholder;
-	Entries.Add( std::move( Entry ) );
+	Entries.Add( MoveTemp( Entry ) );
 }
 
 void FWorldInstance::AddNested( int32 HostId, const TSharedPtr<FWorldInstance>& Instance )
@@ -119,7 +121,7 @@ void FWorldInstance::AddNested( int32 HostId, const TSharedPtr<FWorldInstance>& 
 	FNestedEntry Entry;
 	Entry.HostId = HostId;
 	Entry.Instance = Instance;
-	Nested.Add( std::move( Entry ) );
+	Nested.Add( MoveTemp( Entry ) );
 }
 
 const FWorldInstance* FWorldInstance::FindNested( int32 HostId ) const
@@ -139,7 +141,7 @@ void FWorldInstance::AddBound( int32 ObjectId, const FString& Tag, const TShared
 		FBound Bound;
 		Bound.Tag = Tag;
 		Bound.Object = Object;
-		Entry.Bound.Add( std::move( Bound ) );
+		Entry.Bound.Add( MoveTemp( Bound ) );
 		return;
 	}
 }
@@ -350,7 +352,7 @@ FWorldInstance NWorld::Spawn( CScene& Scene, const TSharedPtr<FWorldDefinition>&
 		CEffectComponent* Effect = Owner->Get()->GetComponent<CEffectComponent>();
 		if ( Effect == nullptr ) continue;
 		TSharedPtr<CGameObject>* Target = Spec.Target != Object.Id ? Placed.Find( Spec.Target ) : nullptr;
-		const bool bOffsetFinite = std::isfinite( Spec.TargetOffset.x ) && std::isfinite( Spec.TargetOffset.y ) && std::isfinite( Spec.TargetOffset.z );
+		const bool bOffsetFinite = NMath::IsFinite( Spec.TargetOffset.x ) && NMath::IsFinite( Spec.TargetOffset.y ) && NMath::IsFinite( Spec.TargetOffset.z );
 		if ( Target == nullptr || !Target->IsValid() || !bOffsetFinite )
 		{
 			const FString Message = FString::Printf( "world object #%d ('%s'): the effect's target #%d is the object itself, was not placed, or has an offset that is not finite; the end stays at its fallback", Object.Id, *Object.Name, Spec.Target );

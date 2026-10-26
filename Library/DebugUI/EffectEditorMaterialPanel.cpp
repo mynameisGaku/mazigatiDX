@@ -6,6 +6,7 @@
 #include <cmath>
 
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Effect/ParticleEffect.h"
@@ -60,10 +61,10 @@ namespace
 			float32 EdgeColor[4] = { Material.EdgeColor.r / 255.0f, Material.EdgeColor.g / 255.0f, Material.EdgeColor.b / 255.0f, Material.EdgeColor.a / 255.0f }; // 境界色の4成分。
 			const bool bEdgeColorChanged = ImGui::ColorEdit4( "Edge color", EdgeColor ); // 実際に色の入力が変わったか。
 			bool bEdgeColorFinite = true; // 4成分を整数色へ安全に変換できるか。
-			for ( const float32 Channel : EdgeColor ) if ( !std::isfinite( Channel ) ) bEdgeColorFinite = false;
+			for ( const float32 Channel : EdgeColor ) if ( !NMath::IsFinite( Channel ) ) bEdgeColorFinite = false;
 			if ( TrackInputEnd( bEdgeColorChanged, State.Document ) && bEdgeColorFinite )
 			{
-				Material.EdgeColor = FColor32( static_cast<uint8>( std::clamp( EdgeColor[0], 0.0f, 1.0f ) * 255.0f + 0.5f ), static_cast<uint8>( std::clamp( EdgeColor[1], 0.0f, 1.0f ) * 255.0f + 0.5f ), static_cast<uint8>( std::clamp( EdgeColor[2], 0.0f, 1.0f ) * 255.0f + 0.5f ), static_cast<uint8>( std::clamp( EdgeColor[3], 0.0f, 1.0f ) * 255.0f + 0.5f ) );
+				Material.EdgeColor = FColor32( static_cast<uint8>( NMath::Clamp( EdgeColor[0], 0.0f, 1.0f ) * 255.0f + 0.5f ), static_cast<uint8>( NMath::Clamp( EdgeColor[1], 0.0f, 1.0f ) * 255.0f + 0.5f ), static_cast<uint8>( NMath::Clamp( EdgeColor[2], 0.0f, 1.0f ) * 255.0f + 0.5f ), static_cast<uint8>( NMath::Clamp( EdgeColor[3], 0.0f, 1.0f ) * 255.0f + 0.5f ) );
 				bChanged = true;
 			}
 			bChanged |= TrackInputEnd( ImGui::DragFloat( "Edge emission", &Material.EdgeEmission, 0.01f, 0.0f, 32.0f, "%.9g", ImGuiSliderFlags_AlwaysClamp ), State.Document );
@@ -96,27 +97,27 @@ namespace
 		bChanged |= TrackInputEnd( NDebugUI::InputString( "Noise path", Distortion.Texture ), State.Document );
 		ImGui::TextWrapped( "Red and green channels encode horizontal and vertical flow." );
 		// 二成分とも有限値なら保存範囲へ収めて表示する。
-		const bool bFiniteScale = std::isfinite( Distortion.UVScale.x ) && std::isfinite( Distortion.UVScale.y );
+		const bool bFiniteScale = NMath::IsFinite( Distortion.UVScale.x ) && NMath::IsFinite( Distortion.UVScale.y );
 		// 不正値をImGuiへ渡さない一時的な横・縦倍率。
-		float32 UVScale[2] = { bFiniteScale ? std::clamp( Distortion.UVScale.x, 0.001f, 128.0f ) : 1.0f, bFiniteScale ? std::clamp( Distortion.UVScale.y, 0.001f, 128.0f ) : 1.0f };
+		float32 UVScale[2] = { bFiniteScale ? NMath::Clamp( Distortion.UVScale.x, 0.001f, 128.0f ) : 1.0f, bFiniteScale ? NMath::Clamp( Distortion.UVScale.y, 0.001f, 128.0f ) : 1.0f };
 		if ( !Distortion.IsValidSettings() ) TextWarningWrapped( "Invalid distortion values; edit the fields or reset distortion." );
 		if ( TrackInputEnd( ImGui::DragFloat2( "Distortion scale", UVScale, 0.01f, 0.001f, 128.0f, "%.6g", ImGuiSliderFlags_AlwaysClamp ), State.Document ) )
 		{
-			if ( std::isfinite( UVScale[0] ) && std::isfinite( UVScale[1] ) )
+			if ( NMath::IsFinite( UVScale[0] ) && NMath::IsFinite( UVScale[1] ) )
 			{
-				Distortion.UVScale = FVector2( std::clamp( UVScale[0], 0.001f, 128.0f ), std::clamp( UVScale[1], 0.001f, 128.0f ) );
+				Distortion.UVScale = FVector2( NMath::Clamp( UVScale[0], 0.001f, 128.0f ), NMath::Clamp( UVScale[1], 0.001f, 128.0f ) );
 				bChanged = true;
 			}
 		}
 		// 二成分とも有限値なら範囲内で表示する移動速度。
-		const bool bFiniteScroll = std::isfinite( Distortion.UVScroll.x ) && std::isfinite( Distortion.UVScroll.y );
+		const bool bFiniteScroll = NMath::IsFinite( Distortion.UVScroll.x ) && NMath::IsFinite( Distortion.UVScroll.y );
 		// 不正値をImGuiへ渡さない一時的な横・縦移動量。
-		float32 UVScroll[2] = { bFiniteScroll ? std::clamp( Distortion.UVScroll.x, -128.0f, 128.0f ) : 0.0f, bFiniteScroll ? std::clamp( Distortion.UVScroll.y, -128.0f, 128.0f ) : 0.0f };
+		float32 UVScroll[2] = { bFiniteScroll ? NMath::Clamp( Distortion.UVScroll.x, -128.0f, 128.0f ) : 0.0f, bFiniteScroll ? NMath::Clamp( Distortion.UVScroll.y, -128.0f, 128.0f ) : 0.0f };
 		if ( TrackInputEnd( ImGui::DragFloat2( "Distortion scroll / second", UVScroll, 0.01f, -128.0f, 128.0f, "%.6g", ImGuiSliderFlags_AlwaysClamp ), State.Document ) )
 		{
-			if ( std::isfinite( UVScroll[0] ) && std::isfinite( UVScroll[1] ) )
+			if ( NMath::IsFinite( UVScroll[0] ) && NMath::IsFinite( UVScroll[1] ) )
 			{
-				Distortion.UVScroll = FVector2( std::clamp( UVScroll[0], -128.0f, 128.0f ), std::clamp( UVScroll[1], -128.0f, 128.0f ) );
+				Distortion.UVScroll = FVector2( NMath::Clamp( UVScroll[0], -128.0f, 128.0f ), NMath::Clamp( UVScroll[1], -128.0f, 128.0f ) );
 				bChanged = true;
 			}
 		}

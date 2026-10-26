@@ -5,6 +5,8 @@
 #include <cmath>
 #include <utility>
 
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Asset/SpriteSheet.h"
 
@@ -20,7 +22,7 @@ namespace
 	const TArray<FString> DefinitionIssues = Definition.Validate();
 		if ( !DefinitionIssues.IsEmpty() ) return Fail( *DefinitionIssues[0] );
 		if ( Definition.TimeMode != FEffectFlipbookDefinition::ETimeMode::Lifetime && Definition.TimeMode != FEffectFlipbookDefinition::ETimeMode::Seconds ) return Fail( "再生時間の種類が不正です" );
-		if ( Definition.TimeMode == FEffectFlipbookDefinition::ETimeMode::Seconds && ( !std::isfinite( Definition.Speed ) || Definition.Speed < 0.0f || Definition.Speed > 128.0f ) ) return Fail( "秒時計の速度は0から128の範囲で指定してください" );
+		if ( Definition.TimeMode == FEffectFlipbookDefinition::ETimeMode::Seconds && ( !NMath::IsFinite( Definition.Speed ) || Definition.Speed < 0.0f || Definition.Speed > 128.0f ) ) return Fail( "秒時計の速度は0から128の範囲で指定してください" );
 		OutSheet = Assets.LoadSpriteSheet( Definition.Sheet, false );
 	if ( !OutSheet.IsValid() || !OutSheet->IsReady() || !OutSheet->GetTexture().IsValid() || !OutSheet->GetTexture()->IsReady() ) return Fail( "スプライトシートまたは元画像を読み込めません" );
 	// sheetが所有するclipと元画像参照を読む定義。
@@ -47,10 +49,10 @@ namespace
 			const FSpriteFrame* Frame = OutSheet->GetFrame( FrameIndex );
 			if ( Frame == nullptr || Frame->X < 0 || Frame->Y < 0 || Frame->Width <= 0 || Frame->Height <= 0 || static_cast<int64>( Frame->X ) + Frame->Width > TextureWidth || static_cast<int64>( Frame->Y ) + Frame->Height > TextureHeight ) return Fail( "クリップに無効な矩形、または画像の外に出るコマがあります" );
 			// 明示durationが無い段だけ、有限正のFpsから秒数を求める。
-		if ( !Clip.Durations.IsValidIndex( Step ) && ( !std::isfinite( Clip.Fps ) || Clip.Fps <= 0.0f ) ) return Fail( "コマ時間かFPSのどちらかを有限の正数にしてください" );
+		if ( !Clip.Durations.IsValidIndex( Step ) && ( !NMath::IsFinite( Clip.Fps ) || Clip.Fps <= 0.0f ) ) return Fail( "コマ時間かFPSのどちらかを有限の正数にしてください" );
 		// 明示durationは値をそのまま検証し、不正値を既定時間へ置き換えない。
 		const float32 Duration = Clip.Durations.IsValidIndex( Step ) ? Clip.Durations[Step] : 1.0f / Clip.Fps;
-			if ( !std::isfinite( Duration ) || Duration <= 0.0f ) return Fail( "コマの表示時間は有限の正数にしてください" );
+			if ( !NMath::IsFinite( Duration ) || Duration <= 0.0f ) return Fail( "コマの表示時間は有限の正数にしてください" );
 			OutFrames.Add( *Frame );
 			OutDurations.Add( Duration );
 		}
@@ -110,7 +112,7 @@ bool NEffectFlipbook::BuildFrames( const FEffectFlipbookDefinition& Definition, 
 		}
 		Built.Frames.Add( Region );
 	}
-	Out = std::move( Built );
+	Out = MoveTemp( Built );
 	if ( OutError != nullptr ) OutError->Reset();
 	return true;
 }

@@ -7,6 +7,8 @@
 #include <utility>
 
 #include "Library/Core/Interfaces/Render/DrawMaterialRibbon.h"
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/DebugUI/EffectEditor.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Effect/ParticleEffectBackend.h"
@@ -43,7 +45,7 @@ namespace
 			Item.Header = Header;
 			Item.Points.SetNum( Header.Ribbon.NumPoints );
 			std::memcpy( Item.Points.GetData(), reinterpret_cast<const uint8*>( Command.Data ) + sizeof( Header ), static_cast<usize>( Item.Points.Num() ) * sizeof( FDrawMaterialRibbonData::FPoint ) );
-			Result.Add( std::move( Item ) );
+			Result.Add( MoveTemp( Item ) );
 		} );
 		return Result;
 	}
@@ -215,7 +217,7 @@ void NWorldTest::RunEffectTreeLightningPlaybackTests( NAssetTest::FChecker& C, C
 		// Age .1秒、寿命2秒における独立な線形消失期待値。
 		const float32 ExpectedDissolve = 0.2f + ( 0.8f - 0.2f ) * ( 0.1f / 2.0f );
 		C.Check( First.Header.Material.bDissolve == 0 && First.Header.Ribbon.Texture >= 0 && First.Points.Num() >= 2, "材質設定とTexture付き点列が所有payloadへ記録される" );
-		C.Check( std::fabs( First.Points[0].Dissolve - ExpectedDissolve ) < 1.0e-4f && std::fabs( First.Points[0].Emission - ( 1.0f + 0.5f * ( 0.1f / 2.0f ) ) ) < 1.0e-4f && std::fabs( First.Points[0].UVOffset[0] - 0.025f ) < 1.0e-4f && std::fabs( First.Points[0].UVOffset[1] + 0.0125f ) < 1.0e-4f, "点ごとの消失・発光・UV移動は粒子Ageから独立した値として記録される" );
+		C.Check( NMath::Abs( First.Points[0].Dissolve - ExpectedDissolve ) < 1.0e-4f && NMath::Abs( First.Points[0].Emission - ( 1.0f + 0.5f * ( 0.1f / 2.0f ) ) ) < 1.0e-4f && NMath::Abs( First.Points[0].UVOffset[0] - 0.025f ) < 1.0e-4f && NMath::Abs( First.Points[0].UVOffset[1] + 0.0125f ) < 1.0e-4f, "点ごとの消失・発光・UV移動は粒子Ageから独立した値として記録される" );
 	}
 	// Alpha/Addのblend命令と材質Ribbonの生色・alphaを個別に比較する。
 	for ( int32 BlendIndex = 0; BlendIndex < 2; ++BlendIndex )
@@ -267,7 +269,7 @@ void NWorldTest::RunEffectTreeLightningPlaybackTests( NAssetTest::FChecker& C, C
 		bFullPayloadPresent = bFullPayloadPresent && !Ribbon.Points.IsEmpty();
 		for ( const FDrawMaterialRibbonData::FPoint& Point : Ribbon.Points )
 		{
-			bFullPointValuesMatch = bFullPointValuesMatch && std::fabs( Point.Dissolve - ExpectedFullDissolve ) < 1.0e-4f && std::fabs( Point.Emission - ExpectedFullEmission ) < 1.0e-4f && std::fabs( Point.UVOffset[0] - ExpectedFullUvX ) < 1.0e-4f && std::fabs( Point.UVOffset[1] - ExpectedFullUvY ) < 1.0e-4f;
+			bFullPointValuesMatch = bFullPointValuesMatch && NMath::Abs( Point.Dissolve - ExpectedFullDissolve ) < 1.0e-4f && NMath::Abs( Point.Emission - ExpectedFullEmission ) < 1.0e-4f && NMath::Abs( Point.UVOffset[0] - ExpectedFullUvX ) < 1.0e-4f && NMath::Abs( Point.UVOffset[1] - ExpectedFullUvY ) < 1.0e-4f;
 		}
 	}
 	C.Check( bFullPayloadPresent, "完成形は14本の幹・枝material strokeが点payloadを持つ (commands=%d)", Full.Num() );
@@ -361,11 +363,11 @@ void NWorldTest::RunEffectTreeLightningPlaybackTests( NAssetTest::FChecker& C, C
 					// 差分からchord方向の移動だけを除いた横ずれ。
 					const float32 Along = ( Delta.x * Chord.x + Delta.y * Chord.y + Delta.z * Chord.z ) / ChordSquared;
 					const FVector3 Lateral( Delta.x - Chord.x * Along, Delta.y - Chord.y * Along, Delta.z - Chord.z * Along );
-					MaxLateralDifference = std::max( MaxLateralDifference, Lateral.Length() );
+					MaxLateralDifference = NMath::Max( MaxLateralDifference, Lateral.Length() );
 				}
 			}
 			// 同じ始終点を保ちつつseed由来の幹屈曲が十分変わるか。
-			const bool bSameEndpoints = TrunkZero.Num() == TrunkOne.Num() && std::fabs( TrunkZero[0].Path.Pos[0] - TrunkOne[0].Path.Pos[0] ) < 1.0e-5f && std::fabs( TrunkZero[0].Path.Pos[1] - TrunkOne[0].Path.Pos[1] ) < 1.0e-5f && std::fabs( TrunkZero[0].Path.Pos[2] - TrunkOne[0].Path.Pos[2] ) < 1.0e-5f && std::fabs( TrunkZero[TrunkZero.Num() - 1].Path.Pos[0] - TrunkOne[TrunkOne.Num() - 1].Path.Pos[0] ) < 1.0e-5f && std::fabs( TrunkZero[TrunkZero.Num() - 1].Path.Pos[1] - TrunkOne[TrunkOne.Num() - 1].Path.Pos[1] ) < 1.0e-5f && std::fabs( TrunkZero[TrunkZero.Num() - 1].Path.Pos[2] - TrunkOne[TrunkOne.Num() - 1].Path.Pos[2] ) < 1.0e-5f;
+			const bool bSameEndpoints = TrunkZero.Num() == TrunkOne.Num() && NMath::Abs( TrunkZero[0].Path.Pos[0] - TrunkOne[0].Path.Pos[0] ) < 1.0e-5f && NMath::Abs( TrunkZero[0].Path.Pos[1] - TrunkOne[0].Path.Pos[1] ) < 1.0e-5f && NMath::Abs( TrunkZero[0].Path.Pos[2] - TrunkOne[0].Path.Pos[2] ) < 1.0e-5f && NMath::Abs( TrunkZero[TrunkZero.Num() - 1].Path.Pos[0] - TrunkOne[TrunkOne.Num() - 1].Path.Pos[0] ) < 1.0e-5f && NMath::Abs( TrunkZero[TrunkZero.Num() - 1].Path.Pos[1] - TrunkOne[TrunkOne.Num() - 1].Path.Pos[1] ) < 1.0e-5f && NMath::Abs( TrunkZero[TrunkZero.Num() - 1].Path.Pos[2] - TrunkOne[TrunkOne.Num() - 1].Path.Pos[2] ) < 1.0e-5f;
 			C.Check( bSameEndpoints && MaxLateralDifference > Chord.Length() * 0.01f, "loopでserialが変わると端点を保ったままseed依存の主幹形状が変わる (lateral=%.4f chord=%.4f)", MaxLateralDifference, Chord.Length() );
 		}
 	}

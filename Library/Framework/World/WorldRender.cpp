@@ -1,5 +1,6 @@
 ﻿#include "WorldRender.h"
 
+#include "Library/Core/Types/Utility.h"
 #include "Library/Framework/World/Mesh/EditMeshBuild.h"
 
 #include <utility>
@@ -26,7 +27,7 @@ namespace
 		// 現在の材質batchだけを共通上限制約で分割した作業結果。
 		TArray<FMeshGeometryChunk> Chunks;
 		if ( !NMeshGeometry::BuildChunks( TArrayView<const FMeshVertex>( Build.Vertices ), TArrayView<const uint32>( Build.Indices.GetData() + Batch.StartIndex, Batch.NumIndices ), Chunks ) ) return false;
-		Resources.Chunks = std::move( Chunks );
+		Resources.Chunks = MoveTemp( Chunks );
 		return !Resources.Chunks.IsEmpty();
 	}
 
@@ -60,9 +61,9 @@ namespace
 		}
 		TSharedPtr<FMeshMaterialEffectResources> Resources = MakeShared<FMeshMaterialEffectResources>();
 		Resources->Definition = Definition;
-		Resources->Texture = std::move( SourceTexture );
-		Resources->MaskTexture = std::move( MaskTexture );
-		Resources->DistortionTexture = std::move( DistortionTexture );
+		Resources->Texture = MoveTemp( SourceTexture );
+		Resources->MaskTexture = MoveTemp( MaskTexture );
+		Resources->DistortionTexture = MoveTemp( DistortionTexture );
 		Resources->TextureHandle = Resources->Texture->GetHandle();
 		Resources->MaskTextureHandle = Resources->MaskTexture.IsValid() ? Resources->MaskTexture->GetHandle() : -1;
 		Resources->DistortionTextureHandle = Resources->DistortionTexture.IsValid() ? Resources->DistortionTexture->GetHandle() : -1;

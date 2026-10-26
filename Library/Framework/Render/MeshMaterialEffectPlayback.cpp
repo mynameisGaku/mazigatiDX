@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
+
 namespace
 {
 	// 一周期内へ負数も含めて折り返し、UVの小数位相を有限値で返す。
@@ -23,7 +25,7 @@ namespace
 			return DeltaTime;
 		}
 		// one-shotの終端より先へ進めない実適用秒数。
-		const float64 Applied = std::min( DeltaTime, std::max( 0.0, Duration - Playback.EffectTimeSeconds ) );
+		const float64 Applied = NMath::Min( DeltaTime, NMath::Max( 0.0, Duration - Playback.EffectTimeSeconds ) );
 		Playback.EffectTimeSeconds += Applied;
 		if ( Playback.EffectTimeSeconds >= Duration ) Playback.EffectState = FMeshMaterialEffectPlayback::EEffectPlaybackState::Finished;
 		return Applied;
@@ -39,7 +41,7 @@ namespace
 
 void FMeshMaterialEffectPlayback::Update( float32 DeltaTime, const FMeshMaterialEffectDefinition& Definition )
 {
-	if ( EffectState != EEffectPlaybackState::Playing || !std::isfinite( DeltaTime ) || DeltaTime <= 0.0f || !std::isfinite( Definition.Duration ) || Definition.Duration <= 0.0f ) return;
+	if ( EffectState != EEffectPlaybackState::Playing || !NMath::IsFinite( DeltaTime ) || DeltaTime <= 0.0f || !NMath::IsFinite( Definition.Duration ) || Definition.Duration <= 0.0f ) return;
 	// float32 deltaを計算用の秒数へ広げた値。
 	const float64 SafeDelta = static_cast<float64>( DeltaTime );
 	// curveとscrollへ反映する実際の進行秒数。

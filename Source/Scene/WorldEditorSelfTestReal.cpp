@@ -3,6 +3,7 @@
 #include <cstdio>
 
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/WorldEditor.h"
 #include "Library/DebugUI/WorldEditorInternal.h"
 #include "Library/Framework/Asset/AssetManager.h"
@@ -57,10 +58,10 @@ namespace
 					int R = 0, G = 0, B = 0, A = 0;
 					GetPixelSoftImage( Soft, X, Y, &R, &G, &B, &A );
 					if ( R + G + B <= 6 ) continue;
-					Left = std::min( Left, X );
-					Top = std::min( Top, Y );
-					Right = std::max( Right, X );
-					Bottom = std::max( Bottom, Y );
+					Left = NMath::Min( Left, X );
+					Top = NMath::Min( Top, Y );
+					Right = NMath::Max( Right, X );
+					Bottom = NMath::Max( Bottom, Y );
 				}
 			}
 			if ( Right < 0 ) return false;
@@ -96,17 +97,17 @@ namespace
 		{
 			FVector2 Pixel;
 			if ( !Camera.WorldToScreen( View, Point, Pixel ) ) return false;
-			OutLeft = std::min( OutLeft, Pixel.x );
-			OutTop = std::min( OutTop, Pixel.y );
-			OutRight = std::max( OutRight, Pixel.x );
-			OutBottom = std::max( OutBottom, Pixel.y );
+			OutLeft = NMath::Min( OutLeft, Pixel.x );
+			OutTop = NMath::Min( OutTop, Pixel.y );
+			OutRight = NMath::Max( OutRight, Pixel.x );
+			OutBottom = NMath::Max( OutBottom, Pixel.y );
 		}
 		return true;
 	}
 
 	bool SameBounds( float32 AL, float32 AT, float32 AR, float32 AB, float32 BL, float32 BT, float32 BR, float32 BB, float32 Tolerance )
 	{
-		return std::fabs( AL - BL ) <= Tolerance && std::fabs( AT - BT ) <= Tolerance && std::fabs( AR - BR ) <= Tolerance && std::fabs( AB - BB ) <= Tolerance;
+		return NMath::Abs( AL - BL ) <= Tolerance && NMath::Abs( AT - BT ) <= Tolerance && NMath::Abs( AR - BR ) <= Tolerance && NMath::Abs( AB - BB ) <= Tolerance;
 	}
 
 	//=========================================================================
@@ -137,14 +138,14 @@ namespace
 				FVector2 Mine;
 				if ( !Camera.WorldToScreen( View, Point, Mine ) ) continue;
 				const VECTOR Theirs = ConvWorldPosToScreenPos( Point );
-				MaxPixelError = std::max( MaxPixelError, std::max( std::fabs( Theirs.x - Mine.x ), std::fabs( Theirs.y - Mine.y ) ) );
+				MaxPixelError = NMath::Max( MaxPixelError, NMath::Max( NMath::Abs( Theirs.x - Mine.x ), NMath::Abs( Theirs.y - Mine.y ) ) );
 				++NumPoints;
 
 				// 逆: 画面の点から、近い面の上の点へ。視点からその点への向きが、ScreenToRay の向き
 				const FEditorRay Ray = Camera.ScreenToRay( View, Mine.x, Mine.y );
 				const VECTOR Near = ConvScreenPosToWorldPos( VGet( Mine.x, Mine.y, 0.0f ) );
 				const FVector3 Direction = ( FVector3( Near ) - Camera.GetEye() ).Normalized();
-				MaxRayError = std::max( MaxRayError, ( Direction - Ray.Direction ).Length() );
+				MaxRayError = NMath::Max( MaxRayError, ( Direction - Ray.Direction ).Length() );
 			}
 		}
 		C.Check( NumPoints >= 15, "enough points were in front of the cameras (%d)", NumPoints );
@@ -164,7 +165,7 @@ namespace
 				FVector2 Mine;
 				if ( !Camera.WorldToScreen( Tall, Camera.Target + Offset, Mine ) ) continue;
 				const VECTOR Theirs = ConvWorldPosToScreenPos( Camera.Target + Offset );
-				Error = std::max( Error, std::max( std::fabs( Theirs.x - Mine.x ), std::fabs( Theirs.y - Mine.y ) ) );
+				Error = NMath::Max( Error, NMath::Max( NMath::Abs( Theirs.x - Mine.x ), NMath::Abs( Theirs.y - Mine.y ) ) );
 			}
 			C.Check( Error < 0.75f, "and in a tall 200x400 view (the field of view is the vertical one) (%.3f pixels)", Error );
 		}
@@ -241,7 +242,7 @@ namespace
 			// 絵の上をクリックすると板が選ばれ、絵の外ならはずれる
 			float32 T = 0.0f;
 			const FEditorRay Inside = Camera.ScreenToRay( View, ( LitL + LitR ) * 0.5f, ( LitT + LitB ) * 0.5f );
-			const FEditorRay Outside = Camera.ScreenToRay( View, std::max( LitL - 8.0f, 1.0f ), ( LitT + LitB ) * 0.5f );
+			const FEditorRay Outside = Camera.ScreenToRay( View, NMath::Max( LitL - 8.0f, 1.0f ), ( LitT + LitB ) * 0.5f );
 			C.Check( NWorldEditor::RayVsShape( Inside, Shapes[0], T ) && !NWorldEditor::RayVsShape( Outside, Shapes[0], T ), "%s: a click on the drawn billboard hits its shape, and a click 8 pixels left of it does not", Case.Name );
 		}
 		Shot.End();
@@ -343,7 +344,7 @@ namespace
 				 "the pixels of the model drawn with the editor's matrix (x %.1f..%.1f, y %.1f..%.1f) are the area of its bounds box (x %.1f..%.1f, y %.1f..%.1f)", LitL, LitR, LitT, LitB, EditL, EditR, EditT, EditB );
 		if ( !bLit || Shapes.IsEmpty() ) return;
 		float32 T = 0.0f;
-		C.Check( NWorldEditor::RayVsShape( Camera.ScreenToRay( View, ( LitL + LitR ) * 0.5f, ( LitT + LitB ) * 0.5f ), Shapes[0], T ) && !NWorldEditor::RayVsShape( Camera.ScreenToRay( View, std::max( LitL - 8.0f, 1.0f ), ( LitT + LitB ) * 0.5f ), Shapes[0], T ),
+		C.Check( NWorldEditor::RayVsShape( Camera.ScreenToRay( View, ( LitL + LitR ) * 0.5f, ( LitT + LitB ) * 0.5f ), Shapes[0], T ) && !NWorldEditor::RayVsShape( Camera.ScreenToRay( View, NMath::Max( LitL - 8.0f, 1.0f ), ( LitT + LitB ) * 0.5f ), Shapes[0], T ),
 				 "a click on the drawn model hits its box, and a click 8 pixels beside it does not" );
 		Shot.End();
 	}

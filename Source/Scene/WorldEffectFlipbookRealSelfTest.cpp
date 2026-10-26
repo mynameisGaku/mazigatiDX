@@ -5,6 +5,7 @@
 #include <cmath>
 #include <vector>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Effect/ParticleEffectBackend.h"
 #include "Library/Framework/Render/DrawContext.h"
@@ -171,7 +172,7 @@ namespace
 		{
 			// 背景色から十分変わったquad pixelを数える。
 			GetPixelSoftImage( Soft, X, Y, &R, &G, &B, &A );
-			if ( std::abs( R - 20 ) + std::abs( G - 20 ) + std::abs( B - 20 ) > 20 )
+			if ( NMath::Abs( R - 20 ) + NMath::Abs( G - 20 ) + NMath::Abs( B - 20 ) > 20 )
 			{
 				++Result.LitPixels;
 				// atlas各コマの非主色上限を越えたpixelを隣コマ混入として数える。

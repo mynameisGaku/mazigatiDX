@@ -10,6 +10,8 @@
 #include "Library/Core/Interfaces/Profiler/IProfiler.h"
 #include "Library/Core/Log/LogManager.h"
 #include "Library/Core/Log/LogVerbosity.h"
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Audio/AudioSystem.h"
 #include "Library/Framework/Component/TransformComponent.h"
@@ -369,7 +371,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 {
 	const auto Add = [&Registry]( const char* Name, const char* Description, auto&& Function, const TArray<FConsoleArgSpec>& Args, const char* Category )
 	{
-		Registry.Add( Name, Description, std::forward<decltype( Function )>( Function ), Args, Category ).Keep();
+		Registry.Add( Name, Description, Forward<decltype( Function )>( Function ), Args, Category ).Keep();
 	};
 
 	//-------------------------------------------------------------------------
@@ -410,8 +412,8 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 		 []( FConsoleContext& Context, TOptional<int32> Count )
 		 {
 			 const FConsoleHistory& History = GetGlobalHistory();
-			 const int32 Show = Count.IsSet() ? std::max( Count.GetValue(), 1 ) : 20;
-			 const int32 First = std::max( History.Num() - Show, 0 );
+			 const int32 Show = Count.IsSet() ? NMath::Max( Count.GetValue(), 1 ) : 20;
+			 const int32 First = NMath::Max( History.Num() - Show, 0 );
 			 for ( int32 i = First; i < History.Num(); ++i ) Context.Print( FString::Printf( "  %3d  %s", i + 1, *History.Get( i ) ) );
 			 if ( History.Num() == 0 ) Context.Print( "(no history yet)" );
 		 },
@@ -670,7 +672,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 		 {
 			 CEngine* Engine = CEngine::Get();
 			 if ( Engine == nullptr ) return false;
-			 const int32 Count = Frames.IsSet() ? std::max( Frames.GetValue(), 1 ) : 1;
+			 const int32 Count = Frames.IsSet() ? NMath::Max( Frames.GetValue(), 1 ) : 1;
 			 Engine->GetTimeControl().Step( Count );
 			 Context.Print( FString::Printf( "stepping %d frame(s)", Count ) );
 			 return true;
@@ -713,8 +715,8 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 			 Target = Target.Replace( "\\", "/" );
 			 const int32 Slash = Target.FindLast( "/" );
 			 if ( Slash > 0 ) NFileSystem::EnsureDirectory( Target.Left( Slash ) );
-			 const float32 Seconds = Delay.IsSet() ? std::max( Delay.GetValue(), 0.0f ) : 0.0f;
-			 const int32 DelayFrames = static_cast<int32>( Seconds * std::max( Platform->GetFPS(), 1.0f ) + 0.5f );
+			 const float32 Seconds = Delay.IsSet() ? NMath::Max( Delay.GetValue(), 0.0f ) : 0.0f;
+			 const int32 DelayFrames = static_cast<int32>( Seconds * NMath::Max( Platform->GetFPS(), 1.0f ) + 0.5f );
 			 if ( !Platform->RequestScreenshot( Target, DelayFrames ) )
 			 {
 				 Context.Error( "the platform cannot take a screenshot" );
@@ -1117,7 +1119,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 				 Context.Error( "unknown bus '" + BusName + "' (" + FString::Join( GetBusNames(), ", " ) + ")" );
 				 return false;
 			 }
-			 if ( Volume.IsSet() ) Audio->SetBusVolume( Bus, std::max( Volume.GetValue(), 0.0f ) );
+			 if ( Volume.IsSet() ) Audio->SetBusVolume( Bus, NMath::Max( Volume.GetValue(), 0.0f ) );
 			 Context.Print( FString( ToString( Bus ) ) + " volume " + NConsole::FormatFloat( Audio->GetBusVolume( Bus ) ) );
 			 return true;
 		 },
@@ -1160,7 +1162,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 		 {
 			 CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>();
 			 if ( Audio == nullptr ) return false;
-			 Audio->StopAll( Fade.IsSet() ? std::max( Fade.GetValue(), 0.0f ) : 0.0f );
+			 Audio->StopAll( Fade.IsSet() ? NMath::Max( Fade.GetValue(), 0.0f ) : 0.0f );
 			 Context.Print( "stopped" );
 			 return true;
 		 },

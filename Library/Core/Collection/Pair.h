@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "Library/Core/Collection/Hash.h"
+#include "Library/Core/Types/Utility.h"
 
 //=============================================================================
 // TPair<K, V>
@@ -26,5 +27,5 @@ struct TPair
 template<typename K, typename V>
 FORCEINLINE TPair<std::decay_t<K>, std::decay_t<V>> MakePair( K&& Key, V&& Value )
 {
-	return { std::forward<K>( Key ), std::forward<V>( Value ) };
+	return { Forward<K>( Key ), Forward<V>( Value ) };
 }

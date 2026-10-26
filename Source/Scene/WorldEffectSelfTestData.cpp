@@ -1,4 +1,5 @@
-﻿#include "Library/Framework/World/Editor/EditorOutliner.h"
+﻿#include "Library/Core/Types/Numeric.h"
+#include "Library/Framework/World/Editor/EditorOutliner.h"
 #include "Library/Framework/World/Editor/EditorPlacement.h"
 #include "Library/Framework/World/Editor/EditorShapes.h"
 #include "Library/Framework/World/WorldEdit.h"
@@ -443,7 +444,7 @@ namespace
 		Endless.Emitters.Add( FParticleEmitterDefinition() );
 		Endless.Duration = -1.0f;
 		C.Check( CountIssues( Endless.Validate(), true, -1 ) == 1, "a negative duration is an error" );
-		Endless.Duration = std::numeric_limits<float32>::quiet_NaN();
+		Endless.Duration = TNumericLimits<float32>::QuietNaN();
 		C.Check( CountIssues( Endless.Validate(), true, -1 ) == 1, "a duration that is not a number is an error" );
 		Endless.Duration = 0.0f;
 		C.Check( Endless.Validate().IsEmpty(), "a duration of 0 (endless) is fine" );
@@ -454,8 +455,8 @@ namespace
 			const char* Name;
 			std::function<void( FParticleEmitterDefinition& )> Edit;
 		};
-		const float32 NaN = std::numeric_limits<float32>::quiet_NaN();
-		const float32 Inf = std::numeric_limits<float32>::infinity();
+		const float32 NaN = TNumericLimits<float32>::QuietNaN();
+		const float32 Inf = TNumericLimits<float32>::Infinity();
 		const FCase Errors[] = {
 			{ "max particles 0", []( FParticleEmitterDefinition& E ) { E.MaxParticles = 0; } },
 			{ "max particles too many", []( FParticleEmitterDefinition& E ) { E.MaxParticles = FParticleEffectDefinition::MaxParticlesPerEmitter + 1; } },
@@ -576,7 +577,7 @@ namespace
 		for ( const FWorldObject& Object : Objects )
 		{
 			World.Objects.Add( Object );
-			World.NextId = std::max( World.NextId, Object.Id + 1 );
+			World.NextId = NMath::Max( World.NextId, Object.Id + 1 );
 		}
 		return World;
 	}
@@ -646,7 +647,7 @@ namespace
 		Issues = Validate( MakeFxObject( 1, "Foreign", "fx/none.efk" ) );
 		C.Check( CountWorldIssues( Issues, EWorldIssueCode::MissingAsset, EWorldIssueSeverity::Error ) == 1 && CountWorldIssues( Issues, EWorldIssueCode::BadEffect, EWorldIssueSeverity::Warning ) == 1, "and a missing foreign file gets both" );
 
-		const float32 NaN = std::numeric_limits<float32>::quiet_NaN();
+		const float32 NaN = TNumericLimits<float32>::QuietNaN();
 		struct FCase
 		{
 			const char* Name;

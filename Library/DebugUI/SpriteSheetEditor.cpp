@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Engine/Engine.h"
@@ -261,7 +262,7 @@ namespace
 
 		if ( S.bFitRequested )
 		{
-			S.Zoom = std::clamp( std::min( ( Size.x - 16.0f ) / static_cast<float>( TexW ), ( Size.y - 28.0f ) / static_cast<float>( TexH ) ), 0.25f, 32.0f );
+			S.Zoom = NMath::Clamp( NMath::Min( ( Size.x - 16.0f ) / static_cast<float>( TexW ), ( Size.y - 28.0f ) / static_cast<float>( TexH ) ), 0.25f, 32.0f );
 			if ( S.Zoom >= 2.0f ) S.Zoom = std::floor( S.Zoom );   // 2 倍以上の拡大は整数倍にして、ドットを揃える
 			S.Pan = ImVec2( ( Size.x - static_cast<float>( TexW ) * S.Zoom ) * 0.5f, ( Size.y - static_cast<float>( TexH ) * S.Zoom ) * 0.5f );
 			S.bFitRequested = false;
@@ -272,7 +273,7 @@ namespace
 		{
 			const ImVec2 Mouse( IO.MousePos.x - Origin.x, IO.MousePos.y - Origin.y );
 			const float Before = S.Zoom;
-			S.Zoom = std::clamp( S.Zoom * ( IO.MouseWheel > 0.0f ? 1.15f : 1.0f / 1.15f ), 0.25f, 32.0f );
+			S.Zoom = NMath::Clamp( S.Zoom * ( IO.MouseWheel > 0.0f ? 1.15f : 1.0f / 1.15f ), 0.25f, 32.0f );
 			S.Pan.x = Mouse.x - ( Mouse.x - S.Pan.x ) * ( S.Zoom / Before );
 			S.Pan.y = Mouse.y - ( Mouse.y - S.Pan.y ) * ( S.Zoom / Before );
 		}
@@ -319,7 +320,7 @@ namespace
 				if ( ( Pass == 1 ) != bSelected ) continue;
 				const FSpriteFrame& F = Item.Frame;
 				const ImVec2 P0( ImageMin.x + static_cast<float>( F.X ) * S.Zoom, ImageMin.y + static_cast<float>( F.Y ) * S.Zoom );
-				const ImVec2 P1( P0.x + static_cast<float>( std::max( F.Width, 1 ) ) * S.Zoom, P0.y + static_cast<float>( std::max( F.Height, 1 ) ) * S.Zoom );
+				const ImVec2 P1( P0.x + static_cast<float>( NMath::Max( F.Width, 1 ) ) * S.Zoom, P0.y + static_cast<float>( NMath::Max( F.Height, 1 ) ) * S.Zoom );
 
 				if ( bSelected )
 				{
@@ -365,10 +366,10 @@ namespace
 		if ( S.bDrawing )
 		{
 			const ImVec2 End( std::floor( Mouse.x ), std::floor( Mouse.y ) );
-			const int32 X0 = std::clamp( static_cast<int32>( std::min( S.DrawStart.x, End.x ) ), 0, TexW );
-			const int32 Y0 = std::clamp( static_cast<int32>( std::min( S.DrawStart.y, End.y ) ), 0, TexH );
-			const int32 X1 = std::clamp( static_cast<int32>( std::max( S.DrawStart.x, End.x ) ) + 1, 0, TexW );
-			const int32 Y1 = std::clamp( static_cast<int32>( std::max( S.DrawStart.y, End.y ) ) + 1, 0, TexH );
+			const int32 X0 = NMath::Clamp( static_cast<int32>( NMath::Min( S.DrawStart.x, End.x ) ), 0, TexW );
+			const int32 Y0 = NMath::Clamp( static_cast<int32>( NMath::Min( S.DrawStart.y, End.y ) ), 0, TexH );
+			const int32 X1 = NMath::Clamp( static_cast<int32>( NMath::Max( S.DrawStart.x, End.x ) ) + 1, 0, TexW );
+			const int32 Y1 = NMath::Clamp( static_cast<int32>( NMath::Max( S.DrawStart.y, End.y ) ) + 1, 0, TexH );
 			const ImVec2 P0( ImageMin.x + static_cast<float>( X0 ) * S.Zoom, ImageMin.y + static_cast<float>( Y0 ) * S.Zoom );
 			const ImVec2 P1( ImageMin.x + static_cast<float>( X1 ) * S.Zoom, ImageMin.y + static_cast<float>( Y1 ) * S.Zoom );
 			DrawList->AddRect( P0, P1, IM_COL32( 255, 235, 60, 255 ), 0.0f, 0, 2.0f );
@@ -470,7 +471,7 @@ namespace
 		if ( ImGui::Button( "Remove grid" ) )
 		{
 			NSpriteSheetEdit::RemoveGrid( S.Document, S.SelectedGrid );
-			S.SelectedGrid = std::min( S.SelectedGrid, S.Document.Get().Grids.Num() - 1 );
+			S.SelectedGrid = NMath::Min( S.SelectedGrid, S.Document.Get().Grids.Num() - 1 );
 		}
 		ImGui::EndDisabled();
 		ImGui::PushTextWrapPos( 0.0f );
@@ -495,7 +496,7 @@ namespace
 		bChanged |= ImGui::DragInt( "Rows", &Grid.Rows, 0.1f, 1, 512 );
 		bChanged |= ImGui::DragInt( "Cell width", &Grid.CellWidth, 0.2f, 0, 4096, Grid.CellWidth == 0 ? "auto" : "%d px" );
 		bChanged |= ImGui::DragInt( "Cell height", &Grid.CellHeight, 0.2f, 0, 4096, Grid.CellHeight == 0 ? "auto" : "%d px" );
-		bChanged |= ImGui::DragInt( "Frames used", &Grid.NumFrames, 0.1f, 0, std::max( Grid.Columns * Grid.Rows, 1 ), Grid.NumFrames == 0 ? "all" : "%d" );
+		bChanged |= ImGui::DragInt( "Frames used", &Grid.NumFrames, 0.1f, 0, NMath::Max( Grid.Columns * Grid.Rows, 1 ), Grid.NumFrames == 0 ? "all" : "%d" );
 		bChanged |= ImGui::DragInt( "Margin X", &Grid.MarginX, 0.1f, 0, 1024, "%d px" );
 		bChanged |= ImGui::DragInt( "Margin Y", &Grid.MarginY, 0.1f, 0, 1024, "%d px" );
 		bChanged |= ImGui::DragInt( "Spacing X", &Grid.SpacingX, 0.1f, 0, 1024, "%d px" );
@@ -514,8 +515,8 @@ namespace
 		}
 		if ( bChanged )
 		{
-			Grid.Columns = std::max( Grid.Columns, 1 );
-			Grid.Rows = std::max( Grid.Rows, 1 );
+			Grid.Columns = NMath::Max( Grid.Columns, 1 );
+			Grid.Rows = NMath::Max( Grid.Rows, 1 );
 			NSpriteSheetEdit::SetGrid( S.Document, S.SelectedGrid, Grid, "grid" );
 		}
 
@@ -621,7 +622,7 @@ namespace
 		if ( ImGui::Button( "Delete clip" ) )
 		{
 			NSpriteSheetEdit::RemoveClip( S.Document, S.SelectedClip );
-			S.SelectedClip = std::min( S.SelectedClip, S.Document.Get().Clips.Num() - 1 );
+			S.SelectedClip = NMath::Min( S.SelectedClip, S.Document.Get().Clips.Num() - 1 );
 			S.SelectedStep = INDEX_NONE;
 			S.SelectedEvent = INDEX_NONE;
 		}
@@ -670,17 +671,17 @@ namespace
 		ImGui::TextUnformatted( "Range" );
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth( 56.0f );
-		ImGui::DragInt( "##First", &S.RangeFirst, 0.1f, 0, std::max( Definition.GetNumFrames() - 1, 0 ) );
+		ImGui::DragInt( "##First", &S.RangeFirst, 0.1f, 0, NMath::Max( Definition.GetNumFrames() - 1, 0 ) );
 		ImGui::SameLine();
 		ImGui::TextUnformatted( "to" );
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth( 56.0f );
-		ImGui::DragInt( "##Last", &S.RangeLast, 0.1f, 0, std::max( Definition.GetNumFrames() - 1, 0 ) );
+		ImGui::DragInt( "##Last", &S.RangeLast, 0.1f, 0, NMath::Max( Definition.GetNumFrames() - 1, 0 ) );
 		ImGui::SameLine();
 		if ( ImGui::Button( "Set range" ) )
 		{
-			NSpriteSheetEdit::SetStepRange( S.Document, ClipIndex, std::clamp( S.RangeFirst, 0, std::max( Definition.GetNumFrames() - 1, 0 ) ),
-											std::clamp( S.RangeLast, 0, std::max( Definition.GetNumFrames() - 1, 0 ) ) );
+			NSpriteSheetEdit::SetStepRange( S.Document, ClipIndex, NMath::Clamp( S.RangeFirst, 0, NMath::Max( Definition.GetNumFrames() - 1, 0 ) ),
+											NMath::Clamp( S.RangeLast, 0, NMath::Max( Definition.GetNumFrames() - 1, 0 ) ) );
 			S.SelectedStep = 0;
 		}
 		if ( !Clip.Durations.IsEmpty() )
@@ -706,7 +707,7 @@ namespace
 			const FSpriteFrame* Frame = S.Sheet.IsValid() ? S.Sheet->GetFrame( Clip.Frames[Step] ) : nullptr;
 			if ( Frame != nullptr && Frame->Width > 0 )
 			{
-				const float Scale = std::min( 24.0f / static_cast<float>( Frame->Width ), 24.0f / static_cast<float>( Frame->Height ) );
+				const float Scale = NMath::Min( 24.0f / static_cast<float>( Frame->Width ), 24.0f / static_cast<float>( Frame->Height ) );
 				ImGui::SetCursorPosY( ImGui::GetCursorPosY() );
 				NDebugUI::ImageRect( TextureId, TexW, TexH, Frame->X, Frame->Y, Frame->Width, Frame->Height, ImVec2( static_cast<float>( Frame->Width ) * Scale, static_cast<float>( Frame->Height ) * Scale ) );
 			}
@@ -717,7 +718,7 @@ namespace
 			ImGui::SameLine();
 			int32 FrameNumber = Clip.Frames[Step];
 			ImGui::SetNextItemWidth( 56.0f );
-			if ( ImGui::DragInt( "##Frame", &FrameNumber, 0.1f, 0, std::max( Definition.GetNumFrames() - 1, 0 ) ) ) NSpriteSheetEdit::SetStepFrame( S.Document, ClipIndex, Step, FrameNumber );
+			if ( ImGui::DragInt( "##Frame", &FrameNumber, 0.1f, 0, NMath::Max( Definition.GetNumFrames() - 1, 0 ) ) ) NSpriteSheetEdit::SetStepFrame( S.Document, ClipIndex, Step, FrameNumber );
 			ImGui::SameLine();
 			float32 Milliseconds = Clip.GetDuration( Step ) * 1000.0f;
 			ImGui::SetNextItemWidth( 70.0f );
@@ -747,7 +748,7 @@ namespace
 		if ( RemoveStep != INDEX_NONE )
 		{
 			NSpriteSheetEdit::RemoveStep( S.Document, ClipIndex, RemoveStep );
-			S.SelectedStep = std::min( S.SelectedStep, S.Document.Get().Clips[ClipIndex].Frames.Num() - 1 );
+			S.SelectedStep = NMath::Min( S.SelectedStep, S.Document.Get().Clips[ClipIndex].Frames.Num() - 1 );
 		}
 
 		// 出来事
@@ -772,7 +773,7 @@ namespace
 			ImGui::SameLine();
 			int32 Step = Event.Step;
 			ImGui::SetNextItemWidth( 60.0f );
-			if ( ImGui::DragInt( "##Step", &Step, 0.1f, 0, std::max( Current.Frames.Num() - 1, 0 ), "step %d" ) )
+			if ( ImGui::DragInt( "##Step", &Step, 0.1f, 0, NMath::Max( Current.Frames.Num() - 1, 0 ), "step %d" ) )
 			{
 				const FString Key = FString::Printf( "evstep%d", i );
 				NSpriteSheetEdit::SetEvent( S.Document, ClipIndex, i, Step, Event.Name, *Key );
@@ -873,10 +874,10 @@ namespace
 		if ( Frame != nullptr && Frame->Width > 0 && Texture.IsValid() && TexW > 0 )
 		{
 			// 基準点が中心に来るように置く。左右反転は基準点を軸にする。大きなコマは、領域に収まるように倍率を下げる
-			const float Above = std::max( Frame->PivotY, 1.0f ), Below = std::max( static_cast<float>( Frame->Height ) - Frame->PivotY, 1.0f );
-			const float Side = std::max( std::max( Frame->PivotX, static_cast<float>( Frame->Width ) - Frame->PivotX ), 1.0f );
-			const float Fit = std::min( std::min( ( Center.y - Origin.y - 6.0f ) / Above, ( Max.y - Center.y - 6.0f ) / Below ), ( Size.x * 0.5f - 6.0f ) / Side );
-			const float Scale = std::max( std::min( S.PreviewScale, Fit ), 0.5f );
+			const float Above = NMath::Max( Frame->PivotY, 1.0f ), Below = NMath::Max( static_cast<float>( Frame->Height ) - Frame->PivotY, 1.0f );
+			const float Side = NMath::Max( NMath::Max( Frame->PivotX, static_cast<float>( Frame->Width ) - Frame->PivotX ), 1.0f );
+			const float Fit = NMath::Min( NMath::Min( ( Center.y - Origin.y - 6.0f ) / Above, ( Max.y - Center.y - 6.0f ) / Below ), ( Size.x * 0.5f - 6.0f ) / Side );
+			const float Scale = NMath::Max( NMath::Min( S.PreviewScale, Fit ), 0.5f );
 			const float Left = S.bPreviewFlipX ? Center.x - ( static_cast<float>( Frame->Width ) - Frame->PivotX ) * Scale : Center.x - Frame->PivotX * Scale;
 			const ImVec2 P0( Left, Center.y - Frame->PivotY * Scale );
 			const ImVec2 P1( P0.x + static_cast<float>( Frame->Width ) * Scale, P0.y + static_cast<float>( Frame->Height ) * Scale );
@@ -901,7 +902,7 @@ namespace
 		float Y = Origin.y + 6.0f;
 		for ( const TPair<FString, float32>& Entry : S.EventLog )
 		{
-			DrawList->AddText( ImVec2( Max.x - 150.0f, Y ), IM_COL32( 255, 220, 80, static_cast<int>( 255.0f * std::min( Entry.Value * 2.0f, 1.0f ) ) ), UI_TEXT( "event: " + Entry.Key ) );
+			DrawList->AddText( ImVec2( Max.x - 150.0f, Y ), IM_COL32( 255, 220, 80, static_cast<int>( 255.0f * NMath::Min( Entry.Value * 2.0f, 1.0f ) ) ), UI_TEXT( "event: " + Entry.Key ) );
 			Y += 14.0f;
 		}
 		DrawList->PopClipRect();
@@ -938,7 +939,7 @@ namespace
 		const ImTextureID TextureId = Texture.IsValid() ? NDebugUI::GetImGuiTexture( Texture->GetHandle() ) : 0;
 
 		ImGui::SeparatorText( "Timeline" );
-		const float32 Total = std::max( Clip.GetTotalDuration(), 0.001f );
+		const float32 Total = NMath::Max( Clip.GetTotalDuration(), 0.001f );
 		const ImVec2 Origin = ImGui::GetCursorScreenPos();
 		const float Width = ImGui::GetContentRegionAvail().x;
 		const float RulerHeight = 16.0f, EventHeight = 30.0f, BlockHeight = 56.0f;
@@ -966,7 +967,7 @@ namespace
 		const float BlockTop = Origin.y + RulerHeight + EventHeight;
 		float Cumulative = 0.0f;
 		float StepStartX[256] = {};
-		const int32 NumDrawn = std::min( Clip.Frames.Num(), 256 );
+		const int32 NumDrawn = NMath::Min( Clip.Frames.Num(), 256 );
 		int32 ResizingStep = INDEX_NONE;
 		for ( int32 i = 0; i < NumDrawn; ++i )
 		{
@@ -983,7 +984,7 @@ namespace
 			const FSpriteFrame* Frame = S.Sheet.IsValid() ? S.Sheet->GetFrame( Clip.Frames[i] ) : nullptr;
 			if ( Frame != nullptr && Frame->Width > 0 && X1 - X0 > 28.0f )
 			{
-				const float Scale = std::min( ( X1 - X0 - 6.0f ) / static_cast<float>( Frame->Width ), 34.0f / static_cast<float>( Frame->Height ) );
+				const float Scale = NMath::Min( ( X1 - X0 - 6.0f ) / static_cast<float>( Frame->Width ), 34.0f / static_cast<float>( Frame->Height ) );
 				const ImVec2 P0( X0 + 3.0f, BlockTop + 3.0f );
 				const ImVec2 P1( P0.x + static_cast<float>( Frame->Width ) * Scale, P0.y + static_cast<float>( Frame->Height ) * Scale );
 				NDebugUI::BeginNearest( DrawList );
@@ -1002,7 +1003,7 @@ namespace
 			if ( ImGui::IsItemHovered() || ImGui::IsItemActive() ) ImGui::SetMouseCursor( ImGuiMouseCursor_ResizeEW );
 			if ( ImGui::IsItemActive() && IO.MouseDelta.x != 0.0f )
 			{
-				const float32 NewDuration = std::max( Duration + IO.MouseDelta.x / PixelsPerSecond, 0.005f );
+				const float32 NewDuration = NMath::Max( Duration + IO.MouseDelta.x / PixelsPerSecond, 0.005f );
 				const FString Key = FString::Printf( "tldur%d", i );
 				NSpriteSheetEdit::SetStepDuration( S.Document, ClipIndex, i, NewDuration, *Key );
 				ResizingStep = i;
@@ -1011,7 +1012,7 @@ namespace
 			// ブロックそのものをクリックして選ぶ
 			ImGui::SetCursorScreenPos( ImVec2( X0, BlockTop ) );
 			ImGui::PushID( 6000 + i );
-			ImGui::InvisibleButton( "##Block", ImVec2( std::max( X1 - X0 - 6.0f, 4.0f ), BlockHeight ) );
+			ImGui::InvisibleButton( "##Block", ImVec2( NMath::Max( X1 - X0 - 6.0f, 4.0f ), BlockHeight ) );
 			if ( ImGui::IsItemClicked() )
 			{
 				S.SelectedStep = i;
@@ -1046,7 +1047,7 @@ namespace
 				float Best = 1.0e30f;
 				for ( int32 s = 0; s < NumDrawn; ++s )
 				{
-					const float D = std::fabs( IO.MousePos.x - StepStartX[s] );
+					const float D = NMath::Abs( IO.MousePos.x - StepStartX[s] );
 					if ( D < Best ) { Best = D; Nearest = s; }
 				}
 				if ( Nearest != Event.Step )
@@ -1079,7 +1080,7 @@ namespace
 		{
 			S.bPlaying = false;
 			S.Preview.Pause();
-			S.Preview.Seek( std::clamp( ( IO.MousePos.x - Origin.x - 4.0f ) / PixelsPerSecond / Total, 0.0f, 1.0f ) );
+			S.Preview.Seek( NMath::Clamp( ( IO.MousePos.x - Origin.x - 4.0f ) / PixelsPerSecond / Total, 0.0f, 1.0f ) );
 		}
 		(void)bAreaHovered;
 		ImGui::SetCursorScreenPos( ImVec2( Origin.x, Origin.y + TotalHeight + 4.0f ) );
@@ -1283,7 +1284,7 @@ void NDebugUI::DrawSpriteSheetEditor( FSpriteSheetEditorState& S, bool* pOpen )
 {
 	const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
 	ImGui::SetNextWindowPos( ImVec2( MainViewport->Pos.x + 16.0f, MainViewport->Pos.y + 38.0f ), ImGuiCond_FirstUseEver );
-	ImGui::SetNextWindowSize( ImVec2( std::min( 1320.0f, MainViewport->Size.x - 32.0f ), std::min( 780.0f, MainViewport->Size.y - 50.0f ) ), ImGuiCond_FirstUseEver );
+	ImGui::SetNextWindowSize( ImVec2( NMath::Min( 1320.0f, MainViewport->Size.x - 32.0f ), NMath::Min( 780.0f, MainViewport->Size.y - 50.0f ) ), ImGuiCond_FirstUseEver );
 	char Title[256];
 	std::snprintf( Title, sizeof( Title ), "Sprite Sheet Editor%s###SpriteSheetEditor", S.Document.IsDirty() ? " *" : "" );
 	if ( !ImGui::Begin( Title, pOpen, ImGuiWindowFlags_MenuBar ) )

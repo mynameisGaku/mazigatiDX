@@ -5,6 +5,7 @@
 
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Engine/Engine.h"
@@ -70,8 +71,8 @@ namespace
 		{
 			const VECTOR A = MV1GetMeshMinPosition( Handle, i );
 			const VECTOR B = MV1GetMeshMaxPosition( Handle, i );
-			Min = FVector3( std::min( Min.x, A.x ), std::min( Min.y, A.y ), std::min( Min.z, A.z ) );
-			Max = FVector3( std::max( Max.x, B.x ), std::max( Max.y, B.y ), std::max( Max.z, B.z ) );
+			Min = FVector3( NMath::Min( Min.x, A.x ), NMath::Min( Min.y, A.y ), NMath::Min( Min.z, A.z ) );
+			Max = FVector3( NMath::Max( Max.x, B.x ), NMath::Max( Max.y, B.y ), NMath::Max( Max.z, B.z ) );
 		}
 		if ( Min.x > Max.x ) return;
 		S.BoundsMin = Min;
@@ -114,8 +115,8 @@ namespace
 			for ( int32 Frame = 0; Frame < NumFrames; ++Frame )
 			{
 				const VECTOR Position = MV1GetFramePosition( Handle, Frame );
-				OutMin = FVector3( std::min( OutMin.x, Position.x ), std::min( OutMin.y, Position.y ), std::min( OutMin.z, Position.z ) );
-				OutMax = FVector3( std::max( OutMax.x, Position.x ), std::max( OutMax.y, Position.y ), std::max( OutMax.z, Position.z ) );
+				OutMin = FVector3( NMath::Min( OutMin.x, Position.x ), NMath::Min( OutMin.y, Position.y ), NMath::Min( OutMin.z, Position.z ) );
+				OutMax = FVector3( NMath::Max( OutMax.x, Position.x ), NMath::Max( OutMax.y, Position.y ), NMath::Max( OutMax.z, Position.z ) );
 			}
 		}
 		SetDrawScreen( DX_SCREEN_BACK );
@@ -134,10 +135,10 @@ namespace
 		}
 		// 見た目の補正（拡大）も含めた、モデル自身の大きさ
 		const FModelAnimationDefinition& Definition = S.Document.Get();
-		const FVector3 Scale( std::fabs( Definition.Scale.x ), std::fabs( Definition.Scale.y ), std::fabs( Definition.Scale.z ) );
+		const FVector3 Scale( NMath::Abs( Definition.Scale.x ), NMath::Abs( Definition.Scale.y ), NMath::Abs( Definition.Scale.z ) );
 		const FVector3 Center = ( S.BoundsMin + S.BoundsMax ) * 0.5f;
 		const FVector3 Extent = ( S.BoundsMax - S.BoundsMin ) * 0.5f;
-		float32 Radius = std::max( std::sqrt( Extent.x * Scale.x * Extent.x * Scale.x + Extent.y * Scale.y * Extent.y * Scale.y + Extent.z * Scale.z * Extent.z * Scale.z ), 0.01f );
+		float32 Radius = NMath::Max( std::sqrt( Extent.x * Scale.x * Extent.x * Scale.x + Extent.y * Scale.y * Extent.y * Scale.y + Extent.z * Scale.z * Extent.z * Scale.z ), 0.01f );
 		FVector3 Middle = FVector3( Center.x * Scale.x, Center.y * Scale.y, Center.z * Scale.z ) + Definition.Offset;
 
 		// 動き回るアニメーション（歩いて前に進む、など）でも画面に収まるように、通る範囲まで含める
@@ -318,12 +319,12 @@ namespace
 		const float32 CosPitch = std::cos( S.Pitch );
 		const VECTOR Target = VGet( S.Target.x, S.Target.y, S.Target.z );
 		const VECTOR Eye = VGet( S.Target.x + S.Distance * CosPitch * std::sin( S.Yaw ), S.Target.y + S.Distance * std::sin( S.Pitch ), S.Target.z - S.Distance * CosPitch * std::cos( S.Yaw ) );
-		SetCameraNearFar( std::max( S.Distance * 0.01f, 0.001f ), S.Distance * 200.0f );
+		SetCameraNearFar( NMath::Max( S.Distance * 0.01f, 0.001f ), S.Distance * 200.0f );
 		SetupCamera_Perspective( 0.8f );
 		SetCameraPositionAndTargetAndUpVec( Eye, Target, VGet( 0.0f, 1.0f, 0.0f ) );
 
 		// 床の格子と軸（モデルの大きさに合わせる）
-		const float32 Cell = std::max( std::pow( 10.0f, std::floor( std::log10( std::max( S.Distance * 0.25f, 0.001f ) ) ) ), 0.001f );
+		const float32 Cell = NMath::Max( std::pow( 10.0f, std::floor( std::log10( NMath::Max( S.Distance * 0.25f, 0.001f ) ) ) ), 0.001f );
 		if ( S.bShowFloor )
 		{
 			const int N = 10;
@@ -384,7 +385,7 @@ namespace
 			if ( ImGui::IsMouseDown( ImGuiMouseButton_Left ) )
 			{
 				S.Yaw -= IO.MouseDelta.x * 0.01f;
-				S.Pitch = std::clamp( S.Pitch + IO.MouseDelta.y * 0.01f, -1.5f, 1.5f );
+				S.Pitch = NMath::Clamp( S.Pitch + IO.MouseDelta.y * 0.01f, -1.5f, 1.5f );
 			}
 			else
 			{
@@ -395,13 +396,13 @@ namespace
 				S.Target = S.Target - Right * ( IO.MouseDelta.x * Scale ) + Up * ( IO.MouseDelta.y * Scale );
 			}
 		}
-		if ( ImGui::IsItemHovered() && IO.MouseWheel != 0.0f ) S.Distance = std::clamp( S.Distance * ( IO.MouseWheel > 0.0f ? 0.88f : 1.0f / 0.88f ), 0.01f, 100000.0f );
+		if ( ImGui::IsItemHovered() && IO.MouseWheel != 0.0f ) S.Distance = NMath::Clamp( S.Distance * ( IO.MouseWheel > 0.0f ? 0.88f : 1.0f / 0.88f ), 0.01f, 100000.0f );
 
 		// 再生中に起きた出来事を、画面の隅に出す
 		float Y = Origin.y + 6.0f;
 		for ( const TPair<FString, float32>& Flash : S.EventFlashes )
 		{
-			DrawList->AddText( ImVec2( Origin.x + 8.0f, Y ), IM_COL32( 255, 220, 80, static_cast<int>( 255.0f * std::min( Flash.Value * 2.0f, 1.0f ) ) ), UI_TEXT( "event: " + Flash.Key ) );
+			DrawList->AddText( ImVec2( Origin.x + 8.0f, Y ), IM_COL32( 255, 220, 80, static_cast<int>( 255.0f * NMath::Min( Flash.Value * 2.0f, 1.0f ) ) ), UI_TEXT( "event: " + Flash.Key ) );
 			Y += 14.0f;
 		}
 		const FModelClipDef* Clip = SelectedClip( S );
@@ -511,7 +512,7 @@ namespace
 			if ( ImGui::IsItemClicked() ) S.SelectedEvent = i;
 			if ( ImGui::IsItemActive() && ImGui::IsMouseDragging( ImGuiMouseButton_Left, 1.0f ) )
 			{
-				const float32 NewTime = std::clamp( ( IO.MousePos.x - TrackLeft ) / TrackWidth, 0.0f, 1.0f );
+				const float32 NewTime = NMath::Clamp( ( IO.MousePos.x - TrackLeft ) / TrackWidth, 0.0f, 1.0f );
 				const FString Key = FString::Printf( "evdrag%d", i );
 				const int32 NewIndex = NModelAnimationEdit::SetEvent( S.Document, ClipIndex, i, NewTime, Event.Name, *Key );
 				if ( S.SelectedEvent == i ) S.SelectedEvent = NewIndex;
@@ -534,7 +535,7 @@ namespace
 		DrawList->AddLine( ImVec2( PlayheadX, Origin.y ), ImVec2( PlayheadX, Origin.y + TotalHeight ), IM_COL32( 255, 80, 80, 255 ), 2.0f );
 		char TimeLabel[48];
 		std::snprintf( TimeLabel, sizeof( TimeLabel ), "%.3f s (%.0f%%)", Normalized * Length, Normalized * 100.0f );
-		DrawList->AddText( ImVec2( std::min( PlayheadX + 4.0f, Origin.x + Width - 110.0f ), TrackTop + 6.0f ), IM_COL32( 255, 200, 200, 255 ), TimeLabel );
+		DrawList->AddText( ImVec2( NMath::Min( PlayheadX + 4.0f, Origin.x + Width - 110.0f ), TrackTop + 6.0f ), IM_COL32( 255, 200, 200, 255 ), TimeLabel );
 
 		// 背景のドラッグで、再生位置を動かす（動かすと一時停止）
 		if ( bScrubbing && ImGui::IsMouseDown( ImGuiMouseButton_Left ) && Length > 0.0f )
@@ -545,7 +546,7 @@ namespace
 			{
 				S.bPlaying = false;
 				S.Animator.Pause();
-				S.Animator.Seek( std::clamp( ( IO.MousePos.x - TrackLeft ) / TrackWidth, 0.0f, 1.0f ) );
+				S.Animator.Seek( NMath::Clamp( ( IO.MousePos.x - TrackLeft ) / TrackWidth, 0.0f, 1.0f ) );
 			}
 		}
 		ImGui::SetCursorScreenPos( ImVec2( Origin.x, Origin.y + TotalHeight + 4.0f ) );
@@ -738,7 +739,7 @@ namespace
 		if ( ImGui::Button( "Delete" ) )
 		{
 			NModelAnimationEdit::RemoveClip( S.Document, S.SelectedClip );
-			S.SelectedClip = std::min( S.SelectedClip, S.Document.Get().Clips.Num() - 1 );
+			S.SelectedClip = NMath::Min( S.SelectedClip, S.Document.Get().Clips.Num() - 1 );
 			S.SelectedEvent = INDEX_NONE;
 		}
 		ImGui::SameLine();
@@ -1213,7 +1214,7 @@ void NDebugUI::DrawModelAnimationEditor( FModelAnimationEditorState& S, bool* pO
 {
 	const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
 	ImGui::SetNextWindowPos( ImVec2( MainViewport->Pos.x + 16.0f, MainViewport->Pos.y + 38.0f ), ImGuiCond_FirstUseEver );
-	ImGui::SetNextWindowSize( ImVec2( std::min( 1320.0f, MainViewport->Size.x - 32.0f ), std::min( 780.0f, MainViewport->Size.y - 50.0f ) ), ImGuiCond_FirstUseEver );
+	ImGui::SetNextWindowSize( ImVec2( NMath::Min( 1320.0f, MainViewport->Size.x - 32.0f ), NMath::Min( 780.0f, MainViewport->Size.y - 50.0f ) ), ImGuiCond_FirstUseEver );
 	char Title[256];
 	std::snprintf( Title, sizeof( Title ), "Model Animation Editor%s###ModelAnimationEditor", S.Document.IsDirty() ? " *" : "" );
 	if ( !ImGui::Begin( Title, pOpen, ImGuiWindowFlags_MenuBar ) )

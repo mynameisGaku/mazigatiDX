@@ -5,6 +5,8 @@
 #include <utility>
 
 #include "Library/Core/Interfaces/Render/DrawMaterialRibbon.h"
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/DebugUI/EffectEditor.h"
 #include "Library/DebugUI/EffectEditorInternal.h"
 #include "Library/Framework/Asset/AssetManager.h"
@@ -30,7 +32,7 @@ namespace
 			TArray<FDrawRibbonData::FPoint> Points;
 			Points.SetNum( Header.NumPoints );
 			std::memcpy( Points.GetData(), reinterpret_cast<const uint8*>( Command.Data ) + sizeof( FDrawRibbonData ), static_cast<usize>( Header.NumPoints ) * sizeof( FDrawRibbonData::FPoint ) );
-			Result.Add( std::move( Points ) );
+			Result.Add( MoveTemp( Points ) );
 		} );
 		return Result;
 	}
@@ -87,7 +89,7 @@ namespace
 			Positions.Reserve( RawPoints.Num() );
 			// 各頂点から三次元位置だけを取り出して並べる。
 			for ( const FDrawMaterialRibbonData::FPoint& Point : RawPoints ) Positions.Add( FVector3( Point.Path.Pos[0], Point.Path.Pos[1], Point.Path.Pos[2] ) );
-			Result.Add( std::move( Positions ) );
+			Result.Add( MoveTemp( Positions ) );
 		} );
 		return Result;
 	}
@@ -197,7 +199,7 @@ namespace
 		C.Check( MixedStrips.Num() == 4 && NearPoint( MixedStrips[0].Last(), DynamicTarget ) && NearPoint( MixedStrips[1].Last(), DynamicTarget ) && NearPoint( MixedStrips[2].Last(), LocalEmitterEnd ) && NearPoint( MixedStrips[3].Last(), LocalEmitterEnd ), "2 エミッター構成では bUseTarget=true の Emitter 0 だけが動的終点へ向かい、Emitter 1 は EndOffset 終点を保つ" );
 
 		// 非有限の NaN 終点座標。
-		const FVector3 NanTarget( std::numeric_limits<float32>::quiet_NaN(), 0.0f, 0.0f );
+		const FVector3 NanTarget( TNumericLimits<float32>::QuietNaN(), 0.0f, 0.0f );
 		BoltPlayback->SetTargetPosition( NanTarget );
 		TreePlayback->SetTargetPosition( NanTarget );
 		C.Check( ReadStrips( RecordPlayback( BoltPlayback ) ).IsEmpty() && ReadStrips( RecordPlayback( TreePlayback ) ).IsEmpty(), "非有限の TargetPosition 指定時は EndOffset へ誤フォールバックせず雷の記録を抑止する" );
@@ -401,7 +403,7 @@ void NWorldTest::RunEffectPathPlaybackTests( NAssetTest::FChecker& C, CAssetMana
 	StableBolts->SetTransform( FTransform( FVector3( 2.0f, 0.0f, 0.0f ) ) );
 	StableBolts->Update( 0.125f );
 	const TArray<TArray<FDrawRibbonData::FPoint>> TwoBolts = ReadStrips( RecordPlayback( StableBolts ) );
-	C.Check( TwoBolts.Num() == 4 && TwoBolts[0].Num() > 8 && std::fabs( ( TwoBolts[0][8].Pos[0] - TwoBolts[2][8].Pos[0] ) + 2.0f ) > 0.001f, "別々に生まれた雷は、生成番号に応じて異なる途中の形を持つ" );
+	C.Check( TwoBolts.Num() == 4 && TwoBolts[0].Num() > 8 && NMath::Abs( ( TwoBolts[0][8].Pos[0] - TwoBolts[2][8].Pos[0] ) + 2.0f ) > 0.001f, "別々に生まれた雷は、生成番号に応じて異なる途中の形を持つ" );
 	StableBolts->Update( 0.9f );
 	const TArray<TArray<FDrawRibbonData::FPoint>> OneBolt = ReadStrips( RecordPlayback( StableBolts ) );
 	C.Check( TwoBolts.Num() == 4 && OneBolt.Num() == 2 && TwoBolts[2].Num() == OneBolt[0].Num() && std::memcmp( TwoBolts[2].GetData(), OneBolt[0].GetData(), static_cast<usize>( OneBolt[0].Num() ) * sizeof( FDrawRibbonData::FPoint ) ) == 0, "ほかの雷が消えて配列が詰まっても、静止した雷の形を保つ" );
@@ -425,7 +427,7 @@ void NWorldTest::RunEffectPathPlaybackTests( NAssetTest::FChecker& C, CAssetMana
 			// 同じ雷の同じ点を比較する。
 			const FVector3 Before( BeforeLoop[0][Index].Pos[0], BeforeLoop[0][Index].Pos[1], BeforeLoop[0][Index].Pos[2] );
 			const FVector3 After( AfterLoop[0][Index].Pos[0], AfterLoop[0][Index].Pos[1], AfterLoop[0][Index].Pos[2] );
-			LoopJump = std::max( LoopJump, ( After - Before ).Length() );
+			LoopJump = NMath::Max( LoopJump, ( After - Before ).Length() );
 		}
 	}
 	C.Check( LoopJump < 0.03f, "発生元の周回境界でも、生存している雷の形を不連続に戻さない（最大変化 %.5f）", LoopJump );

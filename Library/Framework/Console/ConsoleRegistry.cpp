@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Console/ConsoleParse.h"
 
 namespace
@@ -29,7 +31,7 @@ namespace
 			for ( int32 j = 1; j <= M; ++j )
 			{
 				const int32 Cost = A[i - 1] == B[j - 1] ? 0 : 1;
-				Current[j] = std::min( std::min( Previous[j] + 1, Current[j - 1] + 1 ), Previous[j - 1] + Cost );
+				Current[j] = NMath::Min( NMath::Min( Previous[j] + 1, Current[j - 1] + 1 ), Previous[j - 1] + Cost );
 			}
 			std::swap( Previous, Current );
 		}
@@ -49,7 +51,7 @@ namespace
 		for ( int32 n = 1; n < Texts.Num(); ++n )
 		{
 			int32 Length = 0;
-			const int32 Max = std::min( Prefix.Len(), Texts[n].Len() );
+			const int32 Max = NMath::Min( Prefix.Len(), Texts[n].Len() );
 			while ( Length < Max && FString( &Prefix[Length], 1 ).Equals( FString( &Texts[n][Length], 1 ), ESearchCase::IgnoreCase ) ) ++Length;
 			Prefix = Prefix.Left( Length );
 		}
@@ -112,7 +114,7 @@ FConsoleRegistration FConsoleRegistry::Register( FEntry&& Entry )
 	const FString Key = MakeKey( Entry.Info.Name );
 	// コマンドと同じ名前の別名は、コマンドが優先されるので外す
 	Aliases.Remove( Key );
-	Entries.Add( Key, std::move( Entry ) );
+	Entries.Add( Key, MoveTemp( Entry ) );
 	return Registration;
 }
 
@@ -124,7 +126,7 @@ FConsoleRegistration FConsoleRegistry::AddRaw( const FString& Name, const FStrin
 	Entry.Info.Category = Category;
 	Entry.Info.Args = Args;
 	Entry.Handler = std::make_shared<FHandler>( [Function]( FConsoleContext& Context, const TArray<FString>&, FString& ) { return Function( Context ); } );
-	return Register( std::move( Entry ) );
+	return Register( MoveTemp( Entry ) );
 }
 
 void FConsoleRegistry::MarkVariable( const FString& Name, std::function<FString()> GetText, std::function<void()> Reset )
@@ -132,8 +134,8 @@ void FConsoleRegistry::MarkVariable( const FString& Name, std::function<FString(
 	if ( FEntry* Entry = Entries.Find( MakeKey( Name ) ) )
 	{
 		Entry->Info.bVariable = true;
-		Entry->GetText = std::move( GetText );
-		Entry->Reset = std::move( Reset );
+		Entry->GetText = MoveTemp( GetText );
+		Entry->Reset = MoveTemp( Reset );
 	}
 }
 
@@ -359,7 +361,7 @@ bool FConsoleRegistry::SetArgCompleter( const FString& Name, int32 ArgIndex, std
 {
 	FEntry* Entry = Entries.Find( MakeKey( Name ) );
 	if ( Entry == nullptr || !Entry->Info.Args.IsValidIndex( ArgIndex ) ) return false;
-	Entry->Info.Args[ArgIndex].Completer = std::move( Completer );
+	Entry->Info.Args[ArgIndex].Completer = MoveTemp( Completer );
 	return true;
 }
 

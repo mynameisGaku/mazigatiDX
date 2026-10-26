@@ -1,4 +1,5 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Effect/EffectPathGeometry.h"
 #include "WorldEffectSelfTestSupport.h"
 
@@ -38,7 +39,7 @@ namespace
 			// 座標・幅・距離を調べる点。
 			for ( const FEffectPathGeometry::FPoint& Point : Strip.Points )
 			{
-				if ( !std::isfinite( Point.Position.x ) || !std::isfinite( Point.Position.y ) || !std::isfinite( Point.Position.z ) || !std::isfinite( Point.Width ) || !std::isfinite( Point.U ) || Point.Width < 0.0f ) return false;
+				if ( !NMath::IsFinite( Point.Position.x ) || !NMath::IsFinite( Point.Position.y ) || !NMath::IsFinite( Point.Position.z ) || !NMath::IsFinite( Point.Width ) || !NMath::IsFinite( Point.U ) || Point.Width < 0.0f ) return false;
 			}
 		}
 		return Count <= FEffectPathGeometry::MaxPoints && Geometry.Strips.Num() <= FEffectPathDefinition::MaxBranches + 1;
@@ -175,7 +176,7 @@ namespace
 		// 各検証項目の境界を越える入力。
 		const FInvalid Invalid[] = {
 			{ "Kind", []( FEffectPathDefinition& D ) { D.Kind = static_cast<FEffectPathDefinition::EKind>( 99 ); } },
-			{ "End", []( FEffectPathDefinition& D ) { D.End.x = std::numeric_limits<float32>::quiet_NaN(); } },
+			{ "End", []( FEffectPathDefinition& D ) { D.End.x = TNumericLimits<float32>::QuietNaN(); } },
 			{ "Segments", []( FEffectPathDefinition& D ) { D.Segments = 129; } },
 			{ "Branches", []( FEffectPathDefinition& D ) { D.Branches = 17; } },
 			{ "Jitter", []( FEffectPathDefinition& D ) { D.Jitter = -0.1f; } },
@@ -293,7 +294,7 @@ namespace
 		for ( int32 Index = 0; bMain && Index < Geometry.Strips[0].Points.Num(); ++Index )
 		{
 			if ( Index > 0 ) Distance += ( Geometry.Strips[0].Points[Index].Position - Geometry.Strips[0].Points[Index - 1].Position ).Length();
-			bMain = Geometry.Strips[0].Points[Index].Width == 0.4f && Geometry.Strips[0].Points[Index].Color == Color && std::fabs( Geometry.Strips[0].Points[Index].U - Distance ) < 1.0e-5f;
+			bMain = Geometry.Strips[0].Points[Index].Width == 0.4f && Geometry.Strips[0].Points[Index].Color == Color && NMath::Abs( Geometry.Strips[0].Points[Index].U - Distance ) < 1.0e-5f;
 		}
 		C.Check( bMain && Distance >= 5.0f, "主幹の幅と色を保ち、画像用の U は揺れた線に沿う累積ワールド距離にする" );
 		// 同一入力を繰り返して作った中心線。
@@ -349,7 +350,7 @@ namespace
 		for ( int32 Strip = 0; Strip < First.Strips.Num(); ++Strip )
 		{
 			// 各点の更新境界での変化を調べる番号。
-			for ( int32 Index = 0; Index < First.Strips[Strip].Points.Num(); ++Index ) MaximumChange = std::max( MaximumChange, ( First.Strips[Strip].Points[Index].Position - Second.Strips[Strip].Points[Index].Position ).Length() );
+			for ( int32 Index = 0; Index < First.Strips[Strip].Points.Num(); ++Index ) MaximumChange = NMath::Max( MaximumChange, ( First.Strips[Strip].Points[Index].Position - Second.Strips[Strip].Points[Index].Position ).Length() );
 		}
 		C.Check( MaximumChange < 0.001f, "形状の更新境界でも主幹と枝が飛ばない（最大変化 %.8f）", MaximumChange );
 		Definition.RefreshHz = 0.0f;
@@ -357,20 +358,20 @@ namespace
 		NEffectPath::BuildLightning( Definition, 41u, 100.0f, FVector3::Zero, Definition.End, 1.0f, FColor32( 255, 255, 255 ), Second );
 		C.Check( SameGeometry( First, Second ), "更新速度 0 では、時刻が進んでも雷の形を変えない" );
 		Definition.RefreshHz = 12.0f;
-		Definition.Segments = std::numeric_limits<int32>::max();
-		Definition.Branches = std::numeric_limits<int32>::max();
-		NEffectPath::BuildLightning( Definition, 0u, std::numeric_limits<float32>::max(), FVector3::Zero, Definition.End, 1.0f, FColor32( 255, 255, 255 ), First );
+		Definition.Segments = TNumericLimits<int32>::Max();
+		Definition.Branches = TNumericLimits<int32>::Max();
+		NEffectPath::BuildLightning( Definition, 0u, TNumericLimits<float32>::Max(), FVector3::Zero, Definition.End, 1.0f, FColor32( 255, 255, 255 ), First );
 		C.Check( First.Strips.Num() == 17 && First.Strips[0].Points.Num() == 129 && SafeGeometry( First ), "巨大な区間数・枝数・時刻でも、点数上限と有限な座標を保つ" );
 		Definition.Segments = -1;
 		Definition.Branches = -1;
-		Definition.Jitter = std::numeric_limits<float32>::quiet_NaN();
-		NEffectPath::BuildLightning( Definition, 0u, std::numeric_limits<float32>::quiet_NaN(), FVector3::Zero, Definition.End, 1.0f, FColor32( 255, 255, 255 ), First );
+		Definition.Jitter = TNumericLimits<float32>::QuietNaN();
+		NEffectPath::BuildLightning( Definition, 0u, TNumericLimits<float32>::QuietNaN(), FVector3::Zero, Definition.End, 1.0f, FColor32( 255, 255, 255 ), First );
 		C.Check( First.Strips.Num() == 1 && First.Strips[0].Points.Num() == 3 && SafeGeometry( First ), "不正な区間数・枝数・揺れ・時刻を直接渡しても、安全な値で処理する" );
 		NEffectPath::BuildLightning( Definition, 0u, 0.0f, FVector3::Zero, FVector3::Zero, 1.0f, FColor32(), First );
 		C.Check( First.Strips.IsEmpty(), "同じ始点と終点は、前の出力を消して空の形状にする" );
 		NEffectPath::BuildLightning( Definition, 0u, 0.0f, FVector3::Zero, Definition.End, 0.0f, FColor32(), First );
 		C.Check( First.Strips.IsEmpty(), "幅 0 の雷は点を作らない" );
-		NEffectPath::BuildLightning( Definition, 0u, 0.0f, FVector3( std::numeric_limits<float32>::infinity(), 0.0f, 0.0f ), Definition.End, 1.0f, FColor32(), First );
+		NEffectPath::BuildLightning( Definition, 0u, 0.0f, FVector3( TNumericLimits<float32>::Infinity(), 0.0f, 0.0f ), Definition.End, 1.0f, FColor32(), First );
 		C.Check( First.Strips.IsEmpty(), "非有限の始点は、描画側へ不正な座標を渡さず拒否する" );
 		Definition.BranchLength = 1.0e-10f;
 		Definition.Branches = 4;

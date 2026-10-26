@@ -5,6 +5,8 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "Library/Core/Types/Numeric.h"
+
 bool NConsole::ParseInt64( const FString& Text, int64& Out )
 {
 	if ( Text.IsEmpty() ) return false;
@@ -35,7 +37,7 @@ bool NConsole::ParseFloat64( const FString& Text, float64& Out )
 	errno = 0;
 	const double Value = std::strtod( Begin, &End );
 	if ( End == Begin || *End != '\0' ) return false;
-	if ( !std::isfinite( Value ) ) return false;   // nan / inf / 溢れ
+	if ( !NMath::IsFinite( Value ) ) return false;   // nan / inf / 溢れ
 	Out = Value;
 	return true;
 }

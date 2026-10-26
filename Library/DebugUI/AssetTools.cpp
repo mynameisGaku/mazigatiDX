@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "Library/Core/Collection/Sort.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/DebugUI/EffectEditorInternal.h"
 #include "Library/Framework/Asset/AssetManager.h"
@@ -39,7 +40,7 @@ namespace
 	{
 		const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
 		ImGui::SetNextWindowPos( ImVec2( MainViewport->Pos.x + 20.0f, MainViewport->Pos.y + 44.0f ), ImGuiCond_FirstUseEver );
-		ImGui::SetNextWindowSize( ImVec2( std::min( 780.0f, MainViewport->Size.x - 40.0f ), std::min( 560.0f, MainViewport->Size.y - 60.0f ) ), ImGuiCond_FirstUseEver );
+		ImGui::SetNextWindowSize( ImVec2( NMath::Min( 780.0f, MainViewport->Size.x - 40.0f ), NMath::Min( 560.0f, MainViewport->Size.y - 60.0f ) ), ImGuiCond_FirstUseEver );
 		if ( !ImGui::Begin( "Assets", pOpen ) )
 		{
 			ImGui::End();
@@ -215,9 +216,9 @@ namespace
 	void DrawAudioWindow( FAssetToolsState&, bool* pOpen )
 	{
 		const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
-		const float AudioWidth = std::min( 450.0f, MainViewport->Size.x - 40.0f );
-		ImGui::SetNextWindowPos( ImVec2( MainViewport->Pos.x + std::max( 20.0f, MainViewport->Size.x - AudioWidth - 20.0f ), MainViewport->Pos.y + 44.0f ), ImGuiCond_FirstUseEver );
-		ImGui::SetNextWindowSize( ImVec2( AudioWidth, std::min( 500.0f, MainViewport->Size.y - 60.0f ) ), ImGuiCond_FirstUseEver );
+		const float AudioWidth = NMath::Min( 450.0f, MainViewport->Size.x - 40.0f );
+		ImGui::SetNextWindowPos( ImVec2( MainViewport->Pos.x + NMath::Max( 20.0f, MainViewport->Size.x - AudioWidth - 20.0f ), MainViewport->Pos.y + 44.0f ), ImGuiCond_FirstUseEver );
+		ImGui::SetNextWindowSize( ImVec2( AudioWidth, NMath::Min( 500.0f, MainViewport->Size.y - 60.0f ) ), ImGuiCond_FirstUseEver );
 		if ( !ImGui::Begin( "Audio", pOpen ) )
 		{
 			ImGui::End();
@@ -284,7 +285,7 @@ namespace
 				ImGui::TableNextColumn();
 				ImGui::TextUnformatted( ToString( Voice.Bus ) );
 				ImGui::TableNextColumn();
-				ImGui::ProgressBar( std::min( Voice.Volume, 1.0f ), ImVec2( -FLT_MIN, 0.0f ), "" );
+				ImGui::ProgressBar( NMath::Min( Voice.Volume, 1.0f ), ImVec2( -FLT_MIN, 0.0f ), "" );
 				ImGui::SameLine( 4.0f );
 				ImGui::Text( "%.2f", Voice.Volume );
 				ImGui::TableNextColumn();

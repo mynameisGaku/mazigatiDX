@@ -10,6 +10,7 @@
 #include "Library/Core/Collection/Iterator.h"
 #include "Library/Core/Collection/Sort.h"
 #include "Library/Core/Memory/Memory.h"
+#include "Library/Core/Types/Utility.h"
 
 //=============================================================================
 // TArray<T>
@@ -164,12 +165,12 @@ public:
 	// 追加（戻り値は追加した位置のインデックス）
 	//-------------------------------------------------------------------------
 	FORCEINLINE int32 Add( const T& Item ) { return Emplace( Item ); }
-	FORCEINLINE int32 Add( T&& Item ) { return Emplace( std::move( Item ) ); }
+	FORCEINLINE int32 Add( T&& Item ) { return Emplace( MoveTemp( Item ) ); }
 
 	template<typename... Args>
 	FORCEINLINE int32 Emplace( Args&&... args )
 	{
-		EmplaceGetRef( std::forward<Args>( args )... );
+		EmplaceGetRef( Forward<Args>( args )... );
 		return ArrayNum - 1;
 	}
 
@@ -213,7 +214,7 @@ public:
 	}
 
 	FORCEINLINE void Insert( const T& Item, int32 Index ) { EmplaceAt( Index, Item ); }
-	FORCEINLINE void Insert( T&& Item, int32 Index ) { EmplaceAt( Index, std::move( Item ) ); }
+	FORCEINLINE void Insert( T&& Item, int32 Index ) { EmplaceAt( Index, MoveTemp( Item ) ); }
 
 	template<typename... Args>
 	FORCEINLINE void EmplaceAt( int32 Index, Args&&... args )
@@ -221,9 +222,9 @@ public:
 		COLLECTION_CHECK( Index >= 0 && Index <= ArrayNum, "TArray::Insert index out of range" );
 
 		// args が自分の要素を参照している可能性があるので先に値を作る
-		T NewItem( std::forward<Args>( args )... );
+		T NewItem( Forward<Args>( args )... );
 		OpenGap( Index, 1 );
-		new ( Data + Index ) T( std::move( NewItem ) );
+		new ( Data + Index ) T( MoveTemp( NewItem ) );
 	}
 
 	FORCEINLINE void Append( const T* Ptr, int32 Count )
@@ -249,15 +250,15 @@ public:
 	FORCEINLINE void Append( std::initializer_list<T> List ) { Append( List.begin(), static_cast<int32>( List.size() ) ); }
 
 	TArray& operator+=( const TArray& Other ) { Append( Other ); return *this; }
-	TArray& operator+=( TArray&& Other ) { Append( std::move( Other ) ); return *this; }
+	TArray& operator+=( TArray&& Other ) { Append( MoveTemp( Other ) ); return *this; }
 
 	// スタック操作
 	FORCEINLINE void Push( const T& Item ) { Add( Item ); }
-	FORCEINLINE void Push( T&& Item ) { Add( std::move( Item ) ); }
+	FORCEINLINE void Push( T&& Item ) { Add( MoveTemp( Item ) ); }
 	FORCEINLINE T Pop()
 	{
 		COLLECTION_CHECK( !IsEmpty(), "TArray::Pop on empty array" );
-		T Item = std::move( Data[ArrayNum - 1] );
+		T Item = MoveTemp( Data[ArrayNum - 1] );
 		NMemoryOps::DestructItem( Data + ArrayNum - 1 );
 		--ArrayNum;
 		return Item;
@@ -293,7 +294,7 @@ public:
 	FORCEINLINE void RemoveAtSwap( int32 Index )
 	{
 		COLLECTION_CHECK( IsValidIndex( Index ), "TArray::RemoveAtSwap index out of range" );
-		if ( Index != ArrayNum - 1 ) Data[Index] = std::move( Data[ArrayNum - 1] );
+		if ( Index != ArrayNum - 1 ) Data[Index] = MoveTemp( Data[ArrayNum - 1] );
 		NMemoryOps::DestructItem( Data + ArrayNum - 1 );
 		--ArrayNum;
 	}

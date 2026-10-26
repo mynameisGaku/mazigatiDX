@@ -7,6 +7,7 @@
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/Hash.h"
 #include "Library/Core/Collection/Optional.h"
+#include "Library/Core/Types/Utility.h"
 
 //=============================================================================
 // FString
@@ -96,12 +97,12 @@ public:
 	FString& operator+=( char Ch ) { return Append( &Ch, 1 ); }
 
 	friend FORCEINLINE FString operator+( const FString& A, const FString& B ) { FString R( A ); R += B; return R; }
-	friend FORCEINLINE FString operator+( FString&& A, const FString& B ) { A += B; return std::move( A ); }
+	friend FORCEINLINE FString operator+( FString&& A, const FString& B ) { A += B; return MoveTemp( A ); }
 	friend FORCEINLINE FString operator+( const FString& A, const char* B ) { FString R( A ); R += B; return R; }
-	friend FORCEINLINE FString operator+( FString&& A, const char* B ) { A += B; return std::move( A ); }
+	friend FORCEINLINE FString operator+( FString&& A, const char* B ) { A += B; return MoveTemp( A ); }
 	friend FORCEINLINE FString operator+( const char* A, const FString& B ) { FString R( A ); R += B; return R; }
 	friend FORCEINLINE FString operator+( const FString& A, char B ) { FString R( A ); R += B; return R; }
-	friend FORCEINLINE FString operator+( FString&& A, char B ) { A += B; return std::move( A ); }
+	friend FORCEINLINE FString operator+( FString&& A, char B ) { A += B; return MoveTemp( A ); }
 	friend FORCEINLINE FString operator+( char A, const FString& B ) { FString R; R += A; R += B; return R; }
 
 	// パス連結（区切りは '/'。重複する区切りは 1 つにまとめる）

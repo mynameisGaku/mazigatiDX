@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/Framework/Engine/Engine.h"
 
@@ -62,7 +63,7 @@ bool NEffectEditorUI::DrawMeshPanel( FEffectEditorState& State, FParticleEmitter
 		bChanged |= TrackMeshInputEnd( ImGui::DragFloat( "Ring inner radius", &Mesh.InnerRadius, 0.005f, 0.05f, 0.95f, "%.3f", ImGuiSliderFlags_AlwaysClamp ), State.Document );
 	}
 	// 固定形状の角度を編集する前に有限値を保証する。
-	if ( std::isfinite( Mesh.RotationDegrees.x ) && std::isfinite( Mesh.RotationDegrees.y ) && std::isfinite( Mesh.RotationDegrees.z ) ) bChanged |= TrackMeshInputEnd( ImGui::DragFloat3( "Mesh rotation (deg)", &Mesh.RotationDegrees.x, 0.25f, -360000.0f, 360000.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp ), State.Document );
+	if ( NMath::IsFinite( Mesh.RotationDegrees.x ) && NMath::IsFinite( Mesh.RotationDegrees.y ) && NMath::IsFinite( Mesh.RotationDegrees.z ) ) bChanged |= TrackMeshInputEnd( ImGui::DragFloat3( "Mesh rotation (deg)", &Mesh.RotationDegrees.x, 0.25f, -360000.0f, 360000.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp ), State.Document );
 	else TextMeshWarning( "Mesh rotation is invalid; reset mesh to repair it." );
 	ImGui::TextWrapped( "Mesh keeps a fixed world-facing shape; particle Orientation is ignored. Particle size, spin and effect rotation still apply." );
 	ImGui::TextDisabled( "Only the first 64 mesh particles per playback are recorded, in emitter and spawn order." );

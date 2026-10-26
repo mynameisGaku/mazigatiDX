@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Ecs/SystemParams.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogModelAnimator, Log )
@@ -118,7 +119,7 @@ bool FModelAnimator::AddEvent( const FString& ClipName, float32 NormalizedTime, 
 	if ( Clip == nullptr ) return false;
 
 	FClip::FEvent Event;
-	Event.Normalized = std::clamp( NormalizedTime, 0.0f, 1.0f );
+	Event.Normalized = NMath::Clamp( NormalizedTime, 0.0f, 1.0f );
 	Event.Name = EventName;
 	Clip->Events.Add( Event );
 	return true;
@@ -227,14 +228,14 @@ bool FModelAnimator::Play( const FString& ClipName, const FModelPlayParams& Para
 		Layer->bAttached = true;
 	}
 
-	const float32 LengthSeconds = LengthUnits / std::max( UnitsPerSecond, 1.0e-3f );
+	const float32 LengthSeconds = LengthUnits / NMath::Max( UnitsPerSecond, 1.0e-3f );
 	const bool bReuse = Layer->Weight > 0.0f && !Params.bRestartIfPlaying;   // フェードで消えかけの同じクリップは、位置を引き継ぐ
 	Layer->LengthSeconds = LengthSeconds;
 	Layer->ClipSpeed = Params.Speed * Clip->DefaultSpeed;
 	Layer->Loop = Params.Loop.IsSet() ? Params.Loop.Get( Clip->DefaultLoop ) : Clip->DefaultLoop;
 	if ( !bReuse || Params.StartNormalized > 0.0f )
 	{
-		const float64 Normalized = std::clamp( static_cast<float64>( Params.StartNormalized ), 0.0, 1.0 );
+		const float64 Normalized = NMath::Clamp( static_cast<float64>( Params.StartNormalized ), 0.0, 1.0 );
 		// 逆再生は最後から始める（終わりちょうどだと、Loop では先頭に戻ってしまうので、ほんの少し手前）
 		Layer->Playhead = Layer->ClipSpeed < 0.0f && Normalized <= 0.0 ? static_cast<float64>( std::nextafter( LengthSeconds, 0.0f ) ) : Normalized * LengthSeconds;
 		// 開始位置ちょうどの出来事も拾えるよう、「手前」から始まったことにする
@@ -242,7 +243,7 @@ bool FModelAnimator::Play( const FString& ClipName, const FModelPlayParams& Para
 	}
 
 	// クロスフェード: 新しいものは 0 -> 1、ほかは全部 0 へ。すべて同じ時間で終わるよう、変化の速さを揃える
-	const float32 Fade = Params.FadeTime >= 0.0f ? Params.FadeTime : std::max( Clip->DefaultFade, 0.0f );
+	const float32 Fade = Params.FadeTime >= 0.0f ? Params.FadeTime : NMath::Max( Clip->DefaultFade, 0.0f );
 	for ( FLayer& Other : Layers )
 	{
 		if ( &Other == Layer ) continue;
@@ -276,7 +277,7 @@ bool FModelAnimator::Play( const FString& ClipName, const FModelPlayParams& Para
 
 void FModelAnimator::Stop( float32 FadeTime )
 {
-	const float32 Fade = std::max( FadeTime, 0.0f );
+	const float32 Fade = NMath::Max( FadeTime, 0.0f );
 	for ( FLayer& Layer : Layers )
 	{
 		Layer.TargetWeight = 0.0f;
@@ -311,8 +312,8 @@ void FModelAnimator::Update( float32 DeltaTime )
 		if ( Layer.Weight != Layer.TargetWeight )
 		{
 			const float32 Step = Layer.FadeRate * DeltaTime;
-			if ( Layer.Weight < Layer.TargetWeight ) Layer.Weight = std::min( Layer.Weight + Step, Layer.TargetWeight );
-			else Layer.Weight = std::max( Layer.Weight - Step, Layer.TargetWeight );
+			if ( Layer.Weight < Layer.TargetWeight ) Layer.Weight = NMath::Min( Layer.Weight + Step, Layer.TargetWeight );
+			else Layer.Weight = NMath::Max( Layer.Weight - Step, Layer.TargetWeight );
 			if ( Layer.FadeRate <= 0.0f ) Layer.Weight = Layer.TargetWeight;
 		}
 		if ( Layer.Weight <= 0.0f && Layer.TargetWeight <= 0.0f ) continue;   // 働いていない層は、時間も進めない
@@ -385,7 +386,7 @@ void FModelAnimator::Seek( float32 NormalizedTime )
 
 	FLayer& Layer = Layers[Index];
 	// 1 ちょうどだと、Loop では先頭に戻ってしまうので、手前で止める
-	const float64 Normalized = std::clamp( static_cast<float64>( NormalizedTime ), 0.0, 0.999999 );
+	const float64 Normalized = NMath::Clamp( static_cast<float64>( NormalizedTime ), 0.0, 0.999999 );
 	Layer.Playhead = Normalized * static_cast<float64>( Layer.LengthSeconds );
 	Layer.PrevPlayhead = Layer.Playhead;
 	bFinished = false;

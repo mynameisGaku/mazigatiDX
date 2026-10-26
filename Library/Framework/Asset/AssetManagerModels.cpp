@@ -2,6 +2,7 @@
 
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Profiler/ProfilerScope.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/Import/ModelFormats.h"
 #include "Library/Platform/FileSystem.h"
 
@@ -126,7 +127,7 @@ TArray<FModelSourceInfo> CAssetManager::ScanModelSources() const
 		else if ( NFileSystem::GetLastWriteTime( Root / Relative, SourceTime ) && NFileSystem::GetLastWriteTime( OutputFull, OutputTime ) && NModelFormat::IsOutputUpToDate( SourceTime, OutputTime ) )
 			Info.Status = EModelExportStatus::UpToDate;
 		else Info.Status = EModelExportStatus::Stale;
-		if ( Info.Status != EModelExportStatus::Missing ) Info.OutputBytes = std::max<int64>( NFileSystem::GetFileSize( OutputFull ), 0 );
+		if ( Info.Status != EModelExportStatus::Missing ) Info.OutputBytes = NMath::Max<int64>( NFileSystem::GetFileSize( OutputFull ), 0 );
 		Infos.Add( Info );
 	}
 	return Infos;

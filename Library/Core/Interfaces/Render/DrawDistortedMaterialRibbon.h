@@ -7,6 +7,8 @@
 
 #include "DrawMaterialRibbon.h"
 
+#include "Library/Core/Types/Numeric.h"
+
 // 既存材質帯へ、共通ノイズ画像と点ごとの変位量を加えて記録する値。
 struct FDrawDistortedMaterialRibbonData
 {
@@ -34,7 +36,7 @@ namespace NDrawDistortedMaterialRibbon
 	// Dataの材質・画像・倍率を検査し、いずれかが無効ならfalseを返す。
 	inline bool IsValidHeader( const FDrawDistortedMaterialRibbonData& Data )
 	{
-		return NDrawMaterialRibbon::IsValidHeader( Data.Material ) && Data.DistortionTexture >= 0 && std::isfinite( Data.UVScale[0] ) && std::isfinite( Data.UVScale[1] ) && Data.UVScale[0] > 0.0f && Data.UVScale[1] > 0.0f && Data.UVScale[0] <= 128.0f && Data.UVScale[1] <= 128.0f;
+		return NDrawMaterialRibbon::IsValidHeader( Data.Material ) && Data.DistortionTexture >= 0 && NMath::IsFinite( Data.UVScale[0] ) && NMath::IsFinite( Data.UVScale[1] ) && Data.UVScale[0] > 0.0f && Data.UVScale[1] > 0.0f && Data.UVScale[0] <= 128.0f && Data.UVScale[1] <= 128.0f;
 	}
 
 	// 固定設定と点列が描画可能か調べ、無効値ならfalseを返す。
@@ -52,10 +54,10 @@ namespace NDrawDistortedMaterialRibbon
 		{
 			// 既存材質値とノイズ変位値を持つ現在点。
 			const FDrawDistortedMaterialRibbonData::FPoint& Point = Points[Index];
-			if ( !NDrawMaterialRibbon::IsValidPoint( Data.Material, Point.Material, Index > 0, Index > 0 ? Points[Index - 1].Material.Path.U : 0.0f ) || !std::isfinite( Point.Strength ) || Point.Strength < 0.0f || Point.Strength > 1.0f || !std::isfinite( Point.UVOffset[0] ) || !std::isfinite( Point.UVOffset[1] ) || std::abs( Point.UVOffset[0] ) > 1.0e6f || std::abs( Point.UVOffset[1] ) > 1.0e6f ) return false;
+			if ( !NDrawMaterialRibbon::IsValidPoint( Data.Material, Point.Material, Index > 0, Index > 0 ? Points[Index - 1].Material.Path.U : 0.0f ) || !NMath::IsFinite( Point.Strength ) || Point.Strength < 0.0f || Point.Strength > 1.0f || !NMath::IsFinite( Point.UVOffset[0] ) || !NMath::IsFinite( Point.UVOffset[1] ) || NMath::Abs( Point.UVOffset[0] ) > 1.0e6f || NMath::Abs( Point.UVOffset[1] ) > 1.0e6f ) return false;
 			// 連続経路距離へ画像反復を掛けた横座標。
 			const float32 BaseU = Point.Material.Path.U * Ribbon.UVRepeat;
-			if ( !std::isfinite( BaseU * Data.UVScale[0] + Point.UVOffset[0] ) ) return false;
+			if ( !NMath::IsFinite( BaseU * Data.UVScale[0] + Point.UVOffset[0] ) ) return false;
 			// 接線用補助点が作る区間を除いた実描画区間。
 			const bool bVisibleSegment = Index > 0 && !( Index == 1 && ( Ribbon.JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) && !( Index + 1 == Ribbon.NumPoints && ( Ribbon.JoinFlags & FDrawRibbonData::NextPoint ) != 0 );
 			if ( bVisibleSegment && !NDrawMaterialRibbon::AddTextureSections( Data.Material, Points[Index - 1].Material.Path.U, Point.Material.Path.U, TextureSections ) ) return false;

@@ -5,6 +5,7 @@
 #include <cmath>
 
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Effect/EffectBackend.h"
 #include "Library/Framework/Render/DrawContext.h"
 #include "Library/Framework/World/Editor/EditorCamera.h"
@@ -110,11 +111,11 @@ namespace
 	// 計算不能な視点や表示範囲を描画APIへ渡さない。
 	bool IsValidView( const FEditorCamera& Camera, const FEditorViewport& View )
 	{
-		if ( !View.IsValid() || !std::isfinite( View.Near ) || !std::isfinite( View.Far ) || !std::isfinite( View.FovY ) || View.Near <= 0.0f || View.Far <= View.Near || View.FovY <= 0.0f || View.FovY >= 3.14159265f ) return false;
-		if ( !std::isfinite( Camera.Target.x ) || !std::isfinite( Camera.Target.y ) || !std::isfinite( Camera.Target.z ) || !std::isfinite( Camera.Yaw ) || !std::isfinite( Camera.Pitch ) || !std::isfinite( Camera.Distance ) || Camera.Distance <= 0.0f ) return false;
+		if ( !View.IsValid() || !NMath::IsFinite( View.Near ) || !NMath::IsFinite( View.Far ) || !NMath::IsFinite( View.FovY ) || View.Near <= 0.0f || View.Far <= View.Near || View.FovY <= 0.0f || View.FovY >= 3.14159265f ) return false;
+		if ( !NMath::IsFinite( Camera.Target.x ) || !NMath::IsFinite( Camera.Target.y ) || !NMath::IsFinite( Camera.Target.z ) || !NMath::IsFinite( Camera.Yaw ) || !NMath::IsFinite( Camera.Pitch ) || !NMath::IsFinite( Camera.Distance ) || Camera.Distance <= 0.0f ) return false;
 		// 注視点から視点を引いた結果も、有限である必要がある。
 		const FVector3 Eye = Camera.GetEye();
-		return std::isfinite( Eye.x ) && std::isfinite( Eye.y ) && std::isfinite( Eye.z );
+		return NMath::IsFinite( Eye.x ) && NMath::IsFinite( Eye.y ) && NMath::IsFinite( Eye.z );
 	}
 
 	// 力場guide用のLine3D / wire Sphere3Dだけを読み、長さと描画値が安全か確かめる。
@@ -142,7 +143,7 @@ namespace
 				// 読み取り済みの線分座標。
 				FDrawLine3DData Line;
 				std::memcpy( &Line, Payload, sizeof( Line ) );
-				for ( int32 Axis = 0; Axis < 3; ++Axis ) if ( !std::isfinite( Line.P0[Axis] ) || !std::isfinite( Line.P1[Axis] ) ) return false;
+				for ( int32 Axis = 0; Axis < 3; ++Axis ) if ( !NMath::IsFinite( Line.P0[Axis] ) || !NMath::IsFinite( Line.P1[Axis] ) ) return false;
 			}
 			else if ( Type == EDrawCommand::Sphere3D )
 			{
@@ -150,8 +151,8 @@ namespace
 				// 読み取り済みのwire sphere設定。
 				FDrawSphere3DData Sphere;
 				std::memcpy( &Sphere, Payload, sizeof( Sphere ) );
-				if ( !std::isfinite( Sphere.Radius ) || Sphere.Radius <= 0.0f || Sphere.Div < 3 || Sphere.Div > 128 ) return false;
-				for ( int32 Axis = 0; Axis < 3; ++Axis ) if ( !std::isfinite( Sphere.Center[Axis] ) ) return false;
+				if ( !NMath::IsFinite( Sphere.Radius ) || Sphere.Radius <= 0.0f || Sphere.Div < 3 || Sphere.Div > 128 ) return false;
+				for ( int32 Axis = 0; Axis < 3; ++Axis ) if ( !NMath::IsFinite( Sphere.Center[Axis] ) ) return false;
 			}
 			else return false;
 			Offset += TotalWords;
@@ -163,7 +164,7 @@ namespace
 	void RecordGrid( FDrawContext& Draw, const FEditorCamera& Camera )
 	{
 		// 視点の距離に応じた、10の整数乗の格子間隔。
-		const float32 Cell = std::pow( 10.0f, std::floor( std::log10( std::max( Camera.Distance * 0.25f, 0.01f ) ) ) );
+		const float32 Cell = std::pow( 10.0f, std::floor( std::log10( NMath::Max( Camera.Distance * 0.25f, 0.01f ) ) ) );
 		// 中心から片側へ引く格子線の数。
 		constexpr int32 Half = 24;
 		// 大きな注視点でも整数への変換で範囲を超えないよう、格子番号は実数で持つ。

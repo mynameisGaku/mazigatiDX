@@ -6,6 +6,8 @@
 #include <cstring>
 #include <cwchar>
 
+#include "Library/Core/Types/Utility.h"
+
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
@@ -417,7 +419,7 @@ int32 FString::ReplaceInline( const FString& From, const FString& To, ESearchCas
 			i += Size;
 		}
 	}
-	if ( Count > 0 ) *this = std::move( Result );
+	if ( Count > 0 ) *this = MoveTemp( Result );
 	return Count;
 }
 
@@ -431,8 +433,8 @@ bool FString::Split( const FString& Delimiter, FString* OutLeft, FString* OutRig
 	// OutLeft / OutRight が this を指していても壊れないよう、先に両方作る
 	FString LeftPart  = Left( Index );
 	FString RightPart = RightChop( Index + Delimiter.Len() );
-	if ( OutLeft ) *OutLeft = std::move( LeftPart );
-	if ( OutRight ) *OutRight = std::move( RightPart );
+	if ( OutLeft ) *OutLeft = MoveTemp( LeftPart );
+	if ( OutRight ) *OutRight = MoveTemp( RightPart );
 	return true;
 }
 

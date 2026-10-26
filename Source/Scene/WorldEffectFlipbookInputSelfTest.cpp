@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
 #include "WorldSelfTestSupport.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EffectEditorInternal.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Engine/Engine.h"
@@ -155,10 +156,10 @@ namespace
 		C.Check( Input.TabTo( State, SpeedId ), "Seconds speedへkeyboard focusする" );
 		const bool bTyped = Input.ReplaceNumeric( State, SpeedId, "2.75" );
 		Input.Tap( State, ImGuiKey_Tab );
-		C.Check( bTyped && std::fabs( State.Document.Get().Emitters[0].Flipbook.Speed - 2.75f ) < 0.002f, "Seconds speedを文字入力する" );
+		C.Check( bTyped && NMath::Abs( State.Document.Get().Emitters[0].Flipbook.Speed - 2.75f ) < 0.002f, "Seconds speedを文字入力する" );
 		C.Check( State.Document.GetNumUndo() >= 3, "enable・mode・speed入力に履歴がある" );
-		C.Check( State.Document.Undo() && std::fabs( State.Document.Get().Emitters[0].Flipbook.Speed - 1.0f ) < 0.002f, "speed入力だけをUndoする" );
-		C.Check( State.Document.Redo() && std::fabs( State.Document.Get().Emitters[0].Flipbook.Speed - 2.75f ) < 0.002f, "speed文字入力をRedoする" );
+		C.Check( State.Document.Undo() && NMath::Abs( State.Document.Get().Emitters[0].Flipbook.Speed - 1.0f ) < 0.002f, "speed入力だけをUndoする" );
+		C.Check( State.Document.Redo() && NMath::Abs( State.Document.Get().Emitters[0].Flipbook.Speed - 2.75f ) < 0.002f, "speed文字入力をRedoする" );
 		// disableしてもSheet/Clipと他のemitter設定を保つ。
 		FParticleEmitterDefinition Configured = State.Document.Get().Emitters[0];
 		Configured.Flipbook.Sheet = "Effects/flipbook_sigil_burst.sheet.json";
@@ -173,7 +174,7 @@ namespace
 		// 不正enumとNaNを含む描画後、Resetだけで修復しFlipbook外を維持する。
 		FParticleEmitterDefinition Invalid = Disabled;
 		Invalid.Flipbook.TimeMode = static_cast<FEffectFlipbookDefinition::ETimeMode>( 0xFFu );
-		Invalid.Flipbook.Speed = ( std::numeric_limits<float32>::quiet_NaN )();
+		Invalid.Flipbook.Speed = TNumericLimits<float32>::QuietNaN();
 		NParticleEdit::SetEmitter( State.Document, 0, Invalid, "emitter-settings" );
 		Input.Frame( State );
 		C.Check( !State.Document.Get().Emitters[0].Flipbook.Validate().IsEmpty() && Input.FramesBalanced(), "不正modeとNaN speedを渡してもassertせず描画する" );

@@ -6,6 +6,7 @@
 #include <limits>
 
 #include "AssetSelfTestSupport.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EffectEditorInternal.h"
 #include "Library/Framework/Effect/EffectForceFieldDefinition.h"
 #include "Library/Framework/Render/DrawContext.h"
@@ -143,7 +144,7 @@ namespace
 				// 有限性を調べる現在の描画一覧。
 				const ImDrawList* List = Data->CmdLists[ListIndex];
 				// 表示位置が有限である必要があるvertex。
-				for ( const ImDrawVert& Vertex : List->VtxBuffer ) if ( !std::isfinite( Vertex.pos.x ) || !std::isfinite( Vertex.pos.y ) ) return false;
+				for ( const ImDrawVert& Vertex : List->VtxBuffer ) if ( !NMath::IsFinite( Vertex.pos.x ) || !NMath::IsFinite( Vertex.pos.y ) ) return false;
 			}
 			return true;
 		}
@@ -302,7 +303,7 @@ namespace
 		FParticleEffectDefinition Definition = MakeForceFieldInputDefinition();
 		// 不正fieldを組み込む対象emitter。
 		FParticleEmitterDefinition& Emitter = Definition.Emitters[0];
-		Emitter.ForceFields[0].Acceleration.x = ( std::numeric_limits<float32>::quiet_NaN )();
+		Emitter.ForceFields[0].Acceleration.x = TNumericLimits<float32>::QuietNaN();
 		// JSON型不正の印を持つfield。
 		FEffectForceFieldDefinition InvalidType;
 		// finite値を保ったままEnabledの型だけを壊した入力。
@@ -325,7 +326,7 @@ namespace
 		// Resetから移動してNaN fieldのStrengthがTab候補に現れるか。
 		const bool bNaNStrengthFocused = Input.TabTo( State, Input.FieldItemId( "Strength (m/s2)##ForceFieldStrength" ), 128 );
 		C.Check( bNaNResetFocused && !bNaNStrengthFocused, "Resetへfocusを確定してからTabを巡回してもNaN fieldのStrength widgetは存在しない" );
-		C.Check( Input.Press( State, "Reset##ForceFieldReset" ) && State.Document.Get().Emitters[0].ForceFields.Num() == FEffectForceFieldDefinition::MaxFields + 1 && State.Document.Get().Emitters[0].ForceFields[0].Validate().IsEmpty() && std::isfinite( State.Document.Get().Emitters[0].ForceFields[0].Acceleration.x ), "NaNを含む場はResetで全体を既定値へ修復し、超過件数を残す" );
+		C.Check( Input.Press( State, "Reset##ForceFieldReset" ) && State.Document.Get().Emitters[0].ForceFields.Num() == FEffectForceFieldDefinition::MaxFields + 1 && State.Document.Get().Emitters[0].ForceFields[0].Validate().IsEmpty() && NMath::IsFinite( State.Document.Get().Emitters[0].ForceFields[0].Acceleration.x ), "NaNを含む場はResetで全体を既定値へ修復し、超過件数を残す" );
 		State.SelectedForceField = 1;
 		Input.Frame( State );
 		if ( !State.Document.Get().Emitters[0].ForceFields.IsValidIndex( 1 ) )
@@ -446,32 +447,32 @@ namespace
 		C.Check( bFollowResetPressed && FieldAt( 1 ).Validate().IsEmpty() && !FieldAt( 1 ).bFollowEmitter, "型違いのFollowEmitterもResetで復旧する" );
 		// 非有限のAxisを持つfield。
 		FEffectForceFieldDefinition NaNAxisField;
-		NaNAxisField.Axis.x = ( std::numeric_limits<float32>::quiet_NaN )();
+		NaNAxisField.Axis.x = TNumericLimits<float32>::QuietNaN();
 		Definition.Emitters[0].ForceFields.Add( NaNAxisField );
 		// 非有限のFrequencyを持つfield。
 		FEffectForceFieldDefinition NaNFreqField;
-		NaNFreqField.Frequency = ( std::numeric_limits<float32>::quiet_NaN )();
+		NaNFreqField.Frequency = TNumericLimits<float32>::QuietNaN();
 		Definition.Emitters[0].ForceFields.Add( NaNFreqField );
 		// 非有限のScrollSpeedを持つfield。
 		FEffectForceFieldDefinition NaNSpeedField;
-		NaNSpeedField.ScrollSpeed = ( std::numeric_limits<float32>::quiet_NaN )();
+		NaNSpeedField.ScrollSpeed = TNumericLimits<float32>::QuietNaN();
 		Definition.Emitters[0].ForceFields.Add( NaNSpeedField );
 		State.Document.Reset( Definition );
 		// NaNのAxisを持つfieldの入力欄が隠れるか。
 		State.SelectedForceField = 2;
 		Input.Frame( State );
 		const bool bNaNAxisReachable = Input.TabTo( State, Input.FieldItemId( "Radius (m)##ForceFieldRadius" ), 64 );
-		C.Check( !bNaNAxisReachable && Input.Press( State, "Reset##ForceFieldReset" ) && std::isfinite( FieldAt( 2 ).Axis.x ), "NaNのAxisを持つfieldは数値widgetを隠し、Resetで有限値へ復旧する" );
+		C.Check( !bNaNAxisReachable && Input.Press( State, "Reset##ForceFieldReset" ) && NMath::IsFinite( FieldAt( 2 ).Axis.x ), "NaNのAxisを持つfieldは数値widgetを隠し、Resetで有限値へ復旧する" );
 		// NaNのFrequencyを持つfieldの入力欄が隠れるか。
 		State.SelectedForceField = 3;
 		Input.Frame( State );
 		const bool bNaNFreqReachable = Input.TabTo( State, Input.FieldItemId( "Radius (m)##ForceFieldRadius" ), 64 );
-		C.Check( !bNaNFreqReachable && Input.Press( State, "Reset##ForceFieldReset" ) && std::isfinite( FieldAt( 3 ).Frequency ), "NaNのFrequencyを持つfieldは数値widgetを隠し、Resetで有限値へ復旧する" );
+		C.Check( !bNaNFreqReachable && Input.Press( State, "Reset##ForceFieldReset" ) && NMath::IsFinite( FieldAt( 3 ).Frequency ), "NaNのFrequencyを持つfieldは数値widgetを隠し、Resetで有限値へ復旧する" );
 		// NaNのScrollSpeedを持つfieldの入力欄が隠れるか。
 		State.SelectedForceField = 4;
 		Input.Frame( State );
 		const bool bNaNSpeedReachable = Input.TabTo( State, Input.FieldItemId( "Radius (m)##ForceFieldRadius" ), 64 );
-		C.Check( !bNaNSpeedReachable && Input.Press( State, "Reset##ForceFieldReset" ) && std::isfinite( FieldAt( 4 ).ScrollSpeed ), "NaNのScrollSpeedを持つfieldは数値widgetを隠し、Resetで有限値へ復旧する" );
+		C.Check( !bNaNSpeedReachable && Input.Press( State, "Reset##ForceFieldReset" ) && NMath::IsFinite( FieldAt( 4 ).ScrollSpeed ), "NaNのScrollSpeedを持つfieldは数値widgetを隠し、Resetで有限値へ復旧する" );
 	}
 }
 
@@ -569,7 +570,7 @@ namespace NWorldTest
 		};
 		RejectOverlay( FDrawSpan { GuideSpan.Words, -1 }, "負の長さ" );
 		RejectOverlay( FDrawSpan { nullptr, 1 }, "データなしの正長" );
-		RejectOverlay( FDrawSpan { GuideSpan.Words, ( std::numeric_limits<int32>::max )() }, "許容範囲を超える長さ" );
+		RejectOverlay( FDrawSpan { GuideSpan.Words, TNumericLimits<int32>::Max() }, "許容範囲を超える長さ" );
 		// payloadを欠かせるLine3Dの短い命令。
 		FDrawBuffer TruncatedLine;
 		TruncatedLine.Words.push_back( NDrawCommand::MakeHeader( EDrawCommand::Line3D, 0, 1 ) );
@@ -592,7 +593,7 @@ namespace NWorldTest
 		};
 		// NaNや分割数を持つ拒否対象sphere。
 		FDrawSphere3DData BadSphereData{};
-		BadSphereData.Center[0] = ( std::numeric_limits<float32>::quiet_NaN )();
+		BadSphereData.Center[0] = TNumericLimits<float32>::QuietNaN();
 		BadSphereData.Radius = 1.0f;
 		BadSphereData.Div = 16;
 		// NaN座標を持つSphere3D命令。

@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include "Library/Core/Collection/Map.h"
+#include "Library/Core/Types/Numeric.h"
 
 namespace
 {
@@ -120,7 +121,7 @@ FTransform NWorld::ComputeParentWorldTransform( const FWorldDefinition& World, i
 
 FTransform NWorld::WorldToLocal( const FTransform& ParentWorld, const FTransform& ChildWorld )
 {
-	const auto Divide = []( float32 Value, float32 By ) { return std::fabs( By ) > 1.0e-8f ? Value / By : Value; };
+	const auto Divide = []( float32 Value, float32 By ) { return NMath::Abs( By ) > 1.0e-8f ? Value / By : Value; };
 	FTransform Local;
 	Local.Position = ParentWorld.InverseTransformPoint( ChildWorld.Position );
 	Local.Rotation = ( ParentWorld.Rotation.Inverse() * ChildWorld.Rotation ).Normalized();

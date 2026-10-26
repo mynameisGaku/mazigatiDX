@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "AssetSelfTestModelSurface.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/WorldEditorInternal.h"
 #include "Library/DebugUI/WorldEditorModelMaterialPanel.h"
 #include "Library/DebugUI/WorldEditorModelPreview.h"
@@ -403,7 +404,7 @@ namespace NWorldTest
 		const bool bDurationTyped = Input.SetNumber( State, Executor, "Duration (seconds)", "3.25" );
 		// Duration入力後のbinding値。
 		const FWorldModelMaterialEffect* BindingAfterDuration = FindModelBinding( State, 1 );
-		Checker.Check( bDurationTyped && BindingAfterDuration != nullptr && std::fabs( BindingAfterDuration->Effect.Duration - 3.25f ) < 0.002f, "Duration widgetの値がmodel definitionへ保存される" );
+		Checker.Check( bDurationTyped && BindingAfterDuration != nullptr && NMath::Abs( BindingAfterDuration->Effect.Duration - 3.25f ) < 0.002f, "Duration widgetの値がmodel definitionへ保存される" );
 		// 一つの連続text editへ複数値を送り履歴coalesceを確認する。
 		// curve追加前のundo履歴数。
 		const int32 UndoBeforeCurve = State.Session.Document.GetNumUndo();
@@ -426,18 +427,18 @@ namespace NWorldTest
 		Input.Tap( State, Executor, ImGuiKey_Tab );
 		// 連続Opacity入力後のbinding値。
 		const FWorldModelMaterialEffect* BindingAfterOpacity = FindModelBinding( State, 1 );
-		Checker.Check( bOpacityFirst && bOpacitySecond && bOpacityThird && BindingAfterOpacity != nullptr && std::fabs( BindingAfterOpacity->Effect.Opacity - 0.47f ) < 0.002f && State.Session.Document.GetNumUndo() == UndoBeforeOpacity + 1, "連続Opacity入力は最終値0.47を一つの履歴へまとめる" );
+		Checker.Check( bOpacityFirst && bOpacitySecond && bOpacityThird && BindingAfterOpacity != nullptr && NMath::Abs( BindingAfterOpacity->Effect.Opacity - 0.47f ) < 0.002f && State.Session.Document.GetNumUndo() == UndoBeforeOpacity + 1, "連続Opacity入力は最終値0.47を一つの履歴へまとめる" );
 		// 直前のOpacity editをUndoできたか。
 		const bool bOpacityUndone = State.Session.Document.Undo();
 		// Undo直後にbindingが存在し、値が既定へ戻ったか。
 		const FWorldModelMaterialEffect* BindingAfterOpacityUndo = FindModelBinding( State, 1 );
-		const bool bOpacityUndoMatches = BindingAfterOpacityUndo != nullptr && std::fabs( BindingAfterOpacityUndo->Effect.Opacity - 1.0f ) < 0.002f;
+		const bool bOpacityUndoMatches = BindingAfterOpacityUndo != nullptr && NMath::Abs( BindingAfterOpacityUndo->Effect.Opacity - 1.0f ) < 0.002f;
 		Checker.Check( bOpacityUndone && bOpacityUndoMatches, "連続Opacity editのUndoで既定値1.0へ戻す" );
 		// Redoはdocument全体を再配置するため古いbinding参照を使わない。
 		const bool bOpacityRedone = State.Session.Document.Redo();
 		// Redo後に新しいbindingからOpacity値を読む。
 		const FWorldModelMaterialEffect* BindingAfterOpacityRedo = FindModelBinding( State, 1 );
-		const bool bOpacityRedoMatches = BindingAfterOpacityRedo != nullptr && std::fabs( BindingAfterOpacityRedo->Effect.Opacity - 0.47f ) < 0.002f;
+		const bool bOpacityRedoMatches = BindingAfterOpacityRedo != nullptr && NMath::Abs( BindingAfterOpacityRedo->Effect.Opacity - 0.47f ) < 0.002f;
 		Checker.Check( bOpacityRedone && bOpacityRedoMatches, "連続Opacity editのRedoで最終値0.47へ戻す" );
 		State.Session.Document.MarkSaved();
 		// 更新後の専用previewだけをroot transportで操作する。
@@ -466,7 +467,7 @@ namespace NWorldTest
 		NWorldEditorUI::RecordModelObject( State, RootKey, FTransform(), PlayingDraw );
 		// 再生中root記録のcommand数とhandle。
 		const FModelInspectorCommandCounts PlayingCounts = InspectModelCommands( PlayingBuffer );
-		Checker.Check( RootPreview != nullptr && std::fabs( RootTimeBeforeRecord - 0.25 ) < 0.002 && PlayingCounts.Native == 0 && PlayingCounts.Effect == 1 && PlayingCounts.EffectHandle >= 0 && SharedInstance.IsValid() && PlayingCounts.EffectHandle != SharedInstance->GetHandle(), "record repeatは専用instanceの材質効果命令を出し時計を読取だけにする" );
+		Checker.Check( RootPreview != nullptr && NMath::Abs( RootTimeBeforeRecord - 0.25 ) < 0.002 && PlayingCounts.Native == 0 && PlayingCounts.Effect == 1 && PlayingCounts.EffectHandle >= 0 && SharedInstance.IsValid() && PlayingCounts.EffectHandle != SharedInstance->GetHandle(), "record repeatは専用instanceの材質効果命令を出し時計を読取だけにする" );
 		// siblingの独立記録buffer。
 		FDrawBuffer SiblingBuffer;
 		// sibling bufferへの描画context。
@@ -481,7 +482,7 @@ namespace NWorldTest
 		const float64 PausedTime = RootPreview != nullptr ? RootPreview->Animator.GetMaterialEffect().GetEffectTime() : -1.0;
 		NWorldEditorUI::UpdateModelMaterialPreviews( State, 0.5f, &Executor );
 		RootPreview = State.ModelPreviews.Find( RootKey );
-		Checker.Check( RootPreview != nullptr && RootPreview->Animator.GetMaterialEffect().GetPlaybackState() == FMeshMaterialEffectPlayback::EEffectPlaybackState::Paused && std::fabs( RootPreview->Animator.GetMaterialEffect().GetEffectTime() - PausedTime ) < 0.002, "Pause後の更新でroot時計を保持する" );
+		Checker.Check( RootPreview != nullptr && RootPreview->Animator.GetMaterialEffect().GetPlaybackState() == FMeshMaterialEffectPlayback::EEffectPlaybackState::Paused && NMath::Abs( RootPreview->Animator.GetMaterialEffect().GetEffectTime() - PausedTime ) < 0.002, "Pause後の更新でroot時計を保持する" );
 		Checker.Check( Input.Activate( State, Executor, "Stop" ), "Stopを実Inspectorのtransport buttonから送る" );
 		RootPreview = State.ModelPreviews.Find( RootKey );
 		// Stop後のroot clock。
@@ -493,22 +494,22 @@ namespace NWorldTest
 		NWorldEditorUI::RecordModelObject( State, RootKey, FTransform(), StoppedDraw );
 		// 停止中root記録のnative復帰確認。
 		const FModelInspectorCommandCounts StoppedCounts = InspectModelCommands( StoppedBuffer );
-		Checker.Check( RootPreview != nullptr && std::fabs( StoppedTime ) < 0.002 && StoppedCounts.Native == 1 && StoppedCounts.Effect == 0, "Stopは時計0へ戻し同じ専用個体をnative Model commandへ復帰する" );
+		Checker.Check( RootPreview != nullptr && NMath::Abs( StoppedTime ) < 0.002 && StoppedCounts.Native == 1 && StoppedCounts.Effect == 0, "Stopは時計0へ戻し同じ専用個体をnative Model commandへ復帰する" );
 		// transportがdocument履歴を増やさない基準。
 		const int32 UndoBeforeRestart = State.Session.Document.GetNumUndo();
 		Checker.Check( Input.Activate( State, Executor, "Restart" ), "Restartを実Inspectorのtransport buttonから送る" );
 		RootPreview = State.ModelPreviews.Find( RootKey );
-		Checker.Check( RootPreview != nullptr && RootPreview->Animator.GetMaterialEffect().GetPlaybackState() == FMeshMaterialEffectPlayback::EEffectPlaybackState::Playing && std::fabs( RootPreview->Animator.GetMaterialEffect().GetEffectTime() ) < 0.002 && State.Session.Document.GetNumUndo() == UndoBeforeRestart && !State.Session.Document.IsDirty(), "Restartはroot専用時計だけを0から再開し履歴へ入らない" );
+		Checker.Check( RootPreview != nullptr && RootPreview->Animator.GetMaterialEffect().GetPlaybackState() == FMeshMaterialEffectPlayback::EEffectPlaybackState::Playing && NMath::Abs( RootPreview->Animator.GetMaterialEffect().GetEffectTime() ) < 0.002 && State.Session.Document.GetNumUndo() == UndoBeforeRestart && !State.Session.Document.IsDirty(), "Restartはroot専用時計だけを0から再開し履歴へ入らない" );
 		// 保存値を変更したframeに古いownerのtransportを隠す。
 		// preview更新を止めたままdurationだけ編集する結果。
 		const bool bStaleEdit = Input.SetNumber( State, Executor, "Duration (seconds)", "4.5", true, false );
 		RootPreview = State.ModelPreviews.Find( RootKey );
 		// 保存変更前ownerのclock。
 		const float64 OldOwnerTime = RootPreview != nullptr ? RootPreview->Animator.GetMaterialEffect().GetEffectTime() : -1.0;
-		Checker.Check( bStaleEdit && !Input.TabTo( State, Executor, "Play", false ) && RootPreview != nullptr && RootPreview->Definition.MaterialEffect.IsSet() && std::fabs( RootPreview->Definition.MaterialEffect.GetValue().Effect.Duration - 3.25f ) < 0.002f && std::fabs( RootPreview->Animator.GetMaterialEffect().GetEffectTime() - OldOwnerTime ) < 0.002, "保存定義が変わった後は前回ownerのtransportを操作できない" );
+		Checker.Check( bStaleEdit && !Input.TabTo( State, Executor, "Play", false ) && RootPreview != nullptr && RootPreview->Definition.MaterialEffect.IsSet() && NMath::Abs( RootPreview->Definition.MaterialEffect.GetValue().Effect.Duration - 3.25f ) < 0.002f && NMath::Abs( RootPreview->Animator.GetMaterialEffect().GetEffectTime() - OldOwnerTime ) < 0.002, "保存定義が変わった後は前回ownerのtransportを操作できない" );
 		NWorldEditorUI::UpdateModelMaterialPreviews( State, 0.0f, &Executor );
 		RootPreview = State.ModelPreviews.Find( RootKey );
-		Checker.Check( RootPreview != nullptr && RootPreview->Definition.MaterialEffect.IsSet() && std::fabs( RootPreview->Definition.MaterialEffect.GetValue().Effect.Duration - 4.5f ) < 0.002f && RootPreview->Animator.GetMaterialEffect().GetPlaybackState() == FMeshMaterialEffectPlayback::EEffectPlaybackState::Playing, "次updateが新durationのownerを作り直し再生時計0から始める" );
+		Checker.Check( RootPreview != nullptr && RootPreview->Definition.MaterialEffect.IsSet() && NMath::Abs( RootPreview->Definition.MaterialEffect.GetValue().Effect.Duration - 4.5f ) < 0.002f && RootPreview->Animator.GetMaterialEffect().GetPlaybackState() == FMeshMaterialEffectPlayback::EEffectPlaybackState::Playing, "次updateが新durationのownerを作り直し再生時計0から始める" );
 				// 保存設定が切り替わったときpath一致もtransportを閉じる条件に含める。
 		// 同じfileを異なる保存文字列で指すpath。
 		const FString EquivalentModelPath = "./inspector_model.x";
@@ -523,7 +524,7 @@ namespace NWorldTest
 		const float64 TimeBeforePathCheck = RootPreview != nullptr ? RootPreview->Animator.GetMaterialEffect().GetEffectTime() : -1.0;
 		// 古いownerの再生buttonが隠れたか。
 		const bool bOldPathControlsHidden = !Input.TabTo( State, Executor, "Play", false );
-		Checker.Check( bPathEdited && bOldPathControlsHidden && RootPreview != nullptr && RootPreview->Definition.Path == "inspector_model.x" && std::fabs( RootPreview->Animator.GetMaterialEffect().GetEffectTime() - TimeBeforePathCheck ) < 0.002, "同じfileを指すPath文字列だけを変えても旧ownerのtransportを無効にする" );
+		Checker.Check( bPathEdited && bOldPathControlsHidden && RootPreview != nullptr && RootPreview->Definition.Path == "inspector_model.x" && NMath::Abs( RootPreview->Animator.GetMaterialEffect().GetEffectTime() - TimeBeforePathCheck ) < 0.002, "同じfileを指すPath文字列だけを変えても旧ownerのtransportを無効にする" );
 		PathEditable = NWorldEdit::EditObject( State.Session.Document, 1, "Inspector.Model.Path.Restore" );
 		// previewの元Pathへ復帰できたか。
 		const bool bPathRestored = PathEditable != nullptr && PathEditable->Model.IsSet();
@@ -535,7 +536,7 @@ namespace NWorldTest
 		Checker.Check( Input.Activate( State, Executor, "Reset binding" ), "Reset bindingを実Inspector buttonから実行する" );
 		// Reset後のoptional binding値。
 		const FWorldModelMaterialEffect* ResetBinding = FindModelBinding( State, 1 );
-		Checker.Check( ResetBinding != nullptr && ResetBinding->MaterialIndex == 0 && !ResetBinding->bTwoSided && !ResetBinding->Effect.Material.bEnabled && std::fabs( ResetBinding->Effect.Duration - 2.0f ) < 0.002f && std::fabs( ResetBinding->Effect.Opacity - 1.0f ) < 0.002f, "Reset bindingはoptionalを残して各保存値を既定へ戻す" );
+		Checker.Check( ResetBinding != nullptr && ResetBinding->MaterialIndex == 0 && !ResetBinding->bTwoSided && !ResetBinding->Effect.Material.bEnabled && NMath::Abs( ResetBinding->Effect.Duration - 2.0f ) < 0.002f && NMath::Abs( ResetBinding->Effect.Opacity - 1.0f ) < 0.002f, "Reset bindingはoptionalを残して各保存値を既定へ戻す" );
 		// Reset操作をUndoできたか。
 		const bool bResetUndone = State.Session.Document.Undo();
 		// Reset Undo後に復帰したbinding。
@@ -562,7 +563,7 @@ namespace NWorldTest
 		// disabled後も維持されたbinding値。
 		const FWorldModelMaterialEffect* DisabledBinding = FindModelBinding( State, 1 );
 		// 無効化後もbinding値が保持されたか。
-		const bool bDisabledValuesKept = DisabledBinding != nullptr && !DisabledBinding->Effect.Material.bEnabled && DisabledBinding->MaterialIndex == 3 && DisabledBinding->bTwoSided && std::fabs( DisabledBinding->Effect.Duration - 4.5f ) < 0.002f && std::fabs( DisabledBinding->Effect.Opacity - 0.47f ) < 0.002f;
+		const bool bDisabledValuesKept = DisabledBinding != nullptr && !DisabledBinding->Effect.Material.bEnabled && DisabledBinding->MaterialIndex == 3 && DisabledBinding->bTwoSided && NMath::Abs( DisabledBinding->Effect.Duration - 4.5f ) < 0.002f && NMath::Abs( DisabledBinding->Effect.Opacity - 0.47f ) < 0.002f;
 		Checker.Check( bDisabledValuesKept, "disabledでもslot 3・Two-sided・Duration・Opacityを保存する" );
 		// SaveAsが成功しdocumentがcleanになったか。
 		const bool bSaved = NDebugUI::SaveWorldFile( State, SavedPath );
@@ -575,7 +576,7 @@ namespace NWorldTest
 		const FWorldObject* FreshObject = bFreshOpened ? Fresh.Session.Document.Get().FindObject( 1 ) : nullptr;
 		// diskから戻ったmaterial binding。
 		const FWorldModelMaterialEffect* FreshBinding = FreshObject != nullptr && FreshObject->Model.IsSet() && FreshObject->Model.GetValue().MaterialEffect.IsSet() ? &FreshObject->Model.GetValue().MaterialEffect.GetValue() : nullptr;
-		Checker.Check( bFreshOpened && FreshBinding != nullptr && !FreshBinding->Effect.Material.bEnabled && FreshBinding->MaterialIndex == 3 && FreshBinding->bTwoSided && std::fabs( FreshBinding->Effect.Duration - 4.5f ) < 0.002f && std::fabs( FreshBinding->Effect.Opacity - 0.47f ) < 0.002f && !Fresh.Session.Document.IsDirty() && Fresh.Session.Document.GetNumUndo() == 0, "fresh OpenWorldのdisk値はdisabled binding全fieldを保ち履歴を持たない" );
+		Checker.Check( bFreshOpened && FreshBinding != nullptr && !FreshBinding->Effect.Material.bEnabled && FreshBinding->MaterialIndex == 3 && FreshBinding->bTwoSided && NMath::Abs( FreshBinding->Effect.Duration - 4.5f ) < 0.002f && NMath::Abs( FreshBinding->Effect.Opacity - 0.47f ) < 0.002f && !Fresh.Session.Document.IsDirty() && Fresh.Session.Document.GetNumUndo() == 0, "fresh OpenWorldのdisk値はdisabled binding全fieldを保ち履歴を持たない" );
 		Checker.Check( Input.FramesBalanced(), "全ImGui keyboard frameがNewFrame/Renderとwindow stackを閉じる" );
 		NDebugUI::ReleaseWorldEditor( Fresh );
 		NDebugUI::ReleaseWorldEditor( State );

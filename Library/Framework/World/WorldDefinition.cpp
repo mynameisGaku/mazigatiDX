@@ -5,6 +5,8 @@
 #include <limits>
 #include <utility>
 
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Json/JsonHelpers.h"
 #include "Library/Math/MathUtils.h"
 
@@ -143,7 +145,7 @@ namespace
 			// nullや配列も設定済みbindingとして残し、Validateへ渡す。
 			FWorldModelMaterialEffect MaterialEffect;
 			FWorldModelMaterialEffect::FromJson( Json["MaterialEffect"], MaterialEffect );
-			Model.MaterialEffect = std::move( MaterialEffect );
+			Model.MaterialEffect = MoveTemp( MaterialEffect );
 		}
 		return Model;
 	}
@@ -248,15 +250,15 @@ namespace
 		if ( Json.contains( "Target" ) )
 		{
 			const NlohmannJson& Target = Json["Target"];
-			if ( Target.is_number_unsigned() ) Effect.Target = Target.get<uint64>() <= static_cast<uint64>( std::numeric_limits<int32>::max() ) ? static_cast<int32>( Target.get<uint64>() ) : -1;
-			else if ( Target.is_number_integer() && Target.get<int64>() >= std::numeric_limits<int32>::min() && Target.get<int64>() <= std::numeric_limits<int32>::max() ) Effect.Target = static_cast<int32>( Target.get<int64>() );
+			if ( Target.is_number_unsigned() ) Effect.Target = Target.get<uint64>() <= static_cast<uint64>( TNumericLimits<int32>::Max() ) ? static_cast<int32>( Target.get<uint64>() ) : -1;
+			else if ( Target.is_number_integer() && Target.get<int64>() >= TNumericLimits<int32>::Min() && Target.get<int64>() <= TNumericLimits<int32>::Max() ) Effect.Target = static_cast<int32>( Target.get<int64>() );
 			else Effect.Target = -1;
 		}
 		if ( Json.contains( "TargetOffset" ) )
 		{
 			const NlohmannJson& Offset = Json["TargetOffset"];
 			if ( Offset.is_array() && Offset.size() == 3 && Offset[0].is_number() && Offset[1].is_number() && Offset[2].is_number() ) Effect.TargetOffset = FVector3( Offset[0].get<float32>(), Offset[1].get<float32>(), Offset[2].get<float32>() );
-			else Effect.TargetOffset = FVector3( std::numeric_limits<float32>::quiet_NaN(), 0.0f, 0.0f );
+			else Effect.TargetOffset = FVector3( TNumericLimits<float32>::QuietNaN(), 0.0f, 0.0f );
 		}
 		return Effect;
 	}
@@ -969,14 +971,14 @@ bool FWorldDefinition::FromJson( const NlohmannJson& Json, FWorldDefinition& Out
 			FWorldObject Object = ObjectFromJson( ObjectJson, OutWarnings, Index );
 			++Index;
 			if ( Object.Id <= WorldNoId || World.FindIndexById( Object.Id ) != INDEX_NONE ) NeedsId.Add( World.Objects.Num() );
-			else MaxId = std::max( MaxId, Object.Id );
+			else MaxId = NMath::Max( MaxId, Object.Id );
 			World.Objects.Add( Object );
 		}
 	}
 
 	// NextId は、使われている Id より大きく（古い値が保存されていても、既存の Id と重ならないように）
-	for ( const FWorldObject& Object : World.Objects ) MaxId = std::max( MaxId, Object.Id );
-	World.NextId = std::max( NJson::GetOr<int32>( Json, "NextId", 1 ), MaxId + 1 );
+	for ( const FWorldObject& Object : World.Objects ) MaxId = NMath::Max( MaxId, Object.Id );
+	World.NextId = NMath::Max( NJson::GetOr<int32>( Json, "NextId", 1 ), MaxId + 1 );
 	for ( const int32 ObjectIndex : NeedsId )
 	{
 		FWorldObject& Object = World.Objects[ObjectIndex];

@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/World/Editor/EditorCamera.h"
 #include "Library/Framework/World/Editor/EditorOutliner.h"
 #include "Library/Framework/World/Editor/EditorShapes.h"
@@ -33,7 +34,7 @@ namespace NWorldEditorTest
 
 	inline bool Near3( const FVector3& A, const FVector3& B, float32 Tolerance = 1.0e-3f )
 	{
-		return std::fabs( A.x - B.x ) <= Tolerance && std::fabs( A.y - B.y ) <= Tolerance && std::fabs( A.z - B.z ) <= Tolerance;
+		return NMath::Abs( A.x - B.x ) <= Tolerance && NMath::Abs( A.y - B.y ) <= Tolerance && NMath::Abs( A.z - B.z ) <= Tolerance;
 	}
 
 	inline FEditorViewport MakeViewport( int32 Width = 800, int32 Height = 600 )

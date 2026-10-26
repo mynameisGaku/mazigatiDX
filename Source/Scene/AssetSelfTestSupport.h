@@ -13,6 +13,8 @@
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Core/Interfaces/Render/MeshGeometryChunk.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 
 //=============================================================================
@@ -54,7 +56,7 @@ namespace NAssetTest
 
 		void Near( float64 Actual, float64 Expected, float64 Tolerance, const char* What )
 		{
-			Check( std::fabs( Actual - Expected ) <= Tolerance, "%s: expected %.5f, got %.5f", What, Expected, Actual );
+			Check( NMath::Abs( Actual - Expected ) <= Tolerance, "%s: expected %.5f, got %.5f", What, Expected, Actual );
 		}
 
 		void Skip( const char* What )
@@ -320,7 +322,7 @@ namespace NAssetTest
 			if ( !NMeshGeometry::BuildChunks( TArrayView<const FMeshVertex>( Surface.Vertices ), TArrayView<const uint32>( SelectedIndices ), Chunks ) ) return -1;
 			// 作成成功後だけ割り当てる安定handle。
 			const int32 Handle = NextModelMaterialGeometry++;
-			ModelMaterialGeometries.emplace( Handle, std::move( Chunks ) );
+			ModelMaterialGeometries.emplace( Handle, MoveTemp( Chunks ) );
 			return Handle;
 		}
 		// fake geometryの所有chunkを解放し履歴へ記録する。

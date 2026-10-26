@@ -1,5 +1,7 @@
 ﻿#include "CollisionShape.h"
 
+#include "Library/Core/Types/Utility.h"
+
 
 TResult<FCollisionShape> FCollisionShape::ConvexHull( TArrayView<const FVector3> Points )
 {
@@ -36,6 +38,6 @@ TResult<FCollisionShape> FCollisionShape::Mesh( TArrayView<const FVector3> Verti
 		Triangles.push_back( JPH::IndexedTriangle( Indices[i], Indices[i + 1], Indices[i + 2], 0 ) );
 	}
 
-	JPH::MeshShapeSettings Settings( std::move( PhysVertices ), std::move( Triangles ) );
+	JPH::MeshShapeSettings Settings( MoveTemp( PhysVertices ), MoveTemp( Triangles ) );
 	return FromShapeResult( Settings.Create(), "Mesh" );
 }

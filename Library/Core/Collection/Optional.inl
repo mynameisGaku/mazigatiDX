@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "Library/Core/Types/Utility.h"
+
 // Optional.h の大きなテンプレート関数の定義（インライン展開しても速くならないのでクラス定義から分離）
 // Optional.h の末尾から include される。直接 include しない
 
@@ -25,8 +27,8 @@ auto TOptional<T>::operator=( TOptional&& Other ) noexcept( std::is_nothrow_move
 	if ( this == &Other ) return *this;
 	if ( Other.bIsSet )
 	{
-		if ( bIsSet ) Ref() = std::move( Other.Ref() );
-		else Emplace( std::move( Other.Ref() ) );
+		if ( bIsSet ) Ref() = MoveTemp( Other.Ref() );
+		else Emplace( MoveTemp( Other.Ref() ) );
 	}
 	else
 	{

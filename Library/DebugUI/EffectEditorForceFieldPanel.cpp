@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/Framework/Effect/EffectForceFieldDefinition.h"
 
@@ -19,7 +20,7 @@ namespace
 	// 数値入力へ渡せる力場保存値かを、全成分について調べる。
 	bool IsFiniteForceField( const FEffectForceFieldDefinition& Field )
 	{
-		return std::isfinite( Field.Acceleration.x ) && std::isfinite( Field.Acceleration.y ) && std::isfinite( Field.Acceleration.z ) && std::isfinite( Field.Position.x ) && std::isfinite( Field.Position.y ) && std::isfinite( Field.Position.z ) && std::isfinite( Field.Axis.x ) && std::isfinite( Field.Axis.y ) && std::isfinite( Field.Axis.z ) && std::isfinite( Field.Radius ) && std::isfinite( Field.Strength ) && std::isfinite( Field.Frequency ) && std::isfinite( Field.ScrollSpeed );
+		return NMath::IsFinite( Field.Acceleration.x ) && NMath::IsFinite( Field.Acceleration.y ) && NMath::IsFinite( Field.Acceleration.z ) && NMath::IsFinite( Field.Position.x ) && NMath::IsFinite( Field.Position.y ) && NMath::IsFinite( Field.Position.z ) && NMath::IsFinite( Field.Axis.x ) && NMath::IsFinite( Field.Axis.y ) && NMath::IsFinite( Field.Axis.z ) && NMath::IsFinite( Field.Radius ) && NMath::IsFinite( Field.Strength ) && NMath::IsFinite( Field.Frequency ) && NMath::IsFinite( Field.ScrollSpeed );
 	}
 
 	// 回転軸として使える有限の非ゼロベクトルかを、二乗和のoverflowを避けて調べる。
@@ -27,7 +28,7 @@ namespace
 	{
 		// 各成分をdoubleへ広げた長さの二乗。
 		const double LengthSquared = static_cast<double>( Axis.x ) * Axis.x + static_cast<double>( Axis.y ) * Axis.y + static_cast<double>( Axis.z ) * Axis.z;
-		return std::isfinite( LengthSquared ) && LengthSquared >= 1.0e-12;
+		return NMath::IsFinite( LengthSquared ) && LengthSquared >= 1.0e-12;
 	}
 
 	// Comboの表示順。FEffectForceFieldDefinition::EKindの宣言順と1対1にする。
@@ -55,7 +56,7 @@ bool NEffectEditorUI::DrawForceFieldPanel( FEffectEditorState& State, FParticleE
 
 	// コピーに含まれる力場の個数。
 	const int32 FieldCount = Emitter.ForceFields.Num();
-	State.SelectedForceField = FieldCount > 0 ? std::clamp( State.SelectedForceField, 0, FieldCount - 1 ) : 0;
+	State.SelectedForceField = FieldCount > 0 ? NMath::Clamp( State.SelectedForceField, 0, FieldCount - 1 ) : 0;
 	// 前frameの構造操作で必要になったfocus復旧要求。
 	const bool bRestoreForceFieldFocus = State.bForceFieldFocusPending;
 	// 選択中の添字が現在のコピーにあるか。
@@ -126,7 +127,7 @@ bool NEffectEditorUI::DrawForceFieldPanel( FEffectEditorState& State, FParticleE
 	else if ( bDelete )
 	{
 		Emitter.ForceFields.RemoveAt( State.SelectedForceField );
-		State.SelectedForceField = Emitter.ForceFields.IsEmpty() ? 0 : std::min( State.SelectedForceField, Emitter.ForceFields.Num() - 1 );
+		State.SelectedForceField = Emitter.ForceFields.IsEmpty() ? 0 : NMath::Min( State.SelectedForceField, Emitter.ForceFields.Num() - 1 );
 		bChanged = true;
 	}
 	else if ( bMoveUp )
@@ -189,7 +190,7 @@ bool NEffectEditorUI::DrawForceFieldPanel( FEffectEditorState& State, FParticleE
 			for ( int32 KindIndex = 0; KindIndex < ForceFieldKindCount; ++KindIndex ) if ( ForceFieldKindOrder[KindIndex] == Field.Kind ) Kind = KindIndex;
 			if ( TrackForceFieldInputEnd( ImGui::Combo( "Kind##ForceFieldKind", &Kind, ForceFieldKindNames, ForceFieldKindCount ), bInputEnded ) )
 			{
-				Field.Kind = ForceFieldKindOrder[std::clamp( Kind, 0, ForceFieldKindCount - 1 )];
+				Field.Kind = ForceFieldKindOrder[NMath::Clamp( Kind, 0, ForceFieldKindCount - 1 )];
 				bChanged = true;
 			}
 			bChanged |= TrackForceFieldInputEnd( ImGui::Checkbox( "Follow emitter##ForceFieldFollowEmitter", &Field.bFollowEmitter ), bInputEnded );

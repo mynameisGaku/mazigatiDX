@@ -5,6 +5,8 @@
 #include <limits>
 #include <utility>
 
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Json/JsonHelpers.h"
 
 namespace
@@ -52,7 +54,7 @@ namespace
 	bool ReadFloat( const NlohmannJson& Json, float32& Out )
 	{
 		// 読めない値を後の有限値検査で見つける。
-		Out = std::numeric_limits<float32>::quiet_NaN();
+		Out = TNumericLimits<float32>::QuietNaN();
 		if ( !Json.is_number() ) return false;
 		try
 		{
@@ -137,7 +139,7 @@ bool FMeshMaterialEffectDefinition::FromJson( const NlohmannJson& Json, FMeshMat
 		Definition.bInvalidRoot = true;
 		Definition.InvalidFieldTypes = InvalidAll;
 		if ( Warnings != nullptr ) Warnings->Add( "Effect はobjectにしてください" );
-		Out = std::move( Definition );
+		Out = MoveTemp( Definition );
 		return true;
 	}
 	if ( Json.contains( "Material" ) )
@@ -174,7 +176,7 @@ bool FMeshMaterialEffectDefinition::FromJson( const NlohmannJson& Json, FMeshMat
 		else Definition.InvalidFieldTypes |= InvalidBlend;
 		if ( ( Definition.InvalidFieldTypes & InvalidBlend ) != 0 && Warnings != nullptr ) Warnings->Add( "Effect.Blend はAlphaまたはAddにしてください" );
 	}
-	Out = std::move( Definition );
+	Out = MoveTemp( Definition );
 	return true;
 }
 
@@ -188,8 +190,8 @@ TArray<FString> FMeshMaterialEffectDefinition::Validate() const
 	if ( ( InvalidFieldTypes & InvalidLoop ) != 0 ) Issues.Add( "Effect.Loopの型が不正です" );
 	if ( ( InvalidFieldTypes & InvalidOpacity ) != 0 ) Issues.Add( "Effect.Opacityの型が不正です" );
 	if ( ( InvalidFieldTypes & InvalidBlend ) != 0 ) Issues.Add( "Effect.Blendの値が不正です" );
-	if ( !std::isfinite( Duration ) || Duration <= 0.0f || Duration > 3600.0f ) Issues.Add( "Effect.Durationは有限の0より大きく3600以下にしてください" );
-	if ( !std::isfinite( Opacity ) || Opacity < 0.0f || Opacity > 1.0f ) Issues.Add( "Effect.Opacityは有限の0から1にしてください" );
+	if ( !NMath::IsFinite( Duration ) || Duration <= 0.0f || Duration > 3600.0f ) Issues.Add( "Effect.Durationは有限の0より大きく3600以下にしてください" );
+	if ( !NMath::IsFinite( Opacity ) || Opacity < 0.0f || Opacity > 1.0f ) Issues.Add( "Effect.Opacityは有限の0から1にしてください" );
 	if ( Blend != EDrawBlend::Alpha && Blend != EDrawBlend::Add ) Issues.Add( "Effect.BlendはAlphaまたはAddにしてください" );
 	// 正の強度キーがない歪みは実行時に強度0となり、画像を使わない。
 	FEffectMaterialDefinition MaterialForValidation = Material;

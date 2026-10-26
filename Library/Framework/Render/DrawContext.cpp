@@ -7,6 +7,7 @@
 #include <cstring>
 
 #include "Library/Core/Collection/Array.h"
+#include "Library/Core/Types/Numeric.h"
 
 void FDrawContext::MaterialQuad3D( const FDrawMaterialQuadData& Data )
 {
@@ -130,7 +131,7 @@ void FDrawContext::MaterialMesh3D( const FDrawMaterialMeshData& Data, const FMes
 
 void FDrawContext::Ribbon3D( const FDrawRibbonData::FPoint* Points, int32 NumPoints, int32 Texture, float32 UVRepeat, int32 JoinFlags )
 {
-	if ( Points == nullptr || NumPoints < 2 || NumPoints > FDrawRibbonData::MaxPoints || Texture < -1 || !std::isfinite( UVRepeat ) || UVRepeat <= 0.0f || JoinFlags < 0 || ( JoinFlags & ~( FDrawRibbonData::PreviousPoint | FDrawRibbonData::NextPoint ) ) != 0 || NumPoints - static_cast<int32>( ( JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) - static_cast<int32>( ( JoinFlags & FDrawRibbonData::NextPoint ) != 0 ) < 2 ) return;
+	if ( Points == nullptr || NumPoints < 2 || NumPoints > FDrawRibbonData::MaxPoints || Texture < -1 || !NMath::IsFinite( UVRepeat ) || UVRepeat <= 0.0f || JoinFlags < 0 || ( JoinFlags & ~( FDrawRibbonData::PreviousPoint | FDrawRibbonData::NextPoint ) ) != 0 || NumPoints - static_cast<int32>( ( JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) - static_cast<int32>( ( JoinFlags & FDrawRibbonData::NextPoint ) != 0 ) < 2 ) return;
 	// テクスチャを反復する際に必要な、分割後の区間数。
 	int32 TextureSections = 0;
 	// 点列の途中だけを落として、不連続な経路へ変えてしまわないよう全点を先に確かめる。
@@ -138,7 +139,7 @@ void FDrawContext::Ribbon3D( const FDrawRibbonData::FPoint* Points, int32 NumPoi
 	{
 		// 検査してから複写する、今回の経路の点。
 		const FDrawRibbonData::FPoint& Point = Points[Index];
-		if ( !std::isfinite( Point.Pos[0] ) || !std::isfinite( Point.Pos[1] ) || !std::isfinite( Point.Pos[2] ) || !std::isfinite( Point.Width ) || Point.Width < 0.0f || !std::isfinite( Point.U ) || Point.U < 0.0f || !std::isfinite( Point.U * UVRepeat ) ) return;
+		if ( !NMath::IsFinite( Point.Pos[0] ) || !NMath::IsFinite( Point.Pos[1] ) || !NMath::IsFinite( Point.Pos[2] ) || !NMath::IsFinite( Point.Width ) || Point.Width < 0.0f || !NMath::IsFinite( Point.U ) || Point.U < 0.0f || !NMath::IsFinite( Point.U * UVRepeat ) ) return;
 		if ( Index > 0 && Point.U < Points[Index - 1].U ) return;
 		// 幅と接線には全点を使い、補助点が作る区間だけを除外する。
 		const bool bVisibleSegment = Index > 0 && !( Index == 1 && ( JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) && !( Index + 1 == NumPoints && ( JoinFlags & FDrawRibbonData::NextPoint ) != 0 );
@@ -147,7 +148,7 @@ void FDrawContext::Ribbon3D( const FDrawRibbonData::FPoint* Points, int32 NumPoi
 			// 始点側で使い始める画像の反復番号。
 			const float64 First = std::floor( static_cast<float64>( Points[Index - 1].U * UVRepeat ) );
 			// 終点までに必要な反復数。整数境界と一致する終点では余分な区間を作らない。
-			const float64 Sections = std::max( 1.0, std::ceil( static_cast<float64>( Point.U * UVRepeat ) ) - First );
+			const float64 Sections = NMath::Max( 1.0, std::ceil( static_cast<float64>( Point.U * UVRepeat ) ) - First );
 			if ( Sections > static_cast<float64>( FDrawRibbonData::MaxTextureSections - TextureSections ) ) return;
 			TextureSections += static_cast<int32>( Sections );
 		}

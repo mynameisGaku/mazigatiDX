@@ -3,6 +3,7 @@
 #define LIBRARY_CORE_INTERFACES_RENDER_DRAWDISTORTEDMATERIALQUAD_H
 
 #include "Library/Core/Interfaces/Render/DrawMaterialQuad.h"
+#include "Library/Core/Types/Numeric.h"
 
 // 画像領域と独立したノイズ画像で、材質四角形の表示UVを曲げる値。
 struct FDrawDistortedMaterialQuadData
@@ -24,9 +25,9 @@ namespace NDrawDistortedMaterialQuad
 	// 既存材質設定と変位画像の指定が描画可能な値かを調べる。
 	inline bool IsValid( const FDrawDistortedMaterialQuadData& Data )
 	{
-		if ( !NDrawMaterialQuad::IsValid( Data.Material ) || Data.DistortionTexture < 0 || !std::isfinite( Data.Strength ) || Data.Strength < 0.0f || Data.Strength > 1.0f ) return false;
-		if ( !std::isfinite( Data.UVScale[0] ) || !std::isfinite( Data.UVScale[1] ) || Data.UVScale[0] <= 0.0f || Data.UVScale[1] <= 0.0f || Data.UVScale[0] > 128.0f || Data.UVScale[1] > 128.0f ) return false;
-		return std::isfinite( Data.UVOffset[0] ) && std::isfinite( Data.UVOffset[1] ) && Data.UVOffset[0] >= 0.0f && Data.UVOffset[0] < 1.0f && Data.UVOffset[1] >= 0.0f && Data.UVOffset[1] < 1.0f;
+		if ( !NDrawMaterialQuad::IsValid( Data.Material ) || Data.DistortionTexture < 0 || !NMath::IsFinite( Data.Strength ) || Data.Strength < 0.0f || Data.Strength > 1.0f ) return false;
+		if ( !NMath::IsFinite( Data.UVScale[0] ) || !NMath::IsFinite( Data.UVScale[1] ) || Data.UVScale[0] <= 0.0f || Data.UVScale[1] <= 0.0f || Data.UVScale[0] > 128.0f || Data.UVScale[1] > 128.0f ) return false;
+		return NMath::IsFinite( Data.UVOffset[0] ) && NMath::IsFinite( Data.UVOffset[1] ) && Data.UVOffset[0] >= 0.0f && Data.UVOffset[0] < 1.0f && Data.UVOffset[1] >= 0.0f && Data.UVOffset[1] < 1.0f;
 	}
 }
 

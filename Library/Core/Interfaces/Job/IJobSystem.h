@@ -9,6 +9,7 @@
 
 #include "Library/Core/Types/CompilerMacros.h"
 #include "Library/Core/Types/TypeDefinition.h"
+#include "Library/Core/Types/Utility.h"
 
 //=============================================================================
 // FJobHandle
@@ -28,7 +29,7 @@ class FJobHandle
 {
 public:
 	FJobHandle() = default;
-	explicit FJobHandle( std::shared_ptr<FJobState> InState ) : State( std::move( InState ) ) {}
+	explicit FJobHandle( std::shared_ptr<FJobState> InState ) : State( MoveTemp( InState ) ) {}
 
 	// 空のハンドル（何も待たない）は終わっている扱い
 	FORCEINLINE bool IsDone() const { return State == nullptr || State->bDone.load( std::memory_order_acquire ); }

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/Framework/Effect/EffectAppearanceDefinition.h"
 #include "Library/Framework/Effect/ParticleEffect.h"
@@ -14,7 +15,7 @@ namespace
 	// UI previewだけに使い、保存値は変更しないよう色成分を有限の0..1へ整える。
 	FColor ClampPreviewColor( const FColor& Value )
 	{
-		return FColor( std::clamp( std::isfinite( Value.r ) ? Value.r : 0.0f, 0.0f, 1.0f ), std::clamp( std::isfinite( Value.g ) ? Value.g : 0.0f, 0.0f, 1.0f ), std::clamp( std::isfinite( Value.b ) ? Value.b : 0.0f, 0.0f, 1.0f ), std::clamp( std::isfinite( Value.a ) ? Value.a : 0.0f, 0.0f, 1.0f ) );
+		return FColor( NMath::Clamp( NMath::IsFinite( Value.r ) ? Value.r : 0.0f, 0.0f, 1.0f ), NMath::Clamp( NMath::IsFinite( Value.g ) ? Value.g : 0.0f, 0.0f, 1.0f ), NMath::Clamp( NMath::IsFinite( Value.b ) ? Value.b : 0.0f, 0.0f, 1.0f ), NMath::Clamp( NMath::IsFinite( Value.a ) ? Value.a : 0.0f, 0.0f, 1.0f ) );
 	}
 
 	// Start/End色とColor倍率を掛け、透明度を含む64区間のpreviewを描く。
@@ -26,7 +27,7 @@ namespace
 		// 現在のパネルが使える横幅。
 		const ImVec2 Available = ImGui::GetContentRegionAvail();
 		// 小さすぎる表示を避けたpreview幅。
-		const float32 Width = std::max( 32.0f, Available.x );
+		const float32 Width = NMath::Max( 32.0f, Available.x );
 		// チェッカーと色を表示するpreview高さ。
 		const float32 Height = 34.0f;
 		ImGui::InvisibleButton( "##AppearanceColorPreview", ImVec2( Width, Height ) );
@@ -42,7 +43,7 @@ namespace
 			const bool bLightCell = ( static_cast<int32>( ( X - Origin.x ) / Cell ) + static_cast<int32>( ( Y - Origin.y ) / Cell ) ) % 2 == 0;
 			// 透明色の後ろに見せる格子色。
 			const ImU32 Checker = bLightCell ? IM_COL32( 180, 180, 180, 255 ) : IM_COL32( 110, 110, 110, 255 );
-			DrawList->AddRectFilled( ImVec2( X, Y ), ImVec2( std::min( X + Cell, BottomRight.x ), std::min( Y + Cell, BottomRight.y ) ), Checker );
+			DrawList->AddRectFilled( ImVec2( X, Y ), ImVec2( NMath::Min( X + Cell, BottomRight.x ), NMath::Min( Y + Cell, BottomRight.y ) ), Checker );
 		}
 		// 寿命開始時の既存RGBA。
 		const FColor Start = Emitter.StartColor.ToColor();

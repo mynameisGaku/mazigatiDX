@@ -3,6 +3,7 @@
 #include <fstream>
 
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/Utility.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogJson, Log )
 
@@ -58,7 +59,7 @@ bool NJson::CJsonObject::LoadFromFile( const FString& Filename )
 		return false;
 	}
 
-	Root = std::move( Parsed );
+	Root = MoveTemp( Parsed );
 	bLoaded = true;
 	LOG( LogJson, Verbose, "Loaded %s (%d top-level key(s))", *Filename, static_cast<int32>( Root.size() ) );
 	return true;

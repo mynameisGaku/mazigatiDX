@@ -3,6 +3,8 @@
 
 #include "AssetSelfTestFbx.h"
 #include "AssetSelfTestSupport.h"
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Asset/Model.h"
 #include "Library/Framework/Asset/StaticModelSurface.h"
@@ -90,9 +92,9 @@ namespace NAssetTest
 		{
 			for ( const FMeshVertex& Vertex : Data.Vertices )
 			{
-				if ( std::fabs( Vertex.Position[0] - X ) > 0.001f || std::fabs( Vertex.Position[1] - Y ) > 0.001f || std::fabs( Vertex.Position[2] ) > 0.001f ) continue;
-				if ( std::fabs( Vertex.U - U ) > 0.001f || std::fabs( Vertex.V - V ) > 0.001f ) continue;
-				if ( std::fabs( Vertex.Normal[0] ) > 0.001f || std::fabs( Vertex.Normal[1] ) > 0.001f || std::fabs( Vertex.Normal[2] - 1.0f ) > 0.001f ) continue;
+				if ( NMath::Abs( Vertex.Position[0] - X ) > 0.001f || NMath::Abs( Vertex.Position[1] - Y ) > 0.001f || NMath::Abs( Vertex.Position[2] ) > 0.001f ) continue;
+				if ( NMath::Abs( Vertex.U - U ) > 0.001f || NMath::Abs( Vertex.V - V ) > 0.001f ) continue;
+				if ( NMath::Abs( Vertex.Normal[0] ) > 0.001f || NMath::Abs( Vertex.Normal[1] ) > 0.001f || NMath::Abs( Vertex.Normal[2] - 1.0f ) > 0.001f ) continue;
 				if ( Vertex.Color[0] == Red && Vertex.Color[1] == Green && Vertex.Color[2] == Blue && Vertex.Color[3] == Alpha ) return true;
 			}
 			return false;
@@ -132,7 +134,7 @@ namespace NAssetTest
 		// 比較用行列が各要素で同じかを調べる。
 		bool SameMatrix( const MATRIX& A, const MATRIX& B )
 		{
-			for ( int32 Row = 0; Row < 4; ++Row ) for ( int32 Column = 0; Column < 4; ++Column ) if ( std::fabs( A.m[Row][Column] - B.m[Row][Column] ) > 0.0001f ) return false;
+			for ( int32 Row = 0; Row < 4; ++Row ) for ( int32 Column = 0; Column < 4; ++Column ) if ( NMath::Abs( A.m[Row][Column] - B.m[Row][Column] ) > 0.0001f ) return false;
 			return true;
 		}
 	}
@@ -256,7 +258,7 @@ namespace NAssetTest
 		Assets.ReleaseUnused();
 		if ( WorkerRelease.IsValid() )
 		{
-			std::thread Worker( [Moved = std::move( WorkerRelease )]() mutable { Moved.Reset(); } );
+			std::thread Worker( [Moved = MoveTemp( WorkerRelease )]() mutable { Moved.Reset(); } );
 			Worker.join();
 		}
 		// tick直前にdeferred破棄待ちnative handleを確認する値。
@@ -329,7 +331,7 @@ namespace NAssetTest
 			{
 				// 元色のrだけを非有限値へ変えた入力。
 				COLOR_F InjectedDiffuse = OriginalDiffuse;
-				InjectedDiffuse.r = std::numeric_limits<float32>::quiet_NaN();
+				InjectedDiffuse.r = TNumericLimits<float32>::QuietNaN();
 				const bool bNaNSet = MV1SetMaterialDifColor( ModelHandle, 0, InjectedDiffuse ) >= 0;
 				// native setterがNaNを保持したか読む値。
 				const COLOR_F ReadBackNaN = MV1GetMaterialDifColor( ModelHandle, 0 );
@@ -349,12 +351,12 @@ namespace NAssetTest
 				// 元のnative diffuseを必ず戻し、読み戻し値を照合する。
 				const int32 RestoreDiffuseResult = MV1SetMaterialDifColor( ModelHandle, 0, OriginalDiffuse );
 				const COLOR_F RestoredDiffuse = MV1GetMaterialDifColor( ModelHandle, 0 );
-				bNaNMaterialRestored = RestoreDiffuseResult >= 0 && std::isfinite( RestoredDiffuse.r ) && std::isfinite( RestoredDiffuse.g ) && std::isfinite( RestoredDiffuse.b ) && std::isfinite( RestoredDiffuse.a ) && std::fabs( RestoredDiffuse.r - OriginalDiffuse.r ) < 0.001f && std::fabs( RestoredDiffuse.g - OriginalDiffuse.g ) < 0.001f && std::fabs( RestoredDiffuse.b - OriginalDiffuse.b ) < 0.001f && std::fabs( RestoredDiffuse.a - OriginalDiffuse.a ) < 0.001f;
+				bNaNMaterialRestored = RestoreDiffuseResult >= 0 && NMath::IsFinite( RestoredDiffuse.r ) && NMath::IsFinite( RestoredDiffuse.g ) && NMath::IsFinite( RestoredDiffuse.b ) && NMath::IsFinite( RestoredDiffuse.a ) && NMath::Abs( RestoredDiffuse.r - OriginalDiffuse.r ) < 0.001f && NMath::Abs( RestoredDiffuse.g - OriginalDiffuse.g ) < 0.001f && NMath::Abs( RestoredDiffuse.b - OriginalDiffuse.b ) < 0.001f && NMath::Abs( RestoredDiffuse.a - OriginalDiffuse.a ) < 0.001f;
 				// NaN試験後の既存reference pointer/値と資源数。
 				const MV1_REF_POLYGONLIST ReferenceAfterNaNProbe = bReferenceReady ? MV1GetReferenceMesh( ModelHandle, -1, TRUE, FALSE ) : MV1_REF_POLYGONLIST();
 				const MATRIX MatrixAfterNaNProbe = MV1GetMatrix( ModelHandle );
 				const FBackendMemoryInfo AfterNaNProbe = Assets.GetBackend()->GetMemoryInfo();
-				const bool bNativeStatePreserved = SameMatrix( MatrixBeforeSnapshot, MatrixAfterNaNProbe ) && ReferenceAfterNaNProbe.Vertexs == ReferenceBefore.Vertexs && ReferenceAfterNaNProbe.Polygons == ReferenceBefore.Polygons && ReferenceAfterNaNProbe.VertexNum == ReferenceBefore.VertexNum && ReferenceAfterNaNProbe.PolygonNum == ReferenceBefore.PolygonNum && ( !bReferenceHasVertex || ( std::fabs( ReferenceAfterNaNProbe.Vertexs[0].Position.x - FirstReferencePosition.x ) < 0.001f && std::fabs( ReferenceAfterNaNProbe.Vertexs[0].Position.y - FirstReferencePosition.y ) < 0.001f && std::fabs( ReferenceAfterNaNProbe.Vertexs[0].Position.z - FirstReferencePosition.z ) < 0.001f ) ) && BeforeSnapshot.NumModelHandles == AfterNaNProbe.NumModelHandles && BeforeSnapshot.NumTextureHandles == AfterNaNProbe.NumTextureHandles;
+				const bool bNativeStatePreserved = SameMatrix( MatrixBeforeSnapshot, MatrixAfterNaNProbe ) && ReferenceAfterNaNProbe.Vertexs == ReferenceBefore.Vertexs && ReferenceAfterNaNProbe.Polygons == ReferenceBefore.Polygons && ReferenceAfterNaNProbe.VertexNum == ReferenceBefore.VertexNum && ReferenceAfterNaNProbe.PolygonNum == ReferenceBefore.PolygonNum && ( !bReferenceHasVertex || ( NMath::Abs( ReferenceAfterNaNProbe.Vertexs[0].Position.x - FirstReferencePosition.x ) < 0.001f && NMath::Abs( ReferenceAfterNaNProbe.Vertexs[0].Position.y - FirstReferencePosition.y ) < 0.001f && NMath::Abs( ReferenceAfterNaNProbe.Vertexs[0].Position.z - FirstReferencePosition.z ) < 0.001f ) ) && BeforeSnapshot.NumModelHandles == AfterNaNProbe.NumModelHandles && BeforeSnapshot.NumTextureHandles == AfterNaNProbe.NumTextureHandles;
 				Checker.Check( bNaNMaterialRestored && bNativeStatePreserved, "NaN失敗後にdiffuse・matrix・reference mesh・native handle数を復元/保持" );
 			}
 			else
@@ -365,7 +367,7 @@ namespace NAssetTest
 			TSharedPtr<const FStaticModelSurface> Surface = Model->CreateStaticSurfaceSnapshot();
 			const MV1_REF_POLYGONLIST ReferenceAfter = bReferenceReady ? MV1GetReferenceMesh( ModelHandle, -1, TRUE, FALSE ) : MV1_REF_POLYGONLIST();
 			const MATRIX MatrixAfterSnapshot = MV1GetMatrix( ModelHandle );
-			Checker.Check( bMatrixSet && bReferenceHasVertex && ReferenceAfter.Vertexs == ReferenceBefore.Vertexs && ReferenceAfter.Polygons == ReferenceBefore.Polygons && ReferenceAfter.VertexNum == ReferenceBefore.VertexNum && ReferenceAfter.PolygonNum == ReferenceBefore.PolygonNum && SameMatrix( MatrixBeforeSnapshot, MatrixAfterSnapshot ) && std::fabs( FirstReferencePosition.x - ReferenceAfter.Vertexs[0].Position.x ) < 0.001f && std::fabs( FirstReferencePosition.y - ReferenceAfter.Vertexs[0].Position.y ) < 0.001f && std::fabs( FirstReferencePosition.z - ReferenceAfter.Vertexs[0].Position.z ) < 0.001f, "snapshot取得は元modelのmatrixと既存reference meshのpointer・値を変えない" );
+			Checker.Check( bMatrixSet && bReferenceHasVertex && ReferenceAfter.Vertexs == ReferenceBefore.Vertexs && ReferenceAfter.Polygons == ReferenceBefore.Polygons && ReferenceAfter.VertexNum == ReferenceBefore.VertexNum && ReferenceAfter.PolygonNum == ReferenceBefore.PolygonNum && SameMatrix( MatrixBeforeSnapshot, MatrixAfterSnapshot ) && NMath::Abs( FirstReferencePosition.x - ReferenceAfter.Vertexs[0].Position.x ) < 0.001f && NMath::Abs( FirstReferencePosition.y - ReferenceAfter.Vertexs[0].Position.y ) < 0.001f && NMath::Abs( FirstReferencePosition.z - ReferenceAfter.Vertexs[0].Position.z ) < 0.001f, "snapshot取得は元modelのmatrixと既存reference meshのpointer・値を変えない" );
 			Checker.Check( Surface.IsValid() && Surface->GetSource() == Model, "real backendは元modelを保持するimmutable snapshotを返す" );
 			if ( Surface.IsValid() )
 			{
@@ -441,14 +443,14 @@ namespace NAssetTest
 					// native側の今の材質値とsnapshot前の写し。
 					const COLOR_F NativeDiffuse = MV1GetMaterialDifColor( ModelHandle, MaterialIndex );
 					const FStaticModelSurfaceMaterial& Material = Data.Materials[MaterialIndex];
-					bMaterialsMatch = bMaterialsMatch && std::fabs( Material.Diffuse[0] - NativeDiffuse.r ) < 0.001f && std::fabs( Material.Diffuse[1] - NativeDiffuse.g ) < 0.001f && std::fabs( Material.Diffuse[2] - NativeDiffuse.b ) < 0.001f && std::fabs( Material.Diffuse[3] - NativeDiffuse.a ) < 0.001f;
+					bMaterialsMatch = bMaterialsMatch && NMath::Abs( Material.Diffuse[0] - NativeDiffuse.r ) < 0.001f && NMath::Abs( Material.Diffuse[1] - NativeDiffuse.g ) < 0.001f && NMath::Abs( Material.Diffuse[2] - NativeDiffuse.b ) < 0.001f && NMath::Abs( Material.Diffuse[3] - NativeDiffuse.a ) < 0.001f;
 					bHasRed = bHasRed || ( Material.Diffuse[0] > Material.Diffuse[2] && Material.Diffuse[1] < 0.5f );
 					bHasBlue = bHasBlue || ( Material.Diffuse[2] > Material.Diffuse[0] && Material.Diffuse[1] < 0.5f );
 					const int32 TextureIndex = MV1GetMaterialDifMapTexture( ModelHandle, MaterialIndex );
 					const int32 NativeGraph = TextureIndex >= 0 ? MV1GetTextureGraphHandle( ModelHandle, TextureIndex ) : -1;
 					bMaterialsMatch = bMaterialsMatch && Material.BorrowedDiffuseTexture == NativeGraph;
 					const FStaticModelSurfaceMaterial* BeforeMaterial = MaterialIndex < static_cast<int32>( NativeMaterialsBefore.size() ) ? &NativeMaterialsBefore[MaterialIndex] : nullptr;
-					bNativeMaterialsUnchanged = bNativeMaterialsUnchanged && BeforeMaterial != nullptr && Material.BorrowedDiffuseTexture == BeforeMaterial->BorrowedDiffuseTexture && std::fabs( Material.Diffuse[0] - BeforeMaterial->Diffuse[0] ) < 0.001f && std::fabs( Material.Diffuse[1] - BeforeMaterial->Diffuse[1] ) < 0.001f && std::fabs( Material.Diffuse[2] - BeforeMaterial->Diffuse[2] ) < 0.001f && std::fabs( Material.Diffuse[3] - BeforeMaterial->Diffuse[3] ) < 0.001f;
+					bNativeMaterialsUnchanged = bNativeMaterialsUnchanged && BeforeMaterial != nullptr && Material.BorrowedDiffuseTexture == BeforeMaterial->BorrowedDiffuseTexture && NMath::Abs( Material.Diffuse[0] - BeforeMaterial->Diffuse[0] ) < 0.001f && NMath::Abs( Material.Diffuse[1] - BeforeMaterial->Diffuse[1] ) < 0.001f && NMath::Abs( Material.Diffuse[2] - BeforeMaterial->Diffuse[2] ) < 0.001f && NMath::Abs( Material.Diffuse[3] - BeforeMaterial->Diffuse[3] ) < 0.001f;
 					if ( NativeGraph >= 0 ) BorrowedTexture = NativeGraph;
 				}
 				Checker.Check( bMaterialsMatch && bHasRed && bHasBlue && bNativeMaterialsUnchanged, "2色材質RGBA・diffuse mapがsnapshot前native値と一致" );

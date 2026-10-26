@@ -5,6 +5,8 @@
 #include <limits>
 #include <utility>
 
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 
 namespace
@@ -45,7 +47,7 @@ namespace
 	// 位置・法線・UVがすべて有限かを調べる。
 	bool IsFiniteVertex( const FMeshVertex& Vertex )
 	{
-		return std::isfinite( Vertex.Position[0] ) && std::isfinite( Vertex.Position[1] ) && std::isfinite( Vertex.Position[2] ) && std::isfinite( Vertex.Normal[0] ) && std::isfinite( Vertex.Normal[1] ) && std::isfinite( Vertex.Normal[2] ) && std::isfinite( Vertex.U ) && std::isfinite( Vertex.V );
+		return NMath::IsFinite( Vertex.Position[0] ) && NMath::IsFinite( Vertex.Position[1] ) && NMath::IsFinite( Vertex.Position[2] ) && NMath::IsFinite( Vertex.Normal[0] ) && NMath::IsFinite( Vertex.Normal[1] ) && NMath::IsFinite( Vertex.Normal[2] ) && NMath::IsFinite( Vertex.U ) && NMath::IsFinite( Vertex.V );
 	}
 
 	// 同じframe・mesh・材質の連続範囲ならsectionを伸ばし、それ以外は新設する。
@@ -98,7 +100,7 @@ bool CDxLibAssetBackend::GetStaticModelSurface( int32 Model, FStaticModelSurface
 	ReferenceScope.bActive = true;
 	// DxLibが一時model内に保持する参照mesh配列。
 	const MV1_REF_POLYGONLIST Reference = MV1GetReferenceMesh( Temporary.Handle, -1, TRUE, FALSE );
-	if ( Reference.PolygonNum <= 0 || Reference.VertexNum <= 0 || Reference.Polygons == nullptr || Reference.Vertexs == nullptr || Reference.PolygonNum > ( std::numeric_limits<int32>::max )() / 3 ) return false;
+	if ( Reference.PolygonNum <= 0 || Reference.VertexNum <= 0 || Reference.Polygons == nullptr || Reference.Vertexs == nullptr || Reference.PolygonNum > TNumericLimits<int32>::Max() / 3 ) return false;
 	// 失敗時にOutを変えないよう、全結果を局所値へ組み立てる。
 	FStaticModelSurfaceData Surface;
 	Surface.Vertices.Reserve( Reference.VertexNum );
@@ -133,7 +135,7 @@ bool CDxLibAssetBackend::GetStaticModelSurface( int32 Model, FStaticModelSurface
 	{
 		// DxLibから取得した拡散色。
 		const COLOR_F Diffuse = MV1GetMaterialDifColor( Model, MaterialIndex );
-		if ( !std::isfinite( Diffuse.r ) || !std::isfinite( Diffuse.g ) || !std::isfinite( Diffuse.b ) || !std::isfinite( Diffuse.a ) ) return false;
+		if ( !NMath::IsFinite( Diffuse.r ) || !NMath::IsFinite( Diffuse.g ) || !NMath::IsFinite( Diffuse.b ) || !NMath::IsFinite( Diffuse.a ) ) return false;
 		// 元model内のdiffuse map texture index。
 		const int32 TextureIndex = MV1GetMaterialDifMapTexture( Model, MaterialIndex );
 		if ( TextureIndex < -1 || ( TextureIndex >= 0 && TextureIndex >= TextureCount ) ) return false;
@@ -173,6 +175,6 @@ bool CDxLibAssetBackend::GetStaticModelSurface( int32 Model, FStaticModelSurface
 		AppendSection( Surface, Polygon );
 	}
 	if ( Surface.Indices.Num() != Reference.PolygonNum * 3 || Surface.Sections.IsEmpty() || !ReferenceScope.Finish() || !Temporary.Finish() ) return false;
-	Out = std::move( Surface );
+	Out = MoveTemp( Surface );
 	return true;
 }

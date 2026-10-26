@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "Library/Core/Types/Utility.h"
+
 // SubsystemCollection.h の大きなテンプレート関数の定義（インライン展開しても速くならないのでクラス定義から分離）
 // SubsystemCollection.h の末尾から include される。直接 include しない
 
@@ -21,7 +23,7 @@ void FSubsystemCollection::Initialize( TOuter& Outer )
 			NotifySkipped( *Subsystem );
 			continue;
 		}
-		Entries.Add( { TUniquePtr<CSubsystem>( std::move( Subsystem ) ), EState::Uninitialized } );
+		Entries.Add( { TUniquePtr<CSubsystem>( MoveTemp( Subsystem ) ), EState::Uninitialized } );
 	}
 
 	InitializeAll();

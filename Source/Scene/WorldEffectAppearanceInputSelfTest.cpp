@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
 #include "WorldSelfTestSupport.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EffectEditorInternal.h"
 #include "VendorModules/ImGui/imgui_internal.h"
 
@@ -158,21 +159,21 @@ namespace
 		C.Check( Input.TabTo( State, SizeValue ), "Size倍率の実入力へTabで移る" );
 		const bool bSizeTyped = Input.ReplaceNumeric( State, SizeValue, "2.0" );
 		Input.Tap( State, ImGuiKey_Tab );
-		C.Check( bSizeTyped && std::fabs( State.Document.Get().Emitters[0].Appearance.Size.Keys[0].Value - 2.0f ) < 1.0e-5f, "Size倍率へ文字入力しfloat値を保存する" );
+		C.Check( bSizeTyped && NMath::Abs( State.Document.Get().Emitters[0].Appearance.Size.Keys[0].Value - 2.0f ) < 1.0e-5f, "Size倍率へ文字入力しfloat値を保存する" );
 		const ImGuiID ColorRed = Input.CurveColorComponentId( "Color multiplier", 0, 0 );
 		C.Check( Input.TabTo( State, ColorRed ), "ColorEdit4の赤成分へTabで移る" );
 		const bool bRedTyped = Input.ReplaceNumeric( State, ColorRed, "0.5" );
 		Input.Tap( State, ImGuiKey_Tab );
-		C.Check( bRedTyped && std::fabs( State.Document.Get().Emitters[0].Appearance.Color.Keys[0].Value.r - 0.5f ) < 0.002f, "ColorEdit4の赤floatを文字入力で変更する" );
+		C.Check( bRedTyped && NMath::Abs( State.Document.Get().Emitters[0].Appearance.Color.Keys[0].Value.r - 0.5f ) < 0.002f, "ColorEdit4の赤floatを文字入力で変更する" );
 		const ImGuiID ColorAlpha = Input.CurveColorComponentId( "Color multiplier", 0, 3 );
 		C.Check( Input.TabTo( State, ColorAlpha ), "ColorEdit4のalpha成分へTabで移る" );
 		const bool bAlphaTyped = Input.ReplaceNumeric( State, ColorAlpha, "0.25" );
 		Input.Tap( State, ImGuiKey_Tab );
-		C.Check( bAlphaTyped && std::fabs( State.Document.Get().Emitters[0].Appearance.Color.Keys[0].Value.a - 0.25f ) < 0.002f, "ColorEdit4のalpha floatを文字入力で変更する" );
+		C.Check( bAlphaTyped && NMath::Abs( State.Document.Get().Emitters[0].Appearance.Color.Keys[0].Value.a - 0.25f ) < 0.002f, "ColorEdit4のalpha floatを文字入力で変更する" );
 		C.Check( State.Document.GetNumUndo() >= 3, "Size/RGBAの入力欄を離れるたびに別々の履歴になる" );
 		const bool bUndoAlpha = State.Document.Undo();
-		C.Check( bUndoAlpha && std::fabs( State.Document.Get().Emitters[0].Appearance.Color.Keys[0].Value.a - 1.0f ) < 0.002f && std::fabs( State.Document.Get().Emitters[0].Appearance.Color.Keys[0].Value.r - 0.5f ) < 0.002f, "最後のalpha入力だけをUndoする" );
-		C.Check( State.Document.Redo() && std::fabs( State.Document.Get().Emitters[0].Appearance.Color.Keys[0].Value.a - 0.25f ) < 0.002f, "alpha入力をRedoする" );
+		C.Check( bUndoAlpha && NMath::Abs( State.Document.Get().Emitters[0].Appearance.Color.Keys[0].Value.a - 1.0f ) < 0.002f && NMath::Abs( State.Document.Get().Emitters[0].Appearance.Color.Keys[0].Value.r - 0.5f ) < 0.002f, "最後のalpha入力だけをUndoする" );
+		C.Check( State.Document.Redo() && NMath::Abs( State.Document.Get().Emitters[0].Appearance.Color.Keys[0].Value.a - 0.25f ) < 0.002f, "alpha入力をRedoする" );
 	}
 
 	// Add/Remove/Resetが倍率曲線だけを編集し、base colorや材質を残す。
@@ -216,7 +217,7 @@ namespace
 		FParticleEmitterDefinition Emitter;
 		Emitter.Appearance.Size.Keys.Add( { 0.8f, 1.0f } );
 		Emitter.Appearance.Size.Keys.Add( { 0.2f, 2.0f } );
-		Emitter.Appearance.Color.Keys.Add( { 0.8f, FColor( ( std::numeric_limits<float32>::quiet_NaN )(), 0.2f, 0.4f, 1.0f ) } );
+		Emitter.Appearance.Color.Keys.Add( { 0.8f, FColor( TNumericLimits<float32>::QuietNaN(), 0.2f, 0.4f, 1.0f ) } );
 		Emitter.Appearance.Color.Keys.Add( { 0.2f, FColor::White } );
 		Definition.Emitters.Add( Emitter );
 		FEffectEditorState State;

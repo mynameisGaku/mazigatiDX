@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Ecs/SystemParams.h"
 
 //-----------------------------------------------------------------------------
@@ -33,7 +34,7 @@ bool FSpriteAnimator::PlayFrom( const FString& ClipName, float32 NormalizedStart
 	if ( Index == INDEX_NONE ) return false;
 
 	ClipIndex = Index;
-	Rewind( std::clamp( static_cast<float64>( NormalizedStart ), 0.0, 1.0 ) );
+	Rewind( NMath::Clamp( static_cast<float64>( NormalizedStart ), 0.0, 1.0 ) );
 	return true;
 }
 
@@ -124,7 +125,7 @@ void FSpriteAnimator::Seek( float32 NormalizedTime )
 	const FAnimTimeline* Timeline = Sheet.IsValid() ? Sheet->GetTimeline( ClipIndex ) : nullptr;
 	if ( Timeline == nullptr || Timeline->IsEmpty() ) return;
 
-	Playhead = std::clamp( static_cast<float64>( NormalizedTime ), 0.0, 1.0 ) * static_cast<float64>( Timeline->Total );
+	Playhead = NMath::Clamp( static_cast<float64>( NormalizedTime ), 0.0, 1.0 ) * static_cast<float64>( Timeline->Total );
 	const FAnimLocation Location = NAnim::Locate( *Timeline, Playhead );
 	Step = Location.Step;
 	LastAbsoluteStep = Location.AbsoluteStep;
@@ -160,7 +161,7 @@ float32 FSpriteAnimator::GetNormalizedTime() const
 	if ( Timeline == nullptr || Timeline->Total <= 0.0f ) return 0.0f;
 
 	float64 Time = Playhead;
-	if ( Timeline->Loop == EAnimLoopMode::Once ) Time = std::clamp( Time, 0.0, static_cast<float64>( Timeline->Total ) );
+	if ( Timeline->Loop == EAnimLoopMode::Once ) Time = NMath::Clamp( Time, 0.0, static_cast<float64>( Timeline->Total ) );
 	else Time -= std::floor( Time / Timeline->Total ) * Timeline->Total;
 	return static_cast<float32>( Time / Timeline->Total );
 }
@@ -187,7 +188,7 @@ void FSpriteAnimator::Record( FDrawContext& Draw, const FVector2& Position, cons
 	const bool bTinted = Tint.r != 255 || Tint.g != 255 || Tint.b != 255;
 	const bool bTranslucent = Alpha < 1.0f;
 	if ( bTinted ) Draw.Tint( Tint );
-	if ( bTranslucent ) Draw.Blend( EDrawBlend::Alpha, static_cast<int32>( std::clamp( Alpha, 0.0f, 1.0f ) * 255.0f + 0.5f ) );
+	if ( bTranslucent ) Draw.Blend( EDrawBlend::Alpha, static_cast<int32>( NMath::Clamp( Alpha, 0.0f, 1.0f ) * 255.0f + 0.5f ) );
 
 	Draw.SpriteRect( Position.x + Offset.x, Position.y + Offset.y, TextureHandle, Frame->X, Frame->Y, Frame->Width, Frame->Height, Frame->PivotX, Frame->PivotY,
 					 Scale.x * InScale.x, Scale.y * InScale.y, AngleOffset + AngleRadians, bFlipX, bFlipY );
@@ -205,5 +206,5 @@ void FSpriteAnimator::RecordAt( FDrawContext& Draw, const FTransformView& Transf
 	if ( Space.PixelsPerUnit.x * Space.PixelsPerUnit.y < 0.0f ) Angle = -Angle;
 
 	const FVector2 ScreenPosition( Space.Origin.x + Position.x * Space.PixelsPerUnit.x, Space.Origin.y + Position.y * Space.PixelsPerUnit.y );
-	Record( Draw, ScreenPosition, FVector2( std::fabs( WorldScale.x ), std::fabs( WorldScale.y ) ), Angle );
+	Record( Draw, ScreenPosition, FVector2( NMath::Abs( WorldScale.x ), NMath::Abs( WorldScale.y ) ), Angle );
 }

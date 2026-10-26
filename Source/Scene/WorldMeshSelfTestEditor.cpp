@@ -1,6 +1,7 @@
 ﻿#include <algorithm>
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/World/Editor/EditorGizmo.h"
 #include "Library/Framework/World/Editor/EditorMeshPicking.h"
 #include "Library/Framework/World/Editor/EditorPlacement.h"
@@ -25,7 +26,7 @@ using ESelectMode = CWorldEditorSession::ESelectMode;
 //=============================================================================
 namespace
 {
-	bool Near( float32 A, float32 B, float32 Tolerance = 1.0e-3f ) { return std::fabs( A - B ) <= Tolerance; }
+	bool Near( float32 A, float32 B, float32 Tolerance = 1.0e-3f ) { return NMath::Abs( A - B ) <= Tolerance; }
 
 	TArray<int32> Ints( std::initializer_list<int32> List )
 	{
@@ -325,8 +326,8 @@ namespace
 		for ( const FVector3& Corner : Mesh.Vertices )
 		{
 			const FVector2 P = F.Project( Corner );
-			TopLeft = FVector2( std::min( TopLeft.x, P.x ), std::min( TopLeft.y, P.y ) );
-			BottomRight = FVector2( std::max( BottomRight.x, P.x ), std::max( BottomRight.y, P.y ) );
+			TopLeft = FVector2( NMath::Min( TopLeft.x, P.x ), NMath::Min( TopLeft.y, P.y ) );
+			BottomRight = FVector2( NMath::Max( BottomRight.x, P.x ), NMath::Max( BottomRight.y, P.y ) );
 		}
 		FEditMeshSelection InRect = NWorldEditor::FindMeshElementsInRect( Mesh, World, S.Camera, F.View, BottomRight.x + 20.0f, BottomRight.y + 20.0f, TopLeft.x - 20.0f, TopLeft.y - 20.0f, EEditMeshElement::Vertex, false );
 		C.Check( InRect.Vertices.Num() == 8 && InRect.Edges.IsEmpty() && InRect.Faces.IsEmpty(), "a rectangle round the whole box (corners given in either order) takes all 8 vertices when everything counts" );
@@ -344,8 +345,8 @@ namespace
 		for ( const FVector3& Corner : { FVector3( -1, 2, -1 ), FVector3( -1, 2, 1 ), FVector3( 1, 2, 1 ), FVector3( 1, 2, -1 ) } )
 		{
 			const FVector2 P = F.Project( Corner );
-			TopMin = FVector2( std::min( TopMin.x, P.x ), std::min( TopMin.y, P.y ) );
-			TopMax = FVector2( std::max( TopMax.x, P.x ), std::max( TopMax.y, P.y ) );
+			TopMin = FVector2( NMath::Min( TopMin.x, P.x ), NMath::Min( TopMin.y, P.y ) );
+			TopMax = FVector2( NMath::Max( TopMax.x, P.x ), NMath::Max( TopMax.y, P.y ) );
 		}
 		InRect = NWorldEditor::FindMeshElementsInRect( Mesh, World, S.Camera, F.View, TopMin.x - 4.0f, TopMin.y - 4.0f, TopMax.x + 4.0f, TopMax.y + 4.0f, EEditMeshElement::Vertex, false );
 		C.Check( InRect.Vertices.Num() == 4, "a rectangle round the 4 corners of the top takes only those (the lower ones are outside) (%d)", InRect.Vertices.Num() );
@@ -493,7 +494,7 @@ namespace
 			FMeshFixture F;
 			CWorldEditorSession& S = F.Session;
 			const int32 A = F.V( -1, 2, -1 ), B = F.V( 1, 2, -1 );
-			S.SetMeshSelection( Chosen( { std::min( A, B ), std::max( A, B ) } ) );
+			S.SetMeshSelection( Chosen( { NMath::Min( A, B ), NMath::Max( A, B ) } ) );
 			C.Check( S.MeshMerge() && F.Mesh().GetNumVertices() == 7 && S.GetMeshSelection().Vertices.Num() == 1 && Near3( F.Mesh().Vertices[S.GetMeshSelection().Vertices[0]], FVector3( 0, 2, -1 ) ), "merging two vertices: 7 left, the merged one (in the middle of the edge) is the one chosen" );
 			C.Check( !S.MeshMerge(), "one vertex alone cannot be merged" );
 			S.MeshSelectNone();

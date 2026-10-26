@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "Library/Core/Collection/Hash.h"
+#include "Library/Core/Types/Utility.h"
 
 //=============================================================================
 // TDefaultDelete
@@ -40,7 +41,7 @@ struct TDefaultDelete<T[]>
 //
 //   TUniquePtr<CEnemy> Enemy = MakeUnique<CEnemy>( Hp );
 //   Enemy->Tick( dt );
-//   TUniquePtr<CEnemy> Other = std::move( Enemy );   // 所有権の移動
+//   TUniquePtr<CEnemy> Other = MoveTemp( Enemy );   // 所有権の移動
 //
 //   Deleter は空のクラス型（関数オブジェクト）を想定している。
 //=============================================================================
@@ -65,7 +66,7 @@ public:
 	TUniquePtr& operator=( const TUniquePtr& ) = delete;
 
 	TUniquePtr( TUniquePtr&& Other ) noexcept
-		: Deleter( std::move( Other.GetDeleter() ) ), Ptr( Other.Ptr )
+		: Deleter( MoveTemp( Other.GetDeleter() ) ), Ptr( Other.Ptr )
 	{
 		Other.Ptr = nullptr;
 	}
@@ -73,7 +74,7 @@ public:
 	// TUniquePtr<Derived> -> TUniquePtr<Base>
 	template<typename U, typename E, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
 	TUniquePtr( TUniquePtr<U, E>&& Other ) noexcept
-		: Deleter( std::move( Other.GetDeleter() ) ), Ptr( Other.Ptr )
+		: Deleter( MoveTemp( Other.GetDeleter() ) ), Ptr( Other.Ptr )
 	{
 		Other.Ptr = nullptr;
 	}
@@ -85,7 +86,7 @@ public:
 		if ( this != &Other )
 		{
 			Reset( Other.Release() );
-			GetDeleter() = std::move( Other.GetDeleter() );
+			GetDeleter() = MoveTemp( Other.GetDeleter() );
 		}
 		return *this;
 	}
@@ -94,7 +95,7 @@ public:
 	FORCEINLINE TUniquePtr& operator=( TUniquePtr<U, E>&& Other ) noexcept
 	{
 		Reset( Other.Release() );
-		GetDeleter() = std::move( Other.GetDeleter() );
+		GetDeleter() = MoveTemp( Other.GetDeleter() );
 		return *this;
 	}
 
@@ -165,13 +166,13 @@ public:
 	TUniquePtr( const TUniquePtr& ) = delete;
 	TUniquePtr& operator=( const TUniquePtr& ) = delete;
 
-	FORCEINLINE TUniquePtr( TUniquePtr&& Other ) noexcept : Deleter( std::move( Other.GetDeleter() ) ), Ptr( Other.Ptr ) { Other.Ptr = nullptr; }
+	FORCEINLINE TUniquePtr( TUniquePtr&& Other ) noexcept : Deleter( MoveTemp( Other.GetDeleter() ) ), Ptr( Other.Ptr ) { Other.Ptr = nullptr; }
 	FORCEINLINE TUniquePtr& operator=( TUniquePtr&& Other ) noexcept
 	{
 		if ( this != &Other )
 		{
 			Reset( Other.Release() );
-			GetDeleter() = std::move( Other.GetDeleter() );
+			GetDeleter() = MoveTemp( Other.GetDeleter() );
 		}
 		return *this;
 	}
@@ -215,7 +216,7 @@ private:
 template<typename T, typename... Args, typename = std::enable_if_t<!std::is_array_v<T>>>
 FORCEINLINE TUniquePtr<T> MakeUnique( Args&&... args )
 {
-	return TUniquePtr<T>( new T( std::forward<Args>( args )... ) );
+	return TUniquePtr<T>( new T( Forward<Args>( args )... ) );
 }
 
 template<typename T, typename = std::enable_if_t<std::is_array_v<T> && std::extent_v<T> == 0>>

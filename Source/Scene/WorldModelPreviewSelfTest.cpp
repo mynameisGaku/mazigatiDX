@@ -13,6 +13,7 @@
 
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Core/Interfaces/Render/DrawModelMaterial.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/WorldEditor.h"
 #include "Library/DebugUI/WorldEditorInternal.h"
 #include "Library/Framework/Animation/ModelAnimator.h"
@@ -313,7 +314,7 @@ namespace NWorldTest
 		Checker.Check( DisabledPreview != nullptr && DisabledPreview->Animator.Instance.IsValid() && !DisabledPreview->Animator.GetMaterialEffect().IsPrepared() && DisabledPreview->FailureReason.IsEmpty() && Fake.NumTextureLoads == TextureLoadsBeforeWorldUpdate, "disabled bindingは専用native ownerを持つがmask/noise画像をloadしない" );
 		Checker.Check( MissingPreview != nullptr && !MissingPreview->Animator.GetMaterialEffect().IsPrepared() && MissingPreview->FailureReason.Contains( "材質1" ) && Fake.NumTextureLoads == TextureLoadsBeforeWorldUpdate, "欠落maskは対象材質をfailureへ記録し、disabledと欠落画像はtexture loadしない" );
 		AnimatedPreview = State.ModelPreviews.Find( AnimatedKey );
-		const bool bAnimationSettingsApplied = AnimatedPreview != nullptr && AnimatedPreview->Animator.Instance.IsValid() && AnimatedPreview->Animator.GetCurrentClip() == "Custom" && std::fabs( AnimatedPreview->Animator.Speed - 1.25f ) < 1.0e-6f && AnimatedPreview->Animator.ModelOffset.x == 0.25f && AnimatedPreview->Animator.ModelOffset.y == -0.5f && AnimatedPreview->Animator.ModelOffset.z == 0.75f && AnimatedPreview->Animator.ModelScale.x == 1.5f && AnimatedPreview->Animator.ModelScale.y == 0.75f && AnimatedPreview->Animator.ModelScale.z == 2.0f && AnimatedPreview->Animator.Instance->GetNumAttached() > 0 && !AnimatedPreview->Animator.GetMaterialEffect().IsPrepared() && AnimatedPreview->FailureReason.Contains( "animation" ); // Clipと補正値、native fallbackを確かめる
+		const bool bAnimationSettingsApplied = AnimatedPreview != nullptr && AnimatedPreview->Animator.Instance.IsValid() && AnimatedPreview->Animator.GetCurrentClip() == "Custom" && NMath::Abs( AnimatedPreview->Animator.Speed - 1.25f ) < 1.0e-6f && AnimatedPreview->Animator.ModelOffset.x == 0.25f && AnimatedPreview->Animator.ModelOffset.y == -0.5f && AnimatedPreview->Animator.ModelOffset.z == 0.75f && AnimatedPreview->Animator.ModelScale.x == 1.5f && AnimatedPreview->Animator.ModelScale.y == 0.75f && AnimatedPreview->Animator.ModelScale.z == 2.0f && AnimatedPreview->Animator.Instance->GetNumAttached() > 0 && !AnimatedPreview->Animator.GetMaterialEffect().IsPrepared() && AnimatedPreview->FailureReason.Contains( "animation" ); // Clipと補正値、native fallbackを確かめる
 		Checker.Check( bAnimationSettingsApplied, "custom animation clipの再生位置設定と非default補正を適用し効果はnativeへ戻す" );
 		TMap<FWorldEditorModelPreviewKey, int32, FConstantPreviewKeyHasher> CollisionMap; // hashが同値になるkey map
 		CollisionMap.Add( FirstNestedKey, 11 );
@@ -361,7 +362,7 @@ namespace NWorldTest
 		const FWorldEditorModelPreview* FirstNestedAfterRecord = State.ModelPreviews.Find( FirstNestedKey );
 		const FWorldEditorModelPreview* SecondNestedAfterRecord = State.ModelPreviews.Find( SecondNestedKey );
 		const FWorldEditorModelPreview* PendingAfterRecord = State.ModelPreviews.Find( PendingKey ); // Record後のready owner
-		const bool bRecordIsPure = BufferA.Words == BufferB.Words && RootAfterRecord != nullptr && FirstNestedAfterRecord != nullptr && SecondNestedAfterRecord != nullptr && PendingAfterRecord != nullptr && std::fabs( RootAfterRecord->Animator.GetMaterialEffect().GetEffectTime() - RootTimeAfterUpdate ) < 1.0e-6 && std::fabs( FirstNestedAfterRecord->Animator.GetMaterialEffect().GetEffectTime() - FirstNestedTimeAfterUpdate ) < 1.0e-6 && std::fabs( SecondNestedAfterRecord->Animator.GetMaterialEffect().GetEffectTime() - SecondNestedTimeAfterUpdate ) < 1.0e-6 && std::fabs( PendingAfterRecord->Animator.GetMaterialEffect().GetEffectTime() - PendingTimeAfterUpdate ) < 1.0e-6 && Fake.NumStaticModelSurfaceQueries == SurfaceQueriesBeforeRecord && Fake.NumModelMaterialGeometryCreates == GeometryCreatesBeforeRecord && Fake.NumTextureLoads == TextureLoadsBeforeRecord && Fake.NumLoadingQueries == LoadingQueriesBeforeRecord; // 二回のRecordとowner状態が同じか
+		const bool bRecordIsPure = BufferA.Words == BufferB.Words && RootAfterRecord != nullptr && FirstNestedAfterRecord != nullptr && SecondNestedAfterRecord != nullptr && PendingAfterRecord != nullptr && NMath::Abs( RootAfterRecord->Animator.GetMaterialEffect().GetEffectTime() - RootTimeAfterUpdate ) < 1.0e-6 && NMath::Abs( FirstNestedAfterRecord->Animator.GetMaterialEffect().GetEffectTime() - FirstNestedTimeAfterUpdate ) < 1.0e-6 && NMath::Abs( SecondNestedAfterRecord->Animator.GetMaterialEffect().GetEffectTime() - SecondNestedTimeAfterUpdate ) < 1.0e-6 && NMath::Abs( PendingAfterRecord->Animator.GetMaterialEffect().GetEffectTime() - PendingTimeAfterUpdate ) < 1.0e-6 && Fake.NumStaticModelSurfaceQueries == SurfaceQueriesBeforeRecord && Fake.NumModelMaterialGeometryCreates == GeometryCreatesBeforeRecord && Fake.NumTextureLoads == TextureLoadsBeforeRecord && Fake.NumLoadingQueries == LoadingQueriesBeforeRecord; // 二回のRecordとowner状態が同じか
 		Checker.Check( bRecordIsPure, "RecordWorldScene反復はpreview時計・surface query・geometry作成・texture loadを変えない" );
 		const int32 GeometryBeforeStableUpdate = Fake.NumModelMaterialGeometryCreates; // 同一構成Update前の作成数
 		NWorldEditorUI::UpdateModelMaterialPreviews( State, 0.0f, &Executor );
@@ -375,7 +376,7 @@ namespace NWorldTest
 		std::thread WorkerUpdate( [&State, &Executor]() { NWorldEditorUI::UpdateModelMaterialPreviews( State, 0.125f, &Executor ); } ); // worker threadからの禁止Update
 		WorkerUpdate.join();
 		const FWorldEditorModelPreview* AfterWorkerUpdate = State.ModelPreviews.Find( RootKey ); // worker guard後のroot preview
-		const bool bWorkerUpdateIgnored = State.ModelPreviews.Num() == 8 && AfterWorkerUpdate != nullptr && std::fabs( AfterWorkerUpdate->Animator.GetMaterialEffect().GetEffectTime() - TimeBeforeWorker ) < 1.0e-9 && Fake.NumStaticModelSurfaceQueries == QueriesBeforeWorker && Fake.NumModelMaterialGeometryCreates == CreatesBeforeWorker && Fake.NumTextureLoads == LoadsBeforeWorker && Fake.NumLoadingQueries == LoadingQueriesBeforeWorker; // worker updateでstate/resourceが不変か
+		const bool bWorkerUpdateIgnored = State.ModelPreviews.Num() == 8 && AfterWorkerUpdate != nullptr && NMath::Abs( AfterWorkerUpdate->Animator.GetMaterialEffect().GetEffectTime() - TimeBeforeWorker ) < 1.0e-9 && Fake.NumStaticModelSurfaceQueries == QueriesBeforeWorker && Fake.NumModelMaterialGeometryCreates == CreatesBeforeWorker && Fake.NumTextureLoads == LoadsBeforeWorker && Fake.NumLoadingQueries == LoadingQueriesBeforeWorker; // worker updateでstate/resourceが不変か
 		Checker.Check( bWorkerUpdateIgnored, "worker threadのpreview Updateはmap・clock・model resourceを変えない" );
 		NWorldEditorUI::UpdateModelMaterialPreviews( State, 0.125f, &Executor );
 		const FWorldEditorModelPreviewKey PreviewKeys[3] = { RootKey, FirstNestedKey, SecondNestedKey }; // world行列を照合する三owner key
@@ -386,7 +387,7 @@ namespace NWorldTest
 			const FWorldEditorModelPreview* Preview = State.ModelPreviews.Find( PreviewKeys[Index] );
 			FDrawModelMaterialData Payload{}; // 現在ownerのModelMaterial payload
 			const bool bFound = Preview != nullptr && Preview->Animator.Instance.IsValid() && FindPreviewCommand( BufferA, Preview->Animator.Instance->GetHandle(), Payload ); // 指定instanceのcommandが記録されたか
-			bModelPayloadsMatch = bModelPayloadsMatch && bFound && std::fabs( Payload.M[9] - ExpectedWorldX[Index] ) < 0.001f && std::fabs( Payload.M[10] ) < 0.001f && std::fabs( Payload.Opacity - 0.55f ) < 1.0e-6f && Payload.BlendMode == static_cast<int32>( EDrawBlend::Add ) && Payload.Material.bTwoSided == 1;
+			bModelPayloadsMatch = bModelPayloadsMatch && bFound && NMath::Abs( Payload.M[9] - ExpectedWorldX[Index] ) < 0.001f && NMath::Abs( Payload.M[10] ) < 0.001f && NMath::Abs( Payload.Opacity - 0.55f ) < 1.0e-6f && Payload.BlendMode == static_cast<int32>( EDrawBlend::Add ) && Payload.Material.bTwoSided == 1;
 		}
 		Checker.Check( bModelPayloadsMatch && CountPreviewCommands( BufferA, EDrawCommand::ModelMaterial3D ) == 4 && CountPreviewCommands( BufferA, EDrawCommand::Model3D ) == 4, "実world記録は個体別handleと既知位置を使いnative siblingと失敗fallbackを残す" );
 		FWorldEditorModelPreview* FirstPaused = State.ModelPreviews.Find( FirstNestedKey );
@@ -395,7 +396,7 @@ namespace NWorldTest
 		FWorldEditorModelPreview* RootAfterPause = State.ModelPreviews.Find( RootKey );
 		const FWorldEditorModelPreview* FirstAfterPause = State.ModelPreviews.Find( FirstNestedKey );
 		const FWorldEditorModelPreview* SecondAfterPause = State.ModelPreviews.Find( SecondNestedKey );
-		const bool bIndependentClocks = RootAfterPause != nullptr && FirstAfterPause != nullptr && SecondAfterPause != nullptr && std::fabs( RootAfterPause->Animator.GetMaterialEffect().GetEffectTime() - 0.575 ) < 1.0e-5 && std::fabs( FirstAfterPause->Animator.GetMaterialEffect().GetEffectTime() - 0.375 ) < 1.0e-5 && std::fabs( SecondAfterPause->Animator.GetMaterialEffect().GetEffectTime() - 0.575 ) < 1.0e-5; // pauseした一個体だけ時計を保つか
+		const bool bIndependentClocks = RootAfterPause != nullptr && FirstAfterPause != nullptr && SecondAfterPause != nullptr && NMath::Abs( RootAfterPause->Animator.GetMaterialEffect().GetEffectTime() - 0.575 ) < 1.0e-5 && NMath::Abs( FirstAfterPause->Animator.GetMaterialEffect().GetEffectTime() - 0.375 ) < 1.0e-5 && NMath::Abs( SecondAfterPause->Animator.GetMaterialEffect().GetEffectTime() - 0.575 ) < 1.0e-5; // pauseした一個体だけ時計を保つか
 		Checker.Check( bIndependentClocks, "個体Updateは各clockを一度進め、Pauseした同Prefabの片方だけを保持する" );
 		if ( RootAfterPause != nullptr ) RootAfterPause->Animator.GetMaterialEffect().Stop();
 		FDrawBuffer StoppedBuffer; // Stop後の混在native/effect command列
@@ -462,12 +463,12 @@ namespace NWorldTest
 		const bool bChangedRootHandled = NWorldEditorUI::RecordModelObject( State, RootKey, World.Objects[0].Transform.ToTransform(), ChangedBindingDraw ); // 変更後rootがhandledを返すか
 		FDrawModelMaterialData ChangedPayload{}; // 変更後rootのpayload値
 		const bool bChangedPayloadFound = ChangedRoot != nullptr && ChangedRoot->Animator.Instance.IsValid() && FindPreviewCommand( ChangedBindingBuffer, ChangedRoot->Animator.Instance->GetHandle(), ChangedPayload ); // root handleのpayloadを読む
-		Checker.Check( bChangedRootHandled && bChangedPayloadFound && CountPreviewCommands( ChangedBindingBuffer, EDrawCommand::ModelMaterial3D ) == 1 && std::fabs( ChangedPayload.Opacity - 0.61f ) < 1.0e-6f && ChangedPayload.BlendMode == static_cast<int32>( EDrawBlend::Add ) && ChangedPayload.Material.bTwoSided == 0, "binding再準備後のroot命令はOpacity .61・Add・片面設定を保存値どおり記録する" );
+		Checker.Check( bChangedRootHandled && bChangedPayloadFound && CountPreviewCommands( ChangedBindingBuffer, EDrawCommand::ModelMaterial3D ) == 1 && NMath::Abs( ChangedPayload.Opacity - 0.61f ) < 1.0e-6f && ChangedPayload.BlendMode == static_cast<int32>( EDrawBlend::Add ) && ChangedPayload.Material.bTwoSided == 0, "binding再準備後のroot命令はOpacity .61・Add・片面設定を保存値どおり記録する" );
 
 		// 失敗設定はnativeへ戻し、同じ失敗hashで毎frame再試行しない。
 		FWorldDefinition InvalidWorld = State.Session.Document.Get(); // 同じownerでinvalid設定を試すworld copy
 		FWorldObject* InvalidLeaf = InvalidWorld.FindObject( 7 ); // NaN opacityを設定するroot object
-		if ( InvalidLeaf != nullptr && InvalidLeaf->Model.IsSet() && InvalidLeaf->Model.GetValue().MaterialEffect.IsSet() ) InvalidLeaf->Model.GetValue().MaterialEffect.GetValue().Effect.Opacity = std::numeric_limits<float32>::quiet_NaN();
+		if ( InvalidLeaf != nullptr && InvalidLeaf->Model.IsSet() && InvalidLeaf->Model.GetValue().MaterialEffect.IsSet() ) InvalidLeaf->Model.GetValue().MaterialEffect.GetValue().Effect.Opacity = TNumericLimits<float32>::QuietNaN();
 		State.Session.Reset( InvalidWorld, "model_preview_invalid.world" );
 		const int32 SurfaceBeforeInvalid = Fake.NumStaticModelSurfaceQueries; // invalid setting処理前の面照会累計
 		const int32 GeometryBeforeInvalid = Fake.NumModelMaterialGeometryCreates; // invalid setting処理前のgeometry作成累計

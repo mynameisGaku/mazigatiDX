@@ -3,6 +3,7 @@
 
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Interfaces/Tickable/ITickable.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Component/Component.h"
 #include "Library/Framework/Subsystem/SceneSubsystem.h"
 #include "Library/Framework/World/WorldSpawner.h"
@@ -50,8 +51,8 @@ public:
 	FORCEINLINE bool IsTrigger() const { return bTrigger; }
 
 	// トリガーの重なりの開始・終了を知らせる（空なら知らせない）。トリガーでなければ、呼ばれない
-	void SetOnEnter( FTriggerCallback Callback ) { OnEnter = std::move( Callback ); }
-	void SetOnExit( FTriggerCallback Callback ) { OnExit = std::move( Callback ); }
+	void SetOnEnter( FTriggerCallback Callback ) { OnEnter = MoveTemp( Callback ); }
+	void SetOnExit( FTriggerCallback Callback ) { OnExit = MoveTemp( Callback ); }
 	FORCEINLINE const FTriggerCallback& GetOnEnter() const { return OnEnter; }
 	FORCEINLINE const FTriggerCallback& GetOnExit() const { return OnExit; }
 

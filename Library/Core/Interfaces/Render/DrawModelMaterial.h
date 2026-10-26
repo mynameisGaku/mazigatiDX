@@ -6,6 +6,7 @@
 #include <type_traits>
 
 #include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
+#include "Library/Core/Types/Numeric.h"
 
 // MV1モデルの一材質を効果付きで描き、残りを通常描画する固定命令。
 struct FDrawModelMaterialData
@@ -31,11 +32,11 @@ namespace NDrawModelMaterial
 	// 固定payloadを検証し、無効handle・行列・blend・予約数ならfalseを返す。
 	inline bool IsValid( const FDrawModelMaterialData& Data )
 	{
-		if ( Data.Handle < 0 || Data.Geometry < 0 || ( Data.BlendMode != static_cast<int32>( EDrawBlend::Alpha ) && Data.BlendMode != static_cast<int32>( EDrawBlend::Add ) ) || !std::isfinite( Data.Opacity ) || Data.Opacity < 0.0f || Data.Opacity > 1.0f ) return false;
+		if ( Data.Handle < 0 || Data.Geometry < 0 || ( Data.BlendMode != static_cast<int32>( EDrawBlend::Alpha ) && Data.BlendMode != static_cast<int32>( EDrawBlend::Add ) ) || !NMath::IsFinite( Data.Opacity ) || Data.Opacity < 0.0f || Data.Opacity > 1.0f ) return false;
 		for ( int32 Index = 0; Index < 12; ++Index )
 		{
 			// ワールド行列の有限性を調べる要素位置。
-			if ( !std::isfinite( Data.M[Index] ) ) return false;
+			if ( !NMath::IsFinite( Data.M[Index] ) ) return false;
 		}
 		if ( Data.Material.NumVertices != 0 || Data.Material.NumIndices != 0 ) return false;
 		return NDrawMaterialMesh::IsValidSettings( Data.Material );

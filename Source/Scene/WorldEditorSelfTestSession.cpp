@@ -1,5 +1,6 @@
 ﻿#include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/World/Editor/EditorOutliner.h"
 #include "Library/Framework/World/Editor/EditorPlacement.h"
 #include "Library/Framework/World/Editor/EditorSession.h"
@@ -153,7 +154,7 @@ namespace
 		for ( const int32 Index : { 4, 5 } )
 		{
 			const FVector3 P = All[Index].Position;
-			if ( !std::isfinite( P.x ) || !std::isfinite( P.y ) || !std::isfinite( P.z ) ) bFinite = false;
+			if ( !NMath::IsFinite( P.x ) || !NMath::IsFinite( P.y ) || !NMath::IsFinite( P.z ) ) bFinite = false;
 		}
 		C.Check( bFinite, "objects in a parent cycle get finite values and the walk ends" );
 
@@ -535,7 +536,7 @@ namespace
 		C.Check( Crate != WorldNoId && ObjectOrEmpty( S.Document.Get(), Crate ).Name == "Box" && ObjectOrEmpty( S.Document.Get(), Crate ).Model.IsSet() && ObjectOrEmpty( S.Document.Get(), Crate ).Model.Get( FWorldModel() ).Path == "Models/Box.mv1", "CreateAsset: a model, named after the file, with the path in forward slashes" );
 		const int32 Sign = S.CreateAsset( "Tex/a.png", FVector3( 0, 0, 0 ), &F.Assets );
 		const FWorldBillboard& SignBoard = ObjectOrEmpty( S.Document.Get(), Sign ).Billboard.Get( FWorldBillboard() );
-		C.Check( std::fabs( SignBoard.Size.x - 2.0f ) < 1e-5f && std::fabs( SignBoard.Size.y - 1.0f ) < 1e-5f && SignBoard.Texture == "Tex/a.png" && std::fabs( SignBoard.Pivot.y - 1.0f ) < 1e-5f, "an image becomes a billboard with the image's aspect (64x32 -> 2x1) and its pivot at the feet" );
+		C.Check( NMath::Abs( SignBoard.Size.x - 2.0f ) < 1e-5f && NMath::Abs( SignBoard.Size.y - 1.0f ) < 1e-5f && SignBoard.Texture == "Tex/a.png" && NMath::Abs( SignBoard.Pivot.y - 1.0f ) < 1e-5f, "an image becomes a billboard with the image's aspect (64x32 -> 2x1) and its pivot at the feet" );
 		const int32 Voice = S.CreateAsset( "Sounds/Wind.ogg", FVector3::Zero, &F.Assets );
 		C.Check( ObjectOrEmpty( S.Document.Get(), Voice ).Sound.IsSet() && ObjectOrEmpty( S.Document.Get(), Voice ).Sound.Get( FWorldSound() ).Path == "Sounds/Wind.ogg", "a sound file becomes a sound object" );
 		const int32 UndoBeforeBad = S.Document.GetNumUndo();
@@ -776,8 +777,8 @@ namespace
 		U.BeginGizmoDrag( M.View, EEditorGizmoHandle::AxisY, M.RayAt( Pivot + V0 ) );
 		U.UpdateGizmoDrag( M.RayAt( Pivot + V0 * std::cos( NMath::HALF_PI ) + Perp * ( R * std::sin( NMath::HALF_PI ) ) ) );
 		U.EndGizmoDrag();
-		C.Check( std::fabs( FVector3::Distance( WorldPosition( U.Document, M1 ), Pivot ) - Radius1 ) < 2e-3f && std::fabs( FVector3::Distance( WorldPosition( U.Document, M2 ), Pivot ) - Radius2 ) < 2e-3f, "rotating several objects keeps each at its distance from the centre" );
-		C.Check( !Near3( WorldPosition( U.Document, M1 ), FVector3( 3.5f, 0, 0 ), 0.1f ) && std::fabs( std::fabs( ObjectOrEmpty( U.Document.Get(), M1 ).Transform.RotationDegrees.y ) - 90.0f ) < 0.1f, "M1 orbited and turned by 90 degrees about Y (rotation %s)", *ObjectOrEmpty( U.Document.Get(), M1 ).Transform.RotationDegrees.ToString() );
+		C.Check( NMath::Abs( FVector3::Distance( WorldPosition( U.Document, M1 ), Pivot ) - Radius1 ) < 2e-3f && NMath::Abs( FVector3::Distance( WorldPosition( U.Document, M2 ), Pivot ) - Radius2 ) < 2e-3f, "rotating several objects keeps each at its distance from the centre" );
+		C.Check( !Near3( WorldPosition( U.Document, M1 ), FVector3( 3.5f, 0, 0 ), 0.1f ) && NMath::Abs( NMath::Abs( ObjectOrEmpty( U.Document.Get(), M1 ).Transform.RotationDegrees.y ) - 90.0f ) < 0.1f, "M1 orbited and turned by 90 degrees about Y (rotation %s)", *ObjectOrEmpty( U.Document.Get(), M1 ).Transform.RotationDegrees.ToString() );
 
 		// 拡大（Local）
 		FSessionFixture N;
@@ -918,7 +919,7 @@ namespace
 		FEditorCamera Camera = MakeCamera( 0.0f, 0.5f, 10.0f );
 		FEditorPlacementOptions Options;
 		FEditorPlacement Placement = NWorldEditor::ComputePlacement( Camera.ScreenToRay( F.View, 400, 300 ), nullptr, Context, Options );
-		C.Check( Placement.bHitGround && !Placement.bHitObject && std::fabs( Placement.Position.y ) < 1e-6f && std::fabs( Placement.Position.x ) < 1e-3f && std::fabs( Placement.Position.z ) < 1e-3f, "looking at the target on the ground places it at the target (%s)", *Placement.Position.ToString() );
+		C.Check( Placement.bHitGround && !Placement.bHitObject && NMath::Abs( Placement.Position.y ) < 1e-6f && NMath::Abs( Placement.Position.x ) < 1e-3f && NMath::Abs( Placement.Position.z ) < 1e-3f, "looking at the target on the ground places it at the target (%s)", *Placement.Position.ToString() );
 		Options.GroundY = 3.0f;
 		Placement = NWorldEditor::ComputePlacement( Camera.ScreenToRay( F.View, 400, 100 ), nullptr, Context, Options );
 		C.Check( Placement.bHitGround && Placement.Position.y == 3.0f, "a different ground height" );
@@ -926,12 +927,12 @@ namespace
 		Options.SnapStep = 1.0f;
 		const FEditorRay Slanted = Camera.ScreenToRay( F.View, 480, 280 );
 		Placement = NWorldEditor::ComputePlacement( Slanted, nullptr, Context, Options );
-		C.Check( std::fabs( Placement.Position.x - std::round( Placement.Position.x ) ) < 1e-6f && std::fabs( Placement.Position.z - std::round( Placement.Position.z ) ) < 1e-6f && Placement.Position.y == 0.0f, "snapping rounds X and Z to the step (%s)", *Placement.Position.ToString() );
+		C.Check( NMath::Abs( Placement.Position.x - std::round( Placement.Position.x ) ) < 1e-6f && NMath::Abs( Placement.Position.z - std::round( Placement.Position.z ) ) < 1e-6f && Placement.Position.y == 0.0f, "snapping rounds X and Z to the step (%s)", *Placement.Position.ToString() );
 
 		// 空の方を向いている: 地面に当たらないので、一定の距離
 		const FEditorCamera Up = MakeCamera( 0.0f, -0.5f, 10.0f, FVector3( 0, 20, 0 ) );   // 地面より高いところから、空を見上げる
 		Placement = NWorldEditor::ComputePlacement( Up.ScreenToRay( F.View, 400, 300 ), nullptr, Context, FEditorPlacementOptions() );
-		C.Check( !Placement.bHitGround && !Placement.bHitObject && std::fabs( FVector3::Distance( Placement.Position, Up.GetEye() ) - 8.0f ) < 1e-3f, "a ray that misses the ground is placed 8 units from the eye" );
+		C.Check( !Placement.bHitGround && !Placement.bHitObject && NMath::Abs( FVector3::Distance( Placement.Position, Up.GetEye() ) - 8.0f ) < 1e-3f, "a ray that misses the ground is placed 8 units from the eye" );
 
 		// 既存のものの表面（地面より手前）
 		const FEditorCamera Level = MakeCamera( 0.0f, 0.2f, 20.0f, FVector3( 0, 1, 10 ) );
@@ -951,9 +952,9 @@ namespace
 		const int32 Model = NWorldEditor::AddAssetObject( Document, "Models\\Props\\Torch.mv1", WorldNoId, FVector3( 1, 2, 3 ), &Assets );
 		C.Check( Model != WorldNoId && ObjectOrEmpty( Document.Get(), Model ).Name == "Torch" && ObjectOrEmpty( Document.Get(), Model ).Model.Get( FWorldModel() ).Path == "Models/Props/Torch.mv1" && Near3( LocalPosition( Document, Model ), FVector3( 1, 2, 3 ) ) && Document.GetNumUndo() == Base + 1, "AddAssetObject: a model, one history entry" );
 		const int32 Tall = NWorldEditor::AddAssetObject( Document, "Tex/tall.png", WorldNoId, FVector3::Zero, &Assets );
-		C.Check( std::fabs( ObjectOrEmpty( Document.Get(), Tall ).Billboard.Get( FWorldBillboard() ).Size.x - 0.5f ) < 1e-5f && std::fabs( ObjectOrEmpty( Document.Get(), Tall ).Billboard.Get( FWorldBillboard() ).Size.y - 1.0f ) < 1e-5f, "a tall image is 0.5 wide and 1 high" );
+		C.Check( NMath::Abs( ObjectOrEmpty( Document.Get(), Tall ).Billboard.Get( FWorldBillboard() ).Size.x - 0.5f ) < 1e-5f && NMath::Abs( ObjectOrEmpty( Document.Get(), Tall ).Billboard.Get( FWorldBillboard() ).Size.y - 1.0f ) < 1e-5f, "a tall image is 0.5 wide and 1 high" );
 		const int32 NoInfo = NWorldEditor::AddAssetObject( Document, "Tex/unknown.png", WorldNoId, FVector3::Zero, nullptr );
-		C.Check( std::fabs( ObjectOrEmpty( Document.Get(), NoInfo ).Billboard.Get( FWorldBillboard() ).Size.x - 1.0f ) < 1e-5f, "without a size the billboard is square" );
+		C.Check( NMath::Abs( ObjectOrEmpty( Document.Get(), NoInfo ).Billboard.Get( FWorldBillboard() ).Size.x - 1.0f ) < 1e-5f, "without a size the billboard is square" );
 		const int32 UndoBefore = Document.GetNumUndo();
 		C.Check( NWorldEditor::AddAssetObject( Document, "x.txt", WorldNoId, FVector3::Zero, &Assets ) == WorldNoId && NWorldEditor::AddAssetObject( Document, "Models/a.mv1", 999, FVector3::Zero, &Assets ) == WorldNoId && Document.GetNumUndo() == UndoBefore, "an unknown kind or a missing parent adds nothing and leaves no history" );
 
@@ -1033,7 +1034,7 @@ namespace
 		C.Check( Rock.Shape == EWorldColliderShape::Box && Near3( Rock.Size, FVector3( 4, 2, 2 ) ) && Near3( Rock.Offset, FVector3( 2, 1, 1 ) ) && Rock.bTrigger, "a rock's existing collider changes shape, and stays a trigger" );
 		C.Check( !ObjectOrEmpty( S.Document.Get(), 3 ).Collider.IsSet(), "an object with no model is left alone" );
 		C.Check( S.Document.Undo() && !ObjectOrEmpty( S.Document.Get(), 1 ).Collider.IsSet() && ObjectOrEmpty( S.Document.Get(), 2 ).Collider.Get( FWorldCollider() ).Shape == EWorldColliderShape::Sphere
-					 && std::fabs( ObjectOrEmpty( S.Document.Get(), 2 ).Collider.Get( FWorldCollider() ).Radius - 9.0f ) < 1e-5f && !S.Document.CanUndo(),
+					 && NMath::Abs( ObjectOrEmpty( S.Document.Get(), 2 ).Collider.Get( FWorldCollider() ).Radius - 9.0f ) < 1e-5f && !S.Document.CanUndo(),
 				 "one undo takes both back" );
 
 		const uint32 Revision = S.Document.GetRevision();
@@ -1042,12 +1043,12 @@ namespace
 
 		S.SetSelection( Ids( { 1, 2 } ) );
 		S.FitSelectionColliders( EWorldColliderShape::Sphere, F.Assets );
-		C.Check( std::fabs( ObjectOrEmpty( S.Document.Get(), 1 ).Collider.Get( FWorldCollider() ).Radius - 1.0f ) < 1e-5f && std::fabs( ObjectOrEmpty( S.Document.Get(), 2 ).Collider.Get( FWorldCollider() ).Radius - 2.0f ) < 1e-5f
+		C.Check( NMath::Abs( ObjectOrEmpty( S.Document.Get(), 1 ).Collider.Get( FWorldCollider() ).Radius - 1.0f ) < 1e-5f && NMath::Abs( ObjectOrEmpty( S.Document.Get(), 2 ).Collider.Get( FWorldCollider() ).Radius - 2.0f ) < 1e-5f
 					 && Near3( ObjectOrEmpty( S.Document.Get(), 2 ).Collider.Get( FWorldCollider() ).Offset, FVector3( 2, 1, 1 ) ),
 				 "a sphere: half of the longest side, centred on the bounds" );
 		S.FitSelectionColliders( EWorldColliderShape::Capsule, F.Assets );
 		const FWorldCollider RockCapsule = ObjectOrEmpty( S.Document.Get(), 2 ).Collider.Get( FWorldCollider() );
-		C.Check( RockCapsule.Shape == EWorldColliderShape::Capsule && std::fabs( RockCapsule.Radius - 2.0f ) < 1e-5f && std::fabs( RockCapsule.Height - 4.0f ) < 1e-5f, "a capsule (%.2f, %.2f)", RockCapsule.Radius, RockCapsule.Height );
+		C.Check( RockCapsule.Shape == EWorldColliderShape::Capsule && NMath::Abs( RockCapsule.Radius - 2.0f ) < 1e-5f && NMath::Abs( RockCapsule.Height - 4.0f ) < 1e-5f, "a capsule (%.2f, %.2f)", RockCapsule.Radius, RockCapsule.Height );
 
 		// メッシュ: 三角形は実行時にモデルから取るので、大きさは要らない（モデル、またはファイルが要る）
 		S.SetSelection( Ids( { 1, 3, 5 } ) );

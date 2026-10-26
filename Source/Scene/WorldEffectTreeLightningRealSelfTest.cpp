@@ -7,6 +7,7 @@
 
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "WorldEffectSelfTestSupport.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Effect/ParticleEffectBackend.h"
 #include "Library/Framework/Render/DrawContext.h"
@@ -141,7 +142,7 @@ namespace
 			int32 Channels[4] = {};
 			GetPixelSoftImage( Soft, X, Y, &Channels[0], &Channels[1], &Channels[2], &Channels[3] );
 			Result.Pixels[Y * 256 + X] = FColor32( static_cast<uint8>( Channels[0] ), static_cast<uint8>( Channels[1] ), static_cast<uint8>( Channels[2] ), static_cast<uint8>( Channels[3] ) );
-			if ( Channels[0] > 5 || Channels[1] > 5 || Channels[2] > 5 ) { ++Result.LitPixels; Result.MinX = std::min( Result.MinX, X ); Result.MinY = std::min( Result.MinY, Y ); Result.MaxX = std::max( Result.MaxX, X ); Result.MaxY = std::max( Result.MaxY, Y ); }
+			if ( Channels[0] > 5 || Channels[1] > 5 || Channels[2] > 5 ) { ++Result.LitPixels; Result.MinX = NMath::Min( Result.MinX, X ); Result.MinY = NMath::Min( Result.MinY, Y ); Result.MaxX = NMath::Max( Result.MaxX, X ); Result.MaxY = NMath::Max( Result.MaxY, Y ); }
 		}
 		if ( ProofName[0] != '\0' && NFileSystem::EnsureDirectory( ProofDirectory ) ) SaveDrawScreenToPNG( 0, 0, 256, 256, *( ProofDirectory / FString::FromUtf8( ProofName ) ) );
 		return Result;
@@ -181,7 +182,7 @@ namespace
 	{
 		if ( Pixels.Num() < 256 * 256 ) return 0;
 		int32 Count = 0;
-		for ( int32 Y = 0; Y < 256; ++Y ) for ( int32 X = 0; X < 256; ++X ) if ( std::abs( X - 128 ) >= 10 )
+		for ( int32 Y = 0; Y < 256; ++Y ) for ( int32 X = 0; X < 256; ++X ) if ( NMath::Abs( X - 128 ) >= 10 )
 		{
 			// 枝側の一画素。
 			const FColor32& Pixel = Pixels[Y * 256 + X];
@@ -251,7 +252,7 @@ void NWorldTest::RunEffectTreeLightningRealTests( NAssetTest::FChecker& C, CAsse
 	C.Check( EarlyTrunkPixels > 0 && BranchTrunkPixels > 0 && StableTrunkPixels > 0, "枝が伸びても早期frameの主幹は同じroot周辺pixelに残る (early=%d branch=%d overlap=%d)", EarlyTrunkPixels, BranchTrunkPixels, StableTrunkPixels );
 	C.Check( BranchSidePixels > MidSidePixels, "固定Ageの中間frameで主幹外へ一次枝・孫枝のpixelが増える (mid=%d branch=%d)", MidSidePixels, BranchSidePixels );
 	C.Check( Gap.LitPixels == 0, "最後の短いpulse窓後は材質Treeを画素へ描かない (lit=%d)", Gap.LitPixels );
-	const bool bBoundsMatch = std::abs( Full.MinX - Plain.MinX ) <= 2 && std::abs( Full.MinY - Plain.MinY ) <= 2 && std::abs( Full.MaxX - Plain.MaxX ) <= 2 && std::abs( Full.MaxY - Plain.MaxY ) <= 2;
+	const bool bBoundsMatch = NMath::Abs( Full.MinX - Plain.MinX ) <= 2 && NMath::Abs( Full.MinY - Plain.MinY ) <= 2 && NMath::Abs( Full.MaxX - Plain.MaxX ) <= 2 && NMath::Abs( Full.MaxY - Plain.MaxY ) <= 2;
 	C.Check( Full.MaterialCommands > 0 && Oblique.MaterialCommands > 0 && Plain.PlainCommands > 0 && Oblique.LitPixels > 0 && Plain.LitPixels > 0 && bBoundsMatch, "完成Treeは材質ON/OFFで同じ占有幅になり正面・斜めの両視点で実画像を持つ (material=%d legacy=%d bounds=%d oblique=%d plain=%d)", Full.MaterialCommands, Plain.PlainCommands, bBoundsMatch, Oblique.LitPixels, Plain.LitPixels );
 	SetDrawScreen( Saved.Screen );
 	DeleteGraph( Screen );

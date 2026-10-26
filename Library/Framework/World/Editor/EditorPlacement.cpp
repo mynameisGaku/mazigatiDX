@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/Import/ModelFormats.h"
 #include "Library/Framework/Effect/EffectBackend.h"
 #include "Library/Framework/World/Mesh/EditMeshOps.h"
@@ -61,7 +62,7 @@ EEditorAssetKind NWorldEditor::ClassifyAsset( const FString& Path )
 
 FString NWorldEditor::GetAssetDisplayName( const FString& Path )
 {
-	const int32 Slash = std::max( Path.FindLast( "/" ), Path.FindLast( "\\" ) );
+	const int32 Slash = NMath::Max( Path.FindLast( "/" ), Path.FindLast( "\\" ) );
 	FString Name = Slash == INDEX_NONE ? Path : Path.Mid( Slash + 1 );
 	// 二重の拡張子（.effect.json）は、まとめて外す
 	if ( Name.EndsWith( ".effect.json", ESearchCase::IgnoreCase ) ) return Name.Left( Name.Len() - 12 );

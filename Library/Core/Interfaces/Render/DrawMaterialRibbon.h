@@ -9,6 +9,8 @@
 #include "DrawCommand.h"
 #include "DrawRibbon.h"
 
+#include "Library/Core/Types/Numeric.h"
+
 // 既存の帯の形状に、画像マスク・発光・点ごとの値を加えて記録する材質設定。
 struct FDrawMaterialRibbonData
 {
@@ -68,8 +70,8 @@ namespace NDrawMaterialRibbon
 		const FDrawRibbonData& Ribbon = Data.Ribbon;
 		// 既存の材質描画設定。
 		const FDrawMaterialRibbonData::FMaterialSettings& Material = Data.Material;
-		if ( Ribbon.NumPoints < 2 || Ribbon.NumPoints > FDrawRibbonData::MaxPoints || Ribbon.Texture < 0 || Material.MaskTexture < -1 || !std::isfinite( Ribbon.UVRepeat ) || Ribbon.UVRepeat <= 0.0f || Ribbon.JoinFlags < 0 || ( Ribbon.JoinFlags & ~( FDrawRibbonData::PreviousPoint | FDrawRibbonData::NextPoint ) ) != 0 || Ribbon.NumPoints - static_cast<int32>( ( Ribbon.JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) - static_cast<int32>( ( Ribbon.JoinFlags & FDrawRibbonData::NextPoint ) != 0 ) < 2 ) return false;
-		return std::isfinite( Material.UVScale[0] ) && std::isfinite( Material.UVScale[1] ) && Material.UVScale[0] > 0.0f && Material.UVScale[1] > 0.0f && Material.UVScale[0] <= 128.0f && Material.UVScale[1] <= 128.0f && std::isfinite( Material.MaskScale ) && Material.MaskScale > 0.0f && Material.MaskScale <= 128.0f && std::isfinite( Material.EdgeWidth ) && Material.EdgeWidth >= 0.0f && Material.EdgeWidth <= 1.0f && std::isfinite( Material.EdgeEmission ) && Material.EdgeEmission >= 0.0f && Material.EdgeEmission <= 32.0f && ( Material.bDissolve == 0 || Material.bDissolve == 1 ) && ( Material.DepthTest == 0 || Material.DepthTest == 1 ) && ( Material.DepthWrite == 0 || Material.DepthWrite == 1 );
+		if ( Ribbon.NumPoints < 2 || Ribbon.NumPoints > FDrawRibbonData::MaxPoints || Ribbon.Texture < 0 || Material.MaskTexture < -1 || !NMath::IsFinite( Ribbon.UVRepeat ) || Ribbon.UVRepeat <= 0.0f || Ribbon.JoinFlags < 0 || ( Ribbon.JoinFlags & ~( FDrawRibbonData::PreviousPoint | FDrawRibbonData::NextPoint ) ) != 0 || Ribbon.NumPoints - static_cast<int32>( ( Ribbon.JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) - static_cast<int32>( ( Ribbon.JoinFlags & FDrawRibbonData::NextPoint ) != 0 ) < 2 ) return false;
+		return NMath::IsFinite( Material.UVScale[0] ) && NMath::IsFinite( Material.UVScale[1] ) && Material.UVScale[0] > 0.0f && Material.UVScale[1] > 0.0f && Material.UVScale[0] <= 128.0f && Material.UVScale[1] <= 128.0f && NMath::IsFinite( Material.MaskScale ) && Material.MaskScale > 0.0f && Material.MaskScale <= 128.0f && NMath::IsFinite( Material.EdgeWidth ) && Material.EdgeWidth >= 0.0f && Material.EdgeWidth <= 1.0f && NMath::IsFinite( Material.EdgeEmission ) && Material.EdgeEmission >= 0.0f && Material.EdgeEmission <= 32.0f && ( Material.bDissolve == 0 || Material.bDissolve == 1 ) && ( Material.DepthTest == 0 || Material.DepthTest == 1 ) && ( Material.DepthWrite == 0 || Material.DepthWrite == 1 );
 	}
 
 	// 位置・材質・連続UVを調べ、前点より距離が戻らないことを確認する。
@@ -81,7 +83,7 @@ namespace NDrawMaterialRibbon
 		const FDrawMaterialRibbonData::FMaterialSettings& Material = Data.Material;
 		// 元画像の横座標へ反復倍率を適用した値。
 		const float32 BaseU = Point.Path.U * Ribbon.UVRepeat;
-		return std::isfinite( Point.Path.Pos[0] ) && std::isfinite( Point.Path.Pos[1] ) && std::isfinite( Point.Path.Pos[2] ) && std::isfinite( Point.Path.Width ) && Point.Path.Width >= 0.0f && std::isfinite( Point.Path.U ) && Point.Path.U >= 0.0f && std::isfinite( BaseU ) && std::isfinite( BaseU * Material.UVScale[0] + Point.UVOffset[0] ) && std::isfinite( BaseU * Material.MaskScale ) && std::isfinite( Point.Dissolve ) && Point.Dissolve >= 0.0f && Point.Dissolve <= 1.0f && std::isfinite( Point.Emission ) && Point.Emission >= 0.0f && Point.Emission <= 32.0f && std::isfinite( Point.UVOffset[0] ) && std::isfinite( Point.UVOffset[1] ) && std::abs( Point.UVOffset[0] ) <= 1.0e6f && std::abs( Point.UVOffset[1] ) <= 1.0e6f && ( !bHasPrevious || Point.Path.U >= PreviousU );
+		return NMath::IsFinite( Point.Path.Pos[0] ) && NMath::IsFinite( Point.Path.Pos[1] ) && NMath::IsFinite( Point.Path.Pos[2] ) && NMath::IsFinite( Point.Path.Width ) && Point.Path.Width >= 0.0f && NMath::IsFinite( Point.Path.U ) && Point.Path.U >= 0.0f && NMath::IsFinite( BaseU ) && NMath::IsFinite( BaseU * Material.UVScale[0] + Point.UVOffset[0] ) && NMath::IsFinite( BaseU * Material.MaskScale ) && NMath::IsFinite( Point.Dissolve ) && Point.Dissolve >= 0.0f && Point.Dissolve <= 1.0f && NMath::IsFinite( Point.Emission ) && Point.Emission >= 0.0f && Point.Emission <= 32.0f && NMath::IsFinite( Point.UVOffset[0] ) && NMath::IsFinite( Point.UVOffset[1] ) && NMath::Abs( Point.UVOffset[0] ) <= 1.0e6f && NMath::Abs( Point.UVOffset[1] ) <= 1.0e6f && ( !bHasPrevious || Point.Path.U >= PreviousU );
 	}
 
 	// 表示区間だけの画像反復数を加算し、8192区間の上限を守る。
@@ -90,8 +92,8 @@ namespace NDrawMaterialRibbon
 		// 区間の先頭が属する画像反復番号。
 		const float64 FirstRepeat = std::floor( static_cast<float64>( FirstU * Data.Ribbon.UVRepeat ) );
 		// 終端までに必要な整数境界区間数。
-		const float64 Sections = std::max( 1.0, std::ceil( static_cast<float64>( LastU * Data.Ribbon.UVRepeat ) ) - FirstRepeat );
-		if ( !std::isfinite( Sections ) || Sections > static_cast<float64>( FDrawRibbonData::MaxTextureSections - InOutSections ) ) return false;
+		const float64 Sections = NMath::Max( 1.0, std::ceil( static_cast<float64>( LastU * Data.Ribbon.UVRepeat ) ) - FirstRepeat );
+		if ( !NMath::IsFinite( Sections ) || Sections > static_cast<float64>( FDrawRibbonData::MaxTextureSections - InOutSections ) ) return false;
 		InOutSections += static_cast<int32>( Sections );
 		return true;
 	}

@@ -2,6 +2,7 @@
 #include <cmath>
 
 #include "Library/Core/Collection/Map.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Component/TransformComponent.h"
 #include "Library/Framework/Scene/Scene.h"
@@ -30,7 +31,7 @@ namespace
 {
 	bool Near3( const FVector3& A, const FVector3& B, float32 Tolerance = 1.0e-3f )
 	{
-		return std::fabs( A.x - B.x ) <= Tolerance && std::fabs( A.y - B.y ) <= Tolerance && std::fabs( A.z - B.z ) <= Tolerance;
+		return NMath::Abs( A.x - B.x ) <= Tolerance && NMath::Abs( A.y - B.y ) <= Tolerance && NMath::Abs( A.z - B.z ) <= Tolerance;
 	}
 
 	FWorldObject MakeObject( int32 Id, const char* Name, const FVector3& Position = FVector3::Zero, int32 Parent = WorldNoId )
@@ -59,7 +60,7 @@ namespace
 		for ( const FWorldObject& Object : Objects )
 		{
 			World.Objects.Add( Object );
-			World.NextId = std::max( World.NextId, Object.Id + 1 );
+			World.NextId = NMath::Max( World.NextId, Object.Id + 1 );
 		}
 		return World;
 	}

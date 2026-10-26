@@ -3,11 +3,12 @@
 #include <algorithm>
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Math/MathConstants.h"
 
 FVector2 NEditMesh::ComputeBoxUV( const FVector3& Position, const FVector3& Normal, const FEditMeshMaterial& Material )
 {
-	const float32 AX = std::fabs( Normal.x ), AY = std::fabs( Normal.y ), AZ = std::fabs( Normal.z );
+	const float32 AX = NMath::Abs( Normal.x ), AY = NMath::Abs( Normal.y ), AZ = NMath::Abs( Normal.z );
 	float32 U = 0.0f, V = 0.0f;
 	// 表から見て、右が U、下が V（見ている人の上は、水平な面では +Z）
 	if ( AY >= AX && AY >= AZ )
@@ -50,7 +51,7 @@ FEditMeshBuild NEditMesh::BuildRenderMesh( const FEditMesh& Mesh )
 		FVector3 Sum = FVector3::Zero;
 		for ( int32 i = 1; i + 1 < Indices.Num(); ++i ) Sum = Sum + FVector3::Cross( Mesh.Vertices[Indices[i]] - Origin, Mesh.Vertices[Indices[i + 1]] - Origin );
 		const float32 Length = Sum.Length();
-		if ( !( Length > 1.0e-12f ) || !std::isfinite( Length ) ) continue;
+		if ( !( Length > 1.0e-12f ) || !NMath::IsFinite( Length ) ) continue;
 		Weighted[Face] = Sum;
 		Unit[Face] = Sum / Length;
 		Drawn[Face] = true;
@@ -59,7 +60,7 @@ FEditMeshBuild NEditMesh::BuildRenderMesh( const FEditMesh& Mesh )
 			for ( const int32 Index : Indices ) VertexFaces[Index].Add( Face );
 		}
 	}
-	const float32 CosLimit = std::cos( std::clamp( Mesh.SmoothAngle, 0.0f, 180.0f ) * NMath::DEG2RAD ) - 1.0e-5f;   // 角度ちょうどの面も混ぜる
+	const float32 CosLimit = std::cos( NMath::Clamp( Mesh.SmoothAngle, 0.0f, 180.0f ) * NMath::DEG2RAD ) - 1.0e-5f;   // 角度ちょうどの面も混ぜる
 
 	// 材質ごとの三角形（頂点は共通の配列に）
 	TArray<int32> Slots;   // 材質の番号の、出てきた順ではなく、小さい順に並べるための一覧

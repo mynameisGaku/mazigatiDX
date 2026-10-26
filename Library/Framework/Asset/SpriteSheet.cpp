@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Json/JsonHelpers.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogSpriteSheet, Log )
@@ -61,8 +62,8 @@ namespace
 	FSpriteSheetGrid GridFromJson( const NlohmannJson& Json )
 	{
 		FSpriteSheetGrid Grid;
-		Grid.Columns = std::max( NJson::GetOr<int32>( Json, "Columns", 1 ), 1 );
-		Grid.Rows = std::max( NJson::GetOr<int32>( Json, "Rows", 1 ), 1 );
+		Grid.Columns = NMath::Max( NJson::GetOr<int32>( Json, "Columns", 1 ), 1 );
+		Grid.Rows = NMath::Max( NJson::GetOr<int32>( Json, "Rows", 1 ), 1 );
 		Grid.CellWidth = NJson::GetOr<int32>( Json, "CellWidth", 0 );
 		Grid.CellHeight = NJson::GetOr<int32>( Json, "CellHeight", 0 );
 		Grid.NumFrames = NJson::GetOr<int32>( Json, "NumFrames", 0 );
@@ -153,8 +154,8 @@ namespace
 //=============================================================================
 int32 FSpriteSheetGrid::GetNumFrames() const
 {
-	const int32 Total = std::max( Columns, 1 ) * std::max( Rows, 1 );
-	return NumFrames > 0 ? std::min( NumFrames, Total ) : Total;
+	const int32 Total = NMath::Max( Columns, 1 ) * NMath::Max( Rows, 1 );
+	return NumFrames > 0 ? NMath::Min( NumFrames, Total ) : Total;
 }
 
 FSpriteClip FSpriteClip::FromRange( const FString& InName, int32 First, int32 Last, float32 InFps, EAnimLoopMode InLoop )
@@ -219,7 +220,7 @@ void FSpriteClip::NormalizeDurations()
 	const float32 Default = Fps > 0.0f ? 1.0f / Fps : 0.1f;
 	for ( const float32 Duration : Durations )
 	{
-		if ( std::fabs( Duration - Default ) > 1.0e-5f ) return;
+		if ( NMath::Abs( Duration - Default ) > 1.0e-5f ) return;
 	}
 	Durations.Empty();
 }
@@ -378,8 +379,8 @@ void CSpriteSheet::Prepare() const
 void CSpriteSheet::ComputeGridFrames( const FSpriteSheetGrid& Grid, int32 TextureWidth, int32 TextureHeight, TArray<FSpriteFrame>& OutFrames )
 {
 	OutFrames.Reset();
-	const int32 Columns = std::max( Grid.Columns, 1 );
-	const int32 Rows = std::max( Grid.Rows, 1 );
+	const int32 Columns = NMath::Max( Grid.Columns, 1 );
+	const int32 Rows = NMath::Max( Grid.Rows, 1 );
 	const int32 Num = Grid.GetNumFrames();
 
 	// 自動: 余白と隙間を引いた残りを、分割数で等分する

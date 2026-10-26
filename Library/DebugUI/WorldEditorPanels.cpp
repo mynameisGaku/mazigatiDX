@@ -2,6 +2,7 @@
 #include <cmath>
 
 #include "Library/Core/Collection/Map.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/DebugUI/ImGuiTexture.h"
 #include "Library/DebugUI/WorldEditorInternal.h"
@@ -210,7 +211,7 @@ void NWorldEditorUI::DrawOutliner( FWorldEditorState& S )
 				if ( From != INDEX_NONE )
 				{
 					TArray<int32> Range;
-					for ( int32 i = std::min( From, RowIndex ); i <= std::max( From, RowIndex ); ++i ) Range.Add( Rows[i].ObjectId );
+					for ( int32 i = NMath::Min( From, RowIndex ); i <= NMath::Max( From, RowIndex ); ++i ) Range.Add( Rows[i].ObjectId );
 					Session.SetSelection( Range );
 				}
 			}
@@ -253,7 +254,7 @@ void NWorldEditorUI::DrawOutliner( FWorldEditorState& S )
 	const ImVec2 Rest = ImGui::GetContentRegionAvail();
 	if ( Rest.y > 4.0f )
 	{
-		ImGui::InvisibleButton( "##Rest", ImVec2( std::max( Rest.x, 1.0f ), std::max( Rest.y, 1.0f ) ) );
+		ImGui::InvisibleButton( "##Rest", ImVec2( NMath::Max( Rest.x, 1.0f ), NMath::Max( Rest.y, 1.0f ) ) );
 		if ( ImGui::IsItemClicked( ImGuiMouseButton_Left ) ) Session.ClearSelection();
 		if ( ImGui::BeginDragDropTarget() )
 		{
@@ -660,7 +661,7 @@ namespace
 				if ( ImGui::Checkbox( "Play when the scene starts", &Effect.bAutoPlay ) ) NWorldEdit::EditObject( Session.Document, Id )->Effect.GetValue().bAutoPlay = Effect.bAutoPlay;
 				if ( ImGui::DragFloat( "Scale", &Effect.Scale, 0.01f, 0.01f, 100.0f, "%.2f" ) ) NWorldEdit::EditObject( Session.Document, Id, "Inspector.Effect.Scale" )->Effect.GetValue().Scale = Effect.Scale;
 				if ( ImGui::DragFloat( "Speed", &Effect.Speed, 0.01f, 0.0f, 10.0f, "%.2f" ) ) NWorldEdit::EditObject( Session.Document, Id, "Inspector.Effect.Speed" )->Effect.GetValue().Speed = Effect.Speed;
-				if ( ImGui::InputInt( "Seed (0 = the effect's)", &Effect.Seed ) ) NWorldEdit::EditObject( Session.Document, Id, "Inspector.Effect.Seed" )->Effect.GetValue().Seed = std::max( Effect.Seed, 0 );
+				if ( ImGui::InputInt( "Seed (0 = the effect's)", &Effect.Seed ) ) NWorldEdit::EditObject( Session.Document, Id, "Inspector.Effect.Seed" )->Effect.GetValue().Seed = NMath::Max( Effect.Seed, 0 );
 				const char* TargetPreview = Effect.Target == WorldNoId ? "(none)" : "(missing object)";
 				if ( const FWorldObject* TargetObject = Session.Document.Get().FindObject( Effect.Target ); TargetObject != nullptr ) TargetPreview = UI_TEXT( TargetObject->Name );
 				if ( ImGui::BeginCombo( "Target object", TargetPreview ) )
@@ -675,7 +676,7 @@ namespace
 					}
 					ImGui::EndCombo();
 				}
-				FVector3 TargetOffset = std::isfinite( Effect.TargetOffset.x ) && std::isfinite( Effect.TargetOffset.y ) && std::isfinite( Effect.TargetOffset.z ) ? Effect.TargetOffset : FVector3::Zero;
+				FVector3 TargetOffset = NMath::IsFinite( Effect.TargetOffset.x ) && NMath::IsFinite( Effect.TargetOffset.y ) && NMath::IsFinite( Effect.TargetOffset.z ) ? Effect.TargetOffset : FVector3::Zero;
 				if ( ImGui::DragFloat3( "Target offset", &TargetOffset.x, 0.05f, 0.0f, 0.0f, "%.3f" ) ) NWorldEdit::EditObject( Session.Document, Id, "Inspector.Effect.TargetOffset" )->Effect.GetValue().TargetOffset = TargetOffset;
 				if ( ResetButton( "R##EffectTargetOffset" ) ) NWorldEdit::EditObject( Session.Document, Id )->Effect.GetValue().TargetOffset = FVector3::Zero;
 				int32 Loop = Effect.Loop + 1;   // 0: エフェクトの指定のまま / 1: 繰り返さない / 2: 繰り返す
@@ -913,7 +914,7 @@ void NWorldEditorUI::DrawAssetBrowser( FWorldEditorState& S )
 			const FAssetRow& Row = Rows[i];
 			ImGui::PushID( i );
 			static const char* const KindLetters[] = { "[?]", "[M]", "[I]", "[S]", "[W]", "[E]" };
-			ImGui::TextDisabled( "%s", KindLetters[std::clamp( Row.Kind, 0, 5 )] );
+			ImGui::TextDisabled( "%s", KindLetters[NMath::Clamp( Row.Kind, 0, 5 )] );
 			ImGui::SameLine();
 			if ( Row.Kind == 2 && S.AssetInfo.IsValid() )
 			{

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/World/WorldHierarchy.h"
 
 namespace
@@ -275,7 +276,7 @@ bool CWorldEditorSession::FocusSelection( const FEditorViewport& Viewport, const
 	FVector3 Center;
 	float32 Radius = 0.0f;
 	if ( !NWorldEditor::ComputeBoundingSphere( Document.Get(), Selected, Context, Center, Radius ) ) return false;
-	Camera.Focus( Center, std::max( Radius, 0.5f ), Viewport );
+	Camera.Focus( Center, NMath::Max( Radius, 0.5f ), Viewport );
 	return true;
 }
 

@@ -322,6 +322,7 @@
     <ClCompile Include="Source\Config\ScreenConfig.cpp" />
     <ClCompile Include="Source\Object\OrbitMarker.cpp" />
     <ClCompile Include="Source\Object\PhysicsObjects.cpp" />
+    <ClCompile Include="Source\Scene\AssetSelfTestCore.cpp" />
     <ClCompile Include="Source\Scene\AssetSelfTestImport.cpp" />
     <ClCompile Include="Source\Scene\AssetSelfTestLogic.cpp" />
     <ClCompile Include="Source\Scene\AssetSelfTestModelMaterial.cpp" />
@@ -633,7 +634,9 @@
     <ClInclude Include="Library\Core\Profiler\ProfilerTypes.h" />
     <ClInclude Include="Library\Core\Time\PlatformTime.h" />
     <ClInclude Include="Library\Core\Types\CompilerMacros.h" />
+    <ClInclude Include="Library\Core\Types\Numeric.h" />
     <ClInclude Include="Library\Core\Types\TypeDefinition.h" />
+    <ClInclude Include="Library\Core\Types\Utility.h" />
     <ClInclude Include="Library\DebugUI\AssetTools.h" />
     <ClInclude Include="Library\DebugUI\ConsoleWindow.h" />
     <ClInclude Include="Library\DebugUI\EditorCommon.h" />
@@ -803,6 +806,7 @@
     <ClInclude Include="Source\Config\ScreenConfig.h" />
     <ClInclude Include="Source\Object\OrbitMarker.h" />
     <ClInclude Include="Source\Object\PhysicsObjects.h" />
+    <ClInclude Include="Source\Scene\AssetSelfTestCore.h" />
     <ClInclude Include="Source\Scene\AssetSelfTestFbx.h" />
     <ClInclude Include="Source\Scene\AssetSelfTestModelMaterial.h" />
     <ClInclude Include="Source\Scene\AssetSelfTestModelMaterialBoundary.h" />

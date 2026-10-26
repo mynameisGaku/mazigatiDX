@@ -1,4 +1,5 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EffectEditor.h"
 #include "Library/DebugUI/EffectEditorInternal.h"
 #include "Library/DebugUI/AssetTools.h"
@@ -37,7 +38,7 @@ namespace
 	{
 		// 呼び出し時点の試し再生の状態。
 		const FParticleSimulation* Simulation = PreviewSimulation( State );
-		return Simulation != nullptr ? Simulation->Time : std::numeric_limits<float32>::quiet_NaN();
+		return Simulation != nullptr ? Simulation->Time : TNumericLimits<float32>::QuietNaN();
 	}
 
 	// 編集と保存済みアセットを分離し、更新・停止・履歴・終了を実際に進めて確認する。
@@ -68,7 +69,7 @@ namespace
 		Edited.Rate = 20.0f;
 		C.Check( NParticleEdit::SetEmitter( State.Document, 0, Edited ), "保存前の生成速度を変更する" );
 		NDebugUI::UpdateEffectEditor( State, 0.1f );
-		C.Check( State.Playback.IsValid() && State.Playback != First && State.Playback->GetNumParticles() == 2 && Loaded.IsValid() && Loaded->GetDefinition().Emitters[0].Rate == 10.0f && FirstSimulation != nullptr && FirstSimulation->Definition->Emitters[0].Rate == 10.0f && First->GetNumParticles() == 1 && std::fabs( FirstSimulation->Time - 0.1f ) < 1.0e-6f, "未保存の変更は新しい試し再生だけへ反映し、共有アセットと古い再生を変えない" );
+		C.Check( State.Playback.IsValid() && State.Playback != First && State.Playback->GetNumParticles() == 2 && Loaded.IsValid() && Loaded->GetDefinition().Emitters[0].Rate == 10.0f && FirstSimulation != nullptr && FirstSimulation->Definition->Emitters[0].Rate == 10.0f && First->GetNumParticles() == 1 && NMath::Abs( FirstSimulation->Time - 0.1f ) < 1.0e-6f, "未保存の変更は新しい試し再生だけへ反映し、共有アセットと古い再生を変えない" );
 		// 一時停止中に保つ再生位置。
 		const float32 PausedTime = PreviewTime( State );
 		State.bPlaying = false;
@@ -76,19 +77,19 @@ namespace
 		C.Check( PreviewTime( State ) == PausedTime, "一時停止中は再生位置を進めない" );
 		State.bPlaying = true;
 		// 無効な刻みと、明示的に進めない刻み。
-		const float32 InvalidSteps[] = { 0.0f, -1.0f, std::numeric_limits<float32>::quiet_NaN(), std::numeric_limits<float32>::infinity() };
+		const float32 InvalidSteps[] = { 0.0f, -1.0f, TNumericLimits<float32>::QuietNaN(), TNumericLimits<float32>::Infinity() };
 		// いずれも再生位置を変えてはいけない入力。
 		for ( const float32 Step : InvalidSteps ) NDebugUI::UpdateEffectEditor( State, Step );
 		C.Check( PreviewTime( State ) == PausedTime, "0・負・非数・無限大の刻みでは時間を進めない" );
 		State.PreviewSpeed = 0.0f;
 		NDebugUI::UpdateEffectEditor( State, 0.1f );
 		C.Check( PreviewTime( State ) == PausedTime, "プレビュー速度 0 では粒子の時間を進めない" );
-		State.PreviewSpeed = std::numeric_limits<float32>::quiet_NaN();
+		State.PreviewSpeed = TNumericLimits<float32>::QuietNaN();
 		NDebugUI::UpdateEffectEditor( State, 0.1f );
-		C.Check( std::fabs( PreviewTime( State ) - PausedTime - 0.1f ) < 1.0e-6f, "非数のプレビュー速度は通常速度として扱う" );
+		C.Check( NMath::Abs( PreviewTime( State ) - PausedTime - 0.1f ) < 1.0e-6f, "非数のプレビュー速度は通常速度として扱う" );
 		State.PreviewSpeed = 8.0f;
 		NDebugUI::UpdateEffectEditor( State, 10.0f );
-		C.Check( std::fabs( PreviewTime( State ) - PausedTime - 0.5f ) < 1.0e-6f, "長い停止後の刻みは 0.1 秒、プレビュー速度は 4 倍までに抑える" );
+		C.Check( NMath::Abs( PreviewTime( State ) - PausedTime - 0.5f ) < 1.0e-6f, "長い停止後の刻みは 0.1 秒、プレビュー速度は 4 倍までに抑える" );
 		State.PreviewSpeed = 1.0f;
 		C.Check( State.Document.Undo(), "保存前の変更を取り消す" );
 		NDebugUI::UpdateEffectEditor( State, 0.1f );
@@ -165,7 +166,7 @@ namespace
 		for ( int32 Row = 0; Row < 4; ++Row )
 		{
 			// 比べる列の番号。
-			for ( int32 Column = 0; Column < 4; ++Column ) if ( std::fabs( A.m[Row][Column] - B.m[Row][Column] ) > 1.0e-5f ) return false;
+			for ( int32 Column = 0; Column < 4; ++Column ) if ( NMath::Abs( A.m[Row][Column] - B.m[Row][Column] ) > 1.0e-5f ) return false;
 		}
 		return true;
 	}

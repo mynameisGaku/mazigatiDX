@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "Library/Core/Types/Utility.h"
+
 // Array.h の大きなテンプレート関数の定義（インライン展開しても速くならないのでクラス定義から分離）
 // Array.h の末尾から include される。直接 include しない
 
@@ -59,14 +61,14 @@ T& TArray<T>::EmplaceGetRef( Args&&... args )
 {
 	if ( ArrayNum < ArrayMax )
 	{
-		new ( Data + ArrayNum ) T( std::forward<Args>( args )... );
+		new ( Data + ArrayNum ) T( Forward<Args>( args )... );
 	}
 	else
 	{
 		// args が自分の要素を参照していても安全なよう、新領域に先に構築してから移す
 		const int32 NewMax  = CalculateGrowth( ArrayNum + 1 );
 		T*          NewData = FMemory::AllocateArray<T>( NewMax );
-		new ( NewData + ArrayNum ) T( std::forward<Args>( args )... );
+		new ( NewData + ArrayNum ) T( Forward<Args>( args )... );
 		NMemoryOps::RelocateItems( NewData, Data, ArrayNum );
 		FMemory::Free( Data );
 		Data     = NewData;
@@ -97,7 +99,7 @@ int32 TArray<T>::RemoveAll( Predicate Pred )
 	for ( int32 ReadIndex = 0; ReadIndex < ArrayNum; ++ReadIndex )
 	{
 		if ( Pred( Data[ReadIndex] ) ) continue;
-		if ( WriteIndex != ReadIndex ) Data[WriteIndex] = std::move( Data[ReadIndex] );
+		if ( WriteIndex != ReadIndex ) Data[WriteIndex] = MoveTemp( Data[ReadIndex] );
 		++WriteIndex;
 	}
 	const int32 Removed = ArrayNum - WriteIndex;
@@ -118,7 +120,7 @@ void TArray<T>::RemoveAt( int32 Index, int32 Count )
 	}
 	else
 	{
-		for ( int32 i = Index; i + Count < ArrayNum; ++i ) Data[i] = std::move( Data[i + Count] );
+		for ( int32 i = Index; i + Count < ArrayNum; ++i ) Data[i] = MoveTemp( Data[i + Count] );
 		NMemoryOps::DestructItems( Data + ArrayNum - Count, Count );
 	}
 	ArrayNum -= Count;
@@ -164,7 +166,7 @@ void TArray<T>::OpenGap( int32 Index, int32 Count )
 		// 後ろから 1 つずつ移動構築
 		for ( int32 i = ArrayNum - 1; i >= Index; --i )
 		{
-			new ( Data + i + Count ) T( std::move( Data[i] ) );
+			new ( Data + i + Count ) T( MoveTemp( Data[i] ) );
 			Data[i].~T();
 		}
 	}

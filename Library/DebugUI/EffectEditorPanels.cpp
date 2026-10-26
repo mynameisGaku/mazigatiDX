@@ -6,6 +6,7 @@
 #include <limits>
 
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Effect/EffectPathGeometry.h"
@@ -40,9 +41,9 @@ namespace
 		// 整数の色へ変換できない入力は、元の色のままにする。
 		for ( const float32 Channel : Channels )
 		{
-			if ( !std::isfinite( Channel ) ) return false;
+			if ( !NMath::IsFinite( Channel ) ) return false;
 		}
-		Color = FColor32( static_cast<uint8>( std::clamp( Channels[0], 0.0f, 1.0f ) * 255.0f + 0.5f ), static_cast<uint8>( std::clamp( Channels[1], 0.0f, 1.0f ) * 255.0f + 0.5f ), static_cast<uint8>( std::clamp( Channels[2], 0.0f, 1.0f ) * 255.0f + 0.5f ), static_cast<uint8>( std::clamp( Channels[3], 0.0f, 1.0f ) * 255.0f + 0.5f ) );
+		Color = FColor32( static_cast<uint8>( NMath::Clamp( Channels[0], 0.0f, 1.0f ) * 255.0f + 0.5f ), static_cast<uint8>( NMath::Clamp( Channels[1], 0.0f, 1.0f ) * 255.0f + 0.5f ), static_cast<uint8>( NMath::Clamp( Channels[2], 0.0f, 1.0f ) * 255.0f + 0.5f ), static_cast<uint8>( NMath::Clamp( Channels[3], 0.0f, 1.0f ) * 255.0f + 0.5f ) );
 		return true;
 	}
 
@@ -96,7 +97,7 @@ namespace
 		ImGui::EndDisabled();
 		ImGui::EndDisabled();
 		ImGui::BeginDisabled( !S.Document.Get().Emitters.IsValidIndex( S.SelectedEmitter ) );
-		if ( ImGui::Button( "Delete emitter" ) && NParticleEdit::RemoveEmitter( S.Document, S.SelectedEmitter ) ) S.SelectedEmitter = std::min( S.SelectedEmitter, S.Document.Get().Emitters.Num() - 1 );
+		if ( ImGui::Button( "Delete emitter" ) && NParticleEdit::RemoveEmitter( S.Document, S.SelectedEmitter ) ) S.SelectedEmitter = NMath::Min( S.SelectedEmitter, S.Document.Get().Emitters.Num() - 1 );
 		ImGui::SameLine();
 		ImGui::BeginDisabled( S.SelectedEmitter <= 0 );
 		if ( ImGui::Button( "Up" ) && NParticleEdit::MoveEmitter( S.Document, S.SelectedEmitter, S.SelectedEmitter - 1 ) ) --S.SelectedEmitter;
@@ -130,16 +131,16 @@ namespace
 			// 更新対象の一括生成。ループの途中では配列を増減しない。
 			FParticleBurst& Burst = Emitter.Bursts[Index];
 			// 編集中の行が隣の行と入れ替わらないよう、前後の時刻を境界にする。
-			const float32 Earliest = Index > 0 ? std::max( Emitter.Bursts[Index - 1].Time, 0.0f ) : 0.0f;
+			const float32 Earliest = Index > 0 ? NMath::Max( Emitter.Bursts[Index - 1].Time, 0.0f ) : 0.0f;
 			// 最後の行は、有限の正の時刻を任意に指定できる。
-			const float32 Latest = Index + 1 < Emitter.Bursts.Num() ? std::max( Emitter.Bursts[Index + 1].Time, Earliest ) : ( std::numeric_limits<float32>::max )();
+			const float32 Latest = Index + 1 < Emitter.Bursts.Num() ? NMath::Max( Emitter.Bursts[Index + 1].Time, Earliest ) : TNumericLimits<float32>::Max();
 			ImGui::TextDisabled( "Burst %d", Index + 1 );
 			if ( TrackInputEnd( ImGui::DragFloat( "Time (s)", &Burst.Time, 0.01f, 0.0f, 0.0f, "%.3f" ), Document ) )
 			{
-				Burst.Time = std::clamp( Burst.Time, Earliest, Latest );
+				Burst.Time = NMath::Clamp( Burst.Time, Earliest, Latest );
 				bChanged = true;
 			}
-			bChanged |= TrackInputEnd( ImGui::DragInt( "Count", &Burst.Count, 1.0f, 0, ( std::numeric_limits<int32>::max )(), "%d", ImGuiSliderFlags_AlwaysClamp ), Document );
+			bChanged |= TrackInputEnd( ImGui::DragInt( "Count", &Burst.Count, 1.0f, 0, TNumericLimits<int32>::Max(), "%d", ImGuiSliderFlags_AlwaysClamp ), Document );
 			if ( ImGui::SmallButton( "Remove burst" ) ) RemoveIndex = Index;
 			ImGui::PopID();
 		}
@@ -188,7 +189,7 @@ namespace
 			}
 			else bChanged |= TrackInputEnd( ImGui::Checkbox( "Use target", &Emitter.Path.bUseTarget ), Document );
 			// Treeの共通形状値をImGuiへ渡す前に有限性と許容範囲を調べる。
-			bTreeCommonPathValid = Emitter.Path.Kind != FEffectPathDefinition::EKind::TreeLightning || ( std::isfinite( Emitter.Path.End.x ) && std::isfinite( Emitter.Path.End.y ) && std::isfinite( Emitter.Path.End.z ) && ( Emitter.Path.End.x != 0.0f || Emitter.Path.End.y != 0.0f || Emitter.Path.End.z != 0.0f ) && std::fabs( Emitter.Path.End.x ) <= 10000.0f && std::fabs( Emitter.Path.End.y ) <= 10000.0f && std::fabs( Emitter.Path.End.z ) <= 10000.0f && Emitter.Path.Segments >= 2 && Emitter.Path.Segments <= 128 && Emitter.Path.Branches >= 0 && Emitter.Path.Branches <= 16 && std::isfinite( Emitter.Path.Jitter ) && Emitter.Path.Jitter >= 0.0f && Emitter.Path.Jitter <= 1.0f && std::isfinite( Emitter.Path.BranchLength ) && Emitter.Path.BranchLength >= 0.0f && Emitter.Path.BranchLength <= 2.0f && std::isfinite( Emitter.Path.RefreshHz ) && Emitter.Path.RefreshHz >= 0.0f && std::isfinite( Emitter.Path.UVRepeat ) && Emitter.Path.UVRepeat > 0.0f && Emitter.Path.UVRepeat <= 10000.0f && std::isfinite( Emitter.Path.BreakDistance ) && Emitter.Path.BreakDistance > 0.0f );
+			bTreeCommonPathValid = Emitter.Path.Kind != FEffectPathDefinition::EKind::TreeLightning || ( NMath::IsFinite( Emitter.Path.End.x ) && NMath::IsFinite( Emitter.Path.End.y ) && NMath::IsFinite( Emitter.Path.End.z ) && ( Emitter.Path.End.x != 0.0f || Emitter.Path.End.y != 0.0f || Emitter.Path.End.z != 0.0f ) && NMath::Abs( Emitter.Path.End.x ) <= 10000.0f && NMath::Abs( Emitter.Path.End.y ) <= 10000.0f && NMath::Abs( Emitter.Path.End.z ) <= 10000.0f && Emitter.Path.Segments >= 2 && Emitter.Path.Segments <= 128 && Emitter.Path.Branches >= 0 && Emitter.Path.Branches <= 16 && NMath::IsFinite( Emitter.Path.Jitter ) && Emitter.Path.Jitter >= 0.0f && Emitter.Path.Jitter <= 1.0f && NMath::IsFinite( Emitter.Path.BranchLength ) && Emitter.Path.BranchLength >= 0.0f && Emitter.Path.BranchLength <= 2.0f && NMath::IsFinite( Emitter.Path.RefreshHz ) && Emitter.Path.RefreshHz >= 0.0f && NMath::IsFinite( Emitter.Path.UVRepeat ) && Emitter.Path.UVRepeat > 0.0f && Emitter.Path.UVRepeat <= 10000.0f && NMath::IsFinite( Emitter.Path.BreakDistance ) && Emitter.Path.BreakDistance > 0.0f );
 			if ( !bTreeCommonPathValid ) ImGui::TextColored( ImVec4( 1.0f, 0.65f, 0.3f, 1.0f ), "Common tree path values are invalid; reset them before editing." );
 			if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning && ImGui::SmallButton( "Reset tree path values" ) )
 			{
@@ -235,7 +236,7 @@ namespace
 					bChanged |= TrackInputEnd( ImGui::DragFloat( "Growth seconds", &Tree.GrowthSeconds, 0.005f, 0.0f, 10.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp ), Document );
 					bChanged |= TrackInputEnd( ImGui::DragFloat( "Branch delay (s)", &Tree.BranchDelaySeconds, 0.001f, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp ), Document );
 					bChanged |= TrackInputEnd( ImGui::DragInt( "Stroke count", &Tree.StrokeCount, 1.0f, 1, 8, "%d", ImGuiSliderFlags_AlwaysClamp ), Document );
-					bChanged |= TrackInputEnd( ImGui::DragFloat( "Stroke interval (s)", &Tree.StrokeInterval, 0.005f, std::max( 0.001f, Tree.StrokeSeconds ), 2.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp ), Document );
+					bChanged |= TrackInputEnd( ImGui::DragFloat( "Stroke interval (s)", &Tree.StrokeInterval, 0.005f, NMath::Max( 0.001f, Tree.StrokeSeconds ), 2.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp ), Document );
 					bChanged |= TrackInputEnd( ImGui::DragFloat( "Stroke duration (s)", &Tree.StrokeSeconds, 0.001f, 0.0001f, Tree.StrokeInterval, "%.4f", ImGuiSliderFlags_AlwaysClamp ), Document );
 				}
 			}
@@ -355,7 +356,7 @@ namespace
 	// float中心へ丸めた際の誤差も含め、失敗時はboundsを変更しない。
 	bool AddCameraBoundsSphere( FVector3 SphereCenter, float64 SphereRadius, FVector3& BoundsCenter, float64& BoundsRadius, bool& bHasBounds )
 	{
-		if ( !std::isfinite( SphereCenter.x ) || !std::isfinite( SphereCenter.y ) || !std::isfinite( SphereCenter.z ) || !std::isfinite( SphereRadius ) || SphereRadius <= 0.0 ) return false;
+		if ( !NMath::IsFinite( SphereCenter.x ) || !NMath::IsFinite( SphereCenter.y ) || !NMath::IsFinite( SphereCenter.z ) || !NMath::IsFinite( SphereRadius ) || SphereRadius <= 0.0 ) return false;
 		if ( !bHasBounds )
 		{
 			BoundsCenter = SphereCenter;
@@ -370,7 +371,7 @@ namespace
 		const float64 DeltaZ = static_cast<float64>( SphereCenter.z ) - BoundsCenter.z;
 		// sphere中心間のdouble距離。
 		const float64 CenterDistance = std::sqrt( DeltaX * DeltaX + DeltaY * DeltaY + DeltaZ * DeltaZ );
-		if ( !std::isfinite( CenterDistance ) ) return false;
+		if ( !NMath::IsFinite( CenterDistance ) ) return false;
 		if ( CenterDistance + SphereRadius <= BoundsRadius ) return true;
 		if ( CenterDistance + BoundsRadius <= SphereRadius )
 		{
@@ -380,7 +381,7 @@ namespace
 		}
 		if ( CenterDistance <= 1.0e-12 )
 		{
-			BoundsRadius = std::max( BoundsRadius, SphereRadius );
+			BoundsRadius = NMath::Max( BoundsRadius, SphereRadius );
 			return true;
 		}
 		// 二つのsphereを両方含む最小sphereの中心と半径。
@@ -391,7 +392,7 @@ namespace
 		const float64 NewX = static_cast<float64>( BoundsCenter.x ) + DeltaX * Move;
 		const float64 NewY = static_cast<float64>( BoundsCenter.y ) + DeltaY * Move;
 		const float64 NewZ = static_cast<float64>( BoundsCenter.z ) + DeltaZ * Move;
-		if ( !std::isfinite( NewRadius ) || !std::isfinite( NewX ) || !std::isfinite( NewY ) || !std::isfinite( NewZ ) || NewRadius > ( std::numeric_limits<float32>::max )() ) return false;
+		if ( !NMath::IsFinite( NewRadius ) || !NMath::IsFinite( NewX ) || !NMath::IsFinite( NewY ) || !NMath::IsFinite( NewZ ) || NewRadius > TNumericLimits<float32>::Max() ) return false;
 		// float中心へ丸めた差分も半径へ足し、包含を維持する。
 		const FVector3 RoundedCenter( static_cast<float32>( NewX ), static_cast<float32>( NewY ), static_cast<float32>( NewZ ) );
 		// float丸めで失う3軸の差。
@@ -399,7 +400,7 @@ namespace
 		const float64 RoundY = NewY - RoundedCenter.y;
 		const float64 RoundZ = NewZ - RoundedCenter.z;
 		const float64 RoundError = std::sqrt( RoundX * RoundX + RoundY * RoundY + RoundZ * RoundZ );
-		if ( !std::isfinite( RoundError ) || NewRadius + RoundError > ( std::numeric_limits<float32>::max )() ) return false;
+		if ( !NMath::IsFinite( RoundError ) || NewRadius + RoundError > TNumericLimits<float32>::Max() ) return false;
 		BoundsCenter = RoundedCenter;
 		BoundsRadius = NewRadius + RoundError;
 		return true;
@@ -408,13 +409,13 @@ namespace
 	// bounds計算に使う範囲値が有限で昇順か調べる。bRequirePositiveMinimumで寿命下限も確認する。
 	bool IsValidCameraRange( const FParticleRange& Range, bool bRequirePositiveMinimum )
 	{
-		return std::isfinite( Range.Min ) && std::isfinite( Range.Max ) && Range.Min <= Range.Max && ( bRequirePositiveMinimum ? Range.Min > 0.0f : Range.Min >= 0.0f );
+		return NMath::IsFinite( Range.Min ) && NMath::IsFinite( Range.Max ) && Range.Min <= Range.Max && ( bRequirePositiveMinimum ? Range.Min > 0.0f : Range.Min >= 0.0f );
 	}
 
 	// bIncludeMeshがtrueなら固定meshも加え、原点・identity transformのboundsへfocusする。移動previewの円運動は対象外。
 	bool FocusCameraOnGeometry( FEffectEditorState& S, const FEditorViewport& Viewport, bool bIncludeMesh )
 	{
-		if ( !Viewport.IsValid() || !std::isfinite( Viewport.FovY ) || Viewport.FovY <= 0.0f || Viewport.FovY >= 3.14159265f || !std::isfinite( Viewport.Near ) || !std::isfinite( Viewport.Far ) || Viewport.Near <= 0.0f || Viewport.Far <= Viewport.Near ) return false;
+		if ( !Viewport.IsValid() || !NMath::IsFinite( Viewport.FovY ) || Viewport.FovY <= 0.0f || Viewport.FovY >= 3.14159265f || !NMath::IsFinite( Viewport.Near ) || !NMath::IsFinite( Viewport.Far ) || Viewport.Near <= 0.0f || Viewport.Far <= Viewport.Near ) return false;
 		// 複数emitterの保守sphereを包む中心。
 		FVector3 BoundsCenter = FVector3::Zero;
 		// 複数emitterの保守sphereを包むdouble半径。
@@ -432,8 +433,8 @@ namespace
 			{
 				if ( !Emitter.Path.Validate().IsEmpty() || !Emitter.Appearance.Size.Validate().IsEmpty() ) return false;
 				// 粒子幅に使う開始時と終了時の最大値。
-				const float32 BaseSize = std::max( Emitter.StartSize.Max, Emitter.EndSize.Max );
-				if ( !IsValidCameraRange( Emitter.StartSize, false ) || !IsValidCameraRange( Emitter.EndSize, false ) || !std::isfinite( BaseSize ) || BaseSize <= 0.0f ) return false;
+				const float32 BaseSize = NMath::Max( Emitter.StartSize.Max, Emitter.EndSize.Max );
+				if ( !IsValidCameraRange( Emitter.StartSize, false ) || !IsValidCameraRange( Emitter.EndSize, false ) || !NMath::IsFinite( BaseSize ) || BaseSize <= 0.0f ) return false;
 				// Size曲線の最大倍率。空曲線は既定の一倍を使う。
 				float32 AppearanceScale = 1.0f;
 				if ( !Emitter.Appearance.Size.Keys.IsEmpty() )
@@ -442,8 +443,8 @@ namespace
 					for ( const FEffectScalarCurve::FKey& Key : Emitter.Appearance.Size.Keys )
 					{
 						// Tree particle幅へ掛ける倍率候補。
-						if ( !std::isfinite( Key.Value ) || Key.Value < 0.0f || Key.Value > 32.0f ) return false;
-						AppearanceScale = std::max( AppearanceScale, Key.Value );
+						if ( !NMath::IsFinite( Key.Value ) || Key.Value < 0.0f || Key.Value > 32.0f ) return false;
+						AppearanceScale = NMath::Max( AppearanceScale, Key.Value );
 					}
 				}
 				// 完成形treeを使い、粒子halo分も加えるPath copy。
@@ -456,17 +457,17 @@ namespace
 				FVector3 EmitterCenter = FVector3::Zero;
 				// Tree helperが返すemitter sphereの半径。
 				float32 EmitterRadius = 0.0f;
-				if ( !std::isfinite( HaloPadding ) || HaloPadding <= 0.0f || !NEffectPath::GetTreeLightningBounds( CompletedPath, FVector3::Zero, CompletedPath.End, HaloPadding, EmitterCenter, EmitterRadius ) || !AddCameraBoundsSphere( EmitterCenter, EmitterRadius, BoundsCenter, BoundsRadius, bHasBounds ) ) return false;
+				if ( !NMath::IsFinite( HaloPadding ) || HaloPadding <= 0.0f || !NEffectPath::GetTreeLightningBounds( CompletedPath, FVector3::Zero, CompletedPath.End, HaloPadding, EmitterCenter, EmitterRadius ) || !AddCameraBoundsSphere( EmitterCenter, EmitterRadius, BoundsCenter, BoundsRadius, bHasBounds ) ) return false;
 				continue;
 			}
 			if ( !bIncludeMesh || Emitter.Mesh.Kind == FEffectMeshDefinition::EKind::None ) continue;
 			if ( !Emitter.Mesh.IsValidSettings() || Emitter.Path.Kind != FEffectPathDefinition::EKind::None || Emitter.Flipbook.bEnabled || !Emitter.Flipbook.Validate().IsEmpty() || !Emitter.Appearance.Size.Validate().IsEmpty() ) return false;
 			if ( Emitter.Shape != EParticleShape::Cone && Emitter.Shape != EParticleShape::Sphere && Emitter.Shape != EParticleShape::Box ) return false;
-			if ( !IsValidCameraRange( Emitter.StartSize, false ) || !IsValidCameraRange( Emitter.EndSize, false ) || !IsValidCameraRange( Emitter.Lifetime, true ) || !IsValidCameraRange( Emitter.Speed, false ) || !std::isfinite( Emitter.ShapeRadius ) || Emitter.ShapeRadius < 0.0f || !std::isfinite( Emitter.BoxSize.x ) || !std::isfinite( Emitter.BoxSize.y ) || !std::isfinite( Emitter.BoxSize.z ) || Emitter.BoxSize.x < 0.0f || Emitter.BoxSize.y < 0.0f || Emitter.BoxSize.z < 0.0f || !std::isfinite( Emitter.Gravity.x ) || !std::isfinite( Emitter.Gravity.y ) || !std::isfinite( Emitter.Gravity.z ) || !std::isfinite( Emitter.Drag ) || Emitter.Drag < 0.0f ) return false;
-			if ( !std::isfinite( Emitter.ConeAngle ) || Emitter.ConeAngle < 0.0f || Emitter.ConeAngle > 180.0f || !std::isfinite( Emitter.Direction.x ) || !std::isfinite( Emitter.Direction.y ) || !std::isfinite( Emitter.Direction.z ) ) return false;
+			if ( !IsValidCameraRange( Emitter.StartSize, false ) || !IsValidCameraRange( Emitter.EndSize, false ) || !IsValidCameraRange( Emitter.Lifetime, true ) || !IsValidCameraRange( Emitter.Speed, false ) || !NMath::IsFinite( Emitter.ShapeRadius ) || Emitter.ShapeRadius < 0.0f || !NMath::IsFinite( Emitter.BoxSize.x ) || !NMath::IsFinite( Emitter.BoxSize.y ) || !NMath::IsFinite( Emitter.BoxSize.z ) || Emitter.BoxSize.x < 0.0f || Emitter.BoxSize.y < 0.0f || Emitter.BoxSize.z < 0.0f || !NMath::IsFinite( Emitter.Gravity.x ) || !NMath::IsFinite( Emitter.Gravity.y ) || !NMath::IsFinite( Emitter.Gravity.z ) || !NMath::IsFinite( Emitter.Drag ) || Emitter.Drag < 0.0f ) return false;
+			if ( !NMath::IsFinite( Emitter.ConeAngle ) || Emitter.ConeAngle < 0.0f || Emitter.ConeAngle > 180.0f || !NMath::IsFinite( Emitter.Direction.x ) || !NMath::IsFinite( Emitter.Direction.y ) || !NMath::IsFinite( Emitter.Direction.z ) ) return false;
 			// doubleで計算したspawn軸の長さ二乗。
 			const float64 DirectionLengthSquared = static_cast<float64>( Emitter.Direction.x ) * Emitter.Direction.x + static_cast<float64>( Emitter.Direction.y ) * Emitter.Direction.y + static_cast<float64>( Emitter.Direction.z ) * Emitter.Direction.z;
-			if ( !std::isfinite( DirectionLengthSquared ) || DirectionLengthSquared < 1.0e-12 ) return false;
+			if ( !NMath::IsFinite( DirectionLengthSquared ) || DirectionLengthSquared < 1.0e-12 ) return false;
 			// meshの最大辺とAppearance倍率を有限精度で求める。
 			float64 AppearanceScale = 1.0;
 			if ( !Emitter.Appearance.Size.Keys.IsEmpty() )
@@ -475,12 +476,12 @@ namespace
 				for ( const FEffectScalarCurve::FKey& Key : Emitter.Appearance.Size.Keys )
 				{
 					// size倍率の上限候補。
-					if ( !std::isfinite( Key.Value ) || Key.Value < 0.0f || Key.Value > 32.0f ) return false;
-					AppearanceScale = std::max( AppearanceScale, static_cast<float64>( Key.Value ) );
+					if ( !NMath::IsFinite( Key.Value ) || Key.Value < 0.0f || Key.Value > 32.0f ) return false;
+					AppearanceScale = NMath::Max( AppearanceScale, static_cast<float64>( Key.Value ) );
 				}
 			}
 			// start/end sizeの最大値。
-			const float64 BaseSize = std::max( static_cast<float64>( Emitter.StartSize.Max ), static_cast<float64>( Emitter.EndSize.Max ) );
+			const float64 BaseSize = NMath::Max( static_cast<float64>( Emitter.StartSize.Max ), static_cast<float64>( Emitter.EndSize.Max ) );
 			// Planeは半辺の対角、Ringは外半径の係数。
 			const float64 ShapeFactor = Emitter.Mesh.Kind == FEffectMeshDefinition::EKind::Plane ? std::sqrt( 0.5 ) : 0.5;
 			// sizeとAppearanceを反映したmesh半径。
@@ -495,12 +496,12 @@ namespace
 			const float64 TravelRadius = static_cast<float64>( Emitter.Speed.Max ) * Lifetime + GravityLength * Lifetime * Lifetime;
 			// mesh外周、spawn、移動の合計保守半径。
 			const float64 EmitterRadius = MeshRadius + SpawnRadius + TravelRadius;
-			if ( !std::isfinite( EmitterRadius ) || EmitterRadius <= 0.0 || EmitterRadius > ( std::numeric_limits<float32>::max )() || !AddCameraBoundsSphere( FVector3::Zero, EmitterRadius, BoundsCenter, BoundsRadius, bHasBounds ) ) return false;
+			if ( !NMath::IsFinite( EmitterRadius ) || EmitterRadius <= 0.0 || EmitterRadius > TNumericLimits<float32>::Max() || !AddCameraBoundsSphere( FVector3::Zero, EmitterRadius, BoundsCenter, BoundsRadius, bHasBounds ) ) return false;
 		}
-		if ( !bHasBounds || !std::isfinite( BoundsCenter.x ) || !std::isfinite( BoundsCenter.y ) || !std::isfinite( BoundsCenter.z ) || !std::isfinite( BoundsRadius ) || BoundsRadius <= 0.0 || BoundsRadius > FEditorCamera::MaxDistance ) return false;
+		if ( !bHasBounds || !NMath::IsFinite( BoundsCenter.x ) || !NMath::IsFinite( BoundsCenter.y ) || !NMath::IsFinite( BoundsCenter.z ) || !NMath::IsFinite( BoundsRadius ) || BoundsRadius <= 0.0 || BoundsRadius > FEditorCamera::MaxDistance ) return false;
 		// doubleで計算した範囲をcamera APIのfloatへ安全に渡す。
 		const float32 SafeBoundsRadius = static_cast<float32>( BoundsRadius );
-		if ( !std::isfinite( SafeBoundsRadius ) || SafeBoundsRadius <= 0.0f ) return false;
+		if ( !NMath::IsFinite( SafeBoundsRadius ) || SafeBoundsRadius <= 0.0f ) return false;
 		// focusで収まらない異常値を検出できるよう、変更前cameraを保存する。
 		const FEditorCamera PreviousCamera = S.Camera;
 		S.Camera.Focus( BoundsCenter, SafeBoundsRadius, Viewport );
@@ -508,13 +509,13 @@ namespace
 		FVector2 CenterPixel;
 		// カメラ前方に沿った球中心までの距離。
 		float32 CenterDepth = 0.0f;
-		if ( !S.Camera.WorldToScreen( Viewport, BoundsCenter, CenterPixel, &CenterDepth ) || !std::isfinite( CenterDepth ) || !std::isfinite( CenterPixel.x ) || !std::isfinite( CenterPixel.y ) ) { S.Camera = PreviousCamera; return false; }
+		if ( !S.Camera.WorldToScreen( Viewport, BoundsCenter, CenterPixel, &CenterDepth ) || !NMath::IsFinite( CenterDepth ) || !NMath::IsFinite( CenterPixel.x ) || !NMath::IsFinite( CenterPixel.y ) ) { S.Camera = PreviousCamera; return false; }
 		if ( CenterDepth - SafeBoundsRadius <= Viewport.Near || CenterDepth + SafeBoundsRadius >= Viewport.Far ) { S.Camera = PreviousCamera; return false; }
 		// 縦横の半視野角のうち狭い方を使った、球の角度方向の収まり。
 		const float32 HalfFovY = Viewport.FovY * 0.5f;
 		const float32 HalfFovX = std::atan( std::tan( HalfFovY ) * Viewport.GetAspect() );
-		const float32 LimitingHalfFov = std::min( HalfFovX, HalfFovY );
-		if ( !std::isfinite( LimitingHalfFov ) || LimitingHalfFov <= 0.0f || SafeBoundsRadius > CenterDepth * std::sin( LimitingHalfFov ) * 0.92f || CenterPixel.x < 1.0f || CenterPixel.y < 1.0f || CenterPixel.x > Viewport.Width - 1.0f || CenterPixel.y > Viewport.Height - 1.0f ) { S.Camera = PreviousCamera; return false; }
+		const float32 LimitingHalfFov = NMath::Min( HalfFovX, HalfFovY );
+		if ( !NMath::IsFinite( LimitingHalfFov ) || LimitingHalfFov <= 0.0f || SafeBoundsRadius > CenterDepth * std::sin( LimitingHalfFov ) * 0.92f || CenterPixel.x < 1.0f || CenterPixel.y < 1.0f || CenterPixel.x > Viewport.Width - 1.0f || CenterPixel.y > Viewport.Height - 1.0f ) { S.Camera = PreviousCamera; return false; }
 		return true;
 	}
 }
@@ -536,12 +537,12 @@ namespace NEffectEditorUI
 	// 動的終点つきの雷が文書にあるときだけ、画面上のクリック位置から水平面へ試し再生の終点を置く。
 	bool SetPreviewTargetFromScreenRay( FEffectEditorState& S, float32 PixelX, float32 PixelY )
 	{
-		if ( !S.View.IsValid() || !std::isfinite( PixelX ) || !std::isfinite( PixelY ) || PixelX < 0.0f || PixelY < 0.0f || PixelX >= S.View.Width || PixelY >= S.View.Height || FindTargetPathEmitter( S.Document.Get() ) == nullptr ) return false;
+		if ( !S.View.IsValid() || !NMath::IsFinite( PixelX ) || !NMath::IsFinite( PixelY ) || PixelX < 0.0f || PixelY < 0.0f || PixelX >= S.View.Width || PixelY >= S.View.Height || FindTargetPathEmitter( S.Document.Get() ) == nullptr ) return false;
 		const FEditorRay Ray = S.Camera.ScreenToRay( S.View, PixelX, PixelY );
 		float32 T = 0.0f;
 		if ( !NWorldEditor::RayVsPlane( Ray, FVector3::Zero, FVector3::Up, T ) ) return false;
 		const FVector3 Target = Ray.PointAt( T );
-		if ( !std::isfinite( Target.x ) || !std::isfinite( Target.y ) || !std::isfinite( Target.z ) ) return false;
+		if ( !NMath::IsFinite( Target.x ) || !NMath::IsFinite( Target.y ) || !NMath::IsFinite( Target.z ) ) return false;
 		S.PreviewTargetPosition = Target;
 		S.bPreviewTargetEnabled = true;
 		return true;
@@ -565,18 +566,18 @@ namespace NEffectEditorUI
 		if ( !S.bPreviewTargetEnabled || !Viewport.IsValid() || Emitter == nullptr ) return false;
 		const FTransform Transform = GetPreviewEmitterTransform( S );
 		const FVector3 Points[2] = { Transform.Position, S.PreviewTargetPosition };
-		for ( const FVector3& Point : Points ) if ( !std::isfinite( Point.x ) || !std::isfinite( Point.y ) || !std::isfinite( Point.z ) ) return false;
+		for ( const FVector3& Point : Points ) if ( !NMath::IsFinite( Point.x ) || !NMath::IsFinite( Point.y ) || !NMath::IsFinite( Point.z ) ) return false;
 		const FVector3 Center = ( Points[0] + Points[1] ) * 0.5f;
 		// 揺れは主雷の長さの割合なので、半分の長さに掛けて余白へ足す。
-		const float32 Jitter = std::isfinite( Emitter->Path.Jitter ) ? std::clamp( Emitter->Path.Jitter, 0.0f, 1.0f ) : 0.0f;
+		const float32 Jitter = NMath::IsFinite( Emitter->Path.Jitter ) ? NMath::Clamp( Emitter->Path.Jitter, 0.0f, 1.0f ) : 0.0f;
 		float32 Radius = ( Points[1] - Points[0] ).Length() * 0.5f * ( 1.0f + Jitter );
-		Radius = std::max( Radius + 0.25f, 0.5f );
-		if ( !std::isfinite( Center.x ) || !std::isfinite( Center.y ) || !std::isfinite( Center.z ) || !std::isfinite( Radius ) || Radius > FEditorCamera::MaxDistance ) return false;
+		Radius = NMath::Max( Radius + 0.25f, 0.5f );
+		if ( !NMath::IsFinite( Center.x ) || !NMath::IsFinite( Center.y ) || !NMath::IsFinite( Center.z ) || !NMath::IsFinite( Radius ) || Radius > FEditorCamera::MaxDistance ) return false;
 		const FEditorCamera Previous = S.Camera;
 		S.Camera.Focus( Center, Radius, Viewport );
 		FVector2 Pixel;
 		float32 Depth = 0.0f;
-		if ( !S.Camera.WorldToScreen( Viewport, Center, Pixel, &Depth ) || !std::isfinite( Depth ) || Depth - Radius <= Viewport.Near || Depth + Radius >= Viewport.Far || Pixel.x < 1.0f || Pixel.y < 1.0f || Pixel.x > Viewport.Width - 1.0f || Pixel.y > Viewport.Height - 1.0f )
+		if ( !S.Camera.WorldToScreen( Viewport, Center, Pixel, &Depth ) || !NMath::IsFinite( Depth ) || Depth - Radius <= Viewport.Near || Depth + Radius >= Viewport.Far || Pixel.x < 1.0f || Pixel.y < 1.0f || Pixel.x > Viewport.Width - 1.0f || Pixel.y > Viewport.Height - 1.0f )
 		{
 			S.Camera = Previous;
 			return false;
@@ -661,7 +662,7 @@ void NEffectEditorUI::DrawPreview( FEffectEditorState& S )
 	ImGui::Checkbox( "Enable preview target", &S.bPreviewTargetEnabled );
 	// 動的終点つきの雷があるのに、試し再生の終点が無効なときの案内。
 	if ( !S.bPreviewTargetEnabled && NEffectEditorUI::FindTargetPathEmitter( S.Document.Get() ) != nullptr ) ImGui::TextDisabled( "This effect uses a target: enable the preview target to see the bolt follow it." );
-	if ( !std::isfinite( S.PreviewTargetPosition.x ) || !std::isfinite( S.PreviewTargetPosition.y ) || !std::isfinite( S.PreviewTargetPosition.z ) )
+	if ( !NMath::IsFinite( S.PreviewTargetPosition.x ) || !NMath::IsFinite( S.PreviewTargetPosition.y ) || !NMath::IsFinite( S.PreviewTargetPosition.z ) )
 	{
 		ImGui::TextColored( ImVec4( 1.0f, 0.45f, 0.4f, 1.0f ), "Preview target is invalid; reset it before editing." );
 		if ( ImGui::SmallButton( "Reset preview target" ) ) S.PreviewTargetPosition = FVector3( 0.0f, 1.0f, 0.0f );
@@ -706,9 +707,9 @@ void NEffectEditorUI::DrawPreview( FEffectEditorState& S )
 	const ImVec2 Size = ImGui::GetContentRegionAvail();
 	if ( Size.x < 16.0f || Size.y < 16.0f ) return;
 	// 大きなウィンドウでも縦横比を保ち、描画先の辺を 2048 以内にする。
-	const float32 RenderScale = std::min( 1.0f, 2048.0f / std::max( Size.x, Size.y ) );
-	S.View.Width = std::clamp( static_cast<int32>( Size.x * RenderScale ), 2, 2048 );
-	S.View.Height = std::clamp( static_cast<int32>( Size.y * RenderScale ), 2, 2048 );
+	const float32 RenderScale = NMath::Min( 1.0f, 2048.0f / NMath::Max( Size.x, Size.y ) );
+	S.View.Width = NMath::Clamp( static_cast<int32>( Size.x * RenderScale ), 2, 2048 );
+	S.View.Height = NMath::Clamp( static_cast<int32>( Size.y * RenderScale ), 2, 2048 );
 	// 実際のviewport比率が確定したこの時点で、open/reset時のfocusを一度だけ適用する。
 	NEffectEditorUI::ApplyPendingEffectCameraFocus( S, S.View );
 	ImGui::InvisibleButton( "##EffectPreview", Size, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonMiddle | ImGuiButtonFlags_MouseButtonRight );
@@ -720,7 +721,7 @@ void NEffectEditorUI::DrawPreview( FEffectEditorState& S )
 	const FEditorRay MouseRay = S.Camera.ScreenToRay( S.View, MouseX, MouseY );
 	bool bGizmoCaptured = S.PreviewTargetDrag.IsActive();
 	FEditorGizmoFrame TargetGizmoFrame;
-	const bool bCanShowTargetGizmo = S.bPreviewTargetEnabled && NEffectEditorUI::FindTargetPathEmitter( S.Document.Get() ) != nullptr && std::isfinite( S.PreviewTargetPosition.x ) && std::isfinite( S.PreviewTargetPosition.y ) && std::isfinite( S.PreviewTargetPosition.z );
+	const bool bCanShowTargetGizmo = S.bPreviewTargetEnabled && NEffectEditorUI::FindTargetPathEmitter( S.Document.Get() ) != nullptr && NMath::IsFinite( S.PreviewTargetPosition.x ) && NMath::IsFinite( S.PreviewTargetPosition.y ) && NMath::IsFinite( S.PreviewTargetPosition.z );
 	if ( bCanShowTargetGizmo )
 	{
 		TargetGizmoFrame = NWorldEditor::MakeGizmoFrame( S.Camera, S.View, S.PreviewTargetPosition, FQuaternion::Identity );

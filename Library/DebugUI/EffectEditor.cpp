@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/DebugUI/EffectEditorInternal.h"
 #include "Library/Framework/Asset/AssetManager.h"
@@ -364,7 +365,7 @@ void NDebugUI::UpdateEffectEditor( FEffectEditorState& State, float32 DeltaTime 
 		State.Issues = State.Document.Get().Validate();
 		// 選択が削除・取り消しで範囲外になった場合だけ補正する。
 		const int32 NumEmitters = State.Document.Get().Emitters.Num();
-		State.SelectedEmitter = NumEmitters > 0 ? std::clamp( State.SelectedEmitter, 0, NumEmitters - 1 ) : INDEX_NONE;
+		State.SelectedEmitter = NumEmitters > 0 ? NMath::Clamp( State.SelectedEmitter, 0, NumEmitters - 1 ) : INDEX_NONE;
 		// 未保存の変更を、共有アセットや既に作った再生へ書き込まない。
 		const TSharedPtr<const FParticleEffectDefinition> Snapshot = MakeShared<FParticleEffectDefinition>( State.Document.Get() );
 		if ( !FParticleEffectDefinition::HasErrors( State.Issues ) ) State.Playback = NEffect::CreateParticlePlayback( Snapshot, GetAppSubsystem<CAssetManager>(), FEffectPlayParams(), FTransform::Identity, "editor" );
@@ -374,12 +375,12 @@ void NDebugUI::UpdateEffectEditor( FEffectEditorState& State, float32 DeltaTime 
 		// 選択中のエミッターに関係なく、文書内のどれかの雷が終点を使うか。
 		const bool bPathUsesTarget = NEffectEditorUI::FindTargetPathEmitter( State.Document.Get() ) != nullptr;
 		const FVector3& Target = State.PreviewTargetPosition;
-		if ( bPathUsesTarget && State.bPreviewTargetEnabled && std::isfinite( Target.x ) && std::isfinite( Target.y ) && std::isfinite( Target.z ) ) State.Playback->SetTargetPosition( Target );
+		if ( bPathUsesTarget && State.bPreviewTargetEnabled && NMath::IsFinite( Target.x ) && NMath::IsFinite( Target.y ) && NMath::IsFinite( Target.z ) ) State.Playback->SetTargetPosition( Target );
 		else State.Playback->ClearTargetPosition();
 	}
-	if ( !State.bPlaying || !State.Playback.IsValid() || !std::isfinite( DeltaTime ) || DeltaTime <= 0.0f ) return;
+	if ( !State.bPlaying || !State.Playback.IsValid() || !NMath::IsFinite( DeltaTime ) || DeltaTime <= 0.0f ) return;
 	// 長く止まっていた直後も、編集画面の粒子が一度に遠くへ飛ばないようにする。
-	const float32 Step = std::clamp( DeltaTime, 0.0f, 0.1f ) * ( std::isfinite( State.PreviewSpeed ) ? std::clamp( State.PreviewSpeed, 0.0f, 4.0f ) : 1.0f );
+	const float32 Step = NMath::Clamp( DeltaTime, 0.0f, 0.1f ) * ( NMath::IsFinite( State.PreviewSpeed ) ? NMath::Clamp( State.PreviewSpeed, 0.0f, 4.0f ) : 1.0f );
 	if ( State.bPreviewMotion )
 	{
 		// 一周で折り返し、長時間開いたままでも位置の計算精度を保つ。
@@ -452,7 +453,7 @@ void NDebugUI::DrawEffectEditor( FEffectEditorState& State, bool* pOpen )
 			ImGui::Text( "%s%s", State.FilePath.IsEmpty() ? "(new effect)" : UI_TEXT( State.FilePath ), State.Document.IsDirty() ? " *" : "" );
 			ImGui::TextDisabled( "Supported: sprites, ribbon trails, branch lightning, tree lightning and mesh particles" );
 			// 設定を十分な幅で読みつつ、小さい画面ではプレビュー領域も残す。
-			const float LeftWidth = std::min( 460.0f, ImGui::GetContentRegionAvail().x * 0.46f );
+			const float LeftWidth = NMath::Min( 460.0f, ImGui::GetContentRegionAvail().x * 0.46f );
 			ImGui::BeginChild( "EffectDefinition", ImVec2( LeftWidth, -28.0f ), ImGuiChildFlags_Borders );
 			NEffectEditorUI::DrawDefinitionPanel( State );
 			ImGui::EndChild();

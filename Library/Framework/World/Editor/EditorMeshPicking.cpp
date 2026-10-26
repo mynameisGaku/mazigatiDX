@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
+
 using NEditMesh::EEditMeshElement;
 
 namespace
@@ -13,7 +15,7 @@ namespace
 		const FVector3 Edge1 = B - A, Edge2 = C - A;
 		const FVector3 P = FVector3::Cross( Direction, Edge2 );
 		const float32 Determinant = FVector3::Dot( Edge1, P );
-		if ( std::fabs( Determinant ) < 1.0e-12f ) return false;
+		if ( NMath::Abs( Determinant ) < 1.0e-12f ) return false;
 		const float32 InvDeterminant = 1.0f / Determinant;
 		const FVector3 ToOrigin = Origin - A;
 		const float32 U = FVector3::Dot( ToOrigin, P ) * InvDeterminant;
@@ -31,7 +33,7 @@ namespace
 		const FVector2 Segment = B - A;
 		const float32 LengthSquared = Segment.x * Segment.x + Segment.y * Segment.y;
 		float32 T = 0.0f;
-		if ( LengthSquared > 1.0e-12f ) T = std::clamp( ( ( Point.x - A.x ) * Segment.x + ( Point.y - A.y ) * Segment.y ) / LengthSquared, 0.0f, 1.0f );
+		if ( LengthSquared > 1.0e-12f ) T = NMath::Clamp( ( ( Point.x - A.x ) * Segment.x + ( Point.y - A.y ) * Segment.y ) / LengthSquared, 0.0f, 1.0f );
 		const FVector2 Closest( A.x + Segment.x * T, A.y + Segment.y * T );
 		return std::hypot( Point.x - Closest.x, Point.y - Closest.y );
 	}
@@ -156,7 +158,7 @@ FEditMeshHit NWorldEditor::PickMeshElement( const FEditMesh& Mesh, const FTransf
 FEditMeshSelection NWorldEditor::FindMeshElementsInRect( const FEditMesh& Mesh, const FTransform& World, const FEditorCamera& Camera, const FEditorViewport& Viewport, float32 X0, float32 Y0, float32 X1, float32 Y1, EEditMeshElement Element, bool bOnlyVisible )
 {
 	FEditMeshSelection Result;
-	const float32 Left = std::min( X0, X1 ), Right = std::max( X0, X1 ), Top = std::min( Y0, Y1 ), Bottom = std::max( Y0, Y1 );
+	const float32 Left = NMath::Min( X0, X1 ), Right = NMath::Max( X0, X1 ), Top = NMath::Min( Y0, Y1 ), Bottom = NMath::Max( Y0, Y1 );
 	const auto Inside = [&]( const FVector2& Pixel ) { return Pixel.x >= Left && Pixel.x <= Right && Pixel.y >= Top && Pixel.y <= Bottom; };
 	const FVector3 Eye = Camera.GetEye();
 	const FTriangles Triangles = bOnlyVisible ? MakeTriangles( Mesh ) : FTriangles();

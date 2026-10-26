@@ -5,6 +5,7 @@
 #include <set>
 #include <string>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/World/WorldCollision.h"
 #include "Library/Framework/World/WorldDefinition.h"
 #include "Library/Framework/World/WorldEdit.h"
@@ -59,7 +60,7 @@ namespace
 
 	bool Near3( const FVector3& A, const FVector3& B, float32 Tolerance = 1.0e-3f )
 	{
-		return std::fabs( A.x - B.x ) <= Tolerance && std::fabs( A.y - B.y ) <= Tolerance && std::fabs( A.z - B.z ) <= Tolerance;
+		return NMath::Abs( A.x - B.x ) <= Tolerance && NMath::Abs( A.y - B.y ) <= Tolerance && NMath::Abs( A.z - B.z ) <= Tolerance;
 	}
 
 	FWorldObject MakeObject( int32 Id, const char* Name, int32 Parent = WorldNoId )
@@ -631,8 +632,8 @@ namespace
 		O.Props.Add( FWorldProp::MakeInt( "", 1 ) );
 		O.Props.Add( FWorldProp::MakeInt( "x", 1 ) );
 		O.Props.Add( FWorldProp::MakeInt( "x", 2 ) );
-		O.Props.Add( FWorldProp::MakeFloat( "nan", std::numeric_limits<float64>::quiet_NaN() ) );
-		O.Props.Add( FWorldProp::MakeVector3( "v", FVector3( 1.0f, std::numeric_limits<float32>::infinity(), 0.0f ) ) );
+		O.Props.Add( FWorldProp::MakeFloat( "nan", TNumericLimits<float64>::QuietNaN() ) );
+		O.Props.Add( FWorldProp::MakeVector3( "v", FVector3( 1.0f, TNumericLimits<float32>::Infinity(), 0.0f ) ) );
 		O.Props.Add( FWorldProp::MakeObject( "gone", 42 ) );
 		O.Props.Add( FWorldProp::MakeObject( "self", 1 ) );
 		O.Props.Add( FWorldProp::MakeAsset( "missingFile", "nope.wav" ) );
@@ -641,7 +642,7 @@ namespace
 		O.Transform.Scale = FVector3( 1.0f, 0.0f, 1.0f );
 		P.Objects.Add( O );
 		FWorldObject Nan = MakeObject( 2, "nan" );
-		Nan.Transform.Position = FVector3( std::numeric_limits<float32>::quiet_NaN(), 0.0f, 0.0f );
+		Nan.Transform.Position = FVector3( TNumericLimits<float32>::QuietNaN(), 0.0f, 0.0f );
 		P.Objects.Add( Nan );
 		P.NextId = 3;
 		Issues = NWorld::ValidateWorld( P, &Assets );
@@ -701,7 +702,7 @@ namespace
 		AddCollider( 6, EWorldColliderShape::Sphere, FVector3::One, 0.0f, 2.0f );
 		AddCollider( 7, EWorldColliderShape::Capsule, FVector3::One, 0.5f, 0.9f );
 		AddCollider( 8, EWorldColliderShape::Capsule, FVector3::One, 0.5f, 1.0f );   // ちょうど半径の 2 倍: よい
-		AddCollider( 9, EWorldColliderShape::Sphere, FVector3::One, std::numeric_limits<float32>::infinity(), 2.0f );
+		AddCollider( 9, EWorldColliderShape::Sphere, FVector3::One, TNumericLimits<float32>::Infinity(), 2.0f );
 		FWorldObject Forced = MakeObject( 10, "forced" );
 		Forced.Collision = EWorldCollisionMode::On;
 		K.Objects.Add( Forced );

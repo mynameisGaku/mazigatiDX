@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
+
 namespace
 {
 	constexpr float32 Tiny = 1.0e-8f;
@@ -38,7 +40,7 @@ bool NWorldEditor::RayVsBox( const FEditorRay& Ray, const FVector3& Min, const F
 	float32 NearSign = 0.0f;
 	for ( int32 Axis = 0; Axis < 3; ++Axis )
 	{
-		if ( std::fabs( Direction[Axis] ) < Tiny )
+		if ( NMath::Abs( Direction[Axis] ) < Tiny )
 		{
 			// この軸には動かない。範囲の外なら、決して当たらない
 			if ( Origin[Axis] < Low[Axis] || Origin[Axis] > High[Axis] ) return false;
@@ -56,7 +58,7 @@ bool NWorldEditor::RayVsBox( const FEditorRay& Ray, const FVector3& Min, const F
 			NearAxis = Axis;
 			NearSign = EnterSign;
 		}
-		Far = std::min( Far, T2 );
+		Far = NMath::Min( Far, T2 );
 		if ( Near > Far ) return false;
 	}
 	if ( NearAxis < 0 || Near < 0.0f ) return false;
@@ -124,7 +126,7 @@ bool NWorldEditor::RayVsCapsule( const FEditorRay& Ray, const FVector3& A, const
 		const FVector3 Center = End == 0 ? A : B;
 		if ( !HitSphere( Ray, Center, Radius, T ) ) continue;
 		const float32 Along = FVector3::Dot( Axis, Ray.PointAt( T ) - A );
-		if ( End == 0 ? Along <= 0.0f : Along >= AxisLengthSquared ) Best = std::min( Best, T );
+		if ( End == 0 ? Along <= 0.0f : Along >= AxisLengthSquared ) Best = NMath::Min( Best, T );
 	}
 
 	if ( Best == NMath::Infinity ) return false;
@@ -135,7 +137,7 @@ bool NWorldEditor::RayVsCapsule( const FEditorRay& Ray, const FVector3& A, const
 bool NWorldEditor::RayVsPlane( const FEditorRay& Ray, const FVector3& PlanePoint, const FVector3& PlaneNormal, float32& OutT )
 {
 	const float32 Denominator = FVector3::Dot( PlaneNormal, Ray.Direction );
-	if ( std::fabs( Denominator ) < Tiny ) return false;
+	if ( NMath::Abs( Denominator ) < Tiny ) return false;
 	const float32 T = FVector3::Dot( PlaneNormal, PlanePoint - Ray.Origin ) / Denominator;
 	if ( T < 0.0f ) return false;
 	OutT = T;
@@ -156,7 +158,7 @@ bool NWorldEditor::RayVsQuad( const FEditorRay& Ray, const FVector3& Center, con
 	const FVector3 Offset = Ray.PointAt( T ) - Center;
 	const float32 U = FVector3::Dot( Offset, HalfRight ) / RightLengthSquared;
 	const float32 V = FVector3::Dot( Offset, HalfUp ) / UpLengthSquared;
-	if ( std::fabs( U ) > 1.0f || std::fabs( V ) > 1.0f ) return false;
+	if ( NMath::Abs( U ) > 1.0f || NMath::Abs( V ) > 1.0f ) return false;
 	OutT = T;
 	return true;
 }
@@ -209,26 +211,26 @@ float32 NWorldEditor::DistanceRayToSegment( const FEditorRay& Ray, const FVector
 	}
 	else if ( LengthA < Tiny )
 	{
-		T = std::clamp( F / E, 0.0, 1.0 );
+		T = NMath::Clamp( F / E, 0.0, 1.0 );
 	}
 	else if ( E < Tiny )
 	{
-		S = std::clamp( -C / LengthA, 0.0, 1.0 );
+		S = NMath::Clamp( -C / LengthA, 0.0, 1.0 );
 	}
 	else
 	{
 		const double Denominator = LengthA * E - Cross * Cross;
-		S = Denominator > 0.0 ? std::clamp( ( Cross * F - C * E ) / Denominator, 0.0, 1.0 ) : 0.0;
+		S = Denominator > 0.0 ? NMath::Clamp( ( Cross * F - C * E ) / Denominator, 0.0, 1.0 ) : 0.0;
 		T = ( Cross * S + F ) / E;
 		if ( T < 0.0 )
 		{
 			T = 0.0;
-			S = std::clamp( -C / LengthA, 0.0, 1.0 );
+			S = NMath::Clamp( -C / LengthA, 0.0, 1.0 );
 		}
 		else if ( T > 1.0 )
 		{
 			T = 1.0;
-			S = std::clamp( ( Cross - C ) / LengthA, 0.0, 1.0 );
+			S = NMath::Clamp( ( Cross - C ) / LengthA, 0.0, 1.0 );
 		}
 	}
 

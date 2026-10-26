@@ -511,6 +511,9 @@
     <ClCompile Include="Source\Object\PhysicsObjects.cpp">
       <Filter>Source\Object</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Scene\AssetSelfTestCore.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Scene\AssetSelfTestImport.cpp">
       <Filter>Source\Scene</Filter>
     </ClCompile>
@@ -1440,7 +1443,13 @@
     <ClInclude Include="Library\Core\Types\CompilerMacros.h">
       <Filter>Library\Core\Types</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Types\Numeric.h">
+      <Filter>Library\Core\Types</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Types\TypeDefinition.h">
+      <Filter>Library\Core\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Types\Utility.h">
       <Filter>Library\Core\Types</Filter>
     </ClInclude>
     <ClInclude Include="Library\DebugUI\AssetTools.h">
@@ -1949,6 +1958,9 @@
     </ClInclude>
     <ClInclude Include="Source\Object\PhysicsObjects.h">
       <Filter>Source\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scene\AssetSelfTestCore.h">
+      <Filter>Source\Scene</Filter>
     </ClInclude>
     <ClInclude Include="Source\Scene\AssetSelfTestFbx.h">
       <Filter>Source\Scene</Filter>

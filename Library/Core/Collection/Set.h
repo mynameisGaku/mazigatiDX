@@ -7,6 +7,7 @@
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/HashTable.h"
+#include "Library/Core/Types/Utility.h"
 
 //=============================================================================
 // TSet<T>
@@ -100,12 +101,12 @@ public:
 	FORCEINLINE bool Add( T&& Item )
 	{
 		bool bAdded = false;
-		Table.FindOrAdd( Item, [&Item]() { return T( std::move( Item ) ); }, bAdded );
+		Table.FindOrAdd( Item, [&Item]() { return T( MoveTemp( Item ) ); }, bAdded );
 		return bAdded;
 	}
 
 	template<typename... Args>
-	FORCEINLINE bool Emplace( Args&&... args ) { return Add( T( std::forward<Args>( args )... ) ); }
+	FORCEINLINE bool Emplace( Args&&... args ) { return Add( T( Forward<Args>( args )... ) ); }
 
 	FORCEINLINE void Append( const TArray<T>& Items ) { for ( const T& Item : Items ) Add( Item ); }
 	FORCEINLINE void Append( const TSet& Other ) { for ( const T& Item : Other ) Add( Item ); }

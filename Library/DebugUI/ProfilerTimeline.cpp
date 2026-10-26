@@ -6,6 +6,7 @@
 
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Time/PlatformTime.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Profiler/ProfilerAnalyzer.h"
 #include "VendorModules/ImGui/imgui.h"
 
@@ -274,19 +275,19 @@ namespace
 		}
 
 		// 別スレッドの木は、終わってから（数フレーム遅れて）始まったフレームに足されることがあるので、直近のフレームの分は毎回見直す
-		for ( int32 i = std::max( 0, NumFrames - 4 ); i < NumFrames; ++i )
+		for ( int32 i = NMath::Max( 0, NumFrames - 4 ); i < NumFrames; ++i )
 		{
 			for ( const FProfilerThreadTrack& Track : Profiler.GetFrame( i ).Threads ) NoteSampleDurations( State, Track.Samples );
 		}
 
 		// ズームの限界 = 一番短い命令に合わせる（タイマーの 2 カウントより細かくはできない）
-		if ( State.MinSampleTicks > 0 ) State.MinSpanMs = NPlatformTime::TicksToMs( std::max<int64>( State.MinSampleTicks, 2 ) );
+		if ( State.MinSampleTicks > 0 ) State.MinSpanMs = NPlatformTime::TicksToMs( NMath::Max<int64>( State.MinSampleTicks, 2 ) );
 	}
 
 	// 表示するフレーム数と幅から、フレームを 2^Level 個ずつまとめる段を選ぶ（まとめた群が画面で 3 ピクセル程度になるように）。0 ならまとめない
 	int32 ChooseGroupLevel( int32 NumFrames, float Width )
 	{
-		const int32 MaxEntries = std::max( 1, static_cast<int32>( Width / 3.0f ) );
+		const int32 MaxEntries = NMath::Max( 1, static_cast<int32>( Width / 3.0f ) );
 		int32 Level = 0;
 		while ( ( NumFrames >> Level ) > MaxEntries && Level < 30 ) ++Level;
 		return Level;
@@ -308,8 +309,8 @@ namespace
 		const int64 LastGroup = ( OldestId + LastFrame ) >> Level;
 		for ( int64 Group = FirstGroup; Group <= LastGroup; ++Group )
 		{
-			const int64 FirstIndex = std::max<int64>( ( Group << Level ) - OldestId, 0 );
-			const int64 LastIndex = std::min<int64>( ( ( Group + 1 ) << Level ) - 1 - OldestId, NumFrames - 1 );
+			const int64 FirstIndex = NMath::Max<int64>( ( Group << Level ) - OldestId, 0 );
+			const int64 LastIndex = NMath::Min<int64>( ( ( Group + 1 ) << Level ) - 1 - OldestId, NumFrames - 1 );
 			if ( FirstIndex > LastIndex ) continue;
 			const float32 GroupMs = Group < Entries.Num() ? Entries[static_cast<int32>( Group )] : 0.0f;
 			Callback( static_cast<int32>( FirstIndex ), static_cast<int32>( LastIndex ), GroupMs );
@@ -326,7 +327,7 @@ namespace
 	void ZoomToRange( FProfilerTimelineState& State, int32 Mode, float64 StartMs, float64 EndMs )
 	{
 		const float64 Duration = EndMs - StartMs;
-		const float64 Span = std::max( Duration * 1.25, State.MinSpanMs );
+		const float64 Span = NMath::Max( Duration * 1.25, State.MinSpanMs );
 		State.ViewSpanMs[Mode] = Span;
 		State.ViewStartMs[Mode] = StartMs + Duration * 0.5 - Span * 0.5;
 	}
@@ -335,7 +336,7 @@ namespace
 	void ZoomAt( FProfilerTimelineState& State, int32 Mode, bool bFollow, float AnchorFraction, float Wheel, float64 MaxSpanMs )
 	{
 		const float64 OldSpan = State.ViewSpanMs[Mode];
-		const float64 NewSpan = std::clamp( OldSpan * std::pow( 0.78, static_cast<float64>( Wheel ) ), State.MinSpanMs, MaxSpanMs );
+		const float64 NewSpan = NMath::Clamp( OldSpan * std::pow( 0.78, static_cast<float64>( Wheel ) ), State.MinSpanMs, MaxSpanMs );
 		if ( Mode == ModeContinuous && bFollow )
 		{
 			// 追従中は右端（最新）を動かさない
@@ -354,12 +355,12 @@ namespace
 		if ( Mode == ModeContinuous )
 		{
 			OutMaxStart = State.PanMaxMs - Span;
-			OutMinStart = std::min( State.PanMinMs, OutMaxStart );
+			OutMinStart = NMath::Min( State.PanMinMs, OutMaxStart );
 		}
 		else
 		{
 			OutMinStart = State.PanMinMs;
-			OutMaxStart = std::max( State.PanMinMs, State.PanMaxMs - Span );
+			OutMaxStart = NMath::Max( State.PanMinMs, State.PanMaxMs - Span );
 		}
 	}
 
@@ -367,7 +368,7 @@ namespace
 	{
 		float64 MinStart = 0.0, MaxStart = 0.0;
 		GetPanLimits( State, Mode, MinStart, MaxStart );
-		State.ViewStartMs[Mode] = std::clamp( State.ViewStartMs[Mode], MinStart, MaxStart );
+		State.ViewStartMs[Mode] = NMath::Clamp( State.ViewStartMs[Mode], MinStart, MaxStart );
 	}
 
 	// ユーザーの操作で表示の左端を動かす。範囲の外へは出さない。
@@ -377,7 +378,7 @@ namespace
 		float64 MinStart = 0.0, MaxStart = 0.0;
 		GetPanLimits( State, Mode, MinStart, MaxStart );
 		const bool bAtEnd = NewStartMs >= MaxStart - 1.0e-6;
-		State.ViewStartMs[Mode] = std::clamp( NewStartMs, MinStart, MaxStart );
+		State.ViewStartMs[Mode] = NMath::Clamp( NewStartMs, MinStart, MaxStart );
 		if ( bControlsFollow ) bFollow = bAtEnd;
 	}
 
@@ -389,17 +390,17 @@ namespace
 		ImGui::InvisibleButton( "##TimelineHScroll", ImVec2( Width, ScrollbarHeight ) );
 		const bool bHovered = ImGui::IsItemHovered();
 
-		const float64 Range = std::max( State.PanMaxMs - State.PanMinMs, 1.0e-6 );
+		const float64 Range = NMath::Max( State.PanMaxMs - State.PanMinMs, 1.0e-6 );
 		const float64 Span = State.ViewSpanMs[Mode];
 		const float64 Scrollable = Range - Span;   // 動かせる幅
 		const bool bScrollable = Scrollable > 1.0e-6;
 
-		const float ThumbWidth = bScrollable ? std::clamp( static_cast<float>( static_cast<float64>( Width ) * Span / Range ), 24.0f, Width ) : Width;
+		const float ThumbWidth = bScrollable ? NMath::Clamp( static_cast<float>( static_cast<float64>( Width ) * Span / Range ), 24.0f, Width ) : Width;
 		const float Free = Width - ThumbWidth;
 		const auto ThumbLeft = [&]() -> float
 		{
 			if ( !bScrollable ) return 0.0f;
-			return static_cast<float>( std::clamp( ( State.ViewStartMs[Mode] - State.PanMinMs ) / Scrollable, 0.0, 1.0 ) ) * Free;
+			return static_cast<float>( NMath::Clamp( ( State.ViewStartMs[Mode] - State.PanMinMs ) / Scrollable, 0.0, 1.0 ) ) * Free;
 		};
 
 		if ( bScrollable )
@@ -469,14 +470,14 @@ namespace
 			char Label[48];
 			if ( bStacked )
 			{
-				const int32 Decimals = Step >= 1.0 ? 0 : std::clamp( static_cast<int32>( std::ceil( -std::log10( Step ) ) ), 0, 8 );
+				const int32 Decimals = Step >= 1.0 ? 0 : NMath::Clamp( static_cast<int32>( std::ceil( -std::log10( Step ) ) ), 0, 8 );
 				std::snprintf( Label, sizeof( Label ), "%.*f ms", Decimals, T );
 			}
 			else
 			{
 				// 秒で表示する。目盛りの細かさに合わせて小数の桁数を決める
 				const float64 StepSeconds = Step / 1000.0;
-				const int32 Decimals = StepSeconds >= 1.0 ? 0 : std::clamp( static_cast<int32>( std::ceil( -std::log10( StepSeconds ) ) ), 0, 10 );
+				const int32 Decimals = StepSeconds >= 1.0 ? 0 : NMath::Clamp( static_cast<int32>( std::ceil( -std::log10( StepSeconds ) ) ), 0, 10 );
 				std::snprintf( Label, sizeof( Label ), "%.*f s", Decimals, T / 1000.0 );
 			}
 			if ( X >= Area.Origin.x ) DL->AddText( ImVec2( X + 3.0f, Y + 2.0f ), IM_COL32( 220, 220, 220, 255 ), Label );
@@ -507,8 +508,8 @@ namespace
 			float X1 = Area.ToX( EndMs );
 			if ( X1 < Area.Origin.x || X0 > Area.Right() ) continue;
 			if ( X1 - X0 < 0.6f ) continue;   // 1 ピクセルに満たないものは描かない（フレームの帯や上の段に含まれている）
-			X0 = std::max( X0, Area.Origin.x );
-			X1 = std::min( X1, Area.Right() );
+			X0 = NMath::Max( X0, Area.Origin.x );
+			X1 = NMath::Min( X1, Area.Right() );
 
 			const float Y0 = RowTop + RowHeight * static_cast<float>( Sample.Depth );
 			const ImVec2 Min( X0, Y0 );
@@ -725,7 +726,7 @@ namespace
 		ImGui::SameLine();
 		if ( ImGui::SmallButton( "Zoom to this" ) )
 		{
-			State.ViewSpanMs[ModeStacked] = std::max( TotalMs * 1.25, State.MinSpanMs );
+			State.ViewSpanMs[ModeStacked] = NMath::Max( TotalMs * 1.25, State.MinSpanMs );
 			State.ViewStartMs[ModeStacked] = NPlatformTime::TicksToMs( Sample.StartTick - Frame.StartTick ) + TotalMs * 0.5 - State.ViewSpanMs[ModeStacked] * 0.5;
 			ZoomToRange( State, ModeContinuous, TickToMs( State, Sample.StartTick ), TickToMs( State, Sample.StartTick + Sample.DurationTick ) );
 		}
@@ -744,9 +745,9 @@ namespace
 		ImDrawList* DL = ImGui::GetWindowDrawList();
 		DL->AddRectFilled( Origin, ImVec2( Origin.x + Width, Origin.y + OverviewHeight ), IM_COL32( 22, 22, 22, 255 ) );
 
-		const float64 DataSpan = std::max( DataEndMs - DataStartMs, 1.0 );
+		const float64 DataSpan = NMath::Max( DataEndMs - DataStartMs, 1.0 );
 		const float64 PixelsPerMs = static_cast<float64>( Width ) / DataSpan;
-		const float64 MaxMs = std::clamp( static_cast<float64>( State.MaxFrameMsSeen ), 16.7, 66.7 );   // 極端に長い 1 フレームで他が見えなくならないよう、上限を決める
+		const float64 MaxMs = NMath::Clamp( static_cast<float64>( State.MaxFrameMsSeen ), 16.7, 66.7 );   // 極端に長い 1 フレームで他が見えなくならないよう、上限を決める
 		const float BaseY = Origin.y + OverviewHeight;
 
 		// 全フレームを、画面の幅に収まる数の群にまとめて描く（群の高さ = 中で一番長いフレーム）
@@ -754,17 +755,17 @@ namespace
 		ForEachFrameGroup( Profiler, State, 0, NumFrames - 1, ChooseGroupLevel( NumFrames, Width ), [&]( int32 FirstIndex, int32 LastIndex, float32 GroupMs )
 		{
 			const float X0 = Origin.x + static_cast<float>( ( TickToMs( State, Profiler.GetFrame( FirstIndex ).StartTick ) - DataStartMs ) * PixelsPerMs );
-			const float X1 = std::max( X0 + 1.0f, Origin.x + static_cast<float>( ( TickToMs( State, Profiler.GetFrame( LastIndex ).EndTick ) - DataStartMs ) * PixelsPerMs ) );
-			const float Height = std::min( static_cast<float>( GroupMs / MaxMs ), 1.0f ) * ( OverviewHeight - 4.0f );
+			const float X1 = NMath::Max( X0 + 1.0f, Origin.x + static_cast<float>( ( TickToMs( State, Profiler.GetFrame( LastIndex ).EndTick ) - DataStartMs ) * PixelsPerMs ) );
+			const float Height = NMath::Min( static_cast<float>( GroupMs / MaxMs ), 1.0f ) * ( OverviewHeight - 4.0f );
 			DL->AddRectFilled( ImVec2( X0, BaseY - Height ), ImVec2( X1, BaseY ), FrameBarColor( GroupMs, 255 ) );
 		} );
 
 		// 表示している範囲
 		const int32 Mode = ModeContinuous;
-		const float VX0 = Origin.x + static_cast<float>( std::clamp( ( State.ViewStartMs[Mode] - DataStartMs ) * PixelsPerMs, 0.0, static_cast<float64>( Width ) ) );
-		const float VX1 = Origin.x + static_cast<float>( std::clamp( ( State.ViewStartMs[Mode] + State.ViewSpanMs[Mode] - DataStartMs ) * PixelsPerMs, 0.0, static_cast<float64>( Width ) ) );
-		DL->AddRectFilled( ImVec2( VX0, Origin.y ), ImVec2( std::max( VX1, VX0 + 2.0f ), BaseY ), IM_COL32( 255, 255, 255, 38 ) );
-		DL->AddRect( ImVec2( VX0, Origin.y ), ImVec2( std::max( VX1, VX0 + 2.0f ), BaseY ), IM_COL32( 255, 255, 255, 190 ) );
+		const float VX0 = Origin.x + static_cast<float>( NMath::Clamp( ( State.ViewStartMs[Mode] - DataStartMs ) * PixelsPerMs, 0.0, static_cast<float64>( Width ) ) );
+		const float VX1 = Origin.x + static_cast<float>( NMath::Clamp( ( State.ViewStartMs[Mode] + State.ViewSpanMs[Mode] - DataStartMs ) * PixelsPerMs, 0.0, static_cast<float64>( Width ) ) );
+		DL->AddRectFilled( ImVec2( VX0, Origin.y ), ImVec2( NMath::Max( VX1, VX0 + 2.0f ), BaseY ), IM_COL32( 255, 255, 255, 38 ) );
+		DL->AddRect( ImVec2( VX0, Origin.y ), ImVec2( NMath::Max( VX1, VX0 + 2.0f ), BaseY ), IM_COL32( 255, 255, 255, 190 ) );
 
 		if ( bActive )
 		{
@@ -781,8 +782,8 @@ namespace
 	{
 		ImGuiIO& IO = ImGui::GetIO();
 		const int32 Mode = ModeContinuous;
-		const float64 DataSpan = std::max( DataEndMs - DataStartMs, 1.0 );
-		const float64 MaxSpanMs = std::max( DataSpan * 1.1, 10.0 );
+		const float64 DataSpan = NMath::Max( DataEndMs - DataStartMs, 1.0 );
+		const float64 MaxSpanMs = NMath::Max( DataSpan * 1.1, 10.0 );
 
 		DrawOverview( Profiler, State, bFollow, Width, DataStartMs, DataEndMs );
 
@@ -806,7 +807,7 @@ namespace
 		const int64 ViewEndTick = State.BaseTick + static_cast<int64>( ( Header.StartMs + Header.SpanMs ) * 0.001 * static_cast<float64>( TicksPerSecond ) );
 		const int32 FirstFrame = FirstFrameEndingAtOrAfter( Profiler, ViewStartTick );
 		const int32 LastFrame = LastFrameStartingAtOrBefore( Profiler, ViewEndTick );
-		const int32 NumVisible = std::max( 0, LastFrame - FirstFrame + 1 );
+		const int32 NumVisible = NMath::Max( 0, LastFrame - FirstFrame + 1 );
 		const int32 GroupLevel = ChooseGroupLevel( NumVisible, Width );   // 0: 1 フレームずつ描く / 1 以上: 縮小しているので、フレームをまとめた群で描く
 
 		DrawRuler( Header, HeaderOrigin.y, false );
@@ -825,8 +826,8 @@ namespace
 				{
 					const float X0 = Header.ToX( TickToMs( State, Profiler.GetFrame( FirstIndex ).StartTick ) );
 					const float X1 = Header.ToX( TickToMs( State, Profiler.GetFrame( LastIndex ).EndTick ) );
-					const float L = std::max( X0, HeaderOrigin.x );
-					const float R = std::min( X1, HeaderOrigin.x + Width );
+					const float L = NMath::Max( X0, HeaderOrigin.x );
+					const float R = NMath::Min( X1, HeaderOrigin.x + Width );
 					if ( R <= L ) return;
 
 					const bool bHovered = bHeaderHovered && IO.MousePos.x >= L && IO.MousePos.x < R && IO.MousePos.y >= Y0;
@@ -835,7 +836,7 @@ namespace
 						HoveredGroupFirst = FirstIndex;
 						HoveredGroupLast = LastIndex;
 					}
-					DL->AddRectFilled( ImVec2( L, Y0 + 1.0f ), ImVec2( std::max( R - 1.0f, L + 1.0f ), Y0 + FrameTrackHeight - 1.0f ), FrameBarColor( GroupMs, bHovered ? 255 : 190 ) );
+					DL->AddRectFilled( ImVec2( L, Y0 + 1.0f ), ImVec2( NMath::Max( R - 1.0f, L + 1.0f ), Y0 + FrameTrackHeight - 1.0f ), FrameBarColor( GroupMs, bHovered ? 255 : 190 ) );
 				} );
 			}
 
@@ -845,13 +846,13 @@ namespace
 				const float64 Ms = NPlatformTime::TicksToMs( Frame.GetDurationTick() );
 				const float X0 = Header.ToX( TickToMs( State, Frame.StartTick ) );
 				const float X1 = Header.ToX( TickToMs( State, Frame.EndTick ) );
-				const float L = std::max( X0, HeaderOrigin.x );
-				const float R = std::min( X1, HeaderOrigin.x + Width );
+				const float L = NMath::Max( X0, HeaderOrigin.x );
+				const float R = NMath::Min( X1, HeaderOrigin.x + Width );
 				if ( R <= L ) continue;
 
 				const bool bHovered = bHeaderHovered && IO.MousePos.x >= L && IO.MousePos.x < R && IO.MousePos.y >= Y0;
 				if ( bHovered ) HoveredFrame = i;
-				DL->AddRectFilled( ImVec2( L, Y0 + 1.0f ), ImVec2( std::max( R - 1.0f, L + 1.0f ), Y0 + FrameTrackHeight - 1.0f ), FrameBarColor( Ms, bHovered ? 255 : 190 ) );
+				DL->AddRectFilled( ImVec2( L, Y0 + 1.0f ), ImVec2( NMath::Max( R - 1.0f, L + 1.0f ), Y0 + FrameTrackHeight - 1.0f ), FrameBarColor( Ms, bHovered ? 255 : 190 ) );
 				if ( R - L > 74.0f )
 				{
 					char Label[40];
@@ -892,11 +893,11 @@ namespace
 		const float RowHeight = static_cast<float>( State.RowHeight );
 		const int32 TotalFrames = Profiler.GetNumFrames();
 		uint16 MaxDepth = 0;
-		for ( int32 i = FirstFrame; GroupLevel == 0 && i <= LastFrame && i < TotalFrames; ++i ) MaxDepth = std::max( MaxDepth, Profiler.GetFrame( i ).MaxDepth );
+		for ( int32 i = FirstFrame; GroupLevel == 0 && i <= LastFrame && i < TotalFrames; ++i ) MaxDepth = NMath::Max( MaxDepth, Profiler.GetFrame( i ).MaxDepth );
 
 		// メインスレッド以外のスレッドの行（見えているフレームに記録があるスレッドだけ。縮小表示のときは出さない）
 		TArray<int32> ActiveThreads;   // State.Threads のインデックス
-		const int32 ThreadScanFirst = std::max( 0, FirstFrame - ThreadLookbackFrames );
+		const int32 ThreadScanFirst = NMath::Max( 0, FirstFrame - ThreadLookbackFrames );
 		if ( GroupLevel == 0 )
 		{
 			for ( FProfilerTimelineThread& Thread : State.Threads )
@@ -918,7 +919,7 @@ namespace
 					FProfilerTimelineThread& Thread = State.Threads[Found];
 					if ( Track.Name != 0 ) Thread.NameId = Track.Name;
 					Thread.bInView = true;
-					Thread.ViewMaxDepth = std::max( Thread.ViewMaxDepth, Track.MaxDepth );
+					Thread.ViewMaxDepth = NMath::Max( Thread.ViewMaxDepth, Track.MaxDepth );
 				}
 			}
 			if ( State.bShowThreads )
@@ -936,7 +937,7 @@ namespace
 			ThreadRowsTop.Add( ContentBottom + 4.0f + ThreadHeaderHeight );
 			ContentBottom += 4.0f + ThreadHeaderHeight + RowHeight * static_cast<float>( State.Threads[k].ViewMaxDepth + 1 );
 		}
-		const float ContentHeight = std::max( ContentBottom + 6.0f, ChildHeight - 4.0f );
+		const float ContentHeight = NMath::Max( ContentBottom + 6.0f, ChildHeight - 4.0f );
 
 		ImGui::BeginChild( "##TimelineSamples", ImVec2( 0.0f, ChildHeight ), ImGuiChildFlags_None, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 		const ImVec2 SamplesOrigin = ImGui::GetCursorScreenPos();
@@ -965,8 +966,8 @@ namespace
 			// フレームごとに交互の背景と、境目の線
 			const float X0 = Area.ToX( FrameStartMs );
 			const float X1 = Area.ToX( TickToMs( State, Frame.EndTick ) );
-			const float L = std::max( X0, SamplesOrigin.x );
-			const float R = std::min( X1, SamplesOrigin.x + Width );
+			const float L = NMath::Max( X0, SamplesOrigin.x );
+			const float R = NMath::Min( X1, SamplesOrigin.x + Width );
 			if ( R > L && ( Frame.FrameNumber & 1 ) == 0 )
 			{
 				Area.DrawList->AddRectFilled( ImVec2( L, SamplesOrigin.y ), ImVec2( R, SamplesOrigin.y + ContentHeight ), IM_COL32( 255, 255, 255, 10 ) );
@@ -979,8 +980,8 @@ namespace
 			// 1 フレームが 2 ピクセルに満たないほど縮小しているときは、サンプルは描かずフレーム全体を 1 本の帯で示す（全サンプルを調べると重い）
 			if ( X1 - X0 < 2.0f )
 			{
-				const float Left = std::max( X0, SamplesOrigin.x );
-				Area.DrawList->AddRectFilled( ImVec2( Left, SamplesOrigin.y + 2.0f ), ImVec2( std::max( X1, Left + 1.0f ), SamplesOrigin.y + 2.0f + RowHeight - 1.0f ),
+				const float Left = NMath::Max( X0, SamplesOrigin.x );
+				Area.DrawList->AddRectFilled( ImVec2( Left, SamplesOrigin.y + 2.0f ), ImVec2( NMath::Max( X1, Left + 1.0f ), SamplesOrigin.y + 2.0f + RowHeight - 1.0f ),
 											  FrameBarColor( NPlatformTime::TicksToMs( Frame.GetDurationTick() ), 200 ) );
 				continue;
 			}
@@ -995,10 +996,10 @@ namespace
 			{
 				const float X0 = Area.ToX( TickToMs( State, Profiler.GetFrame( FirstIndex ).StartTick ) );
 				const float X1 = Area.ToX( TickToMs( State, Profiler.GetFrame( LastIndex ).EndTick ) );
-				const float Left = std::max( X0, SamplesOrigin.x );
-				const float Right = std::min( X1, SamplesOrigin.x + Width );
+				const float Left = NMath::Max( X0, SamplesOrigin.x );
+				const float Right = NMath::Min( X1, SamplesOrigin.x + Width );
 				if ( Right <= Left ) return;
-				Area.DrawList->AddRectFilled( ImVec2( Left, SamplesOrigin.y + 2.0f ), ImVec2( std::max( Right - 1.0f, Left + 1.0f ), SamplesOrigin.y + 2.0f + RowHeight - 1.0f ),
+				Area.DrawList->AddRectFilled( ImVec2( Left, SamplesOrigin.y + 2.0f ), ImVec2( NMath::Max( Right - 1.0f, Left + 1.0f ), SamplesOrigin.y + 2.0f + RowHeight - 1.0f ),
 											  FrameBarColor( GroupMs, 200 ) );
 			} );
 		}
@@ -1069,7 +1070,7 @@ namespace
 		ImGuiIO& IO = ImGui::GetIO();
 		const int32 Mode = ModeStacked;
 		const int32 NumFrames = Profiler.GetNumFrames();
-		const float64 MaxSpanMs = std::max( static_cast<float64>( State.MaxFrameMsSeen ) * 2.0, 4.0 );
+		const float64 MaxSpanMs = NMath::Max( static_cast<float64>( State.MaxFrameMsSeen ) * 2.0, 4.0 );
 
 		// 先頭に出すフレーム（Auto Scroll 中は一定の頻度で新しくなる。オフなら固定）
 		const uint64 TopNumber = bFollow ? State.LiveFrameNumber : State.StackedPinnedFrameNumber;
@@ -1093,13 +1094,13 @@ namespace
 		// 各フレームの段は同じ高さ（見出し + 深さの最大 + すきま）。深さは先頭付近のフレームから決める（履歴が長くても全フレームは調べない）
 		const float RowHeight = static_cast<float>( State.RowHeight );
 		uint16 MaxDepth = 0;
-		for ( int32 i = std::max( 0, TopIndex - 255 ); i <= TopIndex; ++i ) MaxDepth = std::max( MaxDepth, Profiler.GetFrame( i ).MaxDepth );
+		for ( int32 i = NMath::Max( 0, TopIndex - 255 ); i <= TopIndex; ++i ) MaxDepth = NMath::Max( MaxDepth, Profiler.GetFrame( i ).MaxDepth );
 		const float Stride = StackedHeaderHeight + RowHeight * static_cast<float>( MaxDepth + 1 ) + StackedGap;
 		const float TotalHeight = Stride * static_cast<float>( TopIndex + 1 );
 
 		ImGui::BeginChild( "##TimelineStackedSamples", ImVec2( 0.0f, ChildHeight ), ImGuiChildFlags_None, ImGuiWindowFlags_AlwaysVerticalScrollbar );
 		const ImVec2 SamplesOrigin = ImGui::GetCursorScreenPos();
-		ImGui::InvisibleButton( "##TimelineStackedHit", ImVec2( Width, std::max( TotalHeight, 1.0f ) ) );
+		ImGui::InvisibleButton( "##TimelineStackedHit", ImVec2( Width, NMath::Max( TotalHeight, 1.0f ) ) );
 		const bool bHovered = ImGui::IsItemHovered();
 		const bool bClicked = ImGui::IsItemDeactivated() && IO.MouseDragMaxDistanceSqr[0] < 16.0f && ImGui::IsMouseReleased( 0 );
 		const bool bDoubleClicked = bHovered && ImGui::IsMouseDoubleClicked( 0 );
@@ -1131,8 +1132,8 @@ namespace
 
 		const float ScrollY = ImGui::GetScrollY();
 		FHit Hit;
-		const int32 FirstGroup = std::max( 0, static_cast<int32>( std::floor( ScrollY / Stride ) ) );
-		const int32 LastGroup = std::min( TopIndex, static_cast<int32>( std::floor( ( ScrollY + ChildHeight ) / Stride ) ) );
+		const int32 FirstGroup = NMath::Max( 0, static_cast<int32>( std::floor( ScrollY / Stride ) ) );
+		const int32 LastGroup = NMath::Min( TopIndex, static_cast<int32>( std::floor( ( ScrollY + ChildHeight ) / Stride ) ) );
 		for ( int32 Group = FirstGroup; Group <= LastGroup; ++Group )   // 見えない段は描かない
 		{
 			const int32 FrameIndex = TopIndex - Group;
@@ -1229,13 +1230,13 @@ void NDebugUI::DrawProfilerTimeline( IProfiler& Profiler, FProfilerTimelineState
 	const float64 DataStartMs = TickToMs( State, Oldest.StartTick );
 	const float64 DataEndMs = TickToMs( State, Newest.EndTick );
 	const float64 NewestMs = NPlatformTime::TicksToMs( Newest.GetDurationTick() );
-	const float64 LongestMs = std::max( static_cast<float64>( State.MaxFrameMsSeen ), 1.0 );
+	const float64 LongestMs = NMath::Max( static_cast<float64>( State.MaxFrameMsSeen ), 1.0 );
 
 	// 最初は、最新のフレーム数枚分が見えるように合わせる（そのあとは勝手に動かさない）
 	if ( State.bViewNeedsPlacement )
 	{
 		State.bViewNeedsPlacement = false;
-		State.ViewSpanMs[ModeContinuous] = std::clamp( NewestMs * 8.0, 10.0, 200.0 );
+		State.ViewSpanMs[ModeContinuous] = NMath::Clamp( NewestMs * 8.0, 10.0, 200.0 );
 		State.ViewStartMs[ModeContinuous] = DataEndMs - State.ViewSpanMs[ModeContinuous];
 		State.StackedPinnedFrameNumber = Newest.FrameNumber;
 		State.LiveFrameNumber = Newest.FrameNumber;
@@ -1246,7 +1247,7 @@ void NDebugUI::DrawProfilerTimeline( IProfiler& Profiler, FProfilerTimelineState
 	{
 		State.bStackedInitialized = true;
 		State.ViewStartMs[ModeStacked] = 0.0;
-		State.ViewSpanMs[ModeStacked] = std::clamp( NewestMs * 1.3, 2.0, std::max( LongestMs * 1.05, 2.0 ) );   // std::clamp は、下限が上限より大きいと assert する
+		State.ViewSpanMs[ModeStacked] = NMath::Clamp( NewestMs * 1.3, 2.0, NMath::Max( LongestMs * 1.05, 2.0 ) );   // std::clamp は、下限が上限より大きいと assert する
 	}
 
 	// 横に動かせる範囲（横スクロールバーと、ドラッグなどの制限に使う）
@@ -1271,7 +1272,7 @@ void NDebugUI::DrawProfilerTimeline( IProfiler& Profiler, FProfilerTimelineState
 		if ( State.Mode == ModeContinuous )
 		{
 			State.ViewStartMs[ModeContinuous] = DataStartMs;
-			State.ViewSpanMs[ModeContinuous] = std::max( DataEndMs - DataStartMs, 1.0 ) * 1.02;
+			State.ViewSpanMs[ModeContinuous] = NMath::Max( DataEndMs - DataStartMs, 1.0 ) * 1.02;
 			bAutoScroll = false;
 		}
 		else
@@ -1287,7 +1288,7 @@ void NDebugUI::DrawProfilerTimeline( IProfiler& Profiler, FProfilerTimelineState
 	case EPendingAction::Span100us: State.ViewSpanMs[ModeContinuous] = 0.1; break;
 	default: break;
 	}
-	State.ViewSpanMs[ModeContinuous] = std::max( State.ViewSpanMs[ModeContinuous], State.MinSpanMs );
+	State.ViewSpanMs[ModeContinuous] = NMath::Max( State.ViewSpanMs[ModeContinuous], State.MinSpanMs );
 	if ( Action >= EPendingAction::Span1s && !bAutoScroll )
 	{
 		// Auto Scroll していなければ、今の表示の中央を保ったまま幅を変える
@@ -1304,7 +1305,7 @@ void NDebugUI::DrawProfilerTimeline( IProfiler& Profiler, FProfilerTimelineState
 		{
 			const FProfilerFrame& Frame = Profiler.GetFrame( Index );
 			ZoomToRange( State, ModeContinuous, TickToMs( State, Frame.StartTick ), TickToMs( State, Frame.EndTick ) );
-			State.StackedPinnedFrameNumber = Profiler.GetFrame( std::min( Index + 5, NumFrames - 1 ) ).FrameNumber;   // 選んだフレームが先頭の少し下に見えるように
+			State.StackedPinnedFrameNumber = Profiler.GetFrame( NMath::Min( Index + 5, NumFrames - 1 ) ).FrameNumber;   // 選んだフレームが先頭の少し下に見えるように
 			State.PendingScrollFrameNumber = SelectedFrameNumber;
 			State.FocusedFrameNumber = SelectedFrameNumber;
 			bAutoScroll = false;
@@ -1318,7 +1319,7 @@ void NDebugUI::DrawProfilerTimeline( IProfiler& Profiler, FProfilerTimelineState
 	const int64 Now = NPlatformTime::GetTicks();
 	if ( bAutoScroll )
 	{
-		const float64 Hz = std::max( static_cast<float64>( State.LiveRefreshHz ), 1.0 );
+		const float64 Hz = NMath::Max( static_cast<float64>( State.LiveRefreshHz ), 1.0 );
 		const bool bDue = State.LiveTick == 0 || static_cast<float64>( Now - State.LiveTick ) >= static_cast<float64>( NPlatformTime::GetTicksPerSecond() ) / Hz
 			|| !Profiler.IsEnabled();   // 止まっているときは動かないので、すぐ合わせる
 		if ( bDue )
@@ -1341,11 +1342,11 @@ void NDebugUI::DrawProfilerTimeline( IProfiler& Profiler, FProfilerTimelineState
 	// 描画
 	//-------------------------------------------------------------------------
 	const ImGuiStyle& Style = ImGui::GetStyle();
-	const float Width = std::max( 140.0f, ImGui::GetContentRegionAvail().x - Style.ScrollbarSize );
+	const float Width = NMath::Max( 140.0f, ImGui::GetContentRegionAvail().x - Style.ScrollbarSize );
 
 	const float FixedAbove = ( State.Mode == ModeContinuous ? OverviewHeight + RulerHeight + FrameTrackHeight + 3.0f * Style.ItemSpacing.y : RulerHeight + Style.ItemSpacing.y );
 	const float BottomReserve = ImGui::GetTextLineHeightWithSpacing() + 6.0f;   // タブの下の状態表示の行
-	const float ChildHeight = std::max( 90.0f, ImGui::GetContentRegionAvail().y - FixedAbove - ScrollbarHeight - Style.ItemSpacing.y - DetailHeight - 2.0f * Style.ItemSpacing.y - BottomReserve );
+	const float ChildHeight = NMath::Max( 90.0f, ImGui::GetContentRegionAvail().y - FixedAbove - ScrollbarHeight - Style.ItemSpacing.y - DetailHeight - 2.0f * Style.ItemSpacing.y - BottomReserve );
 
 	if ( State.Mode == ModeContinuous ) DrawContinuous( Profiler, State, bAutoScroll, Width, DataStartMs, DataEndMs, ChildHeight );
 	else DrawStacked( Profiler, State, bAutoScroll, Width, ChildHeight );

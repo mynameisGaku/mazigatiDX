@@ -6,6 +6,8 @@
 #include <limits>
 #include <utility>
 
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Json/JsonHelpers.h"
 
 namespace
@@ -51,7 +53,7 @@ namespace
 	bool ReadFloat( const NlohmannJson& Json, float32& Out )
 	{
 		// 読めない入力を既定値に見せない番兵値。
-		Out = std::numeric_limits<float32>::quiet_NaN();
+		Out = TNumericLimits<float32>::QuietNaN();
 		if ( !Json.is_number() ) return false;
 		try
 		{
@@ -78,7 +80,7 @@ bool FEffectFlipbookDefinition::IsDefault() const
 
 bool FEffectFlipbookDefinition::IsValidSettings() const
 {
-	return InvalidFieldTypes == 0 && ( TimeMode == ETimeMode::Lifetime || TimeMode == ETimeMode::Seconds ) && std::isfinite( Speed ) && Speed >= 0.0f && Speed <= 128.0f && ( !bEnabled || !Sheet.IsEmpty() );
+	return InvalidFieldTypes == 0 && ( TimeMode == ETimeMode::Lifetime || TimeMode == ETimeMode::Seconds ) && NMath::IsFinite( Speed ) && Speed >= 0.0f && Speed <= 128.0f && ( !bEnabled || !Sheet.IsEmpty() );
 }
 
 NlohmannJson FEffectFlipbookDefinition::ToJson() const
@@ -92,7 +94,7 @@ NlohmannJson FEffectFlipbookDefinition::ToJson() const
 	else if ( TimeMode == ETimeMode::Lifetime ) Json["TimeMode"] = "Lifetime";
 	else if ( TimeMode == ETimeMode::Seconds ) Json["TimeMode"] = "Seconds";
 	else Json["TimeMode"] = "Invalid";
-	Json["Speed"] = ( InvalidFieldTypes & InvalidSpeed ) != 0 || !std::isfinite( Speed ) ? NlohmannJson( nullptr ) : NlohmannJson( Speed );
+	Json["Speed"] = ( InvalidFieldTypes & InvalidSpeed ) != 0 || !NMath::IsFinite( Speed ) ? NlohmannJson( nullptr ) : NlohmannJson( Speed );
 	return Json;
 }
 
@@ -104,7 +106,7 @@ bool FEffectFlipbookDefinition::FromJson( const NlohmannJson& Json, FEffectFlipb
 	{
 		Definition.InvalidFieldTypes = InvalidAll;
 		Warn( Warnings, "Flipbook は object にしてください" );
-		Out = std::move( Definition );
+		Out = MoveTemp( Definition );
 		return true;
 	}
 	if ( Json.contains( "Enabled" ) )
@@ -144,7 +146,7 @@ bool FEffectFlipbookDefinition::FromJson( const NlohmannJson& Json, FEffectFlipb
 		Definition.InvalidFieldTypes |= InvalidSpeed;
 		Warn( Warnings, "Speed は有限の数値にしてください" );
 	}
-	Out = std::move( Definition );
+	Out = MoveTemp( Definition );
 	return true;
 }
 
@@ -156,7 +158,7 @@ TArray<FString> FEffectFlipbookDefinition::Validate() const
 	if ( ( InvalidFieldTypes & InvalidSheet ) != 0 ) Issues.Add( "Sheet の値型が不正です" );
 	if ( ( InvalidFieldTypes & InvalidClip ) != 0 ) Issues.Add( "Clip の値型が不正です" );
 	if ( ( InvalidFieldTypes & InvalidTimeMode ) != 0 || ( TimeMode != ETimeMode::Lifetime && TimeMode != ETimeMode::Seconds ) ) Issues.Add( "TimeMode は Lifetime または Seconds にしてください" );
-	if ( ( InvalidFieldTypes & InvalidSpeed ) != 0 || !std::isfinite( Speed ) || Speed < 0.0f || Speed > 128.0f ) Issues.Add( "Speed は有限の 0 から 128 にしてください" );
+	if ( ( InvalidFieldTypes & InvalidSpeed ) != 0 || !NMath::IsFinite( Speed ) || Speed < 0.0f || Speed > 128.0f ) Issues.Add( "Speed は有限の 0 から 128 にしてください" );
 	if ( bEnabled && Sheet.IsEmpty() && ( InvalidFieldTypes & InvalidSheet ) == 0 ) Issues.Add( "有効な Flipbook には Sheet が必要です" );
 	return Issues;
 }
@@ -179,7 +181,7 @@ bool NEffectFlipbook::IsValidTimeline( const FAnimTimeline& Timeline )
 	// Timelineは最大256コマのclipからのPingPong展開までを受け付ける。
 	// 展開後の表示step数。
 	const int32 Count = Timeline.NumSteps();
-	if ( Count <= 0 || Count > 510 || Timeline.StepEnd.Num() != Count || !std::isfinite( Timeline.Total ) || Timeline.Total <= 0.0f ) return false;
+	if ( Count <= 0 || Count > 510 || Timeline.StepEnd.Num() != Count || !NMath::IsFinite( Timeline.Total ) || Timeline.Total <= 0.0f ) return false;
 	if ( Timeline.Loop != EAnimLoopMode::Once && Timeline.Loop != EAnimLoopMode::Loop && Timeline.Loop != EAnimLoopMode::PingPong ) return false;
 	// 各累積時刻と元clipのコマ参照が正しい。
 	// 直前stepの終わり時刻。
@@ -191,7 +193,7 @@ bool NEffectFlipbook::IsValidTimeline( const FAnimTimeline& Timeline )
 		const float32 End = Timeline.StepEnd[Index];
 		// timelineが参照する元clipのコマ。
 		const int32 Source = Timeline.StepSource[Index];
-		if ( !std::isfinite( End ) || End <= PreviousEnd || End > Timeline.Total || Source < 0 || Source >= 256 ) return false;
+		if ( !NMath::IsFinite( End ) || End <= PreviousEnd || End > Timeline.Total || Source < 0 || Source >= 256 ) return false;
 		PreviousEnd = End;
 	}
 	return Timeline.StepEnd.Last() == Timeline.Total;
@@ -202,14 +204,14 @@ int32 NEffectFlipbook::EvaluateStep( const FEffectFlipbookDefinition& Definition
 	// 粒子ごとの呼び出しでは配列全体を再検証せず、必要な境界だけを見る。
 	// timelineの表示step数。
 	const int32 Count = Timeline.NumSteps();
-	if ( !Definition.bEnabled || !Definition.IsValidSettings() || Count <= 0 || Count > 510 || Timeline.StepEnd.Num() != Count || !std::isfinite( Timeline.Total ) || Timeline.Total <= 0.0f ) return INDEX_NONE;
+	if ( !Definition.bEnabled || !Definition.IsValidSettings() || Count <= 0 || Count > 510 || Timeline.StepEnd.Num() != Count || !NMath::IsFinite( Timeline.Total ) || Timeline.Total <= 0.0f ) return INDEX_NONE;
 	if ( Timeline.Loop != EAnimLoopMode::Once && Timeline.Loop != EAnimLoopMode::Loop && Timeline.Loop != EAnimLoopMode::PingPong ) return INDEX_NONE;
 	if ( Timeline.StepEnd.Last() != Timeline.Total ) return INDEX_NONE;
 	if ( Definition.TimeMode == FEffectFlipbookDefinition::ETimeMode::Lifetime )
 	{
-		if ( !std::isfinite( NormalizedAge ) ) return INDEX_NONE;
+		if ( !NMath::IsFinite( NormalizedAge ) ) return INDEX_NONE;
 		// 寿命割合を0から1へ収めた値。
-		const float64 T = std::clamp( static_cast<float64>( NormalizedAge ), 0.0, 1.0 );
+		const float64 T = NMath::Clamp( static_cast<float64>( NormalizedAge ), 0.0, 1.0 );
 		if ( T >= 1.0 ) return Timeline.StepSource.Last() >= 0 && Timeline.StepSource.Last() < 256 ? Count - 1 : INDEX_NONE;
 		// 寿命割合をclipの累積秒へ写した時刻。
 		const float64 Time = T * static_cast<float64>( Timeline.Total );
@@ -217,18 +219,18 @@ int32 NEffectFlipbook::EvaluateStep( const FEffectFlipbookDefinition& Definition
 		const int32 Step = NAnim::Locate( Timeline, Time ).Step;
 		return Step >= 0 && Step < Count && Timeline.StepSource[Step] >= 0 && Timeline.StepSource[Step] < 256 ? Step : INDEX_NONE;
 	}
-	if ( Definition.TimeMode != FEffectFlipbookDefinition::ETimeMode::Seconds || !std::isfinite( AgeSeconds ) || AgeSeconds < 0.0 ) return INDEX_NONE;
+	if ( Definition.TimeMode != FEffectFlipbookDefinition::ETimeMode::Seconds || !NMath::IsFinite( AgeSeconds ) || AgeSeconds < 0.0 ) return INDEX_NONE;
 	// double積のoverflowを検査してからOnce/Loop/PingPongの時間範囲へ収める。
 	// 粒子の経過秒に再生速度を掛けた時刻。
 	const float64 Playhead = AgeSeconds * static_cast<float64>( Definition.Speed );
-	if ( !std::isfinite( Playhead ) ) return INDEX_NONE;
+	if ( !NMath::IsFinite( Playhead ) ) return INDEX_NONE;
 	// loop方式で範囲調整する再生時刻。
 	float64 Time = Playhead;
-	if ( Timeline.Loop == EAnimLoopMode::Once ) Time = std::clamp( Playhead, 0.0, static_cast<float64>( Timeline.Total ) );
+	if ( Timeline.Loop == EAnimLoopMode::Once ) Time = NMath::Clamp( Playhead, 0.0, static_cast<float64>( Timeline.Total ) );
 	else
 	{
 		Time = std::fmod( Playhead, static_cast<float64>( Timeline.Total ) );
-		if ( !std::isfinite( Time ) ) return INDEX_NONE;
+		if ( !NMath::IsFinite( Time ) ) return INDEX_NONE;
 		if ( Time < 0.0 ) Time += static_cast<float64>( Timeline.Total );
 	}
 	// 調整時刻が指すtimeline step。

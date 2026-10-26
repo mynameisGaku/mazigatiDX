@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "Library/Core/Interfaces/Render/DrawDistortedMaterialQuad.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Render/DrawContext.h"
 #include "Library/Framework/Effect/ParticleEffectBackend.h"
@@ -201,7 +202,7 @@ void NWorldTest::RunEffectUVDistortionRealTests( NAssetTest::FChecker& C, CAsset
 		const bool bSourceScaleData = ReadDistortionData( SourceScalePlayback, SourceScaleData );
 		// 二重倍率誤りを色で見分ける既知の緑領域画素。
 		RenderData( SourceScaleData ); const FColor32 SourceScalePixel = Pixel( 57, 64 );
-		C.Check( bSourceScaleData && std::abs( SourceScaleData.Material.UVOffset[0] - 0.8f ) < 1.0e-4f && std::abs( SourceScaleData.Material.UVOffset[1] - 0.3f ) < 1.0e-4f && SourceScaleData.UVOffset[0] == 0.0f && SourceScaleData.UVOffset[1] == 0.0f && std::abs( SourceScaleData.Material.UVScale[0] - 2.25f ) < 1.0e-4f && std::abs( SourceScaleData.Material.UVScale[1] - 1.75f ) < 1.0e-4f && SourceScalePixel.g > SourceScalePixel.r + 80, "sourceOffset=(%.3f,%.3f), noiseOffset=(%.3f,%.3f), scale=(%.2f,%.2f), uv=(%.4f,%.4f), pixel(57,64)=(%d,%d,%d): source offsetとnoise offsetを分け倍率を二重適用しない", SourceScaleData.Material.UVOffset[0], SourceScaleData.Material.UVOffset[1], SourceScaleData.UVOffset[0], SourceScaleData.UVOffset[1], SourceScaleData.Material.UVScale[0], SourceScaleData.Material.UVScale[1], ( 57.5f - 32.0f ) / 64.0f, ( 64.5f - 32.0f ) / 64.0f, SourceScalePixel.r, SourceScalePixel.g, SourceScalePixel.b );
+		C.Check( bSourceScaleData && NMath::Abs( SourceScaleData.Material.UVOffset[0] - 0.8f ) < 1.0e-4f && NMath::Abs( SourceScaleData.Material.UVOffset[1] - 0.3f ) < 1.0e-4f && SourceScaleData.UVOffset[0] == 0.0f && SourceScaleData.UVOffset[1] == 0.0f && NMath::Abs( SourceScaleData.Material.UVScale[0] - 2.25f ) < 1.0e-4f && NMath::Abs( SourceScaleData.Material.UVScale[1] - 1.75f ) < 1.0e-4f && SourceScalePixel.g > SourceScalePixel.r + 80, "sourceOffset=(%.3f,%.3f), noiseOffset=(%.3f,%.3f), scale=(%.2f,%.2f), uv=(%.4f,%.4f), pixel(57,64)=(%d,%d,%d): source offsetとnoise offsetを分け倍率を二重適用しない", SourceScaleData.Material.UVOffset[0], SourceScaleData.Material.UVOffset[1], SourceScaleData.UVOffset[0], SourceScaleData.UVOffset[1], SourceScaleData.Material.UVScale[0], SourceScaleData.Material.UVScale[1], ( 57.5f - 32.0f ) / 64.0f, ( 64.5f - 32.0f ) / 64.0f, SourceScalePixel.r, SourceScalePixel.g, SourceScalePixel.b );
 		// 上右alpha0・下右alpha128のsourceで画素alphaをnoise変位後に保つ。
 		// alpha穴画像と通常発光を使うPlayback定義。
 		FParticleEmitterDefinition AlphaEmitter = Emitter;
@@ -263,18 +264,18 @@ void NWorldTest::RunEffectUVDistortionRealTests( NAssetTest::FChecker& C, CAsset
 		// 同一位置での非整数倍率と1倍のnoise読取結果。
 		const FColor32 NoiseScalePixel = RenderFlow( NoiseScalePlayback, NoiseScaleData, 55, 57 );
 		const FColor32 NoiseScaleOnePixel = RenderFlow( NoiseScaleOnePlayback, NoiseScaleOneData, 55, 57 );
-		C.Check( bNoiseScaleData && std::abs( NoiseScaleData.UVScale[0] - 2.5f ) < 1.0e-4f && NoiseScalePixel.r > NoiseScalePixel.g + 80 && NoiseScaleOnePixel.g > NoiseScaleOnePixel.r + 80, "非均一noiseの非整数倍率が既知pixelの方向を倍率1から変える" );
+		C.Check( bNoiseScaleData && NMath::Abs( NoiseScaleData.UVScale[0] - 2.5f ) < 1.0e-4f && NoiseScalePixel.r > NoiseScalePixel.g + 80 && NoiseScaleOnePixel.g > NoiseScaleOnePixel.r + 80, "非均一noiseの非整数倍率が既知pixelの方向を倍率1から変える" );
 		FDrawDistortedMaterialQuadData FlowData{};
 		const FColor32 FlowAtZero = RenderFlow( FlowPlayback, FlowData, 57, 57 );
 		if ( FlowPlayback.IsValid() ) FlowPlayback->Update( 0.5f );
 		const FColor32 FlowAtHalf = RenderFlow( FlowPlayback, FlowData, 57, 57 );
-		C.Check( FlowPlayback.IsValid() && std::abs( FlowData.UVOffset[0] - 0.25f ) < 1.0e-4f && FlowAtZero.g > FlowAtZero.r + 80 && FlowAtHalf.r > FlowAtHalf.g + 80, "Age 0から0.5秒の正UVscrollがnoise方向とsource pixelを変える" );
+		C.Check( FlowPlayback.IsValid() && NMath::Abs( FlowData.UVOffset[0] - 0.25f ) < 1.0e-4f && FlowAtZero.g > FlowAtZero.r + 80 && FlowAtHalf.r > FlowAtHalf.g + 80, "Age 0から0.5秒の正UVscrollがnoise方向とsource pixelを変える" );
 		FParticleEmitterDefinition ReverseFlowEmitter = FlowEmitter; ReverseFlowEmitter.Material.Distortion.UVScroll = FVector2( -0.5f, 0.0f );
 		TSharedPtr<IEffectPlayback> ReverseFlowPlayback = NEffect::CreateParticlePlayback( NEffectTest::MakeEffect( { ReverseFlowEmitter } ), &Assets, FEffectPlayParams(), FTransform::Identity, "uv-distortion-negative-flow" );
 		if ( ReverseFlowPlayback.IsValid() ) { ReverseFlowPlayback->Update( 0.01f ); ReverseFlowPlayback->Update( 0.5f ); }
 		FDrawDistortedMaterialQuadData ReverseFlowData{};
 		const FColor32 ReverseFlowPixel = RenderFlow( ReverseFlowPlayback, ReverseFlowData, 57, 57 );
-		C.Check( ReverseFlowPlayback.IsValid() && std::abs( ReverseFlowData.UVOffset[0] - 0.75f ) < 1.0e-4f && ReverseFlowPixel.g > ReverseFlowPixel.r + 80, "負UVscrollは同時刻に反対側のnoiseへ戻る" );
+		C.Check( ReverseFlowPlayback.IsValid() && NMath::Abs( ReverseFlowData.UVOffset[0] - 0.75f ) < 1.0e-4f && ReverseFlowPixel.g > ReverseFlowPixel.r + 80, "負UVscrollは同時刻に反対側のnoiseへ戻る" );
 		// mask消失・境界発光・自己発光をゆがみ付きの同じ実Playbackへ加える。
 		FParticleEmitterDefinition MaskedEmitter = Emitter;
 		MaskedEmitter.Material.bDissolve = true; MaskedEmitter.Material.MaskTexture = MaskPath; MaskedEmitter.Material.EdgeWidth = 0.12f; MaskedEmitter.Material.EdgeEmission = 2.0f; MaskedEmitter.Material.Emission.Keys.Add( { 0.0f, 2.0f } ); MaskedEmitter.Material.Emission.Keys.Add( { 1.0f, 2.0f } ); MaskedEmitter.Material.Dissolve.Keys.Add( { 0.0f, 0.5f } ); MaskedEmitter.Material.Dissolve.Keys.Add( { 1.0f, 0.5f } );
@@ -330,7 +331,7 @@ void NWorldTest::RunEffectUVDistortionRealTests( NAssetTest::FChecker& C, CAsset
 		const FString ProofDirectory = FString( "Saved" ) / "EffectUVDistortionProof";
 		if ( NFileSystem::EnsureDirectory( ProofDirectory ) ) SaveDrawScreenToPNG( 0, 0, 128, 128, *( ProofDirectory / "uv-distortion-positive-x.png" ) );
 		// 不正な形状を含むが命令長は正しい直接payload。
-		FDrawDistortedMaterialQuadData Invalid = Distorted; Invalid.Material.Quad.Pos[0] = std::numeric_limits<float32>::quiet_NaN();
+		FDrawDistortedMaterialQuadData Invalid = Distorted; Invalid.Material.Quad.Pos[0] = TNumericLimits<float32>::QuietNaN();
 		FDrawBuffer Forged; Forged.Words.resize( 1 + sizeof( Invalid ) / 4 ); Forged.Words[0] = NDrawCommand::MakeHeader( EDrawCommand::DistortedMaterialQuad3D, 0, static_cast<int32>( Forged.Words.size() ) ); std::memcpy( Forged.Words.data() + 1, &Invalid, sizeof( Invalid ) );
 		ClearDrawScreen(); Executor.Execute( FDrawSpan{ Forged.Words.data(), static_cast<int32>( Forged.Words.size() ) } ); RenderVertex(); GetDrawScreenSoftImage( 0, 0, 128, 128, Soft );
 		const FColor32 RejectedPixel = Pixel( 57, 64 );
@@ -343,7 +344,7 @@ void NWorldTest::RunEffectUVDistortionRealTests( NAssetTest::FChecker& C, CAsset
 		// rendererの戻り値で各異常条件がGPU処理へ入る前に止まることを直接検証する。
 		FEffectMaterialRenderer GuardRenderer;
 		// 頂点のx位置にNaNを入れ、位置検証を外した描画が成功扱いにならないか調べる。
-		FDrawDistortedMaterialQuadData InvalidPosition = Distorted; InvalidPosition.Material.Quad.Pos[0] = std::numeric_limits<float32>::quiet_NaN();
+		FDrawDistortedMaterialQuadData InvalidPosition = Distorted; InvalidPosition.Material.Quad.Pos[0] = TNumericLimits<float32>::QuietNaN();
 		// pivotの許容範囲を外し、不正な基準点を拒否するか調べる。
 		FDrawDistortedMaterialQuadData InvalidPivot = Distorted; InvalidPivot.Material.Quad.PivotX = -0.1f;
 		// 定義外の向き番号を渡し、enum値を検証するか調べる。
@@ -351,7 +352,7 @@ void NWorldTest::RunEffectUVDistortionRealTests( NAssetTest::FChecker& C, CAsset
 		// 画像handleを無効化し、必要な変位画像の欠落を拒否するか調べる。
 		FDrawDistortedMaterialQuadData InvalidNoise = Distorted; InvalidNoise.DistortionTexture = -1;
 		// 発光値を無限大にし、有限値検証で拒否するか調べる。
-		FDrawDistortedMaterialQuadData InvalidEmission = Distorted; InvalidEmission.Material.Emission = std::numeric_limits<float32>::infinity();
+		FDrawDistortedMaterialQuadData InvalidEmission = Distorted; InvalidEmission.Material.Emission = TNumericLimits<float32>::Infinity();
 		// 直接renderer呼出し前に、screen/viewportを反映し対応blendを選ぶ。
 		// 試験後に戻すDxLib合成方式。
 		int32 GuardOldBlend = DX_BLENDMODE_NOBLEND;

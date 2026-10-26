@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "Library/Core/Collection/Map.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Math/MathConstants.h"
 
 namespace
@@ -63,7 +64,7 @@ namespace
 
 	FVector3 Clamp( const FVector3& Size )
 	{
-		return FVector3( std::max( Size.x, MinLength ), std::max( Size.y, MinLength ), std::max( Size.z, MinLength ) );
+		return FVector3( NMath::Max( Size.x, MinLength ), NMath::Max( Size.y, MinLength ), NMath::Max( Size.z, MinLength ) );
 	}
 }
 
@@ -97,8 +98,8 @@ FEditMesh NEditMesh::MakeBox( const FVector3& Size )
 
 FEditMesh NEditMesh::MakePlane( float32 Width, float32 Depth, int32 DivisionsX, int32 DivisionsZ )
 {
-	const float32 W = std::max( Width, MinLength ), D = std::max( Depth, MinLength );
-	const int32 NX = std::clamp( DivisionsX, 1, 256 ), NZ = std::clamp( DivisionsZ, 1, 256 );
+	const float32 W = NMath::Max( Width, MinLength ), D = NMath::Max( Depth, MinLength );
+	const int32 NX = NMath::Clamp( DivisionsX, 1, 256 ), NZ = NMath::Clamp( DivisionsZ, 1, 256 );
 	FBuilder B;
 	for ( int32 i = 0; i < NX; ++i )
 	{
@@ -116,8 +117,8 @@ FEditMesh NEditMesh::MakePlane( float32 Width, float32 Depth, int32 DivisionsX, 
 
 FEditMesh NEditMesh::MakeCylinder( float32 Radius, float32 Height, int32 Segments, bool bCaps )
 {
-	const float32 R = std::max( Radius, MinLength ), H = std::max( Height, MinLength );
-	const int32 N = std::clamp( Segments, 3, 256 );
+	const float32 R = NMath::Max( Radius, MinLength ), H = NMath::Max( Height, MinLength );
+	const int32 N = NMath::Clamp( Segments, 3, 256 );
 	const auto Ring = [&]( int32 Step, float32 Y )
 	{
 		const float32 Angle = NMath::TWO_PI * static_cast<float32>( Step % N ) / static_cast<float32>( N );
@@ -141,8 +142,8 @@ FEditMesh NEditMesh::MakeCylinder( float32 Radius, float32 Height, int32 Segment
 
 FEditMesh NEditMesh::MakeSphere( float32 Radius, int32 Segments, int32 Rings )
 {
-	const float32 R = std::max( Radius, MinLength );
-	const int32 N = std::clamp( Segments, 3, 256 ), M = std::clamp( Rings, 2, 256 );
+	const float32 R = NMath::Max( Radius, MinLength );
+	const int32 N = NMath::Clamp( Segments, 3, 256 ), M = NMath::Clamp( Rings, 2, 256 );
 	const FVector3 Top( 0.0f, 2.0f * R, 0.0f ), Bottom( 0.0f, 0.0f, 0.0f );
 	const auto Point = [&]( int32 Ring, int32 Step )
 	{
@@ -177,7 +178,7 @@ FEditMesh NEditMesh::MakeRamp( const FVector3& Size )
 FEditMesh NEditMesh::MakeStairs( const FVector3& Size, int32 Steps )
 {
 	const FVector3 S = Clamp( Size );
-	const int32 N = std::clamp( Steps, 1, 128 );
+	const int32 N = NMath::Clamp( Steps, 1, 128 );
 	const float32 X0 = -S.x * 0.5f, X1 = S.x * 0.5f, Z0 = -S.z * 0.5f, Z1 = S.z * 0.5f;
 	const float32 StepH = S.y / static_cast<float32>( N ), StepD = S.z / static_cast<float32>( N );
 	FBuilder B;

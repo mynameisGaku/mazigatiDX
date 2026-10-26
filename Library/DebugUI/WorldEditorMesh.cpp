@@ -1,6 +1,7 @@
 ﻿#include <algorithm>
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/DebugUI/WorldEditorInternal.h"
 #include "Library/DebugUI/WorldEditorMeshMaterialPanel.h"
@@ -25,12 +26,12 @@ namespace
 
 	ImU32 WithAlpha( ImU32 Color, int32 Alpha )
 	{
-		return ( Color & ~IM_COL32_A_MASK ) | ( static_cast<ImU32>( std::clamp( Alpha, 0, 255 ) ) << IM_COL32_A_SHIFT );
+		return ( Color & ~IM_COL32_A_MASK ) | ( static_cast<ImU32>( NMath::Clamp( Alpha, 0, 255 ) ) << IM_COL32_A_SHIFT );
 	}
 
 	FColor32 ToColor32( const float ( &Rgb )[3] )
 	{
-		const auto Byte = [] ( float V ) { return static_cast<uint8>( std::clamp( static_cast<int32>( std::round( V * 255.0f ) ), 0, 255 ) ); };
+		const auto Byte = [] ( float V ) { return static_cast<uint8>( NMath::Clamp( static_cast<int32>( std::round( V * 255.0f ) ), 0, 255 ) ); };
 		return FColor32( Byte( Rgb[0] ), Byte( Rgb[1] ), Byte( Rgb[2] ), 255 );
 	}
 
@@ -371,7 +372,7 @@ void NWorldEditorUI::DrawMeshComponentBody( FWorldEditorState& S, const FWorldOb
 			if ( bChanged ) NWorldEdit::EditObject( Session.Document, Id )->Mesh.GetValue().Materials[i].Texture = Texture;
 			if ( !Texture.IsEmpty() && S.AssetInfo.IsValid() && !S.AssetInfo->Exists( Texture ) ) ImGui::TextColored( ImVec4( 1.0f, 0.5f, 0.4f, 1.0f ), "'%s' was not found", UI_TEXT( Texture ) );
 			float32 Tile = Material.Tile;
-			if ( ImGui::DragFloat( "Tile (m per picture)", &Tile, 0.02f, 0.01f, 1000.0f, "%.2f" ) ) NWorldEdit::EditObject( Session.Document, Id, *FString::Printf( "Inspector.Mesh.Tile.%d", i ) )->Mesh.GetValue().Materials[i].Tile = std::max( Tile, 0.001f );
+			if ( ImGui::DragFloat( "Tile (m per picture)", &Tile, 0.02f, 0.01f, 1000.0f, "%.2f" ) ) NWorldEdit::EditObject( Session.Document, Id, *FString::Printf( "Inspector.Mesh.Tile.%d", i ) )->Mesh.GetValue().Materials[i].Tile = NMath::Max( Tile, 0.001f );
 			float32 Offset[2] = { Material.Offset.x, Material.Offset.y };
 			if ( ImGui::DragFloat2( "Offset", Offset, 0.01f ) ) NWorldEdit::EditObject( Session.Document, Id, *FString::Printf( "Inspector.Mesh.Offset.%d", i ) )->Mesh.GetValue().Materials[i].Offset = FVector2( Offset[0], Offset[1] );
 			bool bTwoSided = Material.bTwoSided;

@@ -1,6 +1,7 @@
 ﻿#include <algorithm>
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/World/Mesh/EditMesh.h"
 #include "Library/Framework/World/Mesh/EditMeshBuild.h"
 #include "Library/Framework/World/Mesh/EditMeshOps.h"
@@ -16,7 +17,7 @@ using namespace NWorldMeshTest;
 //=============================================================================
 namespace
 {
-	bool Near( float32 A, float32 B, float32 Tolerance = 1.0e-3f ) { return std::fabs( A - B ) <= Tolerance; }
+	bool Near( float32 A, float32 B, float32 Tolerance = 1.0e-3f ) { return NMath::Abs( A - B ) <= Tolerance; }
 	bool Near3( const FVector3& A, const FVector3& B, float32 Tolerance = 1.0e-3f ) { return Near( A.x, B.x, Tolerance ) && Near( A.y, B.y, Tolerance ) && Near( A.z, B.z, Tolerance ); }
 
 	TArray<int32> Ints( std::initializer_list<int32> List )
@@ -118,7 +119,7 @@ namespace
 		C.Check( Near3( Box.ComputeFaceNormal( 0 ), FVector3::Up ) && Box.GetBounds( Min, Max ) && Near( Max.y, 3.0f ) && Near( Box.ComputeFaceCenter( 0 ).y, 3.0f ), "the extruded face is 1 higher and still faces up" );
 		C.Check( IsClosed( Box ) && FacesLookOutward( Box ) && Near( Box.ComputeVolume(), 12.0f ) && Box.Validate().IsEmpty(), "the mesh is still closed, faces outward, has the volume of 8 + 4 = 12, and has no issues (%.3f)", Box.ComputeVolume() );
 		bool bWallsUp = true;
-		for ( int32 Face = 6; Face < Box.GetNumFaces(); ++Face ) bWallsUp = bWallsUp && Near( Box.ComputeFaceArea( Face ), 2.0f ) && std::fabs( Box.ComputeFaceNormal( Face ).y ) < 1.0e-3f;
+		for ( int32 Face = 6; Face < Box.GetNumFaces(); ++Face ) bWallsUp = bWallsUp && Near( Box.ComputeFaceArea( Face ), 2.0f ) && NMath::Abs( Box.ComputeFaceNormal( Face ).y ) < 1.0e-3f;
 		C.Check( bWallsUp, "the 4 new walls are vertical, each 2 x 1" );
 
 		// 内側へ（負）: 穴になる。閉じたまま、体積は減る

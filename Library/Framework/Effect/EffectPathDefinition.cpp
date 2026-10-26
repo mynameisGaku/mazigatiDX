@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Json/JsonHelpers.h"
 
 namespace
@@ -13,14 +14,14 @@ namespace
 	{
 		if ( !Json.contains( Name ) ) return DefaultValue;
 		const NlohmannJson& Value = Json[Name];
-		if ( !Value.is_number_integer() && !Value.is_number_unsigned() ) return std::numeric_limits<int32>::min();
+		if ( !Value.is_number_integer() && !Value.is_number_unsigned() ) return TNumericLimits<int32>::Min();
 		if ( Value.is_number_unsigned() )
 		{
 			const uint64 Number = Value.get<uint64>();
-			return Number <= static_cast<uint64>( std::numeric_limits<int32>::max() ) ? static_cast<int32>( Number ) : std::numeric_limits<int32>::min();
+			return Number <= static_cast<uint64>( TNumericLimits<int32>::Max() ) ? static_cast<int32>( Number ) : TNumericLimits<int32>::Min();
 		}
 		const int64 Number = Value.get<int64>();
-		return Number >= std::numeric_limits<int32>::min() && Number <= std::numeric_limits<int32>::max() ? static_cast<int32>( Number ) : std::numeric_limits<int32>::min();
+		return Number >= TNumericLimits<int32>::Min() && Number <= TNumericLimits<int32>::Max() ? static_cast<int32>( Number ) : TNumericLimits<int32>::Min();
 	}
 
 	// TreeLightningで誤型の数値をValidateが検出できる非有限値へする。
@@ -28,7 +29,7 @@ namespace
 	{
 		if ( !Json.contains( Name ) ) return DefaultValue;
 		const NlohmannJson& Value = Json[Name];
-		return Value.is_number() ? Value.get<float32>() : std::numeric_limits<float32>::quiet_NaN();
+		return Value.is_number() ? Value.get<float32>() : TNumericLimits<float32>::QuietNaN();
 	}
 
 	// TreeLightningの終点は3個の有限な数値だけを受け付ける。
@@ -36,8 +37,8 @@ namespace
 	{
 		if ( !Json.contains( "End" ) ) return DefaultValue;
 		const NlohmannJson& Value = Json["End"];
-		if ( !Value.is_array() || Value.size() != 3 ) return FVector3( std::numeric_limits<float32>::quiet_NaN() );
-		for ( usize Index = 0; Index < 3; ++Index ) if ( !Value[Index].is_number() ) return FVector3( std::numeric_limits<float32>::quiet_NaN() );
+		if ( !Value.is_array() || Value.size() != 3 ) return FVector3( TNumericLimits<float32>::QuietNaN() );
+		for ( usize Index = 0; Index < 3; ++Index ) if ( !Value[Index].is_number() ) return FVector3( TNumericLimits<float32>::QuietNaN() );
 		return FVector3( Value[0].get<float32>(), Value[1].get<float32>(), Value[2].get<float32>() );
 	}
 }
@@ -130,15 +131,15 @@ TArray<FString> FEffectPathDefinition::Validate() const
 	// 各項目の不正な値を、編集画面と保存の検証へ返す一覧。
 	TArray<FString> Issues;
 	if ( Kind != EKind::None && Kind != EKind::Ribbon && Kind != EKind::Lightning && Kind != EKind::TreeLightning ) Issues.Add( "Path.Kind の表示方式が不正です" );
-	if ( !std::isfinite( End.x ) || !std::isfinite( End.y ) || !std::isfinite( End.z ) ) Issues.Add( "Path.End は有限の座標にしてください" );
+	if ( !NMath::IsFinite( End.x ) || !NMath::IsFinite( End.y ) || !NMath::IsFinite( End.z ) ) Issues.Add( "Path.End は有限の座標にしてください" );
 	else if ( ( Kind == EKind::Lightning || Kind == EKind::TreeLightning ) && End.x == 0.0f && End.y == 0.0f && End.z == 0.0f ) Issues.Add( "Path.End は雷の始点と異なる位置にしてください" );
 	if ( Segments < 2 || Segments > MaxSegments ) Issues.Add( "Path.Segments は 2 以上 128 以下にしてください" );
 	if ( Branches < 0 || Branches > MaxBranches ) Issues.Add( "Path.Branches は 0 以上 16 以下にしてください" );
-	if ( !std::isfinite( Jitter ) || Jitter < 0.0f || ( Kind == EKind::TreeLightning && Jitter > 1.0f ) ) Issues.Add( Kind == EKind::TreeLightning ? "TreeLightning の Path.Jitter は有限の 0 以上 1 以下にしてください" : "Path.Jitter は有限の 0 以上の値にしてください" );
-	if ( !std::isfinite( BranchLength ) || BranchLength < 0.0f || ( Kind == EKind::TreeLightning && BranchLength > 2.0f ) ) Issues.Add( Kind == EKind::TreeLightning ? "TreeLightning の Path.BranchLength は有限の 0 以上 2 以下にしてください" : "Path.BranchLength は有限の 0 以上の値にしてください" );
-	if ( !std::isfinite( RefreshHz ) || RefreshHz < 0.0f ) Issues.Add( "Path.RefreshHz は有限の 0 以上の値にしてください" );
-	if ( !std::isfinite( UVRepeat ) || UVRepeat <= 0.0f ) Issues.Add( "Path.UVRepeat は有限の正の繰り返し回数にしてください" );
-	if ( !std::isfinite( BreakDistance ) || BreakDistance <= 0.0f ) Issues.Add( "Path.BreakDistance は有限の正の距離にしてください" );
+	if ( !NMath::IsFinite( Jitter ) || Jitter < 0.0f || ( Kind == EKind::TreeLightning && Jitter > 1.0f ) ) Issues.Add( Kind == EKind::TreeLightning ? "TreeLightning の Path.Jitter は有限の 0 以上 1 以下にしてください" : "Path.Jitter は有限の 0 以上の値にしてください" );
+	if ( !NMath::IsFinite( BranchLength ) || BranchLength < 0.0f || ( Kind == EKind::TreeLightning && BranchLength > 2.0f ) ) Issues.Add( Kind == EKind::TreeLightning ? "TreeLightning の Path.BranchLength は有限の 0 以上 2 以下にしてください" : "Path.BranchLength は有限の 0 以上の値にしてください" );
+	if ( !NMath::IsFinite( RefreshHz ) || RefreshHz < 0.0f ) Issues.Add( "Path.RefreshHz は有限の 0 以上の値にしてください" );
+	if ( !NMath::IsFinite( UVRepeat ) || UVRepeat <= 0.0f ) Issues.Add( "Path.UVRepeat は有限の正の繰り返し回数にしてください" );
+	if ( !NMath::IsFinite( BreakDistance ) || BreakDistance <= 0.0f ) Issues.Add( "Path.BreakDistance は有限の正の距離にしてください" );
 	for ( const FString& Issue : Tree.Validate() ) Issues.Add( Issue );
 	if ( bInvalidUseTarget ) Issues.Add( "Path.UseTarget は真偽値にしてください" );
 	return Issues;

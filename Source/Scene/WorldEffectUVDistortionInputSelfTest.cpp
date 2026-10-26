@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
 #include "WorldSelfTestSupport.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EffectEditorInternal.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Asset/Texture.h"
@@ -185,13 +186,13 @@ namespace
 		C.Check( Input.TabTo( State, ScaleXId ), "Distortion scaleへkeyboard focusする" );
 		// scale横成分の文字入力結果。
 		const bool bScaleTyped = Input.ReplaceNumeric( State, ScaleXId, "2.25" );
-		C.Check( bScaleTyped && std::fabs( State.Document.Get().Emitters[0].Material.Distortion.UVScale.x - 2.25f ) < 0.003f, "Distortion scaleをImGui文字入力する" );
+		C.Check( bScaleTyped && NMath::Abs( State.Document.Get().Emitters[0].Material.Distortion.UVScale.x - 2.25f ) < 0.003f, "Distortion scaleをImGui文字入力する" );
 		// scrollの横成分ID。
 		const ImGuiID ScrollXId = Input.VectorComponentItemId( "Distortion scroll / second", 0 );
 		C.Check( Input.TabTo( State, ScrollXId ), "Distortion scrollへkeyboard focusする" );
 		// scroll横成分の文字入力結果。
 		const bool bScrollTyped = Input.ReplaceNumeric( State, ScrollXId, "-0.5" );
-		C.Check( bScrollTyped && std::fabs( State.Document.Get().Emitters[0].Material.Distortion.UVScroll.x + 0.5f ) < 0.003f, "Distortion scrollをImGui文字入力する" );
+		C.Check( bScrollTyped && NMath::Abs( State.Document.Get().Emitters[0].Material.Distortion.UVScroll.x + 0.5f ) < 0.003f, "Distortion scrollをImGui文字入力する" );
 		// Strength曲線へ点を足すbutton ID。
 		const ImGuiID AddKeyId = Input.NestedItemId( "Distortion strength", "Add key" );
 		C.Check( Input.TabTo( State, AddKeyId ), "Distortion strengthのAdd keyへkeyboard focusする" );
@@ -212,7 +213,7 @@ namespace
 		FParticleEmitterDefinition InvalidEmitter = ResetEmitter;
 		InvalidEmitter.Material.Distortion.bEnabled = true;
 		InvalidEmitter.Material.Distortion.Texture = "Effects/uv_distortion_flow.tga";
-		InvalidEmitter.Material.Distortion.UVScale.x = ( std::numeric_limits<float32>::quiet_NaN )();
+		InvalidEmitter.Material.Distortion.UVScale.x = TNumericLimits<float32>::QuietNaN();
 		NParticleEdit::SetEmitter( State.Document, 0, InvalidEmitter, "emitter-settings" );
 		C.Check( Input.Frame( State ) && Input.FramesBalanced(), "NaNのscaleを含んでもImGui assertなく描画する" );
 	}

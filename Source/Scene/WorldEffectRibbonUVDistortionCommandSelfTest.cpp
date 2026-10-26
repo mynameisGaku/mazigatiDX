@@ -4,6 +4,7 @@
 #include <limits>
 #include <vector>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Render/DrawContext.h"
 #include "WorldSelfTestSupport.h"
 
@@ -144,7 +145,7 @@ namespace
 		C.Check( !NDrawDistortedMaterialRibbon::IsValid( BoundaryData, BoundaryPoints.GetData() ), "8193画像区間は上限超過として拒否する" );
 		// 派生UVのfloat積が有限範囲を超える設定。
 		BoundaryData.Material.Ribbon.UVRepeat = 1.0f;
-		BoundaryPoints[1].Material.Path.U = std::numeric_limits<float32>::max();
+		BoundaryPoints[1].Material.Path.U = TNumericLimits<float32>::Max();
 		BoundaryData.UVScale[0] = 128.0f;
 		C.Check( !NDrawDistortedMaterialRibbon::IsValid( BoundaryData, BoundaryPoints.GetData() ), "有限入力でも派生ノイズUVがfloat上限を超える帯を拒否する" );
 
@@ -157,7 +158,7 @@ namespace
 		// 不正入力で保持される既存命令列。
 		const std::vector<uint32> BeforeInvalid = AtomicBuffer.Words;
 		MakeValidRibbon( Data, Points, 3 );
-		Points[2].UVOffset[1] = std::numeric_limits<float32>::quiet_NaN();
+		Points[2].UVOffset[1] = TNumericLimits<float32>::QuietNaN();
 		AtomicDraw.DistortedMaterialRibbon3D( Data, Points.GetData() );
 		C.Check( AtomicBuffer.Words == BeforeInvalid, "後半点の非有限UVで命令を原子的に拒否し既存wordを変えない" );
 
@@ -168,7 +169,7 @@ namespace
 		Data.Material.Ribbon.JoinFlags = FDrawRibbonData::PreviousPoint;
 		Data.Material.Ribbon.NumPoints = 2;
 		C.Check( !NDrawDistortedMaterialRibbon::IsValidHeader( Data ), "接線用補助点を除くと点が1個しか残らない指定を拒否する" );
-		Data.Material.Ribbon.NumPoints = std::numeric_limits<int32>::min();
+		Data.Material.Ribbon.NumPoints = TNumericLimits<int32>::Min();
 		// 壊れた点数を持つ入力先。
 		FDrawBuffer MalformedBuffer;
 		// 不正headerを安全に拒否する記録窓口。

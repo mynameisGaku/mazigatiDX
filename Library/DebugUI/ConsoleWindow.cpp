@@ -6,6 +6,7 @@
 #include <cstring>
 #include <string>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/Framework/Console/BuiltinCommands.h"
 #include "Library/Framework/Console/ConsoleParse.h"
@@ -275,8 +276,8 @@ void NDebugUI::DrawConsoleWindow( FConsoleWindowState& S, bool* pOpen )
 	if ( !S.bHistoryLoaded ) LoadConsoleHistory( S );
 
 	const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
-	const float Width = std::min( 860.0f, MainViewport->Size.x - 40.0f );
-	const float Height = std::min( 460.0f, MainViewport->Size.y - 60.0f );
+	const float Width = NMath::Min( 860.0f, MainViewport->Size.x - 40.0f );
+	const float Height = NMath::Min( 460.0f, MainViewport->Size.y - 60.0f );
 	ImGui::SetNextWindowPos( ImVec2( MainViewport->Pos.x + 20.0f, MainViewport->Pos.y + MainViewport->Size.y - Height - 20.0f ), ImGuiCond_FirstUseEver );
 	ImGui::SetNextWindowSize( ImVec2( Width, Height ), ImGuiCond_FirstUseEver );
 	if ( !ImGui::Begin( "Console###Console", pOpen ) )
@@ -311,7 +312,7 @@ void NDebugUI::DrawConsoleWindow( FConsoleWindowState& S, bool* pOpen )
 	const int32 InfoLines = CountInfoLines( Info );
 	const bool bShowSuggestions = HasVisibleSuggestions( S );
 	const int32 NumSuggestions = S.Suggestions.Num();
-	const int32 SuggestionRows = bShowSuggestions ? std::min( NumSuggestions, MaxSuggestionRows ) + ( NumSuggestions > MaxSuggestionRows ? 1 : 0 ) : 0;
+	const int32 SuggestionRows = bShowSuggestions ? NMath::Min( NumSuggestions, MaxSuggestionRows ) + ( NumSuggestions > MaxSuggestionRows ? 1 : 0 ) : 0;
 	float Footer = ImGui::GetFrameHeightWithSpacing() + Style.ItemSpacing.y;
 	if ( InfoLines > 0 ) Footer += InfoLines * LineHeight + Style.ItemSpacing.y * 2.0f + 2.0f;
 	if ( SuggestionRows > 0 ) Footer += SuggestionRows * LineHeight + Style.ItemSpacing.y * 2.0f + 2.0f;
@@ -384,13 +385,13 @@ void NDebugUI::DrawConsoleWindow( FConsoleWindowState& S, bool* pOpen )
 	{
 		ImGui::Separator();
 		float NameWidth = 0.0f;
-		for ( const FConsoleSuggestion& Suggestion : S.Suggestions ) NameWidth = std::max( NameWidth, ImGui::CalcTextSize( UI_TEXT( Suggestion.Text ) ).x );
-		const float DescriptionColumn = std::min( NameWidth + 28.0f, 360.0f );
+		for ( const FConsoleSuggestion& Suggestion : S.Suggestions ) NameWidth = NMath::Max( NameWidth, ImGui::CalcTextSize( UI_TEXT( Suggestion.Text ) ).x );
+		const float DescriptionColumn = NMath::Min( NameWidth + 28.0f, 360.0f );
 
 		// 選んでいる候補が見える範囲を表示する
 		int32 First = 0;
-		if ( NumSuggestions > MaxSuggestionRows && S.Selected != INDEX_NONE ) First = std::clamp( S.Selected - MaxSuggestionRows + 1, 0, NumSuggestions - MaxSuggestionRows );
-		const int32 Last = std::min( First + MaxSuggestionRows, NumSuggestions );
+		if ( NumSuggestions > MaxSuggestionRows && S.Selected != INDEX_NONE ) First = NMath::Clamp( S.Selected - MaxSuggestionRows + 1, 0, NumSuggestions - MaxSuggestionRows );
+		const int32 Last = NMath::Min( First + MaxSuggestionRows, NumSuggestions );
 		int32 Clicked = INDEX_NONE;
 		for ( int32 i = First; i < Last; ++i )
 		{

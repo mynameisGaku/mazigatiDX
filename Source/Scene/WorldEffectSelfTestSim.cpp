@@ -1,5 +1,7 @@
 ﻿#include "WorldEffectSelfTestSupport.h"
 
+#include "Library/Core/Types/Numeric.h"
+
 using namespace NAssetTest;
 using namespace NEffectTest;
 
@@ -60,10 +62,10 @@ namespace
 		{
 			NParticle::Advance( Sim, 0.125f );
 			const float64 Expected = FallHeight( 5.0, -10.0, 0.125, K );
-			const float64 Error = std::fabs( DrawPosition( Sim ).y - Expected );
-			WorstError = std::max( WorstError, Error );
+			const float64 Error = NMath::Abs( DrawPosition( Sim ).y - Expected );
+			WorstError = NMath::Max( WorstError, Error );
 			const float64 ExpectedVelocity = -10.0 * 0.125 * K;
-			bAllOk = bAllOk && Error < 1.0e-4 && std::fabs( Sim.Emitters[0].Particles[0].Velocity.y - ExpectedVelocity ) < 1.0e-4 && std::fabs( Sim.Emitters[0].Particles[0].Age - 0.125 * K ) < 1.0e-6;
+			bAllOk = bAllOk && Error < 1.0e-4 && NMath::Abs( Sim.Emitters[0].Particles[0].Velocity.y - ExpectedVelocity ) < 1.0e-4 && NMath::Abs( Sim.Emitters[0].Particles[0].Age - 0.125 * K ) < 1.0e-6;
 		}
 		C.Check( bAllOk, "free fall follows the semi-implicit Euler formula y = y0 + g dt^2 k (k + 1) / 2 for 8 steps (worst error %.6f)", WorstError );
 		C.Check( DrawPosition( Sim ).x == 0.0f && DrawPosition( Sim ).z == 0.0f, "and nothing moves sideways" );
@@ -83,7 +85,7 @@ namespace
 			NParticle::Advance( DragSim, 0.125f );
 			V *= ( 1.0 - 1.0 * 0.125 );
 			Y += V * 0.125;
-			bDragOk = bDragOk && std::fabs( DrawPosition( DragSim ).y - Y ) < 1.0e-4 && std::fabs( DragSim.Emitters[0].Particles[0].Velocity.y - V ) < 1.0e-4;
+			bDragOk = bDragOk && NMath::Abs( DrawPosition( DragSim ).y - Y ) < 1.0e-4 && NMath::Abs( DragSim.Emitters[0].Particles[0].Velocity.y - V ) < 1.0e-4;
 		}
 		C.Check( bDragOk, "drag shrinks the speed by (1 - drag dt) each step (the speed after 6 steps %.4f)", V );
 
@@ -107,7 +109,7 @@ namespace
 		NParticle::Advance( SpinSim, 0.5f );
 		const float32 StartAngle = SpinSim.Emitters[0].Particles[0].Angle;
 		NParticle::Advance( SpinSim, 0.5f );
-		C.Check( std::fabs( StartAngle - 1.5707963f ) < 1.0e-5f && std::fabs( SpinSim.Emitters[0].Particles[0].Angle - 3.1415927f ) < 1.0e-5f, "the start angle is in degrees and the spin in degrees per second (90 degrees, then +180 degrees in 1 s)" );
+		C.Check( NMath::Abs( StartAngle - 1.5707963f ) < 1.0e-5f && NMath::Abs( SpinSim.Emitters[0].Particles[0].Angle - 3.1415927f ) < 1.0e-5f, "the start angle is in degrees and the spin in degrees per second (90 degrees, then +180 degrees in 1 s)" );
 	}
 
 	//=========================================================================
@@ -134,7 +136,7 @@ namespace
 		Radial.bEnabled = false;
 		C.Check( Near3( Radial.EvaluateAcceleration( FVector3( 1.0f, 0.0f, 0.0f ) ), FVector3::Zero ), "a disabled radial field contributes no acceleration" );
 		Radial.bEnabled = true;
-		const float32 NaN = std::numeric_limits<float32>::quiet_NaN(); // 不正値確認用の非数
+		const float32 NaN = TNumericLimits<float32>::QuietNaN(); // 不正値確認用の非数
 		C.Check( Near3( Radial.EvaluateAcceleration( FVector3( NaN, 0.0f, 0.0f ) ), FVector3::Zero ) && Near3( Radial.EvaluateAcceleration( FVector3( 1.0e30f, 0.0f, 0.0f ) ), FVector3::Zero ), "a non-finite or excessively distant world position is safe" );
 		FEffectForceFieldDefinition BadSettings; // 非有限加速度を持つ場
 		BadSettings.Acceleration.x = NaN;
@@ -153,16 +155,16 @@ namespace
 		OutsideLimits[0].Radius = 0.0f;
 		OutsideLimits[1].Radius = -1.0f;
 		OutsideLimits[2].Radius = FEffectForceFieldDefinition::MaxMagnitude + 1.0f;
-		OutsideLimits[3].Radius = std::numeric_limits<float32>::infinity();
-		OutsideLimits[4].Strength = std::numeric_limits<float32>::infinity();
+		OutsideLimits[3].Radius = TNumericLimits<float32>::Infinity();
+		OutsideLimits[4].Strength = TNumericLimits<float32>::Infinity();
 		OutsideLimits[5].Strength = FEffectForceFieldDefinition::MaxMagnitude + 1.0f;
 		OutsideLimits[6].Frequency = 0.0f;
 		OutsideLimits[7].Frequency = -1.0f;
 		OutsideLimits[8].Frequency = FEffectForceFieldDefinition::MaxMagnitude + 1.0f;
-		OutsideLimits[9].Frequency = std::numeric_limits<float32>::infinity();
+		OutsideLimits[9].Frequency = TNumericLimits<float32>::Infinity();
 		OutsideLimits[10].ScrollSpeed = FEffectForceFieldDefinition::MaxMagnitude + 1.0f;
 		OutsideLimits[11].ScrollSpeed = -FEffectForceFieldDefinition::MaxMagnitude - 1.0f;
-		OutsideLimits[12].ScrollSpeed = std::numeric_limits<float32>::infinity();
+		OutsideLimits[12].ScrollSpeed = TNumericLimits<float32>::Infinity();
 		for ( const FEffectForceFieldDefinition& Invalid : OutsideLimits ) bLimitsValid = bLimitsValid && !Invalid.IsValidSettings() && !Invalid.Validate().IsEmpty() && Near3( Invalid.EvaluateAcceleration( FVector3::Zero ), FVector3::Zero ); // 各範囲外設定を確認
 		// 加速度・中心・回転軸ベクトルの範囲外設定。
 		FEffectForceFieldDefinition OutsideVectors[14];
@@ -178,11 +180,11 @@ namespace
 			if ( Axis == 1 ) OutsideVectors[Axis + 6].Axis.y = FEffectForceFieldDefinition::MaxMagnitude + 1.0f;
 			if ( Axis == 2 ) OutsideVectors[Axis + 6].Axis.z = FEffectForceFieldDefinition::MaxMagnitude + 1.0f;
 		}
-		OutsideVectors[9].Acceleration.y = std::numeric_limits<float32>::infinity();
-		OutsideVectors[10].Position.z = -std::numeric_limits<float32>::infinity();
+		OutsideVectors[9].Acceleration.y = TNumericLimits<float32>::Infinity();
+		OutsideVectors[10].Position.z = -TNumericLimits<float32>::Infinity();
 		OutsideVectors[11].Axis = FVector3::Zero;
 		OutsideVectors[12].Axis = FVector3( 1.0e-7f, 0.0f, 0.0f );
-		OutsideVectors[13].Axis.x = std::numeric_limits<float32>::infinity();
+		OutsideVectors[13].Axis.x = TNumericLimits<float32>::Infinity();
 		for ( const FEffectForceFieldDefinition& Invalid : OutsideVectors ) bLimitsValid = bLimitsValid && !Invalid.IsValidSettings() && !Invalid.Validate().IsEmpty() && Near3( Invalid.EvaluateAcceleration( FVector3::Zero ), FVector3::Zero ); // 全ベクトル成分を確認
 		C.Check( bLimitsValid && MaxSettings.Validate().IsEmpty(), "field settings accept the exact magnitude boundary and reject invalid radius, strength, frequency, scroll speed, and vector bounds" );
 
@@ -411,7 +413,7 @@ namespace
 		const float32 SecondPullAcceleration = -8.0f * ( 1.0f - FirstPullPosition / 4.0f ); // 現位置の減衰を含む引力
 		const float32 SecondPullVelocity = FirstPullVelocity + SecondPullAcceleration * 0.125f; // 二回目の更新後の速度
 		const float32 SecondPullPosition = FirstPullPosition + SecondPullVelocity * 0.125f; // 二回目の更新後の位置
-		C.Check( std::fabs( PullSim.Emitters[0].Particles[0].Velocity.x - SecondPullVelocity ) < 1.0e-5f && std::fabs( DrawPosition( PullSim ).x - SecondPullPosition ) < 1.0e-5f, "radial motion uses the current particle position and the specified linear falloff" );
+		C.Check( NMath::Abs( PullSim.Emitters[0].Particles[0].Velocity.x - SecondPullVelocity ) < 1.0e-5f && NMath::Abs( DrawPosition( PullSim ).x - SecondPullPosition ) < 1.0e-5f, "radial motion uses the current particle position and the specified linear falloff" );
 
 		// 17番目以降は保存されるが、実行時には上限内の場だけを足す。
 		FParticleEmitterDefinition Limited = QuietEmitter(); // 力場数の上限を試すエミッター
@@ -430,7 +432,7 @@ namespace
 		NParticle::Start( LimitedSim, MakeEffect( { Limited } ) );
 		NParticle::Advance( LimitedSim, 0.125f );
 		NParticle::Advance( LimitedSim, 0.125f );
-		C.Check( Limited.ForceFields.Num() == FEffectForceFieldDefinition::MaxFields + 1 && std::fabs( LimitedSim.Emitters[0].Particles[0].Velocity.x - 2.0f ) < 1.0e-5f && std::fabs( DrawPosition( LimitedSim ).x - 0.25f ) < 1.0e-5f, "only the first MaxFields force fields affect particle motion" );
+		C.Check( Limited.ForceFields.Num() == FEffectForceFieldDefinition::MaxFields + 1 && NMath::Abs( LimitedSim.Emitters[0].Particles[0].Velocity.x - 2.0f ) < 1.0e-5f && NMath::Abs( DrawPosition( LimitedSim ).x - 0.25f ) < 1.0e-5f, "only the first MaxFields force fields affect particle motion" );
 
 		// Local粒子では現ワールド位置で評価してから逆回転し、translation/scaleを加速度へ混ぜない。
 		FParticleEmitterDefinition LocalField = QuietEmitter(); // Local粒子を出すエミッター
@@ -463,7 +465,7 @@ namespace
 		NParticle::Start( FastSim, MakeEffect( { Fast } ), 0, 1.5f, 2.0f );
 		NParticle::Advance( FastSim, 0.125f );
 		NParticle::Advance( FastSim, 0.125f );
-		C.Check( std::fabs( FastSim.Emitters[0].Particles[0].Velocity.y - 1.0f ) < 1.0e-5f && std::fabs( DrawPosition( FastSim ).y - 0.25f ) < 1.0e-5f, "play Speed scales elapsed time for force acceleration and movement" );
+		C.Check( NMath::Abs( FastSim.Emitters[0].Particles[0].Velocity.y - 1.0f ) < 1.0e-5f && NMath::Abs( DrawPosition( FastSim ).y - 0.25f ) < 1.0e-5f, "play Speed scales elapsed time for force acceleration and movement" );
 
 		// 停止後も残粒子だけは力を受け、即時停止は残粒子を消す。
 		FParticleEmitterDefinition Stoppable = QuietEmitter(); // 停止後の残粒子を出すエミッター
@@ -481,7 +483,7 @@ namespace
 		NParticle::Start( ImmediateStop, StopDefinition );
 		NParticle::Advance( ImmediateStop, 0.125f );
 		NParticle::Stop( ImmediateStop, true );
-		C.Check( GracefulStop.GetNumParticles() == 1 && std::fabs( GracefulStop.Emitters[0].Particles[0].Velocity.y - 0.5f ) < 1.0e-5f && std::fabs( DrawPosition( GracefulStop ).y - 0.0625f ) < 1.0e-5f && ImmediateStop.GetNumParticles() == 0 && ImmediateStop.IsFinished(), "Stop(false) keeps force-driven particles alive while Stop(true) removes them" );
+		C.Check( GracefulStop.GetNumParticles() == 1 && NMath::Abs( GracefulStop.Emitters[0].Particles[0].Velocity.y - 0.5f ) < 1.0e-5f && NMath::Abs( DrawPosition( GracefulStop ).y - 0.0625f ) < 1.0e-5f && ImmediateStop.GetNumParticles() == 0 && ImmediateStop.IsFinished(), "Stop(false) keeps force-driven particles alive while Stop(true) removes them" );
 
 		// 有限でも位置をfloatの範囲外へ押し出す力場は、その刻みだけ従来の重力計算へ戻す。
 		FParticleEmitterDefinition Overflow = QuietEmitter(); // 予測位置が範囲外になるエミッター
@@ -495,7 +497,7 @@ namespace
 		NParticle::Advance( OverflowSim, 0.125f );
 		NParticle::Advance( OverflowSim, 1.0e20f );
 		const FParticle& OverflowParticle = OverflowSim.Emitters[0].Particles[0]; // 更新後の粒子
-		C.Check( std::isfinite( OverflowParticle.Position.x ) && std::isfinite( OverflowParticle.Velocity.x ) && OverflowParticle.Position.x == 0.0f && OverflowParticle.Velocity.x == 0.0f, "a finite field acceleration cannot overflow the particle position; the invalid field contribution is skipped for that step" );
+		C.Check( NMath::IsFinite( OverflowParticle.Position.x ) && NMath::IsFinite( OverflowParticle.Velocity.x ) && OverflowParticle.Position.x == 0.0f && OverflowParticle.Velocity.x == 0.0f, "a finite field acceleration cannot overflow the particle position; the invalid field contribution is skipped for that step" );
 	}
 
 	//=========================================================================
@@ -788,7 +790,7 @@ namespace
 		for ( int32 K = 1; K <= 4; ++K )
 		{
 			NParticle::Advance( Flipped, 0.125f );
-			bFalls = bFalls && std::fabs( DrawPosition( Flipped ).y - FallHeight( 5.0, -10.0, 0.125, K ) ) < 1.0e-3;
+			bFalls = bFalls && NMath::Abs( DrawPosition( Flipped ).y - FallHeight( 5.0, -10.0, 0.125, K ) ) < 1.0e-3;
 		}
 		C.Check( bFalls, "gravity keeps the world's direction for a Local particle of an effect turned by 90 degrees (it falls, following the same formula)" );
 
@@ -804,13 +806,13 @@ namespace
 		NParticle::Advance( Big, 0.125f );
 		TArray<NParticle::FDrawParticle> Drawn;
 		NParticle::CollectDrawParticles( Big, Drawn );
-		C.Check( std::fabs( NParticle::GetEffectScale( Big ) - 3.0f ) < 1.0e-5f && Drawn.Num() == 1 && std::fabs( Drawn[0].Size - 0.6f ) < 1.0e-5f && std::fabs( Big.Emitters[0].Particles[0].Velocity.y - 6.0f ) < 1.0e-4f, "scale 2 of the object x 1.5 of the player = 3 on size (0.6) and speed (6)" );
+		C.Check( NMath::Abs( NParticle::GetEffectScale( Big ) - 3.0f ) < 1.0e-5f && Drawn.Num() == 1 && NMath::Abs( Drawn[0].Size - 0.6f ) < 1.0e-5f && NMath::Abs( Big.Emitters[0].Particles[0].Velocity.y - 6.0f ) < 1.0e-4f, "scale 2 of the object x 1.5 of the player = 3 on size (0.6) and speed (6)" );
 		FParticleSimulation Mixed;
 		NParticle::Start( Mixed, MakeEffect( { Z } ) );
 		Mixed.Transform = FTransform( FVector3::Zero, FQuaternion::Identity, FVector3( 1.0f, -2.0f, 3.0f ) );
-		C.Check( std::fabs( NParticle::GetEffectScale( Mixed ) - 2.0f ) < 1.0e-5f, "a non-uniform scale (1, -2, 3) uses the mean of the absolute values (2)" );
-		Mixed.Transform = FTransform( FVector3::Zero, FQuaternion::Identity, FVector3( std::numeric_limits<float32>::quiet_NaN(), 1.0f, 1.0f ) );
-		C.Check( std::isfinite( NParticle::GetEffectScale( Mixed ) ), "a scale that is not a number does not spoil the size" );
+		C.Check( NMath::Abs( NParticle::GetEffectScale( Mixed ) - 2.0f ) < 1.0e-5f, "a non-uniform scale (1, -2, 3) uses the mean of the absolute values (2)" );
+		Mixed.Transform = FTransform( FVector3::Zero, FQuaternion::Identity, FVector3( TNumericLimits<float32>::QuietNaN(), 1.0f, 1.0f ) );
+		C.Check( NMath::IsFinite( NParticle::GetEffectScale( Mixed ) ), "a scale that is not a number does not spoil the size" );
 	}
 
 	//=========================================================================
@@ -842,13 +844,13 @@ namespace
 		bool bUnit = true;
 		for ( const FParticle& P : Spread.Emitters[0].Particles )
 		{
-			const float32 Dot = std::clamp( P.Velocity.x, -1.0f, 1.0f );
-			MaxAngle = std::max( MaxAngle, std::acos( Dot ) );
+			const float32 Dot = NMath::Clamp( P.Velocity.x, -1.0f, 1.0f );
+			MaxAngle = NMath::Max( MaxAngle, std::acos( Dot ) );
 			SumDot += Dot;
-			bUnit = bUnit && std::fabs( P.Velocity.Length() - 1.0f ) < 1.0e-4f;
+			bUnit = bUnit && NMath::Abs( P.Velocity.Length() - 1.0f ) < 1.0e-4f;
 		}
 		const float32 MaxDegrees = MaxAngle * 57.29578f;
-		C.Check( bUnit && MaxDegrees <= 30.01f && MaxDegrees > 25.0f && std::fabs( SumDot / 400.0f - 0.9330f ) < 0.012f, "a cone of 30 degrees: every direction within 30 degrees of the axis, some near the edge, speed kept, and spread evenly over the solid angle (mean cosine (1 + cos 30) / 2 = 0.933) (largest %.1f degrees, mean cosine %.3f)", MaxDegrees, SumDot / 400.0f );
+		C.Check( bUnit && MaxDegrees <= 30.01f && MaxDegrees > 25.0f && NMath::Abs( SumDot / 400.0f - 0.9330f ) < 0.012f, "a cone of 30 degrees: every direction within 30 degrees of the axis, some near the edge, speed kept, and spread evenly over the solid angle (mean cosine (1 + cos 30) / 2 = 0.933) (largest %.1f degrees, mean cosine %.3f)", MaxDegrees, SumDot / 400.0f );
 
 		Cone.ConeAngle = 180.0f;
 		FParticleSimulation Everywhere;
@@ -866,13 +868,13 @@ namespace
 		float32 FarthestDisk = 0.0f, SumSquare = 0.0f;
 		for ( const FParticle& P : Disk.Emitters[0].Particles )
 		{
-			bInDisk = bInDisk && std::fabs( P.Position.x ) < 1.0e-4f;   // 軸は X
+			bInDisk = bInDisk && NMath::Abs( P.Position.x ) < 1.0e-4f;   // 軸は X
 			const float32 Distance = FVector3( 0.0f, P.Position.y, P.Position.z ).Length();
-			FarthestDisk = std::max( FarthestDisk, Distance );
+			FarthestDisk = NMath::Max( FarthestDisk, Distance );
 			SumSquare += Distance * Distance;
 		}
 		const float32 MeanSquare = SumSquare / 400.0f / 4.0f;   // 半径 2 の 2 乗で割る。面積に対して一様なら 1/2
-		C.Check( bInDisk && FarthestDisk <= 2.001f && FarthestDisk > 1.7f && std::fabs( MeanSquare - 0.5f ) < 0.06f, "a cone base of radius 2 puts the particles in a disk across the axis, evenly over its area (farthest %.2f, mean of distance^2 / radius^2 %.3f, 0.5 expected)", FarthestDisk, MeanSquare );
+		C.Check( bInDisk && FarthestDisk <= 2.001f && FarthestDisk > 1.7f && NMath::Abs( MeanSquare - 0.5f ) < 0.06f, "a cone base of radius 2 puts the particles in a disk across the axis, evenly over its area (farthest %.2f, mean of distance^2 / radius^2 %.3f, 0.5 expected)", FarthestDisk, MeanSquare );
 
 		// 球: 球の中から、中心の外向きへ
 		FParticleEmitterDefinition Ball = QuietEmitter();
@@ -888,14 +890,14 @@ namespace
 		for ( const FParticle& P : Sphere.Emitters[0].Particles )
 		{
 			const float32 Distance = P.Position.Length();
-			FarthestBall = std::max( FarthestBall, Distance );
+			FarthestBall = NMath::Max( FarthestBall, Distance );
 			SumDistance += Distance;
 			Outside15 += Distance > 1.5f ? 1 : 0;
 			if ( Distance > 0.01f ) bOutward = bOutward && Near3( P.Position / Distance, P.Velocity / 3.0f, 1.0e-3f );
-			bOutward = bOutward && std::fabs( P.Velocity.Length() - 3.0f ) < 1.0e-3f;
+			bOutward = bOutward && NMath::Abs( P.Velocity.Length() - 3.0f ) < 1.0e-3f;
 		}
 		const float32 MeanDistance = SumDistance / 400.0f / 2.0f;   // 半径で割る。体積に対して一様なら 3/4
-		C.Check( bOutward && FarthestBall <= 2.001f && Outside15 > 180 && std::fabs( MeanDistance - 0.75f ) < 0.04f, "a sphere of radius 2: inside it, evenly over its volume, moving straight away from the centre at the given speed (farthest %.2f, %d beyond 1.5, mean distance / radius %.3f, 0.75 expected)", FarthestBall, Outside15, MeanDistance );
+		C.Check( bOutward && FarthestBall <= 2.001f && Outside15 > 180 && NMath::Abs( MeanDistance - 0.75f ) < 0.04f, "a sphere of radius 2: inside it, evenly over its volume, moving straight away from the centre at the given speed (farthest %.2f, %d beyond 1.5, mean distance / radius %.3f, 0.75 expected)", FarthestBall, Outside15, MeanDistance );
 
 		// 箱: 箱の中から、軸の向きへ
 		FParticleEmitterDefinition Box = QuietEmitter();
@@ -909,11 +911,11 @@ namespace
 		float32 MaxX = 0.0f, MaxY = 0.0f, MaxZ = 0.0f;
 		for ( const FParticle& P : Crate.Emitters[0].Particles )
 		{
-			bInBox = bInBox && std::fabs( P.Position.x ) <= 1.001f && std::fabs( P.Position.y ) <= 2.001f && std::fabs( P.Position.z ) <= 3.001f;
+			bInBox = bInBox && NMath::Abs( P.Position.x ) <= 1.001f && NMath::Abs( P.Position.y ) <= 2.001f && NMath::Abs( P.Position.z ) <= 3.001f;
 			bUp = bUp && Near3( P.Velocity, FVector3( 0.0f, 1.0f, 0.0f ), 1.0e-4f );
-			MaxX = std::max( MaxX, std::fabs( P.Position.x ) );
-			MaxY = std::max( MaxY, std::fabs( P.Position.y ) );
-			MaxZ = std::max( MaxZ, std::fabs( P.Position.z ) );
+			MaxX = NMath::Max( MaxX, NMath::Abs( P.Position.x ) );
+			MaxY = NMath::Max( MaxY, NMath::Abs( P.Position.y ) );
+			MaxZ = NMath::Max( MaxZ, NMath::Abs( P.Position.z ) );
 		}
 		C.Check( bInBox && bUp && MaxX > 0.8f && MaxY > 1.6f && MaxZ > 2.4f, "a box of 2 x 4 x 6: inside it, filling it, moving along the axis (largest %.2f, %.2f, %.2f)", MaxX, MaxY, MaxZ );
 
@@ -930,7 +932,7 @@ namespace
 			Emit( Up, Sim );
 			bool bGood = Sim.GetNumParticles() == 50;
 			const FVector3 Unit = Axis.Normalized();
-			for ( const FParticle& P : Sim.Emitters[0].Particles ) bGood = bGood && std::isfinite( P.Velocity.x + P.Velocity.y + P.Velocity.z ) && std::fabs( P.Velocity.Length() - 1.0f ) < 1.0e-3f && FVector3::Dot( P.Velocity, Unit ) >= 0.93f && std::fabs( FVector3::Dot( P.Position, Unit ) ) < 1.0e-3f;
+			for ( const FParticle& P : Sim.Emitters[0].Particles ) bGood = bGood && NMath::IsFinite( P.Velocity.x + P.Velocity.y + P.Velocity.z ) && NMath::Abs( P.Velocity.Length() - 1.0f ) < 1.0e-3f && FVector3::Dot( P.Velocity, Unit ) >= 0.93f && NMath::Abs( FVector3::Dot( P.Position, Unit ) ) < 1.0e-3f;
 			C.Check( bGood, "the cone works for an axis near the vertical (%.3f, %.3f, %.3f): finite, unit speed, within 20 degrees, base across the axis", Axis.x, Axis.y, Axis.z );
 		}
 
@@ -950,8 +952,8 @@ namespace
 			float32 Min = 1.0e9f, Max = -1.0e9f, Sum = 0.0f;
 			void Add( float32 V )
 			{
-				Min = std::min( Min, V );
-				Max = std::max( Max, V );
+				Min = NMath::Min( Min, V );
+				Max = NMath::Max( Max, V );
 				Sum += V;
 			}
 		};
@@ -965,7 +967,7 @@ namespace
 			Angle.Add( P.Angle * 57.29578f );
 			Spin.Add( P.Spin * 57.29578f );
 		}
-		const auto Spreads = [&]( const FStat& S, float32 Low, float32 High ) { return S.Min >= Low - 1.0e-3f && S.Max <= High + 1.0e-3f && S.Min < Low + ( High - Low ) * 0.1f && S.Max > High - ( High - Low ) * 0.1f && std::fabs( S.Sum / 400.0f - ( Low + High ) * 0.5f ) < ( High - Low ) * 0.1f; };
+		const auto Spreads = [&]( const FStat& S, float32 Low, float32 High ) { return S.Min >= Low - 1.0e-3f && S.Max <= High + 1.0e-3f && S.Min < Low + ( High - Low ) * 0.1f && S.Max > High - ( High - Low ) * 0.1f && NMath::Abs( S.Sum / 400.0f - ( Low + High ) * 0.5f ) < ( High - Low ) * 0.1f; };
 		C.Check( Spreads( Life, 1.0f, 2.0f ) && Spreads( Speed, 1.0f, 3.0f ) && Spreads( Size, 0.5f, 1.5f ) && Spreads( EndSize, 2.0f, 4.0f ) && Spreads( Angle, 0.0f, 90.0f ) && Spreads( Spin, -10.0f, 10.0f ),
 				 "lifetime, speed, sizes, angle and spin are spread evenly over their ranges (lifetime %.2f..%.2f, speed %.2f..%.2f, size %.2f..%.2f)", Life.Min, Life.Max, Speed.Min, Speed.Max, Size.Min, Size.Max );
 
@@ -978,8 +980,8 @@ namespace
 		float32 SwappedMin = 99.0f, SwappedMax = -99.0f;
 		for ( const FParticle& P : SwappedSim.Emitters[0].Particles )
 		{
-			SwappedMin = std::min( SwappedMin, P.Velocity.Length() );
-			SwappedMax = std::max( SwappedMax, P.Velocity.Length() );
+			SwappedMin = NMath::Min( SwappedMin, P.Velocity.Length() );
+			SwappedMax = NMath::Max( SwappedMax, P.Velocity.Length() );
 		}
 		C.Check( SwappedMin >= 0.999f && SwappedMax <= 3.001f && SwappedMax > 2.5f, "a range written the wrong way round is used the right way round (%.2f..%.2f)", SwappedMin, SwappedMax );
 	}
@@ -1079,8 +1081,8 @@ namespace
 		float32 Low = 9.0f, High = -9.0f;
 		for ( const FParticle& P : Zero.Emitters[0].Particles )
 		{
-			Low = std::min( Low, P.Velocity.Length() );
-			High = std::max( High, P.Velocity.Length() );
+			Low = NMath::Min( Low, P.Velocity.Length() );
+			High = NMath::Max( High, P.Velocity.Length() );
 		}
 		C.Check( High - Low > 0.5f, "an effect whose own seed is 0 still gets varied random numbers (%.2f..%.2f)", Low, High );
 	}
@@ -1104,14 +1106,14 @@ namespace
 		NParticle::Advance( Sim, 0.125f );
 		TArray<NParticle::FDrawParticle> Items;
 		NParticle::CollectDrawParticles( Sim, Items );
-		C.Check( Items.Num() == 1 && Items[0].Size == 1.0f && Items[0].Color.r == 255 && Items[0].Color.g == 0 && Items[0].Color.b == 100 && Items[0].Color.a == 255 && std::fabs( Items[0].Angle - 0.7853982f ) < 1.0e-5f && Items[0].Emitter == 0,
+		C.Check( Items.Num() == 1 && Items[0].Size == 1.0f && Items[0].Color.r == 255 && Items[0].Color.g == 0 && Items[0].Color.b == 100 && Items[0].Color.a == 255 && NMath::Abs( Items[0].Angle - 0.7853982f ) < 1.0e-5f && Items[0].Emitter == 0,
 				 "a newborn particle is drawn with its start size and colour and its angle" );
 		Sim.Emitters[0].Particles[0].Age = 1.0f;   // 寿命の半分
 		NParticle::CollectDrawParticles( Sim, Items );
-		C.Check( Items.Num() == 1 && std::fabs( Items[0].Size - 0.5f ) < 1.0e-5f && Items[0].Color.r == 128 && Items[0].Color.g == 100 && Items[0].Color.b == 100 && Items[0].Color.a == 128, "half way through its life, size and colour (with alpha) are half way between (127.5 rounds to 128)" );
+		C.Check( Items.Num() == 1 && NMath::Abs( Items[0].Size - 0.5f ) < 1.0e-5f && Items[0].Color.r == 128 && Items[0].Color.g == 100 && Items[0].Color.b == 100 && Items[0].Color.a == 128, "half way through its life, size and colour (with alpha) are half way between (127.5 rounds to 128)" );
 		Sim.Emitters[0].Particles[0].Age = 1.5f;
 		NParticle::CollectDrawParticles( Sim, Items );
-		C.Check( Items.Num() == 1 && std::fabs( Items[0].Size - 0.25f ) < 1.0e-5f && Items[0].Color.r == 64 && Items[0].Color.g == 150 && Items[0].Color.a == 64, "three quarters through, a quarter of the way left" );
+		C.Check( Items.Num() == 1 && NMath::Abs( Items[0].Size - 0.25f ) < 1.0e-5f && Items[0].Color.r == 64 && Items[0].Color.g == 150 && Items[0].Color.a == 64, "three quarters through, a quarter of the way left" );
 		Sim.Emitters[0].Particles[0].Age = 5.0f;   // 寿命を超えていても、値は端で止まる
 		NParticle::CollectDrawParticles( Sim, Items );
 		C.Check( Items.Num() == 1 && Items[0].Size == 0.0f && Items[0].Color.r == 0 && Items[0].Color.a == 0, "past its life the values stay at the end (never beyond)" );
@@ -1140,8 +1142,8 @@ namespace
 	void TestRobust( FChecker& C )
 	{
 		C.Group = "effect-sim-robust";
-		const float32 NaN = std::numeric_limits<float32>::quiet_NaN();
-		const float32 Inf = std::numeric_limits<float32>::infinity();
+		const float32 NaN = TNumericLimits<float32>::QuietNaN();
+		const float32 Inf = TNumericLimits<float32>::Infinity();
 
 		FParticleEmitterDefinition E = QuietEmitter();
 		E.Bursts.Add( Burst( 0.0f, 3 ) );
@@ -1173,7 +1175,7 @@ namespace
 		TArray<NParticle::FDrawParticle> Items;
 		NParticle::CollectDrawParticles( Wildest, Items );
 		bool bFinite = Items.Num() == 20;
-		for ( const NParticle::FDrawParticle& P : Items ) bFinite = bFinite && std::isfinite( P.Position.x + P.Position.y + P.Position.z + P.Size + P.Angle ) && P.Size >= 0.0f && Near3( P.Position, FVector3::Zero );
+		for ( const NParticle::FDrawParticle& P : Items ) bFinite = bFinite && NMath::IsFinite( P.Position.x + P.Position.y + P.Position.z + P.Size + P.Angle ) && P.Size >= 0.0f && Near3( P.Position, FVector3::Zero );
 		C.Check( bFinite, "an effect full of bad values still makes its particles with finite positions and sizes, bad numbers taken as 0 (%d particles)", Items.Num() );
 		Run( Wildest, 0.125f, 4 );
 		C.Check( Wildest.GetNumParticles() == 0 && Wildest.IsFinished() == false, "and they die at once (the lifetime was raised to a tiny positive one), while the endless effect goes on" );
@@ -1216,15 +1218,15 @@ namespace
 		// 有限の最大値や大きな一括生成でも、整数の範囲や空き数を超えて処理しない。
 		FParticleEmitterDefinition Flood = QuietEmitter();
 		Flood.MaxParticles = 1;
-		Flood.Rate = std::numeric_limits<float32>::max();
+		Flood.Rate = TNumericLimits<float32>::Max();
 		Flood.Lifetime = { 0.25f, 0.25f };
-		Flood.Bursts.Add( Burst( 0.0f, std::numeric_limits<int32>::max() ) );
-		Flood.Bursts.Add( Burst( 0.0f, std::numeric_limits<int32>::max() ) );
+		Flood.Bursts.Add( Burst( 0.0f, TNumericLimits<int32>::Max() ) );
+		Flood.Bursts.Add( Burst( 0.0f, TNumericLimits<int32>::Max() ) );
 		// 空きが一つしかない再生状態。
 		FParticleSimulation Flooded;
 		NParticle::Start( Flooded, MakeEffect( { Flood } ) );
 		NParticle::Advance( Flooded, 0.125f );
-		C.Check( Flooded.GetNumParticles() == 1 && Flooded.Emitters[0].BurstsDone == 2 && std::isfinite( Flooded.Emitters[0].Carry ) && Flooded.Emitters[0].Carry == 0.0, "巨大な生成速度と最大数の一括生成でも、一つの空きだけを埋めて余剰を捨てる" );
+		C.Check( Flooded.GetNumParticles() == 1 && Flooded.Emitters[0].BurstsDone == 2 && NMath::IsFinite( Flooded.Emitters[0].Carry ) && Flooded.Emitters[0].Carry == 0.0, "巨大な生成速度と最大数の一括生成でも、一つの空きだけを埋めて余剰を捨てる" );
 		NParticle::Advance( Flooded, 0.125f );
 		C.Check( Flooded.GetNumParticles() == 1 && Flooded.Emitters[0].Particles[0].Age == 0.125f, "上限に達した後も、捨てる生成数だけ反復せず既存の粒子を進める" );
 		NParticle::Advance( Flooded, 0.125f );
@@ -1232,13 +1234,13 @@ namespace
 
 		// 速度との積が有限でなくなった刻みは、通常の刻みと混ぜない。
 		FParticleSimulation OverflowedTime;
-		NParticle::Start( OverflowedTime, MakeEffect( { E } ), 0, 1.0f, std::numeric_limits<float32>::max() );
+		NParticle::Start( OverflowedTime, MakeEffect( { E } ), 0, 1.0f, TNumericLimits<float32>::Max() );
 		NParticle::Advance( OverflowedTime, 2.0f );
 		C.Check( OverflowedTime.Time == 0.0f && OverflowedTime.GetNumParticles() == 0, "刻みが有限でも再生速度との積が範囲を超えたら進めない" );
 		OverflowedTime.Speed = 1.0f;
-		OverflowedTime.Time = std::numeric_limits<float32>::max();
-		NParticle::Advance( OverflowedTime, std::numeric_limits<float32>::max() );
-		C.Check( OverflowedTime.Time == std::numeric_limits<float32>::max() && OverflowedTime.GetNumParticles() == 0, "現在時刻と刻みの和が範囲を超える場合も状態を保持する" );
+		OverflowedTime.Time = TNumericLimits<float32>::Max();
+		NParticle::Advance( OverflowedTime, TNumericLimits<float32>::Max() );
+		C.Check( OverflowedTime.Time == TNumericLimits<float32>::Max() && OverflowedTime.GetNumParticles() == 0, "現在時刻と刻みの和が範囲を超える場合も状態を保持する" );
 	}
 
 	//=========================================================================

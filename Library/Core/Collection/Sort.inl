@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "Library/Core/Types/Utility.h"
+
 // Sort.h の大きなテンプレート関数の定義（インライン展開しても速くならないのでクラス定義から分離）
 // Sort.h の末尾から include される。直接 include しない
 
@@ -10,14 +12,14 @@ void NAlgo::NSortDetail::InsertionSort( T* First, int32 Num, P& Pred )
 	{
 		if ( !Pred( First[i], First[i - 1] ) ) continue;
 
-		T Temp = std::move( First[i] );
+		T Temp = MoveTemp( First[i] );
 		int32 j = i;
 		do
 		{
-			First[j] = std::move( First[j - 1] );
+			First[j] = MoveTemp( First[j - 1] );
 			--j;
 		} while ( j > 0 && Pred( Temp, First[j - 1] ) );
-		First[j] = std::move( Temp );
+		First[j] = MoveTemp( Temp );
 	}
 }
 
@@ -97,16 +99,16 @@ void NAlgo::NSortDetail::MergeSort( T* First, int32 Num, T* Buffer, P& Pred )
 	if ( !Pred( First[Half], First[Half - 1] ) ) return;
 
 	// 左半分を退避してから先頭へ書き戻しながらマージ
-	for ( int32 k = 0; k < Half; ++k ) new ( Buffer + k ) T( std::move( First[k] ) );
+	for ( int32 k = 0; k < Half; ++k ) new ( Buffer + k ) T( MoveTemp( First[k] ) );
 
 	int32 L = 0, R = Half, Out = 0;
 	while ( L < Half && R < Num )
 	{
 		// 等しければ左を優先（安定）
-		if ( Pred( First[R], Buffer[L] ) ) First[Out++] = std::move( First[R++] );
-		else First[Out++] = std::move( Buffer[L++] );
+		if ( Pred( First[R], Buffer[L] ) ) First[Out++] = MoveTemp( First[R++] );
+		else First[Out++] = MoveTemp( Buffer[L++] );
 	}
-	while ( L < Half ) First[Out++] = std::move( Buffer[L++] );
+	while ( L < Half ) First[Out++] = MoveTemp( Buffer[L++] );
 
 	NMemoryOps::DestructItems( Buffer, Half );
 }

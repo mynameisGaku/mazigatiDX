@@ -6,6 +6,8 @@
 #include <cstring>
 #include <utility>
 
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/DebugUI/EffectEditor.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Effect/ParticleEffectBackend.h"
@@ -55,7 +57,7 @@ namespace
 					Ribbon.MaterialPoints[Index] = *Point;
 					Ribbon.Points[Index] = Point->Path;
 				}
-				Result.Add( std::move( Ribbon ) );
+				Result.Add( MoveTemp( Ribbon ) );
 				return;
 			}
 			if ( Command.Type != EDrawCommand::Ribbon3D || Command.NumDataWords * 4 < static_cast<int32>( sizeof( FDrawRibbonData ) ) ) return;
@@ -70,7 +72,7 @@ namespace
 			Ribbon.Header = Header;
 			Ribbon.Points.SetNum( Header.NumPoints );
 			std::memcpy( Ribbon.Points.GetData(), reinterpret_cast<const uint8*>( Command.Data ) + sizeof( Header ), static_cast<usize>( Ribbon.Points.Num() ) * sizeof( FDrawRibbonData::FPoint ) );
-			Result.Add( std::move( Ribbon ) );
+			Result.Add( MoveTemp( Ribbon ) );
 		} );
 		return Result;
 	}
@@ -105,7 +107,7 @@ namespace
 	// 非負RGBA値を既存byte化と同じ四捨五入で範囲内へ丸める。
 	uint8 ExpectedByte( float32 Value )
 	{
-		return static_cast<uint8>( std::clamp( static_cast<int32>( std::floor( std::clamp( Value, 0.0f, 255.0f ) + 0.5f ) ), 0, 255 ) );
+		return static_cast<uint8>( NMath::Clamp( static_cast<int32>( std::floor( NMath::Clamp( Value, 0.0f, 255.0f ) + 0.5f ) ), 0, 255 ) );
 	}
 
 	// packed RGBAの各成分がbyte丸め差以内で一致するかを比べる。
@@ -119,7 +121,7 @@ namespace
 			const int32 ActualValue = static_cast<int32>( ( Actual >> Shift ) & 0xFFu );
 			// 独立式で求めた成分。
 			const int32 ExpectedValue = static_cast<int32>( ( Expected >> Shift ) & 0xFFu );
-			if ( std::abs( ActualValue - ExpectedValue ) > Tolerance ) return false;
+			if ( NMath::Abs( ActualValue - ExpectedValue ) > Tolerance ) return false;
 		}
 		return true;
 	}
@@ -289,8 +291,8 @@ void NWorldTest::RunEffectAppearanceBoundaryTests( NAssetTest::FChecker& C, CAss
 			const auto& Points = SavedRibbons[0].Points;
 			// 原点の粒子を示す点番号。
 			int32 OriginIndex = INDEX_NONE;
-			for ( int32 Index = 0; Index < Points.Num(); ++Index ) if ( std::fabs( Points[Index].Pos[0] ) < 1.0e-5f ) OriginIndex = Index;
-			bSavedValues = OriginIndex != INDEX_NONE && std::fabs( Points[OriginIndex].Width - ExpectedWidth ) < 1.0e-4f && Points[OriginIndex].Color == ExpectedColor;
+			for ( int32 Index = 0; Index < Points.Num(); ++Index ) if ( NMath::Abs( Points[Index].Pos[0] ) < 1.0e-5f ) OriginIndex = Index;
+			bSavedValues = OriginIndex != INDEX_NONE && NMath::Abs( Points[OriginIndex].Width - ExpectedWidth ) < 1.0e-4f && Points[OriginIndex].Color == ExpectedColor;
 		}
 		C.Check( bSavedValues, "saved-copy再生が寿命割合0.25の独立式から幅とRGBAを記録する" );
 	}
@@ -367,7 +369,7 @@ void NWorldTest::RunEffectAppearanceBoundaryTests( NAssetTest::FChecker& C, CAss
 				// 1030回の正確な二進刻みから独立に求める秒齢。
 				const double ExpectedAge = static_cast<double>( 1029 - Index ) * 0.125;
 				// 実際の粒子秒齢が固定したstep式と一致するか。
-				bIndependentAges = bIndependentAges && std::fabs( LongParticles[Index].Age - ExpectedAge ) < 1.0e-5;
+				bIndependentAges = bIndependentAges && NMath::Abs( LongParticles[Index].Age - ExpectedAge ) < 1.0e-5;
 				// 独立式の秒齢から寿命割合を求める。
 				const double T = ExpectedAge / 256.0;
 				// 始終端の粒子サイズを補間し独立倍率を掛けた期待幅。
@@ -382,7 +384,7 @@ void NWorldTest::RunEffectAppearanceBoundaryTests( NAssetTest::FChecker& C, CAss
 				const uint8 ExpectedAlpha = ExpectedByte( static_cast<float32>( ( 200.0 - 100.0 * T ) * ( 0.8 - 0.6 * T ) ) );
 				// RGBAをGPU命令のlittle-endian順へまとめる値。
 				const uint32 ExpectedPacked = static_cast<uint32>( ExpectedRed ) | ( static_cast<uint32>( ExpectedGreen ) << 8 ) | ( static_cast<uint32>( ExpectedBlue ) << 16 ) | ( static_cast<uint32>( ExpectedAlpha ) << 24 );
-				bIndependentValues = bIndependentValues && std::fabs( Chunks[0].Points[Index].Width - ExpectedSampleWidth ) < 2.0e-3 && PackedColorNear( Chunks[0].Points[Index].Color, ExpectedPacked, 1 );
+				bIndependentValues = bIndependentValues && NMath::Abs( Chunks[0].Points[Index].Width - ExpectedSampleWidth ) < 2.0e-3 && PackedColorNear( Chunks[0].Points[Index].Color, ExpectedPacked, 1 );
 			}
 			C.Check( bIndependentAges, "長いRibbonのサンプル粒子齢が正確な0.125秒step式に一致する" );
 			C.Check( bIndependentValues, "長いRibbonの離れた3点で独立寿命式から幅と未premultiply RGBAを確認する" );
@@ -439,7 +441,7 @@ void NWorldTest::RunEffectAppearanceBoundaryTests( NAssetTest::FChecker& C, CAss
 		const uint32 OlderColor = 80u << 24 | 45u << 16 | 15u << 8 | 21u;
 		// 新Age=0.25粒子の独立色期待値。
 		const uint32 NewColor = 135u << 24 | 44u << 16 | 25u << 8 | 20u;
-		bDedupLatest = std::fabs( OlderWidth - 3.0 ) < 1.0e-6 && OlderParticle.Size == 3.0f && OlderParticle.Color.r == 21 && OlderParticle.Color.g == 15 && OlderParticle.Color.b == 45 && OlderParticle.Color.a == 80 && std::fabs( LatestParticle.Size - NewWidth ) < 1.0e-4 && LatestParticle.Color.r == 20 && LatestParticle.Color.g == 25 && LatestParticle.Color.b == 44 && LatestParticle.Color.a == 135 && std::fabs( Merged.Width - NewWidth ) < 1.0e-4 && Merged.Color == NewColor && OlderColor != NewColor;
+		bDedupLatest = NMath::Abs( OlderWidth - 3.0 ) < 1.0e-6 && OlderParticle.Size == 3.0f && OlderParticle.Color.r == 21 && OlderParticle.Color.g == 15 && OlderParticle.Color.b == 45 && OlderParticle.Color.a == 80 && NMath::Abs( LatestParticle.Size - NewWidth ) < 1.0e-4 && LatestParticle.Color.r == 20 && LatestParticle.Color.g == 25 && LatestParticle.Color.b == 44 && LatestParticle.Color.a == 135 && NMath::Abs( Merged.Width - NewWidth ) < 1.0e-4 && Merged.Color == NewColor && OlderColor != NewColor;
 	}
 	C.Check( bDedupLatest, "dedup後はAge0.25の新粒子の幅1.875とRGBA(20,25,44,135)を選ぶ" );
 	DedupTrail.Reset();

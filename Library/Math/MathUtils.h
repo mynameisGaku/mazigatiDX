@@ -2,8 +2,10 @@
 #include "Library/Core/Types/CompilerMacros.h"
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"   // DxLib の型 (VECTOR / MATRIX など) との変換用
 #include "Library/Core/Collection/String.h"       // ToString 用
+#include "Library/Core/Types/Numeric.h"   // NMath::Abs / Min / Max / Clamp / Sign / Square / IsFinite など
 #include "Library/Math/MathConstants.h"
 
 //=============================================================================
@@ -13,27 +15,9 @@
 namespace NMath
 {
 	//-------------------------------------------------------------------------
-	// 基本
+	// 基本（Abs / Min / Max / Clamp / Sign / Square は Core/Types/Numeric.h）
 	//-------------------------------------------------------------------------
-	template<typename T>
-	FORCEINLINE constexpr T Abs( T Value ) { return Value < T( 0 ) ? -Value : Value; }
-
-	template<typename T>
-	FORCEINLINE constexpr T Min( T A, T B ) { return B < A ? B : A; }
-
-	template<typename T>
-	FORCEINLINE constexpr T Max( T A, T B ) { return A < B ? B : A; }
-
-	template<typename T>
-	FORCEINLINE constexpr T Clamp( T Value, T Low, T High ) { return Value < Low ? Low : ( High < Value ? High : Value ); }
-
 	FORCEINLINE constexpr float32 Saturate( float32 Value ) { return Clamp( Value, 0.0f, 1.0f ); }
-
-	template<typename T>
-	FORCEINLINE constexpr T Sign( T Value ) { return Value > T( 0 ) ? T( 1 ) : ( Value < T( 0 ) ? T( -1 ) : T( 0 ) ); }
-
-	template<typename T>
-	FORCEINLINE constexpr T Square( T Value ) { return Value * Value; }
 
 	//-------------------------------------------------------------------------
 	// 補間
@@ -62,8 +46,8 @@ namespace NMath
 	//-------------------------------------------------------------------------
 	// 比較
 	//-------------------------------------------------------------------------
-	FORCEINLINE bool IsNearlyEqual( float32 A, float32 B, float32 Tolerance = Epsilon ) { return std::fabs( A - B ) <= Tolerance; }
-	FORCEINLINE bool IsNearlyZero( float32 Value, float32 Tolerance = Epsilon ) { return std::fabs( Value ) <= Tolerance; }
+	FORCEINLINE bool IsNearlyEqual( float32 A, float32 B, float32 Tolerance = Epsilon ) { return NMath::Abs( A - B ) <= Tolerance; }
+	FORCEINLINE bool IsNearlyZero( float32 Value, float32 Tolerance = Epsilon ) { return NMath::Abs( Value ) <= Tolerance; }
 
 	//-------------------------------------------------------------------------
 	// 冪・平方根

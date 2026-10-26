@@ -5,6 +5,7 @@
 
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Audio/AudioTypes.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
@@ -40,15 +41,15 @@ bool CDxLibAudioBackend::IsPlaying( int32 Voice )
 void CDxLibAudioBackend::SetVolume( int32 Voice, float32 Volume )
 {
 	// DxLib の値は 0（無音）..10000（元の大きさ）で、100 分の 1 デシベル単位
-	const int32 Pal = std::clamp( 10000 + NAudio::VolumeToDecibel100( std::min( Volume, 1.0f ) ), 0, 10000 );
+	const int32 Pal = NMath::Clamp( 10000 + NAudio::VolumeToDecibel100( NMath::Min( Volume, 1.0f ) ), 0, 10000 );
 	SetVolumeSoundMem( Pal, Voice );
 }
 
 void CDxLibAudioBackend::SetPan( int32 Voice, float32 Pan )
 {
 	// 遠い側の音量を (1 - |Pan|) 倍にする。DxLib の値は、正で右寄り・負で左寄り（100 分の 1 デシベル単位）
-	const float32 Far = std::max( 1.0f - std::fabs( Pan ), 1.0e-5f );
-	const int32 Attenuation = std::min( 10000, static_cast<int32>( std::lround( -2000.0f * std::log10( Far ) ) ) );
+	const float32 Far = NMath::Max( 1.0f - NMath::Abs( Pan ), 1.0e-5f );
+	const int32 Attenuation = NMath::Min( 10000, static_cast<int32>( std::lround( -2000.0f * std::log10( Far ) ) ) );
 	SetPanSoundMem( Pan >= 0.0f ? Attenuation : -Attenuation, Voice );
 }
 
@@ -56,10 +57,10 @@ void CDxLibAudioBackend::SetPitch( int32 Voice, float32 Pitch )
 {
 	// 元の周波数を基準にする（前に変えた周波数を基準にしない）
 	ResetFrequencySoundMem( Voice );
-	if ( std::fabs( Pitch - 1.0f ) < 1.0e-4f ) return;
+	if ( NMath::Abs( Pitch - 1.0f ) < 1.0e-4f ) return;
 
 	const int Base = GetFrequencySoundMem( Voice );
-	if ( Base > 0 ) SetFrequencySoundMem( std::clamp( static_cast<int>( std::lround( static_cast<float64>( Base ) * Pitch ) ), 100, 100000 ), Voice );
+	if ( Base > 0 ) SetFrequencySoundMem( NMath::Clamp( static_cast<int>( std::lround( static_cast<float64>( Base ) * Pitch ) ), 100, 100000 ), Voice );
 }
 
 float32 CDxLibAudioBackend::GetPlayPosition( int32 Voice )
@@ -69,5 +70,5 @@ float32 CDxLibAudioBackend::GetPlayPosition( int32 Voice )
 
 void CDxLibAudioBackend::SetPlayPosition( int32 Voice, float32 Seconds )
 {
-	SetSoundCurrentTime( static_cast<LONGLONG>( std::max( Seconds, 0.0f ) * 1000.0f ), Voice );
+	SetSoundCurrentTime( static_cast<LONGLONG>( NMath::Max( Seconds, 0.0f ) * 1000.0f ), Voice );
 }

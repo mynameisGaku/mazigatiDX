@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
+
 namespace
 {
 	constexpr float32 MinStepDuration = 1.0e-4f;
@@ -40,7 +42,7 @@ FAnimTimeline FAnimTimeline::Build( const TArray<float32>& Durations, EAnimLoopM
 	float32 Time = 0.0f;
 	auto AddStep = [&]( int32 Source )
 	{
-		Time += std::max( Durations[Source], MinStepDuration );
+		Time += NMath::Max( Durations[Source], MinStepDuration );
 		Timeline.StepSource.Add( Source );
 		Timeline.StepEnd.Add( Time );
 	};
@@ -69,7 +71,7 @@ FAnimLocation NAnim::Locate( const FAnimTimeline& Timeline, float64 Playhead )
 	float64 Time = Playhead;
 	if ( Timeline.Loop == EAnimLoopMode::Once )
 	{
-		Time = std::clamp( Playhead, 0.0, Total );
+		Time = NMath::Clamp( Playhead, 0.0, Total );
 	}
 	else
 	{
@@ -97,7 +99,7 @@ float32 NAnim::ToClipTime( float64 Playhead, float32 Length, EAnimLoopMode Mode 
 	switch ( Mode )
 	{
 	case EAnimLoopMode::Once:
-		return static_cast<float32>( std::clamp( Playhead, 0.0, L ) );
+		return static_cast<float32>( NMath::Clamp( Playhead, 0.0, L ) );
 	case EAnimLoopMode::Loop:
 		return static_cast<float32>( Playhead - std::floor( Playhead / L ) * L );
 	case EAnimLoopMode::PingPong:
@@ -140,14 +142,14 @@ int32 NAnim::CountMarkerCrossings( float64 FromPlayhead, float64 ToPlayhead, flo
 		if ( !bForward )
 		{
 			// [Low, High): Low ちょうどを含み、High ちょうどを含まない
-			if ( std::fabs( Offset + ( KFirst - 1.0 ) * Period - Low ) < 1.0e-12 ) First = KFirst - 1.0;
-			if ( std::fabs( Offset + KLast * Period - High ) < 1.0e-12 ) Last = KLast - 1.0;
+			if ( NMath::Abs( Offset + ( KFirst - 1.0 ) * Period - Low ) < 1.0e-12 ) First = KFirst - 1.0;
+			if ( NMath::Abs( Offset + KLast * Period - High ) < 1.0e-12 ) Last = KLast - 1.0;
 		}
-		if ( Last >= First ) Count += static_cast<int32>( std::min( Last - First + 1.0, static_cast<float64>( MaxEnumerated ) ) );
+		if ( Last >= First ) Count += static_cast<int32>( NMath::Min( Last - First + 1.0, static_cast<float64>( MaxEnumerated ) ) );
 	};
 	CountSeries( M );
 	if ( Mode == EAnimLoopMode::PingPong && M > 0.0 && M < L ) CountSeries( 2.0 * L - M );
-	return std::min( Count, MaxEnumerated );
+	return NMath::Min( Count, MaxEnumerated );
 }
 
 float32 NAnim::ToNormalized( float64 Playhead, float32 Length, EAnimLoopMode Mode )

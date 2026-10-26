@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "Library/Core/Interfaces/Render/DrawRibbon.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Render/DrawContext.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 
@@ -55,19 +56,19 @@ namespace
 		Points[1] = MakePoint( 1.0f, 0.0f, 0.0f, 1.0f, 1.0f );
 		Draw.Ribbon3D( nullptr, 2, -1 );
 		Draw.Ribbon3D( Points, -1, -1 );
-		Draw.Ribbon3D( Points, ( std::numeric_limits<int32>::min )(), -1, 1.0f, FDrawRibbonData::PreviousPoint );
+		Draw.Ribbon3D( Points, TNumericLimits<int32>::Min(), -1, 1.0f, FDrawRibbonData::PreviousPoint );
 		Draw.Ribbon3D( Points, 0, -1 );
 		Draw.Ribbon3D( Points, 1, -1 );
 		Draw.Ribbon3D( Points, FDrawRibbonData::MaxPoints + 1, -1 );
 		Draw.Ribbon3D( Points, 2, -2 );
 		Draw.Ribbon3D( Points, 2, -1, 0.0f );
-		Draw.Ribbon3D( Points, 2, -1, ( std::numeric_limits<float32>::infinity )() );
-		Draw.Ribbon3D( Points, 2, -1, ( std::numeric_limits<float32>::quiet_NaN )() );
+		Draw.Ribbon3D( Points, 2, -1, TNumericLimits<float32>::Infinity() );
+		Draw.Ribbon3D( Points, 2, -1, TNumericLimits<float32>::QuietNaN() );
 		Draw.Ribbon3D( Points, 2, -1, 1.0f, 4 );
 		Draw.Ribbon3D( Points, 2, -1, 1.0f, FDrawRibbonData::PreviousPoint );
 		Draw.Ribbon3D( Points, 2, -1, 1.0f, FDrawRibbonData::PreviousPoint | FDrawRibbonData::NextPoint );
 		C.Check( Draw.GetNumWords() == BeforeInvalid, "点数・画像番号・反復倍率・接続指定が不正な場合は、命令全体を記録しない" );
-		Points[1].Pos[1] = ( std::numeric_limits<float32>::quiet_NaN )();
+		Points[1].Pos[1] = TNumericLimits<float32>::QuietNaN();
 		Draw.Ribbon3D( Points, 2, -1 );
 		Points[1] = MakePoint( 1.0f, 0.0f, 0.0f, -0.1f, 1.0f );
 		Draw.Ribbon3D( Points, 2, -1 );

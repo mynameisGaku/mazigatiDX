@@ -8,6 +8,7 @@
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/HashTable.h"
 #include "Library/Core/Collection/Pair.h"
+#include "Library/Core/Types/Utility.h"
 
 //=============================================================================
 // TMap<K, V>
@@ -96,12 +97,12 @@ public:
 	// 追加（既にあれば上書き）。追加・上書きした値への参照を返す
 	//-------------------------------------------------------------------------
 	FORCEINLINE V& Add( const K& Key, const V& Value ) { return AddImpl( Key, Value ); }
-	FORCEINLINE V& Add( const K& Key, V&& Value ) { return AddImpl( Key, std::move( Value ) ); }
-	FORCEINLINE V& Add( K&& Key, const V& Value ) { return AddImpl( std::move( Key ), Value ); }
-	FORCEINLINE V& Add( K&& Key, V&& Value ) { return AddImpl( std::move( Key ), std::move( Value ) ); }
+	FORCEINLINE V& Add( const K& Key, V&& Value ) { return AddImpl( Key, MoveTemp( Value ) ); }
+	FORCEINLINE V& Add( K&& Key, const V& Value ) { return AddImpl( MoveTemp( Key ), Value ); }
+	FORCEINLINE V& Add( K&& Key, V&& Value ) { return AddImpl( MoveTemp( Key ), MoveTemp( Value ) ); }
 
 	template<typename... Args>
-	FORCEINLINE V& Emplace( const K& Key, Args&&... args ) { return AddImpl( Key, V( std::forward<Args>( args )... ) ); }
+	FORCEINLINE V& Emplace( const K& Key, Args&&... args ) { return AddImpl( Key, V( Forward<Args>( args )... ) ); }
 
 	// あればその値、無ければ値初期化して追加
 	FORCEINLINE V& FindOrAdd( const K& Key )
@@ -177,7 +178,7 @@ public:
 	{
 		const int32 Index = Table.FindIndex( Key );
 		if ( Index == INDEX_NONE ) return false;
-		OutValue = std::move( Table.GetAt( Index ).Value );
+		OutValue = MoveTemp( Table.GetAt( Index ).Value );
 		Table.RemoveAt( Index );
 		return true;
 	}

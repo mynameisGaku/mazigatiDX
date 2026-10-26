@@ -3,6 +3,7 @@
 #include <utility>
 
 #include "Library/Core/Memory/Memory.h"
+#include "Library/Core/Types/Utility.h"
 
 //=============================================================================
 // Algo
@@ -28,9 +29,9 @@ namespace NAlgo
 	FORCEINLINE void Swap( T& A, T& B )
 	{
 		if ( &A == &B ) return;
-		T Temp = std::move( A );
-		A = std::move( B );
-		B = std::move( Temp );
+		T Temp = MoveTemp( A );
+		A = MoveTemp( B );
+		B = MoveTemp( Temp );
 	}
 
 	template<typename T>

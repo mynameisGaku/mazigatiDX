@@ -8,6 +8,7 @@
 
 #include "AssetSelfTestModelSurface.h"
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/WorldEditor.h"
 #include "Library/DebugUI/WorldEditorInternal.h"
 #include "Library/Framework/Animation/ModelAnimator.h"
@@ -114,7 +115,7 @@ namespace NWorldTest
 			for ( int32 Corner = 0; Corner < 3; ++Corner )
 			{
 				const VECTOR Screen = ConvWorldPosToScreenPos( VGet( ObjectX + FrameX + LocalX[Corner], LocalY[Corner], 0.0f ) ); // native投影座標
-				if ( !std::isfinite( Screen.x ) || !std::isfinite( Screen.y ) ) return false;
+				if ( !NMath::IsFinite( Screen.x ) || !NMath::IsFinite( Screen.y ) ) return false;
 				if ( Corner == 0 )
 				{
 					MinX = Screen.x;
@@ -124,10 +125,10 @@ namespace NWorldTest
 				}
 				else
 				{
-					MinX = std::min( MinX, Screen.x );
-					MaxX = std::max( MaxX, Screen.x );
-					MinY = std::min( MinY, Screen.y );
-					MaxY = std::max( MaxY, Screen.y );
+					MinX = NMath::Min( MinX, Screen.x );
+					MaxX = NMath::Max( MaxX, Screen.x );
+					MinY = NMath::Min( MinY, Screen.y );
+					MaxY = NMath::Max( MaxY, Screen.y );
 				}
 			}
 			Out.Left = static_cast<int32>( std::ceil( MinX + 2.0f ) );

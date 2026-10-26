@@ -2,6 +2,7 @@
 #include <cmath>
 #include <limits>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/DefinitionDocument.h"
 #include "Library/Framework/Effect/EffectFlipbookDefinition.h"
 #include "Library/Framework/Effect/ParticleEffect.h"
@@ -143,11 +144,11 @@ namespace
 		FEffectFlipbookDefinition InvalidRootAgain;
 		C.Check( FEffectFlipbookDefinition::FromJson( NlohmannJson::array(), InvalidRoot ) && !InvalidRoot.Validate().IsEmpty() && FEffectFlipbookDefinition::FromJson( NlohmannJson::parse( InvalidRoot.ToJson().dump() ), InvalidRootAgain ) && !InvalidRootAgain.Validate().IsEmpty(), "配列rootを不正状態としてJSON往復後も検証する" );
 		FEffectFlipbookDefinition NonFinite;
-		NonFinite.Speed = std::numeric_limits<float32>::infinity();
+		NonFinite.Speed = TNumericLimits<float32>::Infinity();
 		// 非有限値を書き戻した後の読込先。
 		FEffectFlipbookDefinition NonFiniteAgain;
 		C.Check( !NonFinite.Validate().IsEmpty() && FEffectFlipbookDefinition::FromJson( NlohmannJson::parse( NonFinite.ToJson().dump() ), NonFiniteAgain ) && !NonFiniteAgain.Validate().IsEmpty(), "Inf速度をJSON nullへ書いても検証エラーを保つ" );
-		NonFinite.Speed = std::numeric_limits<float32>::quiet_NaN();
+		NonFinite.Speed = TNumericLimits<float32>::QuietNaN();
 		C.Check( !NonFinite.Validate().IsEmpty() && FEffectFlipbookDefinition::FromJson( NlohmannJson::parse( NonFinite.ToJson().dump() ), NonFiniteAgain ) && !NonFiniteAgain.Validate().IsEmpty(), "NaN速度をJSON nullへ書いても検証エラーを保つ" );
 		// 必須項目を省いた有効な既定定義。
 		FEffectFlipbookDefinition MissingFields;
@@ -197,9 +198,9 @@ namespace
 		C.Check( NEffectFlipbook::EvaluateStep( Definition, Once, 0.5, 0.0f ) == 2, "秒時計はAge×Speedでコマを選ぶ" );
 		Definition.Speed = 0.0f;
 		C.Check( NEffectFlipbook::EvaluateStep( Definition, Loop, 1.0e300, 0.0f ) == 0 && NEffectFlipbook::EvaluateStep( Definition, Loop, 5.0, 1.0f ) == 0, "巨大な有限秒数は整数cycleへ変換せずfmodで安全に折り返し、Speed0は先頭で止まる" );
-		C.Check( NEffectFlipbook::EvaluateStep( Definition, Loop, std::numeric_limits<float64>::quiet_NaN(), 0.0f ) == INDEX_NONE && NEffectFlipbook::EvaluateStep( Definition, Loop, std::numeric_limits<float64>::infinity(), 0.0f ) == INDEX_NONE && NEffectFlipbook::EvaluateStep( Definition, Loop, -1.0, 0.0f ) == INDEX_NONE, "NaN/Inf/負のAgeを秒時計で拒否する" );
+		C.Check( NEffectFlipbook::EvaluateStep( Definition, Loop, TNumericLimits<float64>::QuietNaN(), 0.0f ) == INDEX_NONE && NEffectFlipbook::EvaluateStep( Definition, Loop, TNumericLimits<float64>::Infinity(), 0.0f ) == INDEX_NONE && NEffectFlipbook::EvaluateStep( Definition, Loop, -1.0, 0.0f ) == INDEX_NONE, "NaN/Inf/負のAgeを秒時計で拒否する" );
 		Definition.Speed = 128.0f;
-		C.Check( NEffectFlipbook::EvaluateStep( Definition, Loop, std::numeric_limits<float64>::max(), 0.0f ) == INDEX_NONE, "Age×Speedのdouble overflowを拒否する" );
+		C.Check( NEffectFlipbook::EvaluateStep( Definition, Loop, TNumericLimits<float64>::Max(), 0.0f ) == INDEX_NONE, "Age×Speedのdouble overflowを拒否する" );
 		Definition.bEnabled = false;
 		C.Check( NEffectFlipbook::EvaluateStep( Definition, Loop, 0.0, 0.0f ) == INDEX_NONE, "無効なFlipbookはコマを返さない" );
 		// 単一フレームと壊れたtimelineの扱い。
@@ -232,14 +233,14 @@ namespace
 		C.Check( !NEffectFlipbook::IsValidTimeline( Bad ) && NEffectFlipbook::EvaluateStep( Enabled, Bad, 0.3, 0.0f ) == INDEX_NONE, "未知のloop方式を拒否する" );
 		Enabled.TimeMode = FEffectFlipbookDefinition::ETimeMode::Lifetime;
 		// 寿命時計で無視する経過秒をNaNにしたparticle結果。
-		const int32 LifetimeParticleStep = NEffectFlipbook::EvaluateStep( Enabled, Once, std::numeric_limits<float64>::quiet_NaN(), 0.25f );
+		const int32 LifetimeParticleStep = NEffectFlipbook::EvaluateStep( Enabled, Once, TNumericLimits<float64>::QuietNaN(), 0.25f );
 		Enabled.TimeMode = FEffectFlipbookDefinition::ETimeMode::Seconds;
 		// 秒時計で無視するnormalized ageをNaNにしたparticle結果。
-		const int32 SecondsParticleStep = NEffectFlipbook::EvaluateStep( Enabled, Loop, 0.5, std::numeric_limits<float32>::quiet_NaN() );
+		const int32 SecondsParticleStep = NEffectFlipbook::EvaluateStep( Enabled, Loop, 0.5, TNumericLimits<float32>::QuietNaN() );
 		C.Check( LifetimeParticleStep == 1 && SecondsParticleStep == 1, "共有timelineでも粒子ごとの時計だけを使い、無関係なage入力は参照しない" );
 		Enabled.TimeMode = FEffectFlipbookDefinition::ETimeMode::Lifetime;
-		C.Check( NEffectFlipbook::EvaluateStep( Enabled, Once, 0.0, std::numeric_limits<float32>::quiet_NaN() ) == INDEX_NONE, "Lifetime時計の非有限normalized ageを拒否する" );
-		Enabled.Speed = std::numeric_limits<float32>::quiet_NaN();
+		C.Check( NEffectFlipbook::EvaluateStep( Enabled, Once, 0.0, TNumericLimits<float32>::QuietNaN() ) == INDEX_NONE, "Lifetime時計の非有限normalized ageを拒否する" );
+		Enabled.Speed = TNumericLimits<float32>::QuietNaN();
 		C.Check( NEffectFlipbook::EvaluateStep( Enabled, Once, 0.0, 0.25f ) == INDEX_NONE, "不正なSpeedを寿命時計でも設定エラーとして拒否する" );
 		FEffectFlipbookDefinition InvalidFlags;
 		FEffectFlipbookDefinition::FromJson( NlohmannJson::parse( R"({"Enabled":true,"Sheet":"test.sheet.json","Clip":null})" ), InvalidFlags );

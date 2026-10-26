@@ -4,6 +4,8 @@
 #include <cmath>
 #include <limits>
 
+#include "Library/Core/Types/Numeric.h"
+
 namespace
 {
 	// 読み取れない整数を、後段の範囲検査で拒否できる値へ置き換える。
@@ -11,14 +13,14 @@ namespace
 	{
 		if ( !Json.contains( Name ) ) return DefaultValue;
 		const NlohmannJson& Value = Json[Name];
-		if ( !Value.is_number_integer() && !Value.is_number_unsigned() ) return std::numeric_limits<int32>::min();
+		if ( !Value.is_number_integer() && !Value.is_number_unsigned() ) return TNumericLimits<int32>::Min();
 		if ( Value.is_number_unsigned() )
 		{
 			const uint64 Number = Value.get<uint64>();
-			return Number <= static_cast<uint64>( std::numeric_limits<int32>::max() ) ? static_cast<int32>( Number ) : std::numeric_limits<int32>::min();
+			return Number <= static_cast<uint64>( TNumericLimits<int32>::Max() ) ? static_cast<int32>( Number ) : TNumericLimits<int32>::Min();
 		}
 		const int64 Number = Value.get<int64>();
-		return Number >= std::numeric_limits<int32>::min() && Number <= std::numeric_limits<int32>::max() ? static_cast<int32>( Number ) : std::numeric_limits<int32>::min();
+		return Number >= TNumericLimits<int32>::Min() && Number <= TNumericLimits<int32>::Max() ? static_cast<int32>( Number ) : TNumericLimits<int32>::Min();
 	}
 
 	// 読み取れない実数を、Validateで必ず検出される非有限値にする。
@@ -26,7 +28,7 @@ namespace
 	{
 		if ( !Json.contains( Name ) ) return DefaultValue;
 		const NlohmannJson& Value = Json[Name];
-		if ( !Value.is_number() ) return std::numeric_limits<float32>::quiet_NaN();
+		if ( !Value.is_number() ) return TNumericLimits<float32>::QuietNaN();
 		return Value.get<float32>();
 	}
 
@@ -71,14 +73,14 @@ bool FEffectLightningTreeDefinition::FromJson( const NlohmannJson& Json, FEffect
 	FEffectLightningTreeDefinition Definition;
 	if ( !Json.is_object() )
 	{
-		Definition.Depth = std::numeric_limits<int32>::min();
-		Definition.ChildBranches = std::numeric_limits<int32>::min();
-		Definition.BranchAngleDegrees = std::numeric_limits<float32>::quiet_NaN();
-		Definition.GrowthSeconds = std::numeric_limits<float32>::quiet_NaN();
-		Definition.BranchDelaySeconds = std::numeric_limits<float32>::quiet_NaN();
-		Definition.StrokeCount = std::numeric_limits<int32>::min();
-		Definition.StrokeInterval = std::numeric_limits<float32>::quiet_NaN();
-		Definition.StrokeSeconds = std::numeric_limits<float32>::quiet_NaN();
+		Definition.Depth = TNumericLimits<int32>::Min();
+		Definition.ChildBranches = TNumericLimits<int32>::Min();
+		Definition.BranchAngleDegrees = TNumericLimits<float32>::QuietNaN();
+		Definition.GrowthSeconds = TNumericLimits<float32>::QuietNaN();
+		Definition.BranchDelaySeconds = TNumericLimits<float32>::QuietNaN();
+		Definition.StrokeCount = TNumericLimits<int32>::Min();
+		Definition.StrokeInterval = TNumericLimits<float32>::QuietNaN();
+		Definition.StrokeSeconds = TNumericLimits<float32>::QuietNaN();
 		if ( Warnings != nullptr ) Warnings->Add( "Path.Tree は object である必要があります" );
 		Out = Definition;
 		return true;
@@ -102,12 +104,12 @@ TArray<FString> FEffectLightningTreeDefinition::Validate() const
 	TArray<FString> Issues;
 	if ( Depth < 0 || Depth > 2 ) Issues.Add( "Path.Tree.Depth は 0 以上 2 以下にしてください" );
 	if ( ChildBranches < 0 || ChildBranches > 4 ) Issues.Add( "Path.Tree.ChildBranches は 0 以上 4 以下にしてください" );
-	if ( !std::isfinite( BranchAngleDegrees ) || BranchAngleDegrees < 5.0f || BranchAngleDegrees > 85.0f ) Issues.Add( "Path.Tree.BranchAngleDegrees は 5 以上 85 以下にしてください" );
-	if ( !std::isfinite( GrowthSeconds ) || GrowthSeconds < 0.0f || GrowthSeconds > 10.0f ) Issues.Add( "Path.Tree.GrowthSeconds は 0 以上 10 以下にしてください" );
-	if ( !std::isfinite( BranchDelaySeconds ) || BranchDelaySeconds < 0.0f || BranchDelaySeconds > 1.0f ) Issues.Add( "Path.Tree.BranchDelaySeconds は 0 以上 1 以下にしてください" );
+	if ( !NMath::IsFinite( BranchAngleDegrees ) || BranchAngleDegrees < 5.0f || BranchAngleDegrees > 85.0f ) Issues.Add( "Path.Tree.BranchAngleDegrees は 5 以上 85 以下にしてください" );
+	if ( !NMath::IsFinite( GrowthSeconds ) || GrowthSeconds < 0.0f || GrowthSeconds > 10.0f ) Issues.Add( "Path.Tree.GrowthSeconds は 0 以上 10 以下にしてください" );
+	if ( !NMath::IsFinite( BranchDelaySeconds ) || BranchDelaySeconds < 0.0f || BranchDelaySeconds > 1.0f ) Issues.Add( "Path.Tree.BranchDelaySeconds は 0 以上 1 以下にしてください" );
 	if ( StrokeCount < 1 || StrokeCount > 8 ) Issues.Add( "Path.Tree.StrokeCount は 1 以上 8 以下にしてください" );
-	if ( !std::isfinite( StrokeInterval ) || StrokeInterval < 0.001f || StrokeInterval > 2.0f ) Issues.Add( "Path.Tree.StrokeInterval は 0.001 以上 2 以下にしてください" );
-	if ( !std::isfinite( StrokeSeconds ) || StrokeSeconds < 0.0001f || !std::isfinite( StrokeInterval ) || StrokeSeconds > StrokeInterval ) Issues.Add( "Path.Tree.StrokeSeconds は 0.0001 以上 StrokeInterval 以下にしてください" );
+	if ( !NMath::IsFinite( StrokeInterval ) || StrokeInterval < 0.001f || StrokeInterval > 2.0f ) Issues.Add( "Path.Tree.StrokeInterval は 0.001 以上 2 以下にしてください" );
+	if ( !NMath::IsFinite( StrokeSeconds ) || StrokeSeconds < 0.0001f || !NMath::IsFinite( StrokeInterval ) || StrokeSeconds > StrokeInterval ) Issues.Add( "Path.Tree.StrokeSeconds は 0.0001 以上 StrokeInterval 以下にしてください" );
 	return Issues;
 }
 

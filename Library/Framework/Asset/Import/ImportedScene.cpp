@@ -4,12 +4,13 @@
 #include <cmath>
 
 #include "Library/Core/Collection/Set.h"
+#include "Library/Core/Types/Numeric.h"
 
 bool FImportMatrix::NearlyEquals( const FImportMatrix& Other, float32 Tolerance ) const
 {
 	for ( int32 i = 0; i < 16; ++i )
 	{
-		if ( std::fabs( M[i] - Other.M[i] ) > Tolerance ) return false;
+		if ( NMath::Abs( M[i] - Other.M[i] ) > Tolerance ) return false;
 	}
 	return true;
 }

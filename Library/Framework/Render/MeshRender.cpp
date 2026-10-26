@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Render/MeshMaterialEffectResources.h"
 #include "Library/Framework/Ecs/SystemParams.h"
 
@@ -14,11 +15,11 @@ namespace
 	// 元法線を逆スケール後に回転し、つぶれた軸を安全に0として扱う。
 	FVector3 TransformMeshNormal( const FVector3& Normal, const FTransform& World )
 	{
-		const auto InverseScaled = []( float32 Value, float32 Scale ) { return std::abs( Scale ) > 1.0e-12f ? Value / Scale : 0.0f; };
+		const auto InverseScaled = []( float32 Value, float32 Scale ) { return NMath::Abs( Scale ) > 1.0e-12f ? Value / Scale : 0.0f; };
 		const FVector3 InverseScaleNormal( InverseScaled( Normal.x, World.Scale.x ), InverseScaled( Normal.y, World.Scale.y ), InverseScaled( Normal.z, World.Scale.z ) );
 		const FVector3 Rotated = World.Rotation.Rotate( InverseScaleNormal );
 		const float32 Length = Rotated.Length();
-		return std::isfinite( Length ) && Length > 1.0e-12f ? Rotated / Length : FVector3::Zero;
+		return NMath::IsFinite( Length ) && Length > 1.0e-12f ? Rotated / Length : FVector3::Zero;
 	}
 
 	// 時刻と保持値から、全chunkに共通する検証済み描画設定を作る。
@@ -73,7 +74,7 @@ namespace
 				const FVector3 WorldPosition = World.TransformPoint( LocalPosition );
 				const FVector3 LocalNormal( SourceVertex.Normal[0], SourceVertex.Normal[1], SourceVertex.Normal[2] );
 				const FVector3 WorldNormal = TransformMeshNormal( LocalNormal, World );
-				if ( !std::isfinite( WorldPosition.x ) || !std::isfinite( WorldPosition.y ) || !std::isfinite( WorldPosition.z ) || !std::isfinite( WorldNormal.x ) || !std::isfinite( WorldNormal.y ) || !std::isfinite( WorldNormal.z ) ) return false;
+				if ( !NMath::IsFinite( WorldPosition.x ) || !NMath::IsFinite( WorldPosition.y ) || !NMath::IsFinite( WorldPosition.z ) || !NMath::IsFinite( WorldNormal.x ) || !NMath::IsFinite( WorldNormal.y ) || !NMath::IsFinite( WorldNormal.z ) ) return false;
 				WorldVertex = SourceVertex;
 				WorldVertex.Position[0] = WorldPosition.x;
 				WorldVertex.Position[1] = WorldPosition.y;
@@ -81,7 +82,7 @@ namespace
 				WorldVertex.Normal[0] = WorldNormal.x;
 				WorldVertex.Normal[1] = WorldNormal.y;
 				WorldVertex.Normal[2] = WorldNormal.z;
-				WorldVertex.Color[3] = static_cast<uint8>( std::clamp( static_cast<int32>( std::lround( static_cast<float64>( SourceVertex.Color[3] ) * Opacity ) ), 0, 255 ) );
+				WorldVertex.Color[3] = static_cast<uint8>( NMath::Clamp( static_cast<int32>( std::lround( static_cast<float64>( SourceVertex.Color[3] ) * Opacity ) ), 0, 255 ) );
 			}
 			if ( !NDrawMaterialMesh::IsValid( Data, WorldVertices.GetData(), SourceChunk.Indices.GetData() ) ) return false;
 		}
@@ -183,7 +184,7 @@ void FMeshRenderer::Record( FDrawContext& Draw, const FTransform& World ) const
 		if ( !Batch.EffectResources.IsValid() || Batch.EffectResources->Chunks.IsEmpty() ) continue;
 		const FMeshMaterialEffectResources& Resources = *Batch.EffectResources;
 		const float32 Duration = Resources.Definition.Duration;
-		const float32 NormalizedTime = std::clamp( static_cast<float32>( Batch.EffectTimeSeconds / Duration ), 0.0f, 1.0f );
+		const float32 NormalizedTime = NMath::Clamp( static_cast<float32>( Batch.EffectTimeSeconds / Duration ), 0.0f, 1.0f );
 		TArray<TArray<FMeshVertex>> WorldVertices;
 		if ( !BuildWorldEffectChunks( Resources, World, NormalizedTime, Batch.EffectUVOffset[0], Batch.EffectUVOffset[1], Batch.DistortionUVOffset[0], Batch.DistortionUVOffset[1], WorldVertices ) ) continue;
 		const EDrawBlend PreviousBlend = Draw.GetBlendMode();

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/World/WorldCollision.h"
 
 EEditorColliderDisplay NWorldEditor::ClassifyColliderDisplay( const FWorldSettings& Settings, const FWorldObject& Object )
@@ -42,12 +43,12 @@ FWorldCollider NWorldEditor::FitColliderToBounds( EWorldColliderShape Shape, con
 		Result.Offset = Center;
 		break;
 	case EWorldColliderShape::Sphere:
-		Result.Radius = std::max( { Size.x, Size.y, Size.z } ) * 0.5f;
+		Result.Radius = NMath::Max( Size.x, Size.y, Size.z ) * 0.5f;
 		Result.Offset = Center;
 		break;
 	case EWorldColliderShape::Capsule:
-		Result.Radius = std::max( Size.x, Size.z ) * 0.5f;
-		Result.Height = std::max( Size.y, Result.Radius * 2.0f );
+		Result.Radius = NMath::Max( Size.x, Size.z ) * 0.5f;
+		Result.Height = NMath::Max( Size.y, Result.Radius * 2.0f );
 		Result.Offset = Center;
 		break;
 	case EWorldColliderShape::Mesh:

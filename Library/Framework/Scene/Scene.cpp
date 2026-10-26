@@ -3,6 +3,7 @@
 #include "Library/Core/Interfaces/Job/IJobSystem.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Profiler/ProfilerScope.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Ecs/BuiltinSystems.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Scene/SceneManager.h"
@@ -77,7 +78,7 @@ void CScene::DestroyAllObjects()
 	// OnDestroy の中で新たに生成されたものも破棄する
 	while ( !Objects.IsEmpty() )
 	{
-		TArray<TSharedPtr<CGameObject>> Removing = std::move( Objects );
+		TArray<TSharedPtr<CGameObject>> Removing = MoveTemp( Objects );
 		Objects.Reset();
 		for ( const TSharedPtr<CGameObject>& Object : Removing )
 		{

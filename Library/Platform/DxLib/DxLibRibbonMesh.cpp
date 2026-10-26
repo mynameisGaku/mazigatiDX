@@ -4,6 +4,9 @@
 #include <algorithm>
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
+
 namespace
 {
 	// 大きな座標差も二倍精度で求め、同じ位置なら指定の向きを返す。
@@ -17,7 +20,7 @@ namespace
 		const float64 Z = static_cast<float64>( To.z ) - From.z;
 		// 安全に単位化するための三次元距離。
 		const float64 Length = std::sqrt( X * X + Y * Y + Z * Z );
-		if ( !std::isfinite( Length ) || Length <= 1.0e-8 ) return Fallback;
+		if ( !NMath::IsFinite( Length ) || Length <= 1.0e-8 ) return Fallback;
 		return VGet( static_cast<float32>( X / Length ), static_cast<float32>( Y / Length ), static_cast<float32>( Z / Length ) );
 	}
 
@@ -37,7 +40,7 @@ namespace
 		// 位置などの連続値を桁あふれしにくい精度で補間する関数。
 		const auto Mix = [&]( float32 A, float32 B ) { return static_cast<float32>( static_cast<float64>( A ) + ( static_cast<float64>( B ) - A ) * Time ); };
 		// 色成分を丸めながらbyte範囲へ収める関数。
-		const auto MixByte = [&]( uint8 A, uint8 B ) { return static_cast<uint8>( std::clamp( Mix( static_cast<float32>( A ), static_cast<float32>( B ) ), 0.0f, 255.0f ) + 0.5f ); };
+		const auto MixByte = [&]( uint8 A, uint8 B ) { return static_cast<uint8>( NMath::Clamp( Mix( static_cast<float32>( A ), static_cast<float32>( B ) ), 0.0f, 255.0f ) + 0.5f ); };
 		// 先頭頂点を基準にした、切れ目へ挿入する結果。
 		VERTEX3D Result = First;
 		Result.pos = VGet( Mix( First.pos.x, Last.pos.x ), Mix( First.pos.y, Last.pos.y ), Mix( First.pos.z, Last.pos.z ) );
@@ -66,8 +69,8 @@ namespace
 			// 現区間の最初の整数反復番号。
 			const float64 FirstRepeat = std::floor( StartU );
 			// 現区間を整数境界で分けるときに必要な区間数。
-			const float64 Required = std::max( 1.0, std::ceil( EndU ) - FirstRepeat );
-			if ( !std::isfinite( Required ) || Required > static_cast<float64>( FDrawRibbonData::MaxTextureSections - TotalSections ) ) return false;
+			const float64 Required = NMath::Max( 1.0, std::ceil( EndU ) - FirstRepeat );
+			if ( !NMath::IsFinite( Required ) || Required > static_cast<float64>( FDrawRibbonData::MaxTextureSections - TotalSections ) ) return false;
 			// 上限確認後に整数化した現区間の反復数。
 			const int32 Sections = static_cast<int32>( Required );
 			TotalSections += Sections;
@@ -98,8 +101,8 @@ namespace
 				Cursor = Next;
 			}
 		}
-		Mesh.Vertices = std::move( SplitVertices );
-		Mesh.Indices = std::move( SplitIndices );
+		Mesh.Vertices = MoveTemp( SplitVertices );
+		Mesh.Indices = MoveTemp( SplitIndices );
 		return true;
 	}
 }
@@ -110,7 +113,7 @@ bool NDxLibRibbonMesh::Build( const FDrawRibbonData& Data, const FDrawRibbonData
 	Mesh.Vertices.Reset();
 	Mesh.Indices.Reset();
 	// 点数・画像反復・ghost flagは呼び出し元契約と同じ範囲に限る。
-	if ( Points == nullptr || Data.NumPoints < 2 || Data.NumPoints > FDrawRibbonData::MaxPoints || Data.Texture < -1 || !std::isfinite( Data.UVRepeat ) || Data.UVRepeat <= 0.0f || Data.JoinFlags < 0 || ( Data.JoinFlags & ~( FDrawRibbonData::PreviousPoint | FDrawRibbonData::NextPoint ) ) != 0 || Data.NumPoints - static_cast<int32>( ( Data.JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) - static_cast<int32>( ( Data.JoinFlags & FDrawRibbonData::NextPoint ) != 0 ) < 2 ) return false;
+	if ( Points == nullptr || Data.NumPoints < 2 || Data.NumPoints > FDrawRibbonData::MaxPoints || Data.Texture < -1 || !NMath::IsFinite( Data.UVRepeat ) || Data.UVRepeat <= 0.0f || Data.JoinFlags < 0 || ( Data.JoinFlags & ~( FDrawRibbonData::PreviousPoint | FDrawRibbonData::NextPoint ) ) != 0 || Data.NumPoints - static_cast<int32>( ( Data.JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) - static_cast<int32>( ( Data.JoinFlags & FDrawRibbonData::NextPoint ) != 0 ) < 2 ) return false;
 	// 隣接する経路点間の接線方向。重複点の区間は0のまま。
 	TArray<VECTOR> Segments;
 	Segments.SetNum( Data.NumPoints - 1 );
@@ -120,7 +123,7 @@ bool NDxLibRibbonMesh::Build( const FDrawRibbonData& Data, const FDrawRibbonData
 	{
 		// 今回の接線と頂点作成に使う経路点。
 		const FDrawRibbonData::FPoint& Point = Points[Index];
-		if ( !std::isfinite( Point.Pos[0] ) || !std::isfinite( Point.Pos[1] ) || !std::isfinite( Point.Pos[2] ) || !std::isfinite( Point.Width ) || Point.Width < 0.0f || !std::isfinite( Point.U ) || Point.U < 0.0f || !std::isfinite( Point.U * Data.UVRepeat ) ) return false;
+		if ( !NMath::IsFinite( Point.Pos[0] ) || !NMath::IsFinite( Point.Pos[1] ) || !NMath::IsFinite( Point.Pos[2] ) || !NMath::IsFinite( Point.Width ) || Point.Width < 0.0f || !NMath::IsFinite( Point.U ) || Point.U < 0.0f || !NMath::IsFinite( Point.U * Data.UVRepeat ) ) return false;
 		if ( Index > 0 )
 		{
 			if ( Point.U < Points[Index - 1].U ) return false;
@@ -179,7 +182,7 @@ bool NDxLibRibbonMesh::Build( const FDrawRibbonData& Data, const FDrawRibbonData
 		// 両側の向きを平均したmiter方向。
 		const VECTOR Miter = RibbonDirection( VGet( 0.0f, 0.0f, 0.0f ), VAdd( BeforeSide, AfterSide ), AfterSide );
 		// 鋭い角で幅が伸びすぎないための補正率。
-		const float32 MiterScale = 1.0f / std::max( std::fabs( VDot( Miter, AfterSide ) ), 0.5f );
+		const float32 MiterScale = 1.0f / NMath::Max( NMath::Abs( VDot( Miter, AfterSide ) ), 0.5f );
 		// 中心から両側へずらす半幅ベクトル。
 		const VECTOR Offset = VScale( Miter, Point.Width * ( 0.5f * MiterScale ) );
 		// 画像を繰り返す前の連続横座標。
@@ -192,7 +195,7 @@ bool NDxLibRibbonMesh::Build( const FDrawRibbonData& Data, const FDrawRibbonData
 			VERTEX3D& Vertex = Mesh.Vertices[Index * 2 + Side];
 			Vertex = {};
 			Vertex.pos = Side == 0 ? VAdd( Position, Offset ) : VSub( Position, Offset );
-			if ( !std::isfinite( Vertex.pos.x ) || !std::isfinite( Vertex.pos.y ) || !std::isfinite( Vertex.pos.z ) ) return false;
+			if ( !NMath::IsFinite( Vertex.pos.x ) || !NMath::IsFinite( Vertex.pos.y ) || !NMath::IsFinite( Vertex.pos.z ) ) return false;
 			Vertex.norm = ToCamera;
 			Vertex.dif = Color;
 			Vertex.spc = GetColorU8( 0, 0, 0, 0 );

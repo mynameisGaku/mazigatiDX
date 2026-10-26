@@ -8,6 +8,7 @@
 #include "Library/Core/Collection/CollectionCommon.h"
 #include "Library/Core/Collection/Hash.h"
 #include "Library/Core/Memory/UniquePtr.h"
+#include "Library/Core/Types/Utility.h"
 
 template<typename T> class TSharedPtr;
 template<typename T> class TWeakPtr;
@@ -76,7 +77,7 @@ namespace NSharedPtrDetail
 	class TRefControllerWithDeleter final : public FRefController
 	{
 	public:
-		FORCEINLINE TRefControllerWithDeleter( T* InObject, Deleter InDeleter ) : Object( InObject ), Delete( std::move( InDeleter ) ) {}
+		FORCEINLINE TRefControllerWithDeleter( T* InObject, Deleter InDeleter ) : Object( InObject ), Delete( MoveTemp( InDeleter ) ) {}
 
 	private:
 		void DestroyObject() noexcept override { Delete( Object ); }
@@ -93,7 +94,7 @@ namespace NSharedPtrDetail
 		template<typename... Args>
 		FORCEINLINE explicit TRefControllerInline( Args&&... args )
 		{
-			new ( Storage ) T( std::forward<Args>( args )... );
+			new ( Storage ) T( Forward<Args>( args )... );
 		}
 
 		FORCEINLINE T* GetObjectPtr() noexcept { return std::launder( reinterpret_cast<T*>( Storage ) ); }
@@ -156,7 +157,7 @@ public:
 	{
 		if ( !InObject ) return;
 		Object     = InObject;
-		Controller = new NSharedPtrDetail::TRefControllerWithDeleter<U, Deleter>( InObject, std::move( InDeleter ) );
+		Controller = new NSharedPtrDetail::TRefControllerWithDeleter<U, Deleter>( InObject, MoveTemp( InDeleter ) );
 		NSharedPtrDetail::EnableSharedFromThis( Controller, InObject, 0 );
 	}
 
@@ -212,7 +213,7 @@ public:
 	}
 	FORCEINLINE TSharedPtr& operator=( TSharedPtr&& Other ) noexcept
 	{
-		TSharedPtr( std::move( Other ) ).SwapWith( *this );
+		TSharedPtr( MoveTemp( Other ) ).SwapWith( *this );
 		return *this;
 	}
 	template<typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
@@ -224,7 +225,7 @@ public:
 	template<typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
 	FORCEINLINE TSharedPtr& operator=( TSharedPtr<U>&& Other ) noexcept
 	{
-		TSharedPtr( std::move( Other ) ).SwapWith( *this );
+		TSharedPtr( MoveTemp( Other ) ).SwapWith( *this );
 		return *this;
 	}
 	FORCEINLINE TSharedPtr& operator=( decltype( nullptr ) ) noexcept
@@ -356,7 +357,7 @@ public:
 	}
 	FORCEINLINE TWeakPtr& operator=( TWeakPtr&& Other ) noexcept
 	{
-		TWeakPtr( std::move( Other ) ).SwapWith( *this );
+		TWeakPtr( MoveTemp( Other ) ).SwapWith( *this );
 		return *this;
 	}
 	template<typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
@@ -461,7 +462,7 @@ private:
 template<typename T, typename... Args>
 FORCEINLINE TSharedPtr<T> MakeShared( Args&&... args )
 {
-	auto* Controller = new NSharedPtrDetail::TRefControllerInline<T>( std::forward<Args>( args )... );
+	auto* Controller = new NSharedPtrDetail::TRefControllerInline<T>( Forward<Args>( args )... );
 	T* Object = Controller->GetObjectPtr();
 	NSharedPtrDetail::EnableSharedFromThis( Controller, Object, 0 );
 	return TSharedPtr<T>( Object, Controller, 0 );

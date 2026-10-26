@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include <limits>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/TypeDefinition.h"
 
 //=============================================================================
@@ -18,6 +19,6 @@ namespace NMath
 
 	inline constexpr float32 Epsilon     = 1.0e-6f;    // 比較用の許容誤差
 	inline constexpr float32 SmallNumber = 1.0e-8f;    // ゼロ除算回避用
-	inline constexpr float32 Infinity    = std::numeric_limits<float32>::infinity();
-	inline constexpr float32 MaxFloat    = ( std::numeric_limits<float32>::max )();  // windows.h の max マクロ回避
+	inline constexpr float32 Infinity    = TNumericLimits<float32>::Infinity();
+	inline constexpr float32 MaxFloat    = TNumericLimits<float32>::Max();
 }

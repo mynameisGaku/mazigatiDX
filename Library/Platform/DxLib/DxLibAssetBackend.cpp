@@ -5,6 +5,7 @@
 
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 
@@ -75,7 +76,7 @@ bool CDxLibAssetBackend::GetTextureUvBounds( int32 Texture, float32 ( &OutUV )[4
 	OutUV[1] = ( static_cast<float32>( Y ) + HalfV * TextureHeight ) / static_cast<float32>( TextureHeight );
 	OutUV[2] = ( static_cast<float32>( X + Width ) - HalfU * TextureWidth ) / static_cast<float32>( TextureWidth );
 	OutUV[3] = ( static_cast<float32>( Y + Height ) - HalfV * TextureHeight ) / static_cast<float32>( TextureHeight );
-	return std::isfinite( OutUV[0] ) && std::isfinite( OutUV[1] ) && std::isfinite( OutUV[2] ) && std::isfinite( OutUV[3] );
+	return NMath::IsFinite( OutUV[0] ) && NMath::IsFinite( OutUV[1] ) && NMath::IsFinite( OutUV[2] ) && NMath::IsFinite( OutUV[3] );
 }
 
 bool CDxLibAssetBackend::GetTextureSize( int32 Texture, int32& OutWidth, int32& OutHeight )

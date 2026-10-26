@@ -5,6 +5,7 @@
 #include <initializer_list>
 #include <limits>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EffectEditorInternal.h"
 #include "Library/Framework/Effect/EffectPathGeometry.h"
 #include "VendorModules/ImGui/imgui_internal.h"
@@ -152,14 +153,14 @@ namespace
 		// NaNの共通Path値を入力欄へ渡さず共通Resetから直す。
 		// 不正座標を注入する編集対象。
 		FParticleEmitterDefinition& InvalidCommon = State.Document.BeginEdit().Emitters[0];
-		InvalidCommon.Path.End.x = ( std::numeric_limits<float32>::quiet_NaN )();
+		InvalidCommon.Path.End.x = TNumericLimits<float32>::QuietNaN();
 		State.Document.EndEditSession();
 		Input.Frame( State );
 		// 共通Path値だけを戻すbutton ID。
 		const ImGuiID ResetCommon = Input.ItemId( "Reset tree path values" );
 		C.Check( Input.TabTo( State, ResetCommon ), "共通Path値の修復ボタンへTabで移る" );
 		Input.Tap( State, ImGuiKey_Enter );
-		C.Check( std::isfinite( State.Document.Get().Emitters[0].Path.End.x ) && State.Document.Get().Emitters[0].Path.Tree.Depth == 1, "共通PathのResetは不正座標だけ直しTree専用設定を保つ" );
+		C.Check( NMath::IsFinite( State.Document.Get().Emitters[0].Path.End.x ) && State.Document.Get().Emitters[0].Path.Tree.Depth == 1, "共通PathのResetは不正座標だけ直しTree専用設定を保つ" );
 		// 範囲外Tree fieldを設定して専用Resetが独立に修復する。
 		// Tree専用範囲外と有効な共通値を一回の編集として仕込む。
 		// 不正Tree設定と維持する共通値を入れる編集対象。
@@ -208,7 +209,7 @@ namespace
 		State.Document.Reset( Definition );
 		State.bTreeCameraFocusPending = true;
 		const bool bFocused = NEffectEditorUI::ApplyPendingTreeCameraFocus( State, Viewport );
-		C.Check( bFocused && !State.bTreeCameraFocusPending && std::isfinite( State.Camera.Distance ) && State.Camera.Distance > FEditorCamera::MinDistance, "pending Tree focusは実viewport確定後に一度適用し有限cameraを作る" );
+		C.Check( bFocused && !State.bTreeCameraFocusPending && NMath::IsFinite( State.Camera.Distance ) && State.Camera.Distance > FEditorCamera::MinDistance, "pending Tree focusは実viewport確定後に一度適用し有限cameraを作る" );
 		// 成長中と枝遅延を除き、全seed bounds APIと同じPathを用意する。
 		FEffectPathDefinition CompletedPath = Emitter.Path;
 		CompletedPath.Tree.GrowthSeconds = 0.0f;
@@ -247,7 +248,7 @@ namespace
 							FVector2 Pixel;
 							float32 Depth = 0.0f;
 							const bool bProjected = State.Camera.WorldToScreen( Viewport, WorldPoint, Pixel, &Depth );
-							bAllTreeBoundsVisible = bAllTreeBoundsVisible && bProjected && std::isfinite( Pixel.x ) && std::isfinite( Pixel.y ) && Depth > Viewport.Near && Depth < Viewport.Far && Pixel.x >= 0.0f && Pixel.y >= 0.0f && Pixel.x <= Viewport.Width && Pixel.y <= Viewport.Height;
+							bAllTreeBoundsVisible = bAllTreeBoundsVisible && bProjected && NMath::IsFinite( Pixel.x ) && NMath::IsFinite( Pixel.y ) && Depth > Viewport.Near && Depth < Viewport.Far && Pixel.x >= 0.0f && Pixel.y >= 0.0f && Pixel.x <= Viewport.Width && Pixel.y <= Viewport.Height;
 						}
 					}
 				}
@@ -276,7 +277,7 @@ namespace
 		C.Check( !bLegacyFocused && !LegacyState.bTreeCameraFocusPending && LegacyState.Camera.Distance == 7.0f && LegacyState.Camera.Target.y == 1.0f, "旧Ribbon/Lightningのcamera位置と距離はTree focus helperで変えない" );
 		// 不正なTree終点を読み込んだ時の安全なcamera fallback。
 		FParticleEffectDefinition InvalidDefinition = Definition;
-		InvalidDefinition.Emitters[0].Path.End.x = ( std::numeric_limits<float32>::quiet_NaN )();
+		InvalidDefinition.Emitters[0].Path.End.x = TNumericLimits<float32>::QuietNaN();
 		FEffectEditorState InvalidState;
 		InvalidState.Document.Reset( InvalidDefinition );
 		InvalidState.Camera.Distance = 8.0f;

@@ -5,6 +5,7 @@
 #include <string>
 
 #include "Library/Core/Collection/Set.h"
+#include "Library/Core/Types/Numeric.h"
 
 namespace
 {
@@ -239,7 +240,7 @@ namespace
 				for ( const int32 Vertex : Cluster.Vertices ) ++PerVertex[Vertex];
 			}
 			int32 MaxPerVertex = 0;
-			for ( const int32 Count : PerVertex ) MaxPerVertex = std::max( MaxPerVertex, Count );
+			for ( const int32 Count : PerVertex ) MaxPerVertex = NMath::Max( MaxPerVertex, Count );
 
 			T.Line( "XSkinMeshHeader {", Inner );
 			T.Indentation( Inner + 1 );

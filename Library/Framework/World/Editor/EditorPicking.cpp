@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/World/WorldHierarchy.h"
 
 bool NWorldEditor::RayVsShape( const FEditorRay& Ray, const FEditorShape& Shape, float32& OutT )
@@ -74,8 +75,8 @@ TArray<int32> NWorldEditor::FindObjectsInRect( const FWorldDefinition& World, co
 {
 	TArray<int32> Result;
 	if ( Context.Camera == nullptr ) return Result;
-	const float32 MinX = std::min( X0, X1 ), MaxX = std::max( X0, X1 );
-	const float32 MinY = std::min( Y0, Y1 ), MaxY = std::max( Y0, Y1 );
+	const float32 MinX = NMath::Min( X0, X1 ), MaxX = NMath::Max( X0, X1 );
+	const float32 MinY = NMath::Min( Y0, Y1 ), MaxY = NMath::Max( Y0, Y1 );
 
 	const TArray<FTransform> WorldTransforms = NWorld::ComputeAllWorldTransforms( World );
 	for ( int32 Index = 0; Index < World.Objects.Num(); ++Index )

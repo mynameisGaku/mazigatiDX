@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Animation/ModelAnimator.h"
 #include "Library/Json/JsonHelpers.h"
 #include "Library/Math/MathUtils.h"
@@ -64,7 +65,7 @@ bool FModelAnimationDefinition::FromJson( const NlohmannJson& Json, FModelAnimat
 	FModelAnimationDefinition Definition;
 	Definition.ModelPath = NJson::GetOr<FString>( Json, "Model", FString() );
 	Definition.PreviewModelPath = NJson::GetOr<FString>( Json, "PreviewModel", FString() );
-	Definition.UnitsPerSecond = std::max( NJson::GetOr<float32>( Json, "UnitsPerSecond", 30.0f ), 1.0e-3f );
+	Definition.UnitsPerSecond = NMath::Max( NJson::GetOr<float32>( Json, "UnitsPerSecond", 30.0f ), 1.0e-3f );
 	Definition.Offset = NJson::ReadVector3( Json, "Offset", FVector3::Zero );
 	Definition.RotationDegrees = NJson::ReadVector3( Json, "Rotation", FVector3::Zero );
 	Definition.Scale = NJson::ReadVector3( Json, "Scale", FVector3::One );
@@ -91,7 +92,7 @@ bool FModelAnimationDefinition::FromJson( const NlohmannJson& Json, FModelAnimat
 				for ( const NlohmannJson& EventItem : Item["Events"] )
 				{
 					FModelEventDef Event;
-					Event.Time = std::clamp( NJson::GetOr<float32>( EventItem, "Time", 0.0f ), 0.0f, 1.0f );
+					Event.Time = NMath::Clamp( NJson::GetOr<float32>( EventItem, "Time", 0.0f ), 0.0f, 1.0f );
 					Event.Name = NJson::GetOr<FString>( EventItem, "Name", FString() );
 					if ( !Event.Name.IsEmpty() ) Clip.Events.Add( Event );
 				}

@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
 #include "WorldMeshMaterialSelfTestSupport.h"
 
+#include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EffectEditorCurveInput.h"
 #include "Library/DebugUI/WorldEditorInternal.h"
 #include "Library/DebugUI/WorldEditorMeshMaterialPanel.h"
@@ -454,7 +455,7 @@ namespace
 		C.Check( EditedMaterial.Texture == "Effects/mesh_surface_lava.tga" && EditedMaterial.Effect.Material.bEnabled && EditedMaterial.Effect.Blend == EDrawBlend::Add && EditedMaterial.Effect.Material.Distortion.bEnabled, "Flowing lava presetがsource・発光・歪みを同じslotへ設定する" );
 		// presetが実際に書き込んだ発光曲線。
 		const FEffectScalarCurve& PresetEmission = EditedMaterial.Effect.Material.Emission;
-		C.Check( PresetEmission.Keys.Num() == 4 && std::fabs( PresetEmission.Keys[0].Time ) < 0.002f && std::fabs( PresetEmission.Keys[0].Value - 1.1f ) < 0.002f, "Flowing lava presetがEmissionに4keyと先頭(0, 1.1)を作る" );
+		C.Check( PresetEmission.Keys.Num() == 4 && NMath::Abs( PresetEmission.Keys[0].Time ) < 0.002f && NMath::Abs( PresetEmission.Keys[0].Value - 1.1f ) < 0.002f, "Flowing lava presetがEmissionに4keyと先頭(0, 1.1)を作る" );
 		C.Check( State.Session.Document.IsDirty() && State.Session.Document.GetNumUndo() == 1, "preset適用がdirtyな一つのworld履歴になる" );
 		C.Check( State.Session.Document.Undo() && State.Session.Document.Get().FindObject( 1 )->Mesh.GetValue().Materials[0].Effect.IsDefault() && State.Session.Document.Get().FindObject( 1 )->Mesh.GetValue().Materials[0].Texture.IsEmpty(), "preset適用全体を一度でUndoする" );
 		C.Check( State.Session.Document.Redo() && State.Session.Document.Get().FindObject( 1 )->Mesh.GetValue().Materials[0].Effect.Material.bEnabled && State.Session.Document.Get().FindObject( 1 )->Mesh.GetValue().Materials[0].Texture == "Effects/mesh_surface_lava.tga", "preset適用をRedoする" );
@@ -464,8 +465,8 @@ namespace
 		Input.Tap( State, ImGuiKey_Tab );
 		const FWorldObject* NumericEditedObject = State.Session.Document.Get().FindObject( 1 );
 		const float32 NumericOpacity = NumericEditedObject != nullptr && NumericEditedObject->Mesh.IsSet() && NumericEditedObject->Mesh.GetValue().Materials.IsValidIndex( 0 ) ? NumericEditedObject->Mesh.GetValue().Materials[0].Effect.Opacity : -1.0f;
-		C.Check( bOpacityTyped && std::fabs( NumericOpacity - 0.73f ) < 0.002f && State.Session.Document.IsDirty(), "Opacityを文字入力しworld inspectorから定義へ書き戻す" );
-		C.Check( State.Session.Document.Undo() && std::fabs( State.Session.Document.Get().FindObject( 1 )->Mesh.GetValue().Materials[0].Effect.Opacity - 1.0f ) < 0.002f && State.Session.Document.Redo() && std::fabs( State.Session.Document.Get().FindObject( 1 )->Mesh.GetValue().Materials[0].Effect.Opacity - 0.73f ) < 0.002f, "Opacity入力の終了でpreset履歴と分かれUndo/Redoできる" );
+		C.Check( bOpacityTyped && NMath::Abs( NumericOpacity - 0.73f ) < 0.002f && State.Session.Document.IsDirty(), "Opacityを文字入力しworld inspectorから定義へ書き戻す" );
+		C.Check( State.Session.Document.Undo() && NMath::Abs( State.Session.Document.Get().FindObject( 1 )->Mesh.GetValue().Materials[0].Effect.Opacity - 1.0f ) < 0.002f && State.Session.Document.Redo() && NMath::Abs( State.Session.Document.Get().FindObject( 1 )->Mesh.GetValue().Materials[0].Effect.Opacity - 0.73f ) < 0.002f, "Opacity入力の終了でpreset履歴と分かれUndo/Redoできる" );
 		const int32 BeforeSecondSlot = State.Session.Document.GetNumUndo();
 		const bool bSecondSlotFocused = Input.TabTo( State, Input.ItemId( "Pulsing barrier", 1 ) );
 		if ( bSecondSlotFocused ) Input.Tap( State, ImGuiKey_Enter );
@@ -507,7 +508,7 @@ namespace
 			for ( int32 Index = 0; Index < AddedKeys.Num(); ++Index )
 			{
 				if ( Index > 0 && !( AddedKeys[Index - 1].Time < AddedKeys[Index].Time ) ) bKeysAscending = false;
-				if ( ExistingKeyIndex < EmissionKeysBeforeAdd.Num() && std::fabs( AddedKeys[Index].Time - EmissionKeysBeforeAdd[ExistingKeyIndex].Time ) < 0.0001f && std::fabs( AddedKeys[Index].Value - EmissionKeysBeforeAdd[ExistingKeyIndex].Value ) < 0.0001f ) ++ExistingKeyIndex;
+				if ( ExistingKeyIndex < EmissionKeysBeforeAdd.Num() && NMath::Abs( AddedKeys[Index].Time - EmissionKeysBeforeAdd[ExistingKeyIndex].Time ) < 0.0001f && NMath::Abs( AddedKeys[Index].Value - EmissionKeysBeforeAdd[ExistingKeyIndex].Value ) < 0.0001f ) ++ExistingKeyIndex;
 				else if ( AddedKeyIndex == INDEX_NONE ) AddedKeyIndex = Index;
 				else bExistingKeysPreserved = false;
 			}
@@ -516,7 +517,7 @@ namespace
 		// 追加後に参照できる材質slotが存在するか。
 		const bool bCurveSlotAfterAdd = CurveObject != nullptr && CurveObject->Mesh.IsSet() && CurveObject->Mesh.GetValue().Materials.IsValidIndex( 0 );
 		// 新しいキーがpanelの既定値1.0を使ったか。
-		const bool bAddedKeyUsesDefaultValue = bCurveSlotAfterAdd && AddedKeyIndex >= 0 && AddedKeyIndex < CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys.Num() && std::fabs( CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys[AddedKeyIndex].Value - 1.0f ) < 0.002f;
+		const bool bAddedKeyUsesDefaultValue = bCurveSlotAfterAdd && AddedKeyIndex >= 0 && AddedKeyIndex < CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys.Num() && NMath::Abs( CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys[AddedKeyIndex].Value - 1.0f ) < 0.002f;
 		const int32 UndoAfterCurveAdd = State.Session.Document.GetNumUndo();
 		C.Check( bCurveAddFocused && CurveKeysAfterAdd == CurveKeysBeforeAdd + 1 && bExistingKeysPreserved && bKeysAscending && bAddedKeyUsesDefaultValue && UndoAfterCurveAdd == BeforeCurve + 1, "実curve UIのAdd keyが既存keyを保ち既定値を追加して一つのworld履歴を作る: focused=%d nav=%u target=%u active=%u keys=%d beforeKeys=%d preserved=%d ascending=%d addedIndex=%d default=%d undo=%d before=%d", bCurveAddFocused, Input.NavId(), CurveAddId, Input.ActiveId(), CurveKeysAfterAdd, CurveKeysBeforeAdd, bExistingKeysPreserved, bKeysAscending, AddedKeyIndex, bAddedKeyUsesDefaultValue, UndoAfterCurveAdd, BeforeCurve );
 		// Add成功時だけ後続のkey値入力と履歴検査を実行する。
@@ -536,7 +537,7 @@ namespace
 			// keyが存在するときだけ読む入力後の先頭値。
 			const float32 CurveValueAfterEdit = CurveKeysAfterValue > 0 ? CurveObject->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys[0].Value : -1.0f;
 			// keyが存在し値が一致したときだけ入力保存成功とする。
-			const bool bCurveValueSaved = bCurveValueSlotExists && CurveKeysAfterValue > 0 && CurveKeysAfterValue == CurveKeysAfterAdd && std::fabs( CurveValueAfterEdit - 2.35f ) < 0.002f;
+			const bool bCurveValueSaved = bCurveValueSlotExists && CurveKeysAfterValue > 0 && CurveKeysAfterValue == CurveKeysAfterAdd && NMath::Abs( CurveValueAfterEdit - 2.35f ) < 0.002f;
 			const int32 UndoAfterCurveValue = State.Session.Document.GetNumUndo();
 			C.Check( bCurveValueTyped && bCurveValueSaved && UndoAfterCurveValue == BeforeCurveValue + 1, "曲線値の文字入力をreleaseで独立した履歴へ確定する: focused=%d typed=%d nav=%u target=%u active=%u temp=%u keys=%d value=%.6g undo=%d before=%d", bCurveValueFocused, bCurveValueTyped, Input.NavId(), CurveValueId, Input.ActiveId(), Input.TempInputId(), CurveKeysAfterValue, CurveValueAfterEdit, UndoAfterCurveValue, BeforeCurveValue );
 			const bool bCurveUndo = State.Session.Document.Undo();
@@ -555,7 +556,7 @@ namespace
 			const int32 CurveKeysAfterRedo = bCurveRedoSlotExists ? CurveObjectAfterRedo->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys.Num() : -1;
 			// keyが存在するときだけ読むRedo後の先頭値。
 			const float32 CurveValueAfterRedo = CurveKeysAfterRedo > 0 ? CurveObjectAfterRedo->Mesh.GetValue().Materials[0].Effect.Material.Emission.Keys[0].Value : -1.0f;
-			C.Check( bCurveUndo && std::fabs( CurveValueAfterUndo - CurveFirstValueBeforeAdd ) < 0.002f && bCurveRedo && std::fabs( CurveValueAfterRedo - 2.35f ) < 0.002f, "曲線値のrelease履歴をUndo/Redoする: undo=%d undoValue=%.6g expectedUndo=%.6g redo=%d redoValue=%.6g", bCurveUndo, CurveValueAfterUndo, CurveFirstValueBeforeAdd, bCurveRedo, CurveValueAfterRedo );
+			C.Check( bCurveUndo && NMath::Abs( CurveValueAfterUndo - CurveFirstValueBeforeAdd ) < 0.002f && bCurveRedo && NMath::Abs( CurveValueAfterRedo - 2.35f ) < 0.002f, "曲線値のrelease履歴をUndo/Redoする: undo=%d undoValue=%.6g expectedUndo=%.6g redo=%d redoValue=%.6g", bCurveUndo, CurveValueAfterUndo, CurveFirstValueBeforeAdd, bCurveRedo, CurveValueAfterRedo );
 		}
 		// 世界asset managerがSaveWorldFileから使われる実装依存先と一致する。
 		C.Check( GetAppSubsystem<CAssetManager>() == &Assets, "SaveAs対象とtest asset managerが同じ" );
@@ -593,7 +594,7 @@ namespace
 				FDrawBuffer StableBufferB;
 				FDrawContext StableDrawB( StableBufferB );
 				const bool bStableRecordB = NWorldEditorUI::RecordMeshObject( State, *FreshObject, Placed, StableDrawB, 1 );
-				C.Check( std::fabs( FirstTime - 0.25 ) < 1.0e-6 && std::fabs( FirstView->Renderer.GetEffectTime() - FirstTime ) < 1.0e-6 && bStableRecordA && bStableRecordB && StableBufferA.Words == StableBufferB.Words, "preview時計を一度進めた後のRecord反復は時計とdraw wordsを変えない" );
+				C.Check( NMath::Abs( FirstTime - 0.25 ) < 1.0e-6 && NMath::Abs( FirstView->Renderer.GetEffectTime() - FirstTime ) < 1.0e-6 && bStableRecordA && bStableRecordB && StableBufferA.Words == StableBufferB.Words, "preview時計を一度進めた後のRecord反復は時計とdraw wordsを変えない" );
 				// mesh definitionのhashが変わると同じownerのrendererを作り直す。
 				FWorldObject ChangedObject = *FreshObject;
 				ChangedObject.Mesh.GetValue().Materials[0].Effect.Opacity = 0.5f;
@@ -601,7 +602,7 @@ namespace
 				FDrawContext ChangedDraw( ChangedBuffer );
 				NWorldEditorUI::RecordMeshObject( State, ChangedObject, Placed, ChangedDraw, 1 );
 				FirstView = State.MeshViews.Find( 1 );
-				C.Check( FirstView != nullptr && FirstView->Hash == ChangedObject.Mesh.GetValue().ComputeHash() && std::fabs( FirstView->Renderer.GetEffectTime() ) < 1.0e-6, "mesh definition hash変更はMeshView rendererを先頭時刻で再構築する" );
+				C.Check( FirstView != nullptr && FirstView->Hash == ChangedObject.Mesh.GetValue().ComputeHash() && NMath::Abs( FirstView->Renderer.GetEffectTime() ) < 1.0e-6, "mesh definition hash変更はMeshView rendererを先頭時刻で再構築する" );
 				// 複製とprefab instanceのsynthetic keyに別のrenderer ownerを割り当てる。
 				FWorldObject DuplicateObject = ChangedObject;
 				DuplicateObject.Id = 2;
@@ -665,15 +666,15 @@ namespace
 		FirstRenderer.Update( 0.25f );
 		SecondRenderer.PlayEffects();
 		SecondRenderer.Update( 0.12f );
-		C.Check( std::fabs( FirstRenderer.GetEffectTime() - 0.25 ) < 1.0e-6 && std::fabs( SecondRenderer.GetEffectTime() - 0.12 ) < 1.0e-6, "複製rendererは共有definitionから独立したslot時刻を持つ" );
+		C.Check( NMath::Abs( FirstRenderer.GetEffectTime() - 0.25 ) < 1.0e-6 && NMath::Abs( SecondRenderer.GetEffectTime() - 0.12 ) < 1.0e-6, "複製rendererは共有definitionから独立したslot時刻を持つ" );
 		FirstRenderer.PauseEffects();
 		FirstRenderer.Update( 0.1f );
-		C.Check( FirstRenderer.IsEffectsPaused() && std::fabs( FirstRenderer.GetEffectTime() - 0.25 ) < 1.0e-6, "Pause中はmesh effectの表示時刻を保持する" );
+		C.Check( FirstRenderer.IsEffectsPaused() && NMath::Abs( FirstRenderer.GetEffectTime() - 0.25 ) < 1.0e-6, "Pause中はmesh effectの表示時刻を保持する" );
 		FirstRenderer.PlayEffects();
 		FirstRenderer.Update( 0.3f );
-		C.Check( FirstRenderer.IsEffectsFinished() && std::fabs( FirstRenderer.GetEffectTime() - 0.5 ) < 1.0e-6, "非loop effectは終端表示を保持してFinishedになる" );
+		C.Check( FirstRenderer.IsEffectsFinished() && NMath::Abs( FirstRenderer.GetEffectTime() - 0.5 ) < 1.0e-6, "非loop effectは終端表示を保持してFinishedになる" );
 		FirstRenderer.PlayEffects();
-		C.Check( FirstRenderer.IsEffectsPlaying() && std::fabs( FirstRenderer.GetEffectTime() ) < 1.0e-6 && std::fabs( SecondRenderer.GetEffectTime() - 0.12 ) < 1.0e-6, "FinishedからのPlayは先頭へ戻り他rendererを変えない" );
+		C.Check( FirstRenderer.IsEffectsPlaying() && NMath::Abs( FirstRenderer.GetEffectTime() ) < 1.0e-6 && NMath::Abs( SecondRenderer.GetEffectTime() - 0.12 ) < 1.0e-6, "FinishedからのPlayは先頭へ戻り他rendererを変えない" );
 		FirstRenderer.StopEffects();
 		C.Check( !FirstRenderer.IsEffectsPlaying() && !FirstRenderer.IsEffectsFinished() && FirstRenderer.GetEffectTime() == 0.0, "Stopはeffect clockを0へ戻してlegacy表示へ戻す" );
 	}

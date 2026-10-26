@@ -5,6 +5,7 @@
 #include <cmath>
 
 #include "Library/Core/Time/PlatformTime.h"
+#include "Library/Core/Types/Numeric.h"
 
 TSharedPtr<CTexture> CAssetManager::CreateTextureRegion( const TSharedPtr<CTexture>& Source, int32 X, int32 Y, int32 Width, int32 Height )
 {
@@ -30,7 +31,7 @@ TSharedPtr<CTexture> CAssetManager::CreateTextureRegion( const TSharedPtr<CTextu
 	// 通常Quad用にbackendが返すbase画像UV。
 	float32 UvBounds[4] = {};
 	const bool bHasUvBounds = GetBackend()->GetTextureUvBounds( Handle, UvBounds );
-	if ( !bHasUvBounds || !std::isfinite( UvBounds[0] ) || !std::isfinite( UvBounds[1] ) || !std::isfinite( UvBounds[2] ) || !std::isfinite( UvBounds[3] ) || UvBounds[0] < 0.0f || UvBounds[1] < 0.0f || UvBounds[2] > 1.0f || UvBounds[3] > 1.0f || UvBounds[2] < UvBounds[0] || UvBounds[3] < UvBounds[1] )
+	if ( !bHasUvBounds || !NMath::IsFinite( UvBounds[0] ) || !NMath::IsFinite( UvBounds[1] ) || !NMath::IsFinite( UvBounds[2] ) || !NMath::IsFinite( UvBounds[3] ) || UvBounds[0] < 0.0f || UvBounds[1] < 0.0f || UvBounds[2] > 1.0f || UvBounds[3] > 1.0f || UvBounds[2] < UvBounds[0] || UvBounds[3] < UvBounds[1] )
 	{
 		GetBackend()->DeleteTexture( Handle );
 		RecordFailure();

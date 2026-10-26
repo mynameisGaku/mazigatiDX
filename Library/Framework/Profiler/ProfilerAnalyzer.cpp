@@ -2,6 +2,7 @@
 
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Time/PlatformTime.h"
+#include "Library/Core/Types/Utility.h"
 
 namespace
 {
@@ -142,7 +143,7 @@ void NProfilerAnalyzer::BuildStats( const IProfiler& Profiler, const FProfileQue
 				else
 				{
 					FProfileStatRow& Row = OutRows.EmplaceGetRef();
-					Row.Label = std::move( Label );
+					Row.Label = MoveTemp( Label );
 					Row.Category = Key.Category;
 					Row.Owner = Key.Owner;
 					Row.Name = Key.Name;

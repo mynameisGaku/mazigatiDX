@@ -5,6 +5,8 @@
 #include <limits>
 #include <utility>
 
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Types/Utility.h"
 #include "Library/Json/JsonHelpers.h"
 
 namespace
@@ -39,7 +41,7 @@ namespace
 	bool ReadVector2( const NlohmannJson& Json, FVector2& Out )
 	{
 		// 読めない成分を検証で見つける値。
-		const float32 Invalid = std::numeric_limits<float32>::quiet_NaN();
+		const float32 Invalid = TNumericLimits<float32>::QuietNaN();
 		Out = FVector2( Invalid, Invalid );
 		if ( !Json.is_array() || Json.size() != 2 || !Json[0].is_number() || !Json[1].is_number() ) return false;
 		try
@@ -68,15 +70,15 @@ bool FEffectUVDistortionDefinition::IsDefault() const
 bool FEffectUVDistortionDefinition::IsValidSettings() const
 {
 	if ( InvalidFieldTypes != 0 || ( bEnabled && Texture.IsEmpty() ) ) return false;
-	if ( !std::isfinite( UVScale.x ) || !std::isfinite( UVScale.y ) || UVScale.x <= 0.0f || UVScale.y <= 0.0f || UVScale.x > 128.0f || UVScale.y > 128.0f ) return false;
-	if ( !std::isfinite( UVScroll.x ) || !std::isfinite( UVScroll.y ) || std::fabs( UVScroll.x ) > 128.0f || std::fabs( UVScroll.y ) > 128.0f ) return false;
+	if ( !NMath::IsFinite( UVScale.x ) || !NMath::IsFinite( UVScale.y ) || UVScale.x <= 0.0f || UVScale.y <= 0.0f || UVScale.x > 128.0f || UVScale.y > 128.0f ) return false;
+	if ( !NMath::IsFinite( UVScroll.x ) || !NMath::IsFinite( UVScroll.y ) || NMath::Abs( UVScroll.x ) > 128.0f || NMath::Abs( UVScroll.y ) > 128.0f ) return false;
 	if ( Strength.Interpolation != FEffectScalarCurve::EInterpolation::Linear && Strength.Interpolation != FEffectScalarCurve::EInterpolation::Step && Strength.Interpolation != FEffectScalarCurve::EInterpolation::Smooth ) return false;
 	if ( Strength.Keys.Num() > FEffectScalarCurve::MaxKeys ) return false;
 	// 32件以下のキーを直接検査し、記録中に一時配列を作らない。
 	float32 PreviousTime = -1.0f;
 	for ( const FEffectScalarCurve::FKey& Key : Strength.Keys )
 	{
-		if ( !std::isfinite( Key.Time ) || !std::isfinite( Key.Value ) || Key.Time < 0.0f || Key.Time > 1.0f || Key.Time <= PreviousTime || Key.Value < 0.0f || Key.Value > 1.0f ) return false;
+		if ( !NMath::IsFinite( Key.Time ) || !NMath::IsFinite( Key.Value ) || Key.Time < 0.0f || Key.Time > 1.0f || Key.Time <= PreviousTime || Key.Value < 0.0f || Key.Value > 1.0f ) return false;
 		PreviousTime = Key.Time;
 	}
 	return true;
@@ -102,7 +104,7 @@ bool FEffectUVDistortionDefinition::FromJson( const NlohmannJson& Json, FEffectU
 	{
 		Definition.InvalidFieldTypes = InvalidAll;
 		Warn( Warnings, "Distortion は object にしてください" );
-		Out = std::move( Definition );
+		Out = MoveTemp( Definition );
 		return true;
 	}
 	if ( Json.contains( "Enabled" ) )
@@ -138,7 +140,7 @@ bool FEffectUVDistortionDefinition::FromJson( const NlohmannJson& Json, FEffectU
 		// 曲線内部の警告をDistortionの項目名付きで渡す。
 		for ( const FString& Message : CurveWarnings ) if ( Warnings != nullptr ) Warnings->Add( FString( "Strength: " ) + Message );
 	}
-	Out = std::move( Definition );
+	Out = MoveTemp( Definition );
 	return true;
 }
 
@@ -152,10 +154,10 @@ TArray<FString> FEffectUVDistortionDefinition::Validate() const
 	if ( ( InvalidFieldTypes & InvalidUVScroll ) != 0 ) Issues.Add( "UVScroll の型が不正です" );
 	if ( ( InvalidFieldTypes & InvalidStrength ) != 0 ) Issues.Add( "Strength の型が不正です" );
 	if ( bEnabled && Texture.IsEmpty() ) Issues.Add( "有効なUV歪みにはTextureが必要です" );
-	if ( !std::isfinite( UVScale.x ) || !std::isfinite( UVScale.y ) || UVScale.x <= 0.0f || UVScale.y <= 0.0f || UVScale.x > 128.0f || UVScale.y > 128.0f ) Issues.Add( "UVScaleは有限の0より大きく128以下にしてください" );
-	if ( !std::isfinite( UVScroll.x ) || !std::isfinite( UVScroll.y ) || std::fabs( UVScroll.x ) > 128.0f || std::fabs( UVScroll.y ) > 128.0f ) Issues.Add( "UVScrollは有限で各成分の絶対値を128以下にしてください" );
+	if ( !NMath::IsFinite( UVScale.x ) || !NMath::IsFinite( UVScale.y ) || UVScale.x <= 0.0f || UVScale.y <= 0.0f || UVScale.x > 128.0f || UVScale.y > 128.0f ) Issues.Add( "UVScaleは有限の0より大きく128以下にしてください" );
+	if ( !NMath::IsFinite( UVScroll.x ) || !NMath::IsFinite( UVScroll.y ) || NMath::Abs( UVScroll.x ) > 128.0f || NMath::Abs( UVScroll.y ) > 128.0f ) Issues.Add( "UVScrollは有限で各成分の絶対値を128以下にしてください" );
 	for ( const FString& Message : Strength.Validate() ) Issues.Add( FString( "Strength: " ) + Message );
-	for ( const FEffectScalarCurve::FKey& Key : Strength.Keys ) if ( std::isfinite( Key.Value ) && ( Key.Value < 0.0f || Key.Value > 1.0f ) ) Issues.Add( "Strengthの値は0から1にしてください" );
+	for ( const FEffectScalarCurve::FKey& Key : Strength.Keys ) if ( NMath::IsFinite( Key.Value ) && ( Key.Value < 0.0f || Key.Value > 1.0f ) ) Issues.Add( "Strengthの値は0から1にしてください" );
 	return Issues;
 }
 

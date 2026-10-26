@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "Library/Core/Collection/Map.h"
+#include "Library/Core/Types/Utility.h"
 
 bool NMeshGeometry::BuildChunks( TArrayView<const FMeshVertex> Vertices, TArrayView<const uint32> Indices, TArray<FMeshGeometryChunk>& Out )
 {
@@ -39,7 +40,7 @@ bool NMeshGeometry::BuildChunks( TArrayView<const FMeshVertex> Vertices, TArrayV
 
 		if ( Current.Indices.Num() + 3 > FDrawMaterialMeshData::MaxIndices || Current.Vertices.Num() + PendingSources.Num() > FDrawMaterialMeshData::MaxVertices )
 		{
-			Built.Add( std::move( Current ) );
+			Built.Add( MoveTemp( Current ) );
 			SourceToChunk.Reset();
 			Current = FMeshGeometryChunk();
 			Current.Vertices.Reserve( FDrawMaterialMeshData::MaxVertices );
@@ -69,7 +70,7 @@ bool NMeshGeometry::BuildChunks( TArrayView<const FMeshVertex> Vertices, TArrayV
 		}
 	}
 
-	if ( !Current.Indices.IsEmpty() ) Built.Add( std::move( Current ) );
-	Out = std::move( Built );
+	if ( !Current.Indices.IsEmpty() ) Built.Add( MoveTemp( Current ) );
+	Out = MoveTemp( Built );
 	return true;
 }

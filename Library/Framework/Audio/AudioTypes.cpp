@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "Library/Core/Types/Numeric.h"
+
 const char* ToString( EAudioBus Bus )
 {
 	switch ( Bus )
@@ -77,7 +79,7 @@ void FAudioFade::Step( float32 DeltaSeconds )
 //=============================================================================
 float32 NAudio::ShapeFade( EFadeCurve Curve, float32 T, bool bRising )
 {
-	T = std::clamp( T, 0.0f, 1.0f );
+	T = NMath::Clamp( T, 0.0f, 1.0f );
 	switch ( Curve )
 	{
 	case EFadeCurve::Linear: return T;
@@ -110,7 +112,7 @@ float32 NAudio::RolloffGain( EAudioRolloff Rolloff, float32 Distance, float32 Mi
 		// MinDistance / Distance。MaxDistance で 0 になるよう、そこでの値を引いて整える
 		const float32 AtMax = MinDistance / MaxDistance;
 		const float32 Raw = MinDistance > 0.0f ? MinDistance / Distance : 1.0f - T;
-		return std::clamp( ( Raw - AtMax ) / ( 1.0f - AtMax ), 0.0f, 1.0f );
+		return NMath::Clamp( ( Raw - AtMax ) / ( 1.0f - AtMax ), 0.0f, 1.0f );
 	}
 	}
 	return 1.0f - T;
@@ -121,7 +123,7 @@ float32 NAudio::SpatialPan( const FVector3& ToSource, const FVector3& Right, flo
 	const float32 Length = ToSource.Length();
 	if ( Length < 1.0e-4f ) return 0.0f;   // 真上（リスナーの位置）では左右が決まらない
 	const float32 Side = FVector3::Dot( ToSource / Length, Right );
-	return std::clamp( Side * Strength, -1.0f, 1.0f );
+	return NMath::Clamp( Side * Strength, -1.0f, 1.0f );
 }
 
 FVector3 NAudio::ListenerRight( const FAudioListener& Listener )
@@ -133,5 +135,5 @@ FVector3 NAudio::ListenerRight( const FAudioListener& Listener )
 int32 NAudio::VolumeToDecibel100( float32 Volume )
 {
 	if ( Volume <= 1.0e-5f ) return MinDecibel100;
-	return std::max( MinDecibel100, static_cast<int32>( std::lround( 2000.0f * std::log10( Volume ) ) ) );
+	return NMath::Max( MinDecibel100, static_cast<int32>( std::lround( 2000.0f * std::log10( Volume ) ) ) );
 }

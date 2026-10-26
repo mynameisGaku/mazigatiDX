@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Render/MeshRender.h"
 #include "Library/Framework/Render/MeshMaterialEffectResources.h"
@@ -109,13 +110,13 @@ void NWorldTest::RunMeshMaterialPlaybackTests( NAssetTest::FChecker& C, CAssetMa
 	FMeshRenderer Renderer = NWorld::MakeMeshRenderer( Mesh, LoadTexture );
 	C.Check( Renderer.IsValid() && !Renderer.HasEffectPreparationFailures(), "有効な材質効果を実画像と固定mesh chunkへ準備する" );
 	if ( !Renderer.IsValid() || Renderer.HasEffectPreparationFailures() ) { Assets.SetRootDirectory( PreviousRoot ); return; }
-	C.Check( Renderer.IsEffectsPlaying() && !Renderer.IsEffectsPaused() && !Renderer.IsEffectsFinished() && std::abs( Renderer.GetEffectTime() ) < 1.0e-9, "生成直後のeffect slotは時刻0から再生中になる" );
+	C.Check( Renderer.IsEffectsPlaying() && !Renderer.IsEffectsPaused() && !Renderer.IsEffectsFinished() && NMath::Abs( Renderer.GetEffectTime() ) < 1.0e-9, "生成直後のeffect slotは時刻0から再生中になる" );
 	// rendererの値複製が共有形状だけを共有し時計を独立させる。
 	FMeshRenderer Copy = Renderer;
 	const TSharedPtr<const FMeshMaterialEffectResources> FrozenResources = Renderer.Batches[0].EffectResources;
 	Mesh.Materials[0].Effect.Duration = 9.0f;
 	Copy.Update( 0.125f );
-	C.Check( std::abs( Copy.GetEffectTime() - 0.125 ) < 1.0e-6 && std::abs( Renderer.GetEffectTime() ) < 1.0e-9 && Copy.Batches[0].EffectResources == FrozenResources && FrozenResources.IsValid() && FrozenResources->Definition.Duration == 0.5f, "renderer copyは時計を独立させ、生成時定義を共有したままmesh編集値から固定する" );
+	C.Check( NMath::Abs( Copy.GetEffectTime() - 0.125 ) < 1.0e-6 && NMath::Abs( Renderer.GetEffectTime() ) < 1.0e-9 && Copy.Batches[0].EffectResources == FrozenResources && FrozenResources.IsValid() && FrozenResources->Definition.Duration == 0.5f, "renderer copyは時計を独立させ、生成時定義を共有したままmesh編集値から固定する" );
 	// Add 123の呼出状態をeffect slot前後で保つbuffer。
 	const FDrawBuffer AddBuffer = RecordMeshEffectRenderer( Renderer, FTransform( FVector3( 3.0f, 0.0f, 0.0f ) ), EDrawBlend::Add, 123 );
 	// 時刻0のmaterial command headerを所有値へ読み取る。
@@ -134,10 +135,10 @@ void NWorldTest::RunMeshMaterialPlaybackTests( NAssetTest::FChecker& C, CAssetMa
 	// Pauseがclockを止め、Playが保持位置から進める。
 	Copy.PauseEffects();
 	Copy.Update( 0.2f );
-	C.Check( Copy.IsEffectsPaused() && std::abs( Copy.GetEffectTime() - 0.125 ) < 1.0e-6, "pause中は曲線clockを保持する" );
+	C.Check( Copy.IsEffectsPaused() && NMath::Abs( Copy.GetEffectTime() - 0.125 ) < 1.0e-6, "pause中は曲線clockを保持する" );
 	Copy.PlayEffects();
 	Copy.Update( 0.125f );
-	C.Check( Copy.IsEffectsPlaying() && std::abs( Copy.GetEffectTime() - 0.25 ) < 1.0e-6, "pauseから再生すると保持位置から進む" );
+	C.Check( Copy.IsEffectsPlaying() && NMath::Abs( Copy.GetEffectTime() - 0.25 ) < 1.0e-6, "pauseから再生すると保持位置から進む" );
 	// 非loop終端は最後の材質表示を保ち、停止だけが従来Mesh3Dへ戻す。
 	Copy.Update( 1.0f );
 	const FDrawBuffer FinishedBuffer = RecordMeshEffectRenderer( Copy, FTransform::Identity, EDrawBlend::Opaque, 255 );
@@ -146,17 +147,17 @@ void NWorldTest::RunMeshMaterialPlaybackTests( NAssetTest::FChecker& C, CAssetMa
 	Copy.Update( 0.25f );
 	FDrawMaterialMeshData FrozenHeader;
 	const bool bFrozenHeaderFound = ReadMeshEffectHeader( RecordMeshEffectRenderer( Copy, FTransform::Identity, EDrawBlend::Opaque, 255 ), FrozenHeader );
-	C.Check( Copy.IsEffectsFinished() && !Copy.IsEffectsPlaying() && CountMeshEffectCommands( FinishedBuffer, EDrawCommand::MaterialMesh3D ) == 1 && std::abs( Copy.GetEffectTime() - 0.5 ) < 1.0e-6 && bFinishedHeaderFound && bFrozenHeaderFound && FinishedHeader.UVOffset[0] == FrozenHeader.UVOffset[0], "非loop終端は最終材質表示・UV位相・終端時計を保つ" );
+	C.Check( Copy.IsEffectsFinished() && !Copy.IsEffectsPlaying() && CountMeshEffectCommands( FinishedBuffer, EDrawCommand::MaterialMesh3D ) == 1 && NMath::Abs( Copy.GetEffectTime() - 0.5 ) < 1.0e-6 && bFinishedHeaderFound && bFrozenHeaderFound && FinishedHeader.UVOffset[0] == FrozenHeader.UVOffset[0], "非loop終端は最終材質表示・UV位相・終端時計を保つ" );
 	Copy.PauseEffects();
 	C.Check( Copy.IsEffectsFinished(), "FinishedへのPauseは終端表示を維持する" );
 	Copy.PlayEffects();
-	C.Check( Copy.IsEffectsPlaying() && std::abs( Copy.GetEffectTime() ) < 1.0e-9, "FinishedからPlayすると時刻0で再開する" );
+	C.Check( Copy.IsEffectsPlaying() && NMath::Abs( Copy.GetEffectTime() ) < 1.0e-9, "FinishedからPlayすると時刻0で再開する" );
 	Copy.Update( 0.1f );
 	Copy.StopEffects();
 	const FDrawBuffer StoppedBuffer = RecordMeshEffectRenderer( Copy, FTransform::Identity, EDrawBlend::Alpha, 77 );
-	C.Check( !Copy.IsEffectsPlaying() && !Copy.IsEffectsPaused() && !Copy.IsEffectsFinished() && std::abs( Copy.GetEffectTime() ) < 1.0e-9 && CountMeshEffectCommands( StoppedBuffer, EDrawCommand::MaterialMesh3D ) == 0 && CountMeshEffectCommands( StoppedBuffer, EDrawCommand::Mesh3D ) == 1, "Stopは時刻を戻して従来Mesh3Dへ切り替える" );
+	C.Check( !Copy.IsEffectsPlaying() && !Copy.IsEffectsPaused() && !Copy.IsEffectsFinished() && NMath::Abs( Copy.GetEffectTime() ) < 1.0e-9 && CountMeshEffectCommands( StoppedBuffer, EDrawCommand::MaterialMesh3D ) == 0 && CountMeshEffectCommands( StoppedBuffer, EDrawCommand::Mesh3D ) == 1, "Stopは時刻を戻して従来Mesh3Dへ切り替える" );
 	Copy.RestartEffects();
-	C.Check( Copy.IsEffectsPlaying() && std::abs( Copy.GetEffectTime() ) < 1.0e-9, "Restartは停止状態から時刻0で効果を始める" );
+	C.Check( Copy.IsEffectsPlaying() && NMath::Abs( Copy.GetEffectTime() ) < 1.0e-9, "Restartは停止状態から時刻0で効果を始める" );
 	// World座標が一度だけ変換されることをcommandの頂点と法線から確認する。
 	bool bFoundTranslatedPosition = false;
 	const auto ReadTranslatedVertex = [&]( const FDrawCommandView& Command )
@@ -166,7 +167,7 @@ void NWorldTest::RunMeshMaterialPlaybackTests( NAssetTest::FChecker& C, CAssetMa
 		// command payloadから読む頂点。
 		FMeshVertex Vertex;
 		std::memcpy( &Vertex, Command.Data + sizeof( FDrawMaterialMeshData ) / 4, sizeof( Vertex ) );
-		bFoundTranslatedPosition = Header.NumVertices >= 3 && std::abs( Vertex.Position[0] - 2.0f ) < 1.0e-5f && std::abs( Vertex.Position[1] ) < 1.0e-5f && std::abs( Vertex.Position[2] + 1.0f ) < 1.0e-5f && std::abs( Vertex.Normal[1] - 1.0f ) < 1.0e-5f;
+		bFoundTranslatedPosition = Header.NumVertices >= 3 && NMath::Abs( Vertex.Position[0] - 2.0f ) < 1.0e-5f && NMath::Abs( Vertex.Position[1] ) < 1.0e-5f && NMath::Abs( Vertex.Position[2] + 1.0f ) < 1.0e-5f && NMath::Abs( Vertex.Normal[1] - 1.0f ) < 1.0e-5f;
 	};
 	ForEachDrawCommand( FDrawSpan{ AddBuffer.Words.data(), static_cast<int32>( AddBuffer.Words.size() ) }, ReadTranslatedVertex );
 	C.Check( bFoundTranslatedPosition, "MaterialMesh頂点へworld位置を一度だけ適用し法線を保つ" );
@@ -179,7 +180,7 @@ void NWorldTest::RunMeshMaterialPlaybackTests( NAssetTest::FChecker& C, CAssetMa
 		// command payloadから読む頂点。
 		FMeshVertex Vertex;
 		std::memcpy( &Vertex, Command.Data + sizeof( FDrawMaterialMeshData ) / 4, sizeof( Vertex ) );
-		bFoundMirroredVertex = std::abs( Vertex.Position[0] - 3.0f ) < 1.0e-5f && std::abs( Vertex.Position[1] ) < 1.0e-5f && std::abs( Vertex.Position[2] ) < 1.0e-5f && std::abs( Vertex.Normal[0] ) < 1.0e-5f && std::abs( Vertex.Normal[1] - 1.0f ) < 1.0e-5f && std::abs( Vertex.Normal[2] ) < 1.0e-5f;
+		bFoundMirroredVertex = NMath::Abs( Vertex.Position[0] - 3.0f ) < 1.0e-5f && NMath::Abs( Vertex.Position[1] ) < 1.0e-5f && NMath::Abs( Vertex.Position[2] ) < 1.0e-5f && NMath::Abs( Vertex.Normal[0] ) < 1.0e-5f && NMath::Abs( Vertex.Normal[1] - 1.0f ) < 1.0e-5f && NMath::Abs( Vertex.Normal[2] ) < 1.0e-5f;
 	};
 	ForEachDrawCommand( FDrawSpan{ MirroredBuffer.Words.data(), static_cast<int32>( MirroredBuffer.Words.size() ) }, ReadMirroredVertex );
 	C.Check( bFoundMirroredVertex, "負scaleとzero scaleのworld位置・inverse scale法線を期待値で確認する" );
@@ -200,20 +201,20 @@ void NWorldTest::RunMeshMaterialPlaybackTests( NAssetTest::FChecker& C, CAssetMa
 	LoopRenderer.Update( 0.25f );
 	FDrawMaterialMeshData LoopHeader;
 	const bool bHalfPhaseFound = ReadMeshEffectHeader( RecordMeshEffectRenderer( LoopRenderer, FTransform::Identity, EDrawBlend::Opaque, 255 ), LoopHeader );
-	C.Check( bHalfPhaseFound && std::abs( LoopHeader.UVOffset[0] - 0.5f ) < 1.0e-6f && std::abs( LoopRenderer.GetEffectTime() - 0.25 ) < 1.0e-6, "loop途中のUVとcurve時計が同じUpdate量だけ進む" );
+	C.Check( bHalfPhaseFound && NMath::Abs( LoopHeader.UVOffset[0] - 0.5f ) < 1.0e-6f && NMath::Abs( LoopRenderer.GetEffectTime() - 0.25 ) < 1.0e-6, "loop途中のUVとcurve時計が同じUpdate量だけ進む" );
 	LoopRenderer.Update( 0.25f );
 	const bool bBoundaryFound = ReadMeshEffectHeader( RecordMeshEffectRenderer( LoopRenderer, FTransform::Identity, EDrawBlend::Opaque, 255 ), LoopHeader );
-	C.Check( bBoundaryFound && std::abs( LoopHeader.UVOffset[0] ) < 1.0e-6f && std::abs( LoopRenderer.GetEffectTime() ) < 1.0e-6, "Duration境界ではcurve時計だけが折り返しUVは周期継続する" );
+	C.Check( bBoundaryFound && NMath::Abs( LoopHeader.UVOffset[0] ) < 1.0e-6f && NMath::Abs( LoopRenderer.GetEffectTime() ) < 1.0e-6, "Duration境界ではcurve時計だけが折り返しUVは周期継続する" );
 	const float32 LargeDelta = 1.0e20f;
 	LoopRenderer.Update( LargeDelta );
 	const float32 ExpectedLargeUv = static_cast<float32>( std::fmod( static_cast<float64>( LargeDelta ) * 2.0, 1.0 ) );
 	const bool bLargeDeltaFound = ReadMeshEffectHeader( RecordMeshEffectRenderer( LoopRenderer, FTransform::Identity, EDrawBlend::Opaque, 255 ), LoopHeader );
-	C.Check( bLargeDeltaFound && std::abs( LoopHeader.UVOffset[0] - ExpectedLargeUv ) < 1.0e-6f && LoopRenderer.GetEffectTime() >= 0.0 && LoopRenderer.GetEffectTime() < 0.5, "巨大有限deltaでもloop時計とUV位相を有界に保つ" );
+	C.Check( bLargeDeltaFound && NMath::Abs( LoopHeader.UVOffset[0] - ExpectedLargeUv ) < 1.0e-6f && LoopRenderer.GetEffectTime() >= 0.0 && LoopRenderer.GetEffectTime() < 0.5, "巨大有限deltaでもloop時計とUV位相を有界に保つ" );
 	const float64 TimeBeforeInvalidDeltas = LoopRenderer.GetEffectTime();
 	const float32 UvBeforeInvalidDeltas = LoopHeader.UVOffset[0];
 	LoopRenderer.Update( -1.0f );
-	LoopRenderer.Update( std::numeric_limits<float32>::quiet_NaN() );
-	LoopRenderer.Update( std::numeric_limits<float32>::infinity() );
+	LoopRenderer.Update( TNumericLimits<float32>::QuietNaN() );
+	LoopRenderer.Update( TNumericLimits<float32>::Infinity() );
 	const bool bInvalidDeltaFound = ReadMeshEffectHeader( RecordMeshEffectRenderer( LoopRenderer, FTransform::Identity, EDrawBlend::Opaque, 255 ), LoopHeader );
 	C.Check( bInvalidDeltaFound && LoopRenderer.GetEffectTime() == TimeBeforeInvalidDeltas && LoopHeader.UVOffset[0] == UvBeforeInvalidDeltas, "負数・NaN・無限deltaは時計もUVも変えない" );
 
@@ -242,9 +243,9 @@ void NWorldTest::RunMeshMaterialPlaybackTests( NAssetTest::FChecker& C, CAssetMa
 	const bool bSingleWrappedHeaderFound = ReadMeshEffectHeader( RecordMeshEffectRenderer( SingleWrappedRenderer, FTransform::Identity, EDrawBlend::Alpha, 255 ), SingleWrappedHeader );
 	const bool bSplitWrappedHeaderFound = ReadMeshEffectHeader( RecordMeshEffectRenderer( SplitWrappedRenderer, FTransform::Identity, EDrawBlend::Alpha, 255 ), SplitWrappedHeader );
 	C.Check( SingleWrappedRenderer.IsValid() && !SingleWrappedRenderer.HasEffectPreparationFailures() && SplitWrappedRenderer.IsValid() && !SplitWrappedRenderer.HasEffectPreparationFailures(), "white noise texture付きUV周回fixtureを二つ準備する" );
-	C.Check( bSingleWrappedHeaderFound && bSplitWrappedHeaderFound && std::abs( SingleWrappedRenderer.GetEffectTime() - 1.25 ) < 1.0e-6 && std::abs( SplitWrappedRenderer.GetEffectTime() - 1.25 ) < 1.0e-6, "5.25秒の一括・分割更新後にDuration 2秒の時計を1.25秒へ折り返す" );
-	C.Check( bSingleWrappedHeaderFound && std::abs( SingleWrappedHeader.UVOffset[0] - 0.65625f ) < 1.0e-6f && std::abs( SingleWrappedHeader.UVOffset[1] - 0.6875f ) < 1.0e-6f && std::abs( SingleWrappedHeader.DistortionUVOffset[0] - 0.96875f ) < 1.0e-6f && std::abs( SingleWrappedHeader.DistortionUVOffset[1] - 0.671875f ) < 1.0e-6f, "一括更新のmain UVとnoise UVは5.25秒×各速度を独立に折り返す" );
-	C.Check( bSingleWrappedHeaderFound && bSplitWrappedHeaderFound && std::abs( SplitWrappedHeader.UVOffset[0] - 0.65625f ) < 1.0e-6f && std::abs( SplitWrappedHeader.UVOffset[1] - 0.6875f ) < 1.0e-6f && std::abs( SplitWrappedHeader.DistortionUVOffset[0] - 0.96875f ) < 1.0e-6f && std::abs( SplitWrappedHeader.DistortionUVOffset[1] - 0.671875f ) < 1.0e-6f && SplitWrappedHeader.UVOffset[0] == SingleWrappedHeader.UVOffset[0] && SplitWrappedHeader.UVOffset[1] == SingleWrappedHeader.UVOffset[1] && SplitWrappedHeader.DistortionUVOffset[0] == SingleWrappedHeader.DistortionUVOffset[0] && SplitWrappedHeader.DistortionUVOffset[1] == SingleWrappedHeader.DistortionUVOffset[1], "分割更新も独立期待値と一括更新の全UV位相へ一致する" );
+	C.Check( bSingleWrappedHeaderFound && bSplitWrappedHeaderFound && NMath::Abs( SingleWrappedRenderer.GetEffectTime() - 1.25 ) < 1.0e-6 && NMath::Abs( SplitWrappedRenderer.GetEffectTime() - 1.25 ) < 1.0e-6, "5.25秒の一括・分割更新後にDuration 2秒の時計を1.25秒へ折り返す" );
+	C.Check( bSingleWrappedHeaderFound && NMath::Abs( SingleWrappedHeader.UVOffset[0] - 0.65625f ) < 1.0e-6f && NMath::Abs( SingleWrappedHeader.UVOffset[1] - 0.6875f ) < 1.0e-6f && NMath::Abs( SingleWrappedHeader.DistortionUVOffset[0] - 0.96875f ) < 1.0e-6f && NMath::Abs( SingleWrappedHeader.DistortionUVOffset[1] - 0.671875f ) < 1.0e-6f, "一括更新のmain UVとnoise UVは5.25秒×各速度を独立に折り返す" );
+	C.Check( bSingleWrappedHeaderFound && bSplitWrappedHeaderFound && NMath::Abs( SplitWrappedHeader.UVOffset[0] - 0.65625f ) < 1.0e-6f && NMath::Abs( SplitWrappedHeader.UVOffset[1] - 0.6875f ) < 1.0e-6f && NMath::Abs( SplitWrappedHeader.DistortionUVOffset[0] - 0.96875f ) < 1.0e-6f && NMath::Abs( SplitWrappedHeader.DistortionUVOffset[1] - 0.671875f ) < 1.0e-6f && SplitWrappedHeader.UVOffset[0] == SingleWrappedHeader.UVOffset[0] && SplitWrappedHeader.UVOffset[1] == SingleWrappedHeader.UVOffset[1] && SplitWrappedHeader.DistortionUVOffset[0] == SingleWrappedHeader.DistortionUVOffset[0] && SplitWrappedHeader.DistortionUVOffset[1] == SingleWrappedHeader.DistortionUVOffset[1], "分割更新も独立期待値と一括更新の全UV位相へ一致する" );
 
 	// 傾斜した面法線を非一様scaleで変換し、inverse-scale結果を独立値と比べる。
 	FEditMesh ObliqueNormalMesh;
@@ -290,7 +291,7 @@ void NWorldTest::RunMeshMaterialPlaybackTests( NAssetTest::FChecker& C, CAssetMa
 	// 独立計算した三成分を正規化係数で合わせた値。
 	const FVector3 ExpectedObliqueWorldNormal( -6.0f * ObliqueNormalInverseLength, -4.0f * ObliqueNormalInverseLength, 3.0f * ObliqueNormalInverseLength );
 	C.Check( ObliqueNormalRenderer.IsValid() && !ObliqueNormalRenderer.HasEffectPreparationFailures() && bObliqueNormalFound, "傾斜三角形を材質mesh commandへ記録する" );
-	C.Check( bObliqueNormalFound && std::abs( ObliqueWorldNormal.x - ExpectedObliqueWorldNormal.x ) < 1.0e-5f && std::abs( ObliqueWorldNormal.y - ExpectedObliqueWorldNormal.y ) < 1.0e-5f && std::abs( ObliqueWorldNormal.z - ExpectedObliqueWorldNormal.z ) < 1.0e-5f, "非一様scale後の斜め法線を手計算inverse-scale期待値へ一致させる: got=(%.6f,%.6f,%.6f) expected=(%.6f,%.6f,%.6f)", ObliqueWorldNormal.x, ObliqueWorldNormal.y, ObliqueWorldNormal.z, ExpectedObliqueWorldNormal.x, ExpectedObliqueWorldNormal.y, ExpectedObliqueWorldNormal.z );
+	C.Check( bObliqueNormalFound && NMath::Abs( ObliqueWorldNormal.x - ExpectedObliqueWorldNormal.x ) < 1.0e-5f && NMath::Abs( ObliqueWorldNormal.y - ExpectedObliqueWorldNormal.y ) < 1.0e-5f && NMath::Abs( ObliqueWorldNormal.z - ExpectedObliqueWorldNormal.z ) < 1.0e-5f, "非一様scale後の斜め法線を手計算inverse-scale期待値へ一致させる: got=(%.6f,%.6f,%.6f) expected=(%.6f,%.6f,%.6f)", ObliqueWorldNormal.x, ObliqueWorldNormal.y, ObliqueWorldNormal.z, ExpectedObliqueWorldNormal.x, ExpectedObliqueWorldNormal.y, ExpectedObliqueWorldNormal.z );
 	// 同じrenderer内のslotはそれぞれ別Durationの時計と終端状態を持つ。
 	FEditMesh MultiSlotMesh = NEditMesh::MakePlane( 2.0f, 2.0f, 2, 1 );
 	MultiSlotMesh.Materials.Add( FEditMeshMaterial() );
@@ -306,7 +307,7 @@ void NWorldTest::RunMeshMaterialPlaybackTests( NAssetTest::FChecker& C, CAssetMa
 	FMeshRenderer MultiSlotRenderer = NWorld::MakeMeshRenderer( MultiSlotMesh, LoadTexture );
 	MultiSlotRenderer.Update( 0.5f );
 	const FDrawBuffer MultiSlotBuffer = RecordMeshEffectRenderer( MultiSlotRenderer, FTransform::Identity, EDrawBlend::Opaque, 255 );
-	C.Check( MultiSlotRenderer.Batches.Num() == 2 && MultiSlotRenderer.Batches[0].EffectResources.IsValid() && MultiSlotRenderer.Batches[1].EffectResources.IsValid() && MultiSlotRenderer.GetEffectTime( 0 ) == 0.25 && std::abs( MultiSlotRenderer.GetEffectTime( 1 ) - 0.5 ) < 1.0e-6 && MultiSlotRenderer.IsEffectsPlaying() && CountMeshEffectCommands( MultiSlotBuffer, EDrawCommand::MaterialMesh3D ) == 2, "複数slotは異なるDurationで独立して進み終端slotも描画する" );
+	C.Check( MultiSlotRenderer.Batches.Num() == 2 && MultiSlotRenderer.Batches[0].EffectResources.IsValid() && MultiSlotRenderer.Batches[1].EffectResources.IsValid() && MultiSlotRenderer.GetEffectTime( 0 ) == 0.25 && NMath::Abs( MultiSlotRenderer.GetEffectTime( 1 ) - 0.5 ) < 1.0e-6 && MultiSlotRenderer.IsEffectsPlaying() && CountMeshEffectCommands( MultiSlotBuffer, EDrawCommand::MaterialMesh3D ) == 2, "複数slotは異なるDurationで独立して進み終端slotも描画する" );
 
 	// 1024頂点境界をまたぐ一枚面を三角形の順とchunk-local indexを保って記録する。
 	FEditMesh ChunkMesh;
@@ -377,10 +378,10 @@ void NWorldTest::RunMeshMaterialPlaybackTests( NAssetTest::FChecker& C, CAssetMa
 	FWorldInstance SpawnedWorld = FreshWorldAsset.IsValid() ? NWorld::Spawn( SpawnScene, FreshWorldAsset->GetDefinitionShared(), FWorldBindings(), SpawnOptions ) : FWorldInstance();
 	TSharedPtr<CGameObject> SpawnedObject = SpawnedWorld.FindByName( "effect mesh" );
 	FMeshRenderer* SpawnedRenderer = SpawnedObject.IsValid() ? SpawnedObject->GetData<FMeshRenderer>() : nullptr;
-	const bool bSpawnReady = SpawnedRenderer != nullptr && SpawnedRenderer->IsValid() && std::abs( SpawnedRenderer->GetEffectTime() ) < 1.0e-9;
+	const bool bSpawnReady = SpawnedRenderer != nullptr && SpawnedRenderer->IsValid() && NMath::Abs( SpawnedRenderer->GetEffectTime() ) < 1.0e-9;
 	if ( bSpawnReady ) SpawnScene.GetSystems().Run( NEcs::EPhase::PreUpdate, 0.125f, ~0ull, SpawnScene.GetEcsWorld(), SpawnScene.GetTransformWorld(), nullptr );
 	const FDrawBuffer SpawnedBuffer = SpawnedRenderer != nullptr ? RecordMeshEffectRenderer( *SpawnedRenderer, FTransform::Identity, EDrawBlend::Opaque, 255 ) : FDrawBuffer();
-	C.Check( bWorldSaved && FreshWorldAsset.IsValid() && bSpawnReady && std::abs( SpawnedRenderer->GetEffectTime() - 0.125 ) < 1.0e-6 && CountMeshEffectCommands( SpawnedBuffer, EDrawCommand::MaterialMesh3D ) > 0, "保存worldをfresh loadして通常Spawn後にECS PreUpdateが時計を進め、scene由来rendererが材質meshを記録する" );
+	C.Check( bWorldSaved && FreshWorldAsset.IsValid() && bSpawnReady && NMath::Abs( SpawnedRenderer->GetEffectTime() - 0.125 ) < 1.0e-6 && CountMeshEffectCommands( SpawnedBuffer, EDrawCommand::MaterialMesh3D ) > 0, "保存worldをfresh loadして通常Spawn後にECS PreUpdateが時計を進め、scene由来rendererが材質meshを記録する" );
 	SpawnedWorld.Despawn();
 	SpawnScene.DestroyAllObjects();
 	SpawnedObject.Reset();

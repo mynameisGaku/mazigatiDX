@@ -8,6 +8,8 @@
 #include "DrawMaterialRibbon.h"
 #include "MeshTypes.h"
 
+#include "Library/Core/Types/Numeric.h"
+
 // 固定済みワールド頂点と材質設定を所有コピーする三角形命令。
 struct FDrawMaterialMeshData
 {
@@ -52,10 +54,10 @@ namespace NDrawMaterialMesh
 		// 材質の固定設定。
 		const FDrawMaterialRibbonData::FMaterialSettings& Material = Data.Material;
 		if ( Data.Texture < 0 || Data.DistortionTexture < -1 || ( Data.bTwoSided != 0 && Data.bTwoSided != 1 ) ) return false;
-		if ( !std::isfinite( Material.UVScale[0] ) || !std::isfinite( Material.UVScale[1] ) || Material.UVScale[0] <= 0.0f || Material.UVScale[1] <= 0.0f || Material.UVScale[0] > 128.0f || Material.UVScale[1] > 128.0f || !std::isfinite( Material.MaskScale ) || Material.MaskScale <= 0.0f || Material.MaskScale > 128.0f || !std::isfinite( Material.EdgeWidth ) || Material.EdgeWidth < 0.0f || Material.EdgeWidth > 1.0f || !std::isfinite( Material.EdgeEmission ) || Material.EdgeEmission < 0.0f || Material.EdgeEmission > 32.0f || ( Material.bDissolve != 0 && Material.bDissolve != 1 ) || ( Material.DepthTest != 0 && Material.DepthTest != 1 ) || ( Material.DepthWrite != 0 && Material.DepthWrite != 1 ) || Material.MaskTexture < -1 ) return false;
-		if ( !std::isfinite( Data.UVOffset[0] ) || !std::isfinite( Data.UVOffset[1] ) || std::abs( Data.UVOffset[0] ) > 1.0e6f || std::abs( Data.UVOffset[1] ) > 1.0e6f || !std::isfinite( Data.Dissolve ) || Data.Dissolve < 0.0f || Data.Dissolve > 1.0f || !std::isfinite( Data.Emission ) || Data.Emission < 0.0f || Data.Emission > 32.0f ) return false;
-		if ( !std::isfinite( Data.DistortionStrength ) || Data.DistortionStrength < 0.0f || Data.DistortionStrength > 1.0f || ( Data.DistortionStrength > 0.0f && Data.DistortionTexture < 0 ) ) return false;
-		return std::isfinite( Data.DistortionUVScale[0] ) && std::isfinite( Data.DistortionUVScale[1] ) && Data.DistortionUVScale[0] > 0.0f && Data.DistortionUVScale[1] > 0.0f && Data.DistortionUVScale[0] <= 128.0f && Data.DistortionUVScale[1] <= 128.0f && std::isfinite( Data.DistortionUVOffset[0] ) && std::isfinite( Data.DistortionUVOffset[1] ) && std::abs( Data.DistortionUVOffset[0] ) <= 1.0e6f && std::abs( Data.DistortionUVOffset[1] ) <= 1.0e6f;
+		if ( !NMath::IsFinite( Material.UVScale[0] ) || !NMath::IsFinite( Material.UVScale[1] ) || Material.UVScale[0] <= 0.0f || Material.UVScale[1] <= 0.0f || Material.UVScale[0] > 128.0f || Material.UVScale[1] > 128.0f || !NMath::IsFinite( Material.MaskScale ) || Material.MaskScale <= 0.0f || Material.MaskScale > 128.0f || !NMath::IsFinite( Material.EdgeWidth ) || Material.EdgeWidth < 0.0f || Material.EdgeWidth > 1.0f || !NMath::IsFinite( Material.EdgeEmission ) || Material.EdgeEmission < 0.0f || Material.EdgeEmission > 32.0f || ( Material.bDissolve != 0 && Material.bDissolve != 1 ) || ( Material.DepthTest != 0 && Material.DepthTest != 1 ) || ( Material.DepthWrite != 0 && Material.DepthWrite != 1 ) || Material.MaskTexture < -1 ) return false;
+		if ( !NMath::IsFinite( Data.UVOffset[0] ) || !NMath::IsFinite( Data.UVOffset[1] ) || NMath::Abs( Data.UVOffset[0] ) > 1.0e6f || NMath::Abs( Data.UVOffset[1] ) > 1.0e6f || !NMath::IsFinite( Data.Dissolve ) || Data.Dissolve < 0.0f || Data.Dissolve > 1.0f || !NMath::IsFinite( Data.Emission ) || Data.Emission < 0.0f || Data.Emission > 32.0f ) return false;
+		if ( !NMath::IsFinite( Data.DistortionStrength ) || Data.DistortionStrength < 0.0f || Data.DistortionStrength > 1.0f || ( Data.DistortionStrength > 0.0f && Data.DistortionTexture < 0 ) ) return false;
+		return NMath::IsFinite( Data.DistortionUVScale[0] ) && NMath::IsFinite( Data.DistortionUVScale[1] ) && Data.DistortionUVScale[0] > 0.0f && Data.DistortionUVScale[1] > 0.0f && Data.DistortionUVScale[0] <= 128.0f && Data.DistortionUVScale[1] <= 128.0f && NMath::IsFinite( Data.DistortionUVOffset[0] ) && NMath::IsFinite( Data.DistortionUVOffset[1] ) && NMath::Abs( Data.DistortionUVOffset[0] ) <= 1.0e6f && NMath::Abs( Data.DistortionUVOffset[1] ) <= 1.0e6f;
 	}
 
 	// 固定設定と配列数が命令上限内かを調べ、範囲外・非有限値ならfalseを返す。
@@ -78,8 +80,8 @@ namespace NDrawMaterialMesh
 		{
 			// 位置・法線・UVを持つ現在頂点。
 			const FMeshVertex& Vertex = Vertices[Index];
-			if ( !std::isfinite( Vertex.Position[0] ) || !std::isfinite( Vertex.Position[1] ) || !std::isfinite( Vertex.Position[2] ) || !std::isfinite( Vertex.Normal[0] ) || !std::isfinite( Vertex.Normal[1] ) || !std::isfinite( Vertex.Normal[2] ) || !std::isfinite( Vertex.U ) || !std::isfinite( Vertex.V ) || std::abs( Vertex.U ) > 1.0e6f || std::abs( Vertex.V ) > 1.0e6f ) return false;
-			if ( !std::isfinite( Vertex.U * Material.UVScale[0] + Data.UVOffset[0] ) || !std::isfinite( Vertex.V * Material.UVScale[1] + Data.UVOffset[1] ) || !std::isfinite( Vertex.U * Material.MaskScale ) || !std::isfinite( Vertex.V * Material.MaskScale ) || !std::isfinite( Vertex.U * Data.DistortionUVScale[0] + Data.DistortionUVOffset[0] ) || !std::isfinite( Vertex.V * Data.DistortionUVScale[1] + Data.DistortionUVOffset[1] ) ) return false;
+			if ( !NMath::IsFinite( Vertex.Position[0] ) || !NMath::IsFinite( Vertex.Position[1] ) || !NMath::IsFinite( Vertex.Position[2] ) || !NMath::IsFinite( Vertex.Normal[0] ) || !NMath::IsFinite( Vertex.Normal[1] ) || !NMath::IsFinite( Vertex.Normal[2] ) || !NMath::IsFinite( Vertex.U ) || !NMath::IsFinite( Vertex.V ) || NMath::Abs( Vertex.U ) > 1.0e6f || NMath::Abs( Vertex.V ) > 1.0e6f ) return false;
+			if ( !NMath::IsFinite( Vertex.U * Material.UVScale[0] + Data.UVOffset[0] ) || !NMath::IsFinite( Vertex.V * Material.UVScale[1] + Data.UVOffset[1] ) || !NMath::IsFinite( Vertex.U * Material.MaskScale ) || !NMath::IsFinite( Vertex.V * Material.MaskScale ) || !NMath::IsFinite( Vertex.U * Data.DistortionUVScale[0] + Data.DistortionUVOffset[0] ) || !NMath::IsFinite( Vertex.V * Data.DistortionUVScale[1] + Data.DistortionUVOffset[1] ) ) return false;
 		}
 		// 頂点配列範囲を超えないindex添字。
 		for ( int32 Index = 0; Index < Data.NumIndices; ++Index )

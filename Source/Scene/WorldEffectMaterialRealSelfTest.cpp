@@ -8,6 +8,7 @@
 #include <limits>
 
 #include "Library/Core/Interfaces/Render/DrawMaterialQuad.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Render/DrawContext.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 #include "Library/Platform/DxLib/EffectMaterialRenderer.h"
@@ -321,7 +322,7 @@ namespace
 		Data.Dissolve = 0.75f;
 		C.Check( Recorded.Dissolve == 0.0f && Recorded.Quad.Handle == 11 && Recorded.DepthTest == 1 && Recorded.DepthWrite == 0, "記録は入力値を所有し、既定の深度契約を保持する" );
 		const int32 BeforeInvalid = Draw.GetNumWords();
-		Data.Dissolve = std::numeric_limits<float32>::quiet_NaN();
+		Data.Dissolve = TNumericLimits<float32>::QuietNaN();
 		Draw.MaterialQuad3D( Data );
 		Data.Dissolve = 0.0f; Data.DepthTest = 2;
 		Draw.MaterialQuad3D( Data );
