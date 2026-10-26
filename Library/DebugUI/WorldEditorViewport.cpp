@@ -320,17 +320,17 @@ namespace
 		FDrawBuffer Buffer;
 		FDrawContext Draw( Buffer );
 		NWorldEditorUI::RecordWorldScene( S, Draw );
-		Executor->Execute( FDrawSpan { Buffer.Words.data(), static_cast<int32>( Buffer.Words.size() ) } );
+		Executor->Execute( FDrawSpan { Buffer.Words.GetData(), Buffer.Words.Num() } );
 
 		// エフェクトは、深度を書かない 2 回目で（半透明・加算の粒子が、後ろの粒子を隠さないように）。深度の比較は残るので、モデルの後ろでは隠れる
 		NWorldEditorUI::UpdateEffectPreviews( S, ImGui::GetIO().DeltaTime );
 		FDrawBuffer EffectBuffer;
 		FDrawContext EffectDraw( EffectBuffer );
 		NWorldEditorUI::RecordEffectPreviews( S, EffectDraw );
-		if ( !EffectBuffer.Words.empty() )
+		if ( !EffectBuffer.Words.IsEmpty() )
 		{
 			SetWriteZBuffer3D( FALSE );
-			Executor->Execute( FDrawSpan { EffectBuffer.Words.data(), static_cast<int32>( EffectBuffer.Words.size() ) } );
+			Executor->Execute( FDrawSpan { EffectBuffer.Words.GetData(), EffectBuffer.Words.Num() } );
 		}
 
 		SetUseZBuffer3D( FALSE );

@@ -111,7 +111,7 @@ namespace
 			FDrawBuffer Buffer;
 			FDrawContext Draw( Buffer );
 			S.Animator.Record( Draw, FMatrix4x4::Identity );
-			Executor->Execute( FDrawSpan { Buffer.Words.data(), static_cast<int32>( Buffer.Words.size() ) } );
+			Executor->Execute( FDrawSpan { Buffer.Words.GetData(), Buffer.Words.Num() } );
 			for ( int32 Frame = 0; Frame < NumFrames; ++Frame )
 			{
 				const VECTOR Position = MV1GetFramePosition( Handle, Frame );
@@ -345,7 +345,7 @@ namespace
 		FDrawBuffer Buffer;
 		FDrawContext Draw( Buffer );
 		S.Animator.Record( Draw, FMatrix4x4::Identity );
-		Executor->Execute( FDrawSpan { Buffer.Words.data(), static_cast<int32>( Buffer.Words.size() ) } );
+		Executor->Execute( FDrawSpan { Buffer.Words.GetData(), Buffer.Words.Num() } );
 
 		// 3D 描画の Z バッファは、既定（使わない）に戻す
 		SetUseZBuffer3D( FALSE );

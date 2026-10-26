@@ -766,7 +766,7 @@ void NEffectEditorUI::DrawPreview( FEffectEditorState& S )
 	NEffectEditorUI::RecordForceFieldGuides( S, GuideDraw );
 	NEffectEditorUI::RecordPreviewTargetGuides( S, GuideDraw );
 	// 寿命中にsurfaceへ渡す、範囲線コマンドのview。
-	const FDrawSpan GuideSpan { GuideBuffer.Words.data(), static_cast<int32>( GuideBuffer.Words.size() ) };
+	const FDrawSpan GuideSpan { GuideBuffer.Words.GetData(), GuideBuffer.Words.Num() };
 	// 描画先へgrid・playback・力場範囲を描けたか。
 	const bool bRendered = Executor != nullptr && S.Surface.Render( S.Camera, S.View, S.Playback.Get(), *Executor, GuideSpan );
 	if ( bRendered && S.Surface.GetHandle() >= 0 ) ImGui::GetWindowDrawList()->AddImage( NDebugUI::GetImGuiTexture( S.Surface.GetHandle() ), Origin, ImVec2( Origin.x + Size.x, Origin.y + Size.y ) );

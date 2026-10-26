@@ -197,7 +197,7 @@ public:
 	{
 		static_assert( std::is_trivially_copyable_v<T>, "AddZeroed requires a trivially copyable type" );
 		const int32 Index = ArrayNum;
-		Reserve( ArrayNum + Count );
+		GrowTo( ArrayNum + Count );
 		FMemory::Memzero( Data + ArrayNum, sizeof( T ) * static_cast<usize>( Count ) );
 		ArrayNum += Count;
 		return Index;
@@ -208,7 +208,7 @@ public:
 	{
 		static_assert( std::is_trivially_copyable_v<T>, "AddUninitialized requires a trivially copyable type" );
 		const int32 Index = ArrayNum;
-		Reserve( ArrayNum + Count );
+		GrowTo( ArrayNum + Count );
 		ArrayNum += Count;
 		return Index;
 	}
@@ -231,7 +231,7 @@ public:
 	{
 		if ( Count <= 0 ) return;
 		COLLECTION_CHECK( !( Ptr >= Data && Ptr < Data + ArrayNum ), "TArray::Append from itself" );
-		Reserve( ArrayNum + Count );
+		ReserveForAppend( ArrayNum + Count );
 		NMemoryOps::CopyConstructItems( Data + ArrayNum, Ptr, Count );
 		ArrayNum += Count;
 	}
@@ -241,7 +241,7 @@ public:
 	FORCEINLINE void Append( TArray&& Other )
 	{
 		if ( &Other == this ) { Append( static_cast<const TArray&>( Other ) ); return; }
-		Reserve( ArrayNum + Other.ArrayNum );
+		ReserveForAppend( ArrayNum + Other.ArrayNum );
 		NMemoryOps::RelocateItems( Data + ArrayNum, Other.Data, Other.ArrayNum );
 		ArrayNum += Other.ArrayNum;
 		Other.ArrayNum = 0;
@@ -444,6 +444,19 @@ public:
 	FORCEINLINE ConstIterator CreateConstIterator() const { return ConstIterator( *this ); }
 
 private:
+	// 追記のために、容量を Required 以上にする。空の配列（作った直後のコピーなど）には必要な数ちょうど、すでに要素がある配列には少し余分に確保する
+	FORCEINLINE void ReserveForAppend( int32 Required )
+	{
+		if ( ArrayMax == 0 ) Reserve( Required );
+		else GrowTo( Required );
+	}
+
+	// 容量を Required 以上にする。足りないときは、再確保の回数を抑えるため、少し余分に確保する（Reserve は指定した数ちょうど）
+	FORCEINLINE void GrowTo( int32 Required )
+	{
+		if ( Required > ArrayMax ) Reallocate( CalculateGrowth( Required ) );
+	}
+
 	FORCEINLINE static int32 CalculateGrowth( int32 Required )
 	{
 		// 1.5 倍 + 少し（小さい配列でも再確保回数を抑える）

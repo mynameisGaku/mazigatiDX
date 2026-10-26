@@ -110,7 +110,7 @@ namespace NEcs
 			if ( Range.Entity != Entity || Range.End <= Range.Begin ) return false;   // 記録していない（または、記録のあとで構造が変わった）
 
 			const FDrawBuffer& Buffer = Buffers[static_cast<size_t>( static_cast<uint32>( Index ) >> DrawBatchShift )];
-			Out.Words = Buffer.Words.data() + Range.Begin;
+			Out.Words = Buffer.Words.GetData() + Range.Begin;
 			Out.NumWords = static_cast<int32>( Range.End - Range.Begin );
 			return true;
 		}

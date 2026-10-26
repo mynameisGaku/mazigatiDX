@@ -274,7 +274,7 @@ bool FEffectPreviewSurface::Render( const FEditorCamera& Camera, const FEditorVi
 	// 格子を既存の実行窓口へ渡すための記録先。
 	FDrawContext GridDraw( GridBuffer );
 	RecordGrid( GridDraw, Camera );
-	Executor.Execute( FDrawSpan { GridBuffer.Words.data(), static_cast<int32>( GridBuffer.Words.size() ) } );
+	Executor.Execute( FDrawSpan { GridBuffer.Words.GetData(), GridBuffer.Words.Num() } );
 	if ( Playback != nullptr )
 	{
 		// 半透明な粒子の描画コマンド。時間更新は呼び出し元で済ませる。
@@ -282,10 +282,10 @@ bool FEffectPreviewSurface::Render( const FEditorCamera& Camera, const FEditorVi
 		// 再生状態が記録する粒子の受け取り先。
 		FDrawContext EffectDraw( EffectBuffer );
 		Playback->Record( EffectDraw );
-		if ( !EffectBuffer.Words.empty() )
+		if ( !EffectBuffer.Words.IsEmpty() )
 		{
 			SetWriteZBuffer3D( FALSE );
-			Executor.Execute( FDrawSpan { EffectBuffer.Words.data(), static_cast<int32>( EffectBuffer.Words.size() ) } );
+			Executor.Execute( FDrawSpan { EffectBuffer.Words.GetData(), EffectBuffer.Words.Num() } );
 		}
 	}
 	if ( Overlay.NumWords > 0 )

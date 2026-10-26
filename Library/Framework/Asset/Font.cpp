@@ -56,7 +56,7 @@ void CFont::Draw( int32 X, int32 Y, const char* Text, const FColor32& Color, EDr
 	Buffer.Clear();
 	FDrawContext Context( Buffer );
 	Record( Context, X, Y, Text, Color, Align, EdgeColor );
-	Executor->Execute( FDrawSpan { Buffer.Words.data(), static_cast<int32>( Buffer.Words.size() ) } );
+	Executor->Execute( FDrawSpan { Buffer.Words.GetData(), Buffer.Words.Num() } );
 }
 
 void CFont::DrawF( int32 X, int32 Y, const FColor32& Color, const char* Format, ... ) const
@@ -75,9 +75,10 @@ void CFont::DrawF( int32 X, int32 Y, const FColor32& Color, const char* Format, 
 	}
 	else if ( Needed >= 0 )
 	{
-		std::vector<char> Large( static_cast<size_t>( Needed ) + 1 );
-		std::vsnprintf( Large.data(), Large.size(), Format, ArgsCopy );
-		Draw( X, Y, Large.data(), Color );
+		TArray<char> Large;
+		Large.SetNum( Needed + 1 );
+		std::vsnprintf( Large.GetData(), static_cast<size_t>( Large.Num() ), Format, ArgsCopy );
+		Draw( X, Y, Large.GetData(), Color );
 	}
 	va_end( ArgsCopy );
 }

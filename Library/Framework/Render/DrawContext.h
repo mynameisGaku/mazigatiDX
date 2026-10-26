@@ -3,8 +3,8 @@
 #define FRAMEWORK_RENDER_DRAWCONTEXT_H
 
 #include <cstring>
-#include <vector>
 
+#include "Library/Core/Collection/Array.h"
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Core/Interfaces/Render/DrawDistortedMaterialQuad.h"
 #include "Library/Core/Interfaces/Render/DrawDistortedMaterialRibbon.h"
@@ -23,10 +23,10 @@
 //=============================================================================
 struct FDrawBuffer
 {
-	std::vector<uint32> Words;
+	TArray<uint32> Words;
 
 	// 中身を空にする（確保した領域は残す。毎フレーム使い回すため）
-	void Clear() { Words.clear(); }
+	void Clear() { Words.Reset(); }
 };
 
 //=============================================================================
@@ -60,7 +60,7 @@ public:
 	explicit FDrawContext( FDrawBuffer& InBuffer ) : Buffer( &InBuffer ) {}
 
 	// これまでに記録したワード数（システムの実行機構が、オブジェクトごとの範囲を決めるのに使う）
-	FORCEINLINE int32 GetNumWords() const { return static_cast<int32>( Buffer->Words.size() ); }
+	FORCEINLINE int32 GetNumWords() const { return Buffer->Words.Num(); }
 
 	//-------------------------------------------------------------------------
 	// 2D（画面座標）
@@ -344,12 +344,12 @@ private:
 	template<typename TData>
 	FORCEINLINE void Push( EDrawCommand Type, uint8 Flags, const TData& Data )
 	{
-		constexpr size_t DataWords = sizeof( TData ) / 4;
-		std::vector<uint32>& Words = Buffer->Words;
-		const size_t Begin = Words.size();
-		Words.resize( Begin + 1 + DataWords );
-		Words[Begin] = NDrawCommand::MakeHeader( Type, Flags, static_cast<int32>( 1 + DataWords ) );
-		FMemory::Memcpy( &Words[Begin + 1], &Data, sizeof( TData ) );
+		constexpr int32 DataWords = static_cast<int32>( sizeof( TData ) / 4 );
+		TArray<uint32>& Words = Buffer->Words;
+		const int32 Begin = Words.AddZeroed( 1 + DataWords );
+		uint32* const Out = Words.GetData() + Begin;
+		Out[0] = NDrawCommand::MakeHeader( Type, Flags, 1 + DataWords );
+		FMemory::Memcpy( Out + 1, &Data, sizeof( TData ) );
 	}
 
 private:

@@ -28,7 +28,7 @@ void TArray<T>::SetNum( int32 NewNum )
 	COLLECTION_CHECK( NewNum >= 0, "TArray::SetNum negative" );
 	if ( NewNum > ArrayNum )
 	{
-		Reserve( NewNum );
+		GrowTo( NewNum );
 		NMemoryOps::DefaultConstructItems( Data + ArrayNum, NewNum - ArrayNum );
 	}
 	else
@@ -45,7 +45,7 @@ void TArray<T>::SetNum( int32 NewNum, const T& Value )
 	if ( NewNum > ArrayNum )
 	{
 		const T Copy = Value;
-		Reserve( NewNum );
+		GrowTo( NewNum );
 		for ( int32 i = ArrayNum; i < NewNum; ++i ) new ( Data + i ) T( Copy );
 	}
 	else
