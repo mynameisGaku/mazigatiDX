@@ -24,6 +24,17 @@ namespace
 		if ( bError ) LOG( LogEffectEditor, Warning, "%s", *Message );
 	}
 
+	// 文書を切り替えたとき、保存されない終点操作を既定値へ戻す。
+	void ResetPreviewTargetState( FEffectEditorState& State )
+	{
+		State.bPreviewTargetEnabled = false;
+		State.PreviewTargetPosition = FVector3( 0.0f, 1.0f, 0.0f );
+		State.bShowPreviewTargetGuides = true;
+		State.bPreviewTargetCameraFocusPending = false;
+		State.PreviewTargetDrag.End();
+		State.PreviewTargetDragStart = FVector3::Zero;
+	}
+
 	// 開く・保存する両方のパスを同じ区切りと余白の扱いにする。
 	FString NormalizePath( const FString& Path )
 	{
@@ -114,6 +125,7 @@ namespace
 				if ( ImGui::MenuItem( "Aura" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/aura.effect.json", pOpen );
 				if ( ImGui::MenuItem( "Ribbon trail" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/ribbon_trail.effect.json", pOpen );
 				if ( ImGui::MenuItem( "Branch lightning" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/branch_lightning.effect.json", pOpen );
+				if ( ImGui::MenuItem( "Target lightning" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/target_lightning.effect.json", pOpen );
 				if ( ImGui::MenuItem( "Realistic lightning tree" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/tree_lightning.effect.json", pOpen );
 				if ( ImGui::MenuItem( "Growing lightning tree" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/growing_tree_lightning.effect.json", pOpen );
 				if ( ImGui::MenuItem( "Dissolve sigil" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/material_dissolve.effect.json", pOpen );
@@ -210,9 +222,12 @@ bool NDebugUI::OpenEffectFile( FEffectEditorState& State, const FString& AssetPa
 	State.SelectedForceField = 0;
 	State.bInitialized = true;
 	State.bPreviewMotion = false;
+	ResetPreviewTargetState( State );
 	// Tree・mesh・力場を含む文書だけ、実viewport確定後に一度全体をcameraへ収める。
 	NEffectEditorUI::SetPendingEffectCameraFocus( State, Definition );
 	State.Camera.Distance = 6.0f;
+	// 動的終点つきの雷があれば、試し再生の終点を有効にして、終点を含む範囲へ一度だけcameraを合わせる。
+	NEffectEditorUI::ApplyInitialPreviewTarget( State );
 	RestartEffectPreview( State );
 	SetStatus( State, "エフェクトを開きました: " + Path );
 	if ( !Warnings.IsEmpty() ) SetStatus( State, FString::Printf( "エフェクトを開きました: %s（読み込み時の警告 %d 件: %s）", *Path, Warnings.Num(), *Warnings[0] ) );
@@ -229,6 +244,7 @@ void NDebugUI::NewEffect( FEffectEditorState& State )
 	State.SaveAsPath = "Effects/NewEffect.effect.json";
 	State.bInitialized = true;
 	State.bPreviewMotion = false;
+	ResetPreviewTargetState( State );
 	State.bTreeCameraFocusPending = false;
 	State.bEffectGeometryCameraFocusPending = false;
 	State.Camera = FEditorCamera();
@@ -252,6 +268,8 @@ bool NDebugUI::NewEffectFromPreset( FEffectEditorState& State, const FString& Pr
 	const FString Base = Path.EndsWith( ".effect.json", ESearchCase::IgnoreCase ) ? Path.Left( Path.Len() - 12 ) : Path;
 	State.SaveAsPath = Base + "_copy.effect.json";
 	State.bPreviewMotion = false;
+	ResetPreviewTargetState( State );
+	NEffectEditorUI::ApplyInitialPreviewTarget( State );
 	// 力場がないRibbonだけ、生成位置の円運動で従来の軌跡previewを見せる。
 	for ( const FParticleEmitterDefinition& Emitter : Copy.Emitters )
 	{
@@ -351,6 +369,14 @@ void NDebugUI::UpdateEffectEditor( FEffectEditorState& State, float32 DeltaTime 
 		const TSharedPtr<const FParticleEffectDefinition> Snapshot = MakeShared<FParticleEffectDefinition>( State.Document.Get() );
 		if ( !FParticleEffectDefinition::HasErrors( State.Issues ) ) State.Playback = NEffect::CreateParticlePlayback( Snapshot, GetAppSubsystem<CAssetManager>(), FEffectPlayParams(), FTransform::Identity, "editor" );
 	}
+	if ( State.Playback.IsValid() )
+	{
+		// 選択中のエミッターに関係なく、文書内のどれかの雷が終点を使うか。
+		const bool bPathUsesTarget = NEffectEditorUI::FindTargetPathEmitter( State.Document.Get() ) != nullptr;
+		const FVector3& Target = State.PreviewTargetPosition;
+		if ( bPathUsesTarget && State.bPreviewTargetEnabled && std::isfinite( Target.x ) && std::isfinite( Target.y ) && std::isfinite( Target.z ) ) State.Playback->SetTargetPosition( Target );
+		else State.Playback->ClearTargetPosition();
+	}
 	if ( !State.bPlaying || !State.Playback.IsValid() || !std::isfinite( DeltaTime ) || DeltaTime <= 0.0f ) return;
 	// 長く止まっていた直後も、編集画面の粒子が一度に遠くへ飛ばないようにする。
 	const float32 Step = std::clamp( DeltaTime, 0.0f, 0.1f ) * ( std::isfinite( State.PreviewSpeed ) ? std::clamp( State.PreviewSpeed, 0.0f, 4.0f ) : 1.0f );
@@ -373,6 +399,7 @@ void NDebugUI::UpdateEffectEditor( FEffectEditorState& State, float32 DeltaTime 
 void NDebugUI::ReleaseEffectEditor( FEffectEditorState& State )
 {
 	RestartEffectPreview( State );
+	ResetPreviewTargetState( State );
 	State.Surface.Release();
 	State.FlipbookSheetCache.Reset();
 	State.FlipbookSheetCachePath.Empty();

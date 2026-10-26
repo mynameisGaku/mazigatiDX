@@ -7,6 +7,7 @@
 #include "WorldSelfTestSupport.h"
 #include "WorldEffectForceFieldEditorSelfTest.h"
 #include "WorldEffectForceFieldEditorGeometrySelfTest.h"
+#include "WorldEffectTargetSelfTest.h"
 
 #include <algorithm>
 #include <cmath>
@@ -563,6 +564,7 @@ void CWorldSelfTestScene::OnEnter()
 	NWorldTest::RunEffectEditorInputTests( C );
 	NWorldTest::RunEffectForceFieldEditorInputTests( C );
 	NWorldTest::RunEffectForceFieldEditorGeometryTests( C );
+	NWorldTest::RunEffectTargetWorldTests( C );
 	NWorldTest::RunEffectMaterialInputTests( C );
 	NWorldTest::RunEffectUVDistortionInputTests( C );
 	NWorldTest::RunEffectAppearanceInputTests( C );
@@ -1689,6 +1691,7 @@ void CWorldSelfTestScene::RunRealChecks()
 	NWorldTest::RunEffectRealTests( C, *Assets, *Executor, Dir );
 	NWorldTest::RunEffectEditorRealTests( C, *Assets, *Executor, Dir );
 	NWorldTest::RunEffectForceFieldPreviewRealTests( C, *Assets, *Executor );
+	NWorldTest::RunEffectTargetSceneEditorTests( C, *Assets );
 	NWorldTest::RunEffectForceFieldEditorPresetRealTests( C, *Assets, *Executor );
 	NWorldTest::RunWorldMeshMaterialEditorTests( C, *Assets, Dir );
 	NWorldTest::RunMeshMaterialPlaybackTests( C, *Assets, Dir );

@@ -268,6 +268,12 @@ namespace
 		{
 			const FWorldEffect& Effect = Object.Effect.GetValue();
 			CheckAsset( Report, Assets, Id, "the effect", Effect.Path );
+			if ( Effect.Target != WorldNoId )
+			{
+				if ( Effect.Target == Id ) Report.Error( EWorldIssueCode::BadEffect, Id, "エフェクトの対象に自分自身は指定できません" );
+				else if ( World.FindObject( Effect.Target ) == nullptr ) Report.Error( EWorldIssueCode::BadEffect, Id, FString::Printf( "エフェクトの対象オブジェクト #%d が見つかりません", Effect.Target ) );
+			}
+			if ( !IsFinite( Effect.TargetOffset ) ) Report.Error( EWorldIssueCode::NonFiniteValue, Id, "エフェクトの対象オフセットに有限でない値があります" );
 			if ( !IsFinite( Effect.Scale ) || !IsFinite( Effect.Speed ) )
 			{
 				Report.Error( EWorldIssueCode::NonFiniteValue, Id, "the effect has a value that is not a finite number" );

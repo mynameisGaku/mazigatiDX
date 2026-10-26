@@ -179,6 +179,8 @@ struct FWorldEffect
 	float32 Speed = 1.0f;         // 時間の進み方
 	int32 Seed = 0;               // 乱数のシード（0 ならエフェクトのシード）
 	int32 Loop = -1;              // -1 = エフェクトの指定のまま / 0 = ループしない / 1 = ループする
+	int32 Target = WorldNoId;     // 動的終点に使うオブジェクト。0 なら指定なし
+	FVector3 TargetOffset = FVector3::Zero; // 対象オブジェクトのローカル空間でのずれ
 };
 
 // 当たり判定の形。付けるかどうかは、オブジェクトの Collision とワールドのタグ規則で決まる（WorldCollision.h）

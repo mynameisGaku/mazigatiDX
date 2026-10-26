@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <utility>
 
 #include "Library/Json/JsonHelpers.h"
@@ -230,6 +231,8 @@ namespace
 		if ( Effect.Speed != Default.Speed ) Json["Speed"] = NJson::Round4( Effect.Speed );
 		if ( Effect.Seed != Default.Seed ) Json["Seed"] = Effect.Seed;
 		if ( Effect.Loop >= 0 ) Json["Loop"] = Effect.Loop != 0;
+		if ( Effect.Target != WorldNoId ) Json["Target"] = Effect.Target;
+		if ( Effect.TargetOffset != FVector3::Zero ) Json["TargetOffset"] = NJson::ToJson( Effect.TargetOffset );
 		return Json;
 	}
 
@@ -242,6 +245,19 @@ namespace
 		Effect.Speed = NJson::GetOr<float32>( Json, "Speed", Effect.Speed );
 		Effect.Seed = NJson::GetOr<int32>( Json, "Seed", Effect.Seed );
 		if ( Json.contains( "Loop" ) && Json["Loop"].is_boolean() ) Effect.Loop = Json["Loop"].get<bool>() ? 1 : 0;
+		if ( Json.contains( "Target" ) )
+		{
+			const NlohmannJson& Target = Json["Target"];
+			if ( Target.is_number_unsigned() ) Effect.Target = Target.get<uint64>() <= static_cast<uint64>( std::numeric_limits<int32>::max() ) ? static_cast<int32>( Target.get<uint64>() ) : -1;
+			else if ( Target.is_number_integer() && Target.get<int64>() >= std::numeric_limits<int32>::min() && Target.get<int64>() <= std::numeric_limits<int32>::max() ) Effect.Target = static_cast<int32>( Target.get<int64>() );
+			else Effect.Target = -1;
+		}
+		if ( Json.contains( "TargetOffset" ) )
+		{
+			const NlohmannJson& Offset = Json["TargetOffset"];
+			if ( Offset.is_array() && Offset.size() == 3 && Offset[0].is_number() && Offset[1].is_number() && Offset[2].is_number() ) Effect.TargetOffset = FVector3( Offset[0].get<float32>(), Offset[1].get<float32>(), Offset[2].get<float32>() );
+			else Effect.TargetOffset = FVector3( std::numeric_limits<float32>::quiet_NaN(), 0.0f, 0.0f );
+		}
 		return Effect;
 	}
 

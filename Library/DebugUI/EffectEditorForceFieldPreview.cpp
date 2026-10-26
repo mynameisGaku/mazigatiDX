@@ -327,6 +327,25 @@ void NEffectEditorUI::RecordForceFieldGuides( const FEffectEditorState& State, F
 	RecordForceFieldGuidesForTransform( State, Draw, GetPreviewEmitterTransform( State ) );
 }
 
+// 動的終点とエミッター始点のつながりを、粒子と同じWorld座標のoverlayへ記録する。
+void NEffectEditorUI::RecordPreviewTargetGuides( const FEffectEditorState& State, FDrawContext& Draw )
+{
+	if ( !State.bShowPreviewTargetGuides || !State.bPreviewTargetEnabled || FindTargetPathEmitter( State.Document.Get() ) == nullptr ) return;
+	const FTransform Transform = GetPreviewEmitterTransform( State );
+	const FVector3 Start = Transform.Position;
+	const FVector3 Target = State.PreviewTargetPosition;
+	if ( !std::isfinite( Start.x ) || !std::isfinite( Start.y ) || !std::isfinite( Start.z ) || !std::isfinite( Target.x ) || !std::isfinite( Target.y ) || !std::isfinite( Target.z ) ) return;
+	const FColor32 ConnectionColor( 255, 170, 45, 255 );
+	const FColor32 AxisXColor( 255, 80, 70, 255 );
+	const FColor32 AxisYColor( 90, 245, 120, 255 );
+	const FColor32 AxisZColor( 80, 150, 255, 255 );
+	constexpr float32 MarkerHalfLength = 0.16f;
+	Draw.Line3D( Start, Target, ConnectionColor );
+	Draw.Line3D( Target - FVector3::Right * MarkerHalfLength, Target + FVector3::Right * MarkerHalfLength, AxisXColor );
+	Draw.Line3D( Target - FVector3::Up * MarkerHalfLength, Target + FVector3::Up * MarkerHalfLength, AxisYColor );
+	Draw.Line3D( Target - FVector3::Forward * MarkerHalfLength, Target + FVector3::Forward * MarkerHalfLength, AxisZColor );
+}
+
 // 追従する場は渡されたエミッター姿勢の位置・回転で、世界固定の場はWorld座標のまま描く。拡大は使わない。
 void NEffectEditorUI::RecordForceFieldGuidesForTransform( const FEffectEditorState& State, FDrawContext& Draw, const FTransform& EmitterTransform )
 {

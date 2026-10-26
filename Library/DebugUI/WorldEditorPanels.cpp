@@ -661,6 +661,23 @@ namespace
 				if ( ImGui::DragFloat( "Scale", &Effect.Scale, 0.01f, 0.01f, 100.0f, "%.2f" ) ) NWorldEdit::EditObject( Session.Document, Id, "Inspector.Effect.Scale" )->Effect.GetValue().Scale = Effect.Scale;
 				if ( ImGui::DragFloat( "Speed", &Effect.Speed, 0.01f, 0.0f, 10.0f, "%.2f" ) ) NWorldEdit::EditObject( Session.Document, Id, "Inspector.Effect.Speed" )->Effect.GetValue().Speed = Effect.Speed;
 				if ( ImGui::InputInt( "Seed (0 = the effect's)", &Effect.Seed ) ) NWorldEdit::EditObject( Session.Document, Id, "Inspector.Effect.Seed" )->Effect.GetValue().Seed = std::max( Effect.Seed, 0 );
+				const char* TargetPreview = Effect.Target == WorldNoId ? "(none)" : "(missing object)";
+				if ( const FWorldObject* TargetObject = Session.Document.Get().FindObject( Effect.Target ); TargetObject != nullptr ) TargetPreview = UI_TEXT( TargetObject->Name );
+				if ( ImGui::BeginCombo( "Target object", TargetPreview ) )
+				{
+					if ( ImGui::Selectable( "(none)", Effect.Target == WorldNoId ) ) NWorldEdit::EditObject( Session.Document, Id )->Effect.GetValue().Target = WorldNoId;
+					for ( const FWorldObject& Candidate : Session.Document.Get().Objects )
+					{
+						if ( Candidate.Id == Id ) continue;
+						ImGui::PushID( Candidate.Id );
+						if ( ImGui::Selectable( UI_TEXT( Candidate.Name ), Effect.Target == Candidate.Id ) ) NWorldEdit::EditObject( Session.Document, Id )->Effect.GetValue().Target = Candidate.Id;
+						ImGui::PopID();
+					}
+					ImGui::EndCombo();
+				}
+				FVector3 TargetOffset = std::isfinite( Effect.TargetOffset.x ) && std::isfinite( Effect.TargetOffset.y ) && std::isfinite( Effect.TargetOffset.z ) ? Effect.TargetOffset : FVector3::Zero;
+				if ( ImGui::DragFloat3( "Target offset", &TargetOffset.x, 0.05f, 0.0f, 0.0f, "%.3f" ) ) NWorldEdit::EditObject( Session.Document, Id, "Inspector.Effect.TargetOffset" )->Effect.GetValue().TargetOffset = TargetOffset;
+				if ( ResetButton( "R##EffectTargetOffset" ) ) NWorldEdit::EditObject( Session.Document, Id )->Effect.GetValue().TargetOffset = FVector3::Zero;
 				int32 Loop = Effect.Loop + 1;   // 0: エフェクトの指定のまま / 1: 繰り返さない / 2: 繰り返す
 				ImGui::SetNextItemWidth( 180.0f );
 				if ( ImGui::Combo( "Loop", &Loop, "As the effect says\0Once\0Loop\0" ) ) NWorldEdit::EditObject( Session.Document, Id )->Effect.GetValue().Loop = Loop - 1;

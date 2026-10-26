@@ -371,6 +371,7 @@
     <ClCompile Include="Source\Scene\WorldEffectSelfTestData.cpp" />
     <ClCompile Include="Source\Scene\WorldEffectSelfTestScene.cpp" />
     <ClCompile Include="Source\Scene\WorldEffectSelfTestSim.cpp" />
+    <ClCompile Include="Source\Scene\WorldEffectTargetSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldEffectTreeLightningInputSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldEffectTreeLightningPlaybackSelfTest.cpp" />
     <ClCompile Include="Source\Scene\WorldEffectTreeLightningRealSelfTest.cpp" />
@@ -818,6 +819,7 @@
     <ClInclude Include="Source\Scene\WorldEffectMeshRealSelfTest.h" />
     <ClInclude Include="Source\Scene\WorldEffectMeshResourceSelfTest.h" />
     <ClInclude Include="Source\Scene\WorldEffectSelfTestSupport.h" />
+    <ClInclude Include="Source\Scene\WorldEffectTargetSelfTest.h" />
     <ClInclude Include="Source\Scene\WorldMeshMaterialSelfTestSupport.h" />
     <ClInclude Include="Source\Scene\WorldMeshSelfTestSupport.h" />
     <ClInclude Include="Source\Scene\WorldModelMaterialInspectorSelfTest.h" />

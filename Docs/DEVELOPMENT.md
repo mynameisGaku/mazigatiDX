@@ -70,7 +70,15 @@ Presetは原本を保ったまま編集し、`File > Save as...`で別名保存�
 
 `IEffectPlayback`には既定の空実装を持つ`SetTargetPosition(const FVector3&)`と`ClearTargetPosition()`を追加し、`FParticlePlayback`が`FParticleSimulation`へ反映します。動的終点はすでにワールド座標であるため、再生姿勢の回転や拡大率を二重に掛けません。非有限の終点座標が渡された場合は`Path.End`へ誤フォールバックせず、そのエミッターの雷記録を抑止します。同一エフェクト内で`bUseTarget`が有効なエミッターと無効なエミッターを混在させられます。
 
-`CEffectComponent`は直接ワールド座標を指定する`SetTargetPosition`、別オブジェクトの`CTransformComponent`へローカル空間オフセット付きで追従する`SetTargetObject`（`TWeakPtr<CGameObject>`で保持し寿命を延ばさない）、指定を解除する`ClearTarget`、現在有効な終点を取得する`TryGetTargetPosition`を持ちます。`Play()`直後と毎フレームの`Tick()`更新前に再生へ同期し、追従先オブジェクトが破棄・未生存・変換なしになったフレームでは自動的に`ClearTargetPosition()`へ戻します。Effect Editorの入力欄・プレビュー終点操作・World保存とInspector・組み込みPresetは次の区切りの範囲です。
+`CEffectComponent`は直接ワールド座標を指定する`SetTargetPosition`、別オブジェクトの`CTransformComponent`へローカル空間オフセット付きで追従する`SetTargetObject`（`TWeakPtr<CGameObject>`で保持し寿命を延ばさない）、指定を解除する`ClearTarget`、現在有効な終点を取得する`TryGetTargetPosition`を持ちます。`Play()`直後と毎フレームの`Tick()`更新前に再生へ同期し、追従先オブジェクトが破棄・未生存・変換なしになったフレームでは自動的に`ClearTargetPosition()`へ戻します。
+
+## 雷の動的終点の制作UIとWorld接続
+
+Effect Editorの`Path`欄（`Lightning` / `TreeLightning`）に`Use target`を追加しました。保存値`Path.UseTarget`としてUndo / Redoに対応し、型不正の値は表示してResetで復旧できます。試し再生の終点は文書へ保存しない編集用の状態で、有効化のチェック・ワールド座標の数値入力・プレビュー画面のクリック（水平面への配置）と移動ギズモ・発生位置から終点への接続線と三軸の目印（Target guides）・終点を含む範囲へのカメラ合わせ（Focus target）を持ちます。終点を使う雷の判定は選択中のエミッターに関係なく文書全体を見るので、板のエミッターを選んでいても雷は終点へ向かいます。動的終点つきの雷を持つ文書（組み込みPresetを含む）を開くと試し再生の終点が自動で有効になり、終点を含む範囲へカメラを一度だけ合わせます。
+
+Worldの`Components.Effect`には、任意の`Target`（追従先オブジェクトのId）と`TargetOffset`（対象のローカル空間でのずれ）を追加しました。既定値ではどちらのJSONキーも書かず、既存の`.world`と同じ形を保ちます。型が壊れた値は`Target = -1`・有限でない`TargetOffset`として保持して検証エラーにし、自己参照・存在しないId・有限でないずれを検証で報告します。複製・貼り付けでは、一緒に複製された対象を指すようにIdを付け替え、複製されていない対象は元のまま残します（Objectプロパティと同じ扱い）。配置（`NWorld::Spawn`）は全オブジェクトを置いてから`CEffectComponent::SetTargetObject`へ接続するため、並び順に依存しません。自分自身・置かれなかった対象・有限でないずれは接続せず、警告して定義側の`Path.End`のままにします。World Editorのプレビューは対象のワールド姿勢と`TargetOffset`から毎フレーム終点を渡し、Inspectorの`Effect`欄で対象オブジェクトとオフセットをUndo付きで編集できます。
+
+組み込みPreset`Effects/target_lightning.effect.json`（Presetメニューの`Target lightning`）は、動的終点を使う分岐雷です。複製して保存し、Worldの`Effect`部品の`Target`へ標的オブジェクトを指定すると、発射元から標的へ雷がつながります。
 
 ## コードとコメント
 
@@ -140,6 +148,8 @@ Effectの帯・雷へのUVディストーションを含む統合版は、world 
 渦・乱流・追従の制作UI・ガイド・組み込み例（4b2）は、同じコードとアセットを使ったDebug／Releaseの全6実行で確認しました。worldは各3,553項目、assetsはDebug 1,176項目・Release 1,174項目、ECSは各構成のワーカー0／1／4／15でそれぞれ7,867,833項目です。ECSのハッシュは`403b39415ba4b9a6`、画素差0で、失敗・スキップ・timeout・shaderエラーはなく、受入ビルドは警告・エラー0、Debugの全基準・変異実行と視覚確認でリーク報告が実在し0バイト、Releaseは報告なしです。実ImGui入力でのKind4択遷移・FollowEmitter切替・各値のDragFloat・Undo・Reset復旧、PresetメニューからのWhirlwind／Gust選択、ガイドの座標・本数・符号・追従姿勢、自動視点の球範囲と矢印余裕、組み込みPresetのJSON往復・World配置・螺旋旋回（角運動量）と相対運動保持を確認し、4種Presetの実画面キャプチャによる螺旋リボン・乱流S字帯・ガイド・設定欄の確認と、21種類の意図的な不具合をすべて正常終了した狙いどおりの検査失敗として検出しました。
 
 雷・樹状雷の動的終点接続の定義・再生窓口・部品追従（4c1、制作UI・World保存・組み込みPresetは次の4c2）は、同じコードを使ったDebug／Releaseの全6実行で確認しました。worldは各3,592項目、assetsはDebug 1,176項目・Release 1,174項目、ECSは各構成のワーカー0／1／4／15でそれぞれ7,867,833項目です。ECSのハッシュは`403b39415ba4b9a6`、画素差0で、失敗・スキップ・timeout・shaderエラーはなく、受入ビルドは警告・エラー0、Debugの全基準・変異実行でリーク報告が実在し0バイト、Releaseは報告なしです。既定JSON省略と既存固定ハッシュ保持、`UseTarget`のJSON往復・型違い`null`保持・検証エラー、`Lightning`と非材質／材質付き`TreeLightning`での動的終点到達・回転拡大の非二重適用・解除復帰、混在エミッター、非有限終点と型不正定義の描画抑止、および独立シーンでの`CEffectComponent`の対象追従（ローカルオフセット回転拡大変換）・移動追従・破棄時フォールバック・直接座標切替・再Play維持を確認し、20種類の意図的な不具合をすべて正常終了した狙いどおりの検査失敗として検出しました。
+
+雷の動的終点の制作UI・World接続・組み込み例（4c2）は、実装後のDebug／Releaseで自己確認しました。worldは各3,631項目、assetsはDebug 1,176項目・Release 1,174項目、ECSは各構成のワーカー0／1／4／15でそれぞれ7,867,833項目（ハッシュ`403b39415ba4b9a6`、画素差0）で、失敗・スキップはなく、ビルドは警告・エラー0、Debugのリーク報告は全て0バイトです。Effect Editorの画面（Target lightning Preset、終点ガイド、雷の接続）は実画像で確認しました。変異テストと実画素テストは行っていません。
 
 ## 変更の統合
 

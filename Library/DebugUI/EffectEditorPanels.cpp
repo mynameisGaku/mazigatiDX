@@ -175,7 +175,18 @@ namespace
 		bool bTreeCommonPathValid = true;
 		if ( Emitter.Path.Kind == FEffectPathDefinition::EKind::Lightning || Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning )
 		{
-			ImGui::TextWrapped( "The end position is relative to the emitter. Jitter and branch length are ratios of the main bolt length." );
+			ImGui::TextWrapped( "The end position is relative to the emitter. Jitter and branch length are ratios of the main bolt length. With Use target, the end follows the target the game gives (the end position is then only the fallback)." );
+			if ( Emitter.Path.HasInvalidUseTarget() )
+			{
+				ImGui::TextColored( ImVec4( 1.0f, 0.65f, 0.3f, 1.0f ), "Path.UseTarget must be a boolean; reset it before editing." );
+				if ( ImGui::SmallButton( "Reset Use target" ) )
+				{
+					Emitter.Path.bUseTarget = false;
+					Emitter.Path.ClearInvalidFlags();
+					bChanged = true;
+				}
+			}
+			else bChanged |= TrackInputEnd( ImGui::Checkbox( "Use target", &Emitter.Path.bUseTarget ), Document );
 			// Treeの共通形状値をImGuiへ渡す前に有限性と許容範囲を調べる。
 			bTreeCommonPathValid = Emitter.Path.Kind != FEffectPathDefinition::EKind::TreeLightning || ( std::isfinite( Emitter.Path.End.x ) && std::isfinite( Emitter.Path.End.y ) && std::isfinite( Emitter.Path.End.z ) && ( Emitter.Path.End.x != 0.0f || Emitter.Path.End.y != 0.0f || Emitter.Path.End.z != 0.0f ) && std::fabs( Emitter.Path.End.x ) <= 10000.0f && std::fabs( Emitter.Path.End.y ) <= 10000.0f && std::fabs( Emitter.Path.End.z ) <= 10000.0f && Emitter.Path.Segments >= 2 && Emitter.Path.Segments <= 128 && Emitter.Path.Branches >= 0 && Emitter.Path.Branches <= 16 && std::isfinite( Emitter.Path.Jitter ) && Emitter.Path.Jitter >= 0.0f && Emitter.Path.Jitter <= 1.0f && std::isfinite( Emitter.Path.BranchLength ) && Emitter.Path.BranchLength >= 0.0f && Emitter.Path.BranchLength <= 2.0f && std::isfinite( Emitter.Path.RefreshHz ) && Emitter.Path.RefreshHz >= 0.0f && std::isfinite( Emitter.Path.UVRepeat ) && Emitter.Path.UVRepeat > 0.0f && Emitter.Path.UVRepeat <= 10000.0f && std::isfinite( Emitter.Path.BreakDistance ) && Emitter.Path.BreakDistance > 0.0f );
 			if ( !bTreeCommonPathValid ) ImGui::TextColored( ImVec4( 1.0f, 0.65f, 0.3f, 1.0f ), "Common tree path values are invalid; reset them before editing." );
@@ -508,6 +519,72 @@ namespace
 	}
 }
 
+namespace NEffectEditorUI
+{
+	// 文書内で最初の、有効な動的終点つきの雷エミッターを返す。選択中のエミッターには依存しない。
+	const FParticleEmitterDefinition* FindTargetPathEmitter( const FParticleEffectDefinition& Document )
+	{
+		for ( const FParticleEmitterDefinition& Emitter : Document.Emitters )
+		{
+			// 雷系の種類で、終点の指定が有効かつ型不正でない。
+			const bool bLightning = Emitter.Path.Kind == FEffectPathDefinition::EKind::Lightning || Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning;
+			if ( bLightning && Emitter.Path.bUseTarget && !Emitter.Path.HasInvalidUseTarget() ) return &Emitter;
+		}
+		return nullptr;
+	}
+
+	// 動的終点つきの雷が文書にあるときだけ、画面上のクリック位置から水平面へ試し再生の終点を置く。
+	bool SetPreviewTargetFromScreenRay( FEffectEditorState& S, float32 PixelX, float32 PixelY )
+	{
+		if ( !S.View.IsValid() || !std::isfinite( PixelX ) || !std::isfinite( PixelY ) || PixelX < 0.0f || PixelY < 0.0f || PixelX >= S.View.Width || PixelY >= S.View.Height || FindTargetPathEmitter( S.Document.Get() ) == nullptr ) return false;
+		const FEditorRay Ray = S.Camera.ScreenToRay( S.View, PixelX, PixelY );
+		float32 T = 0.0f;
+		if ( !NWorldEditor::RayVsPlane( Ray, FVector3::Zero, FVector3::Up, T ) ) return false;
+		const FVector3 Target = Ray.PointAt( T );
+		if ( !std::isfinite( Target.x ) || !std::isfinite( Target.y ) || !std::isfinite( Target.z ) ) return false;
+		S.PreviewTargetPosition = Target;
+		S.bPreviewTargetEnabled = true;
+		return true;
+	}
+
+	// 開いた・複製した文書に動的終点つきの雷があるときだけ、終点を有効にして全体focusを一度保留する。
+	void ApplyInitialPreviewTarget( FEffectEditorState& S )
+	{
+		if ( FindTargetPathEmitter( S.Document.Get() ) == nullptr ) return;
+		S.bPreviewTargetEnabled = true;
+		// 通常の全体focusより、終点を含む範囲を優先する。
+		S.bPreviewTargetCameraFocusPending = true;
+		S.bTreeCameraFocusPending = false;
+		S.bEffectGeometryCameraFocusPending = false;
+	}
+
+	// 発生位置と試し再生の終点を結ぶ雷が収まる球へカメラを合わせる。揺れの大きさは雷の設定を使う。
+	bool FocusCameraOnPreviewTarget( FEffectEditorState& S, const FEditorViewport& Viewport )
+	{
+		const FParticleEmitterDefinition* Emitter = FindTargetPathEmitter( S.Document.Get() );
+		if ( !S.bPreviewTargetEnabled || !Viewport.IsValid() || Emitter == nullptr ) return false;
+		const FTransform Transform = GetPreviewEmitterTransform( S );
+		const FVector3 Points[2] = { Transform.Position, S.PreviewTargetPosition };
+		for ( const FVector3& Point : Points ) if ( !std::isfinite( Point.x ) || !std::isfinite( Point.y ) || !std::isfinite( Point.z ) ) return false;
+		const FVector3 Center = ( Points[0] + Points[1] ) * 0.5f;
+		// 揺れは主雷の長さの割合なので、半分の長さに掛けて余白へ足す。
+		const float32 Jitter = std::isfinite( Emitter->Path.Jitter ) ? std::clamp( Emitter->Path.Jitter, 0.0f, 1.0f ) : 0.0f;
+		float32 Radius = ( Points[1] - Points[0] ).Length() * 0.5f * ( 1.0f + Jitter );
+		Radius = std::max( Radius + 0.25f, 0.5f );
+		if ( !std::isfinite( Center.x ) || !std::isfinite( Center.y ) || !std::isfinite( Center.z ) || !std::isfinite( Radius ) || Radius > FEditorCamera::MaxDistance ) return false;
+		const FEditorCamera Previous = S.Camera;
+		S.Camera.Focus( Center, Radius, Viewport );
+		FVector2 Pixel;
+		float32 Depth = 0.0f;
+		if ( !S.Camera.WorldToScreen( Viewport, Center, Pixel, &Depth ) || !std::isfinite( Depth ) || Depth - Radius <= Viewport.Near || Depth + Radius >= Viewport.Far || Pixel.x < 1.0f || Pixel.y < 1.0f || Pixel.x > Viewport.Width - 1.0f || Pixel.y > Viewport.Height - 1.0f )
+		{
+			S.Camera = Previous;
+			return false;
+		}
+		return true;
+	}
+}
+
 // Tree専用の完成形boundsを既存どおり使い、無効・空なら元cameraを保つ。
 bool NEffectEditorUI::FocusCameraOnTree( FEffectEditorState& S, const FEditorViewport& Viewport )
 {
@@ -581,6 +658,24 @@ void NEffectEditorUI::DrawPreview( FEffectEditorState& S )
 	if ( ImGui::Checkbox( "Move emitter preview", &S.bPreviewMotion ) ) NDebugUI::RestartEffectPreview( S );
 	ImGui::SameLine();
 	ImGui::TextDisabled( "Preview only" );
+	ImGui::Checkbox( "Enable preview target", &S.bPreviewTargetEnabled );
+	// 動的終点つきの雷があるのに、試し再生の終点が無効なときの案内。
+	if ( !S.bPreviewTargetEnabled && NEffectEditorUI::FindTargetPathEmitter( S.Document.Get() ) != nullptr ) ImGui::TextDisabled( "This effect uses a target: enable the preview target to see the bolt follow it." );
+	if ( !std::isfinite( S.PreviewTargetPosition.x ) || !std::isfinite( S.PreviewTargetPosition.y ) || !std::isfinite( S.PreviewTargetPosition.z ) )
+	{
+		ImGui::TextColored( ImVec4( 1.0f, 0.45f, 0.4f, 1.0f ), "Preview target is invalid; reset it before editing." );
+		if ( ImGui::SmallButton( "Reset preview target" ) ) S.PreviewTargetPosition = FVector3( 0.0f, 1.0f, 0.0f );
+	}
+	else ImGui::DragFloat3( "Preview target (world m)", &S.PreviewTargetPosition.x, 0.01f, -10000.0f, 10000.0f, "%.3f" );
+	if ( ImGui::Button( "Reset target" ) )
+	{
+		S.PreviewTargetPosition = FVector3( 0.0f, 1.0f, 0.0f );
+		S.bPreviewTargetEnabled = false;
+	}
+	ImGui::SameLine();
+	if ( ImGui::Button( "Focus target" ) ) S.bPreviewTargetCameraFocusPending = true;
+	ImGui::SameLine();
+	ImGui::Checkbox( "Target guides", &S.bShowPreviewTargetGuides );
 	ImGui::SetNextItemWidth( 130.0f );
 	ImGui::SliderFloat( "Speed", &S.PreviewSpeed, 0.05f, 4.0f, "x%.2f", ImGuiSliderFlags_AlwaysClamp );
 	ImGui::SameLine();
@@ -619,12 +714,48 @@ void NEffectEditorUI::DrawPreview( FEffectEditorState& S )
 	ImGui::InvisibleButton( "##EffectPreview", Size, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonMiddle | ImGuiButtonFlags_MouseButtonRight );
 	// この領域の上で操作されたマウスだけをカメラへ渡す。
 	const ImGuiIO& Input = ImGui::GetIO();
-	if ( ImGui::IsItemActive() )
+	const bool bPreviewHovered = ImGui::IsItemHovered();
+	const float32 MouseX = ( Input.MousePos.x - Origin.x ) * RenderScale;
+	const float32 MouseY = ( Input.MousePos.y - Origin.y ) * RenderScale;
+	const FEditorRay MouseRay = S.Camera.ScreenToRay( S.View, MouseX, MouseY );
+	bool bGizmoCaptured = S.PreviewTargetDrag.IsActive();
+	FEditorGizmoFrame TargetGizmoFrame;
+	const bool bCanShowTargetGizmo = S.bPreviewTargetEnabled && NEffectEditorUI::FindTargetPathEmitter( S.Document.Get() ) != nullptr && std::isfinite( S.PreviewTargetPosition.x ) && std::isfinite( S.PreviewTargetPosition.y ) && std::isfinite( S.PreviewTargetPosition.z );
+	if ( bCanShowTargetGizmo )
+	{
+		TargetGizmoFrame = NWorldEditor::MakeGizmoFrame( S.Camera, S.View, S.PreviewTargetPosition, FQuaternion::Identity );
+		if ( !S.PreviewTargetDrag.IsActive() && bPreviewHovered && ImGui::IsMouseClicked( ImGuiMouseButton_Left ) )
+		{
+			const EEditorGizmoHandle Handle = NWorldEditor::HitTestGizmo( TargetGizmoFrame, EEditorGizmoMode::Translate, MouseRay );
+			if ( Handle != EEditorGizmoHandle::None && S.PreviewTargetDrag.Begin( TargetGizmoFrame, EEditorGizmoMode::Translate, Handle, MouseRay, S.Camera ) )
+			{
+				S.PreviewTargetDragStart = S.PreviewTargetPosition;
+				bGizmoCaptured = true;
+			}
+			else NEffectEditorUI::SetPreviewTargetFromScreenRay( S, MouseX, MouseY );
+		}
+		if ( S.PreviewTargetDrag.IsActive() )
+		{
+			if ( ImGui::IsMouseDown( ImGuiMouseButton_Left ) )
+			{
+				const FEditorGizmoDelta Delta = S.PreviewTargetDrag.Update( MouseRay );
+				S.PreviewTargetPosition = NWorldEditor::ApplyGizmoDeltaToPoint( S.PreviewTargetDragStart, Delta, EEditorGizmoMode::Translate, S.PreviewTargetDrag.GetFrame() );
+			}
+			else S.PreviewTargetDrag.End();
+			bGizmoCaptured = true;
+		}
+	}
+	if ( ImGui::IsItemActive() && !bGizmoCaptured )
 	{
 		if ( ImGui::IsMouseDown( ImGuiMouseButton_Left ) ) S.Camera.Orbit( Input.MouseDelta.x, Input.MouseDelta.y );
 		else S.Camera.Pan( S.View, Input.MouseDelta.x * RenderScale, Input.MouseDelta.y * RenderScale );
 	}
-	if ( ImGui::IsItemHovered() && Input.MouseWheel != 0.0f ) S.Camera.Zoom( Input.MouseWheel );
+	if ( bPreviewHovered && Input.MouseWheel != 0.0f && !bGizmoCaptured ) S.Camera.Zoom( Input.MouseWheel );
+	if ( S.bPreviewTargetCameraFocusPending )
+	{
+		S.bPreviewTargetCameraFocusPending = false;
+		NEffectEditorUI::FocusCameraOnPreviewTarget( S, S.View );
+	}
 	// 描画の実行は既存の窓口へ渡し、描画先の作成と状態の復元は Surface に任せる。
 	IDrawExecutor* Executor = GetAppSubsystem<IDrawExecutor>();
 	// 力場の範囲線を一時記録する描画buffer。
@@ -632,10 +763,24 @@ void NEffectEditorUI::DrawPreview( FEffectEditorState& S )
 	// 力場の範囲線を記録する窓口。
 	FDrawContext GuideDraw( GuideBuffer );
 	NEffectEditorUI::RecordForceFieldGuides( S, GuideDraw );
+	NEffectEditorUI::RecordPreviewTargetGuides( S, GuideDraw );
 	// 寿命中にsurfaceへ渡す、範囲線コマンドのview。
 	const FDrawSpan GuideSpan { GuideBuffer.Words.data(), static_cast<int32>( GuideBuffer.Words.size() ) };
 	// 描画先へgrid・playback・力場範囲を描けたか。
 	const bool bRendered = Executor != nullptr && S.Surface.Render( S.Camera, S.View, S.Playback.Get(), *Executor, GuideSpan );
 	if ( bRendered && S.Surface.GetHandle() >= 0 ) ImGui::GetWindowDrawList()->AddImage( NDebugUI::GetImGuiTexture( S.Surface.GetHandle() ), Origin, ImVec2( Origin.x + Size.x, Origin.y + Size.y ) );
 	else ImGui::GetWindowDrawList()->AddText( ImVec2( Origin.x + 12.0f, Origin.y + 12.0f ), IM_COL32( 230, 230, 230, 255 ), "Preview unavailable" );
+	if ( bCanShowTargetGizmo )
+	{
+		const ImU32 Colors[3] = { IM_COL32( 255, 90, 80, 255 ), IM_COL32( 100, 255, 120, 255 ), IM_COL32( 90, 160, 255, 255 ) };
+		for ( int32 Axis = 0; Axis < 3; ++Axis )
+		{
+			FVector3 A;
+			FVector3 B;
+			NWorldEditor::GetGizmoAxisSegment( TargetGizmoFrame, Axis, A, B );
+			FVector2 PixelA;
+			FVector2 PixelB;
+			if ( S.Camera.ProjectSegment( S.View, A, B, PixelA, PixelB ) ) ImGui::GetWindowDrawList()->AddLine( ImVec2( Origin.x + PixelA.x / RenderScale, Origin.y + PixelA.y / RenderScale ), ImVec2( Origin.x + PixelB.x / RenderScale, Origin.y + PixelB.y / RenderScale ), Colors[Axis], 2.0f );
+		}
+	}
 }

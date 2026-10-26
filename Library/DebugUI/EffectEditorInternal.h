@@ -32,12 +32,22 @@ namespace NEffectEditorUI
 	bool ApplyPendingTreeCameraFocus( FEffectEditorState& State, const FEditorViewport& Viewport );
 	// 文書内の力場があればその範囲、無ければTreeと固定meshの有限boundsへカメラを合わせる。失敗時は元のカメラを保つ。
 	bool FocusCameraOnEffectGeometry( FEffectEditorState& State, const FEditorViewport& Viewport );
+	// 文書内で最初の、有効な動的終点つきの雷エミッターを返す。無ければnullptr。選択中のエミッターには依存しない。
+	const FParticleEmitterDefinition* FindTargetPathEmitter( const FParticleEffectDefinition& Document );
+	// 開いた・複製した文書に動的終点つきの雷があるときだけ、試し再生の終点を有効にして一度だけ全体focusを保留する。
+	void ApplyInitialPreviewTarget( FEffectEditorState& State );
+	// 発生位置と試し再生の終点を結ぶ雷が収まる範囲へカメラを合わせる。失敗時は元のカメラを保つ。
+	bool FocusCameraOnPreviewTarget( FEffectEditorState& State, const FEditorViewport& Viewport );
+	// 動的終点つきの雷が文書にあるとき、画面位置から水平面との交点を求め、有限なら試し再生の終点へ設定する。
+	bool SetPreviewTargetFromScreenRay( FEffectEditorState& State, float32 PixelX, float32 PixelY );
 	// 力場の有限な範囲へカメラを合わせる。場が無いか無効なら元のカメラを保つ。
 	bool FocusCameraOnForceFields( FEffectEditorState& State, const FEditorViewport& Viewport );
 	// 試し再生が使っているエミッター姿勢を返す。Move emitter previewが無効ならIdentityで、拡大は使わない。
 	FTransform GetPreviewEmitterTransform( const FEffectEditorState& State );
 	// 力場の範囲と中心を既存描画先へ記録する。追従する場は現在の試し再生の姿勢で描く。
 	void RecordForceFieldGuides( const FEffectEditorState& State, FDrawContext& Draw );
+	// 動的終点の目印と始点からの接続線を同じoverlayへ記録する。
+	void RecordPreviewTargetGuides( const FEffectEditorState& State, FDrawContext& Draw );
 	// 指定したエミッター姿勢で、追従する場の範囲と向きを描く。世界固定の場は姿勢に依らない。
 	void RecordForceFieldGuidesForTransform( const FEffectEditorState& State, FDrawContext& Draw, const FTransform& EmitterTransform );
 	// 実viewportが確定した後に保留中の全体focusを一度だけ適用する。

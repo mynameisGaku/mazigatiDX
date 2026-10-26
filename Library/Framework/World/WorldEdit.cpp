@@ -108,6 +108,7 @@ int32 NWorldEdit::DuplicateObject( TWorldDocument& Document, int32 ObjectId )
 		{
 			if ( Prop.Type == EWorldPropType::Object ) Prop.ObjectId = Remap( Prop.ObjectId );
 		}
+		if ( Copy.Effect.IsSet() ) Copy.Effect.GetValue().Target = Remap( Copy.Effect.GetValue().Target );
 	}
 
 	// 元の部分木の、いちばん後ろの要素のすぐ後ろへ（元と同じ並びで）入れる
@@ -372,6 +373,11 @@ TArray<int32> NWorldEdit::PasteObjects( TWorldDocument& Document, const FWorldCl
 		{
 			bool bInside = false;
 			if ( Prop.Type == EWorldPropType::Object ) Prop.ObjectId = Remap( Prop.ObjectId, bInside );
+		}
+		if ( Copy.Effect.IsSet() )
+		{
+			bool bTargetInside = false;
+			Copy.Effect.GetValue().Target = Remap( Copy.Effect.GetValue().Target, bTargetInside );
 		}
 		World.Objects.Add( Copy );
 	}

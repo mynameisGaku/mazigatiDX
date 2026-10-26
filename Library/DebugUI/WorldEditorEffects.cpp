@@ -35,6 +35,8 @@ namespace
 		Mix( &Effect.Speed, sizeof( Effect.Speed ) );
 		Mix( &Effect.Seed, sizeof( Effect.Seed ) );
 		Mix( &Effect.Loop, sizeof( Effect.Loop ) );
+		Mix( &Effect.Target, sizeof( Effect.Target ) );
+		Mix( &Effect.TargetOffset, sizeof( Effect.TargetOffset ) );
 		Mix( &Serial, sizeof( Serial ) );
 		return Hash;
 	}
@@ -88,6 +90,18 @@ void NWorldEditorUI::UpdateEffectPreviews( FWorldEditorState& S, float32 DeltaTi
 		if ( Preview.Playback.IsValid() )
 		{
 			Preview.Playback->SetTransform( Transforms[Index] );
+			if ( Spec.Target != WorldNoId )
+			{
+				const int32 TargetIndex = World.FindIndexById( Spec.Target );
+				if ( TargetIndex != INDEX_NONE && TargetIndex < Transforms.Num() && std::isfinite( Spec.TargetOffset.x ) && std::isfinite( Spec.TargetOffset.y ) && std::isfinite( Spec.TargetOffset.z ) && Spec.Target != Object.Id )
+				{
+					const FVector3 TargetPosition = Transforms[TargetIndex].TransformPoint( Spec.TargetOffset );
+					if ( std::isfinite( TargetPosition.x ) && std::isfinite( TargetPosition.y ) && std::isfinite( TargetPosition.z ) ) Preview.Playback->SetTargetPosition( TargetPosition );
+					else Preview.Playback->ClearTargetPosition();
+				}
+				else Preview.Playback->ClearTargetPosition();
+			}
+			else Preview.Playback->ClearTargetPosition();
 			Preview.Playback->Update( Step );
 		}
 	}

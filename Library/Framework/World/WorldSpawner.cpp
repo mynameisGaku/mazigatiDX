@@ -6,6 +6,7 @@
 #include "Library/Framework/Asset/WorldAsset.h"
 #include "Library/Framework/Component/TransformComponent.h"
 #include "Library/Framework/Engine/Engine.h"
+#include "Library/Framework/Effect/EffectComponent.h"
 #include "Library/Framework/World/WorldHierarchy.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogWorld, Log )
@@ -335,6 +336,29 @@ FWorldInstance NWorld::Spawn( CScene& Scene, const TSharedPtr<FWorldDefinition>&
 			Instance.AddBound( Definition_.Id, Tag, Bound );
 			++Report.NumBound;
 		}
+	}
+
+	// 全オブジェクトを配置してから参照を解決し、生成順に依存させない。
+	// 自分自身・置かれなかった対象・有限でないずれは接続せず、警告して定義側の終点のままにする。
+	for ( const FWorldObject& Object : World.Objects )
+	{
+		if ( !Object.Effect.IsSet() || Object.Effect.GetValue().Target == WorldNoId ) continue;
+		const FWorldEffect& Spec = Object.Effect.GetValue();
+		TSharedPtr<CGameObject>* Owner = Placed.Find( Object.Id );
+		if ( Owner == nullptr || !Owner->IsValid() ) continue;
+		// 部品が置かれなかった場合は、その警告がすでに出ている。
+		CEffectComponent* Effect = Owner->Get()->GetComponent<CEffectComponent>();
+		if ( Effect == nullptr ) continue;
+		TSharedPtr<CGameObject>* Target = Spec.Target != Object.Id ? Placed.Find( Spec.Target ) : nullptr;
+		const bool bOffsetFinite = std::isfinite( Spec.TargetOffset.x ) && std::isfinite( Spec.TargetOffset.y ) && std::isfinite( Spec.TargetOffset.z );
+		if ( Target == nullptr || !Target->IsValid() || !bOffsetFinite )
+		{
+			const FString Message = FString::Printf( "world object #%d ('%s'): the effect's target #%d is the object itself, was not placed, or has an offset that is not finite; the end stays at its fallback", Object.Id, *Object.Name, Spec.Target );
+			Report.Warnings.Add( Message );
+			LOG( LogWorld, Warning, "%s", *Message );
+			continue;
+		}
+		Effect->SetTargetObject( *Target, Spec.TargetOffset );
 	}
 
 	LOG( LogWorld, Log, "Spawn: placed %d object(s) of '%s' (%d bound, %d disabled, %d skipped, %d warning(s))", Report.NumSpawned, *World.Name, Report.NumBound, Report.NumDisabled, Report.NumSkipped,

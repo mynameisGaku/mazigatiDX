@@ -6,6 +6,7 @@
 #include "Library/Framework/Asset/SpriteSheet.h"
 #include "Library/Framework/Asset/Texture.h"
 #include "Library/Framework/World/Editor/EditorCamera.h"
+#include "Library/Framework/World/Editor/EditorGizmo.h"
 #include "Library/Platform/DxLib/EffectPreviewSurface.h"
 
 // 内蔵エフェクトの編集中の文書、選択、再生と画面の寿命を一つのツールにまとめる。
@@ -75,6 +76,18 @@ struct FEffectEditorState
 	bool bPreviewMotion = false;
 	// 生成位置の円運動に使う秒数。定義には保存しない。
 	float32 PreviewMotionTime = 0.0f;
+	// 試し再生で動的な雷終点を使うか。文書には保存しない。
+	bool bPreviewTargetEnabled = false;
+	// 試し再生で使うワールド座標の雷終点。文書には保存しない。
+	FVector3 PreviewTargetPosition = FVector3( 0.0f, 1.0f, 0.0f );
+	// 雷終点と接続線をプレビューへ表示するか。
+	bool bShowPreviewTargetGuides = true;
+	// 終点またはカメラを初期化した後、一度だけ全体へfocusする印。
+	bool bPreviewTargetCameraFocusPending = false;
+	// 試し再生の終点ギズモを動かしている状態。
+	FEditorGizmoDrag PreviewTargetDrag;
+	// ギズモをつかんだ時点の終点。
+	FVector3 PreviewTargetDragStart = FVector3::Zero;
 	// 試し再生を見るカメラ。
 	FEditorCamera Camera;
 	// Tree文書を開くかcameraをresetした後、実viewportで一度だけ全体を合わせる印。

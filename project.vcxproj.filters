@@ -658,6 +658,9 @@
     <ClCompile Include="Source\Scene\WorldEffectSelfTestSim.cpp">
       <Filter>Source\Scene</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Scene\WorldEffectTargetSelfTest.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Scene\WorldEffectTreeLightningInputSelfTest.cpp">
       <Filter>Source\Scene</Filter>
     </ClCompile>
@@ -1993,6 +1996,9 @@
       <Filter>Source\Scene</Filter>
     </ClInclude>
     <ClInclude Include="Source\Scene\WorldEffectSelfTestSupport.h">
+      <Filter>Source\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scene\WorldEffectTargetSelfTest.h">
       <Filter>Source\Scene</Filter>
     </ClInclude>
     <ClInclude Include="Source\Scene\WorldMeshMaterialSelfTestSupport.h">
