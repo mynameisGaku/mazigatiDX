@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include <memory>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/Map.h"

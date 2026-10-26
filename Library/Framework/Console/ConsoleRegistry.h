@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include <memory>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -9,6 +8,7 @@
 #include "Library/Core/Collection/Optional.h"
 #include "Library/Core/Collection/Pair.h"
 #include "Library/Core/Collection/String.h"
+#include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Core/Result.h"
 #include "Library/Core/Types/Callable.h"
 #include "Library/Core/Types/TypeTraits.h"
@@ -349,7 +349,7 @@ public:
 		NConsoleDetail::DescribeAll<Values>( Entry.Info.Args, Args, TMakeIndexSequence<std::tuple_size_v<Values>>() );
 		const TArray<FConsoleArgDesc> Descs = Entry.Info.Args;
 
-		Entry.Handler = std::make_shared<FHandler>( [Function = TDecayT<TFunction>( Forward<TFunction>( Function ) ), Descs]( FConsoleContext& Context, const TArray<FString>& Tokens, FString& OutError ) mutable -> EConsoleResult
+		Entry.Handler = MakeShared<FHandler>( [Function = TDecayT<TFunction>( Forward<TFunction>( Function ) ), Descs]( FConsoleContext& Context, const TArray<FString>& Tokens, FString& OutError ) mutable -> EConsoleResult
 		{
 			Values Parsed{};
 			int32 Cursor = 0;
@@ -451,7 +451,7 @@ private:
 	struct FEntry
 	{
 		FConsoleCommandInfo Info;
-		std::shared_ptr<FHandler> Handler;    // 実行中にコマンドが増減しても、実行中の関数が消えないように、共有で持つ
+		TSharedPtr<FHandler> Handler;    // 実行中にコマンドが増減しても、実行中の関数が消えないように、共有で持つ
 		uint32 Id = 0;
 		TCallable<FString()> GetText;     // 変数の今の値
 		TCallable<void()> Reset;          // 変数を登録時の値に戻す

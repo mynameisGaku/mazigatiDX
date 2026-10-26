@@ -1,6 +1,5 @@
 ﻿#pragma once
 #include <climits>
-#include <memory>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -8,6 +7,7 @@
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Interfaces/Job/IJobSystem.h"
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
+#include "Library/Core/Memory/UniquePtr.h"
 #include "Library/Core/Types/CompilerMacros.h"
 #include "Library/Core/Types/TypeTraits.h"
 #include "Library/Core/Types/Utility.h"
@@ -622,9 +622,9 @@ namespace NEcs
 	struct TFunctionTraits<TReturn ( TClass::* )( TArgs... ) const>
 	{
 		template<bool bDraw, typename TFunction>
-		static std::unique_ptr<ISystemRunner> Make( TFunction&& Function )
+		static TUniquePtr<ISystemRunner> Make( TFunction&& Function )
 		{
-			return std::make_unique<TSystemRunner<bDraw, TDecayT<TFunction>, TArgs...>>( Forward<TFunction>( Function ) );
+			return MakeUnique<TSystemRunner<bDraw, TDecayT<TFunction>, TArgs...>>( Forward<TFunction>( Function ) );
 		}
 
 		template<typename TFunction>
@@ -638,9 +638,9 @@ namespace NEcs
 	struct TFunctionTraits<TReturn ( TClass::* )( TArgs... )>
 	{
 		template<bool bDraw, typename TFunction>
-		static std::unique_ptr<ISystemRunner> Make( TFunction&& Function )
+		static TUniquePtr<ISystemRunner> Make( TFunction&& Function )
 		{
-			return std::make_unique<TSystemRunner<bDraw, TDecayT<TFunction>, TArgs...>>( Forward<TFunction>( Function ) );
+			return MakeUnique<TSystemRunner<bDraw, TDecayT<TFunction>, TArgs...>>( Forward<TFunction>( Function ) );
 		}
 
 		template<typename TFunction>
@@ -654,9 +654,9 @@ namespace NEcs
 	struct TFunctionTraits<TReturn ( * )( TArgs... )>
 	{
 		template<bool bDraw, typename TFunction>
-		static std::unique_ptr<ISystemRunner> Make( TFunction&& Function )
+		static TUniquePtr<ISystemRunner> Make( TFunction&& Function )
 		{
-			return std::make_unique<TSystemRunner<bDraw, TDecayT<TFunction>, TArgs...>>( Forward<TFunction>( Function ) );
+			return MakeUnique<TSystemRunner<bDraw, TDecayT<TFunction>, TArgs...>>( Forward<TFunction>( Function ) );
 		}
 
 		template<typename TFunction>
@@ -766,7 +766,7 @@ namespace NEcs
 			const char* Name = "System";
 			EPhase Phase = EPhase::PreUpdate;
 			TArray<FAccess> Access;
-			std::unique_ptr<ISystemRunner> Runner;
+			TUniquePtr<ISystemRunner> Runner;
 			int32 Stage = 0;
 		};
 

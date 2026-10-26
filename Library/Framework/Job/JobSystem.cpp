@@ -126,7 +126,7 @@ bool CJobSystem::RunOneLocked( FUniqueLock& Lock, bool bAllowJobs )
 
 	if ( bAllowJobs && !ReadyJobs.empty() )
 	{
-		std::shared_ptr<FJobState> Job = MoveTemp( ReadyJobs.front() );
+		TSharedPtr<FJobState> Job = MoveTemp( ReadyJobs.front() );
 		ReadyJobs.pop_front();
 		Lock.Unlock();
 		RunJob( Job );
@@ -218,7 +218,7 @@ void CJobSystem::RunParallelRange( int32 Count, int32 MinBatchSize, FRangeFuncti
 
 FJobHandle CJobSystem::Schedule( TCallable<void()> Function, const char* Name, const FJobHandle& Dependency )
 {
-	std::shared_ptr<FJobState> Job = std::make_shared<FJobState>();
+	TSharedPtr<FJobState> Job = MakeShared<FJobState>();
 	Job->Function = MoveTemp( Function );
 	Job->Name = Name;
 	Job->NumPending.Store( 1, EMemoryOrder::Relaxed );   // 登録が終わるまで実行されないよう、自分の分を 1 つ持っておく
@@ -237,12 +237,12 @@ FJobHandle CJobSystem::Schedule( TCallable<void()> Function, const char* Name, c
 	return FJobHandle( Job );
 }
 
-void CJobSystem::ReleaseJob( const std::shared_ptr<FJobState>& Job )
+void CJobSystem::ReleaseJob( const TSharedPtr<FJobState>& Job )
 {
 	if ( Job->NumPending.FetchSub( 1, EMemoryOrder::AcquireRelease ) == 1 ) Enqueue( Job );
 }
 
-void CJobSystem::Enqueue( const std::shared_ptr<FJobState>& Job )
+void CJobSystem::Enqueue( const TSharedPtr<FJobState>& Job )
 {
 	// ワーカーがいないときは、その場で実行する（依存先もその場で終わっているので、順番は守られる）
 	if ( Workers.IsEmpty() )
@@ -258,7 +258,7 @@ void CJobSystem::Enqueue( const std::shared_ptr<FJobState>& Job )
 	WorkAvailable.NotifyOne();
 }
 
-void CJobSystem::RunJob( const std::shared_ptr<FJobState>& Job )
+void CJobSystem::RunJob( const TSharedPtr<FJobState>& Job )
 {
 	{
 		PROFILE_SCOPE_CAT( "Job", Job->Name );
@@ -266,13 +266,13 @@ void CJobSystem::RunJob( const std::shared_ptr<FJobState>& Job )
 	}
 	Job->Function = nullptr;   // 取り込んだものを早く手放す
 
-	TArray<std::shared_ptr<FJobState>> Dependents;
+	TArray<TSharedPtr<FJobState>> Dependents;
 	{
 		FScopedLock Lock( Job->Mutex );
 		Job->bDone.Store( true, EMemoryOrder::Release );
 		Dependents = MoveTemp( Job->Dependents );
 	}
-	for ( const std::shared_ptr<FJobState>& Dependent : Dependents ) ReleaseJob( Dependent );
+	for ( const TSharedPtr<FJobState>& Dependent : Dependents ) ReleaseJob( Dependent );
 }
 
 void CJobSystem::Wait( const FJobHandle& Handle )

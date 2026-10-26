@@ -126,7 +126,7 @@ FConsoleRegistration FConsoleRegistry::AddRaw( const FString& Name, const FStrin
 	Entry.Info.Description = Description;
 	Entry.Info.Category = Category;
 	Entry.Info.Args = Args;
-	Entry.Handler = std::make_shared<FHandler>( [Function]( FConsoleContext& Context, const TArray<FString>&, FString& ) { return Function( Context ); } );
+	Entry.Handler = MakeShared<FHandler>( [Function]( FConsoleContext& Context, const TArray<FString>&, FString& ) { return Function( Context ); } );
 	return Register( MoveTemp( Entry ) );
 }
 
@@ -269,7 +269,7 @@ EConsoleResult FConsoleRegistry::ExecuteSegment( const FString& Segment, IConsol
 
 	if ( FEntry* Entry = Entries.Find( Key ) )
 	{
-		const std::shared_ptr<FHandler> Handler = Entry->Handler;   // 実行中にコマンドが増減しても、この関数は消えない
+		const TSharedPtr<FHandler> Handler = Entry->Handler;   // 実行中にコマンドが増減しても、この関数は消えない
 		const FConsoleCommandInfo Info = Entry->Info;               // 同上（使い方の表示用）
 		FConsoleContext Context( *this, Output, Info.Name, Tokens );
 		FString ArgError;

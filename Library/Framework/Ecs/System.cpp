@@ -85,7 +85,7 @@ void NEcs::FSystemScheduler::Run( EPhase Phase, float32 DeltaTime, uint64 MaxObj
 			const int32 Count = System.Runner->Prepare( World, Transforms, DeltaTime, MaxObjectId );
 			if ( Phase == EPhase::Draw && Count > 0 )
 			{
-				ActiveDrawRunners.Add( System.Runner.get() );
+				ActiveDrawRunners.Add( System.Runner.Get() );
 			}
 			if ( IProfiler* Recorder = NProfiler::GRecorder )
 			{
@@ -93,7 +93,7 @@ void NEcs::FSystemScheduler::Run( EPhase Phase, float32 DeltaTime, uint64 MaxObj
 			}
 			for ( int32 Begin = 0; Begin < Count; Begin += EntitiesPerBatch )
 			{
-				Items.Add( { System.Runner.get(), System.Name, Begin, NMath::Min( Begin + EntitiesPerBatch, Count ) } );
+				Items.Add( { System.Runner.Get(), System.Name, Begin, NMath::Min( Begin + EntitiesPerBatch, Count ) } );
 			}
 		}
 		if ( Items.IsEmpty() ) continue;

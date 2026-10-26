@@ -2,7 +2,6 @@
 #include "Library/Core/Thread/Atomic.h"
 #include "Library/Core/Types/CompilerMacros.h"
 #include <new>
-#include <utility>
 
 #include "Library/Core/Collection/CollectionCommon.h"
 #include "Library/Core/Collection/Hash.h"

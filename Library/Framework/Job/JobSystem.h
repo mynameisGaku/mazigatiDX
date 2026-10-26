@@ -53,15 +53,15 @@ private:
 	bool RunOneLocked( FUniqueLock& Lock, bool bAllowJobs );
 	bool HasWorkLocked() const;
 	void RunBatches( FGroup& Group );
-	void RunJob( const std::shared_ptr<FJobState>& Job );
-	void ReleaseJob( const std::shared_ptr<FJobState>& Job );
-	void Enqueue( const std::shared_ptr<FJobState>& Job );
+	void RunJob( const TSharedPtr<FJobState>& Job );
+	void ReleaseJob( const TSharedPtr<FJobState>& Job );
+	void Enqueue( const TSharedPtr<FJobState>& Job );
 
 private:
 	TArray<FThread> Workers;
 	FMutex Mutex;
 	FConditionVariable WorkAvailable;
 	TArray<FGroup*> Groups;                    // 実行中の ParallelFor
-	std::deque<std::shared_ptr<FJobState>> ReadyJobs;   // 実行できる単発のジョブ
+	std::deque<TSharedPtr<FJobState>> ReadyJobs;   // 実行できる単発のジョブ
 	bool bStopping = false;
 };

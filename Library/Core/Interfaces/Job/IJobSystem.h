@@ -1,8 +1,8 @@
 ﻿#pragma once
-#include <memory>
 #include <utility>
 
 #include "Library/Core/Collection/Array.h"
+#include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Core/Thread/Atomic.h"
 #include "Library/Core/Thread/Mutex.h"
 #include "Library/Core/Types/Callable.h"
@@ -21,20 +21,20 @@ struct FJobState
 	TAtomic<int32> NumPending{ 0 };   // 自分の実行待ち 1 + 終わっていない依存先の数。0 になったら実行できる
 	TAtomic<bool> bDone{ false };
 	FMutex Mutex;                     // bDone の切り替えと Dependents を守る
-	TArray<std::shared_ptr<FJobState>> Dependents;   // このジョブが終わったら実行できるようになるジョブ
+	TArray<TSharedPtr<FJobState>> Dependents;   // このジョブが終わったら実行できるようになるジョブ
 };
 
 class FJobHandle
 {
 public:
 	FJobHandle() = default;
-	explicit FJobHandle( std::shared_ptr<FJobState> InState ) : State( MoveTemp( InState ) ) {}
+	explicit FJobHandle( TSharedPtr<FJobState> InState ) : State( MoveTemp( InState ) ) {}
 
 	// 空のハンドル（何も待たない）は終わっている扱い
 	FORCEINLINE bool IsDone() const { return State == nullptr || State->bDone.Load( EMemoryOrder::Acquire ); }
 	FORCEINLINE bool IsValid() const { return State != nullptr; }
 
-	std::shared_ptr<FJobState> State;
+	TSharedPtr<FJobState> State;
 };
 
 //=============================================================================
