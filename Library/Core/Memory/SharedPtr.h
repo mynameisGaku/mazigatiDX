@@ -1,6 +1,6 @@
 ﻿#pragma once
+#include "Library/Core/Thread/Atomic.h"
 #include "Library/Core/Types/CompilerMacros.h"
-#include <atomic>
 #include <new>
 #include <type_traits>
 #include <utility>
@@ -29,23 +29,23 @@ namespace NSharedPtrDetail
 		FRefController( const FRefController& ) = delete;
 		FRefController& operator=( const FRefController& ) = delete;
 
-		FORCEINLINE void AddShared() noexcept { SharedCount.fetch_add( 1, std::memory_order_relaxed ); }
-		FORCEINLINE void AddWeak() noexcept { WeakCount.fetch_add( 1, std::memory_order_relaxed ); }
+		FORCEINLINE void AddShared() noexcept { SharedCount.FetchAdd( 1, EMemoryOrder::Relaxed ); }
+		FORCEINLINE void AddWeak() noexcept { WeakCount.FetchAdd( 1, EMemoryOrder::Relaxed ); }
 
 		// SharedCount が 0 でなければ +1 して true（TWeakPtr::Pin 用）
 		FORCEINLINE bool TryAddShared() noexcept
 		{
-			int32 Count = SharedCount.load( std::memory_order_relaxed );
+			int32 Count = SharedCount.Load( EMemoryOrder::Relaxed );
 			while ( Count > 0 )
 			{
-				if ( SharedCount.compare_exchange_weak( Count, Count + 1, std::memory_order_acq_rel, std::memory_order_relaxed ) ) return true;
+				if ( SharedCount.CompareExchangeWeak( Count, Count + 1, EMemoryOrder::AcquireRelease, EMemoryOrder::Relaxed ) ) return true;
 			}
 			return false;
 		}
 
 		FORCEINLINE void ReleaseShared() noexcept
 		{
-			if ( SharedCount.fetch_sub( 1, std::memory_order_acq_rel ) == 1 )
+			if ( SharedCount.FetchSub( 1, EMemoryOrder::AcquireRelease ) == 1 )
 			{
 				DestroyObject();
 				ReleaseWeak();
@@ -54,13 +54,13 @@ namespace NSharedPtrDetail
 
 		FORCEINLINE void ReleaseWeak() noexcept
 		{
-			if ( WeakCount.fetch_sub( 1, std::memory_order_acq_rel ) == 1 )
+			if ( WeakCount.FetchSub( 1, EMemoryOrder::AcquireRelease ) == 1 )
 			{
 				DestroySelf();
 			}
 		}
 
-		FORCEINLINE int32 GetSharedCount() const noexcept { return SharedCount.load( std::memory_order_relaxed ); }
+		FORCEINLINE int32 GetSharedCount() const noexcept { return SharedCount.Load( EMemoryOrder::Relaxed ); }
 
 	protected:
 		virtual ~FRefController() = default;
@@ -68,8 +68,8 @@ namespace NSharedPtrDetail
 		virtual void DestroySelf() noexcept { delete this; }
 
 	private:
-		std::atomic<int32> SharedCount { 1 };
-		std::atomic<int32> WeakCount { 1 };
+		TAtomic<int32> SharedCount { 1 };
+		TAtomic<int32> WeakCount { 1 };
 	};
 
 	// 生ポインタ + デリータを持つ制御ブロック

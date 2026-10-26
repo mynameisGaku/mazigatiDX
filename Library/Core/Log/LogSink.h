@@ -1,8 +1,8 @@
 ﻿#pragma once
+#include "Library/Core/Thread/Mutex.h"
 #include "Library/Core/Types/CompilerMacros.h"
 #include <chrono>
 #include <fstream>
-#include <mutex>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
@@ -117,7 +117,7 @@ private:
 	// 古い順に並べたときの Index 番目（リングバッファ）
 	FORCEINLINE const FEntry& GetEntry( int32 Index ) const { return Entries[( Head + Index ) % Entries.Num()]; }
 
-	std::mutex         Mutex;
+	FMutex         Mutex;
 	TArray<FEntry>     Entries;          // MaxLines を上限とするリングバッファ
 	int32              Head        = 0;  // 最も古い要素の位置
 	int32              MaxLines;

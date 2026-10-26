@@ -1,6 +1,6 @@
 ﻿#pragma once
+#include "Library/Core/Thread/Atomic.h"
 #include "Library/Core/Types/CompilerMacros.h"
-#include <atomic>
 
 #include "Library/Core/Log/LogVerbosity.h"
 
@@ -28,8 +28,8 @@ public:
 
 	FORCEINLINE const char* GetName() const { return Name; }
 
-	FORCEINLINE ELogVerbosity GetVerbosity() const { return Verbosity.load( std::memory_order_relaxed ); }
-	FORCEINLINE void SetVerbosity( ELogVerbosity InVerbosity ) { Verbosity.store( InVerbosity, std::memory_order_relaxed ); }
+	FORCEINLINE ELogVerbosity GetVerbosity() const { return Verbosity.Load( EMemoryOrder::Relaxed ); }
+	FORCEINLINE void SetVerbosity( ELogVerbosity InVerbosity ) { Verbosity.Store( InVerbosity, EMemoryOrder::Relaxed ); }
 
 	FORCEINLINE ELogVerbosity GetDefaultVerbosity() const { return DefaultVerbosity; }
 
@@ -42,7 +42,7 @@ public:
 private:
 	const char* Name;
 	ELogVerbosity DefaultVerbosity;
-	std::atomic<ELogVerbosity> Verbosity;
+	TAtomic<ELogVerbosity> Verbosity;
 };
 
 //-----------------------------------------------------------------------------

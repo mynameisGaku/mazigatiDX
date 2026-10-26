@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "Library/Core/Thread/Mutex.h"
+
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -68,19 +70,19 @@ void CLogManager::AddSink( const TSharedPtr<ILogSink>& Sink )
 {
 	if ( !Sink ) return;
 
-	std::lock_guard<std::mutex> Lock( SinkMutex );
+	FScopedLock Lock( SinkMutex );
 	Sinks.AddUnique( Sink );
 }
 
 void CLogManager::RemoveSink( const TSharedPtr<ILogSink>& Sink )
 {
-	std::lock_guard<std::mutex> Lock( SinkMutex );
+	FScopedLock Lock( SinkMutex );
 	Sinks.Remove( Sink );
 }
 
 void CLogManager::RemoveAllSinks()
 {
-	std::lock_guard<std::mutex> Lock( SinkMutex );
+	FScopedLock Lock( SinkMutex );
 	for ( auto& Sink : Sinks )
 	{
 		Sink->Flush();
@@ -90,7 +92,7 @@ void CLogManager::RemoveAllSinks()
 
 void CLogManager::Flush()
 {
-	std::lock_guard<std::mutex> Lock( SinkMutex );
+	FScopedLock Lock( SinkMutex );
 	for ( auto& Sink : Sinks )
 	{
 		Sink->Flush();
@@ -99,13 +101,13 @@ void CLogManager::Flush()
 
 void CLogManager::SetAllCategoriesVerbosity( ELogVerbosity Verbosity )
 {
-	std::lock_guard<std::mutex> Lock( CategoryMutex );
+	FScopedLock Lock( CategoryMutex );
 	for ( FLogCategory* Category : Categories ) Category->SetVerbosity( Verbosity );
 }
 
 void CLogManager::ResetAllCategoriesToDefault()
 {
-	std::lock_guard<std::mutex> Lock( CategoryMutex );
+	FScopedLock Lock( CategoryMutex );
 	for ( FLogCategory* Category : Categories ) Category->SetVerbosity( Category->GetDefaultVerbosity() );
 }
 
@@ -150,7 +152,7 @@ FLogCategory* CLogManager::FindCategory( const char* Name )
 {
 	if ( !Name ) return nullptr;
 
-	std::lock_guard<std::mutex> Lock( CategoryMutex );
+	FScopedLock Lock( CategoryMutex );
 	FLogCategory* const* Found = Categories.FindByPredicate( [Name]( const FLogCategory* Category )
 	{
 		return std::strcmp( Category->GetName(), Name ) == 0;
@@ -169,7 +171,7 @@ bool CLogManager::SetCategoryVerbosity( const char* Name, ELogVerbosity Verbosit
 
 TArray<FLogCategory*> CLogManager::GetCategories()
 {
-	std::lock_guard<std::mutex> Lock( CategoryMutex );
+	FScopedLock Lock( CategoryMutex );
 	return Categories;
 }
 
@@ -222,7 +224,7 @@ void CLogManager::LogV( const FLogCategory& Category, ELogVerbosity Verbosity,
 	Out += FString::FromInt( Line );
 
 	{
-		std::lock_guard<std::mutex> Lock( SinkMutex );
+		FScopedLock Lock( SinkMutex );
 		for ( auto& Sink : Sinks )
 		{
 			if ( Verbosity <= Sink->GetMaxVerbosity() )
@@ -252,13 +254,13 @@ void CLogManager::LogV( const FLogCategory& Category, ELogVerbosity Verbosity,
 
 void CLogManager::RegisterCategory( FLogCategory* Category )
 {
-	std::lock_guard<std::mutex> Lock( CategoryMutex );
+	FScopedLock Lock( CategoryMutex );
 	Categories.Add( Category );
 }
 
 void CLogManager::UnregisterCategory( FLogCategory* Category )
 {
-	std::lock_guard<std::mutex> Lock( CategoryMutex );
+	FScopedLock Lock( CategoryMutex );
 	Categories.Remove( Category );
 }
 

@@ -3,9 +3,9 @@
 #include <algorithm>
 #include <cstdarg>
 #include <cstdio>
-#include <thread>
 
 #include "Library/Core/Profiler/ProfilerScope.h"
+#include "Library/Core/Thread/Thread.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Physics/ContactListener.h"
@@ -157,7 +157,7 @@ TResult<void> CPhysicsSystem::Init( const FPhysicsSettings& InSettings )
 
 	const int32 NumThreads = Settings.NumThreads >= 0
 		? Settings.NumThreads
-		: NMath::Max( 1, static_cast<int32>( std::thread::hardware_concurrency() ) - 1 );
+		: NMath::Max( 1, static_cast<int32>( NThread::GetHardwareConcurrency() ) - 1 );
 
 	TempAllocator = MakeUnique<JPH::TempAllocatorImpl>( Settings.TempAllocatorSize );
 	JobSystem     = MakeUnique<JPH::JobSystemThreadPool>( JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, NumThreads );

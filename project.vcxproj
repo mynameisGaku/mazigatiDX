@@ -560,6 +560,9 @@
     <ClInclude Include="Library\Core\Memory\UniquePtr.h" />
     <ClInclude Include="Library\Core\Profiler\ProfilerScope.h" />
     <ClInclude Include="Library\Core\Profiler\ProfilerTypes.h" />
+    <ClInclude Include="Library\Core\Thread\Atomic.h" />
+    <ClInclude Include="Library\Core\Thread\Mutex.h" />
+    <ClInclude Include="Library\Core\Thread\Thread.h" />
     <ClInclude Include="Library\Core\Time\PlatformTime.h" />
     <ClInclude Include="Library\Core\Types\CompilerMacros.h" />
     <ClInclude Include="Library\Core\Types\Numeric.h" />

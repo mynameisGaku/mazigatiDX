@@ -1,11 +1,11 @@
 ﻿#pragma once
-#include <atomic>
 #include <memory>
 #include <utility>
 #include <vector>
 
 #include "Library/Core/Collection/CollectionCommon.h"
 #include "Library/Core/Interfaces/Job/IJobSystem.h"
+#include "Library/Core/Thread/Atomic.h"
 #include "Library/Core/Types/CompilerMacros.h"
 #include "Library/Core/Types/TypeDefinition.h"
 #include "Library/Core/Types/Utility.h"
@@ -25,8 +25,8 @@ namespace NEcs
 
 	inline int32 AllocateTypeId()
 	{
-		static std::atomic<int32> NextId{ 0 };
-		return NextId.fetch_add( 1, std::memory_order_relaxed );
+		static TAtomic<int32> NextId{ 0 };
+		return NextId.FetchAdd( 1, EMemoryOrder::Relaxed );
 	}
 
 	// 型ごとの 0 からの通し番号（O(1) の入れ物検索とビットマスク判定用）

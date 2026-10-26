@@ -1,12 +1,12 @@
 ﻿#pragma once
-#include <atomic>
 #include <functional>
 #include <memory>
-#include <mutex>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
+#include "Library/Core/Thread/Atomic.h"
+#include "Library/Core/Thread/Mutex.h"
 #include "Library/Core/Types/CompilerMacros.h"
 #include "Library/Core/Types/TypeDefinition.h"
 #include "Library/Core/Types/Utility.h"
@@ -19,9 +19,9 @@ struct FJobState
 {
 	std::function<void()> Function;
 	const char* Name = "Job";
-	std::atomic<int32> NumPending{ 0 };   // 自分の実行待ち 1 + 終わっていない依存先の数。0 になったら実行できる
-	std::atomic<bool> bDone{ false };
-	std::mutex Mutex;                     // bDone の切り替えと Dependents を守る
+	TAtomic<int32> NumPending{ 0 };   // 自分の実行待ち 1 + 終わっていない依存先の数。0 になったら実行できる
+	TAtomic<bool> bDone{ false };
+	FMutex Mutex;                     // bDone の切り替えと Dependents を守る
 	std::vector<std::shared_ptr<FJobState>> Dependents;   // このジョブが終わったら実行できるようになるジョブ
 };
 
@@ -32,7 +32,7 @@ public:
 	explicit FJobHandle( std::shared_ptr<FJobState> InState ) : State( MoveTemp( InState ) ) {}
 
 	// 空のハンドル（何も待たない）は終わっている扱い
-	FORCEINLINE bool IsDone() const { return State == nullptr || State->bDone.load( std::memory_order_acquire ); }
+	FORCEINLINE bool IsDone() const { return State == nullptr || State->bDone.Load( EMemoryOrder::Acquire ); }
 	FORCEINLINE bool IsValid() const { return State != nullptr; }
 
 	std::shared_ptr<FJobState> State;

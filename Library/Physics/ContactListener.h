@@ -1,7 +1,7 @@
 ﻿#pragma once
+#include "Library/Core/Thread/Atomic.h"
+#include "Library/Core/Thread/Mutex.h"
 #include "Library/Core/Types/CompilerMacros.h"
-#include <atomic>
-#include <mutex>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Physics/PhysicsTypes.h"
@@ -59,7 +59,7 @@ class CContactEventQueue final : public JPH::ContactListener
 {
 public:
 	// 収集の有効/無効（リスナーが 0 個のときは無効にして負荷を下げる）
-	FORCEINLINE void SetEnabled( bool bInEnabled ) { bEnabled.store( bInEnabled, std::memory_order_relaxed ); }
+	FORCEINLINE void SetEnabled( bool bInEnabled ) { bEnabled.Store( bInEnabled, EMemoryOrder::Relaxed ); }
 
 	// 溜まったイベントを配信してクリアする（メインスレッドから呼ぶ）
 	void Dispatch( CPhysicsSystem& System, const TArray<CContactListener*>& Listeners );
@@ -89,8 +89,8 @@ private:
 
 	void Push( EEventType Type, const JPH::Body& Body1, const JPH::Body& Body2, const JPH::ContactManifold& Manifold );
 
-	std::atomic<bool>   bEnabled { false };
-	std::mutex          Mutex;
+	TAtomic<bool>   bEnabled { false };
+	FMutex          Mutex;
 	TArray<FEvent>      Events;
 	TArray<FEvent>      DispatchBuffer;
 };

@@ -1221,6 +1221,15 @@
     <ClInclude Include="Library\Core\Profiler\ProfilerTypes.h">
       <Filter>Library\Core\Profiler</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Thread\Atomic.h">
+      <Filter>Library\Core\Thread</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Thread\Mutex.h">
+      <Filter>Library\Core\Thread</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Thread\Thread.h">
+      <Filter>Library\Core\Thread</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Time\PlatformTime.h">
       <Filter>Library\Core\Time</Filter>
     </ClInclude>
@@ -3247,6 +3256,9 @@
     </Filter>
     <Filter Include="Library\Core\Profiler">
       <UniqueIdentifier>{EBB14C5C-F48F-CC42-8274-F1A8F40BFA14}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Core\Thread">
+      <UniqueIdentifier>{BDD98768-5D65-B7ED-7770-16F7B28C3C95}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Core\Time">
       <UniqueIdentifier>{DD7F3CC6-D595-3962-46AC-50E93734807B}</UniqueIdentifier>

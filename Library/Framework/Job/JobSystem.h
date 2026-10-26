@@ -1,12 +1,11 @@
 ﻿#pragma once
-#include <atomic>
-#include <condition_variable>
 #include <deque>
-#include <mutex>
-#include <thread>
 #include <vector>
 
 #include "Library/Core/Interfaces/Job/IJobSystem.h"
+#include "Library/Core/Thread/Atomic.h"
+#include "Library/Core/Thread/Mutex.h"
+#include "Library/Core/Thread/Thread.h"
 #include "Library/Framework/Subsystem/AppSubsystem.h"
 
 //=============================================================================
@@ -43,14 +42,14 @@ private:
 		int32 Count = 0;
 		int32 BatchSize = 1;
 		int32 NumBatches = 1;
-		std::atomic<int32> NextBatch{ 0 };   // 次に取るバッチ
-		std::atomic<int32> NumDone{ 0 };     // 終わったバッチ
-		std::atomic<int32> Users{ 0 };       // 今、このグループを調べているワーカーの数
+		TAtomic<int32> NextBatch{ 0 };   // 次に取るバッチ
+		TAtomic<int32> NumDone{ 0 };     // 終わったバッチ
+		TAtomic<int32> Users{ 0 };       // 今、このグループを調べているワーカーの数
 	};
 
 	void WorkerMain( int32 Index );
 	// 待ち行列から仕事を 1 つ取って実行する（Lock は実行中だけ外す）。仕事が無ければ false
-	bool RunOneLocked( std::unique_lock<std::mutex>& Lock, bool bAllowJobs );
+	bool RunOneLocked( FUniqueLock& Lock, bool bAllowJobs );
 	bool HasWorkLocked() const;
 	void RunBatches( FGroup& Group );
 	void RunJob( const std::shared_ptr<FJobState>& Job );
@@ -58,9 +57,9 @@ private:
 	void Enqueue( const std::shared_ptr<FJobState>& Job );
 
 private:
-	std::vector<std::thread> Workers;
-	std::mutex Mutex;
-	std::condition_variable WorkAvailable;
+	std::vector<FThread> Workers;
+	FMutex Mutex;
+	FConditionVariable WorkAvailable;
 	std::vector<FGroup*> Groups;                    // 実行中の ParallelFor
 	std::deque<std::shared_ptr<FJobState>> ReadyJobs;   // 実行できる単発のジョブ
 	bool bStopping = false;

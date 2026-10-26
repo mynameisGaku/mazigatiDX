@@ -4,6 +4,7 @@
 
 #include "Library/Core/Interfaces/Job/IJobSystem.h"
 #include "Library/Core/Profiler/ProfilerScope.h"
+#include "Library/Core/Thread/Atomic.h"
 #include "Library/Framework/Object/GameObject.h"
 
 namespace
@@ -22,7 +23,7 @@ int32 FTransformWorld::Allocate( CGameObject* Owner, const FTransform& Local )
 	Node.World = Local;
 	Node.Owner = Owner;
 	Node.bDirty = true;
-	bAnyDirty.store( true, std::memory_order_relaxed );
+	bAnyDirty.Store( true, EMemoryOrder::Relaxed );
 	bHierarchyDirty = true;
 	return Slot;
 }
@@ -47,7 +48,7 @@ void FTransformWorld::MarkDirtySlow( int32 Slot )
 {
 	FTransformNode& Node = Nodes[Slot];
 	Node.bDirty = true;
-	bAnyDirty.store( true, std::memory_order_relaxed );
+	bAnyDirty.Store( true, EMemoryOrder::Relaxed );
 	if ( Node.FirstChild == INDEX_NONE ) return;   // 子がなければ、これだけ
 
 	// 子孫を、深さ優先で立てる（スタックは使い回す。毎回確保しない）
@@ -218,7 +219,7 @@ const FTransform& FTransformWorld::GetWorldSlow( int32 Slot )
 void FTransformWorld::Update( IJobSystem* Jobs )
 {
 	if ( bHierarchyDirty ) RebuildHierarchy();
-	if ( !bAnyDirty.load( std::memory_order_relaxed ) ) return;
+	if ( !bAnyDirty.Load( EMemoryOrder::Relaxed ) ) return;
 
 	// 浅い階層から順に。同じ階層の要素は互いに独立（親は前の階層で終わっている）なので、階層ごとに一斉に計算できる
 	const size_t NumLevels = LevelStart.empty() ? 0 : LevelStart.size() - 1;
@@ -262,7 +263,7 @@ void FTransformWorld::Update( IJobSystem* Jobs )
 			else Body( 0, Count );
 		}
 	}
-	bAnyDirty.store( false, std::memory_order_relaxed );
+	bAnyDirty.Store( false, EMemoryOrder::Relaxed );
 }
 
 #pragma endregion

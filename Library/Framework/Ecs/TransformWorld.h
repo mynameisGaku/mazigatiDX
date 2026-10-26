@@ -1,9 +1,9 @@
 ﻿#pragma once
-#include <atomic>
 #include <vector>
 
 #include "Library/Core/Collection/CollectionCommon.h"
 #include "Library/Core/Interfaces/Job/IJobSystem.h"
+#include "Library/Core/Thread/Atomic.h"
 #include "Library/Core/Types/CompilerMacros.h"
 #include "Library/Framework/Ecs/ChunkedPool.h"
 #include "Library/Math/Transform.h"
@@ -71,7 +71,7 @@ public:
 	FORCEINLINE void MarkHierarchyDirty() { bHierarchyDirty = true; }
 
 	// システムが FTransformAccess で書き込む前にメインスレッドで 1 回呼ぶ（ワーカーごとに atomic を触らないため）
-	FORCEINLINE void NotifySystemWrite() { bAnyDirty.store( true, std::memory_order_relaxed ); }
+	FORCEINLINE void NotifySystemWrite() { bAnyDirty.Store( true, EMemoryOrder::Relaxed ); }
 
 	// 並列に動くシステムから、ローカルを書き換えたあとに呼ぶ。子孫のワールド値を古くする処理は、システムの実行が終わったあとに
 	// メインスレッドでまとめて行う（スレッドごとの一覧に溜めるだけなので、ほかのスレッドとぶつからない）
@@ -90,7 +90,7 @@ public:
 	}
 	FORCEINLINE void MarkDirtyDeferred( int32 Slot )
 	{
-		bAnyDirty.store( true, std::memory_order_relaxed );
+		bAnyDirty.Store( true, EMemoryOrder::Relaxed );
 		MarkDirtyDeferred( Nodes[Slot], Slot );
 	}
 	void FlushDeferredDirty();
@@ -137,7 +137,7 @@ private:
 	TChunkedPool<FTransformNode> Nodes;
 
 	bool bHierarchyDirty = true;
-	std::atomic<bool> bAnyDirty{ false };   // 並列に動くシステムも立てる
+	TAtomic<bool> bAnyDirty{ false };   // 並列に動くシステムも立てる
 
 	// 階層の浅い順に並べた生きている要素。同じ親の子は隣り合う。LevelStart[d] .. LevelStart[d + 1] が深さ d（最後に終端が 1 つ）
 	std::vector<FLevelEntry> Entries;

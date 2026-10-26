@@ -12,6 +12,9 @@
 #include "Library/Core/Interfaces/Profiler/IProfiler.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Profiler/ProfilerScope.h"
+#include "Library/Core/Thread/Atomic.h"
+#include "Library/Core/Thread/Mutex.h"
+#include "Library/Core/Thread/Thread.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
@@ -49,13 +52,13 @@ void CJobSystem::Initialize( FSubsystemCollection& Collection )
 	// プロファイラーより後に初期化させる（終了はその逆なので、ワーカーが止まってからプロファイラーが片付く）
 	Collection.InitializeDependency<IProfiler>();
 
-	int32 NumWorkers = NMath::Max( 0, static_cast<int32>( std::thread::hardware_concurrency() ) - 1 );
+	int32 NumWorkers = NMath::Max( 0, static_cast<int32>( NThread::GetHardwareConcurrency() ) - 1 );
 	const int32 Requested = ReadJobThreadsArgument();
 	if ( Requested >= 0 ) NumWorkers = Requested;
 	NumWorkers = NMath::Min( NumWorkers, MaxWorkers );
 
 	Workers.reserve( static_cast<size_t>( NumWorkers ) );
-	for ( int32 i = 0; i < NumWorkers; ++i ) Workers.emplace_back( &CJobSystem::WorkerMain, this, i );
+	for ( int32 i = 0; i < NumWorkers; ++i ) Workers.emplace_back( [this, i] { WorkerMain( i ); } );
 
 	LOG( LogJob, Log, "Ready (%d worker thread(s)%s)", NumWorkers, NumWorkers == 0 ? ": everything runs on the calling thread" : "" );
 }
@@ -63,11 +66,11 @@ void CJobSystem::Initialize( FSubsystemCollection& Collection )
 void CJobSystem::Deinitialize()
 {
 	{
-		std::lock_guard<std::mutex> Lock( Mutex );
+		FScopedLock Lock( Mutex );
 		bStopping = true;
 	}
-	WorkAvailable.notify_all();
-	for ( std::thread& Worker : Workers ) Worker.join();
+	WorkAvailable.NotifyAll();
+	for ( FThread& Worker : Workers ) Worker.Join();
 
 	LOG( LogJob, Log, "Shutdown (%d worker thread(s) stopped)", static_cast<int32>( Workers.size() ) );
 	Workers.clear();
@@ -86,10 +89,10 @@ void CJobSystem::WorkerMain( int32 Index )
 	std::snprintf( Name, sizeof( Name ), "Job Worker %d", Index + 1 );
 	NProfiler::SetThreadName( Name );
 
-	std::unique_lock<std::mutex> Lock( Mutex );
+	FUniqueLock Lock( Mutex );
 	for ( ;; )
 	{
-		WorkAvailable.wait( Lock, [this] { return bStopping || HasWorkLocked(); } );
+		WorkAvailable.Wait( Lock, [this] { return bStopping || HasWorkLocked(); } );
 		if ( bStopping ) return;
 		RunOneLocked( Lock, true );
 	}
@@ -100,23 +103,23 @@ bool CJobSystem::HasWorkLocked() const
 	if ( !ReadyJobs.empty() ) return true;
 	for ( const FGroup* Group : Groups )
 	{
-		if ( Group->NextBatch.load( std::memory_order_relaxed ) < Group->NumBatches ) return true;
+		if ( Group->NextBatch.Load( EMemoryOrder::Relaxed ) < Group->NumBatches ) return true;
 	}
 	return false;
 }
 
-bool CJobSystem::RunOneLocked( std::unique_lock<std::mutex>& Lock, bool bAllowJobs )
+bool CJobSystem::RunOneLocked( FUniqueLock& Lock, bool bAllowJobs )
 {
 	// データ並列のグループを優先する（呼び出し側が待っている）
 	for ( FGroup* Group : Groups )
 	{
-		if ( Group->NextBatch.load( std::memory_order_relaxed ) >= Group->NumBatches ) continue;
+		if ( Group->NextBatch.Load( EMemoryOrder::Relaxed ) >= Group->NumBatches ) continue;
 
-		Group->Users.fetch_add( 1, std::memory_order_acquire );   // ロックの中で数える（登録を外す側が、使い終わるまで待てるように）
-		Lock.unlock();
+		Group->Users.FetchAdd( 1, EMemoryOrder::Acquire );   // ロックの中で数える（登録を外す側が、使い終わるまで待てるように）
+		Lock.Unlock();
 		RunBatches( *Group );
-		Group->Users.fetch_sub( 1, std::memory_order_release );
-		Lock.lock();
+		Group->Users.FetchSub( 1, EMemoryOrder::Release );
+		Lock.Lock();
 		return true;
 	}
 
@@ -124,9 +127,9 @@ bool CJobSystem::RunOneLocked( std::unique_lock<std::mutex>& Lock, bool bAllowJo
 	{
 		std::shared_ptr<FJobState> Job = MoveTemp( ReadyJobs.front() );
 		ReadyJobs.pop_front();
-		Lock.unlock();
+		Lock.Unlock();
 		RunJob( Job );
-		Lock.lock();
+		Lock.Lock();
 		return true;
 	}
 	return false;
@@ -136,7 +139,7 @@ void CJobSystem::RunBatches( FGroup& Group )
 {
 	for ( ;; )
 	{
-		const int32 Batch = Group.NextBatch.fetch_add( 1, std::memory_order_relaxed );
+		const int32 Batch = Group.NextBatch.FetchAdd( 1, EMemoryOrder::Relaxed );
 		if ( Batch >= Group.NumBatches ) return;
 
 		const int32 Begin = Batch * Group.BatchSize;
@@ -145,7 +148,7 @@ void CJobSystem::RunBatches( FGroup& Group )
 			PROFILE_SCOPE_CAT( "Job", Group.Name );
 			Group.Body.Invoke( Group.Body.Object, Begin, End );
 		}
-		Group.NumDone.fetch_add( 1, std::memory_order_release );
+		Group.NumDone.FetchAdd( 1, EMemoryOrder::Release );
 	}
 }
 
@@ -181,31 +184,31 @@ void CJobSystem::RunParallelRange( int32 Count, int32 MinBatchSize, FRangeFuncti
 	Group.BatchSize = BatchSize;
 	Group.NumBatches = NumBatches;
 	{
-		std::lock_guard<std::mutex> Lock( Mutex );
+		FScopedLock Lock( Mutex );
 		Groups.push_back( &Group );
 	}
-	WorkAvailable.notify_all();
+	WorkAvailable.NotifyAll();
 
 	// 呼び出したスレッドも、ワーカーと一緒にバッチを取る
 	RunBatches( Group );
 
 	// 残りのバッチが終わるまで、他のグループの仕事を手伝いながら待つ（単発のジョブは長いことがあるので手伝わない）
-	while ( Group.NumDone.load( std::memory_order_acquire ) < NumBatches )
+	while ( Group.NumDone.Load( EMemoryOrder::Acquire ) < NumBatches )
 	{
-		std::unique_lock<std::mutex> Lock( Mutex );
+		FUniqueLock Lock( Mutex );
 		if ( !RunOneLocked( Lock, false ) )
 		{
-			Lock.unlock();
-			std::this_thread::yield();
+			Lock.Unlock();
+			NThread::YieldToOthers();
 		}
 	}
 
 	{
-		std::lock_guard<std::mutex> Lock( Mutex );
+		FScopedLock Lock( Mutex );
 		Groups.erase( std::find( Groups.begin(), Groups.end(), &Group ) );
 	}
 	// 登録を外したあとは新しく使う者はいない。使っている最中のワーカーが抜けるまで待つ（Group は呼び出しスレッドの上にあるため）
-	while ( Group.Users.load( std::memory_order_acquire ) > 0 ) std::this_thread::yield();
+	while ( Group.Users.Load( EMemoryOrder::Acquire ) > 0 ) NThread::YieldToOthers();
 }
 
 #pragma endregion
@@ -217,15 +220,15 @@ FJobHandle CJobSystem::Schedule( std::function<void()> Function, const char* Nam
 	std::shared_ptr<FJobState> Job = std::make_shared<FJobState>();
 	Job->Function = MoveTemp( Function );
 	Job->Name = Name;
-	Job->NumPending.store( 1, std::memory_order_relaxed );   // 登録が終わるまで実行されないよう、自分の分を 1 つ持っておく
+	Job->NumPending.Store( 1, EMemoryOrder::Relaxed );   // 登録が終わるまで実行されないよう、自分の分を 1 つ持っておく
 
 	if ( Dependency.State != nullptr )
 	{
-		std::lock_guard<std::mutex> Lock( Dependency.State->Mutex );
-		if ( !Dependency.State->bDone.load( std::memory_order_relaxed ) )
+		FScopedLock Lock( Dependency.State->Mutex );
+		if ( !Dependency.State->bDone.Load( EMemoryOrder::Relaxed ) )
 		{
 			Dependency.State->Dependents.push_back( Job );
-			Job->NumPending.fetch_add( 1, std::memory_order_relaxed );
+			Job->NumPending.FetchAdd( 1, EMemoryOrder::Relaxed );
 		}
 	}
 
@@ -235,7 +238,7 @@ FJobHandle CJobSystem::Schedule( std::function<void()> Function, const char* Nam
 
 void CJobSystem::ReleaseJob( const std::shared_ptr<FJobState>& Job )
 {
-	if ( Job->NumPending.fetch_sub( 1, std::memory_order_acq_rel ) == 1 ) Enqueue( Job );
+	if ( Job->NumPending.FetchSub( 1, EMemoryOrder::AcquireRelease ) == 1 ) Enqueue( Job );
 }
 
 void CJobSystem::Enqueue( const std::shared_ptr<FJobState>& Job )
@@ -248,10 +251,10 @@ void CJobSystem::Enqueue( const std::shared_ptr<FJobState>& Job )
 	}
 
 	{
-		std::lock_guard<std::mutex> Lock( Mutex );
+		FScopedLock Lock( Mutex );
 		ReadyJobs.push_back( Job );
 	}
-	WorkAvailable.notify_one();
+	WorkAvailable.NotifyOne();
 }
 
 void CJobSystem::RunJob( const std::shared_ptr<FJobState>& Job )
@@ -264,8 +267,8 @@ void CJobSystem::RunJob( const std::shared_ptr<FJobState>& Job )
 
 	std::vector<std::shared_ptr<FJobState>> Dependents;
 	{
-		std::lock_guard<std::mutex> Lock( Job->Mutex );
-		Job->bDone.store( true, std::memory_order_release );
+		FScopedLock Lock( Job->Mutex );
+		Job->bDone.Store( true, EMemoryOrder::Release );
 		Dependents.swap( Job->Dependents );
 	}
 	for ( const std::shared_ptr<FJobState>& Dependent : Dependents ) ReleaseJob( Dependent );
@@ -276,11 +279,11 @@ void CJobSystem::Wait( const FJobHandle& Handle )
 	// 待っている間も、仕事（グループ・単発のジョブ）を手伝う
 	while ( !Handle.IsDone() )
 	{
-		std::unique_lock<std::mutex> Lock( Mutex );
+		FUniqueLock Lock( Mutex );
 		if ( !RunOneLocked( Lock, true ) )
 		{
-			Lock.unlock();
-			std::this_thread::yield();
+			Lock.Unlock();
+			NThread::YieldToOthers();
 		}
 	}
 }

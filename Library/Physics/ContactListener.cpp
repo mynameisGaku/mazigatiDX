@@ -1,5 +1,7 @@
 ﻿#include "ContactListener.h"
 
+#include "Library/Core/Thread/Atomic.h"
+#include "Library/Core/Thread/Mutex.h"
 #include "Library/Physics/PhysicsSystem.h"
 #include "Library/Physics/RigidBody.h"
 
@@ -8,7 +10,7 @@
 void CContactEventQueue::Dispatch( CPhysicsSystem& System, const TArray<CContactListener*>& Listeners )
 {
 	{
-		std::lock_guard<std::mutex> Lock( Mutex );
+		FScopedLock Lock( Mutex );
 		NAlgo::Swap( DispatchBuffer, Events );
 		Events.Reset();
 	}
@@ -39,7 +41,7 @@ void CContactEventQueue::Dispatch( CPhysicsSystem& System, const TArray<CContact
 
 void CContactEventQueue::Clear()
 {
-	std::lock_guard<std::mutex> Lock( Mutex );
+	FScopedLock Lock( Mutex );
 	Events.Reset();
 }
 
@@ -55,15 +57,15 @@ void CContactEventQueue::OnContactPersisted( const JPH::Body& Body1, const JPH::
 
 void CContactEventQueue::OnContactRemoved( const JPH::SubShapeIDPair& SubShapePair )
 {
-	if ( !bEnabled.load( std::memory_order_relaxed ) ) return;
+	if ( !bEnabled.Load( EMemoryOrder::Relaxed ) ) return;
 
-	std::lock_guard<std::mutex> Lock( Mutex );
+	FScopedLock Lock( Mutex );
 	Events.Add( { EEventType::Removed, SubShapePair.GetBody1ID(), SubShapePair.GetBody2ID(), FContactInfo{} } );
 }
 
 void CContactEventQueue::Push( EEventType Type, const JPH::Body& Body1, const JPH::Body& Body2, const JPH::ContactManifold& Manifold )
 {
-	if ( !bEnabled.load( std::memory_order_relaxed ) ) return;
+	if ( !bEnabled.Load( EMemoryOrder::Relaxed ) ) return;
 
 	FContactInfo Info;
 	Info.Normal           = NPhysics::FromPhys( Manifold.mWorldSpaceNormal );
@@ -73,7 +75,7 @@ void CContactEventQueue::Push( EEventType Type, const JPH::Body& Body1, const JP
 		Info.Point = NPhysics::FromPhys( Manifold.GetWorldSpaceContactPointOn1( 0 ) );
 	}
 
-	std::lock_guard<std::mutex> Lock( Mutex );
+	FScopedLock Lock( Mutex );
 	Events.Add( { Type, Body1.GetID(), Body2.GetID(), Info } );
 }
 

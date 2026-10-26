@@ -1,13 +1,13 @@
 ﻿#pragma once
 #include <sal.h>
 #include <cstdarg>
-#include <mutex>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Memory/SharedPtr.h"
 
 #include "Library/Core/Log/LogCategory.h"
 #include "Library/Core/Log/LogSink.h"
+#include "Library/Core/Thread/Mutex.h"
 
 //=============================================================================
 // CLogManager
@@ -74,9 +74,9 @@ private:
 	void RegisterCategory( FLogCategory* Category );
 	void UnregisterCategory( FLogCategory* Category );
 
-	std::mutex SinkMutex;
+	FMutex SinkMutex;
 	TArray<TSharedPtr<ILogSink>> Sinks;
 
-	std::mutex CategoryMutex;
+	FMutex CategoryMutex;
 	TArray<FLogCategory*> Categories;
 };

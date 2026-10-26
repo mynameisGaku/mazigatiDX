@@ -6,6 +6,7 @@
 #include <ctime>
 #include <share.h>
 
+#include "Library/Core/Thread/Mutex.h"
 #include "Library/Core/Types/Utility.h"
 
 #define NOMINMAX
@@ -199,7 +200,7 @@ CImGuiLogSink::CImGuiLogSink( int32 InMaxLines )
 
 void CImGuiLogSink::Write( const FLogMessage& Message )
 {
-	std::lock_guard<std::mutex> Lock( Mutex );
+	FScopedLock Lock( Mutex );
 	FEntry Entry { Message.Verbosity, ToUtf8( Message.FormattedLine ) };
 	if ( Entries.Num() < MaxLines )
 	{
@@ -215,7 +216,7 @@ void CImGuiLogSink::Write( const FLogMessage& Message )
 
 void CImGuiLogSink::Clear()
 {
-	std::lock_guard<std::mutex> Lock( Mutex );
+	FScopedLock Lock( Mutex );
 	Entries.Reset();
 	Head = 0;
 }
@@ -250,7 +251,7 @@ void CImGuiLogSink::Draw( const char* Title, bool* pOpen )
 	// ---- ログ ----
 	if ( ImGui::BeginChild( "##LogScroll", ImVec2( 0.0f, 0.0f ), false, ImGuiWindowFlags_HorizontalScrollbar ) )
 	{
-		std::lock_guard<std::mutex> Lock( Mutex );
+		FScopedLock Lock( Mutex );
 
 		const bool bFiltered = FilterText[0] != '\0' || FilterVerbosity < static_cast<int32>( ELogVerbosity::All );
 		if ( bFiltered )

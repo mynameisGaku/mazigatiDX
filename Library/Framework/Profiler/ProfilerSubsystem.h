@@ -1,11 +1,11 @@
 ﻿#pragma once
-#include <atomic>
 #include <memory>
-#include <mutex>
 #include <vector>
 
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Interfaces/Profiler/IProfiler.h"
+#include "Library/Core/Thread/Atomic.h"
+#include "Library/Core/Thread/Mutex.h"
 #include "Library/Framework/Subsystem/AppSubsystem.h"
 
 //=============================================================================
@@ -16,7 +16,7 @@
 //=============================================================================
 struct FProfilerWorkerBuffer
 {
-	std::mutex Mutex;
+	FMutex Mutex;
 	uint32 ThreadId = 0;
 	uint32 NameId = 0;
 	const char* NamePtr = nullptr;
@@ -124,7 +124,7 @@ private:
 	bool bMemoryLimitReached = false;
 	int64 StoredSamples = 0;            // 保存しているサンプルの合計（別スレッドの分を含む）
 	int64 StoredCounters = 0;           // 保存しているカウンターの合計
-	std::mutex CounterMutex;            // Current.Counters を守る（どのスレッドからも記録できる）
+	FMutex CounterMutex;            // Current.Counters を守る（どのスレッドからも記録できる）
 	uint32 RecordingThreadId = 0;
 	uint64 NextFrameNumber = 1;
 	float64 OverheadNsPerSample = 0.0;
@@ -137,15 +137,15 @@ private:
 	int32 FirstFrameIndex = 0;
 
 	// 別スレッドの記録
-	std::mutex WorkerRegistryMutex;
+	FMutex WorkerRegistryMutex;
 	std::vector<std::unique_ptr<FProfilerWorkerBuffer>> WorkerBuffers;
 
 	// 文字列の表（ID = 番号。0 は空文字列）。別スレッドからも引くので、一度入れた文字列は動かさない（ブロックごとに確保する）
 	static constexpr int32 StringBlockSize = 1024;
 	static constexpr int32 MaxStringBlocks = 4096;
-	std::atomic<FString*> StringBlocks[MaxStringBlocks] = {};
-	std::atomic<uint32> NumStrings{ 0 };
-	std::mutex StringMutex;                  // 登録（と、内容 / ポインタから ID を探す表）を守る
+	TAtomic<FString*> StringBlocks[MaxStringBlocks] = {};
+	TAtomic<uint32> NumStrings{ 0 };
+	FMutex StringMutex;                  // 登録（と、内容 / ポインタから ID を探す表）を守る
 	TMap<FString, uint32> StringIds;
 	TMap<const char*, uint32> LiteralIds;
 };

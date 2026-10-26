@@ -1,12 +1,12 @@
 ﻿#include "AssetManager.h"
 
-#include <atomic>
-#include <mutex>
-#include <thread>
 #include <vector>
 
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Profiler/ProfilerScope.h"
+#include "Library/Core/Thread/Atomic.h"
+#include "Library/Core/Thread/Mutex.h"
+#include "Library/Core/Thread/Thread.h"
 #include "Library/Core/Time/PlatformTime.h"
 #include "Library/Framework/Asset/FontFile.h"
 #include "Library/Framework/Profiler/ProfilerAnalyzer.h"
@@ -52,11 +52,11 @@ namespace
 
 	struct FService
 	{
-		std::atomic<IAssetBackend*> Backend { nullptr };
-		std::thread::id MainThread;
-		std::mutex Mutex;
+		TAtomic<IAssetBackend*> Backend { nullptr };
+		uint64 MainThread = 0;   // メインスレッドの識別子（NThread::GetCurrentThreadId）
+		FMutex Mutex;
 		std::vector<std::pair<EResource, int32>> Deferred;   // 別スレッドで手放されたもの（メインスレッドで解放する）
-		std::atomic<int32> NumDeferredReleased { 0 };        // 上のうち、解放したものの累計（統計用）
+		TAtomic<int32> NumDeferredReleased { 0 };        // 上のうち、解放したものの累計（統計用）
 		TMap<FString, int32> FontFileUsers;                  // メインスレッドだけ
 	};
 
@@ -84,30 +84,30 @@ namespace
 	{
 		if ( Handle < 0 ) return;
 		FService& S = Service();
-		IAssetBackend* Backend = S.Backend.load();
+		IAssetBackend* Backend = S.Backend.Load();
 		if ( Backend == nullptr ) return;   // アプリの終了後。DxLib の終了処理がまとめて片付ける
 
-		if ( std::this_thread::get_id() == S.MainThread )
+		if ( NThread::GetCurrentId() == S.MainThread )
 		{
 			ReleaseNow( *Backend, Kind, Handle );
 			return;
 		}
-		std::lock_guard<std::mutex> Lock( S.Mutex );
+		FScopedLock Lock( S.Mutex );
 		S.Deferred.emplace_back( Kind, Handle );
 	}
 
 	void FlushDeferred()
 	{
 		FService& S = Service();
-		IAssetBackend* Backend = S.Backend.load();
+		IAssetBackend* Backend = S.Backend.Load();
 		std::vector<std::pair<EResource, int32>> Local;
 		{
-			std::lock_guard<std::mutex> Lock( S.Mutex );
+			FScopedLock Lock( S.Mutex );
 			Local.swap( S.Deferred );
 		}
 		if ( Backend == nullptr ) return;
 		for ( const auto& Entry : Local ) ReleaseNow( *Backend, Entry.first, Entry.second );
-		S.NumDeferredReleased.fetch_add( static_cast<int32>( Local.size() ) );
+		S.NumDeferredReleased.FetchAdd( static_cast<int32>( Local.size() ) );
 	}
 
 	// 読み込みの計測（プロファイラーのサンプルに、パスを表示名として付ける）
@@ -129,8 +129,8 @@ namespace
 	}
 }
 
-IAssetBackend* NAssetService::GetBackend() { return Service().Backend.load(); }
-bool NAssetService::IsMainThread() { return std::this_thread::get_id() == Service().MainThread; }
+IAssetBackend* NAssetService::GetBackend() { return Service().Backend.Load(); }
+bool NAssetService::IsMainThread() { return NThread::GetCurrentId() == Service().MainThread; }
 void NAssetService::ReleaseTexture( int32 Handle ) { Release( EResource::Texture, Handle ); }
 void NAssetService::ReleaseModel( int32 Handle ) { Release( EResource::Model, Handle ); }
 void NAssetService::ReleaseModelMaterialGeometry( int32 Geometry ) { Release( EResource::ModelMaterialGeometry, Geometry ); }
@@ -142,7 +142,7 @@ void NAssetService::ReleaseIndexBuffer( int32 Handle ) { Release( EResource::Ind
 bool NAssetService::AddFontFile( const FString& Path )
 {
 	FService& S = Service();
-	IAssetBackend* Backend = S.Backend.load();
+	IAssetBackend* Backend = S.Backend.Load();
 	if ( Backend == nullptr ) return false;
 
 	if ( int32* Users = S.FontFileUsers.Find( Path ) )
@@ -163,7 +163,7 @@ void NAssetService::RemoveFontFile( const FString& Path )
 	if ( --*Users > 0 ) return;
 
 	S.FontFileUsers.Remove( Path );
-	if ( IAssetBackend* Backend = S.Backend.load() ) Backend->RemoveFontFile( Path );
+	if ( IAssetBackend* Backend = S.Backend.Load() ) Backend->RemoveFontFile( Path );
 }
 
 //=============================================================================
@@ -188,8 +188,8 @@ void CAssetManager::Initialize( FSubsystemCollection& Collection )
 {
 	Backend = Collection.InitializeDependency<IAssetBackend>();
 	FService& S = Service();
-	S.MainThread = std::this_thread::get_id();
-	S.Backend.store( GetBackend() );
+	S.MainThread = NThread::GetCurrentId();
+	S.Backend.Store( GetBackend() );
 
 	if ( Backend == nullptr )
 	{
@@ -213,7 +213,7 @@ void CAssetManager::Deinitialize()
 	Fonts.Empty();
 
 	// これ以降に手放されるアセットは、何もしない（DxLib の終了処理が片付ける）
-	Service().Backend.store( nullptr );
+	Service().Backend.Store( nullptr );
 	Backend = nullptr;
 }
 
@@ -226,7 +226,7 @@ void CAssetManager::SetBackendOverride( IAssetBackend* InBackend )
 {
 	FlushDeferred();
 	BackendOverride = InBackend;
-	Service().Backend.store( GetBackend() );
+	Service().Backend.Store( GetBackend() );
 }
 
 void CAssetManager::Tick( float32 DeltaTime )
@@ -281,7 +281,7 @@ void CAssetManager::UpdateStats()
 	Fresh.TotalCount = 0;
 	Fresh.TotalMemoryBytes = 0;
 	Fresh.TotalFileBytes = 0;
-	Fresh.NumDeferredReleases = Service().NumDeferredReleased.load();
+	Fresh.NumDeferredReleases = Service().NumDeferredReleased.Load();
 
 	for ( const FAssetInfo& Info : GetLoadedAssets() )
 	{

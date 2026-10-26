@@ -5,6 +5,8 @@
 
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Profiler/ProfilerScope.h"
+#include "Library/Core/Thread/Atomic.h"
+#include "Library/Core/Thread/Mutex.h"
 #include "Library/Core/Time/PlatformTime.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Profiler/ProfilerAnalyzer.h"
@@ -40,8 +42,8 @@ void CProfilerSubsystem::Initialize( FSubsystemCollection& Collection )
 	RecordingThreadId = NPlatformTime::GetCurrentThreadId();
 
 	// ID 0 = 空文字列
-	StringBlocks[0].store( new FString[StringBlockSize] );
-	NumStrings.store( 1 );
+	StringBlocks[0].Store( new FString[StringBlockSize] );
+	NumStrings.Store( 1 );
 
 	MeasureOverhead();
 	LOG( LogProfiler, Log, "Ready (history: kept, memory limit: %d MB, up to %d samples/frame, overhead: ~%.0f ns/sample). Off until SetEnabled( true )",
@@ -53,7 +55,7 @@ void CProfilerSubsystem::Deinitialize()
 	if ( NProfiler::GRecorder == this ) NProfiler::GRecorder = nullptr;
 	bRecording = false;
 	bEnabled = false;
-	LOG( LogProfiler, Log, "Shutdown (%d frame(s) stored, %u string(s) interned, %d worker thread(s) seen)", GetNumFrames(), NumStrings.load(),
+	LOG( LogProfiler, Log, "Shutdown (%d frame(s) stored, %u string(s) interned, %d worker thread(s) seen)", GetNumFrames(), NumStrings.Load(),
 		 static_cast<int32>( WorkerBuffers.size() ) );
 
 	// このスレッドの控えがこのプロファイラーを指したままにならないように
@@ -63,14 +65,14 @@ void CProfilerSubsystem::Deinitialize()
 		GThreadBufferOwner = nullptr;
 	}
 	{
-		std::lock_guard<std::mutex> Lock( WorkerRegistryMutex );
+		FScopedLock Lock( WorkerRegistryMutex );
 		WorkerBuffers.clear();
 	}
-	for ( std::atomic<FString*>& Block : StringBlocks )
+	for ( TAtomic<FString*>& Block : StringBlocks )
 	{
-		delete[] Block.exchange( nullptr );
+		delete[] Block.Exchange( nullptr );
 	}
-	NumStrings.store( 0 );
+	NumStrings.Store( 0 );
 }
 
 void CProfilerSubsystem::MeasureOverhead()
@@ -265,7 +267,7 @@ void CProfilerSubsystem::StartFrame()
 	Current.Samples.Reset();
 	Current.Threads.Reset();
 	{
-		std::lock_guard<std::mutex> Lock( CounterMutex );
+		FScopedLock Lock( CounterMutex );
 		Current.Counters.Reset();
 	}
 	Current.NumDropped = 0;
@@ -300,7 +302,7 @@ void CProfilerSubsystem::FinishFrame()
 	Stored.Samples.Append( Current.Samples.GetData(), Current.Samples.Num() );
 	Stored.Threads = MoveTemp( Current.Threads );
 	{
-		std::lock_guard<std::mutex> Lock( CounterMutex );
+		FScopedLock Lock( CounterMutex );
 		Stored.Counters.Append( Current.Counters.GetData(), Current.Counters.Num() );
 	}
 	StoredCounters += Stored.Counters.Num();
@@ -340,18 +342,18 @@ uint32 CProfilerSubsystem::InternLocked( const FString& Key )
 {
 	if ( const uint32* Found = StringIds.Find( Key ) ) return *Found;
 
-	const uint32 Id = NumStrings.load( std::memory_order_relaxed );
+	const uint32 Id = NumStrings.Load( EMemoryOrder::Relaxed );
 	const uint32 BlockIndex = Id / StringBlockSize;
 	if ( BlockIndex >= static_cast<uint32>( MaxStringBlocks ) ) return 0;   // 上限（400 万文字列）。通常は届かない
 
-	FString* Block = StringBlocks[BlockIndex].load( std::memory_order_relaxed );
+	FString* Block = StringBlocks[BlockIndex].Load( EMemoryOrder::Relaxed );
 	if ( Block == nullptr )
 	{
 		Block = new FString[StringBlockSize];
-		StringBlocks[BlockIndex].store( Block, std::memory_order_release );
+		StringBlocks[BlockIndex].Store( Block, EMemoryOrder::Release );
 	}
 	Block[Id % StringBlockSize] = Key;
-	NumStrings.store( Id + 1, std::memory_order_release );   // 中身を書いてから公開する（読む側はロックしない）
+	NumStrings.Store( Id + 1, EMemoryOrder::Release );   // 中身を書いてから公開する（読む側はロックしない）
 	StringIds.Add( Key, Id );
 	return Id;
 }
@@ -361,7 +363,7 @@ uint32 CProfilerSubsystem::InternString( const char* Text )
 	if ( Text == nullptr || Text[0] == '\0' ) return 0;
 
 	const FString Key( SkipTypePrefix( Text ) );
-	std::lock_guard<std::mutex> Lock( StringMutex );
+	FScopedLock Lock( StringMutex );
 	return InternLocked( Key );
 }
 
@@ -381,7 +383,7 @@ uint32 CProfilerSubsystem::InternLiteral( const char* Literal )
 
 	uint32 Id;
 	{
-		std::lock_guard<std::mutex> Lock( StringMutex );
+		FScopedLock Lock( StringMutex );
 		if ( const uint32* Found = LiteralIds.Find( Literal ) )
 		{
 			Id = *Found;
@@ -400,9 +402,9 @@ uint32 CProfilerSubsystem::InternLiteral( const char* Literal )
 const FString& CProfilerSubsystem::GetString( uint32 Id ) const
 {
 	static const FString Empty;
-	if ( Id == 0 || Id >= NumStrings.load( std::memory_order_acquire ) ) return Empty;
+	if ( Id == 0 || Id >= NumStrings.Load( EMemoryOrder::Acquire ) ) return Empty;
 
-	const FString* Block = StringBlocks[Id / StringBlockSize].load( std::memory_order_acquire );
+	const FString* Block = StringBlocks[Id / StringBlockSize].Load( EMemoryOrder::Acquire );
 	return Block != nullptr ? Block[Id % StringBlockSize] : Empty;
 }
 
@@ -414,7 +416,7 @@ void CProfilerSubsystem::RecordCounter( uint32 Name, float64 Value, EProfileCoun
 {
 	if ( !bRecording || Name == 0 ) return;
 
-	std::lock_guard<std::mutex> Lock( CounterMutex );
+	FScopedLock Lock( CounterMutex );
 	for ( FProfileCounter& Existing : Current.Counters )
 	{
 		if ( Existing.Name == Name )
@@ -492,7 +494,7 @@ FProfilerWorkerBuffer* CProfilerSubsystem::GetWorkerBuffer()
 	Buffer->ThreadId = NPlatformTime::GetCurrentThreadId();
 	FProfilerWorkerBuffer* Raw = Buffer.get();
 	{
-		std::lock_guard<std::mutex> Lock( WorkerRegistryMutex );
+		FScopedLock Lock( WorkerRegistryMutex );
 		WorkerBuffers.push_back( MoveTemp( Buffer ) );
 	}
 	GThreadBuffer = Raw;
@@ -503,7 +505,7 @@ FProfilerWorkerBuffer* CProfilerSubsystem::GetWorkerBuffer()
 int64 CProfilerSubsystem::BeginWorkerSample( uint32 Category, uint32 Owner, uint32 Name, uint64 Instance, uint32 Label )
 {
 	FProfilerWorkerBuffer& Buffer = *GetWorkerBuffer();
-	std::lock_guard<std::mutex> Lock( Buffer.Mutex );
+	FScopedLock Lock( Buffer.Mutex );
 
 	// スレッド名は、付けられたときに 1 回だけ ID に変える（ロックの順は Buffer -> String で、逆はないので詰まらない）
 	if ( NProfiler::GThreadName != Buffer.NamePtr )
@@ -536,7 +538,7 @@ void CProfilerSubsystem::EndWorkerSample( int64 SampleId )
 	FProfilerWorkerBuffer& Buffer = *GThreadBuffer;
 
 	const int64 EndTick = NPlatformTime::GetTicks();
-	std::lock_guard<std::mutex> Lock( Buffer.Mutex );
+	FScopedLock Lock( Buffer.Mutex );
 
 	const int64 Index = SampleId - Buffer.BaseId;
 	if ( Index < 0 || Index >= Buffer.Samples.Num() ) return;   // 記録が消されたあとなど
@@ -551,7 +553,7 @@ void CProfilerSubsystem::CollectWorkerSamples()
 {
 	std::vector<FProfilerWorkerBuffer*> Buffers;
 	{
-		std::lock_guard<std::mutex> Lock( WorkerRegistryMutex );
+		FScopedLock Lock( WorkerRegistryMutex );
 		Buffers.reserve( WorkerBuffers.size() );
 		for ( const std::unique_ptr<FProfilerWorkerBuffer>& Buffer : WorkerBuffers ) Buffers.push_back( Buffer.get() );
 	}
@@ -561,7 +563,7 @@ void CProfilerSubsystem::CollectWorkerSamples()
 	{
 		Taken.Reset();
 		{
-			std::lock_guard<std::mutex> Lock( Buffer->Mutex );
+			FScopedLock Lock( Buffer->Mutex );
 
 			// 先頭から、まだ開いている根（ジョブの途中）の手前までが、完成した木。サンプルは呼び出しの前順なので、ここまでは木が丸ごと揃っている
 			int32 NumComplete = 0;
@@ -652,10 +654,10 @@ void CProfilerSubsystem::AddWorkerTree( const FProfilerWorkerBuffer& Buffer, con
 
 void CProfilerSubsystem::ClearWorkerBuffers()
 {
-	std::lock_guard<std::mutex> RegistryLock( WorkerRegistryMutex );
+	FScopedLock RegistryLock( WorkerRegistryMutex );
 	for ( const std::unique_ptr<FProfilerWorkerBuffer>& Buffer : WorkerBuffers )
 	{
-		std::lock_guard<std::mutex> Lock( Buffer->Mutex );
+		FScopedLock Lock( Buffer->Mutex );
 		Buffer->BaseId += Buffer->Samples.Num();   // 開いたままのサンプルの EndSample は、番号が範囲外になって無視される
 		Buffer->Samples.Reset();
 		Buffer->CurrentTop = INDEX_NONE;
