@@ -6,6 +6,7 @@
 #include "Library/Core/Thread/Atomic.h"
 #include "Library/Core/Thread/Mutex.h"
 #include "Library/Core/Thread/Thread.h"
+#include "Library/Core/Types/Callable.h"
 #include "Library/Framework/Subsystem/AppSubsystem.h"
 
 //=============================================================================
@@ -30,7 +31,7 @@ public:
 	//-------------------------------------------------------------------------
 	FORCEINLINE int32 GetNumWorkers() const override { return Workers.Num(); }
 	void RunParallelRange( int32 Count, int32 MinBatchSize, FRangeFunction Body, const char* Name ) override;
-	FJobHandle Schedule( std::function<void()> Function, const char* Name, const FJobHandle& Dependency ) override;
+	FJobHandle Schedule( TCallable<void()> Function, const char* Name, const FJobHandle& Dependency ) override;
 	void Wait( const FJobHandle& Handle ) override;
 
 private:

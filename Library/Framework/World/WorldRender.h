@@ -1,7 +1,7 @@
 ﻿#pragma once
-#include <functional>
 
 #include "Library/Core/Memory/SharedPtr.h"
+#include "Library/Core/Types/Callable.h"
 #include "Library/Framework/Render/Billboard.h"
 #include "Library/Framework/Render/MeshRender.h"
 #include "Library/Framework/World/WorldDefinition.h"
@@ -22,5 +22,5 @@ namespace NWorld
 	// 編集メッシュから、描く FMeshRenderer を作る（描く頂点・インデックスを作って、バッファにし、材質ごとの範囲・色・画像を付ける）。
 	// LoadTexture は、材質の画像のファイル（空でないときだけ）から、画像を読み込む関数（読み込めなければ、空のポインタを返す）。nullptr でもよい（色だけで描く）。
 	// 使える面が無い・バッファが作れない（バックエンドが動いていない）ときは、結果の Buffer が空（IsValid() が false）
-	FMeshRenderer MakeMeshRenderer( const FEditMesh& Mesh, const std::function<TSharedPtr<CTexture>( const FString& )>& LoadTexture );
+	FMeshRenderer MakeMeshRenderer( const FEditMesh& Mesh, const TCallable<TSharedPtr<CTexture>( const FString& )>& LoadTexture );
 }

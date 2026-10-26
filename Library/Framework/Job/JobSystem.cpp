@@ -15,6 +15,7 @@
 #include "Library/Core/Thread/Atomic.h"
 #include "Library/Core/Thread/Mutex.h"
 #include "Library/Core/Thread/Thread.h"
+#include "Library/Core/Types/Callable.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
@@ -215,7 +216,7 @@ void CJobSystem::RunParallelRange( int32 Count, int32 MinBatchSize, FRangeFuncti
 
 #pragma region Jobs
 
-FJobHandle CJobSystem::Schedule( std::function<void()> Function, const char* Name, const FJobHandle& Dependency )
+FJobHandle CJobSystem::Schedule( TCallable<void()> Function, const char* Name, const FJobHandle& Dependency )
 {
 	std::shared_ptr<FJobState> Job = std::make_shared<FJobState>();
 	Job->Function = MoveTemp( Function );

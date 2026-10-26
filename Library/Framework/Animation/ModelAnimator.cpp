@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/Callable.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Ecs/SystemParams.h"
 
@@ -354,7 +355,7 @@ void FModelAnimator::Update( float32 DeltaTime )
 	}
 }
 
-bool FModelAnimator::PrepareMaterialEffect( int32 MaterialIndex, const FMeshMaterialEffectDefinition& Definition, const std::function<TSharedPtr<CTexture>( const FString& )>& LoadTexture, const IDrawExecutor& Executor, bool bTwoSided )
+bool FModelAnimator::PrepareMaterialEffect( int32 MaterialIndex, const FMeshMaterialEffectDefinition& Definition, const TCallable<TSharedPtr<CTexture>( const FString& )>& LoadTexture, const IDrawExecutor& Executor, bool bTwoSided )
 {
 	if ( !Instance.IsValid() )
 	{

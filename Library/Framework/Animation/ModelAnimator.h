@@ -1,10 +1,10 @@
 ﻿#pragma once
-#include <functional>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/Optional.h"
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Memory/SharedPtr.h"
+#include "Library/Core/Types/Callable.h"
 #include "Library/Framework/Animation/AnimationTimeline.h"
 #include "Library/Framework/Asset/Model.h"
 #include "Library/Framework/Render/DrawContext.h"
@@ -107,7 +107,7 @@ struct FModelAnimator
 	// 時間を進める（DeltaTime は秒）。重み（クロスフェード）・再生位置・出来事を更新する
 	void Update( float32 DeltaTime );
 	// 静的な選択材質効果を準備する。失敗時はnative Model描画へ戻る。
-	bool PrepareMaterialEffect( int32 MaterialIndex, const FMeshMaterialEffectDefinition& Definition, const std::function<TSharedPtr<CTexture>( const FString& )>& LoadTexture, const IDrawExecutor& Executor, bool bTwoSided = false );
+	bool PrepareMaterialEffect( int32 MaterialIndex, const FMeshMaterialEffectDefinition& Definition, const TCallable<TSharedPtr<CTexture>( const FString& )>& LoadTexture, const IDrawExecutor& Executor, bool bTwoSided = false );
 	// 選択材質効果を解放し、native Model描画へ戻す。
 	void ClearMaterialEffect();
 	// このAnimator個体の材質効果制御口を返す。

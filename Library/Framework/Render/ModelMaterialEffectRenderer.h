@@ -2,9 +2,9 @@
 #ifndef FRAMEWORK_RENDER_MODELMATERIALEFFECTRENDERER_H
 #define FRAMEWORK_RENDER_MODELMATERIALEFFECTRENDERER_H
 
-#include <functional>
 
 #include "Library/Core/Memory/SharedPtr.h"
+#include "Library/Core/Types/Callable.h"
 #include "Library/Framework/Asset/Texture.h"
 #include "Library/Framework/Effect/MeshMaterialEffectDefinition.h"
 #include "Library/Framework/Render/MeshMaterialEffectPlayback.h"
@@ -20,7 +20,7 @@ struct FModelMaterialEffectResources;
 struct FModelMaterialEffectRenderer : FMeshMaterialEffectPlayback
 {
 	// 元ModelのMaterialIndexへDefinitionを準備する。対応executor・main thread・ready model・必要画像が無ければfalse。
-	bool Prepare( const TSharedPtr<CModel>& Source, int32 MaterialIndex, const FMeshMaterialEffectDefinition& Definition, const std::function<TSharedPtr<CTexture>( const FString& )>& LoadTexture, const IDrawExecutor& Executor, bool bTwoSided = false );
+	bool Prepare( const TSharedPtr<CModel>& Source, int32 MaterialIndex, const FMeshMaterialEffectDefinition& Definition, const TCallable<TSharedPtr<CTexture>( const FString& )>& LoadTexture, const IDrawExecutor& Executor, bool bTwoSided = false );
 	// 効果資源を解放してnative Model描画へ戻す。
 	void Clear();
 	// 準備済み資源があれば個体時計を進める。

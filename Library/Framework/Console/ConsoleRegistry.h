@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include <functional>
 #include <memory>
 #include <tuple>
 #include <type_traits>
@@ -11,6 +10,7 @@
 #include "Library/Core/Collection/Pair.h"
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Result.h"
+#include "Library/Core/Types/Callable.h"
 #include "Library/Core/Types/TypeTraits.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Console/ConsoleArgs.h"
@@ -81,7 +81,7 @@ struct FConsoleArgDesc
 	int32 NumTokens = 1;                               // -1: 残りすべて
 	bool bOptional = false;
 	TArray<FString> Choices;                           // 補完の候補（固定）
-	std::function<TArray<FString>()> Completer;        // 補完の候補（その場で作る。シーンの名前など）
+	TCallable<TArray<FString>()> Completer;        // 補完の候補（その場で作る。シーンの名前など）
 };
 
 struct FConsoleCommandInfo
@@ -317,7 +317,7 @@ struct TConsoleVariableOptions
 {
 	TOptional<T> Min;                                  // 数のときの、下限・上限（超えた値は、範囲に収める）
 	TOptional<T> Max;
-	std::function<void( const T& )> OnChanged;         // 値を変えたあとに呼ぶ
+	TCallable<void( const T& )> OnChanged;         // 値を変えたあとに呼ぶ
 };
 
 //=============================================================================
@@ -326,7 +326,7 @@ struct TConsoleVariableOptions
 class FConsoleRegistry
 {
 public:
-	using FHandler = std::function<EConsoleResult( FConsoleContext&, const TArray<FString>&, FString& )>;   // 最後は、引数の間違いの理由
+	using FHandler = TCallable<EConsoleResult( FConsoleContext&, const TArray<FString>&, FString& )>;   // 最後は、引数の間違いの理由
 
 	// アプリ全体の登録先（CONSOLE_COMMAND の登録先でもある）
 	static FConsoleRegistry& Global();
@@ -365,7 +365,7 @@ public:
 	}
 
 	// 自分で引数を読むコマンド（Context.GetArgs()）。Args は、使い方の表示・補完用（空なら自由な形）
-	FConsoleRegistration AddRaw( const FString& Name, const FString& Description, std::function<EConsoleResult( FConsoleContext& )> Function, const TArray<FConsoleArgDesc>& Args = TArray<FConsoleArgDesc>(),
+	FConsoleRegistration AddRaw( const FString& Name, const FString& Description, TCallable<EConsoleResult( FConsoleContext& )> Function, const TArray<FConsoleArgDesc>& Args = TArray<FConsoleArgDesc>(),
 								 const FString& Category = FString() );
 
 	// 変数。名前だけで今の値を出し、名前 + 値で変える。*Variable は、登録が解除されるまで有効であること
@@ -377,7 +377,7 @@ public:
 
 	// 値の取り出し・設定を関数で行う変数（ウィンドウの大きさなど、変数として持っていないもの）
 	template<typename T>
-	FConsoleRegistration AddVariable( const FString& Name, std::function<T()> Getter, std::function<void( const T& )> Setter, const FString& Description,
+	FConsoleRegistration AddVariable( const FString& Name, TCallable<T()> Getter, TCallable<void( const T& )> Setter, const FString& Description,
 									  const TConsoleVariableOptions<T>& Options = TConsoleVariableOptions<T>(), const FString& Category = FString( "Variables" ) )
 	{
 		const T DefaultValue = Getter();
@@ -438,7 +438,7 @@ public:
 
 	// 引数の補完の候補を、あとから指定する（ArgIndex は、コマンド名を除いた引数の番号）
 	bool SetArgChoices( const FString& Name, int32 ArgIndex, const TArray<FString>& Choices );
-	bool SetArgCompleter( const FString& Name, int32 ArgIndex, std::function<TArray<FString>()> Completer );
+	bool SetArgCompleter( const FString& Name, int32 ArgIndex, TCallable<TArray<FString>()> Completer );
 	// コマンドを一覧から隠す / 説明の分類を変える
 	bool SetHidden( const FString& Name, bool bHidden );
 
@@ -453,12 +453,12 @@ private:
 		FConsoleCommandInfo Info;
 		std::shared_ptr<FHandler> Handler;    // 実行中にコマンドが増減しても、実行中の関数が消えないように、共有で持つ
 		uint32 Id = 0;
-		std::function<FString()> GetText;     // 変数の今の値
-		std::function<void()> Reset;          // 変数を登録時の値に戻す
+		TCallable<FString()> GetText;     // 変数の今の値
+		TCallable<void()> Reset;          // 変数を登録時の値に戻す
 	};
 
 	FConsoleRegistration Register( FEntry&& Entry );
-	void MarkVariable( const FString& Name, std::function<FString()> GetText, std::function<void()> Reset );
+	void MarkVariable( const FString& Name, TCallable<FString()> GetText, TCallable<void()> Reset );
 	void UnregisterById( uint32 Id );
 	EConsoleResult ExecuteSegment( const FString& Segment, IConsoleOutput& Output, int32 Depth );
 	static FString MakeKey( const FString& Name ) { return Name.ToLower(); }
@@ -476,7 +476,7 @@ namespace NConsole
 {
 	struct FStaticRegistrar
 	{
-		explicit FStaticRegistrar( const std::function<void()>& Action ) { Action(); }
+		explicit FStaticRegistrar( const TCallable<void()>& Action ) { Action(); }
 	};
 }
 

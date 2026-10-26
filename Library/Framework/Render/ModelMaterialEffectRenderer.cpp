@@ -7,6 +7,7 @@
 #include "Library/Core/Interfaces/Asset/AssetBackend.h"
 #include "Library/Core/Interfaces/Render/DrawModelMaterial.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/Callable.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/Asset.h"
 #include "Library/Framework/Asset/Model.h"
@@ -19,7 +20,7 @@ DEFINE_LOG_CATEGORY_STATIC( LogModelMaterialEffect, Log )
 namespace
 {
 	// 読み込み時だけ画像を取得し、readyでない画像は資源へ固定しない。
-	TSharedPtr<CTexture> LoadReadyModelEffectTexture( const std::function<TSharedPtr<CTexture>( const FString& )>& LoadTexture, const FString& Path )
+	TSharedPtr<CTexture> LoadReadyModelEffectTexture( const TCallable<TSharedPtr<CTexture>( const FString& )>& LoadTexture, const FString& Path )
 	{
 		if ( !LoadTexture || Path.IsEmpty() ) return nullptr;
 		// ローダーから得た共有画像。
@@ -82,7 +83,7 @@ namespace
 	}
 }
 
-bool FModelMaterialEffectRenderer::Prepare( const TSharedPtr<CModel>& Source, int32 MaterialIndex, const FMeshMaterialEffectDefinition& Definition, const std::function<TSharedPtr<CTexture>( const FString& )>& LoadTexture, const IDrawExecutor& Executor, bool bTwoSided )
+bool FModelMaterialEffectRenderer::Prepare( const TSharedPtr<CModel>& Source, int32 MaterialIndex, const FMeshMaterialEffectDefinition& Definition, const TCallable<TSharedPtr<CTexture>( const FString& )>& LoadTexture, const IDrawExecutor& Executor, bool bTwoSided )
 {
 	Clear();
 	if ( !Definition.Material.bEnabled ) return false;

@@ -1,11 +1,11 @@
 ﻿#pragma once
-#include <functional>
 #include <memory>
 #include <utility>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Thread/Atomic.h"
 #include "Library/Core/Thread/Mutex.h"
+#include "Library/Core/Types/Callable.h"
 #include "Library/Core/Types/CompilerMacros.h"
 #include "Library/Core/Types/TypeDefinition.h"
 #include "Library/Core/Types/Utility.h"
@@ -16,7 +16,7 @@
 //=============================================================================
 struct FJobState
 {
-	std::function<void()> Function;
+	TCallable<void()> Function;
 	const char* Name = "Job";
 	TAtomic<int32> NumPending{ 0 };   // 自分の実行待ち 1 + 終わっていない依存先の数。0 になったら実行できる
 	TAtomic<bool> bDone{ false };
@@ -76,7 +76,7 @@ public:
 
 	virtual void RunParallelRange( int32 Count, int32 MinBatchSize, FRangeFunction Body, const char* Name ) = 0;
 
-	virtual FJobHandle Schedule( std::function<void()> Function, const char* Name, const FJobHandle& Dependency = FJobHandle() ) = 0;
+	virtual FJobHandle Schedule( TCallable<void()> Function, const char* Name, const FJobHandle& Dependency = FJobHandle() ) = 0;
 	virtual void Wait( const FJobHandle& Handle ) = 0;
 
 	// 今のスレッドの番号。0 = ワーカーではないスレッド（メインスレッドなど）、1.. = ワーカー

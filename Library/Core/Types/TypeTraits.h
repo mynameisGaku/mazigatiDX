@@ -119,6 +119,9 @@ namespace NTypeTraitsPrivate
 	template<typename T> struct TAddRvalueReferenceImpl<T, TVoidT<T&&>> { using Type = T&&; };
 }
 
+// 型を並べて void にする。テンプレートの特殊化で「その式や型が書けるか」を調べる（書けないと特殊化が選ばれない）のに使う。
+template<typename... Types> using TVoidT = NTypeTraitsPrivate::TVoidT<Types...>;
+
 // T の左辺値参照。参照を作れない型（void）はそのまま。
 template<typename T> using TAddLvalueReferenceT = typename NTypeTraitsPrivate::TAddLvalueReferenceImpl<T>::Type;
 // T の右辺値参照。参照を作れない型（void）はそのまま。

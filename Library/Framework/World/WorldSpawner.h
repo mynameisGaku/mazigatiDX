@@ -1,10 +1,10 @@
 ﻿#pragma once
-#include <functional>
 #include <utility>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Memory/SmartPointer.h"
+#include "Library/Core/Types/Callable.h"
 #include "Library/Core/Types/TypeTraits.h"
 #include "Library/Framework/Object/GameObject.h"
 #include "Library/Framework/Scene/Scene.h"
@@ -64,7 +64,7 @@ struct FWorldBindContext
 };
 
 // 作ったオブジェクトを返す（置き物の子として、置き物と同じ位置・向きに付く）。失敗したら空
-using FWorldBindFactory = std::function<TSharedPtr<CGameObject>( const FWorldBindContext& )>;
+using FWorldBindFactory = TCallable<TSharedPtr<CGameObject>( const FWorldBindContext& )>;
 
 //-----------------------------------------------------------------------------
 // FWorldBindings
@@ -114,7 +114,7 @@ struct FWorldSpawnContext
 	void Warn( const FString& Message ) const;
 };
 
-using FWorldComponentSpawner = std::function<void( FWorldSpawnContext& )>;
+using FWorldComponentSpawner = TCallable<void( FWorldSpawnContext& )>;
 
 //-----------------------------------------------------------------------------
 // FWorldSpawnerRegistry

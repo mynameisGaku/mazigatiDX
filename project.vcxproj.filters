@@ -1233,6 +1233,9 @@
     <ClInclude Include="Library\Core\Time\PlatformTime.h">
       <Filter>Library\Core\Time</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Types\Callable.h">
+      <Filter>Library\Core\Types</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Types\CompilerMacros.h">
       <Filter>Library\Core\Types</Filter>
     </ClInclude>

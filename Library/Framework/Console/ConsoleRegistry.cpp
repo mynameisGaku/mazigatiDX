@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "Library/Core/Types/Callable.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Console/ConsoleParse.h"
@@ -118,7 +119,7 @@ FConsoleRegistration FConsoleRegistry::Register( FEntry&& Entry )
 	return Registration;
 }
 
-FConsoleRegistration FConsoleRegistry::AddRaw( const FString& Name, const FString& Description, std::function<EConsoleResult( FConsoleContext& )> Function, const TArray<FConsoleArgDesc>& Args, const FString& Category )
+FConsoleRegistration FConsoleRegistry::AddRaw( const FString& Name, const FString& Description, TCallable<EConsoleResult( FConsoleContext& )> Function, const TArray<FConsoleArgDesc>& Args, const FString& Category )
 {
 	FEntry Entry;
 	Entry.Info.Name = Name;
@@ -129,7 +130,7 @@ FConsoleRegistration FConsoleRegistry::AddRaw( const FString& Name, const FStrin
 	return Register( MoveTemp( Entry ) );
 }
 
-void FConsoleRegistry::MarkVariable( const FString& Name, std::function<FString()> GetText, std::function<void()> Reset )
+void FConsoleRegistry::MarkVariable( const FString& Name, TCallable<FString()> GetText, TCallable<void()> Reset )
 {
 	if ( FEntry* Entry = Entries.Find( MakeKey( Name ) ) )
 	{
@@ -344,7 +345,7 @@ bool FConsoleRegistry::ResetVariable( const FString& Name )
 {
 	FEntry* Entry = Entries.Find( MakeKey( Name ) );
 	if ( Entry == nullptr || !Entry->Reset ) return false;
-	const std::function<void()> Reset = Entry->Reset;
+	const TCallable<void()> Reset = Entry->Reset;
 	Reset();
 	return true;
 }
@@ -357,7 +358,7 @@ bool FConsoleRegistry::SetArgChoices( const FString& Name, int32 ArgIndex, const
 	return true;
 }
 
-bool FConsoleRegistry::SetArgCompleter( const FString& Name, int32 ArgIndex, std::function<TArray<FString>()> Completer )
+bool FConsoleRegistry::SetArgCompleter( const FString& Name, int32 ArgIndex, TCallable<TArray<FString>()> Completer )
 {
 	FEntry* Entry = Entries.Find( MakeKey( Name ) );
 	if ( Entry == nullptr || !Entry->Info.Args.IsValidIndex( ArgIndex ) ) return false;

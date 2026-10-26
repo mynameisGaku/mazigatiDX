@@ -1,8 +1,8 @@
 ﻿#pragma once
-#include <functional>
 
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Interfaces/Tickable/ITickable.h"
+#include "Library/Core/Types/Callable.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Component/Component.h"
 #include "Library/Framework/Subsystem/SceneSubsystem.h"
@@ -43,7 +43,7 @@ class FRigidBody;
 class CWorldColliderComponent : public CComponent
 {
 public:
-	using FTriggerCallback = std::function<void( CGameObject& Trigger, FRigidBody& Other )>;
+	using FTriggerCallback = TCallable<void( CGameObject& Trigger, FRigidBody& Other )>;
 
 	CWorldColliderComponent( CPhysicsSubsystem& InPhysics, FRigidBody* InBody, bool bInTrigger ) : Physics( &InPhysics ), Body( InBody ), bTrigger( bInTrigger ) {}
 

@@ -1,5 +1,6 @@
 ﻿#include "WorldRender.h"
 
+#include "Library/Core/Types/Callable.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/World/Mesh/EditMeshBuild.h"
 
@@ -13,7 +14,7 @@
 namespace
 {
 	// 画像をMake時に一度だけ読み、再生中に使える状態なら保持する。
-	TSharedPtr<CTexture> LoadReadyMeshEffectTexture( const std::function<TSharedPtr<CTexture>( const FString& )>& LoadTexture, const FString& Path )
+	TSharedPtr<CTexture> LoadReadyMeshEffectTexture( const TCallable<TSharedPtr<CTexture>( const FString& )>& LoadTexture, const FString& Path )
 	{
 		if ( !LoadTexture || Path.IsEmpty() ) return nullptr;
 		TSharedPtr<CTexture> Texture = LoadTexture( Path );
@@ -40,7 +41,7 @@ namespace
 	}
 
 	// 一つのeffect slotを資源・設定・全chunkまで完成させてから返す。
-	TSharedPtr<const FMeshMaterialEffectResources> BuildMeshEffectResources( const FEditMeshBuild& Build, const FEditMeshBatch& Batch, const FEditMeshMaterial& Material, const std::function<TSharedPtr<CTexture>( const FString& )>& LoadTexture )
+	TSharedPtr<const FMeshMaterialEffectResources> BuildMeshEffectResources( const FEditMeshBuild& Build, const FEditMeshBatch& Batch, const FEditMeshMaterial& Material, const TCallable<TSharedPtr<CTexture>( const FString& )>& LoadTexture )
 	{
 		const FMeshMaterialEffectDefinition& Definition = Material.Effect;
 		if ( !Definition.Material.bEnabled || !Definition.IsValidSettings() ) return nullptr;
@@ -99,7 +100,7 @@ FBillboard NWorld::MakeBillboard( const FWorldBillboard& Spec, const TSharedPtr<
 	return Board;
 }
 
-FMeshRenderer NWorld::MakeMeshRenderer( const FEditMesh& Mesh, const std::function<TSharedPtr<CTexture>( const FString& )>& LoadTexture )
+FMeshRenderer NWorld::MakeMeshRenderer( const FEditMesh& Mesh, const TCallable<TSharedPtr<CTexture>( const FString& )>& LoadTexture )
 {
 	FMeshRenderer Renderer;
 	// 同一mesh内でsource・mask・noiseが同じ画像を指す場合に一度だけ読むcache。

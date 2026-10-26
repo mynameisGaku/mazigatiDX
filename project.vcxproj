@@ -564,6 +564,7 @@
     <ClInclude Include="Library\Core\Thread\Mutex.h" />
     <ClInclude Include="Library\Core\Thread\Thread.h" />
     <ClInclude Include="Library\Core\Time\PlatformTime.h" />
+    <ClInclude Include="Library\Core\Types\Callable.h" />
     <ClInclude Include="Library\Core\Types\CompilerMacros.h" />
     <ClInclude Include="Library\Core\Types\Numeric.h" />
     <ClInclude Include="Library\Core\Types\TypeDefinition.h" />
