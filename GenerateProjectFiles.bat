@@ -84,10 +84,15 @@ $allFilters    = [System.Collections.Generic.SortedSet[string]]::new([StringComp
 $sourceFiles = Get-ChildItem -Path $root -Recurse -File |
                Where-Object { $_.Extension -in @('.cpp', '.c', '.h', '.hpp', '.inl') }
 
+# Source\SelfTest is kept in a separate repository and may be absent (or be a junction to it), so it is not listed
+# file by file. It is added below as wildcard items instead, which keeps the project identical either way.
+$selfTestDir = 'Source\SelfTest'
+
 foreach ($file in $sourceFiles) {
     $relPath = Get-RelPath $root $file.FullName
 
     if (Should-Exclude $relPath) { continue }
+    if ($relPath.StartsWith($selfTestDir + '', [StringComparison]::OrdinalIgnoreCase)) { continue }
 
     $dirPart = [IO.Path]::GetDirectoryName($relPath)
     $filter  = if ($dirPart) { $dirPart } else { '' }
@@ -106,6 +111,10 @@ foreach ($file in $sourceFiles) {
         $includeItems.Add(@{ RelPath = $relPath; Filter = $filter })
     }
 }
+
+$compileItems.Add(@{ RelPath = "$selfTestDir\**\*.cpp"; Filter = $selfTestDir })
+$includeItems.Add(@{ RelPath = "$selfTestDir\**\*.h"; Filter = $selfTestDir })
+[void]$allFilters.Add($selfTestDir)
 
 Write-Host "  Compile : $($compileItems.Count) file(s)"
 Write-Host "  Include : $($includeItems.Count) file(s)"

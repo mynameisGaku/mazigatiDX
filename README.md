@@ -11,7 +11,7 @@ DxLibを使うWindows向けC++フレームワークです。描画・入力・�
 - 固定した向きの平面・円環メッシュ粒子。穴の形状、UV、消失、自己発光、ゆがみを組み合わせて編集。
 - 編集メッシュの材質ごとのディゾルブ・自己発光・UV移動・ゆがみと、再生・一時停止・停止。
 - 粒子へ一様な加速度と、距離で弱まる引力・反発を加える力場の編集・範囲表示。
-- 編集できる組み込みエフェクトと、計算・資源・UI・実GPU画素を調べる自己確認。
+- 編集できる組み込みエフェクト。
 
 静的な取り込みモデルの一個体・一材質へ効果を付け、ワールドへ保存して配置時に再生できます。ワールドのビューポートでも配置ごとに再生し、同じPrefabの複数配置を独立して表示します。使い方と対応範囲は[開発資料](Docs/DEVELOPMENT.md)を参照してください。2D専用の制作操作、HDR・ブルームは今後の工程です。
 
@@ -30,10 +30,9 @@ Developer PowerShellからの例:
 ```powershell
 msbuild .\project.sln /p:Configuration=Debug /p:Platform=x64 /m
 msbuild .\project.sln /p:Configuration=Release /p:Platform=x64 /m
-.\Tools\RunSelfTests.ps1 -Suite world -Configuration Debug
 ```
 
-自己確認の実行は専用の一時フォルダーを使います。通常利用とは別に、詳細な起動・確認・開発規約を[開発手順](Docs/DEVELOPMENT.md)へまとめています。
+自己確認は、このリポジトリに含めず別のリポジトリ`framework-selftests`で管理しています。ルートの`Source\SelfTest`へ置いたときだけ組み込まれ、置かなくても通常どおりビルドできます。詳しい起動・確認・開発規約は[開発手順](Docs/DEVELOPMENT.md)にまとめています。
 
 ## エフェクトを使う
 

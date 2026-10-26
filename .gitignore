@@ -15,3 +15,5 @@ imgui.ini
 Docs/AI_WORKFLOW.md
 Assets/Content/
 Assets/SaveCourse/
+# 自己確認は別のリポジトリ（framework-selftests）で管理し、ここには置かない
+/Source/SelfTest/

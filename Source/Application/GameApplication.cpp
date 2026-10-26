@@ -18,9 +18,7 @@
 #include "Library/Math/Math.h"
 #include "Library/Physics/WorldPhysics.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
-#include "Source/Scene/AssetSelfTestScene.h"
-#include "Source/Scene/EcsSelfTestScene.h"
-#include "Source/Scene/WorldSelfTestScene.h"
+#include "Source/Application/StartupHook.h"
 #include "Source/Scene/GameScene.h"
 #include "Source/Scene/TitleScene.h"
 #include "VendorModules/ImGui/imgui.h"
@@ -81,14 +79,8 @@ void CGameApplication::OnInit()
 	CSceneManager& Scenes = GetSceneManager();
 	Scenes.RegisterScene<CTitleScene>( "Title" );
 	Scenes.RegisterScene<CGameScene>( "Game" );
-	Scenes.RegisterScene<CEcsSelfTestScene>( "EcsSelfTest" );
-	Scenes.RegisterScene<CAssetSelfTestScene>( "AssetSelfTest" );
-	Scenes.RegisterScene<CWorldSelfTestScene>( "WorldSelfTest" );
-	// --selftest=ecs / --selftest=assets / --selftest=world で起動したときは、自己確認のシーンから始める（終わると自動で終了する）
-	if ( CEcsSelfTestScene::IsRequestedOnCommandLine() ) Scenes.ChangeScene( "EcsSelfTest" );
-	else if ( CAssetSelfTestScene::IsRequestedOnCommandLine() ) Scenes.ChangeScene( "AssetSelfTest" );
-	else if ( CWorldSelfTestScene::IsRequestedOnCommandLine() ) Scenes.ChangeScene( "WorldSelfTest" );
-	else Scenes.ChangeScene( "Title" );
+	// 起動時の窓口（自己確認など、別のリポジトリのものが差し込む）。--selftest=ecs / assets / world で起動したときは、そのシーンから始まる
+	if ( !NStartupHook::Run( Scenes ) ) Scenes.ChangeScene( "Title" );
 
 	// --export-models（.mv1 が無い・古いものだけ）/ --export-models=force（すべて作り直す）: アセットのルートフォルダの下の
 	// .fbx / .obj / .x / .pmx などを .mv1 にして、そのまま終了する（アセット出力の自動化用。結果はログに出る）
