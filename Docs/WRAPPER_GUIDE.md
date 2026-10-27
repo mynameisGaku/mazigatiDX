@@ -17,6 +17,7 @@ Library/Core/Interfaces  … 窓口（IPlatform / IInput / IAudioBackend / IAsse
 Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBackend / DxLibDrawExecutor / DxLibInput …）
 ```
 
+- `Library` は静的ライブラリ（`mazigatiDX`）で、ゲームの実行ファイル（`Source`）がリンクする。フレームワークがゲームのコードを include することはない（入口は `NGameMain::RunGame<TGame>()`）。
 - ゲームの実行ファイルは `Library` を使う側（`Source`）に置く。レベルエディタ・エフェクトエディタなどの**エディタは外部ツール**（別の実行ファイル）で、ゲームの実行ファイルには入れない。どちらも同じ `Library` を使う（移行中: 現在は 1 つの実行ファイルに同居し、`--tool=` で起動する）。
 - **DxLib を呼んでよいのは `Library/Platform/DxLib` だけ**。窓口（`Core/Interfaces`）と `Framework` は DxLib のヘッダーを含まない。Jolt・ImGui も同じ（窓口には出さない）。
 - 窓口は**インターフェース先行**で作る。実装を差し替えられる（確認用の偽の実装、将来の別バックエンド）ことが目的で、DxLib の関数をそのまま転送するだけの層にしない。
