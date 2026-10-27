@@ -88,11 +88,17 @@ $sourceFiles = Get-ChildItem -Path $root -Recurse -File |
 # file by file. It is added below as wildcard items instead, which keeps the project identical either way.
 $selfTestDir = 'Source\SelfTest'
 
+# Visual Studio does not apply a wildcard item's <Filter> in the .filters file: the expanded files would all show up loose at the
+# project root. So the .vcxproj keeps the wildcard (new files build without regenerating), and the .filters lists the files that exist
+# now one by one (a file listed there but missing is ignored; a file added later shows at the root until this script is run again).
+$selfTestCompile = [System.Collections.Generic.List[hashtable]]::new()
+$selfTestInclude = [System.Collections.Generic.List[hashtable]]::new()
+
 foreach ($file in $sourceFiles) {
     $relPath = Get-RelPath $root $file.FullName
 
     if (Should-Exclude $relPath) { continue }
-    if ($relPath.StartsWith($selfTestDir + '', [StringComparison]::OrdinalIgnoreCase)) { continue }
+    if ($relPath.StartsWith($selfTestDir + '\', [StringComparison]::OrdinalIgnoreCase)) { continue }
 
     $dirPart = [IO.Path]::GetDirectoryName($relPath)
     $filter  = if ($dirPart) { $dirPart } else { '' }
@@ -112,9 +118,29 @@ foreach ($file in $sourceFiles) {
     }
 }
 
-$compileItems.Add(@{ RelPath = "$selfTestDir\**\*.cpp"; Filter = $selfTestDir })
-$includeItems.Add(@{ RelPath = "$selfTestDir\**\*.h"; Filter = $selfTestDir })
-[void]$allFilters.Add($selfTestDir)
+# Source\SelfTest is usually a junction, which the scan above does not enter: list it by its own path
+$selfTestPath = Join-Path $root $selfTestDir
+if (Test-Path -LiteralPath $selfTestPath) {
+    foreach ($file in (Get-ChildItem -LiteralPath $selfTestPath -Recurse -File | Where-Object { $_.Extension -in @('.cpp', '.h') })) {
+        $relPath = Get-RelPath $root $file.FullName
+        if (Should-Exclude $relPath) { continue }
+        $selfTestFilter = [IO.Path]::GetDirectoryName($relPath)
+        if ($file.Extension -eq '.cpp') { $selfTestCompile.Add(@{ RelPath = $relPath; Filter = $selfTestFilter }) }
+        else { $selfTestInclude.Add(@{ RelPath = $relPath; Filter = $selfTestFilter }) }
+    }
+}
+
+# .vcxproj: wildcard items (the build does not depend on whether Source\SelfTest exists)
+$wildcardCompile = "$selfTestDir\**\*.cpp"
+$wildcardInclude = "$selfTestDir\**\*.h"
+
+# .filters: the existing files, with their sub folders as filters
+foreach ($item in @($selfTestCompile) + @($selfTestInclude)) {
+    $parts = $item.Filter -split '[\\\/]'
+    for ($i = 1; $i -le $parts.Length; $i++) {
+        [void]$allFilters.Add(($parts[0..($i-1)] -join '\'))
+    }
+}
 
 Write-Host "  Compile : $($compileItems.Count) file(s)"
 Write-Host "  Include : $($includeItems.Count) file(s)"
@@ -179,6 +205,9 @@ foreach ($item in $compileItems) {
     $el.SetAttribute('Include', $item.RelPath)
     [void]$cg.AppendChild($el)
 }
+$el = $vcx.CreateElement('ClCompile', $ns)
+$el.SetAttribute('Include', $wildcardCompile)
+[void]$cg.AppendChild($el)
 [void]$proj.AppendChild($cg)
 
 $ig = $vcx.CreateElement('ItemGroup', $ns)
@@ -187,6 +216,9 @@ foreach ($item in $includeItems) {
     $el.SetAttribute('Include', $item.RelPath)
     [void]$ig.AppendChild($el)
 }
+$el = $vcx.CreateElement('ClInclude', $ns)
+$el.SetAttribute('Include', $wildcardInclude)
+[void]$ig.AppendChild($el)
 [void]$proj.AppendChild($ig)
 
 $xw = [System.Xml.XmlWriter]::Create($vcxprojPath, $xws)
@@ -216,6 +248,14 @@ foreach ($item in $compileItems) {
     }
     [void]$fg1.AppendChild($el)
 }
+foreach ($item in $selfTestCompile) {
+    $el = $fxml.CreateElement('ClCompile', $ns)
+    $el.SetAttribute('Include', $item.RelPath)
+    $fe = $fxml.CreateElement('Filter', $ns)
+    $fe.InnerText = $item.Filter
+    [void]$el.AppendChild($fe)
+    [void]$fg1.AppendChild($el)
+}
 [void]$fp.AppendChild($fg1)
 
 $fg2 = $fxml.CreateElement('ItemGroup', $ns)
@@ -227,6 +267,14 @@ foreach ($item in $includeItems) {
         $fe.InnerText = $item.Filter
         [void]$el.AppendChild($fe)
     }
+    [void]$fg2.AppendChild($el)
+}
+foreach ($item in $selfTestInclude) {
+    $el = $fxml.CreateElement('ClInclude', $ns)
+    $el.SetAttribute('Include', $item.RelPath)
+    $fe = $fxml.CreateElement('Filter', $ns)
+    $fe.InnerText = $item.Filter
+    [void]$el.AppendChild($fe)
     [void]$fg2.AppendChild($el)
 }
 [void]$fp.AppendChild($fg2)

@@ -1024,7 +1024,271 @@
     <ClCompile Include="VendorModules\ufbx\ufbx.c">
       <Filter>VendorModules\ufbx</Filter>
     </ClCompile>
-    <ClCompile Include="Source\SelfTest\**\*.cpp">
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCore.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCoreAlgorithm.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCoreCallable.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCoreContainers.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCoreCString.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCoreFile.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCoreMemory.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCoreText.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCoreThread.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCoreTraits.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCoreTuple.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestImport.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestLogic.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestModelMaterial.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestModelMaterialBoundary.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestModelSurface.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestPhysics.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestPhysicsCharacters.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestPhysicsConstraints.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestPhysicsLayers.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestScene.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\ConsoleSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\EcsSelfTestScene.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\SelfTestEntry.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEditorSelfTestInput.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEditorSelfTestMath.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEditorSelfTestReal.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEditorSelfTestSession.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectAppearanceBoundarySelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectAppearanceInputSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectAppearancePlaybackSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectAppearanceRealSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectAppearanceSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectEditorInputSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectEditorRealSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectEditorSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectFlipbookInputSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectFlipbookPlaybackSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectFlipbookRealSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectFlipbookResourceSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectFlipbookSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectForceFieldEditorGeometrySelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectForceFieldEditorSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectMaterialInputSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectMaterialPathPlaybackSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectMaterialPlaybackSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectMaterialRealSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectMaterialRibbonRealSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectMaterialSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectMeshCommandSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectMeshRealSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectMeshResourceSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectMeshSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectPathPlaybackSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectPathSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectRibbonRealSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectRibbonUVDistortionCommandSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectRibbonUVDistortionPlaybackSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectRibbonUVDistortionRealSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectRibbonUVDistortionResourceSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectSelfTestData.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectSelfTestScene.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectSelfTestSim.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectTargetSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectTreeLightningInputSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectTreeLightningPlaybackSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectTreeLightningRealSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectTreeLightningSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectUVDistortionInputSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectUVDistortionPlaybackSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectUVDistortionRealSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectUVDistortionResourceSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldEffectUVDistortionSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldMeshMaterialDefinitionSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldMeshMaterialEditorSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldMeshMaterialPlaybackSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldMeshMaterialRealSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldMeshMaterialResourceSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldMeshSelfTestData.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldMeshSelfTestEditor.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldMeshSelfTestOps.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldModelMaterialInspectorEditorSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldModelMaterialInspectorSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldModelMaterialSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldModelPreviewRealSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldModelPreviewSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldPrefabSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldSelfTestLogic.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\WorldSelfTestScene.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
   </ItemGroup>
@@ -3285,7 +3549,73 @@
     <ClInclude Include="VendorModules\ufbx\ufbx.h">
       <Filter>VendorModules\ufbx</Filter>
     </ClInclude>
-    <ClInclude Include="Source\SelfTest\**\*.h">
+    <ClInclude Include="Source\SelfTest\AssetSelfTestCore.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\AssetSelfTestFbx.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\AssetSelfTestModelMaterial.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\AssetSelfTestModelMaterialBoundary.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\AssetSelfTestModelSurface.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\AssetSelfTestScene.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\AssetSelfTestSupport.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\EcsSelfTestScene.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\WorldEditorSelfTestSupport.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\WorldEffectForceFieldEditorGeometrySelfTest.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\WorldEffectForceFieldEditorSelfTest.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\WorldEffectMeshCommandSelfTest.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\WorldEffectMeshRealSelfTest.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\WorldEffectMeshResourceSelfTest.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\WorldEffectSelfTestSupport.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\WorldEffectTargetSelfTest.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\WorldMeshMaterialSelfTestSupport.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\WorldMeshSelfTestSupport.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\WorldModelMaterialInspectorSelfTest.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\WorldModelMaterialSelfTest.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\WorldModelPreviewSelfTest.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\WorldSelfTestScene.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\WorldSelfTestSupport.h">
       <Filter>Source\SelfTest</Filter>
     </ClInclude>
   </ItemGroup>
