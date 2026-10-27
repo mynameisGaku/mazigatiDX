@@ -43,6 +43,21 @@ float64 NPlatformTime::TicksToUs( int64 Ticks )
 	return static_cast<float64>( Ticks ) * 1000000.0 / static_cast<float64>( GTicksPerSecond );
 }
 
+NPlatformTime::FLocalClock NPlatformTime::GetLocalClock()
+{
+	SYSTEMTIME Now;
+	::GetLocalTime( &Now );
+	FLocalClock Clock;
+	Clock.Year = Now.wYear;
+	Clock.Month = Now.wMonth;
+	Clock.Day = Now.wDay;
+	Clock.Hour = Now.wHour;
+	Clock.Minute = Now.wMinute;
+	Clock.Second = Now.wSecond;
+	Clock.Millisecond = Now.wMilliseconds;
+	return Clock;
+}
+
 uint32 NPlatformTime::GetCurrentThreadId()
 {
 	return static_cast<uint32>( ::GetCurrentThreadId() );

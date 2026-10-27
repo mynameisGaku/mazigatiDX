@@ -1,7 +1,8 @@
 ﻿#include "JsonObject.h"
 
-#include <fstream>
+#include <string>
 
+#include "Library/Core/File/File.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Types/Utility.h"
 
@@ -25,29 +26,21 @@ bool NJson::CJsonObject::LoadFromFile( const FString& Filename )
 {
 	bLoaded = false;
 
-	std::ifstream File( *Filename );
-	if ( !File.is_open() )
+	// テキストとして全部読む（CRLF は LF になる）
+	TArray<uint8> Bytes;
+	if ( !NFile::ReadAllBytes( Filename, Bytes, true ) )
 	{
 		LOG( LogJson, Error, "Failed to open file: %s", *Filename );
 		return false;
 	}
 
 	// UTF-8 の BOM (EF BB BF) は読み飛ばす（エディターが付けることがある）
-	if ( File.peek() == 0xEF )
-	{
-		char Head[3] = {};
-		File.read( Head, 3 );
-		const bool bIsBom = File.gcount() == 3 && static_cast<unsigned char>( Head[0] ) == 0xEF
-			&& static_cast<unsigned char>( Head[1] ) == 0xBB && static_cast<unsigned char>( Head[2] ) == 0xBF;
-		if ( !bIsBom )
-		{
-			File.clear();
-			File.seekg( 0 );
-		}
-	}
+	const uint8* Begin = Bytes.GetData();
+	const uint8* const End = Begin + Bytes.Num();
+	if ( Bytes.Num() >= 3 && Begin[0] == 0xEF && Begin[1] == 0xBB && Begin[2] == 0xBF ) Begin += 3;
 
 	// 第 3 引数 false: 構文エラーで例外を投げず discarded を返す
-	NlohmannJson Parsed = NlohmannJson::parse( File, nullptr, false );
+	NlohmannJson Parsed = NlohmannJson::parse( Begin, End, nullptr, false );
 	if ( Parsed.is_discarded() )
 	{
 		LOG( LogJson, Error, "Failed to parse JSON: %s", *Filename );
@@ -67,15 +60,17 @@ bool NJson::CJsonObject::LoadFromFile( const FString& Filename )
 
 bool NJson::CJsonObject::SaveToFile( const FString& Filename, int32 Indent ) const
 {
-	std::ofstream File( *Filename );
-	if ( !File.is_open() )
+	// テキストとして書く（LF は CRLF になる）
+	FFile File;
+	if ( !File.Open( Filename, FFile::EMode::Write, true ) )
 	{
 		LOG( LogJson, Error, "Failed to open file for writing: %s", *Filename );
 		return false;
 	}
 
-	File << Root.dump( Indent ) << '\n';
-	if ( !File.good() )
+	const std::string Text = Root.dump( Indent ) + '\n';
+	const bool bWritten = File.Write( Text.data(), Text.size() ) == Text.size();
+	if ( !File.Close() || !bWritten )
 	{
 		LOG( LogJson, Error, "Failed while writing %s", *Filename );
 		return false;

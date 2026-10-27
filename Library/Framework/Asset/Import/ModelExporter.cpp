@@ -1,8 +1,8 @@
 ﻿#include "ModelExporter.h"
 
-#include <cstdio>
 
 #include "Library/Core/Collection/Array.h"
+#include "Library/Core/File/File.h"
 #include "Library/Core/Time/PlatformTime.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Framework/Asset/Import/FbxImporter.h"
@@ -44,29 +44,9 @@ namespace
 		return P.StartsWith( "/" ) || ( P.Len() >= 2 && P[1] == ':' );
 	}
 
-	bool ReadFileBytes( const FString& Path, TArray<uint8>& OutBytes )
-	{
-		FILE* File = nullptr;
-		const TArray<wchar_t> Wide = Path.ToWide();
-		if ( _wfopen_s( &File, Wide.GetData(), L"rb" ) != 0 || File == nullptr ) return false;
-		fseek( File, 0, SEEK_END );
-		const long Size = ftell( File );
-		fseek( File, 0, SEEK_SET );
-		OutBytes.Init( 0, Size > 0 ? static_cast<int32>( Size ) : 0 );
-		const size_t Read = OutBytes.IsEmpty() ? 0 : fread( OutBytes.GetData(), 1, OutBytes.Num(), File );
-		fclose( File );
-		return Read == static_cast<size_t>( OutBytes.Num() );
-	}
+	bool ReadFileBytes( const FString& Path, TArray<uint8>& OutBytes ) { return NFile::ReadAllBytes( Path, OutBytes ); }
 
-	bool WriteFileBytes( const FString& Path, const void* Data, size_t Size )
-	{
-		FILE* File = nullptr;
-		const TArray<wchar_t> Wide = Path.ToWide();
-		if ( _wfopen_s( &File, Wide.GetData(), L"wb" ) != 0 || File == nullptr ) return false;
-		const size_t Written = Size > 0 ? fwrite( Data, 1, Size, File ) : 0;
-		fclose( File );
-		return Written == Size;
-	}
+	bool WriteFileBytes( const FString& Path, const void* Data, size_t Size ) { return NFile::WriteAllBytes( Path, Data, Size ); }
 
 	void AddWarning( FModelExportResult& Result, const FString& Text )
 	{

@@ -2,6 +2,7 @@
 #include "Log.h"
 
 #include "Library/Core/Thread/Mutex.h"
+#include "Library/Core/Time/PlatformTime.h"
 #include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Process.h"
 
@@ -197,7 +198,7 @@ void CLogManager::LogV( const FLogCategory& Category, ELogVerbosity Verbosity,
 	Message.Function     = FormatFunctionName( Function );
 	Message.FileName     = ExtractFileName( File );
 	Message.Line         = Line;
-	Message.Time         = std::chrono::system_clock::now();
+	Message.Time         = NPlatformTime::GetLocalClock();
 
 	// [LogHoge]: (Warning: )SomeFeature: SomeFunc: Anything message. | Hoge.cpp | line: 42
 	FString& Out = Message.FormattedLine;

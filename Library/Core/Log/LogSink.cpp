@@ -1,10 +1,5 @@
 ﻿#include "LogSink.h"
 
-#include <chrono>
-#include <cstring>
-#include <ctime>
-#include <share.h>
-
 #include "Library/Core/Thread/Mutex.h"
 #include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Utility.h"
@@ -153,8 +148,7 @@ void CConsoleLogSink::Write( const FLogMessage& Message )
 
 CFileLogSink::CFileLogSink( const FString& FilePath, bool bAppend, bool bExclusiveWrite )
 {
-	const auto Mode = std::ios::out | std::ios::binary | ( bAppend ? std::ios::app : std::ios::trunc );
-	File.open( *FilePath, Mode, bExclusiveWrite ? _SH_DENYWR : _SH_DENYNO );
+	File.Open( FilePath, bAppend ? FFile::EMode::Append : FFile::EMode::Write, false, bExclusiveWrite ? FFile::EShare::DenyWrite : FFile::EShare::AllowAll );
 }
 
 CFileLogSink::~CFileLogSink()
@@ -164,28 +158,24 @@ CFileLogSink::~CFileLogSink()
 
 void CFileLogSink::Write( const FLogMessage& Message )
 {
-	if ( !File.is_open() ) return;
+	if ( !File.IsOpen() ) return;
 
 	// 行頭に時刻 [HH:MM:SS.mmm] を付ける
-	const std::time_t TimeT = std::chrono::system_clock::to_time_t( Message.Time );
-	const int32 Milliseconds = static_cast<int32>( std::chrono::duration_cast<std::chrono::milliseconds>( Message.Time.time_since_epoch() ).count() % 1000 );
-	std::tm LocalTime = {};
-	localtime_s( &LocalTime, &TimeT );
 	char Stamp[32];
-	NCString::Format( Stamp, sizeof( Stamp ), "[%02d:%02d:%02d.%03d] ", LocalTime.tm_hour, LocalTime.tm_min, LocalTime.tm_sec, Milliseconds );
+	NCString::Format( Stamp, sizeof( Stamp ), "[%02d:%02d:%02d.%03d] ", Message.Time.Hour, Message.Time.Minute, Message.Time.Second, Message.Time.Millisecond );
 
 	// 1 行を 1 回の書き込みで出し、すぐファイルへ反映する。
 	// 起動中のログを別のツールで読み続けられるうえ、クラッシュしても直前までのログが残る
 	const FString Line = ToUtf8( Message.FormattedLine );
-	File.write( Stamp, static_cast<std::streamsize>( NCString::Length( Stamp ) ) );
-	File.write( Line.GetData(), Line.Len() );
-	File.write( "\r\n", 2 );
-	File.flush();
+	File.WriteText( Stamp );
+	File.Write( Line.GetData(), static_cast<usize>( Line.Len() ) );
+	File.Write( "\r\n", 2 );
+	File.Flush();
 }
 
 void CFileLogSink::Flush()
 {
-	if ( File.is_open() ) File.flush();
+	File.Flush();
 }
 
 #pragma endregion

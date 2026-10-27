@@ -1,7 +1,7 @@
 ﻿#include "ProfilerExport.h"
 
-#include <cstdio>
 
+#include "Library/Core/File/File.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Time/PlatformTime.h"
 #include "Library/Framework/Profiler/ProfilerAnalyzer.h"
@@ -69,8 +69,8 @@ bool NProfilerExport::WriteChromeTrace( const IProfiler& Profiler, int32 FirstFr
 		return false;
 	}
 
-	FILE* File = nullptr;
-	if ( fopen_s( &File, *Path, "wb" ) != 0 || File == nullptr )
+	FFile File;
+	if ( !File.Open( Path, FFile::EMode::Write ) )
 	{
 		LOG( LogProfilerExport, Error, "Failed to open %s for writing", *Path );
 		return false;
@@ -79,13 +79,13 @@ bool NProfilerExport::WriteChromeTrace( const IProfiler& Profiler, int32 FirstFr
 	const int64 BaseTick = Profiler.GetFrame( FirstFrame ).StartTick;
 	int64 NumEvents = 0;
 
-	std::fputs( "{\"displayTimeUnit\":\"ms\",\"traceEvents\":[\n", File );
+	File.WriteText( "{\"displayTimeUnit\":\"ms\",\"traceEvents\":[\n" );
 
 	// プロセス名・トラック名
 	const FString ProcessName = EscapeJson( NFileSystem::GetExecutableName() );
-	std::fprintf( File, "{\"name\":\"process_name\",\"ph\":\"M\",\"pid\":1,\"args\":{\"name\":\"%s\"}}", *ProcessName );
-	std::fprintf( File, ",\n{\"name\":\"thread_name\",\"ph\":\"M\",\"pid\":1,\"tid\":%d,\"args\":{\"name\":\"Main thread\"}}", MainThreadId );
-	std::fprintf( File, ",\n{\"name\":\"thread_name\",\"ph\":\"M\",\"pid\":1,\"tid\":%d,\"args\":{\"name\":\"Frames\"}}", FrameTrackId );
+	File.Printf( "{\"name\":\"process_name\",\"ph\":\"M\",\"pid\":1,\"args\":{\"name\":\"%s\"}}", *ProcessName );
+	File.Printf( ",\n{\"name\":\"thread_name\",\"ph\":\"M\",\"pid\":1,\"tid\":%d,\"args\":{\"name\":\"Main thread\"}}", MainThreadId );
+	File.Printf( ",\n{\"name\":\"thread_name\",\"ph\":\"M\",\"pid\":1,\"tid\":%d,\"args\":{\"name\":\"Frames\"}}", FrameTrackId );
 
 	// メインスレッド以外（ジョブシステムのワーカーなど）。範囲の中で見つかった順に、トラックを割り当てる
 	TArray<uint32> WorkerThreadIds;
@@ -106,7 +106,7 @@ bool NProfilerExport::WriteChromeTrace( const IProfiler& Profiler, int32 FirstFr
 	for ( int32 i = 0; i < WorkerThreadIds.Num(); ++i )
 	{
 		const FString Name = WorkerThreadNames[i] != 0 ? Profiler.GetString( WorkerThreadNames[i] ) : FString::Printf( "Thread %u", static_cast<unsigned>( WorkerThreadIds[i] ) );
-		std::fprintf( File, ",\n{\"name\":\"thread_name\",\"ph\":\"M\",\"pid\":1,\"tid\":%d,\"args\":{\"name\":\"%s\"}}", FirstWorkerTrackId + i, *EscapeJson( Name ) );
+		File.Printf( ",\n{\"name\":\"thread_name\",\"ph\":\"M\",\"pid\":1,\"tid\":%d,\"args\":{\"name\":\"%s\"}}", FirstWorkerTrackId + i, *EscapeJson( Name ) );
 	}
 
 	for ( int32 FrameIndex = FirstFrame; FrameIndex <= LastFrame; ++FrameIndex )
@@ -114,7 +114,7 @@ bool NProfilerExport::WriteChromeTrace( const IProfiler& Profiler, int32 FirstFr
 		const FProfilerFrame& Frame = Profiler.GetFrame( FrameIndex );
 
 		// フレーム全体（専用トラック）
-		std::fprintf( File, ",\n{\"name\":\"Frame %llu\",\"cat\":\"Frame\",\"ph\":\"X\",\"pid\":1,\"tid\":%d,\"ts\":%.3f,\"dur\":%.3f,\"args\":{\"samples\":%d,\"dropped\":%d}}",
+		File.Printf( ",\n{\"name\":\"Frame %llu\",\"cat\":\"Frame\",\"ph\":\"X\",\"pid\":1,\"tid\":%d,\"ts\":%.3f,\"dur\":%.3f,\"args\":{\"samples\":%d,\"dropped\":%d}}",
 					  static_cast<unsigned long long>( Frame.FrameNumber ), FrameTrackId, ToMicroseconds( Frame.StartTick, BaseTick ),
 					  NPlatformTime::TicksToUs( Frame.GetDurationTick() ), Frame.Samples.Num(), Frame.NumDropped );
 		++NumEvents;
@@ -122,7 +122,7 @@ bool NProfilerExport::WriteChromeTrace( const IProfiler& Profiler, int32 FirstFr
 		// カウンター（Chrome トレースの "C" イベント。フレームの始まりの時刻に、値をグラフの 1 点として置く）
 		for ( const FProfileCounter& Counter : Frame.Counters )
 		{
-			std::fprintf( File, ",\n{\"name\":\"%s\",\"cat\":\"Counter\",\"ph\":\"C\",\"pid\":1,\"ts\":%.3f,\"args\":{\"value\":%.6g}}",
+			File.Printf( ",\n{\"name\":\"%s\",\"cat\":\"Counter\",\"ph\":\"C\",\"pid\":1,\"ts\":%.3f,\"args\":{\"value\":%.6g}}",
 						  *EscapeJson( Profiler.GetString( Counter.Name ) ), ToMicroseconds( Frame.StartTick, BaseTick ), Counter.Value );
 			++NumEvents;
 		}
@@ -141,7 +141,7 @@ bool NProfilerExport::WriteChromeTrace( const IProfiler& Profiler, int32 FirstFr
 				const FString Category = EscapeJson( Profiler.GetString( Sample.Category ) );
 				const FString Owner = EscapeJson( Profiler.GetString( Sample.Owner ) );
 
-				std::fprintf( File, ",\n{\"name\":\"%s\",\"cat\":\"%s\",\"ph\":\"X\",\"pid\":1,\"tid\":%d,\"ts\":%.3f,\"dur\":%.3f,\"args\":{\"owner\":\"%s\",\"instance\":%llu,\"self_us\":%.3f,\"depth\":%u}}",
+				File.Printf( ",\n{\"name\":\"%s\",\"cat\":\"%s\",\"ph\":\"X\",\"pid\":1,\"tid\":%d,\"ts\":%.3f,\"dur\":%.3f,\"args\":{\"owner\":\"%s\",\"instance\":%llu,\"self_us\":%.3f,\"depth\":%u}}",
 							  *Name, *Category, ThreadTrackId, ToMicroseconds( Sample.StartTick, BaseTick ), NPlatformTime::TicksToUs( Sample.DurationTick ),
 							  *Owner, static_cast<unsigned long long>( Sample.Instance ), NPlatformTime::TicksToUs( Sample.GetSelfTick() ),
 							  static_cast<unsigned>( Sample.Depth ) );
@@ -150,9 +150,9 @@ bool NProfilerExport::WriteChromeTrace( const IProfiler& Profiler, int32 FirstFr
 		}
 	}
 
-	std::fputs( "\n]}\n", File );
-	const bool bOk = std::ferror( File ) == 0;
-	std::fclose( File );
+	File.WriteText( "\n]}\n" );
+	const bool bOk = !File.HasError();
+	File.Close();
 
 	if ( bOk ) LOG( LogProfilerExport, Log, "Exported %d frame(s), %lld event(s) to %s", LastFrame - FirstFrame + 1, static_cast<long long>( NumEvents ), *Path );
 	else LOG( LogProfilerExport, Error, "Failed while writing %s (disk full?)", *Path );

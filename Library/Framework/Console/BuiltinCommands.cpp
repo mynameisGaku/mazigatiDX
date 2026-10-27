@@ -1,8 +1,8 @@
 ﻿#include "BuiltinCommands.h"
 
-#include <cstdio>
 #include <string>
 
+#include "Library/Core/File/File.h"
 #include "Library/Core/Interfaces/Job/IJobSystem.h"
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
 #include "Library/Core/Interfaces/Profiler/IProfiler.h"
@@ -147,14 +147,9 @@ namespace
 
 	bool ReadTextFile( const FString& Path, FString& OutText )
 	{
-		FILE* File = nullptr;
-		const TArray<wchar_t> Wide = Path.ToWide();
-		if ( _wfopen_s( &File, Wide.GetData(), L"rb" ) != 0 || File == nullptr ) return false;
-		std::string Bytes;
-		char Buffer[4096];
-		size_t Read = 0;
-		while ( ( Read = fread( Buffer, 1, sizeof( Buffer ), File ) ) > 0 ) Bytes.append( Buffer, Read );
-		fclose( File );
+		TArray<uint8> Raw;
+		if ( !NFile::ReadAllBytes( Path, Raw ) ) return false;
+		std::string Bytes( reinterpret_cast<const char*>( Raw.GetData() ), static_cast<size_t>( Raw.Num() ) );
 
 		if ( Bytes.size() >= 3 && static_cast<unsigned char>( Bytes[0] ) == 0xEF && static_cast<unsigned char>( Bytes[1] ) == 0xBB && static_cast<unsigned char>( Bytes[2] ) == 0xBF ) Bytes.erase( 0, 3 );
 		// UTF-8 の文字が入っていれば UTF-8 として読み、そうでなければ（ASCII だけ・CP932）そのまま読む

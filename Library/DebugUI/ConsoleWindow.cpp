@@ -1,9 +1,9 @@
 ﻿#include "ConsoleWindow.h"
 
 #include <cfloat>
-#include <cstdio>
 #include <string>
 
+#include "Library/Core/File/File.h"
 #include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EditorCommon.h"
@@ -219,14 +219,9 @@ namespace
 void NDebugUI::LoadConsoleHistory( FConsoleWindowState& State )
 {
 	State.bHistoryLoaded = true;
-	FILE* File = nullptr;
-	const TArray<wchar_t> Wide = GetHistoryPath().ToWide();
-	if ( _wfopen_s( &File, Wide.GetData(), L"rb" ) != 0 || File == nullptr ) return;
-	std::string Bytes;
-	char Buffer[4096];
-	size_t Read = 0;
-	while ( ( Read = fread( Buffer, 1, sizeof( Buffer ), File ) ) > 0 ) Bytes.append( Buffer, Read );
-	fclose( File );
+	TArray<uint8> Raw;
+	if ( !NFile::ReadAllBytes( GetHistoryPath(), Raw ) ) return;
+	std::string Bytes( reinterpret_cast<const char*>( Raw.GetData() ), static_cast<size_t>( Raw.Num() ) );
 	if ( Bytes.size() >= 3 && static_cast<unsigned char>( Bytes[0] ) == 0xEF && static_cast<unsigned char>( Bytes[1] ) == 0xBB && static_cast<unsigned char>( Bytes[2] ) == 0xBF ) Bytes.erase( 0, 3 );
 
 	TArray<FString> Lines;
@@ -247,16 +242,14 @@ void NDebugUI::SaveConsoleHistory( FConsoleWindowState& State )
 {
 	const FString Path = GetHistoryPath();
 	NFileSystem::EnsureDirectory( NFileSystem::FindProjectRoot() / "Saved" );
-	FILE* File = nullptr;
-	const TArray<wchar_t> Wide = Path.ToWide();
-	if ( _wfopen_s( &File, Wide.GetData(), L"wb" ) != 0 || File == nullptr ) return;
+	FFile File;
+	if ( !File.Open( Path, FFile::EMode::Write ) ) return;
 	for ( const FString& Line : GetHistory( State ).GetAll() )
 	{
 		const FString Utf8 = Line.ToUtf8();
-		fwrite( *Utf8, 1, static_cast<size_t>( Utf8.Len() ), File );
-		fwrite( "\n", 1, 1, File );
+		File.Write( *Utf8, static_cast<usize>( Utf8.Len() ) );
+		File.Write( "\n", 1 );
 	}
-	fclose( File );
 }
 
 EConsoleResult NDebugUI::ExecuteInConsole( FConsoleWindowState& State, const FString& Line )

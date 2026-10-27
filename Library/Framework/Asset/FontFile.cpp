@@ -1,8 +1,8 @@
 ﻿#include "FontFile.h"
 
-#include <cstdio>
 
 #include "Library/Core/Collection/Array.h"
+#include "Library/Core/File/File.h"
 
 namespace
 {
@@ -127,14 +127,8 @@ bool NFontFile::ReadFaceNameFromMemory( const uint8* Data, usize Size, FString& 
 
 bool NFontFile::ReadFaceName( const FString& Path, FString& OutFaceName )
 {
-	FILE* File = nullptr;
-	if ( fopen_s( &File, *Path, "rb" ) != 0 || File == nullptr ) return false;
-
 	TArray<uint8> Bytes;
-	uint8 Chunk[8192];
-	usize Read = 0;
-	while ( ( Read = std::fread( Chunk, 1, sizeof( Chunk ), File ) ) > 0 ) Bytes.Append( Chunk, static_cast<int32>( Read ) );
-	std::fclose( File );
+	if ( !NFile::ReadAllBytes( Path, Bytes ) ) return false;
 
 	return ReadFaceNameFromMemory( Bytes.GetData(), static_cast<usize>( Bytes.Num() ), OutFaceName );
 }

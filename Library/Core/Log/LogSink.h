@@ -1,12 +1,12 @@
 ﻿#pragma once
 #include "Library/Core/Thread/Mutex.h"
 #include "Library/Core/Types/CompilerMacros.h"
-#include <chrono>
-#include <fstream>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
+#include "Library/Core/File/File.h"
 #include "Library/Core/Log/LogVerbosity.h"
+#include "Library/Core/Time/PlatformTime.h"
 
 //=============================================================================
 // FLogMessage
@@ -20,7 +20,7 @@ struct FLogMessage
 	FString       Function;     // "SomeFeature: SomeFunc"
 	const char*   FileName     = "";  // "Hoge.cpp"（パスなし）
 	int32         Line         = 0;
-	std::chrono::system_clock::time_point Time;
+	NPlatformTime::FLocalClock Time;   // ログを出した時刻（ローカル）
 
 	// 出力用の 1 行
 	//   [LogHoge]: SomeFeature: SomeFunc: Anything message. | Hoge.cpp | line: 42
@@ -86,10 +86,10 @@ public:
 	void Write( const FLogMessage& Message ) override;
 	void Flush() override;
 
-	FORCEINLINE bool IsOpen() const { return File.is_open(); }
+	FORCEINLINE bool IsOpen() const { return File.IsOpen(); }
 
 private:
-	std::ofstream File;
+	FFile File;
 };
 
 //=============================================================================
