@@ -75,6 +75,7 @@
     <ClCompile Include="Library\Core\Time\PlatformTime.cpp" />
     <ClCompile Include="Library\DebugUI\AssetTools.cpp" />
     <ClCompile Include="Library\DebugUI\ConsoleWindow.cpp" />
+    <ClCompile Include="Library\DebugUI\DebugOverlay.cpp" />
     <ClCompile Include="Library\DebugUI\EditorCommon.cpp" />
     <ClCompile Include="Library\DebugUI\EffectEditor.cpp" />
     <ClCompile Include="Library\DebugUI\EffectEditorAppearancePanel.cpp" />
@@ -508,6 +509,7 @@
     <ClInclude Include="Library\Core\Types\Utility.h" />
     <ClInclude Include="Library\DebugUI\AssetTools.h" />
     <ClInclude Include="Library\DebugUI\ConsoleWindow.h" />
+    <ClInclude Include="Library\DebugUI\DebugOverlay.h" />
     <ClInclude Include="Library\DebugUI\EditorCommon.h" />
     <ClInclude Include="Library\DebugUI\EffectEditor.h" />
     <ClInclude Include="Library\DebugUI\EffectEditorCurveInput.h" />

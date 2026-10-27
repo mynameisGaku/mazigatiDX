@@ -88,7 +88,6 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
 |---|---|
 | `FDrawContext` の `Sprite` / `TextWithFont` / `Billboard3D` / `Model` / `Mesh3D` | 画像・フォント・モデルを `int32` のハンドルで受け取っている。型のある資源（`CTexture` など）か型付きハンドルで受けたい |
 | `Source/Scene/GameScene`・`Source/Object` のサンプル | 描画に DxLib の関数（`DrawBox` `DrawString`）を直接呼んでいる。`FImmediateDraw`（`TitleScene` は移行済み）で書き直す |
-| `Source/Application/GameApplication.cpp` | 起動・入力の表示・デバッグ UI が 1 ファイルに集まっている。テンプレートとサンプルでは、役割ごとのクラスとファイルに分ける |
 | 2D 描画の座標 | `Box` / `Circle` / `Line` は `int32`、`Sprite` は `float32`。そろえる |
 | 文字列 | UTF-8 への統一（決定済み、移行が未。第 6 節） |
 | DxLib の網羅 | 関数名で約 8%。2D・文字・3D のライトと影・シェーダー・フィルター・ムービー・ファイル（DXA）などが未 |

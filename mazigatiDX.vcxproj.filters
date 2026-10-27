@@ -31,6 +31,9 @@
     <ClCompile Include="Library\DebugUI\ConsoleWindow.cpp">
       <Filter>Library\DebugUI</Filter>
     </ClCompile>
+    <ClCompile Include="Library\DebugUI\DebugOverlay.cpp">
+      <Filter>Library\DebugUI</Filter>
+    </ClCompile>
     <ClCompile Include="Library\DebugUI\EditorCommon.cpp">
       <Filter>Library\DebugUI</Filter>
     </ClCompile>
@@ -1324,6 +1327,9 @@
       <Filter>Library\DebugUI</Filter>
     </ClInclude>
     <ClInclude Include="Library\DebugUI\ConsoleWindow.h">
+      <Filter>Library\DebugUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\DebugUI\DebugOverlay.h">
       <Filter>Library\DebugUI</Filter>
     </ClInclude>
     <ClInclude Include="Library\DebugUI\EditorCommon.h">
