@@ -76,6 +76,8 @@ private:
 	{
 		int32 Parts      = 0;  // 接触している部位の数。0 は、眠って接触が途切れている状態（End は出していない）
 		int32 AwakeSteps = 0;  // 眠って途切れたまま、どちらかが起きている配りの回数
+		uint32 FirstKey  = 0;  // Begin で渡した剛体の順（End で同じ順に渡すため）
+		uint32 SecondKey = 0;
 	};
 
 	struct FEntry
