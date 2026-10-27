@@ -54,6 +54,8 @@ DxLibでは個体の選択meshだけを一時非表示にし、残りを通常�
 
 準備・非対応・事前検査の失敗は通常モデルへ戻します。GPU描画の途中に失敗した場合は、描けなかった分割形状を省略して警告を一度記録します。成功した形状へ重ね描きする全体の再描画は行いません。backendの終了は、利用中のモデル・画像・効果資源を片付けてから行ってください。確認用の`CAssetManager::SetBackendOverride`は、既存のモデル・画像・効果資源と遅延解放を全て片付けてから切り替えます。
 
+シーンの`OnDraw`、ゲームインスタンスの`OnDraw`、オブジェクトの`Draw()`など、描画システムの外から描くときは、DxLibを直接呼ばず`Library/Framework/Render/ImmediateDraw.h`の`FImmediateDraw`を使います。`FImmediateDraw Draw( GetDrawExecutor() );`と書くと、`FDrawContext`と同じ関数（`Box / Circle / Line / Text / Sprite`など）で描け、`Flush()`かスコープを抜けるときに、記録した順に`IDrawExecutor`で実行します。実行はメインスレッドで、描いたものがなければ実行先を呼びません。実行先が`nullptr`なら、描いたものは捨てます。
+
 ## 粒子の力場
 
 `FParticleEmitterDefinition::ForceFields`は、既存の粒子計算へ加えるWorld空間の力場を保持します。`FEffectForceFieldDefinition`は値の保存・検証・加速度の計算だけを持ち、描画やPhysicsへ依存しません。再生・停止・寿命は既存の`FParticleSimulation`と`IEffectPlayback`を使います。Effect Editorの`Force fields`から値を編集でき、`Force field wind`・`Gravity well`・`Whirlwind`・`Gust`を未保存のコピーとして開けます。

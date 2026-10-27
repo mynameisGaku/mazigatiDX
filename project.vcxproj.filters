@@ -55,6 +55,9 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestCoreTuple.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestImmediateDraw.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
     <ClCompile Include="Source\SelfTest\AssetSelfTestImport.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>

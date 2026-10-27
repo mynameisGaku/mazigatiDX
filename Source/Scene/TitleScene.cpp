@@ -4,8 +4,8 @@
 #include "Library/Core/Interfaces/Input/IInput.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Framework/Engine/Engine.h"
+#include "Library/Framework/Render/ImmediateDraw.h"
 #include "Library/Math/Math.h"
-#include "Library/Platform/DxLib/DxLibInclude.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogTitleScene, Log )
 
@@ -41,6 +41,8 @@ void CTitleScene::OnTick( float32 DeltaTime )
 
 void CTitleScene::OnDraw()
 {
-	DrawString( 560, 320, "TITLE", FColor32::White.ToDxColor() );
-	DrawString( 500, 360, "Press Enter or Gamepad South/Start", FColor32::Gray.ToDxColor() );
+	// 描いたものは、この関数を抜けるときに実行される（DxLib を直接呼ばない）
+	FImmediateDraw Draw( GetDrawExecutor() );
+	Draw.Text( 560, 320, "TITLE", FColor32::White );
+	Draw.Text( 500, 360, "Press Enter or Gamepad South/Start", FColor32::Gray );
 }

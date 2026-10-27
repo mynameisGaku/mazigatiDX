@@ -47,7 +47,7 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
 ## 4. スレッドと状態
 
 - DxLib はスレッドセーフではない。**DxLib を呼ぶ関数は、メインスレッドからだけ呼ぶ**。窓口のコメントに明記する。
-- 描画は「記録 → 実行」に分ける。記録（`FDrawContext`）は並行にできるが、実行（`IDrawExecutor`）はメインスレッドで、記録された順に DxLib を呼ぶ。新しい描画を足すときは、命令（`EDrawCommand`）・データ・記録・実行をそろえる。旧命令の番号と形式は変えない。
+- 描画は「記録 → 実行」に分ける。記録（`FDrawContext`）は並行にできるが、実行（`IDrawExecutor`）はメインスレッドで、記録された順に DxLib を呼ぶ。新しい描画を足すときは、命令（`EDrawCommand`）・データ・記録・実行をそろえる。旧命令の番号と形式は変えない。描画システムの外（シーンの `OnDraw` など、メインスレッド）から描くときは、`FImmediateDraw Draw( GetDrawExecutor() );` で同じ書き方のまま、その場で実行できる。
 - DxLib は**大域の状態**（ブレンド・明るさ・描画先・カメラ・ライト・Z バッファ・カリング・描画領域など）を持つ。包むときは、状態を変えたら**元に戻す**ことを実装の責任にするか、スコープで戻す型を用意する。呼び出し側に「前の状態を覚えておいて戻す」ことを要求しない。
 - 取得できない状態（DxLib に getter がないもの）は推測せず、フレームワーク側が明示的に持つ。
 
@@ -87,7 +87,7 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
 | 箇所 | ずれ |
 |---|---|
 | `FDrawContext` の `Sprite` / `TextWithFont` / `Billboard3D` / `Model` / `Mesh3D` | 画像・フォント・モデルを `int32` のハンドルで受け取っている。型のある資源（`CTexture` など）か型付きハンドルで受けたい |
-| `Source/Scene`・`Source/Object` のサンプル | 描画に DxLib の関数（`DrawBox` `DrawString`）を直接呼んでいる。`FDrawContext` で書けるようにする |
+| `Source/Scene/GameScene`・`Source/Object` のサンプル | 描画に DxLib の関数（`DrawBox` `DrawString`）を直接呼んでいる。`FImmediateDraw`（`TitleScene` は移行済み）で書き直す |
 | `Source/Application/GameApplication.cpp` | 起動・入力の表示・デバッグ UI が 1 ファイルに集まっている。テンプレートとサンプルでは、役割ごとのクラスとファイルに分ける |
 | 2D 描画の座標 | `Box` / `Circle` / `Line` は `int32`、`Sprite` は `float32`。そろえる |
 | 文字列 | UTF-8 への統一（決定済み、移行が未。第 6 節） |

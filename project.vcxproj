@@ -88,6 +88,7 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestCoreThread.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestCoreThread.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestCoreTraits.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestCoreTraits.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestCoreTuple.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestCoreTuple.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestImmediateDraw.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestImmediateDraw.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestImport.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestImport.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestLogic.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestLogic.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestModelMaterial.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestModelMaterial.cpp')" />

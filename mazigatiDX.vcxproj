@@ -176,6 +176,7 @@
     <ClCompile Include="Library\Framework\Profiler\ProfilerSubsystem.cpp" />
     <ClCompile Include="Library\Framework\Render\Billboard.cpp" />
     <ClCompile Include="Library\Framework\Render\DrawContext.cpp" />
+    <ClCompile Include="Library\Framework\Render\ImmediateDraw.cpp" />
     <ClCompile Include="Library\Framework\Render\MeshMaterialEffectPlayback.cpp" />
     <ClCompile Include="Library\Framework\Render\MeshRender.cpp" />
     <ClCompile Include="Library\Framework\Render\ModelMaterialEffectRenderer.cpp" />
@@ -599,6 +600,7 @@
     <ClInclude Include="Library\Framework\Profiler\ProfilerSubsystem.h" />
     <ClInclude Include="Library\Framework\Render\Billboard.h" />
     <ClInclude Include="Library\Framework\Render\DrawContext.h" />
+    <ClInclude Include="Library\Framework\Render\ImmediateDraw.h" />
     <ClInclude Include="Library\Framework\Render\MeshMaterialEffectPlayback.h" />
     <ClInclude Include="Library\Framework\Render\MeshMaterialEffectResources.h" />
     <ClInclude Include="Library\Framework\Render\MeshRender.h" />

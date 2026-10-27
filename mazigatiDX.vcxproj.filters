@@ -334,6 +334,9 @@
     <ClCompile Include="Library\Framework\Render\DrawContext.cpp">
       <Filter>Library\Framework\Render</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Render\ImmediateDraw.cpp">
+      <Filter>Library\Framework\Render</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Render\MeshMaterialEffectPlayback.cpp">
       <Filter>Library\Framework\Render</Filter>
     </ClCompile>
@@ -1597,6 +1600,9 @@
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\DrawContext.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\ImmediateDraw.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\MeshMaterialEffectPlayback.h">
