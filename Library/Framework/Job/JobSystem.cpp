@@ -1,9 +1,7 @@
 ﻿#include "JobSystem.h"
 
 #include <algorithm>
-#include <cstdio>
 #include <cstdlib>
-#include <cstring>
 
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
@@ -16,6 +14,7 @@
 #include "Library/Core/Thread/Mutex.h"
 #include "Library/Core/Thread/Thread.h"
 #include "Library/Core/Types/Callable.h"
+#include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
@@ -36,8 +35,8 @@ namespace
 	int32 ReadJobThreadsArgument()
 	{
 		const char* CommandLine = GetCommandLineA();
-		const char* Found = CommandLine ? std::strstr( CommandLine, "--job-threads=" ) : nullptr;
-		return Found != nullptr ? std::atoi( Found + std::strlen( "--job-threads=" ) ) : -1;
+		const char* Found = CommandLine ? NCString::Find( CommandLine, "--job-threads=" ) : nullptr;
+		return Found != nullptr ? NCString::ToInt32( Found + NCString::Length( "--job-threads=" ) ) : -1;
 	}
 }
 
@@ -87,7 +86,7 @@ void CJobSystem::WorkerMain( int32 Index )
 {
 	GThreadIndex = Index + 1;
 	char Name[24];
-	std::snprintf( Name, sizeof( Name ), "Job Worker %d", Index + 1 );
+	NCString::Format( Name, sizeof( Name ), "Job Worker %d", Index + 1 );
 	NProfiler::SetThreadName( Name );
 
 	FUniqueLock Lock( Mutex );

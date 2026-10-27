@@ -1,6 +1,5 @@
 ﻿#include "ProfilerSubsystem.h"
 
-#include <cstring>
 #include <utility>
 
 #include "Library/Core/Log/Log.h"
@@ -8,6 +7,7 @@
 #include "Library/Core/Thread/Atomic.h"
 #include "Library/Core/Thread/Mutex.h"
 #include "Library/Core/Time/PlatformTime.h"
+#include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Profiler/ProfilerAnalyzer.h"
 
@@ -29,8 +29,8 @@ namespace
 	// typeid().name() の "class " / "struct " を取り除く
 	const char* SkipTypePrefix( const char* Text )
 	{
-		if ( std::strncmp( Text, "class ", 6 ) == 0 ) return Text + 6;
-		if ( std::strncmp( Text, "struct ", 7 ) == 0 ) return Text + 7;
+		if ( NCString::CompareN( Text, "class ", 6 ) == 0 ) return Text + 6;
+		if ( NCString::CompareN( Text, "struct ", 7 ) == 0 ) return Text + 7;
 		return Text;
 	}
 }

@@ -1,6 +1,5 @@
 ﻿#include "DxLibInput.h"
 
-#include <cstring>
 
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
 #include "Library/Core/Log/Log.h"

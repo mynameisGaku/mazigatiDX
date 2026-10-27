@@ -2,10 +2,10 @@
 
 #include <algorithm>
 #include <cstdarg>
-#include <cstdio>
 
 #include "Library/Core/Profiler/ProfilerScope.h"
 #include "Library/Core/Thread/Thread.h"
+#include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Physics/ContactListener.h"
@@ -36,7 +36,7 @@ namespace
 		char Buffer[1024];
 		va_list Args;
 		va_start( Args, Format );
-		std::vsnprintf( Buffer, sizeof( Buffer ), Format, Args );
+		NCString::FormatV( Buffer, sizeof( Buffer ), Format, Args );
 		va_end( Args );
 		CLogManager::Get().Log( LogPhysics, ELogVerbosity::Log, "Jolt", 0, "Jolt", "%s", Buffer );
 	}

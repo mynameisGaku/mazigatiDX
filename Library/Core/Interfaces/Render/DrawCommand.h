@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include <cstring>
 
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Types/TypeDefinition.h"

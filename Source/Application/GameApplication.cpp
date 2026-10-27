@@ -1,6 +1,5 @@
 ﻿#include "GameApplication.h"
 
-#include <cstring>
 #include <initializer_list>
 
 #include "Library/Core/Interfaces/Input/IGamepadInput.h"
@@ -8,6 +7,7 @@
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
 #include "Library/Core/Interfaces/Profiler/IProfiler.h"
 #include "Library/Core/Profiler/ProfilerScope.h"
+#include "Library/Core/Types/CString.h"
 #include "Library/DebugUI/ConsoleWindow.h"
 #include "Library/DebugUI/ImGuiPropertyInspector.h"
 #include "Library/DebugUI/LogCategoryPanel.h"
@@ -84,11 +84,11 @@ void CGameApplication::OnInit()
 
 	// --export-models（.mv1 が無い・古いものだけ）/ --export-models=force（すべて作り直す）: アセットのルートフォルダの下の
 	// .fbx / .obj / .x / .pmx などを .mv1 にして、そのまま終了する（アセット出力の自動化用。結果はログに出る）
-	if ( const char* CommandLine = GetCommandLineA(); CommandLine != nullptr && std::strstr( CommandLine, "--export-models" ) != nullptr )
+	if ( const char* CommandLine = GetCommandLineA(); CommandLine != nullptr && NCString::Find( CommandLine, "--export-models" ) != nullptr )
 	{
 		if ( CAssetManager* Assets = GetAppSubsystem<CAssetManager>() )
 		{
-			const FModelBatchExportResult Batch = Assets->ExportAllModels( std::strstr( CommandLine, "--export-models=force" ) != nullptr );
+			const FModelBatchExportResult Batch = Assets->ExportAllModels( NCString::Find( CommandLine, "--export-models=force" ) != nullptr );
 			LOG( LogGame, Log, "Exported the models in '%s' as .mv1: %s", *Assets->GetRootDirectory(), *Batch.GetSummary() );
 		}
 		if ( IPlatform* Platform = GetAppSubsystem<IPlatform>() ) Platform->RequestExit();
@@ -107,7 +107,7 @@ void CGameApplication::OnInit()
 				LOG( LogGame, Log, "autoexec.cfg: %d command(s), %d failed", NumCommands, NumFailed );
 			else LOG( LogGame, Warning, "autoexec.cfg: %s", *ScriptError );
 		}
-		if ( const char* CommandLine = GetCommandLineA(); CommandLine != nullptr && std::strstr( CommandLine, "--console" ) != nullptr )
+		if ( const char* CommandLine = GetCommandLineA(); CommandLine != nullptr && NCString::Find( CommandLine, "--console" ) != nullptr )
 		{
 			bShowConsole = true;
 			ConsoleWindow.bFocusInput = true;

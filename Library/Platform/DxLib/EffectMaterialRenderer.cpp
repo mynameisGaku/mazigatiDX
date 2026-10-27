@@ -3,11 +3,11 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstring>
 #include <d3d11.h>
 #include <d3dcompiler.h>
 
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 #include "Library/Platform/DxLib/DxLibRibbonMesh.h"
@@ -153,7 +153,7 @@ float4 PSMain(VertexOutput Input) : SV_TARGET
 		// compilerが返す失敗理由。診断が無い場合はnullのまま。
 		ID3DBlob* Errors = nullptr;
 		// 指定entryとprofileのcompile結果。
-		const HRESULT Result = D3DCompile( ShaderSource, std::strlen( ShaderSource ), "EffectMaterial", nullptr, nullptr, Entry, Target, D3DCOMPILE_ENABLE_STRICTNESS, 0, Blob, &Errors );
+		const HRESULT Result = D3DCompile( ShaderSource, NCString::Length( ShaderSource ), "EffectMaterial", nullptr, nullptr, Entry, Target, D3DCOMPILE_ENABLE_STRICTNESS, 0, Blob, &Errors );
 		if ( FAILED( Result ) && Errors != nullptr ) LOG( LogEffectMaterial, Error, "材質シェーダーのコンパイルに失敗しました: %s", static_cast<const char*>( Errors->GetBufferPointer() ) );
 		if ( Errors != nullptr ) Errors->Release();
 		return SUCCEEDED( Result ) && Device != nullptr;

@@ -1,9 +1,9 @@
 ﻿#include "System.h"
 
 #include <algorithm>
-#include <cstring>
 
 #include "Library/Core/Profiler/ProfilerScope.h"
+#include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
 
@@ -47,7 +47,7 @@ int32 NEcs::FSystemScheduler::GetStage( const char* Name ) const
 {
 	for ( const FSystem& System : Systems )
 	{
-		if ( std::strcmp( System.Name, Name ) == 0 ) return System.Stage;
+		if ( NCString::Compare( System.Name, Name ) == 0 ) return System.Stage;
 	}
 	return INDEX_NONE;
 }

@@ -2,6 +2,7 @@
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/CString.h"
 #include "VendorModules/ImGui/imgui.h"
 
 namespace
@@ -24,7 +25,7 @@ void NDebugUI::DrawLogCategories()
 	ImGui::TextDisabled( "(this build keeps logs up to %s)", VerbosityNames[CompiledMaxVerbosity] );
 
 	TArray<FLogCategory*> Categories = Manager.GetCategories();
-	Categories.Sort( []( const FLogCategory* A, const FLogCategory* B ) { return std::strcmp( A->GetName(), B->GetName() ) < 0; } );
+	Categories.Sort( []( const FLogCategory* A, const FLogCategory* B ) { return NCString::Compare( A->GetName(), B->GetName() ) < 0; } );
 
 	if ( !ImGui::BeginTable( "##LogCategories", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp ) ) return;
 	ImGui::TableSetupColumn( "Category", 0, 1.0f );

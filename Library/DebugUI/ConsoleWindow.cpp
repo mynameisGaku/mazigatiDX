@@ -3,9 +3,9 @@
 #include <algorithm>
 #include <cfloat>
 #include <cstdio>
-#include <cstring>
 #include <string>
 
+#include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/Framework/Console/BuiltinCommands.h"
@@ -42,7 +42,7 @@ namespace
 	void SetInputText( FConsoleWindowState& S, const FString& Line )
 	{
 		const FString Utf8 = Line.ToUtf8();
-		std::snprintf( S.Input, sizeof( S.Input ), "%s", *Utf8 );
+		NCString::Format( S.Input, sizeof( S.Input ), "%s", *Utf8 );
 		S.ProgrammaticText = Line;
 		S.bFocusInput = true;
 		++S.InputGeneration;

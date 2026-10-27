@@ -1,11 +1,9 @@
 ﻿#include "String.h"
 
 #include <cerrno>
-#include <cstdio>
 #include <cstdlib>
-#include <cstring>
-#include <cwchar>
 
+#include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Utility.h"
 
 #ifndef NOMINMAX
@@ -99,7 +97,7 @@ namespace
 
 FString::FString( const char* Str )
 {
-	if ( Str ) Append( Str, static_cast<int32>( std::strlen( Str ) ) );
+	if ( Str ) Append( Str, static_cast<int32>( NCString::Length( Str ) ) );
 }
 
 FString::FString( const char* Str, int32 Length )
@@ -111,7 +109,7 @@ FString::FString( const wchar_t* Str )
 {
 	if ( !Str || !*Str ) return;
 
-	const int32 SrcLength = static_cast<int32>( std::wcslen( Str ) );
+	const int32 SrcLength = static_cast<int32>( NCString::WideLength( Str ) );
 	const int32 Length    = WideCharToMultiByte( CP_ACP, 0, Str, SrcLength, nullptr, 0, nullptr, nullptr );
 	Data.SetNum( Length + 1 );
 	WideCharToMultiByte( CP_ACP, 0, Str, SrcLength, Data.GetData(), Length, nullptr, nullptr );
@@ -143,12 +141,12 @@ FString FString::PrintfV( const char* Format, va_list Args )
 
 	va_list ArgsCopy;
 	va_copy( ArgsCopy, Args );
-	const int Length = std::vsnprintf( nullptr, 0, Format, ArgsCopy );
+	const int Length = NCString::FormatV( nullptr, 0, Format, ArgsCopy );
 	va_end( ArgsCopy );
 	if ( Length <= 0 ) return Result;
 
 	Result.Data.SetNum( Length + 1 );
-	std::vsnprintf( Result.Data.GetData(), static_cast<usize>( Length ) + 1, Format, Args );
+	NCString::FormatV( Result.Data.GetData(), static_cast<usize>( Length ) + 1, Format, Args );
 	return Result;
 }
 
@@ -165,7 +163,7 @@ FString FString::FromFloat( float64 Value, int32 Decimals )
 FString FString::FromUtf8( const char* Utf8 )
 {
 	if ( !Utf8 ) return FString();
-	return Convert( Utf8, static_cast<int32>( std::strlen( Utf8 ) ), CP_UTF8, CP_ACP );
+	return Convert( Utf8, static_cast<int32>( NCString::Length( Utf8 ) ), CP_UTF8, CP_ACP );
 }
 
 FString FString::Join( const TArray<FString>& Items, const FString& Separator )
@@ -204,7 +202,7 @@ FString& FString::Append( const char* Str, int32 Length )
 
 FString& FString::operator+=( const char* Str )
 {
-	if ( Str ) Append( Str, static_cast<int32>( std::strlen( Str ) ) );
+	if ( Str ) Append( Str, static_cast<int32>( NCString::Length( Str ) ) );
 	return *this;
 }
 
@@ -265,7 +263,7 @@ int32 FString::Compare( const FString& Other, ESearchCase SearchCase ) const noe
 
 int32 FString::CompareRaw( const char* Other ) const noexcept
 {
-	return std::strcmp( GetData(), Other ? Other : "" );
+	return NCString::Compare( GetData(), Other ? Other : "" );
 }
 
 int32 FString::Find( const FString& Sub, ESearchCase SearchCase, int32 StartIndex ) const
@@ -475,7 +473,7 @@ TOptional<int64> FString::TryParseInt() const
 
 	char* End = nullptr;
 	errno = 0;
-	const long long Value = std::strtoll( Trimmed.GetData(), &End, 0 );
+	const long long Value = NCString::ToInt64( Trimmed.GetData(), &End, 0 );
 	if ( errno == ERANGE || End != Trimmed.GetData() + Trimmed.Len() ) return {};
 	return static_cast<int64>( Value );
 }
@@ -487,7 +485,7 @@ TOptional<float64> FString::TryParseFloat() const
 
 	char* End = nullptr;
 	errno = 0;
-	const double Value = std::strtod( Trimmed.GetData(), &End );
+	const double Value = NCString::ToFloat64( Trimmed.GetData(), &End );
 	if ( errno == ERANGE || End != Trimmed.GetData() + Trimmed.Len() ) return {};
 	return Value;
 }

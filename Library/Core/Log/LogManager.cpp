@@ -1,11 +1,10 @@
 ﻿#include "LogManager.h"
 #include "Log.h"
 
-#include <cstdio>
 #include <cstdlib>
-#include <cstring>
 
 #include "Library/Core/Thread/Mutex.h"
+#include "Library/Core/Types/CString.h"
 
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
@@ -155,7 +154,7 @@ FLogCategory* CLogManager::FindCategory( const char* Name )
 	FScopedLock Lock( CategoryMutex );
 	FLogCategory* const* Found = Categories.FindByPredicate( [Name]( const FLogCategory* Category )
 	{
-		return std::strcmp( Category->GetName(), Name ) == 0;
+		return NCString::Compare( Category->GetName(), Name ) == 0;
 	} );
 	return Found ? *Found : nullptr;
 }

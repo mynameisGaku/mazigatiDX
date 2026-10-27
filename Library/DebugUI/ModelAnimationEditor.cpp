@@ -5,6 +5,7 @@
 
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/Framework/Asset/AssetManager.h"
@@ -409,7 +410,7 @@ namespace
 		if ( Clip != nullptr )
 		{
 			char Info[160];
-			std::snprintf( Info, sizeof( Info ), "%s   %.0f%%   %s", *Clip->Name.ToUtf8(), S.Animator.GetNormalizedTime() * 100.0f, S.Animator.IsFinished() ? "finished" : ( S.bPlaying ? "playing" : "paused" ) );
+			NCString::Format( Info, sizeof( Info ), "%s   %.0f%%   %s", *Clip->Name.ToUtf8(), S.Animator.GetNormalizedTime() * 100.0f, S.Animator.IsFinished() ? "finished" : ( S.bPlaying ? "playing" : "paused" ) );
 			DrawList->AddText( ImVec2( Origin.x + 8.0f, Max.y - 18.0f ), IM_COL32( 230, 230, 230, 255 ), Info );
 		}
 		else if ( !S.Animator.Instance.IsValid() )
@@ -482,7 +483,7 @@ namespace
 				const float X = TrackLeft + T / Length * TrackWidth;
 				DrawList->AddLine( ImVec2( X, Origin.y ), ImVec2( X, Origin.y + RulerHeight ), IM_COL32( 160, 160, 170, 255 ) );
 				char Label[16];
-				std::snprintf( Label, sizeof( Label ), "%.2f", T );
+				NCString::Format( Label, sizeof( Label ), "%.2f", T );
 				DrawList->AddText( ImVec2( X + 2.0f, Origin.y ), IM_COL32( 160, 160, 170, 255 ), Label );
 			}
 		}
@@ -534,7 +535,7 @@ namespace
 		const float PlayheadX = TrackLeft + Normalized * TrackWidth;
 		DrawList->AddLine( ImVec2( PlayheadX, Origin.y ), ImVec2( PlayheadX, Origin.y + TotalHeight ), IM_COL32( 255, 80, 80, 255 ), 2.0f );
 		char TimeLabel[48];
-		std::snprintf( TimeLabel, sizeof( TimeLabel ), "%.3f s (%.0f%%)", Normalized * Length, Normalized * 100.0f );
+		NCString::Format( TimeLabel, sizeof( TimeLabel ), "%.3f s (%.0f%%)", Normalized * Length, Normalized * 100.0f );
 		DrawList->AddText( ImVec2( NMath::Min( PlayheadX + 4.0f, Origin.x + Width - 110.0f ), TrackTop + 6.0f ), IM_COL32( 255, 200, 200, 255 ), TimeLabel );
 
 		// 背景のドラッグで、再生位置を動かす（動かすと一時停止）
@@ -793,7 +794,7 @@ namespace
 				if ( Source->GetClips().Num() > 1 )
 				{
 					char BatchLabel[96];
-					std::snprintf( BatchLabel, sizeof( BatchLabel ), "Add all animations (%d)", Source->GetClips().Num() );
+					NCString::Format( BatchLabel, sizeof( BatchLabel ), "Add all animations (%d)", Source->GetClips().Num() );
 					if ( ImGui::Button( BatchLabel ) )
 					{
 						TArray<FModelClipDef> Batch;
@@ -819,7 +820,7 @@ namespace
 				for ( const FModelClipInfo& Info : Source->GetClips() )
 				{
 					char Label[200];
-					std::snprintf( Label, sizeof( Label ), "%s   (#%d, %.0f time units)###anim%d", Info.Name.IsEmpty() ? "(unnamed)" : *Info.Name.ToUtf8(), Info.AnimIndex, Info.Length, Info.AnimIndex );
+					NCString::Format( Label, sizeof( Label ), "%s   (#%d, %.0f time units)###anim%d", Info.Name.IsEmpty() ? "(unnamed)" : *Info.Name.ToUtf8(), Info.AnimIndex, Info.Length, Info.AnimIndex );
 					if ( ImGui::Selectable( Label ) )
 					{
 						FModelClipDef Clip;
@@ -851,7 +852,7 @@ namespace
 		{
 			const FModelClipDef& Clip = Definition.Clips[i];
 			char Label[200];
-			std::snprintf( Label, sizeof( Label ), "%s   (%.2f s, %s, %d event(s))###clip%d", *Clip.Name.ToUtf8(), S.Animator.GetClipLength( Clip.Name ), ToString( Clip.Loop ), Clip.Events.Num(), i );
+			NCString::Format( Label, sizeof( Label ), "%s   (%.2f s, %s, %d event(s))###clip%d", *Clip.Name.ToUtf8(), S.Animator.GetClipLength( Clip.Name ), ToString( Clip.Loop ), Clip.Events.Num(), i );
 			if ( ImGui::Selectable( Label, S.SelectedClip == i ) )
 			{
 				S.SelectedClip = i;
@@ -891,7 +892,7 @@ namespace
 				for ( const FModelClipInfo& Info : SourceModel->GetClips() )
 				{
 					char Label[160];
-					std::snprintf( Label, sizeof( Label ), "%s  (#%d)###a%d", Info.Name.IsEmpty() ? "(unnamed)" : *Info.Name.ToUtf8(), Info.AnimIndex, Info.AnimIndex );
+					NCString::Format( Label, sizeof( Label ), "%s  (#%d)###a%d", Info.Name.IsEmpty() ? "(unnamed)" : *Info.Name.ToUtf8(), Info.AnimIndex, Info.AnimIndex );
 					if ( ImGui::Selectable( Label, Info.AnimIndex == Edited.AnimIndex ) )
 					{
 						Edited.AnimIndex = Info.AnimIndex;
@@ -952,7 +953,7 @@ namespace
 		{
 			if ( Layer.Weight <= 0.0f ) continue;
 			char Overlay[96];
-			std::snprintf( Overlay, sizeof( Overlay ), "%s  %.0f%%", *Layer.ClipName.ToUtf8(), Layer.Weight * 100.0f );
+			NCString::Format( Overlay, sizeof( Overlay ), "%s  %.0f%%", *Layer.ClipName.ToUtf8(), Layer.Weight * 100.0f );
 			ImGui::ProgressBar( Layer.Weight, ImVec2( -FLT_MIN, 0.0f ), Overlay );
 		}
 	}
@@ -1216,7 +1217,7 @@ void NDebugUI::DrawModelAnimationEditor( FModelAnimationEditorState& S, bool* pO
 	ImGui::SetNextWindowPos( ImVec2( MainViewport->Pos.x + 16.0f, MainViewport->Pos.y + 38.0f ), ImGuiCond_FirstUseEver );
 	ImGui::SetNextWindowSize( ImVec2( NMath::Min( 1320.0f, MainViewport->Size.x - 32.0f ), NMath::Min( 780.0f, MainViewport->Size.y - 50.0f ) ), ImGuiCond_FirstUseEver );
 	char Title[256];
-	std::snprintf( Title, sizeof( Title ), "Model Animation Editor%s###ModelAnimationEditor", S.Document.IsDirty() ? " *" : "" );
+	NCString::Format( Title, sizeof( Title ), "Model Animation Editor%s###ModelAnimationEditor", S.Document.IsDirty() ? " *" : "" );
 	if ( !ImGui::Begin( Title, pOpen, ImGuiWindowFlags_MenuBar ) )
 	{
 		ImGui::End();

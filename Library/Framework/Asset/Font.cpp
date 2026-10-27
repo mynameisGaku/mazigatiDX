@@ -1,11 +1,11 @@
 ﻿#include "Font.h"
 
 #include <cstdarg>
-#include <cstdio>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/CString.h"
 #include "Library/Framework/Engine/Engine.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogFont, Log )
@@ -66,7 +66,7 @@ void CFont::DrawF( int32 X, int32 Y, const FColor32& Color, const char* Format, 
 	va_start( Args, Format );
 	va_list ArgsCopy;
 	va_copy( ArgsCopy, Args );
-	const int Needed = std::vsnprintf( Small, sizeof( Small ), Format, Args );
+	const int Needed = NCString::FormatV( Small, sizeof( Small ), Format, Args );
 	va_end( Args );
 
 	if ( Needed >= 0 && Needed < static_cast<int>( sizeof( Small ) ) )
@@ -77,7 +77,7 @@ void CFont::DrawF( int32 X, int32 Y, const FColor32& Color, const char* Format, 
 	{
 		TArray<char> Large;
 		Large.SetNum( Needed + 1 );
-		std::vsnprintf( Large.GetData(), static_cast<size_t>( Large.Num() ), Format, ArgsCopy );
+		NCString::FormatV( Large.GetData(), static_cast<size_t>( Large.Num() ), Format, ArgsCopy );
 		Draw( X, Y, Large.GetData(), Color );
 	}
 	va_end( ArgsCopy );

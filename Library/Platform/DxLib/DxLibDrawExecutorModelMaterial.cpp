@@ -2,7 +2,6 @@
 #include "DxLibDrawExecutor.h"
 
 #include <algorithm>
-#include <cstring>
 
 #include "Library/Core/Interfaces/Render/DrawModelMaterial.h"
 #include "Library/Core/Log/Log.h"

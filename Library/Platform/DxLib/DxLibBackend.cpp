@@ -1,10 +1,10 @@
 ﻿#include "DxLibBackend.h"
 
 #include <cstdlib>
-#include <cstring>
 
 #include "Library/Core/Collection/Set.h"
 #include "Library/Core/Profiler/ProfilerScope.h"
+#include "Library/Core/Types/CString.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Platform/FileSystem.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
@@ -86,14 +86,14 @@ TResult<void> CDxLibBackend::Init( const FWindowSettings& InSettings )
 	// 起動引数 --screenshot=パス.png [--screenshot-frame=N] [--screenshot-exit]
 	{
 		const char* CommandLine = GetCommandLineA();
-		if ( const char* Found = CommandLine != nullptr ? std::strstr( CommandLine, "--screenshot=" ) : nullptr )
+		if ( const char* Found = CommandLine != nullptr ? NCString::Find( CommandLine, "--screenshot=" ) : nullptr )
 		{
-			Found += std::strlen( "--screenshot=" );
+			Found += NCString::Length( "--screenshot=" );
 			const char* End = Found;
 			while ( *End != '\0' && *End != ' ' ) ++End;
 			ScreenshotPath = FString( Found, static_cast<int32>( End - Found ) );
-			if ( const char* Frame = std::strstr( CommandLine, "--screenshot-frame=" ) ) ScreenshotFrame = std::atoi( Frame + std::strlen( "--screenshot-frame=" ) );
-			bScreenshotExit = std::strstr( CommandLine, "--screenshot-exit" ) != nullptr;
+			if ( const char* Frame = NCString::Find( CommandLine, "--screenshot-frame=" ) ) ScreenshotFrame = NCString::ToInt32( Frame + NCString::Length( "--screenshot-frame=" ) );
+			bScreenshotExit = NCString::Find( CommandLine, "--screenshot-exit" ) != nullptr;
 			bScreenshotDone = false;
 		}
 	}

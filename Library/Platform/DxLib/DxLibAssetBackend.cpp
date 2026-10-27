@@ -1,10 +1,10 @@
 ﻿#include "DxLibAssetBackend.h"
 
-#include <cstring>
 #include <cmath>
 
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
@@ -305,7 +305,7 @@ void CDxLibAssetBackend::DeleteFont( int32 Font )
 int32 CDxLibAssetBackend::MeasureText( int32 Font, const char* Text )
 {
 	if ( Text == nullptr ) return 0;
-	const int Length = static_cast<int>( std::strlen( Text ) );
+	const int Length = static_cast<int>( NCString::Length( Text ) );
 	return Font >= 0 ? GetDrawStringWidthToHandle( Text, Length, Font ) : GetDrawStringWidth( Text, Length );
 }
 

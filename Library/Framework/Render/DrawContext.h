@@ -2,7 +2,6 @@
 #ifndef FRAMEWORK_RENDER_DRAWCONTEXT_H
 #define FRAMEWORK_RENDER_DRAWCONTEXT_H
 
-#include <cstring>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Interfaces/Render/DrawCommand.h"

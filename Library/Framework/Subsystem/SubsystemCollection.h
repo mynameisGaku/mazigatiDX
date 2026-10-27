@@ -1,6 +1,5 @@
 ﻿#pragma once
 #include "Library/Core/Types/CompilerMacros.h"
-#include <cstring>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Interfaces/Tickable/ITickable.h"

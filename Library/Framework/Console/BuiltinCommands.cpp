@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cstdio>
-#include <cstring>
 #include <string>
 
 #include "Library/Core/Interfaces/Job/IJobSystem.h"

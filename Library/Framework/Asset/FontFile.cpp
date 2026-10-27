@@ -1,7 +1,6 @@
 ﻿#include "FontFile.h"
 
 #include <cstdio>
-#include <cstring>
 
 #include "Library/Core/Collection/Array.h"
 

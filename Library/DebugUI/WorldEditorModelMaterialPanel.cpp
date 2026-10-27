@@ -1,9 +1,8 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
 #include "WorldEditorModelMaterialPanel.h"
 
-#include <cstdio>
-#include <cstring>
 
+#include "Library/Core/Types/CString.h"
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/DebugUI/WorldEditorInternal.h"
 #include "Library/DebugUI/WorldEditorMeshMaterialPanel.h"
@@ -225,7 +224,7 @@ void NWorldEditorUI::DrawModelMaterialEffectPanel( FWorldEditorState& State, int
 		{
 			// objectごとに独立し連続入力をまとめる履歴key。
 			char CoalesceKey[64] = {};
-			std::snprintf( CoalesceKey, sizeof( CoalesceKey ), "Inspector.Model.MaterialEffect.%d", ObjectId );
+			NCString::Format( CoalesceKey, sizeof( CoalesceKey ), "Inspector.Model.MaterialEffect.%d", ObjectId );
 			// 最新Model部品だけへ一時値を保存する。
 			if ( FWorldObject* EditableObject = NWorldEdit::EditObject( Session.Document, ObjectId, CoalesceKey ); EditableObject != nullptr && EditableObject->Model.IsSet() ) EditableObject->Model.GetValue().MaterialEffect = EditedModel.MaterialEffect;
 		}

@@ -2,9 +2,9 @@
 
 #include <cerrno>
 #include <cmath>
-#include <cstdio>
 #include <cstdlib>
 
+#include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Numeric.h"
 
 bool NConsole::ParseInt64( const FString& Text, int64& Out )
@@ -20,7 +20,7 @@ bool NConsole::ParseInt64( const FString& Text, int64& Out )
 	if ( *Digits == '+' || *Digits == '-' ) ++Digits;
 	if ( Digits[0] == '0' && ( Digits[1] == 'x' || Digits[1] == 'X' ) ) Base = 16;
 
-	const long long Value = std::strtoll( Begin, &End, Base );
+	const long long Value = NCString::ToInt64( Begin, &End, Base );
 	if ( End == Begin || *End != '\0' || errno == ERANGE ) return false;
 	// strtoll は先頭の空白を読み飛ばすが、引数に空白は入らないので、ここでは拒否しておく
 	if ( Begin[0] == ' ' || Begin[0] == '\t' ) return false;
@@ -35,7 +35,7 @@ bool NConsole::ParseFloat64( const FString& Text, float64& Out )
 	if ( Begin[0] == ' ' || Begin[0] == '\t' ) return false;
 	char* End = nullptr;
 	errno = 0;
-	const double Value = std::strtod( Begin, &End );
+	const double Value = NCString::ToFloat64( Begin, &End );
 	if ( End == Begin || *End != '\0' ) return false;
 	if ( !NMath::IsFinite( Value ) ) return false;   // nan / inf / 溢れ
 	Out = Value;
@@ -61,6 +61,6 @@ bool NConsole::ParseBool( const FString& Text, bool& Out )
 FString NConsole::FormatFloat( float64 Value )
 {
 	char Buffer[48];
-	std::snprintf( Buffer, sizeof( Buffer ), "%.6g", Value );
+	NCString::Format( Buffer, sizeof( Buffer ), "%.6g", Value );
 	return FString( Buffer );
 }

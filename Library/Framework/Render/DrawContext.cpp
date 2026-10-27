@@ -3,10 +3,9 @@
 #include <algorithm>
 #include <cstdarg>
 #include <cmath>
-#include <cstdio>
-#include <cstring>
 
 #include "Library/Core/Collection/Array.h"
+#include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Numeric.h"
 
 void FDrawContext::MaterialQuad3D( const FDrawMaterialQuadData& Data )
@@ -184,7 +183,7 @@ void FDrawContext::Text( int32 X, int32 Y, const char* String, const FColor32& C
 	constexpr size_t DataWords = sizeof( FDrawTextData ) / 4;
 	// ヘッダに収まる大きさまで（それより長い文字列は切る）
 	const size_t MaxChars = ( static_cast<size_t>( NDrawCommand::MaxWords ) - 1 - DataWords ) * 4 - 1;
-	size_t Length = String != nullptr ? std::strlen( String ) : 0;
+	size_t Length = String != nullptr ? NCString::Length( String ) : 0;
 	if ( Length > MaxChars ) Length = MaxChars;
 	const size_t CharWords = ( Length + 1 + 3 ) / 4;   // '\0' を含めて、4 バイト境界まで
 
@@ -206,7 +205,7 @@ void FDrawContext::TextWithFont( int32 FontHandle, int32 X, int32 Y, const char*
 {
 	constexpr size_t DataWords = sizeof( FDrawTextFontData ) / 4;
 	const size_t MaxChars = ( static_cast<size_t>( NDrawCommand::MaxWords ) - 1 - DataWords ) * 4 - 1;
-	size_t Length = String != nullptr ? std::strlen( String ) : 0;
+	size_t Length = String != nullptr ? NCString::Length( String ) : 0;
 	if ( Length > MaxChars ) Length = MaxChars;
 	const size_t CharWords = ( Length + 1 + 3 ) / 4;
 
@@ -238,7 +237,7 @@ void FDrawContext::TextF( int32 X, int32 Y, const FColor32& Color, const char* F
 	va_start( Args, Format );
 	va_list ArgsCopy;
 	va_copy( ArgsCopy, Args );
-	const int Needed = std::vsnprintf( Small, sizeof( Small ), Format, Args );
+	const int Needed = NCString::FormatV( Small, sizeof( Small ), Format, Args );
 	va_end( Args );
 
 	if ( Needed < 0 )
@@ -253,7 +252,7 @@ void FDrawContext::TextF( int32 X, int32 Y, const FColor32& Color, const char* F
 	{
 		TArray<char> Large;
 		Large.SetNum( Needed + 1 );
-		std::vsnprintf( Large.GetData(), static_cast<size_t>( Large.Num() ), Format, ArgsCopy );
+		NCString::FormatV( Large.GetData(), static_cast<size_t>( Large.Num() ), Format, ArgsCopy );
 		Text( X, Y, Large.GetData(), Color );
 	}
 	va_end( ArgsCopy );

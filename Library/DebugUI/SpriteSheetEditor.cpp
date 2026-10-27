@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/Framework/Asset/AssetManager.h"
@@ -343,7 +344,7 @@ namespace
 				if ( S.bShowIndices && bShowLabels && ( P1.x - P0.x ) >= 22.0f && ( P1.y - P0.y ) >= 14.0f )
 				{
 					char Label[16];
-					std::snprintf( Label, sizeof( Label ), "%d", Item.Index );
+					NCString::Format( Label, sizeof( Label ), "%d", Item.Index );
 					DrawList->AddText( ImVec2( P0.x + 3.0f, P0.y + 2.0f ), IM_COL32( 0, 0, 0, 255 ), Label );
 					DrawList->AddText( ImVec2( P0.x + 2.0f, P0.y + 1.0f ), IM_COL32( 255, 255, 255, 255 ), Label );
 				}
@@ -374,7 +375,7 @@ namespace
 			const ImVec2 P1( ImageMin.x + static_cast<float>( X1 ) * S.Zoom, ImageMin.y + static_cast<float>( Y1 ) * S.Zoom );
 			DrawList->AddRect( P0, P1, IM_COL32( 255, 235, 60, 255 ), 0.0f, 0, 2.0f );
 			char Label[64];
-			std::snprintf( Label, sizeof( Label ), "%d,%d  %dx%d", X0, Y0, X1 - X0, Y1 - Y0 );
+			NCString::Format( Label, sizeof( Label ), "%d,%d  %dx%d", X0, Y0, X1 - X0, Y1 - Y0 );
 			DrawList->AddText( ImVec2( P0.x, P0.y - 16.0f ), IM_COL32( 255, 235, 60, 255 ), Label );
 			if ( !ImGui::IsMouseDown( ImGuiMouseButton_Left ) )
 			{
@@ -409,12 +410,12 @@ namespace
 		const int32 Py = static_cast<int32>( NMath::Floor( Mouse.y ) );
 		if ( bHovered && Px >= 0 && Py >= 0 && Px < TexW && Py < TexH )
 		{
-			std::snprintf( Info, sizeof( Info ), "pixel (%d, %d)   frame %s   |   click: select   Ctrl+click: add to clip   Shift+drag: new frame   wheel: zoom   middle-drag: pan", Px, Py,
+			NCString::Format( Info, sizeof( Info ), "pixel (%d, %d)   frame %s   |   click: select   Ctrl+click: add to clip   Shift+drag: new frame   wheel: zoom   middle-drag: pan", Px, Py,
 						   HoverIndex == INDEX_NONE ? "-" : FString::FromInt( HoverIndex ).c_str() );
 		}
 		else
 		{
-			std::snprintf( Info, sizeof( Info ), "%d x %d px   %d frame(s)   |   click: select   Ctrl+click: add to clip   Shift+drag: new frame   wheel: zoom   middle-drag: pan", TexW, TexH, Overlay.Num() );
+			NCString::Format( Info, sizeof( Info ), "%d x %d px   %d frame(s)   |   click: select   Ctrl+click: add to clip   Shift+drag: new frame   wheel: zoom   middle-drag: pan", TexW, TexH, Overlay.Num() );
 		}
 		DrawList->AddRectFilled( ImVec2( Origin.x, Max.y - 20.0f ), Max, IM_COL32( 0, 0, 0, 150 ) );
 		DrawList->AddText( ImVec2( Origin.x + 6.0f, Max.y - 18.0f ), IM_COL32( 230, 230, 230, 255 ), Info );
@@ -483,7 +484,7 @@ namespace
 		{
 			const FSpriteSheetGrid& Grid = Definition.Grids[i];
 			char Label[96];
-			std::snprintf( Label, sizeof( Label ), "Grid %d:  %d x %d,  frames %d..%d###grid%d", i, Grid.Columns, Grid.Rows, Start, Start + Grid.GetNumFrames() - 1, i );
+			NCString::Format( Label, sizeof( Label ), "Grid %d:  %d x %d,  frames %d..%d###grid%d", i, Grid.Columns, Grid.Rows, Start, Start + Grid.GetNumFrames() - 1, i );
 			if ( ImGui::Selectable( Label, S.SelectedGrid == i ) ) S.SelectedGrid = i;
 			Start += Grid.GetNumFrames();
 		}
@@ -568,7 +569,7 @@ namespace
 			{
 				const FOverlayFrame& Item = Overlay[i];
 				char Label[128];
-				std::snprintf( Label, sizeof( Label ), "%3d  (%d,%d) %dx%d  %s%s###frame%d", Item.Index, Item.Frame.X, Item.Frame.Y, Item.Frame.Width, Item.Frame.Height,
+				NCString::Format( Label, sizeof( Label ), "%3d  (%d,%d) %dx%d  %s%s###frame%d", Item.Index, Item.Frame.X, Item.Frame.Y, Item.Frame.Width, Item.Frame.Height,
 							   Item.bFree ? "free" : "grid", Item.bOutside ? "  OUTSIDE" : "", Item.Index );
 				if ( ImGui::Selectable( Label, S.SelectedFrame == Item.Index ) ) S.SelectedFrame = Item.Index;
 			}
@@ -633,7 +634,7 @@ namespace
 		{
 			const FSpriteClip& Clip = Definition.Clips[i];
 			char Label[160];
-			std::snprintf( Label, sizeof( Label ), "%s   (%d frame(s), %.2f s, %s)###clip%d", *Clip.Name.ToUtf8(), Clip.Frames.Num(), Clip.GetTotalDuration(), ToString( Clip.Loop ), i );
+			NCString::Format( Label, sizeof( Label ), "%s   (%d frame(s), %.2f s, %s)###clip%d", *Clip.Name.ToUtf8(), Clip.Frames.Num(), Clip.GetTotalDuration(), ToString( Clip.Loop ), i );
 			if ( ImGui::Selectable( Label, S.SelectedClip == i ) )
 			{
 				S.SelectedClip = i;
@@ -697,7 +698,7 @@ namespace
 			ImGui::PushID( Step );
 			const bool bSelected = S.SelectedStep == Step;
 			char Label[32];
-			std::snprintf( Label, sizeof( Label ), "%2d", Step );
+			NCString::Format( Label, sizeof( Label ), "%2d", Step );
 			if ( ImGui::Selectable( Label, bSelected, 0, ImVec2( 26.0f, 24.0f ) ) )
 			{
 				S.SelectedStep = Step;
@@ -959,7 +960,7 @@ namespace
 			const float X = Origin.x + 4.0f + T * PixelsPerSecond;
 			DrawList->AddLine( ImVec2( X, Origin.y ), ImVec2( X, Origin.y + RulerHeight ), IM_COL32( 160, 160, 170, 255 ) );
 			char Label[16];
-			std::snprintf( Label, sizeof( Label ), "%.2f", T );
+			NCString::Format( Label, sizeof( Label ), "%.2f", T );
 			DrawList->AddText( ImVec2( X + 2.0f, Origin.y ), IM_COL32( 160, 160, 170, 255 ), Label );
 		}
 
@@ -993,7 +994,7 @@ namespace
 				NDebugUI::EndNearest( DrawList );
 			}
 			char Label[32];
-			std::snprintf( Label, sizeof( Label ), "#%d", Clip.Frames[i] );
+			NCString::Format( Label, sizeof( Label ), "#%d", Clip.Frames[i] );
 			DrawList->AddText( ImVec2( X0 + 3.0f, BlockTop + BlockHeight - 16.0f ), IM_COL32( 230, 230, 230, 255 ), Label );
 
 			// ブロックの右端をドラッグして、表示時間を変える
@@ -1286,7 +1287,7 @@ void NDebugUI::DrawSpriteSheetEditor( FSpriteSheetEditorState& S, bool* pOpen )
 	ImGui::SetNextWindowPos( ImVec2( MainViewport->Pos.x + 16.0f, MainViewport->Pos.y + 38.0f ), ImGuiCond_FirstUseEver );
 	ImGui::SetNextWindowSize( ImVec2( NMath::Min( 1320.0f, MainViewport->Size.x - 32.0f ), NMath::Min( 780.0f, MainViewport->Size.y - 50.0f ) ), ImGuiCond_FirstUseEver );
 	char Title[256];
-	std::snprintf( Title, sizeof( Title ), "Sprite Sheet Editor%s###SpriteSheetEditor", S.Document.IsDirty() ? " *" : "" );
+	NCString::Format( Title, sizeof( Title ), "Sprite Sheet Editor%s###SpriteSheetEditor", S.Document.IsDirty() ? " *" : "" );
 	if ( !ImGui::Begin( Title, pOpen, ImGuiWindowFlags_MenuBar ) )
 	{
 		ImGui::End();

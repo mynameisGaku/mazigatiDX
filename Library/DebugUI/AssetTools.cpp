@@ -1,9 +1,9 @@
 ﻿#include "AssetTools.h"
 
 #include <algorithm>
-#include <cstring>
 
 #include "Library/Core/Collection/Sort.h"
+#include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/DebugUI/EffectEditorInternal.h"
@@ -67,7 +67,7 @@ namespace
 		{
 			const float Fraction = static_cast<float>( static_cast<double>( Stats.Backend.VideoMemoryUsed ) / static_cast<double>( Stats.Backend.VideoMemoryTotal ) );
 			char Overlay[96];
-			std::snprintf( Overlay, sizeof( Overlay ), "Video memory %s / %s", *Bytes( Stats.Backend.VideoMemoryUsed ).ToUtf8(), *Bytes( Stats.Backend.VideoMemoryTotal ).ToUtf8() );
+			NCString::Format( Overlay, sizeof( Overlay ), "Video memory %s / %s", *Bytes( Stats.Backend.VideoMemoryUsed ).ToUtf8(), *Bytes( Stats.Backend.VideoMemoryTotal ).ToUtf8() );
 			ImGui::ProgressBar( Fraction, ImVec2( 360.0f, 0.0f ), Overlay );
 			ImGui::SameLine();
 		}
@@ -308,12 +308,12 @@ namespace
 	bool ContainsToken( const char* List, const char* Token )
 	{
 		if ( List == nullptr || Token == nullptr ) return false;
-		const size_t Length = std::strlen( Token );
+		const size_t Length = NCString::Length( Token );
 		for ( const char* p = List; *p != '\0'; )
 		{
-			const char* End = std::strchr( p, ',' );
-			const size_t ItemLength = End != nullptr ? static_cast<size_t>( End - p ) : std::strlen( p );
-			if ( ItemLength == Length && std::strncmp( p, Token, Length ) == 0 ) return true;
+			const char* End = NCString::FindChar( p, ',' );
+			const size_t ItemLength = End != nullptr ? static_cast<size_t>( End - p ) : NCString::Length( p );
+			if ( ItemLength == Length && NCString::CompareN( p, Token, Length ) == 0 ) return true;
 			if ( End == nullptr ) break;
 			p = End + 1;
 		}
@@ -323,9 +323,9 @@ namespace
 	FString GetArgument( const char* Prefix )
 	{
 		const char* CommandLine = GetCommandLineA();
-		const char* Found = CommandLine != nullptr ? std::strstr( CommandLine, Prefix ) : nullptr;
+		const char* Found = CommandLine != nullptr ? NCString::Find( CommandLine, Prefix ) : nullptr;
 		if ( Found == nullptr ) return FString();
-		Found += std::strlen( Prefix );
+		Found += NCString::Length( Prefix );
 		const char* End = Found;
 		while ( *End != '\0' && *End != ' ' ) ++End;
 		return FString( Found, static_cast<int32>( End - Found ) );

@@ -1,12 +1,12 @@
 ﻿#include "LogSink.h"
 
 #include <chrono>
-#include <cstdio>
 #include <cstring>
 #include <ctime>
 #include <share.h>
 
 #include "Library/Core/Thread/Mutex.h"
+#include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Utility.h"
 
 #define NOMINMAX
@@ -94,7 +94,7 @@ namespace
 	//   Text は UTF-8 なので FString::Contains (Shift-JIS 前提) ではなくバイト単位で比較する
 	bool ContainsNoCase( const FString& Text, const char* Pattern )
 	{
-		const int32 PatternLength = static_cast<int32>( std::strlen( Pattern ) );
+		const int32 PatternLength = static_cast<int32>( NCString::Length( Pattern ) );
 		if ( PatternLength == 0 ) return true;
 		if ( PatternLength > Text.Len() ) return false;
 
@@ -172,12 +172,12 @@ void CFileLogSink::Write( const FLogMessage& Message )
 	std::tm LocalTime = {};
 	localtime_s( &LocalTime, &TimeT );
 	char Stamp[32];
-	std::snprintf( Stamp, sizeof( Stamp ), "[%02d:%02d:%02d.%03d] ", LocalTime.tm_hour, LocalTime.tm_min, LocalTime.tm_sec, Milliseconds );
+	NCString::Format( Stamp, sizeof( Stamp ), "[%02d:%02d:%02d.%03d] ", LocalTime.tm_hour, LocalTime.tm_min, LocalTime.tm_sec, Milliseconds );
 
 	// 1 行を 1 回の書き込みで出し、すぐファイルへ反映する。
 	// 起動中のログを別のツールで読み続けられるうえ、クラッシュしても直前までのログが残る
 	const FString Line = ToUtf8( Message.FormattedLine );
-	File.write( Stamp, static_cast<std::streamsize>( std::strlen( Stamp ) ) );
+	File.write( Stamp, static_cast<std::streamsize>( NCString::Length( Stamp ) ) );
 	File.write( Line.GetData(), Line.Len() );
 	File.write( "\r\n", 2 );
 	File.flush();

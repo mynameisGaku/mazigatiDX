@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <cstring>
 #include <unordered_map>
 
 #include "VendorModules/ufbx/ufbx.h"

@@ -2,10 +2,10 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdio>
 
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Time/PlatformTime.h"
+#include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Profiler/ProfilerAnalyzer.h"
 #include "Library/Math/MathUtils.h"
@@ -472,14 +472,14 @@ namespace
 			if ( bStacked )
 			{
 				const int32 Decimals = Step >= 1.0 ? 0 : NMath::Clamp( static_cast<int32>( NMath::Ceil( -NMath::Log10( Step ) ) ), 0, 8 );
-				std::snprintf( Label, sizeof( Label ), "%.*f ms", Decimals, T );
+				NCString::Format( Label, sizeof( Label ), "%.*f ms", Decimals, T );
 			}
 			else
 			{
 				// 秒で表示する。目盛りの細かさに合わせて小数の桁数を決める
 				const float64 StepSeconds = Step / 1000.0;
 				const int32 Decimals = StepSeconds >= 1.0 ? 0 : NMath::Clamp( static_cast<int32>( NMath::Ceil( -NMath::Log10( StepSeconds ) ) ), 0, 10 );
-				std::snprintf( Label, sizeof( Label ), "%.*f s", Decimals, T / 1000.0 );
+				NCString::Format( Label, sizeof( Label ), "%.*f s", Decimals, T / 1000.0 );
 			}
 			if ( X >= Area.Origin.x ) DL->AddText( ImVec2( X + 3.0f, Y + 2.0f ), IM_COL32( 220, 220, 220, 255 ), Label );
 		}
@@ -857,7 +857,7 @@ namespace
 				if ( R - L > 74.0f )
 				{
 					char Label[40];
-					std::snprintf( Label, sizeof( Label ), "#%llu  %.2f ms", static_cast<unsigned long long>( Frame.FrameNumber ), Ms );
+					NCString::Format( Label, sizeof( Label ), "#%llu  %.2f ms", static_cast<unsigned long long>( Frame.FrameNumber ), Ms );
 					DL->PushClipRect( ImVec2( L, Y0 ), ImVec2( R, Y0 + FrameTrackHeight ), true );
 					DL->AddText( ImVec2( L + 4.0f, Y0 + 4.0f ), IM_COL32( 10, 10, 10, 255 ), Label );
 					DL->PopClipRect();
@@ -1149,7 +1149,7 @@ namespace
 
 			// 見出し（番号と時間。フレームの終わりの位置に縦線）
 			char Label[64];
-			std::snprintf( Label, sizeof( Label ), "#%llu   %.2f ms", static_cast<unsigned long long>( Frame.FrameNumber ), FrameMs );
+			NCString::Format( Label, sizeof( Label ), "#%llu   %.2f ms", static_cast<unsigned long long>( Frame.FrameNumber ), FrameMs );
 			Area.DrawList->AddRectFilled( ImVec2( SamplesOrigin.x, Y ), ImVec2( SamplesOrigin.x + Width, Y + StackedHeaderHeight - 1.0f ), IM_COL32( 40, 40, 40, 255 ) );
 			Area.DrawList->AddText( ImVec2( SamplesOrigin.x + 4.0f, Y + 1.0f ), IM_COL32( 235, 235, 235, 255 ), Label );
 			const float EndX = Area.ToX( FrameMs );

@@ -5,6 +5,7 @@
 #include <string>
 
 #include "Library/Core/Collection/Set.h"
+#include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Numeric.h"
 
 namespace
@@ -27,13 +28,13 @@ namespace
 		void Float( float32 Value )
 		{
 			char Buffer[40];
-			std::snprintf( Buffer, sizeof( Buffer ), "%.8g", static_cast<double>( Value ) );
+			NCString::Format( Buffer, sizeof( Buffer ), "%.8g", static_cast<double>( Value ) );
 			Out += Buffer;
 		}
 		void Int( int32 Value )
 		{
 			char Buffer[16];
-			std::snprintf( Buffer, sizeof( Buffer ), "%d", Value );
+			NCString::Format( Buffer, sizeof( Buffer ), "%d", Value );
 			Out += Buffer;
 		}
 
