@@ -182,9 +182,9 @@ void CWorldTriggerSubsystem::Tick( float32 )
 			continue;
 		}
 		TArray<uint32> GoneOthers;
-		for ( const auto& Overlap : Pair.Value.Overlaps )
+		for ( const uint32 Overlap : Pair.Value.Overlaps )
 		{
-			if ( Physics->FindBody( PhysBodyID( Overlap.Key ) ) == nullptr ) GoneOthers.Add( Overlap.Key );
+			if ( Physics->FindBody( PhysBodyID( Overlap ) ) == nullptr ) GoneOthers.Add( Overlap );
 		}
 		for ( const uint32 Key : GoneOthers ) Pair.Value.Overlaps.Remove( Key );
 	}
@@ -210,13 +210,13 @@ int32 CWorldTriggerSubsystem::GetNumOverlaps( const CWorldColliderComponent& Tri
 	return State != nullptr ? State->Overlaps.Num() : 0;
 }
 
-void CWorldTriggerSubsystem::OnContactAdded( FRigidBody* BodyA, FRigidBody* BodyB, const FContactInfo& )
+void CWorldTriggerSubsystem::OnBodyContactBegin( FRigidBody* BodyA, FRigidBody* BodyB, const FContactInfo& )
 {
 	HandleAdded( BodyA, BodyB );
 	HandleAdded( BodyB, BodyA );
 }
 
-void CWorldTriggerSubsystem::OnContactRemoved( FRigidBody* BodyA, FRigidBody* BodyB )
+void CWorldTriggerSubsystem::OnBodyContactEnd( FRigidBody* BodyA, FRigidBody* BodyB )
 {
 	HandleRemoved( BodyA, BodyB );
 	HandleRemoved( BodyB, BodyA );
@@ -226,8 +226,7 @@ void CWorldTriggerSubsystem::HandleAdded( FRigidBody* TriggerBody, FRigidBody* O
 {
 	FTriggerState* State = Triggers.Find( TriggerBody->GetBodyID().GetIndexAndSequenceNumber() );
 	if ( State == nullptr || State->Component == nullptr ) return;
-	int32& Count = State->Overlaps.FindOrAdd( Other->GetBodyID().GetIndexAndSequenceNumber() );
-	if ( ++Count != 1 ) return;
+	if ( !State->Overlaps.Add( Other->GetBodyID().GetIndexAndSequenceNumber() ) ) return;
 
 	// コールバックの中で、物を作る・消してもよいように、必要なものを取り出してから呼ぶ（State はもう使わない）
 	CWorldColliderComponent* Component = State->Component;
@@ -240,10 +239,7 @@ void CWorldTriggerSubsystem::HandleRemoved( FRigidBody* TriggerBody, FRigidBody*
 {
 	FTriggerState* State = Triggers.Find( TriggerBody->GetBodyID().GetIndexAndSequenceNumber() );
 	if ( State == nullptr || State->Component == nullptr ) return;
-	int32* Count = State->Overlaps.Find( Other->GetBodyID().GetIndexAndSequenceNumber() );
-	if ( Count == nullptr ) return;
-	if ( --*Count > 0 ) return;
-	State->Overlaps.Remove( Other->GetBodyID().GetIndexAndSequenceNumber() );
+	if ( State->Overlaps.Remove( Other->GetBodyID().GetIndexAndSequenceNumber() ) == 0 ) return;
 
 	CWorldColliderComponent* Component = State->Component;
 	const CWorldColliderComponent::FTriggerCallback Callback = Component->GetOnExit();

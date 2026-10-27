@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Library/Core/Collection/Map.h"
+#include "Library/Core/Collection/Set.h"
 #include "Library/Core/Interfaces/Physics/IPhysicsContacts.h"
 #include "Library/Core/Interfaces/Tickable/ITickable.h"
 #include "Library/Core/Types/Callable.h"
@@ -68,7 +69,8 @@ private:
 
 //=============================================================================
 // CWorldTriggerSubsystem
-//   物理のあるシーンの、トリガーの重なりを数える。トリガーが 1 つでもあるときだけ、物理の接触の通知を受ける。
+//   物理のあるシーンの、トリガーの重なりを覚える。トリガーが 1 つでもあるときだけ、物理の接触の通知（剛体の組ごとの Begin / End）を受ける。
+//   組の通知なので、複合形状やメッシュで接触する部位が複数あっても 1 回ずつで、剛体が眠っても出たことにならない。
 //=============================================================================
 class CWorldTriggerSubsystem : public CSceneSubsystem, public ITickable, public IPhysicsContactListener
 {
@@ -87,14 +89,14 @@ public:
 	// いま、トリガーに重なっている物の数（確認・デバッグ用）
 	int32 GetNumOverlaps( const CWorldColliderComponent& Trigger ) const;
 
-	void OnContactAdded( FRigidBody* BodyA, FRigidBody* BodyB, const FContactInfo& Info ) override;
-	void OnContactRemoved( FRigidBody* BodyA, FRigidBody* BodyB ) override;
+	void OnBodyContactBegin( FRigidBody* BodyA, FRigidBody* BodyB, const FContactInfo& Info ) override;
+	void OnBodyContactEnd( FRigidBody* BodyA, FRigidBody* BodyB ) override;
 
 private:
 	struct FTriggerState
 	{
 		CWorldColliderComponent* Component = nullptr;
-		TMap<uint32, int32> Overlaps;   // 重なっている物（剛体の識別子）-> 接触の数（1 組で複数回の接触が起きる形のため、数える）
+		TSet<uint32> Overlaps;          // 重なっている物（剛体の識別子）
 	};
 
 	void HandleAdded( FRigidBody* TriggerBody, FRigidBody* Other );
