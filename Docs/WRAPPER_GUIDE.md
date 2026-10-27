@@ -17,6 +17,7 @@ Library/Core/Interfaces  … 窓口（IPlatform / IInput / IAudioBackend / IAsse
 Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBackend / DxLibDrawExecutor / DxLibInput …）
 ```
 
+- ゲームの実行ファイルは `Library` を使う側（`Source`）に置く。レベルエディタ・エフェクトエディタなどの**エディタは外部ツール**（別の実行ファイル）で、ゲームの実行ファイルには入れない。どちらも同じ `Library` を使う（移行中: 現在は 1 つの実行ファイルに同居し、`--tool=` で起動する）。
 - **DxLib を呼んでよいのは `Library/Platform/DxLib` だけ**。窓口（`Core/Interfaces`）と `Framework` は DxLib のヘッダーを含まない。Jolt・ImGui も同じ（窓口には出さない）。
 - 窓口は**インターフェース先行**で作る。実装を差し替えられる（確認用の偽の実装、将来の別バックエンド）ことが目的で、DxLib の関数をそのまま転送するだけの層にしない。
 - 値の型（設定・結果・列挙）は `*Types.h` に分ける。窓口を使う側が、実装のヘッダーを include しなくて済むようにする。
@@ -33,7 +34,7 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
 | 時間 | 秒（`float32`、長い時間は `float64`） |
 | 画面座標 | ピクセル、左上が原点 |
 | DxLib の定数（`DX_…`） | `enum class` に置き換える。組み合わせるものはフラグ型にする。窓口に `DX_` の値を出さない |
-| 文字列 | 窓口は `FString` / `const char*`。DxLib へ渡す前に実装の中で必要な変換をする（現状の注意は第 6 節） |
+| 文字列 | 窓口は `FString` / `const char*`（UTF-8 に統一する。移行の状況は第 6 節） |
 
 ## 3. 資源とハンドル
 
@@ -57,8 +58,9 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
 
 ## 6. 文字列と文字コード
 
-- 窓口の文字列は `FString`。現状の `FString` は実行環境の ANSI コードページ（日本語では CP932）の列で、DxLib の既定のモードと合わせてある。ImGui・ログのファイルなど UTF-8 を要求する所へは `ToUtf8()` で変換する。
-- この方針（ANSI 中心）はモダンとは言えない。**UTF-8 に統一し、DxLib の UTF-8 モード（`SetUseCharCodeFormat`）を使う**移行を、判断事項として残している（ROADMAP の「判断が要る点」）。決まるまでは、新しい窓口で文字コードを仮定せず、`FString` の変換関数だけを使う。
+- **文字列は UTF-8 に統一する**（2026-10-28 に決定）。ソースファイルは UTF-8（BOM 付き）で保存し、`/utf-8` でコンパイルするので、文字列リテラルも UTF-8 になる。DxLib は UTF-8 モード（`SetUseCharCodeFormat( DX_CHARCODEFORMAT_UTF8 )`）で使い、DxLib へ渡す文字列の変換を、利用者に見せない。
+- 窓口の文字列は `FString`（UTF-8 の列）。ImGui・JSON・ログのファイルも UTF-8 なので、境界の変換が要らなくなる。Windows の API や、CP932 の古いファイルを読むときだけ、境界で変換する。
+- **移行はまだ終わっていない**。現状の `FString` は実行環境の ANSI コードページ（日本語では CP932）の列で、ImGui・JSON へは `ToUtf8()` で変換している。移行が終わるまでは、新しい窓口で文字コードを仮定せず、`FString` の変換関数だけを使う。
 
 ## 7. 素の DxLib へ降りる出口
 
@@ -87,5 +89,5 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
 | `Source/Scene`・`Source/Object` のサンプル | 描画に DxLib の関数（`DrawBox` `DrawString`）を直接呼んでいる。`FDrawContext` で書けるようにする |
 | `Source/Application/GameApplication.cpp` | 起動・入力の表示・デバッグ UI が 1 ファイルに集まっている。テンプレートとサンプルでは、役割ごとのクラスとファイルに分ける |
 | 2D 描画の座標 | `Box` / `Circle` / `Line` は `int32`、`Sprite` は `float32`。そろえる |
-| 文字列 | 第 6 節の UTF-8 への統一 |
+| 文字列 | UTF-8 への統一（決定済み、移行が未。第 6 節） |
 | DxLib の網羅 | 関数名で約 8%。2D・文字・3D のライトと影・シェーダー・フィルター・ムービー・ファイル（DXA）などが未 |
