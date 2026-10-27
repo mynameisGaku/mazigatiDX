@@ -14,6 +14,9 @@
   <PropertyGroup>
     <!-- フレームワークのフォルダー（末尾に \ つき）。#include "Library/..." の基準 -->
     <MazigatiRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..'))\</MazigatiRoot>
+    <!-- DxLib の場所。別の場所に置いたときは、同じ名前の環境変数かプロジェクトのプロパティで上書きする -->
+    <MazigatiDxLibDir Condition="'$(MazigatiDxLibDir)' == ''">C:\DxLib</MazigatiDxLibDir>
+    <MazigatiDxLibVcDir Condition="'$(MazigatiDxLibVcDir)' == ''">C:\DxLib_VC\プロジェクトに追加すべきファイル_VC用</MazigatiDxLibVcDir>
   </PropertyGroup>
 
   <ItemDefinitionGroup>
@@ -26,10 +29,10 @@
       <!-- 同名の .cpp が別のフォルダーにあっても .obj が衝突しないよう、元のフォルダー構成のまま出力する -->
       <ObjectFileName>$(IntDir)%(RelativeDir)</ObjectFileName>
       <!-- プロジェクトのフォルダー（#include "Source/..."）、フレームワークのフォルダー（#include "Library/..."）、第三者のライブラリ、DxLib -->
-      <AdditionalIncludeDirectories>$(ProjectDir);$(MazigatiRoot)VendorModules\SDL3\include;$(MazigatiRoot);$(MazigatiRoot)VendorModules;C:\DxLib_VC\プロジェクトに追加すべきファイル_VC用;C:\DxLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(MazigatiRoot)VendorModules\SDL3\include;$(MazigatiRoot);$(MazigatiRoot)VendorModules;$(MazigatiDxLibVcDir);$(MazigatiDxLibDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>$(MazigatiRoot)VendorModules\SDL3\lib\$(PlatformTarget);C:\DxLib_VC\プロジェクトに追加すべきファイル_VC用;C:\DxLib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(MazigatiRoot)VendorModules\SDL3\lib\$(PlatformTarget);$(MazigatiDxLibVcDir);$(MazigatiDxLibDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <!-- main で始められるようにする（WinMain を書かなくてよい。コンソールの窓は出ない） -->
       <SubSystem>Windows</SubSystem>
       <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>

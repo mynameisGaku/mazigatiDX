@@ -34,6 +34,16 @@ msbuild .\project.sln /p:Configuration=Release /p:Platform=x64 /m
 
 自己確認は、このリポジトリに含めず別のリポジトリ`framework-test`で管理しています。ルートの`Source\SelfTest`へ置いたときだけ組み込まれ、置かなくても通常どおりビルドできます。詳しい起動・確認・開発規約は[開発手順](Docs/DEVELOPMENT.md)に、DxLibを包むときの設計規約は[ラッパーの設計規約](Docs/WRAPPER_GUIDE.md)にまとめています。
 
+## 新しいゲームを作る
+
+`Tools\NewProject.ps1`が、テンプレート（`Templates\Minimal`: タイトルから、矢印キーで四角形を動かす画面へ進む最小のゲーム）から、新しいプロジェクトを作ります。
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File Tools\NewProject.ps1 -Name MyGame -Destination C:\dev
+```
+
+作ったプロジェクトの`README.md`に、構成とシーン・オブジェクトの足し方があります。詳しくは[開発手順](Docs/DEVELOPMENT.md)を参照してください。
+
 ## エフェクトを使う
 
 Effect Editorの`Preset`から元になる表現を選び、未保存のコピーを編集します。`File > Save as...`で`Effects/MyEffect.effect.json`などへ保存し、World Editorのアセット一覧から配置します。

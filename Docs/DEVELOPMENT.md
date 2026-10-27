@@ -122,9 +122,19 @@ Worldの`Components.Effect`には、任意の`Target`（追従先オブジェク
 - 中間ファイルは、プロジェクトごとのフォルダー（`project/`、`mazigatiDX/`）に出ます。出力は`x64/Debug`と`x64/Release`です。
 - 静的ライブラリは、デバッグ情報を`.obj`の中に持ちます（`/Z7`）。`.pdb`を指す形（`/Zi`）だと、Releaseのリンクで`LNK4020`（型レコードが壊れている）が出るためです。実行ファイルのリンクが、全部を1つの`.pdb`にまとめます。
 
+## 新しいゲームを始める
+
+`Tools/NewProject.ps1`が、`Templates/Minimal`から新しいゲームのプロジェクトを作ります。
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File Tools\NewProject.ps1 -Name MyGame -Destination C:\dev
+```
+
+`C:\dev\MyGame`に、ソリューション・プロジェクト・`Source`（入口・ゲームインスタンス・タイトルとプレイのシーン・プレイヤー）・`Config/ScreenConfig.json`・`Assets`・`README.md`ができます。プロジェクトは、フレームワークのフォルダーを相対パスで指し（`.vcxproj`の`<MazigatiDXRoot>`と`.sln`）、`Build/mazigatiDX.props`と静的ライブラリ`mazigatiDX`を使います。DxLibは`C:\DxLib`を探します（別の場所なら、環境変数`MazigatiDxLibDir`と`MazigatiDxLibVcDir`）。ファイルを足したり消したりしたら、新しいプロジェクトの`GenerateProjectFiles.bat`で、ファイル一覧を作り直します。テンプレートの確認（作る・ビルド・起動・画面の確認）は、検査側の`RunTemplateTest.ps1`が行います。
+
 ## プロジェクト生成と確認
 
-cpp・header・inlを追加・削除・移動したら、次でプロジェクトを再生成します。
+cpp・header・inlを追加・削除・移動したら、次でプロジェクトを再生成します（本体は`Tools/GenerateProjectFiles.ps1`で、`-Root`にプロジェクトのフォルダーを渡します。ルートの`.bat`はそれを呼びます）。
 
 ```powershell
 cmd /c "GenerateProjectFiles.bat < nul"

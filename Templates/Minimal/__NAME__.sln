@@ -1,0 +1,30 @@
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.645
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "__NAME__", "__NAME__.vcxproj", "__PROJECT_GUID__"
+	ProjectSection(ProjectDependencies) = postProject
+		{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3} = {0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mazigatiDX", "__FRAMEWORK_RELPATH__\mazigatiDX.vcxproj", "{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		__PROJECT_GUID__.Debug|x64.ActiveCfg = Debug|x64
+		__PROJECT_GUID__.Debug|x64.Build.0 = Debug|x64
+		__PROJECT_GUID__.Release|x64.ActiveCfg = Release|x64
+		__PROJECT_GUID__.Release|x64.Build.0 = Release|x64
+		{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}.Debug|x64.ActiveCfg = Debug|x64
+		{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}.Debug|x64.Build.0 = Debug|x64
+		{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}.Release|x64.ActiveCfg = Release|x64
+		{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
