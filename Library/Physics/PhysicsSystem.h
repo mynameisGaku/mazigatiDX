@@ -4,11 +4,13 @@
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/Map.h"
+#include "Library/Core/Interfaces/Physics/ICharacterControllers.h"
 #include "Library/Core/Interfaces/Physics/ICollisionLayers.h"
 #include "Library/Core/Interfaces/Physics/IPhysicsConstraints.h"
 #include "Library/Core/Interfaces/Physics/IPhysicsQuery.h"
 #include "Library/Physics/PhysicsTypes.h"
 #include "Library/Physics/CollisionShape.h"
+#include "Library/Physics/PhysicsCharacter.h"
 #include "Library/Physics/PhysicsConstraint.h"
 #include "Library/Physics/RigidBody.h"
 
@@ -45,7 +47,7 @@ struct FPhysicsSettings
 // CPhysicsSystem
 //   Jolt Physics のワールド 1 つ分。複数作ってよい（シーンごとに CPhysicsSubsystem が 1 つ持つ）。
 //   フレームワークに依存しないので、単体でも動かせる。
-//   空間クエリ（レイ・重なり・掃引）は IPhysicsQuery、衝突レイヤーの表は ICollisionLayers、関節（拘束）は IPhysicsConstraints として使える。
+//   空間クエリ（レイ・重なり・掃引）は IPhysicsQuery、衝突レイヤーの表は ICollisionLayers、関節（拘束）は IPhysicsConstraints、操作するキャラクターは ICharacterControllers として使える。
 //
 //   CPhysicsSystem Physics;
 //   Physics.Init();
@@ -54,7 +56,7 @@ struct FPhysicsSettings
 //   FTransform T = Body->GetTransform();
 //   Physics.Shutdown();
 //=============================================================================
-class CPhysicsSystem : public IPhysicsQuery, public ICollisionLayers, public IPhysicsConstraints
+class CPhysicsSystem : public IPhysicsQuery, public ICollisionLayers, public IPhysicsConstraints, public ICharacterControllers
 {
 public:
 	CPhysicsSystem();
@@ -122,6 +124,14 @@ public:
 	int32 GetConstraintCount() const override;
 
 	//-------------------------------------------------------------------------
+	// 操作するキャラクター（ICharacterControllers。使い方と注意はそちらを参照）
+	//-------------------------------------------------------------------------
+	FPhysicsCharacter* CreateCharacter( const FVector3& Position, const FCharacterSettings& CharacterSettings ) override;
+	void DestroyCharacter( FPhysicsCharacter* Character ) override;
+	void DestroyAllCharacters() override;
+	int32 GetCharacterCount() const override;
+
+	//-------------------------------------------------------------------------
 	// 衝突コールバック（所有権は呼び出し側）
 	//-------------------------------------------------------------------------
 	void AddContactListener( CContactListener* Listener );
@@ -140,6 +150,8 @@ public:
 	JPH::BodyInterface& GetBodyInterface();
 
 private:
+	friend class FPhysicsCharacter;
+
 	struct FLayerFilters;
 
 	void Step( float32 DeltaTime );
@@ -159,6 +171,21 @@ private:
 	// 2 つの剛体の衝突を止める・戻す（関節でつないだ組。数えて持つので、止めた回数だけ戻す）
 	void IgnoreCollision( const FRigidBody& BodyA, const FRigidBody& BodyB, bool bIgnore );
 
+	// キャラクターが持つ剛体か（DestroyBody では壊せない）
+	bool IsCharacterBody( const FRigidBody* Body ) const;
+
+	// キャラクターを Jolt から外し、その剛体も一緒に片付ける（入れ物は残す）
+	void DetachCharacter( FPhysicsCharacter& Character );
+
+	// 瞬間移動の後などに、足元の状態（何の上に立っているか）を調べ直す
+	void RefreshCharacter( FPhysicsCharacter& Character );
+
+	// キャラクターの高さを変える。新しい形が他の物体にめり込むなら false で何も変えない
+	bool ChangeCharacterHeight( FPhysicsCharacter& Character, float32 Height );
+
+	// 固定ステップ 1 つ分、すべてのキャラクターを動かす（Jolt の更新の前に呼ぶ）
+	void UpdateCharacters( float32 DeltaTime );
+
 	bool             bInitialized = false;
 	FPhysicsSettings Settings;
 	float32          Accumulator  = 0.0f;
@@ -174,5 +201,6 @@ private:
 
 	TMap<uint32, TUniquePtr<FRigidBody>> Bodies;  // key: BodyID::GetIndexAndSequenceNumber
 	TArray<TUniquePtr<FPhysicsConstraint>> Constraints;  // 外れて入れ物だけ残っているものも含む
+	TArray<TUniquePtr<FPhysicsCharacter>>  Characters;   // 外れて入れ物だけ残っているものも含む
 	TArray<CContactListener*> ContactListeners;
 };

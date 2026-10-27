@@ -445,6 +445,12 @@
     <ClCompile Include="Library\Physics\ContactListener.cpp">
       <Filter>Library\Physics</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Physics\PhysicsCharacter.cpp">
+      <Filter>Library\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Physics\PhysicsCharacters.cpp">
+      <Filter>Library\Physics</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Physics\PhysicsConstraint.cpp">
       <Filter>Library\Physics</Filter>
     </ClCompile>
@@ -1167,6 +1173,9 @@
     <ClInclude Include="Library\Core\Interfaces\Job\IJobSystem.h">
       <Filter>Library\Core\Interfaces\Job</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Physics\ICharacterControllers.h">
+      <Filter>Library\Core\Interfaces\Physics</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Physics\ICollisionLayers.h">
       <Filter>Library\Core\Interfaces\Physics</Filter>
     </ClInclude>
@@ -1174,6 +1183,9 @@
       <Filter>Library\Core\Interfaces\Physics</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Physics\IPhysicsQuery.h">
+      <Filter>Library\Core\Interfaces\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsCharacterTypes.h">
       <Filter>Library\Core\Interfaces\Physics</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsConstraintTypes.h">
@@ -1735,6 +1747,12 @@
       <Filter>Library\Physics</Filter>
     </ClInclude>
     <ClInclude Include="Library\Physics\Physics.h">
+      <Filter>Library\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\PhysicsCharacter.h">
+      <Filter>Library\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\PhysicsCharacterRules.h">
       <Filter>Library\Physics</Filter>
     </ClInclude>
     <ClInclude Include="Library\Physics\PhysicsConstraint.h">

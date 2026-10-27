@@ -196,6 +196,7 @@ void CPhysicsSystem::Shutdown()
 
 	DestroyAllBodies();
 	DestroyAllConstraints();
+	DestroyAllCharacters();
 
 	JoltSystem.Reset();
 	ContactQueue.Reset();
@@ -231,6 +232,12 @@ float32 CPhysicsSystem::GetInterpolationAlpha() const
 
 void CPhysicsSystem::Step( float32 DeltaTime )
 {
+	if ( !Characters.IsEmpty() )
+	{
+		PROFILE_SCOPE_CAT( "Physics", "Characters" );
+		UpdateCharacters( DeltaTime );
+	}
+
 	JPH::EPhysicsUpdateError Error;
 	{
 		PROFILE_SCOPE_CAT( "Physics", "Jolt.Update" );
@@ -338,6 +345,13 @@ void CPhysicsSystem::DestroyBody( FRigidBody* Body )
 		return;
 	}
 
+	// キャラクターの剛体は、キャラクターが持つ。キャラクターごと壊すのは DestroyCharacter
+	if ( IsCharacterBody( Body ) )
+	{
+		LOG( LogPhysics, Warning, "DestroyBody called with a character's body. Use DestroyCharacter." );
+		return;
+	}
+
 	// 関節は、Jolt が剛体を指したままにならないよう、先に外す
 	DetachConstraintsOf( Body );
 
@@ -354,6 +368,7 @@ void CPhysicsSystem::DestroyAllBodies()
 
 	if ( !Bodies.IsEmpty() ) LOG( LogPhysics, Verbose, "Destroying all %d body(ies)", Bodies.Num() );
 	for ( const TUniquePtr<FPhysicsConstraint>& Constraint : Constraints ) DetachConstraint( *Constraint, false );
+	for ( const TUniquePtr<FPhysicsCharacter>& Character : Characters ) DetachCharacter( *Character );  // 剛体は、キャラクターと一緒に片付く
 	JPH::BodyInterface& BodyInterface = GetBodyInterface();
 	for ( auto& [Key, Body] : Bodies )
 	{

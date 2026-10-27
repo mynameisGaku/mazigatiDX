@@ -300,6 +300,8 @@
     <ClCompile Include="Library\Math\Quaternion.cpp" />
     <ClCompile Include="Library\Physics\CollisionShape.cpp" />
     <ClCompile Include="Library\Physics\ContactListener.cpp" />
+    <ClCompile Include="Library\Physics\PhysicsCharacter.cpp" />
+    <ClCompile Include="Library\Physics\PhysicsCharacters.cpp" />
     <ClCompile Include="Library\Physics\PhysicsConstraint.cpp" />
     <ClCompile Include="Library\Physics\PhysicsConstraints.cpp" />
     <ClCompile Include="Library\Physics\PhysicsLayers.cpp" />
@@ -542,9 +544,11 @@
     <ClInclude Include="Library\Core\Interfaces\Input\MouseState.h" />
     <ClInclude Include="Library\Core\Interfaces\Inspector\IPropertyInspector.h" />
     <ClInclude Include="Library\Core\Interfaces\Job\IJobSystem.h" />
+    <ClInclude Include="Library\Core\Interfaces\Physics\ICharacterControllers.h" />
     <ClInclude Include="Library\Core\Interfaces\Physics\ICollisionLayers.h" />
     <ClInclude Include="Library\Core\Interfaces\Physics\IPhysicsConstraints.h" />
     <ClInclude Include="Library\Core\Interfaces\Physics\IPhysicsQuery.h" />
+    <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsCharacterTypes.h" />
     <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsConstraintTypes.h" />
     <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsLayerTypes.h" />
     <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsQueryTypes.h" />
@@ -732,6 +736,8 @@
     <ClInclude Include="Library\Physics\CollisionShape.h" />
     <ClInclude Include="Library\Physics\ContactListener.h" />
     <ClInclude Include="Library\Physics\Physics.h" />
+    <ClInclude Include="Library\Physics\PhysicsCharacter.h" />
+    <ClInclude Include="Library\Physics\PhysicsCharacterRules.h" />
     <ClInclude Include="Library\Physics\PhysicsConstraint.h" />
     <ClInclude Include="Library\Physics\PhysicsConstraintRules.h" />
     <ClInclude Include="Library\Physics\PhysicsInput.h" />
