@@ -2,8 +2,6 @@
 
 #include "EffectFlipbookFrames.h"
 
-#include <cmath>
-#include <utility>
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"

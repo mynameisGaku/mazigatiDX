@@ -2,7 +2,6 @@
 #include <cassert>
 #include <cstdlib>
 #include <new>
-#include <utility>
 
 #include "Library/Core/Types/TypeDefinition.h"
 #include "Library/Core/Collection/Optional.h"

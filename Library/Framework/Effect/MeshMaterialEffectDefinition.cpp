@@ -1,9 +1,6 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
 #include "MeshMaterialEffectDefinition.h"
 
-#include <cmath>
-#include <limits>
-#include <utility>
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"

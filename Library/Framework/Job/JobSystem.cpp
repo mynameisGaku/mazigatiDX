@@ -1,6 +1,5 @@
 ﻿#include "JobSystem.h"
 
-#include <algorithm>
 #include <cstdlib>
 
 #define WIN32_LEAN_AND_MEAN

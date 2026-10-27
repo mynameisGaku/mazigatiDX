@@ -1,6 +1,8 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
 #pragma once
 
+#include <cmath>   // 中身は std::floor / std::ceil。標準ライブラリに触れるのは、ここと MathUtils.h だけ
+
 #include "Library/Core/Types/CompilerMacros.h"
 #include "Library/Core/Types/TypeDefinition.h"
 
@@ -82,6 +84,14 @@ namespace NMath
 	FORCEINLINE constexpr bool IsInfinite( float32 Value ) { return !IsFinite( Value ) && !IsNaN( Value ); }
 	// 正または負の無限大か。
 	FORCEINLINE constexpr bool IsInfinite( float64 Value ) { return !IsFinite( Value ) && !IsNaN( Value ); }
+
+	//-------------------------------------------------------------------------
+	// 切り捨て・切り上げ（結果は、引数と同じ型の浮動小数点。<cmath> の std::floor / std::ceil と同じ）
+	//-------------------------------------------------------------------------
+	FORCEINLINE float32 Floor( float32 Value ) { return std::floor( Value ); }
+	FORCEINLINE float64 Floor( float64 Value ) { return std::floor( Value ); }
+	FORCEINLINE float32 Ceil( float32 Value ) { return std::ceil( Value ); }
+	FORCEINLINE float64 Ceil( float64 Value ) { return std::ceil( Value ); }
 }
 
 //=============================================================================

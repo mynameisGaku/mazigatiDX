@@ -1,10 +1,9 @@
 ﻿#include "EditMeshOps.h"
 
-#include <algorithm>
-#include <cmath>
 
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Collection/Set.h"
+#include "Library/Core/Collection/Sort.h"
 #include "Library/Core/Types/Numeric.h"
 
 int64 NEditMesh::MakeEdgeKey( int32 A, int32 B )
@@ -556,7 +555,7 @@ void NEditMesh::FlipFaces( FEditMesh& Mesh, const TArray<int32>& Faces )
 	for ( const int32 Face : ValidFaces( Mesh, Faces ) )
 	{
 		TArray<int32>& Indices = Mesh.Faces[Face].Indices;
-		for ( int32 i = 0, j = Indices.Num() - 1; i < j; ++i, --j ) std::swap( Indices[i], Indices[j] );
+		for ( int32 i = 0, j = Indices.Num() - 1; i < j; ++i, --j ) NAlgo::Swap( Indices[i], Indices[j] );
 	}
 }
 
@@ -775,7 +774,7 @@ int32 NEditMesh::AppendMesh( FEditMesh& Destination, const FEditMesh& Source, co
 		for ( const int32 Index : Face.Indices ) Copy.Indices.Add( Index + VertexOffset );
 		if ( bMirrored )
 		{
-			for ( int32 i = 0, j = Copy.Indices.Num() - 1; i < j; ++i, --j ) std::swap( Copy.Indices[i], Copy.Indices[j] );
+			for ( int32 i = 0, j = Copy.Indices.Num() - 1; i < j; ++i, --j ) NAlgo::Swap( Copy.Indices[i], Copy.Indices[j] );
 		}
 		Copy.Material = Face.Material >= 0 && Face.Material < MaterialMap.Num() ? MaterialMap[Face.Material] : 0;
 		Destination.Faces.Add( Copy );

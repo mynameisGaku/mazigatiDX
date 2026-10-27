@@ -3,7 +3,6 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Asset/StaticModelSurface.h"
-#include <utility>
 
 DEFINE_LOG_CATEGORY_STATIC( LogModel, Log )
 

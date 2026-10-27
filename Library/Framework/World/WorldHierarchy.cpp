@@ -1,6 +1,5 @@
 ﻿#include "WorldHierarchy.h"
 
-#include <cmath>
 
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Types/Numeric.h"

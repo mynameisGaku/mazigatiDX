@@ -1,12 +1,10 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
 #include "ParticleSimulation.h"
 
-#include <algorithm>
-#include <cmath>
-#include <limits>
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Math/MathConstants.h"
+#include "Library/Math/MathUtils.h"
 
 namespace
 {
@@ -124,7 +122,7 @@ namespace
 			const float32 Phi = Random.Next() * NMath::TWO_PI;
 			const float32 Ring = NMath::Sqrt( NMath::Max( 1.0f - Z * Z, 0.0f ) );
 			const FVector3 Unit( Ring * NMath::Cos( Phi ), Z, Ring * NMath::Sin( Phi ) );
-			LocalPosition = Unit * ( Radius * std::cbrt( Random.Next() ) );
+			LocalPosition = Unit * ( Radius * NMath::Cbrt( Random.Next() ) );
 			LocalDirection = Unit;
 			break;
 		}
@@ -256,7 +254,7 @@ namespace
 
 	float32 Lerp( float32 A, float32 B, float32 T ) { return A + ( B - A ) * T; }
 
-	uint8 ToByte( float32 Value ) { return static_cast<uint8>( NMath::Clamp( static_cast<int32>( std::lround( Value ) ), 0, 255 ) ); }
+	uint8 ToByte( float32 Value ) { return static_cast<uint8>( NMath::Clamp( static_cast<int32>( NMath::RoundToInt( Value ) ), 0, 255 ) ); }
 }
 
 //=============================================================================

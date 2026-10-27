@@ -4,7 +4,6 @@
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/World/Mesh/EditMeshBuild.h"
 
-#include <utility>
 
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"

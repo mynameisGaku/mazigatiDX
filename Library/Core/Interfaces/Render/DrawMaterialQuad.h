@@ -4,7 +4,6 @@
 
 #include "DrawCommand.h"
 
-#include <cmath>
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/TypeTraits.h"

@@ -1,9 +1,7 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
 #include "EffectEditorInternal.h"
 
-#include <algorithm>
 #include <cmath>
-#include <limits>
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Effect/EffectPathGeometry.h"

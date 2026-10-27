@@ -1,8 +1,6 @@
 ﻿#include "DrawContext.h"
 
-#include <algorithm>
 #include <cstdarg>
-#include <cmath>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Types/CString.h"

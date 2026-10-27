@@ -1,6 +1,4 @@
-﻿#include <algorithm>
-#include <cmath>
-
+﻿
 #include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/DebugUI/WorldEditorInternal.h"

@@ -1,10 +1,9 @@
 ﻿#include "SpriteAnimator.h"
 
-#include <algorithm>
-#include <cmath>
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Ecs/SystemParams.h"
+#include "Library/Math/MathUtils.h"
 
 //-----------------------------------------------------------------------------
 // 再生の操作
@@ -50,7 +49,7 @@ void FSpriteAnimator::Rewind( float64 NormalizedStart )
 	const float64 Total = Timeline->Total;
 	// 逆再生は最後から始める（NormalizedStart は逆再生でも「クリップの先頭からの位置」）。
 	// 終わりちょうどだと、Loop では次の周回の先頭になってしまうので、ほんの少し手前
-	Playhead = Speed < 0.0f && NormalizedStart <= 0.0 ? std::nextafter( Total, 0.0 ) : NormalizedStart * Total;
+	Playhead = Speed < 0.0f && NormalizedStart <= 0.0 ? NMath::NextAfter( Total, 0.0 ) : NormalizedStart * Total;
 
 	const FAnimLocation Location = NAnim::Locate( *Timeline, Playhead );
 	Step = Location.Step;

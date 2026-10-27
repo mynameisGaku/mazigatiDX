@@ -2,7 +2,6 @@
 #ifndef FRAMEWORK_CORE_INTERFACES_RENDER_DRAWMODELMATERIAL_H
 #define FRAMEWORK_CORE_INTERFACES_RENDER_DRAWMODELMATERIAL_H
 
-#include <cmath>
 
 #include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
 #include "Library/Core/Types/Numeric.h"

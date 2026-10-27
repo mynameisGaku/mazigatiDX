@@ -2,9 +2,7 @@
 #ifndef FRAMEWORK_CORE_COLLECTION_ENUMERATE_H
 #define FRAMEWORK_CORE_COLLECTION_ENUMERATE_H
 
-#include <iterator>
-#include <utility>
-
+#include "Library/Core/Collection/RangeAccess.h"
 #include "Library/Core/Types/TypeDefinition.h"
 #include "Library/Core/Types/TypeTraits.h"
 
@@ -13,7 +11,7 @@ template<typename ContainerType>
 class TEnumerateRange
 {
 	// 元の入れ物が返す反復子。
-	using SourceIterator = decltype( std::begin( DeclVal<ContainerType&>() ) );
+	using SourceIterator = decltype( NRange::Begin( DeclVal<ContainerType&>() ) );
 	// ループの構造化束縛に渡す番号と参照。
 	struct FEntry
 	{
@@ -47,9 +45,9 @@ public:
 	// 入れ物の寿命はこの範囲より長く保つ。
 	FORCEINLINE explicit TEnumerateRange( ContainerType& InContainer ) : Container( InContainer ) {}
 	// 先頭要素に番号 0 を付ける。
-	FORCEINLINE FIterator begin() const { return FIterator( std::begin( Container ), 0 ); }
+	FORCEINLINE FIterator begin() const { return FIterator( NRange::Begin( Container ), 0 ); }
 	// 元の終端まで走査する。
-	FORCEINLINE FIterator end() const { return FIterator( std::end( Container ), 0 ); }
+	FORCEINLINE FIterator end() const { return FIterator( NRange::End( Container ), 0 ); }
 
 private:
 	// 番号を付けて参照する入れ物。

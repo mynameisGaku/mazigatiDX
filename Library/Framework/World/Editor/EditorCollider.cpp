@@ -1,6 +1,5 @@
 ﻿#include "EditorCollider.h"
 
-#include <algorithm>
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/World/WorldCollision.h"

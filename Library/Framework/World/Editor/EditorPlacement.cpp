@@ -1,7 +1,5 @@
 ﻿#include "EditorPlacement.h"
 
-#include <algorithm>
-#include <cmath>
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/Import/ModelFormats.h"

@@ -1,9 +1,9 @@
 ﻿#include "AudioTypes.h"
 
-#include <algorithm>
 #include <cmath>
 
 #include "Library/Core/Types/Numeric.h"
+#include "Library/Math/MathUtils.h"
 
 const char* ToString( EAudioBus Bus )
 {
@@ -135,5 +135,5 @@ FVector3 NAudio::ListenerRight( const FAudioListener& Listener )
 int32 NAudio::VolumeToDecibel100( float32 Volume )
 {
 	if ( Volume <= 1.0e-5f ) return MinDecibel100;
-	return NMath::Max( MinDecibel100, static_cast<int32>( std::lround( 2000.0f * NMath::Log10( Volume ) ) ) );
+	return NMath::Max( MinDecibel100, static_cast<int32>( NMath::RoundToInt( 2000.0f * NMath::Log10( Volume ) ) ) );
 }

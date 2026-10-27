@@ -1,9 +1,6 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
 #include "DxLibAssetBackend.h"
 
-#include <cmath>
-#include <limits>
-#include <utility>
 
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Types/Numeric.h"

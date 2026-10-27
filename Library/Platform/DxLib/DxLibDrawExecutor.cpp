@@ -1,7 +1,5 @@
 ﻿#include "DxLibDrawExecutor.h"
 
-#include <algorithm>
-#include <cmath>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Interfaces/Platform/IPlatform.h"

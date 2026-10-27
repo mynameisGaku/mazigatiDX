@@ -1,7 +1,6 @@
 ﻿#include "ConsoleArgs.h"
 
 #include <cerrno>
-#include <cmath>
 #include <cstdlib>
 
 #include "Library/Core/Types/CString.h"

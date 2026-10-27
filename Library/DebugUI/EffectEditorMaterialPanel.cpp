@@ -2,8 +2,6 @@
 #include "EffectEditorInternal.h"
 #include "EffectEditorCurveInput.h"
 
-#include <algorithm>
-#include <cmath>
 
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Core/Types/Numeric.h"

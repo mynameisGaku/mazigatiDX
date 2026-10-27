@@ -3,7 +3,6 @@
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/World/WorldCollision.h"
 
-#include <cmath>
 
 #include "Library/Framework/Audio/AudioTypes.h"
 #include "Library/Framework/Effect/EffectBackend.h"

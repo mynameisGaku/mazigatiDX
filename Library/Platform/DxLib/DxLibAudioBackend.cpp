@@ -1,13 +1,12 @@
 ﻿#include "DxLibAudioBackend.h"
 
-#include <algorithm>
-#include <cmath>
 
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Audio/AudioTypes.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
+#include "Library/Math/MathUtils.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogAudioBackend, Log )
@@ -49,7 +48,7 @@ void CDxLibAudioBackend::SetPan( int32 Voice, float32 Pan )
 {
 	// 遠い側の音量を (1 - |Pan|) 倍にする。DxLib の値は、正で右寄り・負で左寄り（100 分の 1 デシベル単位）
 	const float32 Far = NMath::Max( 1.0f - NMath::Abs( Pan ), 1.0e-5f );
-	const int32 Attenuation = NMath::Min( 10000, static_cast<int32>( std::lround( -2000.0f * NMath::Log10( Far ) ) ) );
+	const int32 Attenuation = NMath::Min( 10000, static_cast<int32>( NMath::RoundToInt( -2000.0f * NMath::Log10( Far ) ) ) );
 	SetPanSoundMem( Pan >= 0.0f ? Attenuation : -Attenuation, Voice );
 }
 
@@ -60,7 +59,7 @@ void CDxLibAudioBackend::SetPitch( int32 Voice, float32 Pitch )
 	if ( NMath::Abs( Pitch - 1.0f ) < 1.0e-4f ) return;
 
 	const int Base = GetFrequencySoundMem( Voice );
-	if ( Base > 0 ) SetFrequencySoundMem( NMath::Clamp( static_cast<int>( std::lround( static_cast<float64>( Base ) * Pitch ) ), 100, 100000 ), Voice );
+	if ( Base > 0 ) SetFrequencySoundMem( NMath::Clamp( static_cast<int>( NMath::RoundToInt( static_cast<float64>( Base ) * Pitch ) ), 100, 100000 ), Voice );
 }
 
 float32 CDxLibAudioBackend::GetPlayPosition( int32 Voice )

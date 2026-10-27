@@ -1,6 +1,5 @@
 ﻿#include "BuiltinCommands.h"
 
-#include <algorithm>
 #include <cstdio>
 #include <string>
 
@@ -1013,7 +1012,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 			 CAssetManager* Assets = GetAppSubsystem<CAssetManager>();
 			 if ( Assets == nullptr ) return false;
 			 TArray<FAssetInfo> Infos = Assets->GetLoadedAssets();
-			 std::sort( Infos.begin(), Infos.end(), []( const FAssetInfo& A, const FAssetInfo& B ) { return A.MemoryBytes > B.MemoryBytes; } );
+			 Infos.StableSort( []( const FAssetInfo& A, const FAssetInfo& B ) { return A.MemoryBytes > B.MemoryBytes; } );
 			 int32 Count = 0;
 			 for ( const FAssetInfo& Info : Infos )
 			 {
@@ -1282,7 +1281,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 			 if ( !Category.IsSet() )
 			 {
 				 TArray<FLogCategory*> Categories = Manager.GetCategories();
-				 std::sort( Categories.begin(), Categories.end(), []( const FLogCategory* A, const FLogCategory* B ) { return FString( A->GetName() ) < FString( B->GetName() ); } );
+				 Categories.StableSort( []( const FLogCategory* A, const FLogCategory* B ) { return FString( A->GetName() ) < FString( B->GetName() ); } );
 				 for ( const FLogCategory* Item : Categories )
 				 {
 					 Context.Print( FString::Printf( "  %-24s %-12s%s", Item->GetName(), LogVerbosityToString( Item->GetVerbosity() ), Item->GetVerbosity() != Item->GetDefaultVerbosity() ? *FString::Printf( "(default %s)", LogVerbosityToString( Item->GetDefaultVerbosity() ) ) : "" ) );

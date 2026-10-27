@@ -1,11 +1,10 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
 #include "EffectPathGeometry.h"
 
-#include <algorithm>
-#include <cmath>
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
+#include "Library/Math/MathUtils.h"
 
 namespace
 {
@@ -140,7 +139,7 @@ namespace
 			Point.Position = Index == 0 ? Start : Index == Segments ? End : Start + Delta * T + ( Right * SpatialNoise( Seed, 0u, T, Time ) + Up * SpatialNoise( Seed, 1u, T, Time ) ) * ( Amplitude * Envelope );
 			Point.Width = bBranch ? Width * ( 1.0f - T ) : Width;
 			Point.Color = Color;
-			if ( bBranch ) Point.Color.a = static_cast<uint8>( std::lround( static_cast<float32>( Color.a ) * ( 1.0f - T ) ) );
+			if ( bBranch ) Point.Color.a = static_cast<uint8>( NMath::RoundToInt( static_cast<float32>( Color.a ) * ( 1.0f - T ) ) );
 			if ( Index > 0 ) Distance += ( Point.Position - Out.Points.Last().Position ).Length();
 			Point.U = Distance;
 			if ( !IsFinite( Point.Position ) || !NMath::IsFinite( Point.Width ) || !NMath::IsFinite( Point.U ) ) return false;
@@ -185,7 +184,7 @@ void NEffectPath::BuildLightning( const FEffectPathDefinition& Definition, uint3
 		// 区間数を変えても枝の位置が大きく飛ばない、シードで決まる幹上の割合。
 		const float32 AttachmentT = 0.1f + static_cast<float32>( HashValue( Seed, 0u, static_cast<uint32>( Branch ) + 991u ) >> 8 ) * ( 0.8f / 16777216.0f );
 		// 主幹の両端を避け、その割合に最も近い主幹点へ枝を接続する。
-		const int32 Attachment = NMath::Clamp( static_cast<int32>( std::lround( AttachmentT * static_cast<float32>( Segments ) ) ), 1, Segments - 1 );
+		const int32 Attachment = NMath::Clamp( static_cast<int32>( NMath::RoundToInt( AttachmentT * static_cast<float32>( Segments ) ) ), 1, Segments - 1 );
 		// 生成中の主幹の座標をそのまま共有する、枝の付け根。
 		const FVector3 Origin = Out.Strips[0].Points[Attachment].Position;
 		// 枝ごとに、主幹と違う形状を作るシード。

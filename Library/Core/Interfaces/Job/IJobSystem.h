@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include <utility>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Memory/SharedPtr.h"

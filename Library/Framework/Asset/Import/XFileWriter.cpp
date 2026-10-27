@@ -1,6 +1,5 @@
 ﻿#include "XFileWriter.h"
 
-#include <algorithm>
 #include <cstdio>
 #include <string>
 

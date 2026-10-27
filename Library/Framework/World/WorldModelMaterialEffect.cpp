@@ -1,8 +1,6 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
 #include "WorldModelMaterialEffect.h"
 
-#include <limits>
-#include <utility>
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"

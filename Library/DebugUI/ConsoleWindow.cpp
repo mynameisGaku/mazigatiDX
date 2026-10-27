@@ -1,6 +1,5 @@
 ﻿#include "ConsoleWindow.h"
 
-#include <algorithm>
 #include <cfloat>
 #include <cstdio>
 #include <string>

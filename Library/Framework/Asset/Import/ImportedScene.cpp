@@ -1,9 +1,8 @@
 ﻿#include "ImportedScene.h"
 
-#include <algorithm>
-#include <cmath>
 
 #include "Library/Core/Collection/Set.h"
+#include "Library/Core/Collection/Sort.h"
 #include "Library/Core/Types/Numeric.h"
 
 bool FImportMatrix::NearlyEquals( const FImportMatrix& Other, float32 Tolerance ) const
@@ -36,7 +35,7 @@ void NImportedScene::ConvertToLeftHanded( FImportedScene& Scene )
 		for ( FVector3& Position : Mesh.Positions ) Position.z = -Position.z;
 		for ( FVector3& Normal : Mesh.Normals ) Normal.z = -Normal.z;
 		// 鏡に映すと、三角形の表裏が逆になる。順番を入れ替えて、表のままにする
-		for ( int32 Index = 0; Index + 2 < Mesh.Indices.Num(); Index += 3 ) std::swap( Mesh.Indices[Index + 1], Mesh.Indices[Index + 2] );
+		for ( int32 Index = 0; Index + 2 < Mesh.Indices.Num(); Index += 3 ) NAlgo::Swap( Mesh.Indices[Index + 1], Mesh.Indices[Index + 2] );
 		for ( FImportedCluster& Cluster : Mesh.Clusters ) Cluster.Offset = MirrorZ( Cluster.Offset );
 	}
 
@@ -52,7 +51,7 @@ void NImportedScene::ConvertToLeftHanded( FImportedScene& Scene )
 void NImportedScene::LimitInfluences( TArray<FImportInfluence>& Influences, int32 Max )
 {
 	Influences.RemoveAll( []( const FImportInfluence& Influence ) { return !( Influence.Weight > 0.0f ); } );
-	std::stable_sort( Influences.begin(), Influences.end(), []( const FImportInfluence& A, const FImportInfluence& B ) { return A.Weight > B.Weight; } );
+	Influences.StableSort( []( const FImportInfluence& A, const FImportInfluence& B ) { return A.Weight > B.Weight; } );
 	if ( Influences.Num() > Max ) Influences.SetNum( Max );
 
 	float64 Sum = 0.0;

@@ -3,7 +3,6 @@
 #define FRAMEWORK_CORE_COLLECTION_SET_H
 #include "Library/Core/Types/CompilerMacros.h"
 #include <initializer_list>
-#include <utility>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/HashTable.h"

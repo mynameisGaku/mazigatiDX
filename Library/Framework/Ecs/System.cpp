@@ -1,6 +1,5 @@
 ﻿#include "System.h"
 
-#include <algorithm>
 
 #include "Library/Core/Profiler/ProfilerScope.h"
 #include "Library/Core/Types/CString.h"

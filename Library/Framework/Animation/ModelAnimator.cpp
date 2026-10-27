@@ -1,12 +1,11 @@
 ﻿#include "ModelAnimator.h"
 
-#include <algorithm>
-#include <cmath>
 
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Types/Callable.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Ecs/SystemParams.h"
+#include "Library/Math/MathUtils.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogModelAnimator, Log )
 
@@ -238,7 +237,7 @@ bool FModelAnimator::Play( const FString& ClipName, const FModelPlayParams& Para
 	{
 		const float64 Normalized = NMath::Clamp( static_cast<float64>( Params.StartNormalized ), 0.0, 1.0 );
 		// 逆再生は最後から始める（終わりちょうどだと、Loop では先頭に戻ってしまうので、ほんの少し手前）
-		Layer->Playhead = Layer->ClipSpeed < 0.0f && Normalized <= 0.0 ? static_cast<float64>( std::nextafter( LengthSeconds, 0.0f ) ) : Normalized * LengthSeconds;
+		Layer->Playhead = Layer->ClipSpeed < 0.0f && Normalized <= 0.0 ? static_cast<float64>( NMath::NextAfter( LengthSeconds, 0.0f ) ) : Normalized * LengthSeconds;
 		// 開始位置ちょうどの出来事も拾えるよう、「手前」から始まったことにする
 		Layer->PrevPlayhead = Layer->Playhead - ( Layer->ClipSpeed < 0.0f ? -1.0e-6 : 1.0e-6 );
 	}

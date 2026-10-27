@@ -1,8 +1,6 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
 #include "WorldEditorMeshMaterialPanel.h"
 
-#include <algorithm>
-#include <cmath>
 #include <initializer_list>
 
 #include "EffectEditorCurveInput.h"

@@ -2,7 +2,6 @@
 #ifndef LIBRARY_CORE_INTERFACES_RENDER_DRAWMATERIALMESH_H
 #define LIBRARY_CORE_INTERFACES_RENDER_DRAWMATERIALMESH_H
 
-#include <cmath>
 
 #include "DrawMaterialRibbon.h"
 #include "MeshTypes.h"

@@ -1,7 +1,5 @@
 ﻿#include "SpriteSheet.h"
 
-#include <algorithm>
-#include <cmath>
 
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Types/Numeric.h"

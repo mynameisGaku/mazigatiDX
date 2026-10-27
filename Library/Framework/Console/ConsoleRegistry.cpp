@@ -1,7 +1,7 @@
 ﻿#include "ConsoleRegistry.h"
 
-#include <algorithm>
 
+#include "Library/Core/Collection/Sort.h"
 #include "Library/Core/Types/Callable.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
@@ -34,7 +34,7 @@ namespace
 				const int32 Cost = A[i - 1] == B[j - 1] ? 0 : 1;
 				Current[j] = NMath::Min( NMath::Min( Previous[j] + 1, Current[j - 1] + 1 ), Previous[j - 1] + Cost );
 			}
-			std::swap( Previous, Current );
+			NAlgo::Swap( Previous, Current );
 		}
 		return Previous[M];
 	}
@@ -206,7 +206,7 @@ TArray<TPair<FString, FString>> FConsoleRegistry::GetAliases() const
 {
 	TArray<TPair<FString, FString>> Result;
 	for ( const auto& Pair : Aliases ) Result.Add( Pair.Value );
-	std::sort( Result.begin(), Result.end(), []( const TPair<FString, FString>& A, const TPair<FString, FString>& B ) { return A.Key.ToLower() < B.Key.ToLower(); } );
+	Result.StableSort( []( const TPair<FString, FString>& A, const TPair<FString, FString>& B ) { return A.Key.ToLower() < B.Key.ToLower(); } );
 	return Result;
 }
 
@@ -243,7 +243,7 @@ FString FConsoleRegistry::SuggestNames( const FString& Name ) const
 	for ( const auto& Pair : Aliases ) Consider( Pair.Value.Key );
 	if ( Matches.IsEmpty() ) return FString();
 
-	std::sort( Matches.begin(), Matches.end(), [&]( const FString& A, const FString& B )
+	Matches.StableSort( [&]( const FString& A, const FString& B )
 	{
 		const int32 DistanceA = EditDistance( Lower, A.ToLower() ), DistanceB = EditDistance( Lower, B.ToLower() );
 		return DistanceA != DistanceB ? DistanceA < DistanceB : A < B;
@@ -324,7 +324,7 @@ TArray<const FConsoleCommandInfo*> FConsoleRegistry::GetCommands( bool bIncludeH
 	{
 		if ( bIncludeHidden || !Pair.Value.Info.bHidden ) Result.Add( &Pair.Value.Info );
 	}
-	std::sort( Result.begin(), Result.end(), []( const FConsoleCommandInfo* A, const FConsoleCommandInfo* B )
+	Result.StableSort( []( const FConsoleCommandInfo* A, const FConsoleCommandInfo* B )
 	{
 		const FString GroupA = GetGroupName( *A ).ToLower(), GroupB = GetGroupName( *B ).ToLower();
 		if ( GroupA != GroupB ) return GroupA < GroupB;
@@ -441,7 +441,7 @@ FConsoleCompletion FConsoleRegistry::Complete( const FString& Line ) const
 		}
 	}
 
-	std::sort( Raw.begin(), Raw.end(), []( const TPair<FString, FString>& A, const TPair<FString, FString>& B ) { return A.Key.ToLower() < B.Key.ToLower(); } );
+	Raw.StableSort( []( const TPair<FString, FString>& A, const TPair<FString, FString>& B ) { return A.Key.ToLower() < B.Key.ToLower(); } );
 	for ( const TPair<FString, FString>& Candidate : Raw )
 	{
 		Completion.Candidates.Add( NConsole::Quote( Candidate.Key ) );

@@ -1,13 +1,10 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
 #include "EffectPathGeometry.h"
 
-#include <algorithm>
-#include <cmath>
-#include <limits>
-#include <utility>
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
+#include "Library/Math/MathUtils.h"
 
 namespace
 {
@@ -124,7 +121,7 @@ namespace
 			Point.Position = Index == 0 ? Start : Index == Segments ? End : Positions[Index];
 			Point.Width = bTaper ? RootWidth * ( 1.0f - T ) : RootWidth;
 			Point.Color = Color;
-			Point.Color.a = bTaper ? static_cast<uint8>( std::lround( static_cast<float64>( RootAlpha ) * ( 1.0 - static_cast<float64>( T ) ) ) ) : RootAlpha;
+			Point.Color.a = bTaper ? static_cast<uint8>( NMath::RoundToInt( static_cast<float64>( RootAlpha ) * ( 1.0 - static_cast<float64>( T ) ) ) ) : RootAlpha;
 			if ( Index > 0 ) Distance += ( Point.Position - Positions[Index - 1] ).Length();
 			Point.U = Distance;
 			if ( !IsFinite( Point.Position ) || !NMath::IsFinite( Point.Width ) || !NMath::IsFinite( Point.U ) ) return false;
@@ -141,7 +138,7 @@ namespace
 		Point.Position = FVector3::Lerp( A.Position, B.Position, T );
 		Point.Width = A.Width + ( B.Width - A.Width ) * T;
 		Point.Color = A.Color;
-		Point.Color.a = static_cast<uint8>( NMath::Clamp( static_cast<int32>( std::lround( static_cast<float32>( A.Color.a ) + ( static_cast<float32>( B.Color.a ) - A.Color.a ) * T ) ), 0, 255 ) );
+		Point.Color.a = static_cast<uint8>( NMath::Clamp( static_cast<int32>( NMath::RoundToInt( static_cast<float32>( A.Color.a ) + ( static_cast<float32>( B.Color.a ) - A.Color.a ) * T ) ), 0, 255 ) );
 		Point.U = A.U + ( B.U - A.U ) * T;
 		return Point;
 	}
@@ -178,7 +175,7 @@ namespace
 	// alphaだけへ全体のLeader倍率を適用し、RGBは未加工で残す。
 	void ScaleAlpha( FEffectPathGeometry::FStrip& Strip, float32 Scale )
 	{
-		for ( FEffectPathGeometry::FPoint& Point : Strip.Points ) Point.Color.a = static_cast<uint8>( NMath::Clamp( static_cast<int32>( std::lround( static_cast<float32>( Point.Color.a ) * Scale ) ), 0, 255 ) );
+		for ( FEffectPathGeometry::FPoint& Point : Strip.Points ) Point.Color.a = static_cast<uint8>( NMath::Clamp( static_cast<int32>( NMath::RoundToInt( static_cast<float32>( Point.Color.a ) * Scale ) ), 0, 255 ) );
 	}
 }
 
@@ -380,6 +377,6 @@ bool NEffectPath::GetTreeLightningBounds( const FEffectPathDefinition& Definitio
 	if ( !NMath::IsFinite( Radius ) || Radius > static_cast<float64>( TNumericLimits<float32>::Max() ) || !IsFinite( Center ) ) return false;
 	OutCenter = Center;
 	OutRadius = static_cast<float32>( Radius );
-	if ( static_cast<float64>( OutRadius ) < Radius ) OutRadius = std::nextafter( OutRadius, TNumericLimits<float32>::Infinity() );
+	if ( static_cast<float64>( OutRadius ) < Radius ) OutRadius = NMath::NextAfter( OutRadius, TNumericLimits<float32>::Infinity() );
 	return NMath::IsFinite( OutRadius );
 }

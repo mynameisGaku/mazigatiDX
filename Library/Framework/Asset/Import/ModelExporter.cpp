@@ -1,6 +1,5 @@
 ﻿#include "ModelExporter.h"
 
-#include <algorithm>
 #include <cstdio>
 
 #include "Library/Core/Collection/Array.h"

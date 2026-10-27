@@ -1,8 +1,6 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
 #include "ModelMaterialEffectRenderer.h"
 
-#include <algorithm>
-#include <cmath>
 
 #include "Library/Core/Interfaces/Asset/AssetBackend.h"
 #include "Library/Core/Interfaces/Render/DrawModelMaterial.h"

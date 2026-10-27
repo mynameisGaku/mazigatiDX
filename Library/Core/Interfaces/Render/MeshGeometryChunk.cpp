@@ -1,7 +1,6 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
 #include "MeshGeometryChunk.h"
 
-#include <utility>
 
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Types/Utility.h"

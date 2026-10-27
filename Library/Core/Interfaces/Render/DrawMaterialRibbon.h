@@ -2,8 +2,6 @@
 #ifndef LIBRARY_CORE_INTERFACES_RENDER_DRAWMATERIALRIBBON_H
 #define LIBRARY_CORE_INTERFACES_RENDER_DRAWMATERIALRIBBON_H
 
-#include <algorithm>
-#include <cmath>
 
 #include "DrawCommand.h"
 #include "DrawRibbon.h"
@@ -90,9 +88,9 @@ namespace NDrawMaterialRibbon
 	inline bool AddTextureSections( const FDrawMaterialRibbonData& Data, float32 FirstU, float32 LastU, int32& InOutSections )
 	{
 		// 区間の先頭が属する画像反復番号。
-		const float64 FirstRepeat = std::floor( static_cast<float64>( FirstU * Data.Ribbon.UVRepeat ) );
+		const float64 FirstRepeat = NMath::Floor( static_cast<float64>( FirstU * Data.Ribbon.UVRepeat ) );
 		// 終端までに必要な整数境界区間数。
-		const float64 Sections = NMath::Max( 1.0, std::ceil( static_cast<float64>( LastU * Data.Ribbon.UVRepeat ) ) - FirstRepeat );
+		const float64 Sections = NMath::Max( 1.0, NMath::Ceil( static_cast<float64>( LastU * Data.Ribbon.UVRepeat ) ) - FirstRepeat );
 		if ( !NMath::IsFinite( Sections ) || Sections > static_cast<float64>( FDrawRibbonData::MaxTextureSections - InOutSections ) ) return false;
 		InOutSections += static_cast<int32>( Sections );
 		return true;

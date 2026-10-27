@@ -1,6 +1,5 @@
 ﻿#include "ModelFormats.h"
 
-#include <algorithm>
 
 #include "Library/Core/Collection/Set.h"
 #include "Library/Core/Types/Numeric.h"

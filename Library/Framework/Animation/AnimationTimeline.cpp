@@ -1,8 +1,7 @@
 ﻿#include "AnimationTimeline.h"
 
-#include <algorithm>
-#include <cmath>
 
+#include "Library/Core/Collection/BinarySearch.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Math/MathUtils.h"
 
@@ -84,7 +83,7 @@ FAnimLocation NAnim::Locate( const FAnimTimeline& Timeline, float64 Playhead )
 	// Time が属するステップ（終わりの時刻が Time より大きい最初のもの）。Once で Time == Total のときは最後
 	const float32* const Begin = Timeline.StepEnd.GetData();
 	const float32* const End = Begin + Num;
-	const float32* Found = std::upper_bound( Begin, End, static_cast<float32>( Time ) );
+	const float32* Found = NAlgo::UpperBound( Begin, End, static_cast<float32>( Time ) );
 	int32 Step = static_cast<int32>( Found - Begin );
 	if ( Step >= Num ) Step = Num - 1;
 

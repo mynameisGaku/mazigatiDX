@@ -1,7 +1,6 @@
 ﻿#pragma once
 #include "Library/Core/Types/CompilerMacros.h"
 #include <new>
-#include <utility>
 
 #include "Library/Core/Collection/CollectionCommon.h"
 #include "Library/Core/Types/TypeTraits.h"

@@ -2,7 +2,6 @@
 #ifndef FRAMEWORK_CORE_COLLECTION_HASHTABLE_H
 #define FRAMEWORK_CORE_COLLECTION_HASHTABLE_H
 #include "Library/Core/Types/CompilerMacros.h"
-#include <utility>
 
 #include "Library/Core/Collection/CollectionCommon.h"
 #include "Library/Core/Collection/Hash.h"

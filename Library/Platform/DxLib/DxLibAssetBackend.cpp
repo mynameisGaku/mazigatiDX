@@ -1,6 +1,5 @@
 ﻿#include "DxLibAssetBackend.h"
 
-#include <cmath>
 
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
 #include "Library/Core/Log/Log.h"

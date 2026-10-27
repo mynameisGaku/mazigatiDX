@@ -1,7 +1,5 @@
 ﻿#include "ParticleEffect.h"
 
-#include <algorithm>
-#include <cmath>
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"

@@ -1,6 +1,5 @@
 ﻿#include "PhysicsSystem.h"
 
-#include <algorithm>
 #include <cstdarg>
 
 #include "Library/Core/Profiler/ProfilerScope.h"

@@ -1,6 +1,5 @@
 ﻿#include "Billboard.h"
 
-#include <cmath>
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Ecs/SystemParams.h"

@@ -1,7 +1,5 @@
 ﻿#include "EditMeshPrimitives.h"
 
-#include <algorithm>
-#include <cmath>
 
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Types/Numeric.h"

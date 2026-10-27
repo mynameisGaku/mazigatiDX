@@ -1,6 +1,5 @@
 ﻿#pragma once
 #include "Library/Core/Types/CompilerMacros.h"
-#include <utility>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Memory/SmartPointer.h"

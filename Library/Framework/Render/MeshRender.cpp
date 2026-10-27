@@ -1,12 +1,11 @@
 ﻿#include "MeshRender.h"
 
-#include <algorithm>
-#include <cmath>
 
 #include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Render/MeshMaterialEffectResources.h"
 #include "Library/Framework/Ecs/SystemParams.h"
+#include "Library/Math/MathUtils.h"
 
 namespace
 {
@@ -82,7 +81,7 @@ namespace
 				WorldVertex.Normal[0] = WorldNormal.x;
 				WorldVertex.Normal[1] = WorldNormal.y;
 				WorldVertex.Normal[2] = WorldNormal.z;
-				WorldVertex.Color[3] = static_cast<uint8>( NMath::Clamp( static_cast<int32>( std::lround( static_cast<float64>( SourceVertex.Color[3] ) * Opacity ) ), 0, 255 ) );
+				WorldVertex.Color[3] = static_cast<uint8>( NMath::Clamp( static_cast<int32>( NMath::RoundToInt( static_cast<float64>( SourceVertex.Color[3] ) * Opacity ) ), 0, 255 ) );
 			}
 			if ( !NDrawMaterialMesh::IsValid( Data, WorldVertices.GetData(), SourceChunk.Indices.GetData() ) ) return false;
 		}

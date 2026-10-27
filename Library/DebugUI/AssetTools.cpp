@@ -1,6 +1,5 @@
 ﻿#include "AssetTools.h"
 
-#include <algorithm>
 
 #include "Library/Core/Collection/Sort.h"
 #include "Library/Core/Types/CString.h"

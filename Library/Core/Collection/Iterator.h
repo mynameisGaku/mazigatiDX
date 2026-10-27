@@ -2,7 +2,6 @@
 #ifndef FRAMEWORK_CORE_COLLECTION_ITERATOR_H
 #define FRAMEWORK_CORE_COLLECTION_ITERATOR_H
 
-#include <utility>
 
 #include "Library/Core/Collection/CollectionCommon.h"
 #include "Library/Core/Types/TypeTraits.h"

@@ -1,6 +1,5 @@
 ﻿#include "ProfilerSubsystem.h"
 
-#include <utility>
 
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Profiler/ProfilerScope.h"

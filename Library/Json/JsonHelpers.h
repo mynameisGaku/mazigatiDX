@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include <cmath>
 
 #include "Library/Json/JsonObject.h"
 #include "Library/Math/Vector3.h"

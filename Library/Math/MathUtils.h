@@ -102,15 +102,32 @@ namespace NMath
 	//-------------------------------------------------------------------------
 	// 丸め
 	//-------------------------------------------------------------------------
-	FORCEINLINE float32 Floor( float32 Value ) { return std::floor( Value ); }
-	FORCEINLINE float64 Floor( float64 Value ) { return std::floor( Value ); }
-	FORCEINLINE float32 Ceil( float32 Value ) { return std::ceil( Value ); }
-	FORCEINLINE float64 Ceil( float64 Value ) { return std::ceil( Value ); }
+	// Floor / Ceil は Core/Types/Numeric.h
 	FORCEINLINE float32 Round( float32 Value ) { return std::round( Value ); }
 	FORCEINLINE float64 Round( float64 Value ) { return std::round( Value ); }
-	FORCEINLINE float32 Frac( float32 Value ) { return Value - std::floor( Value ); }
+	// 四捨五入して整数にする（0.5 は 0 から遠い方へ。std::lround と同じ。範囲を超えた値・NaN の結果は決まっていない）
+	FORCEINLINE int32 RoundToInt( float32 Value ) { return static_cast<int32>( std::lround( Value ) ); }
+	FORCEINLINE int32 RoundToInt( float64 Value ) { return static_cast<int32>( std::lround( Value ) ); }
+	FORCEINLINE float32 Frac( float32 Value ) { return Value - Floor( Value ); }
 	FORCEINLINE float32 Fmod( float32 X, float32 Y ) { return std::fmod( X, Y ); }
 	FORCEINLINE float64 Fmod( float64 X, float64 Y ) { return std::fmod( X, Y ); }
 	FORCEINLINE float64 Fmod( float32 X, float64 Y ) { return std::fmod( static_cast<float64>( X ), Y ); }
 	FORCEINLINE float64 Fmod( float64 X, float32 Y ) { return std::fmod( X, static_cast<float64>( Y ) ); }
+
+	//-------------------------------------------------------------------------
+	// その他（型が混ざるときは float64 で答える。<cmath> と同じ）
+	//-------------------------------------------------------------------------
+	// X から Target の向きに、表せる隣の値（Target が X と同じなら Target）。
+	FORCEINLINE float32 NextAfter( float32 X, float32 Target ) { return std::nextafter( X, Target ); }
+	FORCEINLINE float64 NextAfter( float64 X, float64 Target ) { return std::nextafter( X, Target ); }
+	FORCEINLINE float64 NextAfter( float32 X, float64 Target ) { return std::nextafter( static_cast<float64>( X ), Target ); }
+	FORCEINLINE float64 NextAfter( float64 X, float32 Target ) { return std::nextafter( X, static_cast<float64>( Target ) ); }
+	// 直角三角形の斜辺の長さ（sqrt( X * X + Y * Y ) を、途中でオーバーフロー・アンダーフローさせずに求める）。
+	FORCEINLINE float32 Hypot( float32 X, float32 Y ) { return std::hypot( X, Y ); }
+	FORCEINLINE float64 Hypot( float64 X, float64 Y ) { return std::hypot( X, Y ); }
+	FORCEINLINE float64 Hypot( float32 X, float64 Y ) { return std::hypot( static_cast<float64>( X ), Y ); }
+	FORCEINLINE float64 Hypot( float64 X, float32 Y ) { return std::hypot( X, static_cast<float64>( Y ) ); }
+	// 立方根（負の数も扱える）。
+	FORCEINLINE float32 Cbrt( float32 Value ) { return std::cbrt( Value ); }
+	FORCEINLINE float64 Cbrt( float64 Value ) { return std::cbrt( Value ); }
 }

@@ -1,8 +1,6 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
 #include "ParticleEffectBackend.h"
 
-#include <algorithm>
-#include <cmath>
 
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Types/Numeric.h"
@@ -11,6 +9,7 @@
 #include "Library/Framework/Effect/EffectPathGeometry.h"
 #include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
 #include "Library/Framework/Render/DrawContext.h"
+#include "Library/Math/MathUtils.h"
 
 namespace
 {
@@ -462,7 +461,7 @@ TArray<uint8> NEffect::MakeSoftDotImage()
 			const float32 Dy = ( static_cast<float32>( Y ) - Center ) / ( Center + 0.5f );
 			const float32 Distance = NMath::Sqrt( Dx * Dx + Dy * Dy );
 			const float32 Falloff = Distance >= 1.0f ? 0.0f : ( 1.0f - Distance ) * ( 1.0f - Distance );
-			const uint32 Alpha = static_cast<uint32>( std::lround( Falloff * 255.0f ) );
+			const uint32 Alpha = static_cast<uint32>( NMath::RoundToInt( Falloff * 255.0f ) );
 			Put8( 255 );     // B
 			Put8( 255 );     // G
 			Put8( 255 );     // R
@@ -492,7 +491,7 @@ TArray<uint8> NEffect::MakeRibbonImage()
 			// 色の三成分と不透明度の先頭。
 			const int32 Offset = 18 + ( Y * 2 + X ) * 4;
 			Bytes[Offset] = Bytes[Offset + 1] = Bytes[Offset + 2] = 255;
-			Bytes[Offset + 3] = static_cast<uint8>( std::lround( NMath::Pow( 1.0f - Across, 0.7f ) * 255.0f ) );
+			Bytes[Offset + 3] = static_cast<uint8>( NMath::RoundToInt( NMath::Pow( 1.0f - Across, 0.7f ) * 255.0f ) );
 		}
 	}
 	return Bytes;

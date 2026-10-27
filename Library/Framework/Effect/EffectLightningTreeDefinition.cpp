@@ -1,8 +1,6 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
 #include "EffectLightningTreeDefinition.h"
 
-#include <cmath>
-#include <limits>
 
 #include "Library/Core/Types/Numeric.h"
 

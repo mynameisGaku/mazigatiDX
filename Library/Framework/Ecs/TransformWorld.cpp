@@ -1,6 +1,5 @@
 ﻿#include "TransformWorld.h"
 
-#include <algorithm>
 
 #include "Library/Core/Interfaces/Job/IJobSystem.h"
 #include "Library/Core/Profiler/ProfilerScope.h"

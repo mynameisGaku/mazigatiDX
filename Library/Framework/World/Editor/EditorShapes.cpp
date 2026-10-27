@@ -1,7 +1,5 @@
 ﻿#include "EditorShapes.h"
 
-#include <algorithm>
-#include <cmath>
 
 #include "Library/Core/Collection/Set.h"
 #include "Library/Core/Types/Numeric.h"

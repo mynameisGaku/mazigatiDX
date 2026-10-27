@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include <limits>
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/TypeDefinition.h"

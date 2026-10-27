@@ -2,7 +2,6 @@
 #include <malloc.h>
 #include <cstring>
 #include <new>
-#include <utility>
 
 #include "Library/Core/Types/TypeDefinition.h"
 #include "Library/Core/Types/TypeTraits.h"

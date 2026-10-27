@@ -1,7 +1,5 @@
 ﻿#include "ProfilerWindow.h"
 
-#include <algorithm>
-#include <cmath>
 
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Time/PlatformTime.h"

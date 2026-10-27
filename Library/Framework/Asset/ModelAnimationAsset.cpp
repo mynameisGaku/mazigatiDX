@@ -1,6 +1,5 @@
 ﻿#include "ModelAnimationAsset.h"
 
-#include <algorithm>
 
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Types/Numeric.h"

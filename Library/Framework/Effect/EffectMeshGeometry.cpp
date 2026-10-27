@@ -1,8 +1,6 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
 #include "EffectMeshGeometry.h"
 
-#include <cmath>
-#include <utility>
 
 #include "Library/Core/Types/Utility.h"
 

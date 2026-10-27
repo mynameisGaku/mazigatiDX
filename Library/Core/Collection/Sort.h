@@ -1,6 +1,5 @@
 ﻿#pragma once
 #include "Library/Core/Types/CompilerMacros.h"
-#include <utility>
 
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Types/Utility.h"

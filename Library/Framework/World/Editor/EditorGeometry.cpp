@@ -1,8 +1,7 @@
 ﻿#include "EditorGeometry.h"
 
-#include <algorithm>
-#include <cmath>
 
+#include "Library/Core/Collection/Sort.h"
 #include "Library/Core/Types/Numeric.h"
 
 namespace
@@ -51,7 +50,7 @@ bool NWorldEditor::RayVsBox( const FEditorRay& Ray, const FVector3& Min, const F
 		float32 T2 = ( High[Axis] - Origin[Axis] ) * Inverse;
 		// 進む向きが正なら、低い側の面から入る（法線は負の向き）
 		const float32 EnterSign = Direction[Axis] > 0.0f ? -1.0f : 1.0f;
-		if ( T1 > T2 ) std::swap( T1, T2 );
+		if ( T1 > T2 ) NAlgo::Swap( T1, T2 );
 		if ( T1 > Near )
 		{
 			Near = T1;

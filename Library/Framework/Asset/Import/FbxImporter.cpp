@@ -1,7 +1,5 @@
 ﻿#include "FbxImporter.h"
 
-#include <algorithm>
-#include <cmath>
 #include <cstdint>
 #include <unordered_map>
 

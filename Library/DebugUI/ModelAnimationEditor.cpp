@@ -1,7 +1,5 @@
 ﻿#include "ModelAnimationEditor.h"
 
-#include <algorithm>
-#include <cmath>
 
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Core/Log/Log.h"

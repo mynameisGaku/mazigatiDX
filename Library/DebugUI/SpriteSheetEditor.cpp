@@ -1,8 +1,7 @@
 ﻿#include "SpriteSheetEditor.h"
 
-#include <algorithm>
-#include <cmath>
 
+#include "Library/Core/Collection/Sort.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Numeric.h"
@@ -884,7 +883,7 @@ namespace
 			const ImVec2 P1( P0.x + static_cast<float>( Frame->Width ) * Scale, P0.y + static_cast<float>( Frame->Height ) * Scale );
 			ImVec2 Uv0( static_cast<float>( Frame->X ) / static_cast<float>( TexW ), static_cast<float>( Frame->Y ) / static_cast<float>( TexH ) );
 			ImVec2 Uv1( static_cast<float>( Frame->X + Frame->Width ) / static_cast<float>( TexW ), static_cast<float>( Frame->Y + Frame->Height ) / static_cast<float>( TexH ) );
-			if ( S.bPreviewFlipX ) std::swap( Uv0.x, Uv1.x );
+			if ( S.bPreviewFlipX ) NAlgo::Swap( Uv0.x, Uv1.x );
 			NDebugUI::BeginNearest( DrawList );
 			DrawList->AddImage( NDebugUI::GetImGuiTexture( Texture->GetHandle() ), P0, P1, Uv0, Uv1 );
 			NDebugUI::EndNearest( DrawList );

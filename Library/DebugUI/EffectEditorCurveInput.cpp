@@ -1,11 +1,10 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
 #include "EffectEditorCurveInput.h"
 
-#include <algorithm>
-#include <cmath>
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EditorCommon.h"
+#include "Library/Math/MathUtils.h"
 
 namespace
 {
@@ -165,9 +164,9 @@ namespace
 		// 次のキーが有限なときに使う右境界。
 		const float32 Next = Index + 1 < Curve.Keys.Num() && NMath::IsFinite( Curve.Keys[Index + 1].Time ) ? NMath::Clamp( Curve.Keys[Index + 1].Time, 0.0f, 1.0f ) : 1.0f;
 		// 隣の時刻と重ならない最小入力値。
-		const float32 Earliest = Index > 0 ? std::nextafter( Previous, 1.0f ) : 0.0f;
+		const float32 Earliest = Index > 0 ? NMath::NextAfter( Previous, 1.0f ) : 0.0f;
 		// 隣の時刻と重ならない最大入力値。
-		const float32 Latest = Index + 1 < Curve.Keys.Num() ? std::nextafter( Next, 0.0f ) : 1.0f;
+		const float32 Latest = Index + 1 < Curve.Keys.Num() ? NMath::NextAfter( Next, 0.0f ) : 1.0f;
 		// TimeとValueが安全な数値として保存されているか。
 		const bool bFiniteKey = NMath::IsFinite( Key.Time ) && NMath::IsFinite( Key.Value );
 		// 前後のキーとの厳密な順序が保たれているか。
@@ -255,9 +254,9 @@ bool NEffectEditorUI::DrawColorCurve( const char* Label, FEffectColorCurve& Curv
 		// 次のキーが有限なときに使う右境界。
 		const float32 Next = Index + 1 < Curve.Keys.Num() && NMath::IsFinite( Curve.Keys[Index + 1].Time ) ? NMath::Clamp( Curve.Keys[Index + 1].Time, 0.0f, 1.0f ) : 1.0f;
 		// 隣の時刻と重ならない最小入力値。
-		const float32 Earliest = Index > 0 ? std::nextafter( Previous, 1.0f ) : 0.0f;
+		const float32 Earliest = Index > 0 ? NMath::NextAfter( Previous, 1.0f ) : 0.0f;
 		// 隣の時刻と重ならない最大入力値。
-		const float32 Latest = Index + 1 < Curve.Keys.Num() ? std::nextafter( Next, 0.0f ) : 1.0f;
+		const float32 Latest = Index + 1 < Curve.Keys.Num() ? NMath::NextAfter( Next, 0.0f ) : 1.0f;
 		// ColorEditと時刻欄へ渡せる有限時刻か。
 		const bool bFiniteTime = NMath::IsFinite( Key.Time );
 		// 前後のキーとの厳密な順序が保たれているか。

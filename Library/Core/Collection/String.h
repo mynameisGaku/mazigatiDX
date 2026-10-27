@@ -2,7 +2,6 @@
 #include "Library/Core/Types/CompilerMacros.h"
 #include <sal.h>
 #include <cstdarg>
-#include <utility>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/Hash.h"

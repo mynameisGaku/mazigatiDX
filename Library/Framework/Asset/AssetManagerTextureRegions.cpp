@@ -2,7 +2,6 @@
 
 #include "AssetManager.h"
 
-#include <cmath>
 
 #include "Library/Core/Time/PlatformTime.h"
 #include "Library/Core/Types/Numeric.h"

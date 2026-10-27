@@ -1,5 +1,4 @@
-﻿#include <algorithm>
-
+﻿
 #include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/WorldEditorInternal.h"
 #include "Library/Framework/Asset/AssetManager.h"

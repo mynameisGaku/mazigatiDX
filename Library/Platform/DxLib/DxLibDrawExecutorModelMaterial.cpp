@@ -1,7 +1,6 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
 #include "DxLibDrawExecutor.h"
 
-#include <algorithm>
 
 #include "Library/Core/Interfaces/Render/DrawModelMaterial.h"
 #include "Library/Core/Log/Log.h"

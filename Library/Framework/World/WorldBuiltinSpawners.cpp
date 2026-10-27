@@ -1,5 +1,4 @@
-﻿#include <algorithm>
-
+﻿
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Animation/ModelAnimator.h"
 #include "Library/Framework/Asset/Asset.h"

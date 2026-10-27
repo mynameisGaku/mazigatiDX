@@ -1,9 +1,8 @@
 ﻿#include "EditorMeshPicking.h"
 
-#include <algorithm>
-#include <cmath>
 
 #include "Library/Core/Types/Numeric.h"
+#include "Library/Math/MathUtils.h"
 
 using NEditMesh::EEditMeshElement;
 
@@ -35,7 +34,7 @@ namespace
 		float32 T = 0.0f;
 		if ( LengthSquared > 1.0e-12f ) T = NMath::Clamp( ( ( Point.x - A.x ) * Segment.x + ( Point.y - A.y ) * Segment.y ) / LengthSquared, 0.0f, 1.0f );
 		const FVector2 Closest( A.x + Segment.x * T, A.y + Segment.y * T );
-		return std::hypot( Point.x - Closest.x, Point.y - Closest.y );
+		return NMath::Hypot( Point.x - Closest.x, Point.y - Closest.y );
 	}
 
 	// 三角形のローカルの位置（メッシュと同じ番号）と、元の面。可視判定・面の選択で何度も使う
@@ -103,7 +102,7 @@ FEditMeshHit NWorldEditor::PickMeshElement( const FEditMesh& Mesh, const FTransf
 			FVector2 Pixel;
 			const FVector3 Point = World.TransformPoint( Mesh.Vertices[Vertex] );
 			if ( !Camera.WorldToScreen( Viewport, Point, Pixel ) ) continue;
-			const float32 Distance = std::hypot( Pixel.x - Mouse.x, Pixel.y - Mouse.y );
+			const float32 Distance = NMath::Hypot( Pixel.x - Mouse.x, Pixel.y - Mouse.y );
 			if ( Distance >= Best ) continue;
 			if ( Options.bOnlyVisible && !IsVisible( Mesh, Triangles, World, Eye, Point ) ) continue;
 			Best = Distance;

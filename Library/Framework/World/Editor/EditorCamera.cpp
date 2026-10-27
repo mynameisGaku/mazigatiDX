@@ -1,7 +1,5 @@
 ﻿#include "EditorCamera.h"
 
-#include <algorithm>
-#include <cmath>
 
 #include "Library/Core/Types/Numeric.h"
 

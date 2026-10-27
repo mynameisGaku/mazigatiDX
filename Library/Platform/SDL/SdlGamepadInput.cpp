@@ -1,6 +1,5 @@
 ﻿#include "SdlGamepadInput.h"
 
-#include <cmath>
 
 #include "Library/Core/Interfaces/Input/IMouseInput.h"
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
@@ -592,7 +591,7 @@ bool ASdlGamepadInput::EnableSensor( uint32 DeviceId, EGamepadSensor Sensor, boo
 
 bool ASdlGamepadInput::Rumble( uint32 DeviceId, float32 Low, float32 High, uint32 Milliseconds )
 {
-	if ( std::isnan( Low ) || std::isnan( High ) )
+	if ( NMath::IsNaN( Low ) || NMath::IsNaN( High ) )
 	{
 		LOG( LogGamepad, Warning, "Rumble: intensity is NaN (gamepad #%u)", DeviceId );
 		return false;
@@ -625,7 +624,7 @@ bool ASdlGamepadInput::Rumble( uint32 DeviceId, float32 Low, float32 High, uint3
 
 bool ASdlGamepadInput::RumbleTriggers( uint32 DeviceId, float32 Left, float32 Right, uint32 Milliseconds )
 {
-	if ( std::isnan( Left ) || std::isnan( Right ) )
+	if ( NMath::IsNaN( Left ) || NMath::IsNaN( Right ) )
 	{
 		LOG( LogGamepad, Warning, "RumbleTriggers: intensity is NaN (gamepad #%u)", DeviceId );
 		return false;

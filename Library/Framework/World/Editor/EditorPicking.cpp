@@ -1,6 +1,5 @@
 ﻿#include "EditorPicking.h"
 
-#include <algorithm>
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/World/WorldHierarchy.h"

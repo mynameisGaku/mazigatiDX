@@ -1,6 +1,5 @@
 ﻿#include "EditorSession.h"
 
-#include <algorithm>
 
 #include "Library/Framework/World/WorldHierarchy.h"
 
