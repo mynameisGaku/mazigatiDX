@@ -51,7 +51,53 @@ namespace
 		float32  LimitMin = 0.0f;
 		float32  LimitMax = 0.0f;
 		float32  MaxFriction = 0.0f;
+		float32  BreakForce  = 0.0f;
+		float32  BreakTorque = 0.0f;
 	};
+
+	// 関節が点と向きを保つためにかけた力積（このステップの合計）を読む。OutForce は位置、OutTorque は向き
+	void ReadConstraintImpulses( EConstraintType Type, const JPH::TwoBodyConstraint& Joint, float32& OutForce, float32& OutTorque )
+	{
+		OutForce  = 0.0f;
+		OutTorque = 0.0f;
+		switch ( Type )
+		{
+		case EConstraintType::Fixed:
+		{
+			const JPH::FixedConstraint& Fixed = static_cast<const JPH::FixedConstraint&>( Joint );
+			OutForce  = Fixed.GetTotalLambdaPosition().Length();
+			OutTorque = Fixed.GetTotalLambdaRotation().Length();
+			break;
+		}
+		case EConstraintType::Point:
+			OutForce = static_cast<const JPH::PointConstraint&>( Joint ).GetTotalLambdaPosition().Length();
+			break;
+		case EConstraintType::Distance:
+			OutForce = NMath::Abs( static_cast<const JPH::DistanceConstraint&>( Joint ).GetTotalLambdaPosition() );
+			break;
+		case EConstraintType::Hinge:
+		{
+			const JPH::HingeConstraint& Hinge = static_cast<const JPH::HingeConstraint&>( Joint );
+			OutForce  = Hinge.GetTotalLambdaPosition().Length();
+			OutTorque = Hinge.GetTotalLambdaRotation().Length();
+			break;
+		}
+		case EConstraintType::Slider:
+		{
+			const JPH::SliderConstraint& Slider = static_cast<const JPH::SliderConstraint&>( Joint );
+			OutForce  = Slider.GetTotalLambdaPosition().Length();
+			OutTorque = Slider.GetTotalLambdaRotation().Length();
+			break;
+		}
+		case EConstraintType::Cone:
+		{
+			const JPH::ConeConstraint& Cone = static_cast<const JPH::ConeConstraint&>( Joint );
+			OutForce  = Cone.GetTotalLambdaPosition().Length();
+			OutTorque = NMath::Abs( Cone.GetTotalLambdaRotation() );
+			break;
+		}
+		}
+	}
 
 	// 設定を確かめる。使えなければ false にして、理由を OutReason へ入れる
 	bool PrepareConstraint( const FConstraintSettings& Settings, FPreparedConstraint& OutPrepared, const char*& OutReason )
@@ -61,6 +107,11 @@ namespace
 		if ( !NPhysicsInput::IsFiniteVector( Settings.Anchor ) )
 		{
 			OutReason = "the anchor is not finite";
+			return false;
+		}
+		if ( !NConstraintRules::NormalizeNonNegative( Settings.BreakForce, OutPrepared.BreakForce ) || !NConstraintRules::NormalizeNonNegative( Settings.BreakTorque, OutPrepared.BreakTorque ) )
+		{
+			OutReason = "BreakForce and BreakTorque must be >= 0";
 			return false;
 		}
 
@@ -280,6 +331,8 @@ FPhysicsConstraint* CPhysicsSystem::CreateConstraint( FRigidBody* BodyA, FRigidB
 	if ( !ConstraintSettings.bCollideConnected && BodyB != nullptr ) IgnoreCollision( *BodyA, *BodyB, true );
 
 	FPhysicsConstraint* Constraint = new FPhysicsConstraint( ConstraintSettings.Type, BodyA, BodyB, Joint, ConstraintSettings.bCollideConnected );
+	Constraint->BreakForce  = Prepared.BreakForce;
+	Constraint->BreakTorque = Prepared.BreakTorque;
 	Constraints.Add( TUniquePtr<FPhysicsConstraint>( Constraint ) );
 	if ( ConstraintSettings.bEnabled ) Constraint->WakeBodies();
 
@@ -315,6 +368,94 @@ void CPhysicsSystem::DestroyAllConstraints()
 int32 CPhysicsSystem::GetConstraintCount() const
 {
 	return Constraints.Num();
+}
+
+bool CPhysicsSystem::AddConstraintListener( IPhysicsConstraintListener* Listener )
+{
+	if ( Listener == nullptr ) return false;
+
+	ConstraintListeners.AddUnique( Listener );
+	return true;
+}
+
+void CPhysicsSystem::RemoveConstraintListener( IPhysicsConstraintListener* Listener )
+{
+	ConstraintListeners.Remove( Listener );
+}
+
+bool CPhysicsSystem::OwnsConstraint( const FPhysicsConstraint* Constraint ) const
+{
+	return Constraint != nullptr && Constraints.ContainsByPredicate( [Constraint]( const TUniquePtr<FPhysicsConstraint>& Item ) { return Item.Get() == Constraint; } );
+}
+
+void CPhysicsSystem::UpdateConstraintLoads( float32 StepDelta )
+{
+	// Jolt は、衝突のステップ（CollisionSteps）ごとに関節を解く。力積は最後の 1 回分なので、その長さで割る
+	const float32 SolveDelta = StepDelta / static_cast<float32>( NMath::Max( 1, Settings.CollisionSteps ) );
+
+	struct FBreak
+	{
+		FPhysicsConstraint*  Constraint;
+		PhysBodyID           IdA;
+		PhysBodyID           IdB;
+		bool                 bHasB;
+		FConstraintBreakInfo Info;
+	};
+	TArray<FBreak> Breaks;
+
+	for ( const TUniquePtr<FPhysicsConstraint>& Item : Constraints )
+	{
+		FPhysicsConstraint& Constraint = *Item;
+		Constraint.AppliedForce  = 0.0f;
+		Constraint.AppliedTorque = 0.0f;
+		if ( Constraint.Joint == nullptr || !Constraint.Joint->GetEnabled() ) continue;
+
+		// つないだ剛体がどちらも眠っているなら、関節は解かれていない（前の力積が残っているだけ）
+		if ( !Constraint.BodyA->IsActive() && ( Constraint.BodyB == nullptr || !Constraint.BodyB->IsActive() ) ) continue;
+
+		float32 ImpulseForce  = 0.0f;
+		float32 ImpulseTorque = 0.0f;
+		ReadConstraintImpulses( Constraint.Type, *Constraint.Joint, ImpulseForce, ImpulseTorque );
+		Constraint.AppliedForce  = NConstraintRules::ImpulseToLoad( ImpulseForce, SolveDelta );
+		Constraint.AppliedTorque = NConstraintRules::ImpulseToLoad( ImpulseTorque, SolveDelta );
+
+		if ( !NConstraintRules::ShouldBreak( Constraint.AppliedForce, Constraint.AppliedTorque, Constraint.BreakForce, Constraint.BreakTorque ) ) continue;
+
+		FBreak Break;
+		Break.Constraint  = &Constraint;
+		Break.IdA         = Constraint.BodyA->GetBodyID();
+		Break.bHasB       = Constraint.BodyB != nullptr;
+		if ( Break.bHasB ) Break.IdB = Constraint.BodyB->GetBodyID();
+		Break.Info.Force  = Constraint.AppliedForce;
+		Break.Info.Torque = Constraint.AppliedTorque;
+		Breaks.Add( Break );
+	}
+	if ( Breaks.IsEmpty() ) return;
+
+	// 先にすべて外してから知らせる（通知の中で、世界の状態を触ってよいように）
+	for ( const FBreak& Break : Breaks )
+	{
+		Break.Constraint->bBroken = true;
+		DetachConstraint( *Break.Constraint, true );
+		LOG( LogPhysics, Verbose, "A %s constraint broke (force %.1f N, torque %.1f N*m)", ConstraintTypeToString( Break.Constraint->Type ), Break.Info.Force, Break.Info.Torque );
+	}
+	if ( ConstraintListeners.IsEmpty() ) return;
+
+	const TArray<IPhysicsConstraintListener*> Listeners = ConstraintListeners;
+	for ( const FBreak& Break : Breaks )
+	{
+		for ( IPhysicsConstraintListener* Listener : Listeners )
+		{
+			// 通知の中で、解除・破棄が起きていることがある。毎回確かめる
+			if ( !ConstraintListeners.Contains( Listener ) ) continue;
+			if ( !OwnsConstraint( Break.Constraint ) ) break;
+			FRigidBody* BodyA = FindBody( Break.IdA );
+			FRigidBody* BodyB = Break.bHasB ? FindBody( Break.IdB ) : nullptr;
+			if ( BodyA == nullptr || ( Break.bHasB && BodyB == nullptr ) ) break;
+
+			Listener->OnConstraintBroken( Break.Constraint, BodyA, BodyB, Break.Info );
+		}
+	}
 }
 
 void CPhysicsSystem::IgnoreCollision( const FRigidBody& BodyA, const FRigidBody& BodyB, bool bIgnore )

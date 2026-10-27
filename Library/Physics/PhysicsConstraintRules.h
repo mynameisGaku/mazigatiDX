@@ -11,6 +11,19 @@
 //=============================================================================
 namespace NConstraintRules
 {
+	// 1 ステップで関節がかけた力積（インパルス）を、力（トルク）へ直す。ステップの時間が 0 以下・NaN なら 0
+	inline float32 ImpulseToLoad( float32 Impulse, float32 StepDelta )
+	{
+		if ( !( StepDelta > 0.0f ) ) return 0.0f;
+		return Impulse / StepDelta;
+	}
+
+	// 壊れるか。力かトルクのどちらかが限界を超えたとき（等しいだけでは壊れない。NaN は超えたことにならない）
+	inline bool ShouldBreak( float32 Force, float32 Torque, float32 BreakForce, float32 BreakTorque )
+	{
+		return Force > BreakForce || Torque > BreakTorque;
+	}
+
 	// ばねの設定が使えるか（有限で、どちらも 0 以上）
 	inline bool IsValidSpring( const FConstraintSpring& Spring )
 	{

@@ -307,3 +307,20 @@ EConstraintMotorMode FPhysicsConstraint::GetMotorMode() const
 }
 
 #pragma endregion
+
+#pragma region Breaking
+
+bool FPhysicsConstraint::SetBreakLimits( float32 Force, float32 Torque )
+{
+	if ( Joint == nullptr ) return false;
+
+	float32 NewForce  = 0.0f;
+	float32 NewTorque = 0.0f;
+	if ( !NConstraintRules::NormalizeNonNegative( Force, NewForce ) || !NConstraintRules::NormalizeNonNegative( Torque, NewTorque ) ) return false;
+
+	BreakForce  = NewForce;
+	BreakTorque = NewTorque;
+	return true;
+}
+
+#pragma endregion

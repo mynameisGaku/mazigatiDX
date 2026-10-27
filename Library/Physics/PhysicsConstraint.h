@@ -56,6 +56,24 @@ public:
 	float32 GetCurrentValue() const;
 
 	//-------------------------------------------------------------------------
+	// 壊れる力（FConstraintSettings::BreakForce / BreakTorque）
+	//-------------------------------------------------------------------------
+	// 壊れて外れたか。壊れた関節は、入れ物だけ残る（IsAttached が false）。つないだ剛体を破棄して外れただけのときは false
+	FORCEINLINE bool IsBroken() const { return bBroken; }
+
+	// 壊れる限界。壊れない設定は NMath::MaxFloat
+	FORCEINLINE float32 GetBreakForce() const { return BreakForce; }
+	FORCEINLINE float32 GetBreakTorque() const { return BreakTorque; }
+
+	// 壊れる限界を変える。0 以上（無限大は壊れない）。NaN・負、外れた関節は、何も変えずに false
+	bool SetBreakLimits( float32 Force, float32 Torque );
+
+	// 直前の物理のステップで、点や向きを保つためにかけた力（N）とトルク（N·m）。
+	// 外れた関節、効かせていない関節、つないだ剛体がどちらも眠っている関節は 0
+	FORCEINLINE float32 GetAppliedForce() const { return AppliedForce; }
+	FORCEINLINE float32 GetAppliedTorque() const { return AppliedTorque; }
+
+	//-------------------------------------------------------------------------
 	// 範囲・ばね・摩擦・円錐
 	//-------------------------------------------------------------------------
 	// 動ける範囲を変える（FConstraintSettings::LimitMin / LimitMax と同じ意味）。Hinge / Slider / Distance だけ。
@@ -109,6 +127,11 @@ private:
 	FRigidBody*             BodyB;
 	bool                    bAnchoredToWorld;
 	bool                    bCollideConnected;
+	bool                    bBroken = false;
+	float32                 BreakForce  = NMath::MaxFloat;
+	float32                 BreakTorque = NMath::MaxFloat;
+	float32                 AppliedForce  = 0.0f;
+	float32                 AppliedTorque = 0.0f;
 	JPH::TwoBodyConstraint* Joint;  // 外れると nullptr。参照を 1 つ持つので、外すのは CPhysicsSystem がまとめて行う
 	void*                   UserData = nullptr;
 };

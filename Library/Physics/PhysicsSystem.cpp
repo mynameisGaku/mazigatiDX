@@ -249,6 +249,12 @@ void CPhysicsSystem::Step( float32 DeltaTime )
 		LOG( LogPhysics, Warning, "Physics update error (0x%x). Increase MaxBodyPairs / MaxContactConstraints.", static_cast<uint32>( Error ) );
 	}
 
+	if ( !Constraints.IsEmpty() )
+	{
+		PROFILE_SCOPE_CAT( "Physics", "ConstraintLoads" );
+		UpdateConstraintLoads( DeltaTime );
+	}
+
 	if ( !ContactListeners.IsEmpty() )
 	{
 		// コールバック内での Add/Remove は、レジストリが配っている間の扱いを決めている

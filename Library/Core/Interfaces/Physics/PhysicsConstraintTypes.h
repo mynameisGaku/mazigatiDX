@@ -88,6 +88,15 @@ struct FConstraintSettings
 	// Cone だけ: 円錐の半角（0..PI）。2 つの剛体のひねり軸の間の角度が、これを超えないようにする
 	float32 HalfConeAngle = 0.0f;
 
+	// 壊れる限界。関節が点や向きを保つためにかけている力（BreakForce、N）やトルク（BreakTorque、N·m）が、
+	// 物理のステップの終わりにこれを超えていたら、関節は壊れて外れる（FPhysicsConstraint::IsBroken。つないでいた剛体は起こされ、衝突に戻る）。
+	// 既定は壊れない（NMath::MaxFloat。無限大も同じ）。0 以上で、NaN・負は作れない。0 は、少しでも力がかかれば壊れる。
+	//   力:     つないだ点を保つ力（Distance は棒が引く・押す力）
+	//   トルク: 向きを保つ力（Fixed / Hinge / Slider は固めた回転、Cone は円錐の端を押さえる力）。Point / Distance にはトルクがない
+	//   モーター・範囲の端（Hinge / Slider）・摩擦の力は含めない。作った直後の数ステップは、姿勢のずれを直すために大きな力が出ることがある
+	float32 BreakForce  = NMath::MaxFloat;
+	float32 BreakTorque = NMath::MaxFloat;
+
 	// つないだ 2 つの剛体どうしが衝突するか。既定は false（つなぎ目で押し合わない）。
 	// 作る前から触れ合っていた組も、次のステップから触れ合わなくなる。関節を無効（SetEnabled）にしても変わらず、壊すと衝突に戻る
 	bool bCollideConnected = false;
@@ -160,4 +169,14 @@ struct FConstraintSettings
 		Settings.HalfConeAngle = InHalfConeAngle;
 		return Settings;
 	}
+};
+
+//=============================================================================
+// FConstraintBreakInfo
+//   関節が壊れた瞬間の力（N）とトルク（N·m）。物理のステップの時間で割った値。
+//=============================================================================
+struct FConstraintBreakInfo
+{
+	float32 Force  = 0.0f;
+	float32 Torque = 0.0f;
 };

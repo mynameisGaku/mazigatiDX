@@ -124,6 +124,8 @@ public:
 	void DestroyConstraint( FPhysicsConstraint* Constraint ) override;
 	void DestroyAllConstraints() override;
 	int32 GetConstraintCount() const override;
+	bool AddConstraintListener( IPhysicsConstraintListener* Listener ) override;
+	void RemoveConstraintListener( IPhysicsConstraintListener* Listener ) override;
 
 	//-------------------------------------------------------------------------
 	// 操作するキャラクター（ICharacterControllers。使い方と注意はそちらを参照）
@@ -179,6 +181,12 @@ private:
 	// 剛体につないだ関節をすべて外す（その剛体を破棄する前に呼ぶ）
 	void DetachConstraintsOf( const FRigidBody* Body );
 
+	// この世界が持っている関節か
+	bool OwnsConstraint( const FPhysicsConstraint* Constraint ) const;
+
+	// 物理のステップの後に、関節がかけた力を調べ、限界を超えたものを外して知らせる
+	void UpdateConstraintLoads( float32 StepDelta );
+
 	// 2 つの剛体の衝突を止める・戻す（関節でつないだ組。数えて持つので、止めた回数だけ戻す）
 	void IgnoreCollision( const FRigidBody& BodyA, const FRigidBody& BodyB, bool bIgnore );
 
@@ -213,5 +221,6 @@ private:
 	TMap<uint32, TUniquePtr<FRigidBody>> Bodies;  // key: BodyID::GetIndexAndSequenceNumber
 	TArray<TUniquePtr<FPhysicsConstraint>> Constraints;  // 外れて入れ物だけ残っているものも含む
 	TArray<TUniquePtr<FPhysicsCharacter>>  Characters;   // 外れて入れ物だけ残っているものも含む
+	TArray<IPhysicsConstraintListener*>    ConstraintListeners;  // Init / Shutdown をまたいで残す
 	FContactListenerRegistry  ContactListeners;  // 接触の通知の受け取り側。Init / Shutdown をまたいで残す
 };
