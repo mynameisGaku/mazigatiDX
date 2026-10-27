@@ -1,7 +1,5 @@
 ﻿#include "String.h"
 
-#include <cerrno>
-#include <cstdlib>
 
 #include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Utility.h"
@@ -472,9 +470,9 @@ TOptional<int64> FString::TryParseInt() const
 	if ( Trimmed.IsEmpty() ) return {};
 
 	char* End = nullptr;
-	errno = 0;
+	NCString::ClearRangeError();
 	const long long Value = NCString::ToInt64( Trimmed.GetData(), &End, 0 );
-	if ( errno == ERANGE || End != Trimmed.GetData() + Trimmed.Len() ) return {};
+	if ( NCString::HasRangeError() || End != Trimmed.GetData() + Trimmed.Len() ) return {};
 	return static_cast<int64>( Value );
 }
 
@@ -484,9 +482,9 @@ TOptional<float64> FString::TryParseFloat() const
 	if ( Trimmed.IsEmpty() ) return {};
 
 	char* End = nullptr;
-	errno = 0;
+	NCString::ClearRangeError();
 	const double Value = NCString::ToFloat64( Trimmed.GetData(), &End );
-	if ( errno == ERANGE || End != Trimmed.GetData() + Trimmed.Len() ) return {};
+	if ( NCString::HasRangeError() || End != Trimmed.GetData() + Trimmed.Len() ) return {};
 	return Value;
 }
 

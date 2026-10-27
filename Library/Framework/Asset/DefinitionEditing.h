@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include <string>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"

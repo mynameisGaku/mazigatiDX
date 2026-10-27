@@ -1,6 +1,6 @@
 ﻿#include "EditorCommon.h"
 
-#include <cstring>
+#include "Library/Core/Types/CString.h"
 
 bool NDebugUI::InputString( const char* Label, FString& Value, ImGuiInputTextFlags Flags )
 {

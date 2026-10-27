@@ -1,7 +1,6 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
 #include "EffectMaterialRenderer.h"
 
-#include <cmath>
 #include <d3d11.h>
 #include <d3dcompiler.h>
 

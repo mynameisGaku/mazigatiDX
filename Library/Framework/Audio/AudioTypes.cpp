@@ -1,6 +1,5 @@
 ﻿#include "AudioTypes.h"
 
-#include <cmath>
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Math/MathUtils.h"

@@ -2,6 +2,7 @@
 #pragma once
 
 #include <sal.h>
+#include <cerrno>    // errno / ERANGE（範囲を超えたかの確認）
 #include <cstdarg>
 #include <cstdio>    // 中身は std::snprintf / std::vsnprintf。標準ライブラリに触れるのは、このヘッダーだけに閉じ込める
 #include <cstdlib>   // std::atoi / std::strtoll / std::strtod
@@ -18,10 +19,13 @@
 //     std::strlen( T )                  -> NCString::Length( T )
 //     std::strcmp( A, B )               -> NCString::Compare( A, B )
 //     std::strncmp( A, B, N )           -> NCString::CompareN( A, B, N )
+//     _stricmp / _strnicmp              -> NCString::CompareIgnoreCase / CompareNIgnoreCase（大文字小文字を区別しない）
+//     strncpy_s( D, N, S, _TRUNCATE )   -> NCString::CopyTruncated( D, N, S )
 //     std::strstr( T, P ) / strchr      -> NCString::Find( T, P ) / FindChar( T, C )
 //     std::snprintf / std::vsnprintf    -> NCString::Format / FormatV
 //     std::atoi / strtoll / strtod      -> NCString::ToInt32 / ToInt64 / ToFloat64
 //     std::wcslen( W )                  -> NCString::WideLength( W )
+//     errno = 0; ...; errno == ERANGE   -> NCString::ClearRangeError(); ...; NCString::HasRangeError()
 //
 //   どの関数も、空ポインター（nullptr）は渡せない（Format の Buffer が nullptr で Size が 0 のときだけ例外）。
 //   文字コードは見ない（バイト単位）。FString を使えるところでは FString を使うこと。
@@ -42,6 +46,18 @@ namespace NCString
 
 	// 先頭の Count 文字だけを辞書順に比べる。
 	FORCEINLINE int32 CompareN( const char* A, const char* B, usize Count ) noexcept { return std::strncmp( A, B, Count ); }
+
+	// 大文字小文字を区別せずに（ASCII の A-Z と a-z を同じとして）辞書順に比べる。_stricmp。
+	FORCEINLINE int32 CompareIgnoreCase( const char* A, const char* B ) noexcept { return ::_stricmp( A, B ); }
+
+	// 先頭の Count 文字だけを、大文字小文字を区別せずに比べる。_strnicmp。
+	FORCEINLINE int32 CompareNIgnoreCase( const char* A, const char* B, usize Count ) noexcept { return ::_strnicmp( A, B, Count ); }
+
+	// Source を Dest（Size バイト）へコピーする。入りきらなければ切り詰めて、終端を付ける（Size が 0 のときは何も書かない）。
+	inline void CopyTruncated( char* Dest, usize Size, const char* Source ) noexcept
+	{
+		if ( Size > 0 ) ::strncpy_s( Dest, Size, Source, _TRUNCATE );
+	}
 
 	// Text の中で最初に Pattern が現れる位置。無ければ nullptr。
 	FORCEINLINE const char* Find( const char* Text, const char* Pattern ) noexcept { return std::strstr( Text, Pattern ); }
@@ -75,4 +91,9 @@ namespace NCString
 
 	// 文字列を実数にする（"1e3"、"inf"、"nan" も読める）。読み終えた位置を *End に書く（End は nullptr でもよい）。数でなければ 0。
 	FORCEINLINE float64 ToFloat64( const char* Text, char** End ) noexcept { return std::strtod( Text, End ); }
+
+	// ToInt64 / ToFloat64 が、読んだ数が範囲を超えた（整数は上限・下限に丸め、実数は無限大か 0 になった）かを調べる。
+	// 読む直前に ClearRangeError() を呼び、読んだ直後に HasRangeError() で調べる（スレッドごとの記録なので、別のスレッドの読みとは混ざらない）。
+	FORCEINLINE void ClearRangeError() noexcept { errno = 0; }
+	FORCEINLINE bool HasRangeError() noexcept { return errno == ERANGE; }
 }

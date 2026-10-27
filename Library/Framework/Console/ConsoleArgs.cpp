@@ -1,7 +1,5 @@
 ﻿#include "ConsoleArgs.h"
 
-#include <cerrno>
-#include <cstdlib>
 
 #include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Numeric.h"
@@ -12,7 +10,7 @@ bool NConsole::ParseInt64( const FString& Text, int64& Out )
 	// 前後の空白・先頭の + は受け付けるが、途中の空白は受け付けない
 	const char* Begin = *Text;
 	char* End = nullptr;
-	errno = 0;
+	NCString::ClearRangeError();
 
 	int Base = 10;
 	const char* Digits = Begin;
@@ -20,7 +18,7 @@ bool NConsole::ParseInt64( const FString& Text, int64& Out )
 	if ( Digits[0] == '0' && ( Digits[1] == 'x' || Digits[1] == 'X' ) ) Base = 16;
 
 	const long long Value = NCString::ToInt64( Begin, &End, Base );
-	if ( End == Begin || *End != '\0' || errno == ERANGE ) return false;
+	if ( End == Begin || *End != '\0' || NCString::HasRangeError() ) return false;
 	// strtoll は先頭の空白を読み飛ばすが、引数に空白は入らないので、ここでは拒否しておく
 	if ( Begin[0] == ' ' || Begin[0] == '\t' ) return false;
 	Out = Value;
@@ -33,7 +31,7 @@ bool NConsole::ParseFloat64( const FString& Text, float64& Out )
 	const char* Begin = *Text;
 	if ( Begin[0] == ' ' || Begin[0] == '\t' ) return false;
 	char* End = nullptr;
-	errno = 0;
+	NCString::ClearRangeError();
 	const double Value = NCString::ToFloat64( Begin, &End );
 	if ( End == Begin || *End != '\0' ) return false;
 	if ( !NMath::IsFinite( Value ) ) return false;   // nan / inf / 溢れ

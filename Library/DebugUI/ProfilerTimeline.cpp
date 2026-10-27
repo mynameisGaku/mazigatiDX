@@ -1,6 +1,5 @@
 ﻿#include "ProfilerTimeline.h"
 
-#include <algorithm>
 
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Time/PlatformTime.h"

@@ -95,7 +95,7 @@ namespace
 
 		for ( int32 i = 0; i + PatternLength <= Text.Len(); ++i )
 		{
-			if ( _strnicmp( Text.GetData() + i, Pattern, static_cast<usize>( PatternLength ) ) == 0 ) return true;
+			if ( NCString::CompareNIgnoreCase( Text.GetData() + i, Pattern, static_cast<usize>( PatternLength ) ) == 0 ) return true;
 		}
 		return false;
 	}

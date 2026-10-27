@@ -8,6 +8,7 @@
 #include <crtdbg.h>
 
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Types/CString.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 #include "Library/Platform/FileSystem.h"
@@ -37,7 +38,7 @@ namespace
 	void WriteLeakText( const char* Text )
 	{
 		DWORD Written = 0;
-		if ( LeakReportHandle != INVALID_HANDLE_VALUE ) WriteFile( LeakReportHandle, Text, static_cast<DWORD>( strlen( Text ) ), &Written, nullptr );
+		if ( LeakReportHandle != INVALID_HANDLE_VALUE ) WriteFile( LeakReportHandle, Text, static_cast<DWORD>( NCString::Length( Text ) ), &Written, nullptr );
 	}
 
 	int LeakAllocHook( int AllocType, void*, size_t Size, int, long Request, const unsigned char*, int )
@@ -47,7 +48,7 @@ namespace
 		bBusy = true;
 
 		char Line[512];
-		snprintf( Line, sizeof( Line ), "allocation #%ld (%zu bytes) was made here:\r\n", Request, Size );
+		NCString::Format( Line, sizeof( Line ), "allocation #%ld (%zu bytes) was made here:\r\n", Request, Size );
 		WriteLeakText( Line );
 		void* Frames[48] = {};
 		const USHORT NumFrames = CaptureStackBackTrace( 0, 48, Frames, nullptr );
@@ -67,7 +68,7 @@ namespace
 			LineInfo.SizeOfStruct = sizeof( LineInfo );
 			DWORD LineDisplacement = 0;
 			const bool bHasLine = SymGetLineFromAddr64( Process, Address, &LineDisplacement, &LineInfo ) != FALSE;
-			snprintf( Line, sizeof( Line ), "  %2u  %s  %s:%lu\r\n", i, bFound ? Symbol->Name : "?", bHasLine ? LineInfo.FileName : "", bHasLine ? LineInfo.LineNumber : 0UL );
+			NCString::Format( Line, sizeof( Line ), "  %2u  %s  %s:%lu\r\n", i, bFound ? Symbol->Name : "?", bHasLine ? LineInfo.FileName : "", bHasLine ? LineInfo.LineNumber : 0UL );
 			WriteLeakText( Line );
 		}
 		bBusy = false;

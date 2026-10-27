@@ -1,6 +1,5 @@
 ﻿#include "DxLibBackend.h"
 
-#include <cstdlib>
 
 #include "Library/Core/Collection/Set.h"
 #include "Library/Core/Profiler/ProfilerScope.h"

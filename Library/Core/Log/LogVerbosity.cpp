@@ -1,7 +1,6 @@
 ﻿#include "LogVerbosity.h"
 
-#include <cstring>
-
+#include "Library/Core/Types/CString.h"
 
 const char* LogVerbosityToString( ELogVerbosity Verbosity )
 {
