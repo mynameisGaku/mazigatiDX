@@ -23,6 +23,9 @@ struct FRigidBodySettings
 	bool    bAllowSleeping = true;
 	bool    bContinuousCollision = false;  // 高速移動体のすり抜け防止 (CCD)
 	bool    bActivate      = true;   // 生成直後にアクティブにするか
+
+	// 衝突レイヤー（NCollisionLayer, 0..31）。どのレイヤーとぶつかるかは ICollisionLayers で決める。範囲外なら CreateBody が失敗する
+	uint32  CollisionLayer = NCollisionLayer::Default;
 };
 
 //=============================================================================
@@ -81,6 +84,10 @@ public:
 	void Activate();
 	void Deactivate();
 	bool IsActive() const;
+
+	// 衝突レイヤー。変更は、動く剛体なら起こし、近くで眠っている剛体も起こす（ぶつかる相手が変わるため）。範囲外のレイヤーなら false で何も変えない
+	uint32 GetCollisionLayer() const;
+	bool SetCollisionLayer( uint32 Layer );
 
 	void SetFriction( float32 Friction );
 	void SetRestitution( float32 Restitution );

@@ -96,7 +96,7 @@ namespace
 
 		JPH::BroadPhaseLayer GetBroadPhaseLayer( JPH::ObjectLayer Layer ) const override
 		{
-			return Layer == NPhysicsLayers::NonMoving ? NPhysicsBroadPhaseLayers::NonMoving : NPhysicsBroadPhaseLayers::Moving;
+			return NPhysics::IsMovingObjectLayer( Layer ) ? NPhysicsBroadPhaseLayers::Moving : NPhysicsBroadPhaseLayers::NonMoving;
 		}
 
 #if defined( JPH_EXTERNAL_PROFILE ) || defined( JPH_PROFILE_ENABLED )
@@ -112,24 +112,36 @@ namespace
 	public:
 		bool ShouldCollide( JPH::ObjectLayer Layer1, JPH::BroadPhaseLayer Layer2 ) const override
 		{
-			if ( Layer1 == NPhysicsLayers::NonMoving ) return Layer2 == NPhysicsBroadPhaseLayers::Moving;
+			if ( !NPhysics::IsMovingObjectLayer( Layer1 ) ) return Layer2 == NPhysicsBroadPhaseLayers::Moving;  // 静的同士は衝突しない
 			return true;
 		}
 	};
 
+	// 静的同士は衝突しない。それ以外は、衝突レイヤーの表（CPhysicsSystem::LayerCollisionMasks）で決める
 	class FObjectLayerPairFilter final : public JPH::ObjectLayerPairFilter
 	{
 	public:
+		explicit FObjectLayerPairFilter( const uint32* InLayerCollisionMasks )
+			: LayerCollisionMasks( InLayerCollisionMasks )
+		{}
+
 		bool ShouldCollide( JPH::ObjectLayer Layer1, JPH::ObjectLayer Layer2 ) const override
 		{
-			if ( Layer1 == NPhysicsLayers::NonMoving ) return Layer2 == NPhysicsLayers::Moving;
-			return true;
+			if ( !NPhysics::IsMovingObjectLayer( Layer1 ) && !NPhysics::IsMovingObjectLayer( Layer2 ) ) return false;
+			return ( LayerCollisionMasks[NPhysics::ToCollisionLayer( Layer1 )] & NCollisionLayer::ToMask( NPhysics::ToCollisionLayer( Layer2 ) ) ) != 0;
 		}
+
+	private:
+		const uint32* LayerCollisionMasks;
 	};
 }
 
 struct CPhysicsSystem::FLayerFilters
 {
+	explicit FLayerFilters( const uint32* LayerCollisionMasks )
+		: ObjectPair( LayerCollisionMasks )
+	{}
+
 	FBroadPhaseLayerInterface      BroadPhaseLayer;
 	FObjectVsBroadPhaseLayerFilter ObjectVsBroadPhase;
 	FObjectLayerPairFilter         ObjectPair;
@@ -137,7 +149,10 @@ struct CPhysicsSystem::FLayerFilters
 
 #pragma region Lifecycle
 
-CPhysicsSystem::CPhysicsSystem() = default;
+CPhysicsSystem::CPhysicsSystem()
+{
+	for ( uint32& Mask : LayerCollisionMasks ) Mask = NCollisionLayer::AllMask;  // 初めはすべてぶつかる
+}
 
 CPhysicsSystem::~CPhysicsSystem()
 {
@@ -160,7 +175,7 @@ TResult<void> CPhysicsSystem::Init( const FPhysicsSettings& InSettings )
 
 	TempAllocator = MakeUnique<JPH::TempAllocatorImpl>( Settings.TempAllocatorSize );
 	JobSystem     = MakeUnique<JPH::JobSystemThreadPool>( JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, NumThreads );
-	LayerFilters  = MakeUnique<FLayerFilters>();
+	LayerFilters  = MakeUnique<FLayerFilters>( LayerCollisionMasks );
 	ContactQueue  = MakeUnique<CContactEventQueue>();
 	ContactQueue->SetEnabled( !ContactListeners.IsEmpty() );
 
@@ -250,6 +265,11 @@ FRigidBody* CPhysicsSystem::CreateBody( const FCollisionShape& Shape, EBodyType 
 		LOG( LogPhysics, Error, "CreateBody called with an invalid shape." );
 		return nullptr;
 	}
+	if ( !NCollisionLayer::IsValid( BodySettings.CollisionLayer ) )
+	{
+		LOG( LogPhysics, Error, "CreateBody called with an invalid collision layer (%u, max %u).", BodySettings.CollisionLayer, NCollisionLayer::MaxCount - 1 );
+		return nullptr;
+	}
 
 	// スケールを形状に焼き込む
 	FCollisionShape FinalShape = Shape;
@@ -273,7 +293,7 @@ FRigidBody* CPhysicsSystem::CreateBody( const FCollisionShape& Shape, EBodyType 
 		NPhysics::ToPhysR( Transform.Position ),
 		NPhysics::ToPhys( Transform.Rotation.Normalized() ),
 		NPhysics::ToPhysMotionType( Type ),
-		NPhysics::ToPhysObjectLayer( Type ) );
+		NPhysics::ToPhysObjectLayer( Type, BodySettings.CollisionLayer ) );
 
 	Creation.mFriction       = BodySettings.Friction;
 	Creation.mRestitution    = BodySettings.Restitution;

@@ -445,6 +445,9 @@
     <ClCompile Include="Library\Physics\ContactListener.cpp">
       <Filter>Library\Physics</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Physics\PhysicsLayers.cpp">
+      <Filter>Library\Physics</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Physics\PhysicsQuery.cpp">
       <Filter>Library\Physics</Filter>
     </ClCompile>
@@ -1158,7 +1161,13 @@
     <ClInclude Include="Library\Core\Interfaces\Job\IJobSystem.h">
       <Filter>Library\Core\Interfaces\Job</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Physics\ICollisionLayers.h">
+      <Filter>Library\Core\Interfaces\Physics</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Physics\IPhysicsQuery.h">
+      <Filter>Library\Core\Interfaces\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsLayerTypes.h">
       <Filter>Library\Core\Interfaces\Physics</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsQueryTypes.h">

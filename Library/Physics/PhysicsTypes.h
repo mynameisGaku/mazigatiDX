@@ -17,6 +17,7 @@
 #pragma pop_macro( "max" )
 #pragma pop_macro( "min" )
 
+#include "Library/Core/Interfaces/Physics/PhysicsLayerTypes.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Result.h"
 #include "Library/Math/Math.h"
@@ -48,13 +49,15 @@ enum class EBodyType : uint8
 
 //=============================================================================
 // レイヤー
-//   NonMoving 同士は衝突判定しない。
+//   Jolt のオブジェクトレイヤーは ( 衝突レイヤー << 1 ) | 動くか の形にする。
+//   衝突レイヤー（NCollisionLayer, 0..31）は、ユーザーが決める「どれとぶつかるか」の区分。
+//   動くか（下位 1 ビット）は、静的な剛体同士は衝突しない決まりと、ブロードフェーズのレイヤー分けに使う。
 //=============================================================================
 namespace NPhysicsLayers
 {
-	inline constexpr PhysObjectLayer NonMoving = 0;
-	inline constexpr PhysObjectLayer Moving    = 1;
-	inline constexpr uint32          Count     = 2;
+	inline constexpr PhysObjectLayer NonMoving = 0;  // 下位ビットが 0: 静的
+	inline constexpr PhysObjectLayer Moving    = 1;  // 下位ビットが 1: キネマティックと動的
+	inline constexpr uint32          Count     = NCollisionLayer::MaxCount * 2;
 }
 
 namespace NPhysicsBroadPhaseLayers
@@ -92,8 +95,20 @@ namespace NPhysics
 		return PhysMotionType::Static;
 	}
 
-	FORCEINLINE PhysObjectLayer ToPhysObjectLayer( EBodyType Type )
+	// 衝突レイヤー（0..31）と剛体の種類から、Jolt のオブジェクトレイヤーを作る
+	FORCEINLINE PhysObjectLayer ToPhysObjectLayer( EBodyType Type, uint32 CollisionLayer )
 	{
-		return Type == EBodyType::Static ? NPhysicsLayers::NonMoving : NPhysicsLayers::Moving;
+		const PhysObjectLayer Moving = Type == EBodyType::Static ? NPhysicsLayers::NonMoving : NPhysicsLayers::Moving;
+		return static_cast<PhysObjectLayer>( ( CollisionLayer << 1 ) | Moving );
+	}
+
+	FORCEINLINE uint32 ToCollisionLayer( PhysObjectLayer Layer )
+	{
+		return static_cast<uint32>( Layer ) >> 1;
+	}
+
+	FORCEINLINE bool IsMovingObjectLayer( PhysObjectLayer Layer )
+	{
+		return ( Layer & 1 ) != 0;
 	}
 }

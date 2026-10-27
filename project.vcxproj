@@ -300,6 +300,7 @@
     <ClCompile Include="Library\Math\Quaternion.cpp" />
     <ClCompile Include="Library\Physics\CollisionShape.cpp" />
     <ClCompile Include="Library\Physics\ContactListener.cpp" />
+    <ClCompile Include="Library\Physics\PhysicsLayers.cpp" />
     <ClCompile Include="Library\Physics\PhysicsQuery.cpp" />
     <ClCompile Include="Library\Physics\PhysicsSubsystem.cpp" />
     <ClCompile Include="Library\Physics\PhysicsSystem.cpp" />
@@ -539,7 +540,9 @@
     <ClInclude Include="Library\Core\Interfaces\Input\MouseState.h" />
     <ClInclude Include="Library\Core\Interfaces\Inspector\IPropertyInspector.h" />
     <ClInclude Include="Library\Core\Interfaces\Job\IJobSystem.h" />
+    <ClInclude Include="Library\Core\Interfaces\Physics\ICollisionLayers.h" />
     <ClInclude Include="Library\Core\Interfaces\Physics\IPhysicsQuery.h" />
+    <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsLayerTypes.h" />
     <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsQueryTypes.h" />
     <ClInclude Include="Library\Core\Interfaces\Platform\IPlatform.h" />
     <ClInclude Include="Library\Core\Interfaces\Profiler\IProfiler.h" />

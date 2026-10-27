@@ -3,6 +3,7 @@
 #include "Library/Physics/PhysicsSystem.h"
 
 #include <Jolt/Physics/Body/BodyInterface.h>
+#include <Jolt/Physics/Collision/TransformedShape.h>
 
 namespace
 {
@@ -10,6 +11,9 @@ namespace
 	{
 		return bActivate ? JPH::EActivation::Activate : JPH::EActivation::DontActivate;
 	}
+
+	// レイヤーを変えたとき、ぶつかる相手の変わりそうな近さ（接している剛体を含む）
+	constexpr float32 LayerChangeWakeMargin = 0.1f;
 }
 
 FRigidBody::FRigidBody( JPH::BodyInterface& InBodyInterface, PhysBodyID InBodyID, EBodyType InType, const FVector3& InScale )
@@ -143,6 +147,25 @@ void FRigidBody::Deactivate()
 bool FRigidBody::IsActive() const
 {
 	return GetBodyInterface().IsActive( BodyID );
+}
+
+uint32 FRigidBody::GetCollisionLayer() const
+{
+	return NPhysics::ToCollisionLayer( GetBodyInterface().GetObjectLayer( BodyID ) );
+}
+
+bool FRigidBody::SetCollisionLayer( uint32 Layer )
+{
+	if ( !NCollisionLayer::IsValid( Layer ) ) return false;
+
+	JPH::BodyInterface& Interface = GetBodyInterface();
+	Interface.SetObjectLayer( BodyID, NPhysics::ToPhysObjectLayer( BodyType, Layer ) );
+
+	// ぶつかる相手が変わる。眠っている剛体は衝突を調べ直さないので、自分と近くの動く剛体を起こす（静的な剛体は起こせない）
+	const JPH::AABox Bounds = Interface.GetTransformedShape( BodyID ).GetWorldSpaceBounds();
+	Interface.ActivateBodiesInAABox( JPH::AABox( Bounds.mMin - JPH::Vec3::sReplicate( LayerChangeWakeMargin ), Bounds.mMax + JPH::Vec3::sReplicate( LayerChangeWakeMargin ) ),
+									 JPH::BroadPhaseLayerFilter(), JPH::ObjectLayerFilter() );
+	return true;
 }
 
 void FRigidBody::SetFriction( float32 Friction )

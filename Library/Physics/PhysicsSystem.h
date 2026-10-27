@@ -4,6 +4,7 @@
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/Map.h"
+#include "Library/Core/Interfaces/Physics/ICollisionLayers.h"
 #include "Library/Core/Interfaces/Physics/IPhysicsQuery.h"
 #include "Library/Physics/PhysicsTypes.h"
 #include "Library/Physics/CollisionShape.h"
@@ -42,7 +43,7 @@ struct FPhysicsSettings
 // CPhysicsSystem
 //   Jolt Physics のワールド 1 つ分。複数作ってよい（シーンごとに CPhysicsSubsystem が 1 つ持つ）。
 //   フレームワークに依存しないので、単体でも動かせる。
-//   空間クエリ（レイ・重なり・掃引）は IPhysicsQuery として使える。
+//   空間クエリ（レイ・重なり・掃引）は IPhysicsQuery、衝突レイヤーの表は ICollisionLayers として使える。
 //
 //   CPhysicsSystem Physics;
 //   Physics.Init();
@@ -51,7 +52,7 @@ struct FPhysicsSettings
 //   FTransform T = Body->GetTransform();
 //   Physics.Shutdown();
 //=============================================================================
-class CPhysicsSystem : public IPhysicsQuery
+class CPhysicsSystem : public IPhysicsQuery, public ICollisionLayers
 {
 public:
 	CPhysicsSystem();
@@ -102,6 +103,15 @@ public:
 				FShapeCastHit& OutHit, const FPhysicsQueryFilter& Filter = FPhysicsQueryFilter() ) const override;
 
 	//-------------------------------------------------------------------------
+	// 衝突レイヤー（ICollisionLayers。使い方と注意はそちらを参照）
+	//-------------------------------------------------------------------------
+	bool SetLayerCollision( uint32 LayerA, uint32 LayerB, bool bCollide ) override;
+	bool GetLayerCollision( uint32 LayerA, uint32 LayerB ) const override;
+	bool SetLayerCollisionMask( uint32 Layer, uint32 CollidesWithMask ) override;
+	uint32 GetLayerCollisionMask( uint32 Layer ) const override;
+	void ResetLayerCollision() override;
+
+	//-------------------------------------------------------------------------
 	// 衝突コールバック（所有権は呼び出し側）
 	//-------------------------------------------------------------------------
 	void AddContactListener( CContactListener* Listener );
@@ -124,9 +134,15 @@ private:
 
 	void Step( float32 DeltaTime );
 
+	// 衝突の表が変わるレイヤーの、動く剛体を起こす
+	void WakeLayerBodies( uint32 LayerMask );
+
 	bool             bInitialized = false;
 	FPhysicsSettings Settings;
 	float32          Accumulator  = 0.0f;
+
+	// 衝突レイヤーの表。[A] の bit B が立っていれば A と B はぶつかる。常に対称（Init / Shutdown では変えない）
+	uint32 LayerCollisionMasks[NCollisionLayer::MaxCount];
 
 	TUniquePtr<JPH::TempAllocatorImpl>   TempAllocator;
 	TUniquePtr<JPH::JobSystemThreadPool> JobSystem;

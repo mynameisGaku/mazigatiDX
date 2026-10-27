@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: NOASSERTION
 #pragma once
 #include "Library/Core/Collection/ArrayView.h"
+#include "Library/Core/Interfaces/Physics/PhysicsLayerTypes.h"
 #include "Library/Core/Types/CompilerMacros.h"
 #include "Library/Core/Types/TypeDefinition.h"
 #include "Library/Math/Vector3.h"
@@ -62,6 +63,7 @@ struct FQueryShape
 //   FPhysicsQueryFilter Filter;
 //   Filter.IgnoreBodies = Ignore;           // 自分自身には当たらない
 //   Filter.bIncludeDynamic = false;         // 地形だけを調べる
+//   Filter.LayerMask = NCollisionLayer::ToMask( Enemy );  // 敵のレイヤーだけを調べる
 //=============================================================================
 struct FPhysicsQueryFilter
 {
@@ -69,6 +71,9 @@ struct FPhysicsQueryFilter
 	bool bIncludeKinematic = true;
 	bool bIncludeDynamic   = true;
 	bool bIncludeSensors   = false;  // bIsSensor の剛体（トリガー）を対象にするか
+
+	// 対象にするレイヤー（NCollisionLayer::ToMask を足し合わせる）。既定はすべて。0 なら何にも当たらない
+	uint32 LayerMask = NCollisionLayer::AllMask;
 
 	// 対象から外す剛体。参照先は、クエリを呼ぶ間だけ有効であればよい
 	TArrayView<const FRigidBody* const> IgnoreBodies;

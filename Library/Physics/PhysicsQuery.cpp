@@ -116,6 +116,26 @@ namespace
 		const FPhysicsQueryFilter& Filter;
 	};
 
+	//-------------------------------------------------------------------------
+	// 対象のレイヤーを絞る
+	//   Jolt が剛体を掴む前（ブロードフェーズ）に、衝突レイヤーで落とす
+	//-------------------------------------------------------------------------
+	class FQueryLayerFilter final : public JPH::ObjectLayerFilter
+	{
+	public:
+		explicit FQueryLayerFilter( uint32 InLayerMask )
+			: LayerMask( InLayerMask )
+		{}
+
+		bool ShouldCollide( JPH::ObjectLayer Layer ) const override
+		{
+			return ( LayerMask & NCollisionLayer::ToMask( NPhysics::ToCollisionLayer( Layer ) ) ) != 0;
+		}
+
+	private:
+		uint32 LayerMask;
+	};
+
 	// レイの当たりを、ゲーム側の結果にする。剛体が消えていたら false
 	bool FillRayHit( const JPH::PhysicsSystem& Jolt, const CPhysicsSystem& System, const JPH::RRayCast& Ray, float32 MaxDistance,
 					 const FVector3& Direction, const JPH::RayCastResult& Hit, FRayHit& OutHit )
@@ -151,8 +171,9 @@ bool CPhysicsSystem::RayCast( const FVector3& Origin, const FVector3& Direction,
 
 	const JPH::RRayCast Ray( NPhysics::ToPhysR( Origin ), NPhysics::ToPhys( Unit * MaxDistance ) );
 	const FQueryBodyFilter BodyFilter( *this, Filter );
+	const FQueryLayerFilter LayerFilter( Filter.LayerMask );
 	JPH::ClosestHitCollisionCollector<JPH::CastRayCollector> Collector;
-	JoltSystem->GetNarrowPhaseQuery().CastRay( Ray, JPH::RayCastSettings(), Collector, JPH::BroadPhaseLayerFilter(), JPH::ObjectLayerFilter(), BodyFilter );
+	JoltSystem->GetNarrowPhaseQuery().CastRay( Ray, JPH::RayCastSettings(), Collector, JPH::BroadPhaseLayerFilter(), LayerFilter, BodyFilter );
 	if ( !Collector.HadHit() ) return false;
 
 	return FillRayHit( *JoltSystem, *this, Ray, MaxDistance, Unit, Collector.mHit, OutHit );
@@ -167,8 +188,9 @@ int32 CPhysicsSystem::RayCastAll( const FVector3& Origin, const FVector3& Direct
 
 	const JPH::RRayCast Ray( NPhysics::ToPhysR( Origin ), NPhysics::ToPhys( Unit * MaxDistance ) );
 	const FQueryBodyFilter BodyFilter( *this, Filter );
+	const FQueryLayerFilter LayerFilter( Filter.LayerMask );
 	JPH::AllHitCollisionCollector<JPH::CastRayCollector> Collector;
-	JoltSystem->GetNarrowPhaseQuery().CastRay( Ray, JPH::RayCastSettings(), Collector, JPH::BroadPhaseLayerFilter(), JPH::ObjectLayerFilter(), BodyFilter );
+	JoltSystem->GetNarrowPhaseQuery().CastRay( Ray, JPH::RayCastSettings(), Collector, JPH::BroadPhaseLayerFilter(), LayerFilter, BodyFilter );
 	Collector.Sort();
 
 	OutHits.Reserve( static_cast<int32>( Collector.mHits.size() ) );
@@ -191,11 +213,12 @@ int32 CPhysicsSystem::Overlap( const FQueryShape& Shape, const FVector3& Positio
 	const JPH::RMat44 CenterOfMass = MakeWorldTransform( Position, Rotation ).PreTranslated( JoltShape->GetCenterOfMass() );  // Jolt は重心の位置を受け取る
 
 	const FQueryBodyFilter BodyFilter( *this, Filter );
+	const FQueryLayerFilter LayerFilter( Filter.LayerMask );
 	JPH::CollideShapeSettings CollideSettings;
 	CollideSettings.mBackFaceMode = JPH::EBackFaceMode::CollideWithBackFaces;  // 重なりは幾何学的な判定なので、メッシュの裏側にいても重なる（レイと掃引は裏面を無視する）
 	JPH::AllHitCollisionCollector<JPH::CollideShapeCollector> Collector;
 	JoltSystem->GetNarrowPhaseQuery().CollideShape( JoltShape, JPH::Vec3::sReplicate( 1.0f ), CenterOfMass, CollideSettings, CenterOfMass.GetTranslation(),
-													Collector, JPH::BroadPhaseLayerFilter(), JPH::ObjectLayerFilter(), BodyFilter );
+													Collector, JPH::BroadPhaseLayerFilter(), LayerFilter, BodyFilter );
 
 	for ( const JPH::CollideShapeResult& Hit : Collector.mHits )
 	{
@@ -224,9 +247,10 @@ bool CPhysicsSystem::Sweep( const FQueryShape& Shape, const FVector3& Start, con
 																	   MakeWorldTransform( Start, Rotation ), NPhysics::ToPhys( Unit * MaxDistance ) );
 
 	const FQueryBodyFilter BodyFilter( *this, Filter );
+	const FQueryLayerFilter LayerFilter( Filter.LayerMask );
 	JPH::ClosestHitCollisionCollector<JPH::CastShapeCollector> Collector;
 	JoltSystem->GetNarrowPhaseQuery().CastShape( Cast, JPH::ShapeCastSettings(), NPhysics::ToPhysR( Start ), Collector,
-												 JPH::BroadPhaseLayerFilter(), JPH::ObjectLayerFilter(), BodyFilter );
+												 JPH::BroadPhaseLayerFilter(), LayerFilter, BodyFilter );
 	if ( !Collector.HadHit() ) return false;
 
 	const JPH::ShapeCastResult& Hit = Collector.mHit;
