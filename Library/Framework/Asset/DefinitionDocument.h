@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include <string>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Types/TypeDefinition.h"
@@ -151,7 +150,7 @@ public:
 	static constexpr size_t MaxHistory = 200;
 
 private:
-	std::string Snapshot() const { return Definition.ToJson().dump(); }
+	NJson::FJsonString Snapshot() const { return Definition.ToJson().dump(); }
 
 	void PushUndoSnapshot()
 	{
@@ -160,7 +159,7 @@ private:
 		RedoStack.Reset();
 	}
 
-	void Restore( const std::string& Json )
+	void Restore( const NJson::FJsonString& Json )
 	{
 		TDefinition Restored;
 		if ( TDefinition::FromJson( NlohmannJson::parse( Json, nullptr, false ), Restored ) ) Definition = Restored;
@@ -170,10 +169,10 @@ private:
 	}
 
 	TDefinition Definition;
-	TArray<std::string> UndoStack;
-	TArray<std::string> RedoStack;
-	std::string LastKey;
-	std::string SavedSnapshot;
+	TArray<NJson::FJsonString> UndoStack;
+	TArray<NJson::FJsonString> RedoStack;
+	NJson::FJsonString LastKey;
+	NJson::FJsonString SavedSnapshot;
 	int32 BatchDepth = 0;
 	bool bBatchStarted = false;
 	bool bDirty = false;

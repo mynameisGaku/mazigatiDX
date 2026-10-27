@@ -1,7 +1,5 @@
 ﻿#include "JsonObject.h"
 
-#include <string>
-
 #include "Library/Core/File/File.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Types/Utility.h"
@@ -11,9 +9,9 @@ DEFINE_LOG_CATEGORY_STATIC( LogJson, Log )
 namespace
 {
 	// "A.B.C" -> { "A", "B", "C" }（JSON のキーは UTF-8 なので変換しておく）
-	TArray<String> SplitKeyPath( const FString& Key )
+	TArray<NJson::FJsonString> SplitKeyPath( const FString& Key )
 	{
-		TArray<String> Path;
+		TArray<NJson::FJsonString> Path;
 		for ( const FString& Part : Key.ParseIntoArray( "." ) )
 		{
 			Path.Add( *Part.ToUtf8() );
@@ -68,7 +66,7 @@ bool NJson::CJsonObject::SaveToFile( const FString& Filename, int32 Indent ) con
 		return false;
 	}
 
-	const std::string Text = Root.dump( Indent ) + '\n';
+	const NJson::FJsonString Text = Root.dump( Indent ) + '\n';
 	const bool bWritten = File.Write( Text.data(), Text.size() ) == Text.size();
 	if ( !File.Close() || !bWritten )
 	{
@@ -81,7 +79,7 @@ bool NJson::CJsonObject::SaveToFile( const FString& Filename, int32 Indent ) con
 
 void NJson::CJsonObject::Set( const FString& Key, const NlohmannJson& Value )
 {
-	const TArray<String> Path = SplitKeyPath( Key );
+	const TArray<NJson::FJsonString> Path = SplitKeyPath( Key );
 	if ( Path.Num() == 0 ) return;
 
 	// 途中のオブジェクトが無ければ作る（オブジェクト以外なら置き換える）
@@ -162,11 +160,11 @@ TArray<FString> NJson::CJsonObject::GetKeys() const
 
 const NlohmannJson* NJson::CJsonObject::FindNode( const FString& Key ) const
 {
-	const TArray<String> Path = SplitKeyPath( Key );
+	const TArray<NJson::FJsonString> Path = SplitKeyPath( Key );
 	if ( Path.Num() == 0 ) return nullptr;
 
 	const NlohmannJson* Node = &Root;
-	for ( const String& Part : Path )
+	for ( const NJson::FJsonString& Part : Path )
 	{
 		if ( !Node->is_object() ) return nullptr;
 		const auto It = Node->find( Part );

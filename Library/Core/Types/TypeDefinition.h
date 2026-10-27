@@ -1,7 +1,6 @@
 ﻿#pragma once
 #include <cstdint>
 #include <cstddef>
-#include <string>
 
 #include "Library/Core/Types/CompilerMacros.h"
 
@@ -36,8 +35,3 @@ using uintptr = std::uintptr_t;  // ポインタを格納できる符号なし�
 using intptr  = std::intptr_t;   // ポインタを格納できる符号あり整数
 using byte    = std::uint8_t;    // 生バイト操作用
 
-//=============================================================================
-// 文字列
-//=============================================================================
-using String  = std::string;   // マルチバイト文字列
-using WString = std::wstring;  // ワイド文字列

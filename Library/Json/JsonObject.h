@@ -13,6 +13,13 @@
 
 using NlohmannJson = nlohmann::json;
 
+namespace NJson
+{
+	// JSON ライブラリ（nlohmann）の文字列の型。キーや dump() の結果など、ライブラリとやりとりする文字列の型（UTF-8）。
+	// 自分の文字列は FString を使い、ライブラリに渡す・受け取る境目だけでこの型を使う
+	using FJsonString = NlohmannJson::string_t;
+}
+
 //-----------------------------------------------------------------------------
 // FString <-> JSON 文字列
 //   JSON は UTF-8、FString はシステムのマルチバイト (Shift-JIS) なので変換する
@@ -23,7 +30,7 @@ namespace nlohmann
 	struct adl_serializer<FString>
 	{
 		FORCEINLINE static void to_json( json& Json, const FString& Value ) { Json = *Value.ToUtf8(); }
-		FORCEINLINE static void from_json( const json& Json, FString& Value ) { Value = FString::FromUtf8( Json.get<String>().c_str() ); }
+		FORCEINLINE static void from_json( const json& Json, FString& Value ) { Value = FString::FromUtf8( Json.get<NlohmannJson::string_t>().c_str() ); }
 	};
 }
 

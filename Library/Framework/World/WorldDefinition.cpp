@@ -55,7 +55,7 @@ namespace
 	constexpr const char* KnownComponentTypes[] = { "Model", "Billboard", "Sound", "Effect", "Collider", "Mesh", "Prefab" };
 
 	template<size_t N>
-	bool IsKnownKey( const char* const ( &Keys )[N], const std::string& Key )
+	bool IsKnownKey( const char* const ( &Keys )[N], const NJson::FJsonString& Key )
 	{
 		for ( const char* Known : Keys )
 		{
@@ -386,7 +386,7 @@ namespace
 					Warn( Warnings, Where + ": a tag that is not a string was skipped" );
 					continue;
 				}
-				const FString Tag = FString::FromUtf8( Item.get<std::string>().c_str() ).TrimStartAndEnd();
+				const FString Tag = FString::FromUtf8( Item.get<NJson::FJsonString>().c_str() ).TrimStartAndEnd();
 				if ( Tag.IsEmpty() || !Object.AddTag( Tag ) ) Warn( Warnings, Where + ": an empty or duplicate tag '" + Tag + "' was skipped" );
 			}
 		}
@@ -417,7 +417,7 @@ namespace
 		{
 			for ( auto It = Json["Components"].begin(); It != Json["Components"].end(); ++It )
 			{
-				const std::string Key = It.key();
+				const NJson::FJsonString Key = It.key();
 				const NlohmannJson& Value = It.value();
 				if ( Key == "Model" && Value.is_object() ) Object.Model = ModelFromJson( Value );
 				else if ( Key == "Billboard" && Value.is_object() ) Object.Billboard = BillboardFromJson( Value, Warnings, Where );
@@ -699,7 +699,7 @@ bool FWorldProp::FromJsonValue( const FString& InName, const NlohmannJson& Json,
 	else if ( Json.is_string() )
 	{
 		Prop.Type = EWorldPropType::String;
-		Prop.StringValue = FString::FromUtf8( Json.get<std::string>().c_str() );
+		Prop.StringValue = FString::FromUtf8( Json.get<NJson::FJsonString>().c_str() );
 	}
 	else if ( IsNumberArray( Json, 3 ) )
 	{
@@ -709,7 +709,7 @@ bool FWorldProp::FromJsonValue( const FString& InName, const NlohmannJson& Json,
 	else if ( Json.is_object() && Json.contains( "Asset" ) && Json["Asset"].is_string() )
 	{
 		Prop.Type = EWorldPropType::Asset;
-		Prop.StringValue = FString::FromUtf8( Json["Asset"].get<std::string>().c_str() );
+		Prop.StringValue = FString::FromUtf8( Json["Asset"].get<NJson::FJsonString>().c_str() );
 	}
 	else if ( Json.is_object() && Json.contains( "Object" ) && Json["Object"].is_number_integer() )
 	{

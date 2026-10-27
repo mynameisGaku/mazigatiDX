@@ -1,7 +1,6 @@
 ﻿#include "ConsoleWindow.h"
 
 #include <cfloat>
-#include <string>
 
 #include "Library/Core/File/File.h"
 #include "Library/Core/Types/CString.h"
@@ -221,18 +220,23 @@ void NDebugUI::LoadConsoleHistory( FConsoleWindowState& State )
 	State.bHistoryLoaded = true;
 	TArray<uint8> Raw;
 	if ( !NFile::ReadAllBytes( GetHistoryPath(), Raw ) ) return;
-	std::string Bytes( reinterpret_cast<const char*>( Raw.GetData() ), static_cast<size_t>( Raw.Num() ) );
-	if ( Bytes.size() >= 3 && static_cast<unsigned char>( Bytes[0] ) == 0xEF && static_cast<unsigned char>( Bytes[1] ) == 0xBB && static_cast<unsigned char>( Bytes[2] ) == 0xBF ) Bytes.erase( 0, 3 );
+	// UTF-8 の BOM は読み飛ばす
+	const int32 Num = Raw.Num();
+	int32 Start = Num >= 3 && Raw[0] == 0xEF && Raw[1] == 0xBB && Raw[2] == 0xBF ? 3 : 0;
 
+	// 1 行ずつ（LF 区切り。行末の CR は捨て、空の行は読み飛ばす）
 	TArray<FString> Lines;
-	size_t Start = 0;
-	while ( Start <= Bytes.size() )
+	while ( Start <= Num )
 	{
-		size_t End = Bytes.find( '\n', Start );
-		if ( End == std::string::npos ) End = Bytes.size();
-		std::string Line = Bytes.substr( Start, End - Start );
-		if ( !Line.empty() && Line.back() == '\r' ) Line.pop_back();
-		if ( !Line.empty() ) Lines.Add( FString::FromUtf8( Line.c_str() ) );
+		int32 End = Start;
+		while ( End < Num && Raw[End] != '\n' ) ++End;
+		int32 LineEnd = End;
+		if ( LineEnd > Start && Raw[LineEnd - 1] == '\r' ) --LineEnd;
+		if ( LineEnd > Start )
+		{
+			const FString Line( reinterpret_cast<const char*>( Raw.GetData() ) + Start, LineEnd - Start );
+			Lines.Add( FString::FromUtf8( *Line ) );
+		}
 		Start = End + 1;
 	}
 	GetHistory( State ).SetAll( Lines );

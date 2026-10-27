@@ -1,8 +1,5 @@
 ﻿#include "XFileWriter.h"
 
-#include <cstdio>
-#include <string>
-
 #include "Library/Core/Collection/Set.h"
 #include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Numeric.h"
@@ -19,9 +16,8 @@ namespace
 			Out += Text;
 			Out += "\r\n";
 		}
-		void Indentation( int32 Indent ) { Out.append( static_cast<size_t>( Indent ) * 2, ' ' ); }
+		void Indentation( int32 Indent ) { for ( int32 i = 0; i < Indent * 2; ++i ) Out += ' '; }
 		void Raw( const char* Text ) { Out += Text; }
-		void Raw( const std::string& Text ) { Out += Text; }
 		void Newline() { Out += "\r\n"; }
 
 		void Float( float32 Value )
@@ -47,7 +43,7 @@ namespace
 			}
 		}
 
-		std::string Out;
+		FString Out;
 	};
 
 	void WriteFrameTransform( FTextBuilder& T, const FImportMatrix& Matrix, int32 Indent )
@@ -395,5 +391,5 @@ FString NXFile::Write( const FImportedScene& Scene, const TArray<FString>& Textu
 	}
 	(void)SkinIndex;
 
-	return FString( T.Out.c_str(), static_cast<int32>( T.Out.size() ) );
+	return MoveTemp( T.Out );
 }

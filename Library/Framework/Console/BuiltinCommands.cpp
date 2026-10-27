@@ -124,21 +124,21 @@ namespace
 	}
 
 	// バイト列が UTF-8 として正しいか（ASCII だけでも true）
-	bool IsValidUtf8( const std::string& Bytes )
+	bool IsValidUtf8( const uint8* Bytes, int32 Num )
 	{
-		size_t i = 0;
-		while ( i < Bytes.size() )
+		int32 i = 0;
+		while ( i < Num )
 		{
-			const unsigned char Ch = static_cast<unsigned char>( Bytes[i] );
-			size_t Extra = 0;
+			const uint8 Ch = Bytes[i];
+			int32 Extra = 0;
 			if ( Ch < 0x80 ) Extra = 0;
 			else if ( ( Ch & 0xE0 ) == 0xC0 ) Extra = 1;
 			else if ( ( Ch & 0xF0 ) == 0xE0 ) Extra = 2;
 			else if ( ( Ch & 0xF8 ) == 0xF0 ) Extra = 3;
 			else return false;
-			for ( size_t k = 1; k <= Extra; ++k )
+			for ( int32 k = 1; k <= Extra; ++k )
 			{
-				if ( i + k >= Bytes.size() || ( static_cast<unsigned char>( Bytes[i + k] ) & 0xC0 ) != 0x80 ) return false;
+				if ( i + k >= Num || ( Bytes[i + k] & 0xC0 ) != 0x80 ) return false;
 			}
 			i += Extra + 1;
 		}
@@ -149,14 +149,17 @@ namespace
 	{
 		TArray<uint8> Raw;
 		if ( !NFile::ReadAllBytes( Path, Raw ) ) return false;
-		std::string Bytes( reinterpret_cast<const char*>( Raw.GetData() ), static_cast<size_t>( Raw.Num() ) );
-
-		if ( Bytes.size() >= 3 && static_cast<unsigned char>( Bytes[0] ) == 0xEF && static_cast<unsigned char>( Bytes[1] ) == 0xBB && static_cast<unsigned char>( Bytes[2] ) == 0xBF ) Bytes.erase( 0, 3 );
+		// UTF-8 の BOM は読み飛ばす
+		int32 Begin = 0;
+		if ( Raw.Num() >= 3 && Raw[0] == 0xEF && Raw[1] == 0xBB && Raw[2] == 0xBF ) Begin = 3;
+		const uint8* const Bytes = Raw.GetData() + Begin;
+		const int32 Num = Raw.Num() - Begin;
+		const FString Text( reinterpret_cast<const char*>( Bytes ), Num );
 		// UTF-8 の文字が入っていれば UTF-8 として読み、そうでなければ（ASCII だけ・CP932）そのまま読む
 		bool bHasHigh = false;
-		for ( const char Ch : Bytes ) bHasHigh = bHasHigh || static_cast<unsigned char>( Ch ) >= 0x80;
-		if ( bHasHigh && IsValidUtf8( Bytes ) ) OutText = FString::FromUtf8( Bytes.c_str() );
-		else OutText = FString( Bytes.c_str(), static_cast<int32>( Bytes.size() ) );
+		for ( int32 i = 0; i < Num; ++i ) bHasHigh = bHasHigh || Bytes[i] >= 0x80;
+		if ( bHasHigh && IsValidUtf8( Bytes, Num ) ) OutText = FString::FromUtf8( *Text );
+		else OutText = Text;
 		return true;
 	}
 
