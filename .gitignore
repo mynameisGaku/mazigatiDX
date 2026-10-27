@@ -5,6 +5,7 @@
 /Temp/
 /x64/
 /project/
+/mazigatiDX/
 **/__pycache__/
 *.pdb
 *.obj

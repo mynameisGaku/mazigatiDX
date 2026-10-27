@@ -17,12 +17,12 @@ DxLibを使うWindows向けC++フレームワークです。描画・入力・�
 
 ## ビルド
 
-検証構成はx64のDebug／Releaseです。C++17、MSVCツールセットv145、Windows SDK 10.0.26100.0を使用します。DxLib 3.24fのヘッダーとライブラリを`C:\DxLib`へ配置してください。別の場所を使う場合は`project.vcxproj`のインクルード・ライブラリ検索先を合わせます。
+検証構成はx64のDebug／Releaseです。C++17、MSVCツールセットv145、Windows SDK 10.0.26100.0を使用します。DxLib 3.24fのヘッダーとライブラリを`C:\DxLib`へ配置してください。別の場所を使う場合は`Build\mazigatiDX.props`のインクルード・ライブラリ検索先を合わせます。
 
 必要な第三者ライブラリは`VendorModules`に配置しています。SDLのシンボルファイルは含みません。各ライブラリのライセンスは同じフォルダー内に保持しています。
 
 1. `GenerateProjectFiles.bat`を実行します。
-2. `project.sln`を開き、x64のDebugまたはReleaseをビルドします。
+2. `project.sln`を開き、x64のDebugまたはReleaseをビルドします。フレームワーク本体の静的ライブラリ（`mazigatiDX`）と、ゲームの実行ファイル（`project`）の二つができます。構成は[開発手順](Docs/DEVELOPMENT.md)を参照してください。
 3. 作業ディレクトリーをこのリポジトリのルートにして起動します。`Assets`と`Config`を使います。
 
 Developer PowerShellからの例:

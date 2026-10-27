@@ -4,6 +4,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 15.0.28307.645
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "project", "project.vcxproj", "{EFAFCEE4-F6EA-4651-BA3F-DC3176CDD3A8}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3} = {0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mazigatiDX", "mazigatiDX.vcxproj", "{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +26,14 @@ Global
 		{EFAFCEE4-F6EA-4651-BA3F-DC3176CDD3A8}.Release|x64.Build.0 = Release|x64
 		{EFAFCEE4-F6EA-4651-BA3F-DC3176CDD3A8}.Release|x86.ActiveCfg = Release|Win32
 		{EFAFCEE4-F6EA-4651-BA3F-DC3176CDD3A8}.Release|x86.Build.0 = Release|Win32
+		{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}.Debug|x64.ActiveCfg = Debug|x64
+		{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}.Debug|x64.Build.0 = Debug|x64
+		{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}.Debug|x86.ActiveCfg = Debug|Win32
+		{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}.Debug|x86.Build.0 = Debug|Win32
+		{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}.Release|x64.ActiveCfg = Release|x64
+		{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}.Release|x64.Build.0 = Release|x64
+		{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}.Release|x86.ActiveCfg = Release|Win32
+		{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

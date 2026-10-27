@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  mazigatiDX の共通ビルド設定。
+  フレームワーク本体（mazigatiDX.vcxproj）と、フレームワークを使うプロジェクト（ゲーム・ツール）が、Microsoft.Cpp.props の後で取り込む。
+
+    <ImportGroup Label="PropertySheets">
+      <Import Project="<フレームワークのフォルダー>\Build\mazigatiDX.props" />
+    </ImportGroup>
+
+  ゲーム・ツール（ConfigurationType が Application）のプロジェクトは、フレームワーク本体のプロジェクトへの参照も持つ。
+    <ProjectReference Include="<フレームワークのフォルダー>\mazigatiDX.vcxproj"> <Project>{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}</Project> </ProjectReference>
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <!-- フレームワークのフォルダー（末尾に \ つき）。#include "Library/..." の基準 -->
+    <MazigatiRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..'))\</MazigatiRoot>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <!-- 同名の .cpp が別のフォルダーにあっても .obj が衝突しないよう、元のフォルダー構成のまま出力する -->
+      <ObjectFileName>$(IntDir)%(RelativeDir)</ObjectFileName>
+      <!-- プロジェクトのフォルダー（#include "Source/..."）、フレームワークのフォルダー（#include "Library/..."）、第三者のライブラリ、DxLib -->
+      <AdditionalIncludeDirectories>$(ProjectDir);$(MazigatiRoot)VendorModules\SDL3\include;$(MazigatiRoot);$(MazigatiRoot)VendorModules;C:\DxLib_VC\プロジェクトに追加すべきファイル_VC用;C:\DxLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(MazigatiRoot)VendorModules\SDL3\lib\$(PlatformTarget);C:\DxLib_VC\プロジェクトに追加すべきファイル_VC用;C:\DxLib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <!-- main で始められるようにする（WinMain を書かなくてよい。コンソールの窓は出ない） -->
+      <SubSystem>Windows</SubSystem>
+      <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
+      <!-- サブシステムの登録（REGISTER_SUBSYSTEM）や、コンソールコマンドの登録は、静的な初期化で行う。
+           静的ライブラリの .obj は、参照されないとリンクされず登録が消えるので、ライブラリ全体を取り込む -->
+      <AdditionalOptions>/WHOLEARCHIVE:mazigatiDX.lib %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PreprocessorDefinitions>JPH_ENABLE_ASSERTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+
+  <!-- 静的ライブラリは、デバッグ情報を .obj の中に持つ（/Z7）。.obj が .pdb を指す形（/Zi）だと、Release のリンクで LNK4020（型レコードが壊れている）が出るうえ、
+       並列コンパイルで .pdb の取り合いも起きる。実行ファイルのリンクが、全部をまとめて 1 つの .pdb にする -->
+  <ItemDefinitionGroup Condition="'$(ConfigurationType)'=='StaticLibrary'">
+    <ClCompile>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+
+  <!-- ObjectFileName=$(IntDir)%(RelativeDir) 用の出力ディレクトリを作成（同名 .cpp の衝突回避） -->
+  <Target Name="CreateObjectDirectories" BeforeTargets="ClCompile">
+    <MakeDir Directories="@(ClCompile->'$(IntDir)%(RelativeDir)')" />
+  </Target>
+
+  <!-- SDL3.dll を実行ファイルの隣へコピーする（実行ファイルを作るプロジェクトだけ。静的ライブラリは Link を通らない） -->
+  <Target Name="CopySdlDll" AfterTargets="Link">
+    <Copy SourceFiles="$(MazigatiRoot)VendorModules\SDL3\lib\$(PlatformTarget)\SDL3.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" Condition="Exists('$(MazigatiRoot)VendorModules\SDL3\lib\$(PlatformTarget)\SDL3.dll')" />
+  </Target>
+</Project>
