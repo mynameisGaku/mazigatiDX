@@ -110,7 +110,7 @@ msbuild .\project.sln /p:Configuration=Debug /p:Platform=x64 /m
 msbuild .\project.sln /p:Configuration=Release /p:Platform=x64 /m
 ```
 
-自己確認（ecs・assets・world）はこのリポジトリに含めず、別のリポジトリ`framework-selftests`で管理します。ルートの`Source\SelfTest`へ置く（ジャンクション可）と、`GenerateProjectFiles.bat`がワイルドカードで取り込み、検査側が静的な登録で起動時の窓口（`Source/Application/StartupHook.h`）へ自分を差し込んで、`--selftest=ecs|assets|world`のシーンを登録します。`GameApplication`は有無を知らないので、置かないときは何も組み込まれず通常どおりビルドでき、足し引きしても再コンパイルの要否に影響しません。
+自己確認（ecs・assets・world）はこのリポジトリに含めず、別のリポジトリ`framework-test`で管理します。ルートの`Source\SelfTest`へ置く（ジャンクション可）と、`GenerateProjectFiles.bat`がワイルドカードで取り込み、検査側が静的な登録で起動時の窓口（`Source/Application/StartupHook.h`）へ自分を差し込んで、`--selftest=ecs|assets|world`のシーンを登録します。`GameApplication`は有無を知らないので、置かないときは何も組み込まれず通常どおりビルドでき、足し引きしても再コンパイルの要否に影響しません。
 
 ```powershell
 .\Source\SelfTest\RunSelfTests.ps1 -Suite assets -Configuration Debug

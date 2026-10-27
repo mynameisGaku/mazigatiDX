@@ -32,7 +32,7 @@ msbuild .\project.sln /p:Configuration=Debug /p:Platform=x64 /m
 msbuild .\project.sln /p:Configuration=Release /p:Platform=x64 /m
 ```
 
-自己確認は、このリポジトリに含めず別のリポジトリ`framework-selftests`で管理しています。ルートの`Source\SelfTest`へ置いたときだけ組み込まれ、置かなくても通常どおりビルドできます。詳しい起動・確認・開発規約は[開発手順](Docs/DEVELOPMENT.md)にまとめています。
+自己確認は、このリポジトリに含めず別のリポジトリ`framework-test`で管理しています。ルートの`Source\SelfTest`へ置いたときだけ組み込まれ、置かなくても通常どおりビルドできます。詳しい起動・確認・開発規約は[開発手順](Docs/DEVELOPMENT.md)にまとめています。
 
 ## エフェクトを使う
 
