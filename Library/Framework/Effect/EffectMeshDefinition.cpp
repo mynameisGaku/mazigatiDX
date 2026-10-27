@@ -118,25 +118,27 @@ bool FEffectMeshDefinition::FromJson( const NlohmannJson& Json, FEffectMeshDefin
 	{
 		if ( Json["Segments"].is_number_integer() )
 		{
+			// 3から128の範囲を外れた整数か。
+			bool bOutOfRange = false;
 			try
 			{
 				if ( Json["Segments"].is_number_unsigned() )
 				{
 					// int32変換前に符号なし整数の範囲を調べる。
 					const uint64 Value = Json["Segments"].get<uint64>();
-					if ( Value < 3 || Value > 128 ) throw std::out_of_range( "segments range" );
-					Definition.Segments = static_cast<int32>( Value );
+					if ( Value < 3 || Value > 128 ) bOutOfRange = true;
+					else Definition.Segments = static_cast<int32>( Value );
 				}
 				else
 				{
 					// int32へ狭める前に符号付き整数の範囲を調べる。
 					const int64 Value = Json["Segments"].get<int64>();
-					if ( Value < 3 || Value > 128 ) throw std::out_of_range( "segments range" );
-					Definition.Segments = static_cast<int32>( Value );
+					if ( Value < 3 || Value > 128 ) bOutOfRange = true;
+					else Definition.Segments = static_cast<int32>( Value );
 				}
 			}
 			catch ( const nlohmann::json::exception& ) { Definition.InvalidFieldTypes |= InvalidSegments; Warn( Warnings, "Segmentsは整数にしてください" ); }
-			catch ( const std::out_of_range& ) { Definition.InvalidFieldTypes |= InvalidSegments; Warn( Warnings, "Segmentsは3から128にしてください" ); }
+			if ( bOutOfRange ) { Definition.InvalidFieldTypes |= InvalidSegments; Warn( Warnings, "Segmentsは3から128にしてください" ); }
 		}
 		else { Definition.InvalidFieldTypes |= InvalidSegments; Warn( Warnings, "Segmentsは整数にしてください" ); }
 	}

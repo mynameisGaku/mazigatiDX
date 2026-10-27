@@ -73,7 +73,7 @@ void CJobSystem::Deinitialize()
 
 	LOG( LogJob, Log, "Shutdown (%d worker thread(s) stopped)", Workers.Num() );
 	Workers.Reset();
-	ReadyJobs.clear();
+	ReadyJobs.Empty();
 	Groups.Reset();
 }
 
@@ -99,7 +99,7 @@ void CJobSystem::WorkerMain( int32 Index )
 
 bool CJobSystem::HasWorkLocked() const
 {
-	if ( !ReadyJobs.empty() ) return true;
+	if ( !ReadyJobs.IsEmpty() ) return true;
 	for ( const FGroup* Group : Groups )
 	{
 		if ( Group->NextBatch.Load( EMemoryOrder::Relaxed ) < Group->NumBatches ) return true;
@@ -122,10 +122,10 @@ bool CJobSystem::RunOneLocked( FUniqueLock& Lock, bool bAllowJobs )
 		return true;
 	}
 
-	if ( bAllowJobs && !ReadyJobs.empty() )
+	if ( bAllowJobs && !ReadyJobs.IsEmpty() )
 	{
-		TSharedPtr<FJobState> Job = MoveTemp( ReadyJobs.front() );
-		ReadyJobs.pop_front();
+		TSharedPtr<FJobState> Job;
+		ReadyJobs.Dequeue( Job );
 		Lock.Unlock();
 		RunJob( Job );
 		Lock.Lock();
@@ -251,7 +251,7 @@ void CJobSystem::Enqueue( const TSharedPtr<FJobState>& Job )
 
 	{
 		FScopedLock Lock( Mutex );
-		ReadyJobs.push_back( Job );
+		ReadyJobs.Enqueue( Job );
 	}
 	WorkAvailable.NotifyOne();
 }

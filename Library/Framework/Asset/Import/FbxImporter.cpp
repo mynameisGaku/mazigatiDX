@@ -1,11 +1,11 @@
 ﻿#include "FbxImporter.h"
 
 #include <cstdint>
-#include <unordered_map>
 
 #include "VendorModules/ufbx/ufbx.h"
 
 #include "Library/Core/Collection/Array.h"
+#include "Library/Core/Collection/Map.h"
 #include "Library/Core/Types/Numeric.h"
 
 namespace
@@ -42,17 +42,8 @@ namespace
 		uint32_t Normal;
 		uint32_t UV;
 		bool operator==( const FCornerKey& Other ) const { return Position == Other.Position && Normal == Other.Normal && UV == Other.UV; }
-	};
-
-	struct FCornerKeyHash
-	{
-		size_t operator()( const FCornerKey& Key ) const
-		{
-			size_t Hash = static_cast<size_t>( Key.Position ) * 73856093u;
-			Hash ^= static_cast<size_t>( Key.Normal ) * 19349663u;
-			Hash ^= static_cast<size_t>( Key.UV ) * 83492791u;
-			return Hash;
-		}
+		// TMap のキーにするためのハッシュ（位置・法線・UV の番号を混ぜる）。
+		friend uint32 GetTypeHash( const FCornerKey& Key ) { return HashCombine( HashCombine( GetTypeHash( Key.Position ), GetTypeHash( Key.Normal ) ), GetTypeHash( Key.UV ) ); }
 	};
 
 	class FSceneBuilder
@@ -104,7 +95,7 @@ namespace
 			if ( Texture->type != UFBX_TEXTURE_FILE && Texture->file_textures.count > 0 ) Texture = Texture->file_textures.data[0];
 			if ( Texture->type != UFBX_TEXTURE_FILE ) return -1;
 
-			if ( const auto Found = TextureMap.find( Texture->typed_id ); Found != TextureMap.end() ) return Found->second;
+			if ( const int32* Found = TextureMap.Find( Texture->typed_id ) ) return *Found;
 
 			FImportedTexture Imported;
 			FString File = ToFString( Texture->relative_filename );
@@ -120,7 +111,7 @@ namespace
 			if ( File.IsEmpty() ) return -1;
 			Imported.File = File;
 			const int32 Index = Out.Textures.Add( Imported );
-			TextureMap[Texture->typed_id] = Index;
+			TextureMap.Add( Texture->typed_id, Index );
 			return Index;
 		}
 
@@ -200,7 +191,7 @@ namespace
 				}
 			}
 
-			std::unordered_map<FCornerKey, int32, FCornerKeyHash> VertexMap;
+			TMap<FCornerKey, int32> VertexMap;   // 出力の頂点の番号（元の頂点の組ごと）
 			TArray<uint32_t> ControlPoints;   // 出力の頂点ごとの、元の頂点の番号
 			TArray<uint32_t> Triangles;
 			Triangles.SetNum( static_cast<int32>( NMath::Max<size_t>( Mesh.max_face_triangles * 3, 3 ) ) );
@@ -227,8 +218,9 @@ namespace
 					{
 						const uint32_t Index = Triangles[Triangle * 3 + Corner];
 						const FCornerKey Key { Mesh.vertex_position.indices.data[Index], bHasNormal ? Mesh.vertex_normal.indices.data[Index] : 0u, bHasUV ? Mesh.vertex_uv.indices.data[Index] : 0u };
-						auto Found = VertexMap.find( Key );
-						if ( Found == VertexMap.end() )
+						int32 VertexIndex = INDEX_NONE;
+						if ( const int32* Found = VertexMap.Find( Key ) ) VertexIndex = *Found;
+						else
 						{
 							const ufbx_vec3 Position = Mesh.vertex_position.values.data[Key.Position];
 							Imported.Positions.Add( FVector3( static_cast<float32>( Position.x ), static_cast<float32>( Position.y ), static_cast<float32>( Position.z ) ) );
@@ -247,9 +239,10 @@ namespace
 								Imported.UVs.Add( FVector2( static_cast<float32>( UV.x ), 1.0f - static_cast<float32>( UV.y ) ) );   // FBX は下が 0、DirectX は上が 0
 							}
 							ControlPoints.Add( Mesh.vertex_indices.data[Index] );
-							Found = VertexMap.emplace( Key, Imported.Positions.Num() - 1 ).first;
+							VertexIndex = Imported.Positions.Num() - 1;
+							VertexMap.Add( Key, VertexIndex );
 						}
-						Imported.Indices.Add( Found->second );
+						Imported.Indices.Add( VertexIndex );
 					}
 					Imported.TriangleMaterials.Add( Material );
 				}
@@ -322,7 +315,7 @@ namespace
 		const FImportOptions& Options;
 		FImportedScene& Out;
 		TArray<int32> NodeMap;                 // ufbx のノードの番号 -> FImportedScene::Nodes の番号（根は -1）
-		std::unordered_map<uint32_t, int32> TextureMap;
+		TMap<uint32, int32> TextureMap;
 	};
 }
 

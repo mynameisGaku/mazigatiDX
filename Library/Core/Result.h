@@ -1,11 +1,11 @@
 ﻿#pragma once
 #include <cassert>
-#include <cstdlib>
 #include <new>
 
 #include "Library/Core/Types/TypeDefinition.h"
 #include "Library/Core/Collection/Optional.h"
 #include "Library/Core/Collection/String.h"
+#include "Library/Core/Types/Process.h"
 #include "Library/Core/Types/TypeTraits.h"
 #include "Library/Core/Types/Utility.h"
 
@@ -38,7 +38,7 @@ namespace NResultDetail
 	{
 		assert( false && Message );
 		(void)Message;
-		std::abort();
+		NProcess::Abort();
 	}
 
 	struct FOkTag {};

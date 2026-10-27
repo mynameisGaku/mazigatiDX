@@ -1,7 +1,6 @@
 ﻿#pragma once
-#include <deque>
-
 #include "Library/Core/Collection/Array.h"
+#include "Library/Core/Collection/Queue.h"
 #include "Library/Core/Interfaces/Job/IJobSystem.h"
 #include "Library/Core/Thread/Atomic.h"
 #include "Library/Core/Thread/Mutex.h"
@@ -62,6 +61,6 @@ private:
 	FMutex Mutex;
 	FConditionVariable WorkAvailable;
 	TArray<FGroup*> Groups;                    // 実行中の ParallelFor
-	std::deque<TSharedPtr<FJobState>> ReadyJobs;   // 実行できる単発のジョブ
+	TQueue<TSharedPtr<FJobState>> ReadyJobs;   // 実行できる単発のジョブ
 	bool bStopping = false;
 };

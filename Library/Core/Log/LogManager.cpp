@@ -1,10 +1,9 @@
 ﻿#include "LogManager.h"
 #include "Log.h"
 
-#include <cstdlib>
-
 #include "Library/Core/Thread/Mutex.h"
 #include "Library/Core/Types/CString.h"
+#include "Library/Core/Types/Process.h"
 
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
@@ -247,7 +246,7 @@ void CLogManager::LogV( const FLogCategory& Category, ELogVerbosity Verbosity,
 		{
 			__debugbreak();
 		}
-		std::abort();
+		NProcess::Abort();
 	}
 }
 
