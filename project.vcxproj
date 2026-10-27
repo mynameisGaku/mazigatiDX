@@ -495,7 +495,98 @@
     <ClCompile Include="VendorModules\Jolt\TriangleSplitter\TriangleSplitterBinning.cpp" />
     <ClCompile Include="VendorModules\Jolt\TriangleSplitter\TriangleSplitterMean.cpp" />
     <ClCompile Include="VendorModules\ufbx\ufbx.c" />
-    <ClCompile Include="Source\SelfTest\**\*.cpp" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCore.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestCore.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCoreAlgorithm.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestCoreAlgorithm.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCoreCallable.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestCoreCallable.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCoreContainers.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestCoreContainers.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCoreCString.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestCoreCString.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCoreFile.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestCoreFile.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCoreMemory.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestCoreMemory.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCoreText.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestCoreText.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCoreThread.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestCoreThread.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCoreTraits.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestCoreTraits.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCoreTuple.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestCoreTuple.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestImport.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestImport.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestLogic.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestLogic.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestModelMaterial.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestModelMaterial.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestModelMaterialBoundary.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestModelMaterialBoundary.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestModelSurface.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestModelSurface.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestPhysics.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestPhysics.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestPhysicsCharacters.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestPhysicsCharacters.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestPhysicsConstraints.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestPhysicsConstraints.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestPhysicsContacts.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestPhysicsContacts.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestPhysicsDebug.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestPhysicsDebug.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestPhysicsLayers.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestPhysicsLayers.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestScene.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestScene.cpp')" />
+    <ClCompile Include="Source\SelfTest\ConsoleSelfTest.cpp" Condition="Exists('Source\SelfTest\ConsoleSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\EcsSelfTestScene.cpp" Condition="Exists('Source\SelfTest\EcsSelfTestScene.cpp')" />
+    <ClCompile Include="Source\SelfTest\SelfTestEntry.cpp" Condition="Exists('Source\SelfTest\SelfTestEntry.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEditorSelfTestInput.cpp" Condition="Exists('Source\SelfTest\WorldEditorSelfTestInput.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEditorSelfTestMath.cpp" Condition="Exists('Source\SelfTest\WorldEditorSelfTestMath.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEditorSelfTestReal.cpp" Condition="Exists('Source\SelfTest\WorldEditorSelfTestReal.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEditorSelfTestSession.cpp" Condition="Exists('Source\SelfTest\WorldEditorSelfTestSession.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectAppearanceBoundarySelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectAppearanceBoundarySelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectAppearanceInputSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectAppearanceInputSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectAppearancePlaybackSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectAppearancePlaybackSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectAppearanceRealSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectAppearanceRealSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectAppearanceSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectAppearanceSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectEditorInputSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectEditorInputSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectEditorRealSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectEditorRealSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectEditorSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectEditorSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectFlipbookInputSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectFlipbookInputSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectFlipbookPlaybackSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectFlipbookPlaybackSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectFlipbookRealSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectFlipbookRealSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectFlipbookResourceSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectFlipbookResourceSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectFlipbookSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectFlipbookSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectForceFieldEditorGeometrySelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectForceFieldEditorGeometrySelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectForceFieldEditorSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectForceFieldEditorSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectMaterialInputSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectMaterialInputSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectMaterialPathPlaybackSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectMaterialPathPlaybackSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectMaterialPlaybackSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectMaterialPlaybackSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectMaterialRealSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectMaterialRealSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectMaterialRibbonRealSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectMaterialRibbonRealSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectMaterialSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectMaterialSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectMeshCommandSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectMeshCommandSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectMeshRealSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectMeshRealSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectMeshResourceSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectMeshResourceSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectMeshSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectMeshSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectPathPlaybackSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectPathPlaybackSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectPathSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectPathSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectRibbonRealSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectRibbonRealSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectRibbonUVDistortionCommandSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectRibbonUVDistortionCommandSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectRibbonUVDistortionPlaybackSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectRibbonUVDistortionPlaybackSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectRibbonUVDistortionRealSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectRibbonUVDistortionRealSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectRibbonUVDistortionResourceSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectRibbonUVDistortionResourceSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectSelfTestData.cpp" Condition="Exists('Source\SelfTest\WorldEffectSelfTestData.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectSelfTestScene.cpp" Condition="Exists('Source\SelfTest\WorldEffectSelfTestScene.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectSelfTestSim.cpp" Condition="Exists('Source\SelfTest\WorldEffectSelfTestSim.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectTargetSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectTargetSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectTreeLightningInputSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectTreeLightningInputSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectTreeLightningPlaybackSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectTreeLightningPlaybackSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectTreeLightningRealSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectTreeLightningRealSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectTreeLightningSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectTreeLightningSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectUVDistortionInputSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectUVDistortionInputSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectUVDistortionPlaybackSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectUVDistortionPlaybackSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectUVDistortionRealSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectUVDistortionRealSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectUVDistortionResourceSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectUVDistortionResourceSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldEffectUVDistortionSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldEffectUVDistortionSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldMeshMaterialDefinitionSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldMeshMaterialDefinitionSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldMeshMaterialEditorSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldMeshMaterialEditorSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldMeshMaterialPlaybackSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldMeshMaterialPlaybackSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldMeshMaterialRealSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldMeshMaterialRealSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldMeshMaterialResourceSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldMeshMaterialResourceSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldMeshSelfTestData.cpp" Condition="Exists('Source\SelfTest\WorldMeshSelfTestData.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldMeshSelfTestEditor.cpp" Condition="Exists('Source\SelfTest\WorldMeshSelfTestEditor.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldMeshSelfTestOps.cpp" Condition="Exists('Source\SelfTest\WorldMeshSelfTestOps.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldModelMaterialInspectorEditorSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldModelMaterialInspectorEditorSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldModelMaterialInspectorSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldModelMaterialInspectorSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldModelMaterialSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldModelMaterialSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldModelPreviewRealSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldModelPreviewRealSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldModelPreviewSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldModelPreviewSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldPrefabSelfTest.cpp" Condition="Exists('Source\SelfTest\WorldPrefabSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldSelfTestLogic.cpp" Condition="Exists('Source\SelfTest\WorldSelfTestLogic.cpp')" />
+    <ClCompile Include="Source\SelfTest\WorldSelfTestScene.cpp" Condition="Exists('Source\SelfTest\WorldSelfTestScene.cpp')" />
+    <ClCompile Include="Source\SelfTest\**\*.cpp" Exclude="@(ClCompile)" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Library\Core\Result.h" />
@@ -1258,6 +1349,29 @@
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_video.h" />
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_vulkan.h" />
     <ClInclude Include="VendorModules\ufbx\ufbx.h" />
-    <ClInclude Include="Source\SelfTest\**\*.h" />
+    <ClInclude Include="Source\SelfTest\AssetSelfTestCore.h" Condition="Exists('Source\SelfTest\AssetSelfTestCore.h')" />
+    <ClInclude Include="Source\SelfTest\AssetSelfTestFbx.h" Condition="Exists('Source\SelfTest\AssetSelfTestFbx.h')" />
+    <ClInclude Include="Source\SelfTest\AssetSelfTestModelMaterial.h" Condition="Exists('Source\SelfTest\AssetSelfTestModelMaterial.h')" />
+    <ClInclude Include="Source\SelfTest\AssetSelfTestModelMaterialBoundary.h" Condition="Exists('Source\SelfTest\AssetSelfTestModelMaterialBoundary.h')" />
+    <ClInclude Include="Source\SelfTest\AssetSelfTestModelSurface.h" Condition="Exists('Source\SelfTest\AssetSelfTestModelSurface.h')" />
+    <ClInclude Include="Source\SelfTest\AssetSelfTestScene.h" Condition="Exists('Source\SelfTest\AssetSelfTestScene.h')" />
+    <ClInclude Include="Source\SelfTest\AssetSelfTestSupport.h" Condition="Exists('Source\SelfTest\AssetSelfTestSupport.h')" />
+    <ClInclude Include="Source\SelfTest\EcsSelfTestScene.h" Condition="Exists('Source\SelfTest\EcsSelfTestScene.h')" />
+    <ClInclude Include="Source\SelfTest\WorldEditorSelfTestSupport.h" Condition="Exists('Source\SelfTest\WorldEditorSelfTestSupport.h')" />
+    <ClInclude Include="Source\SelfTest\WorldEffectForceFieldEditorGeometrySelfTest.h" Condition="Exists('Source\SelfTest\WorldEffectForceFieldEditorGeometrySelfTest.h')" />
+    <ClInclude Include="Source\SelfTest\WorldEffectForceFieldEditorSelfTest.h" Condition="Exists('Source\SelfTest\WorldEffectForceFieldEditorSelfTest.h')" />
+    <ClInclude Include="Source\SelfTest\WorldEffectMeshCommandSelfTest.h" Condition="Exists('Source\SelfTest\WorldEffectMeshCommandSelfTest.h')" />
+    <ClInclude Include="Source\SelfTest\WorldEffectMeshRealSelfTest.h" Condition="Exists('Source\SelfTest\WorldEffectMeshRealSelfTest.h')" />
+    <ClInclude Include="Source\SelfTest\WorldEffectMeshResourceSelfTest.h" Condition="Exists('Source\SelfTest\WorldEffectMeshResourceSelfTest.h')" />
+    <ClInclude Include="Source\SelfTest\WorldEffectSelfTestSupport.h" Condition="Exists('Source\SelfTest\WorldEffectSelfTestSupport.h')" />
+    <ClInclude Include="Source\SelfTest\WorldEffectTargetSelfTest.h" Condition="Exists('Source\SelfTest\WorldEffectTargetSelfTest.h')" />
+    <ClInclude Include="Source\SelfTest\WorldMeshMaterialSelfTestSupport.h" Condition="Exists('Source\SelfTest\WorldMeshMaterialSelfTestSupport.h')" />
+    <ClInclude Include="Source\SelfTest\WorldMeshSelfTestSupport.h" Condition="Exists('Source\SelfTest\WorldMeshSelfTestSupport.h')" />
+    <ClInclude Include="Source\SelfTest\WorldModelMaterialInspectorSelfTest.h" Condition="Exists('Source\SelfTest\WorldModelMaterialInspectorSelfTest.h')" />
+    <ClInclude Include="Source\SelfTest\WorldModelMaterialSelfTest.h" Condition="Exists('Source\SelfTest\WorldModelMaterialSelfTest.h')" />
+    <ClInclude Include="Source\SelfTest\WorldModelPreviewSelfTest.h" Condition="Exists('Source\SelfTest\WorldModelPreviewSelfTest.h')" />
+    <ClInclude Include="Source\SelfTest\WorldSelfTestScene.h" Condition="Exists('Source\SelfTest\WorldSelfTestScene.h')" />
+    <ClInclude Include="Source\SelfTest\WorldSelfTestSupport.h" Condition="Exists('Source\SelfTest\WorldSelfTestSupport.h')" />
+    <ClInclude Include="Source\SelfTest\**\*.h" Exclude="@(ClInclude)" />
   </ItemGroup>
 </Project>

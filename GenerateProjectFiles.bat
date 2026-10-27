@@ -84,13 +84,13 @@ $allFilters    = [System.Collections.Generic.SortedSet[string]]::new([StringComp
 $sourceFiles = Get-ChildItem -Path $root -Recurse -File |
                Where-Object { $_.Extension -in @('.cpp', '.c', '.h', '.hpp', '.inl') }
 
-# Source\SelfTest is kept in a separate repository and may be absent (or be a junction to it), so it is not listed
-# file by file. It is added below as wildcard items instead, which keeps the project identical either way.
+# Source\SelfTest is kept in a separate repository and may be absent (or be a junction to it).
 $selfTestDir = 'Source\SelfTest'
 
-# Visual Studio does not apply a wildcard item's <Filter> in the .filters file: the expanded files would all show up loose at the
-# project root. So the .vcxproj keeps the wildcard (new files build without regenerating), and the .filters lists the files that exist
-# now one by one (a file listed there but missing is ignored; a file added later shows at the root until this script is run again).
+# Visual Studio does not apply the .filters file to files that a wildcard item expands to: they would all show up loose at the project
+# root, whatever the .filters file says. So the files that exist now are listed one by one in the .vcxproj too, each with a condition
+# that the file exists (the build works the same when Source\SelfTest is absent). A wildcard item that excludes the listed files is
+# kept after them, so a file added later still builds without regenerating (it shows at the root until this script is run again).
 $selfTestCompile = [System.Collections.Generic.List[hashtable]]::new()
 $selfTestInclude = [System.Collections.Generic.List[hashtable]]::new()
 
@@ -130,7 +130,7 @@ if (Test-Path -LiteralPath $selfTestPath) {
     }
 }
 
-# .vcxproj: wildcard items (the build does not depend on whether Source\SelfTest exists)
+# .vcxproj: the wildcard items that pick up files added later (the ones listed one by one are excluded, so nothing is built twice)
 $wildcardCompile = "$selfTestDir\**\*.cpp"
 $wildcardInclude = "$selfTestDir\**\*.h"
 
@@ -205,8 +205,15 @@ foreach ($item in $compileItems) {
     $el.SetAttribute('Include', $item.RelPath)
     [void]$cg.AppendChild($el)
 }
+foreach ($item in $selfTestCompile) {
+    $el = $vcx.CreateElement('ClCompile', $ns)
+    $el.SetAttribute('Include', $item.RelPath)
+    $el.SetAttribute('Condition', "Exists('$($item.RelPath)')")
+    [void]$cg.AppendChild($el)
+}
 $el = $vcx.CreateElement('ClCompile', $ns)
 $el.SetAttribute('Include', $wildcardCompile)
+$el.SetAttribute('Exclude', '@(ClCompile)')
 [void]$cg.AppendChild($el)
 [void]$proj.AppendChild($cg)
 
@@ -216,8 +223,15 @@ foreach ($item in $includeItems) {
     $el.SetAttribute('Include', $item.RelPath)
     [void]$ig.AppendChild($el)
 }
+foreach ($item in $selfTestInclude) {
+    $el = $vcx.CreateElement('ClInclude', $ns)
+    $el.SetAttribute('Include', $item.RelPath)
+    $el.SetAttribute('Condition', "Exists('$($item.RelPath)')")
+    [void]$ig.AppendChild($el)
+}
 $el = $vcx.CreateElement('ClInclude', $ns)
 $el.SetAttribute('Include', $wildcardInclude)
+$el.SetAttribute('Exclude', '@(ClInclude)')
 [void]$ig.AppendChild($el)
 [void]$proj.AppendChild($ig)
 
