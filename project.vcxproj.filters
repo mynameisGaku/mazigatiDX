@@ -445,6 +445,12 @@
     <ClCompile Include="Library\Physics\ContactListener.cpp">
       <Filter>Library\Physics</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Physics\PhysicsConstraint.cpp">
+      <Filter>Library\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Physics\PhysicsConstraints.cpp">
+      <Filter>Library\Physics</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Physics\PhysicsLayers.cpp">
       <Filter>Library\Physics</Filter>
     </ClCompile>
@@ -1164,7 +1170,13 @@
     <ClInclude Include="Library\Core\Interfaces\Physics\ICollisionLayers.h">
       <Filter>Library\Core\Interfaces\Physics</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Physics\IPhysicsConstraints.h">
+      <Filter>Library\Core\Interfaces\Physics</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Physics\IPhysicsQuery.h">
+      <Filter>Library\Core\Interfaces\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsConstraintTypes.h">
       <Filter>Library\Core\Interfaces\Physics</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsLayerTypes.h">
@@ -1723,6 +1735,15 @@
       <Filter>Library\Physics</Filter>
     </ClInclude>
     <ClInclude Include="Library\Physics\Physics.h">
+      <Filter>Library\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\PhysicsConstraint.h">
+      <Filter>Library\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\PhysicsConstraintRules.h">
+      <Filter>Library\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\PhysicsInput.h">
       <Filter>Library\Physics</Filter>
     </ClInclude>
     <ClInclude Include="Library\Physics\PhysicsSubsystem.h">

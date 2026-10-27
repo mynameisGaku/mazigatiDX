@@ -5,9 +5,11 @@
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Interfaces/Physics/ICollisionLayers.h"
+#include "Library/Core/Interfaces/Physics/IPhysicsConstraints.h"
 #include "Library/Core/Interfaces/Physics/IPhysicsQuery.h"
 #include "Library/Physics/PhysicsTypes.h"
 #include "Library/Physics/CollisionShape.h"
+#include "Library/Physics/PhysicsConstraint.h"
 #include "Library/Physics/RigidBody.h"
 
 namespace JPH
@@ -43,7 +45,7 @@ struct FPhysicsSettings
 // CPhysicsSystem
 //   Jolt Physics のワールド 1 つ分。複数作ってよい（シーンごとに CPhysicsSubsystem が 1 つ持つ）。
 //   フレームワークに依存しないので、単体でも動かせる。
-//   空間クエリ（レイ・重なり・掃引）は IPhysicsQuery、衝突レイヤーの表は ICollisionLayers として使える。
+//   空間クエリ（レイ・重なり・掃引）は IPhysicsQuery、衝突レイヤーの表は ICollisionLayers、関節（拘束）は IPhysicsConstraints として使える。
 //
 //   CPhysicsSystem Physics;
 //   Physics.Init();
@@ -52,7 +54,7 @@ struct FPhysicsSettings
 //   FTransform T = Body->GetTransform();
 //   Physics.Shutdown();
 //=============================================================================
-class CPhysicsSystem : public IPhysicsQuery, public ICollisionLayers
+class CPhysicsSystem : public IPhysicsQuery, public ICollisionLayers, public IPhysicsConstraints
 {
 public:
 	CPhysicsSystem();
@@ -112,6 +114,14 @@ public:
 	void ResetLayerCollision() override;
 
 	//-------------------------------------------------------------------------
+	// 関節（IPhysicsConstraints。使い方と注意はそちらを参照）
+	//-------------------------------------------------------------------------
+	FPhysicsConstraint* CreateConstraint( FRigidBody* BodyA, FRigidBody* BodyB, const FConstraintSettings& ConstraintSettings ) override;
+	void DestroyConstraint( FPhysicsConstraint* Constraint ) override;
+	void DestroyAllConstraints() override;
+	int32 GetConstraintCount() const override;
+
+	//-------------------------------------------------------------------------
 	// 衝突コールバック（所有権は呼び出し側）
 	//-------------------------------------------------------------------------
 	void AddContactListener( CContactListener* Listener );
@@ -137,6 +147,18 @@ private:
 	// 衝突の表が変わるレイヤーの、動く剛体を起こす
 	void WakeLayerBodies( uint32 LayerMask );
 
+	// この世界で作った剛体か
+	bool OwnsBody( const FRigidBody* Body ) const;
+
+	// 関節を Jolt から外し、剛体との関係を切る（入れ物は残す）。bWakeBodies なら、つないでいた剛体を起こす
+	void DetachConstraint( FPhysicsConstraint& Constraint, bool bWakeBodies );
+
+	// 剛体につないだ関節をすべて外す（その剛体を破棄する前に呼ぶ）
+	void DetachConstraintsOf( const FRigidBody* Body );
+
+	// 2 つの剛体の衝突を止める・戻す（関節でつないだ組。数えて持つので、止めた回数だけ戻す）
+	void IgnoreCollision( const FRigidBody& BodyA, const FRigidBody& BodyB, bool bIgnore );
+
 	bool             bInitialized = false;
 	FPhysicsSettings Settings;
 	float32          Accumulator  = 0.0f;
@@ -151,5 +173,6 @@ private:
 	TUniquePtr<JPH::PhysicsSystem>       JoltSystem;
 
 	TMap<uint32, TUniquePtr<FRigidBody>> Bodies;  // key: BodyID::GetIndexAndSequenceNumber
+	TArray<TUniquePtr<FPhysicsConstraint>> Constraints;  // 外れて入れ物だけ残っているものも含む
 	TArray<CContactListener*> ContactListeners;
 };

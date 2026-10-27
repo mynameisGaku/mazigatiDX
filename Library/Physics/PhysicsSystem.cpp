@@ -195,6 +195,7 @@ void CPhysicsSystem::Shutdown()
 	if ( !bInitialized ) return;
 
 	DestroyAllBodies();
+	DestroyAllConstraints();
 
 	JoltSystem.Reset();
 	ContactQueue.Reset();
@@ -337,6 +338,9 @@ void CPhysicsSystem::DestroyBody( FRigidBody* Body )
 		return;
 	}
 
+	// 関節は、Jolt が剛体を指したままにならないよう、先に外す
+	DetachConstraintsOf( Body );
+
 	JPH::BodyInterface& BodyInterface = GetBodyInterface();
 	BodyInterface.RemoveBody( BodyID );
 	BodyInterface.DestroyBody( BodyID );
@@ -349,6 +353,7 @@ void CPhysicsSystem::DestroyAllBodies()
 	if ( !bInitialized ) return;
 
 	if ( !Bodies.IsEmpty() ) LOG( LogPhysics, Verbose, "Destroying all %d body(ies)", Bodies.Num() );
+	for ( const TUniquePtr<FPhysicsConstraint>& Constraint : Constraints ) DetachConstraint( *Constraint, false );
 	JPH::BodyInterface& BodyInterface = GetBodyInterface();
 	for ( auto& [Key, Body] : Bodies )
 	{

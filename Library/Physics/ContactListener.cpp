@@ -45,6 +45,37 @@ void CContactEventQueue::Clear()
 	Events.Reset();
 }
 
+uint64 CContactEventQueue::MakePairKey( const PhysBodyID& BodyA, const PhysBodyID& BodyB )
+{
+	const uint32 A = BodyA.GetIndexAndSequenceNumber();
+	const uint32 B = BodyB.GetIndexAndSequenceNumber();
+	return A < B ? ( static_cast<uint64>( A ) << 32 ) | B : ( static_cast<uint64>( B ) << 32 ) | A;
+}
+
+void CContactEventQueue::AddIgnoredPair( const PhysBodyID& BodyA, const PhysBodyID& BodyB )
+{
+	++IgnoredPairs.FindOrAdd( MakePairKey( BodyA, BodyB ), 0 );
+}
+
+void CContactEventQueue::RemoveIgnoredPair( const PhysBodyID& BodyA, const PhysBodyID& BodyB )
+{
+	const uint64 Key = MakePairKey( BodyA, BodyB );
+	int32* Count = IgnoredPairs.Find( Key );
+	if ( Count == nullptr ) return;
+
+	if ( --( *Count ) <= 0 ) IgnoredPairs.Remove( Key );
+}
+
+JPH::ValidateResult CContactEventQueue::OnContactValidate( const JPH::Body& Body1, const JPH::Body& Body2, JPH::RVec3Arg, const JPH::CollideShapeResult& )
+{
+	// Jolt のワーカースレッドから呼ばれる。読むだけ（書き換えるのは Update の合間）
+	if ( !IgnoredPairs.IsEmpty() && IgnoredPairs.Find( MakePairKey( Body1.GetID(), Body2.GetID() ) ) != nullptr )
+	{
+		return JPH::ValidateResult::RejectAllContactsForThisBodyPair;
+	}
+	return JPH::ValidateResult::AcceptAllContactsForThisBodyPair;
+}
+
 void CContactEventQueue::OnContactAdded( const JPH::Body& Body1, const JPH::Body& Body2, const JPH::ContactManifold& Manifold, JPH::ContactSettings& )
 {
 	Push( EEventType::Added, Body1, Body2, Manifold );

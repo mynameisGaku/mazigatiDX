@@ -4,6 +4,7 @@
 #include "Library/Core/Types/CompilerMacros.h"
 
 #include "Library/Core/Collection/Array.h"
+#include "Library/Core/Collection/Map.h"
 #include "Library/Physics/PhysicsTypes.h"
 
 #pragma push_macro( "min" )
@@ -66,7 +67,13 @@ public:
 
 	void Clear();
 
+	// 衝突させない組（関節でつないだ剛体。FConstraintSettings::bCollideConnected が false のとき）。同じ組に関節が複数ありうるので、数えて持つ。
+	// 変えるのは物理の Update と同時でないとき（Update 中は Jolt のワーカースレッドが読む）
+	void AddIgnoredPair( const PhysBodyID& BodyA, const PhysBodyID& BodyB );
+	void RemoveIgnoredPair( const PhysBodyID& BodyA, const PhysBodyID& BodyB );
+
 	// JPH::ContactListener
+	JPH::ValidateResult OnContactValidate( const JPH::Body& Body1, const JPH::Body& Body2, JPH::RVec3Arg BaseOffset, const JPH::CollideShapeResult& CollisionResult ) override;
 	void OnContactAdded( const JPH::Body& Body1, const JPH::Body& Body2, const JPH::ContactManifold& Manifold, JPH::ContactSettings& Settings ) override;
 	void OnContactPersisted( const JPH::Body& Body1, const JPH::Body& Body2, const JPH::ContactManifold& Manifold, JPH::ContactSettings& Settings ) override;
 	void OnContactRemoved( const JPH::SubShapeIDPair& SubShapePair ) override;
@@ -89,8 +96,13 @@ private:
 
 	void Push( EEventType Type, const JPH::Body& Body1, const JPH::Body& Body2, const JPH::ContactManifold& Manifold );
 
+	// 2 つの剛体の組を 1 つの値にする（順は問わない）
+	static uint64 MakePairKey( const PhysBodyID& BodyA, const PhysBodyID& BodyB );
+
 	TAtomic<bool>   bEnabled { false };
 	FMutex          Mutex;
 	TArray<FEvent>      Events;
 	TArray<FEvent>      DispatchBuffer;
+
+	TMap<uint64, int32> IgnoredPairs;  // key: MakePairKey、value: その組をつなぐ関節の数
 };

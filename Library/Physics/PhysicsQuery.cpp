@@ -2,6 +2,7 @@
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
+#include "Library/Physics/PhysicsInput.h"
 
 #pragma push_macro( "min" )
 #pragma push_macro( "max" )
@@ -21,28 +22,10 @@
 
 namespace
 {
-	bool IsFiniteVector( const FVector3& V )
-	{
-		return NMath::IsFinite( V.x ) && NMath::IsFinite( V.y ) && NMath::IsFinite( V.z );
-	}
-
-	bool IsFiniteRotation( const FQuaternion& Q )
-	{
-		return NMath::IsFinite( Q.x ) && NMath::IsFinite( Q.y ) && NMath::IsFinite( Q.z ) && NMath::IsFinite( Q.w );
-	}
-
-	// 向きの長さを 1 にする。大きな成分で二乗がオーバーフローしないよう、先に最大の成分で割る。
-	// 零ベクトル・NaN・無限大なら false
-	bool NormalizeDirection( const FVector3& Direction, FVector3& OutDirection )
-	{
-		if ( !IsFiniteVector( Direction ) ) return false;
-
-		const float32 Largest = NMath::Max( NMath::Abs( Direction.x ), NMath::Max( NMath::Abs( Direction.y ), NMath::Abs( Direction.z ) ) );
-		if ( Largest < 1.0e-12f ) return false;
-
-		OutDirection = ( Direction / Largest ).Normalized();
-		return true;
-	}
+	// 値の確かめと向きの正規化は、関節と共有する（PhysicsInput.h）
+	using NPhysicsInput::IsFiniteRotation;
+	using NPhysicsInput::IsFiniteVector;
+	using NPhysicsInput::NormalizeDirection;
 
 	// 始点・向き・距離が使えるか確かめ、長さ 1 の向きを返す
 	bool PrepareCast( const FVector3& Origin, const FVector3& Direction, float32 MaxDistance, FVector3& OutDirection )
