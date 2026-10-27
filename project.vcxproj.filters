@@ -1026,6 +1026,9 @@
     <ClInclude Include="Library\Core\Collection\ArrayView.h">
       <Filter>Library\Core\Collection</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Collection\BinarySearch.h">
+      <Filter>Library\Core\Collection</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Collection\Collection.h">
       <Filter>Library\Core\Collection</Filter>
     </ClInclude>
@@ -1068,6 +1071,9 @@
     <ClInclude Include="Library\Core\Collection\Queue.inl">
       <Filter>Library\Core\Collection</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Collection\RangeAccess.h">
+      <Filter>Library\Core\Collection</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Collection\ReverseIterate.h">
       <Filter>Library\Core\Collection</Filter>
     </ClInclude>
@@ -1082,6 +1088,9 @@
     </ClInclude>
     <ClInclude Include="Library\Core\Collection\String.h">
       <Filter>Library\Core\Collection</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\File\File.h">
+      <Filter>Library\Core\File</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Asset\AssetBackend.h">
       <Filter>Library\Core\Interfaces\Asset</Filter>
@@ -1239,7 +1248,16 @@
     <ClInclude Include="Library\Core\Types\CompilerMacros.h">
       <Filter>Library\Core\Types</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Types\CString.h">
+      <Filter>Library\Core\Types</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Types\Numeric.h">
+      <Filter>Library\Core\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Types\Process.h">
+      <Filter>Library\Core\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Types\Tuple.h">
       <Filter>Library\Core\Types</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Types\TypeDefinition.h">
@@ -3223,6 +3241,9 @@
     </Filter>
     <Filter Include="Library\Core\Collection">
       <UniqueIdentifier>{CCE7EF0C-BF29-B949-CCA5-32D8C347A0D3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Core\File">
+      <UniqueIdentifier>{51DBD008-5C65-1173-AB21-5B2B7ED05DCB}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Core\Interfaces">
       <UniqueIdentifier>{82EDBB72-7A10-C684-5397-F1C42D109881}</UniqueIdentifier>

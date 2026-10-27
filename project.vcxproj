@@ -495,6 +495,7 @@
     <ClInclude Include="Library\Core\Collection\Array.h" />
     <ClInclude Include="Library\Core\Collection\Array.inl" />
     <ClInclude Include="Library\Core\Collection\ArrayView.h" />
+    <ClInclude Include="Library\Core\Collection\BinarySearch.h" />
     <ClInclude Include="Library\Core\Collection\Collection.h" />
     <ClInclude Include="Library\Core\Collection\CollectionCommon.h" />
     <ClInclude Include="Library\Core\Collection\Enumerate.h" />
@@ -509,11 +510,13 @@
     <ClInclude Include="Library\Core\Collection\Pair.h" />
     <ClInclude Include="Library\Core\Collection\Queue.h" />
     <ClInclude Include="Library\Core\Collection\Queue.inl" />
+    <ClInclude Include="Library\Core\Collection\RangeAccess.h" />
     <ClInclude Include="Library\Core\Collection\ReverseIterate.h" />
     <ClInclude Include="Library\Core\Collection\Set.h" />
     <ClInclude Include="Library\Core\Collection\Sort.h" />
     <ClInclude Include="Library\Core\Collection\Sort.inl" />
     <ClInclude Include="Library\Core\Collection\String.h" />
+    <ClInclude Include="Library\Core\File\File.h" />
     <ClInclude Include="Library\Core\Interfaces\Asset\AssetBackend.h" />
     <ClInclude Include="Library\Core\Interfaces\Asset\StaticModelSurfaceData.h" />
     <ClInclude Include="Library\Core\Interfaces\Asset\StaticModelSurfaceMaterial.h" />
@@ -566,7 +569,10 @@
     <ClInclude Include="Library\Core\Time\PlatformTime.h" />
     <ClInclude Include="Library\Core\Types\Callable.h" />
     <ClInclude Include="Library\Core\Types\CompilerMacros.h" />
+    <ClInclude Include="Library\Core\Types\CString.h" />
     <ClInclude Include="Library\Core\Types\Numeric.h" />
+    <ClInclude Include="Library\Core\Types\Process.h" />
+    <ClInclude Include="Library\Core\Types\Tuple.h" />
     <ClInclude Include="Library\Core\Types\TypeDefinition.h" />
     <ClInclude Include="Library\Core\Types\TypeTraits.h" />
     <ClInclude Include="Library\Core\Types\Utility.h" />
