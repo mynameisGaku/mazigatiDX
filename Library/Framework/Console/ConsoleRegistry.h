@@ -1,7 +1,4 @@
 ﻿#pragma once
-#include <tuple>
-#include <type_traits>
-#include <utility>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/Map.h"
@@ -11,6 +8,7 @@
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Core/Result.h"
 #include "Library/Core/Types/Callable.h"
+#include "Library/Core/Types/Tuple.h"
 #include "Library/Core/Types/TypeTraits.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Console/ConsoleArgs.h"
@@ -191,12 +189,12 @@ namespace NConsoleDetail
 	template<typename... A> struct TSplit
 	{
 		static constexpr bool bHasContext = false;
-		using Values = std::tuple<TDecayT<A>...>;
+		using Values = TTuple<TDecayT<A>...>;
 	};
 	template<typename... A> struct TSplit<FConsoleContext&, A...>
 	{
 		static constexpr bool bHasContext = true;
-		using Values = std::tuple<TDecayT<A>...>;
+		using Values = TTuple<TDecayT<A>...>;
 	};
 
 	template<typename F> struct TFunctionTraits : TFunctionTraits<decltype( &F::operator() )> {};
@@ -234,7 +232,7 @@ namespace NConsoleDetail
 	template<typename Tuple, size_t... I>
 	void DescribeAll( TArray<FConsoleArgDesc>& Out, const TArray<FConsoleArgSpec>& Specs, TIndexSequence<I...> )
 	{
-		( DescribeOne<std::tuple_element_t<I, Tuple>>( Out, Specs, static_cast<int32>( I ) ), ... );
+		( DescribeOne<TTupleElementT<I, Tuple>>( Out, Specs, static_cast<int32>( I ) ), ... );
 	}
 
 	// 1 つの引数を読む
@@ -271,7 +269,7 @@ namespace NConsoleDetail
 	template<typename Tuple, size_t... I>
 	bool ParseAll( Tuple& Values, const TArray<FString>& Tokens, int32& Cursor, const TArray<FConsoleArgDesc>& Descs, FString& Error, TIndexSequence<I...> )
 	{
-		return ( ParseOne( std::get<I>( Values ), Tokens, Cursor, Descs[static_cast<int32>( I )], Error ) && ... );
+		return ( ParseOne( NTuple::Get<I>( Values ), Tokens, Cursor, Descs[static_cast<int32>( I )], Error ) && ... );
 	}
 
 	// 戻り値の扱い
@@ -293,7 +291,7 @@ namespace NConsoleDetail
 	EConsoleResult Call( TFunction& Function, FConsoleContext& Context, Tuple& Values )
 	{
 		using Split = typename Traits::Split;
-		return std::apply(
+		return NTuple::Apply(
 			[&]( auto&... V ) -> EConsoleResult
 			{
 				if constexpr ( bIsVoid<typename Traits::Return> )
@@ -346,14 +344,14 @@ public:
 		Entry.Info.Name = Name;
 		Entry.Info.Description = Description;
 		Entry.Info.Category = Category;
-		NConsoleDetail::DescribeAll<Values>( Entry.Info.Args, Args, TMakeIndexSequence<std::tuple_size_v<Values>>() );
+		NConsoleDetail::DescribeAll<Values>( Entry.Info.Args, Args, TMakeIndexSequence<TupleSize<Values>>() );
 		const TArray<FConsoleArgDesc> Descs = Entry.Info.Args;
 
 		Entry.Handler = MakeShared<FHandler>( [Function = TDecayT<TFunction>( Forward<TFunction>( Function ) ), Descs]( FConsoleContext& Context, const TArray<FString>& Tokens, FString& OutError ) mutable -> EConsoleResult
 		{
 			Values Parsed{};
 			int32 Cursor = 0;
-			if ( !NConsoleDetail::ParseAll( Parsed, Tokens, Cursor, Descs, OutError, TMakeIndexSequence<std::tuple_size_v<Values>>() ) ) return EConsoleResult::BadArguments;
+			if ( !NConsoleDetail::ParseAll( Parsed, Tokens, Cursor, Descs, OutError, TMakeIndexSequence<TupleSize<Values>>() ) ) return EConsoleResult::BadArguments;
 			if ( Cursor < Tokens.Num() )
 			{
 				OutError = Descs.IsEmpty() ? FString( "this command takes no arguments" ) : "too many arguments (unexpected '" + Tokens[Cursor] + "')";

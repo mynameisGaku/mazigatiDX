@@ -72,6 +72,9 @@ template<typename T> struct TRemoveConst { using Type = T; };
 template<typename T> struct TRemoveConst<const T> { using Type = T; };
 template<typename T> using TRemoveConstT = typename TRemoveConst<T>::Type;
 
+// const を付ける（参照と関数にはもともと付かないので、そのまま）。
+template<typename T> using TAddConstT = const T;
+
 // volatile を外す。
 template<typename T> struct TRemoveVolatile { using Type = T; };
 template<typename T> struct TRemoveVolatile<volatile T> { using Type = T; };
@@ -207,6 +210,9 @@ template<typename T> inline constexpr bool bIsTriviallyDestructible = __is_trivi
 
 // 引数なしで作れるか。
 template<typename T> inline constexpr bool bIsDefaultConstructible = __is_constructible( T );
+
+// Args... を引数にして作れるか。
+template<typename T, typename... Args> inline constexpr bool bIsConstructible = __is_constructible( T, Args... );
 
 // 例外を投げずに移動して作れるか。
 template<typename T> inline constexpr bool bIsNothrowMoveConstructible = __is_nothrow_constructible( T, TAddRvalueReferenceT<T> );

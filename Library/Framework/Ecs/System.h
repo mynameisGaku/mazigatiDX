@@ -1,14 +1,12 @@
 ﻿#pragma once
 #include <climits>
-#include <tuple>
-#include <type_traits>
-#include <utility>
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Interfaces/Job/IJobSystem.h"
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Core/Memory/UniquePtr.h"
 #include "Library/Core/Types/CompilerMacros.h"
+#include "Library/Core/Types/Tuple.h"
 #include "Library/Core/Types/TypeTraits.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Ecs/EcsWorld.h"
@@ -170,7 +168,7 @@ namespace NEcs
 	template<typename TArg>
 	struct TStoragePointer
 	{
-		using Type = TConditionalT<IsComponentArg<TArg>, TComponentStorage<TComponentType<TArg>>*, std::nullptr_t>;
+		using Type = TConditionalT<IsComponentArg<TArg>, TComponentStorage<TComponentType<TArg>>*, decltype( nullptr )>;
 	};
 
 	//-------------------------------------------------------------------------
@@ -286,12 +284,12 @@ namespace NEcs
 		template<size_t I>
 		void BindStorage( int32& Best )
 		{
-			using TArg = std::tuple_element_t<I, std::tuple<TArgs...>>;
+			using TArg = TTupleElementT<I, TTuple<TArgs...>>;
 			if constexpr ( IsRequiredComponentArg<TArg> )
 			{
 				using TComp = TBare<TArg>;
 				TComponentStorage<TComp>& Storage = World->GetStorage<TComp>();
-				std::get<I>( Storages ) = &Storage;
+				NTuple::Get<I>( Storages ) = &Storage;
 				const uint64 Bit = TypeBit<TComp>();
 				RequiredMask |= Bit;
 				if ( Bit == 0ull ) bFastMaskCheck = false;
@@ -304,7 +302,7 @@ namespace NEcs
 			else if constexpr ( IsOptionalComponentArg<TArg> )
 			{
 				using TComp = TPointee<TArg>;
-				std::get<I>( Storages ) = IsWriteArg<TArg> ? &World->GetStorage<TComp>() : World->FindStorage<TComp>();
+				NTuple::Get<I>( Storages ) = IsWriteArg<TArg> ? &World->GetStorage<TComp>() : World->FindStorage<TComp>();
 			}
 			else if constexpr ( IsWithoutArg<TArg> )
 			{
@@ -317,8 +315,8 @@ namespace NEcs
 		template<size_t I>
 		bool HasArgSlow( int32 Entity ) const
 		{
-			using TArg = std::tuple_element_t<I, std::tuple<TArgs...>>;
-			if constexpr ( IsRequiredComponentArg<TArg> ) return std::get<I>( Storages )->Has( Entity );
+			using TArg = TTupleElementT<I, TTuple<TArgs...>>;
+			if constexpr ( IsRequiredComponentArg<TArg> ) return NTuple::Get<I>( Storages )->Has( Entity );
 			else if constexpr ( IsWithoutArg<TArg> ) return !TIsWithout<TBare<TArg>>::HasAny( *World, Entity );
 			else return true;
 		}
@@ -329,7 +327,7 @@ namespace NEcs
 											  [[maybe_unused]] FTransformAccess& Access, [[maybe_unused]] FTransformView& View,
 											  [[maybe_unused]] FDrawContext* Context )
 		{
-			using TArg = std::tuple_element_t<I, std::tuple<TArgs...>>;
+			using TArg = TTupleElementT<I, TTuple<TArgs...>>;
 			if constexpr ( IsDeltaArg<TArg> ) return DeltaTime;
 			else if constexpr ( IsEntityArg<TArg> ) return FEntityRef( Entity, World );
 			else if constexpr ( IsObjectRefArg<TArg> ) return *Record.Object;
@@ -340,7 +338,7 @@ namespace NEcs
 			else if constexpr ( IsWithoutArg<TArg> ) return TBare<TArg>{};
 			else if constexpr ( IsOptionalComponentArg<TArg> )
 			{
-				auto* Storage = std::get<I>( Storages );
+				auto* Storage = NTuple::Get<I>( Storages );
 				if ( Storage == nullptr ) return static_cast<TComponentType<TArg>*>( nullptr );
 				const uint64 Bit = TypeBit<TComponentType<TArg>>();
 				if ( Bit != 0ull ) return ( Record.ComponentMask & Bit ) != 0ull ? &Storage->GetUnchecked( Entity ) : nullptr;
@@ -349,11 +347,11 @@ namespace NEcs
 			else if constexpr ( NumRequired == 1 )
 			{
 				// 必須コンポーネントが 1 つだけなら、その入れ物が必ず Driver なので Sparse を引かずに Dense[Index] を直接読む
-				return std::get<I>( Storages )->GetDenseAt( Index );
+				return NTuple::Get<I>( Storages )->GetDenseAt( Index );
 			}
 			else
 			{
-				return std::get<I>( Storages )->GetUnchecked( Entity );
+				return NTuple::Get<I>( Storages )->GetUnchecked( Entity );
 			}
 		}
 
@@ -435,7 +433,7 @@ namespace NEcs
 		uint64 RequiredMask = 0ull;
 		uint64 ExcludedMask = 0ull;
 		bool bFastMaskCheck = true;
-		std::tuple<typename TStoragePointer<TArgs>::Type...> Storages {};
+		TTuple<typename TStoragePointer<TArgs>::Type...> Storages {};
 	};
 
 	//-------------------------------------------------------------------------
@@ -454,7 +452,7 @@ namespace NEcs
 		static constexpr size_t NumRequired = ( ( IsRequiredComponentArg<TArgs> ? 1u : 0u ) + ... + 0u );
 		static constexpr bool bHasWithout = ( IsWithoutArg<TArgs> || ... );
 
-		using TStorageTuple = std::tuple<typename TStoragePointer<TArgs>::Type...>;
+		using TStorageTuple = TTuple<typename TStoragePointer<TArgs>::Type...>;
 
 		static int32 Run( FEcsWorld& World, FTransformWorld& Transforms, TFunction&& Function )
 		{
@@ -522,13 +520,13 @@ namespace NEcs
 		static bool BindOne( FEcsWorld& World, TStorageTuple& Storages, IComponentStorage*& Driver,
 							 uint64& RequiredMask, uint64& ExcludedMask, bool& bFastMaskCheck, int32& Best )
 		{
-			using TArg = std::tuple_element_t<I, std::tuple<TArgs...>>;
+			using TArg = TTupleElementT<I, TTuple<TArgs...>>;
 			if constexpr ( IsRequiredComponentArg<TArg> )
 			{
 				using TComp = TBare<TArg>;
 				TComponentStorage<TComp>* Storage = World.FindStorage<TComp>();
 				if ( Storage == nullptr || Storage->Num() == 0 ) return false;
-				std::get<I>( Storages ) = Storage;
+				NTuple::Get<I>( Storages ) = Storage;
 				const uint64 Bit = TypeBit<TComp>();
 				RequiredMask |= Bit;
 				if ( Bit == 0ull ) bFastMaskCheck = false;
@@ -541,7 +539,7 @@ namespace NEcs
 			else if constexpr ( IsOptionalComponentArg<TArg> )
 			{
 				using TComp = TPointee<TArg>;
-				std::get<I>( Storages ) = World.FindStorage<TComp>();
+				NTuple::Get<I>( Storages ) = World.FindStorage<TComp>();
 			}
 			else if constexpr ( IsWithoutArg<TArg> )
 			{
@@ -560,8 +558,8 @@ namespace NEcs
 		template<size_t I>
 		static bool HasOneSlow( const FEcsWorld& World, const TStorageTuple& Storages, int32 Entity )
 		{
-			using TArg = std::tuple_element_t<I, std::tuple<TArgs...>>;
-			if constexpr ( IsRequiredComponentArg<TArg> ) return std::get<I>( Storages )->Has( Entity );
+			using TArg = TTupleElementT<I, TTuple<TArgs...>>;
+			if constexpr ( IsRequiredComponentArg<TArg> ) return NTuple::Get<I>( Storages )->Has( Entity );
 			else if constexpr ( IsWithoutArg<TArg> ) return !TIsWithout<TBare<TArg>>::HasAny( World, Entity );
 			else return true;
 		}
@@ -570,7 +568,7 @@ namespace NEcs
 		static FORCEINLINE decltype( auto ) ResolveOne( FEcsWorld& World, TStorageTuple& Storages, int32 Entity, int32 Index,
 														const FEcsWorld::FEntityRecord& Record, FTransformAccess& Access, FTransformView& View )
 		{
-			using TArg = std::tuple_element_t<I, std::tuple<TArgs...>>;
+			using TArg = TTupleElementT<I, TTuple<TArgs...>>;
 			if constexpr ( IsEntityArg<TArg> ) return FEntityRef( Entity, &World );
 			else if constexpr ( IsObjectRefArg<TArg> ) return *Record.Object;
 			else if constexpr ( IsObjectPtrArg<TArg> ) return Record.Object;
@@ -579,7 +577,7 @@ namespace NEcs
 			else if constexpr ( IsWithoutArg<TArg> ) return TBare<TArg>{};
 			else if constexpr ( IsOptionalComponentArg<TArg> )
 			{
-				auto* Storage = std::get<I>( Storages );
+				auto* Storage = NTuple::Get<I>( Storages );
 				if ( Storage == nullptr ) return static_cast<TComponentType<TArg>*>( nullptr );
 				const uint64 Bit = TypeBit<TComponentType<TArg>>();
 				if ( Bit != 0ull ) return ( Record.ComponentMask & Bit ) != 0ull ? &Storage->GetUnchecked( Entity ) : nullptr;
@@ -587,11 +585,11 @@ namespace NEcs
 			}
 			else if constexpr ( NumRequired == 1 )
 			{
-				return std::get<I>( Storages )->GetDenseAt( Index );
+				return NTuple::Get<I>( Storages )->GetDenseAt( Index );
 			}
 			else
 			{
-				return std::get<I>( Storages )->GetUnchecked( Entity );
+				return NTuple::Get<I>( Storages )->GetUnchecked( Entity );
 			}
 		}
 
