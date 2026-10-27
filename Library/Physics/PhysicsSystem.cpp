@@ -200,6 +200,7 @@ void CPhysicsSystem::Shutdown()
 
 	JoltSystem.Reset();
 	ContactQueue.Reset();
+	ContactListeners.ResetPairs();
 	LayerFilters.Reset();
 	JobSystem.Reset();
 	TempAllocator.Reset();
@@ -250,10 +251,9 @@ void CPhysicsSystem::Step( float32 DeltaTime )
 
 	if ( !ContactListeners.IsEmpty() )
 	{
-		// コールバック内での Add/Remove に備えてコピーを渡す
-		const TArray<CContactListener*> Listeners = ContactListeners;
+		// コールバック内での Add/Remove は、レジストリが配っている間の扱いを決めている
 		PROFILE_SCOPE_CAT( "Physics", "DispatchContacts" );
-		ContactQueue->Dispatch( *this, Listeners );
+		ContactQueue->Dispatch( *this, ContactListeners );
 	}
 }
 
@@ -378,6 +378,7 @@ void CPhysicsSystem::DestroyAllBodies()
 	}
 	Bodies.Empty();
 	ContactQueue->Clear();
+	ContactListeners.ResetPairs();
 }
 
 FRigidBody* CPhysicsSystem::FindBody( const PhysBodyID& BodyID ) const
@@ -401,24 +402,51 @@ void CPhysicsSystem::OptimizeBroadPhase()
 
 #pragma region ContactListener
 
-void CPhysicsSystem::AddContactListener( CContactListener* Listener )
+bool CPhysicsSystem::AddContactListener( IPhysicsContactListener* Listener, const FPhysicsContactFilter& Filter )
 {
-	if ( !Listener ) return;
-	if ( ContactListeners.Contains( Listener ) ) return;
+	if ( Listener == nullptr ) return false;
 
-	ContactListeners.Add( Listener );
+	bool   bHasBody = false;
+	uint32 BodyKey  = 0;
+	if ( Filter.Body != nullptr )
+	{
+		if ( !OwnsBody( Filter.Body ) )
+		{
+			LOG( LogPhysics, Warning, "AddContactListener: Filter.Body is not a body of this world" );
+			return false;
+		}
+		bHasBody = true;
+		BodyKey  = Filter.Body->GetBodyID().GetIndexAndSequenceNumber();
+	}
+
+	ContactListeners.Add( *Listener, Filter.LayerMask, Filter.bPersisted, bHasBody, BodyKey );
 	if ( ContactQueue ) ContactQueue->SetEnabled( true );
 	LOG( LogPhysics, Verbose, "Contact listener added (%d listener(s))", ContactListeners.Num() );
+	return true;
 }
 
-void CPhysicsSystem::RemoveContactListener( CContactListener* Listener )
+void CPhysicsSystem::RemoveContactListener( IPhysicsContactListener* Listener )
 {
-	if ( ContactListeners.Remove( Listener ) > 0 ) LOG( LogPhysics, Verbose, "Contact listener removed (%d listener(s) left)", ContactListeners.Num() );
+	if ( Listener == nullptr ) return;
+
+	const int32 Before = ContactListeners.Num();
+	ContactListeners.Remove( *Listener );
+	if ( ContactListeners.Num() != Before ) LOG( LogPhysics, Verbose, "Contact listener removed (%d listener(s) left)", ContactListeners.Num() );
 	if ( ContactQueue && ContactListeners.IsEmpty() )
 	{
 		ContactQueue->SetEnabled( false );
 		ContactQueue->Clear();
 	}
+}
+
+int32 CPhysicsSystem::GetContactListenerCount() const
+{
+	return ContactListeners.Num();
+}
+
+int32 CPhysicsSystem::GetContactPairCount() const
+{
+	return ContactListeners.NumPairs();
 }
 
 #pragma endregion

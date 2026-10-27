@@ -7,11 +7,13 @@
 #include "Library/Core/Interfaces/Physics/ICharacterControllers.h"
 #include "Library/Core/Interfaces/Physics/ICollisionLayers.h"
 #include "Library/Core/Interfaces/Physics/IPhysicsConstraints.h"
+#include "Library/Core/Interfaces/Physics/IPhysicsContacts.h"
 #include "Library/Core/Interfaces/Physics/IPhysicsDebug.h"
 #include "Library/Core/Interfaces/Physics/IPhysicsQuery.h"
 #include "Library/Physics/PhysicsTypes.h"
 #include "Library/Physics/CollisionShape.h"
 #include "Library/Physics/PhysicsCharacter.h"
+#include "Library/Physics/PhysicsContactRegistry.h"
 #include "Library/Physics/PhysicsConstraint.h"
 #include "Library/Physics/RigidBody.h"
 
@@ -23,7 +25,6 @@ namespace JPH
 	class JobSystemThreadPool;
 }
 
-class CContactListener;
 class CContactEventQueue;
 
 //=============================================================================
@@ -48,7 +49,7 @@ struct FPhysicsSettings
 // CPhysicsSystem
 //   Jolt Physics のワールド 1 つ分。複数作ってよい（シーンごとに CPhysicsSubsystem が 1 つ持つ）。
 //   フレームワークに依存しないので、単体でも動かせる。
-//   空間クエリ（レイ・重なり・掃引）は IPhysicsQuery、衝突レイヤーの表は ICollisionLayers、関節（拘束）は IPhysicsConstraints、操作するキャラクターは ICharacterControllers、デバッグ描画は IPhysicsDebug として使える。
+//   空間クエリ（レイ・重なり・掃引）は IPhysicsQuery、衝突レイヤーの表は ICollisionLayers、関節（拘束）は IPhysicsConstraints、操作するキャラクターは ICharacterControllers、デバッグ描画は IPhysicsDebug、接触の通知（ぶつかった・離れた・センサーに入った）は IPhysicsContacts として使える。
 //
 //   CPhysicsSystem Physics;
 //   Physics.Init();
@@ -57,7 +58,7 @@ struct FPhysicsSettings
 //   FTransform T = Body->GetTransform();
 //   Physics.Shutdown();
 //=============================================================================
-class CPhysicsSystem : public IPhysicsQuery, public ICollisionLayers, public IPhysicsConstraints, public ICharacterControllers, public IPhysicsDebug
+class CPhysicsSystem : public IPhysicsQuery, public ICollisionLayers, public IPhysicsConstraints, public ICharacterControllers, public IPhysicsDebug, public IPhysicsContacts
 {
 public:
 	CPhysicsSystem();
@@ -138,10 +139,14 @@ public:
 	int32 DrawDebug( IPhysicsDebugDrawer& Drawer, const FPhysicsDebugDrawSettings& DrawSettings = FPhysicsDebugDrawSettings() ) const override;
 
 	//-------------------------------------------------------------------------
-	// 衝突コールバック（所有権は呼び出し側）
+	// 接触の通知（IPhysicsContacts。使い方と注意はそちらを参照。受け取り側の所有権は呼び出し側）
 	//-------------------------------------------------------------------------
-	void AddContactListener( CContactListener* Listener );
-	void RemoveContactListener( CContactListener* Listener );
+	bool AddContactListener( IPhysicsContactListener* Listener, const FPhysicsContactFilter& Filter = FPhysicsContactFilter() ) override;
+	void RemoveContactListener( IPhysicsContactListener* Listener ) override;
+	int32 GetContactListenerCount() const override;
+
+	// 受け取り側が数えている、接触中の剛体の組の数（受け取り側ごとの合計。確認・デバッグ用で、窓口には出さない）
+	int32 GetContactPairCount() const;
 
 	//-------------------------------------------------------------------------
 	// ワールド設定
@@ -208,5 +213,5 @@ private:
 	TMap<uint32, TUniquePtr<FRigidBody>> Bodies;  // key: BodyID::GetIndexAndSequenceNumber
 	TArray<TUniquePtr<FPhysicsConstraint>> Constraints;  // 外れて入れ物だけ残っているものも含む
 	TArray<TUniquePtr<FPhysicsCharacter>>  Characters;   // 外れて入れ物だけ残っているものも含む
-	TArray<CContactListener*> ContactListeners;
+	FContactListenerRegistry  ContactListeners;  // 接触の通知の受け取り側。Init / Shutdown をまたいで残す
 };

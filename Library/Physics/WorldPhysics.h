@@ -1,13 +1,13 @@
 ﻿#pragma once
 
 #include "Library/Core/Collection/Map.h"
+#include "Library/Core/Interfaces/Physics/IPhysicsContacts.h"
 #include "Library/Core/Interfaces/Tickable/ITickable.h"
 #include "Library/Core/Types/Callable.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Component/Component.h"
 #include "Library/Framework/Subsystem/SceneSubsystem.h"
 #include "Library/Framework/World/WorldSpawner.h"
-#include "Library/Physics/ContactListener.h"
 
 class CPhysicsSubsystem;
 class FRigidBody;
@@ -70,7 +70,7 @@ private:
 // CWorldTriggerSubsystem
 //   物理のあるシーンの、トリガーの重なりを数える。トリガーが 1 つでもあるときだけ、物理の接触の通知を受ける。
 //=============================================================================
-class CWorldTriggerSubsystem : public CSceneSubsystem, public ITickable, public CContactListener
+class CWorldTriggerSubsystem : public CSceneSubsystem, public ITickable, public IPhysicsContactListener
 {
 public:
 	bool ShouldCreateSubsystem( CScene& Scene ) const override;

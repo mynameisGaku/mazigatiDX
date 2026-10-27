@@ -457,6 +457,9 @@
     <ClCompile Include="Library\Physics\PhysicsConstraints.cpp">
       <Filter>Library\Physics</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Physics\PhysicsContactRegistry.cpp">
+      <Filter>Library\Physics</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Physics\PhysicsDebugDraw.cpp">
       <Filter>Library\Physics</Filter>
     </ClCompile>
@@ -1084,6 +1087,9 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestPhysicsConstraints.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestPhysicsContacts.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
     <ClCompile Include="Source\SelfTest\AssetSelfTestPhysicsDebug.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
@@ -1452,6 +1458,9 @@
     <ClInclude Include="Library\Core\Interfaces\Physics\IPhysicsConstraints.h">
       <Filter>Library\Core\Interfaces\Physics</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Physics\IPhysicsContacts.h">
+      <Filter>Library\Core\Interfaces\Physics</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Physics\IPhysicsDebug.h">
       <Filter>Library\Core\Interfaces\Physics</Filter>
     </ClInclude>
@@ -1465,6 +1474,9 @@
       <Filter>Library\Core\Interfaces\Physics</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsConstraintTypes.h">
+      <Filter>Library\Core\Interfaces\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsContactTypes.h">
       <Filter>Library\Core\Interfaces\Physics</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsDebugTypes.h">
@@ -2038,6 +2050,12 @@
       <Filter>Library\Physics</Filter>
     </ClInclude>
     <ClInclude Include="Library\Physics\PhysicsConstraintRules.h">
+      <Filter>Library\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\PhysicsContactRegistry.h">
+      <Filter>Library\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\PhysicsContactRules.h">
       <Filter>Library\Physics</Filter>
     </ClInclude>
     <ClInclude Include="Library\Physics\PhysicsDebugDrawContext.h">

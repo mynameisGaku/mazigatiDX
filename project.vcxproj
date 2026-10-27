@@ -304,6 +304,7 @@
     <ClCompile Include="Library\Physics\PhysicsCharacters.cpp" />
     <ClCompile Include="Library\Physics\PhysicsConstraint.cpp" />
     <ClCompile Include="Library\Physics\PhysicsConstraints.cpp" />
+    <ClCompile Include="Library\Physics\PhysicsContactRegistry.cpp" />
     <ClCompile Include="Library\Physics\PhysicsDebugDraw.cpp" />
     <ClCompile Include="Library\Physics\PhysicsLayers.cpp" />
     <ClCompile Include="Library\Physics\PhysicsQuery.cpp" />
@@ -548,11 +549,13 @@
     <ClInclude Include="Library\Core\Interfaces\Physics\ICharacterControllers.h" />
     <ClInclude Include="Library\Core\Interfaces\Physics\ICollisionLayers.h" />
     <ClInclude Include="Library\Core\Interfaces\Physics\IPhysicsConstraints.h" />
+    <ClInclude Include="Library\Core\Interfaces\Physics\IPhysicsContacts.h" />
     <ClInclude Include="Library\Core\Interfaces\Physics\IPhysicsDebug.h" />
     <ClInclude Include="Library\Core\Interfaces\Physics\IPhysicsDebugDrawer.h" />
     <ClInclude Include="Library\Core\Interfaces\Physics\IPhysicsQuery.h" />
     <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsCharacterTypes.h" />
     <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsConstraintTypes.h" />
+    <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsContactTypes.h" />
     <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsDebugTypes.h" />
     <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsLayerTypes.h" />
     <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsQueryTypes.h" />
@@ -744,6 +747,8 @@
     <ClInclude Include="Library\Physics\PhysicsCharacterRules.h" />
     <ClInclude Include="Library\Physics\PhysicsConstraint.h" />
     <ClInclude Include="Library\Physics\PhysicsConstraintRules.h" />
+    <ClInclude Include="Library\Physics\PhysicsContactRegistry.h" />
+    <ClInclude Include="Library\Physics\PhysicsContactRules.h" />
     <ClInclude Include="Library\Physics\PhysicsDebugDrawContext.h" />
     <ClInclude Include="Library\Physics\PhysicsInput.h" />
     <ClInclude Include="Library\Physics\PhysicsSubsystem.h" />

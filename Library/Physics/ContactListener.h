@@ -5,6 +5,7 @@
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/Map.h"
+#include "Library/Core/Interfaces/Physics/PhysicsContactTypes.h"
 #include "Library/Physics/PhysicsTypes.h"
 
 #pragma push_macro( "min" )
@@ -15,46 +16,14 @@
 #pragma pop_macro( "max" )
 #pragma pop_macro( "min" )
 
-class FRigidBody;
 class CPhysicsSystem;
-
-//=============================================================================
-// FContactInfo
-//=============================================================================
-struct FContactInfo
-{
-	FVector3 Point;                     // 接触点（ワールド座標、A 側の表面）
-	FVector3 Normal;                    // 接触法線（A から B へ向かう方向）
-	float32  PenetrationDepth = 0.0f;   // めり込み量
-};
-
-//=============================================================================
-// CContactListener
-//   衝突コールバックの基底クラス。継承して CPhysicsSystem::AddContactListener で登録する。
-//
-//   コールバックは CPhysicsSystem::Update() 内、各物理ステップの後に
-//   メインスレッドから呼ばれる。そのため中で Body の生成・破棄・力の追加をしてもよい。
-//   1 組の物体でも複合形状やメッシュでは部位ごとに複数回呼ばれることがある。
-//=============================================================================
-class CContactListener
-{
-public:
-	virtual ~CContactListener() = default;
-
-	// 接触開始
-	virtual void OnContactAdded( FRigidBody* BodyA, FRigidBody* BodyB, const FContactInfo& Info );
-
-	// 接触継続中（毎ステップ）
-	virtual void OnContactPersisted( FRigidBody* BodyA, FRigidBody* BodyB, const FContactInfo& Info );
-
-	// 接触終了（どちらかが既に破棄されている場合は呼ばれない）
-	virtual void OnContactRemoved( FRigidBody* BodyA, FRigidBody* BodyB );
-};
+class FContactListenerRegistry;
 
 //=============================================================================
 // CContactEventQueue（内部用）
 //   Jolt のワーカースレッドから届く接触イベントを溜め、
-//   メインスレッドで CContactListener 群に配信する。
+//   メインスレッドで接触の通知の受け取り側（IPhysicsContactListener。FContactListenerRegistry が持つ）に配信する。
+//   受け取り側の登録と、衝突コールバックの使い方は IPhysicsContacts を参照。
 //=============================================================================
 class CContactEventQueue final : public JPH::ContactListener
 {
@@ -63,7 +32,7 @@ public:
 	FORCEINLINE void SetEnabled( bool bInEnabled ) { bEnabled.Store( bInEnabled, EMemoryOrder::Relaxed ); }
 
 	// 溜まったイベントを配信してクリアする（メインスレッドから呼ぶ）
-	void Dispatch( CPhysicsSystem& System, const TArray<CContactListener*>& Listeners );
+	void Dispatch( CPhysicsSystem& System, FContactListenerRegistry& Registry );
 
 	void Clear();
 
@@ -96,13 +65,10 @@ private:
 
 	void Push( EEventType Type, const JPH::Body& Body1, const JPH::Body& Body2, const JPH::ContactManifold& Manifold );
 
-	// 2 つの剛体の組を 1 つの値にする（順は問わない）
-	static uint64 MakePairKey( const PhysBodyID& BodyA, const PhysBodyID& BodyB );
-
 	TAtomic<bool>   bEnabled { false };
 	FMutex          Mutex;
 	TArray<FEvent>      Events;
 	TArray<FEvent>      DispatchBuffer;
 
-	TMap<uint64, int32> IgnoredPairs;  // key: MakePairKey、value: その組をつなぐ関節の数
+	TMap<uint64, int32> IgnoredPairs;  // key: NContactRules::MakePairKey、value: その組をつなぐ関節の数
 };
