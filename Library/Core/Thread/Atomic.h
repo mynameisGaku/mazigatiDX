@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: NOASSERTION
+﻿// SPDX-License-Identifier: MIT
 #pragma once
 
 #include <atomic>   // 中身は std::atomic。標準ライブラリに触れるのは、Core/Thread の三つのヘッダーだけに閉じ込める

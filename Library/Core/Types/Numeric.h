@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: NOASSERTION
+﻿// SPDX-License-Identifier: MIT
 #pragma once
 
 #include <cmath>   // 中身は std::floor / std::ceil。標準ライブラリに触れるのは、ここと MathUtils.h だけ

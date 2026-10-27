@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: NOASSERTION
+﻿// SPDX-License-Identifier: MIT
 #pragma once
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Interfaces/Tickable/ITickable.h"

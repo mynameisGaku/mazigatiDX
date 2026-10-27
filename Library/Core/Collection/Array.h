@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: LicenseRef-Proprietary
+﻿// SPDX-License-Identifier: MIT
 #ifndef FRAMEWORK_CORE_COLLECTION_ARRAY_H
 #define FRAMEWORK_CORE_COLLECTION_ARRAY_H
 #include "Library/Core/Types/CompilerMacros.h"

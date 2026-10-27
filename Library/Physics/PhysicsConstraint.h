@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: NOASSERTION
+﻿// SPDX-License-Identifier: MIT
 #pragma once
 #include "Library/Core/Interfaces/Physics/PhysicsConstraintTypes.h"
 #include "Library/Core/Types/CompilerMacros.h"

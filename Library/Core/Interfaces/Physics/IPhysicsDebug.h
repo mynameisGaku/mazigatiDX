@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: NOASSERTION
+﻿// SPDX-License-Identifier: MIT
 #pragma once
 #include "Library/Core/Interfaces/Physics/IPhysicsDebugDrawer.h"
 #include "Library/Core/Interfaces/Physics/PhysicsDebugTypes.h"

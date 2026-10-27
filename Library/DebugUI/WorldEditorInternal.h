@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: NOASSERTION
+﻿// SPDX-License-Identifier: MIT
 #ifndef FRAMEWORK_DEBUGUI_WORLDEDITORINTERNAL_H
 #define FRAMEWORK_DEBUGUI_WORLDEDITORINTERNAL_H
 #include "Library/DebugUI/WorldEditor.h"

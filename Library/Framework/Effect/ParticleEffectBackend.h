@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: NOASSERTION
+﻿// SPDX-License-Identifier: MIT
 #pragma once
 #include "Library/Framework/Effect/EffectBackend.h"
 #include "Library/Framework/Effect/EffectFlipbookFrames.h"

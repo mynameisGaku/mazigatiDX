@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: NOASSERTION
+﻿// SPDX-License-Identifier: MIT
 #ifndef FRAMEWORK_RENDER_DRAWCONTEXT_H
 #define FRAMEWORK_RENDER_DRAWCONTEXT_H
 

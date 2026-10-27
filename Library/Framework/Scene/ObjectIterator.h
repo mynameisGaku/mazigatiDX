@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: LicenseRef-Proprietary
+﻿// SPDX-License-Identifier: MIT
 #ifndef FRAMEWORK_SCENE_OBJECT_ITERATOR_H
 #define FRAMEWORK_SCENE_OBJECT_ITERATOR_H
 

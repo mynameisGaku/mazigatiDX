@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: NOASSERTION
+﻿// SPDX-License-Identifier: MIT
 #ifndef FRAMEWORK_WORLD_MESH_EDITMESH_H
 #define FRAMEWORK_WORLD_MESH_EDITMESH_H
 #include "Library/Core/Collection/Array.h"

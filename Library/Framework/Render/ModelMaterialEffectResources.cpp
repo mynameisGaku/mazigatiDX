@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: NOASSERTION
+﻿// SPDX-License-Identifier: MIT
 #include "ModelMaterialEffectResources.h"
 
 #include "Library/Framework/Asset/Asset.h"

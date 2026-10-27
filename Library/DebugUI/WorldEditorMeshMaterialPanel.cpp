@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: NOASSERTION
+﻿// SPDX-License-Identifier: MIT
 #include "WorldEditorMeshMaterialPanel.h"
 
 #include <initializer_list>

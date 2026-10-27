@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: LicenseRef-Proprietary
+﻿// SPDX-License-Identifier: MIT
 #ifndef FRAMEWORK_CORE_COLLECTION_ITERATOR_H
 #define FRAMEWORK_CORE_COLLECTION_ITERATOR_H
 

@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: NOASSERTION
+﻿// SPDX-License-Identifier: MIT
 #include "StaticModelSurface.h"
 
 #include "Library/Core/Types/Utility.h"

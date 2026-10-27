@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: LicenseRef-Proprietary
+﻿// SPDX-License-Identifier: MIT
 #ifndef FRAMEWORK_PLATFORM_SDLGAMEPADINPUT_H
 #define FRAMEWORK_PLATFORM_SDLGAMEPADINPUT_H
 

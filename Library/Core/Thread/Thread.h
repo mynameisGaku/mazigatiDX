@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: NOASSERTION
+﻿// SPDX-License-Identifier: MIT
 #pragma once
 
 #include <thread>   // 中身は std::thread。標準ライブラリに触れるのは、Core/Thread の三つのヘッダーだけに閉じ込める

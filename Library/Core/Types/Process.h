@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: NOASSERTION
+﻿// SPDX-License-Identifier: MIT
 #pragma once
 
 #include <cstdlib>   // 中身は std::abort。標準ライブラリに触れるのは、このヘッダーだけに閉じ込める

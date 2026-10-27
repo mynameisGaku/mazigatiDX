@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: NOASSERTION
+﻿// SPDX-License-Identifier: MIT
 
 #include "Library/DebugUI/WorldEditorModelPreviewKey.h"
 

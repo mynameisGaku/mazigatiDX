@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: LicenseRef-Proprietary
+﻿// SPDX-License-Identifier: MIT
 #ifndef FRAMEWORK_INPUT_GAMEPADSENSORSTATE_H
 #define FRAMEWORK_INPUT_GAMEPADSENSORSTATE_H
 

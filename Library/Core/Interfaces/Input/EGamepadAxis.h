@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: LicenseRef-Proprietary
+﻿// SPDX-License-Identifier: MIT
 #ifndef FRAMEWORK_INPUT_EGAMEPADAXIS_H
 #define FRAMEWORK_INPUT_EGAMEPADAXIS_H
 

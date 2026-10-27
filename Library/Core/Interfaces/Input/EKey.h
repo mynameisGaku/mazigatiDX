@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: LicenseRef-Proprietary
+﻿// SPDX-License-Identifier: MIT
 #ifndef FRAMEWORK_CORE_INTERFACES_INPUT_EKEY_H
 #define FRAMEWORK_CORE_INTERFACES_INPUT_EKEY_H
 

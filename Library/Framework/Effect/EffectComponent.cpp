@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: NOASSERTION
+﻿// SPDX-License-Identifier: MIT
 #include "EffectComponent.h"
 
 #include "Library/Framework/Asset/AssetManager.h"

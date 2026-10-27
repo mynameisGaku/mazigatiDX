@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: NOASSERTION
+﻿// SPDX-License-Identifier: MIT
 #pragma once
 #include "Library/Core/Interfaces/Physics/PhysicsCharacterTypes.h"
 #include "Library/Core/Types/Numeric.h"

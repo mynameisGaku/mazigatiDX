@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: NOASSERTION
+﻿// SPDX-License-Identifier: MIT
 #ifndef PARTICLE_EFFECT_EDITING_H
 #define PARTICLE_EFFECT_EDITING_H
 

@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: NOASSERTION
+﻿// SPDX-License-Identifier: MIT
 #include "EffectMaterialRenderer.h"
 
 #include <d3d11.h>

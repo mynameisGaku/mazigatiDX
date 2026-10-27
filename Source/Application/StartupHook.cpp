@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: NOASSERTION
+﻿// SPDX-License-Identifier: MIT
 #include "StartupHook.h"
 
 #include "Library/Core/Collection/Array.h"

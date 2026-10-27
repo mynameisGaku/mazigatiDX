@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: NOASSERTION
+﻿// SPDX-License-Identifier: MIT
 #include "ParticleEffectEditing.h"
 
 #include "Library/Framework/Asset/DefinitionEditing.h"

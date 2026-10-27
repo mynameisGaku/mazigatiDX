@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: LicenseRef-Proprietary
+﻿// SPDX-License-Identifier: MIT
 #ifndef FRAMEWORK_CORE_COLLECTION_COLLECTION_H
 #define FRAMEWORK_CORE_COLLECTION_COLLECTION_H
 #include "Library/Core/Collection/CollectionCommon.h"
