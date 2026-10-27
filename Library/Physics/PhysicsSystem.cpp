@@ -195,7 +195,7 @@ void CPhysicsSystem::Shutdown()
 
 void CPhysicsSystem::Update( float32 DeltaTime )
 {
-	if ( !bInitialized ) return;
+	if ( !bInitialized || NMath::IsNaN( DeltaTime ) ) return;  // NaN を蓄積に混ぜると、以後ずっと進まなくなる
 
 	// 処理落ち時に無限にステップを重ねないよう上限を設ける
 	const float32 MaxAccumulated = Settings.FixedDeltaTime * static_cast<float32>( Settings.MaxSubSteps );

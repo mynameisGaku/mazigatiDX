@@ -4,6 +4,7 @@
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/Map.h"
+#include "Library/Core/Interfaces/Physics/IPhysicsQuery.h"
 #include "Library/Physics/PhysicsTypes.h"
 #include "Library/Physics/CollisionShape.h"
 #include "Library/Physics/RigidBody.h"
@@ -41,6 +42,7 @@ struct FPhysicsSettings
 // CPhysicsSystem
 //   Jolt Physics のワールド 1 つ分。複数作ってよい（シーンごとに CPhysicsSubsystem が 1 つ持つ）。
 //   フレームワークに依存しないので、単体でも動かせる。
+//   空間クエリ（レイ・重なり・掃引）は IPhysicsQuery として使える。
 //
 //   CPhysicsSystem Physics;
 //   Physics.Init();
@@ -49,7 +51,7 @@ struct FPhysicsSettings
 //   FTransform T = Body->GetTransform();
 //   Physics.Shutdown();
 //=============================================================================
-class CPhysicsSystem
+class CPhysicsSystem : public IPhysicsQuery
 {
 public:
 	CPhysicsSystem();
@@ -86,6 +88,18 @@ public:
 
 	// 大量の Body を追加した後に呼ぶとブロードフェーズが最適化される
 	void OptimizeBroadPhase();
+
+	//-------------------------------------------------------------------------
+	// 空間クエリ（IPhysicsQuery。使い方と注意はそちらを参照）
+	//-------------------------------------------------------------------------
+	bool RayCast( const FVector3& Origin, const FVector3& Direction, float32 MaxDistance, FRayHit& OutHit,
+				  const FPhysicsQueryFilter& Filter = FPhysicsQueryFilter() ) const override;
+	int32 RayCastAll( const FVector3& Origin, const FVector3& Direction, float32 MaxDistance, TArray<FRayHit>& OutHits,
+					  const FPhysicsQueryFilter& Filter = FPhysicsQueryFilter() ) const override;
+	int32 Overlap( const FQueryShape& Shape, const FVector3& Position, const FQuaternion& Rotation, TArray<FOverlapHit>& OutHits,
+				   const FPhysicsQueryFilter& Filter = FPhysicsQueryFilter() ) const override;
+	bool Sweep( const FQueryShape& Shape, const FVector3& Start, const FQuaternion& Rotation, const FVector3& Direction, float32 MaxDistance,
+				FShapeCastHit& OutHit, const FPhysicsQueryFilter& Filter = FPhysicsQueryFilter() ) const override;
 
 	//-------------------------------------------------------------------------
 	// 衝突コールバック（所有権は呼び出し側）

@@ -445,6 +445,9 @@
     <ClCompile Include="Library\Physics\ContactListener.cpp">
       <Filter>Library\Physics</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Physics\PhysicsQuery.cpp">
+      <Filter>Library\Physics</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Physics\PhysicsSubsystem.cpp">
       <Filter>Library\Physics</Filter>
     </ClCompile>
@@ -1154,6 +1157,12 @@
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Job\IJobSystem.h">
       <Filter>Library\Core\Interfaces\Job</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Physics\IPhysicsQuery.h">
+      <Filter>Library\Core\Interfaces\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsQueryTypes.h">
+      <Filter>Library\Core\Interfaces\Physics</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Platform\IPlatform.h">
       <Filter>Library\Core\Interfaces\Platform</Filter>
@@ -3262,6 +3271,9 @@
     </Filter>
     <Filter Include="Library\Core\Interfaces\Job">
       <UniqueIdentifier>{A8585FA1-2A3F-69DD-4E61-01EA61BADE7F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Core\Interfaces\Physics">
+      <UniqueIdentifier>{D353A887-344B-F052-D79F-E6C052A954B2}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Core\Interfaces\Platform">
       <UniqueIdentifier>{3AC9C879-2654-37AE-6D17-F56BA5433A55}</UniqueIdentifier>
