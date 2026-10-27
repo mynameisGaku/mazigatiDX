@@ -7,6 +7,7 @@
 #include "Library/Core/Interfaces/Physics/ICharacterControllers.h"
 #include "Library/Core/Interfaces/Physics/ICollisionLayers.h"
 #include "Library/Core/Interfaces/Physics/IPhysicsConstraints.h"
+#include "Library/Core/Interfaces/Physics/IPhysicsDebug.h"
 #include "Library/Core/Interfaces/Physics/IPhysicsQuery.h"
 #include "Library/Physics/PhysicsTypes.h"
 #include "Library/Physics/CollisionShape.h"
@@ -47,7 +48,7 @@ struct FPhysicsSettings
 // CPhysicsSystem
 //   Jolt Physics のワールド 1 つ分。複数作ってよい（シーンごとに CPhysicsSubsystem が 1 つ持つ）。
 //   フレームワークに依存しないので、単体でも動かせる。
-//   空間クエリ（レイ・重なり・掃引）は IPhysicsQuery、衝突レイヤーの表は ICollisionLayers、関節（拘束）は IPhysicsConstraints、操作するキャラクターは ICharacterControllers として使える。
+//   空間クエリ（レイ・重なり・掃引）は IPhysicsQuery、衝突レイヤーの表は ICollisionLayers、関節（拘束）は IPhysicsConstraints、操作するキャラクターは ICharacterControllers、デバッグ描画は IPhysicsDebug として使える。
 //
 //   CPhysicsSystem Physics;
 //   Physics.Init();
@@ -56,7 +57,7 @@ struct FPhysicsSettings
 //   FTransform T = Body->GetTransform();
 //   Physics.Shutdown();
 //=============================================================================
-class CPhysicsSystem : public IPhysicsQuery, public ICollisionLayers, public IPhysicsConstraints, public ICharacterControllers
+class CPhysicsSystem : public IPhysicsQuery, public ICollisionLayers, public IPhysicsConstraints, public ICharacterControllers, public IPhysicsDebug
 {
 public:
 	CPhysicsSystem();
@@ -130,6 +131,11 @@ public:
 	void DestroyCharacter( FPhysicsCharacter* Character ) override;
 	void DestroyAllCharacters() override;
 	int32 GetCharacterCount() const override;
+
+	//-------------------------------------------------------------------------
+	// デバッグ描画（IPhysicsDebug。使い方と注意はそちらを参照）
+	//-------------------------------------------------------------------------
+	int32 DrawDebug( IPhysicsDebugDrawer& Drawer, const FPhysicsDebugDrawSettings& DrawSettings = FPhysicsDebugDrawSettings() ) const override;
 
 	//-------------------------------------------------------------------------
 	// 衝突コールバック（所有権は呼び出し側）
