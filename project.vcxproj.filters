@@ -1084,6 +1084,9 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestPhysicsConstraints.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestPhysicsDebug.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
     <ClCompile Include="Source\SelfTest\AssetSelfTestPhysicsLayers.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
