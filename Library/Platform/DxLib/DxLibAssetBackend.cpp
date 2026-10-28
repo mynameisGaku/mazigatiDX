@@ -310,12 +310,13 @@ int32 CDxLibAssetBackend::MeasureText( int32 Font, const char* Text )
 
 bool CDxLibAssetBackend::AddFontFile( const FString& Path )
 {
-	return AddFontResourceExA( *Path, FR_PRIVATE, nullptr ) > 0;
+	// パスは UTF-8 なので、A 系（システムのコードページ）ではなく W 系で渡す
+	return AddFontResourceExW( Path.ToWide().GetData(), FR_PRIVATE, nullptr ) > 0;
 }
 
 void CDxLibAssetBackend::RemoveFontFile( const FString& Path )
 {
-	RemoveFontResourceExA( *Path, FR_PRIVATE, nullptr );
+	RemoveFontResourceExW( Path.ToWide().GetData(), FR_PRIVATE, nullptr );
 }
 
 //-----------------------------------------------------------------------------
