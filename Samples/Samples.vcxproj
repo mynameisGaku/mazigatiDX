@@ -69,6 +69,10 @@
     <ClCompile Include="Source\Input\InputSample.cpp" />
     <ClCompile Include="Source\Input\KeyboardView.cpp" />
     <ClCompile Include="Source\Input\MouseView.cpp" />
+    <ClCompile Include="Source\Pixels\PixelsSample.cpp" />
+    <ClCompile Include="Source\Pixels\PlasmaView.cpp" />
+    <ClCompile Include="Source\Pixels\SpriteSheetMaker.cpp" />
+    <ClCompile Include="Source\Pixels\TileView.cpp" />
     <ClCompile Include="Source\RenderTarget\RenderTargetSample.cpp" />
     <ClCompile Include="Source\RenderTarget\TargetShowcase.cpp" />
     <ClCompile Include="Source\Shapes\ShapeShowcase.cpp" />
@@ -94,6 +98,10 @@
     <ClInclude Include="Source\Input\InputSample.h" />
     <ClInclude Include="Source\Input\KeyboardView.h" />
     <ClInclude Include="Source\Input\MouseView.h" />
+    <ClInclude Include="Source\Pixels\PixelsSample.h" />
+    <ClInclude Include="Source\Pixels\PlasmaView.h" />
+    <ClInclude Include="Source\Pixels\SpriteSheetMaker.h" />
+    <ClInclude Include="Source\Pixels\TileView.h" />
     <ClInclude Include="Source\RenderTarget\RenderTargetSample.h" />
     <ClInclude Include="Source\RenderTarget\TargetShowcase.h" />
     <ClInclude Include="Source\Shapes\ShapeShowcase.h" />

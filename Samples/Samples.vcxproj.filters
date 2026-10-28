@@ -55,6 +55,18 @@
     <ClCompile Include="Source\Input\MouseView.cpp">
       <Filter>Source\Input</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Pixels\PixelsSample.cpp">
+      <Filter>Source\Pixels</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Pixels\PlasmaView.cpp">
+      <Filter>Source\Pixels</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Pixels\SpriteSheetMaker.cpp">
+      <Filter>Source\Pixels</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Pixels\TileView.cpp">
+      <Filter>Source\Pixels</Filter>
+    </ClCompile>
     <ClCompile Include="Source\RenderTarget\RenderTargetSample.cpp">
       <Filter>Source\RenderTarget</Filter>
     </ClCompile>
@@ -123,6 +135,18 @@
     <ClInclude Include="Source\Input\MouseView.h">
       <Filter>Source\Input</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Pixels\PixelsSample.h">
+      <Filter>Source\Pixels</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Pixels\PlasmaView.h">
+      <Filter>Source\Pixels</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Pixels\SpriteSheetMaker.h">
+      <Filter>Source\Pixels</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Pixels\TileView.h">
+      <Filter>Source\Pixels</Filter>
+    </ClInclude>
     <ClInclude Include="Source\RenderTarget\RenderTargetSample.h">
       <Filter>Source\RenderTarget</Filter>
     </ClInclude>
@@ -163,6 +187,9 @@
     </Filter>
     <Filter Include="Source\Input">
       <UniqueIdentifier>{FFE14168-86E4-9D5A-B4DA-C4ACB9D88FCD}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Pixels">
+      <UniqueIdentifier>{7FACA93B-34CC-117D-96B2-DB56EAC4A18F}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\RenderTarget">
       <UniqueIdentifier>{404CC2CF-CCF6-391E-5932-FC9207128670}</UniqueIdentifier>
