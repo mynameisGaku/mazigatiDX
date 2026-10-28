@@ -39,7 +39,7 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
 
 ## 3. 資源とハンドル
 
-- DxLib のハンドル（`int`）を**そのまま公開しない**。画像・モデル・音・フォントなどは、型のある所有者（`CTexture` `CModel` `CSound` `CFont` など。`CAssetManager` が読み込み・共有・破棄を行う）か、型付きのハンドルで扱う。描画先（`MakeScreen`）は `CRenderTarget`（`CTexture` を継承。`CAssetManager::CreateRenderTarget` で作り、`IAssetBackend` の `CreateRenderTarget` / `ReadRenderTargetPixels` / `SaveRenderTarget` が、DxLib を呼ぶ）。画像は、描画の窓口（`FDrawContext`）に、インターフェース `IImage`（`CTexture` が実装。`Core/Interfaces/Render/IImage.h`）か、型付きのハンドル `FImageHandle` で渡す。描画の側は、`CTexture` などの具体的な型を知らない。
+- DxLib のハンドル（`int`）を**そのまま公開しない**。画像・モデル・音・フォントなどは、型のある所有者（`CTexture` `CModel` `CSound` `CFont` など。`CAssetManager` が読み込み・共有・破棄を行う）か、型付きのハンドルで扱う。CPU の画素から作る画像は `CDynamicTexture`（`FPixelImage` から。`CAssetManager::CreateDynamicTexture`。`IAssetBackend` の `CreateTextureFromPixels` / `UpdateTexturePixels` / `DecodeImage` / `SavePixels`）。描画先（`MakeScreen`）は `CRenderTarget`（`CTexture` を継承。`CAssetManager::CreateRenderTarget` で作り、`IAssetBackend` の `CreateRenderTarget` / `ReadRenderTargetPixels` / `SaveRenderTarget` が、DxLib を呼ぶ）。画像は、描画の窓口（`FDrawContext`）に、インターフェース `IImage`（`CTexture` が実装。`Core/Interfaces/Render/IImage.h`）か、型付きのハンドル `FImageHandle` で渡す。描画の側は、`CTexture` などの具体的な型を知らない。
 - 資源の寿命は参照（共有ポインター）で決める。使う側が強参照を持つ間は有効で、最後の参照が消えたとき、メインスレッドで破棄する（別スレッドからの解放は遅延させて受ける）。
 - 読み込みの失敗は、空の参照とログで返す。準備待ち（非同期）と恒久的な失敗を取り違えない。
 - 無効なハンドルを表す値（`-1`）は実装の中の都合で、利用者に見せない。
@@ -56,6 +56,7 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
 
 - 例外は使わない。失敗は `TResult<T>` か `bool` と、原因を書いたログ（カテゴリ付き）で返す。
 - DxLib が返す `-1` などの値を、そのまま返さない。窓口の意味（空の参照・`false`・エラー値）に直す。
+- DxLib が、**壊れた入力で落ちる**ことがある（切れた PNG を `LoadSoftImageToMem` / `LoadSoftImage` に渡すと、範囲外を読んでアクセス違反になる。M2-5 の実測）。そういう入力は、渡す前に、ラッパーが構造を確かめて、失敗として返す（`DecodeImage` / `DecodeImageFile` は、PNG・BMP・JPEG が最後まであるかを確かめる）。落ちる経路を見つけたら、確かめてから渡す。
 - 前提が破れたとき（不正な引数・NaN・範囲外）は、何もせずにログを出して失敗を返す。DxLib 側のクラッシュや assert に任せない。
 
 ## 6. 文字列と文字コード

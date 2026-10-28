@@ -80,6 +80,13 @@ NaN・無限大・絶対値が1e7を超える値、範囲の外の列挙型の�
 - 読む・保存する: `ReadPixels( X, Y, 幅, 高さ, 出力 )` / `ReadPixel( X, Y, 色 )`は画素（`FColor32`。アルファを持たない描画先は255）を、`Save( パス, FImageSaveOptions )` / `SaveRegion( ... )`はファイル（Png・Bmp・Jpeg。Pngだけ透明度も残る。途中のフォルダーは作ります）を作ります。矩形が描画先の外へはみ出す場合は`false`です。描画は「記録 → 実行」なので、読む・保存するのは、描いたもの（オブジェクトの`Draw`）が実行されたあと（次の`Tick`など）にします。どちらも、メインスレッドだけです。
 見本は`Samples`の`RenderTarget`です（`Samples.exe --sample=RenderTarget`。ミニマップへ描き、貼り、画面の一部を写し、色を読み、Sキーで保存します）。
 
+CPU側の画像（`FPixelImage`）は、画素の並びを持つ値です（DxLibに依存しません）。`FPixelImage Canvas( 64, 64, FColor32( 0, 0, 0, 255 ) );`で作り、`Get / Set`（範囲の外を読むと透明な黒、書くと何もしません）、`Fill / FillRect`、`Blit`（別の画像の矩形を重ねます。`EPixelBlend::Copy`は置き換え、`Alpha`は乗算されていないアルファの`over`で半透明を混ぜます。はみ出す分は切り、自分自身から重ねてもかまいません）、`Crop`、`FlipHorizontal / FlipVertical`が使えます。大きさは1〜16384（画素の総数は64Mまで）で、範囲の外の大きさは空の画像（`IsValid()`が`false`）になります。
+- 画像にする: `Assets->CreateDynamicTexture( "Canvas", Canvas )`で`CDynamicTexture`（`CTexture`でもあるので、そのまま貼れます）を作り、`Update( Canvas )`で中身を替えます（同じ大きさだけ。ハンドルは変わらないので、貼ってある場所は全部、新しい絵になります）。毎フレームの更新は、数百ピクセル四方までの画像に向きます。透明な画素の色も、そのまま入ります。
+- ファイルとの行き来: `LoadPixelImage( パス )` / `DecodePixelImage( バイト列, 大きさ )`（PNG・BMP・JPEGなど。透明度を持たない形式は不透明。読めなければ空の画像）と、`SavePixelImage( 画像, パス, FImageSaveOptions )`があります。DxLibは、途中で切れたPNG・BMP・JPEGを渡すと範囲外を読んで落ちるので、渡す前に、構造が最後まであるかを確かめ、壊れたものは空の画像にします。
+- 描画先から: `CRenderTarget::ReadPixelImage()`で、描画先の全体をCPU側の画像にできます。
+- 分ける（`LoadDivGraph`相当）: `Assets->SplitTexture( 画像, Grid )` / `LoadTextureGrid( パス, Grid )`は、格子（`FSpriteSheetGrid`。余白・隙間・コマの大きさ・並べ方）で分けた、1コマずつの画像の並びを返します。元の画像を共有する派生画像なのでメモリは増えず、元の画像は、派生画像が残るあいだ保たれます。画像の外へはみ出すコマは`nullptr`です。
+見本は`Samples`の`Pixels`です（`Samples.exe --sample=Pixels`。画素を毎フレーム書いて画像を更新し、半透明の光を重ね、シートを分け、Sキーで保存して読み直します）。
+
 組み込みのデバッグ表示は、`Library/DebugUI/DebugOverlay.h`の`CDebugOverlay`です。ゲームインスタンスが持ち、`Init() / Tick() / Draw( *this ) / Term()`を呼ぶと、F1の窓（FPS・入力・シーン・ログ）、F2のプロファイラー、F3のコンソール（Debugだけ）、F11のフルスクリーンが使えます。`OnDrawPanelItems`と`OnDrawWindows`に関数を渡すと、ゲーム側の項目や窓を同じ画面に並べられます。キーの処理は`HandleKeys`に切り出してあり、偽の入力・プロファイラー・プラットフォームで確かめられます。
 
 ## 粒子の力場
