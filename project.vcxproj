@@ -105,6 +105,8 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestPhysicsLayers.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestPhysicsLayers.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestPlatformStartup.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestPlatformStartup.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestScene.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestScene.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestShapes.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestShapes.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestShapesReal.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestShapesReal.cpp')" />
     <ClCompile Include="Source\SelfTest\ConsoleSelfTest.cpp" Condition="Exists('Source\SelfTest\ConsoleSelfTest.cpp')" />
     <ClCompile Include="Source\SelfTest\EcsSelfTestScene.cpp" Condition="Exists('Source\SelfTest\EcsSelfTestScene.cpp')" />
     <ClCompile Include="Source\SelfTest\SelfTestEntry.cpp" Condition="Exists('Source\SelfTest\SelfTestEntry.cpp')" />
@@ -182,12 +184,14 @@
     <ClInclude Include="Source\Object\PhysicsObjects.h" />
     <ClInclude Include="Source\Scene\GameScene.h" />
     <ClInclude Include="Source\Scene\TitleScene.h" />
+    <ClInclude Include="Source\SelfTest\AssetSelfTestCapture.h" Condition="Exists('Source\SelfTest\AssetSelfTestCapture.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestCore.h" Condition="Exists('Source\SelfTest\AssetSelfTestCore.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestFbx.h" Condition="Exists('Source\SelfTest\AssetSelfTestFbx.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestModelMaterial.h" Condition="Exists('Source\SelfTest\AssetSelfTestModelMaterial.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestModelMaterialBoundary.h" Condition="Exists('Source\SelfTest\AssetSelfTestModelMaterialBoundary.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestModelSurface.h" Condition="Exists('Source\SelfTest\AssetSelfTestModelSurface.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestScene.h" Condition="Exists('Source\SelfTest\AssetSelfTestScene.h')" />
+    <ClInclude Include="Source\SelfTest\AssetSelfTestShapes.h" Condition="Exists('Source\SelfTest\AssetSelfTestShapes.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestSupport.h" Condition="Exists('Source\SelfTest\AssetSelfTestSupport.h')" />
     <ClInclude Include="Source\SelfTest\EcsSelfTestScene.h" Condition="Exists('Source\SelfTest\EcsSelfTestScene.h')" />
     <ClInclude Include="Source\SelfTest\WorldEditorSelfTestSupport.h" Condition="Exists('Source\SelfTest\WorldEditorSelfTestSupport.h')" />

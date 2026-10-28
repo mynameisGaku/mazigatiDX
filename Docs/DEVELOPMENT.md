@@ -56,6 +56,8 @@ DxLibでは個体の選択meshだけを一時非表示にし、残りを通常�
 
 シーンの`OnDraw`、ゲームインスタンスの`OnDraw`、オブジェクトの`Draw()`など、描画システムの外から描くときは、DxLibを直接呼ばず`Library/Framework/Render/ImmediateDraw.h`の`FImmediateDraw`を使います。`FImmediateDraw Draw( GetDrawExecutor() );`と書くと、`FDrawContext`と同じ関数（`Box / Circle / Line / Text / Sprite`など）で描け、`Flush()`かスコープを抜けるときに、記録した順に`IDrawExecutor`で実行します。実行はメインスレッドで、描いたものがなければ実行先を呼びません。実行先が`nullptr`なら、描いたものは捨てます。
 
+2Dの図形は、DxLibの関数と同じ形で書けます。整数の座標の`Pixel / Triangle / Quad / Oval / RoundBox`（と`Box / Circle / Line`）は`DrawPixel / DrawTriangle / DrawQuadrangle / DrawOval / DrawRoundRect`などに対応し、画素ちょうどで描きます。ゆっくり動くものや傾いた図形には、アンチエイリアス付きで`float32`の座標を取る`LineAA / BoxAA / CircleAA / OvalAA / TriangleAA / QuadAA / RoundBoxAA`を使います（`DrawLineAA`などに対応。DxLibの仕様で縁が半径の外へ約0.5ピクセルにじむので、円と楕円は整数版と同じ大きさに見えます）。円・楕円・角の丸みの`NumSegments`は何角形で近似するかで、0（既定）なら半径（楕円と角の丸みは大きいほうの半径）から、誤差が1/4ピクセル以下になる4の倍数（12〜256）を決めます。NaN・無限大・絶対値が1e7を超える座標・負の半径・0以下の太さは記録しません。見本は`Samples`の`Shapes`です（`Samples.exe --sample=Shapes`）。
+
 組み込みのデバッグ表示は、`Library/DebugUI/DebugOverlay.h`の`CDebugOverlay`です。ゲームインスタンスが持ち、`Init() / Tick() / Draw( *this ) / Term()`を呼ぶと、F1の窓（FPS・入力・シーン・ログ）、F2のプロファイラー、F3のコンソール（Debugだけ）、F11のフルスクリーンが使えます。`OnDrawPanelItems`と`OnDrawWindows`に関数を渡すと、ゲーム側の項目や窓を同じ画面に並べられます。キーの処理は`HandleKeys`に切り出してあり、偽の入力・プロファイラー・プラットフォームで確かめられます。
 
 ## 粒子の力場

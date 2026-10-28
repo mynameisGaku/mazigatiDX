@@ -91,5 +91,5 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
 |---|---|
 | `FDrawContext` の `Sprite` / `TextWithFont` / `Billboard3D` / `Model` / `Mesh3D` | 画像・フォント・モデルを `int32` のハンドルで受け取っている。型のある資源（`CTexture` など）か型付きハンドルで受けたい |
 | `Source/Scene/GameScene`・`Source/Object` のサンプル | 描画に DxLib の関数（`DrawBox` `DrawString`）を直接呼んでいる。`FImmediateDraw`（`TitleScene` は移行済み）で書き直す |
-| 2D 描画の座標 | `Box` / `Circle` / `Line` は `int32`、`Sprite` は `float32`。そろえる |
+| 2D 描画の座標 | 図形は、DxLib の分け方どおり、整数の座標（`Box` / `Circle` / `Line` / `Pixel` / `Triangle` / `Quad` / `Oval` / `RoundBox`）と、`float32` の座標でなめらかな `*AA` に分けた（M2-1）。画像（`Sprite` は `float32`）との型の違いは、画像の描画を包む M2-2 で決める |
 | DxLib の網羅 | 関数名で約 8%。2D・文字・3D のライトと影・シェーダー・フィルター・ムービー・ファイル（DXA）などが未 |

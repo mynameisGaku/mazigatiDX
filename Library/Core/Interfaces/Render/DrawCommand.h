@@ -60,6 +60,15 @@ enum class EDrawCommand : uint8
 	MaterialMesh3D,
 	// FDrawModelMaterialDataを使い、選択材質以外の通常描画も保つモデル命令。
 	ModelMaterial3D,
+	// 2D の図形の追加（上のコマンドの形式は変えていない。座標は float32 で持ち、なめらかでない描き方では実行のときに四捨五入する）
+	Pixel,          // FDrawPixelData
+	Triangle,       // FDrawTriangleData。Fill なら塗りつぶし。AntiAlias ならなめらかに描く（DrawTriangleAA。Thickness は枠の太さ）
+	Quad,           // FDrawQuadData。Fill / AntiAlias は Triangle と同じ
+	Oval,           // FDrawOvalData。Fill / AntiAlias は Triangle と同じ
+	RoundBox,       // FDrawRoundBoxData。Fill / AntiAlias は Triangle と同じ
+	BoxAA,          // FDrawBoxAAData。Fill なら塗りつぶし（DrawBoxAA）
+	CircleAA,       // FDrawCircleAAData。Fill なら塗りつぶし（DrawCircleAA）
+	LineAA,         // FDrawLineAAData（DrawLineAA）
 };
 
 // Quad3D の向きの決め方
@@ -96,6 +105,7 @@ struct FDrawFlag
 	static constexpr uint8 AlignRight = 1 << 4;    // TextFont: X が文字列の右端
 	static constexpr uint8 TwoSided = 1 << 5;      // Mesh3D: 裏も描く
 	static constexpr uint8 UseRegularCulling = 1 << 6; // 材質mesh: 通常メッシュの裏面除去設定を使う
+	static constexpr uint8 AntiAlias = 1 << 7;     // Triangle / Quad / Oval / RoundBox: なめらかに描く（座標を四捨五入しない）
 };
 
 //-----------------------------------------------------------------------------
@@ -183,6 +193,17 @@ struct FDrawMeshData
 	float32 M[12] = {};
 };
 
+// 2D の図形（座標は画面のピクセル、左上が原点）。Thickness は枠の太さ（塗りつぶしでは使わない。AntiAlias でない Triangle / Quad / RoundBox にも無い）。
+// NumSegments は円・楕円・角の丸みを何角形で近似するか（0 なら、半径から決める。AntiAlias のときだけ使う）
+struct FDrawPixelData { int32 X = 0, Y = 0; FDrawRgb Color; };
+struct FDrawTriangleData { float32 X0 = 0.0f, Y0 = 0.0f, X1 = 0.0f, Y1 = 0.0f, X2 = 0.0f, Y2 = 0.0f; float32 Thickness = 1.0f; FDrawRgb Color; };
+struct FDrawQuadData { float32 X0 = 0.0f, Y0 = 0.0f, X1 = 0.0f, Y1 = 0.0f, X2 = 0.0f, Y2 = 0.0f, X3 = 0.0f, Y3 = 0.0f; float32 Thickness = 1.0f; FDrawRgb Color; };
+struct FDrawOvalData { float32 X = 0.0f, Y = 0.0f, Rx = 0.0f, Ry = 0.0f; float32 Thickness = 1.0f; int32 NumSegments = 0; FDrawRgb Color; };
+struct FDrawRoundBoxData { float32 X0 = 0.0f, Y0 = 0.0f, X1 = 0.0f, Y1 = 0.0f, Rx = 0.0f, Ry = 0.0f; float32 Thickness = 1.0f; int32 NumSegments = 0; FDrawRgb Color; };
+struct FDrawBoxAAData { float32 X0 = 0.0f, Y0 = 0.0f, X1 = 0.0f, Y1 = 0.0f; float32 Thickness = 1.0f; FDrawRgb Color; };
+struct FDrawCircleAAData { float32 X = 0.0f, Y = 0.0f, Radius = 0.0f; float32 Thickness = 1.0f; int32 NumSegments = 0; FDrawRgb Color; };
+struct FDrawLineAAData { float32 X0 = 0.0f, Y0 = 0.0f, X1 = 0.0f, Y1 = 0.0f; float32 Thickness = 1.0f; FDrawRgb Color; };
+
 #define DRAW_DATA_CHECK( Type ) \
 	static_assert( sizeof( Type ) % 4 == 0 && bIsTriviallyCopyable<Type>, #Type " must be made of 4-byte words with no padding" )
 DRAW_DATA_CHECK( FDrawBoxData );
@@ -205,6 +226,14 @@ DRAW_DATA_CHECK( FDrawTextFontData );
 DRAW_DATA_CHECK( FDrawModelAnimData );
 DRAW_DATA_CHECK( FDrawQuad3DData );
 DRAW_DATA_CHECK( FDrawMeshData );
+DRAW_DATA_CHECK( FDrawPixelData );
+DRAW_DATA_CHECK( FDrawTriangleData );
+DRAW_DATA_CHECK( FDrawQuadData );
+DRAW_DATA_CHECK( FDrawOvalData );
+DRAW_DATA_CHECK( FDrawRoundBoxData );
+DRAW_DATA_CHECK( FDrawBoxAAData );
+DRAW_DATA_CHECK( FDrawCircleAAData );
+DRAW_DATA_CHECK( FDrawLineAAData );
 #undef DRAW_DATA_CHECK
 static_assert( sizeof( FDrawBoxData ) == 24 && sizeof( FDrawSphere3DData ) == 28 && sizeof( FDrawModelData ) == 60, "unexpected padding in a draw command data type" );
 
@@ -238,6 +267,10 @@ struct FDrawCommandView
 	int32 NumDataWords = 0;
 
 	FORCEINLINE bool Has( uint8 Flag ) const { return ( Flags & Flag ) != 0; }
+
+	// データが TData 1 つ分あるか（壊れた・短い命令を読まないための確認）
+	template<typename TData>
+	FORCEINLINE bool CanRead() const { return NumDataWords >= static_cast<int32>( sizeof( TData ) / 4 ); }
 
 	template<typename TData>
 	FORCEINLINE TData Read() const

@@ -11,6 +11,7 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
+#include "Library/Math/MathConstants.h"
 #include "Library/Math/MathUtils.h"
 #include "Library/Platform/DxLib/DxLibAssetBackend.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
@@ -184,6 +185,22 @@ namespace
 		case EDrawBlend::Multiply: return DX_BLENDMODE_MUL;
 		default: return DX_BLENDMODE_NOBLEND;
 		}
+	}
+
+	// 円・楕円・角の丸みを近似する角数。指定が無ければ（0）、半径（ピクセル）から、折れ線と円弧の誤差が 1/4 ピクセル以下になる数を 4 の倍数で決める（12..256）
+	int ResolveSegments( int32 NumSegments, float32 Radius )
+	{
+		if ( NumSegments > 0 ) return NumSegments;
+		if ( Radius <= 0.25f ) return 12;
+		const float32 HalfAngle = NMath::Acos( 1.0f - 0.25f / Radius );   // 1 辺が張る中心角の半分
+		const int32 Count = HalfAngle > 0.0f ? static_cast<int32>( NMath::Ceil( NMath::PI / HalfAngle ) ) : 256;
+		return NMath::Clamp( ( Count + 3 ) / 4 * 4, 12, 256 );
+	}
+
+	// なめらかでない描き方では、float の座標を四捨五入して int にする（記録のとき、絶対値 1e7 以下に絞ってあるので溢れない）
+	FORCEINLINE int ToPixel( float32 Value )
+	{
+		return NMath::RoundToInt( Value );
 	}
 }
 
@@ -587,6 +604,66 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 		case EDrawCommand::Ribbon3D:
 		{
 			DrawRibbon3D( Command );
+			break;
+		}
+		case EDrawCommand::Pixel:
+		{
+			if ( !Command.CanRead<FDrawPixelData>() ) break;
+			const FDrawPixelData Data = Command.Read<FDrawPixelData>();
+			DrawPixel( Data.X, Data.Y, ToDxColor( Data.Color ) );
+			break;
+		}
+		case EDrawCommand::Triangle:
+		{
+			if ( !Command.CanRead<FDrawTriangleData>() ) break;
+			const FDrawTriangleData Data = Command.Read<FDrawTriangleData>();
+			if ( Command.Has( FDrawFlag::AntiAlias ) ) DrawTriangleAA( Data.X0, Data.Y0, Data.X1, Data.Y1, Data.X2, Data.Y2, ToDxColor( Data.Color ), Fill, Data.Thickness );
+			else DrawTriangle( ToPixel( Data.X0 ), ToPixel( Data.Y0 ), ToPixel( Data.X1 ), ToPixel( Data.Y1 ), ToPixel( Data.X2 ), ToPixel( Data.Y2 ), ToDxColor( Data.Color ), Fill );
+			break;
+		}
+		case EDrawCommand::Quad:
+		{
+			if ( !Command.CanRead<FDrawQuadData>() ) break;
+			const FDrawQuadData Data = Command.Read<FDrawQuadData>();
+			if ( Command.Has( FDrawFlag::AntiAlias ) ) DrawQuadrangleAA( Data.X0, Data.Y0, Data.X1, Data.Y1, Data.X2, Data.Y2, Data.X3, Data.Y3, ToDxColor( Data.Color ), Fill, Data.Thickness );
+			else DrawQuadrangle( ToPixel( Data.X0 ), ToPixel( Data.Y0 ), ToPixel( Data.X1 ), ToPixel( Data.Y1 ), ToPixel( Data.X2 ), ToPixel( Data.Y2 ), ToPixel( Data.X3 ), ToPixel( Data.Y3 ), ToDxColor( Data.Color ), Fill );
+			break;
+		}
+		case EDrawCommand::Oval:
+		{
+			if ( !Command.CanRead<FDrawOvalData>() ) break;
+			const FDrawOvalData Data = Command.Read<FDrawOvalData>();
+			if ( Command.Has( FDrawFlag::AntiAlias ) ) DrawOvalAA( Data.X, Data.Y, Data.Rx, Data.Ry, ResolveSegments( Data.NumSegments, NMath::Max( Data.Rx, Data.Ry ) ), ToDxColor( Data.Color ), Fill, Data.Thickness );
+			else DrawOval( ToPixel( Data.X ), ToPixel( Data.Y ), ToPixel( Data.Rx ), ToPixel( Data.Ry ), ToDxColor( Data.Color ), Fill, NMath::Max( ToPixel( Data.Thickness ), 1 ) );
+			break;
+		}
+		case EDrawCommand::RoundBox:
+		{
+			if ( !Command.CanRead<FDrawRoundBoxData>() ) break;
+			const FDrawRoundBoxData Data = Command.Read<FDrawRoundBoxData>();
+			if ( Command.Has( FDrawFlag::AntiAlias ) ) DrawRoundRectAA( Data.X0, Data.Y0, Data.X1, Data.Y1, Data.Rx, Data.Ry, ResolveSegments( Data.NumSegments, NMath::Max( Data.Rx, Data.Ry ) ), ToDxColor( Data.Color ), Fill, Data.Thickness );
+			else DrawRoundRect( ToPixel( Data.X0 ), ToPixel( Data.Y0 ), ToPixel( Data.X1 ), ToPixel( Data.Y1 ), ToPixel( Data.Rx ), ToPixel( Data.Ry ), ToDxColor( Data.Color ), Fill );
+			break;
+		}
+		case EDrawCommand::BoxAA:
+		{
+			if ( !Command.CanRead<FDrawBoxAAData>() ) break;
+			const FDrawBoxAAData Data = Command.Read<FDrawBoxAAData>();
+			DrawBoxAA( Data.X0, Data.Y0, Data.X1, Data.Y1, ToDxColor( Data.Color ), Fill, Data.Thickness );
+			break;
+		}
+		case EDrawCommand::CircleAA:
+		{
+			if ( !Command.CanRead<FDrawCircleAAData>() ) break;
+			const FDrawCircleAAData Data = Command.Read<FDrawCircleAAData>();
+			DrawCircleAA( Data.X, Data.Y, Data.Radius, ResolveSegments( Data.NumSegments, Data.Radius ), ToDxColor( Data.Color ), Fill, Data.Thickness );
+			break;
+		}
+		case EDrawCommand::LineAA:
+		{
+			if ( !Command.CanRead<FDrawLineAAData>() ) break;
+			const FDrawLineAAData Data = Command.Read<FDrawLineAAData>();
+			DrawLineAA( Data.X0, Data.Y0, Data.X1, Data.Y1, ToDxColor( Data.Color ), Data.Thickness );
 			break;
 		}
 		}

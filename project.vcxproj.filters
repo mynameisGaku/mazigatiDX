@@ -106,6 +106,12 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestScene.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestShapes.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestShapesReal.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
     <ClCompile Include="Source\SelfTest\ConsoleSelfTest.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
@@ -330,6 +336,9 @@
     <ClInclude Include="Source\Scene\TitleScene.h">
       <Filter>Source\Scene</Filter>
     </ClInclude>
+    <ClInclude Include="Source\SelfTest\AssetSelfTestCapture.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
     <ClInclude Include="Source\SelfTest\AssetSelfTestCore.h">
       <Filter>Source\SelfTest</Filter>
     </ClInclude>
@@ -346,6 +355,9 @@
       <Filter>Source\SelfTest</Filter>
     </ClInclude>
     <ClInclude Include="Source\SelfTest\AssetSelfTestScene.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\AssetSelfTestShapes.h">
       <Filter>Source\SelfTest</Filter>
     </ClInclude>
     <ClInclude Include="Source\SelfTest\AssetSelfTestSupport.h">

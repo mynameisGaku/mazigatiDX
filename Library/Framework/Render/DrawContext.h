@@ -12,6 +12,7 @@
 #include "Library/Core/Interfaces/Render/DrawMaterialQuad.h"
 #include "Library/Core/Interfaces/Render/DrawMaterialRibbon.h"
 #include "Library/Core/Interfaces/Render/DrawRibbon.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Math/Color.h"
 #include "Library/Math/Matrix4x4.h"
 #include "Library/Math/Vector3.h"
@@ -100,6 +101,111 @@ public:
 		Data.Thickness = Thickness;
 		Data.Color = Rgb( Color );
 		Push( EDrawCommand::Line, 0, Data );
+	}
+
+	// 点（DrawPixel）
+	FORCEINLINE void Pixel( int32 X, int32 Y, const FColor32& Color )
+	{
+		FDrawPixelData Data;
+		Data.X = X;
+		Data.Y = Y;
+		Data.Color = Rgb( Color );
+		Push( EDrawCommand::Pixel, 0, Data );
+	}
+
+	// 三角形（DrawTriangle）。頂点は (X0, Y0) (X1, Y1) (X2, Y2)。bFill が false なら枠線だけ（太さは 1）
+	FORCEINLINE void Triangle( int32 X0, int32 Y0, int32 X1, int32 Y1, int32 X2, int32 Y2, const FColor32& Color, bool bFill = true )
+	{
+		PushTriangle( static_cast<float32>( X0 ), static_cast<float32>( Y0 ), static_cast<float32>( X1 ), static_cast<float32>( Y1 ), static_cast<float32>( X2 ), static_cast<float32>( Y2 ), Color, bFill, 1.0f, 0 );
+	}
+
+	// 四角形（DrawQuadrangle）。頂点を (X0, Y0) -> (X1, Y1) -> (X2, Y2) -> (X3, Y3) の順にたどる（台形や平行四辺形など、傾いた四角形用。軸に平行な四角形は Box）
+	FORCEINLINE void Quad( int32 X0, int32 Y0, int32 X1, int32 Y1, int32 X2, int32 Y2, int32 X3, int32 Y3, const FColor32& Color, bool bFill = true )
+	{
+		PushQuad( static_cast<float32>( X0 ), static_cast<float32>( Y0 ), static_cast<float32>( X1 ), static_cast<float32>( Y1 ), static_cast<float32>( X2 ), static_cast<float32>( Y2 ), static_cast<float32>( X3 ), static_cast<float32>( Y3 ), Color, bFill, 1.0f, 0 );
+	}
+
+	// 楕円（DrawOval）。(X, Y) が中心、Rx / Ry が横と縦の半径
+	FORCEINLINE void Oval( int32 X, int32 Y, int32 Rx, int32 Ry, const FColor32& Color, bool bFill = true, int32 Thickness = 1 )
+	{
+		PushOval( static_cast<float32>( X ), static_cast<float32>( Y ), static_cast<float32>( Rx ), static_cast<float32>( Ry ), Color, bFill, static_cast<float32>( Thickness ), 0, 0 );
+	}
+
+	// 角の丸い四角形（DrawRoundRect）。Rx / Ry が角の丸みの横と縦の半径。bFill が false なら枠線だけ（太さは 1）
+	FORCEINLINE void RoundBox( int32 X0, int32 Y0, int32 X1, int32 Y1, int32 Rx, int32 Ry, const FColor32& Color, bool bFill = true )
+	{
+		PushRoundBox( static_cast<float32>( X0 ), static_cast<float32>( Y0 ), static_cast<float32>( X1 ), static_cast<float32>( Y1 ), static_cast<float32>( Rx ), static_cast<float32>( Ry ), Color, bFill, 1.0f, 0, 0 );
+	}
+
+	//-------------------------------------------------------------------------
+	// なめらかな（アンチエイリアス付きの）2D 図形。座標は float32 で、ピクセルの途中にも置ける（ゆっくり動く物がガタつかない）。
+	// 数値が有限でない（NaN・無限大）・大きすぎる（絶対値が 1e7 より大きい）・半径が負・太さが 0 以下のものは、記録しない。
+	// NumSegments は円・楕円・角の丸みを何角形で近似するか。0 なら、半径から（誤差が 1/4 ピクセル以下になるように）決める
+	//-------------------------------------------------------------------------
+	// 線（DrawLineAA）
+	FORCEINLINE void LineAA( float32 X0, float32 Y0, float32 X1, float32 Y1, const FColor32& Color, float32 Thickness = 1.0f )
+	{
+		if ( !AllDrawable( X0, Y0, X1, Y1 ) || !IsPositiveThickness( Thickness ) ) return;
+		FDrawLineAAData Data;
+		Data.X0 = X0;
+		Data.Y0 = Y0;
+		Data.X1 = X1;
+		Data.Y1 = Y1;
+		Data.Thickness = Thickness;
+		Data.Color = Rgb( Color );
+		Push( EDrawCommand::LineAA, 0, Data );
+	}
+
+	// 四角形（DrawBoxAA）。bFill が false なら枠線だけ
+	FORCEINLINE void BoxAA( float32 X0, float32 Y0, float32 X1, float32 Y1, const FColor32& Color, bool bFill = true, float32 Thickness = 1.0f )
+	{
+		if ( !AllDrawable( X0, Y0, X1, Y1 ) || !IsPositiveThickness( Thickness ) ) return;
+		FDrawBoxAAData Data;
+		Data.X0 = X0;
+		Data.Y0 = Y0;
+		Data.X1 = X1;
+		Data.Y1 = Y1;
+		Data.Thickness = Thickness;
+		Data.Color = Rgb( Color );
+		Push( EDrawCommand::BoxAA, bFill ? FDrawFlag::Fill : 0, Data );
+	}
+
+	// 円（DrawCircleAA）
+	FORCEINLINE void CircleAA( float32 X, float32 Y, float32 Radius, const FColor32& Color, bool bFill = true, float32 Thickness = 1.0f, int32 NumSegments = 0 )
+	{
+		if ( !AllDrawable( X, Y, Radius ) || Radius < 0.0f || !IsPositiveThickness( Thickness ) ) return;
+		FDrawCircleAAData Data;
+		Data.X = X;
+		Data.Y = Y;
+		Data.Radius = Radius;
+		Data.Thickness = Thickness;
+		Data.NumSegments = ClampSegments( NumSegments );
+		Data.Color = Rgb( Color );
+		Push( EDrawCommand::CircleAA, bFill ? FDrawFlag::Fill : 0, Data );
+	}
+
+	// 楕円（DrawOvalAA）。(X, Y) が中心、Rx / Ry が横と縦の半径
+	FORCEINLINE void OvalAA( float32 X, float32 Y, float32 Rx, float32 Ry, const FColor32& Color, bool bFill = true, float32 Thickness = 1.0f, int32 NumSegments = 0 )
+	{
+		PushOval( X, Y, Rx, Ry, Color, bFill, Thickness, ClampSegments( NumSegments ), FDrawFlag::AntiAlias );
+	}
+
+	// 三角形（DrawTriangleAA）
+	FORCEINLINE void TriangleAA( float32 X0, float32 Y0, float32 X1, float32 Y1, float32 X2, float32 Y2, const FColor32& Color, bool bFill = true, float32 Thickness = 1.0f )
+	{
+		PushTriangle( X0, Y0, X1, Y1, X2, Y2, Color, bFill, Thickness, FDrawFlag::AntiAlias );
+	}
+
+	// 四角形（DrawQuadrangleAA）。頂点を順にたどる
+	FORCEINLINE void QuadAA( float32 X0, float32 Y0, float32 X1, float32 Y1, float32 X2, float32 Y2, float32 X3, float32 Y3, const FColor32& Color, bool bFill = true, float32 Thickness = 1.0f )
+	{
+		PushQuad( X0, Y0, X1, Y1, X2, Y2, X3, Y3, Color, bFill, Thickness, FDrawFlag::AntiAlias );
+	}
+
+	// 角の丸い四角形（DrawRoundRectAA）。Rx / Ry が角の丸みの横と縦の半径
+	FORCEINLINE void RoundBoxAA( float32 X0, float32 Y0, float32 X1, float32 Y1, float32 Rx, float32 Ry, const FColor32& Color, bool bFill = true, float32 Thickness = 1.0f, int32 NumSegments = 0 )
+	{
+		PushRoundBox( X0, Y0, X1, Y1, Rx, Ry, Color, bFill, Thickness, ClampSegments( NumSegments ), FDrawFlag::AntiAlias );
 	}
 
 	// 文字列（DrawString）。文字列は記録のときにコピーされる（呼び出したあと、元の領域は使い回してよい）
@@ -326,6 +432,76 @@ public:
 private:
 	static FORCEINLINE FDrawRgb Rgb( const FColor32& Color ) { return FDrawRgb{ Color.r, Color.g, Color.b, 0 }; }
 	static FORCEINLINE uint8 Flip( bool bFlipX, bool bFlipY ) { return static_cast<uint8>( ( bFlipX ? FDrawFlag::FlipX : 0 ) | ( bFlipY ? FDrawFlag::FlipY : 0 ) ); }
+
+	// 2D の図形の座標として描ける値か（有限で、実行のときに int にしても溢れない範囲）
+	static FORCEINLINE bool IsDrawable( float32 Value ) { return NMath::IsFinite( Value ) && Value >= -1.0e7f && Value <= 1.0e7f; }
+	template<typename... TValues>
+	static FORCEINLINE bool AllDrawable( TValues... Values ) { return ( IsDrawable( Values ) && ... ); }
+	static FORCEINLINE bool IsPositiveThickness( float32 Thickness ) { return NMath::IsFinite( Thickness ) && Thickness > 0.0f && Thickness <= 1.0e4f; }
+	// 近似する角数。0 は「半径から決める」。それ以外は 4..512 に収める
+	static FORCEINLINE int32 ClampSegments( int32 NumSegments ) { return NumSegments <= 0 ? 0 : NMath::Clamp( NumSegments, 4, 512 ); }
+
+	FORCEINLINE void PushTriangle( float32 X0, float32 Y0, float32 X1, float32 Y1, float32 X2, float32 Y2, const FColor32& Color, bool bFill, float32 Thickness, uint8 Flags )
+	{
+		if ( !AllDrawable( X0, Y0, X1, Y1, X2, Y2 ) || !IsPositiveThickness( Thickness ) ) return;
+		FDrawTriangleData Data;
+		Data.X0 = X0;
+		Data.Y0 = Y0;
+		Data.X1 = X1;
+		Data.Y1 = Y1;
+		Data.X2 = X2;
+		Data.Y2 = Y2;
+		Data.Thickness = Thickness;
+		Data.Color = Rgb( Color );
+		Push( EDrawCommand::Triangle, static_cast<uint8>( Flags | ( bFill ? FDrawFlag::Fill : 0 ) ), Data );
+	}
+
+	FORCEINLINE void PushQuad( float32 X0, float32 Y0, float32 X1, float32 Y1, float32 X2, float32 Y2, float32 X3, float32 Y3, const FColor32& Color, bool bFill, float32 Thickness, uint8 Flags )
+	{
+		if ( !AllDrawable( X0, Y0, X1, Y1, X2, Y2, X3, Y3 ) || !IsPositiveThickness( Thickness ) ) return;
+		FDrawQuadData Data;
+		Data.X0 = X0;
+		Data.Y0 = Y0;
+		Data.X1 = X1;
+		Data.Y1 = Y1;
+		Data.X2 = X2;
+		Data.Y2 = Y2;
+		Data.X3 = X3;
+		Data.Y3 = Y3;
+		Data.Thickness = Thickness;
+		Data.Color = Rgb( Color );
+		Push( EDrawCommand::Quad, static_cast<uint8>( Flags | ( bFill ? FDrawFlag::Fill : 0 ) ), Data );
+	}
+
+	FORCEINLINE void PushOval( float32 X, float32 Y, float32 Rx, float32 Ry, const FColor32& Color, bool bFill, float32 Thickness, int32 NumSegments, uint8 Flags )
+	{
+		if ( !AllDrawable( X, Y, Rx, Ry ) || Rx < 0.0f || Ry < 0.0f || !IsPositiveThickness( Thickness ) ) return;
+		FDrawOvalData Data;
+		Data.X = X;
+		Data.Y = Y;
+		Data.Rx = Rx;
+		Data.Ry = Ry;
+		Data.Thickness = Thickness;
+		Data.NumSegments = NumSegments;
+		Data.Color = Rgb( Color );
+		Push( EDrawCommand::Oval, static_cast<uint8>( Flags | ( bFill ? FDrawFlag::Fill : 0 ) ), Data );
+	}
+
+	FORCEINLINE void PushRoundBox( float32 X0, float32 Y0, float32 X1, float32 Y1, float32 Rx, float32 Ry, const FColor32& Color, bool bFill, float32 Thickness, int32 NumSegments, uint8 Flags )
+	{
+		if ( !AllDrawable( X0, Y0, X1, Y1, Rx, Ry ) || Rx < 0.0f || Ry < 0.0f || !IsPositiveThickness( Thickness ) ) return;
+		FDrawRoundBoxData Data;
+		Data.X0 = X0;
+		Data.Y0 = Y0;
+		Data.X1 = X1;
+		Data.Y1 = Y1;
+		Data.Rx = Rx;
+		Data.Ry = Ry;
+		Data.Thickness = Thickness;
+		Data.NumSegments = NumSegments;
+		Data.Color = Rgb( Color );
+		Push( EDrawCommand::RoundBox, static_cast<uint8>( Flags | ( bFill ? FDrawFlag::Fill : 0 ) ), Data );
+	}
 	static FORCEINLINE void Set3( float32 ( &Out )[3], const FVector3& V )
 	{
 		Out[0] = V.x;
