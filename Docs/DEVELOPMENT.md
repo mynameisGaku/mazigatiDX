@@ -104,7 +104,8 @@ Worldの`Components.Effect`には、任意の`Target`（追従先オブジェク
 - 型や関数の宣言直前に、日本語で役割・入力・失敗条件を記述します。複数の引数を説明するときは引数ごとに改行します。
 - field、変数、定数、列挙値にも、その場所の役割が分かる短い日本語コメントを付けます。専門用語が必要な場合は短く補足します。
 - 関数・制御文・cast・macro・constructor・初期化子の括弧内部は一行に保ち、既存の波括弧の形式を維持します。途中のコメントで式を分断しません。
-- 自作のh・cpp・inl・ps1はUTF-8 BOM一つ、CRLF、NULなしとします。第三者のソースとライセンスは元の形式を保ちます。
+- 自作のh・cpp・inl・ps1はUTF-8 BOM一つ、CRLF、NULなしとします。第三者のソースとライセンスは元の形式を保ちます。BOMは必須です。ビルドは`/execution-charset:utf-8`（`/utf-8`ではありません）なので、BOMのあるファイルだけがUTF-8として読まれ、BOMを落とすと、日本語の文字列リテラルが警告なしで化けます。
+- 文字列は`FString`（UTF-8）です。文字列リテラルもUTF-8で、ImGui・SDL・JSON・DxLibにそのまま渡せます。Win32のAPIは`W`系を使い、パスは`ToWide()`で渡します。UTF-8でないファイルなどとの境目は`FromCodePage` / `ToCodePage`で変換します。詳しくは`WRAPPER_GUIDE.md`の第6節にあります。
 - 標準ライブラリより先に、フレームワークの機能を使います。数値の比較・範囲・有限判定は`Library/Core/Types/Numeric.h`（`NMath::Abs / Min / Max / Clamp / IsFinite / IsNaN / IsInfinite`と`TNumericLimits<T>`）、右辺値の受け渡しは`Library/Core/Types/Utility.h`（`MoveTemp / Forward`）にあります。浮動小数点の`NMath::Abs`は`std::fabs`と同じく符号ビットを落とし、`Min / Max`は`std::min / std::max`と同じ向きで値を返します。同等のものが無いときだけ`std::`を理由付きで使い、第三者のコードは対象外です。
 - 機能、公開API、ソースの配置を変えた場合は、関連する文書と参照も更新します。
 
@@ -118,7 +119,7 @@ Worldの`Components.Effect`には、任意の`Target`（追従先オブジェク
 |`project`|実行ファイル|`Source`（このリポジトリのゲーム。検査を置いたときはその分も）|
 |`Samples`|実行ファイル|`Samples/Source`（機能別のサンプル集。下の「サンプル集」）|
 
-- フレームワークを使うプロジェクトは、`Build/mazigatiDX.props`を取り込み、`mazigatiDX`への参照を持ちます。propsが、インクルード検索先（`#include "Library/..."`）、C++17、DxLibとSDL3のライブラリ検索先、`main`で始められる入口の設定、`SDL3.dll`のコピーを引き受けるので、ゲーム側の`.vcxproj`は短く済みます。
+- フレームワークを使うプロジェクトは、`Build/mazigatiDX.props`を取り込み、`mazigatiDX`への参照を持ちます。propsが、インクルード検索先（`#include "Library/..."`）、C++17、文字列リテラルをUTF-8にする設定（`/execution-charset:utf-8`）、DxLibとSDL3のライブラリ検索先、`main`で始められる入口の設定、`SDL3.dll`のコピーを引き受けるので、ゲーム側の`.vcxproj`は短く済みます。
 - 入口は`main`です。`Source/main.cpp`が`NGameMain::RunGame<CGameApplication>()`を呼ぶだけで、リーク報告、ログ（コンソールとファイル）、窓の設定（`Config/ScreenConfig.json`）、終了時の後片付けは、`Library/Framework/Engine/GameMain.h`が担当します。
 - サブシステムの登録（`REGISTER_SUBSYSTEM`）とコンソールコマンドの登録は、静的な初期化で行います。静的ライブラリの`.obj`は参照されないとリンクされず登録が消えるので、実行ファイルはライブラリ全体を取り込んでリンクします（propsが`/WHOLEARCHIVE:mazigatiDX.lib`を設定）。
 - 各`.vcxproj`の`<MazigatiSourceRoots>`に書いたフォルダーの下のファイルを、`GenerateProjectFiles.bat`が`ClCompile` / `ClInclude`と`.filters`へ書き出します。プロジェクトを足すときも、`<MazigatiSourceRoots>`を書けば再生成の対象になります。

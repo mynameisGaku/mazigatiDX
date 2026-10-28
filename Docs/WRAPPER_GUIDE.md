@@ -35,7 +35,7 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
 | 時間 | 秒（`float32`、長い時間は `float64`） |
 | 画面座標 | ピクセル、左上が原点 |
 | DxLib の定数（`DX_…`） | `enum class` に置き換える。組み合わせるものはフラグ型にする。窓口に `DX_` の値を出さない |
-| 文字列 | 窓口は `FString` / `const char*`（UTF-8 に統一する。移行の状況は第 6 節） |
+| 文字列 | 窓口は `FString` / `const char*`（UTF-8。第 6 節） |
 
 ## 3. 資源とハンドル
 
@@ -59,9 +59,12 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
 
 ## 6. 文字列と文字コード
 
-- **文字列は UTF-8 に統一する**（2026-10-28 に決定）。ソースファイルは UTF-8（BOM 付き）で保存し、`/utf-8` でコンパイルするので、文字列リテラルも UTF-8 になる。DxLib は UTF-8 モード（`SetUseCharCodeFormat( DX_CHARCODEFORMAT_UTF8 )`）で使い、DxLib へ渡す文字列の変換を、利用者に見せない。
-- 窓口の文字列は `FString`（UTF-8 の列）。ImGui・JSON・ログのファイルも UTF-8 なので、境界の変換が要らなくなる。Windows の API や、CP932 の古いファイルを読むときだけ、境界で変換する。
-- **移行はまだ終わっていない**。現状の `FString` は実行環境の ANSI コードページ（日本語では CP932）の列で、ImGui・JSON へは `ToUtf8()` で変換している。移行が終わるまでは、新しい窓口で文字コードを仮定せず、`FString` の変換関数だけを使う。
+- **文字列は UTF-8 に統一した**（2026-10-28）。`FString` の中身は UTF-8 のバイト列で、ソースの文字列リテラルも UTF-8。ImGui・SDL・JSON（nlohmann）・ログのファイルにも、DxLib にも、そのまま渡せる。窓口の文字列は `FString` / `const char*`（UTF-8）。
+- ソースファイルは **BOM つき UTF-8** で保存する。ビルドは `/execution-charset:utf-8`（文字列リテラルを UTF-8 にする）で、`/utf-8` ではない。`/utf-8` は BOM のないファイルも UTF-8 として読むので、BOM のない Shift-JIS の DxLib のヘッダー（`DxLib.h` など）が壊れる。BOM のあるファイルだけが UTF-8 として読まれるので、**BOM を落とすと、日本語のリテラルが警告なしで化ける**。BOM を保つこと。
+- DxLib は UTF-8 モード（`SetUseCharCodeFormat( DX_CHARCODEFORMAT_UTF8 )`）で使う。`CDxLibBackend` が `DxLib_Init` の前に切り替えるので、描画する文字・ファイル名・フォント名・ウィンドウの題・モデルのアニメーション名とフレーム名には、`FString` をそのまま渡せる。ゲームのコードが DxLib を直接呼ぶときも、UTF-8 で渡す。
+- Windows の API は **W 系**（`CreateFileW` など）を使い、パスは `FString::ToWide()` で渡して、受け取った UTF-16 は `FString( const wchar_t* )` で UTF-8 にする。A 系（`...A`）はシステムのコードページ（日本語では Shift-JIS）の列を受け取るので使わない。起動引数は `NCommandLine`。
+- UTF-8 でない相手（昔の Shift-JIS のファイルなど）とのやりとりは、境目で `FString::FromCodePage( バイト列, 長さ, 932 )` / `ToCodePage( 932 )` で変換する。
+- `FString` の検索・置換・分割・連結は、バイト単位でも UTF-8 の文字を壊さない（2 バイト目以降は ASCII と重ならない）。大文字小文字の変換と、区別なしの比較は ASCII だけ。`Left` / `Mid` などの位置はバイト単位なので、文字の途中で切ると不正な UTF-8 になる（`IsValidUtf8()` で確かめ、`ToValidUtf8()` で直す。文字数は `CharCount()`）。外から来た文字列を JSON に入れるときは、不正な UTF-8 を U+FFFD に直す（`NJson::ToJsonString`）。
 
 ## 7. 素の DxLib へ降りる出口
 
@@ -89,5 +92,4 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
 | `FDrawContext` の `Sprite` / `TextWithFont` / `Billboard3D` / `Model` / `Mesh3D` | 画像・フォント・モデルを `int32` のハンドルで受け取っている。型のある資源（`CTexture` など）か型付きハンドルで受けたい |
 | `Source/Scene/GameScene`・`Source/Object` のサンプル | 描画に DxLib の関数（`DrawBox` `DrawString`）を直接呼んでいる。`FImmediateDraw`（`TitleScene` は移行済み）で書き直す |
 | 2D 描画の座標 | `Box` / `Circle` / `Line` は `int32`、`Sprite` は `float32`。そろえる |
-| 文字列 | UTF-8 への統一（決定済み、移行が未。第 6 節） |
 | DxLib の網羅 | 関数名で約 8%。2D・文字・3D のライトと影・シェーダー・フィルター・ムービー・ファイル（DXA）などが未 |
