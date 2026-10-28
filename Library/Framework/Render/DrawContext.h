@@ -52,7 +52,7 @@ struct FDrawBuffer
 //
 //   - 記録した順番に実行される（1 つのオブジェクトの中では、記録した順。重なりもその通りになる）
 //   - 色は FColor32（DxLib の GetColor への変換は、実行するとき、メインスレッドで行う）
-//   - 描画の状態（Blend / CustomBlend / Tint / AddColor / AlphaTest / Filter / PushClip / Transform2D）と 3D 図形の変換（WorldMatrix）は、そのオブジェクトの分が終わると元に戻る
+//   - 描画の状態（Blend / CustomBlend / Tint / AddColor / AlphaTest / Filter / PushClip / Transform2D）と 3D 図形の変換（WorldMatrix）と描画先（PushTarget）は、そのオブジェクトの分が終わると元に戻る
 //   - カメラ・ライト・Zバッファ・描画先は記録しない（呼び出し側が決めたものを使う）
 //   - グラフィック / モデルのハンドルは、あらかじめ読み込んでおく（読み込みは DxLib の呼び出しなのでメインスレッドで）
 //=============================================================================
@@ -710,6 +710,75 @@ public:
 	}
 
 	//-------------------------------------------------------------------------
+	// 描画先（レンダーターゲット）
+	//-------------------------------------------------------------------------
+	// 描画先を、描き込める画像（CRenderTarget）に替える（SetDrawScreen）。PopTarget か FTargetScope で、1 つ前の描画先へ戻す（入れ子にできる）。
+	// 替えた先は、クリップ範囲なし・2D の変換なしから始まり、戻すと、替える前の範囲・変換に戻る。ブレンドなどの状態と、3D のカメラは、替えても変わらない。
+	// 画像が無効（nullptr・無効なハンドル）なら、何も記録せず false を返す（対の PopTarget も呼ばないこと）。
+	// 描画先にできない画像（ふつうの画像）を渡すと、実行のときに、対の PopTarget まで、描く命令を飛ばす。
+	// そのオブジェクトの分が終わると、Pop が足りなくても、始める前の描画先に戻る
+	FORCEINLINE bool PushTarget( FImageHandle Target )
+	{
+		if ( !Target.IsValid() )
+		{
+			return false;
+		}
+		FDrawTargetData Data;
+		Data.Handle = Target.Value;
+		Push( EDrawCommand::PushTarget, 0, Data );
+		return true;
+	}
+
+	template<typename TImage>
+	FORCEINLINE bool PushTarget( const TImage& Target )
+	{
+		return PushTarget( ToHandle( Target ) );
+	}
+
+	// 1 つ前の描画先へ戻す。PushTarget の数より多く呼んでも、何も起きない
+	FORCEINLINE void PopTarget()
+	{
+		const FDrawPopTargetData Data;
+		Push( EDrawCommand::PopTarget, 0, Data );
+	}
+
+	// いまの描画先の全体を、色（アルファも）で塗りつぶす（ClearDrawScreen）。クリップ範囲・ブレンドには関係なく、全体を、その色そのままにする。
+	// 既定は、透明な黒（アルファを持つ描画先を、透明にする）。アルファを持たない描画先は、不透明な色になる
+	FORCEINLINE void Clear( const FColor32& Color = FColor32( 0, 0, 0, 0 ) )
+	{
+		FDrawClearData Data;
+		Data.R = Color.r;
+		Data.G = Color.g;
+		Data.B = Color.b;
+		Data.A = Color.a;
+		Push( EDrawCommand::Clear, 0, Data );
+	}
+
+	// いまの描画先の矩形 (X0, Y0)-(X1, Y1)（右と下の端は含まない）を、画像 Dest へ写す（GetDrawScreenGraph）。
+	// Dest は、矩形と同じ大きさ（幅・高さが同じ）の、描き込める画像（CRenderTarget）にする。大きさが違う・矩形が描画先の外にはみ出す場合は、実行のときに、何もしない。
+	// 幅・高さが 0 以下、絶対値が 1e7 を超える座標、無効な画像は、何も記録しない
+	FORCEINLINE void CopyScreen( int32 X0, int32 Y0, int32 X1, int32 Y1, FImageHandle Dest )
+	{
+		if ( !Dest.IsValid() || X1 <= X0 || Y1 <= Y0 || !AllDrawable( static_cast<float32>( X0 ), static_cast<float32>( Y0 ), static_cast<float32>( X1 ), static_cast<float32>( Y1 ) ) )
+		{
+			return;
+		}
+		FDrawCopyScreenData Data;
+		Data.X0 = X0;
+		Data.Y0 = Y0;
+		Data.X1 = X1;
+		Data.Y1 = Y1;
+		Data.Handle = Dest.Value;
+		Push( EDrawCommand::CopyScreen, 0, Data );
+	}
+
+	template<typename TImage>
+	FORCEINLINE void CopyScreen( int32 X0, int32 Y0, int32 X1, int32 Y1, const TImage& Dest )
+	{
+		CopyScreen( X0, Y0, X1, Y1, ToHandle( Dest ) );
+	}
+
+	//-------------------------------------------------------------------------
 	// 3D（ワールド座標）
 	//-------------------------------------------------------------------------
 	// 線分（DrawLine3D）
@@ -1040,6 +1109,45 @@ public:
 
 	FClipScope( const FClipScope& ) = delete;
 	FClipScope& operator=( const FClipScope& ) = delete;
+
+private:
+	FDrawContext* CommandList;
+	bool bPushed;
+};
+
+//=============================================================================
+// FTargetScope
+//   コマンドリストの描画先を、描き込める画像（CRenderTarget など）に替えて（PushTarget）、スコープを抜けるとき、1 つ前の描画先に戻す（PopTarget）。
+//   入れ子にできる。画像が無効なら、何も記録せず、戻すこともしない。
+//
+//   {
+//       FTargetScope Scope( CommandList, Minimap );   // この中の描画は、Minimap に描かれる
+//       CommandList.Clear();
+//       CommandList.Circle( 64, 64, 30, FColor32::Red );
+//   }
+//   CommandList.Image( 10.0f, 10.0f, Minimap );       // ふつうの画像として、元の描画先へ貼る
+//=============================================================================
+class FTargetScope
+{
+public:
+	template<typename TImage>
+	FTargetScope( FDrawContext& InCommandList, const TImage& Target )
+		: CommandList( &InCommandList )
+		, bPushed( InCommandList.PushTarget( Target ) )
+	{
+	}
+
+	// PushTarget が何も記録しなかったとき（無効な画像）は、PopTarget もしない（外側の描画先を戻してしまわないため）
+	~FTargetScope()
+	{
+		if ( bPushed )
+		{
+			CommandList->PopTarget();
+		}
+	}
+
+	FTargetScope( const FTargetScope& ) = delete;
+	FTargetScope& operator=( const FTargetScope& ) = delete;
 
 private:
 	FDrawContext* CommandList;

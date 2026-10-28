@@ -269,11 +269,34 @@ namespace
 		case EDrawCommand::PushClip:
 		case EDrawCommand::PopClip:
 		case EDrawCommand::Transform2D:
+		case EDrawCommand::PushTarget:
+		case EDrawCommand::PopTarget:
 			return true;
 		default:
 			return false;
 		}
 	}
+
+	// 描画先の全体にかかわる命令か（クリップ範囲に関係なく、実行する）
+	bool IsWholeTargetCommand( EDrawCommand Type )
+	{
+		return Type == EDrawCommand::Clear || Type == EDrawCommand::CopyScreen;
+	}
+
+	// PushTarget で描画先を替える前の状態（PopTarget で戻す）
+	struct FTargetFrame
+	{
+		int PreviousScreen = 0;
+		RECT PreviousArea = {};
+		// 替える前の、クリップの状態
+		bool bClipChanged = false;
+		RECT OldArea = {};
+		TArray<RECT> ClipStack;
+		bool bClipEmpty = false;
+		// 替える前の、2D の変換（DxLib に取得関数がないので、実行のなかで覚えている）
+		bool bTransform2DChanged = false;
+		MATRIX Transform2D = {};
+	};
 
 	// 2 つの範囲の共通部分（右と下の端は含まない）。重ならなければ、空の範囲（右 <= 左 または 下 <= 上）になる
 	RECT IntersectArea( const RECT& A, const RECT& B )
@@ -382,12 +405,44 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 	RECT OldArea = {};
 	TArray<RECT> ClipStack;
 	bool bClipEmpty = false;
+	// 実行のなかで覚えている、いまの 2D の変換（Transform2D で決めたもの）
+	MATRIX Transform2DMatrix = MGetIdent();
+	// 描画先: PushTarget で替える前の状態の並び（一番内側が、いまの描画先に替える前のもの）と、替えられなかった PushTarget の数
+	// （描画先にできない画像を渡された。その対の PopTarget まで、描く命令を飛ばす。飛ばさないと、元の描画先に描いてしまう）
+	TArray<FTargetFrame> TargetStack;
+	int NumInvalidTargets = 0;
+
+	// 1 つ前の描画先に戻す。カメラは、替えても変わらないよう、「替えるとリセットする設定」を一時的に切って替える
+	const auto RestoreTarget = [&]()
+	{
+		const FTargetFrame Frame = TargetStack.Pop();
+		const int PreviousReset = GetUseSetDrawScreenSettingReset();
+		SetUseSetDrawScreenSettingReset( FALSE );
+		SetDrawScreen( Frame.PreviousScreen );
+		SetUseSetDrawScreenSettingReset( PreviousReset );
+		SetDrawArea( Frame.PreviousArea.left, Frame.PreviousArea.top, Frame.PreviousArea.right, Frame.PreviousArea.bottom );
+		bClipChanged = Frame.bClipChanged;
+		OldArea = Frame.OldArea;
+		ClipStack = Frame.ClipStack;
+		bClipEmpty = Frame.bClipEmpty;
+		if ( Frame.bTransform2DChanged )
+		{
+			SetTransformTo2D( &Frame.Transform2D );
+		}
+		else
+		{
+			ResetTransformTo2D();
+		}
+		bTransform2DChanged = Frame.bTransform2DChanged;
+		Transform2DMatrix = Frame.Transform2D;
+	};
 
 	ForEachDrawCommand( Span, [&]( const FDrawCommandView& Command )
 	{
 		const int Fill = Command.Has( FDrawFlag::Fill ) ? TRUE : FALSE;
 
-		if ( bClipEmpty && !IsStateCommand( Command.Type ) )
+		// 状態の命令（と描画先を替える命令）以外は、クリップ範囲が空のあいだ（描画先の全体にかかわる命令を除く）と、描画先にできない画像へ替えたあいだは、飛ばす
+		if ( !IsStateCommand( Command.Type ) && ( NumInvalidTargets > 0 || ( bClipEmpty && !IsWholeTargetCommand( Command.Type ) ) ) )
 		{
 			return;
 		}
@@ -1105,11 +1160,111 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			const FDrawMatrixData Data = Command.Read<FDrawMatrixData>();
 			const MATRIX Matrix = ToMatrix( Data.M );
 			SetTransformTo2D( &Matrix );
+			Transform2DMatrix = Matrix;
 			bTransform2DChanged = true;
+			break;
+		}
+		case EDrawCommand::PushTarget:
+		{
+			if ( !Command.CanRead<FDrawTargetData>() )
+			{
+				break;
+			}
+			const FDrawTargetData Data = Command.Read<FDrawTargetData>();
+			if ( NumInvalidTargets > 0 || Data.Handle < 0 )
+			{
+				++NumInvalidTargets;
+				break;
+			}
+			FTargetFrame Frame;
+			Frame.PreviousScreen = GetDrawScreen();
+			GetDrawArea( &Frame.PreviousArea );
+			const int PreviousReset = GetUseSetDrawScreenSettingReset();
+			SetUseSetDrawScreenSettingReset( FALSE );
+			const int Result = SetDrawScreen( Data.Handle );
+			SetUseSetDrawScreenSettingReset( PreviousReset );
+			if ( Result != 0 )
+			{
+				// 描画先にできない画像（DxLib が拒んだ）。描画先は変わっていない
+				++NumInvalidTargets;
+				break;
+			}
+			// 替えた先の描画範囲は、その全体
+			SetDrawAreaFull();
+			Frame.bClipChanged = bClipChanged;
+			Frame.OldArea = OldArea;
+			Frame.ClipStack = ClipStack;
+			Frame.bClipEmpty = bClipEmpty;
+			Frame.bTransform2DChanged = bTransform2DChanged;
+			Frame.Transform2D = Transform2DMatrix;
+			TargetStack.Add( Frame );
+			// 替えた先は、クリップなし・2D の変換なしから始まる
+			bClipChanged = true;
+			GetDrawArea( &OldArea );
+			ClipStack.Empty();
+			bClipEmpty = false;
+			ResetTransformTo2D();
+			Transform2DMatrix = MGetIdent();
+			bTransform2DChanged = true;
+			break;
+		}
+		case EDrawCommand::PopTarget:
+		{
+			if ( NumInvalidTargets > 0 )
+			{
+				--NumInvalidTargets;
+				break;
+			}
+			if ( TargetStack.IsEmpty() )
+			{
+				break;
+			}
+			RestoreTarget();
+			break;
+		}
+		case EDrawCommand::Clear:
+		{
+			if ( !Command.CanRead<FDrawClearData>() )
+			{
+				break;
+			}
+			const FDrawClearData Data = Command.Read<FDrawClearData>();
+			// ClearDrawScreen は背景色で消す。背景色を一時的に指定の色にして、終わったら戻す
+			int PreviousRed = 0;
+			int PreviousGreen = 0;
+			int PreviousBlue = 0;
+			int PreviousAlpha = 0;
+			GetBackgroundColor( &PreviousRed, &PreviousGreen, &PreviousBlue, &PreviousAlpha );
+			SetBackgroundColor( NMath::Clamp( Data.R, 0, 255 ), NMath::Clamp( Data.G, 0, 255 ), NMath::Clamp( Data.B, 0, 255 ), NMath::Clamp( Data.A, 0, 255 ) );
+			ClearDrawScreen();
+			SetBackgroundColor( PreviousRed, PreviousGreen, PreviousBlue, PreviousAlpha );
+			break;
+		}
+		case EDrawCommand::CopyScreen:
+		{
+			if ( !Command.CanRead<FDrawCopyScreenData>() )
+			{
+				break;
+			}
+			const FDrawCopyScreenData Data = Command.Read<FDrawCopyScreenData>();
+			// DxLib は、画像と矩形の大きさが同じでないと写せない。違うときは何もしない
+			int Width = 0;
+			int Height = 0;
+			if ( Data.Handle < 0 || GetGraphSize( Data.Handle, &Width, &Height ) != 0 || Width != Data.X1 - Data.X0 || Height != Data.Y1 - Data.Y0 )
+			{
+				break;
+			}
+			GetDrawScreenGraph( Data.X0, Data.Y0, Data.X1, Data.Y1, Data.Handle );
 			break;
 		}
 		}
 	} );
+
+	// このオブジェクトの分で替えた描画先を、元に戻す（Pop が足りなくても。クリップ・2D の変換も、替える前に戻る）
+	while ( !TargetStack.IsEmpty() )
+	{
+		RestoreTarget();
+	}
 
 	// このオブジェクトで変えた状態を、次のオブジェクトに漏らさない
 	if ( bBlendChanged )

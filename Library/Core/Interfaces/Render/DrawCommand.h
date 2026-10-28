@@ -87,6 +87,11 @@ enum class EDrawCommand : uint8
 	PushClip,         // FDrawClipData。いまのクリップ範囲との共通部分を、新しい範囲にする（SetDrawArea）
 	PopClip,          // FDrawPopClipData。1 つ前のクリップ範囲に戻す
 	Transform2D,      // FDrawMatrixData。2D の描画に掛かる変換（SetTransformTo2D）
+	// 描画先の追加（上のコマンドの形式は変えていない。描画先は、実行の終わりで元に戻る）
+	PushTarget,       // FDrawTargetData。描画先を、描き込める画像（レンダーターゲット）に替える（SetDrawScreen）。替えた先は、クリップなし・2D の変換なしから始まる
+	PopTarget,        // FDrawPopTargetData。1 つ前の描画先に戻す（クリップ・2D の変換も、替える前に戻る）
+	Clear,            // FDrawClearData。いまの描画先の全体を、色（アルファつき）で塗りつぶす（ClearDrawScreen。クリップ範囲に関係なく全体）
+	CopyScreen,       // FDrawCopyScreenData。いまの描画先の矩形を、画像（矩形と同じ大きさ）へ写す（GetDrawScreenGraph）
 };
 
 // Quad3D の向きの決め方
@@ -315,6 +320,14 @@ struct FDrawFilterData { int32 Mode = 0; };
 struct FDrawClipData { int32 X0 = 0, Y0 = 0, X1 = 0, Y1 = 0; };
 // PopClip は中身を持たない（命令の大きさを 4 バイトの倍数にするため、1 ワードだけ持つ）
 struct FDrawPopClipData { int32 Unused = 0; };
+// 描画先。Handle は、描画先にできる画像（CRenderTarget）のハンドル
+struct FDrawTargetData { int32 Handle = -1; };
+// PopTarget は中身を持たない（命令の大きさを 4 バイトの倍数にするため、1 ワードだけ持つ）
+struct FDrawPopTargetData { int32 Unused = 0; };
+// 描画先を塗りつぶす色（各 0..255）
+struct FDrawClearData { int32 R = 0, G = 0, B = 0, A = 0; };
+// いまの描画先の矩形 (X0, Y0)-(X1, Y1)（右と下の端は含まない）を、画像 Handle へ写す
+struct FDrawCopyScreenData { int32 X0 = 0, Y0 = 0, X1 = 0, Y1 = 0; int32 Handle = -1; };
 
 #define DRAW_DATA_CHECK( Type ) \
 	static_assert( sizeof( Type ) % 4 == 0 && bIsTriviallyCopyable<Type>, #Type " must be made of 4-byte words with no padding" )
@@ -361,6 +374,10 @@ DRAW_DATA_CHECK( FDrawAlphaTestData );
 DRAW_DATA_CHECK( FDrawFilterData );
 DRAW_DATA_CHECK( FDrawClipData );
 DRAW_DATA_CHECK( FDrawPopClipData );
+DRAW_DATA_CHECK( FDrawTargetData );
+DRAW_DATA_CHECK( FDrawPopTargetData );
+DRAW_DATA_CHECK( FDrawClearData );
+DRAW_DATA_CHECK( FDrawCopyScreenData );
 #undef DRAW_DATA_CHECK
 static_assert( sizeof( FDrawBoxData ) == 24 && sizeof( FDrawSphere3DData ) == 28 && sizeof( FDrawModelData ) == 60, "unexpected padding in a draw command data type" );
 
