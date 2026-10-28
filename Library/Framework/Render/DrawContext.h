@@ -5,6 +5,7 @@
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
+#include "Library/Core/Interfaces/Render/IImage.h"
 #include "Library/Core/Interfaces/Render/DrawDistortedMaterialQuad.h"
 #include "Library/Core/Interfaces/Render/DrawDistortedMaterialRibbon.h"
 #include "Library/Core/Interfaces/Render/DrawModelMaterial.h"
@@ -12,6 +13,7 @@
 #include "Library/Core/Interfaces/Render/DrawMaterialQuad.h"
 #include "Library/Core/Interfaces/Render/DrawMaterialRibbon.h"
 #include "Library/Core/Interfaces/Render/DrawRibbon.h"
+#include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Math/Color.h"
 #include "Library/Math/Matrix4x4.h"
@@ -145,7 +147,10 @@ public:
 	// 線（DrawLineAA）
 	FORCEINLINE void LineAA( float32 X0, float32 Y0, float32 X1, float32 Y1, const FColor32& Color, float32 Thickness = 1.0f )
 	{
-		if ( !AllDrawable( X0, Y0, X1, Y1 ) || !IsPositiveThickness( Thickness ) ) return;
+		if ( !AllDrawable( X0, Y0, X1, Y1 ) || !IsPositiveThickness( Thickness ) )
+		{
+			return;
+		}
 		FDrawLineAAData Data;
 		Data.X0 = X0;
 		Data.Y0 = Y0;
@@ -159,7 +164,10 @@ public:
 	// 四角形（DrawBoxAA）。bFill が false なら枠線だけ
 	FORCEINLINE void BoxAA( float32 X0, float32 Y0, float32 X1, float32 Y1, const FColor32& Color, bool bFill = true, float32 Thickness = 1.0f )
 	{
-		if ( !AllDrawable( X0, Y0, X1, Y1 ) || !IsPositiveThickness( Thickness ) ) return;
+		if ( !AllDrawable( X0, Y0, X1, Y1 ) || !IsPositiveThickness( Thickness ) )
+		{
+			return;
+		}
 		FDrawBoxAAData Data;
 		Data.X0 = X0;
 		Data.Y0 = Y0;
@@ -173,7 +181,10 @@ public:
 	// 円（DrawCircleAA）
 	FORCEINLINE void CircleAA( float32 X, float32 Y, float32 Radius, const FColor32& Color, bool bFill = true, float32 Thickness = 1.0f, int32 NumSegments = 0 )
 	{
-		if ( !AllDrawable( X, Y, Radius ) || Radius < 0.0f || !IsPositiveThickness( Thickness ) ) return;
+		if ( !AllDrawable( X, Y, Radius ) || Radius < 0.0f || !IsPositiveThickness( Thickness ) )
+		{
+			return;
+		}
 		FDrawCircleAAData Data;
 		Data.X = X;
 		Data.Y = Y;
@@ -254,6 +265,262 @@ public:
 		Data.SrcW = SrcW;
 		Data.SrcH = SrcH;
 		Push( EDrawCommand::SpriteRect, Flip( bFlipX, bFlipY ), Data );
+	}
+
+	// 画像（IImage を実装したもの。CTexture など）を渡す版の Sprite / SpriteRect。画像が nullptr・無効なら、何も記録しない
+	template<typename TImage>
+	FORCEINLINE void Sprite( float32 X, float32 Y, const TImage& Source, float32 Scale = 1.0f, float32 AngleRadians = 0.0f, bool bFlipX = false, bool bFlipY = false )
+	{
+		const FImageHandle Handle = ToHandle( Source );
+		if ( Handle.IsValid() )
+		{
+			Sprite( X, Y, Handle.Value, Scale, AngleRadians, bFlipX, bFlipY );
+		}
+	}
+
+	template<typename TImage>
+	FORCEINLINE void SpriteRect( float32 X, float32 Y, const TImage& Source, int32 SrcX, int32 SrcY, int32 SrcW, int32 SrcH, float32 PivotX, float32 PivotY,
+								 float32 ScaleX = 1.0f, float32 ScaleY = 1.0f, float32 AngleRadians = 0.0f, bool bFlipX = false, bool bFlipY = false )
+	{
+		const FImageHandle Handle = ToHandle( Source );
+		if ( Handle.IsValid() )
+		{
+			SpriteRect( X, Y, Handle.Value, SrcX, SrcY, SrcW, SrcH, PivotX, PivotY, ScaleX, ScaleY, AngleRadians, bFlipX, bFlipY );
+		}
+	}
+
+	//-------------------------------------------------------------------------
+	// 2D の画像の描画（引数の順番は、DxLib の DrawGraph / DrawExtendGraph / DrawModiGraph / DrawRectGraph / DrawRotaGraph3 / DrawTile / DrawCircleGauge などに合わせてある）
+	//   画像は、IImage を実装したもの（CTexture など。TSharedPtr・ポインター・参照のどれでもよい）か、FImageHandle で渡す。IImage が nullptr・無効（IsValid が false）なら、何も記録しない。
+	//   記録のあと、実行される（メインスレッドで描かれる）まで、画像を手放さないこと。座標は float32 のピクセル（左上が原点）。画像は透過して描く（画像のアルファ・透過色が効く）。
+	//   描けない値（無効な画像・座標が NaN・無限大・絶対値 1e7 超・切り出す矩形の大きさが 0 以下・拡大率が 0 以下など）は、何も記録しない。
+	//   ブレンドモード（Blend）と描画の色（Tint）は、そのまま効く。
+	//-------------------------------------------------------------------------
+	// 画像を等倍で描く（DrawGraphF）。(X, Y) が画像の左上。反転すると、画像の中だけが反転する（左上の位置は同じ）
+	FORCEINLINE void Image( float32 X, float32 Y, FImageHandle Handle, bool bFlipX = false, bool bFlipY = false )
+	{
+		if ( !Handle.IsValid() || !AllDrawable( X, Y ) )
+		{
+			return;
+		}
+		FDrawImageData Data;
+		Data.X = X;
+		Data.Y = Y;
+		Data.Handle = Handle.Value;
+		Push( EDrawCommand::Image, Flip( bFlipX, bFlipY ), Data );
+	}
+
+	template<typename TImage>
+	FORCEINLINE void Image( float32 X, float32 Y, const TImage& Source, bool bFlipX = false, bool bFlipY = false )
+	{
+		Image( X, Y, ToHandle( Source ), bFlipX, bFlipY );
+	}
+
+	// 画像を、矩形 (X0, Y0)-(X1, Y1) に合わせて拡大・縮小して描く（DrawExtendGraphF）。X0 > X1 や Y0 > Y1 なら、その向きに反転する
+	FORCEINLINE void ImageStretch( float32 X0, float32 Y0, float32 X1, float32 Y1, FImageHandle Handle )
+	{
+		if ( !Handle.IsValid() || !AllDrawable( X0, Y0, X1, Y1 ) )
+		{
+			return;
+		}
+		FDrawImageStretchData Data;
+		Data.X0 = X0;
+		Data.Y0 = Y0;
+		Data.X1 = X1;
+		Data.Y1 = Y1;
+		Data.Handle = Handle.Value;
+		Push( EDrawCommand::ImageStretch, 0, Data );
+	}
+
+	template<typename TImage>
+	FORCEINLINE void ImageStretch( float32 X0, float32 Y0, float32 X1, float32 Y1, const TImage& Source )
+	{
+		ImageStretch( X0, Y0, X1, Y1, ToHandle( Source ) );
+	}
+
+	// 画像を、4 つの角へ自由に変形して描く（DrawModiGraphF）。画像の 左上・右上・右下・左下 が、(X0, Y0) (X1, Y1) (X2, Y2) (X3, Y3) へ行く
+	FORCEINLINE void ImageQuad( float32 X0, float32 Y0, float32 X1, float32 Y1, float32 X2, float32 Y2, float32 X3, float32 Y3, FImageHandle Handle )
+	{
+		if ( !Handle.IsValid() || !AllDrawable( X0, Y0, X1, Y1, X2, Y2, X3, Y3 ) )
+		{
+			return;
+		}
+		FDrawImageQuadData Data;
+		Data.X[0] = X0;
+		Data.Y[0] = Y0;
+		Data.X[1] = X1;
+		Data.Y[1] = Y1;
+		Data.X[2] = X2;
+		Data.Y[2] = Y2;
+		Data.X[3] = X3;
+		Data.Y[3] = Y3;
+		Data.Handle = Handle.Value;
+		Push( EDrawCommand::ImageQuad, 0, Data );
+	}
+
+	template<typename TImage>
+	FORCEINLINE void ImageQuad( float32 X0, float32 Y0, float32 X1, float32 Y1, float32 X2, float32 Y2, float32 X3, float32 Y3, const TImage& Source )
+	{
+		ImageQuad( X0, Y0, X1, Y1, X2, Y2, X3, Y3, ToHandle( Source ) );
+	}
+
+	// 画像の一部分（矩形 (SrcX, SrcY, SrcW, SrcH)）を、等倍で描く（DrawRectGraphF）。(X, Y) が、切り出した部分の左上。スプライトシートの 1 コマなどに
+	FORCEINLINE void ImagePart( float32 X, float32 Y, int32 SrcX, int32 SrcY, int32 SrcW, int32 SrcH, FImageHandle Handle, bool bFlipX = false, bool bFlipY = false )
+	{
+		if ( !Handle.IsValid() || !AllDrawable( X, Y ) || !IsValidSource( SrcX, SrcY, SrcW, SrcH ) )
+		{
+			return;
+		}
+		FDrawImagePartData Data;
+		Data.X = X;
+		Data.Y = Y;
+		Data.SrcX = SrcX;
+		Data.SrcY = SrcY;
+		Data.SrcW = SrcW;
+		Data.SrcH = SrcH;
+		Data.Handle = Handle.Value;
+		Push( EDrawCommand::ImagePart, Flip( bFlipX, bFlipY ), Data );
+	}
+
+	template<typename TImage>
+	FORCEINLINE void ImagePart( float32 X, float32 Y, int32 SrcX, int32 SrcY, int32 SrcW, int32 SrcH, const TImage& Source, bool bFlipX = false, bool bFlipY = false )
+	{
+		ImagePart( X, Y, SrcX, SrcY, SrcW, SrcH, ToHandle( Source ), bFlipX, bFlipY );
+	}
+
+	// 画像の一部分を、矩形 (X0, Y0)-(X1, Y1) に合わせて拡大・縮小して描く（DrawRectExtendGraphF）。X0 > X1 や Y0 > Y1 なら、その向きに反転する
+	FORCEINLINE void ImagePartStretch( float32 X0, float32 Y0, float32 X1, float32 Y1, int32 SrcX, int32 SrcY, int32 SrcW, int32 SrcH, FImageHandle Handle )
+	{
+		if ( !Handle.IsValid() || !AllDrawable( X0, Y0, X1, Y1 ) || !IsValidSource( SrcX, SrcY, SrcW, SrcH ) )
+		{
+			return;
+		}
+		FDrawImagePartStretchData Data;
+		Data.X0 = X0;
+		Data.Y0 = Y0;
+		Data.X1 = X1;
+		Data.Y1 = Y1;
+		Data.SrcX = SrcX;
+		Data.SrcY = SrcY;
+		Data.SrcW = SrcW;
+		Data.SrcH = SrcH;
+		Data.Handle = Handle.Value;
+		Push( EDrawCommand::ImagePartStretch, 0, Data );
+	}
+
+	template<typename TImage>
+	FORCEINLINE void ImagePartStretch( float32 X0, float32 Y0, float32 X1, float32 Y1, int32 SrcX, int32 SrcY, int32 SrcW, int32 SrcH, const TImage& Source )
+	{
+		ImagePartStretch( X0, Y0, X1, Y1, SrcX, SrcY, SrcW, SrcH, ToHandle( Source ) );
+	}
+
+	// 画像の一部分を、4 つの角へ自由に変形して描く（DrawRectModiGraphF）。切り出した部分の 左上・右上・右下・左下 が、(X0, Y0) (X1, Y1) (X2, Y2) (X3, Y3) へ行く
+	FORCEINLINE void ImagePartQuad( float32 X0, float32 Y0, float32 X1, float32 Y1, float32 X2, float32 Y2, float32 X3, float32 Y3, int32 SrcX, int32 SrcY, int32 SrcW, int32 SrcH, FImageHandle Handle )
+	{
+		if ( !Handle.IsValid() || !AllDrawable( X0, Y0, X1, Y1, X2, Y2, X3, Y3 ) || !IsValidSource( SrcX, SrcY, SrcW, SrcH ) )
+		{
+			return;
+		}
+		FDrawImagePartQuadData Data;
+		Data.X[0] = X0;
+		Data.Y[0] = Y0;
+		Data.X[1] = X1;
+		Data.Y[1] = Y1;
+		Data.X[2] = X2;
+		Data.Y[2] = Y2;
+		Data.X[3] = X3;
+		Data.Y[3] = Y3;
+		Data.SrcX = SrcX;
+		Data.SrcY = SrcY;
+		Data.SrcW = SrcW;
+		Data.SrcH = SrcH;
+		Data.Handle = Handle.Value;
+		Push( EDrawCommand::ImagePartQuad, 0, Data );
+	}
+
+	template<typename TImage>
+	FORCEINLINE void ImagePartQuad( float32 X0, float32 Y0, float32 X1, float32 Y1, float32 X2, float32 Y2, float32 X3, float32 Y3, int32 SrcX, int32 SrcY, int32 SrcW, int32 SrcH, const TImage& Source )
+	{
+		ImagePartQuad( X0, Y0, X1, Y1, X2, Y2, X3, Y3, SrcX, SrcY, SrcW, SrcH, ToHandle( Source ) );
+	}
+
+	// 画像全体を、基準点（画像の中の点 (PivotX, PivotY)。左上が原点、ピクセル）が画面の (X, Y) に来るように、横・縦に別々の拡大率で拡大し、基準点まわりに回して描く（DrawRotaGraph3F）。
+	// 反転しても、基準点は (X, Y) のまま。AngleRadians はラジアン。拡大率が負なら、その向きに反転する
+	FORCEINLINE void SpritePivot( float32 X, float32 Y, FImageHandle Handle, float32 PivotX, float32 PivotY, float32 ScaleX = 1.0f, float32 ScaleY = 1.0f, float32 AngleRadians = 0.0f, bool bFlipX = false, bool bFlipY = false )
+	{
+		if ( !Handle.IsValid() || !AllDrawable( X, Y, PivotX, PivotY, ScaleX, ScaleY, AngleRadians ) )
+		{
+			return;
+		}
+		FDrawSpritePivotData Data;
+		Data.X = X;
+		Data.Y = Y;
+		Data.PivotX = PivotX;
+		Data.PivotY = PivotY;
+		Data.ScaleX = ScaleX;
+		Data.ScaleY = ScaleY;
+		Data.Angle = AngleRadians;
+		Data.Handle = Handle.Value;
+		Push( EDrawCommand::SpritePivot, Flip( bFlipX, bFlipY ), Data );
+	}
+
+	template<typename TImage>
+	FORCEINLINE void SpritePivot( float32 X, float32 Y, const TImage& Source, float32 PivotX, float32 PivotY, float32 ScaleX = 1.0f, float32 ScaleY = 1.0f, float32 AngleRadians = 0.0f, bool bFlipX = false, bool bFlipY = false )
+	{
+		SpritePivot( X, Y, ToHandle( Source ), PivotX, PivotY, ScaleX, ScaleY, AngleRadians, bFlipX, bFlipY );
+	}
+
+	// 矩形 (X0, Y0)-(X1, Y1) を、画像の繰り返しで埋める（DrawTile）。座標は整数（DxLib の DrawTile と同じ）。
+	// 画像の左上が、矩形の左上に合う（DxLib の DrawTile は画像の中心を矩形の中心に置くので、実行のときに補正する）。
+	// OffsetX / OffsetY は並びの、右下向きのずれ（ピクセル。拡大率が 1 でないと、拡大率の整数倍に丸まる）、Scale は画像の拡大率（0 より大きい）、AngleRadians は画像の回転（ラジアン）
+	FORCEINLINE void Tile( int32 X0, int32 Y0, int32 X1, int32 Y1, FImageHandle Handle, int32 OffsetX = 0, int32 OffsetY = 0, float32 Scale = 1.0f, float32 AngleRadians = 0.0f )
+	{
+		if ( !Handle.IsValid() || Scale <= 0.0f || !AllDrawable( static_cast<float32>( X0 ), static_cast<float32>( Y0 ), static_cast<float32>( X1 ), static_cast<float32>( Y1 ), static_cast<float32>( OffsetX ), static_cast<float32>( OffsetY ), Scale, AngleRadians ) )
+		{
+			return;
+		}
+		FDrawTileData Data;
+		Data.X0 = X0;
+		Data.Y0 = Y0;
+		Data.X1 = X1;
+		Data.Y1 = Y1;
+		Data.OffsetX = OffsetX;
+		Data.OffsetY = OffsetY;
+		Data.Scale = Scale;
+		Data.Angle = AngleRadians;
+		Data.Handle = Handle.Value;
+		Push( EDrawCommand::Tile, 0, Data );
+	}
+
+	template<typename TImage>
+	FORCEINLINE void Tile( int32 X0, int32 Y0, int32 X1, int32 Y1, const TImage& Source, int32 OffsetX = 0, int32 OffsetY = 0, float32 Scale = 1.0f, float32 AngleRadians = 0.0f )
+	{
+		Tile( X0, Y0, X1, Y1, ToHandle( Source ), OffsetX, OffsetY, Scale, AngleRadians );
+	}
+
+	// 円グラフのように、画像を、真上から時計回りに Fraction（0..1。範囲の外は収める）の割合まで描く（DrawCircleGaugeF）。クールダウンの表示などに。
+	// (X, Y) が画像の中心。StartFraction（0..1）は描き始める位置（真上が 0）で、そこから Fraction だけ描く（描き終わりが 1 を超えると、先頭へ回り込む。Fraction が 1 なら、描き始めの位置に関係なく全体）。
+	// Scale は画像の拡大率（0 より大きい）。bFlipX / bFlipY は、グラフを左右・上下に反転する。DxLib のゲージは、画像の四角ではなく、画像の中心を中心とする円（半径は、画像の半分より少し大きい）を描く
+	FORCEINLINE void CircleGauge( float32 X, float32 Y, float32 Fraction, FImageHandle Handle, float32 StartFraction = 0.0f, float32 Scale = 1.0f, bool bFlipX = false, bool bFlipY = false )
+	{
+		if ( !Handle.IsValid() || Scale <= 0.0f || !AllDrawable( X, Y, Fraction, StartFraction, Scale ) )
+		{
+			return;
+		}
+		FDrawCircleGaugeData Data;
+		Data.X = X;
+		Data.Y = Y;
+		Data.Percent = NMath::Clamp( Fraction, 0.0f, 1.0f ) * 100.0f;
+		Data.StartPercent = NMath::Clamp( StartFraction, 0.0f, 1.0f ) * 100.0f;
+		Data.Scale = Scale;
+		Data.Handle = Handle.Value;
+		Push( EDrawCommand::CircleGauge, Flip( bFlipX, bFlipY ), Data );
+	}
+
+	template<typename TImage>
+	FORCEINLINE void CircleGauge( float32 X, float32 Y, float32 Fraction, const TImage& Source, float32 StartFraction = 0.0f, float32 Scale = 1.0f, bool bFlipX = false, bool bFlipY = false )
+	{
+		CircleGauge( X, Y, Fraction, ToHandle( Source ), StartFraction, Scale, bFlipX, bFlipY );
 	}
 
 	// 以降の描画に掛ける色（SetDrawBright）。白に戻すと元の色。そのオブジェクトの分が終わると白に戻る
@@ -433,6 +700,34 @@ private:
 	static FORCEINLINE FDrawRgb Rgb( const FColor32& Color ) { return FDrawRgb{ Color.r, Color.g, Color.b, 0 }; }
 	static FORCEINLINE uint8 Flip( bool bFlipX, bool bFlipY ) { return static_cast<uint8>( ( bFlipX ? FDrawFlag::FlipX : 0 ) | ( bFlipY ? FDrawFlag::FlipY : 0 ) ); }
 
+	// 描画に渡された画像から、ハンドルを取り出す（記録のとき、1 回読む）。nullptr は、無効なハンドルになる
+	static FORCEINLINE FImageHandle ToHandle( FImageHandle Handle )
+	{
+		return Handle;
+	}
+
+	static FORCEINLINE FImageHandle ToHandle( const IImage* Image )
+	{
+		return Image != nullptr ? Image->GetImageHandle() : FImageHandle();
+	}
+
+	static FORCEINLINE FImageHandle ToHandle( const IImage& Image )
+	{
+		return Image.GetImageHandle();
+	}
+
+	template<typename T>
+	static FORCEINLINE FImageHandle ToHandle( const TSharedPtr<T>& Image )
+	{
+		return ToHandle( Image.Get() );
+	}
+
+	// 画像から切り出す矩形として使える値か（大きさが 1 以上。位置と大きさが、実行のときに int で扱える範囲）
+	static FORCEINLINE bool IsValidSource( int32 SrcX, int32 SrcY, int32 SrcW, int32 SrcH )
+	{
+		return SrcW > 0 && SrcH > 0 && SrcW <= 10000000 && SrcH <= 10000000 && SrcX >= -10000000 && SrcX <= 10000000 && SrcY >= -10000000 && SrcY <= 10000000;
+	}
+
 	// 2D の図形の座標として描ける値か（有限で、実行のときに int にしても溢れない範囲）
 	static FORCEINLINE bool IsDrawable( float32 Value ) { return NMath::IsFinite( Value ) && Value >= -1.0e7f && Value <= 1.0e7f; }
 	template<typename... TValues>
@@ -443,7 +738,10 @@ private:
 
 	FORCEINLINE void PushTriangle( float32 X0, float32 Y0, float32 X1, float32 Y1, float32 X2, float32 Y2, const FColor32& Color, bool bFill, float32 Thickness, uint8 Flags )
 	{
-		if ( !AllDrawable( X0, Y0, X1, Y1, X2, Y2 ) || !IsPositiveThickness( Thickness ) ) return;
+		if ( !AllDrawable( X0, Y0, X1, Y1, X2, Y2 ) || !IsPositiveThickness( Thickness ) )
+		{
+			return;
+		}
 		FDrawTriangleData Data;
 		Data.X0 = X0;
 		Data.Y0 = Y0;
@@ -458,7 +756,10 @@ private:
 
 	FORCEINLINE void PushQuad( float32 X0, float32 Y0, float32 X1, float32 Y1, float32 X2, float32 Y2, float32 X3, float32 Y3, const FColor32& Color, bool bFill, float32 Thickness, uint8 Flags )
 	{
-		if ( !AllDrawable( X0, Y0, X1, Y1, X2, Y2, X3, Y3 ) || !IsPositiveThickness( Thickness ) ) return;
+		if ( !AllDrawable( X0, Y0, X1, Y1, X2, Y2, X3, Y3 ) || !IsPositiveThickness( Thickness ) )
+		{
+			return;
+		}
 		FDrawQuadData Data;
 		Data.X0 = X0;
 		Data.Y0 = Y0;
@@ -475,7 +776,10 @@ private:
 
 	FORCEINLINE void PushOval( float32 X, float32 Y, float32 Rx, float32 Ry, const FColor32& Color, bool bFill, float32 Thickness, int32 NumSegments, uint8 Flags )
 	{
-		if ( !AllDrawable( X, Y, Rx, Ry ) || Rx < 0.0f || Ry < 0.0f || !IsPositiveThickness( Thickness ) ) return;
+		if ( !AllDrawable( X, Y, Rx, Ry ) || Rx < 0.0f || Ry < 0.0f || !IsPositiveThickness( Thickness ) )
+		{
+			return;
+		}
 		FDrawOvalData Data;
 		Data.X = X;
 		Data.Y = Y;
@@ -489,7 +793,10 @@ private:
 
 	FORCEINLINE void PushRoundBox( float32 X0, float32 Y0, float32 X1, float32 Y1, float32 Rx, float32 Ry, const FColor32& Color, bool bFill, float32 Thickness, int32 NumSegments, uint8 Flags )
 	{
-		if ( !AllDrawable( X0, Y0, X1, Y1, Rx, Ry ) || Rx < 0.0f || Ry < 0.0f || !IsPositiveThickness( Thickness ) ) return;
+		if ( !AllDrawable( X0, Y0, X1, Y1, Rx, Ry ) || Rx < 0.0f || Ry < 0.0f || !IsPositiveThickness( Thickness ) )
+		{
+			return;
+		}
 		FDrawRoundBoxData Data;
 		Data.X0 = X0;
 		Data.Y0 = Y0;

@@ -190,8 +190,14 @@ namespace
 	// 円・楕円・角の丸みを近似する角数。指定が無ければ（0）、半径（ピクセル）から、折れ線と円弧の誤差が 1/4 ピクセル以下になる数を 4 の倍数で決める（12..256）
 	int ResolveSegments( int32 NumSegments, float32 Radius )
 	{
-		if ( NumSegments > 0 ) return NumSegments;
-		if ( Radius <= 0.25f ) return 12;
+		if ( NumSegments > 0 )
+		{
+			return NumSegments;
+		}
+		if ( Radius <= 0.25f )
+		{
+			return 12;
+		}
 		const float32 HalfAngle = NMath::Acos( 1.0f - 0.25f / Radius );   // 1 辺が張る中心角の半分
 		const int32 Count = HalfAngle > 0.0f ? static_cast<int32>( NMath::Ceil( NMath::PI / HalfAngle ) ) : 256;
 		return NMath::Clamp( ( Count + 3 ) / 4 * 4, 12, 256 );
@@ -608,62 +614,254 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 		}
 		case EDrawCommand::Pixel:
 		{
-			if ( !Command.CanRead<FDrawPixelData>() ) break;
+			if ( !Command.CanRead<FDrawPixelData>() )
+			{
+				break;
+			}
 			const FDrawPixelData Data = Command.Read<FDrawPixelData>();
 			DrawPixel( Data.X, Data.Y, ToDxColor( Data.Color ) );
 			break;
 		}
 		case EDrawCommand::Triangle:
 		{
-			if ( !Command.CanRead<FDrawTriangleData>() ) break;
+			if ( !Command.CanRead<FDrawTriangleData>() )
+			{
+				break;
+			}
 			const FDrawTriangleData Data = Command.Read<FDrawTriangleData>();
-			if ( Command.Has( FDrawFlag::AntiAlias ) ) DrawTriangleAA( Data.X0, Data.Y0, Data.X1, Data.Y1, Data.X2, Data.Y2, ToDxColor( Data.Color ), Fill, Data.Thickness );
-			else DrawTriangle( ToPixel( Data.X0 ), ToPixel( Data.Y0 ), ToPixel( Data.X1 ), ToPixel( Data.Y1 ), ToPixel( Data.X2 ), ToPixel( Data.Y2 ), ToDxColor( Data.Color ), Fill );
+			if ( Command.Has( FDrawFlag::AntiAlias ) )
+			{
+				DrawTriangleAA( Data.X0, Data.Y0, Data.X1, Data.Y1, Data.X2, Data.Y2, ToDxColor( Data.Color ), Fill, Data.Thickness );
+			}
+			else
+			{
+				DrawTriangle( ToPixel( Data.X0 ), ToPixel( Data.Y0 ), ToPixel( Data.X1 ), ToPixel( Data.Y1 ), ToPixel( Data.X2 ), ToPixel( Data.Y2 ), ToDxColor( Data.Color ), Fill );
+			}
 			break;
 		}
 		case EDrawCommand::Quad:
 		{
-			if ( !Command.CanRead<FDrawQuadData>() ) break;
+			if ( !Command.CanRead<FDrawQuadData>() )
+			{
+				break;
+			}
 			const FDrawQuadData Data = Command.Read<FDrawQuadData>();
-			if ( Command.Has( FDrawFlag::AntiAlias ) ) DrawQuadrangleAA( Data.X0, Data.Y0, Data.X1, Data.Y1, Data.X2, Data.Y2, Data.X3, Data.Y3, ToDxColor( Data.Color ), Fill, Data.Thickness );
-			else DrawQuadrangle( ToPixel( Data.X0 ), ToPixel( Data.Y0 ), ToPixel( Data.X1 ), ToPixel( Data.Y1 ), ToPixel( Data.X2 ), ToPixel( Data.Y2 ), ToPixel( Data.X3 ), ToPixel( Data.Y3 ), ToDxColor( Data.Color ), Fill );
+			if ( Command.Has( FDrawFlag::AntiAlias ) )
+			{
+				DrawQuadrangleAA( Data.X0, Data.Y0, Data.X1, Data.Y1, Data.X2, Data.Y2, Data.X3, Data.Y3, ToDxColor( Data.Color ), Fill, Data.Thickness );
+			}
+			else
+			{
+				DrawQuadrangle( ToPixel( Data.X0 ), ToPixel( Data.Y0 ), ToPixel( Data.X1 ), ToPixel( Data.Y1 ), ToPixel( Data.X2 ), ToPixel( Data.Y2 ), ToPixel( Data.X3 ), ToPixel( Data.Y3 ), ToDxColor( Data.Color ), Fill );
+			}
 			break;
 		}
 		case EDrawCommand::Oval:
 		{
-			if ( !Command.CanRead<FDrawOvalData>() ) break;
+			if ( !Command.CanRead<FDrawOvalData>() )
+			{
+				break;
+			}
 			const FDrawOvalData Data = Command.Read<FDrawOvalData>();
-			if ( Command.Has( FDrawFlag::AntiAlias ) ) DrawOvalAA( Data.X, Data.Y, Data.Rx, Data.Ry, ResolveSegments( Data.NumSegments, NMath::Max( Data.Rx, Data.Ry ) ), ToDxColor( Data.Color ), Fill, Data.Thickness );
-			else DrawOval( ToPixel( Data.X ), ToPixel( Data.Y ), ToPixel( Data.Rx ), ToPixel( Data.Ry ), ToDxColor( Data.Color ), Fill, NMath::Max( ToPixel( Data.Thickness ), 1 ) );
+			if ( Command.Has( FDrawFlag::AntiAlias ) )
+			{
+				DrawOvalAA( Data.X, Data.Y, Data.Rx, Data.Ry, ResolveSegments( Data.NumSegments, NMath::Max( Data.Rx, Data.Ry ) ), ToDxColor( Data.Color ), Fill, Data.Thickness );
+			}
+			else
+			{
+				DrawOval( ToPixel( Data.X ), ToPixel( Data.Y ), ToPixel( Data.Rx ), ToPixel( Data.Ry ), ToDxColor( Data.Color ), Fill, NMath::Max( ToPixel( Data.Thickness ), 1 ) );
+			}
 			break;
 		}
 		case EDrawCommand::RoundBox:
 		{
-			if ( !Command.CanRead<FDrawRoundBoxData>() ) break;
+			if ( !Command.CanRead<FDrawRoundBoxData>() )
+			{
+				break;
+			}
 			const FDrawRoundBoxData Data = Command.Read<FDrawRoundBoxData>();
-			if ( Command.Has( FDrawFlag::AntiAlias ) ) DrawRoundRectAA( Data.X0, Data.Y0, Data.X1, Data.Y1, Data.Rx, Data.Ry, ResolveSegments( Data.NumSegments, NMath::Max( Data.Rx, Data.Ry ) ), ToDxColor( Data.Color ), Fill, Data.Thickness );
-			else DrawRoundRect( ToPixel( Data.X0 ), ToPixel( Data.Y0 ), ToPixel( Data.X1 ), ToPixel( Data.Y1 ), ToPixel( Data.Rx ), ToPixel( Data.Ry ), ToDxColor( Data.Color ), Fill );
+			if ( Command.Has( FDrawFlag::AntiAlias ) )
+			{
+				DrawRoundRectAA( Data.X0, Data.Y0, Data.X1, Data.Y1, Data.Rx, Data.Ry, ResolveSegments( Data.NumSegments, NMath::Max( Data.Rx, Data.Ry ) ), ToDxColor( Data.Color ), Fill, Data.Thickness );
+			}
+			else
+			{
+				DrawRoundRect( ToPixel( Data.X0 ), ToPixel( Data.Y0 ), ToPixel( Data.X1 ), ToPixel( Data.Y1 ), ToPixel( Data.Rx ), ToPixel( Data.Ry ), ToDxColor( Data.Color ), Fill );
+			}
 			break;
 		}
 		case EDrawCommand::BoxAA:
 		{
-			if ( !Command.CanRead<FDrawBoxAAData>() ) break;
+			if ( !Command.CanRead<FDrawBoxAAData>() )
+			{
+				break;
+			}
 			const FDrawBoxAAData Data = Command.Read<FDrawBoxAAData>();
 			DrawBoxAA( Data.X0, Data.Y0, Data.X1, Data.Y1, ToDxColor( Data.Color ), Fill, Data.Thickness );
 			break;
 		}
 		case EDrawCommand::CircleAA:
 		{
-			if ( !Command.CanRead<FDrawCircleAAData>() ) break;
+			if ( !Command.CanRead<FDrawCircleAAData>() )
+			{
+				break;
+			}
 			const FDrawCircleAAData Data = Command.Read<FDrawCircleAAData>();
 			DrawCircleAA( Data.X, Data.Y, Data.Radius, ResolveSegments( Data.NumSegments, Data.Radius ), ToDxColor( Data.Color ), Fill, Data.Thickness );
 			break;
 		}
 		case EDrawCommand::LineAA:
 		{
-			if ( !Command.CanRead<FDrawLineAAData>() ) break;
+			if ( !Command.CanRead<FDrawLineAAData>() )
+			{
+				break;
+			}
 			const FDrawLineAAData Data = Command.Read<FDrawLineAAData>();
 			DrawLineAA( Data.X0, Data.Y0, Data.X1, Data.Y1, ToDxColor( Data.Color ), Data.Thickness );
+			break;
+		}
+		case EDrawCommand::Image:
+		{
+			if ( !Command.CanRead<FDrawImageData>() )
+			{
+				break;
+			}
+			const FDrawImageData Data = Command.Read<FDrawImageData>();
+			const int FlipX = Command.Has( FDrawFlag::FlipX ) ? TRUE : FALSE;
+			const int FlipY = Command.Has( FDrawFlag::FlipY ) ? TRUE : FALSE;
+			if ( FlipX || FlipY )
+			{
+				DrawReverseGraphF( Data.X, Data.Y, Data.Handle, TRUE, FlipX, FlipY );
+			}
+			else
+			{
+				DrawGraphF( Data.X, Data.Y, Data.Handle, TRUE );
+			}
+			break;
+		}
+		case EDrawCommand::ImageStretch:
+		{
+			if ( !Command.CanRead<FDrawImageStretchData>() )
+			{
+				break;
+			}
+			const FDrawImageStretchData Data = Command.Read<FDrawImageStretchData>();
+			DrawExtendGraphF( Data.X0, Data.Y0, Data.X1, Data.Y1, Data.Handle, TRUE );
+			break;
+		}
+		case EDrawCommand::ImageQuad:
+		{
+			if ( !Command.CanRead<FDrawImageQuadData>() )
+			{
+				break;
+			}
+			const FDrawImageQuadData Data = Command.Read<FDrawImageQuadData>();
+			DrawModiGraphF( Data.X[0], Data.Y[0], Data.X[1], Data.Y[1], Data.X[2], Data.Y[2], Data.X[3], Data.Y[3], Data.Handle, TRUE );
+			break;
+		}
+		case EDrawCommand::ImagePart:
+		{
+			if ( !Command.CanRead<FDrawImagePartData>() )
+			{
+				break;
+			}
+			const FDrawImagePartData Data = Command.Read<FDrawImagePartData>();
+			DrawRectGraphF( Data.X, Data.Y, Data.SrcX, Data.SrcY, Data.SrcW, Data.SrcH, Data.Handle, TRUE, Command.Has( FDrawFlag::FlipX ) ? TRUE : FALSE, Command.Has( FDrawFlag::FlipY ) ? TRUE : FALSE );
+			break;
+		}
+		case EDrawCommand::ImagePartStretch:
+		{
+			if ( !Command.CanRead<FDrawImagePartStretchData>() )
+			{
+				break;
+			}
+			const FDrawImagePartStretchData Data = Command.Read<FDrawImagePartStretchData>();
+			DrawRectExtendGraphF( Data.X0, Data.Y0, Data.X1, Data.Y1, Data.SrcX, Data.SrcY, Data.SrcW, Data.SrcH, Data.Handle, TRUE );
+			break;
+		}
+		case EDrawCommand::ImagePartQuad:
+		{
+			if ( !Command.CanRead<FDrawImagePartQuadData>() )
+			{
+				break;
+			}
+			const FDrawImagePartQuadData Data = Command.Read<FDrawImagePartQuadData>();
+			DrawRectModiGraphF( Data.X[0], Data.Y[0], Data.X[1], Data.Y[1], Data.X[2], Data.Y[2], Data.X[3], Data.Y[3], Data.SrcX, Data.SrcY, Data.SrcW, Data.SrcH, Data.Handle, TRUE );
+			break;
+		}
+		case EDrawCommand::SpritePivot:
+		{
+			if ( !Command.CanRead<FDrawSpritePivotData>() )
+			{
+				break;
+			}
+			const FDrawSpritePivotData Data = Command.Read<FDrawSpritePivotData>();
+			// DxLib の反転は、画像の中だけを反転して、基準点の位置は元のまま。「反転した画像の、同じ点」を基準点にするため、反転する向きでは基準点を画像の中で反対側に移す
+			float32 PivotX = Data.PivotX;
+			float32 PivotY = Data.PivotY;
+			if ( Command.Has( FDrawFlag::FlipX ) || Command.Has( FDrawFlag::FlipY ) )
+			{
+				float32 Width = 0.0f;
+				float32 Height = 0.0f;
+				GetGraphSizeF( Data.Handle, &Width, &Height );
+				if ( Command.Has( FDrawFlag::FlipX ) )
+				{
+					PivotX = Width - PivotX;
+				}
+				if ( Command.Has( FDrawFlag::FlipY ) )
+				{
+					PivotY = Height - PivotY;
+				}
+			}
+			DrawRotaGraph3F( Data.X, Data.Y, PivotX, PivotY, Data.ScaleX, Data.ScaleY, Data.Angle, Data.Handle, TRUE, Command.Has( FDrawFlag::FlipX ) ? TRUE : FALSE, Command.Has( FDrawFlag::FlipY ) ? TRUE : FALSE );
+			break;
+		}
+		case EDrawCommand::Tile:
+		{
+			if ( !Command.CanRead<FDrawTileData>() )
+			{
+				break;
+			}
+			const FDrawTileData Data = Command.Read<FDrawTileData>();
+			// DxLib の DrawTile は、拡大した画像の中心を「矩形の中心 - 拡大率 x (Tx, Ty)」に置いて並べる（矩形の左上に並びを合わせるものではない）。
+			// 使う側が数えやすいよう、画像の左上を矩形の左上に合わせ、OffsetX / OffsetY を、右下向きのずれ（ピクセル）にする。
+			// (Tx, Ty) は整数なので、拡大率が 1 でないと、ずれは拡大率の整数倍に丸まる
+			int Width = 0;
+			int Height = 0;
+			GetGraphSize( Data.Handle, &Width, &Height );
+			const float32 TileWidth = static_cast<float32>( Width ) * Data.Scale;
+			const float32 TileHeight = static_cast<float32>( Height ) * Data.Scale;
+			const int ShiftX = NMath::RoundToInt( ( ( static_cast<float32>( Data.X1 - Data.X0 ) - TileWidth ) * 0.5f - static_cast<float32>( Data.OffsetX ) ) / Data.Scale );
+			const int ShiftY = NMath::RoundToInt( ( ( static_cast<float32>( Data.Y1 - Data.Y0 ) - TileHeight ) * 0.5f - static_cast<float32>( Data.OffsetY ) ) / Data.Scale );
+			DrawTile( Data.X0, Data.Y0, Data.X1, Data.Y1, ShiftX, ShiftY, Data.Scale, Data.Angle, Data.Handle, TRUE );
+			break;
+		}
+		case EDrawCommand::CircleGauge:
+		{
+			if ( !Command.CanRead<FDrawCircleGaugeData>() )
+			{
+				break;
+			}
+			const FDrawCircleGaugeData Data = Command.Read<FDrawCircleGaugeData>();
+			const int FlipX = Command.Has( FDrawFlag::FlipX ) ? TRUE : FALSE;
+			const int FlipY = Command.Has( FDrawFlag::FlipY ) ? TRUE : FALSE;
+			// DxLib の StartPercent は描き始め、Percent は描き終わり（どちらも真上からの位置）。使う側は、Percent を「描く量」として渡すので、描き終わりに直す。
+			// 描き終わりが 100 を超えるときは、先頭へ回り込んで描く
+			const double End = static_cast<double>( Data.StartPercent ) + static_cast<double>( Data.Percent );
+			if ( Data.Percent >= 100.0f )
+			{
+				// 全体は、描き始めの位置に関係ない（つなぎ目で、縁が重ならないよう、1 回で描く）
+				DrawCircleGaugeF( Data.X, Data.Y, 100.0, Data.Handle, 0.0, Data.Scale, FlipX, FlipY );
+			}
+			else if ( End <= 100.0 )
+			{
+				DrawCircleGaugeF( Data.X, Data.Y, End, Data.Handle, Data.StartPercent, Data.Scale, FlipX, FlipY );
+			}
+			else
+			{
+				DrawCircleGaugeF( Data.X, Data.Y, 100.0, Data.Handle, Data.StartPercent, Data.Scale, FlipX, FlipY );
+				DrawCircleGaugeF( Data.X, Data.Y, End - 100.0, Data.Handle, 0.0, Data.Scale, FlipX, FlipY );
+			}
 			break;
 		}
 		}

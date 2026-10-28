@@ -1239,6 +1239,12 @@
     <ClInclude Include="Library\Core\Interfaces\Render\DrawRibbon.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IImage.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\ImageTypes.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\MeshGeometryChunk.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>

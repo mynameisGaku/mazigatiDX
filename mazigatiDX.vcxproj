@@ -479,6 +479,8 @@
     <ClInclude Include="Library\Core\Interfaces\Render\DrawMaterialRibbon.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\DrawModelMaterial.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\DrawRibbon.h" />
+    <ClInclude Include="Library\Core\Interfaces\Render\IImage.h" />
+    <ClInclude Include="Library\Core\Interfaces\Render\ImageTypes.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\MeshGeometryChunk.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\MeshTypes.h" />
     <ClInclude Include="Library\Core\Interfaces\Tickable\ITickable.h" />

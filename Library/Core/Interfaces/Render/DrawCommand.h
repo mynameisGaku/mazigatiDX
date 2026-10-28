@@ -69,6 +69,16 @@ enum class EDrawCommand : uint8
 	BoxAA,          // FDrawBoxAAData。Fill なら塗りつぶし（DrawBoxAA）
 	CircleAA,       // FDrawCircleAAData。Fill なら塗りつぶし（DrawCircleAA）
 	LineAA,         // FDrawLineAAData（DrawLineAA）
+	// 2D の画像の描画の追加（上のコマンドの形式は変えていない。座標は float32、画像は Handle で指定する）
+	Image,            // FDrawImageData。FlipX / FlipY（DrawGraphF / DrawReverseGraphF）
+	ImageStretch,     // FDrawImageStretchData（DrawExtendGraphF）
+	ImageQuad,        // FDrawImageQuadData（DrawModiGraphF）
+	ImagePart,        // FDrawImagePartData。FlipX / FlipY（DrawRectGraphF）
+	ImagePartStretch, // FDrawImagePartStretchData（DrawRectExtendGraphF）
+	ImagePartQuad,    // FDrawImagePartQuadData（DrawRectModiGraphF）
+	SpritePivot,      // FDrawSpritePivotData。FlipX / FlipY（DrawRotaGraph3F）
+	Tile,             // FDrawTileData（DrawTile）
+	CircleGauge,      // FDrawCircleGaugeData。FlipX / FlipY（DrawCircleGaugeF）
 };
 
 // Quad3D の向きの決め方
@@ -204,6 +214,21 @@ struct FDrawBoxAAData { float32 X0 = 0.0f, Y0 = 0.0f, X1 = 0.0f, Y1 = 0.0f; floa
 struct FDrawCircleAAData { float32 X = 0.0f, Y = 0.0f, Radius = 0.0f; float32 Thickness = 1.0f; int32 NumSegments = 0; FDrawRgb Color; };
 struct FDrawLineAAData { float32 X0 = 0.0f, Y0 = 0.0f, X1 = 0.0f, Y1 = 0.0f; float32 Thickness = 1.0f; FDrawRgb Color; };
 
+// 2D の画像の描画。Handle は画像のハンドル。座標はピクセル（左上が原点）。
+// ImageQuad / ImagePartQuad の 4 つの角は、画像の 左上・右上・右下・左下 が行く先（DrawModiGraph と同じ順）
+struct FDrawImageData { float32 X = 0.0f, Y = 0.0f; int32 Handle = -1; };
+struct FDrawImageStretchData { float32 X0 = 0.0f, Y0 = 0.0f, X1 = 0.0f, Y1 = 0.0f; int32 Handle = -1; };
+struct FDrawImageQuadData { float32 X[4] = {}, Y[4] = {}; int32 Handle = -1; };
+struct FDrawImagePartData { float32 X = 0.0f, Y = 0.0f; int32 SrcX = 0, SrcY = 0, SrcW = 0, SrcH = 0; int32 Handle = -1; };
+struct FDrawImagePartStretchData { float32 X0 = 0.0f, Y0 = 0.0f, X1 = 0.0f, Y1 = 0.0f; int32 SrcX = 0, SrcY = 0, SrcW = 0, SrcH = 0; int32 Handle = -1; };
+struct FDrawImagePartQuadData { float32 X[4] = {}, Y[4] = {}; int32 SrcX = 0, SrcY = 0, SrcW = 0, SrcH = 0; int32 Handle = -1; };
+// 画像の中の点 (PivotX, PivotY)（左上が原点、ピクセル）が画面の (X, Y) に来る。拡大・回転・反転は、その点を軸にする（反転しても、その点は (X, Y) のまま）
+struct FDrawSpritePivotData { float32 X = 0.0f, Y = 0.0f, PivotX = 0.0f, PivotY = 0.0f, ScaleX = 1.0f, ScaleY = 1.0f, Angle = 0.0f; int32 Handle = -1; };
+// 矩形 (X0, Y0)-(X1, Y1) を、画像の繰り返しで埋める。OffsetX / OffsetY はタイルの並びのずれ（ピクセル）、Scale は画像の拡大率、Angle は画像の回転（ラジアン）
+struct FDrawTileData { int32 X0 = 0, Y0 = 0, X1 = 0, Y1 = 0, OffsetX = 0, OffsetY = 0; float32 Scale = 1.0f, Angle = 0.0f; int32 Handle = -1; };
+// 円グラフのように、画像を、真上から時計回りに Percent（0..100）まで描く。(X, Y) は画像の中心。StartPercent（0..100）は描き始める位置
+struct FDrawCircleGaugeData { float32 X = 0.0f, Y = 0.0f, Percent = 100.0f, StartPercent = 0.0f, Scale = 1.0f; int32 Handle = -1; };
+
 #define DRAW_DATA_CHECK( Type ) \
 	static_assert( sizeof( Type ) % 4 == 0 && bIsTriviallyCopyable<Type>, #Type " must be made of 4-byte words with no padding" )
 DRAW_DATA_CHECK( FDrawBoxData );
@@ -234,6 +259,15 @@ DRAW_DATA_CHECK( FDrawRoundBoxData );
 DRAW_DATA_CHECK( FDrawBoxAAData );
 DRAW_DATA_CHECK( FDrawCircleAAData );
 DRAW_DATA_CHECK( FDrawLineAAData );
+DRAW_DATA_CHECK( FDrawImageData );
+DRAW_DATA_CHECK( FDrawImageStretchData );
+DRAW_DATA_CHECK( FDrawImageQuadData );
+DRAW_DATA_CHECK( FDrawImagePartData );
+DRAW_DATA_CHECK( FDrawImagePartStretchData );
+DRAW_DATA_CHECK( FDrawImagePartQuadData );
+DRAW_DATA_CHECK( FDrawSpritePivotData );
+DRAW_DATA_CHECK( FDrawTileData );
+DRAW_DATA_CHECK( FDrawCircleGaugeData );
 #undef DRAW_DATA_CHECK
 static_assert( sizeof( FDrawBoxData ) == 24 && sizeof( FDrawSphere3DData ) == 28 && sizeof( FDrawModelData ) == 60, "unexpected padding in a draw command data type" );
 
