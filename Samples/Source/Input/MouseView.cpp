@@ -2,7 +2,7 @@
 
 #include "Library/Core/Interfaces/Input/IInput.h"
 #include "Library/Framework/Engine/Engine.h"
-#include "Library/Framework/Render/ImmediateDraw.h"
+#include "Library/Framework/Render/DrawContext.h"
 #include "Library/Framework/Scene/Scene.h"
 
 namespace
@@ -33,21 +33,26 @@ CMouseView::CMouseView( const FVector2& InOrigin )
 void CMouseView::Tick( float32 DeltaTime )
 {
 	const IInput* Input = GetAppSubsystem<IInput>();
-	if ( Input != nullptr ) WheelTotal += Input->GetMouseState().WheelY;
+	if ( Input != nullptr )
+	{
+		WheelTotal += Input->GetMouseState().WheelY;
+	}
 }
 
-void CMouseView::Draw()
+void CMouseView::Draw( FDrawContext& CommandList )
 {
 	const IInput* Input = GetAppSubsystem<IInput>();
-	if ( Input == nullptr ) return;
+	if ( Input == nullptr )
+	{
+		return;
+	}
 
-	FImmediateDraw Screen( GetScene()->GetDrawExecutor() );
 	const int32 X = static_cast<int32>( Origin.x );
 	const int32 Y = static_cast<int32>( Origin.y );
 	const FMouseState& State = Input->GetMouseState();
 
-	Screen.Text( X, Y - 24, "Mouse (GetMouseState / IsMouseButtonDown)", FColor32::White );
-	Screen.TextF( X, Y, FColor32::White, "Position: (%d, %d)   Delta: (%d, %d)   Wheel: %.1f", State.X, State.Y, State.DeltaX, State.DeltaY, WheelTotal );
+	CommandList.Text( X, Y - 24, "Mouse (GetMouseState / IsMouseButtonDown)", FColor32::White );
+	CommandList.TextF( X, Y, FColor32::White, "Position: (%d, %d)   Delta: (%d, %d)   Wheel: %.1f", State.X, State.Y, State.DeltaX, State.DeltaY, WheelTotal );
 
 	// ボタン（押している間は塗りつぶす）
 	for ( int32 i = 0; i < 3; ++i )
@@ -55,15 +60,21 @@ void CMouseView::Draw()
 		const bool bDown = Input->IsMouseButtonDown( Buttons[i].Button );
 		const int32 Left = X + i * ( ButtonWidth + ButtonGap );
 		const int32 Top = Y + 32;
-		if ( bDown ) Screen.Box( Left, Top, Left + ButtonWidth, Top + ButtonHeight, FColor32::Green );
-		else Screen.Box( Left, Top, Left + ButtonWidth, Top + ButtonHeight, FColor32::Gray, false, 2 );
-		Screen.Text( Left + 8, Top + 12, Buttons[i].Label, bDown ? FColor32::Black : FColor32::White );
+		if ( bDown )
+		{
+			CommandList.Box( Left, Top, Left + ButtonWidth, Top + ButtonHeight, FColor32::Green );
+		}
+		else
+		{
+			CommandList.Box( Left, Top, Left + ButtonWidth, Top + ButtonHeight, FColor32::Gray, false, 2 );
+		}
+		CommandList.Text( Left + 8, Top + 12, Buttons[i].Label, bDown ? FColor32::Black : FColor32::White );
 	}
 
 	// カーソルの位置を示す十字（ウィンドウの外・フォーカスがないときは出さない）
 	if ( State.bPositionValid && State.bFocused )
 	{
-		Screen.Line( State.X - 12, State.Y, State.X + 12, State.Y, FColor32::Yellow );
-		Screen.Line( State.X, State.Y - 12, State.X, State.Y + 12, FColor32::Yellow );
+		CommandList.Line( State.X - 12, State.Y, State.X + 12, State.Y, FColor32::Yellow );
+		CommandList.Line( State.X, State.Y - 12, State.X, State.Y + 12, FColor32::Yellow );
 	}
 }

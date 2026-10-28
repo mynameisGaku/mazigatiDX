@@ -1,6 +1,6 @@
 ﻿#include "BouncingBox.h"
 
-#include "Library/Framework/Render/ImmediateDraw.h"
+#include "Library/Framework/Render/DrawContext.h"
 #include "Library/Framework/Scene/Scene.h"
 
 CBouncingBox::CBouncingBox( const FVector2& InPosition, const FVector2& InVelocity, int32 InHalfSize, const FColor32& InColor, const FVector2& InAreaMin, const FVector2& InAreaMax )
@@ -40,10 +40,9 @@ void CBouncingBox::Tick( float32 DeltaTime )
 	}
 }
 
-void CBouncingBox::Draw()
+void CBouncingBox::Draw( FDrawContext& CommandList )
 {
-	FImmediateDraw Screen( GetScene()->GetDrawExecutor() );
 	const int32 X = static_cast<int32>( Position.x );
 	const int32 Y = static_cast<int32>( Position.y );
-	Screen.Box( X - HalfSize, Y - HalfSize, X + HalfSize, Y + HalfSize, Color );
+	CommandList.Box( X - HalfSize, Y - HalfSize, X + HalfSize, Y + HalfSize, Color );
 }

@@ -4,7 +4,7 @@
 #include "Library/Framework/Object/GameObject.h"
 #include "Library/Math/Math.h"
 
-class FImmediateDraw;
+class FDrawContext;
 
 //=============================================================================
 // CShapeShowcase
@@ -20,16 +20,16 @@ public:
 	CShapeShowcase( const FVector2& InOrigin, bool bInSmooth );
 
 	void Tick( float32 DeltaTime ) override;
-	void Draw() override;
+	void Draw( FDrawContext& CommandList ) override;
 
 private:
 	// 図形 1 つぶんの描き方（Center は、その図形の中心）
-	void DrawTriangle( FImmediateDraw& Screen, const FVector2& Center ) const;
-	void DrawQuad( FImmediateDraw& Screen, const FVector2& Center ) const;
-	void DrawOval( FImmediateDraw& Screen, const FVector2& Center ) const;
-	void DrawRoundBox( FImmediateDraw& Screen, const FVector2& Center ) const;
-	void DrawCircle( FImmediateDraw& Screen, const FVector2& Center ) const;
-	void DrawLine( FImmediateDraw& Screen, const FVector2& Center ) const;
+	void DrawTriangle( FDrawContext& CommandList, const FVector2& Center ) const;
+	void DrawQuad( FDrawContext& CommandList, const FVector2& Center ) const;
+	void DrawOval( FDrawContext& CommandList, const FVector2& Center ) const;
+	void DrawRoundBox( FDrawContext& CommandList, const FVector2& Center ) const;
+	void DrawCircle( FDrawContext& CommandList, const FVector2& Center ) const;
+	void DrawLine( FDrawContext& CommandList, const FVector2& Center ) const;
 
 	// 左端の図形の中心（画面の座標。ピクセル）
 	FVector2 Origin;

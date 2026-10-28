@@ -15,7 +15,7 @@ public:
 	// InOrigin は、表示の左上（画面の座標。ピクセル）
 	explicit CGamepadView( const FVector2& InOrigin );
 
-	void Draw() override;
+	void Draw( FDrawContext& CommandList ) override;
 
 private:
 	// 表示の左上（画面の座標。ピクセル）

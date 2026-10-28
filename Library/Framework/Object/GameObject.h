@@ -14,6 +14,7 @@
 
 class CScene;
 class CTransformComponent;
+class FDrawContext;
 
 DECLARE_LOG_CATEGORY_EXTERN( LogGameObject, Log )
 
@@ -28,11 +29,15 @@ DECLARE_LOG_CATEGORY_EXTERN( LogGameObject, Log )
 //       explicit CEnemy( int32 InHp ) : Hp( InHp ) {}
 //       void OnSpawn() override { AddComponent<CTransformComponent>(); }
 //       void Tick( float32 DeltaTime ) override { if ( Hp <= 0 ) Destroy(); }
-//       void Draw() override { ... }
+//       void Draw( FDrawContext& CommandList ) override { CommandList.Circle( X, Y, 8, FColor32::Red ); }
 //   };
 //
 //   TSharedPtr<CEnemy> Enemy = Scene.SpawnObject<CEnemy>( 100 );
 //   TWeakPtr<CEnemy>   Target = Enemy;   // 他のオブジェクトから参照するときは弱参照で持つ
+//
+//   描画は、DX12 のコマンドリストと同じ方式: Draw( FDrawContext& CommandList ) は、シーンが用意したコマンドリストに「何を描くか」を記録するだけ。
+//   DxLib を呼ばず、実行先（IDrawExecutor）も知らなくてよい。シーンが、オブジェクトごとにコマンドリストを空にして渡し（Reset）、記録されたものを
+//   DrawOrder の順に実行する（ExecuteCommandLists）ので、ブレンドモードなどの状態は、次のオブジェクトに漏れない。
 //
 //   - SpawnObject 中に OnSpawn が呼ばれる。Tick 中に生成した場合、Tick は次のフレームから
 //   - Destroy() は予約のみ。そのフレームの Tick 後に OnDestroy が呼ばれシーンから外れる
@@ -53,7 +58,8 @@ public:
 	//-------------------------------------------------------------------------
 	virtual void OnSpawn();
 	virtual void Tick( float32 DeltaTime );
-	virtual void Draw();
+	// 描画コマンドを記録する（CommandList に足すだけ。DxLib は呼ばない）。呼ばれるのは、見えている（IsVisible）間、毎フレーム 1 回。DrawOrder の順
+	virtual void Draw( FDrawContext& CommandList );
 	virtual void OnDestroy();
 
 	//-------------------------------------------------------------------------
@@ -237,7 +243,7 @@ private:
 
 	// CScene から呼ばれる
 	void TickObject( float32 DeltaTime );
-	void DrawObject();
+	void DrawObject( FDrawContext& CommandList );
 	void RemoveDestroyedComponents();
 	// シーンから外れるとき（OnDestroy の後）
 	void DetachAll();

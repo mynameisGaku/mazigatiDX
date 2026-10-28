@@ -2,7 +2,7 @@
 
 #include "Library/Core/Interfaces/Input/IInput.h"
 #include "Library/Framework/Engine/Engine.h"
-#include "Library/Framework/Render/ImmediateDraw.h"
+#include "Library/Framework/Render/DrawContext.h"
 #include "Library/Framework/Scene/Scene.h"
 
 namespace
@@ -44,14 +44,13 @@ CKeyboardView::CKeyboardView( const FVector2& InOrigin )
 	: Origin( InOrigin )
 {}
 
-void CKeyboardView::Draw()
+void CKeyboardView::Draw( FDrawContext& CommandList )
 {
-	FImmediateDraw Screen( GetScene()->GetDrawExecutor() );
 	const int32 X = static_cast<int32>( Origin.x );
 	const int32 Y = static_cast<int32>( Origin.y );
 	const IInput* Input = GetAppSubsystem<IInput>();
 
-	Screen.Text( X, Y - 24, "Keyboard (IsKeyDown)", FColor32::White );
+	CommandList.Text( X, Y - 24, "Keyboard (IsKeyDown)", FColor32::White );
 	for ( const FKeyCell& Cell : Cells )
 	{
 		const bool bDown = Input != nullptr && Input->IsKeyDown( Cell.Key );
@@ -59,8 +58,14 @@ void CKeyboardView::Draw()
 		const int32 Top = Y + Cell.Y;
 
 		// 押している間は塗りつぶし、離していれば枠だけ
-		if ( bDown ) Screen.Box( Left, Top, Left + Cell.Width, Top + KeySize, FColor32::Green );
-		else Screen.Box( Left, Top, Left + Cell.Width, Top + KeySize, FColor32::Gray, false, 2 );
-		Screen.Text( Left + 8, Top + KeySize / 2 - 8, Cell.Label, bDown ? FColor32::Black : FColor32::White );
+		if ( bDown )
+		{
+			CommandList.Box( Left, Top, Left + Cell.Width, Top + KeySize, FColor32::Green );
+		}
+		else
+		{
+			CommandList.Box( Left, Top, Left + Cell.Width, Top + KeySize, FColor32::Gray, false, 2 );
+		}
+		CommandList.Text( Left + 8, Top + KeySize / 2 - 8, Cell.Label, bDown ? FColor32::Black : FColor32::White );
 	}
 }

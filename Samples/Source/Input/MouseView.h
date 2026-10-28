@@ -16,7 +16,7 @@ public:
 	explicit CMouseView( const FVector2& InOrigin );
 
 	void Tick( float32 DeltaTime ) override;
-	void Draw() override;
+	void Draw( FDrawContext& CommandList ) override;
 
 private:
 	// 表示の左上（画面の座標。ピクセル）

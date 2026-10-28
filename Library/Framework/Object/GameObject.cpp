@@ -184,10 +184,10 @@ void CGameObject::TickObject( float32 DeltaTime )
 	RemoveDestroyedComponents();
 }
 
-void CGameObject::DrawObject()
+void CGameObject::DrawObject( FDrawContext& CommandList )
 {
 	PROFILE_SCOPE_LAZY( ObjectScope, MakeProfileScope( "Object.Draw" ) );
-	Draw();
+	Draw( CommandList );
 }
 
 FProfileScope CGameObject::MakeProfileScope( const char* Category ) const
@@ -258,7 +258,7 @@ void CGameObject::Tick( float32 DeltaTime )
 {
 }
 
-void CGameObject::Draw()
+void CGameObject::Draw( FDrawContext& CommandList )
 {
 }
 

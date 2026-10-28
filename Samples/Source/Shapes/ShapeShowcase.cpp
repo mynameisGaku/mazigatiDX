@@ -1,6 +1,6 @@
 ﻿#include "ShapeShowcase.h"
 
-#include "Library/Framework/Render/ImmediateDraw.h"
+#include "Library/Framework/Render/DrawContext.h"
 #include "Library/Framework/Scene/Scene.h"
 
 namespace
@@ -42,9 +42,8 @@ void CShapeShowcase::Tick( float32 DeltaTime )
 	Time += DeltaTime;
 }
 
-void CShapeShowcase::Draw()
+void CShapeShowcase::Draw( FDrawContext& CommandList )
 {
-	FImmediateDraw Screen( GetScene()->GetDrawExecutor() );
 
 	// 6 つの図形を、左から並べる。名前は、図形の下
 	const char* const PlainNames[6] = { "Triangle", "Quad", "Oval", "RoundBox", "Circle", "Line" };
@@ -54,29 +53,35 @@ void CShapeShowcase::Draw()
 		const FVector2 Center( Origin.x + CellWidth * static_cast<float32>( Index ), Origin.y );
 		switch ( Index )
 		{
-		case 0: DrawTriangle( Screen, Center ); break;
-		case 1: DrawQuad( Screen, Center ); break;
-		case 2: DrawOval( Screen, Center ); break;
-		case 3: DrawRoundBox( Screen, Center ); break;
-		case 4: DrawCircle( Screen, Center ); break;
-		default: DrawLine( Screen, Center ); break;
+		case 0: DrawTriangle( CommandList, Center ); break;
+		case 1: DrawQuad( CommandList, Center ); break;
+		case 2: DrawOval( CommandList, Center ); break;
+		case 3: DrawRoundBox( CommandList, Center ); break;
+		case 4: DrawCircle( CommandList, Center ); break;
+		default: DrawLine( CommandList, Center ); break;
 		}
-		Screen.Text( Px( Center.x ) - 40, Px( Center.y ) + 90, bSmooth ? SmoothNames[Index] : PlainNames[Index], FColor32::White );
+		CommandList.Text( Px( Center.x ) - 40, Px( Center.y ) + 90, bSmooth ? SmoothNames[Index] : PlainNames[Index], FColor32::White );
 	}
 }
 
-void CShapeShowcase::DrawTriangle( FImmediateDraw& Screen, const FVector2& Center ) const
+void CShapeShowcase::DrawTriangle( FDrawContext& CommandList, const FVector2& Center ) const
 {
 	// 正三角形が、ゆっくり回る
 	const float32 Angle = Time;
 	const FVector2 A = OnCircle( Center, Size, Angle );
 	const FVector2 B = OnCircle( Center, Size, Angle + TwoPi / 3.0f );
 	const FVector2 C = OnCircle( Center, Size, Angle + TwoPi * 2.0f / 3.0f );
-	if ( bSmooth ) Screen.TriangleAA( A.x, A.y, B.x, B.y, C.x, C.y, Red );
-	else Screen.Triangle( Px( A.x ), Px( A.y ), Px( B.x ), Px( B.y ), Px( C.x ), Px( C.y ), Red );
+	if ( bSmooth )
+	{
+		CommandList.TriangleAA( A.x, A.y, B.x, B.y, C.x, C.y, Red );
+	}
+	else
+	{
+		CommandList.Triangle( Px( A.x ), Px( A.y ), Px( B.x ), Px( B.y ), Px( C.x ), Px( C.y ), Red );
+	}
 }
 
-void CShapeShowcase::DrawQuad( FImmediateDraw& Screen, const FVector2& Center ) const
+void CShapeShowcase::DrawQuad( FDrawContext& CommandList, const FVector2& Center ) const
 {
 	// 正方形（4 つの頂点を順にたどる四角形）が、逆向きにゆっくり回る
 	const float32 Angle = -Time * 0.7f + NMath::PI * 0.25f;
@@ -84,49 +89,73 @@ void CShapeShowcase::DrawQuad( FImmediateDraw& Screen, const FVector2& Center ) 
 	const FVector2 B = OnCircle( Center, Size, Angle + TwoPi * 0.25f );
 	const FVector2 C = OnCircle( Center, Size, Angle + TwoPi * 0.5f );
 	const FVector2 D = OnCircle( Center, Size, Angle + TwoPi * 0.75f );
-	if ( bSmooth ) Screen.QuadAA( A.x, A.y, B.x, B.y, C.x, C.y, D.x, D.y, Green );
-	else Screen.Quad( Px( A.x ), Px( A.y ), Px( B.x ), Px( B.y ), Px( C.x ), Px( C.y ), Px( D.x ), Px( D.y ), Green );
+	if ( bSmooth )
+	{
+		CommandList.QuadAA( A.x, A.y, B.x, B.y, C.x, C.y, D.x, D.y, Green );
+	}
+	else
+	{
+		CommandList.Quad( Px( A.x ), Px( A.y ), Px( B.x ), Px( B.y ), Px( C.x ), Px( C.y ), Px( D.x ), Px( D.y ), Green );
+	}
 }
 
-void CShapeShowcase::DrawOval( FImmediateDraw& Screen, const FVector2& Center ) const
+void CShapeShowcase::DrawOval( FDrawContext& CommandList, const FVector2& Center ) const
 {
 	// 中心が、小さな円を描いて動く（動きがゆっくりなほど、整数の座標では 1 ピクセルずつのガタつきが目立つ）
 	const FVector2 Moved = OnCircle( Center, 8.0f, Time * 2.0f );
-	if ( bSmooth ) Screen.OvalAA( Moved.x, Moved.y, 62.0f, 30.0f, Cyan );
-	else Screen.Oval( Px( Moved.x ), Px( Moved.y ), 62, 30, Cyan );
+	if ( bSmooth )
+	{
+		CommandList.OvalAA( Moved.x, Moved.y, 62.0f, 30.0f, Cyan );
+	}
+	else
+	{
+		CommandList.Oval( Px( Moved.x ), Px( Moved.y ), 62, 30, Cyan );
+	}
 }
 
-void CShapeShowcase::DrawRoundBox( FImmediateDraw& Screen, const FVector2& Center ) const
+void CShapeShowcase::DrawRoundBox( FDrawContext& CommandList, const FVector2& Center ) const
 {
 	// 横幅が伸び縮みする、角の丸い四角形
 	const float32 HalfWidth = 40.0f + 8.0f * NMath::Sin( Time * 1.5f );
 	const float32 HalfHeight = 28.0f;
-	if ( bSmooth ) Screen.RoundBoxAA( Center.x - HalfWidth, Center.y - HalfHeight, Center.x + HalfWidth, Center.y + HalfHeight, 14.0f, 14.0f, Orange );
-	else Screen.RoundBox( Px( Center.x - HalfWidth ), Px( Center.y - HalfHeight ), Px( Center.x + HalfWidth ), Px( Center.y + HalfHeight ), 14, 14, Orange );
+	if ( bSmooth )
+	{
+		CommandList.RoundBoxAA( Center.x - HalfWidth, Center.y - HalfHeight, Center.x + HalfWidth, Center.y + HalfHeight, 14.0f, 14.0f, Orange );
+	}
+	else
+	{
+		CommandList.RoundBox( Px( Center.x - HalfWidth ), Px( Center.y - HalfHeight ), Px( Center.x + HalfWidth ), Px( Center.y + HalfHeight ), 14, 14, Orange );
+	}
 }
 
-void CShapeShowcase::DrawCircle( FImmediateDraw& Screen, const FVector2& Center ) const
+void CShapeShowcase::DrawCircle( FDrawContext& CommandList, const FVector2& Center ) const
 {
 	// 塗りつぶした円と、そのまわりの輪（太さ 3）が、小さな円を描いて動く
 	const FVector2 Moved = OnCircle( Center, 10.0f, Time * 3.0f + 1.0f );
 	if ( bSmooth )
 	{
-		Screen.CircleAA( Moved.x, Moved.y, 34.0f, Magenta );
-		Screen.CircleAA( Moved.x, Moved.y, 46.0f, Magenta, false, 3.0f );
+		CommandList.CircleAA( Moved.x, Moved.y, 34.0f, Magenta );
+		CommandList.CircleAA( Moved.x, Moved.y, 46.0f, Magenta, false, 3.0f );
 	}
 	else
 	{
-		Screen.Circle( Px( Moved.x ), Px( Moved.y ), 34, Magenta );
-		Screen.Circle( Px( Moved.x ), Px( Moved.y ), 46, Magenta, false, 3 );
+		CommandList.Circle( Px( Moved.x ), Px( Moved.y ), 34, Magenta );
+		CommandList.Circle( Px( Moved.x ), Px( Moved.y ), 46, Magenta, false, 3 );
 	}
 }
 
-void CShapeShowcase::DrawLine( FImmediateDraw& Screen, const FVector2& Center ) const
+void CShapeShowcase::DrawLine( FDrawContext& CommandList, const FVector2& Center ) const
 {
 	// 中心を通る太い線が、回る
 	const float32 Angle = Time * 1.3f;
 	const FVector2 A = OnCircle( Center, Size, Angle );
 	const FVector2 B = OnCircle( Center, Size, Angle + NMath::PI );
-	if ( bSmooth ) Screen.LineAA( A.x, A.y, B.x, B.y, Yellow, 4.0f );
-	else Screen.Line( Px( A.x ), Px( A.y ), Px( B.x ), Px( B.y ), Yellow, 4 );
+	if ( bSmooth )
+	{
+		CommandList.LineAA( A.x, A.y, B.x, B.y, Yellow, 4.0f );
+	}
+	else
+	{
+		CommandList.Line( Px( A.x ), Px( A.y ), Px( B.x ), Px( B.y ), Yellow, 4 );
+	}
 }

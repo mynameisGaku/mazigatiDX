@@ -6,8 +6,8 @@
 
 //=============================================================================
 // CShapeGallery
-//   FImmediateDraw で描ける 2D の図形（四角・円・線・文字）を、ラベルつきで並べる。動かない。
-//   オブジェクトの Draw() の中から、DxLib を直接呼ばずに描く見本。
+//   コマンドリスト（FDrawContext）に記録できる 2D の図形（四角・円・線・文字）を、ラベルつきで並べる。動かない。
+//   オブジェクトの Draw( FDrawContext& CommandList ) は、DxLib も実行先も知らずに、何を描くかを記録するだけの見本。
 //=============================================================================
 class CShapeGallery : public CGameObject
 {
@@ -15,7 +15,7 @@ public:
 	// InOrigin は、並べる図形の左上（画面の座標。ピクセル）
 	explicit CShapeGallery( const FVector2& InOrigin );
 
-	void Draw() override;
+	void Draw( FDrawContext& CommandList ) override;
 
 private:
 	// 並べる図形の左上（画面の座標。ピクセル）

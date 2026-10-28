@@ -16,7 +16,7 @@ public:
 	explicit CPlayer( const FVector2& InPosition );
 
 	void Tick( float32 DeltaTime ) override;
-	void Draw() override;
+	void Draw( FDrawContext& CommandList ) override;
 
 private:
 	// 画面の座標（ピクセル。左上が原点）

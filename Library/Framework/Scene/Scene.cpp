@@ -243,15 +243,12 @@ void CScene::DrawScene()
 	}
 
 	// 描画システムがあれば、全オブジェクト分の描画を先に（並列に）記録しておく。実行は、下のループで、描画順に 1 つずつ
-	IDrawExecutor* Executor = nullptr;
-	if ( Systems.HasDrawSystems() )
+	IDrawExecutor* Executor = GetDrawExecutor();
+	const bool bRunDrawSystems = Executor != nullptr && Systems.HasDrawSystems();
+	if ( bRunDrawSystems )
 	{
-		Executor = GetDrawExecutor();
-		if ( Executor != nullptr )
-		{
-			PROFILE_SCOPE_LAZY( RecordScope, FProfileScope( "Scene", ProfilerOwnerId, "Systems.Draw" ) );
-			Systems.Run( NEcs::EPhase::Draw, 0.0f, ~0ull, EcsWorld, TransformWorld, GetAppSubsystem<IJobSystem>() );
-		}
+		PROFILE_SCOPE_LAZY( RecordScope, FProfileScope( "Scene", ProfilerOwnerId, "Systems.Draw" ) );
+		Systems.Run( NEcs::EPhase::Draw, 0.0f, ~0ull, EcsWorld, TransformWorld, GetAppSubsystem<IJobSystem>() );
 	}
 
 	{
@@ -259,11 +256,26 @@ void CScene::DrawScene()
 		for ( int32 i = 0; i < DrawList.Num(); ++i )
 		{
 			CGameObject* Object = DrawList[i];
-			if ( !Object->IsAlive() || !Object->IsVisible() ) continue;
+			if ( !Object->IsAlive() || !Object->IsVisible() )
+			{
+				continue;
+			}
 
-			Object->DrawObject();
-			// そのオブジェクトの描画システムの出力は、Draw() の直後に流す
-			if ( Executor != nullptr ) Systems.ReplayDraw( Object->GetEntitySlot(), *Executor );
+			// DX12 のコマンドリストと同じ流れ: コマンドリストを空にして（Reset）、オブジェクトに記録させ、記録されたものを実行する（ExecuteCommandLists）。
+			// オブジェクトごとに実行するので、ブレンドモードなどの状態は、次のオブジェクトに漏れない。何も記録しなかったオブジェクトは、実行先を呼ばない
+			ObjectCommandList.Clear();
+			FDrawContext CommandList( ObjectCommandList );
+			Object->DrawObject( CommandList );
+			if ( Executor != nullptr && CommandList.GetNumWords() > 0 )
+			{
+				Executor->Execute( FDrawSpan { ObjectCommandList.Words.GetData(), ObjectCommandList.Words.Num() } );
+			}
+
+			// そのオブジェクトの描画システムの出力は、Draw の直後に流す
+			if ( bRunDrawSystems )
+			{
+				Systems.ReplayDraw( Object->GetEntitySlot(), *Executor );
+			}
 		}
 	}
 

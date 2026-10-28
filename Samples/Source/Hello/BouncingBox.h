@@ -17,7 +17,7 @@ public:
 	CBouncingBox( const FVector2& InPosition, const FVector2& InVelocity, int32 InHalfSize, const FColor32& InColor, const FVector2& InAreaMin, const FVector2& InAreaMax );
 
 	void Tick( float32 DeltaTime ) override;
-	void Draw() override;
+	void Draw( FDrawContext& CommandList ) override;
 
 	// 今の中心（画面の座標）
 	FORCEINLINE const FVector2& GetPosition() const { return Position; }

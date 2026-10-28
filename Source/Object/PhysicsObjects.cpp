@@ -4,9 +4,9 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Framework/Component/TransformComponent.h"
 #include "Library/Framework/Engine/Engine.h"
+#include "Library/Framework/Render/DrawContext.h"
 #include "Library/Framework/Scene/Scene.h"
 #include "Library/Physics/PhysicsSubsystem.h"
-#include "Library/Platform/DxLib/DxLibInclude.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogPhysicsObjects, Log )
 
@@ -77,13 +77,16 @@ void CPhysicsBall::Tick( float32 DeltaTime )
 	if ( Age >= Lifetime || Body->GetPosition().y < KillY ) Destroy();
 }
 
-void CPhysicsBall::Draw()
+void CPhysicsBall::Draw( FDrawContext& CommandList )
 {
-	if ( Body == nullptr ) return;
+	if ( Body == nullptr )
+	{
+		return;
+	}
 
 	const FVector3 Position = Body->GetPosition();
-	DrawCircle( NSampleView::ToScreenX( Position.x ), NSampleView::ToScreenY( Position.y ),
-				static_cast<int>( Radius * NSampleView::PixelsPerMeter ), Color.ToDxColor(), TRUE );
+	CommandList.Circle( NSampleView::ToScreenX( Position.x ), NSampleView::ToScreenY( Position.y ),
+						static_cast<int32>( Radius * NSampleView::PixelsPerMeter ), Color );
 }
 
 void CPhysicsBall::OnDestroy()
@@ -114,11 +117,11 @@ void CPhysicsFloor::OnSpawn()
 	if ( Body == nullptr ) LOG( LogPhysicsObjects, Error, "%s could not create its rigid body.", *GetDebugName() );
 }
 
-void CPhysicsFloor::Draw()
+void CPhysicsFloor::Draw( FDrawContext& CommandList )
 {
-	DrawBox( NSampleView::ToScreenX( Center.x - HalfExtents.x ), NSampleView::ToScreenY( Center.y + HalfExtents.y ),
-			 NSampleView::ToScreenX( Center.x + HalfExtents.x ), NSampleView::ToScreenY( Center.y - HalfExtents.y ),
-			 FColor32::Gray.ToDxColor(), TRUE );
+	CommandList.Box( NSampleView::ToScreenX( Center.x - HalfExtents.x ), NSampleView::ToScreenY( Center.y + HalfExtents.y ),
+					 NSampleView::ToScreenX( Center.x + HalfExtents.x ), NSampleView::ToScreenY( Center.y - HalfExtents.y ),
+					 FColor32::Gray );
 }
 
 void CPhysicsFloor::OnDestroy()

@@ -15,7 +15,7 @@ public:
 	// InOrigin は、キーの並びの左上（画面の座標。ピクセル）
 	explicit CKeyboardView( const FVector2& InOrigin );
 
-	void Draw() override;
+	void Draw( FDrawContext& CommandList ) override;
 
 private:
 	// キーの並びの左上（画面の座標。ピクセル）

@@ -20,7 +20,7 @@ public:
 
 	void OnSpawn() override;
 	void Tick( float32 DeltaTime ) override;
-	void Draw() override;
+	void Draw( FDrawContext& CommandList ) override;
 	void InspectProperties( IPropertyInspector& Inspector ) override;
 
 private:

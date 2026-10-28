@@ -35,8 +35,8 @@ class CGameInstance;
 //   開始: サブシステム生成 -> OnEnter      終了: OnExit -> 全オブジェクト破棄 -> サブシステム破棄
 //   Tick: サブシステム (PreUpdate) -> OnTick -> 各オブジェクトの Tick -> サブシステム (PostUpdate)
 //         -> 破棄予約されたオブジェクトの OnDestroy
-//   Draw: 描画システムの記録（並列）-> 各オブジェクトの Draw（DrawOrder 順。その直後に、そのオブジェクトの描画システムの出力）
-//         -> OnDraw（UI など手前に出すもの）
+//   Draw: 描画システムの記録（並列）-> 各オブジェクトの Draw（DrawOrder 順。オブジェクトごとにコマンドリストを空にして渡し、記録されたものを実行する。
+//         その直後に、そのオブジェクトの描画システムの出力）-> OnDraw（UI など手前に出すもの）
 //=============================================================================
 class CScene : public CObject
 {
@@ -205,7 +205,7 @@ public:
 	//-------------------------------------------------------------------------
 	// 描画システム（2D / 3D の描画を、DxLib を呼ばずに「記録」するだけにして、並列に動かす）
 	//   記録は並列（ワーカー）、DxLib への実行は直列（メインスレッド）。実行の順番は、DrawOrder -> 生成順のままで、
-	//   ふつうの Draw() と混ぜても重なりの順番は変わらない。詳しくは System.h と DrawContext.h を参照。
+	//   オブジェクトの Draw( FDrawContext& CommandList ) と混ぜても重なりの順番は変わらない。詳しくは System.h と DrawContext.h を参照。
 	//
 	//   AddDrawSystem( "Marker.Draw", []( FDrawContext& Draw, const FTransformView& Transform, const FMarker& Marker )
 	//   {
@@ -273,6 +273,8 @@ private:
 	TArray<CGameObject*> DrawList;
 	bool bDrawOrderDirty = false;
 	IDrawExecutor* DrawExecutorOverride = nullptr;
+	// オブジェクトの Draw に渡すコマンドリストの入れ物。オブジェクトごとに空にして使い回す（確保した領域は残る）
+	FDrawBuffer ObjectCommandList;
 
 	uint64 NextObjectId = 1;
 	float64 ElapsedTime = 0.0;
