@@ -25,6 +25,15 @@
     <ClCompile Include="Source\Hello\ShapeGallery.cpp">
       <Filter>Source\Hello</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Images\ImageShowcase.cpp">
+      <Filter>Source\Images</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Images\ImagesSample.cpp">
+      <Filter>Source\Images</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Images\TestPattern.cpp">
+      <Filter>Source\Images</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Input\GamepadView.cpp">
       <Filter>Source\Input</Filter>
     </ClCompile>
@@ -69,6 +78,15 @@
     <ClInclude Include="Source\Hello\ShapeGallery.h">
       <Filter>Source\Hello</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Images\ImageShowcase.h">
+      <Filter>Source\Images</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Images\ImagesSample.h">
+      <Filter>Source\Images</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Images\TestPattern.h">
+      <Filter>Source\Images</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Input\GamepadView.h">
       <Filter>Source\Input</Filter>
     </ClInclude>
@@ -103,6 +121,9 @@
     </Filter>
     <Filter Include="Source\Hello">
       <UniqueIdentifier>{D7CAE878-E116-AB34-3B7B-F14582C1F4DE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Images">
+      <UniqueIdentifier>{ACF46270-826C-4E75-9FC6-1E64E1A7117E}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Input">
       <UniqueIdentifier>{FFE14168-86E4-9D5A-B4DA-C4ACB9D88FCD}</UniqueIdentifier>

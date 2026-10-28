@@ -14,7 +14,9 @@ mazigatiDX の機能を、1 つずつ動かして見られるサンプル集で�
 
 |名前|内容|
 |---|---|
-|`Hello`|図形・文字を `FImmediateDraw` で描く。`DeltaTime` で動くオブジェクト|
+|`Hello`|図形・文字を、オブジェクトの `Draw( FDrawContext& CommandList )`（コマンドリストへの記録）で描く。`DeltaTime` で動くオブジェクト|
+|`Shapes`|2D の図形を、整数の座標（ギザギザ）と、なめらかな `*AA`（float の座標）で、同じ動きで並べて比べる|
+|`Images`|1 枚の画像を、等倍・拡大・自由な四角形・一部分・基準点と回転・タイル・円グラフの 7 通りで描く（画像は、メモリの上で作る）|
 |`Input`|キーボード・マウス・ゲームパッドの状態を表示する|
 
 ## 構成（クラスとファイルの分け方）
@@ -27,6 +29,8 @@ Samples/
     Catalog/                    サンプルの一覧（CSampleCatalog）、サンプルの情報（FSampleInfo）、サンプルのシーンの基底（CSampleScene）
     Browser/                    一覧の画面（CBrowserScene）
     Hello/                      サンプル Hello: シーン（CHelloSample）と、それが置くオブジェクト（CShapeGallery、CBouncingBox）
+    Shapes/                     サンプル Shapes: シーン（CShapesSample）と、オブジェクト（CShapeShowcase）
+    Images/                     サンプル Images: シーン（CImagesSample）と、オブジェクト（CImageShowcase）、確認用の画像を作る関数（NTestPattern）
     Input/                      サンプル Input: シーン（CInputSample）と、オブジェクト（CKeyboardView、CMouseView、CGamepadView）
   Config/ScreenConfig.json      窓の設定
   Assets/                       画像・音・モデルの置き場
