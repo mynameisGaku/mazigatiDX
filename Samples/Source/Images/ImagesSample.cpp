@@ -4,8 +4,8 @@
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Render/ImmediateDraw.h"
 #include "Source/Catalog/SampleCatalog.h"
+#include "Source/Common/TestPattern.h"
 #include "Source/Images/ImageShowcase.h"
-#include "Source/Images/TestPattern.h"
 
 namespace
 {

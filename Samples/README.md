@@ -17,6 +17,7 @@ mazigatiDX の機能を、1 つずつ動かして見られるサンプル集で�
 |`Hello`|図形・文字を、オブジェクトの `Draw( FDrawContext& CommandList )`（コマンドリストへの記録）で描く。`DeltaTime` で動くオブジェクト|
 |`Shapes`|2D の図形を、整数の座標（ギザギザ）と、なめらかな `*AA`（float の座標）で、同じ動きで並べて比べる|
 |`Images`|1 枚の画像を、等倍・拡大・自由な四角形・一部分・基準点と回転・タイル・円グラフの 7 通りで描く（画像は、メモリの上で作る）|
+|`DrawState`|描画の状態を、動かして見る。ブレンド（6 種類とカスタムブレンド）・加算する色・アルファテスト、クリップの窓（入れ子）、Nearest と Bilinear の拡大、拡大・回転・移動する 2D のカメラ|
 |`Input`|キーボード・マウス・ゲームパッドの状態を表示する|
 
 ## 構成（クラスとファイルの分け方）
@@ -30,7 +31,9 @@ Samples/
     Browser/                    一覧の画面（CBrowserScene）
     Hello/                      サンプル Hello: シーン（CHelloSample）と、それが置くオブジェクト（CShapeGallery、CBouncingBox）
     Shapes/                     サンプル Shapes: シーン（CShapesSample）と、オブジェクト（CShapeShowcase）
-    Images/                     サンプル Images: シーン（CImagesSample）と、オブジェクト（CImageShowcase）、確認用の画像を作る関数（NTestPattern）
+    Images/                     サンプル Images: シーン（CImagesSample）と、オブジェクト（CImageShowcase）
+    DrawState/                  サンプル DrawState: シーン（CDrawStateSample）と、オブジェクト（CBlendShowcase、CViewShowcase）
+    Common/                     複数のサンプルで使うもの。確認用の画像を、メモリの上で作る関数（NTestPattern）
     Input/                      サンプル Input: シーン（CInputSample）と、オブジェクト（CKeyboardView、CMouseView、CGamepadView）
   Config/ScreenConfig.json      窓の設定
   Assets/                       画像・音・モデルの置き場

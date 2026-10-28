@@ -16,6 +16,18 @@
     <ClCompile Include="Source\Catalog\SampleScene.cpp">
       <Filter>Source\Catalog</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Common\TestPattern.cpp">
+      <Filter>Source\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\DrawState\BlendShowcase.cpp">
+      <Filter>Source\DrawState</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\DrawState\DrawStateSample.cpp">
+      <Filter>Source\DrawState</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\DrawState\ViewShowcase.cpp">
+      <Filter>Source\DrawState</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Hello\BouncingBox.cpp">
       <Filter>Source\Hello</Filter>
     </ClCompile>
@@ -29,9 +41,6 @@
       <Filter>Source\Images</Filter>
     </ClCompile>
     <ClCompile Include="Source\Images\ImagesSample.cpp">
-      <Filter>Source\Images</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Images\TestPattern.cpp">
       <Filter>Source\Images</Filter>
     </ClCompile>
     <ClCompile Include="Source\Input\GamepadView.cpp">
@@ -69,6 +78,18 @@
     <ClInclude Include="Source\Catalog\SampleScene.h">
       <Filter>Source\Catalog</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Common\TestPattern.h">
+      <Filter>Source\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\DrawState\BlendShowcase.h">
+      <Filter>Source\DrawState</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\DrawState\DrawStateSample.h">
+      <Filter>Source\DrawState</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\DrawState\ViewShowcase.h">
+      <Filter>Source\DrawState</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Hello\BouncingBox.h">
       <Filter>Source\Hello</Filter>
     </ClInclude>
@@ -82,9 +103,6 @@
       <Filter>Source\Images</Filter>
     </ClInclude>
     <ClInclude Include="Source\Images\ImagesSample.h">
-      <Filter>Source\Images</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Images\TestPattern.h">
       <Filter>Source\Images</Filter>
     </ClInclude>
     <ClInclude Include="Source\Input\GamepadView.h">
@@ -118,6 +136,12 @@
     </Filter>
     <Filter Include="Source\Catalog">
       <UniqueIdentifier>{7C63368C-8999-EB5C-EB62-68FC90B68A1C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Common">
+      <UniqueIdentifier>{3C5FA6DE-6483-89C2-5511-8B0F6BAAB7AD}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\DrawState">
+      <UniqueIdentifier>{A5D3EA37-A556-1B7C-9583-96BCF9291E1F}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Hello">
       <UniqueIdentifier>{D7CAE878-E116-AB34-3B7B-F14582C1F4DE}</UniqueIdentifier>

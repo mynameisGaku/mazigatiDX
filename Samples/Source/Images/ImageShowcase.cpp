@@ -1,7 +1,7 @@
 ﻿#include "ImageShowcase.h"
 
 #include "Library/Framework/Render/DrawContext.h"
-#include "Source/Images/TestPattern.h"
+#include "Source/Common/TestPattern.h"
 
 namespace
 {
