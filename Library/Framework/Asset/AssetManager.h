@@ -10,6 +10,7 @@
 #include "Library/Framework/Asset/Import/ModelExporter.h"
 #include "Library/Framework/Asset/Model.h"
 #include "Library/Framework/Asset/ModelAnimationAsset.h"
+#include "Library/Framework/Asset/RenderTarget.h"
 #include "Library/Framework/Asset/Sound.h"
 #include "Library/Framework/Asset/SpriteSheet.h"
 #include "Library/Framework/Asset/EffectAsset.h"
@@ -159,6 +160,9 @@ public:
 	TSharedPtr<CTexture> CreateTextureRegion( const TSharedPtr<CTexture>& Source, int32 X, int32 Y, int32 Width, int32 Height );
 	// ファイルの中身（BMP / PNG など）から作る。Name が同じなら共有する
 	TSharedPtr<CTexture> CreateTextureFromMemory( const FString& Name, const void* FileImage, usize Size );
+	// 描画先（描き込める画像）を作る。Name が同じで、設定も同じものがまだ使われていれば、それを共有する（設定が違えば、警告して別に作る）。
+	// Desc が作れない値（大きさが 1〜16384 の外など）・作れなかったときは、ログを出して nullptr
+	TSharedPtr<CRenderTarget> CreateRenderTarget( const FString& Name, const FRenderTargetDesc& Desc );
 
 	//-------------------------------------------------------------------------
 	// スプライトシート

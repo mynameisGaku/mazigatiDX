@@ -3,6 +3,8 @@
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Interfaces/Asset/StaticModelSurfaceData.h"
 #include "Library/Core/Interfaces/Render/MeshTypes.h"
+#include "Library/Core/Interfaces/Render/RenderTargetTypes.h"
+#include "Library/Math/Color.h"
 #include "Library/Core/Types/TypeDefinition.h"
 
 //=============================================================================
@@ -82,6 +84,17 @@ public:
 	// 画像の大きさ。読み込み中・無効なハンドルなら false
 	virtual bool GetTextureSize( int32 Texture, int32& OutWidth, int32& OutHeight ) = 0;
 	virtual void DeleteTexture( int32 Texture ) = 0;
+
+	//-------------------------------------------------------------------------
+	// 描画先（レンダーターゲット）。描き込める画像。解放は DeleteTexture、大きさは GetTextureSize
+	//-------------------------------------------------------------------------
+	// 作る。Desc が作れない値（IsValid が false）・作れなかったときは InvalidHandle。非対応の実装も InvalidHandle
+	virtual int32 CreateRenderTarget( const FRenderTargetDesc& /*Desc*/ ) { return NAsset::InvalidHandle; }
+	// 描画先の矩形 (X, Y, Width, Height) の画素を、左上から右へ、上から下へ、OutPixels（Width x Height 個）に読む。
+	// 呼ぶ側が、矩形を描画先の中に収めてある。透明度を持たない描画先の A は 255。描画先でない・読めなかったら false
+	virtual bool ReadRenderTargetPixels( int32 /*Target*/, int32 /*X*/, int32 /*Y*/, int32 /*Width*/, int32 /*Height*/, TArray<FColor32>& /*OutPixels*/ ) { return false; }
+	// 描画先の矩形 (X, Y, Width, Height) を、Path のファイルに保存する。呼ぶ側が、矩形を描画先の中に収めてある。失敗したら false
+	virtual bool SaveRenderTarget( int32 /*Target*/, int32 /*X*/, int32 /*Y*/, int32 /*Width*/, int32 /*Height*/, const FString& /*Path*/, const FImageSaveOptions& /*Options*/ ) { return false; }
 
 	//-------------------------------------------------------------------------
 	// 3D モデル（アニメーションだけが入ったファイルも、モデルとして読み込む）

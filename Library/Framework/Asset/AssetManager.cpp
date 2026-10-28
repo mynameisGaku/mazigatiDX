@@ -490,6 +490,44 @@ TSharedPtr<CTexture> CAssetManager::CreateTextureFromMemory( const FString& Name
 	return Texture;
 }
 
+TSharedPtr<CRenderTarget> CAssetManager::CreateRenderTarget( const FString& Name, const FRenderTargetDesc& Desc )
+{
+	if ( GetBackend() == nullptr )
+	{
+		LOG( LogAsset, Error, "Cannot create the render target '%s': no asset backend.", *Name );
+		return nullptr;
+	}
+	if ( !Desc.IsValid() )
+	{
+		LOG( LogAsset, Error, "Cannot create the render target '%s': %d x %d (multisample %d) is not valid (the size must be 1 to %d, the multisample 0 to %d).", *Name, Desc.Width, Desc.Height, Desc.MultiSamples, FRenderTargetDesc::MaxSize, FRenderTargetDesc::MaxMultiSamples );
+		return nullptr;
+	}
+
+	const FString Key = "target:" + MakeKey( Name );
+	if ( TWeakPtr<CTexture>* Found = Textures.Find( Key ) )
+	{
+		if ( TSharedPtr<CRenderTarget> Existing = DynamicCastSharedPtr<CRenderTarget>( Found->Pin() ) )
+		{
+			const FRenderTargetDesc& Old = Existing->GetDesc();
+			if ( Old.Width == Desc.Width && Old.Height == Desc.Height && Old.bAlpha == Desc.bAlpha && Old.bDepth == Desc.bDepth && Old.MultiSamples == Desc.MultiSamples )
+			{
+				return Existing;
+			}
+			LOG( LogAsset, Warning, "The render target '%s' is already in use with another setting (%d x %d). A new one is created.", *Name, Old.Width, Old.Height );
+		}
+	}
+
+	const int32 Handle = GetBackend()->CreateRenderTarget( Desc );
+	if ( Handle < 0 )
+	{
+		LOG( LogAsset, Error, "Failed to create the render target '%s' (%d x %d).", *Name, Desc.Width, Desc.Height );
+		return nullptr;
+	}
+	TSharedPtr<CRenderTarget> Target = MakeShared<CRenderTarget>( Name, Handle, Desc );
+	Textures.Add( Key, Target );
+	return Target;
+}
+
 //-----------------------------------------------------------------------------
 // スプライトシート
 //-----------------------------------------------------------------------------

@@ -43,6 +43,14 @@ public:
 	// 幅 x 高さ x 4（RGBA 8bit）。ミップマップなどは含めない
 	int64 GetMemoryBytes() const override;
 
+protected:
+	// 大きさが分かっているとき（描画先など。作ったときの大きさ）に、バックエンドへ問い合わせずに済むよう、決める
+	void SetKnownSize( int32 InWidth, int32 InHeight )
+	{
+		Width = InWidth;
+		Height = InHeight;
+	}
+
 private:
 	// 大きさが分かるまで、問い合わせる
 	void RefreshSize() const;

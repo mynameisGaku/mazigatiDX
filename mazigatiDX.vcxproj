@@ -118,6 +118,7 @@
     <ClCompile Include="Library\Framework\Asset\MeshBuffer.cpp" />
     <ClCompile Include="Library\Framework\Asset\Model.cpp" />
     <ClCompile Include="Library\Framework\Asset\ModelAnimationAsset.cpp" />
+    <ClCompile Include="Library\Framework\Asset\RenderTarget.cpp" />
     <ClCompile Include="Library\Framework\Asset\Sound.cpp" />
     <ClCompile Include="Library\Framework\Asset\SpriteSheet.cpp" />
     <ClCompile Include="Library\Framework\Asset\StaticModelSurface.cpp" />
@@ -483,6 +484,7 @@
     <ClInclude Include="Library\Core\Interfaces\Render\ImageTypes.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\MeshGeometryChunk.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\MeshTypes.h" />
+    <ClInclude Include="Library\Core\Interfaces\Render\RenderTargetTypes.h" />
     <ClInclude Include="Library\Core\Interfaces\Tickable\ITickable.h" />
     <ClInclude Include="Library\Core\Log\Log.h" />
     <ClInclude Include="Library\Core\Log\LogCategory.h" />
@@ -543,6 +545,7 @@
     <ClInclude Include="Library\Framework\Asset\MeshBuffer.h" />
     <ClInclude Include="Library\Framework\Asset\Model.h" />
     <ClInclude Include="Library\Framework\Asset\ModelAnimationAsset.h" />
+    <ClInclude Include="Library\Framework\Asset\RenderTarget.h" />
     <ClInclude Include="Library\Framework\Asset\Sound.h" />
     <ClInclude Include="Library\Framework\Asset\SpriteSheet.h" />
     <ClInclude Include="Library\Framework\Asset\StaticModelSurface.h" />

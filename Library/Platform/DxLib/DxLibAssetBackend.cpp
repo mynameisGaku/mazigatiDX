@@ -93,6 +93,148 @@ void CDxLibAssetBackend::DeleteTexture( int32 Texture )
 	DeleteGraph( Texture );
 }
 
+int32 CDxLibAssetBackend::CreateRenderTarget( const FRenderTargetDesc& Desc )
+{
+	if ( !Desc.IsValid() )
+	{
+		return NAsset::InvalidHandle;
+	}
+
+	// 作るときの設定は DxLib の大域の状態なので、作る前の値を覚えて、作ったあとに戻す（マルチサンプルは取得関数がないので、既定の 0 に戻す）
+	const int PreviousDepth = GetDrawValidGraphCreateZBufferFlag();
+	SetDrawValidGraphCreateZBufferFlag( Desc.bDepth ? TRUE : FALSE );
+	if ( Desc.MultiSamples > 0 )
+	{
+		SetCreateDrawValidGraphMultiSample( Desc.MultiSamples, 0 );
+	}
+	const int Handle = MakeScreen( Desc.Width, Desc.Height, Desc.bAlpha ? TRUE : FALSE );
+	if ( Desc.MultiSamples > 0 )
+	{
+		SetCreateDrawValidGraphMultiSample( 0, 0 );
+	}
+	SetDrawValidGraphCreateZBufferFlag( PreviousDepth );
+	return Handle >= 0 ? Handle : NAsset::InvalidHandle;
+}
+
+namespace
+{
+	// 描画先の矩形が、描画先の中に収まっているか
+	bool IsInsideTarget( int32 Target, int32 X, int32 Y, int32 Width, int32 Height )
+	{
+		int TargetWidth = 0;
+		int TargetHeight = 0;
+		if ( Target < 0 || Width <= 0 || Height <= 0 || X < 0 || Y < 0 || GetGraphSize( Target, &TargetWidth, &TargetHeight ) != 0 )
+		{
+			return false;
+		}
+		return static_cast<int64>( X ) + Width <= TargetWidth && static_cast<int64>( Y ) + Height <= TargetHeight;
+	}
+
+	// 描画先を一時的に切り替える。使い終わると、前の描画先・描画範囲・「描画先を替えたときに設定をリセットするか」へ戻す
+	// （描画先を替えると、描画範囲が描画先の全体になるので、読んだり保存したりするあいだだけ、全体にする）
+	class FTemporaryTarget
+	{
+	public:
+		explicit FTemporaryTarget( int32 Target )
+			: PreviousScreen( GetDrawScreen() )
+			, PreviousReset( GetUseSetDrawScreenSettingReset() )
+		{
+			GetDrawArea( &PreviousArea );
+			SetUseSetDrawScreenSettingReset( FALSE );
+			bSwitched = SetDrawScreen( Target ) == 0;
+			if ( bSwitched )
+			{
+				SetDrawAreaFull();
+			}
+		}
+
+		~FTemporaryTarget()
+		{
+			if ( bSwitched )
+			{
+				SetDrawScreen( PreviousScreen );
+				SetDrawArea( PreviousArea.left, PreviousArea.top, PreviousArea.right, PreviousArea.bottom );
+			}
+			SetUseSetDrawScreenSettingReset( PreviousReset );
+		}
+
+		bool IsSwitched() const { return bSwitched; }
+
+		FTemporaryTarget( const FTemporaryTarget& ) = delete;
+		FTemporaryTarget& operator=( const FTemporaryTarget& ) = delete;
+
+	private:
+		int PreviousScreen;
+		int PreviousReset;
+		RECT PreviousArea = {};
+		bool bSwitched = false;
+	};
+}
+
+bool CDxLibAssetBackend::ReadRenderTargetPixels( int32 Target, int32 X, int32 Y, int32 Width, int32 Height, TArray<FColor32>& OutPixels )
+{
+	if ( !IsInsideTarget( Target, X, Y, Width, Height ) )
+	{
+		return false;
+	}
+	FTemporaryTarget Scope( Target );
+	if ( !Scope.IsSwitched() )
+	{
+		return false;
+	}
+	const int Soft = MakeARGB8ColorSoftImage( Width, Height );
+	if ( Soft < 0 )
+	{
+		return false;
+	}
+	const bool bRead = GetDrawScreenSoftImage( X, Y, X + Width, Y + Height, Soft ) == 0;
+	if ( bRead )
+	{
+		OutPixels.SetNum( Width * Height );
+		for ( int32 Row = 0; Row < Height; ++Row )
+		{
+			for ( int32 Column = 0; Column < Width; ++Column )
+			{
+				int Red = 0;
+				int Green = 0;
+				int Blue = 0;
+				int Alpha = 0;
+				GetPixelSoftImage( Soft, Column, Row, &Red, &Green, &Blue, &Alpha );
+				OutPixels[Row * Width + Column] = FColor32( static_cast<uint8>( Red ), static_cast<uint8>( Green ), static_cast<uint8>( Blue ), static_cast<uint8>( Alpha ) );
+			}
+		}
+	}
+	DeleteSoftImage( Soft );
+	return bRead;
+}
+
+bool CDxLibAssetBackend::SaveRenderTarget( int32 Target, int32 X, int32 Y, int32 Width, int32 Height, const FString& Path, const FImageSaveOptions& Options )
+{
+	if ( Path.IsEmpty() || !IsInsideTarget( Target, X, Y, Width, Height ) )
+	{
+		return false;
+	}
+	// DxLib の SaveDrawValidGraph は、描画先にできない画像（MakeGraph など）でも成功を返してしまうので、描画先にできるかを、先に確かめる
+	FTemporaryTarget Scope( Target );
+	if ( !Scope.IsSwitched() )
+	{
+		return false;
+	}
+	int SaveType = DX_IMAGESAVETYPE_PNG;
+	switch ( Options.Format )
+	{
+	case EImageFileFormat::Bmp:
+		SaveType = DX_IMAGESAVETYPE_BMP;
+		break;
+	case EImageFileFormat::Jpeg:
+		SaveType = DX_IMAGESAVETYPE_JPEG;
+		break;
+	default:
+		break;
+	}
+	return SaveDrawValidGraph( Target, X, Y, X + Width, Y + Height, *Path, SaveType, NMath::Clamp( Options.JpegQuality, 0, 100 ), TRUE, NMath::Clamp( Options.PngCompression, -1, 9 ) ) == 0;
+}
+
 //-----------------------------------------------------------------------------
 // モデル
 //-----------------------------------------------------------------------------
