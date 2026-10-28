@@ -62,6 +62,17 @@ DxLibでは個体の選択meshだけを一時非表示にし、残りを通常�
 
 2Dの画像は、`CommandList.Image( X, Y, Texture )`のように、画像（`TSharedPtr<CTexture>`・ポインター・参照のどれでもよい）を渡して描きます。画像は`Library/Core/Interfaces/Render/IImage.h`の`IImage`（`CTexture`が実装）か、型付きのハンドル`FImageHandle`で渡し、DxLibのハンドル（`int`）は公開しません。`nullptr`や無効な画像は、何も記録しません。引数の順番はDxLibに合わせてあります。`Image`（`DrawGraphF`。`bFlipX / bFlipY`で反転）、`ImageStretch`（`DrawExtendGraphF`。`X0 > X1`で反転）、`ImageQuad`（`DrawModiGraphF`。画像の左上・右上・右下・左下の行き先）、`ImagePart / ImagePartStretch / ImagePartQuad`（`DrawRectGraphF`などの、画像の一部分版）、`SpritePivot`（`DrawRotaGraph3F`。基準点・縦横別の拡大・回転・反転。反転しても基準点は動かない）、`Tile`（`DrawTile`。画像の左上を矩形の左上に合わせ、`OffsetX / OffsetY`だけ右下へずらす。DxLibの`DrawTile`は拡大した画像の中心を矩形の中心に置くので、実行のときに補正しています）、`CircleGauge`（`DrawCircleGaugeF`。真上から時計回りに`Fraction`（0〜1）だけ描く。描き始めの位置は`StartFraction`で、1を超えると先頭へ回り込む。DxLibのゲージは、画像の中心を中心とする円を描きます）。NaN・無限大・絶対値が1e7を超える座標・切り出す矩形の大きさが0以下・拡大率が0以下などは記録しません。見本は`Samples`の`Images`です（`Samples.exe --sample=Images`）。
 
+描画の状態は、`CommandList.Blend( EDrawBlend::Add )`のように、記録して変えます。状態は、そのオブジェクトの`Draw`（1回の実行）が終わると、実行の前の値に戻るので、次のオブジェクトに引き継がれません。同じ`Draw`の中では続くので、使い終わったらその場で戻します。
+- `Blend( Mode, Param )`（`SetDrawBlendMode`）: `Opaque / Alpha / Add / Subtract / Multiply`に、`Invert / MultiplyAlpha / PmaAlpha / PmaAdd / PmaSubtract / PmaInvert`を足しました（`Pma`は乗算済みアルファ用）。`Param`（0〜255。範囲の外は収める）は`Alpha`などの強さです。`GetBlendMode()`は、最後に記録した種類を返します。
+- `CustomBlend( FCustomBlend )`（`SetDrawCustomBlendMode`）: 描く色（Src）と下の色（Dest）に掛ける係数（`EDrawBlendFactor`の11通り）と、組み合わせ方（`EDrawBlendOp`の足し算・引き算・小さいほう・大きいほう）を、色とアルファで別々に決めます。例: スクリーン合成は`SrcColor = One`、`DestColor = InvSrcColor`、`ColorOp = Add`。範囲の外の値は記録しません。
+- `AddColor( R, G, B )`（`SetDrawAddColor`）: 描く色（図形も画像も）に足す色です。各成分は-255〜255（負なら引く）。`Tint`で掛けたあとに足されます。
+- `AlphaTest( Compare, Reference )` / `AlphaTestOff()`（`SetDrawAlphaTest`）: 描く色のアルファ（画像の画素ごとの透明度と`Blend`の`Param`）を`Reference`と比べ、成り立つ画素だけを描きます。切り抜きの縁を半透明にしたくないときなどに使います。DxLibの`DX_CMP_NEVER`は何も止めないので、`Never`は「アルファ < 0」で代用しています。
+- `Filter( EDrawFilter )`（`SetDrawMode`）: 画像を拡大・縮小・回転して描くときの色の決め方です。`Nearest`（既定。ドット絵向き）、`Bilinear`（なめらか）、`Anisotropic`（2Dの平らな描画では`Bilinear`と同じ）。
+- `PushClip( X0, Y0, X1, Y1 )` / `PopClip()` / `FClipScope`（`SetDrawArea`）: 描ける範囲を絞ります。右と下の端は含みません。入れ子にすると、いまの範囲との共通部分になり、`PopClip`で1つ前に戻ります。`FClipScope`はスコープを抜けるときに`PopClip`します。共通部分が空（幅か高さが0以下）のあいだは、図形・画像・文字などの描く命令は飛ばし、状態を変える命令だけを実行します。クリップは画面の座標で決まり、`Transform2D`には影響されません。
+- `Transform2D( Matrix )` / `ResetTransform2D()`（`SetTransformTo2D`）: 2Dの描画（図形・画像・文字）に掛ける変換です。行ベクトル（左から順に掛かる）で、アフィン変換だけ（最後の列は無視）。続けて呼ぶと置き換わります（掛け合わさりません）。拡大・回転・移動する2Dのカメラを、行列1つで作れます。DxLibには現在の2Dの変換を取る関数がないので、実行の終わりには、実行の前の値ではなく、変換なしに戻します。
+
+NaN・無限大・絶対値が1e7を超える値、範囲の外の列挙型の値は記録しません。実行の終わりに戻す値は、DxLibに取得関数があるもの（加算する色・アルファテスト・描画モード・クリップ範囲）は実行の前の値、ないもの（2Dの変換）は既定の値です。見本は`Samples`の`DrawState`です（`Samples.exe --sample=DrawState`）。
+
 組み込みのデバッグ表示は、`Library/DebugUI/DebugOverlay.h`の`CDebugOverlay`です。ゲームインスタンスが持ち、`Init() / Tick() / Draw( *this ) / Term()`を呼ぶと、F1の窓（FPS・入力・シーン・ログ）、F2のプロファイラー、F3のコンソール（Debugだけ）、F11のフルスクリーンが使えます。`OnDrawPanelItems`と`OnDrawWindows`に関数を渡すと、ゲーム側の項目や窓を同じ画面に並べられます。キーの処理は`HandleKeys`に切り出してあり、偽の入力・プロファイラー・プラットフォームで確かめられます。
 
 ## 粒子の力場

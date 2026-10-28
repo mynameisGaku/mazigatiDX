@@ -49,6 +49,7 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
 - DxLib はスレッドセーフではない。**DxLib を呼ぶ関数は、メインスレッドからだけ呼ぶ**。窓口のコメントに明記する。
 - 描画は「記録 → 実行」に分ける。記録（`FDrawContext`）は並行にできるが、実行（`IDrawExecutor`）はメインスレッドで、記録された順に DxLib を呼ぶ。新しい描画を足すときは、命令（`EDrawCommand`）・データ・記録・実行をそろえる。旧命令の番号と形式は変えない。オブジェクトの描画は、DX12 のコマンドリストと同じ方式にする: `CGameObject::Draw( FDrawContext& CommandList )` は、シーンが渡すコマンドリストへ記録するだけで、DxLib も実行先も知らない（シーンがオブジェクトごとにコマンドリストを空にして渡し、記録されたものを描画順に実行する）。オブジェクトの外（シーンの `OnDraw` など、メインスレッド）から描くときは、`FImmediateDraw Draw( GetDrawExecutor() );` で同じ書き方のまま、その場で実行できる。
 - DxLib は**大域の状態**（ブレンド・明るさ・描画先・カメラ・ライト・Z バッファ・カリング・描画領域など）を持つ。包むときは、状態を変えたら**元に戻す**ことを実装の責任にするか、スコープで戻す型を用意する。呼び出し側に「前の状態を覚えておいて戻す」ことを要求しない。
+- 描画の状態（ブレンド・カスタムブレンド・加算する色・アルファテスト・描画モード・クリップ範囲・2D の変換）は、`FDrawContext` に記録して変え、`IDrawExecutor::Execute` の終わり（オブジェクトごと）で元に戻す。DxLib に取得関数がある状態（加算する色・アルファテスト・描画モード・クリップ範囲）は**実行の前の値**へ、ない状態（2D の変換）は既定の値へ戻すので、呼び出し側が前の値を覚えておく必要はない。クリップ範囲は入れ子（`PushClip` / `PopClip` / `FClipScope`）にできる。
 - 取得できない状態（DxLib に getter がないもの）は推測せず、フレームワーク側が明示的に持つ。
 
 ## 5. エラー
@@ -92,4 +93,4 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
 | `FDrawContext` の `TextWithFont` / `Billboard3D` / `Quad3D` / `Model` / `Mesh3D` | フォント・モデル・3D の画像を `int32` のハンドルで受け取っている。型のある資源か型付きハンドルで受けたい（2D の画像の描画 `Image` など と `Sprite` / `SpriteRect` は、`IImage` / `FImageHandle` で受けられる。M2-2。フォントは M2-7、3D は M3・M4 で） |
 | `Source/Scene/GameScene` のサンプル | 描画に DxLib の関数（`DrawBox` `DrawString`）を直接呼んでいる。`FImmediateDraw`（`TitleScene` は移行済み）で書き直す（`Source/Object` のオブジェクトは、コマンドリスト方式に移行済み） |
 | 2D 描画の座標 | 図形は、DxLib の分け方どおり、整数の座標（`Box` / `Circle` / `Line` / `Pixel` / `Triangle` / `Quad` / `Oval` / `RoundBox`）と、`float32` の座標でなめらかな `*AA` に分けた（M2-1）。画像の描画（`Image` など。M2-2）は、座標を `float32` にした（`Tile` だけは、DxLib の `DrawTile` に合わせて整数）。`Box` / `Circle` / `Line` の整数（DxLib の整数版）との混在は、そのまま |
-| DxLib の網羅 | 関数名で約 8%。2D・文字・3D のライトと影・シェーダー・フィルター・ムービー・ファイル（DXA）などが未 |
+| DxLib の網羅 | 関数名で約 10%。2D・文字・3D のライトと影・シェーダー・フィルター・ムービー・ファイル（DXA）などが未 |
