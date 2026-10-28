@@ -43,6 +43,16 @@ bool CRenderTarget::ReadPixel( int32 X, int32 Y, FColor32& OutColor ) const
 	return true;
 }
 
+FPixelImage CRenderTarget::ReadPixelImage() const
+{
+	TArray<FColor32> Pixels;
+	if ( !ReadPixels( 0, 0, Desc.Width, Desc.Height, Pixels ) )
+	{
+		return FPixelImage();
+	}
+	return FPixelImage::FromPixels( Desc.Width, Desc.Height, Pixels.GetData() );
+}
+
 bool CRenderTarget::Save( const FString& Path, const FImageSaveOptions& Options ) const
 {
 	return SaveRegion( 0, 0, Desc.Width, Desc.Height, Path, Options );

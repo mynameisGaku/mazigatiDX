@@ -10,6 +10,9 @@
 
 #include <psapi.h>   // windows.h（DxLib.h が読み込む）より後に
 
+#include <climits>
+#include <cstring>
+
 DEFINE_LOG_CATEGORY_STATIC( LogAssetBackend, Log )
 
 REGISTER_SUBSYSTEM( CDxLibAssetBackend )
@@ -233,6 +236,291 @@ bool CDxLibAssetBackend::SaveRenderTarget( int32 Target, int32 X, int32 Y, int32
 		break;
 	}
 	return SaveDrawValidGraph( Target, X, Y, X + Width, Y + Height, *Path, SaveType, NMath::Clamp( Options.JpegQuality, 0, 100 ), TRUE, NMath::Clamp( Options.PngCompression, -1, 9 ) ) == 0;
+}
+
+namespace
+{
+	// 画素から作れる大きさか（呼ぶ側の確認が抜けても、DxLib に渡さない）
+	bool IsValidPixelSize( int32 Width, int32 Height, const void* Pixels )
+	{
+		return Pixels != nullptr && Width >= 1 && Width <= FRenderTargetDesc::MaxSize && Height >= 1 && Height <= FRenderTargetDesc::MaxSize;
+	}
+
+	// 画素を、DxLib の ARGB8 の画像（BASEIMAGE）へ詰める。成功したら、使い終わりに ReleaseBaseImage を呼ぶこと
+	bool FillBaseImage( BASEIMAGE& Base, int32 Width, int32 Height, const FColor32* Pixels )
+	{
+		if ( CreateARGB8ColorBaseImage( Width, Height, &Base ) != 0 )
+		{
+			return false;
+		}
+		for ( int32 Row = 0; Row < Height; ++Row )
+		{
+			uint32* Line = reinterpret_cast<uint32*>( static_cast<uint8*>( Base.GraphData ) + static_cast<usize>( Base.Pitch ) * static_cast<usize>( Row ) );
+			for ( int32 Column = 0; Column < Width; ++Column )
+			{
+				const FColor32& Pixel = Pixels[Row * Width + Column];
+				Line[Column] = ( static_cast<uint32>( Pixel.a ) << 24 ) | ( static_cast<uint32>( Pixel.r ) << 16 ) | ( static_cast<uint32>( Pixel.g ) << 8 ) | static_cast<uint32>( Pixel.b );
+			}
+		}
+		return true;
+	}
+
+	// 4 バイトの、ビッグエンディアン / リトルエンディアンの値
+	uint32 ReadBigEndian32( const uint8* Bytes )
+	{
+		return ( static_cast<uint32>( Bytes[0] ) << 24 ) | ( static_cast<uint32>( Bytes[1] ) << 16 ) | ( static_cast<uint32>( Bytes[2] ) << 8 ) | static_cast<uint32>( Bytes[3] );
+	}
+
+	uint32 ReadLittleEndian32( const uint8* Bytes )
+	{
+		return ( static_cast<uint32>( Bytes[3] ) << 24 ) | ( static_cast<uint32>( Bytes[2] ) << 16 ) | ( static_cast<uint32>( Bytes[1] ) << 8 ) | static_cast<uint32>( Bytes[0] );
+	}
+
+	// 画像のファイルの中身が、最後まであるように見えるか。PNG（印のあと、IHDR から IEND まで、チャンクが全部ある）・BMP（画素のデータが全部ある）・JPEG（終わりの印がある）を調べる。
+	// 調べられない形式は、true（DxLib に任せる）。DxLib は、切れたデータで落ちるので、渡す前の確認に使う
+	bool ImageDataLooksComplete( const uint8* Data, usize Size )
+	{
+		static const uint8 PngSignature[8] = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
+		if ( Data == nullptr || Size == 0 )
+		{
+			return false;
+		}
+		if ( Size >= 8 && std::memcmp( Data, PngSignature, 8 ) == 0 )
+		{
+			// 最初のチャンクは、長さ 13 の IHDR。以降のチャンクを、IEND まで、全部読める
+			usize Position = 8;
+			bool bFirst = true;
+			while ( Position + 12 <= Size )
+			{
+				const uint32 Length = ReadBigEndian32( Data + Position );
+				const uint8* Type = Data + Position + 4;
+				if ( static_cast<uint64>( Position ) + 12 + Length > Size )
+				{
+					return false;
+				}
+				const bool bIsHeader = std::memcmp( Type, "IHDR", 4 ) == 0;
+				if ( bFirst && ( !bIsHeader || Length != 13 ) )
+				{
+					return false;
+				}
+				bFirst = false;
+				Position += 12 + static_cast<usize>( Length );
+				if ( std::memcmp( Type, "IEND", 4 ) == 0 )
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+		if ( Size >= 2 && Data[0] == 'B' && Data[1] == 'M' )
+		{
+			// ファイルの頭 14 バイトと、情報の頭（大きさ・幅・高さ・ビット数・圧縮）が読めて、画素のデータが全部ある（圧縮なしのとき）
+			if ( Size < 26 )
+			{
+				return false;
+			}
+			const uint32 DataOffset = ReadLittleEndian32( Data + 10 );
+			if ( DataOffset >= Size )
+			{
+				return false;
+			}
+			const uint32 HeaderSize = ReadLittleEndian32( Data + 14 );
+			if ( HeaderSize >= 40 && Size >= 14 + 40 )
+			{
+				const int32 Width = static_cast<int32>( ReadLittleEndian32( Data + 18 ) );
+				const int32 Height = static_cast<int32>( ReadLittleEndian32( Data + 22 ) );
+				const uint32 Bits = static_cast<uint32>( Data[28] ) | ( static_cast<uint32>( Data[29] ) << 8 );
+				const uint32 Compression = ReadLittleEndian32( Data + 30 );
+				if ( Width <= 0 || Height == 0 || Height == INT_MIN || Bits == 0 || Bits > 64 )
+				{
+					return false;
+				}
+				if ( Compression == 0 )
+				{
+					const uint64 RowBytes = ( ( static_cast<uint64>( Width ) * Bits + 31 ) / 32 ) * 4;
+					const uint64 AbsHeight = static_cast<uint64>( Height < 0 ? -static_cast<int64>( Height ) : Height );
+					if ( static_cast<uint64>( DataOffset ) + RowBytes * AbsHeight > Size )
+					{
+						return false;
+					}
+				}
+			}
+			return true;
+		}
+		if ( Size >= 2 && Data[0] == 0xFF && Data[1] == 0xD8 )
+		{
+			// 終わりの印（FF D9）が、末尾（0 の詰め物を除いて）にある
+			usize End = Size;
+			while ( End > 2 && Data[End - 1] == 0 )
+			{
+				--End;
+			}
+			return End >= 4 && Data[End - 2] == 0xFF && Data[End - 1] == 0xD9;
+		}
+		return true;
+	}
+
+	// ファイルの中身を全部読んで、ImageDataLooksComplete で確かめる。読めなければ false
+	bool FileLooksComplete( const FString& Path )
+	{
+		const HANDLE File = CreateFileW( Path.ToWide().GetData(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr );
+		if ( File == INVALID_HANDLE_VALUE )
+		{
+			return false;
+		}
+		LARGE_INTEGER FileSize = {};
+		bool bComplete = false;
+		if ( GetFileSizeEx( File, &FileSize ) && FileSize.QuadPart > 0 && FileSize.QuadPart <= static_cast<LONGLONG>( INT_MAX ) )
+		{
+			TArray<uint8> Bytes;
+			Bytes.SetNum( static_cast<int32>( FileSize.QuadPart ) );
+			DWORD NumRead = 0;
+			if ( ReadFile( File, Bytes.GetData(), static_cast<DWORD>( FileSize.QuadPart ), &NumRead, nullptr ) && NumRead == static_cast<DWORD>( FileSize.QuadPart ) )
+			{
+				bComplete = ImageDataLooksComplete( Bytes.GetData(), static_cast<usize>( NumRead ) );
+			}
+		}
+		CloseHandle( File );
+		return bComplete;
+	}
+
+	// ソフトウェアイメージ（ARGB8）の全画素を読む。呼ぶ側が、ソフトウェアイメージを消す
+	bool ReadSoftImage( int Soft, int32& OutWidth, int32& OutHeight, TArray<FColor32>& OutPixels )
+	{
+		int Width = 0;
+		int Height = 0;
+		if ( Soft < 0 || GetSoftImageSize( Soft, &Width, &Height ) != 0 || Width < 1 || Height < 1 || Width > FRenderTargetDesc::MaxSize || Height > FRenderTargetDesc::MaxSize )
+		{
+			return false;
+		}
+		OutPixels.SetNum( Width * Height );
+		for ( int Row = 0; Row < Height; ++Row )
+		{
+			for ( int Column = 0; Column < Width; ++Column )
+			{
+				int Red = 0;
+				int Green = 0;
+				int Blue = 0;
+				int Alpha = 0;
+				GetPixelSoftImage_Unsafe_ARGB8( Soft, Column, Row, &Red, &Green, &Blue, &Alpha );
+				OutPixels[Row * Width + Column] = FColor32( static_cast<uint8>( Red ), static_cast<uint8>( Green ), static_cast<uint8>( Blue ), static_cast<uint8>( Alpha ) );
+			}
+		}
+		OutWidth = Width;
+		OutHeight = Height;
+		return true;
+	}
+}
+
+int32 CDxLibAssetBackend::CreateTextureFromPixels( int32 Width, int32 Height, const FColor32* Pixels )
+{
+	if ( !IsValidPixelSize( Width, Height, Pixels ) )
+	{
+		return NAsset::InvalidHandle;
+	}
+	BASEIMAGE Base = {};
+	if ( !FillBaseImage( Base, Width, Height, Pixels ) )
+	{
+		return NAsset::InvalidHandle;
+	}
+	const int Handle = CreateGraphFromBaseImage( &Base );
+	ReleaseBaseImage( &Base );
+	return Handle >= 0 ? Handle : NAsset::InvalidHandle;
+}
+
+bool CDxLibAssetBackend::UpdateTexturePixels( int32 Texture, int32 Width, int32 Height, const FColor32* Pixels )
+{
+	int TextureWidth = 0;
+	int TextureHeight = 0;
+	if ( Texture < 0 || !IsValidPixelSize( Width, Height, Pixels ) || GetGraphSize( Texture, &TextureWidth, &TextureHeight ) != 0 || TextureWidth != Width || TextureHeight != Height )
+	{
+		return false;
+	}
+	BASEIMAGE Base = {};
+	if ( !FillBaseImage( Base, Width, Height, Pixels ) )
+	{
+		return false;
+	}
+	const int Result = ReCreateGraphFromBaseImage( &Base, Texture );
+	ReleaseBaseImage( &Base );
+	return Result == 0;
+}
+
+bool CDxLibAssetBackend::DecodeImage( const void* FileImage, usize Size, int32& OutWidth, int32& OutHeight, TArray<FColor32>& OutPixels )
+{
+	if ( FileImage == nullptr || Size == 0 || Size > static_cast<usize>( INT_MAX ) )
+	{
+		return false;
+	}
+	// DxLib は、切れた PNG などを渡すと、範囲外を読んで、アクセス違反で落ちる（実測。メモリからもファイルからも）。
+	// 構造を確かめられる形式（PNG・BMP・JPEG）は、最後まであるかを、先に確かめる
+	if ( !ImageDataLooksComplete( static_cast<const uint8*>( FileImage ), Size ) )
+	{
+		return false;
+	}
+	const int Soft = LoadARGB8ColorSoftImageToMem( FileImage, static_cast<int>( Size ) );
+	const bool bRead = ReadSoftImage( Soft, OutWidth, OutHeight, OutPixels );
+	if ( Soft >= 0 )
+	{
+		DeleteSoftImage( Soft );
+	}
+	return bRead;
+}
+
+bool CDxLibAssetBackend::DecodeImageFile( const FString& Path, int32& OutWidth, int32& OutHeight, TArray<FColor32>& OutPixels )
+{
+	if ( Path.IsEmpty() )
+	{
+		return false;
+	}
+	// 切れた画像で DxLib が落ちないよう、ファイルの中身を先に確かめる（DecodeImage と同じ理由）
+	if ( !FileLooksComplete( Path ) )
+	{
+		return false;
+	}
+	const int Soft = LoadARGB8ColorSoftImage( *Path );
+	const bool bRead = ReadSoftImage( Soft, OutWidth, OutHeight, OutPixels );
+	if ( Soft >= 0 )
+	{
+		DeleteSoftImage( Soft );
+	}
+	return bRead;
+}
+
+bool CDxLibAssetBackend::SavePixels( int32 Width, int32 Height, const FColor32* Pixels, const FString& Path, const FImageSaveOptions& Options )
+{
+	if ( Path.IsEmpty() || !IsValidPixelSize( Width, Height, Pixels ) )
+	{
+		return false;
+	}
+	const int Soft = MakeARGB8ColorSoftImage( Width, Height );
+	if ( Soft < 0 )
+	{
+		return false;
+	}
+	for ( int32 Row = 0; Row < Height; ++Row )
+	{
+		for ( int32 Column = 0; Column < Width; ++Column )
+		{
+			const FColor32& Pixel = Pixels[Row * Width + Column];
+			DrawPixelSoftImage_Unsafe_ARGB8( Soft, Column, Row, Pixel.r, Pixel.g, Pixel.b, Pixel.a );
+		}
+	}
+	int Result = -1;
+	switch ( Options.Format )
+	{
+	case EImageFileFormat::Bmp:
+		Result = SaveSoftImageToBmp( *Path, Soft );
+		break;
+	case EImageFileFormat::Jpeg:
+		Result = SaveSoftImageToJpeg( *Path, Soft, NMath::Clamp( Options.JpegQuality, 0, 100 ), TRUE );
+		break;
+	default:
+		Result = SaveSoftImageToPng( *Path, Soft, NMath::Clamp( Options.PngCompression, -1, 9 ) );
+		break;
+	}
+	DeleteSoftImage( Soft );
+	return Result == 0;
 }
 
 //-----------------------------------------------------------------------------

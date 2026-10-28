@@ -107,10 +107,12 @@
     <ClCompile Include="Library\Framework\Animation\SpriteAnimator.cpp" />
     <ClCompile Include="Library\Framework\Asset\AssetManager.cpp" />
     <ClCompile Include="Library\Framework\Asset\AssetManagerEffects.cpp" />
+    <ClCompile Include="Library\Framework\Asset\AssetManagerImages.cpp" />
     <ClCompile Include="Library\Framework\Asset\AssetManagerModels.cpp" />
     <ClCompile Include="Library\Framework\Asset\AssetManagerTextureRegions.cpp" />
     <ClCompile Include="Library\Framework\Asset\AssetManagerWorlds.cpp" />
     <ClCompile Include="Library\Framework\Asset\DefinitionEditing.cpp" />
+    <ClCompile Include="Library\Framework\Asset\DynamicTexture.cpp" />
     <ClCompile Include="Library\Framework\Asset\EditorAssetInfo.cpp" />
     <ClCompile Include="Library\Framework\Asset\EffectAsset.cpp" />
     <ClCompile Include="Library\Framework\Asset\Font.cpp" />
@@ -118,6 +120,7 @@
     <ClCompile Include="Library\Framework\Asset\MeshBuffer.cpp" />
     <ClCompile Include="Library\Framework\Asset\Model.cpp" />
     <ClCompile Include="Library\Framework\Asset\ModelAnimationAsset.cpp" />
+    <ClCompile Include="Library\Framework\Asset\PixelImage.cpp" />
     <ClCompile Include="Library\Framework\Asset\RenderTarget.cpp" />
     <ClCompile Include="Library\Framework\Asset\Sound.cpp" />
     <ClCompile Include="Library\Framework\Asset\SpriteSheet.cpp" />
@@ -538,6 +541,7 @@
     <ClInclude Include="Library\Framework\Asset\AssetManager.h" />
     <ClInclude Include="Library\Framework\Asset\DefinitionDocument.h" />
     <ClInclude Include="Library\Framework\Asset\DefinitionEditing.h" />
+    <ClInclude Include="Library\Framework\Asset\DynamicTexture.h" />
     <ClInclude Include="Library\Framework\Asset\EditorAssetInfo.h" />
     <ClInclude Include="Library\Framework\Asset\EffectAsset.h" />
     <ClInclude Include="Library\Framework\Asset\Font.h" />
@@ -545,6 +549,7 @@
     <ClInclude Include="Library\Framework\Asset\MeshBuffer.h" />
     <ClInclude Include="Library\Framework\Asset\Model.h" />
     <ClInclude Include="Library\Framework\Asset\ModelAnimationAsset.h" />
+    <ClInclude Include="Library\Framework\Asset\PixelImage.h" />
     <ClInclude Include="Library\Framework\Asset\RenderTarget.h" />
     <ClInclude Include="Library\Framework\Asset\Sound.h" />
     <ClInclude Include="Library\Framework\Asset\SpriteSheet.h" />

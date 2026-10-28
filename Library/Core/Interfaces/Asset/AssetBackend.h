@@ -97,6 +97,20 @@ public:
 	virtual bool SaveRenderTarget( int32 /*Target*/, int32 /*X*/, int32 /*Y*/, int32 /*Width*/, int32 /*Height*/, const FString& /*Path*/, const FImageSaveOptions& /*Options*/ ) { return false; }
 
 	//-------------------------------------------------------------------------
+	// CPU 側の画像（画素）との行き来。画素は FColor32（透明度は、乗算されていない普通のアルファ）で、左上から右へ、上から下へ並ぶ
+	//-------------------------------------------------------------------------
+	// 画素（Width x Height 個）から画像を作る。大きさが 1〜16384 の外・Pixels が nullptr・作れなかったときは InvalidHandle。解放は DeleteTexture
+	virtual int32 CreateTextureFromPixels( int32 /*Width*/, int32 /*Height*/, const FColor32* /*Pixels*/ ) { return NAsset::InvalidHandle; }
+	// CreateTextureFromPixels で作った画像の中身を、画素に替える。画像と同じ大きさでなければ false。ハンドルは変わらない
+	virtual bool UpdateTexturePixels( int32 /*Texture*/, int32 /*Width*/, int32 /*Height*/, const FColor32* /*Pixels*/ ) { return false; }
+	// ファイルの中身（PNG・BMP・JPEG など）を、画素に展開する。透明度を持たない形式は、不透明（A = 255）。壊れたデータ・読めない形式なら false
+	virtual bool DecodeImage( const void* /*FileImage*/, usize /*Size*/, int32& /*OutWidth*/, int32& /*OutHeight*/, TArray<FColor32>& /*OutPixels*/ ) { return false; }
+	// ファイル（フルパス）を、画素に展開する。読めなければ false
+	virtual bool DecodeImageFile( const FString& /*Path*/, int32& /*OutWidth*/, int32& /*OutHeight*/, TArray<FColor32>& /*OutPixels*/ ) { return false; }
+	// 画素（Width x Height 個）を、Path のファイルに保存する。呼ぶ側が、大きさを 1 以上にしてある。失敗したら false
+	virtual bool SavePixels( int32 /*Width*/, int32 /*Height*/, const FColor32* /*Pixels*/, const FString& /*Path*/, const FImageSaveOptions& /*Options*/ ) { return false; }
+
+	//-------------------------------------------------------------------------
 	// 3D モデル（アニメーションだけが入ったファイルも、モデルとして読み込む）
 	//-------------------------------------------------------------------------
 	virtual int32 LoadModel( const FString& Path, bool bAsync ) = 0;

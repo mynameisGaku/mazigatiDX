@@ -127,6 +127,9 @@
     <ClCompile Include="Library\Framework\Asset\AssetManagerEffects.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\AssetManagerImages.cpp">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Asset\AssetManagerModels.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
@@ -137,6 +140,9 @@
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\DefinitionEditing.cpp">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\DynamicTexture.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\EditorAssetInfo.cpp">
@@ -158,6 +164,9 @@
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\ModelAnimationAsset.cpp">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\PixelImage.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\RenderTarget.cpp">
@@ -1416,6 +1425,9 @@
     <ClInclude Include="Library\Framework\Asset\DefinitionEditing.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\DynamicTexture.h">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Asset\EditorAssetInfo.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
@@ -1435,6 +1447,9 @@
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\ModelAnimationAsset.h">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\PixelImage.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\RenderTarget.h">

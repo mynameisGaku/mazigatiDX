@@ -34,6 +34,11 @@ public:
 	int32 CreateRenderTarget( const FRenderTargetDesc& Desc ) override;
 	bool ReadRenderTargetPixels( int32 Target, int32 X, int32 Y, int32 Width, int32 Height, TArray<FColor32>& OutPixels ) override;
 	bool SaveRenderTarget( int32 Target, int32 X, int32 Y, int32 Width, int32 Height, const FString& Path, const FImageSaveOptions& Options ) override;
+	int32 CreateTextureFromPixels( int32 Width, int32 Height, const FColor32* Pixels ) override;
+	bool UpdateTexturePixels( int32 Texture, int32 Width, int32 Height, const FColor32* Pixels ) override;
+	bool DecodeImage( const void* FileImage, usize Size, int32& OutWidth, int32& OutHeight, TArray<FColor32>& OutPixels ) override;
+	bool DecodeImageFile( const FString& Path, int32& OutWidth, int32& OutHeight, TArray<FColor32>& OutPixels ) override;
+	bool SavePixels( int32 Width, int32 Height, const FColor32* Pixels, const FString& Path, const FImageSaveOptions& Options ) override;
 
 	int32 LoadModel( const FString& Path, bool bAsync ) override;
 	int32 DuplicateModel( int32 Source ) override;

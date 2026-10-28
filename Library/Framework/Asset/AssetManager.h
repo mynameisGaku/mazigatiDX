@@ -6,10 +6,12 @@
 #include "Library/Core/Interfaces/Tickable/ITickable.h"
 #include "Library/Core/Log/LogCategory.h"
 #include "Library/Core/Memory/SharedPtr.h"
+#include "Library/Framework/Asset/DynamicTexture.h"
 #include "Library/Framework/Asset/Font.h"
 #include "Library/Framework/Asset/Import/ModelExporter.h"
 #include "Library/Framework/Asset/Model.h"
 #include "Library/Framework/Asset/ModelAnimationAsset.h"
+#include "Library/Framework/Asset/PixelImage.h"
 #include "Library/Framework/Asset/RenderTarget.h"
 #include "Library/Framework/Asset/Sound.h"
 #include "Library/Framework/Asset/SpriteSheet.h"
@@ -163,6 +165,21 @@ public:
 	// 描画先（描き込める画像）を作る。Name が同じで、設定も同じものがまだ使われていれば、それを共有する（設定が違えば、警告して別に作る）。
 	// Desc が作れない値（大きさが 1〜16384 の外など）・作れなかったときは、ログを出して nullptr
 	TSharedPtr<CRenderTarget> CreateRenderTarget( const FString& Name, const FRenderTargetDesc& Desc );
+
+	// CPU 側の画像（FPixelImage）から、画像を作る。Name が同じで、まだ使われているものがあれば、それを共有する（中身は替えない。替えるときは CDynamicTexture::Update）。
+	// 画像が空（IsValid が false）・作れなかったときは、ログを出して nullptr
+	TSharedPtr<CDynamicTexture> CreateDynamicTexture( const FString& Name, const FPixelImage& Image );
+	// 画像ファイル（PNG・BMP・JPEG など。パスは LoadTexture と同じ）を、CPU 側の画像に読み込む。読めなければ、ログを出して空の画像（IsValid が false）。透明度を持たない形式は、不透明
+	FPixelImage LoadPixelImage( const FString& Path );
+	// ファイルの中身（PNG・BMP・JPEG など）を、CPU 側の画像に展開する。壊れたデータなら、ログを出して空の画像
+	FPixelImage DecodePixelImage( const void* FileImage, usize Size );
+	// CPU 側の画像をファイルに保存する（形式は Options.Format。相対パスはルートフォルダーの下で、途中のフォルダーは作る）。空の画像・保存できなかったときは false
+	bool SavePixelImage( const FPixelImage& Image, const FString& Path, const FImageSaveOptions& Options = FImageSaveOptions() );
+	// 画像を、格子（FSpriteSheetGrid。余白・隙間・コマの大きさ・並べ方）で分けて、1 コマずつの画像の並びにする（LoadDivGraph 相当）。
+	// 元の画像を共有する派生画像なので、メモリは増えない（元の画像は、派生画像が残る間、保たれる）。並びは、格子のコマの番号の順。格子が画像の外へはみ出すコマは nullptr
+	TArray<TSharedPtr<CTexture>> SplitTexture( const TSharedPtr<CTexture>& Source, const FSpriteSheetGrid& Grid );
+	// 画像ファイルを読み込んで、SplitTexture する
+	TArray<TSharedPtr<CTexture>> LoadTextureGrid( const FString& Path, const FSpriteSheetGrid& Grid );
 
 	//-------------------------------------------------------------------------
 	// スプライトシート

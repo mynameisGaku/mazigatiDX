@@ -3,6 +3,7 @@
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Interfaces/Render/RenderTargetTypes.h"
+#include "Library/Framework/Asset/PixelImage.h"
 #include "Library/Framework/Asset/Texture.h"
 #include "Library/Math/Color.h"
 
@@ -43,6 +44,8 @@ public:
 	bool ReadPixels( int32 X, int32 Y, int32 Width, int32 Height, TArray<FColor32>& OutPixels ) const;
 	// 1 画素を読む。(X, Y) が描画先の外なら false
 	bool ReadPixel( int32 X, int32 Y, FColor32& OutColor ) const;
+	// 全体を、CPU 側の画像（FPixelImage）に読む。読めなければ、空の画像（IsValid が false）
+	FPixelImage ReadPixelImage() const;
 
 	// 全体をファイルに保存する。形式は Options.Format（既定は Png。透明度も残る）。途中のフォルダーは作る。メインスレッドだけ
 	bool Save( const FString& Path, const FImageSaveOptions& Options = FImageSaveOptions() ) const;
