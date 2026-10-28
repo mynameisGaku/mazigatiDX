@@ -39,7 +39,7 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
 
 ## 3. 資源とハンドル
 
-- DxLib のハンドル（`int`）を**そのまま公開しない**。画像・モデル・音・フォントなどは、型のある所有者（`CTexture` `CModel` `CSound` `CFont` など。`CAssetManager` が読み込み・共有・破棄を行う）か、型付きのハンドルで扱う。
+- DxLib のハンドル（`int`）を**そのまま公開しない**。画像・モデル・音・フォントなどは、型のある所有者（`CTexture` `CModel` `CSound` `CFont` など。`CAssetManager` が読み込み・共有・破棄を行う）か、型付きのハンドルで扱う。画像は、描画の窓口（`FDrawContext`）に、インターフェース `IImage`（`CTexture` が実装。`Core/Interfaces/Render/IImage.h`）か、型付きのハンドル `FImageHandle` で渡す。描画の側は、`CTexture` などの具体的な型を知らない。
 - 資源の寿命は参照（共有ポインター）で決める。使う側が強参照を持つ間は有効で、最後の参照が消えたとき、メインスレッドで破棄する（別スレッドからの解放は遅延させて受ける）。
 - 読み込みの失敗は、空の参照とログで返す。準備待ち（非同期）と恒久的な失敗を取り違えない。
 - 無効なハンドルを表す値（`-1`）は実装の中の都合で、利用者に見せない。
@@ -47,7 +47,7 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
 ## 4. スレッドと状態
 
 - DxLib はスレッドセーフではない。**DxLib を呼ぶ関数は、メインスレッドからだけ呼ぶ**。窓口のコメントに明記する。
-- 描画は「記録 → 実行」に分ける。記録（`FDrawContext`）は並行にできるが、実行（`IDrawExecutor`）はメインスレッドで、記録された順に DxLib を呼ぶ。新しい描画を足すときは、命令（`EDrawCommand`）・データ・記録・実行をそろえる。旧命令の番号と形式は変えない。描画システムの外（シーンの `OnDraw` など、メインスレッド）から描くときは、`FImmediateDraw Draw( GetDrawExecutor() );` で同じ書き方のまま、その場で実行できる。
+- 描画は「記録 → 実行」に分ける。記録（`FDrawContext`）は並行にできるが、実行（`IDrawExecutor`）はメインスレッドで、記録された順に DxLib を呼ぶ。新しい描画を足すときは、命令（`EDrawCommand`）・データ・記録・実行をそろえる。旧命令の番号と形式は変えない。オブジェクトの描画は、DX12 のコマンドリストと同じ方式にする: `CGameObject::Draw( FDrawContext& CommandList )` は、シーンが渡すコマンドリストへ記録するだけで、DxLib も実行先も知らない（シーンがオブジェクトごとにコマンドリストを空にして渡し、記録されたものを描画順に実行する）。オブジェクトの外（シーンの `OnDraw` など、メインスレッド）から描くときは、`FImmediateDraw Draw( GetDrawExecutor() );` で同じ書き方のまま、その場で実行できる。
 - DxLib は**大域の状態**（ブレンド・明るさ・描画先・カメラ・ライト・Z バッファ・カリング・描画領域など）を持つ。包むときは、状態を変えたら**元に戻す**ことを実装の責任にするか、スコープで戻す型を用意する。呼び出し側に「前の状態を覚えておいて戻す」ことを要求しない。
 - 取得できない状態（DxLib に getter がないもの）は推測せず、フレームワーク側が明示的に持つ。
 
@@ -89,7 +89,7 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
 
 | 箇所 | ずれ |
 |---|---|
-| `FDrawContext` の `Sprite` / `TextWithFont` / `Billboard3D` / `Model` / `Mesh3D` | 画像・フォント・モデルを `int32` のハンドルで受け取っている。型のある資源（`CTexture` など）か型付きハンドルで受けたい |
-| `Source/Scene/GameScene`・`Source/Object` のサンプル | 描画に DxLib の関数（`DrawBox` `DrawString`）を直接呼んでいる。`FImmediateDraw`（`TitleScene` は移行済み）で書き直す |
-| 2D 描画の座標 | 図形は、DxLib の分け方どおり、整数の座標（`Box` / `Circle` / `Line` / `Pixel` / `Triangle` / `Quad` / `Oval` / `RoundBox`）と、`float32` の座標でなめらかな `*AA` に分けた（M2-1）。画像（`Sprite` は `float32`）との型の違いは、画像の描画を包む M2-2 で決める |
+| `FDrawContext` の `TextWithFont` / `Billboard3D` / `Quad3D` / `Model` / `Mesh3D` | フォント・モデル・3D の画像を `int32` のハンドルで受け取っている。型のある資源か型付きハンドルで受けたい（2D の画像の描画 `Image` など と `Sprite` / `SpriteRect` は、`IImage` / `FImageHandle` で受けられる。M2-2。フォントは M2-7、3D は M3・M4 で） |
+| `Source/Scene/GameScene` のサンプル | 描画に DxLib の関数（`DrawBox` `DrawString`）を直接呼んでいる。`FImmediateDraw`（`TitleScene` は移行済み）で書き直す（`Source/Object` のオブジェクトは、コマンドリスト方式に移行済み） |
+| 2D 描画の座標 | 図形は、DxLib の分け方どおり、整数の座標（`Box` / `Circle` / `Line` / `Pixel` / `Triangle` / `Quad` / `Oval` / `RoundBox`）と、`float32` の座標でなめらかな `*AA` に分けた（M2-1）。画像の描画（`Image` など。M2-2）は、座標を `float32` にした（`Tile` だけは、DxLib の `DrawTile` に合わせて整数）。`Box` / `Circle` / `Line` の整数（DxLib の整数版）との混在は、そのまま |
 | DxLib の網羅 | 関数名で約 8%。2D・文字・3D のライトと影・シェーダー・フィルター・ムービー・ファイル（DXA）などが未 |
