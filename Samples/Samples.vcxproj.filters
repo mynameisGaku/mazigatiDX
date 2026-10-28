@@ -37,6 +37,12 @@
     <ClCompile Include="Source\Input\MouseView.cpp">
       <Filter>Source\Input</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Shapes\ShapeShowcase.cpp">
+      <Filter>Source\Shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Shapes\ShapesSample.cpp">
+      <Filter>Source\Shapes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Application\SamplesApplication.h">
@@ -75,6 +81,12 @@
     <ClInclude Include="Source\Input\MouseView.h">
       <Filter>Source\Input</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Shapes\ShapeShowcase.h">
+      <Filter>Source\Shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Shapes\ShapesSample.h">
+      <Filter>Source\Shapes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source">
@@ -94,6 +106,9 @@
     </Filter>
     <Filter Include="Source\Input">
       <UniqueIdentifier>{FFE14168-86E4-9D5A-B4DA-C4ACB9D88FCD}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Shapes">
+      <UniqueIdentifier>{2AAD6A14-B7C3-4D74-4D10-4E34CCB42B5F}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
