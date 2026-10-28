@@ -73,6 +73,13 @@ DxLibでは個体の選択meshだけを一時非表示にし、残りを通常�
 
 NaN・無限大・絶対値が1e7を超える値、範囲の外の列挙型の値は記録しません。実行の終わりに戻す値は、DxLibに取得関数があるもの（加算する色・アルファテスト・描画モード・クリップ範囲）は実行の前の値、ないもの（2Dの変換）は既定の値です。見本は`Samples`の`DrawState`です（`Samples.exe --sample=DrawState`）。
 
+描画先（レンダーターゲット）は、描き込める画像です。`Assets->CreateRenderTarget( "Minimap", Desc )`で作ります（`FRenderTargetDesc`: 幅・高さは1〜16384、`bAlpha`でアルファチャンネル（描いていない所を透明のまま残す）、`bDepth`でZバッファ、`MultiSamples`でマルチサンプル。作れない値は`nullptr`）。同じ名前・同じ設定なら共有し、最後の参照が消えると自動で解放します。`CRenderTarget`は`CTexture`でもあるので、描いたあとは`IImage`として、ふつうの画像と同じく`CommandList.Image( X, Y, Minimap )`などで画面や別の描画先へ貼れます。
+- 描く: `FTargetScope Scope( CommandList, Minimap );`のスコープの中だけ、描く先が替わります（`PushTarget` / `PopTarget`でも同じ。入れ子にできます）。替えた先は、クリップ範囲なし・2Dの変換なしから始まり、戻ると、替える前の範囲・変換に戻ります。ブレンドなどの状態と3Dのカメラは、替えても変わりません。そのオブジェクトの分が終わると、`PopTarget`が足りなくても、始める前の描画先に戻ります。描画先にできない画像（ふつうの画像）を渡すと、対の`PopTarget`まで、描く命令を飛ばします（元の描画先へ描いてしまいません）。
+- `Clear( 色 )`: いまの描画先の全体を、色とアルファのまま塗りつぶします（既定は透明な黒）。DxLibの`ClearDrawScreen`と同じく、クリップ範囲やブレンドには関係なく、全体を塗ります。
+- `CopyScreen( X0, Y0, X1, Y1, 画像 )`（`GetDrawScreenGraph`）: いまの描画先の矩形を、同じ大きさの描画先へ写します（大きさが違う・矩形が描画先の外へはみ出す場合は、何もしません）。画面全体の一部を写すときは、画面（バックバッファ）が描画先のときに使います。
+- 読む・保存する: `ReadPixels( X, Y, 幅, 高さ, 出力 )` / `ReadPixel( X, Y, 色 )`は画素（`FColor32`。アルファを持たない描画先は255）を、`Save( パス, FImageSaveOptions )` / `SaveRegion( ... )`はファイル（Png・Bmp・Jpeg。Pngだけ透明度も残る。途中のフォルダーは作ります）を作ります。矩形が描画先の外へはみ出す場合は`false`です。描画は「記録 → 実行」なので、読む・保存するのは、描いたもの（オブジェクトの`Draw`）が実行されたあと（次の`Tick`など）にします。どちらも、メインスレッドだけです。
+見本は`Samples`の`RenderTarget`です（`Samples.exe --sample=RenderTarget`。ミニマップへ描き、貼り、画面の一部を写し、色を読み、Sキーで保存します）。
+
 組み込みのデバッグ表示は、`Library/DebugUI/DebugOverlay.h`の`CDebugOverlay`です。ゲームインスタンスが持ち、`Init() / Tick() / Draw( *this ) / Term()`を呼ぶと、F1の窓（FPS・入力・シーン・ログ）、F2のプロファイラー、F3のコンソール（Debugだけ）、F11のフルスクリーンが使えます。`OnDrawPanelItems`と`OnDrawWindows`に関数を渡すと、ゲーム側の項目や窓を同じ画面に並べられます。キーの処理は`HandleKeys`に切り出してあり、偽の入力・プロファイラー・プラットフォームで確かめられます。
 
 ## 粒子の力場

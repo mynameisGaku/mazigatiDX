@@ -39,7 +39,7 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
 
 ## 3. 資源とハンドル
 
-- DxLib のハンドル（`int`）を**そのまま公開しない**。画像・モデル・音・フォントなどは、型のある所有者（`CTexture` `CModel` `CSound` `CFont` など。`CAssetManager` が読み込み・共有・破棄を行う）か、型付きのハンドルで扱う。画像は、描画の窓口（`FDrawContext`）に、インターフェース `IImage`（`CTexture` が実装。`Core/Interfaces/Render/IImage.h`）か、型付きのハンドル `FImageHandle` で渡す。描画の側は、`CTexture` などの具体的な型を知らない。
+- DxLib のハンドル（`int`）を**そのまま公開しない**。画像・モデル・音・フォントなどは、型のある所有者（`CTexture` `CModel` `CSound` `CFont` など。`CAssetManager` が読み込み・共有・破棄を行う）か、型付きのハンドルで扱う。描画先（`MakeScreen`）は `CRenderTarget`（`CTexture` を継承。`CAssetManager::CreateRenderTarget` で作り、`IAssetBackend` の `CreateRenderTarget` / `ReadRenderTargetPixels` / `SaveRenderTarget` が、DxLib を呼ぶ）。画像は、描画の窓口（`FDrawContext`）に、インターフェース `IImage`（`CTexture` が実装。`Core/Interfaces/Render/IImage.h`）か、型付きのハンドル `FImageHandle` で渡す。描画の側は、`CTexture` などの具体的な型を知らない。
 - 資源の寿命は参照（共有ポインター）で決める。使う側が強参照を持つ間は有効で、最後の参照が消えたとき、メインスレッドで破棄する（別スレッドからの解放は遅延させて受ける）。
 - 読み込みの失敗は、空の参照とログで返す。準備待ち（非同期）と恒久的な失敗を取り違えない。
 - 無効なハンドルを表す値（`-1`）は実装の中の都合で、利用者に見せない。
@@ -49,7 +49,7 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
 - DxLib はスレッドセーフではない。**DxLib を呼ぶ関数は、メインスレッドからだけ呼ぶ**。窓口のコメントに明記する。
 - 描画は「記録 → 実行」に分ける。記録（`FDrawContext`）は並行にできるが、実行（`IDrawExecutor`）はメインスレッドで、記録された順に DxLib を呼ぶ。新しい描画を足すときは、命令（`EDrawCommand`）・データ・記録・実行をそろえる。旧命令の番号と形式は変えない。オブジェクトの描画は、DX12 のコマンドリストと同じ方式にする: `CGameObject::Draw( FDrawContext& CommandList )` は、シーンが渡すコマンドリストへ記録するだけで、DxLib も実行先も知らない（シーンがオブジェクトごとにコマンドリストを空にして渡し、記録されたものを描画順に実行する）。オブジェクトの外（シーンの `OnDraw` など、メインスレッド）から描くときは、`FImmediateDraw Draw( GetDrawExecutor() );` で同じ書き方のまま、その場で実行できる。
 - DxLib は**大域の状態**（ブレンド・明るさ・描画先・カメラ・ライト・Z バッファ・カリング・描画領域など）を持つ。包むときは、状態を変えたら**元に戻す**ことを実装の責任にするか、スコープで戻す型を用意する。呼び出し側に「前の状態を覚えておいて戻す」ことを要求しない。
-- 描画の状態（ブレンド・カスタムブレンド・加算する色・アルファテスト・描画モード・クリップ範囲・2D の変換）は、`FDrawContext` に記録して変え、`IDrawExecutor::Execute` の終わり（オブジェクトごと）で元に戻す。DxLib に取得関数がある状態（加算する色・アルファテスト・描画モード・クリップ範囲）は**実行の前の値**へ、ない状態（2D の変換）は既定の値へ戻すので、呼び出し側が前の値を覚えておく必要はない。クリップ範囲は入れ子（`PushClip` / `PopClip` / `FClipScope`）にできる。
+- 描画の状態（ブレンド・カスタムブレンド・加算する色・アルファテスト・描画モード・クリップ範囲・2D の変換・描画先）は、`FDrawContext` に記録して変え、`IDrawExecutor::Execute` の終わり（オブジェクトごと）で元に戻す。DxLib に取得関数がある状態（加算する色・アルファテスト・描画モード・クリップ範囲）は**実行の前の値**へ、ない状態（2D の変換）は既定の値へ戻すので、呼び出し側が前の値を覚えておく必要はない。クリップ範囲は入れ子（`PushClip` / `PopClip` / `FClipScope`）に、描画先も入れ子（`PushTarget` / `PopTarget` / `FTargetScope`）にできる。描画先を替えると、替えた先は、クリップなし・2D の変換なしから始まり、戻すと替える前に戻る（3D のカメラは、替えても変わらない）。
 - 取得できない状態（DxLib に getter がないもの）は推測せず、フレームワーク側が明示的に持つ。
 
 ## 5. エラー
