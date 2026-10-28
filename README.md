@@ -44,6 +44,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\NewProject.ps1 -Name M
 
 作ったプロジェクトの`README.md`に、構成とシーン・オブジェクトの足し方があります。詳しくは[開発手順](Docs/DEVELOPMENT.md)を参照してください。
 
+## サンプルを見る
+
+`project.sln`の`Samples`プロジェクト（`Samples`フォルダー）が、機能別のサンプル集です。起動すると一覧が出ます。サンプルの足し方と構成は[Samples/README.md](Samples/README.md)にあります。
+
 ## エフェクトを使う
 
 Effect Editorの`Preset`から元になる表現を選び、未保存のコピーを編集します。`File > Save as...`で`Effects/MyEffect.effect.json`などへ保存し、World Editorのアセット一覧から配置します。

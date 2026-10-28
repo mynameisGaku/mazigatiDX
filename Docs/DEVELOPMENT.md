@@ -110,12 +110,13 @@ Worldの`Components.Effect`には、任意の`Target`（追従先オブジェク
 
 ## ソリューションの構成
 
-`project.sln`は、二つのプロジェクトからなります。
+`project.sln`は、三つのプロジェクトからなります。
 
 |プロジェクト|種類|中身|
 |---|---|---|
 |`mazigatiDX`|静的ライブラリ|`Library`（フレームワーク本体）と`VendorModules`（第三者のライブラリ）|
 |`project`|実行ファイル|`Source`（このリポジトリのゲーム。検査を置いたときはその分も）|
+|`Samples`|実行ファイル|`Samples/Source`（機能別のサンプル集。下の「サンプル集」）|
 
 - フレームワークを使うプロジェクトは、`Build/mazigatiDX.props`を取り込み、`mazigatiDX`への参照を持ちます。propsが、インクルード検索先（`#include "Library/..."`）、C++17、DxLibとSDL3のライブラリ検索先、`main`で始められる入口の設定、`SDL3.dll`のコピーを引き受けるので、ゲーム側の`.vcxproj`は短く済みます。
 - 入口は`main`です。`Source/main.cpp`が`NGameMain::RunGame<CGameApplication>()`を呼ぶだけで、リーク報告、ログ（コンソールとファイル）、窓の設定（`Config/ScreenConfig.json`）、終了時の後片付けは、`Library/Framework/Engine/GameMain.h`が担当します。
@@ -133,6 +134,16 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\NewProject.ps1 -Name M
 ```
 
 `C:\dev\MyGame`に、ソリューション・プロジェクト・`Source`（入口・ゲームインスタンス・タイトルとプレイのシーン・プレイヤー）・`Config/ScreenConfig.json`・`Assets`・`README.md`ができます。プロジェクトは、フレームワークのフォルダーを相対パスで指し（`.vcxproj`の`<MazigatiDXRoot>`と`.sln`）、`Build/mazigatiDX.props`と静的ライブラリ`mazigatiDX`を使います。DxLibは`C:\DxLib`を探します（別の場所なら、環境変数`MazigatiDxLibDir`と`MazigatiDxLibVcDir`）。ファイルを足したり消したりしたら、新しいプロジェクトの`GenerateProjectFiles.bat`で、ファイル一覧を作り直します。テンプレートの確認（作る・ビルド・起動・画面の確認）は、検査側の`RunTemplateTest.ps1`が行います。
+
+## サンプル集
+
+`Samples`は、機能を1つずつ動かして見られるサンプル集です。起動すると一覧が出て、上下キーで選び、Enterで動かし、サンプルの中からEscで一覧へ戻ります。`--sample=Hello`のように名前を付けて起動すると、一覧を飛ばしてそのサンプルから始まります（`NCommandLine::GetValue( "sample" )`で読みます）。
+
+- **1サンプル = 1フォルダー**（`Samples/Source/<名前>/`）。中身は、シーン1つ（`CSampleScene`を継承）と、そのシーンが置くオブジェクトのクラスで、**1ファイルに1クラス**です。シーンは何をどこに置くかだけを決め、描き方・動き方はオブジェクトが持ちます。
+- サンプルは、自分の`.cpp`の中で`TSampleRegistrar<T>`を静的変数として置いて、自分を`CSampleCatalog`へ登録します（名前・一覧に出す題・説明・並び順）。サンプルを足しても、アプリケーション（`Application/`）と一覧の画面（`Browser/`）は書き換えません。
+- 共通の部分は`Catalog/`にあります。`CSampleScene`は、Escで一覧へ戻る処理と見出しを持ち、サンプルは`OnTick / OnDraw`の代わりに`OnSampleTick / OnSampleDraw`を書きます。
+- サンプルを足すときは、`Tools/NewSample.ps1 -Name Physics -Title "..." -Description "..."`を使います。`Templates/Sample`から`Samples/Source/Physics/`にシーンのクラスを作り、プロジェクトのファイル一覧を更新します（並び順は、指定しなければ最後）。
+- 確認は、検査側の`RunSamplesTest.ps1`が行います（Debug / Releaseのビルドで警告0、一覧と各サンプルの起動と画面の画素、知らない名前、`NewSample.ps1`で足して消す）。一覧の上下キー・Enter・Escの操作は、入力を差し込む仕組みがまだないので、自動では確かめていません。
 
 ## プロジェクト生成と確認
 

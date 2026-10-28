@@ -11,13 +11,10 @@ echo  Root: %PROJECT_ROOT%
 echo ============================================
 echo.
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "%PROJECT_ROOT%\Tools\GenerateProjectFiles.ps1" -Root "%PROJECT_ROOT%"
-
-if %ERRORLEVEL% neq 0 (
-    echo.
-    echo [ERROR] Project file generation failed.
-    pause
-    exit /b 1
+rem The projects in the root folder (the framework and the game) and in the Samples folder.
+for %%R in ("%PROJECT_ROOT%" "%PROJECT_ROOT%\Samples") do (
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%PROJECT_ROOT%\Tools\GenerateProjectFiles.ps1" -Root "%%~R"
+    if errorlevel 1 goto failed
 )
 
 echo.
@@ -25,3 +22,9 @@ echo Press any key to close...
 pause > nul
 endlocal
 exit /b 0
+
+:failed
+echo.
+echo [ERROR] Project file generation failed.
+pause
+exit /b 1

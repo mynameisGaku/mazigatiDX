@@ -62,6 +62,10 @@ public:
 	FORCEINLINE bool IsDebugWindowVisible() const { return bShowDebugWindow; }
 	FORCEINLINE void SetDebugWindowVisible( bool bVisible ) { bShowDebugWindow = bVisible; }
 
+	// 画面の左上の状態行（FPS・窓の種類・シーン・主なキー）が出ているか（既定は出す。自分の文字を左上に出すゲームは、隠す）
+	FORCEINLINE bool IsStatusLineVisible() const { return bShowStatusLine; }
+	FORCEINLINE void SetStatusLineVisible( bool bVisible ) { bShowStatusLine = bVisible; }
+
 	// プロファイラーの窓が出ているか
 	FORCEINLINE bool IsProfilerWindowVisible() const { return bShowProfilerWindow; }
 
@@ -86,6 +90,7 @@ private:
 
 	TSharedPtr<CImGuiLogSink> LogWindow;
 	bool bShowDebugWindow = true;
+	bool bShowStatusLine = true;
 
 	bool bShowProfilerWindow = false;
 	FProfilerWindowState ProfilerWindowState;

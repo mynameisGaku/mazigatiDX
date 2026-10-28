@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>15.0</VCProjectVersion>
+    <ProjectGuid>{5E8B2C47-31A9-4D6F-8B0E-7A2C9D4F1E63}</ProjectGuid>
+    <RootNamespace>Samples</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+    <!-- フレームワーク（mazigatiDX）のフォルダー。このフォルダーからの相対パス（末尾に \） -->
+    <MazigatiDXRoot>..\</MazigatiDXRoot>
+    <!-- GenerateProjectFiles.bat が、このフォルダー（; 区切り）の下のファイルを ClCompile / ClInclude に書き出す -->
+    <MazigatiSourceRoots>Source</MazigatiSourceRoots>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings"></ImportGroup>
+  <ImportGroup Label="Shared"></ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(MazigatiDXRoot)Build\mazigatiDX.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <ItemGroup>
+    <ProjectReference Include="$(MazigatiDXRoot)mazigatiDX.vcxproj">
+      <Project>{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets"></ImportGroup>
+  <ItemGroup>
+    <ClCompile Include="Source\main.cpp" />
+    <ClCompile Include="Source\Application\SamplesApplication.cpp" />
+    <ClCompile Include="Source\Browser\BrowserScene.cpp" />
+    <ClCompile Include="Source\Catalog\SampleCatalog.cpp" />
+    <ClCompile Include="Source\Catalog\SampleScene.cpp" />
+    <ClCompile Include="Source\Hello\BouncingBox.cpp" />
+    <ClCompile Include="Source\Hello\HelloSample.cpp" />
+    <ClCompile Include="Source\Hello\ShapeGallery.cpp" />
+    <ClCompile Include="Source\Input\GamepadView.cpp" />
+    <ClCompile Include="Source\Input\InputSample.cpp" />
+    <ClCompile Include="Source\Input\KeyboardView.cpp" />
+    <ClCompile Include="Source\Input\MouseView.cpp" />
+    <ClCompile Include="Source\SelfTest\**\*.cpp" Exclude="@(ClCompile)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Source\Application\SamplesApplication.h" />
+    <ClInclude Include="Source\Browser\BrowserScene.h" />
+    <ClInclude Include="Source\Catalog\SampleCatalog.h" />
+    <ClInclude Include="Source\Catalog\SampleInfo.h" />
+    <ClInclude Include="Source\Catalog\SampleScene.h" />
+    <ClInclude Include="Source\Hello\BouncingBox.h" />
+    <ClInclude Include="Source\Hello\HelloSample.h" />
+    <ClInclude Include="Source\Hello\ShapeGallery.h" />
+    <ClInclude Include="Source\Input\GamepadView.h" />
+    <ClInclude Include="Source\Input\InputSample.h" />
+    <ClInclude Include="Source\Input\KeyboardView.h" />
+    <ClInclude Include="Source\Input\MouseView.h" />
+    <ClInclude Include="Source\SelfTest\**\*.h" Exclude="@(ClInclude)" />
+  </ItemGroup>
+</Project>

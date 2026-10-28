@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Source\main.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Application\SamplesApplication.cpp">
+      <Filter>Source\Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Browser\BrowserScene.cpp">
+      <Filter>Source\Browser</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Catalog\SampleCatalog.cpp">
+      <Filter>Source\Catalog</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Catalog\SampleScene.cpp">
+      <Filter>Source\Catalog</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Hello\BouncingBox.cpp">
+      <Filter>Source\Hello</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Hello\HelloSample.cpp">
+      <Filter>Source\Hello</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Hello\ShapeGallery.cpp">
+      <Filter>Source\Hello</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Input\GamepadView.cpp">
+      <Filter>Source\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Input\InputSample.cpp">
+      <Filter>Source\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Input\KeyboardView.cpp">
+      <Filter>Source\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Input\MouseView.cpp">
+      <Filter>Source\Input</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Source\Application\SamplesApplication.h">
+      <Filter>Source\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Browser\BrowserScene.h">
+      <Filter>Source\Browser</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Catalog\SampleCatalog.h">
+      <Filter>Source\Catalog</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Catalog\SampleInfo.h">
+      <Filter>Source\Catalog</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Catalog\SampleScene.h">
+      <Filter>Source\Catalog</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Hello\BouncingBox.h">
+      <Filter>Source\Hello</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Hello\HelloSample.h">
+      <Filter>Source\Hello</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Hello\ShapeGallery.h">
+      <Filter>Source\Hello</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Input\GamepadView.h">
+      <Filter>Source\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Input\InputSample.h">
+      <Filter>Source\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Input\KeyboardView.h">
+      <Filter>Source\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Input\MouseView.h">
+      <Filter>Source\Input</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source">
+      <UniqueIdentifier>{D1BD1BF3-E8B3-CC5B-D652-680E16935819}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Application">
+      <UniqueIdentifier>{3C309C29-8704-EF3C-6238-884C86DCE4EF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Browser">
+      <UniqueIdentifier>{D8D78B2D-2923-6F91-261A-33237F267A69}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Catalog">
+      <UniqueIdentifier>{7C63368C-8999-EB5C-EB62-68FC90B68A1C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Hello">
+      <UniqueIdentifier>{D7CAE878-E116-AB34-3B7B-F14582C1F4DE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Input">
+      <UniqueIdentifier>{FFE14168-86E4-9D5A-B4DA-C4ACB9D88FCD}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

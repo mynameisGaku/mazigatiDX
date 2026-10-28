@@ -8,6 +8,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "project", "project.vcxproj"
 		{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3} = {0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Samples", "Samples\Samples.vcxproj", "{5E8B2C47-31A9-4D6F-8B0E-7A2C9D4F1E63}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3} = {0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}
+	EndProjectSection
+EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mazigatiDX", "mazigatiDX.vcxproj", "{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}"
 EndProject
 Global
@@ -34,6 +39,10 @@ Global
 		{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}.Release|x64.Build.0 = Release|x64
 		{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}.Release|x86.ActiveCfg = Release|Win32
 		{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}.Release|x86.Build.0 = Release|Win32
+		{5E8B2C47-31A9-4D6F-8B0E-7A2C9D4F1E63}.Debug|x64.ActiveCfg = Debug|x64
+		{5E8B2C47-31A9-4D6F-8B0E-7A2C9D4F1E63}.Debug|x64.Build.0 = Debug|x64
+		{5E8B2C47-31A9-4D6F-8B0E-7A2C9D4F1E63}.Release|x64.ActiveCfg = Release|x64
+		{5E8B2C47-31A9-4D6F-8B0E-7A2C9D4F1E63}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

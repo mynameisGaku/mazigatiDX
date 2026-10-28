@@ -156,6 +156,7 @@ void CDebugOverlay::Draw( CGameInstance& Game )
 	if ( Platform == nullptr ) return;
 
 	const CScene* Scene = Game.GetSceneManager().GetCurrentScene();
+	if ( bShowStatusLine )
 	{
 		FImmediateDraw Screen( GetAppSubsystem<IDrawExecutor>() );
 		Screen.TextF( 16, 16, FColor32::White, "FPS: %.1f   Mode: %s   Scene: %s   [F11] Fullscreen   [F1] Debug",
