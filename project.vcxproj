@@ -90,6 +90,8 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestCoreTraits.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestCoreTraits.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestCoreTuple.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestCoreTuple.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestDebugOverlay.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestDebugOverlay.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestDrawState.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestDrawState.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestDrawStateReal.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestDrawStateReal.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestImages.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestImages.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestImagesReal.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestImagesReal.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestImmediateDraw.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestImmediateDraw.cpp')" />
@@ -188,6 +190,7 @@
     <ClInclude Include="Source\Scene\TitleScene.h" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestCapture.h" Condition="Exists('Source\SelfTest\AssetSelfTestCapture.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestCore.h" Condition="Exists('Source\SelfTest\AssetSelfTestCore.h')" />
+    <ClInclude Include="Source\SelfTest\AssetSelfTestDrawState.h" Condition="Exists('Source\SelfTest\AssetSelfTestDrawState.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestFbx.h" Condition="Exists('Source\SelfTest\AssetSelfTestFbx.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestImages.h" Condition="Exists('Source\SelfTest\AssetSelfTestImages.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestModelMaterial.h" Condition="Exists('Source\SelfTest\AssetSelfTestModelMaterial.h')" />

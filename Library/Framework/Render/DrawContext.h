@@ -52,10 +52,22 @@ struct FDrawBuffer
 //
 //   - 記録した順番に実行される（1 つのオブジェクトの中では、記録した順。重なりもその通りになる）
 //   - 色は FColor32（DxLib の GetColor への変換は、実行するとき、メインスレッドで行う）
-//   - ブレンドモード（Blend）と 3D 図形の変換（WorldMatrix）は、そのオブジェクトの分が終わると元に戻る
+//   - 描画の状態（Blend / CustomBlend / Tint / AddColor / AlphaTest / Filter / PushClip / Transform2D）と 3D 図形の変換（WorldMatrix）は、そのオブジェクトの分が終わると元に戻る
 //   - カメラ・ライト・Zバッファ・描画先は記録しない（呼び出し側が決めたものを使う）
 //   - グラフィック / モデルのハンドルは、あらかじめ読み込んでおく（読み込みは DxLib の呼び出しなのでメインスレッドで）
 //=============================================================================
+// いまの合成方法をまとめたもの。ほかの合成方法で少し描いてから元に戻すときに、FDrawContext::GetBlendState で保存し、SetBlendState で戻す
+// （Blend だけでは、CustomBlend で決めた合成方法を戻せない）
+struct FBlendState
+{
+	// 合成の種類（カスタムブレンドのあとは Custom）
+	EDrawBlend Mode = EDrawBlend::Opaque;
+	// Alpha などの強さ（Mode が Custom のときは、Custom.Param と同じ）
+	int32 Param = 255;
+	// Mode が Custom のときの設定
+	FCustomBlend Custom;
+};
+
 class FDrawContext
 {
 public:
@@ -531,21 +543,171 @@ public:
 		Push( EDrawCommand::Bright, 0, Data );
 	}
 
-	// 以降のブレンドモードを変える（SetDrawBlendMode）。Param は Alpha のときの不透明度（0..255）など
+	// 以降のブレンドモードを変える（SetDrawBlendMode）。Param は Alpha のときの不透明度（0..255。範囲の外は収める）など。
+	// Custom と、EDrawBlend にない値は、何も記録しない（カスタムブレンドは CustomBlend で）。そのオブジェクトの分が終わると、ブレンドしない状態に戻る
 	FORCEINLINE void Blend( EDrawBlend Mode, int32 Param = 255 )
 	{
+		if ( Mode == EDrawBlend::Custom || !IsInEnumRange( static_cast<int32>( Mode ), static_cast<int32>( EDrawBlend::PmaInvert ) ) )
+		{
+			return;
+		}
 		FDrawBlendData Data;
 		Data.Mode = static_cast<int32>( Mode );
-		Data.Param = Param;
+		Data.Param = NMath::Clamp( Param, 0, 255 );
 		Push( EDrawCommand::Blend, 0, Data );
 		CurrentBlendMode = Mode;
-		CurrentBlendParam = Param;
+		CurrentBlendParam = Data.Param;
 	}
 
-	// このDrawContextで最後に記録した合成方法。初期状態はOpaque。
+	// カスタムブレンド（SetDrawCustomBlendMode）。Src（これから描く色）と Dest（描き先の色）に係数を掛けて、組み合わせ方で合わせる。
+	// 例: 加算 = { SrcColor: SrcAlpha, DestColor: One, ColorOp: Add }。Blend で別のモードにするか、そのオブジェクトの分が終わると、元に戻る。
+	// 係数・組み合わせ方が範囲の外のものは、何も記録しない
+	FORCEINLINE void CustomBlend( const FCustomBlend& Settings )
+	{
+		const int32 MaxFactor = static_cast<int32>( EDrawBlendFactor::SrcAlphaSat );
+		const int32 MaxOp = static_cast<int32>( EDrawBlendOp::Max );
+		if ( !IsInEnumRange( static_cast<int32>( Settings.SrcColor ), MaxFactor ) || !IsInEnumRange( static_cast<int32>( Settings.DestColor ), MaxFactor )
+			 || !IsInEnumRange( static_cast<int32>( Settings.SrcAlpha ), MaxFactor ) || !IsInEnumRange( static_cast<int32>( Settings.DestAlpha ), MaxFactor )
+			 || !IsInEnumRange( static_cast<int32>( Settings.ColorOp ), MaxOp ) || !IsInEnumRange( static_cast<int32>( Settings.AlphaOp ), MaxOp ) )
+		{
+			return;
+		}
+		FDrawCustomBlendData Data;
+		Data.SrcColor = static_cast<int32>( Settings.SrcColor );
+		Data.DestColor = static_cast<int32>( Settings.DestColor );
+		Data.ColorOp = static_cast<int32>( Settings.ColorOp );
+		Data.SrcAlpha = static_cast<int32>( Settings.SrcAlpha );
+		Data.DestAlpha = static_cast<int32>( Settings.DestAlpha );
+		Data.AlphaOp = static_cast<int32>( Settings.AlphaOp );
+		Data.Param = NMath::Clamp( Settings.Param, 0, 255 );
+		Push( EDrawCommand::CustomBlend, 0, Data );
+		CurrentBlendMode = EDrawBlend::Custom;
+		CurrentBlendParam = Data.Param;
+		CurrentCustomBlend = Settings;
+		CurrentCustomBlend.Param = Data.Param;
+	}
+
+	// このDrawContextで最後に記録した合成方法（カスタムブレンドのあとは Custom）。初期状態はOpaque。
 	FORCEINLINE EDrawBlend GetBlendMode() const { return CurrentBlendMode; }
 	// このDrawContextで最後に記録した合成倍率。初期状態は255。
 	FORCEINLINE int32 GetBlendParam() const { return CurrentBlendParam; }
+
+	// 最後に記録した合成方法を、まとめて取り出す（あとで SetBlendState で戻すため）
+	FORCEINLINE FBlendState GetBlendState() const
+	{
+		FBlendState State;
+		State.Mode = CurrentBlendMode;
+		State.Param = CurrentBlendParam;
+		State.Custom = CurrentCustomBlend;
+		return State;
+	}
+
+	// GetBlendState で取り出した合成方法に戻す。Custom なら CustomBlend、それ以外は Blend を記録する
+	FORCEINLINE void SetBlendState( const FBlendState& State )
+	{
+		if ( State.Mode == EDrawBlend::Custom )
+		{
+			CustomBlend( State.Custom );
+		}
+		else
+		{
+			Blend( State.Mode, State.Param );
+		}
+	}
+
+	// 以降の描画の色に足す色（SetDrawAddColor。Tint で掛けたあとに足される）。各成分は -255..255（負なら引く。範囲の外は収める）。(0, 0, 0) が元の状態。
+	// そのオブジェクトの分が終わると、(0, 0, 0) に戻る
+	FORCEINLINE void AddColor( int32 R, int32 G, int32 B )
+	{
+		FDrawAddColorData Data;
+		Data.R = NMath::Clamp( R, -255, 255 );
+		Data.G = NMath::Clamp( G, -255, 255 );
+		Data.B = NMath::Clamp( B, -255, 255 );
+		Push( EDrawCommand::AddColor, 0, Data );
+	}
+
+	// アルファテスト（SetDrawAlphaTest）。描く色のアルファ値と Reference（0..255。範囲の外は収める）を Compare で比べて、成り立つ画素だけ描く。
+	// 切り抜きの画像（葉・柵など）の縁を、半透明にせずに抜くときなどに。AlphaTestOff か、そのオブジェクトの分が終わると、元（しない）に戻る。Compare が範囲の外なら、何も記録しない
+	FORCEINLINE void AlphaTest( EDrawCompare Compare, int32 Reference )
+	{
+		if ( !IsInEnumRange( static_cast<int32>( Compare ), static_cast<int32>( EDrawCompare::Always ) ) )
+		{
+			return;
+		}
+		FDrawAlphaTestData Data;
+		Data.Enabled = 1;
+		Data.Mode = static_cast<int32>( Compare );
+		Data.Reference = NMath::Clamp( Reference, 0, 255 );
+		Push( EDrawCommand::AlphaTest, 0, Data );
+	}
+
+	// アルファテストをやめる
+	FORCEINLINE void AlphaTestOff()
+	{
+		const FDrawAlphaTestData Data;
+		Push( EDrawCommand::AlphaTest, 0, Data );
+	}
+
+	// 画像を拡大・縮小・回転して描くときの色の決め方（SetDrawMode）。Nearest はギザギザ（ドット絵向き）、Bilinear はなめらか。
+	// そのオブジェクトの分が終わると、始める前の状態に戻る。範囲の外の値は、何も記録しない
+	FORCEINLINE void Filter( EDrawFilter Mode )
+	{
+		if ( !IsInEnumRange( static_cast<int32>( Mode ), static_cast<int32>( EDrawFilter::Anisotropic ) ) )
+		{
+			return;
+		}
+		FDrawFilterData Data;
+		Data.Mode = static_cast<int32>( Mode );
+		Push( EDrawCommand::Filter, 0, Data );
+	}
+
+	// クリップ範囲を、いまの範囲と (X0, Y0)-(X1, Y1)（右と下の端は含まない）の共通部分にする（SetDrawArea）。入れ子にできて、PopClip で 1 つ前の範囲に戻る
+	// （同じ数だけ呼ぶ。スコープで対にするなら FClipScope）。共通部分が空なら、何も描かれない。そのオブジェクトの分が終わると、始める前の範囲に戻る。
+	// 値が絶対値 1e7 超のときは、何も記録せず false を返す（対の PopClip も呼ばないこと）
+	FORCEINLINE bool PushClip( int32 X0, int32 Y0, int32 X1, int32 Y1 )
+	{
+		if ( !AllDrawable( static_cast<float32>( X0 ), static_cast<float32>( Y0 ), static_cast<float32>( X1 ), static_cast<float32>( Y1 ) ) )
+		{
+			return false;
+		}
+		FDrawClipData Data;
+		Data.X0 = X0;
+		Data.Y0 = Y0;
+		Data.X1 = X1;
+		Data.Y1 = Y1;
+		Push( EDrawCommand::PushClip, 0, Data );
+		return true;
+	}
+
+	// 1 つ前のクリップ範囲に戻す。PushClip の数より多く呼んでも、何も起きない
+	FORCEINLINE void PopClip()
+	{
+		const FDrawPopClipData Data;
+		Push( EDrawCommand::PopClip, 0, Data );
+	}
+
+	// 以降の 2D の描画（図形・画像・文字）に掛ける変換（SetTransformTo2D）。画面の座標（ピクセル）に掛かる。アフィン変換だけ（最後の列は無視される）。
+	// 2D のカメラ（スクロール・拡大・回転）に使える。ResetTransform2D か、そのオブジェクトの分が終わると、元（変換しない）に戻る。
+	// 値が NaN・無限大・絶対値 1e7 超のときは、何も記録しない
+	FORCEINLINE void Transform2D( const FMatrix4x4& Matrix )
+	{
+		FDrawMatrixData Data;
+		PackAffine( Data.M, Matrix );
+		for ( const float32 Value : Data.M )
+		{
+			if ( !IsDrawable( Value ) )
+			{
+				return;
+			}
+		}
+		Push( EDrawCommand::Transform2D, 0, Data );
+	}
+
+	// 2D の変換を、元（変換しない）に戻す
+	FORCEINLINE void ResetTransform2D()
+	{
+		Transform2D( FMatrix4x4::Identity );
+	}
 
 	//-------------------------------------------------------------------------
 	// 3D（ワールド座標）
@@ -735,6 +897,11 @@ private:
 	static FORCEINLINE bool IsPositiveThickness( float32 Thickness ) { return NMath::IsFinite( Thickness ) && Thickness > 0.0f && Thickness <= 1.0e4f; }
 	// 近似する角数。0 は「半径から決める」。それ以外は 4..512 に収める
 	static FORCEINLINE int32 ClampSegments( int32 NumSegments ) { return NumSegments <= 0 ? 0 : NMath::Clamp( NumSegments, 4, 512 ); }
+	// 列挙型の値が、0 から最後の値（Max）の範囲に入っているか
+	static FORCEINLINE bool IsInEnumRange( int32 Value, int32 Max )
+	{
+		return Value >= 0 && Value <= Max;
+	}
 
 	FORCEINLINE void PushTriangle( float32 X0, float32 Y0, float32 X1, float32 Y1, float32 X2, float32 Y2, const FColor32& Color, bool bFill, float32 Thickness, uint8 Flags )
 	{
@@ -840,6 +1007,43 @@ private:
 	EDrawBlend CurrentBlendMode = EDrawBlend::Opaque;
 	// 現在合成方法に渡した倍率。
 	int32 CurrentBlendParam = 255;
+	// 最後に記録したカスタムブレンドの設定（現在の合成方法が Custom のときだけ意味がある）。
+	FCustomBlend CurrentCustomBlend;
+};
+
+//=============================================================================
+// FClipScope
+//   コマンドリストにクリップ範囲を足して（PushClip）、スコープを抜けるとき、1 つ前の範囲に戻す（PopClip）。入れ子にできる。
+//
+//   {
+//       FClipScope Clip( CommandList, 100, 100, 300, 200 );   // この中の描画は、(100, 100)-(300, 200) の外へはみ出さない
+//       CommandList.Image( 90.0f, 90.0f, Texture );
+//   }
+//=============================================================================
+class FClipScope
+{
+public:
+	FClipScope( FDrawContext& InCommandList, int32 X0, int32 Y0, int32 X1, int32 Y1 )
+		: CommandList( &InCommandList )
+		, bPushed( InCommandList.PushClip( X0, Y0, X1, Y1 ) )
+	{
+	}
+
+	// PushClip が何も記録しなかったとき（値が大きすぎるとき）は、PopClip もしない（外側の範囲を戻してしまわないため）
+	~FClipScope()
+	{
+		if ( bPushed )
+		{
+			CommandList->PopClip();
+		}
+	}
+
+	FClipScope( const FClipScope& ) = delete;
+	FClipScope& operator=( const FClipScope& ) = delete;
+
+private:
+	FDrawContext* CommandList;
+	bool bPushed;
 };
 
 #endif

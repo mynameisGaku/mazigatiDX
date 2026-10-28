@@ -186,16 +186,23 @@ void FMeshRenderer::Record( FDrawContext& Draw, const FTransform& World ) const
 		const float32 NormalizedTime = NMath::Clamp( static_cast<float32>( Batch.EffectTimeSeconds / Duration ), 0.0f, 1.0f );
 		TArray<TArray<FMeshVertex>> WorldVertices;
 		if ( !BuildWorldEffectChunks( Resources, World, NormalizedTime, Batch.EffectUVOffset[0], Batch.EffectUVOffset[1], Batch.DistortionUVOffset[0], Batch.DistortionUVOffset[1], WorldVertices ) ) continue;
-		const EDrawBlend PreviousBlend = Draw.GetBlendMode();
-		const int32 PreviousBlendParam = Draw.GetBlendParam();
-		if ( PreviousBlend != Resources.Definition.Blend || PreviousBlendParam != 255 ) Draw.Blend( Resources.Definition.Blend, 255 );
+		const FBlendState PreviousBlend = Draw.GetBlendState();
+		const bool bChangeBlend = PreviousBlend.Mode != Resources.Definition.Blend || PreviousBlend.Param != 255;
+		if ( bChangeBlend )
+		{
+			Draw.Blend( Resources.Definition.Blend, 255 );
+		}
 		for ( int32 ChunkIndex = 0; ChunkIndex < Resources.Chunks.Num(); ++ChunkIndex )
 		{
 			const FMeshMaterialEffectResources::FChunk& SourceChunk = Resources.Chunks[ChunkIndex];
 			const FDrawMaterialMeshData Data = MakeMeshEffectData( Resources, WorldVertices[ChunkIndex].Num(), SourceChunk.Indices.Num(), NormalizedTime, Batch.EffectUVOffset[0], Batch.EffectUVOffset[1], Batch.DistortionUVOffset[0], Batch.DistortionUVOffset[1] );
 			Draw.MaterialMesh3D( Data, WorldVertices[ChunkIndex].GetData(), SourceChunk.Indices.GetData(), true );
 		}
-		if ( PreviousBlend != Resources.Definition.Blend || PreviousBlendParam != 255 ) Draw.Blend( PreviousBlend, PreviousBlendParam );
+		if ( bChangeBlend )
+		{
+			// Custom のカスタムブレンドも戻せるよう、Blend ではなく SetBlendState で戻す
+			Draw.SetBlendState( PreviousBlend );
+		}
 	}
 }
 

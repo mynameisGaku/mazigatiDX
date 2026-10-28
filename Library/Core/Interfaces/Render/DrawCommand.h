@@ -79,6 +79,14 @@ enum class EDrawCommand : uint8
 	SpritePivot,      // FDrawSpritePivotData。FlipX / FlipY（DrawRotaGraph3F）
 	Tile,             // FDrawTileData（DrawTile）
 	CircleGauge,      // FDrawCircleGaugeData。FlipX / FlipY（DrawCircleGaugeF）
+	// 描画状態の追加（上のコマンドの形式は変えていない。どれも、オブジェクトの分（1 つの Execute）が終わると、元に戻る）
+	CustomBlend,      // FDrawCustomBlendData（SetDrawCustomBlendMode）
+	AddColor,         // FDrawAddColorData（SetDrawAddColor。描く色に足す色）
+	AlphaTest,        // FDrawAlphaTestData（SetDrawAlphaTest）
+	Filter,           // FDrawFilterData（SetDrawMode）
+	PushClip,         // FDrawClipData。いまのクリップ範囲との共通部分を、新しい範囲にする（SetDrawArea）
+	PopClip,          // FDrawPopClipData。1 つ前のクリップ範囲に戻す
+	Transform2D,      // FDrawMatrixData。2D の描画に掛かる変換（SetTransformTo2D）
 };
 
 // Quad3D の向きの決め方
@@ -104,6 +112,74 @@ enum class EDrawBlend : int32
 	Add,        // 加算
 	Subtract,   // 減算
 	Multiply,   // 乗算
+	// 追加（既存の値は変えない）
+	Invert,         // 描く色を反転する（DX_BLENDMODE_INVSRC）
+	MultiplyAlpha,  // アルファ値を考慮した乗算（DX_BLENDMODE_MULA）
+	PmaAlpha,       // 乗算済みアルファのアルファブレンド（DX_BLENDMODE_PMA_ALPHA）
+	PmaAdd,         // 乗算済みアルファの加算（DX_BLENDMODE_PMA_ADD）
+	PmaSubtract,    // 乗算済みアルファの減算（DX_BLENDMODE_PMA_SUB）
+	PmaInvert,      // 乗算済みアルファの反転（DX_BLENDMODE_PMA_INVSRC）
+	Custom,         // CustomBlend で決めたもの（FDrawContext::GetBlendMode が返すだけで、Blend には渡せない）
+};
+
+// カスタムブレンドの係数（DX_BLEND_*。Src = これから描く色、Dest = 描き先にある色。係数を掛けた結果を、EDrawBlendOp で組み合わせる）
+enum class EDrawBlendFactor : int32
+{
+	Zero,           // 0
+	One,            // 1
+	SrcColor,       // Src の色
+	InvSrcColor,    // 1 - Src の色
+	SrcAlpha,       // Src のアルファ
+	InvSrcAlpha,    // 1 - Src のアルファ
+	DestColor,      // Dest の色
+	InvDestColor,   // 1 - Dest の色
+	DestAlpha,      // Dest のアルファ
+	InvDestAlpha,   // 1 - Dest のアルファ
+	SrcAlphaSat,    // min( Src のアルファ, 1 - Dest のアルファ )
+};
+
+// カスタムブレンドの組み合わせ方（DX_BLENDOP_*）
+enum class EDrawBlendOp : int32
+{
+	Add,              // Src x 係数 + Dest x 係数
+	Subtract,         // Src x 係数 - Dest x 係数
+	ReverseSubtract,  // Dest x 係数 - Src x 係数
+	Min,              // 小さいほう
+	Max,              // 大きいほう
+};
+
+// アルファテストの比べ方（DX_CMP_*。描く色のアルファ値 と 基準値を比べて、成り立つ画素だけ描く）
+enum class EDrawCompare : int32
+{
+	Never,          // 描かない
+	Less,           // アルファ < 基準値
+	Equal,          // アルファ == 基準値
+	LessEqual,      // アルファ <= 基準値
+	Greater,        // アルファ > 基準値
+	NotEqual,       // アルファ != 基準値
+	GreaterEqual,   // アルファ >= 基準値
+	Always,         // 常に描く
+};
+
+// 画像を拡大・縮小・回転して描くときの、色の決め方（DX_DRAWMODE_*）
+enum class EDrawFilter : int32
+{
+	Nearest,        // 一番近い画素の色（ギザギザ。既定）
+	Bilinear,       // 周りの 4 画素をなめらかに混ぜる
+	Anisotropic,    // 異方性フィルタリング（斜めから見たときも、なめらか）
+};
+
+// カスタムブレンドの設定（DxLib の SetDrawCustomBlendMode）。既定は、Src をそのまま描く（ブレンドしない）設定
+struct FCustomBlend
+{
+	EDrawBlendFactor SrcColor = EDrawBlendFactor::One;
+	EDrawBlendFactor DestColor = EDrawBlendFactor::Zero;
+	EDrawBlendOp ColorOp = EDrawBlendOp::Add;
+	EDrawBlendFactor SrcAlpha = EDrawBlendFactor::One;
+	EDrawBlendFactor DestAlpha = EDrawBlendFactor::Zero;
+	EDrawBlendOp AlphaOp = EDrawBlendOp::Add;
+	// ブレンドのパラメータ（0..255。SrcAlpha を使う設定では、Src のアルファに掛かる）
+	int32 Param = 255;
 };
 
 struct FDrawFlag
@@ -229,6 +305,17 @@ struct FDrawTileData { int32 X0 = 0, Y0 = 0, X1 = 0, Y1 = 0, OffsetX = 0, Offset
 // 円グラフのように、画像を、真上から時計回りに Percent（0..100）まで描く。(X, Y) は画像の中心。StartPercent（0..100）は描き始める位置
 struct FDrawCircleGaugeData { float32 X = 0.0f, Y = 0.0f, Percent = 100.0f, StartPercent = 0.0f, Scale = 1.0f; int32 Handle = -1; };
 
+// 描画状態。値は、EDrawBlendFactor / EDrawBlendOp / EDrawCompare / EDrawFilter の数値
+struct FDrawCustomBlendData { int32 SrcColor = 1, DestColor = 0, ColorOp = 0, SrcAlpha = 1, DestAlpha = 0, AlphaOp = 0, Param = 255; };
+struct FDrawAddColorData { int32 R = 0, G = 0, B = 0; };
+// Enabled が 0 なら、アルファテストをしない（Mode・Reference は使わない）
+struct FDrawAlphaTestData { int32 Enabled = 0, Mode = 0, Reference = 0; };
+struct FDrawFilterData { int32 Mode = 0; };
+// クリップ範囲 (X0, Y0)-(X1, Y1)。右と下の端は含まない
+struct FDrawClipData { int32 X0 = 0, Y0 = 0, X1 = 0, Y1 = 0; };
+// PopClip は中身を持たない（命令の大きさを 4 バイトの倍数にするため、1 ワードだけ持つ）
+struct FDrawPopClipData { int32 Unused = 0; };
+
 #define DRAW_DATA_CHECK( Type ) \
 	static_assert( sizeof( Type ) % 4 == 0 && bIsTriviallyCopyable<Type>, #Type " must be made of 4-byte words with no padding" )
 DRAW_DATA_CHECK( FDrawBoxData );
@@ -268,6 +355,12 @@ DRAW_DATA_CHECK( FDrawImagePartQuadData );
 DRAW_DATA_CHECK( FDrawSpritePivotData );
 DRAW_DATA_CHECK( FDrawTileData );
 DRAW_DATA_CHECK( FDrawCircleGaugeData );
+DRAW_DATA_CHECK( FDrawCustomBlendData );
+DRAW_DATA_CHECK( FDrawAddColorData );
+DRAW_DATA_CHECK( FDrawAlphaTestData );
+DRAW_DATA_CHECK( FDrawFilterData );
+DRAW_DATA_CHECK( FDrawClipData );
+DRAW_DATA_CHECK( FDrawPopClipData );
 #undef DRAW_DATA_CHECK
 static_assert( sizeof( FDrawBoxData ) == 24 && sizeof( FDrawSphere3DData ) == 28 && sizeof( FDrawModelData ) == 60, "unexpected padding in a draw command data type" );
 
@@ -347,8 +440,8 @@ void ForEachDrawCommand( const FDrawSpan& Span, TFunction&& Function )
 //   描画コマンドを、実際に描画する。メインスレッドだけから呼ばれる。
 //
 //   Execute: Span のコマンドを、先頭から順に実行する。
-//     - Span の中で変えた状態（ブレンドモード・WorldMatrix）は、Span の終わりで元（ブレンドなし・単位行列）に戻る
-//       （次のオブジェクトに漏れない）
+//     - Span の中で変えた状態（ブレンドモード・明るさ・WorldMatrix・加算する色・アルファテスト・描画モード・クリップ範囲・2D の変換）は、
+//       Span の終わりで元に戻る（次のオブジェクトに漏れない）。クリップ範囲が空のあいだは、描く命令だけを飛ばす
 //     - 描画先・カメラ・ライト・Zバッファ・フォントなどは触らない（呼び出し側が決めたものをそのまま使う）
 //   実装: CDxLibDrawExecutor（DxLib）。確認用に、記録するだけの実装を作ってもよい。
 //=============================================================================

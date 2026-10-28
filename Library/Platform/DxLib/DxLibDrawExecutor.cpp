@@ -183,8 +183,113 @@ namespace
 		case EDrawBlend::Add: return DX_BLENDMODE_ADD;
 		case EDrawBlend::Subtract: return DX_BLENDMODE_SUB;
 		case EDrawBlend::Multiply: return DX_BLENDMODE_MUL;
+		case EDrawBlend::Invert: return DX_BLENDMODE_INVSRC;
+		case EDrawBlend::MultiplyAlpha: return DX_BLENDMODE_MULA;
+		case EDrawBlend::PmaAlpha: return DX_BLENDMODE_PMA_ALPHA;
+		case EDrawBlend::PmaAdd: return DX_BLENDMODE_PMA_ADD;
+		case EDrawBlend::PmaSubtract: return DX_BLENDMODE_PMA_SUB;
+		case EDrawBlend::PmaInvert: return DX_BLENDMODE_PMA_INVSRC;
 		default: return DX_BLENDMODE_NOBLEND;
 		}
+	}
+
+	// カスタムブレンドの係数
+	int ToDxBlendFactor( int32 Factor )
+	{
+		switch ( static_cast<EDrawBlendFactor>( Factor ) )
+		{
+		case EDrawBlendFactor::Zero: return DX_BLEND_ZERO;
+		case EDrawBlendFactor::One: return DX_BLEND_ONE;
+		case EDrawBlendFactor::SrcColor: return DX_BLEND_SRC_COLOR;
+		case EDrawBlendFactor::InvSrcColor: return DX_BLEND_INV_SRC_COLOR;
+		case EDrawBlendFactor::SrcAlpha: return DX_BLEND_SRC_ALPHA;
+		case EDrawBlendFactor::InvSrcAlpha: return DX_BLEND_INV_SRC_ALPHA;
+		case EDrawBlendFactor::DestColor: return DX_BLEND_DEST_COLOR;
+		case EDrawBlendFactor::InvDestColor: return DX_BLEND_INV_DEST_COLOR;
+		case EDrawBlendFactor::DestAlpha: return DX_BLEND_DEST_ALPHA;
+		case EDrawBlendFactor::InvDestAlpha: return DX_BLEND_INV_DEST_ALPHA;
+		case EDrawBlendFactor::SrcAlphaSat: return DX_BLEND_SRC_ALPHA_SAT;
+		default: return DX_BLEND_ONE;
+		}
+	}
+
+	// カスタムブレンドの組み合わせ方
+	int ToDxBlendOp( int32 Op )
+	{
+		switch ( static_cast<EDrawBlendOp>( Op ) )
+		{
+		case EDrawBlendOp::Subtract: return DX_BLENDOP_SUBTRACT;
+		case EDrawBlendOp::ReverseSubtract: return DX_BLENDOP_REV_SUBTRACT;
+		case EDrawBlendOp::Min: return DX_BLENDOP_MIX;
+		case EDrawBlendOp::Max: return DX_BLENDOP_MAX;
+		default: return DX_BLENDOP_ADD;
+		}
+	}
+
+	// アルファテストの比べ方
+	int ToDxCompare( int32 Compare )
+	{
+		switch ( static_cast<EDrawCompare>( Compare ) )
+		{
+		case EDrawCompare::Never: return DX_CMP_NEVER;
+		case EDrawCompare::Less: return DX_CMP_LESS;
+		case EDrawCompare::Equal: return DX_CMP_EQUAL;
+		case EDrawCompare::LessEqual: return DX_CMP_LESSEQUAL;
+		case EDrawCompare::Greater: return DX_CMP_GREATER;
+		case EDrawCompare::NotEqual: return DX_CMP_NOTEQUAL;
+		case EDrawCompare::GreaterEqual: return DX_CMP_GREATEREQUAL;
+		default: return DX_CMP_ALWAYS;
+		}
+	}
+
+	// 画像を拡大・縮小・回転して描くときの色の決め方
+	int ToDxFilter( int32 Filter )
+	{
+		switch ( static_cast<EDrawFilter>( Filter ) )
+		{
+		case EDrawFilter::Bilinear: return DX_DRAWMODE_BILINEAR;
+		case EDrawFilter::Anisotropic: return DX_DRAWMODE_ANISOTROPIC;
+		default: return DX_DRAWMODE_NEAREST;
+		}
+	}
+
+	// 描画の状態だけを変える命令か（何かを描く命令ではない）。クリップ範囲が空のあいだ、描く命令だけを飛ばすために使う
+	bool IsStateCommand( EDrawCommand Type )
+	{
+		switch ( Type )
+		{
+		case EDrawCommand::Blend:
+		case EDrawCommand::Bright:
+		case EDrawCommand::WorldMatrix:
+		case EDrawCommand::ModelAnim:
+		case EDrawCommand::CustomBlend:
+		case EDrawCommand::AddColor:
+		case EDrawCommand::AlphaTest:
+		case EDrawCommand::Filter:
+		case EDrawCommand::PushClip:
+		case EDrawCommand::PopClip:
+		case EDrawCommand::Transform2D:
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	// 2 つの範囲の共通部分（右と下の端は含まない）。重ならなければ、空の範囲（右 <= 左 または 下 <= 上）になる
+	RECT IntersectArea( const RECT& A, const RECT& B )
+	{
+		RECT Result;
+		Result.left = NMath::Max( A.left, B.left );
+		Result.top = NMath::Max( A.top, B.top );
+		Result.right = NMath::Min( A.right, B.right );
+		Result.bottom = NMath::Min( A.bottom, B.bottom );
+		return Result;
+	}
+
+	// 範囲が空か
+	bool IsEmptyArea( const RECT& Area )
+	{
+		return Area.right <= Area.left || Area.bottom <= Area.top;
 	}
 
 	// 円・楕円・角の丸みを近似する角数。指定が無ければ（0）、半径（ピクセル）から、折れ線と円弧の誤差が 1/4 ピクセル以下になる数を 4 の倍数で決める（12..256）
@@ -260,13 +365,32 @@ bool CDxLibDrawExecutor::SupportsModelMaterialEffects() const
 
 void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 {
+	// このオブジェクトの分で変えた状態。終わりで、元に戻す（変える前の値は、最初に変えるときに覚える）
 	bool bBlendChanged = false;
 	bool bWorldMatrixChanged = false;
 	bool bBrightChanged = false;
+	bool bAddColorChanged = false;
+	int OldAddColor[3] = { 0, 0, 0 };
+	bool bAlphaTestChanged = false;
+	int OldAlphaTestMode = -1;
+	int OldAlphaTestParam = 0;
+	bool bFilterChanged = false;
+	int OldFilter = DX_DRAWMODE_NEAREST;
+	bool bTransform2DChanged = false;
+	// クリップ: 始める前の範囲と、PushClip で重ねた範囲の並び（一番内側が、いまの範囲）。いまの範囲が空のあいだは、描く命令を飛ばす
+	bool bClipChanged = false;
+	RECT OldArea = {};
+	TArray<RECT> ClipStack;
+	bool bClipEmpty = false;
 
 	ForEachDrawCommand( Span, [&]( const FDrawCommandView& Command )
 	{
 		const int Fill = Command.Has( FDrawFlag::Fill ) ? TRUE : FALSE;
+
+		if ( bClipEmpty && !IsStateCommand( Command.Type ) )
+		{
+			return;
+		}
 
 		switch ( Command.Type )
 		{
@@ -864,15 +988,161 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			}
 			break;
 		}
+		case EDrawCommand::CustomBlend:
+		{
+			if ( !Command.CanRead<FDrawCustomBlendData>() )
+			{
+				break;
+			}
+			const FDrawCustomBlendData Data = Command.Read<FDrawCustomBlendData>();
+			SetDrawCustomBlendMode( TRUE, ToDxBlendFactor( Data.SrcColor ), ToDxBlendFactor( Data.DestColor ), ToDxBlendOp( Data.ColorOp ),
+									ToDxBlendFactor( Data.SrcAlpha ), ToDxBlendFactor( Data.DestAlpha ), ToDxBlendOp( Data.AlphaOp ), Data.Param );
+			bBlendChanged = true;
+			break;
+		}
+		case EDrawCommand::AddColor:
+		{
+			if ( !Command.CanRead<FDrawAddColorData>() )
+			{
+				break;
+			}
+			const FDrawAddColorData Data = Command.Read<FDrawAddColorData>();
+			if ( !bAddColorChanged )
+			{
+				GetDrawAddColor( &OldAddColor[0], &OldAddColor[1], &OldAddColor[2] );
+				bAddColorChanged = true;
+			}
+			SetDrawAddColor( Data.R, Data.G, Data.B );
+			break;
+		}
+		case EDrawCommand::AlphaTest:
+		{
+			if ( !Command.CanRead<FDrawAlphaTestData>() )
+			{
+				break;
+			}
+			const FDrawAlphaTestData Data = Command.Read<FDrawAlphaTestData>();
+			if ( !bAlphaTestChanged )
+			{
+				GetDrawAlphaTest( &OldAlphaTestMode, &OldAlphaTestParam );
+				bAlphaTestChanged = true;
+			}
+			if ( Data.Enabled == 0 )
+			{
+				// -1 が、アルファテストをしない（既定）状態
+				SetDrawAlphaTest( -1, 0 );
+			}
+			else if ( static_cast<EDrawCompare>( Data.Mode ) == EDrawCompare::Never )
+			{
+				// DxLib の DX_CMP_NEVER は、実際には何も止めない（実測）。「アルファ < 0」は、どの画素でも成り立たないので、これで代用する
+				SetDrawAlphaTest( DX_CMP_LESS, 0 );
+			}
+			else
+			{
+				SetDrawAlphaTest( ToDxCompare( Data.Mode ), Data.Reference );
+			}
+			break;
+		}
+		case EDrawCommand::Filter:
+		{
+			if ( !Command.CanRead<FDrawFilterData>() )
+			{
+				break;
+			}
+			const FDrawFilterData Data = Command.Read<FDrawFilterData>();
+			if ( !bFilterChanged )
+			{
+				OldFilter = GetDrawMode();
+				bFilterChanged = true;
+			}
+			SetDrawMode( ToDxFilter( Data.Mode ) );
+			break;
+		}
+		case EDrawCommand::PushClip:
+		{
+			if ( !Command.CanRead<FDrawClipData>() )
+			{
+				break;
+			}
+			const FDrawClipData Data = Command.Read<FDrawClipData>();
+			if ( !bClipChanged )
+			{
+				GetDrawArea( &OldArea );
+				bClipChanged = true;
+			}
+			// 新しい範囲は、いまの範囲（一番内側に重ねた範囲。無ければ、始める前の範囲）との共通部分
+			const RECT Requested = { Data.X0, Data.Y0, Data.X1, Data.Y1 };
+			const RECT Area = IntersectArea( Requested, ClipStack.IsEmpty() ? OldArea : ClipStack.Last() );
+			ClipStack.Add( Area );
+			bClipEmpty = IsEmptyArea( Area );
+			if ( !bClipEmpty )
+			{
+				SetDrawArea( Area.left, Area.top, Area.right, Area.bottom );
+			}
+			break;
+		}
+		case EDrawCommand::PopClip:
+		{
+			if ( ClipStack.IsEmpty() )
+			{
+				break;
+			}
+			ClipStack.Pop();
+			const RECT& Area = ClipStack.IsEmpty() ? OldArea : ClipStack.Last();
+			bClipEmpty = IsEmptyArea( Area );
+			if ( !bClipEmpty )
+			{
+				SetDrawArea( Area.left, Area.top, Area.right, Area.bottom );
+			}
+			break;
+		}
+		case EDrawCommand::Transform2D:
+		{
+			if ( !Command.CanRead<FDrawMatrixData>() )
+			{
+				break;
+			}
+			const FDrawMatrixData Data = Command.Read<FDrawMatrixData>();
+			const MATRIX Matrix = ToMatrix( Data.M );
+			SetTransformTo2D( &Matrix );
+			bTransform2DChanged = true;
+			break;
+		}
 		}
 	} );
 
 	// このオブジェクトで変えた状態を、次のオブジェクトに漏らさない
-	if ( bBlendChanged ) SetDrawBlendMode( DX_BLENDMODE_NOBLEND, 0 );
-	if ( bBrightChanged ) SetDrawBright( 255, 255, 255 );
+	if ( bBlendChanged )
+	{
+		SetDrawBlendMode( DX_BLENDMODE_NOBLEND, 0 );
+	}
+	if ( bBrightChanged )
+	{
+		SetDrawBright( 255, 255, 255 );
+	}
 	if ( bWorldMatrixChanged )
 	{
 		const MATRIX Identity = MGetIdent();
 		SetTransformToWorld( &Identity );
+	}
+	if ( bAddColorChanged )
+	{
+		SetDrawAddColor( OldAddColor[0], OldAddColor[1], OldAddColor[2] );
+	}
+	if ( bAlphaTestChanged )
+	{
+		SetDrawAlphaTest( OldAlphaTestMode, OldAlphaTestParam );
+	}
+	if ( bFilterChanged )
+	{
+		SetDrawMode( OldFilter );
+	}
+	if ( bClipChanged )
+	{
+		SetDrawArea( OldArea.left, OldArea.top, OldArea.right, OldArea.bottom );
+	}
+	if ( bTransform2DChanged )
+	{
+		ResetTransformTo2D();
 	}
 }
