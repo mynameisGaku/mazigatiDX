@@ -55,6 +55,12 @@
     <ClCompile Include="Source\Input\MouseView.cpp">
       <Filter>Source\Input</Filter>
     </ClCompile>
+    <ClCompile Include="Source\RenderTarget\RenderTargetSample.cpp">
+      <Filter>Source\RenderTarget</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\RenderTarget\TargetShowcase.cpp">
+      <Filter>Source\RenderTarget</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Shapes\ShapeShowcase.cpp">
       <Filter>Source\Shapes</Filter>
     </ClCompile>
@@ -117,6 +123,12 @@
     <ClInclude Include="Source\Input\MouseView.h">
       <Filter>Source\Input</Filter>
     </ClInclude>
+    <ClInclude Include="Source\RenderTarget\RenderTargetSample.h">
+      <Filter>Source\RenderTarget</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\RenderTarget\TargetShowcase.h">
+      <Filter>Source\RenderTarget</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Shapes\ShapeShowcase.h">
       <Filter>Source\Shapes</Filter>
     </ClInclude>
@@ -151,6 +163,9 @@
     </Filter>
     <Filter Include="Source\Input">
       <UniqueIdentifier>{FFE14168-86E4-9D5A-B4DA-C4ACB9D88FCD}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\RenderTarget">
+      <UniqueIdentifier>{404CC2CF-CCF6-391E-5932-FC9207128670}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Shapes">
       <UniqueIdentifier>{2AAD6A14-B7C3-4D74-4D10-4E34CCB42B5F}</UniqueIdentifier>

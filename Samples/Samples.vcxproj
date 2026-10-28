@@ -69,6 +69,8 @@
     <ClCompile Include="Source\Input\InputSample.cpp" />
     <ClCompile Include="Source\Input\KeyboardView.cpp" />
     <ClCompile Include="Source\Input\MouseView.cpp" />
+    <ClCompile Include="Source\RenderTarget\RenderTargetSample.cpp" />
+    <ClCompile Include="Source\RenderTarget\TargetShowcase.cpp" />
     <ClCompile Include="Source\Shapes\ShapeShowcase.cpp" />
     <ClCompile Include="Source\Shapes\ShapesSample.cpp" />
     <ClCompile Include="Source\SelfTest\**\*.cpp" Exclude="@(ClCompile)" />
@@ -92,6 +94,8 @@
     <ClInclude Include="Source\Input\InputSample.h" />
     <ClInclude Include="Source\Input\KeyboardView.h" />
     <ClInclude Include="Source\Input\MouseView.h" />
+    <ClInclude Include="Source\RenderTarget\RenderTargetSample.h" />
+    <ClInclude Include="Source\RenderTarget\TargetShowcase.h" />
     <ClInclude Include="Source\Shapes\ShapeShowcase.h" />
     <ClInclude Include="Source\Shapes\ShapesSample.h" />
     <ClInclude Include="Source\SelfTest\**\*.h" Exclude="@(ClInclude)" />
