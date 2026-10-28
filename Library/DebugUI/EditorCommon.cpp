@@ -10,11 +10,10 @@ bool NDebugUI::InputString( const char* Label, FString& Value, ImGuiInputTextFla
 bool NDebugUI::InputStringWithHint( const char* Label, const char* Hint, FString& Value, ImGuiInputTextFlags Flags )
 {
 	char Buffer[512];
-	const FString Utf8 = Value.ToUtf8();
-	strncpy_s( Buffer, sizeof( Buffer ), *Utf8, _TRUNCATE );
+	strncpy_s( Buffer, sizeof( Buffer ), *Value, _TRUNCATE );
 
 	const bool bChanged = Hint != nullptr ? ImGui::InputTextWithHint( Label, Hint, Buffer, sizeof( Buffer ), Flags ) : ImGui::InputText( Label, Buffer, sizeof( Buffer ), Flags );
-	if ( bChanged ) Value = FString::FromUtf8( Buffer );
+	if ( bChanged ) Value = Buffer;
 	return bChanged;
 }
 
@@ -32,7 +31,7 @@ bool NDebugUI::FileCombo( const char* Label, FString& Selected, const TArray<FSt
 			ImGui::SetKeyboardFocusHere();
 		}
 		ImGui::InputTextWithHint( "##Filter", "filter", Filter, sizeof( Filter ) );
-		const FString FilterText = FString::FromUtf8( Filter );
+		const FString FilterText = Filter;
 
 		if ( Files.IsEmpty() ) ImGui::TextDisabled( "(no files found under the asset folder)" );
 		for ( const FString& File : Files )

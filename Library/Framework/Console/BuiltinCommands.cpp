@@ -17,6 +17,7 @@
 #include "Library/Framework/Profiler/ProfilerExport.h"
 #include "Library/Framework/Scene/Scene.h"
 #include "Library/Math/MathUtils.h"
+#include "Library/Platform/CommandLine.h"
 #include "Library/Platform/FileSystem.h"
 
 namespace
@@ -122,28 +123,6 @@ namespace
 		return nullptr;
 	}
 
-	// バイト列が UTF-8 として正しいか（ASCII だけでも true）
-	bool IsValidUtf8( const uint8* Bytes, int32 Num )
-	{
-		int32 i = 0;
-		while ( i < Num )
-		{
-			const uint8 Ch = Bytes[i];
-			int32 Extra = 0;
-			if ( Ch < 0x80 ) Extra = 0;
-			else if ( ( Ch & 0xE0 ) == 0xC0 ) Extra = 1;
-			else if ( ( Ch & 0xF0 ) == 0xE0 ) Extra = 2;
-			else if ( ( Ch & 0xF8 ) == 0xF0 ) Extra = 3;
-			else return false;
-			for ( int32 k = 1; k <= Extra; ++k )
-			{
-				if ( i + k >= Num || ( Bytes[i + k] & 0xC0 ) != 0x80 ) return false;
-			}
-			i += Extra + 1;
-		}
-		return true;
-	}
-
 	bool ReadTextFile( const FString& Path, FString& OutText )
 	{
 		TArray<uint8> Raw;
@@ -154,28 +133,15 @@ namespace
 		const uint8* const Bytes = Raw.GetData() + Begin;
 		const int32 Num = Raw.Num() - Begin;
 		const FString Text( reinterpret_cast<const char*>( Bytes ), Num );
-		// UTF-8 の文字が入っていれば UTF-8 として読み、そうでなければ（ASCII だけ・CP932）そのまま読む
-		bool bHasHigh = false;
-		for ( int32 i = 0; i < Num; ++i ) bHasHigh = bHasHigh || Bytes[i] >= 0x80;
-		if ( bHasHigh && IsValidUtf8( Bytes, Num ) ) OutText = FString::FromUtf8( *Text );
-		else OutText = Text;
+		// UTF-8 として正しければそのまま読む。そうでなければ、昔の Shift-JIS のスクリプトとして UTF-8 に直して読む
+		OutText = Text.IsValidUtf8() ? Text : FString::FromCodePage( Text.GetData(), Text.Len(), 932 );
 		return true;
 	}
 
-	// パスのフォルダの部分（最後の区切りの手前。区切りが無ければ空）。Shift-JIS の 2 バイト目が 0x5C の文字を区切りと間違えない
+	// パスのフォルダの部分（最後の区切りの手前。区切りが無ければ空）
 	FString GetPathDirectory( const FString& Path )
 	{
-		int32 LastSeparator = INDEX_NONE;
-		for ( int32 i = 0; i < Path.Len(); ++i )
-		{
-			const unsigned char Ch = static_cast<unsigned char>( Path[i] );
-			if ( NConsole::IsLeadByte( Ch ) )
-			{
-				++i;
-				continue;
-			}
-			if ( Ch == '/' || Ch == '\\' ) LastSeparator = i;
-		}
+		const int32 LastSeparator = NMath::Max( Path.FindLast( "/" ), Path.FindLast( "\\" ) );
 		return LastSeparator == INDEX_NONE ? FString() : Path.Left( LastSeparator );
 	}
 
@@ -1346,7 +1312,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 		 {}, CategoryInfo );
 
 	Add( "cmdline", "Show the command line the application was started with",
-		 []() { return FString( GetCommandLineA() ); }, {}, CategoryInfo );
+		 []() { return NCommandLine::Get(); }, {}, CategoryInfo );
 
 	Add( "cwd", "Show the working folder, the executable folder and the project root",
 		 []( FConsoleContext& Context )

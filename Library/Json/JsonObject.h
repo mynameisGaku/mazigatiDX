@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 // json.hpp は BOM なし UTF-8 で、コメント中の罫線文字が C4819 を出すので抑制する
-// （プロジェクト全体を /utf-8 にすると Shift-JIS の DxLib ヘッダーや文字列リテラルが壊れる）
+// （ビルドは /utf-8 ではなく /execution-charset:utf-8。BOM の無いファイルを UTF-8 として読むと、BOM なしの Shift-JIS の DxLib ヘッダーが壊れる）
 #pragma warning( push )
 #pragma warning( disable : 4819 )
 #include "VendorModules/nlohmann/json.hpp"
@@ -18,19 +18,32 @@ namespace NJson
 	// JSON ライブラリ（nlohmann）の文字列の型。キーや dump() の結果など、ライブラリとやりとりする文字列の型（UTF-8）。
 	// 自分の文字列は FString を使い、ライブラリに渡す・受け取る境目だけでこの型を使う
 	using FJsonString = NlohmannJson::string_t;
+
+	// FString -> nlohmann の文字列（キー・値）。どちらも UTF-8 なので中身はそのまま。
+	// FString に不正な UTF-8 が入っていると dump() が例外を投げるので、そのときだけ U+FFFD に直す
+	FORCEINLINE FJsonString ToJsonString( const FString& Text )
+	{
+		return Text.IsValidUtf8() ? FJsonString( Text.GetData(), static_cast<usize>( Text.Len() ) ) : FJsonString( *Text.ToValidUtf8() );
+	}
+
+	// nlohmann の文字列 -> FString
+	FORCEINLINE FString FromJsonString( const FJsonString& Text )
+	{
+		return FString( Text.c_str(), static_cast<int32>( Text.size() ) );
+	}
 }
 
 //-----------------------------------------------------------------------------
 // FString <-> JSON 文字列
-//   JSON は UTF-8、FString はシステムのマルチバイト (Shift-JIS) なので変換する
+//   JSON も FString も UTF-8 なので、そのまま入れ替える（ToJsonString / FromJsonString）
 //-----------------------------------------------------------------------------
 namespace nlohmann
 {
 	template<>
 	struct adl_serializer<FString>
 	{
-		FORCEINLINE static void to_json( json& Json, const FString& Value ) { Json = *Value.ToUtf8(); }
-		FORCEINLINE static void from_json( const json& Json, FString& Value ) { Value = FString::FromUtf8( Json.get<NlohmannJson::string_t>().c_str() ); }
+		FORCEINLINE static void to_json( json& Json, const FString& Value ) { Json = NJson::ToJsonString( Value ); }
+		FORCEINLINE static void from_json( const json& Json, FString& Value ) { Value = NJson::FromJsonString( Json.get_ref<const NJson::FJsonString&>() ); }
 	};
 }
 

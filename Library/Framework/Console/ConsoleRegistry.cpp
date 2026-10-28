@@ -44,7 +44,7 @@ namespace
 		return Text.StartsWith( Prefix, ESearchCase::IgnoreCase );
 	}
 
-	// 全部の先頭が同じ部分（大文字小文字は区別しない。2 バイト文字の途中では切らない）
+	// 全部の先頭が同じ部分（大文字小文字は区別しない。UTF-8 の文字の途中では切らない）
 	FString CommonPrefixOf( const TArray<FString>& Texts )
 	{
 		if ( Texts.IsEmpty() ) return FString();
@@ -54,18 +54,9 @@ namespace
 			int32 Length = 0;
 			const int32 Max = NMath::Min( Prefix.Len(), Texts[n].Len() );
 			while ( Length < Max && FString( &Prefix[Length], 1 ).Equals( FString( &Texts[n][Length], 1 ), ESearchCase::IgnoreCase ) ) ++Length;
+			// 次のバイトが文字の 2 バイト目以降（10xxxxxx）なら、文字の途中で切れているので、その文字の手前まで戻す
+			while ( Length > 0 && Length < Prefix.Len() && ( static_cast<unsigned char>( Prefix[Length] ) & 0xC0 ) == 0x80 ) --Length;
 			Prefix = Prefix.Left( Length );
-		}
-		// 2 バイト文字の 1 バイト目で終わっていたら、その 1 バイトは落とす
-		int32 Index = 0;
-		while ( Index < Prefix.Len() )
-		{
-			if ( NConsole::IsLeadByte( static_cast<unsigned char>( Prefix[Index] ) ) )
-			{
-				if ( Index + 1 >= Prefix.Len() ) return Prefix.Left( Index );
-				Index += 2;
-			}
-			else ++Index;
 		}
 		return Prefix;
 	}

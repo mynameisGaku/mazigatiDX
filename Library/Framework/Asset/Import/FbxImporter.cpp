@@ -26,7 +26,7 @@ namespace
 
 	FString ToFString( const ufbx_string& Text )
 	{
-		return Text.data != nullptr && Text.length > 0 ? FString::FromUtf8( Text.data ) : FString();
+		return Text.data != nullptr && Text.length > 0 ? FString( Text.data, static_cast<int32>( Text.length ) ) : FString();
 	}
 
 	// ディレクトリ部分を除いたファイル名
@@ -341,8 +341,7 @@ bool NModelImport::ImportFromMemory( const void* Data, usize Size, const FString
 	// OBJ が参照する .mtl を読む（無くても失敗にしない）
 	LoadOptions.load_external_files = true;
 	LoadOptions.ignore_missing_external_files = true;
-	const FString Utf8Name = FileName.ToUtf8();
-	LoadOptions.filename.data = *Utf8Name;
+	LoadOptions.filename.data = *FileName;
 	LoadOptions.filename.length = SIZE_MAX;
 
 	ufbx_error Error;
@@ -351,7 +350,7 @@ bool NModelImport::ImportFromMemory( const void* Data, usize Size, const FString
 	{
 		char Buffer[512];
 		ufbx_format_error( Buffer, sizeof( Buffer ), &Error );
-		OutError = FString::FromUtf8( Buffer );
+		OutError = Buffer;
 		return false;
 	}
 

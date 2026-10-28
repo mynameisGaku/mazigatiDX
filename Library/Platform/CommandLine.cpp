@@ -4,7 +4,8 @@
 
 FString NCommandLine::Get()
 {
-	const char* CommandLine = GetCommandLineA();
+	// UTF-16 で受け取って UTF-8 にする（A 版はシステムのコードページなので、日本語の引数が UTF-8 にならない）
+	const wchar_t* CommandLine = GetCommandLineW();
 	return CommandLine != nullptr ? FString( CommandLine ) : FString();
 }
 

@@ -84,13 +84,13 @@ FString FFileTime::ToFileNameString() const
 
 bool NFileSystem::FileExists( const FString& Path )
 {
-	const DWORD Attributes = GetFileAttributesA( *Path );
+	const DWORD Attributes = GetFileAttributesW( Path.ToWide().GetData() );
 	return Attributes != INVALID_FILE_ATTRIBUTES && ( Attributes & FILE_ATTRIBUTE_DIRECTORY ) == 0;
 }
 
 bool NFileSystem::DirectoryExists( const FString& Path )
 {
-	const DWORD Attributes = GetFileAttributesA( *Path );
+	const DWORD Attributes = GetFileAttributesW( Path.ToWide().GetData() );
 	return Attributes != INVALID_FILE_ATTRIBUTES && ( Attributes & FILE_ATTRIBUTE_DIRECTORY ) != 0;
 }
 
@@ -100,16 +100,16 @@ bool NFileSystem::DirectoryExists( const FString& Path )
 
 FString NFileSystem::GetExecutableDirectory()
 {
-	char Buffer[MAX_PATH] = {};
-	const DWORD Length = GetModuleFileNameA( nullptr, Buffer, MAX_PATH );
+	wchar_t Buffer[MAX_PATH] = {};
+	const DWORD Length = GetModuleFileNameW( nullptr, Buffer, MAX_PATH );
 	if ( Length == 0 || Length >= MAX_PATH ) return FString();
 	return GetParentDirectory( FString( Buffer ) );
 }
 
 FString NFileSystem::GetExecutableName()
 {
-	char Buffer[MAX_PATH] = {};
-	const DWORD Length = GetModuleFileNameA( nullptr, Buffer, MAX_PATH );
+	wchar_t Buffer[MAX_PATH] = {};
+	const DWORD Length = GetModuleFileNameW( nullptr, Buffer, MAX_PATH );
 	if ( Length == 0 || Length >= MAX_PATH ) return FString( "game" );
 
 	const FString FullPath( Buffer );
@@ -124,16 +124,16 @@ FString NFileSystem::GetExecutableName()
 
 FString NFileSystem::GetWorkingDirectory()
 {
-	char Buffer[MAX_PATH] = {};
-	const DWORD Length = GetCurrentDirectoryA( MAX_PATH, Buffer );
+	wchar_t Buffer[MAX_PATH] = {};
+	const DWORD Length = GetCurrentDirectoryW( MAX_PATH, Buffer );
 	if ( Length == 0 || Length >= MAX_PATH ) return FString();
 	return FString( Buffer );
 }
 
 FString NFileSystem::GetFullPath( const FString& Path )
 {
-	char Buffer[MAX_PATH] = {};
-	const DWORD Length = GetFullPathNameA( *Path, MAX_PATH, Buffer, nullptr );
+	wchar_t Buffer[MAX_PATH] = {};
+	const DWORD Length = GetFullPathNameW( Path.ToWide().GetData(), MAX_PATH, Buffer, nullptr );
 	if ( Length == 0 || Length >= MAX_PATH ) return Path;
 	return FString( Buffer );
 }
@@ -179,7 +179,7 @@ bool NFileSystem::EnsureDirectory( const FString& Path )
 		const FString Partial = Normalized.Left( i );
 		// "C:" のようなドライブ名は作らない
 		if ( Partial.Len() == 2 && Partial[1] == ':' ) continue;
-		if ( CreateDirectoryA( *Partial, nullptr ) )
+		if ( CreateDirectoryW( Partial.ToWide().GetData(), nullptr ) )
 		{
 			LOG( LogFileSystem, Verbose, "Created directory: %s", *Partial );
 		}
@@ -196,15 +196,15 @@ TArray<FString> NFileSystem::ListFiles( const FString& Directory, const FString&
 {
 	TArray<FString> Result;
 
-	WIN32_FIND_DATAA Data;
-	HANDLE Handle = FindFirstFileA( *( ToWindowsPath( Directory ) / Pattern ), &Data );
+	WIN32_FIND_DATAW Data;
+	HANDLE Handle = FindFirstFileW( ( ToWindowsPath( Directory ) / Pattern ).ToWide().GetData(), &Data );
 	if ( Handle == INVALID_HANDLE_VALUE ) return Result;
 
 	do
 	{
 		if ( ( Data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) == 0 ) Result.Add( FString( Data.cFileName ) );
 	}
-	while ( FindNextFileA( Handle, &Data ) );
+	while ( FindNextFileW( Handle, &Data ) );
 	FindClose( Handle );
 	return Result;
 }
@@ -215,9 +215,9 @@ namespace
 	{
 		if ( Depth > 16 ) return;   // シンボリックリンクなどでの無限の再帰を避ける
 
-		WIN32_FIND_DATAA Data;
+		WIN32_FIND_DATAW Data;
 		const FString Directory = Relative.IsEmpty() ? Root : ToWindowsPath( Root ) / ToWindowsPath( Relative );
-		HANDLE Handle = FindFirstFileA( *( Directory / "*" ), &Data );
+		HANDLE Handle = FindFirstFileW( ( Directory / "*" ).ToWide().GetData(), &Data );
 		if ( Handle == INVALID_HANDLE_VALUE ) return;
 
 		do
@@ -237,7 +237,7 @@ namespace
 			}
 			if ( bMatch ) Out.Add( Child );
 		}
-		while ( FindNextFileA( Handle, &Data ) );
+		while ( FindNextFileW( Handle, &Data ) );
 		FindClose( Handle );
 	}
 }
@@ -253,14 +253,14 @@ TArray<FString> NFileSystem::ListFilesRecursive( const FString& Directory, const
 int64 NFileSystem::GetFileSize( const FString& Path )
 {
 	WIN32_FILE_ATTRIBUTE_DATA Data;
-	if ( !GetFileAttributesExA( *Path, GetFileExInfoStandard, &Data ) || ( Data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) != 0 ) return -1;
+	if ( !GetFileAttributesExW( Path.ToWide().GetData(), GetFileExInfoStandard, &Data ) || ( Data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) != 0 ) return -1;
 	return ( static_cast<int64>( Data.nFileSizeHigh ) << 32 ) | static_cast<int64>( Data.nFileSizeLow );
 }
 
 bool NFileSystem::GetLastWriteTime( const FString& Path, FFileTime& OutTime )
 {
 	WIN32_FILE_ATTRIBUTE_DATA Data;
-	if ( !GetFileAttributesExA( *Path, GetFileExInfoStandard, &Data ) ) return false;
+	if ( !GetFileAttributesExW( Path.ToWide().GetData(), GetFileExInfoStandard, &Data ) ) return false;
 
 	FILETIME Local;
 	SYSTEMTIME System;
@@ -279,7 +279,7 @@ FFileTime NFileSystem::GetCurrentLocalTime()
 
 bool NFileSystem::RenameFile( const FString& From, const FString& To )
 {
-	if ( MoveFileExA( *From, *To, 0 ) == 0 )
+	if ( MoveFileExW( From.ToWide().GetData(), To.ToWide().GetData(), 0 ) == 0 )
 	{
 		LOG( LogFileSystem, Warning, "Failed to rename %s -> %s (Windows error %lu)", *From, *To, GetLastError() );
 		return false;
@@ -290,7 +290,7 @@ bool NFileSystem::RenameFile( const FString& From, const FString& To )
 
 bool NFileSystem::RemoveFile( const FString& Path )
 {
-	if ( DeleteFileA( *Path ) == 0 )
+	if ( DeleteFileW( Path.ToWide().GetData() ) == 0 )
 	{
 		LOG( LogFileSystem, Warning, "Failed to delete %s (Windows error %lu)", *Path, GetLastError() );
 		return false;

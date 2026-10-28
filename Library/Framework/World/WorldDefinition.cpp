@@ -282,7 +282,7 @@ namespace
 		if ( Collider.Shape == EWorldColliderShape::Box ) Json["Size"] = NJson::ToJson( Collider.Size );
 		else if ( Collider.Shape != EWorldColliderShape::Mesh ) Json["Radius"] = NJson::Round4( Collider.Radius );
 		if ( Collider.Shape == EWorldColliderShape::Capsule ) Json["Height"] = NJson::Round4( Collider.Height );
-		if ( Collider.Shape == EWorldColliderShape::Mesh && !Collider.Mesh.IsEmpty() ) Json["Mesh"] = Collider.Mesh.ToUtf8().GetData();
+		if ( Collider.Shape == EWorldColliderShape::Mesh && !Collider.Mesh.IsEmpty() ) Json["Mesh"] = Collider.Mesh;
 		if ( Collider.Shape != EWorldColliderShape::Mesh && !IsNearlyEqual( Collider.Offset, Default.Offset ) ) Json["Offset"] = NJson::ToJson( Collider.Offset );
 		if ( Collider.bTrigger ) Json["Trigger"] = true;
 		return Json;
@@ -347,7 +347,7 @@ namespace
 		if ( !Object.Props.IsEmpty() )
 		{
 			NlohmannJson Props = NlohmannJson::object();
-			for ( const FWorldProp& Prop : Object.Props ) Props[*Prop.Name.ToUtf8()] = Prop.ValueToJson();
+			for ( const FWorldProp& Prop : Object.Props ) Props[NJson::ToJsonString( Prop.Name )] = Prop.ValueToJson();
 			Json["Props"] = Props;
 		}
 		const NlohmannJson Transform = TransformToJson( Object.Transform );
@@ -355,7 +355,7 @@ namespace
 		if ( Object.Collision != EWorldCollisionMode::Auto ) Json["Collision"] = ToString( Object.Collision );
 
 		NlohmannJson Components = NlohmannJson::object();
-		for ( const FWorldRawComponent& Raw : Object.RawComponents ) Components[*Raw.Type.ToUtf8()] = Raw.Data;
+		for ( const FWorldRawComponent& Raw : Object.RawComponents ) Components[NJson::ToJsonString( Raw.Type )] = Raw.Data;
 		if ( Object.Model.IsSet() ) Components["Model"] = ModelToJson( Object.Model.GetValue() );
 		if ( Object.Billboard.IsSet() ) Components["Billboard"] = BillboardToJson( Object.Billboard.GetValue() );
 		if ( Object.Sound.IsSet() ) Components["Sound"] = SoundToJson( Object.Sound.GetValue() );
@@ -386,7 +386,7 @@ namespace
 					Warn( Warnings, Where + ": a tag that is not a string was skipped" );
 					continue;
 				}
-				const FString Tag = FString::FromUtf8( Item.get<NJson::FJsonString>().c_str() ).TrimStartAndEnd();
+				const FString Tag = NJson::FromJsonString( Item.get<NJson::FJsonString>() ).TrimStartAndEnd();
 				if ( Tag.IsEmpty() || !Object.AddTag( Tag ) ) Warn( Warnings, Where + ": an empty or duplicate tag '" + Tag + "' was skipped" );
 			}
 		}
@@ -396,7 +396,7 @@ namespace
 			for ( auto It = Json["Props"].begin(); It != Json["Props"].end(); ++It )
 			{
 				FWorldProp Prop;
-				const FString PropName = FString::FromUtf8( It.key().c_str() );
+				const FString PropName = NJson::FromJsonString( It.key() );
 				if ( PropName.IsEmpty() || !FWorldProp::FromJsonValue( PropName, It.value(), Prop ) )
 				{
 					Warn( Warnings, Where + ": the property '" + PropName + "' has a value of an unsupported form and was skipped" );
@@ -437,7 +437,7 @@ namespace
 				{
 					// 知らない種類（と、形が壊れた既知の種類）は、そのまま残す
 					FWorldRawComponent Raw;
-					Raw.Type = FString::FromUtf8( Key.c_str() );
+					Raw.Type = NJson::FromJsonString( Key );
 					Raw.Data = Value;
 					Object.RawComponents.Add( Raw );
 					if ( IsKnownKey( KnownComponentTypes, Key ) ) Warn( Warnings, Where + ": the " + Raw.Type + " component is not an object and was kept as it is" );
@@ -659,12 +659,12 @@ NlohmannJson FWorldProp::ValueToJson() const
 	case EWorldPropType::Bool: return NlohmannJson( bValue );
 	case EWorldPropType::Int: return NlohmannJson( static_cast<int64>( IntValue ) );
 	case EWorldPropType::Float: return NlohmannJson( Round6( FloatValue ) );
-	case EWorldPropType::String: return NlohmannJson( *StringValue.ToUtf8() );
+	case EWorldPropType::String: return NlohmannJson( NJson::ToJsonString( StringValue ) );
 	case EWorldPropType::Vector3: return NJson::ToJson( VectorValue );
 	case EWorldPropType::Asset:
 	{
 		NlohmannJson Json = NlohmannJson::object();
-		Json["Asset"] = *StringValue.ToUtf8();
+		Json["Asset"] = NJson::ToJsonString( StringValue );
 		return Json;
 	}
 	case EWorldPropType::Object:
@@ -699,7 +699,7 @@ bool FWorldProp::FromJsonValue( const FString& InName, const NlohmannJson& Json,
 	else if ( Json.is_string() )
 	{
 		Prop.Type = EWorldPropType::String;
-		Prop.StringValue = FString::FromUtf8( Json.get<NJson::FJsonString>().c_str() );
+		Prop.StringValue = NJson::FromJsonString( Json.get<NJson::FJsonString>() );
 	}
 	else if ( IsNumberArray( Json, 3 ) )
 	{
@@ -709,7 +709,7 @@ bool FWorldProp::FromJsonValue( const FString& InName, const NlohmannJson& Json,
 	else if ( Json.is_object() && Json.contains( "Asset" ) && Json["Asset"].is_string() )
 	{
 		Prop.Type = EWorldPropType::Asset;
-		Prop.StringValue = FString::FromUtf8( Json["Asset"].get<NJson::FJsonString>().c_str() );
+		Prop.StringValue = NJson::FromJsonString( Json["Asset"].get<NJson::FJsonString>() );
 	}
 	else if ( Json.is_object() && Json.contains( "Object" ) && Json["Object"].is_number_integer() )
 	{

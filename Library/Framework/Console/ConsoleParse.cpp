@@ -32,12 +32,6 @@ namespace
 			while ( i < Length )
 			{
 				const unsigned char Ch = static_cast<unsigned char>( Text[i] );
-				if ( NConsole::IsLeadByte( Ch ) && i + 1 < Length )
-				{
-					Token.Value.Append( &Text[i], 2 );
-					i += 2;
-					continue;
-				}
 				if ( IsSpace( static_cast<char>( Ch ) ) || Ch == ';' ) break;
 
 				if ( Ch == '"' )
@@ -47,12 +41,7 @@ namespace
 					while ( i < Length )
 					{
 						const unsigned char Inner = static_cast<unsigned char>( Text[i] );
-						if ( NConsole::IsLeadByte( Inner ) && i + 1 < Length )
-						{
-							Token.Value.Append( &Text[i], 2 );
-							i += 2;
-						}
-						else if ( Inner == '\\' && i + 1 < Length )
+						if ( Inner == '\\' && i + 1 < Length )
 						{
 							const char Next = Text[i + 1];
 							if ( Next == '"' ) { Token.Value += '"'; i += 2; }
@@ -82,12 +71,7 @@ namespace
 					while ( i < Length )
 					{
 						const unsigned char Inner = static_cast<unsigned char>( Text[i] );
-						if ( NConsole::IsLeadByte( Inner ) && i + 1 < Length )
-						{
-							Token.Value.Append( &Text[i], 2 );
-							i += 2;
-						}
-						else if ( Inner == '\'' )
+						if ( Inner == '\'' )
 						{
 							++i;
 							Token.bTerminated = true;
@@ -161,11 +145,6 @@ FString NConsole::Quote( const FString& Text )
 	for ( int32 i = 0; i < Text.Len() && !bNeedsQuote; ++i )
 	{
 		const unsigned char Ch = static_cast<unsigned char>( Text[i] );
-		if ( IsLeadByte( Ch ) && i + 1 < Text.Len() )
-		{
-			++i;
-			continue;
-		}
 		bNeedsQuote = IsSpace( static_cast<char>( Ch ) ) || Ch == '"' || Ch == '\'' || Ch == ';' || Ch == '\n';
 	}
 	if ( !bNeedsQuote ) return Text;
@@ -174,12 +153,7 @@ FString NConsole::Quote( const FString& Text )
 	for ( int32 i = 0; i < Text.Len(); ++i )
 	{
 		const unsigned char Ch = static_cast<unsigned char>( Text[i] );
-		if ( IsLeadByte( Ch ) && i + 1 < Text.Len() )
-		{
-			Result.Append( &Text[i], 2 );
-			++i;
-		}
-		else if ( Ch == '"' ) Result += "\\\"";
+		if ( Ch == '"' ) Result += "\\\"";
 		else if ( Ch == '\\' ) Result += "\\\\";
 		else if ( Ch == '\n' ) Result += "\\n";
 		else if ( Ch == '\t' ) Result += "\\t";

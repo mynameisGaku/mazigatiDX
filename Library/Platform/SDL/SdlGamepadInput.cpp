@@ -392,12 +392,12 @@ void ASdlGamepadInput::RefreshInfo( FDevice& Device )
 		? SDL_GetGamepadName( Device.Gamepad )
 		: SDL_GetJoystickName( Device.Joystick );
 	Device.Info.Name = ( RawName != nullptr && RawName[0] != '\0' )
-		? FString::FromUtf8( RawName )
+		? FString( RawName )
 		: FString( "Generic Controller" );
 
 	char GuidBuffer[64] = {};
 	SDL_GUIDToString( SDL_GetJoystickGUID( Device.Joystick ), GuidBuffer, sizeof( GuidBuffer ) );
-	Device.Info.Guid = FString::FromUtf8( GuidBuffer );
+	Device.Info.Guid = GuidBuffer;
 
 	Device.Info.Vendor = ( Device.Gamepad != nullptr )
 		? SDL_GetGamepadVendor( Device.Gamepad )
@@ -680,7 +680,7 @@ bool ASdlGamepadInput::AddMappingsFromFile( const FString& Filename )
 	}
 
 	const FString Resolved = NFileSystem::FindFile( Filename ).Get( Filename );
-	const int32 Added = SDL_AddGamepadMappingsFromFile( *Resolved.ToUtf8() );
+	const int32 Added = SDL_AddGamepadMappingsFromFile( *Resolved );
 	if ( Added < 0 )
 	{
 		LOG( LogGamepad, Warning, "Failed to load gamepad mappings from %s: %s", *Resolved, SDL_GetError() );

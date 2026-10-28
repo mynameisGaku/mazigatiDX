@@ -5,6 +5,7 @@
 #include "Library/Core/Profiler/ProfilerScope.h"
 #include "Library/Core/Types/CString.h"
 #include "Library/Framework/Engine/Engine.h"
+#include "Library/Platform/CommandLine.h"
 #include "Library/Platform/FileSystem.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 #include "VendorModules/ImGui/imgui_impl_dxlib.hpp"
@@ -84,15 +85,12 @@ TResult<void> CDxLibBackend::Init( const FWindowSettings& InSettings )
 
 	// 起動引数 --screenshot=パス.png [--screenshot-frame=N] [--screenshot-exit]
 	{
-		const char* CommandLine = GetCommandLineA();
-		if ( const char* Found = CommandLine != nullptr ? NCString::Find( CommandLine, "--screenshot=" ) : nullptr )
+		const FString CommandLine = NCommandLine::Get();
+		if ( const TOptional<FString> Path = NCommandLine::GetValue( CommandLine, "screenshot" ) )
 		{
-			Found += NCString::Length( "--screenshot=" );
-			const char* End = Found;
-			while ( *End != '\0' && *End != ' ' ) ++End;
-			ScreenshotPath = FString( Found, static_cast<int32>( End - Found ) );
-			if ( const char* Frame = NCString::Find( CommandLine, "--screenshot-frame=" ) ) ScreenshotFrame = NCString::ToInt32( Frame + NCString::Length( "--screenshot-frame=" ) );
-			bScreenshotExit = NCString::Find( CommandLine, "--screenshot-exit" ) != nullptr;
+			ScreenshotPath = Path.GetValue();
+			if ( const TOptional<FString> Frame = NCommandLine::GetValue( CommandLine, "screenshot-frame" ) ) ScreenshotFrame = Frame.GetValue().ToInt();
+			bScreenshotExit = NCommandLine::HasFlag( CommandLine, "screenshot-exit" );
 			bScreenshotDone = false;
 		}
 	}
@@ -127,6 +125,10 @@ void CDxLibBackend::Shutdown()
 
 void CDxLibBackend::ApplyPreInitSettings()
 {
+	// DxLib に渡す文字列（ファイル名・描画する文字・フォント名・ウィンドウの題など）を UTF-8 として読ませる。
+	// DxLib_Init の前に呼ぶ必要がある（ほかの設定より先にしておく）
+	SetUseCharCodeFormat( DX_CHARCODEFORMAT_UTF8 );
+
 	SetOutApplicationLogValidFlag( Settings.bOutputDxLibLog ? TRUE : FALSE );
 	SetDoubleStartValidFlag( Settings.bAllowMultipleInstances ? TRUE : FALSE );
 	SetMainWindowText( *Settings.Title );
@@ -487,7 +489,7 @@ void CDxLibBackend::InitImGui()
 	if ( NFileSystem::FileExists( Settings.ImGuiFontPath ) )
 	{
 		// ImGui 1.92 以降は使われた文字だけ必要になったときに読み込むので、日本語の文字範囲の指定は要らない
-		IO.Fonts->AddFontFromFileTTF( *Settings.ImGuiFontPath.ToUtf8(), Settings.ImGuiFontSize );
+		IO.Fonts->AddFontFromFileTTF( *Settings.ImGuiFontPath, Settings.ImGuiFontSize );
 		LOG( LogPlatform, Verbose, "ImGui font: %s (%.0f px)", *Settings.ImGuiFontPath, Settings.ImGuiFontSize );
 	}
 	else

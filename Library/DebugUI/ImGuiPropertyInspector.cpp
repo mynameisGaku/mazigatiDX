@@ -9,7 +9,7 @@
 
 void FImGuiPropertyInspector::Text( const char* Label, const FString& Value )
 {
-	ImGui::LabelText( Label, "%s", *Value.ToUtf8() );
+	ImGui::LabelText( Label, "%s", *Value );
 }
 
 bool FImGuiPropertyInspector::Bool( const char* Label, bool& Value )
@@ -59,13 +59,13 @@ void NDebugUI::DrawGameObject( CGameObject& Object )
 
 	ImGuiTreeNodeFlags Flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
 	if ( Object.IsPendingDestroy() ) ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.6f, 0.6f, 0.6f, 1.0f ) );
-	const bool bOpen = ImGui::TreeNodeEx( "##Object", Flags, "%s%s%s", *Label.ToUtf8(),
+	const bool bOpen = ImGui::TreeNodeEx( "##Object", Flags, "%s%s%s", *Label,
 										  bHasComponents ? "  [C]" : "", bHasChildren ? "  [+]" : "" );
 	if ( Object.IsPendingDestroy() ) ImGui::PopStyleColor();
 
 	if ( bOpen )
 	{
-		ImGui::TextDisabled( "%s", *Object.GetTypeName().ToUtf8() );
+		ImGui::TextDisabled( "%s", *Object.GetTypeName() );
 		DrawProperties( Object );
 
 		// コンポーネント
@@ -73,7 +73,7 @@ void NDebugUI::DrawGameObject( CGameObject& Object )
 		{
 			CComponent* Component = Object.GetComponentAt( i );
 			ImGui::PushID( Component );
-			if ( ImGui::TreeNodeEx( "##Component", ImGuiTreeNodeFlags_DefaultOpen, "%s", *Component->GetName().ToUtf8() ) )
+			if ( ImGui::TreeNodeEx( "##Component", ImGuiTreeNodeFlags_DefaultOpen, "%s", *Component->GetName() ) )
 			{
 				DrawProperties( *Component );
 				ImGui::TreePop();
@@ -103,7 +103,7 @@ void NDebugUI::DrawSubsystems( const char* Label, const FSubsystemCollection& Su
 	for ( CSubsystem* Subsystem : Subsystems.GetAll() )
 	{
 		ImGui::PushID( Subsystem );
-		if ( ImGui::TreeNode( "##Subsystem", "%s", *Subsystem->GetTypeName().ToUtf8() ) )
+		if ( ImGui::TreeNode( "##Subsystem", "%s", *Subsystem->GetTypeName() ) )
 		{
 			DrawProperties( *Subsystem );
 			ImGui::TreePop();

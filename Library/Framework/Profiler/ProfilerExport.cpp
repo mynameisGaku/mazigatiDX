@@ -14,7 +14,7 @@ namespace
 	// JSON の文字列として書き出せる形（UTF-8、" \ と制御文字をエスケープ）にする
 	FString EscapeJson( const FString& Text )
 	{
-		const FString Utf8 = Text.ToUtf8();
+		const FString Utf8 = Text.ToValidUtf8();
 		FString Result;
 		Result.Reserve( Utf8.Len() + 8 );
 		for ( int32 i = 0; i < Utf8.Len(); ++i )

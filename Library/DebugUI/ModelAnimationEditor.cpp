@@ -408,7 +408,7 @@ namespace
 		if ( Clip != nullptr )
 		{
 			char Info[160];
-			NCString::Format( Info, sizeof( Info ), "%s   %.0f%%   %s", *Clip->Name.ToUtf8(), S.Animator.GetNormalizedTime() * 100.0f, S.Animator.IsFinished() ? "finished" : ( S.bPlaying ? "playing" : "paused" ) );
+			NCString::Format( Info, sizeof( Info ), "%s   %.0f%%   %s", *Clip->Name, S.Animator.GetNormalizedTime() * 100.0f, S.Animator.IsFinished() ? "finished" : ( S.bPlaying ? "playing" : "paused" ) );
 			DrawList->AddText( ImVec2( Origin.x + 8.0f, Max.y - 18.0f ), IM_COL32( 230, 230, 230, 255 ), Info );
 		}
 		else if ( !S.Animator.Instance.IsValid() )
@@ -818,7 +818,7 @@ namespace
 				for ( const FModelClipInfo& Info : Source->GetClips() )
 				{
 					char Label[200];
-					NCString::Format( Label, sizeof( Label ), "%s   (#%d, %.0f time units)###anim%d", Info.Name.IsEmpty() ? "(unnamed)" : *Info.Name.ToUtf8(), Info.AnimIndex, Info.Length, Info.AnimIndex );
+					NCString::Format( Label, sizeof( Label ), "%s   (#%d, %.0f time units)###anim%d", Info.Name.IsEmpty() ? "(unnamed)" : *Info.Name, Info.AnimIndex, Info.Length, Info.AnimIndex );
 					if ( ImGui::Selectable( Label ) )
 					{
 						FModelClipDef Clip;
@@ -850,7 +850,7 @@ namespace
 		{
 			const FModelClipDef& Clip = Definition.Clips[i];
 			char Label[200];
-			NCString::Format( Label, sizeof( Label ), "%s   (%.2f s, %s, %d event(s))###clip%d", *Clip.Name.ToUtf8(), S.Animator.GetClipLength( Clip.Name ), ToString( Clip.Loop ), Clip.Events.Num(), i );
+			NCString::Format( Label, sizeof( Label ), "%s   (%.2f s, %s, %d event(s))###clip%d", *Clip.Name, S.Animator.GetClipLength( Clip.Name ), ToString( Clip.Loop ), Clip.Events.Num(), i );
 			if ( ImGui::Selectable( Label, S.SelectedClip == i ) )
 			{
 				S.SelectedClip = i;
@@ -884,13 +884,13 @@ namespace
 		if ( SourceModel.IsValid() )
 		{
 			if ( SourceModel->IsAnimationOnly() ) ImGui::TextDisabled( "Animation-only source (%d bone(s))", SourceModel->GetBoneNames().Num() );
-			const char* Preview = Edited.AnimName.IsEmpty() ? "(by number)" : *Edited.AnimName.ToUtf8();
+			const char* Preview = Edited.AnimName.IsEmpty() ? "(by number)" : *Edited.AnimName;
 			if ( ImGui::BeginCombo( "Animation", Preview ) )
 			{
 				for ( const FModelClipInfo& Info : SourceModel->GetClips() )
 				{
 					char Label[160];
-					NCString::Format( Label, sizeof( Label ), "%s  (#%d)###a%d", Info.Name.IsEmpty() ? "(unnamed)" : *Info.Name.ToUtf8(), Info.AnimIndex, Info.AnimIndex );
+					NCString::Format( Label, sizeof( Label ), "%s  (#%d)###a%d", Info.Name.IsEmpty() ? "(unnamed)" : *Info.Name, Info.AnimIndex, Info.AnimIndex );
 					if ( ImGui::Selectable( Label, Info.AnimIndex == Edited.AnimIndex ) )
 					{
 						Edited.AnimIndex = Info.AnimIndex;
@@ -916,12 +916,12 @@ namespace
 		ImGui::SeparatorText( "Crossfade test" );
 		const auto ClipCombo = [&]( const char* Label, int32& Index )
 		{
-			const char* Preview = Definition.Clips.IsValidIndex( Index ) ? *Definition.Clips[Index].Name.ToUtf8() : "(none)";
+			const char* Preview = Definition.Clips.IsValidIndex( Index ) ? *Definition.Clips[Index].Name : "(none)";
 			if ( ImGui::BeginCombo( Label, Preview ) )
 			{
 				for ( int32 i = 0; i < Definition.Clips.Num(); ++i )
 				{
-					if ( ImGui::Selectable( *Definition.Clips[i].Name.ToUtf8(), Index == i ) ) Index = i;
+					if ( ImGui::Selectable( *Definition.Clips[i].Name, Index == i ) ) Index = i;
 				}
 				ImGui::EndCombo();
 			}
@@ -951,7 +951,7 @@ namespace
 		{
 			if ( Layer.Weight <= 0.0f ) continue;
 			char Overlay[96];
-			NCString::Format( Overlay, sizeof( Overlay ), "%s  %.0f%%", *Layer.ClipName.ToUtf8(), Layer.Weight * 100.0f );
+			NCString::Format( Overlay, sizeof( Overlay ), "%s  %.0f%%", *Layer.ClipName, Layer.Weight * 100.0f );
 			ImGui::ProgressBar( Layer.Weight, ImVec2( -FLT_MIN, 0.0f ), Overlay );
 		}
 	}

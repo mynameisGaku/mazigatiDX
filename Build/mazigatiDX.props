@@ -26,6 +26,9 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <!-- 文字列リテラルを UTF-8 にする（FString は UTF-8）。ソースは BOM つき UTF-8 で書く（BOM のあるファイルは、自動で UTF-8 として読まれる）。
+           /utf-8 にしないのは、BOM なしの Shift-JIS の DxLib のヘッダーを、UTF-8 として読んで壊さないため -->
+      <AdditionalOptions>/execution-charset:utf-8 %(AdditionalOptions)</AdditionalOptions>
       <!-- 同名の .cpp が別のフォルダーにあっても .obj が衝突しないよう、元のフォルダー構成のまま出力する -->
       <ObjectFileName>$(IntDir)%(RelativeDir)</ObjectFileName>
       <!-- プロジェクトのフォルダー（#include "Source/..."）、フレームワークのフォルダー（#include "Library/..."）、第三者のライブラリ、DxLib -->

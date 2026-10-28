@@ -39,8 +39,7 @@ namespace
 	// 入力欄の中身を、外から入れ替える（次のフレームに反映される。入力欄にはフォーカスを戻す）
 	void SetInputText( FConsoleWindowState& S, const FString& Line )
 	{
-		const FString Utf8 = Line.ToUtf8();
-		NCString::Format( S.Input, sizeof( S.Input ), "%s", *Utf8 );
+		NCString::Format( S.Input, sizeof( S.Input ), "%s", *Line );
 		S.ProgrammaticText = Line;
 		S.bFocusInput = true;
 		++S.InputGeneration;
@@ -56,7 +55,7 @@ namespace
 	// 入力が変わったら、候補（予測変換）と、使い方の表示を作り直す
 	void UpdateSuggestions( FConsoleWindowState& S )
 	{
-		const FString Line = FString::FromUtf8( S.Input );
+		const FString Line = S.Input;
 		const FString Key = S.bListAll ? Line + "\x01" : Line;
 		if ( Key == S.LastInput ) return;
 		S.LastInput = Key;
@@ -101,9 +100,8 @@ namespace
 	//-------------------------------------------------------------------------
 	void SetCallbackText( ImGuiInputTextCallbackData* Data, FConsoleWindowState& S, const FString& Line )
 	{
-		const FString Utf8 = Line.ToUtf8();
 		Data->DeleteChars( 0, Data->BufTextLen );
-		Data->InsertChars( 0, *Utf8 );
+		Data->InsertChars( 0, *Line );
 		Data->CursorPos = Data->BufTextLen;
 		Data->SelectionStart = Data->SelectionEnd = Data->CursorPos;
 		S.ProgrammaticText = Line;
@@ -117,7 +115,7 @@ namespace
 		if ( Data->EventFlag == ImGuiInputTextFlags_CallbackEdit )
 		{
 			// 打ち込んで変わったとき（こちらで入れ替えた直後は除く）
-			if ( FString::FromUtf8( Data->Buf ) != S.ProgrammaticText )
+			if ( S.ProgrammaticText != Data->Buf )
 			{
 				History.ResetNavigation();
 				S.Selected = INDEX_NONE;
@@ -137,7 +135,7 @@ namespace
 			}
 			else
 			{
-				const FString Current = FString::FromUtf8( Data->Buf );
+				const FString Current = Data->Buf;
 				const FString NewLine = bUp ? History.Previous( Current ) : History.Next( Current );
 				SetCallbackText( Data, S, NewLine );
 				S.Selected = INDEX_NONE;
@@ -145,7 +143,7 @@ namespace
 		}
 		else if ( Data->EventFlag == ImGuiInputTextFlags_CallbackCompletion )
 		{
-			const FString Line = FString::FromUtf8( Data->Buf );
+			const FString Line = Data->Buf;
 			if ( Line.TrimStartAndEnd().IsEmpty() )
 			{
 				S.bListAll = true;   // 入力が空なら、コマンドの一覧を出す
@@ -235,7 +233,7 @@ void NDebugUI::LoadConsoleHistory( FConsoleWindowState& State )
 		if ( LineEnd > Start )
 		{
 			const FString Line( reinterpret_cast<const char*>( Raw.GetData() ) + Start, LineEnd - Start );
-			Lines.Add( FString::FromUtf8( *Line ) );
+			Lines.Add( Line );
 		}
 		Start = End + 1;
 	}
@@ -250,8 +248,7 @@ void NDebugUI::SaveConsoleHistory( FConsoleWindowState& State )
 	if ( !File.Open( Path, FFile::EMode::Write ) ) return;
 	for ( const FString& Line : GetHistory( State ).GetAll() )
 	{
-		const FString Utf8 = Line.ToUtf8();
-		File.Write( *Utf8, static_cast<usize>( Utf8.Len() ) );
+		File.Write( *Line, static_cast<usize>( Line.Len() ) );
 		File.Write( "\n", 1 );
 	}
 }
@@ -292,7 +289,7 @@ void NDebugUI::DrawConsoleWindow( FConsoleWindowState& S, bool* pOpen )
 		S.bScrollToBottom = true;
 	}
 	ImGui::SameLine();
-	if ( ImGui::Button( "Copy" ) ) ImGui::SetClipboardText( *Output.ToText().ToUtf8() );
+	if ( ImGui::Button( "Copy" ) ) ImGui::SetClipboardText( *Output.ToText() );
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth( 200.0f );
 	ImGui::InputTextWithHint( "##Filter", "filter output", S.Filter, sizeof( S.Filter ) );
@@ -321,7 +318,7 @@ void NDebugUI::DrawConsoleWindow( FConsoleWindowState& S, bool* pOpen )
 	{
 		TArray<int32> Visible;
 		const bool bFilter = S.Filter[0] != '\0';
-		const FString FilterText = bFilter ? FString::FromUtf8( S.Filter ) : FString();
+		const FString FilterText = bFilter ? FString( S.Filter ) : FString();
 		if ( bFilter )
 		{
 			for ( int32 i = 0; i < Output.Num(); ++i )
@@ -347,7 +344,7 @@ void NDebugUI::DrawConsoleWindow( FConsoleWindowState& S, bool* pOpen )
 
 		if ( ImGui::BeginPopupContextWindow( "##ConsoleOutputMenu" ) )
 		{
-			if ( ImGui::MenuItem( "Copy all" ) ) ImGui::SetClipboardText( *Output.ToText().ToUtf8() );
+			if ( ImGui::MenuItem( "Copy all" ) ) ImGui::SetClipboardText( *Output.ToText() );
 			if ( ImGui::MenuItem( "Clear" ) )
 			{
 				Output.Clear();
@@ -404,7 +401,7 @@ void NDebugUI::DrawConsoleWindow( FConsoleWindowState& S, bool* pOpen )
 		if ( NumSuggestions > MaxSuggestionRows ) ImGui::TextDisabled( "  %d - %d of %d (Up / Down to see more)", First + 1, Last, NumSuggestions );
 		if ( Clicked != INDEX_NONE )
 		{
-			SetInputText( S, ApplySuggestion( FString::FromUtf8( S.Input ), S.Suggestions[Clicked] ) );
+			SetInputText( S, ApplySuggestion( FString( S.Input ), S.Suggestions[Clicked] ) );
 			S.Selected = INDEX_NONE;
 		}
 	}
@@ -422,7 +419,7 @@ void NDebugUI::DrawConsoleWindow( FConsoleWindowState& S, bool* pOpen )
 		S.bFocusInput = false;
 	}
 	const ImGuiInputTextFlags Flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackHistory | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackEdit;
-	const FString TextBeforeFrame = FString::FromUtf8( S.Input );
+	const FString TextBeforeFrame = S.Input;
 	ImGui::PushID( S.InputGeneration );
 	const bool bEnter = ImGui::InputText( "##ConsoleInput", S.Input, sizeof( S.Input ), Flags, InputCallback, &S );
 	const bool bInputActive = ImGui::IsItemActive();
@@ -448,7 +445,7 @@ void NDebugUI::DrawConsoleWindow( FConsoleWindowState& S, bool* pOpen )
 
 	if ( bEnter )
 	{
-		const FString Line = FString::FromUtf8( S.Input );
+		const FString Line = S.Input;
 		if ( HasVisibleSuggestions( S ) && S.Suggestions.IsValidIndex( S.Selected ) )
 		{
 			// 選んでいる候補を入れる（実行はしない）

@@ -12,51 +12,6 @@
 
 namespace
 {
-	//-------------------------------------------------------------------------
-	// 文字コード
-	//   ソースの文字列リテラルは /utf-8 の有無で UTF-8 / CP932 のどちらにもなり得るため、
-	//   UTF-8 として正しければ UTF-8、そうでなければ ANSI コードページとみなして変換する。
-	//-------------------------------------------------------------------------
-	bool IsValidUtf8( const FString& Text )
-	{
-		const auto* p   = reinterpret_cast<const unsigned char*>( Text.GetData() );
-		const auto* End = p + Text.Len();
-		while ( p < End )
-		{
-			int32 Follow;
-			if      ( *p < 0x80 )           Follow = 0;
-			else if ( ( *p & 0xE0 ) == 0xC0 ) Follow = 1;
-			else if ( ( *p & 0xF0 ) == 0xE0 ) Follow = 2;
-			else if ( ( *p & 0xF8 ) == 0xF0 ) Follow = 3;
-			else return false;
-
-			++p;
-			for ( int32 i = 0; i < Follow; ++i, ++p )
-			{
-				if ( p >= End || ( *p & 0xC0 ) != 0x80 ) return false;
-			}
-		}
-		return true;
-	}
-
-	// 終端 L'\0' 付きのワイド文字列
-	TArray<wchar_t> ToWide( const FString& Text )
-	{
-		if ( !IsValidUtf8( Text ) ) return Text.ToWide();
-
-		TArray<wchar_t> Result;
-		const int Length = Text.IsEmpty() ? 0 : MultiByteToWideChar( CP_UTF8, 0, Text.GetData(), Text.Len(), nullptr, 0 );
-		Result.SetNum( Length + 1 );
-		if ( Length > 0 ) MultiByteToWideChar( CP_UTF8, 0, Text.GetData(), Text.Len(), Result.GetData(), Length );
-		Result[Length] = L'\0';
-		return Result;
-	}
-
-	FString ToUtf8( const FString& Text )
-	{
-		return IsValidUtf8( Text ) ? Text : Text.ToUtf8();
-	}
-
 	WORD GetConsoleColor( ELogVerbosity Verbosity )
 	{
 		switch ( Verbosity )
@@ -86,7 +41,7 @@ namespace
 	}
 
 	// 大文字小文字を区別しない部分一致
-	//   Text は UTF-8 なので FString::Contains (Shift-JIS 前提) ではなくバイト単位で比較する
+	//   FilterText は ImGui の入力バッファ（char 配列）なので、FString にせずバイト単位で比較する
 	bool ContainsNoCase( const FString& Text, const char* Pattern )
 	{
 		const int32 PatternLength = static_cast<int32>( NCString::Length( Pattern ) );
@@ -122,7 +77,7 @@ CConsoleLogSink::~CConsoleLogSink()
 void CConsoleLogSink::Write( const FLogMessage& Message )
 {
 	// 末尾に改行を付ける（終端の直前に挿入）
-	TArray<wchar_t> Line = ToWide( Message.FormattedLine );
+	TArray<wchar_t> Line = Message.FormattedLine.ToWide();
 	Line.Insert( L'\n', Line.Num() - 1 );
 
 	// Visual Studio の出力ウィンドウ
@@ -166,7 +121,7 @@ void CFileLogSink::Write( const FLogMessage& Message )
 
 	// 1 行を 1 回の書き込みで出し、すぐファイルへ反映する。
 	// 起動中のログを別のツールで読み続けられるうえ、クラッシュしても直前までのログが残る
-	const FString Line = ToUtf8( Message.FormattedLine );
+	const FString& Line = Message.FormattedLine;
 	File.WriteText( Stamp );
 	File.Write( Line.GetData(), static_cast<usize>( Line.Len() ) );
 	File.Write( "\r\n", 2 );
@@ -191,7 +146,7 @@ CImGuiLogSink::CImGuiLogSink( int32 InMaxLines )
 void CImGuiLogSink::Write( const FLogMessage& Message )
 {
 	FScopedLock Lock( Mutex );
-	FEntry Entry { Message.Verbosity, ToUtf8( Message.FormattedLine ) };
+	FEntry Entry { Message.Verbosity, Message.FormattedLine };
 	if ( Entries.Num() < MaxLines )
 	{
 		Entries.Add( MoveTemp( Entry ) );

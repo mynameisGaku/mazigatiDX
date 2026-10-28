@@ -633,7 +633,7 @@ namespace
 		{
 			const FSpriteClip& Clip = Definition.Clips[i];
 			char Label[160];
-			NCString::Format( Label, sizeof( Label ), "%s   (%d frame(s), %.2f s, %s)###clip%d", *Clip.Name.ToUtf8(), Clip.Frames.Num(), Clip.GetTotalDuration(), ToString( Clip.Loop ), i );
+			NCString::Format( Label, sizeof( Label ), "%s   (%d frame(s), %.2f s, %s)###clip%d", *Clip.Name, Clip.Frames.Num(), Clip.GetTotalDuration(), ToString( Clip.Loop ), i );
 			if ( ImGui::Selectable( Label, S.SelectedClip == i ) )
 			{
 				S.SelectedClip = i;

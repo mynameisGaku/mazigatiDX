@@ -18,7 +18,7 @@
 //   Title->Record( Draw, 640, 100, "Game Title", FColor32::White, EDrawTextAlign::Center );
 //
 //   縁取りは EdgeSize を指定したフォントで有効（Draw の EdgeColor が縁の色）。
-//   文字コードは FString と同じ（日本語環境では Shift-JIS）。
+//   文字コードは FString と同じ（UTF-8）。
 //=============================================================================
 class CFont : public CAsset
 {

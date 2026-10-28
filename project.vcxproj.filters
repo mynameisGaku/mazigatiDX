@@ -43,6 +43,9 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestCoreMemory.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCoreString.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
     <ClCompile Include="Source\SelfTest\AssetSelfTestCoreText.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>

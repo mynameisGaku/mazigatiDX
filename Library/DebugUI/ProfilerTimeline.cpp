@@ -40,8 +40,8 @@ namespace
 		Span100us,
 	};
 
-	// ImGui に渡す UTF-8 文字列（FString はシステムのマルチバイト）。式の終わりまで有効
-	#define UTF8( Text ) ( *( Text ).ToUtf8() )
+	// ImGui に渡す文字列（FString は UTF-8 なので、そのまま渡せる）。式の終わりまで有効
+	#define UTF8( Text ) ( *( Text ) )
 
 	const char* const ModeLabels[] = { "Continuous (frames in one time axis)", "Stacked (one row per frame)" };
 
@@ -129,7 +129,7 @@ namespace
 	class FHighlight
 	{
 	public:
-		FHighlight( const IProfiler& InProfiler, const char* Utf8Text ) : Profiler( InProfiler ), Needle( FString::FromUtf8( Utf8Text ) ) {}
+		FHighlight( const IProfiler& InProfiler, const char* Utf8Text ) : Profiler( InProfiler ), Needle( FString( Utf8Text ) ) {}
 
 		bool IsActive() const { return !Needle.IsEmpty(); }
 
@@ -710,7 +710,7 @@ namespace
 		Path.Reverse();
 
 		const FString Instance = NProfilerAnalyzer::MakeInstanceLabel( Profiler, Sample.Instance, Sample.Label );
-		ImGui::Text( "%s%s", UTF8( Profiler.GetString( Sample.Name ) ), Instance.IsEmpty() ? "" : *( FString( "  " ) + Instance ).ToUtf8() );
+		ImGui::Text( "%s%s", UTF8( Profiler.GetString( Sample.Name ) ), Instance.IsEmpty() ? "" : *( FString( "  " ) + Instance ) );
 		ImGui::SameLine();
 		ImGui::TextDisabled( "  [%s]  owner: %s  depth: %u  thread: %s", UTF8( Profiler.GetString( Sample.Category ) ),
 							 Sample.Owner != 0 ? UTF8( Profiler.GetString( Sample.Owner ) ) : "-", static_cast<unsigned>( Sample.Depth ),

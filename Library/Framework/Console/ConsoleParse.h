@@ -15,16 +15,10 @@
 //     # ...  または  // ...        行全体が注釈（行の先頭だけ。引数の途中の # は注釈ではない）
 //
 //   引用符の外の \ は、ふつうの文字（C:\dir\file.txt をそのまま書ける）。
-//   文字列は CP932（Shift-JIS）のバイト列。2 バイト文字の 2 バイト目が 0x5C（\）でも、エスケープとして扱わない。
+//   文字列は UTF-8 のバイト列。日本語などの文字は 0x80 以上のバイトだけでできているので、特別扱いは要らない（\ や " と混ざらない）。
 //=============================================================================
 namespace NConsole
 {
-	// CP932 の 2 バイト文字の 1 バイト目か
-	FORCEINLINE bool IsLeadByte( unsigned char Ch )
-	{
-		return ( Ch >= 0x81 && Ch <= 0x9F ) || ( Ch >= 0xE0 && Ch <= 0xFC );
-	}
-
 	// 1 つのコマンド（';' を含まない断片）を引数に分ける。閉じていない引用符・引用符の外の ';' は false（OutError に理由）
 	bool Tokenize( const FString& Text, TArray<FString>& OutTokens, FString& OutError );
 

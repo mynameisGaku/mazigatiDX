@@ -30,4 +30,7 @@ void CHelloSample::OnSampleDraw( FImmediateDraw& Screen )
 	// 動きの範囲を、枠で示す
 	Screen.Box( static_cast<int32>( AreaMin.x ), static_cast<int32>( AreaMin.y ), static_cast<int32>( AreaMax.x ) - 1, static_cast<int32>( AreaMax.y ) - 1, FColor32::Gray, false );
 	Screen.TextF( 16, 56, FColor32::Gray, "Scene time: %.1f s   Objects: %d", GetElapsedTime(), GetNumObjects() );
+
+	// 文字列は UTF-8。日本語もそのまま書いて、そのまま描ける
+	Screen.Text( 16, 72, "日本語もそのまま表示できます（文字列は UTF-8）", FColor32::Gray );
 }

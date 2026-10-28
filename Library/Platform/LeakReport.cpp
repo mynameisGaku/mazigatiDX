@@ -65,10 +65,10 @@ void NLeakReport::Install()
 
 	// 環境変数 COG_LEAK_REPORT にパスがあれば、メモリリークの報告を、そのファイルへも書く。
 	// ファイルは、終了時の報告のあとまで開けたままにする（閉じない）
-	char LeakReportPath[MAX_PATH] = {};
-	if ( GetEnvironmentVariableA( "COG_LEAK_REPORT", LeakReportPath, MAX_PATH ) > 0 )
+	wchar_t LeakReportPath[MAX_PATH] = {};
+	if ( GetEnvironmentVariableW( L"COG_LEAK_REPORT", LeakReportPath, MAX_PATH ) > 0 )
 	{
-		const HANDLE LeakReportFile = CreateFileA( LeakReportPath, GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr );
+		const HANDLE LeakReportFile = CreateFileW( LeakReportPath, GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr );
 		if ( LeakReportFile != INVALID_HANDLE_VALUE )
 		{
 			_CrtSetReportMode( _CRT_WARN, _CRTDBG_MODE_FILE | _CRTDBG_MODE_DEBUG );
@@ -76,10 +76,10 @@ void NLeakReport::Install()
 			LeakReportHandle = LeakReportFile;
 		}
 	}
-	char LeakBreakText[32] = {};
-	if ( GetEnvironmentVariableA( "COG_LEAK_BREAK", LeakBreakText, sizeof( LeakBreakText ) ) > 0 )
+	wchar_t LeakBreakText[32] = {};
+	if ( GetEnvironmentVariableW( L"COG_LEAK_BREAK", LeakBreakText, static_cast<DWORD>( sizeof( LeakBreakText ) / sizeof( LeakBreakText[0] ) ) ) > 0 )
 	{
-		LeakBreakRequest = atol( LeakBreakText );
+		LeakBreakRequest = _wtol( LeakBreakText );
 		_CrtSetAllocHook( LeakAllocHook );
 	}
 #endif

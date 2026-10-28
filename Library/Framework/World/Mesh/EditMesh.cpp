@@ -47,9 +47,9 @@ namespace
 	{
 		const FEditMeshMaterial Default;
 		NlohmannJson Json = NlohmannJson::object();
-		if ( !Material.Name.IsEmpty() ) Json["Name"] = Material.Name.ToUtf8().GetData();
-		if ( Material.Color.r != Default.Color.r || Material.Color.g != Default.Color.g || Material.Color.b != Default.Color.b ) Json["Color"] = NWorld::FormatColor( FColor32( Material.Color.r, Material.Color.g, Material.Color.b ) ).ToUtf8().GetData();
-		if ( !Material.Texture.IsEmpty() ) Json["Texture"] = Material.Texture.ToUtf8().GetData();
+		if ( !Material.Name.IsEmpty() ) Json["Name"] = Material.Name;
+		if ( Material.Color.r != Default.Color.r || Material.Color.g != Default.Color.g || Material.Color.b != Default.Color.b ) Json["Color"] = NWorld::FormatColor( FColor32( Material.Color.r, Material.Color.g, Material.Color.b ) );
+		if ( !Material.Texture.IsEmpty() ) Json["Texture"] = Material.Texture;
 		if ( Material.Tile != Default.Tile ) Json["Tile"] = NJson::Round4( Material.Tile );
 		if ( Material.Offset.x != 0.0f || Material.Offset.y != 0.0f ) Json["Offset"] = NlohmannJson::array( { NJson::Round4( Material.Offset.x ), NJson::Round4( Material.Offset.y ) } );
 		if ( Material.bTwoSided ) Json["TwoSided"] = true;

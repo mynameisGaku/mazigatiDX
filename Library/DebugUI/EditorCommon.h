@@ -6,13 +6,13 @@
 
 //=============================================================================
 // アセットのエディタ（スプライトシート・モデルのアニメーション）が共通で使う、ImGui の小さな部品
-//   FString はシステムの文字コード（日本語環境では Shift-JIS）、ImGui は UTF-8 なので、表示と入力で変換する。
+//   FString も ImGui も UTF-8 なので、そのまま渡せる。
 //=============================================================================
-#define UI_TEXT( Text ) ( *( Text ).ToUtf8() )   // 表示用: ImGui::TextUnformatted( UI_TEXT( Name ) )
+#define UI_TEXT( Text ) ( *( Text ) )   // 表示用: ImGui::TextUnformatted( UI_TEXT( Name ) )。FString を ImGui に渡す場所の目印
 
 namespace NDebugUI
 {
-	// FString を編集する文字入力（UTF-8 に変換して入力し、変更されたら書き戻して true）
+	// FString を編集する文字入力（変更されたら書き戻して true）
 	bool InputString( const char* Label, FString& Value, ImGuiInputTextFlags Flags = 0 );
 	bool InputStringWithHint( const char* Label, const char* Hint, FString& Value, ImGuiInputTextFlags Flags = 0 );
 

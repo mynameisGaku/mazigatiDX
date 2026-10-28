@@ -12,13 +12,17 @@
 // FString
 //   文字列。内部は終端 '\0' 付きの TArray<char>。
 //
-//   文字コードは DxLib / ソースの文字列リテラルと同じ「システムのマルチバイト」(日本語環境では Shift-JIS)。
-//   DxLib の関数にはそのまま渡せる:   DrawString( 0, 0, *Name, Color );
-//   ImGui (UTF-8) に渡すときは変換:     ImGui::TextUnformatted( *Name.ToUtf8() );
+//   文字コードは UTF-8。ソースの文字列リテラルも UTF-8（ビルドは /execution-charset:utf-8。ソースは BOM つき UTF-8）。
+//   ImGui・SDL・JSON（nlohmann）にも、DxLib（DxLibBackend が UTF-8 モードにする）にも、そのまま渡せる:
+//     ImGui::TextUnformatted( *Name );   DrawString( 0, 0, *Name, Color );
+//   Win32 の W 系 API（ファイル名など）へは ToWide() で、受け取った UTF-16 は FString( const wchar_t* ) で戻す。
+//   Shift-JIS など、UTF-8 でない相手とのやりとりは FromCodePage() / ToCodePage()。
 //
-//   検索・置換・大文字小文字変換は全角文字の 2 バイト目を誤検出しないよう処理している。
-//   Left / Right / Mid などの位置・長さはバイト単位。
+//   UTF-8 の 2 バイト目以降は ASCII と重ならないので、検索・置換・分割・Trim は、バイト単位でも文字を壊さない。
+//   大文字小文字の変換と区別なしの比較は ASCII だけ（全角英字などは対象外）。
+//   Left / Right / Mid などの位置・長さはバイト単位（文字の途中で切ると、不正な UTF-8 になる）。文字数は CharCount()。
 //
+
 //   FString Path = FString( "Data" ) / "Model" / "Player.mv1";   // "Data/Model/Player.mv1"
 //   FString Msg  = FString::Printf( "HP: %d / %d", Hp, MaxHp );
 //   TArray<FString> Parts = FString( "a,b,,c" ).ParseIntoArray( "," );   // { "a", "b", "c" }
@@ -35,7 +39,7 @@ public:
 	FString() = default;
 	FString( const char* Str );
 	FString( const char* Str, int32 Length );
-	// ワイド文字列から変換
+	// ワイド文字列（UTF-16）から変換
 	explicit FString( const wchar_t* Str );
 
 	// Count 個の Ch
@@ -49,9 +53,6 @@ public:
 	// Decimals 桁で丸める。末尾の 0 は削らない
 	static FString FromFloat( float64 Value, int32 Decimals = 3 );
 	FORCEINLINE static FString FromBool( bool bValue ) { return bValue ? "true" : "false"; }
-
-	// UTF-8 文字列から変換
-	static FString FromUtf8( const char* Utf8 );
 
 	static FString Join( const TArray<FString>& Items, const FString& Separator );
 
@@ -79,7 +80,7 @@ public:
 
 	// バイト数
 	FORCEINLINE int32 Len() const noexcept { return Data.Num() > 0 ? Data.Num() - 1 : 0; }
-	// 文字数（全角 1 文字 = 1）
+	// 文字数（UTF-8 の 1 文字 = 1。全角も 1）
 	int32 CharCount() const;
 	FORCEINLINE bool IsEmpty() const noexcept { return Len() == 0; }
 	FORCEINLINE bool IsValidIndex( int32 Index ) const noexcept { return Index >= 0 && Index < Len(); }
@@ -182,10 +183,18 @@ public:
 	//-------------------------------------------------------------------------
 	// 文字コード変換
 	//-------------------------------------------------------------------------
-	// ワイド文字列（終端 L'\0' 付き。GetData() を Win32 の W 系 API に渡せる）
+	// ワイド文字列（UTF-16。終端 L'\0' 付き。GetData() を Win32 の W 系 API に渡せる）
 	TArray<wchar_t> ToWide() const;
-	// UTF-8 のバイト列を持つ FString（ImGui などへ渡す用）
-	FString ToUtf8() const;
+
+	// UTF-8 として正しいか（空・ASCII だけなら true。過長な表現・サロゲート・途中で切れた文字は false）
+	bool IsValidUtf8() const;
+	// 不正なバイトを U+FFFD に置き換えて、正しい UTF-8 にしたもの（正しければそのまま）。外から来た文字列を、JSON などに入れる前に使う
+	FString ToValidUtf8() const;
+
+	// UTF-8 でない文字コードの Bytes（Length バイト）から変換する。CodePage は Windows のコードページ（932 = Shift-JIS）。不正なバイトは U+FFFD
+	static FString FromCodePage( const char* Bytes, int32 Length, uint32 CodePage );
+	// そのコードページのバイト列にしたもの。そのコードページに無い文字は '?'
+	FString ToCodePage( uint32 CodePage ) const;
 
 	//-------------------------------------------------------------------------
 	// イテレータ（終端 '\0' は含まない）

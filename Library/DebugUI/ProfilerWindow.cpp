@@ -49,8 +49,8 @@ namespace
 	constexpr int32 SlowRefreshFrames = 2000;    // これより多いフレームを集計する範囲は、更新を 1 秒に 1 回にする
 	constexpr int32 ExportMaxFrames = 20000;     // Chrome トレースに書き出すフレーム数（直近）
 
-	// ImGui に渡す UTF-8 文字列（FString はシステムのマルチバイトなので変換する）。式の終わりまで有効
-	#define UTF8( Text ) ( *( Text ).ToUtf8() )
+	// ImGui に渡す文字列（FString は UTF-8 なので、そのまま渡せる）。式の終わりまで有効
+	#define UTF8( Text ) ( *( Text ) )
 
 	FORCEINLINE ImVec2 Add( const ImVec2& A, const ImVec2& B ) { return ImVec2( A.x + B.x, A.y + B.y ); }
 
@@ -826,6 +826,6 @@ void NDebugUI::DrawProfilerWindow( IProfiler& Profiler, FProfilerWindowState& St
 		ImGui::EndTabBar();
 	}
 
-	if ( !State.StatusMessage.IsEmpty() ) ImGui::TextWrapped( "%s", *State.StatusMessage.ToUtf8() );
+	if ( !State.StatusMessage.IsEmpty() ) ImGui::TextWrapped( "%s", *State.StatusMessage );
 	ImGui::End();
 }

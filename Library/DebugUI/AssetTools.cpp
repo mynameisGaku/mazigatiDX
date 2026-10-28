@@ -10,6 +10,7 @@
 #include "Library/Framework/Audio/AudioSystem.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Profiler/ProfilerAnalyzer.h"
+#include "Library/Platform/CommandLine.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 
 namespace
@@ -66,7 +67,7 @@ namespace
 		{
 			const float Fraction = static_cast<float>( static_cast<double>( Stats.Backend.VideoMemoryUsed ) / static_cast<double>( Stats.Backend.VideoMemoryTotal ) );
 			char Overlay[96];
-			NCString::Format( Overlay, sizeof( Overlay ), "Video memory %s / %s", *Bytes( Stats.Backend.VideoMemoryUsed ).ToUtf8(), *Bytes( Stats.Backend.VideoMemoryTotal ).ToUtf8() );
+			NCString::Format( Overlay, sizeof( Overlay ), "Video memory %s / %s", UI_TEXT( Bytes( Stats.Backend.VideoMemoryUsed ) ), UI_TEXT( Bytes( Stats.Backend.VideoMemoryTotal ) ) );
 			ImGui::ProgressBar( Fraction, ImVec2( 360.0f, 0.0f ), Overlay );
 			ImGui::SameLine();
 		}
@@ -132,7 +133,7 @@ namespace
 		}
 
 		TArray<FAssetInfo> Infos = Assets->GetLoadedAssets();
-		const FString Filter = FString::FromUtf8( State.AssetFilter );
+		const FString Filter = State.AssetFilter;
 		Infos.RemoveAll( [&]( const FAssetInfo& Info )
 		{
 			if ( State.AssetTypeFilter > 0 && static_cast<int32>( Info.Type ) != State.AssetTypeFilter - 1 ) return true;
@@ -319,15 +320,10 @@ namespace
 		return false;
 	}
 
-	FString GetArgument( const char* Prefix )
+	// 起動引数 --Name=値 の値（無ければ空）
+	FString GetArgument( const char* Name )
 	{
-		const char* CommandLine = GetCommandLineA();
-		const char* Found = CommandLine != nullptr ? NCString::Find( CommandLine, Prefix ) : nullptr;
-		if ( Found == nullptr ) return FString();
-		Found += NCString::Length( Prefix );
-		const char* End = Found;
-		while ( *End != '\0' && *End != ' ' ) ++End;
-		return FString( Found, static_cast<int32>( End - Found ) );
+		return NCommandLine::GetValue( Name ).Get( FString() );
 	}
 }
 
@@ -379,7 +375,7 @@ void NDebugUI::DrawAssetTools( FAssetToolsState& State )
 
 void NDebugUI::ApplyAssetToolsCommandLine( FAssetToolsState& State )
 {
-	const FString Tools = GetArgument( "--tool=" );
+	const FString Tools = GetArgument( "tool" );
 	if ( !Tools.IsEmpty() )
 	{
 		State.bShowAssets = ContainsToken( *Tools, "assets" );
@@ -389,7 +385,7 @@ void NDebugUI::ApplyAssetToolsCommandLine( FAssetToolsState& State )
 		State.bShowWorldEditor = ContainsToken( *Tools, "world" );
 		State.bShowEffectEditor = ContainsToken( *Tools, "effect" );
 	}
-	const FString World = GetArgument( "--world=" );
+	const FString World = GetArgument( "world" );
 	if ( !World.IsEmpty() )
 	{
 		State.bShowWorldEditor = true;
@@ -409,7 +405,7 @@ void NDebugUI::ApplyAssetToolsCommandLine( FAssetToolsState& State )
 		if ( !Rest.IsEmpty() ) Numbers.Add( Rest.ToFloat() );
 		return Numbers;
 	};
-	const FString WorldSelect = GetArgument( "--world-select=" );
+	const FString WorldSelect = GetArgument( "world-select" );
 	if ( !WorldSelect.IsEmpty() )
 	{
 		TArray<int32> Ids;
@@ -418,19 +414,19 @@ void NDebugUI::ApplyAssetToolsCommandLine( FAssetToolsState& State )
 	}
 	// 編集メッシュの編集を始める: --world-edit-mesh=要素の種類（vertex / edge / face）。選んだオブジェクト（--world-select）の Mesh 部品を編集する。
 	// --world-mesh-select=all で、要素をすべて選ぶ（確認用）
-	const FString WorldEditMesh = GetArgument( "--world-edit-mesh=" );
+	const FString WorldEditMesh = GetArgument( "world-edit-mesh" );
 	if ( !WorldEditMesh.IsEmpty() && State.WorldEditor.Session.BeginMeshEdit( State.WorldEditor.Session.GetPrimary() ) )
 	{
 		State.WorldEditor.Session.SetMeshElement( WorldEditMesh == "face" ? NEditMesh::EEditMeshElement::Face : WorldEditMesh == "edge" ? NEditMesh::EEditMeshElement::Edge : NEditMesh::EEditMeshElement::Vertex );
-		if ( GetArgument( "--world-mesh-select=" ) == "all" ) State.WorldEditor.Session.MeshSelectAll();
+		if ( GetArgument( "world-mesh-select" ) == "all" ) State.WorldEditor.Session.MeshSelectAll();
 	}
-	const FString WorldMode = GetArgument( "--world-mode=" );
+	const FString WorldMode = GetArgument( "world-mode" );
 	if ( WorldMode == "rotate" ) State.WorldEditor.Session.GizmoMode = EEditorGizmoMode::Rotate;
 	else if ( WorldMode == "scale" ) State.WorldEditor.Session.GizmoMode = EEditorGizmoMode::Scale;
-	const FString WorldColliders = GetArgument( "--world-colliders=" );
+	const FString WorldColliders = GetArgument( "world-colliders" );
 	if ( WorldColliders == "all" ) State.WorldEditor.ColliderView = FWorldEditorState::EColliderView::All;
 	else if ( WorldColliders == "off" ) State.WorldEditor.ColliderView = FWorldEditorState::EColliderView::Off;
-	const FString WorldCamera = GetArgument( "--world-camera=" );   // yaw,pitch,distance[,x,y,z]
+	const FString WorldCamera = GetArgument( "world-camera" );   // yaw,pitch,distance[,x,y,z]
 	if ( !WorldCamera.IsEmpty() )
 	{
 		const TArray<float32> V = SplitNumbers( WorldCamera );
@@ -444,7 +440,7 @@ void NDebugUI::ApplyAssetToolsCommandLine( FAssetToolsState& State )
 		if ( V.Num() >= 6 ) Camera.Target = FVector3( V[3], V[4], V[5] );
 	}
 	// 定義ファイルだけを指定した場合も、対応する編集画面を開く。
-	const FString Effect = GetArgument( "--effect=" );
+	const FString Effect = GetArgument( "effect" );
 	if ( !Effect.IsEmpty() )
 	{
 		State.bShowEffectEditor = true;
@@ -452,23 +448,23 @@ void NDebugUI::ApplyAssetToolsCommandLine( FAssetToolsState& State )
 		OpenEffectFile( State.EffectEditor, Effect );
 	}
 	// 原本を保ったコピーから始める起動経路。移動する帯の画像確認にも使う。
-	const FString EffectPreset = GetArgument( "--effect-preset=" );
+	const FString EffectPreset = GetArgument( "effect-preset" );
 	if ( !EffectPreset.IsEmpty() )
 	{
 		State.bShowEffectEditor = true;
 		NewEffectFromPreset( State.EffectEditor, EffectPreset );
 	}
-	const FString Sprite = GetArgument( "--sprite=" );
+	const FString Sprite = GetArgument( "sprite" );
 	if ( !Sprite.IsEmpty() )
 	{
 		State.bShowSpriteSheetEditor = true;
 		OpenSpriteSheetFile( State.SpriteSheet, Sprite );
 	}
-	const FString SpriteTab = GetArgument( "--sprite-tab=" );
+	const FString SpriteTab = GetArgument( "sprite-tab" );
 	if ( !SpriteTab.IsEmpty() ) State.SpriteSheet.ForceLeftTab = SpriteTab.ToInt();
-	const FString ModelTab = GetArgument( "--model-tab=" );
+	const FString ModelTab = GetArgument( "model-tab" );
 	if ( !ModelTab.IsEmpty() ) State.ModelAnimation.ForceLeftTab = ModelTab.ToInt();
-	const FString ModelAnim = GetArgument( "--modelanim=" );
+	const FString ModelAnim = GetArgument( "modelanim" );
 	if ( !ModelAnim.IsEmpty() )
 	{
 		State.bShowModelAnimationEditor = true;

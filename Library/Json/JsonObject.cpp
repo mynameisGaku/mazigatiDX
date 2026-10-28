@@ -8,13 +8,13 @@ DEFINE_LOG_CATEGORY_STATIC( LogJson, Log )
 
 namespace
 {
-	// "A.B.C" -> { "A", "B", "C" }（JSON のキーは UTF-8 なので変換しておく）
+	// "A.B.C" -> { "A", "B", "C" }（nlohmann のキーの型にしておく）
 	TArray<NJson::FJsonString> SplitKeyPath( const FString& Key )
 	{
 		TArray<NJson::FJsonString> Path;
 		for ( const FString& Part : Key.ParseIntoArray( "." ) )
 		{
-			Path.Add( *Part.ToUtf8() );
+			Path.Add( NJson::ToJsonString( Part ) );
 		}
 		return Path;
 	}
@@ -110,7 +110,7 @@ bool NJson::CJsonObject::Remove( const FString& Key )
 	FString ChildKey;
 	if ( !Key.Split( ".", &ParentKey, &ChildKey, ESearchCase::CaseSensitive, true ) )
 	{
-		const bool bRemoved = Root.erase( *Key.ToUtf8() ) > 0;
+		const bool bRemoved = Root.erase( NJson::ToJsonString( Key ) ) > 0;
 		LOG( LogJson, Verbose, "Remove '%s': %s", *Key, bRemoved ? "removed" : "key not found" );
 		return bRemoved;
 	}
@@ -121,7 +121,7 @@ bool NJson::CJsonObject::Remove( const FString& Key )
 		LOG( LogJson, Verbose, "Remove '%s': parent '%s' not found", *Key, *ParentKey );
 		return false;
 	}
-	const bool bRemoved = const_cast<NlohmannJson*>( Parent )->erase( *ChildKey.ToUtf8() ) > 0;
+	const bool bRemoved = const_cast<NlohmannJson*>( Parent )->erase( NJson::ToJsonString( ChildKey ) ) > 0;
 	LOG( LogJson, Verbose, "Remove '%s': %s", *Key, bRemoved ? "removed" : "key not found" );
 	return bRemoved;
 }
@@ -153,7 +153,7 @@ TArray<FString> NJson::CJsonObject::GetKeys() const
 	TArray<FString> Keys;
 	for ( auto It = Root.begin(); It != Root.end(); ++It )
 	{
-		Keys.Add( FString::FromUtf8( It.key().c_str() ) );
+		Keys.Add( NJson::FromJsonString( It.key() ) );
 	}
 	return Keys;
 }

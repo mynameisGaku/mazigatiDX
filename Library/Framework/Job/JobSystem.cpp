@@ -16,6 +16,7 @@
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
+#include "Library/Platform/CommandLine.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogJob, Log )
 
@@ -32,9 +33,8 @@ namespace
 	// 起動引数 --job-threads=N（無ければ -1）
 	int32 ReadJobThreadsArgument()
 	{
-		const char* CommandLine = GetCommandLineA();
-		const char* Found = CommandLine ? NCString::Find( CommandLine, "--job-threads=" ) : nullptr;
-		return Found != nullptr ? NCString::ToInt32( Found + NCString::Length( "--job-threads=" ) ) : -1;
+		const TOptional<FString> Value = NCommandLine::GetValue( "job-threads" );
+		return Value.IsSet() ? NCString::ToInt32( *Value.GetValue() ) : -1;
 	}
 }
 
