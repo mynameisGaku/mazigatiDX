@@ -28,6 +28,18 @@
     <ClCompile Include="Source\DrawState\ViewShowcase.cpp">
       <Filter>Source\DrawState</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Filters\FilterGallery.cpp">
+      <Filter>Source\Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Filters\FilterImages.cpp">
+      <Filter>Source\Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Filters\FiltersSample.cpp">
+      <Filter>Source\Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Filters\SpotlightView.cpp">
+      <Filter>Source\Filters</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Hello\BouncingBox.cpp">
       <Filter>Source\Hello</Filter>
     </ClCompile>
@@ -108,6 +120,18 @@
     <ClInclude Include="Source\DrawState\ViewShowcase.h">
       <Filter>Source\DrawState</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Filters\FilterGallery.h">
+      <Filter>Source\Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Filters\FilterImages.h">
+      <Filter>Source\Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Filters\FiltersSample.h">
+      <Filter>Source\Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Filters\SpotlightView.h">
+      <Filter>Source\Filters</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Hello\BouncingBox.h">
       <Filter>Source\Hello</Filter>
     </ClInclude>
@@ -178,6 +202,9 @@
     </Filter>
     <Filter Include="Source\DrawState">
       <UniqueIdentifier>{A5D3EA37-A556-1B7C-9583-96BCF9291E1F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Filters">
+      <UniqueIdentifier>{5A1BC48D-C648-F4E9-C883-1FD6805EF4D2}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Hello">
       <UniqueIdentifier>{D7CAE878-E116-AB34-3B7B-F14582C1F4DE}</UniqueIdentifier>

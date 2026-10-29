@@ -60,6 +60,10 @@
     <ClCompile Include="Source\DrawState\BlendShowcase.cpp" />
     <ClCompile Include="Source\DrawState\DrawStateSample.cpp" />
     <ClCompile Include="Source\DrawState\ViewShowcase.cpp" />
+    <ClCompile Include="Source\Filters\FilterGallery.cpp" />
+    <ClCompile Include="Source\Filters\FilterImages.cpp" />
+    <ClCompile Include="Source\Filters\FiltersSample.cpp" />
+    <ClCompile Include="Source\Filters\SpotlightView.cpp" />
     <ClCompile Include="Source\Hello\BouncingBox.cpp" />
     <ClCompile Include="Source\Hello\HelloSample.cpp" />
     <ClCompile Include="Source\Hello\ShapeGallery.cpp" />
@@ -89,6 +93,10 @@
     <ClInclude Include="Source\DrawState\BlendShowcase.h" />
     <ClInclude Include="Source\DrawState\DrawStateSample.h" />
     <ClInclude Include="Source\DrawState\ViewShowcase.h" />
+    <ClInclude Include="Source\Filters\FilterGallery.h" />
+    <ClInclude Include="Source\Filters\FilterImages.h" />
+    <ClInclude Include="Source\Filters\FiltersSample.h" />
+    <ClInclude Include="Source\Filters\SpotlightView.h" />
     <ClInclude Include="Source\Hello\BouncingBox.h" />
     <ClInclude Include="Source\Hello\HelloSample.h" />
     <ClInclude Include="Source\Hello\ShapeGallery.h" />
