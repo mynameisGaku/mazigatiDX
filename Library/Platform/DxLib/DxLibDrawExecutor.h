@@ -20,6 +20,8 @@ class CDxLibAssetBackend;
 //     Cube3D -> DrawCube3D / Billboard3D -> DrawBillboard3D / WorldMatrix -> SetTransformToWorld
 //     Model3D -> MV1SetMatrix + (MV1SetAttachAnimTime) + MV1DrawModel
 //   Span の終わりで、ブレンドモードはブレンドなしに、WorldMatrix は単位行列に、Tint（SetDrawBright）は白に戻す。
+//     ImageFilter -> GraphFilter / GraphFilterBlt / GraphFilterRectBlt / ImageBlend -> GraphBlend / GraphBlendBlt（DxLibImageOps.h）
+//     PushMask / PopMask -> SetMaskScreenGraph + SetMaskScreenGraphUseChannel + SetMaskReverseEffectFlag + SetUseMaskScreenFlag（Span の終わりで、マスクなしに戻す）
 //
 //   DxLib の DrawBox などは、頂点を内部でためてまとめて描く作りなので、こちらで頂点配列にまとめ直さない
 //   （DrawPrimitive2D でまとめると、10 万個の Box で DrawBox の約 8 倍遅かった。バッチの大きさを変えても同じ）。
@@ -52,6 +54,10 @@ private:
 	FEffectMaterialRenderer EffectMaterialRenderer;
 	// 選択材質の不変形状を引くplatform資源backend。
 	CDxLibAssetBackend* AssetBackend = nullptr;
+	// マスク（PushMask）を初めて使うときに作る、DxLib のマスクスクリーンを作ったか（Deinitialize で消す）
+	bool bMaskScreenCreated = false;
+	// マスクスクリーンを作ってあるようにする。使える状態なら true
+	bool EnsureMaskScreen();
 	// 固定payloadを検査し、残りをnativeモデル、選択材質を効果meshとして描く。
 	void ExecuteModelMaterial( const FDrawCommandView& Command );
 };

@@ -14,6 +14,7 @@
 #include "Library/Math/MathConstants.h"
 #include "Library/Math/MathUtils.h"
 #include "Library/Platform/DxLib/DxLibAssetBackend.h"
+#include "Library/Platform/DxLib/DxLibImageOps.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 #include "Library/Platform/DxLib/DxLibRibbonMesh.h"
 
@@ -271,10 +272,18 @@ namespace
 		case EDrawCommand::Transform2D:
 		case EDrawCommand::PushTarget:
 		case EDrawCommand::PopTarget:
+		case EDrawCommand::PushMask:
+		case EDrawCommand::PopMask:
 			return true;
 		default:
 			return false;
 		}
+	}
+
+	// 渡された画像だけを扱う命令か（いまの描画先・クリップには関係ないので、クリップ範囲が空のときも、描画先にできない画像へ替えたときも、実行する）
+	bool IsImageOperation( EDrawCommand Type )
+	{
+		return Type == EDrawCommand::ImageFilter || Type == EDrawCommand::ImageBlend;
 	}
 
 	// 描画先の全体にかかわる命令か（クリップ範囲に関係なく、実行する）
@@ -283,10 +292,20 @@ namespace
 		return Type == EDrawCommand::Clear || Type == EDrawCommand::CopyScreen;
 	}
 
+	// PushMask で重ねたマスク 1 つ分
+	struct FMaskState
+	{
+		int Handle = -1;
+		int Channel = 0;
+		bool bInvert = false;
+	};
+
 	// PushTarget で描画先を替える前の状態（PopTarget で戻す）
 	struct FTargetFrame
 	{
 		int PreviousScreen = 0;
+		// 替える前の、マスクの並び（替えた先は、マスクなしから始まる）
+		TArray<FMaskState> MaskStack;
 		RECT PreviousArea = {};
 		// 替える前の、クリップの状態
 		bool bClipChanged = false;
@@ -353,6 +372,21 @@ void CDxLibDrawExecutor::Deinitialize()
 {
 	EffectMaterialRenderer.Deinitialize();
 	AssetBackend = nullptr;
+	if ( bMaskScreenCreated )
+	{
+		DeleteMaskScreen();
+		bMaskScreenCreated = false;
+	}
+}
+
+// DxLib のマスクは、マスクスクリーンを作ってからでないと使えない。初めて使うときに 1 度だけ作る
+bool CDxLibDrawExecutor::EnsureMaskScreen()
+{
+	if ( !bMaskScreenCreated && CreateMaskScreen() == 0 )
+	{
+		bMaskScreenCreated = true;
+	}
+	return bMaskScreenCreated;
 }
 
 // 現在のDirect3D device上で材質描画用shaderが準備済みか返す。
@@ -411,6 +445,36 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 	// （描画先にできない画像を渡された。その対の PopTarget まで、描く命令を飛ばす。飛ばさないと、元の描画先に描いてしまう）
 	TArray<FTargetFrame> TargetStack;
 	int NumInvalidTargets = 0;
+	// マスク: PushMask で重ねた並び（一番内側が、いまのマスク）。マスクの設定を、実行のなかで 1 度でも変えたか。変える前の、マスクを使う設定
+	TArray<FMaskState> MaskStack;
+	bool bMaskChanged = false;
+	int OldUseMask = FALSE;
+
+	// マスクの並びの一番内側を DxLib に反映する（無ければ、マスクなしに）。DxLib のマスクは、描画先とは別の、全体で 1 つの設定
+	const auto ApplyMask = [&]()
+	{
+		if ( !bMaskChanged )
+		{
+			// 実行の前の値を覚えて、終わりに戻す。DxLib は、何も設定していないときも TRUE と答える（マスクスクリーンも、マスクの画像も無いあいだは、効かない）
+			OldUseMask = GetUseMaskScreenFlag() == FALSE ? FALSE : TRUE;
+			bMaskChanged = true;
+		}
+		if ( !MaskStack.IsEmpty() && EnsureMaskScreen() )
+		{
+			const FMaskState& Mask = MaskStack.Last();
+			// マスクにできる画像（アルファを持つ描画先）でないと、DxLib が断る。そのときは、マスクなしで描く
+			if ( SetMaskScreenGraph( Mask.Handle ) == 0 )
+			{
+				SetMaskScreenGraphUseChannel( NDxLibImageOps::ToDxMaskChannel( Mask.Channel ) );
+				// DxLib の既定は、マスクの値が 0 のところが描かれる向き。こちらの既定は、値が大きいところほど濃く描かれる向きなので、逆にする
+				SetMaskReverseEffectFlag( Mask.bInvert ? FALSE : TRUE );
+				SetUseMaskScreenFlag( TRUE );
+				return;
+			}
+		}
+		SetUseMaskScreenFlag( FALSE );
+		SetMaskScreenGraph( -1 );
+	};
 
 	// 1 つ前の描画先に戻す。カメラは、替えても変わらないよう、「替えるとリセットする設定」を一時的に切って替える
 	const auto RestoreTarget = [&]()
@@ -435,14 +499,19 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 		}
 		bTransform2DChanged = Frame.bTransform2DChanged;
 		Transform2DMatrix = Frame.Transform2D;
+		MaskStack = Frame.MaskStack;
+		if ( bMaskChanged )
+		{
+			ApplyMask();
+		}
 	};
 
 	ForEachDrawCommand( Span, [&]( const FDrawCommandView& Command )
 	{
 		const int Fill = Command.Has( FDrawFlag::Fill ) ? TRUE : FALSE;
 
-		// 状態の命令（と描画先を替える命令）以外は、クリップ範囲が空のあいだ（描画先の全体にかかわる命令を除く）と、描画先にできない画像へ替えたあいだは、飛ばす
-		if ( !IsStateCommand( Command.Type ) && ( NumInvalidTargets > 0 || ( bClipEmpty && !IsWholeTargetCommand( Command.Type ) ) ) )
+		// 状態の命令（と描画先を替える命令・画像の処理）以外は、クリップ範囲が空のあいだ（描画先の全体にかかわる命令を除く）と、描画先にできない画像へ替えたあいだは、飛ばす
+		if ( !IsStateCommand( Command.Type ) && !IsImageOperation( Command.Type ) && ( NumInvalidTargets > 0 || ( bClipEmpty && !IsWholeTargetCommand( Command.Type ) ) ) )
 		{
 			return;
 		}
@@ -1197,6 +1266,7 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			Frame.bClipEmpty = bClipEmpty;
 			Frame.bTransform2DChanged = bTransform2DChanged;
 			Frame.Transform2D = Transform2DMatrix;
+			Frame.MaskStack = MaskStack;
 			TargetStack.Add( Frame );
 			// 替えた先は、クリップなし・2D の変換なしから始まる
 			bClipChanged = true;
@@ -1206,6 +1276,12 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			ResetTransformTo2D();
 			Transform2DMatrix = MGetIdent();
 			bTransform2DChanged = true;
+			// マスクも、なしから始まる
+			if ( !MaskStack.IsEmpty() )
+			{
+				MaskStack.Empty();
+				ApplyMask();
+			}
 			break;
 		}
 		case EDrawCommand::PopTarget:
@@ -1257,6 +1333,49 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			GetDrawScreenGraph( Data.X0, Data.Y0, Data.X1, Data.Y1, Data.Handle );
 			break;
 		}
+		case EDrawCommand::ImageFilter:
+		{
+			if ( !Command.CanRead<FDrawImageFilterData>() )
+			{
+				break;
+			}
+			NDxLibImageOps::ApplyFilter( Command.Read<FDrawImageFilterData>() );
+			break;
+		}
+		case EDrawCommand::ImageBlend:
+		{
+			if ( !Command.CanRead<FDrawImageBlendData>() )
+			{
+				break;
+			}
+			NDxLibImageOps::BlendImages( Command.Read<FDrawImageBlendData>() );
+			break;
+		}
+		case EDrawCommand::PushMask:
+		{
+			if ( !Command.CanRead<FDrawMaskData>() )
+			{
+				break;
+			}
+			const FDrawMaskData Data = Command.Read<FDrawMaskData>();
+			FMaskState State;
+			State.Handle = Data.Handle;
+			State.Channel = Data.Channel;
+			State.bInvert = Data.Invert != 0;
+			MaskStack.Add( State );
+			ApplyMask();
+			break;
+		}
+		case EDrawCommand::PopMask:
+		{
+			if ( MaskStack.IsEmpty() )
+			{
+				break;
+			}
+			MaskStack.Pop();
+			ApplyMask();
+			break;
+		}
 		}
 	} );
 
@@ -1264,6 +1383,15 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 	while ( !TargetStack.IsEmpty() )
 	{
 		RestoreTarget();
+	}
+
+	// マスクは、使ったなら、マスクなしに戻す（始める前に使う設定になっていたなら、その設定へ）
+	if ( bMaskChanged )
+	{
+		SetUseMaskScreenFlag( OldUseMask );
+		SetMaskScreenGraph( -1 );
+		SetMaskReverseEffectFlag( FALSE );
+		SetMaskScreenGraphUseChannel( DX_MASKGRAPH_CH_A );
 	}
 
 	// このオブジェクトで変えた状態を、次のオブジェクトに漏らさない

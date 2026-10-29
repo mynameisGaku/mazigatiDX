@@ -92,6 +92,11 @@ enum class EDrawCommand : uint8
 	PopTarget,        // FDrawPopTargetData。1 つ前の描画先に戻す（クリップ・2D の変換も、替える前に戻る）
 	Clear,            // FDrawClearData。いまの描画先の全体を、色（アルファつき）で塗りつぶす（ClearDrawScreen。クリップ範囲に関係なく全体）
 	CopyScreen,       // FDrawCopyScreenData。いまの描画先の矩形を、画像（矩形と同じ大きさ）へ写す（GetDrawScreenGraph）
+	// 画像の処理とマスクの追加（上のコマンドの形式は変えていない。画像の処理は、描画先・クリップ・ブレンドなどの状態に関係しない。マスクは、実行の終わりで元に戻る）
+	ImageFilter,      // FDrawImageFilterData。画像にフィルターを掛ける（GraphFilter / GraphFilterBlt / GraphFilterRectBlt）
+	ImageBlend,       // FDrawImageBlendData。2 枚の画像を混ぜて、画像へ出す（GraphBlendBlt / GraphBlend）
+	PushMask,         // FDrawMaskData。以降の描画を、マスクの画像の値で薄める（SetMaskScreenGraph）。替えた先の描画先は、マスクなしから始まる
+	PopMask,          // FDrawPopMaskData。1 つ前のマスクに戻す
 };
 
 // Quad3D の向きの決め方
@@ -329,6 +334,99 @@ struct FDrawClearData { int32 R = 0, G = 0, B = 0, A = 0; };
 // いまの描画先の矩形 (X0, Y0)-(X1, Y1)（右と下の端は含まない）を、画像 Handle へ写す
 struct FDrawCopyScreenData { int32 X0 = 0, Y0 = 0, X1 = 0, Y1 = 0; int32 Handle = -1; };
 
+// 画像のフィルターの種類（GraphFilter の DX_GRAPH_FILTER_*。既存の値は変えない）
+enum class EDrawGraphFilter : int32
+{
+	Mono,             // 単色化（青色差・赤色差でずらせる）
+	Gauss,            // ぼかし
+	DownScale,        // 縮小（変換先は、元の 1 / Divisor の大きさ）
+	BrightClip,       // 明るさでクリップ
+	BrightScale,      // 指定の明るさの範囲を、全体に広げる
+	Hsb,              // 色相・彩度・明るさ
+	Invert,           // 階調の反転
+	Level,            // レベル補正
+	TwoColor,         // 2 階調化
+	GradientMap,      // グラデーションマップ
+	Replacement,      // 色の置換
+	PremulAlpha,      // 乗算されていないアルファの画像を、乗算済みアルファにする
+	InterpAlpha,      // 乗算済みアルファの画像を、乗算されていないアルファにする
+	BicubicScale,     // バイキュービックで、指定の大きさへ拡大・縮小
+	Lanczos3Scale,    // Lanczos-3 で、指定の大きさへ拡大・縮小
+	FloatColorScale,  // 色の成分ごとに、引いてから掛ける
+};
+
+// 2 枚の画像の混ぜ方（GraphBlend の DX_GRAPH_BLEND_*。既存の値は変えない）
+enum class EDrawGraphBlend : int32
+{
+	Normal,             // 通常（混ぜる画像のアルファで混ざる。出力のアルファは元の画像のもの）
+	RgbaSelectMix,      // 出力の R / G / B / A を、2 枚の画像の成分から選ぶ（EDrawRgbaSelect）
+	Multiply,           // 乗算
+	Difference,         // 減算
+	Add,                // 加算
+	Screen,             // スクリーン
+	Overlay,            // オーバーレイ
+	Dodge,              // 覆い焼き
+	Burn,               // 焼き込み
+	Darken,             // 比較（暗）
+	Lighten,            // 比較（明）
+	SoftLight,          // ソフトライト
+	HardLight,          // ハードライト
+	Exclusion,          // 除外
+	NormalAlphaCh,      // アルファつきの画像どうしの通常合成（アルファも重なる）
+	AddAlphaCh,         // アルファつきの画像どうしの加算合成
+	MultiplyAlphaOnly,  // アルファチャンネルだけの乗算
+	Mask,               // マスク（元の画像に、混ぜる画像を通常に描いて、元の画像のアルファを優先する）
+};
+
+// RgbaSelectMix で、出力の成分に選ぶもの（DX_RGBA_SELECT_*。Src = 元の画像、Blend = 混ぜる画像、Inv = 反転）
+enum class EDrawRgbaSelect : int32
+{
+	SrcR, SrcG, SrcB, SrcA,
+	BlendR, BlendG, BlendB, BlendA,
+	SrcInvR, SrcInvG, SrcInvB, SrcInvA,
+	BlendInvR, BlendInvG, BlendInvB, BlendInvA,
+};
+
+// マスクの画像の、どの成分をマスクの値にするか（DX_MASKGRAPH_CH_*）
+enum class EDrawMaskChannel : int32
+{
+	Alpha,
+	Red,
+	Green,
+	Blue,
+};
+
+// 画像のフィルター。Source を Dest へ掛ける（Source と Dest が同じで HasRect が 0 なら、その場で。矩形があれば、Source の矩形を、Dest の (DestX, DestY) へ）。
+// Params は、種類ごとの引数（FGraphFilter を参照。float は、ビットのまま入れる）。Map はグラデーションマップの画像。
+// Blend が 1 なら、結果を、転送先に、アルファブレンドで重ねる（0 なら、置き換える）。Premultiplied が 1 なら、乗算済みアルファの画像用の版
+struct FDrawImageFilterData
+{
+	int32 Source = -1, Dest = -1;
+	int32 Type = 0;
+	int32 Premultiplied = 0;
+	int32 Blend = 0;
+	int32 HasRect = 0;
+	int32 SrcX = 0, SrcY = 0, SrcW = 0, SrcH = 0, DestX = 0, DestY = 0;
+	int32 Map = -1;
+	int32 Params[8] = {};
+};
+
+// 2 枚の画像を混ぜて Dest へ出す。Ratio は混ぜる強さ（0..255）。Select は、RgbaSelectMix の出力の R / G / B / A（EDrawRgbaSelect）
+struct FDrawImageBlendData
+{
+	int32 Base = -1, Blend = -1, Dest = -1;
+	int32 Type = 0;
+	int32 Ratio = 255;
+	int32 Premultiplied = 0;
+	int32 Select[4] = { 0, 1, 2, 3 };
+};
+
+// マスク。Handle は、アルファを持つ描画先（CRenderTarget）のハンドル。Channel は EDrawMaskChannel。
+// Invert が 0 なら、マスクの値が大きいところほど濃く描かれる（0 で描かれず、255 でそのまま）。1 なら逆（0 でそのまま）。マスクの画像の外は、値が 255 として扱われる
+struct FDrawMaskData { int32 Handle = -1; int32 Channel = 0; int32 Invert = 0; };
+// PopMask は中身を持たない（命令の大きさを 4 バイトの倍数にするため、1 ワードだけ持つ）
+struct FDrawPopMaskData { int32 Unused = 0; };
+
 #define DRAW_DATA_CHECK( Type ) \
 	static_assert( sizeof( Type ) % 4 == 0 && bIsTriviallyCopyable<Type>, #Type " must be made of 4-byte words with no padding" )
 DRAW_DATA_CHECK( FDrawBoxData );
@@ -378,6 +476,10 @@ DRAW_DATA_CHECK( FDrawTargetData );
 DRAW_DATA_CHECK( FDrawPopTargetData );
 DRAW_DATA_CHECK( FDrawClearData );
 DRAW_DATA_CHECK( FDrawCopyScreenData );
+DRAW_DATA_CHECK( FDrawImageFilterData );
+DRAW_DATA_CHECK( FDrawImageBlendData );
+DRAW_DATA_CHECK( FDrawMaskData );
+DRAW_DATA_CHECK( FDrawPopMaskData );
 #undef DRAW_DATA_CHECK
 static_assert( sizeof( FDrawBoxData ) == 24 && sizeof( FDrawSphere3DData ) == 28 && sizeof( FDrawModelData ) == 60, "unexpected padding in a draw command data type" );
 

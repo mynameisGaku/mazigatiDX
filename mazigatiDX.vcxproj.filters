@@ -535,6 +535,9 @@
     <ClCompile Include="Library\Platform\DxLib\DxLibDrawExecutorModelMaterial.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\DxLibImageOps.cpp">
+      <Filter>Library\Platform\DxLib</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\DxLibInput.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
@@ -1638,6 +1641,9 @@
     <ClInclude Include="Library\Framework\Render\DrawContext.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Render\GraphFilter.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Render\ImmediateDraw.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
@@ -1867,6 +1873,9 @@
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\DxLibDrawExecutor.h">
+      <Filter>Library\Platform\DxLib</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\DxLibImageOps.h">
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\DxLibInclude.h">

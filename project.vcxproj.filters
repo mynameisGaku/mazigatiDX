@@ -67,6 +67,12 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestDrawStateReal.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestFilter.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestFilterReal.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
     <ClCompile Include="Source\SelfTest\AssetSelfTestImages.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
@@ -370,6 +376,9 @@
       <Filter>Source\SelfTest</Filter>
     </ClInclude>
     <ClInclude Include="Source\SelfTest\AssetSelfTestFbx.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\AssetSelfTestFilter.h">
       <Filter>Source\SelfTest</Filter>
     </ClInclude>
     <ClInclude Include="Source\SelfTest\AssetSelfTestImages.h">

@@ -15,6 +15,7 @@
 #include "Library/Core/Interfaces/Render/DrawRibbon.h"
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Core/Types/Numeric.h"
+#include "Library/Framework/Render/GraphFilter.h"
 #include "Library/Math/Color.h"
 #include "Library/Math/Matrix4x4.h"
 #include "Library/Math/Vector3.h"
@@ -779,6 +780,119 @@ public:
 	}
 
 	//-------------------------------------------------------------------------
+	// 画像の処理（フィルター・混ぜる）
+	//   どれも、記録した順に実行される（描いたあとの画像に掛けたり、掛けた画像を、そのあと描いたりできる）。
+	//   描画先・クリップ・ブレンド・明るさ・2D の変換には、影響されず、変えもしない（いまの描画先とも関係なく、渡した画像だけを扱う）。
+	//   画像は、実行のときまで、持ち主が手放さないこと。実行のとき、DxLib が受け付けない画像（描画先にできない画像など）には、何もしない。
+	//   画像・設定が無効（nullptr・無効なハンドル・GradientMap のマップが無効・矩形の大きさが 0 以下）なら、何も記録せず false を返す。
+	//   存在しないハンドルや、画像の外の矩形を、そのまま記録したときも、実行のときは、何も起きない（落ちない）
+	//-------------------------------------------------------------------------
+	// 画像 Target に、フィルターを、その場で掛ける（GraphFilter）。Target は、描き込める画像（CRenderTarget）か、画素から作った画像（CDynamicTexture）。
+	// 画像を切り出したもの（SplitTexture など）にも使える（元の画像の、その範囲だけが変わる）。変換先の大きさが決まる種類（DownScale・BicubicScale・Lanczos3Scale）は、次の ApplyFilter を使う
+	FORCEINLINE bool ApplyFilter( FImageHandle Target, const FGraphFilter& Filter )
+	{
+		return PushImageFilter( Target, Target, Filter, false, false, 0, 0, 0, 0, 0, 0 );
+	}
+
+	template<typename TImage>
+	FORCEINLINE bool ApplyFilter( const TImage& Target, const FGraphFilter& Filter )
+	{
+		return ApplyFilter( ToHandle( Target ), Filter );
+	}
+
+	// Source にフィルターを掛けた結果を、画像 Dest へ出す（GraphFilterBlt）。Source は変わらない。Dest は、描き込める画像（CRenderTarget）でも、ふつうの画像（CDynamicTexture）でもよい。
+	// 大きさが違うとき、拡大・縮小はされず、左上から重なる分だけが出る（DownScale・BicubicScale・Lanczos3Scale は、決めた大きさに変えて、左上へ出す）。
+	// bAlphaBlend が true なら、結果を、Dest の中身にアルファブレンドで重ねる（false なら、置き換える）。重ねるとき、アルファを持つ Dest のアルファは、元の値と二重に掛かる（描画先への描画と同じ）
+	FORCEINLINE bool ApplyFilter( FImageHandle Source, FImageHandle Dest, const FGraphFilter& Filter, bool bAlphaBlend = false )
+	{
+		return PushImageFilter( Source, Dest, Filter, bAlphaBlend, false, 0, 0, 0, 0, 0, 0 );
+	}
+
+	template<typename TSource, typename TDest>
+	FORCEINLINE bool ApplyFilter( const TSource& Source, const TDest& Dest, const FGraphFilter& Filter, bool bAlphaBlend = false )
+	{
+		return ApplyFilter( ToHandle( Source ), ToHandle( Dest ), Filter, bAlphaBlend );
+	}
+
+	// Source の矩形（SrcX, SrcY から SrcW x SrcH。右と下の端は含まない）にフィルターを掛けた結果を、Dest の (DestX, DestY) から出す（GraphFilterRectBlt）。
+	// 範囲が画像の外へはみ出す分は、DxLib が受け付けず、何もしないことがある（画像の中に収める）
+	FORCEINLINE bool ApplyFilterRect( FImageHandle Source, int32 SrcX, int32 SrcY, int32 SrcW, int32 SrcH, FImageHandle Dest, int32 DestX, int32 DestY, const FGraphFilter& Filter, bool bAlphaBlend = false )
+	{
+		return PushImageFilter( Source, Dest, Filter, bAlphaBlend, true, SrcX, SrcY, SrcW, SrcH, DestX, DestY );
+	}
+
+	template<typename TSource, typename TDest>
+	FORCEINLINE bool ApplyFilterRect( const TSource& Source, int32 SrcX, int32 SrcY, int32 SrcW, int32 SrcH, const TDest& Dest, int32 DestX, int32 DestY, const FGraphFilter& Filter, bool bAlphaBlend = false )
+	{
+		return ApplyFilterRect( ToHandle( Source ), SrcX, SrcY, SrcW, SrcH, ToHandle( Dest ), DestX, DestY, Filter, bAlphaBlend );
+	}
+
+	// 2 枚の画像 Base と Overlay を混ぜて、画像 Dest へ出す（GraphBlendBlt。Dest が Base と同じなら、その場で、GraphBlend）。Base・Overlay は変わらない（Dest が Base のときは、Base が変わる）。
+	// Dest は、画像（CRenderTarget・CDynamicTexture など）。大きさは、Base と同じにする（違うと、DxLib の結果になる）。混ぜ方は FGraphBlend
+	FORCEINLINE bool BlendImages( FImageHandle Base, FImageHandle Overlay, FImageHandle Dest, const FGraphBlend& Mode )
+	{
+		if ( !Base.IsValid() || !Overlay.IsValid() || !Dest.IsValid() || !Mode.IsValid() )
+		{
+			return false;
+		}
+		FDrawImageBlendData Data;
+		Data.Base = Base.Value;
+		Data.Blend = Overlay.Value;
+		Data.Dest = Dest.Value;
+		Data.Type = static_cast<int32>( Mode.Type );
+		Data.Ratio = NMath::Clamp( Mode.Ratio, 0, 255 );
+		Data.Premultiplied = Mode.bPremultiplied ? 1 : 0;
+		for ( int32 Index = 0; Index < 4; ++Index )
+		{
+			Data.Select[Index] = static_cast<int32>( Mode.Select[Index] );
+		}
+		Push( EDrawCommand::ImageBlend, 0, Data );
+		return true;
+	}
+
+	template<typename TBase, typename TOverlay, typename TDest>
+	FORCEINLINE bool BlendImages( const TBase& Base, const TOverlay& Overlay, const TDest& Dest, const FGraphBlend& Mode )
+	{
+		return BlendImages( ToHandle( Base ), ToHandle( Overlay ), ToHandle( Dest ), Mode );
+	}
+
+	//-------------------------------------------------------------------------
+	// マスク
+	//-------------------------------------------------------------------------
+	// 以降の描画を、マスクの画像の値で薄める（SetMaskScreenGraph）。PopMask か FMaskScope で、1 つ前のマスクへ戻す（入れ子にできるが、内側のマスクが、外側のマスクに替わる。重ねはしない）。
+	// Mask は、アルファを持つ描画先（CRenderTarget。bAlpha が true）。ふつうの画像は使えない（実行のときに、マスクなしで描かれる）。マスクに描く図形・画像・文字は、ふつうの描画（PushTarget）で作る。
+	// Channel は、マスクの値にする成分（アルファ・赤・緑・青）。bInvert が false なら、値が大きいところほど濃く描かれる（0 で描かれず、255 でそのまま。ふつうの「白いところが見える」）。true なら逆。
+	// 値は段階的に効く（0 と 255 のあいだは、ブレンドの強さになる）。マスクの画像の外（描画先のほうが大きい）は、値が 255 として扱われる。
+	// 替えた先の描画先（PushTarget）は、マスクなしから始まり、戻すと、替える前のマスクに戻る。そのオブジェクトの分が終わると、マスクは解除される。
+	// マスクは、画面（描画先）の左上を合わせて使う。画像が無効なら、何も記録せず false を返す（対の PopMask も呼ばないこと）
+	FORCEINLINE bool PushMask( FImageHandle Mask, EDrawMaskChannel Channel = EDrawMaskChannel::Alpha, bool bInvert = false )
+	{
+		if ( !Mask.IsValid() || !IsInEnumRange( static_cast<int32>( Channel ), static_cast<int32>( EDrawMaskChannel::Blue ) ) )
+		{
+			return false;
+		}
+		FDrawMaskData Data;
+		Data.Handle = Mask.Value;
+		Data.Channel = static_cast<int32>( Channel );
+		Data.Invert = bInvert ? 1 : 0;
+		Push( EDrawCommand::PushMask, 0, Data );
+		return true;
+	}
+
+	template<typename TImage>
+	FORCEINLINE bool PushMask( const TImage& Mask, EDrawMaskChannel Channel = EDrawMaskChannel::Alpha, bool bInvert = false )
+	{
+		return PushMask( ToHandle( Mask ), Channel, bInvert );
+	}
+
+	// 1 つ前のマスクへ戻す（無ければ、マスクなしに）。PushMask の数より多く呼んでも、何も起きない
+	FORCEINLINE void PopMask()
+	{
+		const FDrawPopMaskData Data;
+		Push( EDrawCommand::PopMask, 0, Data );
+	}
+
+	//-------------------------------------------------------------------------
 	// 3D（ワールド座標）
 	//-------------------------------------------------------------------------
 	// 線分（DrawLine3D）
@@ -966,6 +1080,38 @@ private:
 	static FORCEINLINE bool IsPositiveThickness( float32 Thickness ) { return NMath::IsFinite( Thickness ) && Thickness > 0.0f && Thickness <= 1.0e4f; }
 	// 近似する角数。0 は「半径から決める」。それ以外は 4..512 に収める
 	static FORCEINLINE int32 ClampSegments( int32 NumSegments ) { return NumSegments <= 0 ? 0 : NMath::Clamp( NumSegments, 4, 512 ); }
+	// フィルターの命令を記録する（画像・設定・矩形が使える値のときだけ）
+	FORCEINLINE bool PushImageFilter( FImageHandle Source, FImageHandle Dest, const FGraphFilter& Filter, bool bAlphaBlend, bool bRect, int32 SrcX, int32 SrcY, int32 SrcW, int32 SrcH, int32 DestX, int32 DestY )
+	{
+		if ( !Source.IsValid() || !Dest.IsValid() || !Filter.IsValid() )
+		{
+			return false;
+		}
+		if ( bRect && ( !IsValidSource( SrcX, SrcY, SrcW, SrcH ) || !AllDrawable( static_cast<float32>( DestX ), static_cast<float32>( DestY ) ) ) )
+		{
+			return false;
+		}
+		FDrawImageFilterData Data;
+		Data.Source = Source.Value;
+		Data.Dest = Dest.Value;
+		Data.Type = static_cast<int32>( Filter.Type );
+		Data.Premultiplied = Filter.bPremultiplied ? 1 : 0;
+		Data.Blend = bAlphaBlend ? 1 : 0;
+		Data.HasRect = bRect ? 1 : 0;
+		Data.SrcX = SrcX;
+		Data.SrcY = SrcY;
+		Data.SrcW = SrcW;
+		Data.SrcH = SrcH;
+		Data.DestX = DestX;
+		Data.DestY = DestY;
+		Data.Map = Filter.Map.Value;
+		for ( int32 Index = 0; Index < 8; ++Index )
+		{
+			Data.Params[Index] = Filter.Params[Index];
+		}
+		Push( EDrawCommand::ImageFilter, 0, Data );
+		return true;
+	}
 	// 列挙型の値が、0 から最後の値（Max）の範囲に入っているか
 	static FORCEINLINE bool IsInEnumRange( int32 Value, int32 Max )
 	{
@@ -1148,6 +1294,43 @@ public:
 
 	FTargetScope( const FTargetScope& ) = delete;
 	FTargetScope& operator=( const FTargetScope& ) = delete;
+
+private:
+	FDrawContext* CommandList;
+	bool bPushed;
+};
+
+//=============================================================================
+// FMaskScope
+//   コマンドリストの以降の描画を、マスクの画像で薄めて（PushMask）、スコープを抜けるとき、1 つ前のマスクに戻す（PopMask）。
+//   画像が無効なら、何も記録せず、戻すこともしない。
+//
+//   {
+//       FMaskScope Scope( CommandList, SpotlightMask );   // この中の描画は、SpotlightMask の白いところだけに見える（段階的に）
+//       CommandList.Image( 0.0f, 0.0f, Scene );
+//   }
+//=============================================================================
+class FMaskScope
+{
+public:
+	template<typename TImage>
+	FMaskScope( FDrawContext& InCommandList, const TImage& Mask, EDrawMaskChannel Channel = EDrawMaskChannel::Alpha, bool bInvert = false )
+		: CommandList( &InCommandList )
+		, bPushed( InCommandList.PushMask( Mask, Channel, bInvert ) )
+	{
+	}
+
+	// PushMask が何も記録しなかったとき（無効な画像）は、PopMask もしない（外側のマスクを戻してしまわないため）
+	~FMaskScope()
+	{
+		if ( bPushed )
+		{
+			CommandList->PopMask();
+		}
+	}
+
+	FMaskScope( const FMaskScope& ) = delete;
+	FMaskScope& operator=( const FMaskScope& ) = delete;
 
 private:
 	FDrawContext* CommandList;
