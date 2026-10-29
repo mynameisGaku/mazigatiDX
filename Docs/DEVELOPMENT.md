@@ -87,6 +87,14 @@ CPU側の画像（`FPixelImage`）は、画素の並びを持つ値です（DxLi
 - 分ける（`LoadDivGraph`相当）: `Assets->SplitTexture( 画像, Grid )` / `LoadTextureGrid( パス, Grid )`は、格子（`FSpriteSheetGrid`。余白・隙間・コマの大きさ・並べ方）で分けた、1コマずつの画像の並びを返します。元の画像を共有する派生画像なのでメモリは増えず、元の画像は、派生画像が残るあいだ保たれます。画像の外へはみ出すコマは`nullptr`です。
 見本は`Samples`の`Pixels`です（`Samples.exe --sample=Pixels`。画素を毎フレーム書いて画像を更新し、半透明の光を重ね、シートを分け、Sキーで保存して読み直します）。
 
+画像の処理（フィルター・混ぜる）とマスクは、描画の命令として記録します。記録した順に実行されるので、描いたあとの描画先に掛けることも、掛けた画像をそのあと描くこともできます。描画先・クリップ・ブレンド・明るさ・2Dの変換には影響されず、変えもしません（空のクリップ範囲の中や、描画先にできない画像へ替えたあいだも、実行されます）。
+- フィルター（`GraphFilter`）: `CommandList.ApplyFilter( Source, Dest, FGraphFilter::Gauss( 16, 300 ) )`は、Sourceにフィルターを掛けた結果をDestへ出します（Sourceは変わりません。Destは描画先`CRenderTarget`でも、ふつうの画像`CDynamicTexture`でもかまいません。大きさが違うと、拡大・縮小はせず、左上から重なる分だけが出ます）。`ApplyFilter( Target, Filter )`はその場で掛けます。`ApplyFilterRect( Source, 矩形, Dest, 位置, Filter )`は矩形つきです。`bAlphaBlend`を`true`にすると、結果をDestの中身にアルファブレンドで重ねます（既定は置き換え）。切り出した画像（`SplitTexture`）にも使えます（元の画像のその範囲だけが変わります）。
+- 種類（`FGraphFilter::`）: `Mono`（単色化）、`Gauss`（ぼかし）、`DownScale`（縮小。Destは元の1/Divisorの大きさ）、`BrightClip`、`BrightScale`、`HsbRelative` / `HsbAbsolute`（色相・彩度・明るさ）、`Invert`、`Level`（レベル補正）、`TwoColor`（2階調化）、`GradientMap`、`Replacement`（色の置換）、`PremultiplyAlpha` / `UnpremultiplyAlpha`、`BicubicScale` / `Lanczos3Scale`（指定の大きさへ）、`FloatColorScale`。DxLibは範囲の外の引数でも失敗を返さず、おかしな結果にする（例: レベル補正のガンマが0以下だと真っ暗）ので、引数は作るときに範囲へ収めます。乗算済みアルファの画像には、`bPremultiplied`を`true`にします（`BrightClip`・`BrightScale`・`Hsb`・`Invert`・`Level`・`TwoColor`・`GradientMap`・`Replacement`だけ）。
+- 画面そのもの（`DX_SCREEN_BACK`）には`GraphFilter`が効きません。画面全体に掛けたいときは、描画先へ描いて（`FTargetScope`）、その描画先にフィルターを掛けて、画面へ貼ります。
+- 混ぜる（`GraphBlend`）: `CommandList.BlendImages( Base, Overlay, Dest, FGraphBlend::Make( EDrawGraphBlend::Multiply, 255 ) )`は、2枚の画像を混ぜてDestへ出します（Destが Base と同じなら、その場で）。`Normal`・`Multiply`・`Add`・`Screen`・`Difference`（引き算）・`Overlay`・`NormalAlphaCh`（アルファつきの通常合成）・`Mask`など。出力の成分を選ぶ`FGraphBlend::SelectMix`もあります。
+- マスク（`SetMaskScreenGraph`）: `FMaskScope Scope( CommandList, MaskImage )`の中の描画は、マスクの画像の値で薄まります。マスクの画像は、アルファを持つ描画先（`CRenderTarget`の`bAlpha`が`true`。ふつうの画像は使えず、実行のときはマスクなしで描かれます）で、図形・画像・文字は、ふつうの描画（`FTargetScope`）で作ります。値が大きいところほど濃く描かれ（0で描かれず、255でそのまま）、段階的に効きます。`EDrawMaskChannel`でアルファ・赤・緑・青のどれをマスクの値にするかを、`bInvert`で向きを選べます。マスクの画像は、描画先の左上を合わせて使い、その外は値が255として扱われます。入れ子にすると、内側のマスクが外側に替わります（重なりません）。替えた先の描画先（`PushTarget`）はマスクなしから始まり、戻すと元のマスクに戻ります。そのオブジェクトの分が終わると、マスクは解除されます。
+見本は`Samples`の`Filters`です（`Samples.exe --sample=Filters`。1枚の画像にフィルターと混ぜ方を並べ、動くスポットライトの形のマスクで絵を見せます）。
+
 組み込みのデバッグ表示は、`Library/DebugUI/DebugOverlay.h`の`CDebugOverlay`です。ゲームインスタンスが持ち、`Init() / Tick() / Draw( *this ) / Term()`を呼ぶと、F1の窓（FPS・入力・シーン・ログ）、F2のプロファイラー、F3のコンソール（Debugだけ）、F11のフルスクリーンが使えます。`OnDrawPanelItems`と`OnDrawWindows`に関数を渡すと、ゲーム側の項目や窓を同じ画面に並べられます。キーの処理は`HandleKeys`に切り出してあり、偽の入力・プロファイラー・プラットフォームで確かめられます。
 
 ## 粒子の力場
