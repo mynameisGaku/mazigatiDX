@@ -21,6 +21,7 @@ mazigatiDX の機能を、1 つずつ動かして見られるサンプル集で�
 |`Filters`|画像の処理とマスク。1 枚の画像に、フィルター（単色化・反転・ぼかし・色相・レベル補正・2 階調化・グラデーションマップ）と、別の画像との混ぜ方（乗算・加算・スクリーン・減算）を並べる。動くスポットライトの形のマスクで、絵を段階的に見せる|
 |`Pixels`|CPU 側の画像（`FPixelImage`）を、動かして見る。画素を毎フレーム書いて画像を更新する（模様の上に、半透明の光を重ねる）、スプライトシートを格子で 1 コマずつの画像に分ける、S キーで PNG に保存して読み直す|
 |`RenderTarget`|描画先（描き込める画像）を、動かして見る。ミニマップへ描いて、ふつうの画像として貼る（等倍・2 倍）、画面の一部を別の描画先へ写す、描画先から色を読む、S キーで PNG に保存する|
+|`Text`|文字とフォント。フォントの指定（アンチエイリアスの段階・斜体と太さ・縁取り・字間・行の送り幅・文字の代わりのアイコン）を 1 つずつ変えた行、幅が動く箱への折り返し（日本語と英語。句読点は行頭に来ない）と、右揃え・3 行で切る箱、拡大・回転・影・基準点・縦書き|
 |`Input`|キーボード・マウス・ゲームパッドの状態を表示する|
 
 ## 構成（クラスとファイルの分け方）
@@ -39,6 +40,7 @@ Samples/
     RenderTarget/               サンプル RenderTarget: シーン（CRenderTargetSample）と、オブジェクト（CTargetShowcase）
     Filters/                    サンプル Filters: シーン（CFiltersSample）と、オブジェクト（CFilterGallery、CSpotlightView）、画像を CPU で作る関数（NFilterImages）
     Pixels/                     サンプル Pixels: シーン（CPixelsSample）と、オブジェクト（CPlasmaView、CTileView）、シートの画像を CPU で作る関数（NSpriteSheetMaker）
+    Text/                       サンプル Text: シーン（CTextSample）と、オブジェクト（CFontShowcase、CWrapShowcase、CStyledShowcase）
     Common/                     複数のサンプルで使うもの。確認用の画像を、メモリの上で作る関数（NTestPattern）
     Input/                      サンプル Input: シーン（CInputSample）と、オブジェクト（CKeyboardView、CMouseView、CGamepadView）
   Config/ScreenConfig.json      窓の設定

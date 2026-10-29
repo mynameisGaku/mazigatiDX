@@ -91,6 +91,18 @@
     <ClCompile Include="Source\Shapes\ShapesSample.cpp">
       <Filter>Source\Shapes</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Text\FontShowcase.cpp">
+      <Filter>Source\Text</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Text\StyledShowcase.cpp">
+      <Filter>Source\Text</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Text\TextSample.cpp">
+      <Filter>Source\Text</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Text\WrapShowcase.cpp">
+      <Filter>Source\Text</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Application\SamplesApplication.h">
@@ -183,6 +195,18 @@
     <ClInclude Include="Source\Shapes\ShapesSample.h">
       <Filter>Source\Shapes</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Text\FontShowcase.h">
+      <Filter>Source\Text</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Text\StyledShowcase.h">
+      <Filter>Source\Text</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Text\TextSample.h">
+      <Filter>Source\Text</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Text\WrapShowcase.h">
+      <Filter>Source\Text</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source">
@@ -223,6 +247,9 @@
     </Filter>
     <Filter Include="Source\Shapes">
       <UniqueIdentifier>{2AAD6A14-B7C3-4D74-4D10-4E34CCB42B5F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Text">
+      <UniqueIdentifier>{E16AE2E4-2C5F-54A3-6946-41A12BC58602}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

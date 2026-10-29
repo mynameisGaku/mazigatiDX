@@ -81,6 +81,10 @@
     <ClCompile Include="Source\RenderTarget\TargetShowcase.cpp" />
     <ClCompile Include="Source\Shapes\ShapeShowcase.cpp" />
     <ClCompile Include="Source\Shapes\ShapesSample.cpp" />
+    <ClCompile Include="Source\Text\FontShowcase.cpp" />
+    <ClCompile Include="Source\Text\StyledShowcase.cpp" />
+    <ClCompile Include="Source\Text\TextSample.cpp" />
+    <ClCompile Include="Source\Text\WrapShowcase.cpp" />
     <ClCompile Include="Source\SelfTest\**\*.cpp" Exclude="@(ClCompile)" />
   </ItemGroup>
   <ItemGroup>
@@ -114,6 +118,10 @@
     <ClInclude Include="Source\RenderTarget\TargetShowcase.h" />
     <ClInclude Include="Source\Shapes\ShapeShowcase.h" />
     <ClInclude Include="Source\Shapes\ShapesSample.h" />
+    <ClInclude Include="Source\Text\FontShowcase.h" />
+    <ClInclude Include="Source\Text\StyledShowcase.h" />
+    <ClInclude Include="Source\Text\TextSample.h" />
+    <ClInclude Include="Source\Text\WrapShowcase.h" />
     <ClInclude Include="Source\SelfTest\**\*.h" Exclude="@(ClInclude)" />
   </ItemGroup>
 </Project>
