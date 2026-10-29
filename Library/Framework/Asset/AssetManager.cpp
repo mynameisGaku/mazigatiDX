@@ -827,6 +827,12 @@ TSharedPtr<CFont> CAssetManager::LoadFontInternal( const FString& Key, const FFo
 		return nullptr;
 	}
 	TSharedPtr<CFont> Font = MakeShared<CFont>( Key, Handle, Desc, FontFilePath );
+	// 寸法は、作ったあとは変わらないので、ここで 1 度だけ測って、フォントに持たせる（描画システムの中から読めるように）
+	FFontMetrics Metrics;
+	if ( GetBackend()->GetFontMetrics( Handle, Metrics ) )
+	{
+		Font->SetMetrics( Metrics );
+	}
 	RecordLoad( *Font, FontFilePath.IsEmpty() ? FString() : FontFilePath, StartTick );
 	Fonts.Add( Key, Font );
 	LOG( LogAsset, Verbose, "Created the font '%s' (size %d)", Desc.Face.IsEmpty() ? "(default)" : *Desc.Face, Desc.Size );
@@ -837,7 +843,7 @@ namespace
 {
 	FString FontSuffix( int32 Size, const FFontStyle& Style )
 	{
-		return FString::Printf( "|%d|%d|%d|%d|%d", Size, Style.Thickness, Style.EdgeSize, Style.bItalic ? 1 : 0, Style.bAntialias ? 1 : 0 );
+		return FString::Printf( "|%d|%d|%d|%d|%d|%d|%d", Size, Style.Thickness, Style.EdgeSize, Style.bItalic ? 1 : 0, static_cast<int32>( Style.Antialias ), Style.LetterSpacing, Style.LineHeight );
 	}
 
 	FFontDesc MakeDesc( const FString& Face, int32 Size, const FFontStyle& Style )
@@ -848,7 +854,9 @@ namespace
 		Desc.Thickness = Style.Thickness;
 		Desc.EdgeSize = Style.EdgeSize;
 		Desc.bItalic = Style.bItalic;
-		Desc.bAntialias = Style.bAntialias;
+		Desc.Antialias = Style.Antialias;
+		Desc.LetterSpacing = Style.LetterSpacing;
+		Desc.LineHeight = Style.LineHeight;
 		return Desc;
 	}
 }
@@ -908,6 +916,22 @@ TSharedPtr<CFont> CAssetManager::LoadSystemFont( const FString& FaceName, int32 
 TSharedPtr<CFont> CAssetManager::GetDefaultFont( int32 Size, const FFontStyle& Style )
 {
 	return LoadSystemFont( FString(), Size, Style );
+}
+
+bool CAssetManager::IsFontAvailable( const FString& FaceName ) const
+{
+	IAssetBackend* Backend = GetBackend();
+	return Backend != nullptr && !FaceName.IsEmpty() && Backend->IsFontAvailable( FaceName );
+}
+
+TArray<FString> CAssetManager::GetSystemFontNames() const
+{
+	TArray<FString> Names;
+	if ( IAssetBackend* Backend = GetBackend() )
+	{
+		Backend->GetFontNames( Names );
+	}
+	return Names;
 }
 
 //-----------------------------------------------------------------------------

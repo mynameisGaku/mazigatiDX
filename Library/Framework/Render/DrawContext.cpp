@@ -227,6 +227,66 @@ void FDrawContext::TextWithFont( int32 FontHandle, int32 X, int32 Y, const char*
 	if ( Length > 0 ) FMemory::Memcpy( Out + 1 + DataWords, String, Length );
 }
 
+namespace
+{
+	// 文字列つきの命令を、Buffer の最後に足す（命令のヘッダ + データ + 文字列 + 終端、4 バイト境界まで 0）。文字列は、長すぎれば切る
+	void PushStyledText( FDrawBuffer& Buffer, const FDrawTextStyledData& Source, const char* String )
+	{
+		constexpr size_t DataWords = sizeof( FDrawTextStyledData ) / 4;
+		const size_t MaxChars = ( static_cast<size_t>( NDrawCommand::MaxWords ) - 1 - DataWords ) * 4 - 1;
+		size_t Length = NCString::Length( String );
+		if ( Length > MaxChars )
+		{
+			Length = MaxChars;
+		}
+		const size_t CharWords = ( Length + 1 + 3 ) / 4;
+
+		FDrawTextStyledData Data = Source;
+		Data.Length = static_cast<int32>( Length );
+
+		TArray<uint32>& Words = Buffer.Words;
+		const int32 Begin = Words.AddZeroed( static_cast<int32>( 1 + DataWords + CharWords ) );
+		uint32* const Out = Words.GetData() + Begin;
+		Out[0] = NDrawCommand::MakeHeader( EDrawCommand::TextStyled, 0, static_cast<int32>( 1 + DataWords + CharWords ) );
+		FMemory::Memcpy( Out + 1, &Data, sizeof( Data ) );
+		if ( Length > 0 )
+		{
+			FMemory::Memcpy( Out + 1 + DataWords, String, Length );
+		}
+	}
+}
+
+bool FDrawContext::TextStyled( int32 FontHandle, float32 X, float32 Y, const char* String, const FColor32& Color, const FTextStyle& Style )
+{
+	if ( String == nullptr || !AllDrawable( X, Y, Style.ScaleX, Style.ScaleY, Style.AngleRadians, Style.AnchorX, Style.AnchorY, Style.ShadowOffsetX, Style.ShadowOffsetY ) || Style.ScaleX <= 0.0f || Style.ScaleY <= 0.0f )
+	{
+		return false;
+	}
+	FDrawTextStyledData Data;
+	Data.X = X;
+	Data.Y = Y;
+	Data.ScaleX = Style.ScaleX;
+	Data.ScaleY = Style.ScaleY;
+	Data.Angle = Style.AngleRadians;
+	Data.AnchorX = Style.AnchorX;
+	Data.AnchorY = Style.AnchorY;
+	Data.Font = FontHandle;
+	Data.Vertical = Style.bVertical ? 1 : 0;
+	if ( Style.bShadow )
+	{
+		FDrawTextStyledData Shadow = Data;
+		Shadow.X = X + Style.ShadowOffsetX;
+		Shadow.Y = Y + Style.ShadowOffsetY;
+		Shadow.Color = Rgb( Style.ShadowColor );
+		Shadow.EdgeColor = Rgb( Style.ShadowColor );
+		PushStyledText( *Buffer, Shadow, String );
+	}
+	Data.Color = Rgb( Color );
+	Data.EdgeColor = Rgb( Style.EdgeColor );
+	PushStyledText( *Buffer, Data, String );
+	return true;
+}
+
 void FDrawContext::TextF( int32 X, int32 Y, const FColor32& Color, const char* Format, ... )
 {
 	char Small[256];

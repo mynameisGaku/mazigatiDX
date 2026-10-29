@@ -25,10 +25,12 @@ DECLARE_LOG_CATEGORY_EXTERN( LogAsset, Log )
 // フォントの見た目の指定（大きさ以外）
 struct FFontStyle
 {
-	int32 Thickness = 6;       // 太さ（0..9）
-	int32 EdgeSize = 0;        // 0 より大きいと縁取り（ピクセル）
+	int32 Thickness = 6;       // 太さ（0..9。実際は、0..5 と 6..9 の 2 段階にしか変わらないフォントが多い）
+	int32 EdgeSize = 0;        // 0 より大きいと縁取り（ピクセル。縁取りの 2 倍が、1 文字の幅と行の高さに足される）
 	bool bItalic = false;
-	bool bAntialias = true;
+	EFontAntialias Antialias = EFontAntialias::Standard;   // 文字のなめらかさ
+	int32 LetterSpacing = 0;   // 字間（ピクセル。全部の文字の幅に足す。負の値で詰める）
+	int32 LineHeight = -1;     // 行の送り幅（ピクセル。次の行の同じ位置までの距離）。-1 はフォントの既定
 };
 
 // 読み込んでいるアセット 1 つの情報（デバッグ表示用）
@@ -264,6 +266,10 @@ public:
 	TSharedPtr<CFont> LoadSystemFont( const FString& FaceName, int32 Size, const FFontStyle& Style = FFontStyle() );
 	// 既定のフォント
 	TSharedPtr<CFont> GetDefaultFont( int32 Size = 16, const FFontStyle& Style = FFontStyle() );
+	// その名前のフォントが、この環境（OS）にあるか（LoadSystemFont で名前を指定できるか。名前は UTF-8）
+	bool IsFontAvailable( const FString& FaceName ) const;
+	// この環境にあるフォントの名前の一覧
+	TArray<FString> GetSystemFontNames() const;
 
 	//-------------------------------------------------------------------------
 	// 情報・管理

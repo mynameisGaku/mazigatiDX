@@ -190,6 +190,7 @@
     <ClCompile Include="Library\Framework\Scene\SceneManager.cpp" />
     <ClCompile Include="Library\Framework\Subsystem\Subsystem.cpp" />
     <ClCompile Include="Library\Framework\Subsystem\SubsystemCollection.cpp" />
+    <ClCompile Include="Library\Framework\Text\TextLayout.cpp" />
     <ClCompile Include="Library\Framework\World\WorldBuiltinSpawners.cpp" />
     <ClCompile Include="Library\Framework\World\WorldCollision.cpp" />
     <ClCompile Include="Library\Framework\World\WorldDefinition.cpp" />
@@ -441,6 +442,7 @@
     <ClInclude Include="Library\Core\Collection\String.h" />
     <ClInclude Include="Library\Core\File\File.h" />
     <ClInclude Include="Library\Core\Interfaces\Asset\AssetBackend.h" />
+    <ClInclude Include="Library\Core\Interfaces\Asset\FontTypes.h" />
     <ClInclude Include="Library\Core\Interfaces\Asset\StaticModelSurfaceData.h" />
     <ClInclude Include="Library\Core\Interfaces\Asset\StaticModelSurfaceMaterial.h" />
     <ClInclude Include="Library\Core\Interfaces\Asset\StaticModelSurfaceSection.h" />
@@ -620,6 +622,7 @@
     <ClInclude Include="Library\Framework\Render\MeshRender.h" />
     <ClInclude Include="Library\Framework\Render\ModelMaterialEffectRenderer.h" />
     <ClInclude Include="Library\Framework\Render\ModelMaterialEffectResources.h" />
+    <ClInclude Include="Library\Framework\Render\TextStyle.h" />
     <ClInclude Include="Library\Framework\Scene\ISceneManager.h" />
     <ClInclude Include="Library\Framework\Scene\ObjectIterator.h" />
     <ClInclude Include="Library\Framework\Scene\Scene.h" />
@@ -631,6 +634,7 @@
     <ClInclude Include="Library\Framework\Subsystem\Subsystem.inl" />
     <ClInclude Include="Library\Framework\Subsystem\SubsystemCollection.h" />
     <ClInclude Include="Library\Framework\Subsystem\SubsystemCollection.inl" />
+    <ClInclude Include="Library\Framework\Text\TextLayout.h" />
     <ClInclude Include="Library\Framework\World\WorldCollision.h" />
     <ClInclude Include="Library\Framework\World\WorldDefinition.h" />
     <ClInclude Include="Library\Framework\World\WorldEdit.h" />

@@ -97,6 +97,8 @@ enum class EDrawCommand : uint8
 	ImageBlend,       // FDrawImageBlendData。2 枚の画像を混ぜて、画像へ出す（GraphBlendBlt / GraphBlend）
 	PushMask,         // FDrawMaskData。以降の描画を、マスクの画像の値で薄める（SetMaskScreenGraph）。替えた先の描画先は、マスクなしから始まる
 	PopMask,          // FDrawPopMaskData。1 つ前のマスクに戻す
+	// 文字の追加（上のコマンドの形式は変えていない）
+	TextStyled,       // FDrawTextStyledData + 文字列。拡大・回転・縦書き・小数の位置・基準点つきの文字列（DrawRotaStringFToHandle）
 };
 
 // Quad3D の向きの決め方
@@ -427,6 +429,22 @@ struct FDrawMaskData { int32 Handle = -1; int32 Channel = 0; int32 Invert = 0; }
 // PopMask は中身を持たない（命令の大きさを 4 バイトの倍数にするため、1 ワードだけ持つ）
 struct FDrawPopMaskData { int32 Unused = 0; };
 
+// 拡大・回転・縦書きができる文字列。(X, Y) に、文字列の中の基準点（AnchorX, AnchorY: 文字列の大きさに対する割合。横書きは左上が 0, 0、縦書きは右上が 0, 0 で AnchorX は左へ増える）が来る。
+// 拡大と回転は、基準点を中心にする。Angle はラジアン（正の向きは時計回り）。Font が負なら、既定のフォント。Vertical が 1 なら縦書き。
+// 文字列（'\0' 終端、4 バイト境界まで 0 で埋める）が続く。Length は、終端を除く長さ（バイト）
+struct FDrawTextStyledData
+{
+	float32 X = 0.0f, Y = 0.0f;
+	float32 ScaleX = 1.0f, ScaleY = 1.0f;
+	float32 Angle = 0.0f;
+	float32 AnchorX = 0.0f, AnchorY = 0.0f;
+	FDrawRgb Color;
+	FDrawRgb EdgeColor;
+	int32 Font = -1;
+	int32 Length = 0;
+	int32 Vertical = 0;
+};
+
 #define DRAW_DATA_CHECK( Type ) \
 	static_assert( sizeof( Type ) % 4 == 0 && bIsTriviallyCopyable<Type>, #Type " must be made of 4-byte words with no padding" )
 DRAW_DATA_CHECK( FDrawBoxData );
@@ -480,6 +498,7 @@ DRAW_DATA_CHECK( FDrawImageFilterData );
 DRAW_DATA_CHECK( FDrawImageBlendData );
 DRAW_DATA_CHECK( FDrawMaskData );
 DRAW_DATA_CHECK( FDrawPopMaskData );
+DRAW_DATA_CHECK( FDrawTextStyledData );
 #undef DRAW_DATA_CHECK
 static_assert( sizeof( FDrawBoxData ) == 24 && sizeof( FDrawSphere3DData ) == 28 && sizeof( FDrawModelData ) == 60, "unexpected padding in a draw command data type" );
 
@@ -530,6 +549,8 @@ struct FDrawCommandView
 	FORCEINLINE const char* GetTextChars() const { return reinterpret_cast<const char*>( Data + sizeof( FDrawTextData ) / 4 ); }
 	// TextFont コマンドの文字列（'\0' 終端）
 	FORCEINLINE const char* GetFontTextChars() const { return reinterpret_cast<const char*>( Data + sizeof( FDrawTextFontData ) / 4 ); }
+	// TextStyled コマンドの文字列（'\0' 終端）
+	FORCEINLINE const char* GetStyledTextChars() const { return reinterpret_cast<const char*>( Data + sizeof( FDrawTextStyledData ) / 4 ); }
 };
 
 // Span のコマンドを先頭から順に Function( const FDrawCommandView& ) へ渡す

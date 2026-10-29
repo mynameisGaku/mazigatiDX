@@ -376,6 +376,9 @@
     <ClCompile Include="Library\Framework\Subsystem\SubsystemCollection.cpp">
       <Filter>Library\Framework\Subsystem</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Text\TextLayout.cpp">
+      <Filter>Library\Framework\Text</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\World\WorldBuiltinSpawners.cpp">
       <Filter>Library\Framework\World</Filter>
     </ClCompile>
@@ -1125,6 +1128,9 @@
     <ClInclude Include="Library\Core\Interfaces\Asset\AssetBackend.h">
       <Filter>Library\Core\Interfaces\Asset</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Asset\FontTypes.h">
+      <Filter>Library\Core\Interfaces\Asset</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Asset\StaticModelSurfaceData.h">
       <Filter>Library\Core\Interfaces\Asset</Filter>
     </ClInclude>
@@ -1662,6 +1668,9 @@
     <ClInclude Include="Library\Framework\Render\ModelMaterialEffectResources.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Render\TextStyle.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Scene\ISceneManager.h">
       <Filter>Library\Framework\Scene</Filter>
     </ClInclude>
@@ -1694,6 +1703,9 @@
     </ClInclude>
     <ClInclude Include="Library\Framework\Subsystem\SubsystemCollection.inl">
       <Filter>Library\Framework\Subsystem</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Text\TextLayout.h">
+      <Filter>Library\Framework\Text</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\World\WorldCollision.h">
       <Filter>Library\Framework\World</Filter>
@@ -3460,6 +3472,9 @@
     </Filter>
     <Filter Include="Library\Framework\Subsystem">
       <UniqueIdentifier>{8EBFFA04-5A88-A703-1ED1-771E819B49C6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Text">
+      <UniqueIdentifier>{EDEBE803-9A86-DA1F-7EC2-C3911AB2DD0D}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\World">
       <UniqueIdentifier>{2C0212B2-57A7-9272-B467-54D4E8580558}</UniqueIdentifier>

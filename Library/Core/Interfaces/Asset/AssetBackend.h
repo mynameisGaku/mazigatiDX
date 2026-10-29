@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
+#include "Library/Core/Interfaces/Asset/FontTypes.h"
 #include "Library/Core/Interfaces/Asset/StaticModelSurfaceData.h"
 #include "Library/Core/Interfaces/Render/MeshTypes.h"
 #include "Library/Core/Interfaces/Render/RenderTargetTypes.h"
@@ -35,7 +36,9 @@ struct FFontDesc
 	int32 Thickness = 6;        // 太さ（0..9）
 	int32 EdgeSize = 0;         // 0 より大きいと縁取りをつける（ピクセル）
 	bool bItalic = false;
-	bool bAntialias = true;
+	EFontAntialias Antialias = EFontAntialias::Standard;   // 文字のなめらかさ
+	int32 LetterSpacing = 0;    // 字間（ピクセル。全部の文字の幅に足す。負の値で詰める）
+	int32 LineHeight = -1;      // 行の送り幅（ピクセル。次の行の同じ位置までの距離）。-1 はフォントの既定（1 行の文字の高さ）。0 以上を指定すると、その値
 };
 
 // モデルを MV1 ファイルに保存するときの指定
@@ -169,6 +172,20 @@ public:
 	virtual void DeleteFont( int32 Font ) = 0;
 	// 文字列の描画幅（ピクセル）。無効なハンドルなら 0
 	virtual int32 MeasureText( int32 Font, const char* Text ) = 0;
+	// フォントの寸法。無効なハンドル・非対応の実装は false
+	virtual bool GetFontMetrics( int32 /*Font*/, FFontMetrics& /*OutMetrics*/ ) { return false; }
+	// 文字列の大きさ（幅・高さ・行数。\n で複数行）。無効なハンドル・非対応の実装は false
+	virtual bool MeasureTextSize( int32 /*Font*/, const char* /*Text*/, FTextSize& /*OutSize*/ ) { return false; }
+	// 文字 1 つずつの位置と幅（改行も 1 つ）。壊れた UTF-8 は、実装が決めた区切りになる（呼び出す前に、正しい UTF-8 にする）。無効なハンドル・非対応の実装は false
+	virtual bool GetTextGlyphs( int32 /*Font*/, const char* /*Text*/, TArray<FTextGlyph>& /*OutGlyphs*/ ) { return false; }
+	// その名前のフォントが、この環境にあるか（Face は UTF-8）
+	virtual bool IsFontAvailable( const FString& /*Face*/ ) { return false; }
+	// この環境にあるフォントの名前の一覧
+	virtual void GetFontNames( TArray<FString>& /*OutNames*/ ) {}
+	// 指定の 1 文字（Character は UTF-8 の 1 文字）の代わりに、画像 Image を描く（アイコンなどを、文字列の中に入れる）。
+	// (DrawX, DrawY) は画像の描く位置のずれ、Advance は次の文字までの幅。登録できたら true
+	virtual bool AddFontCharImage( int32 /*Font*/, const char* /*Character*/, int32 /*Image*/, int32 /*DrawX*/, int32 /*DrawY*/, int32 /*Advance*/ ) { return false; }
+	virtual void RemoveFontCharImage( int32 /*Font*/, const char* /*Character*/ ) {}
 	// フォントファイル（.ttf / .otf）をこのアプリの間だけ使えるようにする／やめる（フォント名で CreateFont できるようになる）
 	virtual bool AddFontFile( const FString& Path ) = 0;
 	virtual void RemoveFontFile( const FString& Path ) = 0;

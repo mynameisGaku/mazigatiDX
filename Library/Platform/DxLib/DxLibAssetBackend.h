@@ -67,6 +67,13 @@ public:
 	int32 MakeFont( const FFontDesc& Desc ) override;
 	void DeleteFont( int32 Font ) override;
 	int32 MeasureText( int32 Font, const char* Text ) override;
+	bool GetFontMetrics( int32 Font, FFontMetrics& OutMetrics ) override;
+	bool MeasureTextSize( int32 Font, const char* Text, FTextSize& OutSize ) override;
+	bool GetTextGlyphs( int32 Font, const char* Text, TArray<FTextGlyph>& OutGlyphs ) override;
+	bool IsFontAvailable( const FString& Face ) override;
+	void GetFontNames( TArray<FString>& OutNames ) override;
+	bool AddFontCharImage( int32 Font, const char* Character, int32 Image, int32 DrawX, int32 DrawY, int32 Advance ) override;
+	void RemoveFontCharImage( int32 Font, const char* Character ) override;
 	bool AddFontFile( const FString& Path ) override;
 	void RemoveFontFile( const FString& Path ) override;
 

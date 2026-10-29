@@ -716,14 +716,50 @@ bool CDxLibAssetBackend::SaveModelToMV1( int32 Model, const FString& Path, const
 //-----------------------------------------------------------------------------
 // フォント
 //-----------------------------------------------------------------------------
+namespace
+{
+	// 文字のなめらかさと、縁取りの有無から、DxLib のフォントの種類を決める
+	int ToDxFontType( EFontAntialias Antialias, bool bEdge )
+	{
+		switch ( Antialias )
+		{
+		case EFontAntialias::None:
+			return bEdge ? DX_FONTTYPE_EDGE : DX_FONTTYPE_NORMAL;
+		case EFontAntialias::High4x4:
+			return bEdge ? DX_FONTTYPE_ANTIALIASING_EDGE_4X4 : DX_FONTTYPE_ANTIALIASING_4X4;
+		case EFontAntialias::High8x8:
+			return bEdge ? DX_FONTTYPE_ANTIALIASING_EDGE_8X8 : DX_FONTTYPE_ANTIALIASING_8X8;
+		case EFontAntialias::High16x16:
+			return bEdge ? DX_FONTTYPE_ANTIALIASING_EDGE_16X16 : DX_FONTTYPE_ANTIALIASING_16X16;
+		default:
+			return bEdge ? DX_FONTTYPE_ANTIALIASING_EDGE : DX_FONTTYPE_ANTIALIASING;
+		}
+	}
+
+	// 字間・行間の範囲（DxLib は範囲の外でも失敗を返さないので、ここで収める）
+	constexpr int MinLetterSpacing = -256;
+	constexpr int MaxLetterSpacing = 1024;
+	constexpr int MaxLineHeight = 4096;
+}
+
 int32 CDxLibAssetBackend::MakeFont( const FFontDesc& Desc )
 {
-	int FontType = DX_FONTTYPE_NORMAL;
-	if ( Desc.EdgeSize > 0 ) FontType = Desc.bAntialias ? DX_FONTTYPE_ANTIALIASING_EDGE : DX_FONTTYPE_EDGE;
-	else FontType = Desc.bAntialias ? DX_FONTTYPE_ANTIALIASING : DX_FONTTYPE_NORMAL;
-
-	return CreateFontToHandle( Desc.Face.IsEmpty() ? nullptr : *Desc.Face, Desc.Size, Desc.Thickness, FontType, -1, Desc.EdgeSize > 0 ? Desc.EdgeSize : -1,
-							   Desc.bItalic ? TRUE : FALSE );
+	const int FontType = ToDxFontType( Desc.Antialias, Desc.EdgeSize > 0 );
+	const int Handle = CreateFontToHandle( Desc.Face.IsEmpty() ? nullptr : *Desc.Face, Desc.Size, Desc.Thickness, FontType, -1, Desc.EdgeSize > 0 ? Desc.EdgeSize : -1,
+										   Desc.bItalic ? TRUE : FALSE );
+	if ( Handle < 0 )
+	{
+		return Handle;
+	}
+	if ( Desc.LetterSpacing != 0 )
+	{
+		SetFontSpaceToHandle( NMath::Clamp( Desc.LetterSpacing, MinLetterSpacing, MaxLetterSpacing ), Handle );
+	}
+	if ( Desc.LineHeight >= 0 )
+	{
+		SetFontLineSpaceToHandle( NMath::Min( Desc.LineHeight, MaxLineHeight ), Handle );
+	}
+	return Handle;
 }
 
 void CDxLibAssetBackend::DeleteFont( int32 Font )
@@ -736,6 +772,131 @@ int32 CDxLibAssetBackend::MeasureText( int32 Font, const char* Text )
 	if ( Text == nullptr ) return 0;
 	const int Length = static_cast<int>( NCString::Length( Text ) );
 	return Font >= 0 ? GetDrawStringWidthToHandle( Text, Length, Font ) : GetDrawStringWidth( Text, Length );
+}
+
+bool CDxLibAssetBackend::GetFontMetrics( int32 Font, FFontMetrics& OutMetrics )
+{
+	if ( Font < 0 || CheckFontHandleValid( Font ) == FALSE )
+	{
+		return false;
+	}
+	OutMetrics.Size = GetFontSizeToHandle( Font );
+	OutMetrics.LineHeight = GetFontLineSpaceToHandle( Font );
+	OutMetrics.Ascent = GetFontAscentToHandle( Font );
+	OutMetrics.MaxWidth = GetFontMaxWidthToHandle( Font );
+	OutMetrics.EdgeSize = GetFontEdgeSizeToHandle( Font );
+	OutMetrics.LetterSpacing = GetFontSpaceToHandle( Font );
+	// 1 行の文字の高さは、1 文字を測って得る（大きさに、上下の余白と縁取りの分が足される）
+	int Width = 0;
+	int Height = 0;
+	int NumLines = 0;
+	GetDrawStringSizeToHandle( &Width, &Height, &NumLines, "A", 1, Font );
+	OutMetrics.GlyphHeight = Height;
+	return OutMetrics.Size >= 0;
+}
+
+bool CDxLibAssetBackend::MeasureTextSize( int32 Font, const char* Text, FTextSize& OutSize )
+{
+	// 壊れた UTF-8（途中で切れた並びなど）を渡すと、DxLib は、文字列の終わりの先まで読む（実行のたびに結果が違い、まれに異常終了する）ので、渡さない
+	if ( Text == nullptr || Font < 0 || CheckFontHandleValid( Font ) == FALSE || !FString( Text ).IsValidUtf8() )
+	{
+		return false;
+	}
+	int Width = 0;
+	int Height = 0;
+	int NumLines = 0;
+	// 戻り値は、エラーのとき -1、そうでなければ幅（エラーコードではない）
+	if ( GetDrawStringSizeToHandle( &Width, &Height, &NumLines, Text, static_cast<int>( NCString::Length( Text ) ), Font ) < 0 )
+	{
+		return false;
+	}
+	OutSize.Width = Width;
+	OutSize.Height = Height;
+	OutSize.NumLines = NumLines;
+	return true;
+}
+
+bool CDxLibAssetBackend::GetTextGlyphs( int32 Font, const char* Text, TArray<FTextGlyph>& OutGlyphs )
+{
+	OutGlyphs.Reset();
+	// MeasureTextSize と同じく、壊れた UTF-8 は、DxLib に渡さずに失敗にする（折り返しは、渡す前に、正しい形に直している）
+	if ( Text == nullptr || Font < 0 || CheckFontHandleValid( Font ) == FALSE || !FString( Text ).IsValidUtf8() )
+	{
+		return false;
+	}
+	const int Length = static_cast<int>( NCString::Length( Text ) );
+	if ( Length == 0 )
+	{
+		return true;
+	}
+	// バッファが無い（nullptr）と、文字の数だけが返る
+	const int Count = GetDrawStringCharInfoToHandle( nullptr, 0, Text, Length, Font );
+	if ( Count < 0 )
+	{
+		return false;
+	}
+	TArray<DRAWCHARINFO> Info;
+	Info.SetNum( Count );
+	if ( Count > 0 && GetDrawStringCharInfoToHandle( Info.GetData(), static_cast<size_t>( Count ) * sizeof( DRAWCHARINFO ), Text, Length, Font ) < 0 )
+	{
+		return false;
+	}
+	int32 Offset = 0;
+	for ( int32 Index = 0; Index < Count && Offset < Length; ++Index )
+	{
+		FTextGlyph Glyph;
+		Glyph.Offset = Offset;
+		Glyph.Bytes = NMath::Clamp( static_cast<int32>( Info[Index].Bytes ), 1, Length - Offset );
+		Glyph.X = NMath::RoundToInt( Info[Index].DrawX );
+		Glyph.Y = NMath::RoundToInt( Info[Index].DrawY );
+		Glyph.Width = NMath::RoundToInt( Info[Index].SizeX );
+		OutGlyphs.Add( Glyph );
+		Offset += Glyph.Bytes;
+	}
+	return true;
+}
+
+bool CDxLibAssetBackend::IsFontAvailable( const FString& Face )
+{
+	return !Face.IsEmpty() && CheckFontName( *Face ) != FALSE;
+}
+
+void CDxLibAssetBackend::GetFontNames( TArray<FString>& OutNames )
+{
+	OutNames.Reset();
+	// DxLib は、名前を 64 バイトずつ区切って返す。バッファが無い（nullptr）と、名前の数だけが返る
+	constexpr int NameBytes = 64;
+	const int Count = EnumFontNameEx( nullptr, 0, DX_CHARSET_DEFAULT );
+	if ( Count <= 0 )
+	{
+		return;
+	}
+	TArray<char> Buffer;
+	Buffer.SetNum( Count * NameBytes, 0 );
+	EnumFontNameEx( Buffer.GetData(), Count, DX_CHARSET_DEFAULT );
+	for ( int32 Index = 0; Index < Count; ++Index )
+	{
+		char* Name = Buffer.GetData() + Index * NameBytes;
+		Name[NameBytes - 1] = '\0';
+		OutNames.Add( FString( Name ) );
+	}
+}
+
+bool CDxLibAssetBackend::AddFontCharImage( int32 Font, const char* Character, int32 Image, int32 DrawX, int32 DrawY, int32 Advance )
+{
+	if ( Font < 0 || Character == nullptr || Image < 0 || CheckFontHandleValid( Font ) == FALSE )
+	{
+		return false;
+	}
+	return AddFontImageToHandle( Font, Character, Image, DrawX, DrawY, Advance ) == 0;
+}
+
+void CDxLibAssetBackend::RemoveFontCharImage( int32 Font, const char* Character )
+{
+	if ( Font >= 0 && Character != nullptr && CheckFontHandleValid( Font ) != FALSE )
+	{
+		SubFontImageToHandle( Font, Character );
+	}
 }
 
 bool CDxLibAssetBackend::AddFontFile( const FString& Path )

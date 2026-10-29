@@ -644,6 +644,33 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			else DrawString( X, Data.Y, Chars, ToDxColor( Data.Color ) );
 			break;
 		}
+		case EDrawCommand::TextStyled:
+		{
+			if ( !Command.CanRead<FDrawTextStyledData>() )
+			{
+				break;
+			}
+			const FDrawTextStyledData Data = Command.Read<FDrawTextStyledData>();
+			const char* Chars = Command.GetStyledTextChars();
+			const int Font = Data.Font >= 0 ? Data.Font : GetDefaultFontHandle();
+			const int Vertical = Data.Vertical != 0 ? TRUE : FALSE;
+			// 基準点は、文字列の大きさに対する割合なので、実行のときに、大きさを測って、文字列の中の位置（ピクセル）にする
+			int Width = 0;
+			int Height = 0;
+			int NumLines = 0;
+			GetDrawStringSizeToHandle( &Width, &Height, &NumLines, Chars, Data.Length, Font, Vertical );
+			float32 PivotX = Data.AnchorX * static_cast<float32>( Width );
+			float32 PivotY = Data.AnchorY * static_cast<float32>( Height );
+			if ( Vertical == TRUE )
+			{
+				// 縦書きの DxLib の基準点の座標は、書く向き（下）が x、列の並ぶ向き（左）が y（実測）。画面の向き（x が右、y が下）で受け取っているので、入れ替えて渡す
+				// （拡大率は、縦書きでも、横が ExRateX、縦が ExRateY のまま）
+				PivotX = Data.AnchorY * static_cast<float32>( Height );
+				PivotY = Data.AnchorX * static_cast<float32>( Width );
+			}
+			DrawRotaStringFToHandle( Data.X, Data.Y, Data.ScaleX, Data.ScaleY, PivotX, PivotY, Data.Angle, ToDxColor( Data.Color ), Font, ToDxColor( Data.EdgeColor ), Vertical, Chars );
+			break;
+		}
 		case EDrawCommand::ModelAnim:
 		{
 			const FDrawModelAnimData Data = Command.Read<FDrawModelAnimData>();

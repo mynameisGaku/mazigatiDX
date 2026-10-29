@@ -16,6 +16,7 @@
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Render/GraphFilter.h"
+#include "Library/Framework/Render/TextStyle.h"
 #include "Library/Math/Color.h"
 #include "Library/Math/Matrix4x4.h"
 #include "Library/Math/Vector3.h"
@@ -245,6 +246,12 @@ public:
 	// フォント指定の文字列（DrawStringToHandle）。FontHandle は CFont::GetHandle()。
 	// Align で、X を文字列の左端 / 中央 / 右端にできる（幅の計算は実行のとき、メインスレッドで行う）。EdgeColor は縁取りのあるフォントのときの縁の色
 	void TextWithFont( int32 FontHandle, int32 X, int32 Y, const char* String, const FColor32& Color, EDrawTextAlign Align = EDrawTextAlign::Left, const FColor32& EdgeColor = FColor32::Black );
+
+	// 拡大・回転・縦書き・影のある文字列（DrawRotaStringFToHandle）。FontHandle は CFont::GetHandle()（負なら、既定のフォント）。
+	// (X, Y) は、文字列の中の基準点（Style.AnchorX / AnchorY）が来る画面の位置（小数でもよい）。文字列は、記録のときにコピーされる。
+	// 位置・拡大率・回転・基準点・影のずれが有限でない・大きすぎる（絶対値 1e7 超）、拡大率が 0 以下、文字列が nullptr なら、何も記録せず false を返す。
+	// 影をつけると、影の文字列が先に、続けて本体が記録される（2 つの命令になる）
+	bool TextStyled( int32 FontHandle, float32 X, float32 Y, const char* String, const FColor32& Color, const FTextStyle& Style = FTextStyle() );
 
 	// 画像（DrawRotaGraphF）。(X, Y) が画像の中心。AngleRadians はラジアン。GraphHandle は LoadGraph などで得たもの
 	FORCEINLINE void Sprite( float32 X, float32 Y, int32 GraphHandle, float32 Scale = 1.0f, float32 AngleRadians = 0.0f, bool bFlipX = false, bool bFlipY = false )
