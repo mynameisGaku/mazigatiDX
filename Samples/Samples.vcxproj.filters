@@ -103,6 +103,33 @@
     <ClCompile Include="Source\Text\WrapShowcase.cpp">
       <Filter>Source\Text</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Village\Coin.cpp">
+      <Filter>Source\Village</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Village\Darkness.cpp">
+      <Filter>Source\Village</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Village\Dialogue.cpp">
+      <Filter>Source\Village</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Village\Player.cpp">
+      <Filter>Source\Village</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Village\StatusPanel.cpp">
+      <Filter>Source\Village</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Village\TileMap.cpp">
+      <Filter>Source\Village</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Village\VillageArt.cpp">
+      <Filter>Source\Village</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Village\Villager.cpp">
+      <Filter>Source\Village</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Village\VillageSample.cpp">
+      <Filter>Source\Village</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Application\SamplesApplication.h">
@@ -207,6 +234,36 @@
     <ClInclude Include="Source\Text\WrapShowcase.h">
       <Filter>Source\Text</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Village\Coin.h">
+      <Filter>Source\Village</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Village\Darkness.h">
+      <Filter>Source\Village</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Village\Dialogue.h">
+      <Filter>Source\Village</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Village\Player.h">
+      <Filter>Source\Village</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Village\StatusPanel.h">
+      <Filter>Source\Village</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Village\TileMap.h">
+      <Filter>Source\Village</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Village\VillageArt.h">
+      <Filter>Source\Village</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Village\Villager.h">
+      <Filter>Source\Village</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Village\VillageSample.h">
+      <Filter>Source\Village</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Village\VillageState.h">
+      <Filter>Source\Village</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source">
@@ -250,6 +307,9 @@
     </Filter>
     <Filter Include="Source\Text">
       <UniqueIdentifier>{E16AE2E4-2C5F-54A3-6946-41A12BC58602}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Village">
+      <UniqueIdentifier>{BDD5A596-60AB-DBCC-967A-473E787C29E4}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

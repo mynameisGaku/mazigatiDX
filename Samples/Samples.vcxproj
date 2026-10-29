@@ -85,6 +85,15 @@
     <ClCompile Include="Source\Text\StyledShowcase.cpp" />
     <ClCompile Include="Source\Text\TextSample.cpp" />
     <ClCompile Include="Source\Text\WrapShowcase.cpp" />
+    <ClCompile Include="Source\Village\Coin.cpp" />
+    <ClCompile Include="Source\Village\Darkness.cpp" />
+    <ClCompile Include="Source\Village\Dialogue.cpp" />
+    <ClCompile Include="Source\Village\Player.cpp" />
+    <ClCompile Include="Source\Village\StatusPanel.cpp" />
+    <ClCompile Include="Source\Village\TileMap.cpp" />
+    <ClCompile Include="Source\Village\VillageArt.cpp" />
+    <ClCompile Include="Source\Village\Villager.cpp" />
+    <ClCompile Include="Source\Village\VillageSample.cpp" />
     <ClCompile Include="Source\SelfTest\**\*.cpp" Exclude="@(ClCompile)" />
   </ItemGroup>
   <ItemGroup>
@@ -122,6 +131,16 @@
     <ClInclude Include="Source\Text\StyledShowcase.h" />
     <ClInclude Include="Source\Text\TextSample.h" />
     <ClInclude Include="Source\Text\WrapShowcase.h" />
+    <ClInclude Include="Source\Village\Coin.h" />
+    <ClInclude Include="Source\Village\Darkness.h" />
+    <ClInclude Include="Source\Village\Dialogue.h" />
+    <ClInclude Include="Source\Village\Player.h" />
+    <ClInclude Include="Source\Village\StatusPanel.h" />
+    <ClInclude Include="Source\Village\TileMap.h" />
+    <ClInclude Include="Source\Village\VillageArt.h" />
+    <ClInclude Include="Source\Village\Villager.h" />
+    <ClInclude Include="Source\Village\VillageSample.h" />
+    <ClInclude Include="Source\Village\VillageState.h" />
     <ClInclude Include="Source\SelfTest\**\*.h" Exclude="@(ClInclude)" />
   </ItemGroup>
 </Project>
