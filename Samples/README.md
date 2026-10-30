@@ -24,6 +24,7 @@ mazigatiDX の機能を、1 つずつ動かして見られるサンプル集で�
 |`Text`|文字とフォント。フォントの指定（アンチエイリアスの段階・斜体と太さ・縁取り・字間・行の送り幅・文字の代わりのアイコン）を 1 つずつ変えた行、幅が動く箱への折り返し（日本語と英語。句読点は行頭に来ない）と、右揃え・3 行で切る箱、拡大・回転・影・基準点・縦書き|
 |`Village`|小さな村を歩き回る、トップダウンの 2D のゲーム画面（2D の機能を 1 つにまとめた見本）。タイルの地図、2D の変換で主人公を追うカメラ、歩く主人公（キーを押すまでは、ひとりで歩く）、回る金貨、村人との会話（折り返し・1 文字ずつ表示）、夜の明かり（描画先とカスタムブレンド）、金貨の数と体力（円グラフ）とミニマップ|
 |`Camera`|3D のカメラ。注視点のまわりを回る軌道カメラ（透視射影 / 正射影、視野角）で景色を見る。真上から見下ろす 2 つ目のカメラを別の描画先に描いて右下に貼り、メインのカメラが映す地面の範囲を重ねる。世界の点が画面のどこに見えるか（WorldToScreen）で物の名前を置き、マウスの位置を通る光線（ScreenToRay）で指している物を調べ、視錐台に入らない物は描かない|
+|`RenderState`|3D の描画状態。一つの舞台に、描画状態の使いどころを並べる: 深度バッファ（半透明のガラス）、カリング（部屋）、画像の貼り方と変換（壁・水面）、距離のフォグと高さのフォグ（遠くの柱・足元の霧）、フィルターと異方性（地面の市松模様）、3D 図形の変換の積み重ね（腕）、深度バッファの消去（手前に描く光線）。数字キーの 1〜8 で切り替える|
 |`Input`|キーボード・マウス・ゲームパッドの状態を表示する|
 
 ## 構成（クラスとファイルの分け方）
@@ -44,6 +45,7 @@ Samples/
     Pixels/                     サンプル Pixels: シーン（CPixelsSample）と、オブジェクト（CPlasmaView、CTileView）、シートの画像を CPU で作る関数（NSpriteSheetMaker）
     Text/                       サンプル Text: シーン（CTextSample）と、オブジェクト（CFontShowcase、CWrapShowcase、CStyledShowcase）
     Camera/                     サンプル Camera: シーン（CCameraSample）と、オブジェクト（CCameraRig、CMainView、CTopView、CLabelOverlay）、共有する状態（FCameraDemoState）、景色（NScenery）
+    RenderState/                サンプル RenderState: シーン（CRenderStateSample）と、オブジェクト（CRenderStateRig、CStageView、CInfoPanel）、共有する状態（FRenderStateDemoState）、舞台（NStageScenery）
     Village/                    サンプル Village: シーン（CVillageSample）と、オブジェクト（CTileMap、CPlayer、CCoin、CVillager、CDialogue、CDarkness、CStatusPanel）、共有する状態（FVillageState）、絵を CPU で作る関数（NVillageArt）
     Common/                     複数のサンプルで使うもの。確認用の画像を、メモリの上で作る関数（NTestPattern）
     Input/                      サンプル Input: シーン（CInputSample）と、オブジェクト（CKeyboardView、CMouseView、CGamepadView）

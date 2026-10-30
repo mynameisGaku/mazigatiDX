@@ -67,6 +67,15 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
 - **描画先を替えると、「替えるとリセットする設定」を切っても、カメラの光軸が通る画面の点（`SetCameraScreenCenter`）は、替えた先の中心に変わる**（M3-1 の実測）。戻すときに、替える前の値へ戻さないと、元の画面で、3D の位置がずれる（ラッパーは、描画先を替えるとき覚えて、戻すときに戻す）。
 - DxLib は、3D の描画（箱・線・球など）を、内部の頂点バッファに溜めて、あとでまとめて描くが、カメラを替える（`SetCameraPositionAndTarget*`・`SetupCamera_*`・`SetCameraNearFar` など）ときに、溜まった分を、替える前のカメラで描き出す（M3-1 の実測。ラッパーは、替える前に `RenderVertex()` を呼ばなくても、描いたときのカメラで描かれる）。
 - 前提が破れたとき（不正な引数・NaN・範囲外）は、何もせずにログを出して失敗を返す。DxLib 側のクラッシュや assert に任せない。
+- **3D の描画状態（M3-2 の実測）**:
+  - **カリング**: `DX_CULLING_LEFT` は、画面で**反時計回り**に見える面を描かない（表 = 時計回り。`DX_CULLING_RIGHT` は逆）。取得関数（`GetUseBackCulling`）がある。
+  - **深度バッファ**: 「使う」（`SetUseZBuffer3D`）・「書く」（`SetWriteZBuffer3D`）・比べ方（`SetZBufferCmpType3D`）は別々に効く。`SetZBias3D` は、負の値が手前に寄る（-1 でも、同じ平面の 2 枚目が `LESS` を通る）。**Z バッファの設定には取得関数が無い**ので、描画の終わりに戻す先は、フレームワークが初期化で決めた値（`NDxLibRenderState3D::ApplyDefaults`）。生の DxLib で替えた分は、戻らない。`SetDrawScreen` は、これらの状態を替えない。
+  - **`ClearDrawScreenZBuffer` は、溜まった 3D を、先に描き出さない**（そのまま呼ぶと、消す前に描いた物が、消したあとの深度で描かれる）→ 先に `RenderVertex()` する。範囲（`RECT`）も `SetDrawArea` も無視して、全体を消す。
+  - **フォグ**: `SetFogStartEnd` は、`0.0 〜 1.0` ではなく、**ワールドの単位**（視点からの奥行き）。式は、面の奥行きで決まる。球・箱・カプセル・`DrawPolygon3D`（画像あり・なし）には掛かるが、`DrawTriangle3D`・`DrawLine3D`・`DrawBillboard3D` には**掛からない**。`DX_FOGMODE_NONE` のときも掛からない。
+  - **高さのフォグ**（`SetVerticalFog*`）: 直線は `start` で 0、`end` で 1（`end` のほうが低くてもよい）。指数は、`SetVerticalFogDensity` の `start` より下で、低いほど濃くなる。**`SetVerticalFogDensity( start, density )` は、密度がいまと同じだと、`start` を無視する**（実測。先に別の密度にしてから、決めたい密度にする）。**`GetVerticalFogDensity` は、`start` をいつも 0 と返す**（フレームワークは、設定した高さを自分で覚える）。
+  - **画像の貼り方の変換**（`SetTextureAddressTransform`）: UV を、`RotCenter` のまわりに回し、`Trans` を足し、`Scale` を原点から掛ける、の順（回転が正なら、画面で反時計回り。拡大の中心は回転の中心ではない）。2 つ以上を組み合わせたとき、順番が違うと答えが違う。
+  - **`SetDrawMode` の `DX_DRAWMODE_BILINEAR` / `DX_DRAWMODE_ANISOTROPIC` は、3D の面の画像にも効く**。`SetMaxAnisotropy` は `ANISOTROPIC` のときだけ効き、範囲の収めはしない（0 や 100 も、そのまま取得できる）→ フレームワークは 1〜16 に収める。
+  - 状態を替えるとき、DxLib は、その前に溜まった 3D を、前の状態で描き出す（深度・カリング・フォグ・画像の貼り方で確かめた）。
 
 ## 6. 文字列と文字コード
 
