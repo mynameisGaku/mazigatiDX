@@ -54,6 +54,12 @@
     <ClCompile Include="Source\main.cpp" />
     <ClCompile Include="Source\Application\SamplesApplication.cpp" />
     <ClCompile Include="Source\Browser\BrowserScene.cpp" />
+    <ClCompile Include="Source\Camera\CameraRig.cpp" />
+    <ClCompile Include="Source\Camera\CameraSample.cpp" />
+    <ClCompile Include="Source\Camera\LabelOverlay.cpp" />
+    <ClCompile Include="Source\Camera\MainView.cpp" />
+    <ClCompile Include="Source\Camera\Scenery.cpp" />
+    <ClCompile Include="Source\Camera\TopView.cpp" />
     <ClCompile Include="Source\Catalog\SampleCatalog.cpp" />
     <ClCompile Include="Source\Catalog\SampleScene.cpp" />
     <ClCompile Include="Source\Common\TestPattern.cpp" />
@@ -99,6 +105,13 @@
   <ItemGroup>
     <ClInclude Include="Source\Application\SamplesApplication.h" />
     <ClInclude Include="Source\Browser\BrowserScene.h" />
+    <ClInclude Include="Source\Camera\CameraDemoState.h" />
+    <ClInclude Include="Source\Camera\CameraRig.h" />
+    <ClInclude Include="Source\Camera\CameraSample.h" />
+    <ClInclude Include="Source\Camera\LabelOverlay.h" />
+    <ClInclude Include="Source\Camera\MainView.h" />
+    <ClInclude Include="Source\Camera\Scenery.h" />
+    <ClInclude Include="Source\Camera\TopView.h" />
     <ClInclude Include="Source\Catalog\SampleCatalog.h" />
     <ClInclude Include="Source\Catalog\SampleInfo.h" />
     <ClInclude Include="Source\Catalog\SampleScene.h" />

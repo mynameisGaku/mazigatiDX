@@ -10,6 +10,24 @@
     <ClCompile Include="Source\Browser\BrowserScene.cpp">
       <Filter>Source\Browser</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Camera\CameraRig.cpp">
+      <Filter>Source\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Camera\CameraSample.cpp">
+      <Filter>Source\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Camera\LabelOverlay.cpp">
+      <Filter>Source\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Camera\MainView.cpp">
+      <Filter>Source\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Camera\Scenery.cpp">
+      <Filter>Source\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Camera\TopView.cpp">
+      <Filter>Source\Camera</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Catalog\SampleCatalog.cpp">
       <Filter>Source\Catalog</Filter>
     </ClCompile>
@@ -137,6 +155,27 @@
     </ClInclude>
     <ClInclude Include="Source\Browser\BrowserScene.h">
       <Filter>Source\Browser</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Camera\CameraDemoState.h">
+      <Filter>Source\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Camera\CameraRig.h">
+      <Filter>Source\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Camera\CameraSample.h">
+      <Filter>Source\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Camera\LabelOverlay.h">
+      <Filter>Source\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Camera\MainView.h">
+      <Filter>Source\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Camera\Scenery.h">
+      <Filter>Source\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Camera\TopView.h">
+      <Filter>Source\Camera</Filter>
     </ClInclude>
     <ClInclude Include="Source\Catalog\SampleCatalog.h">
       <Filter>Source\Catalog</Filter>
@@ -274,6 +313,9 @@
     </Filter>
     <Filter Include="Source\Browser">
       <UniqueIdentifier>{D8D78B2D-2923-6F91-261A-33237F267A69}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Camera">
+      <UniqueIdentifier>{D238EC28-8D81-BFB8-03E5-491BE1DB2C2C}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Catalog">
       <UniqueIdentifier>{7C63368C-8999-EB5C-EB62-68FC90B68A1C}</UniqueIdentifier>
