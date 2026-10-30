@@ -83,6 +83,11 @@
     <ClCompile Include="Source\Pixels\PlasmaView.cpp" />
     <ClCompile Include="Source\Pixels\SpriteSheetMaker.cpp" />
     <ClCompile Include="Source\Pixels\TileView.cpp" />
+    <ClCompile Include="Source\RenderState\InfoPanel.cpp" />
+    <ClCompile Include="Source\RenderState\RenderStateRig.cpp" />
+    <ClCompile Include="Source\RenderState\RenderStateSample.cpp" />
+    <ClCompile Include="Source\RenderState\StageScenery.cpp" />
+    <ClCompile Include="Source\RenderState\StageView.cpp" />
     <ClCompile Include="Source\RenderTarget\RenderTargetSample.cpp" />
     <ClCompile Include="Source\RenderTarget\TargetShowcase.cpp" />
     <ClCompile Include="Source\Shapes\ShapeShowcase.cpp" />
@@ -136,6 +141,12 @@
     <ClInclude Include="Source\Pixels\PlasmaView.h" />
     <ClInclude Include="Source\Pixels\SpriteSheetMaker.h" />
     <ClInclude Include="Source\Pixels\TileView.h" />
+    <ClInclude Include="Source\RenderState\InfoPanel.h" />
+    <ClInclude Include="Source\RenderState\RenderStateDemoState.h" />
+    <ClInclude Include="Source\RenderState\RenderStateRig.h" />
+    <ClInclude Include="Source\RenderState\RenderStateSample.h" />
+    <ClInclude Include="Source\RenderState\StageScenery.h" />
+    <ClInclude Include="Source\RenderState\StageView.h" />
     <ClInclude Include="Source\RenderTarget\RenderTargetSample.h" />
     <ClInclude Include="Source\RenderTarget\TargetShowcase.h" />
     <ClInclude Include="Source\Shapes\ShapeShowcase.h" />

@@ -97,6 +97,21 @@
     <ClCompile Include="Source\Pixels\TileView.cpp">
       <Filter>Source\Pixels</Filter>
     </ClCompile>
+    <ClCompile Include="Source\RenderState\InfoPanel.cpp">
+      <Filter>Source\RenderState</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\RenderState\RenderStateRig.cpp">
+      <Filter>Source\RenderState</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\RenderState\RenderStateSample.cpp">
+      <Filter>Source\RenderState</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\RenderState\StageScenery.cpp">
+      <Filter>Source\RenderState</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\RenderState\StageView.cpp">
+      <Filter>Source\RenderState</Filter>
+    </ClCompile>
     <ClCompile Include="Source\RenderTarget\RenderTargetSample.cpp">
       <Filter>Source\RenderTarget</Filter>
     </ClCompile>
@@ -249,6 +264,24 @@
     <ClInclude Include="Source\Pixels\TileView.h">
       <Filter>Source\Pixels</Filter>
     </ClInclude>
+    <ClInclude Include="Source\RenderState\InfoPanel.h">
+      <Filter>Source\RenderState</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\RenderState\RenderStateDemoState.h">
+      <Filter>Source\RenderState</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\RenderState\RenderStateRig.h">
+      <Filter>Source\RenderState</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\RenderState\RenderStateSample.h">
+      <Filter>Source\RenderState</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\RenderState\StageScenery.h">
+      <Filter>Source\RenderState</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\RenderState\StageView.h">
+      <Filter>Source\RenderState</Filter>
+    </ClInclude>
     <ClInclude Include="Source\RenderTarget\RenderTargetSample.h">
       <Filter>Source\RenderTarget</Filter>
     </ClInclude>
@@ -340,6 +373,9 @@
     </Filter>
     <Filter Include="Source\Pixels">
       <UniqueIdentifier>{7FACA93B-34CC-117D-96B2-DB56EAC4A18F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\RenderState">
+      <UniqueIdentifier>{93FBC219-622C-243E-E859-AD13FBD37692}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\RenderTarget">
       <UniqueIdentifier>{404CC2CF-CCF6-391E-5932-FC9207128670}</UniqueIdentifier>
