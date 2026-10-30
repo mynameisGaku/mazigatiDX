@@ -547,6 +547,9 @@
     <ClCompile Include="Library\Platform\DxLib\DxLibInput.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\DxLibRenderState3D.cpp">
+      <Filter>Library\Platform\DxLib</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\DxLibRibbonMesh.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
@@ -1674,6 +1677,9 @@
     <ClInclude Include="Library\Framework\Render\ModelMaterialEffectResources.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Render\RenderState3D.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Render\TextStyle.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
@@ -1903,6 +1909,9 @@
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\DxLibModelMaterialGeometry.h">
+      <Filter>Library\Platform\DxLib</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\DxLibRenderState3D.h">
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\DxLibRibbonMesh.h">

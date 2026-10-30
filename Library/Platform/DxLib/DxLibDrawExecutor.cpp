@@ -16,6 +16,7 @@
 #include "Library/Platform/DxLib/DxLibAssetBackend.h"
 #include "Library/Platform/DxLib/DxLibImageOps.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
+#include "Library/Platform/DxLib/DxLibRenderState3D.h"
 #include "Library/Platform/DxLib/DxLibRibbonMesh.h"
 
 REGISTER_SUBSYSTEM( CDxLibDrawExecutor )
@@ -227,22 +228,6 @@ namespace
 		}
 	}
 
-	// アルファテストの比べ方
-	int ToDxCompare( int32 Compare )
-	{
-		switch ( static_cast<EDrawCompare>( Compare ) )
-		{
-		case EDrawCompare::Never: return DX_CMP_NEVER;
-		case EDrawCompare::Less: return DX_CMP_LESS;
-		case EDrawCompare::Equal: return DX_CMP_EQUAL;
-		case EDrawCompare::LessEqual: return DX_CMP_LESSEQUAL;
-		case EDrawCompare::Greater: return DX_CMP_GREATER;
-		case EDrawCompare::NotEqual: return DX_CMP_NOTEQUAL;
-		case EDrawCompare::GreaterEqual: return DX_CMP_GREATEREQUAL;
-		default: return DX_CMP_ALWAYS;
-		}
-	}
-
 	// 画像を拡大・縮小・回転して描くときの色の決め方
 	int ToDxFilter( int32 Filter )
 	{
@@ -276,9 +261,11 @@ namespace
 		case EDrawCommand::PopMask:
 		case EDrawCommand::PushCamera:
 		case EDrawCommand::PopCamera:
+		case EDrawCommand::PushWorldMatrix:
+		case EDrawCommand::PopWorldMatrix:
 			return true;
 		default:
-			return false;
+			return FDxLibRenderState3D::IsStateCommand( Type );
 		}
 	}
 
@@ -291,7 +278,7 @@ namespace
 	// 描画先の全体にかかわる命令か（クリップ範囲に関係なく、実行する）
 	bool IsWholeTargetCommand( EDrawCommand Type )
 	{
-		return Type == EDrawCommand::Clear || Type == EDrawCommand::CopyScreen;
+		return Type == EDrawCommand::Clear || Type == EDrawCommand::CopyScreen || Type == EDrawCommand::ClearDepth;
 	}
 
 	// PushMask で重ねたマスク 1 つ分
@@ -442,6 +429,11 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 	// このオブジェクトの分で変えた状態。終わりで、元に戻す（変える前の値は、最初に変えるときに覚える）
 	bool bBlendChanged = false;
 	bool bWorldMatrixChanged = false;
+	// 3D 図形の変換: 実行のなかで覚えている、いまの変換（始めは変換なし）と、PushWorldMatrix で積む前の変換の並び
+	MATRIX WorldMatrix = MGetIdent();
+	TArray<MATRIX> WorldMatrixStack;
+	// 3D の描画状態（深度バッファ・カリング・画像の貼り方・フォグ・異方性）。変えた分を、終わりに戻す
+	FDxLibRenderState3D RenderState3D;
 	bool bBrightChanged = false;
 	bool bAddColorChanged = false;
 	int OldAddColor[3] = { 0, 0, 0 };
@@ -574,6 +566,12 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			return;
 		}
 
+		// 3D の描画状態の命令
+		if ( RenderState3D.Apply( Command ) )
+		{
+			return;
+		}
+
 		switch ( Command.Type )
 		{
 		case EDrawCommand::Box:
@@ -652,9 +650,39 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 		case EDrawCommand::WorldMatrix:
 		{
 			const FDrawMatrixData Data = Command.Read<FDrawMatrixData>();
-			const MATRIX Matrix = ToMatrix( Data.M );
-			SetTransformToWorld( &Matrix );
+			WorldMatrix = ToMatrix( Data.M );
+			SetTransformToWorld( &WorldMatrix );
 			bWorldMatrixChanged = true;
+			break;
+		}
+		case EDrawCommand::PushWorldMatrix:
+		{
+			if ( !Command.CanRead<FDrawMatrixData>() )
+			{
+				break;
+			}
+			// 自分の座標 -> 親の座標（いまの変換）の順に掛ける（行ベクトルの流儀: 先に掛けたものが先に効く）
+			WorldMatrixStack.Add( WorldMatrix );
+			WorldMatrix = MMult( ToMatrix( Command.Read<FDrawMatrixData>().M ), WorldMatrix );
+			SetTransformToWorld( &WorldMatrix );
+			bWorldMatrixChanged = true;
+			break;
+		}
+		case EDrawCommand::PopWorldMatrix:
+		{
+			if ( WorldMatrixStack.IsEmpty() )
+			{
+				break;
+			}
+			WorldMatrix = WorldMatrixStack.Pop();
+			SetTransformToWorld( &WorldMatrix );
+			break;
+		}
+		case EDrawCommand::ClearDepth:
+		{
+			// 溜まった 3D を、消す前の深度で先に描き出す（DxLib は、深度バッファを消すときには描き出さない）。範囲の指定は DxLib が無視するので、全体を消す
+			RenderVertex();
+			ClearDrawScreenZBuffer();
 			break;
 		}
 		case EDrawCommand::Model3D:
@@ -1248,7 +1276,7 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			}
 			else
 			{
-				SetDrawAlphaTest( ToDxCompare( Data.Mode ), Data.Reference );
+				SetDrawAlphaTest( NDxLibRenderState3D::ToDxCompare( Data.Mode ), Data.Reference );
 			}
 			break;
 		}
@@ -1511,6 +1539,9 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 		SetMaskReverseEffectFlag( FALSE );
 		SetMaskScreenGraphUseChannel( DX_MASKGRAPH_CH_A );
 	}
+
+	// 3D の描画状態を、元に戻す
+	RenderState3D.Restore();
 
 	// このオブジェクトで変えた状態を、次のオブジェクトに漏らさない
 	if ( bBlendChanged )

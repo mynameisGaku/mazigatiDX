@@ -8,6 +8,7 @@
 #include "Library/Platform/CommandLine.h"
 #include "Library/Platform/FileSystem.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
+#include "Library/Platform/DxLib/DxLibRenderState3D.h"
 #include "VendorModules/ImGui/imgui_impl_dxlib.hpp"
 
 DEFINE_LOG_CATEGORY( LogPlatform )
@@ -153,8 +154,8 @@ void CDxLibBackend::ApplyRenderState()
 {
 	// SetDrawScreen はカメラ設定をリセットするので先に呼ぶ
 	SetDrawScreen( DX_SCREEN_BACK );
-	SetUseZBuffer3D( Settings.bUseZBuffer3D ? TRUE : FALSE );
-	SetWriteZBuffer3D( Settings.bUseZBuffer3D ? TRUE : FALSE );
+	// 3D の描画状態の初期値（描画のたびに、終わりで戻す先）。深度バッファの使い方・画像の貼り方は、DxLib から読めないので、ここで決めて覚えておく
+	NDxLibRenderState3D::ApplyDefaults( Settings.bUseZBuffer3D );
 	SetCameraNearFar( Settings.CameraNear, Settings.CameraFar );
 }
 

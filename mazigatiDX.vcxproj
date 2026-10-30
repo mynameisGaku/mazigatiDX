@@ -247,6 +247,7 @@
     <ClCompile Include="Library\Platform\DxLib\DxLibDrawExecutorModelMaterial.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibImageOps.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibInput.cpp" />
+    <ClCompile Include="Library\Platform\DxLib\DxLibRenderState3D.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibRibbonMesh.cpp" />
     <ClCompile Include="Library\Platform\DxLib\EffectMaterialRenderer.cpp" />
     <ClCompile Include="Library\Platform\DxLib\EffectPreviewSurface.cpp" />
@@ -624,6 +625,7 @@
     <ClInclude Include="Library\Framework\Render\MeshRender.h" />
     <ClInclude Include="Library\Framework\Render\ModelMaterialEffectRenderer.h" />
     <ClInclude Include="Library\Framework\Render\ModelMaterialEffectResources.h" />
+    <ClInclude Include="Library\Framework\Render\RenderState3D.h" />
     <ClInclude Include="Library\Framework\Render\TextStyle.h" />
     <ClInclude Include="Library\Framework\Scene\ISceneManager.h" />
     <ClInclude Include="Library\Framework\Scene\ObjectIterator.h" />
@@ -701,6 +703,7 @@
     <ClInclude Include="Library\Platform\DxLib\DxLibInclude.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibInput.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibModelMaterialGeometry.h" />
+    <ClInclude Include="Library\Platform\DxLib\DxLibRenderState3D.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibRibbonMesh.h" />
     <ClInclude Include="Library\Platform\DxLib\EffectMaterialRenderer.h" />
     <ClInclude Include="Library\Platform\DxLib\EffectPreviewSurface.h" />

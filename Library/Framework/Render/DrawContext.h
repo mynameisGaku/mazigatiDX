@@ -17,6 +17,7 @@
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Render/Camera.h"
 #include "Library/Framework/Render/GraphFilter.h"
+#include "Library/Framework/Render/RenderState3D.h"
 #include "Library/Framework/Render/TextStyle.h"
 #include "Library/Math/Color.h"
 #include "Library/Math/Matrix4x4.h"
@@ -55,8 +56,9 @@ struct FDrawBuffer
 //
 //   - 記録した順番に実行される（1 つのオブジェクトの中では、記録した順。重なりもその通りになる）
 //   - 色は FColor32（DxLib の GetColor への変換は、実行するとき、メインスレッドで行う）
-//   - 描画の状態（Blend / CustomBlend / Tint / AddColor / AlphaTest / Filter / PushClip / Transform2D）と 3D 図形の変換（WorldMatrix）と描画先（PushTarget）は、そのオブジェクトの分が終わると元に戻る
-//   - カメラ・ライト・Zバッファ・描画先は記録しない（呼び出し側が決めたものを使う）
+//   - 描画の状態（Blend / CustomBlend / Tint / AddColor / AlphaTest / Filter / PushClip / Transform2D）と 3D 図形の変換（WorldMatrix）と描画先（PushTarget）と
+//     カメラ（PushCamera）と 3D の描画状態（Depth / Culling / TextureAddress / TextureTransform / Fog / HeightFog / Anisotropy）は、そのオブジェクトの分が終わると元に戻る
+//   - ライトは記録しない（呼び出し側が決めたものを使う）。カメラ・描画先・深度バッファの使い方は、記録しなければ、呼び出し側が決めたものを使う
 //   - グラフィック / モデルのハンドルは、あらかじめ読み込んでおく（読み込みは DxLib の呼び出しなのでメインスレッドで）
 //=============================================================================
 // いまの合成方法をまとめたもの。ほかの合成方法で少し描いてから元に戻すときに、FDrawContext::GetBlendState で保存し、SetBlendState で戻す
@@ -916,6 +918,67 @@ public:
 	}
 
 	//-------------------------------------------------------------------------
+	// 3D の描画状態（深度バッファ・カリング・画像の貼り方・フォグ・異方性）
+	//   どれも、そのオブジェクトの分が終わると、始める前の状態に戻る。値が使えないときは、何も記録しない
+	//-------------------------------------------------------------------------
+	// 深度バッファの使い方（SetUseZBuffer3D / SetWriteZBuffer3D / SetZBufferCmpType3D / SetZBias3D）。半透明の物を描くときは FDepthState::ReadOnly()。
+	// Compare が範囲の外なら、何も記録しない。Bias は ±FDepthState::MaxBias に収める
+	void Depth( const FDepthState& State );
+
+	// ポリゴンの裏表の描き分け（SetUseBackCulling）。表 = 画面で頂点が時計回りに見える面。Mode が範囲の外なら、何も記録しない
+	FORCEINLINE void Culling( EDrawCulling Mode )
+	{
+		if ( !IsInEnumRange( static_cast<int32>( Mode ), static_cast<int32>( EDrawCulling::FrontFaces ) ) )
+		{
+			return;
+		}
+		FDrawCullingData Data;
+		Data.Mode = static_cast<int32>( Mode );
+		Push( EDrawCommand::Culling, 0, Data );
+	}
+
+	// 面の画像の外側（UV が 0..1 の外）の貼り方（SetTextureAddressModeUV）。横 U と縦 V を別々に決められる。範囲の外の値は、何も記録しない
+	void TextureAddress( EDrawTextureAddress U, EDrawTextureAddress V );
+
+	// 面の画像の外側の貼り方を、横も縦も同じにする
+	FORCEINLINE void TextureAddress( EDrawTextureAddress Mode )
+	{
+		TextureAddress( Mode, Mode );
+	}
+
+	// 面に貼る画像の、貼る位置・拡大・回転（SetTextureAddressTransform）。何も変えない変換（IsIdentity）なら、変換をやめる。使えない値（NaN・無限大）なら、何も記録しない
+	void TextureTransform( const FTextureTransform& Transform );
+
+	// 面に貼る画像の変換を、元（変換しない）に戻す（ResetTextureAddressTransform）
+	FORCEINLINE void ResetTextureTransform()
+	{
+		TextureTransform( FTextureTransform() );
+	}
+
+	// 距離によるフォグ（SetFogEnable / SetFogMode / SetFogColor / SetFogStartEnd / SetFogDensity）。Mode が None なら、フォグをやめる。使えない値（FFogSettings::IsValid() が false）なら、何も記録しない
+	void Fog( const FFogSettings& Settings );
+
+	// 高さによるフォグ（SetVerticalFogEnable / SetVerticalFogMode / SetVerticalFogColor / SetVerticalFogStartEnd / SetVerticalFogDensity）。Mode が None なら、フォグをやめる。
+	// 使えない値（FFogSettings::IsValid() が false）なら、何も記録しない
+	void HeightFog( const FFogSettings& Settings );
+
+	// 異方性フィルタリングの強さ（SetMaxAnisotropy）。1..16 に収める。Filter( EDrawFilter::Anisotropic ) のときだけ効く（斜めから見た面の画像が、遠くでもぼやけにくくなる）
+	FORCEINLINE void Anisotropy( int32 MaxLevel )
+	{
+		FDrawAnisotropyData Data;
+		Data.Level = NMath::Clamp( MaxLevel, 1, 16 );
+		Push( EDrawCommand::Anisotropy, 0, Data );
+	}
+
+	// いまの描画先の深度バッファを、全体消す（ClearDrawScreenZBuffer）。ここまでに記録した 3D の描画は、消す前の深度で描き終わる。
+	// 手前に描く物（一人称の武器など）を、奥の物に隠されないように、あとから描くときに使う。クリップ範囲や描画範囲に関係なく、全体を消す
+	FORCEINLINE void ClearDepth()
+	{
+		const FDrawClearDepthData Data;
+		Push( EDrawCommand::ClearDepth, 0, Data );
+	}
+
+	//-------------------------------------------------------------------------
 	// 3D（ワールド座標）
 	//-------------------------------------------------------------------------
 	// 線分（DrawLine3D）
@@ -1049,6 +1112,18 @@ public:
 		FDrawMatrixData Data;
 		PackAffine( Data.M, Matrix );
 		Push( EDrawCommand::WorldMatrix, 0, Data );
+	}
+
+	// 以降の 3D 図形（Line3D〜Cube3D）の変換に、Local を掛けて積む（SetTransformToWorld）。Local は、自分の座標 -> 親の座標の変換で、親は、いまの変換（WorldMatrix か、積んだ変換）。
+	// 入れ子にできる（親の物を動かすと、子も動く）。PopWorldMatrix か FWorldMatrixScope で、1 つ前の変換へ戻す。そのオブジェクトの分が終わると、
+	// PopWorldMatrix が足りなくても、変換なしに戻る。アフィン変換だけ（最後の列は無視される）。値が NaN・無限大のときは、何も記録せず false を返す（対の PopWorldMatrix も呼ばないこと）
+	bool PushWorldMatrix( const FMatrix4x4& Local );
+
+	// 1 つ前の 3D 図形の変換へ戻す。PushWorldMatrix の数より多く呼んでも、何も起きない
+	FORCEINLINE void PopWorldMatrix()
+	{
+		const FDrawPopWorldMatrixData Data;
+		Push( EDrawCommand::PopWorldMatrix, 0, Data );
 	}
 
 	// MV1 モデル（MV1SetMatrix -> MV1DrawModel）。World がモデルの変換行列。
@@ -1354,6 +1429,41 @@ public:
 
 	FMaskScope( const FMaskScope& ) = delete;
 	FMaskScope& operator=( const FMaskScope& ) = delete;
+
+private:
+	FDrawContext* CommandList;
+	bool bPushed;
+};
+
+//=============================================================================
+// FWorldMatrixScope
+//   コマンドリストの以降の 3D 図形の変換に Local を掛けて（PushWorldMatrix）、スコープを抜けるとき、1 つ前の変換に戻す（PopWorldMatrix）。
+//   値が使えないときは、何も記録せず、戻すこともしない。
+//
+//   {
+//       FWorldMatrixScope Tower( CommandList, FMatrix4x4::Translate( FVector3( 10.0f, 0.0f, 0.0f ) ) );   // この中の図形は、10 だけ横にずれる
+//       CommandList.Cube3D( ... );
+//   }
+//=============================================================================
+class FWorldMatrixScope
+{
+public:
+	FWorldMatrixScope( FDrawContext& InCommandList, const FMatrix4x4& Local )
+		: CommandList( &InCommandList )
+		, bPushed( InCommandList.PushWorldMatrix( Local ) )
+	{
+	}
+
+	~FWorldMatrixScope()
+	{
+		if ( bPushed )
+		{
+			CommandList->PopWorldMatrix();
+		}
+	}
+
+	FWorldMatrixScope( const FWorldMatrixScope& ) = delete;
+	FWorldMatrixScope& operator=( const FWorldMatrixScope& ) = delete;
 
 private:
 	FDrawContext* CommandList;

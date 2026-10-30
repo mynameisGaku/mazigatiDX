@@ -102,6 +102,17 @@ enum class EDrawCommand : uint8
 	// カメラの追加（上のコマンドの形式は変えていない）
 	PushCamera,       // FDrawCameraData。以降の 3D の描画のカメラを替える（SetCameraPositionAndTargetAndUpVec・SetupCamera_Perspective / Ortho など）
 	PopCamera,        // FDrawPopCameraData。1 つ前のカメラに戻す
+	// 3D の描画状態の追加（上のコマンドの形式は変えていない。ClearDepth 以外は、オブジェクトの分（1 つの Execute）が終わると、元に戻る）
+	Depth,            // FDrawDepthData。深度バッファの使い方（SetUseZBuffer3D / SetWriteZBuffer3D / SetZBufferCmpType3D / SetZBias3D）
+	Culling,          // FDrawCullingData。ポリゴンの裏表の描き分け（SetUseBackCulling）
+	TextureAddress,   // FDrawTextureAddressData。画像の外側の貼り方（SetTextureAddressModeUV）
+	TextureTransform, // FDrawTextureTransformData。画像の貼る位置・拡大・回転（SetTextureAddressTransform / ResetTextureAddressTransform）
+	Fog,              // FDrawFogData。距離によるフォグ（SetFogEnable / SetFogMode / SetFogColor / SetFogStartEnd / SetFogDensity）
+	HeightFog,        // FDrawFogData。高さによるフォグ（SetVerticalFogEnable / SetVerticalFogMode / SetVerticalFogColor / SetVerticalFogStartEnd / SetVerticalFogDensity）
+	Anisotropy,       // FDrawAnisotropyData。異方性フィルタリングの強さ（SetMaxAnisotropy）
+	ClearDepth,       // FDrawClearDepthData。いまの描画先の深度バッファを、全体消す（ClearDrawScreenZBuffer。溜まった 3D を先に描き出してから）
+	PushWorldMatrix,  // FDrawMatrixData。いまの 3D 図形の変換に、この変換を掛けて（自分 -> 親の順）積む（SetTransformToWorld）
+	PopWorldMatrix,   // FDrawPopWorldMatrixData。1 つ前の 3D 図形の変換に戻す
 };
 
 // Quad3D の向きの決め方
@@ -174,6 +185,32 @@ enum class EDrawCompare : int32
 	NotEqual,       // アルファ != 基準値
 	GreaterEqual,   // アルファ >= 基準値
 	Always,         // 常に描く
+};
+
+// 3D のポリゴンの裏表の描き分け（DX_CULLING_*）。表 = 画面で頂点が時計回りに見える面（DxLib / Direct3D の向き。実測）
+enum class EDrawCulling : int32
+{
+	None,         // 両面を描く
+	BackFaces,    // 裏面（画面で反時計回りに見える面）を描かない（DX_CULLING_LEFT）
+	FrontFaces,   // 表面（画面で時計回りに見える面）を描かない（DX_CULLING_RIGHT）
+};
+
+// 画像の外側（UV が 0..1 の外）の貼り方（DX_TEXADDRESS_*）
+enum class EDrawTextureAddress : int32
+{
+	Wrap,     // 繰り返す
+	Mirror,   // 折り返して、鏡のように繰り返す
+	Clamp,    // 端の色を伸ばす
+	Border,   // 外は描かない（透明な黒）
+};
+
+// フォグの濃さの決め方（DX_FOGMODE_*）
+enum class EDrawFogMode : int32
+{
+	None,                 // フォグなし
+	Exponential,          // 指数（密度に応じて、距離とともに濃くなる）
+	ExponentialSquared,   // 指数の 2 乗（近くは薄く、あるところから急に濃くなる）
+	Linear,               // 直線（Start で薄く始まり、End で最も濃くなる）
 };
 
 // 画像を拡大・縮小・回転して描くときの、色の決め方（DX_DRAWMODE_*）
@@ -449,6 +486,33 @@ struct FDrawCameraData
 // PopCamera は中身を持たない（命令の大きさを 4 バイトの倍数にするため、1 ワードだけ持つ）
 struct FDrawPopCameraData { int32 Unused = 0; };
 
+// 3D の描画状態。列挙の値は、EDrawCompare / EDrawCulling / EDrawTextureAddress / EDrawFogMode の数値
+// 深度バッファ: TestDepth が 1 なら比べる、WriteDepth が 1 なら書く。Compare は描く物の深度と深度バッファの値の比べ方、Bias は書く深度に足す偏り
+struct FDrawDepthData { int32 TestDepth = 1, WriteDepth = 1, Compare = 3, Bias = 0; };
+struct FDrawCullingData { int32 Mode = 0; };
+struct FDrawTextureAddressData { int32 U = 0, V = 0; };
+// Enabled が 0 なら、変換しない（ほかの値は使わない）
+struct FDrawTextureTransformData
+{
+	int32 Enabled = 0;
+	float32 TranslationU = 0.0f, TranslationV = 0.0f;
+	float32 ScaleU = 1.0f, ScaleV = 1.0f;
+	float32 CenterU = 0.0f, CenterV = 0.0f;
+	float32 Rotation = 0.0f;
+};
+// フォグ（Fog と HeightFog で共通）。Mode が 0（None）なら、フォグをやめる（ほかの値は使わない）。Start / End は、Fog なら視点からの奥行き、HeightFog なら高さ
+struct FDrawFogData
+{
+	int32 Mode = 0;
+	FDrawRgb Color;
+	float32 Start = 0.0f, End = 1.0f, Density = 0.0f;
+};
+struct FDrawAnisotropyData { int32 Level = 1; };
+// ClearDepth は中身を持たない（命令の大きさを 4 バイトの倍数にするため、1 ワードだけ持つ）
+struct FDrawClearDepthData { int32 Unused = 0; };
+// PopWorldMatrix は中身を持たない（命令の大きさを 4 バイトの倍数にするため、1 ワードだけ持つ）
+struct FDrawPopWorldMatrixData { int32 Unused = 0; };
+
 // 拡大・回転・縦書きができる文字列。(X, Y) に、文字列の中の基準点（AnchorX, AnchorY: 文字列の大きさに対する割合。横書きは左上が 0, 0、縦書きは右上が 0, 0 で AnchorX は左へ増える）が来る。
 // 拡大と回転は、基準点を中心にする。Angle はラジアン（正の向きは時計回り）。Font が負なら、既定のフォント。Vertical が 1 なら縦書き。
 // 文字列（'\0' 終端、4 バイト境界まで 0 で埋める）が続く。Length は、終端を除く長さ（バイト）
@@ -521,6 +585,14 @@ DRAW_DATA_CHECK( FDrawPopMaskData );
 DRAW_DATA_CHECK( FDrawCameraData );
 DRAW_DATA_CHECK( FDrawPopCameraData );
 DRAW_DATA_CHECK( FDrawTextStyledData );
+DRAW_DATA_CHECK( FDrawDepthData );
+DRAW_DATA_CHECK( FDrawCullingData );
+DRAW_DATA_CHECK( FDrawTextureAddressData );
+DRAW_DATA_CHECK( FDrawTextureTransformData );
+DRAW_DATA_CHECK( FDrawFogData );
+DRAW_DATA_CHECK( FDrawAnisotropyData );
+DRAW_DATA_CHECK( FDrawClearDepthData );
+DRAW_DATA_CHECK( FDrawPopWorldMatrixData );
 #undef DRAW_DATA_CHECK
 static_assert( sizeof( FDrawBoxData ) == 24 && sizeof( FDrawSphere3DData ) == 28 && sizeof( FDrawModelData ) == 60, "unexpected padding in a draw command data type" );
 
@@ -602,9 +674,10 @@ void ForEachDrawCommand( const FDrawSpan& Span, TFunction&& Function )
 //   描画コマンドを、実際に描画する。メインスレッドだけから呼ばれる。
 //
 //   Execute: Span のコマンドを、先頭から順に実行する。
-//     - Span の中で変えた状態（ブレンドモード・明るさ・WorldMatrix・加算する色・アルファテスト・描画モード・クリップ範囲・2D の変換）は、
-//       Span の終わりで元に戻る（次のオブジェクトに漏れない）。クリップ範囲が空のあいだは、描く命令だけを飛ばす
-//     - 描画先・カメラ・ライト・Zバッファ・フォントなどは触らない（呼び出し側が決めたものをそのまま使う）
+//     - Span の中で変えた状態（ブレンドモード・明るさ・WorldMatrix・加算する色・アルファテスト・描画モード・クリップ範囲・2D の変換・
+//       深度バッファの使い方・カリング・テクスチャの貼り方・フォグ・異方性）は、Span の終わりで元に戻る（次のオブジェクトに漏れない）。
+//       クリップ範囲が空のあいだは、描く命令だけを飛ばす
+//     - ライト・フォントなどは触らない（呼び出し側が決めたものをそのまま使う）。描画先・カメラは、命令で替えた分だけ、Span の終わりで戻す
 //   実装: CDxLibDrawExecutor（DxLib）。確認用に、記録するだけの実装を作ってもよい。
 //=============================================================================
 class IDrawExecutor
