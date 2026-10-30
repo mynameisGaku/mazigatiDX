@@ -99,6 +99,9 @@ enum class EDrawCommand : uint8
 	PopMask,          // FDrawPopMaskData。1 つ前のマスクに戻す
 	// 文字の追加（上のコマンドの形式は変えていない）
 	TextStyled,       // FDrawTextStyledData + 文字列。拡大・回転・縦書き・小数の位置・基準点つきの文字列（DrawRotaStringFToHandle）
+	// カメラの追加（上のコマンドの形式は変えていない）
+	PushCamera,       // FDrawCameraData。以降の 3D の描画のカメラを替える（SetCameraPositionAndTargetAndUpVec・SetupCamera_Perspective / Ortho など）
+	PopCamera,        // FDrawPopCameraData。1 つ前のカメラに戻す
 };
 
 // Quad3D の向きの決め方
@@ -428,6 +431,23 @@ struct FDrawImageBlendData
 struct FDrawMaskData { int32 Handle = -1; int32 Channel = 0; int32 Invert = 0; };
 // PopMask は中身を持たない（命令の大きさを 4 バイトの倍数にするため、1 ワードだけ持つ）
 struct FDrawPopMaskData { int32 Unused = 0; };
+// カメラ（FCamera の値。Orthographic が 0 なら透視射影、1 なら正射影）
+struct FDrawCameraData
+{
+	float32 Position[3] = {};
+	float32 Target[3] = {};
+	float32 Up[3] = {};
+	int32 Orthographic = 0;
+	float32 FovY = 0.0f;
+	float32 OrthoHeight = 0.0f;
+	float32 Near = 0.0f;
+	float32 Far = 0.0f;
+	float32 HorizontalStretch = 1.0f;
+	float32 ScreenOffsetX = 0.0f;
+	float32 ScreenOffsetY = 0.0f;
+};
+// PopCamera は中身を持たない（命令の大きさを 4 バイトの倍数にするため、1 ワードだけ持つ）
+struct FDrawPopCameraData { int32 Unused = 0; };
 
 // 拡大・回転・縦書きができる文字列。(X, Y) に、文字列の中の基準点（AnchorX, AnchorY: 文字列の大きさに対する割合。横書きは左上が 0, 0、縦書きは右上が 0, 0 で AnchorX は左へ増える）が来る。
 // 拡大と回転は、基準点を中心にする。Angle はラジアン（正の向きは時計回り）。Font が負なら、既定のフォント。Vertical が 1 なら縦書き。
@@ -498,6 +518,8 @@ DRAW_DATA_CHECK( FDrawImageFilterData );
 DRAW_DATA_CHECK( FDrawImageBlendData );
 DRAW_DATA_CHECK( FDrawMaskData );
 DRAW_DATA_CHECK( FDrawPopMaskData );
+DRAW_DATA_CHECK( FDrawCameraData );
+DRAW_DATA_CHECK( FDrawPopCameraData );
 DRAW_DATA_CHECK( FDrawTextStyledData );
 #undef DRAW_DATA_CHECK
 static_assert( sizeof( FDrawBoxData ) == 24 && sizeof( FDrawSphere3DData ) == 28 && sizeof( FDrawModelData ) == 60, "unexpected padding in a draw command data type" );

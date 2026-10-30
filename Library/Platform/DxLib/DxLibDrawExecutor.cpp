@@ -274,6 +274,8 @@ namespace
 		case EDrawCommand::PopTarget:
 		case EDrawCommand::PushMask:
 		case EDrawCommand::PopMask:
+		case EDrawCommand::PushCamera:
+		case EDrawCommand::PopCamera:
 			return true;
 		default:
 			return false;
@@ -300,6 +302,18 @@ namespace
 		bool bInvert = false;
 	};
 
+	// PushCamera で替える前のカメラ（PopCamera で戻す。DxLib から取得できる値）
+	struct FCameraFrame
+	{
+		float Near = 0.0f;
+		float Far = 0.0f;
+		MATRIX View = {};
+		MATRIX Projection = {};
+		float CenterX = 0.0f;
+		float CenterY = 0.0f;
+		float DotAspect = 1.0f;
+	};
+
 	// PushTarget で描画先を替える前の状態（PopTarget で戻す）
 	struct FTargetFrame
 	{
@@ -315,6 +329,9 @@ namespace
 		// 替える前の、2D の変換（DxLib に取得関数がないので、実行のなかで覚えている）
 		bool bTransform2DChanged = false;
 		MATRIX Transform2D = {};
+		// 替える前の、カメラの光軸が通る画面の点（替えると、替えた先の中心に変わるので、戻すときに戻す）
+		float CameraCenterX = 0.0f;
+		float CameraCenterY = 0.0f;
 	};
 
 	// 2 つの範囲の共通部分（右と下の端は含まない）。重ならなければ、空の範囲（右 <= 左 または 下 <= 上）になる
@@ -476,6 +493,46 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 		SetMaskScreenGraph( -1 );
 	};
 
+	// カメラ: PushCamera で替える前の状態の並び（一番内側が、いまのカメラに替える前のもの）
+	TArray<FCameraFrame> CameraStack;
+
+	// カメラを、いまのカメラの値で上書きする（実行のときの描画先の大きさで、光軸が通る画面の点を決める）
+	// DxLib は、3D の描画を、頂点バッファに溜めるが、カメラを替えるときに、溜まった分を、替える前のカメラで描き出す（箱・線・球で確かめた）ので、先に描き出す必要はない
+	const auto ApplyCamera = [&]( const FDrawCameraData& Data )
+	{
+		// 描画先の大きさ。描画先が画像（MakeScreen で作った描画先）なら、その画像の大きさ。画面（バックバッファ）なら、画面の大きさ
+		// （GetDrawScreenSize は、描画先が画像のときも、画面の大きさを返す）
+		int ScreenWidth = 0;
+		int ScreenHeight = 0;
+		if ( GetGraphSize( GetDrawScreen(), &ScreenWidth, &ScreenHeight ) != 0 )
+		{
+			GetDrawScreenSize( &ScreenWidth, &ScreenHeight );
+		}
+		SetCameraNearFar( Data.Near, Data.Far );
+		SetCameraDotAspect( Data.HorizontalStretch );
+		if ( Data.Orthographic != 0 )
+		{
+			SetupCamera_Ortho( Data.OrthoHeight );
+		}
+		else
+		{
+			SetupCamera_Perspective( Data.FovY );
+		}
+		SetCameraPositionAndTargetAndUpVec( VGet( Data.Position[0], Data.Position[1], Data.Position[2] ), VGet( Data.Target[0], Data.Target[1], Data.Target[2] ), VGet( Data.Up[0], Data.Up[1], Data.Up[2] ) );
+		SetCameraScreenCenter( static_cast<float>( ScreenWidth ) * 0.5f + Data.ScreenOffsetX, static_cast<float>( ScreenHeight ) * 0.5f + Data.ScreenOffsetY );
+	};
+
+	// 1 つ前のカメラに戻す（ビュー行列と射影行列で、そのまま戻す）
+	const auto RestoreCamera = [&]()
+	{
+		const FCameraFrame Frame = CameraStack.Pop();
+		SetCameraNearFar( Frame.Near, Frame.Far );
+		SetCameraDotAspect( Frame.DotAspect );
+		SetCameraViewMatrix( Frame.View );
+		SetupCamera_ProjectionMatrix( Frame.Projection );
+		SetCameraScreenCenter( Frame.CenterX, Frame.CenterY );
+	};
+
 	// 1 つ前の描画先に戻す。カメラは、替えても変わらないよう、「替えるとリセットする設定」を一時的に切って替える
 	const auto RestoreTarget = [&]()
 	{
@@ -484,6 +541,7 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 		SetUseSetDrawScreenSettingReset( FALSE );
 		SetDrawScreen( Frame.PreviousScreen );
 		SetUseSetDrawScreenSettingReset( PreviousReset );
+		SetCameraScreenCenter( Frame.CameraCenterX, Frame.CameraCenterY );
 		SetDrawArea( Frame.PreviousArea.left, Frame.PreviousArea.top, Frame.PreviousArea.right, Frame.PreviousArea.bottom );
 		bClipChanged = Frame.bClipChanged;
 		OldArea = Frame.OldArea;
@@ -1275,6 +1333,7 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			FTargetFrame Frame;
 			Frame.PreviousScreen = GetDrawScreen();
 			GetDrawArea( &Frame.PreviousArea );
+			GetCameraScreenCenter( &Frame.CameraCenterX, &Frame.CameraCenterY );
 			const int PreviousReset = GetUseSetDrawScreenSettingReset();
 			SetUseSetDrawScreenSettingReset( FALSE );
 			const int Result = SetDrawScreen( Data.Handle );
@@ -1403,6 +1462,32 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			ApplyMask();
 			break;
 		}
+		case EDrawCommand::PushCamera:
+		{
+			if ( !Command.CanRead<FDrawCameraData>() )
+			{
+				break;
+			}
+			FCameraFrame Frame;
+			Frame.Near = GetCameraNear();
+			Frame.Far = GetCameraFar();
+			Frame.View = GetCameraViewMatrix();
+			Frame.Projection = GetCameraProjectionMatrix();
+			GetCameraScreenCenter( &Frame.CenterX, &Frame.CenterY );
+			Frame.DotAspect = GetCameraDotAspect();
+			CameraStack.Add( Frame );
+			ApplyCamera( Command.Read<FDrawCameraData>() );
+			break;
+		}
+		case EDrawCommand::PopCamera:
+		{
+			if ( CameraStack.IsEmpty() )
+			{
+				break;
+			}
+			RestoreCamera();
+			break;
+		}
 		}
 	} );
 
@@ -1410,6 +1495,12 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 	while ( !TargetStack.IsEmpty() )
 	{
 		RestoreTarget();
+	}
+
+	// このオブジェクトの分で替えたカメラを、元に戻す（Pop が足りなくても）
+	while ( !CameraStack.IsEmpty() )
+	{
+		RestoreCamera();
 	}
 
 	// マスクは、使ったなら、マスクなしに戻す（始める前に使う設定になっていたなら、その設定へ）

@@ -256,6 +256,34 @@ namespace
 	}
 }
 
+bool FDrawContext::PushCamera( const FCamera& Camera )
+{
+	if ( !Camera.IsValid() )
+	{
+		return false;
+	}
+	FDrawCameraData Data;
+	Data.Position[0] = Camera.Position.x;
+	Data.Position[1] = Camera.Position.y;
+	Data.Position[2] = Camera.Position.z;
+	Data.Target[0] = Camera.Target.x;
+	Data.Target[1] = Camera.Target.y;
+	Data.Target[2] = Camera.Target.z;
+	Data.Up[0] = Camera.Up.x;
+	Data.Up[1] = Camera.Up.y;
+	Data.Up[2] = Camera.Up.z;
+	Data.Orthographic = Camera.Projection == ECameraProjection::Orthographic ? 1 : 0;
+	Data.FovY = Camera.FovY;
+	Data.OrthoHeight = Camera.OrthoHeight;
+	Data.Near = Camera.Near;
+	Data.Far = Camera.Far;
+	Data.HorizontalStretch = Camera.HorizontalStretch;
+	Data.ScreenOffsetX = Camera.ScreenOffset.x;
+	Data.ScreenOffsetY = Camera.ScreenOffset.y;
+	Push( EDrawCommand::PushCamera, 0, Data );
+	return true;
+}
+
 bool FDrawContext::TextStyled( int32 FontHandle, float32 X, float32 Y, const char* String, const FColor32& Color, const FTextStyle& Style )
 {
 	if ( String == nullptr || !AllDrawable( X, Y, Style.ScaleX, Style.ScaleY, Style.AngleRadians, Style.AnchorX, Style.AnchorY, Style.ShadowOffsetX, Style.ShadowOffsetY ) || Style.ScaleX <= 0.0f || Style.ScaleY <= 0.0f )

@@ -346,6 +346,9 @@
     <ClCompile Include="Library\Framework\Render\Billboard.cpp">
       <Filter>Library\Framework\Render</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Render\Camera.cpp">
+      <Filter>Library\Framework\Render</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Render\DrawContext.cpp">
       <Filter>Library\Framework\Render</Filter>
     </ClCompile>
@@ -1642,6 +1645,9 @@
       <Filter>Library\Framework\Profiler</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\Billboard.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\Camera.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\DrawContext.h">

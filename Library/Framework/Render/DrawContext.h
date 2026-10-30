@@ -15,6 +15,7 @@
 #include "Library/Core/Interfaces/Render/DrawRibbon.h"
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Core/Types/Numeric.h"
+#include "Library/Framework/Render/Camera.h"
 #include "Library/Framework/Render/GraphFilter.h"
 #include "Library/Framework/Render/TextStyle.h"
 #include "Library/Math/Color.h"
@@ -900,6 +901,21 @@ public:
 	}
 
 	//-------------------------------------------------------------------------
+	// カメラ（3D の見る位置・向き・レンズ）
+	//-------------------------------------------------------------------------
+	// 以降の 3D の描画を、Camera で見る（カメラを替える。実行のときに、描画先の大きさで、光軸が通る画面の点を決める）。PopCamera か FCameraScope で、1 つ前のカメラへ戻す
+	// （入れ子にできる）。そのオブジェクトの分が終わると、PopCamera が足りなくても、始める前のカメラに戻る。
+	// Camera が使えない値（FCamera::IsValid() が false）のときは、何も記録せず false を返す（対の PopCamera も呼ばないこと）
+	bool PushCamera( const FCamera& Camera );
+
+	// 1 つ前のカメラへ戻す。PushCamera の数より多く呼んでも、何も起きない
+	FORCEINLINE void PopCamera()
+	{
+		const FDrawPopCameraData Data;
+		Push( EDrawCommand::PopCamera, 0, Data );
+	}
+
+	//-------------------------------------------------------------------------
 	// 3D（ワールド座標）
 	//-------------------------------------------------------------------------
 	// 線分（DrawLine3D）
@@ -1338,6 +1354,44 @@ public:
 
 	FMaskScope( const FMaskScope& ) = delete;
 	FMaskScope& operator=( const FMaskScope& ) = delete;
+
+private:
+	FDrawContext* CommandList;
+	bool bPushed;
+};
+
+//=============================================================================
+// FCameraScope
+//   コマンドリストの以降の 3D の描画を、Camera で見て（PushCamera）、スコープを抜けるとき、1 つ前のカメラに戻す（PopCamera）。
+//   カメラが使えない値のときは、何も記録せず、戻すこともしない。
+//
+//   {
+//       FCameraScope Scope( CommandList, FCamera::MakePerspective( FVector3( 0.0f, 5.0f, -10.0f ), FVector3::Zero ) );
+//       CommandList.Cube3D( ... );
+//   }
+//=============================================================================
+class FCameraScope
+{
+public:
+	FCameraScope( FDrawContext& InCommandList, const FCamera& Camera )
+		: CommandList( &InCommandList )
+		, bPushed( InCommandList.PushCamera( Camera ) )
+	{
+	}
+
+	~FCameraScope()
+	{
+		if ( bPushed )
+		{
+			CommandList->PopCamera();
+		}
+	}
+
+	// カメラが使えない値で、記録されなかったか
+	FORCEINLINE bool IsPushed() const { return bPushed; }
+
+	FCameraScope( const FCameraScope& ) = delete;
+	FCameraScope& operator=( const FCameraScope& ) = delete;
 
 private:
 	FDrawContext* CommandList;

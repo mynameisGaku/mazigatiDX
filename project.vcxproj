@@ -77,6 +77,8 @@
     <ClCompile Include="Source\Object\PhysicsObjects.cpp" />
     <ClCompile Include="Source\Scene\GameScene.cpp" />
     <ClCompile Include="Source\Scene\TitleScene.cpp" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCamera.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestCamera.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestCameraReal.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestCameraReal.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestCore.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestCore.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestCoreAlgorithm.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestCoreAlgorithm.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestCoreCallable.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestCoreCallable.cpp')" />
@@ -196,6 +198,7 @@
     <ClInclude Include="Source\Object\PhysicsObjects.h" />
     <ClInclude Include="Source\Scene\GameScene.h" />
     <ClInclude Include="Source\Scene\TitleScene.h" />
+    <ClInclude Include="Source\SelfTest\AssetSelfTestCamera.h" Condition="Exists('Source\SelfTest\AssetSelfTestCamera.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestCapture.h" Condition="Exists('Source\SelfTest\AssetSelfTestCapture.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestCore.h" Condition="Exists('Source\SelfTest\AssetSelfTestCore.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestDrawState.h" Condition="Exists('Source\SelfTest\AssetSelfTestDrawState.h')" />

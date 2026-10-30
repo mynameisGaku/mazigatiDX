@@ -180,6 +180,7 @@
     <ClCompile Include="Library\Framework\Profiler\ProfilerExport.cpp" />
     <ClCompile Include="Library\Framework\Profiler\ProfilerSubsystem.cpp" />
     <ClCompile Include="Library\Framework\Render\Billboard.cpp" />
+    <ClCompile Include="Library\Framework\Render\Camera.cpp" />
     <ClCompile Include="Library\Framework\Render\DrawContext.cpp" />
     <ClCompile Include="Library\Framework\Render\ImmediateDraw.cpp" />
     <ClCompile Include="Library\Framework\Render\MeshMaterialEffectPlayback.cpp" />
@@ -614,6 +615,7 @@
     <ClInclude Include="Library\Framework\Profiler\ProfilerExport.h" />
     <ClInclude Include="Library\Framework\Profiler\ProfilerSubsystem.h" />
     <ClInclude Include="Library\Framework\Render\Billboard.h" />
+    <ClInclude Include="Library\Framework\Render\Camera.h" />
     <ClInclude Include="Library\Framework\Render\DrawContext.h" />
     <ClInclude Include="Library\Framework\Render\GraphFilter.h" />
     <ClInclude Include="Library\Framework\Render\ImmediateDraw.h" />
