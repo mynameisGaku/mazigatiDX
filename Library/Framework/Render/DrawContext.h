@@ -20,6 +20,7 @@
 #include "Library/Framework/Render/Lighting.h"
 #include "Library/Framework/Render/RenderState3D.h"
 #include "Library/Framework/Render/TextStyle.h"
+#include "Library/Framework/Render/Vertex3D.h"
 #include "Library/Math/Color.h"
 #include "Library/Math/Matrix4x4.h"
 #include "Library/Math/Vector3.h"
@@ -1103,6 +1104,204 @@ public:
 		Push( EDrawCommand::Billboard3D, Flip( bFlipX, bFlipY ), Data );
 	}
 
+	//-------------------------------------------------------------------------
+	// 3D 図形の追加（点・円錐・カメラへ向ける画像・頂点の並び）
+	//   位置・大きさ・角度・拡大率が有限でない（NaN・無限大）、画像が無効なら、何も記録しない。ブレンドモード（Blend）と描画の色（Tint）は、そのまま効く。
+	//   画像を置くもの（BillboardPivot3D / BillboardQuad3D / Sprite3D / SpriteStretch3D / SpritePivot3D）は、カメラの方へ向き（カメラを回すと、画像も回る）、
+	//   Culling に関係なく見え、光を受けず、深度は効く。画像は透過して描く（画像のアルファが効く）。
+	//-------------------------------------------------------------------------
+	// 点（DrawPixel3D）。1 画素。ブレンド・Bright・深度は効く。フォグと光は効かない
+	FORCEINLINE void Pixel3D( const FVector3& Position, const FColor32& Color )
+	{
+		if ( !IsFiniteVector( Position ) )
+		{
+			return;
+		}
+		FDrawPixel3DData Data;
+		Set3( Data.Pos, Position );
+		Data.Color = Rgb( Color );
+		Push( EDrawCommand::Pixel3D, 0, Data );
+	}
+
+	// 円錐（DrawCone3D）。Top が先、Bottom が底の中心で、底の円の半径が Radius。底にも面がある。DivNum は円周の分割数。
+	// 光を受ける。外側の面（表）と内側の面（裏）でできていて、Culling に従う（FrontFaces では表が描かれず、内側だけが見える。内側の法線は外を向くので、光を受けると真っ暗になる）。
+	// Top と Bottom が同じ、Radius が 0 なら、何も描かれない
+	FORCEINLINE void Cone3D( const FVector3& Top, const FVector3& Bottom, float32 Radius, int32 DivNum, const FColor32& Diffuse, const FColor32& Specular = FColor32::Black, bool bFill = true )
+	{
+		if ( !IsFiniteVector( Top ) || !IsFiniteVector( Bottom ) || !NMath::IsFinite( Radius ) )
+		{
+			return;
+		}
+		FDrawCone3DData Data;
+		Set3( Data.Top, Top );
+		Set3( Data.Bottom, Bottom );
+		Data.Radius = Radius;
+		Data.Div = DivNum;
+		Data.Diffuse = Rgb( Diffuse );
+		Data.Specular = Rgb( Specular );
+		Push( EDrawCommand::Cone3D, bFill ? FDrawFlag::Fill : 0, Data );
+	}
+
+	// 画像を、カメラの方へ向けて置く（DrawBillboard3D）。Size は画像の横の長さ（ワールド）で、縦は画像の縦横比で決まる。
+	// 画像の中の点 (PivotX, PivotY)（0..1、左上が 0, 0。範囲の外でもよい）が Position に来て、AngleRadians（正は反時計回り）の回転は、この点を中心にする。
+	// 反転すると、画像の中だけが反転する（位置は同じ）。Size が 0 なら、何も描かれない
+	FORCEINLINE void BillboardPivot3D( const FVector3& Position, float32 Size, FImageHandle Handle, float32 PivotX = 0.5f, float32 PivotY = 0.5f, float32 AngleRadians = 0.0f, bool bFlipX = false, bool bFlipY = false )
+	{
+		if ( !Handle.IsValid() || !IsFiniteVector( Position ) || !AllFinite( Size, PivotX, PivotY, AngleRadians ) )
+		{
+			return;
+		}
+		FDrawBillboardPivot3DData Data;
+		Set3( Data.Pos, Position );
+		Data.Size = Size;
+		Data.PivotX = PivotX;
+		Data.PivotY = PivotY;
+		Data.Angle = AngleRadians;
+		Data.Handle = Handle.Value;
+		Push( EDrawCommand::BillboardPivot3D, Flip( bFlipX, bFlipY ), Data );
+	}
+
+	template<typename TImage>
+	FORCEINLINE void BillboardPivot3D( const FVector3& Position, float32 Size, const TImage& Source, float32 PivotX = 0.5f, float32 PivotY = 0.5f, float32 AngleRadians = 0.0f, bool bFlipX = false, bool bFlipY = false )
+	{
+		BillboardPivot3D( Position, Size, ToHandle( Source ), PivotX, PivotY, AngleRadians, bFlipX, bFlipY );
+	}
+
+	// 画像の 左上・右上・右下・左下 を、Position から (X0, Y0) (X1, Y1) (X2, Y2) (X3, Y3) だけずれた点へ動かして、自由に変形して置く（DrawModiBillboard3D）。
+	// ずれはワールドの長さで、カメラから見て、右が +X、上が +Y。4 つの角が同じ点など、つぶれた形は、何も描かれない
+	FORCEINLINE void BillboardQuad3D( const FVector3& Position, float32 X0, float32 Y0, float32 X1, float32 Y1, float32 X2, float32 Y2, float32 X3, float32 Y3, FImageHandle Handle )
+	{
+		if ( !Handle.IsValid() || !IsFiniteVector( Position ) || !AllFinite( X0, Y0, X1, Y1, X2, Y2, X3, Y3 ) )
+		{
+			return;
+		}
+		FDrawBillboardQuad3DData Data;
+		Set3( Data.Pos, Position );
+		Data.Corner[0] = X0;
+		Data.Corner[1] = Y0;
+		Data.Corner[2] = X1;
+		Data.Corner[3] = Y1;
+		Data.Corner[4] = X2;
+		Data.Corner[5] = Y2;
+		Data.Corner[6] = X3;
+		Data.Corner[7] = Y3;
+		Data.Handle = Handle.Value;
+		Push( EDrawCommand::BillboardQuad3D, 0, Data );
+	}
+
+	template<typename TImage>
+	FORCEINLINE void BillboardQuad3D( const FVector3& Position, float32 X0, float32 Y0, float32 X1, float32 Y1, float32 X2, float32 Y2, float32 X3, float32 Y3, const TImage& Source )
+	{
+		BillboardQuad3D( Position, X0, Y0, X1, Y1, X2, Y2, X3, Y3, ToHandle( Source ) );
+	}
+
+	// 画像の中心を Position に置いて、カメラの方へ向ける（DrawRotaGraph3D）。大きさは、画像の 1 ピクセルがワールドの Scale の長さ（Scale 0.1 で 32 x 16 の画像なら、3.2 x 1.6）。
+	// AngleRadians は、画像の中心まわりの回転（正は反時計回り）。Scale が 0 なら、何も描かれない
+	FORCEINLINE void Sprite3D( const FVector3& Position, FImageHandle Handle, float32 Scale = 1.0f, float32 AngleRadians = 0.0f, bool bFlipX = false, bool bFlipY = false )
+	{
+		if ( !Handle.IsValid() || !IsFiniteVector( Position ) || !AllFinite( Scale, AngleRadians ) )
+		{
+			return;
+		}
+		FDrawSprite3DData Data;
+		Set3( Data.Pos, Position );
+		Data.Scale = Scale;
+		Data.Angle = AngleRadians;
+		Data.Handle = Handle.Value;
+		Push( EDrawCommand::Sprite3D, Flip( bFlipX, bFlipY ), Data );
+	}
+
+	template<typename TImage>
+	FORCEINLINE void Sprite3D( const FVector3& Position, const TImage& Source, float32 Scale = 1.0f, float32 AngleRadians = 0.0f, bool bFlipX = false, bool bFlipY = false )
+	{
+		Sprite3D( Position, ToHandle( Source ), Scale, AngleRadians, bFlipX, bFlipY );
+	}
+
+	// 画像の中心を Position に置いて、横・縦に別々の拡大率で、カメラの方へ向ける（DrawExtendGraph3D）。大きさの決め方は Sprite3D と同じ
+	FORCEINLINE void SpriteStretch3D( const FVector3& Position, FImageHandle Handle, float32 ScaleX, float32 ScaleY )
+	{
+		if ( !Handle.IsValid() || !IsFiniteVector( Position ) || !AllFinite( ScaleX, ScaleY ) )
+		{
+			return;
+		}
+		FDrawSpriteStretch3DData Data;
+		Set3( Data.Pos, Position );
+		Data.ScaleX = ScaleX;
+		Data.ScaleY = ScaleY;
+		Data.Handle = Handle.Value;
+		Push( EDrawCommand::SpriteStretch3D, 0, Data );
+	}
+
+	template<typename TImage>
+	FORCEINLINE void SpriteStretch3D( const FVector3& Position, const TImage& Source, float32 ScaleX, float32 ScaleY )
+	{
+		SpriteStretch3D( Position, ToHandle( Source ), ScaleX, ScaleY );
+	}
+
+	// 画像の中の点 (PivotX, PivotY)（ピクセル。左上が 0, 0。範囲の外でもよい）が Position に来るように、横・縦に別々の拡大率で、カメラの方へ向けて置く（DrawRota2Graph3D）。
+	// AngleRadians は、基準点まわりの回転（正は反時計回り）。大きさの決め方は Sprite3D と同じ。反転すると、画像の中だけが反転する（位置は同じ）
+	FORCEINLINE void SpritePivot3D( const FVector3& Position, FImageHandle Handle, float32 PivotX, float32 PivotY, float32 ScaleX = 1.0f, float32 ScaleY = 1.0f, float32 AngleRadians = 0.0f, bool bFlipX = false, bool bFlipY = false )
+	{
+		if ( !Handle.IsValid() || !IsFiniteVector( Position ) || !AllFinite( PivotX, PivotY, ScaleX, ScaleY, AngleRadians ) )
+		{
+			return;
+		}
+		FDrawSpritePivot3DData Data;
+		Set3( Data.Pos, Position );
+		Data.PivotX = PivotX;
+		Data.PivotY = PivotY;
+		Data.ScaleX = ScaleX;
+		Data.ScaleY = ScaleY;
+		Data.Angle = AngleRadians;
+		Data.Handle = Handle.Value;
+		Push( EDrawCommand::SpritePivot3D, Flip( bFlipX, bFlipY ), Data );
+	}
+
+	template<typename TImage>
+	FORCEINLINE void SpritePivot3D( const FVector3& Position, const TImage& Source, float32 PivotX, float32 PivotY, float32 ScaleX = 1.0f, float32 ScaleY = 1.0f, float32 AngleRadians = 0.0f, bool bFlipX = false, bool bFlipY = false )
+	{
+		SpritePivot3D( Position, ToHandle( Source ), PivotX, PivotY, ScaleX, ScaleY, AngleRadians, bFlipX, bFlipY );
+	}
+
+	// 頂点の並びを、点・線・三角形として描く（DrawPrimitive3D）。つなぎ方は EDrawPrimitive。頂点の数は、つなぎ方に合う数であること
+	// （Lines は偶数、Triangles は 3 の倍数、帯・扇は 3 以上、折れ線は 2 以上）。Texture を渡すと、頂点の U, V で貼る（無効な画像なら、何も記録しない）。
+	// 位置は、WorldMatrix / PushWorldMatrix の変換を受ける。点・線・三角形のどれも、光は頂点の Normal で受け、フォグも受ける（Pixel3D・Line3D と違う）。
+	// Culling に従う（三角形の表は、画面で時計回りに見える面）。
+	// 1 つの命令に入る大きさに上限がある（頂点 48 バイト。FDrawPrimitive3DData::GetCommandWords が 65,535 ワード以下）。それを超える大きな形は、分けて記録する。
+	// 数が合わない・大きすぎる・数値が有限でない・画像が無効なときは、何も記録せず false を返す
+	bool Primitive3D( const FVertex3D* Vertices, int32 NumVertices, EDrawPrimitive Type )
+	{
+		return PushPrimitive3D( Vertices, NumVertices, nullptr, 0, Type, -1 );
+	}
+
+	bool Primitive3D( const FVertex3D* Vertices, int32 NumVertices, EDrawPrimitive Type, FImageHandle Texture )
+	{
+		return Texture.IsValid() && PushPrimitive3D( Vertices, NumVertices, nullptr, 0, Type, Texture.Value );
+	}
+
+	template<typename TImage>
+	bool Primitive3D( const FVertex3D* Vertices, int32 NumVertices, EDrawPrimitive Type, const TImage& Source )
+	{
+		return Primitive3D( Vertices, NumVertices, Type, ToHandle( Source ) );
+	}
+
+	// 添字で頂点を選んで描く（DrawPrimitiveIndexed3D）。Indices の数（NumIndices）が、つなぎ方に合う数であること。添字は、すべて NumVertices 未満であること。そのほかの規則は Primitive3D と同じ
+	bool PrimitiveIndexed3D( const FVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, EDrawPrimitive Type )
+	{
+		return Indices != nullptr && PushPrimitive3D( Vertices, NumVertices, Indices, NumIndices, Type, -1 );
+	}
+
+	bool PrimitiveIndexed3D( const FVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, EDrawPrimitive Type, FImageHandle Texture )
+	{
+		return Indices != nullptr && Texture.IsValid() && PushPrimitive3D( Vertices, NumVertices, Indices, NumIndices, Type, Texture.Value );
+	}
+
+	template<typename TImage>
+	bool PrimitiveIndexed3D( const FVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, EDrawPrimitive Type, const TImage& Source )
+	{
+		return PrimitiveIndexed3D( Vertices, NumVertices, Indices, NumIndices, Type, ToHandle( Source ) );
+	}
+
 	// 画像を貼った 3D の四角形（ビルボード・向きが固定の板）。向きの決め方と各項目は FDrawQuad3DData を参照。
 	// Camera / CameraY は、記録のときにはカメラを知らない。実行のとき（IDrawExecutor）に、そのときのカメラで向きを決める
 	FORCEINLINE void Quad3D( const FDrawQuad3DData& Data )
@@ -1224,6 +1423,18 @@ private:
 	{
 		return SrcW > 0 && SrcH > 0 && SrcW <= 10000000 && SrcH <= 10000000 && SrcX >= -10000000 && SrcX <= 10000000 && SrcY >= -10000000 && SrcY <= 10000000;
 	}
+
+	// 3D の値として使えるか（有限。NaN・無限大でない）
+	static FORCEINLINE bool IsFiniteVector( const FVector3& Vector )
+	{
+		return NMath::IsFinite( Vector.x ) && NMath::IsFinite( Vector.y ) && NMath::IsFinite( Vector.z );
+	}
+
+	template<typename... TValues>
+	static FORCEINLINE bool AllFinite( TValues... Values ) { return ( NMath::IsFinite( Values ) && ... ); }
+
+	// Primitive3D / PrimitiveIndexed3D の記録（使えない値のときは何も記録せず false）。非インデックスは Indices が nullptr・NumIndices が 0
+	bool PushPrimitive3D( const FVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, EDrawPrimitive Type, int32 Texture );
 
 	// 2D の図形の座標として描ける値か（有限で、実行のときに int にしても溢れない範囲）
 	static FORCEINLINE bool IsDrawable( float32 Value ) { return NMath::IsFinite( Value ) && Value >= -1.0e7f && Value <= 1.0e7f; }

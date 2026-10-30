@@ -122,6 +122,8 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestRenderTargetReal.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestRenderTargetReal.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestScene.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestScene.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestShapes.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestShapes.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestShapes3D.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestShapes3D.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestShapes3DReal.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestShapes3DReal.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestShapesReal.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestShapesReal.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestText.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestText.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestTextReal.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestTextReal.cpp')" />
@@ -219,6 +221,7 @@
     <ClInclude Include="Source\SelfTest\AssetSelfTestRenderTarget.h" Condition="Exists('Source\SelfTest\AssetSelfTestRenderTarget.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestScene.h" Condition="Exists('Source\SelfTest\AssetSelfTestScene.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestShapes.h" Condition="Exists('Source\SelfTest\AssetSelfTestShapes.h')" />
+    <ClInclude Include="Source\SelfTest\AssetSelfTestShapes3D.h" Condition="Exists('Source\SelfTest\AssetSelfTestShapes3D.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestSupport.h" Condition="Exists('Source\SelfTest\AssetSelfTestSupport.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestText.h" Condition="Exists('Source\SelfTest\AssetSelfTestText.h')" />
     <ClInclude Include="Source\SelfTest\EcsSelfTestScene.h" Condition="Exists('Source\SelfTest\EcsSelfTestScene.h')" />

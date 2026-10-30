@@ -18,6 +18,8 @@ class CDxLibAssetBackend;
 //     Blend -> SetDrawBlendMode
 //     Line3D -> DrawLine3D / Triangle3D -> DrawTriangle3D / Sphere3D -> DrawSphere3D / Capsule3D -> DrawCapsule3D
 //     Cube3D -> DrawCube3D / Billboard3D -> DrawBillboard3D / WorldMatrix -> SetTransformToWorld
+//     Pixel3D / Cone3D / BillboardPivot3D / BillboardQuad3D / Sprite3D / SpriteStretch3D / SpritePivot3D / Primitive3D -> DxLibShapes3D.h（DrawPixel3D / DrawCone3D / DrawBillboard3D / DrawModiBillboard3D /
+//       DrawRotaGraph3D / DrawExtendGraph3D / DrawRota2Graph3D / DrawPrimitive3D / DrawPrimitiveIndexed3D）
 //     Model3D -> MV1SetMatrix + (MV1SetAttachAnimTime) + MV1DrawModel
 //   Span の終わりで、ブレンドモードはブレンドなしに、WorldMatrix は単位行列に、Tint（SetDrawBright）は白に戻す。
 //     ImageFilter -> GraphFilter / GraphFilterBlt / GraphFilterRectBlt / ImageBlend -> GraphBlend / GraphBlendBlt（DxLibImageOps.h）

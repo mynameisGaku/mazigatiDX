@@ -19,6 +19,7 @@
 #include "Library/Platform/DxLib/DxLibLighting.h"
 #include "Library/Platform/DxLib/DxLibRenderState3D.h"
 #include "Library/Platform/DxLib/DxLibRibbonMesh.h"
+#include "Library/Platform/DxLib/DxLibShapes3D.h"
 
 REGISTER_SUBSYSTEM( CDxLibDrawExecutor )
 
@@ -980,6 +981,18 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 		case EDrawCommand::Ribbon3D:
 		{
 			DrawRibbon3D( Command );
+			break;
+		}
+		case EDrawCommand::Pixel3D:
+		case EDrawCommand::Cone3D:
+		case EDrawCommand::BillboardPivot3D:
+		case EDrawCommand::BillboardQuad3D:
+		case EDrawCommand::Sprite3D:
+		case EDrawCommand::SpriteStretch3D:
+		case EDrawCommand::SpritePivot3D:
+		case EDrawCommand::Primitive3D:
+		{
+			NDxLibShapes3D::Execute( Command );
 			break;
 		}
 		case EDrawCommand::Pixel:

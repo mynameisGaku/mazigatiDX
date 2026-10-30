@@ -556,6 +556,9 @@
     <ClCompile Include="Library\Platform\DxLib\DxLibRibbonMesh.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\DxLibShapes3D.cpp">
+      <Filter>Library\Platform\DxLib</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\EffectMaterialRenderer.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
@@ -1689,6 +1692,9 @@
     <ClInclude Include="Library\Framework\Render\TextStyle.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Render\Vertex3D.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Scene\ISceneManager.h">
       <Filter>Library\Framework\Scene</Filter>
     </ClInclude>
@@ -1924,6 +1930,9 @@
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\DxLibRibbonMesh.h">
+      <Filter>Library\Platform\DxLib</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\DxLibShapes3D.h">
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\EffectMaterialRenderer.h">

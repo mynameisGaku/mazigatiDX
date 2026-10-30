@@ -176,6 +176,70 @@ void FDrawContext::Ribbon3D( const FDrawRibbonData::FPoint* Points, int32 NumPoi
 	FMemory::Memcpy( Out + 1 + DataWords, Copied.GetData(), static_cast<size_t>( NumPoints ) * sizeof( FDrawRibbonData::FPoint ) );
 }
 
+bool FDrawContext::PushPrimitive3D( const FVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, EDrawPrimitive Type, int32 Texture )
+{
+	if ( Vertices == nullptr )
+	{
+		return false;
+	}
+	const bool bIndexed = Indices != nullptr;
+	if ( !bIndexed && NumIndices != 0 )
+	{
+		return false;
+	}
+	// つなぎ方に合う数か（添字があれば添字の数、なければ頂点の数）。範囲の外のつなぎ方と、0 以下の数は、使えない数なので、ここで弾かれる
+	// （添字つきで、頂点の数が 0 以下なら、あとの添字の確認が弾く）
+	if ( !NDrawPrimitive::IsValidCount( Type, bIndexed ? NumIndices : NumVertices ) )
+	{
+		return false;
+	}
+	// 1 つの命令に収まる大きさか
+	const size_t CommandWords = FDrawPrimitive3DData::GetCommandWords( NumVertices, NumIndices );
+	if ( CommandWords > static_cast<size_t>( NDrawCommand::MaxWords ) || Buffer->Words.Num() > TNumericLimits<int32>::Max() - static_cast<int32>( CommandWords ) )
+	{
+		return false;
+	}
+	// 一部の頂点だけ捨てると、形が変わってしまうので、全部を先に確かめる
+	for ( int32 Index = 0; Index < NumVertices; ++Index )
+	{
+		if ( !Vertices[Index].IsValid() )
+		{
+			return false;
+		}
+	}
+	for ( int32 Index = 0; Index < NumIndices; ++Index )
+	{
+		if ( Indices[Index] >= NumVertices )
+		{
+			return false;
+		}
+	}
+
+	constexpr size_t DataWords = sizeof( FDrawPrimitive3DData ) / 4;
+	constexpr size_t VertexWords = sizeof( FDrawVertex3D ) / 4;
+	FDrawPrimitive3DData Data;
+	Data.Type = static_cast<int32>( Type );
+	Data.Texture = Texture;
+	Data.NumVertices = NumVertices;
+	Data.NumIndices = NumIndices;
+	TArray<uint32>& Words = Buffer->Words;
+	const int32 Begin = Words.AddZeroed( static_cast<int32>( CommandWords ) );
+	uint32* const Out = Words.GetData() + Begin;
+	Out[0] = NDrawCommand::MakeHeader( EDrawCommand::Primitive3D, 0, static_cast<int32>( CommandWords ) );
+	FMemory::Memcpy( Out + 1, &Data, sizeof( Data ) );
+	for ( int32 Index = 0; Index < NumVertices; ++Index )
+	{
+		const FDrawVertex3D Vertex = Vertices[Index].ToDrawData();
+		FMemory::Memcpy( Out + 1 + DataWords + static_cast<size_t>( Index ) * VertexWords, &Vertex, sizeof( Vertex ) );
+	}
+	if ( bIndexed )
+	{
+		// 2 個で 1 ワード。奇数個の最後の半分は、AddZeroed の 0 のまま
+		FMemory::Memcpy( Out + 1 + DataWords + static_cast<size_t>( NumVertices ) * VertexWords, Indices, static_cast<size_t>( NumIndices ) * sizeof( uint16 ) );
+	}
+	return true;
+}
+
 void FDrawContext::Text( int32 X, int32 Y, const char* String, const FColor32& Color )
 {
 	constexpr size_t DataWords = sizeof( FDrawTextData ) / 4;

@@ -121,6 +121,26 @@ enum class EDrawCommand : uint8
 	LightingOptions,  // FDrawLightingOptionsData。光の計算の仕方（SetUseSpecular / SetUsePixelLighting / SetUseHalfLambertLighting / SetUseLightAngleAttenuation）
 	PushLight,        // FDrawLightData。ライトを 1 つ足す（CreateDirLightHandle / CreatePointLightHandle / CreateSpotLightHandle）
 	PopLight,         // FDrawPopLightData。いちばん新しく足したライトを外す（DeleteLightHandle）
+	// 3D 図形の追加（上のコマンドの形式は変えていない）
+	Pixel3D,          // FDrawPixel3DData（DrawPixel3D）
+	Cone3D,           // FDrawCone3DData。Fill なら塗りつぶし（DrawCone3D）
+	BillboardPivot3D, // FDrawBillboardPivot3DData。FlipX / FlipY（DrawBillboard3D。画像の中の基準点を決められる）
+	BillboardQuad3D,  // FDrawBillboardQuad3DData（DrawModiBillboard3D）
+	Sprite3D,         // FDrawSprite3DData。FlipX / FlipY（DrawRotaGraph3D）
+	SpriteStretch3D,  // FDrawSpriteStretch3DData（DrawExtendGraph3D）
+	SpritePivot3D,    // FDrawSpritePivot3DData。FlipX / FlipY（DrawRota2Graph3D）
+	Primitive3D,      // FDrawPrimitive3DData + 頂点（FDrawVertex3D）+ 添字（uint16）。頂点の並びを、点・線・三角形として描く（DrawPrimitive3D / DrawPrimitiveIndexed3D）
+};
+
+// Primitive3D の頂点のつなぎ方（DxLib の DX_PRIMTYPE_*）
+enum class EDrawPrimitive : int32
+{
+	Points,         // 頂点 1 つが点 1 つ
+	Lines,          // 2 つずつが線分 1 本（偶数個）
+	LineStrip,      // 頂点を順につないだ折れ線
+	Triangles,      // 3 つずつが三角形 1 つ（3 の倍数個）
+	TriangleStrip,  // 直前の 2 つと新しい 1 つで三角形（帯。向きは、1 つおきに入れ替わって、全体で同じ向きになる）
+	TriangleFan,    // 最初の頂点と、直前の 1 つと新しい 1 つで三角形（扇）
 };
 
 // Quad3D の向きの決め方
@@ -564,6 +584,48 @@ struct FDrawLightData
 // PopLight は中身を持たない（命令の大きさを 4 バイトの倍数にするため、1 ワードだけ持つ）
 struct FDrawPopLightData { int32 Unused = 0; };
 
+// 3D 図形の追加
+struct FDrawPixel3DData { float32 Pos[3] = {}; FDrawRgb Color; };
+struct FDrawCone3DData { float32 Top[3] = {}, Bottom[3] = {}; float32 Radius = 0.0f; int32 Div = 16; FDrawRgb Diffuse, Specular; };
+// 画像 Handle を、カメラの方へ向けて置く（DrawBillboard3D）。Size は画像の横の長さ（ワールド）で、縦は画像の縦横比で決まる。
+// 画像の中の点 (PivotX, PivotY)（0..1、左上が 0, 0。範囲の外でもよい）が Pos に来て、Angle（ラジアン。正は反時計回り）の回転も、この点を中心にする
+struct FDrawBillboardPivot3DData { float32 Pos[3] = {}; float32 Size = 1.0f; float32 PivotX = 0.5f, PivotY = 0.5f; float32 Angle = 0.0f; int32 Handle = -1; };
+// 画像 Handle の 左上・右上・右下・左下 を、Pos から (X, Y) だけずれた点へ動かす（DrawModiBillboard3D）。ずれはワールドの長さで、カメラから見て、右が +X、上が +Y。Corner = X0, Y0, X1, Y1, X2, Y2, X3, Y3
+struct FDrawBillboardQuad3DData { float32 Pos[3] = {}; float32 Corner[8] = {}; int32 Handle = -1; };
+// 画像の中心を Pos に置き、カメラの方へ向ける（DrawRotaGraph3D / DrawExtendGraph3D）。大きさは、画像の 1 ピクセルがワールドの Scale の長さ
+struct FDrawSprite3DData { float32 Pos[3] = {}; float32 Scale = 1.0f; float32 Angle = 0.0f; int32 Handle = -1; };
+struct FDrawSpriteStretch3DData { float32 Pos[3] = {}; float32 ScaleX = 1.0f, ScaleY = 1.0f; int32 Handle = -1; };
+// 画像の中の点 (PivotX, PivotY)（ピクセル。左上が 0, 0）が Pos に来る（DrawRota2Graph3D）。回転と反転の中心は、画像の中心でなく、この点
+struct FDrawSpritePivot3DData { float32 Pos[3] = {}; float32 PivotX = 0.0f, PivotY = 0.0f; float32 ScaleX = 1.0f, ScaleY = 1.0f; float32 Angle = 0.0f; int32 Handle = -1; };
+
+// 頂点 1 つ（DxLib の VERTEX3D）。色は R, G, B, A。光の計算を切ると、Specular が Diffuse に足される（実測）。SubU / SubV は、固定機能の描画では使われない（シェーダー用）
+struct FDrawVertex3D
+{
+	float32 Position[3] = {};
+	float32 Normal[3] = { 0.0f, 1.0f, 0.0f };
+	uint8 Diffuse[4] = { 255, 255, 255, 255 };
+	uint8 Specular[4] = { 0, 0, 0, 0 };
+	float32 U = 0.0f, V = 0.0f;
+	float32 SubU = 0.0f, SubV = 0.0f;
+};
+
+// 頂点の並びを、点・線・三角形として描く（DrawPrimitive3D / DrawPrimitiveIndexed3D）。後ろに、頂点 NumVertices 個（FDrawVertex3D）、続けて添字 NumIndices 個（uint16。2 個で 1 ワード。奇数個なら 0 で埋める）が続く。
+// NumIndices が 0 なら、頂点を順に使う。0 より大きければ、添字の順に頂点を使う。Texture が負なら、画像なし
+struct FDrawPrimitive3DData
+{
+	int32 Type = 0;   // EDrawPrimitive
+	int32 Texture = -1;
+	int32 NumVertices = 0;
+	int32 NumIndices = 0;
+
+	// 命令全体のワード数（ヘッダー 1 + 固定部分 + 頂点 + 添字）。引数が負のときは 0
+	static constexpr size_t GetCommandWords( int32 InNumVertices, int32 InNumIndices )
+	{
+		return InNumVertices < 0 || InNumIndices < 0 ? 0
+			: 1 + sizeof( FDrawPrimitive3DData ) / 4 + static_cast<size_t>( InNumVertices ) * ( sizeof( FDrawVertex3D ) / 4 ) + ( static_cast<size_t>( InNumIndices ) + 1 ) / 2;
+	}
+};
+
 // 拡大・回転・縦書きができる文字列。(X, Y) に、文字列の中の基準点（AnchorX, AnchorY: 文字列の大きさに対する割合。横書きは左上が 0, 0、縦書きは右上が 0, 0 で AnchorX は左へ増える）が来る。
 // 拡大と回転は、基準点を中心にする。Angle はラジアン（正の向きは時計回り）。Font が負なら、既定のフォント。Vertical が 1 なら縦書き。
 // 文字列（'\0' 終端、4 バイト境界まで 0 で埋める）が続く。Length は、終端を除く長さ（バイト）
@@ -651,7 +713,17 @@ DRAW_DATA_CHECK( FDrawSurfaceMaterialData );
 DRAW_DATA_CHECK( FDrawLightingOptionsData );
 DRAW_DATA_CHECK( FDrawLightData );
 DRAW_DATA_CHECK( FDrawPopLightData );
+DRAW_DATA_CHECK( FDrawPixel3DData );
+DRAW_DATA_CHECK( FDrawCone3DData );
+DRAW_DATA_CHECK( FDrawBillboardPivot3DData );
+DRAW_DATA_CHECK( FDrawBillboardQuad3DData );
+DRAW_DATA_CHECK( FDrawSprite3DData );
+DRAW_DATA_CHECK( FDrawSpriteStretch3DData );
+DRAW_DATA_CHECK( FDrawSpritePivot3DData );
+DRAW_DATA_CHECK( FDrawVertex3D );
+DRAW_DATA_CHECK( FDrawPrimitive3DData );
 #undef DRAW_DATA_CHECK
+static_assert( sizeof( FDrawVertex3D ) == 48 && sizeof( FDrawPrimitive3DData ) == 16, "unexpected padding in a draw command data type" );
 static_assert( sizeof( FDrawBoxData ) == 24 && sizeof( FDrawSphere3DData ) == 28 && sizeof( FDrawModelData ) == 60, "unexpected padding in a draw command data type" );
 
 //-----------------------------------------------------------------------------
@@ -668,6 +740,30 @@ namespace NDrawCommand
 	FORCEINLINE uint32 MakeHeader( EDrawCommand Type, uint8 Flags, int32 NumWords )
 	{
 		return static_cast<uint32>( Type ) | ( static_cast<uint32>( Flags ) << 8 ) | ( static_cast<uint32>( NumWords ) << 16 );
+	}
+}
+
+namespace NDrawPrimitive
+{
+	// 頂点（添字があれば、添字）の数 Count が、つなぎ方 Type に使える数か。Lines は偶数、Triangles は 3 の倍数、帯・扇は 3 以上、折れ線は 2 以上。
+	// DxLib は、余りの頂点を黙って捨てるが、記録するときは、使えない値にする
+	constexpr bool IsValidCount( EDrawPrimitive Type, int32 Count )
+	{
+		switch ( Type )
+		{
+		case EDrawPrimitive::Points:
+			return Count >= 1;
+		case EDrawPrimitive::Lines:
+			return Count >= 2 && Count % 2 == 0;
+		case EDrawPrimitive::LineStrip:
+			return Count >= 2;
+		case EDrawPrimitive::Triangles:
+			return Count >= 3 && Count % 3 == 0;
+		case EDrawPrimitive::TriangleStrip:
+		case EDrawPrimitive::TriangleFan:
+			return Count >= 3;
+		}
+		return false;
 	}
 }
 
