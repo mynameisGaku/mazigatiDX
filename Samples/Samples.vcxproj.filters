@@ -216,6 +216,9 @@
     <ClInclude Include="Source\Catalog\SampleScene.h">
       <Filter>Source\Catalog</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Common\SoftLighting.h">
+      <Filter>Source\Common</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Common\TestPattern.h">
       <Filter>Source\Common</Filter>
     </ClInclude>

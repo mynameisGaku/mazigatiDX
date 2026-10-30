@@ -1,5 +1,7 @@
 ﻿#include "Scenery.h"
 
+#include "Source/Common/SoftLighting.h"
+
 namespace
 {
 	// 輪に並べる物の数と、輪の半径
@@ -97,6 +99,8 @@ void NScenery::RecordGround( FDrawContext& CommandList )
 
 int32 NScenery::RecordObjects( FDrawContext& CommandList, const TArray<FDemoObject>& Objects, const FFrustum* Cull, int32 Highlighted )
 {
+	// 光が当たらない裏側も、真っ黒にならない、やわらかい光
+	FSoftLightingScope SoftLighting( CommandList );
 	int32 NumDrawn = 0;
 	for ( int32 Index = 0; Index < Objects.Num(); ++Index )
 	{

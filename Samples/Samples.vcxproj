@@ -125,6 +125,7 @@
     <ClInclude Include="Source\Catalog\SampleCatalog.h" />
     <ClInclude Include="Source\Catalog\SampleInfo.h" />
     <ClInclude Include="Source\Catalog\SampleScene.h" />
+    <ClInclude Include="Source\Common\SoftLighting.h" />
     <ClInclude Include="Source\Common\TestPattern.h" />
     <ClInclude Include="Source\DrawState\BlendShowcase.h" />
     <ClInclude Include="Source\DrawState\DrawStateSample.h" />

@@ -2,6 +2,7 @@
 
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Asset/PixelImage.h"
+#include "Source/Common/SoftLighting.h"
 #include "Source/Common/TestPattern.h"
 
 namespace
@@ -277,6 +278,9 @@ TArray<NStageScenery::FStageLabel> NStageScenery::MakeLabels()
 
 void NStageScenery::RecordStage( FDrawContext& CommandList, const FRenderStateDemoState& State )
 {
+	// 光が当たらない裏側も、真っ黒にならない、やわらかい光
+	FSoftLightingScope SoftLighting( CommandList );
+
 	// 距離のフォグ（球・箱・カプセル・画像を貼った四角形・ガラスに掛かる。三角形・線・ビルボードには、DxLib の仕様で掛からない）
 	switch ( State.Fog )
 	{
