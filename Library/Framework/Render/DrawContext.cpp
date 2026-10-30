@@ -340,6 +340,68 @@ void FDrawContext::HeightFog( const FFogSettings& Settings )
 	Push( EDrawCommand::HeightFog, 0, MakeFogData( Settings ) );
 }
 
+namespace
+{
+	// 色の 3 成分（アルファは使わない）を、命令のデータに入れる
+	void SetColor3( float32 ( &Out )[3], const FColor& Color )
+	{
+		Out[0] = Color.r;
+		Out[1] = Color.g;
+		Out[2] = Color.b;
+	}
+}
+
+void FDrawContext::AmbientLight( const FColor& Color )
+{
+	if ( !NMath::IsFinite( Color.r ) || !NMath::IsFinite( Color.g ) || !NMath::IsFinite( Color.b ) )
+	{
+		return;
+	}
+	FDrawAmbientLightData Data;
+	SetColor3( Data.Color, Color );
+	Push( EDrawCommand::AmbientLight, 0, Data );
+}
+
+void FDrawContext::SurfaceMaterial( const FSurfaceMaterial& Material )
+{
+	if ( !Material.IsValid() )
+	{
+		return;
+	}
+	FDrawSurfaceMaterialData Data;
+	SetColor3( Data.Diffuse, Material.Diffuse );
+	SetColor3( Data.Ambient, Material.Ambient );
+	SetColor3( Data.Specular, Material.Specular );
+	SetColor3( Data.Emissive, Material.Emissive );
+	Data.Shininess = Material.Shininess;
+	Data.UseVertexDiffuse = Material.bUseVertexDiffuse ? 1 : 0;
+	Data.UseVertexSpecular = Material.bUseVertexSpecular ? 1 : 0;
+	Push( EDrawCommand::SurfaceMaterial, 0, Data );
+}
+
+bool FDrawContext::PushLight( const FLight& Light )
+{
+	if ( !Light.IsValid() )
+	{
+		return false;
+	}
+	FDrawLightData Data;
+	Data.Type = static_cast<int32>( Light.Type );
+	Set3( Data.Position, Light.Position );
+	Set3( Data.Direction, Light.Direction );
+	SetColor3( Data.Diffuse, Light.Diffuse );
+	SetColor3( Data.Specular, Light.Specular );
+	SetColor3( Data.Ambient, Light.Ambient );
+	Data.Range = Light.Range;
+	Data.ConstantAttenuation = Light.ConstantAttenuation;
+	Data.LinearAttenuation = Light.LinearAttenuation;
+	Data.QuadraticAttenuation = Light.QuadraticAttenuation;
+	Data.OuterAngle = Light.OuterAngle;
+	Data.InnerAngle = Light.InnerAngle;
+	Push( EDrawCommand::PushLight, 0, Data );
+	return true;
+}
+
 bool FDrawContext::PushWorldMatrix( const FMatrix4x4& Local )
 {
 	FDrawMatrixData Data;

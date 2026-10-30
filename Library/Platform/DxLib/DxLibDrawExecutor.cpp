@@ -16,6 +16,7 @@
 #include "Library/Platform/DxLib/DxLibAssetBackend.h"
 #include "Library/Platform/DxLib/DxLibImageOps.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
+#include "Library/Platform/DxLib/DxLibLighting.h"
 #include "Library/Platform/DxLib/DxLibRenderState3D.h"
 #include "Library/Platform/DxLib/DxLibRibbonMesh.h"
 
@@ -265,7 +266,7 @@ namespace
 		case EDrawCommand::PopWorldMatrix:
 			return true;
 		default:
-			return FDxLibRenderState3D::IsStateCommand( Type );
+			return FDxLibRenderState3D::IsStateCommand( Type ) || FDxLibLighting::IsStateCommand( Type );
 		}
 	}
 
@@ -434,6 +435,8 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 	TArray<MATRIX> WorldMatrixStack;
 	// 3D の描画状態（深度バッファ・カリング・画像の貼り方・フォグ・異方性）。変えた分を、終わりに戻す
 	FDxLibRenderState3D RenderState3D;
+	// ライティング（光の計算・全体の環境光・材質・ライト）。変えた分を、終わりに戻す
+	FDxLibLighting Lighting;
 	bool bBrightChanged = false;
 	bool bAddColorChanged = false;
 	int OldAddColor[3] = { 0, 0, 0 };
@@ -568,6 +571,12 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 
 		// 3D の描画状態の命令
 		if ( RenderState3D.Apply( Command ) )
+		{
+			return;
+		}
+
+		// ライティングの命令
+		if ( Lighting.Apply( Command ) )
 		{
 			return;
 		}
@@ -1542,6 +1551,9 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 
 	// 3D の描画状態を、元に戻す
 	RenderState3D.Restore();
+
+	// ライティングを、元に戻す（足したライトも外す）
+	Lighting.Restore();
 
 	// このオブジェクトで変えた状態を、次のオブジェクトに漏らさない
 	if ( bBlendChanged )

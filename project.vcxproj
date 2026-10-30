@@ -100,6 +100,8 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestImagesReal.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestImagesReal.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestImmediateDraw.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestImmediateDraw.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestImport.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestImport.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestLighting.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestLighting.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestLightingReal.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestLightingReal.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestLogic.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestLogic.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestModelMaterial.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestModelMaterial.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestModelMaterialBoundary.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestModelMaterialBoundary.cpp')" />
@@ -207,6 +209,7 @@
     <ClInclude Include="Source\SelfTest\AssetSelfTestFbx.h" Condition="Exists('Source\SelfTest\AssetSelfTestFbx.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestFilter.h" Condition="Exists('Source\SelfTest\AssetSelfTestFilter.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestImages.h" Condition="Exists('Source\SelfTest\AssetSelfTestImages.h')" />
+    <ClInclude Include="Source\SelfTest\AssetSelfTestLighting.h" Condition="Exists('Source\SelfTest\AssetSelfTestLighting.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestModelMaterial.h" Condition="Exists('Source\SelfTest\AssetSelfTestModelMaterial.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestModelMaterialBoundary.h" Condition="Exists('Source\SelfTest\AssetSelfTestModelMaterialBoundary.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestModelSurface.h" Condition="Exists('Source\SelfTest\AssetSelfTestModelSurface.h')" />

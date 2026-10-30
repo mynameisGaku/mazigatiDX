@@ -547,6 +547,9 @@
     <ClCompile Include="Library\Platform\DxLib\DxLibInput.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\DxLibLighting.cpp">
+      <Filter>Library\Platform\DxLib</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\DxLibRenderState3D.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
@@ -1662,6 +1665,9 @@
     <ClInclude Include="Library\Framework\Render\ImmediateDraw.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Render\Lighting.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Render\MeshMaterialEffectPlayback.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
@@ -1906,6 +1912,9 @@
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\DxLibInput.h">
+      <Filter>Library\Platform\DxLib</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\DxLibLighting.h">
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\DxLibModelMaterialGeometry.h">

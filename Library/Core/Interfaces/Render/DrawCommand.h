@@ -113,6 +113,14 @@ enum class EDrawCommand : uint8
 	ClearDepth,       // FDrawClearDepthData。いまの描画先の深度バッファを、全体消す（ClearDrawScreenZBuffer。溜まった 3D を先に描き出してから）
 	PushWorldMatrix,  // FDrawMatrixData。いまの 3D 図形の変換に、この変換を掛けて（自分 -> 親の順）積む（SetTransformToWorld）
 	PopWorldMatrix,   // FDrawPopWorldMatrixData。1 つ前の 3D 図形の変換に戻す
+	// ライティング（光）の追加（上のコマンドの形式は変えていない。どれも、オブジェクトの分（1 つの Execute）が終わると、元に戻る）
+	UseLighting,      // FDrawUseLightingData。光の計算をするか（SetUseLighting）
+	DefaultLight,     // FDrawDefaultLightData。DxLib に最初からある 1 つのライトの入り切り（SetLightEnable）
+	AmbientLight,     // FDrawAmbientLightData。全体の環境光（SetGlobalAmbientLight）
+	SurfaceMaterial,  // FDrawSurfaceMaterialData。面の材質（SetMaterialParam / SetMaterialUseVertDifColor / SetMaterialUseVertSpcColor）
+	LightingOptions,  // FDrawLightingOptionsData。光の計算の仕方（SetUseSpecular / SetUsePixelLighting / SetUseHalfLambertLighting / SetUseLightAngleAttenuation）
+	PushLight,        // FDrawLightData。ライトを 1 つ足す（CreateDirLightHandle / CreatePointLightHandle / CreateSpotLightHandle）
+	PopLight,         // FDrawPopLightData。いちばん新しく足したライトを外す（DeleteLightHandle）
 };
 
 // Quad3D の向きの決め方
@@ -211,6 +219,14 @@ enum class EDrawFogMode : int32
 	Exponential,          // 指数（密度に応じて、距離とともに濃くなる）
 	ExponentialSquared,   // 指数の 2 乗（近くは薄く、あるところから急に濃くなる）
 	Linear,               // 直線（Start で薄く始まり、End で最も濃くなる）
+};
+
+// ライトの種類（DX_LIGHTTYPE_*）
+enum class EDrawLightType : int32
+{
+	Directional,   // 方向ライト（太陽のように、どこにあっても同じ向きから、同じ強さで照らす）
+	Point,         // 点光源（電球のように、1 点から全方向へ。遠いほど暗い）
+	Spot,          // スポットライト（懐中電灯のように、1 点から円錐の形に。遠いほど暗い）
 };
 
 // 画像を拡大・縮小・回転して描くときの、色の決め方（DX_DRAWMODE_*）
@@ -513,6 +529,41 @@ struct FDrawClearDepthData { int32 Unused = 0; };
 // PopWorldMatrix は中身を持たない（命令の大きさを 4 バイトの倍数にするため、1 ワードだけ持つ）
 struct FDrawPopWorldMatrixData { int32 Unused = 0; };
 
+// ライティング（光）。色は float（0..1 を超えてもよい）。Type は EDrawLightType の数値
+// UseLighting: Enabled が 0 なら、光の計算をしない（図形の色がそのまま出る）。DefaultLight: DxLib に最初からある 1 つのライトの入り切り
+struct FDrawUseLightingData { int32 Enabled = 1; };
+struct FDrawDefaultLightData { int32 Enabled = 1; };
+struct FDrawAmbientLightData { float32 Color[3] = {}; };
+// 面の材質。UseVertexDiffuse が 1 なら、拡散光の色は、図形（頂点）に付けた色で、Diffuse は使われない（0 なら Diffuse だけ）。UseVertexSpecular も同じ（Specular）。
+// 既定値は、DxLib の既定の材質（実測）
+struct FDrawSurfaceMaterialData
+{
+	float32 Diffuse[3] = { 0.8f, 0.8f, 0.8f };
+	float32 Ambient[3] = {};
+	float32 Specular[3] = { 0.8f, 0.8f, 0.8f };
+	float32 Emissive[3] = {};
+	float32 Shininess = 20.0f;
+	int32 UseVertexDiffuse = 1;
+	int32 UseVertexSpecular = 1;
+};
+// 光の計算の仕方。IgnoreSurfaceAngle が 1 なら、面の向きと光の角度に関係なく、全力で照らす（SetUseLightAngleAttenuation( FALSE )）
+struct FDrawLightingOptionsData { int32 UseSpecular = 1, PixelLighting = 0, WrapLighting = 0, IgnoreSurfaceAngle = 0; };
+// ライト 1 つ。Position は Point / Spot、Direction は Directional / Spot で使う
+struct FDrawLightData
+{
+	int32 Type = 0;
+	float32 Position[3] = {};
+	float32 Direction[3] = { 0.0f, -1.0f, 0.0f };
+	float32 Diffuse[3] = { 1.0f, 1.0f, 1.0f };
+	float32 Specular[3] = { 1.0f, 1.0f, 1.0f };
+	float32 Ambient[3] = {};
+	float32 Range = 1000.0f;
+	float32 ConstantAttenuation = 1.0f, LinearAttenuation = 0.0f, QuadraticAttenuation = 0.0f;
+	float32 OuterAngle = 1.0f, InnerAngle = 0.5f;
+};
+// PopLight は中身を持たない（命令の大きさを 4 バイトの倍数にするため、1 ワードだけ持つ）
+struct FDrawPopLightData { int32 Unused = 0; };
+
 // 拡大・回転・縦書きができる文字列。(X, Y) に、文字列の中の基準点（AnchorX, AnchorY: 文字列の大きさに対する割合。横書きは左上が 0, 0、縦書きは右上が 0, 0 で AnchorX は左へ増える）が来る。
 // 拡大と回転は、基準点を中心にする。Angle はラジアン（正の向きは時計回り）。Font が負なら、既定のフォント。Vertical が 1 なら縦書き。
 // 文字列（'\0' 終端、4 バイト境界まで 0 で埋める）が続く。Length は、終端を除く長さ（バイト）
@@ -593,6 +644,13 @@ DRAW_DATA_CHECK( FDrawFogData );
 DRAW_DATA_CHECK( FDrawAnisotropyData );
 DRAW_DATA_CHECK( FDrawClearDepthData );
 DRAW_DATA_CHECK( FDrawPopWorldMatrixData );
+DRAW_DATA_CHECK( FDrawUseLightingData );
+DRAW_DATA_CHECK( FDrawDefaultLightData );
+DRAW_DATA_CHECK( FDrawAmbientLightData );
+DRAW_DATA_CHECK( FDrawSurfaceMaterialData );
+DRAW_DATA_CHECK( FDrawLightingOptionsData );
+DRAW_DATA_CHECK( FDrawLightData );
+DRAW_DATA_CHECK( FDrawPopLightData );
 #undef DRAW_DATA_CHECK
 static_assert( sizeof( FDrawBoxData ) == 24 && sizeof( FDrawSphere3DData ) == 28 && sizeof( FDrawModelData ) == 60, "unexpected padding in a draw command data type" );
 
@@ -603,6 +661,9 @@ namespace NDrawCommand
 {
 	// コマンド 1 つの最大の大きさ（ヘッダの 16bit に収まる範囲。長すぎる文字列は切る）
 	constexpr int32 MaxWords = 0xFFFF;
+
+	// 同時に効くライトの数の上限（DxLib の仕様。DxLib に最初からある 1 つのライトが有効なら、それも 1 つに数える）
+	constexpr int32 MaxActiveLights = 6;
 
 	FORCEINLINE uint32 MakeHeader( EDrawCommand Type, uint8 Flags, int32 NumWords )
 	{

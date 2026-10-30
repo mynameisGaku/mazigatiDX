@@ -91,6 +91,12 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestImport.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestLighting.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestLightingReal.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
     <ClCompile Include="Source\SelfTest\AssetSelfTestLogic.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
@@ -403,6 +409,9 @@
       <Filter>Source\SelfTest</Filter>
     </ClInclude>
     <ClInclude Include="Source\SelfTest\AssetSelfTestImages.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\AssetSelfTestLighting.h">
       <Filter>Source\SelfTest</Filter>
     </ClInclude>
     <ClInclude Include="Source\SelfTest\AssetSelfTestModelMaterial.h">

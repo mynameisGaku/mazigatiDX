@@ -17,6 +17,7 @@
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Render/Camera.h"
 #include "Library/Framework/Render/GraphFilter.h"
+#include "Library/Framework/Render/Lighting.h"
 #include "Library/Framework/Render/RenderState3D.h"
 #include "Library/Framework/Render/TextStyle.h"
 #include "Library/Math/Color.h"
@@ -57,8 +58,9 @@ struct FDrawBuffer
 //   - 記録した順番に実行される（1 つのオブジェクトの中では、記録した順。重なりもその通りになる）
 //   - 色は FColor32（DxLib の GetColor への変換は、実行するとき、メインスレッドで行う）
 //   - 描画の状態（Blend / CustomBlend / Tint / AddColor / AlphaTest / Filter / PushClip / Transform2D）と 3D 図形の変換（WorldMatrix）と描画先（PushTarget）と
-//     カメラ（PushCamera）と 3D の描画状態（Depth / Culling / TextureAddress / TextureTransform / Fog / HeightFog / Anisotropy）は、そのオブジェクトの分が終わると元に戻る
-//   - ライトは記録しない（呼び出し側が決めたものを使う）。カメラ・描画先・深度バッファの使い方は、記録しなければ、呼び出し側が決めたものを使う
+//     カメラ（PushCamera）と 3D の描画状態（Depth / Culling / TextureAddress / TextureTransform / Fog / HeightFog / Anisotropy）と
+//     ライティング（PushLight / UseLighting / DefaultLight / AmbientLight / SurfaceMaterial / LightingOptions）は、そのオブジェクトの分が終わると元に戻る
+//   - ライト・カメラ・描画先・深度バッファの使い方は、記録しなければ、呼び出し側が決めたものを使う
 //   - グラフィック / モデルのハンドルは、あらかじめ読み込んでおく（読み込みは DxLib の呼び出しなのでメインスレッドで）
 //=============================================================================
 // いまの合成方法をまとめたもの。ほかの合成方法で少し描いてから元に戻すときに、FDrawContext::GetBlendState で保存し、SetBlendState で戻す
@@ -979,6 +981,58 @@ public:
 	}
 
 	//-------------------------------------------------------------------------
+	// ライティング（光）。値は Lighting.h を参照。どれも、このオブジェクトの分が終わると、始める前の状態に戻る
+	//-------------------------------------------------------------------------
+	// 光の計算をするか（SetUseLighting）。false だと、ライト・環境光・自己発光の計算をやめて、拡散色と鏡面色を足した色がそのまま出る（空・画面の飾り・光らせたくない物に）。
+	// 拡散色と鏡面色は、図形に付けた色（材質が図形の色を使わない設定（bUseVertexDiffuse / bUseVertexSpecular が false）なら、材質の色）。図形の鏡面色が黒（既定）なら、図形の色のまま。何も記録しなければ true
+	FORCEINLINE void UseLighting( bool bEnabled )
+	{
+		FDrawUseLightingData Data;
+		Data.Enabled = bEnabled ? 1 : 0;
+		Push( EDrawCommand::UseLighting, 0, Data );
+	}
+
+	// DxLib に最初からある 1 つのライト（白い方向ライト。向きは (1, -1, 1)）の入り切り（SetLightEnable）。自分のライトだけで照らしたいときは、false にする。
+	// ライトは、これも含めて、同時に FLight::MaxActiveLights（6）個まで
+	FORCEINLINE void DefaultLight( bool bEnabled )
+	{
+		FDrawDefaultLightData Data;
+		Data.Enabled = bEnabled ? 1 : 0;
+		Push( EDrawCommand::DefaultLight, 0, Data );
+	}
+
+	// 全体の環境光の色（SetGlobalAmbientLight）。すべての面を、向きに関係なく、この色で底上げする。面の材質の Ambient が 0（既定）だと効かない。
+	// 値が NaN・無限大のときは、何も記録しない
+	void AmbientLight( const FColor& Color );
+
+	// 以降に描く図形の材質（SetMaterialParam / SetMaterialUseVertDifColor / SetMaterialUseVertSpcColor）。値が使えない（FSurfaceMaterial::IsValid() が false）ときは、何も記録しない
+	void SurfaceMaterial( const FSurfaceMaterial& Material );
+
+	// 光の計算の仕方（SetUseSpecular / SetUsePixelLighting / SetUseHalfLambertLighting / SetUseLightAngleAttenuation）
+	FORCEINLINE void LightingOptions( const FLightingOptions& Options )
+	{
+		FDrawLightingOptionsData Data;
+		Data.UseSpecular = Options.bUseSpecular ? 1 : 0;
+		Data.PixelLighting = Options.bPixelLighting ? 1 : 0;
+		Data.WrapLighting = Options.bWrapLighting ? 1 : 0;
+		Data.IgnoreSurfaceAngle = Options.bIgnoreSurfaceAngle ? 1 : 0;
+		Push( EDrawCommand::LightingOptions, 0, Data );
+	}
+
+	// ライトを 1 つ足す（CreateDirLightHandle / CreatePointLightHandle / CreateSpotLightHandle）。以降の図形が、このライトでも照らされる。
+	// 入れ子にできる。PopLight か FLightScope で外す。そのオブジェクトの分が終わると、PopLight が足りなくても、足した分は全部外れる。
+	// ライトは合計 FLight::MaxActiveLights（6）個まで（DefaultLight が有効なら、それも数える）。超えた分は、足しても効かない（PopLight の数は合わせること）。
+	// 値が使えない（FLight::IsValid() が false）ときは、何も記録せず false を返す（対の PopLight も呼ばないこと）
+	bool PushLight( const FLight& Light );
+
+	// いちばん新しく足したライトを外す。PushLight の数より多く呼んでも、何も起きない
+	FORCEINLINE void PopLight()
+	{
+		const FDrawPopLightData Data;
+		Push( EDrawCommand::PopLight, 0, Data );
+	}
+
+	//-------------------------------------------------------------------------
 	// 3D（ワールド座標）
 	//-------------------------------------------------------------------------
 	// 線分（DrawLine3D）
@@ -1464,6 +1518,41 @@ public:
 
 	FWorldMatrixScope( const FWorldMatrixScope& ) = delete;
 	FWorldMatrixScope& operator=( const FWorldMatrixScope& ) = delete;
+
+private:
+	FDrawContext* CommandList;
+	bool bPushed;
+};
+
+//=============================================================================
+// FLightScope
+//   コマンドリストの以降の 3D の描画を、ライト Light でも照らして（PushLight）、スコープを抜けるとき、そのライトを外す（PopLight）。
+//   値が使えないときは、何も記録せず、外すこともしない。
+//
+//   {
+//       FLightScope Lamp( CommandList, FLight::MakePoint( FVector3( 0.0f, 3.0f, 0.0f ), 20.0f, FColor::Orange ) );
+//       CommandList.Sphere3D( ... );
+//   }
+//=============================================================================
+class FLightScope
+{
+public:
+	FLightScope( FDrawContext& InCommandList, const FLight& Light )
+		: CommandList( &InCommandList )
+		, bPushed( InCommandList.PushLight( Light ) )
+	{
+	}
+
+	~FLightScope()
+	{
+		if ( bPushed )
+		{
+			CommandList->PopLight();
+		}
+	}
+
+	FLightScope( const FLightScope& ) = delete;
+	FLightScope& operator=( const FLightScope& ) = delete;
 
 private:
 	FDrawContext* CommandList;

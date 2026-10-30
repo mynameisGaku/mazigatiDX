@@ -8,6 +8,7 @@
 #include "Library/Platform/CommandLine.h"
 #include "Library/Platform/FileSystem.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
+#include "Library/Platform/DxLib/DxLibLighting.h"
 #include "Library/Platform/DxLib/DxLibRenderState3D.h"
 #include "VendorModules/ImGui/imgui_impl_dxlib.hpp"
 
@@ -156,6 +157,8 @@ void CDxLibBackend::ApplyRenderState()
 	SetDrawScreen( DX_SCREEN_BACK );
 	// 3D の描画状態の初期値（描画のたびに、終わりで戻す先）。深度バッファの使い方・画像の貼り方は、DxLib から読めないので、ここで決めて覚えておく
 	NDxLibRenderState3D::ApplyDefaults( Settings.bUseZBuffer3D );
+	// ライティングの初期値（光の計算をする・全体の環境光は 0・材質と光の計算の仕方は DxLib の既定）。描画の終わりに戻す先として覚える
+	NDxLibLighting::ApplyDefaults();
 	SetCameraNearFar( Settings.CameraNear, Settings.CameraFar );
 }
 
