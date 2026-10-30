@@ -89,6 +89,15 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
   - **光を受ける図形**: `DrawSphere3D`・`DrawCube3D`・`DrawCapsule3D`・`DrawCone3D`・法線を持つ `DrawPolygon3D`（`Quad3D`）。**`DrawTriangle3D`（と `DrawLine3D`）は、光を受けない**（光の計算を入れていても、色のまま）。画像なし（ハンドル `-1`）の `DrawPolygon3D` は、何も描かれない。
   - **光の当たらない側は、既定のままだと真っ黒**（環境光は材質の `Ambient` に掛かり、図形の色には掛からない。既定の材質は環境 0）。図形の色に応じた陰にするには、**反対側から弱い方向ライト（補助光）を足し、ハーフランバートを入れる**。サンプルの `SoftLighting.h` がこの組み合わせで、真っ黒な画素は、Camera 見本で 41,124 → 2,718、RenderState 見本で 14,804 → 745 に減った。
   - ライトの設定（`SetLight*Handle`・`SetMaterialParam` など）は、替える前に溜まった 3D を、前の状態で描き出す（図形ごとに、別のライト・材質・光の入り切りにしても、記録した順に効く。球・箱・四角形で確かめた）。
+- **3D 図形の追加（M3-4 の実測）**:
+  - **`DrawPixel3D`**: 1 画素。ブレンド・`SetDrawBright`・深度は効き、**フォグと光は効かない**（`DrawLine3D` と同じ）。カメラの後ろは描かれない。
+  - **`DrawCone3D( TopPos, BottomPos, r, DivNum, ... )`**: 先 = `TopPos`、底の円の中心 = `BottomPos`、半径 = `r`。底にも面がある。光を受ける。**裏面除去に従う**: `DX_CULLING_NONE`・`LEFT` では描かれ、`RIGHT` では、外側が消えて内側だけが見える（内側の法線は外を向くので、光を受けると真っ暗）。分割数は、64 を超えると頭打ち（300 と 64 が同じ絵）で、0 以下でも描かれる（落ちない）。半径 0・先と底が同じ点は何も描かれず、負の半径は正と同じ絵。
+  - **ビルボード系（`DrawBillboard3D` / `DrawModiBillboard3D` / `DrawExtendGraph3D` / `DrawRotaGraph3D` / `DrawRota2Graph3D`）**: カメラの方を向く。**裏面除去に関係なく見え、光を受けず、深度は効き、`SetDrawBlendMode` と `SetDrawBright` は効く**。`SetTransformToWorld` の変換は、位置に効く。画像のハンドルが負だと、何も描かれず -1 を返す。
+  - **`DrawBillboard3D( Pos, cx, cy, Size, Angle, ... )`**: `Size` は画像の**横**の長さ（ワールド）で、縦は画像の縦横比で決まる。**`cx`・`cy` は 0〜1 で、`cy` は画像の下から数える**（`cy` = 0 が下で、`Pos` が画像の左下になる）。範囲の外でもよい（`cx` = -1 は、画像が右へ寄る）。`Angle` の正は**反時計回り**（左上の隅が、左下へ動く）。`Size` 0 は何も描かれない。→ フレームワークは、`Quad3D` や 2D の `SpritePivot` と同じ「上から数える」に直して渡す（`cy` = 1 - 縦）。
+  - **`DrawModiBillboard3D( Pos, x1, y1, ... x4, y4, ... )`**: 4 つの角は、画像の左上・右上・右下・左下の順。ずれは**ワールドの長さ**で、**カメラから見て右が +x、上が +y**（`y` が負の 2 点を先に渡すと、画像は上下に反転する）。4 つの角が同じ点なら、何も描かれない。
+  - **`DrawExtendGraph3D` / `DrawRotaGraph3D` / `DrawRota2Graph3D`**: 画像の **1 ピクセルが、ワールドの 1 x 拡大率**（32 x 16 の画像を 0.1 倍で、3.2 x 1.6）。`DrawExtendGraph3D` と `DrawRotaGraph3D` は、位置が画像の中心。**`DrawRota2Graph3D` の基準点は、ピクセルで、縦は画像の下から数える**（画像の中心は `( 幅 / 2, 高さ / 2 )`）。反転は、画像の中だけが反転する（範囲も基準点も動かない）。拡大率 0 は何も描かれず、負の拡大率も描かれる（範囲は同じ）。
+  - **`DrawPrimitive3D` / `DrawPrimitiveIndexed3D`**: `DX_PRIMTYPE_POINTLIST`（頂点 1 つが 1 画素）・`LINELIST`（2 つずつ。`DrawLine3D` と同じ絵）・`LINESTRIP`（つないだ折れ線）・`TRIANGLELIST`・`TRIANGLESTRIP`・`TRIANGLEFAN`（展開した三角形と同じ絵。帯は、1 つおきの三角形の向きを入れ替えるので、裏面除去をしても、全体が同じ向きに見える）。**余りの頂点（三角形に 4 つ・線に 3 つ）は、黙って捨てる**（戻り値は 0）。頂点 0 個・帯と扇に 2 つ以下も、戻り値 0 で何も描かれない。`DrawPolygon3D` は `TRIANGLELIST`、`DrawPolygonIndexed3D` は添字つきの `TRIANGLELIST` と同じ絵。32 ビット添字の版（`DrawPrimitive32bitIndexed3D`）も、同じ絵。
+  - **頂点の色と光**: **`TransFlag` が `TRUE` だと、頂点のアルファが、頂点ごとの不透明度として効く（`SetDrawBlendMode` が `NOBLEND` でも。128 で半分）。`FALSE` だと無視される**。ブレンド 128 とは掛け合わさる（4 分の 1）。**点・線・三角形のどれも、法線で光を受け、フォグも受ける**（`DrawPixel3D`・`DrawLine3D` と違う）。法線の長さは DxLib が揃える（長さ 3 でも、色そのまま。長さ 0 は真っ黒）。法線は頂点ごとに補間される。光の計算を切ると、頂点の鏡面色が拡散色に足される。`su` / `sv` は、固定機能の描画では、絵を変えない（シェーダー用）。画像なしは `DX_NONE_GRAPH`（-5）で、**-1 だと何も描かれず -1 を返す**。
 
 ## 6. 文字列と文字コード
 
