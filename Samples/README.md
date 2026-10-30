@@ -25,6 +25,7 @@ mazigatiDX の機能を、1 つずつ動かして見られるサンプル集で�
 |`Village`|小さな村を歩き回る、トップダウンの 2D のゲーム画面（2D の機能を 1 つにまとめた見本）。タイルの地図、2D の変換で主人公を追うカメラ、歩く主人公（キーを押すまでは、ひとりで歩く）、回る金貨、村人との会話（折り返し・1 文字ずつ表示）、夜の明かり（描画先とカスタムブレンド）、金貨の数と体力（円グラフ）とミニマップ|
 |`Camera`|3D のカメラ。注視点のまわりを回る軌道カメラ（透視射影 / 正射影、視野角）で景色を見る。真上から見下ろす 2 つ目のカメラを別の描画先に描いて右下に貼り、メインのカメラが映す地面の範囲を重ねる。世界の点が画面のどこに見えるか（WorldToScreen）で物の名前を置き、マウスの位置を通る光線（ScreenToRay）で指している物を調べ、視錐台に入らない物は描かない|
 |`RenderState`|3D の描画状態。一つの舞台に、描画状態の使いどころを並べる: 深度バッファ（半透明のガラス）、カリング（部屋）、画像の貼り方と変換（壁・水面）、距離のフォグと高さのフォグ（遠くの柱・足元の霧）、フィルターと異方性（地面の市松模様）、3D 図形の変換の積み重ね（腕）、深度バッファの消去（手前に描く光線）。数字キーの 1〜8 で切り替える|
+|`Lighting`|3D のライティング。夜の中庭を、月明かり（方向ライト）・床の上を回る電球（点光源）・床を舐めるスポットライト・周りの街灯（同時に 6 つまで）で照らす。材質の違う 5 つの球（つや消し・つや・自己発光・プラスチック・金色の金属）と、床・壁・柱・箱の陰影。数字キーの 1〜9 で、各ライト・全体の環境光・画素ごとの光・ハイライト・やわらかい光・街灯の数・光の計算そのものの入り切りを切り替える|
 |`Input`|キーボード・マウス・ゲームパッドの状態を表示する|
 
 ## 構成（クラスとファイルの分け方）
@@ -46,8 +47,9 @@ Samples/
     Text/                       サンプル Text: シーン（CTextSample）と、オブジェクト（CFontShowcase、CWrapShowcase、CStyledShowcase）
     Camera/                     サンプル Camera: シーン（CCameraSample）と、オブジェクト（CCameraRig、CMainView、CTopView、CLabelOverlay）、共有する状態（FCameraDemoState）、景色（NScenery）
     RenderState/                サンプル RenderState: シーン（CRenderStateSample）と、オブジェクト（CRenderStateRig、CStageView、CInfoPanel）、共有する状態（FRenderStateDemoState）、舞台（NStageScenery）
+    Lighting/                   サンプル Lighting: シーン（CLightingSample）と、オブジェクト（CLightingRig、CLightingView、CLightingPanel）、共有する状態（FLightingDemoState）、中庭（NLightingScenery）
     Village/                    サンプル Village: シーン（CVillageSample）と、オブジェクト（CTileMap、CPlayer、CCoin、CVillager、CDialogue、CDarkness、CStatusPanel）、共有する状態（FVillageState）、絵を CPU で作る関数（NVillageArt）
-    Common/                     複数のサンプルで使うもの。確認用の画像を、メモリの上で作る関数（NTestPattern）
+    Common/                     複数のサンプルで使うもの。確認用の画像を、メモリの上で作る関数（NTestPattern）、光の当たらない側を真っ黒にしない、やわらかい光（FSoftLightingScope）
     Input/                      サンプル Input: シーン（CInputSample）と、オブジェクト（CKeyboardView、CMouseView、CGamepadView）
   Config/ScreenConfig.json      窓の設定
   Assets/                       画像・音・モデルの置き場

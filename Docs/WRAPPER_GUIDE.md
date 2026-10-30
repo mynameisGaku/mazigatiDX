@@ -76,6 +76,19 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
   - **画像の貼り方の変換**（`SetTextureAddressTransform`）: UV を、`RotCenter` のまわりに回し、`Trans` を足し、`Scale` を原点から掛ける、の順（回転が正なら、画面で反時計回り。拡大の中心は回転の中心ではない）。2 つ以上を組み合わせたとき、順番が違うと答えが違う。
   - **`SetDrawMode` の `DX_DRAWMODE_BILINEAR` / `DX_DRAWMODE_ANISOTROPIC` は、3D の面の画像にも効く**。`SetMaxAnisotropy` は `ANISOTROPIC` のときだけ効き、範囲の収めはしない（0 や 100 も、そのまま取得できる）→ フレームワークは 1〜16 に収める。
   - 状態を替えるとき、DxLib は、その前に溜まった 3D を、前の状態で描き出す（深度・カリング・フォグ・画像の貼り方で確かめた）。
+- **ライティング（M3-3 の実測）**:
+  - **既定の状態**: DxLib に最初からあるライトは 1 つ（`SetLight*`。方向ライト、向き `(1, -1, 1)` を正規化した値、拡散 1・鏡面 1・環境 0.33、有効）。`CreateDirLightHandle` などで作ったライトの環境色の既定も 0.33（フレームワークは、足すたびに全項目を決める）。光の計算をする（`SetUseLighting( TRUE )`）・全体の環境光 0・画素ごとの光なし・鏡面反射あり・ハーフランバートなし・角度の減衰あり。**材質（`SetMaterialParam`）の既定は、拡散 0.8・環境 0・鏡面 0.8・自己発光 0・鋭さ（`Power`）20**（拡散と鏡面の色は、既定では、図形に付けた色が使われる）。
+  - **取得関数が無い**: 光の計算の入り切り・全体の環境光・材質・`SetUseSpecular` / `SetUsePixelLighting` / `SetUseHalfLambertLighting` / `SetUseLightAngleAttenuation`。描画の終わりに戻す先は、フレームワークが初期化で決めた値（`NDxLibLighting::ApplyDefaults`。DxLib の既定と同じ）。生の DxLib で替えた分は、戻らない。既定のライトの入り切り（`GetLightEnable`）は読める。
+  - **同時に効くライトは 6 つまで**。`CreateXLightHandle` は、いくつでも作れて、`GetEnableLightHandleNum` も 17 まで数えるが、**効くのは、既定のライト（有効なら）を先頭にして、作った順の先頭 6 つ**。7 つ目以降は、何も起きない。
+  - **色の計算**（Direct3D の固定機能と同じ。実測では、画素の差は ±1 ほど）: 色 ＝ 自己発光 ＋ 材質の環境色 x 全体の環境光 ＋ Σ ライト（ 距離の減衰 x 円錐 x ( 拡散色 x ライトの拡散 x max( N·L, 0 ) ＋ **材質の環境色 x ライトの環境色** ＋ 鏡面色 x ライトの鏡面 x max( N·H, 0 )^鋭さ ) )。**鏡面反射は、光と視線の中間の向き H を使う**（Blinn。反射の向きと視線の内積を使う Phong とは別物）。**ライトの環境色にも、距離と円錐の減衰が掛かる**。ライトの色は、1 を超えても、負でもよい（負の色は暗くする）。最後に 0〜1 に収める。
+  - **拡散色・鏡面色**: `SetMaterialUseVertDifColor( TRUE )`（既定）なら、図形（頂点）に付けた色が拡散色で、材質の `Diffuse` は使われない。`FALSE` なら、材質の `Diffuse` だけで、図形の色は使われない。鏡面（`SetMaterialUseVertSpcColor`）も同じ。環境光（全体・ライト）は、材質の `Ambient` を掛けるので、**既定の材質（環境 0）では効かない**。
+  - **点光源の減衰**: `1 / ( Atten0 + Atten1 x 距離 + Atten2 x 距離^2 )`。`Range` より遠い面は、急に 0（切れ目が見える）。3 つの減衰がすべて 0 でもハンドルは作れて、光は消える。
+  - **スポットライトの円錐**: `OutAngle` / `InAngle` は、軸から左右への広がりの**全角**（ラジアン）。軸と面の点への向きの角度を θ として、`cos( θ )` が `cos( OutAngle / 2 )` 以下は 0、`cos( InAngle / 2 )` 以上は 1、そのあいだは、`cos( θ )` に対して直線。**向きの長さが円錐の計算に効いてしまう**（方向ライトは DxLib が正規化するが、スポットライトは正規化しない）→ フレームワークは、渡す前に正規化する。
+  - **`SetUsePixelLighting( TRUE )`** で、画素ごとに光を計算する（頂点が 4 つの大きな四角形に、スポットライトを当てると、頂点ごと（既定）は、四隅が円錐の外なので真っ暗。画素ごとは、円い輪が出る）。`SetUseHalfLambertLighting( TRUE )` は、面の向きの項を `( N·L x 0.5 + 0.5 )^2` にする（光の当たらない側もうっすら明るい）。**`SetUseLightAngleAttenuation( FALSE )` は、面の向きの項（N·L）を 1 にする**（面が、向きに関係なく、光が届けば全力で照らされる。距離・円錐の減衰は残る）。名前の「角度の減衰」は、円錐のことではない。`SetUseSpecular( FALSE )` は、鏡面反射を消す。
+  - **`SetUseLighting( FALSE )`**: ライト・環境光・自己発光の計算をやめて、**拡散色と鏡面色を足した色**がそのまま出る（`DrawSphere3D` の鏡面色が黒なら、図形の色のまま）。拡散色・鏡面色は、`SetMaterialUseVert*Color` に従う（`FALSE` のままだと、図形の色ではなく、材質の色が出る）。
+  - **光を受ける図形**: `DrawSphere3D`・`DrawCube3D`・`DrawCapsule3D`・`DrawCone3D`・法線を持つ `DrawPolygon3D`（`Quad3D`）。**`DrawTriangle3D`（と `DrawLine3D`）は、光を受けない**（光の計算を入れていても、色のまま）。画像なし（ハンドル `-1`）の `DrawPolygon3D` は、何も描かれない。
+  - **光の当たらない側は、既定のままだと真っ黒**（環境光は材質の `Ambient` に掛かり、図形の色には掛からない。既定の材質は環境 0）。図形の色に応じた陰にするには、**反対側から弱い方向ライト（補助光）を足し、ハーフランバートを入れる**。サンプルの `SoftLighting.h` がこの組み合わせで、真っ黒な画素は、Camera 見本で 41,124 → 2,718、RenderState 見本で 14,804 → 745 に減った。
+  - ライトの設定（`SetLight*Handle`・`SetMaterialParam` など）は、替える前に溜まった 3D を、前の状態で描き出す（図形ごとに、別のライト・材質・光の入り切りにしても、記録した順に効く。球・箱・四角形で確かめた）。
 
 ## 6. 文字列と文字コード
 
