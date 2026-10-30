@@ -97,6 +97,11 @@
     <ClCompile Include="Source\RenderTarget\TargetShowcase.cpp" />
     <ClCompile Include="Source\Shapes\ShapeShowcase.cpp" />
     <ClCompile Include="Source\Shapes\ShapesSample.cpp" />
+    <ClCompile Include="Source\Shapes3D\Shapes3DPanel.cpp" />
+    <ClCompile Include="Source\Shapes3D\Shapes3DRig.cpp" />
+    <ClCompile Include="Source\Shapes3D\Shapes3DSample.cpp" />
+    <ClCompile Include="Source\Shapes3D\Shapes3DScenery.cpp" />
+    <ClCompile Include="Source\Shapes3D\Shapes3DView.cpp" />
     <ClCompile Include="Source\Text\FontShowcase.cpp" />
     <ClCompile Include="Source\Text\StyledShowcase.cpp" />
     <ClCompile Include="Source\Text\TextSample.cpp" />
@@ -163,6 +168,12 @@
     <ClInclude Include="Source\RenderTarget\TargetShowcase.h" />
     <ClInclude Include="Source\Shapes\ShapeShowcase.h" />
     <ClInclude Include="Source\Shapes\ShapesSample.h" />
+    <ClInclude Include="Source\Shapes3D\Shapes3DDemoState.h" />
+    <ClInclude Include="Source\Shapes3D\Shapes3DPanel.h" />
+    <ClInclude Include="Source\Shapes3D\Shapes3DRig.h" />
+    <ClInclude Include="Source\Shapes3D\Shapes3DSample.h" />
+    <ClInclude Include="Source\Shapes3D\Shapes3DScenery.h" />
+    <ClInclude Include="Source\Shapes3D\Shapes3DView.h" />
     <ClInclude Include="Source\Text\FontShowcase.h" />
     <ClInclude Include="Source\Text\StyledShowcase.h" />
     <ClInclude Include="Source\Text\TextSample.h" />
