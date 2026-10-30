@@ -62,6 +62,10 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
 - DxLib が、**壊れた入力で落ちる**ことがある（切れた PNG を `LoadSoftImageToMem` / `LoadSoftImage` に渡すと、範囲外を読んでアクセス違反になる。M2-5 の実測）。そういう入力は、渡す前に、ラッパーが構造を確かめて、失敗として返す（`DecodeImage` / `DecodeImageFile` は、PNG・BMP・JPEG が最後まであるかを確かめる）。落ちる経路を見つけたら、確かめてから渡す。
 - **マスクで描く先は、アルファのない描画先にする**（M2-8 の実測）。アルファを持つ描画先（画面を含む）へ、マスクをつけて描くと、DxLib は、下の絵に混ぜずに、描く色で置き換え、描いたところのアルファを「マスクで決まる濃さ」にしてしまう（暗い箱を、マスクつきで画面へ描くと、世界が見えなくなった）。アルファのない描画先なら、正しく混ざる。濃さは、マスクの値そのもので決まり、`Blend( Alpha, 強さ )` の強さの指定は効かない。画面へ半透明に重ねたいときは、アルファを持つ描画先（層）に絵を作って、その層を、ふつうのアルファブレンドで貼る。層のアルファを、光で減らすには、カスタムブレンド（`SrcAlpha = Zero`・`DestAlpha = InvSrcAlpha`）が使える。
 - 画面（アルファを持つ描画先）へ、アルファブレンドで半透明の画像・図形を重ねると、重ねたところの画面のアルファが、255 より下がる（アルファ 215 を重ねると、約 221）。画面の表示は、RGB だけなので影響しないが、アルファつきで画面を保存する（`--screenshot` の PNG など）と、半透明の画像として保存される。
+- **カメラ（M3-1 の実測）**: DxLib は左手系・Y 上。`GetCameraViewMatrix` は `LookAt( 位置, 見る点, 上 )` と同じで、`GetCameraProjectionMatrix` の奥行きは、`Near` で 0、`Far` で 1。`SetupCamera_Perspective( Fov )` の `Fov` は縦の視野角（横は、画面の縦横比で決まる）、`SetupCamera_Ortho( Size )` の `Size` は、映す範囲の縦の長さ。`SetCameraDotAspect( Dot )` は、横の拡大（射影行列の m00）に、そのまま掛かる（画素の縦横比で割るのではない。大きいほど横へ広がる）。`SetCameraScreenCenter( x, y )` は、光軸が通る画面の点で、ずらすと、世界の点の画面の座標がそのぶんずれる。`ConvWorldPosToScreenPos` は、x・y が画面の座標（ピクセル）、z が奥行き（0〜1）で、カメラの後ろ・奥行きの範囲の外の点は、z が 0〜1 の外になる。`CheckCameraViewClip( 点 )` は、視錐台の外なら TRUE で、`FCamera` の視錐台の判定と、点ごとに同じ答え（箱の `CheckCameraViewClip_Box` は、`FCamera` が外と言う箱を、いつも外と言う）。
+- **描画先の大きさは `GetDrawScreenSize` では取れない**（M3-1 の実測）: `GetDrawScreenSize` は、描画先が画像（`MakeScreen`）のときも、画面（バックバッファ）の大きさを返す。描画先の大きさは、`GetGraphSize( GetDrawScreen() )` で測り（画面のときは失敗するので、`GetDrawScreenSize` へ）、カメラの光軸が通る点を決めるのに使う。
+- **描画先を替えると、「替えるとリセットする設定」を切っても、カメラの光軸が通る画面の点（`SetCameraScreenCenter`）は、替えた先の中心に変わる**（M3-1 の実測）。戻すときに、替える前の値へ戻さないと、元の画面で、3D の位置がずれる（ラッパーは、描画先を替えるとき覚えて、戻すときに戻す）。
+- DxLib は、3D の描画（箱・線・球など）を、内部の頂点バッファに溜めて、あとでまとめて描くが、カメラを替える（`SetCameraPositionAndTarget*`・`SetupCamera_*`・`SetCameraNearFar` など）ときに、溜まった分を、替える前のカメラで描き出す（M3-1 の実測。ラッパーは、替える前に `RenderVertex()` を呼ばなくても、描いたときのカメラで描かれる）。
 - 前提が破れたとき（不正な引数・NaN・範囲外）は、何もせずにログを出して失敗を返す。DxLib 側のクラッシュや assert に任せない。
 
 ## 6. 文字列と文字コード
