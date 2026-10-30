@@ -79,6 +79,11 @@
     <ClCompile Include="Source\Input\InputSample.cpp" />
     <ClCompile Include="Source\Input\KeyboardView.cpp" />
     <ClCompile Include="Source\Input\MouseView.cpp" />
+    <ClCompile Include="Source\Lighting\LightingPanel.cpp" />
+    <ClCompile Include="Source\Lighting\LightingRig.cpp" />
+    <ClCompile Include="Source\Lighting\LightingSample.cpp" />
+    <ClCompile Include="Source\Lighting\LightingScenery.cpp" />
+    <ClCompile Include="Source\Lighting\LightingView.cpp" />
     <ClCompile Include="Source\Pixels\PixelsSample.cpp" />
     <ClCompile Include="Source\Pixels\PlasmaView.cpp" />
     <ClCompile Include="Source\Pixels\SpriteSheetMaker.cpp" />
@@ -137,6 +142,12 @@
     <ClInclude Include="Source\Input\InputSample.h" />
     <ClInclude Include="Source\Input\KeyboardView.h" />
     <ClInclude Include="Source\Input\MouseView.h" />
+    <ClInclude Include="Source\Lighting\LightingDemoState.h" />
+    <ClInclude Include="Source\Lighting\LightingPanel.h" />
+    <ClInclude Include="Source\Lighting\LightingRig.h" />
+    <ClInclude Include="Source\Lighting\LightingSample.h" />
+    <ClInclude Include="Source\Lighting\LightingScenery.h" />
+    <ClInclude Include="Source\Lighting\LightingView.h" />
     <ClInclude Include="Source\Pixels\PixelsSample.h" />
     <ClInclude Include="Source\Pixels\PlasmaView.h" />
     <ClInclude Include="Source\Pixels\SpriteSheetMaker.h" />

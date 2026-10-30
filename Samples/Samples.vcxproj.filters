@@ -85,6 +85,21 @@
     <ClCompile Include="Source\Input\MouseView.cpp">
       <Filter>Source\Input</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Lighting\LightingPanel.cpp">
+      <Filter>Source\Lighting</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Lighting\LightingRig.cpp">
+      <Filter>Source\Lighting</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Lighting\LightingSample.cpp">
+      <Filter>Source\Lighting</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Lighting\LightingScenery.cpp">
+      <Filter>Source\Lighting</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Lighting\LightingView.cpp">
+      <Filter>Source\Lighting</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Pixels\PixelsSample.cpp">
       <Filter>Source\Pixels</Filter>
     </ClCompile>
@@ -252,6 +267,24 @@
     <ClInclude Include="Source\Input\MouseView.h">
       <Filter>Source\Input</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Lighting\LightingDemoState.h">
+      <Filter>Source\Lighting</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Lighting\LightingPanel.h">
+      <Filter>Source\Lighting</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Lighting\LightingRig.h">
+      <Filter>Source\Lighting</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Lighting\LightingSample.h">
+      <Filter>Source\Lighting</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Lighting\LightingScenery.h">
+      <Filter>Source\Lighting</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Lighting\LightingView.h">
+      <Filter>Source\Lighting</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Pixels\PixelsSample.h">
       <Filter>Source\Pixels</Filter>
     </ClInclude>
@@ -370,6 +403,9 @@
     </Filter>
     <Filter Include="Source\Input">
       <UniqueIdentifier>{FFE14168-86E4-9D5A-B4DA-C4ACB9D88FCD}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Lighting">
+      <UniqueIdentifier>{4EB65EA3-3FEC-7570-1AA7-399CE99C056E}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Pixels">
       <UniqueIdentifier>{7FACA93B-34CC-117D-96B2-DB56EAC4A18F}</UniqueIdentifier>
