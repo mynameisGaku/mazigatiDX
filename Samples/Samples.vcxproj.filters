@@ -133,6 +133,24 @@
     <ClCompile Include="Source\RenderTarget\TargetShowcase.cpp">
       <Filter>Source\RenderTarget</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Shaders\ShadersMesh.cpp">
+      <Filter>Source\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Shaders\ShadersPanel.cpp">
+      <Filter>Source\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Shaders\ShadersRig.cpp">
+      <Filter>Source\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Shaders\ShadersSample.cpp">
+      <Filter>Source\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Shaders\ShadersSources.cpp">
+      <Filter>Source\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Shaders\ShadersView.cpp">
+      <Filter>Source\Shaders</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Shadows\ShadowsPanel.cpp">
       <Filter>Source\Shadows</Filter>
     </ClCompile>
@@ -354,6 +372,27 @@
     <ClInclude Include="Source\RenderTarget\TargetShowcase.h">
       <Filter>Source\RenderTarget</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Shaders\ShadersDemoState.h">
+      <Filter>Source\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Shaders\ShadersMesh.h">
+      <Filter>Source\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Shaders\ShadersPanel.h">
+      <Filter>Source\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Shaders\ShadersRig.h">
+      <Filter>Source\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Shaders\ShadersSample.h">
+      <Filter>Source\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Shaders\ShadersSources.h">
+      <Filter>Source\Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Shaders\ShadersView.h">
+      <Filter>Source\Shaders</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Shadows\ShadowsDemoState.h">
       <Filter>Source\Shadows</Filter>
     </ClInclude>
@@ -484,6 +523,9 @@
     </Filter>
     <Filter Include="Source\RenderTarget">
       <UniqueIdentifier>{404CC2CF-CCF6-391E-5932-FC9207128670}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Shaders">
+      <UniqueIdentifier>{33F5B981-E061-6B46-B18D-C9D9B27D0A9F}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Shadows">
       <UniqueIdentifier>{FEDB8F9C-1BC0-D094-CCAB-F151C882255B}</UniqueIdentifier>

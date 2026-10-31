@@ -95,6 +95,12 @@
     <ClCompile Include="Source\RenderState\StageView.cpp" />
     <ClCompile Include="Source\RenderTarget\RenderTargetSample.cpp" />
     <ClCompile Include="Source\RenderTarget\TargetShowcase.cpp" />
+    <ClCompile Include="Source\Shaders\ShadersMesh.cpp" />
+    <ClCompile Include="Source\Shaders\ShadersPanel.cpp" />
+    <ClCompile Include="Source\Shaders\ShadersRig.cpp" />
+    <ClCompile Include="Source\Shaders\ShadersSample.cpp" />
+    <ClCompile Include="Source\Shaders\ShadersSources.cpp" />
+    <ClCompile Include="Source\Shaders\ShadersView.cpp" />
     <ClCompile Include="Source\Shadows\ShadowsPanel.cpp" />
     <ClCompile Include="Source\Shadows\ShadowsRig.cpp" />
     <ClCompile Include="Source\Shadows\ShadowsSample.cpp" />
@@ -171,6 +177,13 @@
     <ClInclude Include="Source\RenderState\StageView.h" />
     <ClInclude Include="Source\RenderTarget\RenderTargetSample.h" />
     <ClInclude Include="Source\RenderTarget\TargetShowcase.h" />
+    <ClInclude Include="Source\Shaders\ShadersDemoState.h" />
+    <ClInclude Include="Source\Shaders\ShadersMesh.h" />
+    <ClInclude Include="Source\Shaders\ShadersPanel.h" />
+    <ClInclude Include="Source\Shaders\ShadersRig.h" />
+    <ClInclude Include="Source\Shaders\ShadersSample.h" />
+    <ClInclude Include="Source\Shaders\ShadersSources.h" />
+    <ClInclude Include="Source\Shaders\ShadersView.h" />
     <ClInclude Include="Source\Shadows\ShadowsDemoState.h" />
     <ClInclude Include="Source\Shadows\ShadowsPanel.h" />
     <ClInclude Include="Source\Shadows\ShadowsRig.h" />
