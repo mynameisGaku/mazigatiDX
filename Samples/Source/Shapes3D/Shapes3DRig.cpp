@@ -79,6 +79,10 @@ void CShapes3DRig::HandleKeys()
 	{
 		State->bLighting = !State->bLighting;
 	}
+	if ( Input->IsKeyPressed( EKey::Num7 ) )
+	{
+		State->ForestLevel = ( State->ForestLevel + 1 ) % FShapes3DDemoState::NumForestLevels;
+	}
 }
 
 void CShapes3DRig::Tick( float32 DeltaTime )

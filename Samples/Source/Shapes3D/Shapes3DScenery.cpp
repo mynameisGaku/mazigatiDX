@@ -24,6 +24,14 @@ namespace
 	const FColor32 FireflyColor( 255, 225, 130 );
 	constexpr float32 StarDistance = 60.0f;
 
+	// 池（水面の格子）: 中心・半分の大きさ・1 辺の分割数（頂点は、( 分割数 + 1 ) の 2 乗）
+	const FVector3 PondCenter( 17.5f, 0.3f, -1.0f );
+	constexpr float32 PondHalfSize = 3.5f;
+	constexpr int32 PondCells = 24;
+
+	// 森の木の数の上限（7 キーの最大）と、森を置く範囲（奥の端）
+	constexpr int32 MaxTrees = FShapes3DDemoState::ForestSizes[FShapes3DDemoState::NumForestLevels - 1];
+
 	// 見どころの位置
 	const FVector3 GemCenter( -2.0f, 3.0f, -3.0f );
 	const FVector3 HelixCenter( -9.0f, 0.0f, -4.0f );
@@ -226,6 +234,121 @@ namespace
 		CommandList.Capsule3D( FVector3( UmbrellaCenter.x, 0.4f, UmbrellaCenter.z ), FVector3( UmbrellaCenter.x, UmbrellaCenter.y + Drop - 0.1f, UmbrellaCenter.z ), 0.12f, 12, FColor32( 120, 90, 60 ) );
 	}
 
+	// 木 1 本の形（幹の箱 + 葉の円錐）を、頂点と添字にする。三角形の表（画面で時計回り）が外を向くよう、並びを決める
+	void BuildTreeMesh( TArray<FVertex3D>& OutVertices, TArray<uint16>& OutIndices )
+	{
+		const auto AddTriangle = [&]( uint16 A, uint16 B, uint16 C, const FVector3& Outward )
+		{
+			const FVector3 Edge1 = OutVertices[B].Position - OutVertices[A].Position;
+			const FVector3 Edge2 = OutVertices[C].Position - OutVertices[A].Position;
+			const bool bOutward = FVector3::Dot( FVector3::Cross( Edge1, Edge2 ), Outward ) > 0.0f;
+			OutIndices.Add( A );
+			OutIndices.Add( bOutward ? B : C );
+			OutIndices.Add( bOutward ? C : B );
+		};
+
+		// 幹: 箱（頂点 8 つ。向きは、中心から角への向き）
+		const FColor32 Bark( 110, 72, 44 );
+		for ( int32 Corner = 0; Corner < 8; ++Corner )
+		{
+			const FVector3 Sign( ( Corner & 1 ) != 0 ? 1.0f : -1.0f, ( Corner & 2 ) != 0 ? 1.0f : -1.0f, ( Corner & 4 ) != 0 ? 1.0f : -1.0f );
+			OutVertices.Add( FVertex3D::Make( FVector3( Sign.x * 0.15f, ( Corner & 2 ) != 0 ? 1.0f : 0.0f, Sign.z * 0.15f ), Sign.Normalized(), Bark ) );
+		}
+		const uint16 Faces[6][4] = { { 0, 1, 2, 3 }, { 4, 5, 6, 7 }, { 0, 1, 4, 5 }, { 2, 3, 6, 7 }, { 0, 2, 4, 6 }, { 1, 3, 5, 7 } };
+		for ( const uint16 ( &Face )[4] : Faces )
+		{
+			const FVector3 Center = ( OutVertices[Face[0]].Position + OutVertices[Face[1]].Position + OutVertices[Face[2]].Position + OutVertices[Face[3]].Position ) * 0.25f;
+			AddTriangle( Face[0], Face[1], Face[2], Center - FVector3( 0.0f, 0.5f, 0.0f ) );
+			AddTriangle( Face[1], Face[3], Face[2], Center - FVector3( 0.0f, 0.5f, 0.0f ) );
+		}
+
+		// 葉: 円錐（底の輪 12 + 先 1）と、底の円盤（中心 1 + 輪 12。下向き）
+		constexpr int32 Segments = 12;
+		const uint16 Apex = static_cast<uint16>( OutVertices.Num() );
+		OutVertices.Add( FVertex3D::Make( FVector3( 0.0f, 4.6f, 0.0f ), FVector3( 0.0f, 1.0f, 0.0f ), FColor32( 90, 190, 110 ) ) );
+		const uint16 RingStart = static_cast<uint16>( OutVertices.Num() );
+		for ( int32 Index = 0; Index < Segments; ++Index )
+		{
+			const float32 Angle = static_cast<float32>( Index ) * NMath::PI * 2.0f / static_cast<float32>( Segments );
+			const FVector3 Direction( NMath::Cos( Angle ), 0.0f, NMath::Sin( Angle ) );
+			OutVertices.Add( FVertex3D::Make( Direction * 1.2f + FVector3( 0.0f, 0.8f, 0.0f ), ( Direction + FVector3( 0.0f, 0.5f, 0.0f ) ).Normalized(), FColor32( 24, 96, 50 ) ) );
+		}
+		const uint16 CapCenter = static_cast<uint16>( OutVertices.Num() );
+		OutVertices.Add( FVertex3D::Make( FVector3( 0.0f, 0.8f, 0.0f ), FVector3( 0.0f, -1.0f, 0.0f ), FColor32( 20, 70, 40 ) ) );
+		const uint16 CapStart = static_cast<uint16>( OutVertices.Num() );
+		for ( int32 Index = 0; Index < Segments; ++Index )
+		{
+			OutVertices.Add( FVertex3D::Make( OutVertices[RingStart + Index].Position, FVector3( 0.0f, -1.0f, 0.0f ), FColor32( 20, 70, 40 ) ) );
+		}
+		for ( int32 Index = 0; Index < Segments; ++Index )
+		{
+			const uint16 Next = static_cast<uint16>( ( Index + 1 ) % Segments );
+			const FVector3 SideOutward = OutVertices[RingStart + Index].Position + OutVertices[RingStart + Next].Position;
+			AddTriangle( Apex, static_cast<uint16>( RingStart + Index ), static_cast<uint16>( RingStart + Next ), SideOutward );
+			AddTriangle( CapCenter, static_cast<uint16>( CapStart + Index ), static_cast<uint16>( CapStart + Next ), FVector3( 0.0f, -1.0f, 0.0f ) );
+		}
+	}
+
+	// 池の水面の格子の頂点（時刻 Time の波。法線は、高さの差から決める。青く、頂点のアルファで半透明）
+	void BuildWaterVertices( float32 Time, TArray<FVertex3D>& OutVertices )
+	{
+		const int32 Points = PondCells + 1;
+		const float32 Step = PondHalfSize * 2.0f / static_cast<float32>( PondCells );
+		const auto Height = [&]( float32 X, float32 Z )
+		{
+			return 0.12f * NMath::Sin( X * 1.7f + Time * 2.0f ) + 0.09f * NMath::Sin( Z * 2.3f - Time * 1.6f ) + 0.05f * NMath::Sin( ( X + Z ) * 3.1f + Time * 3.0f );
+		};
+		OutVertices.Reset();
+		for ( int32 Row = 0; Row < Points; ++Row )
+		{
+			for ( int32 Column = 0; Column < Points; ++Column )
+			{
+				const float32 X = -PondHalfSize + Step * static_cast<float32>( Column );
+				const float32 Z = -PondHalfSize + Step * static_cast<float32>( Row );
+				const float32 DeltaX = Height( X + 0.05f, Z ) - Height( X - 0.05f, Z );
+				const float32 DeltaZ = Height( X, Z + 0.05f ) - Height( X, Z - 0.05f );
+				const FVector3 Normal = FVector3( -DeltaX * 5.0f, 1.0f, -DeltaZ * 5.0f ).Normalized();
+				const float32 Shade = 0.5f + 2.0f * Height( X, Z );
+				const uint8 Level = static_cast<uint8>( NMath::Clamp( 70.0f + 140.0f * Shade, 40.0f, 255.0f ) );
+				OutVertices.Add( FVertex3D::Make( PondCenter + FVector3( X, Height( X, Z ), Z ), Normal, FColor32( static_cast<uint8>( Level / 3 ), static_cast<uint8>( Level * 3 / 4 ), 255, 190 ) ) );
+			}
+		}
+	}
+
+	// 森: 1 つの頂点バッファ + インデックスバッファを、木ごとに、位置・向き・大きさを変えて描く（頂点を、木の数だけ記録し直さない）。数は、7 キーで切り替える
+	void RecordForest( FDrawContext& CommandList, const FShapes3DDemoState& State )
+	{
+		if ( !State.TreeVertices.IsValid() || !State.TreeIndices.IsValid() )
+		{
+			return;
+		}
+		CommandList.SurfaceMaterial( FSurfaceMaterial::MakeMatte() );
+		const int32 NumTrees = FShapes3DDemoState::ForestSizes[NMath::Clamp( State.ForestLevel, 0, FShapes3DDemoState::NumForestLevels - 1 )];
+		for ( int32 Index = 0; Index < NumTrees; ++Index )
+		{
+			const uint32 Seed = static_cast<uint32>( Index ) * 4u + 9000u;
+			const float32 X = -20.0f + 40.0f * Hash01( Seed );
+			const float32 Z = 9.5f + 4.0f * Hash01( Seed + 1u );
+			const float32 Size = 0.55f + 0.45f * Hash01( Seed + 2u );
+			const FMatrix4x4 Place = FMatrix4x4::Scale( Size ) * FMatrix4x4::RotateY( Hash01( Seed + 3u ) * NMath::PI * 2.0f ) * FMatrix4x4::Translate( FVector3( X, 0.0f, Z ) );
+			FWorldMatrixScope Scope( CommandList, Place );
+			CommandList.PrimitiveIndexedBuffer3D( State.TreeVertices, State.TreeIndices, EDrawPrimitive::Triangles );
+		}
+	}
+
+	// 池の水面: 頂点バッファ（毎フレーム書き換える）+ インデックスバッファ（変わらない）。頂点のアルファで、半透明
+	void RecordWater( FDrawContext& CommandList, const FShapes3DDemoState& State )
+	{
+		if ( !State.WaterVertices.IsValid() || !State.WaterIndices.IsValid() )
+		{
+			return;
+		}
+		FSurfaceMaterial Water = FSurfaceMaterial::MakeMatte();
+		Water.Shininess = 60.0f;
+		CommandList.SurfaceMaterial( Water );
+		CommandList.PrimitiveIndexedBuffer3D( State.WaterVertices, State.WaterIndices, EDrawPrimitive::Triangles );
+	}
+
 	// カメラへ向ける画像: 草・旗・回る星・脈打つ心臓・揺れるランタン。基準点の印（小さな赤い球）も置く。光は受けない
 	void RecordBillboards( FDrawContext& CommandList, const FShapes3DDemoState& State )
 	{
@@ -292,6 +415,52 @@ namespace
 		CommandList.Sphere3D( LanternHook, MarkerRadius, 8, FColor32( 255, 60, 60 ) );
 		CommandList.UseLighting( State.bLighting );
 	}
+}
+
+bool NShapes3DScenery::MakeBuffers( FShapes3DDemoState& State )
+{
+	// 木 1 本の形
+	TArray<FVertex3D> TreeVertices;
+	TArray<uint16> TreeIndices;
+	BuildTreeMesh( TreeVertices, TreeIndices );
+	State.TreeVertices = CVertexBuffer::Create( TreeVertices );
+	State.TreeIndices = CIndexBuffer::Create( TreeIndices );
+
+	// 池の水面: 頂点は毎フレーム書き換える。添字は、格子の各マスを 2 つの三角形にしたもの（変わらない）
+	TArray<FVertex3D> WaterVertices;
+	BuildWaterVertices( 0.0f, WaterVertices );
+	State.WaterVertices = CVertexBuffer::Create( WaterVertices );
+	const int32 Points = PondCells + 1;
+	TArray<uint16> WaterIndices;
+	for ( int32 Row = 0; Row < PondCells; ++Row )
+	{
+		for ( int32 Column = 0; Column < PondCells; ++Column )
+		{
+			const uint16 TopLeft = static_cast<uint16>( Row * Points + Column );
+			const uint16 TopRight = static_cast<uint16>( TopLeft + 1 );
+			const uint16 BottomLeft = static_cast<uint16>( TopLeft + Points );
+			const uint16 BottomRight = static_cast<uint16>( BottomLeft + 1 );
+			// 上から見て、表が上を向く並び（Z が増える向きが奥）
+			const uint16 Square[6] = { TopLeft, BottomLeft, TopRight, TopRight, BottomLeft, BottomRight };
+			for ( const uint16 Index : Square )
+			{
+				WaterIndices.Add( Index );
+			}
+		}
+	}
+	State.WaterIndices = CIndexBuffer::Create( WaterIndices );
+	return State.TreeVertices.IsValid() && State.TreeIndices.IsValid() && State.WaterVertices.IsValid() && State.WaterIndices.IsValid();
+}
+
+void NShapes3DScenery::UpdateWater( FShapes3DDemoState& State )
+{
+	if ( !State.WaterVertices.IsValid() )
+	{
+		return;
+	}
+	TArray<FVertex3D> Vertices;
+	BuildWaterVertices( State.Time, Vertices );
+	State.WaterVertices->SetData( 0, Vertices );
 }
 
 bool NShapes3DScenery::MakeTextures( CAssetManager& Assets, FShapes3DDemoState& State )
@@ -415,6 +584,8 @@ TArray<NShapes3DScenery::FStageLabel> NShapes3DScenery::MakeLabels( const FShape
 	Labels.Add( FStageLabel { "Sprite3D", StarSpritePosition + FVector3( 0.0f, 2.6f, 0.0f ) } );
 	Labels.Add( FStageLabel { "SpriteStretch3D", HeartSpritePosition + FVector3( 0.0f, 2.6f, 0.0f ) } );
 	Labels.Add( FStageLabel { "SpritePivot3D", LanternHook + FVector3( 0.0f, 1.2f, 0.0f ) } );
+	Labels.Add( FStageLabel { "Vertex buffer (updated every frame)", PondCenter + FVector3( 0.0f, 2.0f, 0.0f ) } );
+	Labels.Add( FStageLabel { "Forest: one mesh buffer, drawn many times", FVector3( -9.0f, 6.0f, 12.0f ) } );
 	return Labels;
 }
 
@@ -432,6 +603,7 @@ void NShapes3DScenery::RecordStage( FDrawContext& CommandList, const FShapes3DDe
 
 	RecordFloor( CommandList, State );
 	CommandList.SurfaceMaterial( FSurfaceMaterial::MakeMatte() );
+	RecordForest( CommandList, State );
 	RecordPines( CommandList, State );
 	RecordStars( CommandList );
 	RecordFireflies( CommandList, State );
@@ -452,6 +624,7 @@ void NShapes3DScenery::RecordStage( FDrawContext& CommandList, const FShapes3DDe
 	RecordGem( CommandList, State );
 	RecordWave( CommandList, State );
 	RecordUmbrella( CommandList );
+	RecordWater( CommandList, State );
 	CommandList.Culling( EDrawCulling::None );
 
 	RecordBillboards( CommandList, State );

@@ -12,7 +12,7 @@
 namespace
 {
 	// サンプル集への登録（一覧に出す名前・説明・順番）
-	const TSampleRegistrar<CShapes3DSample> Registrar( FSampleInfo { "Shapes3D", "Shapes3D: 3D shapes and primitives", "A night plaza for the 3D shape commands: cones (Cone3D), stars (Pixel3D), and vertex lists drawn as points, lines, line strips, triangles, strips and fans (Primitive3D / PrimitiveIndexed3D), plus images that face the camera with a pivot, four free corners, scale and rotation (BillboardPivot3D, BillboardQuad3D, Sprite3D, SpriteStretch3D, SpritePivot3D). Number keys switch wireframe, fog, culling, the billboard pivot, translucency and lighting.", 38 } );
+	const TSampleRegistrar<CShapes3DSample> Registrar( FSampleInfo { "Shapes3D", "Shapes3D: shapes, primitives, buffers", "A night plaza for the 3D shape commands: cones (Cone3D), stars (Pixel3D), and vertex lists drawn as points, lines, line strips, triangles, strips and fans (Primitive3D / PrimitiveIndexed3D), plus images that face the camera with a pivot, four free corners, scale and rotation (BillboardPivot3D, BillboardQuad3D, Sprite3D, SpriteStretch3D, SpritePivot3D). Vertex and index buffers draw a forest (one tree mesh reused with different transforms) and a pond (a grid whose vertices are rewritten every frame). Number keys switch wireframe, fog, culling, the billboard pivot, translucency, lighting and the number of trees.", 38 } );
 
 	// 描画順（小さいほうが奥）: 3D の広場 → 名札と一覧
 	constexpr int32 StageOrder = 0;
@@ -30,7 +30,7 @@ void CShapes3DSample::OnEnter()
 		return;
 	}
 	State = MakeShared<FShapes3DDemoState>();
-	if ( !NShapes3DScenery::MakeTextures( *Assets, *State ) )
+	if ( !NShapes3DScenery::MakeTextures( *Assets, *State ) || !NShapes3DScenery::MakeBuffers( *State ) )
 	{
 		return;
 	}
@@ -41,7 +41,17 @@ void CShapes3DSample::OnEnter()
 	SpawnObject<CShapes3DPanel>( State, Font )->SetDrawOrder( PanelOrder );
 }
 
+void CShapes3DSample::OnSampleTick( float32 DeltaTime )
+{
+	// 頂点バッファの書き換えは、メインスレッドだけ（シーンの更新は、メインスレッド）
+	if ( State.IsValid() )
+	{
+		NShapes3DScenery::UpdateWater( *State );
+	}
+	(void)DeltaTime;
+}
+
 void CShapes3DSample::OnSampleDraw( FImmediateDraw& Screen )
 {
-	Screen.Text( 16, 56, "Shapes3D: keys 1-6 switch the settings, drag = orbit, wheel = zoom, R = auto orbit.", FColor32::Gray );
+	Screen.Text( 16, 56, "Shapes3D: keys 1-7 switch the settings, drag = orbit, wheel = zoom, R = auto orbit.", FColor32::Gray );
 }

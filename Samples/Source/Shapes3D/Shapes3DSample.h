@@ -16,6 +16,7 @@ class CShapes3DSample : public CSampleScene
 {
 protected:
 	void OnEnter() override;
+	void OnSampleTick( float32 DeltaTime ) override;
 	void OnSampleDraw( FImmediateDraw& Screen ) override;
 
 private:

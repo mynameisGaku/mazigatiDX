@@ -8,7 +8,7 @@ namespace
 	constexpr int32 PanelMargin = 16;
 	constexpr int32 PanelWidth = 520;
 	constexpr int32 LineHeight = 22;
-	constexpr int32 NumLines = 6;
+	constexpr int32 NumLines = 7;
 
 	const char* OnOff( bool bValue )
 	{
@@ -89,6 +89,7 @@ void CShapes3DPanel::Draw( FDrawContext& CommandList )
 		FString::Printf( "4  Billboard pivot                %s", State->bStandOnGround ? "feet (0.5, 1)" : "center (0.5, 0.5)" ),
 		FString::Printf( "5  Translucent images             %s", OnOff( State->bTranslucent ) ),
 		FString::Printf( "6  Lighting                       %s", OnOff( State->bLighting ) ),
+		FString::Printf( "7  Forest (one reused buffer)     %d trees", FShapes3DDemoState::ForestSizes[State->ForestLevel] ),
 	};
 	for ( int32 Index = 0; Index < NumLines; ++Index )
 	{
