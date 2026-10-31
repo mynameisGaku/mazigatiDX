@@ -3,6 +3,7 @@
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Interfaces/Asset/FontTypes.h"
 #include "Library/Core/Interfaces/Asset/StaticModelSurfaceData.h"
+#include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Core/Interfaces/Render/MeshTypes.h"
 #include "Library/Core/Interfaces/Render/RenderTargetTypes.h"
 #include "Library/Math/Color.h"
@@ -163,6 +164,16 @@ public:
 	virtual bool CreateMeshBuffers( const FMeshVertex* /*Vertices*/, int32 /*NumVertices*/, const uint32* /*Indices*/, int32 /*NumIndices*/, int32& /*OutVertexBuffer*/, int32& /*OutIndexBuffer*/ ) { return false; }
 	virtual void DeleteVertexBuffer( int32 /*VertexBuffer*/ ) {}
 	virtual void DeleteIndexBuffer( int32 /*IndexBuffer*/ ) {}
+
+	// 汎用の頂点バッファ・インデックスバッファ（CVertexBuffer / CIndexBuffer）。バッファは、メインスレッドだけで作り・書き換える。解放は DeleteVertexBuffer / DeleteIndexBuffer
+	// 頂点 NumVertices 個の空の（0 で埋まった）頂点バッファを作る。作れなければ負（NAsset::InvalidHandle）
+	virtual int32 MakeVertexBuffer( int32 /*NumVertices*/ ) { return -1; }
+	// 頂点バッファの StartIndex から、頂点 NumVertices 個を書く。範囲が収まらない・無効なハンドルなら false
+	virtual bool WriteVertexBuffer( int32 /*VertexBuffer*/, int32 /*StartIndex*/, const FDrawVertex3D* /*Vertices*/, int32 /*NumVertices*/ ) { return false; }
+	// 添字 NumIndices 個の空のインデックスバッファを作る（b32Bit が true なら 32 ビット、false なら 16 ビット）。作れなければ負
+	virtual int32 MakeIndexBuffer( int32 /*NumIndices*/, bool /*b32Bit*/ ) { return -1; }
+	// インデックスバッファの StartIndex から、添字 NumIndices 個（バッファが 16 ビットなら uint16、32 ビットなら uint32 の並び）を書く。範囲が収まらない・無効なハンドルなら false
+	virtual bool WriteIndexBuffer( int32 /*IndexBuffer*/, int32 /*StartIndex*/, const void* /*Indices*/, int32 /*NumIndices*/ ) { return false; }
 
 	//-------------------------------------------------------------------------
 	// フォント

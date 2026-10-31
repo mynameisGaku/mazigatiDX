@@ -157,6 +157,9 @@
     <ClCompile Include="Library\Framework\Asset\FontFile.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\IndexBuffer.cpp">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Asset\MeshBuffer.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
@@ -182,6 +185,9 @@
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Texture.cpp">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\VertexBuffer.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\WorldAsset.cpp">
@@ -557,6 +563,9 @@
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\DxLibShapes3D.cpp">
+      <Filter>Library\Platform\DxLib</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\DxLibVertex.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\EffectMaterialRenderer.cpp">
@@ -1275,7 +1284,13 @@
     <ClInclude Include="Library\Core\Interfaces\Render\IImage.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IIndexBuffer.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\ImageTypes.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IVertexBuffer.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\MeshGeometryChunk.h">
@@ -1461,6 +1476,9 @@
     <ClInclude Include="Library\Framework\Asset\FontFile.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\IndexBuffer.h">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Asset\MeshBuffer.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
@@ -1486,6 +1504,9 @@
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Texture.h">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\VertexBuffer.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\WorldAsset.h">
@@ -1654,6 +1675,9 @@
       <Filter>Library\Framework\Profiler</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\Billboard.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\BufferRange.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\Camera.h">
@@ -1933,6 +1957,9 @@
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\DxLibShapes3D.h">
+      <Filter>Library\Platform\DxLib</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\DxLibVertex.h">
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\EffectMaterialRenderer.h">

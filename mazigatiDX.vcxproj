@@ -117,6 +117,7 @@
     <ClCompile Include="Library\Framework\Asset\EffectAsset.cpp" />
     <ClCompile Include="Library\Framework\Asset\Font.cpp" />
     <ClCompile Include="Library\Framework\Asset\FontFile.cpp" />
+    <ClCompile Include="Library\Framework\Asset\IndexBuffer.cpp" />
     <ClCompile Include="Library\Framework\Asset\MeshBuffer.cpp" />
     <ClCompile Include="Library\Framework\Asset\Model.cpp" />
     <ClCompile Include="Library\Framework\Asset\ModelAnimationAsset.cpp" />
@@ -126,6 +127,7 @@
     <ClCompile Include="Library\Framework\Asset\SpriteSheet.cpp" />
     <ClCompile Include="Library\Framework\Asset\StaticModelSurface.cpp" />
     <ClCompile Include="Library\Framework\Asset\Texture.cpp" />
+    <ClCompile Include="Library\Framework\Asset\VertexBuffer.cpp" />
     <ClCompile Include="Library\Framework\Asset\WorldAsset.cpp" />
     <ClCompile Include="Library\Framework\Asset\Import\FbxImporter.cpp" />
     <ClCompile Include="Library\Framework\Asset\Import\ImportedScene.cpp" />
@@ -251,6 +253,7 @@
     <ClCompile Include="Library\Platform\DxLib\DxLibRenderState3D.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibRibbonMesh.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibShapes3D.cpp" />
+    <ClCompile Include="Library\Platform\DxLib\DxLibVertex.cpp" />
     <ClCompile Include="Library\Platform\DxLib\EffectMaterialRenderer.cpp" />
     <ClCompile Include="Library\Platform\DxLib\EffectPreviewSurface.cpp" />
     <ClCompile Include="Library\Platform\SDL\SdlGamepadInput.cpp" />
@@ -491,7 +494,9 @@
     <ClInclude Include="Library\Core\Interfaces\Render\DrawModelMaterial.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\DrawRibbon.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IImage.h" />
+    <ClInclude Include="Library\Core\Interfaces\Render\IIndexBuffer.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\ImageTypes.h" />
+    <ClInclude Include="Library\Core\Interfaces\Render\IVertexBuffer.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\MeshGeometryChunk.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\MeshTypes.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\RenderTargetTypes.h" />
@@ -553,6 +558,7 @@
     <ClInclude Include="Library\Framework\Asset\EffectAsset.h" />
     <ClInclude Include="Library\Framework\Asset\Font.h" />
     <ClInclude Include="Library\Framework\Asset\FontFile.h" />
+    <ClInclude Include="Library\Framework\Asset\IndexBuffer.h" />
     <ClInclude Include="Library\Framework\Asset\MeshBuffer.h" />
     <ClInclude Include="Library\Framework\Asset\Model.h" />
     <ClInclude Include="Library\Framework\Asset\ModelAnimationAsset.h" />
@@ -562,6 +568,7 @@
     <ClInclude Include="Library\Framework\Asset\SpriteSheet.h" />
     <ClInclude Include="Library\Framework\Asset\StaticModelSurface.h" />
     <ClInclude Include="Library\Framework\Asset\Texture.h" />
+    <ClInclude Include="Library\Framework\Asset\VertexBuffer.h" />
     <ClInclude Include="Library\Framework\Asset\WorldAsset.h" />
     <ClInclude Include="Library\Framework\Asset\Import\FbxImporter.h" />
     <ClInclude Include="Library\Framework\Asset\Import\ImportedScene.h" />
@@ -618,6 +625,7 @@
     <ClInclude Include="Library\Framework\Profiler\ProfilerExport.h" />
     <ClInclude Include="Library\Framework\Profiler\ProfilerSubsystem.h" />
     <ClInclude Include="Library\Framework\Render\Billboard.h" />
+    <ClInclude Include="Library\Framework\Render\BufferRange.h" />
     <ClInclude Include="Library\Framework\Render\Camera.h" />
     <ClInclude Include="Library\Framework\Render\DrawContext.h" />
     <ClInclude Include="Library\Framework\Render\GraphFilter.h" />
@@ -711,6 +719,7 @@
     <ClInclude Include="Library\Platform\DxLib\DxLibRenderState3D.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibRibbonMesh.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibShapes3D.h" />
+    <ClInclude Include="Library\Platform\DxLib\DxLibVertex.h" />
     <ClInclude Include="Library\Platform\DxLib\EffectMaterialRenderer.h" />
     <ClInclude Include="Library\Platform\DxLib\EffectPreviewSurface.h" />
     <ClInclude Include="Library\Platform\SDL\SdlGamepadInput.h" />

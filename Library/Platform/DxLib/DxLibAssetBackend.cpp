@@ -7,6 +7,7 @@
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
+#include "Library/Platform/DxLib/DxLibVertex.h"
 
 #include <psapi.h>   // windows.h（DxLib.h が読み込む）より後に
 
@@ -687,6 +688,43 @@ void CDxLibAssetBackend::DeleteVertexBuffer( int32 VertexBuffer )
 void CDxLibAssetBackend::DeleteIndexBuffer( int32 IndexBuffer )
 {
 	if ( IndexBuffer >= 0 ) ::DeleteIndexBuffer( IndexBuffer );
+}
+
+int32 CDxLibAssetBackend::MakeVertexBuffer( int32 NumVertices )
+{
+	return NumVertices >= 1 ? ::CreateVertexBuffer( NumVertices, DX_VERTEX_TYPE_NORMAL_3D ) : NAsset::InvalidHandle;
+}
+
+bool CDxLibAssetBackend::WriteVertexBuffer( int32 VertexBuffer, int32 StartIndex, const FDrawVertex3D* Vertices, int32 NumVertices )
+{
+	if ( VertexBuffer < 0 || Vertices == nullptr || StartIndex < 0 || NumVertices < 1 )
+	{
+		return false;
+	}
+	TArray<VERTEX3D> Converted;
+	Converted.SetNum( NumVertices );
+	for ( int32 Index = 0; Index < NumVertices; ++Index )
+	{
+		if ( !NDxLibVertex::ToDxVertex( Vertices[Index], Converted[Index] ) )
+		{
+			return false;
+		}
+	}
+	return ::SetVertexBufferData( StartIndex, Converted.GetData(), NumVertices, VertexBuffer ) == 0;
+}
+
+int32 CDxLibAssetBackend::MakeIndexBuffer( int32 NumIndices, bool b32Bit )
+{
+	return NumIndices >= 1 ? ::CreateIndexBuffer( NumIndices, b32Bit ? DX_INDEX_TYPE_32BIT : DX_INDEX_TYPE_16BIT ) : NAsset::InvalidHandle;
+}
+
+bool CDxLibAssetBackend::WriteIndexBuffer( int32 IndexBuffer, int32 StartIndex, const void* Indices, int32 NumIndices )
+{
+	if ( IndexBuffer < 0 || Indices == nullptr || StartIndex < 0 || NumIndices < 1 )
+	{
+		return false;
+	}
+	return ::SetIndexBufferData( StartIndex, Indices, NumIndices, IndexBuffer ) == 0;
 }
 
 int32 CDxLibAssetBackend::GetModelFrameCount( int32 Model )

@@ -22,6 +22,9 @@
     <ClCompile Include="Source\Scene\TitleScene.cpp">
       <Filter>Source\Scene</Filter>
     </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestBuffers3D.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
     <ClCompile Include="Source\SelfTest\AssetSelfTestCamera.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
@@ -395,6 +398,9 @@
     </ClInclude>
     <ClInclude Include="Source\Scene\TitleScene.h">
       <Filter>Source\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\AssetSelfTestBuffers3D.h">
+      <Filter>Source\SelfTest</Filter>
     </ClInclude>
     <ClInclude Include="Source\SelfTest\AssetSelfTestCamera.h">
       <Filter>Source\SelfTest</Filter>

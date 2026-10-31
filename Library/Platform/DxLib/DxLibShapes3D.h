@@ -10,6 +10,7 @@
 //     BillboardPivot3D -> DrawBillboard3D / BillboardQuad3D -> DrawModiBillboard3D
 //     Sprite3D -> DrawRotaGraph3D / SpriteStretch3D -> DrawExtendGraph3D / SpritePivot3D -> DrawRota2Graph3D
 //     Primitive3D -> DrawPrimitive3D / DrawPrimitiveIndexed3D
+//     PrimitiveBuffer3D -> DrawPrimitive3D_UseVertexBuffer2 / DrawPrimitiveIndexed3D_UseVertexBuffer2（頂点バッファ・インデックスバッファは、DxLibAssetBackend が作る）
 //   画像は常に透過して描く（TransFlag = TRUE）。
 //   座標の向きの違い: DxLib の DrawBillboard3D / DrawRota2Graph3D は、基準点の縦を画像の下から数える（上向き）が、
 //   フレームワークは Quad3D や 2D の SpritePivot と同じに、画像の左上から数える。実行のときに、縦を入れ替えて渡す。

@@ -4,6 +4,7 @@
 #include "Library/Core/Collection/Array.h"
 #include "Library/Math/MathUtils.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
+#include "Library/Platform/DxLib/DxLibVertex.h"
 
 namespace
 {
@@ -51,25 +52,6 @@ namespace
 		return DX_PRIMTYPE_TRIANGLELIST;
 	}
 
-	// 命令の中の頂点 1 つを、DxLib の頂点にする。数値が有限でなければ false
-	bool ToVertex( const FDrawVertex3D& Source, VERTEX3D& OutVertex )
-	{
-		if ( !AreFinite( Source.Position ) || !AreFinite( Source.Normal ) || !NMath::IsFinite( Source.U ) || !NMath::IsFinite( Source.V ) || !NMath::IsFinite( Source.SubU ) || !NMath::IsFinite( Source.SubV ) )
-		{
-			return false;
-		}
-		OutVertex = VERTEX3D {};
-		OutVertex.pos = ToVector( Source.Position );
-		OutVertex.norm = ToVector( Source.Normal );
-		OutVertex.dif = GetColorU8( Source.Diffuse[0], Source.Diffuse[1], Source.Diffuse[2], Source.Diffuse[3] );
-		OutVertex.spc = GetColorU8( Source.Specular[0], Source.Specular[1], Source.Specular[2], Source.Specular[3] );
-		OutVertex.u = Source.U;
-		OutVertex.v = Source.V;
-		OutVertex.su = Source.SubU;
-		OutVertex.sv = Source.SubV;
-		return true;
-	}
-
 	// 頂点の並びを、点・線・三角形として描く。命令の大きさ・数・添字が合わない、数値が有限でないときは、何も描かない（DxLib に、範囲の外を読ませない）
 	void DrawPrimitive( const FDrawCommandView& Command )
 	{
@@ -99,7 +81,7 @@ namespace
 		{
 			FDrawVertex3D Source;
 			FMemory::Memcpy( &Source, Command.Data + DataWords + static_cast<size_t>( Index ) * VertexWords, sizeof( Source ) );
-			if ( !ToVertex( Source, Vertices[Index] ) )
+			if ( !NDxLibVertex::ToDxVertex( Source, Vertices[Index] ) )
 			{
 				return;
 			}
@@ -123,6 +105,33 @@ namespace
 			}
 		}
 		DrawPrimitiveIndexed3D( Vertices.GetData(), Data.NumVertices, Indices.GetData(), Data.NumIndices, ToDxPrimitive( Type ), Graph, TRUE );
+	}
+
+	// 頂点バッファ（と、あればインデックスバッファ）の一部を描く。使う範囲・数が合わない壊れた命令は、描かない（DxLib は、添字なしの範囲を確かめないので、バッファの外を読ませない）
+	void DrawPrimitiveBuffer( const FDrawCommandView& Command )
+	{
+		if ( !Command.CanRead<FDrawPrimitiveBuffer3DData>() )
+		{
+			return;
+		}
+		const FDrawPrimitiveBuffer3DData Data = Command.Read<FDrawPrimitiveBuffer3DData>();
+		const EDrawPrimitive Type = static_cast<EDrawPrimitive>( Data.Type );
+		const bool bIndexed = Data.IndexBuffer >= 0;
+		// 使う範囲（添字ありなら添字の範囲、なしなら頂点の範囲）が、バッファの大きさに収まるか（足し算は、溢れないよう 64 ビットで）。範囲の外のつなぎ方は、使えない数として弾かれる
+		const int32 NumBuffer = bIndexed ? Data.NumBufferIndices : Data.NumBufferVertices;
+		if ( Data.Start < 0 || Data.Num < 1 || static_cast<int64>( Data.Start ) + Data.Num > NumBuffer || !NDrawPrimitive::IsValidCount( Type, Data.Num ) )
+		{
+			return;
+		}
+		// 画像なしは、DX_NONE_GRAPH（-1 ではない。-1 だと何も描かれない）
+		const int Graph = Data.Texture >= 0 ? Data.Texture : DX_NONE_GRAPH;
+		if ( !bIndexed )
+		{
+			DrawPrimitive3D_UseVertexBuffer2( Data.VertexBuffer, ToDxPrimitive( Type ), Data.Start, Data.Num, Graph, TRUE );
+			return;
+		}
+		// 頂点の範囲は、バッファ全体を渡す（実測: 範囲は絵に影響しない。0 個だけ失敗する）
+		DrawPrimitiveIndexed3D_UseVertexBuffer2( Data.VertexBuffer, Data.IndexBuffer, ToDxPrimitive( Type ), Data.BaseVertex, 0, Data.NumBufferVertices, Data.Start, Data.Num, Graph, TRUE );
 	}
 }
 
@@ -226,6 +235,11 @@ namespace NDxLibShapes3D
 		case EDrawCommand::Primitive3D:
 		{
 			DrawPrimitive( Command );
+			return true;
+		}
+		case EDrawCommand::PrimitiveBuffer3D:
+		{
+			DrawPrimitiveBuffer( Command );
 			return true;
 		}
 		default:

@@ -240,6 +240,42 @@ bool FDrawContext::PushPrimitive3D( const FVertex3D* Vertices, int32 NumVertices
 	return true;
 }
 
+bool FDrawContext::PushPrimitiveBuffer3D( FVertexBufferHandle Vertices, FIndexBufferHandle Indices, bool bIndexed, EDrawPrimitive Type, int32 Texture, const FBufferRange& Range )
+{
+	if ( !Vertices.IsValid() || ( bIndexed && !Indices.IsValid() ) )
+	{
+		return false;
+	}
+	// 添字なしでは、BaseVertex は意味がない（0 のまま）
+	if ( !bIndexed && Range.BaseVertex != 0 )
+	{
+		return false;
+	}
+	// 使う範囲（添字ありなら添字の範囲、なしなら頂点の範囲）が、バッファに収まり、つなぎ方に合う数か。足し算は、溢れないよう 64 ビットで
+	const int32 NumBuffer = bIndexed ? Indices.NumIndices : Vertices.NumVertices;
+	if ( Range.Start < 0 )
+	{
+		return false;
+	}
+	const int64 Num = Range.Num < 0 ? static_cast<int64>( NumBuffer ) - Range.Start : Range.Num;
+	if ( Range.Start + Num > NumBuffer || !NDrawPrimitive::IsValidCount( Type, static_cast<int32>( Num ) ) )
+	{
+		return false;
+	}
+	FDrawPrimitiveBuffer3DData Data;
+	Data.Type = static_cast<int32>( Type );
+	Data.Texture = Texture;
+	Data.VertexBuffer = Vertices.Value;
+	Data.NumBufferVertices = Vertices.NumVertices;
+	Data.IndexBuffer = bIndexed ? Indices.Value : -1;
+	Data.NumBufferIndices = bIndexed ? Indices.NumIndices : 0;
+	Data.Start = Range.Start;
+	Data.Num = static_cast<int32>( Num );
+	Data.BaseVertex = Range.BaseVertex;
+	Push( EDrawCommand::PrimitiveBuffer3D, 0, Data );
+	return true;
+}
+
 void FDrawContext::Text( int32 X, int32 Y, const char* String, const FColor32& Color )
 {
 	constexpr size_t DataWords = sizeof( FDrawTextData ) / 4;

@@ -991,6 +991,7 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 		case EDrawCommand::SpriteStretch3D:
 		case EDrawCommand::SpritePivot3D:
 		case EDrawCommand::Primitive3D:
+		case EDrawCommand::PrimitiveBuffer3D:
 		{
 			NDxLibShapes3D::Execute( Command );
 			break;

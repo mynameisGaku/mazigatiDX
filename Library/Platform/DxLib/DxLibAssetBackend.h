@@ -60,6 +60,10 @@ public:
 	bool CreateMeshBuffers( const FMeshVertex* Vertices, int32 NumVertices, const uint32* Indices, int32 NumIndices, int32& OutVertexBuffer, int32& OutIndexBuffer ) override;
 	void DeleteVertexBuffer( int32 VertexBuffer ) override;
 	void DeleteIndexBuffer( int32 IndexBuffer ) override;
+	int32 MakeVertexBuffer( int32 NumVertices ) override;
+	bool WriteVertexBuffer( int32 VertexBuffer, int32 StartIndex, const FDrawVertex3D* Vertices, int32 NumVertices ) override;
+	int32 MakeIndexBuffer( int32 NumIndices, bool b32Bit ) override;
+	bool WriteIndexBuffer( int32 IndexBuffer, int32 StartIndex, const void* Indices, int32 NumIndices ) override;
 	int32 GetModelFrameCount( int32 Model ) override;
 	FString GetModelFrameName( int32 Model, int32 FrameIndex ) override;
 	bool SaveModelToMV1( int32 Model, const FString& Path, const FModelSaveOptions& Options, FString& OutWarning ) override;

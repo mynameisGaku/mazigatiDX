@@ -6,6 +6,8 @@
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Core/Interfaces/Render/IImage.h"
+#include "Library/Core/Interfaces/Render/IIndexBuffer.h"
+#include "Library/Core/Interfaces/Render/IVertexBuffer.h"
 #include "Library/Core/Interfaces/Render/DrawDistortedMaterialQuad.h"
 #include "Library/Core/Interfaces/Render/DrawDistortedMaterialRibbon.h"
 #include "Library/Core/Interfaces/Render/DrawModelMaterial.h"
@@ -15,6 +17,7 @@
 #include "Library/Core/Interfaces/Render/DrawRibbon.h"
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Core/Types/Numeric.h"
+#include "Library/Framework/Render/BufferRange.h"
 #include "Library/Framework/Render/Camera.h"
 #include "Library/Framework/Render/GraphFilter.h"
 #include "Library/Framework/Render/Lighting.h"
@@ -1302,6 +1305,63 @@ public:
 		return PrimitiveIndexed3D( Vertices, NumVertices, Indices, NumIndices, Type, ToHandle( Source ) );
 	}
 
+	//-------------------------------------------------------------------------
+	// 頂点バッファ・インデックスバッファ（GPU に置いた頂点を描く）
+	//   頂点バッファ（CVertexBuffer など。IVertexBuffer を実装したもの）とインデックスバッファ（CIndexBuffer など）は、TSharedPtr・ポインター・参照・ハンドル（FVertexBufferHandle / FIndexBufferHandle）のどれでも渡せる。
+	//   一度作ったバッファを、何度も描ける（頂点を毎回記録しなくてよい。命令は、バッファの指定だけで小さい）。WorldMatrix / PushWorldMatrix で、位置を変えて、使い回せる。
+	//   記録してから、描かれるまで、バッファを手放さないこと。無効なバッファ（nullptr・作れなかった）・無効な画像・範囲やつなぎ方に合わない数のときは、何も記録せず false を返す。
+	//   DxLib の実測: 頂点バッファの描画には、Blend と Tint が効かない（頂点の色とアルファで表す）。光・フォグ・Culling・変換・Depth・頂点のアルファは、Primitive3D と同じに効く。
+	//   添字が指す頂点が、頂点バッファの範囲の外のとき（BaseVertex を足した先も）は、DxLib は失敗を返し、先に処理した三角形だけを描くことがある（描かれるものは決まらないが、落ちない）。収めるのは、呼ぶ側の責任。
+	//-------------------------------------------------------------------------
+	// 頂点バッファの頂点を、つなぎ方 Type で描く（DrawPrimitive3D_UseVertexBuffer2）。Range の Start 番目から Num 個（Num が負なら最後まで）を使う（BaseVertex は 0 のまま）。
+	// 数は、つなぎ方に合うこと（Primitive3D と同じ規則）
+	bool PrimitiveBuffer3D( FVertexBufferHandle Vertices, EDrawPrimitive Type, const FBufferRange& Range = FBufferRange() )
+	{
+		return PushPrimitiveBuffer3D( Vertices, FIndexBufferHandle(), false, Type, -1, Range );
+	}
+
+	// 画像 Texture を貼る版（頂点の画像の座標で貼る）
+	bool PrimitiveBuffer3D( FVertexBufferHandle Vertices, EDrawPrimitive Type, FImageHandle Texture, const FBufferRange& Range = FBufferRange() )
+	{
+		return Texture.IsValid() && PushPrimitiveBuffer3D( Vertices, FIndexBufferHandle(), false, Type, Texture.Value, Range );
+	}
+
+	template<typename TVertices, typename = TEnableIfT<!bIsSame<TVertices, FVertexBufferHandle>>>
+	bool PrimitiveBuffer3D( const TVertices& Vertices, EDrawPrimitive Type, const FBufferRange& Range = FBufferRange() )
+	{
+		return PrimitiveBuffer3D( ToVertexHandle( Vertices ), Type, Range );
+	}
+
+	template<typename TVertices, typename TImage, typename = TEnableIfT<!bIsSame<TImage, FBufferRange>>>
+	bool PrimitiveBuffer3D( const TVertices& Vertices, EDrawPrimitive Type, const TImage& Texture, const FBufferRange& Range = FBufferRange() )
+	{
+		return PrimitiveBuffer3D( ToVertexHandle( Vertices ), Type, ToHandle( Texture ), Range );
+	}
+
+	// 添字で頂点を選んで描く（DrawPrimitiveIndexed3D_UseVertexBuffer2）。Range の Start 番目から Num 個（Num が負なら最後まで）の添字を使い、各添字に BaseVertex を足した頂点を描く。
+	// 数は、つなぎ方に合うこと（添字の数について。Primitive3D と同じ規則）
+	bool PrimitiveIndexedBuffer3D( FVertexBufferHandle Vertices, FIndexBufferHandle Indices, EDrawPrimitive Type, const FBufferRange& Range = FBufferRange() )
+	{
+		return PushPrimitiveBuffer3D( Vertices, Indices, true, Type, -1, Range );
+	}
+
+	bool PrimitiveIndexedBuffer3D( FVertexBufferHandle Vertices, FIndexBufferHandle Indices, EDrawPrimitive Type, FImageHandle Texture, const FBufferRange& Range = FBufferRange() )
+	{
+		return Texture.IsValid() && PushPrimitiveBuffer3D( Vertices, Indices, true, Type, Texture.Value, Range );
+	}
+
+	template<typename TVertices, typename TIndices, typename = TEnableIfT<!bIsSame<TVertices, FVertexBufferHandle> || !bIsSame<TIndices, FIndexBufferHandle>>>
+	bool PrimitiveIndexedBuffer3D( const TVertices& Vertices, const TIndices& Indices, EDrawPrimitive Type, const FBufferRange& Range = FBufferRange() )
+	{
+		return PrimitiveIndexedBuffer3D( ToVertexHandle( Vertices ), ToIndexHandle( Indices ), Type, Range );
+	}
+
+	template<typename TVertices, typename TIndices, typename TImage, typename = TEnableIfT<!bIsSame<TImage, FBufferRange>>>
+	bool PrimitiveIndexedBuffer3D( const TVertices& Vertices, const TIndices& Indices, EDrawPrimitive Type, const TImage& Texture, const FBufferRange& Range = FBufferRange() )
+	{
+		return PrimitiveIndexedBuffer3D( ToVertexHandle( Vertices ), ToIndexHandle( Indices ), Type, ToHandle( Texture ), Range );
+	}
+
 	// 画像を貼った 3D の四角形（ビルボード・向きが固定の板）。向きの決め方と各項目は FDrawQuad3DData を参照。
 	// Camera / CameraY は、記録のときにはカメラを知らない。実行のとき（IDrawExecutor）に、そのときのカメラで向きを決める
 	FORCEINLINE void Quad3D( const FDrawQuad3DData& Data )
@@ -1432,6 +1492,52 @@ private:
 
 	template<typename... TValues>
 	static FORCEINLINE bool AllFinite( TValues... Values ) { return ( NMath::IsFinite( Values ) && ... ); }
+
+	// 描画に渡されたバッファから、ハンドルを取り出す（記録のとき、1 回読む）。nullptr は、無効なハンドルになる
+	static FORCEINLINE FVertexBufferHandle ToVertexHandle( FVertexBufferHandle Handle )
+	{
+		return Handle;
+	}
+
+	static FORCEINLINE FVertexBufferHandle ToVertexHandle( const IVertexBuffer* Buffer )
+	{
+		return Buffer != nullptr ? Buffer->GetVertexBufferHandle() : FVertexBufferHandle();
+	}
+
+	static FORCEINLINE FVertexBufferHandle ToVertexHandle( const IVertexBuffer& Buffer )
+	{
+		return Buffer.GetVertexBufferHandle();
+	}
+
+	template<typename T>
+	static FORCEINLINE FVertexBufferHandle ToVertexHandle( const TSharedPtr<T>& Buffer )
+	{
+		return ToVertexHandle( Buffer.Get() );
+	}
+
+	static FORCEINLINE FIndexBufferHandle ToIndexHandle( FIndexBufferHandle Handle )
+	{
+		return Handle;
+	}
+
+	static FORCEINLINE FIndexBufferHandle ToIndexHandle( const IIndexBuffer* Buffer )
+	{
+		return Buffer != nullptr ? Buffer->GetIndexBufferHandle() : FIndexBufferHandle();
+	}
+
+	static FORCEINLINE FIndexBufferHandle ToIndexHandle( const IIndexBuffer& Buffer )
+	{
+		return Buffer.GetIndexBufferHandle();
+	}
+
+	template<typename T>
+	static FORCEINLINE FIndexBufferHandle ToIndexHandle( const TSharedPtr<T>& Buffer )
+	{
+		return ToIndexHandle( Buffer.Get() );
+	}
+
+	// PrimitiveBuffer3D / PrimitiveIndexedBuffer3D の記録（使えない値のときは何も記録せず false）
+	bool PushPrimitiveBuffer3D( FVertexBufferHandle Vertices, FIndexBufferHandle Indices, bool bIndexed, EDrawPrimitive Type, int32 Texture, const FBufferRange& Range );
 
 	// Primitive3D / PrimitiveIndexed3D の記録（使えない値のときは何も記録せず false）。非インデックスは Indices が nullptr・NumIndices が 0
 	bool PushPrimitive3D( const FVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, EDrawPrimitive Type, int32 Texture );

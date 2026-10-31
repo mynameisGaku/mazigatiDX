@@ -130,6 +130,8 @@ enum class EDrawCommand : uint8
 	SpriteStretch3D,  // FDrawSpriteStretch3DData（DrawExtendGraph3D）
 	SpritePivot3D,    // FDrawSpritePivot3DData。FlipX / FlipY（DrawRota2Graph3D）
 	Primitive3D,      // FDrawPrimitive3DData + 頂点（FDrawVertex3D）+ 添字（uint16）。頂点の並びを、点・線・三角形として描く（DrawPrimitive3D / DrawPrimitiveIndexed3D）
+	// 頂点バッファ・インデックスバッファの追加（上のコマンドの形式は変えていない）
+	PrimitiveBuffer3D, // FDrawPrimitiveBuffer3DData。GPU に置いた頂点（と添字）の一部を、点・線・三角形として描く（DrawPrimitive3D_UseVertexBuffer2 / DrawPrimitiveIndexed3D_UseVertexBuffer2）
 };
 
 // Primitive3D の頂点のつなぎ方（DxLib の DX_PRIMTYPE_*）
@@ -642,6 +644,21 @@ struct FDrawTextStyledData
 	int32 Vertical = 0;
 };
 
+// 頂点バッファ（と、あればインデックスバッファ）の一部を描く。バッファの大きさ（NumBufferVertices / NumBufferIndices）は、記録のときに決めた値（バッファの大きさは変わらない）。
+// IndexBuffer が負なら、添字なし: 頂点バッファの Start から Num 個を順に使う（BaseVertex は 0）。0 以上なら、添字あり: インデックスバッファの Start から Num 個の添字で頂点を選び、各添字に BaseVertex を足す。Texture が負なら、画像なし
+struct FDrawPrimitiveBuffer3DData
+{
+	int32 Type = 0;   // EDrawPrimitive
+	int32 Texture = -1;
+	int32 VertexBuffer = -1;
+	int32 NumBufferVertices = 0;
+	int32 IndexBuffer = -1;
+	int32 NumBufferIndices = 0;
+	int32 Start = 0;
+	int32 Num = 0;
+	int32 BaseVertex = 0;
+};
+
 #define DRAW_DATA_CHECK( Type ) \
 	static_assert( sizeof( Type ) % 4 == 0 && bIsTriviallyCopyable<Type>, #Type " must be made of 4-byte words with no padding" )
 DRAW_DATA_CHECK( FDrawBoxData );
@@ -722,6 +739,7 @@ DRAW_DATA_CHECK( FDrawSpriteStretch3DData );
 DRAW_DATA_CHECK( FDrawSpritePivot3DData );
 DRAW_DATA_CHECK( FDrawVertex3D );
 DRAW_DATA_CHECK( FDrawPrimitive3DData );
+DRAW_DATA_CHECK( FDrawPrimitiveBuffer3DData );
 #undef DRAW_DATA_CHECK
 static_assert( sizeof( FDrawVertex3D ) == 48 && sizeof( FDrawPrimitive3DData ) == 16, "unexpected padding in a draw command data type" );
 static_assert( sizeof( FDrawBoxData ) == 24 && sizeof( FDrawSphere3DData ) == 28 && sizeof( FDrawModelData ) == 60, "unexpected padding in a draw command data type" );
