@@ -727,6 +727,46 @@ bool CDxLibAssetBackend::WriteIndexBuffer( int32 IndexBuffer, int32 StartIndex, 
 	return ::SetIndexBufferData( StartIndex, Indices, NumIndices, IndexBuffer ) == 0;
 }
 
+int32 CDxLibAssetBackend::MakeShadowMap( int32 Width, int32 Height )
+{
+	// DxLib は 0 以下や大きすぎる大きさを断る（実測: 1〜16384 が作れる）が、渡す前にも確かめる
+	if ( Width < 1 || Height < 1 || Width > NDrawShadowMap::MaxSize || Height > NDrawShadowMap::MaxSize )
+	{
+		return NAsset::InvalidHandle;
+	}
+	return ::MakeShadowMap( Width, Height );
+}
+
+void CDxLibAssetBackend::DeleteShadowMap( int32 ShadowMap )
+{
+	if ( ShadowMap >= 0 )
+	{
+		::DeleteShadowMap( ShadowMap );
+	}
+}
+
+bool CDxLibAssetBackend::GetShadowMapViewProjection( int32 ShadowMap, float32 ( &OutMatrix )[16] )
+{
+	MATRIX Matrix = {};
+	if ( ShadowMap < 0 || ::GetShadowMapViewProjectionMatrix( ShadowMap, &Matrix ) != 0 )
+	{
+		return false;
+	}
+	// まだ一度も影を描いていないシャドウマップは、成功して、全部 0 の行列を返す（実測）。行列の右下は、描いたあとは必ず 1 になる
+	if ( Matrix.m[3][3] == 0.0f )
+	{
+		return false;
+	}
+	for ( int32 Row = 0; Row < 4; ++Row )
+	{
+		for ( int32 Column = 0; Column < 4; ++Column )
+		{
+			OutMatrix[Row * 4 + Column] = Matrix.m[Row][Column];
+		}
+	}
+	return true;
+}
+
 int32 CDxLibAssetBackend::GetModelFrameCount( int32 Model )
 {
 	return MV1GetFrameNum( Model );

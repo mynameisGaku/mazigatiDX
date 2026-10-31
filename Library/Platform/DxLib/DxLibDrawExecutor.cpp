@@ -19,6 +19,7 @@
 #include "Library/Platform/DxLib/DxLibLighting.h"
 #include "Library/Platform/DxLib/DxLibRenderState3D.h"
 #include "Library/Platform/DxLib/DxLibRibbonMesh.h"
+#include "Library/Platform/DxLib/DxLibShadowMap.h"
 #include "Library/Platform/DxLib/DxLibShapes3D.h"
 
 REGISTER_SUBSYSTEM( CDxLibDrawExecutor )
@@ -267,7 +268,7 @@ namespace
 		case EDrawCommand::PopWorldMatrix:
 			return true;
 		default:
-			return FDxLibRenderState3D::IsStateCommand( Type ) || FDxLibLighting::IsStateCommand( Type );
+			return FDxLibRenderState3D::IsStateCommand( Type ) || FDxLibLighting::IsStateCommand( Type ) || FDxLibShadowMap::IsStateCommand( Type );
 		}
 	}
 
@@ -438,6 +439,8 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 	FDxLibRenderState3D RenderState3D;
 	// ライティング（光の計算・全体の環境光・材質・ライト）。変えた分を、終わりに戻す
 	FDxLibLighting Lighting;
+	// シャドウマップ（影の絵）への描画と、影を受けるスロット。描いている途中なら終わらせて、使っているスロットを外す
+	FDxLibShadowMap ShadowMap;
 	bool bBrightChanged = false;
 	bool bAddColorChanged = false;
 	int OldAddColor[3] = { 0, 0, 0 };
@@ -564,8 +567,14 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 	{
 		const int Fill = Command.Has( FDrawFlag::Fill ) ? TRUE : FALSE;
 
-		// 状態の命令（と描画先を替える命令・画像の処理）以外は、クリップ範囲が空のあいだ（描画先の全体にかかわる命令を除く）と、描画先にできない画像へ替えたあいだは、飛ばす
-		if ( !IsStateCommand( Command.Type ) && !IsImageOperation( Command.Type ) && ( NumInvalidTargets > 0 || ( bClipEmpty && !IsWholeTargetCommand( Command.Type ) ) ) )
+		// 影の絵を描いている間は、描画先・カメラ・クリップなど、影の絵を壊す命令を実行しない
+		if ( ShadowMap.IsInPass() && FDxLibShadowMap::IsBlockedInPass( Command.Type ) )
+		{
+			return;
+		}
+
+		// 状態の命令（と描画先を替える命令・画像の処理）以外は、クリップ範囲が空のあいだ（描画先の全体にかかわる命令を除く）と、描画先にできない画像へ替えたあいだと、影の絵を描けなかったあいだは、飛ばす
+		if ( !IsStateCommand( Command.Type ) && !IsImageOperation( Command.Type ) && ( NumInvalidTargets > 0 || ShadowMap.IsSkippingDraws() || ( bClipEmpty && !IsWholeTargetCommand( Command.Type ) ) ) )
 		{
 			return;
 		}
@@ -578,6 +587,12 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 
 		// ライティングの命令
 		if ( Lighting.Apply( Command ) )
+		{
+			return;
+		}
+
+		// シャドウマップの命令
+		if ( ShadowMap.Apply( Command ) )
 		{
 			return;
 		}
@@ -1541,6 +1556,9 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 		}
 		}
 	} );
+
+	// 影の絵を描いている途中なら終わらせる（影の絵は、描画先・カメラを一時的に替えているので、ほかを戻す前に）。使っているスロットも外す
+	ShadowMap.Restore();
 
 	// このオブジェクトの分で替えた描画先を、元に戻す（Pop が足りなくても。クリップ・2D の変換も、替える前に戻る）
 	while ( !TargetStack.IsEmpty() )

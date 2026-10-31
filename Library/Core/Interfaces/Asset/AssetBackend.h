@@ -176,6 +176,16 @@ public:
 	virtual bool WriteIndexBuffer( int32 /*IndexBuffer*/, int32 /*StartIndex*/, const void* /*Indices*/, int32 /*NumIndices*/ ) { return false; }
 
 	//-------------------------------------------------------------------------
+	// シャドウマップ（影の絵。CShadowMap）。メインスレッドだけで作る。解放は DeleteShadowMap
+	//-------------------------------------------------------------------------
+	// 縦横 Width x Height（それぞれ 1 以上、NDrawShadowMap::MaxSize 以下）のシャドウマップを作る。作れなければ負（NAsset::InvalidHandle）
+	virtual int32 MakeShadowMap( int32 /*Width*/, int32 /*Height*/ ) { return -1; }
+	virtual void DeleteShadowMap( int32 /*ShadowMap*/ ) {}
+	// 最後に BeginShadowMap で影を描いたときの、光から見た行列（ビュー行列 x 射影行列。16 個の float。DxLib と同じ、行ベクトルの流儀）を取り出す。
+	// まだ一度も影を描いていない・無効なハンドルなら false
+	virtual bool GetShadowMapViewProjection( int32 /*ShadowMap*/, float32 ( & /*OutMatrix*/ )[16] ) { return false; }
+
+	//-------------------------------------------------------------------------
 	// フォント
 	//-------------------------------------------------------------------------
 	// ※ CreateFont は Windows のマクロ（CreateFontA / W）と衝突するので使わない

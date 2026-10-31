@@ -498,7 +498,67 @@ bool FDrawContext::PushLight( const FLight& Light )
 	Data.QuadraticAttenuation = Light.QuadraticAttenuation;
 	Data.OuterAngle = Light.OuterAngle;
 	Data.InnerAngle = Light.InnerAngle;
+	Data.ShadowMapSlots = Light.ShadowMapSlots;
 	Push( EDrawCommand::PushLight, 0, Data );
+	return true;
+}
+
+bool FDrawContext::BeginShadowMap( FShadowMapHandle ShadowMap, const FShadowMapView& View )
+{
+	// 使えない値でも記録する（ハンドルを負にして）。記録しないと、影を落とすはずの図形が、画面にそのまま描かれてしまう
+	const bool bValid = ShadowMap.IsValid() && View.IsValid();
+	FDrawBeginShadowMapData Data;
+	if ( bValid )
+	{
+		Data.Handle = ShadowMap.Value;
+		Set3( Data.Direction, View.LightDirection );
+		Data.HasArea = View.bFitToCamera ? 0 : 1;
+		Set3( Data.AreaMin, View.AreaMin );
+		Set3( Data.AreaMax, View.AreaMax );
+		Data.AdjustDepth = View.AdjustDepth;
+	}
+	Push( EDrawCommand::BeginShadowMap, 0, Data );
+	return bValid;
+}
+
+bool FDrawContext::UseShadowMap( int32 Slot, FShadowMapHandle ShadowMap )
+{
+	if ( Slot < 0 || Slot >= NDrawShadowMap::NumSlots || !ShadowMap.IsValid() )
+	{
+		return false;
+	}
+	FDrawUseShadowMapData Data;
+	Data.Slot = Slot;
+	Data.Handle = ShadowMap.Value;
+	Push( EDrawCommand::UseShadowMap, 0, Data );
+	return true;
+}
+
+void FDrawContext::StopUsingShadowMap( int32 Slot )
+{
+	if ( Slot < 0 || Slot >= NDrawShadowMap::NumSlots )
+	{
+		return;
+	}
+	FDrawUseShadowMapData Data;
+	Data.Slot = Slot;
+	Data.Handle = -1;
+	Push( EDrawCommand::UseShadowMap, 0, Data );
+}
+
+bool FDrawContext::PreviewShadowMap( FShadowMapHandle ShadowMap, int32 X0, int32 Y0, int32 X1, int32 Y1 )
+{
+	if ( !ShadowMap.IsValid() || X1 <= X0 || Y1 <= Y0 )
+	{
+		return false;
+	}
+	FDrawPreviewShadowMapData Data;
+	Data.Handle = ShadowMap.Value;
+	Data.X0 = X0;
+	Data.Y0 = Y0;
+	Data.X1 = X1;
+	Data.Y1 = Y1;
+	Push( EDrawCommand::PreviewShadowMap, 0, Data );
 	return true;
 }
 

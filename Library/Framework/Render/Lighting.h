@@ -58,6 +58,10 @@ struct FLight
 	float32 LinearAttenuation = 0.0f;
 	float32 QuadraticAttenuation = 0.0f;
 
+	// このライトが、どのシャドウマップ（影の絵）の影を受けるか。ビットの和（NDrawShadowMap::SlotBit( スロット )。スロットは 0〜2）。既定は全部のスロット（DxLib の既定）。
+	// 太陽だけが影を落とすなら、ほかのライトは 0（影を受けない）にする。UseShadowMap で使っているスロットだけが、実際に効く
+	int32 ShadowMapSlots = NDrawShadowMap::AllSlots;
+
 	// スポットライトの円錐の全角（ラジアン。軸から左右に、この半分ずつ広がる）。OuterAngle より外は照らさず、InnerAngle より中は全力で、そのあいだは直線的に弱まる。
 	// 0 < InnerAngle <= OuterAngle <= π
 	float32 OuterAngle = 1.0f;
@@ -98,11 +102,15 @@ struct FLight
 		return Light;
 	}
 
-	// 値が使えるか（種類が範囲の中。使う項目がすべて有限。向きの長さ・Range・減衰・角度が決まりの範囲の中）
+	// 値が使えるか（種類が範囲の中。影を受けるスロットが 0〜2 の中。使う項目がすべて有限。向きの長さ・Range・減衰・角度が決まりの範囲の中）
 	bool IsValid() const
 	{
 		const int32 TypeValue = static_cast<int32>( Type );
 		if ( TypeValue < static_cast<int32>( EDrawLightType::Directional ) || TypeValue > static_cast<int32>( EDrawLightType::Spot ) )
+		{
+			return false;
+		}
+		if ( ( ShadowMapSlots & ~NDrawShadowMap::AllSlots ) != 0 )
 		{
 			return false;
 		}

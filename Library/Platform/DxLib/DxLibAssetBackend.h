@@ -64,6 +64,9 @@ public:
 	bool WriteVertexBuffer( int32 VertexBuffer, int32 StartIndex, const FDrawVertex3D* Vertices, int32 NumVertices ) override;
 	int32 MakeIndexBuffer( int32 NumIndices, bool b32Bit ) override;
 	bool WriteIndexBuffer( int32 IndexBuffer, int32 StartIndex, const void* Indices, int32 NumIndices ) override;
+	int32 MakeShadowMap( int32 Width, int32 Height ) override;
+	void DeleteShadowMap( int32 ShadowMap ) override;
+	bool GetShadowMapViewProjection( int32 ShadowMap, float32 ( &OutMatrix )[16] ) override;
 	int32 GetModelFrameCount( int32 Model ) override;
 	FString GetModelFrameName( int32 Model, int32 FrameIndex ) override;
 	bool SaveModelToMV1( int32 Model, const FString& Path, const FModelSaveOptions& Options, FString& OutWarning ) override;

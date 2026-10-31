@@ -123,6 +123,7 @@
     <ClCompile Include="Library\Framework\Asset\ModelAnimationAsset.cpp" />
     <ClCompile Include="Library\Framework\Asset\PixelImage.cpp" />
     <ClCompile Include="Library\Framework\Asset\RenderTarget.cpp" />
+    <ClCompile Include="Library\Framework\Asset\ShadowMap.cpp" />
     <ClCompile Include="Library\Framework\Asset\Sound.cpp" />
     <ClCompile Include="Library\Framework\Asset\SpriteSheet.cpp" />
     <ClCompile Include="Library\Framework\Asset\StaticModelSurface.cpp" />
@@ -252,6 +253,7 @@
     <ClCompile Include="Library\Platform\DxLib\DxLibLighting.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibRenderState3D.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibRibbonMesh.cpp" />
+    <ClCompile Include="Library\Platform\DxLib\DxLibShadowMap.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibShapes3D.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibVertex.cpp" />
     <ClCompile Include="Library\Platform\DxLib\EffectMaterialRenderer.cpp" />
@@ -496,6 +498,7 @@
     <ClInclude Include="Library\Core\Interfaces\Render\IImage.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IIndexBuffer.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\ImageTypes.h" />
+    <ClInclude Include="Library\Core\Interfaces\Render\IShadowMap.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IVertexBuffer.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\MeshGeometryChunk.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\MeshTypes.h" />
@@ -564,6 +567,7 @@
     <ClInclude Include="Library\Framework\Asset\ModelAnimationAsset.h" />
     <ClInclude Include="Library\Framework\Asset\PixelImage.h" />
     <ClInclude Include="Library\Framework\Asset\RenderTarget.h" />
+    <ClInclude Include="Library\Framework\Asset\ShadowMap.h" />
     <ClInclude Include="Library\Framework\Asset\Sound.h" />
     <ClInclude Include="Library\Framework\Asset\SpriteSheet.h" />
     <ClInclude Include="Library\Framework\Asset\StaticModelSurface.h" />
@@ -637,6 +641,7 @@
     <ClInclude Include="Library\Framework\Render\ModelMaterialEffectRenderer.h" />
     <ClInclude Include="Library\Framework\Render\ModelMaterialEffectResources.h" />
     <ClInclude Include="Library\Framework\Render\RenderState3D.h" />
+    <ClInclude Include="Library\Framework\Render\ShadowMapView.h" />
     <ClInclude Include="Library\Framework\Render\TextStyle.h" />
     <ClInclude Include="Library\Framework\Render\Vertex3D.h" />
     <ClInclude Include="Library\Framework\Scene\ISceneManager.h" />
@@ -718,6 +723,7 @@
     <ClInclude Include="Library\Platform\DxLib\DxLibModelMaterialGeometry.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibRenderState3D.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibRibbonMesh.h" />
+    <ClInclude Include="Library\Platform\DxLib\DxLibShadowMap.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibShapes3D.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibVertex.h" />
     <ClInclude Include="Library\Platform\DxLib\EffectMaterialRenderer.h" />

@@ -49,6 +49,7 @@ namespace
 		Sound,
 		VertexBuffer,
 		IndexBuffer,
+		ShadowMap,
 	};
 
 	struct FService
@@ -78,6 +79,7 @@ namespace
 		case EResource::Sound: Backend.DeleteSound( Handle ); break;
 		case EResource::VertexBuffer: Backend.DeleteVertexBuffer( Handle ); break;
 		case EResource::IndexBuffer: Backend.DeleteIndexBuffer( Handle ); break;
+		case EResource::ShadowMap: Backend.DeleteShadowMap( Handle ); break;
 		}
 	}
 
@@ -139,6 +141,7 @@ void NAssetService::ReleaseFont( int32 Handle ) { Release( EResource::Font, Hand
 void NAssetService::ReleaseSound( int32 Handle ) { Release( EResource::Sound, Handle ); }
 void NAssetService::ReleaseVertexBuffer( int32 Handle ) { Release( EResource::VertexBuffer, Handle ); }
 void NAssetService::ReleaseIndexBuffer( int32 Handle ) { Release( EResource::IndexBuffer, Handle ); }
+void NAssetService::ReleaseShadowMap( int32 Handle ) { Release( EResource::ShadowMap, Handle ); }
 
 bool NAssetService::AddFontFile( const FString& Path )
 {

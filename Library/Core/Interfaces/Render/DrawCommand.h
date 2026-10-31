@@ -132,6 +132,11 @@ enum class EDrawCommand : uint8
 	Primitive3D,      // FDrawPrimitive3DData + 頂点（FDrawVertex3D）+ 添字（uint16）。頂点の並びを、点・線・三角形として描く（DrawPrimitive3D / DrawPrimitiveIndexed3D）
 	// 頂点バッファ・インデックスバッファの追加（上のコマンドの形式は変えていない）
 	PrimitiveBuffer3D, // FDrawPrimitiveBuffer3DData。GPU に置いた頂点（と添字）の一部を、点・線・三角形として描く（DrawPrimitive3D_UseVertexBuffer2 / DrawPrimitiveIndexed3D_UseVertexBuffer2）
+	// シャドウマップの追加（上のコマンドの形式は変えていない）
+	BeginShadowMap,   // FDrawBeginShadowMapData。以降の 3D の描画を、画面でなくシャドウマップ（影の絵）へ描く（SetShadowMapLightDirection / SetShadowMapDrawArea / ResetShadowMapDrawArea / SetShadowMapAdjustDepth / ShadowMap_DrawSetup）
+	EndShadowMap,     // FDrawEndShadowMapData。シャドウマップへの描画を終えて、元の描画先・カメラへ戻す（ShadowMap_DrawEnd）
+	UseShadowMap,     // FDrawUseShadowMapData。シャドウマップを、影を受ける描画に使う（SetUseShadowMap。スロット 0〜2）
+	PreviewShadowMap, // FDrawPreviewShadowMapData。シャドウマップの中身（深度）を、画面の矩形に描く（TestDrawShadowMap）
 };
 
 // Primitive3D の頂点のつなぎ方（DxLib の DX_PRIMTYPE_*）
@@ -551,10 +556,27 @@ struct FDrawClearDepthData { int32 Unused = 0; };
 // PopWorldMatrix は中身を持たない（命令の大きさを 4 バイトの倍数にするため、1 ワードだけ持つ）
 struct FDrawPopWorldMatrixData { int32 Unused = 0; };
 
+// シャドウマップ（影の絵）の定数
+namespace NDrawShadowMap
+{
+	// 同時に影を受けられるシャドウマップの数（DxLib の SetUseShadowMap のスロット 0〜2）
+	constexpr int32 NumSlots = 3;
+
+	// スロットのビット（スロット 0 が 1、1 が 2、2 が 4）。ライトが、どのスロットの影を受けるかの指定（ビットの和）に使う
+	constexpr int32 SlotBit( int32 Slot ) { return 1 << Slot; }
+
+	// すべてのスロットの影を受ける（DxLib の既定）
+	constexpr int32 AllSlots = 7;
+
+	// シャドウマップの縦横の大きさの上限（DxLib がこれを超えると作れない）
+	constexpr int32 MaxSize = 16384;
+}
+
 // ライティング（光）。色は float（0..1 を超えてもよい）。Type は EDrawLightType の数値
 // UseLighting: Enabled が 0 なら、光の計算をしない（図形の色がそのまま出る）。DefaultLight: DxLib に最初からある 1 つのライトの入り切り
 struct FDrawUseLightingData { int32 Enabled = 1; };
-struct FDrawDefaultLightData { int32 Enabled = 1; };
+// ShadowMapSlots: このライトが影を受けるスロットのビットの和（NDrawShadowMap::SlotBit）。既定は全部
+struct FDrawDefaultLightData { int32 Enabled = 1; int32 ShadowMapSlots = NDrawShadowMap::AllSlots; };
 struct FDrawAmbientLightData { float32 Color[3] = {}; };
 // 面の材質。UseVertexDiffuse が 1 なら、拡散光の色は、図形（頂点）に付けた色で、Diffuse は使われない（0 なら Diffuse だけ）。UseVertexSpecular も同じ（Specular）。
 // 既定値は、DxLib の既定の材質（実測）
@@ -582,6 +604,8 @@ struct FDrawLightData
 	float32 Range = 1000.0f;
 	float32 ConstantAttenuation = 1.0f, LinearAttenuation = 0.0f, QuadraticAttenuation = 0.0f;
 	float32 OuterAngle = 1.0f, InnerAngle = 0.5f;
+	// このライトが影を受けるスロットのビットの和（NDrawShadowMap::SlotBit）。既定は全部
+	int32 ShadowMapSlots = NDrawShadowMap::AllSlots;
 };
 // PopLight は中身を持たない（命令の大きさを 4 バイトの倍数にするため、1 ワードだけ持つ）
 struct FDrawPopLightData { int32 Unused = 0; };
@@ -658,6 +682,25 @@ struct FDrawPrimitiveBuffer3DData
 	int32 Num = 0;
 	int32 BaseVertex = 0;
 };
+
+// シャドウマップへの描画を始める。Handle が負（記録のときに使えなかった）なら、対の EndShadowMap まで、描く命令を飛ばす（影を落とすはずの図形が、画面にそのまま描かれないように）。
+// Direction は光が進む向き（長さは問わない）。HasArea が 0 なら、影の範囲は、始めるときのカメラの視錐台に自動で合わせる。そうでなければ、AreaMin〜AreaMax（ワールドの箱）。
+// AdjustDepth は、影の判定に足す深さの補正（正規化した深度。小さすぎると面が自分の影で縞になり、大きすぎると影が出ない）
+struct FDrawBeginShadowMapData
+{
+	int32 Handle = -1;
+	float32 Direction[3] = { 0.0f, -1.0f, 0.0f };
+	int32 HasArea = 0;
+	float32 AreaMin[3] = {};
+	float32 AreaMax[3] = {};
+	float32 AdjustDepth = 0.005f;
+};
+// EndShadowMap は中身を持たない（命令の大きさを 4 バイトの倍数にするため、1 ワードだけ持つ）
+struct FDrawEndShadowMapData { int32 Unused = 0; };
+// スロット Slot（0〜2）に、シャドウマップ Handle を使わせる。Handle が負なら、そのスロットを使わない
+struct FDrawUseShadowMapData { int32 Slot = 0; int32 Handle = -1; };
+// シャドウマップの中身（深度）を、画面の矩形 (X0, Y0)〜(X1, Y1) に描く（確かめる用）
+struct FDrawPreviewShadowMapData { int32 Handle = -1; int32 X0 = 0, Y0 = 0, X1 = 0, Y1 = 0; };
 
 #define DRAW_DATA_CHECK( Type ) \
 	static_assert( sizeof( Type ) % 4 == 0 && bIsTriviallyCopyable<Type>, #Type " must be made of 4-byte words with no padding" )
@@ -740,6 +783,10 @@ DRAW_DATA_CHECK( FDrawSpritePivot3DData );
 DRAW_DATA_CHECK( FDrawVertex3D );
 DRAW_DATA_CHECK( FDrawPrimitive3DData );
 DRAW_DATA_CHECK( FDrawPrimitiveBuffer3DData );
+DRAW_DATA_CHECK( FDrawBeginShadowMapData );
+DRAW_DATA_CHECK( FDrawEndShadowMapData );
+DRAW_DATA_CHECK( FDrawUseShadowMapData );
+DRAW_DATA_CHECK( FDrawPreviewShadowMapData );
 #undef DRAW_DATA_CHECK
 static_assert( sizeof( FDrawVertex3D ) == 48 && sizeof( FDrawPrimitive3DData ) == 16, "unexpected padding in a draw command data type" );
 static_assert( sizeof( FDrawBoxData ) == 24 && sizeof( FDrawSphere3DData ) == 28 && sizeof( FDrawModelData ) == 60, "unexpected padding in a draw command data type" );

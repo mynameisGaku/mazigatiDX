@@ -73,6 +73,10 @@ namespace
 		SetLightSpcColorHandle( Handle, ToColor( Data.Specular, 0.0f ) );
 		SetLightAmbColorHandle( Handle, ToColor( Data.Ambient, 0.0f ) );
 		SetLightEnableHandle( Handle, TRUE );
+		for ( int Slot = 0; Slot < NDrawShadowMap::NumSlots; ++Slot )
+		{
+			SetLightUseShadowMapHandle( Handle, Slot, ( Data.ShadowMapSlots & NDrawShadowMap::SlotBit( Slot ) ) != 0 ? TRUE : FALSE );
+		}
 		return Handle;
 	}
 }
@@ -136,7 +140,17 @@ bool FDxLibLighting::Apply( const FDrawCommandView& Command )
 				OldDefaultLightEnable = GetLightEnable();
 				bDefaultLightChanged = true;
 			}
-			SetLightEnable( Command.Read<FDrawDefaultLightData>().Enabled != 0 ? TRUE : FALSE );
+			const FDrawDefaultLightData Data = Command.Read<FDrawDefaultLightData>();
+			SetLightEnable( Data.Enabled != 0 ? TRUE : FALSE );
+			// 影を受けるスロット（DxLib の既定は全部）。変えたなら、終わりに全部に戻す
+			if ( bDefaultLightSlotsChanged || ( Data.ShadowMapSlots & NDrawShadowMap::AllSlots ) != NDrawShadowMap::AllSlots )
+			{
+				for ( int Slot = 0; Slot < NDrawShadowMap::NumSlots; ++Slot )
+				{
+					SetLightUseShadowMap( Slot, ( Data.ShadowMapSlots & NDrawShadowMap::SlotBit( Slot ) ) != 0 ? TRUE : FALSE );
+				}
+				bDefaultLightSlotsChanged = true;
+			}
 		}
 		return true;
 	}
@@ -213,6 +227,14 @@ void FDxLibLighting::Restore()
 	{
 		SetLightEnable( OldDefaultLightEnable );
 		bDefaultLightChanged = false;
+	}
+	if ( bDefaultLightSlotsChanged )
+	{
+		for ( int Slot = 0; Slot < NDrawShadowMap::NumSlots; ++Slot )
+		{
+			SetLightUseShadowMap( Slot, TRUE );
+		}
+		bDefaultLightSlotsChanged = false;
 	}
 	if ( bUseLightingChanged )
 	{

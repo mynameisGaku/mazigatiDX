@@ -7,6 +7,7 @@
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Core/Interfaces/Render/IImage.h"
 #include "Library/Core/Interfaces/Render/IIndexBuffer.h"
+#include "Library/Core/Interfaces/Render/IShadowMap.h"
 #include "Library/Core/Interfaces/Render/IVertexBuffer.h"
 #include "Library/Core/Interfaces/Render/DrawDistortedMaterialQuad.h"
 #include "Library/Core/Interfaces/Render/DrawDistortedMaterialRibbon.h"
@@ -22,6 +23,7 @@
 #include "Library/Framework/Render/GraphFilter.h"
 #include "Library/Framework/Render/Lighting.h"
 #include "Library/Framework/Render/RenderState3D.h"
+#include "Library/Framework/Render/ShadowMapView.h"
 #include "Library/Framework/Render/TextStyle.h"
 #include "Library/Framework/Render/Vertex3D.h"
 #include "Library/Math/Color.h"
@@ -63,7 +65,7 @@ struct FDrawBuffer
 //   - 色は FColor32（DxLib の GetColor への変換は、実行するとき、メインスレッドで行う）
 //   - 描画の状態（Blend / CustomBlend / Tint / AddColor / AlphaTest / Filter / PushClip / Transform2D）と 3D 図形の変換（WorldMatrix）と描画先（PushTarget）と
 //     カメラ（PushCamera）と 3D の描画状態（Depth / Culling / TextureAddress / TextureTransform / Fog / HeightFog / Anisotropy）と
-//     ライティング（PushLight / UseLighting / DefaultLight / AmbientLight / SurfaceMaterial / LightingOptions）は、そのオブジェクトの分が終わると元に戻る
+//     ライティング（PushLight / UseLighting / DefaultLight / AmbientLight / SurfaceMaterial / LightingOptions）とシャドウマップ（BeginShadowMap / UseShadowMap）は、そのオブジェクトの分が終わると元に戻る
 //   - ライト・カメラ・描画先・深度バッファの使い方は、記録しなければ、呼び出し側が決めたものを使う
 //   - グラフィック / モデルのハンドルは、あらかじめ読み込んでおく（読み込みは DxLib の呼び出しなのでメインスレッドで）
 //=============================================================================
@@ -997,11 +999,13 @@ public:
 	}
 
 	// DxLib に最初からある 1 つのライト（白い方向ライト。向きは (1, -1, 1)）の入り切り（SetLightEnable）。自分のライトだけで照らしたいときは、false にする。
-	// ライトは、これも含めて、同時に FLight::MaxActiveLights（6）個まで
-	FORCEINLINE void DefaultLight( bool bEnabled )
+	// ライトは、これも含めて、同時に FLight::MaxActiveLights（6）個まで。
+	// ShadowMapSlots は、このライトが影を受けるスロットのビットの和（NDrawShadowMap::SlotBit）。既定は全部（0〜2 の外のビットは無視する）
+	FORCEINLINE void DefaultLight( bool bEnabled, int32 ShadowMapSlots = NDrawShadowMap::AllSlots )
 	{
 		FDrawDefaultLightData Data;
 		Data.Enabled = bEnabled ? 1 : 0;
+		Data.ShadowMapSlots = ShadowMapSlots & NDrawShadowMap::AllSlots;
 		Push( EDrawCommand::DefaultLight, 0, Data );
 	}
 
@@ -1034,6 +1038,61 @@ public:
 	{
 		const FDrawPopLightData Data;
 		Push( EDrawCommand::PopLight, 0, Data );
+	}
+
+	//-------------------------------------------------------------------------
+	// シャドウマップ（影の絵）。値は ShadowMapView.h、シャドウマップは Framework/Asset/ShadowMap.h を参照。
+	// 影は、2 段で作る: ① BeginShadowMap〜EndShadowMap の間に、影を落とすものを描く（画面ではなく、シャドウマップへ描かれる）。
+	// ② UseShadowMap のあとに、影を受けるものを描く（光を受ける図形・ライトの照らし方は、ほかの 3D 図形と同じ）。光の計算を切る（UseLighting( false )）と、影は出ない。
+	// どれも、このオブジェクトの分が終わると、始める前の状態に戻る（始めたままの影の絵は終わらせ、使っているスロットは外す）。
+	// シャドウマップは、TSharedPtr・ポインター・参照・ハンドル（FShadowMapHandle）のどれでも渡せる。記録してから描かれるまで、手放さないこと
+	//-------------------------------------------------------------------------
+	// シャドウマップ ShadowMap への描画を始める（ShadowMap_DrawSetup）。以降の 3D の図形・モデルは、画面でなく、View の光から見た深度としてシャドウマップへ描かれる。
+	// 始めるたびに、中身は消えて、描き直される。入れ子にできない（始めている間の BeginShadowMap は無視する。対の EndShadowMap も無視する）。
+	// 影の絵の中で効くのは、3D の図形・モデルと、その描き方の状態（ワールド変換・カリング・ブレンド・アルファテスト・画像の貼り方）。
+	// 描画先・カメラ・クリップ・Clear / ClearDepth / CopyScreen / UseShadowMap の命令は、影の絵を壊すので、実行のときに無視する。
+	// 影を落とすのは、ほぼ不透明に描かれたもの: 不透明度（ブレンド Alpha の値・頂点のアルファ・画像のアルファ）が低いものは落とさない。境目は 255 のうち、
+	// 頂点（Primitive3D）のアルファとブレンドの値は 149、箱（Cube3D）のブレンドの値は 189、球（Sphere3D）は 195（実測。これ以上が影を落とす）。加算ブレンドも落とさない。
+	// 画像のアルファが低い画素も落とさない（葉の切り抜き）。
+	// カリングは、画面と同じ設定が効く（裏面を描かない設定のとき、裏面は影を落とさない）。
+	// ShadowMap か View が使えない（無効なハンドル・View.IsValid() が false）ときは、false を返す。このときも、命令は記録する: 対の EndShadowMap まで、図形を描かずに飛ばす
+	// （飛ばさないと、影を落とすはずの図形が、そのまま画面に描かれてしまう）。シャドウマップの中身は、描き直されずに、前のまま残る。対の EndShadowMap は、必ず呼ぶこと
+	bool BeginShadowMap( FShadowMapHandle ShadowMap, const FShadowMapView& View );
+
+	template<typename TShadowMap, typename = TEnableIfT<!bIsSame<TShadowMap, FShadowMapHandle>>>
+	bool BeginShadowMap( const TShadowMap& ShadowMap, const FShadowMapView& View )
+	{
+		return BeginShadowMap( ToShadowMapHandle( ShadowMap ), View );
+	}
+
+	// シャドウマップへの描画を終えて、元の描画先・カメラに戻す（ShadowMap_DrawEnd）。BeginShadowMap の数より多く呼んでも、何も起きない
+	FORCEINLINE void EndShadowMap()
+	{
+		const FDrawEndShadowMapData Data;
+		Push( EDrawCommand::EndShadowMap, 0, Data );
+	}
+
+	// スロット Slot（0〜2）に、シャドウマップを使わせる（SetUseShadowMap）。以降に描く光を受ける図形に、影ができる。
+	// 同じスロットに別のシャドウマップを指定すると、入れ替わる。スロットが 0〜2 の外・シャドウマップが無効なときは、何も記録せず false を返す
+	bool UseShadowMap( int32 Slot, FShadowMapHandle ShadowMap );
+
+	template<typename TShadowMap, typename = TEnableIfT<!bIsSame<TShadowMap, FShadowMapHandle>>>
+	bool UseShadowMap( int32 Slot, const TShadowMap& ShadowMap )
+	{
+		return UseShadowMap( Slot, ToShadowMapHandle( ShadowMap ) );
+	}
+
+	// スロット Slot の影を、使わなくする。スロットが 0〜2 の外なら、何も記録しない
+	void StopUsingShadowMap( int32 Slot );
+
+	// シャドウマップの中身（光から見た深度。近いほど暗い赤）を、画面の矩形 (X0, Y0)〜(X1, Y1) に描く（TestDrawShadowMap。影の範囲や向きを確かめる用）。
+	// シャドウマップが無効・矩形が空（X1 <= X0 か Y1 <= Y0）のときは、何も記録せず false を返す
+	bool PreviewShadowMap( FShadowMapHandle ShadowMap, int32 X0, int32 Y0, int32 X1, int32 Y1 );
+
+	template<typename TShadowMap, typename = TEnableIfT<!bIsSame<TShadowMap, FShadowMapHandle>>>
+	bool PreviewShadowMap( const TShadowMap& ShadowMap, int32 X0, int32 Y0, int32 X1, int32 Y1 )
+	{
+		return PreviewShadowMap( ToShadowMapHandle( ShadowMap ), X0, Y0, X1, Y1 );
 	}
 
 	//-------------------------------------------------------------------------
@@ -1515,6 +1574,27 @@ private:
 		return ToVertexHandle( Buffer.Get() );
 	}
 
+	static FORCEINLINE FShadowMapHandle ToShadowMapHandle( FShadowMapHandle Handle )
+	{
+		return Handle;
+	}
+
+	static FORCEINLINE FShadowMapHandle ToShadowMapHandle( const IShadowMap* ShadowMap )
+	{
+		return ShadowMap != nullptr ? ShadowMap->GetShadowMapHandle() : FShadowMapHandle();
+	}
+
+	static FORCEINLINE FShadowMapHandle ToShadowMapHandle( const IShadowMap& ShadowMap )
+	{
+		return ShadowMap.GetShadowMapHandle();
+	}
+
+	template<typename T>
+	static FORCEINLINE FShadowMapHandle ToShadowMapHandle( const TSharedPtr<T>& ShadowMap )
+	{
+		return ToShadowMapHandle( ShadowMap.Get() );
+	}
+
 	static FORCEINLINE FIndexBufferHandle ToIndexHandle( FIndexBufferHandle Handle )
 	{
 		return Handle;
@@ -1874,6 +1954,83 @@ public:
 private:
 	FDrawContext* CommandList;
 	bool bPushed;
+};
+
+//=============================================================================
+// FShadowMapPassScope
+//   コマンドリストの以降の 3D の描画を、シャドウマップ ShadowMap へ描く（影を落とすものを描く。BeginShadowMap）ようにして、スコープを抜けるとき、元の描画先へ戻す（EndShadowMap）。
+//   シャドウマップか View が使えないときも、対の EndShadowMap は記録する（IsValid() が false。このスコープの中の図形は、画面に描かれず、飛ばされる）。
+//
+//   {
+//       FShadowMapPassScope Pass( CommandList, ShadowMap, FShadowMapView::MakeForArea( FVector3( 1.0f, -1.0f, 1.0f ), AreaMin, AreaMax ) );
+//       CommandList.Cube3D( ... );     // 影を落とすもの
+//   }
+//=============================================================================
+class FShadowMapPassScope
+{
+public:
+	template<typename TShadowMap>
+	FShadowMapPassScope( FDrawContext& InCommandList, const TShadowMap& ShadowMap, const FShadowMapView& View )
+		: CommandList( &InCommandList )
+		, bValid( InCommandList.BeginShadowMap( ShadowMap, View ) )
+	{
+	}
+
+	~FShadowMapPassScope()
+	{
+		CommandList->EndShadowMap();
+	}
+
+	// シャドウマップと View が使える値で、影を描くか
+	FORCEINLINE bool IsValid() const { return bValid; }
+
+	FShadowMapPassScope( const FShadowMapPassScope& ) = delete;
+	FShadowMapPassScope& operator=( const FShadowMapPassScope& ) = delete;
+
+private:
+	FDrawContext* CommandList;
+	bool bValid;
+};
+
+//=============================================================================
+// FShadowMapUseScope
+//   コマンドリストの以降の光を受ける 3D の図形に、スロット Slot のシャドウマップの影を付けて（UseShadowMap）、スコープを抜けるとき、そのスロットを使わなくする（StopUsingShadowMap）。
+//   スロットかシャドウマップが使えないときは、何も記録せず、外すこともしない。
+//
+//   {
+//       FShadowMapUseScope Shadow( CommandList, 0, ShadowMap );
+//       CommandList.Cube3D( ... );     // 影を受けるもの
+//   }
+//=============================================================================
+class FShadowMapUseScope
+{
+public:
+	template<typename TShadowMap>
+	FShadowMapUseScope( FDrawContext& InCommandList, int32 InSlot, const TShadowMap& ShadowMap )
+		: CommandList( &InCommandList )
+		, Slot( InSlot )
+		, bUsing( InCommandList.UseShadowMap( InSlot, ShadowMap ) )
+	{
+	}
+
+	~FShadowMapUseScope()
+	{
+		if ( bUsing )
+		{
+			CommandList->StopUsingShadowMap( Slot );
+		}
+	}
+
+	// シャドウマップを使っているか（記録されたか）
+	FORCEINLINE bool IsUsing() const { return bUsing; }
+
+	FShadowMapUseScope( const FShadowMapUseScope& ) = delete;
+	FShadowMapUseScope& operator=( const FShadowMapUseScope& ) = delete;
+
+private:
+	FDrawContext* CommandList;
+	int32 Slot;
+	bool bUsing;
 };
 
 //=============================================================================

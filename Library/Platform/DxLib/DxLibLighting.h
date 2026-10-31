@@ -47,6 +47,8 @@ private:
 	bool bUseLightingChanged = false;
 	bool bDefaultLightChanged = false;
 	int OldDefaultLightEnable = 1;
+	// DxLib に最初からあるライトの、影を受けるスロットを変えたか（DxLib の既定は全部。取得関数が無いので、終わりに全部へ戻す）
+	bool bDefaultLightSlotsChanged = false;
 	bool bAmbientLightChanged = false;
 	bool bMaterialChanged = false;
 	bool bOptionsChanged = false;
