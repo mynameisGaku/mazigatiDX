@@ -24,6 +24,8 @@ namespace NSoftLighting
 	{
 		FLight Light = FLight::MakeDirectional( FVector3( -1.0f, 0.4f, -1.0f ), FColor( 0.42f, 0.44f, 0.52f ) );
 		Light.Specular = FColor::Black;
+		// 影の絵（シャドウマップ）の影は受けない。補助光は、地面の照り返しなので、太陽の影の中も照らす（影が真っ黒にならない）
+		Light.ShadowMapSlots = 0;
 		return Light;
 	}
 }

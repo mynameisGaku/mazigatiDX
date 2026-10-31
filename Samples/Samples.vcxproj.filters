@@ -133,6 +133,21 @@
     <ClCompile Include="Source\RenderTarget\TargetShowcase.cpp">
       <Filter>Source\RenderTarget</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Shadows\ShadowsPanel.cpp">
+      <Filter>Source\Shadows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Shadows\ShadowsRig.cpp">
+      <Filter>Source\Shadows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Shadows\ShadowsSample.cpp">
+      <Filter>Source\Shadows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Shadows\ShadowsScenery.cpp">
+      <Filter>Source\Shadows</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Shadows\ShadowsView.cpp">
+      <Filter>Source\Shadows</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Shapes\ShapeShowcase.cpp">
       <Filter>Source\Shapes</Filter>
     </ClCompile>
@@ -339,6 +354,24 @@
     <ClInclude Include="Source\RenderTarget\TargetShowcase.h">
       <Filter>Source\RenderTarget</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Shadows\ShadowsDemoState.h">
+      <Filter>Source\Shadows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Shadows\ShadowsPanel.h">
+      <Filter>Source\Shadows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Shadows\ShadowsRig.h">
+      <Filter>Source\Shadows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Shadows\ShadowsSample.h">
+      <Filter>Source\Shadows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Shadows\ShadowsScenery.h">
+      <Filter>Source\Shadows</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Shadows\ShadowsView.h">
+      <Filter>Source\Shadows</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Shapes\ShapeShowcase.h">
       <Filter>Source\Shapes</Filter>
     </ClInclude>
@@ -451,6 +484,9 @@
     </Filter>
     <Filter Include="Source\RenderTarget">
       <UniqueIdentifier>{404CC2CF-CCF6-391E-5932-FC9207128670}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Shadows">
+      <UniqueIdentifier>{FEDB8F9C-1BC0-D094-CCAB-F151C882255B}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Shapes">
       <UniqueIdentifier>{2AAD6A14-B7C3-4D74-4D10-4E34CCB42B5F}</UniqueIdentifier>

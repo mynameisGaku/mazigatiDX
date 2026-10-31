@@ -95,6 +95,11 @@
     <ClCompile Include="Source\RenderState\StageView.cpp" />
     <ClCompile Include="Source\RenderTarget\RenderTargetSample.cpp" />
     <ClCompile Include="Source\RenderTarget\TargetShowcase.cpp" />
+    <ClCompile Include="Source\Shadows\ShadowsPanel.cpp" />
+    <ClCompile Include="Source\Shadows\ShadowsRig.cpp" />
+    <ClCompile Include="Source\Shadows\ShadowsSample.cpp" />
+    <ClCompile Include="Source\Shadows\ShadowsScenery.cpp" />
+    <ClCompile Include="Source\Shadows\ShadowsView.cpp" />
     <ClCompile Include="Source\Shapes\ShapeShowcase.cpp" />
     <ClCompile Include="Source\Shapes\ShapesSample.cpp" />
     <ClCompile Include="Source\Shapes3D\Shapes3DPanel.cpp" />
@@ -166,6 +171,12 @@
     <ClInclude Include="Source\RenderState\StageView.h" />
     <ClInclude Include="Source\RenderTarget\RenderTargetSample.h" />
     <ClInclude Include="Source\RenderTarget\TargetShowcase.h" />
+    <ClInclude Include="Source\Shadows\ShadowsDemoState.h" />
+    <ClInclude Include="Source\Shadows\ShadowsPanel.h" />
+    <ClInclude Include="Source\Shadows\ShadowsRig.h" />
+    <ClInclude Include="Source\Shadows\ShadowsSample.h" />
+    <ClInclude Include="Source\Shadows\ShadowsScenery.h" />
+    <ClInclude Include="Source\Shadows\ShadowsView.h" />
     <ClInclude Include="Source\Shapes\ShapeShowcase.h" />
     <ClInclude Include="Source\Shapes\ShapesSample.h" />
     <ClInclude Include="Source\Shapes3D\Shapes3DDemoState.h" />
