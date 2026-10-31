@@ -67,6 +67,9 @@ public:
 	int32 MakeShadowMap( int32 Width, int32 Height ) override;
 	void DeleteShadowMap( int32 ShadowMap ) override;
 	bool GetShadowMapViewProjection( int32 ShadowMap, float32 ( &OutMatrix )[16] ) override;
+	int32 MakeShader( EShaderStage Stage, const void* Code, int32 NumBytes ) override;
+	void DeleteShader( int32 Shader ) override;
+	bool CompileShader( EShaderStage Stage, const char* Source, int32 NumBytes, const char* SourceName, const char* EntryPoint, const char* ShaderModel, TArray<uint8>& OutCode, FString& OutMessage ) override;
 	int32 GetModelFrameCount( int32 Model ) override;
 	FString GetModelFrameName( int32 Model, int32 FrameIndex ) override;
 	bool SaveModelToMV1( int32 Model, const FString& Path, const FModelSaveOptions& Options, FString& OutWarning ) override;

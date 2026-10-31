@@ -175,6 +175,9 @@
     <ClCompile Include="Library\Framework\Asset\RenderTarget.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Shader.cpp">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Asset\ShadowMap.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
@@ -563,6 +566,9 @@
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\DxLibRibbonMesh.cpp">
+      <Filter>Library\Platform\DxLib</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\DxLibShader.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\DxLibShadowMap.cpp">
@@ -1296,6 +1302,9 @@
     <ClInclude Include="Library\Core\Interfaces\Render\ImageTypes.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IShader.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IShadowMap.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
@@ -1501,6 +1510,9 @@
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\RenderTarget.h">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Shader.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\ShadowMap.h">
@@ -1723,6 +1735,9 @@
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\RenderState3D.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\ShaderVertex.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\ShadowMapView.h">
@@ -1969,6 +1984,9 @@
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\DxLibRibbonMesh.h">
+      <Filter>Library\Platform\DxLib</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\DxLibShader.h">
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\DxLibShadowMap.h">

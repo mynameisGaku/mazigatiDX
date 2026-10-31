@@ -10,6 +10,7 @@
 #include "Library/Platform/DxLib/DxLibVertex.h"
 
 #include <psapi.h>   // windows.h（DxLib.h が読み込む）より後に
+#include <d3dcompiler.h>
 
 #include <climits>
 #include <cstring>
@@ -20,6 +21,25 @@ REGISTER_SUBSYSTEM( CDxLibAssetBackend )
 
 namespace
 {
+	// d3dcompiler_47.dll の D3DCompile。Windows に入っている DLL を、使うときに読む（リンクしないので、無い環境でもこのファイルは動き、コンパイルだけが失敗する）
+	using FD3DCompileFunction = HRESULT( WINAPI* )( LPCVOID, SIZE_T, LPCSTR, const D3D_SHADER_MACRO*, ID3DInclude*, LPCSTR, LPCSTR, UINT, UINT, ID3DBlob**, ID3DBlob** );
+
+	FD3DCompileFunction FindD3DCompile()
+	{
+		static FD3DCompileFunction Function = nullptr;
+		static bool bSearched = false;
+		if ( !bSearched )
+		{
+			bSearched = true;
+			HMODULE Module = LoadLibraryW( L"d3dcompiler_47.dll" );
+			if ( Module != nullptr )
+			{
+				Function = reinterpret_cast<FD3DCompileFunction>( GetProcAddress( Module, "D3DCompile" ) );
+			}
+		}
+		return Function;
+	}
+
 	// 非同期読み込みの設定を、この範囲だけ変える
 	struct FAsyncScope
 	{
@@ -725,6 +745,75 @@ bool CDxLibAssetBackend::WriteIndexBuffer( int32 IndexBuffer, int32 StartIndex, 
 		return false;
 	}
 	return ::SetIndexBufferData( StartIndex, Indices, NumIndices, IndexBuffer ) == 0;
+}
+
+int32 CDxLibAssetBackend::MakeShader( EShaderStage Stage, const void* Code, int32 NumBytes )
+{
+	if ( Code == nullptr || NumBytes < 1 )
+	{
+		return NAsset::InvalidHandle;
+	}
+	// DxLib は、壊れたバイト列・途中で切れたバイト列・種類の違うもの（頂点用をピクセル用として読むなど）に -1 を返す（実測）
+	const int Handle = Stage == EShaderStage::Pixel ? LoadPixelShaderFromMem( Code, NumBytes ) : LoadVertexShaderFromMem( Code, NumBytes );
+	return Handle >= 0 ? Handle : NAsset::InvalidHandle;
+}
+
+void CDxLibAssetBackend::DeleteShader( int32 Shader )
+{
+	if ( Shader >= 0 )
+	{
+		::DeleteShader( Shader );
+	}
+}
+
+bool CDxLibAssetBackend::CompileShader( EShaderStage Stage, const char* Source, int32 NumBytes, const char* SourceName, const char* EntryPoint, const char* ShaderModel, TArray<uint8>& OutCode, FString& OutMessage )
+{
+	OutCode.Reset();
+	OutMessage = FString();
+	if ( Source == nullptr || NumBytes < 1 || EntryPoint == nullptr || EntryPoint[0] == '\0' || ShaderModel == nullptr )
+	{
+		OutMessage = "the source, the entry point and the shader model are required";
+		return false;
+	}
+	// DxLib が読めるのは 4.0 / 4.1 / 5.0（実測: 3.0 は読めない）
+	if ( NCString::Compare( ShaderModel, "4_0" ) != 0 && NCString::Compare( ShaderModel, "4_1" ) != 0 && NCString::Compare( ShaderModel, "5_0" ) != 0 )
+	{
+		OutMessage = "the shader model must be 4_0, 4_1 or 5_0";
+		return false;
+	}
+	const FD3DCompileFunction Compile = FindD3DCompile();
+	if ( Compile == nullptr )
+	{
+		OutMessage = "d3dcompiler_47.dll is not available";
+		return false;
+	}
+	char Target[16] = {};
+	NCString::Format( Target, sizeof( Target ), "%s_%s", Stage == EShaderStage::Pixel ? "ps" : "vs", ShaderModel );
+
+	ID3DBlob* Code = nullptr;
+	ID3DBlob* Errors = nullptr;
+	// ソースの名前は、メッセージと、#include を探すフォルダー（ファイルの名前のとき）に使われる
+	const HRESULT Result = Compile( Source, static_cast<SIZE_T>( NumBytes ), SourceName, nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, EntryPoint, Target, 0, 0, &Code, &Errors );
+	if ( Errors != nullptr )
+	{
+		OutMessage = FString( static_cast<const char*>( Errors->GetBufferPointer() ), static_cast<int32>( Errors->GetBufferSize() ) );
+		Errors->Release();
+	}
+	if ( FAILED( Result ) || Code == nullptr )
+	{
+		if ( Code != nullptr )
+		{
+			Code->Release();
+		}
+		if ( OutMessage.IsEmpty() )
+		{
+			OutMessage = "the shader cannot be compiled";
+		}
+		return false;
+	}
+	OutCode.Append( static_cast<const uint8*>( Code->GetBufferPointer() ), static_cast<int32>( Code->GetBufferSize() ) );
+	Code->Release();
+	return true;
 }
 
 int32 CDxLibAssetBackend::MakeShadowMap( int32 Width, int32 Height )

@@ -90,6 +90,7 @@ namespace NAssetService
 	void ReleaseVertexBuffer( int32 Handle );
 	void ReleaseIndexBuffer( int32 Handle );
 	void ReleaseShadowMap( int32 Handle );
+	void ReleaseShader( int32 Handle );
 
 	// フォントファイルの利用（AddFontFile）を数えながら行う。最後の利用者が RemoveFontFile したときに実際に外す
 	bool AddFontFile( const FString& Path );

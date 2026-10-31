@@ -137,6 +137,12 @@ enum class EDrawCommand : uint8
 	EndShadowMap,     // FDrawEndShadowMapData。シャドウマップへの描画を終えて、元の描画先・カメラへ戻す（ShadowMap_DrawEnd）
 	UseShadowMap,     // FDrawUseShadowMapData。シャドウマップを、影を受ける描画に使う（SetUseShadowMap。スロット 0〜2）
 	PreviewShadowMap, // FDrawPreviewShadowMapData。シャドウマップの中身（深度）を、画面の矩形に描く（TestDrawShadowMap）
+	// シェーダーの追加（上のコマンドの形式は変えていない）
+	UseShader,         // FDrawUseShaderData。頂点シェーダー / ピクセルシェーダーを、シェーダーで描く命令に使わせる（SetUseVertexShader / SetUsePixelShader）
+	ShaderConstants,   // FDrawShaderConstantsData + 定数の中身（4 バイト単位）。シェーダーの定数バッファの中身を替えて、スロットに置く（Create / Update / SetShaderConstantBuffer）
+	ShaderTexture,     // FDrawShaderTextureData。シェーダーが読む画像を、段に置く（SetUseTextureToShader）
+	PrimitiveShader3D, // FDrawPrimitiveShader3DData + 頂点（FDrawShaderVertex3D）+ 添字（uint16）。シェーダーで、3D の頂点の並びを描く（DrawPrimitive3DToShader / DrawPrimitiveIndexed3DToShader）
+	ShaderRect,        // FDrawShaderRectData。画素の座標の矩形を、組み込みの頂点シェーダー（利用者のピクセルシェーダーに、色と画像の座標を渡す）で描く
 };
 
 // Primitive3D の頂点のつなぎ方（DxLib の DX_PRIMTYPE_*）
@@ -572,6 +578,20 @@ namespace NDrawShadowMap
 	constexpr int32 MaxSize = 16384;
 }
 
+// シェーダーの定数
+namespace NDrawShader
+{
+	// シェーダーが読める画像の段の数（t0〜t15。DxLib の SetUseTextureToShader の段 0〜15）
+	constexpr int32 NumTextureStages = 16;
+
+	// 定数バッファのスロットのうち、使えるもの（HLSL の register( bN ) の N）。0〜3 は DxLib 自身が使い、上書きすると普通の 3D の描画が壊れる（実測）。14 以上は D3D11 の上限を超える
+	constexpr int32 FirstUserSlot = 4;
+	constexpr int32 LastUserSlot = 13;
+
+	// 1 つの定数バッファの大きさの上限（バイト。16 の倍数であること。4x4 の行列 64 個）
+	constexpr int32 MaxConstantBytes = 4096;
+}
+
 // ライティング（光）。色は float（0..1 を超えてもよい）。Type は EDrawLightType の数値
 // UseLighting: Enabled が 0 なら、光の計算をしない（図形の色がそのまま出る）。DefaultLight: DxLib に最初からある 1 つのライトの入り切り
 struct FDrawUseLightingData { int32 Enabled = 1; };
@@ -702,6 +722,58 @@ struct FDrawUseShadowMapData { int32 Slot = 0; int32 Handle = -1; };
 // シャドウマップの中身（深度）を、画面の矩形 (X0, Y0)〜(X1, Y1) に描く（確かめる用）
 struct FDrawPreviewShadowMapData { int32 Handle = -1; int32 X0 = 0, Y0 = 0, X1 = 0, Y1 = 0; };
 
+// 頂点シェーダー（Stage が 0）か、ピクセルシェーダー（Stage が 1）を、使わせる。Handle が負なら、その種類のシェーダーを使わない
+struct FDrawUseShaderData { int32 Stage = 0; int32 Handle = -1; };
+// 定数バッファの中身を NumBytes バイト（NDrawShader::MaxConstantBytes 以下の、16 の倍数）にして、Stage 側のスロット Slot（NDrawShader::FirstUserSlot〜LastUserSlot）に置く。
+// 後ろに、中身が NumBytes / 4 ワード続く
+struct FDrawShaderConstantsData { int32 Stage = 0; int32 Slot = NDrawShader::FirstUserSlot; int32 NumBytes = 0; };
+// シェーダーの段 Stage（0〜15）に、画像 Handle を置く。Handle が負なら、その段を空にする
+struct FDrawShaderTextureData { int32 Stage = 0; int32 Handle = -1; };
+
+// シェーダーに渡す 3D の頂点 1 つ（DxLib の VERTEX3DSHADER。88 バイト）。色は R, G, B, A。
+// 頂点シェーダーの入力は、この並びのとおりに、先頭から飛ばさずに宣言する（DxLib は、宣言した順に詰めて読む）
+struct FDrawShaderVertex3D
+{
+	float32 Position[3] = {};
+	float32 SubPosition[4] = {};
+	float32 Normal[3] = { 0.0f, 1.0f, 0.0f };
+	float32 Tangent[3] = { 1.0f, 0.0f, 0.0f };
+	float32 Binormal[3] = { 0.0f, 0.0f, 1.0f };
+	uint8 Diffuse[4] = { 255, 255, 255, 255 };
+	uint8 Specular[4] = { 0, 0, 0, 0 };
+	float32 U = 0.0f, V = 0.0f;
+	float32 SubU = 0.0f, SubV = 0.0f;
+};
+
+// シェーダーで、3D の頂点の並びを描く。後ろに、頂点 NumVertices 個（FDrawShaderVertex3D）、続けて添字 NumIndices 個（uint16。2 個で 1 ワード。奇数個なら 0 で埋める）が続く。
+// NumIndices が 0 なら、頂点を順に使う。0 より大きければ、添字の順に頂点を使う。Type は EDrawPrimitive
+struct FDrawPrimitiveShader3DData
+{
+	int32 Type = 0;
+	int32 NumVertices = 0;
+	int32 NumIndices = 0;
+	int32 Reserved = 0;
+
+	// 命令全体のワード数（ヘッダー 1 + 固定部分 + 頂点 + 添字）。引数が負のときは 0
+	static constexpr size_t GetCommandWords( int32 InNumVertices, int32 InNumIndices )
+	{
+		return InNumVertices < 0 || InNumIndices < 0 ? 0
+			: 1 + sizeof( FDrawPrimitiveShader3DData ) / 4 + static_cast<size_t>( InNumVertices ) * ( sizeof( FDrawShaderVertex3D ) / 4 ) + ( static_cast<size_t>( InNumIndices ) + 1 ) / 2;
+	}
+};
+
+// 画面の矩形を、利用者のピクセルシェーダーで描く。位置と大きさは、描画先の画素の座標（左上が 0, 0）。実行のときに、いまの描画先の大きさでクリップ座標に直す。
+// 画像の座標は、矩形の左上が (U0, V0)、右下が (U1, V1)。Color は頂点の色（R, G, B, A）
+// 組み込みの頂点シェーダーが、ピクセルシェーダーに渡すもの: float4 Position : SV_POSITION、float4 Color : COLOR0、float2 Uv : TEXCOORD0
+struct FDrawShaderRectData
+{
+	float32 X = 0.0f, Y = 0.0f;
+	float32 Width = 0.0f, Height = 0.0f;
+	float32 U0 = 0.0f, V0 = 0.0f;
+	float32 U1 = 1.0f, V1 = 1.0f;
+	uint8 Color[4] = { 255, 255, 255, 255 };
+};
+
 #define DRAW_DATA_CHECK( Type ) \
 	static_assert( sizeof( Type ) % 4 == 0 && bIsTriviallyCopyable<Type>, #Type " must be made of 4-byte words with no padding" )
 DRAW_DATA_CHECK( FDrawBoxData );
@@ -787,8 +859,16 @@ DRAW_DATA_CHECK( FDrawBeginShadowMapData );
 DRAW_DATA_CHECK( FDrawEndShadowMapData );
 DRAW_DATA_CHECK( FDrawUseShadowMapData );
 DRAW_DATA_CHECK( FDrawPreviewShadowMapData );
+DRAW_DATA_CHECK( FDrawUseShaderData );
+DRAW_DATA_CHECK( FDrawShaderConstantsData );
+DRAW_DATA_CHECK( FDrawShaderTextureData );
+DRAW_DATA_CHECK( FDrawShaderVertex3D );
+DRAW_DATA_CHECK( FDrawPrimitiveShader3DData );
+DRAW_DATA_CHECK( FDrawShaderRectData );
 #undef DRAW_DATA_CHECK
 static_assert( sizeof( FDrawVertex3D ) == 48 && sizeof( FDrawPrimitive3DData ) == 16, "unexpected padding in a draw command data type" );
+// シェーダーの頂点は、DxLib の VERTEX3DSHADER（88 バイト）と同じ並びでないと、頂点シェーダーが読めない
+static_assert( sizeof( FDrawShaderVertex3D ) == 88 && sizeof( FDrawPrimitiveShader3DData ) == 16 && sizeof( FDrawShaderRectData ) == 36, "unexpected padding in a draw command data type" );
 static_assert( sizeof( FDrawBoxData ) == 24 && sizeof( FDrawSphere3DData ) == 28 && sizeof( FDrawModelData ) == 60, "unexpected padding in a draw command data type" );
 
 //-----------------------------------------------------------------------------

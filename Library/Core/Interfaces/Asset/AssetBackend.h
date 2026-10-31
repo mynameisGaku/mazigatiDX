@@ -4,6 +4,7 @@
 #include "Library/Core/Interfaces/Asset/FontTypes.h"
 #include "Library/Core/Interfaces/Asset/StaticModelSurfaceData.h"
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
+#include "Library/Core/Interfaces/Render/IShader.h"
 #include "Library/Core/Interfaces/Render/MeshTypes.h"
 #include "Library/Core/Interfaces/Render/RenderTargetTypes.h"
 #include "Library/Math/Color.h"
@@ -184,6 +185,16 @@ public:
 	// 最後に BeginShadowMap で影を描いたときの、光から見た行列（ビュー行列 x 射影行列。16 個の float。DxLib と同じ、行ベクトルの流儀）を取り出す。
 	// まだ一度も影を描いていない・無効なハンドルなら false
 	virtual bool GetShadowMapViewProjection( int32 /*ShadowMap*/, float32 ( & /*OutMatrix*/ )[16] ) { return false; }
+
+	//-------------------------------------------------------------------------
+	// シェーダー（CShader）。メインスレッドだけで作る。解放は DeleteShader
+	//-------------------------------------------------------------------------
+	// コンパイル済みのシェーダー（バイト列）から作る。作れなければ負（NAsset::InvalidHandle）。形式が合わないバイト列・種類が違うもの（頂点用をピクセル用として読むなど）は作れない
+	virtual int32 MakeShader( EShaderStage /*Stage*/, const void* /*Code*/, int32 /*NumBytes*/ ) { return -1; }
+	virtual void DeleteShader( int32 /*Shader*/ ) {}
+	// HLSL のソース（UTF-8。NumBytes バイト）を、コンパイル済みのシェーダーにする。SourceName は、メッセージと #include の探し先に使う名前（ファイルの名前）、
+	// EntryPoint は入り口の関数の名前、ShaderModel は "4_0" など。失敗したら false で、OutMessage に理由（ソースの行番号つき）を入れる。コンパイラーが使えない実装は、いつも false
+	virtual bool CompileShader( EShaderStage /*Stage*/, const char* /*Source*/, int32 /*NumBytes*/, const char* /*SourceName*/, const char* /*EntryPoint*/, const char* /*ShaderModel*/, TArray<uint8>& /*OutCode*/, FString& /*OutMessage*/ ) { return false; }
 
 	//-------------------------------------------------------------------------
 	// フォント

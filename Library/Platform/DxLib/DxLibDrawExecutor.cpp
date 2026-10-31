@@ -19,6 +19,7 @@
 #include "Library/Platform/DxLib/DxLibLighting.h"
 #include "Library/Platform/DxLib/DxLibRenderState3D.h"
 #include "Library/Platform/DxLib/DxLibRibbonMesh.h"
+#include "Library/Platform/DxLib/DxLibShader.h"
 #include "Library/Platform/DxLib/DxLibShadowMap.h"
 #include "Library/Platform/DxLib/DxLibShapes3D.h"
 
@@ -268,7 +269,7 @@ namespace
 		case EDrawCommand::PopWorldMatrix:
 			return true;
 		default:
-			return FDxLibRenderState3D::IsStateCommand( Type ) || FDxLibLighting::IsStateCommand( Type ) || FDxLibShadowMap::IsStateCommand( Type );
+			return FDxLibRenderState3D::IsStateCommand( Type ) || FDxLibLighting::IsStateCommand( Type ) || FDxLibShadowMap::IsStateCommand( Type ) || FDxLibShader::IsStateCommand( Type );
 		}
 	}
 
@@ -441,6 +442,8 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 	FDxLibLighting Lighting;
 	// シャドウマップ（影の絵）への描画と、影を受けるスロット。描いている途中なら終わらせて、使っているスロットを外す
 	FDxLibShadowMap ShadowMap;
+	// シェーダー（使わせた頂点シェーダー・ピクセルシェーダー、置いた画像と定数バッファ）。終わりに、外して片付ける
+	FDxLibShader ShaderState;
 	bool bBrightChanged = false;
 	bool bAddColorChanged = false;
 	int OldAddColor[3] = { 0, 0, 0 };
@@ -568,7 +571,7 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 		const int Fill = Command.Has( FDrawFlag::Fill ) ? TRUE : FALSE;
 
 		// 影の絵を描いている間は、描画先・カメラ・クリップなど、影の絵を壊す命令を実行しない
-		if ( ShadowMap.IsInPass() && FDxLibShadowMap::IsBlockedInPass( Command.Type ) )
+		if ( ShadowMap.IsInPass() && ( FDxLibShadowMap::IsBlockedInPass( Command.Type ) || FDxLibShader::IsBlockedInPass( Command.Type ) ) )
 		{
 			return;
 		}
@@ -593,6 +596,12 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 
 		// シャドウマップの命令
 		if ( ShadowMap.Apply( Command ) )
+		{
+			return;
+		}
+
+		// シェーダーの命令
+		if ( ShaderState.Apply( Command ) )
 		{
 			return;
 		}
@@ -1559,6 +1568,9 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 
 	// 影の絵を描いている途中なら終わらせる（影の絵は、描画先・カメラを一時的に替えているので、ほかを戻す前に）。使っているスロットも外す
 	ShadowMap.Restore();
+
+	// 使わせたシェーダーと画像を外し、使った定数バッファを片付ける
+	ShaderState.Restore();
 
 	// このオブジェクトの分で替えた描画先を、元に戻す（Pop が足りなくても。クリップ・2D の変換も、替える前に戻る）
 	while ( !TargetStack.IsEmpty() )
