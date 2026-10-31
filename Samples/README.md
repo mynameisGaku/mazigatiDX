@@ -27,6 +27,7 @@ mazigatiDX の機能を、1 つずつ動かして見られるサンプル集で�
 |`RenderState`|3D の描画状態。一つの舞台に、描画状態の使いどころを並べる: 深度バッファ（半透明のガラス）、カリング（部屋）、画像の貼り方と変換（壁・水面）、距離のフォグと高さのフォグ（遠くの柱・足元の霧）、フィルターと異方性（地面の市松模様）、3D 図形の変換の積み重ね（腕）、深度バッファの消去（手前に描く光線）。数字キーの 1〜8 で切り替える|
 |`Lighting`|3D のライティング。夜の中庭を、月明かり（方向ライト）・床の上を回る電球（点光源）・床を舐めるスポットライト・周りの街灯（同時に 6 つまで）で照らす。材質の違う 5 つの球（つや消し・つや・自己発光・プラスチック・金色の金属）と、床・壁・柱・箱の陰影。数字キーの 1〜9 で、各ライト・全体の環境光・画素ごとの光・ハイライト・やわらかい光・街灯の数・光の計算そのものの入り切りを切り替える|
 |`Shapes3D`|3D 図形の追加。夜の広場に、松（円錐）・星（点）・蛍（点の並び）・座標軸とらせん（線）・波（帯）・傘（扇）・宝石（添字つきの三角形）と、カメラへ向ける画像（足元が基準点の草・4 つの角を動かす旗・回る星・脈打つ心臓・揺れるランタン）と、頂点バッファ・インデックスバッファで描く森（木 1 本の形を、位置を変えて何度も描く）・池の水面（頂点を毎フレーム書き換える）を並べる。数字キーの 1〜7 で、円錐の線描き・フォグ・多角形のカリング・ビルボードの基準点・画像の半透明・光の入り切り・森の木の数を切り替える|
+|`Shadows`|影（シャドウマップ）。昼の中庭に、家・木・木箱・すき間のある柵・歩き回る旅人を置き、動く太陽の影を落とす。影の絵（`BeginShadowMap` ～ `EndShadowMap`）を毎フレーム描き、`UseShadowMap` で影を受ける。数字キーで、影の入り切り・影の絵の大きさ・影を計算する範囲・太陽の動き・補正の深さ（0 だと床が縞になる）・影の絵の中身の表示（`PreviewShadowMap`）・ランタン（影を受けない点光源。`FLight::ShadowMapSlots`）を切り替える。マウスで回り、ホイールで近づく|
 |`Input`|キーボード・マウス・ゲームパッドの状態を表示する|
 
 ## 構成（クラスとファイルの分け方）
@@ -50,6 +51,7 @@ Samples/
     RenderState/                サンプル RenderState: シーン（CRenderStateSample）と、オブジェクト（CRenderStateRig、CStageView、CInfoPanel）、共有する状態（FRenderStateDemoState）、舞台（NStageScenery）
     Lighting/                   サンプル Lighting: シーン（CLightingSample）と、オブジェクト（CLightingRig、CLightingView、CLightingPanel）、共有する状態（FLightingDemoState）、中庭（NLightingScenery）
     Shapes3D/                   サンプル Shapes3D: シーン（CShapes3DSample）と、オブジェクト（CShapes3DRig、CShapes3DView、CShapes3DPanel）、共有する状態（FShapes3DDemoState）、広場（NShapes3DScenery）
+    Shadows/                    サンプル Shadows: シーン（CShadowsSample）と、オブジェクト（CShadowsRig、CShadowsView、CShadowsPanel）、共有する状態（FShadowsDemoState）、中庭（NShadowsScenery）
     Village/                    サンプル Village: シーン（CVillageSample）と、オブジェクト（CTileMap、CPlayer、CCoin、CVillager、CDialogue、CDarkness、CStatusPanel）、共有する状態（FVillageState）、絵を CPU で作る関数（NVillageArt）
     Common/                     複数のサンプルで使うもの。確認用の画像を、メモリの上で作る関数（NTestPattern）、光の当たらない側を真っ黒にしない、やわらかい光（FSoftLightingScope）
     Input/                      サンプル Input: シーン（CInputSample）と、オブジェクト（CKeyboardView、CMouseView、CGamepadView）
