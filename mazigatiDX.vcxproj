@@ -88,6 +88,7 @@
     <ClCompile Include="Library\DebugUI\EffectEditorPanels.cpp" />
     <ClCompile Include="Library\DebugUI\EffectPreviewSurface.cpp" />
     <ClCompile Include="Library\DebugUI\ImGuiPropertyInspector.cpp" />
+    <ClCompile Include="Library\DebugUI\ImGuiTexture.cpp" />
     <ClCompile Include="Library\DebugUI\LogCategoryPanel.cpp" />
     <ClCompile Include="Library\DebugUI\ModelAnimationEditor.cpp" />
     <ClCompile Include="Library\DebugUI\ProfilerTimeline.cpp" />
@@ -239,8 +240,10 @@
     <ClCompile Include="Library\Physics\PhysicsSystem.cpp" />
     <ClCompile Include="Library\Physics\RigidBody.cpp" />
     <ClCompile Include="Library\Physics\WorldPhysics.cpp" />
+    <ClCompile Include="Library\Platform\BackendSelection.cpp" />
     <ClCompile Include="Library\Platform\CommandLine.cpp" />
     <ClCompile Include="Library\Platform\FileSystem.cpp" />
+    <ClCompile Include="Library\Platform\ImGuiAssert.cpp" />
     <ClCompile Include="Library\Platform\LeakReport.cpp" />
     <ClCompile Include="Library\Platform\LogArchive.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackend.cpp" />
@@ -261,6 +264,11 @@
     <ClCompile Include="Library\Platform\DxLib\DxLibShapes3D.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibVertex.cpp" />
     <ClCompile Include="Library\Platform\DxLib\EffectMaterialRenderer.cpp" />
+    <ClCompile Include="Library\Platform\Null\NullAssetBackend.cpp" />
+    <ClCompile Include="Library\Platform\Null\NullAudioBackend.cpp" />
+    <ClCompile Include="Library\Platform\Null\NullDrawExecutor.cpp" />
+    <ClCompile Include="Library\Platform\Null\NullInput.cpp" />
+    <ClCompile Include="Library\Platform\Null\NullPlatform.cpp" />
     <ClCompile Include="Library\Platform\SDL\SdlGamepadInput.cpp" />
     <ClCompile Include="VendorModules\ImGui\imgui.cpp" />
     <ClCompile Include="VendorModules\ImGui\imgui_draw.cpp" />
@@ -714,6 +722,7 @@
     <ClInclude Include="Library\Physics\PhysicsTypes.h" />
     <ClInclude Include="Library\Physics\RigidBody.h" />
     <ClInclude Include="Library\Physics\WorldPhysics.h" />
+    <ClInclude Include="Library\Platform\BackendSelection.h" />
     <ClInclude Include="Library\Platform\CommandLine.h" />
     <ClInclude Include="Library\Platform\FileSystem.h" />
     <ClInclude Include="Library\Platform\LeakReport.h" />
@@ -725,6 +734,7 @@
     <ClInclude Include="Library\Platform\DxLib\DxLibBackend.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibDrawExecutor.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibImageOps.h" />
+    <ClInclude Include="Library\Platform\DxLib\DxLibImGuiTexture.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibInclude.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibInput.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibLighting.h" />
@@ -737,6 +747,11 @@
     <ClInclude Include="Library\Platform\DxLib\DxLibTypes.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibVertex.h" />
     <ClInclude Include="Library\Platform\DxLib\EffectMaterialRenderer.h" />
+    <ClInclude Include="Library\Platform\Null\NullAssetBackend.h" />
+    <ClInclude Include="Library\Platform\Null\NullAudioBackend.h" />
+    <ClInclude Include="Library\Platform\Null\NullDrawExecutor.h" />
+    <ClInclude Include="Library\Platform\Null\NullInput.h" />
+    <ClInclude Include="Library\Platform\Null\NullPlatform.h" />
     <ClInclude Include="Library\Platform\SDL\SdlGamepadInput.h" />
     <ClInclude Include="VendorModules\ImGui\imconfig.h" />
     <ClInclude Include="VendorModules\ImGui\imgui.h" />

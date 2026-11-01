@@ -20,6 +20,8 @@ public:
 	void Initialize( FSubsystemCollection& Collection ) override;
 	// 振動を停止し、この実装が取得した SDL の利用権だけを解放する。
 	void Deinitialize() override;
+	// --backend=null のときは作らない（実機のゲームパッドを読まず、いつも同じ入力で動かすため）
+	bool ShouldCreateSubsystem( CEngine& Engine ) const override;
 	// 抜き差しを確認し、一度だけ入力状態を取得する。
 	void Tick( float32 DeltaTime ) override;
 	// ゲーム処理より前に更新する。

@@ -11,16 +11,11 @@
 #include "Library/Platform/DxLib/DxLibLighting.h"
 #include "Library/Platform/DxLib/DxLibRenderState3D.h"
 #include "VendorModules/ImGui/imgui_impl_dxlib.hpp"
+#include "Library/DebugUI/ImGuiTexture.h"
+#include "Library/Platform/BackendSelection.h"
+#include "Library/Platform/DxLib/DxLibImGuiTexture.h"
 
 DEFINE_LOG_CATEGORY( LogPlatform )
-
-#ifdef _DEBUG
-// ImGui の IM_ASSERT から呼ばれる（VendorModules/ImGui/imconfig.h）。原因をログに残してから止める
-void CoGImGuiAssertFailed( const char* Expression, const char* File, int Line )
-{
-	LOG( LogPlatform, Fatal, "ImGui assertion failed: %s (%s:%d)", Expression, File, Line );
-}
-#endif
 
 REGISTER_SUBSYSTEM( CDxLibBackend )
 
@@ -46,6 +41,11 @@ namespace
 }
 
 #pragma region Lifecycle
+
+bool CDxLibBackend::ShouldCreateSubsystem( CEngine& Engine ) const
+{
+	return !NBackendSelection::IsNullRequested();
+}
 
 void CDxLibBackend::Initialize( FSubsystemCollection& Collection )
 {
@@ -74,6 +74,7 @@ TResult<void> CDxLibBackend::Init( const FWindowSettings& InSettings )
 
 	if ( DxLib_Init() == -1 ) return TResult<void>::Err( "DxLib_Init failed" );
 	bInitialized = true;
+	NDebugUI::SetImGuiTextureCallbacks( NDxLibImGuiTexture::MakeCallbacks() );
 	LOG( LogPlatform, Verbose, "DxLib initialized (Direct3D version %d, working directory %s)", GetUseDxLibDirect3DVersion(), *NFileSystem::GetWorkingDirectory() );
 
 	ApplyRenderState();
@@ -118,6 +119,8 @@ void CDxLibBackend::Shutdown()
 
 	LOG( LogPlatform, Log, "Shutting down (%llu frame(s) rendered)", static_cast<unsigned long long>( FrameCount ) );
 	ShutdownImGui();
+	NDebugUI::ClearImGuiTextureCache();
+	NDebugUI::SetImGuiTextureCallbacks( NDebugUI::FImGuiTextureCallbacks() );
 	DxLib_End();
 	bInitialized = false;
 	PendingWindowMode.Reset();
@@ -360,9 +363,14 @@ void CDxLibBackend::UpdateTime()
 
 void CDxLibBackend::WaitForFrameLimit()
 {
-	if ( Settings.MaxFPS <= 0 ) return;
+	// bVSync が有効でも、ディスプレイが省電力（画面オフ）のときは DWM が垂直同期の待ちを省いて 800 FPS 以上で空回りするため、既定で 60 FPS を上限にする
+	const int32 TargetFPS = Settings.MaxFPS > 0 ? Settings.MaxFPS : ( Settings.bVSync ? 60 : 0 );
+	if ( TargetFPS <= 0 )
+	{
+		return;
+	}
 
-	const int64 FrameMicroseconds = 1000000 / Settings.MaxFPS;
+	const int64 FrameMicroseconds = 1000000 / TargetFPS;
 	while ( true )
 	{
 		const int64 Remaining = FrameMicroseconds - ( GetNowHiPerformanceCount() - FrameStart );

@@ -15,8 +15,8 @@
     <!-- フレームワークのフォルダー（末尾に \ つき）。#include "Library/..." の基準 -->
     <MazigatiRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..'))\</MazigatiRoot>
     <!-- DxLib の場所。別の場所に置いたときは、同じ名前の環境変数かプロジェクトのプロパティで上書きする -->
-    <MazigatiDxLibDir Condition="'$(MazigatiDxLibDir)' == ''">C:\DxLib</MazigatiDxLibDir>
-    <MazigatiDxLibVcDir Condition="'$(MazigatiDxLibVcDir)' == ''">C:\DxLib_VC\プロジェクトに追加すべきファイル_VC用</MazigatiDxLibVcDir>
+    <MazigatiDxLibDir Condition="'$(MazigatiDxLibDir)' == '' and '$(MazigatiWithoutDxLib)' != 'true'">C:\DxLib</MazigatiDxLibDir>
+    <MazigatiDxLibVcDir Condition="'$(MazigatiDxLibVcDir)' == '' and '$(MazigatiWithoutDxLib)' != 'true'">C:\DxLib_VC\プロジェクトに追加すべきファイル_VC用</MazigatiDxLibVcDir>
   </PropertyGroup>
 
   <ItemDefinitionGroup>
@@ -73,6 +73,13 @@
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
     </ClCompile>
   </ItemDefinitionGroup>
+
+  <!-- /p:MazigatiWithoutDxLib=true のときは、Library/Platform/DxLib と Source/SelfTest をコンパイル対象から外し、DxLib なしでリンクできることを確かめる -->
+  <Target Name="ExcludeDxLibSources" BeforeTargets="CreateObjectDirectories;ClCompile" Condition="'$(MazigatiWithoutDxLib)'=='true'">
+    <ItemGroup>
+      <ClCompile Remove="$(MazigatiRoot)Library\Platform\DxLib\**;Library\Platform\DxLib\**;Source\SelfTest\**" />
+    </ItemGroup>
+  </Target>
 
   <!-- ObjectFileName=$(IntDir)%(RelativeDir) 用の出力ディレクトリを作成（同名 .cpp の衝突回避） -->
   <Target Name="CreateObjectDirectories" BeforeTargets="ClCompile">

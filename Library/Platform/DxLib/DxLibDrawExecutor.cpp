@@ -22,6 +22,7 @@
 #include "Library/Platform/DxLib/DxLibShader.h"
 #include "Library/Platform/DxLib/DxLibShadowMap.h"
 #include "Library/Platform/DxLib/DxLibShapes3D.h"
+#include "Library/Platform/BackendSelection.h"
 
 REGISTER_SUBSYSTEM( CDxLibDrawExecutor )
 
@@ -363,6 +364,11 @@ namespace
 	{
 		return NMath::RoundToInt( Value );
 	}
+}
+
+bool CDxLibDrawExecutor::ShouldCreateSubsystem( CEngine& Engine ) const
+{
+	return !NBackendSelection::IsNullRequested();
 }
 
 void CDxLibDrawExecutor::Initialize( FSubsystemCollection& Collection )

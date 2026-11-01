@@ -1,31 +1,42 @@
-﻿#pragma once
+﻿// SPDX-License-Identifier: MIT
+#pragma once
 #include "Library/Core/Types/TypeDefinition.h"
 #include "VendorModules/ImGui/imgui.h"
 
 //=============================================================================
-// ImGui で DxLib の画像を表示する
-//   DxLib のグラフィックハンドル（LoadGraph / MakeScreen で作ったもの）を、ImGui::Image / AddImage に渡せる ID にする。
-//   Direct3D 11 の ShaderResourceView を作ってキャッシュする（ImGui の描画は DxLib と同じデバイスで行われるので、そのまま使える）。
-//
-//   ImGui::Image( NDebugUI::GetImGuiTexture( Texture->GetHandle() ), ImVec2( 256, 256 ) );
-//
-//   - 画像のハンドルが削除されたり、別の画像に使い回されたりしても、中身を見て作り直すので古い絵は出ない
-//   - 一定フレーム使われなかったものは TickImGuiTextureCache で解放する
-//   - メインスレッドだけで使う。Direct3D 11 でなければ（または無効なハンドルなら）0
+// ImGui へプラットフォームの画像を表示する窓口
+//   画像のハンドル（IAssetBackend が返したもの）を、ImGui::Image / AddImage に渡せる ImTextureID にする。
+//   DxLib を読まない。実装は、プラットフォーム側（Library/Platform/DxLib/DxLibImGuiTexture.h など）が
+//   SetImGuiTextureCallbacks で差し込む。差し込まれていない間（--backend=null や、初期化の前・終了のあと）は、
+//   GetImGuiTexture は 0 を返し、ほかは何もしない。
 //=============================================================================
 namespace NDebugUI
 {
+	// プラットフォームの実装が差し込む関数の一覧
+	struct FImGuiTextureCallbacks
+	{
+		ImTextureID ( *GetTexture )( int32 GraphHandle ) = nullptr;
+		void ( *TickCache )() = nullptr;
+		void ( *ClearCache )() = nullptr;
+		int32 ( *GetCacheSize )() = nullptr;
+		void ( *BeginNearest )( ImDrawList* DrawList ) = nullptr;
+		void ( *EndNearest )( ImDrawList* DrawList ) = nullptr;
+	};
+
+	// プラットフォームの初期化・終了で、関数の一覧を差し込む／外す
+	void SetImGuiTextureCallbacks( const FImGuiTextureCallbacks& Callbacks );
+
 	ImTextureID GetImGuiTexture( int32 GraphHandle );
 
-	// 毎フレーム 1 回呼ぶ。しばらく使われなかった ShaderResourceView を解放する
+	// 毎フレーム 1 回呼ぶ。しばらく使われていないキャッシュを解放する
 	void TickImGuiTextureCache();
 	void ClearImGuiTextureCache();
-	// いまキャッシュしている数（確認用）
+	// いまキャッシュされている数（確認用）
 	int32 GetImGuiTextureCacheSize();
 
 	//-------------------------------------------------------------------------
 	// 拡大しても、ぼかさずにドットを見せる（ピクセルアートの確認用）
-	//   BeginNearest と EndNearest の間に AddImage した画像は、最近傍で補間される
+	//   BeginNearest と EndNearest の間で AddImage した画像は、最近傍で補間される
 	//-------------------------------------------------------------------------
 	void BeginNearest( ImDrawList* DrawList );
 	void EndNearest( ImDrawList* DrawList );

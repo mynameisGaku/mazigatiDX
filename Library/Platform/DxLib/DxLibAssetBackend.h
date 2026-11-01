@@ -20,6 +20,8 @@
 class CDxLibAssetBackend : public CAppSubsystem, public IAssetBackend
 {
 public:
+	// --backend=null のときは作らない（Library/Platform/Null の実装を使う）
+	bool ShouldCreateSubsystem( CEngine& Engine ) const override;
 	void Initialize( FSubsystemCollection& Collection ) override;
 	void Deinitialize() override;
 

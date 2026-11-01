@@ -8,10 +8,16 @@
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 #include "Library/Math/MathUtils.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
+#include "Library/Platform/BackendSelection.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogAudioBackend, Log )
 
 REGISTER_SUBSYSTEM( CDxLibAudioBackend )
+
+bool CDxLibAudioBackend::ShouldCreateSubsystem( CEngine& Engine ) const
+{
+	return !NBackendSelection::IsNullRequested();
+}
 
 void CDxLibAudioBackend::Initialize( FSubsystemCollection& Collection )
 {

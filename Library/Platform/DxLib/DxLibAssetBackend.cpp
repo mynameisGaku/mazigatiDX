@@ -14,6 +14,7 @@
 
 #include <climits>
 #include <cstring>
+#include "Library/Platform/BackendSelection.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogAssetBackend, Log )
 
@@ -46,6 +47,11 @@ namespace
 		explicit FAsyncScope( bool bAsync ) { SetUseASyncLoadFlag( bAsync ? TRUE : FALSE ); }
 		~FAsyncScope() { SetUseASyncLoadFlag( FALSE ); }
 	};
+}
+
+bool CDxLibAssetBackend::ShouldCreateSubsystem( CEngine& Engine ) const
+{
+	return !NBackendSelection::IsNullRequested();
 }
 
 void CDxLibAssetBackend::Initialize( FSubsystemCollection& Collection )

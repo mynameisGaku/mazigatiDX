@@ -31,6 +31,8 @@ class CDxLibAssetBackend;
 class CDxLibDrawExecutor : public CAppSubsystem, public IDrawExecutor
 {
 public:
+	// --backend=null のときは作らない（Library/Platform/Null の実装を使う）
+	bool ShouldCreateSubsystem( CEngine& Engine ) const override;
 	// DxLibと材質描画用GPU資源を初期化する。
 	void Initialize( FSubsystemCollection& Collection ) override;
 	// DxLib終了前に材質描画用GPU資源を解放する。

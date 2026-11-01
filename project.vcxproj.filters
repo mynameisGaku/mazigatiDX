@@ -112,6 +112,9 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestModelSurface.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestNullBackend.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
     <ClCompile Include="Source\SelfTest\AssetSelfTestPhysics.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>

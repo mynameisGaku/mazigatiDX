@@ -107,6 +107,7 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestModelMaterial.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestModelMaterial.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestModelMaterialBoundary.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestModelMaterialBoundary.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestModelSurface.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestModelSurface.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestNullBackend.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestNullBackend.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestPhysics.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestPhysics.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestPhysicsCharacters.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestPhysicsCharacters.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestPhysicsConstraintBreak.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestPhysicsConstraintBreak.cpp')" />

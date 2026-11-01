@@ -5,6 +5,7 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
+#include "Library/Platform/BackendSelection.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogInput, Log )
 
@@ -37,6 +38,11 @@ namespace
 		KEY_INPUT_MULTIPLY, KEY_INPUT_ADD, KEY_INPUT_SUBTRACT, KEY_INPUT_DECIMAL, KEY_INPUT_DIVIDE, KEY_INPUT_NUMPADENTER,
 	};
 	static_assert( sizeof( DxKeyCodes ) / sizeof( DxKeyCodes[0] ) == static_cast<int>( EKey::Count ), "DxKeyCodes must match EKey" );
+}
+
+bool CDxLibInput::ShouldCreateSubsystem( CEngine& Engine ) const
+{
+	return !NBackendSelection::IsNullRequested();
 }
 
 void CDxLibInput::Initialize( FSubsystemCollection& Collection )

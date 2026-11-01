@@ -9,6 +9,7 @@
 #include "Library/Platform/FileSystem.h"
 
 #include <SDL3/SDL.h>
+#include "Library/Platform/BackendSelection.h"
 #pragma comment( lib, "SDL3.lib" )
 
 DEFINE_LOG_CATEGORY_STATIC( LogGamepad, Log )
@@ -129,6 +130,11 @@ namespace
 ASdlGamepadInput::~ASdlGamepadInput()
 {
 	Deinitialize();
+}
+
+bool ASdlGamepadInput::ShouldCreateSubsystem( CEngine& Engine ) const
+{
+	return !NBackendSelection::IsNullRequested();
 }
 
 void ASdlGamepadInput::Initialize( FSubsystemCollection& Collection )
