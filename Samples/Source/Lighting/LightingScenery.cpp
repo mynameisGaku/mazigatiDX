@@ -237,11 +237,15 @@ void NLightingScenery::RecordStage( FDrawContext& CommandList, const FLightingDe
 	Options.bWrapLighting = State.bWrapLighting;
 	CommandList.LightingOptions( Options );
 
-	// ライトを足す。足したライトは、この Draw が終わると、全部外れる
+	// ライトを足す（描いたあとで、同じ回数だけ PopLight で戻す）
 	const TArray<FLight> Lights = MakeLights( State );
+	int32 NumPushedLights = 0;
 	for ( const FLight& Light : Lights )
 	{
-		CommandList.PushLight( Light );
+		if ( CommandList.PushLight( Light ) )
+		{
+			++NumPushedLights;
+		}
 	}
 
 	RecordFloor( CommandList, State );
@@ -262,5 +266,10 @@ void NLightingScenery::RecordStage( FDrawContext& CommandList, const FLightingDe
 			CommandList.Line3D( Light.Position, GetSpotlightTarget( State.Time ), bActive ? FColor32( 200, 210, 230 ) : FColor32( 70, 70, 76 ) );
 		}
 		++Slot;
+	}
+
+	for ( int32 Index = 0; Index < NumPushedLights; ++Index )
+	{
+		CommandList.PopLight();
 	}
 }
