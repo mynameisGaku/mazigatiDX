@@ -64,10 +64,10 @@
     <ClCompile Include="Library\DebugUI\EffectEditorPanels.cpp">
       <Filter>Library\DebugUI</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\ImGuiPropertyInspector.cpp">
+    <ClCompile Include="Library\DebugUI\EffectPreviewSurface.cpp">
       <Filter>Library\DebugUI</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\ImGuiTexture.cpp">
+    <ClCompile Include="Library\DebugUI\ImGuiPropertyInspector.cpp">
       <Filter>Library\DebugUI</Filter>
     </ClCompile>
     <ClCompile Include="Library\DebugUI\LogCategoryPanel.cpp">
@@ -559,6 +559,9 @@
     <ClCompile Include="Library\Platform\DxLib\DxLibImageOps.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\DxLibImGuiTexture.cpp">
+      <Filter>Library\Platform\DxLib</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\DxLibInput.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
@@ -584,9 +587,6 @@
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\EffectMaterialRenderer.cpp">
-      <Filter>Library\Platform\DxLib</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\EffectPreviewSurface.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\SDL\SdlGamepadInput.cpp">
@@ -1422,6 +1422,9 @@
     <ClInclude Include="Library\DebugUI\EffectEditorInternal.h">
       <Filter>Library\DebugUI</Filter>
     </ClInclude>
+    <ClInclude Include="Library\DebugUI\EffectPreviewSurface.h">
+      <Filter>Library\DebugUI</Filter>
+    </ClInclude>
     <ClInclude Include="Library\DebugUI\ImGuiPropertyInspector.h">
       <Filter>Library\DebugUI</Filter>
     </ClInclude>
@@ -1956,6 +1959,9 @@
     <ClInclude Include="Library\Platform\WindowSettings.h">
       <Filter>Library\Platform</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Platform\WindowsInclude.h">
+      <Filter>Library\Platform</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\DxLibAssetBackend.h">
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
@@ -1998,13 +2004,13 @@
     <ClInclude Include="Library\Platform\DxLib\DxLibShapes3D.h">
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\DxLibTypes.h">
+      <Filter>Library\Platform\DxLib</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\DxLibVertex.h">
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\EffectMaterialRenderer.h">
-      <Filter>Library\Platform\DxLib</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\DxLib\EffectPreviewSurface.h">
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\SDL\SdlGamepadInput.h">

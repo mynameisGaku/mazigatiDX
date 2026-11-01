@@ -104,6 +104,9 @@ public:
 
 	FORCEINLINE int32 GetHandle() const { return Handle; }
 	FORCEINLINE const TSharedPtr<CModel>& GetSource() const { return Source; }
+	// 骨（フレーム）の、いまの位置（ワールド座標。最後に描いたときのアニメーションと行列で決まる）を、骨の順に OutPositions へ。メインスレッドだけ。
+	// 骨が無い・バックエンドが答えられないときは false（OutPositions は空）
+	bool GetFramePositions( TArray<FVector3>& OutPositions ) const;
 
 	// AnimSource の AnimIndex 番のアニメーションを付ける（同じものが付いていればそのまま）。戻り値は付けた番号（失敗したら -1）
 	int32 AttachAnim( const TSharedPtr<CModel>& AnimSource, int32 AnimIndex );

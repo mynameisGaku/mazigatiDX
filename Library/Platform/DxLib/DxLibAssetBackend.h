@@ -72,6 +72,7 @@ public:
 	bool CompileShader( EShaderStage Stage, const char* Source, int32 NumBytes, const char* SourceName, const char* EntryPoint, const char* ShaderModel, TArray<uint8>& OutCode, FString& OutMessage ) override;
 	int32 GetModelFrameCount( int32 Model ) override;
 	FString GetModelFrameName( int32 Model, int32 FrameIndex ) override;
+	bool GetModelFramePosition( int32 Model, int32 FrameIndex, float32 ( &OutPosition )[3] ) override;
 	bool SaveModelToMV1( int32 Model, const FString& Path, const FModelSaveOptions& Options, FString& OutWarning ) override;
 
 	int32 MakeFont( const FFontDesc& Desc ) override;

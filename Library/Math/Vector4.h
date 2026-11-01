@@ -22,12 +22,6 @@ struct alignas( 16 ) FVector4
 
 	FORCEINLINE constexpr FVector3 XYZ() const { return { x, y, z }; }
 
-	//-------------------------------------------------------------------------
-	// DxLib 変換
-	//-------------------------------------------------------------------------
-	FORCEINLINE constexpr FVector4( const FLOAT4& V ) : x( V.x ), y( V.y ), z( V.z ), w( V.w ) {}
-	FORCEINLINE constexpr operator FLOAT4() const { return FLOAT4{ x, y, z, w }; }
-
 	FORCEINLINE FString ToString() const { return FString::Printf( "X=%.3f Y=%.3f Z=%.3f W=%.3f", x, y, z, w ); }
 
 	//-------------------------------------------------------------------------

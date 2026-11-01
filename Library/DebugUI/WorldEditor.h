@@ -7,6 +7,7 @@
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Memory/UniquePtr.h"
 #include "Library/Framework/Asset/EditorAssetInfo.h"
+#include "Library/Framework/Asset/RenderTarget.h"
 #include "Library/Framework/Effect/EffectBackend.h"
 #include "Library/Framework/Render/MeshRender.h"
 #include "Library/DebugUI/WorldEditorModelPreview.h"
@@ -94,7 +95,8 @@ struct FWorldEditorState
 	//-------------------------------------------------------------------------
 	// ビューポート（毎フレーム描き直す）
 	//-------------------------------------------------------------------------
-	int32 ViewScreen = -1;
+	// ビューポートを描く描画先（パネルの大きさが変わったら作り直す）
+	TSharedPtr<CRenderTarget> ViewTarget;
 	int32 ViewWidth = 0;
 	int32 ViewHeight = 0;
 	ImVec2 ViewOrigin = ImVec2( 0.0f, 0.0f );   // 最後に描いたビューポートの位置と大きさ（ImGui の画面座標。確認用の自動操作が使う）

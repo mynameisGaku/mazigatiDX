@@ -5,6 +5,7 @@
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Framework/Animation/ModelAnimator.h"
 #include "Library/Framework/Asset/DefinitionEditing.h"
+#include "Library/Framework/Asset/RenderTarget.h"
 #include "Library/Framework/Asset/ModelAnimationAsset.h"
 #include "VendorModules/ImGui/imgui.h"
 
@@ -58,7 +59,8 @@ struct FModelAnimationEditorState
 	//-------------------------------------------------------------------------
 	// 3D 表示
 	//-------------------------------------------------------------------------
-	int32 PreviewScreen = -1;
+	// 3D のプレビューを描く描画先（パネルの大きさが変わったら作り直す）
+	TSharedPtr<CRenderTarget> PreviewTarget;
 	int32 PreviewWidth = 0;
 	int32 PreviewHeight = 0;
 	float32 Yaw = 0.6f;

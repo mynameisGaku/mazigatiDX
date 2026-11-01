@@ -4,7 +4,7 @@
 #include "LeakReport.h"
 
 #include "Library/Core/Types/CString.h"
-#include "Library/Platform/DxLib/DxLibInclude.h"
+#include "Library/Platform/WindowsInclude.h"
 
 #ifdef _DEBUG
 #include <dbghelp.h>

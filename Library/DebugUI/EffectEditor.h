@@ -7,7 +7,7 @@
 #include "Library/Framework/Asset/Texture.h"
 #include "Library/Framework/World/Editor/EditorCamera.h"
 #include "Library/Framework/World/Editor/EditorGizmo.h"
-#include "Library/Platform/DxLib/EffectPreviewSurface.h"
+#include "Library/DebugUI/EffectPreviewSurface.h"
 
 // 内蔵エフェクトの編集中の文書、選択、再生と画面の寿命を一つのツールにまとめる。
 struct FEffectEditorState

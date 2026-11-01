@@ -19,15 +19,6 @@ struct alignas( 16 ) FColor
 	FORCEINLINE constexpr FColor( float32 InR, float32 InG, float32 InB, float32 InA = 1.0f ) : r( InR ), g( InG ), b( InB ), a( InA ) {}
 	FORCEINLINE constexpr explicit FColor( const FVector4& V ) : r( V.x ), g( V.y ), b( V.z ), a( V.w ) {}
 
-	//-------------------------------------------------------------------------
-	// DxLib 変換
-	//-------------------------------------------------------------------------
-	FORCEINLINE constexpr FColor( const COLOR_F& C ) : r( C.r ), g( C.g ), b( C.b ), a( C.a ) {}
-	FORCEINLINE constexpr operator COLOR_F() const { return COLOR_F{ r, g, b, a }; }
-
-	// DrawBox などに渡す色 (GetColor)。アルファは無視される。DxLib_Init 後に呼ぶこと
-	unsigned int ToDxColor() const;
-
 	FORCEINLINE FString ToString() const { return FString::Printf( "R=%.3f G=%.3f B=%.3f A=%.3f", r, g, b, a ); }
 
 	static const FColor White;
@@ -84,23 +75,6 @@ struct FColor32
 	constexpr FColor32() = default;
 	FORCEINLINE constexpr FColor32( uint8 InR, uint8 InG, uint8 InB, uint8 InA = 255 ) : r( InR ), g( InG ), b( InB ), a( InA ) {}
 
-	//-------------------------------------------------------------------------
-	// DxLib 変換（COLOR_U8 のメンバ順は b, g, r, a）
-	//-------------------------------------------------------------------------
-	FORCEINLINE constexpr FColor32( const COLOR_U8& C ) : r( C.r ), g( C.g ), b( C.b ), a( C.a ) {}
-	FORCEINLINE constexpr operator COLOR_U8() const { return COLOR_U8{ b, g, r, a }; }
-
-	// DrawBox などに渡す色 (GetColor)。アルファは無視される。DxLib_Init 後に呼ぶこと
-	FORCEINLINE unsigned int ToDxColor() const { return GetColor( r, g, b ); }
-
-	// GetColor の値から復元（アルファは 255）
-	FORCEINLINE static FColor32 FromDxColor( unsigned int DxColor )
-	{
-		int R = 0, G = 0, B = 0;
-		GetColor2( DxColor, &R, &G, &B );
-		return { static_cast<uint8>( R ), static_cast<uint8>( G ), static_cast<uint8>( B ), 255 };
-	}
-
 	FORCEINLINE FString ToString() const { return FString::Printf( "R=%u G=%u B=%u A=%u", r, g, b, a ); }
 
 	static const FColor32 White;
@@ -148,8 +122,6 @@ FORCEINLINE constexpr FColor32 FColor::ToColor32() const
 		static_cast<uint8>( C.b * 255.0f + 0.5f ),
 		static_cast<uint8>( C.a * 255.0f + 0.5f ) };
 }
-
-FORCEINLINE unsigned int FColor::ToDxColor() const { return ToColor32().ToDxColor(); }
 
 FORCEINLINE constexpr FColor operator*( float32 S, const FColor& C ) { return C * S; }
 

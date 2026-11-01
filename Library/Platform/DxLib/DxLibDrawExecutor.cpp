@@ -431,8 +431,12 @@ bool CDxLibDrawExecutor::SupportsModelMaterialEffects() const
 void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 {
 	// このオブジェクトの分で変えた状態。終わりで、元に戻す（変える前の値は、最初に変えるときに覚える）
+	// ブレンド・3D 図形の変換・明るさは、最初に変えるときに、変える前の値を DxLib から読んで覚え、終わりにその値へ戻す（実行の前の値に戻す）
 	bool bBlendChanged = false;
+	int OldBlendMode = DX_BLENDMODE_NOBLEND;
+	int OldBlendParam = 0;
 	bool bWorldMatrixChanged = false;
+	MATRIX OldWorldMatrix = MGetIdent();
 	// 3D 図形の変換: 実行のなかで覚えている、いまの変換（始めは変換なし）と、PushWorldMatrix で積む前の変換の並び
 	MATRIX WorldMatrix = MGetIdent();
 	TArray<MATRIX> WorldMatrixStack;
@@ -445,6 +449,7 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 	// シェーダー（使わせた頂点シェーダー・ピクセルシェーダー、置いた画像と定数バッファ）。終わりに、外して片付ける
 	FDxLibShader ShaderState;
 	bool bBrightChanged = false;
+	int OldBright[3] = { 255, 255, 255 };
 	bool bAddColorChanged = false;
 	int OldAddColor[3] = { 0, 0, 0 };
 	bool bAlphaTestChanged = false;
@@ -641,8 +646,12 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 		case EDrawCommand::Blend:
 		{
 			const FDrawBlendData Data = Command.Read<FDrawBlendData>();
+			if ( !bBlendChanged )
+			{
+				GetDrawBlendMode( &OldBlendMode, &OldBlendParam );
+				bBlendChanged = true;
+			}
 			SetDrawBlendMode( ToDxBlendMode( Data.Mode ), Data.Param );
-			bBlendChanged = static_cast<EDrawBlend>( Data.Mode ) != EDrawBlend::Opaque;
 			break;
 		}
 		case EDrawCommand::Line3D:
@@ -684,9 +693,13 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 		case EDrawCommand::WorldMatrix:
 		{
 			const FDrawMatrixData Data = Command.Read<FDrawMatrixData>();
+			if ( !bWorldMatrixChanged )
+			{
+				GetTransformToWorldMatrix( &OldWorldMatrix );
+				bWorldMatrixChanged = true;
+			}
 			WorldMatrix = ToMatrix( Data.M );
 			SetTransformToWorld( &WorldMatrix );
-			bWorldMatrixChanged = true;
 			break;
 		}
 		case EDrawCommand::PushWorldMatrix:
@@ -696,10 +709,14 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 				break;
 			}
 			// 自分の座標 -> 親の座標（いまの変換）の順に掛ける（行ベクトルの流儀: 先に掛けたものが先に効く）
+			if ( !bWorldMatrixChanged )
+			{
+				GetTransformToWorldMatrix( &OldWorldMatrix );
+				bWorldMatrixChanged = true;
+			}
 			WorldMatrixStack.Add( WorldMatrix );
 			WorldMatrix = MMult( ToMatrix( Command.Read<FDrawMatrixData>().M ), WorldMatrix );
 			SetTransformToWorld( &WorldMatrix );
-			bWorldMatrixChanged = true;
 			break;
 		}
 		case EDrawCommand::PopWorldMatrix:
@@ -746,8 +763,12 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 		case EDrawCommand::Bright:
 		{
 			const FDrawBrightData Data = Command.Read<FDrawBrightData>();
+			if ( !bBrightChanged )
+			{
+				GetDrawBright( &OldBright[0], &OldBright[1], &OldBright[2] );
+				bBrightChanged = true;
+			}
 			SetDrawBright( Data.Color.R, Data.Color.G, Data.Color.B );
-			bBrightChanged = Data.Color.R != 255 || Data.Color.G != 255 || Data.Color.B != 255;
 			break;
 		}
 		case EDrawCommand::TextFont:
@@ -1279,9 +1300,13 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 				break;
 			}
 			const FDrawCustomBlendData Data = Command.Read<FDrawCustomBlendData>();
+			if ( !bBlendChanged )
+			{
+				GetDrawBlendMode( &OldBlendMode, &OldBlendParam );
+				bBlendChanged = true;
+			}
 			SetDrawCustomBlendMode( TRUE, ToDxBlendFactor( Data.SrcColor ), ToDxBlendFactor( Data.DestColor ), ToDxBlendOp( Data.ColorOp ),
 									ToDxBlendFactor( Data.SrcAlpha ), ToDxBlendFactor( Data.DestAlpha ), ToDxBlendOp( Data.AlphaOp ), Data.Param );
-			bBlendChanged = true;
 			break;
 		}
 		case EDrawCommand::AddColor:
@@ -1602,16 +1627,15 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 	// このオブジェクトで変えた状態を、次のオブジェクトに漏らさない
 	if ( bBlendChanged )
 	{
-		SetDrawBlendMode( DX_BLENDMODE_NOBLEND, 0 );
+		SetDrawBlendMode( OldBlendMode, OldBlendParam );
 	}
 	if ( bBrightChanged )
 	{
-		SetDrawBright( 255, 255, 255 );
+		SetDrawBright( OldBright[0], OldBright[1], OldBright[2] );
 	}
 	if ( bWorldMatrixChanged )
 	{
-		const MATRIX Identity = MGetIdent();
-		SetTransformToWorld( &Identity );
+		SetTransformToWorld( &OldWorldMatrix );
 	}
 	if ( bAddColorChanged )
 	{

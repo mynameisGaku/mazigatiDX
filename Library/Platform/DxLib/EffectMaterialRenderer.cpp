@@ -8,6 +8,7 @@
 #include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
+#include "Library/Platform/DxLib/DxLibTypes.h"
 #include "Library/Platform/DxLib/DxLibRibbonMesh.h"
 #include "Library/Math/Matrix4x4.h"
 
@@ -860,7 +861,7 @@ Failed:
 		const MATRIX ApiViewportInverse = MInverse( ApiViewport );
 		// shaderへ送るworld座標からclip座標への変換。
 		MATRIX Wvp = MMult( MMult( MMult( View, Projection ), Viewport ), ApiViewportInverse );
-		if ( World != nullptr ) Wvp = MMult( static_cast<MATRIX>( *World ), Wvp );
+		if ( World != nullptr ) Wvp = MMult( NDxLibTypes::ToDxLib( *World ), Wvp );
 		for ( int Row = 0; Row < 4; ++Row ) for ( int Column = 0; Column < 4; ++Column ) if ( !NMath::IsFinite( Wvp.m[Row][Column] ) ) { Saved.Restore( Context ); return false; }
 		// source・mask・noise graph領域をbase texture内へ写す値。
 		// 元画像のbase内矩形と半texel幅。
@@ -1000,7 +1001,7 @@ Failed:
 		MATRIX View{}, Projection{}, Viewport{}, ApiViewport{};
 		GetTransformToViewMatrix( &View ); GetTransformToProjectionMatrix( &Projection ); GetTransformToViewportMatrix( &Viewport ); GetTransformToAPIViewportMatrix( &ApiViewport );
 		MATRIX Wvp = MMult( MMult( MMult( View, Projection ), Viewport ), MInverse( ApiViewport ) );
-		if ( World != nullptr ) Wvp = MMult( static_cast<MATRIX>( *World ), Wvp );
+		if ( World != nullptr ) Wvp = MMult( NDxLibTypes::ToDxLib( *World ), Wvp );
 		for ( int32 Row = 0; Row < 4; ++Row ) for ( int32 Column = 0; Column < 4; ++Column ) if ( !NMath::IsFinite( Wvp.m[Row][Column] ) ) return false;
 		return true;
 	}

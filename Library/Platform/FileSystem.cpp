@@ -1,7 +1,7 @@
 ﻿#include "FileSystem.h"
 
 #include "Library/Core/Log/Log.h"
-#include "Library/Platform/DxLib/DxLibInclude.h"
+#include "Library/Platform/WindowsInclude.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogFileSystem, Log )
 

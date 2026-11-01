@@ -1,6 +1,6 @@
 ﻿#include "CommandLine.h"
 
-#include "Library/Platform/DxLib/DxLibInclude.h"
+#include "Library/Platform/WindowsInclude.h"
 
 FString NCommandLine::Get()
 {

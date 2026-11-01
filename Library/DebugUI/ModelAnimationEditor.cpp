@@ -9,7 +9,9 @@
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Render/DrawContext.h"
-#include "Library/Platform/DxLib/DxLibInclude.h"
+#include "Library/Framework/Asset/RenderTarget.h"
+#include "Library/Framework/Render/Camera.h"
+#include "Library/Framework/Render/RenderState3D.h"
 #include "Library/Platform/FileSystem.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogModelAnimationEditor, Log )
@@ -62,18 +64,17 @@ namespace
 	void ComputeBounds( FState& S )
 	{
 		S.bHaveBounds = false;
-		if ( !S.Animator.Instance.IsValid() ) return;
-		const int32 Handle = S.Animator.Instance->GetHandle();
-		const int32 NumMeshes = MV1GetMeshNum( Handle );
-		FVector3 Min( 1.0e30f, 1.0e30f, 1.0e30f ), Max( -1.0e30f, -1.0e30f, -1.0e30f );
-		for ( int32 i = 0; i < NumMeshes; ++i )
+		if ( !S.Animator.Instance.IsValid() || !S.Animator.Instance->GetSource().IsValid() )
 		{
-			const VECTOR A = MV1GetMeshMinPosition( Handle, i );
-			const VECTOR B = MV1GetMeshMaxPosition( Handle, i );
-			Min = FVector3( NMath::Min( Min.x, A.x ), NMath::Min( Min.y, A.y ), NMath::Min( Min.z, A.z ) );
-			Max = FVector3( NMath::Max( Max.x, B.x ), NMath::Max( Max.y, B.y ), NMath::Max( Max.z, B.z ) );
+			return;
 		}
-		if ( Min.x > Max.x ) return;
+		// インスタンスのメッシュは、元のモデルと同じ
+		FVector3 Min;
+		FVector3 Max;
+		if ( !S.Animator.Instance->GetSource()->GetBounds( Min, Max ) )
+		{
+			return;
+		}
 		S.BoundsMin = Min;
 		S.BoundsMax = Max;
 		S.bHaveBounds = true;
@@ -81,9 +82,23 @@ namespace
 
 	void EnsureScreen( FState& S, int32 Width, int32 Height )
 	{
-		if ( S.PreviewScreen >= 0 && S.PreviewWidth == Width && S.PreviewHeight == Height ) return;
-		if ( S.PreviewScreen >= 0 ) DeleteGraph( S.PreviewScreen );
-		S.PreviewScreen = MakeScreen( Width, Height, FALSE );
+		if ( S.PreviewTarget.IsValid() && S.PreviewWidth == Width && S.PreviewHeight == Height )
+		{
+			return;
+		}
+		// 前の描画先を手放してから、新しい大きさで作る（同じ名前を使い回す）
+		S.PreviewTarget.Reset();
+		CAssetManager* Assets = GetAppSubsystem<CAssetManager>();
+		if ( Assets == nullptr )
+		{
+			return;
+		}
+		FRenderTargetDesc Desc;
+		Desc.Width = Width;
+		Desc.Height = Height;
+		Desc.bAlpha = false;
+		Desc.bDepth = true;
+		S.PreviewTarget = Assets->CreateRenderTarget( "Editor/ModelAnimation/Preview", Desc );
 		S.PreviewWidth = Width;
 		S.PreviewHeight = Height;
 	}
@@ -93,32 +108,40 @@ namespace
 	bool SampleMotionRange( FState& S, FVector3& OutMin, FVector3& OutMax )
 	{
 		IDrawExecutor* Executor = GetAppSubsystem<IDrawExecutor>();
-		if ( Executor == nullptr || !S.Animator.Instance.IsValid() || S.PreviewScreen < 0 || SelectedClip( S ) == nullptr ) return false;
-
-		const int32 Handle = S.Animator.Instance->GetHandle();
-		const int32 NumFrames = MV1GetFrameNum( Handle );
-		if ( NumFrames <= 0 ) return false;
+		if ( Executor == nullptr || !S.Animator.Instance.IsValid() || !S.PreviewTarget.IsValid() || SelectedClip( S ) == nullptr )
+		{
+			return false;
+		}
 
 		const float32 Saved = S.Animator.GetNormalizedTime();
 		OutMin = FVector3( 1.0e30f, 1.0e30f, 1.0e30f );
 		OutMax = FVector3( -1.0e30f, -1.0e30f, -1.0e30f );
-		SetDrawScreen( S.PreviewScreen );
 		constexpr int32 NumSamples = 24;
+		TArray<FVector3> Positions;
 		for ( int32 i = 0; i <= NumSamples; ++i )
 		{
+			// 描画先へ描いて（描く実行で、アニメーションの時間が骨に入る）、骨の位置を読む
 			S.Animator.Seek( static_cast<float32>( i ) / static_cast<float32>( NumSamples ) );
 			FDrawBuffer Buffer;
-			FDrawContext Draw( Buffer );
-			S.Animator.Record( Draw, FMatrix4x4::Identity );
-			Executor->Execute( FDrawSpan { Buffer.Words.GetData(), Buffer.Words.Num() } );
-			for ( int32 Frame = 0; Frame < NumFrames; ++Frame )
 			{
-				const VECTOR Position = MV1GetFramePosition( Handle, Frame );
+				FDrawContext Draw( Buffer );
+				if ( Draw.PushTarget( S.PreviewTarget ) )
+				{
+					S.Animator.Record( Draw, FMatrix4x4::Identity );
+					Draw.PopTarget();
+				}
+			}
+			Executor->Execute( FDrawSpan { Buffer.Words.GetData(), Buffer.Words.Num() } );
+			if ( !S.Animator.Instance->GetFramePositions( Positions ) )
+			{
+				continue;
+			}
+			for ( const FVector3& Position : Positions )
+			{
 				OutMin = FVector3( NMath::Min( OutMin.x, Position.x ), NMath::Min( OutMin.y, Position.y ), NMath::Min( OutMin.z, Position.z ) );
 				OutMax = FVector3( NMath::Max( OutMax.x, Position.x ), NMath::Max( OutMax.y, Position.y ), NMath::Max( OutMax.z, Position.z ) );
 			}
 		}
-		SetDrawScreen( DX_SCREEN_BACK );
 		S.Animator.Seek( Saved );
 		return OutMin.x <= OutMax.x;
 	}
@@ -298,59 +321,71 @@ namespace
 	void RenderPreview( FState& S, int32 Width, int32 Height )
 	{
 		IDrawExecutor* Executor = GetAppSubsystem<IDrawExecutor>();
-		if ( Executor == nullptr || Width < 16 || Height < 16 ) return;
-
+		if ( Executor == nullptr || Width < 16 || Height < 16 )
+		{
+			return;
+		}
 		EnsureScreen( S, Width, Height );
-		if ( S.PreviewScreen < 0 ) return;
+		if ( !S.PreviewTarget.IsValid() )
+		{
+			return;
+		}
 
-		const float32 NearClip = GetCameraNear();
-		const float32 FarClip = GetCameraFar();
-		int R = 0, G = 0, B = 0;
-		GetBackgroundColor( &R, &G, &B );
-
-		SetDrawScreen( S.PreviewScreen );
-		SetBackgroundColor( static_cast<int>( S.Background[0] * 255.0f ), static_cast<int>( S.Background[1] * 255.0f ), static_cast<int>( S.Background[2] * 255.0f ) );
-		ClearDrawScreen();
-		SetBackgroundColor( R, G, B );
-		SetUseZBuffer3D( TRUE );
-		SetWriteZBuffer3D( TRUE );
-
+		// 注視点のまわりを回るカメラ
 		const float32 CosPitch = NMath::Cos( S.Pitch );
-		const VECTOR Target = VGet( S.Target.x, S.Target.y, S.Target.z );
-		const VECTOR Eye = VGet( S.Target.x + S.Distance * CosPitch * NMath::Sin( S.Yaw ), S.Target.y + S.Distance * NMath::Sin( S.Pitch ), S.Target.z - S.Distance * CosPitch * NMath::Cos( S.Yaw ) );
-		SetCameraNearFar( NMath::Max( S.Distance * 0.01f, 0.001f ), S.Distance * 200.0f );
-		SetupCamera_Perspective( 0.8f );
-		SetCameraPositionAndTargetAndUpVec( Eye, Target, VGet( 0.0f, 1.0f, 0.0f ) );
-
-		// 床の格子と軸（モデルの大きさに合わせる）
-		const float32 Cell = NMath::Max( NMath::Pow( 10.0f, NMath::Floor( NMath::Log10( NMath::Max( S.Distance * 0.25f, 0.001f ) ) ) ), 0.001f );
-		if ( S.bShowFloor )
-		{
-			const int N = 10;
-			for ( int i = -N; i <= N; ++i )
-			{
-				const unsigned int Color = i == 0 ? GetColor( 110, 110, 120 ) : GetColor( 60, 62, 70 );
-				DrawLine3D( VGet( i * Cell, 0.0f, -N * Cell ), VGet( i * Cell, 0.0f, N * Cell ), Color );
-				DrawLine3D( VGet( -N * Cell, 0.0f, i * Cell ), VGet( N * Cell, 0.0f, i * Cell ), Color );
-			}
-		}
-		if ( S.bShowAxes )
-		{
-			DrawLine3D( VGet( 0.0f, 0.0f, 0.0f ), VGet( 3.0f * Cell, 0.0f, 0.0f ), GetColor( 255, 70, 70 ) );
-			DrawLine3D( VGet( 0.0f, 0.0f, 0.0f ), VGet( 0.0f, 3.0f * Cell, 0.0f ), GetColor( 70, 255, 70 ) );
-			DrawLine3D( VGet( 0.0f, 0.0f, 0.0f ), VGet( 0.0f, 0.0f, 3.0f * Cell ), GetColor( 80, 120, 255 ) );
-		}
+		const FVector3 Eye( S.Target.x + S.Distance * CosPitch * NMath::Sin( S.Yaw ), S.Target.y + S.Distance * NMath::Sin( S.Pitch ), S.Target.z - S.Distance * CosPitch * NMath::Cos( S.Yaw ) );
+		FCamera Camera = FCamera::MakePerspective( Eye, S.Target, 0.8f );
+		Camera.Near = NMath::Max( S.Distance * 0.01f, 0.001f );
+		Camera.Far = S.Distance * 200.0f;
 
 		FDrawBuffer Buffer;
-		FDrawContext Draw( Buffer );
-		S.Animator.Record( Draw, FMatrix4x4::Identity );
-		Executor->Execute( FDrawSpan { Buffer.Words.GetData(), Buffer.Words.Num() } );
+		{
+			FDrawContext Draw( Buffer );
+			if ( !Draw.PushTarget( S.PreviewTarget ) )
+			{
+				return;
+			}
+			const auto ToByte = []( float32 Value )
+			{
+				return static_cast<uint8>( NMath::Clamp( Value, 0.0f, 1.0f ) * 255.0f );
+			};
+			Draw.Clear( FColor32( ToByte( S.Background[0] ), ToByte( S.Background[1] ), ToByte( S.Background[2] ), 255 ) );
+			Draw.ClearDepth();
+			FDepthState DepthOn;
+			DepthOn.bTestDepth = true;
+			DepthOn.bWriteDepth = true;
+			Draw.Depth( DepthOn );
+			const bool bCamera = Draw.PushCamera( Camera );
 
-		// 3D 描画の Z バッファは、既定（使わない）に戻す
-		SetUseZBuffer3D( FALSE );
-		SetWriteZBuffer3D( FALSE );
-		SetDrawScreen( DX_SCREEN_BACK );
-		SetCameraNearFar( NearClip, FarClip );
+			// 床の格子と軸（モデルの大きさに合わせる）
+			const float32 Cell = NMath::Max( NMath::Pow( 10.0f, NMath::Floor( NMath::Log10( NMath::Max( S.Distance * 0.25f, 0.001f ) ) ) ), 0.001f );
+			if ( S.bShowFloor )
+			{
+				const int N = 10;
+				for ( int i = -N; i <= N; ++i )
+				{
+					const FColor32 Color = i == 0 ? FColor32( 110, 110, 120 ) : FColor32( 60, 62, 70 );
+					const float32 Offset = static_cast<float32>( i ) * Cell;
+					const float32 Edge = static_cast<float32>( N ) * Cell;
+					Draw.Line3D( FVector3( Offset, 0.0f, -Edge ), FVector3( Offset, 0.0f, Edge ), Color );
+					Draw.Line3D( FVector3( -Edge, 0.0f, Offset ), FVector3( Edge, 0.0f, Offset ), Color );
+				}
+			}
+			if ( S.bShowAxes )
+			{
+				Draw.Line3D( FVector3::Zero, FVector3( 3.0f * Cell, 0.0f, 0.0f ), FColor32( 255, 70, 70 ) );
+				Draw.Line3D( FVector3::Zero, FVector3( 0.0f, 3.0f * Cell, 0.0f ), FColor32( 70, 255, 70 ) );
+				Draw.Line3D( FVector3::Zero, FVector3( 0.0f, 0.0f, 3.0f * Cell ), FColor32( 80, 120, 255 ) );
+			}
+
+			S.Animator.Record( Draw, FMatrix4x4::Identity );
+			if ( bCamera )
+			{
+				Draw.PopCamera();
+			}
+			Draw.PopTarget();
+		}
+		Executor->Execute( FDrawSpan { Buffer.Words.GetData(), Buffer.Words.Num() } );
 	}
 
 	void DrawViewport( FState& S )
@@ -375,7 +410,7 @@ namespace
 
 		ImDrawList* DrawList = ImGui::GetWindowDrawList();
 		const ImVec2 Max( Origin.x + Size.x, Origin.y + Size.y );
-		if ( S.PreviewScreen >= 0 ) DrawList->AddImage( NDebugUI::GetImGuiTexture( S.PreviewScreen ), Origin, ImVec2( Origin.x + static_cast<float>( S.PreviewWidth ), Origin.y + static_cast<float>( S.PreviewHeight ) ) );
+		if ( S.PreviewTarget.IsValid() ) DrawList->AddImage( NDebugUI::GetImGuiTexture( S.PreviewTarget->GetImageHandle().Value ), Origin, ImVec2( Origin.x + static_cast<float>( S.PreviewWidth ), Origin.y + static_cast<float>( S.PreviewHeight ) ) );
 
 		ImGui::InvisibleButton( "##View", Size, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonMiddle | ImGuiButtonFlags_MouseButtonRight );
 		ImGuiIO& IO = ImGui::GetIO();
@@ -1199,11 +1234,7 @@ bool NDebugUI::NewMotionPack( FModelAnimationEditorState& State, const FString& 
 
 void NDebugUI::ReleaseModelAnimationEditor( FModelAnimationEditorState& State )
 {
-	if ( State.PreviewScreen >= 0 )
-	{
-		DeleteGraph( State.PreviewScreen );
-		State.PreviewScreen = -1;
-	}
+	State.PreviewTarget.Reset();
 	State.Animator = FModelAnimator();
 	State.Asset.Reset();
 	State.PreviewModel.Reset();

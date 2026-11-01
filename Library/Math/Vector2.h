@@ -14,12 +14,6 @@ struct FVector2
 	FORCEINLINE constexpr FVector2( float32 InX, float32 InY ) : x( InX ), y( InY ) {}
 	FORCEINLINE constexpr explicit FVector2( float32 Scalar ) : x( Scalar ), y( Scalar ) {}
 
-	//-------------------------------------------------------------------------
-	// DxLib 変換 (FLOAT2 は u, v)
-	//-------------------------------------------------------------------------
-	FORCEINLINE constexpr FVector2( const FLOAT2& V ) : x( V.u ), y( V.v ) {}
-	FORCEINLINE constexpr operator FLOAT2() const { return FLOAT2{ x, y }; }
-
 	FORCEINLINE FString ToString() const { return FString::Printf( "X=%.3f Y=%.3f", x, y ); }
 
 	static const FVector2 Zero;

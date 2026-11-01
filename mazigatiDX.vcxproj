@@ -86,8 +86,8 @@
     <ClCompile Include="Library\DebugUI\EffectEditorMaterialPanel.cpp" />
     <ClCompile Include="Library\DebugUI\EffectEditorMeshPanel.cpp" />
     <ClCompile Include="Library\DebugUI\EffectEditorPanels.cpp" />
+    <ClCompile Include="Library\DebugUI\EffectPreviewSurface.cpp" />
     <ClCompile Include="Library\DebugUI\ImGuiPropertyInspector.cpp" />
-    <ClCompile Include="Library\DebugUI\ImGuiTexture.cpp" />
     <ClCompile Include="Library\DebugUI\LogCategoryPanel.cpp" />
     <ClCompile Include="Library\DebugUI\ModelAnimationEditor.cpp" />
     <ClCompile Include="Library\DebugUI\ProfilerTimeline.cpp" />
@@ -251,6 +251,7 @@
     <ClCompile Include="Library\Platform\DxLib\DxLibDrawExecutor.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibDrawExecutorModelMaterial.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibImageOps.cpp" />
+    <ClCompile Include="Library\Platform\DxLib\DxLibImGuiTexture.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibInput.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibLighting.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibRenderState3D.cpp" />
@@ -260,7 +261,6 @@
     <ClCompile Include="Library\Platform\DxLib\DxLibShapes3D.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibVertex.cpp" />
     <ClCompile Include="Library\Platform\DxLib\EffectMaterialRenderer.cpp" />
-    <ClCompile Include="Library\Platform\DxLib\EffectPreviewSurface.cpp" />
     <ClCompile Include="Library\Platform\SDL\SdlGamepadInput.cpp" />
     <ClCompile Include="VendorModules\ImGui\imgui.cpp" />
     <ClCompile Include="VendorModules\ImGui\imgui_draw.cpp" />
@@ -540,6 +540,7 @@
     <ClInclude Include="Library\DebugUI\EffectEditor.h" />
     <ClInclude Include="Library\DebugUI\EffectEditorCurveInput.h" />
     <ClInclude Include="Library\DebugUI\EffectEditorInternal.h" />
+    <ClInclude Include="Library\DebugUI\EffectPreviewSurface.h" />
     <ClInclude Include="Library\DebugUI\ImGuiPropertyInspector.h" />
     <ClInclude Include="Library\DebugUI\ImGuiTexture.h" />
     <ClInclude Include="Library\DebugUI\LogCategoryPanel.h" />
@@ -718,6 +719,7 @@
     <ClInclude Include="Library\Platform\LeakReport.h" />
     <ClInclude Include="Library\Platform\LogArchive.h" />
     <ClInclude Include="Library\Platform\WindowSettings.h" />
+    <ClInclude Include="Library\Platform\WindowsInclude.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibAssetBackend.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibAudioBackend.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibBackend.h" />
@@ -732,9 +734,9 @@
     <ClInclude Include="Library\Platform\DxLib\DxLibShader.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibShadowMap.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibShapes3D.h" />
+    <ClInclude Include="Library\Platform\DxLib\DxLibTypes.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibVertex.h" />
     <ClInclude Include="Library\Platform\DxLib\EffectMaterialRenderer.h" />
-    <ClInclude Include="Library\Platform\DxLib\EffectPreviewSurface.h" />
     <ClInclude Include="Library\Platform\SDL\SdlGamepadInput.h" />
     <ClInclude Include="VendorModules\ImGui\imconfig.h" />
     <ClInclude Include="VendorModules\ImGui\imgui.h" />

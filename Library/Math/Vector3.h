@@ -17,17 +17,6 @@ struct alignas( 16 ) FVector3
 	FORCEINLINE constexpr FVector3( float32 InX, float32 InY, float32 InZ ) : x( InX ), y( InY ), z( InZ ) {}
 	FORCEINLINE constexpr explicit FVector3( float32 Scalar ) : x( Scalar ), y( Scalar ), z( Scalar ) {}
 
-	//-------------------------------------------------------------------------
-	// DxLib 変換
-	//   FVector3 Pos = VGet( 1, 2, 3 );
-	//   DrawSphere3D( Pos, 1.0f, 16, Color, Color, TRUE );   // VECTOR に暗黙変換
-	//-------------------------------------------------------------------------
-	FORCEINLINE constexpr FVector3( const VECTOR& V ) : x( V.x ), y( V.y ), z( V.z ) {}
-	FORCEINLINE constexpr operator VECTOR() const { return VECTOR{ x, y, z }; }
-
-	FORCEINLINE constexpr explicit FVector3( const VECTOR_D& V ) : x( float32( V.x ) ), y( float32( V.y ) ), z( float32( V.z ) ) {}
-	FORCEINLINE constexpr VECTOR_D ToDxD() const { return VECTOR_D{ x, y, z }; }
-
 	FORCEINLINE FString ToString() const { return FString::Printf( "X=%.3f Y=%.3f Z=%.3f", x, y, z ); }
 
 	static const FVector3 Zero;

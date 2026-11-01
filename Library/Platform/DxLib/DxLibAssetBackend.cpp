@@ -876,6 +876,19 @@ int32 CDxLibAssetBackend::GetModelFrameCount( int32 Model )
 	return MV1GetFrameNum( Model );
 }
 
+bool CDxLibAssetBackend::GetModelFramePosition( int32 Model, int32 FrameIndex, float32 ( &OutPosition )[3] )
+{
+	if ( Model < 0 || FrameIndex < 0 || FrameIndex >= MV1GetFrameNum( Model ) )
+	{
+		return false;
+	}
+	const VECTOR Position = MV1GetFramePosition( Model, FrameIndex );
+	OutPosition[0] = Position.x;
+	OutPosition[1] = Position.y;
+	OutPosition[2] = Position.z;
+	return true;
+}
+
 FString CDxLibAssetBackend::GetModelFrameName( int32 Model, int32 FrameIndex )
 {
 	const char* Name = MV1GetFrameName( Model, FrameIndex );

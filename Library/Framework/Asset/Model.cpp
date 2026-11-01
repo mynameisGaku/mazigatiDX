@@ -221,3 +221,25 @@ void CModelInstance::DetachAnim( int32 AttachIndex )
 	if ( IAssetBackend* Backend = NAssetService::GetBackend() ) Backend->DetachModelAnim( Handle, AttachIndex );
 	Attached.RemoveAt( Index );
 }
+
+bool CModelInstance::GetFramePositions( TArray<FVector3>& OutPositions ) const
+{
+	OutPositions.Reset();
+	IAssetBackend* Backend = NAssetService::GetBackend();
+	if ( Backend == nullptr || Handle < 0 )
+	{
+		return false;
+	}
+	const int32 NumFrames = Backend->GetModelFrameCount( Handle );
+	for ( int32 Index = 0; Index < NumFrames; ++Index )
+	{
+		float32 Position[3] = {};
+		if ( !Backend->GetModelFramePosition( Handle, Index, Position ) )
+		{
+			OutPositions.Reset();
+			return false;
+		}
+		OutPositions.Add( FVector3( Position[0], Position[1], Position[2] ) );
+	}
+	return OutPositions.Num() > 0;
+}

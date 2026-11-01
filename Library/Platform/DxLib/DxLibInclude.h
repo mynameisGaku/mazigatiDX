@@ -11,3 +11,15 @@
 #endif
 
 #include <DxLib.h>
+
+// windows.h の、フレームワークの関数名とぶつかるマクロ（SetProp -> SetPropA など）を取り消す。
+// DxLib を読むファイルと読まないファイルで、同じ関数の名前が変わってしまわないように（DxLib は Platform/DxLib の中だけで読む）
+#ifdef SetProp
+#undef SetProp
+#endif
+#ifdef RemoveProp
+#undef RemoveProp
+#endif
+#ifdef GetObject
+#undef GetObject
+#endif

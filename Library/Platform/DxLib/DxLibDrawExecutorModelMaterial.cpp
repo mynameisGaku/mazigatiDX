@@ -6,6 +6,7 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Platform/DxLib/DxLibAssetBackend.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
+#include "Library/Platform/DxLib/DxLibTypes.h"
 #include "Library/Math/Matrix4x4.h"
 
 namespace
@@ -139,7 +140,7 @@ void CDxLibDrawExecutor::ExecuteModelMaterial( const FDrawCommandView& Command )
 	// 通常mesh分類が表示中かをcustom部分だけへ適用する値。
 	const bool bNormalCategoryVisible = CategoryVisible != FALSE;
 	// command個体行列をrenderer用の数値型へ変換した値。
-	const FMatrix4x4 World( WorldMatrix );
+	const FMatrix4x4 World = NDxLibTypes::FromDxLib( WorldMatrix );
 	// 先行するDxLib頂点を確定してから描画先・viewportを事前確認する。
 	RenderVertex();
 	// 対象meshのinstance状態とchunk描画可否をすべて確認した状態。

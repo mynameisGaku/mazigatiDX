@@ -153,6 +153,8 @@ public:
 	// 骨（フレーム）。アニメーションは名前が合う骨だけを動かすので、モデルとアニメーションの骨の名前が合うかの確認に使う
 	virtual int32 GetModelFrameCount( int32 Model ) = 0;
 	virtual FString GetModelFrameName( int32 Model, int32 FrameIndex ) = 0;
+	// 骨（フレーム）の、いまの位置（ワールド座標。最後に描いたときのアニメーションと行列で決まる）。番号が範囲の外・分からないなら false
+	virtual bool GetModelFramePosition( int32 /*Model*/, int32 /*FrameIndex*/, float32 ( & /*OutPosition*/ )[3] ) { return false; }
 	// MV1 ファイルに保存する（Path は絶対パス。フォルダは作ってある前提）。成功したら true。
 	// 使われていないアニメーションがあった、という警告つきの成功も true（OutWarning に理由）
 	virtual bool SaveModelToMV1( int32 Model, const FString& Path, const FModelSaveOptions& Options, FString& OutWarning ) = 0;

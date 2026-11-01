@@ -3,7 +3,6 @@
 #include <cmath>
 
 #include "Library/Core/Types/Numeric.h"
-#include "Library/Platform/DxLib/DxLibInclude.h"   // DxLib の型 (VECTOR / MATRIX など) との変換用
 #include "Library/Core/Collection/String.h"       // ToString 用
 #include "Library/Core/Types/Numeric.h"   // NMath::Abs / Min / Max / Clamp / Sign / Square / IsFinite など
 #include "Library/Math/MathConstants.h"

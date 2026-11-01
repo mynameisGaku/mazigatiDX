@@ -9,11 +9,15 @@
 #include "Library/Framework/World/WorldCollision.h"
 #include "Library/Framework/World/WorldHierarchy.h"
 #include "Library/Framework/World/WorldRender.h"
-#include "Library/Platform/DxLib/DxLibInclude.h"
+#include "Library/Framework/Asset/AssetManager.h"
+#include "Library/Framework/Asset/RenderTarget.h"
+#include "Library/Framework/Render/Camera.h"
+#include "Library/Framework/Render/Lighting.h"
+#include "Library/Framework/Render/RenderState3D.h"
 
 //=============================================================================
 // ワールドエディタの 3D の視界（ビューポート）
-//   - 3D の描画（DxLib）: 格子・モデル・ビルボード・目印・当たり判定の枠を、専用の画面に描き、ImGui の画像として出す。
+//   - 3D の描画（描画先へのコマンドリスト）: 格子・モデル・ビルボード・目印・当たり判定の枠を、専用の画面に描き、ImGui の画像として出す。
 //     モデルとビルボードは、実行時と同じ関数（FDrawContext、NWorld::MakeBillboard）で描くので、ゲームと見え方が同じになる。
 //   - 重ね描き（ImGui）: 選択の枠・ギズモ・名前・矩形選択・軸の目印。奥行きに関係なく、いつも見える。
 //   - 入力: カメラの操作・クリックと矩形での選択・ギズモのドラッグ・アセットのドロップ。選択やギズモの結果は CWorldEditorSession が決める。
@@ -40,9 +44,23 @@ namespace
 
 	void EnsureScreen( FState& S, int32 Width, int32 Height )
 	{
-		if ( S.ViewScreen >= 0 && S.ViewWidth == Width && S.ViewHeight == Height ) return;
-		if ( S.ViewScreen >= 0 ) DeleteGraph( S.ViewScreen );
-		S.ViewScreen = MakeScreen( Width, Height, FALSE );
+		if ( S.ViewTarget.IsValid() && S.ViewWidth == Width && S.ViewHeight == Height )
+		{
+			return;
+		}
+		// 前の描画先を手放してから、新しい大きさで作る（同じ名前を使い回す）
+		S.ViewTarget.Reset();
+		CAssetManager* Assets = GetAppSubsystem<CAssetManager>();
+		if ( Assets == nullptr )
+		{
+			return;
+		}
+		FRenderTargetDesc Desc;
+		Desc.Width = Width;
+		Desc.Height = Height;
+		Desc.bAlpha = false;
+		Desc.bDepth = true;
+		S.ViewTarget = Assets->CreateRenderTarget( "Editor/World/Viewport", Desc );
 		S.ViewWidth = Width;
 		S.ViewHeight = Height;
 	}
@@ -285,58 +303,73 @@ namespace
 	void RenderScene( FState& S )
 	{
 		IDrawExecutor* Executor = GetAppSubsystem<IDrawExecutor>();
-		if ( Executor == nullptr || S.ViewScreen < 0 ) return;
+		if ( Executor == nullptr || !S.ViewTarget.IsValid() )
+		{
+			return;
+		}
 		const FEditorCamera& Camera = S.Session.Camera;
 
 		S.View.Near = NMath::Max( Camera.Distance * 0.01f, 0.01f );
 		S.View.Far = NMath::Max( Camera.Distance * 300.0f, 500.0f );
+		FCamera ViewCamera = FCamera::MakePerspective( Camera.GetEye(), Camera.Target, S.View.FovY );
+		ViewCamera.Near = S.View.Near;
+		ViewCamera.Far = S.View.Far;
 
-		const float32 OldNear = GetCameraNear();
-		const float32 OldFar = GetCameraFar();
-		int R = 0, G = 0, B = 0;
-		GetBackgroundColor( &R, &G, &B );
+		// 光は、カメラの向きから当てる（どの面も見える）。DxLib に最初からあるライトは切り、同じ白い光を、カメラの向きで足す
+		FLight Light = FLight::MakeDirectional( Camera.GetForward() );
+		Light.Ambient = FColor( 0.4f, 0.4f, 0.45f, 1.0f );
 
-		// 光は、カメラの向きから当てる（どの面も見える）。ほかの描画に影響しないよう、あとで元に戻す
-		const VECTOR OldLightDirection = GetLightDirection();
-		const COLOR_F OldLightAmbient = GetLightAmbColor();
-		SetLightDirection( Camera.GetForward() );
-		SetLightAmbColor( GetColorF( 0.4f, 0.4f, 0.45f, 1.0f ) );
+		// 描画先・深度・カメラ・光を決めて、Record を記録する（1 回の実行。終わると、描画先・カメラ・光は元に戻る）
+		const auto RecordInView = [&]( FDrawBuffer& Buffer, bool bClear, bool bWriteDepth, const auto& Record )
+		{
+			FDrawContext Draw( Buffer );
+			if ( !Draw.PushTarget( S.ViewTarget ) )
+			{
+				return;
+			}
+			if ( bClear )
+			{
+				Draw.Clear( FColor32( 38, 40, 48, 255 ) );
+				Draw.ClearDepth();
+			}
+			FDepthState DepthState;
+			DepthState.bTestDepth = true;
+			DepthState.bWriteDepth = bWriteDepth;
+			Draw.Depth( DepthState );
+			const bool bCamera = Draw.PushCamera( ViewCamera );
+			Draw.DefaultLight( false );
+			const bool bLight = Draw.PushLight( Light );
+			Record( Draw );
+			if ( bLight )
+			{
+				Draw.PopLight();
+			}
+			if ( bCamera )
+			{
+				Draw.PopCamera();
+			}
+			Draw.PopTarget();
+		};
 
-		SetDrawScreen( S.ViewScreen );
-		SetBackgroundColor( 38, 40, 48 );
-		ClearDrawScreen();
-		SetBackgroundColor( R, G, B );
-		SetUseZBuffer3D( TRUE );
-		SetWriteZBuffer3D( TRUE );
-		SetCameraNearFar( S.View.Near, S.View.Far );
-		SetupCamera_Perspective( S.View.FovY );
-		SetCameraPositionAndTargetAndUpVec( Camera.GetEye(), Camera.Target, FVector3::Up );
 		// 材質meshの表示時間を現在frameへ反映してからscene commandを記録する。
 		NWorldEditorUI::UpdateMeshMaterialPreviews( S, ImGui::GetIO().DeltaTime );
 		NWorldEditorUI::UpdateModelMaterialPreviews( S, ImGui::GetIO().DeltaTime, Executor );
 
 		FDrawBuffer Buffer;
-		FDrawContext Draw( Buffer );
-		NWorldEditorUI::RecordWorldScene( S, Draw );
+		RecordInView( Buffer, true, true, [&]( FDrawContext& Draw )
+		{
+			NWorldEditorUI::RecordWorldScene( S, Draw );
+		} );
 		Executor->Execute( FDrawSpan { Buffer.Words.GetData(), Buffer.Words.Num() } );
 
 		// エフェクトは、深度を書かない 2 回目で（半透明・加算の粒子が、後ろの粒子を隠さないように）。深度の比較は残るので、モデルの後ろでは隠れる
 		NWorldEditorUI::UpdateEffectPreviews( S, ImGui::GetIO().DeltaTime );
 		FDrawBuffer EffectBuffer;
-		FDrawContext EffectDraw( EffectBuffer );
-		NWorldEditorUI::RecordEffectPreviews( S, EffectDraw );
-		if ( !EffectBuffer.Words.IsEmpty() )
+		RecordInView( EffectBuffer, false, false, [&]( FDrawContext& Draw )
 		{
-			SetWriteZBuffer3D( FALSE );
-			Executor->Execute( FDrawSpan { EffectBuffer.Words.GetData(), EffectBuffer.Words.Num() } );
-		}
-
-		SetUseZBuffer3D( FALSE );
-		SetWriteZBuffer3D( FALSE );
-		SetDrawScreen( DX_SCREEN_BACK );
-		SetCameraNearFar( OldNear, OldFar );
-		SetLightDirection( OldLightDirection );
-		SetLightAmbColor( OldLightAmbient );
+			NWorldEditorUI::RecordEffectPreviews( S, Draw );
+		} );
+		Executor->Execute( FDrawSpan { EffectBuffer.Words.GetData(), EffectBuffer.Words.Num() } );
 	}
 
 	//=========================================================================
@@ -693,7 +726,7 @@ void NWorldEditorUI::DrawViewport( FWorldEditorState& S )
 	RenderScene( S );
 
 	ImDrawList* DrawList = ImGui::GetWindowDrawList();
-	if ( S.ViewScreen >= 0 ) DrawList->AddImage( NDebugUI::GetImGuiTexture( S.ViewScreen ), Origin, ImVec2( Origin.x + static_cast<float32>( S.ViewWidth ), Origin.y + static_cast<float32>( S.ViewHeight ) ) );
+	if ( S.ViewTarget.IsValid() ) DrawList->AddImage( NDebugUI::GetImGuiTexture( S.ViewTarget->GetImageHandle().Value ), Origin, ImVec2( Origin.x + static_cast<float32>( S.ViewWidth ), Origin.y + static_cast<float32>( S.ViewHeight ) ) );
 
 	ImGui::InvisibleButton( "##WorldView", Size, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonMiddle | ImGuiButtonFlags_MouseButtonRight );
 	const bool bHovered = ImGui::IsItemHovered();
@@ -705,11 +738,7 @@ void NWorldEditorUI::DrawViewport( FWorldEditorState& S )
 
 void NWorldEditorUI::ReleaseViewport( FWorldEditorState& S )
 {
-	if ( S.ViewScreen >= 0 )
-	{
-		DeleteGraph( S.ViewScreen );
-		S.ViewScreen = -1;
-	}
+	S.ViewTarget.Reset();
 	S.ViewWidth = 0;
 	S.ViewHeight = 0;
 }

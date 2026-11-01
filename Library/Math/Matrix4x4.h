@@ -34,40 +34,6 @@ struct alignas( 16 ) FMatrix4x4
 	static const FMatrix4x4 Zero;
 
 	//-------------------------------------------------------------------------
-	// DxLib 変換（規約が同じなので要素をそのままコピー）
-	//   MV1SetMatrix( Handle, Transform.ToMatrix() );   // MATRIX に暗黙変換
-	//-------------------------------------------------------------------------
-	FORCEINLINE constexpr FMatrix4x4( const MATRIX& M )
-	{
-		for ( int32 i = 0; i < 4; ++i )
-			for ( int32 j = 0; j < 4; ++j )
-				m[i][j] = M.m[i][j];
-	}
-	FORCEINLINE constexpr operator MATRIX() const
-	{
-		MATRIX M{};
-		for ( int32 i = 0; i < 4; ++i )
-			for ( int32 j = 0; j < 4; ++j )
-				M.m[i][j] = m[i][j];
-		return M;
-	}
-
-	FORCEINLINE constexpr explicit FMatrix4x4( const MATRIX_D& M )
-	{
-		for ( int32 i = 0; i < 4; ++i )
-			for ( int32 j = 0; j < 4; ++j )
-				m[i][j] = static_cast<float32>( M.m[i][j] );
-	}
-	FORCEINLINE constexpr MATRIX_D ToDxD() const
-	{
-		MATRIX_D M{};
-		for ( int32 i = 0; i < 4; ++i )
-			for ( int32 j = 0; j < 4; ++j )
-				M.m[i][j] = m[i][j];
-		return M;
-	}
-
-	//-------------------------------------------------------------------------
 	// 生成
 	//-------------------------------------------------------------------------
 	FORCEINLINE static constexpr FMatrix4x4 Translate( const FVector3& T )

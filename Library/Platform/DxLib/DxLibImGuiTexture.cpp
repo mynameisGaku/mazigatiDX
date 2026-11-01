@@ -1,4 +1,6 @@
-﻿#include "ImGuiTexture.h"
+﻿// SPDX-License-Identifier: MIT
+// NDebugUI::GetImGuiTexture などの DxLib（Direct3D 11）での実装。宣言は DebugUI/ImGuiTexture.h（DxLib を読まない）
+#include "Library/DebugUI/ImGuiTexture.h"
 
 #include <d3d11.h>
 
