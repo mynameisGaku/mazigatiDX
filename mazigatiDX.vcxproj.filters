@@ -391,7 +391,19 @@
     <ClCompile Include="Library\Framework\PixelEffect\Effects\PixelAuraEffect.cpp">
       <Filter>Library\Framework\PixelEffect\Effects</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\PixelEffect\Effects\PixelBeamEffect.cpp">
+      <Filter>Library\Framework\PixelEffect\Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\PixelEffect\Effects\PixelCoinEffect.cpp">
+      <Filter>Library\Framework\PixelEffect\Effects</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\PixelEffect\Effects\PixelDamageNumberEffect.cpp">
+      <Filter>Library\Framework\PixelEffect\Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\PixelEffect\Effects\PixelDashEffect.cpp">
+      <Filter>Library\Framework\PixelEffect\Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\PixelEffect\Effects\PixelDustEffect.cpp">
       <Filter>Library\Framework\PixelEffect\Effects</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\PixelEffect\Effects\PixelExplosionEffect.cpp">
@@ -400,10 +412,22 @@
     <ClCompile Include="Library\Framework\PixelEffect\Effects\PixelFireEffect.cpp">
       <Filter>Library\Framework\PixelEffect\Effects</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\PixelEffect\Effects\PixelFreezeEffect.cpp">
+      <Filter>Library\Framework\PixelEffect\Effects</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\PixelEffect\Effects\PixelHealEffect.cpp">
       <Filter>Library\Framework\PixelEffect\Effects</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\PixelEffect\Effects\PixelLevelUpEffect.cpp">
+      <Filter>Library\Framework\PixelEffect\Effects</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\PixelEffect\Effects\PixelLightningEffect.cpp">
+      <Filter>Library\Framework\PixelEffect\Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\PixelEffect\Effects\PixelMagicCircleEffect.cpp">
+      <Filter>Library\Framework\PixelEffect\Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\PixelEffect\Effects\PixelPoisonEffect.cpp">
       <Filter>Library\Framework\PixelEffect\Effects</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\PixelEffect\Effects\PixelShockwaveEffect.cpp">
@@ -413,6 +437,15 @@
       <Filter>Library\Framework\PixelEffect\Effects</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\PixelEffect\Effects\PixelSparkleEffect.cpp">
+      <Filter>Library\Framework\PixelEffect\Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\PixelEffect\Effects\PixelSplashEffect.cpp">
+      <Filter>Library\Framework\PixelEffect\Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\PixelEffect\Effects\PixelWarpEffect.cpp">
+      <Filter>Library\Framework\PixelEffect\Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\PixelEffect\Effects\PixelWindEffect.cpp">
       <Filter>Library\Framework\PixelEffect\Effects</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Profiler\ProfilerAnalyzer.cpp">
@@ -1839,7 +1872,19 @@
     <ClInclude Include="Library\Framework\PixelEffect\Effects\PixelAuraEffect.h">
       <Filter>Library\Framework\PixelEffect\Effects</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\PixelEffect\Effects\PixelBeamEffect.h">
+      <Filter>Library\Framework\PixelEffect\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\PixelEffect\Effects\PixelCoinEffect.h">
+      <Filter>Library\Framework\PixelEffect\Effects</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\PixelEffect\Effects\PixelDamageNumberEffect.h">
+      <Filter>Library\Framework\PixelEffect\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\PixelEffect\Effects\PixelDashEffect.h">
+      <Filter>Library\Framework\PixelEffect\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\PixelEffect\Effects\PixelDustEffect.h">
       <Filter>Library\Framework\PixelEffect\Effects</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\PixelEffect\Effects\PixelExplosionEffect.h">
@@ -1848,10 +1893,22 @@
     <ClInclude Include="Library\Framework\PixelEffect\Effects\PixelFireEffect.h">
       <Filter>Library\Framework\PixelEffect\Effects</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\PixelEffect\Effects\PixelFreezeEffect.h">
+      <Filter>Library\Framework\PixelEffect\Effects</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\PixelEffect\Effects\PixelHealEffect.h">
       <Filter>Library\Framework\PixelEffect\Effects</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\PixelEffect\Effects\PixelLevelUpEffect.h">
+      <Filter>Library\Framework\PixelEffect\Effects</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\PixelEffect\Effects\PixelLightningEffect.h">
+      <Filter>Library\Framework\PixelEffect\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\PixelEffect\Effects\PixelMagicCircleEffect.h">
+      <Filter>Library\Framework\PixelEffect\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\PixelEffect\Effects\PixelPoisonEffect.h">
       <Filter>Library\Framework\PixelEffect\Effects</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\PixelEffect\Effects\PixelShockwaveEffect.h">
@@ -1861,6 +1918,15 @@
       <Filter>Library\Framework\PixelEffect\Effects</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\PixelEffect\Effects\PixelSparkleEffect.h">
+      <Filter>Library\Framework\PixelEffect\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\PixelEffect\Effects\PixelSplashEffect.h">
+      <Filter>Library\Framework\PixelEffect\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\PixelEffect\Effects\PixelWarpEffect.h">
+      <Filter>Library\Framework\PixelEffect\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\PixelEffect\Effects\PixelWindEffect.h">
       <Filter>Library\Framework\PixelEffect\Effects</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Profiler\ProfilerAnalyzer.h">

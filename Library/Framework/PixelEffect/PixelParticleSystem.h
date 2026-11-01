@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Library/Core/Collection/Array.h"
+#include "Library/Core/Types/Callable.h"
 #include "Library/Framework/PixelEffect/PixelEffectTypes.h"
 
 class CPixelPainter;
@@ -20,6 +21,9 @@ public:
 
 	// StepTime 秒進め、寿命の尽きた粒子を外す（0 以下は何もしない）
 	void Step( float32 StepTime );
+
+	// ShouldRemove が true を返す粒子を外す（水面より下へ落ちた滴など、寿命の前に消したいもの）
+	void RemoveIf( const TCallable<bool( const FPixelParticle& )>& ShouldRemove );
 
 	// Layer の粒子を、Palette（暗い色から明るい色へ）の色で描く
 	void Draw( const CPixelPainter& Painter, const TArray<FColor32>& Palette, EPixelLayer Layer ) const;

@@ -105,7 +105,7 @@ void CPixelEffectTile::Draw( FDrawContext& CommandList )
 	const FPixelEffectMeta& Meta = Effect->GetMeta();
 	const int32 Left = Px( Origin.x );
 	const int32 Top = Px( Origin.y ) + TitleHeight;
-	CommandList.TextF( Left, Px( Origin.y ), FColor32::White, "%s  (%s%s)", *Meta.Name, *Meta.Category, Meta.bLoop ? ", loop" : "" );
+	CommandList.TextF( Left, Px( Origin.y ), FColor32::White, "%s%s", *Meta.Name, Meta.bLoop ? " (loop)" : "" );
 	if ( !Texture.IsValid() )
 	{
 		return;
