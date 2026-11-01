@@ -172,7 +172,7 @@ void FDxLibShader::SetEmptyTexture( int32 Stage )
 
 bool FDxLibShader::IsStateCommand( EDrawCommand Type )
 {
-	return Type == EDrawCommand::UseShader || Type == EDrawCommand::ShaderConstants || Type == EDrawCommand::ShaderTexture;
+	return Type == EDrawCommand::UseShader || Type == EDrawCommand::ShaderConstants || Type == EDrawCommand::ShaderTexture || Type == EDrawCommand::ShaderOutputTarget;
 }
 
 bool FDxLibShader::IsBlockedInPass( EDrawCommand Type )
@@ -192,6 +192,9 @@ bool FDxLibShader::Apply( const FDrawCommandView& Command )
 		return true;
 	case EDrawCommand::ShaderTexture:
 		SetTexture( Command );
+		return true;
+	case EDrawCommand::ShaderOutputTarget:
+		SetOutputTarget( Command );
 		return true;
 	case EDrawCommand::PrimitiveShader3D:
 		DrawPrimitive3D( Command );
@@ -317,6 +320,31 @@ void FDxLibShader::SetTexture( const FDrawCommandView& Command )
 	}
 	SetEmptyTexture( Data.Stage );
 	bTextureUsed[Data.Stage] = true;
+}
+
+void FDxLibShader::SetOutputTarget( const FDrawCommandView& Command )
+{
+	if ( !Command.CanRead<FDrawShaderOutputTargetData>() )
+	{
+		return;
+	}
+	const FDrawShaderOutputTargetData Data = Command.Read<FDrawShaderOutputTargetData>();
+	// 0 は、いまの描画先（PushTarget）の出力なので、ここでは替えない
+	if ( Data.Index < 1 || Data.Index >= NDrawShader::NumOutputTargets )
+	{
+		return;
+	}
+	// DxLib は、でたらめな・解放済みのハンドルも 0 を返して受け取る（実測）ので、画像として大きさを読めるかで確かめる
+	int Width = 0;
+	int Height = 0;
+	// 外す命令（Handle が負）も、大きさを読めないので、ここで外す側へ進む
+	if ( GetGraphSize( Data.Handle, &Width, &Height ) == 0 && SetRenderTargetToShader( Data.Index, Data.Handle ) == 0 )
+	{
+		bOutputTargetUsed[Data.Index] = true;
+		return;
+	}
+	SetRenderTargetToShader( Data.Index, -1 );
+	bOutputTargetUsed[Data.Index] = false;
 }
 
 void FDxLibShader::DrawPrimitive3D( const FDrawCommandView& Command )
@@ -450,6 +478,13 @@ void FDxLibShader::Restore()
 		{
 			SetEmptyTexture( Stage );
 			bTextureUsed[Stage] = false;
+		}
+	}
+	for ( int32 Index = 1; Index < NDrawShader::NumOutputTargets; ++Index )
+	{
+		if ( bOutputTargetUsed[Index] )
+		{
+			SetRenderTargetToShader( Index, -1 );
 		}
 	}
 	// 定数バッファは、消す前に中身を 0 にして反映する（DxLib は、消したあとも、最後に反映した中身を、スロットに残す（実測）。次のオブジェクトに、この中身が漏れないように）

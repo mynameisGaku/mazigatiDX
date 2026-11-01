@@ -43,6 +43,7 @@ bool FDxLibShadowMap::IsBlockedInPass( EDrawCommand Type )
 	case EDrawCommand::ImageBlend:
 	case EDrawCommand::UseShadowMap:
 	case EDrawCommand::PreviewShadowMap:
+	case EDrawCommand::ShaderOutputTarget:
 		return true;
 	default:
 		return false;

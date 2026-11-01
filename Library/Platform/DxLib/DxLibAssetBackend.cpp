@@ -126,7 +126,16 @@ int32 CDxLibAssetBackend::CreateRenderTarget( const FRenderTargetDesc& Desc )
 
 	// 作るときの設定は DxLib の大域の状態なので、作る前の値を覚えて、作ったあとに戻す（マルチサンプルは取得関数がないので、既定の 0 に戻す）
 	const int PreviousDepth = GetDrawValidGraphCreateZBufferFlag();
+	const int PreviousFloat = GetDrawValidFloatTypeGraphCreateFlag();
+	const int PreviousChannels = GetCreateDrawValidGraphChannelNum();
+	const int PreviousBits = GetCreateGraphChannelBitDepth();
 	SetDrawValidGraphCreateZBufferFlag( Desc.bDepth ? TRUE : FALSE );
+	if ( Desc.IsFloat() )
+	{
+		SetDrawValidFloatTypeGraphCreateFlag( TRUE );
+		SetCreateDrawValidGraphChannelNum( Desc.Channels );
+		SetCreateGraphChannelBitDepth( Desc.Format == ERenderTargetFormat::Float32 ? 32 : 16 );
+	}
 	if ( Desc.MultiSamples > 0 )
 	{
 		SetCreateDrawValidGraphMultiSample( Desc.MultiSamples, 0 );
@@ -135,6 +144,12 @@ int32 CDxLibAssetBackend::CreateRenderTarget( const FRenderTargetDesc& Desc )
 	if ( Desc.MultiSamples > 0 )
 	{
 		SetCreateDrawValidGraphMultiSample( 0, 0 );
+	}
+	if ( Desc.IsFloat() )
+	{
+		SetDrawValidFloatTypeGraphCreateFlag( PreviousFloat );
+		SetCreateDrawValidGraphChannelNum( PreviousChannels );
+		SetCreateGraphChannelBitDepth( PreviousBits );
 	}
 	SetDrawValidGraphCreateZBufferFlag( PreviousDepth );
 	return Handle >= 0 ? Handle : NAsset::InvalidHandle;

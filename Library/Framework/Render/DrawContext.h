@@ -1159,6 +1159,21 @@ public:
 	// 段 Stage の画像を外す
 	void StopUsingShaderTexture( int32 Stage );
 
+	// ピクセルシェーダーの 2 つ目以降の出力（HLSL の SV_Target1〜SV_Target7。Index は 1〜7）を、描画先 Target に書く（SetRenderTargetToShader。複数の描画先への同時の書き出し）。
+	// SV_Target0 は、いまの描画先（PushTarget で決めたもの）に書かれる。色と深度を 1 回の描画で書き分ける、といった使い方をする。
+	// 描画先は、いまの描画先と同じ大きさにすること。シェーダーで描く命令だけが書き、ふつうの図形は書かない。PushTarget / PopTarget をまたいでも残り、
+	// このオブジェクトの分が終わると外れる。無効な描画先・Index が範囲の外のときは、何も記録せず false を返す
+	bool ShaderOutputTarget( int32 Index, FImageHandle Target );
+
+	template<typename TImage, typename = TEnableIfT<!bIsSame<TImage, FImageHandle>>>
+	bool ShaderOutputTarget( int32 Index, const TImage& Target )
+	{
+		return ShaderOutputTarget( Index, ToHandle( Target ) );
+	}
+
+	// 出力 Index（1〜7）を、書かないようにする
+	void StopUsingShaderOutputTarget( int32 Index );
+
 	// シェーダーで、3D の頂点の並びを描く（DrawPrimitive3DToShader）。つなぎ方は EDrawPrimitive。頂点の数は、つなぎ方に合う数であること（Primitive3D と同じ規則）。
 	// 位置は、頂点シェーダーが計算する（ワールド座標を渡して、シェーダーの定数のカメラの行列で変換する、など。DxLib の行列は渡されない）。
 	// 1 つの命令に入る大きさに上限がある（頂点 88 バイト。FDrawPrimitiveShader3DData::GetCommandWords が 65,535 ワード以下。頂点だけなら 2,978 個まで）。

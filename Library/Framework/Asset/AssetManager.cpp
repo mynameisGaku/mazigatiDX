@@ -505,7 +505,7 @@ TSharedPtr<CRenderTarget> CAssetManager::CreateRenderTarget( const FString& Name
 	}
 	if ( !Desc.IsValid() )
 	{
-		LOG( LogAsset, Error, "Cannot create the render target '%s': %d x %d (multisample %d) is not valid (the size must be 1 to %d, the multisample 0 to %d).", *Name, Desc.Width, Desc.Height, Desc.MultiSamples, FRenderTargetDesc::MaxSize, FRenderTargetDesc::MaxMultiSamples );
+		LOG( LogAsset, Error, "Cannot create the render target '%s': %d x %d (multisample %d, format %d, %d channel(s)) is not valid (the size must be 1 to %d, the multisample 0 to %d, the channels 4, or 1 / 2 for a float format).", *Name, Desc.Width, Desc.Height, Desc.MultiSamples, static_cast<int32>( Desc.Format ), Desc.Channels, FRenderTargetDesc::MaxSize, FRenderTargetDesc::MaxMultiSamples );
 		return nullptr;
 	}
 
@@ -515,7 +515,7 @@ TSharedPtr<CRenderTarget> CAssetManager::CreateRenderTarget( const FString& Name
 		if ( TSharedPtr<CRenderTarget> Existing = DynamicCastSharedPtr<CRenderTarget>( Found->Pin() ) )
 		{
 			const FRenderTargetDesc& Old = Existing->GetDesc();
-			if ( Old.Width == Desc.Width && Old.Height == Desc.Height && Old.bAlpha == Desc.bAlpha && Old.bDepth == Desc.bDepth && Old.MultiSamples == Desc.MultiSamples )
+			if ( Old.Width == Desc.Width && Old.Height == Desc.Height && Old.bAlpha == Desc.bAlpha && Old.bDepth == Desc.bDepth && Old.MultiSamples == Desc.MultiSamples && Old.Format == Desc.Format && Old.Channels == Desc.Channels )
 			{
 				return Existing;
 			}

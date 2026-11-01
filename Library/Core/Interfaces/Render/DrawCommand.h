@@ -143,6 +143,8 @@ enum class EDrawCommand : uint8
 	ShaderTexture,     // FDrawShaderTextureData。シェーダーが読む画像を、段に置く（SetUseTextureToShader）
 	PrimitiveShader3D, // FDrawPrimitiveShader3DData + 頂点（FDrawShaderVertex3D）+ 添字（uint16）。シェーダーで、3D の頂点の並びを描く（DrawPrimitive3DToShader / DrawPrimitiveIndexed3DToShader）
 	ShaderRect,        // FDrawShaderRectData。画素の座標の矩形を、組み込みの頂点シェーダー（利用者のピクセルシェーダーに、色と画像の座標を渡す）で描く
+	// 描画先の追加（上のコマンドの形式は変えていない）
+	ShaderOutputTarget, // FDrawShaderOutputTargetData。ピクセルシェーダーの 2 つ目以降の出力（SV_Target1〜7）を書く描画先を決める（SetRenderTargetToShader）
 };
 
 // Primitive3D の頂点のつなぎ方（DxLib の DX_PRIMTYPE_*）
@@ -590,6 +592,9 @@ namespace NDrawShader
 
 	// 1 つの定数バッファの大きさの上限（バイト。16 の倍数であること。4x4 の行列 64 個）
 	constexpr int32 MaxConstantBytes = 4096;
+
+	// ピクセルシェーダーの出力（SV_TargetN）の数（0〜7。0 は、いまの描画先）。ShaderOutputTarget で決められるのは 1〜7
+	constexpr int32 NumOutputTargets = 8;
 }
 
 // ライティング（光）。色は float（0..1 を超えてもよい）。Type は EDrawLightType の数値
@@ -729,6 +734,8 @@ struct FDrawUseShaderData { int32 Stage = 0; int32 Handle = -1; };
 struct FDrawShaderConstantsData { int32 Stage = 0; int32 Slot = NDrawShader::FirstUserSlot; int32 NumBytes = 0; };
 // シェーダーの段 Stage（0〜15）に、画像 Handle を置く。Handle が負なら、その段を空にする
 struct FDrawShaderTextureData { int32 Stage = 0; int32 Handle = -1; };
+// ピクセルシェーダーの出力 Index（1〜7。SV_TargetN の N）を、描画先 Handle に書く。Handle が負なら、その出力を書かない
+struct FDrawShaderOutputTargetData { int32 Index = 1; int32 Handle = -1; };
 
 // シェーダーに渡す 3D の頂点 1 つ（DxLib の VERTEX3DSHADER。88 バイト）。色は R, G, B, A。
 // 頂点シェーダーの入力は、この並びのとおりに、先頭から飛ばさずに宣言する（DxLib は、宣言した順に詰めて読む）
@@ -862,6 +869,7 @@ DRAW_DATA_CHECK( FDrawPreviewShadowMapData );
 DRAW_DATA_CHECK( FDrawUseShaderData );
 DRAW_DATA_CHECK( FDrawShaderConstantsData );
 DRAW_DATA_CHECK( FDrawShaderTextureData );
+DRAW_DATA_CHECK( FDrawShaderOutputTargetData );
 DRAW_DATA_CHECK( FDrawShaderVertex3D );
 DRAW_DATA_CHECK( FDrawPrimitiveShader3DData );
 DRAW_DATA_CHECK( FDrawShaderRectData );

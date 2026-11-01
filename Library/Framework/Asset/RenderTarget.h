@@ -26,6 +26,13 @@
 //   }
 //   CommandList.Image( 20.0f, 20.0f, Minimap );                         // ふつうの画像として画面へ貼る
 //
+//   // 浮動小数点の描画先（1 を超える明るさを残す。シェーダーで読んで、トーンマップ・ブルームなどに使う）
+//   FRenderTargetDesc HdrDesc;
+//   HdrDesc.Width = 1280;
+//   HdrDesc.Height = 720;
+//   HdrDesc.Format = ERenderTargetFormat::Float16;
+//   TSharedPtr<CRenderTarget> Hdr = Assets->CreateRenderTarget( "Hdr", HdrDesc );
+//
 //   // 読む・保存する（描いたあと。メインスレッドだけ。描き込みは、オブジェクトの Draw が実行されたあとに済んでいる）
 //   FColor32 Color;
 //   Minimap->ReadPixel( 128, 128, Color );
@@ -39,7 +46,7 @@ public:
 	// 作ったときの設定
 	FORCEINLINE const FRenderTargetDesc& GetDesc() const { return Desc; }
 
-	// 矩形 (X, Y, Width, Height) の画素を、左上から右へ、上から下へ、OutPixels（Width x Height 個）に読む。
+	// 矩形 (X, Y, Width, Height) の画素を、左上から右へ、上から下へ、OutPixels（Width x Height 個）に読む（浮動小数点の描画先は、0〜255 に収めて読む）。
 	// 矩形が描画先の外にはみ出していたり、大きさが 0 以下なら、何もせず false。透明度を持たない描画先の A は 255。メインスレッドだけ
 	bool ReadPixels( int32 X, int32 Y, int32 Width, int32 Height, TArray<FColor32>& OutPixels ) const;
 	// 1 画素を読む。(X, Y) が描画先の外なら false
@@ -52,7 +59,7 @@ public:
 	// 矩形 (X, Y, Width, Height) だけを保存する。矩形が描画先の外にはみ出していたら、何もせず false
 	bool SaveRegion( int32 X, int32 Y, int32 Width, int32 Height, const FString& Path, const FImageSaveOptions& Options = FImageSaveOptions() ) const;
 
-	// 色（4 バイト）と、Z バッファ（4 バイト）、マルチサンプルの分
+	// 色（形式とチャンネルの数による）と、Z バッファ（4 バイト）、マルチサンプルの分
 	int64 GetMemoryBytes() const override;
 	FString Describe() const override;
 

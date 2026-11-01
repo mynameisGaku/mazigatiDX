@@ -93,10 +93,13 @@ int64 CRenderTarget::GetMemoryBytes() const
 	// マルチサンプルのときは、色も Z も、サンプルの数だけ要る
 	const int64 Samples = Desc.MultiSamples > 1 ? Desc.MultiSamples : 1;
 	const int64 Pixels = static_cast<int64>( Desc.Width ) * Desc.Height;
-	return Pixels * 4 * Samples + ( Desc.bDepth ? Pixels * 4 * Samples : 0 );
+	return Pixels * Desc.GetBytesPerPixel() * Samples + ( Desc.bDepth ? Pixels * 4 * Samples : 0 );
 }
 
 FString CRenderTarget::Describe() const
 {
-	return FString::Printf( "%d x %d render target%s%s", Desc.Width, Desc.Height, Desc.bAlpha ? ", alpha" : "", Desc.MultiSamples > 1 ? ", multisample" : "" );
+	const char* Format = Desc.Format == ERenderTargetFormat::Float32 ? ", float32" : Desc.Format == ERenderTargetFormat::Float16 ? ", float16" : "";
+	// 1・2 チャンネルは、浮動小数点の描画先だけ
+	const char* Channels = Desc.Channels == 1 ? " x1" : Desc.Channels == 2 ? " x2" : "";
+	return FString::Printf( "%d x %d render target%s%s%s%s", Desc.Width, Desc.Height, Format, Channels, Desc.bAlpha ? ", alpha" : "", Desc.MultiSamples > 1 ? ", multisample" : "" );
 }

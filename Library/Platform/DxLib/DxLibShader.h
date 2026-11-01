@@ -19,8 +19,9 @@
 //   - 画像は、HLSL の Texture2D を t0 から連続して宣言する。t1 だけを宣言すると、DxLib が落ちる（なので、段は実行側では確かめられない。呼び出す側の約束）
 //   - NULL の頂点配列・負のポリゴン数を渡すと DxLib が落ちるので、渡す前にすべて確かめる（記録のときと、実行のとき）
 //
-//   Apply: シェーダーの命令（UseShader / ShaderConstants / ShaderTexture / PrimitiveShader3D / ShaderRect）を実行する
-//   Restore: 使わせたシェーダーと画像を外し、使った定数バッファを（中身を 0 にして）片付ける
+//   - 2 つ目以降の出力（SetRenderTargetToShader の 1〜7）は、SetDrawScreen をまたいでも残る。ふつうの図形は書かない。でたらめなハンドルも 0 を返して受け取るので、記録のときに確かめる
+//   Apply: シェーダーの命令（UseShader / ShaderConstants / ShaderTexture / ShaderOutputTarget / PrimitiveShader3D / ShaderRect）を実行する
+//   Restore: 使わせたシェーダー・画像・出力の描画先を外し、使った定数バッファを（中身を 0 にして）片付ける
 //=============================================================================
 class FDxLibShader
 {
@@ -42,6 +43,7 @@ private:
 	void UseShader( const FDrawCommandView& Command );
 	void SetConstants( const FDrawCommandView& Command );
 	void SetTexture( const FDrawCommandView& Command );
+	void SetOutputTarget( const FDrawCommandView& Command );
 	void DrawPrimitive3D( const FDrawCommandView& Command );
 	void DrawRect( const FDrawCommandView& Command );
 
@@ -57,6 +59,9 @@ private:
 
 	// SetUseTextureToShader で画像を置いた段（終わりに外す）
 	bool bTextureUsed[NDrawShader::NumTextureStages] = {};
+
+	// SetRenderTargetToShader で描画先を決めた出力（終わりに外す。0 は使わない）
+	bool bOutputTargetUsed[NDrawShader::NumOutputTargets] = {};
 
 	// 使っている定数バッファ（種類とスロットごとに 1 つ。大きさが足りなくなったら作り直す）
 	struct FConstantBuffer

@@ -652,6 +652,31 @@ void FDrawContext::StopUsingShaderTexture( int32 Stage )
 	Push( EDrawCommand::ShaderTexture, 0, Data );
 }
 
+bool FDrawContext::ShaderOutputTarget( int32 Index, FImageHandle Target )
+{
+	if ( Index < 1 || Index >= NDrawShader::NumOutputTargets || !Target.IsValid() )
+	{
+		return false;
+	}
+	FDrawShaderOutputTargetData Data;
+	Data.Index = Index;
+	Data.Handle = Target.Value;
+	Push( EDrawCommand::ShaderOutputTarget, 0, Data );
+	return true;
+}
+
+void FDrawContext::StopUsingShaderOutputTarget( int32 Index )
+{
+	if ( Index < 1 || Index >= NDrawShader::NumOutputTargets )
+	{
+		return;
+	}
+	FDrawShaderOutputTargetData Data;
+	Data.Index = Index;
+	Data.Handle = -1;
+	Push( EDrawCommand::ShaderOutputTarget, 0, Data );
+}
+
 bool FDrawContext::PrimitiveShader3D( const FShaderVertex3D* Vertices, int32 NumVertices, EDrawPrimitive Type )
 {
 	return PushPrimitiveShader3D( Vertices, NumVertices, nullptr, 0, Type );
