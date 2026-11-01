@@ -187,6 +187,33 @@ struct VertexInput
 
 組み込みのデバッグ表示は、`Library/DebugUI/DebugOverlay.h`の`CDebugOverlay`です。ゲームインスタンスが持ち、`Init() / Tick() / Draw( *this ) / Term()`を呼ぶと、F1の窓（FPS・入力・シーン・ログ）、F2のプロファイラー、F3のコンソール（Debugだけ）、F11のフルスクリーンが使えます。`OnDrawPanelItems`と`OnDrawWindows`に関数を渡すと、ゲーム側の項目や窓を同じ画面に並べられます。キーの処理は`HandleKeys`に切り出してあり、偽の入力・プロファイラー・プラットフォームで確かめられます。
 
+## ピクセルアートのエフェクト
+
+`Library/Framework/PixelEffect`は、ドット絵のエフェクトをCPUで1画素ずつ描く仕組みです（DxLibに依存しません）。描いた絵は`FPixelImage`にして、`CDynamicTexture`で毎フレーム貼ります。
+
+- 描き先`IPixelSurface`: 大きさと、1画素の読み書き（`SetPixel` / `BlendPixel` / `AddLight` / `GetPixel`）だけの窓口です。`FPixelEffectFrame`は色と光の2枚に溜めて`CompositeToImage( 背景 )`で1枚にし、`FPixelImageSurface`は`FPixelImage`へ直接書きます。この6つを書けば、自前の描き先にもできます。
+- エフェクト`IPixelEffect`: `Start( FPixelPlacement )`（置く場所・左右反転・種・色の段）→ `Update( 秒 )` → `Draw( 描き先, EPixelLayer::Back / Front )`、`IsFinished()`です。後ろの層と前の層の間にキャラクターを描くと、煙やオーラが後ろに、火花が前に出ます。同じ種なら毎回同じ絵になり、時間は1/120秒の決まった刻みで進むので、フレームの長さが違っても同じ絵です。
+- 自分のエフェクトを作るときは`CPixelTimedEffect`を継承し、`OnStart`（粒子を撒く）・`OnStep`（刻みごと）・`OnDraw( Painter, 層 )`だけを書きます。`CPixelPainter`は点・線・円・輪・円弧・楕円・多角形・四角・光・ドット文字・シルエット・立ち絵を描き、描き方は`FPixelStroke`（濃さ・太さ・光）で決めます。濃さ1未満は色を混ぜず、4x4のディザで画素を間引きます。粒子は`CPixelParticleSystem`です。
+- 用意してあるエフェクト（`PixelEffect/Effects`）: 爆発・衝撃波・斬撃・光線・突進の残像・炎・落雷・凍結・水しぶき・風・砂ぼこり・回復・毒・オーラ・きらめき・魔法陣・転送・お金・ダメージ数値・レベルアップの20種です。
+
+```cpp
+CPixelExplosionEffect Explosion;
+FPixelPlacement Placement;
+Placement.Position = FVector2( 48.0f, 60.0f );
+Placement.Seed = 7;
+Explosion.Start( Placement );
+
+FPixelEffectFrame Frame( 96, 96 );
+// 毎フレーム
+Explosion.Update( DeltaTime );
+Frame.Clear();
+Explosion.Draw( Frame, EPixelLayer::Back );
+Explosion.Draw( Frame, EPixelLayer::Front );
+Texture->Update( Frame.CompositeToImage() );
+```
+
+見本は`Samples`の`PixelEffects`です（`Samples.exe --sample=PixelEffects`。20種を2ページに並べて繰り返し再生します。← →キーでページ、Fキーで左右反転、Rキーで種を変えて最初から）。
+
 ## 粒子の力場
 
 `FParticleEmitterDefinition::ForceFields`は、既存の粒子計算へ加えるWorld空間の力場を保持します。`FEffectForceFieldDefinition`は値の保存・検証・加速度の計算だけを持ち、描画やPhysicsへ依存しません。再生・停止・寿命は既存の`FParticleSimulation`と`IEffectPlayback`を使います。Effect Editorの`Force fields`から値を編集でき、`Force field wind`・`Gravity well`・`Whirlwind`・`Gust`を未保存のコピーとして開けます。
