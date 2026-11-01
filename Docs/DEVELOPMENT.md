@@ -216,6 +216,21 @@ Heal.DrawFront( CommandList, Feet, 2.0f );
 
 見本は`Samples`の`PixelEffects`です（`Samples.exe --sample=PixelEffects`。20種を2ページに並べて繰り返し再生します。← →キーでページ、Fキーで左右反転、Rキーで種を変えて最初から）。
 
+## モデルの構造・見た目・当たり判定
+
+- 構造: `CModel::GetStructure()`は、フレームの木（親・子・持っているメッシュ）、メッシュ（材質・頂点と三角形の数・範囲）、材質（読み込んだときの色・使うテクスチャ）、テクスチャ（ファイルのパス・大きさ）、形状（モーフ）の名前を返します。名前から番号は`FindFrame` / `FindMaterial` / `FindShape`。DxLibの`.x`は、`Mesh`ごとに子のフレームを作り、材質の一覧の1つずつにメッシュを作ります（使われない材質は三角形0のメッシュ）。
+- 見た目: `CModelInstance::GetAppearance()`の`FModelAppearance`で、その1体だけの材質の色（`SetMaterialColors` / `SetMaterialDiffuse`、`ResetMaterialColors`で読み込んだときの色へ）、メッシュとフレームの表示、全体の不透明度、形状の効き具合（`SetShapeRate`）を変えます。同じモデルから作ったほかのインスタンスは変わりません。
+- フレームの行列: `CModelInstance::GetFrameMatrix( 番号, EModelFrameSpace::World / Local, 行列 )`（最後に描いたときのアニメーションと置き場所で決まる）。
+- 当たり判定: `CModelInstance::GetCollision()`の`FModelCollision`で、線を飛ばして最初に当たる所（`Raycast`）と、球と重なる三角形（`OverlapSphere`）を求めます。置き場所は、問い合わせのたびに描くときと同じ行列で渡します（移動・回転・拡大で写し直さなくてよい）。形は最初の問い合わせのときに写すので、アニメーションや形状で変わった形で調べるときは`Refresh()`を呼びます。
+
+```cpp
+FModelHit Hit;
+if ( Ground->GetCollision().Raycast( GroundWorld, Eye, Eye + Down * 50.0f, Hit ) )
+{
+	FeetY = Hit.Position.y;          // Hit.Normal・Hit.Distance・Hit.Frame・Hit.Material も分かる
+}
+```
+
 ## ゲームスレッドと AsyncTask
 
 描画・アセット・音・窓など、DxLibを触る仕事は**ゲームスレッド**（起動したスレッド。`NGameMain`と`CEngine::Run`が覚える）だけで行います。DxLibはスレッドセーフではないためです。
