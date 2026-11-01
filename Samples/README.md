@@ -30,6 +30,7 @@ mazigatiDX の機能を、1 つずつ動かして見られるサンプル集で�
 |`Shadows`|影（シャドウマップ）。昼の中庭に、家・木・木箱・すき間のある柵・歩き回る旅人を置き、動く太陽の影を落とす。影の絵（`BeginShadowMap` ～ `EndShadowMap`）を毎フレーム描き、`UseShadowMap` で影を受ける。数字キーで、影の入り切り・影の絵の大きさ・影を計算する範囲・太陽の動き・補正の深さ（0 だと床が縞になる）・影の絵の中身の表示（`PreviewShadowMap`）・ランタン（影を受けない点光源。`FLight::ShadowMapSlots`）を切り替える。マウスで回り、ホイールで近づく|
 |`Shaders`|シェーダー。庭に球と柱を置き、自分で書いた HLSL のシェーダー（物の行列とカメラの行列で位置を決める頂点シェーダー、トゥーン・法線の色・奥行き・波紋・市松模様のピクセルシェーダー）で描画先へ描き、ポストエフェクト（白黒・周りを暗く・モザイク・ゆがみ。`ShaderRect`）をかけて画面に貼る。数字キーの 1〜4 で、物の見え方・地面・ポストエフェクト・時間を切り替える|
 |`PostEffects`|描画先とポストエフェクト。夜の広場（光る玉・ネオンの溝）を 16 ビットの浮動小数点の描画先へ描き（1 を超える明るさが残る）、同じピクセルシェーダーで深度を 32 ビットの描画先へ同時に書く（`ShaderOutputTarget`。複数の出力）。明るい所を抜き出してぼかし（ブルーム）、深度で霧をかけ、トーンマップ（ACES・Reinhard）で画面に貼る。1 キーで見せるもの（仕上がり・8 ビット相当・ブルームだけ・深度）、2〜5 キーでトーンマップ・ブルーム・霧・時間、Q / E キーで露出を切り替える|
+|`Island`|3D の見本（ゲームの画面らしい構成）。探検家が島を歩き、光る結晶を集める。地形（頂点バッファ + 添字バッファ。決まった種から作る）・木と灯台（3D 図形）・空を動く太陽と影（シャドウマップ）・回る灯台の光（スポットライト）・霧・半透明の海・加算の光のにじみ・地図・名札（`WorldToScreen`）・右クリックの目的地（`ScreenToRay`）。WASD で歩き、右クリックでその場所へ歩き、ドラッグでカメラを回し、ホイールで近づく。数字キーの 1〜3 で、影・霧・時刻を切り替える|
 |`Input`|キーボード・マウス・ゲームパッドの状態を表示する|
 
 ## 構成（クラスとファイルの分け方）
@@ -56,6 +57,7 @@ Samples/
     Shadows/                    サンプル Shadows: シーン（CShadowsSample）と、オブジェクト（CShadowsRig、CShadowsView、CShadowsPanel）、共有する状態（FShadowsDemoState）、中庭（NShadowsScenery）
     Shaders/                    サンプル Shaders: シーン（CShadersSample）と、オブジェクト（CShadersRig、CShadersView、CShadersPanel）、共有する状態（FShadersDemoState）、HLSL のソース（NShadersSources）
     PostEffects/                サンプル PostEffects: シーン（CPostEffectsSample）と、オブジェクト（CPostEffectsRig、CPostEffectsView、CPostEffectsPanel）、共有する状態（FPostEffectsDemoState）、シェーダーのソースと定数（NPostEffectsSources）
+    Island/                     サンプル Island: シーン（CIslandSample）と、オブジェクト（CIslandClock、CIslandExplorer、CIslandCrystals、CIslandView、CIslandHud）、共有する状態（FIslandState）、地形（NIslandTerrain）、舞台（NIslandScenery）
     Village/                    サンプル Village: シーン（CVillageSample）と、オブジェクト（CTileMap、CPlayer、CCoin、CVillager、CDialogue、CDarkness、CStatusPanel）、共有する状態（FVillageState）、絵を CPU で作る関数（NVillageArt）
     Common/                     複数のサンプルで使うもの。確認用の画像を、メモリの上で作る関数（NTestPattern）、光の当たらない側を真っ黒にしない、やわらかい光（FSoftLightingScope）、シェーダーで描く形（球・立方体・地面。NShaderMeshes）
     Input/                      サンプル Input: シーン（CInputSample）と、オブジェクト（CKeyboardView、CMouseView、CGamepadView）
