@@ -34,6 +34,9 @@
     <ClCompile Include="Source\Catalog\SampleScene.cpp">
       <Filter>Source\Catalog</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Common\ShaderMeshes.cpp">
+      <Filter>Source\Common</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Common\TestPattern.cpp">
       <Filter>Source\Common</Filter>
     </ClCompile>
@@ -112,6 +115,21 @@
     <ClCompile Include="Source\Pixels\TileView.cpp">
       <Filter>Source\Pixels</Filter>
     </ClCompile>
+    <ClCompile Include="Source\PostEffects\PostEffectsPanel.cpp">
+      <Filter>Source\PostEffects</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\PostEffects\PostEffectsRig.cpp">
+      <Filter>Source\PostEffects</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\PostEffects\PostEffectsSample.cpp">
+      <Filter>Source\PostEffects</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\PostEffects\PostEffectsSources.cpp">
+      <Filter>Source\PostEffects</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\PostEffects\PostEffectsView.cpp">
+      <Filter>Source\PostEffects</Filter>
+    </ClCompile>
     <ClCompile Include="Source\RenderState\InfoPanel.cpp">
       <Filter>Source\RenderState</Filter>
     </ClCompile>
@@ -132,9 +150,6 @@
     </ClCompile>
     <ClCompile Include="Source\RenderTarget\TargetShowcase.cpp">
       <Filter>Source\RenderTarget</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Shaders\ShadersMesh.cpp">
-      <Filter>Source\Shaders</Filter>
     </ClCompile>
     <ClCompile Include="Source\Shaders\ShadersPanel.cpp">
       <Filter>Source\Shaders</Filter>
@@ -264,6 +279,9 @@
     <ClInclude Include="Source\Catalog\SampleScene.h">
       <Filter>Source\Catalog</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Common\ShaderMeshes.h">
+      <Filter>Source\Common</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Common\SoftLighting.h">
       <Filter>Source\Common</Filter>
     </ClInclude>
@@ -348,6 +366,24 @@
     <ClInclude Include="Source\Pixels\TileView.h">
       <Filter>Source\Pixels</Filter>
     </ClInclude>
+    <ClInclude Include="Source\PostEffects\PostEffectsDemoState.h">
+      <Filter>Source\PostEffects</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\PostEffects\PostEffectsPanel.h">
+      <Filter>Source\PostEffects</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\PostEffects\PostEffectsRig.h">
+      <Filter>Source\PostEffects</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\PostEffects\PostEffectsSample.h">
+      <Filter>Source\PostEffects</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\PostEffects\PostEffectsSources.h">
+      <Filter>Source\PostEffects</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\PostEffects\PostEffectsView.h">
+      <Filter>Source\PostEffects</Filter>
+    </ClInclude>
     <ClInclude Include="Source\RenderState\InfoPanel.h">
       <Filter>Source\RenderState</Filter>
     </ClInclude>
@@ -373,9 +409,6 @@
       <Filter>Source\RenderTarget</Filter>
     </ClInclude>
     <ClInclude Include="Source\Shaders\ShadersDemoState.h">
-      <Filter>Source\Shaders</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Shaders\ShadersMesh.h">
       <Filter>Source\Shaders</Filter>
     </ClInclude>
     <ClInclude Include="Source\Shaders\ShadersPanel.h">
@@ -517,6 +550,9 @@
     </Filter>
     <Filter Include="Source\Pixels">
       <UniqueIdentifier>{7FACA93B-34CC-117D-96B2-DB56EAC4A18F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\PostEffects">
+      <UniqueIdentifier>{A05B2755-E2D5-DE2B-99EF-DC5BE9CF9E46}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\RenderState">
       <UniqueIdentifier>{93FBC219-622C-243E-E859-AD13FBD37692}</UniqueIdentifier>

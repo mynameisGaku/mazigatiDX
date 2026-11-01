@@ -5,11 +5,11 @@
 #include "Library/Framework/Render/ShaderVertex.h"
 
 //=============================================================================
-// NShadersMesh
-//   サンプル Shaders で、シェーダーに渡す形（頂点と添字）。一度だけ作って、毎フレーム使い回す。
+// NShaderMeshes
+//   シェーダーで描く見本（Shaders・PostEffects）で、シェーダーに渡す形（頂点と添字）。一度だけ作って、毎フレーム使い回す。
 //   どれも、PrimitiveIndexedShader3D に渡す（EDrawPrimitive::Triangles）。頂点シェーダーが、自分の行列で動かす。
 //=============================================================================
-namespace NShadersMesh
+namespace NShaderMeshes
 {
 	// 頂点と添字の入れ物
 	struct FMesh

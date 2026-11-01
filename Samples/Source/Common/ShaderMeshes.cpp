@@ -1,4 +1,4 @@
-﻿#include "ShadersMesh.h"
+﻿#include "ShaderMeshes.h"
 
 #include "Library/Math/Math.h"
 
@@ -7,9 +7,9 @@ namespace
 	constexpr int32 SphereSegments = 24;
 	constexpr int32 SphereRings = 16;
 
-	NShadersMesh::FMesh MakeSphere()
+	NShaderMeshes::FMesh MakeSphere()
 	{
-		NShadersMesh::FMesh Mesh;
+		NShaderMeshes::FMesh Mesh;
 		for ( int32 Ring = 0; Ring <= SphereRings; ++Ring )
 		{
 			const float32 Theta = NMath::PI * static_cast<float32>( Ring ) / static_cast<float32>( SphereRings );
@@ -40,9 +40,9 @@ namespace
 		return Mesh;
 	}
 
-	NShadersMesh::FMesh MakeCube()
+	NShaderMeshes::FMesh MakeCube()
 	{
-		NShadersMesh::FMesh Mesh;
+		NShaderMeshes::FMesh Mesh;
 		// 面の向き（法線）と、面の中の 2 つの軸
 		const FVector3 Normals[6] = { FVector3( 1, 0, 0 ), FVector3( -1, 0, 0 ), FVector3( 0, 1, 0 ), FVector3( 0, -1, 0 ), FVector3( 0, 0, 1 ), FVector3( 0, 0, -1 ) };
 		const FVector3 AxesU[6] = { FVector3( 0, 1, 0 ), FVector3( 0, 1, 0 ), FVector3( 1, 0, 0 ), FVector3( 1, 0, 0 ), FVector3( 1, 0, 0 ), FVector3( 1, 0, 0 ) };
@@ -67,10 +67,10 @@ namespace
 		return Mesh;
 	}
 
-	NShadersMesh::FMesh MakeGround()
+	NShaderMeshes::FMesh MakeGround()
 	{
-		NShadersMesh::FMesh Mesh;
-		const float32 Half = NShadersMesh::GroundHalfSize;
+		NShaderMeshes::FMesh Mesh;
+		const float32 Half = NShaderMeshes::GroundHalfSize;
 		const FVector3 Up( 0.0f, 1.0f, 0.0f );
 		Mesh.Vertices.Add( FShaderVertex3D::Make( FVector3( -Half, 0.0f, -Half ), Up, FColor32( 255, 255, 255, 255 ), 0.0f, 0.0f ) );
 		Mesh.Vertices.Add( FShaderVertex3D::Make( FVector3( Half, 0.0f, -Half ), Up, FColor32( 255, 255, 255, 255 ), 1.0f, 0.0f ) );
@@ -85,19 +85,19 @@ namespace
 	}
 }
 
-const NShadersMesh::FMesh& NShadersMesh::GetSphere()
+const NShaderMeshes::FMesh& NShaderMeshes::GetSphere()
 {
 	static const FMesh Mesh = MakeSphere();
 	return Mesh;
 }
 
-const NShadersMesh::FMesh& NShadersMesh::GetCube()
+const NShaderMeshes::FMesh& NShaderMeshes::GetCube()
 {
 	static const FMesh Mesh = MakeCube();
 	return Mesh;
 }
 
-const NShadersMesh::FMesh& NShadersMesh::GetGround()
+const NShaderMeshes::FMesh& NShaderMeshes::GetGround()
 {
 	static const FMesh Mesh = MakeGround();
 	return Mesh;

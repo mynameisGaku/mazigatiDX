@@ -62,6 +62,7 @@
     <ClCompile Include="Source\Camera\TopView.cpp" />
     <ClCompile Include="Source\Catalog\SampleCatalog.cpp" />
     <ClCompile Include="Source\Catalog\SampleScene.cpp" />
+    <ClCompile Include="Source\Common\ShaderMeshes.cpp" />
     <ClCompile Include="Source\Common\TestPattern.cpp" />
     <ClCompile Include="Source\DrawState\BlendShowcase.cpp" />
     <ClCompile Include="Source\DrawState\DrawStateSample.cpp" />
@@ -88,6 +89,11 @@
     <ClCompile Include="Source\Pixels\PlasmaView.cpp" />
     <ClCompile Include="Source\Pixels\SpriteSheetMaker.cpp" />
     <ClCompile Include="Source\Pixels\TileView.cpp" />
+    <ClCompile Include="Source\PostEffects\PostEffectsPanel.cpp" />
+    <ClCompile Include="Source\PostEffects\PostEffectsRig.cpp" />
+    <ClCompile Include="Source\PostEffects\PostEffectsSample.cpp" />
+    <ClCompile Include="Source\PostEffects\PostEffectsSources.cpp" />
+    <ClCompile Include="Source\PostEffects\PostEffectsView.cpp" />
     <ClCompile Include="Source\RenderState\InfoPanel.cpp" />
     <ClCompile Include="Source\RenderState\RenderStateRig.cpp" />
     <ClCompile Include="Source\RenderState\RenderStateSample.cpp" />
@@ -95,7 +101,6 @@
     <ClCompile Include="Source\RenderState\StageView.cpp" />
     <ClCompile Include="Source\RenderTarget\RenderTargetSample.cpp" />
     <ClCompile Include="Source\RenderTarget\TargetShowcase.cpp" />
-    <ClCompile Include="Source\Shaders\ShadersMesh.cpp" />
     <ClCompile Include="Source\Shaders\ShadersPanel.cpp" />
     <ClCompile Include="Source\Shaders\ShadersRig.cpp" />
     <ClCompile Include="Source\Shaders\ShadersSample.cpp" />
@@ -141,6 +146,7 @@
     <ClInclude Include="Source\Catalog\SampleCatalog.h" />
     <ClInclude Include="Source\Catalog\SampleInfo.h" />
     <ClInclude Include="Source\Catalog\SampleScene.h" />
+    <ClInclude Include="Source\Common\ShaderMeshes.h" />
     <ClInclude Include="Source\Common\SoftLighting.h" />
     <ClInclude Include="Source\Common\TestPattern.h" />
     <ClInclude Include="Source\DrawState\BlendShowcase.h" />
@@ -169,6 +175,12 @@
     <ClInclude Include="Source\Pixels\PlasmaView.h" />
     <ClInclude Include="Source\Pixels\SpriteSheetMaker.h" />
     <ClInclude Include="Source\Pixels\TileView.h" />
+    <ClInclude Include="Source\PostEffects\PostEffectsDemoState.h" />
+    <ClInclude Include="Source\PostEffects\PostEffectsPanel.h" />
+    <ClInclude Include="Source\PostEffects\PostEffectsRig.h" />
+    <ClInclude Include="Source\PostEffects\PostEffectsSample.h" />
+    <ClInclude Include="Source\PostEffects\PostEffectsSources.h" />
+    <ClInclude Include="Source\PostEffects\PostEffectsView.h" />
     <ClInclude Include="Source\RenderState\InfoPanel.h" />
     <ClInclude Include="Source\RenderState\RenderStateDemoState.h" />
     <ClInclude Include="Source\RenderState\RenderStateRig.h" />
@@ -178,7 +190,6 @@
     <ClInclude Include="Source\RenderTarget\RenderTargetSample.h" />
     <ClInclude Include="Source\RenderTarget\TargetShowcase.h" />
     <ClInclude Include="Source\Shaders\ShadersDemoState.h" />
-    <ClInclude Include="Source\Shaders\ShadersMesh.h" />
     <ClInclude Include="Source\Shaders\ShadersPanel.h" />
     <ClInclude Include="Source\Shaders\ShadersRig.h" />
     <ClInclude Include="Source\Shaders\ShadersSample.h" />

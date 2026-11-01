@@ -2,7 +2,7 @@
 
 #include "Library/Framework/Render/DrawContext.h"
 #include "Library/Framework/Render/RenderState3D.h"
-#include "Source/Shaders/ShadersMesh.h"
+#include "Source/Common/ShaderMeshes.h"
 #include "Source/Shaders/ShadersSources.h"
 
 namespace
@@ -33,7 +33,7 @@ namespace
 	};
 
 	// 形を 1 つ描く（物の定数を、頂点側とピクセル側に置いて、添字つきで描く）
-	void RecordMesh( FDrawContext& CommandList, const NShadersMesh::FMesh& Mesh, const FMatrix4x4& World, const FVector4& Color, float32 Wobble )
+	void RecordMesh( FDrawContext& CommandList, const NShaderMeshes::FMesh& Mesh, const FMatrix4x4& World, const FVector4& Color, float32 Wobble )
 	{
 		NShadersSources::FObjectConstants Object;
 		Object.World = World;
@@ -67,7 +67,7 @@ void CShadersView::RecordScene( FDrawContext& CommandList ) const
 	// 地面
 	CommandList.UseVertexShader( State->ObjectVertex );
 	CommandList.UsePixelShader( State->GroundPixels[State->GroundMode] );
-	RecordMesh( CommandList, NShadersMesh::GetGround(), FMatrix4x4::Identity, FVector4( 1.0f, 1.0f, 1.0f, 1.0f ), 0.0f );
+	RecordMesh( CommandList, NShaderMeshes::GetGround(), FMatrix4x4::Identity, FVector4( 1.0f, 1.0f, 1.0f, 1.0f ), 0.0f );
 
 	// 物（球 3 つと柱）。同じ頂点シェーダーに、見え方ごとのピクセルシェーダーを使う。柱はゆっくり回る
 	CommandList.UsePixelShader( State->ObjectPixels[State->ObjectMode] );
@@ -80,7 +80,7 @@ void CShadersView::RecordScene( FDrawContext& CommandList ) const
 			World = World * FMatrix4x4::RotateY( State->Time * 0.5f );
 		}
 		World = World * FMatrix4x4::Translate( Object.Position );
-		RecordMesh( CommandList, Object.bCube ? NShadersMesh::GetCube() : NShadersMesh::GetSphere(), World, Object.Color, Wobble );
+		RecordMesh( CommandList, Object.bCube ? NShaderMeshes::GetCube() : NShaderMeshes::GetSphere(), World, Object.Color, Wobble );
 	}
 }
 
@@ -103,12 +103,14 @@ void CShadersView::Draw( FDrawContext& CommandList )
 	CommandList.StopUsingPixelShader();
 	CommandList.PopTarget();
 
-	// ② 描画先の絵を、ポストエフェクトのピクセルシェーダーを掛けて、見せる範囲に貼る。全体にかける効果なので、奥行きは比べない
+	// ② 描画先の絵を、ポストエフェクトのピクセルシェーダーを掛けて、見せる範囲に貼る。全体にかける効果なので、奥行きは比べない。
+	//    ゆがみで画像の外を読む所は、端の色を伸ばす（既定の「繰り返す」だと、反対側の端の絵が回り込む）
 	FDepthState NoDepth;
 	NoDepth.bTestDepth = false;
 	NoDepth.bWriteDepth = false;
 	CommandList.Depth( NoDepth );
 	CommandList.Filter( EDrawFilter::Bilinear );
+	CommandList.TextureAddress( EDrawTextureAddress::Clamp );
 	NShadersSources::FPostConstants Post;
 	Post.Parameters = FVector4( State->Time, static_cast<float32>( FShadersDemoState::ViewWidth ), static_cast<float32>( FShadersDemoState::ViewHeight ), 0.0f );
 	CommandList.ShaderConstants( EShaderStage::Pixel, 4, Post );
