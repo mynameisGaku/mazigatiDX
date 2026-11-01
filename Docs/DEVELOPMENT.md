@@ -196,20 +196,20 @@ struct VertexInput
 - 自分のエフェクトを作るときは`CPixelTimedEffect`を継承し、`OnStart`（粒子を撒く）・`OnStep`（刻みごと）・`OnDraw( Painter, 層 )`だけを書きます。`CPixelPainter`は点・線・円・輪・円弧・楕円・多角形・四角・光・ドット文字・シルエット・立ち絵を描き、描き方は`FPixelStroke`（濃さ・太さ・光）で決めます。濃さ1未満は色を混ぜず、4x4のディザで画素を間引きます。粒子は`CPixelParticleSystem`です。
 - 用意してあるエフェクト（`PixelEffect/Effects`）: 爆発・衝撃波・斬撃・光線・突進の残像・炎・落雷・凍結・水しぶき・風・砂ぼこり・回復・毒・オーラ・きらめき・魔法陣・転送・お金・ダメージ数値・レベルアップの20種です。
 
-```cpp
-CPixelExplosionEffect Explosion;
-FPixelPlacement Placement;
-Placement.Position = FVector2( 48.0f, 60.0f );
-Placement.Seed = 7;
-Explosion.Start( Placement );
+- ゲームで使うときは`CPixelEffectView`が便利です。後ろの層と前の層を別々の画像（`CDynamicTexture`）にして、基準点を画面の好きな位置へ、好きな倍率で描きます。**エフェクトはキャラクターを描きません**。キャラクターは、`DrawBack`と`DrawFront`の間にふつうに描きます（キャラクターと重ならない爆発などは、どちらか片方の層しか使いません）。画像を作らずに層ごとの絵だけが欲しいときは`CPixelEffectPlayer`（CPUだけ）を使います。
 
-FPixelEffectFrame Frame( 96, 96 );
-// 毎フレーム
-Explosion.Update( DeltaTime );
-Frame.Clear();
-Explosion.Draw( Frame, EPixelLayer::Back );
-Explosion.Draw( Frame, EPixelLayer::Front );
-Texture->Update( Frame.CompositeToImage() );
+```cpp
+// 作るとき（Assets は CAssetManager）
+CPixelEffectView Heal( *Assets, MakeUnique<CPixelHealEffect>() );
+Heal.Play( Seed );                         // 左右反転・色の段も渡せる
+
+// Tick で
+Heal.Update( DeltaTime );                  // Heal.IsFinished() で終わりがわかる
+
+// Draw( FDrawContext& CommandList ) で。Feet はキャラクターの足元の画面の座標
+Heal.DrawBack( CommandList, Feet, 2.0f );  // 2 倍に拡大
+CommandList.Image( Feet.x - 12.0f, Feet.y - 38.0f, HeroTexture );
+Heal.DrawFront( CommandList, Feet, 2.0f );
 ```
 
 見本は`Samples`の`PixelEffects`です（`Samples.exe --sample=PixelEffects`。20種を2ページに並べて繰り返し再生します。← →キーでページ、Fキーで左右反転、Rキーで種を変えて最初から）。

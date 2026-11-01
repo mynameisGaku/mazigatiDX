@@ -5,17 +5,18 @@
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/PixelEffect/PixelBackdrop.h"
-#include "Library/Framework/PixelEffect/PixelPainter.h"
 #include "Library/Framework/Render/DrawContext.h"
 
 namespace
 {
 	// 画像を画面で何倍に描くか
-	constexpr int32 Zoom = 2;
+	constexpr float32 Zoom = 2.0f;
 	// 見出しから絵までの高さ（ピクセル）
 	constexpr int32 TitleHeight = 22;
 	// 一度きりのエフェクトが終わってから、始め直すまで（秒）
 	constexpr float32 PauseAfterFinish = 0.4f;
+	// 背景・立ち絵の画像の名前に付ける通し番号（見本ごとに別の画像にする）
+	int32 NextSerial = 0;
 
 	FORCEINLINE int32 Px( float32 Value )
 	{
@@ -25,40 +26,35 @@ namespace
 
 CPixelEffectTile::CPixelEffectTile( const FVector2& InOrigin, TUniquePtr<IPixelEffect> InEffect, EPixelBackdrop InBackdrop, const FPixelActor* InActor )
 	: Origin( InOrigin )
-	, Effect( MoveTemp( InEffect ) )
-	, bHasActor( InActor != nullptr )
 {
-	if ( !Effect.IsValid() )
+	CAssetManager* Assets = GetAppSubsystem<CAssetManager>();
+	if ( Assets == nullptr || !InEffect.IsValid() )
 	{
 		return;
 	}
+	const FPixelEffectMeta Meta = InEffect->GetMeta();
+	Effect = MakeUnique<CPixelEffectView>( *Assets, MoveTemp( InEffect ) );
+	++NextSerial;
+	Backdrop = Assets->CreateDynamicTexture( FString::Printf( "Samples/PixelEffects/Backdrop#%d", NextSerial ), NPixelBackdrop::MakeBackdrop( InBackdrop, Meta.Width, Meta.Height, NMath::RoundToInt( Meta.Anchor.y ) ) );
 	if ( InActor != nullptr )
 	{
-		Actor = *InActor;
-	}
-	const FPixelEffectMeta& Meta = Effect->GetMeta();
-	Frame.Initialize( Meta.Width, Meta.Height );
-	Backdrop = NPixelBackdrop::MakeBackdrop( InBackdrop, Meta.Width, Meta.Height, NMath::RoundToInt( Meta.Anchor.y ) );
-	if ( CAssetManager* Assets = GetAppSubsystem<CAssetManager>() )
-	{
-		Texture = Assets->CreateDynamicTexture( FString::Printf( "Samples/PixelEffects/%s", *Meta.Name ), Backdrop );
+		FPixelImage Figure = FPixelImage::FromPixels( InActor->Width, InActor->Height, InActor->Pixels.GetData() );
+		Actor = Assets->CreateDynamicTexture( FString::Printf( "Samples/PixelEffects/Actor#%d", NextSerial ), Figure );
+		Figure.FlipHorizontal();
+		FlippedActor = Assets->CreateDynamicTexture( FString::Printf( "Samples/PixelEffects/FlippedActor#%d", NextSerial ), Figure );
 	}
 	Restart();
 }
 
 void CPixelEffectTile::Restart()
 {
-	FPixelPlacement Placement;
-	Placement.Position = Effect->GetMeta().Anchor;
-	Placement.bFlipHorizontal = bFlip;
-	Placement.Seed = Seed;
-	Effect->Start( Placement );
+	Effect->Play( Seed, bFlip );
 	RestartDelay = PauseAfterFinish;
 }
 
 void CPixelEffectTile::Tick( float32 DeltaTime )
 {
-	if ( !Effect.IsValid() || !Texture.IsValid() )
+	if ( !Effect.IsValid() )
 	{
 		return;
 	}
@@ -73,7 +69,6 @@ void CPixelEffectTile::Tick( float32 DeltaTime )
 		++Seed;
 		Restart();
 	}
-
 	Effect->Update( DeltaTime );
 	if ( Effect->IsFinished() )
 	{
@@ -84,16 +79,6 @@ void CPixelEffectTile::Tick( float32 DeltaTime )
 			Restart();
 		}
 	}
-
-	// 後ろの層 → 立ち絵 → 前の層の順に描いて、背景の上に合成する
-	Frame.Clear();
-	Effect->Draw( Frame, EPixelLayer::Back );
-	if ( bHasActor )
-	{
-		CPixelPainter( Frame, Effect->GetMeta().Anchor, bFlip ).Actor( Actor, FVector2() );
-	}
-	Effect->Draw( Frame, EPixelLayer::Front );
-	Texture->Update( Frame.CompositeToImage( Backdrop.GetData() ) );
 }
 
 void CPixelEffectTile::Draw( FDrawContext& CommandList )
@@ -102,14 +87,28 @@ void CPixelEffectTile::Draw( FDrawContext& CommandList )
 	{
 		return;
 	}
-	const FPixelEffectMeta& Meta = Effect->GetMeta();
-	const int32 Left = Px( Origin.x );
-	const int32 Top = Px( Origin.y ) + TitleHeight;
-	CommandList.TextF( Left, Px( Origin.y ), FColor32::White, "%s%s", *Meta.Name, Meta.bLoop ? " (loop)" : "" );
-	if ( !Texture.IsValid() )
+	const FPixelEffectMeta& Meta = Effect->GetPlayer().GetMeta();
+	const float32 Left = static_cast<float32>( Px( Origin.x ) );
+	const float32 Top = static_cast<float32>( Px( Origin.y ) + TitleHeight );
+	const float32 Right = Left + static_cast<float32>( Meta.Width ) * Zoom;
+	const float32 Bottom = Top + static_cast<float32>( Meta.Height ) * Zoom;
+	CommandList.TextF( Px( Origin.x ), Px( Origin.y ), FColor32::White, "%s%s", *Meta.Name, Meta.bLoop ? " (loop)" : "" );
+	if ( Backdrop.IsValid() )
 	{
-		return;
+		CommandList.ImageStretch( Left, Top, Right, Bottom, Backdrop );
 	}
-	CommandList.ImageStretch( static_cast<float32>( Left ), static_cast<float32>( Top ), static_cast<float32>( Left + Meta.Width * Zoom ), static_cast<float32>( Top + Meta.Height * Zoom ), Texture );
-	CommandList.Box( Left, Top, Left + Meta.Width * Zoom, Top + Meta.Height * Zoom, FColor32( 90, 90, 90 ), false );
+
+	// ゲームと同じ順: エフェクトの後ろ → キャラクター（足元を基準点に合わせる）→ エフェクトの前
+	const FVector2 Anchor( Left + Meta.Anchor.x * Zoom, Top + Meta.Anchor.y * Zoom );
+	Effect->DrawBack( CommandList, Anchor, Zoom );
+	const TSharedPtr<CDynamicTexture>& Figure = bFlip ? FlippedActor : Actor;
+	if ( Figure.IsValid() )
+	{
+		const float32 FigureWidth = static_cast<float32>( Figure->GetWidth() ) * Zoom;
+		const float32 FigureHeight = static_cast<float32>( Figure->GetHeight() ) * Zoom;
+		const float32 FigureLeft = Anchor.x - static_cast<float32>( Figure->GetWidth() / 2 ) * Zoom;
+		CommandList.ImageStretch( FigureLeft, Anchor.y - FigureHeight, FigureLeft + FigureWidth, Anchor.y, Figure );
+	}
+	Effect->DrawFront( CommandList, Anchor, Zoom );
+	CommandList.Box( Px( Left ), Px( Top ), Px( Right ), Px( Bottom ), FColor32( 90, 90, 90 ), false );
 }

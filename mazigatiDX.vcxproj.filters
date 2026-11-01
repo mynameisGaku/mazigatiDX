@@ -358,6 +358,12 @@
     <ClCompile Include="Library\Framework\PixelEffect\PixelEffectFrame.cpp">
       <Filter>Library\Framework\PixelEffect</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\PixelEffect\PixelEffectPlayer.cpp">
+      <Filter>Library\Framework\PixelEffect</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\PixelEffect\PixelEffectView.cpp">
+      <Filter>Library\Framework\PixelEffect</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\PixelEffect\PixelFont.cpp">
       <Filter>Library\Framework\PixelEffect</Filter>
     </ClCompile>
@@ -1836,7 +1842,13 @@
     <ClInclude Include="Library\Framework\PixelEffect\PixelEffectFrame.h">
       <Filter>Library\Framework\PixelEffect</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\PixelEffect\PixelEffectPlayer.h">
+      <Filter>Library\Framework\PixelEffect</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\PixelEffect\PixelEffectTypes.h">
+      <Filter>Library\Framework\PixelEffect</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\PixelEffect\PixelEffectView.h">
       <Filter>Library\Framework\PixelEffect</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\PixelEffect\PixelFont.h">

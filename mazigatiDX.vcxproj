@@ -184,6 +184,8 @@
     <ClCompile Include="Library\Framework\PixelEffect\PixelBackdrop.cpp" />
     <ClCompile Include="Library\Framework\PixelEffect\PixelColor.cpp" />
     <ClCompile Include="Library\Framework\PixelEffect\PixelEffectFrame.cpp" />
+    <ClCompile Include="Library\Framework\PixelEffect\PixelEffectPlayer.cpp" />
+    <ClCompile Include="Library\Framework\PixelEffect\PixelEffectView.cpp" />
     <ClCompile Include="Library\Framework\PixelEffect\PixelFont.cpp" />
     <ClCompile Include="Library\Framework\PixelEffect\PixelImageSurface.cpp" />
     <ClCompile Include="Library\Framework\PixelEffect\PixelMask.cpp" />
@@ -678,7 +680,9 @@
     <ClInclude Include="Library\Framework\PixelEffect\PixelColor.h" />
     <ClInclude Include="Library\Framework\PixelEffect\PixelDither.h" />
     <ClInclude Include="Library\Framework\PixelEffect\PixelEffectFrame.h" />
+    <ClInclude Include="Library\Framework\PixelEffect\PixelEffectPlayer.h" />
     <ClInclude Include="Library\Framework\PixelEffect\PixelEffectTypes.h" />
+    <ClInclude Include="Library\Framework\PixelEffect\PixelEffectView.h" />
     <ClInclude Include="Library\Framework\PixelEffect\PixelFont.h" />
     <ClInclude Include="Library\Framework\PixelEffect\PixelImageSurface.h" />
     <ClInclude Include="Library\Framework\PixelEffect\PixelMask.h" />
