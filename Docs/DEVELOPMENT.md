@@ -216,6 +216,28 @@ Heal.DrawFront( CommandList, Feet, 2.0f );
 
 見本は`Samples`の`PixelEffects`です（`Samples.exe --sample=PixelEffects`。20種を2ページに並べて繰り返し再生します。← →キーでページ、Fキーで左右反転、Rキーで種を変えて最初から）。
 
+## ゲームスレッドと AsyncTask
+
+描画・アセット・音・窓など、DxLibを触る仕事は**ゲームスレッド**（起動したスレッド。`NGameMain`と`CEngine::Run`が覚える）だけで行います。DxLibはスレッドセーフではないためです。
+
+- `IsInGameThread()`: いまゲームスレッドか。
+- `GAME_THREAD_ONLY();` / `GAME_THREAD_ONLY( 戻り値 );`: 関数の頭に書くと、ゲームスレッドの外から呼ばれたときに、エラーをログに出して何もせずに戻ります（DxLibを触って壊れる代わりに）。アセットの読み込み・作成（`CAssetManager`の`Load…` / `Create…`など）、モデルの見た目、画面の撮影の関数に入っています。
+- `AsyncTask( EThreadType::Worker, 仕事 )`: 重い仕事（計算・ファイルの読み込みなど。DxLibは触らない）をワーカーで実行します。ワーカーが0本なら、その場で実行します。
+- `AsyncTask( EThreadType::Game, 仕事 )`: 仕事をゲームスレッドへ渡します。次のフレームのはじめ（更新の前）に、頼んだ順に実行されます。ワーカーで作った結果を、画面やアセットに反映するときに使います。
+
+```cpp
+AsyncTask( EThreadType::Worker, [ Path ]()
+{
+	FMapData Map = ParseMap( Path );                          // ワーカーで（DxLib は触らない）
+	AsyncTask( EThreadType::Game, [ Map = MoveTemp( Map ) ]()
+	{
+		SpawnMap( Map );                                     // ゲームスレッドで（オブジェクト・アセット）
+	} );
+} );
+```
+
+仕事は、呼んだ側の変数を参照で使わず、値で持たせます（実行されるときには、呼んだ関数は終わっています）。
+
 ## 画面の撮影（スクリーンショット・GIF）
 
 `CScreenCapture`（アプリのサブシステム）が、画面を撮って`Saved/Screenshots`へ保存します。名前を指定しなければ`Screenshot_00001.png`のような番号の名前になります（番号は、フォルダにあるものの次）。既定はゲームの絵だけで、デバッグ用のUI（ImGui）は写しません（`bIncludeDebugUI`で写せます）。形式はPNG・JPEG・BMP・GIFで、名前の拡張子か`Format`で選びます。
