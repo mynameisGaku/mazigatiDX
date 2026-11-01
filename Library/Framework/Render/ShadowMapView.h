@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
+#include "Library/Framework/Render/Camera.h"
 #include "Library/Math/Math.h"
 
 //=============================================================================
@@ -12,6 +13,8 @@
 //   影は、光が進む向き（LightDirection）に沿って、平行に落ちる。影を計算する範囲（ワールドの箱。AreaMin〜AreaMax）の中だけに影ができ、
 //   範囲が狭いほど、同じ大きさのシャドウマップでも、影の輪郭が細かくなる。範囲の外には影ができない（影を受ける床も、この箱に入れること）。
 //   範囲を決めずに bFitToCamera にすると、始めるときのカメラの見える範囲（視錐台）に自動で合わせる。カメラの Far が遠いと範囲が広くなり、輪郭が粗くなる。
+//   MakeForCameraView は、カメラの見える範囲を、手前から ShadowDistance までで切って、それを囲む箱を範囲にする（見えている近くだけに影を出し、後ろや遠くには出さない。
+//   範囲が狭くなるので、輪郭が細かくなる）。カメラが動くたびに作り直す。
 //
 //   AdjustDepth: 影の判定に足す深さの補正（光から見た深度を 0〜1 に正規化した値）。面が自分の影で縞になる（シャドウアクネ）なら大きく、影が面から離れて浮くなら小さくする。
 //   実測では、0.001 以上で縞が出なくなり、0 / 0.0001 では縞が出た。1 以上と負の値は、影が出なくなる・すべてが影になる。
@@ -42,6 +45,11 @@ struct FShadowMapView
 		View.bFitToCamera = true;
 		return View;
 	}
+
+	// カメラの見える範囲のうち、手前（Near）から ShadowDistance までを囲む箱に影を計算する。ShadowDistance は、Far より遠ければ Far にする。
+	// 箱の高さは MinHeight〜MaxHeight（影を受ける地面と、影を落とす物の高さが入るようにする）。横と奥行きは、見える範囲の角を囲み、Margin だけ広げる
+	// （見える範囲のすぐ外の物の影も入るように）。カメラが使えない・ShadowDistance が Near 以下・MinHeight >= MaxHeight・値が有限でないときは、MakeFitToCamera と同じ
+	static FShadowMapView MakeForCameraView( const FVector3& InLightDirection, const FCamera& Camera, const FCameraViewport& Viewport, float32 ShadowDistance, float32 MinHeight, float32 MaxHeight, float32 Margin = 0.0f );
 
 	// 箱（InAreaMin〜InAreaMax）の中に影を計算する
 	static FShadowMapView MakeForArea( const FVector3& InLightDirection, const FVector3& InAreaMin, const FVector3& InAreaMax )

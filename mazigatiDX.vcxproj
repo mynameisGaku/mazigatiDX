@@ -191,6 +191,7 @@
     <ClCompile Include="Library\Framework\Render\MeshRender.cpp" />
     <ClCompile Include="Library\Framework\Render\ModelMaterialEffectRenderer.cpp" />
     <ClCompile Include="Library\Framework\Render\ModelMaterialEffectResources.cpp" />
+    <ClCompile Include="Library\Framework\Render\ShadowMapView.cpp" />
     <ClCompile Include="Library\Framework\Scene\Scene.cpp" />
     <ClCompile Include="Library\Framework\Scene\SceneManager.cpp" />
     <ClCompile Include="Library\Framework\Subsystem\Subsystem.cpp" />

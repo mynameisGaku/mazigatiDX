@@ -6,7 +6,8 @@
 //=============================================================================
 // FDxLibShadowMap
 //   1 回の Execute の間に行った、シャドウマップ（影の絵）への描画と、影を受けるスロットを覚えて、終わりに元に戻す。
-//   DxLib のシャドウマップは、ShadowMap_DrawSetup から ShadowMap_DrawEnd の間だけ、描画先・カメラを影の絵のものに替える（実測: 終わると、描画先・カメラ・クリップ・ブレンドなどは元に戻る）。
+//   DxLib のシャドウマップは、ShadowMap_DrawSetup から ShadowMap_DrawEnd の間だけ、描画先・カメラを影の絵のものに替える（実測: 終わると、描画先・カメラ・ブレンドなどは元に戻る。
+//   ただし、クリップ（SetDrawArea）は、画面全体に戻ってしまうので、始める前の範囲を覚えて、終わったあとに戻す）。
 //   その間に、描画先・カメラ・クリップ・Clear などを変えると、影の絵が壊れる（実測: ClearDrawScreen で全面が影になり、カメラを替えると影が出ず、SetDrawScreen で ShadowMap_DrawEnd が失敗する）ので、
 //   IsBlockedInPass の命令は、影の絵を描いている間は実行しない。
 //   DxLib のシャドウマップは入れ子にできない（実測: 描いている間の ShadowMap_DrawSetup は、同じ影なら失敗し、別の影なら切り替わるが、ShadowMap_DrawEnd は 1 回で全部終わる）ので、
@@ -51,6 +52,12 @@ private:
 
 	// 描いている間に来た BeginShadowMap の数（入れ子。対の EndShadowMap と相殺する）
 	int NumNestedBegins = 0;
+
+	// 影の絵を終わらせて、始める前のクリップ（描く範囲）に戻す
+	void EndPass();
+
+	// 影の絵を始める前のクリップ（描く範囲。左・上・右・下）
+	int AreaBeforePass[4] = {};
 
 	// UseShadowMap で使っているスロット（終わりに外す）
 	bool bSlotUsed[NDrawShadowMap::NumSlots] = {};

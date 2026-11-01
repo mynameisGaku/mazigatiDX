@@ -379,6 +379,9 @@
     <ClCompile Include="Library\Framework\Render\ModelMaterialEffectResources.cpp">
       <Filter>Library\Framework\Render</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Render\ShadowMapView.cpp">
+      <Filter>Library\Framework\Render</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Scene\Scene.cpp">
       <Filter>Library\Framework\Scene</Filter>
     </ClCompile>

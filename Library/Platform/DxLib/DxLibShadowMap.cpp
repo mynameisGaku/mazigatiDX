@@ -98,8 +98,15 @@ bool FDxLibShadowMap::Apply( const FDrawCommandView& Command )
 		{
 			return true;
 		}
+		// DxLib は、ShadowMap_DrawEnd でクリップを画面全体に戻してしまうので、始める前の範囲を覚えておく
+		RECT Area;
+		GetDrawArea( &Area );
 		if ( ShadowMap_DrawSetup( Data.Handle ) == 0 )
 		{
+			AreaBeforePass[0] = Area.left;
+			AreaBeforePass[1] = Area.top;
+			AreaBeforePass[2] = Area.right;
+			AreaBeforePass[3] = Area.bottom;
 			State = EState::Drawing;
 		}
 		return true;
@@ -113,7 +120,7 @@ bool FDxLibShadowMap::Apply( const FDrawCommandView& Command )
 		}
 		if ( State == EState::Drawing )
 		{
-			ShadowMap_DrawEnd();
+			EndPass();
 		}
 		State = EState::Idle;
 		return true;
@@ -159,12 +166,18 @@ bool FDxLibShadowMap::Apply( const FDrawCommandView& Command )
 	}
 }
 
+void FDxLibShadowMap::EndPass()
+{
+	ShadowMap_DrawEnd();
+	SetDrawArea( AreaBeforePass[0], AreaBeforePass[1], AreaBeforePass[2], AreaBeforePass[3] );
+}
+
 void FDxLibShadowMap::Restore()
 {
 	// 終わらせ忘れた影の絵を終わらせる（先に。描画先・カメラは、影の絵が終わってから戻す）
 	if ( State == EState::Drawing )
 	{
-		ShadowMap_DrawEnd();
+		EndPass();
 	}
 	State = EState::Idle;
 	NumNestedBegins = 0;
