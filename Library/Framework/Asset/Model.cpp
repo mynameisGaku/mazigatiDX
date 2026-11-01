@@ -1,5 +1,6 @@
 ﻿#include "Model.h"
 
+#include "Library/Core/Thread/GameThread.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Asset/StaticModelSurface.h"
@@ -154,6 +155,7 @@ FString CModel::Describe() const
 
 void CModel::RefreshStructure() const
 {
+	GAME_THREAD_ONLY();
 	IAssetBackend* Backend = NAssetService::GetBackend();
 	if ( bStructureRead || Backend == nullptr || !IsReady() )
 	{
@@ -267,6 +269,7 @@ void CModelInstance::DetachAnim( int32 AttachIndex )
 
 bool CModelInstance::GetFrameMatrix( int32 Frame, EModelFrameSpace Space, FMatrix4x4& OutMatrix ) const
 {
+	GAME_THREAD_ONLY( false );
 	IAssetBackend* Backend = NAssetService::GetBackend();
 	return Backend != nullptr && Handle >= 0 && Backend->GetModelFrameMatrix( Handle, Frame, Space, OutMatrix );
 }
@@ -278,6 +281,7 @@ FModelAppearance CModelInstance::GetAppearance() const
 
 bool CModelInstance::GetFramePositions( TArray<FVector3>& OutPositions ) const
 {
+	GAME_THREAD_ONLY( false );
 	OutPositions.Reset();
 	IAssetBackend* Backend = NAssetService::GetBackend();
 	if ( Backend == nullptr || Handle < 0 )

@@ -1,4 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
+#include "Library/Core/Thread/GameThread.h"
 #include "Library/Framework/Capture/ScreenCapture.h"
 
 #include "Library/Core/File/File.h"
@@ -64,6 +65,7 @@ void CScreenCapture::Deinitialize()
 
 void CScreenCapture::SetDirectory( const FString& InDirectory )
 {
+	GAME_THREAD_ONLY();
 	Directory = InDirectory.IsEmpty() ? NScreenshotNames::GetDefaultDirectory() : InDirectory;
 }
 
@@ -133,6 +135,7 @@ void CScreenCapture::ApplyCommandLine( uint64 FrameIndex )
 
 FString CScreenCapture::TakeScreenshot( const FString& Name, const FScreenshotOptions& Options )
 {
+	GAME_THREAD_ONLY( FString() );
 	if ( Platform == nullptr || bScreenshotPending )
 	{
 		return FString();
@@ -148,6 +151,7 @@ FString CScreenCapture::TakeScreenshot( const FString& Name, const FScreenshotOp
 
 FString CScreenCapture::TakeHighResShot( const FString& Name, const FHighResShotOptions& Options )
 {
+	GAME_THREAD_ONLY( FString() );
 	int32 Width = 0;
 	int32 Height = 0;
 	float32 Scale = 1.0f;
@@ -164,11 +168,13 @@ FString CScreenCapture::TakeHighResShot( const FString& Name, const FHighResShot
 
 void CScreenCapture::SetSubject( const TCallable<bool( const CGameObject& )>& Filter )
 {
+	GAME_THREAD_ONLY();
 	Subject = Filter;
 }
 
 void CScreenCapture::SetSubjectByName( const FString& Text )
 {
+	GAME_THREAD_ONLY();
 	if ( Text.IsEmpty() )
 	{
 		ClearSubject();
@@ -182,6 +188,7 @@ void CScreenCapture::SetSubjectByName( const FString& Text )
 
 void CScreenCapture::ClearSubject()
 {
+	GAME_THREAD_ONLY();
 	Subject = nullptr;
 }
 
@@ -220,6 +227,7 @@ void CScreenCapture::TakePendingHighResShot()
 
 FString CScreenCapture::StartRecording( const FString& Name, const FGifRecordOptions& Options )
 {
+	GAME_THREAD_ONLY( FString() );
 	if ( Platform == nullptr || bRecording )
 	{
 		return FString();
@@ -239,6 +247,7 @@ FString CScreenCapture::StartRecording( const FString& Name, const FGifRecordOpt
 
 bool CScreenCapture::StopRecording()
 {
+	GAME_THREAD_ONLY( false );
 	if ( !bRecording )
 	{
 		return false;

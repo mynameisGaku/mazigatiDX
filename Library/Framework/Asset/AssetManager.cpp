@@ -1,6 +1,7 @@
 ﻿#include "AssetManager.h"
 
 
+#include "Library/Core/Thread/GameThread.h"
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/Pair.h"
 #include "Library/Core/Log/Log.h"
@@ -440,6 +441,7 @@ void CAssetManager::ReleaseUnused()
 //-----------------------------------------------------------------------------
 TSharedPtr<CTexture> CAssetManager::LoadTexture( const FString& Path, bool bAsync )
 {
+	GAME_THREAD_ONLY( nullptr );
 	const TOptional<FString> Full = PrepareLoad( "texture", Path );
 	if ( !Full.IsSet() ) return nullptr;
 
@@ -473,6 +475,7 @@ TSharedPtr<CTexture> CAssetManager::LoadTexture( const FString& Path, bool bAsyn
 
 TSharedPtr<CTexture> CAssetManager::CreateTextureFromMemory( const FString& Name, const void* FileImage, usize Size )
 {
+	GAME_THREAD_ONLY( nullptr );
 	if ( GetBackend() == nullptr || FileImage == nullptr || Size == 0 )
 	{
 		LOG( LogAsset, Error, "Cannot create the texture '%s' from memory: %s.", *Name, GetBackend() == nullptr ? "no asset backend" : "no data" );
@@ -498,6 +501,7 @@ TSharedPtr<CTexture> CAssetManager::CreateTextureFromMemory( const FString& Name
 
 TSharedPtr<CRenderTarget> CAssetManager::CreateRenderTarget( const FString& Name, const FRenderTargetDesc& Desc )
 {
+	GAME_THREAD_ONLY( nullptr );
 	if ( GetBackend() == nullptr )
 	{
 		LOG( LogAsset, Error, "Cannot create the render target '%s': no asset backend.", *Name );
@@ -544,6 +548,7 @@ void CAssetManager::AddPendingSheet( const TSharedPtr<CSpriteSheet>& Sheet )
 
 TSharedPtr<CSpriteSheet> CAssetManager::CreateSpriteSheet( const TSharedPtr<CTexture>& Texture, const FSpriteSheetGrid& Grid, const FString& Name )
 {
+	GAME_THREAD_ONLY( nullptr );
 	TSharedPtr<CSpriteSheet> Sheet = CreateSpriteSheet( Texture, Name );
 	if ( Sheet.IsValid() )
 	{
@@ -555,6 +560,7 @@ TSharedPtr<CSpriteSheet> CAssetManager::CreateSpriteSheet( const TSharedPtr<CTex
 
 TSharedPtr<CSpriteSheet> CAssetManager::CreateSpriteSheet( const TSharedPtr<CTexture>& Texture, const FString& Name )
 {
+	GAME_THREAD_ONLY( nullptr );
 	if ( !Texture.IsValid() )
 	{
 		LOG( LogAsset, Error, "Cannot create the sprite sheet '%s': no texture was given.", *Name );
@@ -565,6 +571,7 @@ TSharedPtr<CSpriteSheet> CAssetManager::CreateSpriteSheet( const TSharedPtr<CTex
 
 TSharedPtr<CSpriteSheet> CAssetManager::CreateSpriteSheet( const FSpriteSheetDefinition& Definition, const FString& Name, bool bAsync )
 {
+	GAME_THREAD_ONLY( nullptr );
 	TSharedPtr<CTexture> Texture = LoadTexture( Definition.TexturePath, bAsync );
 	if ( !Texture.IsValid() ) return nullptr;   // 原因は LoadTexture がログに出している
 
@@ -610,6 +617,7 @@ bool CAssetManager::SaveSpriteSheetDefinition( const FString& Path, const FSprit
 
 TSharedPtr<CSpriteSheet> CAssetManager::LoadSpriteSheet( const FString& DefinitionPath, bool bAsync )
 {
+	GAME_THREAD_ONLY( nullptr );
 	const TOptional<FString> Full = PrepareLoad( "sprite sheet", DefinitionPath );
 	if ( !Full.IsSet() ) return nullptr;
 
@@ -664,6 +672,7 @@ TSharedPtr<CSpriteSheet> CAssetManager::LoadSpriteSheet( const FString& Definiti
 //-----------------------------------------------------------------------------
 TSharedPtr<CModelAnimationAsset> CAssetManager::CreateModelAnimations( const FModelAnimationDefinition& Definition, const FString& Name, bool bAsync )
 {
+	GAME_THREAD_ONLY( nullptr );
 	// Model が空なら、モデルを持たないアニメーション集（モーション専用）
 	TSharedPtr<CModel> Model;
 	if ( !Definition.ModelPath.IsEmpty() )
@@ -689,6 +698,7 @@ TSharedPtr<CModelAnimationAsset> CAssetManager::CreateModelAnimations( const FMo
 
 TSharedPtr<CModelAnimationAsset> CAssetManager::LoadModelAnimations( const FString& DefinitionPath, bool bAsync )
 {
+	GAME_THREAD_ONLY( nullptr );
 	const TOptional<FString> Full = PrepareLoad( "model animation set", DefinitionPath );
 	if ( !Full.IsSet() ) return nullptr;
 
@@ -747,6 +757,7 @@ bool CAssetManager::SaveModelAnimationDefinition( const FString& Path, const FMo
 //-----------------------------------------------------------------------------
 TSharedPtr<CModel> CAssetManager::LoadModel( const FString& Path, bool bAsync )
 {
+	GAME_THREAD_ONLY( nullptr );
 	FString FullPath;
 	if ( !ResolveModelRequest( Path, FullPath ) )
 	{
@@ -787,6 +798,7 @@ TSharedPtr<CModel> CAssetManager::LoadModel( const FString& Path, bool bAsync )
 
 TSharedPtr<CSound> CAssetManager::LoadSound( const FString& Path, ESoundLoadMode Mode, bool bAsync )
 {
+	GAME_THREAD_ONLY( nullptr );
 	const TOptional<FString> Full = PrepareLoad( "sound", Path );
 	if ( !Full.IsSet() ) return nullptr;
 
@@ -823,6 +835,7 @@ TSharedPtr<CSound> CAssetManager::LoadSound( const FString& Path, ESoundLoadMode
 //-----------------------------------------------------------------------------
 TSharedPtr<CFont> CAssetManager::LoadFontInternal( const FString& Key, const FFontDesc& Desc, const FString& FontFilePath )
 {
+	GAME_THREAD_ONLY( nullptr );
 	PROFILE_SCOPE_LAZY( LoadScope, MakeLoadScope( "LoadFont", Desc.Face.IsEmpty() ? FString( "(default)" ) : Desc.Face ) );
 	const int64 StartTick = NPlatformTime::GetTicks();
 	const int32 Handle = GetBackend()->MakeFont( Desc );

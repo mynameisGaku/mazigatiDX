@@ -3,11 +3,13 @@
 #include "AssetManager.h"
 
 
+#include "Library/Core/Thread/GameThread.h"
 #include "Library/Core/Time/PlatformTime.h"
 #include "Library/Core/Types/Numeric.h"
 
 TSharedPtr<CTexture> CAssetManager::CreateTextureRegion( const TSharedPtr<CTexture>& Source, int32 X, int32 Y, int32 Width, int32 Height )
 {
+	GAME_THREAD_ONLY( nullptr );
 	if ( GetBackend() == nullptr || !Source.IsValid() || !Source->IsReady() || Source->GetHandle() < 0 || X < 0 || Y < 0 || Width <= 0 || Height <= 0 ) return nullptr;
 	// 元画像寸法を問い合わせ、64bit和で領域の外側を検査する。
 	const int32 SourceWidth = Source->GetWidth();

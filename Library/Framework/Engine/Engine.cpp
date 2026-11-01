@@ -1,5 +1,6 @@
 ﻿#include "Engine.h"
 
+#include "Library/Core/Thread/GameThread.h"
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
 #include "Library/Core/Interfaces/Profiler/IProfiler.h"
 #include "Library/Core/Log/Log.h"
@@ -24,6 +25,8 @@ int32 CEngine::Run( TUniquePtr<CGameInstance> InGameInstance, const FWindowSetti
 		LOG( LogEngine, Error, "Another engine is already running." );
 		return -1;
 	}
+	// エンジンを動かすスレッドが、ゲームスレッド
+	NGameThread::Bind();
 	if ( !InGameInstance )
 	{
 		LOG( LogEngine, Error, "Run called without a game instance." );
@@ -72,6 +75,12 @@ int32 CEngine::Run( TUniquePtr<CGameInstance> InGameInstance, const FWindowSetti
 		}
 		const float32 DeltaTime = TimeControl.Apply( Platform->GetDeltaTime() );
 
+		// ほかのスレッドから AsyncTask( EThreadType::Game, ... ) で頼まれた仕事を、更新の前に実行する
+		{
+			PROFILE_SCOPE_OWNER( "Engine", "Engine", "GameThreadTasks" );
+			NGameThread::RunPendingTasks();
+		}
+
 		{
 			PROFILE_SCOPE_OWNER( "Engine", "Engine", "AppSubsystems.PreUpdate" );
 			Subsystems.Tick( DeltaTime, ETickGroup::PreUpdate );
@@ -98,6 +107,13 @@ int32 CEngine::Run( TUniquePtr<CGameInstance> InGameInstance, const FWindowSetti
 	const uint64 NumFrames = Platform->GetFrameCount() - StartFrameCount;
 	LOG( LogEngine, Log, "Main loop ended: %llu frame(s) in %.1f s (average %.1f FPS)", static_cast<unsigned long long>( NumFrames ),
 		 ElapsedSeconds, ElapsedSeconds > 0.0 ? static_cast<float64>( NumFrames ) / ElapsedSeconds : 0.0 );
+
+	// 残っている仕事は、ゲームとサブシステムを片付ける前に済ませる（仕事が使うものが、まだ生きているうちに）
+	const int32 NumLateTasks = NGameThread::RunPendingTasks();
+	if ( NumLateTasks > 0 )
+	{
+		LOG( LogEngine, Log, "Ran %d game thread task(s) left at the end of the main loop", NumLateTasks );
+	}
 
 	GameInstance->Term();
 	GameInstance.Reset();

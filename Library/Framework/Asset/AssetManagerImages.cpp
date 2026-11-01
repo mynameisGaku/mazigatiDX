@@ -2,12 +2,14 @@
 
 #include "AssetManager.h"
 
+#include "Library/Core/Thread/GameThread.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Time/PlatformTime.h"
 #include "Library/Platform/FileSystem.h"
 
 TSharedPtr<CDynamicTexture> CAssetManager::CreateDynamicTexture( const FString& Name, const FPixelImage& Image )
 {
+	GAME_THREAD_ONLY( nullptr );
 	if ( GetBackend() == nullptr )
 	{
 		LOG( LogAsset, Error, "Cannot create the texture '%s' from pixels: no asset backend.", *Name );
@@ -46,6 +48,7 @@ TSharedPtr<CDynamicTexture> CAssetManager::CreateDynamicTexture( const FString& 
 
 FPixelImage CAssetManager::LoadPixelImage( const FString& Path )
 {
+	GAME_THREAD_ONLY( FPixelImage() );
 	const TOptional<FString> Full = PrepareLoad( "pixel image", Path );
 	if ( !Full.IsSet() )
 	{
@@ -65,6 +68,7 @@ FPixelImage CAssetManager::LoadPixelImage( const FString& Path )
 
 FPixelImage CAssetManager::DecodePixelImage( const void* FileImage, usize Size )
 {
+	GAME_THREAD_ONLY( FPixelImage() );
 	if ( GetBackend() == nullptr || FileImage == nullptr || Size == 0 )
 	{
 		return FPixelImage();
@@ -83,6 +87,7 @@ FPixelImage CAssetManager::DecodePixelImage( const void* FileImage, usize Size )
 
 bool CAssetManager::SavePixelImage( const FPixelImage& Image, const FString& Path, const FImageSaveOptions& Options )
 {
+	GAME_THREAD_ONLY( false );
 	if ( GetBackend() == nullptr || !Image.IsValid() || Path.IsEmpty() )
 	{
 		return false;
@@ -102,6 +107,7 @@ bool CAssetManager::SavePixelImage( const FPixelImage& Image, const FString& Pat
 
 TArray<TSharedPtr<CTexture>> CAssetManager::SplitTexture( const TSharedPtr<CTexture>& Source, const FSpriteSheetGrid& Grid )
 {
+	GAME_THREAD_ONLY( TArray<TSharedPtr<CTexture>>() );
 	TArray<TSharedPtr<CTexture>> Pieces;
 	if ( GetBackend() == nullptr || !Source.IsValid() || !Source->IsReady() || Source->GetHandle() < 0 )
 	{
@@ -119,5 +125,6 @@ TArray<TSharedPtr<CTexture>> CAssetManager::SplitTexture( const TSharedPtr<CText
 
 TArray<TSharedPtr<CTexture>> CAssetManager::LoadTextureGrid( const FString& Path, const FSpriteSheetGrid& Grid )
 {
+	GAME_THREAD_ONLY( TArray<TSharedPtr<CTexture>>() );
 	return SplitTexture( LoadTexture( Path ), Grid );
 }

@@ -1,4 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
+#include "Library/Core/Thread/GameThread.h"
 #include "Library/Framework/PixelEffect/PixelEffectView.h"
 
 #include "Library/Framework/Asset/AssetManager.h"
@@ -36,12 +37,14 @@ CPixelEffectView::CPixelEffectView( CAssetManager& Assets, TUniquePtr<IPixelEffe
 
 void CPixelEffectView::Play( uint32 Seed, bool bFlipHorizontal, const TArray<FColor32>& Palette )
 {
+	GAME_THREAD_ONLY();
 	Player.Play( Seed, bFlipHorizontal, Palette );
 	Update( 0.0f );
 }
 
 void CPixelEffectView::Update( float32 DeltaTime )
 {
+	GAME_THREAD_ONLY();
 	Player.Update( DeltaTime );
 	if ( BackTexture.IsValid() )
 	{

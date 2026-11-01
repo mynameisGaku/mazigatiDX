@@ -72,6 +72,7 @@
     <ClCompile Include="Library\Core\Log\LogManager.cpp" />
     <ClCompile Include="Library\Core\Log\LogSink.cpp" />
     <ClCompile Include="Library\Core\Log\LogVerbosity.cpp" />
+    <ClCompile Include="Library\Core\Thread\GameThread.cpp" />
     <ClCompile Include="Library\Core\Time\PlatformTime.cpp" />
     <ClCompile Include="Library\DebugUI\AssetTools.cpp" />
     <ClCompile Include="Library\DebugUI\ConsoleWindow.cpp" />
@@ -190,6 +191,7 @@
     <ClCompile Include="Library\Framework\Engine\ScreenConfig.cpp" />
     <ClCompile Include="Library\Framework\Engine\TimeControl.cpp" />
     <ClCompile Include="Library\Framework\GameInstance\GameInstance.cpp" />
+    <ClCompile Include="Library\Framework\Job\AsyncTask.cpp" />
     <ClCompile Include="Library\Framework\Job\JobSystem.cpp" />
     <ClCompile Include="Library\Framework\Object\GameObject.cpp" />
     <ClCompile Include="Library\Framework\Object\Object.cpp" />
@@ -581,6 +583,7 @@
     <ClInclude Include="Library\Core\Profiler\ProfilerScope.h" />
     <ClInclude Include="Library\Core\Profiler\ProfilerTypes.h" />
     <ClInclude Include="Library\Core\Thread\Atomic.h" />
+    <ClInclude Include="Library\Core\Thread\GameThread.h" />
     <ClInclude Include="Library\Core\Thread\Mutex.h" />
     <ClInclude Include="Library\Core\Thread\Thread.h" />
     <ClInclude Include="Library\Core\Time\PlatformTime.h" />
@@ -701,6 +704,7 @@
     <ClInclude Include="Library\Framework\Engine\ScreenConfig.h" />
     <ClInclude Include="Library\Framework\Engine\TimeControl.h" />
     <ClInclude Include="Library\Framework\GameInstance\GameInstance.h" />
+    <ClInclude Include="Library\Framework\Job\AsyncTask.h" />
     <ClInclude Include="Library\Framework\Job\JobSystem.h" />
     <ClInclude Include="Library\Framework\Object\GameObject.h" />
     <ClInclude Include="Library\Framework\Object\Object.h" />

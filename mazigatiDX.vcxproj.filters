@@ -22,6 +22,9 @@
     <ClCompile Include="Library\Core\Log\LogVerbosity.cpp">
       <Filter>Library\Core\Log</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Core\Thread\GameThread.cpp">
+      <Filter>Library\Core\Thread</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Core\Time\PlatformTime.cpp">
       <Filter>Library\Core\Time</Filter>
     </ClCompile>
@@ -375,6 +378,9 @@
     </ClCompile>
     <ClCompile Include="Library\Framework\GameInstance\GameInstance.cpp">
       <Filter>Library\Framework\GameInstance</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Job\AsyncTask.cpp">
+      <Filter>Library\Framework\Job</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Job\JobSystem.cpp">
       <Filter>Library\Framework\Job</Filter>
@@ -1545,6 +1551,9 @@
     <ClInclude Include="Library\Core\Thread\Atomic.h">
       <Filter>Library\Core\Thread</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Thread\GameThread.h">
+      <Filter>Library\Core\Thread</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Thread\Mutex.h">
       <Filter>Library\Core\Thread</Filter>
     </ClInclude>
@@ -1904,6 +1913,9 @@
     </ClInclude>
     <ClInclude Include="Library\Framework\GameInstance\GameInstance.h">
       <Filter>Library\Framework\GameInstance</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Job\AsyncTask.h">
+      <Filter>Library\Framework\Job</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Job\JobSystem.h">
       <Filter>Library\Framework\Job</Filter>

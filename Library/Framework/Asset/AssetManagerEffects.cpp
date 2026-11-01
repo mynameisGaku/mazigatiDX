@@ -1,5 +1,6 @@
 ﻿#include "AssetManager.h"
 
+#include "Library/Core/Thread/GameThread.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Time/PlatformTime.h"
 #include "Library/Json/JsonObject.h"
@@ -10,6 +11,7 @@
 //=============================================================================
 TSharedPtr<CEffectAsset> CAssetManager::LoadEffect( const FString& Path )
 {
+	GAME_THREAD_ONLY( nullptr );
 	const TOptional<FString> Full = PrepareLoad( "effect", Path );
 	if ( !Full.IsSet() ) return nullptr;
 

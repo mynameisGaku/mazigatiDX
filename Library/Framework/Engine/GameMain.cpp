@@ -1,5 +1,6 @@
 ﻿#include "GameMain.h"
 
+#include "Library/Core/Thread/GameThread.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Framework/Engine/ScreenConfig.h"
@@ -18,6 +19,8 @@ namespace
 
 int32 NGameMain::Run( const FOptions& Options, const TCallable<int32( const FWindowSettings& )>& RunEngine )
 {
+	// 起動したスレッドが、ゲームスレッド（描画・アセットなど DxLib を触る仕事をするスレッド）
+	NGameThread::Bind();
 	NLeakReport::Install();
 
 	// 起動前（設定ファイルの読み込みやエンジンの初期化）のログも出せるよう、最初に登録する
