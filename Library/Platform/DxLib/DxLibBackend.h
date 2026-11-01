@@ -44,6 +44,7 @@ public:
 
 	void RequestExit() override;
 	bool RequestScreenshot( const FString& Path, int32 DelayFrames = 0 ) override;
+	void SetFrameCaptureSink( IFrameCaptureSink* Sink ) override;
 	bool IsExitRequested() const override;
 
 	float32 GetDeltaTime() const override;  // 最大 0.25 秒
@@ -105,6 +106,14 @@ private:
 	// 起動引数 --screenshot=パス.png [--screenshot-frame=N（既定 90）] [--screenshot-exit]: N フレーム目の画面（ImGui も含む）を保存する。
 	// 画面の見た目の確認（スクリーンショットの撮影）用。--screenshot-exit なら、保存したあと終了する
 	void CaptureScreenshotIfRequested();
+	// 受け取り手が欲しいと言ったら、画面の画素を読んで渡す（画面に出す直前）
+	void DeliverFrameToSink( EFrameCaptureStage Stage );
+	IFrameCaptureSink* FrameCaptureSink = nullptr;
+	// 画素を読むための CPU 側の画像と、並べ直した画素（大きさが変わったら作り直す）
+	int CaptureSoftImage = -1;
+	int32 CaptureWidth = 0;
+	int32 CaptureHeight = 0;
+	TArray<FColor32> CapturePixels;
 	FString ScreenshotPath;
 	int32 ScreenshotFrame = 90;
 	bool bScreenshotExit = false;

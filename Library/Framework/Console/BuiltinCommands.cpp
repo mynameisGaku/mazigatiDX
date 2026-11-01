@@ -1,6 +1,7 @@
 ﻿#include "BuiltinCommands.h"
 
 
+#include "Library/Framework/Capture/ScreenCapture.h"
 #include "Library/Core/File/File.h"
 #include "Library/Core/Interfaces/Job/IJobSystem.h"
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
@@ -662,32 +663,61 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 		 },
 		 {}, CategoryEngine );
 
-	Add( "screenshot", "Save a screenshot (PNG) of the current frame, debug UI included",
-		 []( FConsoleContext& Context, TOptional<FString> Path, TOptional<float32> Delay )
+	Add( "screenshot", "Save a screenshot of the current frame to Saved/Screenshots (Screenshot_00001.png when no name is given)",
+		 []( FConsoleContext& Context, TOptional<FString> Name, TOptional<float32> Delay, TOptional<bool> bWithUI )
 		 {
 			 IPlatform* Platform = GetAppSubsystem<IPlatform>();
-			 if ( Platform == nullptr ) return false;
-			 FString Target;
-			 if ( Path.IsSet() && !Path.GetValue().IsEmpty() ) Target = Path.GetValue();
-			 else Target = FString::Printf( "%s_%s.png", *NFileSystem::GetExecutableName(), *NFileSystem::GetCurrentLocalTime().ToFileNameString() );
-			 const bool bAbsolute = Target.Find( ":" ) != INDEX_NONE || Target.StartsWith( "/" ) || Target.StartsWith( "\\" );
-			 if ( !bAbsolute ) Target = NFileSystem::FindProjectRoot() / "Saved" / "Screenshots" / Target;
-			 if ( !Target.EndsWith( ".png", ESearchCase::IgnoreCase ) ) Target += ".png";
-			 Target = Target.Replace( "\\", "/" );
-			 const int32 Slash = Target.FindLast( "/" );
-			 if ( Slash > 0 ) NFileSystem::EnsureDirectory( Target.Left( Slash ) );
-			 const float32 Seconds = Delay.IsSet() ? NMath::Max( Delay.GetValue(), 0.0f ) : 0.0f;
-			 const int32 DelayFrames = static_cast<int32>( Seconds * NMath::Max( Platform->GetFPS(), 1.0f ) + 0.5f );
-			 if ( !Platform->RequestScreenshot( Target, DelayFrames ) )
+			 CScreenCapture* Capture = GetAppSubsystem<CScreenCapture>();
+			 if ( Platform == nullptr || Capture == nullptr )
 			 {
-				 Context.Error( "the platform cannot take a screenshot" );
+				 Context.Error( "the screen capture is not available" );
 				 return false;
 			 }
-			 Context.Print( DelayFrames > 0 ? FString::Printf( "saving %s in %s s (%d frame(s))", *Target, *NConsole::FormatFloat( Seconds ), DelayFrames ) : "saving " + Target + " at the end of this frame" );
+			 FScreenshotOptions Options;
+			 const float32 Seconds = Delay.IsSet() ? NMath::Max( Delay.GetValue(), 0.0f ) : 0.0f;
+			 Options.DelayFrames = static_cast<int32>( Seconds * NMath::Max( Platform->GetFPS(), 1.0f ) + 0.5f );
+			 // コンソールから撮るときは、既定でデバッグ用の UI も写す（コンソールを開いたままなので、見たままを残す）
+			 Options.bIncludeDebugUI = bWithUI.IsSet() ? bWithUI.GetValue() : true;
+			 const FString Path = Capture->TakeScreenshot( Name.IsSet() ? Name.GetValue() : FString(), Options );
+			 if ( Path.IsEmpty() )
+			 {
+				 Context.Error( "a screenshot is already waiting to be taken" );
+				 return false;
+			 }
+			 Context.Print( Options.DelayFrames > 0 ? FString::Printf( "saving %s in %s s (%d frame(s))", *Path, *NConsole::FormatFloat( Seconds ), Options.DelayFrames ) : "saving " + Path + " at the end of this frame" );
 			 return true;
 		 },
-		 { { "path", "Output file. A relative path is placed under Saved/Screenshots. Default: <project>_<date and time>.png" },
-		   { "delay", "Seconds to wait before taking it, so you can set the screen up (default 0)." } }, CategoryEngine );
+		 { { "name", "File name (.png / .jpg / .bmp / .gif). A relative name is placed under Saved/Screenshots. Default: Screenshot_<number>.png" },
+		   { "delay", "Seconds to wait before taking it, so you can set the screen up (default 0)." },
+		   { "ui", "Include the debug UI (default true from the console)." } }, CategoryEngine );
+
+	Add( "gif", "Start or stop recording a GIF of the game screen to Saved/Screenshots (Shift + F9 does the same; F9 takes a screenshot)",
+		 []( FConsoleContext& Context, TOptional<FString> Name, TOptional<int32> Step, TOptional<int32> Downscale, TOptional<bool> bWithUI )
+		 {
+			 CScreenCapture* Capture = GetAppSubsystem<CScreenCapture>();
+			 if ( Capture == nullptr )
+			 {
+				 Context.Error( "the screen capture is not available" );
+				 return false;
+			 }
+			 if ( Capture->IsRecording() )
+			 {
+				 const bool bSaved = Capture->StopRecording();
+				 Context.Print( ( bSaved ? "saved " : "failed to save " ) + Capture->GetLastSavedPath() );
+				 return bSaved;
+			 }
+			 FGifRecordOptions Options = Capture->GetHotkeyRecordOptions();
+			 Options.bIncludeDebugUI = bWithUI.IsSet() ? bWithUI.GetValue() : Options.bIncludeDebugUI;
+			 Options.FrameStep = Step.IsSet() ? Step.GetValue() : Options.FrameStep;
+			 Options.Downscale = Downscale.IsSet() ? Downscale.GetValue() : Options.Downscale;
+			 const FString Path = Capture->StartRecording( Name.IsSet() ? Name.GetValue() : FString(), Options );
+			 Context.Print( "recording " + Path + " (run gif again to stop)" );
+			 return !Path.IsEmpty();
+		 },
+		 { { "name", "File name. Default: Screenshot_<number>.gif" },
+		   { "step", "Take one frame every N frames (default 2)." },
+		   { "downscale", "Shrink by 1/N (default 1)." },
+		   { "ui", "Include the debug UI (default false: the game screen only)." } }, CategoryEngine );
 
 	Add( "window", "Show the window size, mode and title",
 		 []()

@@ -121,6 +121,12 @@ void CDxLibBackend::Shutdown()
 	ShutdownImGui();
 	NDebugUI::ClearImGuiTextureCache();
 	NDebugUI::SetImGuiTextureCallbacks( NDebugUI::FImGuiTextureCallbacks() );
+	if ( CaptureSoftImage >= 0 )
+	{
+		DeleteSoftImage( CaptureSoftImage );
+		CaptureSoftImage = -1;
+	}
+	FrameCaptureSink = nullptr;
 	DxLib_End();
 	bInitialized = false;
 	PendingWindowMode.Reset();
@@ -223,6 +229,62 @@ bool CDxLibBackend::RequestScreenshot( const FString& Path, int32 DelayFrames )
 	return true;
 }
 
+void CDxLibBackend::SetFrameCaptureSink( IFrameCaptureSink* Sink )
+{
+	FrameCaptureSink = Sink;
+}
+
+void CDxLibBackend::DeliverFrameToSink( EFrameCaptureStage Stage )
+{
+	const uint64 FrameIndex = FrameCount + 1;
+	if ( FrameCaptureSink == nullptr || !FrameCaptureSink->WantsFrame( FrameIndex, Stage ) )
+	{
+		return;
+	}
+	PROFILE_SCOPE_OWNER( "Platform", "DxLib", "FrameCapture" );
+	const int32 Width = GetScreenWidth();
+	const int32 Height = GetScreenHeight();
+	if ( CaptureSoftImage < 0 || CaptureWidth != Width || CaptureHeight != Height )
+	{
+		if ( CaptureSoftImage >= 0 )
+		{
+			DeleteSoftImage( CaptureSoftImage );
+		}
+		CaptureSoftImage = MakeARGB8ColorSoftImage( Width, Height );
+		CaptureWidth = Width;
+		CaptureHeight = Height;
+	}
+	// 溜まっている 2D の描画を先に描き切ってから読む
+	RenderVertex();
+	if ( CaptureSoftImage < 0 || GetDrawScreenSoftImage( 0, 0, Width, Height, CaptureSoftImage ) != 0 )
+	{
+		return;
+	}
+	// ARGB8 の CPU 側の画像は、1 画素 4 バイト（B, G, R, A の順）。行の間隔は GetPitchSoftImage
+	const uint8* Bytes = static_cast<const uint8*>( GetImageAddressSoftImage( CaptureSoftImage ) );
+	const int32 Pitch = GetPitchSoftImage( CaptureSoftImage );
+	if ( Bytes == nullptr || Pitch < Width * 4 )
+	{
+		return;
+	}
+	CapturePixels.SetNum( Width * Height );
+	for ( int32 Y = 0; Y < Height; ++Y )
+	{
+		const uint8* Row = Bytes + static_cast<usize>( Y ) * static_cast<usize>( Pitch );
+		for ( int32 X = 0; X < Width; ++X )
+		{
+			CapturePixels[Y * Width + X] = FColor32( Row[X * 4 + 2], Row[X * 4 + 1], Row[X * 4 + 0], 255 );
+		}
+	}
+	FFramePixels Frame;
+	Frame.Width = Width;
+	Frame.Height = Height;
+	Frame.Pixels = CapturePixels.GetData();
+	Frame.FrameIndex = FrameIndex;
+	Frame.Stage = Stage;
+	FrameCaptureSink->OnFrame( Frame );
+}
+
 void CDxLibBackend::CaptureScreenshotIfRequested()
 {
 	if ( bScreenshotDone || ScreenshotPath.IsEmpty() ) return;
@@ -238,6 +300,8 @@ void CDxLibBackend::CaptureScreenshotIfRequested()
 void CDxLibBackend::EndFrame()
 {
 	if ( !bInFrame ) return;
+
+	DeliverFrameToSink( EFrameCaptureStage::Game );
 
 	if ( bImGuiActive )
 	{
@@ -268,6 +332,7 @@ void CDxLibBackend::EndFrame()
 	}
 
 	CaptureScreenshotIfRequested();
+	DeliverFrameToSink( EFrameCaptureStage::WithDebugUI );
 
 	{
 		PROFILE_SCOPE_OWNER( "Platform", "DxLib", "ScreenFlip" );

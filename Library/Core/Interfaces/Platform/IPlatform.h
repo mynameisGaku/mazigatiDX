@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Types/TypeDefinition.h"
+#include "Library/Core/Interfaces/Platform/FrameCapture.h"
 #include "Library/Platform/WindowSettings.h"
 
 //=============================================================================
@@ -61,4 +62,6 @@ public:
 	// 今のフレームの終わり（DelayFrames が 1 以上なら、そのフレーム数あとのフレームの終わり）に、画面（ImGui を含む）を PNG で保存するよう頼む。
 	// Path のフォルダは作ってある前提。頼めなければ false
 	virtual bool RequestScreenshot( const FString& Path, int32 DelayFrames = 0 ) { (void)Path; (void)DelayFrames; return false; }
+	// 画面の画素の受け取り手を登録する（nullptr で外す。1 つだけ）。画面に出す直前に、欲しいフレームの画素を渡す。対応しない実装では何も起きない
+	virtual void SetFrameCaptureSink( IFrameCaptureSink* Sink ) { (void)Sink; }
 };
