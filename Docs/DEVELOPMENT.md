@@ -273,7 +273,22 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\NewProject.ps1 -Name M
 - サンプルは、自分の`.cpp`の中で`TSampleRegistrar<T>`を静的変数として置いて、自分を`CSampleCatalog`へ登録します（名前・一覧に出す題・説明・並び順）。サンプルを足しても、アプリケーション（`Application/`）と一覧の画面（`Browser/`）は書き換えません。
 - 共通の部分は`Catalog/`にあります。`CSampleScene`は、Escで一覧へ戻る処理と見出しを持ち、サンプルは`OnTick / OnDraw`の代わりに`OnSampleTick / OnSampleDraw`を書きます。
 - サンプルを足すときは、`Tools/NewSample.ps1 -Name Physics -Title "..." -Description "..."`を使います。`Templates/Sample`から`Samples/Source/Physics/`にシーンのクラスを作り、プロジェクトのファイル一覧を更新します（並び順は、指定しなければ最後）。
-- 確認は、検査側の`RunSamplesTest.ps1`が行います（Debug / Releaseのビルドで警告0、一覧と各サンプルの起動と画面の画素、知らない名前、`NewSample.ps1`で足して消す）。一覧の上下キー・Enter・Escの操作は、入力を差し込む仕組みがまだないので、自動では確かめていません。
+- 確認は、検査側の`RunSamplesTest.ps1`が行います（Debug / Releaseのビルドで警告0、一覧と各サンプルの起動と画面の画素、知らない名前、`--backend=null --max-frames=30`での一覧と全サンプルの実行と描画命令・未解放ハンドルの検査、`/p:MazigatiWithoutDxLib=true`でのビルドと起動、`NewSample.ps1`で足して消す）。
+
+## DxLib を使わない実行（Null バックエンド）
+
+`Library/Platform/Null`には、DxLibやDirect3Dのヘッダーを読まずに`IPlatform`・`IDrawExecutor`・`IAssetBackend`・`IAudioBackend`・`IInput`を実装した2つ目の実行側があります。起動の引数`--backend=null`を付けると、DxLibの代わりにこちらが選ばれます（`Library/Platform/BackendSelection.h`の`NBackendSelection::IsNullRequested()`）。
+
+```powershell
+.\x64\Debug\Samples.exe --backend=null --max-frames=30 --sample=Island
+.\x64\Debug\project.exe --backend=null --max-frames=30
+```
+
+- `CNullPlatform`: 窓を出さず、待たずに1フレーム`1/60`秒ずつ進め、`--max-frames=N`に達するか`RequestExit()`が呼ばれたら終了します。ImGuiは描画の実装なしでフレームだけ進め、`imgui.ini`は読み書きしません。
+- `CNullDrawExecutor`: `FDrawSpan`の命令列を先頭から読み、命令ごとの最小ワード数と、`PushTarget / PopTarget`・`PushClip / PopClip`・`PushMask / PopMask`・`PushCamera / PopCamera`・`PushWorldMatrix / PopWorldMatrix`・`PushLight / PopLight`・`BeginShadowMap / EndShadowMap`の7組の深さの釣り合いを検査して終了時に統計をログへ出します。
+- `CNullAssetBackend`: 画像（PNG・BMP・JPEGのヘッダーから寸法を読み、未知の形式は64x64）・描画先・頂点バッファ・インデックスバッファ・シャドウマップ・シェーダー（`CompileShader`はダミーの`"DXBC"`4バイトを返す）・フォント（半角はサイズの半分、全角はサイズ幅で折り返しと文字位置を計算）・音（WAVのヘッダーから秒数を計算）のハンドルを発行し、終了時に未解放のハンドルが残っていれば警告します。
+- `CNullInput` / `CNullAudioBackend`: キー・マウス・ボイスの状態をメモリ上で進め、テストから入力を差し込めます。
+- `msbuild project.sln /p:Configuration=Release /p:Platform=x64 /p:MazigatiWithoutDxLib=true`で、`Library/Platform/DxLib`のソースとDxLibのライブラリを除いたままビルド・リンクできることを確かめられます。
 
 ## プロジェクト生成と確認
 
