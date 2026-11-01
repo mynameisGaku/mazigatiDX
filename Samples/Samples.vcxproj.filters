@@ -127,6 +127,12 @@
     <ClCompile Include="Source\Lighting\LightingView.cpp">
       <Filter>Source\Lighting</Filter>
     </ClCompile>
+    <ClCompile Include="Source\PixelEffects\PixelEffectsSample.cpp">
+      <Filter>Source\PixelEffects</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\PixelEffects\PixelEffectTile.cpp">
+      <Filter>Source\PixelEffects</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Pixels\PixelsSample.cpp">
       <Filter>Source\Pixels</Filter>
     </ClCompile>
@@ -405,6 +411,12 @@
     <ClInclude Include="Source\Lighting\LightingView.h">
       <Filter>Source\Lighting</Filter>
     </ClInclude>
+    <ClInclude Include="Source\PixelEffects\PixelEffectsSample.h">
+      <Filter>Source\PixelEffects</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\PixelEffects\PixelEffectTile.h">
+      <Filter>Source\PixelEffects</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Pixels\PixelsSample.h">
       <Filter>Source\Pixels</Filter>
     </ClInclude>
@@ -601,6 +613,9 @@
     </Filter>
     <Filter Include="Source\Lighting">
       <UniqueIdentifier>{4EB65EA3-3FEC-7570-1AA7-399CE99C056E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\PixelEffects">
+      <UniqueIdentifier>{173D6A76-D99B-63C5-0023-893638D4E51C}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Pixels">
       <UniqueIdentifier>{7FACA93B-34CC-117D-96B2-DB56EAC4A18F}</UniqueIdentifier>

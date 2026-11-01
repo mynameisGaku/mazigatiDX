@@ -93,6 +93,8 @@
     <ClCompile Include="Source\Lighting\LightingSample.cpp" />
     <ClCompile Include="Source\Lighting\LightingScenery.cpp" />
     <ClCompile Include="Source\Lighting\LightingView.cpp" />
+    <ClCompile Include="Source\PixelEffects\PixelEffectsSample.cpp" />
+    <ClCompile Include="Source\PixelEffects\PixelEffectTile.cpp" />
     <ClCompile Include="Source\Pixels\PixelsSample.cpp" />
     <ClCompile Include="Source\Pixels\PlasmaView.cpp" />
     <ClCompile Include="Source\Pixels\SpriteSheetMaker.cpp" />
@@ -188,6 +190,8 @@
     <ClInclude Include="Source\Lighting\LightingSample.h" />
     <ClInclude Include="Source\Lighting\LightingScenery.h" />
     <ClInclude Include="Source\Lighting\LightingView.h" />
+    <ClInclude Include="Source\PixelEffects\PixelEffectsSample.h" />
+    <ClInclude Include="Source\PixelEffects\PixelEffectTile.h" />
     <ClInclude Include="Source\Pixels\PixelsSample.h" />
     <ClInclude Include="Source\Pixels\PlasmaView.h" />
     <ClInclude Include="Source\Pixels\SpriteSheetMaker.h" />
