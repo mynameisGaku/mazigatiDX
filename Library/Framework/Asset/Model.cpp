@@ -152,6 +152,49 @@ FString CModel::Describe() const
 	return FString::Printf( "%d mesh(es), %d animation(s)", GetMeshCount(), GetClips().Num() );
 }
 
+void CModel::RefreshStructure() const
+{
+	IAssetBackend* Backend = NAssetService::GetBackend();
+	if ( bStructureRead || Backend == nullptr || !IsReady() )
+	{
+		return;
+	}
+	// 答えられなかったとき（読み込み中・未対応）は覚えず、次に聞かれたときに読み直す
+	bStructureRead = Backend->GetModelStructure( Handle, Structure );
+}
+
+const FModelStructure& CModel::GetStructure() const
+{
+	RefreshStructure();
+	return Structure;
+}
+
+int32 CModel::FindFrame( const FString& Name ) const
+{
+	const TArray<FModelFrameInfo>& Frames = GetStructure().Frames;
+	for ( int32 Index = 0; Index < Frames.Num(); ++Index )
+	{
+		if ( Frames[Index].Name == Name )
+		{
+			return Index;
+		}
+	}
+	return -1;
+}
+
+int32 CModel::FindMaterial( const FString& Name ) const
+{
+	const TArray<FModelMaterialInfo>& Materials = GetStructure().Materials;
+	for ( int32 Index = 0; Index < Materials.Num(); ++Index )
+	{
+		if ( Materials[Index].Name == Name )
+		{
+			return Index;
+		}
+	}
+	return -1;
+}
+
 TSharedPtr<CModelInstance> CModel::CreateInstance()
 {
 	IAssetBackend* Backend = NAssetService::GetBackend();
@@ -220,6 +263,17 @@ void CModelInstance::DetachAnim( int32 AttachIndex )
 
 	if ( IAssetBackend* Backend = NAssetService::GetBackend() ) Backend->DetachModelAnim( Handle, AttachIndex );
 	Attached.RemoveAt( Index );
+}
+
+bool CModelInstance::GetFrameMatrix( int32 Frame, EModelFrameSpace Space, FMatrix4x4& OutMatrix ) const
+{
+	IAssetBackend* Backend = NAssetService::GetBackend();
+	return Backend != nullptr && Handle >= 0 && Backend->GetModelFrameMatrix( Handle, Frame, Space, OutMatrix );
+}
+
+FModelAppearance CModelInstance::GetAppearance() const
+{
+	return FModelAppearance( Handle, Source.Get() );
 }
 
 bool CModelInstance::GetFramePositions( TArray<FVector3>& OutPositions ) const

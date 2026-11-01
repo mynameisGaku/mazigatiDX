@@ -76,6 +76,17 @@ public:
 	FString GetModelFrameName( int32 Model, int32 FrameIndex ) override;
 	bool GetModelFramePosition( int32 Model, int32 FrameIndex, float32 ( &OutPosition )[3] ) override;
 	bool SaveModelToMV1( int32 Model, const FString& Path, const FModelSaveOptions& Options, FString& OutWarning ) override;
+	// モデルの構造と、モデル 1 体ごとの見た目（DxLibAssetBackendModelStructure.cpp）
+	bool GetModelStructure( int32 Model, FModelStructure& Out ) override;
+	bool GetModelMaterialColors( int32 Model, int32 Material, FModelMaterialColors& Out ) override;
+	bool SetModelMaterialColors( int32 Model, int32 Material, const FModelMaterialColors& Colors ) override;
+	bool GetModelMeshVisible( int32 Model, int32 Mesh, bool& bOut ) override;
+	bool SetModelMeshVisible( int32 Model, int32 Mesh, bool bVisible ) override;
+	bool GetModelFrameVisible( int32 Model, int32 Frame, bool& bOut ) override;
+	bool SetModelFrameVisible( int32 Model, int32 Frame, bool bVisible ) override;
+	bool GetModelOpacity( int32 Model, float32& Out ) override;
+	bool SetModelOpacity( int32 Model, float32 Opacity ) override;
+	bool GetModelFrameMatrix( int32 Model, int32 Frame, EModelFrameSpace Space, FMatrix4x4& Out ) override;
 
 	int32 MakeFont( const FFontDesc& Desc ) override;
 	void DeleteFont( int32 Font ) override;

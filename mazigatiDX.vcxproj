@@ -122,6 +122,7 @@
     <ClCompile Include="Library\Framework\Asset\MeshBuffer.cpp" />
     <ClCompile Include="Library\Framework\Asset\Model.cpp" />
     <ClCompile Include="Library\Framework\Asset\ModelAnimationAsset.cpp" />
+    <ClCompile Include="Library\Framework\Asset\ModelAppearance.cpp" />
     <ClCompile Include="Library\Framework\Asset\PixelImage.cpp" />
     <ClCompile Include="Library\Framework\Asset\RenderTarget.cpp" />
     <ClCompile Include="Library\Framework\Asset\Shader.cpp" />
@@ -283,6 +284,7 @@
     <ClCompile Include="Library\Platform\LogArchive.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackend.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackendModelMaterial.cpp" />
+    <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackendModelStructure.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackendModelSurface.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibAudioBackend.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibBackend.cpp" />
@@ -498,6 +500,7 @@
     <ClInclude Include="Library\Core\File\File.h" />
     <ClInclude Include="Library\Core\Interfaces\Asset\AssetBackend.h" />
     <ClInclude Include="Library\Core\Interfaces\Asset\FontTypes.h" />
+    <ClInclude Include="Library\Core\Interfaces\Asset\ModelStructureTypes.h" />
     <ClInclude Include="Library\Core\Interfaces\Asset\StaticModelSurfaceData.h" />
     <ClInclude Include="Library\Core\Interfaces\Asset\StaticModelSurfaceMaterial.h" />
     <ClInclude Include="Library\Core\Interfaces\Asset\StaticModelSurfaceSection.h" />
@@ -613,6 +616,7 @@
     <ClInclude Include="Library\Framework\Asset\MeshBuffer.h" />
     <ClInclude Include="Library\Framework\Asset\Model.h" />
     <ClInclude Include="Library\Framework\Asset\ModelAnimationAsset.h" />
+    <ClInclude Include="Library\Framework\Asset\ModelAppearance.h" />
     <ClInclude Include="Library\Framework\Asset\PixelImage.h" />
     <ClInclude Include="Library\Framework\Asset\RenderTarget.h" />
     <ClInclude Include="Library\Framework\Asset\Shader.h" />

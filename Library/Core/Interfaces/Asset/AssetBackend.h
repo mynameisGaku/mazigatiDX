@@ -2,12 +2,14 @@
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Interfaces/Asset/FontTypes.h"
+#include "Library/Core/Interfaces/Asset/ModelStructureTypes.h"
 #include "Library/Core/Interfaces/Asset/StaticModelSurfaceData.h"
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Core/Interfaces/Render/IShader.h"
 #include "Library/Core/Interfaces/Render/MeshTypes.h"
 #include "Library/Core/Interfaces/Render/RenderTargetTypes.h"
 #include "Library/Math/Color.h"
+#include "Library/Math/Matrix4x4.h"
 #include "Library/Core/Types/TypeDefinition.h"
 
 //=============================================================================
@@ -158,6 +160,26 @@ public:
 	// MV1 ファイルに保存する（Path は絶対パス。フォルダは作ってある前提）。成功したら true。
 	// 使われていないアニメーションがあった、という警告つきの成功も true（OutWarning に理由）
 	virtual bool SaveModelToMV1( int32 Model, const FString& Path, const FModelSaveOptions& Options, FString& OutWarning ) = 0;
+
+	//-------------------------------------------------------------------------
+	// モデルの構造と、モデル 1 体ごとの見た目（DuplicateModel で作ったものは、それぞれ別に持つ）
+	//   対応していない実装・読み込み中・番号が範囲の外は false で、Out は変えない
+	//-------------------------------------------------------------------------
+	// フレーム・メッシュ・材質・テクスチャを写す
+	virtual bool GetModelStructure( int32 /*Model*/, FModelStructure& /*Out*/ ) { return false; }
+	// 材質の色（いまの値）
+	virtual bool GetModelMaterialColors( int32 /*Model*/, int32 /*Material*/, FModelMaterialColors& /*Out*/ ) { return false; }
+	virtual bool SetModelMaterialColors( int32 /*Model*/, int32 /*Material*/, const FModelMaterialColors& /*Colors*/ ) { return false; }
+	// メッシュ・フレームを描くか（フレームを隠すと、その子のフレームのメッシュも描かない）
+	virtual bool GetModelMeshVisible( int32 /*Model*/, int32 /*Mesh*/, bool& /*bOut*/ ) { return false; }
+	virtual bool SetModelMeshVisible( int32 /*Model*/, int32 /*Mesh*/, bool /*bVisible*/ ) { return false; }
+	virtual bool GetModelFrameVisible( int32 /*Model*/, int32 /*Frame*/, bool& /*bOut*/ ) { return false; }
+	virtual bool SetModelFrameVisible( int32 /*Model*/, int32 /*Frame*/, bool /*bVisible*/ ) { return false; }
+	// モデル全体の不透明度（0〜1。材質の不透明度に掛ける）
+	virtual bool GetModelOpacity( int32 /*Model*/, float32& /*Out*/ ) { return false; }
+	virtual bool SetModelOpacity( int32 /*Model*/, float32 /*Opacity*/ ) { return false; }
+	// フレームの、いまの行列（最後に描いたときのアニメーションと置き場所で決まる）
+	virtual bool GetModelFrameMatrix( int32 /*Model*/, int32 /*Frame*/, EModelFrameSpace /*Space*/, FMatrix4x4& /*Out*/ ) { return false; }
 
 	//-------------------------------------------------------------------------
 	// メッシュ（頂点バッファ・インデックスバッファ。編集メッシュを描くため）

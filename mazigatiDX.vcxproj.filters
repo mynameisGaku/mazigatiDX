@@ -172,6 +172,9 @@
     <ClCompile Include="Library\Framework\Asset\ModelAnimationAsset.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\ModelAppearance.cpp">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Asset\PixelImage.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
@@ -653,6 +656,9 @@
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackendModelMaterial.cpp">
+      <Filter>Library\Platform\DxLib</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackendModelStructure.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackendModelSurface.cpp">
@@ -1296,6 +1302,9 @@
     <ClInclude Include="Library\Core\Interfaces\Asset\FontTypes.h">
       <Filter>Library\Core\Interfaces\Asset</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Asset\ModelStructureTypes.h">
+      <Filter>Library\Core\Interfaces\Asset</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Asset\StaticModelSurfaceData.h">
       <Filter>Library\Core\Interfaces\Asset</Filter>
     </ClInclude>
@@ -1639,6 +1648,9 @@
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\ModelAnimationAsset.h">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\ModelAppearance.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\PixelImage.h">

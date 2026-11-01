@@ -1,8 +1,11 @@
 ﻿#pragma once
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Memory/SharedPtr.h"
+#include "Library/Core/Interfaces/Asset/ModelStructureTypes.h"
 #include "Library/Framework/Asset/Asset.h"
+#include "Library/Framework/Asset/ModelAppearance.h"
 #include "Library/Framework/Asset/Import/ModelFormats.h"
+#include "Library/Math/Matrix4x4.h"
 #include "Library/Math/Vector3.h"
 
 class CModel;
@@ -69,12 +72,19 @@ public:
 	// このモデルの骨に、AnimSource のアニメーションの骨がどれだけ合うか（モーション専用ファイルを別のモデルに使うときの確認）
 	FBoneMatch CompareBones( const CModel& AnimSource ) const;
 
+	// 構造（フレームの木・メッシュ・材質と読み込んだときの色・テクスチャ）。読み込みが終わるまで、またはバックエンドが答えられないときは空（答えられるようになったら読む）
+	const FModelStructure& GetStructure() const;
+	// 名前で番号を探す（最初に見つかったもの。無ければ -1）
+	int32 FindFrame( const FString& Name ) const;
+	int32 FindMaterial( const FString& Name ) const;
+
 	// 自分用のインスタンスを作る（元のデータを共有する）。失敗したら nullptr
 	TSharedPtr<CModelInstance> CreateInstance();
 
 private:
 	void RefreshClips() const;
 	void RefreshShape() const;
+	void RefreshStructure() const;
 
 	int32 Handle;
 	bool bAsync;
@@ -87,6 +97,8 @@ private:
 	mutable bool bHasBounds = false;
 	mutable FVector3 BoundsMin = FVector3::Zero;
 	mutable FVector3 BoundsMax = FVector3::Zero;
+	mutable bool bStructureRead = false;
+	mutable FModelStructure Structure;
 };
 
 //=============================================================================
@@ -107,6 +119,11 @@ public:
 	// 骨（フレーム）の、いまの位置（ワールド座標。最後に描いたときのアニメーションと行列で決まる）を、骨の順に OutPositions へ。メインスレッドだけ。
 	// 骨が無い・バックエンドが答えられないときは false（OutPositions は空）
 	bool GetFramePositions( TArray<FVector3>& OutPositions ) const;
+	// フレームのいまの行列（最後に描いたときのアニメーションと置き場所で決まる）。番号が範囲の外・分からないときは false。メインスレッドだけ
+	bool GetFrameMatrix( int32 Frame, EModelFrameSpace Space, FMatrix4x4& OutMatrix ) const;
+
+	// この 1 体の見た目（材質の色・表示・不透明度）を変える窓口。インスタンスより長く持たない
+	FModelAppearance GetAppearance() const;
 
 	// AnimSource の AnimIndex 番のアニメーションを付ける（同じものが付いていればそのまま）。戻り値は付けた番号（失敗したら -1）
 	int32 AttachAnim( const TSharedPtr<CModel>& AnimSource, int32 AnimIndex );
