@@ -197,6 +197,19 @@ int32 CModel::FindMaterial( const FString& Name ) const
 	return -1;
 }
 
+int32 CModel::FindShape( const FString& Name ) const
+{
+	const TArray<FString>& Shapes = GetStructure().Shapes;
+	for ( int32 Index = 0; Index < Shapes.Num(); ++Index )
+	{
+		if ( Shapes[Index] == Name )
+		{
+			return Index;
+		}
+	}
+	return -1;
+}
+
 TSharedPtr<CModelInstance> CModel::CreateInstance()
 {
 	IAssetBackend* Backend = NAssetService::GetBackend();
@@ -277,6 +290,11 @@ bool CModelInstance::GetFrameMatrix( int32 Frame, EModelFrameSpace Space, FMatri
 FModelAppearance CModelInstance::GetAppearance() const
 {
 	return FModelAppearance( Handle, Source.Get() );
+}
+
+FModelCollision CModelInstance::GetCollision() const
+{
+	return FModelCollision( Handle );
 }
 
 bool CModelInstance::GetFramePositions( TArray<FVector3>& OutPositions ) const

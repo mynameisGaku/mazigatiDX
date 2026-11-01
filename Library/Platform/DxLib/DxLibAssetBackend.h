@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "Library/Core/Collection/Map.h"
+#include "Library/Core/Collection/Set.h"
 #include "Library/Core/Interfaces/Asset/AssetBackend.h"
 #include "Library/Core/Interfaces/Asset/StaticModelSurfaceData.h"
 #include "Library/Core/Memory/SharedPtr.h"
@@ -87,6 +88,12 @@ public:
 	bool GetModelOpacity( int32 Model, float32& Out ) override;
 	bool SetModelOpacity( int32 Model, float32 Opacity ) override;
 	bool GetModelFrameMatrix( int32 Model, int32 Frame, EModelFrameSpace Space, FMatrix4x4& Out ) override;
+	bool GetModelShapeRate( int32 Model, int32 Shape, float32& Out ) override;
+	bool SetModelShapeRate( int32 Model, int32 Shape, float32 Rate ) override;
+	// 当たり判定（DxLibAssetBackendModelCollision.cpp）
+	bool PrepareModelCollision( int32 Model ) override;
+	bool RaycastModel( int32 Model, const FVector3& From, const FVector3& To, FModelHit& Out ) override;
+	bool OverlapModelSphere( int32 Model, const FVector3& Center, float32 Radius, TArray<FModelHit>& Out ) override;
 
 	int32 MakeFont( const FFontDesc& Desc ) override;
 	void DeleteFont( int32 Font ) override;
@@ -122,4 +129,6 @@ private:
 	TMap<int32, TSharedPtr<const FDxLibModelMaterialGeometry>> ModelMaterialGeometries;
 	// 重複を避けて次のbackend内部handleを割り当てる値。
 	int32 NextModelMaterialGeometry = 1;
+	// 当たり判定の形を写してあるモデル（DeleteModel で忘れる）
+	TSet<int32> CollisionReadyModels;
 };

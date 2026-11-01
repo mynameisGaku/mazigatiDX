@@ -115,6 +115,11 @@ bool CDxLibAssetBackend::GetModelStructure( int32 Model, FModelStructure& Out )
 		Info.Height = MV1GetTextureHeight( Model, Texture );
 		Structure.Textures.Add( Info );
 	}
+	const int32 ShapeCount = MV1GetShapeNum( Model );
+	for ( int32 Shape = 0; Shape < ShapeCount; ++Shape )
+	{
+		Structure.Shapes.Add( ToString( MV1GetShapeName( Model, Shape ) ) );
+	}
 	Out = MoveTemp( Structure );
 	return true;
 }
@@ -211,4 +216,19 @@ bool CDxLibAssetBackend::GetModelFrameMatrix( int32 Model, int32 Frame, EModelFr
 	}
 	Out = NDxLibTypes::FromDxLib( Space == EModelFrameSpace::World ? MV1GetFrameLocalWorldMatrix( Model, Frame ) : MV1GetFrameLocalMatrix( Model, Frame ) );
 	return true;
+}
+
+bool CDxLibAssetBackend::GetModelShapeRate( int32 Model, int32 Shape, float32& Out )
+{
+	if ( Model < 0 || Shape < 0 || Shape >= MV1GetShapeNum( Model ) )
+	{
+		return false;
+	}
+	Out = MV1GetShapeRate( Model, Shape );
+	return true;
+}
+
+bool CDxLibAssetBackend::SetModelShapeRate( int32 Model, int32 Shape, float32 Rate )
+{
+	return Model >= 0 && Shape >= 0 && Shape < MV1GetShapeNum( Model ) && MV1SetShapeRate( Model, Shape, Rate, DX_MV1_SHAPERATE_OVERWRITE ) >= 0;
 }

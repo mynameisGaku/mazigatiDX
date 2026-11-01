@@ -117,3 +117,24 @@ bool FModelAppearance::SetOpacity( float32 Opacity )
 	const float32 Safe = Opacity == Opacity ? NMath::Clamp( Opacity, 0.0f, 1.0f ) : 0.0f;
 	return Backend != nullptr && Handle >= 0 && Backend->SetModelOpacity( Handle, Safe );
 }
+
+float32 FModelAppearance::GetShapeRate( int32 Shape ) const
+{
+	GAME_THREAD_ONLY( 0.0f );
+	IAssetBackend* Backend = NAssetService::GetBackend();
+	float32 Rate = 0.0f;
+	if ( Backend != nullptr && Handle >= 0 )
+	{
+		Backend->GetModelShapeRate( Handle, Shape, Rate );
+	}
+	return Rate;
+}
+
+bool FModelAppearance::SetShapeRate( int32 Shape, float32 Rate )
+{
+	GAME_THREAD_ONLY( false );
+	IAssetBackend* Backend = NAssetService::GetBackend();
+	// NaN は 0（効かない）として扱う
+	const float32 Safe = Rate == Rate ? Rate : 0.0f;
+	return Backend != nullptr && Handle >= 0 && Backend->SetModelShapeRate( Handle, Shape, Safe );
+}

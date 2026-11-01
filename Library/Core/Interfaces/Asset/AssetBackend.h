@@ -2,6 +2,7 @@
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Interfaces/Asset/FontTypes.h"
+#include "Library/Core/Interfaces/Asset/ModelCollisionTypes.h"
 #include "Library/Core/Interfaces/Asset/ModelStructureTypes.h"
 #include "Library/Core/Interfaces/Asset/StaticModelSurfaceData.h"
 #include "Library/Core/Interfaces/Render/DrawCommand.h"
@@ -180,6 +181,17 @@ public:
 	virtual bool SetModelOpacity( int32 /*Model*/, float32 /*Opacity*/ ) { return false; }
 	// フレームの、いまの行列（最後に描いたときのアニメーションと置き場所で決まる）
 	virtual bool GetModelFrameMatrix( int32 /*Model*/, int32 /*Frame*/, EModelFrameSpace /*Space*/, FMatrix4x4& /*Out*/ ) { return false; }
+	// 形状（モーフ）の効き具合（0 = 効かない、1 = すべて効く。いまの値）
+	virtual bool GetModelShapeRate( int32 /*Model*/, int32 /*Shape*/, float32& /*Out*/ ) { return false; }
+	virtual bool SetModelShapeRate( int32 /*Model*/, int32 /*Shape*/, float32 /*Rate*/ ) { return false; }
+
+	// 当たり判定。モデルの手元の座標（置き場所を含まない）で、準備したときの形（アニメーション・形状を含む）を写しておき、それに問い合わせる。
+	// 形を写す（2 回目からは、写し直す）
+	virtual bool PrepareModelCollision( int32 /*Model*/ ) { return false; }
+	// From から To への線が、最初に当たる三角形（手元の座標。準備していなければ準備する）。当たらなければ false
+	virtual bool RaycastModel( int32 /*Model*/, const FVector3& /*From*/, const FVector3& /*To*/, FModelHit& /*Out*/ ) { return false; }
+	// 球と重なる三角形をすべて（手元の座標。準備していなければ準備する）。対応していなければ false
+	virtual bool OverlapModelSphere( int32 /*Model*/, const FVector3& /*Center*/, float32 /*Radius*/, TArray<FModelHit>& /*Out*/ ) { return false; }
 
 	//-------------------------------------------------------------------------
 	// メッシュ（頂点バッファ・インデックスバッファ。編集メッシュを描くため）

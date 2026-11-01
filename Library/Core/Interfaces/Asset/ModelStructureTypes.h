@@ -90,6 +90,8 @@ struct FModelStructure
 	TArray<FModelMeshInfo> Meshes;
 	TArray<FModelMaterialInfo> Materials;
 	TArray<FModelTextureInfo> Textures;
+	// 形状（モーフ。表情や体型の変形）の名前。番号は FModelAppearance::SetShapeRate に渡すもの
+	TArray<FString> Shapes;
 };
 
 // フレームの行列をどの座標で取るか

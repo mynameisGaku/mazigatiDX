@@ -39,6 +39,10 @@ public:
 	bool IsFrameVisible( int32 Frame ) const;
 	bool SetFrameVisible( int32 Frame, bool bVisible );
 
+	// 形状（モーフ）の効き具合（0 = 効かない、1 = すべて効く。番号は CModel::GetStructure().Shapes の並び、名前からは CModel::FindShape）。分からないときは 0
+	float32 GetShapeRate( int32 Shape ) const;
+	bool SetShapeRate( int32 Shape, float32 Rate );
+
 	// 全体の不透明度（0〜1 に収める）。分からないときは 1
 	float32 GetOpacity() const;
 	bool SetOpacity( float32 Opacity );

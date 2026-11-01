@@ -4,6 +4,7 @@
 #include "Library/Core/Interfaces/Asset/ModelStructureTypes.h"
 #include "Library/Framework/Asset/Asset.h"
 #include "Library/Framework/Asset/ModelAppearance.h"
+#include "Library/Framework/Asset/ModelCollision.h"
 #include "Library/Framework/Asset/Import/ModelFormats.h"
 #include "Library/Math/Matrix4x4.h"
 #include "Library/Math/Vector3.h"
@@ -77,6 +78,7 @@ public:
 	// 名前で番号を探す（最初に見つかったもの。無ければ -1）
 	int32 FindFrame( const FString& Name ) const;
 	int32 FindMaterial( const FString& Name ) const;
+	int32 FindShape( const FString& Name ) const;
 
 	// 自分用のインスタンスを作る（元のデータを共有する）。失敗したら nullptr
 	TSharedPtr<CModelInstance> CreateInstance();
@@ -124,6 +126,8 @@ public:
 
 	// この 1 体の見た目（材質の色・表示・不透明度）を変える窓口。インスタンスより長く持たない
 	FModelAppearance GetAppearance() const;
+	// この 1 体への当たり判定の窓口（線・球）。インスタンスより長く持たない
+	FModelCollision GetCollision() const;
 
 	// AnimSource の AnimIndex 番のアニメーションを付ける（同じものが付いていればそのまま）。戻り値は付けた番号（失敗したら -1）
 	int32 AttachAnim( const TSharedPtr<CModel>& AnimSource, int32 AnimIndex );

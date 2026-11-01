@@ -581,6 +581,8 @@ int32 CDxLibAssetBackend::DuplicateModel( int32 Source )
 
 void CDxLibAssetBackend::DeleteModel( int32 Model )
 {
+	// 当たり判定の情報は、モデルと一緒に消える
+	CollisionReadyModels.Remove( Model );
 	MV1DeleteModel( Model );
 }
 
