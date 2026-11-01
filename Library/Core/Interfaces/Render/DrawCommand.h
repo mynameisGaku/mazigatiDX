@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "Library/Core/Collection/Array.h"
+#include "Library/Core/Interfaces/Render/OffscreenCaptureTypes.h"
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Types/TypeDefinition.h"
 #include "Library/Core/Types/TypeTraits.h"
@@ -1008,4 +1010,10 @@ public:
 	virtual bool SupportsEffectMaterialMesh() const { return false; }
 	// ModelMaterial3Dでモデル内の選択材質へ効果を描けるか返す。
 	virtual bool SupportsModelMaterialEffects() const { return false; }
+
+	// 撮影のための描き直しを始める: 以後の Execute を、Desc の大きさの別の描画先へ、2D を Desc.Scale 倍にして描く。
+	// 対応しない実行先・作れない大きさ・すでに始めているときは false（何も変えない）。EndOffscreenCapture と必ず対にする
+	virtual bool BeginOffscreenCapture( const FOffscreenCaptureDesc& /*Desc*/ ) { return false; }
+	// 描き直しを終え、描いた画素（Width x Height、左上から行の順。a は描画先の透明度）を Out へ写して、元の描画先に戻す。始めていなければ false
+	virtual bool EndOffscreenCapture( TArray<FColor32>& /*Out*/ ) { return false; }
 };

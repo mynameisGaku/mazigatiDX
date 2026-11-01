@@ -226,6 +226,16 @@ void CScene::TickScene( float32 DeltaTime )
 
 void CScene::DrawScene()
 {
+	DrawObjectsAndScene( nullptr, true );
+}
+
+void CScene::RedrawForCapture( const TCallable<bool( const CGameObject& )>* Filter )
+{
+	DrawObjectsAndScene( Filter, Filter == nullptr );
+}
+
+void CScene::DrawObjectsAndScene( const TCallable<bool( const CGameObject& )>* Filter, bool bDrawSceneOverlay )
+{
 	// Tick されていないシーン（スタックの下にあるもの）も Draw されるので、ここでも ID を更新する
 	ProfilerOwnerId = NProfiler::GRecorder ? NProfiler::GRecorder->InternString( *GetName() ) : 0u;
 	PROFILE_SCOPE_LAZY( SceneScope, FProfileScope( "Scene", ProfilerOwnerId, "DrawScene" ) );
@@ -256,7 +266,7 @@ void CScene::DrawScene()
 		for ( int32 i = 0; i < DrawList.Num(); ++i )
 		{
 			CGameObject* Object = DrawList[i];
-			if ( !Object->IsAlive() || !Object->IsVisible() )
+			if ( !Object->IsAlive() || !Object->IsVisible() || ( Filter != nullptr && !( *Filter )( *Object ) ) )
 			{
 				continue;
 			}
@@ -279,6 +289,7 @@ void CScene::DrawScene()
 		}
 	}
 
+	if ( bDrawSceneOverlay )
 	{
 		PROFILE_SCOPE_LAZY( OnDrawScope, FProfileScope( "Scene", ProfilerOwnerId, "OnDraw" ) );
 		OnDraw();

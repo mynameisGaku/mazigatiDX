@@ -719,6 +719,39 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 		   { "downscale", "Shrink by 1/N (default 1)." },
 		   { "ui", "Include the debug UI (default false: the game screen only)." } }, CategoryEngine );
 
+	Add( "highresshot", "Redraw the game at a larger size and save it to Saved/Screenshots (like Unreal's HighResShot). Optionally only the subject, with a transparent background",
+		 []( FConsoleContext& Context, TOptional<FString> Size, TOptional<FString> Subject, TOptional<FString> Name )
+		 {
+			 CScreenCapture* Capture = GetAppSubsystem<CScreenCapture>();
+			 if ( Capture == nullptr )
+			 {
+				 Context.Error( "the screen capture is not available" );
+				 return false;
+			 }
+			 FHighResShotOptions Options;
+			 const FString SizeText = Size.IsSet() ? Size.GetValue() : FString( "2" );
+			 if ( !NCaptureCommandLine::ParseResolution( SizeText, Options.Width, Options.Height ) )
+			 {
+				 Options.Multiplier = SizeText.ToFloat( 0.0f );
+			 }
+			 if ( Subject.IsSet() && !Subject.GetValue().IsEmpty() )
+			 {
+				 Capture->SetSubjectByName( Subject.GetValue() );
+				 Options.bSubjectOnly = true;
+			 }
+			 const FString Path = Capture->TakeHighResShot( Name.IsSet() ? Name.GetValue() : FString(), Options );
+			 if ( Path.IsEmpty() )
+			 {
+				 Context.Error( "cannot take it (size 1..16384, or a shot is already waiting)" );
+				 return false;
+			 }
+			 Context.Print( "saving " + Path );
+			 return true;
+		 },
+		 { { "size", "A multiplier of the screen size (2 = twice) or a resolution such as 3840x2160. Default: 2" },
+		   { "subject", "Only objects whose name contains this text are drawn; the rest becomes transparent (PNG)." },
+		   { "name", "File name. Default: Screenshot_<number>.png" } }, CategoryEngine );
+
 	Add( "window", "Show the window size, mode and title",
 		 []()
 		 {

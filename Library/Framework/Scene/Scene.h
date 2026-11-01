@@ -3,6 +3,7 @@
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Memory/SmartPointer.h"
+#include "Library/Core/Types/Callable.h"
 #include "Library/Core/Types/TypeTraits.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Component/TransformComponent.h"
@@ -219,6 +220,11 @@ public:
 	// シーンが使う描画先を返す。差し替えがなければアプリの描画先を返し、所有権は持たない
 	IDrawExecutor* GetDrawExecutor() const;
 
+	// 撮影のための描き直し: 見えているオブジェクトを、描画順にもう一度記録して実行する（実行先は GetDrawExecutor()）。
+	// Filter があれば、それが true を返すオブジェクトだけ（被写体だけの撮影）。Filter が無ければ OnDraw も描く（画面と同じ絵）。
+	// オブジェクトの Draw は記録だけなので、何度呼んでもよい
+	void RedrawForCapture( const TCallable<bool( const CGameObject& )>* Filter );
+
 	// このシーンのサブシステム（T はクラスでもインターフェースでもよい）
 	template<typename T>
 	FORCEINLINE T* GetSubsystem() const { return Subsystems.Get<T>(); }
@@ -249,6 +255,8 @@ private:
 	void Exit();
 	void TickScene( float32 DeltaTime );
 	void DrawScene();
+	// 描画の本体（Filter が nullptr なら、すべてのオブジェクト）
+	void DrawObjectsAndScene( const TCallable<bool( const CGameObject& )>* Filter, bool bDrawSceneOverlay );
 
 	void AddObject( const TSharedPtr<CGameObject>& Object );
 	void RemoveDestroyedObjects();

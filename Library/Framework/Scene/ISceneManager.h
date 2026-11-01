@@ -1,7 +1,9 @@
 ﻿#pragma once
 #include "Library/Core/Collection/String.h"
+#include "Library/Core/Types/Callable.h"
 
 class CScene;
+class CGameObject;
 class CGameInstance;
 
 //=============================================================================
@@ -27,4 +29,7 @@ public:
 	virtual CScene* GetCurrentScene() const = 0;
 	// 所有しているゲームインスタンス（単体で使っているなら nullptr）
 	virtual CGameInstance* GetGameInstance() const = 0;
+
+	// 撮影のための描き直し: 積まれているシーンを、下から順に CScene::RedrawForCapture で描く。対応しない実装では何もしない
+	virtual void RedrawScenesForCapture( const TCallable<bool( const CGameObject& )>* Filter ) { ( void )Filter; }
 };

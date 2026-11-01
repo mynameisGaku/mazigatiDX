@@ -229,6 +229,9 @@
     <ClCompile Include="Library\Framework\Audio\AudioTypes.cpp">
       <Filter>Library\Framework\Audio</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Capture\AlphaMatte.cpp">
+      <Filter>Library\Framework\Capture</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Capture\CaptureCommandLine.cpp">
       <Filter>Library\Framework\Capture</Filter>
     </ClCompile>
@@ -245,6 +248,9 @@
       <Filter>Library\Framework\Capture</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Capture\GifLzw.cpp">
+      <Filter>Library\Framework\Capture</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Capture\OffscreenShot.cpp">
       <Filter>Library\Framework\Capture</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Capture\PaletteMapper.cpp">
@@ -698,6 +704,9 @@
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\DxLibDrawExecutor.cpp">
+      <Filter>Library\Platform\DxLib</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\DxLibDrawExecutorCapture.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\DxLibDrawExecutorModelMaterial.cpp">
@@ -1488,6 +1497,9 @@
     <ClInclude Include="Library\Core\Interfaces\Render\MeshTypes.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\OffscreenCaptureTypes.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\RenderTargetTypes.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
@@ -1737,6 +1749,9 @@
     <ClInclude Include="Library\Framework\Audio\AudioTypes.h">
       <Filter>Library\Framework\Audio</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Capture\AlphaMatte.h">
+      <Filter>Library\Framework\Capture</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Capture\CaptureCommandLine.h">
       <Filter>Library\Framework\Capture</Filter>
     </ClInclude>
@@ -1756,6 +1771,9 @@
       <Filter>Library\Framework\Capture</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Capture\GifLzw.h">
+      <Filter>Library\Framework\Capture</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Capture\OffscreenShot.h">
       <Filter>Library\Framework\Capture</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Capture\PaletteMapper.h">

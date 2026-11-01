@@ -52,6 +52,9 @@ public:
 	bool SupportsEffectMaterialMesh() const override;
 	// 不変形状資源と材質mesh描画が同時に利用できるか返す。
 	bool SupportsModelMaterialEffects() const override;
+	// 撮影のための描き直し（DxLibDrawExecutorCapture.cpp）
+	bool BeginOffscreenCapture( const FOffscreenCaptureDesc& Desc ) override;
+	bool EndOffscreenCapture( TArray<FColor32>& Out ) override;
 
 private:
 	// DxLibが動作中に解放する必要がある材質描画用GPU資源。
@@ -64,4 +67,14 @@ private:
 	bool EnsureMaskScreen();
 	// 固定payloadを検査し、残りをnativeモデル、選択材質を効果meshとして描く。
 	void ExecuteModelMaterial( const FDrawCommandView& Command );
+
+	// 撮影のための描き直しの状態。始めている間、撮影の描画先へ直接描く 2D を CaptureScale 倍にする
+	bool bOffscreenCapture = false;
+	float32 CaptureScale = 1.0f;
+	int CaptureScreen = -1;
+	int CapturePreviousScreen = -1;
+	// 撮影の前の描画範囲（左・上・右・下）
+	int32 CapturePreviousArea[4] = {};
+	int32 CaptureWidth = 0;
+	int32 CaptureHeight = 0;
 };

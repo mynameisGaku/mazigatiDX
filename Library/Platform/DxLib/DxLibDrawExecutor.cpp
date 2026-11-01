@@ -474,6 +474,24 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 	// 描画先: PushTarget で替える前の状態の並び（一番内側が、いまの描画先に替える前のもの）と、替えられなかった PushTarget の数
 	// （描画先にできない画像を渡された。その対の PopTarget まで、描く命令を飛ばす。飛ばさないと、元の描画先に描いてしまう）
 	TArray<FTargetFrame> TargetStack;
+	// 2D の変換を当てる（Matrix が nullptr なら変換なし）。撮影のための描き直しの間は、撮影の描画先へ直接描くときだけ、撮影の倍率を掛ける
+	const auto Apply2DTransform = [&]( const MATRIX* Matrix )
+	{
+		if ( bOffscreenCapture && TargetStack.IsEmpty() && CaptureScale != 1.0f )
+		{
+			const MATRIX Scale = MGetScale( VGet( CaptureScale, CaptureScale, 1.0f ) );
+			const MATRIX Combined = Matrix != nullptr ? MMult( *Matrix, Scale ) : Scale;
+			SetTransformTo2D( &Combined );
+		}
+		else if ( Matrix != nullptr )
+		{
+			SetTransformTo2D( Matrix );
+		}
+		else
+		{
+			ResetTransformTo2D();
+		}
+	};
 	int NumInvalidTargets = 0;
 	// マスク: PushMask で重ねた並び（一番内側が、いまのマスク）。マスクの設定を、実行のなかで 1 度でも変えたか。変える前の、マスクを使う設定
 	TArray<FMaskState> MaskStack;
@@ -560,14 +578,7 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 		OldArea = Frame.OldArea;
 		ClipStack = Frame.ClipStack;
 		bClipEmpty = Frame.bClipEmpty;
-		if ( Frame.bTransform2DChanged )
-		{
-			SetTransformTo2D( &Frame.Transform2D );
-		}
-		else
-		{
-			ResetTransformTo2D();
-		}
+		Apply2DTransform( Frame.bTransform2DChanged ? &Frame.Transform2D : nullptr );
 		bTransform2DChanged = Frame.bTransform2DChanged;
 		Transform2DMatrix = Frame.Transform2D;
 		MaskStack = Frame.MaskStack;
@@ -1386,7 +1397,11 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 				bClipChanged = true;
 			}
 			// 新しい範囲は、いまの範囲（一番内側に重ねた範囲。無ければ、始める前の範囲）との共通部分
-			const RECT Requested = { Data.X0, Data.Y0, Data.X1, Data.Y1 };
+			// 撮影のための描き直しでは、撮影の描画先へ直接描くクリップも、2D と同じ倍率で広げる
+			const bool bScaleClip = bOffscreenCapture && TargetStack.IsEmpty();
+			const RECT Requested = bScaleClip
+				? RECT { static_cast<LONG>( static_cast<float32>( Data.X0 ) * CaptureScale ), static_cast<LONG>( static_cast<float32>( Data.Y0 ) * CaptureScale ), static_cast<LONG>( static_cast<float32>( Data.X1 ) * CaptureScale + 0.999f ), static_cast<LONG>( static_cast<float32>( Data.Y1 ) * CaptureScale + 0.999f ) }
+				: RECT { Data.X0, Data.Y0, Data.X1, Data.Y1 };
 			const RECT Area = IntersectArea( Requested, ClipStack.IsEmpty() ? OldArea : ClipStack.Last() );
 			ClipStack.Add( Area );
 			bClipEmpty = IsEmptyArea( Area );
@@ -1419,7 +1434,7 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			}
 			const FDrawMatrixData Data = Command.Read<FDrawMatrixData>();
 			const MATRIX Matrix = ToMatrix( Data.M );
-			SetTransformTo2D( &Matrix );
+			Apply2DTransform( &Matrix );
 			Transform2DMatrix = Matrix;
 			bTransform2DChanged = true;
 			break;
@@ -1661,6 +1676,6 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 	}
 	if ( bTransform2DChanged )
 	{
-		ResetTransformTo2D();
+		Apply2DTransform( nullptr );
 	}
 }

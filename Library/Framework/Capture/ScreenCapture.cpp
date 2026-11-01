@@ -8,9 +8,14 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Framework/Capture/CaptureFileWriter.h"
 #include "Library/Framework/Capture/CaptureImage.h"
+#include "Library/Framework/Capture/AlphaMatte.h"
 #include "Library/Framework/Capture/GifEncoder.h"
+#include "Library/Framework/Capture/OffscreenShot.h"
 #include "Library/Framework/Capture/ScreenshotNames.h"
+#include "Library/Core/Interfaces/Render/DrawCommand.h"
 #include "Library/Framework/Engine/Engine.h"
+#include "Library/Framework/GameInstance/GameInstance.h"
+#include "Library/Framework/Object/GameObject.h"
 #include "Library/Math/MathUtils.h"
 #include "Library/Platform/CommandLine.h"
 #include "Library/Platform/FileSystem.h"
@@ -72,6 +77,7 @@ void CScreenCapture::Tick( float32 DeltaTime )
 	// いま描いているフレームの番号（EndFrame で、この番号の画素が届く）
 	const uint64 FrameIndex = Platform->GetFrameCount() + 1;
 	ApplyCommandLine( FrameIndex );
+	TakePendingHighResShot();
 
 	const IInput* Input = GetAppSubsystem<IInput>();
 	if ( bHotkeysEnabled && Input != nullptr && Input->IsKeyPressed( EKey::F9 ) )
@@ -97,7 +103,18 @@ void CScreenCapture::ApplyCommandLine( uint64 FrameIndex )
 	if ( CommandLine.bScreenshot && !bCommandScreenshotIssued && FrameIndex >= static_cast<uint64>( NMath::Max( 1, CommandLine.ScreenshotFrame ) ) )
 	{
 		bCommandScreenshotIssued = true;
-		TakeScreenshot( CommandLine.ScreenshotName, CommandLine.Screenshot );
+		if ( CommandLine.bHighRes )
+		{
+			if ( !CommandLine.SubjectName.IsEmpty() )
+			{
+				SetSubjectByName( CommandLine.SubjectName );
+			}
+			TakeHighResShot( CommandLine.ScreenshotName, CommandLine.HighRes );
+		}
+		else
+		{
+			TakeScreenshot( CommandLine.ScreenshotName, CommandLine.Screenshot );
+		}
 	}
 	if ( CommandLine.bRecord && !bCommandRecordIssued && FrameIndex >= static_cast<uint64>( NMath::Max( 1, CommandLine.RecordStartFrame ) ) )
 	{
@@ -106,7 +123,7 @@ void CScreenCapture::ApplyCommandLine( uint64 FrameIndex )
 	}
 	// 起動引数で頼まれたものが、すべて終わったら閉じる
 	const bool bWantsExit = ( CommandLine.bScreenshot && CommandLine.bExitAfterScreenshot ) || ( CommandLine.bRecord && CommandLine.bExitAfterRecord );
-	const bool bScreenshotDone = !CommandLine.bScreenshot || ( bCommandScreenshotIssued && !bScreenshotPending );
+	const bool bScreenshotDone = !CommandLine.bScreenshot || ( bCommandScreenshotIssued && !bScreenshotPending && !bHighResPending );
 	const bool bRecordDone = !CommandLine.bRecord || ( bCommandRecordIssued && !bRecording );
 	if ( bWantsExit && bScreenshotDone && bRecordDone && Platform != nullptr && !Platform->IsExitRequested() )
 	{
@@ -127,6 +144,78 @@ FString CScreenCapture::TakeScreenshot( const FString& Name, const FScreenshotOp
 	ScreenshotFrame = Platform->GetFrameCount() + 1 + static_cast<uint64>( NMath::Max( 0, Options.DelayFrames ) );
 	bScreenshotPending = true;
 	return ScreenshotPath;
+}
+
+FString CScreenCapture::TakeHighResShot( const FString& Name, const FHighResShotOptions& Options )
+{
+	int32 Width = 0;
+	int32 Height = 0;
+	float32 Scale = 1.0f;
+	if ( Platform == nullptr || bHighResPending || ( Options.bSubjectOnly && !Subject ) || !NOffscreenShot::ResolveSize( Options, Platform->GetScreenWidth(), Platform->GetScreenHeight(), Width, Height, Scale ) )
+	{
+		return FString();
+	}
+	HighResOptions = Options;
+	HighResOptions.Format = NCaptureFileWriter::ResolveFormat( Name, Options.Format );
+	HighResPath = NScreenshotNames::ResolvePath( Directory, Name, NCaptureFileWriter::GetExtension( HighResOptions.Format ), LastNumber + 1, &LastNumber );
+	bHighResPending = true;
+	return HighResPath;
+}
+
+void CScreenCapture::SetSubject( const TCallable<bool( const CGameObject& )>& Filter )
+{
+	Subject = Filter;
+}
+
+void CScreenCapture::SetSubjectByName( const FString& Text )
+{
+	if ( Text.IsEmpty() )
+	{
+		ClearSubject();
+		return;
+	}
+	Subject = [ Text ]( const CGameObject& Object )
+	{
+		return Object.GetName().Contains( Text, ESearchCase::IgnoreCase );
+	};
+}
+
+void CScreenCapture::ClearSubject()
+{
+	Subject = nullptr;
+}
+
+void CScreenCapture::TakePendingHighResShot()
+{
+	if ( !bHighResPending )
+	{
+		return;
+	}
+	bHighResPending = false;
+	IDrawExecutor* Executor = GetAppSubsystem<IDrawExecutor>();
+	CGameInstance* GameInstance = GetEngine() != nullptr ? GetEngine()->GetGameInstance() : nullptr;
+	int32 Width = 0;
+	int32 Height = 0;
+	float32 Scale = 1.0f;
+	TArray<FColor32> Pixels;
+	const bool bSized = Platform != nullptr && NOffscreenShot::ResolveSize( HighResOptions, Platform->GetScreenWidth(), Platform->GetScreenHeight(), Width, Height, Scale );
+	const TCallable<bool( const CGameObject& )>* Filter = HighResOptions.bSubjectOnly && Subject ? &Subject : nullptr;
+	const bool bRendered = bSized && Executor != nullptr && GameInstance != nullptr && NOffscreenShot::Render( *Executor, GameInstance->GetSceneManager(), Width, Height, Scale, Filter, Pixels );
+	if ( bRendered && Filter != nullptr && HighResOptions.Format != EScreenshotFormat::Png )
+	{
+		// 透明度を残せない形式は、背景の色の上に重ねる
+		NAlphaMatte::Flatten( Pixels, HighResOptions.BackgroundColor );
+	}
+	bLastSaveSucceeded = bRendered && NCaptureFileWriter::Save( Pixels, Width, Height, HighResPath, HighResOptions.Format, HighResOptions.JpegQuality, GetAppSubsystem<IAssetBackend>() );
+	LastSavedPath = HighResPath;
+	if ( bLastSaveSucceeded )
+	{
+		LOG( LogCapture, Log, "Saved a high resolution screenshot (%d x %d%s) to %s", Width, Height, Filter != nullptr ? ", subject only" : "", *HighResPath );
+	}
+	else
+	{
+		LOG( LogCapture, Warning, "Failed to take the high resolution screenshot %s (%d x %d)", *HighResPath, Width, Height );
+	}
 }
 
 FString CScreenCapture::StartRecording( const FString& Name, const FGifRecordOptions& Options )

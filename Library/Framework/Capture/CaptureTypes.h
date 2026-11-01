@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Library/Core/Types/TypeDefinition.h"
+#include "Library/Math/Color.h"
 
 //=============================================================================
 // 画面の記録（スクリーンショット・GIF）の設定の値の型
@@ -44,6 +45,23 @@ struct FScreenshotOptions
 	bool bIncludeDebugUI = false;
 	// 何フレーム待ってから撮るか（画面を整える時間）
 	int32 DelayFrames = 0;
+};
+
+// 高解像度のスクリーンショット（画面とは別の大きな描画先へ、もう一度描いて撮る）の設定
+struct FHighResShotOptions
+{
+	// 画面の大きさの何倍で撮るか（Width / Height が 0 のとき。2 なら 1280 x 720 の画面を 2560 x 1440 で）
+	float32 Multiplier = 2.0f;
+	// 撮る大きさを直接決める（例: 3840 x 2160。どちらかが 0 なら Multiplier を使う）。画面と縦横比が違うときは、2D はどちらにも収まる倍率で描く
+	int32 Width = 0;
+	int32 Height = 0;
+	// 被写体（SetSubject で決めたもの、または TakeHighResShot に渡したもの）だけを撮り、それ以外を透明にする
+	bool bSubjectOnly = false;
+	// 透明度を残せない形式（JPEG・BMP・GIF）で、被写体だけを保存するときの背景の色
+	FColor32 BackgroundColor = FColor32( 0, 0, 0, 255 );
+	// 保存の形式（名前の拡張子が優先）。被写体だけを透明で残すなら Png
+	EScreenshotFormat Format = EScreenshotFormat::Png;
+	int32 JpegQuality = 90;
 };
 
 // GIF の記録の設定

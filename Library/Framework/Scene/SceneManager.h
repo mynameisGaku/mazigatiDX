@@ -67,6 +67,7 @@ public:
 	//-------------------------------------------------------------------------
 	void Tick( float32 DeltaTime );
 	void Draw();
+	void RedrawScenesForCapture( const TCallable<bool( const CGameObject& )>* Filter ) override;
 	// すべてのシーンを終了する（予約も破棄する）
 	void Shutdown();
 

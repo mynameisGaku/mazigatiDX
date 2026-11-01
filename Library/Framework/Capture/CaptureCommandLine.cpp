@@ -83,6 +83,24 @@ bool NCaptureCommandLine::ParseFormat( const FString& Text, EScreenshotFormat& O
 	return true;
 }
 
+bool NCaptureCommandLine::ParseResolution( const FString& Text, int32& OutWidth, int32& OutHeight )
+{
+	const TArray<FString> Parts = Text.Replace( "X", "x" ).ParseIntoArray( "x", false );
+	if ( Parts.Num() != 2 )
+	{
+		return false;
+	}
+	const TOptional<int64> Width = Parts[0].TrimStart().TrimEnd().TryParseInt();
+	const TOptional<int64> Height = Parts[1].TrimStart().TrimEnd().TryParseInt();
+	if ( !Width.IsSet() || !Height.IsSet() || Width.GetValue() <= 0 || Height.GetValue() <= 0 )
+	{
+		return false;
+	}
+	OutWidth = static_cast<int32>( Width.GetValue() );
+	OutHeight = static_cast<int32>( Height.GetValue() );
+	return true;
+}
+
 FCaptureCommandLine NCaptureCommandLine::Parse( const FString& CommandLine )
 {
 	FCaptureCommandLine Result;
@@ -97,6 +115,27 @@ FCaptureCommandLine NCaptureCommandLine::Parse( const FString& CommandLine )
 		NCaptureCommandLine::ParseFormat( Format.GetValue(), Result.Screenshot.Format );
 	}
 	ReadInt( CommandLine, "capture-quality", Result.Screenshot.JpegQuality );
+	Result.HighRes.Format = Result.Screenshot.Format;
+	Result.HighRes.JpegQuality = Result.Screenshot.JpegQuality;
+	if ( const TOptional<FString> Scale = NCommandLine::GetValue( CommandLine, "capture-scale" ) )
+	{
+		Result.bHighRes = true;
+		Result.HighRes.Multiplier = static_cast<float32>( Scale.GetValue().ToFloat( Result.HighRes.Multiplier ) );
+	}
+	if ( const TOptional<FString> Resolution = NCommandLine::GetValue( CommandLine, "capture-resolution" ) )
+	{
+		Result.bHighRes = ParseResolution( Resolution.GetValue(), Result.HighRes.Width, Result.HighRes.Height ) || Result.bHighRes;
+	}
+	if ( const TOptional<FString> Subject = NCommandLine::GetValue( CommandLine, "capture-subject" ) )
+	{
+		Result.SubjectName = Subject.GetValue();
+		Result.HighRes.bSubjectOnly = !Result.SubjectName.IsEmpty();
+		if ( !NCommandLine::GetValue( CommandLine, "capture-scale" ).IsSet() && !NCommandLine::GetValue( CommandLine, "capture-resolution" ).IsSet() )
+		{
+			Result.HighRes.Multiplier = 1.0f;
+		}
+		Result.bHighRes = Result.bHighRes || Result.HighRes.bSubjectOnly;
+	}
 
 	Result.bRecord = ReadSwitch( CommandLine, "record", Result.RecordName );
 	ReadInt( CommandLine, "record-start", Result.RecordStartFrame );

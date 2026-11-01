@@ -141,12 +141,14 @@
     <ClCompile Include="Library\Framework\Audio\AudioComponents.cpp" />
     <ClCompile Include="Library\Framework\Audio\AudioSystem.cpp" />
     <ClCompile Include="Library\Framework\Audio\AudioTypes.cpp" />
+    <ClCompile Include="Library\Framework\Capture\AlphaMatte.cpp" />
     <ClCompile Include="Library\Framework\Capture\CaptureCommandLine.cpp" />
     <ClCompile Include="Library\Framework\Capture\CaptureFileWriter.cpp" />
     <ClCompile Include="Library\Framework\Capture\CaptureImage.cpp" />
     <ClCompile Include="Library\Framework\Capture\ColorQuantizer.cpp" />
     <ClCompile Include="Library\Framework\Capture\GifEncoder.cpp" />
     <ClCompile Include="Library\Framework\Capture\GifLzw.cpp" />
+    <ClCompile Include="Library\Framework\Capture\OffscreenShot.cpp" />
     <ClCompile Include="Library\Framework\Capture\PaletteMapper.cpp" />
     <ClCompile Include="Library\Framework\Capture\ScreenCapture.cpp" />
     <ClCompile Include="Library\Framework\Capture\ScreenshotNames.cpp" />
@@ -298,6 +300,7 @@
     <ClCompile Include="Library\Platform\DxLib\DxLibAudioBackend.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibBackend.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibDrawExecutor.cpp" />
+    <ClCompile Include="Library\Platform\DxLib\DxLibDrawExecutorCapture.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibDrawExecutorModelMaterial.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibImageOps.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibImGuiTexture.cpp" />
@@ -562,6 +565,7 @@
     <ClInclude Include="Library\Core\Interfaces\Render\IVertexBuffer.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\MeshGeometryChunk.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\MeshTypes.h" />
+    <ClInclude Include="Library\Core\Interfaces\Render\OffscreenCaptureTypes.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\RenderTargetTypes.h" />
     <ClInclude Include="Library\Core\Interfaces\Tickable\ITickable.h" />
     <ClInclude Include="Library\Core\Log\Log.h" />
@@ -645,6 +649,7 @@
     <ClInclude Include="Library\Framework\Audio\AudioComponents.h" />
     <ClInclude Include="Library\Framework\Audio\AudioSystem.h" />
     <ClInclude Include="Library\Framework\Audio\AudioTypes.h" />
+    <ClInclude Include="Library\Framework\Capture\AlphaMatte.h" />
     <ClInclude Include="Library\Framework\Capture\CaptureCommandLine.h" />
     <ClInclude Include="Library\Framework\Capture\CaptureFileWriter.h" />
     <ClInclude Include="Library\Framework\Capture\CaptureImage.h" />
@@ -652,6 +657,7 @@
     <ClInclude Include="Library\Framework\Capture\ColorQuantizer.h" />
     <ClInclude Include="Library\Framework\Capture\GifEncoder.h" />
     <ClInclude Include="Library\Framework\Capture\GifLzw.h" />
+    <ClInclude Include="Library\Framework\Capture\OffscreenShot.h" />
     <ClInclude Include="Library\Framework\Capture\PaletteMapper.h" />
     <ClInclude Include="Library\Framework\Capture\ScreenCapture.h" />
     <ClInclude Include="Library\Framework\Capture\ScreenshotNames.h" />

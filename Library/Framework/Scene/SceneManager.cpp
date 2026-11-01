@@ -161,6 +161,14 @@ void CSceneManager::Draw()
 	}
 }
 
+void CSceneManager::RedrawScenesForCapture( const TCallable<bool( const CGameObject& )>* Filter )
+{
+	for ( int32 i = 0; i < SceneStack.Num(); ++i )
+	{
+		SceneStack[i]->RedrawForCapture( Filter );
+	}
+}
+
 void CSceneManager::Shutdown()
 {
 	if ( !Requests.IsEmpty() ) LOG( LogScene, Warning, "Shutting down with %d scene request(s) still pending. They are discarded.", Requests.Num() );
