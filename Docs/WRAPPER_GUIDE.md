@@ -19,7 +19,7 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
 
 - `Library` は静的ライブラリ（`mazigatiDX`）で、ゲームの実行ファイル（`Source`）がリンクする。フレームワークがゲームのコードを include することはない（入口は `NGameMain::RunGame<TGame>()`）。
 - ゲームの実行ファイルは `Library` を使う側（`Source`）に置く。レベルエディタ・エフェクトエディタなどの**エディタは外部ツール**（別の実行ファイル）で、ゲームの実行ファイルには入れない。どちらも同じ `Library` を使う（移行中: 現在は 1 つの実行ファイルに同居し、`--tool=` で起動する）。
-- **DxLib を呼んでよいのは `Library/Platform/DxLib` だけ**。窓口（`Core/Interfaces`）と `Framework` は DxLib のヘッダーを含まない。Jolt・ImGui も同じ（窓口には出さない）。
+- **DxLib を呼んでよいのは `Library/Platform/DxLib` だけ**。窓口（`Core/Interfaces`）と `Framework` は DxLib のヘッダーを含まない。Jolt・ImGui も同じ（窓口には出さない）。この決まりは、書式のチェック（`CheckSourceFormat.ps1`）で守る: `Library/Platform/DxLib` の外の `.h` / `.cpp` / `.inl` が、DxLib（`DxLib.h`・`Platform/DxLib` の中のヘッダー）や Direct3D（`d3d11` / `d3dcompiler` / `dxgi`）のヘッダーを読むと失敗する（ゲーム本体・見本・テンプレート・エディターも同じ。DxLib を直接呼んで実測する検査のコードだけは除く）。DxLib を別の実装（DirectX 12 など）に切り替えるときに、作り直すのが `Library/Platform/DxLib` だけで済むようにするため。エディターのプレビューも、DxLib の画面ではなく、フレームワークの描画先（`CRenderTarget`）とコマンドリストで描く。Windows の API だけを使う Platform の実装（ファイル・コマンドライン・リーク報告）は、DxLib ではなく `Library/Platform/WindowsInclude.h` を読む（`windows.h` の `SetProp` / `RemoveProp` / `GetObject` のマクロは取り消してある。フレームワークの関数の名前とぶつかるため）。
 - 窓口は**インターフェース先行**で作る。実装を差し替えられる（確認用の偽の実装、将来の別バックエンド）ことが目的で、DxLib の関数をそのまま転送するだけの層にしない。
 - 値の型（設定・結果・列挙）は `*Types.h` に分ける。窓口を使う側が、実装のヘッダーを include しなくて済むようにする。
 
@@ -30,7 +30,7 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
 | 名前 | 第三者でない名前空間は `N` で始める。型の接頭辞は `F`（値・構造体）、`C`（クラス）、`I`（インターフェース）、`E`（`enum class`）、`T`（テンプレート） |
 | 整数・実数 | `int32` / `uint32` / `float32` / `float64` など、`Library/Core/Types` の型。素の `int` / `long` を窓口に出さない |
 | 色 | `FColor32`（`r g b a`、0..255）。DxLib の色（`unsigned int`）への変換は実装の中だけ |
-| ベクトル・行列 | `FVector2/3` `FMatrix4x4` `FQuaternion`（左手系・Y 上・行ベクトル）。DxLib の `VECTOR` / `MATRIX` への変換は実装の中だけ |
+| ベクトル・行列 | `FVector2/3` `FMatrix4x4` `FQuaternion`（左手系・Y 上・行ベクトル）。DxLib の `VECTOR` / `MATRIX` への変換は実装の中だけ（`Platform/DxLib/DxLibTypes.h` の `NDxLibTypes::ToDxLib` / `FromDxLib`。数学の型には、DxLib の型への暗黙の変換はない） |
 | 角度 | ラジアン（度は編集用 JSON の境界だけ） |
 | 時間 | 秒（`float32`、長い時間は `float64`） |
 | 画面座標 | ピクセル、左上が原点 |
@@ -134,7 +134,7 @@ Library/Platform/DxLib  … DxLib を呼ぶ実装（DxLibBackend / DxLibAssetBac
 
 包みきれない機能や、まれにしか使わない機能（Tier 3）のために、素の DxLib を呼ぶ出口を残す。
 
-- ゲームのコードで DxLib を直接呼ぶときは、`Library/Platform/DxLib/DxLibInclude.h`（`NOMINMAX` を定義して `DxLib.h` を読み込む）を include する。
+- ゲームのコードで DxLib を直接呼ぶときは、`Library/Platform/DxLib/DxLibInclude.h`（`NOMINMAX` を定義して `DxLib.h` を読み込む）を include する。 ただし、直接呼んだ場所は、DxLib から別の実装へ乗り換えるときに書き直すことになる（このリポジトリのゲーム本体・見本・テンプレートでは使わない。書式のチェックで止める）。DxLib の型との変換は `Library/Platform/DxLib/DxLibTypes.h` の `NDxLibTypes` を使う。
 - 直接呼ぶ側が、**状態を元に戻す**責任を持つ（第 4 節）。描画は命令の記録と順序が混ざるので、記録された描画の前後を意識する。
 - 出口を使う機能が増えてきたら、それは包む対象に昇格させる合図。
 
