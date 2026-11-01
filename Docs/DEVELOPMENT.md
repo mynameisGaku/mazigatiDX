@@ -212,7 +212,31 @@ CommandList.Image( Feet.x - 12.0f, Feet.y - 38.0f, HeroTexture );
 Heal.DrawFront( CommandList, Feet, 2.0f );
 ```
 
+![PixelEffects の見本（この GIF もフレームワークの GIF の記録で撮ったもの）](Images/pixel_effects.gif)
+
 見本は`Samples`の`PixelEffects`です（`Samples.exe --sample=PixelEffects`。20種を2ページに並べて繰り返し再生します。← →キーでページ、Fキーで左右反転、Rキーで種を変えて最初から）。
+
+## 画面の撮影（スクリーンショット・GIF）
+
+`CScreenCapture`（アプリのサブシステム）が、画面を撮って`Saved/Screenshots`へ保存します。名前を指定しなければ`Screenshot_00001.png`のような番号の名前になります（番号は、フォルダにあるものの次）。既定はゲームの絵だけで、デバッグ用のUI（ImGui）は写しません（`bIncludeDebugUI`で写せます）。形式はPNG・JPEG・BMP・GIFで、名前の拡張子か`Format`で選びます。
+
+- **F9**でスクリーンショット、**Shift + F9**でGIFの記録を始める / 止める（フレームワークの決まり）。そのときの設定は`SetHotkeyScreenshotOptions` / `SetHotkeyRecordOptions`、キーを使わないゲームは`SetHotkeysEnabled( false )`。
+- コードから: `TakeScreenshot( 名前, Options )`（矩形の切り出し・縮小・待つフレーム）、`StartRecording` / `StopRecording`（何フレームごとに1枚・枚数の上限・繰り返し）。
+- 高解像度: `TakeHighResShot`は、画面とは別の大きな描画先へもう一度描いて撮ります（UnrealのHighResShotと同じ考え方）。`Multiplier = 2`で画面の2倍、`Width = 3840, Height = 2160`で4K。3Dは細かくなり、2D（UI・文字）は同じ配置のまま拡大されます。
+- 被写体だけ: `SetSubject( 条件 )` / `SetSubjectByName( "Hero" )`で被写体を決め、`bSubjectOnly = true`で撮ると、被写体のオブジェクトだけを描き、ほかを透明にしたPNGになります（黒と白の背景で2回描いて透明度を求めるので、半透明の縁も正しく残ります）。被写体は、自分で描画を記録するオブジェクトの単位です（1つのオブジェクトが世界全体を描くつくりでは、その中の一部だけは選べません）。
+- コンソール: `screenshot [名前] [待つ秒] [ui]`、`gif [名前] [step] [縮小] [ui]`、`highresshot [2 / 3840x2160] [被写体の名前] [名前]`。
+- 起動引数（ドキュメントの画像を、決まったフレームで撮るため）: `--capture[=名前] --capture-frame=N --capture-region=X,Y,W,H --capture-downscale=K --capture-ui --capture-format=jpg --capture-scale=K --capture-resolution=WxH --capture-subject=名前 --capture-exit`、`--record[=名前] --record-start=N --record-frames=M --record-step=S --record-region=... --record-downscale=K --record-ui --record-exit`。
+
+```powershell
+# Island を 90 フレーム目に 1/2 で撮って終わる（下の画像）
+.\x64\Debug\Samples.exe --sample=Island --capture=island.png --capture-frame=90 --capture-downscale=2 --capture-exit
+# PixelEffects の上の段を、2 フレームごとに 60 枚の GIF に
+.\x64\Debug\Samples.exe --sample=PixelEffects --record=pixel_effects --record-start=4 --record-frames=60 --record-region=36,96,1160,218 --record-exit
+```
+
+![Island の見本を、起動引数で撮ったもの](Images/island.png)
+
+プラットフォームとの境目は`IFrameCaptureSink`（画面に出す直前の画素を受け取る窓口）と`IDrawExecutor::BeginOffscreenCapture`（大きな描画先へ描き直す窓口）だけで、GIFの組み立て（色の表・LZW・前の1枚との差分）と透明度の計算はCPUだけの自前のコードです。
 
 ## 粒子の力場
 
