@@ -88,6 +88,30 @@
     <ClCompile Include="Source\Input\MouseView.cpp">
       <Filter>Source\Input</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Island\IslandClock.cpp">
+      <Filter>Source\Island</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Island\IslandCrystals.cpp">
+      <Filter>Source\Island</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Island\IslandExplorer.cpp">
+      <Filter>Source\Island</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Island\IslandHud.cpp">
+      <Filter>Source\Island</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Island\IslandSample.cpp">
+      <Filter>Source\Island</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Island\IslandScenery.cpp">
+      <Filter>Source\Island</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Island\IslandTerrain.cpp">
+      <Filter>Source\Island</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Island\IslandView.cpp">
+      <Filter>Source\Island</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Lighting\LightingPanel.cpp">
       <Filter>Source\Lighting</Filter>
     </ClCompile>
@@ -336,6 +360,33 @@
     <ClInclude Include="Source\Input\MouseView.h">
       <Filter>Source\Input</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Island\IslandClock.h">
+      <Filter>Source\Island</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Island\IslandCrystals.h">
+      <Filter>Source\Island</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Island\IslandExplorer.h">
+      <Filter>Source\Island</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Island\IslandHud.h">
+      <Filter>Source\Island</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Island\IslandSample.h">
+      <Filter>Source\Island</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Island\IslandScenery.h">
+      <Filter>Source\Island</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Island\IslandState.h">
+      <Filter>Source\Island</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Island\IslandTerrain.h">
+      <Filter>Source\Island</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Island\IslandView.h">
+      <Filter>Source\Island</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Lighting\LightingDemoState.h">
       <Filter>Source\Lighting</Filter>
     </ClInclude>
@@ -544,6 +595,9 @@
     </Filter>
     <Filter Include="Source\Input">
       <UniqueIdentifier>{FFE14168-86E4-9D5A-B4DA-C4ACB9D88FCD}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Island">
+      <UniqueIdentifier>{20B19AF9-A3DC-23D7-70A9-42A4E8FCF35C}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Lighting">
       <UniqueIdentifier>{4EB65EA3-3FEC-7570-1AA7-399CE99C056E}</UniqueIdentifier>
