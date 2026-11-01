@@ -29,6 +29,7 @@ mazigatiDX の機能を、1 つずつ動かして見られるサンプル集で�
 |`Shapes3D`|3D 図形の追加。夜の広場に、松（円錐）・星（点）・蛍（点の並び）・座標軸とらせん（線）・波（帯）・傘（扇）・宝石（添字つきの三角形）と、カメラへ向ける画像（足元が基準点の草・4 つの角を動かす旗・回る星・脈打つ心臓・揺れるランタン）と、頂点バッファ・インデックスバッファで描く森（木 1 本の形を、位置を変えて何度も描く）・池の水面（頂点を毎フレーム書き換える）を並べる。数字キーの 1〜7 で、円錐の線描き・フォグ・多角形のカリング・ビルボードの基準点・画像の半透明・光の入り切り・森の木の数を切り替える|
 |`Shadows`|影（シャドウマップ）。昼の中庭に、家・木・木箱・すき間のある柵・歩き回る旅人を置き、動く太陽の影を落とす。影の絵（`BeginShadowMap` ～ `EndShadowMap`）を毎フレーム描き、`UseShadowMap` で影を受ける。数字キーで、影の入り切り・影の絵の大きさ・影を計算する範囲・太陽の動き・補正の深さ（0 だと床が縞になる）・影の絵の中身の表示（`PreviewShadowMap`）・ランタン（影を受けない点光源。`FLight::ShadowMapSlots`）を切り替える。マウスで回り、ホイールで近づく|
 |`Shaders`|シェーダー。庭に球と柱を置き、自分で書いた HLSL のシェーダー（物の行列とカメラの行列で位置を決める頂点シェーダー、トゥーン・法線の色・奥行き・波紋・市松模様のピクセルシェーダー）で描画先へ描き、ポストエフェクト（白黒・周りを暗く・モザイク・ゆがみ。`ShaderRect`）をかけて画面に貼る。数字キーの 1〜4 で、物の見え方・地面・ポストエフェクト・時間を切り替える|
+|`PostEffects`|描画先とポストエフェクト。夜の広場（光る玉・ネオンの溝）を 16 ビットの浮動小数点の描画先へ描き（1 を超える明るさが残る）、同じピクセルシェーダーで深度を 32 ビットの描画先へ同時に書く（`ShaderOutputTarget`。複数の出力）。明るい所を抜き出してぼかし（ブルーム）、深度で霧をかけ、トーンマップ（ACES・Reinhard）で画面に貼る。1 キーで見せるもの（仕上がり・8 ビット相当・ブルームだけ・深度）、2〜5 キーでトーンマップ・ブルーム・霧・時間、Q / E キーで露出を切り替える|
 |`Input`|キーボード・マウス・ゲームパッドの状態を表示する|
 
 ## 構成（クラスとファイルの分け方）
@@ -53,9 +54,10 @@ Samples/
     Lighting/                   サンプル Lighting: シーン（CLightingSample）と、オブジェクト（CLightingRig、CLightingView、CLightingPanel）、共有する状態（FLightingDemoState）、中庭（NLightingScenery）
     Shapes3D/                   サンプル Shapes3D: シーン（CShapes3DSample）と、オブジェクト（CShapes3DRig、CShapes3DView、CShapes3DPanel）、共有する状態（FShapes3DDemoState）、広場（NShapes3DScenery）
     Shadows/                    サンプル Shadows: シーン（CShadowsSample）と、オブジェクト（CShadowsRig、CShadowsView、CShadowsPanel）、共有する状態（FShadowsDemoState）、中庭（NShadowsScenery）
-    Shaders/                    サンプル Shaders: シーン（CShadersSample）と、オブジェクト（CShadersRig、CShadersView、CShadersPanel）、共有する状態（FShadersDemoState）、HLSL のソース（NShadersSources）、形（NShadersMesh）
+    Shaders/                    サンプル Shaders: シーン（CShadersSample）と、オブジェクト（CShadersRig、CShadersView、CShadersPanel）、共有する状態（FShadersDemoState）、HLSL のソース（NShadersSources）
+    PostEffects/                サンプル PostEffects: シーン（CPostEffectsSample）と、オブジェクト（CPostEffectsRig、CPostEffectsView、CPostEffectsPanel）、共有する状態（FPostEffectsDemoState）、シェーダーのソースと定数（NPostEffectsSources）
     Village/                    サンプル Village: シーン（CVillageSample）と、オブジェクト（CTileMap、CPlayer、CCoin、CVillager、CDialogue、CDarkness、CStatusPanel）、共有する状態（FVillageState）、絵を CPU で作る関数（NVillageArt）
-    Common/                     複数のサンプルで使うもの。確認用の画像を、メモリの上で作る関数（NTestPattern）、光の当たらない側を真っ黒にしない、やわらかい光（FSoftLightingScope）
+    Common/                     複数のサンプルで使うもの。確認用の画像を、メモリの上で作る関数（NTestPattern）、光の当たらない側を真っ黒にしない、やわらかい光（FSoftLightingScope）、シェーダーで描く形（球・立方体・地面。NShaderMeshes）
     Input/                      サンプル Input: シーン（CInputSample）と、オブジェクト（CKeyboardView、CMouseView、CGamepadView）
   Config/ScreenConfig.json      窓の設定
   Assets/                       画像・音・モデルの置き場
