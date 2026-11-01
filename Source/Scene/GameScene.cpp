@@ -4,7 +4,7 @@
 #include "Library/Core/Interfaces/Input/IInput.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Framework/Engine/Engine.h"
-#include "Library/Platform/DxLib/DxLibInclude.h"
+#include "Library/Framework/Render/ImmediateDraw.h"
 #include "Source/Object/OrbitMarker.h"
 #include "Source/Object/PhysicsObjects.h"
 
@@ -70,7 +70,8 @@ void CGameScene::OnTick( float32 DeltaTime )
 
 void CGameScene::OnDraw()
 {
-	DrawFormatString( 16, 40, FColor32::White.ToDxColor(), "GAME   [Space] Spawn ball   [Esc] Title   Objects: %d", GetNumObjects() );
+	FImmediateDraw Draw( GetDrawExecutor() );
+	Draw.Text( 16, 40, *FString::Printf( "GAME   [Space] Spawn ball   [Esc] Title   Objects: %d", GetNumObjects() ), FColor32::White );
 }
 
 void CGameScene::SpawnBall()
