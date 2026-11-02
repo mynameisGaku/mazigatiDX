@@ -147,6 +147,8 @@ enum class EDrawCommand : uint8
 	ShaderRect,        // FDrawShaderRectData。画素の座標の矩形を、組み込みの頂点シェーダー（利用者のピクセルシェーダーに、色と画像の座標を渡す）で描く
 	// 描画先の追加（上のコマンドの形式は変えていない）
 	ShaderOutputTarget, // FDrawShaderOutputTargetData。ピクセルシェーダーの 2 つ目以降の出力（SV_Target1〜7）を書く描画先を決める（SetRenderTargetToShader）
+	// モデルのアニメーションの追加（上のコマンドの形式は変えていない）
+	ModelAnimFrame,     // FDrawModelAnimFrameData。次の Model3D で描くモデルに付けたアニメーション 1 つの、フレーム（骨）ごとのブレンド率（MV1SetAttachAnimBlendRateToFrame。ModelAnim のあとに記録する）
 };
 
 // Primitive3D の頂点のつなぎ方（DxLib の DX_PRIMTYPE_*）
@@ -342,6 +344,15 @@ struct FDrawBrightData { FDrawRgb Color; };
 // Text と同じ並びの先頭に、フォントと縁取りの色を足したもの。文字列が続く
 struct FDrawTextFontData { int32 X = 0, Y = 0; FDrawRgb Color; int32 Length = 0; int32 Font = -1; FDrawRgb EdgeColor; };
 struct FDrawModelAnimData { int32 Handle = -1; int32 AttachIndex = -1; float32 Time = 0.0f; float32 Rate = 1.0f; };
+// 付けたアニメーションの、指定した骨だけに適用する割合
+struct FDrawModelAnimFrameData
+{
+	int32 Handle = -1;				// モデルの番号
+	int32 AttachIndex = -1;		// 付けたアニメーションの番号
+	int32 Frame = -1;				// 率を設定する骨の番号
+	float32 Rate = 1.0f;			// この骨に適用する割合
+	int32 bIncludeChildren = 1;	// 子の骨にも同じ割合を設定するか
+};
 
 struct FDrawRgba
 {
@@ -803,6 +814,7 @@ DRAW_DATA_CHECK( FDrawSpriteRectData );
 DRAW_DATA_CHECK( FDrawBrightData );
 DRAW_DATA_CHECK( FDrawTextFontData );
 DRAW_DATA_CHECK( FDrawModelAnimData );
+DRAW_DATA_CHECK( FDrawModelAnimFrameData );
 DRAW_DATA_CHECK( FDrawQuad3DData );
 DRAW_DATA_CHECK( FDrawMeshData );
 DRAW_DATA_CHECK( FDrawPixelData );

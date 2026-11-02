@@ -244,14 +244,20 @@ CModelInstance::~CModelInstance()
 	NAssetService::ReleaseModel( Handle );
 }
 
-int32 CModelInstance::AttachAnim( const TSharedPtr<CModel>& AnimSource, int32 AnimIndex )
+int32 CModelInstance::AttachAnim( const TSharedPtr<CModel>& AnimSource, int32 AnimIndex, bool bReuseExisting )
 {
 	IAssetBackend* Backend = NAssetService::GetBackend();
 	if ( Backend == nullptr || !AnimSource.IsValid() || Handle < 0 ) return -1;
 
-	for ( const FAttached& Entry : Attached )
+	if ( bReuseExisting )
 	{
-		if ( Entry.AnimSource == AnimSource && Entry.AnimIndex == AnimIndex ) return Entry.AttachIndex;
+		for ( const FAttached& Entry : Attached )
+		{
+			if ( Entry.AnimSource == AnimSource && Entry.AnimIndex == AnimIndex )
+			{
+				return Entry.AttachIndex;
+			}
+		}
 	}
 
 	// AnimSource がこのインスタンスの元のモデルなら、自分自身のアニメーションを付ける

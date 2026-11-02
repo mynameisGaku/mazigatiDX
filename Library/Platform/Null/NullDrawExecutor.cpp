@@ -141,6 +141,7 @@ namespace
 		case EDrawCommand::PrimitiveShader3D: return WordsOf<FDrawPrimitiveShader3DData>();
 		case EDrawCommand::ShaderRect: return WordsOf<FDrawShaderRectData>();
 		case EDrawCommand::ShaderOutputTarget: return WordsOf<FDrawShaderOutputTargetData>();
+		case EDrawCommand::ModelAnimFrame: return WordsOf<FDrawModelAnimFrameData>();
 		}
 		return -1;
 	}

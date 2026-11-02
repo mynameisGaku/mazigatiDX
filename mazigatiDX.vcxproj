@@ -104,6 +104,7 @@
     <ClCompile Include="Library\DebugUI\WorldEditorModels.cpp" />
     <ClCompile Include="Library\DebugUI\WorldEditorPanels.cpp" />
     <ClCompile Include="Library\DebugUI\WorldEditorViewport.cpp" />
+    <ClCompile Include="Library\Framework\Animation\AnimationBlend.cpp" />
     <ClCompile Include="Library\Framework\Animation\AnimationTimeline.cpp" />
     <ClCompile Include="Library\Framework\Animation\ModelAnimator.cpp" />
     <ClCompile Include="Library\Framework\Animation\SpriteAnimator.cpp" />
@@ -620,6 +621,7 @@
     <ClInclude Include="Library\DebugUI\WorldEditorModelMaterialPanel.h" />
     <ClInclude Include="Library\DebugUI\WorldEditorModelPreview.h" />
     <ClInclude Include="Library\DebugUI\WorldEditorModelPreviewKey.h" />
+    <ClInclude Include="Library\Framework\Animation\AnimationBlend.h" />
     <ClInclude Include="Library\Framework\Animation\AnimationTimeline.h" />
     <ClInclude Include="Library\Framework\Animation\ModelAnimator.h" />
     <ClInclude Include="Library\Framework\Animation\SpriteAnimator.h" />

@@ -129,8 +129,8 @@ public:
 	// この 1 体への当たり判定の窓口（線・球）。インスタンスより長く持たない
 	FModelCollision GetCollision() const;
 
-	// AnimSource の AnimIndex 番のアニメーションを付ける（同じものが付いていればそのまま）。戻り値は付けた番号（失敗したら -1）
-	int32 AttachAnim( const TSharedPtr<CModel>& AnimSource, int32 AnimIndex );
+	// AnimSource の AnimIndex 番のアニメーションを付ける。既定では同じものを再利用し、独立した時間が必要なら false を渡す。失敗時は -1
+	int32 AttachAnim( const TSharedPtr<CModel>& AnimSource, int32 AnimIndex, bool bReuseExisting = true );
 	// 付けたアニメーションを外す
 	void DetachAnim( int32 AttachIndex );
 	FORCEINLINE int32 GetNumAttached() const { return Attached.Num(); }

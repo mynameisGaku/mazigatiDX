@@ -37,8 +37,13 @@ class FTransformView;
 //   // 自分で描く場合: 描画システムの中、または FDrawContext に記録して実行する
 //   Animator.Record( Draw, World );
 //
-//   時間の単位: クリップの長さや再生位置は秒で扱う。DxLib のモデルの時間は「フレーム」なので、UnitsPerSecond（既定 30）で換算する
-//   （FBX / MV1 / X はふつう 30 フレーム = 1 秒）。ファイルによって違う場合は UnitsPerSecond を変える。
+//   時間の単位: クリップの長さや再生位置は秒で扱う。DxLib のモデルの時間はフレームなので、UnitsPerSecond（既定 30）で換算する。
+//   ファイルによって違う場合は UnitsPerSecond を変える。
+//
+//   体の一部だけ別の動き: PlayPart( "Wave", "UpperBody" ) で、骨 UpperBody とその子だけを Wave で動かす（ほかは Play のまま）。StopPart で戻す。
+//
+//   アニメーターは描画の実装（DxLib など）を知らない。アニメーションの付け外しはアセットの窓口（IAssetBackend）、
+//   時間と混ぜる割合は描画の命令（ModelAnim / ModelAnimFrame）で伝える。割合の計算は NAnimationBlend。
 //
 //   出来事: AddEvent( "Run", 0.25f, "Footstep" ) のようにクリップの位置（0..1）に名前を付けておくと、
 //   再生位置がそこを通った更新で GetEvents() / ConsumeEvent() に現れる（次の Update まで有効）。
@@ -65,7 +70,7 @@ struct FModelAnimator
 	TSharedPtr<CModelInstance> Instance;
 	// 選択した静的Model材質の共有資源と、このAnimator個体の効果時計。
 	FModelMaterialEffectRenderer MaterialEffect;
-	float32 UnitsPerSecond = 30.0f;     // DxLib のモデルの時間 1 秒あたりの値
+	float32 UnitsPerSecond = 30.0f;     // モデルの時間 1 秒あたりの値
 	float32 Speed = 1.0f;               // 全体の速さの倍率
 	bool bVisible = true;
 	bool bAutoDraw = true;              // true なら、組み込みの描画システムが CTransformComponent のワールド行列で描く
@@ -99,8 +104,16 @@ struct FModelAnimator
 	// 前のアニメーションから FadeTime 秒かけて切り替える（負ならクリップの既定のフェード）。見つからなければ false（いまの再生は変えない）
 	bool Play( const FString& ClipName, float32 FadeTime = -1.0f );
 	bool Play( const FString& ClipName, const FModelPlayParams& Params );
-	// 再生中のものを FadeTime 秒かけて止める（フェードが終わると、モデルは何も再生していない姿勢になる）
+	// 再生中のものを FadeTime 秒かけて止める（体の一部の動きも。フェードが終わると、モデルは何も再生していない姿勢になる）
 	void Stop( float32 FadeTime = 0.2f );
+	// 骨 BoneName とその子だけを、ClipName で動かす（ほかの部分は Play のアニメーションのまま。上半身で手を振る、など）。
+	// 前の一部の動きからは、フェードで切り替える。クリップ・骨が見つからなければ false
+	bool PlayPart( const FString& ClipName, const FString& BoneName, const FModelPlayParams& Params = FModelPlayParams() );
+	// 体の一部の動きを、FadeTime 秒かけてやめる（Play のアニメーションへ戻る）
+	void StopPart( float32 FadeTime = 0.2f );
+	// 体の一部を動かしているクリップと骨（無ければ空）
+	FString GetPartClip() const;
+	FString GetPartBone() const;
 	void Pause() { bPaused = true; }
 	void Resume() { bPaused = false; }
 	FORCEINLINE bool IsPaused() const { return bPaused; }
@@ -163,7 +176,7 @@ private:
 		FString Name;
 		TSharedPtr<CModel> Source;
 		int32 AnimIndex = 0;
-		float32 LengthUnits = 0.0f;     // DxLib の時間単位。0 なら Source から読む
+		float32 LengthUnits = 0.0f;     // モデルの時間の単位での長さ。0 なら Source から読む
 		EAnimLoopMode DefaultLoop = EAnimLoopMode::Loop;
 		float32 DefaultSpeed = 1.0f;
 		float32 DefaultFade = 0.2f;
@@ -188,20 +201,31 @@ private:
 		float32 TargetWeight = 0.0f;
 		float32 FadeRate = 0.0f;        // 1 秒あたりの重みの変化量（TargetWeight に向かう）
 		bool bAttached = false;         // Instance に付いている
+		int32 PartFrame = -1;           // 体の一部だけに効かせる骨の番号（-1 なら体全体）
 	};
 
 	FClip* FindClip( const FString& Name );
 	const FClip* FindClip( const FString& Name ) const;
-	// クリップの長さ（DxLib の時間単位）。0 以下なら使えない
+	// クリップの長さ（モデルの時間の単位）。0 以下なら使えない
 	float32 ResolveLengthUnits( FClip& Clip ) const;
-	// 使う層を決める（同じクリップがあれば再利用、無ければ空き、無ければ捨てる）
-	FLayer* AcquireLayer( int32 ClipSlot );
+	// 有限かつ正の時間単位。公開値が不正なら従来の既定 30 を使う
+	float32 ResolveUnitsPerSecond() const;
+	// 使う層を決める（同じクリップ・同じ骨があれば再利用、無ければ空き、無ければ捨てる）
+	FLayer* AcquireLayer( int32 ClipSlot, int32 InPartFrame );
+	// クリップを層に付けて、再生の位置・速さ・繰り返しを決める（重みは変えない）。OutFade はフェードの長さ
+	FLayer* StartClip( FClip& Clip, int32 InPartFrame, const FModelPlayParams& Params, float32& OutFade );
+	// Layer を重み 1 へ、同じ組（体全体か、体の一部か）のほかの層を 0 へ、Fade 秒で
+	void CrossFadeTo( FLayer& Layer, float32 Fade );
 	void DetachLayer( FLayer& Layer );
 	int32 FindPrimaryLayer() const;
 
 	TArray<FClip> Clips;
 	TArray<FLayer> Layers;
+	TArray<int32> PartParents;				// 部分再生の骨階層（Record はゲームスレッド外からも読む）
+	TArray<uint8> PartTouchedFrames;		// 一度でも部分率を書いた骨。DxLib の保持状態を毎フレーム戻す
 	int32 PrimaryClipSlot = INDEX_NONE;   // 最後に Play したクリップ
+	int32 PartClipSlot = INDEX_NONE;      // 最後に PlayPart したクリップ
+	int32 PartFrame = -1;                 // その骨
 	bool bPaused = false;
 	bool bFinished = false;
 	bool bFinishedThisUpdate = false;

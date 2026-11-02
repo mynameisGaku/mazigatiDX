@@ -118,6 +118,9 @@
     <ClCompile Include="Library\DebugUI\WorldEditorViewport.cpp">
       <Filter>Library\DebugUI</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Animation\AnimationBlend.cpp">
+      <Filter>Library\Framework\Animation</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Animation\AnimationTimeline.cpp">
       <Filter>Library\Framework\Animation</Filter>
     </ClCompile>
@@ -1661,6 +1664,9 @@
     </ClInclude>
     <ClInclude Include="Library\DebugUI\WorldEditorModelPreviewKey.h">
       <Filter>Library\DebugUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Animation\AnimationBlend.h">
+      <Filter>Library\Framework\Animation</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Animation\AnimationTimeline.h">
       <Filter>Library\Framework\Animation</Filter>

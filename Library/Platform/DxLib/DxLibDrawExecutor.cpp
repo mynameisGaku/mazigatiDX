@@ -253,6 +253,7 @@ namespace
 		case EDrawCommand::Bright:
 		case EDrawCommand::WorldMatrix:
 		case EDrawCommand::ModelAnim:
+		case EDrawCommand::ModelAnimFrame:
 		case EDrawCommand::CustomBlend:
 		case EDrawCommand::AddColor:
 		case EDrawCommand::AlphaTest:
@@ -834,6 +835,20 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			const FDrawModelAnimData Data = Command.Read<FDrawModelAnimData>();
 			MV1SetAttachAnimTime( Data.Handle, Data.AttachIndex, Data.Time );
 			MV1SetAttachAnimBlendRate( Data.Handle, Data.AttachIndex, Data.Rate );
+			break;
+		}
+		case EDrawCommand::ModelAnimFrame:
+		{
+			if ( !Command.CanRead<FDrawModelAnimFrameData>() )
+			{
+				break;
+			}
+			const FDrawModelAnimFrameData Data = Command.Read<FDrawModelAnimFrameData>();
+			if ( Data.Handle < 0 || Data.AttachIndex < 0 || Data.Frame < 0 || !NMath::IsFinite( Data.Rate ) )
+			{
+				break;
+			}
+			MV1SetAttachAnimBlendRateToFrame( Data.Handle, Data.AttachIndex, Data.Frame, NMath::Clamp( Data.Rate, 0.0f, 1.0f ), Data.bIncludeChildren != 0 ? TRUE : FALSE );
 			break;
 		}
 		case EDrawCommand::Quad3D:

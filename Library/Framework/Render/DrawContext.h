@@ -1576,6 +1576,23 @@ public:
 		Push( EDrawCommand::ModelAnim, 0, Data );
 	}
 
+	// ModelAnimLayer のあとに、フレーム Frame（bIncludeChildren なら、その子のフレームすべても）だけのブレンド率を替える（MV1SetAttachAnimBlendRateToFrame）。
+	// 体の一部だけを別のアニメーションで動かす（上半身で手を振る、など）ときに使う
+	FORCEINLINE void ModelAnimFrameRate( int32 ModelHandle, int32 AttachIndex, int32 Frame, float32 BlendRate, bool bIncludeChildren = true )
+	{
+		if ( ModelHandle < 0 || AttachIndex < 0 || Frame < 0 || !NMath::IsFinite( BlendRate ) )
+		{
+			return;
+		}
+		FDrawModelAnimFrameData Data;
+		Data.Handle = ModelHandle;
+		Data.AttachIndex = AttachIndex;
+		Data.Frame = Frame;
+		Data.Rate = NMath::Clamp( BlendRate, 0.0f, 1.0f );
+		Data.bIncludeChildren = bIncludeChildren ? 1 : 0;
+		Push( EDrawCommand::ModelAnimFrame, 0, Data );
+	}
+
 	// 以降の 3D 図形（Line3D〜Cube3D）のローカル -> ワールド変換（SetTransformToWorld）。アフィン変換だけ（最後の列は無視される）
 	FORCEINLINE void WorldMatrix( const FMatrix4x4& Matrix )
 	{
