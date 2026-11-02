@@ -273,6 +273,21 @@ if ( Animator.ConsumeRootMotion( RootDelta ) )
 }
 ```
 
+移動と回転だけを受け取る場合は、`ConsumeRootMotion( ReferenceToActorBasis, Translation, Rotation )`を使います。基準行列は差分の座標に合わせて呼び出し側で構成し、root骨では`Pbase * ParentToModel * ModelLocal`を渡します。`ModelLocal`はAnimatorと同じ`TRS( ModelOffset, ModelRotation, ModelScale )`です。任意boneの差分にModelLocalだけを渡すと回転pivotがずれるため、固定基準poseと固定parent-to-model行列も含めます。parentが動く場合の補正は対象外です。
+
+```cpp
+const FMatrix4x4 ModelLocal = FMatrix4x4::TRS( Animator.ModelOffset, Animator.ModelRotation, Animator.ModelScale );
+const FMatrix4x4 ReferenceToActorBasis = FixedRootPose * FixedParentToModel * ModelLocal;
+FVector3 RootTranslation;
+FQuaternion RootRotation;
+if ( Animator.ConsumeRootMotion( ReferenceToActorBasis, RootTranslation, RootRotation ) )
+{
+	// 呼び出し側の移動・物理方針に合わせてTranslationとRotationを適用する。
+}
+```
+
+このoverloadもゲームスレッド専用です。native sampleまたはbasis補正に失敗した場合は両出力と未消費区間を保持し、basisを直して同じ区間を再試行できます。成功した区間はどちらのoverloadからも二度取得できません。非剛体の差分を移動・回転だけへ丸めず失敗します。full affineのoverloadは従来どおりscale等を含む行列を返します。単位・再生instance・添付clipの置換など構成の不連続を検出した場合は、既存契約により区間を破棄または再開まで拒否するため、sample/basis失敗の再試行とは異なります。
+
 差分は全身の主クリップだけを対象にし、クロスフェード中の前クリップと部分再生は含めません。複数の連続した`Update`は一つの区間にまとめます。同じクリップへの通常の`Play`は再生を再開せず、保留区間も維持します。停止・シーク・新しい再生・骨の選び直しは保留差分を捨てます。Animatorのコピーは保留区間を独立して持ち、ゲームスレッドの`ConsumeRootMotion`で共有samplerを順に使います。native sample失敗では出力と保留区間を残し、同じ差分を再試行できます。`UnitsPerSecond`変更を観測した後は、元の値へ戻しても成功した新しいPlay/restartまで拒否します。再生中のクリップを`AddClip`で置き換えた場合は`ClearClips`後にクリップを登録し直して再生してください。公開`Instance`の交換後は旧添付先と混同しないよう、新しい`FModelAnimator`を作成してください。取得した行列は親基準の完全な差分です。表示モデルから根の動きを除く処理やゲームオブジェクトの自動移動は行いません。
 
 ## ゲームスレッドと AsyncTask

@@ -136,6 +136,9 @@ struct FModelAnimator
 	void ClearRootMotionBone();
 	// 主スレッドで未消費差分を一度だけ取得する。native失敗ではOutDeltaと差分を保ち、再試行できる。
 	bool ConsumeRootMotion( FMatrix4x4& OutDelta );
+	// メインスレッドで基準行列へ差分を補正し、剛体として変換できた場合だけ移動・回転を一度取得する。
+	// native sampleまたはbasis変換の失敗では両出力と未消費区間を保ち、再試行できる。
+	bool ConsumeRootMotion( const FMatrix4x4& ReferenceToActorBasis, FVector3& OutTranslation, FQuaternion& OutRotation );
 
 	//-------------------------------------------------------------------------
 	// 状態
@@ -252,6 +255,8 @@ private:
 	void AccumulateRootMotion( const FLayer& Layer, float64 From, float64 To );
 	// 選択骨・添付先・単位などのroot取得条件を検査する。
 	bool IsRootMotionIdentityValid() const;
+	// pending区間を検証・sampleし、消費前のfull affine差分だけを返す。
+	bool TryExtractPendingRootMotion( FMatrix4x4& OutDelta );
 
 	TArray<FClip> Clips;
 	TArray<FLayer> Layers;

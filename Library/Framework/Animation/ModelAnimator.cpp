@@ -783,6 +783,38 @@ bool FModelAnimator::ConsumeRootMotion( FMatrix4x4& OutDelta )
 	{
 		return false;
 	}
+	FMatrix4x4 Delta; // pending消費前に検証済みfull affine差分を受ける。
+	if ( !TryExtractPendingRootMotion( Delta ) )
+	{
+		return false;
+	}
+	OutDelta = Delta;
+	ClearPendingRootMotion();
+	return true;
+}
+
+bool FModelAnimator::ConsumeRootMotion( const FMatrix4x4& ReferenceToActorBasis, FVector3& OutTranslation, FQuaternion& OutRotation )
+{
+	GAME_THREAD_ONLY( false );
+	if ( !NAssetService::IsMainThread() )
+	{
+		return false;
+	}
+	FMatrix4x4 Delta; // 変換前のpending full affine差分。
+	FVector3 Translation; // 変換が成功したときに返すactor空間移動。
+	FQuaternion Rotation; // 変換が成功したときに返すactor空間回転。
+	if ( !TryExtractPendingRootMotion( Delta ) || !NRootMotion::TryConvertToActorMotion( Delta, ReferenceToActorBasis, Translation, Rotation ) )
+	{
+		return false;
+	}
+	OutTranslation = Translation;
+	OutRotation = Rotation;
+	ClearPendingRootMotion();
+	return true;
+}
+
+bool FModelAnimator::TryExtractPendingRootMotion( FMatrix4x4& OutDelta )
+{
 	if ( bHasPlaybackInstance && ( !PlaybackInstance.IsValid() || !PlaybackInstance.HasSameObject( Instance.Get() ) ) )
 	{
 		bRootMotionInstanceMismatch = true;
@@ -850,7 +882,6 @@ bool FModelAnimator::ConsumeRootMotion( FMatrix4x4& OutDelta )
 		return false;
 	}
 	OutDelta = Delta;
-	ClearPendingRootMotion();
 	return true;
 }
 
