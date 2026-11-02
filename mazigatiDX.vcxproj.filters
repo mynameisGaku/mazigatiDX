@@ -124,6 +124,9 @@
     <ClCompile Include="Library\Framework\Animation\AnimationTimeline.cpp">
       <Filter>Library\Framework\Animation</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Animation\ModelAnimationSampler.cpp">
+      <Filter>Library\Framework\Animation</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Animation\ModelAnimator.cpp">
       <Filter>Library\Framework\Animation</Filter>
     </ClCompile>
@@ -1669,6 +1672,9 @@
       <Filter>Library\Framework\Animation</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Animation\AnimationTimeline.h">
+      <Filter>Library\Framework\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Animation\ModelAnimationSampler.h">
       <Filter>Library\Framework\Animation</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Animation\ModelAnimator.h">

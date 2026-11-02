@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// SPDX-License-Identifier: MIT
+#pragma once
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Interfaces/Asset/FontTypes.h"
@@ -134,6 +135,8 @@ public:
 	// Model に、SourceModel（Model 自身でもよい）の AnimIndex 番のアニメーションを付ける。戻り値は付けた番号（失敗したら -1）
 	virtual int32 AttachModelAnim( int32 Model, int32 AnimIndex, int32 SourceModel ) = 0;
 	virtual void DetachModelAnim( int32 Model, int32 AttachIndex ) = 0;
+	// 専用modelの単一attached clipを指定時刻・weight1にして、指定frameの完全な親基準poseを読む。失敗時は false で Out を変えない。
+	virtual bool SampleModelAnimFrameLocalMatrix( int32 /*Model*/, int32 /*AttachIndex*/, int32 /*Frame*/, float32 /*Time*/, FMatrix4x4& /*Out*/ ) { return false; }
 
 	// 形の情報。メッシュが 0 個ならアニメーションだけのファイル（モーション専用）。読み込み中なら 0
 	virtual int32 GetModelMeshCount( int32 Model ) = 0;

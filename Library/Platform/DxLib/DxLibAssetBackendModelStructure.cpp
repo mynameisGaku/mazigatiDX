@@ -3,6 +3,7 @@
 
 #include "Library/Platform/DxLib/DxLibInclude.h"
 #include "Library/Platform/DxLib/DxLibTypes.h"
+#include "Library/Core/Types/Numeric.h"
 
 //=============================================================================
 // CDxLibAssetBackend のうち、モデルの構造（フレーム・メッシュ・材質・テクスチャ）と、モデル 1 体ごとの見た目（MV1 の関数）
@@ -27,6 +28,23 @@ namespace
 	bool IsMaterialIndex( int32 Model, int32 Material )
 	{
 		return Model >= 0 && Material >= 0 && Material < MV1GetMaterialNum( Model );
+	}
+
+	// DxLibの行列をFrameworkへ返す前にfinite affine形式を確認する。
+	bool IsFiniteAffine( const FMatrix4x4& Matrix )
+	{
+		for ( int32 Row = 0; Row < 4; ++Row )
+		{
+			for ( int32 Column = 0; Column < 4; ++Column )
+			{
+				if ( !NMath::IsFinite( Matrix.m[Row][Column] ) )
+				{
+					return false;
+				}
+			}
+		}
+		constexpr float32 Tolerance = 1.0e-4f;
+		return NMath::Abs( Matrix.m[0][3] ) <= Tolerance && NMath::Abs( Matrix.m[1][3] ) <= Tolerance && NMath::Abs( Matrix.m[2][3] ) <= Tolerance && NMath::Abs( Matrix.m[3][3] - 1.0f ) <= Tolerance;
 	}
 
 	FModelMaterialColors ReadMaterialColors( int32 Model, int32 Material )
@@ -215,6 +233,26 @@ bool CDxLibAssetBackend::GetModelFrameMatrix( int32 Model, int32 Frame, EModelFr
 		return false;
 	}
 	Out = NDxLibTypes::FromDxLib( Space == EModelFrameSpace::World ? MV1GetFrameLocalWorldMatrix( Model, Frame ) : MV1GetFrameLocalMatrix( Model, Frame ) );
+	return true;
+}
+
+bool CDxLibAssetBackend::SampleModelAnimFrameLocalMatrix( int32 Model, int32 AttachIndex, int32 Frame, float32 Time, FMatrix4x4& Out )
+{
+	if ( !IsFrameIndex( Model, Frame ) || AttachIndex < 0 || !NMath::IsFinite( Time ) )
+	{
+		return false;
+	}
+	const float32 Length = MV1GetAttachAnimTotalTime( Model, AttachIndex );
+	if ( !NMath::IsFinite( Length ) || Length <= 0.0f || Time < 0.0f || Time > Length || MV1SetAttachAnimTime( Model, AttachIndex, Time ) < 0 || MV1SetAttachAnimBlendRate( Model, AttachIndex, 1.0f ) < 0 )
+	{
+		return false;
+	}
+	const FMatrix4x4 Sampled = NDxLibTypes::FromDxLib( MV1GetFrameLocalMatrix( Model, Frame ) );
+	if ( !IsFiniteAffine( Sampled ) )
+	{
+		return false;
+	}
+	Out = Sampled;
 	return true;
 }
 
