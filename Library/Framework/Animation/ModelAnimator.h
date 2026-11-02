@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// SPDX-License-Identifier: MIT
+#pragma once
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/Optional.h"
@@ -14,6 +15,7 @@
 #include "Library/Math/Vector3.h"
 
 class FTransformView;
+class CModelAnimationSampler;
 
 //=============================================================================
 // FModelAnimator
@@ -128,6 +130,12 @@ struct FModelAnimator
 	const FModelMaterialEffectRenderer& GetMaterialEffect() const;
 	// 主に再生中のクリップの再生位置を、0..1 の位置に動かす（出来事は起きない。エディタのシークバー用）。再生していなければ何もしない
 	void Seek( float32 NormalizedTime );
+	// メインスレッドで指定骨の親基準姿勢を選ぶ。失敗時は選択を変更しない。
+	bool ConfigureRootMotionBone( const FString& BoneName );
+	// メインスレッドでroot-motion骨の選択と未消費差分を解除する。
+	void ClearRootMotionBone();
+	// 主スレッドで未消費差分を一度だけ取得する。native失敗ではOutDeltaと差分を保ち、再試行できる。
+	bool ConsumeRootMotion( FMatrix4x4& OutDelta );
 
 	//-------------------------------------------------------------------------
 	// 状態
@@ -196,12 +204,30 @@ private:
 		float32 LengthSeconds = 0.0f;
 		float64 PrevPlayhead = 0.0;     // 前の Update の終わりの再生位置（出来事の判定用）
 		float32 ClipSpeed = 1.0f;
+		float32 UnitsPerSecondAtStart = 30.0f; // 再生開始時の有効時間単位。途中変更の検出に使う。
 		EAnimLoopMode Loop = EAnimLoopMode::Loop;
 		float32 Weight = 0.0f;
 		float32 TargetWeight = 0.0f;
 		float32 FadeRate = 0.0f;        // 1 秒あたりの重みの変化量（TargetWeight に向かう）
 		bool bAttached = false;         // Instance に付いている
+		TWeakPtr<CModelInstance> AttachedInstance; // 添付先。公開Instance差し替えを検出する。
 		int32 PartFrame = -1;           // 体の一部だけに効かせる骨の番号（-1 なら体全体）
+	};
+	// root-motion計算へ渡す、連続した全身再生区間の値。
+	struct FRootMotionInterval
+	{
+		bool bValid = false; // 同じFrom/Toでも未消費区間として扱う。
+		float64 From = 0.0; // 連続区間の開始時刻。
+		float64 To = 0.0; // 最後に記録した終了時刻。
+		int32 ClipSlot = INDEX_NONE; // 区間を作った全身クリップ。
+		TSharedPtr<CModel> Source; // クリップ資源の寿命を保つ。
+		int32 AnimIndex = INDEX_NONE; // Source内のアニメーション番号。
+		float32 LengthUnits = 0.0f; // native時間の長さ。
+		float32 LengthSeconds = 0.0f; // Updateと同じ秒単位の長さ。
+		float32 UnitsPerSecond = 0.0f; // Play時に使った時間換算率。
+		EAnimLoopMode Loop = EAnimLoopMode::Loop; // 区間を進めた再生方式。
+		int32 Frame = INDEX_NONE; // 親基準姿勢を読む骨番号。
+		TWeakPtr<CModelInstance> Instance; // 再生を開始したModel instance。
 	};
 
 	FClip* FindClip( const FString& Name );
@@ -218,6 +244,14 @@ private:
 	void CrossFadeTo( FLayer& Layer, float32 Fade );
 	void DetachLayer( FLayer& Layer );
 	int32 FindPrimaryLayer() const;
+	// 未消費区間の値だけを消す。samplerの寿命には触れない。
+	void ClearPendingRootMotion();
+	// 不連続を記録し、必要なら新しい再生までroot取得を止める。
+	void InvalidateRootMotion( bool bRequireRestart );
+	// worker Updateから、一次全身層の連続区間だけを値として蓄積する。
+	void AccumulateRootMotion( const FLayer& Layer, float64 From, float64 To );
+	// 選択骨・添付先・単位などのroot取得条件を検査する。
+	bool IsRootMotionIdentityValid() const;
 
 	TArray<FClip> Clips;
 	TArray<FLayer> Layers;
@@ -230,4 +264,16 @@ private:
 	bool bFinished = false;
 	bool bFinishedThisUpdate = false;
 	TArray<FString> Events;
+	int32 RootMotionFrame = INDEX_NONE; // 選択した骨番号。
+	FRootMotionInterval PendingRootMotion; // Updateでまとめた未消費区間。
+	TWeakPtr<CModelInstance> RootMotionConfiguredInstance; // 骨選択時のinstance。
+	TWeakPtr<CModelInstance> PlaybackInstance; // 最初のanimation添付先。
+	bool bHasPlaybackInstance = false; // PlaybackInstanceの有効性。
+	bool bRootMotionRequiresRestart = false; // 単位変更後は新規Playまで取得を止める。
+	bool bRootMotionClipReplacementRequiresClear = false; // active clip置換後はClearClipsまで取得を止める。
+	bool bRootMotionInstanceMismatch = false; // Instance差し替え後は新Animatorを要求する。
+	TSharedPtr<CModelAnimationSampler> RootMotionSampler; // main-thread Consume用の再利用sampler。
+	TSharedPtr<CModel> RootMotionSamplerTarget; // sampler作成時の対象Model。
+	TSharedPtr<CModel> RootMotionSamplerSource; // sampler作成時のanimation source。
+	int32 RootMotionSamplerAnimIndex = INDEX_NONE; // sampler作成時のclip番号。
 };

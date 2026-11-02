@@ -253,7 +253,21 @@ if ( Ground->GetCollision().Raycast( GroundWorld, Eye, Eye + Down * 50.0f, Hit )
 
 `Extended`は再生方式に従って連続化した姿勢です。Loopでは、姿勢を`P(t)`、先頭を`P0`、1周の差分を`C = P(Length) * Inverse(P0)`とすると、`t = n * Length + r`の連続姿勢は`P(r) * Inverse(P0) * C^n`です。共通の周回を相殺した同値な式で区間差分を求めます。
 
-この計算はバックエンドを参照せず、拡大率も含む完全な姿勢差分を返します。コールバックは呼び出し元のスレッドで実行するため、姿勢サンプラーを渡す場合はゲームスレッドから呼びます。表示上の根の移動の除去、移動・回転だけをゲームオブジェクトへ適用する方針、Animatorや物理との接続は別の工程です。
+この計算はバックエンドを参照せず、拡大率も含む完全な姿勢差分を返します。コールバックは呼び出し元のスレッドで実行するため、姿勢サンプラーを渡す場合はゲームスレッドから呼びます。Animatorからの明示的な取得APIは次節のとおりです。表示上の根の移動の除去、自動移動、物理へ適用する方針は含みません。
+
+### Animatorからroot-motion差分を一度だけ受け取る
+
+`FModelAnimator::ConfigureRootMotionBone( "Root" )`で読む骨を設定し、ECSの並列`Update`が完了した後、ゲームスレッド側のオブジェクト`Tick`などから`ConsumeRootMotion( Delta )`を呼びます。設定・解除・取得はゲームスレッド専用です。`Scene::OnTick`は組み込みの`PreUpdate`より先に動くため、そのフレームの更新差分が必要なら、`PreUpdate`のjoin後に実行されるオブジェクト`Tick`で受け取ります。`Update`は区間の時刻だけを蓄積し、`Record`は描画命令だけを記録します。native姿勢の読み取りは`ConsumeRootMotion`時に行います。
+
+```cpp
+FMatrix4x4 RootDelta;
+if ( Animator.ConsumeRootMotion( RootDelta ) )
+{
+	// 呼び出し側の移動・物理方針に合わせてRootDeltaを適用する。
+}
+```
+
+差分は全身の主クリップだけを対象にし、クロスフェード中の前クリップと部分再生は含めません。複数の連続した`Update`は一つの区間にまとめます。同じクリップへの通常の`Play`は再生を再開せず、保留区間も維持します。停止・シーク・新しい再生・骨の選び直しは保留差分を捨てます。Animatorのコピーは保留区間を独立して持ち、ゲームスレッドの`ConsumeRootMotion`で共有samplerを順に使います。native sample失敗では出力と保留区間を残し、同じ差分を再試行できます。`UnitsPerSecond`変更を観測した後は、元の値へ戻しても成功した新しいPlay/restartまで拒否します。再生中のクリップを`AddClip`で置き換えた場合は`ClearClips`後にクリップを登録し直して再生してください。公開`Instance`の交換後は旧添付先と混同しないよう、新しい`FModelAnimator`を作成してください。取得した行列は親基準の完全な差分です。表示モデルから根の動きを除く処理やゲームオブジェクトの自動移動は行いません。
 
 ## ゲームスレッドと AsyncTask
 

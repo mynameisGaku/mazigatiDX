@@ -3,6 +3,10 @@
 
 #include "Library/Core/Log/Log.h"
 #include "Library/Framework/Animation/AnimationBlend.h"
+#include "Library/Framework/Animation/ModelAnimationSampler.h"
+#include "Library/Framework/Animation/RootMotion.h"
+#include "Library/Core/Thread/GameThread.h"
+#include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Core/Types/Callable.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Ecs/SystemParams.h"
@@ -35,8 +39,15 @@ void FModelAnimator::AddClip( const FString& Name, const TSharedPtr<CModel>& Sou
 
 	if ( FClip* Existing = FindClip( Name ) )
 	{
+		const int32 ExistingSlot = static_cast<int32>( Existing - Clips.GetData() ); // 置換前にactive slotを記録する。
+		const bool bAttachedSlot = Layers.ContainsByPredicate( [ExistingSlot]( const FLayer& Layer ) { return Layer.ClipSlot == ExistingSlot && Layer.bAttached; } ); // outgoing層も旧sourceの添付を保持する。
 		Clip.Events = Existing->Events;   // 出来事は引き継ぐ
 		*Existing = Clip;
+		if ( ExistingSlot == PrimaryClipSlot || bAttachedSlot )
+		{
+			bRootMotionClipReplacementRequiresClear = true;
+			InvalidateRootMotion( true );
+		}
 		return;
 	}
 	Clips.Add( Clip );
@@ -84,6 +95,9 @@ void FModelAnimator::ClearClips()
 	PrimaryClipSlot = INDEX_NONE;
 	PartClipSlot = INDEX_NONE;
 	PartFrame = -1;
+	ClearPendingRootMotion();
+	bRootMotionRequiresRestart = bRootMotionInstanceMismatch;
+	bRootMotionClipReplacementRequiresClear = false;
 }
 
 float32 FModelAnimator::ResolveLengthUnits( FClip& Clip ) const
@@ -241,7 +255,7 @@ FModelAnimator::FLayer* FModelAnimator::StartClip( FClip& Clip, int32 InPartFram
 	FLayer* Layer = AcquireLayer( Slot, InPartFrame );
 	if ( !Layer->bAttached )
 	{
-		const int32 AttachIndex = Instance->AttachAnim( Clip.Source, Clip.AnimIndex, false );
+		const int32 AttachIndex = Instance->AttachAnim( Clip.Source, Clip.AnimIndex, false ); // このAnimator専用のanimation添付。
 		if ( AttachIndex < 0 )
 		{
 			if ( Layer->Weight <= 0.0f ) *Layer = FLayer();   // 付けられなかったので、層を空に戻す
@@ -249,11 +263,23 @@ FModelAnimator::FLayer* FModelAnimator::StartClip( FClip& Clip, int32 InPartFram
 		}
 		Layer->AttachIndex = AttachIndex;
 		Layer->bAttached = true;
+		Layer->AttachedInstance = Instance;
+		if ( !bHasPlaybackInstance )
+		{
+			PlaybackInstance = Instance;
+			bHasPlaybackInstance = true;
+		}
+		else if ( !PlaybackInstance.IsValid() || !PlaybackInstance.HasSameObject( Instance.Get() ) )
+		{
+			bRootMotionInstanceMismatch = true;
+			InvalidateRootMotion( true );
+		}
 	}
 
 	const bool bReuse = Layer->Weight > 0.0f && !Params.bRestartIfPlaying;   // フェードで消えかけの同じクリップは、位置を引き継ぐ
 	Layer->LengthSeconds = LengthSeconds;
 	Layer->ClipSpeed = ClipSpeed;
+	Layer->UnitsPerSecondAtStart = Units;
 	Layer->Loop = Params.Loop.IsSet() ? Params.Loop.Get( Clip.DefaultLoop ) : Clip.DefaultLoop;
 	if ( !bReuse || Params.StartNormalized > 0.0f )
 	{
@@ -331,6 +357,11 @@ bool FModelAnimator::Play( const FString& ClipName, const FModelPlayParams& Para
 	PrimaryClipSlot = Slot;
 	bFinished = false;
 	bFinishedThisUpdate = false;
+	ClearPendingRootMotion();
+	if ( !bRootMotionClipReplacementRequiresClear && !bRootMotionInstanceMismatch )
+	{
+		bRootMotionRequiresRestart = false;
+	}
 	return true;
 }
 
@@ -461,12 +492,32 @@ void FModelAnimator::Stop( float32 FadeTime )
 	PartFrame = -1;
 	bFinished = false;
 	bFinishedThisUpdate = false;
+	ClearPendingRootMotion();
 }
 
 void FModelAnimator::Update( float32 DeltaTime )
 {
 	Events.Empty();
 	bFinishedThisUpdate = false;
+	if ( bHasPlaybackInstance && ( !PlaybackInstance.IsValid() || !PlaybackInstance.HasSameObject( Instance.Get() ) ) )
+	{
+		bRootMotionInstanceMismatch = true;
+		InvalidateRootMotion( true );
+	}
+	if ( RootMotionFrame >= 0 && ( !RootMotionConfiguredInstance.IsValid() || !RootMotionConfiguredInstance.HasSameObject( Instance.Get() ) ) )
+	{
+		bRootMotionInstanceMismatch = true;
+		InvalidateRootMotion( true );
+	}
+	const int32 PrimaryIndex = FindPrimaryLayer(); // 変更前の全身層を特定する。
+	if ( PrimaryIndex != INDEX_NONE && Layers[PrimaryIndex].UnitsPerSecondAtStart != ResolveUnitsPerSecond() )
+	{
+		InvalidateRootMotion( true );
+	}
+	if ( PendingRootMotion.bValid && PendingRootMotion.UnitsPerSecond != ResolveUnitsPerSecond() )
+	{
+		InvalidateRootMotion( true );
+	}
 	if ( !NMath::IsFinite( DeltaTime ) || DeltaTime <= 0.0f )
 	{
 		return;
@@ -477,6 +528,8 @@ void FModelAnimator::Update( float32 DeltaTime )
 	{
 		return;
 	}
+	const bool bTrackRootMotion = RootMotionFrame >= 0 && PrimaryIndex != INDEX_NONE && Layers[PrimaryIndex].PartFrame < 0 && Layers[PrimaryIndex].bAttached; // root区間を追う全身層。
+	const float64 RootMotionFrom = bTrackRootMotion ? Layers[PrimaryIndex].Playhead : 0.0; // Update開始時刻を保存する。
 
 	for ( FLayer& Layer : Layers )
 	{
@@ -546,6 +599,10 @@ void FModelAnimator::Update( float32 DeltaTime )
 			bFinishedThisUpdate = true;
 		}
 	}
+	if ( bTrackRootMotion && Layers.IsValidIndex( PrimaryIndex ) && Layers[PrimaryIndex].ClipSlot == PrimaryClipSlot )
+	{
+		AccumulateRootMotion( Layers[PrimaryIndex], RootMotionFrom, Layers[PrimaryIndex].Playhead );
+	}
 }
 
 bool FModelAnimator::PrepareMaterialEffect( int32 MaterialIndex, const FMeshMaterialEffectDefinition& Definition, const TCallable<TSharedPtr<CTexture>( const FString& )>& LoadTexture, const IDrawExecutor& Executor, bool bTwoSided )
@@ -583,9 +640,218 @@ void FModelAnimator::Seek( float32 NormalizedTime )
 	const float64 Normalized = NMath::Clamp( static_cast<float64>( NormalizedTime ), 0.0, 0.999999 );
 	Layer.Playhead = Normalized * static_cast<float64>( Layer.LengthSeconds );
 	Layer.PrevPlayhead = Layer.Playhead;
+	ClearPendingRootMotion();
 	bFinished = false;
 	bFinishedThisUpdate = false;
 	Events.Empty();
+}
+
+void FModelAnimator::ClearPendingRootMotion()
+{
+	PendingRootMotion = FRootMotionInterval();
+}
+
+void FModelAnimator::InvalidateRootMotion( bool bRequireRestart )
+{
+	ClearPendingRootMotion();
+	if ( bRequireRestart )
+	{
+		bRootMotionRequiresRestart = true;
+	}
+}
+
+bool FModelAnimator::IsRootMotionIdentityValid() const
+{
+	if ( RootMotionFrame < 0 || !Instance.IsValid() || !RootMotionConfiguredInstance.IsValid() || !RootMotionConfiguredInstance.HasSameObject( Instance.Get() ) || bRootMotionRequiresRestart || bRootMotionClipReplacementRequiresClear || bRootMotionInstanceMismatch )
+	{
+		return false;
+	}
+	if ( bHasPlaybackInstance && ( !PlaybackInstance.IsValid() || !PlaybackInstance.HasSameObject( Instance.Get() ) ) )
+	{
+		return false;
+	}
+	if ( PendingRootMotion.bValid && ( !PendingRootMotion.Instance.IsValid() || !PendingRootMotion.Instance.HasSameObject( Instance.Get() ) ) )
+	{
+		return false;
+	}
+	return true;
+}
+
+void FModelAnimator::AccumulateRootMotion( const FLayer& Layer, float64 From, float64 To )
+{
+	if ( RootMotionFrame < 0 || bRootMotionRequiresRestart || bRootMotionClipReplacementRequiresClear || bRootMotionInstanceMismatch || !Instance.IsValid() || !Layer.AttachedInstance.IsValid() || !Layer.AttachedInstance.HasSameObject( Instance.Get() ) )
+	{
+		return;
+	}
+	if ( Layer.ClipSlot < 0 || Layer.ClipSlot >= Clips.Num() || Layer.UnitsPerSecondAtStart != ResolveUnitsPerSecond() )
+	{
+		InvalidateRootMotion( true );
+		return;
+	}
+	const FClip& Clip = Clips[Layer.ClipSlot]; // 区間のclip情報を固定する。
+	if ( !Clip.Source.IsValid() || !NMath::IsFinite( Clip.LengthUnits ) || Clip.LengthUnits <= 0.0f || !NMath::IsFinite( Layer.LengthSeconds ) || Layer.LengthSeconds <= 0.0f || !NMath::IsFinite( From ) || !NMath::IsFinite( To ) )
+	{
+		InvalidateRootMotion( true );
+		return;
+	}
+	if ( From == To )
+	{
+		return;
+	}
+	if ( PendingRootMotion.bValid )
+	{
+		const bool bSameInterval = PendingRootMotion.To == From && PendingRootMotion.ClipSlot == Layer.ClipSlot && PendingRootMotion.Source.Get() == Clip.Source.Get() && PendingRootMotion.AnimIndex == Clip.AnimIndex && PendingRootMotion.LengthUnits == Clip.LengthUnits && PendingRootMotion.LengthSeconds == Layer.LengthSeconds && PendingRootMotion.UnitsPerSecond == Layer.UnitsPerSecondAtStart && PendingRootMotion.Loop == Layer.Loop && PendingRootMotion.Frame == RootMotionFrame && PendingRootMotion.Instance.IsValid() && PendingRootMotion.Instance.HasSameObject( Instance.Get() ); // 連続性と全条件を固定する。
+		if ( !bSameInterval )
+		{
+			InvalidateRootMotion( true );
+			return;
+		}
+		PendingRootMotion.To = To;
+		return;
+	}
+	PendingRootMotion.bValid = true;
+	PendingRootMotion.From = From;
+	PendingRootMotion.To = To;
+	PendingRootMotion.ClipSlot = Layer.ClipSlot;
+	PendingRootMotion.Source = Clip.Source;
+	PendingRootMotion.AnimIndex = Clip.AnimIndex;
+	PendingRootMotion.LengthUnits = Clip.LengthUnits;
+	PendingRootMotion.LengthSeconds = Layer.LengthSeconds;
+	PendingRootMotion.UnitsPerSecond = Layer.UnitsPerSecondAtStart;
+	PendingRootMotion.Loop = Layer.Loop;
+	PendingRootMotion.Frame = RootMotionFrame;
+	PendingRootMotion.Instance = Instance;
+}
+
+bool FModelAnimator::ConfigureRootMotionBone( const FString& BoneName )
+{
+	GAME_THREAD_ONLY( false );
+	if ( !NAssetService::IsMainThread() )
+	{
+		return false;
+	}
+	if ( bHasPlaybackInstance && ( !PlaybackInstance.IsValid() || !PlaybackInstance.HasSameObject( Instance.Get() ) ) )
+	{
+		bRootMotionInstanceMismatch = true;
+		InvalidateRootMotion( true );
+	}
+	if ( RootMotionFrame >= 0 && ( !RootMotionConfiguredInstance.IsValid() || !RootMotionConfiguredInstance.HasSameObject( Instance.Get() ) ) )
+	{
+		bRootMotionInstanceMismatch = true;
+		InvalidateRootMotion( true );
+	}
+	const int32 PrimaryIndex = FindPrimaryLayer(); // 現在再生中の時間単位を確認する。
+	if ( PrimaryIndex != INDEX_NONE && Layers[PrimaryIndex].UnitsPerSecondAtStart != ResolveUnitsPerSecond() )
+	{
+		InvalidateRootMotion( true );
+	}
+	if ( !Instance.IsValid() || !Instance->GetSource().IsValid() || !Instance->GetSource()->IsReady() || !Instance->GetSource()->HasMesh() || bRootMotionInstanceMismatch || bRootMotionRequiresRestart || bRootMotionClipReplacementRequiresClear )
+	{
+		return false;
+	}
+	const int32 Frame = Instance->GetSource()->GetBoneNames().Find( BoneName ); // 骨名から選択番号を求める。
+	if ( Frame < 0 )
+	{
+		return false;
+	}
+	RootMotionFrame = Frame;
+	RootMotionConfiguredInstance = Instance;
+	ClearPendingRootMotion();
+	return true;
+}
+
+void FModelAnimator::ClearRootMotionBone()
+{
+	GAME_THREAD_ONLY();
+	if ( !NAssetService::IsMainThread() )
+	{
+		return;
+	}
+	RootMotionFrame = INDEX_NONE;
+	RootMotionConfiguredInstance.Reset();
+	ClearPendingRootMotion();
+	RootMotionSampler.Reset();
+	RootMotionSamplerTarget.Reset();
+	RootMotionSamplerSource.Reset();
+	RootMotionSamplerAnimIndex = INDEX_NONE;
+}
+
+bool FModelAnimator::ConsumeRootMotion( FMatrix4x4& OutDelta )
+{
+	GAME_THREAD_ONLY( false );
+	if ( !NAssetService::IsMainThread() )
+	{
+		return false;
+	}
+	if ( bHasPlaybackInstance && ( !PlaybackInstance.IsValid() || !PlaybackInstance.HasSameObject( Instance.Get() ) ) )
+	{
+		bRootMotionInstanceMismatch = true;
+		InvalidateRootMotion( true );
+	}
+	if ( RootMotionFrame >= 0 && ( !RootMotionConfiguredInstance.IsValid() || !RootMotionConfiguredInstance.HasSameObject( Instance.Get() ) ) )
+	{
+		bRootMotionInstanceMismatch = true;
+		InvalidateRootMotion( true );
+	}
+	const int32 PrimaryIndex = FindPrimaryLayer(); // 公開時間単位がPlay時の値か調べる。
+	if ( PrimaryIndex != INDEX_NONE && Layers[PrimaryIndex].UnitsPerSecondAtStart != ResolveUnitsPerSecond() )
+	{
+		InvalidateRootMotion( true );
+	}
+	if ( PendingRootMotion.bValid && PendingRootMotion.UnitsPerSecond != ResolveUnitsPerSecond() )
+	{
+		InvalidateRootMotion( true );
+	}
+	if ( !PendingRootMotion.bValid || !IsRootMotionIdentityValid() )
+	{
+		return false;
+	}
+	if ( PrimaryIndex == INDEX_NONE || !Layers[PrimaryIndex].bAttached || !Layers[PrimaryIndex].AttachedInstance.IsValid() || !Layers[PrimaryIndex].AttachedInstance.HasSameObject( Instance.Get() ) || Layers[PrimaryIndex].UnitsPerSecondAtStart != PendingRootMotion.UnitsPerSecond )
+	{
+		bRootMotionInstanceMismatch = bHasPlaybackInstance && ( !PlaybackInstance.IsValid() || !PlaybackInstance.HasSameObject( Instance.Get() ) );
+		InvalidateRootMotion( true );
+		return false;
+	}
+	const FRootMotionInterval Interval = PendingRootMotion; // 失敗時に保つ区間のcopy。
+	const TSharedPtr<CModel>& Target = Instance->GetSource(); // samplerの対象meshを得る。
+	if ( !Target.IsValid() )
+	{
+		return false;
+	}
+	if ( Interval.From != Interval.To && ( !RootMotionSampler.IsValid() || RootMotionSamplerTarget.Get() != Target.Get() || RootMotionSamplerSource.Get() != Interval.Source.Get() || RootMotionSamplerAnimIndex != Interval.AnimIndex ) )
+	{
+		TSharedPtr<CModelAnimationSampler> NewSampler = CModelAnimationSampler::Create( Target, Interval.Source, Interval.AnimIndex ); // main threadで必要時だけ作る。
+		if ( !NewSampler.IsValid() )
+		{
+			return false;
+		}
+		RootMotionSampler = MoveTemp( NewSampler );
+		RootMotionSamplerTarget = Target;
+		RootMotionSamplerSource = Interval.Source;
+		RootMotionSamplerAnimIndex = Interval.AnimIndex;
+	}
+	FMatrix4x4 Delta; // 成功が確定するまで呼出側出力を触らない。
+	const TCallable<bool( float32, FMatrix4x4& )> Sample = [this, &Interval]( float32 SampleSeconds, FMatrix4x4& OutPose ) {
+			if ( !RootMotionSampler.IsValid() || !NMath::IsFinite( SampleSeconds ) )
+			{
+				return false;
+			}
+			const float64 NativeTime64 = static_cast<float64>( SampleSeconds ) * static_cast<float64>( Interval.UnitsPerSecond ); // 再生時と同じ時間単位へ変換する。
+			if ( !NMath::IsFinite( NativeTime64 ) )
+			{
+				return false;
+			}
+			const float32 NativeTime = static_cast<float32>( NMath::Max( 0.0, NMath::Min( NativeTime64, static_cast<float64>( Interval.LengthUnits ) ) ) ); // float丸め後もclip範囲へ収める。
+			return RootMotionSampler->SampleFrameLocalMatrix( Interval.Frame, NativeTime, OutPose );
+		};
+	const bool bExtracted = NRootMotion::ExtractDelta( Interval.From, Interval.To, Interval.LengthSeconds, Interval.Loop, Sample, Delta ); // 完全な差分を一時行列へ求める。
+	if ( !bExtracted )
+	{
+		return false;
+	}
+	OutDelta = Delta;
+	ClearPendingRootMotion();
+	return true;
 }
 
 //-----------------------------------------------------------------------------
