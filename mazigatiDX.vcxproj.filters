@@ -130,6 +130,9 @@
     <ClCompile Include="Library\Framework\Animation\ModelAnimator.cpp">
       <Filter>Library\Framework\Animation</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Animation\RootMotion.cpp">
+      <Filter>Library\Framework\Animation</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Animation\SpriteAnimator.cpp">
       <Filter>Library\Framework\Animation</Filter>
     </ClCompile>
@@ -1678,6 +1681,9 @@
       <Filter>Library\Framework\Animation</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Animation\ModelAnimator.h">
+      <Filter>Library\Framework\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Animation\RootMotion.h">
       <Filter>Library\Framework\Animation</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Animation\SpriteAnimator.h">

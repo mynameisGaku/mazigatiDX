@@ -166,6 +166,9 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestRenderTargetReal.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestRootMotion.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
     <ClCompile Include="Source\SelfTest\AssetSelfTestScene.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>

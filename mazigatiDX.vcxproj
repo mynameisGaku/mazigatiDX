@@ -108,6 +108,7 @@
     <ClCompile Include="Library\Framework\Animation\AnimationTimeline.cpp" />
     <ClCompile Include="Library\Framework\Animation\ModelAnimationSampler.cpp" />
     <ClCompile Include="Library\Framework\Animation\ModelAnimator.cpp" />
+    <ClCompile Include="Library\Framework\Animation\RootMotion.cpp" />
     <ClCompile Include="Library\Framework\Animation\SpriteAnimator.cpp" />
     <ClCompile Include="Library\Framework\Asset\AssetManager.cpp" />
     <ClCompile Include="Library\Framework\Asset\AssetManagerEffects.cpp" />
@@ -626,6 +627,7 @@
     <ClInclude Include="Library\Framework\Animation\AnimationTimeline.h" />
     <ClInclude Include="Library\Framework\Animation\ModelAnimationSampler.h" />
     <ClInclude Include="Library\Framework\Animation\ModelAnimator.h" />
+    <ClInclude Include="Library\Framework\Animation\RootMotion.h" />
     <ClInclude Include="Library\Framework\Animation\SpriteAnimator.h" />
     <ClInclude Include="Library\Framework\Asset\Asset.h" />
     <ClInclude Include="Library\Framework\Asset\AssetManager.h" />
