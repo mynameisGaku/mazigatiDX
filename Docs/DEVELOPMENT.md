@@ -255,6 +255,12 @@ if ( Ground->GetCollision().Raycast( GroundWorld, Eye, Eye + Down * 50.0f, Hit )
 
 この計算はバックエンドを参照せず、拡大率も含む完全な姿勢差分を返します。コールバックは呼び出し元のスレッドで実行するため、姿勢サンプラーを渡す場合はゲームスレッドから呼びます。Animatorからの明示的な取得APIは次節のとおりです。表示上の根の移動の除去、自動移動、物理へ適用する方針は含みません。
 
+`TryExtractRigidMotion`はproper rigid（軸長1、軸同士が直交し、右手系）の差分だけを移動と回転へ分けます。軸長二乗・軸同士の内積は`1.0e-4`以内、行列式は1から`4.0e-4`以内を許容します。scale、shear、反転を黙って落とさず、条件を満たさない場合は`false`を返して両出力を保持します。`m03/m13/m23`は厳密に0である必要があり、積の丸めによる`m33`だけは1との差が`1.0e-4`以内なら1へ戻します。
+
+`TryConvertToActorMotion( SourceDelta, ReferenceToActorBasis, ... )`は、`SourceDelta * ReferenceToActorBasis = ReferenceToActorBasis * Converted`を満たすactor空間の移動・回転を返します。`SourceDelta`は有限affineなら受け付けますが、変換後がproper rigidでなければ失敗します。基準行列は有限・可逆・正向きaffineであればshearを含められます。3x3基底を共通倍率で正規化して逆行列を求めるため、一様scale`0.001`も扱えます。正規化後も既存の逆行列判定の行列式下限を下回る、相対的につぶれた基準や非有限な中間結果では失敗し、両出力を保持します。この下限は一般的な条件数判定ではありません。
+
+基準行列は差分の座標に合わせて呼び出し側で構成します。骨差分の場合は固定基準姿勢、固定parent-to-model行列、`ModelLocal`を掛け合わせます。動くparentの補正は対象外です。Animatorから得る全 affine差分とつなぐ計算は純粋関数で、actor移動や描画poseの変更は行いません。
+
 ### Animatorからroot-motion差分を一度だけ受け取る
 
 `FModelAnimator::ConfigureRootMotionBone( "Root" )`で読む骨を設定し、ECSの並列`Update`が完了した後、ゲームスレッド側のオブジェクト`Tick`などから`ConsumeRootMotion( Delta )`を呼びます。設定・解除・取得はゲームスレッド専用です。`Scene::OnTick`は組み込みの`PreUpdate`より先に動くため、そのフレームの更新差分が必要なら、`PreUpdate`のjoin後に実行されるオブジェクト`Tick`で受け取ります。`Update`は区間の時刻だけを蓄積し、`Record`は描画命令だけを記録します。native姿勢の読み取りは`ConsumeRootMotion`時に行います。
