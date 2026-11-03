@@ -91,6 +91,8 @@ public:
 	bool GetModelOpacity( int32 Model, float32& Out ) override;
 	bool SetModelOpacity( int32 Model, float32 Opacity ) override;
 	bool GetModelFrameMatrix( int32 Model, int32 Frame, EModelFrameSpace Space, FMatrix4x4& Out ) override;
+	// backend窓口で追跡する指定骨の上書き状態を読む。未設定時はfalse flagとしOut行列を保つ。
+	bool GetModelFrameLocalMatrixOverride( int32 Model, int32 Frame, bool& bOutOverridden, FMatrix4x4& Out ) override;
 	// 準備済み個体の指定骨へ親基準の全姿勢を設定する。不正入力やnative失敗時はfalseを返す。
 	bool SetModelFrameLocalMatrixOverride( int32 Model, int32 Frame, const FMatrix4x4& LocalToParent ) override;
 	// 指定骨の上書きを解除し、現在時刻の再生姿勢へ戻す。不正番号やnative失敗時はfalseを返す。
@@ -130,12 +132,16 @@ public:
 	const FDxLibModelMaterialGeometry* FindModelMaterialGeometry( int32 Geometry ) const;
 	// 現在backendが保持する不変形状資源数を返す。
 	int32 GetNumModelMaterialGeometries() const;
+	// backend窓口で追跡中の全modelのframe pose上書き数を返す検査用診断。
+	int64 GetNumTrackedModelFrameOverrides() const;
 
 private:
 	// effect描画から読む登録済みの不変形状を所有する。
 	TMap<int32, TSharedPtr<const FDxLibModelMaterialGeometry>> ModelMaterialGeometries;
 	// 重複を避けて次のbackend内部handleを割り当てる値。
 	int32 NextModelMaterialGeometry = 1;
+	// backend窓口で設定したhandleごとの親基準frame poseを所有する。
+	TMap<int32, TMap<int32, FMatrix4x4>> ModelFrameLocalMatrixOverrides;
 	// 当たり判定の形を写してあるモデル（DeleteModel で忘れる）
 	TSet<int32> CollisionReadyModels;
 };

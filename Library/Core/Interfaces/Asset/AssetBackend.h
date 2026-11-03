@@ -184,6 +184,8 @@ public:
 	virtual bool SetModelOpacity( int32 /*Model*/, float32 /*Opacity*/ ) { return false; }
 	// フレームの、いまの行列（最後に描いたときのアニメーションと置き場所で決まる）
 	virtual bool GetModelFrameMatrix( int32 /*Model*/, int32 /*Frame*/, EModelFrameSpace /*Space*/, FMatrix4x4& /*Out*/ ) { return false; }
+	// 有効なmodel/frameならtrueで追跡状態を返し、未設定時はfalse flagとして行列を保つ。失敗時は両Outを保つ。
+	virtual bool GetModelFrameLocalMatrixOverride( int32 /*Model*/, int32 /*Frame*/, bool& /*bOutOverridden*/, FMatrix4x4& /*Out*/ ) { return false; }
 	// 指定frameの完全な親基準local poseを上書きする。未対応・未準備・不正入力はfalseで既存状態を変えない。
 	virtual bool SetModelFrameLocalMatrixOverride( int32 /*Model*/, int32 /*Frame*/, const FMatrix4x4& /*LocalToParent*/ ) { return false; }
 	// 指定frameのlocal pose上書きを解除し、現在のanimation評価へ戻す。未対応・未準備はfalseで状態を変えない。

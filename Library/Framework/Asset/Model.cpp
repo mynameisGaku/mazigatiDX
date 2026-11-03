@@ -313,6 +313,17 @@ bool CModelInstance::GetFrameMatrix( int32 Frame, EModelFrameSpace Space, FMatri
 	return Backend != nullptr && Handle >= 0 && Backend->GetModelFrameMatrix( Handle, Frame, Space, OutMatrix );
 }
 
+bool CModelInstance::GetFrameLocalMatrixOverride( int32 Frame, bool& bOutOverridden, FMatrix4x4& OutLocalToParent ) const
+{
+	GAME_THREAD_ONLY( false );
+	if ( !NAssetService::IsMainThread() || !Source.IsValid() || !Source->IsReady() || Handle < 0 || !Source->GetBoneNames().IsValidIndex( Frame ) )
+	{
+		return false;
+	}
+	IAssetBackend* Backend = NAssetService::GetBackend(); // 個体別pose上書き状態を読むbackend。
+	return Backend != nullptr && Backend->GetModelFrameLocalMatrixOverride( Handle, Frame, bOutOverridden, OutLocalToParent );
+}
+
 bool CModelInstance::SetFrameLocalMatrixOverride( int32 Frame, const FMatrix4x4& LocalToParent )
 {
 	GAME_THREAD_ONLY( false );

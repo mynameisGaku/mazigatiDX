@@ -252,13 +252,41 @@ bool CDxLibAssetBackend::GetModelFrameMatrix( int32 Model, int32 Frame, EModelFr
 	return true;
 }
 
+bool CDxLibAssetBackend::GetModelFrameLocalMatrixOverride( int32 Model, int32 Frame, bool& bOutOverridden, FMatrix4x4& Out )
+{
+	if ( Model < 0 || CheckHandleASyncLoad( Model ) != FALSE || !IsFrameIndex( Model, Frame ) )
+	{
+		return false;
+	}
+	const TMap<int32, FMatrix4x4>* ModelOverrides = ModelFrameLocalMatrixOverrides.Find( Model ); // このhandleの追跡済みframe pose。
+	if ( ModelOverrides == nullptr )
+	{
+		bOutOverridden = false;
+		return true;
+	}
+	const FMatrix4x4* FrameOverride = ModelOverrides->Find( Frame ); // 指定frameの追跡済み上書き値。
+	if ( FrameOverride == nullptr )
+	{
+		bOutOverridden = false;
+		return true;
+	}
+	bOutOverridden = true;
+	Out = *FrameOverride;
+	return true;
+}
+
 bool CDxLibAssetBackend::SetModelFrameLocalMatrixOverride( int32 Model, int32 Frame, const FMatrix4x4& LocalToParent )
 {
 	if ( Model < 0 || CheckHandleASyncLoad( Model ) != FALSE || !IsFrameIndex( Model, Frame ) || !IsCanonicalAffinePose( LocalToParent ) )
 	{
 		return false;
 	}
-	return MV1SetFrameUserLocalMatrix( Model, Frame, NDxLibTypes::ToDxLib( LocalToParent ) ) == 0;
+	if ( MV1SetFrameUserLocalMatrix( Model, Frame, NDxLibTypes::ToDxLib( LocalToParent ) ) != 0 )
+	{
+		return false;
+	}
+	ModelFrameLocalMatrixOverrides.FindOrAdd( Model ).Add( Frame, LocalToParent );
+	return true;
 }
 
 bool CDxLibAssetBackend::ClearModelFrameLocalMatrixOverride( int32 Model, int32 Frame )
@@ -267,7 +295,31 @@ bool CDxLibAssetBackend::ClearModelFrameLocalMatrixOverride( int32 Model, int32 
 	{
 		return false;
 	}
-	return MV1ResetFrameUserLocalMatrix( Model, Frame ) == 0;
+	if ( MV1ResetFrameUserLocalMatrix( Model, Frame ) != 0 )
+	{
+		return false;
+	}
+	TMap<int32, FMatrix4x4>* ModelOverrides = ModelFrameLocalMatrixOverrides.Find( Model ); // 解除後に残すhandle別上書き表。
+	if ( ModelOverrides != nullptr )
+	{
+		ModelOverrides->Remove( Frame );
+		if ( ModelOverrides->IsEmpty() )
+		{
+			ModelFrameLocalMatrixOverrides.Remove( Model );
+		}
+	}
+	return true;
+}
+
+int64 CDxLibAssetBackend::GetNumTrackedModelFrameOverrides() const
+{
+	int64 NumTrackedFrames = 0; // backend窓口が追跡するpose上書き数。
+	// model handleごとの追跡件数を診断値へ加える。
+	for ( const auto& ModelOverrides : ModelFrameLocalMatrixOverrides )
+	{
+		NumTrackedFrames += ModelOverrides.Value.Num();
+	}
+	return NumTrackedFrames;
 }
 
 bool CDxLibAssetBackend::SampleModelAnimFrameLocalMatrix( int32 Model, int32 AttachIndex, int32 Frame, float32 Time, FMatrix4x4& Out )

@@ -8,6 +8,7 @@
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
+#include "Library/Platform/DxLib/DxLibTypes.h"
 #include "Library/Platform/DxLib/DxLibVertex.h"
 
 #include <psapi.h>   // windows.h（DxLib.h が読み込む）より後に
@@ -593,18 +594,53 @@ bool CDxLibAssetBackend::SavePixels( int32 Width, int32 Height, const FColor32* 
 int32 CDxLibAssetBackend::LoadModel( const FString& Path, bool bAsync )
 {
 	FAsyncScope Scope( bAsync );
-	return MV1LoadModel( *Path );
+	const int32 Model = MV1LoadModel( *Path ); // 新しく読み込んだnative model handle。
+	if ( Model >= 0 )
+	{
+		ModelFrameLocalMatrixOverrides.Remove( Model );
+	}
+	return Model;
 }
 
 int32 CDxLibAssetBackend::DuplicateModel( int32 Source )
 {
-	return MV1DuplicateModel( Source );
+	TMap<int32, FMatrix4x4> SourceOverrides; // 複製前に値として退避するframe pose上書き。
+	// outer mapから複製元の追跡値を探し、native複製前にコピーを完了する。
+	if ( const TMap<int32, FMatrix4x4>* TrackedOverrides = ModelFrameLocalMatrixOverrides.Find( Source ) )
+	{
+		SourceOverrides = *TrackedOverrides;
+	}
+	const int32 Duplicate = MV1DuplicateModel( Source ); // 新しいnative model handle。
+	if ( Duplicate < 0 || Duplicate == Source )
+	{
+		return NAsset::InvalidHandle;
+	}
+	// backend窓口で複製元に設定した各frame poseを、新しいnative modelへ再設定する。
+	for ( const auto& FrameOverride : SourceOverrides )
+	{
+		if ( MV1SetFrameUserLocalMatrix( Duplicate, FrameOverride.Key, NDxLibTypes::ToDxLib( FrameOverride.Value ) ) != 0 )
+		{
+			ModelFrameLocalMatrixOverrides.Remove( Duplicate );
+			MV1DeleteModel( Duplicate );
+			return NAsset::InvalidHandle;
+		}
+	}
+	if ( SourceOverrides.IsEmpty() )
+	{
+		ModelFrameLocalMatrixOverrides.Remove( Duplicate );
+	}
+	else
+	{
+		ModelFrameLocalMatrixOverrides.Add( Duplicate, MoveTemp( SourceOverrides ) );
+	}
+	return Duplicate;
 }
 
 void CDxLibAssetBackend::DeleteModel( int32 Model )
 {
 	// 当たり判定の情報は、モデルと一緒に消える
 	CollisionReadyModels.Remove( Model );
+	ModelFrameLocalMatrixOverrides.Remove( Model );
 	MV1DeleteModel( Model );
 }
 
