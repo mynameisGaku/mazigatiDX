@@ -9,8 +9,14 @@ EEditorColliderDisplay NWorldEditor::ClassifyColliderDisplay( const FWorldSettin
 	// Collider が無ければ、ResolveCollision が「付かない」と答える（そのあとは、Collider がある場合だけ）
 	const FWorldCollisionDecision Decision = NWorld::ResolveCollision( Settings, Object );
 	const bool bForced = Decision.Reason == EWorldCollisionReason::ObjectOverride;
-	if ( !Decision.bEnabled ) return bForced ? EEditorColliderDisplay::OffForced : EEditorColliderDisplay::Off;
-	if ( Object.Collider.GetValue().bTrigger ) return EEditorColliderDisplay::Trigger;
+	if ( !Decision.bEnabled )
+	{
+		return bForced ? EEditorColliderDisplay::OffForced : EEditorColliderDisplay::Off;
+	}
+	if ( Object.Collider.GetValue().bTrigger )
+	{
+		return EEditorColliderDisplay::Trigger;
+	}
 	return bForced ? EEditorColliderDisplay::SolidForced : EEditorColliderDisplay::Solid;
 }
 
@@ -59,7 +65,10 @@ FWorldCollider NWorldEditor::FitColliderToBounds( EWorldColliderShape Shape, con
 bool NWorldEditor::FitColliderToModel( TWorldDocument& Document, int32 ObjectId, EWorldColliderShape Shape, const IEditorAssetInfo& Assets )
 {
 	const FWorldObject* Object = Document.Get().FindObject( ObjectId );
-	if ( Object == nullptr ) return false;
+	if ( Object == nullptr )
+	{
+		return false;
+	}
 	const FWorldCollider Base = Object->Collider.IsSet() ? Object->Collider.GetValue() : FWorldCollider();
 
 	FWorldCollider Fitted;
@@ -70,17 +79,32 @@ bool NWorldEditor::FitColliderToModel( TWorldDocument& Document, int32 ObjectId,
 		Fitted.Shape = EWorldColliderShape::Mesh;
 		FWorldObject WithMesh = *Object;
 		WithMesh.Collider = Fitted;
-		if ( NWorld::GetColliderMeshPath( WithMesh ).IsEmpty() && !NWorld::UsesEditMeshCollider( WithMesh ) ) return false;
+		if ( NWorld::GetColliderMeshPath( WithMesh ).IsEmpty() && !NWorld::UsesEditMeshCollider( WithMesh ) )
+		{
+			return false;
+		}
 	}
 	else
 	{
 		// 大きさの元は、三角形の元と同じ順（Collider の Mesh のファイル > Mesh 部品 > Model のファイル）
 		FVector3 Min, Max;
 		bool bKnown = false;
-		if ( !Base.Mesh.IsEmpty() ) bKnown = Assets.GetModelBounds( Base.Mesh, Min, Max );
-		else if ( Object->Mesh.IsSet() ) bKnown = Object->Mesh.GetValue().GetBounds( Min, Max );
-		else if ( Object->Model.IsSet() && !Object->Model.GetValue().Path.IsEmpty() ) bKnown = Assets.GetModelBounds( Object->Model.GetValue().Path, Min, Max );
-		if ( !bKnown ) return false;
+		if ( !Base.Mesh.IsEmpty() )
+		{
+			bKnown = Assets.GetModelBounds( Base.Mesh, Min, Max );
+		}
+		else if ( Object->Mesh.IsSet() )
+		{
+			bKnown = Object->Mesh.GetValue().GetBounds( Min, Max );
+		}
+		else if ( Object->Model.IsSet() && !Object->Model.GetValue().Path.IsEmpty() )
+		{
+			bKnown = Assets.GetModelBounds( Object->Model.GetValue().Path, Min, Max );
+		}
+		if ( !bKnown )
+		{
+			return false;
+		}
 		Fitted = FitColliderToBounds( Shape, Min, Max, Base );
 		Fitted.Mesh = FString();
 	}

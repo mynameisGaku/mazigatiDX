@@ -48,14 +48,20 @@ FQuaternion FQuaternion::FromBasis( const FVector3& AxisX, const FVector3& AxisY
 FQuaternion FQuaternion::LookRotation( const FVector3& Forward, const FVector3& Up )
 {
 	const FVector3 F = Forward.Normalized();
-	if ( F.IsNearlyZero() ) return Identity;
+	if ( F.IsNearlyZero() )
+	{
+		return Identity;
+	}
 
 	FVector3 R = FVector3::Cross( Up, F ).Normalized();
 	if ( R.IsNearlyZero() )
 	{
 		// Forward と Up が平行
 		R = FVector3::Cross( FVector3::Forward, F ).Normalized();
-		if ( R.IsNearlyZero() ) R = FVector3::Right;
+		if ( R.IsNearlyZero() )
+		{
+			R = FVector3::Right;
+		}
 	}
 	const FVector3 U = FVector3::Cross( F, R );
 	return FromBasis( R, U, F );
@@ -71,7 +77,10 @@ FQuaternion FQuaternion::FromToRotation( const FVector3& From, const FVector3& T
 	{
 		// 真逆: 任意の直交軸で 180 度
 		FVector3 Axis = FVector3::Cross( FVector3::Right, A );
-		if ( Axis.LengthSquared() < NMath::Epsilon ) Axis = FVector3::Cross( FVector3::Up, A );
+		if ( Axis.LengthSquared() < NMath::Epsilon )
+		{
+			Axis = FVector3::Cross( FVector3::Up, A );
+		}
 		return FromAxisAngle( Axis.Normalized(), NMath::PI );
 	}
 
@@ -108,7 +117,10 @@ FQuaternion FQuaternion::Slerp( const FQuaternion& A, const FQuaternion& B, floa
 		Sign     = -1.0f;
 	}
 
-	if ( CosTheta > 0.9995f ) return Nlerp( A, B, Alpha );
+	if ( CosTheta > 0.9995f )
+	{
+		return Nlerp( A, B, Alpha );
+	}
 
 	const float32 Theta    = NMath::Acos( CosTheta );
 	const float32 InvSin   = 1.0f / NMath::Sin( Theta );

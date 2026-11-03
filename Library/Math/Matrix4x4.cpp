@@ -17,7 +17,10 @@ bool FMatrix4x4::TryInverse( FMatrix4x4& OutInverse ) const
 	const float32 c0 = m[2][0] * m[3][1] - m[3][0] * m[2][1];
 
 	const float32 Det = s0 * c5 - s1 * c4 + s2 * c3 + s3 * c2 - s4 * c1 + s5 * c0;
-	if ( NMath::Abs( Det ) <= NMath::SmallNumber ) return false;
+	if ( NMath::Abs( Det ) <= NMath::SmallNumber )
+	{
+		return false;
+	}
 
 	const float32 InvDet = 1.0f / Det;
 	FMatrix4x4 R;

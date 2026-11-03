@@ -51,9 +51,18 @@ FWorldCollisionDecision NWorld::ResolveCollision( const FWorldSettings& Settings
 
 FString NWorld::GetColliderMeshPath( const FWorldObject& Object )
 {
-	if ( !Object.Collider.IsSet() ) return FString();
-	if ( !Object.Collider.GetValue().Mesh.IsEmpty() ) return Object.Collider.GetValue().Mesh;
-	if ( Object.Mesh.IsSet() ) return FString();
+	if ( !Object.Collider.IsSet() )
+	{
+		return FString();
+	}
+	if ( !Object.Collider.GetValue().Mesh.IsEmpty() )
+	{
+		return Object.Collider.GetValue().Mesh;
+	}
+	if ( Object.Mesh.IsSet() )
+	{
+		return FString();
+	}
 	return Object.Model.IsSet() ? Object.Model.GetValue().Path : FString();
 }
 
@@ -70,7 +79,10 @@ FWorldCollisionSummary NWorld::SummarizeCollision( const FWorldDefinition& World
 	{
 		const FWorldObject& Object = World.Objects[Index];
 		++Summary.NumPlaced;
-		if ( !Object.Collider.IsSet() ) continue;
+		if ( !Object.Collider.IsSet() )
+		{
+			continue;
+		}
 		++Summary.NumWithCollider;
 		const FWorldCollisionDecision Decision = ResolveCollision( World.Settings, Object );
 		switch ( Decision.Reason )
@@ -99,8 +111,14 @@ FWorldCollisionSummary NWorld::SummarizeCollision( const FWorldDefinition& World
 			continue;
 		}
 		++Summary.NumEnabled;
-		if ( Object.Collider.GetValue().bTrigger ) ++Summary.NumTriggers;
-		if ( Object.Collider.GetValue().Shape == EWorldColliderShape::Mesh ) ++Summary.NumMeshes;
+		if ( Object.Collider.GetValue().bTrigger )
+		{
+			++Summary.NumTriggers;
+		}
+		if ( Object.Collider.GetValue().Shape == EWorldColliderShape::Mesh )
+		{
+			++Summary.NumMeshes;
+		}
 	}
 	return Summary;
 }

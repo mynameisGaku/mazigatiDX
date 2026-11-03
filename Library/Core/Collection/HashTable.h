@@ -1,6 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef FRAMEWORK_CORE_COLLECTION_HASHTABLE_H
-#define FRAMEWORK_CORE_COLLECTION_HASHTABLE_H
+#pragma once
 #include "Library/Core/Types/CompilerMacros.h"
 
 #include "Library/Core/Collection/CollectionCommon.h"
@@ -64,8 +63,14 @@ public:
 		FORCEINLINE TIterator& operator++()
 		{
 			// 削除した位置には後続の要素が詰められている可能性があるので、進めずに再確認する
-			if ( bCurrentRemoved ) bCurrentRemoved = false;
-			else if ( Step < Table->Capacity ) ++Step;
+			if ( bCurrentRemoved )
+			{
+				bCurrentRemoved = false;
+			}
+			else if ( Step < Table->Capacity )
+			{
+				++Step;
+			}
 			SkipEmpty();
 			return *this;
 		}
@@ -91,7 +96,10 @@ public:
 	private:
 		FORCEINLINE void SkipEmpty()
 		{
-			while ( Step < Table->Capacity && Table->Hashes[GetIndex()] == 0 ) ++Step;
+			while ( Step < Table->Capacity && Table->Hashes[GetIndex()] == 0 )
+			{
+				++Step;
+			}
 		}
 
 		// 要素を所有するテーブル。
@@ -161,7 +169,10 @@ public:
 	FORCEINLINE void Reserve( int32 ElementCount )
 	{
 		const int32 Required = CapacityFor( ElementCount );
-		if ( Required > Capacity ) Rehash( Required );
+		if ( Required > Capacity )
+		{
+			Rehash( Required );
+		}
 	}
 
 	//-------------------------------------------------------------------------
@@ -197,7 +208,10 @@ public:
 	FORCEINLINE bool Remove( const KeyType& Key )
 	{
 		const int32 Index = FindIndex( Key );
-		if ( Index == INDEX_NONE ) return false;
+		if ( Index == INDEX_NONE )
+		{
+			return false;
+		}
 		RemoveAt( Index );
 		return true;
 	}
@@ -228,7 +242,10 @@ private:
 	{
 		for ( int32 i = 0; i < Capacity; ++i )
 		{
-			if ( Hashes[i] == 0 ) return i;
+			if ( Hashes[i] == 0 )
+			{
+				return i;
+			}
 		}
 		return 0;
 	}
@@ -236,9 +253,15 @@ private:
 	// 負荷率 3/4 以下に収まる 2 のべき乗の容量を返す。
 	FORCEINLINE static int32 CapacityFor( int32 ElementCount )
 	{
-		if ( ElementCount <= 0 ) return 0;
+		if ( ElementCount <= 0 )
+		{
+			return 0;
+		}
 		int32 Result = MinCapacity;
-		while ( Result * 3 / 4 < ElementCount ) Result *= 2;
+		while ( Result * 3 / 4 < ElementCount )
+		{
+			Result *= 2;
+		}
 		return Result;
 	}
 
@@ -246,7 +269,10 @@ private:
 	{
 		const int32 Mask = Capacity - 1;
 		int32 i = static_cast<int32>( Hash ) & Mask;
-		while ( Hashes[i] != 0 ) i = ( i + 1 ) & Mask;
+		while ( Hashes[i] != 0 )
+		{
+			i = ( i + 1 ) & Mask;
+		}
 		return i;
 	}
 
@@ -261,5 +287,3 @@ private:
 };
 
 #include "HashTable.inl"
-
-#endif

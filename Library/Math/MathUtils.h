@@ -94,7 +94,10 @@ namespace NMath
 	FORCEINLINE float32 WrapAngle( float32 Rad )
 	{
 		Rad = std::fmod( Rad + PI, TWO_PI );
-		if ( Rad < 0.0f ) Rad += TWO_PI;
+		if ( Rad < 0.0f )
+		{
+			Rad += TWO_PI;
+		}
 		return Rad - PI;
 	}
 

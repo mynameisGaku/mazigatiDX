@@ -28,8 +28,14 @@ namespace
 			case '\r': Result += "\\r"; break;
 			case '\t': Result += "\\t"; break;
 			default:
-				if ( static_cast<unsigned char>( Ch ) < 0x20 ) Result += FString::Printf( "\\u%04x", static_cast<unsigned>( Ch ) );
-				else Result += Ch;
+				if ( static_cast<unsigned char>( Ch ) < 0x20 )
+				{
+					Result += FString::Printf( "\\u%04x", static_cast<unsigned>( Ch ) );
+				}
+				else
+				{
+					Result += Ch;
+				}
 				break;
 			}
 		}
@@ -100,7 +106,10 @@ bool NProfilerExport::WriteChromeTrace( const IProfiler& Profiler, int32 FirstFr
 				Found = WorkerThreadIds.Add( Track.ThreadId );
 				WorkerThreadNames.Add( 0 );
 			}
-			if ( Track.Name != 0 ) WorkerThreadNames[Found] = Track.Name;
+			if ( Track.Name != 0 )
+			{
+				WorkerThreadNames[Found] = Track.Name;
+			}
 		}
 	}
 	for ( int32 i = 0; i < WorkerThreadIds.Num(); ++i )
@@ -154,7 +163,13 @@ bool NProfilerExport::WriteChromeTrace( const IProfiler& Profiler, int32 FirstFr
 	const bool bOk = !File.HasError();
 	File.Close();
 
-	if ( bOk ) LOG( LogProfilerExport, Log, "Exported %d frame(s), %lld event(s) to %s", LastFrame - FirstFrame + 1, static_cast<long long>( NumEvents ), *Path );
-	else LOG( LogProfilerExport, Error, "Failed while writing %s (disk full?)", *Path );
+	if ( bOk )
+	{
+		LOG( LogProfilerExport, Log, "Exported %d frame(s), %lld event(s) to %s", LastFrame - FirstFrame + 1, static_cast<long long>( NumEvents ), *Path );
+	}
+	else
+	{
+		LOG( LogProfilerExport, Error, "Failed while writing %s (disk full?)", *Path );
+	}
 	return bOk;
 }

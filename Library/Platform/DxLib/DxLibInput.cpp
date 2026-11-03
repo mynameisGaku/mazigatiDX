@@ -124,14 +124,20 @@ void CDxLibInput::Tick( float32 DeltaTime )
 bool CDxLibInput::IsDown( const char ( &State )[NumDxKeys], EKey Key )
 {
 	const int32 Index = static_cast<int32>( Key );
-	if ( Index < 0 || Index >= static_cast<int32>( EKey::Count ) ) return false;
+	if ( Index < 0 || Index >= static_cast<int32>( EKey::Count ) )
+	{
+		return false;
+	}
 	return State[DxKeyCodes[Index]] != 0;
 }
 
 uint32 CDxLibInput::ToButtonBit( EMouseButton Button )
 {
 	const uint8 Index = static_cast<uint8>( Button );
-	if ( Index >= static_cast<uint8>( EMouseButton::Count ) ) return 0u;
+	if ( Index >= static_cast<uint8>( EMouseButton::Count ) )
+	{
+		return 0u;
+	}
 	return 1u << Index;
 }
 

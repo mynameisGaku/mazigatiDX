@@ -22,7 +22,10 @@ void CComponent::OnDestroyRequested()
 
 void CComponent::Destroy()
 {
-	if ( bPendingDestroy ) return;
+	if ( bPendingDestroy )
+	{
+		return;
+	}
 	bPendingDestroy = true;
 	OnDestroyRequested();
 }

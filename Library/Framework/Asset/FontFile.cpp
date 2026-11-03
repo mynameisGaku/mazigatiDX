@@ -33,7 +33,10 @@ namespace
 	FString FromUtf16BE( const FReader& Reader, usize Offset, usize Length )
 	{
 		TArray<wchar_t> Wide;
-		for ( usize i = 0; i + 1 < Length; i += 2 ) Wide.Add( static_cast<wchar_t>( Reader.U16( Offset + i ) ) );
+		for ( usize i = 0; i + 1 < Length; i += 2 )
+		{
+			Wide.Add( static_cast<wchar_t>( Reader.U16( Offset + i ) ) );
+		}
 		Wide.Add( L'\0' );
 		return FString( Wide.GetData() );
 	}
@@ -44,7 +47,10 @@ namespace
 		for ( usize i = 0; i < Length; ++i )
 		{
 			const char Ch = static_cast<char>( Reader.Data[Offset + i] );
-			if ( static_cast<uint8>( Ch ) < 0x80 ) Result += Ch;   // ASCII の範囲だけ（フォント名はほぼ英数字）
+			if ( static_cast<uint8>( Ch ) < 0x80 )
+			{
+				Result += Ch;   // ASCII の範囲だけ（フォント名はほぼ英数字）
+			}
 		}
 		return Result;
 	}
@@ -52,15 +58,24 @@ namespace
 
 bool NFontFile::ReadFaceNameFromMemory( const uint8* Data, usize Size, FString& OutFaceName )
 {
-	if ( Data == nullptr || Size < 12 ) return false;
+	if ( Data == nullptr || Size < 12 )
+	{
+		return false;
+	}
 	const FReader Reader { Data, Size };
 
 	// .ttc（フォントの集まり）は、最初のフォントを使う
 	usize FontOffset = 0;
-	if ( Reader.U32( 0 ) == Tag( 't', 't', 'c', 'f' ) ) FontOffset = Reader.U32( 12 );
+	if ( Reader.U32( 0 ) == Tag( 't', 't', 'c', 'f' ) )
+	{
+		FontOffset = Reader.U32( 12 );
+	}
 
 	const uint32 Version = Reader.U32( FontOffset );
-	if ( Version != 0x00010000u && Version != Tag( 'O', 'T', 'T', 'O' ) && Version != Tag( 't', 'r', 'u', 'e' ) ) return false;
+	if ( Version != 0x00010000u && Version != Tag( 'O', 'T', 'T', 'O' ) && Version != Tag( 't', 'r', 'u', 'e' ) )
+	{
+		return false;
+	}
 
 	const uint32 NumTables = Reader.U16( FontOffset + 4 );
 	usize NameTable = 0;
@@ -75,7 +90,10 @@ bool NFontFile::ReadFaceNameFromMemory( const uint8* Data, usize Size, FString& 
 			break;
 		}
 	}
-	if ( NameTable == 0 || !Reader.CanRead( NameTable, NameTableLength ) ) return false;
+	if ( NameTable == 0 || !Reader.CanRead( NameTable, NameTableLength ) )
+	{
+		return false;
+	}
 
 	const uint32 Count = Reader.U16( NameTable + 2 );
 	const usize StringStorage = NameTable + Reader.U16( NameTable + 4 );
@@ -86,7 +104,10 @@ bool NFontFile::ReadFaceNameFromMemory( const uint8* Data, usize Size, FString& 
 	for ( uint32 i = 0; i < Count; ++i )
 	{
 		const usize Record = NameTable + 6 + static_cast<usize>( i ) * 12;
-		if ( !Reader.CanRead( Record, 12 ) ) break;
+		if ( !Reader.CanRead( Record, 12 ) )
+		{
+			break;
+		}
 
 		const uint32 PlatformId = Reader.U16( Record );
 		const uint32 EncodingId = Reader.U16( Record + 2 );
@@ -94,7 +115,10 @@ bool NFontFile::ReadFaceNameFromMemory( const uint8* Data, usize Size, FString& 
 		const uint32 NameId = Reader.U16( Record + 6 );
 		const usize Length = Reader.U16( Record + 8 );
 		const usize Offset = StringStorage + Reader.U16( Record + 10 );
-		if ( NameId != 1 || Length == 0 || !Reader.CanRead( Offset, Length ) ) continue;
+		if ( NameId != 1 || Length == 0 || !Reader.CanRead( Offset, Length ) )
+		{
+			continue;
+		}
 
 		int32 Score = -1;
 		FString Candidate;
@@ -120,7 +144,10 @@ bool NFontFile::ReadFaceNameFromMemory( const uint8* Data, usize Size, FString& 
 		}
 	}
 
-	if ( BestScore < 0 ) return false;
+	if ( BestScore < 0 )
+	{
+		return false;
+	}
 	OutFaceName = Best;
 	return true;
 }
@@ -128,7 +155,10 @@ bool NFontFile::ReadFaceNameFromMemory( const uint8* Data, usize Size, FString& 
 bool NFontFile::ReadFaceName( const FString& Path, FString& OutFaceName )
 {
 	TArray<uint8> Bytes;
-	if ( !NFile::ReadAllBytes( Path, Bytes ) ) return false;
+	if ( !NFile::ReadAllBytes( Path, Bytes ) )
+	{
+		return false;
+	}
 
 	return ReadFaceNameFromMemory( Bytes.GetData(), static_cast<usize>( Bytes.Num() ), OutFaceName );
 }

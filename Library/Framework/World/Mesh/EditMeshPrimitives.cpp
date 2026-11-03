@@ -21,7 +21,10 @@ namespace
 			TArray<int32>& Bucket = Buckets.FindOrAdd( Key );
 			for ( const int32 Index : Bucket )
 			{
-				if ( FVector3::DistanceSquared( Mesh.Vertices[Index], Position ) < 1.0e-10f ) return Index;
+				if ( FVector3::DistanceSquared( Mesh.Vertices[Index], Position ) < 1.0e-10f )
+				{
+					return Index;
+				}
 			}
 			const int32 Index = Mesh.Vertices.Add( Position );
 			Bucket.Add( Index );
@@ -31,14 +34,20 @@ namespace
 		void Face( std::initializer_list<FVector3> Corners )
 		{
 			FEditMeshFace Face;
-			for ( const FVector3& Corner : Corners ) Face.Indices.Add( Vertex( Corner ) );
+			for ( const FVector3& Corner : Corners )
+			{
+				Face.Indices.Add( Vertex( Corner ) );
+			}
 			Mesh.Faces.Add( Face );
 		}
 
 		void Face( const TArray<FVector3>& Corners )
 		{
 			FEditMeshFace Face;
-			for ( const FVector3& Corner : Corners ) Face.Indices.Add( Vertex( Corner ) );
+			for ( const FVector3& Corner : Corners )
+			{
+				Face.Indices.Add( Vertex( Corner ) );
+			}
 			Mesh.Faces.Add( Face );
 		}
 
@@ -123,7 +132,10 @@ FEditMesh NEditMesh::MakeCylinder( float32 Radius, float32 Height, int32 Segment
 		return FVector3( R * NMath::Cos( Angle ), Y, R * NMath::Sin( Angle ) );
 	};
 	FBuilder B;
-	for ( int32 i = 0; i < N; ++i ) B.Face( { Ring( i, 0.0f ), Ring( i, H ), Ring( i + 1, H ), Ring( i + 1, 0.0f ) } );
+	for ( int32 i = 0; i < N; ++i )
+	{
+		B.Face( { Ring( i, 0.0f ), Ring( i, H ), Ring( i + 1, H ), Ring( i + 1, 0.0f ) } );
+	}
 	if ( bCaps )
 	{
 		TArray<FVector3> Top, Bottom;
@@ -150,12 +162,21 @@ FEditMesh NEditMesh::MakeSphere( float32 Radius, int32 Segments, int32 Rings )
 		return FVector3( R * NMath::Sin( Polar ) * NMath::Cos( Angle ), R + R * NMath::Cos( Polar ), R * NMath::Sin( Polar ) * NMath::Sin( Angle ) );
 	};
 	FBuilder B;
-	for ( int32 s = 0; s < N; ++s ) B.Face( { Top, Point( 1, s + 1 ), Point( 1, s ) } );
+	for ( int32 s = 0; s < N; ++s )
+	{
+		B.Face( { Top, Point( 1, s + 1 ), Point( 1, s ) } );
+	}
 	for ( int32 r = 1; r + 1 < M; ++r )
 	{
-		for ( int32 s = 0; s < N; ++s ) B.Face( { Point( r + 1, s ), Point( r, s ), Point( r, s + 1 ), Point( r + 1, s + 1 ) } );
+		for ( int32 s = 0; s < N; ++s )
+		{
+			B.Face( { Point( r + 1, s ), Point( r, s ), Point( r, s + 1 ), Point( r + 1, s + 1 ) } );
+		}
 	}
-	for ( int32 s = 0; s < N; ++s ) B.Face( { Bottom, Point( M - 1, s ), Point( M - 1, s + 1 ) } );
+	for ( int32 s = 0; s < N; ++s )
+	{
+		B.Face( { Bottom, Point( M - 1, s ), Point( M - 1, s + 1 ) } );
+	}
 	return B.Mesh;
 }
 

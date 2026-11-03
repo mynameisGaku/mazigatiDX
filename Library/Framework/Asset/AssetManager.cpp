@@ -88,10 +88,16 @@ namespace
 
 	void Release( EResource Kind, int32 Handle )
 	{
-		if ( Handle < 0 ) return;
+		if ( Handle < 0 )
+		{
+			return;
+		}
 		FService& S = Service();
 		IAssetBackend* Backend = S.Backend.Load();
-		if ( Backend == nullptr ) return;   // アプリの終了後。DxLib の終了処理がまとめて片付ける
+		if ( Backend == nullptr )
+		{
+			return;   // アプリの終了後。DxLib の終了処理がまとめて片付ける
+		}
 
 		if ( NThread::GetCurrentId() == S.MainThread )
 		{
@@ -111,8 +117,14 @@ namespace
 			FScopedLock Lock( S.Mutex );
 			Local = MoveTemp( S.Deferred );
 		}
-		if ( Backend == nullptr ) return;
-		for ( const auto& Entry : Local ) ReleaseNow( *Backend, Entry.Key, Entry.Value );
+		if ( Backend == nullptr )
+		{
+			return;
+		}
+		for ( const auto& Entry : Local )
+		{
+			ReleaseNow( *Backend, Entry.Key, Entry.Value );
+		}
 		S.NumDeferredReleased.FetchAdd( Local.Num() );
 	}
 
@@ -151,14 +163,20 @@ bool NAssetService::AddFontFile( const FString& Path )
 {
 	FService& S = Service();
 	IAssetBackend* Backend = S.Backend.Load();
-	if ( Backend == nullptr ) return false;
+	if ( Backend == nullptr )
+	{
+		return false;
+	}
 
 	if ( int32* Users = S.FontFileUsers.Find( Path ) )
 	{
 		++*Users;
 		return true;
 	}
-	if ( !Backend->AddFontFile( Path ) ) return false;
+	if ( !Backend->AddFontFile( Path ) )
+	{
+		return false;
+	}
 	S.FontFileUsers.Add( Path, 1 );
 	return true;
 }
@@ -167,11 +185,20 @@ void NAssetService::RemoveFontFile( const FString& Path )
 {
 	FService& S = Service();
 	int32* Users = S.FontFileUsers.Find( Path );
-	if ( Users == nullptr ) return;
-	if ( --*Users > 0 ) return;
+	if ( Users == nullptr )
+	{
+		return;
+	}
+	if ( --*Users > 0 )
+	{
+		return;
+	}
 
 	S.FontFileUsers.Remove( Path );
-	if ( IAssetBackend* Backend = S.Backend.Load() ) Backend->RemoveFontFile( Path );
+	if ( IAssetBackend* Backend = S.Backend.Load() )
+	{
+		Backend->RemoveFontFile( Path );
+	}
 }
 
 //=============================================================================
@@ -181,7 +208,10 @@ bool FAssetBundle::AreAllReady() const
 {
 	for ( const TSharedPtr<CAsset>& Asset : Assets )
 	{
-		if ( !Asset->IsReady() ) return false;
+		if ( !Asset->IsReady() )
+		{
+			return false;
+		}
 	}
 	return true;
 }
@@ -246,7 +276,10 @@ void CAssetManager::Tick( float32 DeltaTime )
 	for ( int32 Index = PendingSheets.Num() - 1; Index >= 0; --Index )
 	{
 		const TSharedPtr<CSpriteSheet> Sheet = PendingSheets[Index].Pin();
-		if ( !Sheet.IsValid() || Sheet->IsReady() ) PendingSheets.RemoveAtSwap( Index );
+		if ( !Sheet.IsValid() || Sheet->IsReady() )
+		{
+			PendingSheets.RemoveAtSwap( Index );
+		}
 	}
 
 	PruneTimer += DeltaTime;
@@ -285,7 +318,10 @@ void CAssetManager::RecordLoad( CAsset& Asset, const FString& FullPath, int64 St
 void CAssetManager::UpdateStats()
 {
 	FAssetStats Fresh = Stats;   // 起動してからの累計は引き継ぐ
-	for ( FAssetTypeStats& Type : Fresh.Types ) Type = FAssetTypeStats();
+	for ( FAssetTypeStats& Type : Fresh.Types )
+	{
+		Type = FAssetTypeStats();
+	}
 	Fresh.TotalCount = 0;
 	Fresh.TotalMemoryBytes = 0;
 	Fresh.TotalFileBytes = 0;
@@ -295,7 +331,10 @@ void CAssetManager::UpdateStats()
 	{
 		FAssetTypeStats& Type = Fresh.Types[static_cast<int32>( Info.Type )];
 		++Type.Count;
-		if ( !Info.bReady ) ++Type.NumNotReady;
+		if ( !Info.bReady )
+		{
+			++Type.NumNotReady;
+		}
 		Type.MemoryBytes += Info.MemoryBytes;
 		Type.FileBytes += Info.FileBytes;
 		Type.LoadMs += Info.LoadMs;
@@ -303,7 +342,10 @@ void CAssetManager::UpdateStats()
 		Fresh.TotalMemoryBytes += Info.MemoryBytes;
 		Fresh.TotalFileBytes += Info.FileBytes;
 	}
-	if ( Fresh.TotalMemoryBytes > Fresh.PeakMemoryBytes ) Fresh.PeakMemoryBytes = Fresh.TotalMemoryBytes;
+	if ( Fresh.TotalMemoryBytes > Fresh.PeakMemoryBytes )
+	{
+		Fresh.PeakMemoryBytes = Fresh.TotalMemoryBytes;
+	}
 
 	if ( IAssetBackend* B = GetBackend() )
 	{
@@ -316,7 +358,10 @@ void CAssetManager::UpdateStats()
 void CAssetManager::RecordCounters() const
 {
 	IProfiler* Recorder = NProfiler::GRecorder;
-	if ( Recorder == nullptr ) return;
+	if ( Recorder == nullptr )
+	{
+		return;
+	}
 
 	static const char* const CountNames[NumAssetTypes] = { "Asset.Count.Texture", "Asset.Count.SpriteSheet", "Asset.Count.Model", "Asset.Count.Sound", "Asset.Count.Font",
 														   "Asset.Count.ModelAnimation", "Asset.Count.World", "Asset.Count.Effect" };
@@ -344,7 +389,10 @@ void CAssetManager::RecordCounters() const
 		PROFILE_COUNTER_BYTES( "Memory.VRAM.Used", Stats.Backend.VideoMemoryUsed );
 		PROFILE_COUNTER_BYTES( "Memory.VRAM.Total", Stats.Backend.VideoMemoryTotal );
 	}
-	if ( Stats.Backend.ProcessWorkingSet > 0 ) PROFILE_COUNTER_BYTES( "Memory.WorkingSet", Stats.Backend.ProcessWorkingSet );
+	if ( Stats.Backend.ProcessWorkingSet > 0 )
+	{
+		PROFILE_COUNTER_BYTES( "Memory.WorkingSet", Stats.Backend.ProcessWorkingSet );
+	}
 	PROFILE_COUNTER( "Handle.Textures", Stats.Backend.NumTextureHandles );
 	PROFILE_COUNTER( "Handle.Models", Stats.Backend.NumModelHandles );
 	PROFILE_COUNTER( "Handle.Sounds", Stats.Backend.NumSoundHandles );
@@ -373,7 +421,10 @@ FString CAssetManager::GetRootDirectory() const
 
 TOptional<FString> CAssetManager::ResolvePath( const FString& Path ) const
 {
-	if ( Path.IsEmpty() ) return TOptional<FString>();
+	if ( Path.IsEmpty() )
+	{
+		return TOptional<FString>();
+	}
 
 	// ルートフォルダを最優先、次に作業ディレクトリ・exe のフォルダ（と親）。絶対パスはそのまま
 	if ( NFileSystem::FileExists( Path ) && ( Path.Find( ":" ) != INDEX_NONE || Path.StartsWith( "/" ) || Path.StartsWith( "\\" ) ) )
@@ -385,9 +436,15 @@ TOptional<FString> CAssetManager::ResolvePath( const FString& Path ) const
 	if ( !Root.IsEmpty() )
 	{
 		const FString Candidate = Root / Path;
-		if ( NFileSystem::FileExists( Candidate ) ) return NFileSystem::GetFullPath( Candidate );
+		if ( NFileSystem::FileExists( Candidate ) )
+		{
+			return NFileSystem::GetFullPath( Candidate );
+		}
 	}
-	if ( TOptional<FString> Found = NFileSystem::FindFile( Path ); Found.IsSet() ) return NFileSystem::GetFullPath( Found.Get( FString() ) );
+	if ( TOptional<FString> Found = NFileSystem::FindFile( Path ); Found.IsSet() )
+	{
+		return NFileSystem::GetFullPath( Found.Get( FString() ) );
+	}
 	return TOptional<FString>();
 }
 
@@ -420,7 +477,10 @@ void CAssetManager::PruneCache( TCache<T>& Cache )
 {
 	for ( auto It = Cache.CreateIterator(); It; ++It )
 	{
-		if ( !It.Value().IsValid() ) It.RemoveCurrent();
+		if ( !It.Value().IsValid() )
+		{
+			It.RemoveCurrent();
+		}
 	}
 }
 
@@ -443,7 +503,10 @@ TSharedPtr<CTexture> CAssetManager::LoadTexture( const FString& Path, bool bAsyn
 {
 	GAME_THREAD_ONLY( nullptr );
 	const TOptional<FString> Full = PrepareLoad( "texture", Path );
-	if ( !Full.IsSet() ) return nullptr;
+	if ( !Full.IsSet() )
+	{
+		return nullptr;
+	}
 
 	const FString FullPath = Full.Get( FString() );
 	const FString Key = MakeKey( FullPath );
@@ -485,7 +548,10 @@ TSharedPtr<CTexture> CAssetManager::CreateTextureFromMemory( const FString& Name
 	const FString Key = "memory:" + MakeKey( Name );
 	if ( TWeakPtr<CTexture>* Found = Textures.Find( Key ) )
 	{
-		if ( TSharedPtr<CTexture> Existing = Found->Pin() ) return Existing;
+		if ( TSharedPtr<CTexture> Existing = Found->Pin() )
+		{
+			return Existing;
+		}
 	}
 
 	const int32 Handle = GetBackend()->CreateTextureFromMemory( FileImage, Size );
@@ -543,7 +609,10 @@ TSharedPtr<CRenderTarget> CAssetManager::CreateRenderTarget( const FString& Name
 //-----------------------------------------------------------------------------
 void CAssetManager::AddPendingSheet( const TSharedPtr<CSpriteSheet>& Sheet )
 {
-	if ( !Sheet->IsReady() ) PendingSheets.Add( Sheet );
+	if ( !Sheet->IsReady() )
+	{
+		PendingSheets.Add( Sheet );
+	}
 }
 
 TSharedPtr<CSpriteSheet> CAssetManager::CreateSpriteSheet( const TSharedPtr<CTexture>& Texture, const FSpriteSheetGrid& Grid, const FString& Name )
@@ -573,7 +642,10 @@ TSharedPtr<CSpriteSheet> CAssetManager::CreateSpriteSheet( const FSpriteSheetDef
 {
 	GAME_THREAD_ONLY( nullptr );
 	TSharedPtr<CTexture> Texture = LoadTexture( Definition.TexturePath, bAsync );
-	if ( !Texture.IsValid() ) return nullptr;   // 原因は LoadTexture がログに出している
+	if ( !Texture.IsValid() )
+	{
+		return nullptr;   // 原因は LoadTexture がログに出している
+	}
 
 	TSharedPtr<CSpriteSheet> Sheet = MakeShared<CSpriteSheet>( Name.IsEmpty() ? Definition.TexturePath : Name, Texture );
 	Sheet->SetDefinition( Definition );
@@ -585,7 +657,10 @@ TOptional<FString> CAssetManager::PrepareSavePath( const FString& Path )
 {
 	FString Full = Path;
 	const bool bAbsolute = Path.Find( ":" ) != INDEX_NONE || Path.StartsWith( "/" ) || Path.StartsWith( "\\" );
-	if ( !bAbsolute ) Full = GetRootDirectory() / Path;
+	if ( !bAbsolute )
+	{
+		Full = GetRootDirectory() / Path;
+	}
 	Full = Full.Replace( "\\", "/" );
 
 	const int32 Slash = Full.FindLast( "/" );
@@ -600,7 +675,10 @@ TOptional<FString> CAssetManager::PrepareSavePath( const FString& Path )
 bool CAssetManager::SaveSpriteSheetDefinition( const FString& Path, const FSpriteSheetDefinition& Definition )
 {
 	const TOptional<FString> Full = PrepareSavePath( Path );
-	if ( !Full.IsSet() ) return false;
+	if ( !Full.IsSet() )
+	{
+		return false;
+	}
 
 	NJson::CJsonObject Json;
 	Json.GetRoot() = Definition.ToJson();
@@ -619,7 +697,10 @@ TSharedPtr<CSpriteSheet> CAssetManager::LoadSpriteSheet( const FString& Definiti
 {
 	GAME_THREAD_ONLY( nullptr );
 	const TOptional<FString> Full = PrepareLoad( "sprite sheet", DefinitionPath );
-	if ( !Full.IsSet() ) return nullptr;
+	if ( !Full.IsSet() )
+	{
+		return nullptr;
+	}
 
 	const FString FullPath = Full.Get( FString() );
 	const FString Key = MakeKey( FullPath );
@@ -656,7 +737,10 @@ TSharedPtr<CSpriteSheet> CAssetManager::LoadSpriteSheet( const FString& Definiti
 		return nullptr;
 	}
 	TSharedPtr<CTexture> Texture = LoadTexture( Definition.TexturePath, bAsync );
-	if ( !Texture.IsValid() ) return nullptr;   // 原因は LoadTexture がログに出している
+	if ( !Texture.IsValid() )
+	{
+		return nullptr;   // 原因は LoadTexture がログに出している
+	}
 
 	TSharedPtr<CSpriteSheet> Sheet = MakeShared<CSpriteSheet>( FullPath, Texture );
 	Sheet->SetDefinition( Definition );
@@ -678,7 +762,10 @@ TSharedPtr<CModelAnimationAsset> CAssetManager::CreateModelAnimations( const FMo
 	if ( !Definition.ModelPath.IsEmpty() )
 	{
 		Model = LoadModel( Definition.ModelPath, bAsync );
-		if ( !Model.IsValid() ) return nullptr;   // 原因は LoadModel がログに出している
+		if ( !Model.IsValid() )
+		{
+			return nullptr;   // 原因は LoadModel がログに出している
+		}
 		if ( Model->IsReady() && Model->GetMeshCount() == 0 )
 		{
 			LOG( LogAsset, Warning, "The model '%s' of the animation set has no mesh (it only holds animations), so nothing will be drawn. Use it as a clip's Source instead.", *Definition.ModelPath );
@@ -689,7 +776,10 @@ TSharedPtr<CModelAnimationAsset> CAssetManager::CreateModelAnimations( const FMo
 	for ( const FModelClipDef& Clip : Definition.Clips )
 	{
 		TSharedPtr<CModel> Source = Clip.SourcePath.IsEmpty() ? Model : LoadModel( Clip.SourcePath, bAsync );
-		if ( !Source.IsValid() ) Source = Model;   // 読めなかったクリップは、モデル自身のアニメーションとして扱う（原因はログに出ている）
+		if ( !Source.IsValid() )
+		{
+			Source = Model;   // 読めなかったクリップは、モデル自身のアニメーションとして扱う（原因はログに出ている）
+		}
 		Sources.Add( Source );
 	}
 	const FString DefaultName = Definition.ModelPath.IsEmpty() ? FString( "(animation set)" ) : Definition.ModelPath;
@@ -700,7 +790,10 @@ TSharedPtr<CModelAnimationAsset> CAssetManager::LoadModelAnimations( const FStri
 {
 	GAME_THREAD_ONLY( nullptr );
 	const TOptional<FString> Full = PrepareLoad( "model animation set", DefinitionPath );
-	if ( !Full.IsSet() ) return nullptr;
+	if ( !Full.IsSet() )
+	{
+		return nullptr;
+	}
 
 	const FString FullPath = Full.Get( FString() );
 	const FString Key = MakeKey( FullPath );
@@ -738,7 +831,10 @@ TSharedPtr<CModelAnimationAsset> CAssetManager::LoadModelAnimations( const FStri
 bool CAssetManager::SaveModelAnimationDefinition( const FString& Path, const FModelAnimationDefinition& Definition )
 {
 	const TOptional<FString> Full = PrepareSavePath( Path );
-	if ( !Full.IsSet() ) return false;
+	if ( !Full.IsSet() )
+	{
+		return false;
+	}
 
 	NJson::CJsonObject Json;
 	Json.GetRoot() = Definition.ToJson();
@@ -800,7 +896,10 @@ TSharedPtr<CSound> CAssetManager::LoadSound( const FString& Path, ESoundLoadMode
 {
 	GAME_THREAD_ONLY( nullptr );
 	const TOptional<FString> Full = PrepareLoad( "sound", Path );
-	if ( !Full.IsSet() ) return nullptr;
+	if ( !Full.IsSet() )
+	{
+		return nullptr;
+	}
 
 	const FString FullPath = Full.Get( FString() );
 	// 読み込み方が違えば別のアセット（同じファイルを、効果音としても BGM としても使えるように）
@@ -883,7 +982,10 @@ namespace
 TSharedPtr<CFont> CAssetManager::LoadFont( const FString& FontFilePath, int32 Size, const FFontStyle& Style )
 {
 	const TOptional<FString> Full = PrepareLoad( "font", FontFilePath );
-	if ( !Full.IsSet() ) return nullptr;
+	if ( !Full.IsSet() )
+	{
+		return nullptr;
+	}
 
 	const FString FullPath = Full.Get( FString() );
 	const FString Key = "file:" + MakeKey( FullPath ) + FontSuffix( Size, Style );
@@ -909,7 +1011,10 @@ TSharedPtr<CFont> CAssetManager::LoadFont( const FString& FontFilePath, int32 Si
 	}
 
 	TSharedPtr<CFont> Font = LoadFontInternal( Key, MakeDesc( Face, Size, Style ), FullPath );
-	if ( !Font.IsValid() ) NAssetService::RemoveFontFile( FullPath );   // CFont に引き渡せなかった分の登録を戻す
+	if ( !Font.IsValid() )
+	{
+		NAssetService::RemoveFontFile( FullPath );   // CFont に引き渡せなかった分の登録を戻す
+	}
 	return Font;
 }
 
@@ -964,7 +1069,10 @@ namespace
 		for ( auto It = Cache.CreateConstIterator(); It; ++It )
 		{
 			const TSharedPtr<T> Asset = It.Value().Pin();
-			if ( !Asset.IsValid() ) continue;
+			if ( !Asset.IsValid() )
+			{
+				continue;
+			}
 
 			FAssetInfo Info;
 			Info.Type = Asset->GetAssetType();
@@ -1017,7 +1125,10 @@ void CAssetManager::DumpToLog() const
 	for ( int32 i = 0; i < NumAssetTypes; ++i )
 	{
 		const FAssetTypeStats& Type = Stats.Types[i];
-		if ( Type.Count > 0 ) LOG( LogAsset, Display, "  %-12s %3d asset(s), ~%s", ToString( static_cast<EAssetType>( i ) ), Type.Count, *Bytes( Type.MemoryBytes ) );
+		if ( Type.Count > 0 )
+		{
+			LOG( LogAsset, Display, "  %-12s %3d asset(s), ~%s", ToString( static_cast<EAssetType>( i ) ), Type.Count, *Bytes( Type.MemoryBytes ) );
+		}
 	}
 	for ( const FAssetInfo& Info : GetLoadedAssets() )
 	{

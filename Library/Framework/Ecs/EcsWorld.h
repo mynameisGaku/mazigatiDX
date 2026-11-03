@@ -97,7 +97,10 @@ public:
 	// 追加する（すでに持っていれば上書き）。戻り値は、次に構造を変えるまで有効
 	T* Add( int32 Entity, const T& Value )
 	{
-		if ( Entity >= Sparse.Num() ) Sparse.SetNum( static_cast<size_t>( Entity ) + 1, INDEX_NONE );
+		if ( Entity >= Sparse.Num() )
+		{
+			Sparse.SetNum( static_cast<size_t>( Entity ) + 1, INDEX_NONE );
+		}
 		int32& DenseIndex = Sparse[Entity];
 		if ( DenseIndex != INDEX_NONE )
 		{
@@ -114,7 +117,10 @@ public:
 	template<typename... TArgs>
 	T* Emplace( int32 Entity, TArgs&&... Args )
 	{
-		if ( Entity >= Sparse.Num() ) Sparse.SetNum( static_cast<size_t>( Entity ) + 1, INDEX_NONE );
+		if ( Entity >= Sparse.Num() )
+		{
+			Sparse.SetNum( static_cast<size_t>( Entity ) + 1, INDEX_NONE );
+		}
 		int32& DenseIndex = Sparse[Entity];
 		if ( DenseIndex != INDEX_NONE )
 		{
@@ -131,9 +137,15 @@ public:
 	template<typename... TArgs>
 	T& GetOrAdd( int32 Entity, TArgs&&... Args )
 	{
-		if ( Entity >= Sparse.Num() ) Sparse.SetNum( static_cast<size_t>( Entity ) + 1, INDEX_NONE );
+		if ( Entity >= Sparse.Num() )
+		{
+			Sparse.SetNum( static_cast<size_t>( Entity ) + 1, INDEX_NONE );
+		}
 		int32& DenseIndex = Sparse[Entity];
-		if ( DenseIndex != INDEX_NONE ) return Dense[DenseIndex];
+		if ( DenseIndex != INDEX_NONE )
+		{
+			return Dense[DenseIndex];
+		}
 		DenseIndex = Dense.Num();
 		Dense.Emplace( Forward<TArgs>( Args )... );
 		DenseEntity.Add( Entity );
@@ -142,14 +154,20 @@ public:
 
 	FORCEINLINE T* Find( int32 Entity )
 	{
-		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Sparse.Num() ) ) return nullptr;
+		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Sparse.Num() ) )
+		{
+			return nullptr;
+		}
 		const int32 DenseIndex = Sparse[Entity];
 		return DenseIndex != INDEX_NONE ? &Dense[DenseIndex] : nullptr;
 	}
 
 	FORCEINLINE const T* Find( int32 Entity ) const
 	{
-		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Sparse.Num() ) ) return nullptr;
+		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Sparse.Num() ) )
+		{
+			return nullptr;
+		}
 		const int32 DenseIndex = Sparse[Entity];
 		return DenseIndex != INDEX_NONE ? &Dense[DenseIndex] : nullptr;
 	}
@@ -166,9 +184,15 @@ public:
 
 	void Remove( int32 Entity ) override
 	{
-		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Sparse.Num() ) ) return;
+		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Sparse.Num() ) )
+		{
+			return;
+		}
 		const int32 DenseIndex = Sparse[Entity];
-		if ( DenseIndex == INDEX_NONE ) return;
+		if ( DenseIndex == INDEX_NONE )
+		{
+			return;
+		}
 
 		// 最後の要素を空いたところへ移す（Dense に隙間を作らない）
 		const int32 LastIndex = Dense.Num() - 1;
@@ -289,9 +313,15 @@ public:
 	template<typename T>
 	FORCEINLINE T* GetData( int32 Entity )
 	{
-		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Records.Num() ) ) return nullptr;
+		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Records.Num() ) )
+		{
+			return nullptr;
+		}
 		const uint64 Bit = NEcs::TypeBit<T>();
-		if ( Bit != 0ull && ( Records[Entity].ComponentMask & Bit ) == 0ull ) return nullptr;
+		if ( Bit != 0ull && ( Records[Entity].ComponentMask & Bit ) == 0ull )
+		{
+			return nullptr;
+		}
 		TComponentStorage<T>* Storage = FindStorage<T>();
 		return Storage != nullptr ? ( Bit != 0ull ? &Storage->GetUnchecked( Entity ) : Storage->Find( Entity ) ) : nullptr;
 	}
@@ -299,9 +329,15 @@ public:
 	template<typename T>
 	FORCEINLINE const T* GetData( int32 Entity ) const
 	{
-		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Records.Num() ) ) return nullptr;
+		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Records.Num() ) )
+		{
+			return nullptr;
+		}
 		const uint64 Bit = NEcs::TypeBit<T>();
-		if ( Bit != 0ull && ( Records[Entity].ComponentMask & Bit ) == 0ull ) return nullptr;
+		if ( Bit != 0ull && ( Records[Entity].ComponentMask & Bit ) == 0ull )
+		{
+			return nullptr;
+		}
 		const TComponentStorage<T>* Storage = FindStorage<T>();
 		return Storage != nullptr ? ( Bit != 0ull ? &Storage->GetUnchecked( Entity ) : Storage->Find( Entity ) ) : nullptr;
 	}
@@ -309,9 +345,15 @@ public:
 	template<typename T>
 	FORCEINLINE bool HasData( int32 Entity ) const
 	{
-		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Records.Num() ) ) return false;
+		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Records.Num() ) )
+		{
+			return false;
+		}
 		const uint64 Bit = NEcs::TypeBit<T>();
-		if ( Bit != 0ull ) return ( Records[Entity].ComponentMask & Bit ) != 0ull;
+		if ( Bit != 0ull )
+		{
+			return ( Records[Entity].ComponentMask & Bit ) != 0ull;
+		}
 		const TComponentStorage<T>* Storage = FindStorage<T>();
 		return Storage != nullptr && Storage->Has( Entity );
 	}
@@ -319,9 +361,15 @@ public:
 	template<typename T>
 	FORCEINLINE void RemoveData( int32 Entity )
 	{
-		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Records.Num() ) ) return;
+		if ( static_cast<uint32>( Entity ) >= static_cast<uint32>( Records.Num() ) )
+		{
+			return;
+		}
 		Records[Entity].ComponentMask &= ~NEcs::TypeBit<T>();
-		if ( TComponentStorage<T>* Storage = FindStorage<T>() ) Storage->Remove( Entity );
+		if ( TComponentStorage<T>* Storage = FindStorage<T>() )
+		{
+			Storage->Remove( Entity );
+		}
 	}
 
 	// システムの中から、このエンティティのゲームオブジェクトの破棄を予約する（スレッドごとの一覧に溜める）
@@ -333,11 +381,17 @@ private:
 	template<typename T>
 	TComponentStorage<T>& GetOrCreateStorageSlow( int32 Id )
 	{
-		if ( Id >= StorageById.Num() ) StorageById.SetNum( Id + 1, nullptr );
+		if ( Id >= StorageById.Num() )
+		{
+			StorageById.SetNum( Id + 1, nullptr );
+		}
 		auto Created = MakeUnique<TComponentStorage<T>>();
 		TComponentStorage<T>* Raw = Created.Get();
 		StorageById[Id] = Raw;
-		if ( Id >= 64 ) OverflowStorages.Add( Raw );
+		if ( Id >= 64 )
+		{
+			OverflowStorages.Add( Raw );
+		}
 		Storages.Add( MoveTemp( Created ) );
 		return *Raw;
 	}

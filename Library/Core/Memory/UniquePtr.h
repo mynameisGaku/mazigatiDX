@@ -112,7 +112,10 @@ public:
 	{
 		T* Old = Ptr;
 		Ptr = NewPtr;
-		if ( Old ) GetDeleter()( Old );
+		if ( Old )
+		{
+			GetDeleter()( Old );
+		}
 	}
 
 	// 所有権を手放して生ポインタを返す（delete は呼び出し側の責任）
@@ -182,7 +185,10 @@ public:
 	{
 		T* Old = Ptr;
 		Ptr = NewPtr;
-		if ( Old ) GetDeleter()( Old );
+		if ( Old )
+		{
+			GetDeleter()( Old );
+		}
 	}
 
 	[[nodiscard]] FORCEINLINE T* Release() noexcept

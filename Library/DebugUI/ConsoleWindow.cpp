@@ -48,7 +48,10 @@ namespace
 	FString ApplySuggestion( const FString& Line, const FConsoleSuggestion& Suggestion )
 	{
 		FString NewLine = Line.Left( Suggestion.ReplaceFrom ) + Suggestion.Text;
-		if ( Suggestion.bAppendSpace ) NewLine += " ";
+		if ( Suggestion.bAppendSpace )
+		{
+			NewLine += " ";
+		}
 		return NewLine;
 	}
 
@@ -57,18 +60,30 @@ namespace
 	{
 		const FString Line = S.Input;
 		const FString Key = S.bListAll ? Line + "\x01" : Line;
-		if ( Key == S.LastInput ) return;
+		if ( Key == S.LastInput )
+		{
+			return;
+		}
 		S.LastInput = Key;
 
 		S.Suggestions.Empty();
 		S.CommandName.Empty();
 		S.ActiveArg = INDEX_NONE;
 		S.Selected = INDEX_NONE;
-		if ( GetHistory( S ).IsNavigating() ) return;   // 履歴をたどっている間は、候補を出さない（矢印で履歴を続けてたどれるように）
-		if ( Line.TrimStartAndEnd().IsEmpty() && !S.bListAll ) return;
+		if ( GetHistory( S ).IsNavigating() )
+		{
+			return;   // 履歴をたどっている間は、候補を出さない（矢印で履歴を続けてたどれるように）
+		}
+		if ( Line.TrimStartAndEnd().IsEmpty() && !S.bListAll )
+		{
+			return;
+		}
 
 		const FConsoleCompletion Completion = GetRegistry( S ).Complete( Line );
-		if ( Completion.Command != nullptr ) S.CommandName = Completion.Command->Name;
+		if ( Completion.Command != nullptr )
+		{
+			S.CommandName = Completion.Command->Name;
+		}
 		S.ActiveArg = Completion.ActiveArg;
 
 		for ( int32 i = 0; i < Completion.Candidates.Num(); ++i )
@@ -80,7 +95,10 @@ namespace
 			S.Suggestions.Add( Suggestion );
 		}
 		// すでに打ち終えている（候補が自分自身だけ）なら、候補は出さない。使い方の表示で足りる
-		if ( S.Suggestions.Num() == 1 && Line.Mid( Completion.ReplaceFrom ).Equals( S.Suggestions[0].Text, ESearchCase::IgnoreCase ) ) S.Suggestions.Empty();
+		if ( S.Suggestions.Num() == 1 && Line.Mid( Completion.ReplaceFrom ).Equals( S.Suggestions[0].Text, ESearchCase::IgnoreCase ) )
+		{
+			S.Suggestions.Empty();
+		}
 
 		// 同じ書き出しの履歴
 		for ( const FString& Match : GetHistory( S ).FindMatches( Line, 4 ) )
@@ -130,8 +148,14 @@ namespace
 			{
 				// 候補を選ぶ（端で折り返す）
 				const int32 Num = S.Suggestions.Num();
-				if ( S.Selected == INDEX_NONE ) S.Selected = bUp ? Num - 1 : 0;
-				else S.Selected = ( S.Selected + ( bUp ? Num - 1 : 1 ) ) % Num;
+				if ( S.Selected == INDEX_NONE )
+				{
+					S.Selected = bUp ? Num - 1 : 0;
+				}
+				else
+				{
+					S.Selected = ( S.Selected + ( bUp ? Num - 1 : 1 ) ) % Num;
+				}
 			}
 			else
 			{
@@ -156,14 +180,23 @@ namespace
 				return 0;
 			}
 			const FConsoleCompletion Completion = GetRegistry( S ).Complete( Line );
-			if ( Completion.Candidates.IsEmpty() ) return 0;
+			if ( Completion.Candidates.IsEmpty() )
+			{
+				return 0;
+			}
 			if ( Completion.Candidates.Num() == 1 )
 			{
 				SetCallbackText( Data, S, Line.Left( Completion.ReplaceFrom ) + Completion.Candidates[0] + " " );
 				return 0;
 			}
-			if ( Completion.CommonPrefix.Len() > Line.Len() - Completion.ReplaceFrom ) SetCallbackText( Data, S, Line.Left( Completion.ReplaceFrom ) + Completion.CommonPrefix );
-			else if ( HasVisibleSuggestions( S ) ) S.Selected = 0;
+			if ( Completion.CommonPrefix.Len() > Line.Len() - Completion.ReplaceFrom )
+			{
+				SetCallbackText( Data, S, Line.Left( Completion.ReplaceFrom ) + Completion.CommonPrefix );
+			}
+			else if ( HasVisibleSuggestions( S ) )
+			{
+				S.Selected = 0;
+			}
 		}
 		return 0;
 	}
@@ -173,11 +206,17 @@ namespace
 	//-------------------------------------------------------------------------
 	int32 CountInfoLines( const FConsoleCommandInfo* Info )
 	{
-		if ( Info == nullptr ) return 0;
+		if ( Info == nullptr )
+		{
+			return 0;
+		}
 		int32 Lines = 1 + ( Info->Description.IsEmpty() ? 0 : 1 );
 		for ( const FConsoleArgDesc& Arg : Info->Args )
 		{
-			if ( !Arg.Description.IsEmpty() ) ++Lines;
+			if ( !Arg.Description.IsEmpty() )
+			{
+				++Lines;
+			}
 		}
 		return Lines;
 	}
@@ -199,11 +238,17 @@ namespace
 			ImGui::SameLine( 0.0f, 6.0f );
 			ImGui::TextColored( i == ActiveArg ? Highlight : Normal, "%s", UI_TEXT( Text ) );
 		}
-		if ( !Info.Description.IsEmpty() ) ImGui::TextColored( Dim, "%s", UI_TEXT( Info.Description ) );
+		if ( !Info.Description.IsEmpty() )
+		{
+			ImGui::TextColored( Dim, "%s", UI_TEXT( Info.Description ) );
+		}
 		for ( int32 i = 0; i < Info.Args.Num(); ++i )
 		{
 			const FConsoleArgDesc& Arg = Info.Args[i];
-			if ( Arg.Description.IsEmpty() ) continue;   // 説明が無い引数は、詳しくは出さない
+			if ( Arg.Description.IsEmpty() )
+			{
+				continue;   // 説明が無い引数は、詳しくは出さない
+			}
 			const FString Head = Arg.Name + ( Arg.bOptional ? " (optional)" : "" ) + ": ";
 			ImGui::TextColored( i == ActiveArg ? Highlight : Dim, "  %s%s", UI_TEXT( Head ), UI_TEXT( Arg.Description ) );
 		}
@@ -217,7 +262,10 @@ void NDebugUI::LoadConsoleHistory( FConsoleWindowState& State )
 {
 	State.bHistoryLoaded = true;
 	TArray<uint8> Raw;
-	if ( !NFile::ReadAllBytes( GetHistoryPath(), Raw ) ) return;
+	if ( !NFile::ReadAllBytes( GetHistoryPath(), Raw ) )
+	{
+		return;
+	}
 	// UTF-8 の BOM は読み飛ばす
 	const int32 Num = Raw.Num();
 	int32 Start = Num >= 3 && Raw[0] == 0xEF && Raw[1] == 0xBB && Raw[2] == 0xBF ? 3 : 0;
@@ -227,9 +275,15 @@ void NDebugUI::LoadConsoleHistory( FConsoleWindowState& State )
 	while ( Start <= Num )
 	{
 		int32 End = Start;
-		while ( End < Num && Raw[End] != '\n' ) ++End;
+		while ( End < Num && Raw[End] != '\n' )
+		{
+			++End;
+		}
 		int32 LineEnd = End;
-		if ( LineEnd > Start && Raw[LineEnd - 1] == '\r' ) --LineEnd;
+		if ( LineEnd > Start && Raw[LineEnd - 1] == '\r' )
+		{
+			--LineEnd;
+		}
 		if ( LineEnd > Start )
 		{
 			const FString Line( reinterpret_cast<const char*>( Raw.GetData() ) + Start, LineEnd - Start );
@@ -245,7 +299,10 @@ void NDebugUI::SaveConsoleHistory( FConsoleWindowState& State )
 	const FString Path = GetHistoryPath();
 	NFileSystem::EnsureDirectory( NFileSystem::FindProjectRoot() / "Saved" );
 	FFile File;
-	if ( !File.Open( Path, FFile::EMode::Write ) ) return;
+	if ( !File.Open( Path, FFile::EMode::Write ) )
+	{
+		return;
+	}
 	for ( const FString& Line : GetHistory( State ).GetAll() )
 	{
 		File.Write( *Line, static_cast<usize>( Line.Len() ) );
@@ -266,7 +323,10 @@ EConsoleResult NDebugUI::ExecuteInConsole( FConsoleWindowState& State, const FSt
 
 void NDebugUI::DrawConsoleWindow( FConsoleWindowState& S, bool* pOpen )
 {
-	if ( !S.bHistoryLoaded ) LoadConsoleHistory( S );
+	if ( !S.bHistoryLoaded )
+	{
+		LoadConsoleHistory( S );
+	}
 
 	const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
 	const float Width = NMath::Min( 860.0f, MainViewport->Size.x - 40.0f );
@@ -289,7 +349,10 @@ void NDebugUI::DrawConsoleWindow( FConsoleWindowState& S, bool* pOpen )
 		S.bScrollToBottom = true;
 	}
 	ImGui::SameLine();
-	if ( ImGui::Button( "Copy" ) ) ImGui::SetClipboardText( *Output.ToText() );
+	if ( ImGui::Button( "Copy" ) )
+	{
+		ImGui::SetClipboardText( *Output.ToText() );
+	}
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth( 200.0f );
 	ImGui::InputTextWithHint( "##Filter", "filter output", S.Filter, sizeof( S.Filter ) );
@@ -307,8 +370,14 @@ void NDebugUI::DrawConsoleWindow( FConsoleWindowState& S, bool* pOpen )
 	const int32 NumSuggestions = S.Suggestions.Num();
 	const int32 SuggestionRows = bShowSuggestions ? NMath::Min( NumSuggestions, MaxSuggestionRows ) + ( NumSuggestions > MaxSuggestionRows ? 1 : 0 ) : 0;
 	float Footer = ImGui::GetFrameHeightWithSpacing() + Style.ItemSpacing.y;
-	if ( InfoLines > 0 ) Footer += InfoLines * LineHeight + Style.ItemSpacing.y * 2.0f + 2.0f;
-	if ( SuggestionRows > 0 ) Footer += SuggestionRows * LineHeight + Style.ItemSpacing.y * 2.0f + 2.0f;
+	if ( InfoLines > 0 )
+	{
+		Footer += InfoLines * LineHeight + Style.ItemSpacing.y * 2.0f + 2.0f;
+	}
+	if ( SuggestionRows > 0 )
+	{
+		Footer += SuggestionRows * LineHeight + Style.ItemSpacing.y * 2.0f + 2.0f;
+	}
 
 	//-------------------------------------------------------------------------
 	// 出力
@@ -323,7 +392,10 @@ void NDebugUI::DrawConsoleWindow( FConsoleWindowState& S, bool* pOpen )
 		{
 			for ( int32 i = 0; i < Output.Num(); ++i )
 			{
-				if ( Output.Get( i ).Text.Contains( FilterText, ESearchCase::IgnoreCase ) ) Visible.Add( i );
+				if ( Output.Get( i ).Text.Contains( FilterText, ESearchCase::IgnoreCase ) )
+				{
+					Visible.Add( i );
+				}
 			}
 		}
 		const int32 Count = bFilter ? Visible.Num() : Output.Num();
@@ -344,7 +416,10 @@ void NDebugUI::DrawConsoleWindow( FConsoleWindowState& S, bool* pOpen )
 
 		if ( ImGui::BeginPopupContextWindow( "##ConsoleOutputMenu" ) )
 		{
-			if ( ImGui::MenuItem( "Copy all" ) ) ImGui::SetClipboardText( *Output.ToText() );
+			if ( ImGui::MenuItem( "Copy all" ) )
+			{
+				ImGui::SetClipboardText( *Output.ToText() );
+			}
 			if ( ImGui::MenuItem( "Clear" ) )
 			{
 				Output.Clear();
@@ -356,7 +431,10 @@ void NDebugUI::DrawConsoleWindow( FConsoleWindowState& S, bool* pOpen )
 	// 新しい出力は、一番下を見ているときだけ追いかける（上を読んでいるときは動かさない）
 	if ( Output.GetRevision() != S.LastOutputRevision )
 	{
-		if ( bAtBottom || S.bScrollToBottom ) ImGui::SetScrollHereY( 1.0f );
+		if ( bAtBottom || S.bScrollToBottom )
+		{
+			ImGui::SetScrollHereY( 1.0f );
+		}
 		S.LastOutputRevision = Output.GetRevision();
 		S.bScrollToBottom = false;
 	}
@@ -378,19 +456,28 @@ void NDebugUI::DrawConsoleWindow( FConsoleWindowState& S, bool* pOpen )
 	{
 		ImGui::Separator();
 		float NameWidth = 0.0f;
-		for ( const FConsoleSuggestion& Suggestion : S.Suggestions ) NameWidth = NMath::Max( NameWidth, ImGui::CalcTextSize( UI_TEXT( Suggestion.Text ) ).x );
+		for ( const FConsoleSuggestion& Suggestion : S.Suggestions )
+		{
+			NameWidth = NMath::Max( NameWidth, ImGui::CalcTextSize( UI_TEXT( Suggestion.Text ) ).x );
+		}
 		const float DescriptionColumn = NMath::Min( NameWidth + 28.0f, 360.0f );
 
 		// 選んでいる候補が見える範囲を表示する
 		int32 First = 0;
-		if ( NumSuggestions > MaxSuggestionRows && S.Selected != INDEX_NONE ) First = NMath::Clamp( S.Selected - MaxSuggestionRows + 1, 0, NumSuggestions - MaxSuggestionRows );
+		if ( NumSuggestions > MaxSuggestionRows && S.Selected != INDEX_NONE )
+		{
+			First = NMath::Clamp( S.Selected - MaxSuggestionRows + 1, 0, NumSuggestions - MaxSuggestionRows );
+		}
 		const int32 Last = NMath::Min( First + MaxSuggestionRows, NumSuggestions );
 		int32 Clicked = INDEX_NONE;
 		for ( int32 i = First; i < Last; ++i )
 		{
 			const FConsoleSuggestion& Suggestion = S.Suggestions[i];
 			ImGui::PushID( i );
-			if ( ImGui::Selectable( UI_TEXT( Suggestion.Text ), S.Selected == i, ImGuiSelectableFlags_NoAutoClosePopups, ImVec2( DescriptionColumn - 8.0f, 0.0f ) ) ) Clicked = i;
+			if ( ImGui::Selectable( UI_TEXT( Suggestion.Text ), S.Selected == i, ImGuiSelectableFlags_NoAutoClosePopups, ImVec2( DescriptionColumn - 8.0f, 0.0f ) ) )
+			{
+				Clicked = i;
+			}
 			if ( !Suggestion.Description.IsEmpty() )
 			{
 				ImGui::SameLine( DescriptionColumn );
@@ -398,7 +485,10 @@ void NDebugUI::DrawConsoleWindow( FConsoleWindowState& S, bool* pOpen )
 			}
 			ImGui::PopID();
 		}
-		if ( NumSuggestions > MaxSuggestionRows ) ImGui::TextDisabled( "  %d - %d of %d (Up / Down to see more)", First + 1, Last, NumSuggestions );
+		if ( NumSuggestions > MaxSuggestionRows )
+		{
+			ImGui::TextDisabled( "  %d - %d of %d (Up / Down to see more)", First + 1, Last, NumSuggestions );
+		}
 		if ( Clicked != INDEX_NONE )
 		{
 			SetInputText( S, ApplySuggestion( FString( S.Input ), S.Suggestions[Clicked] ) );
@@ -458,7 +548,10 @@ void NDebugUI::DrawConsoleWindow( FConsoleWindowState& S, bool* pOpen )
 			S.bFocusInput = true;
 			GetHistory( S ).ResetNavigation();
 			S.bListAll = false;
-			if ( !Line.TrimStartAndEnd().IsEmpty() ) ExecuteInConsole( S, Line );
+			if ( !Line.TrimStartAndEnd().IsEmpty() )
+			{
+				ExecuteInConsole( S, Line );
+			}
 		}
 	}
 

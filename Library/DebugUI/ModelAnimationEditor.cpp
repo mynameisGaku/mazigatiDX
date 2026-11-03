@@ -29,7 +29,10 @@ namespace
 	{
 		S.StatusMessage = Text;
 		S.bStatusIsError = bError;
-		if ( bError ) LOG( LogModelAnimationEditor, Warning, "%s", *Text );
+		if ( bError )
+		{
+			LOG( LogModelAnimationEditor, Warning, "%s", *Text );
+		}
 	}
 
 	FString NormalizePath( const FString& Path ) { return Path.Replace( "\\", "/" ); }
@@ -37,9 +40,15 @@ namespace
 	void RescanFiles( FState& S, bool bForce )
 	{
 		CAssetManager* Assets = GetAssets();
-		if ( Assets == nullptr ) return;
+		if ( Assets == nullptr )
+		{
+			return;
+		}
 		const double Now = ImGui::GetTime();
-		if ( !bForce && Now - S.LastScanTime < 3.0 ) return;
+		if ( !bForce && Now - S.LastScanTime < 3.0 )
+		{
+			return;
+		}
 		S.LastScanTime = Now;
 
 		const FString Root = Assets->GetRootDirectory();
@@ -54,8 +63,14 @@ namespace
 
 	TSharedPtr<CModel> GetEffectiveMeshModel( const FState& S )
 	{
-		if ( S.Asset.IsValid() && S.Asset->GetModel().IsValid() && S.Asset->GetModel()->HasMesh() ) return S.Asset->GetModel();
-		if ( S.PreviewModel.IsValid() && S.PreviewModel->HasMesh() ) return S.PreviewModel;
+		if ( S.Asset.IsValid() && S.Asset->GetModel().IsValid() && S.Asset->GetModel()->HasMesh() )
+		{
+			return S.Asset->GetModel();
+		}
+		if ( S.PreviewModel.IsValid() && S.PreviewModel->HasMesh() )
+		{
+			return S.PreviewModel;
+		}
 		return TSharedPtr<CModel>();
 	}
 
@@ -194,16 +209,31 @@ namespace
 		FModelPlayParams Params;
 		Params.FadeTime = 0.0f;
 		Params.bRestartIfPlaying = true;
-		if ( !S.Animator.Play( Clip->Name, Params ) ) return;
-		if ( bKeepTime ) S.Animator.Seek( Normalized );
-		if ( S.bPlaying ) S.Animator.Resume();
-		else S.Animator.Pause();
+		if ( !S.Animator.Play( Clip->Name, Params ) )
+		{
+			return;
+		}
+		if ( bKeepTime )
+		{
+			S.Animator.Seek( Normalized );
+		}
+		if ( S.bPlaying )
+		{
+			S.Animator.Resume();
+		}
+		else
+		{
+			S.Animator.Pause();
+		}
 	}
 
 	void SyncPreview( FState& S )
 	{
 		CAssetManager* Assets = GetAssets();
-		if ( Assets == nullptr ) return;
+		if ( Assets == nullptr )
+		{
+			return;
+		}
 		const FModelAnimationDefinition& Definition = S.Document.Get();
 
 		if ( S.BuiltModelPath != Definition.ModelPath || S.BuiltPreviewModelPath != Definition.PreviewModelPath )
@@ -245,17 +275,38 @@ namespace
 			{
 				const TSharedPtr<CModel>& BoundModel = S.Asset->GetModel();
 				const TSharedPtr<CModel> Fallback = ( !BoundModel.IsValid() || BoundModel->IsAnimationOnly() ) ? S.PreviewModel : TSharedPtr<CModel>();
-				if ( !S.Animator.Instance.IsValid() && Fallback.IsValid() ) S.Animator = S.Asset->CreateAnimatorFor( Fallback );
-				else S.Asset->ApplyTo( S.Animator, Fallback );
+				if ( !S.Animator.Instance.IsValid() && Fallback.IsValid() )
+				{
+					S.Animator = S.Asset->CreateAnimatorFor( Fallback );
+				}
+				else
+				{
+					S.Asset->ApplyTo( S.Animator, Fallback );
+				}
 			}
-			if ( !Definition.Clips.IsValidIndex( S.SelectedClip ) ) S.SelectedClip = Definition.Clips.IsEmpty() ? INDEX_NONE : Definition.Clips.Num() - 1;
+			if ( !Definition.Clips.IsValidIndex( S.SelectedClip ) )
+			{
+				S.SelectedClip = Definition.Clips.IsEmpty() ? INDEX_NONE : Definition.Clips.Num() - 1;
+			}
 			const FModelClipDef* Clip = SelectedClip( S );
-			if ( Clip == nullptr || S.SelectedEvent >= Clip->Events.Num() ) S.SelectedEvent = INDEX_NONE;
-			if ( !Definition.Clips.IsValidIndex( S.BlendFrom ) ) S.BlendFrom = INDEX_NONE;
-			if ( !Definition.Clips.IsValidIndex( S.BlendTo ) ) S.BlendTo = INDEX_NONE;
+			if ( Clip == nullptr || S.SelectedEvent >= Clip->Events.Num() )
+			{
+				S.SelectedEvent = INDEX_NONE;
+			}
+			if ( !Definition.Clips.IsValidIndex( S.BlendFrom ) )
+			{
+				S.BlendFrom = INDEX_NONE;
+			}
+			if ( !Definition.Clips.IsValidIndex( S.BlendTo ) )
+			{
+				S.BlendTo = INDEX_NONE;
+			}
 			PlaySelected( S, true );
 		}
-		if ( S.PlayingClip != S.SelectedClip ) PlaySelected( S, false );
+		if ( S.PlayingClip != S.SelectedClip )
+		{
+			PlaySelected( S, false );
+		}
 	}
 
 	//=========================================================================
@@ -275,10 +326,16 @@ namespace
 	bool SaveCurrent( FState& S, const FString& AssetPath )
 	{
 		CAssetManager* Assets = GetAssets();
-		if ( Assets == nullptr || AssetPath.IsEmpty() ) return false;
+		if ( Assets == nullptr || AssetPath.IsEmpty() )
+		{
+			return false;
+		}
 
 		FString Path = NormalizePath( AssetPath );
-		if ( !Path.EndsWith( DefinitionExtension, ESearchCase::IgnoreCase ) ) Path += DefinitionExtension;
+		if ( !Path.EndsWith( DefinitionExtension, ESearchCase::IgnoreCase ) )
+		{
+			Path += DefinitionExtension;
+		}
 		if ( !Assets->SaveModelAnimationDefinition( Path, S.Document.Get() ) )
 		{
 			SetStatus( S, "Failed to save '" + Path + "' (see the log).", true );
@@ -311,9 +368,18 @@ namespace
 			S.bRequestOpenUnsavedPopup = true;
 			return;
 		}
-		if ( Action == FState::EPending::Open ) NDebugUI::OpenModelAnimationFile( S, Path );
-		else if ( Action == FState::EPending::New ) NDebugUI::NewModelAnimationFromModel( S, Path );
-		else if ( Action == FState::EPending::NewMotionPack ) NDebugUI::NewMotionPack( S, Path );
+		if ( Action == FState::EPending::Open )
+		{
+			NDebugUI::OpenModelAnimationFile( S, Path );
+		}
+		else if ( Action == FState::EPending::New )
+		{
+			NDebugUI::NewModelAnimationFromModel( S, Path );
+		}
+		else if ( Action == FState::EPending::NewMotionPack )
+		{
+			NDebugUI::NewMotionPack( S, Path );
+		}
 	}
 
 	//=========================================================================
@@ -395,7 +461,10 @@ namespace
 		ImGui::SameLine();
 		ImGui::Checkbox( "Axes", &S.bShowAxes );
 		ImGui::SameLine();
-		if ( ImGui::SmallButton( "Fit" ) ) S.bFitRequested = true;
+		if ( ImGui::SmallButton( "Fit" ) )
+		{
+			S.bFitRequested = true;
+		}
 		ImGui::SameLine();
 		ImGui::ColorEdit3( "##Background", S.Background, ImGuiColorEditFlags_NoInputs );
 		ImGui::SameLine();
@@ -403,15 +472,24 @@ namespace
 
 		const ImVec2 Origin = ImGui::GetCursorScreenPos();
 		ImVec2 Size = ImGui::GetContentRegionAvail();
-		if ( Size.x < 64.0f || Size.y < 64.0f ) return;
+		if ( Size.x < 64.0f || Size.y < 64.0f )
+		{
+			return;
+		}
 
 		EnsureScreen( S, static_cast<int32>( Size.x ), static_cast<int32>( Size.y ) );
-		if ( S.bFitRequested ) FitCamera( S );
+		if ( S.bFitRequested )
+		{
+			FitCamera( S );
+		}
 		RenderPreview( S, static_cast<int32>( Size.x ), static_cast<int32>( Size.y ) );
 
 		ImDrawList* DrawList = ImGui::GetWindowDrawList();
 		const ImVec2 Max( Origin.x + Size.x, Origin.y + Size.y );
-		if ( S.PreviewTarget.IsValid() ) DrawList->AddImage( NDebugUI::GetImGuiTexture( S.PreviewTarget->GetImageHandle().Value ), Origin, ImVec2( Origin.x + static_cast<float>( S.PreviewWidth ), Origin.y + static_cast<float>( S.PreviewHeight ) ) );
+		if ( S.PreviewTarget.IsValid() )
+		{
+			DrawList->AddImage( NDebugUI::GetImGuiTexture( S.PreviewTarget->GetImageHandle().Value ), Origin, ImVec2( Origin.x + static_cast<float>( S.PreviewWidth ), Origin.y + static_cast<float>( S.PreviewHeight ) ) );
+		}
 
 		ImGui::InvisibleButton( "##View", Size, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonMiddle | ImGuiButtonFlags_MouseButtonRight );
 		ImGuiIO& IO = ImGui::GetIO();
@@ -431,7 +509,10 @@ namespace
 				S.Target = S.Target - Right * ( IO.MouseDelta.x * Scale ) + Up * ( IO.MouseDelta.y * Scale );
 			}
 		}
-		if ( ImGui::IsItemHovered() && IO.MouseWheel != 0.0f ) S.Distance = NMath::Clamp( S.Distance * ( IO.MouseWheel > 0.0f ? 0.88f : 1.0f / 0.88f ), 0.01f, 100000.0f );
+		if ( ImGui::IsItemHovered() && IO.MouseWheel != 0.0f )
+		{
+			S.Distance = NMath::Clamp( S.Distance * ( IO.MouseWheel > 0.0f ? 0.88f : 1.0f / 0.88f ), 0.01f, 100000.0f );
+		}
 
 		// 再生中に起きた出来事を、画面の隅に出す
 		float Y = Origin.y + 6.0f;
@@ -474,8 +555,14 @@ namespace
 		if ( ImGui::Button( S.bPlaying ? "Pause" : "Play" ) )
 		{
 			S.bPlaying = !S.bPlaying;
-			if ( S.bPlaying ) S.Animator.Resume();
-			else S.Animator.Pause();
+			if ( S.bPlaying )
+			{
+				S.Animator.Resume();
+			}
+			else
+			{
+				S.Animator.Pause();
+			}
 		}
 		ImGui::SameLine();
 		if ( ImGui::Button( "Restart" ) )
@@ -490,7 +577,10 @@ namespace
 		ImGui::SameLine();
 		ImGui::TextDisabled( "length %s", UI_TEXT( NDebugUI::FormatSeconds( Length ) ) );
 		ImGui::SameLine();
-		if ( ImGui::Button( "Add event at playhead" ) ) S.SelectedEvent = NModelAnimationEdit::AddEvent( S.Document, ClipIndex, S.Animator.GetNormalizedTime(), S.NewEventName );
+		if ( ImGui::Button( "Add event at playhead" ) )
+		{
+			S.SelectedEvent = NModelAnimationEdit::AddEvent( S.Document, ClipIndex, S.Animator.GetNormalizedTime(), S.NewEventName );
+		}
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth( 120.0f );
 		NDebugUI::InputString( "##NewEvent", S.NewEventName );
@@ -534,7 +624,10 @@ namespace
 			bool bFlash = false;
 			for ( const TPair<FString, float32>& Flash : S.EventFlashes )
 			{
-				if ( Flash.Key == Event.Name ) bFlash = true;
+				if ( Flash.Key == Event.Name )
+				{
+					bFlash = true;
+				}
 			}
 			const ImVec2 Flag0( X, Y ), Flag1( X + 10.0f + static_cast<float>( Event.Name.Len() ) * 6.5f, Y + 13.0f );
 			DrawList->AddLine( ImVec2( X, Y ), ImVec2( X, TrackTop + TrackHeight ), bSelected || bFlash ? IM_COL32( 255, 220, 80, 255 ) : IM_COL32( 255, 150, 60, 200 ) );
@@ -544,13 +637,19 @@ namespace
 			ImGui::SetCursorScreenPos( Flag0 );
 			ImGui::PushID( 3000 + i );
 			ImGui::InvisibleButton( "##Flag", ImVec2( Flag1.x - Flag0.x, Flag1.y - Flag0.y ) );
-			if ( ImGui::IsItemClicked() ) S.SelectedEvent = i;
+			if ( ImGui::IsItemClicked() )
+			{
+				S.SelectedEvent = i;
+			}
 			if ( ImGui::IsItemActive() && ImGui::IsMouseDragging( ImGuiMouseButton_Left, 1.0f ) )
 			{
 				const float32 NewTime = NMath::Clamp( ( IO.MousePos.x - TrackLeft ) / TrackWidth, 0.0f, 1.0f );
 				const FString Key = FString::Printf( "evdrag%d", i );
 				const int32 NewIndex = NModelAnimationEdit::SetEvent( S.Document, ClipIndex, i, NewTime, Event.Name, *Key );
-				if ( S.SelectedEvent == i ) S.SelectedEvent = NewIndex;
+				if ( S.SelectedEvent == i )
+				{
+					S.SelectedEvent = NewIndex;
+				}
 			}
 			if ( ImGui::BeginPopupContextItem( "##FlagMenu" ) )
 			{
@@ -576,7 +675,10 @@ namespace
 		if ( bScrubbing && ImGui::IsMouseDown( ImGuiMouseButton_Left ) && Length > 0.0f )
 		{
 			bool bOnFlag = false;
-			for ( int32 i = 0; i < Clip->Events.Num(); ++i ) bOnFlag = bOnFlag || ImGui::IsPopupOpen( "##FlagMenu" );
+			for ( int32 i = 0; i < Clip->Events.Num(); ++i )
+			{
+				bOnFlag = bOnFlag || ImGui::IsPopupOpen( "##FlagMenu" );
+			}
 			if ( !bOnFlag )
 			{
 				S.bPlaying = false;
@@ -592,7 +694,10 @@ namespace
 		{
 			ImGui::PushID( 4000 + i );
 			const FModelEventDef& Event = Clip->Events[i];
-			if ( ImGui::Selectable( "##Event", S.SelectedEvent == i, 0, ImVec2( 12.0f, 0.0f ) ) ) S.SelectedEvent = i;
+			if ( ImGui::Selectable( "##Event", S.SelectedEvent == i, 0, ImVec2( 12.0f, 0.0f ) ) )
+			{
+				S.SelectedEvent = i;
+			}
 			ImGui::SameLine();
 			float32 Time = Event.Time;
 			ImGui::SetNextItemWidth( 90.0f );
@@ -600,12 +705,18 @@ namespace
 			{
 				const FString Key = FString::Printf( "evtime%d", i );
 				const int32 NewIndex = NModelAnimationEdit::SetEvent( S.Document, ClipIndex, i, Time, Event.Name, *Key );
-				if ( S.SelectedEvent == i ) S.SelectedEvent = NewIndex;
+				if ( S.SelectedEvent == i )
+				{
+					S.SelectedEvent = NewIndex;
+				}
 			}
 			ImGui::SameLine();
 			ImGui::TextDisabled( "%6.3f s", Event.Time * Length );
 			ImGui::SameLine();
-			if ( S.EventNameBufferIndex != i || !ImGui::IsAnyItemActive() ) S.EventNameBuffer = Event.Name;
+			if ( S.EventNameBufferIndex != i || !ImGui::IsAnyItemActive() )
+			{
+				S.EventNameBuffer = Event.Name;
+			}
 			FString Buffer = S.EventNameBufferIndex == i ? S.EventNameBuffer : Event.Name;
 			ImGui::SetNextItemWidth( 150.0f );
 			if ( NDebugUI::InputString( "##Name", Buffer ) )
@@ -619,7 +730,10 @@ namespace
 				S.EventNameBufferIndex = INDEX_NONE;
 			}
 			ImGui::SameLine();
-			if ( ImGui::SmallButton( "x" ) ) RemoveEvent = i;
+			if ( ImGui::SmallButton( "x" ) )
+			{
+				RemoveEvent = i;
+			}
 			ImGui::PopID();
 		}
 		if ( RemoveEvent != INDEX_NONE )
@@ -627,7 +741,10 @@ namespace
 			NModelAnimationEdit::RemoveEvent( S.Document, ClipIndex, RemoveEvent );
 			S.SelectedEvent = INDEX_NONE;
 		}
-		if ( Clip->Events.IsEmpty() ) ImGui::TextDisabled( "No events. 'Add event at playhead' puts one where the playhead is (0..1 of the clip)." );
+		if ( Clip->Events.IsEmpty() )
+		{
+			ImGui::TextDisabled( "No events. 'Add event at playhead' puts one where the playhead is (0..1 of the clip)." );
+		}
 	}
 
 	//=========================================================================
@@ -641,11 +758,17 @@ namespace
 		if ( !Definition.ModelPath.IsEmpty() )
 		{
 			ImGui::SameLine();
-			if ( ImGui::SmallButton( "Clear (motion pack)" ) ) NModelAnimationEdit::SetModelPath( S.Document, FString() );
+			if ( ImGui::SmallButton( "Clear (motion pack)" ) )
+			{
+				NModelAnimationEdit::SetModelPath( S.Document, FString() );
+			}
 		}
 		FString Selected = Definition.ModelPath;
 		ImGui::SetNextItemWidth( -FLT_MIN );
-		if ( NDebugUI::FileCombo( "##Model", Selected, S.ModelFiles, "(none - motion pack)" ) ) NModelAnimationEdit::SetModelPath( S.Document, Selected );
+		if ( NDebugUI::FileCombo( "##Model", Selected, S.ModelFiles, "(none - motion pack)" ) )
+		{
+			NModelAnimationEdit::SetModelPath( S.Document, Selected );
+		}
 
 		bool bNeedPreviewModel = Definition.ModelPath.IsEmpty();
 		if ( S.Asset.IsValid() && S.Asset->GetModel().IsValid() )
@@ -676,7 +799,10 @@ namespace
 			if ( !Definition.PreviewModelPath.IsEmpty() )
 			{
 				ImGui::SameLine();
-				if ( ImGui::SmallButton( "Clear##Preview" ) ) NModelAnimationEdit::SetPreviewModelPath( S.Document, FString() );
+				if ( ImGui::SmallButton( "Clear##Preview" ) )
+				{
+					NModelAnimationEdit::SetPreviewModelPath( S.Document, FString() );
+				}
 			}
 			FString PreviewSelected = Definition.PreviewModelPath;
 			ImGui::SetNextItemWidth( -FLT_MIN );
@@ -693,8 +819,14 @@ namespace
 		}
 
 		float32 UnitsPerSecond = Definition.UnitsPerSecond;
-		if ( ImGui::DragFloat( "Time units / s", &UnitsPerSecond, 0.1f, 0.001f, 1000.0f, "%.2f" ) ) NModelAnimationEdit::SetUnitsPerSecond( S.Document, UnitsPerSecond, "ups" );
-		if ( ImGui::IsItemHovered() ) ImGui::SetTooltip( "The model's animation time is in frames. 30 per second is usual for FBX / MV1 / X." );
+		if ( ImGui::DragFloat( "Time units / s", &UnitsPerSecond, 0.1f, 0.001f, 1000.0f, "%.2f" ) )
+		{
+			NModelAnimationEdit::SetUnitsPerSecond( S.Document, UnitsPerSecond, "ups" );
+		}
+		if ( ImGui::IsItemHovered() )
+		{
+			ImGui::SetTooltip( "The model's animation time is in frames. 30 per second is usual for FBX / MV1 / X." );
+		}
 
 		ImGui::SeparatorText( "Placement (applied when drawn)" );
 		FVector3 Offset = Definition.Offset, Rotation = Definition.RotationDegrees, Scale = Definition.Scale;
@@ -702,11 +834,17 @@ namespace
 		bChanged |= ImGui::DragFloat3( "Offset", &Offset.x, 0.01f );
 		bChanged |= ImGui::DragFloat3( "Rotation", &Rotation.x, 0.5f, -360.0f, 360.0f, "%.1f deg" );
 		bChanged |= ImGui::DragFloat3( "Scale", &Scale.x, 0.005f );
-		if ( bChanged ) NModelAnimationEdit::SetPlacement( S.Document, Offset, Rotation, Scale, "placement" );
+		if ( bChanged )
+		{
+			NModelAnimationEdit::SetPlacement( S.Document, Offset, Rotation, Scale, "placement" );
+		}
 
 		ImGui::SeparatorText( ".mv1 output" );
 		ImGui::Checkbox( "Also output .mv1 when saving", &S.bExportMV1OnSave );
-		if ( ImGui::IsItemHovered() ) ImGui::SetTooltip( "When saving this .modelanim.json, any .fbx / .obj / .x / .pmx / .vmd used by it is also saved as .mv1 next to the source file." );
+		if ( ImGui::IsItemHovered() )
+		{
+			ImGui::SetTooltip( "When saving this .modelanim.json, any .fbx / .obj / .x / .pmx / .vmd used by it is also saved as .mv1 next to the source file." );
+		}
 		if ( Assets != nullptr )
 		{
 			if ( ImGui::Button( "Export .mv1 now" ) )
@@ -733,7 +871,10 @@ namespace
 		else
 		{
 			ImGui::TextColored( ImVec4( 1.0f, 0.8f, 0.35f, 1.0f ), "%d problem(s):", Problems.Num() );
-			for ( const FString& Problem : Problems ) ImGui::TextWrapped( "- %s", UI_TEXT( Problem ) );
+			for ( const FString& Problem : Problems )
+			{
+				ImGui::TextWrapped( "- %s", UI_TEXT( Problem ) );
+			}
 		}
 		// 定義が指すクリップが、モデルに実在するか・骨の名前が合うか
 		if ( S.Asset.IsValid() )
@@ -768,7 +909,10 @@ namespace
 		CAssetManager* Assets = GetAssets();
 		const FModelAnimationDefinition& Definition = S.Document.Get();
 		bool bOpenAddPopup = false;
-		if ( ImGui::Button( "Add clip..." ) ) bOpenAddPopup = true;
+		if ( ImGui::Button( "Add clip..." ) )
+		{
+			bOpenAddPopup = true;
+		}
 		ImGui::SameLine();
 		ImGui::BeginDisabled( !Definition.Clips.IsValidIndex( S.SelectedClip ) );
 		if ( ImGui::Button( "Delete" ) )
@@ -802,11 +946,17 @@ namespace
 			ImGui::TextUnformatted( "Add an animation from:" );
 			ImGui::SetNextItemWidth( -FLT_MIN );
 			NDebugUI::FileCombo( "##Source", S.AddSourceSelection, S.ModelFiles, Definition.ModelPath.IsEmpty() ? "(choose an animation / model file)" : "(the model itself)" );
-			if ( !Definition.ModelPath.IsEmpty() && ImGui::SmallButton( "the model itself" ) ) S.AddSourceSelection.Empty();
+			if ( !Definition.ModelPath.IsEmpty() && ImGui::SmallButton( "the model itself" ) )
+			{
+				S.AddSourceSelection.Empty();
+			}
 
 			const FString EffectiveSourcePath = S.AddSourceSelection.IsEmpty() ? Definition.ModelPath : S.AddSourceSelection;
 			TSharedPtr<CModel> Source;
-			if ( Assets != nullptr && !EffectiveSourcePath.IsEmpty() ) Source = Assets->LoadModel( EffectiveSourcePath );
+			if ( Assets != nullptr && !EffectiveSourcePath.IsEmpty() )
+			{
+				Source = Assets->LoadModel( EffectiveSourcePath );
+			}
 			if ( Source.IsValid() )
 			{
 				ImGui::TextDisabled( "%s   (%d bone(s))", UI_TEXT( Source->Describe() ), Source->GetBoneNames().Num() );
@@ -850,7 +1000,10 @@ namespace
 			ImGui::BeginChild( "##Animations", ImVec2( 0.0f, -ImGui::GetFrameHeightWithSpacing() ), ImGuiChildFlags_Borders );
 			if ( Source.IsValid() )
 			{
-				if ( Source->GetClips().IsEmpty() ) ImGui::TextDisabled( "This file has no animations." );
+				if ( Source->GetClips().IsEmpty() )
+				{
+					ImGui::TextDisabled( "This file has no animations." );
+				}
 				for ( const FModelClipInfo& Info : Source->GetClips() )
 				{
 					char Label[200];
@@ -877,7 +1030,10 @@ namespace
 				ImGui::TextDisabled( "The file could not be loaded." );
 			}
 			ImGui::EndChild();
-			if ( ImGui::Button( "Close" ) ) ImGui::CloseCurrentPopup();
+			if ( ImGui::Button( "Close" ) )
+			{
+				ImGui::CloseCurrentPopup();
+			}
 			ImGui::EndPopup();
 		}
 
@@ -893,16 +1049,28 @@ namespace
 				S.SelectedEvent = INDEX_NONE;
 			}
 		}
-		if ( Definition.Clips.IsEmpty() ) ImGui::TextDisabled( "No clips yet. Click 'Add clip...'." );
+		if ( Definition.Clips.IsEmpty() )
+		{
+			ImGui::TextDisabled( "No clips yet. Click 'Add clip...'." );
+		}
 		ImGui::EndChild();
 
 		const FModelClipDef* Clip = SelectedClip( S );
-		if ( Clip == nullptr ) return;
+		if ( Clip == nullptr )
+		{
+			return;
+		}
 		const int32 ClipIndex = S.SelectedClip;
 
-		if ( !ImGui::IsAnyItemActive() ) S.NameBuffer = Clip->Name;
+		if ( !ImGui::IsAnyItemActive() )
+		{
+			S.NameBuffer = Clip->Name;
+		}
 		NDebugUI::InputString( "Name", S.NameBuffer );
-		if ( ImGui::IsItemDeactivatedAfterEdit() ) S.NameBuffer = NModelAnimationEdit::RenameClip( S.Document, ClipIndex, S.NameBuffer );
+		if ( ImGui::IsItemDeactivatedAfterEdit() )
+		{
+			S.NameBuffer = NModelAnimationEdit::RenameClip( S.Document, ClipIndex, S.NameBuffer );
+		}
 
 		FModelClipDef Edited = *Clip;
 		bool bChanged = false;
@@ -919,7 +1087,10 @@ namespace
 		TSharedPtr<CModel> SourceModel = S.Asset.IsValid() ? S.Asset->GetClipSource( ClipIndex ) : TSharedPtr<CModel>();
 		if ( SourceModel.IsValid() )
 		{
-			if ( SourceModel->IsAnimationOnly() ) ImGui::TextDisabled( "Animation-only source (%d bone(s))", SourceModel->GetBoneNames().Num() );
+			if ( SourceModel->IsAnimationOnly() )
+			{
+				ImGui::TextDisabled( "Animation-only source (%d bone(s))", SourceModel->GetBoneNames().Num() );
+			}
 			const char* Preview = Edited.AnimName.IsEmpty() ? "(by number)" : *Edited.AnimName;
 			if ( ImGui::BeginCombo( "Animation", Preview ) )
 			{
@@ -945,8 +1116,14 @@ namespace
 		}
 		bChanged |= ImGui::DragFloat( "Speed", &Edited.Speed, 0.01f, -4.0f, 4.0f, "x%.2f" );
 		bChanged |= ImGui::DragFloat( "Fade in", &Edited.FadeTime, 0.01f, 0.0f, 5.0f, "%.2f s" );
-		if ( ImGui::IsItemHovered() ) ImGui::SetTooltip( "The crossfade time when the game plays this clip without specifying one." );
-		if ( bChanged ) NModelAnimationEdit::SetClipSettings( S.Document, ClipIndex, Edited, "clip" );
+		if ( ImGui::IsItemHovered() )
+		{
+			ImGui::SetTooltip( "The crossfade time when the game plays this clip without specifying one." );
+		}
+		if ( bChanged )
+		{
+			NModelAnimationEdit::SetClipSettings( S.Document, ClipIndex, Edited, "clip" );
+		}
 
 		// クロスフェードの確認
 		ImGui::SeparatorText( "Crossfade test" );
@@ -957,7 +1134,10 @@ namespace
 			{
 				for ( int32 i = 0; i < Definition.Clips.Num(); ++i )
 				{
-					if ( ImGui::Selectable( *Definition.Clips[i].Name, Index == i ) ) Index = i;
+					if ( ImGui::Selectable( *Definition.Clips[i].Name, Index == i ) )
+					{
+						Index = i;
+					}
 				}
 				ImGui::EndCombo();
 			}
@@ -985,7 +1165,10 @@ namespace
 		ImGui::EndDisabled();
 		for ( const FModelAnimator::FLayerInfo& Layer : S.Animator.GetLayerInfos() )
 		{
-			if ( Layer.Weight <= 0.0f ) continue;
+			if ( Layer.Weight <= 0.0f )
+			{
+				continue;
+			}
 			char Overlay[96];
 			NCString::Format( Overlay, sizeof( Overlay ), "%s  %.0f%%", *Layer.ClipName, Layer.Weight * 100.0f );
 			ImGui::ProgressBar( Layer.Weight, ImVec2( -FLT_MIN, 0.0f ), Overlay );
@@ -997,23 +1180,44 @@ namespace
 	//=========================================================================
 	void DrawMenuBar( FState& S, bool* pOpen )
 	{
-		if ( !ImGui::BeginMenuBar() ) return;
+		if ( !ImGui::BeginMenuBar() )
+		{
+			return;
+		}
 		bool bOpenNewPopup = false, bOpenOpenPopup = false, bOpenSaveAsPopup = false;
 		const FModelAnimationDefinition& Definition = S.Document.Get();
 		const bool bCanSave = !Definition.ModelPath.IsEmpty() || !Definition.Clips.IsEmpty();
 
 		if ( ImGui::BeginMenu( "File" ) )
 		{
-			if ( ImGui::MenuItem( "New from model..." ) ) bOpenNewPopup = true;
-			if ( ImGui::MenuItem( "New motion pack (no model)" ) ) RequestAction( S, FState::EPending::NewMotionPack, FString() );
-			if ( ImGui::MenuItem( "Open..." ) ) bOpenOpenPopup = true;
+			if ( ImGui::MenuItem( "New from model..." ) )
+			{
+				bOpenNewPopup = true;
+			}
+			if ( ImGui::MenuItem( "New motion pack (no model)" ) )
+			{
+				RequestAction( S, FState::EPending::NewMotionPack, FString() );
+			}
+			if ( ImGui::MenuItem( "Open..." ) )
+			{
+				bOpenOpenPopup = true;
+			}
 			ImGui::Separator();
 			if ( ImGui::MenuItem( "Save", "Ctrl+S", false, bCanSave ) )
 			{
-				if ( S.FilePath.IsEmpty() ) bOpenSaveAsPopup = true;
-				else SaveCurrent( S, S.FilePath );
+				if ( S.FilePath.IsEmpty() )
+				{
+					bOpenSaveAsPopup = true;
+				}
+				else
+				{
+					SaveCurrent( S, S.FilePath );
+				}
 			}
-			if ( ImGui::MenuItem( "Save as...", nullptr, false, bCanSave ) ) bOpenSaveAsPopup = true;
+			if ( ImGui::MenuItem( "Save as...", nullptr, false, bCanSave ) )
+			{
+				bOpenSaveAsPopup = true;
+			}
 			if ( ImGui::MenuItem( "Export used models to .mv1", nullptr, false, bCanSave ) )
 			{
 				if ( CAssetManager* Assets = GetAssets() )
@@ -1023,15 +1227,27 @@ namespace
 					RescanFiles( S, true );
 				}
 			}
-			if ( ImGui::MenuItem( "Reload from disk", nullptr, false, !S.FilePath.IsEmpty() ) ) RequestAction( S, FState::EPending::Open, S.FilePath );
+			if ( ImGui::MenuItem( "Reload from disk", nullptr, false, !S.FilePath.IsEmpty() ) )
+			{
+				RequestAction( S, FState::EPending::Open, S.FilePath );
+			}
 			ImGui::Separator();
-			if ( ImGui::MenuItem( "Close window" ) && pOpen != nullptr ) *pOpen = false;
+			if ( ImGui::MenuItem( "Close window" ) && pOpen != nullptr )
+			{
+				*pOpen = false;
+			}
 			ImGui::EndMenu();
 		}
 		if ( ImGui::BeginMenu( "Edit" ) )
 		{
-			if ( ImGui::MenuItem( "Undo", "Ctrl+Z", false, S.Document.CanUndo() ) ) S.Document.Undo();
-			if ( ImGui::MenuItem( "Redo", "Ctrl+Y", false, S.Document.CanRedo() ) ) S.Document.Redo();
+			if ( ImGui::MenuItem( "Undo", "Ctrl+Z", false, S.Document.CanUndo() ) )
+			{
+				S.Document.Undo();
+			}
+			if ( ImGui::MenuItem( "Redo", "Ctrl+Y", false, S.Document.CanRedo() ) )
+			{
+				S.Document.Redo();
+			}
 			ImGui::EndMenu();
 		}
 		ImGui::TextDisabled( "  %s%s", S.FilePath.IsEmpty() ? "(unsaved)" : UI_TEXT( S.FilePath ), S.Document.IsDirty() ? " *" : "" );
@@ -1052,10 +1268,19 @@ namespace
 			if ( S.SaveAsPath.IsEmpty() )
 			{
 				FString Base = Definition.ModelPath;
-				if ( Base.IsEmpty() && !Definition.Clips.IsEmpty() ) Base = Definition.Clips[0].SourcePath;
-				if ( Base.IsEmpty() ) Base = "Motions/MotionPack";
+				if ( Base.IsEmpty() && !Definition.Clips.IsEmpty() )
+				{
+					Base = Definition.Clips[0].SourcePath;
+				}
+				if ( Base.IsEmpty() )
+				{
+					Base = "Motions/MotionPack";
+				}
 				const int32 Dot = Base.FindLast( "." );
-				if ( Dot > 0 ) Base = Base.Left( Dot );
+				if ( Dot > 0 )
+				{
+					Base = Base.Left( Dot );
+				}
 				S.SaveAsPath = Base + DefinitionExtension;
 			}
 			ImGui::OpenPopup( "Save model animation set as" );
@@ -1080,7 +1305,10 @@ namespace
 			}
 			ImGui::EndDisabled();
 			ImGui::SameLine();
-			if ( ImGui::Button( "Cancel" ) ) ImGui::CloseCurrentPopup();
+			if ( ImGui::Button( "Cancel" ) )
+			{
+				ImGui::CloseCurrentPopup();
+			}
 			ImGui::EndPopup();
 		}
 		ImGui::SetNextWindowSize( PopupSize );
@@ -1096,7 +1324,10 @@ namespace
 			}
 			ImGui::EndDisabled();
 			ImGui::SameLine();
-			if ( ImGui::Button( "Cancel" ) ) ImGui::CloseCurrentPopup();
+			if ( ImGui::Button( "Cancel" ) )
+			{
+				ImGui::CloseCurrentPopup();
+			}
 			ImGui::EndPopup();
 		}
 		ImGui::SetNextWindowSize( PopupSize );
@@ -1107,10 +1338,16 @@ namespace
 			ImGui::Checkbox( "Also output referenced models as .mv1", &S.bExportMV1OnSave );
 			if ( ImGui::Button( "Save" ) && !S.SaveAsPath.IsEmpty() )
 			{
-				if ( SaveCurrent( S, S.SaveAsPath ) ) ImGui::CloseCurrentPopup();
+				if ( SaveCurrent( S, S.SaveAsPath ) )
+				{
+					ImGui::CloseCurrentPopup();
+				}
 			}
 			ImGui::SameLine();
-			if ( ImGui::Button( "Cancel" ) ) ImGui::CloseCurrentPopup();
+			if ( ImGui::Button( "Cancel" ) )
+			{
+				ImGui::CloseCurrentPopup();
+			}
 			ImGui::EndPopup();
 		}
 		if ( ImGui::BeginPopupModal( "Unsaved changes", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
@@ -1121,10 +1358,22 @@ namespace
 				const FState::EPending Action = S.Pending;
 				const FString Path = S.PendingPath;
 				S.Pending = FState::EPending::None;
-				if ( Action == FState::EPending::Open ) NDebugUI::OpenModelAnimationFile( S, Path );
-				else if ( Action == FState::EPending::New ) NDebugUI::NewModelAnimationFromModel( S, Path );
-				else if ( Action == FState::EPending::NewMotionPack ) NDebugUI::NewMotionPack( S, Path );
-				else if ( Action == FState::EPending::Close && pOpen != nullptr ) *pOpen = false;
+				if ( Action == FState::EPending::Open )
+				{
+					NDebugUI::OpenModelAnimationFile( S, Path );
+				}
+				else if ( Action == FState::EPending::New )
+				{
+					NDebugUI::NewModelAnimationFromModel( S, Path );
+				}
+				else if ( Action == FState::EPending::NewMotionPack )
+				{
+					NDebugUI::NewMotionPack( S, Path );
+				}
+				else if ( Action == FState::EPending::Close && pOpen != nullptr )
+				{
+					*pOpen = false;
+				}
 			};
 			if ( ImGui::Button( "Save and continue" ) )
 			{
@@ -1163,7 +1412,10 @@ namespace
 bool NDebugUI::OpenModelAnimationFile( FModelAnimationEditorState& State, const FString& AssetPath )
 {
 	CAssetManager* Assets = GetAssets();
-	if ( Assets == nullptr ) return false;
+	if ( Assets == nullptr )
+	{
+		return false;
+	}
 
 	const TOptional<FString> Full = Assets->ResolvePath( AssetPath );
 	if ( !Full.IsSet() )
@@ -1261,9 +1513,18 @@ void NDebugUI::DrawModelAnimationEditor( FModelAnimationEditorState& S, bool* pO
 	ImGuiIO& IO = ImGui::GetIO();
 	if ( ImGui::IsWindowFocused( ImGuiFocusedFlags_RootAndChildWindows ) && !IO.WantTextInput )
 	{
-		if ( ImGui::IsKeyChordPressed( ImGuiMod_Ctrl | ImGuiKey_Z ) ) S.Document.Undo();
-		if ( ImGui::IsKeyChordPressed( ImGuiMod_Ctrl | ImGuiKey_Y ) || ImGui::IsKeyChordPressed( ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Z ) ) S.Document.Redo();
-		if ( ImGui::IsKeyChordPressed( ImGuiMod_Ctrl | ImGuiKey_S ) && !S.FilePath.IsEmpty() ) SaveCurrent( S, S.FilePath );
+		if ( ImGui::IsKeyChordPressed( ImGuiMod_Ctrl | ImGuiKey_Z ) )
+		{
+			S.Document.Undo();
+		}
+		if ( ImGui::IsKeyChordPressed( ImGuiMod_Ctrl | ImGuiKey_Y ) || ImGui::IsKeyChordPressed( ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Z ) )
+		{
+			S.Document.Redo();
+		}
+		if ( ImGui::IsKeyChordPressed( ImGuiMod_Ctrl | ImGuiKey_S ) && !S.FilePath.IsEmpty() )
+		{
+			SaveCurrent( S, S.FilePath );
+		}
 	}
 
 	// 再生（速さはプレビューのスライダー。出来事を集める）
@@ -1279,7 +1540,10 @@ void NDebugUI::DrawModelAnimationEditor( FModelAnimationEditorState& S, bool* pO
 	for ( int32 i = S.EventFlashes.Num() - 1; i >= 0; --i )
 	{
 		S.EventFlashes[i].Value -= IO.DeltaTime;
-		if ( S.EventFlashes[i].Value <= 0.0f ) S.EventFlashes.RemoveAt( i );
+		if ( S.EventFlashes[i].Value <= 0.0f )
+		{
+			S.EventFlashes.RemoveAt( i );
+		}
 	}
 
 	const float FooterHeight = ImGui::GetFrameHeightWithSpacing() + 2.0f;
@@ -1289,8 +1553,14 @@ void NDebugUI::DrawModelAnimationEditor( FModelAnimationEditorState& S, bool* pO
 	if ( ImGui::BeginTabBar( "##LeftTabs" ) )
 	{
 		const auto TabFlags = [&S]( int32 Index ) { return S.ForceLeftTab == Index ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None; };
-		if ( ImGui::BeginTabItem( "Clips", nullptr, TabFlags( 0 ) ) ) { DrawClipsTab( S ); ImGui::EndTabItem(); }
-		if ( ImGui::BeginTabItem( "Model", nullptr, TabFlags( 1 ) ) ) { DrawModelTab( S ); ImGui::EndTabItem(); }
+		if ( ImGui::BeginTabItem( "Clips", nullptr, TabFlags( 0 ) ) )
+		{
+			DrawClipsTab( S ); ImGui::EndTabItem();
+		}
+		if ( ImGui::BeginTabItem( "Model", nullptr, TabFlags( 1 ) ) )
+		{
+			DrawModelTab( S ); ImGui::EndTabItem();
+		}
 		ImGui::EndTabBar();
 		S.ForceLeftTab = INDEX_NONE;
 	}
@@ -1306,9 +1576,18 @@ void NDebugUI::DrawModelAnimationEditor( FModelAnimationEditorState& S, bool* pO
 	ImGui::EndChild();
 	ImGui::EndChild();
 
-	if ( S.bStatusIsError ) ImGui::TextColored( ImVec4( 1.0f, 0.5f, 0.4f, 1.0f ), "%s", UI_TEXT( S.StatusMessage ) );
-	else ImGui::TextDisabled( "%s", UI_TEXT( S.StatusMessage ) );
+	if ( S.bStatusIsError )
+	{
+		ImGui::TextColored( ImVec4( 1.0f, 0.5f, 0.4f, 1.0f ), "%s", UI_TEXT( S.StatusMessage ) );
+	}
+	else
+	{
+		ImGui::TextDisabled( "%s", UI_TEXT( S.StatusMessage ) );
+	}
 
-	if ( !ImGui::IsAnyItemActive() ) S.Document.EndEditSession();
+	if ( !ImGui::IsAnyItemActive() )
+	{
+		S.Document.EndEditSession();
+	}
 	ImGui::End();
 }

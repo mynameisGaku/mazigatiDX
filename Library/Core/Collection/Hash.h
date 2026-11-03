@@ -70,7 +70,10 @@ FORCEINLINE constexpr uint32 GetTypeHash( bool Value )   { return Value ? 1u : 0
 
 FORCEINLINE uint32 GetTypeHash( float32 Value )
 {
-	if ( Value == 0.0f ) Value = 0.0f;  // -0 と +0 を同一視
+	if ( Value == 0.0f )
+	{
+		Value = 0.0f;  // -0 と +0 を同一視
+	}
 	uint32 Bits = 0;
 	static_assert( sizeof( Bits ) == sizeof( Value ) );
 	FMemory::Memcpy( &Bits, &Value, sizeof( Bits ) );
@@ -79,7 +82,10 @@ FORCEINLINE uint32 GetTypeHash( float32 Value )
 
 FORCEINLINE uint32 GetTypeHash( float64 Value )
 {
-	if ( Value == 0.0 ) Value = 0.0;
+	if ( Value == 0.0 )
+	{
+		Value = 0.0;
+	}
 	uint64 Bits = 0;
 	static_assert( sizeof( Bits ) == sizeof( Value ) );
 	FMemory::Memcpy( &Bits, &Value, sizeof( Bits ) );

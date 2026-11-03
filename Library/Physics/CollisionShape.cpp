@@ -5,11 +5,17 @@
 
 TResult<FCollisionShape> FCollisionShape::ConvexHull( TArrayView<const FVector3> Points )
 {
-	if ( Points.Num() < 4 ) return TResult<FCollisionShape>::Err( "ConvexHull: at least 4 points are required" );
+	if ( Points.Num() < 4 )
+	{
+		return TResult<FCollisionShape>::Err( "ConvexHull: at least 4 points are required" );
+	}
 
 	JPH::Array<PhysVec3> PhysPoints;
 	PhysPoints.reserve( static_cast<usize>( Points.Num() ) );
-	for ( const FVector3& P : Points ) PhysPoints.push_back( NPhysics::ToPhys( P ) );
+	for ( const FVector3& P : Points )
+	{
+		PhysPoints.push_back( NPhysics::ToPhys( P ) );
+	}
 
 	JPH::ConvexHullShapeSettings Settings( PhysPoints );
 	return FromShapeResult( Settings.Create(), "ConvexHull" );
@@ -24,7 +30,10 @@ TResult<FCollisionShape> FCollisionShape::Mesh( TArrayView<const FVector3> Verti
 
 	JPH::VertexList PhysVertices;
 	PhysVertices.reserve( static_cast<usize>( Vertices.Num() ) );
-	for ( const FVector3& V : Vertices ) PhysVertices.push_back( JPH::Float3( V.x, V.y, V.z ) );
+	for ( const FVector3& V : Vertices )
+	{
+		PhysVertices.push_back( JPH::Float3( V.x, V.y, V.z ) );
+	}
 
 	JPH::IndexedTriangleList Triangles;
 	Triangles.reserve( static_cast<usize>( Indices.Num() / 3 ) );

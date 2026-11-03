@@ -20,7 +20,10 @@ namespace
 {
 	void SpawnModel( FWorldSpawnContext& Context )
 	{
-		if ( !Context.Definition.Model.IsSet() ) return;
+		if ( !Context.Definition.Model.IsSet() )
+		{
+			return;
+		}
 		const FWorldModel& Spec = Context.Definition.Model.GetValue();
 		if ( Context.Assets == nullptr )
 		{
@@ -43,8 +46,14 @@ namespace
 		FModelAnimator Animator;
 		if ( !Spec.Animations.IsEmpty() )
 		{
-			if ( const TSharedPtr<CModelAnimationAsset> Set = Context.Assets->LoadModelAnimations( Spec.Animations ); Set.IsValid() ) Animator = Set->CreateAnimatorFor( Model );
-			else Context.Warn( "the animation set '" + Spec.Animations + "' could not be loaded; the model's own animations are used" );
+			if ( const TSharedPtr<CModelAnimationAsset> Set = Context.Assets->LoadModelAnimations( Spec.Animations ); Set.IsValid() )
+			{
+				Animator = Set->CreateAnimatorFor( Model );
+			}
+			else
+			{
+				Context.Warn( "the animation set '" + Spec.Animations + "' could not be loaded; the model's own animations are used" );
+			}
 		}
 		if ( !Animator.Instance.IsValid() )
 		{
@@ -58,7 +67,10 @@ namespace
 		}
 
 		Animator.Speed = Spec.Speed;
-		if ( !Spec.Clip.IsEmpty() && !Animator.Play( Spec.Clip, 0.0f ) ) Context.Warn( "the model has no clip named '" + Spec.Clip + "'" );
+		if ( !Spec.Clip.IsEmpty() && !Animator.Play( Spec.Clip, 0.0f ) )
+		{
+			Context.Warn( "the model has no clip named '" + Spec.Clip + "'" );
+		}
 		// 有効なモデル材質効果だけを設置時に準備し、失敗時はAnimatorの既定描画へ戻す。
 		if ( Spec.MaterialEffect.IsSet() )
 		{
@@ -68,13 +80,34 @@ namespace
 			{
 				// 対応する実行先を一度だけ取得する借用ポインター。
 				IDrawExecutor* Executor = Context.Scene.GetDrawExecutor();
-				if ( !Binding.IsValidSettings() ) Context.Warn( FString::Printf( "モデル材質効果の材質%dの設定が不正なため、通常描画を使います", Binding.MaterialIndex ) );
-				else if ( Executor == nullptr ) Context.Warn( FString::Printf( "モデル材質効果の材質%dを使う描画先がないため、通常描画を使います", Binding.MaterialIndex ) );
-				else if ( !NAssetService::IsMainThread() ) Context.Warn( FString::Printf( "モデル材質効果の材質%dの準備はメインスレッドで行う必要があるため、通常描画を使います", Binding.MaterialIndex ) );
-				else if ( !Executor->SupportsModelMaterialEffects() ) Context.Warn( FString::Printf( "描画先がモデル材質効果の材質%dに対応していないため、通常描画を使います", Binding.MaterialIndex ) );
-				else if ( !Model->IsReady() ) Context.Warn( FString::Printf( "モデル材質効果の材質%dはモデルの読み込み完了前のため、通常描画を使います", Binding.MaterialIndex ) );
-				else if ( Animator.Instance->GetNumAttached() > 0 ) Context.Warn( FString::Printf( "モデル材質効果の材質%dはアニメーションが結び付いたモデルに準備できないため、通常描画を使います", Binding.MaterialIndex ) );
-				else if ( !Animator.PrepareMaterialEffect( Binding.MaterialIndex, Binding.Effect, [Assets = Context.Assets]( const FString& Path ) { return Assets->LoadTexture( Path ); }, *Executor, Binding.bTwoSided ) ) Context.Warn( FString::Printf( "モデル材質効果の材質%dは面情報または効果画像を準備できないため、通常描画を使います", Binding.MaterialIndex ) );
+				if ( !Binding.IsValidSettings() )
+				{
+					Context.Warn( FString::Printf( "モデル材質効果の材質%dの設定が不正なため、通常描画を使います", Binding.MaterialIndex ) );
+				}
+				else if ( Executor == nullptr )
+				{
+					Context.Warn( FString::Printf( "モデル材質効果の材質%dを使う描画先がないため、通常描画を使います", Binding.MaterialIndex ) );
+				}
+				else if ( !NAssetService::IsMainThread() )
+				{
+					Context.Warn( FString::Printf( "モデル材質効果の材質%dの準備はメインスレッドで行う必要があるため、通常描画を使います", Binding.MaterialIndex ) );
+				}
+				else if ( !Executor->SupportsModelMaterialEffects() )
+				{
+					Context.Warn( FString::Printf( "描画先がモデル材質効果の材質%dに対応していないため、通常描画を使います", Binding.MaterialIndex ) );
+				}
+				else if ( !Model->IsReady() )
+				{
+					Context.Warn( FString::Printf( "モデル材質効果の材質%dはモデルの読み込み完了前のため、通常描画を使います", Binding.MaterialIndex ) );
+				}
+				else if ( Animator.Instance->GetNumAttached() > 0 )
+				{
+					Context.Warn( FString::Printf( "モデル材質効果の材質%dはアニメーションが結び付いたモデルに準備できないため、通常描画を使います", Binding.MaterialIndex ) );
+				}
+				else if ( !Animator.PrepareMaterialEffect( Binding.MaterialIndex, Binding.Effect, [Assets = Context.Assets]( const FString& Path ) { return Assets->LoadTexture( Path ); }, *Executor, Binding.bTwoSided ) )
+				{
+					Context.Warn( FString::Printf( "モデル材質効果の材質%dは面情報または効果画像を準備できないため、通常描画を使います", Binding.MaterialIndex ) );
+				}
 			}
 		}
 		Context.Object.AddData( Animator );
@@ -82,7 +115,10 @@ namespace
 
 	void SpawnBillboard( FWorldSpawnContext& Context )
 	{
-		if ( !Context.Definition.Billboard.IsSet() ) return;
+		if ( !Context.Definition.Billboard.IsSet() )
+		{
+			return;
+		}
 		const FWorldBillboard& Spec = Context.Definition.Billboard.GetValue();
 		if ( Context.Assets == nullptr )
 		{
@@ -98,13 +134,19 @@ namespace
 
 		bool bRectApplied = true;
 		const FBillboard Board = NWorld::MakeBillboard( Spec, Texture, &bRectApplied );
-		if ( !bRectApplied ) Context.Warn( "the billboard's rectangle could not be used (the image size is not known yet, or the rectangle is empty)" );
+		if ( !bRectApplied )
+		{
+			Context.Warn( "the billboard's rectangle could not be used (the image size is not known yet, or the rectangle is empty)" );
+		}
 		Context.Object.AddData( Board );
 	}
 
 	void SpawnMesh( FWorldSpawnContext& Context )
 	{
-		if ( !Context.Definition.Mesh.IsSet() ) return;
+		if ( !Context.Definition.Mesh.IsSet() )
+		{
+			return;
+		}
 		const FEditMesh& Mesh = Context.Definition.Mesh.GetValue();
 		if ( Mesh.GetNumTriangles() == 0 )
 		{
@@ -114,7 +156,10 @@ namespace
 		const FMeshRenderer Renderer = NWorld::MakeMeshRenderer( Mesh, [&Context]( const FString& Path )
 		{
 			const TSharedPtr<CTexture> Texture = Context.Assets != nullptr ? Context.Assets->LoadTexture( Path ) : TSharedPtr<CTexture>();
-			if ( !Texture.IsValid() ) Context.Warn( "the mesh material's image '" + Path + "' could not be loaded (the material is drawn with its colour only)" );
+			if ( !Texture.IsValid() )
+			{
+				Context.Warn( "the mesh material's image '" + Path + "' could not be loaded (the material is drawn with its colour only)" );
+			}
 			return Texture;
 		} );
 		if ( !Renderer.IsValid() )
@@ -122,13 +167,19 @@ namespace
 			Context.Warn( "the mesh could not be made (the asset manager is not running, or the mesh is too big)" );
 			return;
 		}
-		if ( Renderer.HasEffectPreparationFailures() ) Context.Warn( "有効な材質効果の画像または描画用データを準備できず、該当slotは非表示になります" );
+		if ( Renderer.HasEffectPreparationFailures() )
+		{
+			Context.Warn( "有効な材質効果の画像または描画用データを準備できず、該当slotは非表示になります" );
+		}
 		Context.Object.AddData( Renderer );
 	}
 
 	void SpawnSound( FWorldSpawnContext& Context )
 	{
-		if ( !Context.Definition.Sound.IsSet() ) return;
+		if ( !Context.Definition.Sound.IsSet() )
+		{
+			return;
+		}
 		const FWorldSound& Spec = Context.Definition.Sound.GetValue();
 		if ( Context.Assets == nullptr )
 		{
@@ -144,7 +195,10 @@ namespace
 
 		CAudioSourceComponent* Source = Context.Object.AddComponent<CAudioSourceComponent>( Sound );
 		EAudioBus Bus = EAudioBus::Ambient;
-		if ( !TryParse( Spec.Bus, Bus ) ) Context.Warn( "the sound's bus '" + Spec.Bus + "' is unknown; Ambient is used" );
+		if ( !TryParse( Spec.Bus, Bus ) )
+		{
+			Context.Warn( "the sound's bus '" + Spec.Bus + "' is unknown; Ambient is used" );
+		}
 		Source->SetBus( Bus );
 		Source->SetVolume( Spec.Volume );
 		Source->SetPitch( Spec.Pitch );
@@ -155,7 +209,10 @@ namespace
 
 	void SpawnEffect( FWorldSpawnContext& Context )
 	{
-		if ( !Context.Definition.Effect.IsSet() ) return;
+		if ( !Context.Definition.Effect.IsSet() )
+		{
+			return;
+		}
 		const FWorldEffect& Spec = Context.Definition.Effect.GetValue();
 		if ( Context.Assets == nullptr )
 		{

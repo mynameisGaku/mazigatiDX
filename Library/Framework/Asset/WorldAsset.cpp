@@ -15,7 +15,10 @@ FString CWorldAsset::Describe() const
 	int32 NumEnabled = 0;
 	for ( const FWorldObject& Object : Definition->Objects )
 	{
-		if ( Object.bEnabled ) ++NumEnabled;
+		if ( Object.bEnabled )
+		{
+			++NumEnabled;
+		}
 	}
 	return FString::Printf( "%d object(s)%s, %d collision rule(s)", Definition->Objects.Num(), NumEnabled != Definition->Objects.Num() ? *FString::Printf( " (%d enabled)", NumEnabled ) : "",
 							Definition->Settings.CollisionRules.Num() );
@@ -34,6 +37,9 @@ int64 CWorldAsset::GetMemoryBytes() const
 
 bool FAssetWorldQuery::Exists( const FString& Path ) const
 {
-	if ( Assets.ResolvePath( Path ).IsSet() ) return true;
+	if ( Assets.ResolvePath( Path ).IsSet() )
+	{
+		return true;
+	}
 	return NModelFormat::CanConvertToMV1( Path ) && Assets.ResolvePath( NModelFormat::GetMV1Path( Path ) ).IsSet();
 }

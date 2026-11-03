@@ -46,7 +46,10 @@ const FWorldBindFactory* FWorldBindings::Find( const FString& Tag ) const
 {
 	for ( const FEntry& Entry : Entries )
 	{
-		if ( Entry.Tag == Tag ) return &Entry.Factory;
+		if ( Entry.Tag == Tag )
+		{
+			return &Entry.Factory;
+		}
 	}
 	return nullptr;
 }
@@ -87,7 +90,10 @@ bool FWorldSpawnerRegistry::Has( const FString& Name ) const
 {
 	for ( const FEntry& Entry : Entries )
 	{
-		if ( Entry.Name == Name ) return true;
+		if ( Entry.Name == Name )
+		{
+			return true;
+		}
 	}
 	return false;
 }
@@ -128,7 +134,10 @@ const FWorldInstance* FWorldInstance::FindNested( int32 HostId ) const
 {
 	for ( const FNestedEntry& Entry : Nested )
 	{
-		if ( Entry.HostId == HostId ) return Entry.Instance.Get();
+		if ( Entry.HostId == HostId )
+		{
+			return Entry.Instance.Get();
+		}
 	}
 	return nullptr;
 }
@@ -137,7 +146,10 @@ void FWorldInstance::AddBound( int32 ObjectId, const FString& Tag, const TShared
 {
 	for ( FEntry& Entry : Entries )
 	{
-		if ( Entry.ObjectId != ObjectId ) continue;
+		if ( Entry.ObjectId != ObjectId )
+		{
+			continue;
+		}
 		FBound Bound;
 		Bound.Tag = Tag;
 		Bound.Object = Object;
@@ -150,7 +162,10 @@ TSharedPtr<CGameObject> FWorldInstance::FindById( int32 ObjectId ) const
 {
 	for ( const FEntry& Entry : Entries )
 	{
-		if ( Entry.ObjectId != ObjectId ) continue;
+		if ( Entry.ObjectId != ObjectId )
+		{
+			continue;
+		}
 		TSharedPtr<CGameObject> Object = Entry.Placeholder.Pin();
 		return Object.IsValid() && Object->IsAlive() ? Object : TSharedPtr<CGameObject>();
 	}
@@ -166,33 +181,60 @@ TSharedPtr<CGameObject> FWorldInstance::FindFirst( const FString& Tag ) const
 TArray<TSharedPtr<CGameObject>> FWorldInstance::FindAll( const FString& Tag ) const
 {
 	TArray<TSharedPtr<CGameObject>> Result;
-	if ( !Definition.IsValid() ) return Result;
+	if ( !Definition.IsValid() )
+	{
+		return Result;
+	}
 	for ( const FEntry& Entry : Entries )
 	{
 		const FWorldObject* Object = Definition->FindObject( Entry.ObjectId );
-		if ( Object == nullptr || !Object->HasTag( Tag ) ) continue;
-		if ( TSharedPtr<CGameObject> Placeholder = Entry.Placeholder.Pin(); Placeholder.IsValid() && Placeholder->IsAlive() ) Result.Add( Placeholder );
+		if ( Object == nullptr || !Object->HasTag( Tag ) )
+		{
+			continue;
+		}
+		if ( TSharedPtr<CGameObject> Placeholder = Entry.Placeholder.Pin(); Placeholder.IsValid() && Placeholder->IsAlive() )
+		{
+			Result.Add( Placeholder );
+		}
 	}
 	for ( const FNestedEntry& Entry : Nested )
 	{
-		if ( Entry.Instance.IsValid() ) Result.Append( Entry.Instance->FindAll( Tag ) );
+		if ( Entry.Instance.IsValid() )
+		{
+			Result.Append( Entry.Instance->FindAll( Tag ) );
+		}
 	}
 	return Result;
 }
 
 TSharedPtr<CGameObject> FWorldInstance::FindByName( const FString& Name ) const
 {
-	if ( !Definition.IsValid() ) return TSharedPtr<CGameObject>();
+	if ( !Definition.IsValid() )
+	{
+		return TSharedPtr<CGameObject>();
+	}
 	for ( const FEntry& Entry : Entries )
 	{
 		const FWorldObject* Object = Definition->FindObject( Entry.ObjectId );
-		if ( Object == nullptr || Object->Name != Name ) continue;
-		if ( TSharedPtr<CGameObject> Placeholder = Entry.Placeholder.Pin(); Placeholder.IsValid() && Placeholder->IsAlive() ) return Placeholder;
+		if ( Object == nullptr || Object->Name != Name )
+		{
+			continue;
+		}
+		if ( TSharedPtr<CGameObject> Placeholder = Entry.Placeholder.Pin(); Placeholder.IsValid() && Placeholder->IsAlive() )
+		{
+			return Placeholder;
+		}
 	}
 	for ( const FNestedEntry& Entry : Nested )
 	{
-		if ( !Entry.Instance.IsValid() ) continue;
-		if ( TSharedPtr<CGameObject> Found = Entry.Instance->FindByName( Name ); Found.IsValid() ) return Found;
+		if ( !Entry.Instance.IsValid() )
+		{
+			continue;
+		}
+		if ( TSharedPtr<CGameObject> Found = Entry.Instance->FindByName( Name ); Found.IsValid() )
+		{
+			return Found;
+		}
 	}
 	return TSharedPtr<CGameObject>();
 }
@@ -201,12 +243,18 @@ void FWorldInstance::Despawn()
 {
 	for ( FEntry& Entry : Entries )
 	{
-		if ( TSharedPtr<CGameObject> Placeholder = Entry.Placeholder.Pin() ) Placeholder->Destroy();
+		if ( TSharedPtr<CGameObject> Placeholder = Entry.Placeholder.Pin() )
+		{
+			Placeholder->Destroy();
+		}
 	}
 	Entries.Empty();
 	for ( FNestedEntry& Entry : Nested )
 	{
-		if ( Entry.Instance.IsValid() ) Entry.Instance->Despawn();   // 入れ子の置き物は、ホストの子なので、ホストと一緒に消えるが、記録も片付ける
+		if ( Entry.Instance.IsValid() )
+		{
+			Entry.Instance->Despawn();   // 入れ子の置き物は、ホストの子なので、ホストと一緒に消えるが、記録も片付ける
+		}
 	}
 	Nested.Empty();
 }
@@ -262,11 +310,20 @@ FWorldInstance NWorld::Spawn( CScene& Scene, const TSharedPtr<FWorldDefinition>&
 		// 位置・向き・大きさ。親があれば親からの相対（親の置き物の子）、最上位ならワールド全体の置き場所を掛ける
 		const TSharedPtr<CGameObject>* Parent = Definition_.Parent != WorldNoId ? Placed.Find( Definition_.Parent ) : nullptr;
 		FTransform Local = Definition_.Transform.ToTransform();
-		if ( Parent == nullptr && Options.AttachTo == nullptr ) Local = FTransform::Combine( Options.Root, Local );
+		if ( Parent == nullptr && Options.AttachTo == nullptr )
+		{
+			Local = FTransform::Combine( Options.Root, Local );
+		}
 		CTransformComponent* Transform = Object->AddComponent<CTransformComponent>();
 		Transform->SetLocalTransform( Local );
-		if ( Parent != nullptr ) Object->AttachToParent( Parent->Get() );
-		else if ( Options.AttachTo != nullptr ) Object->AttachToParent( Options.AttachTo );   // 入れ子のワールド: 最上位は、ホストの子（ホストからの相対）
+		if ( Parent != nullptr )
+		{
+			Object->AttachToParent( Parent->Get() );
+		}
+		else if ( Options.AttachTo != nullptr )
+		{
+			Object->AttachToParent( Options.AttachTo );   // 入れ子のワールド: 最上位は、ホストの子（ホストからの相対）
+		}
 
 		FWorldObjectRef Ref;
 		Ref.World = Definition;
@@ -279,10 +336,16 @@ FWorldInstance NWorld::Spawn( CScene& Scene, const TSharedPtr<FWorldDefinition>&
 
 		// 部品（登録された順）
 		FWorldSpawnContext Context{ Scene, World, Definition_, *Object, FTransform::Combine( Options.Root, NWorld::ComputeWorldTransform( World, Definition_.Id ) ), Assets, Report };
-		for ( const FWorldSpawnerRegistry::FEntry& Entry : Registry.GetEntries() ) Entry.Spawner( Context );
+		for ( const FWorldSpawnerRegistry::FEntry& Entry : Registry.GetEntries() )
+		{
+			Entry.Spawner( Context );
+		}
 		for ( const FWorldRawComponent& Raw : Definition_.RawComponents )
 		{
-			if ( !Registry.Has( Raw.Type ) ) Context.Warn( "the component '" + Raw.Type + "' is not supported by this version; it was not placed" );
+			if ( !Registry.Has( Raw.Type ) )
+			{
+				Context.Warn( "the component '" + Raw.Type + "' is not supported by this version; it was not placed" );
+			}
 		}
 
 		// 入れ子のワールド（Prefab 部品）: 別の .world を、この置き物の子として置く
@@ -291,15 +354,33 @@ FWorldInstance NWorld::Spawn( CScene& Scene, const TSharedPtr<FWorldDefinition>&
 			const FString& PrefabPath = Definition_.Prefab.GetValue().Path;
 			const FString Key = NWorld::NormalizeAssetPath( PrefabPath );
 			bool bLoop = !SelfKey.IsEmpty() && Key == SelfKey;
-			for ( const FString& Visited : Stack ) bLoop = bLoop || Visited == Key;
-			if ( PrefabPath.IsEmpty() ) Context.Warn( "the prefab has no file; nothing was placed" );
-			else if ( bLoop ) Context.Warn( "the prefab '" + PrefabPath + "' leads back to itself; it was not placed" );
-			else if ( Stack.Num() >= WorldMaxPrefabDepth ) Context.Warn( FString::Printf( "the prefab '%s' is nested deeper than %d levels; it was not placed", *PrefabPath, WorldMaxPrefabDepth ) );
-			else if ( Assets == nullptr ) Context.Warn( "the prefab '" + PrefabPath + "' was not placed: the asset manager is not running" );
+			for ( const FString& Visited : Stack )
+			{
+				bLoop = bLoop || Visited == Key;
+			}
+			if ( PrefabPath.IsEmpty() )
+			{
+				Context.Warn( "the prefab has no file; nothing was placed" );
+			}
+			else if ( bLoop )
+			{
+				Context.Warn( "the prefab '" + PrefabPath + "' leads back to itself; it was not placed" );
+			}
+			else if ( Stack.Num() >= WorldMaxPrefabDepth )
+			{
+				Context.Warn( FString::Printf( "the prefab '%s' is nested deeper than %d levels; it was not placed", *PrefabPath, WorldMaxPrefabDepth ) );
+			}
+			else if ( Assets == nullptr )
+			{
+				Context.Warn( "the prefab '" + PrefabPath + "' was not placed: the asset manager is not running" );
+			}
 			else
 			{
 				const TSharedPtr<CWorldAsset> Prefab = Assets->LoadWorld( PrefabPath );
-				if ( !Prefab.IsValid() ) Context.Warn( "the prefab '" + PrefabPath + "' could not be loaded" );
+				if ( !Prefab.IsValid() )
+				{
+					Context.Warn( "the prefab '" + PrefabPath + "' could not be loaded" );
+				}
 				else
 				{
 					FWorldSpawnOptions Inner = Options;
@@ -314,7 +395,10 @@ FWorldInstance NWorld::Spawn( CScene& Scene, const TSharedPtr<FWorldDefinition>&
 					Report.NumBound += InnerReport.NumBound;
 					Report.NumSkipped += InnerReport.NumSkipped;
 					Report.NumPrefabs += InnerReport.NumPrefabs + 1;
-					for ( const FString& Message : InnerReport.Warnings ) Report.Warnings.Add( "prefab '" + PrefabPath + "': " + Message );
+					for ( const FString& Message : InnerReport.Warnings )
+					{
+						Report.Warnings.Add( "prefab '" + PrefabPath + "': " + Message );
+					}
 					Instance.AddNested( Definition_.Id, InnerInstance );
 				}
 			}
@@ -324,7 +408,10 @@ FWorldInstance NWorld::Spawn( CScene& Scene, const TSharedPtr<FWorldDefinition>&
 		for ( const FString& Tag : Definition_.Tags )
 		{
 			const FWorldBindFactory* Factory = Bindings.Find( Tag );
-			if ( Factory == nullptr ) continue;
+			if ( Factory == nullptr )
+			{
+				continue;
+			}
 			const FWorldBindContext BindContext{ Scene, World, Definition_, *Object, Tag };
 			TSharedPtr<CGameObject> Bound = ( *Factory )( BindContext );
 			if ( !Bound.IsValid() )
@@ -333,7 +420,10 @@ FWorldInstance NWorld::Spawn( CScene& Scene, const TSharedPtr<FWorldDefinition>&
 				continue;
 			}
 			// 置き物に付いて動くよう、位置の部品が無ければ足す（位置は置き物と同じ）
-			if ( Bound->GetComponent<CTransformComponent>() == nullptr ) Bound->AddComponent<CTransformComponent>();
+			if ( Bound->GetComponent<CTransformComponent>() == nullptr )
+			{
+				Bound->AddComponent<CTransformComponent>();
+			}
 			Bound->AttachToParent( Object.Get() );
 			Instance.AddBound( Definition_.Id, Tag, Bound );
 			++Report.NumBound;
@@ -344,13 +434,22 @@ FWorldInstance NWorld::Spawn( CScene& Scene, const TSharedPtr<FWorldDefinition>&
 	// 自分自身・置かれなかった対象・有限でないずれは接続せず、警告して定義側の終点のままにする。
 	for ( const FWorldObject& Object : World.Objects )
 	{
-		if ( !Object.Effect.IsSet() || Object.Effect.GetValue().Target == WorldNoId ) continue;
+		if ( !Object.Effect.IsSet() || Object.Effect.GetValue().Target == WorldNoId )
+		{
+			continue;
+		}
 		const FWorldEffect& Spec = Object.Effect.GetValue();
 		TSharedPtr<CGameObject>* Owner = Placed.Find( Object.Id );
-		if ( Owner == nullptr || !Owner->IsValid() ) continue;
+		if ( Owner == nullptr || !Owner->IsValid() )
+		{
+			continue;
+		}
 		// 部品が置かれなかった場合は、その警告がすでに出ている。
 		CEffectComponent* Effect = Owner->Get()->GetComponent<CEffectComponent>();
-		if ( Effect == nullptr ) continue;
+		if ( Effect == nullptr )
+		{
+			continue;
+		}
 		TSharedPtr<CGameObject>* Target = Spec.Target != Object.Id ? Placed.Find( Spec.Target ) : nullptr;
 		const bool bOffsetFinite = NMath::IsFinite( Spec.TargetOffset.x ) && NMath::IsFinite( Spec.TargetOffset.y ) && NMath::IsFinite( Spec.TargetOffset.z );
 		if ( Target == nullptr || !Target->IsValid() || !bOffsetFinite )

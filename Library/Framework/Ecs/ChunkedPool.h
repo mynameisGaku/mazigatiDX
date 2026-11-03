@@ -33,7 +33,10 @@ public:
 		else
 		{
 			Slot = NumSlots++;
-			if ( ( Slot >> ChunkShift ) >= Chunks.Num() ) Chunks.Add( MakeUnique<T[]>( ChunkSize ) );
+			if ( ( Slot >> ChunkShift ) >= Chunks.Num() )
+			{
+				Chunks.Add( MakeUnique<T[]>( ChunkSize ) );
+			}
 			Alive.Add( 0 );
 		}
 		( *this )[Slot] = T();
@@ -44,7 +47,10 @@ public:
 
 	void Free( int32 Slot )
 	{
-		if ( !IsAlive( Slot ) ) return;
+		if ( !IsAlive( Slot ) )
+		{
+			return;
+		}
 		( *this )[Slot] = T();   // 持っていたものを手放す
 		Alive[Slot] = 0;
 		--NumAlive;

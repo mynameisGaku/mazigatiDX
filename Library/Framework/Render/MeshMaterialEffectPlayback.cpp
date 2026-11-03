@@ -10,7 +10,10 @@ namespace
 	{
 		// 秒単位scrollを減らしてから加算する折返し値。
 		float64 Wrapped = NMath::Fmod( Phase + NMath::Fmod( Delta, 1.0 ), 1.0 );
-		if ( Wrapped < 0.0 ) Wrapped += 1.0;
+		if ( Wrapped < 0.0 )
+		{
+			Wrapped += 1.0;
+		}
 		return Wrapped;
 	}
 
@@ -25,7 +28,10 @@ namespace
 		// one-shotの終端より先へ進めない実適用秒数。
 		const float64 Applied = NMath::Min( DeltaTime, NMath::Max( 0.0, Duration - Playback.EffectTimeSeconds ) );
 		Playback.EffectTimeSeconds += Applied;
-		if ( Playback.EffectTimeSeconds >= Duration ) Playback.EffectState = FMeshMaterialEffectPlayback::EEffectPlaybackState::Finished;
+		if ( Playback.EffectTimeSeconds >= Duration )
+		{
+			Playback.EffectState = FMeshMaterialEffectPlayback::EEffectPlaybackState::Finished;
+		}
 		return Applied;
 	}
 
@@ -39,7 +45,10 @@ namespace
 
 void FMeshMaterialEffectPlayback::Update( float32 DeltaTime, const FMeshMaterialEffectDefinition& Definition )
 {
-	if ( EffectState != EEffectPlaybackState::Playing || !NMath::IsFinite( DeltaTime ) || DeltaTime <= 0.0f || !NMath::IsFinite( Definition.Duration ) || Definition.Duration <= 0.0f ) return;
+	if ( EffectState != EEffectPlaybackState::Playing || !NMath::IsFinite( DeltaTime ) || DeltaTime <= 0.0f || !NMath::IsFinite( Definition.Duration ) || Definition.Duration <= 0.0f )
+	{
+		return;
+	}
 	// float32 deltaを計算用の秒数へ広げた値。
 	const float64 SafeDelta = static_cast<float64>( DeltaTime );
 	// curveとscrollへ反映する実際の進行秒数。
@@ -62,7 +71,10 @@ void FMeshMaterialEffectPlayback::Play()
 
 void FMeshMaterialEffectPlayback::Pause()
 {
-	if ( EffectState == EEffectPlaybackState::Playing ) EffectState = EEffectPlaybackState::Paused;
+	if ( EffectState == EEffectPlaybackState::Playing )
+	{
+		EffectState = EEffectPlaybackState::Paused;
+	}
 }
 
 void FMeshMaterialEffectPlayback::Stop()

@@ -67,7 +67,10 @@ namespace NDrawMaterialRibbon
 		const FDrawRibbonData& Ribbon = Data.Ribbon;
 		// 既存の材質描画設定。
 		const FDrawMaterialRibbonData::FMaterialSettings& Material = Data.Material;
-		if ( Ribbon.NumPoints < 2 || Ribbon.NumPoints > FDrawRibbonData::MaxPoints || Ribbon.Texture < 0 || Material.MaskTexture < -1 || !NMath::IsFinite( Ribbon.UVRepeat ) || Ribbon.UVRepeat <= 0.0f || Ribbon.JoinFlags < 0 || ( Ribbon.JoinFlags & ~( FDrawRibbonData::PreviousPoint | FDrawRibbonData::NextPoint ) ) != 0 || Ribbon.NumPoints - static_cast<int32>( ( Ribbon.JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) - static_cast<int32>( ( Ribbon.JoinFlags & FDrawRibbonData::NextPoint ) != 0 ) < 2 ) return false;
+		if ( Ribbon.NumPoints < 2 || Ribbon.NumPoints > FDrawRibbonData::MaxPoints || Ribbon.Texture < 0 || Material.MaskTexture < -1 || !NMath::IsFinite( Ribbon.UVRepeat ) || Ribbon.UVRepeat <= 0.0f || Ribbon.JoinFlags < 0 || ( Ribbon.JoinFlags & ~( FDrawRibbonData::PreviousPoint | FDrawRibbonData::NextPoint ) ) != 0 || Ribbon.NumPoints - static_cast<int32>( ( Ribbon.JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) - static_cast<int32>( ( Ribbon.JoinFlags & FDrawRibbonData::NextPoint ) != 0 ) < 2 )
+		{
+			return false;
+		}
 		return NMath::IsFinite( Material.UVScale[0] ) && NMath::IsFinite( Material.UVScale[1] ) && Material.UVScale[0] > 0.0f && Material.UVScale[1] > 0.0f && Material.UVScale[0] <= 128.0f && Material.UVScale[1] <= 128.0f && NMath::IsFinite( Material.MaskScale ) && Material.MaskScale > 0.0f && Material.MaskScale <= 128.0f && NMath::IsFinite( Material.EdgeWidth ) && Material.EdgeWidth >= 0.0f && Material.EdgeWidth <= 1.0f && NMath::IsFinite( Material.EdgeEmission ) && Material.EdgeEmission >= 0.0f && Material.EdgeEmission <= 32.0f && ( Material.bDissolve == 0 || Material.bDissolve == 1 ) && ( Material.DepthTest == 0 || Material.DepthTest == 1 ) && ( Material.DepthWrite == 0 || Material.DepthWrite == 1 );
 	}
 
@@ -90,7 +93,10 @@ namespace NDrawMaterialRibbon
 		const float64 FirstRepeat = NMath::Floor( static_cast<float64>( FirstU * Data.Ribbon.UVRepeat ) );
 		// 終端までに必要な整数境界区間数。
 		const float64 Sections = NMath::Max( 1.0, NMath::Ceil( static_cast<float64>( LastU * Data.Ribbon.UVRepeat ) ) - FirstRepeat );
-		if ( !NMath::IsFinite( Sections ) || Sections > static_cast<float64>( FDrawRibbonData::MaxTextureSections - InOutSections ) ) return false;
+		if ( !NMath::IsFinite( Sections ) || Sections > static_cast<float64>( FDrawRibbonData::MaxTextureSections - InOutSections ) )
+		{
+			return false;
+		}
 		InOutSections += static_cast<int32>( Sections );
 		return true;
 	}
@@ -98,7 +104,10 @@ namespace NDrawMaterialRibbon
 	// 固定設定と点列全体を確認し、記録途中で不正値が残らないことを保証する。
 	inline bool IsValid( const FDrawMaterialRibbonData& Data, const FDrawMaterialRibbonData::FPoint* Points )
 	{
-		if ( Points == nullptr || !IsValidHeader( Data ) ) return false;
+		if ( Points == nullptr || !IsValidHeader( Data ) )
+		{
+			return false;
+		}
 		// 点列全体で使用する画像区間数。
 		int32 TextureSections = 0;
 		// 固定配列上限内の全経路点を順に検査する。
@@ -106,10 +115,16 @@ namespace NDrawMaterialRibbon
 		{
 			// 直前点と比較する現在点。
 			const FDrawMaterialRibbonData::FPoint& Point = Points[Index];
-			if ( !IsValidPoint( Data, Point, Index > 0, Index > 0 ? Points[Index - 1].Path.U : 0.0f ) ) return false;
+			if ( !IsValidPoint( Data, Point, Index > 0, Index > 0 ? Points[Index - 1].Path.U : 0.0f ) )
+			{
+				return false;
+			}
 			// 接線用補助点が作る区間を除いた実描画区間。
 			const bool bVisibleSegment = Index > 0 && !( Index == 1 && ( Data.Ribbon.JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) && !( Index + 1 == Data.Ribbon.NumPoints && ( Data.Ribbon.JoinFlags & FDrawRibbonData::NextPoint ) != 0 );
-			if ( bVisibleSegment && !AddTextureSections( Data, Points[Index - 1].Path.U, Point.Path.U, TextureSections ) ) return false;
+			if ( bVisibleSegment && !AddTextureSections( Data, Points[Index - 1].Path.U, Point.Path.U, TextureSections ) )
+			{
+				return false;
+			}
 		}
 		return true;
 	}

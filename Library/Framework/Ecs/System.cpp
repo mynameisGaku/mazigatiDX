@@ -24,7 +24,10 @@ bool NEcs::FSystemScheduler::Conflicts( const FSystem& A, const FSystem& B )
 	{
 		for ( const FAccess& Y : B.Access )
 		{
-			if ( X.Key == Y.Key && ( X.bWrite || Y.bWrite ) ) return true;
+			if ( X.Key == Y.Key && ( X.bWrite || Y.bWrite ) )
+			{
+				return true;
+			}
 		}
 	}
 	return false;
@@ -36,9 +39,15 @@ void NEcs::FSystemScheduler::AddSystem( FSystem&& System )
 	System.Stage = 0;
 	for ( const FSystem& Existing : Systems )
 	{
-		if ( Existing.Phase == System.Phase && Conflicts( Existing, System ) ) System.Stage = NMath::Max( System.Stage, Existing.Stage + 1 );
+		if ( Existing.Phase == System.Phase && Conflicts( Existing, System ) )
+		{
+			System.Stage = NMath::Max( System.Stage, Existing.Stage + 1 );
+		}
 	}
-	if ( System.Phase == EPhase::Draw ) DrawSystems.Add( Systems.Num() );
+	if ( System.Phase == EPhase::Draw )
+	{
+		DrawSystems.Add( Systems.Num() );
+	}
 	Systems.Add( MoveTemp( System ) );
 }
 
@@ -46,7 +55,10 @@ int32 NEcs::FSystemScheduler::GetStage( const char* Name ) const
 {
 	for ( const FSystem& System : Systems )
 	{
-		if ( NCString::Compare( System.Name, Name ) == 0 ) return System.Stage;
+		if ( NCString::Compare( System.Name, Name ) == 0 )
+		{
+			return System.Stage;
+		}
 	}
 	return INDEX_NONE;
 }
@@ -56,7 +68,10 @@ int32 NEcs::FSystemScheduler::GetNumStages( EPhase Phase ) const
 	int32 NumStages = 0;
 	for ( const FSystem& System : Systems )
 	{
-		if ( System.Phase == Phase ) NumStages = NMath::Max( NumStages, System.Stage + 1 );
+		if ( System.Phase == Phase )
+		{
+			NumStages = NMath::Max( NumStages, System.Stage + 1 );
+		}
 	}
 	return NumStages;
 }
@@ -79,7 +94,10 @@ void NEcs::FSystemScheduler::Run( EPhase Phase, float32 DeltaTime, uint64 MaxObj
 		Items.Reset();
 		for ( FSystem& System : Systems )
 		{
-			if ( System.Phase != Phase || System.Stage != Stage ) continue;
+			if ( System.Phase != Phase || System.Stage != Stage )
+			{
+				continue;
+			}
 
 			const int32 Count = System.Runner->Prepare( World, Transforms, DeltaTime, MaxObjectId );
 			if ( Phase == EPhase::Draw && Count > 0 )
@@ -95,7 +113,10 @@ void NEcs::FSystemScheduler::Run( EPhase Phase, float32 DeltaTime, uint64 MaxObj
 				Items.Add( { System.Runner.Get(), System.Name, Begin, NMath::Min( Begin + EntitiesPerBatch, Count ) } );
 			}
 		}
-		if ( Items.IsEmpty() ) continue;
+		if ( Items.IsEmpty() )
+		{
+			continue;
+		}
 
 		const FWorkItem* WorkData = Items.GetData();
 		const auto Body = [WorkData]( int32 First, int32 Last )
@@ -107,8 +128,14 @@ void NEcs::FSystemScheduler::Run( EPhase Phase, float32 DeltaTime, uint64 MaxObj
 				Item.Runner->RunRange( Item.Begin, Item.End );
 			}
 		};
-		if ( Jobs != nullptr && Jobs->GetNumWorkers() > 0 ) Jobs->ParallelForRange( Items.Num(), 1, "Systems", Body );
-		else Body( 0, Items.Num() );
+		if ( Jobs != nullptr && Jobs->GetNumWorkers() > 0 )
+		{
+			Jobs->ParallelForRange( Items.Num(), 1, "Systems", Body );
+		}
+		else
+		{
+			Body( 0, Items.Num() );
+		}
 
 		// 並列に溜めた「ワールド値を古くする」「破棄の予約」を、メインスレッドでまとめて反映する（次の段の前に）
 		if ( Phase != EPhase::Draw )

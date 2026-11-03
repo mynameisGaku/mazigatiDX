@@ -50,7 +50,10 @@ namespace
 
 	void AddWarning( FModelExportResult& Result, const FString& Text )
 	{
-		if ( !Result.Warning.IsEmpty() ) Result.Warning += "\n";
+		if ( !Result.Warning.IsEmpty() )
+		{
+			Result.Warning += "\n";
+		}
 		Result.Warning += Text;
 		LOG( LogModelExport, Warning, "'%s': %s", *Result.SourcePath, *Text );
 	}
@@ -88,8 +91,14 @@ namespace
 			if ( !NFileSystem::FileExists( Absolute ) )
 			{
 				const FString SameFolder = NormalizeSlashes( SourceDirectory / GetFileName( Texture.File ) );
-				if ( NFileSystem::FileExists( SameFolder ) ) Absolute = SameFolder;
-				else AddWarning( Result, "the texture '" + Texture.File + "' was not found" );
+				if ( NFileSystem::FileExists( SameFolder ) )
+				{
+					Absolute = SameFolder;
+				}
+				else
+				{
+					AddWarning( Result, "the texture '" + Texture.File + "' was not found" );
+				}
 			}
 			Paths.Add( NModelExport::MakeRelativePath( OutputDirectory, Absolute ) );
 		}
@@ -99,8 +108,14 @@ namespace
 
 FString FModelExportResult::GetSummary() const
 {
-	if ( !bSuccess ) return FString::Printf( "%s: failed (%s)", *SourcePath, *Error );
-	if ( bSkippedUpToDate ) return FString::Printf( "%s: up to date (%s)", *SourcePath, *OutputPath );
+	if ( !bSuccess )
+	{
+		return FString::Printf( "%s: failed (%s)", *SourcePath, *Error );
+	}
+	if ( bSkippedUpToDate )
+	{
+		return FString::Printf( "%s: up to date (%s)", *SourcePath, *OutputPath );
+	}
 	const char* Kind = SavedType == EModelSaveType::AnimOnly ? "animations only" : ( SavedType == EModelSaveType::MeshOnly ? "mesh only" : "mesh and animations" );
 	return FString::Printf( "%s -> %s (%s; %d mesh(es), %d animation(s), %d bone(s); %lld bytes; %.0f ms%s)", *SourcePath, *OutputPath, Kind, NumMeshes, NumAnimations, NumBones,
 							static_cast<long long>( OutputBytes ), Milliseconds, bImported ? "; imported" : "" );
@@ -109,9 +124,18 @@ FString FModelExportResult::GetSummary() const
 void FModelBatchExportResult::Add( const FModelExportResult& Result )
 {
 	Items.Add( Result );
-	if ( !Result.bSuccess ) ++NumFailed;
-	else if ( Result.bSkippedUpToDate ) ++NumSkipped;
-	else ++NumExported;
+	if ( !Result.bSuccess )
+	{
+		++NumFailed;
+	}
+	else if ( Result.bSkippedUpToDate )
+	{
+		++NumSkipped;
+	}
+	else
+	{
+		++NumExported;
+	}
 }
 
 FString FModelBatchExportResult::GetSummary() const
@@ -129,19 +153,34 @@ FString NModelExport::MakeRelativePath( const FString& FromDirectory, const FStr
 	};
 	const TArray<FString> From = Split( FromDirectory );
 	const TArray<FString> To = Split( ToPath );
-	if ( To.IsEmpty() ) return ToPath;
+	if ( To.IsEmpty() )
+	{
+		return ToPath;
+	}
 
 	int32 Common = 0;
-	while ( Common < From.Num() && Common < To.Num() - 1 && From[Common].Equals( To[Common], ESearchCase::IgnoreCase ) ) ++Common;
+	while ( Common < From.Num() && Common < To.Num() - 1 && From[Common].Equals( To[Common], ESearchCase::IgnoreCase ) )
+	{
+		++Common;
+	}
 	// 最初の階層（ドライブなど）から違うなら、相対にできない
-	if ( Common == 0 && ( !From.IsEmpty() ) && ( IsAbsolute( FromDirectory ) || IsAbsolute( ToPath ) ) ) return NormalizeSlashes( ToPath );
+	if ( Common == 0 && ( !From.IsEmpty() ) && ( IsAbsolute( FromDirectory ) || IsAbsolute( ToPath ) ) )
+	{
+		return NormalizeSlashes( ToPath );
+	}
 
 	FString Result;
-	for ( int32 i = Common; i < From.Num(); ++i ) Result += "../";
+	for ( int32 i = Common; i < From.Num(); ++i )
+	{
+		Result += "../";
+	}
 	for ( int32 i = Common; i < To.Num(); ++i )
 	{
 		Result += To[i];
-		if ( i + 1 < To.Num() ) Result += "/";
+		if ( i + 1 < To.Num() )
+		{
+			Result += "/";
+		}
 	}
 	return Result;
 }
@@ -153,9 +192,18 @@ FModelExportResult NModelExport::Export( IAssetBackend& Backend, const FString& 
 	Result.SourcePath = NormalizeSlashes( SourceFullPath );
 
 	const EModelFileKind Kind = NModelFormat::Classify( Result.SourcePath );
-	if ( Kind == EModelFileKind::MV1 ) return Fail( Result, "the file is already a .mv1" );
-	if ( Kind == EModelFileKind::Unknown ) return Fail( Result, "the file format is not supported" );
-	if ( !NFileSystem::FileExists( Result.SourcePath ) ) return Fail( Result, "the file does not exist" );
+	if ( Kind == EModelFileKind::MV1 )
+	{
+		return Fail( Result, "the file is already a .mv1" );
+	}
+	if ( Kind == EModelFileKind::Unknown )
+	{
+		return Fail( Result, "the file format is not supported" );
+	}
+	if ( !NFileSystem::FileExists( Result.SourcePath ) )
+	{
+		return Fail( Result, "the file does not exist" );
+	}
 
 	Result.OutputPath = NormalizeSlashes( Options.OutputPath.IsEmpty() ? NModelFormat::GetMV1Path( Result.SourcePath ) : Options.OutputPath );
 
@@ -173,7 +221,10 @@ FModelExportResult NModelExport::Export( IAssetBackend& Backend, const FString& 
 	}
 
 	const FString OutputDirectory = GetDirectory( Result.OutputPath );
-	if ( !OutputDirectory.IsEmpty() && !NFileSystem::EnsureDirectory( OutputDirectory ) ) return Fail( Result, "could not create the output folder '" + OutputDirectory + "'" );
+	if ( !OutputDirectory.IsEmpty() && !NFileSystem::EnsureDirectory( OutputDirectory ) )
+	{
+		return Fail( Result, "could not create the output folder '" + OutputDirectory + "'" );
+	}
 
 	// 読む: 取り込みは、いったん .x にして DxLib に読ませる
 	int32 Handle = NAsset::InvalidHandle;
@@ -181,17 +232,32 @@ FModelExportResult NModelExport::Export( IAssetBackend& Backend, const FString& 
 	if ( Kind == EModelFileKind::Imported )
 	{
 		TArray<uint8> Bytes;
-		if ( !ReadFileBytes( Result.SourcePath, Bytes ) ) return Fail( Result, "could not read the file" );
+		if ( !ReadFileBytes( Result.SourcePath, Bytes ) )
+		{
+			return Fail( Result, "could not read the file" );
+		}
 
 		FImportOptions ImportOptions;
 		ImportOptions.AnimFps = Options.AnimFps;
 		FImportedScene Scene;
 		FString ImportError;
-		if ( !NModelImport::ImportFromMemory( Bytes.GetData(), Bytes.Num(), Result.SourcePath, ImportOptions, Scene, ImportError ) ) return Fail( Result, "could not read it as a model: " + ImportError );
+		if ( !NModelImport::ImportFromMemory( Bytes.GetData(), Bytes.Num(), Result.SourcePath, ImportOptions, Scene, ImportError ) )
+		{
+			return Fail( Result, "could not read it as a model: " + ImportError );
+		}
 		const TArray<FString> Problems = NImportedScene::Validate( Scene );
-		if ( !Problems.IsEmpty() ) return Fail( Result, "the imported data is inconsistent: " + Problems[0] );
-		if ( Scene.Nodes.IsEmpty() ) return Fail( Result, "the file has no nodes (no model)" );
-		if ( !Scene.HasMesh() && Scene.Animations.IsEmpty() ) AddWarning( Result, "the file has neither a mesh nor an animation" );
+		if ( !Problems.IsEmpty() )
+		{
+			return Fail( Result, "the imported data is inconsistent: " + Problems[0] );
+		}
+		if ( Scene.Nodes.IsEmpty() )
+		{
+			return Fail( Result, "the file has no nodes (no model)" );
+		}
+		if ( !Scene.HasMesh() && Scene.Animations.IsEmpty() )
+		{
+			AddWarning( Result, "the file has neither a mesh nor an animation" );
+		}
 
 		NImportedScene::ConvertToLeftHanded( Scene );
 		const FString OutputBase = GetBaseName( Result.OutputPath );
@@ -199,7 +265,10 @@ FModelExportResult NModelExport::Export( IAssetBackend& Backend, const FString& 
 		const FString Text = NXFile::Write( Scene, TexturePaths );
 
 		TemporaryX = ( OutputDirectory.IsEmpty() ? FString() : OutputDirectory + "/" ) + OutputBase + ".import.tmp.x";
-		if ( !WriteFileBytes( TemporaryX, *Text, static_cast<size_t>( Text.Len() ) ) ) return Fail( Result, "could not write the temporary file '" + TemporaryX + "'" );
+		if ( !WriteFileBytes( TemporaryX, *Text, static_cast<size_t>( Text.Len() ) ) )
+		{
+			return Fail( Result, "could not write the temporary file '" + TemporaryX + "'" );
+		}
 		Handle = Backend.LoadModel( TemporaryX, false );
 		Result.bImported = true;
 	}
@@ -209,7 +278,10 @@ FModelExportResult NModelExport::Export( IAssetBackend& Backend, const FString& 
 	}
 	if ( Handle < 0 )
 	{
-		if ( !TemporaryX.IsEmpty() ) NFileSystem::RemoveFile( TemporaryX );
+		if ( !TemporaryX.IsEmpty() )
+		{
+			NFileSystem::RemoveFile( TemporaryX );
+		}
 		return Fail( Result, Kind == EModelFileKind::Imported ? "DxLib could not read the converted data" : "DxLib could not read the file" );
 	}
 
@@ -223,20 +295,41 @@ FModelExportResult NModelExport::Export( IAssetBackend& Backend, const FString& 
 	Result.SavedType = Save.Type;
 
 	FString Failure;
-	if ( Result.NumMeshes == 0 && Result.NumAnimations == 0 ) Failure = "the file has neither a mesh nor an animation, so there is nothing to save";
-	else if ( Save.Type == EModelSaveType::AnimOnly && Result.NumAnimations == 0 ) Failure = "the file has no animations to save";
-	else if ( Save.Type == EModelSaveType::MeshOnly && Result.NumMeshes == 0 ) Failure = "the file has no mesh to save";
+	if ( Result.NumMeshes == 0 && Result.NumAnimations == 0 )
+	{
+		Failure = "the file has neither a mesh nor an animation, so there is nothing to save";
+	}
+	else if ( Save.Type == EModelSaveType::AnimOnly && Result.NumAnimations == 0 )
+	{
+		Failure = "the file has no animations to save";
+	}
+	else if ( Save.Type == EModelSaveType::MeshOnly && Result.NumMeshes == 0 )
+	{
+		Failure = "the file has no mesh to save";
+	}
 
 	if ( Failure.IsEmpty() )
 	{
 		FString SaveWarning;
-		if ( !Backend.SaveModelToMV1( Handle, Result.OutputPath, Save, SaveWarning ) ) Failure = "DxLib could not save the .mv1 file";
-		else if ( !SaveWarning.IsEmpty() ) AddWarning( Result, SaveWarning );
+		if ( !Backend.SaveModelToMV1( Handle, Result.OutputPath, Save, SaveWarning ) )
+		{
+			Failure = "DxLib could not save the .mv1 file";
+		}
+		else if ( !SaveWarning.IsEmpty() )
+		{
+			AddWarning( Result, SaveWarning );
+		}
 	}
 
 	Backend.DeleteModel( Handle );
-	if ( !TemporaryX.IsEmpty() ) NFileSystem::RemoveFile( TemporaryX );
-	if ( !Failure.IsEmpty() ) return Fail( Result, Failure );
+	if ( !TemporaryX.IsEmpty() )
+	{
+		NFileSystem::RemoveFile( TemporaryX );
+	}
+	if ( !Failure.IsEmpty() )
+	{
+		return Fail( Result, Failure );
+	}
 
 	Result.bSuccess = true;
 	Result.OutputBytes = NFileSystem::GetFileSize( Result.OutputPath );

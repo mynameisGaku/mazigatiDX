@@ -46,7 +46,10 @@ void TArray<T>::SetNum( int32 NewNum, const T& Value )
 	{
 		const T Copy = Value;
 		GrowTo( NewNum );
-		for ( int32 i = ArrayNum; i < NewNum; ++i ) new ( Data + i ) T( Copy );
+		for ( int32 i = ArrayNum; i < NewNum; ++i )
+		{
+			new ( Data + i ) T( Copy );
+		}
 	}
 	else
 	{
@@ -98,8 +101,14 @@ int32 TArray<T>::RemoveAll( Predicate Pred )
 	int32 WriteIndex = 0;
 	for ( int32 ReadIndex = 0; ReadIndex < ArrayNum; ++ReadIndex )
 	{
-		if ( Pred( Data[ReadIndex] ) ) continue;
-		if ( WriteIndex != ReadIndex ) Data[WriteIndex] = MoveTemp( Data[ReadIndex] );
+		if ( Pred( Data[ReadIndex] ) )
+		{
+			continue;
+		}
+		if ( WriteIndex != ReadIndex )
+		{
+			Data[WriteIndex] = MoveTemp( Data[ReadIndex] );
+		}
 		++WriteIndex;
 	}
 	const int32 Removed = ArrayNum - WriteIndex;
@@ -112,7 +121,10 @@ template<typename T>
 void TArray<T>::RemoveAt( int32 Index, int32 Count )
 {
 	COLLECTION_CHECK( Index >= 0 && Count >= 0 && Index + Count <= ArrayNum, "TArray::RemoveAt out of range" );
-	if ( Count == 0 ) return;
+	if ( Count == 0 )
+	{
+		return;
+	}
 
 	if constexpr ( NMemoryOps::bIsBitwiseRelocatable<T> )
 	{
@@ -120,7 +132,10 @@ void TArray<T>::RemoveAt( int32 Index, int32 Count )
 	}
 	else
 	{
-		for ( int32 i = Index; i + Count < ArrayNum; ++i ) Data[i] = MoveTemp( Data[i + Count] );
+		for ( int32 i = Index; i + Count < ArrayNum; ++i )
+		{
+			Data[i] = MoveTemp( Data[i + Count] );
+		}
 		NMemoryOps::DestructItems( Data + ArrayNum - Count, Count );
 	}
 	ArrayNum -= Count;
@@ -155,7 +170,10 @@ void TArray<T>::Reallocate( int32 NewMax )
 template<typename T>
 void TArray<T>::OpenGap( int32 Index, int32 Count )
 {
-	if ( ArrayNum + Count > ArrayMax ) Reallocate( CalculateGrowth( ArrayNum + Count ) );
+	if ( ArrayNum + Count > ArrayMax )
+	{
+		Reallocate( CalculateGrowth( ArrayNum + Count ) );
+	}
 
 	if constexpr ( NMemoryOps::bIsBitwiseRelocatable<T> )
 	{

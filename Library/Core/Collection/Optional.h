@@ -39,11 +39,17 @@ public:
 
 	FORCEINLINE TOptional( const TOptional& Other )
 	{
-		if ( Other.bIsSet ) Emplace( Other.Ref() );
+		if ( Other.bIsSet )
+		{
+			Emplace( Other.Ref() );
+		}
 	}
 	FORCEINLINE TOptional( TOptional&& Other ) noexcept( bIsNothrowMoveConstructible<T> )
 	{
-		if ( Other.bIsSet ) Emplace( MoveTemp( Other.Ref() ) );
+		if ( Other.bIsSet )
+		{
+			Emplace( MoveTemp( Other.Ref() ) );
+		}
 	}
 
 	FORCEINLINE ~TOptional() { Reset(); }
@@ -54,14 +60,26 @@ public:
 
 	FORCEINLINE TOptional& operator=( const T& InValue )
 	{
-		if ( bIsSet ) Ref() = InValue;
-		else Emplace( InValue );
+		if ( bIsSet )
+		{
+			Ref() = InValue;
+		}
+		else
+		{
+			Emplace( InValue );
+		}
 		return *this;
 	}
 	FORCEINLINE TOptional& operator=( T&& InValue )
 	{
-		if ( bIsSet ) Ref() = MoveTemp( InValue );
-		else Emplace( MoveTemp( InValue ) );
+		if ( bIsSet )
+		{
+			Ref() = MoveTemp( InValue );
+		}
+		else
+		{
+			Emplace( MoveTemp( InValue ) );
+		}
 		return *this;
 	}
 	TOptional& operator=( FNullOpt ) noexcept { Reset(); return *this; }
@@ -134,7 +152,10 @@ public:
 	//-------------------------------------------------------------------------
 	friend FORCEINLINE bool operator==( const TOptional& A, const TOptional& B )
 	{
-		if ( A.bIsSet != B.bIsSet ) return false;
+		if ( A.bIsSet != B.bIsSet )
+		{
+			return false;
+		}
 		return !A.bIsSet || A.Ref() == B.Ref();
 	}
 	friend bool operator!=( const TOptional& A, const TOptional& B ) { return !( A == B ); }

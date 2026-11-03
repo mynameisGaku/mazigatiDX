@@ -30,7 +30,10 @@ namespace
 				Hash *= 1099511628211ull;
 			}
 		};
-		for ( int32 i = 0; i < Effect.Path.Len(); ++i ) Mix( &Effect.Path[i], 1 );
+		for ( int32 i = 0; i < Effect.Path.Len(); ++i )
+		{
+			Mix( &Effect.Path[i], 1 );
+		}
 		Mix( &Effect.Scale, sizeof( Effect.Scale ) );
 		Mix( &Effect.Speed, sizeof( Effect.Speed ) );
 		Mix( &Effect.Seed, sizeof( Effect.Seed ) );
@@ -67,8 +70,14 @@ void NWorldEditorUI::UpdateEffectPreviews( FWorldEditorState& S, float32 DeltaTi
 	for ( int32 Index = 0; Index < World.Objects.Num(); ++Index )
 	{
 		const FWorldObject& Object = World.Objects[Index];
-		if ( !Object.bEnabled || !Object.Effect.IsSet() || Object.Effect.GetValue().Path.IsEmpty() ) continue;
-		if ( Transforms.IsEmpty() ) Transforms = NWorld::ComputeAllWorldTransforms( World );
+		if ( !Object.bEnabled || !Object.Effect.IsSet() || Object.Effect.GetValue().Path.IsEmpty() )
+		{
+			continue;
+		}
+		if ( Transforms.IsEmpty() )
+		{
+			Transforms = NWorld::ComputeAllWorldTransforms( World );
+		}
 		const FWorldEffect& Spec = Object.Effect.GetValue();
 		Seen.Add( Object.Id );
 
@@ -96,12 +105,24 @@ void NWorldEditorUI::UpdateEffectPreviews( FWorldEditorState& S, float32 DeltaTi
 				if ( TargetIndex != INDEX_NONE && TargetIndex < Transforms.Num() && NMath::IsFinite( Spec.TargetOffset.x ) && NMath::IsFinite( Spec.TargetOffset.y ) && NMath::IsFinite( Spec.TargetOffset.z ) && Spec.Target != Object.Id )
 				{
 					const FVector3 TargetPosition = Transforms[TargetIndex].TransformPoint( Spec.TargetOffset );
-					if ( NMath::IsFinite( TargetPosition.x ) && NMath::IsFinite( TargetPosition.y ) && NMath::IsFinite( TargetPosition.z ) ) Preview.Playback->SetTargetPosition( TargetPosition );
-					else Preview.Playback->ClearTargetPosition();
+					if ( NMath::IsFinite( TargetPosition.x ) && NMath::IsFinite( TargetPosition.y ) && NMath::IsFinite( TargetPosition.z ) )
+					{
+						Preview.Playback->SetTargetPosition( TargetPosition );
+					}
+					else
+					{
+						Preview.Playback->ClearTargetPosition();
+					}
 				}
-				else Preview.Playback->ClearTargetPosition();
+				else
+				{
+					Preview.Playback->ClearTargetPosition();
+				}
 			}
-			else Preview.Playback->ClearTargetPosition();
+			else
+			{
+				Preview.Playback->ClearTargetPosition();
+			}
 			Preview.Playback->Update( Step );
 		}
 	}
@@ -110,15 +131,24 @@ void NWorldEditorUI::UpdateEffectPreviews( FWorldEditorState& S, float32 DeltaTi
 	TArray<int32> Stale;
 	for ( const auto& Pair : S.EffectPreviews )
 	{
-		if ( !Seen.Contains( Pair.Key ) ) Stale.Add( Pair.Key );
+		if ( !Seen.Contains( Pair.Key ) )
+		{
+			Stale.Add( Pair.Key );
+		}
 	}
-	for ( const int32 Id : Stale ) S.EffectPreviews.Remove( Id );
+	for ( const int32 Id : Stale )
+	{
+		S.EffectPreviews.Remove( Id );
+	}
 }
 
 void NWorldEditorUI::RecordEffectPreviews( FWorldEditorState& S, FDrawContext& Draw )
 {
 	for ( const auto& Pair : S.EffectPreviews )
 	{
-		if ( Pair.Value.Playback.IsValid() ) Pair.Value.Playback->Record( Draw );
+		if ( Pair.Value.Playback.IsValid() )
+		{
+			Pair.Value.Playback->Record( Draw );
+		}
 	}
 }

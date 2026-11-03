@@ -92,7 +92,10 @@ namespace
 		{
 			for ( int32 Bit = 1; Bit <= 4; Bit <<= 1 )
 			{
-				if ( ( i & Bit ) == 0 ) Sink.Line( Corner[i], Corner[i | Bit] );
+				if ( ( i & Bit ) == 0 )
+				{
+					Sink.Line( Corner[i], Corner[i | Bit] );
+				}
 			}
 		}
 	}
@@ -135,7 +138,10 @@ namespace
 	// 凸包・三角形メッシュなど、決まった輪郭を持たない形は、三角形の辺で描く（上限まで）
 	void DrawTriangles( FLineSink& Sink, const JPH::Shape& Shape, const FPose& Pose, JPH::Vec3Arg Scale, const FShapeDraw& Draw )
 	{
-		if ( Draw.MaxTriangles <= 0 ) return;
+		if ( Draw.MaxTriangles <= 0 )
+		{
+			return;
+		}
 
 		JPH::Shape::GetTrianglesContext Context;
 		Shape.GetTrianglesStart( Context, Draw.Region, Pose.Apply( Scale * Shape.GetCenterOfMass() ), Pose.Rotation, Scale );
@@ -146,7 +152,10 @@ namespace
 		while ( Remaining > 0 )
 		{
 			const int32 Got = Shape.GetTrianglesNext( Context, BatchTriangles, Vertices );
-			if ( Got <= 0 ) break;
+			if ( Got <= 0 )
+			{
+				break;
+			}
 
 			const int32 Use = NMath::Min( Got, Remaining );
 			for ( int32 t = 0; t < Use; ++t )
@@ -207,7 +216,10 @@ namespace
 
 int32 CPhysicsSystem::DrawDebug( IPhysicsDebugDrawer& Drawer, const FPhysicsDebugDrawSettings& DrawSettings ) const
 {
-	if ( !bInitialized ) return 0;
+	if ( !bInitialized )
+	{
+		return 0;
+	}
 
 	// 範囲の指定が使えないなら、何も描かない
 	JPH::Vec3 RegionCenter = JPH::Vec3::sZero();
@@ -215,7 +227,10 @@ int32 CPhysicsSystem::DrawDebug( IPhysicsDebugDrawer& Drawer, const FPhysicsDebu
 	JPH::AABox RegionBox( JPH::Vec3::sReplicate( -1.0e30f ), JPH::Vec3::sReplicate( 1.0e30f ) );
 	if ( DrawSettings.bUseRegion )
 	{
-		if ( !NPhysicsInput::IsFiniteVector( DrawSettings.RegionCenter ) || !NMath::IsFinite( DrawSettings.RegionRadius ) || DrawSettings.RegionRadius <= 0.0f ) return 0;
+		if ( !NPhysicsInput::IsFiniteVector( DrawSettings.RegionCenter ) || !NMath::IsFinite( DrawSettings.RegionRadius ) || DrawSettings.RegionRadius <= 0.0f )
+		{
+			return 0;
+		}
 		RegionCenter = NPhysics::ToPhys( DrawSettings.RegionCenter );
 		RegionRadius = DrawSettings.RegionRadius;
 		RegionBox    = JPH::AABox( RegionCenter - JPH::Vec3::sReplicate( RegionRadius ), RegionCenter + JPH::Vec3::sReplicate( RegionRadius ) );
@@ -242,22 +257,55 @@ int32 CPhysicsSystem::DrawDebug( IPhysicsDebugDrawer& Drawer, const FPhysicsDebu
 		const bool bSensor = BodyInterface.IsSensor( BodyID );
 		const bool bCharacter = IsCharacterBody( &Body );
 		bool bDraw = DrawSettings.bDrawDynamic;
-		if ( bSensor ) bDraw = DrawSettings.bDrawSensors;
-		else if ( Body.GetBodyType() == EBodyType::Static ) bDraw = DrawSettings.bDrawStatic;
-		else if ( Body.GetBodyType() == EBodyType::Kinematic ) bDraw = DrawSettings.bDrawKinematic;
-		if ( !bDraw ) continue;
+		if ( bSensor )
+		{
+			bDraw = DrawSettings.bDrawSensors;
+		}
+		else if ( Body.GetBodyType() == EBodyType::Static )
+		{
+			bDraw = DrawSettings.bDrawStatic;
+		}
+		else if ( Body.GetBodyType() == EBodyType::Kinematic )
+		{
+			bDraw = DrawSettings.bDrawKinematic;
+		}
+		if ( !bDraw )
+		{
+			continue;
+		}
 
 		const JPH::TransformedShape Transformed = BodyInterface.GetTransformedShape( BodyID );
-		if ( Transformed.mShape == nullptr ) continue;
+		if ( Transformed.mShape == nullptr )
+		{
+			continue;
+		}
 		const JPH::AABox Bounds = Transformed.GetWorldSpaceBounds();
-		if ( !InRegion( Bounds ) ) continue;
+		if ( !InRegion( Bounds ) )
+		{
+			continue;
+		}
 
 		FColor32 Color = DrawSettings.DynamicColor;
-		if ( bCharacter ) Color = DrawSettings.CharacterColor;
-		else if ( bSensor ) Color = DrawSettings.SensorColor;
-		else if ( Body.GetBodyType() == EBodyType::Static ) Color = DrawSettings.StaticColor;
-		else if ( Body.GetBodyType() == EBodyType::Kinematic ) Color = DrawSettings.KinematicColor;
-		else if ( !BodyInterface.IsActive( BodyID ) ) Color = DrawSettings.SleepingColor;
+		if ( bCharacter )
+		{
+			Color = DrawSettings.CharacterColor;
+		}
+		else if ( bSensor )
+		{
+			Color = DrawSettings.SensorColor;
+		}
+		else if ( Body.GetBodyType() == EBodyType::Static )
+		{
+			Color = DrawSettings.StaticColor;
+		}
+		else if ( Body.GetBodyType() == EBodyType::Kinematic )
+		{
+			Color = DrawSettings.KinematicColor;
+		}
+		else if ( !BodyInterface.IsActive( BodyID ) )
+		{
+			Color = DrawSettings.SleepingColor;
+		}
 
 		// 形の原点（剛体の位置）と向き。形が重心からずれていても、形の中の座標は原点が基準
 		JPH::RVec3 Position;
@@ -286,17 +334,26 @@ int32 CPhysicsSystem::DrawDebug( IPhysicsDebugDrawer& Drawer, const FPhysicsDebu
 	{
 		for ( const TUniquePtr<FPhysicsConstraint>& Constraint : Constraints )
 		{
-			if ( Constraint->Joint == nullptr ) continue;
+			if ( Constraint->Joint == nullptr )
+			{
+				continue;
+			}
 
 			const JPH::TwoBodyConstraint& Joint = *Constraint->Joint;
 			const JPH::Vec3 PointB( Joint.GetBody1()->GetCenterOfMassTransform() * Joint.GetConstraintToBody1Matrix().GetTranslation() );
 			const JPH::Vec3 PointA( Joint.GetBody2()->GetCenterOfMassTransform() * Joint.GetConstraintToBody2Matrix().GetTranslation() );
-			if ( !PointInRegion( PointA ) && !PointInRegion( PointB ) ) continue;
+			if ( !PointInRegion( PointA ) && !PointInRegion( PointB ) )
+			{
+				continue;
+			}
 
 			FLineSink Sink( Drawer, Joint.GetEnabled() ? DrawSettings.ConstraintColor : DrawSettings.DisabledColor );
 			Sink.Line( PointB, PointA );
 			const JPH::Vec3 Axes[3] = { JPH::Vec3::sAxisX(), JPH::Vec3::sAxisY(), JPH::Vec3::sAxisZ() };
-			for ( const JPH::Vec3& Axis : Axes ) Sink.Line( PointA - CrossHalfSize * Axis, PointA + CrossHalfSize * Axis );
+			for ( const JPH::Vec3& Axis : Axes )
+			{
+				Sink.Line( PointA - CrossHalfSize * Axis, PointA + CrossHalfSize * Axis );
+			}
 
 			if ( Constraint->Type == EConstraintType::Hinge )
 			{
@@ -314,10 +371,16 @@ int32 CPhysicsSystem::DrawDebug( IPhysicsDebugDrawer& Drawer, const FPhysicsDebu
 	{
 		for ( const TUniquePtr<FPhysicsCharacter>& Character : Characters )
 		{
-			if ( Character->Character == nullptr || Character->GetGroundState() == ECharacterGroundState::InAir ) continue;
+			if ( Character->Character == nullptr || Character->GetGroundState() == ECharacterGroundState::InAir )
+			{
+				continue;
+			}
 
 			const JPH::Vec3 Feet( Character->Character->GetPosition() );
-			if ( !PointInRegion( Feet ) ) continue;
+			if ( !PointInRegion( Feet ) )
+			{
+				continue;
+			}
 
 			FLineSink Sink( Drawer, DrawSettings.CharacterColor );
 			Sink.Line( Feet, Feet + GroundNormalSize * Character->Character->GetGroundNormal() );

@@ -19,7 +19,10 @@ namespace
 	// bChanged: widgetが変えた値。bInputEnded: 呼出側の終了印へORする値。
 	bool TrackModelMaterialInputEnd( bool bChanged, bool& bInputEnded )
 	{
-		if ( ImGui::IsItemDeactivatedAfterEdit() ) bInputEnded = true;
+		if ( ImGui::IsItemDeactivatedAfterEdit() )
+		{
+			bInputEnded = true;
+		}
 		return bChanged;
 	}
 
@@ -27,9 +30,18 @@ namespace
 	// Saved: 現在の保存値。Prepared: 前回更新時の値。一致しなければfalse。
 	bool SameModelSettings( const FWorldModel& Saved, const FWorldModel& Prepared )
 	{
-		if ( Saved.Path != Prepared.Path || Saved.Animations != Prepared.Animations || Saved.Clip != Prepared.Clip || FMemory::Memcmp( &Saved.Speed, &Prepared.Speed, sizeof( float32 ) ) != 0 ) return false;
-		if ( Saved.MaterialEffect.IsSet() != Prepared.MaterialEffect.IsSet() ) return false;
-		if ( !Saved.MaterialEffect.IsSet() ) return true;
+		if ( Saved.Path != Prepared.Path || Saved.Animations != Prepared.Animations || Saved.Clip != Prepared.Clip || FMemory::Memcmp( &Saved.Speed, &Prepared.Speed, sizeof( float32 ) ) != 0 )
+		{
+			return false;
+		}
+		if ( Saved.MaterialEffect.IsSet() != Prepared.MaterialEffect.IsSet() )
+		{
+			return false;
+		}
+		if ( !Saved.MaterialEffect.IsSet() )
+		{
+			return true;
+		}
 		// 保存値側のoptional内binding。
 		const FWorldModelMaterialEffect& Left = Saved.MaterialEffect.GetValue();
 		// preview側のoptional内binding。
@@ -56,7 +68,10 @@ namespace
 			// snapshotに保存されたsectionを数える。
 			for ( const FStaticModelSurfaceSection& Section : Data.Sections )
 			{
-				if ( Section.MaterialIndex == MaterialIndex ) ++SectionCount;
+				if ( Section.MaterialIndex == MaterialIndex )
+				{
+					++SectionCount;
+				}
 			}
 			ImGui::PushID( MaterialIndex );
 			ImGui::ColorButton( "##Diffuse", ImVec4( Material.Diffuse[0], Material.Diffuse[1], Material.Diffuse[2], Material.Diffuse[3] ), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_AlphaPreview, ImVec2( 22.0f, 16.0f ) );
@@ -73,7 +88,10 @@ void NWorldEditorUI::DrawModelMaterialEffectPanel( FWorldEditorState& State, int
 	CWorldEditorSession& Session = State.Session;
 	// このframeの最新Modelを引く。
 	const FWorldObject* FoundObject = Session.Document.Get().FindObject( ObjectId );
-	if ( FoundObject == nullptr || !FoundObject->Model.IsSet() ) return;
+	if ( FoundObject == nullptr || !FoundObject->Model.IsSet() )
+	{
+		return;
+	}
 	// UI操作は保存前の一時値へまとめる。
 	FWorldModel EditedModel = FoundObject->Model.GetValue();
 	// 既に準備済みのslot情報だけを借りる。
@@ -148,11 +166,17 @@ void NWorldEditorUI::DrawModelMaterialEffectPanel( FWorldEditorState& State, int
 			// 不正root、材質番号、型markerを呼出側へ表示する。
 			for ( const FString& Issue : CurrentBinding.Validate() )
 			{
-				if ( Issue.StartsWith( "MaterialEffect.Effect:" ) ) continue;
+				if ( Issue.StartsWith( "MaterialEffect.Effect:" ) )
+				{
+					continue;
+				}
 				bHasBindingIssue = true;
 				ImGui::TextWrapped( "%s", UI_TEXT( Issue ) );
 			}
-			if ( bHasBindingIssue ) ImGui::TextDisabled( "Use Reset binding to clear invalid saved binding types." );
+			if ( bHasBindingIssue )
+			{
+				ImGui::TextDisabled( "Use Reset binding to clear invalid saved binding types." );
+			}
 			ImGui::TextDisabled( "Model material effects use unlit LDR Alpha / Add rendering; lighting and bloom are not included." );
 
 			// root Model配置専用previewを引くkey。
@@ -162,23 +186,47 @@ void NWorldEditorUI::DrawModelMaterialEffectPanel( FWorldEditorState& State, int
 			FWorldEditorModelPreview* Preview = State.ModelPreviews.Find( PreviewKey );
 			// 保存値とpreview snapshotが一致する場合だけtransportを有効にする。
 			const bool bPreviewMatches = Preview != nullptr && Preview->bBuilt && SameModelSettings( EditedModel, Preview->Definition );
-			if ( !FoundObject->bEnabled ) ImGui::TextDisabled( "This Model object is disabled and has no active placement preview." );
-			else if ( Preview == nullptr || !Preview->bBuilt ) ImGui::TextDisabled( "The placement preview is waiting for its next update." );
-			else if ( !bPreviewMatches ) ImGui::TextDisabled( "The placement preview will refresh from the latest saved settings." );
-			else if ( !Preview->FailureReason.IsEmpty() ) ImGui::TextWrapped( "%s", UI_TEXT( Preview->FailureReason ) );
+			if ( !FoundObject->bEnabled )
+			{
+				ImGui::TextDisabled( "This Model object is disabled and has no active placement preview." );
+			}
+			else if ( Preview == nullptr || !Preview->bBuilt )
+			{
+				ImGui::TextDisabled( "The placement preview is waiting for its next update." );
+			}
+			else if ( !bPreviewMatches )
+			{
+				ImGui::TextDisabled( "The placement preview will refresh from the latest saved settings." );
+			}
+			else if ( !Preview->FailureReason.IsEmpty() )
+			{
+				ImGui::TextWrapped( "%s", UI_TEXT( Preview->FailureReason ) );
+			}
 			if ( CurrentBinding.Effect.Material.bEnabled && bPreviewMatches && Preview->Animator.GetMaterialEffect().IsPrepared() )
 			{
 				// 専用個体の再生状態。
 				FModelMaterialEffectRenderer& Renderer = Preview->Animator.GetMaterialEffect();
 				ImGui::SeparatorText( "Placement preview transport" );
 				ImGui::BeginDisabled( !FoundObject->bEnabled );
-				if ( ImGui::Button( "Play" ) ) Renderer.Play();
+				if ( ImGui::Button( "Play" ) )
+				{
+					Renderer.Play();
+				}
 				ImGui::SameLine();
-				if ( ImGui::Button( "Pause" ) ) Renderer.Pause();
+				if ( ImGui::Button( "Pause" ) )
+				{
+					Renderer.Pause();
+				}
 				ImGui::SameLine();
-				if ( ImGui::Button( "Stop" ) ) Renderer.Stop();
+				if ( ImGui::Button( "Stop" ) )
+				{
+					Renderer.Stop();
+				}
 				ImGui::SameLine();
-				if ( ImGui::Button( "Restart" ) ) Renderer.Restart();
+				if ( ImGui::Button( "Restart" ) )
+				{
+					Renderer.Restart();
+				}
 				ImGui::EndDisabled();
 				// 専用previewの再生状態。
 				const FMeshMaterialEffectPlayback::EEffectPlaybackState Playback = Renderer.GetPlaybackState();
@@ -193,8 +241,14 @@ void NWorldEditorUI::DrawModelMaterialEffectPanel( FWorldEditorState& State, int
 				}
 				ImGui::TextDisabled( "%s  %.3f s", StateText, Renderer.GetEffectTime() );
 			}
-			else if ( bChanged ) ImGui::TextDisabled( "Preview controls will refresh after this setting is saved." );
-			else if ( CurrentBinding.Effect.Material.bEnabled && Preview != nullptr && !Preview->FailureReason.IsEmpty() ) ImGui::TextDisabled( "Playback controls are unavailable while the effect is not prepared." );
+			else if ( bChanged )
+			{
+				ImGui::TextDisabled( "Preview controls will refresh after this setting is saved." );
+			}
+			else if ( CurrentBinding.Effect.Material.bEnabled && Preview != nullptr && !Preview->FailureReason.IsEmpty() )
+			{
+				ImGui::TextDisabled( "Playback controls are unavailable while the effect is not prepared." );
+			}
 		}
 	}
 
@@ -209,12 +263,21 @@ void NWorldEditorUI::DrawModelMaterialEffectPanel( FWorldEditorState& State, int
 			{
 				// 保存値を丸めず、実slot範囲外だけを知らせる。
 				const int32 MaterialIndex = EditedModel.MaterialEffect.GetValue().MaterialIndex;
-				if ( MaterialIndex < 0 || MaterialIndex >= SurfaceData.Materials.Num() ) ImGui::TextColored( ImVec4( 1.0f, 0.55f, 0.4f, 1.0f ), "Material index %d is outside the %d available slot(s). The saved value is preserved.", MaterialIndex, SurfaceData.Materials.Num() );
+				if ( MaterialIndex < 0 || MaterialIndex >= SurfaceData.Materials.Num() )
+				{
+					ImGui::TextColored( ImVec4( 1.0f, 0.55f, 0.4f, 1.0f ), "Material index %d is outside the %d available slot(s). The saved value is preserved.", MaterialIndex, SurfaceData.Materials.Num() );
+				}
 			}
 		}
-		else ImGui::TextDisabled( "Static material information is pending or unavailable; it is prepared before viewport recording." );
+		else
+		{
+			ImGui::TextDisabled( "Static material information is pending or unavailable; it is prepared before viewport recording." );
+		}
 	}
-	else ImGui::TextDisabled( "Static material information is unavailable until the editor asset cache is ready." );
+	else
+	{
+		ImGui::TextDisabled( "Static material information is unavailable until the editor asset cache is ready." );
+	}
 
 	if ( bChanged )
 	{
@@ -226,8 +289,14 @@ void NWorldEditorUI::DrawModelMaterialEffectPanel( FWorldEditorState& State, int
 			char CoalesceKey[64] = {};
 			NCString::Format( CoalesceKey, sizeof( CoalesceKey ), "Inspector.Model.MaterialEffect.%d", ObjectId );
 			// 最新Model部品だけへ一時値を保存する。
-			if ( FWorldObject* EditableObject = NWorldEdit::EditObject( Session.Document, ObjectId, CoalesceKey ); EditableObject != nullptr && EditableObject->Model.IsSet() ) EditableObject->Model.GetValue().MaterialEffect = EditedModel.MaterialEffect;
+			if ( FWorldObject* EditableObject = NWorldEdit::EditObject( Session.Document, ObjectId, CoalesceKey ); EditableObject != nullptr && EditableObject->Model.IsSet() )
+			{
+				EditableObject->Model.GetValue().MaterialEffect = EditedModel.MaterialEffect;
+			}
 		}
 	}
-	if ( bInputEnded ) Session.Document.EndEditSession();
+	if ( bInputEnded )
+	{
+		Session.Document.EndEditSession();
+	}
 }

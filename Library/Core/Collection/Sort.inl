@@ -10,7 +10,10 @@ void NAlgo::NSortDetail::InsertionSort( T* First, int32 Num, P& Pred )
 {
 	for ( int32 i = 1; i < Num; ++i )
 	{
-		if ( !Pred( First[i], First[i - 1] ) ) continue;
+		if ( !Pred( First[i], First[i - 1] ) )
+		{
+			continue;
+		}
 
 		T Temp = MoveTemp( First[i] );
 		int32 j = i;
@@ -29,9 +32,18 @@ void NAlgo::NSortDetail::SiftDown( T* First, int32 Root, int32 Num, P& Pred )
 	while ( true )
 	{
 		int32 Child = Root * 2 + 1;
-		if ( Child >= Num ) return;
-		if ( Child + 1 < Num && Pred( First[Child], First[Child + 1] ) ) ++Child;
-		if ( !Pred( First[Root], First[Child] ) ) return;
+		if ( Child >= Num )
+		{
+			return;
+		}
+		if ( Child + 1 < Num && Pred( First[Child], First[Child + 1] ) )
+		{
+			++Child;
+		}
+		if ( !Pred( First[Root], First[Child] ) )
+		{
+			return;
+		}
 		Swap( First[Root], First[Child] );
 		Root = Child;
 	}
@@ -55,9 +67,18 @@ void NAlgo::NSortDetail::IntroSort( T* First, int32 Num, int32 DepthLimit, P& Pr
 		int32 j = Num - 1;
 		while ( true )
 		{
-			while ( i <= j && Pred( First[i], First[0] ) ) ++i;
-			while ( i <= j && Pred( First[0], First[j] ) ) --j;
-			if ( i >= j ) break;
+			while ( i <= j && Pred( First[i], First[0] ) )
+			{
+				++i;
+			}
+			while ( i <= j && Pred( First[0], First[j] ) )
+			{
+				--j;
+			}
+			if ( i >= j )
+			{
+				break;
+			}
 			Swap( First[i], First[j] );
 			++i;
 			--j;
@@ -96,19 +117,34 @@ void NAlgo::NSortDetail::MergeSort( T* First, int32 Num, T* Buffer, P& Pred )
 	MergeSort( First + Half, Num - Half, Buffer, Pred );
 
 	// 既に整列済みなら何もしない
-	if ( !Pred( First[Half], First[Half - 1] ) ) return;
+	if ( !Pred( First[Half], First[Half - 1] ) )
+	{
+		return;
+	}
 
 	// 左半分を退避してから先頭へ書き戻しながらマージ
-	for ( int32 k = 0; k < Half; ++k ) new ( Buffer + k ) T( MoveTemp( First[k] ) );
+	for ( int32 k = 0; k < Half; ++k )
+	{
+		new ( Buffer + k ) T( MoveTemp( First[k] ) );
+	}
 
 	int32 L = 0, R = Half, Out = 0;
 	while ( L < Half && R < Num )
 	{
 		// 等しければ左を優先（安定）
-		if ( Pred( First[R], Buffer[L] ) ) First[Out++] = MoveTemp( First[R++] );
-		else First[Out++] = MoveTemp( Buffer[L++] );
+		if ( Pred( First[R], Buffer[L] ) )
+		{
+			First[Out++] = MoveTemp( First[R++] );
+		}
+		else
+		{
+			First[Out++] = MoveTemp( Buffer[L++] );
+		}
 	}
-	while ( L < Half ) First[Out++] = MoveTemp( Buffer[L++] );
+	while ( L < Half )
+	{
+		First[Out++] = MoveTemp( Buffer[L++] );
+	}
 
 	NMemoryOps::DestructItems( Buffer, Half );
 }

@@ -173,8 +173,14 @@ private:
 		static R Invoke( unsigned char* Object, Args... InArgs )
 		{
 			FunctionType& Function = *Launder( reinterpret_cast<FunctionType*>( Object ) );
-			if constexpr ( bIsVoid<R> ) { Function( Forward<Args>( InArgs )... ); }
-			else { return static_cast<R>( Function( Forward<Args>( InArgs )... ) ); }
+			if constexpr ( bIsVoid<R> )
+			{
+				Function( Forward<Args>( InArgs )... );
+			}
+			else
+			{
+				return static_cast<R>( Function( Forward<Args>( InArgs )... ) );
+			}
 		}
 		static void Copy( unsigned char* Dest, const unsigned char* Source ) { new ( Dest ) FunctionType( *Launder( reinterpret_cast<const FunctionType*>( Source ) ) ); }
 		static void Move( unsigned char* Dest, unsigned char* Source ) noexcept
@@ -196,8 +202,14 @@ private:
 		static R Invoke( unsigned char* Object, Args... InArgs )
 		{
 			FunctionType& Function = *Pointer( Object );
-			if constexpr ( bIsVoid<R> ) { Function( Forward<Args>( InArgs )... ); }
-			else { return static_cast<R>( Function( Forward<Args>( InArgs )... ) ); }
+			if constexpr ( bIsVoid<R> )
+			{
+				Function( Forward<Args>( InArgs )... );
+			}
+			else
+			{
+				return static_cast<R>( Function( Forward<Args>( InArgs )... ) );
+			}
 		}
 		static void Copy( unsigned char* Dest, const unsigned char* Source ) { new ( Dest ) FunctionType*( new FunctionType( *Pointer( Source ) ) ); }
 		static void Move( unsigned char* Dest, unsigned char* Source ) noexcept { new ( Dest ) FunctionType*( Pointer( Source ) ); }
@@ -209,8 +221,14 @@ private:
 	template<typename DecayedType, typename FunctionType>
 	void Construct( FunctionType&& Function )
 	{
-		if constexpr ( bFitsInline<DecayedType> ) new ( Storage ) DecayedType( Forward<FunctionType>( Function ) );
-		else new ( Storage ) DecayedType*( new DecayedType( Forward<FunctionType>( Function ) ) );
+		if constexpr ( bFitsInline<DecayedType> )
+		{
+			new ( Storage ) DecayedType( Forward<FunctionType>( Function ) );
+		}
+		else
+		{
+			new ( Storage ) DecayedType*( new DecayedType( Forward<FunctionType>( Function ) ) );
+		}
 		Ops = &TOps<DecayedType>::Table;
 	}
 

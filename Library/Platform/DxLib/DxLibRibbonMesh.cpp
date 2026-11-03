@@ -19,7 +19,10 @@ namespace
 		const float64 Z = static_cast<float64>( To.z ) - From.z;
 		// 安全に単位化するための三次元距離。
 		const float64 Length = NMath::Sqrt( X * X + Y * Y + Z * Z );
-		if ( !NMath::IsFinite( Length ) || Length <= 1.0e-8 ) return Fallback;
+		if ( !NMath::IsFinite( Length ) || Length <= 1.0e-8 )
+		{
+			return Fallback;
+		}
 		return VGet( static_cast<float32>( X / Length ), static_cast<float32>( Y / Length ), static_cast<float32>( Z / Length ) );
 	}
 
@@ -28,8 +31,14 @@ namespace
 	{
 		// 経路と視線へ垂直に交わる通常の幅方向。
 		VECTOR Side = VCross( Tangent, ToCamera );
-		if ( VSquareSize( Side ) < 1.0e-10f ) Side = VSub( CameraRight, VScale( Tangent, VDot( CameraRight, Tangent ) ) );
-		if ( VSquareSize( Side ) < 1.0e-10f ) Side = VSub( CameraUp, VScale( Tangent, VDot( CameraUp, Tangent ) ) );
+		if ( VSquareSize( Side ) < 1.0e-10f )
+		{
+			Side = VSub( CameraRight, VScale( Tangent, VDot( CameraRight, Tangent ) ) );
+		}
+		if ( VSquareSize( Side ) < 1.0e-10f )
+		{
+			Side = VSub( CameraUp, VScale( Tangent, VDot( CameraUp, Tangent ) ) );
+		}
 		return RibbonDirection( VGet( 0.0f, 0.0f, 0.0f ), Side, CameraRight );
 	}
 
@@ -60,7 +69,10 @@ namespace
 		int32 TotalSections = 0;
 		for ( int32 Index = 0; Index + 1 < Data.NumPoints; ++Index )
 		{
-			if ( ( Index == 0 && ( Data.JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) || ( Index + 2 == Data.NumPoints && ( Data.JoinFlags & FDrawRibbonData::NextPoint ) != 0 ) ) continue;
+			if ( ( Index == 0 && ( Data.JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) || ( Index + 2 == Data.NumPoints && ( Data.JoinFlags & FDrawRibbonData::NextPoint ) != 0 ) )
+			{
+				continue;
+			}
 			// 現区間が画像座標上で始まる位置。
 			const float64 StartU = Mesh.Vertices[Index * 2].u;
 			// 現区間が画像座標上で終わる位置。
@@ -69,7 +81,10 @@ namespace
 			const float64 FirstRepeat = NMath::Floor( StartU );
 			// 現区間を整数境界で分けるときに必要な区間数。
 			const float64 Required = NMath::Max( 1.0, NMath::Ceil( EndU ) - FirstRepeat );
-			if ( !NMath::IsFinite( Required ) || Required > static_cast<float64>( FDrawRibbonData::MaxTextureSections - TotalSections ) ) return false;
+			if ( !NMath::IsFinite( Required ) || Required > static_cast<float64>( FDrawRibbonData::MaxTextureSections - TotalSections ) )
+			{
+				return false;
+			}
 			// 上限確認後に整数化した現区間の反復数。
 			const int32 Sections = static_cast<int32>( Required );
 			TotalSections += Sections;
@@ -112,7 +127,10 @@ bool NDxLibRibbonMesh::Build( const FDrawRibbonData& Data, const FDrawRibbonData
 	Mesh.Vertices.Reset();
 	Mesh.Indices.Reset();
 	// 点数・画像反復・ghost flagは呼び出し元契約と同じ範囲に限る。
-	if ( Points == nullptr || Data.NumPoints < 2 || Data.NumPoints > FDrawRibbonData::MaxPoints || Data.Texture < -1 || !NMath::IsFinite( Data.UVRepeat ) || Data.UVRepeat <= 0.0f || Data.JoinFlags < 0 || ( Data.JoinFlags & ~( FDrawRibbonData::PreviousPoint | FDrawRibbonData::NextPoint ) ) != 0 || Data.NumPoints - static_cast<int32>( ( Data.JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) - static_cast<int32>( ( Data.JoinFlags & FDrawRibbonData::NextPoint ) != 0 ) < 2 ) return false;
+	if ( Points == nullptr || Data.NumPoints < 2 || Data.NumPoints > FDrawRibbonData::MaxPoints || Data.Texture < -1 || !NMath::IsFinite( Data.UVRepeat ) || Data.UVRepeat <= 0.0f || Data.JoinFlags < 0 || ( Data.JoinFlags & ~( FDrawRibbonData::PreviousPoint | FDrawRibbonData::NextPoint ) ) != 0 || Data.NumPoints - static_cast<int32>( ( Data.JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) - static_cast<int32>( ( Data.JoinFlags & FDrawRibbonData::NextPoint ) != 0 ) < 2 )
+	{
+		return false;
+	}
 	// 隣接する経路点間の接線方向。重複点の区間は0のまま。
 	TArray<VECTOR> Segments;
 	Segments.SetNum( Data.NumPoints - 1 );
@@ -122,15 +140,24 @@ bool NDxLibRibbonMesh::Build( const FDrawRibbonData& Data, const FDrawRibbonData
 	{
 		// 今回の接線と頂点作成に使う経路点。
 		const FDrawRibbonData::FPoint& Point = Points[Index];
-		if ( !NMath::IsFinite( Point.Pos[0] ) || !NMath::IsFinite( Point.Pos[1] ) || !NMath::IsFinite( Point.Pos[2] ) || !NMath::IsFinite( Point.Width ) || Point.Width < 0.0f || !NMath::IsFinite( Point.U ) || Point.U < 0.0f || !NMath::IsFinite( Point.U * Data.UVRepeat ) ) return false;
+		if ( !NMath::IsFinite( Point.Pos[0] ) || !NMath::IsFinite( Point.Pos[1] ) || !NMath::IsFinite( Point.Pos[2] ) || !NMath::IsFinite( Point.Width ) || Point.Width < 0.0f || !NMath::IsFinite( Point.U ) || Point.U < 0.0f || !NMath::IsFinite( Point.U * Data.UVRepeat ) )
+		{
+			return false;
+		}
 		if ( Index > 0 )
 		{
-			if ( Point.U < Points[Index - 1].U ) return false;
+			if ( Point.U < Points[Index - 1].U )
+			{
+				return false;
+			}
 			Segments[Index - 1] = RibbonDirection( VGet( Points[Index - 1].Pos[0], Points[Index - 1].Pos[1], Points[Index - 1].Pos[2] ), VGet( Point.Pos[0], Point.Pos[1], Point.Pos[2] ), VGet( 0.0f, 0.0f, 0.0f ) );
 			bHasSegment = bHasSegment || VSquareSize( Segments[Index - 1] ) > 0.5f;
 		}
 	}
-	if ( !bHasSegment ) return false;
+	if ( !bHasSegment )
+	{
+		return false;
+	}
 	// 各点へ入る最後の長さのある接線。
 	TArray<VECTOR> Incoming;
 	Incoming.SetNum( Data.NumPoints );
@@ -141,13 +168,19 @@ bool NDxLibRibbonMesh::Build( const FDrawRibbonData& Data, const FDrawRibbonData
 	VECTOR Last = VGet( 0.0f, 0.0f, 0.0f );
 	for ( int32 Index = 0; Index < Data.NumPoints; ++Index )
 	{
-		if ( Index > 0 && VSquareSize( Segments[Index - 1] ) > 0.5f ) Last = Segments[Index - 1];
+		if ( Index > 0 && VSquareSize( Segments[Index - 1] ) > 0.5f )
+		{
+			Last = Segments[Index - 1];
+		}
 		Incoming[Index] = Last;
 	}
 	Last = VGet( 0.0f, 0.0f, 0.0f );
 	for ( int32 Index = Data.NumPoints - 1; Index >= 0; --Index )
 	{
-		if ( Index + 1 < Data.NumPoints && VSquareSize( Segments[Index] ) > 0.5f ) Last = Segments[Index];
+		if ( Index + 1 < Data.NumPoints && VSquareSize( Segments[Index] ) > 0.5f )
+		{
+			Last = Segments[Index];
+		}
 		Outgoing[Index] = Last;
 	}
 	// 帯の幅方向を決めるカメラ位置。
@@ -194,7 +227,10 @@ bool NDxLibRibbonMesh::Build( const FDrawRibbonData& Data, const FDrawRibbonData
 			VERTEX3D& Vertex = Mesh.Vertices[Index * 2 + Side];
 			Vertex = {};
 			Vertex.pos = Side == 0 ? VAdd( Position, Offset ) : VSub( Position, Offset );
-			if ( !NMath::IsFinite( Vertex.pos.x ) || !NMath::IsFinite( Vertex.pos.y ) || !NMath::IsFinite( Vertex.pos.z ) ) return false;
+			if ( !NMath::IsFinite( Vertex.pos.x ) || !NMath::IsFinite( Vertex.pos.y ) || !NMath::IsFinite( Vertex.pos.z ) )
+			{
+				return false;
+			}
 			Vertex.norm = ToCamera;
 			Vertex.dif = Color;
 			Vertex.spc = GetColorU8( 0, 0, 0, 0 );
@@ -214,6 +250,9 @@ bool NDxLibRibbonMesh::Build( const FDrawRibbonData& Data, const FDrawRibbonData
 		}
 	}
 	// 旧描画だけ画像反復ごとに分け、新材質描画は連続Uを保持する。
-	if ( bSplitTexture && Data.Texture >= 0 && !SplitRibbonTexture( Data, Mesh ) ) return false;
+	if ( bSplitTexture && Data.Texture >= 0 && !SplitRibbonTexture( Data, Mesh ) )
+	{
+		return false;
+	}
 	return true;
 }

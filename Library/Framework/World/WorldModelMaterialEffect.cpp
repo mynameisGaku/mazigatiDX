@@ -39,7 +39,10 @@ namespace
 			{
 				// 符号なし入力の値。
 				const uint64 Number = Json.get<uint64>();
-				if ( Number > static_cast<uint64>( TNumericLimits<int32>::Max() ) ) return false;
+				if ( Number > static_cast<uint64>( TNumericLimits<int32>::Max() ) )
+				{
+					return false;
+				}
 				Out = static_cast<int32>( Number );
 				return true;
 			}
@@ -48,12 +51,18 @@ namespace
 				return false;
 			}
 		}
-		if ( !Json.is_number_integer() ) return false;
+		if ( !Json.is_number_integer() )
+		{
+			return false;
+		}
 		try
 		{
 			// 符号付き入力の値。
 			const int64 Number = Json.get<int64>();
-			if ( Number < static_cast<int64>( TNumericLimits<int32>::Min() ) || Number > static_cast<int64>( TNumericLimits<int32>::Max() ) ) return false;
+			if ( Number < static_cast<int64>( TNumericLimits<int32>::Min() ) || Number > static_cast<int64>( TNumericLimits<int32>::Max() ) )
+			{
+				return false;
+			}
 			Out = static_cast<int32>( Number );
 			return true;
 		}
@@ -66,7 +75,10 @@ namespace
 
 NlohmannJson FWorldModelMaterialEffect::ToJson() const
 {
-	if ( bInvalidRoot ) return nullptr;
+	if ( bInvalidRoot )
+	{
+		return nullptr;
+	}
 	// bindingの保存先object。
 	NlohmannJson Json = NlohmannJson::object();
 	Json["MaterialIndex"] = ( InvalidFieldTypes & InvalidMaterialIndex ) != 0 ? NlohmannJson( nullptr ) : NlohmannJson( MaterialIndex );
@@ -83,27 +95,42 @@ bool FWorldModelMaterialEffect::FromJson( const NlohmannJson& Json, FWorldModelM
 	{
 		Definition.bInvalidRoot = true;
 		Definition.InvalidFieldTypes = InvalidAll;
-		if ( Warnings != nullptr ) Warnings->Add( "MaterialEffect はobjectにしてください" );
+		if ( Warnings != nullptr )
+		{
+			Warnings->Add( "MaterialEffect はobjectにしてください" );
+		}
 		Out = MoveTemp( Definition );
 		return true;
 	}
 	if ( Json.contains( "MaterialIndex" ) && !ReadMaterialIndex( Json["MaterialIndex"], Definition.MaterialIndex ) )
 	{
 		Definition.InvalidFieldTypes |= InvalidMaterialIndex;
-		if ( Warnings != nullptr ) Warnings->Add( "MaterialEffect.MaterialIndex はint32範囲の整数にしてください" );
+		if ( Warnings != nullptr )
+		{
+			Warnings->Add( "MaterialEffect.MaterialIndex はint32範囲の整数にしてください" );
+		}
 	}
 	if ( Json.contains( "Effect" ) && !FMeshMaterialEffectDefinition::FromJson( Json["Effect"], Definition.Effect, Warnings ) )
 	{
 		Definition.InvalidFieldTypes |= InvalidEffect;
-		if ( Warnings != nullptr ) Warnings->Add( "MaterialEffect.Effect はobjectにしてください" );
+		if ( Warnings != nullptr )
+		{
+			Warnings->Add( "MaterialEffect.Effect はobjectにしてください" );
+		}
 	}
 	if ( Json.contains( "TwoSided" ) )
 	{
-		if ( Json["TwoSided"].is_boolean() ) Definition.bTwoSided = Json["TwoSided"].get<bool>();
+		if ( Json["TwoSided"].is_boolean() )
+		{
+			Definition.bTwoSided = Json["TwoSided"].get<bool>();
+		}
 		else
 		{
 			Definition.InvalidFieldTypes |= InvalidTwoSided;
-			if ( Warnings != nullptr ) Warnings->Add( "MaterialEffect.TwoSided はtrue/falseにしてください" );
+			if ( Warnings != nullptr )
+			{
+				Warnings->Add( "MaterialEffect.TwoSided はtrue/falseにしてください" );
+			}
 		}
 	}
 	Out = MoveTemp( Definition );
@@ -114,12 +141,30 @@ TArray<FString> FWorldModelMaterialEffect::Validate() const
 {
 	// binding内で見つかった問題。
 	TArray<FString> Issues;
-	if ( bInvalidRoot ) Issues.Add( "MaterialEffectのroot型がobjectではありません" );
-	if ( ( InvalidFieldTypes & InvalidMaterialIndex ) != 0 ) Issues.Add( "MaterialEffect.MaterialIndexの型または範囲が不正です" );
-	if ( ( InvalidFieldTypes & InvalidEffect ) != 0 ) Issues.Add( "MaterialEffect.Effectの型が不正です" );
-	if ( ( InvalidFieldTypes & InvalidTwoSided ) != 0 ) Issues.Add( "MaterialEffect.TwoSidedの型が不正です" );
-	if ( MaterialIndex < 0 ) Issues.Add( "MaterialEffect.MaterialIndexは0以上にしてください" );
-	for ( const FString& Issue : Effect.Validate() ) Issues.Add( "MaterialEffect.Effect: " + Issue );
+	if ( bInvalidRoot )
+	{
+		Issues.Add( "MaterialEffectのroot型がobjectではありません" );
+	}
+	if ( ( InvalidFieldTypes & InvalidMaterialIndex ) != 0 )
+	{
+		Issues.Add( "MaterialEffect.MaterialIndexの型または範囲が不正です" );
+	}
+	if ( ( InvalidFieldTypes & InvalidEffect ) != 0 )
+	{
+		Issues.Add( "MaterialEffect.Effectの型が不正です" );
+	}
+	if ( ( InvalidFieldTypes & InvalidTwoSided ) != 0 )
+	{
+		Issues.Add( "MaterialEffect.TwoSidedの型が不正です" );
+	}
+	if ( MaterialIndex < 0 )
+	{
+		Issues.Add( "MaterialEffect.MaterialIndexは0以上にしてください" );
+	}
+	for ( const FString& Issue : Effect.Validate() )
+	{
+		Issues.Add( "MaterialEffect.Effect: " + Issue );
+	}
 	return Issues;
 }
 

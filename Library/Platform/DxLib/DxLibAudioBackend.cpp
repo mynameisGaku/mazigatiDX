@@ -62,10 +62,16 @@ void CDxLibAudioBackend::SetPitch( int32 Voice, float32 Pitch )
 {
 	// 元の周波数を基準にする（前に変えた周波数を基準にしない）
 	ResetFrequencySoundMem( Voice );
-	if ( NMath::Abs( Pitch - 1.0f ) < 1.0e-4f ) return;
+	if ( NMath::Abs( Pitch - 1.0f ) < 1.0e-4f )
+	{
+		return;
+	}
 
 	const int Base = GetFrequencySoundMem( Voice );
-	if ( Base > 0 ) SetFrequencySoundMem( NMath::Clamp( static_cast<int>( NMath::RoundToInt( static_cast<float64>( Base ) * Pitch ) ), 100, 100000 ), Voice );
+	if ( Base > 0 )
+	{
+		SetFrequencySoundMem( NMath::Clamp( static_cast<int>( NMath::RoundToInt( static_cast<float64>( Base ) * Pitch ) ), 100, 100000 ), Voice );
+	}
 }
 
 float32 CDxLibAudioBackend::GetPlayPosition( int32 Voice )

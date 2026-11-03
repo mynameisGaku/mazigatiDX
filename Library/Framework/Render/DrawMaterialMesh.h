@@ -51,10 +51,22 @@ namespace NDrawMaterialMesh
 	{
 		// 材質の固定設定。
 		const FDrawMaterialRibbonData::FMaterialSettings& Material = Data.Material;
-		if ( Data.Texture < 0 || Data.DistortionTexture < -1 || ( Data.bTwoSided != 0 && Data.bTwoSided != 1 ) ) return false;
-		if ( !NMath::IsFinite( Material.UVScale[0] ) || !NMath::IsFinite( Material.UVScale[1] ) || Material.UVScale[0] <= 0.0f || Material.UVScale[1] <= 0.0f || Material.UVScale[0] > 128.0f || Material.UVScale[1] > 128.0f || !NMath::IsFinite( Material.MaskScale ) || Material.MaskScale <= 0.0f || Material.MaskScale > 128.0f || !NMath::IsFinite( Material.EdgeWidth ) || Material.EdgeWidth < 0.0f || Material.EdgeWidth > 1.0f || !NMath::IsFinite( Material.EdgeEmission ) || Material.EdgeEmission < 0.0f || Material.EdgeEmission > 32.0f || ( Material.bDissolve != 0 && Material.bDissolve != 1 ) || ( Material.DepthTest != 0 && Material.DepthTest != 1 ) || ( Material.DepthWrite != 0 && Material.DepthWrite != 1 ) || Material.MaskTexture < -1 ) return false;
-		if ( !NMath::IsFinite( Data.UVOffset[0] ) || !NMath::IsFinite( Data.UVOffset[1] ) || NMath::Abs( Data.UVOffset[0] ) > 1.0e6f || NMath::Abs( Data.UVOffset[1] ) > 1.0e6f || !NMath::IsFinite( Data.Dissolve ) || Data.Dissolve < 0.0f || Data.Dissolve > 1.0f || !NMath::IsFinite( Data.Emission ) || Data.Emission < 0.0f || Data.Emission > 32.0f ) return false;
-		if ( !NMath::IsFinite( Data.DistortionStrength ) || Data.DistortionStrength < 0.0f || Data.DistortionStrength > 1.0f || ( Data.DistortionStrength > 0.0f && Data.DistortionTexture < 0 ) ) return false;
+		if ( Data.Texture < 0 || Data.DistortionTexture < -1 || ( Data.bTwoSided != 0 && Data.bTwoSided != 1 ) )
+		{
+			return false;
+		}
+		if ( !NMath::IsFinite( Material.UVScale[0] ) || !NMath::IsFinite( Material.UVScale[1] ) || Material.UVScale[0] <= 0.0f || Material.UVScale[1] <= 0.0f || Material.UVScale[0] > 128.0f || Material.UVScale[1] > 128.0f || !NMath::IsFinite( Material.MaskScale ) || Material.MaskScale <= 0.0f || Material.MaskScale > 128.0f || !NMath::IsFinite( Material.EdgeWidth ) || Material.EdgeWidth < 0.0f || Material.EdgeWidth > 1.0f || !NMath::IsFinite( Material.EdgeEmission ) || Material.EdgeEmission < 0.0f || Material.EdgeEmission > 32.0f || ( Material.bDissolve != 0 && Material.bDissolve != 1 ) || ( Material.DepthTest != 0 && Material.DepthTest != 1 ) || ( Material.DepthWrite != 0 && Material.DepthWrite != 1 ) || Material.MaskTexture < -1 )
+		{
+			return false;
+		}
+		if ( !NMath::IsFinite( Data.UVOffset[0] ) || !NMath::IsFinite( Data.UVOffset[1] ) || NMath::Abs( Data.UVOffset[0] ) > 1.0e6f || NMath::Abs( Data.UVOffset[1] ) > 1.0e6f || !NMath::IsFinite( Data.Dissolve ) || Data.Dissolve < 0.0f || Data.Dissolve > 1.0f || !NMath::IsFinite( Data.Emission ) || Data.Emission < 0.0f || Data.Emission > 32.0f )
+		{
+			return false;
+		}
+		if ( !NMath::IsFinite( Data.DistortionStrength ) || Data.DistortionStrength < 0.0f || Data.DistortionStrength > 1.0f || ( Data.DistortionStrength > 0.0f && Data.DistortionTexture < 0 ) )
+		{
+			return false;
+		}
 		return NMath::IsFinite( Data.DistortionUVScale[0] ) && NMath::IsFinite( Data.DistortionUVScale[1] ) && Data.DistortionUVScale[0] > 0.0f && Data.DistortionUVScale[1] > 0.0f && Data.DistortionUVScale[0] <= 128.0f && Data.DistortionUVScale[1] <= 128.0f && NMath::IsFinite( Data.DistortionUVOffset[0] ) && NMath::IsFinite( Data.DistortionUVOffset[1] ) && NMath::Abs( Data.DistortionUVOffset[0] ) <= 1.0e6f && NMath::Abs( Data.DistortionUVOffset[1] ) <= 1.0e6f;
 	}
 
@@ -70,7 +82,10 @@ namespace NDrawMaterialMesh
 	// Indices: NumIndices個以上の有効な型付きindex配列。
 	inline bool IsValid( const FDrawMaterialMeshData& Data, const FMeshVertex* Vertices, const uint32* Indices )
 	{
-		if ( Vertices == nullptr || Indices == nullptr || !IsValidHeader( Data ) ) return false;
+		if ( Vertices == nullptr || Indices == nullptr || !IsValidHeader( Data ) )
+		{
+			return false;
+		}
 		// 点列全体で使用するUV倍率と移動量。
 		const FDrawMaterialRibbonData::FMaterialSettings& Material = Data.Material;
 		// 有限性と上限を調べる頂点添字。
@@ -78,14 +93,23 @@ namespace NDrawMaterialMesh
 		{
 			// 位置・法線・UVを持つ現在頂点。
 			const FMeshVertex& Vertex = Vertices[Index];
-			if ( !NMath::IsFinite( Vertex.Position[0] ) || !NMath::IsFinite( Vertex.Position[1] ) || !NMath::IsFinite( Vertex.Position[2] ) || !NMath::IsFinite( Vertex.Normal[0] ) || !NMath::IsFinite( Vertex.Normal[1] ) || !NMath::IsFinite( Vertex.Normal[2] ) || !NMath::IsFinite( Vertex.U ) || !NMath::IsFinite( Vertex.V ) || NMath::Abs( Vertex.U ) > 1.0e6f || NMath::Abs( Vertex.V ) > 1.0e6f ) return false;
-			if ( !NMath::IsFinite( Vertex.U * Material.UVScale[0] + Data.UVOffset[0] ) || !NMath::IsFinite( Vertex.V * Material.UVScale[1] + Data.UVOffset[1] ) || !NMath::IsFinite( Vertex.U * Material.MaskScale ) || !NMath::IsFinite( Vertex.V * Material.MaskScale ) || !NMath::IsFinite( Vertex.U * Data.DistortionUVScale[0] + Data.DistortionUVOffset[0] ) || !NMath::IsFinite( Vertex.V * Data.DistortionUVScale[1] + Data.DistortionUVOffset[1] ) ) return false;
+			if ( !NMath::IsFinite( Vertex.Position[0] ) || !NMath::IsFinite( Vertex.Position[1] ) || !NMath::IsFinite( Vertex.Position[2] ) || !NMath::IsFinite( Vertex.Normal[0] ) || !NMath::IsFinite( Vertex.Normal[1] ) || !NMath::IsFinite( Vertex.Normal[2] ) || !NMath::IsFinite( Vertex.U ) || !NMath::IsFinite( Vertex.V ) || NMath::Abs( Vertex.U ) > 1.0e6f || NMath::Abs( Vertex.V ) > 1.0e6f )
+			{
+				return false;
+			}
+			if ( !NMath::IsFinite( Vertex.U * Material.UVScale[0] + Data.UVOffset[0] ) || !NMath::IsFinite( Vertex.V * Material.UVScale[1] + Data.UVOffset[1] ) || !NMath::IsFinite( Vertex.U * Material.MaskScale ) || !NMath::IsFinite( Vertex.V * Material.MaskScale ) || !NMath::IsFinite( Vertex.U * Data.DistortionUVScale[0] + Data.DistortionUVOffset[0] ) || !NMath::IsFinite( Vertex.V * Data.DistortionUVScale[1] + Data.DistortionUVOffset[1] ) )
+			{
+				return false;
+			}
 		}
 		// 頂点配列範囲を超えないindex添字。
 		for ( int32 Index = 0; Index < Data.NumIndices; ++Index )
 		{
 			// 三角形が参照する頂点番号。
-			if ( Indices[Index] >= static_cast<uint32>( Data.NumVertices ) ) return false;
+			if ( Indices[Index] >= static_cast<uint32>( Data.NumVertices ) )
+			{
+				return false;
+			}
 		}
 		return true;
 	}

@@ -19,7 +19,10 @@ bool CAssetManager::ResolveModelRequest( const FString& Path, FString& OutFullPa
 
 	TOptional<FString> Found = ResolvePath( Path );
 	// 元の .fbx が無くて、変換済みの .mv1 だけがある（配布版など）
-	if ( !Found.IsSet() && NModelFormat::CanConvertToMV1( Path ) ) Found = ResolvePath( NModelFormat::GetMV1Path( Path ) );
+	if ( !Found.IsSet() && NModelFormat::CanConvertToMV1( Path ) )
+	{
+		Found = ResolvePath( NModelFormat::GetMV1Path( Path ) );
+	}
 	if ( !Found.IsSet() )
 	{
 		LOG( LogAsset, Error, "Cannot load the model '%s': the file was not found (root directory '%s').", *Path, *GetRootDirectory() );
@@ -33,7 +36,10 @@ bool CAssetManager::ResolveModelLoadPath( const FString& FullPath, FString& OutL
 {
 	OutLoadPath = FullPath;
 	const EModelFileKind Kind = NModelFormat::Classify( FullPath );
-	if ( Kind != EModelFileKind::Imported && !( Kind == EModelFileKind::DxLibNative && bPreferConvertedModels ) ) return true;
+	if ( Kind != EModelFileKind::Imported && !( Kind == EModelFileKind::DxLibNative && bPreferConvertedModels ) )
+	{
+		return true;
+	}
 
 	// 最新の .mv1 が隣にあれば、それを読む
 	const FString Mv1Path = NModelFormat::GetMV1Path( FullPath );
@@ -46,7 +52,10 @@ bool CAssetManager::ResolveModelLoadPath( const FString& FullPath, FString& OutL
 	}
 
 	// DxLib が読める形式は、そのまま読める
-	if ( Kind != EModelFileKind::Imported ) return true;
+	if ( Kind != EModelFileKind::Imported )
+	{
+		return true;
+	}
 
 	// DxLib は .fbx / .obj を読めない
 	if ( bAutoImportModels )
@@ -111,7 +120,10 @@ TArray<FModelSourceInfo> CAssetManager::ScanModelSources() const
 {
 	TArray<FModelSourceInfo> Infos;
 	const FString Root = GetRootDirectory();
-	if ( Root.IsEmpty() || !NFileSystem::DirectoryExists( Root ) ) return Infos;
+	if ( Root.IsEmpty() || !NFileSystem::DirectoryExists( Root ) )
+	{
+		return Infos;
+	}
 
 	for ( const FString& Relative : NFileSystem::ListFilesRecursive( Root, NModelFormat::GetConvertibleExtensions() ) )
 	{
@@ -123,11 +135,22 @@ TArray<FModelSourceInfo> CAssetManager::ScanModelSources() const
 
 		const FString OutputFull = Root / Info.OutputPath;
 		FFileTime SourceTime, OutputTime;
-		if ( !NFileSystem::FileExists( OutputFull ) ) Info.Status = EModelExportStatus::Missing;
+		if ( !NFileSystem::FileExists( OutputFull ) )
+		{
+			Info.Status = EModelExportStatus::Missing;
+		}
 		else if ( NFileSystem::GetLastWriteTime( Root / Relative, SourceTime ) && NFileSystem::GetLastWriteTime( OutputFull, OutputTime ) && NModelFormat::IsOutputUpToDate( SourceTime, OutputTime ) )
+		{
 			Info.Status = EModelExportStatus::UpToDate;
-		else Info.Status = EModelExportStatus::Stale;
-		if ( Info.Status != EModelExportStatus::Missing ) Info.OutputBytes = NMath::Max<int64>( NFileSystem::GetFileSize( OutputFull ), 0 );
+		}
+		else
+		{
+			Info.Status = EModelExportStatus::Stale;
+		}
+		if ( Info.Status != EModelExportStatus::Missing )
+		{
+			Info.OutputBytes = NMath::Max<int64>( NFileSystem::GetFileSize( OutputFull ), 0 );
+		}
 		Infos.Add( Info );
 	}
 	return Infos;
@@ -141,7 +164,10 @@ FModelBatchExportResult CAssetManager::ExportAllModels( bool bForce, const FMode
 	Each.bForce = bForce;
 	for ( const FModelSourceInfo& Info : ScanModelSources() )
 	{
-		if ( !bForce && Info.Status == EModelExportStatus::UpToDate ) continue;
+		if ( !bForce && Info.Status == EModelExportStatus::UpToDate )
+		{
+			continue;
+		}
 		Batch.Add( ExportModelAsMV1( Info.Path, Each ) );
 	}
 	LOG( LogAsset, Log, "Exported the models as .mv1: %s", *Batch.GetSummary() );
@@ -153,15 +179,24 @@ FModelBatchExportResult CAssetManager::ExportModelsUsedBy( const FModelAnimation
 	TArray<FString> Paths;
 	const auto AddPath = [&Paths]( const FString& Path )
 	{
-		if ( !Path.IsEmpty() && NModelFormat::CanConvertToMV1( Path ) ) Paths.AddUnique( Path );
+		if ( !Path.IsEmpty() && NModelFormat::CanConvertToMV1( Path ) )
+		{
+			Paths.AddUnique( Path );
+		}
 	};
 	AddPath( Definition.ModelPath );
 	AddPath( Definition.PreviewModelPath );
-	for ( const FModelClipDef& Clip : Definition.Clips ) AddPath( Clip.SourcePath );
+	for ( const FModelClipDef& Clip : Definition.Clips )
+	{
+		AddPath( Clip.SourcePath );
+	}
 
 	FModelBatchExportResult Batch;
 	FModelExportOptions Options;
 	Options.bForce = bForce;
-	for ( const FString& Path : Paths ) Batch.Add( ExportModelAsMV1( Path, Options ) );
+	for ( const FString& Path : Paths )
+	{
+		Batch.Add( ExportModelAsMV1( Path, Options ) );
+	}
 	return Batch;
 }

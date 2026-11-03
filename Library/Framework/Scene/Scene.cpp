@@ -46,7 +46,10 @@ TSharedPtr<CGameObject> CScene::FindObjectByName( const FString& Name ) const
 {
 	for ( const TSharedPtr<CGameObject>& Object : Objects )
 	{
-		if ( Object->IsAlive() && Object->GetName() == Name ) return Object;
+		if ( Object->IsAlive() && Object->GetName() == Name )
+		{
+			return Object;
+		}
 	}
 	LOG( LogScene, Verbose, "FindObjectByName: no live object named '%s' in '%s'", *Name, *GetName() );
 	return nullptr;
@@ -56,7 +59,10 @@ TSharedPtr<CGameObject> CScene::FindObjectById( uint64 Id ) const
 {
 	for ( const TSharedPtr<CGameObject>& Object : Objects )
 	{
-		if ( Object->IsAlive() && Object->GetId() == Id ) return Object;
+		if ( Object->IsAlive() && Object->GetId() == Id )
+		{
+			return Object;
+		}
 	}
 	LOG( LogScene, Verbose, "FindObjectById: no live object #%llu in '%s'", static_cast<unsigned long long>( Id ), *GetName() );
 	return nullptr;
@@ -67,14 +73,20 @@ TArray<CGameObject*> CScene::GetRootObjects() const
 	TArray<CGameObject*> Roots;
 	for ( const TSharedPtr<CGameObject>& Object : Objects )
 	{
-		if ( Object->GetParent() == nullptr ) Roots.Add( Object.Get() );
+		if ( Object->GetParent() == nullptr )
+		{
+			Roots.Add( Object.Get() );
+		}
 	}
 	return Roots;
 }
 
 void CScene::DestroyAllObjects()
 {
-	if ( !Objects.IsEmpty() ) LOG( LogGameObject, Verbose, "Destroying all %d object(s) in '%s'", Objects.Num(), *GetName() );
+	if ( !Objects.IsEmpty() )
+	{
+		LOG( LogGameObject, Verbose, "Destroying all %d object(s) in '%s'", Objects.Num(), *GetName() );
+	}
 
 	// OnDestroy の中で新たに生成されたものも破棄する
 	while ( !Objects.IsEmpty() )
@@ -119,21 +131,33 @@ void CScene::RemoveDestroyedObjects()
 	// 全員の OnDestroy が終わってから親子関係とコンポーネントを外す（OnDestroy から親を参照できるように）
 	for ( int32 i = 0; i < Objects.Num(); ++i )
 	{
-		if ( Objects[i]->IsPendingDestroy() ) Objects[i]->DetachAll();
+		if ( Objects[i]->IsPendingDestroy() )
+		{
+			Objects[i]->DetachAll();
+		}
 	}
 
 	const int32 NumRemoved = Objects.RemoveAll( []( const TSharedPtr<CGameObject>& Object )
 	{
-		if ( !Object->IsPendingDestroy() ) return false;
+		if ( !Object->IsPendingDestroy() )
+		{
+			return false;
+		}
 		Object->Scene = nullptr;
 		return true;
 	} );
-	if ( NumRemoved > 0 ) bDrawOrderDirty = true;
+	if ( NumRemoved > 0 )
+	{
+		bDrawOrderDirty = true;
+	}
 }
 
 void CScene::NotifyDestroy( CGameObject& Object )
 {
-	if ( Object.bDestroyNotified ) return;
+	if ( Object.bDestroyNotified )
+	{
+		return;
+	}
 	Object.bDestroyNotified = true;
 	LOG( LogGameObject, Verbose, "Destroying %s in '%s'", *Object.GetDebugName(), *GetName() );
 	Object.OnDestroy();
@@ -143,7 +167,10 @@ void CScene::RebuildDrawList()
 {
 	DrawList.Reset();
 	DrawList.Reserve( Objects.Num() );
-	for ( const TSharedPtr<CGameObject>& Object : Objects ) DrawList.Add( Object.Get() );
+	for ( const TSharedPtr<CGameObject>& Object : Objects )
+	{
+		DrawList.Add( Object.Get() );
+	}
 
 	// 安定ソートなので同じ DrawOrder なら生成順
 	DrawList.StableSort( []( const CGameObject* A, const CGameObject* B ) { return A->GetDrawOrder() < B->GetDrawOrder(); } );
@@ -205,7 +232,10 @@ void CScene::TickScene( float32 DeltaTime )
 		{
 			// Tick 中の SpawnObject で配列が再確保されても大丈夫なよう、毎回インデックスで取り出す
 			CGameObject* Object = Objects[i].Get();
-			if ( Object->IsAlive() ) Object->TickObject( DeltaTime );
+			if ( Object->IsAlive() )
+			{
+				Object->TickObject( DeltaTime );
+			}
 		}
 	}
 

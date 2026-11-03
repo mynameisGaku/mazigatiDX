@@ -30,27 +30,54 @@ namespace
 	FORCEINLINE FStatKey MakeKey( const FProfileSample& Sample, uint32 GroupBy )
 	{
 		FStatKey Key;
-		if ( GroupBy & NProfileGroupBy::Category ) Key.Category = Sample.Category;
-		if ( GroupBy & NProfileGroupBy::Owner ) Key.Owner = Sample.Owner;
-		if ( GroupBy & NProfileGroupBy::Name ) Key.Name = Sample.Name;
-		if ( GroupBy & NProfileGroupBy::Instance ) Key.Instance = Sample.Instance;
+		if ( GroupBy & NProfileGroupBy::Category )
+		{
+			Key.Category = Sample.Category;
+		}
+		if ( GroupBy & NProfileGroupBy::Owner )
+		{
+			Key.Owner = Sample.Owner;
+		}
+		if ( GroupBy & NProfileGroupBy::Name )
+		{
+			Key.Name = Sample.Name;
+		}
+		if ( GroupBy & NProfileGroupBy::Instance )
+		{
+			Key.Instance = Sample.Instance;
+		}
 		return Key;
 	}
 
 	FString MakeRowLabel( const IProfiler& Profiler, const FProfileSample& Sample, uint32 GroupBy )
 	{
 		TArray<FString> Parts;
-		if ( GroupBy & NProfileGroupBy::Category ) Parts.Add( Profiler.GetString( Sample.Category ) );
-		if ( GroupBy & NProfileGroupBy::Owner ) Parts.Add( Profiler.GetString( Sample.Owner ) );
+		if ( GroupBy & NProfileGroupBy::Category )
+		{
+			Parts.Add( Profiler.GetString( Sample.Category ) );
+		}
+		if ( GroupBy & NProfileGroupBy::Owner )
+		{
+			Parts.Add( Profiler.GetString( Sample.Owner ) );
+		}
 
 		FString NamePart;
-		if ( GroupBy & NProfileGroupBy::Name ) NamePart = Profiler.GetString( Sample.Name );
+		if ( GroupBy & NProfileGroupBy::Name )
+		{
+			NamePart = Profiler.GetString( Sample.Name );
+		}
 		if ( GroupBy & NProfileGroupBy::Instance )
 		{
-			if ( !NamePart.IsEmpty() ) NamePart += ' ';
+			if ( !NamePart.IsEmpty() )
+			{
+				NamePart += ' ';
+			}
 			NamePart += NProfilerAnalyzer::MakeInstanceLabel( Profiler, Sample.Instance, Sample.Label );
 		}
-		if ( !NamePart.IsEmpty() ) Parts.Add( NamePart );
+		if ( !NamePart.IsEmpty() )
+		{
+			Parts.Add( NamePart );
+		}
 
 		// 空の項目（Owner が無いサンプルなど）は表示しない
 		Parts.RemoveAll( []( const FString& Part ) { return Part.IsEmpty(); } );
@@ -73,18 +100,33 @@ namespace
 bool NProfilerAnalyzer::ClampFrameRange( const IProfiler& Profiler, int32& InOutFirst, int32& InOutLast )
 {
 	const int32 NumFrames = Profiler.GetNumFrames();
-	if ( NumFrames <= 0 ) return false;
+	if ( NumFrames <= 0 )
+	{
+		return false;
+	}
 
-	if ( InOutLast < 0 || InOutLast >= NumFrames ) InOutLast = NumFrames - 1;
-	if ( InOutFirst < 0 ) InOutFirst = 0;
-	if ( InOutFirst > InOutLast ) InOutFirst = InOutLast;
+	if ( InOutLast < 0 || InOutLast >= NumFrames )
+	{
+		InOutLast = NumFrames - 1;
+	}
+	if ( InOutFirst < 0 )
+	{
+		InOutFirst = 0;
+	}
+	if ( InOutFirst > InOutLast )
+	{
+		InOutFirst = InOutLast;
+	}
 	return true;
 }
 
 FProfileFrameStats NProfilerAnalyzer::ComputeFrameStats( const IProfiler& Profiler, int32 FirstFrame, int32 LastFrame )
 {
 	FProfileFrameStats Stats;
-	if ( !ClampFrameRange( Profiler, FirstFrame, LastFrame ) ) return Stats;
+	if ( !ClampFrameRange( Profiler, FirstFrame, LastFrame ) )
+	{
+		return Stats;
+	}
 
 	Stats.MinMs = 1.0e30;
 	for ( int32 i = FirstFrame; i <= LastFrame; ++i )
@@ -92,8 +134,14 @@ FProfileFrameStats NProfilerAnalyzer::ComputeFrameStats( const IProfiler& Profil
 		const FProfilerFrame& Frame = Profiler.GetFrame( i );
 		const float64 Ms = NPlatformTime::TicksToMs( Frame.GetDurationTick() );
 		Stats.TotalMs += Ms;
-		if ( Ms < Stats.MinMs ) Stats.MinMs = Ms;
-		if ( Ms > Stats.MaxMs ) Stats.MaxMs = Ms;
+		if ( Ms < Stats.MinMs )
+		{
+			Stats.MinMs = Ms;
+		}
+		if ( Ms > Stats.MaxMs )
+		{
+			Stats.MaxMs = Ms;
+		}
 		Stats.NumSamples += Frame.Samples.Num();
 		++Stats.NumFrames;
 	}
@@ -111,7 +159,10 @@ void NProfilerAnalyzer::BuildStats( const IProfiler& Profiler, const FProfileQue
 
 	int32 FirstFrame = Query.FirstFrame;
 	int32 LastFrame = Query.LastFrame;
-	if ( !ClampFrameRange( Profiler, FirstFrame, LastFrame ) ) return;
+	if ( !ClampFrameRange( Profiler, FirstFrame, LastFrame ) )
+	{
+		return;
+	}
 
 	// キー -> 行のインデックス。フィルターで除外された行は INDEX_NONE を入れて、次からは判定を省く
 	TMap<FStatKey, int32> RowIndices;
@@ -124,7 +175,10 @@ void NProfilerAnalyzer::BuildStats( const IProfiler& Profiler, const FProfileQue
 		for ( int32 i = 0; i < Samples.Num(); ++i )
 		{
 			const FProfileSample& Sample = Samples[i];
-			if ( Query.MaxDepth >= 0 && Sample.Depth > Query.MaxDepth ) continue;
+			if ( Query.MaxDepth >= 0 && Sample.Depth > Query.MaxDepth )
+			{
+				continue;
+			}
 
 			const FStatKey Key = MakeKey( Sample, Query.GroupBy );
 
@@ -152,13 +206,19 @@ void NProfilerAnalyzer::BuildStats( const IProfiler& Profiler, const FProfileQue
 				}
 				RowIndices.Add( Key, RowIndex );
 			}
-			if ( RowIndex == INDEX_NONE ) continue;
+			if ( RowIndex == INDEX_NONE )
+			{
+				continue;
+			}
 
 			FProfileStatRow& Row = OutRows[RowIndex];
 			const float64 InclusiveMs = NPlatformTime::TicksToMs( Sample.DurationTick );
 			++Row.Calls;
 			Row.SelfMs += NPlatformTime::TicksToMs( Sample.GetSelfTick() );
-			if ( InclusiveMs > Row.MaxMs ) Row.MaxMs = InclusiveMs;
+			if ( InclusiveMs > Row.MaxMs )
+			{
+				Row.MaxMs = InclusiveMs;
+			}
 
 			// 祖先に同じ行があれば、その内側の時間は外側に含まれているので足さない
 			bool bNestedInSameRow = false;
@@ -170,7 +230,10 @@ void NProfilerAnalyzer::BuildStats( const IProfiler& Profiler, const FProfileQue
 					break;
 				}
 			}
-			if ( !bNestedInSameRow ) Row.InclusiveMs += InclusiveMs;
+			if ( !bNestedInSameRow )
+			{
+				Row.InclusiveMs += InclusiveMs;
+			}
 		}
 	}
 }
@@ -184,7 +247,10 @@ FString NProfilerAnalyzer::MakeInstanceLabel( const IProfiler& Profiler, uint64 
 	if ( Label != 0 )
 	{
 		const FString& Text = Profiler.GetString( Label );
-		if ( !Text.IsEmpty() ) return Instance != 0 ? FString::Printf( "%s (#%llu)", *Text, static_cast<unsigned long long>( Instance ) ) : Text;
+		if ( !Text.IsEmpty() )
+		{
+			return Instance != 0 ? FString::Printf( "%s (#%llu)", *Text, static_cast<unsigned long long>( Instance ) ) : Text;
+		}
 	}
 	return Instance != 0 ? FString::Printf( "#%llu", static_cast<unsigned long long>( Instance ) ) : FString();
 }
@@ -195,7 +261,10 @@ FString NProfilerAnalyzer::MakeNodeLabel( const IProfiler& Profiler, const FProf
 	if ( Node.Instance != 0 || Node.Label != 0 )
 	{
 		const FString Instance = MakeInstanceLabel( Profiler, Node.Instance, Node.Label );
-		if ( !Instance.IsEmpty() ) Result = Result.IsEmpty() ? Instance : Result + ' ' + Instance;
+		if ( !Instance.IsEmpty() )
+		{
+			Result = Result.IsEmpty() ? Instance : Result + ' ' + Instance;
+		}
 	}
 	return Result.IsEmpty() ? FString( "(unnamed)" ) : Result;
 }
@@ -221,7 +290,10 @@ namespace
 		FProfileTreeNode& Emitted = Out.EmplaceGetRef( Work[Index].Node );
 		Emitted.Depth = Depth;
 
-		for ( int32 Child = Work[Index].FirstChild; Child != INDEX_NONE; Child = Work[Child].NextSibling ) EmitNode( Work, Child, Depth + 1, Out );
+		for ( int32 Child = Work[Index].FirstChild; Child != INDEX_NONE; Child = Work[Child].NextSibling )
+		{
+			EmitNode( Work, Child, Depth + 1, Out );
+		}
 
 		Out[OutIndex].NumDescendants = Out.Num() - OutIndex - 1;
 	}
@@ -231,7 +303,10 @@ void NProfilerAnalyzer::BuildCallTree( const IProfiler& Profiler, int32 FirstFra
 									   TArray<FProfileTreeNode>& OutNodes )
 {
 	OutNodes.Reset();
-	if ( !ClampFrameRange( Profiler, FirstFrame, LastFrame ) ) return;
+	if ( !ClampFrameRange( Profiler, FirstFrame, LastFrame ) )
+	{
+		return;
+	}
 
 	// 複数フレームは、フレームをまたいで同じ処理を同じノードにするために、まとめる前提にする
 	const bool bMerge = bMergeSiblings || FirstFrame != LastFrame;
@@ -259,7 +334,10 @@ void NProfilerAnalyzer::BuildCallTree( const IProfiler& Profiler, int32 FirstFra
 			uint64 Key = CombineHash64( 0x51ED27ull, Sample.Category );
 			Key = CombineHash64( Key, Sample.Owner );
 			Key = CombineHash64( Key, Sample.Name );
-			if ( !( bMerge && bMergeInstances ) ) Key = CombineHash64( Key, Sample.Instance );
+			if ( !( bMerge && bMergeInstances ) )
+			{
+				Key = CombineHash64( Key, Sample.Instance );
+			}
 
 			const uint64 PathKey = CombineHash64( Work[ParentNode].Node.Id, Key );
 
@@ -267,7 +345,10 @@ void NProfilerAnalyzer::BuildCallTree( const IProfiler& Profiler, int32 FirstFra
 			uint64 NodeId = PathKey;
 			if ( bMerge )
 			{
-				if ( const int32* Found = MergedNodes.Find( PathKey ) ) NodeIndex = *Found;
+				if ( const int32* Found = MergedNodes.Find( PathKey ) )
+				{
+					NodeIndex = *Found;
+				}
 			}
 			else
 			{
@@ -290,11 +371,20 @@ void NProfilerAnalyzer::BuildCallTree( const IProfiler& Profiler, int32 FirstFra
 
 				// 親の子リストの末尾に追加
 				FWorkNode& Parent = Work[ParentNode];
-				if ( Parent.LastChild == INDEX_NONE ) Parent.FirstChild = NodeIndex;
-				else Work[Parent.LastChild].NextSibling = NodeIndex;
+				if ( Parent.LastChild == INDEX_NONE )
+				{
+					Parent.FirstChild = NodeIndex;
+				}
+				else
+				{
+					Work[Parent.LastChild].NextSibling = NodeIndex;
+				}
 				Parent.LastChild = NodeIndex;
 
-				if ( bMerge ) MergedNodes.Add( PathKey, NodeIndex );
+				if ( bMerge )
+				{
+					MergedNodes.Add( PathKey, NodeIndex );
+				}
 			}
 			NodeOfSample[i] = NodeIndex;
 
@@ -302,13 +392,19 @@ void NProfilerAnalyzer::BuildCallTree( const IProfiler& Profiler, int32 FirstFra
 			++Node.Calls;
 			Node.TotalTick += Sample.DurationTick;
 			Node.SelfTick += Sample.GetSelfTick();
-			if ( Sample.DurationTick > Node.MaxTick ) Node.MaxTick = Sample.DurationTick;
+			if ( Sample.DurationTick > Node.MaxTick )
+			{
+				Node.MaxTick = Sample.DurationTick;
+			}
 		}
 	}
 
 	// 仮想ルートの子を最上位として、呼ばれた順に並べた配列へ出力する
 	OutNodes.Reserve( Work.Num() );
-	for ( int32 Root = Work[0].FirstChild; Root != INDEX_NONE; Root = Work[Root].NextSibling ) EmitNode( Work, Root, 0, OutNodes );
+	for ( int32 Root = Work[0].FirstChild; Root != INDEX_NONE; Root = Work[Root].NextSibling )
+	{
+		EmitNode( Work, Root, 0, OutNodes );
+	}
 }
 
 namespace
@@ -318,7 +414,10 @@ namespace
 					 bool bAscending, TArray<FProfileTreeNode>& Out )
 	{
 		TArray<int32> Siblings;
-		for ( int32 i = Begin; i < End; i += 1 + In[i].NumDescendants ) Siblings.Add( i );
+		for ( int32 i = Begin; i < End; i += 1 + In[i].NumDescendants )
+		{
+			Siblings.Add( i );
+		}
 
 		// true なら A が B より前
 		const auto Before = [&Profiler, &In, Key, bAscending]( int32 A, int32 B )
@@ -335,7 +434,10 @@ namespace
 				const uint32 IdB = Key == NProfilerAnalyzer::ETreeSortKey::Name ? NodeB.Name : ( Key == NProfilerAnalyzer::ETreeSortKey::Category ? NodeB.Category : NodeB.Owner );
 				int32 Compare = Profiler.GetString( IdA ).Compare( Profiler.GetString( IdB ), ESearchCase::IgnoreCase );
 				// 名前が同じなら個体（Instance）の順
-				if ( Compare == 0 && Key == NProfilerAnalyzer::ETreeSortKey::Name ) Compare = NodeA.Instance < NodeB.Instance ? -1 : ( NodeA.Instance > NodeB.Instance ? 1 : 0 );
+				if ( Compare == 0 && Key == NProfilerAnalyzer::ETreeSortKey::Name )
+				{
+					Compare = NodeA.Instance < NodeB.Instance ? -1 : ( NodeA.Instance > NodeB.Instance ? 1 : 0 );
+				}
 				return bAscending ? Compare < 0 : Compare > 0;
 			}
 			case NProfilerAnalyzer::ETreeSortKey::Calls:
@@ -374,7 +476,10 @@ void NProfilerAnalyzer::SortCallTree( const IProfiler& Profiler, const TArray<FP
 void NProfilerAnalyzer::BuildCounterRows( const IProfiler& Profiler, int32 FirstFrame, int32 LastFrame, const FString& Filter, TArray<FProfileCounterRow>& OutRows )
 {
 	OutRows.Reset();
-	if ( !ClampFrameRange( Profiler, FirstFrame, LastFrame ) ) return;
+	if ( !ClampFrameRange( Profiler, FirstFrame, LastFrame ) )
+	{
+		return;
+	}
 
 	TMap<uint32, int32> RowOfName;
 	for ( int32 FrameIndex = FirstFrame; FrameIndex <= LastFrame; ++FrameIndex )
@@ -405,16 +510,25 @@ void NProfilerAnalyzer::BuildCounterRows( const IProfiler& Profiler, int32 First
 
 	for ( FProfileCounterRow& Row : OutRows )
 	{
-		if ( Row.NumSamples > 0 ) Row.Average /= static_cast<float64>( Row.NumSamples );
+		if ( Row.NumSamples > 0 )
+		{
+			Row.Average /= static_cast<float64>( Row.NumSamples );
+		}
 	}
-	if ( !Filter.IsEmpty() ) OutRows.RemoveAll( [&Filter]( const FProfileCounterRow& Row ) { return !Row.Label.Contains( Filter, ESearchCase::IgnoreCase ); } );
+	if ( !Filter.IsEmpty() )
+	{
+		OutRows.RemoveAll( [&Filter]( const FProfileCounterRow& Row ) { return !Row.Label.Contains( Filter, ESearchCase::IgnoreCase ); } );
+	}
 	OutRows.Sort( []( const FProfileCounterRow& A, const FProfileCounterRow& B ) { return A.Label.Compare( B.Label, ESearchCase::IgnoreCase ) < 0; } );
 }
 
 void NProfilerAnalyzer::GetCounterSeries( const IProfiler& Profiler, uint32 Name, int32 FirstFrame, int32 LastFrame, TArray<float32>& OutValues )
 {
 	OutValues.Reset();
-	if ( !ClampFrameRange( Profiler, FirstFrame, LastFrame ) ) return;
+	if ( !ClampFrameRange( Profiler, FirstFrame, LastFrame ) )
+	{
+		return;
+	}
 
 	float32 Previous = 0.0f;
 	for ( int32 FrameIndex = FirstFrame; FrameIndex <= LastFrame; ++FrameIndex )
@@ -438,9 +552,18 @@ FString NProfilerAnalyzer::FormatCounterValue( float64 Value, EProfileCounterUni
 	case EProfileCounterUnit::Bytes:
 	{
 		const float64 Magnitude = Value < 0.0 ? -Value : Value;
-		if ( Magnitude >= 1024.0 * 1024.0 * 1024.0 ) return FString::Printf( "%.2f GB", Value / ( 1024.0 * 1024.0 * 1024.0 ) );
-		if ( Magnitude >= 1024.0 * 1024.0 ) return FString::Printf( "%.2f MB", Value / ( 1024.0 * 1024.0 ) );
-		if ( Magnitude >= 1024.0 ) return FString::Printf( "%.1f KB", Value / 1024.0 );
+		if ( Magnitude >= 1024.0 * 1024.0 * 1024.0 )
+		{
+			return FString::Printf( "%.2f GB", Value / ( 1024.0 * 1024.0 * 1024.0 ) );
+		}
+		if ( Magnitude >= 1024.0 * 1024.0 )
+		{
+			return FString::Printf( "%.2f MB", Value / ( 1024.0 * 1024.0 ) );
+		}
+		if ( Magnitude >= 1024.0 )
+		{
+			return FString::Printf( "%.1f KB", Value / 1024.0 );
+		}
 		return FString::Printf( "%.0f B", Value );
 	}
 	case EProfileCounterUnit::Milliseconds: return FString::Printf( "%.3f ms", Value );
@@ -455,7 +578,10 @@ FString NProfilerAnalyzer::FormatCounterValue( float64 Value, EProfileCounterUni
 			FString Grouped;
 			for ( int32 i = 0; i < Digits.Len(); ++i )
 			{
-				if ( i > 0 && ( Digits.Len() - i ) % 3 == 0 ) Grouped += ',';
+				if ( i > 0 && ( Digits.Len() - i ) % 3 == 0 )
+				{
+					Grouped += ',';
+				}
 				Grouped += Digits[i];
 			}
 			return ( Value < 0.0 ? FString( "-" ) : FString() ) + Grouped;

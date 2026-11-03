@@ -10,16 +10,28 @@
 //-----------------------------------------------------------------------------
 bool FSpriteAnimator::Play( const FString& ClipName, bool bRestart )
 {
-	if ( !Sheet.IsValid() ) return false;
+	if ( !Sheet.IsValid() )
+	{
+		return false;
+	}
 	const int32 Index = Sheet->FindClip( ClipName );
-	if ( Index == INDEX_NONE ) return false;
+	if ( Index == INDEX_NONE )
+	{
+		return false;
+	}
 	return PlayIndex( Index, bRestart );
 }
 
 bool FSpriteAnimator::PlayIndex( int32 NewClipIndex, bool bRestart )
 {
-	if ( !Sheet.IsValid() || Sheet->GetClip( NewClipIndex ) == nullptr ) return false;
-	if ( !bRestart && ClipIndex == NewClipIndex && bPlaying ) return true;
+	if ( !Sheet.IsValid() || Sheet->GetClip( NewClipIndex ) == nullptr )
+	{
+		return false;
+	}
+	if ( !bRestart && ClipIndex == NewClipIndex && bPlaying )
+	{
+		return true;
+	}
 
 	ClipIndex = NewClipIndex;
 	Rewind( 0.0 );
@@ -28,9 +40,15 @@ bool FSpriteAnimator::PlayIndex( int32 NewClipIndex, bool bRestart )
 
 bool FSpriteAnimator::PlayFrom( const FString& ClipName, float32 NormalizedStart )
 {
-	if ( !Sheet.IsValid() ) return false;
+	if ( !Sheet.IsValid() )
+	{
+		return false;
+	}
 	const int32 Index = Sheet->FindClip( ClipName );
-	if ( Index == INDEX_NONE ) return false;
+	if ( Index == INDEX_NONE )
+	{
+		return false;
+	}
 
 	ClipIndex = Index;
 	Rewind( NMath::Clamp( static_cast<float64>( NormalizedStart ), 0.0, 1.0 ) );
@@ -66,7 +84,10 @@ void FSpriteAnimator::Stop()
 	bFinished = false;
 	bFinishedThisUpdate = false;
 	Events.Empty();
-	if ( ClipIndex != INDEX_NONE ) Rewind( 0.0 );
+	if ( ClipIndex != INDEX_NONE )
+	{
+		Rewind( 0.0 );
+	}
 	bPlaying = false;
 }
 
@@ -84,11 +105,17 @@ void FSpriteAnimator::Update( float32 DeltaTime )
 {
 	Events.Empty();
 	bFinishedThisUpdate = false;
-	if ( !bPlaying || !Sheet.IsValid() ) return;
+	if ( !bPlaying || !Sheet.IsValid() )
+	{
+		return;
+	}
 
 	const FAnimTimeline* Timeline = Sheet->GetTimeline( ClipIndex );
 	const FSpriteClip* Clip = Sheet->GetClip( ClipIndex );
-	if ( Timeline == nullptr || Clip == nullptr || Timeline->IsEmpty() ) return;
+	if ( Timeline == nullptr || Clip == nullptr || Timeline->IsEmpty() )
+	{
+		return;
+	}
 
 	Playhead += static_cast<float64>( DeltaTime ) * static_cast<float64>( Speed );
 	const FAnimLocation Location = NAnim::Locate( *Timeline, Playhead );
@@ -100,7 +127,10 @@ void FSpriteAnimator::Update( float32 DeltaTime )
 		const int32 ClipStep = Timeline->StepSource[EnteredStep];
 		for ( const FSpriteAnimEvent& Event : Clip->Events )
 		{
-			if ( Event.Step == ClipStep ) Events.Add( Event.Name );
+			if ( Event.Step == ClipStep )
+			{
+				Events.Add( Event.Name );
+			}
 		}
 	} );
 	LastAbsoluteStep = Location.AbsoluteStep;
@@ -122,7 +152,10 @@ void FSpriteAnimator::Update( float32 DeltaTime )
 void FSpriteAnimator::Seek( float32 NormalizedTime )
 {
 	const FAnimTimeline* Timeline = Sheet.IsValid() ? Sheet->GetTimeline( ClipIndex ) : nullptr;
-	if ( Timeline == nullptr || Timeline->IsEmpty() ) return;
+	if ( Timeline == nullptr || Timeline->IsEmpty() )
+	{
+		return;
+	}
 
 	Playhead = NMath::Clamp( static_cast<float64>( NormalizedTime ), 0.0, 1.0 ) * static_cast<float64>( Timeline->Total );
 	const FAnimLocation Location = NAnim::Locate( *Timeline, Playhead );
@@ -144,11 +177,17 @@ FString FSpriteAnimator::GetClipName() const
 
 int32 FSpriteAnimator::GetFrameIndex() const
 {
-	if ( ClipIndex == INDEX_NONE ) return ManualFrame;
+	if ( ClipIndex == INDEX_NONE )
+	{
+		return ManualFrame;
+	}
 
 	const FAnimTimeline* Timeline = Sheet.IsValid() ? Sheet->GetTimeline( ClipIndex ) : nullptr;
 	const FSpriteClip* Clip = Sheet.IsValid() ? Sheet->GetClip( ClipIndex ) : nullptr;
-	if ( Timeline == nullptr || Clip == nullptr || !Timeline->StepSource.IsValidIndex( Step ) ) return INDEX_NONE;
+	if ( Timeline == nullptr || Clip == nullptr || !Timeline->StepSource.IsValidIndex( Step ) )
+	{
+		return INDEX_NONE;
+	}
 
 	const int32 ClipStep = Timeline->StepSource[Step];
 	return Clip->Frames.IsValidIndex( ClipStep ) ? Clip->Frames[ClipStep] : INDEX_NONE;
@@ -157,18 +196,30 @@ int32 FSpriteAnimator::GetFrameIndex() const
 float32 FSpriteAnimator::GetNormalizedTime() const
 {
 	const FAnimTimeline* Timeline = Sheet.IsValid() ? Sheet->GetTimeline( ClipIndex ) : nullptr;
-	if ( Timeline == nullptr || Timeline->Total <= 0.0f ) return 0.0f;
+	if ( Timeline == nullptr || Timeline->Total <= 0.0f )
+	{
+		return 0.0f;
+	}
 
 	float64 Time = Playhead;
-	if ( Timeline->Loop == EAnimLoopMode::Once ) Time = NMath::Clamp( Time, 0.0, static_cast<float64>( Timeline->Total ) );
-	else Time -= NMath::Floor( Time / Timeline->Total ) * Timeline->Total;
+	if ( Timeline->Loop == EAnimLoopMode::Once )
+	{
+		Time = NMath::Clamp( Time, 0.0, static_cast<float64>( Timeline->Total ) );
+	}
+	else
+	{
+		Time -= NMath::Floor( Time / Timeline->Total ) * Timeline->Total;
+	}
 	return static_cast<float32>( Time / Timeline->Total );
 }
 
 bool FSpriteAnimator::ConsumeEvent( const FString& Name )
 {
 	const int32 Index = Events.Find( Name );
-	if ( Index == INDEX_NONE ) return false;
+	if ( Index == INDEX_NONE )
+	{
+		return false;
+	}
 	Events.RemoveAt( Index );
 	return true;
 }
@@ -178,16 +229,28 @@ bool FSpriteAnimator::ConsumeEvent( const FString& Name )
 //-----------------------------------------------------------------------------
 void FSpriteAnimator::Record( FDrawContext& Draw, const FVector2& Position, const FVector2& InScale, float32 AngleRadians ) const
 {
-	if ( !bVisible || !Sheet.IsValid() || Alpha <= 0.0f ) return;
+	if ( !bVisible || !Sheet.IsValid() || Alpha <= 0.0f )
+	{
+		return;
+	}
 
 	const int32 TextureHandle = Sheet->GetTextureHandle();
 	const FSpriteFrame* Frame = Sheet->GetFrame( GetFrameIndex() );
-	if ( TextureHandle < 0 || Frame == nullptr || Frame->Width <= 0 || Frame->Height <= 0 ) return;
+	if ( TextureHandle < 0 || Frame == nullptr || Frame->Width <= 0 || Frame->Height <= 0 )
+	{
+		return;
+	}
 
 	const bool bTinted = Tint.r != 255 || Tint.g != 255 || Tint.b != 255;
 	const bool bTranslucent = Alpha < 1.0f;
-	if ( bTinted ) Draw.Tint( Tint );
-	if ( bTranslucent ) Draw.Blend( EDrawBlend::Alpha, static_cast<int32>( NMath::Clamp( Alpha, 0.0f, 1.0f ) * 255.0f + 0.5f ) );
+	if ( bTinted )
+	{
+		Draw.Tint( Tint );
+	}
+	if ( bTranslucent )
+	{
+		Draw.Blend( EDrawBlend::Alpha, static_cast<int32>( NMath::Clamp( Alpha, 0.0f, 1.0f ) * 255.0f + 0.5f ) );
+	}
 
 	Draw.SpriteRect( Position.x + Offset.x, Position.y + Offset.y, TextureHandle, Frame->X, Frame->Y, Frame->Width, Frame->Height, Frame->PivotX, Frame->PivotY,
 					 Scale.x * InScale.x, Scale.y * InScale.y, AngleOffset + AngleRadians, bFlipX, bFlipY );
@@ -202,7 +265,10 @@ void FSpriteAnimator::RecordAt( FDrawContext& Draw, const FTransformView& Transf
 	// Z 軸まわりの回転角（ほかの軸の回転は、2D のスプライトでは使わない）
 	float32 Angle = NMath::Atan2( 2.0f * ( Q.w * Q.z + Q.x * Q.y ), 1.0f - 2.0f * ( Q.y * Q.y + Q.z * Q.z ) );
 	// 縦横の一方だけ反転する変換では、回る向きも逆になる
-	if ( Space.PixelsPerUnit.x * Space.PixelsPerUnit.y < 0.0f ) Angle = -Angle;
+	if ( Space.PixelsPerUnit.x * Space.PixelsPerUnit.y < 0.0f )
+	{
+		Angle = -Angle;
+	}
 
 	const FVector2 ScreenPosition( Space.Origin.x + Position.x * Space.PixelsPerUnit.x, Space.Origin.y + Position.y * Space.PixelsPerUnit.y );
 	Record( Draw, ScreenPosition, FVector2( NMath::Abs( WorldScale.x ), NMath::Abs( WorldScale.y ) ), Angle );

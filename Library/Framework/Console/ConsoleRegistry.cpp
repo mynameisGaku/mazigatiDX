@@ -20,12 +20,21 @@ namespace
 	int32 EditDistance( const FString& A, const FString& B )
 	{
 		const int32 N = A.Len(), M = B.Len();
-		if ( N == 0 ) return M;
-		if ( M == 0 ) return N;
+		if ( N == 0 )
+		{
+			return M;
+		}
+		if ( M == 0 )
+		{
+			return N;
+		}
 		TArray<int32> Previous, Current;
 		Previous.SetNum( M + 1 );
 		Current.SetNum( M + 1 );
-		for ( int32 j = 0; j <= M; ++j ) Previous[j] = j;
+		for ( int32 j = 0; j <= M; ++j )
+		{
+			Previous[j] = j;
+		}
 		for ( int32 i = 1; i <= N; ++i )
 		{
 			Current[0] = i;
@@ -47,15 +56,24 @@ namespace
 	// 全部の先頭が同じ部分（大文字小文字は区別しない。UTF-8 の文字の途中では切らない）
 	FString CommonPrefixOf( const TArray<FString>& Texts )
 	{
-		if ( Texts.IsEmpty() ) return FString();
+		if ( Texts.IsEmpty() )
+		{
+			return FString();
+		}
 		FString Prefix = Texts[0];
 		for ( int32 n = 1; n < Texts.Num(); ++n )
 		{
 			int32 Length = 0;
 			const int32 Max = NMath::Min( Prefix.Len(), Texts[n].Len() );
-			while ( Length < Max && FString( &Prefix[Length], 1 ).Equals( FString( &Texts[n][Length], 1 ), ESearchCase::IgnoreCase ) ) ++Length;
+			while ( Length < Max && FString( &Prefix[Length], 1 ).Equals( FString( &Texts[n][Length], 1 ), ESearchCase::IgnoreCase ) )
+			{
+				++Length;
+			}
 			// 次のバイトが文字の 2 バイト目以降（10xxxxxx）なら、文字の途中で切れているので、その文字の手前まで戻す
-			while ( Length > 0 && Length < Prefix.Len() && ( static_cast<unsigned char>( Prefix[Length] ) & 0xC0 ) == 0x80 ) --Length;
+			while ( Length > 0 && Length < Prefix.Len() && ( static_cast<unsigned char>( Prefix[Length] ) & 0xC0 ) == 0x80 )
+			{
+				--Length;
+			}
 			Prefix = Prefix.Left( Length );
 		}
 		return Prefix;
@@ -196,7 +214,10 @@ const FString* FConsoleRegistry::FindAlias( const FString& Alias ) const
 TArray<TPair<FString, FString>> FConsoleRegistry::GetAliases() const
 {
 	TArray<TPair<FString, FString>> Result;
-	for ( const auto& Pair : Aliases ) Result.Add( Pair.Value );
+	for ( const auto& Pair : Aliases )
+	{
+		Result.Add( Pair.Value );
+	}
 	Result.StableSort( []( const TPair<FString, FString>& A, const TPair<FString, FString>& B ) { return A.Key.ToLower() < B.Key.ToLower(); } );
 	return Result;
 }
@@ -207,13 +228,19 @@ TArray<TPair<FString, FString>> FConsoleRegistry::GetAliases() const
 EConsoleResult FConsoleRegistry::Execute( const FString& Line, IConsoleOutput& Output )
 {
 	const TArray<FString> Segments = NConsole::SplitCommands( Line );
-	if ( Segments.IsEmpty() ) return EConsoleResult::Empty;
+	if ( Segments.IsEmpty() )
+	{
+		return EConsoleResult::Empty;
+	}
 
 	EConsoleResult First = EConsoleResult::Ok;
 	for ( const FString& Segment : Segments )
 	{
 		const EConsoleResult Result = ExecuteSegment( Segment, Output, 0 );
-		if ( Result != EConsoleResult::Ok && First == EConsoleResult::Ok ) First = Result;
+		if ( Result != EConsoleResult::Ok && First == EConsoleResult::Ok )
+		{
+			First = Result;
+		}
 	}
 	return First;
 }
@@ -225,21 +252,36 @@ FString FConsoleRegistry::SuggestNames( const FString& Name ) const
 	const auto Consider = [&]( const FString& Candidate )
 	{
 		const FString CandidateLower = Candidate.ToLower();
-		if ( CandidateLower.StartsWith( Lower ) || EditDistance( Lower, CandidateLower ) <= 2 ) Matches.AddUnique( Candidate );
+		if ( CandidateLower.StartsWith( Lower ) || EditDistance( Lower, CandidateLower ) <= 2 )
+		{
+			Matches.AddUnique( Candidate );
+		}
 	};
 	for ( const auto& Pair : Entries )
 	{
-		if ( !Pair.Value.Info.bHidden ) Consider( Pair.Value.Info.Name );
+		if ( !Pair.Value.Info.bHidden )
+		{
+			Consider( Pair.Value.Info.Name );
+		}
 	}
-	for ( const auto& Pair : Aliases ) Consider( Pair.Value.Key );
-	if ( Matches.IsEmpty() ) return FString();
+	for ( const auto& Pair : Aliases )
+	{
+		Consider( Pair.Value.Key );
+	}
+	if ( Matches.IsEmpty() )
+	{
+		return FString();
+	}
 
 	Matches.StableSort( [&]( const FString& A, const FString& B )
 	{
 		const int32 DistanceA = EditDistance( Lower, A.ToLower() ), DistanceB = EditDistance( Lower, B.ToLower() );
 		return DistanceA != DistanceB ? DistanceA < DistanceB : A < B;
 	} );
-	if ( Matches.Num() > 4 ) Matches.SetNum( 4 );
+	if ( Matches.Num() > 4 )
+	{
+		Matches.SetNum( 4 );
+	}
 	return FString::Join( Matches, ", " );
 }
 
@@ -252,7 +294,10 @@ EConsoleResult FConsoleRegistry::ExecuteSegment( const FString& Segment, IConsol
 		Output.Write( EConsoleLine::Error, Error );
 		return EConsoleResult::BadArguments;
 	}
-	if ( Tokens.IsEmpty() ) return EConsoleResult::Empty;
+	if ( Tokens.IsEmpty() )
+	{
+		return EConsoleResult::Empty;
+	}
 
 	const FString Name = Tokens[0];
 	Tokens.RemoveAt( 0 );
@@ -281,20 +326,32 @@ EConsoleResult FConsoleRegistry::ExecuteSegment( const FString& Segment, IConsol
 			return EConsoleResult::Failed;
 		}
 		FString Expanded = Alias->Value;
-		for ( const FString& Token : Tokens ) Expanded += " " + NConsole::Quote( Token );
+		for ( const FString& Token : Tokens )
+		{
+			Expanded += " " + NConsole::Quote( Token );
+		}
 		EConsoleResult First = EConsoleResult::Ok;
 		for ( const FString& Sub : NConsole::SplitCommands( Expanded ) )
 		{
 			const EConsoleResult Result = ExecuteSegment( Sub, Output, Depth + 1 );
-			if ( Result != EConsoleResult::Ok && First == EConsoleResult::Ok ) First = Result;
+			if ( Result != EConsoleResult::Ok && First == EConsoleResult::Ok )
+			{
+				First = Result;
+			}
 		}
 		return First;
 	}
 
 	FString Message = "unknown command '" + Name + "'";
 	const FString Suggestions = SuggestNames( Name );
-	if ( !Suggestions.IsEmpty() ) Message += ". Did you mean: " + Suggestions + "?";
-	else Message += ". Type 'help' for the list of commands.";
+	if ( !Suggestions.IsEmpty() )
+	{
+		Message += ". Did you mean: " + Suggestions + "?";
+	}
+	else
+	{
+		Message += ". Type 'help' for the list of commands.";
+	}
 	Output.Write( EConsoleLine::Error, Message );
 	return EConsoleResult::UnknownCommand;
 }
@@ -313,12 +370,18 @@ TArray<const FConsoleCommandInfo*> FConsoleRegistry::GetCommands( bool bIncludeH
 	TArray<const FConsoleCommandInfo*> Result;
 	for ( const auto& Pair : Entries )
 	{
-		if ( bIncludeHidden || !Pair.Value.Info.bHidden ) Result.Add( &Pair.Value.Info );
+		if ( bIncludeHidden || !Pair.Value.Info.bHidden )
+		{
+			Result.Add( &Pair.Value.Info );
+		}
 	}
 	Result.StableSort( []( const FConsoleCommandInfo* A, const FConsoleCommandInfo* B )
 	{
 		const FString GroupA = GetGroupName( *A ).ToLower(), GroupB = GetGroupName( *B ).ToLower();
-		if ( GroupA != GroupB ) return GroupA < GroupB;
+		if ( GroupA != GroupB )
+		{
+			return GroupA < GroupB;
+		}
 		return A->Name.ToLower() < B->Name.ToLower();
 	} );
 	return Result;
@@ -327,7 +390,10 @@ TArray<const FConsoleCommandInfo*> FConsoleRegistry::GetCommands( bool bIncludeH
 bool FConsoleRegistry::GetVariableText( const FString& Name, FString& OutText ) const
 {
 	const FEntry* Entry = Entries.Find( MakeKey( Name ) );
-	if ( Entry == nullptr || !Entry->GetText ) return false;
+	if ( Entry == nullptr || !Entry->GetText )
+	{
+		return false;
+	}
 	OutText = Entry->GetText();
 	return true;
 }
@@ -335,7 +401,10 @@ bool FConsoleRegistry::GetVariableText( const FString& Name, FString& OutText ) 
 bool FConsoleRegistry::ResetVariable( const FString& Name )
 {
 	FEntry* Entry = Entries.Find( MakeKey( Name ) );
-	if ( Entry == nullptr || !Entry->Reset ) return false;
+	if ( Entry == nullptr || !Entry->Reset )
+	{
+		return false;
+	}
 	const TCallable<void()> Reset = Entry->Reset;
 	Reset();
 	return true;
@@ -344,7 +413,10 @@ bool FConsoleRegistry::ResetVariable( const FString& Name )
 bool FConsoleRegistry::SetArgChoices( const FString& Name, int32 ArgIndex, const TArray<FString>& Choices )
 {
 	FEntry* Entry = Entries.Find( MakeKey( Name ) );
-	if ( Entry == nullptr || !Entry->Info.Args.IsValidIndex( ArgIndex ) ) return false;
+	if ( Entry == nullptr || !Entry->Info.Args.IsValidIndex( ArgIndex ) )
+	{
+		return false;
+	}
 	Entry->Info.Args[ArgIndex].Choices = Choices;
 	return true;
 }
@@ -352,7 +424,10 @@ bool FConsoleRegistry::SetArgChoices( const FString& Name, int32 ArgIndex, const
 bool FConsoleRegistry::SetArgCompleter( const FString& Name, int32 ArgIndex, TCallable<TArray<FString>()> Completer )
 {
 	FEntry* Entry = Entries.Find( MakeKey( Name ) );
-	if ( Entry == nullptr || !Entry->Info.Args.IsValidIndex( ArgIndex ) ) return false;
+	if ( Entry == nullptr || !Entry->Info.Args.IsValidIndex( ArgIndex ) )
+	{
+		return false;
+	}
 	Entry->Info.Args[ArgIndex].Completer = MoveTemp( Completer );
 	return true;
 }
@@ -360,7 +435,10 @@ bool FConsoleRegistry::SetArgCompleter( const FString& Name, int32 ArgIndex, TCa
 bool FConsoleRegistry::SetHidden( const FString& Name, bool bHidden )
 {
 	FEntry* Entry = Entries.Find( MakeKey( Name ) );
-	if ( Entry == nullptr ) return false;
+	if ( Entry == nullptr )
+	{
+		return false;
+	}
 	Entry->Info.bHidden = bHidden;
 	return true;
 }
@@ -379,7 +457,10 @@ FConsoleCompletion FConsoleRegistry::Complete( const FString& Line ) const
 	{
 		for ( const TPair<FString, FString>& Existing : Raw )
 		{
-			if ( Existing.Key == Text ) return;
+			if ( Existing.Key == Text )
+			{
+				return;
+			}
 		}
 		Raw.Add( TPair<FString, FString> { Text, Description } );
 	};
@@ -388,11 +469,17 @@ FConsoleCompletion FConsoleRegistry::Complete( const FString& Line ) const
 		// コマンド名（別名も）
 		for ( const auto& Pair : Entries )
 		{
-			if ( !Pair.Value.Info.bHidden && StartsWithIgnoreCase( Pair.Value.Info.Name, Analysis.CurrentPrefix ) ) AddRaw( Pair.Value.Info.Name, Pair.Value.Info.Description );
+			if ( !Pair.Value.Info.bHidden && StartsWithIgnoreCase( Pair.Value.Info.Name, Analysis.CurrentPrefix ) )
+			{
+				AddRaw( Pair.Value.Info.Name, Pair.Value.Info.Description );
+			}
 		}
 		for ( const auto& Pair : Aliases )
 		{
-			if ( StartsWithIgnoreCase( Pair.Value.Key, Analysis.CurrentPrefix ) ) AddRaw( Pair.Value.Key, "alias: " + Pair.Value.Value );
+			if ( StartsWithIgnoreCase( Pair.Value.Key, Analysis.CurrentPrefix ) )
+			{
+				AddRaw( Pair.Value.Key, "alias: " + Pair.Value.Value );
+			}
 		}
 		// 名前を打ち終えている（完全に一致する）コマンドの使い方を見せる
 		if ( const FConsoleCommandInfo* Typed = Find( Analysis.CurrentPrefix ) )
@@ -424,10 +511,16 @@ FConsoleCompletion FConsoleRegistry::Complete( const FString& Line ) const
 		{
 			const FConsoleArgDesc& Arg = Info->Args[ArgIndex];
 			TArray<FString> Source = Arg.Choices;
-			if ( Arg.Completer ) Source.Append( Arg.Completer() );
+			if ( Arg.Completer )
+			{
+				Source.Append( Arg.Completer() );
+			}
 			for ( const FString& Choice : Source )
 			{
-				if ( StartsWithIgnoreCase( Choice, Analysis.CurrentPrefix ) ) AddRaw( Choice, FString() );
+				if ( StartsWithIgnoreCase( Choice, Analysis.CurrentPrefix ) )
+				{
+					AddRaw( Choice, FString() );
+				}
 			}
 		}
 	}

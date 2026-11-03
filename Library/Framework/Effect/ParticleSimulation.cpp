@@ -29,7 +29,10 @@ namespace
 		const double Z = static_cast<double>( A.z ) + B.z;
 		// float32で表せる絶対値の上限。
 		const double Limit = TNumericLimits<float32>::Max();
-		if ( !NMath::IsFinite( X ) || !NMath::IsFinite( Y ) || !NMath::IsFinite( Z ) || NMath::Abs( X ) > Limit || NMath::Abs( Y ) > Limit || NMath::Abs( Z ) > Limit ) return false;
+		if ( !NMath::IsFinite( X ) || !NMath::IsFinite( Y ) || !NMath::IsFinite( Z ) || NMath::Abs( X ) > Limit || NMath::Abs( Y ) > Limit || NMath::Abs( Z ) > Limit )
+		{
+			return false;
+		}
 		Out = FVector3( static_cast<float32>( X ), static_cast<float32>( Y ), static_cast<float32>( Z ) );
 		return true;
 	}
@@ -56,9 +59,15 @@ namespace
 	uint32 MakeSeed( uint32 Seed, int32 EmitterIndex )
 	{
 		uint32 State = Seed * 2654435761u + static_cast<uint32>( EmitterIndex + 1 ) * 40503u + 0x9E3779B9u;
-		if ( State == 0 ) State = 1;
+		if ( State == 0 )
+		{
+			State = 1;
+		}
 		FRandom Warm { State };
-		for ( int32 i = 0; i < 4; ++i ) Warm.Next();   // 似たシードの最初の値が、近くならないように
+		for ( int32 i = 0; i < 4; ++i )
+		{
+			Warm.Next();   // 似たシードの最初の値が、近くならないように
+		}
 		return State;
 	}
 
@@ -73,7 +82,10 @@ namespace
 	// 向きに使う軸（長さ 0・非有限なら、上）
 	FVector3 GetAxis( const FVector3& Direction )
 	{
-		if ( !NMath::IsFinite( Direction.x ) || !NMath::IsFinite( Direction.y ) || !NMath::IsFinite( Direction.z ) || Direction.LengthSquared() < 1.0e-12f ) return FVector3::Up;
+		if ( !NMath::IsFinite( Direction.x ) || !NMath::IsFinite( Direction.y ) || !NMath::IsFinite( Direction.z ) || Direction.LengthSquared() < 1.0e-12f )
+		{
+			return FVector3::Up;
+		}
 		return Direction.Normalized();
 	}
 
@@ -83,7 +95,10 @@ namespace
 		const FParticleEmitterDefinition& Def = Simulation.Definition->Emitters[EmitterIndex];
 		FParticleEmitterState& State = Simulation.Emitters[EmitterIndex];
 		const int32 MaxParticles = NMath::Clamp( Def.MaxParticles, 0, FParticleEffectDefinition::MaxParticlesPerEmitter );
-		if ( State.Particles.Num() >= MaxParticles ) return;
+		if ( State.Particles.Num() >= MaxParticles )
+		{
+			return;
+		}
 
 		FRandom Random { State.Random };
 		const float32 Scale = NParticle::GetEffectScale( Simulation );
@@ -155,12 +170,18 @@ namespace
 	{
 		const FParticleEmitterDefinition& Def = Simulation.Definition->Emitters[EmitterIndex];
 		FParticleEmitterState& State = Simulation.Emitters[EmitterIndex];
-		if ( State.Particles.IsEmpty() ) return;
+		if ( State.Particles.IsEmpty() )
+		{
+			return;
+		}
 		// 定義に保存されたWorld重力を有限値へ整える。
 		const FVector3 WorldGravity( Sanitize( Def.Gravity.x ), Sanitize( Def.Gravity.y ), Sanitize( Def.Gravity.z ) );
 		// 粒子空間で加える既存の重力。
 		FVector3 Gravity = WorldGravity;
-		if ( Def.Space == EParticleSpace::Local ) Gravity = Simulation.Transform.Rotation.UnrotateVector( Gravity );   // 重力は、ワールドの向き
+		if ( Def.Space == EParticleSpace::Local )
+		{
+			Gravity = Simulation.Transform.Rotation.UnrotateVector( Gravity );   // 重力は、ワールドの向き
+		}
 		// 既存の抵抗を速度へ掛ける倍率。
 		const float32 DragFactor = NMath::Max( 1.0f - NMath::Max( Sanitize( Def.Drag ), 0.0f ) * Step, 0.0f );
 		// 抵抗が定義されているか。
@@ -175,7 +196,10 @@ namespace
 		{
 			FParticle P = State.Particles[i];
 			P.Age += Step;
-			if ( P.Age >= P.Lifetime ) continue;
+			if ( P.Age >= P.Lifetime )
+			{
+				continue;
+			}
 			if ( bHasForceFields )
 			{
 				// Local粒子は描画と同じ移動・回転でWorld位置へ戻す。
@@ -189,14 +213,23 @@ namespace
 					const FVector3 FieldAcceleration = Def.ForceFields[FieldIndex].EvaluateAcceleration( WorldPosition, Simulation.Transform, Simulation.Time );
 					// overflowしない場合の累積値。
 					FVector3 Sum;
-					if ( TryAddFinite( WorldFieldAcceleration, FieldAcceleration, Sum ) ) WorldFieldAcceleration = Sum;
+					if ( TryAddFinite( WorldFieldAcceleration, FieldAcceleration, Sum ) )
+					{
+						WorldFieldAcceleration = Sum;
+					}
 				}
 				// Local粒子では加速度だけを粒子空間へ戻す。
 				FVector3 LocalFieldAcceleration = Def.Space == EParticleSpace::Local ? Simulation.Transform.Rotation.UnrotateVector( WorldFieldAcceleration ) : WorldFieldAcceleration;
-				if ( !IsFiniteVector( LocalFieldAcceleration ) ) LocalFieldAcceleration = FVector3::Zero;
+				if ( !IsFiniteVector( LocalFieldAcceleration ) )
+				{
+					LocalFieldAcceleration = FVector3::Zero;
+				}
 				// 重力へ場の加速度を加えた候補。
 				FVector3 Acceleration = Gravity;
-				if ( !TryAddFinite( Gravity, LocalFieldAcceleration, Acceleration ) ) Acceleration = Gravity;
+				if ( !TryAddFinite( Gravity, LocalFieldAcceleration, Acceleration ) )
+				{
+					Acceleration = Gravity;
+				}
 				// 場を加えた速度候補。
 				const FVector3 UpdatedVelocity = P.Velocity + Acceleration * Step;
 				// 抵抗後の位置まで有限なときだけfieldの寄与を採用する。
@@ -204,8 +237,14 @@ namespace
 				const FVector3 UpdatedPosition = P.Position + DraggedUpdatedVelocity * Step;
 				P.Velocity = IsFiniteVector( UpdatedVelocity ) && IsFiniteVector( UpdatedPosition ) ? UpdatedVelocity : P.Velocity + Gravity * Step;
 			}
-			else P.Velocity = P.Velocity + Gravity * Step;
-			if ( bDrag ) P.Velocity = P.Velocity * DragFactor;
+			else
+			{
+				P.Velocity = P.Velocity + Gravity * Step;
+			}
+			if ( bDrag )
+			{
+				P.Velocity = P.Velocity * DragFactor;
+			}
 			P.Position = P.Position + P.Velocity * Step;
 			P.Angle += P.Spin * Step;
 			State.Particles[Kept++] = P;
@@ -221,14 +260,20 @@ namespace
 		for ( int32 i = 0; i < Simulation.Emitters.Num(); ++i )
 		{
 			UpdateParticles( Simulation, i, Step );
-			if ( !Simulation.bEmitting ) continue;
+			if ( !Simulation.bEmitting )
+			{
+				continue;
+			}
 
 			const FParticleEmitterDefinition& Def = Effect.Emitters[i];
 			FParticleEmitterState& State = Simulation.Emitters[i];
 			const float32 Delay = NMath::Max( Sanitize( Def.Delay ), 0.0f );
 			const float32 LocalPrevious = Simulation.Time - Delay;
 			const float32 LocalNow = Simulation.Time + Step - Delay;
-			if ( LocalNow < 0.0f ) continue;   // まだ、動き出していない
+			if ( LocalNow < 0.0f )
+			{
+				continue;   // まだ、動き出していない
+			}
 
 			// 捨てる粒子の数は整数へ変換せず、残っている空きの数だけ作る。
 			// この定義で同時に生存できる粒子数。
@@ -247,7 +292,10 @@ namespace
 				NumToEmit += NMath::Min( NMath::Max( Def.Bursts[State.BurstsDone].Count, 0 ), Available - NumToEmit );
 				++State.BurstsDone;
 			}
-			for ( int32 n = 0; n < NumToEmit; ++n ) Spawn( Simulation, i );
+			for ( int32 n = 0; n < NumToEmit; ++n )
+			{
+				Spawn( Simulation, i );
+			}
 		}
 		Simulation.Time += Step;
 	}
@@ -263,7 +311,10 @@ namespace
 int32 FParticleSimulation::GetNumParticles() const
 {
 	int32 Count = 0;
-	for ( const FParticleEmitterState& Emitter : Emitters ) Count += Emitter.Particles.Num();
+	for ( const FParticleEmitterState& Emitter : Emitters )
+	{
+		Count += Emitter.Particles.Num();
+	}
 	return Count;
 }
 
@@ -291,7 +342,10 @@ void NParticle::Start( FParticleSimulation& Simulation, const TSharedPtr<const F
 	Simulation.Speed = Speed;
 	Simulation.bStarted = true;
 	Simulation.bEmitting = false;
-	if ( !Definition.IsValid() ) return;
+	if ( !Definition.IsValid() )
+	{
+		return;
+	}
 	Simulation.bLoop = LoopOverride < 0 ? Definition->bLoop : LoopOverride != 0;
 	const uint32 UsedSeed = Seed != 0 ? Seed : Definition->Seed;
 	const int32 NumEmitters = NMath::Min( Definition->Emitters.Num(), FParticleEffectDefinition::MaxEmitters );
@@ -306,13 +360,22 @@ void NParticle::Start( FParticleSimulation& Simulation, const TSharedPtr<const F
 
 void NParticle::Advance( FParticleSimulation& Simulation, float32 DeltaTime )
 {
-	if ( !Simulation.bStarted || !Simulation.Definition.IsValid() || !NMath::IsFinite( DeltaTime ) || DeltaTime <= 0.0f ) return;
+	if ( !Simulation.bStarted || !Simulation.Definition.IsValid() || !NMath::IsFinite( DeltaTime ) || DeltaTime <= 0.0f )
+	{
+		return;
+	}
 	const FParticleEffectDefinition& Effect = *Simulation.Definition;
-	if ( Simulation.Emitters.Num() > Effect.Emitters.Num() ) return;   // 定義と食い違っている（Start し直すまで進めない）
+	if ( Simulation.Emitters.Num() > Effect.Emitters.Num() )
+	{
+		return;   // 定義と食い違っている（Start し直すまで進めない）
+	}
 
 	float32 Remaining = DeltaTime * NMath::Max( Sanitize( Simulation.Speed, 1.0f ), 0.0f );
 	// 入力が有限でも、再生速度との積や現在時刻との和が範囲を超える場合は進めない。
-	if ( !NMath::IsFinite( Remaining ) || !NMath::IsFinite( Simulation.Time + Remaining ) ) return;
+	if ( !NMath::IsFinite( Remaining ) || !NMath::IsFinite( Simulation.Time + Remaining ) )
+	{
+		return;
+	}
 	const float32 Duration = NMath::Max( Sanitize( Effect.Duration ), 0.0f );
 	for ( int32 Wrap = 0; Remaining > 0.0f && Wrap < MaxWrapsPerAdvance; ++Wrap )
 	{
@@ -329,7 +392,10 @@ void NParticle::Advance( FParticleSimulation& Simulation, float32 DeltaTime )
 		}
 		StepOnce( Simulation, Step );
 		Remaining -= Step;
-		if ( !bWrap ) break;
+		if ( !bWrap )
+		{
+			break;
+		}
 		if ( Simulation.bLoop )
 		{
 			Simulation.Time = 0.0f;
@@ -339,7 +405,10 @@ void NParticle::Advance( FParticleSimulation& Simulation, float32 DeltaTime )
 				Emitter.BurstsDone = 0;
 			}
 		}
-		else Simulation.bEmitting = false;
+		else
+		{
+			Simulation.bEmitting = false;
+		}
 	}
 }
 
@@ -348,14 +417,20 @@ void NParticle::Stop( FParticleSimulation& Simulation, bool bImmediate )
 	Simulation.bEmitting = false;
 	if ( bImmediate )
 	{
-		for ( FParticleEmitterState& Emitter : Simulation.Emitters ) Emitter.Particles.Reset();
+		for ( FParticleEmitterState& Emitter : Simulation.Emitters )
+		{
+			Emitter.Particles.Reset();
+		}
 	}
 }
 
 void NParticle::CollectDrawParticles( const FParticleSimulation& Simulation, TArray<FDrawParticle>& Out )
 {
 	Out.Reset();
-	if ( !Simulation.Definition.IsValid() ) return;
+	if ( !Simulation.Definition.IsValid() )
+	{
+		return;
+	}
 	const FParticleEffectDefinition& Effect = *Simulation.Definition;
 	for ( int32 i = 0; i < Simulation.Emitters.Num() && i < Effect.Emitters.Num(); ++i )
 	{
@@ -366,7 +441,10 @@ void NParticle::CollectDrawParticles( const FParticleSimulation& Simulation, TAr
 			const float32 T = NMath::Clamp( P.Age / P.Lifetime, 0.0f, 1.0f );
 			FDrawParticle Item;
 			Item.Position = bLocal ? Simulation.Transform.Position + Simulation.Transform.Rotation.Rotate( P.Position ) : P.Position;
-			if ( Def.Appearance.Size.Keys.IsEmpty() ) Item.Size = Lerp( P.StartSize, P.EndSize, T );
+			if ( Def.Appearance.Size.Keys.IsEmpty() )
+			{
+				Item.Size = Lerp( P.StartSize, P.EndSize, T );
+			}
 			else
 			{
 				// 有効な大きさ曲線だけを適用し、巨大値や非有限値を描画へ渡さない。
@@ -379,7 +457,10 @@ void NParticle::CollectDrawParticles( const FParticleSimulation& Simulation, TAr
 				Item.Size = static_cast<float32>( NMath::IsFinite( ScaledSize ) ? NMath::Clamp( ScaledSize, 0.0, 1000000.0 ) : 0.0 );
 			}
 			Item.Angle = P.Angle;
-			if ( Def.Appearance.Color.Keys.IsEmpty() ) Item.Color = FColor32( ToByte( Lerp( Def.StartColor.r, Def.EndColor.r, T ) ), ToByte( Lerp( Def.StartColor.g, Def.EndColor.g, T ) ), ToByte( Lerp( Def.StartColor.b, Def.EndColor.b, T ) ), ToByte( Lerp( Def.StartColor.a, Def.EndColor.a, T ) ) );
+			if ( Def.Appearance.Color.Keys.IsEmpty() )
+			{
+				Item.Color = FColor32( ToByte( Lerp( Def.StartColor.r, Def.EndColor.r, T ) ), ToByte( Lerp( Def.StartColor.g, Def.EndColor.g, T ) ), ToByte( Lerp( Def.StartColor.b, Def.EndColor.b, T ) ), ToByte( Lerp( Def.StartColor.a, Def.EndColor.a, T ) ) );
+			}
 			else
 			{
 				// 基準 RGBA を丸める前に各色倍率を掛け、一度だけ byte 化する。

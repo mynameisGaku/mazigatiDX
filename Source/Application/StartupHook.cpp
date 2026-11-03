@@ -18,7 +18,10 @@ namespace NStartupHook
 	// 起動時に呼ぶ関数を追加する。
 	void Add( FHook Hook )
 	{
-		if ( Hook != nullptr ) GetHooks().Add( Hook );
+		if ( Hook != nullptr )
+		{
+			GetHooks().Add( Hook );
+		}
 	}
 
 	// 追加された関数を順に呼ぶ。最初のシーンを選んだものがあれば true。
@@ -27,7 +30,10 @@ namespace NStartupHook
 		bool bSelectedFirstScene = false;
 		for ( const FHook Hook : GetHooks() )
 		{
-			if ( Hook( Scenes ) ) bSelectedFirstScene = true;
+			if ( Hook( Scenes ) )
+			{
+				bSelectedFirstScene = true;
+			}
 		}
 		return bSelectedFirstScene;
 	}

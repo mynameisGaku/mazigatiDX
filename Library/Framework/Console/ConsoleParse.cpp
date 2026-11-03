@@ -19,8 +19,14 @@ namespace
 		int32 i = Start;
 		while ( i < Length )
 		{
-			while ( i < Length && IsSpace( Text[i] ) ) ++i;
-			if ( i >= Length ) break;
+			while ( i < Length && IsSpace( Text[i] ) )
+			{
+				++i;
+			}
+			if ( i >= Length )
+			{
+				break;
+			}
 			if ( Text[i] == ';' )
 			{
 				OutEnd = i;
@@ -32,7 +38,10 @@ namespace
 			while ( i < Length )
 			{
 				const unsigned char Ch = static_cast<unsigned char>( Text[i] );
-				if ( IsSpace( static_cast<char>( Ch ) ) || Ch == ';' ) break;
+				if ( IsSpace( static_cast<char>( Ch ) ) || Ch == ';' )
+				{
+					break;
+				}
 
 				if ( Ch == '"' )
 				{
@@ -44,11 +53,26 @@ namespace
 						if ( Inner == '\\' && i + 1 < Length )
 						{
 							const char Next = Text[i + 1];
-							if ( Next == '"' ) { Token.Value += '"'; i += 2; }
-							else if ( Next == '\\' ) { Token.Value += '\\'; i += 2; }
-							else if ( Next == 'n' ) { Token.Value += '\n'; i += 2; }
-							else if ( Next == 't' ) { Token.Value += '\t'; i += 2; }
-							else { Token.Value += '\\'; ++i; }   // それ以外は、\ をそのまま残す（"C:\dir"）
+							if ( Next == '"' )
+							{
+								Token.Value += '"'; i += 2;
+							}
+							else if ( Next == '\\' )
+							{
+								Token.Value += '\\'; i += 2;
+							}
+							else if ( Next == 'n' )
+							{
+								Token.Value += '\n'; i += 2;
+							}
+							else if ( Next == 't' )
+							{
+								Token.Value += '\t'; i += 2;
+							}
+							else
+							{
+								Token.Value += '\\'; ++i;
+							}   // それ以外は、\ をそのまま残す（"C:\dir"）
 						}
 						else if ( Inner == '"' )
 						{
@@ -123,7 +147,10 @@ TArray<FString> NConsole::SplitCommands( const FString& Line )
 {
 	TArray<FString> Commands;
 	const FString Trimmed = Line.TrimStartAndEnd();
-	if ( Trimmed.IsEmpty() || Trimmed.StartsWith( "#" ) || Trimmed.StartsWith( "//" ) ) return Commands;
+	if ( Trimmed.IsEmpty() || Trimmed.StartsWith( "#" ) || Trimmed.StartsWith( "//" ) )
+	{
+		return Commands;
+	}
 
 	int32 Start = 0;
 	while ( Start <= Line.Len() )
@@ -132,8 +159,14 @@ TArray<FString> NConsole::SplitCommands( const FString& Line )
 		int32 End = 0;
 		Scan( Line, Start, Ignored, End );
 		const FString Segment = Line.Mid( Start, End - Start ).TrimStartAndEnd();
-		if ( !Segment.IsEmpty() ) Commands.Add( Segment );
-		if ( End >= Line.Len() ) break;
+		if ( !Segment.IsEmpty() )
+		{
+			Commands.Add( Segment );
+		}
+		if ( End >= Line.Len() )
+		{
+			break;
+		}
 		Start = End + 1;
 	}
 	return Commands;
@@ -147,17 +180,35 @@ FString NConsole::Quote( const FString& Text )
 		const unsigned char Ch = static_cast<unsigned char>( Text[i] );
 		bNeedsQuote = IsSpace( static_cast<char>( Ch ) ) || Ch == '"' || Ch == '\'' || Ch == ';' || Ch == '\n';
 	}
-	if ( !bNeedsQuote ) return Text;
+	if ( !bNeedsQuote )
+	{
+		return Text;
+	}
 
 	FString Result = "\"";
 	for ( int32 i = 0; i < Text.Len(); ++i )
 	{
 		const unsigned char Ch = static_cast<unsigned char>( Text[i] );
-		if ( Ch == '"' ) Result += "\\\"";
-		else if ( Ch == '\\' ) Result += "\\\\";
-		else if ( Ch == '\n' ) Result += "\\n";
-		else if ( Ch == '\t' ) Result += "\\t";
-		else Result += static_cast<char>( Ch );
+		if ( Ch == '"' )
+		{
+			Result += "\\\"";
+		}
+		else if ( Ch == '\\' )
+		{
+			Result += "\\\\";
+		}
+		else if ( Ch == '\n' )
+		{
+			Result += "\\n";
+		}
+		else if ( Ch == '\t' )
+		{
+			Result += "\\t";
+		}
+		else
+		{
+			Result += static_cast<char>( Ch );
+		}
 	}
 	Result += "\"";
 	return Result;
@@ -175,7 +226,10 @@ NConsole::FInputAnalysis NConsole::AnalyzeInput( const FString& Line )
 		Tokens.Empty();
 		int32 End = 0;
 		Scan( Line, Start, Tokens, End );
-		if ( End >= Line.Len() ) break;
+		if ( End >= Line.Len() )
+		{
+			break;
+		}
 		Start = End + 1;
 	}
 
@@ -187,7 +241,10 @@ NConsole::FInputAnalysis NConsole::AnalyzeInput( const FString& Line )
 		const bool bOpen = !Last.bTerminated;
 		const bool bTyping = bOpen || Last.End >= Line.Len();   // 最後の引数のすぐ後ろで入力が終わっている（空白が続いていない）
 		const int32 NumDone = bTyping ? NumTokens - 1 : NumTokens;
-		for ( int32 i = 0; i < NumDone; ++i ) Analysis.Tokens.Add( Tokens[i].Value );
+		for ( int32 i = 0; i < NumDone; ++i )
+		{
+			Analysis.Tokens.Add( Tokens[i].Value );
+		}
 		if ( bTyping )
 		{
 			Analysis.CurrentPrefix = Last.Value;

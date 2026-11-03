@@ -156,7 +156,10 @@ uint32 FRigidBody::GetCollisionLayer() const
 
 bool FRigidBody::SetCollisionLayer( uint32 Layer )
 {
-	if ( !NCollisionLayer::IsValid( Layer ) ) return false;
+	if ( !NCollisionLayer::IsValid( Layer ) )
+	{
+		return false;
+	}
 
 	JPH::BodyInterface& Interface = GetBodyInterface();
 	Interface.SetObjectLayer( BodyID, NPhysics::ToPhysObjectLayer( BodyType, Layer ) );

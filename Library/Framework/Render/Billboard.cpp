@@ -6,10 +6,16 @@
 
 bool FBillboard::SetRect( int32 X, int32 Y, int32 Width, int32 Height )
 {
-	if ( !Texture.IsValid() ) return false;
+	if ( !Texture.IsValid() )
+	{
+		return false;
+	}
 	const int32 TextureWidth = Texture->GetWidth();
 	const int32 TextureHeight = Texture->GetHeight();
-	if ( TextureWidth <= 0 || TextureHeight <= 0 || Width <= 0 || Height <= 0 ) return false;
+	if ( TextureWidth <= 0 || TextureHeight <= 0 || Width <= 0 || Height <= 0 )
+	{
+		return false;
+	}
 	U0 = static_cast<float32>( X ) / static_cast<float32>( TextureWidth );
 	V0 = static_cast<float32>( Y ) / static_cast<float32>( TextureHeight );
 	U1 = static_cast<float32>( X + Width ) / static_cast<float32>( TextureWidth );
@@ -27,7 +33,10 @@ void FBillboard::ResetRect()
 
 void FBillboard::Record( FDrawContext& Draw, const FTransform& World ) const
 {
-	if ( !bVisible || !Texture.IsValid() || Texture->GetHandle() < 0 ) return;
+	if ( !bVisible || !Texture.IsValid() || Texture->GetHandle() < 0 )
+	{
+		return;
+	}
 
 	FDrawQuad3DData Data;
 	Data.Pos[0] = World.Position.x;

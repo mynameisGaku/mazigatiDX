@@ -10,7 +10,10 @@ FContactListenerRegistry::FEntry* FContactListenerRegistry::FindLive( const IPhy
 {
 	for ( const TUniquePtr<FEntry>& Entry : Entries )
 	{
-		if ( Entry->Listener == &Listener ) return Entry.Get();
+		if ( Entry->Listener == &Listener )
+		{
+			return Entry.Get();
+		}
 	}
 	return nullptr;
 }
@@ -37,7 +40,10 @@ void FContactListenerRegistry::Remove( IPhysicsContactListener& Listener )
 	for ( int32 Index = 0; Index < Entries.Num(); ++Index )
 	{
 		FEntry& Entry = *Entries[Index];
-		if ( Entry.Listener != &Listener ) continue;
+		if ( Entry.Listener != &Listener )
+		{
+			continue;
+		}
 
 		--LiveCount;
 		if ( DispatchDepth > 0 )
@@ -58,29 +64,44 @@ void FContactListenerRegistry::Remove( IPhysicsContactListener& Listener )
 int32 FContactListenerRegistry::NumPairs() const
 {
 	int32 Total = 0;
-	for ( const TUniquePtr<FEntry>& Entry : Entries ) Total += Entry->Pairs.Num();
+	for ( const TUniquePtr<FEntry>& Entry : Entries )
+	{
+		Total += Entry->Pairs.Num();
+	}
 	return Total;
 }
 
 void FContactListenerRegistry::ResetPairs()
 {
-	for ( TUniquePtr<FEntry>& Entry : Entries ) Entry->Pairs.Reset();
+	for ( TUniquePtr<FEntry>& Entry : Entries )
+	{
+		Entry->Pairs.Reset();
+	}
 }
 
 void FContactListenerRegistry::ForgetPair( uint32 KeyA, uint32 KeyB )
 {
 	const uint64 PairKey = NContactRules::MakePairKey( KeyA, KeyB );
-	for ( TUniquePtr<FEntry>& Entry : Entries ) Entry->Pairs.Remove( PairKey );
+	for ( TUniquePtr<FEntry>& Entry : Entries )
+	{
+		Entry->Pairs.Remove( PairKey );
+	}
 }
 
 void FContactListenerRegistry::BeginDispatch()
 {
-	if ( DispatchDepth++ == 0 ) DispatchLimit = Entries.Num();
+	if ( DispatchDepth++ == 0 )
+	{
+		DispatchLimit = Entries.Num();
+	}
 }
 
 void FContactListenerRegistry::EndDispatch()
 {
-	if ( --DispatchDepth > 0 ) return;
+	if ( --DispatchDepth > 0 )
+	{
+		return;
+	}
 
 	DispatchLimit = 0;
 	if ( bNeedsCompact )
@@ -99,17 +120,29 @@ void FContactListenerRegistry::DeliverContact( const CPhysicsSystem& System, ECo
 	for ( int32 Index = 0; Index < DispatchLimit; ++Index )
 	{
 		FEntry& Entry = *Entries[Index];
-		if ( Entry.Listener == nullptr ) continue;
-		if ( Signal == EContactSignal::Persisted && !Entry.bPersisted ) continue;
+		if ( Entry.Listener == nullptr )
+		{
+			continue;
+		}
+		if ( Signal == EContactSignal::Persisted && !Entry.bPersisted )
+		{
+			continue;
+		}
 
 		if ( bStale )
 		{
 			BodyA = System.FindBody( PhysBodyID( KeyA ) );
 			BodyB = System.FindBody( PhysBodyID( KeyB ) );
-			if ( BodyA == nullptr || BodyB == nullptr ) return;
+			if ( BodyA == nullptr || BodyB == nullptr )
+			{
+				return;
+			}
 			bStale = false;
 		}
-		if ( !NContactRules::Accepts( Entry.bHasBody, Entry.BodyKey, Entry.LayerMask, KeyA, BodyA->GetCollisionLayer(), KeyB, BodyB->GetCollisionLayer() ) ) continue;
+		if ( !NContactRules::Accepts( Entry.bHasBody, Entry.BodyKey, Entry.LayerMask, KeyA, BodyA->GetCollisionLayer(), KeyB, BodyB->GetCollisionLayer() ) )
+		{
+			continue;
+		}
 
 		switch ( Signal )
 		{
@@ -131,7 +164,10 @@ void FContactListenerRegistry::DeliverBodyBegin( const CPhysicsSystem& System, u
 	for ( int32 Index = 0; Index < DispatchLimit; ++Index )
 	{
 		FEntry& Entry = *Entries[Index];
-		if ( Entry.Listener == nullptr ) continue;
+		if ( Entry.Listener == nullptr )
+		{
+			continue;
+		}
 
 		if ( bStale )
 		{
@@ -154,7 +190,10 @@ void FContactListenerRegistry::DeliverBodyBegin( const CPhysicsSystem& System, u
 			State->AwakeSteps = 0;
 			continue;
 		}
-		if ( !NContactRules::Accepts( Entry.bHasBody, Entry.BodyKey, Entry.LayerMask, KeyA, BodyA->GetCollisionLayer(), KeyB, BodyB->GetCollisionLayer() ) ) continue;
+		if ( !NContactRules::Accepts( Entry.bHasBody, Entry.BodyKey, Entry.LayerMask, KeyA, BodyA->GetCollisionLayer(), KeyB, BodyB->GetCollisionLayer() ) )
+		{
+			continue;
+		}
 
 		FPairState NewState;
 		NewState.Parts     = 1;
@@ -176,11 +215,20 @@ void FContactListenerRegistry::DeliverBodyEnd( const CPhysicsSystem& System, uin
 	for ( int32 Index = 0; Index < DispatchLimit; ++Index )
 	{
 		FEntry& Entry = *Entries[Index];
-		if ( Entry.Listener == nullptr ) continue;
+		if ( Entry.Listener == nullptr )
+		{
+			continue;
+		}
 
 		FPairState* State = Entry.Pairs.Find( PairKey );
-		if ( State == nullptr || State->Parts <= 0 ) continue;  // 登録の前から続いていた接触、破棄で記録を捨てた組、眠って途切れている組
-		if ( --State->Parts > 0 ) continue;
+		if ( State == nullptr || State->Parts <= 0 )
+		{
+			continue;  // 登録の前から続いていた接触、破棄で記録を捨てた組、眠って途切れている組
+		}
+		if ( --State->Parts > 0 )
+		{
+			continue;
+		}
 
 		if ( bStale )
 		{
@@ -213,7 +261,10 @@ void FContactListenerRegistry::DeliverWakeCheck( const CPhysicsSystem& System )
 	for ( int32 Index = 0; Index < DispatchLimit; ++Index )
 	{
 		FEntry& Entry = *Entries[Index];
-		if ( Entry.Listener == nullptr || !Entry.bMaybeSuspended ) continue;
+		if ( Entry.Listener == nullptr || !Entry.bMaybeSuspended )
+		{
+			continue;
+		}
 
 		// 通知の中で組の表が変わりうるので、先に集めてから配る
 		TArray<uint64> Gone;
@@ -221,7 +272,10 @@ void FContactListenerRegistry::DeliverWakeCheck( const CPhysicsSystem& System )
 		bool bStillSuspended = false;
 		for ( auto& Pair : Entry.Pairs )
 		{
-			if ( Pair.Value.Parts > 0 ) continue;
+			if ( Pair.Value.Parts > 0 )
+			{
+				continue;
+			}
 
 			const FRigidBody* BodyA = System.FindBody( PhysBodyID( Pair.Value.FirstKey ) );
 			const FRigidBody* BodyB = System.FindBody( PhysBodyID( Pair.Value.SecondKey ) );
@@ -236,23 +290,38 @@ void FContactListenerRegistry::DeliverWakeCheck( const CPhysicsSystem& System )
 				bStillSuspended = true;
 				continue;
 			}
-			if ( ++Pair.Value.AwakeSteps >= WakeGraceSteps ) Ready.Add( Pair.Key );
-			else bStillSuspended = true;
+			if ( ++Pair.Value.AwakeSteps >= WakeGraceSteps )
+			{
+				Ready.Add( Pair.Key );
+			}
+			else
+			{
+				bStillSuspended = true;
+			}
 		}
 		Entry.bMaybeSuspended = bStillSuspended;
 
-		for ( const uint64 Key : Gone ) Entry.Pairs.Remove( Key );
+		for ( const uint64 Key : Gone )
+		{
+			Entry.Pairs.Remove( Key );
+		}
 		for ( const uint64 Key : Ready )
 		{
 			const FPairState* State = Entry.Pairs.Find( Key );
-			if ( Entry.Listener == nullptr || State == nullptr || State->Parts > 0 ) continue;  // 通知の中で、解除・破棄・接触のやり直しがあった
+			if ( Entry.Listener == nullptr || State == nullptr || State->Parts > 0 )
+			{
+				continue;  // 通知の中で、解除・破棄・接触のやり直しがあった
+			}
 
 			const uint32 FirstKey  = State->FirstKey;
 			const uint32 SecondKey = State->SecondKey;
 			Entry.Pairs.Remove( Key );
 			FRigidBody* BodyA = System.FindBody( PhysBodyID( FirstKey ) );
 			FRigidBody* BodyB = System.FindBody( PhysBodyID( SecondKey ) );
-			if ( BodyA == nullptr || BodyB == nullptr ) continue;
+			if ( BodyA == nullptr || BodyB == nullptr )
+			{
+				continue;
+			}
 			Entry.Listener->OnBodyContactEnd( BodyA, BodyB );
 		}
 	}

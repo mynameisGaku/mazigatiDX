@@ -13,7 +13,10 @@ namespace
 	// 入力欄を離れたときに履歴sessionを閉じる。
 	bool TrackMeshInputEnd( bool bChanged, TParticleEffectDocument& Document )
 	{
-		if ( ImGui::IsItemDeactivatedAfterEdit() ) Document.EndEditSession();
+		if ( ImGui::IsItemDeactivatedAfterEdit() )
+		{
+			Document.EndEditSession();
+		}
 		return bChanged;
 	}
 
@@ -54,7 +57,10 @@ bool NEffectEditorUI::DrawMeshPanel( FEffectEditorState& State, FParticleEmitter
 		Mesh.Kind = static_cast<FEffectMeshDefinition::EKind>( Kind );
 		bChanged = true;
 	}
-	if ( Mesh.Kind == FEffectMeshDefinition::EKind::None ) return bChanged;
+	if ( Mesh.Kind == FEffectMeshDefinition::EKind::None )
+	{
+		return bChanged;
+	}
 	if ( Mesh.Kind == FEffectMeshDefinition::EKind::Ring )
 	{
 		// 分割数はRing形状だけで編集し、Planeへ切り替えても値を保持する。
@@ -63,15 +69,30 @@ bool NEffectEditorUI::DrawMeshPanel( FEffectEditorState& State, FParticleEmitter
 		bChanged |= TrackMeshInputEnd( ImGui::DragFloat( "Ring inner radius", &Mesh.InnerRadius, 0.005f, 0.05f, 0.95f, "%.3f", ImGuiSliderFlags_AlwaysClamp ), State.Document );
 	}
 	// 固定形状の角度を編集する前に有限値を保証する。
-	if ( NMath::IsFinite( Mesh.RotationDegrees.x ) && NMath::IsFinite( Mesh.RotationDegrees.y ) && NMath::IsFinite( Mesh.RotationDegrees.z ) ) bChanged |= TrackMeshInputEnd( ImGui::DragFloat3( "Mesh rotation (deg)", &Mesh.RotationDegrees.x, 0.25f, -360000.0f, 360000.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp ), State.Document );
-	else TextMeshWarning( "Mesh rotation is invalid; reset mesh to repair it." );
+	if ( NMath::IsFinite( Mesh.RotationDegrees.x ) && NMath::IsFinite( Mesh.RotationDegrees.y ) && NMath::IsFinite( Mesh.RotationDegrees.z ) )
+	{
+		bChanged |= TrackMeshInputEnd( ImGui::DragFloat3( "Mesh rotation (deg)", &Mesh.RotationDegrees.x, 0.25f, -360000.0f, 360000.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp ), State.Document );
+	}
+	else
+	{
+		TextMeshWarning( "Mesh rotation is invalid; reset mesh to repair it." );
+	}
 	ImGui::TextWrapped( "Mesh keeps a fixed world-facing shape; particle Orientation is ignored. Particle size, spin and effect rotation still apply." );
 	ImGui::TextDisabled( "Only the first 64 mesh particles per playback are recorded, in emitter and spawn order." );
 	ImGui::TextDisabled( "Enabled material uses its curves, scroll, dissolve and distortion; disabled material uses neutral unlit values." );
-	if ( Emitter.Path.Kind != FEffectPathDefinition::EKind::None ) TextMeshWarning( "Mesh and Path cannot be used together. Set Path kind to None to use this mesh." );
-	if ( Emitter.Flipbook.bEnabled ) TextMeshWarning( "Mesh and Flipbook cannot be used together. Disable Flipbook to use this mesh." );
+	if ( Emitter.Path.Kind != FEffectPathDefinition::EKind::None )
+	{
+		TextMeshWarning( "Mesh and Path cannot be used together. Set Path kind to None to use this mesh." );
+	}
+	if ( Emitter.Flipbook.bEnabled )
+	{
+		TextMeshWarning( "Mesh and Flipbook cannot be used together. Disable Flipbook to use this mesh." );
+	}
 	// mesh命令の描画実装が接続されているか確認する。
 	IDrawExecutor* Executor = GetAppSubsystem<IDrawExecutor>();
-	if ( Executor == nullptr || !Executor->SupportsEffectMaterialMesh() ) TextMeshWarning( "The active renderer does not support material mesh particles; mesh particles are not drawn." );
+	if ( Executor == nullptr || !Executor->SupportsEffectMaterialMesh() )
+	{
+		TextMeshWarning( "The active renderer does not support material mesh particles; mesh particles are not drawn." );
+	}
 	return bChanged;
 }

@@ -30,7 +30,10 @@ bool FImGuiPropertyInspector::Float( const char* Label, float32& Value )
 bool FImGuiPropertyInspector::Vector3( const char* Label, FVector3& Value )
 {
 	float Values[3] = { Value.x, Value.y, Value.z };
-	if ( !ImGui::DragFloat3( Label, Values, 0.01f ) ) return false;
+	if ( !ImGui::DragFloat3( Label, Values, 0.01f ) )
+	{
+		return false;
+	}
 	Value = FVector3( Values[0], Values[1], Values[2] );
 	return true;
 }
@@ -58,10 +61,16 @@ void NDebugUI::DrawGameObject( CGameObject& Object )
 	const bool bHasComponents = Object.GetNumComponents() > 0;
 
 	ImGuiTreeNodeFlags Flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
-	if ( Object.IsPendingDestroy() ) ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.6f, 0.6f, 0.6f, 1.0f ) );
+	if ( Object.IsPendingDestroy() )
+	{
+		ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.6f, 0.6f, 0.6f, 1.0f ) );
+	}
 	const bool bOpen = ImGui::TreeNodeEx( "##Object", Flags, "%s%s%s", *Label,
 										  bHasComponents ? "  [C]" : "", bHasChildren ? "  [+]" : "" );
-	if ( Object.IsPendingDestroy() ) ImGui::PopStyleColor();
+	if ( Object.IsPendingDestroy() )
+	{
+		ImGui::PopStyleColor();
+	}
 
 	if ( bOpen )
 	{
@@ -83,7 +92,10 @@ void NDebugUI::DrawGameObject( CGameObject& Object )
 
 		// 子オブジェクト（表示中に配列が変わらないようコピーしてから回す）
 		const TArray<CGameObject*> Children = Object.GetChildren();
-		for ( CGameObject* Child : Children ) DrawGameObject( *Child );
+		for ( CGameObject* Child : Children )
+		{
+			DrawGameObject( *Child );
+		}
 
 		ImGui::TreePop();
 	}
@@ -93,12 +105,18 @@ void NDebugUI::DrawGameObject( CGameObject& Object )
 
 void NDebugUI::DrawSceneHierarchy( CScene& Scene )
 {
-	for ( CGameObject* Root : Scene.GetRootObjects() ) DrawGameObject( *Root );
+	for ( CGameObject* Root : Scene.GetRootObjects() )
+	{
+		DrawGameObject( *Root );
+	}
 }
 
 void NDebugUI::DrawSubsystems( const char* Label, const FSubsystemCollection& Subsystems )
 {
-	if ( !ImGui::TreeNode( Label, "%s (%d)", Label, Subsystems.GetAll().Num() ) ) return;
+	if ( !ImGui::TreeNode( Label, "%s (%d)", Label, Subsystems.GetAll().Num() ) )
+	{
+		return;
+	}
 
 	for ( CSubsystem* Subsystem : Subsystems.GetAll() )
 	{

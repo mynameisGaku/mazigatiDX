@@ -29,7 +29,10 @@ FVector3 FPhysicsCharacter::GetPosition() const
 
 bool FPhysicsCharacter::SetPosition( const FVector3& Position )
 {
-	if ( Character == nullptr || !NPhysicsInput::IsFiniteVector( Position ) ) return false;
+	if ( Character == nullptr || !NPhysicsInput::IsFiniteVector( Position ) )
+	{
+		return false;
+	}
 
 	Character->SetPosition( NPhysics::ToPhysR( Position ) );
 	Owner->RefreshCharacter( *this );  // 新しい場所で何かの上に立っているか、すぐ分かるようにする
@@ -38,7 +41,10 @@ bool FPhysicsCharacter::SetPosition( const FVector3& Position )
 
 bool FPhysicsCharacter::SetMoveVelocity( const FVector3& Velocity )
 {
-	if ( Character == nullptr || !NPhysicsInput::IsFiniteVector( Velocity ) ) return false;
+	if ( Character == nullptr || !NPhysicsInput::IsFiniteVector( Velocity ) )
+	{
+		return false;
+	}
 
 	MoveVelocity = FVector3( Velocity.x, 0.0f, Velocity.z );
 	return true;
@@ -51,7 +57,10 @@ FVector3 FPhysicsCharacter::GetVelocity() const
 
 bool FPhysicsCharacter::Jump( float32 Speed )
 {
-	if ( Character == nullptr || !NMath::IsFinite( Speed ) || Speed <= 0.0f || !IsOnGround() ) return false;
+	if ( Character == nullptr || !NMath::IsFinite( Speed ) || Speed <= 0.0f || !IsOnGround() )
+	{
+		return false;
+	}
 
 	bJumpRequested = true;
 	JumpSpeed      = Speed;
@@ -64,7 +73,10 @@ bool FPhysicsCharacter::Jump( float32 Speed )
 
 ECharacterGroundState FPhysicsCharacter::GetGroundState() const
 {
-	if ( Character == nullptr ) return ECharacterGroundState::InAir;
+	if ( Character == nullptr )
+	{
+		return ECharacterGroundState::InAir;
+	}
 
 	switch ( Character->GetGroundState() )
 	{
@@ -97,14 +109,20 @@ FRigidBody* FPhysicsCharacter::GetGroundBody() const
 
 bool FPhysicsCharacter::SetHeight( float32 Height )
 {
-	if ( Character == nullptr || !NCharacterRules::IsValidShape( Settings.Radius, Height ) ) return false;
+	if ( Character == nullptr || !NCharacterRules::IsValidShape( Settings.Radius, Height ) )
+	{
+		return false;
+	}
 
 	return Owner->ChangeCharacterHeight( *this, Height );
 }
 
 bool FPhysicsCharacter::SetMaxSlopeAngle( float32 Angle )
 {
-	if ( Character == nullptr || !NCharacterRules::IsValidSlopeAngle( Angle ) ) return false;
+	if ( Character == nullptr || !NCharacterRules::IsValidSlopeAngle( Angle ) )
+	{
+		return false;
+	}
 
 	Character->SetMaxSlopeAngle( Angle );
 	Settings.MaxSlopeAngle = Angle;
@@ -113,7 +131,10 @@ bool FPhysicsCharacter::SetMaxSlopeAngle( float32 Angle )
 
 bool FPhysicsCharacter::SetStepHeight( float32 Height )
 {
-	if ( Character == nullptr || !NCharacterRules::IsFiniteNonNegative( Height ) ) return false;
+	if ( Character == nullptr || !NCharacterRules::IsFiniteNonNegative( Height ) )
+	{
+		return false;
+	}
 
 	Settings.StepHeight = Height;
 	return true;
@@ -121,7 +142,10 @@ bool FPhysicsCharacter::SetStepHeight( float32 Height )
 
 bool FPhysicsCharacter::SetStickToFloorDistance( float32 Distance )
 {
-	if ( Character == nullptr || !NCharacterRules::IsFiniteNonNegative( Distance ) ) return false;
+	if ( Character == nullptr || !NCharacterRules::IsFiniteNonNegative( Distance ) )
+	{
+		return false;
+	}
 
 	Settings.StickToFloorDistance = Distance;
 	return true;
@@ -129,7 +153,10 @@ bool FPhysicsCharacter::SetStickToFloorDistance( float32 Distance )
 
 bool FPhysicsCharacter::SetMass( float32 Mass )
 {
-	if ( Character == nullptr || !NCharacterRules::IsFiniteNonNegative( Mass ) ) return false;
+	if ( Character == nullptr || !NCharacterRules::IsFiniteNonNegative( Mass ) )
+	{
+		return false;
+	}
 
 	Character->SetMass( Mass );
 	Settings.Mass = Mass;
@@ -138,7 +165,10 @@ bool FPhysicsCharacter::SetMass( float32 Mass )
 
 bool FPhysicsCharacter::SetMaxPushForce( float32 Force )
 {
-	if ( Character == nullptr || !NCharacterRules::IsFiniteNonNegative( Force ) ) return false;
+	if ( Character == nullptr || !NCharacterRules::IsFiniteNonNegative( Force ) )
+	{
+		return false;
+	}
 
 	Character->SetMaxStrength( Force );
 	Settings.MaxPushForce = Force;
@@ -147,7 +177,10 @@ bool FPhysicsCharacter::SetMaxPushForce( float32 Force )
 
 bool FPhysicsCharacter::SetGravityFactor( float32 Factor )
 {
-	if ( Character == nullptr || !NMath::IsFinite( Factor ) ) return false;
+	if ( Character == nullptr || !NMath::IsFinite( Factor ) )
+	{
+		return false;
+	}
 
 	Settings.GravityFactor = Factor;
 	return true;
@@ -155,9 +188,15 @@ bool FPhysicsCharacter::SetGravityFactor( float32 Factor )
 
 bool FPhysicsCharacter::SetCollisionLayer( uint32 Layer )
 {
-	if ( Character == nullptr || !NCollisionLayer::IsValid( Layer ) ) return false;
+	if ( Character == nullptr || !NCollisionLayer::IsValid( Layer ) )
+	{
+		return false;
+	}
 
-	if ( Body != nullptr && !Body->SetCollisionLayer( Layer ) ) return false;
+	if ( Body != nullptr && !Body->SetCollisionLayer( Layer ) )
+	{
+		return false;
+	}
 	Settings.CollisionLayer = Layer;
 	return true;
 }

@@ -24,10 +24,16 @@ namespace NPhysicsInput
 	// 零ベクトル・NaN・無限大なら false
 	inline bool NormalizeDirection( const FVector3& Direction, FVector3& OutDirection )
 	{
-		if ( !IsFiniteVector( Direction ) ) return false;
+		if ( !IsFiniteVector( Direction ) )
+		{
+			return false;
+		}
 
 		const float32 Largest = NMath::Max( NMath::Abs( Direction.x ), NMath::Max( NMath::Abs( Direction.y ), NMath::Abs( Direction.z ) ) );
-		if ( Largest < 1.0e-12f ) return false;
+		if ( Largest < 1.0e-12f )
+		{
+			return false;
+		}
 
 		OutDirection = ( Direction / Largest ).Normalized();
 		return true;

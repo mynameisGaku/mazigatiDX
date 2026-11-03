@@ -202,8 +202,14 @@ public:
 		{
 			for ( const FBound& Bound : Entry.Bound )
 			{
-				if ( Bound.Tag != Tag ) continue;
-				if ( TSharedPtr<CGameObject> Object = Bound.Object.Pin(); Object.IsValid() && Object->IsAlive() && Object->template IsA<T>() ) Result.Add( StaticCastSharedPtr<T>( Object ) );
+				if ( Bound.Tag != Tag )
+				{
+					continue;
+				}
+				if ( TSharedPtr<CGameObject> Object = Bound.Object.Pin(); Object.IsValid() && Object->IsAlive() && Object->template IsA<T>() )
+				{
+					Result.Add( StaticCastSharedPtr<T>( Object ) );
+				}
 			}
 		}
 		return Result;

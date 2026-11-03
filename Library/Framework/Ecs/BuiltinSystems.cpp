@@ -38,29 +38,44 @@ void NEcs::RegisterBuiltinSystems( FSystemScheduler& Scheduler )
 
 	Scheduler.AddDraw( "Animation.Sprite.Draw", []( FDrawContext& Draw, const FTransformView& Transform, const FSpriteAnimator& Animator )
 	{
-		if ( Animator.bAutoDraw ) Animator.RecordAt( Draw, Transform );
+		if ( Animator.bAutoDraw )
+		{
+			Animator.RecordAt( Draw, Transform );
+		}
 	} );
 	Scheduler.AddDraw( "Animation.Model.Draw", []( FDrawContext& Draw, const FTransformView& Transform, const FModelAnimator& Animator )
 	{
-		if ( Animator.bAutoDraw ) Animator.RecordAt( Draw, Transform );
+		if ( Animator.bAutoDraw )
+		{
+			Animator.RecordAt( Draw, Transform );
+		}
 	} );
 
 	// 画像を貼った四角形（FBillboard）
 	Scheduler.AddDraw( "Render.Billboard.Draw", []( FDrawContext& Draw, const FTransformView& Transform, const FBillboard& Board )
 	{
-		if ( Board.bAutoDraw ) Board.RecordAt( Draw, Transform );
+		if ( Board.bAutoDraw )
+		{
+			Board.RecordAt( Draw, Transform );
+		}
 	} );
 
 	// エフェクト（CEffectComponent が付ける FEffectPlayer）。位置・時間は、コンポーネントの Tick が進めたもの
 	Scheduler.AddDraw( "Effect.Draw", []( FDrawContext& Draw, const FTransformView& Transform, const FEffectPlayer& Player )
 	{
 		(void)Transform;
-		if ( Player.bAutoDraw && Player.Playback.IsValid() ) Player.Playback->Record( Draw );
+		if ( Player.bAutoDraw && Player.Playback.IsValid() )
+		{
+			Player.Playback->Record( Draw );
+		}
 	} );
 
 	// 編集メッシュ（FMeshRenderer）
 	Scheduler.AddDraw( "Render.Mesh.Draw", []( FDrawContext& Draw, const FTransformView& Transform, const FMeshRenderer& Mesh )
 	{
-		if ( Mesh.bAutoDraw ) Mesh.RecordAt( Draw, Transform );
+		if ( Mesh.bAutoDraw )
+		{
+			Mesh.RecordAt( Draw, Transform );
+		}
 	} );
 }

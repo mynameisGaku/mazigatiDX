@@ -14,7 +14,10 @@ bool NSubsystemRegistry::Register()
 	static_assert( bIsDefaultConstructible<T>, "REGISTER_SUBSYSTEM: subsystem must be default constructible" );
 
 	TArray<TEntry<TBase>>& Entries = GetEntries<TBase>();
-	if ( Entries.ContainsByPredicate( []( const TEntry<TBase>& Entry ) { return *Entry.Type == typeid( T ); } ) ) return false;
+	if ( Entries.ContainsByPredicate( []( const TEntry<TBase>& Entry ) { return *Entry.Type == typeid( T ); } ) )
+	{
+		return false;
+	}
 
 	Entries.Add( { &typeid( T ), []() -> TUniquePtr<TBase> { return MakeUnique<T>(); } } );
 	return true;

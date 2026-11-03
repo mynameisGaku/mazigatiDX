@@ -61,7 +61,10 @@ namespace
 					 UI_TEXT( Bytes( Stats.TotalFileBytes ) ) );
 		ImGui::Text( "Loads: %d (%.1f ms total, slowest %.1f ms), %d shared from the cache, %d failed, %d loading now", Stats.NumLoads, Stats.TotalLoadMs, Stats.MaxLoadMs, Stats.NumCacheHits,
 					 Stats.NumLoadFailures, Stats.NumLoading );
-		if ( !Stats.MaxLoadPath.IsEmpty() ) ImGui::TextDisabled( "Slowest: %s", UI_TEXT( Stats.MaxLoadPath ) );
+		if ( !Stats.MaxLoadPath.IsEmpty() )
+		{
+			ImGui::TextDisabled( "Slowest: %s", UI_TEXT( Stats.MaxLoadPath ) );
+		}
 		if ( Stats.Backend.VideoMemoryTotal > 0 )
 		{
 			const float Fraction = static_cast<float>( static_cast<double>( Stats.Backend.VideoMemoryUsed ) / static_cast<double>( Stats.Backend.VideoMemoryTotal ) );
@@ -100,9 +103,15 @@ namespace
 			ImGui::EndTable();
 		}
 
-		if ( ImGui::Button( "Release unused" ) ) Assets->ReleaseUnused();
+		if ( ImGui::Button( "Release unused" ) )
+		{
+			Assets->ReleaseUnused();
+		}
 		ImGui::SameLine();
-		if ( ImGui::Button( "Print to log" ) ) Assets->DumpToLog();
+		if ( ImGui::Button( "Print to log" ) )
+		{
+			Assets->DumpToLog();
+		}
 		ImGui::SameLine();
 		if ( ImGui::Button( "Export models to .mv1" ) )
 		{
@@ -110,7 +119,10 @@ namespace
 			State.ExportStatusMessage = ".mv1 export: " + Batch.GetSummary();
 			State.bExportStatusError = Batch.NumFailed > 0;
 		}
-		if ( ImGui::IsItemHovered() ) ImGui::SetTooltip( "Convert any new or modified .fbx / .obj / .x / .pmx / .vmd under the asset root to .mv1." );
+		if ( ImGui::IsItemHovered() )
+		{
+			ImGui::SetTooltip( "Convert any new or modified .fbx / .obj / .x / .pmx / .vmd under the asset root to .mv1." );
+		}
 		ImGui::SameLine();
 		if ( ImGui::Button( "Rebuild all .mv1" ) )
 		{
@@ -127,16 +139,28 @@ namespace
 		(void)TypeLabels;
 		if ( !State.ExportStatusMessage.IsEmpty() )
 		{
-			if ( State.bExportStatusError ) ImGui::TextColored( ImVec4( 1.0f, 0.5f, 0.4f, 1.0f ), "%s", UI_TEXT( State.ExportStatusMessage ) );
-			else ImGui::TextDisabled( "%s", UI_TEXT( State.ExportStatusMessage ) );
+			if ( State.bExportStatusError )
+			{
+				ImGui::TextColored( ImVec4( 1.0f, 0.5f, 0.4f, 1.0f ), "%s", UI_TEXT( State.ExportStatusMessage ) );
+			}
+			else
+			{
+				ImGui::TextDisabled( "%s", UI_TEXT( State.ExportStatusMessage ) );
+			}
 		}
 
 		TArray<FAssetInfo> Infos = Assets->GetLoadedAssets();
 		const FString Filter = State.AssetFilter;
 		Infos.RemoveAll( [&]( const FAssetInfo& Info )
 		{
-			if ( State.AssetTypeFilter > 0 && static_cast<int32>( Info.Type ) != State.AssetTypeFilter - 1 ) return true;
-			if ( !Filter.IsEmpty() && !Info.Path.Contains( Filter, ESearchCase::IgnoreCase ) && !Info.Description.Contains( Filter, ESearchCase::IgnoreCase ) ) return true;
+			if ( State.AssetTypeFilter > 0 && static_cast<int32>( Info.Type ) != State.AssetTypeFilter - 1 )
+			{
+				return true;
+			}
+			if ( !Filter.IsEmpty() && !Info.Path.Contains( Filter, ESearchCase::IgnoreCase ) && !Info.Description.Contains( Filter, ESearchCase::IgnoreCase ) )
+			{
+				return true;
+			}
 			return false;
 		} );
 
@@ -191,7 +215,10 @@ namespace
 					ImGui::TextColored( TypeColor( Info.Type ), "%s", ToString( Info.Type ) );
 					ImGui::TableNextColumn();
 					ImGui::TextUnformatted( UI_TEXT( Info.Path ) );
-					if ( ImGui::IsItemHovered() ) ImGui::SetTooltip( "%s", UI_TEXT( Info.Path ) );
+					if ( ImGui::IsItemHovered() )
+					{
+						ImGui::SetTooltip( "%s", UI_TEXT( Info.Path ) );
+					}
 					ImGui::TableNextColumn();
 					ImGui::Text( "%d", Info.RefCount );
 					ImGui::TableNextColumn();
@@ -234,9 +261,15 @@ namespace
 		ImGui::Text( "%d voice(s) playing%s", Audio->GetNumVoices(), Audio->IsPaused() ? "   (PAUSED)" : "" );
 		ImGui::SameLine();
 		bool bPaused = Audio->IsPaused();
-		if ( ImGui::Checkbox( "Pause all", &bPaused ) ) Audio->SetPaused( bPaused );
+		if ( ImGui::Checkbox( "Pause all", &bPaused ) )
+		{
+			Audio->SetPaused( bPaused );
+		}
 		ImGui::SameLine();
-		if ( ImGui::Button( "Stop all" ) ) Audio->StopAll( 0.2f );
+		if ( ImGui::Button( "Stop all" ) )
+		{
+			Audio->StopAll( 0.2f );
+		}
 
 		// バス
 		ImGui::SeparatorText( "Buses" );
@@ -249,10 +282,16 @@ namespace
 			ImGui::SameLine( 80.0f );
 			float32 Volume = Audio->GetBusVolume( Bus );
 			ImGui::SetNextItemWidth( 220.0f );
-			if ( ImGui::SliderFloat( "##Volume", &Volume, 0.0f, 1.5f, "%.2f" ) ) Audio->SetBusVolume( Bus, Volume );
+			if ( ImGui::SliderFloat( "##Volume", &Volume, 0.0f, 1.5f, "%.2f" ) )
+			{
+				Audio->SetBusVolume( Bus, Volume );
+			}
 			ImGui::SameLine();
 			bool bMuted = Audio->IsBusMuted( Bus );
-			if ( ImGui::Checkbox( "Mute", &bMuted ) ) Audio->SetBusMuted( Bus, bMuted );
+			if ( ImGui::Checkbox( "Mute", &bMuted ) )
+			{
+				Audio->SetBusMuted( Bus, bMuted );
+			}
 			ImGui::PopID();
 		}
 
@@ -296,7 +335,10 @@ namespace
 				ImGui::TableNextColumn();
 				ImGui::Text( "%s%s%s%s", Voice.bLooping ? "loop " : "", Voice.bPaused ? "paused " : "", Voice.bFading ? "fading " : "", Voice.bSpatial ? "3D" : "" );
 				ImGui::TableNextColumn();
-				if ( ImGui::SmallButton( "Stop" ) ) Audio->Stop( Voice.Handle, 0.1f );
+				if ( ImGui::SmallButton( "Stop" ) )
+				{
+					Audio->Stop( Voice.Handle, 0.1f );
+				}
 				ImGui::PopID();
 			}
 			ImGui::EndTable();
@@ -306,14 +348,23 @@ namespace
 
 	bool ContainsToken( const char* List, const char* Token )
 	{
-		if ( List == nullptr || Token == nullptr ) return false;
+		if ( List == nullptr || Token == nullptr )
+		{
+			return false;
+		}
 		const size_t Length = NCString::Length( Token );
 		for ( const char* p = List; *p != '\0'; )
 		{
 			const char* End = NCString::FindChar( p, ',' );
 			const size_t ItemLength = End != nullptr ? static_cast<size_t>( End - p ) : NCString::Length( p );
-			if ( ItemLength == Length && NCString::CompareN( p, Token, Length ) == 0 ) return true;
-			if ( End == nullptr ) break;
+			if ( ItemLength == Length && NCString::CompareN( p, Token, Length ) == 0 )
+			{
+				return true;
+			}
+			if ( End == nullptr )
+			{
+				break;
+			}
 			p = End + 1;
 		}
 		return false;
@@ -343,8 +394,14 @@ void NDebugUI::DrawAssetToolsButtons( FAssetToolsState& State )
 	bool bShowEffect = State.bShowEffectEditor;
 	if ( ImGui::Checkbox( "Effect editor", &bShowEffect ) )
 	{
-		if ( bShowEffect ) State.bShowEffectEditor = true;
-		else NEffectEditorUI::RequestAction( State.EffectEditor, FEffectEditorState::EPending::Close, FString(), &State.bShowEffectEditor );
+		if ( bShowEffect )
+		{
+			State.bShowEffectEditor = true;
+		}
+		else
+		{
+			NEffectEditorUI::RequestAction( State.EffectEditor, FEffectEditorState::EPending::Close, FString(), &State.bShowEffectEditor );
+		}
 	}
 }
 
@@ -357,9 +414,18 @@ void NDebugUI::DrawAssetTools( FAssetToolsState& State )
 	}
 	NDebugUI::TickImGuiTextureCache();
 
-	if ( State.bShowSpriteSheetEditor ) DrawSpriteSheetEditor( State.SpriteSheet, &State.bShowSpriteSheetEditor );
-	if ( State.bShowModelAnimationEditor ) DrawModelAnimationEditor( State.ModelAnimation, &State.bShowModelAnimationEditor );
-	if ( State.bShowEffectEditor ) DrawEffectEditor( State.EffectEditor, &State.bShowEffectEditor );
+	if ( State.bShowSpriteSheetEditor )
+	{
+		DrawSpriteSheetEditor( State.SpriteSheet, &State.bShowSpriteSheetEditor );
+	}
+	if ( State.bShowModelAnimationEditor )
+	{
+		DrawModelAnimationEditor( State.ModelAnimation, &State.bShowModelAnimationEditor );
+	}
+	if ( State.bShowEffectEditor )
+	{
+		DrawEffectEditor( State.EffectEditor, &State.bShowEffectEditor );
+	}
 	// 画面を閉じた後や別の窓口から保存した場合も、更新を一度だけ伝える。
 	if ( State.ObservedEffectSaveSerial != State.EffectEditor.SaveSerial )
 	{
@@ -367,9 +433,18 @@ void NDebugUI::DrawAssetTools( FAssetToolsState& State )
 		++State.WorldEditor.EffectRestartSerial;
 		State.WorldEditor.EffectPreviews.Empty();
 	}
-	if ( State.bShowWorldEditor ) DrawWorldEditor( State.WorldEditor, &State.bShowWorldEditor );
-	if ( State.bShowAssets ) DrawAssetWindow( State, &State.bShowAssets );
-	if ( State.bShowAudio ) DrawAudioWindow( State, &State.bShowAudio );
+	if ( State.bShowWorldEditor )
+	{
+		DrawWorldEditor( State.WorldEditor, &State.bShowWorldEditor );
+	}
+	if ( State.bShowAssets )
+	{
+		DrawAssetWindow( State, &State.bShowAssets );
+	}
+	if ( State.bShowAudio )
+	{
+		DrawAudioWindow( State, &State.bShowAudio );
+	}
 }
 
 void NDebugUI::ApplyAssetToolsCommandLine( FAssetToolsState& State )
@@ -401,14 +476,20 @@ void NDebugUI::ApplyAssetToolsCommandLine( FAssetToolsState& State )
 			Numbers.Add( Left.ToFloat() );
 			Rest = Right;
 		}
-		if ( !Rest.IsEmpty() ) Numbers.Add( Rest.ToFloat() );
+		if ( !Rest.IsEmpty() )
+		{
+			Numbers.Add( Rest.ToFloat() );
+		}
 		return Numbers;
 	};
 	const FString WorldSelect = GetArgument( "world-select" );
 	if ( !WorldSelect.IsEmpty() )
 	{
 		TArray<int32> Ids;
-		for ( const float32 Id : SplitNumbers( WorldSelect ) ) Ids.Add( static_cast<int32>( Id ) );
+		for ( const float32 Id : SplitNumbers( WorldSelect ) )
+		{
+			Ids.Add( static_cast<int32>( Id ) );
+		}
 		State.WorldEditor.Session.SetSelection( Ids );
 	}
 	// 編集メッシュの編集を始める: --world-edit-mesh=要素の種類（vertex / edge / face）。選んだオブジェクト（--world-select）の Mesh 部品を編集する。
@@ -417,14 +498,29 @@ void NDebugUI::ApplyAssetToolsCommandLine( FAssetToolsState& State )
 	if ( !WorldEditMesh.IsEmpty() && State.WorldEditor.Session.BeginMeshEdit( State.WorldEditor.Session.GetPrimary() ) )
 	{
 		State.WorldEditor.Session.SetMeshElement( WorldEditMesh == "face" ? NEditMesh::EEditMeshElement::Face : WorldEditMesh == "edge" ? NEditMesh::EEditMeshElement::Edge : NEditMesh::EEditMeshElement::Vertex );
-		if ( GetArgument( "world-mesh-select" ) == "all" ) State.WorldEditor.Session.MeshSelectAll();
+		if ( GetArgument( "world-mesh-select" ) == "all" )
+		{
+			State.WorldEditor.Session.MeshSelectAll();
+		}
 	}
 	const FString WorldMode = GetArgument( "world-mode" );
-	if ( WorldMode == "rotate" ) State.WorldEditor.Session.GizmoMode = EEditorGizmoMode::Rotate;
-	else if ( WorldMode == "scale" ) State.WorldEditor.Session.GizmoMode = EEditorGizmoMode::Scale;
+	if ( WorldMode == "rotate" )
+	{
+		State.WorldEditor.Session.GizmoMode = EEditorGizmoMode::Rotate;
+	}
+	else if ( WorldMode == "scale" )
+	{
+		State.WorldEditor.Session.GizmoMode = EEditorGizmoMode::Scale;
+	}
 	const FString WorldColliders = GetArgument( "world-colliders" );
-	if ( WorldColliders == "all" ) State.WorldEditor.ColliderView = FWorldEditorState::EColliderView::All;
-	else if ( WorldColliders == "off" ) State.WorldEditor.ColliderView = FWorldEditorState::EColliderView::Off;
+	if ( WorldColliders == "all" )
+	{
+		State.WorldEditor.ColliderView = FWorldEditorState::EColliderView::All;
+	}
+	else if ( WorldColliders == "off" )
+	{
+		State.WorldEditor.ColliderView = FWorldEditorState::EColliderView::Off;
+	}
 	const FString WorldCamera = GetArgument( "world-camera" );   // yaw,pitch,distance[,x,y,z]
 	if ( !WorldCamera.IsEmpty() )
 	{
@@ -436,7 +532,10 @@ void NDebugUI::ApplyAssetToolsCommandLine( FAssetToolsState& State )
 			Camera.Pitch = V[1];
 			Camera.Distance = V[2];
 		}
-		if ( V.Num() >= 6 ) Camera.Target = FVector3( V[3], V[4], V[5] );
+		if ( V.Num() >= 6 )
+		{
+			Camera.Target = FVector3( V[3], V[4], V[5] );
+		}
 	}
 	// 定義ファイルだけを指定した場合も、対応する編集画面を開く。
 	const FString Effect = GetArgument( "effect" );
@@ -460,9 +559,15 @@ void NDebugUI::ApplyAssetToolsCommandLine( FAssetToolsState& State )
 		OpenSpriteSheetFile( State.SpriteSheet, Sprite );
 	}
 	const FString SpriteTab = GetArgument( "sprite-tab" );
-	if ( !SpriteTab.IsEmpty() ) State.SpriteSheet.ForceLeftTab = SpriteTab.ToInt();
+	if ( !SpriteTab.IsEmpty() )
+	{
+		State.SpriteSheet.ForceLeftTab = SpriteTab.ToInt();
+	}
 	const FString ModelTab = GetArgument( "model-tab" );
-	if ( !ModelTab.IsEmpty() ) State.ModelAnimation.ForceLeftTab = ModelTab.ToInt();
+	if ( !ModelTab.IsEmpty() )
+	{
+		State.ModelAnimation.ForceLeftTab = ModelTab.ToInt();
+	}
 	const FString ModelAnim = GetArgument( "modelanim" );
 	if ( !ModelAnim.IsEmpty() )
 	{

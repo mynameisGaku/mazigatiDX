@@ -15,7 +15,10 @@ CEngine* CEngine::RunningEngine = nullptr;
 
 CEngine::~CEngine()
 {
-	if ( RunningEngine == this ) RunningEngine = nullptr;
+	if ( RunningEngine == this )
+	{
+		RunningEngine = nullptr;
+	}
 }
 
 int32 CEngine::Run( TUniquePtr<CGameInstance> InGameInstance, const FWindowSettings& InStartupSettings )
@@ -55,7 +58,10 @@ int32 CEngine::Run( TUniquePtr<CGameInstance> InGameInstance, const FWindowSetti
 
 	// 無くてもよい（無ければ計測しない）
 	IProfiler* Profiler = GetSubsystem<IProfiler>();
-	if ( Profiler == nullptr ) LOG( LogEngine, Warning, "No profiler is available. Profiling is disabled." );
+	if ( Profiler == nullptr )
+	{
+		LOG( LogEngine, Warning, "No profiler is available. Profiling is disabled." );
+	}
 
 	GameInstance = MoveTemp( InGameInstance );
 	GameInstance->Init( this );
@@ -67,11 +73,17 @@ int32 CEngine::Run( TUniquePtr<CGameInstance> InGameInstance, const FWindowSetti
 	for ( ;; )
 	{
 		// 前のフレームの計測を確定し、このフレームの記録を始める（Platform.BeginFrame も計測に含めるため最初に呼ぶ）
-		if ( Profiler != nullptr ) Profiler->BeginFrame();
+		if ( Profiler != nullptr )
+		{
+			Profiler->BeginFrame();
+		}
 
 		{
 			PROFILE_SCOPE_OWNER( "Engine", "Engine", "Platform.BeginFrame" );
-			if ( !Platform->BeginFrame() ) break;
+			if ( !Platform->BeginFrame() )
+			{
+				break;
+			}
 		}
 		const float32 DeltaTime = TimeControl.Apply( Platform->GetDeltaTime() );
 

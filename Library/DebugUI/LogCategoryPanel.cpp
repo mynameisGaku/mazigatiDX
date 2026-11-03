@@ -18,16 +18,25 @@ void NDebugUI::DrawLogCategories()
 {
 	CLogManager& Manager = CLogManager::Get();
 
-	if ( ImGui::SmallButton( "All Verbose" ) ) Manager.SetAllCategoriesVerbosity( ELogVerbosity::Verbose );
+	if ( ImGui::SmallButton( "All Verbose" ) )
+	{
+		Manager.SetAllCategoriesVerbosity( ELogVerbosity::Verbose );
+	}
 	ImGui::SameLine();
-	if ( ImGui::SmallButton( "All default" ) ) Manager.ResetAllCategoriesToDefault();
+	if ( ImGui::SmallButton( "All default" ) )
+	{
+		Manager.ResetAllCategoriesToDefault();
+	}
 	ImGui::SameLine();
 	ImGui::TextDisabled( "(this build keeps logs up to %s)", VerbosityNames[CompiledMaxVerbosity] );
 
 	TArray<FLogCategory*> Categories = Manager.GetCategories();
 	Categories.Sort( []( const FLogCategory* A, const FLogCategory* B ) { return NCString::Compare( A->GetName(), B->GetName() ) < 0; } );
 
-	if ( !ImGui::BeginTable( "##LogCategories", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp ) ) return;
+	if ( !ImGui::BeginTable( "##LogCategories", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp ) )
+	{
+		return;
+	}
 	ImGui::TableSetupColumn( "Category", 0, 1.0f );
 	ImGui::TableSetupColumn( "Verbosity", 0, 1.0f );
 

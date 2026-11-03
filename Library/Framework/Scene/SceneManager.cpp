@@ -31,7 +31,10 @@ void CSceneManager::RegisterSceneFactory( const FString& Name, FSceneFactory Fac
 TArray<FString> CSceneManager::GetRegisteredSceneNames() const
 {
 	TArray<FString> Names;
-	for ( const auto& [Name, Factory] : Factories ) Names.Add( Name );
+	for ( const auto& [Name, Factory] : Factories )
+	{
+		Names.Add( Name );
+	}
 	Names.Sort();
 	return Names;
 }
@@ -39,7 +42,10 @@ TArray<FString> CSceneManager::GetRegisteredSceneNames() const
 TUniquePtr<CScene> CSceneManager::CreateScene( const FString& Name ) const
 {
 	const FSceneFactory* Factory = Factories.Find( Name );
-	if ( Factory == nullptr ) return nullptr;
+	if ( Factory == nullptr )
+	{
+		return nullptr;
+	}
 
 	TUniquePtr<CScene> Scene = ( *Factory )();
 	Scene->SetName( Name );
@@ -97,7 +103,10 @@ void CSceneManager::ApplyRequests()
 			}
 			if ( Request.Type == ERequestType::Change )
 			{
-				while ( !SceneStack.IsEmpty() ) PopSceneNow();
+				while ( !SceneStack.IsEmpty() )
+				{
+					PopSceneNow();
+				}
 			}
 			PushSceneNow( MoveTemp( Scene ) );
 			break;
@@ -122,7 +131,10 @@ void CSceneManager::ApplyRequests()
 
 void CSceneManager::PushSceneNow( TUniquePtr<CScene> Scene )
 {
-	if ( CScene* Top = GetCurrentScene() ) Top->OnPause();
+	if ( CScene* Top = GetCurrentScene() )
+	{
+		Top->OnPause();
+	}
 
 	CScene* Raw = Scene.Get();
 	SceneStack.Add( MoveTemp( Scene ) );
@@ -150,7 +162,10 @@ void CSceneManager::Tick( float32 DeltaTime )
 		ApplyRequests();
 	}
 
-	if ( CScene* Top = GetCurrentScene() ) Top->TickScene( DeltaTime );
+	if ( CScene* Top = GetCurrentScene() )
+	{
+		Top->TickScene( DeltaTime );
+	}
 }
 
 void CSceneManager::Draw()
@@ -171,11 +186,20 @@ void CSceneManager::RedrawScenesForCapture( const TCallable<bool( const CGameObj
 
 void CSceneManager::Shutdown()
 {
-	if ( !Requests.IsEmpty() ) LOG( LogScene, Warning, "Shutting down with %d scene request(s) still pending. They are discarded.", Requests.Num() );
-	if ( !SceneStack.IsEmpty() ) LOG( LogScene, Log, "Shutting down: closing %d scene(s)", SceneStack.Num() );
+	if ( !Requests.IsEmpty() )
+	{
+		LOG( LogScene, Warning, "Shutting down with %d scene request(s) still pending. They are discarded.", Requests.Num() );
+	}
+	if ( !SceneStack.IsEmpty() )
+	{
+		LOG( LogScene, Log, "Shutting down: closing %d scene(s)", SceneStack.Num() );
+	}
 
 	Requests.Reset();
-	while ( !SceneStack.IsEmpty() ) PopSceneNow();
+	while ( !SceneStack.IsEmpty() )
+	{
+		PopSceneNow();
+	}
 }
 
 #pragma endregion

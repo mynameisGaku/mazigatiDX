@@ -14,7 +14,10 @@ void FEngineTimeControl::SetScale( float32 InScale )
 void FEngineTimeControl::Step( int32 Frames )
 {
 	bPaused = true;
-	if ( Frames > 0 ) StepsRemaining += Frames;
+	if ( Frames > 0 )
+	{
+		StepsRemaining += Frames;
+	}
 }
 
 float32 FEngineTimeControl::Apply( float32 PlatformDeltaTime )

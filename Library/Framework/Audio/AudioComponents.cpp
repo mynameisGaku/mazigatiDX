@@ -14,7 +14,10 @@ void CAudioListenerComponent::Tick( float32 DeltaTime )
 	CGameObject* Owner = GetOwner();
 	CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>();
 	CTransformComponent* Transform = Owner != nullptr ? Owner->GetComponent<CTransformComponent>() : nullptr;
-	if ( Audio == nullptr || Transform == nullptr ) return;
+	if ( Audio == nullptr || Transform == nullptr )
+	{
+		return;
+	}
 
 	const FTransform World = Transform->GetWorldTransform();
 	Audio->SetListener( World.Position, World.Rotation.GetForward(), World.Rotation.GetUp() );
@@ -27,7 +30,10 @@ void CAudioSourceComponent::Play()
 {
 	CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>();
 	CGameObject* Owner = GetOwner();
-	if ( Audio == nullptr || !Sound.IsValid() || IsPlaying() ) return;
+	if ( Audio == nullptr || !Sound.IsValid() || IsPlaying() )
+	{
+		return;
+	}
 
 	CTransformComponent* Transform = Owner != nullptr ? Owner->GetComponent<CTransformComponent>() : nullptr;
 	FSoundPlayParams PlayParams = Params;
@@ -38,7 +44,10 @@ void CAudioSourceComponent::Play()
 
 void CAudioSourceComponent::Stop( float32 FadeOut )
 {
-	if ( CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>() ) Audio->Stop( Handle, FadeOut );
+	if ( CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>() )
+	{
+		Audio->Stop( Handle, FadeOut );
+	}
 	Handle = FSoundHandle();
 	bAutoPlay = false;   // 止めたものを、自動で鳴らし直さない
 }
@@ -56,12 +65,18 @@ void CAudioSourceComponent::OnAttach()
 
 void CAudioSourceComponent::OnOwnerSceneChanged( CScene* NewScene )
 {
-	if ( NewScene == nullptr ) Stop();
+	if ( NewScene == nullptr )
+	{
+		Stop();
+	}
 }
 
 void CAudioSourceComponent::OnDetach()
 {
-	if ( CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>() ) Audio->Stop( Handle, 0.0f );
+	if ( CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>() )
+	{
+		Audio->Stop( Handle, 0.0f );
+	}
 	Handle = FSoundHandle();
 }
 
@@ -69,7 +84,10 @@ void CAudioSourceComponent::Tick( float32 DeltaTime )
 {
 	(void)DeltaTime;
 	CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>();
-	if ( Audio == nullptr ) return;
+	if ( Audio == nullptr )
+	{
+		return;
+	}
 
 	if ( bAutoPlay && !bStarted )
 	{

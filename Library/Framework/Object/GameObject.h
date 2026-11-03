@@ -115,8 +115,14 @@ public:
 	{
 		for ( const FComponentEntry& Entry : Components )
 		{
-			if ( Entry.Component->IsPendingDestroy() ) continue;
-			if ( T* Casted = dynamic_cast<T*>( Entry.Component.Get() ) ) return Casted;
+			if ( Entry.Component->IsPendingDestroy() )
+			{
+				continue;
+			}
+			if ( T* Casted = dynamic_cast<T*>( Entry.Component.Get() ) )
+			{
+				return Casted;
+			}
 		}
 		return nullptr;
 	}
@@ -206,7 +212,10 @@ public:
 	template<typename T>
 	FORCEINLINE void RemoveData()
 	{
-		if ( FEcsWorld* World = GetEcsWorldIfAny() ) World->RemoveData<T>( EntitySlot );
+		if ( FEcsWorld* World = GetEcsWorldIfAny() )
+		{
+			World->RemoveData<T>( EntitySlot );
+		}
 	}
 
 	//-------------------------------------------------------------------------

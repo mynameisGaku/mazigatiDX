@@ -50,7 +50,10 @@ public:
 	FORCEINLINE TQueue( const TQueue& Other )
 	{
 		Reserve( Other.Count );
-		for ( int32 i = 0; i < Other.Count; ++i ) Enqueue( Other[i] );
+		for ( int32 i = 0; i < Other.Count; ++i )
+		{
+			Enqueue( Other[i] );
+		}
 	}
 
 	TQueue( TQueue&& Other ) noexcept
@@ -74,7 +77,10 @@ public:
 		{
 			Empty();
 			Reserve( Other.Count );
-			for ( int32 i = 0; i < Other.Count; ++i ) Enqueue( Other[i] );
+			for ( int32 i = 0; i < Other.Count; ++i )
+			{
+				Enqueue( Other[i] );
+			}
 		}
 		return *this;
 	}
@@ -90,13 +96,19 @@ public:
 	// 全要素を削除（メモリは保持）
 	FORCEINLINE void Empty()
 	{
-		while ( Count > 0 ) Pop();
+		while ( Count > 0 )
+		{
+			Pop();
+		}
 		Head = 0;
 	}
 
 	FORCEINLINE void Reserve( int32 NewCapacity )
 	{
-		if ( NewCapacity > Capacity ) Grow( NewCapacity );
+		if ( NewCapacity > Capacity )
+		{
+			Grow( NewCapacity );
+		}
 	}
 
 	//-------------------------------------------------------------------------
@@ -111,7 +123,10 @@ public:
 	// 先頭を取り出す。空なら false
 	FORCEINLINE bool Dequeue( T& OutItem )
 	{
-		if ( Count == 0 ) return false;
+		if ( Count == 0 )
+		{
+			return false;
+		}
 		OutItem = MoveTemp( Data[Head] );
 		Pop();
 		return true;
@@ -120,7 +135,10 @@ public:
 	// 先頭を捨てる。空なら false
 	FORCEINLINE bool Pop()
 	{
-		if ( Count == 0 ) return false;
+		if ( Count == 0 )
+		{
+			return false;
+		}
 		NMemoryOps::DestructItem( Data + Head );
 		Head = ( Head + 1 ) % Capacity;
 		--Count;

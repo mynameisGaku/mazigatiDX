@@ -59,14 +59,20 @@ namespace
 	{
 		for ( const char* Known : Keys )
 		{
-			if ( Key == Known ) return true;
+			if ( Key == Known )
+			{
+				return true;
+			}
 		}
 		return false;
 	}
 
 	void Warn( TArray<FString>* Warnings, const FString& Message )
 	{
-		if ( Warnings != nullptr ) Warnings->Add( Message );
+		if ( Warnings != nullptr )
+		{
+			Warnings->Add( Message );
+		}
 	}
 
 	float64 Round6( float64 Value )
@@ -86,9 +92,15 @@ namespace
 
 	FVector2 ReadVector2( const NlohmannJson& Object, const char* Key, const FVector2& Default )
 	{
-		if ( !Object.is_object() ) return Default;
+		if ( !Object.is_object() )
+		{
+			return Default;
+		}
 		const auto It = Object.find( Key );
-		if ( It == Object.end() || !It->is_array() || It->size() < 2 ) return Default;
+		if ( It == Object.end() || !It->is_array() || It->size() < 2 )
+		{
+			return Default;
+		}
 		try
 		{
 			return FVector2( ( *It )[0].get<float32>(), ( *It )[1].get<float32>() );
@@ -107,10 +119,16 @@ namespace
 	// 非 null の数の配列か
 	bool IsNumberArray( const NlohmannJson& Json, size_t Count )
 	{
-		if ( !Json.is_array() || Json.size() != Count ) return false;
+		if ( !Json.is_array() || Json.size() != Count )
+		{
+			return false;
+		}
 		for ( const NlohmannJson& Item : Json )
 		{
-			if ( !Item.is_number() ) return false;
+			if ( !Item.is_number() )
+			{
+				return false;
+			}
 		}
 		return true;
 	}
@@ -122,10 +140,22 @@ namespace
 	{
 		NlohmannJson Json = NlohmannJson::object();
 		Json["Path"] = Model.Path;
-		if ( !Model.Animations.IsEmpty() ) Json["Animations"] = Model.Animations;
-		if ( !Model.Clip.IsEmpty() ) Json["Clip"] = Model.Clip;
-		if ( Model.Speed != 1.0f ) Json["Speed"] = NJson::Round4( Model.Speed );
-		if ( Model.MaterialEffect.IsSet() ) Json["MaterialEffect"] = Model.MaterialEffect.GetValue().ToJson();
+		if ( !Model.Animations.IsEmpty() )
+		{
+			Json["Animations"] = Model.Animations;
+		}
+		if ( !Model.Clip.IsEmpty() )
+		{
+			Json["Clip"] = Model.Clip;
+		}
+		if ( Model.Speed != 1.0f )
+		{
+			Json["Speed"] = NJson::Round4( Model.Speed );
+		}
+		if ( Model.MaterialEffect.IsSet() )
+		{
+			Json["MaterialEffect"] = Model.MaterialEffect.GetValue().ToJson();
+		}
 		return Json;
 	}
 
@@ -164,14 +194,35 @@ namespace
 	{
 		NlohmannJson Json = NlohmannJson::object();
 		Json["Texture"] = Board.Texture;
-		if ( Board.Size.x != 1.0f || Board.Size.y != 1.0f ) Json["Size"] = Vector2ToJson( Board.Size );
-		if ( Board.Pivot.x != 0.5f || Board.Pivot.y != 0.5f ) Json["Pivot"] = Vector2ToJson( Board.Pivot );
-		if ( Board.Mode != EWorldBillboardMode::Camera ) Json["Mode"] = ToString( Board.Mode );
+		if ( Board.Size.x != 1.0f || Board.Size.y != 1.0f )
+		{
+			Json["Size"] = Vector2ToJson( Board.Size );
+		}
+		if ( Board.Pivot.x != 0.5f || Board.Pivot.y != 0.5f )
+		{
+			Json["Pivot"] = Vector2ToJson( Board.Pivot );
+		}
+		if ( Board.Mode != EWorldBillboardMode::Camera )
+		{
+			Json["Mode"] = ToString( Board.Mode );
+		}
 		const FColor32 White( 255, 255, 255, 255 );
-		if ( Board.Tint.r != White.r || Board.Tint.g != White.g || Board.Tint.b != White.b || Board.Tint.a != White.a ) Json["Tint"] = NWorld::FormatColor( Board.Tint );
-		if ( Board.bUseRect ) Json["Rect"] = NlohmannJson::array( { Board.RectX, Board.RectY, Board.RectWidth, Board.RectHeight } );
-		if ( Board.bFlipX ) Json["FlipX"] = true;
-		if ( Board.bFlipY ) Json["FlipY"] = true;
+		if ( Board.Tint.r != White.r || Board.Tint.g != White.g || Board.Tint.b != White.b || Board.Tint.a != White.a )
+		{
+			Json["Tint"] = NWorld::FormatColor( Board.Tint );
+		}
+		if ( Board.bUseRect )
+		{
+			Json["Rect"] = NlohmannJson::array( { Board.RectX, Board.RectY, Board.RectWidth, Board.RectHeight } );
+		}
+		if ( Board.bFlipX )
+		{
+			Json["FlipX"] = true;
+		}
+		if ( Board.bFlipY )
+		{
+			Json["FlipY"] = true;
+		}
 		return Json;
 	}
 
@@ -184,12 +235,18 @@ namespace
 		if ( Json.contains( "Mode" ) )
 		{
 			const FString Text = NJson::GetOr<FString>( Json, "Mode", FString() );
-			if ( !TryParse( Text, Board.Mode ) ) Warn( Warnings, Where + ": unknown billboard mode '" + Text + "' (using Camera)" );
+			if ( !TryParse( Text, Board.Mode ) )
+			{
+				Warn( Warnings, Where + ": unknown billboard mode '" + Text + "' (using Camera)" );
+			}
 		}
 		if ( Json.contains( "Tint" ) )
 		{
 			const FString Text = NJson::GetOr<FString>( Json, "Tint", FString() );
-			if ( !NWorld::TryParseColor( Text, Board.Tint ) ) Warn( Warnings, Where + ": bad tint color '" + Text + "' (using white)" );
+			if ( !NWorld::TryParseColor( Text, Board.Tint ) )
+			{
+				Warn( Warnings, Where + ": bad tint color '" + Text + "' (using white)" );
+			}
 		}
 		if ( Json.contains( "Rect" ) && IsNumberArray( Json["Rect"], 4 ) )
 		{
@@ -209,13 +266,34 @@ namespace
 		const FWorldSound Default;
 		NlohmannJson Json = NlohmannJson::object();
 		Json["Path"] = Sound.Path;
-		if ( Sound.Bus != Default.Bus ) Json["Bus"] = Sound.Bus;
-		if ( Sound.Volume != Default.Volume ) Json["Volume"] = NJson::Round4( Sound.Volume );
-		if ( Sound.Pitch != Default.Pitch ) Json["Pitch"] = NJson::Round4( Sound.Pitch );
-		if ( Sound.bLoop != Default.bLoop ) Json["Loop"] = Sound.bLoop;
-		if ( Sound.bAutoPlay != Default.bAutoPlay ) Json["AutoPlay"] = Sound.bAutoPlay;
-		if ( Sound.MinDistance != Default.MinDistance ) Json["MinDistance"] = NJson::Round4( Sound.MinDistance );
-		if ( Sound.MaxDistance != Default.MaxDistance ) Json["MaxDistance"] = NJson::Round4( Sound.MaxDistance );
+		if ( Sound.Bus != Default.Bus )
+		{
+			Json["Bus"] = Sound.Bus;
+		}
+		if ( Sound.Volume != Default.Volume )
+		{
+			Json["Volume"] = NJson::Round4( Sound.Volume );
+		}
+		if ( Sound.Pitch != Default.Pitch )
+		{
+			Json["Pitch"] = NJson::Round4( Sound.Pitch );
+		}
+		if ( Sound.bLoop != Default.bLoop )
+		{
+			Json["Loop"] = Sound.bLoop;
+		}
+		if ( Sound.bAutoPlay != Default.bAutoPlay )
+		{
+			Json["AutoPlay"] = Sound.bAutoPlay;
+		}
+		if ( Sound.MinDistance != Default.MinDistance )
+		{
+			Json["MinDistance"] = NJson::Round4( Sound.MinDistance );
+		}
+		if ( Sound.MaxDistance != Default.MaxDistance )
+		{
+			Json["MaxDistance"] = NJson::Round4( Sound.MaxDistance );
+		}
 		return Json;
 	}
 
@@ -224,13 +302,34 @@ namespace
 		const FWorldEffect Default;
 		NlohmannJson Json = NlohmannJson::object();
 		Json["Path"] = Effect.Path;
-		if ( Effect.bAutoPlay != Default.bAutoPlay ) Json["AutoPlay"] = Effect.bAutoPlay;
-		if ( Effect.Scale != Default.Scale ) Json["Scale"] = NJson::Round4( Effect.Scale );
-		if ( Effect.Speed != Default.Speed ) Json["Speed"] = NJson::Round4( Effect.Speed );
-		if ( Effect.Seed != Default.Seed ) Json["Seed"] = Effect.Seed;
-		if ( Effect.Loop >= 0 ) Json["Loop"] = Effect.Loop != 0;
-		if ( Effect.Target != WorldNoId ) Json["Target"] = Effect.Target;
-		if ( Effect.TargetOffset != FVector3::Zero ) Json["TargetOffset"] = NJson::ToJson( Effect.TargetOffset );
+		if ( Effect.bAutoPlay != Default.bAutoPlay )
+		{
+			Json["AutoPlay"] = Effect.bAutoPlay;
+		}
+		if ( Effect.Scale != Default.Scale )
+		{
+			Json["Scale"] = NJson::Round4( Effect.Scale );
+		}
+		if ( Effect.Speed != Default.Speed )
+		{
+			Json["Speed"] = NJson::Round4( Effect.Speed );
+		}
+		if ( Effect.Seed != Default.Seed )
+		{
+			Json["Seed"] = Effect.Seed;
+		}
+		if ( Effect.Loop >= 0 )
+		{
+			Json["Loop"] = Effect.Loop != 0;
+		}
+		if ( Effect.Target != WorldNoId )
+		{
+			Json["Target"] = Effect.Target;
+		}
+		if ( Effect.TargetOffset != FVector3::Zero )
+		{
+			Json["TargetOffset"] = NJson::ToJson( Effect.TargetOffset );
+		}
 		return Json;
 	}
 
@@ -242,19 +341,37 @@ namespace
 		Effect.Scale = NJson::GetOr<float32>( Json, "Scale", Effect.Scale );
 		Effect.Speed = NJson::GetOr<float32>( Json, "Speed", Effect.Speed );
 		Effect.Seed = NJson::GetOr<int32>( Json, "Seed", Effect.Seed );
-		if ( Json.contains( "Loop" ) && Json["Loop"].is_boolean() ) Effect.Loop = Json["Loop"].get<bool>() ? 1 : 0;
+		if ( Json.contains( "Loop" ) && Json["Loop"].is_boolean() )
+		{
+			Effect.Loop = Json["Loop"].get<bool>() ? 1 : 0;
+		}
 		if ( Json.contains( "Target" ) )
 		{
 			const NlohmannJson& Target = Json["Target"];
-			if ( Target.is_number_unsigned() ) Effect.Target = Target.get<uint64>() <= static_cast<uint64>( TNumericLimits<int32>::Max() ) ? static_cast<int32>( Target.get<uint64>() ) : -1;
-			else if ( Target.is_number_integer() && Target.get<int64>() >= TNumericLimits<int32>::Min() && Target.get<int64>() <= TNumericLimits<int32>::Max() ) Effect.Target = static_cast<int32>( Target.get<int64>() );
-			else Effect.Target = -1;
+			if ( Target.is_number_unsigned() )
+			{
+				Effect.Target = Target.get<uint64>() <= static_cast<uint64>( TNumericLimits<int32>::Max() ) ? static_cast<int32>( Target.get<uint64>() ) : -1;
+			}
+			else if ( Target.is_number_integer() && Target.get<int64>() >= TNumericLimits<int32>::Min() && Target.get<int64>() <= TNumericLimits<int32>::Max() )
+			{
+				Effect.Target = static_cast<int32>( Target.get<int64>() );
+			}
+			else
+			{
+				Effect.Target = -1;
+			}
 		}
 		if ( Json.contains( "TargetOffset" ) )
 		{
 			const NlohmannJson& Offset = Json["TargetOffset"];
-			if ( Offset.is_array() && Offset.size() == 3 && Offset[0].is_number() && Offset[1].is_number() && Offset[2].is_number() ) Effect.TargetOffset = FVector3( Offset[0].get<float32>(), Offset[1].get<float32>(), Offset[2].get<float32>() );
-			else Effect.TargetOffset = FVector3( TNumericLimits<float32>::QuietNaN(), 0.0f, 0.0f );
+			if ( Offset.is_array() && Offset.size() == 3 && Offset[0].is_number() && Offset[1].is_number() && Offset[2].is_number() )
+			{
+				Effect.TargetOffset = FVector3( Offset[0].get<float32>(), Offset[1].get<float32>(), Offset[2].get<float32>() );
+			}
+			else
+			{
+				Effect.TargetOffset = FVector3( TNumericLimits<float32>::QuietNaN(), 0.0f, 0.0f );
+			}
 		}
 		return Effect;
 	}
@@ -279,12 +396,30 @@ namespace
 		NlohmannJson Json = NlohmannJson::object();
 		Json["Shape"] = ToString( Collider.Shape );
 		// 使う項目だけ書く（形に関係のない項目は、既定値のまま）
-		if ( Collider.Shape == EWorldColliderShape::Box ) Json["Size"] = NJson::ToJson( Collider.Size );
-		else if ( Collider.Shape != EWorldColliderShape::Mesh ) Json["Radius"] = NJson::Round4( Collider.Radius );
-		if ( Collider.Shape == EWorldColliderShape::Capsule ) Json["Height"] = NJson::Round4( Collider.Height );
-		if ( Collider.Shape == EWorldColliderShape::Mesh && !Collider.Mesh.IsEmpty() ) Json["Mesh"] = Collider.Mesh;
-		if ( Collider.Shape != EWorldColliderShape::Mesh && !IsNearlyEqual( Collider.Offset, Default.Offset ) ) Json["Offset"] = NJson::ToJson( Collider.Offset );
-		if ( Collider.bTrigger ) Json["Trigger"] = true;
+		if ( Collider.Shape == EWorldColliderShape::Box )
+		{
+			Json["Size"] = NJson::ToJson( Collider.Size );
+		}
+		else if ( Collider.Shape != EWorldColliderShape::Mesh )
+		{
+			Json["Radius"] = NJson::Round4( Collider.Radius );
+		}
+		if ( Collider.Shape == EWorldColliderShape::Capsule )
+		{
+			Json["Height"] = NJson::Round4( Collider.Height );
+		}
+		if ( Collider.Shape == EWorldColliderShape::Mesh && !Collider.Mesh.IsEmpty() )
+		{
+			Json["Mesh"] = Collider.Mesh;
+		}
+		if ( Collider.Shape != EWorldColliderShape::Mesh && !IsNearlyEqual( Collider.Offset, Default.Offset ) )
+		{
+			Json["Offset"] = NJson::ToJson( Collider.Offset );
+		}
+		if ( Collider.bTrigger )
+		{
+			Json["Trigger"] = true;
+		}
 		return Json;
 	}
 
@@ -294,7 +429,10 @@ namespace
 		if ( Json.contains( "Shape" ) )
 		{
 			const FString Text = NJson::GetOr<FString>( Json, "Shape", FString() );
-			if ( !TryParse( Text, Collider.Shape ) ) Warn( Warnings, Where + ": unknown collider shape '" + Text + "' (using Box)" );
+			if ( !TryParse( Text, Collider.Shape ) )
+			{
+				Warn( Warnings, Where + ": unknown collider shape '" + Text + "' (using Box)" );
+			}
 		}
 		Collider.Size = NJson::ReadVector3( Json, "Size", Collider.Size );
 		Collider.Radius = NJson::GetOr<float32>( Json, "Radius", Collider.Radius );
@@ -311,9 +449,18 @@ namespace
 	NlohmannJson TransformToJson( const FWorldTransform& Transform )
 	{
 		NlohmannJson Json = NlohmannJson::object();
-		if ( !IsNearlyEqual( Transform.Position, FVector3::Zero ) ) Json["Position"] = NJson::ToJson( Transform.Position );
-		if ( !IsNearlyEqual( Transform.RotationDegrees, FVector3::Zero ) ) Json["Rotation"] = NJson::ToJson( Transform.RotationDegrees );
-		if ( !IsNearlyEqual( Transform.Scale, FVector3::One ) ) Json["Scale"] = NJson::ToJson( Transform.Scale );
+		if ( !IsNearlyEqual( Transform.Position, FVector3::Zero ) )
+		{
+			Json["Position"] = NJson::ToJson( Transform.Position );
+		}
+		if ( !IsNearlyEqual( Transform.RotationDegrees, FVector3::Zero ) )
+		{
+			Json["Rotation"] = NJson::ToJson( Transform.RotationDegrees );
+		}
+		if ( !IsNearlyEqual( Transform.Scale, FVector3::One ) )
+		{
+			Json["Scale"] = NJson::ToJson( Transform.Scale );
+		}
 		return Json;
 	}
 
@@ -332,38 +479,89 @@ namespace
 		// 知らない項目を先に入れて、知っている項目で上書きする（知らない項目が、知っている項目を壊さない）
 		if ( Object.Extra.is_object() )
 		{
-			for ( auto It = Object.Extra.begin(); It != Object.Extra.end(); ++It ) Json[It.key()] = It.value();
+			for ( auto It = Object.Extra.begin(); It != Object.Extra.end(); ++It )
+			{
+				Json[It.key()] = It.value();
+			}
 		}
 		Json["Id"] = Object.Id;
-		if ( !Object.Name.IsEmpty() ) Json["Name"] = Object.Name;
-		if ( Object.Parent != WorldNoId ) Json["Parent"] = Object.Parent;
-		if ( !Object.bEnabled ) Json["Enabled"] = false;
+		if ( !Object.Name.IsEmpty() )
+		{
+			Json["Name"] = Object.Name;
+		}
+		if ( Object.Parent != WorldNoId )
+		{
+			Json["Parent"] = Object.Parent;
+		}
+		if ( !Object.bEnabled )
+		{
+			Json["Enabled"] = false;
+		}
 		if ( !Object.Tags.IsEmpty() )
 		{
 			NlohmannJson Tags = NlohmannJson::array();
-			for ( const FString& Tag : Object.Tags ) Tags.push_back( Tag );
+			for ( const FString& Tag : Object.Tags )
+			{
+				Tags.push_back( Tag );
+			}
 			Json["Tags"] = Tags;
 		}
 		if ( !Object.Props.IsEmpty() )
 		{
 			NlohmannJson Props = NlohmannJson::object();
-			for ( const FWorldProp& Prop : Object.Props ) Props[NJson::ToJsonString( Prop.Name )] = Prop.ValueToJson();
+			for ( const FWorldProp& Prop : Object.Props )
+			{
+				Props[NJson::ToJsonString( Prop.Name )] = Prop.ValueToJson();
+			}
 			Json["Props"] = Props;
 		}
 		const NlohmannJson Transform = TransformToJson( Object.Transform );
-		if ( !Transform.empty() ) Json["Transform"] = Transform;
-		if ( Object.Collision != EWorldCollisionMode::Auto ) Json["Collision"] = ToString( Object.Collision );
+		if ( !Transform.empty() )
+		{
+			Json["Transform"] = Transform;
+		}
+		if ( Object.Collision != EWorldCollisionMode::Auto )
+		{
+			Json["Collision"] = ToString( Object.Collision );
+		}
 
 		NlohmannJson Components = NlohmannJson::object();
-		for ( const FWorldRawComponent& Raw : Object.RawComponents ) Components[NJson::ToJsonString( Raw.Type )] = Raw.Data;
-		if ( Object.Model.IsSet() ) Components["Model"] = ModelToJson( Object.Model.GetValue() );
-		if ( Object.Billboard.IsSet() ) Components["Billboard"] = BillboardToJson( Object.Billboard.GetValue() );
-		if ( Object.Sound.IsSet() ) Components["Sound"] = SoundToJson( Object.Sound.GetValue() );
-		if ( Object.Effect.IsSet() ) Components["Effect"] = EffectToJson( Object.Effect.GetValue() );
-		if ( Object.Collider.IsSet() ) Components["Collider"] = ColliderToJson( Object.Collider.GetValue() );
-		if ( Object.Mesh.IsSet() ) Components["Mesh"] = Object.Mesh.GetValue().ToJson();
-		if ( Object.Prefab.IsSet() ) Components["Prefab"] = PrefabToJson( Object.Prefab.GetValue() );
-		if ( !Components.empty() ) Json["Components"] = Components;
+		for ( const FWorldRawComponent& Raw : Object.RawComponents )
+		{
+			Components[NJson::ToJsonString( Raw.Type )] = Raw.Data;
+		}
+		if ( Object.Model.IsSet() )
+		{
+			Components["Model"] = ModelToJson( Object.Model.GetValue() );
+		}
+		if ( Object.Billboard.IsSet() )
+		{
+			Components["Billboard"] = BillboardToJson( Object.Billboard.GetValue() );
+		}
+		if ( Object.Sound.IsSet() )
+		{
+			Components["Sound"] = SoundToJson( Object.Sound.GetValue() );
+		}
+		if ( Object.Effect.IsSet() )
+		{
+			Components["Effect"] = EffectToJson( Object.Effect.GetValue() );
+		}
+		if ( Object.Collider.IsSet() )
+		{
+			Components["Collider"] = ColliderToJson( Object.Collider.GetValue() );
+		}
+		if ( Object.Mesh.IsSet() )
+		{
+			Components["Mesh"] = Object.Mesh.GetValue().ToJson();
+		}
+		if ( Object.Prefab.IsSet() )
+		{
+			Components["Prefab"] = PrefabToJson( Object.Prefab.GetValue() );
+		}
+		if ( !Components.empty() )
+		{
+			Json["Components"] = Components;
+		}
 		return Json;
 	}
 
@@ -373,7 +571,10 @@ namespace
 		Object.Id = NJson::GetOr<int32>( Json, "Id", WorldNoId );
 		Object.Name = NJson::GetOr<FString>( Json, "Name", FString() );
 		Object.Parent = NJson::GetOr<int32>( Json, "Parent", WorldNoId );
-		if ( Object.Parent < 0 ) Object.Parent = WorldNoId;
+		if ( Object.Parent < 0 )
+		{
+			Object.Parent = WorldNoId;
+		}
 		Object.bEnabled = NJson::GetOr<bool>( Json, "Enabled", true );
 		const FString Where = FString::Printf( "object #%d ('%s')", Index, *Object.Name );
 
@@ -387,7 +588,10 @@ namespace
 					continue;
 				}
 				const FString Tag = NJson::FromJsonString( Item.get<NJson::FJsonString>() ).TrimStartAndEnd();
-				if ( Tag.IsEmpty() || !Object.AddTag( Tag ) ) Warn( Warnings, Where + ": an empty or duplicate tag '" + Tag + "' was skipped" );
+				if ( Tag.IsEmpty() || !Object.AddTag( Tag ) )
+				{
+					Warn( Warnings, Where + ": an empty or duplicate tag '" + Tag + "' was skipped" );
+				}
 			}
 		}
 
@@ -406,11 +610,17 @@ namespace
 			}
 		}
 
-		if ( Json.contains( "Transform" ) ) Object.Transform = TransformFromJson( Json["Transform"] );
+		if ( Json.contains( "Transform" ) )
+		{
+			Object.Transform = TransformFromJson( Json["Transform"] );
+		}
 		if ( Json.contains( "Collision" ) )
 		{
 			const FString Text = NJson::GetOr<FString>( Json, "Collision", FString() );
-			if ( !TryParse( Text, Object.Collision ) ) Warn( Warnings, Where + ": unknown collision mode '" + Text + "' (using Auto)" );
+			if ( !TryParse( Text, Object.Collision ) )
+			{
+				Warn( Warnings, Where + ": unknown collision mode '" + Text + "' (using Auto)" );
+			}
 		}
 
 		if ( Json.contains( "Components" ) && Json["Components"].is_object() )
@@ -419,20 +629,41 @@ namespace
 			{
 				const NJson::FJsonString Key = It.key();
 				const NlohmannJson& Value = It.value();
-				if ( Key == "Model" && Value.is_object() ) Object.Model = ModelFromJson( Value );
-				else if ( Key == "Billboard" && Value.is_object() ) Object.Billboard = BillboardFromJson( Value, Warnings, Where );
-				else if ( Key == "Sound" && Value.is_object() ) Object.Sound = SoundFromJson( Value );
-				else if ( Key == "Effect" && Value.is_object() ) Object.Effect = EffectFromJson( Value );
-				else if ( Key == "Collider" && Value.is_object() ) Object.Collider = ColliderFromJson( Value, Warnings, Where );
+				if ( Key == "Model" && Value.is_object() )
+				{
+					Object.Model = ModelFromJson( Value );
+				}
+				else if ( Key == "Billboard" && Value.is_object() )
+				{
+					Object.Billboard = BillboardFromJson( Value, Warnings, Where );
+				}
+				else if ( Key == "Sound" && Value.is_object() )
+				{
+					Object.Sound = SoundFromJson( Value );
+				}
+				else if ( Key == "Effect" && Value.is_object() )
+				{
+					Object.Effect = EffectFromJson( Value );
+				}
+				else if ( Key == "Collider" && Value.is_object() )
+				{
+					Object.Collider = ColliderFromJson( Value, Warnings, Where );
+				}
 				else if ( Key == "Mesh" && Value.is_object() )
 				{
 					FEditMesh Mesh;
 					TArray<FString> MeshWarnings;
 					FEditMesh::FromJson( Value, Mesh, &MeshWarnings );
-					for ( const FString& Message : MeshWarnings ) Warn( Warnings, Where + ": " + Message );
+					for ( const FString& Message : MeshWarnings )
+					{
+						Warn( Warnings, Where + ": " + Message );
+					}
 					Object.Mesh = Mesh;
 				}
-				else if ( Key == "Prefab" && Value.is_object() ) Object.Prefab = PrefabFromJson( Value );
+				else if ( Key == "Prefab" && Value.is_object() )
+				{
+					Object.Prefab = PrefabFromJson( Value );
+				}
 				else
 				{
 					// 知らない種類（と、形が壊れた既知の種類）は、そのまま残す
@@ -440,7 +671,10 @@ namespace
 					Raw.Type = NJson::FromJsonString( Key );
 					Raw.Data = Value;
 					Object.RawComponents.Add( Raw );
-					if ( IsKnownKey( KnownComponentTypes, Key ) ) Warn( Warnings, Where + ": the " + Raw.Type + " component is not an object and was kept as it is" );
+					if ( IsKnownKey( KnownComponentTypes, Key ) )
+					{
+						Warn( Warnings, Where + ": the " + Raw.Type + " component is not an object and was kept as it is" );
+					}
 				}
 			}
 		}
@@ -451,7 +685,10 @@ namespace
 			{
 				if ( !IsKnownKey( KnownObjectKeys, It.key() ) )
 				{
-					if ( !Object.Extra.is_object() ) Object.Extra = NlohmannJson::object();
+					if ( !Object.Extra.is_object() )
+					{
+						Object.Extra = NlohmannJson::object();
+					}
 					Object.Extra[It.key()] = It.value();
 				}
 			}
@@ -562,17 +799,35 @@ FString NWorld::NormalizeAssetPath( const FString& Path )
 bool NWorld::TryParseColor( const FString& Text, FColor32& OutColor )
 {
 	FString Digits = Text.TrimStartAndEnd();
-	if ( Digits.StartsWith( "#" ) ) Digits = Digits.Mid( 1 );
-	if ( Digits.Len() != 6 && Digits.Len() != 8 ) return false;
+	if ( Digits.StartsWith( "#" ) )
+	{
+		Digits = Digits.Mid( 1 );
+	}
+	if ( Digits.Len() != 6 && Digits.Len() != 8 )
+	{
+		return false;
+	}
 	uint8 Bytes[4] = { 0, 0, 0, 255 };
 	for ( int32 i = 0; i < Digits.Len(); ++i )
 	{
 		const char Ch = Digits[i];
 		int32 Value = 0;
-		if ( Ch >= '0' && Ch <= '9' ) Value = Ch - '0';
-		else if ( Ch >= 'a' && Ch <= 'f' ) Value = Ch - 'a' + 10;
-		else if ( Ch >= 'A' && Ch <= 'F' ) Value = Ch - 'A' + 10;
-		else return false;
+		if ( Ch >= '0' && Ch <= '9' )
+		{
+			Value = Ch - '0';
+		}
+		else if ( Ch >= 'a' && Ch <= 'f' )
+		{
+			Value = Ch - 'a' + 10;
+		}
+		else if ( Ch >= 'A' && Ch <= 'F' )
+		{
+			Value = Ch - 'A' + 10;
+		}
+		else
+		{
+			return false;
+		}
 		uint8& Byte = Bytes[i / 2];
 		Byte = static_cast<uint8>( ( i % 2 == 0 ) ? Value * 16 : Byte + Value );
 	}
@@ -582,7 +837,10 @@ bool NWorld::TryParseColor( const FString& Text, FColor32& OutColor )
 
 FString NWorld::FormatColor( const FColor32& Color )
 {
-	if ( Color.a == 255 ) return FString::Printf( "#%02X%02X%02X", Color.r, Color.g, Color.b );
+	if ( Color.a == 255 )
+	{
+		return FString::Printf( "#%02X%02X%02X", Color.r, Color.g, Color.b );
+	}
 	return FString::Printf( "#%02X%02X%02X%02X", Color.r, Color.g, Color.b, Color.a );
 }
 
@@ -776,7 +1034,10 @@ bool FWorldObject::HasTag( const FString& Tag ) const
 bool FWorldObject::AddTag( const FString& Tag )
 {
 	const FString Trimmed = Tag.TrimStartAndEnd();
-	if ( Trimmed.IsEmpty() || Tags.Contains( Trimmed ) ) return false;
+	if ( Trimmed.IsEmpty() || Tags.Contains( Trimmed ) )
+	{
+		return false;
+	}
 	Tags.Add( Trimmed );
 	return true;
 }
@@ -790,7 +1051,10 @@ const FWorldProp* FWorldObject::FindProp( const FString& PropName ) const
 {
 	for ( const FWorldProp& Prop : Props )
 	{
-		if ( Prop.Name == PropName ) return &Prop;
+		if ( Prop.Name == PropName )
+		{
+			return &Prop;
+		}
 	}
 	return nullptr;
 }
@@ -826,7 +1090,10 @@ const FWorldRawComponent* FWorldObject::FindRawComponent( const FString& Type ) 
 {
 	for ( const FWorldRawComponent& Raw : RawComponents )
 	{
-		if ( Raw.Type == Type ) return &Raw;
+		if ( Raw.Type == Type )
+		{
+			return &Raw;
+		}
 	}
 	return nullptr;
 }
@@ -834,14 +1101,38 @@ const FWorldRawComponent* FWorldObject::FindRawComponent( const FString& Type ) 
 TArray<FString> FWorldObject::GetComponentNames() const
 {
 	TArray<FString> Names;
-	if ( Model.IsSet() ) Names.Add( "Model" );
-	if ( Billboard.IsSet() ) Names.Add( "Billboard" );
-	if ( Sound.IsSet() ) Names.Add( "Sound" );
-	if ( Effect.IsSet() ) Names.Add( "Effect" );
-	if ( Collider.IsSet() ) Names.Add( "Collider" );
-	if ( Mesh.IsSet() ) Names.Add( "Mesh" );
-	if ( Prefab.IsSet() ) Names.Add( "Prefab" );
-	for ( const FWorldRawComponent& Raw : RawComponents ) Names.Add( Raw.Type );
+	if ( Model.IsSet() )
+	{
+		Names.Add( "Model" );
+	}
+	if ( Billboard.IsSet() )
+	{
+		Names.Add( "Billboard" );
+	}
+	if ( Sound.IsSet() )
+	{
+		Names.Add( "Sound" );
+	}
+	if ( Effect.IsSet() )
+	{
+		Names.Add( "Effect" );
+	}
+	if ( Collider.IsSet() )
+	{
+		Names.Add( "Collider" );
+	}
+	if ( Mesh.IsSet() )
+	{
+		Names.Add( "Mesh" );
+	}
+	if ( Prefab.IsSet() )
+	{
+		Names.Add( "Prefab" );
+	}
+	for ( const FWorldRawComponent& Raw : RawComponents )
+	{
+		Names.Add( Raw.Type );
+	}
 	return Names;
 }
 
@@ -855,10 +1146,16 @@ int32 FWorldDefinition::AllocateId()
 
 int32 FWorldDefinition::FindIndexById( int32 Id ) const
 {
-	if ( Id == WorldNoId ) return INDEX_NONE;
+	if ( Id == WorldNoId )
+	{
+		return INDEX_NONE;
+	}
 	for ( int32 i = 0; i < Objects.Num(); ++i )
 	{
-		if ( Objects[i].Id == Id ) return i;
+		if ( Objects[i].Id == Id )
+		{
+			return i;
+		}
 	}
 	return INDEX_NONE;
 }
@@ -879,7 +1176,10 @@ const FWorldObject* FWorldDefinition::FindObjectByName( const FString& ObjectNam
 {
 	for ( const FWorldObject& Object : Objects )
 	{
-		if ( Object.Name == ObjectName ) return &Object;
+		if ( Object.Name == ObjectName )
+		{
+			return &Object;
+		}
 	}
 	return nullptr;
 }
@@ -889,10 +1189,16 @@ NlohmannJson FWorldDefinition::ToJson() const
 	NlohmannJson Json = NlohmannJson::object();
 	if ( Extra.is_object() )
 	{
-		for ( auto It = Extra.begin(); It != Extra.end(); ++It ) Json[It.key()] = It.value();
+		for ( auto It = Extra.begin(); It != Extra.end(); ++It )
+		{
+			Json[It.key()] = It.value();
+		}
 	}
 	Json["Version"] = Version;
-	if ( !Name.IsEmpty() ) Json["Name"] = Name;
+	if ( !Name.IsEmpty() )
+	{
+		Json["Name"] = Name;
+	}
 	Json["NextId"] = NextId;
 
 	NlohmannJson SettingsJson = NlohmannJson::object();
@@ -908,17 +1214,26 @@ NlohmannJson FWorldDefinition::ToJson() const
 		}
 		SettingsJson["CollisionRules"] = Rules;
 	}
-	if ( !SettingsJson.empty() ) Json["Settings"] = SettingsJson;
+	if ( !SettingsJson.empty() )
+	{
+		Json["Settings"] = SettingsJson;
+	}
 
 	NlohmannJson ObjectsJson = NlohmannJson::array();
-	for ( const FWorldObject& Object : Objects ) ObjectsJson.push_back( ObjectToJson( Object ) );
+	for ( const FWorldObject& Object : Objects )
+	{
+		ObjectsJson.push_back( ObjectToJson( Object ) );
+	}
 	Json["Objects"] = ObjectsJson;
 	return Json;
 }
 
 bool FWorldDefinition::FromJson( const NlohmannJson& Json, FWorldDefinition& OutDefinition, TArray<FString>* OutWarnings )
 {
-	if ( !Json.is_object() ) return false;
+	if ( !Json.is_object() )
+	{
+		return false;
+	}
 
 	FWorldDefinition World;
 	World.Version = NJson::GetOr<int32>( Json, "Version", WorldFormatVersion );
@@ -966,14 +1281,23 @@ bool FWorldDefinition::FromJson( const NlohmannJson& Json, FWorldDefinition& Out
 			}
 			FWorldObject Object = ObjectFromJson( ObjectJson, OutWarnings, Index );
 			++Index;
-			if ( Object.Id <= WorldNoId || World.FindIndexById( Object.Id ) != INDEX_NONE ) NeedsId.Add( World.Objects.Num() );
-			else MaxId = NMath::Max( MaxId, Object.Id );
+			if ( Object.Id <= WorldNoId || World.FindIndexById( Object.Id ) != INDEX_NONE )
+			{
+				NeedsId.Add( World.Objects.Num() );
+			}
+			else
+			{
+				MaxId = NMath::Max( MaxId, Object.Id );
+			}
 			World.Objects.Add( Object );
 		}
 	}
 
 	// NextId は、使われている Id より大きく（古い値が保存されていても、既存の Id と重ならないように）
-	for ( const FWorldObject& Object : World.Objects ) MaxId = NMath::Max( MaxId, Object.Id );
+	for ( const FWorldObject& Object : World.Objects )
+	{
+		MaxId = NMath::Max( MaxId, Object.Id );
+	}
 	World.NextId = NMath::Max( NJson::GetOr<int32>( Json, "NextId", 1 ), MaxId + 1 );
 	for ( const int32 ObjectIndex : NeedsId )
 	{
@@ -987,8 +1311,14 @@ bool FWorldDefinition::FromJson( const NlohmannJson& Json, FWorldDefinition& Out
 	{
 		for ( auto It = Json.begin(); It != Json.end(); ++It )
 		{
-			if ( IsKnownKey( KnownWorldKeys, It.key() ) ) continue;
-			if ( !World.Extra.is_object() ) World.Extra = NlohmannJson::object();
+			if ( IsKnownKey( KnownWorldKeys, It.key() ) )
+			{
+				continue;
+			}
+			if ( !World.Extra.is_object() )
+			{
+				World.Extra = NlohmannJson::object();
+			}
 			World.Extra[It.key()] = It.value();
 		}
 	}

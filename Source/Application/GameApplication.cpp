@@ -34,7 +34,10 @@ void CGameApplication::OnInit()
 	Scenes.RegisterScene<CTitleScene>( "Title" );
 	Scenes.RegisterScene<CGameScene>( "Game" );
 	// 起動時の窓口（自己確認など、別のリポジトリのものが差し込む）。--selftest=ecs / assets / world で起動したときは、そのシーンから始まる
-	if ( !NStartupHook::Run( Scenes ) ) Scenes.ChangeScene( "Title" );
+	if ( !NStartupHook::Run( Scenes ) )
+	{
+		Scenes.ChangeScene( "Title" );
+	}
 
 	// --export-models（.mv1 が無い・古いものだけ）/ --export-models=force（すべて作り直す）: アセットのルートフォルダの下の
 	// .fbx / .obj / .x / .pmx などを .mv1 にして、そのまま終了する（アセット出力の自動化用。結果はログに出る）
@@ -46,7 +49,10 @@ void CGameApplication::OnInit()
 			const FModelBatchExportResult Batch = Assets->ExportAllModels( NCString::Find( *CommandLine, "--export-models=force" ) != nullptr );
 			LOG( LogGame, Log, "Exported the models in '%s' as .mv1: %s", *Assets->GetRootDirectory(), *Batch.GetSummary() );
 		}
-		if ( IPlatform* Platform = GetAppSubsystem<IPlatform>() ) Platform->RequestExit();
+		if ( IPlatform* Platform = GetAppSubsystem<IPlatform>() )
+		{
+			Platform->RequestExit();
+		}
 	}
 
 	LOG( LogGame, Log, "Game started" );

@@ -22,13 +22,19 @@ FString CGameObject::GetDebugName() const
 void CGameObject::SetTickEnabled( bool bEnabled )
 {
 	bTickEnabled = bEnabled;
-	if ( FEcsWorld* World = GetEcsWorldIfAny() ) World->GetRecordMutable( EntitySlot ).bTickEnabled = bEnabled;
+	if ( FEcsWorld* World = GetEcsWorldIfAny() )
+	{
+		World->GetRecordMutable( EntitySlot ).bTickEnabled = bEnabled;
+	}
 }
 
 void CGameObject::SetVisible( bool bInVisible )
 {
 	bVisible = bInVisible;
-	if ( FEcsWorld* World = GetEcsWorldIfAny() ) World->GetRecordMutable( EntitySlot ).bVisible = bInVisible;
+	if ( FEcsWorld* World = GetEcsWorldIfAny() )
+	{
+		World->GetRecordMutable( EntitySlot ).bVisible = bInVisible;
+	}
 }
 
 void CGameObject::SetTransformSlotInternal( int32 Slot )
@@ -44,11 +50,20 @@ void CGameObject::SetTransformSlotInternal( int32 Slot )
 
 void CGameObject::Destroy()
 {
-	if ( bPendingDestroy ) return;
+	if ( bPendingDestroy )
+	{
+		return;
+	}
 	bPendingDestroy = true;
-	if ( FEcsWorld* World = GetEcsWorldIfAny() ) World->GetRecordMutable( EntitySlot ).bPendingDestroy = true;
+	if ( FEcsWorld* World = GetEcsWorldIfAny() )
+	{
+		World->GetRecordMutable( EntitySlot ).bPendingDestroy = true;
+	}
 
-	for ( CGameObject* Child : Children ) Child->Destroy();
+	for ( CGameObject* Child : Children )
+	{
+		Child->Destroy();
+	}
 }
 
 void CGameObject::DetachAll()
@@ -60,10 +75,16 @@ void CGameObject::DetachAll()
 	}
 	Components.Reset();
 
-	if ( Parent != nullptr ) Parent->Children.RemoveSingle( this );
+	if ( Parent != nullptr )
+	{
+		Parent->Children.RemoveSingle( this );
+	}
 	Parent = nullptr;
 
-	for ( CGameObject* Child : Children ) Child->Parent = nullptr;
+	for ( CGameObject* Child : Children )
+	{
+		Child->Parent = nullptr;
+	}
 	Children.Reset();
 
 	if ( Scene != nullptr )
@@ -86,7 +107,10 @@ FEcsWorld* CGameObject::GetEcsWorldIfAny() const
 FEcsWorld* CGameObject::GetEcsWorldForData( const char* What ) const
 {
 	FEcsWorld* World = GetEcsWorldIfAny();
-	if ( World == nullptr ) LOG( LogGameObject, Warning, "%s: %s is not in a scene yet. Data components can be used from OnSpawn onwards.", What, *GetDebugName() );
+	if ( World == nullptr )
+	{
+		LOG( LogGameObject, Warning, "%s: %s is not in a scene yet. Data components can be used from OnSpawn onwards.", What, *GetDebugName() );
+	}
 	return World;
 }
 
@@ -94,7 +118,10 @@ void CGameObject::NotifySceneAssigned()
 {
 	// OnOwnerSceneChanged の中でコンポーネントが増えても大丈夫なよう、件数を固定してインデックスで回す
 	const int32 NumComponents = Components.Num();
-	for ( int32 i = 0; i < NumComponents; ++i ) Components[i].Component->OnOwnerSceneChanged( Scene );
+	for ( int32 i = 0; i < NumComponents; ++i )
+	{
+		Components[i].Component->OnOwnerSceneChanged( Scene );
+	}
 }
 
 #pragma endregion
@@ -105,14 +132,20 @@ bool CGameObject::IsAncestorOf( const CGameObject* Object ) const
 {
 	for ( const CGameObject* Ancestor = Object ? Object->Parent : nullptr; Ancestor != nullptr; Ancestor = Ancestor->Parent )
 	{
-		if ( Ancestor == this ) return true;
+		if ( Ancestor == this )
+		{
+			return true;
+		}
 	}
 	return false;
 }
 
 bool CGameObject::AttachToParent( CGameObject* NewParent )
 {
-	if ( NewParent == Parent ) return true;
+	if ( NewParent == Parent )
+	{
+		return true;
+	}
 
 	if ( NewParent != nullptr )
 	{
@@ -133,13 +166,28 @@ bool CGameObject::AttachToParent( CGameObject* NewParent )
 		}
 	}
 
-	if ( Parent != nullptr ) Parent->Children.RemoveSingle( this );
+	if ( Parent != nullptr )
+	{
+		Parent->Children.RemoveSingle( this );
+	}
 	Parent = NewParent;
-	if ( Parent != nullptr ) Parent->Children.Add( this );
-	if ( Scene != nullptr ) Scene->GetTransformWorld().MarkHierarchyDirty();   // ワールド値の階層を組み直す
+	if ( Parent != nullptr )
+	{
+		Parent->Children.Add( this );
+	}
+	if ( Scene != nullptr )
+	{
+		Scene->GetTransformWorld().MarkHierarchyDirty();   // ワールド値の階層を組み直す
+	}
 
-	if ( Parent != nullptr ) LOG( LogGameObject, Verbose, "%s attached to %s", *GetDebugName(), *Parent->GetDebugName() );
-	else LOG( LogGameObject, Verbose, "%s detached from its parent", *GetDebugName() );
+	if ( Parent != nullptr )
+	{
+		LOG( LogGameObject, Verbose, "%s attached to %s", *GetDebugName(), *Parent->GetDebugName() );
+	}
+	else
+	{
+		LOG( LogGameObject, Verbose, "%s detached from its parent", *GetDebugName() );
+	}
 	return true;
 }
 
@@ -163,8 +211,14 @@ void CGameObject::TickComponents( float32 DeltaTime, ETickGroup Group )
 	for ( int32 i = 0; i < NumComponents; ++i )
 	{
 		ITickable* Tickable = Components[i].Tickable;
-		if ( Tickable == nullptr || Components[i].Component->IsPendingDestroy() ) continue;
-		if ( Tickable->GetTickGroup() != Group || !Tickable->IsTickable() ) continue;
+		if ( Tickable == nullptr || Components[i].Component->IsPendingDestroy() )
+		{
+			continue;
+		}
+		if ( Tickable->GetTickGroup() != Group || !Tickable->IsTickable() )
+		{
+			continue;
+		}
 
 		PROFILE_SCOPE_LAZY( ComponentScope, FProfileScope( "Component", Scene ? Scene->GetProfilerOwnerId() : 0u,
 														   typeid( *Components[i].Component.Get() ).name(), Id, GetProfilerLabelId( *NProfiler::GRecorder ) ) );
@@ -213,7 +267,10 @@ void CGameObject::RemoveDestroyedComponents()
 {
 	for ( int32 i = Components.Num() - 1; i >= 0; --i )
 	{
-		if ( !Components[i].Component->IsPendingDestroy() ) continue;
+		if ( !Components[i].Component->IsPendingDestroy() )
+		{
+			continue;
+		}
 		LOG( LogGameObject, Verbose, "Component %s removed from %s", *Components[i].Component->GetTypeName(), *GetDebugName() );
 		Components[i].Component->OnDetach();
 		Components.RemoveAt( i );
@@ -226,9 +283,15 @@ void CGameObject::RemoveDestroyedComponents()
 
 void CGameObject::SetDrawOrder( int32 InDrawOrder )
 {
-	if ( DrawOrder == InDrawOrder ) return;
+	if ( DrawOrder == InDrawOrder )
+	{
+		return;
+	}
 	DrawOrder = InDrawOrder;
-	if ( Scene != nullptr ) Scene->MarkDrawOrderDirty();
+	if ( Scene != nullptr )
+	{
+		Scene->MarkDrawOrderDirty();
+	}
 }
 
 void CGameObject::InspectProperties( IPropertyInspector& Inspector )
@@ -236,12 +299,21 @@ void CGameObject::InspectProperties( IPropertyInspector& Inspector )
 	Inspector.Text( "Id", FString::FromInt( static_cast<int64>( Id ) ) );
 	// システム用の記録にも写すので、メンバを直接ではなく setter 経由で変える
 	bool bNewTickEnabled = bTickEnabled;
-	if ( Inspector.Bool( "Tick Enabled", bNewTickEnabled ) ) SetTickEnabled( bNewTickEnabled );
+	if ( Inspector.Bool( "Tick Enabled", bNewTickEnabled ) )
+	{
+		SetTickEnabled( bNewTickEnabled );
+	}
 	bool bNewVisible = bVisible;
-	if ( Inspector.Bool( "Visible", bNewVisible ) ) SetVisible( bNewVisible );
+	if ( Inspector.Bool( "Visible", bNewVisible ) )
+	{
+		SetVisible( bNewVisible );
+	}
 
 	int32 NewDrawOrder = DrawOrder;
-	if ( Inspector.Int( "Draw Order", NewDrawOrder ) ) SetDrawOrder( NewDrawOrder );
+	if ( Inspector.Int( "Draw Order", NewDrawOrder ) )
+	{
+		SetDrawOrder( NewDrawOrder );
+	}
 }
 
 #pragma endregion

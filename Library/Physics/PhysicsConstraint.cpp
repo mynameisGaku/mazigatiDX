@@ -48,8 +48,14 @@ FPhysicsConstraint::FPhysicsConstraint( EConstraintType InType, FRigidBody* InBo
 
 void FPhysicsConstraint::WakeBodies() const
 {
-	if ( BodyA != nullptr ) BodyA->Activate();
-	if ( BodyB != nullptr ) BodyB->Activate();
+	if ( BodyA != nullptr )
+	{
+		BodyA->Activate();
+	}
+	if ( BodyB != nullptr )
+	{
+		BodyB->Activate();
+	}
 }
 
 #pragma region State
@@ -61,7 +67,10 @@ bool FPhysicsConstraint::IsEnabled() const
 
 bool FPhysicsConstraint::SetEnabled( bool bEnabled )
 {
-	if ( Joint == nullptr ) return false;
+	if ( Joint == nullptr )
+	{
+		return false;
+	}
 
 	Joint->SetEnabled( bEnabled );
 	WakeBodies();
@@ -70,7 +79,10 @@ bool FPhysicsConstraint::SetEnabled( bool bEnabled )
 
 float32 FPhysicsConstraint::GetCurrentValue() const
 {
-	if ( Joint == nullptr ) return 0.0f;
+	if ( Joint == nullptr )
+	{
+		return 0.0f;
+	}
 
 	switch ( Type )
 	{
@@ -96,7 +108,10 @@ float32 FPhysicsConstraint::GetCurrentValue() const
 
 bool FPhysicsConstraint::SetLimits( float32 Min, float32 Max )
 {
-	if ( Joint == nullptr ) return false;
+	if ( Joint == nullptr )
+	{
+		return false;
+	}
 
 	float32 LimitMin = 0.0f;
 	float32 LimitMax = 0.0f;
@@ -105,20 +120,29 @@ bool FPhysicsConstraint::SetLimits( float32 Min, float32 Max )
 	case EConstraintType::Hinge:
 	{
 		JPH::HingeConstraint* Hinge = static_cast<JPH::HingeConstraint*>( Joint );
-		if ( !NConstraintRules::NormalizeLimits( Type, Min, Max, FromJoltSpring( Hinge->GetLimitsSpringSettings() ), false, LimitMin, LimitMax ) ) return false;
+		if ( !NConstraintRules::NormalizeLimits( Type, Min, Max, FromJoltSpring( Hinge->GetLimitsSpringSettings() ), false, LimitMin, LimitMax ) )
+		{
+			return false;
+		}
 		Hinge->SetLimits( LimitMin, LimitMax );
 		break;
 	}
 	case EConstraintType::Slider:
 	{
 		JPH::SliderConstraint* Slider = static_cast<JPH::SliderConstraint*>( Joint );
-		if ( !NConstraintRules::NormalizeLimits( Type, Min, Max, FromJoltSpring( Slider->GetLimitsSpringSettings() ), false, LimitMin, LimitMax ) ) return false;
+		if ( !NConstraintRules::NormalizeLimits( Type, Min, Max, FromJoltSpring( Slider->GetLimitsSpringSettings() ), false, LimitMin, LimitMax ) )
+		{
+			return false;
+		}
 		Slider->SetLimits( LimitMin, LimitMax );
 		break;
 	}
 	case EConstraintType::Distance:
 	{
-		if ( !NConstraintRules::NormalizeLimits( Type, Min, Max, FConstraintSpring(), false, LimitMin, LimitMax ) ) return false;
+		if ( !NConstraintRules::NormalizeLimits( Type, Min, Max, FConstraintSpring(), false, LimitMin, LimitMax ) )
+		{
+			return false;
+		}
 		static_cast<JPH::DistanceConstraint*>( Joint )->SetDistance( LimitMin, LimitMax );
 		break;
 	}
@@ -132,21 +156,30 @@ bool FPhysicsConstraint::SetLimits( float32 Min, float32 Max )
 
 bool FPhysicsConstraint::SetLimitSpring( const FConstraintSpring& Spring )
 {
-	if ( Joint == nullptr || !NConstraintRules::IsValidSpring( Spring ) ) return false;
+	if ( Joint == nullptr || !NConstraintRules::IsValidSpring( Spring ) )
+	{
+		return false;
+	}
 
 	switch ( Type )
 	{
 	case EConstraintType::Hinge:
 	{
 		JPH::HingeConstraint* Hinge = static_cast<JPH::HingeConstraint*>( Joint );
-		if ( Spring.Frequency <= 0.0f && HasCollapsedLimits( *Hinge ) ) return false;  // 範囲が潰れているのに硬く止めると、動けなくなる
+		if ( Spring.Frequency <= 0.0f && HasCollapsedLimits( *Hinge ) )
+		{
+			return false;  // 範囲が潰れているのに硬く止めると、動けなくなる
+		}
 		Hinge->SetLimitsSpringSettings( ToJoltSpring( Spring ) );
 		break;
 	}
 	case EConstraintType::Slider:
 	{
 		JPH::SliderConstraint* Slider = static_cast<JPH::SliderConstraint*>( Joint );
-		if ( Spring.Frequency <= 0.0f && HasCollapsedLimits( *Slider ) ) return false;
+		if ( Spring.Frequency <= 0.0f && HasCollapsedLimits( *Slider ) )
+		{
+			return false;
+		}
 		Slider->SetLimitsSpringSettings( ToJoltSpring( Spring ) );
 		break;
 	}
@@ -164,7 +197,10 @@ bool FPhysicsConstraint::SetLimitSpring( const FConstraintSpring& Spring )
 bool FPhysicsConstraint::SetMaxFriction( float32 MaxFriction )
 {
 	float32 Friction = 0.0f;
-	if ( Joint == nullptr || !NConstraintRules::NormalizeNonNegative( MaxFriction, Friction ) ) return false;
+	if ( Joint == nullptr || !NConstraintRules::NormalizeNonNegative( MaxFriction, Friction ) )
+	{
+		return false;
+	}
 
 	switch ( Type )
 	{
@@ -184,8 +220,14 @@ bool FPhysicsConstraint::SetMaxFriction( float32 MaxFriction )
 
 bool FPhysicsConstraint::SetHalfConeAngle( float32 HalfConeAngle )
 {
-	if ( Joint == nullptr || Type != EConstraintType::Cone ) return false;
-	if ( !NMath::IsFinite( HalfConeAngle ) || HalfConeAngle < 0.0f || HalfConeAngle > NMath::PI ) return false;
+	if ( Joint == nullptr || Type != EConstraintType::Cone )
+	{
+		return false;
+	}
+	if ( !NMath::IsFinite( HalfConeAngle ) || HalfConeAngle < 0.0f || HalfConeAngle > NMath::PI )
+	{
+		return false;
+	}
 
 	static_cast<JPH::ConeConstraint*>( Joint )->SetHalfConeAngle( HalfConeAngle );
 	WakeBodies();
@@ -199,7 +241,10 @@ bool FPhysicsConstraint::SetHalfConeAngle( float32 HalfConeAngle )
 bool FPhysicsConstraint::SetMotorVelocity( float32 TargetVelocity, float32 MaxForce )
 {
 	float32 Force = 0.0f;
-	if ( Joint == nullptr || !NMath::IsFinite( TargetVelocity ) || !NConstraintRules::NormalizeNonNegative( MaxForce, Force ) ) return false;
+	if ( Joint == nullptr || !NMath::IsFinite( TargetVelocity ) || !NConstraintRules::NormalizeNonNegative( MaxForce, Force ) )
+	{
+		return false;
+	}
 
 	switch ( Type )
 	{
@@ -230,7 +275,10 @@ bool FPhysicsConstraint::SetMotorVelocity( float32 TargetVelocity, float32 MaxFo
 bool FPhysicsConstraint::SetMotorPosition( float32 TargetPosition, const FConstraintSpring& Spring, float32 MaxForce )
 {
 	float32 Force = 0.0f;
-	if ( Joint == nullptr || !NMath::IsFinite( TargetPosition ) || !NConstraintRules::IsValidSpring( Spring ) || !NConstraintRules::NormalizeNonNegative( MaxForce, Force ) ) return false;
+	if ( Joint == nullptr || !NMath::IsFinite( TargetPosition ) || !NConstraintRules::IsValidSpring( Spring ) || !NConstraintRules::NormalizeNonNegative( MaxForce, Force ) )
+	{
+		return false;
+	}
 
 	switch ( Type )
 	{
@@ -262,7 +310,10 @@ bool FPhysicsConstraint::SetMotorPosition( float32 TargetPosition, const FConstr
 
 bool FPhysicsConstraint::DisableMotor()
 {
-	if ( Joint == nullptr ) return false;
+	if ( Joint == nullptr )
+	{
+		return false;
+	}
 
 	switch ( Type )
 	{
@@ -282,7 +333,10 @@ bool FPhysicsConstraint::DisableMotor()
 
 EConstraintMotorMode FPhysicsConstraint::GetMotorMode() const
 {
-	if ( Joint == nullptr ) return EConstraintMotorMode::Off;
+	if ( Joint == nullptr )
+	{
+		return EConstraintMotorMode::Off;
+	}
 
 	JPH::EMotorState State = JPH::EMotorState::Off;
 	switch ( Type )
@@ -312,11 +366,17 @@ EConstraintMotorMode FPhysicsConstraint::GetMotorMode() const
 
 bool FPhysicsConstraint::SetBreakLimits( float32 Force, float32 Torque )
 {
-	if ( Joint == nullptr ) return false;
+	if ( Joint == nullptr )
+	{
+		return false;
+	}
 
 	float32 NewForce  = 0.0f;
 	float32 NewTorque = 0.0f;
-	if ( !NConstraintRules::NormalizeNonNegative( Force, NewForce ) || !NConstraintRules::NormalizeNonNegative( Torque, NewTorque ) ) return false;
+	if ( !NConstraintRules::NormalizeNonNegative( Force, NewForce ) || !NConstraintRules::NormalizeNonNegative( Torque, NewTorque ) )
+	{
+		return false;
+	}
 
 	BreakForce  = NewForce;
 	BreakTorque = NewTorque;

@@ -29,12 +29,18 @@ int32 FTransformWorld::Allocate( CGameObject* Owner, const FTransform& Local )
 
 void FTransformWorld::Free( int32 Slot )
 {
-	if ( !Nodes.IsAlive( Slot ) ) return;
+	if ( !Nodes.IsAlive( Slot ) )
+	{
+		return;
+	}
 
 	// 子は親を失う。次に組み直すとき、新しい親（または根）に付け替える
 	for ( int32 Child = Nodes[Slot].FirstChild; Child != INDEX_NONE; Child = Nodes[Child].NextSibling )
 	{
-		if ( !Nodes.IsAlive( Child ) || Nodes[Child].Parent != Slot ) continue;
+		if ( !Nodes.IsAlive( Child ) || Nodes[Child].Parent != Slot )
+		{
+			continue;
+		}
 		Nodes[Child].Parent = INDEX_NONE;
 		MarkDirty( Child );
 	}
@@ -48,7 +54,10 @@ void FTransformWorld::MarkDirtySlow( int32 Slot )
 	FTransformNode& Node = Nodes[Slot];
 	Node.bDirty = true;
 	bAnyDirty.Store( true, EMemoryOrder::Relaxed );
-	if ( Node.FirstChild == INDEX_NONE ) return;   // 子がなければ、これだけ
+	if ( Node.FirstChild == INDEX_NONE )
+	{
+		return;   // 子がなければ、これだけ
+	}
 
 	// 子孫を、深さ優先で立てる（スタックは使い回す。毎回確保しない）
 	thread_local TArray<int32> Stack;
@@ -60,7 +69,10 @@ void FTransformWorld::MarkDirtySlow( int32 Slot )
 		Stack.Pop();
 		for ( int32 Child = Nodes[Current].FirstChild; Child != INDEX_NONE; Child = Nodes[Child].NextSibling )
 		{
-			if ( !Nodes.IsAlive( Child ) || Nodes[Child].bDirty ) continue;
+			if ( !Nodes.IsAlive( Child ) || Nodes[Child].bDirty )
+			{
+				continue;
+			}
 			Nodes[Child].bDirty = true;
 			Stack.Add( Child );
 		}
@@ -75,7 +87,10 @@ void FTransformWorld::FlushDeferredDirty()
 	{
 		for ( const int32 Slot : PerThread )
 		{
-			if ( Nodes.IsAlive( Slot ) ) MarkDirty( Slot );
+			if ( Nodes.IsAlive( Slot ) )
+			{
+				MarkDirty( Slot );
+			}
 		}
 		PerThread.Reset();
 	}
@@ -88,7 +103,10 @@ int32 FTransformWorld::FindParentSlot( const CGameObject* Owner ) const
 	for ( const CGameObject* Ancestor = Owner ? Owner->GetParent() : nullptr; Ancestor != nullptr; Ancestor = Ancestor->GetParent() )
 	{
 		const int32 Slot = Ancestor->GetTransformSlot();
-		if ( Slot != INDEX_NONE && Nodes.IsAlive( Slot ) && !Nodes[Slot].bPendingDestroy ) return Slot;
+		if ( Slot != INDEX_NONE && Nodes.IsAlive( Slot ) && !Nodes[Slot].bPendingDestroy )
+		{
+			return Slot;
+		}
 	}
 	return INDEX_NONE;
 }
@@ -102,7 +120,10 @@ void FTransformWorld::RebuildHierarchy()
 	TArray<int32> Changed;
 	for ( int32 Slot = 0; Slot < NumSlots; ++Slot )
 	{
-		if ( !Nodes.IsAlive( Slot ) ) continue;
+		if ( !Nodes.IsAlive( Slot ) )
+		{
+			continue;
+		}
 		FTransformNode& Node = Nodes[Slot];
 		const int32 NewParent = FindParentSlot( Node.Owner );
 		if ( NewParent != Node.Parent )
@@ -115,13 +136,19 @@ void FTransformWorld::RebuildHierarchy()
 	// 2) 子の一覧（小さい番号から並ぶよう逆順に積む）
 	for ( int32 Slot = 0; Slot < NumSlots; ++Slot )
 	{
-		if ( !Nodes.IsAlive( Slot ) ) continue;
+		if ( !Nodes.IsAlive( Slot ) )
+		{
+			continue;
+		}
 		Nodes[Slot].FirstChild = INDEX_NONE;
 		Nodes[Slot].NextSibling = INDEX_NONE;
 	}
 	for ( int32 Slot = NumSlots - 1; Slot >= 0; --Slot )
 	{
-		if ( !Nodes.IsAlive( Slot ) || Nodes[Slot].Parent == INDEX_NONE ) continue;
+		if ( !Nodes.IsAlive( Slot ) || Nodes[Slot].Parent == INDEX_NONE )
+		{
+			continue;
+		}
 		FTransformNode& Parent = Nodes[Nodes[Slot].Parent];
 		Nodes[Slot].NextSibling = Parent.FirstChild;
 		Parent.FirstChild = Slot;
@@ -134,9 +161,15 @@ void FTransformWorld::RebuildHierarchy()
 	LevelStart.Add( 0 );
 	for ( int32 Slot = 0; Slot < NumSlots; ++Slot )
 	{
-		if ( !Nodes.IsAlive( Slot ) ) continue;
+		if ( !Nodes.IsAlive( Slot ) )
+		{
+			continue;
+		}
 		FTransformNode& Node = Nodes[Slot];
-		if ( Node.Parent != INDEX_NONE ) continue;
+		if ( Node.Parent != INDEX_NONE )
+		{
+			continue;
+		}
 		Node.Depth = 0;
 		Entries.Add( { &Node, nullptr } );
 	}
@@ -156,7 +189,10 @@ void FTransformWorld::RebuildHierarchy()
 				Entries.Add( { &ChildNode, ParentNode } );
 			}
 		}
-		if ( Entries.Num() == PrevEnd ) break;
+		if ( Entries.Num() == PrevEnd )
+		{
+			break;
+		}
 		LevelStart.Add( Entries.Num() );
 	}
 
@@ -200,25 +236,40 @@ void FTransformWorld::Compute( FTransformNode& Node )
 void FTransformWorld::EnsureClean( int32 Slot )
 {
 	FTransformNode& Node = Nodes[Slot];
-	if ( !Node.bDirty ) return;
+	if ( !Node.bDirty )
+	{
+		return;
+	}
 
 	// 親から順に（深さは浅いので再帰でよい）
-	if ( Node.Parent != INDEX_NONE ) EnsureClean( Node.Parent );
+	if ( Node.Parent != INDEX_NONE )
+	{
+		EnsureClean( Node.Parent );
+	}
 	Compute( Node );
 	Node.bDirty = false;
 }
 
 const FTransform& FTransformWorld::GetWorldSlow( int32 Slot )
 {
-	if ( bHierarchyDirty ) RebuildHierarchy();
+	if ( bHierarchyDirty )
+	{
+		RebuildHierarchy();
+	}
 	EnsureClean( Slot );
 	return Nodes[Slot].World;
 }
 
 void FTransformWorld::Update( IJobSystem* Jobs )
 {
-	if ( bHierarchyDirty ) RebuildHierarchy();
-	if ( !bAnyDirty.Load( EMemoryOrder::Relaxed ) ) return;
+	if ( bHierarchyDirty )
+	{
+		RebuildHierarchy();
+	}
+	if ( !bAnyDirty.Load( EMemoryOrder::Relaxed ) )
+	{
+		return;
+	}
 
 	// 浅い階層から順に。同じ階層の要素は互いに独立（親は前の階層で終わっている）なので、階層ごとに一斉に計算できる
 	const int32 NumLevels = LevelStart.IsEmpty() ? 0 : LevelStart.Num() - 1;
@@ -227,7 +278,10 @@ void FTransformWorld::Update( IJobSystem* Jobs )
 	{
 		const int32 Begin = LevelStart[Level];
 		const int32 Count = LevelStart[Level + 1] - Begin;
-		if ( Count <= 0 ) continue;
+		if ( Count <= 0 )
+		{
+			continue;
+		}
 
 		const FLevelEntry* LevelEntries = AllEntries + Begin;
 		if ( Level == 0 )
@@ -237,13 +291,22 @@ void FTransformWorld::Update( IJobSystem* Jobs )
 				for ( int32 i = First; i < Last; ++i )
 				{
 					FTransformNode& Node = *LevelEntries[i].Node;
-					if ( !Node.bDirty ) continue;
+					if ( !Node.bDirty )
+					{
+						continue;
+					}
 					Node.World = Node.Local;
 					Node.bDirty = false;
 				}
 			};
-			if ( Jobs != nullptr ) Jobs->ParallelForRange( Count, MinNodesPerBatch, "Transforms.Update", Body );
-			else Body( 0, Count );
+			if ( Jobs != nullptr )
+			{
+				Jobs->ParallelForRange( Count, MinNodesPerBatch, "Transforms.Update", Body );
+			}
+			else
+			{
+				Body( 0, Count );
+			}
 		}
 		else
 		{
@@ -253,13 +316,22 @@ void FTransformWorld::Update( IJobSystem* Jobs )
 				{
 					const FLevelEntry& Entry = LevelEntries[i];
 					FTransformNode& Node = *Entry.Node;
-					if ( !Node.bDirty ) continue;
+					if ( !Node.bDirty )
+					{
+						continue;
+					}
 					ComputeWithParent( Node, Entry.Parent->World );
 					Node.bDirty = false;
 				}
 			};
-			if ( Jobs != nullptr ) Jobs->ParallelForRange( Count, MinNodesPerBatch, "Transforms.Update", Body );
-			else Body( 0, Count );
+			if ( Jobs != nullptr )
+			{
+				Jobs->ParallelForRange( Count, MinNodesPerBatch, "Transforms.Update", Body );
+			}
+			else
+			{
+				Body( 0, Count );
+			}
 		}
 	}
 	bAnyDirty.Store( false, EMemoryOrder::Relaxed );

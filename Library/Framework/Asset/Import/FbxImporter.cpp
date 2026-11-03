@@ -61,7 +61,10 @@ namespace
 			BuildNodes();
 			BuildMaterials();
 			BuildMeshes();
-			if ( Options.bImportAnimations ) BuildAnimations();
+			if ( Options.bImportAnimations )
+			{
+				BuildAnimations();
+			}
 		}
 
 	private:
@@ -73,7 +76,10 @@ namespace
 			for ( size_t i = 0; i < Source.nodes.count; ++i )
 			{
 				const ufbx_node* Node = Source.nodes.data[i];
-				if ( Node->is_root ) continue;   // 根は変換を持たない（空の入れ物）
+				if ( Node->is_root )
+				{
+					continue;   // 根は変換を持たない（空の入れ物）
+				}
 				NodeMap[static_cast<int32>( i )] = Out.Nodes.Num();
 				FImportedNode Imported;
 				Imported.Name = ToFString( Node->name );
@@ -83,32 +89,59 @@ namespace
 			for ( size_t i = 0; i < Source.nodes.count; ++i )
 			{
 				const ufbx_node* Node = Source.nodes.data[i];
-				if ( NodeMap[static_cast<int32>( i )] < 0 ) continue;
+				if ( NodeMap[static_cast<int32>( i )] < 0 )
+				{
+					continue;
+				}
 				Out.Nodes[NodeMap[static_cast<int32>( i )]].Parent = Node->parent != nullptr && !Node->parent->is_root ? GetNodeIndex( Node->parent ) : -1;
 			}
 		}
 
 		int32 AddTexture( const ufbx_texture* Texture )
 		{
-			if ( Texture == nullptr ) return -1;
+			if ( Texture == nullptr )
+			{
+				return -1;
+			}
 			// 重ね合わせなどの合成テクスチャは、中の最初のファイルを使う
-			if ( Texture->type != UFBX_TEXTURE_FILE && Texture->file_textures.count > 0 ) Texture = Texture->file_textures.data[0];
-			if ( Texture->type != UFBX_TEXTURE_FILE ) return -1;
+			if ( Texture->type != UFBX_TEXTURE_FILE && Texture->file_textures.count > 0 )
+			{
+				Texture = Texture->file_textures.data[0];
+			}
+			if ( Texture->type != UFBX_TEXTURE_FILE )
+			{
+				return -1;
+			}
 
-			if ( const int32* Found = TextureMap.Find( Texture->typed_id ) ) return *Found;
+			if ( const int32* Found = TextureMap.Find( Texture->typed_id ) )
+			{
+				return *Found;
+			}
 
 			FImportedTexture Imported;
 			FString File = ToFString( Texture->relative_filename );
-			if ( File.IsEmpty() ) File = ToFString( Texture->filename );
-			if ( File.IsEmpty() ) File = ToFString( Texture->absolute_filename );
+			if ( File.IsEmpty() )
+			{
+				File = ToFString( Texture->filename );
+			}
+			if ( File.IsEmpty() )
+			{
+				File = ToFString( Texture->absolute_filename );
+			}
 			if ( Texture->content.size > 0 )
 			{
 				const uint8* Bytes = static_cast<const uint8*>( Texture->content.data );
 				Imported.EmbeddedData = TArray<uint8>( Bytes, static_cast<int32>( Texture->content.size ) );
 				File = GetFileNameOnly( File );   // 埋め込みは、フォルダを付けずファイル名にする
-				if ( File.IsEmpty() ) File = FString::Printf( "texture%d.png", Out.Textures.Num() );
+				if ( File.IsEmpty() )
+				{
+					File = FString::Printf( "texture%d.png", Out.Textures.Num() );
+				}
 			}
-			if ( File.IsEmpty() ) return -1;
+			if ( File.IsEmpty() )
+			{
+				return -1;
+			}
 			Imported.File = File;
 			const int32 Index = Out.Textures.Add( Imported );
 			TextureMap.Add( Texture->typed_id, Index );
@@ -140,7 +173,10 @@ namespace
 					Imported.Specular[1] = static_cast<float32>( Material->fbx.specular_color.value_vec3.y ) * Factor;
 					Imported.Specular[2] = static_cast<float32>( Material->fbx.specular_color.value_vec3.z ) * Factor;
 				}
-				if ( Material->fbx.specular_exponent.has_value ) Imported.Power = static_cast<float32>( Material->fbx.specular_exponent.value_real );
+				if ( Material->fbx.specular_exponent.has_value )
+				{
+					Imported.Power = static_cast<float32>( Material->fbx.specular_exponent.value_real );
+				}
 				if ( Material->fbx.emission_color.has_value )
 				{
 					const float32 Factor = Material->fbx.emission_factor.has_value ? static_cast<float32>( Material->fbx.emission_factor.value_real ) : 1.0f;
@@ -157,14 +193,20 @@ namespace
 			for ( size_t NodeIndex = 0; NodeIndex < Source.nodes.count; ++NodeIndex )
 			{
 				const ufbx_node* Node = Source.nodes.data[NodeIndex];
-				if ( Node->mesh == nullptr || NodeMap[static_cast<int32>( NodeIndex )] < 0 ) continue;
+				if ( Node->mesh == nullptr || NodeMap[static_cast<int32>( NodeIndex )] < 0 )
+				{
+					continue;
+				}
 				BuildMesh( *Node, *Node->mesh, NodeMap[static_cast<int32>( NodeIndex )] );
 			}
 		}
 
 		void BuildMesh( const ufbx_node& Node, const ufbx_mesh& Mesh, int32 ImportedNode )
 		{
-			if ( Mesh.num_triangles == 0 || !Mesh.vertex_position.exists ) return;
+			if ( Mesh.num_triangles == 0 || !Mesh.vertex_position.exists )
+			{
+				return;
+			}
 
 			FImportedMesh Imported;
 			Imported.Name = ToFString( Node.name );
@@ -199,7 +241,10 @@ namespace
 			for ( size_t FaceIndex = 0; FaceIndex < Mesh.faces.count; ++FaceIndex )
 			{
 				const ufbx_face Face = Mesh.faces.data[FaceIndex];
-				if ( Face.num_indices < 3 ) continue;
+				if ( Face.num_indices < 3 )
+				{
+					continue;
+				}
 				const uint32_t NumTriangles = ufbx_triangulate_face( Triangles.GetData(), Triangles.Num(), &Mesh, Face );
 
 				int32 Material = -1;
@@ -207,9 +252,18 @@ namespace
 				{
 					const uint32_t Slot = Mesh.face_material.data[FaceIndex];
 					const ufbx_material* Used = nullptr;
-					if ( Node.materials.count > Slot ) Used = Node.materials.data[Slot];
-					else if ( Mesh.materials.count > Slot ) Used = Mesh.materials.data[Slot];
-					if ( Used != nullptr ) Material = static_cast<int32>( Used->typed_id );
+					if ( Node.materials.count > Slot )
+					{
+						Used = Node.materials.data[Slot];
+					}
+					else if ( Mesh.materials.count > Slot )
+					{
+						Used = Mesh.materials.data[Slot];
+					}
+					if ( Used != nullptr )
+					{
+						Material = static_cast<int32>( Used->typed_id );
+					}
 				}
 
 				for ( uint32_t Triangle = 0; Triangle < NumTriangles; ++Triangle )
@@ -219,7 +273,10 @@ namespace
 						const uint32_t Index = Triangles[Triangle * 3 + Corner];
 						const FCornerKey Key { Mesh.vertex_position.indices.data[Index], bHasNormal ? Mesh.vertex_normal.indices.data[Index] : 0u, bHasUV ? Mesh.vertex_uv.indices.data[Index] : 0u };
 						int32 VertexIndex = INDEX_NONE;
-						if ( const int32* Found = VertexMap.Find( Key ) ) VertexIndex = *Found;
+						if ( const int32* Found = VertexMap.Find( Key ) )
+						{
+							VertexIndex = *Found;
+						}
 						else
 						{
 							const ufbx_vec3 Position = Mesh.vertex_position.values.data[Key.Position];
@@ -247,7 +304,10 @@ namespace
 					Imported.TriangleMaterials.Add( Material );
 				}
 			}
-			if ( Imported.Indices.IsEmpty() ) return;
+			if ( Imported.Indices.IsEmpty() )
+			{
+				return;
+			}
 
 			if ( Skin != nullptr )
 			{
@@ -263,7 +323,10 @@ namespace
 				{
 					for ( const FImportInfluence& Influence : Influences[ControlPoints[Vertex]] )
 					{
-						if ( !Imported.Clusters.IsValidIndex( Influence.Cluster ) ) continue;
+						if ( !Imported.Clusters.IsValidIndex( Influence.Cluster ) )
+						{
+							continue;
+						}
 						Imported.Clusters[Influence.Cluster].Vertices.Add( Vertex );
 						Imported.Clusters[Influence.Cluster].Weights.Add( Influence.Weight );
 					}
@@ -281,7 +344,10 @@ namespace
 			{
 				const ufbx_anim_stack* Stack = Source.anim_stacks.data[StackIndex];
 				const double Begin = Stack->time_begin, End = Stack->time_end;
-				if ( !( End > Begin ) || Stack->anim == nullptr ) continue;
+				if ( !( End > Begin ) || Stack->anim == nullptr )
+				{
+					continue;
+				}
 
 				FImportedAnimation Animation;
 				Animation.Name = ToFString( Stack->name );
@@ -292,7 +358,10 @@ namespace
 				{
 					const ufbx_node* Node = Source.nodes.data[NodeIndex];
 					const int32 Imported = NodeMap[static_cast<int32>( NodeIndex )];
-					if ( Imported < 0 ) continue;
+					if ( Imported < 0 )
+					{
+						continue;
+					}
 
 					FImportedTrack Track;
 					Track.Node = Imported;
@@ -303,9 +372,15 @@ namespace
 						const ufbx_transform Transform = ufbx_evaluate_transform( Stack->anim, Node, Time );
 						const ufbx_matrix Matrix = ufbx_transform_to_matrix( &Transform );
 						Track.Keys.Add( ToImportMatrix( Matrix ) );
-						if ( !Track.Keys.Last().NearlyEquals( Out.Nodes[Imported].Local, 1.0e-5f ) ) bAnimated = true;
+						if ( !Track.Keys.Last().NearlyEquals( Out.Nodes[Imported].Local, 1.0e-5f ) )
+						{
+							bAnimated = true;
+						}
 					}
-					if ( bAnimated ) Animation.Tracks.Add( Track );
+					if ( bAnimated )
+					{
+						Animation.Tracks.Add( Track );
+					}
 				}
 				Out.Animations.Add( Animation );
 			}

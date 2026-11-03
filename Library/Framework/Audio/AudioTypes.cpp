@@ -60,7 +60,10 @@ void FAudioFade::FadeTo( float32 Target, float32 Seconds, EFadeCurve InCurve )
 
 void FAudioFade::Step( float32 DeltaSeconds )
 {
-	if ( Elapsed >= Duration ) return;
+	if ( Elapsed >= Duration )
+	{
+		return;
+	}
 
 	Elapsed += DeltaSeconds;
 	if ( Elapsed >= Duration )
@@ -97,9 +100,18 @@ float32 NAudio::ShapeFade( EFadeCurve Curve, float32 T, bool bRising )
 
 float32 NAudio::RolloffGain( EAudioRolloff Rolloff, float32 Distance, float32 MinDistance, float32 MaxDistance )
 {
-	if ( MaxDistance <= MinDistance ) return Distance <= MinDistance ? 1.0f : 0.0f;
-	if ( Distance <= MinDistance ) return 1.0f;
-	if ( Distance >= MaxDistance ) return 0.0f;
+	if ( MaxDistance <= MinDistance )
+	{
+		return Distance <= MinDistance ? 1.0f : 0.0f;
+	}
+	if ( Distance <= MinDistance )
+	{
+		return 1.0f;
+	}
+	if ( Distance >= MaxDistance )
+	{
+		return 0.0f;
+	}
 
 	const float32 T = ( Distance - MinDistance ) / ( MaxDistance - MinDistance );   // 0..1
 	switch ( Rolloff )
@@ -120,7 +132,10 @@ float32 NAudio::RolloffGain( EAudioRolloff Rolloff, float32 Distance, float32 Mi
 float32 NAudio::SpatialPan( const FVector3& ToSource, const FVector3& Right, float32 Strength )
 {
 	const float32 Length = ToSource.Length();
-	if ( Length < 1.0e-4f ) return 0.0f;   // 真上（リスナーの位置）では左右が決まらない
+	if ( Length < 1.0e-4f )
+	{
+		return 0.0f;   // 真上（リスナーの位置）では左右が決まらない
+	}
 	const float32 Side = FVector3::Dot( ToSource / Length, Right );
 	return NMath::Clamp( Side * Strength, -1.0f, 1.0f );
 }
@@ -133,6 +148,9 @@ FVector3 NAudio::ListenerRight( const FAudioListener& Listener )
 
 int32 NAudio::VolumeToDecibel100( float32 Volume )
 {
-	if ( Volume <= 1.0e-5f ) return MinDecibel100;
+	if ( Volume <= 1.0e-5f )
+	{
+		return MinDecibel100;
+	}
 	return NMath::Max( MinDecibel100, static_cast<int32>( NMath::RoundToInt( 2000.0f * NMath::Log10( Volume ) ) ) );
 }

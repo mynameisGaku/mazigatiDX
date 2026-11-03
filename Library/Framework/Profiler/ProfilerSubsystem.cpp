@@ -28,8 +28,14 @@ namespace
 	// typeid().name() の "class " / "struct " を取り除く
 	const char* SkipTypePrefix( const char* Text )
 	{
-		if ( NCString::CompareN( Text, "class ", 6 ) == 0 ) return Text + 6;
-		if ( NCString::CompareN( Text, "struct ", 7 ) == 0 ) return Text + 7;
+		if ( NCString::CompareN( Text, "class ", 6 ) == 0 )
+		{
+			return Text + 6;
+		}
+		if ( NCString::CompareN( Text, "struct ", 7 ) == 0 )
+		{
+			return Text + 7;
+		}
 		return Text;
 	}
 }
@@ -51,7 +57,10 @@ void CProfilerSubsystem::Initialize( FSubsystemCollection& Collection )
 
 void CProfilerSubsystem::Deinitialize()
 {
-	if ( NProfiler::GRecorder == this ) NProfiler::GRecorder = nullptr;
+	if ( NProfiler::GRecorder == this )
+	{
+		NProfiler::GRecorder = nullptr;
+	}
 	bRecording = false;
 	bEnabled = false;
 	LOG( LogProfiler, Log, "Shutdown (%d frame(s) stored, %u string(s) interned, %d worker thread(s) seen)", GetNumFrames(), NumStrings.Load(),
@@ -106,22 +115,34 @@ void CProfilerSubsystem::MeasureOverhead()
 
 void CProfilerSubsystem::SetEnabled( bool bInEnabled )
 {
-	if ( bEnabled == bInEnabled ) return;
+	if ( bEnabled == bInEnabled )
+	{
+		return;
+	}
 	bEnabled = bInEnabled;
 	if ( bEnabled )
 	{
 		bClearOnStart = true;
 		bMemoryLimitReached = false;
 	}
-	if ( !bEnabled ) RemainingCaptureFrames = 0;
+	if ( !bEnabled )
+	{
+		RemainingCaptureFrames = 0;
+	}
 	LOG( LogProfiler, Log, "%s (takes effect at the next frame)", bEnabled ? "Start requested" : "Stop requested" );
 }
 
 void CProfilerSubsystem::CaptureFrames( int32 NumFrames )
 {
-	if ( NumFrames <= 0 ) return;
+	if ( NumFrames <= 0 )
+	{
+		return;
+	}
 	RemainingCaptureFrames = NumFrames;
-	if ( !bEnabled ) bClearOnStart = true;
+	if ( !bEnabled )
+	{
+		bClearOnStart = true;
+	}
 	bEnabled = true;
 	LOG( LogProfiler, Log, "Capturing %d frame(s)", NumFrames );
 }
@@ -172,7 +193,10 @@ void CProfilerSubsystem::DropOldestFrame()
 {
 	FProfilerFrame& Oldest = Frames[FirstFrameIndex];
 	StoredSamples -= Oldest.Samples.Num();
-	for ( const FProfilerThreadTrack& Track : Oldest.Threads ) StoredSamples -= Track.Samples.Num();
+	for ( const FProfilerThreadTrack& Track : Oldest.Threads )
+	{
+		StoredSamples -= Track.Samples.Num();
+	}
 	StoredCounters -= Oldest.Counters.Num();
 	Oldest.Samples.Empty();   // メモリも返す
 	Oldest.Threads.Empty();
@@ -190,8 +214,14 @@ void CProfilerSubsystem::DropOldestFrame()
 void CProfilerSubsystem::EnforceLimits()
 {
 	// 新しいフレームは必ず 1 つ残す
-	while ( MaxFrames > 0 && GetNumFrames() > MaxFrames && GetNumFrames() > 1 ) DropOldestFrame();
-	while ( MaxStoredSamples > 0 && StoredSamples > MaxStoredSamples && GetNumFrames() > 1 ) DropOldestFrame();
+	while ( MaxFrames > 0 && GetNumFrames() > MaxFrames && GetNumFrames() > 1 )
+	{
+		DropOldestFrame();
+	}
+	while ( MaxStoredSamples > 0 && StoredSamples > MaxStoredSamples && GetNumFrames() > 1 )
+	{
+		DropOldestFrame();
+	}
 }
 
 #pragma endregion
@@ -201,7 +231,10 @@ void CProfilerSubsystem::EnforceLimits()
 void CProfilerSubsystem::BeginFrame()
 {
 	const bool bWasRecording = bRecording;
-	if ( bRecording ) FinishFrame();
+	if ( bRecording )
+	{
+		FinishFrame();
+	}
 
 	if ( bEnabled )
 	{
@@ -224,7 +257,10 @@ void CProfilerSubsystem::BeginFrame()
 void CProfilerSubsystem::LogSummary() const
 {
 	const int32 NumStored = GetNumFrames();
-	if ( NumStored <= 0 ) return;
+	if ( NumStored <= 0 )
+	{
+		return;
+	}
 
 	// 長く記録したときに止まらないよう、要約は直近の SummaryMaxFrames フレームまで
 	const int32 FirstFrame = NumStored > SummaryMaxFrames ? NumStored - SummaryMaxFrames : 0;
@@ -306,7 +342,10 @@ void CProfilerSubsystem::FinishFrame()
 	}
 	StoredCounters += Stored.Counters.Num();
 	StoredSamples += Stored.Samples.Num();
-	for ( const FProfilerThreadTrack& Track : Stored.Threads ) StoredSamples += Track.Samples.Num();
+	for ( const FProfilerThreadTrack& Track : Stored.Threads )
+	{
+		StoredSamples += Track.Samples.Num();
+	}
 
 	// 上限を決めているときだけ、超えた分を古いフレームから捨てる
 	EnforceLimits();
@@ -339,11 +378,17 @@ const FProfilerFrame& CProfilerSubsystem::GetFrame( int32 Index ) const
 
 uint32 CProfilerSubsystem::InternLocked( const FString& Key )
 {
-	if ( const uint32* Found = StringIds.Find( Key ) ) return *Found;
+	if ( const uint32* Found = StringIds.Find( Key ) )
+	{
+		return *Found;
+	}
 
 	const uint32 Id = NumStrings.Load( EMemoryOrder::Relaxed );
 	const uint32 BlockIndex = Id / StringBlockSize;
-	if ( BlockIndex >= static_cast<uint32>( MaxStringBlocks ) ) return 0;   // 上限（400 万文字列）。通常は届かない
+	if ( BlockIndex >= static_cast<uint32>( MaxStringBlocks ) )
+	{
+		return 0;   // 上限（400 万文字列）。通常は届かない
+	}
 
 	FString* Block = StringBlocks[BlockIndex].Load( EMemoryOrder::Relaxed );
 	if ( Block == nullptr )
@@ -359,7 +404,10 @@ uint32 CProfilerSubsystem::InternLocked( const FString& Key )
 
 uint32 CProfilerSubsystem::InternString( const char* Text )
 {
-	if ( Text == nullptr || Text[0] == '\0' ) return 0;
+	if ( Text == nullptr || Text[0] == '\0' )
+	{
+		return 0;
+	}
 
 	const FString Key( SkipTypePrefix( Text ) );
 	FScopedLock Lock( StringMutex );
@@ -368,7 +416,10 @@ uint32 CProfilerSubsystem::InternString( const char* Text )
 
 uint32 CProfilerSubsystem::InternLiteral( const char* Literal )
 {
-	if ( Literal == nullptr || Literal[0] == '\0' ) return 0;
+	if ( Literal == nullptr || Literal[0] == '\0' )
+	{
+		return 0;
+	}
 
 	// スレッドごとの小さな控え（ポインタ -> ID）。ほとんどの呼び出しはここで済み、ロックしない
 	struct FCacheEntry
@@ -378,7 +429,10 @@ uint32 CProfilerSubsystem::InternLiteral( const char* Literal )
 	};
 	thread_local FCacheEntry Cache[256] = {};
 	FCacheEntry& Entry = Cache[( ( reinterpret_cast<uintptr_t>( Literal ) >> 3 ) * 2654435761u >> 8 ) & 255];
-	if ( Entry.Ptr == Literal ) return Entry.Id;
+	if ( Entry.Ptr == Literal )
+	{
+		return Entry.Id;
+	}
 
 	uint32 Id;
 	{
@@ -401,7 +455,10 @@ uint32 CProfilerSubsystem::InternLiteral( const char* Literal )
 const FString& CProfilerSubsystem::GetString( uint32 Id ) const
 {
 	static const FString Empty;
-	if ( Id == 0 || Id >= NumStrings.Load( EMemoryOrder::Acquire ) ) return Empty;
+	if ( Id == 0 || Id >= NumStrings.Load( EMemoryOrder::Acquire ) )
+	{
+		return Empty;
+	}
 
 	const FString* Block = StringBlocks[Id / StringBlockSize].Load( EMemoryOrder::Acquire );
 	return Block != nullptr ? Block[Id % StringBlockSize] : Empty;
@@ -413,7 +470,10 @@ const FString& CProfilerSubsystem::GetString( uint32 Id ) const
 
 void CProfilerSubsystem::RecordCounter( uint32 Name, float64 Value, EProfileCounterUnit Unit )
 {
-	if ( !bRecording || Name == 0 ) return;
+	if ( !bRecording || Name == 0 )
+	{
+		return;
+	}
 
 	FScopedLock Lock( CounterMutex );
 	for ( FProfileCounter& Existing : Current.Counters )
@@ -434,8 +494,14 @@ void CProfilerSubsystem::RecordCounter( uint32 Name, float64 Value, EProfileCoun
 int64 CProfilerSubsystem::BeginSample( uint32 Category, uint32 Owner, uint32 Name, uint64 Instance, uint32 Label )
 {
 	// メインスレッド以外は、スレッドごとのバッファへ
-	if ( NPlatformTime::GetCurrentThreadId() != RecordingThreadId ) return BeginWorkerSample( Category, Owner, Name, Instance, Label );
-	if ( !bRecording ) return INDEX_NONE;
+	if ( NPlatformTime::GetCurrentThreadId() != RecordingThreadId )
+	{
+		return BeginWorkerSample( Category, Owner, Name, Instance, Label );
+	}
+	if ( !bRecording )
+	{
+		return INDEX_NONE;
+	}
 
 	if ( Current.Samples.Num() >= MaxSamplesPerFrame )
 	{
@@ -451,7 +517,10 @@ int64 CProfilerSubsystem::BeginSample( uint32 Category, uint32 Owner, uint32 Nam
 	Sample.Label = Label;
 	Sample.Parent = CurrentTop;
 	Sample.Depth = CurrentTop == INDEX_NONE ? 0 : static_cast<uint16>( Current.Samples[CurrentTop].Depth + 1 );
-	if ( Sample.Depth > Current.MaxDepth ) Current.MaxDepth = Sample.Depth;
+	if ( Sample.Depth > Current.MaxDepth )
+	{
+		Current.MaxDepth = Sample.Depth;
+	}
 
 	const int32 Index = Current.Samples.Num() - 1;
 	CurrentTop = Index;
@@ -465,7 +534,10 @@ void CProfilerSubsystem::EndSample( int64 SampleId )
 {
 	// 先に終了時刻を取る
 	const int64 EndTick = NPlatformTime::GetTicks();
-	if ( SampleId == INDEX_NONE ) return;
+	if ( SampleId == INDEX_NONE )
+	{
+		return;
+	}
 	if ( NPlatformTime::GetCurrentThreadId() != RecordingThreadId )
 	{
 		EndWorkerSample( SampleId );
@@ -473,11 +545,17 @@ void CProfilerSubsystem::EndSample( int64 SampleId )
 	}
 
 	const int32 SampleIndex = static_cast<int32>( SampleId );
-	if ( !bRecording || !Current.Samples.IsValidIndex( SampleIndex ) ) return;
+	if ( !bRecording || !Current.Samples.IsValidIndex( SampleIndex ) )
+	{
+		return;
+	}
 
 	FProfileSample& Sample = Current.Samples[SampleIndex];
 	Sample.DurationTick = EndTick - Sample.StartTick;
-	if ( Sample.Parent != INDEX_NONE ) Current.Samples[Sample.Parent].ChildTick += Sample.DurationTick;
+	if ( Sample.Parent != INDEX_NONE )
+	{
+		Current.Samples[Sample.Parent].ChildTick += Sample.DurationTick;
+	}
 	CurrentTop = Sample.Parent;
 }
 
@@ -487,7 +565,10 @@ void CProfilerSubsystem::EndSample( int64 SampleId )
 
 FProfilerWorkerBuffer* CProfilerSubsystem::GetWorkerBuffer()
 {
-	if ( GThreadBufferOwner == this ) return GThreadBuffer;
+	if ( GThreadBufferOwner == this )
+	{
+		return GThreadBuffer;
+	}
 
 	TUniquePtr<FProfilerWorkerBuffer> Buffer = MakeUnique<FProfilerWorkerBuffer>();
 	Buffer->ThreadId = NPlatformTime::GetCurrentThreadId();
@@ -513,7 +594,10 @@ int64 CProfilerSubsystem::BeginWorkerSample( uint32 Category, uint32 Owner, uint
 		Buffer.NameId = InternString( NProfiler::GThreadName );
 	}
 
-	if ( Buffer.Samples.Num() >= MaxWorkerBufferSamples ) return INDEX_NONE;
+	if ( Buffer.Samples.Num() >= MaxWorkerBufferSamples )
+	{
+		return INDEX_NONE;
+	}
 
 	FProfileSample& Sample = Buffer.Samples.EmplaceGetRef();
 	Sample.Category = Category;
@@ -533,18 +617,27 @@ int64 CProfilerSubsystem::BeginWorkerSample( uint32 Category, uint32 Owner, uint
 
 void CProfilerSubsystem::EndWorkerSample( int64 SampleId )
 {
-	if ( GThreadBufferOwner != this ) return;   // このスレッドは始めていない
+	if ( GThreadBufferOwner != this )
+	{
+		return;   // このスレッドは始めていない
+	}
 	FProfilerWorkerBuffer& Buffer = *GThreadBuffer;
 
 	const int64 EndTick = NPlatformTime::GetTicks();
 	FScopedLock Lock( Buffer.Mutex );
 
 	const int64 Index = SampleId - Buffer.BaseId;
-	if ( Index < 0 || Index >= Buffer.Samples.Num() ) return;   // 記録が消されたあとなど
+	if ( Index < 0 || Index >= Buffer.Samples.Num() )
+	{
+		return;   // 記録が消されたあとなど
+	}
 
 	FProfileSample& Sample = Buffer.Samples[static_cast<int32>( Index )];
 	Sample.DurationTick = EndTick - Sample.StartTick;
-	if ( Sample.Parent != INDEX_NONE ) Buffer.Samples[Sample.Parent].ChildTick += Sample.DurationTick;
+	if ( Sample.Parent != INDEX_NONE )
+	{
+		Buffer.Samples[Sample.Parent].ChildTick += Sample.DurationTick;
+	}
 	Buffer.CurrentTop = Sample.Parent;
 }
 
@@ -554,7 +647,10 @@ void CProfilerSubsystem::CollectWorkerSamples()
 	{
 		FScopedLock Lock( WorkerRegistryMutex );
 		Buffers.Reserve( WorkerBuffers.Num() );
-		for ( const TUniquePtr<FProfilerWorkerBuffer>& Buffer : WorkerBuffers ) Buffers.Add( Buffer.Get() );
+		for ( const TUniquePtr<FProfilerWorkerBuffer>& Buffer : WorkerBuffers )
+		{
+			Buffers.Add( Buffer.Get() );
+		}
 	}
 
 	TArray<FProfileSample> Taken;
@@ -570,19 +666,31 @@ void CProfilerSubsystem::CollectWorkerSamples()
 			while ( NumComplete < Num )
 			{
 				const FProfileSample& Sample = Buffer->Samples[NumComplete];
-				if ( Sample.Parent == INDEX_NONE && Sample.DurationTick < 0 ) break;
+				if ( Sample.Parent == INDEX_NONE && Sample.DurationTick < 0 )
+				{
+					break;
+				}
 				++NumComplete;
 			}
-			if ( NumComplete == 0 ) continue;
+			if ( NumComplete == 0 )
+			{
+				continue;
+			}
 
 			Taken.Append( Buffer->Samples.GetData(), NumComplete );
 			Buffer->Samples.RemoveAt( 0, NumComplete );
 			Buffer->BaseId += NumComplete;
 			for ( FProfileSample& Sample : Buffer->Samples )
 			{
-				if ( Sample.Parent != INDEX_NONE ) Sample.Parent -= NumComplete;
+				if ( Sample.Parent != INDEX_NONE )
+				{
+					Sample.Parent -= NumComplete;
+				}
 			}
-			if ( Buffer->CurrentTop != INDEX_NONE ) Buffer->CurrentTop -= NumComplete;
+			if ( Buffer->CurrentTop != INDEX_NONE )
+			{
+				Buffer->CurrentTop -= NumComplete;
+			}
 		}
 
 		// 木（根から次の根の手前まで）ごとに、開始時刻のフレームへ振り分ける
@@ -590,7 +698,10 @@ void CProfilerSubsystem::CollectWorkerSamples()
 		while ( Begin < Taken.Num() )
 		{
 			int32 End = Begin + 1;
-			while ( End < Taken.Num() && Taken[End].Parent != INDEX_NONE ) ++End;
+			while ( End < Taken.Num() && Taken[End].Parent != INDEX_NONE )
+			{
+				++End;
+			}
 			AddWorkerTree( *Buffer, Taken.GetData() + Begin, End - Begin, Begin );
 			Begin = End;
 		}
@@ -614,10 +725,19 @@ void CProfilerSubsystem::AddWorkerTree( const FProfilerWorkerBuffer& Buffer, con
 		while ( Low < High )
 		{
 			const int32 Mid = ( Low + High ) / 2;
-			if ( Frames[Mid].StartTick <= RootStart ) Low = Mid + 1;
-			else High = Mid;
+			if ( Frames[Mid].StartTick <= RootStart )
+			{
+				Low = Mid + 1;
+			}
+			else
+			{
+				High = Mid;
+			}
 		}
-		if ( Low - 1 < FirstFrameIndex ) return;   // そのフレームはもう捨てた（または記録を始める前）
+		if ( Low - 1 < FirstFrameIndex )
+		{
+			return;   // そのフレームはもう捨てた（または記録を始める前）
+		}
 		Target = &Frames[Low - 1];
 		bStoredFrame = true;
 	}
@@ -637,7 +757,10 @@ void CProfilerSubsystem::AddWorkerTree( const FProfilerWorkerBuffer& Buffer, con
 		Track = &Target->Threads.EmplaceGetRef();
 		Track->ThreadId = Buffer.ThreadId;
 	}
-	if ( Buffer.NameId != 0 ) Track->Name = Buffer.NameId;
+	if ( Buffer.NameId != 0 )
+	{
+		Track->Name = Buffer.NameId;
+	}
 
 	// 追記する。Parent は木の先頭を 0 とした位置から、行の中での位置へ付け替える
 	const int32 Offset = Track->Samples.Num();
@@ -645,10 +768,19 @@ void CProfilerSubsystem::AddWorkerTree( const FProfilerWorkerBuffer& Buffer, con
 	for ( int32 i = 0; i < Count; ++i )
 	{
 		FProfileSample& Sample = Track->Samples[Offset + i];
-		if ( Sample.Parent != INDEX_NONE ) Sample.Parent = Sample.Parent - TreeStart + Offset;
-		if ( Sample.Depth > Track->MaxDepth ) Track->MaxDepth = Sample.Depth;
+		if ( Sample.Parent != INDEX_NONE )
+		{
+			Sample.Parent = Sample.Parent - TreeStart + Offset;
+		}
+		if ( Sample.Depth > Track->MaxDepth )
+		{
+			Track->MaxDepth = Sample.Depth;
+		}
 	}
-	if ( bStoredFrame ) StoredSamples += Count;
+	if ( bStoredFrame )
+	{
+		StoredSamples += Count;
+	}
 }
 
 void CProfilerSubsystem::ClearWorkerBuffers()

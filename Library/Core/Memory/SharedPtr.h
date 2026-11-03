@@ -37,7 +37,10 @@ namespace NSharedPtrDetail
 			int32 Count = SharedCount.Load( EMemoryOrder::Relaxed );
 			while ( Count > 0 )
 			{
-				if ( SharedCount.CompareExchangeWeak( Count, Count + 1, EMemoryOrder::AcquireRelease, EMemoryOrder::Relaxed ) ) return true;
+				if ( SharedCount.CompareExchangeWeak( Count, Count + 1, EMemoryOrder::AcquireRelease, EMemoryOrder::Relaxed ) )
+				{
+					return true;
+				}
 			}
 			return false;
 		}
@@ -108,7 +111,10 @@ namespace NSharedPtrDetail
 	template<typename U>
 	FORCEINLINE auto EnableSharedFromThis( FRefController* Controller, U* Object, int ) -> decltype( Object->InternalSetWeakThis( Controller, Object ), void() )
 	{
-		if ( Object ) Object->InternalSetWeakThis( Controller, Object );
+		if ( Object )
+		{
+			Object->InternalSetWeakThis( Controller, Object );
+		}
 	}
 	FORCEINLINE void EnableSharedFromThis( FRefController*, const volatile void*, long ) {}
 
@@ -154,7 +160,10 @@ public:
 	template<typename U, typename Deleter, typename = TEnableIfT<bIsConvertible<U*, T*>>>
 	FORCEINLINE TSharedPtr( U* InObject, Deleter InDeleter )
 	{
-		if ( !InObject ) return;
+		if ( !InObject )
+		{
+			return;
+		}
 		Object     = InObject;
 		Controller = new NSharedPtrDetail::TRefControllerWithDeleter<U, Deleter>( InObject, MoveTemp( InDeleter ) );
 		NSharedPtrDetail::EnableSharedFromThis( Controller, InObject, 0 );
@@ -170,7 +179,10 @@ public:
 
 	FORCEINLINE TSharedPtr( const TSharedPtr& Other ) noexcept : Object( Other.Object ), Controller( Other.Controller )
 	{
-		if ( Controller ) Controller->AddShared();
+		if ( Controller )
+		{
+			Controller->AddShared();
+		}
 	}
 
 	FORCEINLINE TSharedPtr( TSharedPtr&& Other ) noexcept : Object( Other.Object ), Controller( Other.Controller )
@@ -183,7 +195,10 @@ public:
 	template<typename U, typename = TEnableIfT<bIsConvertible<U*, T*>>>
 	FORCEINLINE TSharedPtr( const TSharedPtr<U>& Other ) noexcept : Object( Other.Object ), Controller( Other.Controller )
 	{
-		if ( Controller ) Controller->AddShared();
+		if ( Controller )
+		{
+			Controller->AddShared();
+		}
 	}
 
 	template<typename U, typename = TEnableIfT<bIsConvertible<U*, T*>>>
@@ -197,12 +212,18 @@ public:
 	template<typename U>
 	FORCEINLINE TSharedPtr( const TSharedPtr<U>& Other, T* InObject ) noexcept : Object( InObject ), Controller( Other.Controller )
 	{
-		if ( Controller ) Controller->AddShared();
+		if ( Controller )
+		{
+			Controller->AddShared();
+		}
 	}
 
 	FORCEINLINE ~TSharedPtr()
 	{
-		if ( Controller ) Controller->ReleaseShared();
+		if ( Controller )
+		{
+			Controller->ReleaseShared();
+		}
 	}
 
 	FORCEINLINE TSharedPtr& operator=( const TSharedPtr& Other ) noexcept
@@ -279,7 +300,10 @@ public:
 		{
 			Object     = Casted;
 			Controller = Other.Controller;
-			if ( Controller ) Controller->AddShared();
+			if ( Controller )
+			{
+				Controller->AddShared();
+			}
 		}
 	}
 
@@ -324,12 +348,18 @@ public:
 	template<typename U, typename = TEnableIfT<bIsConvertible<U*, T*>>>
 	FORCEINLINE TWeakPtr( const TSharedPtr<U>& Shared ) noexcept : Object( Shared.Object ), Controller( Shared.Controller )
 	{
-		if ( Controller ) Controller->AddWeak();
+		if ( Controller )
+		{
+			Controller->AddWeak();
+		}
 	}
 
 	FORCEINLINE TWeakPtr( const TWeakPtr& Other ) noexcept : Object( Other.Object ), Controller( Other.Controller )
 	{
-		if ( Controller ) Controller->AddWeak();
+		if ( Controller )
+		{
+			Controller->AddWeak();
+		}
 	}
 
 	FORCEINLINE TWeakPtr( TWeakPtr&& Other ) noexcept : Object( Other.Object ), Controller( Other.Controller )
@@ -341,12 +371,18 @@ public:
 	template<typename U, typename = TEnableIfT<bIsConvertible<U*, T*>>>
 	FORCEINLINE TWeakPtr( const TWeakPtr<U>& Other ) noexcept : Object( Other.Object ), Controller( Other.Controller )
 	{
-		if ( Controller ) Controller->AddWeak();
+		if ( Controller )
+		{
+			Controller->AddWeak();
+		}
 	}
 
 	FORCEINLINE ~TWeakPtr()
 	{
-		if ( Controller ) Controller->ReleaseWeak();
+		if ( Controller )
+		{
+			Controller->ReleaseWeak();
+		}
 	}
 
 	FORCEINLINE TWeakPtr& operator=( const TWeakPtr& Other ) noexcept
@@ -374,7 +410,10 @@ public:
 	// 生きていれば TSharedPtr を返す（破棄済みなら空）
 	FORCEINLINE TSharedPtr<T> Pin() const noexcept
 	{
-		if ( Controller && Controller->TryAddShared() ) return TSharedPtr<T>( Object, Controller, 0 );
+		if ( Controller && Controller->TryAddShared() )
+		{
+			return TSharedPtr<T>( Object, Controller, 0 );
+		}
 		return TSharedPtr<T>();
 	}
 
@@ -390,7 +429,10 @@ public:
 private:
 	FORCEINLINE TWeakPtr( T* InObject, FRefController* InController ) noexcept : Object( InObject ), Controller( InController )
 	{
-		if ( Controller ) Controller->AddWeak();
+		if ( Controller )
+		{
+			Controller->AddWeak();
+		}
 	}
 
 	FORCEINLINE void SwapWith( TWeakPtr& Other ) noexcept
@@ -441,7 +483,10 @@ public:
 	template<typename U>
 	FORCEINLINE void InternalSetWeakThis( NSharedPtrDetail::FRefController* Controller, U* Object ) const
 	{
-		if ( !WeakThis.IsValid() ) WeakThis = TWeakPtr<T>( static_cast<T*>( Object ), Controller );
+		if ( !WeakThis.IsValid() )
+		{
+			WeakThis = TWeakPtr<T>( static_cast<T*>( Object ), Controller );
+		}
 	}
 
 protected:

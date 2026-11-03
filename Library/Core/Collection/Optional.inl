@@ -9,11 +9,20 @@
 template<typename T>
 auto TOptional<T>::operator=( const TOptional& Other ) -> TOptional&
 {
-	if ( this == &Other ) return *this;
+	if ( this == &Other )
+	{
+		return *this;
+	}
 	if ( Other.bIsSet )
 	{
-		if ( bIsSet ) Ref() = Other.Ref();
-		else Emplace( Other.Ref() );
+		if ( bIsSet )
+		{
+			Ref() = Other.Ref();
+		}
+		else
+		{
+			Emplace( Other.Ref() );
+		}
 	}
 	else
 	{
@@ -25,11 +34,20 @@ auto TOptional<T>::operator=( const TOptional& Other ) -> TOptional&
 template<typename T>
 auto TOptional<T>::operator=( TOptional&& Other ) noexcept( bIsNothrowMoveAssignable<T> ) -> TOptional&
 {
-	if ( this == &Other ) return *this;
+	if ( this == &Other )
+	{
+		return *this;
+	}
 	if ( Other.bIsSet )
 	{
-		if ( bIsSet ) Ref() = MoveTemp( Other.Ref() );
-		else Emplace( MoveTemp( Other.Ref() ) );
+		if ( bIsSet )
+		{
+			Ref() = MoveTemp( Other.Ref() );
+		}
+		else
+		{
+			Emplace( MoveTemp( Other.Ref() ) );
+		}
 	}
 	else
 	{

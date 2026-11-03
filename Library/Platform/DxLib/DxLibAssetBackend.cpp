@@ -80,24 +80,42 @@ int32 CDxLibAssetBackend::CreateTextureFromMemory( const void* FileImage, usize 
 
 int32 CDxLibAssetBackend::CreateTextureRegion( int32 Source, int32 X, int32 Y, int32 Width, int32 Height )
 {
-	if ( Source < 0 || X < 0 || Y < 0 || Width <= 0 || Height <= 0 ) return NAsset::InvalidHandle;
+	if ( Source < 0 || X < 0 || Y < 0 || Width <= 0 || Height <= 0 )
+	{
+		return NAsset::InvalidHandle;
+	}
 	// 元グラフ上の指定矩形を収める寸法。
 	int SourceWidth = 0;
 	int SourceHeight = 0;
-	if ( GetGraphSize( Source, &SourceWidth, &SourceHeight ) != 0 ) return NAsset::InvalidHandle;
-	if ( static_cast<int64>( X ) + Width > SourceWidth || static_cast<int64>( Y ) + Height > SourceHeight ) return NAsset::InvalidHandle;
+	if ( GetGraphSize( Source, &SourceWidth, &SourceHeight ) != 0 )
+	{
+		return NAsset::InvalidHandle;
+	}
+	if ( static_cast<int64>( X ) + Width > SourceWidth || static_cast<int64>( Y ) + Height > SourceHeight )
+	{
+		return NAsset::InvalidHandle;
+	}
 	return DerivationGraph( X, Y, Width, Height, Source );
 }
 
 bool CDxLibAssetBackend::GetTextureUvBounds( int32 Texture, float32 ( &OutUV )[4] )
 {
-	if ( Texture < 0 ) return false;
+	if ( Texture < 0 )
+	{
+		return false;
+	}
 	// 派生前のbase texture全体のpixel寸法。
 	int TextureWidth = 0, TextureHeight = 0;
 	// 派生グラフがbase texture上で占めるpixel矩形。
 	int X = 0, Y = 0, Width = 0, Height = 0;
-	if ( GetGraphTextureSize( Texture, &TextureWidth, &TextureHeight ) != 0 || TextureWidth <= 0 || TextureHeight <= 0 ) return false;
-	if ( GetGraphUseBaseGraphArea( Texture, &X, &Y, &Width, &Height ) != 0 || X < 0 || Y < 0 || Width <= 0 || Height <= 0 || static_cast<int64>( X ) + Width > TextureWidth || static_cast<int64>( Y ) + Height > TextureHeight ) return false;
+	if ( GetGraphTextureSize( Texture, &TextureWidth, &TextureHeight ) != 0 || TextureWidth <= 0 || TextureHeight <= 0 )
+	{
+		return false;
+	}
+	if ( GetGraphUseBaseGraphArea( Texture, &X, &Y, &Width, &Height ) != 0 || X < 0 || Y < 0 || Width <= 0 || Height <= 0 || static_cast<int64>( X ) + Width > TextureWidth || static_cast<int64>( Y ) + Height > TextureHeight )
+	{
+		return false;
+	}
 	// 一pixel領域でも一点を正確に標本化できるよう、両端を中央へ寄せる。
 	// 半pixelを正規化した横・縦のUV幅。
 	const float32 HalfU = 0.5f / static_cast<float32>( TextureWidth );
@@ -113,7 +131,10 @@ bool CDxLibAssetBackend::GetTextureSize( int32 Texture, int32& OutWidth, int32& 
 {
 	int Width = 0;
 	int Height = 0;
-	if ( GetGraphSize( Texture, &Width, &Height ) != 0 ) return false;
+	if ( GetGraphSize( Texture, &Width, &Height ) != 0 )
+	{
+		return false;
+	}
 	OutWidth = Width;
 	OutHeight = Height;
 	return true;
@@ -621,7 +642,10 @@ int32 CDxLibAssetBackend::GetModelMeshCount( int32 Model )
 bool CDxLibAssetBackend::GetModelBounds( int32 Model, float32 ( &OutMin )[3], float32 ( &OutMax )[3] )
 {
 	const int32 NumMeshes = MV1GetMeshNum( Model );
-	if ( NumMeshes <= 0 ) return false;
+	if ( NumMeshes <= 0 )
+	{
+		return false;
+	}
 
 	// 描くときと同じ位置（フレームの変換を適用した頂点）の範囲。取れれば、これを使う
 	if ( MV1SetupReferenceMesh( Model, -1, TRUE, TRUE ) >= 0 )
@@ -638,7 +662,10 @@ bool CDxLibAssetBackend::GetModelBounds( int32 Model, float32 ( &OutMin )[3], fl
 			OutMax[2] = Reference.MaxPosition.z;
 		}
 		MV1TerminateReferenceMesh( Model, -1, TRUE, TRUE );
-		if ( bHasPolygons ) return true;
+		if ( bHasPolygons )
+		{
+			return true;
+		}
 	}
 
 	bool bAny = false;
@@ -660,8 +687,14 @@ bool CDxLibAssetBackend::GetModelBounds( int32 Model, float32 ( &OutMin )[3], fl
 
 bool CDxLibAssetBackend::GetModelCollisionMesh( int32 Model, TArray<float32>& OutPositions, TArray<uint32>& OutIndices )
 {
-	if ( MV1GetMeshNum( Model ) <= 0 ) return false;
-	if ( MV1SetupReferenceMesh( Model, -1, TRUE, TRUE ) < 0 ) return false;
+	if ( MV1GetMeshNum( Model ) <= 0 )
+	{
+		return false;
+	}
+	if ( MV1SetupReferenceMesh( Model, -1, TRUE, TRUE ) < 0 )
+	{
+		return false;
+	}
 	const MV1_REF_POLYGONLIST Reference = MV1GetReferenceMesh( Model, -1, TRUE, TRUE );
 	const bool bOk = Reference.PolygonNum > 0 && Reference.VertexNum > 0 && Reference.Polygons != nullptr && Reference.Vertexs != nullptr;
 	if ( bOk )
@@ -678,7 +711,10 @@ bool CDxLibAssetBackend::GetModelCollisionMesh( int32 Model, TArray<float32>& Ou
 		}
 		for ( int32 i = 0; i < Reference.PolygonNum; ++i )
 		{
-			for ( int32 Corner = 0; Corner < 3; ++Corner ) OutIndices.Add( static_cast<uint32>( Reference.Polygons[i].VIndex[Corner] ) );
+			for ( int32 Corner = 0; Corner < 3; ++Corner )
+			{
+				OutIndices.Add( static_cast<uint32>( Reference.Polygons[i].VIndex[Corner] ) );
+			}
 		}
 	}
 	MV1TerminateReferenceMesh( Model, -1, TRUE, TRUE );
@@ -689,7 +725,10 @@ bool CDxLibAssetBackend::CreateMeshBuffers( const FMeshVertex* Vertices, int32 N
 {
 	OutVertexBuffer = NAsset::InvalidHandle;
 	OutIndexBuffer = NAsset::InvalidHandle;
-	if ( Vertices == nullptr || Indices == nullptr || NumVertices < 3 || NumIndices < 3 ) return false;
+	if ( Vertices == nullptr || Indices == nullptr || NumVertices < 3 || NumIndices < 3 )
+	{
+		return false;
+	}
 
 	TArray<VERTEX3D> Converted;
 	Converted.Reserve( NumVertices );
@@ -706,7 +745,10 @@ bool CDxLibAssetBackend::CreateMeshBuffers( const FMeshVertex* Vertices, int32 N
 		Converted.Add( Vertex );
 	}
 	const int VertexBuffer = CreateVertexBuffer( NumVertices, DX_VERTEX_TYPE_NORMAL_3D );
-	if ( VertexBuffer < 0 ) return false;
+	if ( VertexBuffer < 0 )
+	{
+		return false;
+	}
 	const int IndexBuffer = CreateIndexBuffer( NumIndices, DX_INDEX_TYPE_32BIT );
 	if ( IndexBuffer < 0 )
 	{
@@ -726,12 +768,18 @@ bool CDxLibAssetBackend::CreateMeshBuffers( const FMeshVertex* Vertices, int32 N
 
 void CDxLibAssetBackend::DeleteVertexBuffer( int32 VertexBuffer )
 {
-	if ( VertexBuffer >= 0 ) ::DeleteVertexBuffer( VertexBuffer );
+	if ( VertexBuffer >= 0 )
+	{
+		::DeleteVertexBuffer( VertexBuffer );
+	}
 }
 
 void CDxLibAssetBackend::DeleteIndexBuffer( int32 IndexBuffer )
 {
-	if ( IndexBuffer >= 0 ) ::DeleteIndexBuffer( IndexBuffer );
+	if ( IndexBuffer >= 0 )
+	{
+		::DeleteIndexBuffer( IndexBuffer );
+	}
 }
 
 int32 CDxLibAssetBackend::MakeVertexBuffer( int32 NumVertices )
@@ -907,13 +955,22 @@ FString CDxLibAssetBackend::GetModelFrameName( int32 Model, int32 FrameIndex )
 bool CDxLibAssetBackend::SaveModelToMV1( int32 Model, const FString& Path, const FModelSaveOptions& Options, FString& OutWarning )
 {
 	int SaveType = MV1_SAVETYPE_NORMAL;
-	if ( Options.Type == EModelSaveType::MeshOnly ) SaveType = MV1_SAVETYPE_MESH;
-	else if ( Options.Type == EModelSaveType::AnimOnly ) SaveType = MV1_SAVETYPE_ANIM;
+	if ( Options.Type == EModelSaveType::MeshOnly )
+	{
+		SaveType = MV1_SAVETYPE_MESH;
+	}
+	else if ( Options.Type == EModelSaveType::AnimOnly )
+	{
+		SaveType = MV1_SAVETYPE_ANIM;
+	}
 
 	// 圧縮: 法線 8bit・座標 16bit・ウェイト 8bit なし・アニメーション 16bit（DxLib の既定）。しない: すべて 32bit
 	const int Normal8 = Options.bCompress ? 1 : 0, Position16 = Options.bCompress ? 1 : 0, Anim16 = Options.bCompress ? 1 : 0;
 	const int Result = MV1SaveModelToMV1File( Model, *Path, SaveType, -1, TRUE, Normal8, Position16, 0, Anim16 );
-	if ( Result == -2 ) OutWarning = "the model has animations that are not used by any bone";
+	if ( Result == -2 )
+	{
+		OutWarning = "the model has animations that are not used by any bone";
+	}
 	return Result == 0 || Result == -2;
 }
 
@@ -973,7 +1030,10 @@ void CDxLibAssetBackend::DeleteFont( int32 Font )
 
 int32 CDxLibAssetBackend::MeasureText( int32 Font, const char* Text )
 {
-	if ( Text == nullptr ) return 0;
+	if ( Text == nullptr )
+	{
+		return 0;
+	}
 	const int Length = static_cast<int>( NCString::Length( Text ) );
 	return Font >= 0 ? GetDrawStringWidthToHandle( Text, Length, Font ) : GetDrawStringWidth( Text, Length );
 }
@@ -1158,7 +1218,10 @@ FBackendMemoryInfo CDxLibAssetBackend::GetMemoryInfo()
 
 	PROCESS_MEMORY_COUNTERS Counters = {};
 	Counters.cb = sizeof( Counters );
-	if ( GetProcessMemoryInfo( GetCurrentProcess(), &Counters, sizeof( Counters ) ) ) Info.ProcessWorkingSet = static_cast<int64>( Counters.WorkingSetSize );
+	if ( GetProcessMemoryInfo( GetCurrentProcess(), &Counters, sizeof( Counters ) ) )
+	{
+		Info.ProcessWorkingSet = static_cast<int64>( Counters.WorkingSetSize );
+	}
 
 	Info.NumTextureHandles = GetHandleNum( DX_HANDLETYPE_GRAPH );
 	Info.NumModelHandles = GetHandleNum( DX_HANDLETYPE_MODEL );
@@ -1172,7 +1235,10 @@ int64 CDxLibAssetBackend::EstimateModelBytes( int32 Model )
 	// 頂点（1 つ 64 バイトとして）、フレームの行列、使っているテクスチャ（幅 x 高さ x 4）
 	int64 Bytes = static_cast<int64>( MV1GetFrameNum( Model ) ) * 64;
 	const int NumLists = MV1GetTriangleListNum( Model );
-	for ( int i = 0; i < NumLists; ++i ) Bytes += static_cast<int64>( MV1GetTriangleListVertexNum( Model, i ) ) * 64;
+	for ( int i = 0; i < NumLists; ++i )
+	{
+		Bytes += static_cast<int64>( MV1GetTriangleListVertexNum( Model, i ) ) * 64;
+	}
 
 	const int NumTextures = MV1GetTextureNum( Model );
 	for ( int i = 0; i < NumTextures; ++i )
@@ -1180,7 +1246,10 @@ int64 CDxLibAssetBackend::EstimateModelBytes( int32 Model )
 		const int Graph = MV1GetTextureGraphHandle( Model, i );
 		int Width = 0;
 		int Height = 0;
-		if ( Graph >= 0 && GetGraphSize( Graph, &Width, &Height ) == 0 ) Bytes += static_cast<int64>( Width ) * Height * 4;
+		if ( Graph >= 0 && GetGraphSize( Graph, &Width, &Height ) == 0 )
+		{
+			Bytes += static_cast<int64>( Width ) * Height * 4;
+		}
 	}
 	return Bytes;
 }
@@ -1188,7 +1257,10 @@ int64 CDxLibAssetBackend::EstimateModelBytes( int32 Model )
 int64 CDxLibAssetBackend::EstimateSoundBytes( int32 Sound, ESoundLoadMode Mode )
 {
 	// 展開後は 16bit ステレオ（1 サンプル 4 バイト）として見積もる。再生しながら読む音は、読み込み用の領域だけ
-	if ( Mode == ESoundLoadMode::Stream ) return 2 * 64 * 1024;
+	if ( Mode == ESoundLoadMode::Stream )
+	{
+		return 2 * 64 * 1024;
+	}
 	return static_cast<int64>( GetSoundTotalSample( Sound ) ) * 4;
 }
 

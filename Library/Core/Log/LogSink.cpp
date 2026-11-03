@@ -45,12 +45,21 @@ namespace
 	bool ContainsNoCase( const FString& Text, const char* Pattern )
 	{
 		const int32 PatternLength = static_cast<int32>( NCString::Length( Pattern ) );
-		if ( PatternLength == 0 ) return true;
-		if ( PatternLength > Text.Len() ) return false;
+		if ( PatternLength == 0 )
+		{
+			return true;
+		}
+		if ( PatternLength > Text.Len() )
+		{
+			return false;
+		}
 
 		for ( int32 i = 0; i + PatternLength <= Text.Len(); ++i )
 		{
-			if ( NCString::CompareNIgnoreCase( Text.GetData() + i, Pattern, static_cast<usize>( PatternLength ) ) == 0 ) return true;
+			if ( NCString::CompareNIgnoreCase( Text.GetData() + i, Pattern, static_cast<usize>( PatternLength ) ) == 0 )
+			{
+				return true;
+			}
 		}
 		return false;
 	}
@@ -85,11 +94,17 @@ void CConsoleLogSink::Write( const FLogMessage& Message )
 
 	// コンソール
 	HANDLE Console = GetStdHandle( STD_OUTPUT_HANDLE );
-	if ( Console == nullptr || Console == INVALID_HANDLE_VALUE ) return;
+	if ( Console == nullptr || Console == INVALID_HANDLE_VALUE )
+	{
+		return;
+	}
 
 	CONSOLE_SCREEN_BUFFER_INFO Info{};
 	const bool bHasInfo = GetConsoleScreenBufferInfo( Console, &Info ) != FALSE;
-	if ( !bHasInfo ) return;  // リダイレクト時などコンソールでない
+	if ( !bHasInfo )
+	{
+		return;  // リダイレクト時などコンソールでない
+	}
 
 	SetConsoleTextAttribute( Console, GetConsoleColor( Message.Verbosity ) );
 	DWORD Written = 0;
@@ -113,7 +128,10 @@ CFileLogSink::~CFileLogSink()
 
 void CFileLogSink::Write( const FLogMessage& Message )
 {
-	if ( !File.IsOpen() ) return;
+	if ( !File.IsOpen() )
+	{
+		return;
+	}
 
 	// 行頭に時刻 [HH:MM:SS.mmm] を付ける
 	char Stamp[32];
@@ -175,7 +193,10 @@ void CImGuiLogSink::Draw( const char* Title, bool* pOpen )
 	}
 
 	// ---- ツールバー ----
-	if ( ImGui::Button( "Clear" ) ) Clear();
+	if ( ImGui::Button( "Clear" ) )
+	{
+		Clear();
+	}
 	ImGui::SameLine();
 	ImGui::Checkbox( "Auto-scroll", &bAutoScroll );
 	ImGui::SameLine();
@@ -204,8 +225,14 @@ void CImGuiLogSink::Draw( const char* Title, bool* pOpen )
 			for ( int32 i = 0; i < Entries.Num(); ++i )
 			{
 				const FEntry& Entry = GetEntry( i );
-				if ( static_cast<int32>( Entry.Verbosity ) > FilterVerbosity ) continue;
-				if ( !ContainsNoCase( Entry.Text, FilterText ) ) continue;
+				if ( static_cast<int32>( Entry.Verbosity ) > FilterVerbosity )
+				{
+					continue;
+				}
+				if ( !ContainsNoCase( Entry.Text, FilterText ) )
+				{
+					continue;
+				}
 
 				ImGui::PushStyleColor( ImGuiCol_Text, GetImGuiColor( Entry.Verbosity ) );
 				ImGui::TextUnformatted( Entry.Text.GetData(), Entry.Text.GetData() + Entry.Text.Len() );

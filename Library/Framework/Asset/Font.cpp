@@ -22,7 +22,10 @@ CFont::CFont( const FString& InKey, int32 InHandle, const FFontDesc& InDesc, con
 CFont::~CFont()
 {
 	NAssetService::ReleaseFont( Handle );
-	if ( !FontFilePath.IsEmpty() ) NAssetService::RemoveFontFile( FontFilePath );
+	if ( !FontFilePath.IsEmpty() )
+	{
+		NAssetService::RemoveFontFile( FontFilePath );
+	}
 }
 
 FString CFont::Describe() const
@@ -50,7 +53,10 @@ void CFont::Record( FDrawContext& Draw, int32 X, int32 Y, const char* Text, cons
 void CFont::Draw( int32 X, int32 Y, const char* Text, const FColor32& Color, EDrawTextAlign Align, const FColor32& EdgeColor ) const
 {
 	IDrawExecutor* Executor = GetAppSubsystem<IDrawExecutor>();
-	if ( Executor == nullptr ) return;
+	if ( Executor == nullptr )
+	{
+		return;
+	}
 
 	// 記録して、すぐ実行する（使い回す入れ物。メインスレッドだけで使う）
 	static FDrawBuffer Buffer;

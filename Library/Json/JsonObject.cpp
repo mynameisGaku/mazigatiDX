@@ -35,7 +35,10 @@ bool NJson::CJsonObject::LoadFromFile( const FString& Filename )
 	// UTF-8 の BOM (EF BB BF) は読み飛ばす（エディターが付けることがある）
 	const uint8* Begin = Bytes.GetData();
 	const uint8* const End = Begin + Bytes.Num();
-	if ( Bytes.Num() >= 3 && Begin[0] == 0xEF && Begin[1] == 0xBB && Begin[2] == 0xBF ) Begin += 3;
+	if ( Bytes.Num() >= 3 && Begin[0] == 0xEF && Begin[1] == 0xBB && Begin[2] == 0xBF )
+	{
+		Begin += 3;
+	}
 
 	// 第 3 引数 false: 構文エラーで例外を投げず discarded を返す
 	NlohmannJson Parsed = NlohmannJson::parse( Begin, End, nullptr, false );
@@ -80,14 +83,20 @@ bool NJson::CJsonObject::SaveToFile( const FString& Filename, int32 Indent ) con
 void NJson::CJsonObject::Set( const FString& Key, const NlohmannJson& Value )
 {
 	const TArray<NJson::FJsonString> Path = SplitKeyPath( Key );
-	if ( Path.Num() == 0 ) return;
+	if ( Path.Num() == 0 )
+	{
+		return;
+	}
 
 	// 途中のオブジェクトが無ければ作る（オブジェクト以外なら置き換える）
 	NlohmannJson* Node = &Root;
 	for ( int32 i = 0; i < Path.Num() - 1; ++i )
 	{
 		NlohmannJson& Child = ( *Node )[Path[i]];
-		if ( !Child.is_object() ) Child = NlohmannJson::object();
+		if ( !Child.is_object() )
+		{
+			Child = NlohmannJson::object();
+		}
 		Node = &Child;
 	}
 	( *Node )[Path.Last()] = Value;
@@ -161,14 +170,23 @@ TArray<FString> NJson::CJsonObject::GetKeys() const
 const NlohmannJson* NJson::CJsonObject::FindNode( const FString& Key ) const
 {
 	const TArray<NJson::FJsonString> Path = SplitKeyPath( Key );
-	if ( Path.Num() == 0 ) return nullptr;
+	if ( Path.Num() == 0 )
+	{
+		return nullptr;
+	}
 
 	const NlohmannJson* Node = &Root;
 	for ( const NJson::FJsonString& Part : Path )
 	{
-		if ( !Node->is_object() ) return nullptr;
+		if ( !Node->is_object() )
+		{
+			return nullptr;
+		}
 		const auto It = Node->find( Part );
-		if ( It == Node->end() ) return nullptr;
+		if ( It == Node->end() )
+		{
+			return nullptr;
+		}
 		Node = &*It;
 	}
 	return Node;

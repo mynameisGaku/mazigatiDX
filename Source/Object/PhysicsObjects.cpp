@@ -74,7 +74,10 @@ void CPhysicsBall::Tick( float32 DeltaTime )
 	Transform->SetLocalTransform( Body->GetTransform() );
 
 	Age += DeltaTime;
-	if ( Age >= Lifetime || Body->GetPosition().y < KillY ) Destroy();
+	if ( Age >= Lifetime || Body->GetPosition().y < KillY )
+	{
+		Destroy();
+	}
 }
 
 void CPhysicsBall::Draw( FDrawContext& CommandList )
@@ -91,7 +94,10 @@ void CPhysicsBall::Draw( FDrawContext& CommandList )
 
 void CPhysicsBall::OnDestroy()
 {
-	if ( Physics != nullptr && Body != nullptr ) Physics->DestroyBody( Body );
+	if ( Physics != nullptr && Body != nullptr )
+	{
+		Physics->DestroyBody( Body );
+	}
 	Body = nullptr;
 }
 
@@ -114,7 +120,10 @@ void CPhysicsFloor::OnSpawn()
 		return;
 	}
 	Body = Physics->CreateBody( FCollisionShape::Box( HalfExtents ), EBodyType::Static, MakeTransform( Center ) );
-	if ( Body == nullptr ) LOG( LogPhysicsObjects, Error, "%s could not create its rigid body.", *GetDebugName() );
+	if ( Body == nullptr )
+	{
+		LOG( LogPhysicsObjects, Error, "%s could not create its rigid body.", *GetDebugName() );
+	}
 }
 
 void CPhysicsFloor::Draw( FDrawContext& CommandList )
@@ -126,7 +135,10 @@ void CPhysicsFloor::Draw( FDrawContext& CommandList )
 
 void CPhysicsFloor::OnDestroy()
 {
-	if ( Physics != nullptr && Body != nullptr ) Physics->DestroyBody( Body );
+	if ( Physics != nullptr && Body != nullptr )
+	{
+		Physics->DestroyBody( Body );
+	}
 	Body = nullptr;
 }
 

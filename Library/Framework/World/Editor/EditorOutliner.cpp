@@ -21,12 +21,21 @@ namespace
 			const char C = Filter[i];
 			if ( C == ' ' || C == '\t' )
 			{
-				if ( !Current.IsEmpty() ) Terms.Add( Current );
+				if ( !Current.IsEmpty() )
+				{
+					Terms.Add( Current );
+				}
 				Current = FString();
 			}
-			else Current += C;
+			else
+			{
+				Current += C;
+			}
 		}
-		if ( !Current.IsEmpty() ) Terms.Add( Current );
+		if ( !Current.IsEmpty() )
+		{
+			Terms.Add( Current );
+		}
 		return Terms;
 	}
 }
@@ -43,7 +52,10 @@ bool NWorldEditor::MatchesFilterTerm( const FWorldObject& Object, const FString&
 		const FString Component = Term.Mid( 5 );
 		for ( const FString& Name : Object.GetComponentNames() )
 		{
-			if ( Name.Equals( Component, ESearchCase::IgnoreCase ) ) return true;
+			if ( Name.Equals( Component, ESearchCase::IgnoreCase ) )
+			{
+				return true;
+			}
 		}
 		return false;
 	}
@@ -59,7 +71,10 @@ bool NWorldEditor::MatchesFilter( const FWorldObject& Object, const FString& Fil
 {
 	for ( const FString& Term : SplitTerms( Filter ) )
 	{
-		if ( !MatchesFilterTerm( Object, Term ) ) return false;
+		if ( !MatchesFilterTerm( Object, Term ) )
+		{
+			return false;
+		}
 	}
 	return true;
 }
@@ -70,7 +85,10 @@ TArray<FEditorOutlinerRow> NWorldEditor::BuildOutlinerRows( const FWorldDefiniti
 	TMap<int32, int32> IndexById;
 	for ( int32 i = 0; i < Num; ++i )
 	{
-		if ( !IndexById.Contains( World.Objects[i].Id ) ) IndexById.Add( World.Objects[i].Id, i );
+		if ( !IndexById.Contains( World.Objects[i].Id ) )
+		{
+			IndexById.Add( World.Objects[i].Id, i );
+		}
 	}
 
 	// 子の一覧（配列の順）と、最上位（親がいない・存在しない親）
@@ -81,8 +99,14 @@ TArray<FEditorOutlinerRow> NWorldEditor::BuildOutlinerRows( const FWorldDefiniti
 	{
 		const int32 Parent = World.Objects[i].Parent;
 		const int32* ParentIndex = Parent == WorldNoId ? nullptr : IndexById.Find( Parent );
-		if ( ParentIndex == nullptr ) Roots.Add( i );
-		else Children[*ParentIndex].Add( i );
+		if ( ParentIndex == nullptr )
+		{
+			Roots.Add( i );
+		}
+		else
+		{
+			Children[*ParentIndex].Add( i );
+		}
 	}
 
 	// 絞り込み: 一致したものと、その祖先
@@ -97,7 +121,10 @@ TArray<FEditorOutlinerRow> NWorldEditor::BuildOutlinerRows( const FWorldDefiniti
 		for ( int32 i = 0; i < Num; ++i )
 		{
 			Match[i] = MatchesFilter( World.Objects[i], Filter );
-			if ( !Match[i] ) continue;
+			if ( !Match[i] )
+			{
+				continue;
+			}
 			int32 Current = i;
 			for ( int32 Step = 0; Step < MaxDepth && Current != INDEX_NONE && !Show[Current]; ++Step )
 			{
@@ -121,7 +148,10 @@ TArray<FEditorOutlinerRow> NWorldEditor::BuildOutlinerRows( const FWorldDefiniti
 		while ( !Stack.IsEmpty() )
 		{
 			const FEntry Entry = Stack.Pop();
-			if ( Visited[Entry.Index] || !Show[Entry.Index] ) continue;
+			if ( Visited[Entry.Index] || !Show[Entry.Index] )
+			{
+				continue;
+			}
 			Visited[Entry.Index] = true;
 
 			const FWorldObject& Object = World.Objects[Entry.Index];
@@ -133,12 +163,21 @@ TArray<FEditorOutlinerRow> NWorldEditor::BuildOutlinerRows( const FWorldDefiniti
 			Row.bExpanded = Row.bHasChildren && ( bFiltering || !Collapsed.Contains( Object.Id ) );
 			Rows.Add( Row );
 
-			if ( !Row.bExpanded ) continue;
-			for ( int32 i = Children[Entry.Index].Num() - 1; i >= 0; --i ) Stack.Add( { Children[Entry.Index][i], Entry.Depth + 1 } );
+			if ( !Row.bExpanded )
+			{
+				continue;
+			}
+			for ( int32 i = Children[Entry.Index].Num() - 1; i >= 0; --i )
+			{
+				Stack.Add( { Children[Entry.Index][i], Entry.Depth + 1 } );
+			}
 		}
 	};
 
-	for ( const int32 Root : Roots ) Walk( Root );
+	for ( const int32 Root : Roots )
+	{
+		Walk( Root );
+	}
 
 	// 循環していて、木からたどれないもの（畳まれた木の中は、まだ「たどっていない」だけなので除く）
 	TArray<bool> Reachable;
@@ -148,14 +187,23 @@ TArray<FEditorOutlinerRow> NWorldEditor::BuildOutlinerRows( const FWorldDefiniti
 		while ( !Stack.IsEmpty() )
 		{
 			const int32 Index = Stack.Pop();
-			if ( Reachable[Index] ) continue;
+			if ( Reachable[Index] )
+			{
+				continue;
+			}
 			Reachable[Index] = true;
-			for ( const int32 Child : Children[Index] ) Stack.Add( Child );
+			for ( const int32 Child : Children[Index] )
+			{
+				Stack.Add( Child );
+			}
 		}
 	}
 	for ( int32 i = 0; i < Num; ++i )
 	{
-		if ( Reachable[i] || Visited[i] || !Show[i] ) continue;
+		if ( Reachable[i] || Visited[i] || !Show[i] )
+		{
+			continue;
+		}
 		Visited[i] = true;
 		FEditorOutlinerRow Row;
 		Row.ObjectId = World.Objects[i].Id;

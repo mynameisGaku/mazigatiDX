@@ -30,7 +30,10 @@ namespace
 	// 始点・向き・距離が使えるか確かめ、長さ 1 の向きを返す
 	bool PrepareCast( const FVector3& Origin, const FVector3& Direction, float32 MaxDistance, FVector3& OutDirection )
 	{
-		if ( !IsFiniteVector( Origin ) || !NMath::IsFinite( MaxDistance ) || MaxDistance <= 0.0f ) return false;
+		if ( !IsFiniteVector( Origin ) || !NMath::IsFinite( MaxDistance ) || MaxDistance <= 0.0f )
+		{
+			return false;
+		}
 		return NormalizeDirection( Direction, OutDirection );
 	}
 
@@ -42,15 +45,24 @@ namespace
 		switch ( Query.Type )
 		{
 		case FQueryShape::EType::Sphere:
-			if ( !IsSize( Query.Radius ) ) return false;
+			if ( !IsSize( Query.Radius ) )
+			{
+				return false;
+			}
 			OutShape = FCollisionShape::Sphere( Query.Radius );
 			return true;
 		case FQueryShape::EType::Box:
-			if ( !IsSize( Query.HalfExtents.x ) || !IsSize( Query.HalfExtents.y ) || !IsSize( Query.HalfExtents.z ) ) return false;
+			if ( !IsSize( Query.HalfExtents.x ) || !IsSize( Query.HalfExtents.y ) || !IsSize( Query.HalfExtents.z ) )
+			{
+				return false;
+			}
 			OutShape = FCollisionShape::Box( Query.HalfExtents );
 			return true;
 		case FQueryShape::EType::Capsule:
-			if ( !IsSize( Query.HalfHeight ) || !IsSize( Query.Radius ) ) return false;
+			if ( !IsSize( Query.HalfHeight ) || !IsSize( Query.Radius ) )
+			{
+				return false;
+			}
 			OutShape = FCollisionShape::Capsule( Query.HalfHeight, Query.Radius );
 			return true;
 		}
@@ -83,7 +95,10 @@ namespace
 
 		bool ShouldCollideLocked( const JPH::Body& Body ) const override
 		{
-			if ( Body.IsSensor() && !Filter.bIncludeSensors ) return false;
+			if ( Body.IsSensor() && !Filter.bIncludeSensors )
+			{
+				return false;
+			}
 
 			switch ( Body.GetMotionType() )
 			{
@@ -124,15 +139,24 @@ namespace
 					 const FVector3& Direction, const JPH::RayCastResult& Hit, FRayHit& OutHit )
 	{
 		FRigidBody* Body = System.FindBody( Hit.mBodyID );
-		if ( Body == nullptr ) return false;
+		if ( Body == nullptr )
+		{
+			return false;
+		}
 
 		const JPH::RVec3 Point = Ray.GetPointOnRay( Hit.mFraction );
 
 		JPH::BodyLockRead Lock( Jolt.GetBodyLockInterface(), Hit.mBodyID );
-		if ( !Lock.Succeeded() ) return false;
+		if ( !Lock.Succeeded() )
+		{
+			return false;
+		}
 
 		FVector3 Normal = NPhysics::FromPhys( Lock.GetBody().GetWorldSpaceSurfaceNormal( Hit.mSubShapeID2, Point ) );
-		if ( !IsFiniteVector( Normal ) || Normal.LengthSquared() < 0.25f ) Normal = -Direction;  // 面の向きが決まらないとき（中心など）は、レイを押し返す向き
+		if ( !IsFiniteVector( Normal ) || Normal.LengthSquared() < 0.25f )
+		{
+			Normal = -Direction;  // 面の向きが決まらないとき（中心など）は、レイを押し返す向き
+		}
 
 		OutHit.Body     = Body;
 		OutHit.UserData = Body->GetUserData();
@@ -150,14 +174,20 @@ bool CPhysicsSystem::RayCast( const FVector3& Origin, const FVector3& Direction,
 	OutHit = FRayHit();
 
 	FVector3 Unit;
-	if ( !bInitialized || !PrepareCast( Origin, Direction, MaxDistance, Unit ) ) return false;
+	if ( !bInitialized || !PrepareCast( Origin, Direction, MaxDistance, Unit ) )
+	{
+		return false;
+	}
 
 	const JPH::RRayCast Ray( NPhysics::ToPhysR( Origin ), NPhysics::ToPhys( Unit * MaxDistance ) );
 	const FQueryBodyFilter BodyFilter( *this, Filter );
 	const FQueryLayerFilter LayerFilter( Filter.LayerMask );
 	JPH::ClosestHitCollisionCollector<JPH::CastRayCollector> Collector;
 	JoltSystem->GetNarrowPhaseQuery().CastRay( Ray, JPH::RayCastSettings(), Collector, JPH::BroadPhaseLayerFilter(), LayerFilter, BodyFilter );
-	if ( !Collector.HadHit() ) return false;
+	if ( !Collector.HadHit() )
+	{
+		return false;
+	}
 
 	return FillRayHit( *JoltSystem, *this, Ray, MaxDistance, Unit, Collector.mHit, OutHit );
 }
@@ -167,7 +197,10 @@ int32 CPhysicsSystem::RayCastAll( const FVector3& Origin, const FVector3& Direct
 	OutHits.Reset();
 
 	FVector3 Unit;
-	if ( !bInitialized || !PrepareCast( Origin, Direction, MaxDistance, Unit ) ) return 0;
+	if ( !bInitialized || !PrepareCast( Origin, Direction, MaxDistance, Unit ) )
+	{
+		return 0;
+	}
 
 	const JPH::RRayCast Ray( NPhysics::ToPhysR( Origin ), NPhysics::ToPhys( Unit * MaxDistance ) );
 	const FQueryBodyFilter BodyFilter( *this, Filter );
@@ -180,7 +213,10 @@ int32 CPhysicsSystem::RayCastAll( const FVector3& Origin, const FVector3& Direct
 	for ( const JPH::RayCastResult& Hit : Collector.mHits )
 	{
 		FRayHit Converted;
-		if ( FillRayHit( *JoltSystem, *this, Ray, MaxDistance, Unit, Hit, Converted ) ) OutHits.Add( Converted );
+		if ( FillRayHit( *JoltSystem, *this, Ray, MaxDistance, Unit, Hit, Converted ) )
+		{
+			OutHits.Add( Converted );
+		}
 	}
 	return OutHits.Num();
 }
@@ -190,7 +226,10 @@ int32 CPhysicsSystem::Overlap( const FQueryShape& Shape, const FVector3& Positio
 	OutHits.Reset();
 
 	FCollisionShape QueryShape;
-	if ( !bInitialized || !IsFiniteVector( Position ) || !IsFiniteRotation( Rotation ) || !MakeCollisionShape( Shape, QueryShape ) ) return 0;
+	if ( !bInitialized || !IsFiniteVector( Position ) || !IsFiniteRotation( Rotation ) || !MakeCollisionShape( Shape, QueryShape ) )
+	{
+		return 0;
+	}
 
 	const JPH::Shape* JoltShape = QueryShape.GetShape().GetPtr();
 	const JPH::RMat44 CenterOfMass = MakeWorldTransform( Position, Rotation ).PreTranslated( JoltShape->GetCenterOfMass() );  // Jolt は重心の位置を受け取る
@@ -206,8 +245,14 @@ int32 CPhysicsSystem::Overlap( const FQueryShape& Shape, const FVector3& Positio
 	for ( const JPH::CollideShapeResult& Hit : Collector.mHits )
 	{
 		FRigidBody* Body = FindBody( Hit.mBodyID2 );
-		if ( Body == nullptr ) continue;
-		if ( OutHits.ContainsByPredicate( [Body]( const FOverlapHit& Existing ) { return Existing.Body == Body; } ) ) continue;  // 三角形などで 1 つの剛体が何度も出る
+		if ( Body == nullptr )
+		{
+			continue;
+		}
+		if ( OutHits.ContainsByPredicate( [Body]( const FOverlapHit& Existing ) { return Existing.Body == Body; } ) )
+		{
+			continue;  // 三角形などで 1 つの剛体が何度も出る
+		}
 
 		FOverlapHit Converted;
 		Converted.Body     = Body;
@@ -224,7 +269,10 @@ bool CPhysicsSystem::Sweep( const FQueryShape& Shape, const FVector3& Start, con
 
 	FVector3 Unit;
 	FCollisionShape QueryShape;
-	if ( !bInitialized || !IsFiniteRotation( Rotation ) || !PrepareCast( Start, Direction, MaxDistance, Unit ) || !MakeCollisionShape( Shape, QueryShape ) ) return false;
+	if ( !bInitialized || !IsFiniteRotation( Rotation ) || !PrepareCast( Start, Direction, MaxDistance, Unit ) || !MakeCollisionShape( Shape, QueryShape ) )
+	{
+		return false;
+	}
 
 	const JPH::RShapeCast Cast = JPH::RShapeCast::sFromWorldTransform( QueryShape.GetShape().GetPtr(), JPH::Vec3::sReplicate( 1.0f ),
 																	   MakeWorldTransform( Start, Rotation ), NPhysics::ToPhys( Unit * MaxDistance ) );
@@ -234,15 +282,24 @@ bool CPhysicsSystem::Sweep( const FQueryShape& Shape, const FVector3& Start, con
 	JPH::ClosestHitCollisionCollector<JPH::CastShapeCollector> Collector;
 	JoltSystem->GetNarrowPhaseQuery().CastShape( Cast, JPH::ShapeCastSettings(), NPhysics::ToPhysR( Start ), Collector,
 												 JPH::BroadPhaseLayerFilter(), LayerFilter, BodyFilter );
-	if ( !Collector.HadHit() ) return false;
+	if ( !Collector.HadHit() )
+	{
+		return false;
+	}
 
 	const JPH::ShapeCastResult& Hit = Collector.mHit;
 	FRigidBody* Body = FindBody( Hit.mBodyID2 );
-	if ( Body == nullptr ) return false;
+	if ( Body == nullptr )
+	{
+		return false;
+	}
 
 	// 当たりの点は、掃引の始点からの相対で返ってくる。法線は「相手を押し出す向き」の逆（相手の面から、動かした形状へ向かう向き）
 	FVector3 Normal;
-	if ( !NormalizeDirection( -NPhysics::FromPhys( Hit.mPenetrationAxis ), Normal ) ) Normal = -Unit;  // 向きの長さは意味を持たないので、小さくても向きは使える
+	if ( !NormalizeDirection( -NPhysics::FromPhys( Hit.mPenetrationAxis ), Normal ) )
+	{
+		Normal = -Unit;  // 向きの長さは意味を持たないので、小さくても向きは使える
+	}
 
 	OutHit.Body     = Body;
 	OutHit.UserData = Body->GetUserData();

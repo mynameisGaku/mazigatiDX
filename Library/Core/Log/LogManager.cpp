@@ -15,11 +15,17 @@ namespace
 	// "C:\\foo\\bar\\Hoge.cpp" -> "Hoge.cpp"
 	const char* ExtractFileName( const char* Path )
 	{
-		if ( !Path ) return "";
+		if ( !Path )
+		{
+			return "";
+		}
 		const char* Result = Path;
 		for ( const char* p = Path; *p; ++p )
 		{
-			if ( *p == '\\' || *p == '/' ) Result = p + 1;
+			if ( *p == '\\' || *p == '/' )
+			{
+				Result = p + 1;
+			}
 		}
 		return Result;
 	}
@@ -67,7 +73,10 @@ CLogManager& CLogManager::Get()
 
 void CLogManager::AddSink( const TSharedPtr<ILogSink>& Sink )
 {
-	if ( !Sink ) return;
+	if ( !Sink )
+	{
+		return;
+	}
 
 	FScopedLock Lock( SinkMutex );
 	Sinks.AddUnique( Sink );
@@ -101,18 +110,27 @@ void CLogManager::Flush()
 void CLogManager::SetAllCategoriesVerbosity( ELogVerbosity Verbosity )
 {
 	FScopedLock Lock( CategoryMutex );
-	for ( FLogCategory* Category : Categories ) Category->SetVerbosity( Verbosity );
+	for ( FLogCategory* Category : Categories )
+	{
+		Category->SetVerbosity( Verbosity );
+	}
 }
 
 void CLogManager::ResetAllCategoriesToDefault()
 {
 	FScopedLock Lock( CategoryMutex );
-	for ( FLogCategory* Category : Categories ) Category->SetVerbosity( Category->GetDefaultVerbosity() );
+	for ( FLogCategory* Category : Categories )
+	{
+		Category->SetVerbosity( Category->GetDefaultVerbosity() );
+	}
 }
 
 int32 CLogManager::ApplyCommandLine( const char* CommandLine )
 {
-	if ( CommandLine == nullptr ) return 0;
+	if ( CommandLine == nullptr )
+	{
+		return 0;
+	}
 
 	int32 NumChanged = 0;
 	for ( const FString& Token : FString( CommandLine ).ParseIntoArray( " " ) )
@@ -149,7 +167,10 @@ int32 CLogManager::ApplyCommandLine( const char* CommandLine )
 
 FLogCategory* CLogManager::FindCategory( const char* Name )
 {
-	if ( !Name ) return nullptr;
+	if ( !Name )
+	{
+		return nullptr;
+	}
 
 	FScopedLock Lock( CategoryMutex );
 	FLogCategory* const* Found = Categories.FindByPredicate( [Name]( const FLogCategory* Category )
@@ -162,7 +183,10 @@ FLogCategory* CLogManager::FindCategory( const char* Name )
 bool CLogManager::SetCategoryVerbosity( const char* Name, ELogVerbosity Verbosity )
 {
 	FLogCategory* Category = FindCategory( Name );
-	if ( !Category ) return false;
+	if ( !Category )
+	{
+		return false;
+	}
 
 	Category->SetVerbosity( Verbosity );
 	return true;
@@ -188,8 +212,14 @@ void CLogManager::LogV( const FLogCategory& Category, ELogVerbosity Verbosity,
 						const char* File, int32 Line, const char* Function,
 						const char* Format, va_list Args )
 {
-	if ( Verbosity == ELogVerbosity::NoLogging ) return;
-	if ( Category.IsSuppressed( Verbosity ) ) return;
+	if ( Verbosity == ELogVerbosity::NoLogging )
+	{
+		return;
+	}
+	if ( Category.IsSuppressed( Verbosity ) )
+	{
+		return;
+	}
 
 	FLogMessage Message;
 	Message.CategoryName = Category.GetName();

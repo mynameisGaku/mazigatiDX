@@ -50,11 +50,17 @@ namespace
 
 bool CPhysicsSystem::IsCharacterBody( const FRigidBody* Body ) const
 {
-	if ( Body == nullptr ) return false;
+	if ( Body == nullptr )
+	{
+		return false;
+	}
 
 	for ( const TUniquePtr<FPhysicsCharacter>& Character : Characters )
 	{
-		if ( Character->Body == Body ) return true;
+		if ( Character->Body == Body )
+		{
+			return true;
+		}
 	}
 	return false;
 }
@@ -127,7 +133,10 @@ FPhysicsCharacter* CPhysicsSystem::CreateCharacter( const FVector3& Position, co
 
 void CPhysicsSystem::DestroyCharacter( FPhysicsCharacter* Character )
 {
-	if ( Character == nullptr || !bInitialized ) return;
+	if ( Character == nullptr || !bInitialized )
+	{
+		return;
+	}
 
 	const int32 Index = Characters.IndexOfByPredicate( [Character]( const TUniquePtr<FPhysicsCharacter>& Item ) { return Item.Get() == Character; } );
 	if ( Index == INDEX_NONE )
@@ -143,10 +152,19 @@ void CPhysicsSystem::DestroyCharacter( FPhysicsCharacter* Character )
 
 void CPhysicsSystem::DestroyAllCharacters()
 {
-	if ( !bInitialized ) return;
+	if ( !bInitialized )
+	{
+		return;
+	}
 
-	if ( !Characters.IsEmpty() ) LOG( LogPhysics, Verbose, "Destroying all %d character(s)", Characters.Num() );
-	for ( const TUniquePtr<FPhysicsCharacter>& Character : Characters ) DetachCharacter( *Character );
+	if ( !Characters.IsEmpty() )
+	{
+		LOG( LogPhysics, Verbose, "Destroying all %d character(s)", Characters.Num() );
+	}
+	for ( const TUniquePtr<FPhysicsCharacter>& Character : Characters )
+	{
+		DetachCharacter( *Character );
+	}
 	Characters.Empty();
 }
 
@@ -157,7 +175,10 @@ int32 CPhysicsSystem::GetCharacterCount() const
 
 void CPhysicsSystem::DetachCharacter( FPhysicsCharacter& Character )
 {
-	if ( Character.Character == nullptr ) return;
+	if ( Character.Character == nullptr )
+	{
+		return;
+	}
 
 	Character.LastPosition = NPhysics::FromPhys( Character.Character->GetPosition() );
 	if ( Character.Body != nullptr )
@@ -174,7 +195,10 @@ void CPhysicsSystem::DetachCharacter( FPhysicsCharacter& Character )
 
 void CPhysicsSystem::RefreshCharacter( FPhysicsCharacter& Character )
 {
-	if ( Character.Character == nullptr ) return;
+	if ( Character.Character == nullptr )
+	{
+		return;
+	}
 
 	const JPH::BodyID OwnBody = Character.Character->GetInnerBodyID();
 	const FCharacterFilters Filters( *JoltSystem, NPhysics::ToPhysObjectLayer( EBodyType::Kinematic, Character.Settings.CollisionLayer ), OwnBody );
@@ -184,14 +208,20 @@ void CPhysicsSystem::RefreshCharacter( FPhysicsCharacter& Character )
 bool CPhysicsSystem::ChangeCharacterHeight( FPhysicsCharacter& Character, float32 Height )
 {
 	const JPH::ShapeRefC Shape = MakeCharacterShape( Character.Settings.Radius, Height );
-	if ( Shape == nullptr ) return false;
+	if ( Shape == nullptr )
+	{
+		return false;
+	}
 
 	const JPH::BodyID OwnBody = Character.Character->GetInnerBodyID();
 	const FCharacterFilters Filters( *JoltSystem, NPhysics::ToPhysObjectLayer( EBodyType::Kinematic, Character.Settings.CollisionLayer ), OwnBody );
 
 	// 新しい形が、他の物体に（許す深さを超えて）めり込むなら、変えない
 	const float32 MaxPenetration = 1.5f * JoltSystem->GetPhysicsSettings().mPenetrationSlop;
-	if ( !Character.Character->SetShape( Shape, MaxPenetration, Filters.BroadPhase, Filters.ObjectLayer, Filters.Body, Filters.Shape, *TempAllocator ) ) return false;
+	if ( !Character.Character->SetShape( Shape, MaxPenetration, Filters.BroadPhase, Filters.ObjectLayer, Filters.Body, Filters.Shape, *TempAllocator ) )
+	{
+		return false;
+	}
 
 	Character.Character->SetInnerBodyShape( Shape );
 	Character.Settings.Height = Height;
@@ -203,7 +233,10 @@ void CPhysicsSystem::UpdateCharacters( float32 DeltaTime )
 	for ( const TUniquePtr<FPhysicsCharacter>& Item : Characters )
 	{
 		FPhysicsCharacter& Character = *Item;
-		if ( Character.Character == nullptr ) continue;  // 外れている
+		if ( Character.Character == nullptr )
+		{
+			continue;  // 外れている
+		}
 
 		JPH::CharacterVirtual& Joint = *Character.Character;
 
@@ -217,7 +250,10 @@ void CPhysicsSystem::UpdateCharacters( float32 DeltaTime )
 		if ( Joint.GetGroundState() == JPH::CharacterBase::EGroundState::OnGround && bMovingTowardsGround )
 		{
 			NewVelocity = GroundVelocity;
-			if ( Character.bJumpRequested ) NewVelocity += Character.JumpSpeed * JPH::Vec3::sAxisY();
+			if ( Character.bJumpRequested )
+			{
+				NewVelocity += Character.JumpSpeed * JPH::Vec3::sAxisY();
+			}
 		}
 		Character.bJumpRequested = false;
 		NewVelocity += Gravity * DeltaTime;

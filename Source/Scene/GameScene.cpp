@@ -25,7 +25,10 @@ void CGameScene::OnEnter()
 	// 画面幅 1280px = 25.6m。下端に床を置く
 	SpawnObject<CPhysicsFloor>( FVector3( 12.8f, 0.5f, 0.0f ), FVector3( 12.0f, 0.5f, 2.0f ) )->SetName( "Floor" );
 
-	for ( int32 i = 0; i < NumInitialBalls; ++i ) SpawnBall();
+	for ( int32 i = 0; i < NumInitialBalls; ++i )
+	{
+		SpawnBall();
+	}
 
 	// 親子関係のサンプル: 親が回ると子・孫が周回する
 	TSharedPtr<COrbitMarker> Sun = SpawnObject<COrbitMarker>( FVector3( 20.0f, 9.0f, 0.0f ), 45.0f, 14, FColor32::Yellow );
@@ -54,13 +57,25 @@ void CGameScene::OnTick( float32 DeltaTime )
 		for ( const FGamepadInfo& Device : Gamepads->GetDevices() )
 		{
 			const FGamepadState* State = Gamepads->GetState( Device.Id );
-			if ( State == nullptr ) continue;
-			if ( State->IsPressed( EGamepadButton::South ) ) bSpawn = true;
-			if ( State->IsPressed( EGamepadButton::Back ) )  bBackToTitle = true;
+			if ( State == nullptr )
+			{
+				continue;
+			}
+			if ( State->IsPressed( EGamepadButton::South ) )
+			{
+				bSpawn = true;
+			}
+			if ( State->IsPressed( EGamepadButton::Back ) )
+			{
+				bBackToTitle = true;
+			}
 		}
 	}
 
-	if ( bSpawn ) SpawnBall();
+	if ( bSpawn )
+	{
+		SpawnBall();
+	}
 	if ( bBackToTitle )
 	{
 		LOG( LogGameScene, Log, "Back to the title (after %.1f s, %d ball(s) spawned)", GetElapsedTime(), NumSpawned );

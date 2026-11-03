@@ -105,10 +105,16 @@ namespace NEcs
 		FORCEINLINE bool GetDrawSpan( int32 Entity, FDrawSpan& Out ) const
 		{
 			const int32 Index = Driver != nullptr ? Driver->IndexOf( Entity ) : Entity;
-			if ( static_cast<uint32>( Index ) >= static_cast<uint32>( NumPrepared ) ) return false;
+			if ( static_cast<uint32>( Index ) >= static_cast<uint32>( NumPrepared ) )
+			{
+				return false;
+			}
 
 			const FDrawRange& Range = Ranges[Index];
-			if ( Range.Entity != Entity || Range.End <= Range.Begin ) return false;   // 記録していない（または、記録のあとで構造が変わった）
+			if ( Range.Entity != Entity || Range.End <= Range.Begin )
+			{
+				return false;   // 記録していない（または、記録のあとで構造が変わった）
+			}
 
 			const FDrawBuffer& Buffer = Buffers[static_cast<size_t>( static_cast<uint32>( Index ) >> DrawBatchShift )];
 			Out.Words = Buffer.Words.GetData() + Range.Begin;
@@ -225,16 +231,28 @@ namespace NEcs
 
 			if constexpr ( bWritesTransform )
 			{
-				if ( Count > 0 ) InTransforms.NotifySystemWrite();
+				if ( Count > 0 )
+				{
+					InTransforms.NotifySystemWrite();
+				}
 			}
 
 			if constexpr ( bDraw )
 			{
 				// 塊ごとの記録先と、エンティティごとの範囲を用意する（確保した領域は使い回し、書き込みはワーカー側で行う）
 				const int32 NumBatches = ( Count + EntitiesPerBatch - 1 ) >> DrawBatchShift;
-				if ( Buffers.Num() < NumBatches ) Buffers.SetNum( NumBatches );
-				for ( int32 i = 0; i < NumBatches; ++i ) Buffers[i].Clear();
-				if ( Ranges.Num() < Count ) Ranges.SetNum( Count );
+				if ( Buffers.Num() < NumBatches )
+				{
+					Buffers.SetNum( NumBatches );
+				}
+				for ( int32 i = 0; i < NumBatches; ++i )
+				{
+					Buffers[i].Clear();
+				}
+				if ( Ranges.Num() < Count )
+				{
+					Ranges.SetNum( Count );
+				}
 			}
 			return Count;
 		}
@@ -248,22 +266,34 @@ namespace NEcs
 				FDrawContext Context( Buffers[static_cast<size_t>( static_cast<uint32>( Begin ) >> DrawBatchShift )] );
 				if ( Entities != nullptr )
 				{
-					for ( int32 i = Begin; i < End; ++i ) RunEntity( Entities[i], i, &Context, TIndexSequenceFor<TArgs...>{} );
+					for ( int32 i = Begin; i < End; ++i )
+					{
+						RunEntity( Entities[i], i, &Context, TIndexSequenceFor<TArgs...>{} );
+					}
 				}
 				else
 				{
-					for ( int32 i = Begin; i < End; ++i ) RunEntity( i, i, &Context, TIndexSequenceFor<TArgs...>{} );
+					for ( int32 i = Begin; i < End; ++i )
+					{
+						RunEntity( i, i, &Context, TIndexSequenceFor<TArgs...>{} );
+					}
 				}
 			}
 			else
 			{
 				if ( Entities != nullptr )
 				{
-					for ( int32 i = Begin; i < End; ++i ) RunEntity( Entities[i], i, nullptr, TIndexSequenceFor<TArgs...>{} );
+					for ( int32 i = Begin; i < End; ++i )
+					{
+						RunEntity( Entities[i], i, nullptr, TIndexSequenceFor<TArgs...>{} );
+					}
 				}
 				else
 				{
-					for ( int32 i = Begin; i < End; ++i ) RunEntity( i, i, nullptr, TIndexSequenceFor<TArgs...>{} );
+					for ( int32 i = Begin; i < End; ++i )
+					{
+						RunEntity( i, i, nullptr, TIndexSequenceFor<TArgs...>{} );
+					}
 				}
 			}
 		}
@@ -272,9 +302,18 @@ namespace NEcs
 		template<typename TArg>
 		static void AddAccess( TArray<FAccess>& Out )
 		{
-			if constexpr ( IsComponentArg<TArg> ) Out.Add( { TypeKey<TComponentType<TArg>>(), IsWriteArg<TArg> } );
-			else if constexpr ( IsTransformArg<TArg> ) Out.Add( { TypeKey<FTransformAccess>(), IsWriteRefArg<TArg> } );
-			else if constexpr ( IsViewArg<TArg> ) Out.Add( { TypeKey<FTransformAccess>(), false } );
+			if constexpr ( IsComponentArg<TArg> )
+			{
+				Out.Add( { TypeKey<TComponentType<TArg>>(), IsWriteArg<TArg> } );
+			}
+			else if constexpr ( IsTransformArg<TArg> )
+			{
+				Out.Add( { TypeKey<FTransformAccess>(), IsWriteRefArg<TArg> } );
+			}
+			else if constexpr ( IsViewArg<TArg> )
+			{
+				Out.Add( { TypeKey<FTransformAccess>(), false } );
+			}
 		}
 
 		template<size_t... Is>
@@ -294,7 +333,10 @@ namespace NEcs
 				NTuple::Get<I>( Storages ) = &Storage;
 				const uint64 Bit = TypeBit<TComp>();
 				RequiredMask |= Bit;
-				if ( Bit == 0ull ) bFastMaskCheck = false;
+				if ( Bit == 0ull )
+				{
+					bFastMaskCheck = false;
+				}
 				if ( Storage.Num() < Best )
 				{
 					Best = Storage.Num();
@@ -309,7 +351,10 @@ namespace NEcs
 			else if constexpr ( IsWithoutArg<TArg> )
 			{
 				ExcludedMask |= TIsWithout<TBare<TArg>>::Mask();
-				if ( !TIsWithout<TBare<TArg>>::AllIn64() ) bFastMaskCheck = false;
+				if ( !TIsWithout<TBare<TArg>>::AllIn64() )
+				{
+					bFastMaskCheck = false;
+				}
 			}
 		}
 
@@ -318,9 +363,18 @@ namespace NEcs
 		bool HasArgSlow( int32 Entity ) const
 		{
 			using TArg = TTupleElementT<I, TTuple<TArgs...>>;
-			if constexpr ( IsRequiredComponentArg<TArg> ) return NTuple::Get<I>( Storages )->Has( Entity );
-			else if constexpr ( IsWithoutArg<TArg> ) return !TIsWithout<TBare<TArg>>::HasAny( *World, Entity );
-			else return true;
+			if constexpr ( IsRequiredComponentArg<TArg> )
+			{
+				return NTuple::Get<I>( Storages )->Has( Entity );
+			}
+			else if constexpr ( IsWithoutArg<TArg> )
+			{
+				return !TIsWithout<TBare<TArg>>::HasAny( *World, Entity );
+			}
+			else
+			{
+				return true;
+			}
 		}
 
 		template<size_t I>
@@ -330,20 +384,50 @@ namespace NEcs
 											  [[maybe_unused]] FDrawContext* Context )
 		{
 			using TArg = TTupleElementT<I, TTuple<TArgs...>>;
-			if constexpr ( IsDeltaArg<TArg> ) return DeltaTime;
-			else if constexpr ( IsEntityArg<TArg> ) return FEntityRef( Entity, World );
-			else if constexpr ( IsObjectRefArg<TArg> ) return *Record.Object;
-			else if constexpr ( IsObjectPtrArg<TArg> ) return Record.Object;
-			else if constexpr ( IsTransformArg<TArg> ) return ( Access );
-			else if constexpr ( IsViewArg<TArg> ) return ( View );
-			else if constexpr ( IsDrawArg<TArg> ) return ( *Context );
-			else if constexpr ( IsWithoutArg<TArg> ) return TBare<TArg>{};
+			if constexpr ( IsDeltaArg<TArg> )
+			{
+				return DeltaTime;
+			}
+			else if constexpr ( IsEntityArg<TArg> )
+			{
+				return FEntityRef( Entity, World );
+			}
+			else if constexpr ( IsObjectRefArg<TArg> )
+			{
+				return *Record.Object;
+			}
+			else if constexpr ( IsObjectPtrArg<TArg> )
+			{
+				return Record.Object;
+			}
+			else if constexpr ( IsTransformArg<TArg> )
+			{
+				return ( Access );
+			}
+			else if constexpr ( IsViewArg<TArg> )
+			{
+				return ( View );
+			}
+			else if constexpr ( IsDrawArg<TArg> )
+			{
+				return ( *Context );
+			}
+			else if constexpr ( IsWithoutArg<TArg> )
+			{
+				return TBare<TArg>{};
+			}
 			else if constexpr ( IsOptionalComponentArg<TArg> )
 			{
 				auto* Storage = NTuple::Get<I>( Storages );
-				if ( Storage == nullptr ) return static_cast<TComponentType<TArg>*>( nullptr );
+				if ( Storage == nullptr )
+				{
+					return static_cast<TComponentType<TArg>*>( nullptr );
+				}
 				const uint64 Bit = TypeBit<TComponentType<TArg>>();
-				if ( Bit != 0ull ) return ( Record.ComponentMask & Bit ) != 0ull ? &Storage->GetUnchecked( Entity ) : nullptr;
+				if ( Bit != 0ull )
+				{
+					return ( Record.ComponentMask & Bit ) != 0ull ? &Storage->GetUnchecked( Entity ) : nullptr;
+				}
 				return Storage->Find( Entity );
 			}
 			else if constexpr ( NumRequired == 1 )
@@ -365,7 +449,10 @@ namespace NEcs
 			{
 				if ( !Record.bAlive )
 				{
-					if constexpr ( bDraw ) Ranges[Index].Entity = INDEX_NONE;
+					if constexpr ( bDraw )
+					{
+						Ranges[Index].Entity = INDEX_NONE;
+					}
 					return;
 				}
 			}
@@ -382,19 +469,28 @@ namespace NEcs
 			else
 			{
 				// オブジェクトの Tick と同じ条件: 破棄が予約されていない・Tick が有効・今フレームに生成されたものではない
-				if ( Record.bPendingDestroy || !Record.bTickEnabled || Record.ObjectId > MaxObjectId ) return;
+				if ( Record.bPendingDestroy || !Record.bTickEnabled || Record.ObjectId > MaxObjectId )
+				{
+					return;
+				}
 			}
 
 			if constexpr ( NumRequired > 1 || bHasWithout )
 			{
 				if ( ( ( Record.ComponentMask & RequiredMask ) != RequiredMask ) || ( ( Record.ComponentMask & ExcludedMask ) != 0ull ) )
 				{
-					if constexpr ( bDraw ) Ranges[Index].Entity = INDEX_NONE;
+					if constexpr ( bDraw )
+					{
+						Ranges[Index].Entity = INDEX_NONE;
+					}
 					return;
 				}
 				if ( !bFastMaskCheck && !( HasArgSlow<Is>( Entity ) && ... ) )
 				{
-					if constexpr ( bDraw ) Ranges[Index].Entity = INDEX_NONE;
+					if constexpr ( bDraw )
+					{
+						Ranges[Index].Entity = INDEX_NONE;
+					}
 					return;
 				}
 			}
@@ -406,7 +502,10 @@ namespace NEcs
 				FTransformNode* Node = Record.TransformNode;
 				if ( Node == nullptr )
 				{
-					if constexpr ( bDraw ) Ranges[Index].Entity = INDEX_NONE;
+					if constexpr ( bDraw )
+					{
+						Ranges[Index].Entity = INDEX_NONE;
+					}
 					return;
 				}
 				Access = FTransformAccess( Node, Transforms, Record.TransformSlot );
@@ -471,9 +570,15 @@ namespace NEcs
 			}
 
 			const int32 Count = Driver != nullptr ? Driver->Num() : ( NumRequired == 0 ? World.GetNumEntitySlots() : 0 );
-			if ( Count <= 0 ) return 0;
+			if ( Count <= 0 )
+			{
+				return 0;
+			}
 
-			if constexpr ( bWritesTransform ) Transforms.NotifySystemWrite();
+			if constexpr ( bWritesTransform )
+			{
+				Transforms.NotifySystemWrite();
+			}
 
 			// ループの途中で構造が変わらない前提の高速走査。ただし CGameObject::Destroy() は bPendingDestroy を立てるだけなので安全
 			const int32* Entities = Driver != nullptr ? Driver->GetEntities() : nullptr;
@@ -482,12 +587,21 @@ namespace NEcs
 			{
 				const int32 Entity = Entities != nullptr ? Entities[i] : i;
 				const FEcsWorld::FEntityRecord& Record = World.GetRecord( Entity );
-				if ( !Record.bAlive || Record.bPendingDestroy ) continue;
+				if ( !Record.bAlive || Record.bPendingDestroy )
+				{
+					continue;
+				}
 
 				if constexpr ( NumRequired > 1 || bHasWithout )
 				{
-					if ( ( ( Record.ComponentMask & RequiredMask ) != RequiredMask ) || ( ( Record.ComponentMask & ExcludedMask ) != 0ull ) ) continue;
-					if ( !bFastMaskCheck && !HasAllSlow( World, Storages, Entity, TIndexSequenceFor<TArgs...>{} ) ) continue;
+					if ( ( ( Record.ComponentMask & RequiredMask ) != RequiredMask ) || ( ( Record.ComponentMask & ExcludedMask ) != 0ull ) )
+					{
+						continue;
+					}
+					if ( !bFastMaskCheck && !HasAllSlow( World, Storages, Entity, TIndexSequenceFor<TArgs...>{} ) )
+					{
+						continue;
+					}
 				}
 
 				FTransformAccess Access;
@@ -495,18 +609,33 @@ namespace NEcs
 				if constexpr ( bUsesTransform )
 				{
 					FTransformNode* Node = Record.TransformNode;
-					if ( Node == nullptr ) continue;
-					if constexpr ( bUsesView ) (void)Transforms.GetWorld( Record.TransformSlot );
+					if ( Node == nullptr )
+					{
+						continue;
+					}
+					if constexpr ( bUsesView )
+					{
+						(void)Transforms.GetWorld( Record.TransformSlot );
+					}
 					Access = FTransformAccess( Node, &Transforms, Record.TransformSlot );
 					View = FTransformView( Node );
 				}
 
 				++NumVisited;
-				if ( !InvokeOne( World, Storages, Function, Entity, i, Record, Access, View, TIndexSequenceFor<TArgs...>{} ) ) break;
+				if ( !InvokeOne( World, Storages, Function, Entity, i, Record, Access, View, TIndexSequenceFor<TArgs...>{} ) )
+				{
+					break;
+				}
 			}
 
-			if constexpr ( bWritesTransform ) Transforms.FlushDeferredDirty();
-			if constexpr ( bUsesEntityRef ) World.FlushDeferred();
+			if constexpr ( bWritesTransform )
+			{
+				Transforms.FlushDeferredDirty();
+			}
+			if constexpr ( bUsesEntityRef )
+			{
+				World.FlushDeferred();
+			}
 			return NumVisited;
 		}
 
@@ -527,11 +656,17 @@ namespace NEcs
 			{
 				using TComp = TBare<TArg>;
 				TComponentStorage<TComp>* Storage = World.FindStorage<TComp>();
-				if ( Storage == nullptr || Storage->Num() == 0 ) return false;
+				if ( Storage == nullptr || Storage->Num() == 0 )
+				{
+					return false;
+				}
 				NTuple::Get<I>( Storages ) = Storage;
 				const uint64 Bit = TypeBit<TComp>();
 				RequiredMask |= Bit;
-				if ( Bit == 0ull ) bFastMaskCheck = false;
+				if ( Bit == 0ull )
+				{
+					bFastMaskCheck = false;
+				}
 				if ( Storage->Num() < Best )
 				{
 					Best = Storage->Num();
@@ -546,7 +681,10 @@ namespace NEcs
 			else if constexpr ( IsWithoutArg<TArg> )
 			{
 				ExcludedMask |= TIsWithout<TBare<TArg>>::Mask();
-				if ( !TIsWithout<TBare<TArg>>::AllIn64() ) bFastMaskCheck = false;
+				if ( !TIsWithout<TBare<TArg>>::AllIn64() )
+				{
+					bFastMaskCheck = false;
+				}
 			}
 			return true;
 		}
@@ -561,9 +699,18 @@ namespace NEcs
 		static bool HasOneSlow( const FEcsWorld& World, const TStorageTuple& Storages, int32 Entity )
 		{
 			using TArg = TTupleElementT<I, TTuple<TArgs...>>;
-			if constexpr ( IsRequiredComponentArg<TArg> ) return NTuple::Get<I>( Storages )->Has( Entity );
-			else if constexpr ( IsWithoutArg<TArg> ) return !TIsWithout<TBare<TArg>>::HasAny( World, Entity );
-			else return true;
+			if constexpr ( IsRequiredComponentArg<TArg> )
+			{
+				return NTuple::Get<I>( Storages )->Has( Entity );
+			}
+			else if constexpr ( IsWithoutArg<TArg> )
+			{
+				return !TIsWithout<TBare<TArg>>::HasAny( World, Entity );
+			}
+			else
+			{
+				return true;
+			}
 		}
 
 		template<size_t I>
@@ -571,18 +718,42 @@ namespace NEcs
 														const FEcsWorld::FEntityRecord& Record, FTransformAccess& Access, FTransformView& View )
 		{
 			using TArg = TTupleElementT<I, TTuple<TArgs...>>;
-			if constexpr ( IsEntityArg<TArg> ) return FEntityRef( Entity, &World );
-			else if constexpr ( IsObjectRefArg<TArg> ) return *Record.Object;
-			else if constexpr ( IsObjectPtrArg<TArg> ) return Record.Object;
-			else if constexpr ( IsTransformArg<TArg> ) return ( Access );
-			else if constexpr ( IsViewArg<TArg> ) return ( View );
-			else if constexpr ( IsWithoutArg<TArg> ) return TBare<TArg>{};
+			if constexpr ( IsEntityArg<TArg> )
+			{
+				return FEntityRef( Entity, &World );
+			}
+			else if constexpr ( IsObjectRefArg<TArg> )
+			{
+				return *Record.Object;
+			}
+			else if constexpr ( IsObjectPtrArg<TArg> )
+			{
+				return Record.Object;
+			}
+			else if constexpr ( IsTransformArg<TArg> )
+			{
+				return ( Access );
+			}
+			else if constexpr ( IsViewArg<TArg> )
+			{
+				return ( View );
+			}
+			else if constexpr ( IsWithoutArg<TArg> )
+			{
+				return TBare<TArg>{};
+			}
 			else if constexpr ( IsOptionalComponentArg<TArg> )
 			{
 				auto* Storage = NTuple::Get<I>( Storages );
-				if ( Storage == nullptr ) return static_cast<TComponentType<TArg>*>( nullptr );
+				if ( Storage == nullptr )
+				{
+					return static_cast<TComponentType<TArg>*>( nullptr );
+				}
 				const uint64 Bit = TypeBit<TComponentType<TArg>>();
-				if ( Bit != 0ull ) return ( Record.ComponentMask & Bit ) != 0ull ? &Storage->GetUnchecked( Entity ) : nullptr;
+				if ( Bit != 0ull )
+				{
+					return ( Record.ComponentMask & Bit ) != 0ull ? &Storage->GetUnchecked( Entity ) : nullptr;
+				}
 				return Storage->Find( Entity );
 			}
 			else if constexpr ( NumRequired == 1 )
@@ -678,8 +849,14 @@ namespace NEcs
 	int32 CountEntities( const FEcsWorld& World )
 	{
 		const TComponentStorage<TFirst>* FirstStorage = World.FindStorage<TFirst>();
-		if ( FirstStorage == nullptr || FirstStorage->Num() == 0 ) return 0;
-		if ( !( ( World.FindStorage<TRest>() != nullptr && World.FindStorage<TRest>()->Num() > 0 ) && ... ) ) return 0;
+		if ( FirstStorage == nullptr || FirstStorage->Num() == 0 )
+		{
+			return 0;
+		}
+		if ( !( ( World.FindStorage<TRest>() != nullptr && World.FindStorage<TRest>()->Num() > 0 ) && ... ) )
+		{
+			return 0;
+		}
 
 		const IComponentStorage* Driver = FirstStorage;
 		( ( World.FindStorage<TRest>()->Num() < Driver->Num() ? ( Driver = World.FindStorage<TRest>(), 0 ) : 0 ), ... );
@@ -694,9 +871,18 @@ namespace NEcs
 		{
 			const int32 Entity = Entities[i];
 			const FEcsWorld::FEntityRecord& Record = Records[Entity];
-			if ( !Record.bAlive || Record.bPendingDestroy ) continue;
-			if ( ( Record.ComponentMask & Mask ) != Mask ) continue;
-			if ( !bFast && !( World.HasData<TFirst>( Entity ) && ( World.HasData<TRest>( Entity ) && ... ) ) ) continue;
+			if ( !Record.bAlive || Record.bPendingDestroy )
+			{
+				continue;
+			}
+			if ( ( Record.ComponentMask & Mask ) != Mask )
+			{
+				continue;
+			}
+			if ( !bFast && !( World.HasData<TFirst>( Entity ) && ( World.HasData<TRest>( Entity ) && ... ) ) )
+			{
+				continue;
+			}
 			++Count;
 		}
 		return Count;
@@ -718,7 +904,10 @@ namespace NEcs
 		void Add( EPhase Phase, const char* Name, TFunction&& Function )
 		{
 			COLLECTION_CHECK( Phase != EPhase::Draw, "Draw systems are registered with AddDraw" );
-			if ( Phase == EPhase::Draw ) return;
+			if ( Phase == EPhase::Draw )
+			{
+				return;
+			}
 			AddInternal<false>( Phase, Name, Forward<TFunction>( Function ) );
 		}
 
@@ -744,7 +933,10 @@ namespace NEcs
 			for ( const ISystemRunner* Runner : ActiveDrawRunners )
 			{
 				FDrawSpan Span;
-				if ( Runner->GetDrawSpan( Entity, Span ) ) Executor.Execute( Span );
+				if ( Runner->GetDrawSpan( Entity, Span ) )
+				{
+					Executor.Execute( Span );
+				}
 			}
 		}
 

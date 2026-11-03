@@ -20,7 +20,10 @@ namespace
 	{
 		State.StatusMessage = Message;
 		State.bStatusIsError = bError;
-		if ( bError ) LOG( LogEffectEditor, Warning, "%s", *Message );
+		if ( bError )
+		{
+			LOG( LogEffectEditor, Warning, "%s", *Message );
+		}
 	}
 
 	// 文書を切り替えたとき、保存されない終点操作を既定値へ戻す。
@@ -45,10 +48,16 @@ namespace
 	{
 		// アセットのルートを所有する、既存の管理機構。
 		CAssetManager* Assets = GetAppSubsystem<CAssetManager>();
-		if ( Assets == nullptr ) return;
+		if ( Assets == nullptr )
+		{
+			return;
+		}
 		// 一覧を毎フレーム走査しないための現在時刻。
 		const double Now = ImGui::GetTime();
-		if ( Now - State.LastScanTime < 3.0 ) return;
+		if ( Now - State.LastScanTime < 3.0 )
+		{
+			return;
+		}
 		State.LastScanTime = Now;
 		State.EffectFiles = NFileSystem::ListFilesRecursive( Assets->GetRootDirectory(), { ".effect.json" } );
 		State.TextureFiles = NFileSystem::ListFilesRecursive( Assets->GetRootDirectory(), { ".png", ".jpg", ".jpeg", ".bmp", ".tga", ".dds" } );
@@ -58,14 +67,26 @@ namespace
 	// 確認を済ませた操作だけを実行する。読み込みの失敗では現在の文書を保つ。
 	bool ExecuteAction( FEffectEditorState& State, FEffectEditorState::EPending Action, const FString& Path, bool* pOpen )
 	{
-		if ( Action == FEffectEditorState::EPending::Open ) return NDebugUI::OpenEffectFile( State, Path );
-		if ( Action == FEffectEditorState::EPending::New ) NDebugUI::NewEffect( State );
-		if ( Action == FEffectEditorState::EPending::Preset ) return NDebugUI::NewEffectFromPreset( State, Path );
+		if ( Action == FEffectEditorState::EPending::Open )
+		{
+			return NDebugUI::OpenEffectFile( State, Path );
+		}
+		if ( Action == FEffectEditorState::EPending::New )
+		{
+			NDebugUI::NewEffect( State );
+		}
+		if ( Action == FEffectEditorState::EPending::Preset )
+		{
+			return NDebugUI::NewEffectFromPreset( State, Path );
+		}
 		if ( Action == FEffectEditorState::EPending::Close )
 		{
 			NDebugUI::ReleaseEffectEditor( State );
 			State.bInitialized = false;
-			if ( pOpen != nullptr ) *pOpen = false;
+			if ( pOpen != nullptr )
+			{
+				*pOpen = false;
+			}
 		}
 		return true;
 	}
@@ -78,12 +99,24 @@ namespace
 			State.bRequestUnsavedPopup = false;
 			ImGui::OpenPopup( "Unsaved effect##EffectEditor" );
 		}
-		if ( !ImGui::BeginPopupModal( "Unsaved effect##EffectEditor", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) ) return;
+		if ( !ImGui::BeginPopupModal( "Unsaved effect##EffectEditor", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+		{
+			return;
+		}
 		ImGui::TextUnformatted( "Save changes before continuing?" );
-		if ( State.FilePath.IsEmpty() ) NDebugUI::InputString( "Save path", State.SaveAsPath );
-		if ( ImGui::Button( "Save and continue" ) && NEffectEditorUI::CompletePendingAction( State, true, pOpen ) ) ImGui::CloseCurrentPopup();
+		if ( State.FilePath.IsEmpty() )
+		{
+			NDebugUI::InputString( "Save path", State.SaveAsPath );
+		}
+		if ( ImGui::Button( "Save and continue" ) && NEffectEditorUI::CompletePendingAction( State, true, pOpen ) )
+		{
+			ImGui::CloseCurrentPopup();
+		}
 		ImGui::SameLine();
-		if ( ImGui::Button( "Discard changes" ) && NEffectEditorUI::CompletePendingAction( State, false, pOpen ) ) ImGui::CloseCurrentPopup();
+		if ( ImGui::Button( "Discard changes" ) && NEffectEditorUI::CompletePendingAction( State, false, pOpen ) )
+		{
+			ImGui::CloseCurrentPopup();
+		}
 		ImGui::SameLine();
 		if ( ImGui::Button( "Cancel" ) )
 		{
@@ -105,67 +138,178 @@ namespace
 		{
 			if ( ImGui::BeginMenu( "File" ) )
 			{
-				if ( ImGui::MenuItem( "New" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::New, FString(), pOpen );
-				if ( ImGui::MenuItem( "Open..." ) ) bOpenDialog = true;
+				if ( ImGui::MenuItem( "New" ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::New, FString(), pOpen );
+				}
+				if ( ImGui::MenuItem( "Open..." ) )
+				{
+					bOpenDialog = true;
+				}
 				if ( ImGui::MenuItem( "Save", "Ctrl+S" ) )
 				{
-					if ( State.FilePath.IsEmpty() ) bSaveDialog = true;
-					else NDebugUI::SaveEffectFile( State );
+					if ( State.FilePath.IsEmpty() )
+					{
+						bSaveDialog = true;
+					}
+					else
+					{
+						NDebugUI::SaveEffectFile( State );
+					}
 				}
-				if ( ImGui::MenuItem( "Save as..." ) ) bSaveDialog = true;
+				if ( ImGui::MenuItem( "Save as..." ) )
+				{
+					bSaveDialog = true;
+				}
 				ImGui::Separator();
-				if ( ImGui::MenuItem( "Close", nullptr, false, pOpen != nullptr ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Close, FString(), pOpen );
+				if ( ImGui::MenuItem( "Close", nullptr, false, pOpen != nullptr ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Close, FString(), pOpen );
+				}
 				ImGui::EndMenu();
 			}
 			if ( ImGui::BeginMenu( "Preset" ) )
 			{
-				if ( ImGui::MenuItem( "Campfire" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/campfire.effect.json", pOpen );
-				if ( ImGui::MenuItem( "Sparks" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/sparks.effect.json", pOpen );
-				if ( ImGui::MenuItem( "Aura" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/aura.effect.json", pOpen );
-				if ( ImGui::MenuItem( "Ribbon trail" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/ribbon_trail.effect.json", pOpen );
-				if ( ImGui::MenuItem( "Branch lightning" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/branch_lightning.effect.json", pOpen );
-				if ( ImGui::MenuItem( "Target lightning" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/target_lightning.effect.json", pOpen );
-				if ( ImGui::MenuItem( "Realistic lightning tree" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/tree_lightning.effect.json", pOpen );
-				if ( ImGui::MenuItem( "Growing lightning tree" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/growing_tree_lightning.effect.json", pOpen );
-				if ( ImGui::MenuItem( "Dissolve sigil" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/material_dissolve.effect.json", pOpen );
-				if ( ImGui::MenuItem( "Material ribbon trail" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/material_ribbon_trail.effect.json", pOpen );
-				if ( ImGui::MenuItem( "Material branch lightning" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/material_branch_lightning.effect.json", pOpen );
-				if ( ImGui::MenuItem( "Chromatic ribbon" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/appearance_ribbon_spectrum.effect.json", pOpen );
-				if ( ImGui::MenuItem( "Pulse lightning" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/appearance_pulse_lightning.effect.json", pOpen );
-				if ( ImGui::MenuItem( "Flipbook sigil burst" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/flipbook_sigil_burst.effect.json", pOpen );
-				if ( ImGui::MenuItem( "Flowing energy veil" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/uv_distortion_energy_veil.effect.json", pOpen );
-				if ( ImGui::MenuItem( "Distorted ribbon trail" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/uv_distortion_ribbon.effect.json", pOpen );
-				if ( ImGui::MenuItem( "Flowing lightning tree" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/uv_distortion_tree_lightning.effect.json", pOpen );
-				if ( ImGui::MenuItem( "Mesh energy ring" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/mesh_energy_ring.effect.json", pOpen );
-				if ( ImGui::MenuItem( "Mesh tilted veil" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/mesh_tilted_veil.effect.json", pOpen );
-				if ( ImGui::MenuItem( "Force field wind" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_wind.effect.json", pOpen );
-				if ( ImGui::MenuItem( "Gravity well" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_gravity_well.effect.json", pOpen );
-				if ( ImGui::MenuItem( "Whirlwind" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_whirlwind.effect.json", pOpen );
-				if ( ImGui::MenuItem( "Gust" ) ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_gust.effect.json", pOpen );
+				if ( ImGui::MenuItem( "Campfire" ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/campfire.effect.json", pOpen );
+				}
+				if ( ImGui::MenuItem( "Sparks" ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/sparks.effect.json", pOpen );
+				}
+				if ( ImGui::MenuItem( "Aura" ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/aura.effect.json", pOpen );
+				}
+				if ( ImGui::MenuItem( "Ribbon trail" ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/ribbon_trail.effect.json", pOpen );
+				}
+				if ( ImGui::MenuItem( "Branch lightning" ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/branch_lightning.effect.json", pOpen );
+				}
+				if ( ImGui::MenuItem( "Target lightning" ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/target_lightning.effect.json", pOpen );
+				}
+				if ( ImGui::MenuItem( "Realistic lightning tree" ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/tree_lightning.effect.json", pOpen );
+				}
+				if ( ImGui::MenuItem( "Growing lightning tree" ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/growing_tree_lightning.effect.json", pOpen );
+				}
+				if ( ImGui::MenuItem( "Dissolve sigil" ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/material_dissolve.effect.json", pOpen );
+				}
+				if ( ImGui::MenuItem( "Material ribbon trail" ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/material_ribbon_trail.effect.json", pOpen );
+				}
+				if ( ImGui::MenuItem( "Material branch lightning" ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/material_branch_lightning.effect.json", pOpen );
+				}
+				if ( ImGui::MenuItem( "Chromatic ribbon" ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/appearance_ribbon_spectrum.effect.json", pOpen );
+				}
+				if ( ImGui::MenuItem( "Pulse lightning" ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/appearance_pulse_lightning.effect.json", pOpen );
+				}
+				if ( ImGui::MenuItem( "Flipbook sigil burst" ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/flipbook_sigil_burst.effect.json", pOpen );
+				}
+				if ( ImGui::MenuItem( "Flowing energy veil" ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/uv_distortion_energy_veil.effect.json", pOpen );
+				}
+				if ( ImGui::MenuItem( "Distorted ribbon trail" ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/uv_distortion_ribbon.effect.json", pOpen );
+				}
+				if ( ImGui::MenuItem( "Flowing lightning tree" ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/uv_distortion_tree_lightning.effect.json", pOpen );
+				}
+				if ( ImGui::MenuItem( "Mesh energy ring" ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/mesh_energy_ring.effect.json", pOpen );
+				}
+				if ( ImGui::MenuItem( "Mesh tilted veil" ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/mesh_tilted_veil.effect.json", pOpen );
+				}
+				if ( ImGui::MenuItem( "Force field wind" ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_wind.effect.json", pOpen );
+				}
+				if ( ImGui::MenuItem( "Gravity well" ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_gravity_well.effect.json", pOpen );
+				}
+				if ( ImGui::MenuItem( "Whirlwind" ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_whirlwind.effect.json", pOpen );
+				}
+				if ( ImGui::MenuItem( "Gust" ) )
+				{
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_gust.effect.json", pOpen );
+				}
 				ImGui::EndMenu();
 			}
 			if ( ImGui::BeginMenu( "Edit" ) )
 			{
-				if ( ImGui::MenuItem( "Undo", "Ctrl+Z", false, State.Document.CanUndo() ) ) State.Document.Undo();
-				if ( ImGui::MenuItem( "Redo", "Ctrl+Y", false, State.Document.CanRedo() ) ) State.Document.Redo();
+				if ( ImGui::MenuItem( "Undo", "Ctrl+Z", false, State.Document.CanUndo() ) )
+				{
+					State.Document.Undo();
+				}
+				if ( ImGui::MenuItem( "Redo", "Ctrl+Y", false, State.Document.CanRedo() ) )
+				{
+					State.Document.Redo();
+				}
 				ImGui::EndMenu();
 			}
 			ImGui::EndMenuBar();
 		}
 		if ( ImGui::IsWindowFocused( ImGuiFocusedFlags_RootAndChildWindows ) && !ImGui::GetIO().WantTextInput )
 		{
-			if ( ImGui::IsKeyChordPressed( ImGuiMod_Ctrl | ImGuiKey_Z ) ) State.Document.Undo();
-			if ( ImGui::IsKeyChordPressed( ImGuiMod_Ctrl | ImGuiKey_Y ) ) State.Document.Redo();
+			if ( ImGui::IsKeyChordPressed( ImGuiMod_Ctrl | ImGuiKey_Z ) )
+			{
+				State.Document.Undo();
+			}
+			if ( ImGui::IsKeyChordPressed( ImGuiMod_Ctrl | ImGuiKey_Y ) )
+			{
+				State.Document.Redo();
+			}
 			if ( ImGui::IsKeyChordPressed( ImGuiMod_Ctrl | ImGuiKey_S ) )
 			{
-				if ( State.FilePath.IsEmpty() ) bSaveDialog = true;
-				else NDebugUI::SaveEffectFile( State );
+				if ( State.FilePath.IsEmpty() )
+				{
+					bSaveDialog = true;
+				}
+				else
+				{
+					NDebugUI::SaveEffectFile( State );
+				}
 			}
 		}
-		if ( bOpenDialog ) ImGui::OpenPopup( "Open effect##EffectEditor" );
+		if ( bOpenDialog )
+		{
+			ImGui::OpenPopup( "Open effect##EffectEditor" );
+		}
 		if ( bSaveDialog )
 		{
-			if ( State.SaveAsPath.IsEmpty() ) State.SaveAsPath = State.FilePath.IsEmpty() ? FString( "Effects/NewEffect.effect.json" ) : State.FilePath;
+			if ( State.SaveAsPath.IsEmpty() )
+			{
+				State.SaveAsPath = State.FilePath.IsEmpty() ? FString( "Effects/NewEffect.effect.json" ) : State.FilePath;
+			}
 			ImGui::OpenPopup( "Save effect as##EffectEditor" );
 		}
 		if ( ImGui::BeginPopupModal( "Open effect##EffectEditor", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
@@ -180,15 +324,24 @@ namespace
 			}
 			ImGui::EndDisabled();
 			ImGui::SameLine();
-			if ( ImGui::Button( "Cancel" ) ) ImGui::CloseCurrentPopup();
+			if ( ImGui::Button( "Cancel" ) )
+			{
+				ImGui::CloseCurrentPopup();
+			}
 			ImGui::EndPopup();
 		}
 		if ( ImGui::BeginPopupModal( "Save effect as##EffectEditor", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
 		{
 			NDebugUI::InputString( "Path", State.SaveAsPath );
-			if ( ImGui::Button( "Save" ) && NDebugUI::SaveEffectFile( State, State.SaveAsPath ) ) ImGui::CloseCurrentPopup();
+			if ( ImGui::Button( "Save" ) && NDebugUI::SaveEffectFile( State, State.SaveAsPath ) )
+			{
+				ImGui::CloseCurrentPopup();
+			}
 			ImGui::SameLine();
-			if ( ImGui::Button( "Cancel" ) ) ImGui::CloseCurrentPopup();
+			if ( ImGui::Button( "Cancel" ) )
+			{
+				ImGui::CloseCurrentPopup();
+			}
 			ImGui::EndPopup();
 		}
 	}
@@ -200,7 +353,10 @@ bool NDebugUI::OpenEffectFile( FEffectEditorState& State, const FString& AssetPa
 	CAssetManager* Assets = GetAppSubsystem<CAssetManager>();
 	// 読み込みと、その後に保存する際の共通のパス。
 	const FString Path = NormalizePath( AssetPath );
-	if ( Assets == nullptr || Path.IsEmpty() ) return false;
+	if ( Assets == nullptr || Path.IsEmpty() )
+	{
+		return false;
+	}
 	// 別の利用者が古い資産を保持していても、開く操作ではディスク上の内容を読む。
 	const TOptional<FString> FullPath = Assets->ResolvePath( Path );
 	// 読み込みの成否が分かるまで、現在の文書へ触らないための一時領域。
@@ -229,7 +385,10 @@ bool NDebugUI::OpenEffectFile( FEffectEditorState& State, const FString& AssetPa
 	NEffectEditorUI::ApplyInitialPreviewTarget( State );
 	RestartEffectPreview( State );
 	SetStatus( State, "エフェクトを開きました: " + Path );
-	if ( !Warnings.IsEmpty() ) SetStatus( State, FString::Printf( "エフェクトを開きました: %s（読み込み時の警告 %d 件: %s）", *Path, Warnings.Num(), *Warnings[0] ) );
+	if ( !Warnings.IsEmpty() )
+	{
+		SetStatus( State, FString::Printf( "エフェクトを開きました: %s（読み込み時の警告 %d 件: %s）", *Path, Warnings.Num(), *Warnings[0] ) );
+	}
 	return true;
 }
 
@@ -256,7 +415,10 @@ bool NDebugUI::NewEffectFromPreset( FEffectEditorState& State, const FString& Pr
 {
 	// ファイルを読み取れた場合だけ、現在の文書を独立したコピーへ置き換える。
 	const FString Path = NormalizePath( PresetPath );
-	if ( !OpenEffectFile( State, Path ) ) return false;
+	if ( !OpenEffectFile( State, Path ) )
+	{
+		return false;
+	}
 	// プリセットの内容は保持し、元のファイルを保存先に使わない。
 	const FParticleEffectDefinition Copy = State.Document.Get();
 	State.Document.Reset( FParticleEffectDefinition() );
@@ -272,7 +434,10 @@ bool NDebugUI::NewEffectFromPreset( FEffectEditorState& State, const FString& Pr
 	// 力場がないRibbonだけ、生成位置の円運動で従来の軌跡previewを見せる。
 	for ( const FParticleEmitterDefinition& Emitter : Copy.Emitters )
 	{
-		if ( Emitter.Path.Kind != FEffectPathDefinition::EKind::Ribbon || !Emitter.ForceFields.IsEmpty() ) continue;
+		if ( Emitter.Path.Kind != FEffectPathDefinition::EKind::Ribbon || !Emitter.ForceFields.IsEmpty() )
+		{
+			continue;
+		}
 		State.bPreviewMotion = true;
 		break;
 	}
@@ -297,7 +462,10 @@ bool NDebugUI::SaveEffectFile( FEffectEditorState& State, const FString& AssetPa
 	{
 		// 四角形で実際に使うシートだけ保存直前に同期検証する。
 		const FParticleEmitterDefinition& Emitter = State.Document.Get().Emitters[Index];
-		if ( !Emitter.Flipbook.bEnabled || Emitter.Path.Kind != FEffectPathDefinition::EKind::None ) continue;
+		if ( !Emitter.Flipbook.bEnabled || Emitter.Path.Kind != FEffectPathDefinition::EKind::None )
+		{
+			continue;
+		}
 		const TArray<FString> AssetIssues = NEffectFlipbook::ValidateAssets( Emitter.Flipbook, *Assets );
 		if ( !AssetIssues.IsEmpty() )
 		{
@@ -314,7 +482,10 @@ bool NDebugUI::SaveEffectFile( FEffectEditorState& State, const FString& AssetPa
 		const FEffectUVDistortionDefinition& Distortion = Emitter.Material.Distortion;
 		// 現在のpath kindでnoise検証が必要か。
 		const bool bDistortionPath = Emitter.Path.Kind == FEffectPathDefinition::EKind::None || Emitter.Path.Kind == FEffectPathDefinition::EKind::Ribbon || Emitter.Path.Kind == FEffectPathDefinition::EKind::Lightning || Emitter.Path.Kind == FEffectPathDefinition::EKind::TreeLightning;
-		if ( !Distortion.bEnabled || !Emitter.Material.bEnabled || !bDistortionPath ) continue;
+		if ( !Distortion.bEnabled || !Emitter.Material.bEnabled || !bDistortionPath )
+		{
+			continue;
+		}
 		// 既存AssetManagerから同期で取得し、保存後すぐ使える画像か確認する。
 		const TSharedPtr<CTexture> NoiseTexture = Assets->LoadTexture( Distortion.Texture, false );
 		if ( !NoiseTexture.IsValid() || !NoiseTexture->IsReady() )
@@ -323,7 +494,10 @@ bool NDebugUI::SaveEffectFile( FEffectEditorState& State, const FString& AssetPa
 			return false;
 		}
 	}
-	if ( !Path.EndsWith( ".effect.json", ESearchCase::IgnoreCase ) ) Path += ".effect.json";
+	if ( !Path.EndsWith( ".effect.json", ESearchCase::IgnoreCase ) )
+	{
+		Path += ".effect.json";
+	}
 	if ( !Assets->SaveEffect( Path, State.Document.Get() ) )
 	{
 		SetStatus( State, "エフェクトを保存できません: " + Path, true );
@@ -340,7 +514,10 @@ bool NDebugUI::SaveEffectFile( FEffectEditorState& State, const FString& AssetPa
 
 FTransform NEffectEditorUI::GetPreviewEmitterTransform( const FEffectEditorState& State )
 {
-	if ( !State.bPreviewMotion ) return FTransform::Identity;
+	if ( !State.bPreviewMotion )
+	{
+		return FTransform::Identity;
+	}
 	return FTransform( FVector3( NMath::Cos( State.PreviewMotionTime ) * 1.2f, 1.0f, NMath::Sin( State.PreviewMotionTime ) * 1.2f ) );
 }
 
@@ -366,17 +543,29 @@ void NDebugUI::UpdateEffectEditor( FEffectEditorState& State, float32 DeltaTime 
 		State.SelectedEmitter = NumEmitters > 0 ? NMath::Clamp( State.SelectedEmitter, 0, NumEmitters - 1 ) : INDEX_NONE;
 		// 未保存の変更を、共有アセットや既に作った再生へ書き込まない。
 		const TSharedPtr<const FParticleEffectDefinition> Snapshot = MakeShared<FParticleEffectDefinition>( State.Document.Get() );
-		if ( !FParticleEffectDefinition::HasErrors( State.Issues ) ) State.Playback = NEffect::CreateParticlePlayback( Snapshot, GetAppSubsystem<CAssetManager>(), FEffectPlayParams(), FTransform::Identity, "editor" );
+		if ( !FParticleEffectDefinition::HasErrors( State.Issues ) )
+		{
+			State.Playback = NEffect::CreateParticlePlayback( Snapshot, GetAppSubsystem<CAssetManager>(), FEffectPlayParams(), FTransform::Identity, "editor" );
+		}
 	}
 	if ( State.Playback.IsValid() )
 	{
 		// 選択中のエミッターに関係なく、文書内のどれかの雷が終点を使うか。
 		const bool bPathUsesTarget = NEffectEditorUI::FindTargetPathEmitter( State.Document.Get() ) != nullptr;
 		const FVector3& Target = State.PreviewTargetPosition;
-		if ( bPathUsesTarget && State.bPreviewTargetEnabled && NMath::IsFinite( Target.x ) && NMath::IsFinite( Target.y ) && NMath::IsFinite( Target.z ) ) State.Playback->SetTargetPosition( Target );
-		else State.Playback->ClearTargetPosition();
+		if ( bPathUsesTarget && State.bPreviewTargetEnabled && NMath::IsFinite( Target.x ) && NMath::IsFinite( Target.y ) && NMath::IsFinite( Target.z ) )
+		{
+			State.Playback->SetTargetPosition( Target );
+		}
+		else
+		{
+			State.Playback->ClearTargetPosition();
+		}
 	}
-	if ( !State.bPlaying || !State.Playback.IsValid() || !NMath::IsFinite( DeltaTime ) || DeltaTime <= 0.0f ) return;
+	if ( !State.bPlaying || !State.Playback.IsValid() || !NMath::IsFinite( DeltaTime ) || DeltaTime <= 0.0f )
+	{
+		return;
+	}
 	// 長く止まっていた直後も、編集画面の粒子が一度に遠くへ飛ばないようにする。
 	const float32 Step = NMath::Clamp( DeltaTime, 0.0f, 0.1f ) * ( NMath::IsFinite( State.PreviewSpeed ) ? NMath::Clamp( State.PreviewSpeed, 0.0f, 4.0f ) : 1.0f );
 	if ( State.bPreviewMotion )
@@ -386,12 +575,18 @@ void NDebugUI::UpdateEffectEditor( FEffectEditorState& State, float32 DeltaTime 
 		State.PreviewMotionTime = NMath::Fmod( State.PreviewMotionTime + Step, CirclePeriod );
 		State.Playback->SetTransform( NEffectEditorUI::GetPreviewEmitterTransform( State ) );
 	}
-	else State.Playback->SetTransform( FTransform::Identity );
+	else
+	{
+		State.Playback->SetTransform( FTransform::Identity );
+	}
 	State.Playback->Update( Step );
 	if ( State.bRepeatPreview && State.Playback->IsFinished() )
 	{
 		State.FinishedTime += Step;
-		if ( State.FinishedTime >= 0.75f ) RestartEffectPreview( State );
+		if ( State.FinishedTime >= 0.75f )
+		{
+			RestartEffectPreview( State );
+		}
 	}
 }
 
@@ -424,9 +619,18 @@ bool NEffectEditorUI::RequestAction( FEffectEditorState& State, FEffectEditorSta
 
 bool NEffectEditorUI::CompletePendingAction( FEffectEditorState& State, bool bSave, bool* pOpen )
 {
-	if ( State.Pending == FEffectEditorState::EPending::None ) return false;
-	if ( bSave && !NDebugUI::SaveEffectFile( State, State.FilePath.IsEmpty() ? State.SaveAsPath : State.FilePath ) ) return false;
-	if ( !ExecuteAction( State, State.Pending, State.PendingPath, pOpen ) ) return false;
+	if ( State.Pending == FEffectEditorState::EPending::None )
+	{
+		return false;
+	}
+	if ( bSave && !NDebugUI::SaveEffectFile( State, State.FilePath.IsEmpty() ? State.SaveAsPath : State.FilePath ) )
+	{
+		return false;
+	}
+	if ( !ExecuteAction( State, State.Pending, State.PendingPath, pOpen ) )
+	{
+		return false;
+	}
 	State.Pending = FEffectEditorState::EPending::None;
 	State.PendingPath.Empty();
 	State.bRequestUnsavedPopup = false;
@@ -435,14 +639,20 @@ bool NEffectEditorUI::CompletePendingAction( FEffectEditorState& State, bool bSa
 
 void NDebugUI::DrawEffectEditor( FEffectEditorState& State, bool* pOpen )
 {
-	if ( !State.bInitialized ) NewEffect( State );
+	if ( !State.bInitialized )
+	{
+		NewEffect( State );
+	}
 	RescanFiles( State );
 	ImGui::SetNextWindowSize( ImVec2( 1120.0f, 660.0f ), ImGuiCond_FirstUseEver );
 	// ×を押しても、未保存確認が済むまで実際の表示フラグは下げない。
 	bool bWindowOpen = true;
 	// 折り畳み時にも、閉じる要求の確認だけは処理する。
 	const bool bExpanded = ImGui::Begin( "Effect Editor", pOpen != nullptr ? &bWindowOpen : nullptr, ImGuiWindowFlags_MenuBar );
-	if ( !bWindowOpen ) NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Close, FString(), pOpen );
+	if ( !bWindowOpen )
+	{
+		NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Close, FString(), pOpen );
+	}
 	if ( bExpanded && ( pOpen == nullptr || *pOpen ) )
 	{
 		DrawMenu( State, pOpen );
@@ -460,12 +670,21 @@ void NDebugUI::DrawEffectEditor( FEffectEditorState& State, bool* pOpen )
 			ImGui::BeginChild( "EffectPreview", ImVec2( 0.0f, -28.0f ), ImGuiChildFlags_Borders );
 			NEffectEditorUI::DrawPreview( State );
 			ImGui::EndChild();
-			if ( State.bStatusIsError ) NDebugUI::PushWarningColor();
+			if ( State.bStatusIsError )
+			{
+				NDebugUI::PushWarningColor();
+			}
 			ImGui::TextUnformatted( UI_TEXT( State.StatusMessage ) );
-			if ( State.bStatusIsError ) NDebugUI::PopWarningColor();
+			if ( State.bStatusIsError )
+			{
+				NDebugUI::PopWarningColor();
+			}
 		}
 	}
 	DrawUnsavedDialog( State, pOpen );
-	if ( !ImGui::IsAnyItemActive() ) State.Document.EndEditSession();
+	if ( !ImGui::IsAnyItemActive() )
+	{
+		State.Document.EndEditSession();
+	}
 	ImGui::End();
 }

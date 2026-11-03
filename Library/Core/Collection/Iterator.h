@@ -1,6 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef FRAMEWORK_CORE_COLLECTION_ITERATOR_H
-#define FRAMEWORK_CORE_COLLECTION_ITERATOR_H
+#pragma once
 
 
 #include "Library/Core/Collection/CollectionCommon.h"
@@ -31,8 +30,14 @@ public:
 	// 削除で詰められた要素も次に訪問する。
 	FORCEINLINE TIterator& operator++()
 	{
-		if ( bCurrentRemoved ) bCurrentRemoved = false;
-		else if ( Index < Container->Num() ) ++Index;
+		if ( bCurrentRemoved )
+		{
+			bCurrentRemoved = false;
+		}
+		else if ( Index < Container->Num() )
+		{
+			++Index;
+		}
 		return *this;
 	}
 	// 現在位置が配列内かを返す。
@@ -64,5 +69,3 @@ private:
 	// 削除した位置を次の ++ で再確認する。
 	bool bCurrentRemoved = false;
 };
-
-#endif

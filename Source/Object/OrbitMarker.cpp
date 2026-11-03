@@ -20,7 +20,10 @@ void COrbitMarker::OnSpawn()
 
 void COrbitMarker::Tick( float32 DeltaTime )
 {
-	if ( SpinDegreesPerSecond == 0.0f ) return;
+	if ( SpinDegreesPerSecond == 0.0f )
+	{
+		return;
+	}
 
 	const FQuaternion Spin = FQuaternion::FromAxisAngle( FVector3::Forward, NMath::ToRadians( SpinDegreesPerSecond * DeltaTime ) );
 	Transform->SetLocalRotation( ( Spin * Transform->GetLocalRotation() ).Normalized() );

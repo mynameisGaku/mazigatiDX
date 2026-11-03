@@ -49,10 +49,22 @@ namespace
 		{
 			if ( Vendor == VendorNintendo )
 			{
-				if ( Product == ProductSwitch2Pro )   return EGamepadType::Switch2Pro;
-				if ( Product == ProductJoyCon2Left )  return EGamepadType::JoyCon2Left;
-				if ( Product == ProductJoyCon2Right ) return EGamepadType::JoyCon2Right;
-				if ( Product == ProductJoyCon2Pair )  return EGamepadType::JoyCon2Pair;
+				if ( Product == ProductSwitch2Pro )
+				{
+					return EGamepadType::Switch2Pro;
+				}
+				if ( Product == ProductJoyCon2Left )
+				{
+					return EGamepadType::JoyCon2Left;
+				}
+				if ( Product == ProductJoyCon2Right )
+				{
+					return EGamepadType::JoyCon2Right;
+				}
+				if ( Product == ProductJoyCon2Pair )
+				{
+					return EGamepadType::JoyCon2Pair;
+				}
 			}
 			return EGamepadType::Generic;
 		}
@@ -116,10 +128,16 @@ namespace
 
 	bool ContainsJoystickId( const SDL_JoystickID* Ids, int32 Count, uint32 TargetId )
 	{
-		if ( Ids == nullptr ) return false;
+		if ( Ids == nullptr )
+		{
+			return false;
+		}
 		for ( int32 i = 0; i < Count; ++i )
 		{
-			if ( static_cast<uint32>( Ids[i] ) == TargetId ) return true;
+			if ( static_cast<uint32>( Ids[i] ) == TargetId )
+			{
+				return true;
+			}
 		}
 		return false;
 	}
@@ -193,7 +211,10 @@ void ASdlGamepadInput::Initialize( FSubsystemCollection& Collection )
 
 void ASdlGamepadInput::Deinitialize()
 {
-	if ( bInitialized ) LOG( LogGamepad, Log, "Shutting down (%d device(s) open)", Devices.Num() );
+	if ( bInitialized )
+	{
+		LOG( LogGamepad, Log, "Shutting down (%d device(s) open)", Devices.Num() );
+	}
 
 	for ( FDevice& Device : Devices )
 	{
@@ -224,7 +245,10 @@ void ASdlGamepadInput::Tick( float32 DeltaTime )
 	Connected.Reset();
 	Disconnected.Reset();
 
-	if ( !bInitialized ) return;
+	if ( !bInitialized )
+	{
+		return;
+	}
 
 	// 前フレームで切断状態として返した記録を取り除く
 	Devices.RemoveAll( []( const FDevice& Device ) { return !Device.State.bConnected; } );
@@ -244,7 +268,10 @@ void ASdlGamepadInput::Tick( float32 DeltaTime )
 		const bool bStillPresent = ContainsJoystickId( RawIds, RawCount, Device.Info.Id )
 			&& ( Device.Gamepad != nullptr ? SDL_GamepadConnected( Device.Gamepad ) : SDL_JoystickConnected( Device.Joystick ) );
 
-		if ( bStillPresent ) continue;
+		if ( bStillPresent )
+		{
+			continue;
+		}
 
 		LOG( LogGamepad, Log, "Gamepad disconnected: #%u (%s)", Device.Info.Id, *Device.Info.Name );
 		Disconnected.Add( Device.Info.Id );
@@ -305,7 +332,10 @@ void ASdlGamepadInput::Tick( float32 DeltaTime )
 	DeviceInfos.Reset();
 	for ( FDevice& Device : Devices )
 	{
-		if ( !Device.State.bConnected ) continue;
+		if ( !Device.State.bConnected )
+		{
+			continue;
+		}
 
 		// 後からマッピングが追加されて標準配置に対応した場合は昇格させる
 		if ( Device.Gamepad == nullptr && SDL_IsGamepad( Device.Info.Id ) )
@@ -623,8 +653,14 @@ bool ASdlGamepadInput::Rumble( uint32 DeviceId, float32 Low, float32 High, uint3
 	const bool bOk = ( Device->Gamepad != nullptr )
 		? SDL_RumbleGamepad( Device->Gamepad, Low16, High16, Milliseconds )
 		: SDL_RumbleJoystick( Device->Joystick, Low16, High16, Milliseconds );
-	if ( !bOk ) LOG( LogGamepad, Warning, "Rumble: SDL failed for gamepad #%u: %s", DeviceId, SDL_GetError() );
-	else LOG( LogGamepad, VeryVerbose, "Rumble #%u low=%.2f high=%.2f for %u ms", DeviceId, Low, High, Milliseconds );
+	if ( !bOk )
+	{
+		LOG( LogGamepad, Warning, "Rumble: SDL failed for gamepad #%u: %s", DeviceId, SDL_GetError() );
+	}
+	else
+	{
+		LOG( LogGamepad, VeryVerbose, "Rumble #%u low=%.2f high=%.2f for %u ms", DeviceId, Low, High, Milliseconds );
+	}
 	return bOk;
 }
 
@@ -655,8 +691,14 @@ bool ASdlGamepadInput::RumbleTriggers( uint32 DeviceId, float32 Left, float32 Ri
 	const bool bOk = ( Device->Gamepad != nullptr )
 		? SDL_RumbleGamepadTriggers( Device->Gamepad, Left16, Right16, Milliseconds )
 		: SDL_RumbleJoystickTriggers( Device->Joystick, Left16, Right16, Milliseconds );
-	if ( !bOk ) LOG( LogGamepad, Warning, "RumbleTriggers: SDL failed for gamepad #%u: %s", DeviceId, SDL_GetError() );
-	else LOG( LogGamepad, VeryVerbose, "Trigger rumble #%u left=%.2f right=%.2f for %u ms", DeviceId, Left, Right, Milliseconds );
+	if ( !bOk )
+	{
+		LOG( LogGamepad, Warning, "RumbleTriggers: SDL failed for gamepad #%u: %s", DeviceId, SDL_GetError() );
+	}
+	else
+	{
+		LOG( LogGamepad, VeryVerbose, "Trigger rumble #%u left=%.2f right=%.2f for %u ms", DeviceId, Left, Right, Milliseconds );
+	}
 	return bOk;
 }
 
@@ -672,8 +714,14 @@ bool ASdlGamepadInput::SetLed( uint32 DeviceId, uint8 Red, uint8 Green, uint8 Bl
 	const bool bOk = ( Device->Gamepad != nullptr )
 		? SDL_SetGamepadLED( Device->Gamepad, Red, Green, Blue )
 		: SDL_SetJoystickLED( Device->Joystick, Red, Green, Blue );
-	if ( !bOk ) LOG( LogGamepad, Warning, "SetLed: SDL failed for gamepad #%u: %s", DeviceId, SDL_GetError() );
-	else LOG( LogGamepad, Verbose, "LED of gamepad #%u set to (%u, %u, %u)", DeviceId, Red, Green, Blue );
+	if ( !bOk )
+	{
+		LOG( LogGamepad, Warning, "SetLed: SDL failed for gamepad #%u: %s", DeviceId, SDL_GetError() );
+	}
+	else
+	{
+		LOG( LogGamepad, Verbose, "LED of gamepad #%u set to (%u, %u, %u)", DeviceId, Red, Green, Blue );
+	}
 	return bOk;
 }
 
@@ -699,7 +747,10 @@ bool ASdlGamepadInput::AddMappingsFromFile( const FString& Filename )
 
 void ASdlGamepadInput::SetBackgroundInputEnabled( bool bEnabled )
 {
-	if ( bBackgroundInputEnabled == bEnabled ) return;
+	if ( bBackgroundInputEnabled == bEnabled )
+	{
+		return;
+	}
 	bBackgroundInputEnabled = bEnabled;
 	LOG( LogGamepad, Verbose, "Background input %s", bEnabled ? "enabled" : "disabled" );
 }

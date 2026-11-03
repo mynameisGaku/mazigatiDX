@@ -17,13 +17,19 @@ bool FAssetEditorInfo::Exists( const FString& Path ) const
 
 const FAssetEditorInfo::FModelEntry& FAssetEditorInfo::FindModel( const FString& Path ) const
 {
-	if ( const FModelEntry* Found = Models.Find( Path ) ) return *Found;
+	if ( const FModelEntry* Found = Models.Find( Path ) )
+	{
+		return *Found;
+	}
 
 	FModelEntry Entry;
 	if ( !Path.IsEmpty() && Query.Exists( Path ) )
 	{
 		Entry.Model = Assets.LoadModel( Path );
-		if ( Entry.Model.IsValid() && Entry.Model->HasMesh() ) Entry.Instance = Entry.Model->CreateInstance();
+		if ( Entry.Model.IsValid() && Entry.Model->HasMesh() )
+		{
+			Entry.Instance = Entry.Model->CreateInstance();
+		}
 	}
 	return Models.Add( Path, Entry );
 }
@@ -37,7 +43,10 @@ bool FAssetEditorInfo::GetModelBounds( const FString& Path, FVector3& OutMin, FV
 bool FAssetEditorInfo::GetTextureSize( const FString& Path, int32& OutWidth, int32& OutHeight ) const
 {
 	const TSharedPtr<CTexture> Texture = GetTexture( Path );
-	if ( !Texture.IsValid() ) return false;
+	if ( !Texture.IsValid() )
+	{
+		return false;
+	}
 	OutWidth = Texture->GetWidth();
 	OutHeight = Texture->GetHeight();
 	return OutWidth > 0 && OutHeight > 0;
@@ -45,13 +54,19 @@ bool FAssetEditorInfo::GetTextureSize( const FString& Path, int32& OutWidth, int
 
 const FEditorCollisionMesh* FAssetEditorInfo::GetCollisionMesh( const FString& Path ) const
 {
-	if ( const TSharedPtr<FEditorCollisionMesh>* Found = Meshes.Find( Path ) ) return Found->Get();
+	if ( const TSharedPtr<FEditorCollisionMesh>* Found = Meshes.Find( Path ) )
+	{
+		return Found->Get();
+	}
 	TSharedPtr<FEditorCollisionMesh> Mesh;
 	const FModelEntry& Entry = FindModel( Path );
 	if ( Entry.Model.IsValid() )
 	{
 		TSharedPtr<FEditorCollisionMesh> Loaded = MakeShared<FEditorCollisionMesh>();
-		if ( Entry.Model->GetCollisionMesh( Loaded->Vertices, Loaded->Indices ) ) Mesh = Loaded;
+		if ( Entry.Model->GetCollisionMesh( Loaded->Vertices, Loaded->Indices ) )
+		{
+			Mesh = Loaded;
+		}
 	}
 	Meshes.Add( Path, Mesh );
 	return Mesh.Get();
@@ -60,9 +75,15 @@ const FEditorCollisionMesh* FAssetEditorInfo::GetCollisionMesh( const FString& P
 const FWorldDefinition* FAssetEditorInfo::GetWorld( const FString& Path ) const
 {
 	const FString Key = NWorld::NormalizeAssetPath( Path );
-	if ( const TSharedPtr<CWorldAsset>* Found = Worlds.Find( Key ) ) return Found->IsValid() ? &( *Found )->GetDefinition() : nullptr;
+	if ( const TSharedPtr<CWorldAsset>* Found = Worlds.Find( Key ) )
+	{
+		return Found->IsValid() ? &( *Found )->GetDefinition() : nullptr;
+	}
 	TSharedPtr<CWorldAsset> Loaded;
-	if ( !Path.IsEmpty() && Query.Exists( Path ) ) Loaded = Assets.LoadWorld( Path );
+	if ( !Path.IsEmpty() && Query.Exists( Path ) )
+	{
+		Loaded = Assets.LoadWorld( Path );
+	}
 	Worlds.Add( Key, Loaded );
 	return Loaded.IsValid() ? &Loaded->GetDefinition() : nullptr;
 }
@@ -79,11 +100,20 @@ TSharedPtr<CModel> FAssetEditorInfo::GetModelSource( const FString& Path ) const
 
 TSharedPtr<const FStaticModelSurface> FAssetEditorInfo::PrepareModelSurface( const FString& Path ) const
 {
-	if ( !NAssetService::IsMainThread() ) return nullptr;
+	if ( !NAssetService::IsMainThread() )
+	{
+		return nullptr;
+	}
 	// Pathに対応するsourceとsnapshot状態を取得する。
 	const FModelEntry& Entry = FindModel( Path );
-	if ( Entry.bSurfaceSnapshotAttempted ) return Entry.SurfaceSnapshot;
-	if ( !Entry.Model.IsValid() || !Entry.Model->IsReady() ) return nullptr;
+	if ( Entry.bSurfaceSnapshotAttempted )
+	{
+		return Entry.SurfaceSnapshot;
+	}
+	if ( !Entry.Model.IsValid() || !Entry.Model->IsReady() )
+	{
+		return nullptr;
+	}
 
 	Entry.SurfaceSnapshot = Entry.Model->CreateStaticSurfaceSnapshot();
 	Entry.bSurfaceSnapshotAttempted = true;
@@ -93,15 +123,24 @@ TSharedPtr<const FStaticModelSurface> FAssetEditorInfo::PrepareModelSurface( con
 TSharedPtr<const FStaticModelSurface> FAssetEditorInfo::FindPreparedModelSurface( const FString& Path ) const
 {
 	// 既存entryだけを探し、記録済みのsnapshotを返す。
-	if ( const FModelEntry* Entry = Models.Find( Path ) ) return Entry->bSurfaceSnapshotAttempted ? Entry->SurfaceSnapshot : nullptr;
+	if ( const FModelEntry* Entry = Models.Find( Path ) )
+	{
+		return Entry->bSurfaceSnapshotAttempted ? Entry->SurfaceSnapshot : nullptr;
+	}
 	return nullptr;
 }
 
 TSharedPtr<CTexture> FAssetEditorInfo::GetTexture( const FString& Path ) const
 {
-	if ( const TSharedPtr<CTexture>* Found = Textures.Find( Path ) ) return *Found;
+	if ( const TSharedPtr<CTexture>* Found = Textures.Find( Path ) )
+	{
+		return *Found;
+	}
 	TSharedPtr<CTexture> Texture;
-	if ( !Path.IsEmpty() && Query.Exists( Path ) ) Texture = Assets.LoadTexture( Path );
+	if ( !Path.IsEmpty() && Query.Exists( Path ) )
+	{
+		Texture = Assets.LoadTexture( Path );
+	}
 	Textures.Add( Path, Texture );
 	return Texture;
 }

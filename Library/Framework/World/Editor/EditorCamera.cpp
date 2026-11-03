@@ -79,33 +79,54 @@ FMatrix4x4 FEditorCamera::GetProjectionMatrix( const FEditorViewport& Viewport )
 
 bool FEditorCamera::WorldToScreen( const FEditorViewport& Viewport, const FVector3& Point, FVector2& OutPixel, float32* OutDepth ) const
 {
-	if ( !Viewport.IsValid() ) return false;
+	if ( !Viewport.IsValid() )
+	{
+		return false;
+	}
 	const FVector3 Offset = Point - GetEye();
 	const float32 Depth = FVector3::Dot( Offset, GetForward() );
-	if ( Depth <= Viewport.Near ) return false;
+	if ( Depth <= Viewport.Near )
+	{
+		return false;
+	}
 
 	const float32 TanHalf = NMath::Tan( Viewport.FovY * 0.5f );
 	const float32 NdcX = FVector3::Dot( Offset, GetRight() ) / ( Depth * TanHalf * Viewport.GetAspect() );
 	const float32 NdcY = FVector3::Dot( Offset, GetUp() ) / ( Depth * TanHalf );
 	OutPixel = FVector2( ( NdcX * 0.5f + 0.5f ) * static_cast<float32>( Viewport.Width ), ( 0.5f - NdcY * 0.5f ) * static_cast<float32>( Viewport.Height ) );
-	if ( OutDepth != nullptr ) *OutDepth = Depth;
+	if ( OutDepth != nullptr )
+	{
+		*OutDepth = Depth;
+	}
 	return true;
 }
 
 bool FEditorCamera::ProjectSegment( const FEditorViewport& Viewport, const FVector3& A, const FVector3& B, FVector2& OutPixelA, FVector2& OutPixelB ) const
 {
-	if ( !Viewport.IsValid() ) return false;
+	if ( !Viewport.IsValid() )
+	{
+		return false;
+	}
 	const FVector3 Eye = GetEye();
 	const FVector3 Forward = GetForward();
 	float32 DepthA = FVector3::Dot( A - Eye, Forward );
 	float32 DepthB = FVector3::Dot( B - Eye, Forward );
 	const float32 Near = Viewport.Near * 1.01f;   // 近い面ぎりぎりの点は、投影が不安定なので少し奥で切る
-	if ( DepthA <= Near && DepthB <= Near ) return false;
+	if ( DepthA <= Near && DepthB <= Near )
+	{
+		return false;
+	}
 
 	FVector3 ClippedA = A;
 	FVector3 ClippedB = B;
-	if ( DepthA <= Near ) ClippedA = A + ( B - A ) * ( ( Near - DepthA ) / ( DepthB - DepthA ) );
-	else if ( DepthB <= Near ) ClippedB = B + ( A - B ) * ( ( Near - DepthB ) / ( DepthA - DepthB ) );
+	if ( DepthA <= Near )
+	{
+		ClippedA = A + ( B - A ) * ( ( Near - DepthA ) / ( DepthB - DepthA ) );
+	}
+	else if ( DepthB <= Near )
+	{
+		ClippedB = B + ( A - B ) * ( ( Near - DepthB ) / ( DepthA - DepthB ) );
+	}
 	return WorldToScreen( Viewport, ClippedA, OutPixelA ) && WorldToScreen( Viewport, ClippedB, OutPixelB );
 }
 

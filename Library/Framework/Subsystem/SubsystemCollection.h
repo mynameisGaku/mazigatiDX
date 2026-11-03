@@ -55,7 +55,10 @@ public:
 	{
 		for ( CSubsystem* Subsystem : InitializedSubsystems )
 		{
-			if ( T* Casted = dynamic_cast<T*>( Subsystem ) ) return Casted;
+			if ( T* Casted = dynamic_cast<T*>( Subsystem ) )
+			{
+				return Casted;
+			}
 		}
 		return nullptr;
 	}

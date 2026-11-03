@@ -70,8 +70,14 @@ public:
 	// スケールを適用した新しい形状（Sphere / Capsule は一様スケールに補正される）
 	FORCEINLINE TResult<FCollisionShape> Scaled( const FVector3& Scale ) const
 	{
-		if ( !IsValid() ) return TResult<FCollisionShape>::Err( "Scaled: shape is invalid" );
-		if ( Scale.Equals( FVector3::One ) ) return TResult<FCollisionShape>::Ok( *this );
+		if ( !IsValid() )
+		{
+			return TResult<FCollisionShape>::Err( "Scaled: shape is invalid" );
+		}
+		if ( Scale.Equals( FVector3::One ) )
+		{
+			return TResult<FCollisionShape>::Ok( *this );
+		}
 		return FromShapeResult( Shape->ScaleShape( NPhysics::ToPhys( Scale ) ), "Scaled" );
 	}
 
@@ -96,7 +102,10 @@ private:
 	FORCEINLINE static float32 ClampPositive( float32 Value, const char* Name )
 	{
 		constexpr float32 MinSize = 1.0e-3f;
-		if ( Value >= MinSize ) return Value;
+		if ( Value >= MinSize )
+		{
+			return Value;
+		}
 		LOG( LogPhysics, Warning, "%s must be positive (%f), clamped to %f", Name, Value, MinSize );
 		return MinSize;
 	}

@@ -14,7 +14,10 @@ namespace
 
 	float32 GetMarkerRadius( const FEditorShapeContext& Context, const FVector3& Position )
 	{
-		if ( Context.Camera == nullptr || !Context.Viewport.IsValid() ) return 0.25f;
+		if ( Context.Camera == nullptr || !Context.Viewport.IsValid() )
+		{
+			return 0.25f;
+		}
 		return Context.Camera->GetPixelSize( Context.Viewport, Position ) * Context.MarkerPixels;
 	}
 
@@ -37,9 +40,15 @@ namespace
 	// 入れ子のワールド（Prefab 部品）の中身を囲む箱（入れ子のワールドの座標）。読み込めない・中身が無い・深すぎるなら false
 	bool ComputePrefabBounds( const FString& Path, const FEditorShapeContext& Context, FVector3& OutMin, FVector3& OutMax )
 	{
-		if ( Context.Assets == nullptr || Path.IsEmpty() || PrefabDepth >= WorldMaxPrefabDepth ) return false;
+		if ( Context.Assets == nullptr || Path.IsEmpty() || PrefabDepth >= WorldMaxPrefabDepth )
+		{
+			return false;
+		}
 		const FWorldDefinition* Nested = Context.Assets->GetWorld( Path );
-		if ( Nested == nullptr || Nested->Objects.IsEmpty() ) return false;
+		if ( Nested == nullptr || Nested->Objects.IsEmpty() )
+		{
+			return false;
+		}
 		++PrefabDepth;
 		const TArray<FTransform> Transforms = NWorld::ComputeAllWorldTransforms( *Nested );
 		TArray<FEditorShape> Shapes;
@@ -49,13 +58,19 @@ namespace
 		for ( int32 i = 0; i < Nested->Objects.Num() && i < Transforms.Num(); ++i )
 		{
 			const FWorldObject& Object = Nested->Objects[i];
-			if ( !Object.bEnabled ) continue;
+			if ( !Object.bEnabled )
+			{
+				continue;
+			}
 			Min = FVector3::Min( Min, Transforms[i].Position );   // 目印（空のオブジェクト・音）は、位置だけを含める
 			Max = FVector3::Max( Max, Transforms[i].Position );
 			bAny = true;
 			for ( const FEditorShape& Shape : NWorldEditor::GatherShapes( Object, Transforms[i], Context ) )
 			{
-				if ( Shape.Role != EEditorShapeRole::Marker && Shape.Role != EEditorShapeRole::Sound && Shape.Role != EEditorShapeRole::Effect ) Shapes.Add( Shape );
+				if ( Shape.Role != EEditorShapeRole::Marker && Shape.Role != EEditorShapeRole::Sound && Shape.Role != EEditorShapeRole::Effect )
+				{
+					Shapes.Add( Shape );
+				}
 			}
 		}
 		--PrefabDepth;
@@ -65,7 +80,10 @@ namespace
 			Min = FVector3::Min( Min, ShapeMin );
 			Max = FVector3::Max( Max, ShapeMax );
 		}
-		if ( !bAny ) return false;
+		if ( !bAny )
+		{
+			return false;
+		}
 		OutMin = Min;
 		OutMax = Max;
 		return true;
@@ -131,8 +149,14 @@ void NWorldEditor::ComputeBillboardAxes( EWorldBillboardMode Mode, const FTransf
 		// 水平だけで、カメラの方を向く。真上・真下から見ているときは、カメラの横向きを使う
 		FVector3 Forward( WorldTransform.Position.x - CameraEye.x, 0.0f, WorldTransform.Position.z - CameraEye.z );
 		OutUp = FVector3::Up;
-		if ( Forward.LengthSquared() < 1.0e-8f ) OutRight = CameraRight;
-		else OutRight = FVector3::Cross( OutUp, Forward.Normalized() );
+		if ( Forward.LengthSquared() < 1.0e-8f )
+		{
+			OutRight = CameraRight;
+		}
+		else
+		{
+			OutRight = FVector3::Cross( OutUp, Forward.Normalized() );
+		}
 		break;
 	}
 	case EWorldBillboardMode::Camera:
@@ -193,8 +217,14 @@ TArray<FEditorShape> NWorldEditor::GatherShapes( const FWorldObject& Object, con
 {
 	TArray<FEditorShape> Shapes;
 
-	if ( Object.Model.IsSet() ) Shapes.Add( MakeBoundsBox( EEditorShapeRole::Model, Object.Model.GetValue().Path, WorldTransform, Context ) );
-	if ( Object.Mesh.IsSet() ) Shapes.Add( MakeEditMeshBox( EEditorShapeRole::Model, Object.Mesh.GetValue(), WorldTransform ) );
+	if ( Object.Model.IsSet() )
+	{
+		Shapes.Add( MakeBoundsBox( EEditorShapeRole::Model, Object.Model.GetValue().Path, WorldTransform, Context ) );
+	}
+	if ( Object.Mesh.IsSet() )
+	{
+		Shapes.Add( MakeEditMeshBox( EEditorShapeRole::Model, Object.Mesh.GetValue(), WorldTransform ) );
+	}
 	if ( Object.Prefab.IsSet() )
 	{
 		// 入れ子のワールド: 中身を囲む箱。中身が分からなければ、1 m の箱（bApproximate）
@@ -228,19 +258,37 @@ TArray<FEditorShape> NWorldEditor::GatherShapes( const FWorldObject& Object, con
 		}
 	}
 
-	if ( Object.Sound.IsSet() ) Shapes.Add( MakeMarker( EEditorShapeRole::Sound, WorldTransform.Position, Context ) );
-	if ( Object.Effect.IsSet() ) Shapes.Add( MakeMarker( EEditorShapeRole::Effect, WorldTransform.Position, Context ) );
+	if ( Object.Sound.IsSet() )
+	{
+		Shapes.Add( MakeMarker( EEditorShapeRole::Sound, WorldTransform.Position, Context ) );
+	}
+	if ( Object.Effect.IsSet() )
+	{
+		Shapes.Add( MakeMarker( EEditorShapeRole::Effect, WorldTransform.Position, Context ) );
+	}
 
 	if ( Object.Collider.IsSet() )
 	{
 		// メッシュの当たり判定は、三角形を取るモデルの箱で、選ぶ・囲む（三角形の枠線は、AppendMeshWireLines で別に出す）
-		if ( NWorld::UsesEditMeshCollider( Object ) ) Shapes.Add( MakeEditMeshBox( EEditorShapeRole::Collider, Object.Mesh.GetValue(), WorldTransform ) );
-		else if ( Object.Collider.GetValue().Shape == EWorldColliderShape::Mesh ) Shapes.Add( MakeBoundsBox( EEditorShapeRole::Collider, NWorld::GetColliderMeshPath( Object ), WorldTransform, Context ) );
-		else Shapes.Add( MakeColliderShape( Object.Collider.GetValue(), WorldTransform ) );
+		if ( NWorld::UsesEditMeshCollider( Object ) )
+		{
+			Shapes.Add( MakeEditMeshBox( EEditorShapeRole::Collider, Object.Mesh.GetValue(), WorldTransform ) );
+		}
+		else if ( Object.Collider.GetValue().Shape == EWorldColliderShape::Mesh )
+		{
+			Shapes.Add( MakeBoundsBox( EEditorShapeRole::Collider, NWorld::GetColliderMeshPath( Object ), WorldTransform, Context ) );
+		}
+		else
+		{
+			Shapes.Add( MakeColliderShape( Object.Collider.GetValue(), WorldTransform ) );
+		}
 	}
 
 	// 見えるものが何も無いオブジェクトは、目印で選べるようにする
-	if ( Shapes.IsEmpty() ) Shapes.Add( MakeMarker( EEditorShapeRole::Marker, WorldTransform.Position, Context ) );
+	if ( Shapes.IsEmpty() )
+	{
+		Shapes.Add( MakeMarker( EEditorShapeRole::Marker, WorldTransform.Position, Context ) );
+	}
 	return Shapes;
 }
 
@@ -287,7 +335,10 @@ void NWorldEditor::AppendShapeWireLines( const FEditorShape& Shape, int32 Circle
 		{
 			for ( int32 Bit = 0; Bit < 3; ++Bit )
 			{
-				if ( Corner & ( 1 << Bit ) ) continue;
+				if ( Corner & ( 1 << Bit ) )
+				{
+					continue;
+				}
 				OutLines.Add( Corners[Corner] );
 				OutLines.Add( Corners[Corner | ( 1 << Bit )] );
 			}
@@ -347,7 +398,10 @@ void NWorldEditor::AppendShapeWireLines( const FEditorShape& Shape, int32 Circle
 
 bool NWorldEditor::ComputeShapesBounds( const TArray<FEditorShape>& Shapes, FVector3& OutMin, FVector3& OutMax )
 {
-	if ( Shapes.IsEmpty() ) return false;
+	if ( Shapes.IsEmpty() )
+	{
+		return false;
+	}
 	FVector3 Min( NMath::MaxFloat, NMath::MaxFloat, NMath::MaxFloat );
 	FVector3 Max( -NMath::MaxFloat, -NMath::MaxFloat, -NMath::MaxFloat );
 	const auto Include = [&]( const FVector3& P )
@@ -400,14 +454,20 @@ bool NWorldEditor::AppendEditMeshWireLines( const FEditMesh& Mesh, const FTransf
 	TSet<int64> Done;   // 描いた縁（小さい頂点の番号 << 32 | 大きい番号）
 	for ( int32 Face = 0; Face < NumUsed; ++Face )
 	{
-		if ( !Mesh.IsFaceValid( Face ) ) continue;
+		if ( !Mesh.IsFaceValid( Face ) )
+		{
+			continue;
+		}
 		const TArray<int32>& Indices = Mesh.Faces[Face].Indices;
 		for ( int32 i = 0; i < Indices.Num(); ++i )
 		{
 			const int32 A = Indices[i];
 			const int32 B = Indices[( i + 1 ) % Indices.Num()];
 			const int64 Key = ( static_cast<int64>( NMath::Min( A, B ) ) << 32 ) | static_cast<int64>( NMath::Max( A, B ) );
-			if ( !Done.Add( Key ) ) continue;
+			if ( !Done.Add( Key ) )
+			{
+				continue;
+			}
 			OutLines.Add( Transform.TransformPoint( Mesh.Vertices[A] ) );
 			OutLines.Add( Transform.TransformPoint( Mesh.Vertices[B] ) );
 		}
@@ -428,7 +488,10 @@ bool NWorldEditor::AppendMeshWireLines( const FEditorCollisionMesh& Mesh, const 
 			const uint32 A = Mesh.Indices[Triangle * 3 + Edge];
 			const uint32 B = Mesh.Indices[Triangle * 3 + ( Edge + 1 ) % 3];
 			const int64 Key = ( static_cast<int64>( NMath::Min( A, B ) ) << 32 ) | static_cast<int64>( NMath::Max( A, B ) );
-			if ( !Done.Add( Key ) ) continue;
+			if ( !Done.Add( Key ) )
+			{
+				continue;
+			}
 			OutLines.Add( Transform.TransformPoint( Vertex( A ) ) );
 			OutLines.Add( Transform.TransformPoint( Vertex( B ) ) );
 		}

@@ -27,8 +27,14 @@ namespace
 		while ( Low < High )
 		{
 			const int32 Mid = ( Low + High ) / 2;
-			if ( Set[Mid] < Value ) Low = Mid + 1;
-			else High = Mid;
+			if ( Set[Mid] < Value )
+			{
+				Low = Mid + 1;
+			}
+			else
+			{
+				High = Mid;
+			}
 		}
 		return Low;
 	}
@@ -37,7 +43,10 @@ namespace
 	void AddSortedImpl( TArray<T>& Set, T Value )
 	{
 		const int32 Position = LowerBound( Set, Value );
-		if ( Position < Set.Num() && Set[Position] == Value ) return;
+		if ( Position < Set.Num() && Set[Position] == Value )
+		{
+			return;
+		}
 		Set.Insert( Value, Position );
 	}
 
@@ -45,7 +54,10 @@ namespace
 	bool RemoveSortedImpl( TArray<T>& Set, T Value )
 	{
 		const int32 Position = LowerBound( Set, Value );
-		if ( Position >= Set.Num() || Set[Position] != Value ) return false;
+		if ( Position >= Set.Num() || Set[Position] != Value )
+		{
+			return false;
+		}
 		Set.RemoveAt( Position );
 		return true;
 	}
@@ -63,7 +75,10 @@ namespace
 		TArray<int32> Result;
 		for ( const int32 Face : Faces )
 		{
-			if ( Mesh.IsFaceValid( Face ) ) AddSortedImpl( Result, Face );
+			if ( Mesh.IsFaceValid( Face ) )
+			{
+				AddSortedImpl( Result, Face );
+			}
 		}
 		return Result;
 	}
@@ -73,7 +88,10 @@ namespace
 		TArray<int32> Result;
 		for ( const int32 Vertex : Vertices )
 		{
-			if ( Mesh.Vertices.IsValidIndex( Vertex ) ) AddSortedImpl( Result, Vertex );
+			if ( Mesh.Vertices.IsValidIndex( Vertex ) )
+			{
+				AddSortedImpl( Result, Vertex );
+			}
 		}
 		return Result;
 	}
@@ -86,7 +104,10 @@ namespace
 		const TArray<int32>& Indices = Mesh.Faces[Face].Indices;
 		const FVector3& Origin = Mesh.Vertices[Indices[0]];
 		FVector3 Sum = FVector3::Zero;
-		for ( int32 i = 1; i + 1 < Indices.Num(); ++i ) Sum = Sum + FVector3::Cross( Mesh.Vertices[Indices[i]] - Origin, Mesh.Vertices[Indices[i + 1]] - Origin );
+		for ( int32 i = 1; i + 1 < Indices.Num(); ++i )
+		{
+			Sum = Sum + FVector3::Cross( Mesh.Vertices[Indices[i]] - Origin, Mesh.Vertices[Indices[i + 1]] - Origin );
+		}
 		return Sum;
 	}
 
@@ -105,9 +126,18 @@ namespace
 	{
 		A = FindRoot( Parent, A );
 		B = FindRoot( Parent, B );
-		if ( A == B ) return;
-		if ( A < B ) Parent[B] = A;
-		else Parent[A] = B;
+		if ( A == B )
+		{
+			return;
+		}
+		if ( A < B )
+		{
+			Parent[B] = A;
+		}
+		else
+		{
+			Parent[A] = B;
+		}
 	}
 
 	// Parent に従って面の頂点を付け替え、つぶれた面を消し、使われない頂点を取り除く。OutNewIndex があれば、元の頂点 -> いまの頂点（消えたものは -1）
@@ -126,20 +156,32 @@ namespace
 					break;
 				}
 				const int32 Root = FindRoot( Parent, Index );
-				if ( Loop.IsEmpty() || Loop.Last() != Root ) Loop.Add( Root );
+				if ( Loop.IsEmpty() || Loop.Last() != Root )
+				{
+					Loop.Add( Root );
+				}
 			}
 			if ( bBroken )
 			{
 				Kept.Add( Face );   // 壊れた面は、そのまま（ここでは直さない）
 				continue;
 			}
-			if ( Loop.Num() > 1 && Loop[0] == Loop.Last() ) Loop.RemoveAt( Loop.Num() - 1 );
+			if ( Loop.Num() > 1 && Loop[0] == Loop.Last() )
+			{
+				Loop.RemoveAt( Loop.Num() - 1 );
+			}
 			bool bPinched = Loop.Num() < 3;
 			for ( int32 i = 0; i < Loop.Num() && !bPinched; ++i )
 			{
-				for ( int32 j = 0; j < i; ++j ) bPinched = bPinched || Loop[i] == Loop[j];
+				for ( int32 j = 0; j < i; ++j )
+				{
+					bPinched = bPinched || Loop[i] == Loop[j];
+				}
 			}
-			if ( bPinched ) continue;
+			if ( bPinched )
+			{
+				continue;
+			}
 			FEditMeshFace Replaced = Face;
 			Replaced.Indices = Loop;
 			Kept.Add( Replaced );
@@ -149,7 +191,10 @@ namespace
 		{
 			OutNewIndex->Init( -1, Parent.Num() );
 			// 後ろの詰め直し（RemoveUnusedVertices）の前に、元 -> 代表 を控え、あとで、代表 -> いまの番号に繋ぐ
-			for ( int32 i = 0; i < Parent.Num(); ++i ) ( *OutNewIndex )[i] = FindRoot( Parent, i );
+			for ( int32 i = 0; i < Parent.Num(); ++i )
+			{
+				( *OutNewIndex )[i] = FindRoot( Parent, i );
+			}
 		}
 	}
 }
@@ -169,13 +214,19 @@ void NEditMesh::CleanSelection( const FEditMesh& Mesh, FEditMeshSelection& Selec
 	TArray<int32> Vertices;
 	for ( const int32 Vertex : Selection.Vertices )
 	{
-		if ( Mesh.Vertices.IsValidIndex( Vertex ) ) AddSortedImpl( Vertices, Vertex );
+		if ( Mesh.Vertices.IsValidIndex( Vertex ) )
+		{
+			AddSortedImpl( Vertices, Vertex );
+		}
 	}
 	Selection.Vertices = Vertices;
 	TArray<int32> Faces;
 	for ( const int32 Face : Selection.Faces )
 	{
-		if ( Mesh.Faces.IsValidIndex( Face ) ) AddSortedImpl( Faces, Face );
+		if ( Mesh.Faces.IsValidIndex( Face ) )
+		{
+			AddSortedImpl( Faces, Face );
+		}
 	}
 	Selection.Faces = Faces;
 	if ( !Selection.Edges.IsEmpty() )
@@ -184,7 +235,10 @@ void NEditMesh::CleanSelection( const FEditMesh& Mesh, FEditMeshSelection& Selec
 		TArray<int64> Edges;
 		for ( const int64 Edge : Selection.Edges )
 		{
-			if ( ContainsSortedImpl( All, Edge ) ) AddSortedImpl( Edges, Edge );
+			if ( ContainsSortedImpl( All, Edge ) )
+			{
+				AddSortedImpl( Edges, Edge );
+			}
 		}
 		Selection.Edges = Edges;
 	}
@@ -204,16 +258,28 @@ FEditMeshSelection NEditMesh::ConvertSelection( const FEditMesh& Mesh, const FEd
 		{
 			int32 A = 0, B = 0;
 			SplitEdgeKey( Edge, A, B );
-			if ( ContainsSortedImpl( Affected, A ) && ContainsSortedImpl( Affected, B ) ) Result.Edges.Add( Edge );
+			if ( ContainsSortedImpl( Affected, A ) && ContainsSortedImpl( Affected, B ) )
+			{
+				Result.Edges.Add( Edge );
+			}
 		}
 		break;
 	case EEditMeshElement::Face:
 		for ( int32 Face = 0; Face < Mesh.Faces.Num(); ++Face )
 		{
-			if ( !Mesh.IsFaceValid( Face ) ) continue;
+			if ( !Mesh.IsFaceValid( Face ) )
+			{
+				continue;
+			}
 			bool bAll = true;
-			for ( const int32 Index : Mesh.Faces[Face].Indices ) bAll = bAll && ContainsSortedImpl( Affected, Index );
-			if ( bAll ) Result.Faces.Add( Face );
+			for ( const int32 Index : Mesh.Faces[Face].Indices )
+			{
+				bAll = bAll && ContainsSortedImpl( Affected, Index );
+			}
+			if ( bAll )
+			{
+				Result.Faces.Add( Face );
+			}
 		}
 		break;
 	}
@@ -225,21 +291,36 @@ TArray<int32> NEditMesh::GetAffectedVertices( const FEditMesh& Mesh, const FEdit
 	TArray<int32> Result;
 	for ( const int32 Vertex : Selection.Vertices )
 	{
-		if ( Mesh.Vertices.IsValidIndex( Vertex ) ) AddSortedImpl( Result, Vertex );
+		if ( Mesh.Vertices.IsValidIndex( Vertex ) )
+		{
+			AddSortedImpl( Result, Vertex );
+		}
 	}
 	for ( const int64 Edge : Selection.Edges )
 	{
 		int32 A = 0, B = 0;
 		SplitEdgeKey( Edge, A, B );
-		if ( Mesh.Vertices.IsValidIndex( A ) ) AddSortedImpl( Result, A );
-		if ( Mesh.Vertices.IsValidIndex( B ) ) AddSortedImpl( Result, B );
+		if ( Mesh.Vertices.IsValidIndex( A ) )
+		{
+			AddSortedImpl( Result, A );
+		}
+		if ( Mesh.Vertices.IsValidIndex( B ) )
+		{
+			AddSortedImpl( Result, B );
+		}
 	}
 	for ( const int32 Face : Selection.Faces )
 	{
-		if ( !Mesh.Faces.IsValidIndex( Face ) ) continue;
+		if ( !Mesh.Faces.IsValidIndex( Face ) )
+		{
+			continue;
+		}
 		for ( const int32 Vertex : Mesh.Faces[Face].Indices )
 		{
-			if ( Mesh.Vertices.IsValidIndex( Vertex ) ) AddSortedImpl( Result, Vertex );
+			if ( Mesh.Vertices.IsValidIndex( Vertex ) )
+			{
+				AddSortedImpl( Result, Vertex );
+			}
 		}
 	}
 	return Result;
@@ -248,9 +329,15 @@ TArray<int32> NEditMesh::GetAffectedVertices( const FEditMesh& Mesh, const FEdit
 FVector3 NEditMesh::ComputeSelectionCenter( const FEditMesh& Mesh, const FEditMeshSelection& Selection )
 {
 	const TArray<int32> Vertices = GetAffectedVertices( Mesh, Selection );
-	if ( Vertices.IsEmpty() ) return FVector3::Zero;
+	if ( Vertices.IsEmpty() )
+	{
+		return FVector3::Zero;
+	}
 	FVector3 Sum = FVector3::Zero;
-	for ( const int32 Vertex : Vertices ) Sum = Sum + Mesh.Vertices[Vertex];
+	for ( const int32 Vertex : Vertices )
+	{
+		Sum = Sum + Mesh.Vertices[Vertex];
+	}
 	return Sum / static_cast<float32>( Vertices.Num() );
 }
 
@@ -259,7 +346,10 @@ FVector3 NEditMesh::ComputeSelectionNormal( const FEditMesh& Mesh, const FEditMe
 	FVector3 Sum = FVector3::Zero;
 	for ( const int32 Face : Selection.Faces )
 	{
-		if ( Mesh.IsFaceValid( Face ) ) Sum = Sum + AreaVector( Mesh, Face );
+		if ( Mesh.IsFaceValid( Face ) )
+		{
+			Sum = Sum + AreaVector( Mesh, Face );
+		}
 	}
 	const float32 Length = Sum.Length();
 	return Length > 1.0e-9f ? Sum / Length : FVector3::Zero;
@@ -270,15 +360,24 @@ TArray<int64> NEditMesh::GetAllEdges( const FEditMesh& Mesh )
 	TArray<int64> Result;
 	for ( int32 Face = 0; Face < Mesh.Faces.Num(); ++Face )
 	{
-		if ( !Mesh.IsFaceValid( Face ) ) continue;
+		if ( !Mesh.IsFaceValid( Face ) )
+		{
+			continue;
+		}
 		const TArray<int32>& Indices = Mesh.Faces[Face].Indices;
-		for ( int32 i = 0; i < Indices.Num(); ++i ) Result.Add( MakeEdgeKey( Indices[i], Indices[( i + 1 ) % Indices.Num()] ) );
+		for ( int32 i = 0; i < Indices.Num(); ++i )
+		{
+			Result.Add( MakeEdgeKey( Indices[i], Indices[( i + 1 ) % Indices.Num()] ) );
+		}
 	}
 	Result.Sort();
 	TArray<int64> Unique;
 	for ( const int64 Edge : Result )
 	{
-		if ( Unique.IsEmpty() || Unique.Last() != Edge ) Unique.Add( Edge );
+		if ( Unique.IsEmpty() || Unique.Last() != Edge )
+		{
+			Unique.Add( Edge );
+		}
 	}
 	return Unique;
 }
@@ -287,7 +386,10 @@ TArray<int32> NEditMesh::GetFacesUsingVertices( const FEditMesh& Mesh, const TAr
 {
 	TArray<int32> Result;
 	TArray<int32> Sorted;
-	for ( const int32 Vertex : Vertices ) AddSortedImpl( Sorted, Vertex );
+	for ( const int32 Vertex : Vertices )
+	{
+		AddSortedImpl( Sorted, Vertex );
+	}
 	for ( int32 Face = 0; Face < Mesh.Faces.Num(); ++Face )
 	{
 		for ( const int32 Index : Mesh.Faces[Face].Indices )
@@ -326,9 +428,15 @@ TArray<int32> NEditMesh::GetLinkedFaces( const FEditMesh& Mesh, const TArray<int
 	TMap<int64, TArray<int32>> FacesOfEdge;
 	for ( int32 Face = 0; Face < Mesh.Faces.Num(); ++Face )
 	{
-		if ( !Mesh.IsFaceValid( Face ) ) continue;
+		if ( !Mesh.IsFaceValid( Face ) )
+		{
+			continue;
+		}
 		const TArray<int32>& Indices = Mesh.Faces[Face].Indices;
-		for ( int32 i = 0; i < Indices.Num(); ++i ) FacesOfEdge.FindOrAdd( MakeEdgeKey( Indices[i], Indices[( i + 1 ) % Indices.Num()] ) ).Add( Face );
+		for ( int32 i = 0; i < Indices.Num(); ++i )
+		{
+			FacesOfEdge.FindOrAdd( MakeEdgeKey( Indices[i], Indices[( i + 1 ) % Indices.Num()] ) ).Add( Face );
+		}
 	}
 	TArray<int32> Result;
 	TArray<int32> Queue;
@@ -346,10 +454,16 @@ TArray<int32> NEditMesh::GetLinkedFaces( const FEditMesh& Mesh, const TArray<int
 		for ( int32 i = 0; i < Indices.Num(); ++i )
 		{
 			const TArray<int32>* Neighbors = FacesOfEdge.Find( MakeEdgeKey( Indices[i], Indices[( i + 1 ) % Indices.Num()] ) );
-			if ( Neighbors == nullptr ) continue;
+			if ( Neighbors == nullptr )
+			{
+				continue;
+			}
 			for ( const int32 Neighbor : *Neighbors )
 			{
-				if ( ContainsSortedImpl( Result, Neighbor ) ) continue;
+				if ( ContainsSortedImpl( Result, Neighbor ) )
+				{
+					continue;
+				}
 				AddSortedImpl( Result, Neighbor );
 				Queue.Add( Neighbor );
 			}
@@ -363,12 +477,21 @@ int32 NEditMesh::CountOpenEdges( const FEditMesh& Mesh )
 	TMap<int64, int32> Counts;
 	for ( int32 Face = 0; Face < Mesh.Faces.Num(); ++Face )
 	{
-		if ( !Mesh.IsFaceValid( Face ) ) continue;
+		if ( !Mesh.IsFaceValid( Face ) )
+		{
+			continue;
+		}
 		const TArray<int32>& Indices = Mesh.Faces[Face].Indices;
-		for ( int32 i = 0; i < Indices.Num(); ++i ) ++Counts.FindOrAdd( MakeEdgeKey( Indices[i], Indices[( i + 1 ) % Indices.Num()] ) );
+		for ( int32 i = 0; i < Indices.Num(); ++i )
+		{
+			++Counts.FindOrAdd( MakeEdgeKey( Indices[i], Indices[( i + 1 ) % Indices.Num()] ) );
+		}
 	}
 	int32 NumOpen = 0;
-	for ( const auto& Pair : Counts ) NumOpen += Pair.Value == 1 ? 1 : 0;
+	for ( const auto& Pair : Counts )
+	{
+		NumOpen += Pair.Value == 1 ? 1 : 0;
+	}
 	return NumOpen;
 }
 
@@ -379,7 +502,10 @@ FEditMeshSelection NEditMesh::ExtrudeFaces( FEditMesh& Mesh, const TArray<int32>
 {
 	FEditMeshSelection Result;
 	const TArray<int32> Selected = ValidFaces( Mesh, Faces );
-	if ( Selected.IsEmpty() ) return Result;
+	if ( Selected.IsEmpty() )
+	{
+		return Result;
+	}
 	Result.Faces = Selected;
 	TArray<FEditMeshFace> Walls;
 	TArray<int32> NewVertices;
@@ -436,7 +562,10 @@ FEditMeshSelection NEditMesh::ExtrudeFaces( FEditMesh& Mesh, const TArray<int32>
 		{
 			for ( const int32 Index : Mesh.Faces[Face].Indices )
 			{
-				if ( NewIndex.Find( Index ) != nullptr ) continue;
+				if ( NewIndex.Find( Index ) != nullptr )
+				{
+					continue;
+				}
 				const FVector3 Sum = *NormalSum.Find( Index );
 				const float32 Length = Sum.Length();
 				const FVector3 Offset = Length > 1.0e-9f ? Sum / Length * Distance : FVector3::Zero;
@@ -451,15 +580,24 @@ FEditMeshSelection NEditMesh::ExtrudeFaces( FEditMesh& Mesh, const TArray<int32>
 			for ( int32 i = 0; i < Indices.Num(); ++i )
 			{
 				const int32 A = Indices[i], B = Indices[( i + 1 ) % Indices.Num()];
-				if ( !Directed.Contains( DirectedKey( B, A ) ) ) AddWall( A, B, *NewIndex.Find( A ), *NewIndex.Find( B ), Mesh.Faces[Face].Material );
+				if ( !Directed.Contains( DirectedKey( B, A ) ) )
+				{
+					AddWall( A, B, *NewIndex.Find( A ), *NewIndex.Find( B ), Mesh.Faces[Face].Material );
+				}
 			}
 		}
 		for ( const int32 Face : Selected )
 		{
-			for ( int32& Index : Mesh.Faces[Face].Indices ) Index = *NewIndex.Find( Index );
+			for ( int32& Index : Mesh.Faces[Face].Indices )
+			{
+				Index = *NewIndex.Find( Index );
+			}
 		}
 	}
-	for ( const FEditMeshFace& Wall : Walls ) Mesh.Faces.Add( Wall );
+	for ( const FEditMeshFace& Wall : Walls )
+	{
+		Mesh.Faces.Add( Wall );
+	}
 	NewVertices.Sort();
 	Result.Vertices = NewVertices;
 	return Result;
@@ -472,7 +610,10 @@ FEditMeshSelection NEditMesh::InsetFaces( FEditMesh& Mesh, const TArray<int32>& 
 	for ( const int32 Face : Result.Faces )
 	{
 		const FVector3 Center = Mesh.ComputeFaceCenter( Face );
-		for ( const int32 Index : Mesh.Faces[Face].Indices ) Mesh.Vertices[Index] = Center + ( Mesh.Vertices[Index] - Center ) * ( 1.0f - Shrink );
+		for ( const int32 Index : Mesh.Faces[Face].Indices )
+		{
+			Mesh.Vertices[Index] = Center + ( Mesh.Vertices[Index] - Center ) * ( 1.0f - Shrink );
+		}
 	}
 	return Result;
 }
@@ -485,7 +626,10 @@ int32 NEditMesh::RemoveUnusedVertices( FEditMesh& Mesh )
 	{
 		for ( const int32 Index : Face.Indices )
 		{
-			if ( Mesh.Vertices.IsValidIndex( Index ) ) Used[Index] = true;
+			if ( Mesh.Vertices.IsValidIndex( Index ) )
+			{
+				Used[Index] = true;
+			}
 		}
 	}
 	TArray<int32> NewIndex;
@@ -493,17 +637,26 @@ int32 NEditMesh::RemoveUnusedVertices( FEditMesh& Mesh )
 	TArray<FVector3> Kept;
 	for ( int32 i = 0; i < Mesh.Vertices.Num(); ++i )
 	{
-		if ( !Used[i] ) continue;
+		if ( !Used[i] )
+		{
+			continue;
+		}
 		NewIndex[i] = Kept.Num();
 		Kept.Add( Mesh.Vertices[i] );
 	}
 	const int32 NumRemoved = Mesh.Vertices.Num() - Kept.Num();
-	if ( NumRemoved == 0 ) return 0;
+	if ( NumRemoved == 0 )
+	{
+		return 0;
+	}
 	for ( FEditMeshFace& Face : Mesh.Faces )
 	{
 		for ( int32& Index : Face.Indices )
 		{
-			if ( Mesh.Vertices.IsValidIndex( Index ) ) Index = NewIndex[Index];
+			if ( Mesh.Vertices.IsValidIndex( Index ) )
+			{
+				Index = NewIndex[Index];
+			}
 		}
 	}
 	Mesh.Vertices = Kept;
@@ -515,7 +668,10 @@ int32 NEditMesh::RemoveInvalidFaces( FEditMesh& Mesh )
 	TArray<FEditMeshFace> Kept;
 	for ( int32 Face = 0; Face < Mesh.Faces.Num(); ++Face )
 	{
-		if ( Mesh.IsFaceValid( Face ) ) Kept.Add( Mesh.Faces[Face] );
+		if ( Mesh.IsFaceValid( Face ) )
+		{
+			Kept.Add( Mesh.Faces[Face] );
+		}
 	}
 	const int32 NumRemoved = Mesh.Faces.Num() - Kept.Num();
 	Mesh.Faces = Kept;
@@ -527,13 +683,22 @@ int32 NEditMesh::DeleteFaces( FEditMesh& Mesh, const TArray<int32>& Faces )
 	TArray<int32> Doomed;
 	for ( const int32 Face : Faces )
 	{
-		if ( Mesh.Faces.IsValidIndex( Face ) ) AddSortedImpl( Doomed, Face );
+		if ( Mesh.Faces.IsValidIndex( Face ) )
+		{
+			AddSortedImpl( Doomed, Face );
+		}
 	}
-	if ( Doomed.IsEmpty() ) return 0;
+	if ( Doomed.IsEmpty() )
+	{
+		return 0;
+	}
 	TArray<FEditMeshFace> Kept;
 	for ( int32 Face = 0; Face < Mesh.Faces.Num(); ++Face )
 	{
-		if ( !ContainsSortedImpl( Doomed, Face ) ) Kept.Add( Mesh.Faces[Face] );
+		if ( !ContainsSortedImpl( Doomed, Face ) )
+		{
+			Kept.Add( Mesh.Faces[Face] );
+		}
 	}
 	Mesh.Faces = Kept;
 	RemoveUnusedVertices( Mesh );
@@ -543,10 +708,16 @@ int32 NEditMesh::DeleteFaces( FEditMesh& Mesh, const TArray<int32>& Faces )
 int32 NEditMesh::DeleteVertices( FEditMesh& Mesh, const TArray<int32>& Vertices )
 {
 	const TArray<int32> Valid = ValidVertices( Mesh, Vertices );
-	if ( Valid.IsEmpty() ) return 0;
+	if ( Valid.IsEmpty() )
+	{
+		return 0;
+	}
 	const TArray<int32> Doomed = GetFacesUsingVertices( Mesh, Valid );
 	const int32 NumDeleted = DeleteFaces( Mesh, Doomed );
-	if ( NumDeleted == 0 ) RemoveUnusedVertices( Mesh );   // どの面にも使われていない頂点
+	if ( NumDeleted == 0 )
+	{
+		RemoveUnusedVertices( Mesh );   // どの面にも使われていない頂点
+	}
 	return NumDeleted;
 }
 
@@ -555,19 +726,34 @@ void NEditMesh::FlipFaces( FEditMesh& Mesh, const TArray<int32>& Faces )
 	for ( const int32 Face : ValidFaces( Mesh, Faces ) )
 	{
 		TArray<int32>& Indices = Mesh.Faces[Face].Indices;
-		for ( int32 i = 0, j = Indices.Num() - 1; i < j; ++i, --j ) NAlgo::Swap( Indices[i], Indices[j] );
+		for ( int32 i = 0, j = Indices.Num() - 1; i < j; ++i, --j )
+		{
+			NAlgo::Swap( Indices[i], Indices[j] );
+		}
 	}
 }
 
 int32 NEditMesh::MergeVertices( FEditMesh& Mesh, const TArray<int32>& Vertices )
 {
 	const TArray<int32> Valid = ValidVertices( Mesh, Vertices );
-	if ( Valid.Num() < 2 ) return -1;
+	if ( Valid.Num() < 2 )
+	{
+		return -1;
+	}
 	FVector3 Sum = FVector3::Zero;
-	for ( const int32 Vertex : Valid ) Sum = Sum + Mesh.Vertices[Vertex];
+	for ( const int32 Vertex : Valid )
+	{
+		Sum = Sum + Mesh.Vertices[Vertex];
+	}
 	TArray<int32> Parent;
-	for ( int32 i = 0; i < Mesh.Vertices.Num(); ++i ) Parent.Add( i );
-	for ( int32 i = 1; i < Valid.Num(); ++i ) Unite( Parent, Valid[0], Valid[i] );
+	for ( int32 i = 0; i < Mesh.Vertices.Num(); ++i )
+	{
+		Parent.Add( i );
+	}
+	for ( int32 i = 1; i < Valid.Num(); ++i )
+	{
+		Unite( Parent, Valid[0], Valid[i] );
+	}
 	Mesh.Vertices[Valid[0]] = Sum / static_cast<float32>( Valid.Num() );
 
 	TArray<int32> Roots;
@@ -577,13 +763,22 @@ int32 NEditMesh::MergeVertices( FEditMesh& Mesh, const TArray<int32>& Vertices )
 	Used.Init( false, Mesh.Vertices.Num() );
 	for ( const FEditMeshFace& Face : Mesh.Faces )
 	{
-		for ( const int32 Index : Face.Indices ) Used[Index] = true;
+		for ( const int32 Index : Face.Indices )
+		{
+			Used[Index] = true;
+		}
 	}
 	int32 NewRoot = -1, Count = 0;
 	for ( int32 i = 0; i < Mesh.Vertices.Num(); ++i )
 	{
-		if ( !Used[i] ) continue;
-		if ( i == Roots[Valid[0]] ) NewRoot = Count;
+		if ( !Used[i] )
+		{
+			continue;
+		}
+		if ( i == Roots[Valid[0]] )
+		{
+			NewRoot = Count;
+		}
 		++Count;
 	}
 	RemoveUnusedVertices( Mesh );
@@ -596,10 +791,16 @@ int32 NEditMesh::WeldVertices( FEditMesh& Mesh, const TArray<int32>& Vertices, f
 	TArray<int32> Candidates = Vertices.IsEmpty() ? TArray<int32>() : ValidVertices( Mesh, Vertices );
 	if ( Vertices.IsEmpty() )
 	{
-		for ( int32 i = 0; i < Mesh.Vertices.Num(); ++i ) Candidates.Add( i );
+		for ( int32 i = 0; i < Mesh.Vertices.Num(); ++i )
+		{
+			Candidates.Add( i );
+		}
 	}
 	TArray<int32> Parent;
-	for ( int32 i = 0; i < Mesh.Vertices.Num(); ++i ) Parent.Add( i );
+	for ( int32 i = 0; i < Mesh.Vertices.Num(); ++i )
+	{
+		Parent.Add( i );
+	}
 
 	const auto CellOf = [&]( float32 Value ) { return static_cast<int64>( NMath::Floor( Value / Reach ) ); };
 	const auto KeyOf = [&]( int64 X, int64 Y, int64 Z ) { return ( X * 73856093ll ) ^ ( Y * 19349663ll ) ^ ( Z * 83492791ll ); };
@@ -616,10 +817,16 @@ int32 NEditMesh::WeldVertices( FEditMesh& Mesh, const TArray<int32>& Vertices, f
 				for ( int64 DZ = -1; DZ <= 1; ++DZ )
 				{
 					const TArray<int32>* Cell = Grid.Find( KeyOf( CX + DX, CY + DY, CZ + DZ ) );
-					if ( Cell == nullptr ) continue;
+					if ( Cell == nullptr )
+					{
+						continue;
+					}
 					for ( const int32 Other : *Cell )
 					{
-						if ( FVector3::DistanceSquared( Mesh.Vertices[Other], P ) <= ReachSquared ) Unite( Parent, Other, Vertex );
+						if ( FVector3::DistanceSquared( Mesh.Vertices[Other], P ) <= ReachSquared )
+						{
+							Unite( Parent, Other, Vertex );
+						}
 					}
 				}
 			}
@@ -635,7 +842,10 @@ int32 NEditMesh::WeldVertices( FEditMesh& Mesh, const TArray<int32>& Vertices, f
 int32 NEditMesh::SubdivideFaces( FEditMesh& Mesh, const TArray<int32>& Faces )
 {
 	const TArray<int32> Selected = ValidFaces( Mesh, Faces );
-	if ( Selected.IsEmpty() ) return 0;
+	if ( Selected.IsEmpty() )
+	{
+		return 0;
+	}
 	const int32 NumBefore = Mesh.Faces.Num();
 
 	TMap<int64, int32> Middle;   // 辺 -> 辺の真ん中の頂点
@@ -645,23 +855,38 @@ int32 NEditMesh::SubdivideFaces( FEditMesh& Mesh, const TArray<int32>& Faces )
 		for ( int32 i = 0; i < Indices.Num(); ++i )
 		{
 			const int64 Key = MakeEdgeKey( Indices[i], Indices[( i + 1 ) % Indices.Num()] );
-			if ( Middle.Find( Key ) == nullptr ) Middle.Add( Key, Mesh.Vertices.Add( ( Mesh.Vertices[Indices[i]] + Mesh.Vertices[Indices[( i + 1 ) % Indices.Num()]] ) * 0.5f ) );
+			if ( Middle.Find( Key ) == nullptr )
+			{
+				Middle.Add( Key, Mesh.Vertices.Add( ( Mesh.Vertices[Indices[i]] + Mesh.Vertices[Indices[( i + 1 ) % Indices.Num()]] ) * 0.5f ) );
+			}
 		}
 	}
 
 	// 隣の面（選んでいない面）にも、辺の真ん中の頂点を足す（隙間ができないように）
 	for ( int32 Face = 0; Face < NumBefore; ++Face )
 	{
-		if ( ContainsSortedImpl( Selected, Face ) ) continue;
+		if ( ContainsSortedImpl( Selected, Face ) )
+		{
+			continue;
+		}
 		const TArray<int32> Old = Mesh.Faces[Face].Indices;
 		bool bInRange = true;
-		for ( const int32 Index : Old ) bInRange = bInRange && Mesh.Vertices.IsValidIndex( Index );
-		if ( !bInRange || Old.Num() < 3 ) continue;
+		for ( const int32 Index : Old )
+		{
+			bInRange = bInRange && Mesh.Vertices.IsValidIndex( Index );
+		}
+		if ( !bInRange || Old.Num() < 3 )
+		{
+			continue;
+		}
 		TArray<int32> Loop;
 		for ( int32 i = 0; i < Old.Num(); ++i )
 		{
 			Loop.Add( Old[i] );
-			if ( const int32* Mid = Middle.Find( MakeEdgeKey( Old[i], Old[( i + 1 ) % Old.Num()] ) ) ) Loop.Add( *Mid );
+			if ( const int32* Mid = Middle.Find( MakeEdgeKey( Old[i], Old[( i + 1 ) % Old.Num()] ) ) )
+			{
+				Loop.Add( *Mid );
+			}
 		}
 		Mesh.Faces[Face].Indices = Loop;
 	}
@@ -672,7 +897,10 @@ int32 NEditMesh::SubdivideFaces( FEditMesh& Mesh, const TArray<int32>& Faces )
 		const TArray<int32> Old = Mesh.Faces[Face].Indices;
 		const int32 Material = Mesh.Faces[Face].Material;
 		FVector3 Sum = FVector3::Zero;
-		for ( const int32 Index : Old ) Sum = Sum + Mesh.Vertices[Index];
+		for ( const int32 Index : Old )
+		{
+			Sum = Sum + Mesh.Vertices[Index];
+		}
 		const int32 Center = Mesh.Vertices.Add( Sum / static_cast<float32>( Old.Num() ) );
 		for ( int32 i = 0; i < Old.Num(); ++i )
 		{
@@ -683,8 +911,14 @@ int32 NEditMesh::SubdivideFaces( FEditMesh& Mesh, const TArray<int32>& Faces )
 			Quad.Indices.Add( Old[i] );
 			Quad.Indices.Add( *Middle.Find( MakeEdgeKey( Old[i], Next ) ) );
 			Quad.Indices.Add( Center );
-			if ( i == 0 ) Mesh.Faces[Face] = Quad;
-			else Mesh.Faces.Add( Quad );
+			if ( i == 0 )
+			{
+				Mesh.Faces[Face] = Quad;
+			}
+			else
+			{
+				Mesh.Faces.Add( Quad );
+			}
 		}
 	}
 	return Mesh.Faces.Num() - NumBefore;
@@ -696,7 +930,10 @@ int32 NEditMesh::TriangulateFaces( FEditMesh& Mesh, const TArray<int32>& Faces )
 	for ( const int32 Face : ValidFaces( Mesh, Faces ) )
 	{
 		const TArray<int32> Old = Mesh.Faces[Face].Indices;
-		if ( Old.Num() <= 3 ) continue;
+		if ( Old.Num() <= 3 )
+		{
+			continue;
+		}
 		const int32 Material = Mesh.Faces[Face].Material;
 		for ( int32 i = 1; i + 1 < Old.Num(); ++i )
 		{
@@ -705,8 +942,14 @@ int32 NEditMesh::TriangulateFaces( FEditMesh& Mesh, const TArray<int32>& Faces )
 			Triangle.Indices.Add( Old[0] );
 			Triangle.Indices.Add( Old[i] );
 			Triangle.Indices.Add( Old[i + 1] );
-			if ( i == 1 ) Mesh.Faces[Face] = Triangle;
-			else Mesh.Faces.Add( Triangle );
+			if ( i == 1 )
+			{
+				Mesh.Faces[Face] = Triangle;
+			}
+			else
+			{
+				Mesh.Faces.Add( Triangle );
+			}
 		}
 	}
 	return Mesh.Faces.Num() - NumBefore;
@@ -724,7 +967,10 @@ void NEditMesh::SetFaceMaterial( FEditMesh& Mesh, const TArray<int32>& Faces, in
 {
 	for ( const int32 Face : Faces )
 	{
-		if ( Mesh.Faces.IsValidIndex( Face ) ) Mesh.Faces[Face].Material = Material;
+		if ( Mesh.Faces.IsValidIndex( Face ) )
+		{
+			Mesh.Faces[Face].Material = Material;
+		}
 	}
 }
 
@@ -732,19 +978,31 @@ int32 NEditMesh::AddMaterial( FEditMesh& Mesh, const FEditMeshMaterial& Material
 {
 	for ( int32 i = 0; i < Mesh.Materials.Num(); ++i )
 	{
-		if ( IsSameMaterial( Mesh.Materials[i], Material ) ) return i;
+		if ( IsSameMaterial( Mesh.Materials[i], Material ) )
+		{
+			return i;
+		}
 	}
 	return Mesh.Materials.Add( Material );
 }
 
 bool NEditMesh::RemoveMaterial( FEditMesh& Mesh, int32 Index )
 {
-	if ( !Mesh.Materials.IsValidIndex( Index ) ) return false;
+	if ( !Mesh.Materials.IsValidIndex( Index ) )
+	{
+		return false;
+	}
 	Mesh.Materials.RemoveAt( Index );
 	for ( FEditMeshFace& Face : Mesh.Faces )
 	{
-		if ( Face.Material == Index ) Face.Material = 0;
-		else if ( Face.Material > Index ) --Face.Material;
+		if ( Face.Material == Index )
+		{
+			Face.Material = 0;
+		}
+		else if ( Face.Material > Index )
+		{
+			--Face.Material;
+		}
 	}
 	return true;
 }
@@ -756,7 +1014,10 @@ int32 NEditMesh::AppendMesh( FEditMesh& Destination, const FEditMesh& Source, co
 {
 	const int32 FirstFace = Destination.Faces.Num();
 	const int32 VertexOffset = Destination.Vertices.Num();
-	for ( const FVector3& Vertex : Source.Vertices ) Destination.Vertices.Add( Transform.TransformPoint( Vertex ) );
+	for ( const FVector3& Vertex : Source.Vertices )
+	{
+		Destination.Vertices.Add( Transform.TransformPoint( Vertex ) );
+	}
 
 	// 材質の対応（元の番号 -> こちらの番号）
 	TArray<int32> MaterialMap;
@@ -764,17 +1025,29 @@ int32 NEditMesh::AppendMesh( FEditMesh& Destination, const FEditMesh& Source, co
 	for ( int32 i = 0; i < NumSourceMaterials; ++i )
 	{
 		const FEditMeshMaterial& Material = Source.GetMaterial( i );
-		if ( Destination.Materials.IsEmpty() && IsSameMaterial( Material, FEditMeshMaterial() ) ) MaterialMap.Add( 0 );
-		else MaterialMap.Add( AddMaterial( Destination, Material ) );
+		if ( Destination.Materials.IsEmpty() && IsSameMaterial( Material, FEditMeshMaterial() ) )
+		{
+			MaterialMap.Add( 0 );
+		}
+		else
+		{
+			MaterialMap.Add( AddMaterial( Destination, Material ) );
+		}
 	}
 	const bool bMirrored = Transform.Scale.x * Transform.Scale.y * Transform.Scale.z < 0.0f;
 	for ( const FEditMeshFace& Face : Source.Faces )
 	{
 		FEditMeshFace Copy;
-		for ( const int32 Index : Face.Indices ) Copy.Indices.Add( Index + VertexOffset );
+		for ( const int32 Index : Face.Indices )
+		{
+			Copy.Indices.Add( Index + VertexOffset );
+		}
 		if ( bMirrored )
 		{
-			for ( int32 i = 0, j = Copy.Indices.Num() - 1; i < j; ++i, --j ) NAlgo::Swap( Copy.Indices[i], Copy.Indices[j] );
+			for ( int32 i = 0, j = Copy.Indices.Num() - 1; i < j; ++i, --j )
+			{
+				NAlgo::Swap( Copy.Indices[i], Copy.Indices[j] );
+			}
 		}
 		Copy.Material = Face.Material >= 0 && Face.Material < MaterialMap.Num() ? MaterialMap[Face.Material] : 0;
 		Destination.Faces.Add( Copy );
@@ -810,7 +1083,10 @@ FEditMesh NEditMesh::MakeFromTriangles( TArrayView<const FVector3> Positions, TA
 				for ( int64 DZ = -1; DZ <= 1 && Found < 0; ++DZ )
 				{
 					const TArray<int32>* Cell = Grid.Find( KeyOf( CX + DX, CY + DY, CZ + DZ ) );
-					if ( Cell == nullptr ) continue;
+					if ( Cell == nullptr )
+					{
+						continue;
+					}
 					for ( const int32 Other : *Cell )
 					{
 						if ( FVector3::DistanceSquared( Mesh.Vertices[Other], P ) <= ReachSquared )
@@ -832,15 +1108,24 @@ FEditMesh NEditMesh::MakeFromTriangles( TArrayView<const FVector3> Positions, TA
 	for ( int32 i = 0; i + 2 < Indices.Num(); i += 3 )
 	{
 		const uint32 A = Indices[i], B = Indices[i + 1], C = Indices[i + 2];
-		if ( A >= static_cast<uint32>( Positions.Num() ) || B >= static_cast<uint32>( Positions.Num() ) || C >= static_cast<uint32>( Positions.Num() ) ) continue;
+		if ( A >= static_cast<uint32>( Positions.Num() ) || B >= static_cast<uint32>( Positions.Num() ) || C >= static_cast<uint32>( Positions.Num() ) )
+		{
+			continue;
+		}
 		const int32 VA = Remap[A], VB = Remap[B], VC = Remap[C];
-		if ( VA == VB || VB == VC || VA == VC ) continue;
+		if ( VA == VB || VB == VC || VA == VC )
+		{
+			continue;
+		}
 		FEditMeshFace Face;
 		Face.Indices.Add( VA );
 		Face.Indices.Add( VB );
 		Face.Indices.Add( VC );
 		Mesh.Faces.Add( Face );
-		if ( Mesh.ComputeFaceNormal( Mesh.Faces.Num() - 1 ).IsNearlyZero() ) Mesh.Faces.RemoveAt( Mesh.Faces.Num() - 1 );
+		if ( Mesh.ComputeFaceNormal( Mesh.Faces.Num() - 1 ).IsNearlyZero() )
+		{
+			Mesh.Faces.RemoveAt( Mesh.Faces.Num() - 1 );
+		}
 	}
 	RemoveUnusedVertices( Mesh );
 	return Mesh;

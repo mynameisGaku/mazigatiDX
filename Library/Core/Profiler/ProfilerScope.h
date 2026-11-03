@@ -97,7 +97,10 @@ public:
 
 	FORCEINLINE ~FProfileScope()
 	{
-		if ( Target != nullptr ) Target->EndSample( Index );
+		if ( Target != nullptr )
+		{
+			Target->EndSample( Index );
+		}
 	}
 
 	FProfileScope( const FProfileScope& ) = delete;
@@ -122,7 +125,13 @@ private:
 	#define PROFILE_SCOPE_LAZY( Var, Expression )         FProfileScope Var = NProfiler::GRecorder ? ( Expression ) : FProfileScope()
 
 	#define PROFILE_COUNTER_UNIT( Name, Value, Unit ) \
-		do { if ( IProfiler* ProfileRecorder = NProfiler::GRecorder ) ProfileRecorder->RecordCounter( ProfileRecorder->InternLiteral( Name ), static_cast<float64>( Value ), Unit ); } while ( 0 )
+		do \
+		{ \
+			if ( IProfiler* ProfileRecorder = NProfiler::GRecorder ) \
+			{ \
+				ProfileRecorder->RecordCounter( ProfileRecorder->InternLiteral( Name ), static_cast<float64>( Value ), Unit ); \
+			} \
+		} while ( 0 )
 	#define PROFILE_COUNTER( Name, Value )                PROFILE_COUNTER_UNIT( Name, Value, EProfileCounterUnit::Count )
 	#define PROFILE_COUNTER_BYTES( Name, Value )          PROFILE_COUNTER_UNIT( Name, Value, EProfileCounterUnit::Bytes )
 	#define PROFILE_COUNTER_MS( Name, Value )             PROFILE_COUNTER_UNIT( Name, Value, EProfileCounterUnit::Milliseconds )

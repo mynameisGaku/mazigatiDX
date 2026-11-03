@@ -13,7 +13,10 @@ TSharedPtr<CEffectAsset> CAssetManager::LoadEffect( const FString& Path )
 {
 	GAME_THREAD_ONLY( nullptr );
 	const TOptional<FString> Full = PrepareLoad( "effect", Path );
-	if ( !Full.IsSet() ) return nullptr;
+	if ( !Full.IsSet() )
+	{
+		return nullptr;
+	}
 
 	const FString FullPath = Full.Get( FString() );
 	const FString Key = MakeKey( FullPath );
@@ -36,8 +39,14 @@ TSharedPtr<CEffectAsset> CAssetManager::LoadEffect( const FString& Path )
 		RecordFailure();
 		return nullptr;
 	}
-	for ( int32 i = 0; i < Warnings.Num() && i < 20; ++i ) LOG( LogAsset, Warning, "Effect '%s': %s", *FullPath, *Warnings[i] );
-	if ( Warnings.Num() > 20 ) LOG( LogAsset, Warning, "Effect '%s': %d more warning(s) not shown", *FullPath, Warnings.Num() - 20 );
+	for ( int32 i = 0; i < Warnings.Num() && i < 20; ++i )
+	{
+		LOG( LogAsset, Warning, "Effect '%s': %s", *FullPath, *Warnings[i] );
+	}
+	if ( Warnings.Num() > 20 )
+	{
+		LOG( LogAsset, Warning, "Effect '%s': %d more warning(s) not shown", *FullPath, Warnings.Num() - 20 );
+	}
 
 	TSharedPtr<CEffectAsset> Asset = MakeShared<CEffectAsset>( FullPath, Definition, Warnings );
 	RecordLoad( *Asset, FullPath, StartTick );
@@ -49,7 +58,10 @@ TSharedPtr<CEffectAsset> CAssetManager::LoadEffect( const FString& Path )
 bool CAssetManager::SaveEffect( const FString& Path, const FParticleEffectDefinition& Definition )
 {
 	const TOptional<FString> Full = PrepareSavePath( Path );
-	if ( !Full.IsSet() ) return false;
+	if ( !Full.IsSet() )
+	{
+		return false;
+	}
 
 	NJson::CJsonObject Json;
 	Json.GetRoot() = Definition.ToJson();

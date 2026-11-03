@@ -14,7 +14,10 @@ namespace
 		const int32 Dot = Path.FindLast( "." );
 		const int32 Slash = Path.FindLast( "/" );
 		const int32 BackSlash = Path.FindLast( "\\" );
-		if ( Dot == INDEX_NONE || Dot < Slash || Dot < BackSlash ) return FString();
+		if ( Dot == INDEX_NONE || Dot < Slash || Dot < BackSlash )
+		{
+			return FString();
+		}
 		return Path.Mid( Dot );
 	}
 
@@ -22,7 +25,10 @@ namespace
 	{
 		for ( const char* Item : List )
 		{
-			if ( Extension.Equals( Item, ESearchCase::IgnoreCase ) ) return true;
+			if ( Extension.Equals( Item, ESearchCase::IgnoreCase ) )
+			{
+				return true;
+			}
 		}
 		return false;
 	}
@@ -48,13 +54,28 @@ namespace
 
 EEditorAssetKind NWorldEditor::ClassifyAsset( const FString& Path )
 {
-	if ( NModelFormat::Classify( Path ) != EModelFileKind::Unknown ) return EEditorAssetKind::Model;
+	if ( NModelFormat::Classify( Path ) != EModelFileKind::Unknown )
+	{
+		return EEditorAssetKind::Model;
+	}
 	// エフェクト: 内蔵のパーティクルと、登録された外部のバックエンドが扱うファイル
-	if ( FEffectBackendRegistry::Global().Find( Path ) != nullptr ) return EEditorAssetKind::Effect;
+	if ( FEffectBackendRegistry::Global().Find( Path ) != nullptr )
+	{
+		return EEditorAssetKind::Effect;
+	}
 	const FString Extension = GetExtension( Path );
-	if ( IsOneOf( Extension, { ".png", ".jpg", ".jpeg", ".bmp", ".tga", ".dds" } ) ) return EEditorAssetKind::Texture;
-	if ( IsOneOf( Extension, { ".wav", ".ogg", ".mp3" } ) ) return EEditorAssetKind::Sound;
-	if ( IsOneOf( Extension, { ".world" } ) ) return EEditorAssetKind::World;
+	if ( IsOneOf( Extension, { ".png", ".jpg", ".jpeg", ".bmp", ".tga", ".dds" } ) )
+	{
+		return EEditorAssetKind::Texture;
+	}
+	if ( IsOneOf( Extension, { ".wav", ".ogg", ".mp3" } ) )
+	{
+		return EEditorAssetKind::Sound;
+	}
+	if ( IsOneOf( Extension, { ".world" } ) )
+	{
+		return EEditorAssetKind::World;
+	}
 	return EEditorAssetKind::Unknown;
 }
 
@@ -63,9 +84,15 @@ FString NWorldEditor::GetAssetDisplayName( const FString& Path )
 	const int32 Slash = NMath::Max( Path.FindLast( "/" ), Path.FindLast( "\\" ) );
 	FString Name = Slash == INDEX_NONE ? Path : Path.Mid( Slash + 1 );
 	// 二重の拡張子（.effect.json）は、まとめて外す
-	if ( Name.EndsWith( ".effect.json", ESearchCase::IgnoreCase ) ) return Name.Left( Name.Len() - 12 );
+	if ( Name.EndsWith( ".effect.json", ESearchCase::IgnoreCase ) )
+	{
+		return Name.Left( Name.Len() - 12 );
+	}
 	const int32 Dot = Name.FindLast( "." );
-	if ( Dot > 0 ) Name = Name.Left( Dot );
+	if ( Dot > 0 )
+	{
+		Name = Name.Left( Dot );
+	}
 	return Name;
 }
 
@@ -95,24 +122,39 @@ FEditorPlacement NWorldEditor::ComputePlacement( const FEditorRay& Ray, const FW
 		}
 	}
 
-	if ( !Result.bHitGround && !Result.bHitObject ) BestT = Options.FallbackDistance;
+	if ( !Result.bHitGround && !Result.bHitObject )
+	{
+		BestT = Options.FallbackDistance;
+	}
 	Result.Position = Ray.PointAt( BestT );
 	Result.Position.x = SnapTo( Result.Position.x, Options.SnapStep );
 	Result.Position.z = SnapTo( Result.Position.z, Options.SnapStep );
-	if ( Result.bHitGround ) Result.Position.y = Options.GroundY;   // 地面は、誤差なく
+	if ( Result.bHitGround )
+	{
+		Result.Position.y = Options.GroundY;   // 地面は、誤差なく
+	}
 	return Result;
 }
 
 int32 NWorldEditor::AddAssetObject( TWorldDocument& Document, const FString& AssetPath, int32 ParentId, const FVector3& WorldPosition, const IEditorAssetInfo* Info )
 {
 	const EEditorAssetKind Kind = ClassifyAsset( AssetPath );
-	if ( AssetPath.IsEmpty() || Kind == EEditorAssetKind::Unknown ) return WorldNoId;
-	if ( ParentId != WorldNoId && Document.Get().FindObject( ParentId ) == nullptr ) return WorldNoId;
+	if ( AssetPath.IsEmpty() || Kind == EEditorAssetKind::Unknown )
+	{
+		return WorldNoId;
+	}
+	if ( ParentId != WorldNoId && Document.Get().FindObject( ParentId ) == nullptr )
+	{
+		return WorldNoId;
+	}
 
 	const FString Path = AssetPath.Replace( "\\", "/" );
 	TWorldDocument::FBatch Batch( Document );
 	const int32 Id = NWorldEdit::AddObject( Document, GetAssetDisplayName( Path ), ParentId, MakeLocalPlacement( Document.Get(), ParentId, WorldPosition ) );
-	if ( Id == WorldNoId ) return WorldNoId;
+	if ( Id == WorldNoId )
+	{
+		return WorldNoId;
+	}
 
 	FWorldObject* Object = NWorldEdit::EditObject( Document, Id );
 	switch ( Kind )
@@ -165,16 +207,25 @@ int32 NWorldEditor::AddAssetObject( TWorldDocument& Document, const FString& Ass
 
 int32 NWorldEditor::AddEmptyObject( TWorldDocument& Document, const FString& Name, int32 ParentId, const FVector3& WorldPosition )
 {
-	if ( ParentId != WorldNoId && Document.Get().FindObject( ParentId ) == nullptr ) return WorldNoId;
+	if ( ParentId != WorldNoId && Document.Get().FindObject( ParentId ) == nullptr )
+	{
+		return WorldNoId;
+	}
 	return NWorldEdit::AddObject( Document, Name, ParentId, MakeLocalPlacement( Document.Get(), ParentId, WorldPosition ) );
 }
 
 int32 NWorldEditor::AddMeshObject( TWorldDocument& Document, EEditMeshPrimitive Kind, int32 ParentId, const FVector3& WorldPosition, bool bCollider )
 {
-	if ( ParentId != WorldNoId && Document.Get().FindObject( ParentId ) == nullptr ) return WorldNoId;
+	if ( ParentId != WorldNoId && Document.Get().FindObject( ParentId ) == nullptr )
+	{
+		return WorldNoId;
+	}
 	TWorldDocument::FBatch Batch( Document );
 	const int32 Id = NWorldEdit::AddObject( Document, NEditMesh::ToString( Kind ), ParentId, MakeLocalPlacement( Document.Get(), ParentId, WorldPosition ) );
-	if ( Id == WorldNoId ) return WorldNoId;
+	if ( Id == WorldNoId )
+	{
+		return WorldNoId;
+	}
 	FWorldObject* Object = NWorldEdit::EditObject( Document, Id );
 	Object->Mesh = NEditMesh::MakePrimitive( Kind );
 	if ( bCollider )
@@ -189,11 +240,20 @@ int32 NWorldEditor::AddMeshObject( TWorldDocument& Document, EEditMeshPrimitive 
 bool NWorldEditor::ConvertModelToMesh( TWorldDocument& Document, int32 ObjectId, const IEditorAssetInfo& Assets )
 {
 	const FWorldObject* Object = Document.Get().FindObject( ObjectId );
-	if ( Object == nullptr || !Object->Model.IsSet() || Object->Mesh.IsSet() || Object->Model.GetValue().Path.IsEmpty() ) return false;
+	if ( Object == nullptr || !Object->Model.IsSet() || Object->Mesh.IsSet() || Object->Model.GetValue().Path.IsEmpty() )
+	{
+		return false;
+	}
 	const FEditorCollisionMesh* Source = Assets.GetCollisionMesh( Object->Model.GetValue().Path );
-	if ( Source == nullptr || Source->Vertices.IsEmpty() || Source->Indices.IsEmpty() ) return false;
+	if ( Source == nullptr || Source->Vertices.IsEmpty() || Source->Indices.IsEmpty() )
+	{
+		return false;
+	}
 	FEditMesh Mesh = NEditMesh::MakeFromTriangles( TArrayView<const FVector3>( Source->Vertices ), TArrayView<const uint32>( Source->Indices ), 1.0e-4f );
-	if ( Mesh.GetNumFaces() == 0 ) return false;
+	if ( Mesh.GetNumFaces() == 0 )
+	{
+		return false;
+	}
 	FWorldObject* Edited = NWorldEdit::EditObject( Document, ObjectId );
 	Edited->Mesh = Mesh;
 	Edited->Model.Reset();
@@ -202,11 +262,17 @@ bool NWorldEditor::ConvertModelToMesh( TWorldDocument& Document, int32 ObjectId,
 
 int32 NWorldEditor::AddColliderObject( TWorldDocument& Document, EWorldColliderShape Shape, bool bTrigger, int32 ParentId, const FVector3& WorldPosition )
 {
-	if ( ParentId != WorldNoId && Document.Get().FindObject( ParentId ) == nullptr ) return WorldNoId;
+	if ( ParentId != WorldNoId && Document.Get().FindObject( ParentId ) == nullptr )
+	{
+		return WorldNoId;
+	}
 	TWorldDocument::FBatch Batch( Document );
 	const char* BaseName = bTrigger ? "Trigger" : ( Shape == EWorldColliderShape::Box ? "Box" : Shape == EWorldColliderShape::Sphere ? "Sphere" : "Capsule" );
 	const int32 Id = NWorldEdit::AddObject( Document, BaseName, ParentId, MakeLocalPlacement( Document.Get(), ParentId, WorldPosition ) );
-	if ( Id == WorldNoId ) return WorldNoId;
+	if ( Id == WorldNoId )
+	{
+		return WorldNoId;
+	}
 	FWorldCollider Collider;
 	Collider.Shape = Shape;
 	Collider.bTrigger = bTrigger;

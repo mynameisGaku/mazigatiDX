@@ -55,7 +55,10 @@ struct TConsoleArg<bool>
 	static const char* TypeName() { return "bool"; }
 	static bool Parse( const FString* Tokens, int32, bool& Out, FString& Error )
 	{
-		if ( NConsole::ParseBool( Tokens[0], Out ) ) return true;
+		if ( NConsole::ParseBool( Tokens[0], Out ) )
+		{
+			return true;
+		}
 		Error = "expected true / false (or on / off), got '" + Tokens[0] + "'";
 		return false;
 	}
@@ -70,7 +73,10 @@ struct TConsoleArg<int64>
 	static const char* TypeName() { return "int"; }
 	static bool Parse( const FString* Tokens, int32, int64& Out, FString& Error )
 	{
-		if ( NConsole::ParseInt64( Tokens[0], Out ) ) return true;
+		if ( NConsole::ParseInt64( Tokens[0], Out ) )
+		{
+			return true;
+		}
 		Error = "expected an integer, got '" + Tokens[0] + "'";
 		return false;
 	}
@@ -135,7 +141,10 @@ struct TConsoleArg<float64>
 	static const char* TypeName() { return "float"; }
 	static bool Parse( const FString* Tokens, int32, float64& Out, FString& Error )
 	{
-		if ( NConsole::ParseFloat64( Tokens[0], Out ) ) return true;
+		if ( NConsole::ParseFloat64( Tokens[0], Out ) )
+		{
+			return true;
+		}
 		Error = "expected a number, got '" + Tokens[0] + "'";
 		return false;
 	}
@@ -187,7 +196,10 @@ struct TConsoleArg<FConsoleRest>
 		Out.Text.Empty();
 		for ( int32 i = 0; i < NumAvailable; ++i )
 		{
-			if ( i > 0 ) Out.Text += " ";
+			if ( i > 0 )
+			{
+				Out.Text += " ";
+			}
 			Out.Text += Tokens[i];
 		}
 		return true;

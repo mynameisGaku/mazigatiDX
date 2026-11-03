@@ -46,7 +46,10 @@ namespace
 		MATRIX Matrix{};
 		for ( int Row = 0; Row < 4; ++Row )
 		{
-			for ( int Column = 0; Column < 3; ++Column ) Matrix.m[Row][Column] = M[Row * 3 + Column];
+			for ( int Column = 0; Column < 3; ++Column )
+			{
+				Matrix.m[Row][Column] = M[Row * 3 + Column];
+			}
 			Matrix.m[Row][3] = Row == 3 ? 1.0f : 0.0f;
 		}
 		return Matrix;
@@ -55,7 +58,10 @@ namespace
 	// FDrawQuad3DData を、画像を貼った 2 枚の三角形として描く。Camera / CameraY は、いまのカメラから向きを決める
 	void DrawQuad3D( const FDrawQuad3DData& Data )
 	{
-		if ( Data.Handle < 0 ) return;
+		if ( Data.Handle < 0 )
+		{
+			return;
+		}
 
 		const VECTOR Position = ToVector( Data.Pos );
 		VECTOR Right = ToVector( Data.Right );
@@ -70,7 +76,10 @@ namespace
 			const VECTOR CameraPosition = GetCameraPosition();
 			VECTOR Forward = VGet( Position.x - CameraPosition.x, 0.0f, Position.z - CameraPosition.z );
 			Up = VGet( 0.0f, 1.0f, 0.0f );
-			if ( VSquareSize( Forward ) < 1.0e-8f ) Right = GetCameraRightVector();
+			if ( VSquareSize( Forward ) < 1.0e-8f )
+			{
+				Right = GetCameraRightVector();
+			}
 			else
 			{
 				Forward = VNorm( Forward );
@@ -125,7 +134,10 @@ namespace
 		int OldBlendParam = 0;
 		GetDrawBlendMode( &OldBlendMode, &OldBlendParam );
 		SetUseBackCulling( DX_CULLING_NONE );
-		if ( Data.Color.A < 255 && OldBlendMode == DX_BLENDMODE_NOBLEND ) SetDrawBlendMode( DX_BLENDMODE_ALPHA, 255 );
+		if ( Data.Color.A < 255 && OldBlendMode == DX_BLENDMODE_NOBLEND )
+		{
+			SetDrawBlendMode( DX_BLENDMODE_ALPHA, 255 );
+		}
 		DrawPolygon3D( Vertices, 2, Data.Handle, TRUE );
 		SetDrawBlendMode( OldBlendMode, OldBlendParam );
 		SetUseBackCulling( OldCulling );
@@ -134,14 +146,20 @@ namespace
 	// 頂点バッファの三角形を、行列をセットして描く。描いたあとに、行列（WorldMatrix で決めたもの）とカリングを元に戻す。色は、頂点の色
 	void DrawMesh3D( const FDrawMeshData& Data, bool bTwoSided )
 	{
-		if ( Data.VertexBuffer < 0 || Data.IndexBuffer < 0 || Data.NumIndices < 3 || Data.NumVertices < 3 ) return;
+		if ( Data.VertexBuffer < 0 || Data.IndexBuffer < 0 || Data.NumIndices < 3 || Data.NumVertices < 3 )
+		{
+			return;
+		}
 		const MATRIX Matrix = ToMatrix( Data.M );
 		MATRIX OldMatrix;
 		GetTransformToWorldMatrix( &OldMatrix );
 		SetTransformToWorld( &Matrix );
 
 		const int OldCulling = GetUseBackCulling();
-		if ( bTwoSided ) SetUseBackCulling( DX_CULLING_NONE );
+		if ( bTwoSided )
+		{
+			SetUseBackCulling( DX_CULLING_NONE );
+		}
 		// 画像なしは、DX_NONE_GRAPH（-1 ではない。-1 だと何も描かれない）
 		const int Graph = Data.Texture >= 0 ? Data.Texture : DX_NONE_GRAPH;
 		DrawPrimitiveIndexed3D_UseVertexBuffer2( Data.VertexBuffer, Data.IndexBuffer, DX_PRIMTYPE_TRIANGLELIST, 0, 0, Data.NumVertices, Data.StartIndex, Data.NumIndices, Graph, FALSE );
@@ -153,20 +171,35 @@ namespace
 	void DrawRibbon3D( const FDrawCommandView& Command )
 	{
 		constexpr int32 DataWords = sizeof( FDrawRibbonData ) / 4;
-		if ( Command.NumDataWords < DataWords ) return;
+		if ( Command.NumDataWords < DataWords )
+		{
+			return;
+		}
 		const FDrawRibbonData Data = Command.Read<FDrawRibbonData>();
-		if ( Data.NumPoints < 2 || Data.NumPoints > FDrawRibbonData::MaxPoints || Data.Texture < -1 || !NMath::IsFinite( Data.UVRepeat ) || Data.UVRepeat <= 0.0f || Data.JoinFlags < 0 || ( Data.JoinFlags & ~( FDrawRibbonData::PreviousPoint | FDrawRibbonData::NextPoint ) ) != 0 || Data.NumPoints - static_cast<int32>( ( Data.JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) - static_cast<int32>( ( Data.JoinFlags & FDrawRibbonData::NextPoint ) != 0 ) < 2 ) return;
-		if ( Command.NumDataWords != DataWords + Data.NumPoints * static_cast<int32>( sizeof( FDrawRibbonData::FPoint ) / 4 ) ) return;
+		if ( Data.NumPoints < 2 || Data.NumPoints > FDrawRibbonData::MaxPoints || Data.Texture < -1 || !NMath::IsFinite( Data.UVRepeat ) || Data.UVRepeat <= 0.0f || Data.JoinFlags < 0 || ( Data.JoinFlags & ~( FDrawRibbonData::PreviousPoint | FDrawRibbonData::NextPoint ) ) != 0 || Data.NumPoints - static_cast<int32>( ( Data.JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) - static_cast<int32>( ( Data.JoinFlags & FDrawRibbonData::NextPoint ) != 0 ) < 2 )
+		{
+			return;
+		}
+		if ( Command.NumDataWords != DataWords + Data.NumPoints * static_cast<int32>( sizeof( FDrawRibbonData::FPoint ) / 4 ) )
+		{
+			return;
+		}
 		TArray<FDrawRibbonData::FPoint> Points;
 		Points.SetNum( Data.NumPoints );
 		FMemory::Memcpy( Points.GetData(), Command.Data + DataWords, static_cast<size_t>( Data.NumPoints ) * sizeof( FDrawRibbonData::FPoint ) );
 		for ( int32 Index = 0; Index < Data.NumPoints; ++Index )
 		{
 			const FDrawRibbonData::FPoint& Point = Points[Index];
-			if ( !NMath::IsFinite( Point.Pos[0] ) || !NMath::IsFinite( Point.Pos[1] ) || !NMath::IsFinite( Point.Pos[2] ) || !NMath::IsFinite( Point.Width ) || Point.Width < 0.0f || !NMath::IsFinite( Point.U ) || Point.U < 0.0f || !NMath::IsFinite( Point.U * Data.UVRepeat ) || ( Index > 0 && Point.U < Points[Index - 1].U ) ) return;
+			if ( !NMath::IsFinite( Point.Pos[0] ) || !NMath::IsFinite( Point.Pos[1] ) || !NMath::IsFinite( Point.Pos[2] ) || !NMath::IsFinite( Point.Width ) || Point.Width < 0.0f || !NMath::IsFinite( Point.U ) || Point.U < 0.0f || !NMath::IsFinite( Point.U * Data.UVRepeat ) || ( Index > 0 && Point.U < Points[Index - 1].U ) )
+			{
+				return;
+			}
 		}
 		FDxLibRibbonMesh Mesh;
-		if ( !NDxLibRibbonMesh::Build( Data, Points.GetData(), true, Mesh ) ) return;
+		if ( !NDxLibRibbonMesh::Build( Data, Points.GetData(), true, Mesh ) )
+		{
+			return;
+		}
 		const int32 OldCulling = GetUseBackCulling();
 		int32 OldBlendMode = DX_BLENDMODE_NOBLEND;
 		int32 OldBlendParam = 0;
@@ -176,7 +209,10 @@ namespace
 		const MATRIX Identity = MGetIdent();
 		SetTransformToWorld( &Identity );
 		SetUseBackCulling( DX_CULLING_NONE );
-		if ( OldBlendMode == DX_BLENDMODE_NOBLEND ) SetDrawBlendMode( DX_BLENDMODE_ALPHA, 255 );
+		if ( OldBlendMode == DX_BLENDMODE_NOBLEND )
+		{
+			SetDrawBlendMode( DX_BLENDMODE_ALPHA, 255 );
+		}
 		DrawPolygonIndexed3D( Mesh.Vertices.GetData(), Mesh.Vertices.Num(), Mesh.Indices.GetData(), Mesh.Indices.Num() / 3, Data.Texture >= 0 ? Data.Texture : DX_NONE_GRAPH, TRUE );
 		SetDrawBlendMode( OldBlendMode, OldBlendParam );
 		SetUseBackCulling( OldCulling );
@@ -758,7 +794,10 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 		{
 			const FDrawModelData Data = Command.Read<FDrawModelData>();
 			MV1SetMatrix( Data.Handle, ToMatrix( Data.M ) );
-			if ( Data.AnimIndex >= 0 ) MV1SetAttachAnimTime( Data.Handle, Data.AnimIndex, Data.AnimTime );
+			if ( Data.AnimIndex >= 0 )
+			{
+				MV1SetAttachAnimTime( Data.Handle, Data.AnimIndex, Data.AnimTime );
+			}
 			MV1DrawModel( Data.Handle );
 			break;
 		}
@@ -799,8 +838,14 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 				const int Width = Data.Font >= 0 ? GetDrawStringWidthToHandle( Chars, Data.Length, Data.Font ) : GetDrawStringWidth( Chars, Data.Length );
 				X -= Command.Has( FDrawFlag::AlignCenter ) ? Width / 2 : Width;
 			}
-			if ( Data.Font >= 0 ) DrawStringToHandle( X, Data.Y, Chars, ToDxColor( Data.Color ), Data.Font, ToDxColor( Data.EdgeColor ) );
-			else DrawString( X, Data.Y, Chars, ToDxColor( Data.Color ) );
+			if ( Data.Font >= 0 )
+			{
+				DrawStringToHandle( X, Data.Y, Chars, ToDxColor( Data.Color ), Data.Font, ToDxColor( Data.EdgeColor ) );
+			}
+			else
+			{
+				DrawString( X, Data.Y, Chars, ToDxColor( Data.Color ) );
+			}
 			break;
 		}
 		case EDrawCommand::TextStyled:
@@ -862,7 +907,10 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			static bool bInvalidMaterialCommandLogged = false;
 			if ( Command.NumDataWords != static_cast<int32>( sizeof( FDrawMaterialQuadData ) / 4 ) )
 			{
-				if ( !bInvalidMaterialCommandLogged ) { LOG( LogDxLibDraw, Warning, "材質付き四角形の命令長が不正なため描画を読み飛ばしました" ); bInvalidMaterialCommandLogged = true; }
+				if ( !bInvalidMaterialCommandLogged )
+				{
+					LOG( LogDxLibDraw, Warning, "材質付き四角形の命令長が不正なため描画を読み飛ばしました" ); bInvalidMaterialCommandLogged = true;
+				}
 				break;
 			}
 			EffectMaterialRenderer.Draw( Command.Read<FDrawMaterialQuadData>() );
@@ -874,7 +922,10 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			static bool bInvalidDistortedMaterialCommandLogged = false;
 			if ( Command.NumDataWords != static_cast<int32>( sizeof( FDrawDistortedMaterialQuadData ) / 4 ) )
 			{
-				if ( !bInvalidDistortedMaterialCommandLogged ) { LOG( LogDxLibDraw, Warning, "UVゆがみ付き材質四角形の命令長が不正なため描画を読み飛ばしました" ); bInvalidDistortedMaterialCommandLogged = true; }
+				if ( !bInvalidDistortedMaterialCommandLogged )
+				{
+					LOG( LogDxLibDraw, Warning, "UVゆがみ付き材質四角形の命令長が不正なため描画を読み飛ばしました" ); bInvalidDistortedMaterialCommandLogged = true;
+				}
 				break;
 			}
 			EffectMaterialRenderer.DrawDistorted( Command.Read<FDrawDistortedMaterialQuadData>() );
@@ -888,7 +939,10 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			constexpr int32 DataWords = sizeof( FDrawDistortedMaterialRibbonData ) / 4;
 			if ( Command.NumDataWords < DataWords )
 			{
-				if ( !bInvalidDistortedRibbonCommandLogged ) { LOG( LogDxLibDraw, Warning, "UVゆがみ付き材質帯の命令長が不正なため描画を読み飛ばしました" ); bInvalidDistortedRibbonCommandLogged = true; }
+				if ( !bInvalidDistortedRibbonCommandLogged )
+				{
+					LOG( LogDxLibDraw, Warning, "UVゆがみ付き材質帯の命令長が不正なため描画を読み飛ばしました" ); bInvalidDistortedRibbonCommandLogged = true;
+				}
 				break;
 			}
 			// 点数を読む前にbyte列から固定headerを複写する。
@@ -896,14 +950,20 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			FMemory::Memcpy( &Data, Command.Data, sizeof( Data ) );
 			if ( !NDrawDistortedMaterialRibbon::IsValidHeader( Data ) )
 			{
-				if ( !bInvalidDistortedRibbonCommandLogged ) { LOG( LogDxLibDraw, Warning, "UVゆがみ付き材質帯の点数または設定値が不正なため描画を読み飛ばしました" ); bInvalidDistortedRibbonCommandLogged = true; }
+				if ( !bInvalidDistortedRibbonCommandLogged )
+				{
+					LOG( LogDxLibDraw, Warning, "UVゆがみ付き材質帯の点数または設定値が不正なため描画を読み飛ばしました" ); bInvalidDistortedRibbonCommandLogged = true;
+				}
 				break;
 			}
 			// 最大点数検査後に計算する、完全なpayloadのword数。
 			const size_t ExpectedDataWords = static_cast<size_t>( DataWords ) + static_cast<size_t>( Data.Material.Ribbon.NumPoints ) * sizeof( FDrawDistortedMaterialRibbonData::FPoint ) / 4;
 			if ( ExpectedDataWords > static_cast<size_t>( NDrawCommand::MaxWords - 1 ) || Command.NumDataWords != static_cast<int32>( ExpectedDataWords ) )
 			{
-				if ( !bInvalidDistortedRibbonCommandLogged ) { LOG( LogDxLibDraw, Warning, "UVゆがみ付き材質帯の点数または命令長が不正なため描画を読み飛ばしました" ); bInvalidDistortedRibbonCommandLogged = true; }
+				if ( !bInvalidDistortedRibbonCommandLogged )
+				{
+					LOG( LogDxLibDraw, Warning, "UVゆがみ付き材質帯の点数または命令長が不正なため描画を読み飛ばしました" ); bInvalidDistortedRibbonCommandLogged = true;
+				}
 				break;
 			}
 			// 検証済み長さから作る、命令が所有する点列。
@@ -912,14 +972,20 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			FMemory::Memcpy( Points.GetData(), Command.Data + DataWords, static_cast<size_t>( Data.Material.Ribbon.NumPoints ) * sizeof( FDrawDistortedMaterialRibbonData::FPoint ) );
 			if ( !NDrawDistortedMaterialRibbon::IsValid( Data, Points.GetData() ) )
 			{
-				if ( !bInvalidDistortedRibbonCommandLogged ) { LOG( LogDxLibDraw, Warning, "UVゆがみ付き材質帯の点または反復上限が不正なため描画を読み飛ばしました" ); bInvalidDistortedRibbonCommandLogged = true; }
+				if ( !bInvalidDistortedRibbonCommandLogged )
+				{
+					LOG( LogDxLibDraw, Warning, "UVゆがみ付き材質帯の点または反復上限が不正なため描画を読み飛ばしました" ); bInvalidDistortedRibbonCommandLogged = true;
+				}
 				break;
 			}
 			if ( !EffectMaterialRenderer.IsRibbonUVDistortionAvailable() )
 			{
 				// 未対応描画先の診断を重複させない状態。
 				static bool bUnsupportedDistortedRibbonLogged = false;
-				if ( !bUnsupportedDistortedRibbonLogged ) { LOG( LogDxLibDraw, Warning, "現在の描画実装では材質帯のUVゆがみを描画できません" ); bUnsupportedDistortedRibbonLogged = true; }
+				if ( !bUnsupportedDistortedRibbonLogged )
+				{
+					LOG( LogDxLibDraw, Warning, "現在の描画実装では材質帯のUVゆがみを描画できません" ); bUnsupportedDistortedRibbonLogged = true;
+				}
 				break;
 			}
 			EffectMaterialRenderer.DrawDistortedRibbon( Data, Points.GetData() );
@@ -933,7 +999,10 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			constexpr int32 DataWords = sizeof( FDrawMaterialRibbonData ) / 4;
 			if ( Command.NumDataWords < DataWords )
 			{
-				if ( !bInvalidMaterialRibbonCommandLogged ) { LOG( LogDxLibDraw, Warning, "材質付き帯の命令長が不正なため描画を読み飛ばしました" ); bInvalidMaterialRibbonCommandLogged = true; }
+				if ( !bInvalidMaterialRibbonCommandLogged )
+				{
+					LOG( LogDxLibDraw, Warning, "材質付き帯の命令長が不正なため描画を読み飛ばしました" ); bInvalidMaterialRibbonCommandLogged = true;
+				}
 				break;
 			}
 			// 点を読む前にbyte列から型付き所有headerへ複写する。
@@ -944,12 +1013,18 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			const FDrawMaterialRibbonData::FMaterialSettings& Material = Data.Material;
 			if ( Ribbon.NumPoints < 2 || Ribbon.NumPoints > FDrawRibbonData::MaxPoints || Ribbon.Texture < 0 || Material.MaskTexture < -1 || !NMath::IsFinite( Ribbon.UVRepeat ) || Ribbon.UVRepeat <= 0.0f || Ribbon.JoinFlags < 0 || ( Ribbon.JoinFlags & ~( FDrawRibbonData::PreviousPoint | FDrawRibbonData::NextPoint ) ) != 0 || Ribbon.NumPoints - static_cast<int32>( ( Ribbon.JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) - static_cast<int32>( ( Ribbon.JoinFlags & FDrawRibbonData::NextPoint ) != 0 ) < 2 || Command.NumDataWords != DataWords + Ribbon.NumPoints * static_cast<int32>( sizeof( FDrawMaterialRibbonData::FPoint ) / 4 ) )
 			{
-				if ( !bInvalidMaterialRibbonCommandLogged ) { LOG( LogDxLibDraw, Warning, "材質付き帯の点数または命令長が不正なため描画を読み飛ばしました" ); bInvalidMaterialRibbonCommandLogged = true; }
+				if ( !bInvalidMaterialRibbonCommandLogged )
+				{
+					LOG( LogDxLibDraw, Warning, "材質付き帯の点数または命令長が不正なため描画を読み飛ばしました" ); bInvalidMaterialRibbonCommandLogged = true;
+				}
 				break;
 			}
 			if ( !NMath::IsFinite( Material.UVScale[0] ) || !NMath::IsFinite( Material.UVScale[1] ) || Material.UVScale[0] <= 0.0f || Material.UVScale[1] <= 0.0f || Material.UVScale[0] > 128.0f || Material.UVScale[1] > 128.0f || !NMath::IsFinite( Material.MaskScale ) || Material.MaskScale <= 0.0f || Material.MaskScale > 128.0f || !NMath::IsFinite( Material.EdgeWidth ) || Material.EdgeWidth < 0.0f || Material.EdgeWidth > 1.0f || !NMath::IsFinite( Material.EdgeEmission ) || Material.EdgeEmission < 0.0f || Material.EdgeEmission > 32.0f || ( Material.bDissolve != 0 && Material.bDissolve != 1 ) || ( Material.DepthTest != 0 && Material.DepthTest != 1 ) || ( Material.DepthWrite != 0 && Material.DepthWrite != 1 ) )
 			{
-				if ( !bInvalidMaterialRibbonCommandLogged ) { LOG( LogDxLibDraw, Warning, "材質付き帯の設定値が不正なため描画を読み飛ばしました" ); bInvalidMaterialRibbonCommandLogged = true; }
+				if ( !bInvalidMaterialRibbonCommandLogged )
+				{
+					LOG( LogDxLibDraw, Warning, "材質付き帯の設定値が不正なため描画を読み飛ばしました" ); bInvalidMaterialRibbonCommandLogged = true;
+				}
 				break;
 			}
 			// 命令payloadから作る、通常寿命を持つ所有点列。
@@ -980,20 +1055,29 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 					const float64 FirstRepeat = NMath::Floor( static_cast<float64>( Points[Index - 1].Path.U * Ribbon.UVRepeat ) );
 					// 終点までに必要な整数反復区間数。
 					const float64 Sections = NMath::Max( 1.0, NMath::Ceil( static_cast<float64>( Point.Path.U * Ribbon.UVRepeat ) ) - FirstRepeat );
-					if ( !NMath::IsFinite( Sections ) || Sections > static_cast<float64>( FDrawRibbonData::MaxTextureSections - TextureSections ) ) { bValidPoints = false; break; }
+					if ( !NMath::IsFinite( Sections ) || Sections > static_cast<float64>( FDrawRibbonData::MaxTextureSections - TextureSections ) )
+					{
+						bValidPoints = false; break;
+					}
 					TextureSections += static_cast<int32>( Sections );
 				}
 			}
 			if ( !bValidPoints )
 			{
-				if ( !bInvalidMaterialRibbonCommandLogged ) { LOG( LogDxLibDraw, Warning, "材質付き帯の点または反復上限が不正なため描画を読み飛ばしました" ); bInvalidMaterialRibbonCommandLogged = true; }
+				if ( !bInvalidMaterialRibbonCommandLogged )
+				{
+					LOG( LogDxLibDraw, Warning, "材質付き帯の点または反復上限が不正なため描画を読み飛ばしました" ); bInvalidMaterialRibbonCommandLogged = true;
+				}
 				break;
 			}
 			if ( !EffectMaterialRenderer.IsRibbonAvailable() )
 			{
 				// 非対応描画先の診断を重複させない状態。
 				static bool bUnsupportedMaterialRibbonLogged = false;
-				if ( !bUnsupportedMaterialRibbonLogged ) { LOG( LogDxLibDraw, Warning, "現在の描画実装では材質付きの帯を描画できません" ); bUnsupportedMaterialRibbonLogged = true; }
+				if ( !bUnsupportedMaterialRibbonLogged )
+				{
+					LOG( LogDxLibDraw, Warning, "現在の描画実装では材質付きの帯を描画できません" ); bUnsupportedMaterialRibbonLogged = true;
+				}
 				break;
 			}
 			EffectMaterialRenderer.DrawRibbon( Data, Points.GetData() );
@@ -1007,7 +1091,10 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			static bool bInvalidMaterialMeshCommandLogged = false;
 			if ( Command.NumDataWords < DataWords )
 			{
-				if ( !bInvalidMaterialMeshCommandLogged ) { LOG( LogDxLibDraw, Warning, "材質付きメッシュの命令headerが短いため描画を読み飛ばしました" ); bInvalidMaterialMeshCommandLogged = true; }
+				if ( !bInvalidMaterialMeshCommandLogged )
+				{
+					LOG( LogDxLibDraw, Warning, "材質付きメッシュの命令headerが短いため描画を読み飛ばしました" ); bInvalidMaterialMeshCommandLogged = true;
+				}
 				break;
 			}
 			// byte列から型付きheaderへ安全に複写する値。
@@ -1015,7 +1102,10 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			FMemory::Memcpy( &Data, Command.Data, sizeof( Data ) );
 			if ( !NDrawMaterialMesh::IsValidHeader( Data ) )
 			{
-				if ( !bInvalidMaterialMeshCommandLogged ) { LOG( LogDxLibDraw, Warning, "材質付きメッシュの頂点数または設定値が不正なため描画を読み飛ばしました" ); bInvalidMaterialMeshCommandLogged = true; }
+				if ( !bInvalidMaterialMeshCommandLogged )
+				{
+					LOG( LogDxLibDraw, Warning, "材質付きメッシュの頂点数または設定値が不正なため描画を読み飛ばしました" ); bInvalidMaterialMeshCommandLogged = true;
+				}
 				break;
 			}
 			// 上限確認後に計算する正確なpayload長。
@@ -1024,7 +1114,10 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			const size_t ExpectedDataWords = static_cast<size_t>( DataWords ) + VertexWords + IndexWords;
 			if ( ExpectedDataWords > static_cast<size_t>( NDrawCommand::MaxWords - 1 ) || Command.NumDataWords != static_cast<int32>( ExpectedDataWords ) )
 			{
-				if ( !bInvalidMaterialMeshCommandLogged ) { LOG( LogDxLibDraw, Warning, "材質付きメッシュの命令長が不正なため描画を読み飛ばしました" ); bInvalidMaterialMeshCommandLogged = true; }
+				if ( !bInvalidMaterialMeshCommandLogged )
+				{
+					LOG( LogDxLibDraw, Warning, "材質付きメッシュの命令長が不正なため描画を読み飛ばしました" ); bInvalidMaterialMeshCommandLogged = true;
+				}
 				break;
 			}
 			// byte列から寿命を持つ型付き頂点配列へ複写する。
@@ -1037,14 +1130,20 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 			FMemory::Memcpy( Indices.GetData(), Command.Data + DataWords + VertexWords, static_cast<size_t>( Data.NumIndices ) * sizeof( uint32 ) );
 			if ( !NDrawMaterialMesh::IsValid( Data, Vertices.GetData(), Indices.GetData() ) )
 			{
-				if ( !bInvalidMaterialMeshCommandLogged ) { LOG( LogDxLibDraw, Warning, "材質付きメッシュの頂点またはindexが不正なため描画を読み飛ばしました" ); bInvalidMaterialMeshCommandLogged = true; }
+				if ( !bInvalidMaterialMeshCommandLogged )
+				{
+					LOG( LogDxLibDraw, Warning, "材質付きメッシュの頂点またはindexが不正なため描画を読み飛ばしました" ); bInvalidMaterialMeshCommandLogged = true;
+				}
 				break;
 			}
 			if ( !EffectMaterialRenderer.IsMeshAvailable() )
 			{
 				// 非対応描画先を一度だけ記録する状態。
 				static bool bUnsupportedMaterialMeshLogged = false;
-				if ( !bUnsupportedMaterialMeshLogged ) { LOG( LogDxLibDraw, Warning, "現在の描画実装では材質付きメッシュを描画できません" ); bUnsupportedMaterialMeshLogged = true; }
+				if ( !bUnsupportedMaterialMeshLogged )
+				{
+					LOG( LogDxLibDraw, Warning, "現在の描画実装では材質付きメッシュを描画できません" ); bUnsupportedMaterialMeshLogged = true;
+				}
 				break;
 			}
 			EffectMaterialRenderer.DrawMesh( Data, Vertices.GetData(), Indices.GetData(), Command.Has( FDrawFlag::UseRegularCulling ) );

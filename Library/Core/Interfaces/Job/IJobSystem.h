@@ -70,7 +70,10 @@ public:
 	{
 		ParallelForRange( Count, MinBatchSize, Name, [&Function]( int32 Begin, int32 End )
 		{
-			for ( int32 i = Begin; i < End; ++i ) Function( i );
+			for ( int32 i = Begin; i < End; ++i )
+			{
+				Function( i );
+			}
 		} );
 	}
 };

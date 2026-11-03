@@ -66,7 +66,10 @@ public:
 	{
 		for ( int32 i = 0; i < Count; ++i )
 		{
-			if ( DataPtr[i] == Item ) return i;
+			if ( DataPtr[i] == Item )
+			{
+				return i;
+			}
 		}
 		return INDEX_NONE;
 	}
@@ -77,7 +80,10 @@ public:
 	{
 		for ( int32 i = 0; i < Count; ++i )
 		{
-			if ( Pred( DataPtr[i] ) ) return i;
+			if ( Pred( DataPtr[i] ) )
+			{
+				return i;
+			}
 		}
 		return INDEX_NONE;
 	}

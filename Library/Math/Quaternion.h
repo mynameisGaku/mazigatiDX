@@ -110,7 +110,10 @@ struct alignas( 16 ) FQuaternion
 	FORCEINLINE FQuaternion Inverse() const
 	{
 		const float32 LenSq = LengthSquared();
-		if ( LenSq <= NMath::SmallNumber ) return Identity;
+		if ( LenSq <= NMath::SmallNumber )
+		{
+			return Identity;
+		}
 		const float32 Inv = 1.0f / LenSq;
 		return { -x * Inv, -y * Inv, -z * Inv, w * Inv };
 	}

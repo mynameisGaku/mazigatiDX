@@ -22,9 +22,15 @@ namespace
 	FString GetExtension( const FString& Path )
 	{
 		const int32 Dot = Path.FindLast( "." );
-		if ( Dot == INDEX_NONE ) return FString();
+		if ( Dot == INDEX_NONE )
+		{
+			return FString();
+		}
 		const int32 Separator = NMath::Max( Path.FindLast( "/" ), Path.FindLast( "\\" ) );
-		if ( Separator > Dot ) return FString();
+		if ( Separator > Dot )
+		{
+			return FString();
+		}
 		return Path.Mid( Dot ).ToLower();
 	}
 }
@@ -32,9 +38,18 @@ namespace
 EModelFileKind NModelFormat::Classify( const FString& Path )
 {
 	const FString Extension = GetExtension( Path );
-	if ( Extension == ".mv1" ) return EModelFileKind::MV1;
-	if ( GetNativeExtensions().Contains( Extension ) ) return EModelFileKind::DxLibNative;
-	if ( GetImportedExtensions().Contains( Extension ) ) return EModelFileKind::Imported;
+	if ( Extension == ".mv1" )
+	{
+		return EModelFileKind::MV1;
+	}
+	if ( GetNativeExtensions().Contains( Extension ) )
+	{
+		return EModelFileKind::DxLibNative;
+	}
+	if ( GetImportedExtensions().Contains( Extension ) )
+	{
+		return EModelFileKind::Imported;
+	}
 	return EModelFileKind::Unknown;
 }
 
@@ -47,7 +62,10 @@ bool NModelFormat::CanConvertToMV1( const FString& Path )
 FString NModelFormat::GetMV1Path( const FString& SourcePath )
 {
 	const FString Extension = GetExtension( SourcePath );
-	if ( Extension.IsEmpty() ) return SourcePath + ".mv1";
+	if ( Extension.IsEmpty() )
+	{
+		return SourcePath + ".mv1";
+	}
 	return SourcePath.Left( SourcePath.Len() - Extension.Len() ) + ".mv1";
 }
 
@@ -86,21 +104,33 @@ int64 NModelFormat::ToSortKey( const FFileTime& Time )
 
 bool NModelFormat::IsOutputUpToDate( const FFileTime& SourceTime, const FFileTime& OutputTime )
 {
-	if ( SourceTime.Year == 0 || OutputTime.Year == 0 ) return false;
+	if ( SourceTime.Year == 0 || OutputTime.Year == 0 )
+	{
+		return false;
+	}
 	return ToSortKey( OutputTime ) >= ToSortKey( SourceTime );
 }
 
 FBoneMatch NModelCompat::MatchBones( const TArray<FString>& ModelBones, const TArray<FString>& AnimBones )
 {
 	TSet<FString> Available;
-	for ( const FString& Name : ModelBones ) Available.Add( Name );
+	for ( const FString& Name : ModelBones )
+	{
+		Available.Add( Name );
+	}
 
 	FBoneMatch Result;
 	for ( const FString& Name : AnimBones )
 	{
 		++Result.NumAnimBones;
-		if ( Available.Contains( Name ) ) ++Result.NumMatched;
-		else if ( Result.Missing.Num() < MaxMissingNames ) Result.Missing.Add( Name );
+		if ( Available.Contains( Name ) )
+		{
+			++Result.NumMatched;
+		}
+		else if ( Result.Missing.Num() < MaxMissingNames )
+		{
+			Result.Missing.Add( Name );
+		}
 	}
 	return Result;
 }

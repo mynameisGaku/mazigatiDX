@@ -45,15 +45,42 @@ namespace
 		NlohmannJson Json = NlohmannJson::object();
 		Json["Columns"] = Grid.Columns;
 		Json["Rows"] = Grid.Rows;
-		if ( Grid.CellWidth > 0 ) Json["CellWidth"] = Grid.CellWidth;
-		if ( Grid.CellHeight > 0 ) Json["CellHeight"] = Grid.CellHeight;
-		if ( Grid.NumFrames > 0 ) Json["NumFrames"] = Grid.NumFrames;
-		if ( Grid.MarginX != 0 ) Json["MarginX"] = Grid.MarginX;
-		if ( Grid.MarginY != 0 ) Json["MarginY"] = Grid.MarginY;
-		if ( Grid.SpacingX != 0 ) Json["SpacingX"] = Grid.SpacingX;
-		if ( Grid.SpacingY != 0 ) Json["SpacingY"] = Grid.SpacingY;
-		if ( Grid.Order == ESpriteGridOrder::ColumnMajor ) Json["Order"] = "ColumnMajor";
-		if ( Grid.bCustomPivot ) Json["Pivot"] = NlohmannJson::array( { NJson::Round4( Grid.PivotX ), NJson::Round4( Grid.PivotY ) } );
+		if ( Grid.CellWidth > 0 )
+		{
+			Json["CellWidth"] = Grid.CellWidth;
+		}
+		if ( Grid.CellHeight > 0 )
+		{
+			Json["CellHeight"] = Grid.CellHeight;
+		}
+		if ( Grid.NumFrames > 0 )
+		{
+			Json["NumFrames"] = Grid.NumFrames;
+		}
+		if ( Grid.MarginX != 0 )
+		{
+			Json["MarginX"] = Grid.MarginX;
+		}
+		if ( Grid.MarginY != 0 )
+		{
+			Json["MarginY"] = Grid.MarginY;
+		}
+		if ( Grid.SpacingX != 0 )
+		{
+			Json["SpacingX"] = Grid.SpacingX;
+		}
+		if ( Grid.SpacingY != 0 )
+		{
+			Json["SpacingY"] = Grid.SpacingY;
+		}
+		if ( Grid.Order == ESpriteGridOrder::ColumnMajor )
+		{
+			Json["Order"] = "ColumnMajor";
+		}
+		if ( Grid.bCustomPivot )
+		{
+			Json["Pivot"] = NlohmannJson::array( { NJson::Round4( Grid.PivotX ), NJson::Round4( Grid.PivotY ) } );
+		}
 		return Json;
 	}
 
@@ -91,11 +118,17 @@ namespace
 			const int32 Step = Clip.Frames[1] - Clip.Frames[0];
 			bRange = ( Step == 1 || Step == -1 ) && Clip.Frames[i] - Clip.Frames[i - 1] == Step;
 		}
-		if ( bRange ) Json["Range"] = NlohmannJson::array( { Clip.Frames.First(), Clip.Frames.Last() } );
+		if ( bRange )
+		{
+			Json["Range"] = NlohmannJson::array( { Clip.Frames.First(), Clip.Frames.Last() } );
+		}
 		else
 		{
 			NlohmannJson Frames = NlohmannJson::array();
-			for ( const int32 Frame : Clip.Frames ) Frames.push_back( Frame );
+			for ( const int32 Frame : Clip.Frames )
+			{
+				Frames.push_back( Frame );
+			}
 			Json["Frames"] = Frames;
 		}
 
@@ -104,7 +137,10 @@ namespace
 		if ( !Clip.Durations.IsEmpty() )
 		{
 			NlohmannJson Durations = NlohmannJson::array();
-			for ( const float32 Duration : Clip.Durations ) Durations.push_back( NJson::Round4( Duration ) );
+			for ( const float32 Duration : Clip.Durations )
+			{
+				Durations.push_back( NJson::Round4( Duration ) );
+			}
 			Json["Durations"] = Durations;
 		}
 		if ( !Clip.Events.IsEmpty() )
@@ -135,18 +171,30 @@ namespace
 		}
 		else if ( Json.contains( "Frames" ) && Json["Frames"].is_array() )
 		{
-			for ( const NlohmannJson& Frame : Json["Frames"] ) Clip.Frames.Add( Frame.get<int32>() );
+			for ( const NlohmannJson& Frame : Json["Frames"] )
+			{
+				Clip.Frames.Add( Frame.get<int32>() );
+			}
 		}
 		if ( Json.contains( "Durations" ) && Json["Durations"].is_array() )
 		{
-			for ( const NlohmannJson& Duration : Json["Durations"] ) Clip.Durations.Add( Duration.get<float32>() );
+			for ( const NlohmannJson& Duration : Json["Durations"] )
+			{
+				Clip.Durations.Add( Duration.get<float32>() );
+			}
 		}
 		if ( Json.contains( "Events" ) && Json["Events"].is_array() )
 		{
-			for ( const NlohmannJson& Event : Json["Events"] ) Clip.AddEvent( NJson::GetOr<int32>( Event, "Step", 0 ), NJson::GetOr<FString>( Event, "Name", FString() ) );
+			for ( const NlohmannJson& Event : Json["Events"] )
+			{
+				Clip.AddEvent( NJson::GetOr<int32>( Event, "Step", 0 ), NJson::GetOr<FString>( Event, "Name", FString() ) );
+			}
 		}
 
-		if ( Clip.Name.IsEmpty() || Clip.Frames.IsEmpty() ) return false;
+		if ( Clip.Name.IsEmpty() || Clip.Frames.IsEmpty() )
+		{
+			return false;
+		}
 		OutClip = Clip;
 		return true;
 	}
@@ -171,7 +219,10 @@ FSpriteClip FSpriteClip::FromRange( const FString& InName, int32 First, int32 La
 	for ( int32 Frame = First;; Frame += Step )
 	{
 		Clip.Frames.Add( Frame );
-		if ( Frame == Last ) break;
+		if ( Frame == Last )
+		{
+			break;
+		}
 	}
 	return Clip;
 }
@@ -182,15 +233,24 @@ FSpriteClip FSpriteClip::FromFrames( const FString& InName, std::initializer_lis
 	Clip.Name = InName;
 	Clip.Fps = InFps;
 	Clip.Loop = InLoop;
-	for ( const int32 Frame : InFrames ) Clip.Frames.Add( Frame );
+	for ( const int32 Frame : InFrames )
+	{
+		Clip.Frames.Add( Frame );
+	}
 	return Clip;
 }
 
 FSpriteClip& FSpriteClip::SetDuration( int32 Step, float32 Seconds )
 {
-	if ( Step < 0 || Step >= Frames.Num() ) return *this;
+	if ( Step < 0 || Step >= Frames.Num() )
+	{
+		return *this;
+	}
 	const float32 Default = Fps > 0.0f ? 1.0f / Fps : 0.1f;
-	while ( Durations.Num() < Frames.Num() ) Durations.Add( Default );
+	while ( Durations.Num() < Frames.Num() )
+	{
+		Durations.Add( Default );
+	}
 	Durations[Step] = Seconds;
 	return *this;
 }
@@ -206,24 +266,36 @@ FSpriteClip& FSpriteClip::AddEvent( int32 Step, const FString& EventName )
 
 float32 FSpriteClip::GetDuration( int32 Step ) const
 {
-	if ( Durations.IsValidIndex( Step ) ) return Durations[Step];
+	if ( Durations.IsValidIndex( Step ) )
+	{
+		return Durations[Step];
+	}
 	return Fps > 0.0f ? 1.0f / Fps : 0.1f;
 }
 
 float32 FSpriteClip::GetTotalDuration() const
 {
 	float32 Total = 0.0f;
-	for ( int32 Step = 0; Step < Frames.Num(); ++Step ) Total += GetDuration( Step );
+	for ( int32 Step = 0; Step < Frames.Num(); ++Step )
+	{
+		Total += GetDuration( Step );
+	}
 	return Total;
 }
 
 void FSpriteClip::NormalizeDurations()
 {
-	if ( Durations.IsEmpty() ) return;
+	if ( Durations.IsEmpty() )
+	{
+		return;
+	}
 	const float32 Default = Fps > 0.0f ? 1.0f / Fps : 0.1f;
 	for ( const float32 Duration : Durations )
 	{
-		if ( NMath::Abs( Duration - Default ) > 1.0e-5f ) return;
+		if ( NMath::Abs( Duration - Default ) > 1.0e-5f )
+		{
+			return;
+		}
 	}
 	Durations.Empty();
 }
@@ -234,7 +306,10 @@ void FSpriteClip::NormalizeDurations()
 int32 FSpriteSheetDefinition::GetNumGridFrames() const
 {
 	int32 Total = 0;
-	for ( const FSpriteSheetGrid& Grid : Grids ) Total += Grid.GetNumFrames();
+	for ( const FSpriteSheetGrid& Grid : Grids )
+	{
+		Total += Grid.GetNumFrames();
+	}
 	return Total;
 }
 
@@ -251,7 +326,10 @@ NlohmannJson FSpriteSheetDefinition::ToJson() const
 	else if ( Grids.Num() > 1 )
 	{
 		NlohmannJson Array = NlohmannJson::array();
-		for ( const FSpriteSheetGrid& Grid : Grids ) Array.push_back( GridToJson( Grid ) );
+		for ( const FSpriteSheetGrid& Grid : Grids )
+		{
+			Array.push_back( GridToJson( Grid ) );
+		}
 		Json["Grid"] = Array;
 	}
 
@@ -275,7 +353,10 @@ NlohmannJson FSpriteSheetDefinition::ToJson() const
 	if ( !Clips.IsEmpty() )
 	{
 		NlohmannJson Array = NlohmannJson::array();
-		for ( const FSpriteClip& Clip : Clips ) Array.push_back( ClipToJson( Clip ) );
+		for ( const FSpriteClip& Clip : Clips )
+		{
+			Array.push_back( ClipToJson( Clip ) );
+		}
 		Json["Clips"] = Array;
 	}
 	return Json;
@@ -283,7 +364,10 @@ NlohmannJson FSpriteSheetDefinition::ToJson() const
 
 bool FSpriteSheetDefinition::FromJson( const NlohmannJson& Json, FSpriteSheetDefinition& OutDefinition )
 {
-	if ( !Json.is_object() ) return false;
+	if ( !Json.is_object() )
+	{
+		return false;
+	}
 
 	FSpriteSheetDefinition Definition;
 	Definition.TexturePath = NJson::GetOr<FString>( Json, "Texture", FString() );
@@ -293,7 +377,10 @@ bool FSpriteSheetDefinition::FromJson( const NlohmannJson& Json, FSpriteSheetDef
 		const NlohmannJson& GridJson = Json["Grid"];
 		if ( GridJson.is_array() )
 		{
-			for ( const NlohmannJson& Item : GridJson ) Definition.Grids.Add( GridFromJson( Item ) );
+			for ( const NlohmannJson& Item : GridJson )
+			{
+				Definition.Grids.Add( GridFromJson( Item ) );
+			}
 		}
 		else if ( GridJson.is_object() )
 		{
@@ -341,20 +428,32 @@ CSpriteSheet::CSpriteSheet( const FString& InName, const TSharedPtr<CTexture>& I
 	: CAsset( EAssetType::SpriteSheet, InName )
 	, Texture( InTexture )
 {
-	if ( Texture.IsValid() ) Definition.TexturePath = Texture->GetPath();
+	if ( Texture.IsValid() )
+	{
+		Definition.TexturePath = Texture->GetPath();
+	}
 }
 
 void CSpriteSheet::SetTexture( const TSharedPtr<CTexture>& InTexture, const FString& DefinitionTexturePath )
 {
 	Texture = InTexture;
-	if ( !DefinitionTexturePath.IsEmpty() ) Definition.TexturePath = DefinitionTexturePath;
-	else if ( Texture.IsValid() ) Definition.TexturePath = Texture->GetPath();
+	if ( !DefinitionTexturePath.IsEmpty() )
+	{
+		Definition.TexturePath = DefinitionTexturePath;
+	}
+	else if ( Texture.IsValid() )
+	{
+		Definition.TexturePath = Texture->GetPath();
+	}
 	RebuildFrames();
 }
 
 bool CSpriteSheet::IsReady() const
 {
-	if ( !Texture.IsValid() || !Texture->IsReady() ) return false;
+	if ( !Texture.IsValid() || !Texture->IsReady() )
+	{
+		return false;
+	}
 	Prepare();
 	return !bPendingSize;
 }
@@ -376,7 +475,10 @@ int64 CSpriteSheet::GetMemoryBytes() const
 
 void CSpriteSheet::Prepare() const
 {
-	if ( bPendingSize && Texture.IsValid() && Texture->IsReady() ) RebuildFrames();
+	if ( bPendingSize && Texture.IsValid() && Texture->IsReady() )
+	{
+		RebuildFrames();
+	}
 }
 
 void CSpriteSheet::ComputeGridFrames( const FSpriteSheetGrid& Grid, int32 TextureWidth, int32 TextureHeight, TArray<FSpriteFrame>& OutFrames )
@@ -389,8 +491,14 @@ void CSpriteSheet::ComputeGridFrames( const FSpriteSheetGrid& Grid, int32 Textur
 	// 自動: 余白と隙間を引いた残りを、分割数で等分する
 	int32 CellWidth = Grid.CellWidth;
 	int32 CellHeight = Grid.CellHeight;
-	if ( CellWidth <= 0 ) CellWidth = ( TextureWidth - 2 * Grid.MarginX - Grid.SpacingX * ( Columns - 1 ) ) / Columns;
-	if ( CellHeight <= 0 ) CellHeight = ( TextureHeight - 2 * Grid.MarginY - Grid.SpacingY * ( Rows - 1 ) ) / Rows;
+	if ( CellWidth <= 0 )
+	{
+		CellWidth = ( TextureWidth - 2 * Grid.MarginX - Grid.SpacingX * ( Columns - 1 ) ) / Columns;
+	}
+	if ( CellHeight <= 0 )
+	{
+		CellHeight = ( TextureHeight - 2 * Grid.MarginY - Grid.SpacingY * ( Rows - 1 ) ) / Rows;
+	}
 
 	for ( int32 Index = 0; Index < Num; ++Index )
 	{
@@ -442,14 +550,23 @@ void CSpriteSheet::RebuildFrames() const
 	{
 		const int32 StartIndex = Frames.Num();
 		Frames.SetNum( StartIndex + Grid.GetNumFrames() );   // 番号は、画像が読み込まれていなくても決まっている
-		if ( bTextureReady ) FillGrid( Grid, StartIndex, TextureWidth, TextureHeight );
-		else bPendingSize = true;
+		if ( bTextureReady )
+		{
+			FillGrid( Grid, StartIndex, TextureWidth, TextureHeight );
+		}
+		else
+		{
+			bPendingSize = true;
+		}
 	}
 	if ( !Texture.IsValid() && !Definition.Grids.IsEmpty() )
 	{
 		LOG( LogSpriteSheet, Warning, "'%s' has no texture. The grid frames stay empty.", *GetPath() );
 	}
-	for ( const FSpriteFrame& Frame : Definition.Frames ) Frames.Add( Frame );
+	for ( const FSpriteFrame& Frame : Definition.Frames )
+	{
+		Frames.Add( Frame );
+	}
 }
 
 void CSpriteSheet::SetDefinition( const FSpriteSheetDefinition& InDefinition )
@@ -497,14 +614,20 @@ const FSpriteFrame* CSpriteSheet::GetFrame( int32 Index ) const
 FAnimTimeline CSpriteSheet::MakeTimeline( const FSpriteClip& Clip )
 {
 	TArray<float32> Durations;
-	for ( int32 Step = 0; Step < Clip.Frames.Num(); ++Step ) Durations.Add( Clip.GetDuration( Step ) );
+	for ( int32 Step = 0; Step < Clip.Frames.Num(); ++Step )
+	{
+		Durations.Add( Clip.GetDuration( Step ) );
+	}
 	return FAnimTimeline::Build( Durations, Clip.Loop );
 }
 
 void CSpriteSheet::RebuildTimelines()
 {
 	Timelines.Empty();
-	for ( const FSpriteClip& Clip : Definition.Clips ) Timelines.Add( MakeTimeline( Clip ) );
+	for ( const FSpriteClip& Clip : Definition.Clips )
+	{
+		Timelines.Add( MakeTimeline( Clip ) );
+	}
 }
 
 int32 CSpriteSheet::AddClip( const FSpriteClip& Clip )

@@ -99,7 +99,10 @@ public:
 	{
 		for ( const TSharedPtr<CGameObject>& Object : Objects )
 		{
-			if ( Object->IsAlive() && Object->IsA<T>() ) return StaticCastSharedPtr<T>( Object );
+			if ( Object->IsAlive() && Object->IsA<T>() )
+			{
+				return StaticCastSharedPtr<T>( Object );
+			}
 		}
 		return nullptr;
 	}
@@ -110,7 +113,10 @@ public:
 		TArray<TSharedPtr<T>> Result;
 		for ( const TSharedPtr<CGameObject>& Object : Objects )
 		{
-			if ( Object->IsAlive() && Object->IsA<T>() ) Result.Add( StaticCastSharedPtr<T>( Object ) );
+			if ( Object->IsAlive() && Object->IsA<T>() )
+			{
+				Result.Add( StaticCastSharedPtr<T>( Object ) );
+			}
 		}
 		return Result;
 	}
@@ -170,13 +176,19 @@ public:
 	FORCEINLINE T* FindFirstData()
 	{
 		TComponentStorage<T>* Storage = EcsWorld.FindStorage<T>();
-		if ( Storage == nullptr ) return nullptr;
+		if ( Storage == nullptr )
+		{
+			return nullptr;
+		}
 		const int32* Entities = Storage->GetEntities();
 		const int32 Num = Storage->Num();
 		for ( int32 i = 0; i < Num; ++i )
 		{
 			const FEcsWorld::FEntityRecord& Record = EcsWorld.GetRecord( Entities[i] );
-			if ( Record.bAlive && !Record.bPendingDestroy ) return &Storage->GetDenseAt( i );
+			if ( Record.bAlive && !Record.bPendingDestroy )
+			{
+				return &Storage->GetDenseAt( i );
+			}
 		}
 		return nullptr;
 	}
@@ -189,13 +201,19 @@ public:
 	FORCEINLINE CGameObject* FindFirstObjectWithData() const
 	{
 		const TComponentStorage<T>* Storage = EcsWorld.FindStorage<T>();
-		if ( Storage == nullptr ) return nullptr;
+		if ( Storage == nullptr )
+		{
+			return nullptr;
+		}
 		const int32* Entities = Storage->GetEntities();
 		const int32 Num = Storage->Num();
 		for ( int32 i = 0; i < Num; ++i )
 		{
 			const FEcsWorld::FEntityRecord& Record = EcsWorld.GetRecord( Entities[i] );
-			if ( Record.bAlive && !Record.bPendingDestroy ) return Record.Object;
+			if ( Record.bAlive && !Record.bPendingDestroy )
+			{
+				return Record.Object;
+			}
 		}
 		return nullptr;
 	}

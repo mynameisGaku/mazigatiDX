@@ -32,7 +32,10 @@ FORCEINLINE TOptional<EWindowMode> WindowModeFromString( const FString& Str )
 	const FString Trimmed = Str.TrimStartAndEnd();
 	for ( EWindowMode Mode : { EWindowMode::Windowed, EWindowMode::Borderless, EWindowMode::Fullscreen } )
 	{
-		if ( Trimmed.Equals( WindowModeToString( Mode ), ESearchCase::IgnoreCase ) ) return Mode;
+		if ( Trimmed.Equals( WindowModeToString( Mode ), ESearchCase::IgnoreCase ) )
+		{
+			return Mode;
+		}
 	}
 	return {};
 }

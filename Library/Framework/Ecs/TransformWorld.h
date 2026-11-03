@@ -59,7 +59,10 @@ public:
 	// ローカルを変えたあとに呼ぶ（このノードと子孫のワールド値が古くなる）
 	FORCEINLINE void MarkDirty( int32 Slot )
 	{
-		if ( !Nodes[Slot].bDirty ) MarkDirtySlow( Slot );   // 立っているなら、子孫もすべて立っている（不変条件）
+		if ( !Nodes[Slot].bDirty )
+		{
+			MarkDirtySlow( Slot );   // 立っているなら、子孫もすべて立っている（不変条件）
+		}
 	}
 	FORCEINLINE void SetLocal( int32 Slot, const FTransform& Local )
 	{
@@ -101,7 +104,10 @@ public:
 	FORCEINLINE const FTransform& GetWorld( int32 Slot )
 	{
 		const FTransformNode& Node = Nodes[Slot];
-		if ( !bHierarchyDirty && !Node.bDirty ) return Node.World;   // 最新（ほとんどの呼び出しはここ）
+		if ( !bHierarchyDirty && !Node.bDirty )
+		{
+			return Node.World;   // 最新（ほとんどの呼び出しはここ）
+		}
 		return GetWorldSlow( Slot );
 	}
 

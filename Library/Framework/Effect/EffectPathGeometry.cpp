@@ -117,7 +117,10 @@ namespace
 		const FVector3 Delta = End - Start;
 		// 主幹または枝の長さ。
 		const float32 Length = Delta.Length();
-		if ( !IsFinite( Delta ) || !NMath::IsFinite( Length ) || Length <= 0.0f || !NMath::IsFinite( Amplitude ) ) return false;
+		if ( !IsFinite( Delta ) || !NMath::IsFinite( Length ) || Length <= 0.0f || !NMath::IsFinite( Amplitude ) )
+		{
+			return false;
+		}
 		// 揺れの一方向。
 		FVector3 Right;
 		// 揺れのもう一方向。
@@ -139,10 +142,19 @@ namespace
 			Point.Position = Index == 0 ? Start : Index == Segments ? End : Start + Delta * T + ( Right * SpatialNoise( Seed, 0u, T, Time ) + Up * SpatialNoise( Seed, 1u, T, Time ) ) * ( Amplitude * Envelope );
 			Point.Width = bBranch ? Width * ( 1.0f - T ) : Width;
 			Point.Color = Color;
-			if ( bBranch ) Point.Color.a = static_cast<uint8>( NMath::RoundToInt( static_cast<float32>( Color.a ) * ( 1.0f - T ) ) );
-			if ( Index > 0 ) Distance += ( Point.Position - Out.Points.Last().Position ).Length();
+			if ( bBranch )
+			{
+				Point.Color.a = static_cast<uint8>( NMath::RoundToInt( static_cast<float32>( Color.a ) * ( 1.0f - T ) ) );
+			}
+			if ( Index > 0 )
+			{
+				Distance += ( Point.Position - Out.Points.Last().Position ).Length();
+			}
 			Point.U = Distance;
-			if ( !IsFinite( Point.Position ) || !NMath::IsFinite( Point.Width ) || !NMath::IsFinite( Point.U ) ) return false;
+			if ( !IsFinite( Point.Position ) || !NMath::IsFinite( Point.Width ) || !NMath::IsFinite( Point.U ) )
+			{
+				return false;
+			}
 			Out.Points.Add( Point );
 		}
 		return true;
@@ -152,24 +164,36 @@ namespace
 void NEffectPath::BuildLightning( const FEffectPathDefinition& Definition, uint32 Seed, float32 Time, const FVector3& Start, const FVector3& End, float32 Width, const FColor32& Color, FEffectPathGeometry& Out )
 {
 	Out.Strips.Reset();
-	if ( Definition.Kind != FEffectPathDefinition::EKind::Lightning || !IsFinite( Start ) || !IsFinite( End ) || !NMath::IsFinite( Width ) || Width <= 0.0f ) return;
+	if ( Definition.Kind != FEffectPathDefinition::EKind::Lightning || !IsFinite( Start ) || !IsFinite( End ) || !NMath::IsFinite( Width ) || Width <= 0.0f )
+	{
+		return;
+	}
 	// 主幹の軸となる、ワールドの両端の差。
 	const FVector3 Delta = End - Start;
 	// 幅の比率を実際の距離へ変えるための、主幹の長さ。
 	const float32 Length = Delta.Length();
-	if ( !IsFinite( Delta ) || !NMath::IsFinite( Length ) || Length <= 0.0f ) return;
+	if ( !IsFinite( Delta ) || !NMath::IsFinite( Length ) || Length <= 0.0f )
+	{
+		return;
+	}
 	// 不正な定義を直接渡されても、点数を上限内に保つ区間数。
 	const int32 Segments = NMath::Clamp( Definition.Segments, 2, FEffectPathDefinition::MaxSegments );
 	// 揺れの比率を、ワールド距離へ変えた幅。
 	const float32 Amplitude = ( NMath::IsFinite( Definition.Jitter ) ? NMath::Max( Definition.Jitter, 0.0f ) : 0.0f ) * Length;
 	// 枝の比率を、ワールド距離へ変えた長さ。
 	const float32 BranchLength = ( NMath::IsFinite( Definition.BranchLength ) ? NMath::Max( Definition.BranchLength, 0.0f ) : 0.0f ) * Length;
-	if ( !NMath::IsFinite( Amplitude ) || !NMath::IsFinite( BranchLength ) ) return;
+	if ( !NMath::IsFinite( Amplitude ) || !NMath::IsFinite( BranchLength ) )
+	{
+		return;
+	}
 	// 今回の再生時刻で使う、二つの更新番号と補間率。
 	const FNoiseTime NoiseTime = GetNoiseTime( Time, Definition.RefreshHz );
 	// 生成順で先頭になる、両端の固定された主幹。
 	FEffectPathGeometry::FStrip Main;
-	if ( !BuildStrip( Start, End, Segments, Amplitude, Width, Color, Seed, NoiseTime, false, Main ) ) return;
+	if ( !BuildStrip( Start, End, Segments, Amplitude, Width, Color, Seed, NoiseTime, false, Main ) )
+	{
+		return;
+	}
 	Out.Strips.Add( MoveTemp( Main ) );
 	// 長さ 0 の枝は作らず、それ以外は設定数を安全な範囲にする。
 	const int32 Branches = BranchLength > 0.0f ? NMath::Clamp( Definition.Branches, 0, FEffectPathDefinition::MaxBranches ) : 0;
@@ -193,7 +217,10 @@ void NEffectPath::BuildLightning( const FEffectPathDefinition& Definition, uint3
 		const FVector3 Direction = ( Delta / Length * 0.35f + Right * Noise( BranchSeed, 73u, NoiseTime ) + Up * Noise( BranchSeed, 74u, NoiseTime ) ).Normalized();
 		// 大きなワールド座標では、ごく短い枝が同じ座標へ丸まる場合だけ枝を省く。
 		const FVector3 Tip = Origin + Direction * BranchLength;
-		if ( Tip == Origin ) continue;
+		if ( Tip == Origin )
+		{
+			continue;
+		}
 		// 幹と同じ時刻の揺れを使うが、独立した一点列として描く枝。
 		FEffectPathGeometry::FStrip Strip;
 		if ( !BuildStrip( Origin, Tip, NMath::Max( Segments / 3, 2 ), Amplitude * 0.35f, Width * 0.55f, Color, BranchSeed, NoiseTime, true, Strip ) )

@@ -52,11 +52,17 @@ void CJobSystem::Initialize( FSubsystemCollection& Collection )
 
 	int32 NumWorkers = NMath::Max( 0, static_cast<int32>( NThread::GetHardwareConcurrency() ) - 1 );
 	const int32 Requested = ReadJobThreadsArgument();
-	if ( Requested >= 0 ) NumWorkers = Requested;
+	if ( Requested >= 0 )
+	{
+		NumWorkers = Requested;
+	}
 	NumWorkers = NMath::Min( NumWorkers, MaxWorkers );
 
 	Workers.Reserve( NumWorkers );
-	for ( int32 i = 0; i < NumWorkers; ++i ) Workers.Emplace( [this, i] { WorkerMain( i ); } );
+	for ( int32 i = 0; i < NumWorkers; ++i )
+	{
+		Workers.Emplace( [this, i] { WorkerMain( i ); } );
+	}
 
 	LOG( LogJob, Log, "Ready (%d worker thread(s)%s)", NumWorkers, NumWorkers == 0 ? ": everything runs on the calling thread" : "" );
 }
@@ -68,7 +74,10 @@ void CJobSystem::Deinitialize()
 		bStopping = true;
 	}
 	WorkAvailable.NotifyAll();
-	for ( FThread& Worker : Workers ) Worker.Join();
+	for ( FThread& Worker : Workers )
+	{
+		Worker.Join();
+	}
 
 	LOG( LogJob, Log, "Shutdown (%d worker thread(s) stopped)", Workers.Num() );
 	Workers.Reset();
@@ -91,17 +100,26 @@ void CJobSystem::WorkerMain( int32 Index )
 	for ( ;; )
 	{
 		WorkAvailable.Wait( Lock, [this] { return bStopping || HasWorkLocked(); } );
-		if ( bStopping ) return;
+		if ( bStopping )
+		{
+			return;
+		}
 		RunOneLocked( Lock, true );
 	}
 }
 
 bool CJobSystem::HasWorkLocked() const
 {
-	if ( !ReadyJobs.IsEmpty() ) return true;
+	if ( !ReadyJobs.IsEmpty() )
+	{
+		return true;
+	}
 	for ( const FGroup* Group : Groups )
 	{
-		if ( Group->NextBatch.Load( EMemoryOrder::Relaxed ) < Group->NumBatches ) return true;
+		if ( Group->NextBatch.Load( EMemoryOrder::Relaxed ) < Group->NumBatches )
+		{
+			return true;
+		}
 	}
 	return false;
 }
@@ -111,7 +129,10 @@ bool CJobSystem::RunOneLocked( FUniqueLock& Lock, bool bAllowJobs )
 	// データ並列のグループを優先する（呼び出し側が待っている）
 	for ( FGroup* Group : Groups )
 	{
-		if ( Group->NextBatch.Load( EMemoryOrder::Relaxed ) >= Group->NumBatches ) continue;
+		if ( Group->NextBatch.Load( EMemoryOrder::Relaxed ) >= Group->NumBatches )
+		{
+			continue;
+		}
 
 		Group->Users.FetchAdd( 1, EMemoryOrder::Acquire );   // ロックの中で数える（登録を外す側が、使い終わるまで待てるように）
 		Lock.Unlock();
@@ -138,7 +159,10 @@ void CJobSystem::RunBatches( FGroup& Group )
 	for ( ;; )
 	{
 		const int32 Batch = Group.NextBatch.FetchAdd( 1, EMemoryOrder::Relaxed );
-		if ( Batch >= Group.NumBatches ) return;
+		if ( Batch >= Group.NumBatches )
+		{
+			return;
+		}
 
 		const int32 Begin = Batch * Group.BatchSize;
 		const int32 End = NMath::Min( Begin + Group.BatchSize, Group.Count );
@@ -156,7 +180,10 @@ void CJobSystem::RunBatches( FGroup& Group )
 
 void CJobSystem::RunParallelRange( int32 Count, int32 MinBatchSize, FRangeFunction Body, const char* Name )
 {
-	if ( Count <= 0 ) return;
+	if ( Count <= 0 )
+	{
+		return;
+	}
 
 	// バッチの分け方は Count と MinBatchSize だけで決まる（ワーカーの数に依存しない）
 	const int32 MinBatch = NMath::Max( MinBatchSize, 1 );
@@ -206,7 +233,10 @@ void CJobSystem::RunParallelRange( int32 Count, int32 MinBatchSize, FRangeFuncti
 		Groups.RemoveSingle( &Group );
 	}
 	// 登録を外したあとは新しく使う者はいない。使っている最中のワーカーが抜けるまで待つ（Group は呼び出しスレッドの上にあるため）
-	while ( Group.Users.Load( EMemoryOrder::Acquire ) > 0 ) NThread::YieldToOthers();
+	while ( Group.Users.Load( EMemoryOrder::Acquire ) > 0 )
+	{
+		NThread::YieldToOthers();
+	}
 }
 
 #pragma endregion
@@ -236,7 +266,10 @@ FJobHandle CJobSystem::Schedule( TCallable<void()> Function, const char* Name, c
 
 void CJobSystem::ReleaseJob( const TSharedPtr<FJobState>& Job )
 {
-	if ( Job->NumPending.FetchSub( 1, EMemoryOrder::AcquireRelease ) == 1 ) Enqueue( Job );
+	if ( Job->NumPending.FetchSub( 1, EMemoryOrder::AcquireRelease ) == 1 )
+	{
+		Enqueue( Job );
+	}
 }
 
 void CJobSystem::Enqueue( const TSharedPtr<FJobState>& Job )
@@ -269,7 +302,10 @@ void CJobSystem::RunJob( const TSharedPtr<FJobState>& Job )
 		Job->bDone.Store( true, EMemoryOrder::Release );
 		Dependents = MoveTemp( Job->Dependents );
 	}
-	for ( const TSharedPtr<FJobState>& Dependent : Dependents ) ReleaseJob( Dependent );
+	for ( const TSharedPtr<FJobState>& Dependent : Dependents )
+	{
+		ReleaseJob( Dependent );
+	}
 }
 
 void CJobSystem::Wait( const FJobHandle& Handle )

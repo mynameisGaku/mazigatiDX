@@ -40,22 +40,37 @@ FEditMeshBuild NEditMesh::BuildRenderMesh( const FEditMesh& Mesh )
 	TArray<bool> Drawn;
 	Drawn.Init( false, NumFaces );
 	TArray<TArray<int32>> VertexFaces;
-	if ( Mesh.SmoothAngle > 0.0f ) VertexFaces.SetNum( Mesh.Vertices.Num() );
+	if ( Mesh.SmoothAngle > 0.0f )
+	{
+		VertexFaces.SetNum( Mesh.Vertices.Num() );
+	}
 	for ( int32 Face = 0; Face < NumFaces; ++Face )
 	{
-		if ( !Mesh.IsFaceValid( Face ) ) continue;
+		if ( !Mesh.IsFaceValid( Face ) )
+		{
+			continue;
+		}
 		const TArray<int32>& Indices = Mesh.Faces[Face].Indices;
 		const FVector3& Origin = Mesh.Vertices[Indices[0]];
 		FVector3 Sum = FVector3::Zero;
-		for ( int32 i = 1; i + 1 < Indices.Num(); ++i ) Sum = Sum + FVector3::Cross( Mesh.Vertices[Indices[i]] - Origin, Mesh.Vertices[Indices[i + 1]] - Origin );
+		for ( int32 i = 1; i + 1 < Indices.Num(); ++i )
+		{
+			Sum = Sum + FVector3::Cross( Mesh.Vertices[Indices[i]] - Origin, Mesh.Vertices[Indices[i + 1]] - Origin );
+		}
 		const float32 Length = Sum.Length();
-		if ( !( Length > 1.0e-12f ) || !NMath::IsFinite( Length ) ) continue;
+		if ( !( Length > 1.0e-12f ) || !NMath::IsFinite( Length ) )
+		{
+			continue;
+		}
 		Weighted[Face] = Sum;
 		Unit[Face] = Sum / Length;
 		Drawn[Face] = true;
 		if ( Mesh.SmoothAngle > 0.0f )
 		{
-			for ( const int32 Index : Indices ) VertexFaces[Index].Add( Face );
+			for ( const int32 Index : Indices )
+			{
+				VertexFaces[Index].Add( Face );
+			}
 		}
 	}
 	const float32 CosLimit = NMath::Cos( NMath::Clamp( Mesh.SmoothAngle, 0.0f, 180.0f ) * NMath::DEG2RAD ) - 1.0e-5f;   // 角度ちょうどの面も混ぜる
@@ -77,7 +92,10 @@ FEditMeshBuild NEditMesh::BuildRenderMesh( const FEditMesh& Mesh )
 
 	for ( int32 Face = 0; Face < NumFaces; ++Face )
 	{
-		if ( !Drawn[Face] ) continue;
+		if ( !Drawn[Face] )
+		{
+			continue;
+		}
 		const FEditMeshFace& Item = Mesh.Faces[Face];
 		const FEditMeshMaterial& Material = Mesh.GetMaterial( Item.Material );
 		const int32 First = Result.Vertices.Num();
@@ -90,10 +108,16 @@ FEditMeshBuild NEditMesh::BuildRenderMesh( const FEditMesh& Mesh )
 				FVector3 Mixed = FVector3::Zero;
 				for ( const int32 Other : VertexFaces[Index] )
 				{
-					if ( FVector3::Dot( Unit[Face], Unit[Other] ) >= CosLimit ) Mixed = Mixed + Weighted[Other];
+					if ( FVector3::Dot( Unit[Face], Unit[Other] ) >= CosLimit )
+					{
+						Mixed = Mixed + Weighted[Other];
+					}
 				}
 				const float32 Length = Mixed.Length();
-				if ( Length > 1.0e-12f ) Normal = Mixed / Length;
+				if ( Length > 1.0e-12f )
+				{
+					Normal = Mixed / Length;
+				}
 			}
 			const FVector2 UV = NEditMesh::ComputeBoxUV( Position, Unit[Face], Material );
 			FMeshVertex Vertex;
@@ -121,7 +145,10 @@ FEditMeshBuild NEditMesh::BuildRenderMesh( const FEditMesh& Mesh )
 
 	// 材質の番号の小さい順にまとめる
 	TArray<int32> Order;
-	for ( int32 i = 0; i < Slots.Num(); ++i ) Order.Add( i );
+	for ( int32 i = 0; i < Slots.Num(); ++i )
+	{
+		Order.Add( i );
+	}
 	Order.Sort( [&]( int32 A, int32 B ) { return Slots[A] < Slots[B]; } );
 	for ( const int32 Position : Order )
 	{

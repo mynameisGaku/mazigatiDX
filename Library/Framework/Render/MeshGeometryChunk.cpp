@@ -7,11 +7,17 @@
 
 bool NMeshGeometry::BuildChunks( TArrayView<const FMeshVertex> Vertices, TArrayView<const uint32> Indices, TArray<FMeshGeometryChunk>& Out )
 {
-	if ( Vertices.Num() <= 0 || Vertices.GetData() == nullptr || Indices.Num() <= 0 || Indices.GetData() == nullptr || Indices.Num() % 3 != 0 ) return false;
+	if ( Vertices.Num() <= 0 || Vertices.GetData() == nullptr || Indices.Num() <= 0 || Indices.GetData() == nullptr || Indices.Num() % 3 != 0 )
+	{
+		return false;
+	}
 	for ( int32 Index = 0; Index < Indices.Num(); ++Index )
 	{
 		// 元頂点配列の範囲を超えていないか調べるindex。
-		if ( Indices[Index] >= static_cast<uint32>( Vertices.Num() ) ) return false;
+		if ( Indices[Index] >= static_cast<uint32>( Vertices.Num() ) )
+		{
+			return false;
+		}
 	}
 
 	// 完成するまで呼出元へ見せない作業用chunk列。
@@ -34,7 +40,10 @@ bool NMeshGeometry::BuildChunks( TArrayView<const FMeshVertex> Vertices, TArrayV
 		{
 			// 三角形の現在cornerが参照する元頂点。
 			const uint32 SourceIndex = Indices[Triangle + Corner];
-			if ( SourceToChunk.Find( SourceIndex ) == nullptr && !PendingSources.Contains( SourceIndex ) ) PendingSources.Add( SourceIndex );
+			if ( SourceToChunk.Find( SourceIndex ) == nullptr && !PendingSources.Contains( SourceIndex ) )
+			{
+				PendingSources.Add( SourceIndex );
+			}
 		}
 
 		if ( Current.Indices.Num() + 3 > FDrawMaterialMeshData::MaxIndices || Current.Vertices.Num() + PendingSources.Num() > FDrawMaterialMeshData::MaxVertices )
@@ -49,7 +58,10 @@ bool NMeshGeometry::BuildChunks( TArrayView<const FMeshVertex> Vertices, TArrayV
 			{
 				// 切替後のchunkで重複を除いた元頂点。
 				const uint32 SourceIndex = Indices[Triangle + Corner];
-				if ( !PendingSources.Contains( SourceIndex ) ) PendingSources.Add( SourceIndex );
+				if ( !PendingSources.Contains( SourceIndex ) )
+				{
+					PendingSources.Add( SourceIndex );
+				}
 			}
 		}
 
@@ -69,7 +81,10 @@ bool NMeshGeometry::BuildChunks( TArrayView<const FMeshVertex> Vertices, TArrayV
 		}
 	}
 
-	if ( !Current.Indices.IsEmpty() ) Built.Add( MoveTemp( Current ) );
+	if ( !Current.Indices.IsEmpty() )
+	{
+		Built.Add( MoveTemp( Current ) );
+	}
 	Out = MoveTemp( Built );
 	return true;
 }

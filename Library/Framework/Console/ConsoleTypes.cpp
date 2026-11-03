@@ -13,7 +13,10 @@ void FConsoleBuffer::Write( EConsoleLine Kind, const FString& Text )
 	{
 		const int32 End = Text.Find( "\n", ESearchCase::CaseSensitive, Start );
 		FString Line = End == INDEX_NONE ? Text.Mid( Start ) : Text.Mid( Start, End - Start );
-		if ( Line.EndsWith( "\r" ) ) Line = Line.LeftChop( 1 );
+		if ( Line.EndsWith( "\r" ) )
+		{
+			Line = Line.LeftChop( 1 );
+		}
 
 		FConsoleLine Entry;
 		Entry.Kind = Kind;
@@ -30,7 +33,10 @@ void FConsoleBuffer::Write( EConsoleLine Kind, const FString& Text )
 		}
 		++Revision;
 
-		if ( End == INDEX_NONE ) break;
+		if ( End == INDEX_NONE )
+		{
+			break;
+		}
 		Start = End + 1;
 	}
 }
@@ -53,7 +59,10 @@ FString FConsoleBuffer::ToText() const
 	FString Result;
 	for ( int32 i = 0; i < NumLines; ++i )
 	{
-		if ( i > 0 ) Result += "\n";
+		if ( i > 0 )
+		{
+			Result += "\n";
+		}
 		Result += Get( i ).Text;
 	}
 	return Result;

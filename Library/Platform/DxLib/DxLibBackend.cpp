@@ -64,15 +64,24 @@ void CDxLibBackend::Deinitialize()
 
 TResult<void> CDxLibBackend::Init( const FWindowSettings& InSettings )
 {
-	if ( bInitialized ) return TResult<void>::Err( "CDxLibBackend is already initialized" );
+	if ( bInitialized )
+	{
+		return TResult<void>::Err( "CDxLibBackend is already initialized" );
+	}
 
 	Settings       = InSettings;
 	bExitRequested = false;
-	if ( Settings.WindowMode != EWindowMode::Windowed ) LastFullscreenMode = Settings.WindowMode;
+	if ( Settings.WindowMode != EWindowMode::Windowed )
+	{
+		LastFullscreenMode = Settings.WindowMode;
+	}
 
 	ApplyPreInitSettings();
 
-	if ( DxLib_Init() == -1 ) return TResult<void>::Err( "DxLib_Init failed" );
+	if ( DxLib_Init() == -1 )
+	{
+		return TResult<void>::Err( "DxLib_Init failed" );
+	}
 	bInitialized = true;
 	NDebugUI::SetImGuiTextureCallbacks( NDxLibImGuiTexture::MakeCallbacks() );
 	LOG( LogPlatform, Verbose, "DxLib initialized (Direct3D version %d, working directory %s)", GetUseDxLibDirect3DVersion(), *NFileSystem::GetWorkingDirectory() );
@@ -83,7 +92,10 @@ TResult<void> CDxLibBackend::Init( const FWindowSettings& InSettings )
 		SetWindowPosition( Settings.PositionX, Settings.PositionY );
 	}
 
-	if ( Settings.bEnableImGui ) InitImGui();
+	if ( Settings.bEnableImGui )
+	{
+		InitImGui();
+	}
 	ApplyMouseCursor();
 
 	// 起動引数 --screenshot=パス.png [--screenshot-frame=N] [--screenshot-exit]
@@ -92,7 +104,10 @@ TResult<void> CDxLibBackend::Init( const FWindowSettings& InSettings )
 		if ( const TOptional<FString> Path = NCommandLine::GetValue( CommandLine, "screenshot" ) )
 		{
 			ScreenshotPath = Path.GetValue();
-			if ( const TOptional<FString> Frame = NCommandLine::GetValue( CommandLine, "screenshot-frame" ) ) ScreenshotFrame = Frame.GetValue().ToInt();
+			if ( const TOptional<FString> Frame = NCommandLine::GetValue( CommandLine, "screenshot-frame" ) )
+			{
+				ScreenshotFrame = Frame.GetValue().ToInt();
+			}
 			bScreenshotExit = NCommandLine::HasFlag( CommandLine, "screenshot-exit" );
 			bScreenshotDone = false;
 		}
@@ -115,7 +130,10 @@ TResult<void> CDxLibBackend::Init( const FWindowSettings& InSettings )
 
 void CDxLibBackend::Shutdown()
 {
-	if ( !bInitialized ) return;
+	if ( !bInitialized )
+	{
+		return;
+	}
 
 	LOG( LogPlatform, Log, "Shutting down (%llu frame(s) rendered)", static_cast<unsigned long long>( FrameCount ) );
 	ShutdownImGui();
@@ -154,10 +172,16 @@ void CDxLibBackend::ApplyPreInitSettings()
 	// 実行中にウィンドウモードを変えてもグラフィックハンドルや Direct3D デバイスを作り直さない
 	SetChangeScreenModeGraphicsSystemResetFlag( FALSE );
 
-	if ( Settings.WindowMode != EWindowMode::Windowed ) SetFullScreenResolutionMode( ToDxResolutionMode( Settings.WindowMode ) );
+	if ( Settings.WindowMode != EWindowMode::Windowed )
+	{
+		SetFullScreenResolutionMode( ToDxResolutionMode( Settings.WindowMode ) );
+	}
 	ChangeWindowMode( Settings.WindowMode == EWindowMode::Windowed ? TRUE : FALSE );
 
-	if ( Settings.bEnableImGui ) SetHookWinProc( ImGuiWndProcHook );
+	if ( Settings.bEnableImGui )
+	{
+		SetHookWinProc( ImGuiWndProcHook );
+	}
 }
 
 void CDxLibBackend::ApplyRenderState()
@@ -177,7 +201,10 @@ void CDxLibBackend::ApplyRenderState()
 
 bool CDxLibBackend::BeginFrame()
 {
-	if ( !bInitialized ) return false;
+	if ( !bInitialized )
+	{
+		return false;
+	}
 
 	{
 		PROFILE_SCOPE_OWNER( "Platform", "DxLib", "ProcessMessage" );
@@ -187,7 +214,10 @@ bool CDxLibBackend::BeginFrame()
 			return false;
 		}
 	}
-	if ( bExitRequested ) return false;
+	if ( bExitRequested )
+	{
+		return false;
+	}
 
 	// ウィンドウモードの変更はフレームの外（ImGui のフレーム開始前）で反映する
 	if ( PendingWindowMode.IsSet() )
@@ -220,7 +250,10 @@ bool CDxLibBackend::BeginFrame()
 
 bool CDxLibBackend::RequestScreenshot( const FString& Path, int32 DelayFrames )
 {
-	if ( !bInitialized || Path.IsEmpty() ) return false;
+	if ( !bInitialized || Path.IsEmpty() )
+	{
+		return false;
+	}
 	// 今のフレームの EndFrame で保存する（起動引数の --screenshot と同じ仕組み）
 	ScreenshotPath = Path;
 	ScreenshotFrame = static_cast<int32>( FrameCount ) + 1 + ( DelayFrames > 0 ? DelayFrames : 0 );
@@ -287,19 +320,37 @@ void CDxLibBackend::DeliverFrameToSink( EFrameCaptureStage Stage )
 
 void CDxLibBackend::CaptureScreenshotIfRequested()
 {
-	if ( bScreenshotDone || ScreenshotPath.IsEmpty() ) return;
-	if ( static_cast<int32>( FrameCount ) + 1 < ScreenshotFrame ) return;
+	if ( bScreenshotDone || ScreenshotPath.IsEmpty() )
+	{
+		return;
+	}
+	if ( static_cast<int32>( FrameCount ) + 1 < ScreenshotFrame )
+	{
+		return;
+	}
 
 	bScreenshotDone = true;
 	const int Result = SaveDrawScreenToPNG( 0, 0, GetScreenWidth(), GetScreenHeight(), *ScreenshotPath );
-	if ( Result == 0 ) LOG( LogPlatform, Log, "Saved a screenshot of frame %d to %s", static_cast<int32>( FrameCount ) + 1, *ScreenshotPath );
-	else LOG( LogPlatform, Warning, "Failed to save the screenshot %s", *ScreenshotPath );
-	if ( bScreenshotExit ) bExitRequested = true;
+	if ( Result == 0 )
+	{
+		LOG( LogPlatform, Log, "Saved a screenshot of frame %d to %s", static_cast<int32>( FrameCount ) + 1, *ScreenshotPath );
+	}
+	else
+	{
+		LOG( LogPlatform, Warning, "Failed to save the screenshot %s", *ScreenshotPath );
+	}
+	if ( bScreenshotExit )
+	{
+		bExitRequested = true;
+	}
 }
 
 void CDxLibBackend::EndFrame()
 {
-	if ( !bInFrame ) return;
+	if ( !bInFrame )
+	{
+		return;
+	}
 
 	DeliverFrameToSink( EFrameCaptureStage::Game );
 
@@ -367,7 +418,10 @@ void CDxLibBackend::RenderImGuiViewports()
 	{
 		ImGuiViewport* Viewport = PlatformIO.Viewports[i];
 		AliveIds.Add( Viewport->ID );
-		if ( Viewport->Flags & ImGuiViewportFlags_IsMinimized ) continue;
+		if ( Viewport->Flags & ImGuiViewportFlags_IsMinimized )
+		{
+			continue;
+		}
 
 		// 初めて表示するウィンドウは時刻 0（= 一番古い）として最優先で表示する
 		const int64* Last = ViewportLastPresentTime.Find( Viewport->ID );
@@ -381,20 +435,35 @@ void CDxLibBackend::RenderImGuiViewports()
 	// 一番長く更新していないウィンドウから表示する（回数に上限があっても全ウィンドウが順番に更新される）
 	Candidates.StableSort( []( const FCandidate& A, const FCandidate& B ) { return A.LastPresentTime < B.LastPresentTime; } );
 	const int32 MaxPresents = Settings.ImGuiViewportMaxPresentsPerFrame;
-	if ( MaxPresents > 0 && Candidates.Num() > MaxPresents ) Candidates.RemoveAt( MaxPresents, Candidates.Num() - MaxPresents );
+	if ( MaxPresents > 0 && Candidates.Num() > MaxPresents )
+	{
+		Candidates.RemoveAt( MaxPresents, Candidates.Num() - MaxPresents );
+	}
 
 	for ( const FCandidate& Candidate : Candidates )
 	{
 		FProfileScope Scope( "Platform", "ImGui", "Viewport.Render", Candidate.Viewport->ID );
-		if ( PlatformIO.Platform_RenderWindow ) PlatformIO.Platform_RenderWindow( Candidate.Viewport, nullptr );
-		if ( PlatformIO.Renderer_RenderWindow ) PlatformIO.Renderer_RenderWindow( Candidate.Viewport, nullptr );
+		if ( PlatformIO.Platform_RenderWindow )
+		{
+			PlatformIO.Platform_RenderWindow( Candidate.Viewport, nullptr );
+		}
+		if ( PlatformIO.Renderer_RenderWindow )
+		{
+			PlatformIO.Renderer_RenderWindow( Candidate.Viewport, nullptr );
+		}
 	}
 	for ( const FCandidate& Candidate : Candidates )
 	{
 		// 環境によっては 1 回の Present が垂直同期 1 回分かかる。どのウィンドウが何 ms かかったかをここで見る
 		FProfileScope Scope( "Platform", "ImGui", "Viewport.Present", Candidate.Viewport->ID );
-		if ( PlatformIO.Platform_SwapBuffers ) PlatformIO.Platform_SwapBuffers( Candidate.Viewport, nullptr );
-		if ( PlatformIO.Renderer_SwapBuffers ) PlatformIO.Renderer_SwapBuffers( Candidate.Viewport, nullptr );
+		if ( PlatformIO.Platform_SwapBuffers )
+		{
+			PlatformIO.Platform_SwapBuffers( Candidate.Viewport, nullptr );
+		}
+		if ( PlatformIO.Renderer_SwapBuffers )
+		{
+			PlatformIO.Renderer_SwapBuffers( Candidate.Viewport, nullptr );
+		}
 		ViewportLastPresentTime.Add( Candidate.Viewport->ID, Now );
 	}
 
@@ -410,8 +479,14 @@ void CDxLibBackend::UpdateTime()
 	FrameStart  = Now;
 
 	// ブレークポイントなどで止まった後に巨大な値が入らないようにする
-	if ( Delta > 0.25 ) Delta = 0.25;
-	if ( Delta < 0.0 ) Delta = 0.0;
+	if ( Delta > 0.25 )
+	{
+		Delta = 0.25;
+	}
+	if ( Delta < 0.0 )
+	{
+		Delta = 0.0;
+	}
 
 	DeltaTime  = static_cast<float32>( Delta );
 	TotalTime += Delta;
@@ -439,10 +514,19 @@ void CDxLibBackend::WaitForFrameLimit()
 	while ( true )
 	{
 		const int64 Remaining = FrameMicroseconds - ( GetNowHiPerformanceCount() - FrameStart );
-		if ( Remaining <= 0 ) break;
+		if ( Remaining <= 0 )
+		{
+			break;
+		}
 		// 1ms 以上残っていれば眠り、最後は細かく待つ
-		if ( Remaining > 1500 ) Sleep( static_cast<DWORD>( ( Remaining - 1000 ) / 1000 ) );
-		else Sleep( 0 );
+		if ( Remaining > 1500 )
+		{
+			Sleep( static_cast<DWORD>( ( Remaining - 1000 ) / 1000 ) );
+		}
+		else
+		{
+			Sleep( 0 );
+		}
 	}
 }
 
@@ -455,7 +539,10 @@ void CDxLibBackend::SetWindowMode( EWindowMode Mode )
 	if ( !bInitialized )
 	{
 		Settings.WindowMode = Mode;
-		if ( Mode != EWindowMode::Windowed ) LastFullscreenMode = Mode;
+		if ( Mode != EWindowMode::Windowed )
+		{
+			LastFullscreenMode = Mode;
+		}
 		LOG( LogPlatform, Verbose, "Window mode set before initialization: %s", WindowModeToString( Mode ) );
 		return;
 	}
@@ -483,7 +570,10 @@ bool CDxLibBackend::ApplyWindowMode( EWindowMode Mode )
 		ChangeWindowMode( TRUE );
 	}
 
-	if ( Mode != EWindowMode::Windowed ) SetFullScreenResolutionMode( ToDxResolutionMode( Mode ) );
+	if ( Mode != EWindowMode::Windowed )
+	{
+		SetFullScreenResolutionMode( ToDxResolutionMode( Mode ) );
+	}
 	const int Result = ChangeWindowMode( Mode == EWindowMode::Windowed ? TRUE : FALSE );
 
 	if ( Result != DX_CHANGESCREEN_OK && Result != DX_CHANGESCREEN_REFRESHNORMAL )
@@ -496,8 +586,14 @@ bool CDxLibBackend::ApplyWindowMode( EWindowMode Mode )
 	}
 
 	Settings.WindowMode = Mode;
-	if ( Mode != EWindowMode::Windowed ) LastFullscreenMode = Mode;
-	else SetWindowSizeExtendRate( Settings.WindowExtendRate );
+	if ( Mode != EWindowMode::Windowed )
+	{
+		LastFullscreenMode = Mode;
+	}
+	else
+	{
+		SetWindowSizeExtendRate( Settings.WindowExtendRate );
+	}
 
 	ApplyRenderState();
 	ApplyMouseCursor();
@@ -508,15 +604,24 @@ bool CDxLibBackend::ApplyWindowMode( EWindowMode Mode )
 void CDxLibBackend::SetWindowTitle( const FString& Title )
 {
 	Settings.Title = Title;
-	if ( bInitialized ) SetMainWindowText( *Settings.Title );
+	if ( bInitialized )
+	{
+		SetMainWindowText( *Settings.Title );
+	}
 	LOG( LogPlatform, Verbose, "Window title: %s", *Title );
 }
 
 void CDxLibBackend::SetMouseCursorVisible( bool bVisible )
 {
-	if ( Settings.bShowMouseCursor == bVisible ) return;
+	if ( Settings.bShowMouseCursor == bVisible )
+	{
+		return;
+	}
 	Settings.bShowMouseCursor = bVisible;
-	if ( bInitialized ) ApplyMouseCursor();
+	if ( bInitialized )
+	{
+		ApplyMouseCursor();
+	}
 	LOG( LogPlatform, Verbose, "Mouse cursor %s", bVisible ? "shown" : "hidden" );
 }
 
@@ -529,15 +634,24 @@ void CDxLibBackend::ApplyMouseCursor()
 	if ( bImGuiActive )
 	{
 		ImGuiIO& IO = ImGui::GetIO();
-		if ( Settings.bShowMouseCursor ) IO.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
-		else IO.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
+		if ( Settings.bShowMouseCursor )
+		{
+			IO.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
+		}
+		else
+		{
+			IO.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
+		}
 	}
 }
 
 void CDxLibBackend::SetWindowExtendRate( float64 Rate )
 {
 	Settings.WindowExtendRate = Rate;
-	if ( bInitialized && Settings.WindowMode == EWindowMode::Windowed ) SetWindowSizeExtendRate( Rate );
+	if ( bInitialized && Settings.WindowMode == EWindowMode::Windowed )
+	{
+		SetWindowSizeExtendRate( Rate );
+	}
 	LOG( LogPlatform, Verbose, "Window scale: %.2f%s", Rate, Settings.WindowMode == EWindowMode::Windowed ? "" : " (applied when back to windowed)" );
 }
 
@@ -559,9 +673,18 @@ void CDxLibBackend::InitImGui()
 	ImGui::CreateContext();
 
 	ImGuiIO& IO = ImGui::GetIO();
-	if ( Settings.bImGuiDocking ) IO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-	if ( Settings.bImGuiViewports ) IO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-	if ( !Settings.bImGuiSaveIni ) IO.IniFilename = nullptr;
+	if ( Settings.bImGuiDocking )
+	{
+		IO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+	}
+	if ( Settings.bImGuiViewports )
+	{
+		IO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+	}
+	if ( !Settings.bImGuiSaveIni )
+	{
+		IO.IniFilename = nullptr;
+	}
 
 	if ( NFileSystem::FileExists( Settings.ImGuiFontPath ) )
 	{
@@ -586,7 +709,10 @@ void CDxLibBackend::InitImGui()
 
 void CDxLibBackend::ShutdownImGui()
 {
-	if ( !bImGuiActive ) return;
+	if ( !bImGuiActive )
+	{
+		return;
+	}
 
 	ImGui_ImplDXlib_Shutdown();
 	ImGui::DestroyContext();
@@ -607,7 +733,10 @@ bool CDxLibBackend::IsInitialized() const
 
 void CDxLibBackend::RequestExit()
 {
-	if ( !bExitRequested ) LOG( LogPlatform, Log, "Exit requested" );
+	if ( !bExitRequested )
+	{
+		LOG( LogPlatform, Log, "Exit requested" );
+	}
 	bExitRequested = true;
 }
 

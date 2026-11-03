@@ -56,7 +56,10 @@ namespace NCString
 	// Source を Dest（Size バイト）へコピーする。入りきらなければ切り詰めて、終端を付ける（Size が 0 のときは何も書かない）。
 	inline void CopyTruncated( char* Dest, usize Size, const char* Source ) noexcept
 	{
-		if ( Size > 0 ) ::strncpy_s( Dest, Size, Source, _TRUNCATE );
+		if ( Size > 0 )
+		{
+			::strncpy_s( Dest, Size, Source, _TRUNCATE );
+		}
 	}
 
 	// Text の中で最初に Pattern が現れる位置。無ければ nullptr。

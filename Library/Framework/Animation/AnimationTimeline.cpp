@@ -24,9 +24,18 @@ const char* ToString( EAnimLoopMode Mode )
 EAnimLoopMode ParseLoopMode( const FString& Text, EAnimLoopMode Default )
 {
 	const FString Lower = Text.ToLower();
-	if ( Lower == "once" ) return EAnimLoopMode::Once;
-	if ( Lower == "loop" ) return EAnimLoopMode::Loop;
-	if ( Lower == "pingpong" || Lower == "ping-pong" || Lower == "ping_pong" ) return EAnimLoopMode::PingPong;
+	if ( Lower == "once" )
+	{
+		return EAnimLoopMode::Once;
+	}
+	if ( Lower == "loop" )
+	{
+		return EAnimLoopMode::Loop;
+	}
+	if ( Lower == "pingpong" || Lower == "ping-pong" || Lower == "ping_pong" )
+	{
+		return EAnimLoopMode::PingPong;
+	}
 	return Default;
 }
 
@@ -47,11 +56,17 @@ FAnimTimeline FAnimTimeline::Build( const TArray<float32>& Durations, EAnimLoopM
 		Timeline.StepEnd.Add( Time );
 	};
 
-	for ( int32 i = 0; i < Num; ++i ) AddStep( i );
+	for ( int32 i = 0; i < Num; ++i )
+	{
+		AddStep( i );
+	}
 	if ( Mode == EAnimLoopMode::PingPong )
 	{
 		// 往路の逆順（端の 2 つは重ねない）
-		for ( int32 i = Num - 2; i >= 1; --i ) AddStep( i );
+		for ( int32 i = Num - 2; i >= 1; --i )
+		{
+			AddStep( i );
+		}
 	}
 	Timeline.Total = Time;
 	return Timeline;
@@ -64,7 +79,10 @@ FAnimLocation NAnim::Locate( const FAnimTimeline& Timeline, float64 Playhead )
 {
 	FAnimLocation Location;
 	const int32 Num = Timeline.NumSteps();
-	if ( Num == 0 || Timeline.Total <= 0.0f ) return Location;
+	if ( Num == 0 || Timeline.Total <= 0.0f )
+	{
+		return Location;
+	}
 
 	const float64 Total = Timeline.Total;
 	int64 Cycles = 0;
@@ -85,7 +103,10 @@ FAnimLocation NAnim::Locate( const FAnimTimeline& Timeline, float64 Playhead )
 	const float32* const End = Begin + Num;
 	const float32* Found = NAlgo::UpperBound( Begin, End, static_cast<float32>( Time ) );
 	int32 Step = static_cast<int32>( Found - Begin );
-	if ( Step >= Num ) Step = Num - 1;
+	if ( Step >= Num )
+	{
+		Step = Num - 1;
+	}
 
 	Location.Step = Step;
 	Location.AbsoluteStep = Cycles * Num + Step;
@@ -94,7 +115,10 @@ FAnimLocation NAnim::Locate( const FAnimTimeline& Timeline, float64 Playhead )
 
 float32 NAnim::ToClipTime( float64 Playhead, float32 Length, EAnimLoopMode Mode )
 {
-	if ( Length <= 0.0f ) return 0.0f;
+	if ( Length <= 0.0f )
+	{
+		return 0.0f;
+	}
 	const float64 L = static_cast<float64>( Length );
 	switch ( Mode )
 	{
@@ -113,7 +137,10 @@ float32 NAnim::ToClipTime( float64 Playhead, float32 Length, EAnimLoopMode Mode 
 
 int32 NAnim::CountMarkerCrossings( float64 FromPlayhead, float64 ToPlayhead, float32 Marker, float32 Length, EAnimLoopMode Mode )
 {
-	if ( Length <= 0.0f || FromPlayhead == ToPlayhead || Marker < 0.0f || Marker > Length ) return 0;
+	if ( Length <= 0.0f || FromPlayhead == ToPlayhead || Marker < 0.0f || Marker > Length )
+	{
+		return 0;
+	}
 	const float64 L = static_cast<float64>( Length );
 	const float64 M = static_cast<float64>( Marker );
 	const bool bForward = ToPlayhead > FromPlayhead;
@@ -142,13 +169,25 @@ int32 NAnim::CountMarkerCrossings( float64 FromPlayhead, float64 ToPlayhead, flo
 		if ( !bForward )
 		{
 			// [Low, High): Low ちょうどを含み、High ちょうどを含まない
-			if ( NMath::Abs( Offset + ( KFirst - 1.0 ) * Period - Low ) < 1.0e-12 ) First = KFirst - 1.0;
-			if ( NMath::Abs( Offset + KLast * Period - High ) < 1.0e-12 ) Last = KLast - 1.0;
+			if ( NMath::Abs( Offset + ( KFirst - 1.0 ) * Period - Low ) < 1.0e-12 )
+			{
+				First = KFirst - 1.0;
+			}
+			if ( NMath::Abs( Offset + KLast * Period - High ) < 1.0e-12 )
+			{
+				Last = KLast - 1.0;
+			}
 		}
-		if ( Last >= First ) Count += static_cast<int32>( NMath::Min( Last - First + 1.0, static_cast<float64>( MaxEnumerated ) ) );
+		if ( Last >= First )
+		{
+			Count += static_cast<int32>( NMath::Min( Last - First + 1.0, static_cast<float64>( MaxEnumerated ) ) );
+		}
 	};
 	CountSeries( M );
-	if ( Mode == EAnimLoopMode::PingPong && M > 0.0 && M < L ) CountSeries( 2.0 * L - M );
+	if ( Mode == EAnimLoopMode::PingPong && M > 0.0 && M < L )
+	{
+		CountSeries( 2.0 * L - M );
+	}
 	return NMath::Min( Count, MaxEnumerated );
 }
 

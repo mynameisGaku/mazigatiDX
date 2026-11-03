@@ -16,9 +16,15 @@ namespace NJson
 	template<typename T>
 	T GetOr( const NlohmannJson& Object, const char* Key, const T& Default )
 	{
-		if ( !Object.is_object() ) return Default;
+		if ( !Object.is_object() )
+		{
+			return Default;
+		}
 		const auto It = Object.find( Key );
-		if ( It == Object.end() || It->is_null() ) return Default;
+		if ( It == Object.end() || It->is_null() )
+		{
+			return Default;
+		}
 		try
 		{
 			return It->get<T>();
@@ -43,9 +49,15 @@ namespace NJson
 	// [x, y, z] を読む。無い・形が違うときは Default
 	inline FVector3 ReadVector3( const NlohmannJson& Object, const char* Key, const FVector3& Default )
 	{
-		if ( !Object.is_object() ) return Default;
+		if ( !Object.is_object() )
+		{
+			return Default;
+		}
 		const auto It = Object.find( Key );
-		if ( It == Object.end() || !It->is_array() || It->size() < 3 ) return Default;
+		if ( It == Object.end() || !It->is_array() || It->size() < 3 )
+		{
+			return Default;
+		}
 		try
 		{
 			return FVector3( ( *It )[0].get<float32>(), ( *It )[1].get<float32>(), ( *It )[2].get<float32>() );

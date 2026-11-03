@@ -43,12 +43,18 @@ void CContactEventQueue::Dispatch( CPhysicsSystem& System, FContactListenerRegis
 	// （複合形状で、接触する部位が同じステップの中で入れ替わっても、End と Begin の対が途切れないようにする）
 	for ( const FEvent& Event : DispatchBuffer )
 	{
-		if ( Event.Type != EEventType::Added ) continue;
+		if ( Event.Type != EEventType::Added )
+		{
+			continue;
+		}
 		Registry.DeliverBodyBegin( System, Event.Body1.GetIndexAndSequenceNumber(), Event.Body2.GetIndexAndSequenceNumber(), Event.Info );
 	}
 	for ( const FEvent& Event : DispatchBuffer )
 	{
-		if ( Event.Type != EEventType::Removed ) continue;
+		if ( Event.Type != EEventType::Removed )
+		{
+			continue;
+		}
 		Registry.DeliverBodyEnd( System, Event.Body1.GetIndexAndSequenceNumber(), Event.Body2.GetIndexAndSequenceNumber() );
 	}
 
@@ -74,9 +80,15 @@ void CContactEventQueue::RemoveIgnoredPair( const PhysBodyID& BodyA, const PhysB
 {
 	const uint64 Key = NContactRules::MakePairKey( BodyA.GetIndexAndSequenceNumber(), BodyB.GetIndexAndSequenceNumber() );
 	int32* Count = IgnoredPairs.Find( Key );
-	if ( Count == nullptr ) return;
+	if ( Count == nullptr )
+	{
+		return;
+	}
 
-	if ( --( *Count ) <= 0 ) IgnoredPairs.Remove( Key );
+	if ( --( *Count ) <= 0 )
+	{
+		IgnoredPairs.Remove( Key );
+	}
 }
 
 JPH::ValidateResult CContactEventQueue::OnContactValidate( const JPH::Body& Body1, const JPH::Body& Body2, JPH::RVec3Arg, const JPH::CollideShapeResult& )
@@ -101,7 +113,10 @@ void CContactEventQueue::OnContactPersisted( const JPH::Body& Body1, const JPH::
 
 void CContactEventQueue::OnContactRemoved( const JPH::SubShapeIDPair& SubShapePair )
 {
-	if ( !bEnabled.Load( EMemoryOrder::Relaxed ) ) return;
+	if ( !bEnabled.Load( EMemoryOrder::Relaxed ) )
+	{
+		return;
+	}
 
 	FScopedLock Lock( Mutex );
 	Events.Add( { EEventType::Removed, SubShapePair.GetBody1ID(), SubShapePair.GetBody2ID(), FContactInfo{} } );
@@ -109,7 +124,10 @@ void CContactEventQueue::OnContactRemoved( const JPH::SubShapeIDPair& SubShapePa
 
 void CContactEventQueue::Push( EEventType Type, const JPH::Body& Body1, const JPH::Body& Body2, const JPH::ContactManifold& Manifold )
 {
-	if ( !bEnabled.Load( EMemoryOrder::Relaxed ) ) return;
+	if ( !bEnabled.Load( EMemoryOrder::Relaxed ) )
+	{
+		return;
+	}
 
 	FContactInfo Info;
 	Info.Normal           = NPhysics::FromPhys( Manifold.mWorldSpaceNormal );

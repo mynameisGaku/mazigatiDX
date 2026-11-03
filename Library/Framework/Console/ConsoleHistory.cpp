@@ -9,15 +9,24 @@ void FConsoleHistory::Add( const FString& Line )
 {
 	ResetNavigation();
 	const FString Trimmed = Line.TrimStartAndEnd();
-	if ( Trimmed.IsEmpty() ) return;
+	if ( Trimmed.IsEmpty() )
+	{
+		return;
+	}
 
 	// 同じ行が過去にあれば、そちらを消して、最後（一番新しい）に足す
 	for ( int32 i = Lines.Num() - 1; i >= 0; --i )
 	{
-		if ( Lines[i] == Trimmed ) Lines.RemoveAt( i );
+		if ( Lines[i] == Trimmed )
+		{
+			Lines.RemoveAt( i );
+		}
 	}
 	Lines.Add( Trimmed );
-	while ( Lines.Num() > MaxEntries ) Lines.RemoveAt( 0 );
+	while ( Lines.Num() > MaxEntries )
+	{
+		Lines.RemoveAt( 0 );
+	}
 }
 
 void FConsoleHistory::Clear()
@@ -29,7 +38,10 @@ void FConsoleHistory::Clear()
 void FConsoleHistory::SetAll( const TArray<FString>& InLines )
 {
 	Lines.Empty();
-	for ( const FString& Line : InLines ) Add( Line );
+	for ( const FString& Line : InLines )
+	{
+		Add( Line );
+	}
 	ResetNavigation();
 }
 
@@ -41,19 +53,28 @@ void FConsoleHistory::ResetNavigation()
 
 FString FConsoleHistory::Previous( const FString& CurrentInput )
 {
-	if ( Lines.IsEmpty() ) return CurrentInput;
+	if ( Lines.IsEmpty() )
+	{
+		return CurrentInput;
+	}
 	if ( Cursor == INDEX_NONE )
 	{
 		Saved = CurrentInput;
 		Cursor = Lines.Num();
 	}
-	if ( Cursor > 0 ) --Cursor;
+	if ( Cursor > 0 )
+	{
+		--Cursor;
+	}
 	return Lines[Cursor];
 }
 
 FString FConsoleHistory::Next( const FString& CurrentInput )
 {
-	if ( Cursor == INDEX_NONE ) return CurrentInput;
+	if ( Cursor == INDEX_NONE )
+	{
+		return CurrentInput;
+	}
 	++Cursor;
 	if ( Cursor >= Lines.Num() )
 	{
@@ -67,10 +88,16 @@ FString FConsoleHistory::Next( const FString& CurrentInput )
 TArray<FString> FConsoleHistory::FindMatches( const FString& Prefix, int32 MaxCount ) const
 {
 	TArray<FString> Matches;
-	if ( Prefix.IsEmpty() ) return Matches;
+	if ( Prefix.IsEmpty() )
+	{
+		return Matches;
+	}
 	for ( int32 i = Lines.Num() - 1; i >= 0 && Matches.Num() < MaxCount; --i )
 	{
-		if ( Lines[i].StartsWith( Prefix, ESearchCase::IgnoreCase ) && !Lines[i].Equals( Prefix, ESearchCase::IgnoreCase ) ) Matches.Add( Lines[i] );
+		if ( Lines[i].StartsWith( Prefix, ESearchCase::IgnoreCase ) && !Lines[i].Equals( Prefix, ESearchCase::IgnoreCase ) )
+		{
+			Matches.Add( Lines[i] );
+		}
 	}
 	return Matches;
 }

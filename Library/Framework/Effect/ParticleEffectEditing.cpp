@@ -11,7 +11,10 @@ namespace
 		// 既存の名前の一覧。
 		TArray<FString> Names;
 		// 登録順にあるエミッターから名前を取り出す。
-		for ( const FParticleEmitterDefinition& Emitter : Document.Get().Emitters ) Names.Add( Emitter.Name );
+		for ( const FParticleEmitterDefinition& Emitter : Document.Get().Emitters )
+		{
+			Names.Add( Emitter.Name );
+		}
 		return Names;
 	}
 
@@ -38,7 +41,10 @@ namespace
 
 int32 NParticleEdit::AddEmitter( TParticleEffectDocument& Document, const FString& Name )
 {
-	if ( Document.Get().Emitters.Num() >= FParticleEffectDefinition::MaxEmitters ) return INDEX_NONE;
+	if ( Document.Get().Emitters.Num() >= FParticleEffectDefinition::MaxEmitters )
+	{
+		return INDEX_NONE;
+	}
 	// 既存の名前と重ならない、新しいエミッター。
 	FParticleEmitterDefinition Emitter;
 	Emitter.Name = NDefinitionEdit::MakeUniqueName( EmitterNames( Document ), Name, "Emitter" );
@@ -47,7 +53,10 @@ int32 NParticleEdit::AddEmitter( TParticleEffectDocument& Document, const FStrin
 
 int32 NParticleEdit::DuplicateEmitter( TParticleEffectDocument& Document, int32 Index )
 {
-	if ( !Document.Get().Emitters.IsValidIndex( Index ) || Document.Get().Emitters.Num() >= FParticleEffectDefinition::MaxEmitters ) return INDEX_NONE;
+	if ( !Document.Get().Emitters.IsValidIndex( Index ) || Document.Get().Emitters.Num() >= FParticleEffectDefinition::MaxEmitters )
+	{
+		return INDEX_NONE;
+	}
 	// 編集開始前に内容をコピーし、配列の移動で参照が失われないようにする。
 	FParticleEmitterDefinition Emitter = Document.Get().Emitters[Index];
 	Emitter.Name = NDefinitionEdit::MakeUniqueName( EmitterNames( Document ), Emitter.Name, "Emitter" );
@@ -57,14 +66,20 @@ int32 NParticleEdit::DuplicateEmitter( TParticleEffectDocument& Document, int32 
 
 bool NParticleEdit::RemoveEmitter( TParticleEffectDocument& Document, int32 Index )
 {
-	if ( !Document.Get().Emitters.IsValidIndex( Index ) ) return false;
+	if ( !Document.Get().Emitters.IsValidIndex( Index ) )
+	{
+		return false;
+	}
 	Document.BeginEdit().Emitters.RemoveAt( Index );
 	return true;
 }
 
 bool NParticleEdit::MoveEmitter( TParticleEffectDocument& Document, int32 From, int32 To )
 {
-	if ( !Document.Get().Emitters.IsValidIndex( From ) || !Document.Get().Emitters.IsValidIndex( To ) || From == To ) return false;
+	if ( !Document.Get().Emitters.IsValidIndex( From ) || !Document.Get().Emitters.IsValidIndex( To ) || From == To )
+	{
+		return false;
+	}
 	// 移すエミッターの内容を、削除前に保存する。
 	const FParticleEmitterDefinition Moving = Document.Get().Emitters[From];
 	// 1 回の取り消しで戻せる、並べ替え対象の配列。
@@ -76,11 +91,17 @@ bool NParticleEdit::MoveEmitter( TParticleEffectDocument& Document, int32 From, 
 
 bool NParticleEdit::SetEmitter( TParticleEffectDocument& Document, int32 Index, const FParticleEmitterDefinition& Emitter, const char* Key )
 {
-	if ( !Document.Get().Emitters.IsValidIndex( Index ) ) return false;
+	if ( !Document.Get().Emitters.IsValidIndex( Index ) )
+	{
+		return false;
+	}
 	// 一括生成の順番だけを正規化し、範囲や数値は入力どおり保つ。
 	FParticleEmitterDefinition Updated = Emitter;
 	Updated.SortBursts();
-	if ( EmitterHash( Document.Get().Emitters[Index] ) == EmitterHash( Updated ) ) return false;
+	if ( EmitterHash( Document.Get().Emitters[Index] ) == EmitterHash( Updated ) )
+	{
+		return false;
+	}
 	Document.BeginEdit( Key ).Emitters[Index] = Updated;
 	return true;
 }
@@ -89,7 +110,10 @@ bool NParticleEdit::SetProperties( TParticleEffectDocument& Document, const FStr
 {
 	// 比較に使う、編集前の定義。
 	const FParticleEffectDefinition& Current = Document.Get();
-	if ( Current.Name == Name && PropertiesHash( Current.Duration, Current.bLoop, Current.Seed ) == PropertiesHash( Duration, bLoop, Seed ) ) return false;
+	if ( Current.Name == Name && PropertiesHash( Current.Duration, Current.bLoop, Current.Seed ) == PropertiesHash( Duration, bLoop, Seed ) )
+	{
+		return false;
+	}
 	// エミッターや形式の版には触れず、全体の設定だけを更新する。
 	FParticleEffectDefinition& Updated = Document.BeginEdit( Key );
 	Updated.Name = Name;

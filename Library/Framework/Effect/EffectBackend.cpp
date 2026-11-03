@@ -7,7 +7,10 @@
 //=============================================================================
 void FEffectBackendRegistry::Add( const TSharedPtr<IEffectBackend>& Backend )
 {
-	if ( !Backend.IsValid() ) return;
+	if ( !Backend.IsValid() )
+	{
+		return;
+	}
 	for ( TSharedPtr<IEffectBackend>& Existing : Backends )
 	{
 		if ( FString( Existing->GetName() ) == FString( Backend->GetName() ) )
@@ -36,7 +39,10 @@ IEffectBackend* FEffectBackendRegistry::Find( const FString& Path ) const
 {
 	for ( const TSharedPtr<IEffectBackend>& Backend : Backends )
 	{
-		if ( Backend->CanPlay( Path ) ) return Backend.Get();
+		if ( Backend->CanPlay( Path ) )
+		{
+			return Backend.Get();
+		}
 	}
 	return nullptr;
 }
@@ -46,8 +52,14 @@ TSharedPtr<IEffectPlayback> FEffectBackendRegistry::Play( const FString& Path, C
 	// 扱えると言ったバックエンドが読み込めなかったら、次のバックエンドに聞く（拡張子が重なる外部ライブラリの置き換えのため）
 	for ( const TSharedPtr<IEffectBackend>& Backend : Backends )
 	{
-		if ( !Backend->CanPlay( Path ) ) continue;
-		if ( TSharedPtr<IEffectPlayback> Playback = Backend->Play( Path, Assets, Params, World ); Playback.IsValid() ) return Playback;
+		if ( !Backend->CanPlay( Path ) )
+		{
+			continue;
+		}
+		if ( TSharedPtr<IEffectPlayback> Playback = Backend->Play( Path, Assets, Params, World ); Playback.IsValid() )
+		{
+			return Playback;
+		}
 	}
 	return nullptr;
 }

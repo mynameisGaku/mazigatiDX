@@ -172,8 +172,15 @@ struct alignas( 16 ) FMatrix4x4
 	FORCEINLINE constexpr bool operator==( const FMatrix4x4& B ) const
 	{
 		for ( int32 i = 0; i < 4; ++i )
+		{
 			for ( int32 j = 0; j < 4; ++j )
-				if ( m[i][j] != B.m[i][j] ) return false;
+			{
+				if ( m[i][j] != B.m[i][j] )
+				{
+					return false;
+				}
+			}
+		}
 		return true;
 	}
 	constexpr bool operator!=( const FMatrix4x4& B ) const { return !( *this == B ); }
@@ -258,8 +265,15 @@ struct alignas( 16 ) FMatrix4x4
 	FORCEINLINE bool Equals( const FMatrix4x4& B, float32 Tolerance = NMath::Epsilon ) const
 	{
 		for ( int32 i = 0; i < 4; ++i )
+		{
 			for ( int32 j = 0; j < 4; ++j )
-				if ( NMath::Abs( m[i][j] - B.m[i][j] ) > Tolerance ) return false;
+			{
+				if ( NMath::Abs( m[i][j] - B.m[i][j] ) > Tolerance )
+				{
+					return false;
+				}
+			}
+		}
 		return true;
 	}
 };

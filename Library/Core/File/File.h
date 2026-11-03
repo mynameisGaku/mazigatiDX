@@ -96,7 +96,10 @@ public:
 	// 閉じる（書き込みの残りをファイルへ出す）。閉じて失敗しなければ true。開いていなければ何もせず true。
 	bool Close()
 	{
-		if ( Handle == nullptr ) return true;
+		if ( Handle == nullptr )
+		{
+			return true;
+		}
 		const int Result = std::fclose( Handle );
 		Handle = nullptr;
 		return Result == 0;
@@ -121,7 +124,10 @@ public:
 	// 書式（NCString::Format と同じ）で書く。長さに上限はない。書けたら true。
 	bool Printf( _Printf_format_string_ const char* InFormat, ... )
 	{
-		if ( Handle == nullptr ) return false;
+		if ( Handle == nullptr )
+		{
+			return false;
+		}
 		va_list Args;
 		va_start( Args, InFormat );
 		const int Result = std::vfprintf( Handle, InFormat, Args );
@@ -147,12 +153,18 @@ namespace NFile
 	{
 		OutBytes.Reset();
 		FFile File;
-		if ( !File.Open( Path, FFile::EMode::Read, bText ) ) return false;
+		if ( !File.Open( Path, FFile::EMode::Read, bText ) )
+		{
+			return false;
+		}
 		uint8 Chunk[8192];
 		for ( ;; )
 		{
 			const usize Read = File.Read( Chunk, sizeof( Chunk ) );
-			if ( Read == 0 ) break;
+			if ( Read == 0 )
+			{
+				break;
+			}
 			OutBytes.Append( Chunk, static_cast<int32>( Read ) );
 		}
 		return !File.HasError();
@@ -162,7 +174,10 @@ namespace NFile
 	inline bool WriteAllBytes( const FString& Path, const void* Data, usize Size, bool bText = false )
 	{
 		FFile File;
-		if ( !File.Open( Path, FFile::EMode::Write, bText ) ) return false;
+		if ( !File.Open( Path, FFile::EMode::Write, bText ) )
+		{
+			return false;
+		}
 		const usize Written = File.Write( Data, Size );
 		const bool bClosed = File.Close();
 		return Written == Size && bClosed;

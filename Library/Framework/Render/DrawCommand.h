@@ -975,7 +975,10 @@ void ForEachDrawCommand( const FDrawSpan& Span, TFunction&& Function )
 	{
 		const uint32 Header = *Word;
 		const int32 NumWords = static_cast<int32>( Header >> 16 );
-		if ( NumWords < 1 || Word + NumWords > End ) break;   // 壊れた並び（起きないはず）
+		if ( NumWords < 1 || Word + NumWords > End )
+		{
+			break;   // 壊れた並び（起きないはず）
+		}
 
 		FDrawCommandView View;
 		View.Type = static_cast<EDrawCommand>( Header & 0xFFu );

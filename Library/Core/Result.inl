@@ -12,7 +12,10 @@ auto TResult<T, E>::MapImpl( Self&& This, F&& Func )
 {
 	using U   = TDecayT<TInvokeResultT<F, decltype( ForwardOk( Forward<Self>( This ) ) )>>;
 	using Out = TResult<U, E>;
-	if ( This.IsErr() ) return Out::Err( ForwardErr( Forward<Self>( This ) ) );
+	if ( This.IsErr() )
+	{
+		return Out::Err( ForwardErr( Forward<Self>( This ) ) );
+	}
 	if constexpr ( bIsVoid<U> )
 	{
 		Forward<F>( Func )( ForwardOk( Forward<Self>( This ) ) );
@@ -30,7 +33,10 @@ auto TResult<void, E>::Map( F&& Func ) const
 {
 	using U   = TDecayT<TInvokeResultT<F>>;
 	using Out = TResult<U, E>;
-	if ( IsErr() ) return Out::Err( Error.GetValue() );
+	if ( IsErr() )
+	{
+		return Out::Err( Error.GetValue() );
+	}
 	if constexpr ( bIsVoid<U> )
 	{
 		Forward<F>( Func )();

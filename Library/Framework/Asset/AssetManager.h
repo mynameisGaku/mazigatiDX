@@ -97,7 +97,10 @@ public:
 	template<typename T>
 	const TSharedPtr<T>& Add( const TSharedPtr<T>& Asset )
 	{
-		if ( Asset.IsValid() ) Assets.Add( TSharedPtr<CAsset>( Asset ) );
+		if ( Asset.IsValid() )
+		{
+			Assets.Add( TSharedPtr<CAsset>( Asset ) );
+		}
 		return Asset;
 	}
 

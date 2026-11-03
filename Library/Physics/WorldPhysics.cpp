@@ -15,7 +15,10 @@ REGISTER_SUBSYSTEM( CWorldTriggerSubsystem )
 void CWorldColliderComponent::OnDetach()
 {
 	// トリガーの重なりの記録は、CWorldTriggerSubsystem が、剛体が無くなったことを見て片付ける（ここからは触らない: シーンの片付けで、先に無くなっていることがある）
-	if ( Physics != nullptr && Body != nullptr ) Physics->DestroyBody( Body );
+	if ( Physics != nullptr && Body != nullptr )
+	{
+		Physics->DestroyBody( Body );
+	}
 	Body = nullptr;
 }
 
@@ -27,11 +30,17 @@ namespace
 
 	void SpawnCollider( FWorldSpawnContext& Context )
 	{
-		if ( !Context.Definition.Collider.IsSet() ) return;
+		if ( !Context.Definition.Collider.IsSet() )
+		{
+			return;
+		}
 		const FWorldCollider& Spec = Context.Definition.Collider.GetValue();
 
 		const FWorldCollisionDecision Decision = NWorld::ResolveCollision( Context.World.Settings, Context.Definition );
-		if ( !Decision.bEnabled ) return;
+		if ( !Decision.bEnabled )
+		{
+			return;
+		}
 
 		CPhysicsSubsystem* Physics = Context.Scene.GetSubsystem<CPhysicsSubsystem>();
 		if ( Physics == nullptr )
@@ -134,7 +143,10 @@ namespace
 		CWorldColliderComponent* Component = Context.Object.AddComponent<CWorldColliderComponent>( *Physics, Body, Spec.bTrigger );
 		if ( Spec.bTrigger )
 		{
-			if ( CWorldTriggerSubsystem* Triggers = GetTriggers( Context.Scene ) ) Triggers->Register( *Component );
+			if ( CWorldTriggerSubsystem* Triggers = GetTriggers( Context.Scene ) )
+			{
+				Triggers->Register( *Component );
+			}
 		}
 	}
 }
@@ -154,7 +166,10 @@ void CWorldTriggerSubsystem::Initialize( FSubsystemCollection& Collection )
 
 void CWorldTriggerSubsystem::Deinitialize()
 {
-	if ( Physics != nullptr && bListening ) Physics->RemoveContactListener( this );
+	if ( Physics != nullptr && bListening )
+	{
+		Physics->RemoveContactListener( this );
+	}
 	bListening = false;
 	Triggers.Empty();
 	Physics = nullptr;
@@ -184,16 +199,28 @@ void CWorldTriggerSubsystem::Tick( float32 )
 		TArray<uint32> GoneOthers;
 		for ( const uint32 Overlap : Pair.Value.Overlaps )
 		{
-			if ( Physics->FindBody( PhysBodyID( Overlap ) ) == nullptr ) GoneOthers.Add( Overlap );
+			if ( Physics->FindBody( PhysBodyID( Overlap ) ) == nullptr )
+			{
+				GoneOthers.Add( Overlap );
+			}
 		}
-		for ( const uint32 Key : GoneOthers ) Pair.Value.Overlaps.Remove( Key );
+		for ( const uint32 Key : GoneOthers )
+		{
+			Pair.Value.Overlaps.Remove( Key );
+		}
 	}
-	for ( const uint32 Key : GoneTriggers ) Triggers.Remove( Key );
+	for ( const uint32 Key : GoneTriggers )
+	{
+		Triggers.Remove( Key );
+	}
 }
 
 void CWorldTriggerSubsystem::Register( CWorldColliderComponent& Trigger )
 {
-	if ( Physics == nullptr || Trigger.GetBody() == nullptr ) return;
+	if ( Physics == nullptr || Trigger.GetBody() == nullptr )
+	{
+		return;
+	}
 	FTriggerState& State = Triggers.FindOrAdd( Trigger.GetBody()->GetBodyID().GetIndexAndSequenceNumber() );
 	State.Component = &Trigger;
 	if ( !bListening )
@@ -205,7 +232,10 @@ void CWorldTriggerSubsystem::Register( CWorldColliderComponent& Trigger )
 
 int32 CWorldTriggerSubsystem::GetNumOverlaps( const CWorldColliderComponent& Trigger ) const
 {
-	if ( Trigger.GetBody() == nullptr ) return 0;
+	if ( Trigger.GetBody() == nullptr )
+	{
+		return 0;
+	}
 	const FTriggerState* State = Triggers.Find( Trigger.GetBody()->GetBodyID().GetIndexAndSequenceNumber() );
 	return State != nullptr ? State->Overlaps.Num() : 0;
 }
@@ -225,26 +255,44 @@ void CWorldTriggerSubsystem::OnBodyContactEnd( FRigidBody* BodyA, FRigidBody* Bo
 void CWorldTriggerSubsystem::HandleAdded( FRigidBody* TriggerBody, FRigidBody* Other )
 {
 	FTriggerState* State = Triggers.Find( TriggerBody->GetBodyID().GetIndexAndSequenceNumber() );
-	if ( State == nullptr || State->Component == nullptr ) return;
-	if ( !State->Overlaps.Add( Other->GetBodyID().GetIndexAndSequenceNumber() ) ) return;
+	if ( State == nullptr || State->Component == nullptr )
+	{
+		return;
+	}
+	if ( !State->Overlaps.Add( Other->GetBodyID().GetIndexAndSequenceNumber() ) )
+	{
+		return;
+	}
 
 	// コールバックの中で、物を作る・消してもよいように、必要なものを取り出してから呼ぶ（State はもう使わない）
 	CWorldColliderComponent* Component = State->Component;
 	const CWorldColliderComponent::FTriggerCallback Callback = Component->GetOnEnter();
 	CGameObject* Owner = Component->GetOwner();
-	if ( Callback && Owner != nullptr ) Callback( *Owner, *Other );
+	if ( Callback && Owner != nullptr )
+	{
+		Callback( *Owner, *Other );
+	}
 }
 
 void CWorldTriggerSubsystem::HandleRemoved( FRigidBody* TriggerBody, FRigidBody* Other )
 {
 	FTriggerState* State = Triggers.Find( TriggerBody->GetBodyID().GetIndexAndSequenceNumber() );
-	if ( State == nullptr || State->Component == nullptr ) return;
-	if ( State->Overlaps.Remove( Other->GetBodyID().GetIndexAndSequenceNumber() ) == 0 ) return;
+	if ( State == nullptr || State->Component == nullptr )
+	{
+		return;
+	}
+	if ( State->Overlaps.Remove( Other->GetBodyID().GetIndexAndSequenceNumber() ) == 0 )
+	{
+		return;
+	}
 
 	CWorldColliderComponent* Component = State->Component;
 	const CWorldColliderComponent::FTriggerCallback Callback = Component->GetOnExit();
 	CGameObject* Owner = Component->GetOwner();
-	if ( Callback && Owner != nullptr ) Callback( *Owner, *Other );
+	if ( Callback && Owner != nullptr )
+	{
+		Callback( *Owner, *Other );
+	}
 }
 
 //=============================================================================
@@ -258,7 +306,10 @@ void NPhysicsWorld::RegisterSpawners( FWorldSpawnerRegistry& Registry )
 bool NPhysicsWorld::SetTriggerCallbacks( CGameObject& Trigger, CWorldColliderComponent::FTriggerCallback OnEnter, CWorldColliderComponent::FTriggerCallback OnExit )
 {
 	CWorldColliderComponent* Component = Trigger.GetComponent<CWorldColliderComponent>();
-	if ( Component == nullptr || !Component->IsTrigger() ) return false;
+	if ( Component == nullptr || !Component->IsTrigger() )
+	{
+		return false;
+	}
 	Component->SetOnEnter( MoveTemp( OnEnter ) );
 	Component->SetOnExit( MoveTemp( OnExit ) );
 	return true;

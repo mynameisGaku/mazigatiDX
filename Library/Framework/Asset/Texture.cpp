@@ -15,7 +15,10 @@ CTexture::CTexture( const FString& InPath, int32 InHandle, const TSharedPtr<CTex
 	, Width( InWidth )
 	, Height( InHeight )
 {
-	for ( int32 Index = 0; Index < 4; ++Index ) PolygonUvBounds[Index] = InPolygonUvBounds[Index];
+	for ( int32 Index = 0; Index < 4; ++Index )
+	{
+		PolygonUvBounds[Index] = InPolygonUvBounds[Index];
+	}
 }
 
 CTexture::~CTexture()
@@ -25,10 +28,19 @@ CTexture::~CTexture()
 
 void CTexture::RefreshSize() const
 {
-	if ( Width > 0 && Height > 0 ) return;
+	if ( Width > 0 && Height > 0 )
+	{
+		return;
+	}
 	IAssetBackend* Backend = NAssetService::GetBackend();
-	if ( Backend == nullptr || Handle < 0 ) return;
-	if ( bAsync && Backend->IsLoading( Handle ) ) return;
+	if ( Backend == nullptr || Handle < 0 )
+	{
+		return;
+	}
+	if ( bAsync && Backend->IsLoading( Handle ) )
+	{
+		return;
+	}
 
 	int32 W = 0;
 	int32 H = 0;
@@ -53,15 +65,24 @@ int32 CTexture::GetHeight() const
 
 bool CTexture::IsReady() const
 {
-	if ( Handle < 0 ) return false;
-	if ( !bAsync ) return true;
+	if ( Handle < 0 )
+	{
+		return false;
+	}
+	if ( !bAsync )
+	{
+		return true;
+	}
 	IAssetBackend* Backend = NAssetService::GetBackend();
 	return Backend != nullptr && !Backend->IsLoading( Handle );
 }
 
 int64 CTexture::GetMemoryBytes() const
 {
-	if ( ParentTexture.IsValid() ) return 0;
+	if ( ParentTexture.IsValid() )
+	{
+		return 0;
+	}
 	return static_cast<int64>( GetWidth() ) * GetHeight() * 4;
 }
 

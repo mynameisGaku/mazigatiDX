@@ -6,7 +6,10 @@
 
 bool NConsole::ParseInt64( const FString& Text, int64& Out )
 {
-	if ( Text.IsEmpty() ) return false;
+	if ( Text.IsEmpty() )
+	{
+		return false;
+	}
 	// 前後の空白・先頭の + は受け付けるが、途中の空白は受け付けない
 	const char* Begin = *Text;
 	char* End = nullptr;
@@ -14,27 +17,51 @@ bool NConsole::ParseInt64( const FString& Text, int64& Out )
 
 	int Base = 10;
 	const char* Digits = Begin;
-	if ( *Digits == '+' || *Digits == '-' ) ++Digits;
-	if ( Digits[0] == '0' && ( Digits[1] == 'x' || Digits[1] == 'X' ) ) Base = 16;
+	if ( *Digits == '+' || *Digits == '-' )
+	{
+		++Digits;
+	}
+	if ( Digits[0] == '0' && ( Digits[1] == 'x' || Digits[1] == 'X' ) )
+	{
+		Base = 16;
+	}
 
 	const long long Value = NCString::ToInt64( Begin, &End, Base );
-	if ( End == Begin || *End != '\0' || NCString::HasRangeError() ) return false;
+	if ( End == Begin || *End != '\0' || NCString::HasRangeError() )
+	{
+		return false;
+	}
 	// strtoll は先頭の空白を読み飛ばすが、引数に空白は入らないので、ここでは拒否しておく
-	if ( Begin[0] == ' ' || Begin[0] == '\t' ) return false;
+	if ( Begin[0] == ' ' || Begin[0] == '\t' )
+	{
+		return false;
+	}
 	Out = Value;
 	return true;
 }
 
 bool NConsole::ParseFloat64( const FString& Text, float64& Out )
 {
-	if ( Text.IsEmpty() ) return false;
+	if ( Text.IsEmpty() )
+	{
+		return false;
+	}
 	const char* Begin = *Text;
-	if ( Begin[0] == ' ' || Begin[0] == '\t' ) return false;
+	if ( Begin[0] == ' ' || Begin[0] == '\t' )
+	{
+		return false;
+	}
 	char* End = nullptr;
 	NCString::ClearRangeError();
 	const double Value = NCString::ToFloat64( Begin, &End );
-	if ( End == Begin || *End != '\0' ) return false;
-	if ( !NMath::IsFinite( Value ) ) return false;   // nan / inf / 溢れ
+	if ( End == Begin || *End != '\0' )
+	{
+		return false;
+	}
+	if ( !NMath::IsFinite( Value ) )
+	{
+		return false;   // nan / inf / 溢れ
+	}
 	Out = Value;
 	return true;
 }

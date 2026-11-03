@@ -1890,8 +1890,12 @@ private:
 	static FORCEINLINE void PackAffine( float32 ( &Out )[12], const FMatrix4x4& Matrix )
 	{
 		for ( int32 Row = 0; Row < 4; ++Row )
+		{
 			for ( int32 Column = 0; Column < 3; ++Column )
+			{
 				Out[Row * 3 + Column] = Matrix.m[Row][Column];
+			}
+		}
 	}
 
 	// コマンド 1 つを末尾に足す。足した分は 0 で埋まってから書くので、隙間にも決まった値が入る（ビット単位で比べられる）

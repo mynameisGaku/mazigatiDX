@@ -56,7 +56,10 @@ void FModelAnimator::AddClip( const FString& Name, const TSharedPtr<CModel>& Sou
 
 int32 FModelAnimator::AddClipsFrom( const TSharedPtr<CModel>& Source, const FString& Prefix )
 {
-	if ( !Source.IsValid() ) return 0;
+	if ( !Source.IsValid() )
+	{
+		return 0;
+	}
 	if ( !Source->IsReady() )
 	{
 		LOG( LogModelAnimator, Warning, "AddClipsFrom: the model '%s' is still loading. No clip was added.", *Source->GetPath() );
@@ -81,14 +84,20 @@ bool FModelAnimator::HasClip( const FString& Name ) const
 TArray<FString> FModelAnimator::GetClipNames() const
 {
 	TArray<FString> Names;
-	for ( const FClip& Clip : Clips ) Names.Add( Clip.Name );
+	for ( const FClip& Clip : Clips )
+	{
+		Names.Add( Clip.Name );
+	}
 	return Names;
 }
 
 void FModelAnimator::ClearClips()
 {
 	Stop( 0.0f );
-	for ( FLayer& Layer : Layers ) DetachLayer( Layer );
+	for ( FLayer& Layer : Layers )
+	{
+		DetachLayer( Layer );
+	}
 	Layers.Empty();
 	Clips.Empty();
 	PartParents.Empty();
@@ -103,8 +112,14 @@ void FModelAnimator::ClearClips()
 
 float32 FModelAnimator::ResolveLengthUnits( FClip& Clip ) const
 {
-	if ( Clip.LengthUnits > 0.0f ) return Clip.LengthUnits;
-	if ( !Clip.Source.IsValid() || !Clip.Source->IsReady() ) return 0.0f;
+	if ( Clip.LengthUnits > 0.0f )
+	{
+		return Clip.LengthUnits;
+	}
+	if ( !Clip.Source.IsValid() || !Clip.Source->IsReady() )
+	{
+		return 0.0f;
+	}
 
 	for ( const FModelClipInfo& Info : Clip.Source->GetClips() )
 	{
@@ -125,7 +140,10 @@ float32 FModelAnimator::ResolveUnitsPerSecond() const
 float32 FModelAnimator::GetClipLength( const FString& Name ) const
 {
 	const FClip* Clip = FindClip( Name );
-	if ( Clip == nullptr ) return 0.0f;
+	if ( Clip == nullptr )
+	{
+		return 0.0f;
+	}
 	// 長さは再生を始めるときに決まる。まだなら、Source から読む（const なので書き戻さない）
 	if ( Clip->LengthUnits > 0.0f && NMath::IsFinite( Clip->LengthUnits ) )
 	{
@@ -149,7 +167,10 @@ float32 FModelAnimator::GetClipLength( const FString& Name ) const
 bool FModelAnimator::AddEvent( const FString& ClipName, float32 NormalizedTime, const FString& EventName )
 {
 	FClip* Clip = FindClip( ClipName );
-	if ( Clip == nullptr ) return false;
+	if ( Clip == nullptr )
+	{
+		return false;
+	}
 
 	FClip::FEvent Event;
 	Event.Normalized = NMath::Clamp( NormalizedTime, 0.0f, 1.0f );
@@ -169,9 +190,15 @@ void FModelAnimator::DetachLayer( FLayer& Layer )
 		bool bShared = false;
 		for ( const FLayer& Other : Layers )
 		{
-			if ( &Other != &Layer && Other.bAttached && Other.AttachIndex == Layer.AttachIndex ) bShared = true;
+			if ( &Other != &Layer && Other.bAttached && Other.AttachIndex == Layer.AttachIndex )
+			{
+				bShared = true;
+			}
 		}
-		if ( !bShared ) Instance->DetachAnim( Layer.AttachIndex );
+		if ( !bShared )
+		{
+			Instance->DetachAnim( Layer.AttachIndex );
+		}
 	}
 	Layer = FLayer();
 }
@@ -209,7 +236,10 @@ FModelAnimator::FLayer* FModelAnimator::AcquireLayer( int32 ClipSlot, int32 InPa
 	{
 		for ( FLayer& Layer : Layers )
 		{
-			if ( Victim == nullptr || Layer.Weight < Victim->Weight ) Victim = &Layer;
+			if ( Victim == nullptr || Layer.Weight < Victim->Weight )
+			{
+				Victim = &Layer;
+			}
 		}
 	}
 	DetachLayer( *Victim );
@@ -220,7 +250,10 @@ FModelAnimator::FLayer* FModelAnimator::AcquireLayer( int32 ClipSlot, int32 InPa
 
 int32 FModelAnimator::FindPrimaryLayer() const
 {
-	if ( PrimaryClipSlot == INDEX_NONE ) return INDEX_NONE;
+	if ( PrimaryClipSlot == INDEX_NONE )
+	{
+		return INDEX_NONE;
+	}
 	return Layers.IndexOfByPredicate( [this]( const FLayer& Layer ) { return Layer.ClipSlot == PrimaryClipSlot && Layer.PartFrame < 0; } );
 }
 
@@ -259,7 +292,10 @@ FModelAnimator::FLayer* FModelAnimator::StartClip( FClip& Clip, int32 InPartFram
 		const int32 AttachIndex = Instance->AttachAnim( Clip.Source, Clip.AnimIndex, false ); // このAnimator専用のanimation添付。
 		if ( AttachIndex < 0 )
 		{
-			if ( Layer->Weight <= 0.0f ) *Layer = FLayer();   // 付けられなかったので、層を空に戻す
+			if ( Layer->Weight <= 0.0f )
+			{
+				*Layer = FLayer();   // 付けられなかったので、層を空に戻す
+			}
 			return nullptr;
 		}
 		Layer->AttachIndex = AttachIndex;
@@ -534,7 +570,10 @@ void FModelAnimator::Update( float32 DeltaTime )
 
 	for ( FLayer& Layer : Layers )
 	{
-		if ( Layer.ClipSlot == INDEX_NONE || !Layer.bAttached ) continue;
+		if ( Layer.ClipSlot == INDEX_NONE || !Layer.bAttached )
+		{
+			continue;
+		}
 
 		// 重み
 		if ( Layer.Weight != Layer.TargetWeight )
@@ -554,7 +593,10 @@ void FModelAnimator::Update( float32 DeltaTime )
 				Layer.Weight -= static_cast<float32>( Step );
 			}
 		}
-		if ( Layer.Weight <= 0.0f && Layer.TargetWeight <= 0.0f ) continue;   // 働いていない層は、時間も進めない
+		if ( Layer.Weight <= 0.0f && Layer.TargetWeight <= 0.0f )
+		{
+			continue;   // 働いていない層は、時間も進めない
+		}
 
 		// 時間
 		const float64 PlaybackSpeed = NMath::IsFinite( Speed ) ? static_cast<float64>( Speed ) : 0.0;
@@ -591,7 +633,10 @@ void FModelAnimator::Update( float32 DeltaTime )
 		for ( const FClip::FEvent& Event : Clip.Events )
 		{
 			const int32 Count = NAnim::CountMarkerCrossings( Layer.PrevPlayhead, Layer.Playhead, Event.Normalized * Layer.LengthSeconds, Layer.LengthSeconds, Layer.Loop );
-			for ( int32 i = 0; i < Count; ++i ) Events.Add( Event.Name );
+			for ( int32 i = 0; i < Count; ++i )
+			{
+				Events.Add( Event.Name );
+			}
 		}
 
 		if ( bReachedEnd && Layer.PartFrame < 0 && Layer.ClipSlot == PrimaryClipSlot && Layer.TargetWeight > 0.0f && !bFinished )
@@ -634,7 +679,10 @@ const FModelMaterialEffectRenderer& FModelAnimator::GetMaterialEffect() const
 void FModelAnimator::Seek( float32 NormalizedTime )
 {
 	const int32 Index = FindPrimaryLayer();
-	if ( Index == INDEX_NONE ) return;
+	if ( Index == INDEX_NONE )
+	{
+		return;
+	}
 
 	FLayer& Layer = Layers[Index];
 	// 1 ちょうどだと、Loop では先頭に戻ってしまうので、手前で止める
@@ -902,7 +950,10 @@ bool FModelAnimator::IsPlaying() const
 float32 FModelAnimator::GetNormalizedTime() const
 {
 	const int32 Index = FindPrimaryLayer();
-	if ( Index == INDEX_NONE ) return 0.0f;
+	if ( Index == INDEX_NONE )
+	{
+		return 0.0f;
+	}
 	const FLayer& Layer = Layers[Index];
 	return NAnim::ToNormalized( Layer.Playhead, Layer.LengthSeconds, Layer.Loop );
 }
@@ -910,7 +961,10 @@ float32 FModelAnimator::GetNormalizedTime() const
 float32 FModelAnimator::GetPlayTime() const
 {
 	const int32 Index = FindPrimaryLayer();
-	if ( Index == INDEX_NONE ) return 0.0f;
+	if ( Index == INDEX_NONE )
+	{
+		return 0.0f;
+	}
 	const FLayer& Layer = Layers[Index];
 	return NAnim::ToClipTime( Layer.Playhead, Layer.LengthSeconds, Layer.Loop );
 }
@@ -920,7 +974,10 @@ int32 FModelAnimator::GetNumActiveLayers() const
 	int32 Count = 0;
 	for ( const FLayer& Layer : Layers )
 	{
-		if ( Layer.bAttached && ( Layer.Weight > 0.0f || Layer.TargetWeight > 0.0f ) ) ++Count;
+		if ( Layer.bAttached && ( Layer.Weight > 0.0f || Layer.TargetWeight > 0.0f ) )
+		{
+			++Count;
+		}
 	}
 	return Count;
 }
@@ -930,13 +987,19 @@ TArray<FModelAnimator::FLayerInfo> FModelAnimator::GetLayerInfos() const
 	float32 Sum = 0.0f;
 	for ( const FLayer& Layer : Layers )
 	{
-		if ( Layer.bAttached && Layer.Weight > 0.0f ) Sum += Layer.Weight;
+		if ( Layer.bAttached && Layer.Weight > 0.0f )
+		{
+			Sum += Layer.Weight;
+		}
 	}
 
 	TArray<FLayerInfo> Infos;
 	for ( const FLayer& Layer : Layers )
 	{
-		if ( !Layer.bAttached ) continue;
+		if ( !Layer.bAttached )
+		{
+			continue;
+		}
 		FLayerInfo Info;
 		Info.ClipName = Clips.IsValidIndex( Layer.ClipSlot ) ? Clips[Layer.ClipSlot].Name : FString();
 		Info.Weight = Sum > 0.0f && Layer.Weight > 0.0f ? Layer.Weight / Sum : 0.0f;
@@ -950,7 +1013,10 @@ TArray<FModelAnimator::FLayerInfo> FModelAnimator::GetLayerInfos() const
 bool FModelAnimator::ConsumeEvent( const FString& Name )
 {
 	const int32 Index = Events.Find( Name );
-	if ( Index == INDEX_NONE ) return false;
+	if ( Index == INDEX_NONE )
+	{
+		return false;
+	}
 	Events.RemoveAt( Index );
 	return true;
 }
@@ -960,10 +1026,16 @@ bool FModelAnimator::ConsumeEvent( const FString& Name )
 //-----------------------------------------------------------------------------
 void FModelAnimator::Record( FDrawContext& Draw, const FMatrix4x4& World ) const
 {
-	if ( !bVisible || !Instance.IsValid() ) return;
+	if ( !bVisible || !Instance.IsValid() )
+	{
+		return;
+	}
 	// このobject個体のnative model handle。
 	const int32 Handle = Instance->GetHandle();
-	if ( Handle < 0 ) return;
+	if ( Handle < 0 )
+	{
+		return;
+	}
 
 	// 付けているアニメーションすべての時間と割合を毎回伝える（働いていないものは 0 にして、前の値を残さない）。
 	// 割合は NAnimationBlend で決める（体全体の層は合計 1、体の一部の層は、その骨とその子だけ）
@@ -976,7 +1048,10 @@ void FModelAnimator::Record( FDrawContext& Draw, const FMatrix4x4& World ) const
 	for ( int32 Index = 0; Index < Layers.Num(); ++Index )
 	{
 		const FLayer& Layer = Layers[Index];
-		if ( !Layer.bAttached ) continue;
+		if ( !Layer.bAttached )
+		{
+			continue;
+		}
 		// モデルの時間の単位へ変換した層の再生位置。
 		const float32 Time = NAnim::ToClipTime( Layer.Playhead, Layer.LengthSeconds, Layer.Loop ) * ResolveUnitsPerSecond();
 		Draw.ModelAnimLayer( Handle, Layer.AttachIndex, NMath::IsFinite( Time ) ? Time : 0.0f, Blend.WholeRates[Index] );
@@ -995,7 +1070,10 @@ void FModelAnimator::Record( FDrawContext& Draw, const FMatrix4x4& World ) const
 	// 既存のModelと材質効果の双方へ渡す完全なworld matrix。
 	const FMatrix4x4 ModelWorld = Local * World;
 	// 選択材質効果が記録を引き受けたときは全Model命令を重ねない。
-	if ( MaterialEffect.Record( Draw, Instance, ModelWorld ) ) return;
+	if ( MaterialEffect.Record( Draw, Instance, ModelWorld ) )
+	{
+		return;
+	}
 	Draw.Model( Handle, ModelWorld );
 }
 

@@ -14,7 +14,10 @@ namespace NConstraintRules
 	// 1 ステップで関節がかけた力積（インパルス）を、力（トルク）へ直す。ステップの時間が 0 以下・NaN なら 0
 	inline float32 ImpulseToLoad( float32 Impulse, float32 StepDelta )
 	{
-		if ( !( StepDelta > 0.0f ) ) return 0.0f;
+		if ( !( StepDelta > 0.0f ) )
+		{
+			return 0.0f;
+		}
 		return Impulse / StepDelta;
 	}
 
@@ -33,7 +36,10 @@ namespace NConstraintRules
 	// 0 以上の力・トルク・摩擦。NaN と負は不可。無限大は「上限なし」として MaxFloat にする
 	inline bool NormalizeNonNegative( float32 Value, float32& OutValue )
 	{
-		if ( NMath::IsNaN( Value ) || Value < 0.0f ) return false;
+		if ( NMath::IsNaN( Value ) || Value < 0.0f )
+		{
+			return false;
+		}
 		OutValue = NMath::IsInfinite( Value ) ? NMath::MaxFloat : Value;
 		return true;
 	}
@@ -41,7 +47,10 @@ namespace NConstraintRules
 	// 端の値を、有限の範囲に収める（無限大は MaxFloat）。NaN は不可
 	inline bool NormalizeEdge( float32 Value, float32& OutValue )
 	{
-		if ( NMath::IsNaN( Value ) ) return false;
+		if ( NMath::IsNaN( Value ) )
+		{
+			return false;
+		}
 		OutValue = NMath::Clamp( Value, -NMath::MaxFloat, NMath::MaxFloat );
 		return true;
 	}
@@ -55,24 +64,42 @@ namespace NConstraintRules
 	{
 		float32 LimitMin = 0.0f;
 		float32 LimitMax = 0.0f;
-		if ( !NormalizeEdge( Min, LimitMin ) || !NormalizeEdge( Max, LimitMax ) ) return false;
+		if ( !NormalizeEdge( Min, LimitMin ) || !NormalizeEdge( Max, LimitMax ) )
+		{
+			return false;
+		}
 
 		switch ( Type )
 		{
 		case EConstraintType::Hinge:
-			if ( LimitMin > 0.0f || LimitMax < 0.0f ) return false;
+			if ( LimitMin > 0.0f || LimitMax < 0.0f )
+			{
+				return false;
+			}
 			LimitMin = NMath::Max( LimitMin, -NMath::PI );
 			LimitMax = NMath::Min( LimitMax, NMath::PI );
 			break;
 		case EConstraintType::Slider:
-			if ( LimitMin > 0.0f || LimitMax < 0.0f ) return false;
+			if ( LimitMin > 0.0f || LimitMax < 0.0f )
+			{
+				return false;
+			}
 			break;
 		case EConstraintType::Distance:
 			if ( LimitMin < 0.0f || LimitMax < 0.0f )
 			{
-				if ( !bAllowAuto ) return false;
-				if ( LimitMin < 0.0f ) LimitMin = -1.0f;
-				if ( LimitMax < 0.0f ) LimitMax = -1.0f;
+				if ( !bAllowAuto )
+				{
+					return false;
+				}
+				if ( LimitMin < 0.0f )
+				{
+					LimitMin = -1.0f;
+				}
+				if ( LimitMax < 0.0f )
+				{
+					LimitMax = -1.0f;
+				}
 			}
 			else if ( LimitMin > LimitMax )
 			{
@@ -86,7 +113,10 @@ namespace NConstraintRules
 		}
 
 		// 範囲が 1 点に潰れるのに、硬く止めると動けない
-		if ( LimitMin == LimitMax && Spring.Frequency <= 0.0f ) return false;
+		if ( LimitMin == LimitMax && Spring.Frequency <= 0.0f )
+		{
+			return false;
+		}
 
 		OutMin = LimitMin;
 		OutMax = LimitMax;

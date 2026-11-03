@@ -21,7 +21,10 @@ namespace NContactRules
 	//   LayerMask は、どちらかの剛体のレイヤーが含まれていれば届ける
 	inline bool Accepts( bool bHasBody, uint32 BodyKey, uint32 LayerMask, uint32 KeyA, uint32 LayerA, uint32 KeyB, uint32 LayerB )
 	{
-		if ( bHasBody && BodyKey != KeyA && BodyKey != KeyB ) return false;
+		if ( bHasBody && BodyKey != KeyA && BodyKey != KeyB )
+		{
+			return false;
+		}
 		return ( LayerMask & ( NCollisionLayer::ToMask( LayerA ) | NCollisionLayer::ToMask( LayerB ) ) ) != 0;
 	}
 

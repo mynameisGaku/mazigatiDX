@@ -14,14 +14,23 @@ namespace
 		const FVector3 Edge1 = B - A, Edge2 = C - A;
 		const FVector3 P = FVector3::Cross( Direction, Edge2 );
 		const float32 Determinant = FVector3::Dot( Edge1, P );
-		if ( NMath::Abs( Determinant ) < 1.0e-12f ) return false;
+		if ( NMath::Abs( Determinant ) < 1.0e-12f )
+		{
+			return false;
+		}
 		const float32 InvDeterminant = 1.0f / Determinant;
 		const FVector3 ToOrigin = Origin - A;
 		const float32 U = FVector3::Dot( ToOrigin, P ) * InvDeterminant;
-		if ( U < 0.0f || U > 1.0f ) return false;
+		if ( U < 0.0f || U > 1.0f )
+		{
+			return false;
+		}
 		const FVector3 Q = FVector3::Cross( ToOrigin, Edge1 );
 		const float32 V = FVector3::Dot( Direction, Q ) * InvDeterminant;
-		if ( V < 0.0f || U + V > 1.0f ) return false;
+		if ( V < 0.0f || U + V > 1.0f )
+		{
+			return false;
+		}
 		OutT = FVector3::Dot( Edge2, Q ) * InvDeterminant;
 		return true;
 	}
@@ -32,7 +41,10 @@ namespace
 		const FVector2 Segment = B - A;
 		const float32 LengthSquared = Segment.x * Segment.x + Segment.y * Segment.y;
 		float32 T = 0.0f;
-		if ( LengthSquared > 1.0e-12f ) T = NMath::Clamp( ( ( Point.x - A.x ) * Segment.x + ( Point.y - A.y ) * Segment.y ) / LengthSquared, 0.0f, 1.0f );
+		if ( LengthSquared > 1.0e-12f )
+		{
+			T = NMath::Clamp( ( ( Point.x - A.x ) * Segment.x + ( Point.y - A.y ) * Segment.y ) / LengthSquared, 0.0f, 1.0f );
+		}
 		const FVector2 Closest( A.x + Segment.x * T, A.y + Segment.y * T );
 		return NMath::Hypot( Point.x - Closest.x, Point.y - Closest.y );
 	}
@@ -62,7 +74,10 @@ namespace
 			if ( RayTriangle( LocalEye, Direction, Mesh.Vertices[static_cast<int32>( Triangles.Indices[i] )], Mesh.Vertices[static_cast<int32>( Triangles.Indices[i + 1] )], Mesh.Vertices[static_cast<int32>( Triangles.Indices[i + 2] )], T ) )
 			{
 				// 点に届く前（99.5% まで）に面があれば、隠れている。点を使う面は、点のところ（T = 1）で当たるので隠さない
-				if ( T > 1.0e-4f && T < 0.995f ) return false;
+				if ( T > 1.0e-4f && T < 0.995f )
+				{
+					return false;
+				}
 			}
 		}
 		return true;
@@ -81,7 +96,10 @@ FEditMeshHit NWorldEditor::PickMeshElement( const FEditMesh& Mesh, const FTransf
 	const FVector2 Mouse( X, Y );
 	const FVector3 Eye = Camera.GetEye();
 	FTriangles Triangles;
-	if ( Options.bOnlyVisible || Element == EEditMeshElement::Face ) Triangles = MakeTriangles( Mesh );
+	if ( Options.bOnlyVisible || Element == EEditMeshElement::Face )
+	{
+		Triangles = MakeTriangles( Mesh );
+	}
 
 	switch ( Element )
 	{
@@ -92,19 +110,37 @@ FEditMeshHit NWorldEditor::PickMeshElement( const FEditMesh& Mesh, const FTransf
 		Used.Init( false, Mesh.GetNumVertices() );
 		for ( int32 Face = 0; Face < Mesh.GetNumFaces(); ++Face )
 		{
-			if ( !Mesh.IsFaceValid( Face ) ) continue;
-			for ( const int32 Index : Mesh.Faces[Face].Indices ) Used[Index] = true;
+			if ( !Mesh.IsFaceValid( Face ) )
+			{
+				continue;
+			}
+			for ( const int32 Index : Mesh.Faces[Face].Indices )
+			{
+				Used[Index] = true;
+			}
 		}
 		float32 Best = Options.VertexRadius;
 		for ( int32 Vertex = 0; Vertex < Mesh.GetNumVertices(); ++Vertex )
 		{
-			if ( !Used[Vertex] ) continue;
+			if ( !Used[Vertex] )
+			{
+				continue;
+			}
 			FVector2 Pixel;
 			const FVector3 Point = World.TransformPoint( Mesh.Vertices[Vertex] );
-			if ( !Camera.WorldToScreen( Viewport, Point, Pixel ) ) continue;
+			if ( !Camera.WorldToScreen( Viewport, Point, Pixel ) )
+			{
+				continue;
+			}
 			const float32 Distance = NMath::Hypot( Pixel.x - Mouse.x, Pixel.y - Mouse.y );
-			if ( Distance >= Best ) continue;
-			if ( Options.bOnlyVisible && !IsVisible( Mesh, Triangles, World, Eye, Point ) ) continue;
+			if ( Distance >= Best )
+			{
+				continue;
+			}
+			if ( Options.bOnlyVisible && !IsVisible( Mesh, Triangles, World, Eye, Point ) )
+			{
+				continue;
+			}
 			Best = Distance;
 			Hit.bHit = true;
 			Hit.Index = Vertex;
@@ -121,10 +157,19 @@ FEditMeshHit NWorldEditor::PickMeshElement( const FEditMesh& Mesh, const FTransf
 			NEditMesh::SplitEdgeKey( Edge, A, B );
 			const FVector3 PointA = World.TransformPoint( Mesh.Vertices[A] ), PointB = World.TransformPoint( Mesh.Vertices[B] );
 			FVector2 PixelA, PixelB;
-			if ( !Camera.WorldToScreen( Viewport, PointA, PixelA ) || !Camera.WorldToScreen( Viewport, PointB, PixelB ) ) continue;
+			if ( !Camera.WorldToScreen( Viewport, PointA, PixelA ) || !Camera.WorldToScreen( Viewport, PointB, PixelB ) )
+			{
+				continue;
+			}
 			const float32 Distance = PointSegmentDistance( Mouse, PixelA, PixelB );
-			if ( Distance >= Best ) continue;
-			if ( Options.bOnlyVisible && !IsVisible( Mesh, Triangles, World, Eye, ( PointA + PointB ) * 0.5f ) ) continue;
+			if ( Distance >= Best )
+			{
+				continue;
+			}
+			if ( Options.bOnlyVisible && !IsVisible( Mesh, Triangles, World, Eye, ( PointA + PointB ) * 0.5f ) )
+			{
+				continue;
+			}
 			Best = Distance;
 			Hit.bHit = true;
 			Hit.Edge = Edge;
@@ -141,13 +186,22 @@ FEditMeshHit NWorldEditor::PickMeshElement( const FEditMesh& Mesh, const FTransf
 		for ( int32 i = 0; i + 2 < Triangles.Indices.Num(); i += 3 )
 		{
 			float32 T = 0.0f;
-			if ( !RayTriangle( LocalOrigin, LocalDirection, Mesh.Vertices[static_cast<int32>( Triangles.Indices[i] )], Mesh.Vertices[static_cast<int32>( Triangles.Indices[i + 1] )], Mesh.Vertices[static_cast<int32>( Triangles.Indices[i + 2] )], T ) ) continue;
-			if ( T <= 0.0f || T >= BestT ) continue;
+			if ( !RayTriangle( LocalOrigin, LocalDirection, Mesh.Vertices[static_cast<int32>( Triangles.Indices[i] )], Mesh.Vertices[static_cast<int32>( Triangles.Indices[i + 1] )], Mesh.Vertices[static_cast<int32>( Triangles.Indices[i + 2] )], T ) )
+			{
+				continue;
+			}
+			if ( T <= 0.0f || T >= BestT )
+			{
+				continue;
+			}
 			BestT = T;
 			Hit.bHit = true;
 			Hit.Index = Triangles.FaceOf[i / 3];
 		}
-		if ( Hit.bHit ) Hit.Distance = FVector3::Distance( Ray.Origin, World.TransformPoint( LocalOrigin + LocalDirection * BestT ) );
+		if ( Hit.bHit )
+		{
+			Hit.Distance = FVector3::Distance( Ray.Origin, World.TransformPoint( LocalOrigin + LocalDirection * BestT ) );
+		}
 		break;
 	}
 	}
@@ -171,15 +225,27 @@ FEditMeshSelection NWorldEditor::FindMeshElementsInRect( const FEditMesh& Mesh, 
 		Used.Init( false, Mesh.GetNumVertices() );
 		for ( int32 Face = 0; Face < Mesh.GetNumFaces(); ++Face )
 		{
-			if ( !Mesh.IsFaceValid( Face ) ) continue;
-			for ( const int32 Index : Mesh.Faces[Face].Indices ) Used[Index] = true;
+			if ( !Mesh.IsFaceValid( Face ) )
+			{
+				continue;
+			}
+			for ( const int32 Index : Mesh.Faces[Face].Indices )
+			{
+				Used[Index] = true;
+			}
 		}
 		for ( int32 Vertex = 0; Vertex < Mesh.GetNumVertices(); ++Vertex )
 		{
-			if ( !Used[Vertex] ) continue;
+			if ( !Used[Vertex] )
+			{
+				continue;
+			}
 			FVector2 Pixel;
 			const FVector3 Point = World.TransformPoint( Mesh.Vertices[Vertex] );
-			if ( Camera.WorldToScreen( Viewport, Point, Pixel ) && Inside( Pixel ) && Visible( Point ) ) Result.Vertices.Add( Vertex );
+			if ( Camera.WorldToScreen( Viewport, Point, Pixel ) && Inside( Pixel ) && Visible( Point ) )
+			{
+				Result.Vertices.Add( Vertex );
+			}
 		}
 		break;
 	}
@@ -190,16 +256,25 @@ FEditMeshSelection NWorldEditor::FindMeshElementsInRect( const FEditMesh& Mesh, 
 			NEditMesh::SplitEdgeKey( Edge, A, B );
 			const FVector3 PointA = World.TransformPoint( Mesh.Vertices[A] ), PointB = World.TransformPoint( Mesh.Vertices[B] );
 			FVector2 PixelA, PixelB;
-			if ( Camera.WorldToScreen( Viewport, PointA, PixelA ) && Camera.WorldToScreen( Viewport, PointB, PixelB ) && Inside( PixelA ) && Inside( PixelB ) && Visible( ( PointA + PointB ) * 0.5f ) ) Result.Edges.Add( Edge );
+			if ( Camera.WorldToScreen( Viewport, PointA, PixelA ) && Camera.WorldToScreen( Viewport, PointB, PixelB ) && Inside( PixelA ) && Inside( PixelB ) && Visible( ( PointA + PointB ) * 0.5f ) )
+			{
+				Result.Edges.Add( Edge );
+			}
 		}
 		break;
 	case EEditMeshElement::Face:
 		for ( int32 Face = 0; Face < Mesh.GetNumFaces(); ++Face )
 		{
-			if ( !Mesh.IsFaceValid( Face ) ) continue;
+			if ( !Mesh.IsFaceValid( Face ) )
+			{
+				continue;
+			}
 			FVector2 Pixel;
 			const FVector3 Point = World.TransformPoint( Mesh.ComputeFaceCenter( Face ) );
-			if ( Camera.WorldToScreen( Viewport, Point, Pixel ) && Inside( Pixel ) && Visible( Point ) ) Result.Faces.Add( Face );
+			if ( Camera.WorldToScreen( Viewport, Point, Pixel ) && Inside( Pixel ) && Visible( Point ) )
+			{
+				Result.Faces.Add( Face );
+			}
 		}
 		break;
 	}

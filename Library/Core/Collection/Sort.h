@@ -27,7 +27,10 @@ namespace NAlgo
 	template<typename T>
 	FORCEINLINE void Swap( T& A, T& B )
 	{
-		if ( &A == &B ) return;
+		if ( &A == &B )
+		{
+			return;
+		}
 		T Temp = MoveTemp( A );
 		A = MoveTemp( B );
 		B = MoveTemp( Temp );
@@ -36,7 +39,10 @@ namespace NAlgo
 	template<typename T>
 	FORCEINLINE void Reverse( T* First, int32 Num )
 	{
-		for ( int32 i = 0, j = Num - 1; i < j; ++i, --j ) Swap( First[i], First[j] );
+		for ( int32 i = 0, j = Num - 1; i < j; ++i, --j )
+		{
+			Swap( First[i], First[j] );
+		}
 	}
 
 	namespace NSortDetail
@@ -53,7 +59,10 @@ namespace NAlgo
 		template<typename T, typename P>
 		FORCEINLINE void HeapSort( T* First, int32 Num, P& Pred )
 		{
-			for ( int32 i = Num / 2 - 1; i >= 0; --i ) SiftDown( First, i, Num, Pred );
+			for ( int32 i = Num / 2 - 1; i >= 0; --i )
+			{
+				SiftDown( First, i, Num, Pred );
+			}
 			for ( int32 End = Num - 1; End > 0; --End )
 			{
 				Swap( First[0], First[End] );
@@ -68,9 +77,18 @@ namespace NAlgo
 			T* A = First + 1;
 			T* B = First + Num / 2;
 			T* C = First + Num - 1;
-			if ( Pred( *B, *A ) ) Swap( *A, *B );
-			if ( Pred( *C, *B ) ) Swap( *B, *C );
-			if ( Pred( *B, *A ) ) Swap( *A, *B );
+			if ( Pred( *B, *A ) )
+			{
+				Swap( *A, *B );
+			}
+			if ( Pred( *C, *B ) )
+			{
+				Swap( *B, *C );
+			}
+			if ( Pred( *B, *A ) )
+			{
+				Swap( *A, *B );
+			}
 			Swap( First[0], *B );
 		}
 
@@ -85,7 +103,10 @@ namespace NAlgo
 		FORCEINLINE int32 Log2Floor( int32 Value )
 		{
 			int32 Result = 0;
-			while ( Value > 1 ) { Value >>= 1; ++Result; }
+			while ( Value > 1 )
+			{
+				Value >>= 1; ++Result;
+			}
 			return Result;
 		}
 	}
@@ -94,7 +115,10 @@ namespace NAlgo
 	template<typename T, typename P>
 	FORCEINLINE void Sort( T* First, int32 Num, P Pred )
 	{
-		if ( Num < 2 ) return;
+		if ( Num < 2 )
+		{
+			return;
+		}
 		NSortDetail::IntroSort( First, Num, NSortDetail::Log2Floor( Num ) * 2, Pred );
 	}
 
@@ -105,7 +129,10 @@ namespace NAlgo
 	template<typename T, typename P>
 	FORCEINLINE void StableSort( T* First, int32 Num, P Pred )
 	{
-		if ( Num < 2 ) return;
+		if ( Num < 2 )
+		{
+			return;
+		}
 		T* Buffer = FMemory::AllocateArray<T>( Num / 2 + 1 );
 		NSortDetail::MergeSort( First, Num, Buffer, Pred );
 		FMemory::Free( Buffer );

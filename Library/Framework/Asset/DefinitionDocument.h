@@ -67,7 +67,10 @@ public:
 			return Definition;
 		}
 		const bool bContinue = Key != nullptr && !LastKey.empty() && LastKey == Key;
-		if ( !bContinue ) PushUndoSnapshot();
+		if ( !bContinue )
+		{
+			PushUndoSnapshot();
+		}
 		LastKey = Key != nullptr ? Key : "";
 		bDirty = true;
 		++Revision;
@@ -111,7 +114,10 @@ public:
 
 	bool Undo()
 	{
-		if ( UndoStack.IsEmpty() || BatchDepth > 0 ) return false;
+		if ( UndoStack.IsEmpty() || BatchDepth > 0 )
+		{
+			return false;
+		}
 		RedoStack.Add( Snapshot() );
 		Restore( UndoStack.Last() );
 		UndoStack.Pop();
@@ -120,7 +126,10 @@ public:
 
 	bool Redo()
 	{
-		if ( RedoStack.IsEmpty() || BatchDepth > 0 ) return false;
+		if ( RedoStack.IsEmpty() || BatchDepth > 0 )
+		{
+			return false;
+		}
 		UndoStack.Add( Snapshot() );
 		Restore( RedoStack.Last() );
 		RedoStack.Pop();
@@ -130,7 +139,10 @@ public:
 	// 最後の編集を元に戻して、やり直しにも残さない（編集の途中でやめたとき。ドラッグを Esc で取り消すなど）
 	bool UndoAndForget()
 	{
-		if ( UndoStack.IsEmpty() || BatchDepth > 0 ) return false;
+		if ( UndoStack.IsEmpty() || BatchDepth > 0 )
+		{
+			return false;
+		}
 		Restore( UndoStack.Last() );
 		UndoStack.Pop();
 		return true;
@@ -155,14 +167,20 @@ private:
 	void PushUndoSnapshot()
 	{
 		UndoStack.Add( Snapshot() );
-		if ( UndoStack.Num() > MaxHistory ) UndoStack.RemoveAt( 0 );
+		if ( UndoStack.Num() > MaxHistory )
+		{
+			UndoStack.RemoveAt( 0 );
+		}
 		RedoStack.Reset();
 	}
 
 	void Restore( const NJson::FJsonString& Json )
 	{
 		TDefinition Restored;
-		if ( TDefinition::FromJson( NlohmannJson::parse( Json, nullptr, false ), Restored ) ) Definition = Restored;
+		if ( TDefinition::FromJson( NlohmannJson::parse( Json, nullptr, false ), Restored ) )
+		{
+			Definition = Restored;
+		}
 		LastKey.clear();
 		bDirty = Snapshot() != SavedSnapshot;
 		++Revision;

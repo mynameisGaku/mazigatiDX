@@ -1,6 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef FRAMEWORK_CORE_COLLECTION_MAP_H
-#define FRAMEWORK_CORE_COLLECTION_MAP_H
+#pragma once
 #include "Library/Core/Types/CompilerMacros.h"
 #include <initializer_list>
 
@@ -81,7 +80,10 @@ public:
 	FORCEINLINE TMap( std::initializer_list<PairType> List )
 	{
 		Reserve( static_cast<int32>( List.size() ) );
-		for ( const PairType& Pair : List ) Add( Pair.Key, Pair.Value );
+		for ( const PairType& Pair : List )
+		{
+			Add( Pair.Key, Pair.Value );
+		}
 	}
 
 	//-------------------------------------------------------------------------
@@ -162,7 +164,10 @@ public:
 	{
 		for ( const PairType& Pair : Table )
 		{
-			if ( Pair.Value == Value ) return &Pair.Key;
+			if ( Pair.Value == Value )
+			{
+				return &Pair.Key;
+			}
 		}
 		return nullptr;
 	}
@@ -177,7 +182,10 @@ public:
 	FORCEINLINE bool RemoveAndCopyValue( const K& Key, V& OutValue )
 	{
 		const int32 Index = Table.FindIndex( Key );
-		if ( Index == INDEX_NONE ) return false;
+		if ( Index == INDEX_NONE )
+		{
+			return false;
+		}
 		OutValue = MoveTemp( Table.GetAt( Index ).Value );
 		Table.RemoveAt( Index );
 		return true;
@@ -197,7 +205,10 @@ public:
 	{
 		TArray<K> Keys;
 		Keys.Reserve( Num() );
-		for ( const PairType& Pair : Table ) Keys.Add( Pair.Key );
+		for ( const PairType& Pair : Table )
+		{
+			Keys.Add( Pair.Key );
+		}
 		return Keys;
 	}
 
@@ -205,7 +216,10 @@ public:
 	{
 		TArray<V> Values;
 		Values.Reserve( Num() );
-		for ( const PairType& Pair : Table ) Values.Add( Pair.Value );
+		for ( const PairType& Pair : Table )
+		{
+			Values.Add( Pair.Value );
+		}
 		return Values;
 	}
 
@@ -216,18 +230,27 @@ public:
 		TMap Result;
 		for ( const PairType& Pair : Table )
 		{
-			if ( Pred( Pair.Key, Pair.Value ) ) Result.Add( Pair.Key, Pair.Value );
+			if ( Pred( Pair.Key, Pair.Value ) )
+			{
+				Result.Add( Pair.Key, Pair.Value );
+			}
 		}
 		return Result;
 	}
 
 	friend FORCEINLINE bool operator==( const TMap& A, const TMap& B )
 	{
-		if ( A.Num() != B.Num() ) return false;
+		if ( A.Num() != B.Num() )
+		{
+			return false;
+		}
 		for ( const PairType& Pair : A.Table )
 		{
 			const V* Other = B.Find( Pair.Key );
-			if ( !Other || !( *Other == Pair.Value ) ) return false;
+			if ( !Other || !( *Other == Pair.Value ) )
+			{
+				return false;
+			}
 		}
 		return true;
 	}
@@ -251,5 +274,3 @@ private:
 };
 
 #include "Map.inl"
-
-#endif

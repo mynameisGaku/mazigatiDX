@@ -21,17 +21,29 @@ void CBrowserScene::OnEnter()
 	SelectedIndex = 0;
 	for ( int32 i = 0; i < Entries.Num(); ++i )
 	{
-		if ( Entries[i].Name == CSampleCatalog::Get().GetLastSelected() ) SelectedIndex = i;
+		if ( Entries[i].Name == CSampleCatalog::Get().GetLastSelected() )
+		{
+			SelectedIndex = i;
+		}
 	}
 }
 
 void CBrowserScene::OnTick( float32 DeltaTime )
 {
 	const IInput* Input = GetAppSubsystem<IInput>();
-	if ( Input == nullptr || Entries.IsEmpty() ) return;
+	if ( Input == nullptr || Entries.IsEmpty() )
+	{
+		return;
+	}
 
-	if ( Input->IsKeyPressed( EKey::Up ) || Input->IsKeyPressed( EKey::W ) ) MoveSelection( -1 );
-	if ( Input->IsKeyPressed( EKey::Down ) || Input->IsKeyPressed( EKey::S ) ) MoveSelection( 1 );
+	if ( Input->IsKeyPressed( EKey::Up ) || Input->IsKeyPressed( EKey::W ) )
+	{
+		MoveSelection( -1 );
+	}
+	if ( Input->IsKeyPressed( EKey::Down ) || Input->IsKeyPressed( EKey::S ) )
+	{
+		MoveSelection( 1 );
+	}
 
 	if ( Input->IsKeyPressed( EKey::Enter ) || Input->IsKeyPressed( EKey::Space ) )
 	{

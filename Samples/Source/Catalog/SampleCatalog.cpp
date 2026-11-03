@@ -2,14 +2,20 @@
 
 bool CSampleCatalog::IsValidName( const FString& Name )
 {
-	if ( Name.IsEmpty() ) return false;
+	if ( Name.IsEmpty() )
+	{
+		return false;
+	}
 
 	for ( int32 i = 0; i < Name.Len(); ++i )
 	{
 		const char Ch = Name[i];
 		const bool bLetter = ( Ch >= 'A' && Ch <= 'Z' ) || ( Ch >= 'a' && Ch <= 'z' );
 		const bool bDigitOrUnderscore = ( Ch >= '0' && Ch <= '9' ) || Ch == '_';
-		if ( !bLetter && !( i > 0 && bDigitOrUnderscore ) ) return false;
+		if ( !bLetter && !( i > 0 && bDigitOrUnderscore ) )
+		{
+			return false;
+		}
 	}
 	return true;
 }
@@ -48,7 +54,10 @@ TArray<FSampleInfo> CSampleCatalog::GetSorted() const
 	TArray<FSampleInfo> Sorted = Samples;
 	Sorted.Sort( []( const FSampleInfo& A, const FSampleInfo& B )
 				 {
-					 if ( A.Order != B.Order ) return A.Order < B.Order;
+					 if ( A.Order != B.Order )
+					 {
+						return A.Order < B.Order;
+					 }
 					 return A.Name < B.Name;
 				 } );
 	return Sorted;
@@ -58,7 +67,10 @@ const FSampleInfo* CSampleCatalog::Find( const FString& Name ) const
 {
 	for ( const FSampleInfo& Sample : Samples )
 	{
-		if ( Sample.Name == Name ) return &Sample;
+		if ( Sample.Name == Name )
+		{
+			return &Sample;
+		}
 	}
 	return nullptr;
 }

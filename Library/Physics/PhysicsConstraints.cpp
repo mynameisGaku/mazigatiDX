@@ -328,13 +328,19 @@ FPhysicsConstraint* CPhysicsSystem::CreateConstraint( FRigidBody* BodyA, FRigidB
 	JoltSystem->AddConstraint( Joint );  // 世界が参照を 1 つ持つ
 	Joint->AddRef();                     // こちらも 1 つ持つ（外すときに、世界から外してから手放す）
 
-	if ( !ConstraintSettings.bCollideConnected && BodyB != nullptr ) IgnoreCollision( *BodyA, *BodyB, true );
+	if ( !ConstraintSettings.bCollideConnected && BodyB != nullptr )
+	{
+		IgnoreCollision( *BodyA, *BodyB, true );
+	}
 
 	FPhysicsConstraint* Constraint = new FPhysicsConstraint( ConstraintSettings.Type, BodyA, BodyB, Joint, ConstraintSettings.bCollideConnected );
 	Constraint->BreakForce  = Prepared.BreakForce;
 	Constraint->BreakTorque = Prepared.BreakTorque;
 	Constraints.Add( TUniquePtr<FPhysicsConstraint>( Constraint ) );
-	if ( ConstraintSettings.bEnabled ) Constraint->WakeBodies();
+	if ( ConstraintSettings.bEnabled )
+	{
+		Constraint->WakeBodies();
+	}
 
 	LOG( LogPhysics, Verbose, "Created %s constraint (%d constraint(s) in the world)", ConstraintTypeToString( ConstraintSettings.Type ), Constraints.Num() );
 	return Constraint;
@@ -342,7 +348,10 @@ FPhysicsConstraint* CPhysicsSystem::CreateConstraint( FRigidBody* BodyA, FRigidB
 
 void CPhysicsSystem::DestroyConstraint( FPhysicsConstraint* Constraint )
 {
-	if ( Constraint == nullptr || !bInitialized ) return;
+	if ( Constraint == nullptr || !bInitialized )
+	{
+		return;
+	}
 
 	const int32 Index = Constraints.IndexOfByPredicate( [Constraint]( const TUniquePtr<FPhysicsConstraint>& Item ) { return Item.Get() == Constraint; } );
 	if ( Index == INDEX_NONE )
@@ -358,10 +367,19 @@ void CPhysicsSystem::DestroyConstraint( FPhysicsConstraint* Constraint )
 
 void CPhysicsSystem::DestroyAllConstraints()
 {
-	if ( !bInitialized ) return;
+	if ( !bInitialized )
+	{
+		return;
+	}
 
-	if ( !Constraints.IsEmpty() ) LOG( LogPhysics, Verbose, "Destroying all %d constraint(s)", Constraints.Num() );
-	for ( const TUniquePtr<FPhysicsConstraint>& Constraint : Constraints ) DetachConstraint( *Constraint, true );
+	if ( !Constraints.IsEmpty() )
+	{
+		LOG( LogPhysics, Verbose, "Destroying all %d constraint(s)", Constraints.Num() );
+	}
+	for ( const TUniquePtr<FPhysicsConstraint>& Constraint : Constraints )
+	{
+		DetachConstraint( *Constraint, true );
+	}
 	Constraints.Empty();
 }
 
@@ -372,7 +390,10 @@ int32 CPhysicsSystem::GetConstraintCount() const
 
 bool CPhysicsSystem::AddConstraintListener( IPhysicsConstraintListener* Listener )
 {
-	if ( Listener == nullptr ) return false;
+	if ( Listener == nullptr )
+	{
+		return false;
+	}
 
 	ConstraintListeners.AddUnique( Listener );
 	return true;
@@ -408,10 +429,16 @@ void CPhysicsSystem::UpdateConstraintLoads( float32 StepDelta )
 		FPhysicsConstraint& Constraint = *Item;
 		Constraint.AppliedForce  = 0.0f;
 		Constraint.AppliedTorque = 0.0f;
-		if ( Constraint.Joint == nullptr || !Constraint.Joint->GetEnabled() ) continue;
+		if ( Constraint.Joint == nullptr || !Constraint.Joint->GetEnabled() )
+		{
+			continue;
+		}
 
 		// つないだ剛体がどちらも眠っているなら、関節は解かれていない（前の力積が残っているだけ）
-		if ( !Constraint.BodyA->IsActive() && ( Constraint.BodyB == nullptr || !Constraint.BodyB->IsActive() ) ) continue;
+		if ( !Constraint.BodyA->IsActive() && ( Constraint.BodyB == nullptr || !Constraint.BodyB->IsActive() ) )
+		{
+			continue;
+		}
 
 		float32 ImpulseForce  = 0.0f;
 		float32 ImpulseTorque = 0.0f;
@@ -419,18 +446,27 @@ void CPhysicsSystem::UpdateConstraintLoads( float32 StepDelta )
 		Constraint.AppliedForce  = NConstraintRules::ImpulseToLoad( ImpulseForce, SolveDelta );
 		Constraint.AppliedTorque = NConstraintRules::ImpulseToLoad( ImpulseTorque, SolveDelta );
 
-		if ( !NConstraintRules::ShouldBreak( Constraint.AppliedForce, Constraint.AppliedTorque, Constraint.BreakForce, Constraint.BreakTorque ) ) continue;
+		if ( !NConstraintRules::ShouldBreak( Constraint.AppliedForce, Constraint.AppliedTorque, Constraint.BreakForce, Constraint.BreakTorque ) )
+		{
+			continue;
+		}
 
 		FBreak Break;
 		Break.Constraint  = &Constraint;
 		Break.IdA         = Constraint.BodyA->GetBodyID();
 		Break.bHasB       = Constraint.BodyB != nullptr;
-		if ( Break.bHasB ) Break.IdB = Constraint.BodyB->GetBodyID();
+		if ( Break.bHasB )
+		{
+			Break.IdB = Constraint.BodyB->GetBodyID();
+		}
 		Break.Info.Force  = Constraint.AppliedForce;
 		Break.Info.Torque = Constraint.AppliedTorque;
 		Breaks.Add( Break );
 	}
-	if ( Breaks.IsEmpty() ) return;
+	if ( Breaks.IsEmpty() )
+	{
+		return;
+	}
 
 	// 先にすべて外してから知らせる（通知の中で、世界の状態を触ってよいように）
 	for ( const FBreak& Break : Breaks )
@@ -439,7 +475,10 @@ void CPhysicsSystem::UpdateConstraintLoads( float32 StepDelta )
 		DetachConstraint( *Break.Constraint, true );
 		LOG( LogPhysics, Verbose, "A %s constraint broke (force %.1f N, torque %.1f N*m)", ConstraintTypeToString( Break.Constraint->Type ), Break.Info.Force, Break.Info.Torque );
 	}
-	if ( ConstraintListeners.IsEmpty() ) return;
+	if ( ConstraintListeners.IsEmpty() )
+	{
+		return;
+	}
 
 	const TArray<IPhysicsConstraintListener*> Listeners = ConstraintListeners;
 	for ( const FBreak& Break : Breaks )
@@ -447,11 +486,20 @@ void CPhysicsSystem::UpdateConstraintLoads( float32 StepDelta )
 		for ( IPhysicsConstraintListener* Listener : Listeners )
 		{
 			// 通知の中で、解除・破棄が起きていることがある。毎回確かめる
-			if ( !ConstraintListeners.Contains( Listener ) ) continue;
-			if ( !OwnsConstraint( Break.Constraint ) ) break;
+			if ( !ConstraintListeners.Contains( Listener ) )
+			{
+				continue;
+			}
+			if ( !OwnsConstraint( Break.Constraint ) )
+			{
+				break;
+			}
 			FRigidBody* BodyA = FindBody( Break.IdA );
 			FRigidBody* BodyB = Break.bHasB ? FindBody( Break.IdB ) : nullptr;
-			if ( BodyA == nullptr || ( Break.bHasB && BodyB == nullptr ) ) break;
+			if ( BodyA == nullptr || ( Break.bHasB && BodyB == nullptr ) )
+			{
+				break;
+			}
 
 			Listener->OnConstraintBroken( Break.Constraint, BodyA, BodyB, Break.Info );
 		}
@@ -460,8 +508,14 @@ void CPhysicsSystem::UpdateConstraintLoads( float32 StepDelta )
 
 void CPhysicsSystem::IgnoreCollision( const FRigidBody& BodyA, const FRigidBody& BodyB, bool bIgnore )
 {
-	if ( bIgnore ) ContactQueue->AddIgnoredPair( BodyA.GetBodyID(), BodyB.GetBodyID() );
-	else ContactQueue->RemoveIgnoredPair( BodyA.GetBodyID(), BodyB.GetBodyID() );
+	if ( bIgnore )
+	{
+		ContactQueue->AddIgnoredPair( BodyA.GetBodyID(), BodyB.GetBodyID() );
+	}
+	else
+	{
+		ContactQueue->RemoveIgnoredPair( BodyA.GetBodyID(), BodyB.GetBodyID() );
+	}
 
 	// Jolt は「ぶつからなかった」ことも組ごとに覚えていて、2 つが動かないうちは次のステップでも使い回す。
 	// 組の扱いが変わったので、その覚えを捨てて、次のステップで調べ直させる（止めたなら今の接触が消え、戻したなら接触が生まれる）
@@ -472,11 +526,20 @@ void CPhysicsSystem::IgnoreCollision( const FRigidBody& BodyA, const FRigidBody&
 
 void CPhysicsSystem::DetachConstraint( FPhysicsConstraint& Constraint, bool bWakeBodies )
 {
-	if ( Constraint.Joint == nullptr ) return;
+	if ( Constraint.Joint == nullptr )
+	{
+		return;
+	}
 
 	// つないでいた剛体は、支えを失うので起こす
-	if ( bWakeBodies ) Constraint.WakeBodies();
-	if ( !Constraint.bCollideConnected && Constraint.BodyA != nullptr && Constraint.BodyB != nullptr ) IgnoreCollision( *Constraint.BodyA, *Constraint.BodyB, false );
+	if ( bWakeBodies )
+	{
+		Constraint.WakeBodies();
+	}
+	if ( !Constraint.bCollideConnected && Constraint.BodyA != nullptr && Constraint.BodyB != nullptr )
+	{
+		IgnoreCollision( *Constraint.BodyA, *Constraint.BodyB, false );
+	}
 
 	JoltSystem->RemoveConstraint( Constraint.Joint );
 	Constraint.Joint->Release();
@@ -489,6 +552,9 @@ void CPhysicsSystem::DetachConstraintsOf( const FRigidBody* Body )
 {
 	for ( const TUniquePtr<FPhysicsConstraint>& Constraint : Constraints )
 	{
-		if ( Constraint->BodyA == Body || Constraint->BodyB == Body ) DetachConstraint( *Constraint, true );
+		if ( Constraint->BodyA == Body || Constraint->BodyB == Body )
+		{
+			DetachConstraint( *Constraint, true );
+		}
 	}
 }

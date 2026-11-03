@@ -20,7 +20,10 @@ const char* LogVerbosityToString( ELogVerbosity Verbosity )
 
 bool LogVerbosityFromString( const char* Text, ELogVerbosity& OutVerbosity )
 {
-	if ( Text == nullptr ) return false;
+	if ( Text == nullptr )
+	{
+		return false;
+	}
 
 	static constexpr ELogVerbosity All[] = {
 		ELogVerbosity::NoLogging, ELogVerbosity::Fatal, ELogVerbosity::Error, ELogVerbosity::Warning,

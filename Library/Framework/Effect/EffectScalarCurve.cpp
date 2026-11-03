@@ -11,10 +11,22 @@ namespace
 	// 保存名から補間方法を読む。未知の名前は既定値を保つ。
 	bool ParseInterpolation( const FString& Text, FEffectScalarCurve::EInterpolation& Out )
 	{
-		if ( Text.Equals( "Linear", ESearchCase::IgnoreCase ) ) Out = FEffectScalarCurve::EInterpolation::Linear;
-		else if ( Text.Equals( "Step", ESearchCase::IgnoreCase ) ) Out = FEffectScalarCurve::EInterpolation::Step;
-		else if ( Text.Equals( "Smooth", ESearchCase::IgnoreCase ) ) Out = FEffectScalarCurve::EInterpolation::Smooth;
-		else return false;
+		if ( Text.Equals( "Linear", ESearchCase::IgnoreCase ) )
+		{
+			Out = FEffectScalarCurve::EInterpolation::Linear;
+		}
+		else if ( Text.Equals( "Step", ESearchCase::IgnoreCase ) )
+		{
+			Out = FEffectScalarCurve::EInterpolation::Step;
+		}
+		else if ( Text.Equals( "Smooth", ESearchCase::IgnoreCase ) )
+		{
+			Out = FEffectScalarCurve::EInterpolation::Smooth;
+		}
+		else
+		{
+			return false;
+		}
 		return true;
 	}
 
@@ -35,7 +47,10 @@ namespace
 	{
 		// 読めない値が検証で見つかるよう、失敗値を NaN にする。
 		Out = TNumericLimits<float32>::QuietNaN();
-		if ( !Json.is_number() ) return false;
+		if ( !Json.is_number() )
+		{
+			return false;
+		}
 		try
 		{
 			Out = Json.get<float32>();
@@ -65,7 +80,10 @@ float32 FEffectScalarCurve::Evaluate( float32 Time, float32 DefaultValue ) const
 {
 	// 返す既定値にも非有限値を通さない。
 	const float32 SafeDefault = NMath::IsFinite( DefaultValue ) ? DefaultValue : 0.0f;
-	if ( !NMath::IsFinite( Time ) || Keys.IsEmpty() ) return SafeDefault;
+	if ( !NMath::IsFinite( Time ) || Keys.IsEmpty() )
+	{
+		return SafeDefault;
+	}
 	// 壊れた直接入力でも計算量と参照範囲を固定する。
 	const int32 Count = NMath::Min( Keys.Num(), MaxKeys );
 	int32 FirstIndex = INDEX_NONE; // 有限なキーのうち最小時刻を持つ位置。
@@ -76,23 +94,56 @@ float32 FEffectScalarCurve::Evaluate( float32 Time, float32 DefaultValue ) const
 	for ( int32 Index = 0; Index < Count; ++Index )
 	{
 		const FKey& Key = Keys[Index]; // 今回調べる有限値候補。
-		if ( !NMath::IsFinite( Key.Time ) || !NMath::IsFinite( Key.Value ) ) continue;
-		if ( FirstIndex == INDEX_NONE || Key.Time < Keys[FirstIndex].Time || ( Key.Time == Keys[FirstIndex].Time && Index < FirstIndex ) ) FirstIndex = Index;
-		if ( LastIndex == INDEX_NONE || Key.Time > Keys[LastIndex].Time || ( Key.Time == Keys[LastIndex].Time && Index < LastIndex ) ) LastIndex = Index;
-		if ( Key.Time <= Time && ( LowerIndex == INDEX_NONE || Key.Time > Keys[LowerIndex].Time || ( Key.Time == Keys[LowerIndex].Time && Index < LowerIndex ) ) ) LowerIndex = Index;
-		if ( Key.Time >= Time && ( UpperIndex == INDEX_NONE || Key.Time < Keys[UpperIndex].Time || ( Key.Time == Keys[UpperIndex].Time && Index < UpperIndex ) ) ) UpperIndex = Index;
+		if ( !NMath::IsFinite( Key.Time ) || !NMath::IsFinite( Key.Value ) )
+		{
+			continue;
+		}
+		if ( FirstIndex == INDEX_NONE || Key.Time < Keys[FirstIndex].Time || ( Key.Time == Keys[FirstIndex].Time && Index < FirstIndex ) )
+		{
+			FirstIndex = Index;
+		}
+		if ( LastIndex == INDEX_NONE || Key.Time > Keys[LastIndex].Time || ( Key.Time == Keys[LastIndex].Time && Index < LastIndex ) )
+		{
+			LastIndex = Index;
+		}
+		if ( Key.Time <= Time && ( LowerIndex == INDEX_NONE || Key.Time > Keys[LowerIndex].Time || ( Key.Time == Keys[LowerIndex].Time && Index < LowerIndex ) ) )
+		{
+			LowerIndex = Index;
+		}
+		if ( Key.Time >= Time && ( UpperIndex == INDEX_NONE || Key.Time < Keys[UpperIndex].Time || ( Key.Time == Keys[UpperIndex].Time && Index < UpperIndex ) ) )
+		{
+			UpperIndex = Index;
+		}
 	}
-	if ( FirstIndex == INDEX_NONE ) return SafeDefault;
-	if ( LowerIndex == INDEX_NONE ) return Keys[FirstIndex].Value;
-	if ( UpperIndex == INDEX_NONE ) return Keys[LastIndex].Value;
+	if ( FirstIndex == INDEX_NONE )
+	{
+		return SafeDefault;
+	}
+	if ( LowerIndex == INDEX_NONE )
+	{
+		return Keys[FirstIndex].Value;
+	}
+	if ( UpperIndex == INDEX_NONE )
+	{
+		return Keys[LastIndex].Value;
+	}
 	const FKey& Lower = Keys[LowerIndex]; // 評価時刻の左にあるキー。
 	const FKey& Upper = Keys[UpperIndex]; // 評価時刻の右にあるキー。
-	if ( LowerIndex == UpperIndex || Upper.Time <= Lower.Time ) return Lower.Value;
-	if ( Interpolation == EInterpolation::Step ) return Lower.Value;
+	if ( LowerIndex == UpperIndex || Upper.Time <= Lower.Time )
+	{
+		return Lower.Value;
+	}
+	if ( Interpolation == EInterpolation::Step )
+	{
+		return Lower.Value;
+	}
 	// double で差を計算し、有限な float32 端点の補間中も桁あふれを避ける。
 	double Alpha = ( static_cast<double>( Time ) - Lower.Time ) / ( static_cast<double>( Upper.Time ) - Lower.Time ); // 二つのキーの間での割合。
 	Alpha = NMath::Clamp( Alpha, 0.0, 1.0 );
-	if ( Interpolation == EInterpolation::Smooth ) Alpha = Alpha * Alpha * ( 3.0 - 2.0 * Alpha );
+	if ( Interpolation == EInterpolation::Smooth )
+	{
+		Alpha = Alpha * Alpha * ( 3.0 - 2.0 * Alpha );
+	}
 	const double Value = static_cast<double>( Lower.Value ) + ( static_cast<double>( Upper.Value ) - Lower.Value ) * Alpha; // 補間後の有限な値。
 	return NMath::IsFinite( Value ) ? static_cast<float32>( Value ) : SafeDefault;
 }
@@ -114,7 +165,10 @@ NlohmannJson FEffectScalarCurve::ToJson() const
 
 bool FEffectScalarCurve::FromJson( const NlohmannJson& Json, FEffectScalarCurve& Out, TArray<FString>* Warnings )
 {
-	if ( !Json.is_object() ) return false;
+	if ( !Json.is_object() )
+	{
+		return false;
+	}
 	FEffectScalarCurve Curve; // 入力を読んで組み立てる曲線。
 	if ( Json.contains( "Interpolation" ) )
 	{
@@ -122,14 +176,20 @@ bool FEffectScalarCurve::FromJson( const NlohmannJson& Json, FEffectScalarCurve&
 		if ( !ParseInterpolation( Text, Curve.Interpolation ) )
 		{
 			Curve.Interpolation = static_cast<EInterpolation>( 0xFFu );
-			if ( Warnings != nullptr ) Warnings->Add( "Interpolation が不明です。Validate で修正してください" );
+			if ( Warnings != nullptr )
+			{
+				Warnings->Add( "Interpolation が不明です。Validate で修正してください" );
+			}
 		}
 	}
 	if ( Json.contains( "Keys" ) )
 	{
 		if ( !Json["Keys"].is_array() )
 		{
-			if ( Warnings != nullptr ) Warnings->Add( "Keys は配列にしてください。Validate で修正してください" );
+			if ( Warnings != nullptr )
+			{
+				Warnings->Add( "Keys は配列にしてください。Validate で修正してください" );
+			}
 			FKey InvalidKey; // 不正な配列を Validate で検出させるキー。
 			InvalidKey.Time = TNumericLimits<float32>::QuietNaN();
 			InvalidKey.Value = TNumericLimits<float32>::QuietNaN();
@@ -152,11 +212,23 @@ bool FEffectScalarCurve::FromJson( const NlohmannJson& Json, FEffectScalarCurve&
 					const auto Value = Item.find( "Value" ); // 値フィールドの有無と値。
 					const bool bTimeValid = Time != Item.end() ? ReadFloat( *Time, Key.Time ) : false; // 時刻を正しく読めたか。
 					const bool bValueValid = Value != Item.end() ? ReadFloat( *Value, Key.Value ) : false; // 値を正しく読めたか。
-					if ( Time == Item.end() ) Key.Time = TNumericLimits<float32>::QuietNaN();
-					if ( Value == Item.end() ) Key.Value = TNumericLimits<float32>::QuietNaN();
-					if ( ( !bTimeValid || !bValueValid ) && Warnings != nullptr ) Warnings->Add( FString::Printf( "Keys[%d] の Time / Value は数値が必要です", Index ) );
+					if ( Time == Item.end() )
+					{
+						Key.Time = TNumericLimits<float32>::QuietNaN();
+					}
+					if ( Value == Item.end() )
+					{
+						Key.Value = TNumericLimits<float32>::QuietNaN();
+					}
+					if ( ( !bTimeValid || !bValueValid ) && Warnings != nullptr )
+					{
+						Warnings->Add( FString::Printf( "Keys[%d] の Time / Value は数値が必要です", Index ) );
+					}
 				}
-				if ( !Item.is_object() && Warnings != nullptr ) Warnings->Add( FString::Printf( "Keys[%d] はオブジェクトにしてください", Index ) );
+				if ( !Item.is_object() && Warnings != nullptr )
+				{
+					Warnings->Add( FString::Printf( "Keys[%d] はオブジェクトにしてください", Index ) );
+				}
 				Curve.Keys.Add( Key );
 			}
 		}
@@ -168,8 +240,14 @@ bool FEffectScalarCurve::FromJson( const NlohmannJson& Json, FEffectScalarCurve&
 TArray<FString> FEffectScalarCurve::Validate() const
 {
 	TArray<FString> Issues; // 見つかった曲線の問題。
-	if ( Interpolation != EInterpolation::Linear && Interpolation != EInterpolation::Step && Interpolation != EInterpolation::Smooth ) Issues.Add( "Interpolation が不正です" );
-	if ( Keys.Num() > MaxKeys ) Issues.Add( FString::Printf( "Keys は %d 個以下にしてください", MaxKeys ) );
+	if ( Interpolation != EInterpolation::Linear && Interpolation != EInterpolation::Step && Interpolation != EInterpolation::Smooth )
+	{
+		Issues.Add( "Interpolation が不正です" );
+	}
+	if ( Keys.Num() > MaxKeys )
+	{
+		Issues.Add( FString::Printf( "Keys は %d 個以下にしてください", MaxKeys ) );
+	}
 	float32 PreviousTime = 0.0f; // 直前の有限キーの時刻。
 	bool bHasPrevious = false; // 比較できる前のキーがあるか。
 	for ( int32 Index = 0; Index < Keys.Num(); ++Index )
@@ -180,8 +258,14 @@ TArray<FString> FEffectScalarCurve::Validate() const
 			Issues.Add( FString::Printf( "Keys[%d] の Time / Value は有限値にしてください", Index ) );
 			continue;
 		}
-		if ( Key.Time < 0.0f || Key.Time > 1.0f ) Issues.Add( FString::Printf( "Keys[%d].Time は 0 から 1 にしてください", Index ) );
-		if ( bHasPrevious && Key.Time <= PreviousTime ) Issues.Add( FString::Printf( "Keys[%d].Time は前のキーより大きくしてください", Index ) );
+		if ( Key.Time < 0.0f || Key.Time > 1.0f )
+		{
+			Issues.Add( FString::Printf( "Keys[%d].Time は 0 から 1 にしてください", Index ) );
+		}
+		if ( bHasPrevious && Key.Time <= PreviousTime )
+		{
+			Issues.Add( FString::Printf( "Keys[%d].Time は前のキーより大きくしてください", Index ) );
+		}
 		PreviousTime = Key.Time;
 		bHasPrevious = true;
 	}

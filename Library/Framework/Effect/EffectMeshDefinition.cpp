@@ -24,7 +24,10 @@ namespace
 	// JSON項目の型違いを呼び出し元へ伝える。
 	void Warn( TArray<FString>* Warnings, const char* Message )
 	{
-		if ( Warnings != nullptr ) Warnings->Add( Message );
+		if ( Warnings != nullptr )
+		{
+			Warnings->Add( Message );
+		}
 	}
 
 	// FNV-1aへ値のbyte列を追加する。
@@ -33,7 +36,10 @@ namespace
 	{
 		// hashへ混ぜる値のbyte列。
 		const uint8* Bytes = reinterpret_cast<const uint8*>( &Value );
-		for ( usize Index = 0; Index < sizeof( T ); ++Index ) { Hash ^= Bytes[Index]; Hash *= 1099511628211ull; }
+		for ( usize Index = 0; Index < sizeof( T ); ++Index )
+		{
+			Hash ^= Bytes[Index]; Hash *= 1099511628211ull;
+		}
 	}
 
 	// JSON numberをfloatへ読み、失敗はNaNで保持する。
@@ -41,9 +47,18 @@ namespace
 	{
 		// 読み取り不能を保存検証で見つける値。
 		Out = TNumericLimits<float32>::QuietNaN();
-		if ( !Json.is_number() ) return false;
-		try { Out = Json.get<float32>(); return true; }
-		catch ( const nlohmann::json::exception& ) { return false; }
+		if ( !Json.is_number() )
+		{
+			return false;
+		}
+		try
+		{
+			Out = Json.get<float32>(); return true;
+		}
+		catch ( const nlohmann::json::exception& )
+		{
+			return false;
+		}
 	}
 
 	// 三成分の厳密な数値配列を読む。
@@ -52,9 +67,18 @@ namespace
 		// 読み取り不能を保存検証で見つける成分。
 		const float32 Invalid = TNumericLimits<float32>::QuietNaN();
 		Out = FVector3( Invalid, Invalid, Invalid );
-		if ( !Json.is_array() || Json.size() != 3 || !Json[0].is_number() || !Json[1].is_number() || !Json[2].is_number() ) return false;
-		try { Out = FVector3( Json[0].get<float32>(), Json[1].get<float32>(), Json[2].get<float32>() ); return true; }
-		catch ( const nlohmann::json::exception& ) { return false; }
+		if ( !Json.is_array() || Json.size() != 3 || !Json[0].is_number() || !Json[1].is_number() || !Json[2].is_number() )
+		{
+			return false;
+		}
+		try
+		{
+			Out = FVector3( Json[0].get<float32>(), Json[1].get<float32>(), Json[2].get<float32>() ); return true;
+		}
+		catch ( const nlohmann::json::exception& )
+		{
+			return false;
+		}
 	}
 }
 
@@ -103,14 +127,29 @@ bool FEffectMeshDefinition::FromJson( const NlohmannJson& Json, FEffectMeshDefin
 	}
 	if ( Json.contains( "Kind" ) )
 	{
-		if ( !Json["Kind"].is_string() ) { Definition.InvalidFieldTypes |= InvalidKind; Definition.Kind = static_cast<EKind>( InvalidKindValue ); Warn( Warnings, "Kindは文字列にしてください" ); }
+		if ( !Json["Kind"].is_string() )
+		{
+			Definition.InvalidFieldTypes |= InvalidKind; Definition.Kind = static_cast<EKind>( InvalidKindValue ); Warn( Warnings, "Kindは文字列にしてください" );
+		}
 		else
 		{
 			const FString Kind = NJson::GetOr<FString>( Json, "Kind", FString() );
-			if ( Kind == "None" ) Definition.Kind = EKind::None;
-			else if ( Kind == "Plane" ) Definition.Kind = EKind::Plane;
-			else if ( Kind == "Ring" ) Definition.Kind = EKind::Ring;
-			else { Definition.InvalidFieldTypes |= InvalidKind; Definition.Kind = static_cast<EKind>( InvalidKindValue ); Warn( Warnings, "KindはNone、Plane、Ringのいずれかにしてください" ); }
+			if ( Kind == "None" )
+			{
+				Definition.Kind = EKind::None;
+			}
+			else if ( Kind == "Plane" )
+			{
+				Definition.Kind = EKind::Plane;
+			}
+			else if ( Kind == "Ring" )
+			{
+				Definition.Kind = EKind::Ring;
+			}
+			else
+			{
+				Definition.InvalidFieldTypes |= InvalidKind; Definition.Kind = static_cast<EKind>( InvalidKindValue ); Warn( Warnings, "KindはNone、Plane、Ringのいずれかにしてください" );
+			}
 		}
 	}
 	if ( Json.contains( "Segments" ) )
@@ -125,24 +164,51 @@ bool FEffectMeshDefinition::FromJson( const NlohmannJson& Json, FEffectMeshDefin
 				{
 					// int32変換前に符号なし整数の範囲を調べる。
 					const uint64 Value = Json["Segments"].get<uint64>();
-					if ( Value < 3 || Value > 128 ) bOutOfRange = true;
-					else Definition.Segments = static_cast<int32>( Value );
+					if ( Value < 3 || Value > 128 )
+					{
+						bOutOfRange = true;
+					}
+					else
+					{
+						Definition.Segments = static_cast<int32>( Value );
+					}
 				}
 				else
 				{
 					// int32へ狭める前に符号付き整数の範囲を調べる。
 					const int64 Value = Json["Segments"].get<int64>();
-					if ( Value < 3 || Value > 128 ) bOutOfRange = true;
-					else Definition.Segments = static_cast<int32>( Value );
+					if ( Value < 3 || Value > 128 )
+					{
+						bOutOfRange = true;
+					}
+					else
+					{
+						Definition.Segments = static_cast<int32>( Value );
+					}
 				}
 			}
-			catch ( const nlohmann::json::exception& ) { Definition.InvalidFieldTypes |= InvalidSegments; Warn( Warnings, "Segmentsは整数にしてください" ); }
-			if ( bOutOfRange ) { Definition.InvalidFieldTypes |= InvalidSegments; Warn( Warnings, "Segmentsは3から128にしてください" ); }
+			catch ( const nlohmann::json::exception& )
+			{
+				Definition.InvalidFieldTypes |= InvalidSegments; Warn( Warnings, "Segmentsは整数にしてください" );
+			}
+			if ( bOutOfRange )
+			{
+				Definition.InvalidFieldTypes |= InvalidSegments; Warn( Warnings, "Segmentsは3から128にしてください" );
+			}
 		}
-		else { Definition.InvalidFieldTypes |= InvalidSegments; Warn( Warnings, "Segmentsは整数にしてください" ); }
+		else
+		{
+			Definition.InvalidFieldTypes |= InvalidSegments; Warn( Warnings, "Segmentsは整数にしてください" );
+		}
 	}
-	if ( Json.contains( "InnerRadius" ) && !ReadFloat( Json["InnerRadius"], Definition.InnerRadius ) ) { Definition.InvalidFieldTypes |= InvalidInnerRadius; Warn( Warnings, "InnerRadiusは数値にしてください" ); }
-	if ( Json.contains( "Rotation" ) && !ReadRotation( Json["Rotation"], Definition.RotationDegrees ) ) { Definition.InvalidFieldTypes |= InvalidRotation; Warn( Warnings, "Rotationは三つの数値配列にしてください" ); }
+	if ( Json.contains( "InnerRadius" ) && !ReadFloat( Json["InnerRadius"], Definition.InnerRadius ) )
+	{
+		Definition.InvalidFieldTypes |= InvalidInnerRadius; Warn( Warnings, "InnerRadiusは数値にしてください" );
+	}
+	if ( Json.contains( "Rotation" ) && !ReadRotation( Json["Rotation"], Definition.RotationDegrees ) )
+	{
+		Definition.InvalidFieldTypes |= InvalidRotation; Warn( Warnings, "Rotationは三つの数値配列にしてください" );
+	}
 	Out = MoveTemp( Definition );
 	return true;
 }
@@ -151,10 +217,22 @@ TArray<FString> FEffectMeshDefinition::Validate() const
 {
 	// 保存できないmesh値の一覧。
 	TArray<FString> Issues;
-	if ( ( InvalidFieldTypes & InvalidKind ) != 0 || ( Kind != EKind::None && Kind != EKind::Plane && Kind != EKind::Ring ) ) Issues.Add( "Mesh.KindはNone、Plane、Ringのいずれかにしてください" );
-	if ( ( InvalidFieldTypes & InvalidSegments ) != 0 || Segments < 3 || Segments > 128 ) Issues.Add( "Mesh.Segmentsは3から128にしてください" );
-	if ( ( InvalidFieldTypes & InvalidInnerRadius ) != 0 || !NMath::IsFinite( InnerRadius ) || InnerRadius < 0.05f || InnerRadius > 0.95f ) Issues.Add( "Mesh.InnerRadiusは0.05から0.95にしてください" );
-	if ( ( InvalidFieldTypes & InvalidRotation ) != 0 || !NMath::IsFinite( RotationDegrees.x ) || !NMath::IsFinite( RotationDegrees.y ) || !NMath::IsFinite( RotationDegrees.z ) || NMath::Abs( RotationDegrees.x ) > 360000.0f || NMath::Abs( RotationDegrees.y ) > 360000.0f || NMath::Abs( RotationDegrees.z ) > 360000.0f ) Issues.Add( "Mesh.Rotationは有限で各軸の絶対値を360000度以下にしてください" );
+	if ( ( InvalidFieldTypes & InvalidKind ) != 0 || ( Kind != EKind::None && Kind != EKind::Plane && Kind != EKind::Ring ) )
+	{
+		Issues.Add( "Mesh.KindはNone、Plane、Ringのいずれかにしてください" );
+	}
+	if ( ( InvalidFieldTypes & InvalidSegments ) != 0 || Segments < 3 || Segments > 128 )
+	{
+		Issues.Add( "Mesh.Segmentsは3から128にしてください" );
+	}
+	if ( ( InvalidFieldTypes & InvalidInnerRadius ) != 0 || !NMath::IsFinite( InnerRadius ) || InnerRadius < 0.05f || InnerRadius > 0.95f )
+	{
+		Issues.Add( "Mesh.InnerRadiusは0.05から0.95にしてください" );
+	}
+	if ( ( InvalidFieldTypes & InvalidRotation ) != 0 || !NMath::IsFinite( RotationDegrees.x ) || !NMath::IsFinite( RotationDegrees.y ) || !NMath::IsFinite( RotationDegrees.z ) || NMath::Abs( RotationDegrees.x ) > 360000.0f || NMath::Abs( RotationDegrees.y ) > 360000.0f || NMath::Abs( RotationDegrees.z ) > 360000.0f )
+	{
+		Issues.Add( "Mesh.Rotationは有限で各軸の絶対値を360000度以下にしてください" );
+	}
 	return Issues;
 }
 

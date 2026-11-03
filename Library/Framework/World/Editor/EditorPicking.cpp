@@ -36,14 +36,20 @@ TArray<FEditorHit> NWorldEditor::PickObjects( const FWorldDefinition& World, con
 	for ( int32 Index = 0; Index < World.Objects.Num(); ++Index )
 	{
 		const FWorldObject& Object = World.Objects[Index];
-		if ( !IsPickable( Object, Options ) ) continue;
+		if ( !IsPickable( Object, Options ) )
+		{
+			continue;
+		}
 
 		FEditorHit Best;
 		bool bHit = false;
 		for ( const FEditorShape& Shape : GatherShapes( Object, WorldTransforms[Index], Context ) )
 		{
 			float32 T = 0.0f;
-			if ( !IsPickable( Shape, Options ) || !RayVsShape( Ray, Shape, T ) ) continue;
+			if ( !IsPickable( Shape, Options ) || !RayVsShape( Ray, Shape, T ) )
+			{
+				continue;
+			}
 			if ( !bHit || T < Best.Distance )
 			{
 				Best.ObjectId = Object.Id;
@@ -52,7 +58,10 @@ TArray<FEditorHit> NWorldEditor::PickObjects( const FWorldDefinition& World, con
 				bHit = true;
 			}
 		}
-		if ( bHit ) Hits.Add( Best );
+		if ( bHit )
+		{
+			Hits.Add( Best );
+		}
 	}
 	// 同じ距離なら、配列の順のまま
 	Hits.StableSort( []( const FEditorHit& A, const FEditorHit& B ) { return A.Distance < B.Distance; } );
@@ -61,10 +70,16 @@ TArray<FEditorHit> NWorldEditor::PickObjects( const FWorldDefinition& World, con
 
 int32 NWorldEditor::PickNext( const TArray<FEditorHit>& Hits, int32 CurrentId )
 {
-	if ( Hits.IsEmpty() ) return WorldNoId;
+	if ( Hits.IsEmpty() )
+	{
+		return WorldNoId;
+	}
 	for ( int32 i = 0; i < Hits.Num(); ++i )
 	{
-		if ( Hits[i].ObjectId == CurrentId ) return Hits[( i + 1 ) % Hits.Num()].ObjectId;
+		if ( Hits[i].ObjectId == CurrentId )
+		{
+			return Hits[( i + 1 ) % Hits.Num()].ObjectId;
+		}
 	}
 	return Hits[0].ObjectId;
 }
@@ -73,7 +88,10 @@ TArray<int32> NWorldEditor::FindObjectsInRect( const FWorldDefinition& World, co
 											   const FEditorPickOptions& Options )
 {
 	TArray<int32> Result;
-	if ( Context.Camera == nullptr ) return Result;
+	if ( Context.Camera == nullptr )
+	{
+		return Result;
+	}
 	const float32 MinX = NMath::Min( X0, X1 ), MaxX = NMath::Max( X0, X1 );
 	const float32 MinY = NMath::Min( Y0, Y1 ), MaxY = NMath::Max( Y0, Y1 );
 
@@ -81,11 +99,17 @@ TArray<int32> NWorldEditor::FindObjectsInRect( const FWorldDefinition& World, co
 	for ( int32 Index = 0; Index < World.Objects.Num(); ++Index )
 	{
 		const FWorldObject& Object = World.Objects[Index];
-		if ( !IsPickable( Object, Options ) ) continue;
+		if ( !IsPickable( Object, Options ) )
+		{
+			continue;
+		}
 		for ( const FEditorShape& Shape : GatherShapes( Object, WorldTransforms[Index], Context ) )
 		{
 			FVector2 Pixel;
-			if ( !IsPickable( Shape, Options ) || !Context.Camera->WorldToScreen( Context.Viewport, GetShapeCenter( Shape ), Pixel ) ) continue;
+			if ( !IsPickable( Shape, Options ) || !Context.Camera->WorldToScreen( Context.Viewport, GetShapeCenter( Shape ), Pixel ) )
+			{
+				continue;
+			}
 			if ( Pixel.x >= MinX && Pixel.x <= MaxX && Pixel.y >= MinY && Pixel.y <= MaxY )
 			{
 				Result.Add( Object.Id );
@@ -105,14 +129,23 @@ bool NWorldEditor::ComputeBoundingSphere( const FWorldDefinition& World, const T
 	for ( const int32 Id : Ids )
 	{
 		const int32 Index = World.FindIndexById( Id );
-		if ( Index == INDEX_NONE ) continue;
+		if ( Index == INDEX_NONE )
+		{
+			continue;
+		}
 		FVector3 ObjectMin, ObjectMax;
-		if ( !ComputeShapesBounds( GatherShapes( World.Objects[Index], WorldTransforms[Index], Context ), ObjectMin, ObjectMax ) ) continue;
+		if ( !ComputeShapesBounds( GatherShapes( World.Objects[Index], WorldTransforms[Index], Context ), ObjectMin, ObjectMax ) )
+		{
+			continue;
+		}
 		Min = FVector3::Min( Min, ObjectMin );
 		Max = FVector3::Max( Max, ObjectMax );
 		bAny = true;
 	}
-	if ( !bAny ) return false;
+	if ( !bAny )
+	{
+		return false;
+	}
 	OutCenter = ( Min + Max ) * 0.5f;
 	OutRadius = ( Max - Min ).Length() * 0.5f;
 	return true;

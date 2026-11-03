@@ -15,7 +15,10 @@ TArray<int32> NWorld::GetChildIndices( const FWorldDefinition& World, int32 Pare
 	TArray<int32> Children;
 	for ( int32 i = 0; i < World.Objects.Num(); ++i )
 	{
-		if ( World.Objects[i].Parent == ParentId && World.Objects[i].Id != ParentId ) Children.Add( i );
+		if ( World.Objects[i].Parent == ParentId && World.Objects[i].Id != ParentId )
+		{
+			Children.Add( i );
+		}
 	}
 	return Children;
 }
@@ -24,7 +27,10 @@ TArray<int32> NWorld::GetSubtreeIndices( const FWorldDefinition& World, int32 Ro
 {
 	TArray<int32> Result;
 	const int32 RootIndex = World.FindIndexById( RootId );
-	if ( RootIndex == INDEX_NONE ) return Result;
+	if ( RootIndex == INDEX_NONE )
+	{
+		return Result;
+	}
 
 	TArray<bool> Visited;
 	Visited.Init( false, World.Objects.Num() );
@@ -35,24 +41,39 @@ TArray<int32> NWorld::GetSubtreeIndices( const FWorldDefinition& World, int32 Ro
 	while ( !Stack.IsEmpty() )
 	{
 		const int32 Index = Stack.Pop();
-		if ( Visited[Index] ) continue;
+		if ( Visited[Index] )
+		{
+			continue;
+		}
 		Visited[Index] = true;
 		Result.Add( Index );
 		const TArray<int32> Children = GetChildIndices( World, World.Objects[Index].Id );
-		for ( int32 i = Children.Num() - 1; i >= 0; --i ) Stack.Add( Children[i] );
+		for ( int32 i = Children.Num() - 1; i >= 0; --i )
+		{
+			Stack.Add( Children[i] );
+		}
 	}
 	return Result;
 }
 
 bool NWorld::IsDescendantOf( const FWorldDefinition& World, int32 AncestorId, int32 CandidateId )
 {
-	if ( AncestorId == WorldNoId || AncestorId == CandidateId ) return false;
+	if ( AncestorId == WorldNoId || AncestorId == CandidateId )
+	{
+		return false;
+	}
 	int32 Current = CandidateId;
 	for ( int32 Step = 0; Step < MaxDepth; ++Step )
 	{
 		const FWorldObject* Object = World.FindObject( Current );
-		if ( Object == nullptr || Object->Parent == WorldNoId ) return false;
-		if ( Object->Parent == AncestorId ) return true;
+		if ( Object == nullptr || Object->Parent == WorldNoId )
+		{
+			return false;
+		}
+		if ( Object->Parent == AncestorId )
+		{
+			return true;
+		}
 		Current = Object->Parent;
 	}
 	return false;
@@ -65,7 +86,10 @@ int32 NWorld::GetDepth( const FWorldDefinition& World, int32 ObjectId )
 	for ( int32 Step = 0; Step < MaxDepth; ++Step )
 	{
 		const FWorldObject* Object = World.FindObject( Current );
-		if ( Object == nullptr || Object->Parent == WorldNoId || World.FindObject( Object->Parent ) == nullptr ) return Depth;
+		if ( Object == nullptr || Object->Parent == WorldNoId || World.FindObject( Object->Parent ) == nullptr )
+		{
+			return Depth;
+		}
 		++Depth;
 		Current = Object->Parent;
 	}
@@ -77,7 +101,10 @@ TArray<int32> NWorld::FilterToRoots( const FWorldDefinition& World, const TArray
 	TArray<int32> Roots;
 	for ( const FWorldObject& Object : World.Objects )
 	{
-		if ( !Ids.Contains( Object.Id ) ) continue;
+		if ( !Ids.Contains( Object.Id ) )
+		{
+			continue;
+		}
 		bool bAncestorSelected = false;
 		for ( const int32 Other : Ids )
 		{
@@ -87,7 +114,10 @@ TArray<int32> NWorld::FilterToRoots( const FWorldDefinition& World, const TArray
 				break;
 			}
 		}
-		if ( !bAncestorSelected ) Roots.Add( Object.Id );
+		if ( !bAncestorSelected )
+		{
+			Roots.Add( Object.Id );
+		}
 	}
 	return Roots;
 }
@@ -100,21 +130,33 @@ FTransform NWorld::ComputeWorldTransform( const FWorldDefinition& World, int32 O
 	for ( int32 Step = 0; Step < MaxDepth; ++Step )
 	{
 		const FWorldObject* Object = World.FindObject( Current );
-		if ( Object == nullptr ) break;
+		if ( Object == nullptr )
+		{
+			break;
+		}
 		Chain.Add( Object );
-		if ( Object->Parent == WorldNoId ) break;
+		if ( Object->Parent == WorldNoId )
+		{
+			break;
+		}
 		Current = Object->Parent;
 	}
 
 	FTransform Result = FTransform::Identity;
-	for ( int32 i = Chain.Num() - 1; i >= 0; --i ) Result = FTransform::Combine( Result, Chain[i]->Transform.ToTransform() );
+	for ( int32 i = Chain.Num() - 1; i >= 0; --i )
+	{
+		Result = FTransform::Combine( Result, Chain[i]->Transform.ToTransform() );
+	}
 	return Result;
 }
 
 FTransform NWorld::ComputeParentWorldTransform( const FWorldDefinition& World, int32 ObjectId )
 {
 	const FWorldObject* Object = World.FindObject( ObjectId );
-	if ( Object == nullptr || Object->Parent == WorldNoId || World.FindObject( Object->Parent ) == nullptr ) return FTransform::Identity;
+	if ( Object == nullptr || Object->Parent == WorldNoId || World.FindObject( Object->Parent ) == nullptr )
+	{
+		return FTransform::Identity;
+	}
 	return ComputeWorldTransform( World, Object->Parent );
 }
 
@@ -134,7 +176,10 @@ TArray<FTransform> NWorld::ComputeAllWorldTransforms( const FWorldDefinition& Wo
 	TMap<int32, int32> IndexById;
 	for ( int32 i = 0; i < Num; ++i )
 	{
-		if ( !IndexById.Contains( World.Objects[i].Id ) ) IndexById.Add( World.Objects[i].Id, i );   // 重複は、先のものが正（FindIndexById と同じ）
+		if ( !IndexById.Contains( World.Objects[i].Id ) )
+		{
+			IndexById.Add( World.Objects[i].Id, i );   // 重複は、先のものが正（FindIndexById と同じ）
+		}
 	}
 
 	TArray<FTransform> Result;
@@ -144,7 +189,10 @@ TArray<FTransform> NWorld::ComputeAllWorldTransforms( const FWorldDefinition& Wo
 	TArray<int32> Chain;
 	for ( int32 Start = 0; Start < Num; ++Start )
 	{
-		if ( State[Start] == 2 ) continue;
+		if ( State[Start] == 2 )
+		{
+			continue;
+		}
 
 		// 計算済み・最上位・循環のどれかに当たるまで、親をたどる
 		Chain.Reset();
@@ -157,12 +205,18 @@ TArray<FTransform> NWorld::ComputeAllWorldTransforms( const FWorldDefinition& Wo
 				ParentWorld = Result[Current];
 				break;
 			}
-			if ( State[Current] == 1 ) break;   // 循環
+			if ( State[Current] == 1 )
+			{
+				break;   // 循環
+			}
 			State[Current] = 1;
 			Chain.Add( Current );
 			const int32 Parent = World.Objects[Current].Parent;
 			const int32* ParentIndex = Parent == WorldNoId ? nullptr : IndexById.Find( Parent );
-			if ( ParentIndex == nullptr ) break;
+			if ( ParentIndex == nullptr )
+			{
+				break;
+			}
 			Current = *ParentIndex;
 		}
 
@@ -191,17 +245,26 @@ NWorld::FWorldSpawnOrder NWorld::ComputeSpawnOrder( const FWorldDefinition& Worl
 		while ( !Stack.IsEmpty() )
 		{
 			const int32 Index = Stack.Pop();
-			if ( Done[Index] ) continue;
+			if ( Done[Index] )
+			{
+				continue;
+			}
 			Done[Index] = true;
 			if ( bSkipDisabled && !World.Objects[Index].bEnabled )
 			{
 				// 無効なオブジェクトの子孫も、入れない（Cyclic にもしない）
-				for ( const int32 Skipped : GetSubtreeIndices( World, World.Objects[Index].Id ) ) Done[Skipped] = true;
+				for ( const int32 Skipped : GetSubtreeIndices( World, World.Objects[Index].Id ) )
+				{
+					Done[Skipped] = true;
+				}
 				continue;
 			}
 			Result.Order.Add( Index );
 			const TArray<int32> Children = GetChildIndices( World, World.Objects[Index].Id );
-			for ( int32 i = Children.Num() - 1; i >= 0; --i ) Stack.Add( Children[i] );
+			for ( int32 i = Children.Num() - 1; i >= 0; --i )
+			{
+				Stack.Add( Children[i] );
+			}
 		}
 	};
 
@@ -210,14 +273,23 @@ NWorld::FWorldSpawnOrder NWorld::ComputeSpawnOrder( const FWorldDefinition& Worl
 		const FWorldObject& Object = World.Objects[i];
 		const bool bRoot = Object.Parent == WorldNoId;
 		const bool bOrphan = !bRoot && World.FindIndexById( Object.Parent ) == INDEX_NONE;
-		if ( !bRoot && !bOrphan ) continue;
-		if ( bOrphan ) Result.Orphans.Add( i );
+		if ( !bRoot && !bOrphan )
+		{
+			continue;
+		}
+		if ( bOrphan )
+		{
+			Result.Orphans.Add( i );
+		}
 		Visit( i );
 	}
 
 	for ( int32 i = 0; i < Num; ++i )
 	{
-		if ( !Done[i] ) Result.Cyclic.Add( i );
+		if ( !Done[i] )
+		{
+			Result.Cyclic.Add( i );
+		}
 	}
 	return Result;
 }

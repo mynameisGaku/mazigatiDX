@@ -47,10 +47,22 @@ namespace NDrawMaterialQuad
 		const FDrawQuad3DData& Quad = Data.Quad;
 		// 三成分の位置・方向に非有限値がないか調べる。
 		const auto Finite3 = []( const float32 ( &Values )[3] ) { return NMath::IsFinite( Values[0] ) && NMath::IsFinite( Values[1] ) && NMath::IsFinite( Values[2] ); };
-		if ( Quad.Handle < 0 || Data.MaskTexture < -1 || !Finite3( Quad.Pos ) || !Finite3( Quad.Right ) || !Finite3( Quad.Up ) || !NMath::IsFinite( Quad.Width ) || !NMath::IsFinite( Quad.Height ) || Quad.Width <= 0.0f || Quad.Height <= 0.0f || Quad.Width > 1.0e6f || Quad.Height > 1.0e6f ) return false;
-		if ( !NMath::IsFinite( Quad.PivotX ) || !NMath::IsFinite( Quad.PivotY ) || Quad.PivotX < 0.0f || Quad.PivotX > 1.0f || Quad.PivotY < 0.0f || Quad.PivotY > 1.0f || !NMath::IsFinite( Quad.Angle ) || !NMath::IsFinite( Quad.U0 ) || !NMath::IsFinite( Quad.V0 ) || !NMath::IsFinite( Quad.U1 ) || !NMath::IsFinite( Quad.V1 ) || Quad.U0 < 0.0f || Quad.V0 < 0.0f || Quad.U1 > 1.0f || Quad.V1 > 1.0f || Quad.U0 >= Quad.U1 || Quad.V0 >= Quad.V1 ) return false;
-		if ( Quad.Orient < static_cast<int32>( EDrawQuadOrient::Camera ) || Quad.Orient > static_cast<int32>( EDrawQuadOrient::Fixed ) ) return false;
-		if ( !NMath::IsFinite( Data.UVScale[0] ) || !NMath::IsFinite( Data.UVScale[1] ) || !NMath::IsFinite( Data.UVOffset[0] ) || !NMath::IsFinite( Data.UVOffset[1] ) || NMath::Abs( Data.UVScale[0] ) > 1.0e4f || NMath::Abs( Data.UVScale[1] ) > 1.0e4f || NMath::Abs( Data.UVOffset[0] ) > 1.0e6f || NMath::Abs( Data.UVOffset[1] ) > 1.0e6f ) return false;
+		if ( Quad.Handle < 0 || Data.MaskTexture < -1 || !Finite3( Quad.Pos ) || !Finite3( Quad.Right ) || !Finite3( Quad.Up ) || !NMath::IsFinite( Quad.Width ) || !NMath::IsFinite( Quad.Height ) || Quad.Width <= 0.0f || Quad.Height <= 0.0f || Quad.Width > 1.0e6f || Quad.Height > 1.0e6f )
+		{
+			return false;
+		}
+		if ( !NMath::IsFinite( Quad.PivotX ) || !NMath::IsFinite( Quad.PivotY ) || Quad.PivotX < 0.0f || Quad.PivotX > 1.0f || Quad.PivotY < 0.0f || Quad.PivotY > 1.0f || !NMath::IsFinite( Quad.Angle ) || !NMath::IsFinite( Quad.U0 ) || !NMath::IsFinite( Quad.V0 ) || !NMath::IsFinite( Quad.U1 ) || !NMath::IsFinite( Quad.V1 ) || Quad.U0 < 0.0f || Quad.V0 < 0.0f || Quad.U1 > 1.0f || Quad.V1 > 1.0f || Quad.U0 >= Quad.U1 || Quad.V0 >= Quad.V1 )
+		{
+			return false;
+		}
+		if ( Quad.Orient < static_cast<int32>( EDrawQuadOrient::Camera ) || Quad.Orient > static_cast<int32>( EDrawQuadOrient::Fixed ) )
+		{
+			return false;
+		}
+		if ( !NMath::IsFinite( Data.UVScale[0] ) || !NMath::IsFinite( Data.UVScale[1] ) || !NMath::IsFinite( Data.UVOffset[0] ) || !NMath::IsFinite( Data.UVOffset[1] ) || NMath::Abs( Data.UVScale[0] ) > 1.0e4f || NMath::Abs( Data.UVScale[1] ) > 1.0e4f || NMath::Abs( Data.UVOffset[0] ) > 1.0e6f || NMath::Abs( Data.UVOffset[1] ) > 1.0e6f )
+		{
+			return false;
+		}
 		return NMath::IsFinite( Data.MaskScale ) && Data.MaskScale > 0.0f && Data.MaskScale <= 1.0e4f && NMath::IsFinite( Data.Dissolve ) && Data.Dissolve >= 0.0f && Data.Dissolve <= 1.0f && NMath::IsFinite( Data.Emission ) && Data.Emission >= 0.0f && Data.Emission <= 64.0f && NMath::IsFinite( Data.EdgeWidth ) && Data.EdgeWidth >= 0.0f && Data.EdgeWidth <= 1.0f && NMath::IsFinite( Data.EdgeEmission ) && Data.EdgeEmission >= 0.0f && Data.EdgeEmission <= 64.0f && ( Data.bDissolve == 0 || Data.bDissolve == 1 ) && ( Data.DepthTest == 0 || Data.DepthTest == 1 ) && ( Data.DepthWrite == 0 || Data.DepthWrite == 1 );
 	}
 }

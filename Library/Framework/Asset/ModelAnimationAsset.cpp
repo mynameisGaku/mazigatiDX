@@ -21,23 +21,47 @@ NlohmannJson FModelAnimationDefinition::ToJson() const
 {
 	NlohmannJson Json = NlohmannJson::object();
 	Json["Version"] = 1;
-	if ( !ModelPath.IsEmpty() ) Json["Model"] = ModelPath;
-	if ( !PreviewModelPath.IsEmpty() ) Json["PreviewModel"] = PreviewModelPath;
+	if ( !ModelPath.IsEmpty() )
+	{
+		Json["Model"] = ModelPath;
+	}
+	if ( !PreviewModelPath.IsEmpty() )
+	{
+		Json["PreviewModel"] = PreviewModelPath;
+	}
 	Json["UnitsPerSecond"] = NJson::Round4( UnitsPerSecond );
-	if ( Offset.x != 0.0f || Offset.y != 0.0f || Offset.z != 0.0f ) Json["Offset"] = NJson::ToJson( Offset );
-	if ( RotationDegrees.x != 0.0f || RotationDegrees.y != 0.0f || RotationDegrees.z != 0.0f ) Json["Rotation"] = NJson::ToJson( RotationDegrees );
-	if ( Scale.x != 1.0f || Scale.y != 1.0f || Scale.z != 1.0f ) Json["Scale"] = NJson::ToJson( Scale );
+	if ( Offset.x != 0.0f || Offset.y != 0.0f || Offset.z != 0.0f )
+	{
+		Json["Offset"] = NJson::ToJson( Offset );
+	}
+	if ( RotationDegrees.x != 0.0f || RotationDegrees.y != 0.0f || RotationDegrees.z != 0.0f )
+	{
+		Json["Rotation"] = NJson::ToJson( RotationDegrees );
+	}
+	if ( Scale.x != 1.0f || Scale.y != 1.0f || Scale.z != 1.0f )
+	{
+		Json["Scale"] = NJson::ToJson( Scale );
+	}
 
 	NlohmannJson ClipArray = NlohmannJson::array();
 	for ( const FModelClipDef& Clip : Clips )
 	{
 		NlohmannJson Item = NlohmannJson::object();
 		Item["Name"] = Clip.Name;
-		if ( !Clip.SourcePath.IsEmpty() ) Item["Source"] = Clip.SourcePath;
-		if ( !Clip.AnimName.IsEmpty() ) Item["AnimName"] = Clip.AnimName;
+		if ( !Clip.SourcePath.IsEmpty() )
+		{
+			Item["Source"] = Clip.SourcePath;
+		}
+		if ( !Clip.AnimName.IsEmpty() )
+		{
+			Item["AnimName"] = Clip.AnimName;
+		}
 		Item["AnimIndex"] = Clip.AnimIndex;
 		Item["Loop"] = ToString( Clip.Loop );
-		if ( Clip.Speed != 1.0f ) Item["Speed"] = NJson::Round4( Clip.Speed );
+		if ( Clip.Speed != 1.0f )
+		{
+			Item["Speed"] = NJson::Round4( Clip.Speed );
+		}
 		Item["Fade"] = NJson::Round4( Clip.FadeTime );
 		if ( !Clip.Events.IsEmpty() )
 		{
@@ -59,7 +83,10 @@ NlohmannJson FModelAnimationDefinition::ToJson() const
 
 bool FModelAnimationDefinition::FromJson( const NlohmannJson& Json, FModelAnimationDefinition& OutDefinition )
 {
-	if ( !Json.is_object() ) return false;
+	if ( !Json.is_object() )
+	{
+		return false;
+	}
 
 	FModelAnimationDefinition Definition;
 	Definition.ModelPath = NJson::GetOr<FString>( Json, "Model", FString() );
@@ -93,7 +120,10 @@ bool FModelAnimationDefinition::FromJson( const NlohmannJson& Json, FModelAnimat
 					FModelEventDef Event;
 					Event.Time = NMath::Clamp( NJson::GetOr<float32>( EventItem, "Time", 0.0f ), 0.0f, 1.0f );
 					Event.Name = NJson::GetOr<FString>( EventItem, "Name", FString() );
-					if ( !Event.Name.IsEmpty() ) Clip.Events.Add( Event );
+					if ( !Event.Name.IsEmpty() )
+					{
+						Clip.Events.Add( Event );
+					}
 				}
 			}
 			Definition.Clips.Add( Clip );
@@ -123,10 +153,16 @@ TSharedPtr<CModel> CModelAnimationAsset::GetClipSource( int32 ClipIndex ) const
 
 bool CModelAnimationAsset::IsReady() const
 {
-	if ( Model.IsValid() && !Model->IsReady() ) return false;
+	if ( Model.IsValid() && !Model->IsReady() )
+	{
+		return false;
+	}
 	for ( const TSharedPtr<CModel>& Source : ClipSources )
 	{
-		if ( Source.IsValid() && !Source->IsReady() ) return false;
+		if ( Source.IsValid() && !Source->IsReady() )
+		{
+			return false;
+		}
 	}
 	return true;
 }
@@ -139,7 +175,10 @@ FString CModelAnimationAsset::Describe() const
 int64 CModelAnimationAsset::GetMemoryBytes() const
 {
 	int64 Bytes = static_cast<int64>( sizeof( *this ) );
-	for ( const FModelClipDef& Clip : Definition.Clips ) Bytes += static_cast<int64>( sizeof( FModelClipDef ) ) + Clip.Events.Num() * static_cast<int64>( sizeof( FModelEventDef ) );
+	for ( const FModelClipDef& Clip : Definition.Clips )
+	{
+		Bytes += static_cast<int64>( sizeof( FModelClipDef ) ) + Clip.Events.Num() * static_cast<int64>( sizeof( FModelEventDef ) );
+	}
 	return Bytes;
 }
 
@@ -157,7 +196,10 @@ int32 CModelAnimationAsset::ApplyTo( FModelAnimator& Animator, const TSharedPtr<
 	{
 		const FModelClipDef& Clip = Definition.Clips[Index];
 		TSharedPtr<CModel> Source = ClipSources.IsValidIndex( Index ) && ClipSources[Index].IsValid() ? ClipSources[Index] : Model;
-		if ( !Source.IsValid() ) Source = FallbackSource;
+		if ( !Source.IsValid() )
+		{
+			Source = FallbackSource;
+		}
 		if ( !Source.IsValid() )
 		{
 			LOG( LogModelAnimationAsset, Warning, "'%s': the clip '%s' has no animation file and the set has no model, skipped.", *GetPath(), *Clip.Name );
@@ -168,12 +210,21 @@ int32 CModelAnimationAsset::ApplyTo( FModelAnimator& Animator, const TSharedPtr<
 		int32 AnimIndex = Clip.AnimIndex;
 		if ( !Clip.AnimName.IsEmpty() )
 		{
-			if ( const FModelClipInfo* Info = Source->FindClip( Clip.AnimName ) ) AnimIndex = Info->AnimIndex;
-			else if ( Source->IsReady() ) LOG( LogModelAnimationAsset, Warning, "'%s': the animation '%s' was not found in '%s'. Animation %d is used.", *GetPath(), *Clip.AnimName, *Source->GetPath(), AnimIndex );
+			if ( const FModelClipInfo* Info = Source->FindClip( Clip.AnimName ) )
+			{
+				AnimIndex = Info->AnimIndex;
+			}
+			else if ( Source->IsReady() )
+			{
+				LOG( LogModelAnimationAsset, Warning, "'%s': the animation '%s' was not found in '%s'. Animation %d is used.", *GetPath(), *Clip.AnimName, *Source->GetPath(), AnimIndex );
+			}
 		}
 
 		Animator.AddClip( Clip.Name, Source, AnimIndex, Clip.Loop, Clip.Speed, Clip.FadeTime );
-		for ( const FModelEventDef& Event : Clip.Events ) Animator.AddEvent( Clip.Name, Event.Time, Event.Name );
+		for ( const FModelEventDef& Event : Clip.Events )
+		{
+			Animator.AddEvent( Clip.Name, Event.Time, Event.Name );
+		}
 		++NumAdded;
 	}
 	return NumAdded;
@@ -182,7 +233,10 @@ int32 CModelAnimationAsset::ApplyTo( FModelAnimator& Animator, const TSharedPtr<
 FModelAnimator CModelAnimationAsset::CreateAnimator() const
 {
 	FModelAnimator Animator;
-	if ( Model.IsValid() ) Animator.Instance = Model->CreateInstance();   // メッシュのないファイルは、ここで null（理由はログに出る）
+	if ( Model.IsValid() )
+	{
+		Animator.Instance = Model->CreateInstance();   // メッシュのないファイルは、ここで null（理由はログに出る）
+	}
 	ApplyTo( Animator );
 	return Animator;
 }
@@ -190,7 +244,10 @@ FModelAnimator CModelAnimationAsset::CreateAnimator() const
 FModelAnimator CModelAnimationAsset::CreateAnimatorFor( const TSharedPtr<CModel>& Character ) const
 {
 	FModelAnimator Animator;
-	if ( Character.IsValid() ) Animator.Instance = Character->CreateInstance();
+	if ( Character.IsValid() )
+	{
+		Animator.Instance = Character->CreateInstance();
+	}
 	ApplyTo( Animator, Character );
 	return Animator;
 }

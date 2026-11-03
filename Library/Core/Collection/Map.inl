@@ -16,6 +16,9 @@ V& TMap<K, V, Hasher>::AddImpl( KArg&& Key, VArg&& Value )
 	}, bAdded );
 
 	// 既にあった場合は値だけ上書き（Value はまだ消費されていない）
-	if ( !bAdded ) Pair.Value = Forward<VArg>( Value );
+	if ( !bAdded )
+	{
+		Pair.Value = Forward<VArg>( Value );
+	}
 	return Pair.Value;
 }

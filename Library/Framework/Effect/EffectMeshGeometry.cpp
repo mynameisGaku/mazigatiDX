@@ -27,7 +27,10 @@ bool NEffectMesh::BuildGeometry( const FEffectMeshDefinition& Definition, FEffec
 {
 	if ( !Definition.IsValidSettings() || Definition.Kind == FEffectMeshDefinition::EKind::None )
 	{
-		if ( Error != nullptr ) *Error = "meshの種類または設定が無効です";
+		if ( Error != nullptr )
+		{
+			*Error = "meshの種類または設定が無効です";
+		}
 		return false;
 	}
 	// 出力を壊さず、完成後に置き換える作業用geometry。
@@ -80,10 +83,16 @@ bool NEffectMesh::BuildGeometry( const FEffectMeshDefinition& Definition, FEffec
 	}
 	else
 	{
-		if ( Error != nullptr ) *Error = "meshの種類が未対応です";
+		if ( Error != nullptr )
+		{
+			*Error = "meshの種類が未対応です";
+		}
 		return false;
 	}
 	Out = MoveTemp( Geometry );
-	if ( Error != nullptr ) Error->Empty();
+	if ( Error != nullptr )
+	{
+		Error->Empty();
+	}
 	return true;
 }

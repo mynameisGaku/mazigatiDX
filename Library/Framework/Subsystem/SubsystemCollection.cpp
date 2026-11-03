@@ -16,7 +16,10 @@ void FSubsystemCollection::InitializeAll()
 
 	// 初期化された順に並べて 1 行で残す（どのサブシステムが有効か、順番はどうか、を後から確認できる）
 	TArray<FString> Names;
-	for ( const CSubsystem* Subsystem : InitializedSubsystems ) Names.Add( Subsystem->GetTypeName() );
+	for ( const CSubsystem* Subsystem : InitializedSubsystems )
+	{
+		Names.Add( Subsystem->GetTypeName() );
+	}
 	// 何も無いコレクション（サブシステムを使わないシーンなど）は目立たせない
 	const ELogVerbosity Verbosity = Names.IsEmpty() ? ELogVerbosity::Verbose : ELogVerbosity::Log;
 	if ( !LogSubsystem.IsSuppressed( Verbosity ) )
@@ -55,7 +58,10 @@ CSubsystem* FSubsystemCollection::InitializeEntry( int32 Index )
 	Entry.State = EState::Initialized;
 
 	InitializedSubsystems.Add( Subsystem );
-	if ( ITickable* Tickable = dynamic_cast<ITickable*>( Subsystem ) ) Tickables.Add( Tickable );
+	if ( ITickable* Tickable = dynamic_cast<ITickable*>( Subsystem ) )
+	{
+		Tickables.Add( Tickable );
+	}
 
 	LOG( LogSubsystem, Verbose, "[%s] Initialized: %s", *Label, *Subsystem->GetTypeName() );
 	return Subsystem;
@@ -65,7 +71,10 @@ CSubsystem* FSubsystemCollection::InitializeMatching( bool ( *Predicate )( CSubs
 {
 	for ( int32 i = 0; i < Entries.Num(); ++i )
 	{
-		if ( Predicate( Entries[i].Subsystem.Get() ) ) return InitializeEntry( i );
+		if ( Predicate( Entries[i].Subsystem.Get() ) )
+		{
+			return InitializeEntry( i );
+		}
 	}
 	return nullptr;
 }
@@ -87,7 +96,10 @@ void FSubsystemCollection::Deinitialize()
 	for ( int32 i = InitializedSubsystems.Num() - 1; i >= 0; --i )
 	{
 		const int32 Index = Entries.IndexOfByPredicate( [&]( const FEntry& Entry ) { return Entry.Subsystem.Get() == InitializedSubsystems[i]; } );
-		if ( Index != INDEX_NONE ) Entries.RemoveAt( Index );
+		if ( Index != INDEX_NONE )
+		{
+			Entries.RemoveAt( Index );
+		}
 	}
 
 	Tickables.Reset();
@@ -103,7 +115,10 @@ void FSubsystemCollection::Tick( float32 DeltaTime, ETickGroup Group )
 	for ( int32 i = 0; i < Tickables.Num(); ++i )
 	{
 		ITickable* Tickable = Tickables[i];
-		if ( Tickable->GetTickGroup() != Group || !Tickable->IsTickable() ) continue;
+		if ( Tickable->GetTickGroup() != Group || !Tickable->IsTickable() )
+		{
+			continue;
+		}
 
 		// typeid().name() はプログラム中ずっと有効なポインタ。型名が Name になる
 		PROFILE_SCOPE_LAZY( SubsystemScope, FProfileScope( "Subsystem", OwnerId, typeid( *Tickable ).name() ) );

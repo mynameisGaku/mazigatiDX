@@ -20,17 +20,26 @@ namespace
 
 void CTransformComponent::BindToWorld( FTransformWorld& InWorld )
 {
-	if ( World != nullptr ) return;
+	if ( World != nullptr )
+	{
+		return;
+	}
 
 	World = &InWorld;
 	Slot = InWorld.Allocate( GetOwner(), DetachedLocal );
 	Node = &InWorld.GetNode( Slot );
-	if ( GetOwner()->TransformSlot == INDEX_NONE ) GetOwner()->SetTransformSlotInternal( Slot );
+	if ( GetOwner()->TransformSlot == INDEX_NONE )
+	{
+		GetOwner()->SetTransformSlotInternal( Slot );
+	}
 }
 
 void CTransformComponent::UnbindFromWorld()
 {
-	if ( World == nullptr ) return;
+	if ( World == nullptr )
+	{
+		return;
+	}
 
 	DetachedLocal = Node->Local;   // 外れたあとも値は残る
 	CGameObject* Owner = GetOwner();
@@ -56,12 +65,18 @@ void CTransformComponent::UnbindFromWorld()
 
 void CTransformComponent::OnAttach()
 {
-	if ( CScene* Scene = GetOwner()->GetScene() ) BindToWorld( Scene->GetTransformWorld() );
+	if ( CScene* Scene = GetOwner()->GetScene() )
+	{
+		BindToWorld( Scene->GetTransformWorld() );
+	}
 }
 
 void CTransformComponent::OnOwnerSceneChanged( CScene* NewScene )
 {
-	if ( NewScene != nullptr ) BindToWorld( NewScene->GetTransformWorld() );
+	if ( NewScene != nullptr )
+	{
+		BindToWorld( NewScene->GetTransformWorld() );
+	}
 }
 
 void CTransformComponent::OnDetach()
@@ -72,7 +87,10 @@ void CTransformComponent::OnDetach()
 void CTransformComponent::OnDestroyRequested()
 {
 	// 取り外しが予約されたら、親としては数えない（以前の GetComponent が、予約済みを飛ばしていたのと同じ）
-	if ( World == nullptr ) return;
+	if ( World == nullptr )
+	{
+		return;
+	}
 	Node->bPendingDestroy = true;
 	World->MarkHierarchyDirty();
 }
@@ -83,8 +101,14 @@ void CTransformComponent::OnDestroyRequested()
 
 void CTransformComponent::SetLocalTransform( const FTransform& InLocal )
 {
-	if ( World != nullptr ) World->SetLocal( Slot, InLocal );
-	else DetachedLocal = InLocal;
+	if ( World != nullptr )
+	{
+		World->SetLocal( Slot, InLocal );
+	}
+	else
+	{
+		DetachedLocal = InLocal;
+	}
 }
 
 void CTransformComponent::SetLocalPosition( const FVector3& Position )
@@ -126,11 +150,17 @@ void CTransformComponent::SetLocalScale( const FVector3& Scale )
 
 const CTransformComponent* CTransformComponent::FindParentTransform() const
 {
-	if ( GetOwner() == nullptr ) return nullptr;
+	if ( GetOwner() == nullptr )
+	{
+		return nullptr;
+	}
 
 	for ( const CGameObject* Ancestor = GetOwner()->GetParent(); Ancestor != nullptr; Ancestor = Ancestor->GetParent() )
 	{
-		if ( const CTransformComponent* Transform = Ancestor->GetComponent<CTransformComponent>() ) return Transform;
+		if ( const CTransformComponent* Transform = Ancestor->GetComponent<CTransformComponent>() )
+		{
+			return Transform;
+		}
 	}
 	return nullptr;
 }
@@ -183,7 +213,10 @@ void CTransformComponent::InspectProperties( IPropertyInspector& Inspector )
 	bChanged |= Inspector.Vector3( "Scale", Edited.Scale );
 
 	// 値を書き換えたら、ワールド値が古くなるので、必ず Set を通す
-	if ( bChanged ) SetLocalTransform( Edited );
+	if ( bChanged )
+	{
+		SetLocalTransform( Edited );
+	}
 
 	if ( FindParentTransform() != nullptr )
 	{

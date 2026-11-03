@@ -46,7 +46,10 @@ namespace
 		// 見つからないのが普通のこともある（省略可能な設定ファイルなど）ので、結果は Verbose。呼び出し側が重大度を決める
 		if ( IsAbsolutePath( RelativePath ) )
 		{
-			if ( Exists( RelativePath ) ) return RelativePath;
+			if ( Exists( RelativePath ) )
+			{
+				return RelativePath;
+			}
 			LOG( LogFileSystem, Verbose, "%s not found: %s", Kind, *RelativePath );
 			return NullOpt;
 		}
@@ -102,7 +105,10 @@ FString NFileSystem::GetExecutableDirectory()
 {
 	wchar_t Buffer[MAX_PATH] = {};
 	const DWORD Length = GetModuleFileNameW( nullptr, Buffer, MAX_PATH );
-	if ( Length == 0 || Length >= MAX_PATH ) return FString();
+	if ( Length == 0 || Length >= MAX_PATH )
+	{
+		return FString();
+	}
 	return GetParentDirectory( FString( Buffer ) );
 }
 
@@ -110,7 +116,10 @@ FString NFileSystem::GetExecutableName()
 {
 	wchar_t Buffer[MAX_PATH] = {};
 	const DWORD Length = GetModuleFileNameW( nullptr, Buffer, MAX_PATH );
-	if ( Length == 0 || Length >= MAX_PATH ) return FString( "game" );
+	if ( Length == 0 || Length >= MAX_PATH )
+	{
+		return FString( "game" );
+	}
 
 	const FString FullPath( Buffer );
 	const int32 Backslash = FullPath.FindLast( "\\" );
@@ -126,7 +135,10 @@ FString NFileSystem::GetWorkingDirectory()
 {
 	wchar_t Buffer[MAX_PATH] = {};
 	const DWORD Length = GetCurrentDirectoryW( MAX_PATH, Buffer );
-	if ( Length == 0 || Length >= MAX_PATH ) return FString();
+	if ( Length == 0 || Length >= MAX_PATH )
+	{
+		return FString();
+	}
 	return FString( Buffer );
 }
 
@@ -134,7 +146,10 @@ FString NFileSystem::GetFullPath( const FString& Path )
 {
 	wchar_t Buffer[MAX_PATH] = {};
 	const DWORD Length = GetFullPathNameW( Path.ToWide().GetData(), MAX_PATH, Buffer, nullptr );
-	if ( Length == 0 || Length >= MAX_PATH ) return Path;
+	if ( Length == 0 || Length >= MAX_PATH )
+	{
+		return Path;
+	}
 	return FString( Buffer );
 }
 
@@ -168,17 +183,26 @@ FString NFileSystem::FindProjectRoot()
 
 bool NFileSystem::EnsureDirectory( const FString& Path )
 {
-	if ( Path.IsEmpty() ) return false;
+	if ( Path.IsEmpty() )
+	{
+		return false;
+	}
 
 	// "A/B/C" なら A、A/B、A/B/C の順に作る
 	const FString Normalized = ToWindowsPath( Path );
 	for ( int32 i = 1; i <= Normalized.Len(); ++i )
 	{
-		if ( i != Normalized.Len() && Normalized[i] != '\\' ) continue;
+		if ( i != Normalized.Len() && Normalized[i] != '\\' )
+		{
+			continue;
+		}
 
 		const FString Partial = Normalized.Left( i );
 		// "C:" のようなドライブ名は作らない
-		if ( Partial.Len() == 2 && Partial[1] == ':' ) continue;
+		if ( Partial.Len() == 2 && Partial[1] == ':' )
+		{
+			continue;
+		}
 		if ( CreateDirectoryW( Partial.ToWide().GetData(), nullptr ) )
 		{
 			LOG( LogFileSystem, Verbose, "Created directory: %s", *Partial );
@@ -198,11 +222,17 @@ TArray<FString> NFileSystem::ListFiles( const FString& Directory, const FString&
 
 	WIN32_FIND_DATAW Data;
 	HANDLE Handle = FindFirstFileW( ( ToWindowsPath( Directory ) / Pattern ).ToWide().GetData(), &Data );
-	if ( Handle == INVALID_HANDLE_VALUE ) return Result;
+	if ( Handle == INVALID_HANDLE_VALUE )
+	{
+		return Result;
+	}
 
 	do
 	{
-		if ( ( Data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) == 0 ) Result.Add( FString( Data.cFileName ) );
+		if ( ( Data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) == 0 )
+		{
+			Result.Add( FString( Data.cFileName ) );
+		}
 	}
 	while ( FindNextFileW( Handle, &Data ) );
 	FindClose( Handle );
@@ -213,17 +243,26 @@ namespace
 {
 	void ListRecursiveInto( const FString& Root, const FString& Relative, const TArray<FString>& Extensions, TArray<FString>& Out, int32 Depth )
 	{
-		if ( Depth > 16 ) return;   // シンボリックリンクなどでの無限の再帰を避ける
+		if ( Depth > 16 )
+		{
+			return;   // シンボリックリンクなどでの無限の再帰を避ける
+		}
 
 		WIN32_FIND_DATAW Data;
 		const FString Directory = Relative.IsEmpty() ? Root : ToWindowsPath( Root ) / ToWindowsPath( Relative );
 		HANDLE Handle = FindFirstFileW( ( Directory / "*" ).ToWide().GetData(), &Data );
-		if ( Handle == INVALID_HANDLE_VALUE ) return;
+		if ( Handle == INVALID_HANDLE_VALUE )
+		{
+			return;
+		}
 
 		do
 		{
 			const FString Name( Data.cFileName );
-			if ( Name == "." || Name == ".." ) continue;
+			if ( Name == "." || Name == ".." )
+			{
+				continue;
+			}
 			const FString Child = Relative.IsEmpty() ? Name : Relative + "/" + Name;
 			if ( ( Data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) != 0 )
 			{
@@ -233,9 +272,15 @@ namespace
 			bool bMatch = Extensions.IsEmpty();
 			for ( const FString& Extension : Extensions )
 			{
-				if ( Name.EndsWith( Extension, ESearchCase::IgnoreCase ) ) bMatch = true;
+				if ( Name.EndsWith( Extension, ESearchCase::IgnoreCase ) )
+				{
+					bMatch = true;
+				}
 			}
-			if ( bMatch ) Out.Add( Child );
+			if ( bMatch )
+			{
+				Out.Add( Child );
+			}
 		}
 		while ( FindNextFileW( Handle, &Data ) );
 		FindClose( Handle );
@@ -253,18 +298,27 @@ TArray<FString> NFileSystem::ListFilesRecursive( const FString& Directory, const
 int64 NFileSystem::GetFileSize( const FString& Path )
 {
 	WIN32_FILE_ATTRIBUTE_DATA Data;
-	if ( !GetFileAttributesExW( Path.ToWide().GetData(), GetFileExInfoStandard, &Data ) || ( Data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) != 0 ) return -1;
+	if ( !GetFileAttributesExW( Path.ToWide().GetData(), GetFileExInfoStandard, &Data ) || ( Data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) != 0 )
+	{
+		return -1;
+	}
 	return ( static_cast<int64>( Data.nFileSizeHigh ) << 32 ) | static_cast<int64>( Data.nFileSizeLow );
 }
 
 bool NFileSystem::GetLastWriteTime( const FString& Path, FFileTime& OutTime )
 {
 	WIN32_FILE_ATTRIBUTE_DATA Data;
-	if ( !GetFileAttributesExW( Path.ToWide().GetData(), GetFileExInfoStandard, &Data ) ) return false;
+	if ( !GetFileAttributesExW( Path.ToWide().GetData(), GetFileExInfoStandard, &Data ) )
+	{
+		return false;
+	}
 
 	FILETIME Local;
 	SYSTEMTIME System;
-	if ( !FileTimeToLocalFileTime( &Data.ftLastWriteTime, &Local ) || !FileTimeToSystemTime( &Local, &System ) ) return false;
+	if ( !FileTimeToLocalFileTime( &Data.ftLastWriteTime, &Local ) || !FileTimeToSystemTime( &Local, &System ) )
+	{
+		return false;
+	}
 
 	OutTime = ToFileTime( System );
 	return true;

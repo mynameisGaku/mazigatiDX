@@ -38,14 +38,23 @@ void THashTable<ElementType, KeyType, KeyFuncs, Hasher>::Reset()
 template<typename ElementType, typename KeyType, typename KeyFuncs, typename Hasher>
 int32 THashTable<ElementType, KeyType, KeyFuncs, Hasher>::FindIndex( const KeyType& Key ) const
 {
-	if ( Count == 0 ) return INDEX_NONE;
+	if ( Count == 0 )
+	{
+		return INDEX_NONE;
+	}
 
 	const uint32 Hash = HashKey( Key );
 	const int32  Mask = Capacity - 1;
 	for ( int32 i = static_cast<int32>( Hash ) & Mask; ; i = ( i + 1 ) & Mask )
 	{
-		if ( Hashes[i] == 0 ) return INDEX_NONE;
-		if ( Hashes[i] == Hash && KeyFuncs::GetKey( Elements[i] ) == Key ) return i;
+		if ( Hashes[i] == 0 )
+		{
+			return INDEX_NONE;
+		}
+		if ( Hashes[i] == Hash && KeyFuncs::GetKey( Elements[i] ) == Key )
+		{
+			return i;
+		}
 	}
 }
 
@@ -65,7 +74,10 @@ auto THashTable<ElementType, KeyType, KeyFuncs, Hasher>::FindOrAdd( const KeyTyp
 	ElementType* NewElement = new ( Temp ) ElementType( MakeElement() );
 	const uint32 Hash = HashKey( KeyFuncs::GetKey( *NewElement ) );
 
-	if ( CapacityFor( Count + 1 ) > Capacity ) Rehash( CapacityFor( Count + 1 ) );
+	if ( CapacityFor( Count + 1 ) > Capacity )
+	{
+		Rehash( CapacityFor( Count + 1 ) );
+	}
 
 	const int32 Index = FindEmptySlot( Hash );
 	NMemoryOps::RelocateItems( Elements + Index, NewElement, 1 );
@@ -139,7 +151,10 @@ void THashTable<ElementType, KeyType, KeyFuncs, Hasher>::Rehash( int32 NewCapaci
 
 	for ( int32 i = 0; i < OldCapacity; ++i )
 	{
-		if ( OldHashes[i] == 0 ) continue;
+		if ( OldHashes[i] == 0 )
+		{
+			continue;
+		}
 		const int32 Index = FindEmptySlot( OldHashes[i] );
 		NMemoryOps::RelocateItems( Elements + Index, OldElements + i, 1 );
 		Hashes[Index] = OldHashes[i];
@@ -152,7 +167,10 @@ void THashTable<ElementType, KeyType, KeyFuncs, Hasher>::Rehash( int32 NewCapaci
 template<typename ElementType, typename KeyType, typename KeyFuncs, typename Hasher>
 void THashTable<ElementType, KeyType, KeyFuncs, Hasher>::CopyFrom( const THashTable& Other )
 {
-	if ( Other.Count == 0 ) return;
+	if ( Other.Count == 0 )
+	{
+		return;
+	}
 
 	Capacity = Other.Capacity;
 	Count    = Other.Count;
@@ -161,6 +179,9 @@ void THashTable<ElementType, KeyType, KeyFuncs, Hasher>::CopyFrom( const THashTa
 	FMemory::Memcpy( Hashes, Other.Hashes, sizeof( uint32 ) * static_cast<usize>( Capacity ) );
 	for ( int32 i = 0; i < Capacity; ++i )
 	{
-		if ( Hashes[i] != 0 ) new ( Elements + i ) ElementType( Other.Elements[i] );
+		if ( Hashes[i] != 0 )
+		{
+			new ( Elements + i ) ElementType( Other.Elements[i] );
+		}
 	}
 }

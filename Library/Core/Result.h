@@ -72,15 +72,27 @@ public:
 
 	FORCEINLINE TResult( const TResult& Other ) : bIsOk( Other.bIsOk )
 	{
-		if ( bIsOk ) new ( Storage ) T( Other.OkRef() );
-		else new ( Storage ) E( Other.ErrRef() );
+		if ( bIsOk )
+		{
+			new ( Storage ) T( Other.OkRef() );
+		}
+		else
+		{
+			new ( Storage ) E( Other.ErrRef() );
+		}
 	}
 
 	TResult( TResult&& Other ) noexcept( bIsNothrowMoveConstructible<T> && bIsNothrowMoveConstructible<E> )
 		: bIsOk( Other.bIsOk )
 	{
-		if ( bIsOk ) new ( Storage ) T( MoveTemp( Other.OkRef() ) );
-		else new ( Storage ) E( MoveTemp( Other.ErrRef() ) );
+		if ( bIsOk )
+		{
+			new ( Storage ) T( MoveTemp( Other.OkRef() ) );
+		}
+		else
+		{
+			new ( Storage ) E( MoveTemp( Other.ErrRef() ) );
+		}
 	}
 
 	FORCEINLINE ~TResult() { Destroy(); }
@@ -91,8 +103,14 @@ public:
 		{
 			Destroy();
 			bIsOk = Other.bIsOk;
-			if ( bIsOk ) new ( Storage ) T( Other.OkRef() );
-			else new ( Storage ) E( Other.ErrRef() );
+			if ( bIsOk )
+			{
+				new ( Storage ) T( Other.OkRef() );
+			}
+			else
+			{
+				new ( Storage ) E( Other.ErrRef() );
+			}
 		}
 		return *this;
 	}
@@ -103,8 +121,14 @@ public:
 		{
 			Destroy();
 			bIsOk = Other.bIsOk;
-			if ( bIsOk ) new ( Storage ) T( MoveTemp( Other.OkRef() ) );
-			else new ( Storage ) E( MoveTemp( Other.ErrRef() ) );
+			if ( bIsOk )
+			{
+				new ( Storage ) T( MoveTemp( Other.OkRef() ) );
+			}
+			else
+			{
+				new ( Storage ) E( MoveTemp( Other.ErrRef() ) );
+			}
 		}
 		return *this;
 	}
@@ -122,34 +146,52 @@ public:
 	// エラー時に呼ぶと abort する
 	FORCEINLINE T& Unwrap() &
 	{
-		if ( !bIsOk ) NResultDetail::Panic( "TResult::Unwrap() called on Err" );
+		if ( !bIsOk )
+		{
+			NResultDetail::Panic( "TResult::Unwrap() called on Err" );
+		}
 		return OkRef();
 	}
 	FORCEINLINE const T& Unwrap() const&
 	{
-		if ( !bIsOk ) NResultDetail::Panic( "TResult::Unwrap() called on Err" );
+		if ( !bIsOk )
+		{
+			NResultDetail::Panic( "TResult::Unwrap() called on Err" );
+		}
 		return OkRef();
 	}
 	FORCEINLINE T&& Unwrap() &&
 	{
-		if ( !bIsOk ) NResultDetail::Panic( "TResult::Unwrap() called on Err" );
+		if ( !bIsOk )
+		{
+			NResultDetail::Panic( "TResult::Unwrap() called on Err" );
+		}
 		return MoveTemp( OkRef() );
 	}
 
 	// 成功時に呼ぶと abort する
 	FORCEINLINE E& UnwrapErr() &
 	{
-		if ( bIsOk ) NResultDetail::Panic( "TResult::UnwrapErr() called on Ok" );
+		if ( bIsOk )
+		{
+			NResultDetail::Panic( "TResult::UnwrapErr() called on Ok" );
+		}
 		return ErrRef();
 	}
 	FORCEINLINE const E& UnwrapErr() const&
 	{
-		if ( bIsOk ) NResultDetail::Panic( "TResult::UnwrapErr() called on Ok" );
+		if ( bIsOk )
+		{
+			NResultDetail::Panic( "TResult::UnwrapErr() called on Ok" );
+		}
 		return ErrRef();
 	}
 	FORCEINLINE E&& UnwrapErr() &&
 	{
-		if ( bIsOk ) NResultDetail::Panic( "TResult::UnwrapErr() called on Ok" );
+		if ( bIsOk )
+		{
+			NResultDetail::Panic( "TResult::UnwrapErr() called on Ok" );
+		}
 		return MoveTemp( ErrRef() );
 	}
 
@@ -211,8 +253,14 @@ private:
 
 	FORCEINLINE void Destroy() noexcept
 	{
-		if ( bIsOk ) OkRef().~T();
-		else ErrRef().~E();
+		if ( bIsOk )
+		{
+			OkRef().~T();
+		}
+		else
+		{
+			ErrRef().~E();
+		}
 	}
 
 	FORCEINLINE T& OkRef() noexcept { return *Launder( reinterpret_cast<T*>( Storage ) ); }
@@ -224,14 +272,26 @@ private:
 	template<typename Self>
 	FORCEINLINE static decltype( auto ) ForwardOk( Self&& This )
 	{
-		if constexpr ( bIsLvalueReference<Self> ) return ( This.OkRef() );
-		else return MoveTemp( This.OkRef() );
+		if constexpr ( bIsLvalueReference<Self> )
+		{
+			return ( This.OkRef() );
+		}
+		else
+		{
+			return MoveTemp( This.OkRef() );
+		}
 	}
 	template<typename Self>
 	FORCEINLINE static decltype( auto ) ForwardErr( Self&& This )
 	{
-		if constexpr ( bIsLvalueReference<Self> ) return ( This.ErrRef() );
-		else return MoveTemp( This.ErrRef() );
+		if constexpr ( bIsLvalueReference<Self> )
+		{
+			return ( This.ErrRef() );
+		}
+		else
+		{
+			return MoveTemp( This.ErrRef() );
+		}
 	}
 
 	template<typename Self, typename F>
@@ -242,7 +302,10 @@ private:
 	{
 		using E2  = TDecayT<TInvokeResultT<F, decltype( ForwardErr( Forward<Self>( This ) ) )>>;
 		using Out = TResult<T, E2>;
-		if ( This.IsOk() ) return Out::Ok( ForwardOk( Forward<Self>( This ) ) );
+		if ( This.IsOk() )
+		{
+			return Out::Ok( ForwardOk( Forward<Self>( This ) ) );
+		}
 		return Out::Err( Forward<F>( Func )( ForwardErr( Forward<Self>( This ) ) ) );
 	}
 
@@ -252,7 +315,10 @@ private:
 		using Out = TDecayT<TInvokeResultT<F, decltype( ForwardOk( Forward<Self>( This ) ) )>>;
 		static_assert( NResultDetail::TIsResult<Out>::Value, "AndThen: callback must return TResult" );
 		static_assert( bIsSame<typename Out::ErrorType, E>, "AndThen: callback must return the same error type" );
-		if ( This.IsErr() ) return Out::Err( ForwardErr( Forward<Self>( This ) ) );
+		if ( This.IsErr() )
+		{
+			return Out::Err( ForwardErr( Forward<Self>( This ) ) );
+		}
 		return Forward<F>( Func )( ForwardOk( Forward<Self>( This ) ) );
 	}
 
@@ -262,7 +328,10 @@ private:
 		using Out = TDecayT<TInvokeResultT<F, decltype( ForwardErr( Forward<Self>( This ) ) )>>;
 		static_assert( NResultDetail::TIsResult<Out>::Value, "OrElse: callback must return TResult" );
 		static_assert( bIsSame<typename Out::ValueType, T>, "OrElse: callback must return the same value type" );
-		if ( This.IsOk() ) return Out::Ok( ForwardOk( Forward<Self>( This ) ) );
+		if ( This.IsOk() )
+		{
+			return Out::Ok( ForwardOk( Forward<Self>( This ) ) );
+		}
 		return Forward<F>( Func )( ForwardErr( Forward<Self>( This ) ) );
 	}
 
@@ -299,23 +368,35 @@ public:
 	// エラー時に呼ぶと abort する
 	FORCEINLINE void Unwrap() const
 	{
-		if ( IsErr() ) NResultDetail::Panic( "TResult::Unwrap() called on Err" );
+		if ( IsErr() )
+		{
+			NResultDetail::Panic( "TResult::Unwrap() called on Err" );
+		}
 	}
 
 	// 成功時に呼ぶと abort する
 	FORCEINLINE E& UnwrapErr() &
 	{
-		if ( IsOk() ) NResultDetail::Panic( "TResult::UnwrapErr() called on Ok" );
+		if ( IsOk() )
+		{
+			NResultDetail::Panic( "TResult::UnwrapErr() called on Ok" );
+		}
 		return Error.GetValue();
 	}
 	FORCEINLINE const E& UnwrapErr() const&
 	{
-		if ( IsOk() ) NResultDetail::Panic( "TResult::UnwrapErr() called on Ok" );
+		if ( IsOk() )
+		{
+			NResultDetail::Panic( "TResult::UnwrapErr() called on Ok" );
+		}
 		return Error.GetValue();
 	}
 	FORCEINLINE E&& UnwrapErr() &&
 	{
-		if ( IsOk() ) NResultDetail::Panic( "TResult::UnwrapErr() called on Ok" );
+		if ( IsOk() )
+		{
+			NResultDetail::Panic( "TResult::UnwrapErr() called on Ok" );
+		}
 		return MoveTemp( Error ).GetValue();
 	}
 
@@ -332,7 +413,10 @@ public:
 	{
 		using E2  = TDecayT<TInvokeResultT<F, const E&>>;
 		using Out = TResult<void, E2>;
-		if ( IsOk() ) return Out::Ok();
+		if ( IsOk() )
+		{
+			return Out::Ok();
+		}
 		return Out::Err( Forward<F>( Func )( Error.GetValue() ) );
 	}
 
@@ -343,7 +427,10 @@ public:
 		using Out = TDecayT<TInvokeResultT<F>>;
 		static_assert( NResultDetail::TIsResult<Out>::Value, "AndThen: callback must return TResult" );
 		static_assert( bIsSame<typename Out::ErrorType, E>, "AndThen: callback must return the same error type" );
-		if ( IsErr() ) return Out::Err( Error.GetValue() );
+		if ( IsErr() )
+		{
+			return Out::Err( Error.GetValue() );
+		}
 		return Forward<F>( Func )();
 	}
 
@@ -354,7 +441,10 @@ public:
 		using Out = TDecayT<TInvokeResultT<F, const E&>>;
 		static_assert( NResultDetail::TIsResult<Out>::Value, "OrElse: callback must return TResult" );
 		static_assert( bIsVoid<typename Out::ValueType>, "OrElse: callback must return TResult<void, ...>" );
-		if ( IsOk() ) return Out::Ok();
+		if ( IsOk() )
+		{
+			return Out::Ok();
+		}
 		return Forward<F>( Func )( Error.GetValue() );
 	}
 

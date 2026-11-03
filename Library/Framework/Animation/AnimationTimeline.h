@@ -74,10 +74,16 @@ namespace NAnim
 	template<typename TFunction>
 	void ForEachEnteredStep( int64 FromAbsolute, int64 ToAbsolute, int32 NumSteps, TFunction&& Function )
 	{
-		if ( NumSteps <= 0 || FromAbsolute == ToAbsolute ) return;
+		if ( NumSteps <= 0 || FromAbsolute == ToAbsolute )
+		{
+			return;
+		}
 		auto StepOf = [NumSteps]( int64 Absolute ) {
 			int64 Mod = Absolute % NumSteps;
-			if ( Mod < 0 ) Mod += NumSteps;
+			if ( Mod < 0 )
+			{
+				Mod += NumSteps;
+			}
 			return static_cast<int32>( Mod );
 		};
 		int32 Count = 0;
@@ -85,14 +91,26 @@ namespace NAnim
 		{
 			// 長く止まったあとの巻き戻しは、最後の MaxEnumerated 個だけ
 			int64 Begin = FromAbsolute + 1;
-			if ( ToAbsolute - Begin + 1 > MaxEnumerated ) Begin = ToAbsolute - MaxEnumerated + 1;
-			for ( int64 Absolute = Begin; Absolute <= ToAbsolute && Count < MaxEnumerated; ++Absolute, ++Count ) Function( StepOf( Absolute ) );
+			if ( ToAbsolute - Begin + 1 > MaxEnumerated )
+			{
+				Begin = ToAbsolute - MaxEnumerated + 1;
+			}
+			for ( int64 Absolute = Begin; Absolute <= ToAbsolute && Count < MaxEnumerated; ++Absolute, ++Count )
+			{
+				Function( StepOf( Absolute ) );
+			}
 		}
 		else
 		{
 			int64 Begin = FromAbsolute - 1;
-			if ( Begin - ToAbsolute + 1 > MaxEnumerated ) Begin = ToAbsolute + MaxEnumerated - 1;
-			for ( int64 Absolute = Begin; Absolute >= ToAbsolute && Count < MaxEnumerated; --Absolute, ++Count ) Function( StepOf( Absolute ) );
+			if ( Begin - ToAbsolute + 1 > MaxEnumerated )
+			{
+				Begin = ToAbsolute + MaxEnumerated - 1;
+			}
+			for ( int64 Absolute = Begin; Absolute >= ToAbsolute && Count < MaxEnumerated; --Absolute, ++Count )
+			{
+				Function( StepOf( Absolute ) );
+			}
 		}
 	}
 }

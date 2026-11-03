@@ -1,6 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef FRAMEWORK_CORE_COLLECTION_ARRAY_H
-#define FRAMEWORK_CORE_COLLECTION_ARRAY_H
+#pragma once
 #include "Library/Core/Types/CompilerMacros.h"
 #include <initializer_list>
 
@@ -47,7 +46,10 @@ public:
 	template<typename InputIt, typename = TEnableIfT<!bIsIntegral<InputIt>>>
 	FORCEINLINE TArray( InputIt First, InputIt Last )
 	{
-		for ( ; First != Last; ++First ) Emplace( *First );
+		for ( ; First != Last; ++First )
+		{
+			Emplace( *First );
+		}
 	}
 
 	FORCEINLINE TArray( const TArray& Other ) { Append( Other.Data, Other.ArrayNum ); }
@@ -91,7 +93,10 @@ public:
 		const T Copy = Value;  // Value が自分の要素を指していても安全なように
 		Reset();
 		Reserve( Count );
-		for ( int32 i = 0; i < Count; ++i ) new ( Data + i ) T( Copy );
+		for ( int32 i = 0; i < Count; ++i )
+		{
+			new ( Data + i ) T( Copy );
+		}
 		ArrayNum = Count;
 	}
 
@@ -111,13 +116,19 @@ public:
 	// 容量を Capacity 以上にする
 	FORCEINLINE void Reserve( int32 Capacity )
 	{
-		if ( Capacity > ArrayMax ) Reallocate( Capacity );
+		if ( Capacity > ArrayMax )
+		{
+			Reallocate( Capacity );
+		}
 	}
 
 	// 余分な容量を解放
 	FORCEINLINE void Shrink()
 	{
-		if ( ArrayMax > ArrayNum ) Reallocate( ArrayNum );
+		if ( ArrayMax > ArrayNum )
+		{
+			Reallocate( ArrayNum );
+		}
 	}
 
 	// 全要素を削除してメモリも解放（Slack 分は確保し直す）
@@ -125,7 +136,10 @@ public:
 	{
 		NMemoryOps::DestructItems( Data, ArrayNum );
 		ArrayNum = 0;
-		if ( ArrayMax != Slack ) Reallocate( Slack );
+		if ( ArrayMax != Slack )
+		{
+			Reallocate( Slack );
+		}
 	}
 
 	// 全要素を削除（メモリは保持）
@@ -228,7 +242,10 @@ public:
 
 	FORCEINLINE void Append( const T* Ptr, int32 Count )
 	{
-		if ( Count <= 0 ) return;
+		if ( Count <= 0 )
+		{
+			return;
+		}
 		COLLECTION_CHECK( !( Ptr >= Data && Ptr < Data + ArrayNum ), "TArray::Append from itself" );
 		ReserveForAppend( ArrayNum + Count );
 		NMemoryOps::CopyConstructItems( Data + ArrayNum, Ptr, Count );
@@ -239,7 +256,10 @@ public:
 
 	FORCEINLINE void Append( TArray&& Other )
 	{
-		if ( &Other == this ) { Append( static_cast<const TArray&>( Other ) ); return; }
+		if ( &Other == this )
+		{
+			Append( static_cast<const TArray&>( Other ) ); return;
+		}
 		ReserveForAppend( ArrayNum + Other.ArrayNum );
 		NMemoryOps::RelocateItems( Data + ArrayNum, Other.Data, Other.ArrayNum );
 		ArrayNum += Other.ArrayNum;
@@ -277,7 +297,10 @@ public:
 	FORCEINLINE bool RemoveSingle( const T& Item )
 	{
 		const int32 Index = Find( Item );
-		if ( Index == INDEX_NONE ) return false;
+		if ( Index == INDEX_NONE )
+		{
+			return false;
+		}
 		RemoveAt( Index );
 		return true;
 	}
@@ -293,7 +316,10 @@ public:
 	FORCEINLINE void RemoveAtSwap( int32 Index )
 	{
 		COLLECTION_CHECK( IsValidIndex( Index ), "TArray::RemoveAtSwap index out of range" );
-		if ( Index != ArrayNum - 1 ) Data[Index] = MoveTemp( Data[ArrayNum - 1] );
+		if ( Index != ArrayNum - 1 )
+		{
+			Data[Index] = MoveTemp( Data[ArrayNum - 1] );
+		}
 		NMemoryOps::DestructItem( Data + ArrayNum - 1 );
 		--ArrayNum;
 	}
@@ -306,7 +332,10 @@ public:
 	{
 		for ( int32 i = 0; i < ArrayNum; ++i )
 		{
-			if ( Data[i] == Item ) return i;
+			if ( Data[i] == Item )
+			{
+				return i;
+			}
 		}
 		return INDEX_NONE;
 	}
@@ -319,7 +348,10 @@ public:
 	{
 		for ( int32 i = ArrayNum - 1; i >= 0; --i )
 		{
-			if ( Data[i] == Item ) return i;
+			if ( Data[i] == Item )
+			{
+				return i;
+			}
 		}
 		return INDEX_NONE;
 	}
@@ -331,7 +363,10 @@ public:
 	{
 		for ( int32 i = 0; i < ArrayNum; ++i )
 		{
-			if ( Pred( Data[i] ) ) return i;
+			if ( Pred( Data[i] ) )
+			{
+				return i;
+			}
 		}
 		return INDEX_NONE;
 	}
@@ -358,7 +393,10 @@ public:
 	{
 		for ( int32 i = 0; i < ArrayNum; ++i )
 		{
-			if ( !Pred( Data[i] ) ) return false;
+			if ( !Pred( Data[i] ) )
+			{
+				return false;
+			}
 		}
 		return true;
 	}
@@ -369,7 +407,10 @@ public:
 		int32 Count = 0;
 		for ( int32 i = 0; i < ArrayNum; ++i )
 		{
-			if ( Pred( Data[i] ) ) ++Count;
+			if ( Pred( Data[i] ) )
+			{
+				++Count;
+			}
 		}
 		return Count;
 	}
@@ -384,7 +425,10 @@ public:
 		TArray Result;
 		for ( int32 i = 0; i < ArrayNum; ++i )
 		{
-			if ( Pred( Data[i] ) ) Result.Add( Data[i] );
+			if ( Pred( Data[i] ) )
+			{
+				Result.Add( Data[i] );
+			}
 		}
 		return Result;
 	}
@@ -396,7 +440,10 @@ public:
 		using U = TDecayT<TInvokeResultT<Func, const T&>>;
 		TArray<U> Result;
 		Result.Reserve( ArrayNum );
-		for ( int32 i = 0; i < ArrayNum; ++i ) Result.Add( Fn( Data[i] ) );
+		for ( int32 i = 0; i < ArrayNum; ++i )
+		{
+			Result.Add( Fn( Data[i] ) );
+		}
 		return Result;
 	}
 
@@ -424,10 +471,16 @@ public:
 	//-------------------------------------------------------------------------
 	friend FORCEINLINE bool operator==( const TArray& A, const TArray& B )
 	{
-		if ( A.ArrayNum != B.ArrayNum ) return false;
+		if ( A.ArrayNum != B.ArrayNum )
+		{
+			return false;
+		}
 		for ( int32 i = 0; i < A.ArrayNum; ++i )
 		{
-			if ( !( A.Data[i] == B.Data[i] ) ) return false;
+			if ( !( A.Data[i] == B.Data[i] ) )
+			{
+				return false;
+			}
 		}
 		return true;
 	}
@@ -446,14 +499,23 @@ private:
 	// 追記のために、容量を Required 以上にする。空の配列（作った直後のコピーなど）には必要な数ちょうど、すでに要素がある配列には少し余分に確保する
 	FORCEINLINE void ReserveForAppend( int32 Required )
 	{
-		if ( ArrayMax == 0 ) Reserve( Required );
-		else GrowTo( Required );
+		if ( ArrayMax == 0 )
+		{
+			Reserve( Required );
+		}
+		else
+		{
+			GrowTo( Required );
+		}
 	}
 
 	// 容量を Required 以上にする。足りないときは、再確保の回数を抑えるため、少し余分に確保する（Reserve は指定した数ちょうど）
 	FORCEINLINE void GrowTo( int32 Required )
 	{
-		if ( Required > ArrayMax ) Reallocate( CalculateGrowth( Required ) );
+		if ( Required > ArrayMax )
+		{
+			Reallocate( CalculateGrowth( Required ) );
+		}
 	}
 
 	FORCEINLINE static int32 CalculateGrowth( int32 Required )
@@ -473,5 +535,3 @@ private:
 };
 
 #include "Array.inl"
-
-#endif

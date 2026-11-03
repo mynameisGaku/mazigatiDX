@@ -26,7 +26,10 @@ void CSamplesApplication::OnInit()
 	Catalog.RegisterAll( Scenes );
 
 	TArray<FString> Names;
-	for ( const FSampleInfo& Sample : Catalog.GetSorted() ) Names.Add( Sample.Name );
+	for ( const FSampleInfo& Sample : Catalog.GetSorted() )
+	{
+		Names.Add( Sample.Name );
+	}
 	LOG( LogSamples, Log, "Samples (%d): %s", Names.Num(), *FString::Join( Names, ", " ) );
 
 	// --sample=Name で、そのサンプルから始める（無い名前なら、警告を出して一覧から始める）
@@ -38,7 +41,10 @@ void CSamplesApplication::OnInit()
 	}
 	else
 	{
-		if ( Requested.IsSet() ) LOG( LogSamples, Warning, "Unknown sample '%s'. Starting from the list.", *Requested.GetValue() );
+		if ( Requested.IsSet() )
+		{
+			LOG( LogSamples, Warning, "Unknown sample '%s'. Starting from the list.", *Requested.GetValue() );
+		}
 		Scenes.ChangeScene( CSampleCatalog::GetBrowserSceneName() );
 	}
 }

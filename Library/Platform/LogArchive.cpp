@@ -27,18 +27,30 @@ NLogArchive::FPrepareResult NLogArchive::Prepare( const FString& Directory, cons
 {
 	FPrepareResult Result;
 	Result.bDirectoryReady = NFileSystem::EnsureDirectory( Directory );
-	if ( !Result.bDirectoryReady ) return Result;
+	if ( !Result.bDirectoryReady )
+	{
+		return Result;
+	}
 
 	// 1. 今回のログと同じ名前のファイルが既にあれば、古いログとして改名する
 	const FString CurrentPath = Directory / ( Name + ".log" );
 	if ( NFileSystem::FileExists( CurrentPath ) )
 	{
 		FFileTime Time;
-		if ( !NFileSystem::GetLastWriteTime( CurrentPath, Time ) ) Time = NFileSystem::GetCurrentLocalTime();
+		if ( !NFileSystem::GetLastWriteTime( CurrentPath, Time ) )
+		{
+			Time = NFileSystem::GetCurrentLocalTime();
+		}
 
 		const FString BackupPath = MakeUniqueBackupPath( Directory, Name, Time.ToFileNameString() );
-		if ( NFileSystem::RenameFile( CurrentPath, BackupPath ) ) Result.BackupPath = BackupPath;
-		else Result.bBackupFailed = true;
+		if ( NFileSystem::RenameFile( CurrentPath, BackupPath ) )
+		{
+			Result.BackupPath = BackupPath;
+		}
+		else
+		{
+			Result.bBackupFailed = true;
+		}
 	}
 
 	// 2. 古いバックアップを整理する。名前に日時が入っているので、文字列順 = 古い順
@@ -70,11 +82,17 @@ NLogArchive::FOpenResult NLogArchive::OpenLogFile( const FString& Directory, con
 
 		// 使用中の <Name>.log は改名できない（Prepare は bBackupFailed になるだけで、他は問題なく進む）
 		const FPrepareResult Archive = Prepare( Directory, InstanceName, MaxBackups );
-		if ( !Archive.bDirectoryReady ) return Result;
+		if ( !Archive.bDirectoryReady )
+		{
+			return Result;
+		}
 
 		const FString Path = Directory / ( InstanceName + ".log" );
 		TSharedPtr<CFileLogSink> Sink = MakeShared<CFileLogSink>( Path, false, true );
-		if ( !Sink->IsOpen() ) continue;   // 別のインスタンスが使用中 -> 次の名前
+		if ( !Sink->IsOpen() )
+		{
+			continue;   // 別のインスタンスが使用中 -> 次の名前
+		}
 
 		Result.Sink = Sink;
 		Result.Path = Path;

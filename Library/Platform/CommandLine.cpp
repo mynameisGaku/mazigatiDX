@@ -39,7 +39,10 @@ TArray<FString> NCommandLine::Split( const FString& CommandLine )
 		Current += Ch;
 		bHasToken = true;
 	}
-	if ( bHasToken ) Tokens.Add( Current );
+	if ( bHasToken )
+	{
+		Tokens.Add( Current );
+	}
 	return Tokens;
 }
 
@@ -49,7 +52,10 @@ bool NCommandLine::HasFlag( const FString& CommandLine, const char* Name )
 	const TArray<FString> Tokens = Split( CommandLine );
 	for ( int32 i = 1; i < Tokens.Num(); ++i )
 	{
-		if ( Tokens[i] == Flag ) return true;
+		if ( Tokens[i] == Flag )
+		{
+			return true;
+		}
 	}
 	return false;
 }
@@ -65,7 +71,10 @@ TOptional<FString> NCommandLine::GetValue( const FString& CommandLine, const cha
 	const TArray<FString> Tokens = Split( CommandLine );
 	for ( int32 i = 1; i < Tokens.Num(); ++i )
 	{
-		if ( Tokens[i].StartsWith( Prefix ) ) return Tokens[i].RightChop( Prefix.Len() );
+		if ( Tokens[i].StartsWith( Prefix ) )
+		{
+			return Tokens[i].RightChop( Prefix.Len() );
+		}
 	}
 	return {};
 }
