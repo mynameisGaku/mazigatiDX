@@ -1,40 +1,11 @@
-﻿#pragma once
+﻿// SPDX-License-Identifier: MIT
+#pragma once
 
-#include "Library/Core/Collection/Array.h"
-#include "Library/Core/Memory/SharedPtr.h"
-#include "Library/Core/Thread/Atomic.h"
-#include "Library/Core/Thread/Mutex.h"
 #include "Library/Core/Types/Callable.h"
 #include "Library/Core/Types/CompilerMacros.h"
 #include "Library/Core/Types/TypeDefinition.h"
 #include "Library/Core/Types/Utility.h"
-
-//=============================================================================
-// FJobHandle
-//   Schedule で投げた単発のジョブの控え。終わったかを調べたり、待ったり、次のジョブの依存先にしたりできる。
-//=============================================================================
-struct FJobState
-{
-	TCallable<void()> Function;
-	const char* Name = "Job";
-	TAtomic<int32> NumPending{ 0 };   // 自分の実行待ち 1 + 終わっていない依存先の数。0 になったら実行できる
-	TAtomic<bool> bDone{ false };
-	FMutex Mutex;                     // bDone の切り替えと Dependents を守る
-	TArray<TSharedPtr<FJobState>> Dependents;   // このジョブが終わったら実行できるようになるジョブ
-};
-
-class FJobHandle
-{
-public:
-	FJobHandle() = default;
-	explicit FJobHandle( TSharedPtr<FJobState> InState ) : State( MoveTemp( InState ) ) {}
-
-	// 空のハンドル（何も待たない）は終わっている扱い
-	FORCEINLINE bool IsDone() const { return State == nullptr || State->bDone.Load( EMemoryOrder::Acquire ); }
-	FORCEINLINE bool IsValid() const { return State != nullptr; }
-
-	TSharedPtr<FJobState> State;
-};
+#include "Library/Core/Thread/JobHandle.h"
 
 //=============================================================================
 // IJobSystem

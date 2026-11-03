@@ -1,6 +1,7 @@
-﻿#pragma once
+﻿// SPDX-License-Identifier: MIT
+#pragma once
 #include "Library/Core/Collection/ArrayView.h"
-#include "Library/Core/Interfaces/Render/MeshTypes.h"
+#include "Library/Framework/Render/MeshTypes.h"
 #include "Library/Core/Memory/SharedPtr.h"
 
 //=============================================================================

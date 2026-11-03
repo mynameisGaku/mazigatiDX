@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "EffectPreviewSurface.h"
+#include "Library/Core/Interfaces/Render/IDrawExecutor.h"
 
 
 #include "Library/Core/Log/Log.h"

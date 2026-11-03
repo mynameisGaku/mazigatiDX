@@ -1,6 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef LIBRARY_CORE_INTERFACES_ASSET_STATICMODELSURFACESECTION_H
-#define LIBRARY_CORE_INTERFACES_ASSET_STATICMODELSURFACESECTION_H
+#pragma once
 
 #include "Library/Core/Types/TypeDefinition.h"
 
@@ -13,5 +12,3 @@ struct FStaticModelSurfaceSection
 	int32 SourceFrameIndex = -1;  // 元モデルのフレーム番号。未対応なら -1
 	int32 SourceMeshIndex = -1;   // 元モデルのメッシュ番号。未対応なら -1
 };
-
-#endif

@@ -1,7 +1,7 @@
 ﻿#include "MeshRender.h"
 
 
-#include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
+#include "Library/Framework/Render/DrawMaterialMesh.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Render/MeshMaterialEffectResources.h"
 #include "Library/Framework/Ecs/SystemParams.h"

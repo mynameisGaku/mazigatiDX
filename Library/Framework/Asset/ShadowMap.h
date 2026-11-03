@@ -1,7 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 
-#include "Library/Core/Interfaces/Render/DrawCommand.h"
+#include "Library/Framework/Render/DrawCommand.h"
 #include "Library/Core/Interfaces/Render/IShadowMap.h"
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Math/Matrix4x4.h"

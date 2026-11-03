@@ -1,5 +1,8 @@
-﻿#pragma once
-#include "Library/Core/Interfaces/Render/DrawCommand.h"
+﻿// SPDX-License-Identifier: MIT
+#pragma once
+#include "Library/Core/Interfaces/Render/IDrawExecutor.h"
+#include "Library/Core/Render/OffscreenCaptureDesc.h"
+#include "Library/Framework/Render/DrawCommand.h"
 #include "Library/Framework/Subsystem/AppSubsystem.h"
 #include "Library/Platform/DxLib/EffectMaterialRenderer.h"
 

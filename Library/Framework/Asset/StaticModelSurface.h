@@ -1,8 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef LIBRARY_FRAMEWORK_ASSET_STATICMODELSURFACE_H
-#define LIBRARY_FRAMEWORK_ASSET_STATICMODELSURFACE_H
+#pragma once
 
-#include "Library/Core/Interfaces/Asset/StaticModelSurfaceData.h"
+#include "Library/Framework/Asset/StaticModelSurfaceData.h"
 #include "Library/Core/Memory/SharedPtr.h"
 
 class CModel;
@@ -23,5 +22,3 @@ private:
 	TSharedPtr<const CModel> Source;  // Data内の借用画像handleを生かす元モデル
 	FStaticModelSurfaceData Data;     // 読み込み後に変更しない面データ
 };
-
-#endif

@@ -1,6 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
-#include "Library/Core/Interfaces/Physics/PhysicsCharacterTypes.h"
+#include "Library/Physics/PhysicsCharacterTypes.h"
 #include "Library/Core/Types/TypeDefinition.h"
 #include "Library/Math/Vector3.h"
 

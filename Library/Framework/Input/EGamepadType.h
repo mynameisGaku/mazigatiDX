@@ -1,6 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef FRAMEWORK_INPUT_EGAMEPADTYPE_H
-#define FRAMEWORK_INPUT_EGAMEPADTYPE_H
+#pragma once
 
 #include "Library/Core/Types/TypeDefinition.h"
 
@@ -25,5 +24,3 @@ enum class EGamepadType : uint8
 	GameCube, // GameCube 互換。
 	Steam // Steam Controller 互換。
 };
-
-#endif

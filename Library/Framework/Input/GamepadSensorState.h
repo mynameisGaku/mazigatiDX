@@ -1,6 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef FRAMEWORK_INPUT_GAMEPADSENSORSTATE_H
-#define FRAMEWORK_INPUT_GAMEPADSENSORSTATE_H
+#pragma once
 
 #include "Library/Core/Types/TypeDefinition.h"
 
@@ -16,5 +15,3 @@ struct FGamepadSensorState
 	// 今フレームの値を取得できたか。
 	bool bValid = false;
 };
-
-#endif

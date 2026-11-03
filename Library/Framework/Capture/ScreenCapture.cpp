@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "Library/Core/Thread/GameThread.h"
+#include "Library/Core/Interfaces/Render/IDrawExecutor.h"
 #include "Library/Framework/Capture/ScreenCapture.h"
 
 #include "Library/Core/File/File.h"
@@ -13,7 +14,7 @@
 #include "Library/Framework/Capture/GifEncoder.h"
 #include "Library/Framework/Capture/OffscreenShot.h"
 #include "Library/Framework/Capture/ScreenshotNames.h"
-#include "Library/Core/Interfaces/Render/DrawCommand.h"
+#include "Library/Framework/Render/DrawCommand.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/GameInstance/GameInstance.h"
 #include "Library/Framework/Object/GameObject.h"

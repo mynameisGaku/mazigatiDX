@@ -1,6 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
-#include "Library/Core/Interfaces/Physics/PhysicsContactTypes.h"
+#include "Library/Physics/PhysicsContactTypes.h"
 #include "Library/Core/Types/TypeDefinition.h"
 
 //=============================================================================

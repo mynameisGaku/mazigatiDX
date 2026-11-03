@@ -1,11 +1,12 @@
-﻿#pragma once
+﻿// SPDX-License-Identifier: MIT
+#pragma once
 #include "Library/Core/Thread/Atomic.h"
 #include "Library/Core/Thread/Mutex.h"
 #include "Library/Core/Types/CompilerMacros.h"
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/Map.h"
-#include "Library/Core/Interfaces/Physics/PhysicsContactTypes.h"
+#include "Library/Physics/PhysicsContactTypes.h"
 #include "Library/Physics/PhysicsTypes.h"
 
 #pragma push_macro( "min" )

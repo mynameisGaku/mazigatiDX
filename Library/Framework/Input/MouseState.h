@@ -1,6 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef FRAMEWORK_CORE_INTERFACES_INPUT_MOUSESTATE_H
-#define FRAMEWORK_CORE_INTERFACES_INPUT_MOUSESTATE_H
+#pragma once
 
 #include "Library/Core/Types/TypeDefinition.h"
 
@@ -32,5 +31,3 @@ struct FMouseState
 	// ゲームのメインウィンドウに入力の対象がある場合だけ true。
 	bool bFocused = false;
 };
-
-#endif

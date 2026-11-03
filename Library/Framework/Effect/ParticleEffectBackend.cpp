@@ -7,7 +7,7 @@
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Effect/EffectPathGeometry.h"
-#include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
+#include "Library/Framework/Render/DrawMaterialMesh.h"
 #include "Library/Framework/Render/DrawContext.h"
 #include "Library/Math/MathUtils.h"
 

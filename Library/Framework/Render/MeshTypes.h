@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// SPDX-License-Identifier: MIT
+#pragma once
 #include "Library/Core/Types/TypeDefinition.h"
 
 //=============================================================================

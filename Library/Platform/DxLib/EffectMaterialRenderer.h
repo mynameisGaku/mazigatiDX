@@ -1,13 +1,12 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef LIBRARY_PLATFORM_DXLIB_EFFECTMATERIALRENDERER_H
-#define LIBRARY_PLATFORM_DXLIB_EFFECTMATERIALRENDERER_H
+#pragma once
 
-#include "Library/Core/Interfaces/Render/DrawCommand.h"
-#include "Library/Core/Interfaces/Render/DrawDistortedMaterialQuad.h"
-#include "Library/Core/Interfaces/Render/DrawDistortedMaterialRibbon.h"
-#include "Library/Core/Interfaces/Render/DrawMaterialQuad.h"
-#include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
-#include "Library/Core/Interfaces/Render/DrawMaterialRibbon.h"
+#include "Library/Framework/Render/DrawCommand.h"
+#include "Library/Framework/Render/DrawDistortedMaterialQuad.h"
+#include "Library/Framework/Render/DrawDistortedMaterialRibbon.h"
+#include "Library/Framework/Render/DrawMaterialQuad.h"
+#include "Library/Framework/Render/DrawMaterialMesh.h"
+#include "Library/Framework/Render/DrawMaterialRibbon.h"
 
 struct FMatrix4x4;
 
@@ -67,5 +66,3 @@ private:
 	// DxLib終了前に解放するGPU資源の所有者。
 	FImpl* Impl = nullptr;
 };
-
-#endif

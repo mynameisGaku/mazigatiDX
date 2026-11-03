@@ -2,7 +2,7 @@
 #pragma once
 
 #include "Library/Core/Collection/Array.h"
-#include "Library/Core/Interfaces/Render/DrawCommand.h"
+#include "Library/Framework/Render/DrawCommand.h"
 
 //=============================================================================
 // FDxLibShader

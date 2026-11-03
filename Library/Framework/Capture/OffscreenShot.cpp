@@ -1,7 +1,8 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "Library/Framework/Capture/OffscreenShot.h"
+#include "Library/Core/Interfaces/Render/IDrawExecutor.h"
 
-#include "Library/Core/Interfaces/Render/DrawCommand.h"
+#include "Library/Framework/Render/DrawCommand.h"
 #include "Library/Framework/Capture/AlphaMatte.h"
 #include "Library/Framework/Scene/ISceneManager.h"
 #include "Library/Math/MathUtils.h"

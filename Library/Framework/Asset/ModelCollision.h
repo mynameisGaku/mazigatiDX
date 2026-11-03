@@ -2,7 +2,7 @@
 #pragma once
 
 #include "Library/Core/Collection/Array.h"
-#include "Library/Core/Interfaces/Asset/ModelCollisionTypes.h"
+#include "Library/Framework/Asset/ModelCollisionTypes.h"
 #include "Library/Math/Matrix4x4.h"
 #include "Library/Math/Vector3.h"
 

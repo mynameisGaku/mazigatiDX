@@ -1,6 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef FRAMEWORK_INPUT_EGAMEPADAXIS_H
-#define FRAMEWORK_INPUT_EGAMEPADAXIS_H
+#pragma once
 
 #include "Library/Core/Types/TypeDefinition.h"
 
@@ -15,5 +14,3 @@ enum class EGamepadAxis : uint8
 	RightTrigger, // 右トリガー。
 	Count // 状態配列の要素数。
 };
-
-#endif

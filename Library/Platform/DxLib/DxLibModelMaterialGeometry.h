@@ -1,9 +1,8 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef LIBRARY_PLATFORM_DXLIB_DXLIBMODELMATERIALGEOMETRY_H
-#define LIBRARY_PLATFORM_DXLIB_DXLIBMODELMATERIALGEOMETRY_H
+#pragma once
 
 #include "Library/Core/Collection/Array.h"
-#include "Library/Core/Interfaces/Render/MeshGeometryChunk.h"
+#include "Library/Framework/Render/MeshGeometryChunk.h"
 
 // 選択材質を持つ全meshの不変描画形状。
 struct FDxLibModelMaterialGeometry
@@ -24,5 +23,3 @@ struct FDxLibModelMaterialGeometry
 	// Snapshot順を保った選択材質mesh。
 	TArray<FMesh> Meshes;
 };
-
-#endif

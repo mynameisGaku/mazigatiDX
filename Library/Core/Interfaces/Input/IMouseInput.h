@@ -1,9 +1,8 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef FRAMEWORK_CORE_INTERFACES_INPUT_IMOUSEINPUT_H
-#define FRAMEWORK_CORE_INTERFACES_INPUT_IMOUSEINPUT_H
+#pragma once
 
-#include "Library/Core/Interfaces/Input/EMouseButton.h"
-#include "Library/Core/Interfaces/Input/MouseState.h"
+#include "Library/Framework/Input/EMouseButton.h"
+#include "Library/Framework/Input/MouseState.h"
 
 // 毎フレームに一度取り込んだマウス入力。カーソルの表示状態は変更しない。
 class IMouseInput
@@ -20,5 +19,3 @@ public:
 	// Button がこのフレームで離された場合だけ true。フォーカス喪失も解放とする。
 	virtual bool IsMouseButtonReleased( EMouseButton Button ) const = 0;
 };
-
-#endif

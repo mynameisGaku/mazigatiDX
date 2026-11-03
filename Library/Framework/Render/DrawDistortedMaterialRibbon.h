@@ -1,9 +1,8 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef LIBRARY_CORE_INTERFACES_RENDER_DRAWDISTORTEDMATERIALRIBBON_H
-#define LIBRARY_CORE_INTERFACES_RENDER_DRAWDISTORTEDMATERIALRIBBON_H
+#pragma once
 
 
-#include "DrawMaterialRibbon.h"
+#include "Library/Framework/Render/DrawMaterialRibbon.h"
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/TypeTraits.h"
@@ -67,5 +66,3 @@ namespace NDrawDistortedMaterialRibbon
 
 static_assert( sizeof( FDrawDistortedMaterialRibbonData::FPoint ) == 52 && bIsTriviallyCopyable<FDrawDistortedMaterialRibbonData::FPoint>, "distorted material ribbon point must occupy thirteen words" );
 static_assert( sizeof( FDrawDistortedMaterialRibbonData ) == 68 && sizeof( FDrawDistortedMaterialRibbonData ) % 4 == 0 && bIsTriviallyCopyable<FDrawDistortedMaterialRibbonData>, "distorted material ribbon header must occupy seventeen words" );
-
-#endif

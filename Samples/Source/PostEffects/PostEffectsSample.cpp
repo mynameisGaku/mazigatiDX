@@ -1,6 +1,6 @@
 ﻿#include "PostEffectsSample.h"
 
-#include "Library/Core/Interfaces/Render/RenderTargetTypes.h"
+#include "Library/Framework/Render/RenderTargetTypes.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Render/ImmediateDraw.h"

@@ -6,8 +6,8 @@
 
 
 #include "Library/Core/Collection/Map.h"
-#include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
-#include "Library/Core/Interfaces/Render/MeshGeometryChunk.h"
+#include "Library/Framework/Render/DrawMaterialMesh.h"
+#include "Library/Framework/Render/MeshGeometryChunk.h"
 #include "Library/Framework/Render/MeshMaterialEffectResources.h"
 
 namespace

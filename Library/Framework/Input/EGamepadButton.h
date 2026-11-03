@@ -1,6 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef FRAMEWORK_INPUT_EGAMEPADBUTTON_H
-#define FRAMEWORK_INPUT_EGAMEPADBUTTON_H
+#pragma once
 
 #include "Library/Core/Types/TypeDefinition.h"
 
@@ -35,5 +34,3 @@ enum class EGamepadButton : uint8
 	Misc6, // 機種固有の追加ボタン6。
 	Count // 状態配列の要素数。
 };
-
-#endif

@@ -2,7 +2,7 @@
 #include "DxLibDrawExecutor.h"
 
 
-#include "Library/Core/Interfaces/Render/DrawModelMaterial.h"
+#include "Library/Framework/Render/DrawModelMaterial.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Platform/DxLib/DxLibAssetBackend.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"

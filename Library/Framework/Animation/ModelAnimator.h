@@ -16,6 +16,7 @@
 
 class FTransformView;
 class CModelAnimationSampler;
+class IDrawExecutor;
 
 //=============================================================================
 // FModelAnimator

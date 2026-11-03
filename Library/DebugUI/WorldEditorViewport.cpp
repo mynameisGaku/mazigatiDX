@@ -1,5 +1,6 @@
 ﻿
-#include "Library/Core/Interfaces/Render/DrawCommand.h"
+#include "Library/Framework/Render/DrawCommand.h"
+#include "Library/Core/Interfaces/Render/IDrawExecutor.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/EditorCommon.h"
 #include "Library/DebugUI/WorldEditorInternal.h"

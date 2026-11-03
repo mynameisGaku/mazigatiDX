@@ -1,9 +1,9 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef FRAMEWORK_DEBUGUI_WORLDEDITORINTERNAL_H
-#define FRAMEWORK_DEBUGUI_WORLDEDITORINTERNAL_H
+#pragma once
 #include "Library/DebugUI/WorldEditor.h"
 
 class CAssetManager;
+class IDrawExecutor;
 
 //=============================================================================
 // ワールドエディタの画面の中で、ファイルをまたいで使うもの（WorldEditor*.cpp 専用）
@@ -93,5 +93,3 @@ namespace NWorldEditorUI
 	// Inspector の Mesh 部品の中身（大きさ・材質）
 	void DrawMeshComponentBody( FWorldEditorState& S, const FWorldObject& Object );
 }
-
-#endif

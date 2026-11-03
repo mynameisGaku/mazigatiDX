@@ -1,6 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef FRAMEWORK_CORE_INTERFACES_INPUT_EKEY_H
-#define FRAMEWORK_CORE_INTERFACES_INPUT_EKEY_H
+#pragma once
 
 #include "Library/Core/Types/TypeDefinition.h"
 
@@ -228,6 +227,3 @@ enum class EKey : uint8
 	// キー数。入力としては使わない。
 	Count
 };
-
-#endif
-

@@ -1,7 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
-#include "Library/Core/Interfaces/Input/EKey.h"
-#include "Library/Core/Interfaces/Input/EMouseButton.h"
+#include "Library/Framework/Input/EKey.h"
+#include "Library/Framework/Input/EMouseButton.h"
 #include "Library/Core/Interfaces/Input/IInput.h"
 #include "Library/Core/Interfaces/Tickable/ITickable.h"
 #include "Library/Core/Types/TypeDefinition.h"

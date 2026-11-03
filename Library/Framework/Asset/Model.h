@@ -1,7 +1,8 @@
-﻿#pragma once
+﻿// SPDX-License-Identifier: MIT
+#pragma once
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Memory/SharedPtr.h"
-#include "Library/Core/Interfaces/Asset/ModelStructureTypes.h"
+#include "Library/Framework/Asset/ModelStructureTypes.h"
 #include "Library/Framework/Asset/Asset.h"
 #include "Library/Framework/Asset/ModelAppearance.h"
 #include "Library/Framework/Asset/ModelCollision.h"

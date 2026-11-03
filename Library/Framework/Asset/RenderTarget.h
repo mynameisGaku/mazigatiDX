@@ -2,7 +2,7 @@
 #pragma once
 
 #include "Library/Core/Collection/Array.h"
-#include "Library/Core/Interfaces/Render/RenderTargetTypes.h"
+#include "Library/Framework/Render/RenderTargetTypes.h"
 #include "Library/Framework/Asset/PixelImage.h"
 #include "Library/Framework/Asset/Texture.h"
 #include "Library/Math/Color.h"

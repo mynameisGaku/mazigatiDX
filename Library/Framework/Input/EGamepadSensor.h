@@ -1,6 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef FRAMEWORK_INPUT_EGAMEPADSENSOR_H
-#define FRAMEWORK_INPUT_EGAMEPADSENSOR_H
+#pragma once
 
 #include "Library/Core/Types/TypeDefinition.h"
 
@@ -15,5 +14,3 @@ enum class EGamepadSensor : uint8
 	GyroscopeRight, // 右 Joy-Con の角速度。
 	Count // 状態配列の要素数。
 };
-
-#endif

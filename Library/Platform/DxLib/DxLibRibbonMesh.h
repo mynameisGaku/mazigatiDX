@@ -1,9 +1,8 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef LIBRARY_PLATFORM_DXLIB_DXLIBRIBBONMESH_H
-#define LIBRARY_PLATFORM_DXLIB_DXLIBRIBBONMESH_H
+#pragma once
 
 #include "Library/Core/Collection/Array.h"
-#include "Library/Core/Interfaces/Render/DrawRibbon.h"
+#include "Library/Framework/Render/DrawRibbon.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 
 // DxLibの帯頂点と三角形番号を所有する、一回の展開結果。
@@ -21,5 +20,3 @@ namespace NDxLibRibbonMesh
 	// ribbon入力からmeshを作る。bSplitTextureがtrueなら旧描画用に整数U境界で分ける。
 	bool Build( const FDrawRibbonData& Data, const FDrawRibbonData::FPoint* Points, bool bSplitTexture, FDxLibRibbonMesh& Mesh );
 }
-
-#endif

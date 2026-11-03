@@ -1,9 +1,8 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef FRAMEWORK_INPUT_IGAMEPADINPUT_H
-#define FRAMEWORK_INPUT_IGAMEPADINPUT_H
+#pragma once
 
-#include "Library/Core/Interfaces/Input/GamepadInfo.h"
-#include "Library/Core/Interfaces/Input/GamepadState.h"
+#include "Library/Framework/Input/GamepadInfo.h"
+#include "Library/Framework/Input/GamepadState.h"
 
 // アプリの寿命で機器を管理する入口。すべてメインスレッドから利用する。
 class IGamepadInput
@@ -34,5 +33,3 @@ public:
 	// 非操作中にも入力を受けるかを指定。既定は false。
 	virtual void SetBackgroundInputEnabled( bool bEnabled ) = 0;
 };
-
-#endif

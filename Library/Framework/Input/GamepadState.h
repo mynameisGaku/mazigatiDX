@@ -1,12 +1,11 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef FRAMEWORK_INPUT_GAMEPADSTATE_H
-#define FRAMEWORK_INPUT_GAMEPADSTATE_H
+#pragma once
 
 #include "Library/Core/Collection/Array.h"
-#include "Library/Core/Interfaces/Input/EGamepadAxis.h"
-#include "Library/Core/Interfaces/Input/EGamepadButton.h"
-#include "Library/Core/Interfaces/Input/EGamepadSensor.h"
-#include "Library/Core/Interfaces/Input/GamepadSensorState.h"
+#include "Library/Framework/Input/EGamepadAxis.h"
+#include "Library/Framework/Input/EGamepadButton.h"
+#include "Library/Framework/Input/EGamepadSensor.h"
+#include "Library/Framework/Input/GamepadSensorState.h"
 
 // フレーム開始時の入力値。切断時は1フレームだけ解放状態を取得できる。
 struct FGamepadState
@@ -45,5 +44,3 @@ struct FGamepadState
 	// 無効な軸番号なら 0 を返す。
 	float32 GetAxis( EGamepadAxis Axis ) const;
 };
-
-#endif

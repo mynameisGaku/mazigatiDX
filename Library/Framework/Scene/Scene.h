@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// SPDX-License-Identifier: MIT
+#pragma once
 #include "Library/Core/Types/CompilerMacros.h"
 
 #include "Library/Core/Collection/Array.h"
@@ -16,6 +17,7 @@
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 
 class CGameInstance;
+class IDrawExecutor;
 
 //=============================================================================
 // CScene

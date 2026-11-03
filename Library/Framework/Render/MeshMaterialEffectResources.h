@@ -1,13 +1,12 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef FRAMEWORK_RENDER_MESHMATERIALEFFECTRESOURCES_H
-#define FRAMEWORK_RENDER_MESHMATERIALEFFECTRESOURCES_H
+#pragma once
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Memory/SharedPtr.h"
-#include "Library/Core/Interfaces/Render/MeshGeometryChunk.h"
+#include "Library/Framework/Render/MeshGeometryChunk.h"
 #include "Library/Framework/Asset/Texture.h"
 #include "Library/Framework/Effect/MeshMaterialEffectDefinition.h"
-#include "Library/Core/Interfaces/Render/MeshTypes.h"
+#include "Library/Framework/Render/MeshTypes.h"
 
 // 生成時に検証した一つの材質slotを、形状と画像の寿命ごと共有する。
 struct FMeshMaterialEffectResources
@@ -35,5 +34,3 @@ struct FMeshMaterialEffectResources
 	// 元slotと同じ裏面表示指定。
 	bool bTwoSided = false;
 };
-
-#endif

@@ -2,6 +2,7 @@
 
 
 #include "Library/DebugUI/WorldEditorInternal.h"
+#include "Library/Core/Interfaces/Render/IDrawExecutor.h"
 #include "Library/DebugUI/WorldEditorModelPreview.h"
 #include "Library/DebugUI/WorldEditorModelPreviewKey.h"
 #include "Library/Framework/Asset/Asset.h"

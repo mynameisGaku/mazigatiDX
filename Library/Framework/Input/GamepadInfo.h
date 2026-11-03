@@ -1,9 +1,8 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef FRAMEWORK_INPUT_GAMEPADINFO_H
-#define FRAMEWORK_INPUT_GAMEPADINFO_H
+#pragma once
 
 #include "Library/Core/Collection/String.h"
-#include "Library/Core/Interfaces/Input/EGamepadType.h"
+#include "Library/Framework/Input/EGamepadType.h"
 
 // 接続中の機器の識別情報。ID は抜き差しで変わり、配列内の位置には依存しない。
 struct FGamepadInfo
@@ -35,5 +34,3 @@ struct FGamepadInfo
 	// 十字キー方向値の個数。
 	int32 NumHats = 0;
 };
-
-#endif

@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// SPDX-License-Identifier: MIT
+#pragma once
 #include "Library/Core/Types/CompilerMacros.h"
 
 // windows.h の min / max マクロが Jolt と衝突するため一時退避
@@ -17,7 +18,7 @@
 #pragma pop_macro( "max" )
 #pragma pop_macro( "min" )
 
-#include "Library/Core/Interfaces/Physics/PhysicsLayerTypes.h"
+#include "Library/Physics/PhysicsLayerTypes.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Result.h"
 #include "Library/Math/Math.h"

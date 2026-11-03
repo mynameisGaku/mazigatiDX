@@ -1,10 +1,9 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef FRAMEWORK_EFFECT_MESHMATERIALEFFECTDEFINITION_H
-#define FRAMEWORK_EFFECT_MESHMATERIALEFFECTDEFINITION_H
+#pragma once
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
-#include "Library/Core/Interfaces/Render/DrawCommand.h"
+#include "Library/Framework/Render/DrawCommand.h"
 #include "Library/Framework/Effect/EffectMaterialDefinition.h"
 #include "Library/Json/JsonObject.h"
 
@@ -43,5 +42,3 @@ private:
 	// 型違いを既定値へ黙って直さず保存検査へ残すbit。
 	uint8 InvalidFieldTypes = 0;
 };
-
-#endif

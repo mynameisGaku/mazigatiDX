@@ -1,10 +1,9 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef LIBRARY_CORE_INTERFACES_RENDER_DRAWMATERIALMESH_H
-#define LIBRARY_CORE_INTERFACES_RENDER_DRAWMATERIALMESH_H
+#pragma once
 
 
-#include "DrawMaterialRibbon.h"
-#include "MeshTypes.h"
+#include "Library/Framework/Render/DrawMaterialRibbon.h"
+#include "Library/Framework/Render/MeshTypes.h"
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/TypeTraits.h"
@@ -91,5 +90,3 @@ namespace NDrawMaterialMesh
 		return true;
 	}
 }
-
-#endif

@@ -1,8 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef FRAMEWORK_CORE_INTERFACES_INPUT_IKEYBOARDINPUT_H
-#define FRAMEWORK_CORE_INTERFACES_INPUT_IKEYBOARDINPUT_H
+#pragma once
 
-#include "Library/Core/Interfaces/Input/EKey.h"
+#include "Library/Framework/Input/EKey.h"
 
 // 毎フレームに一度取り込んだ物理キーの状態。文字入力やキーの自動反復は扱わない。
 class IKeyboardInput
@@ -17,5 +16,3 @@ public:
 	// Key がこのフレームで離された場合だけ true。フォーカス喪失も解放とする。
 	virtual bool IsKeyReleased( EKey Key ) const = 0;
 };
-
-#endif

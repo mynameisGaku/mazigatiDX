@@ -1,7 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 
-#include "Library/Core/Interfaces/Asset/ModelStructureTypes.h"
+#include "Library/Framework/Asset/ModelStructureTypes.h"
 
 class CModel;
 

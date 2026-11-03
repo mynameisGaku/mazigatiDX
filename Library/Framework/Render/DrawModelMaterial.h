@@ -1,9 +1,8 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef FRAMEWORK_CORE_INTERFACES_RENDER_DRAWMODELMATERIAL_H
-#define FRAMEWORK_CORE_INTERFACES_RENDER_DRAWMODELMATERIAL_H
+#pragma once
 
 
-#include "Library/Core/Interfaces/Render/DrawMaterialMesh.h"
+#include "Library/Framework/Render/DrawMaterialMesh.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/TypeTraits.h"
 
@@ -41,5 +40,3 @@ namespace NDrawModelMaterial
 		return NDrawMaterialMesh::IsValidSettings( Data.Material );
 	}
 }
-
-#endif

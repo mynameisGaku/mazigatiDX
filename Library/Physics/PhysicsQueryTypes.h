@@ -1,7 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 #include "Library/Core/Collection/ArrayView.h"
-#include "Library/Core/Interfaces/Physics/PhysicsLayerTypes.h"
+#include "Library/Physics/PhysicsLayerTypes.h"
 #include "Library/Core/Types/CompilerMacros.h"
 #include "Library/Core/Types/TypeDefinition.h"
 #include "Library/Math/Vector3.h"

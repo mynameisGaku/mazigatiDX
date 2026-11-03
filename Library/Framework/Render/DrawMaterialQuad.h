@@ -1,8 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef LIBRARY_CORE_INTERFACES_RENDER_DRAWMATERIALQUAD_H
-#define LIBRARY_CORE_INTERFACES_RENDER_DRAWMATERIALQUAD_H
+#pragma once
 
-#include "DrawCommand.h"
+#include "Library/Framework/Render/DrawCommand.h"
 
 
 #include "Library/Core/Types/Numeric.h"
@@ -57,5 +56,3 @@ namespace NDrawMaterialQuad
 }
 
 static_assert( sizeof( FDrawMaterialQuadData ) % 4 == 0 && bIsTriviallyCopyable<FDrawMaterialQuadData>, "FDrawMaterialQuadData must be 4-byte words" );
-
-#endif

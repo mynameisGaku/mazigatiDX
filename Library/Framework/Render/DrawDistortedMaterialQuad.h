@@ -1,8 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef LIBRARY_CORE_INTERFACES_RENDER_DRAWDISTORTEDMATERIALQUAD_H
-#define LIBRARY_CORE_INTERFACES_RENDER_DRAWDISTORTEDMATERIALQUAD_H
+#pragma once
 
-#include "Library/Core/Interfaces/Render/DrawMaterialQuad.h"
+#include "Library/Framework/Render/DrawMaterialQuad.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/TypeTraits.h"
 
@@ -33,5 +32,3 @@ namespace NDrawDistortedMaterialQuad
 }
 
 static_assert( sizeof( FDrawDistortedMaterialQuadData ) % 4 == 0 && bIsTriviallyCopyable<FDrawDistortedMaterialQuadData>, "FDrawDistortedMaterialQuadData must be 4-byte words" );
-
-#endif

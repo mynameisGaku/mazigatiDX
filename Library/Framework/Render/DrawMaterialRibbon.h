@@ -1,10 +1,9 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef LIBRARY_CORE_INTERFACES_RENDER_DRAWMATERIALRIBBON_H
-#define LIBRARY_CORE_INTERFACES_RENDER_DRAWMATERIALRIBBON_H
+#pragma once
 
 
-#include "DrawCommand.h"
-#include "DrawRibbon.h"
+#include "Library/Framework/Render/DrawCommand.h"
+#include "Library/Framework/Render/DrawRibbon.h"
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/TypeTraits.h"
@@ -115,5 +114,3 @@ namespace NDrawMaterialRibbon
 		return true;
 	}
 }
-
-#endif

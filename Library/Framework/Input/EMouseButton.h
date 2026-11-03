@@ -1,6 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef FRAMEWORK_CORE_INTERFACES_INPUT_EMOUSEBUTTON_H
-#define FRAMEWORK_CORE_INTERFACES_INPUT_EMOUSEBUTTON_H
+#pragma once
 
 #include "Library/Core/Types/TypeDefinition.h"
 
@@ -26,5 +25,3 @@ enum class EMouseButton : uint8
 	// ボタン数。入力としては使わない。
 	Count
 };
-
-#endif

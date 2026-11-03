@@ -1,9 +1,10 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef FRAMEWORK_DEBUGUI_WORLDEDITORMODELPREVIEW_H
-#define FRAMEWORK_DEBUGUI_WORLDEDITORMODELPREVIEW_H
+#pragma once
 
 #include "Library/Framework/Animation/ModelAnimator.h"
 #include "Library/Framework/World/WorldDefinition.h"
+
+class IDrawExecutor;
 
 // エディタだけが所有する一個体のsource、再生状態、設定snapshot。
 struct FWorldEditorModelPreview
@@ -25,5 +26,3 @@ struct FWorldEditorModelPreview
 	// native fallbackになった理由。成功時は空。
 	FString FailureReason;
 };
-
-#endif

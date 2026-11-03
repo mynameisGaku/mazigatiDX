@@ -1,8 +1,10 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 
-#include "Library/Core/Interfaces/Render/DrawCommand.h"
+#include "Library/Framework/Render/DrawCommand.h"
 #include "Library/Framework/Render/DrawContext.h"
+
+class IDrawExecutor;
 
 namespace NRenderDetail
 {

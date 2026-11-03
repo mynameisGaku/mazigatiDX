@@ -3,7 +3,7 @@
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Collection/Set.h"
 #include "Library/Core/Interfaces/Asset/AssetBackend.h"
-#include "Library/Core/Interfaces/Asset/StaticModelSurfaceData.h"
+#include "Library/Framework/Asset/StaticModelSurfaceData.h"
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Framework/Subsystem/AppSubsystem.h"
 #include "Library/Platform/DxLib/DxLibModelMaterialGeometry.h"

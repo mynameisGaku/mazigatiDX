@@ -1,4 +1,5 @@
 ﻿#include "Scene.h"
+#include "Library/Core/Interfaces/Render/IDrawExecutor.h"
 
 #include "Library/Core/Interfaces/Job/IJobSystem.h"
 #include "Library/Core/Log/Log.h"

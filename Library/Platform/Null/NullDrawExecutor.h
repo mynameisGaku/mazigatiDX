@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
-#include "Library/Core/Interfaces/Render/DrawCommand.h"
+#include "Library/Core/Interfaces/Render/IDrawExecutor.h"
+#include "Library/Framework/Render/DrawCommand.h"
 #include "Library/Core/Types/TypeDefinition.h"
 #include "Library/Framework/Subsystem/AppSubsystem.h"
 

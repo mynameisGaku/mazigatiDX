@@ -1,8 +1,10 @@
-﻿#pragma once
+﻿// SPDX-License-Identifier: MIT
+#pragma once
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/Queue.h"
 #include "Library/Core/Interfaces/Job/IJobSystem.h"
 #include "Library/Core/Thread/Atomic.h"
+#include "Library/Core/Thread/JobState.h"
 #include "Library/Core/Thread/Mutex.h"
 #include "Library/Core/Thread/Thread.h"
 #include "Library/Core/Types/Callable.h"

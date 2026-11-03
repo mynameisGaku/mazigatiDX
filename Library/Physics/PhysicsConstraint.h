@@ -1,6 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
-#include "Library/Core/Interfaces/Physics/PhysicsConstraintTypes.h"
+#include "Library/Physics/PhysicsConstraintTypes.h"
 #include "Library/Core/Types/CompilerMacros.h"
 #include "Library/Core/Types/TypeDefinition.h"
 

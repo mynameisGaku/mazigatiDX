@@ -1,11 +1,10 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef FRAMEWORK_EFFECT_EFFECTMESHGEOMETRY_H
-#define FRAMEWORK_EFFECT_EFFECTMESHGEOMETRY_H
+#pragma once
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Types/TypeDefinition.h"
 #include "Library/Framework/Effect/EffectMeshDefinition.h"
-#include "Library/Core/Interfaces/Render/MeshTypes.h"
+#include "Library/Framework/Render/MeshTypes.h"
 
 // playback内で共有する読み取り専用のCPU頂点・index列。
 struct FEffectMeshGeometry
@@ -21,5 +20,3 @@ namespace NEffectMesh
 	// 設定から上限内の平面または円環を作り、不正値では出力を変えない。
 	bool BuildGeometry( const FEffectMeshDefinition& Definition, FEffectMeshGeometry& Out, FString* Error = nullptr );
 }
-
-#endif

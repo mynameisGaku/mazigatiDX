@@ -1,6 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
-#ifndef FRAMEWORK_CORE_INTERFACES_RENDER_DRAW_RIBBON_H
-#define FRAMEWORK_CORE_INTERFACES_RENDER_DRAW_RIBBON_H
+#pragma once
 
 
 #include "Library/Core/Types/TypeDefinition.h"
@@ -43,5 +42,3 @@ struct FDrawRibbonData
 
 static_assert( sizeof( FDrawRibbonData ) == 16 && bIsTriviallyCopyable<FDrawRibbonData>, "ribbon header must occupy four words" );
 static_assert( sizeof( FDrawRibbonData::FPoint ) == 24 && bIsTriviallyCopyable<FDrawRibbonData::FPoint>, "ribbon point must occupy six words" );
-
-#endif

@@ -4,12 +4,6 @@
     <ClCompile Include="Library\Core\Collection\String.cpp">
       <Filter>Library\Core\Collection</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Core\Interfaces\Input\GamepadState.cpp">
-      <Filter>Library\Core\Interfaces\Input</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Core\Interfaces\Render\MeshGeometryChunk.cpp">
-      <Filter>Library\Core\Interfaces\Render</Filter>
-    </ClCompile>
     <ClCompile Include="Library\Core\Interfaces\Tickable\ITickable.cpp">
       <Filter>Library\Core\Interfaces\Tickable</Filter>
     </ClCompile>
@@ -391,6 +385,9 @@
     <ClCompile Include="Library\Framework\GameInstance\GameInstance.cpp">
       <Filter>Library\Framework\GameInstance</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Input\GamepadState.cpp">
+      <Filter>Library\Framework\Input</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Job\AsyncTask.cpp">
       <Filter>Library\Framework\Job</Filter>
     </ClCompile>
@@ -527,6 +524,9 @@
       <Filter>Library\Framework\Render</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Render\ImmediateDraw.cpp">
+      <Filter>Library\Framework\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Render\MeshGeometryChunk.cpp">
       <Filter>Library\Framework\Render</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Render\MeshMaterialEffectPlayback.cpp">
@@ -784,9 +784,6 @@
     <ClCompile Include="Library\Platform\SDL\SdlGamepadInput.cpp">
       <Filter>Library\Platform\SDL</Filter>
     </ClCompile>
-    <ClCompile Include="VendorModules\ImGui\imgui.cpp">
-      <Filter>VendorModules\ImGui</Filter>
-    </ClCompile>
     <ClCompile Include="VendorModules\ImGui\imgui_draw.cpp">
       <Filter>VendorModules\ImGui</Filter>
     </ClCompile>
@@ -806,6 +803,9 @@
       <Filter>VendorModules\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="VendorModules\ImGui\imgui_widgets.cpp">
+      <Filter>VendorModules\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="VendorModules\ImGui\imgui.cpp">
       <Filter>VendorModules\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="VendorModules\Jolt\RegisterTypes.cpp">
@@ -1356,53 +1356,8 @@
     <ClInclude Include="Library\Core\Interfaces\Asset\AssetBackend.h">
       <Filter>Library\Core\Interfaces\Asset</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Asset\FontTypes.h">
-      <Filter>Library\Core\Interfaces\Asset</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Asset\ModelCollisionTypes.h">
-      <Filter>Library\Core\Interfaces\Asset</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Asset\ModelStructureTypes.h">
-      <Filter>Library\Core\Interfaces\Asset</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Asset\StaticModelSurfaceData.h">
-      <Filter>Library\Core\Interfaces\Asset</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Asset\StaticModelSurfaceMaterial.h">
-      <Filter>Library\Core\Interfaces\Asset</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Asset\StaticModelSurfaceSection.h">
-      <Filter>Library\Core\Interfaces\Asset</Filter>
-    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Audio\AudioBackend.h">
       <Filter>Library\Core\Interfaces\Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Input\EGamepadAxis.h">
-      <Filter>Library\Core\Interfaces\Input</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Input\EGamepadButton.h">
-      <Filter>Library\Core\Interfaces\Input</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Input\EGamepadSensor.h">
-      <Filter>Library\Core\Interfaces\Input</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Input\EGamepadType.h">
-      <Filter>Library\Core\Interfaces\Input</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Input\EKey.h">
-      <Filter>Library\Core\Interfaces\Input</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Input\EMouseButton.h">
-      <Filter>Library\Core\Interfaces\Input</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Input\GamepadInfo.h">
-      <Filter>Library\Core\Interfaces\Input</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Input\GamepadSensorState.h">
-      <Filter>Library\Core\Interfaces\Input</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Input\GamepadState.h">
-      <Filter>Library\Core\Interfaces\Input</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Input\IGamepadInput.h">
       <Filter>Library\Core\Interfaces\Input</Filter>
@@ -1414,9 +1369,6 @@
       <Filter>Library\Core\Interfaces\Input</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Input\IMouseInput.h">
-      <Filter>Library\Core\Interfaces\Input</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Input\MouseState.h">
       <Filter>Library\Core\Interfaces\Input</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Inspector\IPropertyInspector.h">
@@ -1446,24 +1398,6 @@
     <ClInclude Include="Library\Core\Interfaces\Physics\IPhysicsQuery.h">
       <Filter>Library\Core\Interfaces\Physics</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsCharacterTypes.h">
-      <Filter>Library\Core\Interfaces\Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsConstraintTypes.h">
-      <Filter>Library\Core\Interfaces\Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsContactTypes.h">
-      <Filter>Library\Core\Interfaces\Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsDebugTypes.h">
-      <Filter>Library\Core\Interfaces\Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsLayerTypes.h">
-      <Filter>Library\Core\Interfaces\Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Physics\PhysicsQueryTypes.h">
-      <Filter>Library\Core\Interfaces\Physics</Filter>
-    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Platform\FrameCapture.h">
       <Filter>Library\Core\Interfaces\Platform</Filter>
     </ClInclude>
@@ -1473,37 +1407,13 @@
     <ClInclude Include="Library\Core\Interfaces\Profiler\IProfiler.h">
       <Filter>Library\Core\Interfaces\Profiler</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Render\DrawCommand.h">
-      <Filter>Library\Core\Interfaces\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Render\DrawDistortedMaterialQuad.h">
-      <Filter>Library\Core\Interfaces\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Render\DrawDistortedMaterialRibbon.h">
-      <Filter>Library\Core\Interfaces\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Render\DrawMaterialMesh.h">
-      <Filter>Library\Core\Interfaces\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Render\DrawMaterialQuad.h">
-      <Filter>Library\Core\Interfaces\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Render\DrawMaterialRibbon.h">
-      <Filter>Library\Core\Interfaces\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Render\DrawModelMaterial.h">
-      <Filter>Library\Core\Interfaces\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Render\DrawRibbon.h">
+    <ClInclude Include="Library\Core\Interfaces\Render\IDrawExecutor.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IImage.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IIndexBuffer.h">
-      <Filter>Library\Core\Interfaces\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Render\ImageTypes.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IShader.h">
@@ -1513,18 +1423,6 @@
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IVertexBuffer.h">
-      <Filter>Library\Core\Interfaces\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Render\MeshGeometryChunk.h">
-      <Filter>Library\Core\Interfaces\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Render\MeshTypes.h">
-      <Filter>Library\Core\Interfaces\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Render\OffscreenCaptureTypes.h">
-      <Filter>Library\Core\Interfaces\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Render\RenderTargetTypes.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Tickable\ITickable.h">
@@ -1566,10 +1464,22 @@
     <ClInclude Include="Library\Core\Profiler\ProfilerTypes.h">
       <Filter>Library\Core\Profiler</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Render\DrawSpan.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\OffscreenCaptureDesc.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Thread\Atomic.h">
       <Filter>Library\Core\Thread</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Thread\GameThread.h">
+      <Filter>Library\Core\Thread</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Thread\JobHandle.h">
+      <Filter>Library\Core\Thread</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Thread\JobState.h">
       <Filter>Library\Core\Thread</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Thread\Mutex.h">
@@ -1716,6 +1626,9 @@
     <ClInclude Include="Library\Framework\Asset\FontFile.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\FontTypes.h">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Asset\IndexBuffer.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
@@ -1732,6 +1645,12 @@
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\ModelCollision.h">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\ModelCollisionTypes.h">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\ModelStructureTypes.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\PixelImage.h">
@@ -1753,6 +1672,15 @@
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\StaticModelSurface.h">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\StaticModelSurfaceData.h">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\StaticModelSurfaceMaterial.h">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\StaticModelSurfaceSection.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Texture.h">
@@ -1944,6 +1872,36 @@
     <ClInclude Include="Library\Framework\GameInstance\GameInstance.h">
       <Filter>Library\Framework\GameInstance</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Input\EGamepadAxis.h">
+      <Filter>Library\Framework\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Input\EGamepadButton.h">
+      <Filter>Library\Framework\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Input\EGamepadSensor.h">
+      <Filter>Library\Framework\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Input\EGamepadType.h">
+      <Filter>Library\Framework\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Input\EKey.h">
+      <Filter>Library\Framework\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Input\EMouseButton.h">
+      <Filter>Library\Framework\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Input\GamepadInfo.h">
+      <Filter>Library\Framework\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Input\GamepadSensorState.h">
+      <Filter>Library\Framework\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Input\GamepadState.h">
+      <Filter>Library\Framework\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Input\MouseState.h">
+      <Filter>Library\Framework\Input</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Job\AsyncTask.h">
       <Filter>Library\Framework\Job</Filter>
     </ClInclude>
@@ -2091,16 +2049,46 @@
     <ClInclude Include="Library\Framework\Render\Camera.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Render\DrawCommand.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Render\DrawContext.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Render\DrawDistortedMaterialQuad.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\DrawDistortedMaterialRibbon.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\DrawMaterialMesh.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\DrawMaterialQuad.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\DrawMaterialRibbon.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\DrawModelMaterial.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\DrawRibbon.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Render\GraphFilter.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\ImageTypes.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\ImmediateDraw.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\Lighting.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\MeshGeometryChunk.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\MeshMaterialEffectPlayback.h">
@@ -2112,6 +2100,9 @@
     <ClInclude Include="Library\Framework\Render\MeshRender.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Render\MeshTypes.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Render\ModelMaterialEffectRenderer.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
@@ -2119,6 +2110,9 @@
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\RenderState3D.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\RenderTargetTypes.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\ShaderVertex.h">
@@ -2289,10 +2283,16 @@
     <ClInclude Include="Library\Physics\PhysicsCharacterRules.h">
       <Filter>Library\Physics</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Physics\PhysicsCharacterTypes.h">
+      <Filter>Library\Physics</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Physics\PhysicsConstraint.h">
       <Filter>Library\Physics</Filter>
     </ClInclude>
     <ClInclude Include="Library\Physics\PhysicsConstraintRules.h">
+      <Filter>Library\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\PhysicsConstraintTypes.h">
       <Filter>Library\Physics</Filter>
     </ClInclude>
     <ClInclude Include="Library\Physics\PhysicsContactRegistry.h">
@@ -2301,10 +2301,22 @@
     <ClInclude Include="Library\Physics\PhysicsContactRules.h">
       <Filter>Library\Physics</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Physics\PhysicsContactTypes.h">
+      <Filter>Library\Physics</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Physics\PhysicsDebugDrawContext.h">
       <Filter>Library\Physics</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Physics\PhysicsDebugTypes.h">
+      <Filter>Library\Physics</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Physics\PhysicsInput.h">
+      <Filter>Library\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\PhysicsLayerTypes.h">
+      <Filter>Library\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\PhysicsQueryTypes.h">
       <Filter>Library\Physics</Filter>
     </ClInclude>
     <ClInclude Include="Library\Physics\PhysicsSubsystem.h">
@@ -2418,9 +2430,6 @@
     <ClInclude Include="VendorModules\ImGui\imconfig.h">
       <Filter>VendorModules\ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="VendorModules\ImGui\imgui.h">
-      <Filter>VendorModules\ImGui</Filter>
-    </ClInclude>
     <ClInclude Include="VendorModules\ImGui\imgui_impl_dx11.h">
       <Filter>VendorModules\ImGui</Filter>
     </ClInclude>
@@ -2434,6 +2443,9 @@
       <Filter>VendorModules\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\ImGui\imgui_internal.h">
+      <Filter>VendorModules\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="VendorModules\ImGui\imgui.h">
       <Filter>VendorModules\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\ImGui\imstb_rectpack.h">
@@ -3588,17 +3600,14 @@
     <ClInclude Include="VendorModules\Jolt\TriangleSplitter\TriangleSplitterMean.h">
       <Filter>VendorModules\Jolt\TriangleSplitter</Filter>
     </ClInclude>
-    <ClInclude Include="VendorModules\nlohmann\json.hpp">
-      <Filter>VendorModules\nlohmann</Filter>
-    </ClInclude>
     <ClInclude Include="VendorModules\nlohmann\json_fwd.hpp">
       <Filter>VendorModules\nlohmann</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\nlohmann\json_literals.hpp">
       <Filter>VendorModules\nlohmann</Filter>
     </ClInclude>
-    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL.h">
-      <Filter>VendorModules\SDL3\include\SDL3</Filter>
+    <ClInclude Include="VendorModules\nlohmann\json.hpp">
+      <Filter>VendorModules\nlohmann</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_assert.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
@@ -3702,10 +3711,10 @@
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_log.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
-    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_main.h">
+    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_main_impl.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
-    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_main_impl.h">
+    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_main.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_messagebox.h">
@@ -3726,13 +3735,13 @@
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_oldnames.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
+    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_opengl_glext.h">
+      <Filter>VendorModules\SDL3\include\SDL3</Filter>
+    </ClInclude>
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_opengl.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_opengles.h">
-      <Filter>VendorModules\SDL3\include\SDL3</Filter>
-    </ClInclude>
-    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_opengles2.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_opengles2_gl2.h">
@@ -3747,7 +3756,7 @@
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_opengles2_khrplatform.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
-    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_opengl_glext.h">
+    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_opengles2.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_pen.h">
@@ -3756,10 +3765,10 @@
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_pixels.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
-    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_platform.h">
+    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_platform_defines.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
-    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_platform_defines.h">
+    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_platform.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_power.h">
@@ -3798,9 +3807,6 @@
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_system.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
-    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_test.h">
-      <Filter>VendorModules\SDL3\include\SDL3</Filter>
-    </ClInclude>
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_test_assert.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
@@ -3831,6 +3837,9 @@
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_test_memory.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
+    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_test.h">
+      <Filter>VendorModules\SDL3\include\SDL3</Filter>
+    </ClInclude>
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_thread.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
@@ -3853,6 +3862,9 @@
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_vulkan.h">
+      <Filter>VendorModules\SDL3\include\SDL3</Filter>
+    </ClInclude>
+    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\ufbx\ufbx.h">
@@ -3914,6 +3926,9 @@
     <Filter Include="Library\Core\Profiler">
       <UniqueIdentifier>{EBB14C5C-F48F-CC42-8274-F1A8F40BFA14}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Library\Core\Render">
+      <UniqueIdentifier>{C93CF468-DF5A-BCCF-5B5F-24E777FB35C2}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Library\Core\Thread">
       <UniqueIdentifier>{BDD98768-5D65-B7ED-7770-16F7B28C3C95}</UniqueIdentifier>
     </Filter>
@@ -3961,6 +3976,9 @@
     </Filter>
     <Filter Include="Library\Framework\GameInstance">
       <UniqueIdentifier>{ED8C557B-EC8F-AADF-DA4B-E81717A006CC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Input">
+      <UniqueIdentifier>{7078BFB4-8121-7161-A62A-BB22C37D3AEC}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\Job">
       <UniqueIdentifier>{7D8BE6D1-5987-EFE3-7845-5AD79F48D4EF}</UniqueIdentifier>
