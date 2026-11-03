@@ -4,8 +4,28 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Asset/StaticModelSurface.h"
+#include "Library/Math/MathUtils.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogModel, Log )
+
+namespace
+{
+	// 骨の親基準行列の16要素が有限で、透視変換を含まない厳密な形か調べる。
+	bool IsCanonicalAffinePose( const FMatrix4x4& Matrix )
+	{
+		for ( int32 Row = 0; Row < 4; ++Row ) // 有限値を調べる行。
+		{
+			for ( int32 Column = 0; Column < 4; ++Column ) // 有限値を調べる列。
+			{
+				if ( !NMath::IsFinite( Matrix.m[Row][Column] ) )
+				{
+					return false;
+				}
+			}
+		}
+		return Matrix.m[0][3] == 0.0f && Matrix.m[1][3] == 0.0f && Matrix.m[2][3] == 0.0f && Matrix.m[3][3] == 1.0f;
+	}
+}
 
 //=============================================================================
 // CModel
@@ -291,6 +311,28 @@ bool CModelInstance::GetFrameMatrix( int32 Frame, EModelFrameSpace Space, FMatri
 	GAME_THREAD_ONLY( false );
 	IAssetBackend* Backend = NAssetService::GetBackend();
 	return Backend != nullptr && Handle >= 0 && Backend->GetModelFrameMatrix( Handle, Frame, Space, OutMatrix );
+}
+
+bool CModelInstance::SetFrameLocalMatrixOverride( int32 Frame, const FMatrix4x4& LocalToParent )
+{
+	GAME_THREAD_ONLY( false );
+	if ( !NAssetService::IsMainThread() || !IsCanonicalAffinePose( LocalToParent ) || !Source.IsValid() || !Source->IsReady() || Handle < 0 || !Source->GetBoneNames().IsValidIndex( Frame ) )
+	{
+		return false;
+	}
+	IAssetBackend* Backend = NAssetService::GetBackend(); // 個体別pose上書きを受けるbackend。
+	return Backend != nullptr && Backend->SetModelFrameLocalMatrixOverride( Handle, Frame, LocalToParent );
+}
+
+bool CModelInstance::ClearFrameLocalMatrixOverride( int32 Frame )
+{
+	GAME_THREAD_ONLY( false );
+	if ( !NAssetService::IsMainThread() || !Source.IsValid() || !Source->IsReady() || Handle < 0 || !Source->GetBoneNames().IsValidIndex( Frame ) )
+	{
+		return false;
+	}
+	IAssetBackend* Backend = NAssetService::GetBackend(); // 個体別pose上書きを解除するbackend。
+	return Backend != nullptr && Backend->ClearModelFrameLocalMatrixOverride( Handle, Frame );
 }
 
 FModelAppearance CModelInstance::GetAppearance() const

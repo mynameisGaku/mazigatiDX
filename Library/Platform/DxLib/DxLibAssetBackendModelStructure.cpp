@@ -47,6 +47,22 @@ namespace
 		return NMath::Abs( Matrix.m[0][3] ) <= Tolerance && NMath::Abs( Matrix.m[1][3] ) <= Tolerance && NMath::Abs( Matrix.m[2][3] ) <= Tolerance && NMath::Abs( Matrix.m[3][3] - 1.0f ) <= Tolerance;
 	}
 
+	// 骨の親基準行列の16要素が有限で、透視変換を含まない厳密な形か調べる。
+	bool IsCanonicalAffinePose( const FMatrix4x4& Matrix )
+	{
+		for ( int32 Row = 0; Row < 4; ++Row ) // 有限値を調べる行。
+		{
+			for ( int32 Column = 0; Column < 4; ++Column ) // 有限値を調べる列。
+			{
+				if ( !NMath::IsFinite( Matrix.m[Row][Column] ) )
+				{
+					return false;
+				}
+			}
+		}
+		return Matrix.m[0][3] == 0.0f && Matrix.m[1][3] == 0.0f && Matrix.m[2][3] == 0.0f && Matrix.m[3][3] == 1.0f;
+	}
+
 	FModelMaterialColors ReadMaterialColors( int32 Model, int32 Material )
 	{
 		FModelMaterialColors Colors;
@@ -234,6 +250,24 @@ bool CDxLibAssetBackend::GetModelFrameMatrix( int32 Model, int32 Frame, EModelFr
 	}
 	Out = NDxLibTypes::FromDxLib( Space == EModelFrameSpace::World ? MV1GetFrameLocalWorldMatrix( Model, Frame ) : MV1GetFrameLocalMatrix( Model, Frame ) );
 	return true;
+}
+
+bool CDxLibAssetBackend::SetModelFrameLocalMatrixOverride( int32 Model, int32 Frame, const FMatrix4x4& LocalToParent )
+{
+	if ( Model < 0 || CheckHandleASyncLoad( Model ) != FALSE || !IsFrameIndex( Model, Frame ) || !IsCanonicalAffinePose( LocalToParent ) )
+	{
+		return false;
+	}
+	return MV1SetFrameUserLocalMatrix( Model, Frame, NDxLibTypes::ToDxLib( LocalToParent ) ) == 0;
+}
+
+bool CDxLibAssetBackend::ClearModelFrameLocalMatrixOverride( int32 Model, int32 Frame )
+{
+	if ( Model < 0 || CheckHandleASyncLoad( Model ) != FALSE || !IsFrameIndex( Model, Frame ) )
+	{
+		return false;
+	}
+	return MV1ResetFrameUserLocalMatrix( Model, Frame ) == 0;
 }
 
 bool CDxLibAssetBackend::SampleModelAnimFrameLocalMatrix( int32 Model, int32 AttachIndex, int32 Frame, float32 Time, FMatrix4x4& Out )

@@ -184,6 +184,10 @@ public:
 	virtual bool SetModelOpacity( int32 /*Model*/, float32 /*Opacity*/ ) { return false; }
 	// フレームの、いまの行列（最後に描いたときのアニメーションと置き場所で決まる）
 	virtual bool GetModelFrameMatrix( int32 /*Model*/, int32 /*Frame*/, EModelFrameSpace /*Space*/, FMatrix4x4& /*Out*/ ) { return false; }
+	// 指定frameの完全な親基準local poseを上書きする。未対応・未準備・不正入力はfalseで既存状態を変えない。
+	virtual bool SetModelFrameLocalMatrixOverride( int32 /*Model*/, int32 /*Frame*/, const FMatrix4x4& /*LocalToParent*/ ) { return false; }
+	// 指定frameのlocal pose上書きを解除し、現在のanimation評価へ戻す。未対応・未準備はfalseで状態を変えない。
+	virtual bool ClearModelFrameLocalMatrixOverride( int32 /*Model*/, int32 /*Frame*/ ) { return false; }
 	// 形状（モーフ）の効き具合（0 = 効かない、1 = すべて効く。いまの値）
 	virtual bool GetModelShapeRate( int32 /*Model*/, int32 /*Shape*/, float32& /*Out*/ ) { return false; }
 	virtual bool SetModelShapeRate( int32 /*Model*/, int32 /*Shape*/, float32 /*Rate*/ ) { return false; }

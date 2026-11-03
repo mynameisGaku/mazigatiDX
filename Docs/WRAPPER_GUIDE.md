@@ -4,6 +4,8 @@ mazigatiDX は、DxLib を本気で包み、モダンな C++ で使いやすく�
 
 任意時刻の骨姿勢を読むサンプラーでは、`MV1GetAttachAnimFrameLocalMatrix`を完全な骨姿勢として使わない。検査用モデルのキーのない子の骨では、初期位置のX=1を含まずX=0だった。専用の複製モデルに一つのクリップを付け、時刻と重み1を設定した後に`MV1GetFrameLocalMatrix`を読み、親基準の姿勢を得る。実機でキーのある骨の移動とキーのない子の初期位置、元モデル・別個体の状態不変、終了時のモデル数復旧を確認した。専用複製は作成時だけ行う。複製が座標や添付アニメーションを継承しない仕様は[公式の複製関数の説明](https://dxlib.xsrv.jp/function/dxfunc_3d_model_0.html)にも記載されている。
 
+`CModelInstance::SetFrameLocalMatrixOverride`は、指定したフレームの位置・向き・大きさを含む完全な親基準姿勢をアニメーション評価より優先させる。加算offsetではなく、有限で厳密なaffine行列（右端の列が(0, 0, 0, 1)）をそのまま置き換える。有限な拡大縮小・せん断・反転・0 scaleも受け付ける。`ClearFrameLocalMatrixOverride`で上書きを解除すると、その時点のアニメーション時間と重みから評価した姿勢へ戻る。どちらもメインスレッド専用で、読み込み中・不正frame・不正行列・未対応backendでは失敗する。失敗は既存の姿勢上書きを保持し、Null backendはfalseを返して状態を持たない。描画命令への一時適用、Animatorのroot除去、actorの自動移動はこの窓口には含めない。
+
 ## 1. 層と依存の向き
 
 ```

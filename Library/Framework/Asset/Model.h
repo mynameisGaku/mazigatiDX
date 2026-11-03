@@ -124,6 +124,10 @@ public:
 	bool GetFramePositions( TArray<FVector3>& OutPositions ) const;
 	// フレームのいまの行列（最後に描いたときのアニメーションと置き場所で決まる）。番号が範囲の外・分からないときは false。メインスレッドだけ
 	bool GetFrameMatrix( int32 Frame, EModelFrameSpace Space, FMatrix4x4& OutMatrix ) const;
+	// メインスレッドでframeの位置・向き・大きさを含む親基準pose全体を置き換える。失敗時は現在の上書き状態を保つ。
+	bool SetFrameLocalMatrixOverride( int32 Frame, const FMatrix4x4& LocalToParent );
+	// メインスレッドでframeのpose上書きを解除し、現在のanimation評価へ戻す。失敗時は現在の上書き状態を保つ。
+	bool ClearFrameLocalMatrixOverride( int32 Frame );
 
 	// この 1 体の見た目（材質の色・表示・不透明度）を変える窓口。インスタンスより長く持たない
 	FModelAppearance GetAppearance() const;

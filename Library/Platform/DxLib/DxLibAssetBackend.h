@@ -91,6 +91,10 @@ public:
 	bool GetModelOpacity( int32 Model, float32& Out ) override;
 	bool SetModelOpacity( int32 Model, float32 Opacity ) override;
 	bool GetModelFrameMatrix( int32 Model, int32 Frame, EModelFrameSpace Space, FMatrix4x4& Out ) override;
+	// 準備済み個体の指定骨へ親基準の全姿勢を設定する。不正入力やnative失敗時はfalseを返す。
+	bool SetModelFrameLocalMatrixOverride( int32 Model, int32 Frame, const FMatrix4x4& LocalToParent ) override;
+	// 指定骨の上書きを解除し、現在時刻の再生姿勢へ戻す。不正番号やnative失敗時はfalseを返す。
+	bool ClearModelFrameLocalMatrixOverride( int32 Model, int32 Frame ) override;
 	bool GetModelShapeRate( int32 Model, int32 Shape, float32& Out ) override;
 	bool SetModelShapeRate( int32 Model, int32 Shape, float32 Rate ) override;
 	// 当たり判定（DxLibAssetBackendModelCollision.cpp）
