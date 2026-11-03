@@ -1,4 +1,5 @@
 ﻿#include "DxLibAssetBackend.h"
+#include "Library/Core/Memory/Memory.h"
 
 
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
@@ -327,7 +328,7 @@ namespace
 		{
 			return false;
 		}
-		if ( Size >= 8 && std::memcmp( Data, PngSignature, 8 ) == 0 )
+		if ( Size >= 8 && FMemory::Memcmp( Data, PngSignature, 8 ) == 0 )
 		{
 			// 最初のチャンクは、長さ 13 の IHDR。以降のチャンクを、IEND まで、全部読める
 			usize Position = 8;
@@ -340,14 +341,14 @@ namespace
 				{
 					return false;
 				}
-				const bool bIsHeader = std::memcmp( Type, "IHDR", 4 ) == 0;
+				const bool bIsHeader = FMemory::Memcmp( Type, "IHDR", 4 ) == 0;
 				if ( bFirst && ( !bIsHeader || Length != 13 ) )
 				{
 					return false;
 				}
 				bFirst = false;
 				Position += 12 + static_cast<usize>( Length );
-				if ( std::memcmp( Type, "IEND", 4 ) == 0 )
+				if ( FMemory::Memcmp( Type, "IEND", 4 ) == 0 )
 				{
 					return true;
 				}
