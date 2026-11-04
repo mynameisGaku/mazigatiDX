@@ -150,6 +150,8 @@ enum class EDrawCommand : uint8
 	ShaderOutputTarget, // FDrawShaderOutputTargetData。ピクセルシェーダーの 2 つ目以降の出力（SV_Target1〜7）を書く描画先を決める（SetRenderTargetToShader）
 	// モデルのアニメーションの追加（上のコマンドの形式は変えていない）
 	ModelAnimFrame,     // FDrawModelAnimFrameData。次の Model3D で描くモデルに付けたアニメーション 1 つの、フレーム（骨）ごとのブレンド率（MV1SetAttachAnimBlendRateToFrame。ModelAnim のあとに記録する）
+	// 通常モデルを一度描く間だけ骨poseを適用し、直後に元へ戻す命令。
+	ModelFramePose3D,
 };
 
 // Primitive3D の頂点のつなぎ方（DxLib の DX_PRIMTYPE_*）

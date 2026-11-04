@@ -64,6 +64,8 @@ public:
 
 	// 命令を数え、対になる命令と、命令の長さを調べる
 	void Execute( const FDrawSpan& Span ) override;
+	// native model poseの一時適用は行わない。
+	bool SupportsModelFrameOverrides() const override { return false; }
 
 	// ここまでの統計
 	const FNullDrawStats& GetStats() const;

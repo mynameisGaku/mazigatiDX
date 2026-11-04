@@ -7,6 +7,7 @@
 #include "Library/Framework/Render/DrawMaterialQuad.h"
 #include "Library/Framework/Render/DrawMaterialRibbon.h"
 #include "Library/Framework/Render/DrawModelMaterial.h"
+#include "Library/Framework/Render/DrawModelFramePoseData.h"
 #include "Library/Framework/Render/DrawRibbon.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
@@ -57,6 +58,7 @@ namespace
 		case EDrawCommand::Billboard3D: return WordsOf<FDrawBillboard3DData>();
 		case EDrawCommand::WorldMatrix: return WordsOf<FDrawMatrixData>();
 		case EDrawCommand::Model3D: return WordsOf<FDrawModelData>();
+		case EDrawCommand::ModelFramePose3D: return WordsOf<FDrawModelFramePoseData>();
 		case EDrawCommand::SpriteRect: return WordsOf<FDrawSpriteRectData>();
 		case EDrawCommand::Bright: return WordsOf<FDrawBrightData>();
 		case EDrawCommand::TextFont: return WordsOf<FDrawTextFontData>() + 1;
@@ -202,6 +204,15 @@ void CNullDrawExecutor::Execute( const FDrawSpan& Span )
 		if ( MinWords < 0 || Command.NumDataWords < MinWords )
 		{
 			++Stats.NumBrokenCommands;
+			return;
+		}
+		if ( Command.Type == EDrawCommand::ModelFramePose3D )
+		{
+			FDrawModelFramePoseData Data{}; // 検査する固定header値。
+			if ( !NDrawModelFramePose::IsValidCommand( Command, Data ) )
+			{
+				++Stats.NumBrokenCommands;
+			}
 			return;
 		}
 

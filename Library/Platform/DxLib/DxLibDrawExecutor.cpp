@@ -471,6 +471,11 @@ bool CDxLibDrawExecutor::SupportsModelMaterialEffects() const
 	return AssetBackend != nullptr && EffectMaterialRenderer.IsMeshAvailable();
 }
 
+bool CDxLibDrawExecutor::SupportsModelFrameOverrides() const
+{
+	return AssetBackend != nullptr;
+}
+
 void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 {
 	// このオブジェクトの分で変えた状態。終わりで、元に戻す（変える前の値は、最初に変えるときに覚える）
@@ -804,6 +809,11 @@ void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
 		case EDrawCommand::ModelMaterial3D:
 		{
 			ExecuteModelMaterial( Command );
+			break;
+		}
+		case EDrawCommand::ModelFramePose3D:
+		{
+			ExecuteModelFramePose( Command );
 			break;
 		}
 		case EDrawCommand::SpriteRect:

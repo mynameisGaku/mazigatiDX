@@ -35,6 +35,8 @@ public:
 	virtual bool SupportsEffectMaterialMesh() const { return false; }
 	// ModelMaterial3Dでモデル内の選択材質へ効果を描けるか返す。
 	virtual bool SupportsModelMaterialEffects() const { return false; }
+	// 通常model描画1回だけのframe pose一時適用に対応するか返す。
+	virtual bool SupportsModelFrameOverrides() const { return false; }
 
 	// 撮影のための描き直しを始める: 以後の Execute を、Desc の大きさの別の描画先へ、2D を Desc.Scale 倍にして描く。
 	// 対応しない実行先・作れない大きさ・すでに始めているときは false（何も変えない）。EndOffscreenCapture と必ず対にする

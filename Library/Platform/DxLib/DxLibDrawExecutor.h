@@ -24,6 +24,7 @@ class CDxLibAssetBackend;
 //     Pixel3D / Cone3D / BillboardPivot3D / BillboardQuad3D / Sprite3D / SpriteStretch3D / SpritePivot3D / Primitive3D -> DxLibShapes3D.h（DrawPixel3D / DrawCone3D / DrawBillboard3D / DrawModiBillboard3D /
 //       DrawRotaGraph3D / DrawExtendGraph3D / DrawRota2Graph3D / DrawPrimitive3D / DrawPrimitiveIndexed3D）
 //     Model3D -> MV1SetMatrix + (MV1SetAttachAnimTime) + MV1DrawModel
+//     ModelFramePose3D -> backend pose save/apply + MV1DrawModel + reverse restore
 //   Span の終わりで、ブレンドモードはブレンドなしに、WorldMatrix は単位行列に、Tint（SetDrawBright）は白に戻す。
 //     ImageFilter -> GraphFilter / GraphFilterBlt / GraphFilterRectBlt / ImageBlend -> GraphBlend / GraphBlendBlt（DxLibImageOps.h）
 //     PushMask / PopMask -> SetMaskScreenGraph + SetMaskScreenGraphUseChannel + SetMaskReverseEffectFlag + SetUseMaskScreenFlag（Span の終わりで、マスクなしに戻す）
@@ -55,6 +56,8 @@ public:
 	bool SupportsEffectMaterialMesh() const override;
 	// 不変形状資源と材質mesh描画が同時に利用できるか返す。
 	bool SupportsModelMaterialEffects() const override;
+	// AssetBackendが初期化済みで、一時poseを適用できるか返す。
+	bool SupportsModelFrameOverrides() const override;
 	// 撮影のための描き直し（DxLibDrawExecutorCapture.cpp）
 	bool BeginOffscreenCapture( const FOffscreenCaptureDesc& Desc ) override;
 	bool EndOffscreenCapture( TArray<FColor32>& Out ) override;
@@ -70,6 +73,8 @@ private:
 	bool EnsureMaskScreen();
 	// 固定payloadを検査し、残りをnativeモデル、選択材質を効果meshとして描く。
 	void ExecuteModelMaterial( const FDrawCommandView& Command );
+	// 一時poseを適用し、通常modelを描いた直後に状態を復元する。
+	void ExecuteModelFramePose( const FDrawCommandView& Command );
 
 	// 撮影のための描き直しの状態。始めている間、撮影の描画先へ直接描く 2D を CaptureScale 倍にする
 	bool bOffscreenCapture = false;

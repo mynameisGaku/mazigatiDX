@@ -12,6 +12,7 @@
 #include "Library/Framework/Render/DrawDistortedMaterialQuad.h"
 #include "Library/Framework/Render/DrawDistortedMaterialRibbon.h"
 #include "Library/Framework/Render/DrawModelMaterial.h"
+#include "Library/Framework/Render/DrawModelFrameOverrideData.h"
 #include "Library/Framework/Render/DrawMaterialMesh.h"
 #include "Library/Framework/Render/DrawMaterialQuad.h"
 #include "Library/Framework/Render/DrawMaterialRibbon.h"
@@ -1624,6 +1625,8 @@ public:
 		Data.AnimTime = AnimTime;
 		Push( EDrawCommand::Model3D, 0, Data );
 	}
+	// Overridesを通常model描画1命令へ値snapshotして一時適用を要求する。Count0ではnull可。無効値やbuffer上限で失敗し、commandを追加しない。
+	bool ModelWithFrameOverrides( int32 ModelHandle, const FMatrix4x4& World, const FDrawModelFrameOverrideData* Overrides, int32 NumOverrides, int32 AnimAttachIndex = -1, float32 AnimTime = 0.0f );
 
 private:
 	static FORCEINLINE FDrawRgb Rgb( const FColor32& Color ) { return FDrawRgb{ Color.r, Color.g, Color.b, 0 }; }

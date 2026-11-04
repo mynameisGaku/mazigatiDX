@@ -5,6 +5,7 @@
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Numeric.h"
+#include "Library/Framework/Render/DrawModelFramePoseData.h"
 
 void FDrawContext::MaterialQuad3D( const FDrawMaterialQuadData& Data )
 {
@@ -118,6 +119,63 @@ bool FDrawContext::ModelMaterial( const FDrawModelMaterialData& Data )
 	uint32* const Out = Words.GetData() + Begin;
 	Out[0] = NDrawCommand::MakeHeader( EDrawCommand::ModelMaterial3D, 0, static_cast<int32>( CommandWords ) );
 	FMemory::Memcpy( Out + 1, &Header, sizeof( Header ) );
+	return true;
+}
+
+bool FDrawContext::ModelWithFrameOverrides( int32 ModelHandle, const FMatrix4x4& World, const FDrawModelFrameOverrideData* Overrides, int32 NumOverrides, int32 AnimAttachIndex, float32 AnimTime )
+{
+	if ( ModelHandle < 0 || AnimAttachIndex < -1 || !NMath::IsFinite( AnimTime ) || AnimTime < 0.0f || NumOverrides < 0 || NumOverrides > NDrawModelFramePose::MaxOverrides || ( NumOverrides > 0 && Overrides == nullptr ) )
+	{
+		return false;
+	}
+	// world行列の有限性を調べる行番号。
+	for ( int32 Row = 0; Row < 4; ++Row )
+	{
+		// 現在行の有限性を調べる列番号。
+		for ( int32 Column = 0; Column < 4; ++Column )
+		{
+			if ( !NMath::IsFinite( World.m[Row][Column] ) )
+			{
+				return false;
+			}
+		}
+	}
+	if ( World.m[0][3] != 0.0f || World.m[1][3] != 0.0f || World.m[2][3] != 0.0f || World.m[3][3] != 1.0f )
+	{
+		return false;
+	}
+	// buffer再確保より前に、呼出側配列を命令所有の値へ複写する。
+	TArray<FDrawModelFrameOverrideData> Snapshot; // buffer変更前に所有するpose snapshot。
+	if ( NumOverrides > 0 )
+	{
+		Snapshot.Append( Overrides, NumOverrides );
+	}
+	FDrawModelFramePoseData Data; // 可変長commandの固定header。
+	Data.Handle = ModelHandle;
+	PackAffine( Data.M, World );
+	Data.AnimIndex = AnimAttachIndex;
+	Data.AnimTime = AnimTime;
+	Data.NumOverrides = NumOverrides;
+	if ( !NDrawModelFramePose::IsValidHeader( Data ) || !NDrawModelFramePose::IsValidOverrides( Snapshot.GetData(), Snapshot.Num() ) )
+	{
+		return false;
+	}
+	constexpr int32 HeaderWords = sizeof( FDrawModelFramePoseData ) / 4; // 固定headerのword数。
+	constexpr int32 OverrideWords = sizeof( FDrawModelFrameOverrideData ) / 4; // 1pose recordのword数。
+	const int32 CommandWords = 1 + HeaderWords + NumOverrides * OverrideWords; // command header込みの長さ。
+	TArray<uint32>& Words = Buffer->Words; // 追記する共有command列。
+	if ( CommandWords > NDrawCommand::MaxWords || Words.Num() > TNumericLimits<int32>::Max() - CommandWords )
+	{
+		return false;
+	}
+	const int32 Begin = Words.AddZeroed( CommandWords ); // 新commandの先頭word位置。
+	uint32* const Out = Words.GetData() + Begin; // 新commandを書き込む位置。
+	Out[0] = NDrawCommand::MakeHeader( EDrawCommand::ModelFramePose3D, 0, CommandWords );
+	FMemory::Memcpy( Out + 1, &Data, sizeof( Data ) );
+	if ( NumOverrides > 0 )
+	{
+		FMemory::Memcpy( Out + 1 + HeaderWords, Snapshot.GetData(), static_cast<size_t>( NumOverrides ) * sizeof( FDrawModelFrameOverrideData ) );
+	}
 	return true;
 }
 
