@@ -6,6 +6,7 @@
 #include "Library/Framework/Animation/AnimationBlend.h"
 #include "Library/Framework/Animation/ModelAnimationSampler.h"
 #include "Library/Framework/Animation/RootMotion.h"
+#include "Library/Framework/Render/DrawModelFramePoseData.h"
 #include "Library/Core/Thread/GameThread.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Core/Types/Callable.h"
@@ -14,6 +15,27 @@
 #include "Library/Math/MathUtils.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogModelAnimator, Log )
+
+namespace
+{
+	// 行列が有限で、最後の列が厳密なaffine形式か調べる。
+	bool IsCanonicalFiniteMatrix( const FMatrix4x4& Matrix )
+	{
+		// 有限性を調べる行番号。
+		for ( int32 Row = 0; Row < 4; ++Row )
+		{
+			// 有限性を調べる列番号。
+			for ( int32 Column = 0; Column < 4; ++Column )
+			{
+				if ( !NMath::IsFinite( Matrix.m[Row][Column] ) )
+				{
+					return false;
+				}
+			}
+		}
+		return Matrix.m[0][3] == 0.0f && Matrix.m[1][3] == 0.0f && Matrix.m[2][3] == 0.0f && Matrix.m[3][3] == 1.0f;
+	}
+}
 
 //-----------------------------------------------------------------------------
 // クリップの登録
@@ -1024,6 +1046,44 @@ bool FModelAnimator::ConsumeEvent( const FString& Name )
 //-----------------------------------------------------------------------------
 // 描画
 //-----------------------------------------------------------------------------
+FAnimationBlendResult FModelAnimator::ComputeAnimationBlend() const
+{
+	// 既存の層blend計算へ渡す再生状態。
+	TArray<FAnimationBlendLayer> BlendLayers;
+	for ( const FLayer& Layer : Layers )
+	{
+		// blendへ写す再生層。
+		BlendLayers.Add( FAnimationBlendLayer { Layer.bAttached ? Layer.Weight : 0.0f, Layer.PartFrame } );
+	}
+	return NAnimationBlend::Compute( BlendLayers, PartParents, PartTouchedFrames );
+}
+
+void FModelAnimator::RecordAnimationCommands( FDrawContext& Draw, int32 Handle, const FAnimationBlendResult& Blend ) const
+{
+	// 記録する層の番号。
+	for ( int32 Index = 0; Index < Layers.Num(); ++Index )
+	{
+		// 現在の再生層。
+		const FLayer& Layer = Layers[Index];
+		if ( !Layer.bAttached )
+		{
+			continue;
+		}
+		// native時間単位へ変換した層の再生位置。
+		const float32 Time = NAnim::ToClipTime( Layer.Playhead, Layer.LengthSeconds, Layer.Loop ) * ResolveUnitsPerSecond();
+		Draw.ModelAnimLayer( Handle, Layer.AttachIndex, NMath::IsFinite( Time ) ? Time : 0.0f, Blend.WholeRates[Index] );
+	}
+	for ( const FAnimationFrameRate& FrameRate : Blend.FrameRates )
+	{
+		// 現在の骨別blend率。
+		const FLayer& Layer = Layers[FrameRate.Layer];
+		if ( Layer.bAttached )
+		{
+			Draw.ModelAnimFrameRate( Handle, Layer.AttachIndex, FrameRate.Frame, FrameRate.Rate, false );
+		}
+	}
+}
+
 void FModelAnimator::Record( FDrawContext& Draw, const FMatrix4x4& World ) const
 {
 	if ( !bVisible || !Instance.IsValid() )
@@ -1037,33 +1097,9 @@ void FModelAnimator::Record( FDrawContext& Draw, const FMatrix4x4& World ) const
 		return;
 	}
 
-	// 付けているアニメーションすべての時間と割合を毎回伝える（働いていないものは 0 にして、前の値を残さない）。
-	// 割合は NAnimationBlend で決める（体全体の層は合計 1、体の一部の層は、その骨とその子だけ）
-	TArray<FAnimationBlendLayer> BlendLayers;
-	for ( const FLayer& Layer : Layers )
-	{
-		BlendLayers.Add( FAnimationBlendLayer { Layer.bAttached ? Layer.Weight : 0.0f, Layer.PartFrame } );
-	}
-	const FAnimationBlendResult Blend = NAnimationBlend::Compute( BlendLayers, PartParents, PartTouchedFrames );
-	for ( int32 Index = 0; Index < Layers.Num(); ++Index )
-	{
-		const FLayer& Layer = Layers[Index];
-		if ( !Layer.bAttached )
-		{
-			continue;
-		}
-		// モデルの時間の単位へ変換した層の再生位置。
-		const float32 Time = NAnim::ToClipTime( Layer.Playhead, Layer.LengthSeconds, Layer.Loop ) * ResolveUnitsPerSecond();
-		Draw.ModelAnimLayer( Handle, Layer.AttachIndex, NMath::IsFinite( Time ) ? Time : 0.0f, Blend.WholeRates[Index] );
-	}
-	for ( const FAnimationFrameRate& FrameRate : Blend.FrameRates )
-	{
-		const FLayer& Layer = Layers[FrameRate.Layer];
-		if ( Layer.bAttached )
-		{
-			Draw.ModelAnimFrameRate( Handle, Layer.AttachIndex, FrameRate.Frame, FrameRate.Rate, false );
-		}
-	}
+	// 既存と同じ層時間・全体率・部分骨率を計算する。
+	const FAnimationBlendResult Blend = ComputeAnimationBlend();
+	RecordAnimationCommands( Draw, Handle, Blend );
 
 	// Animator固有の補正行列。
 	const FMatrix4x4 Local = FMatrix4x4::TRS( ModelOffset, ModelRotation, ModelScale );
@@ -1080,4 +1116,78 @@ void FModelAnimator::Record( FDrawContext& Draw, const FMatrix4x4& World ) const
 void FModelAnimator::RecordAt( FDrawContext& Draw, const FTransformView& Transform ) const
 {
 	Record( Draw, Transform.GetWorldMatrix() );
+}
+
+bool FModelAnimator::RecordWithFrameOverrides( FDrawContext& Draw, const FMatrix4x4& World, const FDrawModelFrameOverrideData* Overrides, int32 NumOverrides ) const
+{
+	if ( !bVisible || !Instance.IsValid() || NumOverrides < 0 || NumOverrides > NDrawModelFramePose::MaxOverrides || ( NumOverrides > 0 && Overrides == nullptr ) || !IsCanonicalFiniteMatrix( World ) )
+	{
+		return false;
+	}
+	// この個体が描画で使うnative model handle。
+	const int32 Handle = Instance->GetHandle();
+	if ( Handle < 0 || ( MaterialEffect.IsPrepared() && MaterialEffect.GetPlaybackState() != FMeshMaterialEffectPlayback::EEffectPlaybackState::Stopped ) )
+	{
+		return false;
+	}
+	// 出力先への追記より前に入力poseを所有する。
+	TArray<FDrawModelFrameOverrideData> PoseSnapshot;
+	if ( NumOverrides > 0 )
+	{
+		PoseSnapshot.Append( Overrides, NumOverrides );
+	}
+	if ( !NDrawModelFramePose::IsValidOverrides( PoseSnapshot.GetData(), PoseSnapshot.Num() ) )
+	{
+		return false;
+	}
+	// Animatorの補正を内側へ掛けた最終model world行列。
+	const FMatrix4x4 Local = FMatrix4x4::TRS( ModelOffset, ModelRotation, ModelScale );
+	const FMatrix4x4 ModelWorld = Local * World;
+	if ( !IsCanonicalFiniteMatrix( ModelWorld ) )
+	{
+		return false;
+	}
+	// 既存Recordと同じblend計画。
+	const FAnimationBlendResult Blend = ComputeAnimationBlend();
+	// 最終pose commandが占めるword数。
+	const int32 PoseCommandWords = 1 + static_cast<int32>( sizeof( FDrawModelFramePoseData ) / 4 ) + PoseSnapshot.Num() * static_cast<int32>( sizeof( FDrawModelFrameOverrideData ) / 4 );
+	if ( PoseCommandWords > NDrawCommand::MaxWords )
+	{
+		return false;
+	}
+	// animation commandsの総word数を見積もる値。
+	int64 PlannedWords = PoseCommandWords;
+	// 各attached layerのModelAnim command分を加える。
+	for ( const FLayer& Layer : Layers )
+	{
+		if ( Layer.bAttached )
+		{
+			PlannedWords += 1 + static_cast<int64>( sizeof( FDrawModelAnimData ) / 4 );
+		}
+	}
+	// 実際に追記される骨frame率command分を加える。
+	for ( const FAnimationFrameRate& FrameRate : Blend.FrameRates )
+	{
+		if ( !Layers.IsValidIndex( FrameRate.Layer ) )
+		{
+			return false;
+		}
+		// 現在の骨別blend率に対応する再生層。
+		const FLayer& Layer = Layers[FrameRate.Layer];
+		if ( Layer.bAttached && Handle >= 0 && Layer.AttachIndex >= 0 && FrameRate.Frame >= 0 && NMath::IsFinite( FrameRate.Rate ) )
+		{
+			PlannedWords += 1 + static_cast<int64>( sizeof( FDrawModelAnimFrameData ) / 4 );
+		}
+	}
+	if ( PlannedWords > static_cast<int64>( TNumericLimits<int32>::Max() ) - Draw.GetNumWords() )
+	{
+		return false;
+	}
+	RecordAnimationCommands( Draw, Handle, Blend );
+	return Draw.ModelWithFrameOverrides( Handle, ModelWorld, PoseSnapshot.GetData(), PoseSnapshot.Num() );
+}
+
+bool FModelAnimator::RecordAtWithFrameOverrides( FDrawContext& Draw, const FTransformView& Transform, const FDrawModelFrameOverrideData* Overrides, int32 NumOverrides ) const
+{
+	return RecordWithFrameOverrides( Draw, Transform.GetWorldMatrix(), Overrides, NumOverrides );
 }

@@ -17,6 +17,7 @@
 class FTransformView;
 class CModelAnimationSampler;
 class IDrawExecutor;
+struct FAnimationBlendResult;
 
 //=============================================================================
 // FModelAnimator
@@ -179,6 +180,10 @@ struct FModelAnimator
 	// 付けているアニメーションの時間とブレンド率、モデルの行列を記録する。World はモデルのワールド行列（ModelOffset などは内側に掛かる）
 	void Record( FDrawContext& Draw, const FMatrix4x4& World ) const;
 	void RecordAt( FDrawContext& Draw, const FTransformView& Transform ) const;
+	// 骨poseを含む通常Model描画を記録する。入力不正・非表示・未対応材質効果ではwordsを変更しない。
+	bool RecordWithFrameOverrides( FDrawContext& Draw, const FMatrix4x4& World, const FDrawModelFrameOverrideData* Overrides, int32 NumOverrides ) const;
+	// Transformのworld姿勢と骨poseを通常Model描画へ記録する。失敗時はwordsを変更しない。
+	bool RecordAtWithFrameOverrides( FDrawContext& Draw, const FTransformView& Transform, const FDrawModelFrameOverrideData* Overrides, int32 NumOverrides ) const;
 
 	static constexpr int32 MaxLayers = 6;
 
@@ -236,6 +241,10 @@ private:
 
 	FClip* FindClip( const FString& Name );
 	const FClip* FindClip( const FString& Name ) const;
+	// 読み取り専用のAnimator状態から既存と同じ骨ブレンド結果を作る。
+	FAnimationBlendResult ComputeAnimationBlend() const;
+	// Blend結果を層command、骨commandの順で追記する。
+	void RecordAnimationCommands( FDrawContext& Draw, int32 Handle, const FAnimationBlendResult& Blend ) const;
 	// クリップの長さ（モデルの時間の単位）。0 以下なら使えない
 	float32 ResolveLengthUnits( FClip& Clip ) const;
 	// 有限かつ正の時間単位。公開値が不正なら従来の既定 30 を使う
