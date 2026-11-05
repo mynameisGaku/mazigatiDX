@@ -6,10 +6,10 @@
 
 //=============================================================================
 // CEffectAsset
-//   読み込んだパーティクルのエフェクト（.effect.json）。CAssetManager::LoadEffect で読み込む。
+//   読み込んだパーティクルのエフェクト（.gxeffect）。CAssetManager::LoadEffect で読み込む。
 //   中身は FParticleEffectDefinition（純粋なデータ。ParticleEffect.h）。再生は IEffectBackend（EffectBackend.h）が受け持つ。
 //
-//   TSharedPtr<CEffectAsset> Fire = Assets->LoadEffect( "Effects/Fire.effect.json" );
+//   TSharedPtr<CEffectAsset> Fire = Assets->LoadEffect( "Effects/Fire.gxeffect" );
 //   NParticle::Start( Simulation, Fire->GetDefinitionShared() );
 //
 //   定義を作り直して保存するときは Assets->SaveEffect( Path, Definition )（保存したパスのキャッシュは捨てるので、次の LoadEffect は新しい内容を読む）。

@@ -30,11 +30,11 @@
 //         "Transform": { "Position": [0, 1, 0], "Rotation": [0, 90, 0], "Scale": [1, 1, 1] },   // 角度は度（Pitch, Yaw, Roll）。省略した項目は既定値
 //         "Collision": "Auto",                            // "Auto"（既定）/ "On" / "Off"
 //         "Components": {                                 // 種類ごとに 1 つまで。知らない種類は、そのまま保存される
-//           "Model": { "Path": "Models/Torch.mv1", "Animations": "Models/Torch.modelanim.json", "Clip": "Burn", "Speed": 1 },
+//           "Model": { "Path": "Models/Torch.mv1", "Animations": "Models/Torch.gxmodelanim", "Clip": "Burn", "Speed": 1 },
 //           "Billboard": { "Texture": "Sprites/Glow.png", "Size": [1, 1], "Pivot": [0.5, 0.5], "Mode": "CameraY", "Tint": "#FFFFFF80",
 //                          "Rect": [0, 0, 64, 64], "FlipX": false, "FlipY": false },
 //           "Sound": { "Path": "Sounds/Fire.wav", "Bus": "Ambient", "Volume": 1, "Pitch": 1, "Loop": true, "AutoPlay": true, "MinDistance": 1, "MaxDistance": 25 },
-//           "Effect": { "Path": "Effects/Fire.effect.json", "AutoPlay": true, "Scale": 1, "Speed": 1, "Seed": 0, "Loop": true },   // Loop を省略すると、エフェクトの指定のまま
+//           "Effect": { "Path": "Effects/Fire.gxeffect", "AutoPlay": true, "Scale": 1, "Speed": 1, "Seed": 0, "Loop": true },   // Loop を省略すると、エフェクトの指定のまま
 //           "Collider": { "Shape": "Box", "Size": [1, 2, 1], "Radius": 0.5, "Height": 2, "Offset": [0, 1, 0], "Trigger": false,
 //                         "Mesh": "Models/Floor.mv1" }     // Shape が "Mesh" のとき、三角形を取るモデル（省略なら、Model 部品のファイル）
 //           "Mesh": { "Vertices": [[0, 0, 0], [1, 0, 0], ...], "Faces": [[0, 1, 2, 3], ...], "FaceMaterials": [0, 1, ...],   // 編集メッシュ（EditMesh.h に詳しい）

@@ -10,12 +10,12 @@
 struct FModelAnimator;
 
 //=============================================================================
-// モデルのアニメーションの定義（独自のデータアセット。JSON と相互に変換できる。拡張子は .modelanim.json）
+// モデルのアニメーションの定義（独自のデータアセット。JSON と相互に変換できる。拡張子は .gxmodelanim）
 //   「どのモデルに、どのファイルのどのアニメーションを、何という名前・ループ・速さ・フェードで使い、
 //    どの位置にどんな出来事（イベント）を置くか」をまとめたもの。モデルのアニメーションエディタ（デバッグ画面の Tools）で作って保存できる。
 //
 //   // 読み込んで、すぐ再生できるアニメーターを作る
-//   TSharedPtr<CModelAnimationAsset> Robot = Assets->LoadModelAnimations( "Models/Robot.modelanim.json" );
+//   TSharedPtr<CModelAnimationAsset> Robot = Assets->LoadModelAnimations( "Models/Robot.gxmodelanim" );
 //   FModelAnimator Animator = Robot->CreateAnimator();       // インスタンス + 全クリップ（出来事つき）が登録済み
 //   Animator.Play( "Walk" );                                  // 定義に書いたループ・速さ・フェードで再生
 //   AddData( Animator );
@@ -39,7 +39,7 @@ struct FModelAnimator;
 //   モーション専用（モデルを持たないアニメーション集）:
 //     Model を空にして、各クリップの Source に、メッシュの無いアニメーションだけのファイル（.mv1 / .fbx など）を書く。
 //     ゲームでは、どのキャラクターにでも使える:
-//       TSharedPtr<CModelAnimationAsset> Motions = Assets->LoadModelAnimations( "Motions/Humanoid.modelanim.json" );
+//       TSharedPtr<CModelAnimationAsset> Motions = Assets->LoadModelAnimations( "Motions/Humanoid.gxmodelanim" );
 //       FModelAnimator Animator = Motions->CreateAnimatorFor( Assets->LoadModel( "Models/Robot.mv1" ) );
 //     アニメーションは名前が合う骨だけを動かすので、骨の名前が合うかは CModel::CompareBones で確かめられる。
 //=============================================================================

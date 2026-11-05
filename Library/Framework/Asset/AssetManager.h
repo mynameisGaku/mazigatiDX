@@ -119,7 +119,7 @@ private:
 //
 //   CAssetManager* Assets = GetAppSubsystem<CAssetManager>();
 //   TSharedPtr<CTexture>     Hero  = Assets->LoadTexture( "Textures/Hero.png" );
-//   TSharedPtr<CSpriteSheet> Sheet = Assets->LoadSpriteSheet( "Sprites/Hero.sheet.json" );
+//   TSharedPtr<CSpriteSheet> Sheet = Assets->LoadSpriteSheet( "Sprites/Hero.gxsprite" );
 //   TSharedPtr<CModel>       Robot = Assets->LoadModel( "Models/Robot.fbx" );   // .fbx / .obj は、同じ名前の .mv1 を（無ければ作って）読む
 //   TSharedPtr<CSound>       Jump  = Assets->LoadSound( "Sound/Jump.wav" );
 //   TSharedPtr<CSound>       Theme = Assets->LoadSound( "Sound/Theme.ogg", ESoundLoadMode::Stream );
@@ -228,7 +228,7 @@ public:
 	bool SaveWorld( const FString& Path, const FWorldDefinition& Definition );
 
 	//-------------------------------------------------------------------------
-	// パーティクルのエフェクト（.effect.json。書式は ParticleEffect.cpp の先頭、再生は EffectBackend.h を参照）
+	// パーティクルのエフェクト（.gxeffect。書式は ParticleEffect.cpp の先頭、再生は EffectBackend.h を参照）
 	//-------------------------------------------------------------------------
 	// 定義ファイル（JSON）から。中の画像は、再生を始めるとき（ParticleEffectBackend）に読み込まれる
 	TSharedPtr<CEffectAsset> LoadEffect( const FString& Path );

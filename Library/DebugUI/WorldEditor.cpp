@@ -60,9 +60,9 @@ void NWorldEditorUI::RescanFiles( FWorldEditorState& S, bool bForce )
 	S.ModelFiles = NFileSystem::ListFilesRecursive( Root, NModelFormat::GetAllModelExtensions() );
 	S.TextureFiles = NFileSystem::ListFilesRecursive( Root, { ".png", ".jpg", ".jpeg", ".bmp", ".tga", ".dds" } );
 	S.SoundFiles = NFileSystem::ListFilesRecursive( Root, { ".wav", ".ogg", ".mp3" } );
-	S.AnimationFiles = NFileSystem::ListFilesRecursive( Root, { ".modelanim.json" } );
+	S.AnimationFiles = NFileSystem::ListFilesRecursive( Root, { ".gxmodelanim" } );
 	S.WorldFiles = NFileSystem::ListFilesRecursive( Root, { ".world" } );
-	S.EffectFiles = NFileSystem::ListFilesRecursive( Root, { ".effect.json" } );
+	S.EffectFiles = NFileSystem::ListFilesRecursive( Root, { ".gxeffect" } );
 }
 
 void NWorldEditorUI::RefreshIssues( FWorldEditorState& S )

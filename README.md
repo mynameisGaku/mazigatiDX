@@ -50,7 +50,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\NewProject.ps1 -Name M
 
 ## エフェクトを使う
 
-Effect Editorの`Preset`から元になる表現を選び、未保存のコピーを編集します。`File > Save as...`で`Effects/MyEffect.effect.json`などへ保存し、World Editorのアセット一覧から配置します。
+Effect Editorの`Preset`から元になる表現を選び、未保存のコピーを編集します。`File > Save as...`で`Effects/MyEffect.gxeffect`などへ保存し、World Editorのアセット一覧から配置します。
 
 `Flowing energy veil`、`Distorted ribbon trail`、`Flowing lightning tree`では、ノイズの移動と強さの曲線によるUVディストーションを試せます。帯は移動プレビューで軌跡を確認でき、ゲーム内では配置したオブジェクトを動かして使います。`Realistic lightning tree`と`Growing lightning tree`では枝・孫枝・成長・明滅を編集できます。サンプル原本は`Assets/Effects`にあります。
 

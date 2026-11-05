@@ -22,7 +22,7 @@
 			"Color": { "Start": "#FFFFFFFF", "End": "#FFFFFFFF" },
 			"Flipbook": {
 				"Enabled": true,
-				"Sheet": "Effects/flipbook_sigil_burst.sheet.json",
+				"Sheet": "Effects/flipbook_sigil_burst.gxsprite",
 				"Clip": "Burst",
 				"TimeMode": "Lifetime",
 				"Speed": 1.0

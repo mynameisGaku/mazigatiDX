@@ -12,11 +12,11 @@ class CAssetManager;
 //=============================================================================
 // エフェクトの窓口（バックエンド）
 //   エフェクトを「再生する」仕組みを、インターフェースにしてある。ワールドの Effect 部品も、ゲームのコードも、ここだけを知る。
-//   中身を差し替えられる: 内蔵の簡易パーティクル（ParticleEffectBackend.h。.effect.json）と、外部のエフェクトライブラリ（Effekseer など）を、
+//   中身を差し替えられる: 内蔵の簡易パーティクル（ParticleEffectBackend.h。.gxeffect）と、外部のエフェクトライブラリ（Effekseer など）を、
 //   同じ窓口の、別の実装として登録できる（拡張子などで、どちらが扱うかを決める）。
 //
 //   // 再生する（登録された最初の、扱えるバックエンド）
-//   TSharedPtr<IEffectPlayback> Playback = FEffectBackendRegistry::Global().Play( "Effects/Fire.effect.json", Assets, Params, FTransform( Position ) );
+//   TSharedPtr<IEffectPlayback> Playback = FEffectBackendRegistry::Global().Play( "Effects/Fire.gxeffect", Assets, Params, FTransform( Position ) );
 //   Playback->SetTransform( ... );   // 動くものに付けるなら、毎フレーム
 //   Playback->Update( DeltaTime );   // 毎フレーム 1 回
 //   Playback->Record( Draw );        // 描画コマンドに記録する（const。描画システムから、並列に呼ばれても安全）

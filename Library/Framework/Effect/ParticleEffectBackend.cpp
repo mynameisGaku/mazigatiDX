@@ -502,7 +502,7 @@ TArray<uint8> NEffect::MakeRibbonImage()
 //=============================================================================
 bool FParticleEffectBackend::CanPlay( const FString& Path ) const
 {
-	return Path.EndsWith( ".effect.json", ESearchCase::IgnoreCase );
+	return Path.EndsWith( ".gxeffect", ESearchCase::IgnoreCase );
 }
 
 TSharedPtr<IEffectPlayback> FParticleEffectBackend::Play( const FString& Path, CAssetManager* Assets, const FEffectPlayParams& Params, const FTransform& World )

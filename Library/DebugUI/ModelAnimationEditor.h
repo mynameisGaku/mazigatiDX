@@ -11,7 +11,7 @@
 
 //=============================================================================
 // モデルのアニメーションエディタ
-//   モデルのアニメーションの定義（.modelanim.json）を、モデルを動かして確かめながら作って保存する。
+//   モデルのアニメーションの定義（.gxmodelanim）を、モデルを動かして確かめながら作って保存する。
 //
 //   - 3D プレビュー: ドラッグで回転、中ボタン（または右ボタン）で移動、ホイールで拡大。床の格子と軸つき
 //   - クリップ: モデルのファイルに入っているアニメーション（動きだけの別ファイルも）から追加。名前・ループ・速さ・フェードを設定
@@ -86,7 +86,7 @@ struct FModelAnimationEditorState
 	// ファイル
 	//-------------------------------------------------------------------------
 	TArray<FString> ModelFiles;             // アセットのルートの下のモデル
-	TArray<FString> DefinitionFiles;        // アセットのルートの下の .modelanim.json
+	TArray<FString> DefinitionFiles;        // アセットのルートの下の .gxmodelanim
 	double LastScanTime = -100.0;
 	FString OpenSelection;
 	FString NewModelSelection;

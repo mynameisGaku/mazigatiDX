@@ -59,9 +59,9 @@ namespace
 			return;
 		}
 		State.LastScanTime = Now;
-		State.EffectFiles = NFileSystem::ListFilesRecursive( Assets->GetRootDirectory(), { ".effect.json" } );
+		State.EffectFiles = NFileSystem::ListFilesRecursive( Assets->GetRootDirectory(), { ".gxeffect" } );
 		State.TextureFiles = NFileSystem::ListFilesRecursive( Assets->GetRootDirectory(), { ".png", ".jpg", ".jpeg", ".bmp", ".tga", ".dds" } );
-		State.SheetFiles = NFileSystem::ListFilesRecursive( Assets->GetRootDirectory(), { ".sheet.json" } );
+		State.SheetFiles = NFileSystem::ListFilesRecursive( Assets->GetRootDirectory(), { ".gxsprite" } );
 	}
 
 	// 確認を済ませた操作だけを実行する。読み込みの失敗では現在の文書を保つ。
@@ -172,95 +172,95 @@ namespace
 			{
 				if ( ImGui::MenuItem( "Campfire" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/campfire.effect.json", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/campfire.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Sparks" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/sparks.effect.json", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/sparks.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Aura" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/aura.effect.json", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/aura.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Ribbon trail" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/ribbon_trail.effect.json", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/ribbon_trail.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Branch lightning" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/branch_lightning.effect.json", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/branch_lightning.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Target lightning" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/target_lightning.effect.json", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/target_lightning.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Realistic lightning tree" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/tree_lightning.effect.json", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/tree_lightning.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Growing lightning tree" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/growing_tree_lightning.effect.json", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/growing_tree_lightning.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Dissolve sigil" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/material_dissolve.effect.json", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/material_dissolve.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Material ribbon trail" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/material_ribbon_trail.effect.json", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/material_ribbon_trail.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Material branch lightning" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/material_branch_lightning.effect.json", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/material_branch_lightning.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Chromatic ribbon" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/appearance_ribbon_spectrum.effect.json", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/appearance_ribbon_spectrum.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Pulse lightning" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/appearance_pulse_lightning.effect.json", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/appearance_pulse_lightning.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Flipbook sigil burst" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/flipbook_sigil_burst.effect.json", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/flipbook_sigil_burst.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Flowing energy veil" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/uv_distortion_energy_veil.effect.json", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/uv_distortion_energy_veil.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Distorted ribbon trail" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/uv_distortion_ribbon.effect.json", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/uv_distortion_ribbon.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Flowing lightning tree" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/uv_distortion_tree_lightning.effect.json", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/uv_distortion_tree_lightning.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Mesh energy ring" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/mesh_energy_ring.effect.json", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/mesh_energy_ring.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Mesh tilted veil" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/mesh_tilted_veil.effect.json", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/mesh_tilted_veil.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Force field wind" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_wind.effect.json", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_wind.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Gravity well" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_gravity_well.effect.json", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_gravity_well.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Whirlwind" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_whirlwind.effect.json", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_whirlwind.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Gust" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_gust.effect.json", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_gust.gxeffect", pOpen );
 				}
 				ImGui::EndMenu();
 			}
@@ -308,7 +308,7 @@ namespace
 		{
 			if ( State.SaveAsPath.IsEmpty() )
 			{
-				State.SaveAsPath = State.FilePath.IsEmpty() ? FString( "Effects/NewEffect.effect.json" ) : State.FilePath;
+				State.SaveAsPath = State.FilePath.IsEmpty() ? FString( "Effects/NewEffect.gxeffect" ) : State.FilePath;
 			}
 			ImGui::OpenPopup( "Save effect as##EffectEditor" );
 		}
@@ -399,7 +399,7 @@ void NDebugUI::NewEffect( FEffectEditorState& State )
 	State.SelectedEmitter = NParticleEdit::AddEmitter( State.Document );
 	State.SelectedForceField = 0;
 	State.FilePath.Empty();
-	State.SaveAsPath = "Effects/NewEffect.effect.json";
+	State.SaveAsPath = "Effects/NewEffect.gxeffect";
 	State.bInitialized = true;
 	State.bPreviewMotion = false;
 	ResetPreviewTargetState( State );
@@ -426,8 +426,8 @@ bool NDebugUI::NewEffectFromPreset( FEffectEditorState& State, const FString& Pr
 	State.Document.EndEditSession();
 	State.FilePath.Empty();
 	// 定義ファイルの拡張子がある場合だけ外し、コピー専用の保存先を提案する。
-	const FString Base = Path.EndsWith( ".effect.json", ESearchCase::IgnoreCase ) ? Path.Left( Path.Len() - 12 ) : Path;
-	State.SaveAsPath = Base + "_copy.effect.json";
+	const FString Base = Path.EndsWith( ".gxeffect", ESearchCase::IgnoreCase ) ? Path.Left( Path.Len() - FString( ".gxeffect" ).Len() ) : Path;
+	State.SaveAsPath = Base + "_copy.gxeffect";
 	State.bPreviewMotion = false;
 	ResetPreviewTargetState( State );
 	NEffectEditorUI::ApplyInitialPreviewTarget( State );
@@ -494,9 +494,9 @@ bool NDebugUI::SaveEffectFile( FEffectEditorState& State, const FString& AssetPa
 			return false;
 		}
 	}
-	if ( !Path.EndsWith( ".effect.json", ESearchCase::IgnoreCase ) )
+	if ( !Path.EndsWith( ".gxeffect", ESearchCase::IgnoreCase ) )
 	{
-		Path += ".effect.json";
+		Path += ".gxeffect";
 	}
 	if ( !Assets->SaveEffect( Path, State.Document.Get() ) )
 	{

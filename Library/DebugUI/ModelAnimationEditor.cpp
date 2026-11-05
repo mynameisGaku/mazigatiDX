@@ -21,7 +21,7 @@ namespace
 {
 	using FState = FModelAnimationEditorState;
 
-	constexpr const char* DefinitionExtension = ".modelanim.json";
+	constexpr const char* DefinitionExtension = ".gxmodelanim";
 
 	CAssetManager* GetAssets() { return GetAppSubsystem<CAssetManager>(); }
 
@@ -843,7 +843,7 @@ namespace
 		ImGui::Checkbox( "Also output .mv1 when saving", &S.bExportMV1OnSave );
 		if ( ImGui::IsItemHovered() )
 		{
-			ImGui::SetTooltip( "When saving this .modelanim.json, any .fbx / .obj / .x / .pmx / .vmd used by it is also saved as .mv1 next to the source file." );
+			ImGui::SetTooltip( "When saving this .gxmodelanim, any .fbx / .obj / .x / .pmx / .vmd used by it is also saved as .mv1 next to the source file." );
 		}
 		if ( Assets != nullptr )
 		{
@@ -1314,7 +1314,7 @@ namespace
 		ImGui::SetNextWindowSize( PopupSize );
 		if ( ImGui::BeginPopupModal( "Open model animation set", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
 		{
-			ImGui::TextUnformatted( "Choose a definition (*.modelanim.json under the asset folder):" );
+			ImGui::TextUnformatted( "Choose a definition (*.gxmodelanim under the asset folder):" );
 			NDebugUI::FileCombo( "##OpenDefinition", S.OpenSelection, S.DefinitionFiles, "(choose a file)" );
 			ImGui::BeginDisabled( S.OpenSelection.IsEmpty() );
 			if ( ImGui::Button( "Open" ) )
@@ -1333,7 +1333,7 @@ namespace
 		ImGui::SetNextWindowSize( PopupSize );
 		if ( ImGui::BeginPopupModal( "Save model animation set as", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
 		{
-			ImGui::TextUnformatted( "Path under the asset folder (the .modelanim.json extension is added):" );
+			ImGui::TextUnformatted( "Path under the asset folder (the .gxmodelanim extension is added):" );
 			NDebugUI::InputString( "##SaveAs", S.SaveAsPath );
 			ImGui::Checkbox( "Also output referenced models as .mv1", &S.bExportMV1OnSave );
 			if ( ImGui::Button( "Save" ) && !S.SaveAsPath.IsEmpty() )

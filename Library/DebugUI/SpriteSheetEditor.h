@@ -10,7 +10,7 @@
 
 //=============================================================================
 // スプライトシートエディタ
-//   スプライトシートの定義（.sheet.json）を、画像の上でコマ割りを見ながら作って保存する。
+//   スプライトシートの定義（.gxsprite）を、画像の上でコマ割りを見ながら作って保存する。
 //
 //   - 画像: 分割線・コマの番号・基準点を重ねて表示（ホイールで拡大、中ボタンまたは Space + ドラッグで移動）。
 //           コマをクリックで選択、Shift + ドラッグで自由な矩形を足す
@@ -79,7 +79,7 @@ struct FSpriteSheetEditorState
 	// ファイル
 	//-------------------------------------------------------------------------
 	TArray<FString> TextureFiles;           // アセットのルートの下の画像
-	TArray<FString> SheetFiles;             // アセットのルートの下の .sheet.json
+	TArray<FString> SheetFiles;             // アセットのルートの下の .gxsprite
 	double LastScanTime = -100.0;
 	FString OpenSelection;
 	FString NewTextureSelection;

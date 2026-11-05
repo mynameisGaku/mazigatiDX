@@ -50,7 +50,7 @@ bool NEffectEditorUI::DrawFlipbookPanel( FEffectEditorState& State, FParticleEmi
 	}
 	// 有効/無効の切替でもシートとクリップ名を保持する。
 	bChanged |= TrackFlipbookInputEnd( ImGui::Checkbox( "Enable flipbook", &Emitter.Flipbook.bEnabled ), State.Document );
-	// .sheet.json候補と任意の相対パスを同じ値へ入力する。
+	// .gxsprite候補と任意の相対パスを同じ値へ入力する。
 	bChanged |= TrackFlipbookInputEnd( NDebugUI::FileCombo( "Sheet file", Emitter.Flipbook.Sheet, State.SheetFiles, "(choose sheet)" ), State.Document );
 	bChanged |= TrackFlipbookInputEnd( NDebugUI::InputString( "Sheet path", Emitter.Flipbook.Sheet ), State.Document );
 	// 無効・非四角形では未使用assetを読まず、名前の手入力だけを許可する。

@@ -25,7 +25,7 @@
 //   Sheet->AddClip( FSpriteClip::FromRange( "Jump", 16, 19, 10.0f, EAnimLoopMode::Once ) );
 //
 //   // 3. または、定義ファイル（JSON）から。画像・分割・クリップがまとめて読み込まれる
-//   TSharedPtr<CSpriteSheet> Sheet = Assets->LoadSpriteSheet( "Sprites/Hero.sheet.json" );
+//   TSharedPtr<CSpriteSheet> Sheet = Assets->LoadSpriteSheet( "Sprites/Hero.gxsprite" );
 //
 //   定義ファイルは、スプライトシートエディタ（デバッグ画面の Tools）で、画像の上に分割を重ねて確かめながら作って保存できる。
 //   定義の中身は FSpriteSheetDefinition（コードからも作れて、JSON と相互に変換できる）。

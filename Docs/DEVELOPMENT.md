@@ -298,6 +298,19 @@ if ( Animator.ConsumeRootMotion( ReferenceToActorBasis, RootTranslation, RootRot
 
 差分は全身の主クリップだけを対象にし、クロスフェード中の前クリップと部分再生は含めません。複数の連続した`Update`は一つの区間にまとめます。同じクリップへの通常の`Play`は再生を再開せず、保留区間も維持します。停止・シーク・新しい再生・骨の選び直しは保留差分を捨てます。Animatorのコピーは保留区間を独立して持ち、ゲームスレッドの`ConsumeRootMotion`で共有samplerを順に使います。native sample失敗では出力と保留区間を残し、同じ差分を再試行できます。`UnitsPerSecond`変更を観測した後は、元の値へ戻しても成功した新しいPlay/restartまで拒否します。再生中のクリップを`AddClip`で置き換えた場合は`ClearClips`後にクリップを登録し直して再生してください。公開`Instance`の交換後は旧添付先と混同しないよう、新しい`FModelAnimator`を作成してください。取得した行列は親基準の完全な差分です。表示モデルから根の動きを除く処理やゲームオブジェクトの自動移動は行いません。
 
+## 資産ファイルの拡張子
+
+フレームワークの資産ファイル（中身はJSON）は、`.json`を付けず、種類ごとの拡張子で終わります。
+
+|種類|拡張子|
+|---|---|
+|スプライトシート|`.gxsprite`|
+|エフェクト|`.gxeffect`|
+|モデルのアニメーション|`.gxmodelanim`|
+|ワールド|`.world`|
+
+古い名前（`.sheet.json` / `.effect.json` / `.modelanim.json`）の資産は、一覧にも出ず、読み込まれません。手元の資産は、`Tools\MigrateAssetExtensions.ps1 -Root <資産のフォルダ>`で移せます。ファイルの名前を替え、ワールドや別の資産の中の古い名前の参照も、まとめて書き換えます（中身の形式、文字コード、改行は変わりません）。`-DryRun`を付けると、何が起きるかだけを表示して、何も変えません。同じ名前の新しいファイルがすでにあるときは、そのファイルを触らずに知らせます。
+
 ## ゲームスレッドと AsyncTask
 
 描画・アセット・音・窓など、DxLibを触る仕事は**ゲームスレッド**（起動したスレッド。`NGameMain`と`CEngine::Run`が覚える）だけで行います。DxLibはスレッドセーフではないためです。
@@ -362,11 +375,11 @@ Local粒子は、現在のエフェクトの回転と移動からWorld位置を�
 
 範囲線は`FDrawContext`へ記録し、既存の`IDrawExecutor`で実行します。`FEffectPreviewSurface::Render`の5引数版は、合計65,535ワード以内の追加の`Line3D`／wire `Sphere3D`命令を呼出中だけ借りて格子・粒子の後へ重ねます。他の命令や壊れた並びは失敗として返し、従来の4引数版は追加命令なしの経路を使います。範囲線の記録は粒子の時計・保存値・アセット資源を変更しません。
 
-Presetは原本を保ったまま編集し、`File > Save as...`で別名保存します。保存した`.effect.json`はWorld Editorのアセット一覧から配置し、Worldへ保存して通常の再生に使えます。`FollowEmitter`を切った場はWorld固定、入れた場は配置の移動と回転に追従します。2D専用操作・HDRとブルームは後続の範囲です。
+Presetは原本を保ったまま編集し、`File > Save as...`で別名保存します。保存した`.gxeffect`はWorld Editorのアセット一覧から配置し、Worldへ保存して通常の再生に使えます。`FollowEmitter`を切った場はWorld固定、入れた場は配置の移動と回転に追従します。2D専用操作・HDRとブルームは後続の範囲です。
 
 ## 雷の動的終点接続
 
-`FEffectPathDefinition::bUseTarget`（JSONでは`Path.UseTarget`）を有効にした`Lightning`と`TreeLightning`は、再生側から動的ワールド終点が指定されている間、固定オフセット`Path.End`の代わりにそのワールド座標を終点として主幹と枝を生成します。既定の`false`ではJSONキーとハッシュ混合を省略し、既存の全`.effect.json`および既定ハッシュを維持します。`UseTarget`が真偽値でない場合は`null`として往復保持して検証エラーにし、記録も抑止します。`Path.End`は動的終点未指定時のフォールバックとして常に検証します。
+`FEffectPathDefinition::bUseTarget`（JSONでは`Path.UseTarget`）を有効にした`Lightning`と`TreeLightning`は、再生側から動的ワールド終点が指定されている間、固定オフセット`Path.End`の代わりにそのワールド座標を終点として主幹と枝を生成します。既定の`false`ではJSONキーとハッシュ混合を省略し、既存の全`.gxeffect`および既定ハッシュを維持します。`UseTarget`が真偽値でない場合は`null`として往復保持して検証エラーにし、記録も抑止します。`Path.End`は動的終点未指定時のフォールバックとして常に検証します。
 
 `IEffectPlayback`には既定の空実装を持つ`SetTargetPosition(const FVector3&)`と`ClearTargetPosition()`を追加し、`FParticlePlayback`が`FParticleSimulation`へ反映します。動的終点はすでにワールド座標であるため、再生姿勢の回転や拡大率を二重に掛けません。非有限の終点座標が渡された場合は`Path.End`へ誤フォールバックせず、そのエミッターの雷記録を抑止します。同一エフェクト内で`bUseTarget`が有効なエミッターと無効なエミッターを混在させられます。
 
@@ -378,7 +391,7 @@ Effect Editorの`Path`欄（`Lightning` / `TreeLightning`）に`Use target`を�
 
 Worldの`Components.Effect`には、任意の`Target`（追従先オブジェクトのId）と`TargetOffset`（対象のローカル空間でのずれ）を追加しました。既定値ではどちらのJSONキーも書かず、既存の`.world`と同じ形を保ちます。型が壊れた値は`Target = -1`・有限でない`TargetOffset`として保持して検証エラーにし、自己参照・存在しないId・有限でないずれを検証で報告します。複製・貼り付けでは、一緒に複製された対象を指すようにIdを付け替え、複製されていない対象は元のまま残します（Objectプロパティと同じ扱い）。配置（`NWorld::Spawn`）は全オブジェクトを置いてから`CEffectComponent::SetTargetObject`へ接続するため、並び順に依存しません。自分自身・置かれなかった対象・有限でないずれは接続せず、警告して定義側の`Path.End`のままにします。World Editorのプレビューは対象のワールド姿勢と`TargetOffset`から毎フレーム終点を渡し、Inspectorの`Effect`欄で対象オブジェクトとオフセットをUndo付きで編集できます。
 
-組み込みPreset`Effects/target_lightning.effect.json`（Presetメニューの`Target lightning`）は、動的終点を使う分岐雷です。複製して保存し、Worldの`Effect`部品の`Target`へ標的オブジェクトを指定すると、発射元から標的へ雷がつながります。
+組み込みPreset`Effects/target_lightning.gxeffect`（Presetメニューの`Target lightning`）は、動的終点を使う分岐雷です。複製して保存し、Worldの`Effect`部品の`Target`へ標的オブジェクトを指定すると、発射元から標的へ雷がつながります。
 
 ## コードとコメント
 

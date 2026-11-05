@@ -7,7 +7,7 @@
 #include "Library/Platform/FileSystem.h"
 
 //=============================================================================
-// CAssetManager: パーティクルのエフェクト（.effect.json。書式は ParticleEffect.cpp の先頭）
+// CAssetManager: パーティクルのエフェクト（.gxeffect。書式は ParticleEffect.cpp の先頭）
 //=============================================================================
 TSharedPtr<CEffectAsset> CAssetManager::LoadEffect( const FString& Path )
 {

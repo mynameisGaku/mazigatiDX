@@ -11,7 +11,7 @@
 #include "Library/Json/JsonObject.h"
 #include "Library/Math/Color.h"
 #include "Library/Math/Vector3.h"
-// 保存する.effect.jsonの書式番号。
+// 保存する.gxeffectの書式番号。
 constexpr int32 ParticleEffectFormatVersion = 1;
 
 // 粒子を出す形（Direction の向きを軸にする）

@@ -133,7 +133,7 @@ struct FWorldTransform
 struct FWorldModel
 {
 	FString Path;                 // モデルのファイル（.mv1 / .fbx など。アセットのルートからの相対）
-	FString Animations;           // アニメーション集（.modelanim.json）。空なら、モデルのファイルに入っているアニメーション
+	FString Animations;           // アニメーション集（.gxmodelanim）。空なら、モデルのファイルに入っているアニメーション
 	FString Clip;                 // 最初に再生するクリップの名前。空なら再生しない
 	float32 Speed = 1.0f;         // 再生の速さ
 	// 省略可能な材質効果。無効化中も設定値を保存する。
@@ -170,7 +170,7 @@ struct FWorldSound
 	float32 MaxDistance = 25.0f;  // これより遠いと、聞こえない
 };
 
-// エフェクト（炎・煙・火花・魔法の光など。Effect/EffectBackend.h のバックエンドが再生する。内蔵は .effect.json のパーティクル）
+// エフェクト（炎・煙・火花・魔法の光など。Effect/EffectBackend.h のバックエンドが再生する。内蔵は .gxeffect のパーティクル）
 struct FWorldEffect
 {
 	FString Path;                 // エフェクトのファイル

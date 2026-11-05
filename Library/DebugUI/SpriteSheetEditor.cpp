@@ -16,7 +16,7 @@ namespace
 {
 	using FState = FSpriteSheetEditorState;
 
-	constexpr const char* SheetExtension = ".sheet.json";
+	constexpr const char* SheetExtension = ".gxsprite";
 
 	CAssetManager* GetAssets() { return GetAppSubsystem<CAssetManager>(); }
 
@@ -1169,7 +1169,7 @@ namespace
 		ImGui::SetNextWindowSize( PopupSize );
 		if ( ImGui::BeginPopupModal( "Open sprite sheet", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
 		{
-			ImGui::TextUnformatted( "Choose a definition (*.sheet.json under the asset folder):" );
+			ImGui::TextUnformatted( "Choose a definition (*.gxsprite under the asset folder):" );
 			NDebugUI::FileCombo( "##OpenSheet", S.OpenSelection, S.SheetFiles, "(choose a file)" );
 			ImGui::BeginDisabled( S.OpenSelection.IsEmpty() );
 			if ( ImGui::Button( "Open" ) )
@@ -1185,7 +1185,7 @@ namespace
 		ImGui::SetNextWindowSize( PopupSize );
 		if ( ImGui::BeginPopupModal( "Save sprite sheet as", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
 		{
-			ImGui::TextUnformatted( "Path under the asset folder (the .sheet.json extension is added):" );
+			ImGui::TextUnformatted( "Path under the asset folder (the .gxsprite extension is added):" );
 			NDebugUI::InputString( "##SaveAs", S.SaveAsPath );
 			if ( ImGui::Button( "Save" ) && !S.SaveAsPath.IsEmpty() )
 			{

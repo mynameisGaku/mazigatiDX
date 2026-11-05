@@ -26,7 +26,7 @@ enum class EAssetType : uint8
 	Font,
 	ModelAnimation,   // モデルのアニメーションの定義（独自のデータアセット）
 	World,            // ワールド（.world。置き物の配置の定義。独自のデータアセット）
-	Effect,           // パーティクルのエフェクト（.effect.json。独自のデータアセット）
+	Effect,           // パーティクルのエフェクト（.gxeffect。独自のデータアセット）
 };
 constexpr int32 NumAssetTypes = 8;
 

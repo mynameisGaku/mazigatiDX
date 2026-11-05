@@ -24,14 +24,14 @@ struct FEffectPlayer
 //   このオブジェクトの位置に出るエフェクト（炎・煙・火花・魔法の光など）。オブジェクトに付いて動く（毎フレーム、位置・向き・大きさに追従する）。
 //   オブジェクトがシーンから外れる・破棄されると、止まって消える。CTransformComponent が必要。
 //
-//   CEffectComponent* Fire = Campfire->AddComponent<CEffectComponent>( "Effects/Fire.effect.json" );
+//   CEffectComponent* Fire = Campfire->AddComponent<CEffectComponent>( "Effects/Fire.gxeffect" );
 //   Fire->SetScale( 2.0f );
 //   Fire->Play();                  // AutoPlay が true（既定）なら、シーンに入った時点で始まる
 //   Fire->Stop();                  // 出すのをやめる（残りの粒子は、自然に消える）
 //
 //   1 つのオブジェクトに付けるエフェクトの部品は 1 つ（描画のデータが 1 つだけのため）。いくつも出したいときは、子のオブジェクトに付ける。
 //   使い切りの演出（爆発など）は、Loop を切ったエフェクトを、SetDestroyOwnerWhenFinished( true ) で置くと、終わったときにオブジェクトごと消える。
-//   中身は IEffectBackend（EffectBackend.h）が決める: 既定は内蔵のパーティクル（.effect.json）。SetBackends で、別の一覧（外部のライブラリ入り）に変えられる。
+//   中身は IEffectBackend（EffectBackend.h）が決める: 既定は内蔵のパーティクル（.gxeffect）。SetBackends で、別の一覧（外部のライブラリ入り）に変えられる。
 //=============================================================================
 class CEffectComponent : public CComponent, public ITickable
 {
