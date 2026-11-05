@@ -660,6 +660,12 @@ float32 CDxLibAssetBackend::GetModelAnimLength( int32 Model, int32 AnimIndex )
 	return MV1GetAnimTotalTime( Model, AnimIndex );
 }
 
+float32 CDxLibAssetBackend::GetModelAnimUnitsPerSecond( int32 Model, int32 AnimIndex )
+{
+	// DxLib のモデルの時間は、FBX / MV1 / X / PMD のどれも 30 = 1 秒。アニメーションが無い番号は、分からないので 0
+	return Model >= 0 && AnimIndex >= 0 && AnimIndex < MV1GetAnimNum( Model ) ? 30.0f : 0.0f;
+}
+
 int32 CDxLibAssetBackend::AttachModelAnim( int32 Model, int32 AnimIndex, int32 SourceModel )
 {
 	return MV1AttachAnim( Model, AnimIndex, SourceModel, TRUE );

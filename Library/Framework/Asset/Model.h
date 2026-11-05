@@ -22,7 +22,8 @@ struct FModelClipInfo
 {
 	FString Name;           // ファイルに付いている名前（無ければ空）
 	int32 AnimIndex = 0;    // モデルの中での番号
-	float32 Length = 0.0f;  // 長さ（DxLib の時間単位。FBX / MV1 / X ではフレーム数）
+	float32 Length = 0.0f;  // 長さ（モデルの時間の単位。UnitsPerSecond で割ると秒）
+	float32 UnitsPerSecond = 0.0f;   // モデルの時間の 1 秒あたりの値（バックエンドが答える。0 なら分からない。DxLib は 30）
 };
 
 //=============================================================================

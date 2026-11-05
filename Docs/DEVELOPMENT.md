@@ -237,6 +237,10 @@ if ( Ground->GetCollision().Raycast( GroundWorld, Eye, Eye + Down * 50.0f, Hit )
 
 モデルの再生と混合計算はFrameworkが担当し、描画実装には共通の描画命令を渡します。バックエンドを交換・追加する際も、FrameworkへDxLibやDirect3Dの型を持ち込まず、アセットと描画のインターフェースを介して接続します。
 
+### アニメーションの時間の単位
+
+クリップの長さと再生位置は、`FModelAnimator`の外では秒で扱います。モデルの中の時間（`GetModelAnimLength`やモデルへ渡す再生時間）は、バックエンドが決める単位です。この単位は、`IAssetBackend::GetModelAnimUnitsPerSecond`が答える1秒あたりの値で、`FModelClipInfo::UnitsPerSecond`から読めます（DxLibは30。答えない実装は0で、30として扱います）。`FModelAnimator::UnitsPerSecond`は、その値を上書きしたいときだけ使い、既定の0はモデルが答える値を使います。バックエンドへの問い合わせはゲームスレッドだけなので、単位は再生を始めるときに読んで覚えます。1つのアニメーターの中では、クリップの単位がそろっている前提です。
+
 ### 体の一部だけ別のアニメーションを再生する
 
 `FModelAnimator::Play`で全身を再生し、`PlayPart( "Wave", "UpperBody" )`で指定した骨と子孫だけを別のクリップへ切り替えます。クリップと骨はモデルに登録された名前を使い、見つからない場合は現在の再生を保持して`false`を返します。部分再生は一組で、別の骨やクリップを指定すると前の部分再生からフェードで切り替わります。

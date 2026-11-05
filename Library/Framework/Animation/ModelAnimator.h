@@ -41,7 +41,7 @@ struct FAnimationBlendResult;
 //   // 自分で描く場合: 描画システムの中、または FDrawContext に記録して実行する
 //   Animator.Record( Draw, World );
 //
-//   時間の単位: クリップの長さや再生位置は秒で扱う。DxLib のモデルの時間はフレームなので、UnitsPerSecond（既定 30）で換算する。
+//   時間の単位: クリップの長さや再生位置は秒で扱う。モデルの時間の単位（1 秒あたりの値）は、モデル（バックエンド）が答える値で換算する。
 //   ファイルによって違う場合は UnitsPerSecond を変える。
 //
 //   体の一部だけ別の動き: PlayPart( "Wave", "UpperBody" ) で、骨 UpperBody とその子だけを Wave で動かす（ほかは Play のまま）。StopPart で戻す。
@@ -74,7 +74,7 @@ struct FModelAnimator
 	TSharedPtr<CModelInstance> Instance;
 	// 選択した静的Model材質の共有資源と、このAnimator個体の効果時計。
 	FModelMaterialEffectRenderer MaterialEffect;
-	float32 UnitsPerSecond = 30.0f;     // モデルの時間 1 秒あたりの値
+	float32 UnitsPerSecond = 0.0f;      // モデルの時間 1 秒あたりの値を上書きする（0 以下なら、モデルが答える値。無ければ 30。ふつうは 0 のまま）
 	float32 Speed = 1.0f;               // 全体の速さの倍率
 	bool bVisible = true;
 	bool bAutoDraw = true;              // true なら、組み込みの描画システムが CTransformComponent のワールド行列で描く
@@ -194,6 +194,7 @@ private:
 		TSharedPtr<CModel> Source;
 		int32 AnimIndex = 0;
 		float32 LengthUnits = 0.0f;     // モデルの時間の単位での長さ。0 なら Source から読む
+		float32 SourceUnitsPerSecond = 0.0f;   // Source が答えた時間の単位（0 なら分からない。長さと一緒に読む）
 		EAnimLoopMode DefaultLoop = EAnimLoopMode::Loop;
 		float32 DefaultSpeed = 1.0f;
 		float32 DefaultFade = 0.2f;
@@ -249,6 +250,8 @@ private:
 	float32 ResolveLengthUnits( FClip& Clip ) const;
 	// 有限かつ正の時間単位。公開値が不正なら従来の既定 30 を使う
 	float32 ResolveUnitsPerSecond() const;
+	// 上書きが無いとき、SourceUnits（クリップの元が答えた単位。0 以下なら分からない）を使う版
+	float32 ResolveUnitsPerSecond( float32 SourceUnits ) const;
 	// 使う層を決める（同じクリップ・同じ骨があれば再利用、無ければ空き、無ければ捨てる）
 	FLayer* AcquireLayer( int32 ClipSlot, int32 InPartFrame );
 	// クリップを層に付けて、再生の位置・速さ・繰り返しを決める（重みは変えない）。OutFade はフェードの長さ
@@ -272,6 +275,9 @@ private:
 	TArray<FLayer> Layers;
 	TArray<int32> PartParents;				// 部分再生の骨階層（Record はゲームスレッド外からも読む）
 	TArray<uint8> PartTouchedFrames;		// 一度でも部分率を書いた骨。DxLib の保持状態を毎フレーム戻す
+	// 最後に再生を始めたクリップの元が答えた時間の単位（0 なら分からない）。ResolveUnitsPerSecond が、上書きの次に使う。
+	// 1 つのアニメーターの中では、クリップの時間の単位がそろっている前提（DxLib はすべて 30）
+	float32 SourceUnitsPerSecond = 0.0f;
 	int32 PrimaryClipSlot = INDEX_NONE;   // 最後に Play したクリップ
 	int32 PartClipSlot = INDEX_NONE;      // 最後に PlayPart したクリップ
 	int32 PartFrame = -1;                 // その骨

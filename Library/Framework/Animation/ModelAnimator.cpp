@@ -148,15 +148,26 @@ float32 FModelAnimator::ResolveLengthUnits( FClip& Clip ) const
 		if ( Info.AnimIndex == Clip.AnimIndex )
 		{
 			Clip.LengthUnits = Info.Length;
+			Clip.SourceUnitsPerSecond = Info.UnitsPerSecond;
 			break;
 		}
 	}
 	return Clip.LengthUnits;
 }
 
+float32 FModelAnimator::ResolveUnitsPerSecond( float32 SourceUnits ) const
+{
+	// 上書き（UnitsPerSecond）が最優先。無ければクリップの元（モデル）が答えた値。それも無ければ 30
+	if ( NMath::IsFinite( UnitsPerSecond ) && UnitsPerSecond > 0.0f )
+	{
+		return UnitsPerSecond;
+	}
+	return NMath::IsFinite( SourceUnits ) && SourceUnits > 0.0f ? SourceUnits : 30.0f;
+}
+
 float32 FModelAnimator::ResolveUnitsPerSecond() const
 {
-	return NMath::IsFinite( UnitsPerSecond ) && UnitsPerSecond > 0.0f ? UnitsPerSecond : 30.0f;
+	return ResolveUnitsPerSecond( SourceUnitsPerSecond );
 }
 
 float32 FModelAnimator::GetClipLength( const FString& Name ) const
@@ -169,7 +180,7 @@ float32 FModelAnimator::GetClipLength( const FString& Name ) const
 	// 長さは再生を始めるときに決まる。まだなら、Source から読む（const なので書き戻さない）
 	if ( Clip->LengthUnits > 0.0f && NMath::IsFinite( Clip->LengthUnits ) )
 	{
-		const float32 Seconds = Clip->LengthUnits / NMath::Max( ResolveUnitsPerSecond(), 1.0e-3f );
+		const float32 Seconds = Clip->LengthUnits / NMath::Max( ResolveUnitsPerSecond( Clip->SourceUnitsPerSecond ), 1.0e-3f );
 		return NMath::IsFinite( Seconds ) ? Seconds : 0.0f;
 	}
 	if ( Clip->Source.IsValid() && Clip->Source->IsReady() )
@@ -178,7 +189,7 @@ float32 FModelAnimator::GetClipLength( const FString& Name ) const
 		{
 			if ( Info.AnimIndex == Clip->AnimIndex && NMath::IsFinite( Info.Length ) && Info.Length > 0.0f )
 			{
-				const float32 Seconds = Info.Length / NMath::Max( ResolveUnitsPerSecond(), 1.0e-3f );
+				const float32 Seconds = Info.Length / NMath::Max( ResolveUnitsPerSecond( Info.UnitsPerSecond ), 1.0e-3f );
 				return NMath::IsFinite( Seconds ) ? Seconds : 0.0f;
 			}
 		}
@@ -292,6 +303,8 @@ bool FModelAnimator::Play( const FString& ClipName, float32 FadeTime )
 FModelAnimator::FLayer* FModelAnimator::StartClip( FClip& Clip, int32 InPartFrame, const FModelPlayParams& Params, float32& OutFade )
 {
 	const float32 LengthUnits = ResolveLengthUnits( Clip );
+	// バックエンドへ問い合わせるのはメインスレッドだけなので、クリップの元が答えた単位は、再生を始めるときに読んで覚える（並列の Update は、この値だけを読む）
+	SourceUnitsPerSecond = Clip.SourceUnitsPerSecond;
 	const float32 Units = ResolveUnitsPerSecond();
 	const float32 ClipSpeed = Params.Speed * Clip.DefaultSpeed;
 	const float32 RequestedFade = Params.FadeTime >= 0.0f ? Params.FadeTime : Clip.DefaultFade;

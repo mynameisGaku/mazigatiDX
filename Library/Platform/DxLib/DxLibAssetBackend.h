@@ -50,6 +50,7 @@ public:
 	int32 GetModelAnimCount( int32 Model ) override;
 	FString GetModelAnimName( int32 Model, int32 AnimIndex ) override;
 	float32 GetModelAnimLength( int32 Model, int32 AnimIndex ) override;
+	float32 GetModelAnimUnitsPerSecond( int32 Model, int32 AnimIndex ) override;
 	int32 AttachModelAnim( int32 Model, int32 AnimIndex, int32 SourceModel ) override;
 	void DetachModelAnim( int32 Model, int32 AttachIndex ) override;
 	// 専用MV1の単一attached clipを指定時刻・weight1にし、指定frameの完全なlocal poseを返す。

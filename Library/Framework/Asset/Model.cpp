@@ -64,6 +64,7 @@ void CModel::RefreshClips() const
 		Clip.Name = Backend->GetModelAnimName( Handle, Index );
 		Clip.AnimIndex = Index;
 		Clip.Length = Backend->GetModelAnimLength( Handle, Index );
+		Clip.UnitsPerSecond = Backend->GetModelAnimUnitsPerSecond( Handle, Index );
 		Clips.Add( Clip );
 	}
 }

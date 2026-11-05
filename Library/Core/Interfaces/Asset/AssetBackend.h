@@ -132,6 +132,9 @@ public:
 	virtual FString GetModelAnimName( int32 Model, int32 AnimIndex ) = 0;
 	// アニメーションの長さ（実装の時間単位。DxLib ではフレーム数）。不明なら 0
 	virtual float32 GetModelAnimLength( int32 Model, int32 AnimIndex ) = 0;
+	// アニメーションの時間の単位（1 秒あたりの値。秒で扱う実装なら 1）。GetModelAnimLength とモデルの再生時間は、この単位で表す。
+	// 分からなければ 0（呼ぶ側は、既定の 30 を使う）
+	virtual float32 GetModelAnimUnitsPerSecond( int32 /*Model*/, int32 /*AnimIndex*/ ) { return 0.0f; }
 	// Model に、SourceModel（Model 自身でもよい）の AnimIndex 番のアニメーションを付ける。戻り値は付けた番号（失敗したら -1）
 	virtual int32 AttachModelAnim( int32 Model, int32 AnimIndex, int32 SourceModel ) = 0;
 	virtual void DetachModelAnim( int32 Model, int32 AttachIndex ) = 0;
