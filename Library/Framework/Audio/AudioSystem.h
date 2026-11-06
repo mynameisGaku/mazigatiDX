@@ -185,6 +185,11 @@ private:
 		EAudioBus Bus = EAudioBus::Sfx;
 		int32 Priority = 0;
 		bool bLoop = false;
+		// ループ区間をバックエンドが扱えないとき、CAudioSystem が再生位置を見て戻す
+		bool bEmulateLoopRegion = false;
+		float32 LoopRegionStart = 0.0f;
+		float32 LoopRegionEnd = 0.0f;      // 0 以下は音の最後まで
+		float32 LastPlayPosition = 0.0f;
 		bool bPausable = true;
 		bool bPaused = false;       // いま一時停止中（バックエンドは止めてある）
 		bool bUserPaused = false;   // Pause( Handle ) で止められた

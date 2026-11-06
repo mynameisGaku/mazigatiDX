@@ -81,6 +81,19 @@ void CNullAudioBackend::SetPlayPosition( int32 Voice, float32 Seconds )
 	}
 }
 
+bool CNullAudioBackend::SetLoopRegion( int32 Voice, float32 StartSeconds, float32 EndSeconds )
+{
+	if ( Voice < 0 )
+	{
+		return false;
+	}
+	FVoiceState& State = Voices.FindOrAdd( Voice );
+	State.LoopStart = StartSeconds;
+	State.LoopEnd = EndSeconds;
+	State.bLoopRegionSet = true;
+	return true;
+}
+
 CNullAudioBackend::FVoiceState CNullAudioBackend::GetVoiceState( int32 Voice ) const
 {
 	const FVoiceState* State = Voices.Find( Voice );

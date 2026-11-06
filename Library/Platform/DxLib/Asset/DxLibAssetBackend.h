@@ -123,6 +123,9 @@ public:
 	int32 DuplicateSound( int32 Source ) override;
 	void DeleteSound( int32 Sound ) override;
 	float32 GetSoundLength( int32 Sound ) override;
+	bool GetSoundInfo( int32 Sound, FSoundInfo& Out ) override;
+	int32 CreateSoundFromPcm( const FPcmBuffer& Pcm ) override;
+	bool DecodeSoundFile( const FString& Path, FPcmBuffer& Out ) override;
 
 	FBackendMemoryInfo GetMemoryInfo() override;
 	int64 EstimateModelBytes( int32 Model ) override;

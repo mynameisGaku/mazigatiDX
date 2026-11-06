@@ -3,6 +3,7 @@
 
 #include "Library/Framework/Render/State/ShadowMapView.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
+#include "Library/Platform/System/BackendSupport.h"
 
 namespace
 {
@@ -71,7 +72,8 @@ bool FDxLibShadowMap::Apply( const FDrawCommandView& Command )
 		}
 		if ( State != EState::Idle )
 		{
-			// 入れ子にはできない。内側は無視する（対の EndShadowMap も無視する）
+			// DxLib 未対応: 入れ子にはできない。内側は無視する（対の EndShadowMap も無視する）
+			NBackendSupport::ReportUnsupported( "DxLib", "Nested shadow map passes", "the inner BeginShadowMap and its EndShadowMap are ignored" );
 			++NumNestedBegins;
 			return true;
 		}

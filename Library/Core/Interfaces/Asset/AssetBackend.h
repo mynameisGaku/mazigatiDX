@@ -6,6 +6,7 @@
 #include "Library/Framework/Asset/Model/ModelCollisionTypes.h"
 #include "Library/Framework/Asset/Model/ModelMeshTypes.h"
 #include "Library/Framework/Asset/Model/ModelStructureTypes.h"
+#include "Library/Framework/Asset/Sound/SoundTypes.h"
 #include "Library/Framework/Asset/Model/StaticModelSurfaceData.h"
 #include "Library/Framework/Render/Draw/DrawCommand.h"
 #include "Library/Core/Interfaces/Render/IShader.h"
@@ -32,7 +33,7 @@ namespace NAsset
 enum class ESoundLoadMode : uint8
 {
 	Memory,   // 全部をメモリに展開する。応答が速く、同じ音の同時再生ができる（効果音向け）
-	Stream,   // 再生しながらファイルから読む。メモリを食わない代わりに、同じ音の同時再生はできない（BGM 向け）
+	Stream,   // 再生しながらファイルから読む。メモリを食わない代わりに、同じ音の同時再生ができないことがある（できる数はバックエンドが決める。BGM 向け）
 };
 
 // フォントの指定
@@ -59,7 +60,7 @@ enum class EModelSaveType : uint8
 struct FModelSaveOptions
 {
 	EModelSaveType Type = EModelSaveType::Normal;
-	// true なら小さくなる保存（法線 8bit・座標 16bit・アニメーション 16bit。DxLib の既定）。false なら精度を落とさない（大きい）
+	// true なら小さくなる保存（精度を落として、ファイルを小さくする）。false なら精度を落とさない（大きい）。既定は true
 	bool bCompress = true;
 };
 
@@ -235,7 +236,7 @@ public:
 	// 縦横 Width x Height（それぞれ 1 以上、NDrawShadowMap::MaxSize 以下）のシャドウマップを作る。作れなければ負（NAsset::InvalidHandle）
 	virtual int32 MakeShadowMap( int32 /*Width*/, int32 /*Height*/ ) { return -1; }
 	virtual void DeleteShadowMap( int32 /*ShadowMap*/ ) {}
-	// 最後に BeginShadowMap で影を描いたときの、光から見た行列（ビュー行列 x 射影行列。16 個の float。DxLib と同じ、行ベクトルの流儀）を取り出す。
+	// 最後に BeginShadowMap で影を描いたときの、光から見た行列（ビュー行列 x 射影行列。16 個の float。フレームワークの FMatrix4x4 と同じ、行ベクトルの流儀）を取り出す。
 	// まだ一度も影を描いていない・無効なハンドルなら false
 	virtual bool GetShadowMapViewProjection( int32 /*ShadowMap*/, float32 ( & /*OutMatrix*/ )[16] ) { return false; }
 
@@ -284,6 +285,14 @@ public:
 	virtual void DeleteSound( int32 Sound ) = 0;
 	// 音の長さ（秒）。読み込み中・不明なら負
 	virtual float32 GetSoundLength( int32 Sound ) = 0;
+	// 音の情報（長さ・サンプル数・サンプルレート・チャンネル数。分からない項目は 0）。読み込み中・番号が不正・未対応なら false で、Out は変えない
+	virtual bool GetSoundInfo( int32 /*Sound*/, FSoundInfo& /*Out*/ ) { return false; }
+	// 生の音（PCM）から、メモリに展開した音を作る。作れなければ負（NAsset::InvalidHandle）。使い終わったら DeleteSound。
+	// 対応するチャンネル数・サンプルレートは実装による（対応しない形は、未対応として負を返す）
+	virtual int32 CreateSoundFromPcm( const FPcmBuffer& /*Pcm*/ ) { return -1; }
+	// 音のファイル（Path は絶対パス。WAV のほか、実装が読める形式）を、生の音（PCM）に読み出す。読めなければ false で、Out は変えない。
+	// WAV は、フレームワークが自分で読める（NWavFile）ので、実装が対応していなくてもよい
+	virtual bool DecodeSoundFile( const FString& /*Path*/, FPcmBuffer& /*Out*/ ) { return false; }
 
 	//-------------------------------------------------------------------------
 	// メモリ

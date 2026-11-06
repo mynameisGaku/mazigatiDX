@@ -137,6 +137,8 @@
     <ClCompile Include="Library\Framework\Asset\Model\Import\ModelFormats.cpp" />
     <ClCompile Include="Library\Framework\Asset\Model\Import\XFileWriter.cpp" />
     <ClCompile Include="Library\Framework\Asset\Sound\Sound.cpp" />
+    <ClCompile Include="Library\Framework\Asset\Sound\SoundLoader.cpp" />
+    <ClCompile Include="Library\Framework\Asset\Sound\WavFile.cpp" />
     <ClCompile Include="Library\Framework\Asset\Texture\DynamicTexture.cpp" />
     <ClCompile Include="Library\Framework\Asset\Texture\PixelImage.cpp" />
     <ClCompile Include="Library\Framework\Asset\Texture\RenderTarget.cpp" />
@@ -307,6 +309,7 @@
     <ClCompile Include="Library\Platform\DxLib\Asset\DxLibAssetBackendModelMesh.cpp" />
     <ClCompile Include="Library\Platform\DxLib\Asset\DxLibAssetBackendModelStructure.cpp" />
     <ClCompile Include="Library\Platform\DxLib\Asset\DxLibAssetBackendModelSurface.cpp" />
+    <ClCompile Include="Library\Platform\DxLib\Asset\DxLibAssetBackendSound.cpp" />
     <ClCompile Include="Library\Platform\DxLib\Asset\DxLibImageOps.cpp" />
     <ClCompile Include="Library\Platform\DxLib\Audio\DxLibAudioBackend.cpp" />
     <ClCompile Include="Library\Platform\DxLib\Input\DxLibInput.cpp" />
@@ -331,6 +334,7 @@
     <ClCompile Include="Library\Platform\Null\NullInput.cpp" />
     <ClCompile Include="Library\Platform\Null\NullPlatform.cpp" />
     <ClCompile Include="Library\Platform\SDL\SdlGamepadInput.cpp" />
+    <ClCompile Include="Library\Platform\System\BackendSupport.cpp" />
     <ClCompile Include="Library\Platform\System\CommandLine.cpp" />
     <ClCompile Include="Library\Platform\System\FileSystem.cpp" />
     <ClCompile Include="Library\Platform\System\ImGuiAssert.cpp" />
@@ -645,6 +649,9 @@
     <ClInclude Include="Library\Framework\Asset\Model\Import\ModelFormats.h" />
     <ClInclude Include="Library\Framework\Asset\Model\Import\XFileWriter.h" />
     <ClInclude Include="Library\Framework\Asset\Sound\Sound.h" />
+    <ClInclude Include="Library\Framework\Asset\Sound\SoundLoader.h" />
+    <ClInclude Include="Library\Framework\Asset\Sound\SoundTypes.h" />
+    <ClInclude Include="Library\Framework\Asset\Sound\WavFile.h" />
     <ClInclude Include="Library\Framework\Asset\Texture\DynamicTexture.h" />
     <ClInclude Include="Library\Framework\Asset\Texture\PixelImage.h" />
     <ClInclude Include="Library\Framework\Asset\Texture\RenderTarget.h" />
@@ -891,6 +898,7 @@
     <ClInclude Include="Library\Platform\Null\NullInput.h" />
     <ClInclude Include="Library\Platform\Null\NullPlatform.h" />
     <ClInclude Include="Library\Platform\SDL\SdlGamepadInput.h" />
+    <ClInclude Include="Library\Platform\System\BackendSupport.h" />
     <ClInclude Include="Library\Platform\System\CommandLine.h" />
     <ClInclude Include="Library\Platform\System\FileSystem.h" />
     <ClInclude Include="Library\Platform\System\LeakReport.h" />

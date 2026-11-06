@@ -30,4 +30,5 @@ public:
 
 	float32 GetPlayPosition( int32 Voice ) override;
 	void SetPlayPosition( int32 Voice, float32 Seconds ) override;
+	bool SetLoopRegion( int32 Voice, float32 StartSeconds, float32 EndSeconds ) override;
 };

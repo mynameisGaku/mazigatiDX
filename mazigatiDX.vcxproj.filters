@@ -217,6 +217,12 @@
     <ClCompile Include="Library\Framework\Asset\Sound\Sound.cpp">
       <Filter>Library\Framework\Asset\Sound</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Sound\SoundLoader.cpp">
+      <Filter>Library\Framework\Asset\Sound</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Sound\WavFile.cpp">
+      <Filter>Library\Framework\Asset\Sound</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Texture\DynamicTexture.cpp">
       <Filter>Library\Framework\Asset\Texture</Filter>
     </ClCompile>
@@ -727,6 +733,9 @@
     <ClCompile Include="Library\Platform\DxLib\Asset\DxLibAssetBackendModelSurface.cpp">
       <Filter>Library\Platform\DxLib\Asset</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\Asset\DxLibAssetBackendSound.cpp">
+      <Filter>Library\Platform\DxLib\Asset</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\Asset\DxLibImageOps.cpp">
       <Filter>Library\Platform\DxLib\Asset</Filter>
     </ClCompile>
@@ -798,6 +807,9 @@
     </ClCompile>
     <ClCompile Include="Library\Platform\SDL\SdlGamepadInput.cpp">
       <Filter>Library\Platform\SDL</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\System\BackendSupport.cpp">
+      <Filter>Library\Platform\System</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\System\CommandLine.cpp">
       <Filter>Library\Platform\System</Filter>
@@ -1737,6 +1749,15 @@
     <ClInclude Include="Library\Framework\Asset\Sound\Sound.h">
       <Filter>Library\Framework\Asset\Sound</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Sound\SoundLoader.h">
+      <Filter>Library\Framework\Asset\Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Sound\SoundTypes.h">
+      <Filter>Library\Framework\Asset\Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Sound\WavFile.h">
+      <Filter>Library\Framework\Asset\Sound</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Texture\DynamicTexture.h">
       <Filter>Library\Framework\Asset\Texture</Filter>
     </ClInclude>
@@ -2474,6 +2495,9 @@
     </ClInclude>
     <ClInclude Include="Library\Platform\SDL\SdlGamepadInput.h">
       <Filter>Library\Platform\SDL</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\System\BackendSupport.h">
+      <Filter>Library\Platform\System</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\System\CommandLine.h">
       <Filter>Library\Platform\System</Filter>

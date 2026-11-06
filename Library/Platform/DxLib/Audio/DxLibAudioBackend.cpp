@@ -79,6 +79,26 @@ float32 CDxLibAudioBackend::GetPlayPosition( int32 Voice )
 	return static_cast<float32>( GetSoundCurrentTime( Voice ) ) / 1000.0f;
 }
 
+bool CDxLibAudioBackend::SetLoopRegion( int32 Voice, float32 StartSeconds, float32 EndSeconds )
+{
+	// DxLib のループ区間は、ミリ秒で始まりと終わりを別々に決める。関数の名前から想像するのと逆で、実測では次のとおり
+	// （SetLoopTimePosSoundMem = 区間の始まり（終わりに届いたら戻る位置）、SetLoopStartTimePosSoundMem = 区間の終わり。呼ぶ順番は関係ない）。
+	// 終わりが 0 以下なら、音の最後（全体の長さ）にする。
+	// DxLib の制約: 区間の始まりは、再生を始める位置（SetPlayPosition で動かした位置）より後でないと効かない。頭から鳴らす BGM では問題にならない
+	const LONGLONG Total = GetSoundTotalTime( Voice );
+	if ( Total <= 0 )
+	{
+		return false;
+	}
+	const LONGLONG Start = static_cast<LONGLONG>( NMath::Max( StartSeconds, 0.0f ) * 1000.0f );
+	const LONGLONG End = EndSeconds > 0.0f ? static_cast<LONGLONG>( EndSeconds * 1000.0f ) : Total;
+	if ( SetLoopTimePosSoundMem( Start < Total ? Start : 0, Voice ) != 0 )
+	{
+		return false;
+	}
+	return SetLoopStartTimePosSoundMem( End < Total ? End : Total, Voice ) == 0;
+}
+
 void CDxLibAudioBackend::SetPlayPosition( int32 Voice, float32 Seconds )
 {
 	SetSoundCurrentTime( static_cast<LONGLONG>( NMath::Max( Seconds, 0.0f ) * 1000.0f ), Voice );

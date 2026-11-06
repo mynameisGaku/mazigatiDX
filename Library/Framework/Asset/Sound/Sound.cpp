@@ -41,6 +41,49 @@ float32 CSound::GetLength() const
 	return Length;
 }
 
+bool CSound::GetInfo( FSoundInfo& OutInfo ) const
+{
+	if ( bInfoRead )
+	{
+		OutInfo = Info;
+		return true;
+	}
+	IAssetBackend* Backend = NAssetService::GetBackend();
+	if ( Backend == nullptr || Handle < 0 || !IsReady() )
+	{
+		return false;
+	}
+	FSoundInfo Read;
+	if ( !Backend->GetSoundInfo( Handle, Read ) )
+	{
+		return false;
+	}
+	// 長さは、情報に無ければ GetLength で補う
+	Read.LengthSeconds = Read.LengthSeconds > 0.0f ? Read.LengthSeconds : GetLength();
+	Info = Read;
+	bInfoRead = true;
+	OutInfo = Info;
+	return true;
+}
+
+void CSound::SetLoopRegion( float32 StartSeconds, float32 EndSeconds )
+{
+	// 数でない値や負の値は 0 に、終わりが始まり以前なら「最後まで」にする
+	const float32 Start = StartSeconds == StartSeconds && StartSeconds > 0.0f ? StartSeconds : 0.0f;
+	float32 End = EndSeconds == EndSeconds && EndSeconds > 0.0f ? EndSeconds : 0.0f;
+	End = End > Start ? End : 0.0f;
+	bLoopRegionSet = true;
+	LoopStartSeconds = Start;
+	LoopEndSeconds = End;
+}
+
+void CSound::ClearLoopRegion()
+{
+	bLoopRegionSet = true;
+	LoopStartSeconds = 0.0f;
+	LoopEndSeconds = 0.0f;
+}
+
 bool CSound::IsReady() const
 {
 	if ( Handle < 0 )

@@ -241,6 +241,18 @@ FSoundHandle CAudioSystem::Play( const TSharedPtr<CSound>& Sound, const FSoundPl
 	++NumActive;
 	LastPlayTime.Add( Sound.Get(), Clock );
 
+	// ループ区間の指定があれば、バックエンドへ伝える（対応していなければ、再生位置を見て戻して補う）
+	if ( Params.bLoop && Sound->IsLoopRegionSet() )
+	{
+		if ( !B->SetLoopRegion( BackendVoice, Sound->GetLoopStart(), Sound->GetLoopEnd() ) )
+		{
+			Voice.bEmulateLoopRegion = true;
+			Voice.LoopRegionStart = Sound->GetLoopStart();
+			Voice.LoopRegionEnd = Sound->GetLoopEnd() > 0.0f ? Sound->GetLoopEnd() : Sound->GetLength();
+			Voice.LastPlayPosition = Params.StartTime;
+		}
+	}
+
 	// 音が出る前に、音量・パン・ピッチを決めておく（出だしで音量が一瞬跳ねない）
 	Apply( Voice, true );
 	if ( Params.StartTime > 0.0f ) B->SetPlayPosition( BackendVoice, Params.StartTime );
@@ -570,7 +582,28 @@ void CAudioSystem::Update( float32 DeltaSeconds )
 
 		Apply( Voice, false );
 
-		if ( !Voice.bPaused && !B->IsPlaying( Voice.BackendVoice ) ) FreeVoice( Index );   // 鳴り終わった
+		if ( !Voice.bPaused && !B->IsPlaying( Voice.BackendVoice ) )
+		{
+			FreeVoice( Index );   // 鳴り終わった
+			continue;
+		}
+
+		// ループ区間をバックエンドが扱えないとき: 区間の終わりに届いた（または音の最後で先頭へ戻った）ら、区間の始まりへ戻す
+		if ( Voice.bEmulateLoopRegion && !Voice.bPaused && Voice.bLoop )
+		{
+			const float32 Position = B->GetPlayPosition( Voice.BackendVoice );
+			const bool bReachedEnd = Voice.LoopRegionEnd > 0.0f && Position >= Voice.LoopRegionEnd;
+			const bool bWrapped = Position + 0.05f < Voice.LastPlayPosition;
+			if ( bReachedEnd || bWrapped )
+			{
+				B->SetPlayPosition( Voice.BackendVoice, Voice.LoopRegionStart );
+				Voice.LastPlayPosition = Voice.LoopRegionStart;
+			}
+			else
+			{
+				Voice.LastPlayPosition = Position;
+			}
+		}
 	}
 
 	PROFILE_COUNTER( "Audio.Voices", NumActive );

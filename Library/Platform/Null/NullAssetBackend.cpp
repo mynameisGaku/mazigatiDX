@@ -885,6 +885,44 @@ float32 CNullAssetBackend::GetSoundLength( int32 Sound )
 	return Record != nullptr ? Record->Length : -1.0f;
 }
 
+bool CNullAssetBackend::GetSoundInfo( int32 Sound, FSoundInfo& Out )
+{
+	const FSoundRecord* Record = Sounds.Find( Sound );
+	if ( Record == nullptr )
+	{
+		return false;
+	}
+	if ( Record->bHasInfo )
+	{
+		Out = Record->Info;
+		return true;
+	}
+	// 分かるのは長さだけ
+	FSoundInfo Info;
+	Info.LengthSeconds = Record->Length;
+	Out = Info;
+	return true;
+}
+
+int32 CNullAssetBackend::CreateSoundFromPcm( const FPcmBuffer& Pcm )
+{
+	if ( !Pcm.IsValid() )
+	{
+		return NAsset::InvalidHandle;
+	}
+	FSoundRecord Record;
+	Record.Length = Pcm.GetLengthSeconds();
+	Record.Mode = ESoundLoadMode::Memory;
+	Record.Info.LengthSeconds = Pcm.GetLengthSeconds();
+	Record.Info.FrameCount = Pcm.GetFrameCount();
+	Record.Info.SampleRate = Pcm.SampleRate;
+	Record.Info.Channels = Pcm.Channels;
+	Record.bHasInfo = true;
+	const int32 Handle = AllocateHandle();
+	Sounds.Add( Handle, Record );
+	return Handle;
+}
+
 #pragma endregion
 
 #pragma region Memory

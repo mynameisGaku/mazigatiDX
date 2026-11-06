@@ -26,6 +26,10 @@ public:
 		float32 Pan = 0.0f;
 		float32 Pitch = 1.0f;
 		float32 Position = 0.0f;
+		// SetLoopRegion で決めた区間（終わりが 0 以下は音の最後まで）
+		float32 LoopStart = 0.0f;
+		float32 LoopEnd = 0.0f;
+		bool bLoopRegionSet = false;
 	};
 
 	// --backend=null のときだけ作る
@@ -41,6 +45,7 @@ public:
 
 	float32 GetPlayPosition( int32 Voice ) override;
 	void SetPlayPosition( int32 Voice, float32 Seconds ) override;
+	bool SetLoopRegion( int32 Voice, float32 StartSeconds, float32 EndSeconds ) override;
 
 	//-------------------------------------------------------------------------
 	// Null 固有（確認用）

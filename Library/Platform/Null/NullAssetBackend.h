@@ -110,6 +110,8 @@ public:
 	int32 DuplicateSound( int32 Source ) override;
 	void DeleteSound( int32 Sound ) override;
 	float32 GetSoundLength( int32 Sound ) override;
+	bool GetSoundInfo( int32 Sound, FSoundInfo& Out ) override;
+	int32 CreateSoundFromPcm( const FPcmBuffer& Pcm ) override;
 
 	FBackendMemoryInfo GetMemoryInfo() override;
 	int64 EstimateModelBytes( int32 Model ) override;
@@ -175,6 +177,9 @@ private:
 	{
 		float32 Length = 1.0f;
 		ESoundLoadMode Mode = ESoundLoadMode::Memory;
+		// 分かっているときの情報（PCM から作った音など）
+		FSoundInfo Info;
+		bool bHasInfo = false;
 	};
 
 	// 新しいハンドル（1 から増える。種類ごとの表は別だが、番号は共通で、重ならない）

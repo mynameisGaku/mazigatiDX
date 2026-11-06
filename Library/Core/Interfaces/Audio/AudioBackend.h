@@ -32,4 +32,8 @@ public:
 	virtual float32 GetPlayPosition( int32 Voice ) = 0;
 	// 再生位置を変える（次に Play( ..., false ) するときの位置。再生中は無視されることがある）
 	virtual void SetPlayPosition( int32 Voice, float32 Seconds ) = 0;
+
+	// ループして鳴らすときの区間（秒）。再生位置が EndSeconds に届くと StartSeconds へ戻る。EndSeconds が 0 以下なら音の最後まで。
+	// 対応していない実装は false を返す（CAudioSystem が、再生位置を見て戻して補う。ただし、実装より粗い精度になる）
+	virtual bool SetLoopRegion( int32 /*Voice*/, float32 /*StartSeconds*/, float32 /*EndSeconds*/ ) { return false; }
 };
