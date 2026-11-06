@@ -388,6 +388,15 @@
     <ClCompile Include="Library\Framework\Input\GamepadState.cpp">
       <Filter>Library\Framework\Input</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Input\Text\TextEditBuffer.cpp">
+      <Filter>Library\Framework\Input\Text</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Input\Text\Utf8ByteAssembler.cpp">
+      <Filter>Library\Framework\Input\Text</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Input\Touch\TouchTracker.cpp">
+      <Filter>Library\Framework\Input\Touch</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Job\AsyncTask.cpp">
       <Filter>Library\Framework\Job</Filter>
     </ClCompile>
@@ -725,6 +734,12 @@
       <Filter>Library\Platform\DxLib\Audio</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\Input\DxLibInput.cpp">
+      <Filter>Library\Platform\DxLib\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\Input\DxLibInputCursorTouch.cpp">
+      <Filter>Library\Platform\DxLib\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\Input\DxLibInputText.cpp">
       <Filter>Library\Platform\DxLib\Input</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\Render\DxLibDrawExecutor.cpp">
@@ -1374,6 +1389,9 @@
     <ClInclude Include="Library\Core\Interfaces\Audio\AudioBackend.h">
       <Filter>Library\Core\Interfaces\Audio</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Input\ICursorControl.h">
+      <Filter>Library\Core\Interfaces\Input</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Input\IGamepadInput.h">
       <Filter>Library\Core\Interfaces\Input</Filter>
     </ClInclude>
@@ -1384,6 +1402,12 @@
       <Filter>Library\Core\Interfaces\Input</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Input\IMouseInput.h">
+      <Filter>Library\Core\Interfaces\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Input\ITextInput.h">
+      <Filter>Library\Core\Interfaces\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Input\ITouchInput.h">
       <Filter>Library\Core\Interfaces\Input</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Inspector\IPropertyInspector.h">
@@ -1919,6 +1943,21 @@
     </ClInclude>
     <ClInclude Include="Library\Framework\Input\MouseState.h">
       <Filter>Library\Framework\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Input\Text\TextEditBuffer.h">
+      <Filter>Library\Framework\Input\Text</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Input\Text\TextInputTypes.h">
+      <Filter>Library\Framework\Input\Text</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Input\Text\Utf8ByteAssembler.h">
+      <Filter>Library\Framework\Input\Text</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Input\Touch\TouchTracker.h">
+      <Filter>Library\Framework\Input\Touch</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Input\Touch\TouchTypes.h">
+      <Filter>Library\Framework\Input\Touch</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Job\AsyncTask.h">
       <Filter>Library\Framework\Job</Filter>
@@ -4060,6 +4099,12 @@
     </Filter>
     <Filter Include="Library\Framework\Input">
       <UniqueIdentifier>{7078BFB4-8121-7161-A62A-BB22C37D3AEC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Input\Text">
+      <UniqueIdentifier>{E6ECDD6B-92D9-9810-20C8-05F60181ED22}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Input\Touch">
+      <UniqueIdentifier>{CF76F327-C511-D641-C930-08B5EEAAB6B1}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\Job">
       <UniqueIdentifier>{7D8BE6D1-5987-EFE3-7845-5AD79F48D4EF}</UniqueIdentifier>

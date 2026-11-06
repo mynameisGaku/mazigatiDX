@@ -119,6 +119,9 @@ void CDxLibInput::Tick( float32 DeltaTime )
 		MouseState.bPositionValid = false;
 		bHadValidMousePos = false;
 	}
+
+	UpdateText();
+	UpdateTouch();
 }
 
 bool CDxLibInput::IsDown( const char ( &State )[NumDxKeys], EKey Key )

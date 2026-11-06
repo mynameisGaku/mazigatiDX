@@ -194,6 +194,9 @@
     <ClCompile Include="Library\Framework\Engine\TimeControl.cpp" />
     <ClCompile Include="Library\Framework\GameInstance\GameInstance.cpp" />
     <ClCompile Include="Library\Framework\Input\GamepadState.cpp" />
+    <ClCompile Include="Library\Framework\Input\Text\TextEditBuffer.cpp" />
+    <ClCompile Include="Library\Framework\Input\Text\Utf8ByteAssembler.cpp" />
+    <ClCompile Include="Library\Framework\Input\Touch\TouchTracker.cpp" />
     <ClCompile Include="Library\Framework\Job\AsyncTask.cpp" />
     <ClCompile Include="Library\Framework\Job\JobSystem.cpp" />
     <ClCompile Include="Library\Framework\Object\GameObject.cpp" />
@@ -307,6 +310,8 @@
     <ClCompile Include="Library\Platform\DxLib\Asset\DxLibImageOps.cpp" />
     <ClCompile Include="Library\Platform\DxLib\Audio\DxLibAudioBackend.cpp" />
     <ClCompile Include="Library\Platform\DxLib\Input\DxLibInput.cpp" />
+    <ClCompile Include="Library\Platform\DxLib\Input\DxLibInputCursorTouch.cpp" />
+    <ClCompile Include="Library\Platform\DxLib\Input\DxLibInputText.cpp" />
     <ClCompile Include="Library\Platform\DxLib\Render\DxLibDrawExecutor.cpp" />
     <ClCompile Include="Library\Platform\DxLib\Render\DxLibDrawExecutorCapture.cpp" />
     <ClCompile Include="Library\Platform\DxLib\Render\DxLibDrawExecutorModelFramePose.cpp" />
@@ -524,10 +529,13 @@
     <ClInclude Include="Library\Core\File\File.h" />
     <ClInclude Include="Library\Core\Interfaces\Asset\AssetBackend.h" />
     <ClInclude Include="Library\Core\Interfaces\Audio\AudioBackend.h" />
+    <ClInclude Include="Library\Core\Interfaces\Input\ICursorControl.h" />
     <ClInclude Include="Library\Core\Interfaces\Input\IGamepadInput.h" />
     <ClInclude Include="Library\Core\Interfaces\Input\IInput.h" />
     <ClInclude Include="Library\Core\Interfaces\Input\IKeyboardInput.h" />
     <ClInclude Include="Library\Core\Interfaces\Input\IMouseInput.h" />
+    <ClInclude Include="Library\Core\Interfaces\Input\ITextInput.h" />
+    <ClInclude Include="Library\Core\Interfaces\Input\ITouchInput.h" />
     <ClInclude Include="Library\Core\Interfaces\Inspector\IPropertyInspector.h" />
     <ClInclude Include="Library\Core\Interfaces\Job\IJobSystem.h" />
     <ClInclude Include="Library\Core\Interfaces\Physics\ICharacterControllers.h" />
@@ -706,6 +714,11 @@
     <ClInclude Include="Library\Framework\Input\GamepadSensorState.h" />
     <ClInclude Include="Library\Framework\Input\GamepadState.h" />
     <ClInclude Include="Library\Framework\Input\MouseState.h" />
+    <ClInclude Include="Library\Framework\Input\Text\TextEditBuffer.h" />
+    <ClInclude Include="Library\Framework\Input\Text\TextInputTypes.h" />
+    <ClInclude Include="Library\Framework\Input\Text\Utf8ByteAssembler.h" />
+    <ClInclude Include="Library\Framework\Input\Touch\TouchTracker.h" />
+    <ClInclude Include="Library\Framework\Input\Touch\TouchTypes.h" />
     <ClInclude Include="Library\Framework\Job\AsyncTask.h" />
     <ClInclude Include="Library\Framework\Job\JobSystem.h" />
     <ClInclude Include="Library\Framework\Object\GameObject.h" />

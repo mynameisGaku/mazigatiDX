@@ -312,6 +312,31 @@ if ( Animator.ConsumeRootMotion( ReferenceToActorBasis, RootTranslation, RootRot
 
 古い名前（`.sheet.json` / `.effect.json` / `.modelanim.json` / `.world`）の資産は、一覧にも出ず、読み込まれません。手元の資産は、`Tools\MigrateAssetExtensions.ps1 -Root <資産のフォルダ>`で移せます。ファイルの名前を替え、ワールドや別の資産の中の古い名前の参照も、まとめて書き換えます（中身の形式、文字コード、改行は変わりません）。`-DryRun`を付けると、何が起きるかだけを表示して、何も変えません。同じ名前の新しいファイルがすでにあるときは、そのファイルを触らずに知らせます。
 
+## 文字入力・カーソル・タッチ
+
+キーの状態（`IKeyboardInput`）とは別に、OSを通った文字入力、カーソルの操作、タッチを、バックエンドに依らない窓口で扱います。どれも`GetAppSubsystem<…>()`で取り、メインスレッドから使います。DxLibの文字コード・制御コード・IMEの構造体は`Library/Platform/DxLib/Input`の中に閉じ込めてあり、別のバックエンドでも同じ窓口と値の型をそのまま使えます。
+
+|窓口|内容|
+|---|---|
+|`ITextInput`|欄に文字を打つときだけ`SetTextInputActive( true )`にします（`false`の間は文字も変換も受けず、WASDなどに変換が割り込みません）。`GetTextInputEvents()`は、このフレームに届いた確定文字（UTF-8）と編集の操作（Backspace・Delete・Enter・矢印・Home/Endなど。押しっぱなしの繰り返しを含む）を、届いた順に返します。`GetImeComposition()`は、かな漢字変換の途中の文字列・カーソル・候補です|
+|`ICursorControl`|`SetCursorVisible`、`SetCursorPosition`（次の更新から`IMouseInput`に反映）|
+|`ITouchInput`|`GetTouches()`（ID・位置・圧力・このフレームで触れ始めたか）と`GetReleasedTouchIds()`（離れた指）|
+
+`FTextEditBuffer`（`Framework/Input/Text`）にイベントを渡すと、1行（または複数行）の入力欄になります。文字は全角を1文字として数え、カーソルは文字の境目にだけ置きます。Enterは確定の合図（`ConsumeSubmitted()`）、Escapeは取り消しの合図（`ConsumeCancelled()`）です。
+
+```cpp
+ITextInput* TextInput = GetAppSubsystem<ITextInput>();
+TextInput->SetTextInputActive( true );     // 名前の欄を開いた
+Field.ApplyAll( TextInput->GetTextInputEvents() );
+if ( Field.ConsumeSubmitted() )
+{
+	TextInput->SetTextInputActive( false );
+	// Field.GetText() が入力された名前
+}
+```
+
+バックエンドを作るときは、`FUtf8ByteAssembler`（1バイトずつ届く文字のまとめ）と`FTouchTracker`（いまの指の一覧から触れ始め・離れたを求める）を使えます。`--backend=null`の`CNullInput`は、`AddTypedText`・`AddTextCommand`・`SetImeComposition`・`SetTouches`で入力を決められます。IMEの変換中の状態は、本物のIMEでは未確認です（検査は決めた値の受け渡しだけ）。
+
 ## ゲームスレッドと AsyncTask
 
 描画・アセット・音・窓など、DxLibを触る仕事は**ゲームスレッド**（起動したスレッド。`NGameMain`と`CEngine::Run`が覚える）だけで行います。DxLibはスレッドセーフではないためです。

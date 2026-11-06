@@ -137,6 +137,7 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestShapes3DReal.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestShapes3DReal.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestShapesReal.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestShapesReal.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestText.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestText.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestTextInput.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestTextInput.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestTextReal.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestTextReal.cpp')" />
     <ClCompile Include="Source\SelfTest\ConsoleSelfTest.cpp" Condition="Exists('Source\SelfTest\ConsoleSelfTest.cpp')" />
     <ClCompile Include="Source\SelfTest\EcsSelfTestScene.cpp" Condition="Exists('Source\SelfTest\EcsSelfTestScene.cpp')" />
@@ -244,6 +245,7 @@
     <ClInclude Include="Source\SelfTest\AssetSelfTestShapes3D.h" Condition="Exists('Source\SelfTest\AssetSelfTestShapes3D.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestSupport.h" Condition="Exists('Source\SelfTest\AssetSelfTestSupport.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestText.h" Condition="Exists('Source\SelfTest\AssetSelfTestText.h')" />
+    <ClInclude Include="Source\SelfTest\AssetSelfTestTextInput.h" Condition="Exists('Source\SelfTest\AssetSelfTestTextInput.h')" />
     <ClInclude Include="Source\SelfTest\EcsSelfTestScene.h" Condition="Exists('Source\SelfTest\EcsSelfTestScene.h')" />
     <ClInclude Include="Source\SelfTest\WorldEditorSelfTestSupport.h" Condition="Exists('Source\SelfTest\WorldEditorSelfTestSupport.h')" />
     <ClInclude Include="Source\SelfTest\WorldEffectForceFieldEditorGeometrySelfTest.h" Condition="Exists('Source\SelfTest\WorldEffectForceFieldEditorGeometrySelfTest.h')" />

@@ -57,6 +57,16 @@ void CNullInput::Tick( float32 DeltaTime )
 	MouseState.WheelY = PendingWheelY;
 	bHadMouseTick = true;
 
+	// 文字入力: 受けている間だけ届く。受けていない間に決められたものは捨てる
+	TextEvents = MoveTemp( PendingTextEvents );
+	PendingTextEvents.Reset();
+	ImeComposition = bTextInputActive ? PendingComposition : FImeComposition();
+	if ( !bTextInputActive )
+	{
+		TextEvents.Reset();
+	}
+	TouchTracker.Update( PendingTouches );
+
 	// ホイールは 1 フレームだけ有効
 	PendingWheelX = 0.0f;
 	PendingWheelY = 0.0f;
@@ -147,4 +157,85 @@ void CNullInput::ReleaseAll()
 {
 	FMemory::Memset( PendingKeys, 0, sizeof( PendingKeys ) );
 	PendingButtons = 0u;
+}
+
+void CNullInput::SetTextInputActive( bool bActive )
+{
+	if ( bActive == bTextInputActive )
+	{
+		return;
+	}
+	// 切り替えたときに、たまっていた入力は捨てる（本物と同じ）
+	bTextInputActive = bActive;
+	PendingTextEvents.Reset();
+	PendingComposition = FImeComposition();
+	TextEvents.Reset();
+	ImeComposition = FImeComposition();
+}
+
+bool CNullInput::IsTextInputActive() const
+{
+	return bTextInputActive;
+}
+
+const TArray<FTextInputEvent>& CNullInput::GetTextInputEvents() const
+{
+	return TextEvents;
+}
+
+const FImeComposition& CNullInput::GetImeComposition() const
+{
+	return ImeComposition;
+}
+
+bool CNullInput::SetCursorVisible( bool bVisible )
+{
+	bCursorVisible = bVisible;
+	return true;
+}
+
+bool CNullInput::IsCursorVisible() const
+{
+	return bCursorVisible;
+}
+
+bool CNullInput::SetCursorPosition( int32 X, int32 Y )
+{
+	SetMousePosition( X, Y );
+	return true;
+}
+
+bool CNullInput::IsTouchAvailable() const
+{
+	return true;
+}
+
+const TArray<FTouchPoint>& CNullInput::GetTouches() const
+{
+	return TouchTracker.GetTouches();
+}
+
+const TArray<uint32>& CNullInput::GetReleasedTouchIds() const
+{
+	return TouchTracker.GetReleasedIds();
+}
+
+void CNullInput::AddTypedText( const FString& Text )
+{
+	PendingTextEvents.Add( FTextInputEvent::MakeText( Text ) );
+}
+
+void CNullInput::AddTextCommand( ETextEditCommand Command )
+{
+	PendingTextEvents.Add( FTextInputEvent::MakeCommand( Command ) );
+}
+
+void CNullInput::SetImeComposition( const FImeComposition& Composition )
+{
+	PendingComposition = Composition;
+}
+
+void CNullInput::SetTouches( const TArray<FTouchPoint>& Touches )
+{
+	PendingTouches = Touches;
 }
