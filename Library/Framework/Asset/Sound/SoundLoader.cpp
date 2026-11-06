@@ -1,68 +1,64 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "SoundLoader.h"
 
-#include "Library/Core/File/File.h"
-#include "Library/Core/Interfaces/Asset/AssetBackend.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Profiler/ProfilerScope.h"
 #include "Library/Core/Thread/GameThread.h"
-#include "Library/Framework/Asset/Sound/WavFile.h"
+#include "Library/Core/Time/PlatformTime.h"
+#include "Library/Framework/Asset/Loading/AssetLoadRecorder.h"
+#include "Library/Framework/Asset/Loading/AssetLog.h"
+#include "Library/Framework/Asset/Loading/AssetPathResolver.h"
 
-DEFINE_LOG_CATEGORY_STATIC( LogSoundLoader, Log )
-
-CSoundLoader::CSoundLoader( IAssetBackend* InBackend )
-	: Backend( InBackend )
+CSoundLoader::CSoundLoader( CAssetLoadContext& InContext )
+	: Context( InContext )
 {
 }
 
-TSharedPtr<CSound> CSoundLoader::CreateFromPcm( const FString& Name, const FPcmBuffer& Pcm ) const
+TSharedPtr<CSound> CSoundLoader::Load( const FString& Path, ESoundLoadMode Mode, bool bAsync )
 {
 	GAME_THREAD_ONLY( nullptr );
-	if ( Backend == nullptr )
+	const TOptional<FString> Full = Context.PrepareLoad( "sound", Path );
+	if ( !Full.IsSet() )
 	{
-		LOG( LogSoundLoader, Error, "Cannot create the sound '%s' from PCM: no asset backend.", *Name );
 		return nullptr;
 	}
-	if ( !Pcm.IsValid() )
+
+	const FString FullPath = Full.Get( FString() );
+	// 読み込み方が違えば別のアセット（同じファイルを、効果音としても BGM としても使えるように）
+	const FString Key = CAssetPathResolver::MakeKey( FullPath ) + ( Mode == ESoundLoadMode::Stream ? "|stream" : "|memory" );
+	if ( TSharedPtr<CSound> Existing = Cache.Find( Key ) )
 	{
-		LOG( LogSoundLoader, Error, "Cannot create the sound '%s' from PCM: the data is empty or malformed (%d channel(s), %d Hz, %d sample(s)).", *Name, Pcm.Channels, Pcm.SampleRate, Pcm.Samples.Num() );
-		return nullptr;
+		Context.GetRecorder().RecordCacheHit();
+		return Existing;
 	}
-	const int32 Handle = Backend->CreateSoundFromPcm( Pcm );
+
+	PROFILE_SCOPE_LAZY( LoadScope, CAssetLoadRecorder::MakeProfileScope( "LoadSound", FullPath ) );
+	const int64 StartTick = NPlatformTime::GetTicks();
+	const int32 Handle = Context.GetBackend()->LoadSound( FullPath, Mode, bAsync );
 	if ( Handle < 0 )
 	{
-		LOG( LogSoundLoader, Error, "The backend could not create the sound '%s' from PCM (%d channel(s), %d Hz).", *Name, Pcm.Channels, Pcm.SampleRate );
+		LOG( LogAsset, Error, "Failed to load the sound '%s' (unsupported or broken file).", *FullPath );
+		Context.GetRecorder().RecordFailure();
 		return nullptr;
 	}
-	LOG( LogSoundLoader, Verbose, "Created the sound '%s' from PCM (%.2f s, %d channel(s), %d Hz)", *Name, Pcm.GetLengthSeconds(), Pcm.Channels, Pcm.SampleRate );
-	return MakeShared<CSound>( "pcm:" + Name, Handle, ESoundLoadMode::Memory, false );
+	TSharedPtr<CSound> Sound = MakeShared<CSound>( FullPath, Handle, Mode, bAsync );
+	Context.GetRecorder().RecordLoad( *Sound, FullPath, StartTick );
+	Cache.Add( Key, Sound );
+	LOG( LogAsset, Verbose, "Loaded the sound '%s' (%s)%s", *FullPath, Mode == ESoundLoadMode::Stream ? "stream" : "memory", bAsync ? " async" : "" );
+	return Sound;
 }
 
-bool CSoundLoader::Decode( const FString& FullPath, FPcmBuffer& OutPcm ) const
+void CSoundLoader::CollectInfos( TArray<FAssetInfo>& Out ) const
 {
-	GAME_THREAD_ONLY( false );
-	if ( FullPath.EndsWith( ".wav", ESearchCase::IgnoreCase ) )
-	{
-		TArray<uint8> Bytes;
-		if ( NFile::ReadAllBytes( FullPath, Bytes ) && NWavFile::Decode( Bytes.GetData(), static_cast<usize>( Bytes.Num() ), OutPcm ) )
-		{
-			return true;
-		}
-	}
-	if ( Backend != nullptr && Backend->DecodeSoundFile( FullPath, OutPcm ) )
-	{
-		return true;
-	}
-	LOG( LogSoundLoader, Error, "Failed to decode the sound '%s' (unsupported or broken file).", *FullPath );
-	return false;
+	Cache.CollectInfos( Out );
 }
 
-bool CSoundLoader::SaveWav( const FPcmBuffer& Pcm, const FString& FullPath )
+void CSoundLoader::Prune()
 {
-	TArray<uint8> Bytes;
-	if ( FullPath.IsEmpty() || !NWavFile::Encode( Pcm, Bytes ) || !NFile::WriteAllBytes( FullPath, Bytes.GetData(), static_cast<usize>( Bytes.Num() ) ) )
-	{
-		LOG( LogSoundLoader, Error, "Failed to save the WAV file '%s'.", *FullPath );
-		return false;
-	}
-	return true;
+	Cache.Prune();
+}
+
+void CSoundLoader::Clear()
+{
+	Cache.Clear();
 }

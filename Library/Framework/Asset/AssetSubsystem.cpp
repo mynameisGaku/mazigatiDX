@@ -224,15 +224,14 @@ void CAssetSubsystem::Initialize( FSubsystemCollection& Collection )
 void CAssetSubsystem::Deinitialize()
 {
 	FlushDeferred();
-	PendingSheets.Empty();
 	TextureLoader.Clear();
-	SpriteSheets.Empty();
-	Models.Empty();
-	ModelAnimations.Empty();
+	SpriteSheetLoader.Clear();
+	ModelLoader.Clear();
+	ModelAnimationLoader.Clear();
 	WorldLoader.Clear();
 	EffectLoader.Clear();
-	Sounds.Empty();
-	Fonts.Empty();
+	SoundLoader.Clear();
+	FontLoader.Clear();
 
 	// これ以降に手放されるアセットは、何もしない（DxLib の終了処理が片付ける）
 	Service().Backend.Store( nullptr );
@@ -258,15 +257,7 @@ void CAssetSubsystem::Tick( float32 DeltaTime )
 	PROFILE_SCOPE_CAT( "Asset", "Tick" );
 	FlushDeferred();
 
-	// 画像の読み込みを待っていたスプライトシートのコマ割りを、読み込みが終わったら作る
-	for ( int32 Index = PendingSheets.Num() - 1; Index >= 0; --Index )
-	{
-		const TSharedPtr<CSpriteSheet> Sheet = PendingSheets[Index].Pin();
-		if ( !Sheet.IsValid() || Sheet->IsReady() )
-		{
-			PendingSheets.RemoveAtSwap( Index );
-		}
-	}
+	SpriteSheetLoader.Update();
 
 	PruneTimer += DeltaTime;
 	if ( PruneTimer >= 5.0f )
@@ -404,28 +395,16 @@ TOptional<FString> CAssetSubsystem::ResolvePath( const FString& Path ) const
 	return PathResolver.ResolvePath( Path );
 }
 
-template<typename T>
-void CAssetSubsystem::PruneCache( TCache<T>& Cache )
-{
-	for ( auto It = Cache.CreateIterator(); It; ++It )
-	{
-		if ( !It.Value().IsValid() )
-		{
-			It.RemoveCurrent();
-		}
-	}
-}
-
 void CAssetSubsystem::ReleaseUnused()
 {
 	TextureLoader.Prune();
-	PruneCache( SpriteSheets );
-	PruneCache( Models );
-	PruneCache( ModelAnimations );
+	SpriteSheetLoader.Prune();
+	ModelLoader.Prune();
+	ModelAnimationLoader.Prune();
 	WorldLoader.Prune();
 	EffectLoader.Prune();
-	PruneCache( Sounds );
-	PruneCache( Fonts );
+	SoundLoader.Prune();
+	FontLoader.Prune();
 }
 
 //-----------------------------------------------------------------------------
@@ -483,481 +462,97 @@ TArray<TSharedPtr<CTexture>> CAssetSubsystem::LoadTextureGrid( const FString& Pa
 }
 
 //-----------------------------------------------------------------------------
-// スプライトシート
+// スプライトシート・モデル・サウンド・フォント（それぞれのローダーに任せる）
 //-----------------------------------------------------------------------------
-void CAssetSubsystem::AddPendingSheet( const TSharedPtr<CSpriteSheet>& Sheet )
-{
-	if ( !Sheet->IsReady() )
-	{
-		PendingSheets.Add( Sheet );
-	}
-}
-
 TSharedPtr<CSpriteSheet> CAssetSubsystem::CreateSpriteSheet( const TSharedPtr<CTexture>& Texture, const FSpriteSheetGrid& Grid, const FString& Name )
 {
-	GAME_THREAD_ONLY( nullptr );
-	TSharedPtr<CSpriteSheet> Sheet = CreateSpriteSheet( Texture, Name );
-	if ( Sheet.IsValid() )
-	{
-		Sheet->BuildGrid( Grid );
-		AddPendingSheet( Sheet );
-	}
-	return Sheet;
+	return SpriteSheetLoader.Create( Texture, Grid, Name );
 }
 
 TSharedPtr<CSpriteSheet> CAssetSubsystem::CreateSpriteSheet( const TSharedPtr<CTexture>& Texture, const FString& Name )
 {
-	GAME_THREAD_ONLY( nullptr );
-	if ( !Texture.IsValid() )
-	{
-		LOG( LogAsset, Error, "Cannot create the sprite sheet '%s': no texture was given.", *Name );
-		return nullptr;
-	}
-	return MakeShared<CSpriteSheet>( Name.IsEmpty() ? Texture->GetPath() : Name, Texture );
+	return SpriteSheetLoader.Create( Texture, Name );
 }
 
 TSharedPtr<CSpriteSheet> CAssetSubsystem::CreateSpriteSheet( const FSpriteSheetDefinition& Definition, const FString& Name, bool bAsync )
 {
-	GAME_THREAD_ONLY( nullptr );
-	TSharedPtr<CTexture> Texture = LoadTexture( Definition.TexturePath, bAsync );
-	if ( !Texture.IsValid() )
-	{
-		return nullptr;   // 原因は LoadTexture がログに出している
-	}
-
-	TSharedPtr<CSpriteSheet> Sheet = MakeShared<CSpriteSheet>( Name.IsEmpty() ? Definition.TexturePath : Name, Texture );
-	Sheet->SetDefinition( Definition );
-	AddPendingSheet( Sheet );
-	return Sheet;
+	return SpriteSheetLoader.Create( Definition, Name, bAsync );
 }
 
 bool CAssetSubsystem::SaveSpriteSheetDefinition( const FString& Path, const FSpriteSheetDefinition& Definition )
 {
-	const TOptional<FString> Full = PrepareSavePath( Path );
-	if ( !Full.IsSet() )
-	{
-		return false;
-	}
-
-	NJson::CJsonObject Json;
-	Json.GetRoot() = Definition.ToJson();
-	if ( !Json.SaveToFile( Full.Get( FString() ) ) )
-	{
-		LOG( LogAsset, Error, "Failed to write the sprite sheet definition '%s'.", *Full.Get( FString() ) );
-		return false;
-	}
-	SpriteSheets.Remove( MakeKey( Full.Get( FString() ) ) );   // 古い内容のキャッシュは捨てる
-	LOG( LogAsset, Log, "Saved the sprite sheet definition '%s' (%d grid(s), %d frame(s), %d clip(s))", *Full.Get( FString() ), Definition.Grids.Num(), Definition.GetNumFrames(),
-		 Definition.Clips.Num() );
-	return true;
+	return SpriteSheetLoader.Save( Path, Definition );
 }
 
 TSharedPtr<CSpriteSheet> CAssetSubsystem::LoadSpriteSheet( const FString& DefinitionPath, bool bAsync )
 {
-	GAME_THREAD_ONLY( nullptr );
-	const TOptional<FString> Full = PrepareLoad( "sprite sheet", DefinitionPath );
-	if ( !Full.IsSet() )
-	{
-		return nullptr;
-	}
-
-	const FString FullPath = Full.Get( FString() );
-	const FString Key = MakeKey( FullPath );
-	if ( TWeakPtr<CSpriteSheet>* Found = SpriteSheets.Find( Key ) )
-	{
-		if ( TSharedPtr<CSpriteSheet> Existing = Found->Pin() )
-		{
-			RecordCacheHit();
-			return Existing;
-		}
-	}
-
-	PROFILE_SCOPE_LAZY( LoadScope, CAssetLoadRecorder::MakeProfileScope( "LoadSpriteSheet", FullPath ) );
-	const int64 StartTick = NPlatformTime::GetTicks();
-	NJson::CJsonObject Json;
-	if ( !Json.LoadFromFile( FullPath ) )
-	{
-		LOG( LogAsset, Error, "Failed to read the sprite sheet definition '%s' (not valid JSON?).", *FullPath );
-		RecordFailure();
-		return nullptr;
-	}
-
-	FSpriteSheetDefinition Definition;
-	if ( !FSpriteSheetDefinition::FromJson( Json.GetRoot(), Definition ) )
-	{
-		LOG( LogAsset, Error, "The sprite sheet definition '%s' is not a JSON object.", *FullPath );
-		RecordFailure();
-		return nullptr;
-	}
-	if ( Definition.TexturePath.IsEmpty() )
-	{
-		LOG( LogAsset, Error, "The sprite sheet definition '%s' has no \"Texture\".", *FullPath );
-		RecordFailure();
-		return nullptr;
-	}
-	TSharedPtr<CTexture> Texture = LoadTexture( Definition.TexturePath, bAsync );
-	if ( !Texture.IsValid() )
-	{
-		return nullptr;   // 原因は LoadTexture がログに出している
-	}
-
-	TSharedPtr<CSpriteSheet> Sheet = MakeShared<CSpriteSheet>( FullPath, Texture );
-	Sheet->SetDefinition( Definition );
-	RecordLoad( *Sheet, FullPath, StartTick );
-	AddPendingSheet( Sheet );
-	SpriteSheets.Add( Key, Sheet );
-	LOG( LogAsset, Verbose, "Loaded the sprite sheet '%s' (%d frame(s), %d clip(s))", *FullPath, Sheet->GetNumFrames(), Sheet->GetNumClips() );
-	return Sheet;
+	return SpriteSheetLoader.Load( DefinitionPath, bAsync );
 }
 
-//-----------------------------------------------------------------------------
-// モデルのアニメーションの定義
-//-----------------------------------------------------------------------------
 TSharedPtr<CModelAnimationAsset> CAssetSubsystem::CreateModelAnimations( const FModelAnimationDefinition& Definition, const FString& Name, bool bAsync )
 {
-	GAME_THREAD_ONLY( nullptr );
-	// Model が空なら、モデルを持たないアニメーション集（モーション専用）
-	TSharedPtr<CModel> Model;
-	if ( !Definition.ModelPath.IsEmpty() )
-	{
-		Model = LoadModel( Definition.ModelPath, bAsync );
-		if ( !Model.IsValid() )
-		{
-			return nullptr;   // 原因は LoadModel がログに出している
-		}
-		if ( Model->IsReady() && Model->GetMeshCount() == 0 )
-		{
-			LOG( LogAsset, Warning, "The model '%s' of the animation set has no mesh (it only holds animations), so nothing will be drawn. Use it as a clip's Source instead.", *Definition.ModelPath );
-		}
-	}
-
-	TArray<TSharedPtr<CModel>> Sources;
-	for ( const FModelClipDef& Clip : Definition.Clips )
-	{
-		TSharedPtr<CModel> Source = Clip.SourcePath.IsEmpty() ? Model : LoadModel( Clip.SourcePath, bAsync );
-		if ( !Source.IsValid() )
-		{
-			Source = Model;   // 読めなかったクリップは、モデル自身のアニメーションとして扱う（原因はログに出ている）
-		}
-		Sources.Add( Source );
-	}
-	const FString DefaultName = Definition.ModelPath.IsEmpty() ? FString( "(animation set)" ) : Definition.ModelPath;
-	return MakeShared<CModelAnimationAsset>( Name.IsEmpty() ? DefaultName : Name, Definition, Model, Sources );
+	return ModelAnimationLoader.Create( Definition, Name, bAsync );
 }
 
 TSharedPtr<CModelAnimationAsset> CAssetSubsystem::LoadModelAnimations( const FString& DefinitionPath, bool bAsync )
 {
-	GAME_THREAD_ONLY( nullptr );
-	const TOptional<FString> Full = PrepareLoad( "model animation set", DefinitionPath );
-	if ( !Full.IsSet() )
-	{
-		return nullptr;
-	}
-
-	const FString FullPath = Full.Get( FString() );
-	const FString Key = MakeKey( FullPath );
-	if ( TWeakPtr<CModelAnimationAsset>* Found = ModelAnimations.Find( Key ) )
-	{
-		if ( TSharedPtr<CModelAnimationAsset> Existing = Found->Pin() )
-		{
-			RecordCacheHit();
-			return Existing;
-		}
-	}
-
-	PROFILE_SCOPE_LAZY( LoadScope, CAssetLoadRecorder::MakeProfileScope( "LoadModelAnimations", FullPath ) );
-	const int64 StartTick = NPlatformTime::GetTicks();
-	NJson::CJsonObject Json;
-	FModelAnimationDefinition Definition;
-	if ( !Json.LoadFromFile( FullPath ) || !FModelAnimationDefinition::FromJson( Json.GetRoot(), Definition ) )
-	{
-		LOG( LogAsset, Error, "Failed to read the model animation definition '%s' (not valid JSON?).", *FullPath );
-		RecordFailure();
-		return nullptr;
-	}
-	TSharedPtr<CModelAnimationAsset> Asset = CreateModelAnimations( Definition, FullPath, bAsync );
-	if ( !Asset.IsValid() )
-	{
-		RecordFailure();
-		return nullptr;
-	}
-	RecordLoad( *Asset, FullPath, StartTick );
-	ModelAnimations.Add( Key, Asset );
-	LOG( LogAsset, Verbose, "Loaded the model animation definition '%s' (%d clip(s))", *FullPath, Definition.Clips.Num() );
-	return Asset;
+	return ModelAnimationLoader.Load( DefinitionPath, bAsync );
 }
 
 bool CAssetSubsystem::SaveModelAnimationDefinition( const FString& Path, const FModelAnimationDefinition& Definition )
 {
-	const TOptional<FString> Full = PrepareSavePath( Path );
-	if ( !Full.IsSet() )
-	{
-		return false;
-	}
-
-	NJson::CJsonObject Json;
-	Json.GetRoot() = Definition.ToJson();
-	if ( !Json.SaveToFile( Full.Get( FString() ) ) )
-	{
-		LOG( LogAsset, Error, "Failed to write the model animation definition '%s'.", *Full.Get( FString() ) );
-		return false;
-	}
-	ModelAnimations.Remove( MakeKey( Full.Get( FString() ) ) );
-	LOG( LogAsset, Log, "Saved the model animation definition '%s' (%d clip(s))", *Full.Get( FString() ), Definition.Clips.Num() );
-	return true;
+	return ModelAnimationLoader.Save( Path, Definition );
 }
 
-//-----------------------------------------------------------------------------
-// モデル・サウンド
-//-----------------------------------------------------------------------------
 TSharedPtr<CModel> CAssetSubsystem::LoadModel( const FString& Path, bool bAsync )
 {
-	GAME_THREAD_ONLY( nullptr );
-	FString FullPath;
-	if ( !ModelImporter.ResolveRequest( Path, FullPath ) )
-	{
-		RecordFailure();
-		return nullptr;
-	}
-	const FString Key = MakeKey( FullPath );
-	if ( TWeakPtr<CModel>* Found = Models.Find( Key ) )
-	{
-		if ( TSharedPtr<CModel> Existing = Found->Pin() )
-		{
-			RecordCacheHit();
-			return Existing;
-		}
-	}
-
-	PROFILE_SCOPE_LAZY( LoadScope, CAssetLoadRecorder::MakeProfileScope( "LoadModel", FullPath ) );
-	const int64 StartTick = NPlatformTime::GetTicks();
-	FString LoadPath;
-	if ( !ModelImporter.ResolveLoadPath( FullPath, LoadPath ) )
-	{
-		RecordFailure();
-		return nullptr;
-	}
-	const int32 Handle = GetBackend()->LoadModel( LoadPath, bAsync );
-	if ( Handle < 0 )
-	{
-		LOG( LogAsset, Error, "Failed to load the model '%s' (unsupported or broken file).", *LoadPath );
-		RecordFailure();
-		return nullptr;
-	}
-	TSharedPtr<CModel> Model = MakeShared<CModel>( FullPath, Handle, bAsync );
-	RecordLoad( *Model, LoadPath, StartTick );
-	Models.Add( Key, Model );
-	LOG( LogAsset, Verbose, "Loaded the model '%s'%s%s", *FullPath, LoadPath != FullPath ? *( " (from " + LoadPath + ")" ) : "", bAsync ? " (async)" : "" );
-	return Model;
+	return ModelLoader.Load( Path, bAsync );
 }
 
 TSharedPtr<CSound> CAssetSubsystem::LoadSound( const FString& Path, ESoundLoadMode Mode, bool bAsync )
 {
-	GAME_THREAD_ONLY( nullptr );
-	const TOptional<FString> Full = PrepareLoad( "sound", Path );
-	if ( !Full.IsSet() )
-	{
-		return nullptr;
-	}
-
-	const FString FullPath = Full.Get( FString() );
-	// 読み込み方が違えば別のアセット（同じファイルを、効果音としても BGM としても使えるように）
-	const FString Key = MakeKey( FullPath ) + ( Mode == ESoundLoadMode::Stream ? "|stream" : "|memory" );
-	if ( TWeakPtr<CSound>* Found = Sounds.Find( Key ) )
-	{
-		if ( TSharedPtr<CSound> Existing = Found->Pin() )
-		{
-			RecordCacheHit();
-			return Existing;
-		}
-	}
-
-	PROFILE_SCOPE_LAZY( LoadScope, CAssetLoadRecorder::MakeProfileScope( "LoadSound", FullPath ) );
-	const int64 StartTick = NPlatformTime::GetTicks();
-	const int32 Handle = GetBackend()->LoadSound( FullPath, Mode, bAsync );
-	if ( Handle < 0 )
-	{
-		LOG( LogAsset, Error, "Failed to load the sound '%s' (unsupported or broken file).", *FullPath );
-		RecordFailure();
-		return nullptr;
-	}
-	TSharedPtr<CSound> Sound = MakeShared<CSound>( FullPath, Handle, Mode, bAsync );
-	RecordLoad( *Sound, FullPath, StartTick );
-	Sounds.Add( Key, Sound );
-	LOG( LogAsset, Verbose, "Loaded the sound '%s' (%s)%s", *FullPath, Mode == ESoundLoadMode::Stream ? "stream" : "memory", bAsync ? " async" : "" );
-	return Sound;
-}
-
-//-----------------------------------------------------------------------------
-// フォント
-//-----------------------------------------------------------------------------
-TSharedPtr<CFont> CAssetSubsystem::LoadFontInternal( const FString& Key, const FFontDesc& Desc, const FString& FontFilePath )
-{
-	GAME_THREAD_ONLY( nullptr );
-	PROFILE_SCOPE_LAZY( LoadScope, CAssetLoadRecorder::MakeProfileScope( "LoadFont", Desc.Face.IsEmpty() ? FString( "(default)" ) : Desc.Face ) );
-	const int64 StartTick = NPlatformTime::GetTicks();
-	const int32 Handle = GetBackend()->MakeFont( Desc );
-	if ( Handle < 0 )
-	{
-		LOG( LogAsset, Error, "Failed to create the font '%s' (size %d).", Desc.Face.IsEmpty() ? "(default)" : *Desc.Face, Desc.Size );
-		RecordFailure();
-		return nullptr;
-	}
-	TSharedPtr<CFont> Font = MakeShared<CFont>( Key, Handle, Desc, FontFilePath );
-	// 寸法は、作ったあとは変わらないので、ここで 1 度だけ測って、フォントに持たせる（描画システムの中から読めるように）
-	FFontMetrics Metrics;
-	if ( GetBackend()->GetFontMetrics( Handle, Metrics ) )
-	{
-		Font->SetMetrics( Metrics );
-	}
-	RecordLoad( *Font, FontFilePath.IsEmpty() ? FString() : FontFilePath, StartTick );
-	Fonts.Add( Key, Font );
-	LOG( LogAsset, Verbose, "Created the font '%s' (size %d)", Desc.Face.IsEmpty() ? "(default)" : *Desc.Face, Desc.Size );
-	return Font;
-}
-
-namespace
-{
-	FString FontSuffix( int32 Size, const FFontStyle& Style )
-	{
-		return FString::Printf( "|%d|%d|%d|%d|%d|%d|%d", Size, Style.Thickness, Style.EdgeSize, Style.bItalic ? 1 : 0, static_cast<int32>( Style.Antialias ), Style.LetterSpacing, Style.LineHeight );
-	}
-
-	FFontDesc MakeDesc( const FString& Face, int32 Size, const FFontStyle& Style )
-	{
-		FFontDesc Desc;
-		Desc.Face = Face;
-		Desc.Size = Size;
-		Desc.Thickness = Style.Thickness;
-		Desc.EdgeSize = Style.EdgeSize;
-		Desc.bItalic = Style.bItalic;
-		Desc.Antialias = Style.Antialias;
-		Desc.LetterSpacing = Style.LetterSpacing;
-		Desc.LineHeight = Style.LineHeight;
-		return Desc;
-	}
+	return SoundLoader.Load( Path, Mode, bAsync );
 }
 
 TSharedPtr<CFont> CAssetSubsystem::LoadFont( const FString& FontFilePath, int32 Size, const FFontStyle& Style )
 {
-	const TOptional<FString> Full = PrepareLoad( "font", FontFilePath );
-	if ( !Full.IsSet() )
-	{
-		return nullptr;
-	}
-
-	const FString FullPath = Full.Get( FString() );
-	const FString Key = "file:" + MakeKey( FullPath ) + FontSuffix( Size, Style );
-	if ( TWeakPtr<CFont>* Found = Fonts.Find( Key ) )
-	{
-		if ( TSharedPtr<CFont> Existing = Found->Pin() )
-		{
-			RecordCacheHit();
-			return Existing;
-		}
-	}
-
-	FString Face;
-	if ( !NFontFile::ReadFaceName( FullPath, Face ) )
-	{
-		LOG( LogAsset, Error, "Cannot read the font name from '%s' (is it a .ttf / .otf / .ttc file?).", *FullPath );
-		return nullptr;
-	}
-	if ( !NAssetService::AddFontFile( FullPath ) )
-	{
-		LOG( LogAsset, Error, "Failed to register the font file '%s' with the system.", *FullPath );
-		return nullptr;
-	}
-
-	TSharedPtr<CFont> Font = LoadFontInternal( Key, MakeDesc( Face, Size, Style ), FullPath );
-	if ( !Font.IsValid() )
-	{
-		NAssetService::RemoveFontFile( FullPath );   // CFont に引き渡せなかった分の登録を戻す
-	}
-	return Font;
+	return FontLoader.LoadFile( FontFilePath, Size, Style );
 }
 
 TSharedPtr<CFont> CAssetSubsystem::LoadSystemFont( const FString& FaceName, int32 Size, const FFontStyle& Style )
 {
-	if ( GetBackend() == nullptr )
-	{
-		LOG( LogAsset, Error, "Cannot create the font '%s': no asset backend.", *FaceName );
-		return nullptr;
-	}
-	const FString Key = "face:" + FaceName.ToLower() + FontSuffix( Size, Style );
-	if ( TWeakPtr<CFont>* Found = Fonts.Find( Key ) )
-	{
-		if ( TSharedPtr<CFont> Existing = Found->Pin() )
-		{
-			RecordCacheHit();
-			return Existing;
-		}
-	}
-	return LoadFontInternal( Key, MakeDesc( FaceName, Size, Style ), FString() );
+	return FontLoader.LoadSystem( FaceName, Size, Style );
 }
 
 TSharedPtr<CFont> CAssetSubsystem::GetDefaultFont( int32 Size, const FFontStyle& Style )
 {
-	return LoadSystemFont( FString(), Size, Style );
+	return FontLoader.LoadSystem( FString(), Size, Style );
 }
 
 bool CAssetSubsystem::IsFontAvailable( const FString& FaceName ) const
 {
-	IAssetBackend* Backend = GetBackend();
-	return Backend != nullptr && !FaceName.IsEmpty() && Backend->IsFontAvailable( FaceName );
+	return FontLoader.IsAvailable( FaceName );
 }
 
 TArray<FString> CAssetSubsystem::GetSystemFontNames() const
 {
-	TArray<FString> Names;
-	if ( IAssetBackend* Backend = GetBackend() )
-	{
-		Backend->GetFontNames( Names );
-	}
-	return Names;
+	return FontLoader.GetSystemFontNames();
 }
 
 //-----------------------------------------------------------------------------
 // 情報
 //-----------------------------------------------------------------------------
-namespace
-{
-	template<typename T>
-	void CollectInfos( const TMap<FString, TWeakPtr<T>>& Cache, TArray<FAssetInfo>& Out )
-	{
-		for ( auto It = Cache.CreateConstIterator(); It; ++It )
-		{
-			const TSharedPtr<T> Asset = It.Value().Pin();
-			if ( !Asset.IsValid() )
-			{
-				continue;
-			}
-
-			FAssetInfo Info;
-			Info.Type = Asset->GetAssetType();
-			Info.Path = Asset->GetPath();
-			Info.Description = Asset->Describe();
-			Info.RefCount = Asset.GetSharedReferenceCount() - 1;   // 調べるために作った分を除く
-			Info.bReady = Asset->IsReady();
-			Info.MemoryBytes = Asset->GetMemoryBytes();
-			Info.FileBytes = Asset->GetFileBytes();
-			Info.LoadMs = Asset->GetLoadMs();
-			Out.Add( Info );
-		}
-	}
-}
-
 TArray<FAssetInfo> CAssetSubsystem::GetLoadedAssets() const
 {
 	TArray<FAssetInfo> Infos;
 	TextureLoader.CollectInfos( Infos );
-	CollectInfos( SpriteSheets, Infos );
-	CollectInfos( Models, Infos );
-	CollectInfos( ModelAnimations, Infos );
+	SpriteSheetLoader.CollectInfos( Infos );
+	ModelLoader.CollectInfos( Infos );
+	ModelAnimationLoader.CollectInfos( Infos );
 	WorldLoader.CollectInfos( Infos );
 	EffectLoader.CollectInfos( Infos );
-	CollectInfos( Sounds, Infos );
-	CollectInfos( Fonts, Infos );
+	SoundLoader.CollectInfos( Infos );
+	FontLoader.CollectInfos( Infos );
 	Infos.Sort( []( const FAssetInfo& A, const FAssetInfo& B ) { return A.Type != B.Type ? A.Type < B.Type : A.Path < B.Path; } );
 	return Infos;
 }

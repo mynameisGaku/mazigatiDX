@@ -317,9 +317,9 @@ if ( Animator.ConsumeRootMotion( ReferenceToActorBasis, RootTranslation, RootRot
 |やりたいこと|使うもの|
 |---|---|
 |音の長さ・サンプルレートなどを知る|`CSound::GetInfo( FSoundInfo& )`（分からない項目は0。DxLibはチャンネル数を答えられないので0）|
-|計算で作った音を鳴らす|`FPcmBuffer`（チャンネルを交互に並べた-1〜1のfloat）を`CSoundLoader::CreateFromPcm( 名前, Pcm )`に渡すと、`CAudioSubsystem`で鳴らせる`CSound`になります|
-|音のファイルを生の音に読み出す|`CSoundLoader::Decode( 絶対パス, Pcm )`。WAVは`NWavFile`が読み、それ以外はバックエンドが読める形式による|
-|生の音をWAVに保存する|`CSoundLoader::SaveWav( Pcm, 絶対パス )`（16ビットPCM）|
+|計算で作った音を鳴らす|`FPcmBuffer`（チャンネルを交互に並べた-1〜1のfloat）を`CPcmSoundLoader::CreateFromPcm( 名前, Pcm )`に渡すと、`CAudioSubsystem`で鳴らせる`CSound`になります|
+|音のファイルを生の音に読み出す|`CPcmSoundLoader::Decode( 絶対パス, Pcm )`。WAVは`NWavFile`が読み、それ以外はバックエンドが読める形式による|
+|生の音をWAVに保存する|`CPcmSoundLoader::SaveWav( Pcm, 絶対パス )`（16ビットPCM）|
 |イントロ付きBGM（頭は1度だけ、あとは繰り返す）|`CSound::SetLoopRegion( 始まり秒, 終わり秒 )`。`bLoop`で鳴らすと、終わりに届くたびに始まりへ戻ります。終わりが0以下なら音の最後まで。`ClearLoopRegion()`でやめます|
 
 ループ区間をバックエンドが扱えないとき（`IAudioBackend::SetLoopRegion`が`false`を返すとき）は、`CAudioSubsystem`が毎フレーム再生位置を見て始まりへ戻して補います（フレーム単位の精度で、バックエンドが再生中に位置を動かせることが前提です）。DxLibは区間を直接扱えます。ただし、区間の始まりより後ろから再生を始めた場合は区間が効かないことがあります（頭から鳴らすBGMでは問題になりません）。
@@ -327,7 +327,7 @@ if ( Animator.ConsumeRootMotion( ReferenceToActorBasis, RootTranslation, RootRot
 DxLibで使えない機能（3チャンネル以上のPCMなど）は、黙って無視せず、ログに警告を1回だけ出します（`NBackendSupport::ReportUnsupported`）。実装を書くときは、DxLibでできないことを関数の近くに簡潔なコメントで書きます。
 
 ```cpp
-CSoundLoader Loader( NAssetService::GetBackend() );
+CPcmSoundLoader Loader( NAssetService::GetBackend() );
 FPcmBuffer Beep;
 Beep.SampleRate = 22050;
 for ( int32 Index = 0; Index < 11025; ++Index )
@@ -517,7 +517,7 @@ Worldの`Components.Effect`には、任意の`Target`（追従先オブジェク
 
 - フォルダは、領域（役割のジャンル）ごとに切ります。`Library/Framework/Asset`の下なら`Texture / Model / Font / Sound / Gpu / Data / Definition`、`Render`の下なら`Draw / Camera / State / Types / Mesh / MaterialEffect`のようにです。本質的なジャンルが同じ（同じ題材の定義と処理、値の型と読み書きなど）ファイルは同じフォルダに置いてよいですが、ジャンルの違うファイルを一つのフォルダに並べません。フォルダ直下には、その領域の入口になる少数のファイル（`Asset.h`や`AssetManager.*`など）だけを置き、新しいファイルは、いちばん近い領域のフォルダへ置きます（合う所が無ければ新しい領域のフォルダを作ります）。ファイルを移したら、`#include`と文書の参照も合わせて直し、プロジェクト生成（`Tools\GenerateProjectFiles.ps1`）をやり直します。
 - インターフェース（`Library/Core/Interfaces`）と、その値の型は、ゲームとフレームワークが「何をしたいか」から決めます。DxLibの関数・単位・制約・ファイル形式・既定値に合わせません（DxLibを別のバックエンドに替えても、インターフェースは変わらないようにするため）。バックエンドごとの事情は、実装（`Library/Platform/<名前>`）の中で吸収し、できない機能は「未対応」（`false`）を返して、フレームワークの側で補えるものは補います。
-- クラスの責務は一つにします。登録とキャッシュの管理（`CAssetSubsystem`）、作る・読み込む・書き出す（`CSoundLoader` などのローダー）、鳴らす・描くなどの実行（`CAudioSubsystem` など）は別のクラスです。新しい処理を既存の管理クラスに足さず、役割ごとのクラスを作ります（バックエンドは作るときに渡し、検査で偽物に替えられるようにします）。責務を分けるときは、関数を別ファイルに分けたり名前空間を作ったりして済ませず、クラスにします。ただし、状態も依存も寿命も差し替えも持たない小さな関数群（`NMath`・`NFile`・`NWavFile` のような変換や計算）は、名前空間のままでかまいません。何をクラスにするかは、状態・依存・差し替えの要る責務かどうかで考えます。
+- クラスの責務は一つにします。登録とキャッシュの管理（`CAssetSubsystem`）、作る・読み込む・書き出す（`CPcmSoundLoader` などのローダー）、鳴らす・描くなどの実行（`CAudioSubsystem` など）は別のクラスです。新しい処理を既存の管理クラスに足さず、役割ごとのクラスを作ります（バックエンドは作るときに渡し、検査で偽物に替えられるようにします）。責務を分けるときは、関数を別ファイルに分けたり名前空間を作ったりして済ませず、クラスにします。ただし、状態も依存も寿命も差し替えも持たない小さな関数群（`NMath`・`NFile`・`NWavFile` のような変換や計算）は、名前空間のままでかまいません。何をクラスにするかは、状態・依存・差し替えの要る責務かどうかで考えます。
 - クラス名とファイル名は、「何をする人か」が分かる名前にします（`CAssetPathResolver`＝パスを解決する人、`CTextureLoader`＝画像を読み込む人、`CModelImporter`＝モデルを取り込む人）。`Manager`・`Helper`・`Utility`・`Subsystem` に分けたファイル名（`AssetSubsystemImages.cpp` など、クラスの一部を分けただけの名前）は付けません。分けたい処理は、その役割の名前のクラスにします。サブシステムの名前は、「役割 + `Subsystem`」の2つの要素だけ（`CAssetSubsystem`・`CAudioSubsystem`）にします。
 - サブシステム（`CAppSubsystem` / `CGameInstanceSubsystem` / `CSceneSubsystem` を継承するクラス）の名前には`Subsystem`を付けます（`CAssetSubsystem`・`CDxLibInputSubsystem` など）。ファイル名もクラス名に合わせます。
 - 公開する主要な型は原則一つのヘッダーに置き、実装は同名cppへ分けます。templateの実装は同名ヘッダーまたはinlに置きます。

@@ -8,13 +8,19 @@
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Framework/Asset/Texture/DynamicTexture.h"
 #include "Library/Framework/Asset/Font/Font.h"
+#include "Library/Framework/Asset/Font/FontLoader.h"
+#include "Library/Framework/Asset/Font/FontStyle.h"
 #include "Library/Framework/Asset/Model/Import/ModelExporter.h"
 #include "Library/Framework/Asset/Model/Model.h"
 #include "Library/Framework/Asset/Model/ModelAnimationAsset.h"
+#include "Library/Framework/Asset/Model/ModelAnimationLoader.h"
+#include "Library/Framework/Asset/Model/ModelLoader.h"
 #include "Library/Framework/Asset/Texture/PixelImage.h"
 #include "Library/Framework/Asset/Texture/RenderTarget.h"
 #include "Library/Framework/Asset/Sound/Sound.h"
+#include "Library/Framework/Asset/Sound/SoundLoader.h"
 #include "Library/Framework/Asset/Data/SpriteSheet.h"
+#include "Library/Framework/Asset/Data/SpriteSheetLoader.h"
 #include "Library/Framework/Asset/Data/EffectAsset.h"
 #include "Library/Framework/Asset/Data/EffectLoader.h"
 #include "Library/Framework/Asset/Data/WorldAsset.h"
@@ -29,17 +35,6 @@
 #include "Library/Framework/Asset/Texture/Texture.h"
 #include "Library/Framework/Asset/Texture/TextureLoader.h"
 #include "Library/Framework/Subsystem/AppSubsystem.h"
-
-// フォントの見た目の指定（大きさ以外）
-struct FFontStyle
-{
-	int32 Thickness = 6;       // 太さ（0..9。実際は、0..5 と 6..9 の 2 段階にしか変わらないフォントが多い）
-	int32 EdgeSize = 0;        // 0 より大きいと縁取り（ピクセル。縁取りの 2 倍が、1 文字の幅と行の高さに足される）
-	bool bItalic = false;
-	EFontAntialias Antialias = EFontAntialias::Standard;   // 文字のなめらかさ
-	int32 LetterSpacing = 0;   // 字間（ピクセル。全部の文字の幅に足す。負の値で詰める）
-	int32 LineHeight = -1;     // 行の送り幅（ピクセル。次の行の同じ位置までの距離）。-1 はフォントの既定
-};
 
 // アセットの種類ごとの集計
 struct FAssetTypeStats
@@ -254,7 +249,7 @@ public:
 	// サウンド
 	//-------------------------------------------------------------------------
 	TSharedPtr<CSound> LoadSound( const FString& Path, ESoundLoadMode Mode = ESoundLoadMode::Memory, bool bAsync = false );
-	// 生の音（PCM）から音を作る・ファイルから PCM に読み出す・WAV に保存する処理は、CSoundLoader（Framework/Asset/Sound）が受け持つ
+	// 生の音（PCM）から音を作る・ファイルから PCM に読み出す・WAV に保存する処理は、CPcmSoundLoader（Framework/Asset/Sound）が受け持つ
 
 	//-------------------------------------------------------------------------
 	// フォント（大きさ・スタイルごとに別のフォントになる。同じ指定なら共有）
@@ -291,23 +286,8 @@ public:
 	IAssetBackend* GetBackend() const;
 
 private:
-	template<typename T>
-	using TCache = TMap<FString, TWeakPtr<T>>;
-
-	// 以下 4 つは、パスを解決する人・読み込みを記録する人（それぞれ別のクラス）への取り次ぎ（残りの読み込みの処理が、ローダーへ移るまでの間）
-	TOptional<FString> PrepareLoad( const char* Kind, const FString& Path ) { return LoadContext.PrepareLoad( Kind, Path ); }
-	static FString MakeKey( const FString& FullPath ) { return CAssetPathResolver::MakeKey( FullPath ); }
-	TOptional<FString> PrepareSavePath( const FString& Path ) { return PathResolver.PrepareSavePath( Path ); }
-	void RecordLoad( CAsset& Asset, const FString& FullPath, int64 StartTick ) { LoadRecorder.RecordLoad( Asset, FullPath, StartTick ); }
-	void RecordCacheHit() { LoadRecorder.RecordCacheHit(); }
-	void RecordFailure() { LoadRecorder.RecordFailure(); }
-	TSharedPtr<CFont> LoadFontInternal( const FString& Key, const FFontDesc& Desc, const FString& FontFilePath );
-	void AddPendingSheet( const TSharedPtr<CSpriteSheet>& Sheet );
 	// プロファイラーが記録中なら、集計をカウンターとして記録する
 	void RecordCounters() const;
-
-	template<typename T>
-	static void PruneCache( TCache<T>& Cache );
 
 	IAssetBackend* Backend = nullptr;
 	IAssetBackend* BackendOverride = nullptr;
@@ -321,13 +301,12 @@ private:
 	CWorldLoader WorldLoader { LoadContext };
 	CEffectLoader EffectLoader { LoadContext };
 	CModelImporter ModelImporter { LoadContext };
+	CModelLoader ModelLoader { LoadContext, ModelImporter };
+	CModelAnimationLoader ModelAnimationLoader { LoadContext, ModelLoader };
+	CSpriteSheetLoader SpriteSheetLoader { LoadContext, TextureLoader };
+	CSoundLoader SoundLoader { LoadContext };
+	CFontLoader FontLoader { LoadContext };
 
-	TCache<CSpriteSheet> SpriteSheets;
-	TCache<CModel> Models;
-	TCache<CModelAnimationAsset> ModelAnimations;
-	TCache<CSound> Sounds;
-	TCache<CFont> Fonts;
-	TArray<TWeakPtr<CSpriteSheet>> PendingSheets;
 	float32 PruneTimer = 0.0f;
 	float32 StatsTimer = 0.5f;
 	mutable FAssetStats Stats;

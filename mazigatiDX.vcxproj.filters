@@ -151,6 +151,9 @@
     <ClCompile Include="Library\Framework\Asset\Data\SpriteSheet.cpp">
       <Filter>Library\Framework\Asset\Data</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Data\SpriteSheetLoader.cpp">
+      <Filter>Library\Framework\Asset\Data</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Data\WorldAsset.cpp">
       <Filter>Library\Framework\Asset\Data</Filter>
     </ClCompile>
@@ -164,6 +167,9 @@
       <Filter>Library\Framework\Asset\Font</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Font\FontFile.cpp">
+      <Filter>Library\Framework\Asset\Font</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Font\FontLoader.cpp">
       <Filter>Library\Framework\Asset\Font</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Gpu\IndexBuffer.cpp">
@@ -196,10 +202,16 @@
     <ClCompile Include="Library\Framework\Asset\Model\ModelAnimationAsset.cpp">
       <Filter>Library\Framework\Asset\Model</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Model\ModelAnimationLoader.cpp">
+      <Filter>Library\Framework\Asset\Model</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Model\ModelAppearance.cpp">
       <Filter>Library\Framework\Asset\Model</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Model\ModelCollision.cpp">
+      <Filter>Library\Framework\Asset\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Model\ModelLoader.cpp">
       <Filter>Library\Framework\Asset\Model</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Model\StaticModelSurface.cpp">
@@ -222,6 +234,9 @@
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Model\Import\XFileWriter.cpp">
       <Filter>Library\Framework\Asset\Model\Import</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Sound\PcmSoundLoader.cpp">
+      <Filter>Library\Framework\Asset\Sound</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Sound\Sound.cpp">
       <Filter>Library\Framework\Asset\Sound</Filter>
@@ -1719,6 +1734,9 @@
     <ClInclude Include="Library\Framework\Asset\Data\SpriteSheet.h">
       <Filter>Library\Framework\Asset\Data</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Data\SpriteSheetLoader.h">
+      <Filter>Library\Framework\Asset\Data</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Data\WorldAsset.h">
       <Filter>Library\Framework\Asset\Data</Filter>
     </ClInclude>
@@ -1735,6 +1753,12 @@
       <Filter>Library\Framework\Asset\Font</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Font\FontFile.h">
+      <Filter>Library\Framework\Asset\Font</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Font\FontLoader.h">
+      <Filter>Library\Framework\Asset\Font</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Font\FontStyle.h">
       <Filter>Library\Framework\Asset\Font</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Font\FontTypes.h">
@@ -1779,6 +1803,9 @@
     <ClInclude Include="Library\Framework\Asset\Model\ModelAnimationAsset.h">
       <Filter>Library\Framework\Asset\Model</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Model\ModelAnimationLoader.h">
+      <Filter>Library\Framework\Asset\Model</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Model\ModelAppearance.h">
       <Filter>Library\Framework\Asset\Model</Filter>
     </ClInclude>
@@ -1786,6 +1813,9 @@
       <Filter>Library\Framework\Asset\Model</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Model\ModelCollisionTypes.h">
+      <Filter>Library\Framework\Asset\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Model\ModelLoader.h">
       <Filter>Library\Framework\Asset\Model</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Model\ModelMeshTypes.h">
@@ -1823,6 +1853,9 @@
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Model\Import\XFileWriter.h">
       <Filter>Library\Framework\Asset\Model\Import</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Sound\PcmSoundLoader.h">
+      <Filter>Library\Framework\Asset\Sound</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Sound\Sound.h">
       <Filter>Library\Framework\Asset\Sound</Filter>
