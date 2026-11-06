@@ -314,6 +314,13 @@ bool CModelInstance::GetFrameMatrix( int32 Frame, EModelFrameSpace Space, FMatri
 	return Backend != nullptr && Handle >= 0 && Backend->GetModelFrameMatrix( Handle, Frame, Space, OutMatrix );
 }
 
+bool CModelInstance::GetMeshData( int32 Mesh, bool bCurrentPose, FModelMeshData& Out ) const
+{
+	GAME_THREAD_ONLY( false );
+	IAssetBackend* Backend = NAssetService::GetBackend();
+	return Backend != nullptr && Handle >= 0 && Backend->GetModelMeshData( Handle, Mesh, bCurrentPose, Out );
+}
+
 bool CModelInstance::GetFrameLocalMatrixOverride( int32 Frame, bool& bOutOverridden, FMatrix4x4& OutLocalToParent ) const
 {
 	GAME_THREAD_ONLY( false );

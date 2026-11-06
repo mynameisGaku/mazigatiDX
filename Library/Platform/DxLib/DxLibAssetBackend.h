@@ -83,6 +83,7 @@ public:
 	bool SaveModelToMV1( int32 Model, const FString& Path, const FModelSaveOptions& Options, FString& OutWarning ) override;
 	// モデルの構造と、モデル 1 体ごとの見た目（DxLibAssetBackendModelStructure.cpp）
 	bool GetModelStructure( int32 Model, FModelStructure& Out ) override;
+	bool GetModelMeshData( int32 Model, int32 Mesh, bool bCurrentPose, FModelMeshData& Out ) override;
 	bool GetModelMaterialColors( int32 Model, int32 Material, FModelMaterialColors& Out ) override;
 	bool SetModelMaterialColors( int32 Model, int32 Material, const FModelMaterialColors& Colors ) override;
 	bool GetModelMeshVisible( int32 Model, int32 Mesh, bool& bOut ) override;

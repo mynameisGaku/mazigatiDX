@@ -108,6 +108,7 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestLogic.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestLogic.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestModelMaterial.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestModelMaterial.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestModelMaterialBoundary.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestModelMaterialBoundary.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestModelMesh.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestModelMesh.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestModelStructure.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestModelStructure.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestModelSurface.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestModelSurface.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestNullBackend.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestNullBackend.cpp')" />
@@ -227,6 +228,7 @@
     <ClInclude Include="Source\SelfTest\AssetSelfTestLighting.h" Condition="Exists('Source\SelfTest\AssetSelfTestLighting.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestModelMaterial.h" Condition="Exists('Source\SelfTest\AssetSelfTestModelMaterial.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestModelMaterialBoundary.h" Condition="Exists('Source\SelfTest\AssetSelfTestModelMaterialBoundary.h')" />
+    <ClInclude Include="Source\SelfTest\AssetSelfTestModelMesh.h" Condition="Exists('Source\SelfTest\AssetSelfTestModelMesh.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestModelStructure.h" Condition="Exists('Source\SelfTest\AssetSelfTestModelStructure.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestModelSurface.h" Condition="Exists('Source\SelfTest\AssetSelfTestModelSurface.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestPixelEffect.h" Condition="Exists('Source\SelfTest\AssetSelfTestPixelEffect.h')" />

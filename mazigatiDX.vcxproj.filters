@@ -526,10 +526,10 @@
     <ClCompile Include="Library\Framework\Render\DrawModelFrameOverrideData.cpp">
       <Filter>Library\Framework\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Render\DrawModelFramePoseData.cpp">
+    <ClCompile Include="Library\Framework\Render\DrawModelFrameOverrideScope.cpp">
       <Filter>Library\Framework\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Render\DrawModelFrameOverrideScope.cpp">
+    <ClCompile Include="Library\Framework\Render\DrawModelFramePoseData.cpp">
       <Filter>Library\Framework\Render</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Render\ImmediateDraw.cpp">
@@ -721,6 +721,9 @@
     <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackendModelMaterial.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackendModelMesh.cpp">
+      <Filter>Library\Platform\DxLib</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackendModelStructure.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
@@ -739,10 +742,10 @@
     <ClCompile Include="Library\Platform\DxLib\DxLibDrawExecutorCapture.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\DxLibDrawExecutorModelMaterial.cpp">
+    <ClCompile Include="Library\Platform\DxLib\DxLibDrawExecutorModelFramePose.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\DxLibDrawExecutorModelFramePose.cpp">
+    <ClCompile Include="Library\Platform\DxLib\DxLibDrawExecutorModelMaterial.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\DxLibImageOps.cpp">
@@ -796,6 +799,9 @@
     <ClCompile Include="Library\Platform\SDL\SdlGamepadInput.cpp">
       <Filter>Library\Platform\SDL</Filter>
     </ClCompile>
+    <ClCompile Include="VendorModules\ImGui\imgui.cpp">
+      <Filter>VendorModules\ImGui</Filter>
+    </ClCompile>
     <ClCompile Include="VendorModules\ImGui\imgui_draw.cpp">
       <Filter>VendorModules\ImGui</Filter>
     </ClCompile>
@@ -815,9 +821,6 @@
       <Filter>VendorModules\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="VendorModules\ImGui\imgui_widgets.cpp">
-      <Filter>VendorModules\ImGui</Filter>
-    </ClCompile>
-    <ClCompile Include="VendorModules\ImGui\imgui.cpp">
       <Filter>VendorModules\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="VendorModules\Jolt\RegisterTypes.cpp">
@@ -1662,6 +1665,9 @@
     <ClInclude Include="Library\Framework\Asset\ModelCollisionTypes.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\ModelMeshTypes.h">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Asset\ModelStructureTypes.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
@@ -2067,15 +2073,6 @@
     <ClInclude Include="Library\Framework\Render\DrawContext.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\DrawModelFrameOverrideData.h">
-      <Filter>Library\Framework\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\Render\DrawModelFramePoseData.h">
-      <Filter>Library\Framework\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\Render\DrawModelFrameOverrideScope.h">
-      <Filter>Library\Framework\Render</Filter>
-    </ClInclude>
     <ClInclude Include="Library\Framework\Render\DrawDistortedMaterialQuad.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
@@ -2089,6 +2086,15 @@
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\DrawMaterialRibbon.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\DrawModelFrameOverrideData.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\DrawModelFrameOverrideScope.h">
+      <Filter>Library\Framework\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\DrawModelFramePoseData.h">
       <Filter>Library\Framework\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\DrawModelMaterial.h">
@@ -2451,6 +2457,9 @@
     <ClInclude Include="VendorModules\ImGui\imconfig.h">
       <Filter>VendorModules\ImGui</Filter>
     </ClInclude>
+    <ClInclude Include="VendorModules\ImGui\imgui.h">
+      <Filter>VendorModules\ImGui</Filter>
+    </ClInclude>
     <ClInclude Include="VendorModules\ImGui\imgui_impl_dx11.h">
       <Filter>VendorModules\ImGui</Filter>
     </ClInclude>
@@ -2464,9 +2473,6 @@
       <Filter>VendorModules\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\ImGui\imgui_internal.h">
-      <Filter>VendorModules\ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="VendorModules\ImGui\imgui.h">
       <Filter>VendorModules\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\ImGui\imstb_rectpack.h">
@@ -3621,14 +3627,17 @@
     <ClInclude Include="VendorModules\Jolt\TriangleSplitter\TriangleSplitterMean.h">
       <Filter>VendorModules\Jolt\TriangleSplitter</Filter>
     </ClInclude>
+    <ClInclude Include="VendorModules\nlohmann\json.hpp">
+      <Filter>VendorModules\nlohmann</Filter>
+    </ClInclude>
     <ClInclude Include="VendorModules\nlohmann\json_fwd.hpp">
       <Filter>VendorModules\nlohmann</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\nlohmann\json_literals.hpp">
       <Filter>VendorModules\nlohmann</Filter>
     </ClInclude>
-    <ClInclude Include="VendorModules\nlohmann\json.hpp">
-      <Filter>VendorModules\nlohmann</Filter>
+    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL.h">
+      <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_assert.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
@@ -3732,10 +3741,10 @@
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_log.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
-    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_main_impl.h">
+    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_main.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
-    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_main.h">
+    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_main_impl.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_messagebox.h">
@@ -3756,13 +3765,13 @@
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_oldnames.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
-    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_opengl_glext.h">
-      <Filter>VendorModules\SDL3\include\SDL3</Filter>
-    </ClInclude>
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_opengl.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_opengles.h">
+      <Filter>VendorModules\SDL3\include\SDL3</Filter>
+    </ClInclude>
+    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_opengles2.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_opengles2_gl2.h">
@@ -3777,7 +3786,7 @@
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_opengles2_khrplatform.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
-    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_opengles2.h">
+    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_opengl_glext.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_pen.h">
@@ -3786,10 +3795,10 @@
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_pixels.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
-    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_platform_defines.h">
+    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_platform.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
-    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_platform.h">
+    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_platform_defines.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_power.h">
@@ -3828,6 +3837,9 @@
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_system.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
+    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_test.h">
+      <Filter>VendorModules\SDL3\include\SDL3</Filter>
+    </ClInclude>
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_test_assert.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
@@ -3858,9 +3870,6 @@
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_test_memory.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
-    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_test.h">
-      <Filter>VendorModules\SDL3\include\SDL3</Filter>
-    </ClInclude>
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_thread.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
@@ -3883,9 +3892,6 @@
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_vulkan.h">
-      <Filter>VendorModules\SDL3\include\SDL3</Filter>
-    </ClInclude>
-    <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL.h">
       <Filter>VendorModules\SDL3\include\SDL3</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\ufbx\ufbx.h">

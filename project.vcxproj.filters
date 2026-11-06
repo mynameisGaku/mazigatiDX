@@ -115,6 +115,9 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestModelMaterialBoundary.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestModelMesh.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
     <ClCompile Include="Source\SelfTest\AssetSelfTestModelStructure.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
@@ -463,6 +466,9 @@
       <Filter>Source\SelfTest</Filter>
     </ClInclude>
     <ClInclude Include="Source\SelfTest\AssetSelfTestModelMaterialBoundary.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\AssetSelfTestModelMesh.h">
       <Filter>Source\SelfTest</Filter>
     </ClInclude>
     <ClInclude Include="Source\SelfTest\AssetSelfTestModelStructure.h">

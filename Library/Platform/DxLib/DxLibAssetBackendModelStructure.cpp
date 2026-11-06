@@ -149,6 +149,24 @@ bool CDxLibAssetBackend::GetModelStructure( int32 Model, FModelStructure& Out )
 		Info.Height = MV1GetTextureHeight( Model, Texture );
 		Structure.Textures.Add( Info );
 	}
+	const int32 TriangleListCount = MV1GetTriangleListNum( Model );
+	for ( int32 List = 0; List < TriangleListCount; ++List )
+	{
+		FModelTriangleListInfo Info;
+		Info.Material = MV1GetTriangleListUseMaterial( Model, List );
+		Info.PolygonCount = MV1GetTriangleListPolygonNum( Model, List );
+		Info.VertexCount = MV1GetTriangleListVertexNum( Model, List );
+		Info.BoneMatrixCount = MV1GetTriangleListLocalWorldMatrixNum( Model, List );
+		const int32 VertexType = MV1GetTriangleListVertexType( Model, List );
+		Info.bHasNormalMap = VertexType >= DX_MV1_VERTEX_TYPE_NMAP_1FRAME;
+		// 法線マップの有無を除いた、骨の数の種類（0: 1 本、1: 4 本、2: 8 本、3: それ以上）
+		const int32 SkinningKind = Info.bHasNormalMap ? VertexType - DX_MV1_VERTEX_TYPE_NMAP_1FRAME : VertexType;
+		Info.Skinning = SkinningKind == DX_MV1_VERTEX_TYPE_1FRAME ? EModelSkinning::Rigid
+			: SkinningKind == DX_MV1_VERTEX_TYPE_4FRAME ? EModelSkinning::Bones4
+			: SkinningKind == DX_MV1_VERTEX_TYPE_8FRAME ? EModelSkinning::Bones8
+			: EModelSkinning::BonesMany;
+		Structure.TriangleLists.Add( Info );
+	}
 	const int32 ShapeCount = MV1GetShapeNum( Model );
 	for ( int32 Shape = 0; Shape < ShapeCount; ++Shape )
 	{
