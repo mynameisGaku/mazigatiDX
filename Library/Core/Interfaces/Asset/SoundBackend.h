@@ -29,4 +29,7 @@ public:
 	// 音のファイル（Path は絶対パス。WAV のほか、実装が読める形式）を、生の音（PCM）に読み出す。読めなければ false で、Out は変えない。
 	// WAV は、フレームワークが自分で読める（NWavFile）ので、実装が対応していなくてもよい
 	virtual bool DecodeSoundFile( const FString& /*Path*/, FPcmBuffer& /*Out*/ ) { return false; }
+	// DecodeSoundFile（と LoadSound）で読めるファイルの拡張子（".mp3" のように、ドットつき・小文字）。WAV は、フレームワークが自分で読めるので、入れなくてよい。
+	// 一覧の表示・ファイル選択の絞り込みに使う（実際に読めるかは、開いたときに分かる。OS のデコーダーに任せる形式は、環境によっては読めない）
+	virtual TArray<FString> GetReadableSoundExtensions() const { return TArray<FString>(); }
 };

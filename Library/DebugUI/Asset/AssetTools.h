@@ -6,6 +6,7 @@
 #include "Library/DebugUI/Asset/AssetBrowser.h"
 #include "Library/DebugUI/Effect/EffectEditor.h"
 #include "Library/DebugUI/Asset/ModelAnimationEditor.h"
+#include "Library/DebugUI/Asset/SoundEditor.h"
 #include "Library/DebugUI/Asset/SpriteSheetEditor.h"
 #include "Library/DebugUI/World/WorldEditor.h"
 
@@ -26,6 +27,7 @@ struct FAssetToolsState
 	bool bShowAssets = false;
 	bool bShowAudio = false;
 	bool bShowSpriteSheetEditor = false;
+	bool bShowSoundEditor = false;
 	bool bShowModelAnimationEditor = false;
 	bool bShowWorldEditor = false;
 	// 内蔵エフェクトの定義編集画面を表示するか。
@@ -36,6 +38,7 @@ struct FAssetToolsState
 	bool bShowBrowser = false;
 
 	FSpriteSheetEditorState SpriteSheet;
+	FSoundEditorState SoundEditor;
 	FModelAnimationEditorState ModelAnimation;
 	FWorldEditorState WorldEditor;
 	FAIDebuggerState AIDebugger;

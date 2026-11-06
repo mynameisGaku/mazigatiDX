@@ -390,6 +390,8 @@ void NDebugUI::DrawAssetToolsButtons( FAssetToolsState& State )
 	ImGui::SameLine();
 	ImGui::Checkbox( "Audio", &State.bShowAudio );
 	ImGui::SameLine();
+	ImGui::Checkbox( "Sound editor", &State.bShowSoundEditor );
+	ImGui::SameLine();
 	ImGui::Checkbox( "Sprite sheet editor", &State.bShowSpriteSheetEditor );
 	ImGui::SameLine();
 	ImGui::Checkbox( "Model animation editor", &State.bShowModelAnimationEditor );
@@ -416,7 +418,7 @@ void NDebugUI::DrawAssetToolsButtons( FAssetToolsState& State )
 bool NDebugUI::IsAssetOpenInEditor( const FAssetToolsState& State, const FString& AssetPath )
 {
 	const FString Path = NWorld::NormalizeAssetPath( AssetPath );
-	for ( const FString* Open : { &State.SpriteSheet.FilePath, &State.ModelAnimation.FilePath, &State.EffectEditor.FilePath, &State.WorldEditor.Session.FilePath,
+	for ( const FString* Open : { &State.SpriteSheet.FilePath, &State.SoundEditor.FilePath, &State.ModelAnimation.FilePath, &State.EffectEditor.FilePath, &State.WorldEditor.Session.FilePath,
 								  &State.AIEditor.BlackboardPath, &State.AIEditor.StateMachinePath, &State.AIEditor.BehaviorTreePath } )
 	{
 		if ( !Open->IsEmpty() && NWorld::NormalizeAssetPath( *Open ) == Path )
@@ -444,6 +446,9 @@ bool NDebugUI::OpenAssetInEditor( FAssetToolsState& State, const FString& AssetP
 		}
 		State.bShowSpriteSheetEditor = true;
 		return State.SpriteSheet.FilePath == Path && State.SpriteSheet.Document.IsDirty() ? true : OpenSpriteSheetFile( State.SpriteSheet, Path );
+	case EAssetBrowserKind::Sound:
+		State.bShowSoundEditor = true;
+		return OpenSoundFile( State.SoundEditor, Path );
 	case EAssetBrowserKind::ModelAnimation:
 		if ( State.ModelAnimation.Document.IsDirty() && State.ModelAnimation.FilePath != Path )
 		{
@@ -484,6 +489,7 @@ void NDebugUI::DrawAssetToolsMenuItems( FAssetToolsState& State )
 	ImGui::MenuItem( "Project (asset browser)", nullptr, &State.bShowBrowser );
 	ImGui::MenuItem( "Assets (loaded)", nullptr, &State.bShowAssets );
 	ImGui::MenuItem( "Audio", nullptr, &State.bShowAudio );
+	ImGui::MenuItem( "Sound editor", nullptr, &State.bShowSoundEditor );
 	ImGui::MenuItem( "Sprite sheet editor", nullptr, &State.bShowSpriteSheetEditor );
 	ImGui::MenuItem( "Model animation editor", nullptr, &State.bShowModelAnimationEditor );
 	ImGui::MenuItem( "World editor", nullptr, &State.bShowWorldEditor );
@@ -525,6 +531,10 @@ void NDebugUI::DrawAssetTools( FAssetToolsState& State )
 	if ( State.bShowSpriteSheetEditor )
 	{
 		DrawSpriteSheetEditor( State.SpriteSheet, &State.bShowSpriteSheetEditor );
+	}
+	if ( State.bShowSoundEditor )
+	{
+		DrawSoundEditor( State.SoundEditor, &State.bShowSoundEditor );
 	}
 	if ( State.bShowModelAnimationEditor )
 	{
@@ -575,6 +585,7 @@ void NDebugUI::ApplyAssetToolsCommandLine( FAssetToolsState& State )
 		State.bShowAssets = ContainsToken( *Tools, "assets" );
 		State.bShowAudio = ContainsToken( *Tools, "audio" );
 		State.bShowSpriteSheetEditor = ContainsToken( *Tools, "sprite" );
+		State.bShowSoundEditor = ContainsToken( *Tools, "sound" );
 		State.bShowModelAnimationEditor = ContainsToken( *Tools, "model" );
 		State.bShowWorldEditor = ContainsToken( *Tools, "world" );
 		State.bShowEffectEditor = ContainsToken( *Tools, "effect" );

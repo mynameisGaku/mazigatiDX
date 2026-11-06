@@ -126,6 +126,7 @@ public:
 	bool GetSoundInfo( int32 Sound, FSoundInfo& Out ) override;
 	int32 CreateSoundFromPcm( const FPcmBuffer& Pcm ) override;
 	bool DecodeSoundFile( const FString& Path, FPcmBuffer& Out ) override;
+	TArray<FString> GetReadableSoundExtensions() const override;
 
 	FBackendMemoryInfo GetMemoryInfo() override;
 	int64 EstimateModelBytes( int32 Model ) override;

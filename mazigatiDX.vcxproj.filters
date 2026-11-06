@@ -73,6 +73,9 @@
     <ClCompile Include="Library\DebugUI\Asset\ModelAnimationEditor.cpp">
       <Filter>Library\DebugUI\Asset</Filter>
     </ClCompile>
+    <ClCompile Include="Library\DebugUI\Asset\SoundEditor.cpp">
+      <Filter>Library\DebugUI\Asset</Filter>
+    </ClCompile>
     <ClCompile Include="Library\DebugUI\Asset\SpriteSheetEditor.cpp">
       <Filter>Library\DebugUI\Asset</Filter>
     </ClCompile>
@@ -1855,6 +1858,9 @@
       <Filter>Library\DebugUI\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\DebugUI\Asset\ModelAnimationEditor.h">
+      <Filter>Library\DebugUI\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\DebugUI\Asset\SoundEditor.h">
       <Filter>Library\DebugUI\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\DebugUI\Asset\SpriteSheetEditor.h">

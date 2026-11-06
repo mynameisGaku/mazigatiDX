@@ -74,6 +74,14 @@ int32 CDxLibAssetBackendSubsystem::CreateSoundFromPcm( const FPcmBuffer& Pcm )
 	return Sound;
 }
 
+TArray<FString> CDxLibAssetBackendSubsystem::GetReadableSoundExtensions() const
+{
+	// DxLib が読む形式: 組み込みは PCM（WAV）・Ogg Vorbis・Opus。MP3 は OS のデコーダー（実機で確かめた）。
+	// FLAC は、手で作った最小のファイルが読めなかったので挙げない（DxLib が非対応の可能性が高い）。wma / aac / m4a などは、確かめていないので挙げない
+	// （一覧に無い拡張子も、サウンドエディターでパスを指せば、試しに開ける）
+	return TArray<FString>( { ".wav", ".ogg", ".opus", ".mp3" } );
+}
+
 bool CDxLibAssetBackendSubsystem::DecodeSoundFile( const FString& Path, FPcmBuffer& Out )
 {
 	const int Soft = LoadSoftSound( *Path );

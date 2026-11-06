@@ -334,6 +334,24 @@ TSharedPtr<CModel> CAssetSubsystem::LoadModel( const FString& Path, bool bAsync 
 	return ModelLoader.Load( Path, bAsync );
 }
 
+TArray<FString> CAssetSubsystem::GetReadableSoundExtensions() const
+{
+	TArray<FString> Result;
+	Result.Add( ".wav" );
+	if ( const IAssetBackend* Backend = GetBackend() )
+	{
+		for ( const FString& Extension : Backend->GetReadableSoundExtensions() )
+		{
+			const FString Lower = Extension.ToLower();
+			if ( !Lower.IsEmpty() && Result.Find( Lower ) == INDEX_NONE )
+			{
+				Result.Add( Lower );
+			}
+		}
+	}
+	return Result;
+}
+
 TSharedPtr<CSound> CAssetSubsystem::LoadSound( const FString& Path, ESoundLoadMode Mode, bool bAsync )
 {
 	return SoundLoader.Load( Path, Mode, bAsync );

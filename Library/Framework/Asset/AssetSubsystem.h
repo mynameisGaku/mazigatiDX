@@ -248,6 +248,8 @@ public:
 	//-------------------------------------------------------------------------
 	TSharedPtr<CSound> LoadSound( const FString& Path, ESoundLoadMode Mode = ESoundLoadMode::Memory, bool bAsync = false );
 	// 生の音（PCM）から音を作る・ファイルから PCM に読み出す・WAV に保存する処理は、CPcmSoundLoader（Framework/Asset/Sound）が受け持つ
+	// 読める音のファイルの拡張子（".wav" を含む。".mp3" のように、ドットつき・小文字・重複なし）。WAV 以外は、バックエンドが読める形式（ISoundBackend::GetReadableSoundExtensions）
+	TArray<FString> GetReadableSoundExtensions() const;
 
 	//-------------------------------------------------------------------------
 	// フォント（大きさ・スタイルごとに別のフォントになる。同じ指定なら共有）

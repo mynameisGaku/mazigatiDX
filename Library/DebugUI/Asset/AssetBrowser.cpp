@@ -115,6 +115,13 @@ namespace
 		{
 			Extensions.Add( Info.Extension );
 		}
+		for ( const FString& Extension : Assets->GetReadableSoundExtensions() )
+		{
+			if ( Extensions.Find( Extension ) == INDEX_NONE )
+			{
+				Extensions.Add( Extension );
+			}
+		}
 		TArray<FString> Files = NFileSystem::ListFilesRecursive( Root, Extensions );
 		NAlgo::Sort( Files.GetData(), Files.Num() );
 		State.Entries.Reset();
@@ -266,6 +273,18 @@ bool NDebugUI::TryGetAssetBrowserKind( const FString& Path, EAssetBrowserKind& O
 			return true;
 		}
 	}
+	// バックエンドが読める音の形式（mp3 / ogg のほか、wma / aac / m4a / flac など。環境による）
+	if ( const CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>() )
+	{
+		for ( const FString& Extension : Assets->GetReadableSoundExtensions() )
+		{
+			if ( Path.EndsWith( Extension, ESearchCase::IgnoreCase ) )
+			{
+				OutKind = EAssetBrowserKind::Sound;
+				return true;
+			}
+		}
+	}
 	return false;
 }
 
@@ -287,7 +306,7 @@ bool NDebugUI::TakeOpenAssetRequest( FString& OutPath )
 
 bool NDebugUI::HasEditor( EAssetBrowserKind Kind )
 {
-	return Kind == EAssetBrowserKind::SpriteSheet || Kind == EAssetBrowserKind::ModelAnimation || Kind == EAssetBrowserKind::World || Kind == EAssetBrowserKind::Effect
+	return Kind == EAssetBrowserKind::SpriteSheet || Kind == EAssetBrowserKind::ModelAnimation || Kind == EAssetBrowserKind::World || Kind == EAssetBrowserKind::Effect || Kind == EAssetBrowserKind::Sound
 		|| Kind == EAssetBrowserKind::Blackboard || Kind == EAssetBrowserKind::StateMachine || Kind == EAssetBrowserKind::BehaviorTree;
 }
 

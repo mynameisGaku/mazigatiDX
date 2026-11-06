@@ -91,6 +91,7 @@
     <ClCompile Include="Library\DebugUI\Asset\AssetTools.cpp" />
     <ClCompile Include="Library\DebugUI\Asset\AssetUsesPanel.cpp" />
     <ClCompile Include="Library\DebugUI\Asset\ModelAnimationEditor.cpp" />
+    <ClCompile Include="Library\DebugUI\Asset\SoundEditor.cpp" />
     <ClCompile Include="Library\DebugUI\Asset\SpriteSheetEditor.cpp" />
     <ClCompile Include="Library\DebugUI\Common\EditorCommon.cpp" />
     <ClCompile Include="Library\DebugUI\Common\ImGuiPropertyInspector.cpp" />
@@ -687,6 +688,7 @@
     <ClInclude Include="Library\DebugUI\Asset\AssetTools.h" />
     <ClInclude Include="Library\DebugUI\Asset\AssetUsesPanel.h" />
     <ClInclude Include="Library\DebugUI\Asset\ModelAnimationEditor.h" />
+    <ClInclude Include="Library\DebugUI\Asset\SoundEditor.h" />
     <ClInclude Include="Library\DebugUI\Asset\SpriteSheetEditor.h" />
     <ClInclude Include="Library\DebugUI\Common\EditorCommon.h" />
     <ClInclude Include="Library\DebugUI\Common\ImGuiPropertyInspector.h" />

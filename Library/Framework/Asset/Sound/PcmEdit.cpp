@@ -32,10 +32,111 @@ namespace
 		return Sum / static_cast<float32>( Pcm.Channels );
 	}
 
-	float32 FadeGain( float32 T, EFadeCurve Curve )
+	float32 FadeGain( float32 T, EPcmFadeCurve Curve )
 	{
 		T = NMath::Clamp( T, 0.0f, 1.0f );
-		return Curve == EFadeCurve::Smooth ? 0.5f - 0.5f * NMath::Cos( NMath::PI * T ) : T;
+		return Curve == EPcmFadeCurve::Smooth ? 0.5f - 0.5f * NMath::Cos( NMath::PI * T ) : T;
+	}
+}
+
+bool NPcmEdit::Remove( const FPcmBuffer& In, int64 Start, int64 End, int64 CrossfadeFrames, FPcmBuffer& Out )
+{
+	if ( !In.IsValid() )
+	{
+		return false;
+	}
+	const FFrameRange Range = ClampRange( In, Start, End );
+	const int64 Frames = In.GetFrameCount();
+	if ( Range.IsEmpty() || Range.GetLength() >= Frames )
+	{
+		return false;
+	}
+	const int64 Fade = NMath::Min( NMath::Min( NMath::Max<int64>( CrossfadeFrames, 0 ), Range.Start ), Frames - Range.End );
+	FPcmBuffer Result;
+	Result.SampleRate = In.SampleRate;
+	Result.Channels = In.Channels;
+	const int32 Channels = In.Channels;
+	// 前の部分（混ぜる所の手前まで）
+	for ( int64 Index = 0; Index < ( Range.Start - Fade ) * Channels; ++Index )
+	{
+		Result.Samples.Add( In.Samples[static_cast<int32>( Index )] );
+	}
+	// つなぎ目: 削る前の末尾から、削ったあとの先頭へ
+	for ( int64 Step = 0; Step < Fade; ++Step )
+	{
+		const float32 T = static_cast<float32>( Step + 1 ) / static_cast<float32>( Fade + 1 );
+		for ( int32 Channel = 0; Channel < Channels; ++Channel )
+		{
+			const float32 Left = Finite( In.Samples[static_cast<int32>( ( Range.Start - Fade + Step ) * Channels + Channel )] );
+			const float32 Right = Finite( In.Samples[static_cast<int32>( ( Range.End + Step ) * Channels + Channel )] );
+			Result.Samples.Add( Left * ( 1.0f - T ) + Right * T );
+		}
+	}
+	// 後ろの部分
+	for ( int64 Index = ( Range.End + Fade ) * Channels; Index < Frames * Channels; ++Index )
+	{
+		Result.Samples.Add( In.Samples[static_cast<int32>( Index )] );
+	}
+	Out = Result;
+	return true;
+}
+
+bool NPcmEdit::Replace( const FPcmBuffer& In, int64 Start, int64 End, const FPcmBuffer& With, FPcmBuffer& Out )
+{
+	if ( !In.IsValid() )
+	{
+		return false;
+	}
+	const bool bHasWith = !With.Samples.IsEmpty();
+	if ( bHasWith && ( !With.IsValid() || With.SampleRate != In.SampleRate || With.Channels != In.Channels ) )
+	{
+		return false;
+	}
+	const FFrameRange Range = ClampRange( In, Start, End );
+	FPcmBuffer Result;
+	Result.SampleRate = In.SampleRate;
+	Result.Channels = In.Channels;
+	for ( int64 Index = 0; Index < Range.Start * In.Channels; ++Index )
+	{
+		Result.Samples.Add( In.Samples[static_cast<int32>( Index )] );
+	}
+	if ( bHasWith )
+	{
+		for ( const float32 Sample : With.Samples )
+		{
+			Result.Samples.Add( Sample );
+		}
+	}
+	for ( int64 Index = Range.End * In.Channels; Index < In.Samples.Num(); ++Index )
+	{
+		Result.Samples.Add( In.Samples[static_cast<int32>( Index )] );
+	}
+	if ( Result.Samples.IsEmpty() )
+	{
+		return false;
+	}
+	Out = Result;
+	return true;
+}
+
+void NPcmEdit::ApplyGainRamp( FPcmBuffer& Pcm, float32 StartGain, float32 EndGain, int64 Start, int64 End, bool bInDecibels )
+{
+	if ( !NMath::IsFinite( StartGain ) || !NMath::IsFinite( EndGain ) || Pcm.Channels < 1 )
+	{
+		return;
+	}
+	const FFrameRange Range = ClampRange( Pcm, Start, End );
+	const int64 Length = Range.GetLength();
+	const bool bRatio = bInDecibels && StartGain > 0.0f && EndGain > 0.0f;
+	for ( int64 Frame = Range.Start; Frame < Range.End; ++Frame )
+	{
+		const float32 T = Length > 1 ? static_cast<float32>( Frame - Range.Start ) / static_cast<float32>( Length - 1 ) : 0.0f;
+		const float32 Gain = bRatio ? StartGain * NMath::Pow( EndGain / StartGain, T ) : StartGain + ( EndGain - StartGain ) * T;
+		for ( int32 Channel = 0; Channel < Pcm.Channels; ++Channel )
+		{
+			float32& Sample = Pcm.Samples[static_cast<int32>( Frame * Pcm.Channels + Channel )];
+			Sample = Finite( Sample ) * Gain;
+		}
 	}
 }
 
@@ -112,7 +213,7 @@ bool NPcmEdit::Normalize( FPcmBuffer& Pcm, float32 TargetPeak )
 	return true;
 }
 
-void NPcmEdit::FadeIn( FPcmBuffer& Pcm, int64 Frames, EFadeCurve Curve )
+void NPcmEdit::FadeIn( FPcmBuffer& Pcm, int64 Frames, EPcmFadeCurve Curve )
 {
 	const int64 Total = Pcm.GetFrameCount();
 	Frames = NMath::Min( Frames, Total );
@@ -127,7 +228,7 @@ void NPcmEdit::FadeIn( FPcmBuffer& Pcm, int64 Frames, EFadeCurve Curve )
 	}
 }
 
-void NPcmEdit::FadeOut( FPcmBuffer& Pcm, int64 Frames, EFadeCurve Curve )
+void NPcmEdit::FadeOut( FPcmBuffer& Pcm, int64 Frames, EPcmFadeCurve Curve )
 {
 	const int64 Total = Pcm.GetFrameCount();
 	Frames = NMath::Min( Frames, Total );
@@ -189,6 +290,95 @@ TArray<FFrameRange> NPcmEdit::FindClippedRanges( const FPcmBuffer& Pcm, float32 
 		}
 	}
 	return Result;
+}
+
+TArray<FFrameRange> NPcmEdit::FindSilentRanges( const FPcmBuffer& Pcm, float32 Threshold, int64 MinFrames )
+{
+	TArray<FFrameRange> Result;
+	if ( !Pcm.IsValid() )
+	{
+		return Result;
+	}
+	MinFrames = NMath::Max<int64>( MinFrames, 1 );
+	const int64 Frames = Pcm.GetFrameCount();
+	int64 RunStart = -1;
+	for ( int64 Frame = 0; Frame <= Frames; ++Frame )
+	{
+		bool bSilent = Frame < Frames;
+		if ( bSilent )
+		{
+			for ( int32 Channel = 0; Channel < Pcm.Channels; ++Channel )
+			{
+				const float32 Value = Pcm.Samples[static_cast<int32>( Frame * Pcm.Channels + Channel )];
+				if ( NMath::IsFinite( Value ) && NMath::Abs( Value ) > Threshold )
+				{
+					bSilent = false;
+					break;
+				}
+			}
+		}
+		if ( bSilent )
+		{
+			if ( RunStart < 0 )
+			{
+				RunStart = Frame;
+			}
+		}
+		else if ( RunStart >= 0 )
+		{
+			if ( Frame - RunStart >= MinFrames )
+			{
+				FFrameRange Range;
+				Range.Start = RunStart;
+				Range.End = Frame;
+				Result.Add( Range );
+			}
+			RunStart = -1;
+		}
+	}
+	return Result;
+}
+
+bool NPcmEdit::CollapseSilence( const FPcmBuffer& In, float32 Threshold, int64 MinSilenceFrames, int64 KeepFrames, FPcmBuffer& Out, int64* OutRemovedFrames )
+{
+	KeepFrames = NMath::Max<int64>( KeepFrames, 0 );
+	const TArray<FFrameRange> Silences = FindSilentRanges( In, Threshold, NMath::Max<int64>( MinSilenceFrames, KeepFrames + 1 ) );
+	if ( Silences.Num() == 0 )
+	{
+		return false;
+	}
+	FPcmBuffer Result;
+	Result.SampleRate = In.SampleRate;
+	Result.Channels = In.Channels;
+	const int32 Channels = In.Channels;
+	int64 Removed = 0;
+	int64 Copied = 0;   // ここまでは、Result に入れた（In のフレーム）
+	const auto CopyFrames = [&]( int64 From, int64 To )
+	{
+		for ( int64 Index = From * Channels; Index < To * Channels; ++Index )
+		{
+			Result.Samples.Add( In.Samples[static_cast<int32>( Index )] );
+		}
+	};
+	for ( const FFrameRange& Silence : Silences )
+	{
+		const int64 Head = KeepFrames / 2;
+		const int64 Tail = KeepFrames - Head;
+		CopyFrames( Copied, Silence.Start + Head );
+		Copied = Silence.End - Tail;
+		Removed += Silence.GetLength() - KeepFrames;
+	}
+	CopyFrames( Copied, In.GetFrameCount() );
+	if ( Result.Samples.IsEmpty() )
+	{
+		return false;
+	}
+	Out = Result;
+	if ( OutRemovedFrames != nullptr )
+	{
+		*OutRemovedFrames = Removed;
+	}
+	return true;
 }
 
 FFrameRange NPcmEdit::FindAudibleRange( const FPcmBuffer& Pcm, float32 Threshold )

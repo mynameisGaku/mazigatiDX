@@ -59,7 +59,7 @@ void NWorldEditorUI::RescanFiles( FWorldEditorState& S, bool bForce )
 	const FString Root = Assets->GetRootDirectory();
 	S.ModelFiles = NFileSystem::ListFilesRecursive( Root, NModelFormat::GetAllModelExtensions() );
 	S.TextureFiles = NFileSystem::ListFilesRecursive( Root, { ".png", ".jpg", ".jpeg", ".bmp", ".tga", ".dds" } );
-	S.SoundFiles = NFileSystem::ListFilesRecursive( Root, { ".wav", ".ogg", ".mp3" } );
+	S.SoundFiles = NFileSystem::ListFilesRecursive( Root, Assets->GetReadableSoundExtensions() );
 	S.AnimationFiles = NFileSystem::ListFilesRecursive( Root, { ".gxmodelanim" } );
 	S.WorldFiles = NFileSystem::ListFilesRecursive( Root, { ".gxworld" } );
 	S.EffectFiles = NFileSystem::ListFilesRecursive( Root, { ".gxeffect" } );
