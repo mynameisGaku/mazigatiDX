@@ -32,6 +32,31 @@ void CAISample::OnEnter()
 	{
 		Guard->SetTarget( Hero->GetId() );
 	}
+
+	// 同じ C++ のクラス（CAIGuard）に、別のツリー（JSON）を渡すだけで、別の敵・NPC になる（コードは書かない）:
+	//   Scout = 遠くから見つけて、近づきすぎずに付きまとう偵察兵（Scout.gxbt）。Villager = 巡回するだけの村人（Villager.gxbt。何も追わない）
+	const TSharedPtr<CAIGuard> Scout = SpawnObject<CAIGuard>( FVector2( 1130.0f, 440.0f ), FString( "AI/Scout.gxbt" ), FString( "Scout" ), FColor32( 240, 210, 90 ) );
+	if ( Hero.IsValid() && Scout.IsValid() )
+	{
+		Scout->SetTarget( Hero->GetId() );
+	}
+	SpawnObject<CAIGuard>( FVector2( 640.0f, 580.0f ), FString( "AI/Villager.gxbt" ), FString( "Villager" ), FColor32( 120, 200, 130 ) );
+
+	// 負荷の確認用の起動引数 --ai-count=300: 見張りを、さらに指定した数だけ、舞台いっぱいに出す（プロファイラーで、AI の更新の時間を見る）
+	if ( const TOptional<FString> Requested = NCommandLine::GetValue( "ai-count" ) )
+	{
+		const int32 Count = Requested.GetValue().ToInt();
+		for ( int32 Index = 0; Index < Count; ++Index )
+		{
+			const float32 X = CAIActor::ArenaMin.x + static_cast<float32>( ( Index * 37 ) % 1150 );
+			const float32 Y = CAIActor::ArenaMin.y + 40.0f + static_cast<float32>( ( Index * 53 ) % 380 );
+			const TSharedPtr<CAIGuard> Extra = SpawnObject<CAIGuard>( FVector2( X, Y ) );
+			if ( Hero.IsValid() && Extra.IsValid() )
+			{
+				Extra->SetTarget( Hero->GetId() );
+			}
+		}
+	}
 }
 
 void CAISample::OnSampleDraw( FImmediateDraw& Screen )
@@ -45,6 +70,6 @@ void CAISample::OnSampleDraw( FImmediateDraw& Screen )
 
 	Screen.Text( 16, 56, "A / D (arrows): walk    Space / J: attack", FColor32::Gray );
 	Screen.Text( 16, 76, "Hero = state machine (Hero.gxstate)", FColor32::Gray );
-	Screen.Text( 16, 96, "Guard = behavior tree (Guard.gxbt)", FColor32::Gray );
-	Screen.Text( 16, 116, "F1 > AI debugger shows the states, nodes and blackboard", FColor32::Gray );
+	Screen.Text( 16, 96, "Guard / Scout / Villager = the same C++ class with three behavior trees (Guard.gxbt, Scout.gxbt, Villager.gxbt)", FColor32::Gray );
+	Screen.Text( 16, 116, "F1 > AI debugger shows the states, nodes and blackboard.  AI editor edits the files (a saved file is reloaded while running)", FColor32::Gray );
 }

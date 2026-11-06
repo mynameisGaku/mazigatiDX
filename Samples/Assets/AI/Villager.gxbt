@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Blackboard": "AI/Guard.gxblackboard",
+  "Root": {
+    "Type": "Sequence",
+    "Name": "Stroll",
+    "Children": [
+      { "Do": "MoveToPatrolPoint", "Params": { "Speed": 45, "Range": 140 } },
+      { "Do": "Wait", "Params": { "Seconds": 2.0 } }
+    ]
+  }
+}

@@ -14,7 +14,8 @@ class CBehaviorTreeComponent;
 class CAIGuard : public CAIActor
 {
 public:
-	CAIGuard( const FVector2& InPosition );
+	// TreePath: 使うビヘイビアツリー。同じクラスのまま、ツリー（JSON）を変えるだけで、見張り・偵察兵・村人のような別の敵・NPC になる（コードは書かない）
+	CAIGuard( const FVector2& InPosition, const FString& InTreePath = "AI/Guard.gxbt", const FString& InName = "Guard", const FColor32& InColor = FColor32( 235, 120, 90 ) );
 
 	void OnSpawn() override;
 
@@ -27,5 +28,6 @@ protected:
 	void OnDamaged() override;
 
 private:
+	FString TreePath;
 	CBehaviorTreeComponent* Brain = nullptr;
 };

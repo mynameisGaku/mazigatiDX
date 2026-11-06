@@ -3,8 +3,9 @@
 
 #include "Library/Framework/AI/BehaviorTreeComponent.h"
 
-CAIGuard::CAIGuard( const FVector2& InPosition )
-	: CAIActor( "Guard", InPosition, FColor32( 235, 120, 90 ) )
+CAIGuard::CAIGuard( const FVector2& InPosition, const FString& InTreePath, const FString& InName, const FColor32& InColor )
+	: CAIActor( InName, InPosition, InColor )
+	, TreePath( InTreePath )
 {
 	Hp = 8;
 	Facing = -1.0f;
@@ -12,7 +13,7 @@ CAIGuard::CAIGuard( const FVector2& InPosition )
 
 void CAIGuard::OnSpawn()
 {
-	Brain = AddComponent<CBehaviorTreeComponent>( "AI/Guard.gxbt" );
+	Brain = AddComponent<CBehaviorTreeComponent>( TreePath );
 	Brain->SetAnimationControl( this );
 	// すぐ読み込む（ブラックボードを、最初のフレームから使えるように）
 	Brain->Load();

@@ -389,6 +389,14 @@ if ( Animator.ConsumeRootMotion( ReferenceToActorBasis, RootTranslation, RootRot
 |部品のパラメータを編集する|Task・Condition・Service・ステートの処理は、名前を一覧から選ぶと、パラメータの入力欄がスキーマから自動で出ます（範囲つきはスライダー、ブラックボードのキーは一覧、説明はマウスを置くと出ます）。登録されていない名前は赤で出ます|
 |問題を調べる|下のIssuesに、部品の名前・ブラックボードのキー・構造の問題が出ます（保存する前に直せます）。**問題の行をクリックすると、該当のノード・ステート・遷移が選ばれて、グラフがそこへ寄ります**|
 
+### AIのサンプルと負荷
+
+|知りたいこと|内容|
+|---|---|
+|サンプル|Samplesの`AI`サンプル。Hero（`Hero.gxstate`。ステートマシン）、Guard（`Guard.gxbt`）、Scout（`Scout.gxbt`）、Villager（`Villager.gxbt`）が出ます。**Guard・Scout・Villagerは、同じC++のクラス（`CAIGuard`）に、別のツリー（JSON）を渡しているだけ**で、敵やNPCの種類を、コードを書かずに（JSONとエディタだけで）増やせます|
+|多数のAIを出して負荷を見る|`--ai-count=300`で、見張りをさらに300体出します（F2のプロファイラーで、AIの更新の時間を見ます）|
+|負荷の目安|1000個のビヘイビアツリーと1000個のステートマシンを、同じ定義から作って動かした、1フレーム分の更新（Releaseで約0.12 ms、Debugで約0.7 ms。検査の`ai-load`が、ログに出します）。定義は共有され、インスタンスが持つのは状態とブラックボードだけです|
+
 ホットリロード: `NAI::ReloadAsset( Scene, パス )`が、そのアセット（`.gxstate` / `.gxbt` / `.gxblackboard`）を使っているコンポーネントを読み直します（`CStateMachineComponent::Reload` / `CBehaviorTreeComponent::Reload`。`Library/Framework/AI/AIHotReload.h`）。読めなければ元のまま動き続けます。ブラックボードは作り直して、キー名と型が同じ値を引き継ぎ（共有は保ちます）、動いていたステートマシン・ツリーは最初から動かし直します。エディタは、保存のたびに呼びます。
 
 ## ムービー

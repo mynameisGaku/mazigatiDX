@@ -1,0 +1,44 @@
+{
+  "Version": 1,
+  "Blackboard": "AI/Guard.gxblackboard",
+  "Root": {
+    "Type": "Selector",
+    "Name": "Brain",
+    "Services": [
+      { "Do": "SensePlayer", "Interval": 0.1, "Params": { "SightRange": 520, "AttackRange": 60 } }
+    ],
+    "Children": [
+      {
+        "Type": "Sequence",
+        "Name": "Hurt",
+        "Decorators": [
+          { "Type": "BlackboardCondition", "Key": "bHurt", "Op": "==", "Value": true, "Abort": "LowerPriority" }
+        ],
+        "Children": [
+          { "Do": "PlayClip", "Params": { "Clip": "Hurt", "WaitUntilFinished": true } },
+          { "Do": "SetBlackboard", "Params": { "Key": "bHurt", "Value": false } }
+        ]
+      },
+      {
+        "Type": "Sequence",
+        "Name": "Shadow",
+        "Decorators": [
+          { "Type": "BlackboardCondition", "Key": "HasTarget", "Op": "==", "Value": true, "Abort": "Both" }
+        ],
+        "Children": [
+          { "Do": "MoveToTarget", "Params": { "Speed": 200, "AcceptRange": 150 } },
+          { "Do": "FaceTarget" },
+          { "Do": "Wait", "Params": { "Seconds": 0.2 } }
+        ]
+      },
+      {
+        "Type": "Sequence",
+        "Name": "Scout",
+        "Children": [
+          { "Do": "MoveToPatrolPoint", "Params": { "Speed": 120, "Range": 320 } },
+          { "Do": "Wait", "Params": { "Seconds": 0.3 } }
+        ]
+      }
+    ]
+  }
+}
