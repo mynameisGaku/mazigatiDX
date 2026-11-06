@@ -69,7 +69,9 @@ bool FNodeGraphCanvas::Begin( const char* Id, FNodeGraphView& InView, const ImVe
 	const bool bActive = ImGui::IsItemActive();
 
 	// 全体が収まるように合わせる（最初と、グラフの大きさが変わったとき）
-	if ( !View->bFitted || View->FittedContent.x != ContentSize.x || View->FittedContent.y != ContentSize.y )
+	// （ノードを動かしているあいだは、グラフが広がっても合わせ直さない。拡大率が変わると、マウスの動きとずれる）
+	const bool bChangedSize = View->FittedContent.x != ContentSize.x || View->FittedContent.y != ContentSize.y || NMath::Abs( View->FittedCanvas.x - CanvasSize.x ) > 2.0f || NMath::Abs( View->FittedCanvas.y - CanvasSize.y ) > 2.0f;
+	if ( !View->bFitted || ( bChangedSize && !View->bPanBlocked ) )
 	{
 		const float ZoomX = CanvasSize.x / NMath::Max( ContentSize.x + FitMargin * 2.0f, 1.0f );
 		const float ZoomY = CanvasSize.y / NMath::Max( ContentSize.y + FitMargin * 2.0f, 1.0f );
@@ -77,11 +79,12 @@ bool FNodeGraphCanvas::Begin( const char* Id, FNodeGraphView& InView, const ImVe
 		View->Pan = ImVec2( ( CanvasSize.x / View->Zoom - ContentSize.x ) * 0.5f, ( CanvasSize.y / View->Zoom - ContentSize.y ) * 0.5f );
 		View->bFitted = true;
 		View->FittedContent = ContentSize;
+		View->FittedCanvas = CanvasSize;
 	}
 
 	const ImGuiIO& IO = ImGui::GetIO();
 	// パン: ドラッグ（左か中ボタン）
-	if ( bActive && ( ImGui::IsMouseDragging( ImGuiMouseButton_Left, 0.0f ) || ImGui::IsMouseDragging( ImGuiMouseButton_Middle, 0.0f ) ) )
+	if ( bActive && ( ( ImGui::IsMouseDragging( ImGuiMouseButton_Left, 0.0f ) && !View->bPanBlocked ) || ImGui::IsMouseDragging( ImGuiMouseButton_Middle, 0.0f ) ) )
 	{
 		View->Pan = Plus( View->Pan, Scale( IO.MouseDelta, 1.0f / View->Zoom ) );
 	}
@@ -244,6 +247,21 @@ bool FNodeGraphCanvas::DrawElbowArrow( const ImVec2* Points, int32 NumPoints, Im
 		}
 	}
 	return false;
+}
+
+ImVec2 FNodeGraphCanvas::ToWorld( const ImVec2& Screen ) const
+{
+	return ImVec2( ( Screen.x - Origin.x ) / View->Zoom - View->Pan.x, ( Screen.y - Origin.y ) / View->Zoom - View->Pan.y );
+}
+
+void FNodeGraphCanvas::DrawOutline( const ImVec2& WorldMin, const ImVec2& WorldSize, ImU32 Color, float Thickness, float Rounding )
+{
+	DrawList->AddRect( ToScreen( WorldMin ), ToScreen( Plus( WorldMin, WorldSize ) ), Color, Rounding * View->Zoom, 0, Thickness );
+}
+
+void FNodeGraphCanvas::DrawLine( const ImVec2& WorldA, const ImVec2& WorldB, ImU32 Color, float Thickness )
+{
+	DrawList->AddLine( ToScreen( WorldA ), ToScreen( WorldB ), Color, Thickness );
 }
 
 void FNodeGraphCanvas::DrawDot( const ImVec2& WorldPos, ImU32 Color, float Radius )

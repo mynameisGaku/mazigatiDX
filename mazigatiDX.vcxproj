@@ -76,8 +76,14 @@
     <ClCompile Include="Library\Core\Types\Checksum.cpp" />
     <ClCompile Include="Library\DebugUI\DebugOverlay.cpp" />
     <ClCompile Include="Library\DebugUI\AI\AIDebugger.cpp" />
+    <ClCompile Include="Library\DebugUI\AI\AIEditor.cpp" />
+    <ClCompile Include="Library\DebugUI\AI\AIEditorBehaviorTree.cpp" />
+    <ClCompile Include="Library\DebugUI\AI\AIEditorBlackboard.cpp" />
+    <ClCompile Include="Library\DebugUI\AI\AIEditorParts.cpp" />
+    <ClCompile Include="Library\DebugUI\AI\AIEditorStateMachine.cpp" />
     <ClCompile Include="Library\DebugUI\AI\AIGraphLayout.cpp" />
     <ClCompile Include="Library\DebugUI\AI\AIGraphViews.cpp" />
+    <ClCompile Include="Library\DebugUI\AI\AIParamInspector.cpp" />
     <ClCompile Include="Library\DebugUI\AI\NodeGraph.cpp" />
     <ClCompile Include="Library\DebugUI\Asset\AssetTools.cpp" />
     <ClCompile Include="Library\DebugUI\Asset\ModelAnimationEditor.cpp" />
@@ -109,6 +115,7 @@
     <ClCompile Include="Library\DebugUI\World\WorldEditorPanels.cpp" />
     <ClCompile Include="Library\DebugUI\World\WorldEditorViewport.cpp" />
     <ClCompile Include="Library\Framework\AI\AIBlackboardSetup.cpp" />
+    <ClCompile Include="Library\Framework\AI\AIHotReload.cpp" />
     <ClCompile Include="Library\Framework\AI\AIIssue.cpp" />
     <ClCompile Include="Library\Framework\AI\BehaviorTreeComponent.cpp" />
     <ClCompile Include="Library\Framework\AI\StateMachineComponent.cpp" />
@@ -660,8 +667,11 @@
     <ClInclude Include="Library\Core\Types\Utility.h" />
     <ClInclude Include="Library\DebugUI\DebugOverlay.h" />
     <ClInclude Include="Library\DebugUI\AI\AIDebugger.h" />
+    <ClInclude Include="Library\DebugUI\AI\AIEditor.h" />
+    <ClInclude Include="Library\DebugUI\AI\AIEditorInternal.h" />
     <ClInclude Include="Library\DebugUI\AI\AIGraphLayout.h" />
     <ClInclude Include="Library\DebugUI\AI\AIGraphViews.h" />
+    <ClInclude Include="Library\DebugUI\AI\AIParamInspector.h" />
     <ClInclude Include="Library\DebugUI\AI\NodeGraph.h" />
     <ClInclude Include="Library\DebugUI\Asset\AssetTools.h" />
     <ClInclude Include="Library\DebugUI\Asset\ModelAnimationEditor.h" />
@@ -685,6 +695,7 @@
     <ClInclude Include="Library\DebugUI\World\WorldEditorModelPreviewKey.h" />
     <ClInclude Include="Library\Framework\AI\AIBlackboardSetup.h" />
     <ClInclude Include="Library\Framework\AI\AIContext.h" />
+    <ClInclude Include="Library\Framework\AI\AIHotReload.h" />
     <ClInclude Include="Library\Framework\AI\AIIssue.h" />
     <ClInclude Include="Library\Framework\AI\AILog.h" />
     <ClInclude Include="Library\Framework\AI\BehaviorTreeComponent.h" />

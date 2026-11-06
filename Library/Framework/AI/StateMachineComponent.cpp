@@ -4,6 +4,7 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Thread/GameThread.h"
 #include "Library/Framework/AI/AIBlackboardSetup.h"
+#include "Library/Framework/AI/AIHotReload.h"
 #include "Library/Framework/AI/AILog.h"
 #include "Library/Framework/AI/BehaviorTreeComponent.h"
 #include "Library/Framework/Asset/AssetSubsystem.h"
@@ -81,6 +82,63 @@ bool CStateMachineComponent::SetDefinition( const TSharedPtr<const FStateMachine
 		Blackboard = MakeShared<CBlackboard>( BlackboardDefinition );
 	}
 	return BuildMachine( Definition );
+}
+
+bool CStateMachineComponent::Reload( FAIReloadContext& Context )
+{
+	CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
+	return Assets != nullptr && Reload( *Assets, Context );
+}
+
+bool CStateMachineComponent::Reload( CAssetSubsystem& AssetSubsystem, FAIReloadContext& Context )
+{
+	GAME_THREAD_ONLY( false );
+	CAssetSubsystem* Assets = &AssetSubsystem;
+	if ( Path.IsEmpty() || !bTriedLoad )
+	{
+		return false;
+	}
+	// 読めなければ、元のまま動き続ける
+	const TSharedPtr<CStateMachineAsset> Asset = Assets->LoadStateMachine( Path );
+	if ( !Asset.IsValid() )
+	{
+		return false;
+	}
+	const bool bWasRunning = IsRunning();
+	Stop();
+
+	// ブラックボード: 同じオブジェクトの相手が作り直したものがあれば共有し、無ければ作り直して、キー名と型が同じ値を引き継ぐ
+	const FString NewBlackboardPath = Asset->GetDefinition().Blackboard;
+	if ( bShareBlackboard && Context.Blackboard.IsValid() && Context.BlackboardPath == NewBlackboardPath )
+	{
+		Blackboard = Context.Blackboard;
+	}
+	else
+	{
+		TSharedPtr<CBlackboard> Fresh = NAI::CreateBlackboard( *Assets, NewBlackboardPath, Path );
+		if ( Fresh.IsValid() )
+		{
+			if ( Blackboard.IsValid() )
+			{
+				Fresh->CopyMatchingValuesFrom( *Blackboard );
+			}
+			Blackboard = Fresh;
+			if ( bShareBlackboard )
+			{
+				Context.BlackboardPath = NewBlackboardPath;
+				Context.Blackboard = Fresh;
+			}
+		}
+	}
+	BlackboardPath = NewBlackboardPath;
+	Issues = Asset->GetLoadIssues();
+	Machine.Reset();
+	const bool bBuilt = BuildMachine( Asset->GetDefinitionShared() );
+	if ( bBuilt && bWasRunning )
+	{
+		Start();
+	}
+	return bBuilt;
 }
 
 bool CStateMachineComponent::BuildMachine( const TSharedPtr<const FStateMachineDefinition>& Definition )

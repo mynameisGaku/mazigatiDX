@@ -34,10 +34,28 @@
     <ClCompile Include="Library\DebugUI\AI\AIDebugger.cpp">
       <Filter>Library\DebugUI\AI</Filter>
     </ClCompile>
+    <ClCompile Include="Library\DebugUI\AI\AIEditor.cpp">
+      <Filter>Library\DebugUI\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\AI\AIEditorBehaviorTree.cpp">
+      <Filter>Library\DebugUI\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\AI\AIEditorBlackboard.cpp">
+      <Filter>Library\DebugUI\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\AI\AIEditorParts.cpp">
+      <Filter>Library\DebugUI\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\AI\AIEditorStateMachine.cpp">
+      <Filter>Library\DebugUI\AI</Filter>
+    </ClCompile>
     <ClCompile Include="Library\DebugUI\AI\AIGraphLayout.cpp">
       <Filter>Library\DebugUI\AI</Filter>
     </ClCompile>
     <ClCompile Include="Library\DebugUI\AI\AIGraphViews.cpp">
+      <Filter>Library\DebugUI\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\AI\AIParamInspector.cpp">
       <Filter>Library\DebugUI\AI</Filter>
     </ClCompile>
     <ClCompile Include="Library\DebugUI\AI\NodeGraph.cpp">
@@ -131,6 +149,9 @@
       <Filter>Library\DebugUI\World</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\AI\AIBlackboardSetup.cpp">
+      <Filter>Library\Framework\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\AI\AIHotReload.cpp">
       <Filter>Library\Framework\AI</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\AI\AIIssue.cpp">
@@ -1782,10 +1803,19 @@
     <ClInclude Include="Library\DebugUI\AI\AIDebugger.h">
       <Filter>Library\DebugUI\AI</Filter>
     </ClInclude>
+    <ClInclude Include="Library\DebugUI\AI\AIEditor.h">
+      <Filter>Library\DebugUI\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\DebugUI\AI\AIEditorInternal.h">
+      <Filter>Library\DebugUI\AI</Filter>
+    </ClInclude>
     <ClInclude Include="Library\DebugUI\AI\AIGraphLayout.h">
       <Filter>Library\DebugUI\AI</Filter>
     </ClInclude>
     <ClInclude Include="Library\DebugUI\AI\AIGraphViews.h">
+      <Filter>Library\DebugUI\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\DebugUI\AI\AIParamInspector.h">
       <Filter>Library\DebugUI\AI</Filter>
     </ClInclude>
     <ClInclude Include="Library\DebugUI\AI\NodeGraph.h">
@@ -1855,6 +1885,9 @@
       <Filter>Library\Framework\AI</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\AI\AIContext.h">
+      <Filter>Library\Framework\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\AI\AIHotReload.h">
       <Filter>Library\Framework\AI</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\AI\AIIssue.h">

@@ -33,6 +33,10 @@ struct FNodeGraphView
 	bool bFitted = false;
 	// 合わせたときの、グラフ全体の大きさ（変わったら、合わせ直す）
 	ImVec2 FittedContent = ImVec2( 0.0f, 0.0f );
+	// 合わせたときの、キャンバスの大きさ（ウィンドウの大きさが変わったら、合わせ直す）
+	ImVec2 FittedCanvas = ImVec2( 0.0f, 0.0f );
+	// true の間は、ドラッグでパンしない（ノードを動かすなど、キャンバスの上の操作が優先されるとき。エディタが、毎フレーム、次のフレームの分を設定する）
+	bool bPanBlocked = false;
 };
 
 class FNodeGraphCanvas
@@ -45,6 +49,8 @@ public:
 	void End();
 
 	ImVec2 ToScreen( const ImVec2& World ) const;
+	// 画面の座標から、ワールド座標へ
+	ImVec2 ToWorld( const ImVec2& Screen ) const;
 	float GetZoom() const { return View != nullptr ? View->Zoom : 1.0f; }
 	// マウスが、キャンバスの上にあるか
 	bool IsHovered() const { return bHovered; }
@@ -64,6 +70,9 @@ public:
 	bool DrawRelay( const ImVec2& WorldPos, ImU32 Color, float Radius = 5.0f );
 	// 塗りつぶした小さな点（UML の初期状態の印。入口の矢印の始点に使う）
 	void DrawDot( const ImVec2& WorldPos, ImU32 Color, float Radius = 4.0f );
+	// 枠だけ（選択・ドロップ先の強調など）。線（ドロップ位置の印など）
+	void DrawOutline( const ImVec2& WorldMin, const ImVec2& WorldSize, ImU32 Color, float Thickness, float Rounding = 6.0f );
+	void DrawLine( const ImVec2& WorldA, const ImVec2& WorldB, ImU32 Color, float Thickness );
 
 private:
 	FNodeGraphView* View = nullptr;

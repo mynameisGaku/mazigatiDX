@@ -376,7 +376,20 @@ if ( Animator.ConsumeRootMotion( ReferenceToActorBasis, RootTranslation, RootRot
 |部分木のコピー・貼り付け|`CopySubtree`（`.gxbt`と同じ書式のJSON）・`PasteSubtree`|
 |キーの改名に合わせて参照を直す|`NStateMachineEdit::RenameBlackboardKey` / `NBehaviorTreeEdit::RenameBlackboardKey`（条件・デコレーターの`Key`を直す。部品のパラメータの中は直さない）。使用数は`CountBlackboardKeyUsage`|
 
-エディタの画面（グラフの編集・インスペクタ・検証）は、これから足します。
+### AIエディタ
+
+デバッグウィンドウの「AI editor」で開きます（`--tool=aieditor`で最初から開き、`--ai-file=AI/Guard.gxbt`でファイルも開けます）。画面は`Library/DebugUI/AI/AIEditor*.cpp`で、編集の中身は上の編集関数です。タブは3つ（Behavior Tree / State Machine / Blackboard）で、タブごとに、開いているファイルと、元に戻す・やり直す（Ctrl+Z / Ctrl+Y）の履歴を持ちます。
+
+|やりたいこと|操作|
+|---|---|
+|ファイルを開く・保存する|File > New / Open... / Save（Ctrl+S）/ Save as...。別のファイルを開く・新規のときは、未保存の変更を確認します。保存すると、動いているシーンのAIにも反映されます（ホットリロード）|
+|ブラックボードを編集する|Blackboardタブの表で、名前・型・既定値・Trigger・Enumの選択肢を編集します。名前は入力が終わったときに改名され、開いているステートマシン・ツリーの参照も直ります。使われているキーを消すときは確認が出ます|
+|ビヘイビアツリーを編集する|ノードをクリックで選び、右クリックのメニューで子の追加（Selector / Sequence / Parallel / 登録したTask）・デコレーター・サービスの追加・包む・種類の変更・コピー・貼り付け・複製・削除をします（Del / Ctrl+C / Ctrl+V / Ctrl+Dも使えます）。ノードを別のノードへドラッグすると動かせます（左1/4 = その前、右1/4 = その後ろ、真ん中 = その子の最後。兄弟の順が優先順位です）|
+|ステートマシンを編集する|ステートをクリックで選び、ドラッグで動かします（座標は定義の`Editor`欄に保存。「Reset layout」で自動の配置に戻せます）。矢印をクリックで遷移を選びます。右クリックで、子のステート・遷移・Any State遷移の追加、入口の指定、削除ができます。ステートの入れ子は`Machine`にチェックして子を足します|
+|部品のパラメータを編集する|Task・Condition・Service・ステートの処理は、名前を一覧から選ぶと、パラメータの入力欄がスキーマから自動で出ます（範囲つきはスライダー、ブラックボードのキーは一覧、説明はマウスを置くと出ます）。登録されていない名前は赤で出ます|
+|問題を調べる|下のIssuesに、部品の名前・ブラックボードのキー・構造の問題が出ます（保存する前に直せます）|
+
+ホットリロード: `NAI::ReloadAsset( Scene, パス )`が、そのアセット（`.gxstate` / `.gxbt` / `.gxblackboard`）を使っているコンポーネントを読み直します（`CStateMachineComponent::Reload` / `CBehaviorTreeComponent::Reload`。`Library/Framework/AI/AIHotReload.h`）。読めなければ元のまま動き続けます。ブラックボードは作り直して、キー名と型が同じ値を引き継ぎ（共有は保ちます）、動いていたステートマシン・ツリーは最初から動かし直します。エディタは、保存のたびに呼びます。
 
 ## ムービー
 

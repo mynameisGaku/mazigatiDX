@@ -28,8 +28,8 @@ namespace NBehaviorTreeEdit
 	void RemoveNode( TBehaviorTreeDocument& Document, int32 NodeIndex );
 
 	// ノードを、子孫ごと、別の親の下へ動かす（同じ親の中の並べ替えもこれ。At は、動かしたあとの位置）。
-	// ルートは動かせない。自分の子孫の下・葉の下へは動かせない。動かせたら true
-	bool MoveNode( TBehaviorTreeDocument& Document, int32 NodeIndex, int32 NewParent, int32 At );
+	// ルートは動かせない。自分の子孫の下・葉の下へは動かせない。動かせたら true（OutNewIndex に、動かしたあとの、そのノードの番号を返す）
+	bool MoveNode( TBehaviorTreeDocument& Document, int32 NodeIndex, int32 NewParent, int32 At, int32* OutNewIndex = nullptr );
 
 	// ノードを、子孫ごと複製して、元のすぐ右の兄弟にする。複製のルートの番号を返す（ルートは複製できない。INDEX_NONE）
 	int32 DuplicateNode( TBehaviorTreeDocument& Document, int32 NodeIndex );

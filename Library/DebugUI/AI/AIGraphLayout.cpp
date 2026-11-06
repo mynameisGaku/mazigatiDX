@@ -187,6 +187,15 @@ namespace
 			}
 			X += Cols.Width[Layer] + NAIGraph::ColumnGap;
 		}
+		// エディタで動かしたステートは、定義の Editor 欄の座標（このマシンの中身の左上からの相対）にする
+		for ( const int32 Child : Machine.Children )
+		{
+			const NlohmannJson& Editor = Work.Definition->States[Child].Editor;
+			if ( Editor.is_object() && Editor.contains( "X" ) && Editor.contains( "Y" ) && Editor["X"].is_number() && Editor["Y"].is_number() )
+			{
+				Work.Layout->Pos[Child] = ImVec2( Origin.x + Editor["X"].get<float>(), Origin.y + Editor["Y"].get<float>() );
+			}
+		}
 		for ( const int32 Child : Machine.Children )
 		{
 			if ( Work.Definition->States[Child].bMachine )
@@ -510,6 +519,12 @@ FStateMachineGraphLayout NAIGraph::BuildStateMachineLayout( const FStateMachineD
 	Columns.SetNum( Definition.States.Num() + 1 );
 	Layout.Content = MeasureMachine( Work, Columns, -1 );
 	PlaceMachine( Work, Columns, -1, ImVec2( 0.0f, 0.0f ) );
+	// 動かしたステートが、最初の範囲の外へ出たら、グラフ全体の大きさを広げる
+	for ( int32 Index = 0; Index < Definition.States.Num(); ++Index )
+	{
+		Layout.Content.x = NMath::Max( Layout.Content.x, Layout.Pos[Index].x + Layout.Size[Index].x + NAIGraph::Padding );
+		Layout.Content.y = NMath::Max( Layout.Content.y, Layout.Pos[Index].y + Layout.Size[Index].y + NAIGraph::Padding );
+	}
 
 	// 矢印の一覧
 	TArray<FEdgeInfo> Edges;

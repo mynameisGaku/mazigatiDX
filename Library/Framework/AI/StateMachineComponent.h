@@ -10,6 +10,7 @@
 #include "Library/Framework/Component/Component.h"
 
 class CAssetSubsystem;
+struct FAIReloadContext;
 
 //=============================================================================
 // CStateMachineComponent
@@ -68,6 +69,10 @@ public:
 	// Path のステートマシンを読み込み、ブラックボードを作り、コンパイルする（まだ始めない）。失敗したら false
 	bool Load();
 	bool Load( CAssetSubsystem& Assets );
+	// 保存し直したアセットを読み直して、動いたまま差し替える（ホットリロード。AIHotReload.h）。読めなければ、元のまま動き続けて false。
+	// ブラックボードは作り直して値を引き継ぎ、動いていたステートマシンは、最初から動かし直す。Context は、同じオブジェクトの部品どうしでブラックボードを共有するための入れ物
+	bool Reload( FAIReloadContext& Context );
+	bool Reload( CAssetSubsystem& Assets, FAIReloadContext& Context );
 	// コードで作った定義を使う。Blackboard が nullptr のときは、空のブラックボードになる。失敗したら false
 	bool SetDefinition( const TSharedPtr<const FStateMachineDefinition>& Definition, const TSharedPtr<const FBlackboardDefinition>& BlackboardDefinition );
 	// 読み込み済みなら始める / 止める（OnExit）

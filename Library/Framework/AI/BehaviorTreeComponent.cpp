@@ -5,6 +5,7 @@
 #include "Library/Core/Profiler/ProfilerScope.h"
 #include "Library/Core/Thread/GameThread.h"
 #include "Library/Framework/AI/AIBlackboardSetup.h"
+#include "Library/Framework/AI/AIHotReload.h"
 #include "Library/Framework/AI/AILog.h"
 #include "Library/Framework/AI/StateMachineComponent.h"
 #include "Library/Framework/Asset/AssetSubsystem.h"
@@ -83,6 +84,63 @@ bool CBehaviorTreeComponent::SetDefinition( const TSharedPtr<const FBehaviorTree
 		Blackboard = MakeShared<CBlackboard>( BlackboardDefinition );
 	}
 	return BuildTree( Definition );
+}
+
+bool CBehaviorTreeComponent::Reload( FAIReloadContext& Context )
+{
+	CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
+	return Assets != nullptr && Reload( *Assets, Context );
+}
+
+bool CBehaviorTreeComponent::Reload( CAssetSubsystem& AssetSubsystem, FAIReloadContext& Context )
+{
+	GAME_THREAD_ONLY( false );
+	CAssetSubsystem* Assets = &AssetSubsystem;
+	if ( Path.IsEmpty() || !bTriedLoad )
+	{
+		return false;
+	}
+	// 読めなければ、元のまま動き続ける
+	const TSharedPtr<CBehaviorTreeAsset> Asset = Assets->LoadBehaviorTree( Path );
+	if ( !Asset.IsValid() )
+	{
+		return false;
+	}
+	const bool bWasRunning = IsRunning();
+	Stop();
+
+	// ブラックボード: 同じオブジェクトの相手が作り直したものがあれば共有し、無ければ作り直して、キー名と型が同じ値を引き継ぐ
+	const FString NewBlackboardPath = Asset->GetDefinition().Blackboard;
+	if ( bShareBlackboard && Context.Blackboard.IsValid() && Context.BlackboardPath == NewBlackboardPath )
+	{
+		Blackboard = Context.Blackboard;
+	}
+	else
+	{
+		TSharedPtr<CBlackboard> Fresh = NAI::CreateBlackboard( *Assets, NewBlackboardPath, Path );
+		if ( Fresh.IsValid() )
+		{
+			if ( Blackboard.IsValid() )
+			{
+				Fresh->CopyMatchingValuesFrom( *Blackboard );
+			}
+			Blackboard = Fresh;
+			if ( bShareBlackboard )
+			{
+				Context.BlackboardPath = NewBlackboardPath;
+				Context.Blackboard = Fresh;
+			}
+		}
+	}
+	BlackboardPath = NewBlackboardPath;
+	Issues = Asset->GetLoadIssues();
+	Tree.Reset();
+	const bool bBuilt = BuildTree( Asset->GetDefinitionShared() );
+	if ( bBuilt && bWasRunning )
+	{
+		Start();
+	}
+	return bBuilt;
 }
 
 bool CBehaviorTreeComponent::BuildTree( const TSharedPtr<const FBehaviorTreeDefinition>& Definition )

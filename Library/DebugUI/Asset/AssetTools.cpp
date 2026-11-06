@@ -394,6 +394,8 @@ void NDebugUI::DrawAssetToolsButtons( FAssetToolsState& State )
 	ImGui::SameLine();
 	ImGui::Checkbox( "World editor", &State.bShowWorldEditor );
 	ImGui::Checkbox( "AI debugger", &State.bShowAIDebugger );
+	ImGui::SameLine();
+	ImGui::Checkbox( "AI editor", &State.bShowAIEditor );
 	// 外側の表示切替から閉じるときも、未保存の確認を省略しない。
 	bool bShowEffect = State.bShowEffectEditor;
 	if ( ImGui::Checkbox( "Effect editor", &bShowEffect ) )
@@ -445,6 +447,10 @@ void NDebugUI::DrawAssetTools( FAssetToolsState& State )
 	{
 		DrawAIDebugger( State.AIDebugger, &State.bShowAIDebugger );
 	}
+	if ( State.bShowAIEditor )
+	{
+		DrawAIEditor( State.AIEditor, &State.bShowAIEditor );
+	}
 	if ( State.bShowAssets )
 	{
 		DrawAssetWindow( State, &State.bShowAssets );
@@ -467,12 +473,30 @@ void NDebugUI::ApplyAssetToolsCommandLine( FAssetToolsState& State )
 		State.bShowWorldEditor = ContainsToken( *Tools, "world" );
 		State.bShowEffectEditor = ContainsToken( *Tools, "effect" );
 		State.bShowAIDebugger = ContainsToken( *Tools, "ai" );
+		State.bShowAIEditor = ContainsToken( *Tools, "aieditor" );
 	}
 	const FString AIObject = GetArgument( "ai-object" );
 	if ( !AIObject.IsEmpty() )
 	{
 		State.bShowAIDebugger = true;
 		State.AIDebugger.InitialSelection = AIObject;
+	}
+	const FString AIFile = GetArgument( "ai-file" );
+	if ( !AIFile.IsEmpty() )
+	{
+		State.bShowAIEditor = true;
+		OpenAIEditorFile( State.AIEditor, AIFile );
+	}
+	// AI エディタで最初に選ぶもの（スクリーンショットでの確認用）: --ai-node=番号（ビヘイビアツリー）、--ai-state=ステートの名前か経路（ステートマシン）
+	const FString AINode = GetArgument( "ai-node" );
+	if ( !AINode.IsEmpty() )
+	{
+		State.AIEditor.SelectedNode = NCString::ToInt32( *AINode );
+	}
+	const FString AIState = GetArgument( "ai-state" );
+	if ( !AIState.IsEmpty() )
+	{
+		State.AIEditor.SelectedState = State.AIEditor.StateMachine.Get().FindByPath( -1, AIState );
 	}
 	const FString World = GetArgument( "world" );
 	if ( !World.IsEmpty() )

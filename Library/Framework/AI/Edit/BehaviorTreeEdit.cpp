@@ -161,7 +161,7 @@ void NBehaviorTreeEdit::RemoveNode( TBehaviorTreeDocument& Document, int32 NodeI
 	}
 }
 
-bool NBehaviorTreeEdit::MoveNode( TBehaviorTreeDocument& Document, int32 NodeIndex, int32 NewParent, int32 At )
+bool NBehaviorTreeEdit::MoveNode( TBehaviorTreeDocument& Document, int32 NodeIndex, int32 NewParent, int32 At, int32* OutNewIndex )
 {
 	const FBehaviorTreeDefinition& Current = Document.Get();
 	if ( NodeIndex <= 0 || !IsValidNode( Current, NodeIndex ) || !IsValidNode( Current, NewParent ) || Current.Nodes[NewParent].Type == EBTNodeType::Task )
@@ -177,7 +177,11 @@ bool NBehaviorTreeEdit::MoveNode( TBehaviorTreeDocument& Document, int32 NodeInd
 	FBehaviorTreeDefinition& Definition = Document.BeginEdit();
 	TArray<int32> NewIndex;
 	RemoveSubtreeNodes( Definition, NodeIndex, &NewIndex );
-	PlaceSubtree( Definition, Block, NewIndex[NewParent], At );
+	const int32 Placed = PlaceSubtree( Definition, Block, NewIndex[NewParent], At );
+	if ( OutNewIndex != nullptr )
+	{
+		*OutNewIndex = Placed;
+	}
 	return true;
 }
 
