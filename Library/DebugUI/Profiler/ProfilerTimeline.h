@@ -91,14 +91,14 @@ struct FProfilerTimelineState
 
 	TArray<FProfilerTimelineThread> Threads;   // 見つかったメインスレッド以外のスレッド（見つかった順に固定。行が入れ替わらないように）
 
-	uint64 FocusedFrameNumber = 0;      // 窓全体で選ばれたフレームのうち、最後に画面を合わせたもの
+	uint64 FocusedFrameNumber = 0;      // ウィンドウ全体で選ばれたフレームのうち、最後に画面を合わせたもの
 	uint64 PendingScrollFrameNumber = 0;// Stacked で、この段までスクロールしたい
 };
 
 namespace NDebugUI
 {
 	// タイムラインを描く（ImGui のウィンドウ / タブの中で呼ぶ）。
-	//   SelectedFrameNumber: 窓全体で選ばれているフレーム（フレームグラフのクリックなど）。変わったらそこへ移動する（Auto Scroll は止まる）。
+	//   SelectedFrameNumber: ウィンドウ全体で選ばれているフレーム（フレームグラフのクリックなど）。変わったらそこへ移動する（Auto Scroll は止まる）。
 	//                        同じフレームをもう一度選び直したいときは、呼び出し側で State.FocusedFrameNumber = 0 にする
 	void DrawProfilerTimeline( IProfiler& Profiler, FProfilerTimelineState& State, uint64 SelectedFrameNumber );
 }

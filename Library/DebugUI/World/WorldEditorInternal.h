@@ -16,7 +16,7 @@ namespace NWorldEditorUI
 
 	CAssetSubsystem* GetAssets();
 
-	// 次の窓の最初の位置と大きさを、アプリの画面に対する割合で決める（FirstUseEver。ユーザーが動かした位置は、ImGui が覚える）
+	// 次のウィンドウの最初の位置と大きさを、アプリの画面に対する割合で決める（FirstUseEver。ユーザーが動かした位置は、ImGui が覚える）
 	void SetNextWindowRect( float32 X, float32 Y, float32 Width, float32 Height );
 	void SetStatus( FWorldEditorState& S, const FString& Text, bool bError = false );
 
@@ -43,7 +43,7 @@ namespace NWorldEditorUI
 	constexpr ImU32 ColorSelected = IM_COL32( 255, 150, 40, 255 );
 	constexpr ImU32 ColorPrimary = IM_COL32( 255, 205, 90, 255 );
 
-	// 各窓
+	// 各ウィンドウ
 	void DrawViewport( FWorldEditorState& S );
 	void ReleaseViewport( FWorldEditorState& S );
 	void DrawOutliner( FWorldEditorState& S );
@@ -59,7 +59,7 @@ namespace NWorldEditorUI
 	// 入れ子のワールド（Prefab）
 	// 別のワールドを開く（未保存の変更があれば、確認してから）
 	void RequestOpenWorld( FWorldEditorState& S, const FString& Path );
-	// 選んだオブジェクト（根と子孫）を、別の .gxworld（Path）に保存して、その Prefab を置いたオブジェクト 1 つに置き換える。できたら true
+	// 選んだオブジェクト（ルートと子孫）を、別の .gxworld（Path）に保存して、その Prefab を置いたオブジェクト 1 つに置き換える。できたら true
 	bool MakePrefabFromSelection( FWorldEditorState& S, const FString& Path );
 
 	// エフェクトのプレビュー（WorldEditorEffects.cpp）

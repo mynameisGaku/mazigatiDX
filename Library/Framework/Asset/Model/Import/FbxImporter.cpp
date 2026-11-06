@@ -78,7 +78,7 @@ namespace
 				const ufbx_node* Node = Source.nodes.data[i];
 				if ( Node->is_root )
 				{
-					continue;   // 根は変換を持たない（空の入れ物）
+					continue;   // ルートは変換を持たない（空の入れ物）
 				}
 				NodeMap[static_cast<int32>( i )] = Out.Nodes.Num();
 				FImportedNode Imported;
@@ -389,7 +389,7 @@ namespace
 		const ufbx_scene& Source;
 		const FImportOptions& Options;
 		FImportedScene& Out;
-		TArray<int32> NodeMap;                 // ufbx のノードの番号 -> FImportedScene::Nodes の番号（根は -1）
+		TArray<int32> NodeMap;                 // ufbx のノードの番号 -> FImportedScene::Nodes の番号（ルートは -1）
 		TMap<uint32, int32> TextureMap;
 	};
 }

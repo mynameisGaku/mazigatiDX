@@ -489,7 +489,7 @@ bool CWorldEditorSession::BeginGizmoDrag( const FEditorViewport& Viewport, EEdit
 		return true;
 	}
 
-	// 動かす根の、開始のときのワールドでの姿勢
+	// 動かすルートの、開始のときのワールドでの姿勢
 	for ( const int32 Root : GetSelectedRoots() )
 	{
 		FDragObject Object;

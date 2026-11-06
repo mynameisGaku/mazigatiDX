@@ -809,7 +809,7 @@ void NDebugUI::DrawProfilerWindow( IProfiler& Profiler, FProfilerWindowState& St
 		}
 		if ( ImGui::BeginTabItem( "Timeline" ) )
 		{
-			// タイムラインの Auto Scroll は、この窓の Live とは別（押さない限り勝手に動かない）
+			// タイムラインの Auto Scroll は、このウィンドウの Live とは別（押さない限り勝手に動かない）
 			NDebugUI::DrawProfilerTimeline( Profiler, State.Timeline, State.SelectedFrameNumber );
 			ImGui::EndTabItem();
 		}

@@ -37,10 +37,10 @@ struct FVillageState
 	float32 Darkness = 1.0f;
 	bool bNight = true;
 
-	// 会話の窓が開いているか。村人に話しかけたい（村人が true にして、会話の窓が受け取る）
+	// 会話のウィンドウが開いているか。村人に話しかけたい（村人が true にして、会話のウィンドウが受け取る）
 	bool bDialogueOpen = false;
 	bool bTalkRequested = false;
-	// 会話の窓を閉じた時刻（Time）。閉じたキーで、すぐに話しかけ直さないようにする
+	// 会話のウィンドウを閉じた時刻（Time）。閉じたキーで、すぐに話しかけ直さないようにする
 	float32 DialogueClosedTime = -10.0f;
 
 	// サンプルを始めてからの時間（秒）

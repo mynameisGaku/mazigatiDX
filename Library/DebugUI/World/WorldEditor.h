@@ -20,9 +20,9 @@
 // ワールド（.gxworld）のレベルエディタ
 //   モデル・画像・音・当たり判定の形・空のオブジェクト（タグでコードの生成物を結び付ける場所）を、3D の視界に置いて、.gxworld に保存する。
 //
-//   窓（ドッキングできる）:
+//   ウィンドウ（ドッキングできる）:
 //     World Editor    メニュー・ツールバー・3D の視界（ビューポート）
-//     World Outliner  オブジェクトの木。ドラッグで親子の付け替え、絞り込み（tag:Enemy / comp:Model / #12 / 名前）
+//     World Outliner  オブジェクトのツリー。ドラッグで親子の付け替え、絞り込み（tag:Enemy / comp:Model / #12 / 名前）
 //     World Inspector 選んだオブジェクトの名前・位置・タグ・プロパティ・部品・当たり判定の決定の理由・検証の問題
 //     World Assets    アセットの一覧。視界へドラッグして置く（ダブルクリックで視界の中央に）
 //     World Issues    検証の問題の一覧（クリックで選ぶ）と、ワールドの設定（当たり判定のタグ規則）
@@ -63,7 +63,7 @@ struct FWorldEditorInput
 	bool bEscapePressed = false;
 	FVector3 Fly = FVector3::Zero;   // 飛ぶ向き（右・上・前。各 -1..1。W A S D Q E）
 	float32 DeltaTime = 1.0f / 60.0f;
-	bool bHovered = true;            // マウスがビューポートの上にある（ほかの窓に隠れていない）
+	bool bHovered = true;            // マウスがビューポートの上にある（ほかのウィンドウに隠れていない）
 };
 
 struct FWorldEditorState
@@ -75,7 +75,7 @@ struct FWorldEditorState
 	TUniquePtr<FAssetEditorInfo> AssetInfo;   // アセットの大きさ・有無・読み込み済みのもの。CAssetSubsystem が使えるとき作る
 
 	//-------------------------------------------------------------------------
-	// 窓
+	// ウィンドウ
 	//-------------------------------------------------------------------------
 	bool bShowOutliner = true;
 	bool bShowInspector = true;
@@ -112,7 +112,7 @@ struct FWorldEditorState
 	bool bViewHovered = false;
 	bool bUseInputOverride = false;             // true なら、ImGui の入力の代わりに InputOverride を使う（確認用の自動操作）
 	FWorldEditorInput InputOverride;
-	bool bAnyPanelFocused = false;              // 編集用の窓のどれかにフォーカスがある（ショートカットを受ける）
+	bool bAnyPanelFocused = false;              // 編集用のウィンドウのどれかにフォーカスがある（ショートカットを受ける）
 	TArray<FTransform> FrameTransforms;         // 最後に描いたときの、オブジェクトごと（Objects と同じ並び）のワールドでの姿勢と図形
 	TArray<TArray<FEditorShape>> FrameShapes;
 	bool bHasDropPreview = false;               // アセットを視界の上へドラッグしている間の、置く場所

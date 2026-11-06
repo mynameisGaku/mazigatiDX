@@ -53,7 +53,7 @@ struct FCameraDemoState
 	static constexpr int32 ViewWidth = 1280;
 	static constexpr int32 ViewHeight = 640;
 
-	// 上から見る図（右下の窓）の大きさと位置（画面の座標）
+	// 上から見る図（右下のウィンドウ）の大きさと位置（画面の座標）
 	static constexpr int32 TopViewSize = 300;
 	static constexpr int32 TopViewLeft = ViewLeft + ViewWidth - 16 - TopViewSize;
 	static constexpr int32 TopViewTop = ViewTop + ViewHeight - 16 - TopViewSize;

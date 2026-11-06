@@ -209,7 +209,7 @@ void NEffectPath::BuildLightning( const FEffectPathDefinition& Definition, uint3
 		const float32 AttachmentT = 0.1f + static_cast<float32>( HashValue( Seed, 0u, static_cast<uint32>( Branch ) + 991u ) >> 8 ) * ( 0.8f / 16777216.0f );
 		// 主幹の両端を避け、その割合に最も近い主幹点へ枝を接続する。
 		const int32 Attachment = NMath::Clamp( static_cast<int32>( NMath::RoundToInt( AttachmentT * static_cast<float32>( Segments ) ) ), 1, Segments - 1 );
-		// 生成中の主幹の座標をそのまま共有する、枝の付け根。
+		// 生成中の主幹の座標をそのまま共有する、枝の付けルート。
 		const FVector3 Origin = Out.Strips[0].Points[Attachment].Position;
 		// 枝ごとに、主幹と違う形状を作るシード。
 		const uint32 BranchSeed = HashValue( Seed, 17u, static_cast<uint32>( Branch ) + 1u );

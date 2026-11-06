@@ -4,7 +4,7 @@
 #include "Library/Math/Transform.h"
 
 //=============================================================================
-// ワールドの階層（Parent で表した木）の問い合わせ
+// ワールドの階層（Parent で表したツリー）の問い合わせ
 //   FWorldDefinition を読むだけの純粋な関数。壊れたデータ（存在しない親・循環）でも止まる（無限ループにならない）。
 //   戻り値の番号は、FWorldDefinition::Objects の中の位置（Id ではない）。兄弟は配列の順。
 //=============================================================================
@@ -16,8 +16,8 @@ namespace NWorld
 	// RootId のオブジェクトと、その子孫（親が子より先の順）。RootId が無ければ空
 	TArray<int32> GetSubtreeIndices( const FWorldDefinition& World, int32 RootId );
 
-	// Ids のうち、存在して、祖先が Ids に入っていないもの（根）。重複は 1 つにして、配列（Objects）の順に並べる。
-	// 選んだオブジェクトをまとめて動かす・消す・複製するとき、子は親と一緒に扱われるので、根だけを対象にする
+	// Ids のうち、存在して、祖先が Ids に入っていないもの（ルート）。重複は 1 つにして、配列（Objects）の順に並べる。
+	// 選んだオブジェクトをまとめて動かす・消す・複製するとき、子は親と一緒に扱われるので、ルートだけを対象にする
 	TArray<int32> FilterToRoots( const FWorldDefinition& World, const TArray<int32>& Ids );
 
 	// CandidateId が AncestorId の子孫か（同じ Id は false）

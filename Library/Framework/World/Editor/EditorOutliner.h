@@ -5,7 +5,7 @@
 #include "Library/Framework/World/Definition/WorldDefinition.h"
 
 //=============================================================================
-// アウトライナー（オブジェクトの一覧の木）の表示内容
+// アウトライナー（オブジェクトの一覧のツリー）の表示内容
 //   画面に出す行の並びを作る純粋な関数（ImGui を使わない）。ImGui 側は、この行を順に出すだけ。
 //
 //   絞り込み（Filter）: 空白で区切った語を、すべて満たすものだけ（AND）。
@@ -19,7 +19,7 @@ struct FEditorOutlinerRow
 {
 	int32 ObjectId = WorldNoId;
 	int32 Depth = 0;
-	bool bHasChildren = false;   // 子がある（絞り込み中でも、全体の木での話）
+	bool bHasChildren = false;   // 子がある（絞り込み中でも、全体のツリーでの話）
 	bool bExpanded = false;      // 子を出している
 	bool bMatch = true;          // 絞り込みに一致した（道筋として出しているだけの祖先は false。絞り込みが無ければ true）
 };
@@ -32,6 +32,6 @@ namespace NWorldEditor
 	bool MatchesFilter( const FWorldObject& Object, const FString& Filter );
 
 	// 行の並び（親が先の深さ優先。兄弟は配列の順）。Collapsed に入っている Id の子は出さない。
-	// 存在しない親を持つオブジェクトは最上位として、循環していて木からたどれないものは、最後に最上位として出す（見つけて消せるように）
+	// 存在しない親を持つオブジェクトは最上位として、循環していてツリーからたどれないものは、最後に最上位として出す（見つけて消せるように）
 	TArray<FEditorOutlinerRow> BuildOutlinerRows( const FWorldDefinition& World, const TSet<int32>& Collapsed, const FString& Filter );
 }

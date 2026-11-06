@@ -12,7 +12,7 @@
 //=============================================================================
 // ワールドエディタの「編集の状態」
 //   編集中のワールド（元に戻す履歴つき）、選択、カメラ、ギズモの設定とドラッグ、コピーしたもの。
-//   エディタの窓（ImGui）が持つのは、この状態と、画面だけの状態（窓の開閉・入力欄など）。
+//   エディタのウィンドウ（ImGui）が持つのは、この状態と、画面だけの状態（ウィンドウの開閉・入力欄など）。
 //   「クリックしたら何が選ばれるか」「ギズモを動かすとワールドがどう変わるか」「削除したあと選択がどうなるか」は、
 //   ここ（純粋なコード。DxLib・ImGui を使わない）で決めて、画面なしでテストする。
 //
@@ -49,7 +49,7 @@ public:
 	// 主な選択（最後に選んだもの。インスペクターで見せる、ギズモの向きを決める）。選択が空なら WorldNoId
 	int32 GetPrimary() const { return Selected.IsEmpty() ? WorldNoId : Selected.Last(); }
 	bool IsSelected( int32 ObjectId ) const { return Selected.Contains( ObjectId ); }
-	// 選択のうち、祖先も選んでいるものを除いた根（まとめて動かす・消す・複製するときの対象）
+	// 選択のうち、祖先も選んでいるものを除いたルート（まとめて動かす・消す・複製するときの対象）
 	TArray<int32> GetSelectedRoots() const;
 
 	void Select( int32 ObjectId, ESelectMode Mode = ESelectMode::Replace );
@@ -89,7 +89,7 @@ public:
 	int32 CreateMesh( EEditMeshPrimitive Kind, const FVector3& WorldPosition, int32 ParentId = WorldNoId, bool bCollider = true );
 	// 選んだオブジェクトのうち、Model 部品を編集メッシュに変えられたものの数（1 回の「元に戻す」）。変えた物の三角形は IEditorAssetInfo から取る
 	int32 ConvertSelectionToMeshes( const IEditorAssetInfo& Assets );
-	// 選んだオブジェクト（根と子孫）を、PrefabPath の Prefab 部品を持つ 1 つのオブジェクトに置き換えて、それを選ぶ（取り出した定義の保存は、呼び出し側）。置いた Id を返す。1 回の「元に戻す」
+	// 選んだオブジェクト（ルートと子孫）を、PrefabPath の Prefab 部品を持つ 1 つのオブジェクトに置き換えて、それを選ぶ（取り出した定義の保存は、呼び出し側）。置いた Id を返す。1 回の「元に戻す」
 	int32 ReplaceSelectionWithPrefab( const FString& PrefabPath, const FVector3& Origin, const FString& Name );
 	// Ids の Prefab 部品を持つオブジェクトを、中身に展開する（NWorldEdit::UnpackPrefab）。中身が読めないものは飛ばす。展開できた数を返す。1 回の「元に戻す」
 	int32 UnpackPrefabs( const TArray<int32>& Ids, const IEditorAssetInfo& Assets );
@@ -110,7 +110,7 @@ public:
 	float32 RotateSnapDegrees = 15.0f;
 	float32 ScaleSnap = 0.1f;
 
-	// ギズモの位置と向き: 位置は、選んだ根の位置の中心（1 つなら、そのオブジェクト）。Local のときの向きは、主な選択の向き。選択が空なら false
+	// ギズモの位置と向き: 位置は、選んだルートの位置の中心（1 つなら、そのオブジェクト）。Local のときの向きは、主な選択の向き。選択が空なら false
 	bool GetGizmoFrame( const FEditorViewport& Viewport, FEditorGizmoFrame& OutFrame ) const;
 
 	// ドラッグ: 取っ手をつかむ → 動かす（毎フレーム）→ 離す / 取り消す。動かしている間は、毎フレームの履歴を積まず、離すまでで 1 回。

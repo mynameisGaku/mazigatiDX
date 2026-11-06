@@ -18,7 +18,7 @@ namespace
 	// サンプル集への登録（一覧に出す名前・説明・順番）
 	const TSampleRegistrar<CVillageSample> Registrar( FSampleInfo { "Village", "Village: a small top-down game scene", "Walk around a small village (WASD / arrows, Shift to run). It combines tile maps, a camera (Transform2D), sprites, spinning coins, a dialogue box with wrapped text, night lighting (a render target with custom blending), and a minimap.", 30 } );
 
-	// 描く順（小さいほうが奥）: 地図 → 金貨 → 村人 → 主人公 → 夜の暗さ → 情報の表示 → 会話の窓
+	// 描く順（小さいほうが奥）: 地図 → 金貨 → 村人 → 主人公 → 夜の暗さ → 情報の表示 → 会話のウィンドウ
 	constexpr int32 MapOrder = 0;
 	constexpr int32 CoinOrder = 10;
 	constexpr int32 VillagerOrder = 20;
@@ -86,7 +86,7 @@ void CVillageSample::OnEnter()
 		SpawnObject<CCoin>( State, Index, State->CoinPositions[Index], Coin, Glow )->SetDrawOrder( CoinOrder );
 	}
 
-	// 村人・主人公・夜の暗さ・情報の表示・会話の窓
+	// 村人・主人公・夜の暗さ・情報の表示・会話のウィンドウ
 	SpawnObject<CVillager>( State, Map->GetVillagerPosition(), VillagerSheet, PanelFont )->SetDrawOrder( VillagerOrder );
 	SpawnObject<CPlayer>( State, Map, PlayerSheet )->SetDrawOrder( PlayerOrder );
 	SpawnObject<CDarkness>( State, Map->GetLampPositions(), NightLayer, Glow )->SetDrawOrder( DarknessOrder );

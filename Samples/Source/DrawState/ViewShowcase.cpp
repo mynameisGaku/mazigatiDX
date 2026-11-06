@@ -9,7 +9,7 @@ namespace
 	// クリップの絵の枠の大きさ（ピクセル）
 	constexpr int32 ClipAreaWidth = 240;
 	constexpr int32 ClipAreaHeight = 250;
-	// クリップの窓の大きさ（ピクセル）
+	// クリップのウィンドウの大きさ（ピクセル）
 	constexpr int32 WindowHalfWidth = 70;
 	constexpr int32 WindowHalfHeight = 45;
 	// 描画モードの絵の大きさ（ピクセル）と、拡大する画像の一部分（画像の中の左上と大きさ）
@@ -17,7 +17,7 @@ namespace
 	constexpr int32 SourceLeft = 6;
 	constexpr int32 SourceTop = 6;
 	constexpr int32 SourceSize = 4;
-	// 2D の変換の絵（カメラの窓）の大きさ（ピクセル）
+	// 2D の変換の絵（カメラのウィンドウ）の大きさ（ピクセル）
 	constexpr int32 CameraWidth = 560;
 	constexpr int32 CameraHeight = 290;
 	// 絵と絵のあいだの間隔（ピクセル）
@@ -60,27 +60,27 @@ void CViewShowcase::Draw( FDrawContext& CommandList )
 
 void CViewShowcase::DrawClip( FDrawContext& CommandList, int32 Left, int32 Top ) const
 {
-	// 全体の枠（窓の外にも見えるよう、クリップの外で描く）
+	// 全体の枠（ウィンドウの外にも見えるよう、クリップの外で描く）
 	CommandList.Box( Left, Top, Left + ClipAreaWidth, Top + ClipAreaHeight, FColor32( 90, 90, 90 ), false );
 
-	// 窓は、枠の中をゆっくり回る
+	// ウィンドウは、枠の中をゆっくり回る
 	const int32 CenterX = Left + ClipAreaWidth / 2 + Px( 50.0f * NMath::Cos( Time * 0.8f ) );
 	const int32 CenterY = Top + ClipAreaHeight / 2 + Px( 60.0f * NMath::Sin( Time * 1.1f ) );
 	{
-		// この中の描画は、窓 (CenterX ± WindowHalfWidth, CenterY ± WindowHalfHeight) の外へはみ出さない
+		// この中の描画は、ウィンドウ (CenterX ± WindowHalfWidth, CenterY ± WindowHalfHeight) の外へはみ出さない
 		FClipScope Window( CommandList, CenterX - WindowHalfWidth, CenterY - WindowHalfHeight, CenterX + WindowHalfWidth, CenterY + WindowHalfHeight );
 		for ( int32 Offset = -ClipAreaHeight; Offset < ClipAreaWidth; Offset += 16 )
 		{
-			// 枠より広く描くが、窓の中の縞しか見えない
+			// 枠より広く描くが、ウィンドウの中の縞しか見えない
 			CommandList.Line( Left + Offset, Top + ClipAreaHeight, Left + Offset + ClipAreaHeight, Top, FColor32( 90, 190, 120 ), 6 );
 		}
 		{
-			// 窓の中の、さらに小さい窓（入れ子。外の窓との共通部分になる）
+			// ウィンドウの中の、さらに小さいウィンドウ（入れ子。外のウィンドウとの共通部分になる）
 			FClipScope Inner( CommandList, CenterX - 20, CenterY - WindowHalfHeight - 20, CenterX + 20, CenterY + 20 );
 			CommandList.Circle( CenterX, CenterY, 50, FColor32( 240, 200, 60 ) );
 		}
 	}
-	// 窓の枠は、クリップの外で描く
+	// ウィンドウの枠は、クリップの外で描く
 	CommandList.Box( CenterX - WindowHalfWidth, CenterY - WindowHalfHeight, CenterX + WindowHalfWidth, CenterY + WindowHalfHeight, FColor32::White, false );
 }
 
@@ -120,18 +120,18 @@ void CViewShowcase::DrawWorld( FDrawContext& CommandList ) const
 
 void CViewShowcase::DrawCamera( FDrawContext& CommandList, int32 Left, int32 Top ) const
 {
-	// 窓の枠
+	// ウィンドウの枠
 	CommandList.Box( Left, Top, Left + CameraWidth, Top + CameraHeight, FColor32( 90, 90, 90 ), false );
 
 	// カメラは、世界の中を回りながら、拡大・回転する。世界の座標 -> 画面の座標 の行列 =
-	// 世界の座標を、カメラの位置が原点になるようにずらす -> 拡大 -> 回転 -> 窓の中心へ（行ベクトルなので、左から順に掛かる）
+	// 世界の座標を、カメラの位置が原点になるようにずらす -> 拡大 -> 回転 -> ウィンドウの中心へ（行ベクトルなので、左から順に掛かる）
 	const FVector3 CameraPosition( 120.0f * NMath::Cos( Time * 0.5f ), 80.0f * NMath::Sin( Time * 0.7f ), 0.0f );
 	const float32 Zoom = 1.0f + 0.4f * NMath::Sin( Time * 0.6f );
 	const float32 Angle = 0.35f * NMath::Sin( Time * 0.4f );
 	const FVector3 WindowCenter( static_cast<float32>( Left + CameraWidth / 2 ), static_cast<float32>( Top + CameraHeight / 2 ), 0.0f );
 	const FMatrix4x4 View = FMatrix4x4::Translate( FVector3( -CameraPosition.x, -CameraPosition.y, 0.0f ) ) * FMatrix4x4::Scale( Zoom ) * FMatrix4x4::RotateZ( Angle ) * FMatrix4x4::Translate( WindowCenter );
 
-	// クリップは、変換のあとの画面の座標で決まる（変換に影響されない）ので、窓の外へはみ出さない
+	// クリップは、変換のあとの画面の座標で決まる（変換に影響されない）ので、ウィンドウの外へはみ出さない
 	FClipScope Window( CommandList, Left, Top, Left + CameraWidth, Top + CameraHeight );
 	CommandList.Transform2D( View );
 	DrawWorld( CommandList );

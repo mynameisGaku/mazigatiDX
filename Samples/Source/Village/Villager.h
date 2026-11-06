@@ -11,7 +11,7 @@
 //=============================================================================
 // CVillager
 //   道のそばに立っている村人。主人公が近づくと、頭の上に「!」を出す。そこで Enter（か Space）を押すと、話しかける
-//   （FVillageState::bTalkRequested を立てる。会話の窓 CDialogue が受け取る）。
+//   （FVillageState::bTalkRequested を立てる。会話のウィンドウ CDialogue が受け取る）。
 //   Draw( FDrawContext& CommandList ) は、足元の影と、少し揺れる姿と、「!」を記録するだけ。
 //=============================================================================
 class CVillager : public CGameObject

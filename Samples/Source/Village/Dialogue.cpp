@@ -5,14 +5,14 @@
 
 namespace
 {
-	// 窓の位置と大きさ（画面の座標。ピクセル）。見せる範囲の下に置く
+	// ウィンドウの位置と大きさ（画面の座標。ピクセル）。見せる範囲の下に置く
 	constexpr int32 BoxLeft = 80;
 	constexpr int32 BoxRight = FVillageState::ViewWidth - 80;
 	constexpr int32 BoxHeight = 150;
 	constexpr int32 BoxBottom = FVillageState::ViewTop + FVillageState::ViewHeight - 16;
 	constexpr int32 BoxTop = BoxBottom - BoxHeight;
 
-	// 窓の縁と文字の間の余白、名前の札の大きさ（ピクセル）
+	// ウィンドウの縁と文字の間の余白、名前の札の大きさ（ピクセル）
 	constexpr int32 Padding = 24;
 	constexpr int32 NameTabWidth = 170;
 	constexpr int32 NameTabHeight = 34;
@@ -85,7 +85,7 @@ void CDialogue::StartPage()
 	{
 		return;
 	}
-	// 窓の幅に収まるように折り返す（文字を測るので、文が変わるときに 1 度だけ）
+	// ウィンドウの幅に収まるように折り返す（文字を測るので、文が変わるときに 1 度だけ）
 	FTextLayoutOptions Options;
 	Options.MaxWidth = BoxRight - BoxLeft - Padding * 2;
 	Options.MaxLines = MaxLines;
@@ -157,7 +157,7 @@ void CDialogue::Draw( FDrawContext& CommandList )
 		return;
 	}
 
-	// 窓（少し透けた、暗い青の角丸の箱と、白い縁）と、話す人の名前の札
+	// ウィンドウ（少し透けた、暗い青の角丸の箱と、白い縁）と、話す人の名前の札
 	CommandList.Blend( EDrawBlend::Alpha, 225 );
 	CommandList.RoundBox( BoxLeft, BoxTop, BoxRight, BoxBottom, 14, 14, FColor32( 18, 22, 50 ) );
 	CommandList.RoundBox( BoxLeft + 16, BoxTop - NameTabHeight + 8, BoxLeft + 16 + NameTabWidth, BoxTop + 8, 10, 10, FColor32( 52, 64, 140 ) );

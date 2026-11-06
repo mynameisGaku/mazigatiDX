@@ -23,7 +23,7 @@ struct FTransformNode
 	int32 Parent = INDEX_NONE;          // 最も近い祖先の CTransformComponent の番号（親オブジェクトが持っていなければ、その上を探す）
 	int32 FirstChild = INDEX_NONE;      // 子の一覧（階層を組み直すたびに作り直す）
 	int32 NextSibling = INDEX_NONE;
-	int32 Depth = 0;                    // 根が 0
+	int32 Depth = 0;                    // ルートが 0
 
 	bool bDirty = true;                 // World が古い。立っている間は、子孫もすべて立っている
 	bool bPendingDestroy = false;       // コンポーネントの取り外しが予約された（親としては数えない）

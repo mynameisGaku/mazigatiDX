@@ -409,7 +409,7 @@ void NProfilerAnalyzer::BuildCallTree( const IProfiler& Profiler, int32 FirstFra
 
 namespace
 {
-	// [Begin, End) にある兄弟（各ノードの部分木を飛ばして数える）を並べ替えて、部分木ごと Out へ出力する
+	// [Begin, End) にある兄弟（各ノードのサブツリーを飛ばして数える）を並べ替えて、サブツリーごと Out へ出力する
 	void EmitSorted( const IProfiler& Profiler, const TArray<FProfileTreeNode>& In, int32 Begin, int32 End, NProfilerAnalyzer::ETreeSortKey Key,
 					 bool bAscending, TArray<FProfileTreeNode>& Out )
 	{
@@ -464,7 +464,7 @@ void NProfilerAnalyzer::SortCallTree( const IProfiler& Profiler, const TArray<FP
 {
 	OutNodes.Reset();
 	OutNodes.Reserve( InNodes.Num() );
-	// 兄弟の並びだけが変わり、深さや部分木の大きさ（NumDescendants）は変わらないので、そのままコピーできる
+	// 兄弟の並びだけが変わり、深さやサブツリーの大きさ（NumDescendants）は変わらないので、そのままコピーできる
 	EmitSorted( Profiler, InNodes, 0, InNodes.Num(), Key, bAscending, OutNodes );
 }
 

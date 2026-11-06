@@ -20,7 +20,7 @@ namespace NConsole
 	// 組み込みのコマンドと変数を登録する
 	void RegisterBuiltinCommands( FConsoleRegistry& Registry );
 
-	// 画面の窓・組み込みのコマンド（history）・起動時のスクリプトが共有する、アプリ全体の履歴と出力
+	// 画面のウィンドウ・組み込みのコマンド（history）・起動時のスクリプトが共有する、アプリ全体の履歴と出力
 	FConsoleHistory& GetGlobalHistory();
 	FConsoleBuffer& GetGlobalOutput();
 

@@ -49,7 +49,7 @@ namespace NMath
 	FORCEINLINE bool IsNearlyZero( float32 Value, float32 Tolerance = Epsilon ) { return NMath::Abs( Value ) <= Tolerance; }
 
 	//-------------------------------------------------------------------------
-	// 冪・平方根・指数・対数（このあとの三角関数・丸めも同じ決まり）
+	// 冪・平方ルート・指数・対数（このあとの三角関数・丸めも同じ決まり）
 	//   float32 と float64 の版がある。引数と同じ型で答える（<cmath> の std::sqrt などと同じ）。
 	//   整数を渡すと、float32 版と float64 版のどちらも同じ強さで合うため曖昧になり、コンパイルできない。<cmath> は黙って double にするので、型が静かに変わるのを防げる。float32 / float64 へ明示的に変換して渡す。
 	//   二引数の関数は、float32 と float64 を混ぜると float64 で答える（<cmath> と同じ）。
@@ -129,7 +129,7 @@ namespace NMath
 	FORCEINLINE float64 Hypot( float64 X, float64 Y ) { return std::hypot( X, Y ); }
 	FORCEINLINE float64 Hypot( float32 X, float64 Y ) { return std::hypot( static_cast<float64>( X ), Y ); }
 	FORCEINLINE float64 Hypot( float64 X, float32 Y ) { return std::hypot( X, static_cast<float64>( Y ) ); }
-	// 立方根（負の数も扱える）。
+	// 立方ルート（負の数も扱える）。
 	FORCEINLINE float32 Cbrt( float32 Value ) { return std::cbrt( Value ); }
 	FORCEINLINE float64 Cbrt( float64 Value ) { return std::cbrt( Value ); }
 }

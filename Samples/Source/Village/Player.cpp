@@ -118,7 +118,7 @@ void CPlayer::Tick( float32 DeltaTime )
 		bAutoWalk = false;
 	}
 
-	// 会話の窓が開いているあいだは、自分で歩いているときは、立ち止まる（ひとりで歩くときは、止まらない）
+	// 会話のウィンドウが開いているあいだは、自分で歩いているときは、立ち止まる（ひとりで歩くときは、止まらない）
 	if ( bAutoWalk )
 	{
 		Direction = GetRouteDirection();

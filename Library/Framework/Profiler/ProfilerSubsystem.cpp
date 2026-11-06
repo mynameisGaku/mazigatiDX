@@ -323,7 +323,7 @@ void CProfilerSubsystem::FinishFrame()
 	NProfiler::GRecorder = nullptr;
 	CurrentTop = INDEX_NONE;
 
-	// 別スレッドで完成した木を集める（このフレームの分は Current へ、前のフレームで始まった分は保存済みのそのフレームへ）
+	// 別スレッドで完成したツリーを集める（このフレームの分は Current へ、前のフレームで始まった分は保存済みのそのフレームへ）
 	CollectWorkerSamples();
 
 	// 保存するときは、サンプル数ちょうどの大きさにコピーする（作業用の Current は容量を使い回し、保存した分に余分なメモリを持たせない）
@@ -660,7 +660,7 @@ void CProfilerSubsystem::CollectWorkerSamples()
 		{
 			FScopedLock Lock( Buffer->Mutex );
 
-			// 先頭から、まだ開いている根（ジョブの途中）の手前までが、完成した木。サンプルは呼び出しの前順なので、ここまでは木が丸ごと揃っている
+			// 先頭から、まだ開いているルート（ジョブの途中）の手前までが、完成したツリー。サンプルは呼び出しの前順なので、ここまではツリーが丸ごと揃っている
 			int32 NumComplete = 0;
 			const int32 Num = Buffer->Samples.Num();
 			while ( NumComplete < Num )
@@ -693,7 +693,7 @@ void CProfilerSubsystem::CollectWorkerSamples()
 			}
 		}
 
-		// 木（根から次の根の手前まで）ごとに、開始時刻のフレームへ振り分ける
+		// ツリー（ルートから次のルートの手前まで）ごとに、開始時刻のフレームへ振り分ける
 		int32 Begin = 0;
 		while ( Begin < Taken.Num() )
 		{
@@ -710,7 +710,7 @@ void CProfilerSubsystem::CollectWorkerSamples()
 
 void CProfilerSubsystem::AddWorkerTree( const FProfilerWorkerBuffer& Buffer, const FProfileSample* Samples, int32 Count, int32 TreeStart )
 {
-	// 木が入るフレーム = 根が始まった時刻を含むフレーム（作業中の Current か、保存済みのフレーム）
+	// ツリーが入るフレーム = ルートが始まった時刻を含むフレーム（作業中の Current か、保存済みのフレーム）
 	const int64 RootStart = Samples[0].StartTick;
 	FProfilerFrame* Target = nullptr;
 	bool bStoredFrame = false;
@@ -762,7 +762,7 @@ void CProfilerSubsystem::AddWorkerTree( const FProfilerWorkerBuffer& Buffer, con
 		Track->Name = Buffer.NameId;
 	}
 
-	// 追記する。Parent は木の先頭を 0 とした位置から、行の中での位置へ付け替える
+	// 追記する。Parent はツリーの先頭を 0 とした位置から、行の中での位置へ付け替える
 	const int32 Offset = Track->Samples.Num();
 	Track->Samples.Append( Samples, Count );
 	for ( int32 i = 0; i < Count; ++i )

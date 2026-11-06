@@ -138,7 +138,7 @@ namespace
 		FillCircle( Image, static_cast<float32>( OriginX ) + 12.0f, 8.0f, 3.0f, FColor32( 84, 164, 84 ) );
 	}
 
-	// 屋根
+	// 屋ルート
 	void PaintRoof( FPixelImage& Image, int32 OriginX )
 	{
 		for ( int32 Y = 0; Y < NVillageArt::TileSize; ++Y )

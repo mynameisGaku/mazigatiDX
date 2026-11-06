@@ -18,7 +18,7 @@ namespace
 	// ランタンの位置（家の戸口の脇）
 	const FVector3 LanternPosition( 7.0f, 1.5f, 6.0f );
 
-	// 影を計算する範囲の広さ（半分）: 中庭だけ・広い範囲。高さは、家の屋根より上まで
+	// 影を計算する範囲の広さ（半分）: 中庭だけ・広い範囲。高さは、家の屋ルートより上まで
 	constexpr float32 CourtyardHalfSize = 22.0f;
 	constexpr float32 WideHalfSize = 45.0f;
 	constexpr float32 AreaTop = 14.0f;
@@ -85,7 +85,7 @@ namespace
 		Vertices.Add( BottomLeft );
 	}
 
-	// 家: 壁（箱）・屋根（切妻。2 つの斜面と両端の三角形）・煙突
+	// 家: 壁（箱）・屋ルート（切妻。2 つの斜面と両端の三角形）・煙突
 	void RecordHouse( FDrawContext& CommandList )
 	{
 		CommandList.Cube3D( FVector3( -4.0f, 0.0f, -3.0f ), FVector3( 4.0f, 5.0f, 3.0f ), WallColor );
@@ -251,7 +251,7 @@ FLight NShadowsScenery::MakeSun( const FShadowsDemoState& State )
 
 FLight NShadowsScenery::MakeSkyLight()
 {
-	// 真上からの、青みがかった弱い光（空の明かり）。影の中の地面や屋根を、うっすら照らす。影の絵の影は受けない
+	// 真上からの、青みがかった弱い光（空の明かり）。影の中の地面や屋ルートを、うっすら照らす。影の絵の影は受けない
 	FLight Sky = FLight::MakeDirectional( FVector3( 0.0f, -1.0f, 0.0f ), FColor( 0.30f, 0.36f, 0.48f ) );
 	Sky.Specular = FColor::Black;
 	Sky.ShadowMapSlots = 0;

@@ -20,7 +20,7 @@ namespace
 	constexpr float ScrollbarHeight = 14.0f;
 	constexpr float PanStepFraction = 0.15f;   // 横ホイール 1 目盛りで動く量（表示幅に対する割合）
 	constexpr float ThreadHeaderHeight = 16.0f;
-	constexpr int32 ThreadLookbackFrames = 16;   // 別スレッドの木は始まったフレームに入る。長いジョブが見えている範囲にはみ出すぶんを拾うため、手前のフレームも調べる
+	constexpr int32 ThreadLookbackFrames = 16;   // 別スレッドのツリーは始まったフレームに入る。長いジョブが見えている範囲にはみ出すぶんを拾うため、手前のフレームも調べる
 
 	enum EMode : int32
 	{
@@ -273,7 +273,7 @@ namespace
 			}
 		}
 
-		// 別スレッドの木は、終わってから（数フレーム遅れて）始まったフレームに足されることがあるので、直近のフレームの分は毎回見直す
+		// 別スレッドのツリーは、終わってから（数フレーム遅れて）始まったフレームに足されることがあるので、直近のフレームの分は毎回見直す
 		for ( int32 i = NMath::Max( 0, NumFrames - 4 ); i < NumFrames; ++i )
 		{
 			for ( const FProfilerThreadTrack& Track : Profiler.GetFrame( i ).Threads ) NoteSampleDurations( State, Track.Samples );
@@ -1295,7 +1295,7 @@ void NDebugUI::DrawProfilerTimeline( IProfiler& Profiler, FProfilerTimelineState
 	}
 
 	//-------------------------------------------------------------------------
-	// 窓全体で選ばれたフレーム（フレームグラフのクリックなど）へ画面を合わせる。Auto Scroll は止まる
+	// ウィンドウ全体で選ばれたフレーム（フレームグラフのクリックなど）へ画面を合わせる。Auto Scroll は止まる
 	//-------------------------------------------------------------------------
 	if ( SelectedFrameNumber != 0 && SelectedFrameNumber != State.FocusedFrameNumber )
 	{

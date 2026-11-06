@@ -4,10 +4,10 @@
 
 //=============================================================================
 // NBackendSelection
-//   どのプラットフォームの実装（窓・描画・読み込み・音・入力）を使うかを、起動の引数から決める窓口。
+//   どのプラットフォームの実装（ウィンドウ・描画・読み込み・音・入力）を使うかを、起動の引数から決める窓口。
 //   DxLib を読まない（Library/Platform/DxLib の外にある）ので、DxLib の実装も、DxLib を使わない実装も、同じ窓口で判断する。
 //
-//   game.exe --backend=null            窓を出さず、描かず、音を出さない実装（Library/Platform/Null）で動かす
+//   game.exe --backend=null            ウィンドウを出さず、描かず、音を出さない実装（Library/Platform/Null）で動かす
 //   game.exe                           （指定なし）DxLib の実装で動かす
 //
 //   各実装のサブシステムは、ShouldCreateSubsystem でこの窓口を見て、自分を作るかを決める。

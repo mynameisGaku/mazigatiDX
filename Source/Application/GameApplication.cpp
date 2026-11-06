@@ -17,7 +17,7 @@ DEFINE_LOG_CATEGORY_STATIC( LogGame, Log )
 
 void CGameApplication::OnInit()
 {
-	// デバッグ表示の窓に、アセットの画面・エディタを並べる。ログの窓とコンソールの準備は、Init で行う
+	// デバッグ表示のウィンドウに、アセットの画面・エディタを並べる。ログのウィンドウとコンソールの準備は、Init で行う
 	Overlay.OnDrawPanelItems = [this]() { NDebugUI::DrawAssetToolsButtons( AssetTools ); };
 	Overlay.OnDrawWindows = [this]()
 	{

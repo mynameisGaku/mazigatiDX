@@ -354,7 +354,7 @@ void NEffectPath::BuildTreeLightning( const FEffectPathDefinition& Definition, u
 	{
 		return;
 	}
-	// 成長中はleaderを暗くし、完成後は指定された放電窓だけを明るくする。
+	// 成長中はleaderを暗くし、完成後は指定された放電ウィンドウだけを明るくする。
 	const bool bGrowing = Age < GrowthEnd;
 	float32 Brightness = bGrowing ? 0.12f : 0.0f;
 	if ( !bGrowing )

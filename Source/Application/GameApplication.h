@@ -18,9 +18,9 @@ protected:
 	void OnTerm() override;
 
 private:
-	// 組み込みのデバッグ表示（F1: 窓、F2: プロファイラー、F3: コンソール、F11: フルスクリーン）
+	// 組み込みのデバッグ表示（F1: ウィンドウ、F2: プロファイラー、F3: コンソール、F11: フルスクリーン）
 	CDebugOverlay Overlay;
 
-	// アセットの画面・エディタ（Assets / Audio / スプライトシートエディタ / モデルのアニメーションエディタ）。デバッグ表示の窓に並べる
+	// アセットの画面・エディタ（Assets / Audio / スプライトシートエディタ / モデルのアニメーションエディタ）。デバッグ表示のウィンドウに並べる
 	FAssetToolsState AssetTools;
 };

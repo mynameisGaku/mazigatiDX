@@ -21,7 +21,7 @@
 //     Input->SetKeyDown( EKey::Space, true );     // 次のフレームの頭（PreUpdate の Tick）から、Space が押された状態になる
 //
 //   - 設定した値は、次の Tick で、現在の状態になる。そのときの IsKeyPressed / IsMouseButtonPressed は、前の状態との差（押した瞬間）で決まる
-//   - マウスは、画面の中にあり、窓が有効（bFocused が true）として扱う。位置は SetMousePosition で決める（初めは 0, 0）
+//   - マウスは、画面の中にあり、ウィンドウが有効（bFocused が true）として扱う。位置は SetMousePosition で決める（初めは 0, 0）
 //=============================================================================
 class CNullInputSubsystem : public CAppSubsystem, public IInput, public ITextInput, public ICursorControl, public ITouchInput, public ITickable
 {

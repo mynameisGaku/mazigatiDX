@@ -153,7 +153,7 @@ int32 NWorldEdit::DuplicateObject( TWorldDocument& Document, int32 ObjectId )
 		Copy.Id = NewIds[i];
 		if ( i > 0 )
 		{
-			Copy.Parent = Remap( Copy.Parent );   // 根の親は、元と同じ（兄弟として並ぶ）
+			Copy.Parent = Remap( Copy.Parent );   // ルートの親は、元と同じ（兄弟として並ぶ）
 		}
 		for ( FWorldProp& Prop : Copy.Props )
 		{
@@ -168,7 +168,7 @@ int32 NWorldEdit::DuplicateObject( TWorldDocument& Document, int32 ObjectId )
 		}
 	}
 
-	// 元の部分木の、いちばん後ろの要素のすぐ後ろへ（元と同じ並びで）入れる
+	// 元のサブツリーの、いちばん後ろの要素のすぐ後ろへ（元と同じ並びで）入れる
 	for ( int32 i = 0; i < Copies.Num(); ++i )
 	{
 		World.Objects.Insert( Copies[i], LastIndexOfOriginal + 1 + i );
@@ -304,7 +304,7 @@ int32 NWorldEdit::GroupObjects( TWorldDocument& Document, const TArray<int32>& I
 		return WorldNoId;
 	}
 
-	// 親は、根の位置の中心。根が同じ親を持つなら、その親の子にする
+	// 親は、ルートの位置の中心。ルートが同じ親を持つなら、その親の子にする
 	const int32 CommonParent = Document.Get().FindObject( Roots[0] )->Parent;
 	bool bSameParent = true;
 	FVector3 Center = FVector3::Zero;
@@ -326,7 +326,7 @@ int32 NWorldEdit::GroupObjects( TWorldDocument& Document, const TArray<int32>& I
 	{
 		return WorldNoId;
 	}
-	// 親の並びでは、最初の根のあった位置へ
+	// 親の並びでは、最初のルートのあった位置へ
 	if ( bSameParent )
 	{
 		Reparent( Document, Group, GroupParent, Roots[0], false );
@@ -380,7 +380,7 @@ NWorldEdit::FWorldClipboard NWorldEdit::CopyObjects( const FWorldDefinition& Wor
 			FWorldObject Copy = World.Objects[Index];
 			if ( bFirst )
 			{
-				// 根は、ワールドでの姿勢にする（別の親の下へ貼っても、同じ場所に出るように）。親のいない根は、そのまま
+				// ルートは、ワールドでの姿勢にする（別の親の下へ貼っても、同じ場所に出るように）。親のいないルートは、そのまま
 				if ( Copy.Parent != WorldNoId )
 				{
 					Copy.Transform = FWorldTransform::FromTransform( NWorld::ComputeWorldTransform( World, Root ) );
@@ -447,7 +447,7 @@ TArray<int32> NWorldEdit::UnpackPrefab( TWorldDocument& Document, int32 ObjectId
 	}
 	const FTransform HostWorld = NWorld::ComputeWorldTransform( Document.Get(), ObjectId );
 
-	// 中身の根（親のいないもの）。根の姿勢を、ホストを掛けたワールドでの姿勢にして貼ると、貼り付けが、ホストからの相対（元のまま）に直す
+	// 中身のルート（親のいないもの）。ルートの姿勢を、ホストを掛けたワールドでの姿勢にして貼ると、貼り付けが、ホストからの相対（元のまま）に直す
 	TArray<int32> RootIds;
 	for ( const FWorldObject& Object : Prefab.Objects )
 	{
@@ -511,7 +511,7 @@ TArray<int32> NWorldEdit::PasteObjects( TWorldDocument& Document, const FWorldCl
 		}
 		else
 		{
-			// 根: 貼る先の親の下へ。ワールドでの位置をずらして、親の中のローカルの値にする
+			// ルート: 貼る先の親の下へ。ワールドでの位置をずらして、親の中のローカルの値にする
 			Copy.Parent = ParentId;
 			if ( ParentId == WorldNoId )
 			{

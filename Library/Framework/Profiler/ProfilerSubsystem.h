@@ -12,7 +12,7 @@
 // FProfilerWorkerBuffer
 //   メインスレッド以外のスレッド 1 つ分の、記録中のサンプル。スレッドごとに 1 つ（そのスレッドの最初の計測で作る）。
 //   ほかのスレッドと共有しないので、計測中のロックはこのバッファの Mutex だけ（メインスレッドがフレームの終わりに
-//   完成した木を取り出すときに、少しの間ぶつかる）
+//   完成したツリーを取り出すときに、少しの間ぶつかる）
 //=============================================================================
 struct FProfilerWorkerBuffer
 {
@@ -20,7 +20,7 @@ struct FProfilerWorkerBuffer
 	uint32 ThreadId = 0;
 	uint32 NameId = 0;
 	const char* NamePtr = nullptr;
-	TArray<FProfileSample> Samples;   // 完成した木から順に、フレームへ移して取り除く
+	TArray<FProfileSample> Samples;   // 完成したツリーから順に、フレームへ移して取り除く
 	int64 BaseId = 0;                 // Samples[0] の通し番号（取り除いても、開いているサンプルの番号は変わらない）
 	int32 CurrentTop = INDEX_NONE;    // 開いているサンプルのうち一番内側（Samples のインデックス）
 };
@@ -34,7 +34,7 @@ struct FProfilerWorkerBuffer
 //   GetAppSubsystem<IProfiler>() で取得する。
 //
 //   スレッド: メインスレッドは、ロックなしの速い経路で記録する。ほかのスレッドは、スレッドごとのバッファに記録し、
-//   メインスレッドのフレームの終わりに、完成した木を「木の根が始まった時刻のフレーム」へ移す。
+//   メインスレッドのフレームの終わりに、完成したツリーを「ツリーのルートが始まった時刻のフレーム」へ移す。
 //   文字列の表は全スレッドで共有し（登録は排他、引く方はロックなし）、スレッドごとの小さな控えで、ほとんどの呼び出しはロックしない。
 //=============================================================================
 class CProfilerSubsystem : public CAppSubsystem, public IProfiler
@@ -104,9 +104,9 @@ private:
 	FProfilerWorkerBuffer* GetWorkerBuffer();
 	int64 BeginWorkerSample( uint32 Category, uint32 Owner, uint32 Name, uint64 Instance, uint32 Label );
 	void EndWorkerSample( int64 SampleId );
-	// 別スレッドで完成した木を、開始時刻のフレームへ移す（メインスレッドのフレームの終わりに呼ぶ）
+	// 別スレッドで完成したツリーを、開始時刻のフレームへ移す（メインスレッドのフレームの終わりに呼ぶ）
 	void CollectWorkerSamples();
-	// Samples は木 1 つ分（根から始まる Count 個）。Parent は取り出した配列での位置なので、TreeStart（その配列での木の先頭の位置）を引いて使う
+	// Samples はツリー 1 つ分（ルートから始まる Count 個）。Parent は取り出した配列での位置なので、TreeStart（その配列でのツリーの先頭の位置）を引いて使う
 	void AddWorkerTree( const FProfilerWorkerBuffer& Buffer, const FProfileSample* Samples, int32 Count, int32 TreeStart );
 	void ClearWorkerBuffers();
 

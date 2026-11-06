@@ -18,7 +18,7 @@ namespace
 {
 	using FState = FWorldEditorState;
 
-	// パネルの窓を始める（最初の位置と大きさは、アプリの画面に対する割合）。閉じていれば false（End は呼ばなくてよい）
+	// パネルのウィンドウを始める（最初の位置と大きさは、アプリの画面に対する割合）。閉じていれば false（End は呼ばなくてよい）
 	bool BeginPanel( FState& S, const char* Title, bool* pOpen, float32 X, float32 Y, float32 Width, float32 Height )
 	{
 		NWorldEditorUI::SetNextWindowRect( X, Y, Width, Height );

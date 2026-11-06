@@ -22,7 +22,7 @@ struct FImportMatrix
 	bool NearlyEquals( const FImportMatrix& Other, float32 Tolerance = 1.0e-5f ) const;
 };
 
-// 骨（階層）。Parent は FImportedScene::Nodes の番号（-1 で根）
+// 骨（階層）。Parent は FImportedScene::Nodes の番号（-1 でルート）
 struct FImportedNode
 {
 	FString Name;

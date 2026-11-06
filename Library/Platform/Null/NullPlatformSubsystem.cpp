@@ -86,7 +86,7 @@ void CNullPlatformSubsystem::InitImGui()
 	{
 		IO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	}
-	// 窓を持たないので、窓の外へ出す機能は使えない。利用者の imgui.ini は、読まず、書かない
+	// ウィンドウを持たないので、ウィンドウの外へ出す機能は使えない。利用者の imgui.ini は、読まず、書かない
 	IO.IniFilename = nullptr;
 	// 文字の画像は、AnswerImGuiTextureRequests が「できた」と答える
 	IO.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;

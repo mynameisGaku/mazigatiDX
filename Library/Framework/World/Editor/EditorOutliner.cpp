@@ -179,7 +179,7 @@ TArray<FEditorOutlinerRow> NWorldEditor::BuildOutlinerRows( const FWorldDefiniti
 		Walk( Root );
 	}
 
-	// 循環していて、木からたどれないもの（畳まれた木の中は、まだ「たどっていない」だけなので除く）
+	// 循環していて、ツリーからたどれないもの（畳まれたツリーの中は、まだ「たどっていない」だけなので除く）
 	TArray<bool> Reachable;
 	Reachable.Init( false, Num );
 	{

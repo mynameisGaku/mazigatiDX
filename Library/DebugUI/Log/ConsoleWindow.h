@@ -6,7 +6,7 @@
 #include "Library/Framework/Console/ConsoleTypes.h"
 
 //=============================================================================
-// コンソールの窓（ImGui）。実行中にコマンドを入力する。デバッグ限定（Debug ビルド。COG_DEBUG_CONSOLE が 1 のときだけ呼ぶ）。
+// コンソールのウィンドウ（ImGui）。実行中にコマンドを入力する。デバッグ限定（Debug ビルド。COG_DEBUG_CONSOLE が 1 のときだけ呼ぶ）。
 //
 //   入力すると、すぐ下に「予測変換」（コマンド名・引数の候補・同じ書き出しの履歴）が説明つきで出る。
 //   コマンド名を打ち終えると、その使い方（いま入力している引数を強調）と、説明のある引数の説明が出る。
@@ -60,13 +60,13 @@ struct FConsoleWindowState
 
 namespace NDebugUI
 {
-	// 窓を描く（pOpen が false になったら閉じられた）
+	// ウィンドウを描く（pOpen が false になったら閉じられた）
 	void DrawConsoleWindow( FConsoleWindowState& State, bool* pOpen );
 
-	// 1 行を、窓に入力したときと同じように実行する（入力の表示 "> ..."・実行・履歴への追加）
+	// 1 行を、ウィンドウに入力したときと同じように実行する（入力の表示 "> ..."・実行・履歴への追加）
 	EConsoleResult ExecuteInConsole( FConsoleWindowState& State, const FString& Line );
 
-	// 履歴を Saved/ConsoleHistory.txt に保存・読み込み（窓が最初に描かれるときに読み込む）
+	// 履歴を Saved/ConsoleHistory.txt に保存・読み込み（ウィンドウが最初に描かれるときに読み込む）
 	void LoadConsoleHistory( FConsoleWindowState& State );
 	void SaveConsoleHistory( FConsoleWindowState& State );
 }

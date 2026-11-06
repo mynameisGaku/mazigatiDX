@@ -34,7 +34,7 @@ void FTransformWorld::Free( int32 Slot )
 		return;
 	}
 
-	// 子は親を失う。次に組み直すとき、新しい親（または根）に付け替える
+	// 子は親を失う。次に組み直すとき、新しい親（またはルート）に付け替える
 	for ( int32 Child = Nodes[Slot].FirstChild; Child != INDEX_NONE; Child = Nodes[Child].NextSibling )
 	{
 		if ( !Nodes.IsAlive( Child ) || Nodes[Child].Parent != Slot )
@@ -154,7 +154,7 @@ void FTransformWorld::RebuildHierarchy()
 		Parent.FirstChild = Slot;
 	}
 
-	// 3) 根から深さ順に並べる（幅優先）。同じ親の子が隣り合うので、Update で親のワールド値がキャッシュに乗る
+	// 3) ルートから深さ順に並べる（幅優先）。同じ親の子が隣り合うので、Update で親のワールド値がキャッシュに乗る
 	Entries.Reset();
 	Entries.Reserve( static_cast<size_t>( Nodes.GetNumAlive() ) );
 	LevelStart.Reset();

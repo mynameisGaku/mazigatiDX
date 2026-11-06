@@ -294,7 +294,7 @@ void NWorldEditorUI::DrawMeshToolbar( FWorldEditorState& S )
 	const bool bHasChosen = !Session.GetMeshSelection().IsEmpty();
 	const bool bBusy = Session.IsGizmoDragging();
 
-	// 前の部品の右に続けて置く。右端に収まらなければ、次の行に折り返す（窓が狭くても、はみ出さない）
+	// 前の部品の右に続けて置く。右端に収まらなければ、次の行に折り返す（ウィンドウが狭くても、はみ出さない）
 	const auto Continue = [] ( float NextWidth )
 	{
 		const ImGuiStyle& Style = ImGui::GetStyle();

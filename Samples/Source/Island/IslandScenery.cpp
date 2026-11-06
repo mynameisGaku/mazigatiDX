@@ -79,7 +79,7 @@ namespace
 		}
 	}
 
-	// 灯台: 赤と白の段・灯室・屋根
+	// 灯台: 赤と白の段・灯室・屋ルート
 	void RecordLighthouse( FDrawContext& CommandList, const FIslandState& State )
 	{
 		const FVector3& Base = State.LighthousePosition;

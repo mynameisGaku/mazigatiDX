@@ -76,7 +76,7 @@ public:
 	// このモデルの骨に、AnimSource のアニメーションの骨がどれだけ合うか（モーション専用ファイルを別のモデルに使うときの確認）
 	FBoneMatch CompareBones( const CModel& AnimSource ) const;
 
-	// 構造（フレームの木・メッシュ・材質と読み込んだときの色・テクスチャ）。読み込みが終わるまで、またはバックエンドが答えられないときは空（答えられるようになったら読む）
+	// 構造（フレームのツリー・メッシュ・材質と読み込んだときの色・テクスチャ）。読み込みが終わるまで、またはバックエンドが答えられないときは空（答えられるようになったら読む）
 	const FModelStructure& GetStructure() const;
 	// 名前で番号を探す（最初に見つかったもの。無ければ -1）
 	int32 FindFrame( const FString& Name ) const;

@@ -124,7 +124,7 @@ int32 CDxLibAssetBackendSubsystem::CreateModelMaterialGeometry( const FStaticMod
 
 		// section内のindexだけを、元vertex順と三角形向きを保って分割する。
 		TArray<FMeshGeometryChunk> SectionChunks;
-		// 元sectionだけを参照する三角形index窓。
+		// 元sectionだけを参照する三角形indexウィンドウ。
 		const TArrayView<const uint32> SectionIndices( Surface.Indices.GetData() + Section.FirstIndex, Section.NumIndices );
 		if ( !NMeshGeometry::BuildChunks( Surface.Vertices, SectionIndices, SectionChunks ) )
 		{
