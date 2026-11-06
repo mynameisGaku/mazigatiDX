@@ -67,6 +67,9 @@
     <ClCompile Include="Library\DebugUI\Asset\AssetTools.cpp">
       <Filter>Library\DebugUI\Asset</Filter>
     </ClCompile>
+    <ClCompile Include="Library\DebugUI\Asset\AssetUsesPanel.cpp">
+      <Filter>Library\DebugUI\Asset</Filter>
+    </ClCompile>
     <ClCompile Include="Library\DebugUI\Asset\ModelAnimationEditor.cpp">
       <Filter>Library\DebugUI\Asset</Filter>
     </ClCompile>
@@ -239,6 +242,9 @@
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\AssetSubsystem.cpp">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\AssetUsageScanner.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\EditorAssetInfo.cpp">
@@ -744,6 +750,9 @@
     </ClCompile>
     <ClCompile Include="Library\Framework\Text\TextLayout.cpp">
       <Filter>Library\Framework\Text</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\World\Definition\WorldAssetUse.cpp">
+      <Filter>Library\Framework\World\Definition</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\World\Definition\WorldDefinition.cpp">
       <Filter>Library\Framework\World\Definition</Filter>
@@ -1833,6 +1842,9 @@
     <ClInclude Include="Library\DebugUI\Asset\AssetTools.h">
       <Filter>Library\DebugUI\Asset</Filter>
     </ClInclude>
+    <ClInclude Include="Library\DebugUI\Asset\AssetUsesPanel.h">
+      <Filter>Library\DebugUI\Asset</Filter>
+    </ClInclude>
     <ClInclude Include="Library\DebugUI\Asset\ModelAnimationEditor.h">
       <Filter>Library\DebugUI\Asset</Filter>
     </ClInclude>
@@ -1984,6 +1996,9 @@
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\AssetSubsystem.h">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\AssetUsageScanner.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\EditorAssetInfo.h">
@@ -2669,6 +2684,9 @@
     </ClInclude>
     <ClInclude Include="Library\Framework\Text\TextLayout.h">
       <Filter>Library\Framework\Text</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\World\Definition\WorldAssetUse.h">
+      <Filter>Library\Framework\World\Definition</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\World\Definition\WorldDefinition.h">
       <Filter>Library\Framework\World\Definition</Filter>

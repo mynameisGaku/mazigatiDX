@@ -87,6 +87,7 @@
     <ClCompile Include="Library\DebugUI\AI\NodeGraph.cpp" />
     <ClCompile Include="Library\DebugUI\Asset\AssetBrowser.cpp" />
     <ClCompile Include="Library\DebugUI\Asset\AssetTools.cpp" />
+    <ClCompile Include="Library\DebugUI\Asset\AssetUsesPanel.cpp" />
     <ClCompile Include="Library\DebugUI\Asset\ModelAnimationEditor.cpp" />
     <ClCompile Include="Library\DebugUI\Asset\SpriteSheetEditor.cpp" />
     <ClCompile Include="Library\DebugUI\Common\EditorCommon.cpp" />
@@ -145,6 +146,7 @@
     <ClCompile Include="Library\Framework\Asset\AssetBundle.cpp" />
     <ClCompile Include="Library\Framework\Asset\AssetService.cpp" />
     <ClCompile Include="Library\Framework\Asset\AssetSubsystem.cpp" />
+    <ClCompile Include="Library\Framework\Asset\AssetUsageScanner.cpp" />
     <ClCompile Include="Library\Framework\Asset\EditorAssetInfo.cpp" />
     <ClCompile Include="Library\Framework\Asset\Data\BehaviorTreeAsset.cpp" />
     <ClCompile Include="Library\Framework\Asset\Data\BehaviorTreeLoader.cpp" />
@@ -313,6 +315,7 @@
     <ClCompile Include="Library\Framework\Subsystem\Subsystem.cpp" />
     <ClCompile Include="Library\Framework\Subsystem\SubsystemCollection.cpp" />
     <ClCompile Include="Library\Framework\Text\TextLayout.cpp" />
+    <ClCompile Include="Library\Framework\World\Definition\WorldAssetUse.cpp" />
     <ClCompile Include="Library\Framework\World\Definition\WorldDefinition.cpp" />
     <ClCompile Include="Library\Framework\World\Definition\WorldEdit.cpp" />
     <ClCompile Include="Library\Framework\World\Definition\WorldHierarchy.cpp" />
@@ -677,6 +680,7 @@
     <ClInclude Include="Library\DebugUI\AI\NodeGraph.h" />
     <ClInclude Include="Library\DebugUI\Asset\AssetBrowser.h" />
     <ClInclude Include="Library\DebugUI\Asset\AssetTools.h" />
+    <ClInclude Include="Library\DebugUI\Asset\AssetUsesPanel.h" />
     <ClInclude Include="Library\DebugUI\Asset\ModelAnimationEditor.h" />
     <ClInclude Include="Library\DebugUI\Asset\SpriteSheetEditor.h" />
     <ClInclude Include="Library\DebugUI\Common\EditorCommon.h" />
@@ -728,6 +732,7 @@
     <ClInclude Include="Library\Framework\Asset\Asset.h" />
     <ClInclude Include="Library\Framework\Asset\AssetBundle.h" />
     <ClInclude Include="Library\Framework\Asset\AssetSubsystem.h" />
+    <ClInclude Include="Library\Framework\Asset\AssetUsageScanner.h" />
     <ClInclude Include="Library\Framework\Asset\EditorAssetInfo.h" />
     <ClInclude Include="Library\Framework\Asset\Data\BehaviorTreeAsset.h" />
     <ClInclude Include="Library\Framework\Asset\Data\BehaviorTreeLoader.h" />
@@ -956,6 +961,7 @@
     <ClInclude Include="Library\Framework\Subsystem\SubsystemCollection.h" />
     <ClInclude Include="Library\Framework\Subsystem\SubsystemCollection.inl" />
     <ClInclude Include="Library\Framework\Text\TextLayout.h" />
+    <ClInclude Include="Library\Framework\World\Definition\WorldAssetUse.h" />
     <ClInclude Include="Library\Framework\World\Definition\WorldDefinition.h" />
     <ClInclude Include="Library\Framework\World\Definition\WorldEdit.h" />
     <ClInclude Include="Library\Framework\World\Definition\WorldHierarchy.h" />

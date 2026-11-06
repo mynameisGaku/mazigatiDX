@@ -43,6 +43,9 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestAnimatorUnits.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestBrowser.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
     <ClCompile Include="Source\SelfTest\AssetSelfTestBuffers3D.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>

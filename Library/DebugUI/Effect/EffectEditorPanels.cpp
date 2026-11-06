@@ -637,6 +637,10 @@ void NEffectEditorUI::DrawDefinitionPanel( FEffectEditorState& S )
 	ImGui::PushItemWidth( -135.0f );
 	ImGui::SeparatorText( "Effect" );
 	DrawProperties( S );
+	if ( ImGui::CollapsingHeader( "Used by (worlds)" ) )
+	{
+		NDebugUI::DrawAssetUsesPanel( S.Uses, S.FilePath );
+	}
 	ImGui::SeparatorText( "Emitters" );
 	DrawEmitterList( S );
 	ImGui::Separator();

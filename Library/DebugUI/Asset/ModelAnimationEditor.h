@@ -4,6 +4,7 @@
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Framework/Animation/ModelAnimator.h"
+#include "Library/DebugUI/Asset/AssetUsesPanel.h"
 #include "Library/Framework/Asset/Definition/DefinitionEditing.h"
 #include "Library/Framework/Asset/Texture/RenderTarget.h"
 #include "Library/Framework/Asset/Model/ModelAnimationAsset.h"
@@ -44,6 +45,7 @@ struct FModelAnimationEditorState
 	float32 PreviewSpeed = 1.0f;
 	bool bLoopView = false;
 	TArray<TPair<FString, float32>> EventFlashes;   // 出来事の名前と、光らせる残り時間
+	FAssetUsesState Uses;                           // このアニメーションセットを使っているワールドの一覧（Used by タブ）
 	int32 ForceLeftTab = INDEX_NONE;                // 起動引数で、最初に開く左のタブ（0 Clips / 1 Model）
 
 	//-------------------------------------------------------------------------

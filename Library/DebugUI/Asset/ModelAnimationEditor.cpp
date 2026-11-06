@@ -1561,6 +1561,11 @@ void NDebugUI::DrawModelAnimationEditor( FModelAnimationEditorState& S, bool* pO
 		{
 			DrawModelTab( S ); ImGui::EndTabItem();
 		}
+		if ( ImGui::BeginTabItem( "Used by", nullptr, TabFlags( 2 ) ) )
+		{
+			NDebugUI::DrawAssetUsesPanel( S.Uses, S.FilePath );
+			ImGui::EndTabItem();
+		}
 		ImGui::EndTabBar();
 		S.ForceLeftTab = INDEX_NONE;
 	}

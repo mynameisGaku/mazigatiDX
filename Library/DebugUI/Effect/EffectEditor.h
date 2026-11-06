@@ -7,6 +7,7 @@
 #include "Library/Framework/Asset/Texture/Texture.h"
 #include "Library/Framework/World/Editor/EditorCamera.h"
 #include "Library/Framework/World/Editor/EditorGizmo.h"
+#include "Library/DebugUI/Asset/AssetUsesPanel.h"
 #include "Library/DebugUI/Effect/EffectPreviewSurface.h"
 
 // 内蔵エフェクトの編集中の文書、選択、再生と画面の寿命を一つのツールにまとめる。
@@ -14,6 +15,8 @@ struct FEffectEditorState
 {
 	// 保存前の定義と、元に戻す・やり直す履歴。
 	TParticleEffectDocument Document;
+	// このエフェクトを使っているワールドの一覧（Used by）
+	FAssetUsesState Uses;
 	// 編集中のファイル。空なら保存先が未定。
 	FString FilePath;
 	// 名前を付けて保存する際の入力欄。
