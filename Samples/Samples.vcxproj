@@ -15,6 +15,8 @@
     <ProjectGuid>{5E8B2C47-31A9-4D6F-8B0E-7A2C9D4F1E63}</ProjectGuid>
     <RootNamespace>Samples</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+    <!-- 64 ビット版のコンパイラ・リンカーを使う（32 ビット版は、Release のコード生成で、ヒープが足りなくなる: C1002） -->
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
     <!-- フレームワーク（mazigatiDX）のフォルダー。このフォルダーからの相対パス（末尾に \） -->
     <MazigatiDXRoot>..\</MazigatiDXRoot>
     <!-- GenerateProjectFiles.bat が、このフォルダー（; 区切り）の下のファイルを ClCompile / ClInclude に書き出す -->

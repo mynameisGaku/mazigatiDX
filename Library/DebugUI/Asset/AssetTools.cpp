@@ -413,6 +413,20 @@ void NDebugUI::DrawAssetToolsButtons( FAssetToolsState& State )
 	}
 }
 
+bool NDebugUI::IsAssetOpenInEditor( const FAssetToolsState& State, const FString& AssetPath )
+{
+	const FString Path = NWorld::NormalizeAssetPath( AssetPath );
+	for ( const FString* Open : { &State.SpriteSheet.FilePath, &State.ModelAnimation.FilePath, &State.EffectEditor.FilePath, &State.WorldEditor.Session.FilePath,
+								  &State.AIEditor.BlackboardPath, &State.AIEditor.StateMachinePath, &State.AIEditor.BehaviorTreePath } )
+	{
+		if ( !Open->IsEmpty() && NWorld::NormalizeAssetPath( *Open ) == Path )
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 bool NDebugUI::OpenAssetInEditor( FAssetToolsState& State, const FString& AssetPath )
 {
 	EAssetBrowserKind Kind = EAssetBrowserKind::Texture;
@@ -537,7 +551,7 @@ void NDebugUI::DrawAssetTools( FAssetToolsState& State )
 	}
 	if ( State.bShowBrowser )
 	{
-		DrawAssetBrowser( State.Browser, [&State]( const FString& Path ) { return OpenAssetInEditor( State, Path ); }, &State.bShowBrowser );
+		DrawAssetBrowser( State.Browser, [&State]( const FString& Path ) { return OpenAssetInEditor( State, Path ); }, [&State]( const FString& Path ) { return IsAssetOpenInEditor( State, Path ); }, &State.bShowBrowser );
 	}
 	if ( State.bShowAIEditor )
 	{

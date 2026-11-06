@@ -238,6 +238,9 @@
     <ClCompile Include="Library\Framework\Asset\AssetBundle.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\AssetReferences.cpp">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Asset\AssetService.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
@@ -1993,6 +1996,9 @@
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\AssetBundle.h">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\AssetReferences.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\AssetSubsystem.h">

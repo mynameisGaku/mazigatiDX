@@ -71,6 +71,9 @@ namespace NDebugUI
 	// エディタのウィンドウも出す。エディタが無い種類・そのエディタに未保存の変更がある（別のファイルを開くと失われる）ときは、開かずに false
 	bool OpenAssetInEditor( FAssetToolsState& State, const FString& AssetPath );
 
+	// そのファイルが、どれかのエディタで開かれているか（パスの区切りと大文字小文字の違いは無視する）。開かれているファイルは、改名・削除させない
+	bool IsAssetOpenInEditor( const FAssetToolsState& State, const FString& AssetPath );
+
 	// 同じ切り替えを、メニューの項目として出す（エディタ専用の実行ファイルのメニューバー用。BeginMenu の中で呼ぶ）
 	void DrawAssetToolsMenuItems( FAssetToolsState& State );
 

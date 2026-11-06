@@ -23,6 +23,8 @@
     <ProjectGuid>{EFAFCEE4-F6EA-4651-BA3F-DC3176CDD3A8}</ProjectGuid>
     <RootNamespace>project</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+    <!-- 64 ビット版のコンパイラ・リンカーを使う（32 ビット版は、Release のコード生成で、ヒープが足りなくなる: C1002） -->
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
     <!-- GenerateProjectFiles.bat が、このフォルダー（; 区切り）の下のファイルを ClCompile / ClInclude に書き出す -->
     <MazigatiSourceRoots>Source</MazigatiSourceRoots>
   </PropertyGroup>

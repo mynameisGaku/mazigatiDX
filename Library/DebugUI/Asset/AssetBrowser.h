@@ -5,6 +5,7 @@
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Types/Callable.h"
 #include "Library/Core/Types/TypeDefinition.h"
+#include "Library/Framework/Asset/AssetReferences.h"
 
 //=============================================================================
 // アセットのブラウザー（Project ウィンドウ）
@@ -49,6 +50,13 @@ struct FAssetBrowserState
 	FString SelectedPath;
 	FString StatusMessage;
 	bool bStatusIsError = false;
+
+	// 改名・削除の確認ウィンドウ（右クリックの Rename / Delete。ファイルを指しているアセットの一覧つき）
+	enum class EDialog : uint8 { None, Rename, Delete } Dialog = EDialog::None;
+	bool bOpenDialogRequested = false;
+	FString DialogPath;                   // 対象のファイル
+	FString RenameNewPath;
+	TArray<FAssetReference> DialogReferences;
 };
 
 namespace NDebugUI
@@ -65,6 +73,7 @@ namespace NDebugUI
 	// 覚えている要求を取り出す（取り出すと空になる）。無ければ false
 	bool TakeOpenAssetRequest( FString& OutPath );
 
-	// ウィンドウを 1 つ出す。OnOpen( パス ) は、エディタで開く処理（開けなければ false。理由は Status に出してよい）
-	void DrawAssetBrowser( FAssetBrowserState& State, const TCallable<bool( const FString& )>& OnOpen, bool* pOpen = nullptr );
+	// ウィンドウを 1 つ出す。OnOpen( パス ) は、エディタで開く処理（開けなければ false。理由は Status に出してよい）。
+	// IsOpenInEditor( パス ) は、そのファイルが、どれかのエディタで開かれているか（開かれているファイルは、改名・削除させない）
+	void DrawAssetBrowser( FAssetBrowserState& State, const TCallable<bool( const FString& )>& OnOpen, const TCallable<bool( const FString& )>& IsOpenInEditor, bool* pOpen = nullptr );
 }

@@ -3,6 +3,7 @@
 
 #include "Library/Core/Collection/Sort.h"
 #include "Library/DebugUI/Common/EditorCommon.h"
+#include "Library/Framework/Asset/AssetReferences.h"
 #include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Math/MathUtils.h"
@@ -130,6 +131,115 @@ namespace
 		}
 	}
 
+	// 改名・削除の確認ウィンドウ。参照しているアセットの一覧を見せて、改名なら、参照も書き換える
+	void DrawManageDialog( FAssetBrowserState& State, CAssetSubsystem& Assets )
+	{
+		using EDialog = FAssetBrowserState::EDialog;
+		if ( State.Dialog == EDialog::None )
+		{
+			return;
+		}
+		const char* Title = State.Dialog == EDialog::Rename ? "Rename asset###AssetManageDialog" : "Delete asset###AssetManageDialog";
+		if ( State.bOpenDialogRequested )
+		{
+			State.bOpenDialogRequested = false;
+			ImGui::OpenPopup( Title );
+		}
+		bool bOpen = true;
+		ImGui::SetNextWindowSize( ImVec2( 520.0f, 0.0f ), ImGuiCond_Appearing );
+		if ( !ImGui::BeginPopupModal( Title, &bOpen, ImGuiWindowFlags_AlwaysAutoResize ) )
+		{
+			if ( !bOpen )
+			{
+				State.Dialog = EDialog::None;
+			}
+			return;
+		}
+		ImGui::TextUnformatted( UI_TEXT( State.DialogPath ) );
+		int32 NumReferences = 0;
+		for ( const FAssetReference& Reference : State.DialogReferences )
+		{
+			NumReferences += Reference.Count;
+		}
+		if ( State.DialogReferences.Num() > 0 )
+		{
+			if ( State.Dialog == EDialog::Rename )
+			{
+				ImGui::TextDisabled( "%d reference(s) in %d file(s); they will be updated to the new path:", NumReferences, State.DialogReferences.Num() );
+			}
+			else
+			{
+				ImGui::TextColored( ImVec4( 1.0f, 0.75f, 0.35f, 1.0f ), "%d reference(s) in %d file(s) will be left pointing at nothing:", NumReferences, State.DialogReferences.Num() );
+			}
+			ImGui::BeginChild( "##refs", ImVec2( 0.0f, NMath::Min( 160.0f, 22.0f * static_cast<float>( State.DialogReferences.Num() ) + 8.0f ) ), ImGuiChildFlags_Borders );
+			for ( const FAssetReference& Reference : State.DialogReferences )
+			{
+				ImGui::BulletText( "%s  (%d)", UI_TEXT( Reference.FilePath ), Reference.Count );
+			}
+			ImGui::EndChild();
+		}
+		else
+		{
+			ImGui::TextDisabled( "Nothing refers to this file." );
+		}
+		bool bDone = false;
+		if ( State.Dialog == EDialog::Rename )
+		{
+			ImGui::SetNextItemWidth( -FLT_MIN );
+			NDebugUI::InputStringWithHint( "##newpath", "new path (same extension)", State.RenameNewPath );
+			ImGui::BeginDisabled( State.RenameNewPath.IsEmpty() || State.RenameNewPath == State.DialogPath );
+			if ( ImGui::Button( "Rename" ) )
+			{
+				const FAssetRenameResult Result = NAssetReferences::RenameAsset( Assets, State.DialogPath, State.RenameNewPath );
+				if ( Result.bSuccess )
+				{
+					State.StatusMessage = "Renamed " + State.DialogPath + " to " + State.RenameNewPath + " (" + FString::FromInt( Result.Updated.Num() ) + " file(s) updated). Reopen the editors that had the updated files open.";
+					State.bStatusIsError = false;
+					State.SelectedPath = State.RenameNewPath;
+					State.LastScanTime = -100.0;
+				}
+				else
+				{
+					State.StatusMessage = "Rename failed: " + Result.Error;
+					State.bStatusIsError = true;
+				}
+				bDone = true;
+			}
+			ImGui::EndDisabled();
+		}
+		else
+		{
+			if ( ImGui::Button( "Delete" ) )
+			{
+				FString Error;
+				if ( NAssetReferences::DeleteAsset( Assets, State.DialogPath, &Error ) )
+				{
+					State.StatusMessage = "Deleted " + State.DialogPath;
+					State.bStatusIsError = false;
+					State.SelectedPath = FString();
+					State.LastScanTime = -100.0;
+				}
+				else
+				{
+					State.StatusMessage = "Delete failed: " + Error;
+					State.bStatusIsError = true;
+				}
+				bDone = true;
+			}
+		}
+		ImGui::SameLine();
+		if ( ImGui::Button( "Cancel" ) )
+		{
+			bDone = true;
+		}
+		if ( bDone )
+		{
+			State.Dialog = EDialog::None;
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
+	}
+
 	void Open( FAssetBrowserState& State, const TCallable<bool( const FString& )>& OnOpen, const FString& Path )
 	{
 		State.SelectedPath = Path;
@@ -210,7 +320,7 @@ const char* NDebugUI::ToString( EAssetBrowserKind Kind )
 	}
 }
 
-void NDebugUI::DrawAssetBrowser( FAssetBrowserState& State, const TCallable<bool( const FString& )>& OnOpen, bool* pOpen )
+void NDebugUI::DrawAssetBrowser( FAssetBrowserState& State, const TCallable<bool( const FString& )>& OnOpen, const TCallable<bool( const FString& )>& IsOpenInEditor, bool* pOpen )
 {
 	const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
 	ImGui::SetNextWindowPos( ImVec2( MainViewport->Pos.x + 20.0f, MainViewport->Pos.y + 44.0f ), ImGuiCond_FirstUseEver );
@@ -290,6 +400,28 @@ void NDebugUI::DrawAssetBrowser( FAssetBrowserState& State, const TCallable<bool
 				{
 					ImGui::SetClipboardText( *Entry.Path );
 				}
+				// 専用のエディタがあるファイル（データアセット）だけ、改名・削除できる。エディタで開いているファイルは、先に閉じる（保存する）必要がある
+				const bool bOpenInEditor = bEditable && IsOpenInEditor && IsOpenInEditor( Entry.Path );
+				ImGui::Separator();
+				if ( ImGui::MenuItem( "Rename...", nullptr, false, bEditable && !bOpenInEditor ) )
+				{
+					State.Dialog = FAssetBrowserState::EDialog::Rename;
+					State.bOpenDialogRequested = true;
+					State.DialogPath = Entry.Path;
+					State.RenameNewPath = Entry.Path;
+					State.DialogReferences = NAssetReferences::FindReferences( *Assets, Entry.Path );
+				}
+				if ( ImGui::MenuItem( "Delete...", nullptr, false, bEditable && !bOpenInEditor ) )
+				{
+					State.Dialog = FAssetBrowserState::EDialog::Delete;
+					State.bOpenDialogRequested = true;
+					State.DialogPath = Entry.Path;
+					State.DialogReferences = NAssetReferences::FindReferences( *Assets, Entry.Path );
+				}
+				if ( bOpenInEditor && ImGui::IsItemHovered( ImGuiHoveredFlags_AllowWhenDisabled ) )
+				{
+					ImGui::SetTooltip( "This file is open in an editor. Close it (or open another file there) first." );
+				}
 				ImGui::EndPopup();
 			}
 			ImGui::TableSetColumnIndex( 1 );
@@ -301,6 +433,7 @@ void NDebugUI::DrawAssetBrowser( FAssetBrowserState& State, const TCallable<bool
 		ImGui::EndTable();
 	}
 	ImGui::TextDisabled( "%d file(s) shown. Double-click a file to open it in its editor (right-click for more).", NumShown );
+	DrawManageDialog( State, *Assets );
 	if ( !State.StatusMessage.IsEmpty() )
 	{
 		if ( State.bStatusIsError )
