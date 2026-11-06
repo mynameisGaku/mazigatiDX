@@ -2,6 +2,7 @@
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/Common/EditorCommon.h"
+#include "Library/DebugUI/Asset/AssetBrowser.h"
 #include "Library/DebugUI/Common/ImGuiTexture.h"
 #include "Library/DebugUI/World/WorldEditorInternal.h"
 #include "Library/DebugUI/World/WorldEditorModelMaterialPanel.h"
@@ -465,9 +466,24 @@ namespace
 	void DrawAssetPathField( FState& S, const char* Label, FString& Path, const TArray<FString>& Files, bool& bOutChanged )
 	{
 		ImGui::TextUnformatted( Label );
-		ImGui::SetNextItemWidth( -FLT_MIN );
+		// 専用のエディタがある種類（.gxeffect / .gxmodelanim / .gxworld など）の欄には、右に Open ボタンを出す（ツール同士の連携）
+		EAssetBrowserKind Kind = EAssetBrowserKind::Texture;
+		const bool bCanOpen = !Path.IsEmpty() && NDebugUI::TryGetAssetBrowserKind( Path, Kind ) && NDebugUI::HasEditor( Kind ) && S.AssetInfo.IsValid() && S.AssetInfo->Exists( Path );
+		ImGui::SetNextItemWidth( bCanOpen ? -56.0f : -FLT_MIN );
 		ImGui::PushID( Label );
 		bOutChanged = NDebugUI::FileCombo( "##Path", Path, Files, "(none)" );
+		if ( bCanOpen )
+		{
+			ImGui::SameLine();
+			if ( ImGui::Button( "Open" ) )
+			{
+				NDebugUI::RequestOpenAssetInEditor( Path );
+			}
+			if ( ImGui::IsItemHovered() )
+			{
+				ImGui::SetTooltip( "Open this file in its editor (%s)", NDebugUI::ToString( Kind ) );
+			}
+		}
 		ImGui::PopID();
 		if ( !Path.IsEmpty() && S.AssetInfo.IsValid() && !S.AssetInfo->Exists( Path ) )
 		{

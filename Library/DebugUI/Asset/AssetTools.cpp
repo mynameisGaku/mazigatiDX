@@ -497,6 +497,15 @@ void NDebugUI::DrawAssetTools( FAssetToolsState& State )
 		State.bCommandLineApplied = true;
 		ApplyAssetToolsCommandLine( State );
 	}
+	// 他のエディタからの「開いて」という要求（ツール同士の連携）。開けなければ、Project ウィンドウの下に理由を出す
+	FString OpenRequest;
+	if ( TakeOpenAssetRequest( OpenRequest ) )
+	{
+		const bool bOpened = OpenAssetInEditor( State, OpenRequest );
+		State.Browser.StatusMessage = bOpened ? "Opened " + OpenRequest : "Could not open '" + OpenRequest + "' (the editor has unsaved changes: save or discard them first).";
+		State.Browser.bStatusIsError = !bOpened;
+		State.Browser.SelectedPath = OpenRequest;
+	}
 	NDebugUI::TickImGuiTextureCache();
 
 	if ( State.bShowSpriteSheetEditor )

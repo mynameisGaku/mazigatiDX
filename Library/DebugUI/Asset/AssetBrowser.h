@@ -59,6 +59,12 @@ namespace NDebugUI
 	bool HasEditor( EAssetBrowserKind Kind );
 	const char* ToString( EAssetBrowserKind Kind );
 
+	// 「このファイルを、その種類のエディタで開いて」という要求（ツール同士の連携）。どのエディタからも呼べる（例: ワールドエディタのエフェクトの欄の Open ボタン）。
+	// 要求は 1 つだけ覚え（あとの要求が、前の要求を置き換える）、DrawAssetTools が、次のフレームの頭で OpenAssetInEditor に渡す。ゲームスレッドから呼ぶ
+	void RequestOpenAssetInEditor( const FString& AssetPath );
+	// 覚えている要求を取り出す（取り出すと空になる）。無ければ false
+	bool TakeOpenAssetRequest( FString& OutPath );
+
 	// ウィンドウを 1 つ出す。OnOpen( パス ) は、エディタで開く処理（開けなければ false。理由は Status に出してよい）
 	void DrawAssetBrowser( FAssetBrowserState& State, const TCallable<bool( const FString& )>& OnOpen, bool* pOpen = nullptr );
 }

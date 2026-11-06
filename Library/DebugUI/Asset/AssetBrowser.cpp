@@ -92,6 +92,8 @@ namespace
 		}
 	}
 
+	FString PendingOpenRequest;
+
 	void Rescan( FAssetBrowserState& State, bool bForce )
 	{
 		CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
@@ -155,6 +157,22 @@ bool NDebugUI::TryGetAssetBrowserKind( const FString& Path, EAssetBrowserKind& O
 		}
 	}
 	return false;
+}
+
+void NDebugUI::RequestOpenAssetInEditor( const FString& AssetPath )
+{
+	PendingOpenRequest = AssetPath;
+}
+
+bool NDebugUI::TakeOpenAssetRequest( FString& OutPath )
+{
+	if ( PendingOpenRequest.IsEmpty() )
+	{
+		return false;
+	}
+	OutPath = PendingOpenRequest;
+	PendingOpenRequest = FString();
+	return true;
 }
 
 bool NDebugUI::HasEditor( EAssetBrowserKind Kind )

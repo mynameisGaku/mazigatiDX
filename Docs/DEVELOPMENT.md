@@ -659,6 +659,7 @@ Worldの`Components.Effect`には、任意の`Target`（追従先オブジェク
 |起動する|`x64/Debug/Editor.exe`（または`Release`）。作業フォルダーに`Config/ScreenConfig.json`（ウィンドウの設定）を置きます|
 |編集するゲームのアセットを指す|`--assets=フォルダー`（そのゲームのアセットのルートフォルダー。無ければ、作業フォルダーの`Assets`）|
 |プロジェクトのブラウザー（Project）|アセットのルートの下のファイルを、種類別（スプライトシート・アニメーション・ワールド・エフェクト・AI・画像・モデル・音）に一覧します。名前で絞り込め、**ダブルクリック**（か、右クリック > Open in editor）で、その種類のエディタで開きます。エディタが無い種類（画像・音・モデル・`.gxparts`）は、灰色で、開けません。開く先のエディタに未保存の変更があるときは、失われないよう、開かずに、断ります。何も指定せずに起動すると、これが開きます（`--tool=project`でも開けます）。コードからは`NDebugUI::OpenAssetInEditor( Tools, パス )`|
+|エディタ同士をつなぐ|ワールドエディタのパス欄（エフェクト・アニメーションセット・ワールドファイル）の右の**Open**ボタンで、そのファイルを、専用のエディタ（エフェクトエディタなど）で開きます。他のエディタからも、`NDebugUI::RequestOpenAssetInEditor( パス )`を呼べば、同じことができます（要求は`DrawAssetTools`が、次のフレームの頭で受け取ります）|
 |最初に開くツールを指す|`--tool=project,aieditor`（`project` `assets` `audio` `sprite` `model` `world` `effect` `ai` `aieditor`。カンマ区切り）、`--ai-file=AI/Guard.gxbt`、`--open=パス`（拡張子から、その種類のエディタで開く）、`--world=...`など（`AssetTools.h`の起動引数。何も指定しなければ、アセットの画面を開きます）|
 |ゲーム固有のAIの部品を、エディタで使う|ゲームの部品（C++）は、エディタ専用の実行ファイルにはありません。ゲームが、部品の**カタログ**（`.gxparts`。名前・カテゴリ・説明・パラメータのスキーマ・別名）を書き出し、エディタがそれを読んで「名前とスキーマだけの部品」（何もしない）を登録します。これで、部品を一覧から選べ、パラメータの入力欄がスキーマから出て、「未登録」の警告も出ません（実行は、ゲームの実行ファイルが、本物の部品で行います）|
 |カタログを書き出す|ゲームのコンソール（F3）の`ai.parts`（アセットのルートの`AI/AIParts.gxparts`へ。パスも指せます）。Samplesは、`--sample=AI --export-ai-parts`で書き出せます。コードからは`NAI::SavePartsCatalog( Assets )`（`Library/Framework/AI/Registry/AIPartsCatalog.h`）|
