@@ -110,6 +110,8 @@
     <ClCompile Include="Library\Framework\AI\Blackboard\BlackboardValue.cpp" />
     <ClCompile Include="Library\Framework\AI\Registry\AIRegistry.cpp" />
     <ClCompile Include="Library\Framework\AI\Registry\ParamSchema.cpp" />
+    <ClCompile Include="Library\Framework\AI\StateMachine\StateMachineDefinition.cpp" />
+    <ClCompile Include="Library\Framework\AI\StateMachine\StateMachineRuntime.cpp" />
     <ClCompile Include="Library\Framework\Animation\AnimationBlend.cpp" />
     <ClCompile Include="Library\Framework\Animation\AnimationTimeline.cpp" />
     <ClCompile Include="Library\Framework\Animation\ModelAnimationSampler.cpp" />
@@ -666,6 +668,8 @@
     <ClInclude Include="Library\Framework\AI\Registry\AIParts.h" />
     <ClInclude Include="Library\Framework\AI\Registry\AIRegistry.h" />
     <ClInclude Include="Library\Framework\AI\Registry\ParamSchema.h" />
+    <ClInclude Include="Library\Framework\AI\StateMachine\StateMachineDefinition.h" />
+    <ClInclude Include="Library\Framework\AI\StateMachine\StateMachineRuntime.h" />
     <ClInclude Include="Library\Framework\Animation\AnimationBlend.h" />
     <ClInclude Include="Library\Framework\Animation\AnimationTimeline.h" />
     <ClInclude Include="Library\Framework\Animation\ModelAnimationSampler.h" />

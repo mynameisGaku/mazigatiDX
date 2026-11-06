@@ -25,6 +25,9 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestAI.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestAIStateMachine.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
     <ClCompile Include="Source\SelfTest\AssetSelfTestAnimatorUnits.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>

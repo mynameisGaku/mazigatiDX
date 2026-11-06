@@ -28,6 +28,8 @@ public:
 	virtual void OnEnter( FAIContext& /*Context*/ ) {}
 	virtual void OnTick( FAIContext& /*Context*/, float32 /*DeltaTime*/ ) {}
 	virtual void OnExit( FAIContext& /*Context*/ ) {}
+	// アニメーションの出来事（OnClipEvent で指した名前）が起きたとき。OnClipEvent に書く処理は、これを実装する（"Hit" で当たり判定を出す、など）
+	virtual void OnEvent( FAIContext& /*Context*/, const FString& /*EventName*/ ) {}
 };
 
 // 遷移の条件になる判定
