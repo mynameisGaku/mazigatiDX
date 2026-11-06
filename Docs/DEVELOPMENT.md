@@ -312,6 +312,18 @@ if ( Animator.ConsumeRootMotion( ReferenceToActorBasis, RootTranslation, RootRot
 
 古い名前（`.sheet.json` / `.effect.json` / `.modelanim.json` / `.world`）の資産は、一覧にも出ず、読み込まれません。手元の資産は、`Tools\MigrateAssetExtensions.ps1 -Root <資産のフォルダ>`で移せます。ファイルの名前を替え、ワールドや別の資産の中の古い名前の参照も、まとめて書き換えます（中身の形式、文字コード、改行は変わりません）。`-DryRun`を付けると、何が起きるかだけを表示して、何も変えません。同じ名前の新しいファイルがすでにあるときは、そのファイルを触らずに知らせます。
 
+## ムービー
+
+|やりたいこと|使うもの|
+|---|---|
+|ムービー（mp4など）を再生する|`CMovieSubsystem::Open( パス )`で`CMovie`を開き、`Play( bLoop )`で再生します。相対パスはアセットのルートフォルダから探します。開けた形式はバックエンドによります（DxLibはWindowsが読めるmp4・wmv・aviなど）|
+|再生中のコマを描く|`CMovie`は`IImage`なので、`Draw.Image( X, Y, Movie )`のように画像として描けます|
+|止める・続ける・位置を動かす|`Pause`（位置を覚えて止める）・`Play`（続きから）・`Stop`（頭に戻して止める）・`Seek( 秒 )`・`GetPosition`・`IsPlaying`（終わると`false`）|
+|大きさ・長さ・コマ数|`CMovie::GetInfo()`（`FMovieInfo`。分からない項目は0）|
+|音量・速さ|`SetVolume( 0〜1 )`・`SetSpeed( 倍率 )`（速さに対応しないバックエンドは`false`）。音量はムービー自身のもので、`CAudioSubsystem`のバスには入りません|
+
+手放すと閉じます。`CMovieSubsystem`が終わるときに残っているムービーは使えなくなります（`IsValid()`が`false`）。DxLibには、ムービーを一度開くと`LoadGraph`が画像でないファイルを「ムービー」として開いて成功にしてしまう癖があるため、テクスチャの読み込み（`ITextureBackend::LoadTexture` / `CreateTextureFromMemory`）で弾いています（非同期の読み込みは判別できません）。
+
 ## 音の情報・生の音（PCM）・ループ区間
 
 |やりたいこと|使うもの|

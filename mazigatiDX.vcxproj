@@ -215,6 +215,8 @@
     <ClCompile Include="Library\Framework\Input\Touch\TouchTracker.cpp" />
     <ClCompile Include="Library\Framework\Job\AsyncTask.cpp" />
     <ClCompile Include="Library\Framework\Job\JobSubsystem.cpp" />
+    <ClCompile Include="Library\Framework\Movie\Movie.cpp" />
+    <ClCompile Include="Library\Framework\Movie\MovieSubsystem.cpp" />
     <ClCompile Include="Library\Framework\Object\GameObject.cpp" />
     <ClCompile Include="Library\Framework\Object\Object.cpp" />
     <ClCompile Include="Library\Framework\PixelEffect\Canvas\PixelBackdrop.cpp" />
@@ -345,6 +347,7 @@
     <ClCompile Include="Library\Platform\DxLib\Render\DxLibShapes3D.cpp" />
     <ClCompile Include="Library\Platform\DxLib\Render\DxLibVertex.cpp" />
     <ClCompile Include="Library\Platform\DxLib\Render\EffectMaterialRenderer.cpp" />
+    <ClCompile Include="Library\Platform\DxLib\Video\DxLibMovieBackendSubsystem.cpp" />
     <ClCompile Include="Library\Platform\DxLib\Window\DxLibDisplayInfoSubsystem.cpp" />
     <ClCompile Include="Library\Platform\DxLib\Window\DxLibWindowControlSubsystem.cpp" />
     <ClCompile Include="Library\Platform\Null\NullAssetBackendSubsystem.cpp" />
@@ -352,6 +355,7 @@
     <ClCompile Include="Library\Platform\Null\NullDisplayInfoSubsystem.cpp" />
     <ClCompile Include="Library\Platform\Null\NullDrawExecutorSubsystem.cpp" />
     <ClCompile Include="Library\Platform\Null\NullInputSubsystem.cpp" />
+    <ClCompile Include="Library\Platform\Null\NullMovieBackendSubsystem.cpp" />
     <ClCompile Include="Library\Platform\Null\NullPcmStreamBackendSubsystem.cpp" />
     <ClCompile Include="Library\Platform\Null\NullPlatformSubsystem.cpp" />
     <ClCompile Include="Library\Platform\Null\NullWindowControlSubsystem.cpp" />
@@ -592,6 +596,7 @@
     <ClInclude Include="Library\Core\Interfaces\Render\IShadowMap.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IVertexBuffer.h" />
     <ClInclude Include="Library\Core\Interfaces\Tickable\ITickable.h" />
+    <ClInclude Include="Library\Core\Interfaces\Video\MovieBackend.h" />
     <ClInclude Include="Library\Core\Log\Log.h" />
     <ClInclude Include="Library\Core\Log\LogCategory.h" />
     <ClInclude Include="Library\Core\Log\LogManager.h" />
@@ -782,6 +787,9 @@
     <ClInclude Include="Library\Framework\Input\Touch\TouchTypes.h" />
     <ClInclude Include="Library\Framework\Job\AsyncTask.h" />
     <ClInclude Include="Library\Framework\Job\JobSubsystem.h" />
+    <ClInclude Include="Library\Framework\Movie\Movie.h" />
+    <ClInclude Include="Library\Framework\Movie\MovieSubsystem.h" />
+    <ClInclude Include="Library\Framework\Movie\MovieTypes.h" />
     <ClInclude Include="Library\Framework\Object\GameObject.h" />
     <ClInclude Include="Library\Framework\Object\Object.h" />
     <ClInclude Include="Library\Framework\PixelEffect\Canvas\IPixelSurface.h" />
@@ -951,6 +959,7 @@
     <ClInclude Include="Library\Platform\DxLib\Render\DxLibShapes3D.h" />
     <ClInclude Include="Library\Platform\DxLib\Render\DxLibVertex.h" />
     <ClInclude Include="Library\Platform\DxLib\Render\EffectMaterialRenderer.h" />
+    <ClInclude Include="Library\Platform\DxLib\Video\DxLibMovieBackendSubsystem.h" />
     <ClInclude Include="Library\Platform\DxLib\Window\DxLibDisplayInfoSubsystem.h" />
     <ClInclude Include="Library\Platform\DxLib\Window\DxLibWindowControlSubsystem.h" />
     <ClInclude Include="Library\Platform\Null\NullAssetBackendSubsystem.h" />
@@ -958,6 +967,7 @@
     <ClInclude Include="Library\Platform\Null\NullDisplayInfoSubsystem.h" />
     <ClInclude Include="Library\Platform\Null\NullDrawExecutorSubsystem.h" />
     <ClInclude Include="Library\Platform\Null\NullInputSubsystem.h" />
+    <ClInclude Include="Library\Platform\Null\NullMovieBackendSubsystem.h" />
     <ClInclude Include="Library\Platform\Null\NullPcmStreamBackendSubsystem.h" />
     <ClInclude Include="Library\Platform\Null\NullPlatformSubsystem.h" />
     <ClInclude Include="Library\Platform\Null\NullWindowControlSubsystem.h" />

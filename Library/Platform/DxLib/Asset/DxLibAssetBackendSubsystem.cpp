@@ -49,6 +49,18 @@ namespace
 		explicit FAsyncScope( bool bAsync ) { SetUseASyncLoadFlag( bAsync ? TRUE : FALSE ); }
 		~FAsyncScope() { SetUseASyncLoadFlag( FALSE ); }
 	};
+
+	// DxLib の癖: ムービーを一度でも開いたあとは、LoadGraph / CreateGraphFromMem が、画像でないファイルを「ムービー」として開いて成功にしてしまう
+	// （大きさも出まかせ）。そのハンドルは画像として使えないので、捨てて失敗にする。非同期の読み込み中は、まだ判別できないので調べない
+	int RejectMovieHandle( int Handle )
+	{
+		if ( Handle >= 0 && GetMovieTotalFrameToGraph( Handle ) > 0 )
+		{
+			DeleteGraph( Handle );
+			return -1;
+		}
+		return Handle;
+	}
 }
 
 bool CDxLibAssetBackendSubsystem::ShouldCreateSubsystem( CEngine& Engine ) const
@@ -71,12 +83,13 @@ void CDxLibAssetBackendSubsystem::Initialize( FSubsystemCollection& Collection )
 int32 CDxLibAssetBackendSubsystem::LoadTexture( const FString& Path, bool bAsync )
 {
 	FAsyncScope Scope( bAsync );
-	return LoadGraph( *Path );
+	const int Handle = LoadGraph( *Path );
+	return bAsync ? Handle : RejectMovieHandle( Handle );
 }
 
 int32 CDxLibAssetBackendSubsystem::CreateTextureFromMemory( const void* FileImage, usize Size )
 {
-	return CreateGraphFromMem( FileImage, static_cast<int>( Size ) );
+	return RejectMovieHandle( CreateGraphFromMem( FileImage, static_cast<int>( Size ) ) );
 }
 
 int32 CDxLibAssetBackendSubsystem::CreateTextureRegion( int32 Source, int32 X, int32 Y, int32 Width, int32 Height )

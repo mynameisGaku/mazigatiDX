@@ -451,6 +451,12 @@
     <ClCompile Include="Library\Framework\Job\JobSubsystem.cpp">
       <Filter>Library\Framework\Job</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Movie\Movie.cpp">
+      <Filter>Library\Framework\Movie</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Movie\MovieSubsystem.cpp">
+      <Filter>Library\Framework\Movie</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Object\GameObject.cpp">
       <Filter>Library\Framework\Object</Filter>
     </ClCompile>
@@ -841,6 +847,9 @@
     <ClCompile Include="Library\Platform\DxLib\Render\EffectMaterialRenderer.cpp">
       <Filter>Library\Platform\DxLib\Render</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\Video\DxLibMovieBackendSubsystem.cpp">
+      <Filter>Library\Platform\DxLib\Video</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\Window\DxLibDisplayInfoSubsystem.cpp">
       <Filter>Library\Platform\DxLib\Window</Filter>
     </ClCompile>
@@ -860,6 +869,9 @@
       <Filter>Library\Platform\Null</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\Null\NullInputSubsystem.cpp">
+      <Filter>Library\Platform\Null</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Null\NullMovieBackendSubsystem.cpp">
       <Filter>Library\Platform\Null</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\Null\NullPcmStreamBackendSubsystem.cpp">
@@ -1578,6 +1590,9 @@
     <ClInclude Include="Library\Core\Interfaces\Tickable\ITickable.h">
       <Filter>Library\Core\Interfaces\Tickable</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Video\MovieBackend.h">
+      <Filter>Library\Core\Interfaces\Video</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Log\Log.h">
       <Filter>Library\Core\Log</Filter>
     </ClInclude>
@@ -2148,6 +2163,15 @@
     <ClInclude Include="Library\Framework\Job\JobSubsystem.h">
       <Filter>Library\Framework\Job</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Movie\Movie.h">
+      <Filter>Library\Framework\Movie</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Movie\MovieSubsystem.h">
+      <Filter>Library\Framework\Movie</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Movie\MovieTypes.h">
+      <Filter>Library\Framework\Movie</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Object\GameObject.h">
       <Filter>Library\Framework\Object</Filter>
     </ClInclude>
@@ -2655,6 +2679,9 @@
     <ClInclude Include="Library\Platform\DxLib\Render\EffectMaterialRenderer.h">
       <Filter>Library\Platform\DxLib\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\Video\DxLibMovieBackendSubsystem.h">
+      <Filter>Library\Platform\DxLib\Video</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\Window\DxLibDisplayInfoSubsystem.h">
       <Filter>Library\Platform\DxLib\Window</Filter>
     </ClInclude>
@@ -2674,6 +2701,9 @@
       <Filter>Library\Platform\Null</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\Null\NullInputSubsystem.h">
+      <Filter>Library\Platform\Null</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Null\NullMovieBackendSubsystem.h">
       <Filter>Library\Platform\Null</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\Null\NullPcmStreamBackendSubsystem.h">
@@ -4208,6 +4238,9 @@
     <Filter Include="Library\Core\Interfaces\Tickable">
       <UniqueIdentifier>{6BF12820-D4D9-0E12-2E02-CA7740695419}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Library\Core\Interfaces\Video">
+      <UniqueIdentifier>{1E16F5C3-14AE-F625-ABD0-3F2D01D5CE45}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Library\Core\Log">
       <UniqueIdentifier>{569D098E-6702-40B3-1E47-C27256C8B391}</UniqueIdentifier>
     </Filter>
@@ -4337,6 +4370,9 @@
     <Filter Include="Library\Framework\Job">
       <UniqueIdentifier>{7D8BE6D1-5987-EFE3-7845-5AD79F48D4EF}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Library\Framework\Movie">
+      <UniqueIdentifier>{1E3A05B7-EB01-58E3-4280-B85818AA3FEF}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Library\Framework\Object">
       <UniqueIdentifier>{AE7A0878-C4BF-1825-B73F-C9BE522D8B62}</UniqueIdentifier>
     </Filter>
@@ -4453,6 +4489,9 @@
     </Filter>
     <Filter Include="Library\Platform\DxLib\Render">
       <UniqueIdentifier>{E41253BB-00FD-FA77-8F11-EF28C94D8340}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DxLib\Video">
+      <UniqueIdentifier>{8C1C9265-BFD4-CE6B-2BF9-918353BB814F}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Platform\DxLib\Window">
       <UniqueIdentifier>{37409DE1-352B-CC5F-CFF7-B96539B867EF}</UniqueIdentifier>
