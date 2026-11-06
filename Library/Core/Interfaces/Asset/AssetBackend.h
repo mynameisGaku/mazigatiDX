@@ -176,7 +176,8 @@ public:
 	// フレーム・メッシュ・材質・テクスチャを写す
 	virtual bool GetModelStructure( int32 /*Model*/, FModelStructure& /*Out*/ ) { return false; }
 	// メッシュの中身（頂点と三角形）。Mesh は FModelStructure::Meshes の番号で、-1 なら全部。
-	// bCurrentPose が true なら、いまの姿勢（アニメーション・骨の上書き・形状を含む）の位置、false なら読み込んだままの位置
+	// bCurrentPose が true なら、いまの姿勢（アニメーション・骨の上書きを含む）の位置、false なら読み込んだままの位置。
+	// 形状（モーフ）の変形は、DxLib の参照用メッシュに出ないので、どちらにも含まれない（描画には効く）
 	virtual bool GetModelMeshData( int32 /*Model*/, int32 /*Mesh*/, bool /*bCurrentPose*/, FModelMeshData& /*Out*/ ) { return false; }
 	// 材質の色（いまの値）
 	virtual bool GetModelMaterialColors( int32 /*Model*/, int32 /*Material*/, FModelMaterialColors& /*Out*/ ) { return false; }

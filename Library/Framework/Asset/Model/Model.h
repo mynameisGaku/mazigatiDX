@@ -134,7 +134,7 @@ public:
 	bool ClearFrameLocalMatrixOverride( int32 Frame );
 
 	// メッシュの中身（頂点と三角形。モデルのローカル座標）。Mesh は FModelStructure::Meshes の番号で、-1 なら全部。メインスレッドだけ。
-	// bCurrentPose が true なら、いまの姿勢（アニメーション・骨の上書き・形状を含む）、false なら読み込んだままの形。
+	// bCurrentPose が true なら、いまの姿勢（アニメーション・骨の上書きを含む）、false なら読み込んだままの形。形状（モーフ）の変形は含まない（描画には効く）。
 	// 読み込み中・番号が範囲の外・バックエンドが答えられないときは false（Out は変えない）
 	bool GetMeshData( int32 Mesh, bool bCurrentPose, FModelMeshData& Out ) const;
 	// この 1 体の見た目（材質の色・表示・不透明度）を変える窓口。インスタンスより長く持たない
