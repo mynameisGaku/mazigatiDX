@@ -835,6 +835,7 @@
     <ClInclude Include="Library\Framework\Render\Draw\DrawModelFramePoseData.h" />
     <ClInclude Include="Library\Framework\Render\Draw\DrawModelMaterial.h" />
     <ClInclude Include="Library\Framework\Render\Draw\DrawRibbon.h" />
+    <ClInclude Include="Library\Framework\Render\Draw\DrawScopes.h" />
     <ClInclude Include="Library\Framework\Render\Draw\ImmediateDraw.h" />
     <ClInclude Include="Library\Framework\Render\MaterialEffect\MeshMaterialEffectPlayback.h" />
     <ClInclude Include="Library\Framework\Render\MaterialEffect\MeshMaterialEffectResources.h" />

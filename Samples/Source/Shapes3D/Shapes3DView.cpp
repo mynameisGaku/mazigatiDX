@@ -1,6 +1,7 @@
 ﻿#include "Shapes3DView.h"
 
 #include "Source/Shapes3D/Shapes3DScenery.h"
+#include "Library/Framework/Render/Draw/DrawScopes.h"
 
 CShapes3DView::CShapes3DView( const TSharedPtr<FShapes3DDemoState>& InState )
 	: State( InState )

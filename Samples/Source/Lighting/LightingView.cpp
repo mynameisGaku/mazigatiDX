@@ -1,6 +1,7 @@
 ﻿#include "LightingView.h"
 
 #include "Source/Lighting/LightingScenery.h"
+#include "Library/Framework/Render/Draw/DrawScopes.h"
 
 CLightingView::CLightingView( const TSharedPtr<FLightingDemoState>& InState )
 	: State( InState )

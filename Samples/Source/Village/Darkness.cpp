@@ -2,6 +2,7 @@
 
 #include "Library/Core/Interfaces/Input/IInput.h"
 #include "Library/Framework/Engine/Engine.h"
+#include "Library/Framework/Render/Draw/DrawScopes.h"
 
 namespace
 {

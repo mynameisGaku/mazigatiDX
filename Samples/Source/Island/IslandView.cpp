@@ -1,6 +1,7 @@
 ﻿#include "IslandView.h"
 
 #include "Library/Framework/Render/Draw/DrawContext.h"
+#include "Library/Framework/Render/Draw/DrawScopes.h"
 #include "Source/Island/IslandScenery.h"
 
 namespace

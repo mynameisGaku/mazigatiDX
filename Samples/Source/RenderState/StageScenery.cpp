@@ -4,6 +4,7 @@
 #include "Library/Framework/Asset/Texture/PixelImage.h"
 #include "Source/Common/SoftLighting.h"
 #include "Source/Common/TestPattern.h"
+#include "Library/Framework/Render/Draw/DrawScopes.h"
 
 namespace
 {

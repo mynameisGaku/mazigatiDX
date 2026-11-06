@@ -1,6 +1,7 @@
 ﻿#include "StageView.h"
 
 #include "Source/RenderState/StageScenery.h"
+#include "Library/Framework/Render/Draw/DrawScopes.h"
 
 CStageView::CStageView( const TSharedPtr<FRenderStateDemoState>& InState )
 	: State( InState )

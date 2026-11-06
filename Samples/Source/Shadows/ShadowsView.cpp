@@ -1,6 +1,7 @@
 ﻿#include "ShadowsView.h"
 
 #include "Source/Shadows/ShadowsScenery.h"
+#include "Library/Framework/Render/Draw/DrawScopes.h"
 
 CShadowsView::CShadowsView( const TSharedPtr<FShadowsDemoState>& InState )
 	: State( InState )

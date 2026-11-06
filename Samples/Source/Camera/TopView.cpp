@@ -1,6 +1,7 @@
 ﻿#include "TopView.h"
 
 #include "Source/Camera/Scenery.h"
+#include "Library/Framework/Render/Draw/DrawScopes.h"
 
 namespace
 {

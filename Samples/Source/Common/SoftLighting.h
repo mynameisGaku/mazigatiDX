@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Library/Framework/Render/Draw/DrawContext.h"
+#include "Library/Framework/Render/Draw/DrawScopes.h"
 
 //=============================================================================
 // NSoftLighting / FSoftLightingScope

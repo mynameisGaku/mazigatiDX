@@ -3,6 +3,7 @@
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
+#include "Library/Framework/Render/Draw/DrawScopes.h"
 #include "Library/Math/Math.h"
 
 //=============================================================================

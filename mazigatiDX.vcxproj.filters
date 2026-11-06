@@ -2307,6 +2307,9 @@
     <ClInclude Include="Library\Framework\Render\Draw\DrawRibbon.h">
       <Filter>Library\Framework\Render\Draw</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Render\Draw\DrawScopes.h">
+      <Filter>Library\Framework\Render\Draw</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Render\Draw\ImmediateDraw.h">
       <Filter>Library\Framework\Render\Draw</Filter>
     </ClInclude>

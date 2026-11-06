@@ -4,6 +4,7 @@
 #include "Library/Framework/Asset/Texture/PixelImage.h"
 #include "Library/Framework/Render/Types/Vertex3D.h"
 #include "Source/Common/SoftLighting.h"
+#include "Library/Framework/Render/Draw/DrawScopes.h"
 
 namespace
 {

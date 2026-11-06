@@ -1,6 +1,7 @@
 ﻿#include "MainView.h"
 
 #include "Source/Camera/Scenery.h"
+#include "Library/Framework/Render/Draw/DrawScopes.h"
 
 CMainView::CMainView( const TSharedPtr<FCameraDemoState>& InState )
 	: State( InState )
