@@ -10,6 +10,7 @@
 #include "Library/Core/Log/LogVerbosity.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
+#include "Library/Framework/AI/StateMachineComponent.h"
 #include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Audio/AudioSubsystem.h"
 #include "Library/Framework/Component/TransformComponent.h"
@@ -29,6 +30,7 @@ namespace
 	const char* CategoryWindow = "Window";
 	const char* CategoryScene = "Scene";
 	const char* CategoryObjects = "Objects";
+	const char* CategoryAI = "AI";
 	const char* CategoryEcs = "ECS";
 	const char* CategoryAssets = "Assets";
 	const char* CategoryAudio = "Audio";
@@ -1234,6 +1236,50 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 			 return true;
 		 },
 		 { { "on", "true to start recording, false to stop. Without it, shows the state." } }, CategoryProfiler );
+
+	//-------------------------------------------------------------------------
+	// AI
+	//-------------------------------------------------------------------------
+	Add( "ai.dump", "Show the state, the blackboard and the recent transitions of the state machines in the current scene",
+		 []( FConsoleContext& Context, TOptional<int64> ObjectId )
+		 {
+			 CScene* Scene = FindCurrentScene();
+			 if ( Scene == nullptr )
+			 {
+				 Context.Error( "no scene" );
+				 return false;
+			 }
+			 int32 Count = 0;
+			 for ( const TSharedPtr<CGameObject>& Object : Scene->GetObjects() )
+			 {
+				 CStateMachineComponent* Machine = Object.IsValid() ? Object->GetComponent<CStateMachineComponent>() : nullptr;
+				 if ( Machine == nullptr || ( ObjectId.IsSet() && static_cast<int64>( Object->GetId() ) != ObjectId.GetValue() ) )
+				 {
+					 continue;
+				 }
+				 Context.Print( FString::Printf( "#%llu %s: %s", static_cast<unsigned long long>( Object->GetId() ), *Object->GetDebugName(), *Machine->Describe() ) );
+				 ++Count;
+			 }
+			 Context.Print( FString::Printf( "%d state machine(s)", Count ) );
+			 return true;
+		 },
+		 { { "object", "Object id. Without it, shows every object that has a state machine." } }, CategoryAI );
+
+	Add( "ai.event", "Send an event to the state machine of an object",
+		 []( FConsoleContext& Context, int64 ObjectId, const FString& Event )
+		 {
+			 const TSharedPtr<CGameObject> Object = FindObjectByIdSafe( ObjectId );
+			 CStateMachineComponent* Machine = Object.IsValid() ? Object->GetComponent<CStateMachineComponent>() : nullptr;
+			 if ( Machine == nullptr )
+			 {
+				 Context.Error( "the object has no state machine" );
+				 return false;
+			 }
+			 Machine->SendEvent( Event );
+			 Context.Print( "sent '" + Event + "'" );
+			 return true;
+		 },
+		 { { "object", "Object id." }, { "event", "Event name (a transition's On / Event condition)." } }, CategoryAI );
 
 	Add( "profiler.capture", "Record a number of frames, then stop",
 		 []( FConsoleContext& Context, int32 Frames )

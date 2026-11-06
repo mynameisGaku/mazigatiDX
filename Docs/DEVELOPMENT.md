@@ -309,8 +309,30 @@ if ( Animator.ConsumeRootMotion( ReferenceToActorBasis, RootTranslation, RootRot
 |エフェクト|`.gxeffect`|
 |モデルのアニメーション|`.gxmodelanim`|
 |ワールド|`.gxworld`|
+|AIのブラックボード|`.gxblackboard`|
+|AIのステートマシン|`.gxstate`|
 
 古い名前（`.sheet.json` / `.effect.json` / `.modelanim.json` / `.world`）の資産は、一覧にも出ず、読み込まれません。手元の資産は、`Tools\MigrateAssetExtensions.ps1 -Root <資産のフォルダ>`で移せます。ファイルの名前を替え、ワールドや別の資産の中の古い名前の参照も、まとめて書き換えます（中身の形式、文字コード、改行は変わりません）。`-DryRun`を付けると、何が起きるかだけを表示して、何も変えません。同じ名前の新しいファイルがすでにあるときは、そのファイルを触らずに知らせます。
+
+## AI（ステートマシン・ブラックボード）
+
+状態遷移を`enum`と`switch`で書かず、データ（JSON）で定義して動かします。定義は`CAssetSubsystem`で読み込みます。ゲームの型（アニメーターなど）は、窓口を挟んでゲーム側が実装します。
+
+|やりたいこと|使うもの|
+|---|---|
+|AIが見る値の置き場を定義する|`.gxblackboard`（`FBlackboardDefinition`）。キーの型は`Bool` `Int` `Float` `Vector3` `Name` `Object`（`GetId()`の値）`Enum`。`"Trigger": true`のBoolは1フレームだけ真になる|
+|状態遷移を定義する|`.gxstate`（`FStateMachineDefinition`）。階層（`Machine`）・遷移（`From` `To` `When` `Priority` `MinTime`）・Any State遷移・`OnEnter` `OnTick` `OnExit`・`Clip`・`OnClipEvent`。書式は`StateMachineDefinition.h`の先頭|
+|オブジェクトで動かす|`CStateMachineComponent`を付ける（`AddComponent<CStateMachineComponent>( "AI/Player.gxstate" )`）。所有者の更新の前（`PreUpdate`）に動き、最初の`Tick`で読み込んで始まります|
+|値を渡す・読む|`Component->GetBlackboard()`（`FindKey`で名前を1回引いて番号を使い、`SetBool` `GetFloat`など）。値が実際に変わったときだけリビジョンが進みます|
+|イベントを送る|`Component->SendEvent( "Damaged" )`。遷移の`"On": "Damaged"`か`{ "Event": "Damaged" }`の条件で使われ、使った遷移が消費します|
+|処理や判定をC++で書く|`FAIStateAction`（`OnEnter` `OnTick` `OnExit` `OnEvent`）・`FAICondition`（`Evaluate`）を継承し、起動時に`NAI::RegisterStateAction<T>( "名前", FParamSchema()..., "カテゴリ" )`・`NAI::RegisterCondition<T>`で登録します。`AddAlias( "古い名前", "名前" )`で古い名前のJSONも読めます|
+|パラメータの型・範囲・既定値|`FParamSchema`（`Bool` `Int` `Float` `String` `Enum` `BlackboardKey` `Clip` `AssetPath`、続けて`Range` `Hint` `Required`）。JSONの読み込み・検証・（将来の）エディタの入力欄が、これ1つから決まります。部品は`Initialize( const FParamSet& )`で1回だけ読みます|
+|アニメーションと繋ぐ|ゲーム側が`IAIAnimationControl`（`PlayClip` `IsClipFinished` `ConsumeClipEvent` `HasClip`）を実装し、`Component->SetAnimationControl( &Animator )`で渡します|
+|実行中の状態を見る|コンソールの`ai.dump [オブジェクトID]`（ステートの経路・経過時間・ブラックボードの値・遷移の履歴）、`ai.event <オブジェクトID> <名前>`。コードからは`Component->Describe()`|
+
+1回の`Tick`の動きは、(1)経過時間を進める、(2)遷移を探す（最上位のAny State遷移→今のステートの遷移を葉から親へ。同じ一覧の中では`Priority`の大きい順、同じなら書いた順）、(3)あれば離れるステートの`OnExit`（葉から）→入るステートの`OnEnter`（親から）、(4)いるステートの`OnTick`とアニメーションの出来事への反応、です。同じ`Tick`で続けて遷移できるのは8回までで、同じ遷移は1回の`Tick`で2度起きません（上限に当たると警告して残りは次の`Tick`へ）。Any State遷移は、どのステートからでも（終点の`Dead`などからも）起きるので、終わりのステートが入れない条件（`bDead == false`など）を付けます。
+
+壊れた定義でもゲームは落ちません。未登録の部品・無いブラックボードのキー・型に合わない比較・無い遷移先は、問題の一覧（`GetIssues()`とログ）に出て、その部分だけが無効（条件は常に偽）になります。ステートが1つも無い・入口が無い・マシンの子が無いときは、動きません。ビヘイビアツリー・エディタ・デバッガは、これから足します。
 
 ## ムービー
 

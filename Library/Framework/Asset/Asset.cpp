@@ -13,6 +13,8 @@ const char* ToString( EAssetType Type )
 	case EAssetType::ModelAnimation: return "ModelAnimation";
 	case EAssetType::World: return "World";
 	case EAssetType::Effect: return "Effect";
+	case EAssetType::Blackboard: return "Blackboard";
+	case EAssetType::StateMachine: return "StateMachine";
 	}
 	return "?";
 }

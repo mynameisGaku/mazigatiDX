@@ -121,6 +121,9 @@
     <ClCompile Include="Library\Framework\AI\AIIssue.cpp">
       <Filter>Library\Framework\AI</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\AI\StateMachineComponent.cpp">
+      <Filter>Library\Framework\AI</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\AI\Blackboard\Blackboard.cpp">
       <Filter>Library\Framework\AI\Blackboard</Filter>
     </ClCompile>
@@ -175,6 +178,12 @@
     <ClCompile Include="Library\Framework\Asset\EditorAssetInfo.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Data\BlackboardAsset.cpp">
+      <Filter>Library\Framework\Asset\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Data\BlackboardLoader.cpp">
+      <Filter>Library\Framework\Asset\Data</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Data\EffectAsset.cpp">
       <Filter>Library\Framework\Asset\Data</Filter>
     </ClCompile>
@@ -185,6 +194,12 @@
       <Filter>Library\Framework\Asset\Data</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Data\SpriteSheetLoader.cpp">
+      <Filter>Library\Framework\Asset\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Data\StateMachineAsset.cpp">
+      <Filter>Library\Framework\Asset\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Data\StateMachineLoader.cpp">
       <Filter>Library\Framework\Asset\Data</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Data\WorldAsset.cpp">
@@ -1788,6 +1803,9 @@
     <ClInclude Include="Library\Framework\AI\AILog.h">
       <Filter>Library\Framework\AI</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\AI\StateMachineComponent.h">
+      <Filter>Library\Framework\AI</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\AI\Blackboard\Blackboard.h">
       <Filter>Library\Framework\AI\Blackboard</Filter>
     </ClInclude>
@@ -1842,6 +1860,12 @@
     <ClInclude Include="Library\Framework\Asset\EditorAssetInfo.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Data\BlackboardAsset.h">
+      <Filter>Library\Framework\Asset\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Data\BlackboardLoader.h">
+      <Filter>Library\Framework\Asset\Data</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Data\EffectAsset.h">
       <Filter>Library\Framework\Asset\Data</Filter>
     </ClInclude>
@@ -1852,6 +1876,12 @@
       <Filter>Library\Framework\Asset\Data</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Data\SpriteSheetLoader.h">
+      <Filter>Library\Framework\Asset\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Data\StateMachineAsset.h">
+      <Filter>Library\Framework\Asset\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Data\StateMachineLoader.h">
       <Filter>Library\Framework\Asset\Data</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Data\WorldAsset.h">

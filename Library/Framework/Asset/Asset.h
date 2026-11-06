@@ -27,8 +27,10 @@ enum class EAssetType : uint8
 	ModelAnimation,   // モデルのアニメーションの定義（独自のデータアセット）
 	World,            // ワールド（.gxworld。置き物の配置の定義。独自のデータアセット）
 	Effect,           // パーティクルのエフェクト（.gxeffect。独自のデータアセット）
+	Blackboard,       // AI のブラックボードの定義（.gxblackboard。独自のデータアセット）
+	StateMachine,     // AI のステートマシンの定義（.gxstate。独自のデータアセット）
 };
-constexpr int32 NumAssetTypes = 8;
+constexpr int32 NumAssetTypes = 10;
 
 const char* ToString( EAssetType Type );
 

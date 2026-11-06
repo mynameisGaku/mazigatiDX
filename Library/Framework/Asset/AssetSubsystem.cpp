@@ -49,6 +49,8 @@ void CAssetSubsystem::Deinitialize()
 	ModelAnimationLoader.Clear();
 	WorldLoader.Clear();
 	EffectLoader.Clear();
+	BlackboardLoader.Clear();
+	StateMachineLoader.Clear();
 	SoundLoader.Clear();
 	FontLoader.Clear();
 
@@ -161,9 +163,9 @@ void CAssetSubsystem::RecordCounters() const
 	}
 
 	static const char* const CountNames[NumAssetTypes] = { "Asset.Count.Texture", "Asset.Count.SpriteSheet", "Asset.Count.Model", "Asset.Count.Sound", "Asset.Count.Font",
-														   "Asset.Count.ModelAnimation", "Asset.Count.World", "Asset.Count.Effect" };
+														   "Asset.Count.ModelAnimation", "Asset.Count.World", "Asset.Count.Effect", "Asset.Count.Blackboard", "Asset.Count.StateMachine" };
 	static const char* const MemoryNames[NumAssetTypes] = { "Asset.Memory.Texture", "Asset.Memory.SpriteSheet", "Asset.Memory.Model", "Asset.Memory.Sound", "Asset.Memory.Font",
-															"Asset.Memory.ModelAnimation", "Asset.Memory.World", "Asset.Memory.Effect" };
+															"Asset.Memory.ModelAnimation", "Asset.Memory.World", "Asset.Memory.Effect", "Asset.Memory.Blackboard", "Asset.Memory.StateMachine" };
 	for ( int32 i = 0; i < NumAssetTypes; ++i )
 	{
 		Recorder->RecordCounter( Recorder->InternLiteral( CountNames[i] ), Stats.Types[i].Count, EProfileCounterUnit::Count );
@@ -222,6 +224,8 @@ void CAssetSubsystem::ReleaseUnused()
 	ModelAnimationLoader.Prune();
 	WorldLoader.Prune();
 	EffectLoader.Prune();
+	BlackboardLoader.Prune();
+	StateMachineLoader.Prune();
 	SoundLoader.Prune();
 	FontLoader.Prune();
 }
@@ -370,6 +374,8 @@ TArray<FAssetInfo> CAssetSubsystem::GetLoadedAssets() const
 	ModelAnimationLoader.CollectInfos( Infos );
 	WorldLoader.CollectInfos( Infos );
 	EffectLoader.CollectInfos( Infos );
+	BlackboardLoader.CollectInfos( Infos );
+	StateMachineLoader.CollectInfos( Infos );
 	SoundLoader.CollectInfos( Infos );
 	FontLoader.CollectInfos( Infos );
 	Infos.Sort( []( const FAssetInfo& A, const FAssetInfo& B ) { return A.Type != B.Type ? A.Type < B.Type : A.Path < B.Path; } );
@@ -431,6 +437,26 @@ TSharedPtr<CEffectAsset> CAssetSubsystem::LoadEffect( const FString& Path )
 bool CAssetSubsystem::SaveEffect( const FString& Path, const FParticleEffectDefinition& Definition )
 {
 	return EffectLoader.Save( Path, Definition );
+}
+
+TSharedPtr<CBlackboardAsset> CAssetSubsystem::LoadBlackboard( const FString& Path )
+{
+	return BlackboardLoader.Load( Path );
+}
+
+bool CAssetSubsystem::SaveBlackboard( const FString& Path, const FBlackboardDefinition& Definition )
+{
+	return BlackboardLoader.Save( Path, Definition );
+}
+
+TSharedPtr<CStateMachineAsset> CAssetSubsystem::LoadStateMachine( const FString& Path )
+{
+	return StateMachineLoader.Load( Path );
+}
+
+bool CAssetSubsystem::SaveStateMachine( const FString& Path, const FStateMachineDefinition& Definition )
+{
+	return StateMachineLoader.Save( Path, Definition );
 }
 
 FModelExportResult CAssetSubsystem::ExportModelAsMV1( const FString& SourcePath, const FModelExportOptions& Options )

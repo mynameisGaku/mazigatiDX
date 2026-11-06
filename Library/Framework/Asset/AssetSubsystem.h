@@ -22,8 +22,12 @@
 #include "Library/Framework/Asset/Data/SpriteSheet.h"
 #include "Library/Framework/Asset/Data/SpriteSheetLoader.h"
 #include "Library/Framework/Asset/AssetBundle.h"
+#include "Library/Framework/Asset/Data/BlackboardAsset.h"
+#include "Library/Framework/Asset/Data/BlackboardLoader.h"
 #include "Library/Framework/Asset/Data/EffectAsset.h"
 #include "Library/Framework/Asset/Data/EffectLoader.h"
+#include "Library/Framework/Asset/Data/StateMachineAsset.h"
+#include "Library/Framework/Asset/Data/StateMachineLoader.h"
 #include "Library/Framework/Asset/Data/WorldAsset.h"
 #include "Library/Framework/Asset/Data/WorldLoader.h"
 #include "Library/Framework/Asset/Loading/AssetInfo.h"
@@ -194,6 +198,22 @@ public:
 	bool SaveEffect( const FString& Path, const FParticleEffectDefinition& Definition );
 
 	//-------------------------------------------------------------------------
+	// AI のブラックボード（.gxblackboard。書式は BlackboardDefinition.h の先頭）
+	//-------------------------------------------------------------------------
+	// 定義ファイル（JSON）から。捨てたキーなどの問題はログに出る。読めなければ nullptr
+	TSharedPtr<CBlackboardAsset> LoadBlackboard( const FString& Path );
+	// 定義を JSON ファイルに保存する（相対パスはルートフォルダの下。フォルダは作る）。そのパスのキャッシュは捨てるので、次の Load は読み直す
+	bool SaveBlackboard( const FString& Path, const FBlackboardDefinition& Definition );
+
+	//-------------------------------------------------------------------------
+	// AI のステートマシン（.gxstate。書式は StateMachineDefinition.h の先頭）
+	//-------------------------------------------------------------------------
+	// 定義ファイル（JSON）から。部品の名前・ブラックボードのキーの検証は、CStateMachine::Create のときに行う。読めない・ステートが無いときは nullptr
+	TSharedPtr<CStateMachineAsset> LoadStateMachine( const FString& Path );
+	// 定義を JSON ファイルに保存する（相対パスはルートフォルダの下。フォルダは作る）。そのパスのキャッシュは捨てるので、次の Load は読み直す
+	bool SaveStateMachine( const FString& Path, const FStateMachineDefinition& Definition );
+
+	//-------------------------------------------------------------------------
 	// 取り込みと .mv1 への出力（FBX / OBJ / .x / .pmx ... -> .mv1）
 	//-------------------------------------------------------------------------
 	// 元のファイルを .mv1 にして保存する（既定は同じフォルダ・同じ名前）。出力が新しければ何もしない（Options.bForce で作り直す）。
@@ -268,6 +288,8 @@ private:
 	CPixelImageCodec PixelImageCodec { LoadContext };
 	CWorldLoader WorldLoader { LoadContext };
 	CEffectLoader EffectLoader { LoadContext };
+	CBlackboardLoader BlackboardLoader { LoadContext };
+	CStateMachineLoader StateMachineLoader { LoadContext };
 	CModelImporter ModelImporter { LoadContext };
 	CModelLoader ModelLoader { LoadContext, ModelImporter };
 	CModelAnimationLoader ModelAnimationLoader { LoadContext, ModelLoader };
