@@ -50,7 +50,7 @@ namespace NDrawDistortedMaterialRibbon
 		const FDrawRibbonData& Ribbon = Data.Material.Ribbon;
 		// 接線だけに使う補助区間を除いた画像反復数。
 		int32 TextureSections = 0;
-		// 全pointをコピー前提で順に調べる添字。
+		// 全pointをコピー前提で順に調べるインデックス。
 		for ( int32 Index = 0; Index < Ribbon.NumPoints; ++Index )
 		{
 			// 既存材質値とノイズ変位値を持つ現在点。

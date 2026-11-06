@@ -52,7 +52,7 @@ namespace
 		return DX_PRIMTYPE_TRIANGLELIST;
 	}
 
-	// 頂点の並びを、点・線・三角形として描く。命令の大きさ・数・添字が合わない、数値が有限でないときは、何も描かない（DxLib に、範囲の外を読ませない）
+	// 頂点の並びを、点・線・三角形として描く。命令の大きさ・数・インデックスが合わない、数値が有限でないときは、何も描かない（DxLib に、範囲の外を読ませない）
 	void DrawPrimitive( const FDrawCommandView& Command )
 	{
 		if ( !Command.CanRead<FDrawPrimitive3DData>() )
@@ -62,12 +62,12 @@ namespace
 		const FDrawPrimitive3DData Data = Command.Read<FDrawPrimitive3DData>();
 		const EDrawPrimitive Type = static_cast<EDrawPrimitive>( Data.Type );
 		const bool bIndexed = Data.NumIndices > 0;
-		// 範囲の外のつなぎ方と、0 以下の頂点の数は、使えない数として弾かれる。添字の数が負のときと、頂点の数が負のときは、次の大きさの確認が弾く（GetCommandWords が 0 になる）
+		// 範囲の外のつなぎ方と、0 以下の頂点の数は、使えない数として弾かれる。インデックスの数が負のときと、頂点の数が負のときは、次の大きさの確認が弾く（GetCommandWords が 0 になる）
 		if ( !NDrawPrimitive::IsValidCount( Type, bIndexed ? Data.NumIndices : Data.NumVertices ) )
 		{
 			return;
 		}
-		// 命令の大きさ（ヘッダーの 1 ワードも含む）が、頂点と添字の数にぴったり合うか
+		// 命令の大きさ（ヘッダーの 1 ワードも含む）が、頂点とインデックスの数にぴったり合うか
 		if ( static_cast<size_t>( Command.NumDataWords ) + 1 != FDrawPrimitive3DData::GetCommandWords( Data.NumVertices, Data.NumIndices ) )
 		{
 			return;
@@ -107,7 +107,7 @@ namespace
 		DrawPrimitiveIndexed3D( Vertices.GetData(), Data.NumVertices, Indices.GetData(), Data.NumIndices, ToDxPrimitive( Type ), Graph, TRUE );
 	}
 
-	// 頂点バッファ（と、あればインデックスバッファ）の一部を描く。使う範囲・数が合わない壊れた命令は、描かない（DxLib は、添字なしの範囲を確かめないので、バッファの外を読ませない）
+	// 頂点バッファ（と、あればインデックスバッファ）の一部を描く。使う範囲・数が合わない壊れた命令は、描かない（DxLib は、インデックスなしの範囲を確かめないので、バッファの外を読ませない）
 	void DrawPrimitiveBuffer( const FDrawCommandView& Command )
 	{
 		if ( !Command.CanRead<FDrawPrimitiveBuffer3DData>() )
@@ -117,7 +117,7 @@ namespace
 		const FDrawPrimitiveBuffer3DData Data = Command.Read<FDrawPrimitiveBuffer3DData>();
 		const EDrawPrimitive Type = static_cast<EDrawPrimitive>( Data.Type );
 		const bool bIndexed = Data.IndexBuffer >= 0;
-		// 使う範囲（添字ありなら添字の範囲、なしなら頂点の範囲）が、バッファの大きさに収まるか（足し算は、溢れないよう 64 ビットで）。範囲の外のつなぎ方は、使えない数として弾かれる
+		// 使う範囲（インデックスありならインデックスの範囲、なしなら頂点の範囲）が、バッファの大きさに収まるか（足し算は、溢れないよう 64 ビットで）。範囲の外のつなぎ方は、使えない数として弾かれる
 		const int32 NumBuffer = bIndexed ? Data.NumBufferIndices : Data.NumBufferVertices;
 		if ( Data.Start < 0 || Data.Num < 1 || static_cast<int64>( Data.Start ) + Data.Num > NumBuffer || !NDrawPrimitive::IsValidCount( Type, Data.Num ) )
 		{

@@ -8,9 +8,9 @@
 
 //=============================================================================
 // FRandomStream
-//   種（Seed）で列が決まる乱数のクラス。同じ種なら、環境（バックエンド・OS・ビルド）に依らず、同じ列になる。
+//   シード（Seed）で列が決まる乱数のクラス。同じシードなら、環境（バックエンド・OS・ビルド）に依らず、同じ列になる。
 //   リプレイ・検査・手続き的な生成（ダンジョン、粒子のばらつき）で、「毎回同じ結果」にしたいときに使う。
-//   アルゴリズムは PCG32（O'Neill 氏の公開された方式。種 42・列 54 の最初の 6 つが 0xa15c02b7 0x7b47f409 0xba1d3330 0x83d2f293 0xbfa4784b 0xcbed606e）。
+//   アルゴリズムは PCG32（O'Neill 氏の公開された方式。シード 42・列 54 の最初の 6 つが 0xa15c02b7 0x7b47f409 0xba1d3330 0x83d2f293 0xbfa4784b 0xcbed606e）。
 //
 //   FRandomStream Random( 12345 );
 //   const float32 Roll = Random.NextFloat();                 // 0 以上 1 未満
@@ -31,13 +31,13 @@ public:
 		uint64 Increment = 0;
 	};
 
-	// 種 0・列 54 で始める（毎回同じ列）
+	// シード 0・列 54 で始める（毎回同じ列）
 	FRandomStream();
 
-	// Seed: 列を決める種。Sequence: 同じ種でも別の列にするための番号
+	// Seed: 列を決めるシード。Sequence: 同じシードでも別の列にするための番号
 	explicit FRandomStream( uint64 Seed, uint64 Sequence = 54 );
 
-	// 種と列を決め直して、最初から始める
+	// シードと列を決め直して、最初から始める
 	void Reset( uint64 Seed, uint64 Sequence = 54 );
 
 	FState GetState() const;

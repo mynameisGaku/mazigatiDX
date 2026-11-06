@@ -870,7 +870,7 @@ Failed:
 		// index順に展開した非indexed頂点をGPUへ送る配列。
 		TArray<FVertex> Vertices;
 		Vertices.SetNum( Data.NumIndices );
-		// 各三角形頂点へ位置・色・UVと共通材質値を写す添字。
+		// 各三角形頂点へ位置・色・UVと共通材質値を写すインデックス。
 		for ( int32 Index = 0; Index < Data.NumIndices; ++Index )
 		{
 			// 元meshから読む頂点。

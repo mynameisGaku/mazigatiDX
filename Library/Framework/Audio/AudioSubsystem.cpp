@@ -86,7 +86,7 @@ const CAudioSubsystem::FVoice* CAudioSubsystem::Resolve( FSoundHandle Handle ) c
 //=============================================================================
 float32 CAudioSubsystem::NextRandom()
 {
-	// xorshift32。同じ種なら同じ並び
+	// xorshift32。同じシードなら同じ並び
 	RandomState ^= RandomState << 13;
 	RandomState ^= RandomState >> 17;
 	RandomState ^= RandomState << 5;

@@ -361,7 +361,7 @@ void FDxLibShader::DrawPrimitive3D( const FDrawCommandView& Command )
 	{
 		return;
 	}
-	// 命令の大きさ（ヘッダーの 1 ワードも含む）が、頂点と添字の数にぴったり合うか
+	// 命令の大きさ（ヘッダーの 1 ワードも含む）が、頂点とインデックスの数にぴったり合うか
 	if ( static_cast<size_t>( Command.NumDataWords ) + 1 != FDrawPrimitiveShader3DData::GetCommandWords( Data.NumVertices, Data.NumIndices ) )
 	{
 		return;

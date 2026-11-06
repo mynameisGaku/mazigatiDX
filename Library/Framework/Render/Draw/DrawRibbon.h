@@ -8,7 +8,7 @@
 // カメラへ面を向ける帯の記録。直後にNumPoints個のFPointが続く。
 struct FDrawRibbonData
 {
-	// 1命令で記録できる点の上限。添字と命令長が安全な範囲に収まる。
+	// 1命令で記録できる点の上限。インデックスと命令長が安全な範囲に収まる。
 	static constexpr int32 MaxPoints = 1024;
 	// 画像を反復するために分割できる区間の上限。展開後も16bitの頂点番号に収まる。
 	static constexpr int32 MaxTextureSections = 8192;

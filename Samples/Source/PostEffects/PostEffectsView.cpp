@@ -62,7 +62,7 @@ namespace
 		return FVector3( NMath::Cos( Angle ) * OrbRadius, Height, NMath::Sin( Angle ) * OrbRadius );
 	}
 
-	// 形を 1 つ描く（物の定数を、頂点側とピクセル側に置いて、添字つきで描く）
+	// 形を 1 つ描く（物の定数を、頂点側とピクセル側に置いて、インデックスつきで描く）
 	void RecordMesh( FDrawContext& CommandList, const NShaderMeshes::FMesh& Mesh, const FMatrix4x4& World, const FVector3& Albedo, const FVector3& Emission )
 	{
 		NPostEffectsSources::FObjectConstants Object;

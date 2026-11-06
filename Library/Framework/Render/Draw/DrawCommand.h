@@ -132,9 +132,9 @@ enum class EDrawCommand : uint8
 	Sprite3D,         // FDrawSprite3DData。FlipX / FlipY（DrawRotaGraph3D）
 	SpriteStretch3D,  // FDrawSpriteStretch3DData（DrawExtendGraph3D）
 	SpritePivot3D,    // FDrawSpritePivot3DData。FlipX / FlipY（DrawRota2Graph3D）
-	Primitive3D,      // FDrawPrimitive3DData + 頂点（FDrawVertex3D）+ 添字（uint16）。頂点の並びを、点・線・三角形として描く（DrawPrimitive3D / DrawPrimitiveIndexed3D）
+	Primitive3D,      // FDrawPrimitive3DData + 頂点（FDrawVertex3D）+ インデックス（uint16）。頂点の並びを、点・線・三角形として描く（DrawPrimitive3D / DrawPrimitiveIndexed3D）
 	// 頂点バッファ・インデックスバッファの追加（上のコマンドの形式は変えていない）
-	PrimitiveBuffer3D, // FDrawPrimitiveBuffer3DData。GPU に置いた頂点（と添字）の一部を、点・線・三角形として描く（DrawPrimitive3D_UseVertexBuffer2 / DrawPrimitiveIndexed3D_UseVertexBuffer2）
+	PrimitiveBuffer3D, // FDrawPrimitiveBuffer3DData。GPU に置いた頂点（とインデックス）の一部を、点・線・三角形として描く（DrawPrimitive3D_UseVertexBuffer2 / DrawPrimitiveIndexed3D_UseVertexBuffer2）
 	// シャドウマップの追加（上のコマンドの形式は変えていない）
 	BeginShadowMap,   // FDrawBeginShadowMapData。以降の 3D の描画を、画面でなくシャドウマップ（影の絵）へ描く（SetShadowMapLightDirection / SetShadowMapDrawArea / ResetShadowMapDrawArea / SetShadowMapAdjustDepth / ShadowMap_DrawSetup）
 	EndShadowMap,     // FDrawEndShadowMapData。シャドウマップへの描画を終えて、元の描画先・カメラへ戻す（ShadowMap_DrawEnd）
@@ -144,7 +144,7 @@ enum class EDrawCommand : uint8
 	UseShader,         // FDrawUseShaderData。頂点シェーダー / ピクセルシェーダーを、シェーダーで描く命令に使わせる（SetUseVertexShader / SetUsePixelShader）
 	ShaderConstants,   // FDrawShaderConstantsData + 定数の中身（4 バイト単位）。シェーダーの定数バッファの中身を替えて、スロットに置く（Create / Update / SetShaderConstantBuffer）
 	ShaderTexture,     // FDrawShaderTextureData。シェーダーが読む画像を、段に置く（SetUseTextureToShader）
-	PrimitiveShader3D, // FDrawPrimitiveShader3DData + 頂点（FDrawShaderVertex3D）+ 添字（uint16）。シェーダーで、3D の頂点の並びを描く（DrawPrimitive3DToShader / DrawPrimitiveIndexed3DToShader）
+	PrimitiveShader3D, // FDrawPrimitiveShader3DData + 頂点（FDrawShaderVertex3D）+ インデックス（uint16）。シェーダーで、3D の頂点の並びを描く（DrawPrimitive3DToShader / DrawPrimitiveIndexed3DToShader）
 	ShaderRect,        // FDrawShaderRectData。画素の座標の矩形を、組み込みの頂点シェーダー（利用者のピクセルシェーダーに、色と画像の座標を渡す）で描く
 	// 描画先の追加（上のコマンドの形式は変えていない）
 	ShaderOutputTarget, // FDrawShaderOutputTargetData。ピクセルシェーダーの 2 つ目以降の出力（SV_Target1〜7）を書く描画先を決める（SetRenderTargetToShader）
@@ -676,8 +676,8 @@ struct FDrawVertex3D
 	float32 SubU = 0.0f, SubV = 0.0f;
 };
 
-// 頂点の並びを、点・線・三角形として描く（DrawPrimitive3D / DrawPrimitiveIndexed3D）。後ろに、頂点 NumVertices 個（FDrawVertex3D）、続けて添字 NumIndices 個（uint16。2 個で 1 ワード。奇数個なら 0 で埋める）が続く。
-// NumIndices が 0 なら、頂点を順に使う。0 より大きければ、添字の順に頂点を使う。Texture が負なら、画像なし
+// 頂点の並びを、点・線・三角形として描く（DrawPrimitive3D / DrawPrimitiveIndexed3D）。後ろに、頂点 NumVertices 個（FDrawVertex3D）、続けてインデックス NumIndices 個（uint16。2 個で 1 ワード。奇数個なら 0 で埋める）が続く。
+// NumIndices が 0 なら、頂点を順に使う。0 より大きければ、インデックスの順に頂点を使う。Texture が負なら、画像なし
 struct FDrawPrimitive3DData
 {
 	int32 Type = 0;   // EDrawPrimitive
@@ -685,7 +685,7 @@ struct FDrawPrimitive3DData
 	int32 NumVertices = 0;
 	int32 NumIndices = 0;
 
-	// 命令全体のワード数（ヘッダー 1 + 固定部分 + 頂点 + 添字）。引数が負のときは 0
+	// 命令全体のワード数（ヘッダー 1 + 固定部分 + 頂点 + インデックス）。引数が負のときは 0
 	static constexpr size_t GetCommandWords( int32 InNumVertices, int32 InNumIndices )
 	{
 		return InNumVertices < 0 || InNumIndices < 0 ? 0
@@ -710,7 +710,7 @@ struct FDrawTextStyledData
 };
 
 // 頂点バッファ（と、あればインデックスバッファ）の一部を描く。バッファの大きさ（NumBufferVertices / NumBufferIndices）は、記録のときに決めた値（バッファの大きさは変わらない）。
-// IndexBuffer が負なら、添字なし: 頂点バッファの Start から Num 個を順に使う（BaseVertex は 0）。0 以上なら、添字あり: インデックスバッファの Start から Num 個の添字で頂点を選び、各添字に BaseVertex を足す。Texture が負なら、画像なし
+// IndexBuffer が負なら、インデックスなし: 頂点バッファの Start から Num 個を順に使う（BaseVertex は 0）。0 以上なら、インデックスあり: インデックスバッファの Start から Num 個のインデックスで頂点を選び、各インデックスに BaseVertex を足す。Texture が負なら、画像なし
 struct FDrawPrimitiveBuffer3DData
 {
 	int32 Type = 0;   // EDrawPrimitive
@@ -768,8 +768,8 @@ struct FDrawShaderVertex3D
 	float32 SubU = 0.0f, SubV = 0.0f;
 };
 
-// シェーダーで、3D の頂点の並びを描く。後ろに、頂点 NumVertices 個（FDrawShaderVertex3D）、続けて添字 NumIndices 個（uint16。2 個で 1 ワード。奇数個なら 0 で埋める）が続く。
-// NumIndices が 0 なら、頂点を順に使う。0 より大きければ、添字の順に頂点を使う。Type は EDrawPrimitive
+// シェーダーで、3D の頂点の並びを描く。後ろに、頂点 NumVertices 個（FDrawShaderVertex3D）、続けてインデックス NumIndices 個（uint16。2 個で 1 ワード。奇数個なら 0 で埋める）が続く。
+// NumIndices が 0 なら、頂点を順に使う。0 より大きければ、インデックスの順に頂点を使う。Type は EDrawPrimitive
 struct FDrawPrimitiveShader3DData
 {
 	int32 Type = 0;
@@ -777,7 +777,7 @@ struct FDrawPrimitiveShader3DData
 	int32 NumIndices = 0;
 	int32 Reserved = 0;
 
-	// 命令全体のワード数（ヘッダー 1 + 固定部分 + 頂点 + 添字）。引数が負のときは 0
+	// 命令全体のワード数（ヘッダー 1 + 固定部分 + 頂点 + インデックス）。引数が負のときは 0
 	static constexpr size_t GetCommandWords( int32 InNumVertices, int32 InNumIndices )
 	{
 		return InNumVertices < 0 || InNumIndices < 0 ? 0
@@ -915,7 +915,7 @@ namespace NDrawCommand
 
 namespace NDrawPrimitive
 {
-	// 頂点（添字があれば、添字）の数 Count が、つなぎ方 Type に使える数か。Lines は偶数、Triangles は 3 の倍数、帯・扇は 3 以上、折れ線は 2 以上。
+	// 頂点（インデックスがあれば、インデックス）の数 Count が、つなぎ方 Type に使える数か。Lines は偶数、Triangles は 3 の倍数、帯・扇は 3 以上、折れ線は 2 以上。
 	// DxLib は、余りの頂点を黙って捨てるが、記録するときは、使えない値にする
 	constexpr bool IsValidCount( EDrawPrimitive Type, int32 Count )
 	{

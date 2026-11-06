@@ -9,7 +9,7 @@
 // NAlgo::LowerBound / UpperBound
 //   整列済みの範囲 [First, Last) から、二分探索で位置を求める。std::lower_bound / std::upper_bound の代わり。
 //   範囲は Pred( A, B )（A を B より前に置くなら true。省略すると operator<）の順に並んでいること。
-//   First と Last は、添字で飛べる（+ と - ができる）反復子（ポインターなど）。
+//   First と Last は、インデックスで飛べる（+ と - ができる）反復子（ポインターなど）。
 //
 //   const float32* Found = NAlgo::UpperBound( Begin, End, Time );   // Time より大きい最初の要素の位置（無ければ End）
 //=============================================================================

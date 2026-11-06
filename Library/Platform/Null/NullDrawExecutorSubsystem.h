@@ -29,7 +29,7 @@ struct FNullDrawStats
 	int64 NumUnbalancedSpans = 0;
 	// 対になる Push / Begin が無いまま、Pop / End が来た回数（DxLib の実行側は、何もせず読み飛ばす）
 	int64 NumExtraPops = 0;
-	// 種類ごとの実行した命令の数。添字は static_cast<int32>( EDrawCommand )
+	// 種類ごとの実行した命令の数。インデックスは static_cast<int32>( EDrawCommand )
 	int64 CommandCounts[NumCommandTypes] = {};
 
 	// 指定の種類の命令を実行した数

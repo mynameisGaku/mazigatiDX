@@ -19,7 +19,7 @@ int32 CDxLibAssetBackendSubsystem::CreateModelMaterialGeometry( const FStaticMod
 	{
 		return -1;
 	}
-	// snapshot全材質の色値と借用handleを検証する添字。
+	// snapshot全材質の色値と借用handleを検証するインデックス。
 	for ( int32 MaterialArrayIndex = 0; MaterialArrayIndex < Surface.Materials.Num(); ++MaterialArrayIndex )
 	{
 		// snapshotに保存された元材質の拡散色と借用画像handle。
@@ -130,7 +130,7 @@ int32 CDxLibAssetBackendSubsystem::CreateModelMaterialGeometry( const FStaticMod
 		{
 			return -1;
 		}
-		// 完成済みsection chunkを順にmesh資源へ移す添字。
+		// 完成済みsection chunkを順にmesh資源へ移すインデックス。
 		for ( int32 ChunkIndex = 0; ChunkIndex < SectionChunks.Num(); ++ChunkIndex )
 		{
 			Mesh.Chunks.Add( MoveTemp( SectionChunks[ChunkIndex] ) );

@@ -249,7 +249,7 @@ template<typename Function, typename... Args>
 using TInvokeResultT = decltype( DeclVal<Function>()( DeclVal<Args>()... ) );
 
 //-----------------------------------------------------------------------------
-// 整数の並び（パラメーターパックを添字で展開するのに使う）
+// 整数の並び（パラメーターパックをインデックスで展開するのに使う）
 //   TIndexSequence<0, 1, 2>、TMakeIndexSequence<3>（0 .. 2）、TIndexSequenceFor<A, B, C>（型の数だけ）
 //-----------------------------------------------------------------------------
 template<usize... Indices>

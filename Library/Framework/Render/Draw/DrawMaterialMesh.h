@@ -88,7 +88,7 @@ namespace NDrawMaterialMesh
 		}
 		// 点列全体で使用するUV倍率と移動量。
 		const FDrawMaterialRibbonData::FMaterialSettings& Material = Data.Material;
-		// 有限性と上限を調べる頂点添字。
+		// 有限性と上限を調べる頂点インデックス。
 		for ( int32 Index = 0; Index < Data.NumVertices; ++Index )
 		{
 			// 位置・法線・UVを持つ現在頂点。
@@ -102,7 +102,7 @@ namespace NDrawMaterialMesh
 				return false;
 			}
 		}
-		// 頂点配列範囲を超えないindex添字。
+		// 頂点配列範囲を超えないindexインデックス。
 		for ( int32 Index = 0; Index < Data.NumIndices; ++Index )
 		{
 			// 三角形が参照する頂点番号。

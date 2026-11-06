@@ -174,7 +174,7 @@ struct FPixelPlacement
 	FVector2 Position;
 	// 左右を反転する（向きのある演出）
 	bool bFlipHorizontal = false;
-	// 乱数の種（同じ種なら、毎回同じ絵になる）
+	// 乱数のシード（同じシードなら、毎回同じ絵になる）
 	uint32 Seed = 1;
 	// 色の段（空なら、エフェクトの既定のパレット）。暗い色から明るい色へ
 	TArray<FColor32> Palette;

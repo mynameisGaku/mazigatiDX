@@ -11,7 +11,7 @@ struct FEffectMeshGeometry
 {
 	// XY面の形状頂点。粒子ごとの変換では元配列を書き換えない。
 	TArray<FMeshVertex> Vertices;
-	// 三角形順に並んだ頂点添字。
+	// 三角形順に並んだ頂点インデックス。
 	TArray<uint32> Indices;
 };
 

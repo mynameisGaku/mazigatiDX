@@ -57,7 +57,7 @@ bool NEffectEditorUI::DrawForceFieldPanel( FEffectEditorState& State, FParticleE
 	State.SelectedForceField = FieldCount > 0 ? NMath::Clamp( State.SelectedForceField, 0, FieldCount - 1 ) : 0;
 	// 前frameの構造操作で必要になったfocus復旧要求。
 	const bool bRestoreForceFieldFocus = State.bForceFieldFocusPending;
-	// 選択中の添字が現在のコピーにあるか。
+	// 選択中のインデックスが現在のコピーにあるか。
 	const bool bHasSelection = Emitter.ForceFields.IsValidIndex( State.SelectedForceField );
 	// 新規作成と複製を止める上限判定。
 	const bool bAtLimit = FieldCount >= FEffectForceFieldDefinition::MaxFields;
@@ -149,7 +149,7 @@ bool NEffectEditorUI::DrawForceFieldPanel( FEffectEditorState& State, FParticleE
 	if ( Emitter.ForceFields.IsEmpty() ) ImGui::TextDisabled( "No force fields" );
 	else
 	{
-		// 選択と順序を操作する一覧の添字。
+		// 選択と順序を操作する一覧のインデックス。
 		for ( int32 Index = 0; Index < Emitter.ForceFields.Num(); ++Index )
 		{
 			ImGui::PushID( Index );

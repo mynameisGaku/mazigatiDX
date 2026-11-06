@@ -4,7 +4,7 @@
 
 namespace
 {
-	// 疑似乱数（座標と種から決まる 0〜1。同じ入力なら同じ値）
+	// 疑似乱数（座標とシードから決まる 0〜1。同じ入力なら同じ値）
 	float32 Random01( int32 X, int32 Y, int32 Seed )
 	{
 		uint32 Value = static_cast<uint32>( X ) * 374761393u + static_cast<uint32>( Y ) * 668265263u + static_cast<uint32>( Seed ) * 2246822519u;

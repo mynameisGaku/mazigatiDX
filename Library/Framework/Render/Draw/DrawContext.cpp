@@ -299,8 +299,8 @@ bool FDrawContext::PushPrimitive3D( const FVertex3D* Vertices, int32 NumVertices
 	{
 		return false;
 	}
-	// つなぎ方に合う数か（添字があれば添字の数、なければ頂点の数）。範囲の外のつなぎ方と、0 以下の数は、使えない数なので、ここで弾かれる
-	// （添字つきで、頂点の数が 0 以下なら、あとの添字の確認が弾く）
+	// つなぎ方に合う数か（インデックスがあればインデックスの数、なければ頂点の数）。範囲の外のつなぎ方と、0 以下の数は、使えない数なので、ここで弾かれる
+	// （インデックスつきで、頂点の数が 0 以下なら、あとのインデックスの確認が弾く）
 	if ( !NDrawPrimitive::IsValidCount( Type, bIndexed ? NumIndices : NumVertices ) )
 	{
 		return false;
@@ -358,12 +358,12 @@ bool FDrawContext::PushPrimitiveBuffer3D( FVertexBufferHandle Vertices, FIndexBu
 	{
 		return false;
 	}
-	// 添字なしでは、BaseVertex は意味がない（0 のまま）
+	// インデックスなしでは、BaseVertex は意味がない（0 のまま）
 	if ( !bIndexed && Range.BaseVertex != 0 )
 	{
 		return false;
 	}
-	// 使う範囲（添字ありなら添字の範囲、なしなら頂点の範囲）が、バッファに収まり、つなぎ方に合う数か。足し算は、溢れないよう 64 ビットで
+	// 使う範囲（インデックスありならインデックスの範囲、なしなら頂点の範囲）が、バッファに収まり、つなぎ方に合う数か。足し算は、溢れないよう 64 ビットで
 	const int32 NumBuffer = bIndexed ? Indices.NumIndices : Vertices.NumVertices;
 	if ( Range.Start < 0 )
 	{
@@ -828,7 +828,7 @@ bool FDrawContext::PushPrimitiveShader3D( const FShaderVertex3D* Vertices, int32
 	{
 		return false;
 	}
-	// つなぎ方に合う数か（添字があれば添字の数、なければ頂点の数）。範囲の外のつなぎ方と、0 以下の数は、使えない数なので、ここで弾かれる
+	// つなぎ方に合う数か（インデックスがあればインデックスの数、なければ頂点の数）。範囲の外のつなぎ方と、0 以下の数は、使えない数なので、ここで弾かれる
 	if ( !NDrawPrimitive::IsValidCount( Type, bIndexed ? NumIndices : NumVertices ) )
 	{
 		return false;

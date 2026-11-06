@@ -57,7 +57,7 @@ void CIslandSample::OnEnter()
 	}
 	State = MakeShared<FIslandState>();
 
-	// 島（決まった種から作るので、毎回同じ）と、描くためのバッファ・影の絵・画像
+	// 島（決まったシードから作るので、毎回同じ）と、描くためのバッファ・影の絵・画像
 	NIslandTerrain::Generate( *State );
 	if ( !NIslandTerrain::MakeBuffers( *State ) )
 	{

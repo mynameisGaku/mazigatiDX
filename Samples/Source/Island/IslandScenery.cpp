@@ -106,7 +106,7 @@ namespace
 		CommandList.Cone3D( Feet + FVector3( 0.0f, 1.85f, 0.0f ) + Forward * 0.55f, Feet + FVector3( 0.0f, 1.85f, 0.0f ) + Forward * 0.25f, 0.08f, 8, SkinColor );
 	}
 
-	// 地形（頂点バッファ + 添字バッファ）
+	// 地形（頂点バッファ + インデックスバッファ）
 	void RecordTerrain( FDrawContext& CommandList, const FIslandState& State )
 	{
 		if ( State.TerrainVertices.IsValid() && State.TerrainIndices.IsValid() )

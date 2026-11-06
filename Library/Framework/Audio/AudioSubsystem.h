@@ -170,7 +170,7 @@ public:
 	//-------------------------------------------------------------------------
 	// 同時に鳴らせる音の数（既定 48）。超えたら、優先度が低く、小さく、古いものから止める
 	void SetMaxVoices( int32 Max ) { MaxVoices = Max > 1 ? Max : 1; }
-	// ばらつきの乱数の種（同じ種なら同じ結果になる）
+	// ばらつきの乱数のシード（同じシードなら同じ結果になる）
 	void SetRandomSeed( uint32 Seed ) { RandomState = Seed != 0 ? Seed : 1u; }
 	int32 GetNumVoices() const { return NumActive; }
 	TArray<FVoiceInfo> GetVoiceInfos() const;

@@ -19,7 +19,7 @@ namespace
 	const FColor32 RockColor( 138, 132, 124 );
 	const FColor32 SeaColor( 40, 96, 150 );
 
-	// 整数の格子点の、0〜1 の乱数（決まった種）
+	// 整数の格子点の、0〜1 の乱数（決まったシード）
 	float32 Hash01( int32 X, int32 Z, uint32 Seed )
 	{
 		uint32 Value = static_cast<uint32>( X ) * 374761393u + static_cast<uint32>( Z ) * 668265263u + Seed * 2246822519u;

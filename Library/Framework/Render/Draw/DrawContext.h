@@ -1180,7 +1180,7 @@ public:
 	// 数が合わない・大きすぎる・数値が有限でないときは、何も記録せず false を返す
 	bool PrimitiveShader3D( const FShaderVertex3D* Vertices, int32 NumVertices, EDrawPrimitive Type );
 
-	// 添字で頂点を選んで、シェーダーで描く（DrawPrimitiveIndexed3DToShader）。Indices の数（NumIndices）が、つなぎ方に合う数であること。添字は、すべて NumVertices 未満であること
+	// インデックスで頂点を選んで、シェーダーで描く（DrawPrimitiveIndexed3DToShader）。Indices の数（NumIndices）が、つなぎ方に合う数であること。インデックスは、すべて NumVertices 未満であること
 	bool PrimitiveIndexedShader3D( const FShaderVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, EDrawPrimitive Type );
 
 	// 画面の矩形を、ピクセルシェーダーで描く。ポストエフェクトや、画像へのシェーダーの適用に使う。位置と大きさは、描画先の画素の座標（左上が X, Y。大きさが Width x Height）。
@@ -1445,7 +1445,7 @@ public:
 		return Primitive3D( Vertices, NumVertices, Type, ToHandle( Source ) );
 	}
 
-	// 添字で頂点を選んで描く（DrawPrimitiveIndexed3D）。Indices の数（NumIndices）が、つなぎ方に合う数であること。添字は、すべて NumVertices 未満であること。そのほかの規則は Primitive3D と同じ
+	// インデックスで頂点を選んで描く（DrawPrimitiveIndexed3D）。Indices の数（NumIndices）が、つなぎ方に合う数であること。インデックスは、すべて NumVertices 未満であること。そのほかの規則は Primitive3D と同じ
 	bool PrimitiveIndexed3D( const FVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, EDrawPrimitive Type )
 	{
 		return Indices != nullptr && PushPrimitive3D( Vertices, NumVertices, Indices, NumIndices, Type, -1 );
@@ -1468,7 +1468,7 @@ public:
 	//   一度作ったバッファを、何度も描ける（頂点を毎回記録しなくてよい。命令は、バッファの指定だけで小さい）。WorldMatrix / PushWorldMatrix で、位置を変えて、使い回せる。
 	//   記録してから、描かれるまで、バッファを手放さないこと。無効なバッファ（nullptr・作れなかった）・無効な画像・範囲やつなぎ方に合わない数のときは、何も記録せず false を返す。
 	//   DxLib の実測: 頂点バッファの描画には、Blend と Tint が効かない（頂点の色とアルファで表す）。光・フォグ・Culling・変換・Depth・頂点のアルファは、Primitive3D と同じに効く。
-	//   添字が指す頂点が、頂点バッファの範囲の外のとき（BaseVertex を足した先も）は、DxLib は失敗を返し、先に処理した三角形だけを描くことがある（描かれるものは決まらないが、落ちない）。収めるのは、呼ぶ側の責任。
+	//   インデックスが指す頂点が、頂点バッファの範囲の外のとき（BaseVertex を足した先も）は、DxLib は失敗を返し、先に処理した三角形だけを描くことがある（描かれるものは決まらないが、落ちない）。収めるのは、呼ぶ側の責任。
 	//-------------------------------------------------------------------------
 	// 頂点バッファの頂点を、つなぎ方 Type で描く（DrawPrimitive3D_UseVertexBuffer2）。Range の Start 番目から Num 個（Num が負なら最後まで）を使う（BaseVertex は 0 のまま）。
 	// 数は、つなぎ方に合うこと（Primitive3D と同じ規則）
@@ -1495,8 +1495,8 @@ public:
 		return PrimitiveBuffer3D( ToVertexHandle( Vertices ), Type, ToHandle( Texture ), Range );
 	}
 
-	// 添字で頂点を選んで描く（DrawPrimitiveIndexed3D_UseVertexBuffer2）。Range の Start 番目から Num 個（Num が負なら最後まで）の添字を使い、各添字に BaseVertex を足した頂点を描く。
-	// 数は、つなぎ方に合うこと（添字の数について。Primitive3D と同じ規則）
+	// インデックスで頂点を選んで描く（DrawPrimitiveIndexed3D_UseVertexBuffer2）。Range の Start 番目から Num 個（Num が負なら最後まで）のインデックスを使い、各インデックスに BaseVertex を足した頂点を描く。
+	// 数は、つなぎ方に合うこと（インデックスの数について。Primitive3D と同じ規則）
 	bool PrimitiveIndexedBuffer3D( FVertexBufferHandle Vertices, FIndexBufferHandle Indices, EDrawPrimitive Type, const FBufferRange& Range = FBufferRange() )
 	{
 		return PushPrimitiveBuffer3D( Vertices, Indices, true, Type, -1, Range );

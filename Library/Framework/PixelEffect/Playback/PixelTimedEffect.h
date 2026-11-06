@@ -26,7 +26,7 @@ public:
 protected:
 	explicit CPixelTimedEffect( const FPixelEffectMeta& InMeta );
 
-	// Start で、時間を 0 に戻したあとに呼ぶ（粒子を撒くなど）。Random は、置き場所の種から作った乱数
+	// Start で、時間を 0 に戻したあとに呼ぶ（粒子を撒くなど）。Random は、置き場所のシードから作った乱数
 	virtual void OnStart( FPixelRandom& Random );
 
 	// 刻み（StepTime 秒）ごとに呼ぶ

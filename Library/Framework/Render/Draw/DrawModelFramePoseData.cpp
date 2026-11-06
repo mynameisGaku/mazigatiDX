@@ -19,7 +19,7 @@ namespace
 	// 12値のaffine行列がすべて有限かを調べる。
 	bool HasFiniteAffineValues( const float32 ( &Values )[12] )
 	{
-		// 12個の保存行列値を検査する添字。
+		// 12個の保存行列値を検査するインデックス。
 		for ( int32 Index = 0; Index < 12; ++Index )
 		{
 			if ( !NMath::IsFinite( Values[Index] ) )
@@ -33,7 +33,7 @@ namespace
 	// 4行4列値が有限かつ最後の列が厳密なaffine値かを調べる。
 	bool IsCanonicalAffineValues( const float32 ( &Values )[16] )
 	{
-		// 行列要素の有限性を検査する添字。
+		// 行列要素の有限性を検査するインデックス。
 		for ( int32 Index = 0; Index < 16; ++Index )
 		{
 			if ( !NMath::IsFinite( Values[Index] ) )

@@ -147,7 +147,7 @@ namespace
 		CommandList.UseLighting( State.bLighting );
 	}
 
-	// 宝石（八面体）。6 つの頂点と 24 個の添字で、8 つの三角形（PrimitiveIndexed3D）。頂点の法線は、中心から外へ向かう向き。回る
+	// 宝石（八面体）。6 つの頂点と 24 個のインデックスで、8 つの三角形（PrimitiveIndexed3D）。頂点の法線は、中心から外へ向かう向き。回る
 	void RecordGem( FDrawContext& CommandList, const FShapes3DDemoState& State )
 	{
 		const float32 Radius = 1.4f;
@@ -234,7 +234,7 @@ namespace
 		CommandList.Capsule3D( FVector3( UmbrellaCenter.x, 0.4f, UmbrellaCenter.z ), FVector3( UmbrellaCenter.x, UmbrellaCenter.y + Drop - 0.1f, UmbrellaCenter.z ), 0.12f, 12, FColor32( 120, 90, 60 ) );
 	}
 
-	// 木 1 本の形（幹の箱 + 葉の円錐）を、頂点と添字にする。三角形の表（画面で時計回り）が外を向くよう、並びを決める
+	// 木 1 本の形（幹の箱 + 葉の円錐）を、頂点とインデックスにする。三角形の表（画面で時計回り）が外を向くよう、並びを決める
 	void BuildTreeMesh( TArray<FVertex3D>& OutVertices, TArray<uint16>& OutIndices )
 	{
 		const auto AddTriangle = [&]( uint16 A, uint16 B, uint16 C, const FVector3& Outward )
@@ -426,7 +426,7 @@ bool NShapes3DScenery::MakeBuffers( FShapes3DDemoState& State )
 	State.TreeVertices = CVertexBuffer::Create( TreeVertices );
 	State.TreeIndices = CIndexBuffer::Create( TreeIndices );
 
-	// 池の水面: 頂点は毎フレーム書き換える。添字は、格子の各マスを 2 つの三角形にしたもの（変わらない）
+	// 池の水面: 頂点は毎フレーム書き換える。インデックスは、格子の各マスを 2 つの三角形にしたもの（変わらない）
 	TArray<FVertex3D> WaterVertices;
 	BuildWaterVertices( 0.0f, WaterVertices );
 	State.WaterVertices = CVertexBuffer::Create( WaterVertices );

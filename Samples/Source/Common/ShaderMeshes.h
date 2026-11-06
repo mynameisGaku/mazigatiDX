@@ -6,12 +6,12 @@
 
 //=============================================================================
 // NShaderMeshes
-//   シェーダーで描く見本（Shaders・PostEffects）で、シェーダーに渡す形（頂点と添字）。一度だけ作って、毎フレーム使い回す。
+//   シェーダーで描く見本（Shaders・PostEffects）で、シェーダーに渡す形（頂点とインデックス）。一度だけ作って、毎フレーム使い回す。
 //   どれも、PrimitiveIndexedShader3D に渡す（EDrawPrimitive::Triangles）。頂点シェーダーが、自分の行列で動かす。
 //=============================================================================
 namespace NShaderMeshes
 {
-	// 頂点と添字の入れ物
+	// 頂点とインデックスの入れ物
 	struct FMesh
 	{
 		TArray<FShaderVertex3D> Vertices;

@@ -6,12 +6,12 @@
 #include "Library/Core/Types/TypeTraits.h"
 #include "Library/Core/Types/Utility.h"
 
-// Num と添字を持つ配列を走査する。削除後は次の ++ まで要素を参照しない。
+// Num とインデックスを持つ配列を走査する。削除後は次の ++ まで要素を参照しない。
 template<typename ContainerType>
 class TIterator
 {
 public:
-	// 添字アクセスと同じ参照型を使い、const を保つ。
+	// インデックスアクセスと同じ参照型を使い、const を保つ。
 	using ReferenceType = decltype( DeclVal<ContainerType&>()[0] );
 	// 要素を所有せず、配列と開始位置を受け取る。範囲外の開始位置は不正。
 	FORCEINLINE explicit TIterator( ContainerType& InContainer, int32 InIndex = 0 ) : Container( &InContainer ), Index( InIndex )
@@ -42,7 +42,7 @@ public:
 	}
 	// 現在位置が配列内かを返す。
 	FORCEINLINE explicit operator bool() const { return Index >= 0 && Index < Container->Num(); }
-	// 現在の添字を返す。削除直後は詰められた位置を返す。
+	// 現在のインデックスを返す。削除直後は詰められた位置を返す。
 	FORCEINLINE int32 GetIndex() const { return Index; }
 	// 現在要素を順序を保って削除する。const 配列では使用できない。
 	FORCEINLINE void RemoveCurrent()

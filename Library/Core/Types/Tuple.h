@@ -29,7 +29,7 @@ class TTuple;
 
 namespace NTupleDetail
 {
-	// 型の並び（添字での取り出しと、個数の比較に使う）。
+	// 型の並び（インデックスでの取り出しと、個数の比較に使う）。
 	template<typename... Ts>
 	struct TTypeList {};
 
@@ -68,7 +68,7 @@ namespace NTupleDetail
 		constexpr explicit TLeaf( U&& InValue ) : Value( Forward<U>( InValue ) ) {}
 	};
 
-	// 添字 I... の入れ物を全部継承する。
+	// インデックス I... の入れ物を全部継承する。
 	template<typename Indices, typename... Ts>
 	struct TStorage;
 
@@ -185,7 +185,7 @@ namespace NTuple
 
 namespace NTupleDetail
 {
-	// 添字 I... で全部の要素を取り出して、InFunction に渡す。
+	// インデックス I... で全部の要素を取り出して、InFunction に渡す。
 	template<typename Function, typename Tuple, usize... I>
 	constexpr decltype( auto ) Apply( Function&& InFunction, Tuple&& InTuple, TIndexSequence<I...> )
 	{

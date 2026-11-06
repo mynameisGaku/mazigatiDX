@@ -523,7 +523,7 @@ bool NRootMotion::TryConvertToActorMotion( const FMatrix4x4& SourceDelta, const 
 		{
 			for ( int32 Column = 0; Column < 3; ++Column ) // 最初の積の列番号。
 			{
-				for ( int32 Inner = 0; Inner < 3; ++Inner ) // 最初の積の内側添字。
+				for ( int32 Inner = 0; Inner < 3; ++Inner ) // 最初の積の内側インデックス。
 				{
 					InverseTimesSource[Row][Column] += InverseLinear[Row][Inner] * SourceLinear[Inner][Column];
 				}
@@ -533,7 +533,7 @@ bool NRootMotion::TryConvertToActorMotion( const FMatrix4x4& SourceDelta, const 
 		{
 			for ( int32 Column = 0; Column < 3; ++Column ) // Clinearの列番号。
 			{
-				for ( int32 Inner = 0; Inner < 3; ++Inner ) // Clinearの内側添字。
+				for ( int32 Inner = 0; Inner < 3; ++Inner ) // Clinearの内側インデックス。
 				{
 					ConvertedLinear[Row][Column] += InverseTimesSource[Row][Inner] * BasisLinear[Inner][Column];
 				}
@@ -543,13 +543,13 @@ bool NRootMotion::TryConvertToActorMotion( const FMatrix4x4& SourceDelta, const 
 	float64 ConvertedTranslation[3] = {}; // actor空間差分の平行移動。
 	for ( int32 Column = 0; Column < 3; ++Column ) // translationの出力軸。
 	{
-		for ( int32 Inner = 0; Inner < 3; ++Inner ) // source移動をbasisへ写す内側添字。
+		for ( int32 Inner = 0; Inner < 3; ++Inner ) // source移動をbasisへ写す内側インデックス。
 		{
 			ConvertedTranslation[Column] += static_cast<float64>( AffineDelta.m[3][Inner] ) * BasisLinear[Inner][Column];
 		}
 		if ( !bPureTranslation )
 		{
-			for ( int32 Inner = 0; Inner < 3; ++Inner ) // basis offsetに線形差分を適用する内側添字。
+			for ( int32 Inner = 0; Inner < 3; ++Inner ) // basis offsetに線形差分を適用する内側インデックス。
 			{
 				const float64 IdentityMinusLinear = ( Inner == Column ? 1.0 : 0.0 ) - ConvertedLinear[Inner][Column]; // I-Clinearの要素。
 				ConvertedTranslation[Column] += static_cast<float64>( AffineBasis.m[3][Inner] ) * IdentityMinusLinear;
