@@ -71,6 +71,7 @@
     <ClCompile Include="Library\Core\Log\LogSink.cpp" />
     <ClCompile Include="Library\Core\Log\LogVerbosity.cpp" />
     <ClCompile Include="Library\Core\Thread\GameThread.cpp" />
+    <ClCompile Include="Library\Core\Time\DateTime.cpp" />
     <ClCompile Include="Library\Core\Time\PlatformTime.cpp" />
     <ClCompile Include="Library\DebugUI\DebugOverlay.cpp" />
     <ClCompile Include="Library\DebugUI\Asset\AssetTools.cpp" />
@@ -287,6 +288,7 @@
     <ClCompile Include="Library\Math\Color.cpp" />
     <ClCompile Include="Library\Math\Matrix4x4.cpp" />
     <ClCompile Include="Library\Math\Quaternion.cpp" />
+    <ClCompile Include="Library\Math\RandomStream.cpp" />
     <ClCompile Include="Library\Physics\PhysicsSubsystem.cpp" />
     <ClCompile Include="Library\Physics\PhysicsSystem.cpp" />
     <ClCompile Include="Library\Physics\WorldPhysics.cpp" />
@@ -586,6 +588,7 @@
     <ClInclude Include="Library\Core\Thread\JobState.h" />
     <ClInclude Include="Library\Core\Thread\Mutex.h" />
     <ClInclude Include="Library\Core\Thread\Thread.h" />
+    <ClInclude Include="Library\Core\Time\DateTime.h" />
     <ClInclude Include="Library\Core\Time\PlatformTime.h" />
     <ClInclude Include="Library\Core\Types\Callable.h" />
     <ClInclude Include="Library\Core\Types\CompilerMacros.h" />
@@ -854,6 +857,7 @@
     <ClInclude Include="Library\Math\MathUtils.h" />
     <ClInclude Include="Library\Math\Matrix4x4.h" />
     <ClInclude Include="Library\Math\Quaternion.h" />
+    <ClInclude Include="Library\Math\RandomStream.h" />
     <ClInclude Include="Library\Math\Transform.h" />
     <ClInclude Include="Library\Math\Vector2.h" />
     <ClInclude Include="Library\Math\Vector3.h" />

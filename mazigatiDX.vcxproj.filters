@@ -19,6 +19,9 @@
     <ClCompile Include="Library\Core\Thread\GameThread.cpp">
       <Filter>Library\Core\Thread</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Core\Time\DateTime.cpp">
+      <Filter>Library\Core\Time</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Core\Time\PlatformTime.cpp">
       <Filter>Library\Core\Time</Filter>
     </ClCompile>
@@ -665,6 +668,9 @@
       <Filter>Library\Math</Filter>
     </ClCompile>
     <ClCompile Include="Library\Math\Quaternion.cpp">
+      <Filter>Library\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Math\RandomStream.cpp">
       <Filter>Library\Math</Filter>
     </ClCompile>
     <ClCompile Include="Library\Physics\PhysicsSubsystem.cpp">
@@ -1560,6 +1566,9 @@
     <ClInclude Include="Library\Core\Thread\Thread.h">
       <Filter>Library\Core\Thread</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Time\DateTime.h">
+      <Filter>Library\Core\Time</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Time\PlatformTime.h">
       <Filter>Library\Core\Time</Filter>
     </ClInclude>
@@ -2362,6 +2371,9 @@
       <Filter>Library\Math</Filter>
     </ClInclude>
     <ClInclude Include="Library\Math\Quaternion.h">
+      <Filter>Library\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Math\RandomStream.h">
       <Filter>Library\Math</Filter>
     </ClInclude>
     <ClInclude Include="Library\Math\Transform.h">

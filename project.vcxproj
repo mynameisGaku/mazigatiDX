@@ -125,6 +125,7 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestPixelImage.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestPixelImage.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestPixelImageReal.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestPixelImageReal.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestPlatformStartup.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestPlatformStartup.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestRandomDateTime.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestRandomDateTime.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestRenderState.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestRenderState.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestRenderStateReal.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestRenderStateReal.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestRenderTarget.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestRenderTarget.cpp')" />
@@ -238,6 +239,7 @@
     <ClInclude Include="Source\SelfTest\AssetSelfTestPcmSound.h" Condition="Exists('Source\SelfTest\AssetSelfTestPcmSound.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestPixelEffect.h" Condition="Exists('Source\SelfTest\AssetSelfTestPixelEffect.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestPixelImage.h" Condition="Exists('Source\SelfTest\AssetSelfTestPixelImage.h')" />
+    <ClInclude Include="Source\SelfTest\AssetSelfTestRandomDateTime.h" Condition="Exists('Source\SelfTest\AssetSelfTestRandomDateTime.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestRender.h" Condition="Exists('Source\SelfTest\AssetSelfTestRender.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestRenderState.h" Condition="Exists('Source\SelfTest\AssetSelfTestRenderState.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestRenderTarget.h" Condition="Exists('Source\SelfTest\AssetSelfTestRenderTarget.h')" />

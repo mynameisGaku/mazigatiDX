@@ -338,6 +338,35 @@ TSharedPtr<CSound> Sound = Loader.CreateFromPcm( "Beep", Beep );
 Audio->Play( Sound );
 ```
 
+## 乱数と日時
+
+**`FRandomStream`**（`Library/Math`）は、種で列が決まる乱数のクラスです。同じ種なら、環境に依らず同じ列になります（PCG32）。リプレイ・検査・手続き的な生成のように、毎回同じ結果にしたいときに使います。
+
+```cpp
+FRandomStream Random( 12345 );
+const float32 Roll = Random.NextFloat();                // 0以上1未満
+const int32 Damage = Random.NextInt( 8, 12 );           // 8以上12以下
+const bool bCritical = Random.NextBool( 0.1f );
+const FVector3 Direction = Random.NextUnitVector();     // 球面に一様
+Random.Shuffle( Deck );
+const FRandomStream::FState Saved = Random.GetState();  // セーブデータ・リプレイの途中から再開できる
+```
+
+暗号には使えません。並列で使うときは、スレッドごとに別のストリームを持ちます。パーティクル・ピクセルエフェクト・オーディオが自前で持っている乱数は、出力が既存の検査と一致している必要があるため、まだ置き換えていません。
+
+**`FDateTime`**（`Library/Core/Time`）は、UTCのUnix時間（ミリ秒）で日時を持つクラスです。タイムゾーンに依らない値なので、保存・通信・比較に向きます。
+
+```cpp
+const FDateTime Now = FDateTime::Now();
+const FDateParts Local = Now.ToLocalParts();           // 今の壁の時計の時刻（タイムゾーン・夏時間を反映）
+const FString Text = Now.ToIso8601();                  // "2026-11-06T09:30:00.123Z"
+FDateTime Parsed;
+FDateTime::TryParseIso8601( "2024-02-29T21:34:56+09:00", Parsed );   // ずれを引いてUTCにする
+const float64 Seconds = Now.AddDays( 1 ).SecondsSince( Now );        // 86400.0
+```
+
+日付の計算はグレゴリオ暦（1970年より前も、うるう年の規則どおり）で、うるう秒は扱いません。年は1〜9999年です。ローカル時刻への変換（`ToLocalParts` / `FromLocalParts`）はOSのタイムゾーンを使うため、1601年より前は変換せずUTCのまま返します。文字コードの変換は`FString`（`FromCodePage` / `ToCodePage`）にあります。
+
 ## ディスプレイとウィンドウ
 
 |窓口|内容|
