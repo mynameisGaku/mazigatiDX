@@ -364,6 +364,9 @@
     <ClCompile Include="Library\Framework\Asset\Model\Import\XFileWriter.cpp">
       <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Sound\PcmEdit.cpp">
+      <Filter>Library\Framework\Asset\Sound</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Sound\PcmSoundLoader.cpp">
       <Filter>Library\Framework\Asset\Sound</Filter>
     </ClCompile>
@@ -371,6 +374,9 @@
       <Filter>Library\Framework\Asset\Sound</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Sound\SoundLoader.cpp">
+      <Filter>Library\Framework\Asset\Sound</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Sound\Waveform.cpp">
       <Filter>Library\Framework\Asset\Sound</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Sound\WavFile.cpp">
@@ -2157,6 +2163,9 @@
     <ClInclude Include="Library\Framework\Asset\Model\Import\XFileWriter.h">
       <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Sound\PcmEdit.h">
+      <Filter>Library\Framework\Asset\Sound</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Sound\PcmSoundLoader.h">
       <Filter>Library\Framework\Asset\Sound</Filter>
     </ClInclude>
@@ -2167,6 +2176,9 @@
       <Filter>Library\Framework\Asset\Sound</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Sound\SoundTypes.h">
+      <Filter>Library\Framework\Asset\Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Sound\Waveform.h">
       <Filter>Library\Framework\Asset\Sound</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Sound\WavFile.h">

@@ -188,9 +188,11 @@
     <ClCompile Include="Library\Framework\Asset\Model\Import\ModelFormats.cpp" />
     <ClCompile Include="Library\Framework\Asset\Model\Import\ModelImporter.cpp" />
     <ClCompile Include="Library\Framework\Asset\Model\Import\XFileWriter.cpp" />
+    <ClCompile Include="Library\Framework\Asset\Sound\PcmEdit.cpp" />
     <ClCompile Include="Library\Framework\Asset\Sound\PcmSoundLoader.cpp" />
     <ClCompile Include="Library\Framework\Asset\Sound\Sound.cpp" />
     <ClCompile Include="Library\Framework\Asset\Sound\SoundLoader.cpp" />
+    <ClCompile Include="Library\Framework\Asset\Sound\Waveform.cpp" />
     <ClCompile Include="Library\Framework\Asset\Sound\WavFile.cpp" />
     <ClCompile Include="Library\Framework\Asset\Texture\DynamicTexture.cpp" />
     <ClCompile Include="Library\Framework\Asset\Texture\PixelImage.cpp" />
@@ -787,10 +789,12 @@
     <ClInclude Include="Library\Framework\Asset\Model\Import\ModelFormats.h" />
     <ClInclude Include="Library\Framework\Asset\Model\Import\ModelImporter.h" />
     <ClInclude Include="Library\Framework\Asset\Model\Import\XFileWriter.h" />
+    <ClInclude Include="Library\Framework\Asset\Sound\PcmEdit.h" />
     <ClInclude Include="Library\Framework\Asset\Sound\PcmSoundLoader.h" />
     <ClInclude Include="Library\Framework\Asset\Sound\Sound.h" />
     <ClInclude Include="Library\Framework\Asset\Sound\SoundLoader.h" />
     <ClInclude Include="Library\Framework\Asset\Sound\SoundTypes.h" />
+    <ClInclude Include="Library\Framework\Asset\Sound\Waveform.h" />
     <ClInclude Include="Library\Framework\Asset\Sound\WavFile.h" />
     <ClInclude Include="Library\Framework\Asset\Texture\DynamicTexture.h" />
     <ClInclude Include="Library\Framework\Asset\Texture\PixelImage.h" />

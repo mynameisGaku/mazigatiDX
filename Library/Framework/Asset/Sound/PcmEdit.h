@@ -1,0 +1,62 @@
+﻿// SPDX-License-Identifier: MIT
+#pragma once
+
+#include "Library/Core/Collection/Array.h"
+#include "Library/Core/Types/TypeDefinition.h"
+#include "Library/Framework/Asset/Sound/SoundTypes.h"
+
+//=============================================================================
+// NPcmEdit
+//   生の音（FPcmBuffer）を、切り出す・音量をそろえる・フェードさせる・割れた所を見つける、状態を持たない関数（サウンドエディターの部品。鳴らさずに検査できる）。
+//   範囲は「フレーム」（1 チャンネルあたりのサンプルの位置）で、[Start, End)（End は含まない）。範囲は、音の長さに切り詰める。
+//   数でない値（NaN・無限大）は、無音として扱う（ピークの計算にも入れない）。
+//
+//   FPcmBuffer Cut;
+//   NPcmEdit::Slice( Pcm, NPcmEdit::SnapToZeroCrossing( Pcm, 12000, 200 ), 48000, Cut );   // 切り口が、ゼロを横切る所になるようにして切り出す
+//   NPcmEdit::Normalize( Cut, 0.9f );                                                          // いちばん大きい所が 0.9 になるように
+//   NPcmEdit::FadeIn( Cut, 480 );  NPcmEdit::FadeOut( Cut, 960 );                              // プチッという音を防ぐ
+//=============================================================================
+struct FFrameRange
+{
+	int64 Start = 0;
+	int64 End = 0;
+
+	int64 GetLength() const { return End > Start ? End - Start : 0; }
+	bool IsEmpty() const { return End <= Start; }
+};
+
+enum class EFadeCurve : uint8
+{
+	Linear,   // 直線
+	Smooth,   // 始めと終わりがなめらか（コサイン）
+};
+
+namespace NPcmEdit
+{
+	// In の [Start, End) を、Out に切り出す（サンプルレートとチャンネル数は引き継ぐ）。In が音として使えない・範囲が空なら false で、Out は変えない
+	bool Slice( const FPcmBuffer& In, int64 Start, int64 End, FPcmBuffer& Out );
+
+	// 範囲の中の、絶対値がいちばん大きいサンプル（全チャンネル。範囲が空なら 0）。End が負なら、最後まで
+	float32 GetPeak( const FPcmBuffer& Pcm, int64 Start = 0, int64 End = -1 );
+
+	// 範囲の音量を Gain 倍にする（End が負なら、最後まで。Gain が数でないなら、何もしない）。-1..1 を超えても切らない（保存・再生のときに切られる）
+	void ApplyGain( FPcmBuffer& Pcm, float32 Gain, int64 Start = 0, int64 End = -1 );
+
+	// いちばん大きいサンプルが TargetPeak になるように、全体の音量をそろえる。無音・TargetPeak が 0 以下・数でないなら false（何もしない）
+	bool Normalize( FPcmBuffer& Pcm, float32 TargetPeak = 1.0f );
+
+	// 先頭の Frames フレームを、無音から元の音量へ（Frames は、音の長さに切り詰める。0 以下なら、何もしない）
+	void FadeIn( FPcmBuffer& Pcm, int64 Frames, EFadeCurve Curve = EFadeCurve::Smooth );
+	// 最後の Frames フレームを、元の音量から無音へ（最後のフレームが、ちょうど無音になる）
+	void FadeOut( FPcmBuffer& Pcm, int64 Frames, EFadeCurve Curve = EFadeCurve::Smooth );
+
+	// 音が割れている（どれかのチャンネルの絶対値が Threshold 以上）フレームの連なりを、MinRun フレーム以上のものだけ、順に返す
+	TArray<FFrameRange> FindClippedRanges( const FPcmBuffer& Pcm, float32 Threshold = 1.0f, int64 MinRun = 1 );
+
+	// 聞こえる範囲（どれかのチャンネルの絶対値が Threshold を超える、最初のフレームから最後のフレームまで）。無音なら、空の範囲
+	FFrameRange FindAudibleRange( const FPcmBuffer& Pcm, float32 Threshold = 0.001f );
+
+	// Frame の近くで、波形がゼロを横切る（全チャンネルの平均の符号が変わる）フレームを返す。切り口・ループの端を、ここにすると、プチッという音が出にくい。
+	// Frame から前後に MaxDistance フレームまで探し、近いほうを選ぶ（同じ距離なら前）。見つからなければ、Frame を音の範囲に切り詰めたもの
+	int64 SnapToZeroCrossing( const FPcmBuffer& Pcm, int64 Frame, int64 MaxDistance );
+}
