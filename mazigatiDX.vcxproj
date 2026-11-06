@@ -119,6 +119,9 @@
     <ClCompile Include="Library\Framework\AI\Blackboard\BlackboardCompare.cpp" />
     <ClCompile Include="Library\Framework\AI\Blackboard\BlackboardDefinition.cpp" />
     <ClCompile Include="Library\Framework\AI\Blackboard\BlackboardValue.cpp" />
+    <ClCompile Include="Library\Framework\AI\Edit\BehaviorTreeEdit.cpp" />
+    <ClCompile Include="Library\Framework\AI\Edit\BlackboardEdit.cpp" />
+    <ClCompile Include="Library\Framework\AI\Edit\StateMachineEdit.cpp" />
     <ClCompile Include="Library\Framework\AI\Registry\AIRegistry.cpp" />
     <ClCompile Include="Library\Framework\AI\Registry\ParamSchema.cpp" />
     <ClCompile Include="Library\Framework\AI\StateMachine\StateMachineDefinition.cpp" />
@@ -693,6 +696,9 @@
     <ClInclude Include="Library\Framework\AI\Blackboard\BlackboardCompare.h" />
     <ClInclude Include="Library\Framework\AI\Blackboard\BlackboardDefinition.h" />
     <ClInclude Include="Library\Framework\AI\Blackboard\BlackboardValue.h" />
+    <ClInclude Include="Library\Framework\AI\Edit\BehaviorTreeEdit.h" />
+    <ClInclude Include="Library\Framework\AI\Edit\BlackboardEdit.h" />
+    <ClInclude Include="Library\Framework\AI\Edit\StateMachineEdit.h" />
     <ClInclude Include="Library\Framework\AI\Registry\AIParts.h" />
     <ClInclude Include="Library\Framework\AI\Registry\AIRegistry.h" />
     <ClInclude Include="Library\Framework\AI\Registry\ParamSchema.h" />

@@ -28,6 +28,9 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestAIBehaviorTree.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestAIEdit.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
     <ClCompile Include="Source\SelfTest\AssetSelfTestAIStateMachine.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>

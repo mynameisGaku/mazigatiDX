@@ -364,7 +364,19 @@ if ( Animator.ConsumeRootMotion( ReferenceToActorBasis, RootTranslation, RootRot
 
 グラフの矢印は、直角に折れる線で描きます（角は丸め、終点に矢じり）。分かれ目・合わさる所や、箱の上下を回る長い矢印の途中には、中継ノード（丸い点）を置きます。他の矢印と並んで重なる矢印は、真ん中の線や経路全体をずらして避け、関係のない矢印と重なる中継ノードは、自分の矢印の上でずらします。配置と経路の計算は描画に依存しない`NAIGraph::BuildStateMachineLayout` / `BuildBehaviorTreeLayout`（`Library/DebugUI/AI/AIGraphLayout.h`）が行い、描く部品は`FNodeGraphCanvas`（`NodeGraph.h`。パン・ズーム・箱・矢印・中継ノード）です。どちらも、これから足すエディタで使い回します。
 
-エディタ（グラフの編集・インスペクタ・検証）は、これから足します。
+### AIの編集関数（エディタの土台）
+
+|やりたいこと|使うもの|
+|---|---|
+|定義を、画面なしで編集する|`TBlackboardDocument` / `TStateMachineDocument` / `TBehaviorTreeDocument`（`TDefinitionDocument`。元に戻す・やり直す・未保存の印）に対して、`NBlackboardEdit` / `NStateMachineEdit` / `NBehaviorTreeEdit`（`Library/Framework/AI/Edit/`）の関数を呼びます。範囲外の番号・できない操作・変わらない操作は何もせず、履歴にも積みません。連続した変更（ドラッグなど）は`CoalesceKey`に同じ文字列を渡すと1回の編集にまとまります|
+|ブラックボードのキー|`AddKey`（型の初期値で作る。同じ名前は`Name 2`）・`RemoveKey`・`RenameKey`・`MoveKey`・`SetKeyType`（型を変えると既定値・Enumの選択肢・Triggerを後始末）・`SetKeyDefault`・Enumの選択肢（`AddEnumValue`など）|
+|ステートマシンのステート|`AddState`（葉の下に足すと、その葉がMachineになる。名前の`/`は`_`）・`RemoveState`（子孫と、それを指す遷移を消し、Entryを直す）・`RenameState`（Entry・遷移の`From` / `To`（`A/B`の経路を含む）を新しい名前に直す）・`SetStateIsMachine`・`SetStateClip`・`SetStatePosition`（エディタの座標。ドラッグは1回の元に戻す）|
+|遷移・処理|`AddTransition` / `RemoveTransition` / `MoveTransition` / `SetTransition`（`bAny`でAny Stateの一覧）、`AddAction`など（`EStateActionList`）、`AddClipEvent`など|
+|ビヘイビアツリーのノード|`AddNode`（位置`At`を指せる。兄弟の順が優先順位）・`RemoveNode`（子孫ごと）・`MoveNode`（別の親・並べ替え。自分の子孫の下・葉の下・ルートは不可）・`DuplicateNode`・`WrapNode`・`ChangeNodeType`・デコレーター / サービスの`Add` / `Remove` / `Move` / `Set`|
+|部分木のコピー・貼り付け|`CopySubtree`（`.gxbt`と同じ書式のJSON）・`PasteSubtree`|
+|キーの改名に合わせて参照を直す|`NStateMachineEdit::RenameBlackboardKey` / `NBehaviorTreeEdit::RenameBlackboardKey`（条件・デコレーターの`Key`を直す。部品のパラメータの中は直さない）。使用数は`CountBlackboardKeyUsage`|
+
+エディタの画面（グラフの編集・インスペクタ・検証）は、これから足します。
 
 ## ムービー
 

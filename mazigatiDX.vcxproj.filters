@@ -163,6 +163,15 @@
     <ClCompile Include="Library\Framework\AI\Blackboard\BlackboardValue.cpp">
       <Filter>Library\Framework\AI\Blackboard</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\AI\Edit\BehaviorTreeEdit.cpp">
+      <Filter>Library\Framework\AI\Edit</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\AI\Edit\BlackboardEdit.cpp">
+      <Filter>Library\Framework\AI\Edit</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\AI\Edit\StateMachineEdit.cpp">
+      <Filter>Library\Framework\AI\Edit</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\AI\Registry\AIRegistry.cpp">
       <Filter>Library\Framework\AI\Registry</Filter>
     </ClCompile>
@@ -1880,6 +1889,15 @@
     </ClInclude>
     <ClInclude Include="Library\Framework\AI\Blackboard\BlackboardValue.h">
       <Filter>Library\Framework\AI\Blackboard</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\AI\Edit\BehaviorTreeEdit.h">
+      <Filter>Library\Framework\AI\Edit</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\AI\Edit\BlackboardEdit.h">
+      <Filter>Library\Framework\AI\Edit</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\AI\Edit\StateMachineEdit.h">
+      <Filter>Library\Framework\AI\Edit</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\AI\Registry\AIParts.h">
       <Filter>Library\Framework\AI\Registry</Filter>
@@ -4462,6 +4480,9 @@
     </Filter>
     <Filter Include="Library\Framework\AI\Blackboard">
       <UniqueIdentifier>{3826CAE4-15A3-D142-E2E1-0317732FE46D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\AI\Edit">
+      <UniqueIdentifier>{C7F766B0-9EC9-DEA6-2206-2801A6FE387C}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\AI\Registry">
       <UniqueIdentifier>{BB823820-134F-A8ED-AD12-56431E399109}</UniqueIdentifier>
