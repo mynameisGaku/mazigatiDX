@@ -8,7 +8,7 @@
 #include "Library/Framework/Animation/RootMotion.h"
 #include "Library/Framework/Render/Draw/DrawModelFramePoseData.h"
 #include "Library/Core/Thread/GameThread.h"
-#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Core/Types/Callable.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Ecs/SystemParams.h"

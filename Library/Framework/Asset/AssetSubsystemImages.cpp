@@ -1,13 +1,13 @@
 ﻿// SPDX-License-Identifier: MIT
 
-#include "AssetManagerSubsystem.h"
+#include "AssetSubsystem.h"
 
 #include "Library/Core/Thread/GameThread.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Time/PlatformTime.h"
 #include "Library/Platform/System/FileSystem.h"
 
-TSharedPtr<CDynamicTexture> CAssetManagerSubsystem::CreateDynamicTexture( const FString& Name, const FPixelImage& Image )
+TSharedPtr<CDynamicTexture> CAssetSubsystem::CreateDynamicTexture( const FString& Name, const FPixelImage& Image )
 {
 	GAME_THREAD_ONLY( nullptr );
 	if ( GetBackend() == nullptr )
@@ -46,7 +46,7 @@ TSharedPtr<CDynamicTexture> CAssetManagerSubsystem::CreateDynamicTexture( const 
 	return Texture;
 }
 
-FPixelImage CAssetManagerSubsystem::LoadPixelImage( const FString& Path )
+FPixelImage CAssetSubsystem::LoadPixelImage( const FString& Path )
 {
 	GAME_THREAD_ONLY( FPixelImage() );
 	const TOptional<FString> Full = PrepareLoad( "pixel image", Path );
@@ -66,7 +66,7 @@ FPixelImage CAssetManagerSubsystem::LoadPixelImage( const FString& Path )
 	return FPixelImage::FromPixels( Width, Height, Pixels.GetData() );
 }
 
-FPixelImage CAssetManagerSubsystem::DecodePixelImage( const void* FileImage, usize Size )
+FPixelImage CAssetSubsystem::DecodePixelImage( const void* FileImage, usize Size )
 {
 	GAME_THREAD_ONLY( FPixelImage() );
 	if ( GetBackend() == nullptr || FileImage == nullptr || Size == 0 )
@@ -85,7 +85,7 @@ FPixelImage CAssetManagerSubsystem::DecodePixelImage( const void* FileImage, usi
 	return FPixelImage::FromPixels( Width, Height, Pixels.GetData() );
 }
 
-bool CAssetManagerSubsystem::SavePixelImage( const FPixelImage& Image, const FString& Path, const FImageSaveOptions& Options )
+bool CAssetSubsystem::SavePixelImage( const FPixelImage& Image, const FString& Path, const FImageSaveOptions& Options )
 {
 	GAME_THREAD_ONLY( false );
 	if ( GetBackend() == nullptr || !Image.IsValid() || Path.IsEmpty() )
@@ -105,7 +105,7 @@ bool CAssetManagerSubsystem::SavePixelImage( const FPixelImage& Image, const FSt
 	return true;
 }
 
-TArray<TSharedPtr<CTexture>> CAssetManagerSubsystem::SplitTexture( const TSharedPtr<CTexture>& Source, const FSpriteSheetGrid& Grid )
+TArray<TSharedPtr<CTexture>> CAssetSubsystem::SplitTexture( const TSharedPtr<CTexture>& Source, const FSpriteSheetGrid& Grid )
 {
 	GAME_THREAD_ONLY( TArray<TSharedPtr<CTexture>>() );
 	TArray<TSharedPtr<CTexture>> Pieces;
@@ -123,7 +123,7 @@ TArray<TSharedPtr<CTexture>> CAssetManagerSubsystem::SplitTexture( const TShared
 	return Pieces;
 }
 
-TArray<TSharedPtr<CTexture>> CAssetManagerSubsystem::LoadTextureGrid( const FString& Path, const FSpriteSheetGrid& Grid )
+TArray<TSharedPtr<CTexture>> CAssetSubsystem::LoadTextureGrid( const FString& Path, const FSpriteSheetGrid& Grid )
 {
 	GAME_THREAD_ONLY( TArray<TSharedPtr<CTexture>>() );
 	return SplitTexture( LoadTexture( Path ), Grid );

@@ -1,6 +1,6 @@
 ﻿#include "IslandSample.h"
 
-#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Asset/Texture/PixelImage.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Render/Draw/ImmediateDraw.h"
@@ -50,7 +50,7 @@ namespace
 
 void CIslandSample::OnEnter()
 {
-	CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
+	CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
 	if ( Assets == nullptr )
 	{
 		return;

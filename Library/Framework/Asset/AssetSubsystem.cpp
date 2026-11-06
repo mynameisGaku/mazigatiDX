@@ -1,4 +1,4 @@
-﻿#include "AssetManagerSubsystem.h"
+﻿#include "AssetSubsystem.h"
 
 
 #include "Library/Core/Thread/GameThread.h"
@@ -18,7 +18,7 @@
 
 DEFINE_LOG_CATEGORY( LogAsset )
 
-REGISTER_SUBSYSTEM( CAssetManagerSubsystem )
+REGISTER_SUBSYSTEM( CAssetSubsystem )
 
 const char* ToString( EAssetType Type )
 {
@@ -217,17 +217,18 @@ bool FAssetBundle::AreAllReady() const
 }
 
 //=============================================================================
-// CAssetManagerSubsystem
+// CAssetSubsystem
 //=============================================================================
-CAssetManagerSubsystem::CAssetManagerSubsystem() = default;
-CAssetManagerSubsystem::~CAssetManagerSubsystem() = default;
+CAssetSubsystem::CAssetSubsystem() = default;
+CAssetSubsystem::~CAssetSubsystem() = default;
 
-void CAssetManagerSubsystem::Initialize( FSubsystemCollection& Collection )
+void CAssetSubsystem::Initialize( FSubsystemCollection& Collection )
 {
 	Backend = Collection.InitializeDependency<IAssetBackend>();
 	FService& S = Service();
 	S.MainThread = NThread::GetCurrentId();
 	S.Backend.Store( GetBackend() );
+	LoadContext.SetBackend( GetBackend() );
 
 	if ( Backend == nullptr )
 	{
@@ -237,7 +238,7 @@ void CAssetManagerSubsystem::Initialize( FSubsystemCollection& Collection )
 	LOG( LogAsset, Log, "Asset manager ready (root directory '%s')", *GetRootDirectory() );
 }
 
-void CAssetManagerSubsystem::Deinitialize()
+void CAssetSubsystem::Deinitialize()
 {
 	FlushDeferred();
 	PendingSheets.Empty();
@@ -245,29 +246,31 @@ void CAssetManagerSubsystem::Deinitialize()
 	SpriteSheets.Empty();
 	Models.Empty();
 	ModelAnimations.Empty();
-	Worlds.Empty();
-	Effects.Empty();
+	WorldLoader.Clear();
+	EffectLoader.Clear();
 	Sounds.Empty();
 	Fonts.Empty();
 
 	// これ以降に手放されるアセットは、何もしない（DxLib の終了処理が片付ける）
 	Service().Backend.Store( nullptr );
+	LoadContext.SetBackend( nullptr );
 	Backend = nullptr;
 }
 
-IAssetBackend* CAssetManagerSubsystem::GetBackend() const
+IAssetBackend* CAssetSubsystem::GetBackend() const
 {
 	return BackendOverride != nullptr ? BackendOverride : Backend;
 }
 
-void CAssetManagerSubsystem::SetBackendOverride( IAssetBackend* InBackend )
+void CAssetSubsystem::SetBackendOverride( IAssetBackend* InBackend )
 {
 	FlushDeferred();
 	BackendOverride = InBackend;
 	Service().Backend.Store( GetBackend() );
+	LoadContext.SetBackend( GetBackend() );
 }
 
-void CAssetManagerSubsystem::Tick( float32 DeltaTime )
+void CAssetSubsystem::Tick( float32 DeltaTime )
 {
 	PROFILE_SCOPE_CAT( "Asset", "Tick" );
 	FlushDeferred();
@@ -289,7 +292,11 @@ void CAssetManagerSubsystem::Tick( float32 DeltaTime )
 		ReleaseUnused();
 	}
 
-	// 集計: プロファイラーの記録中は毎フレーム（カウンターとして残す）、それ以外は 0.5 秒ごと（画面に出す用）
+	// 集計: プロファイラーの記録中は毎フレーム（カウンターとして残す）、それ以外は 0.5 秒ごと（画面に出す用）。読み込みがあった直後は、早めに更新する
+	if ( LoadRecorder.ConsumeLoadHappened() )
+	{
+		StatsTimer = 0.5f;
+	}
 	StatsTimer += DeltaTime;
 	if ( NProfiler::GRecorder != nullptr || StatsTimer >= 0.5f )
 	{
@@ -299,25 +306,22 @@ void CAssetManagerSubsystem::Tick( float32 DeltaTime )
 	}
 }
 
-void CAssetManagerSubsystem::RecordLoad( CAsset& Asset, const FString& FullPath, int64 StartTick )
+const FAssetStats& CAssetSubsystem::GetStats() const
 {
-	const float32 Ms = static_cast<float32>( NPlatformTime::TicksToMs( NPlatformTime::GetTicks() - StartTick ) );
-	const int64 FileBytes = FullPath.IsEmpty() ? 0 : NFileSystem::GetFileSize( FullPath );
-	Asset.SetLoadInfo( FileBytes > 0 ? FileBytes : 0, Ms );
-
-	++Stats.NumLoads;
-	Stats.TotalLoadMs += Ms;
-	if ( Ms > Stats.MaxLoadMs )
-	{
-		Stats.MaxLoadMs = Ms;
-		Stats.MaxLoadPath = FullPath;
-	}
-	StatsTimer = 0.5f;
+	// 読み込みの累計（回数・共有・失敗・時間）は、読み込みを記録する人が数えている。読むたびに、最新の値を写す
+	const FAssetLoadCounters& Counters = LoadRecorder.GetCounters();
+	Stats.NumLoads = Counters.NumLoads;
+	Stats.NumCacheHits = Counters.NumCacheHits;
+	Stats.NumLoadFailures = Counters.NumLoadFailures;
+	Stats.TotalLoadMs = Counters.TotalLoadMs;
+	Stats.MaxLoadMs = Counters.MaxLoadMs;
+	Stats.MaxLoadPath = Counters.MaxLoadPath;
+	return Stats;
 }
 
-void CAssetManagerSubsystem::UpdateStats()
+void CAssetSubsystem::UpdateStats()
 {
-	FAssetStats Fresh = Stats;   // 起動してからの累計は引き継ぐ
+	FAssetStats Fresh = GetStats();   // 起動してからの累計は引き継ぐ
 	for ( FAssetTypeStats& Type : Fresh.Types )
 	{
 		Type = FAssetTypeStats();
@@ -355,7 +359,7 @@ void CAssetManagerSubsystem::UpdateStats()
 	Stats = Fresh;
 }
 
-void CAssetManagerSubsystem::RecordCounters() const
+void CAssetSubsystem::RecordCounters() const
 {
 	IProfiler* Recorder = NProfiler::GRecorder;
 	if ( Recorder == nullptr )
@@ -400,80 +404,25 @@ void CAssetManagerSubsystem::RecordCounters() const
 }
 
 //-----------------------------------------------------------------------------
-// パス
+// パス（パスを解決する人 CAssetPathResolver に任せる）
 //-----------------------------------------------------------------------------
-void CAssetManagerSubsystem::SetRootDirectory( const FString& Directory )
+void CAssetSubsystem::SetRootDirectory( const FString& Directory )
 {
-	RootDirectoryName = Directory;
-	ResolvedRoot.Reset();
+	PathResolver.SetRootDirectory( Directory );
 }
 
-FString CAssetManagerSubsystem::GetRootDirectory() const
+FString CAssetSubsystem::GetRootDirectory() const
 {
-	if ( !ResolvedRoot.IsSet() )
-	{
-		TOptional<FString> Found = NFileSystem::FindDirectory( RootDirectoryName );
-		ResolvedRoot = Found.IsSet() ? NFileSystem::GetFullPath( Found.Get( FString() ) ) : FString();
-	}
-	const FString Root = ResolvedRoot.Get( FString() );
-	return Root.IsEmpty() ? RootDirectoryName : Root;
+	return PathResolver.GetRootDirectory();
 }
 
-TOptional<FString> CAssetManagerSubsystem::ResolvePath( const FString& Path ) const
+TOptional<FString> CAssetSubsystem::ResolvePath( const FString& Path ) const
 {
-	if ( Path.IsEmpty() )
-	{
-		return TOptional<FString>();
-	}
-
-	// ルートフォルダを最優先、次に作業ディレクトリ・exe のフォルダ（と親）。絶対パスはそのまま
-	if ( NFileSystem::FileExists( Path ) && ( Path.Find( ":" ) != INDEX_NONE || Path.StartsWith( "/" ) || Path.StartsWith( "\\" ) ) )
-	{
-		return NFileSystem::GetFullPath( Path );
-	}
-
-	const FString Root = GetRootDirectory();
-	if ( !Root.IsEmpty() )
-	{
-		const FString Candidate = Root / Path;
-		if ( NFileSystem::FileExists( Candidate ) )
-		{
-			return NFileSystem::GetFullPath( Candidate );
-		}
-	}
-	if ( TOptional<FString> Found = NFileSystem::FindFile( Path ); Found.IsSet() )
-	{
-		return NFileSystem::GetFullPath( Found.Get( FString() ) );
-	}
-	return TOptional<FString>();
-}
-
-FString CAssetManagerSubsystem::MakeKey( const FString& FullPath )
-{
-	// Windows のパスは大文字小文字を区別せず、区切りも '\' と '/' の両方がある。同じファイルは同じキーにする
-	FString Key = FullPath.Replace( "\\", "/" ).ToLower();
-	return Key;
-}
-
-TOptional<FString> CAssetManagerSubsystem::PrepareLoad( const char* Kind, const FString& Path )
-{
-	if ( GetBackend() == nullptr )
-	{
-		LOG( LogAsset, Error, "Cannot load the %s '%s': no asset backend.", Kind, *Path );
-		RecordFailure();
-		return TOptional<FString>();
-	}
-	TOptional<FString> Full = ResolvePath( Path );
-	if ( !Full.IsSet() )
-	{
-		LOG( LogAsset, Error, "Cannot load the %s '%s': the file was not found (root directory '%s').", Kind, *Path, *GetRootDirectory() );
-		RecordFailure();
-	}
-	return Full;
+	return PathResolver.ResolvePath( Path );
 }
 
 template<typename T>
-void CAssetManagerSubsystem::PruneCache( TCache<T>& Cache )
+void CAssetSubsystem::PruneCache( TCache<T>& Cache )
 {
 	for ( auto It = Cache.CreateIterator(); It; ++It )
 	{
@@ -484,14 +433,14 @@ void CAssetManagerSubsystem::PruneCache( TCache<T>& Cache )
 	}
 }
 
-void CAssetManagerSubsystem::ReleaseUnused()
+void CAssetSubsystem::ReleaseUnused()
 {
 	PruneCache( Textures );
 	PruneCache( SpriteSheets );
 	PruneCache( Models );
 	PruneCache( ModelAnimations );
-	PruneCache( Worlds );
-	PruneCache( Effects );
+	WorldLoader.Prune();
+	EffectLoader.Prune();
 	PruneCache( Sounds );
 	PruneCache( Fonts );
 }
@@ -499,7 +448,7 @@ void CAssetManagerSubsystem::ReleaseUnused()
 //-----------------------------------------------------------------------------
 // 画像
 //-----------------------------------------------------------------------------
-TSharedPtr<CTexture> CAssetManagerSubsystem::LoadTexture( const FString& Path, bool bAsync )
+TSharedPtr<CTexture> CAssetSubsystem::LoadTexture( const FString& Path, bool bAsync )
 {
 	GAME_THREAD_ONLY( nullptr );
 	const TOptional<FString> Full = PrepareLoad( "texture", Path );
@@ -536,7 +485,7 @@ TSharedPtr<CTexture> CAssetManagerSubsystem::LoadTexture( const FString& Path, b
 	return Texture;
 }
 
-TSharedPtr<CTexture> CAssetManagerSubsystem::CreateTextureFromMemory( const FString& Name, const void* FileImage, usize Size )
+TSharedPtr<CTexture> CAssetSubsystem::CreateTextureFromMemory( const FString& Name, const void* FileImage, usize Size )
 {
 	GAME_THREAD_ONLY( nullptr );
 	if ( GetBackend() == nullptr || FileImage == nullptr || Size == 0 )
@@ -565,7 +514,7 @@ TSharedPtr<CTexture> CAssetManagerSubsystem::CreateTextureFromMemory( const FStr
 	return Texture;
 }
 
-TSharedPtr<CRenderTarget> CAssetManagerSubsystem::CreateRenderTarget( const FString& Name, const FRenderTargetDesc& Desc )
+TSharedPtr<CRenderTarget> CAssetSubsystem::CreateRenderTarget( const FString& Name, const FRenderTargetDesc& Desc )
 {
 	GAME_THREAD_ONLY( nullptr );
 	if ( GetBackend() == nullptr )
@@ -607,7 +556,7 @@ TSharedPtr<CRenderTarget> CAssetManagerSubsystem::CreateRenderTarget( const FStr
 //-----------------------------------------------------------------------------
 // スプライトシート
 //-----------------------------------------------------------------------------
-void CAssetManagerSubsystem::AddPendingSheet( const TSharedPtr<CSpriteSheet>& Sheet )
+void CAssetSubsystem::AddPendingSheet( const TSharedPtr<CSpriteSheet>& Sheet )
 {
 	if ( !Sheet->IsReady() )
 	{
@@ -615,7 +564,7 @@ void CAssetManagerSubsystem::AddPendingSheet( const TSharedPtr<CSpriteSheet>& Sh
 	}
 }
 
-TSharedPtr<CSpriteSheet> CAssetManagerSubsystem::CreateSpriteSheet( const TSharedPtr<CTexture>& Texture, const FSpriteSheetGrid& Grid, const FString& Name )
+TSharedPtr<CSpriteSheet> CAssetSubsystem::CreateSpriteSheet( const TSharedPtr<CTexture>& Texture, const FSpriteSheetGrid& Grid, const FString& Name )
 {
 	GAME_THREAD_ONLY( nullptr );
 	TSharedPtr<CSpriteSheet> Sheet = CreateSpriteSheet( Texture, Name );
@@ -627,7 +576,7 @@ TSharedPtr<CSpriteSheet> CAssetManagerSubsystem::CreateSpriteSheet( const TShare
 	return Sheet;
 }
 
-TSharedPtr<CSpriteSheet> CAssetManagerSubsystem::CreateSpriteSheet( const TSharedPtr<CTexture>& Texture, const FString& Name )
+TSharedPtr<CSpriteSheet> CAssetSubsystem::CreateSpriteSheet( const TSharedPtr<CTexture>& Texture, const FString& Name )
 {
 	GAME_THREAD_ONLY( nullptr );
 	if ( !Texture.IsValid() )
@@ -638,7 +587,7 @@ TSharedPtr<CSpriteSheet> CAssetManagerSubsystem::CreateSpriteSheet( const TShare
 	return MakeShared<CSpriteSheet>( Name.IsEmpty() ? Texture->GetPath() : Name, Texture );
 }
 
-TSharedPtr<CSpriteSheet> CAssetManagerSubsystem::CreateSpriteSheet( const FSpriteSheetDefinition& Definition, const FString& Name, bool bAsync )
+TSharedPtr<CSpriteSheet> CAssetSubsystem::CreateSpriteSheet( const FSpriteSheetDefinition& Definition, const FString& Name, bool bAsync )
 {
 	GAME_THREAD_ONLY( nullptr );
 	TSharedPtr<CTexture> Texture = LoadTexture( Definition.TexturePath, bAsync );
@@ -653,26 +602,7 @@ TSharedPtr<CSpriteSheet> CAssetManagerSubsystem::CreateSpriteSheet( const FSprit
 	return Sheet;
 }
 
-TOptional<FString> CAssetManagerSubsystem::PrepareSavePath( const FString& Path )
-{
-	FString Full = Path;
-	const bool bAbsolute = Path.Find( ":" ) != INDEX_NONE || Path.StartsWith( "/" ) || Path.StartsWith( "\\" );
-	if ( !bAbsolute )
-	{
-		Full = GetRootDirectory() / Path;
-	}
-	Full = Full.Replace( "\\", "/" );
-
-	const int32 Slash = Full.FindLast( "/" );
-	if ( Slash > 0 && !NFileSystem::EnsureDirectory( Full.Left( Slash ) ) )
-	{
-		LOG( LogAsset, Error, "Cannot save '%s': the folder could not be created.", *Full );
-		return TOptional<FString>();
-	}
-	return NFileSystem::GetFullPath( Full );
-}
-
-bool CAssetManagerSubsystem::SaveSpriteSheetDefinition( const FString& Path, const FSpriteSheetDefinition& Definition )
+bool CAssetSubsystem::SaveSpriteSheetDefinition( const FString& Path, const FSpriteSheetDefinition& Definition )
 {
 	const TOptional<FString> Full = PrepareSavePath( Path );
 	if ( !Full.IsSet() )
@@ -693,7 +623,7 @@ bool CAssetManagerSubsystem::SaveSpriteSheetDefinition( const FString& Path, con
 	return true;
 }
 
-TSharedPtr<CSpriteSheet> CAssetManagerSubsystem::LoadSpriteSheet( const FString& DefinitionPath, bool bAsync )
+TSharedPtr<CSpriteSheet> CAssetSubsystem::LoadSpriteSheet( const FString& DefinitionPath, bool bAsync )
 {
 	GAME_THREAD_ONLY( nullptr );
 	const TOptional<FString> Full = PrepareLoad( "sprite sheet", DefinitionPath );
@@ -754,7 +684,7 @@ TSharedPtr<CSpriteSheet> CAssetManagerSubsystem::LoadSpriteSheet( const FString&
 //-----------------------------------------------------------------------------
 // モデルのアニメーションの定義
 //-----------------------------------------------------------------------------
-TSharedPtr<CModelAnimationAsset> CAssetManagerSubsystem::CreateModelAnimations( const FModelAnimationDefinition& Definition, const FString& Name, bool bAsync )
+TSharedPtr<CModelAnimationAsset> CAssetSubsystem::CreateModelAnimations( const FModelAnimationDefinition& Definition, const FString& Name, bool bAsync )
 {
 	GAME_THREAD_ONLY( nullptr );
 	// Model が空なら、モデルを持たないアニメーション集（モーション専用）
@@ -786,7 +716,7 @@ TSharedPtr<CModelAnimationAsset> CAssetManagerSubsystem::CreateModelAnimations( 
 	return MakeShared<CModelAnimationAsset>( Name.IsEmpty() ? DefaultName : Name, Definition, Model, Sources );
 }
 
-TSharedPtr<CModelAnimationAsset> CAssetManagerSubsystem::LoadModelAnimations( const FString& DefinitionPath, bool bAsync )
+TSharedPtr<CModelAnimationAsset> CAssetSubsystem::LoadModelAnimations( const FString& DefinitionPath, bool bAsync )
 {
 	GAME_THREAD_ONLY( nullptr );
 	const TOptional<FString> Full = PrepareLoad( "model animation set", DefinitionPath );
@@ -828,7 +758,7 @@ TSharedPtr<CModelAnimationAsset> CAssetManagerSubsystem::LoadModelAnimations( co
 	return Asset;
 }
 
-bool CAssetManagerSubsystem::SaveModelAnimationDefinition( const FString& Path, const FModelAnimationDefinition& Definition )
+bool CAssetSubsystem::SaveModelAnimationDefinition( const FString& Path, const FModelAnimationDefinition& Definition )
 {
 	const TOptional<FString> Full = PrepareSavePath( Path );
 	if ( !Full.IsSet() )
@@ -851,11 +781,11 @@ bool CAssetManagerSubsystem::SaveModelAnimationDefinition( const FString& Path, 
 //-----------------------------------------------------------------------------
 // モデル・サウンド
 //-----------------------------------------------------------------------------
-TSharedPtr<CModel> CAssetManagerSubsystem::LoadModel( const FString& Path, bool bAsync )
+TSharedPtr<CModel> CAssetSubsystem::LoadModel( const FString& Path, bool bAsync )
 {
 	GAME_THREAD_ONLY( nullptr );
 	FString FullPath;
-	if ( !ResolveModelRequest( Path, FullPath ) )
+	if ( !ModelImporter.ResolveRequest( Path, FullPath ) )
 	{
 		RecordFailure();
 		return nullptr;
@@ -873,7 +803,7 @@ TSharedPtr<CModel> CAssetManagerSubsystem::LoadModel( const FString& Path, bool 
 	PROFILE_SCOPE_LAZY( LoadScope, MakeLoadScope( "LoadModel", FullPath ) );
 	const int64 StartTick = NPlatformTime::GetTicks();
 	FString LoadPath;
-	if ( !ResolveModelLoadPath( FullPath, LoadPath ) )
+	if ( !ModelImporter.ResolveLoadPath( FullPath, LoadPath ) )
 	{
 		RecordFailure();
 		return nullptr;
@@ -892,7 +822,7 @@ TSharedPtr<CModel> CAssetManagerSubsystem::LoadModel( const FString& Path, bool 
 	return Model;
 }
 
-TSharedPtr<CSound> CAssetManagerSubsystem::LoadSound( const FString& Path, ESoundLoadMode Mode, bool bAsync )
+TSharedPtr<CSound> CAssetSubsystem::LoadSound( const FString& Path, ESoundLoadMode Mode, bool bAsync )
 {
 	GAME_THREAD_ONLY( nullptr );
 	const TOptional<FString> Full = PrepareLoad( "sound", Path );
@@ -932,7 +862,7 @@ TSharedPtr<CSound> CAssetManagerSubsystem::LoadSound( const FString& Path, ESoun
 //-----------------------------------------------------------------------------
 // フォント
 //-----------------------------------------------------------------------------
-TSharedPtr<CFont> CAssetManagerSubsystem::LoadFontInternal( const FString& Key, const FFontDesc& Desc, const FString& FontFilePath )
+TSharedPtr<CFont> CAssetSubsystem::LoadFontInternal( const FString& Key, const FFontDesc& Desc, const FString& FontFilePath )
 {
 	GAME_THREAD_ONLY( nullptr );
 	PROFILE_SCOPE_LAZY( LoadScope, MakeLoadScope( "LoadFont", Desc.Face.IsEmpty() ? FString( "(default)" ) : Desc.Face ) );
@@ -979,7 +909,7 @@ namespace
 	}
 }
 
-TSharedPtr<CFont> CAssetManagerSubsystem::LoadFont( const FString& FontFilePath, int32 Size, const FFontStyle& Style )
+TSharedPtr<CFont> CAssetSubsystem::LoadFont( const FString& FontFilePath, int32 Size, const FFontStyle& Style )
 {
 	const TOptional<FString> Full = PrepareLoad( "font", FontFilePath );
 	if ( !Full.IsSet() )
@@ -1018,7 +948,7 @@ TSharedPtr<CFont> CAssetManagerSubsystem::LoadFont( const FString& FontFilePath,
 	return Font;
 }
 
-TSharedPtr<CFont> CAssetManagerSubsystem::LoadSystemFont( const FString& FaceName, int32 Size, const FFontStyle& Style )
+TSharedPtr<CFont> CAssetSubsystem::LoadSystemFont( const FString& FaceName, int32 Size, const FFontStyle& Style )
 {
 	if ( GetBackend() == nullptr )
 	{
@@ -1037,18 +967,18 @@ TSharedPtr<CFont> CAssetManagerSubsystem::LoadSystemFont( const FString& FaceNam
 	return LoadFontInternal( Key, MakeDesc( FaceName, Size, Style ), FString() );
 }
 
-TSharedPtr<CFont> CAssetManagerSubsystem::GetDefaultFont( int32 Size, const FFontStyle& Style )
+TSharedPtr<CFont> CAssetSubsystem::GetDefaultFont( int32 Size, const FFontStyle& Style )
 {
 	return LoadSystemFont( FString(), Size, Style );
 }
 
-bool CAssetManagerSubsystem::IsFontAvailable( const FString& FaceName ) const
+bool CAssetSubsystem::IsFontAvailable( const FString& FaceName ) const
 {
 	IAssetBackend* Backend = GetBackend();
 	return Backend != nullptr && !FaceName.IsEmpty() && Backend->IsFontAvailable( FaceName );
 }
 
-TArray<FString> CAssetManagerSubsystem::GetSystemFontNames() const
+TArray<FString> CAssetSubsystem::GetSystemFontNames() const
 {
 	TArray<FString> Names;
 	if ( IAssetBackend* Backend = GetBackend() )
@@ -1088,28 +1018,28 @@ namespace
 	}
 }
 
-TArray<FAssetInfo> CAssetManagerSubsystem::GetLoadedAssets() const
+TArray<FAssetInfo> CAssetSubsystem::GetLoadedAssets() const
 {
 	TArray<FAssetInfo> Infos;
 	CollectInfos( Textures, Infos );
 	CollectInfos( SpriteSheets, Infos );
 	CollectInfos( Models, Infos );
 	CollectInfos( ModelAnimations, Infos );
-	CollectInfos( Worlds, Infos );
-	CollectInfos( Effects, Infos );
+	WorldLoader.CollectInfos( Infos );
+	EffectLoader.CollectInfos( Infos );
 	CollectInfos( Sounds, Infos );
 	CollectInfos( Fonts, Infos );
 	Infos.Sort( []( const FAssetInfo& A, const FAssetInfo& B ) { return A.Type != B.Type ? A.Type < B.Type : A.Path < B.Path; } );
 	return Infos;
 }
 
-int32 CAssetManagerSubsystem::GetNumLoading() const
+int32 CAssetSubsystem::GetNumLoading() const
 {
 	IAssetBackend* B = GetBackend();
 	return B != nullptr ? B->GetNumLoading() : 0;
 }
 
-void CAssetManagerSubsystem::DumpToLog() const
+void CAssetSubsystem::DumpToLog() const
 {
 	const auto Bytes = []( int64 Value ) { return NProfilerAnalyzer::FormatCounterValue( static_cast<float64>( Value ), EProfileCounterUnit::Bytes ); };
 
@@ -1135,4 +1065,47 @@ void CAssetManagerSubsystem::DumpToLog() const
 		LOG( LogAsset, Display, "    [%s] %s  refs %d  ~%s  file %s  load %.2f ms  %s", ToString( Info.Type ), *Info.Path, Info.RefCount, *Bytes( Info.MemoryBytes ),
 			 *Bytes( Info.FileBytes ), Info.LoadMs, *Info.Description );
 	}
+}
+
+//-----------------------------------------------------------------------------
+// ワールド・エフェクト・モデルの取り込み（それぞれのローダー / CModelImporter に任せる）
+//-----------------------------------------------------------------------------
+TSharedPtr<CWorldAsset> CAssetSubsystem::LoadWorld( const FString& Path )
+{
+	return WorldLoader.Load( Path );
+}
+
+bool CAssetSubsystem::SaveWorld( const FString& Path, const FWorldDefinition& Definition )
+{
+	return WorldLoader.Save( Path, Definition );
+}
+
+TSharedPtr<CEffectAsset> CAssetSubsystem::LoadEffect( const FString& Path )
+{
+	return EffectLoader.Load( Path );
+}
+
+bool CAssetSubsystem::SaveEffect( const FString& Path, const FParticleEffectDefinition& Definition )
+{
+	return EffectLoader.Save( Path, Definition );
+}
+
+FModelExportResult CAssetSubsystem::ExportModelAsMV1( const FString& SourcePath, const FModelExportOptions& Options )
+{
+	return ModelImporter.ExportAsMV1( SourcePath, Options );
+}
+
+TArray<FModelSourceInfo> CAssetSubsystem::ScanModelSources() const
+{
+	return ModelImporter.ScanSources();
+}
+
+FModelBatchExportResult CAssetSubsystem::ExportAllModels( bool bForce, const FModelExportOptions& Options )
+{
+	return ModelImporter.ExportAll( bForce, Options );
+}
+
+FModelBatchExportResult CAssetSubsystem::ExportModelsUsedBy( const FModelAnimationDefinition& Definition, bool bForce )
+{
+	return ModelImporter.ExportUsedBy( Definition, bForce );
 }

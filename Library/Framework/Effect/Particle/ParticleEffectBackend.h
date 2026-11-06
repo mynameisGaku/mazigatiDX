@@ -9,7 +9,7 @@ class CTexture;
 
 //=============================================================================
 // 内蔵のパーティクルのバックエンド（.gxeffect を扱う）
-//   CAssetManagerSubsystem::LoadEffect で定義を読み、ParticleSimulation で動かす。Record は四角形・連続する帯・分岐する雷・固定meshを描画命令へ記録する。
+//   CAssetSubsystem::LoadEffect で定義を読み、ParticleSimulation で動かす。Record は四角形・連続する帯・分岐する雷・固定meshを描画命令へ記録する。
 //   画像はエミッターの Texture。省略時は四角形用の丸、または幅方向だけが柔らかく消える帯を共有して使う。
 //
 //   EffectBackend.h の窓口の、ひとつの実装。ふつうは FEffectBackendRegistry 経由で使う（直接使うなら FParticlePlayback を作る）。
@@ -24,7 +24,7 @@ class FParticleEffectBackend : public IEffectBackend
 public:
 	const char* GetName() const override { return "Particle"; }
 	bool CanPlay( const FString& Path ) const override;
-	TSharedPtr<IEffectPlayback> Play( const FString& Path, CAssetManagerSubsystem* Assets, const FEffectPlayParams& Params, const FTransform& World ) override;
+	TSharedPtr<IEffectPlayback> Play( const FString& Path, CAssetSubsystem* Assets, const FEffectPlayParams& Params, const FTransform& World ) override;
 };
 
 //-----------------------------------------------------------------------------
@@ -78,7 +78,7 @@ private:
 namespace NEffect
 {
 	// 定義・アセット管理・再生設定から画像と材質マスクを保持する再生を作る。必須入力が無ければ空を返す。
-	TSharedPtr<IEffectPlayback> CreateParticlePlayback( const TSharedPtr<const FParticleEffectDefinition>& Definition, CAssetManagerSubsystem* Assets, const FEffectPlayParams& Params, const FTransform& World, const FString& Label = FString() );
+	TSharedPtr<IEffectPlayback> CreateParticlePlayback( const TSharedPtr<const FParticleEffectDefinition>& Definition, CAssetSubsystem* Assets, const FEffectPlayParams& Params, const FTransform& World, const FString& Label = FString() );
 
 	// 組み込みの、ふちがぼやけた丸の画像（TGA の中身。64 x 64、色は白、アルファが中心から縁へ (1 - 距離)^2 で落ちる。
 	// DxLib の加算も画像のアルファを使うので、アルファ・加算のどちらにも、この 1 枚を使う）

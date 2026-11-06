@@ -7,7 +7,7 @@
 #include "Library/Framework/Render/State/Lighting.h"
 #include "Source/Lighting/LightingDemoState.h"
 
-class CAssetManagerSubsystem;
+class CAssetSubsystem;
 
 //=============================================================================
 // NLightingScenery
@@ -25,7 +25,7 @@ namespace NLightingScenery
 	};
 
 	// 舞台で使う画像を作って、State に入れる。作れなければ false
-	bool MakeTextures( CAssetManagerSubsystem& Assets, FLightingDemoState& State );
+	bool MakeTextures( CAssetSubsystem& Assets, FLightingDemoState& State );
 
 	// 月明かり（青白い方向ライト）
 	FLight MakeMoon();

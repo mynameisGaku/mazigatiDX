@@ -10,7 +10,7 @@ class IAssetBackend;
 
 //=============================================================================
 // CSoundLoader
-//   音を「作る・読み出す・書き出す」役割だけを持つクラス（登録とキャッシュの管理は CAssetManagerSubsystem、鳴らすのは CAudioSubsystem）。
+//   音を「作る・読み出す・書き出す」役割だけを持つクラス（登録とキャッシュの管理は CAssetSubsystem、鳴らすのは CAudioSubsystem）。
 //   バックエンドは作るときに渡す（検査では偽のバックエンドを渡せる）。パスは絶対パス（資産のルートからの解決は呼ぶ側）。
 //
 //   CSoundLoader Loader( NAssetService::GetBackend() );
@@ -20,7 +20,7 @@ class IAssetBackend;
 //   CSoundLoader::SaveWav( Pcm, FullPath );                                  // 16 ビットの WAV に書く
 //
 //   - すべてゲームスレッドから使う（バックエンドの呼び出しを含むため）。SaveWav だけはバックエンドを使わない
-//   - 作った音は CAssetManagerSubsystem のキャッシュには入らない（同じ名前でも別の音。持ち主が共有で持つ）
+//   - 作った音は CAssetSubsystem のキャッシュには入らない（同じ名前でも別の音。持ち主が共有で持つ）
 //=============================================================================
 class CSoundLoader
 {

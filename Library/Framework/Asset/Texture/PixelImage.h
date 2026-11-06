@@ -18,8 +18,8 @@ enum class EPixelBlend : uint8
 //=============================================================================
 // FPixelImage
 //   CPU 側の画像（画素の並び）。DxLib に依存しない値で、描く・塗る・切り出す・重ねる・反転するなどが、ここで済む。
-//   GPU に載せるには CAssetManagerSubsystem::CreateDynamicTexture（作る）/ CDynamicTexture::Update（中身を替える）、
-//   ファイルとの行き来は CAssetManagerSubsystem::LoadPixelImage / DecodePixelImage / SavePixelImage を使う。
+//   GPU に載せるには CAssetSubsystem::CreateDynamicTexture（作る）/ CDynamicTexture::Update（中身を替える）、
+//   ファイルとの行き来は CAssetSubsystem::LoadPixelImage / DecodePixelImage / SavePixelImage を使う。
 //
 //   FPixelImage Canvas( 64, 64, FColor32( 0, 0, 0, 255 ) );             // 黒で塗った 64 x 64
 //   Canvas.FillRect( 8, 8, 16, 16, FColor32( 255, 0, 0 ) );             // 赤い四角

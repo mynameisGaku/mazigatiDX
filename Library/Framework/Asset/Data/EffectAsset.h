@@ -6,7 +6,7 @@
 
 //=============================================================================
 // CEffectAsset
-//   読み込んだパーティクルのエフェクト（.gxeffect）。CAssetManagerSubsystem::LoadEffect で読み込む。
+//   読み込んだパーティクルのエフェクト（.gxeffect）。CAssetSubsystem::LoadEffect で読み込む。
 //   中身は FParticleEffectDefinition（純粋なデータ。ParticleEffect.h）。再生は IEffectBackend（EffectBackend.h）が受け持つ。
 //
 //   TSharedPtr<CEffectAsset> Fire = Assets->LoadEffect( "Effects/Fire.gxeffect" );

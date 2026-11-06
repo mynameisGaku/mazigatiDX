@@ -12,7 +12,7 @@ DEFINE_LOG_CATEGORY_STATIC( LogSpriteSheet, Log )
 //
 //   {
 //     "Version": 1,
-//     "Texture": "Sprites/Hero.png",                     // 必須。CAssetManagerSubsystem のルートからのパス
+//     "Texture": "Sprites/Hero.png",                     // 必須。CAssetSubsystem のルートからのパス
 //     "Grid": {                                          // 省略可。格子状のコマ（複数なら配列 [ {...}, {...} ]）
 //       "Columns": 8, "Rows": 4,                         // 分割数（横・縦）
 //       "CellWidth": 64, "CellHeight": 64,               // 1 コマのピクセル数。省略／0 なら画像の大きさから自動

@@ -7,12 +7,12 @@
 #include "Library/Framework/Asset/Data/WorldAsset.h"
 #include "Library/Framework/World/Editor/EditorShapes.h"
 
-class CAssetManagerSubsystem;
+class CAssetSubsystem;
 class FStaticModelSurface;
 
 //=============================================================================
 // FAssetEditorInfo
-//   ワールドエディタ（EditorShapes.h の IEditorAssetInfo）の、CAssetManagerSubsystem による実装。
+//   ワールドエディタ（EditorShapes.h の IEditorAssetInfo）の、CAssetSubsystem による実装。
 //   モデルの大きさ・画像の大きさ・ファイルの有無を答える。読み込んだモデル・画像は、画面に出す側（エディタのビューポート）にも渡す。
 //
 //   ピッキングと描画が毎フレーム何度も問い合わせるので、読み込み（失敗も）をパスごとに覚える。
@@ -22,7 +22,7 @@ class FStaticModelSurface;
 class FAssetEditorInfo final : public IEditorAssetInfo
 {
 public:
-	explicit FAssetEditorInfo( CAssetManagerSubsystem& InAssets );
+	explicit FAssetEditorInfo( CAssetSubsystem& InAssets );
 
 	bool Exists( const FString& Path ) const override;
 	bool GetModelBounds( const FString& Path, FVector3& OutMin, FVector3& OutMax ) const override;
@@ -55,7 +55,7 @@ private:
 
 	const FModelEntry& FindModel( const FString& Path ) const;
 
-	CAssetManagerSubsystem& Assets;
+	CAssetSubsystem& Assets;
 	FAssetWorldQuery Query;
 	mutable TMap<FString, FModelEntry> Models;
 	mutable TMap<FString, TSharedPtr<CTexture>> Textures;   // 読み込めなかったものは、空のポインタで覚える

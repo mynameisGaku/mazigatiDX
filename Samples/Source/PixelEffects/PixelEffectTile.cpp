@@ -2,7 +2,7 @@
 #include "PixelEffectTile.h"
 
 #include "Library/Core/Interfaces/Input/IInput.h"
-#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/PixelEffect/Canvas/PixelBackdrop.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
@@ -27,7 +27,7 @@ namespace
 CPixelEffectTile::CPixelEffectTile( const FVector2& InOrigin, TUniquePtr<IPixelEffect> InEffect, EPixelBackdrop InBackdrop, const FPixelActor* InActor )
 	: Origin( InOrigin )
 {
-	CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
+	CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
 	if ( Assets == nullptr || !InEffect.IsValid() )
 	{
 		return;

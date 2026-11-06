@@ -5,7 +5,7 @@
 
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Types/Numeric.h"
-#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Asset/Texture/RenderTarget.h"
 #include "Library/Framework/Effect/EffectBackend.h"
 #include "Library/Framework/Engine/Engine.h"
@@ -134,7 +134,7 @@ bool FEffectPreviewSurface::Render( const FEditorCamera& Camera, const FEditorVi
 	}
 	if ( !Target.IsValid() || Width != View.Width || Height != View.Height )
 	{
-		CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
+		CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
 		if ( Assets == nullptr )
 		{
 			return false;

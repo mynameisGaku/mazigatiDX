@@ -1,0 +1,38 @@
+﻿// SPDX-License-Identifier: MIT
+#pragma once
+
+#include "Library/Core/Collection/Optional.h"
+#include "Library/Core/Collection/String.h"
+
+//=============================================================================
+// CAssetPathResolver
+//   アセットのパスを解決する人。ルートフォルダ（既定は "Assets"）を覚え、アセットのパスを実在するファイルの絶対パスにし、
+//   保存先のパス（フォルダも作る）を用意する。読み込みや保存そのものはしない（それは各ローダーの仕事）。
+//
+//   CAssetPathResolver Paths;
+//   Paths.SetRootDirectory( "Assets" );
+//   TOptional<FString> Full = Paths.ResolvePath( "Textures/Hero.png" );
+//
+//   - ルートの相対パスは、作業ディレクトリ・exe のフォルダ・その親から探す（見つからなければ、指定の名前のまま）
+//   - ルートに無ければ、作業ディレクトリ・exe のフォルダ（と、その親）も探す。絶対パスはそのまま
+//=============================================================================
+class CAssetPathResolver
+{
+public:
+	// アセットのルートフォルダ
+	void SetRootDirectory( const FString& Directory );
+	FString GetRootDirectory() const;
+
+	// アセットのパスを、実在するファイルの絶対パスにする。見つからなければ空
+	TOptional<FString> ResolvePath( const FString& Path ) const;
+
+	// 保存先の絶対パス（相対ならルートフォルダの下）。途中のフォルダも作る。作れなければ空
+	TOptional<FString> PrepareSavePath( const FString& Path ) const;
+
+	// キャッシュのキー。Windows のパスは大文字小文字を区別せず、区切りも '\' と '/' の両方があるので、同じファイルは同じキーにする
+	static FString MakeKey( const FString& FullPath );
+
+private:
+	FString RootDirectoryName = "Assets";
+	mutable TOptional<FString> ResolvedRoot;
+};

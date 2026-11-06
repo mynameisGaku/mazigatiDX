@@ -5,7 +5,7 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
-#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Effect/Geometry/EffectPathGeometry.h"
 #include "Library/Framework/Render/Draw/DrawMaterialMesh.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
@@ -16,7 +16,7 @@ namespace
 	constexpr int32 SoftDotSize = 64;
 
 	// 組み込みの丸の画像（Assets の上で共有される。名前が同じなら同じ画像）
-	TSharedPtr<CTexture> GetSoftDot( CAssetManagerSubsystem* Assets )
+	TSharedPtr<CTexture> GetSoftDot( CAssetSubsystem* Assets )
 	{
 		if ( Assets == nullptr ) return nullptr;
 		const TArray<uint8> Image = NEffect::MakeSoftDotImage();
@@ -505,7 +505,7 @@ bool FParticleEffectBackend::CanPlay( const FString& Path ) const
 	return Path.EndsWith( ".gxeffect", ESearchCase::IgnoreCase );
 }
 
-TSharedPtr<IEffectPlayback> FParticleEffectBackend::Play( const FString& Path, CAssetManagerSubsystem* Assets, const FEffectPlayParams& Params, const FTransform& World )
+TSharedPtr<IEffectPlayback> FParticleEffectBackend::Play( const FString& Path, CAssetSubsystem* Assets, const FEffectPlayParams& Params, const FTransform& World )
 {
 	if ( Assets == nullptr || !CanPlay( Path ) ) return nullptr;
 	const TSharedPtr<CEffectAsset> Asset = Assets->LoadEffect( Path );
@@ -515,7 +515,7 @@ TSharedPtr<IEffectPlayback> FParticleEffectBackend::Play( const FString& Path, C
 	return NEffect::CreateParticlePlayback( Definition, Assets, Params, World, Path );
 }
 
-TSharedPtr<IEffectPlayback> NEffect::CreateParticlePlayback( const TSharedPtr<const FParticleEffectDefinition>& Definition, CAssetManagerSubsystem* Assets, const FEffectPlayParams& Params, const FTransform& World, const FString& Label )
+TSharedPtr<IEffectPlayback> NEffect::CreateParticlePlayback( const TSharedPtr<const FParticleEffectDefinition>& Definition, CAssetSubsystem* Assets, const FEffectPlayParams& Params, const FTransform& World, const FString& Label )
 {
 	if ( Assets == nullptr || !Definition.IsValid() ) return nullptr;
 	// エミッターごとの従来画像を再生中保持する配列。

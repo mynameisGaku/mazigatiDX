@@ -1,6 +1,6 @@
 ﻿#include "ShadowsScenery.h"
 
-#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Asset/Texture/PixelImage.h"
 #include "Library/Framework/Render/Types/Vertex3D.h"
 #include "Source/Common/SoftLighting.h"
@@ -186,7 +186,7 @@ namespace
 	}
 }
 
-bool NShadowsScenery::MakeTextures( CAssetManagerSubsystem& Assets, FShadowsDemoState& State )
+bool NShadowsScenery::MakeTextures( CAssetSubsystem& Assets, FShadowsDemoState& State )
 {
 	// 芝生: 8 x 8 画素の濃淡の市松模様（1 周期 = 2 x 2 マス）
 	FPixelImage Checker( 8, 8 );

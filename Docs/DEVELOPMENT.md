@@ -54,7 +54,7 @@ World EditorのModel Inspectorでは、任意の材質効果の追加・削除�
 
 DxLibでは個体の選択meshだけを一時非表示にし、残りを通常のモデルとして描きます。まとめ描画を確定してから可視状態を戻し、元のローカル形状へ配置行列を一度掛けて選択材質を描きます。元の拡散色を頂点色へ二重適用せず、不透明度は頂点alphaへ一度掛けます。効果は照明を使わないLDRのAlpha/Addで、消失・自己発光・UV移動・ゆがみを使えます。元の材質の照明・画像変換・透過判定の完全再現は含みません。通常部分の描画順を保ちますが、効果面はその後に描くため、通常の半透明面との完全な相対順序は保証しません。変形するモデル、HDRとブルームは後続の範囲です。
 
-準備・非対応・事前検査の失敗は通常モデルへ戻します。GPU描画の途中に失敗した場合は、描けなかった分割形状を省略して警告を一度記録します。成功した形状へ重ね描きする全体の再描画は行いません。backendの終了は、利用中のモデル・画像・効果資源を片付けてから行ってください。確認用の`CAssetManagerSubsystem::SetBackendOverride`は、既存のモデル・画像・効果資源と遅延解放を全て片付けてから切り替えます。
+準備・非対応・事前検査の失敗は通常モデルへ戻します。GPU描画の途中に失敗した場合は、描けなかった分割形状を省略して警告を一度記録します。成功した形状へ重ね描きする全体の再描画は行いません。backendの終了は、利用中のモデル・画像・効果資源を片付けてから行ってください。確認用の`CAssetSubsystem::SetBackendOverride`は、既存のモデル・画像・効果資源と遅延解放を全て片付けてから切り替えます。
 
 オブジェクトの描画は、DX12のコマンドリストと同じ方式です。`CGameObject::Draw( FDrawContext& CommandList )`は、シーンが用意したコマンドリストに、`CommandList.Box(...)`などで「何を描くか」を記録するだけで、DxLibも実行先（`IDrawExecutor`）も知りません。シーンはオブジェクトごとにコマンドリストを空にして渡し（Reset）、記録されたものを描画順（`DrawOrder`）に実行する（ExecuteCommandLists）ので、ブレンドモードなどの状態は次のオブジェクトに漏れません。何も記録しなかったオブジェクトは、実行先を呼びません。
 
@@ -201,7 +201,7 @@ struct VertexInput
 - ゲームで使うときは`CPixelEffectView`が便利です。後ろの層と前の層を別々の画像（`CDynamicTexture`）にして、基準点を画面の好きな位置へ、好きな倍率で描きます。**エフェクトはキャラクターを描きません**。キャラクターは、`DrawBack`と`DrawFront`の間にふつうに描きます（キャラクターと重ならない爆発などは、どちらか片方の層しか使いません）。画像を作らずに層ごとの絵だけが欲しいときは`CPixelEffectPlayer`（CPUだけ）を使います。
 
 ```cpp
-// 作るとき（Assets は CAssetManagerSubsystem）
+// 作るとき（Assets は CAssetSubsystem）
 CPixelEffectView Heal( *Assets, MakeUnique<CPixelHealEffect>() );
 Heal.Play( Seed );                         // 左右反転・色の段も渡せる
 
@@ -436,7 +436,7 @@ if ( Field.ConsumeSubmitted() )
 描画・アセット・音・窓など、DxLibを触る仕事は**ゲームスレッド**（起動したスレッド。`NGameMain`と`CEngine::Run`が覚える）だけで行います。DxLibはスレッドセーフではないためです。
 
 - `IsInGameThread()`: いまゲームスレッドか。
-- `GAME_THREAD_ONLY();` / `GAME_THREAD_ONLY( 戻り値 );`: 関数の頭に書くと、ゲームスレッドの外から呼ばれたときに、エラーをログに出して何もせずに戻ります（DxLibを触って壊れる代わりに）。アセットの読み込み・作成（`CAssetManagerSubsystem`の`Load…` / `Create…`など）、モデルの見た目、画面の撮影の関数に入っています。
+- `GAME_THREAD_ONLY();` / `GAME_THREAD_ONLY( 戻り値 );`: 関数の頭に書くと、ゲームスレッドの外から呼ばれたときに、エラーをログに出して何もせずに戻ります（DxLibを触って壊れる代わりに）。アセットの読み込み・作成（`CAssetSubsystem`の`Load…` / `Create…`など）、モデルの見た目、画面の撮影の関数に入っています。
 - `AsyncTask( EThreadType::Worker, 仕事 )`: 重い仕事（計算・ファイルの読み込みなど。DxLibは触らない）をワーカーで実行します。ワーカーが0本なら、その場で実行します。
 - `AsyncTask( EThreadType::Game, 仕事 )`: 仕事をゲームスレッドへ渡します。次のフレームのはじめ（更新の前）に、頼んだ順に実行されます。ワーカーで作った結果を、画面やアセットに反映するときに使います。
 
@@ -517,8 +517,8 @@ Worldの`Components.Effect`には、任意の`Target`（追従先オブジェク
 
 - フォルダは、領域（役割のジャンル）ごとに切ります。`Library/Framework/Asset`の下なら`Texture / Model / Font / Sound / Gpu / Data / Definition`、`Render`の下なら`Draw / Camera / State / Types / Mesh / MaterialEffect`のようにです。本質的なジャンルが同じ（同じ題材の定義と処理、値の型と読み書きなど）ファイルは同じフォルダに置いてよいですが、ジャンルの違うファイルを一つのフォルダに並べません。フォルダ直下には、その領域の入口になる少数のファイル（`Asset.h`や`AssetManager.*`など）だけを置き、新しいファイルは、いちばん近い領域のフォルダへ置きます（合う所が無ければ新しい領域のフォルダを作ります）。ファイルを移したら、`#include`と文書の参照も合わせて直し、プロジェクト生成（`Tools\GenerateProjectFiles.ps1`）をやり直します。
 - インターフェース（`Library/Core/Interfaces`）と、その値の型は、ゲームとフレームワークが「何をしたいか」から決めます。DxLibの関数・単位・制約・ファイル形式・既定値に合わせません（DxLibを別のバックエンドに替えても、インターフェースは変わらないようにするため）。バックエンドごとの事情は、実装（`Library/Platform/<名前>`）の中で吸収し、できない機能は「未対応」（`false`）を返して、フレームワークの側で補えるものは補います。
-- クラスの責務は一つにします。登録とキャッシュの管理（`CAssetManagerSubsystem`）、作る・読み込む・書き出す（`CSoundLoader` などのローダー）、鳴らす・描くなどの実行（`CAudioSubsystem` など）は別のクラスです。新しい処理を既存の管理クラスに足さず、役割ごとのクラスを作ります（バックエンドは作るときに渡し、検査で偽物に替えられるようにします）。責務を分けるときは、関数を別ファイルに分けたり名前空間を作ったりして済ませず、クラスにします。ただし、状態も依存も寿命も差し替えも持たない小さな関数群（`NMath`・`NFile`・`NWavFile` のような変換や計算）は、名前空間のままでかまいません。何をクラスにするかは、状態・依存・差し替えの要る責務かどうかで考えます。
-- サブシステム（`CAppSubsystem` / `CGameInstanceSubsystem` / `CSceneSubsystem` を継承するクラス）の名前には`Subsystem`を付けます（`CAssetManagerSubsystem`・`CDxLibInputSubsystem` など）。ファイル名もクラス名に合わせます。
+- クラスの責務は一つにします。登録とキャッシュの管理（`CAssetSubsystem`）、作る・読み込む・書き出す（`CSoundLoader` などのローダー）、鳴らす・描くなどの実行（`CAudioSubsystem` など）は別のクラスです。新しい処理を既存の管理クラスに足さず、役割ごとのクラスを作ります（バックエンドは作るときに渡し、検査で偽物に替えられるようにします）。責務を分けるときは、関数を別ファイルに分けたり名前空間を作ったりして済ませず、クラスにします。ただし、状態も依存も寿命も差し替えも持たない小さな関数群（`NMath`・`NFile`・`NWavFile` のような変換や計算）は、名前空間のままでかまいません。何をクラスにするかは、状態・依存・差し替えの要る責務かどうかで考えます。
+- サブシステム（`CAppSubsystem` / `CGameInstanceSubsystem` / `CSceneSubsystem` を継承するクラス）の名前には`Subsystem`を付けます（`CAssetSubsystem`・`CDxLibInputSubsystem` など）。ファイル名もクラス名に合わせます。
 - 公開する主要な型は原則一つのヘッダーに置き、実装は同名cppへ分けます。templateの実装は同名ヘッダーまたはinlに置きます。
 - 新しい型の役割は`A`（所有される多態オブジェクト）、`F`（値・ハンドル・サービス）、`T`（template）、`E`（enum）、`I`（インターフェース）で示します。既存の型は無関係な変更で一括改名しません。
 - ヘッダー冒頭は`// SPDX-License-Identifier: MIT`と`#pragma once`を置き、長い使い方は文書へ分けます。

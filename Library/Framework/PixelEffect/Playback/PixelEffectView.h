@@ -6,7 +6,7 @@
 #include "Library/Framework/PixelEffect/Playback/PixelEffectPlayer.h"
 #include "Library/Math/Vector2.h"
 
-class CAssetManagerSubsystem;
+class CAssetSubsystem;
 class FDrawContext;
 
 //=============================================================================
@@ -28,7 +28,7 @@ class CPixelEffectView
 {
 public:
 	// 画像は Assets で作る（名前は、ほかの CPixelEffectView と重ならないよう、通し番号を付ける）
-	CPixelEffectView( CAssetManagerSubsystem& Assets, TUniquePtr<IPixelEffect> InEffect );
+	CPixelEffectView( CAssetSubsystem& Assets, TUniquePtr<IPixelEffect> InEffect );
 
 	// 初めから再生する（CPixelEffectPlayer::Play と同じ）
 	void Play( uint32 Seed = 1, bool bFlipHorizontal = false, const TArray<FColor32>& Palette = TArray<FColor32>() );

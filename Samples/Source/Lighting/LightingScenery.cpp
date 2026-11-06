@@ -1,6 +1,6 @@
 ﻿#include "LightingScenery.h"
 
-#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Asset/Texture/PixelImage.h"
 
 namespace
@@ -153,7 +153,7 @@ namespace
 	}
 }
 
-bool NLightingScenery::MakeTextures( CAssetManagerSubsystem& Assets, FLightingDemoState& State )
+bool NLightingScenery::MakeTextures( CAssetSubsystem& Assets, FLightingDemoState& State )
 {
 	// 床: 4 x 4 画素の濃淡の市松模様（1 周期 = 2 x 2 マス）
 	FPixelImage Checker( 8, 8 );

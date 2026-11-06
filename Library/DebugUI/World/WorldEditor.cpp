@@ -6,7 +6,7 @@
 #include "Library/DebugUI/Common/EditorCommon.h"
 #include "Library/DebugUI/World/WorldEditorInternal.h"
 #include "Library/Framework/Asset/EditorAssetInfo.h"
-#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Asset/Model/StaticModelSurface.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/World/Editor/EditorPicking.h"
@@ -20,9 +20,9 @@ DEFINE_LOG_CATEGORY_STATIC( LogWorldEditor, Log )
 //=============================================================================
 // 共通の補助
 //=============================================================================
-CAssetManagerSubsystem* NWorldEditorUI::GetAssets()
+CAssetSubsystem* NWorldEditorUI::GetAssets()
 {
-	return GetAppSubsystem<CAssetManagerSubsystem>();
+	return GetAppSubsystem<CAssetSubsystem>();
 }
 
 void NWorldEditorUI::SetNextWindowRect( float32 X, float32 Y, float32 Width, float32 Height )
@@ -44,7 +44,7 @@ void NWorldEditorUI::SetStatus( FWorldEditorState& S, const FString& Text, bool 
 
 void NWorldEditorUI::RescanFiles( FWorldEditorState& S, bool bForce )
 {
-	CAssetManagerSubsystem* Assets = GetAssets();
+	CAssetSubsystem* Assets = GetAssets();
 	if ( Assets == nullptr )
 	{
 		return;
@@ -156,7 +156,7 @@ namespace
 
 bool NDebugUI::OpenWorldFile( FWorldEditorState& S, const FString& AssetPath )
 {
-	CAssetManagerSubsystem* Assets = NWorldEditorUI::GetAssets();
+	CAssetSubsystem* Assets = NWorldEditorUI::GetAssets();
 	const FString Path = NormalizePath( AssetPath );
 	if ( Assets == nullptr )
 	{
@@ -202,7 +202,7 @@ void NDebugUI::NewWorld( FWorldEditorState& S )
 
 bool NDebugUI::SaveWorldFile( FWorldEditorState& S, const FString& AssetPath )
 {
-	CAssetManagerSubsystem* Assets = NWorldEditorUI::GetAssets();
+	CAssetSubsystem* Assets = NWorldEditorUI::GetAssets();
 	const FString Path = EnsureWorldExtension( AssetPath.IsEmpty() ? S.Session.FilePath : AssetPath );
 	if ( Path.IsEmpty() || Assets == nullptr )
 	{
@@ -228,7 +228,7 @@ bool NDebugUI::SaveWorldFile( FWorldEditorState& S, const FString& AssetPath )
 bool NWorldEditorUI::MakePrefabFromSelection( FWorldEditorState& S, const FString& Path )
 {
 	CWorldEditorSession& Session = S.Session;
-	CAssetManagerSubsystem* Assets = GetAssets();
+	CAssetSubsystem* Assets = GetAssets();
 	const FString File = EnsureWorldExtension( Path );
 	if ( File.IsEmpty() || Assets == nullptr || S.Session.GetSelection().IsEmpty() )
 	{
@@ -950,7 +950,7 @@ void NWorldEditorUI::RequestOpenWorld( FWorldEditorState& S, const FString& Path
 
 void NDebugUI::DrawWorldEditor( FWorldEditorState& S, bool* pOpen )
 {
-	CAssetManagerSubsystem* Assets = NWorldEditorUI::GetAssets();
+	CAssetSubsystem* Assets = NWorldEditorUI::GetAssets();
 	if ( Assets != nullptr && !S.AssetInfo.IsValid() )
 	{
 		S.AssetInfo = MakeUnique<FAssetEditorInfo>( *Assets );

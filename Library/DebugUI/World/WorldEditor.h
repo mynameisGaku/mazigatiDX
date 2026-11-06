@@ -72,7 +72,7 @@ struct FWorldEditorState
 	// 編集の状態（文書・選択・カメラ・ギズモ）
 	//-------------------------------------------------------------------------
 	CWorldEditorSession Session;
-	TUniquePtr<FAssetEditorInfo> AssetInfo;   // アセットの大きさ・有無・読み込み済みのもの。CAssetManagerSubsystem が使えるとき作る
+	TUniquePtr<FAssetEditorInfo> AssetInfo;   // アセットの大きさ・有無・読み込み済みのもの。CAssetSubsystem が使えるとき作る
 
 	//-------------------------------------------------------------------------
 	// 窓

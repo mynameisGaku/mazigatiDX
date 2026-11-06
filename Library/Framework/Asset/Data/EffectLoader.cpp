@@ -1,32 +1,34 @@
-﻿#include "AssetManagerSubsystem.h"
+﻿// SPDX-License-Identifier: MIT
+#include "EffectLoader.h"
 
-#include "Library/Core/Thread/GameThread.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Thread/GameThread.h"
 #include "Library/Core/Time/PlatformTime.h"
+#include "Library/Framework/Asset/Loading/AssetLoadRecorder.h"
+#include "Library/Framework/Asset/Loading/AssetLog.h"
+#include "Library/Framework/Asset/Loading/AssetPathResolver.h"
 #include "Library/Json/JsonObject.h"
-#include "Library/Platform/System/FileSystem.h"
 
-//=============================================================================
-// CAssetManagerSubsystem: パーティクルのエフェクト（.gxeffect。書式は ParticleEffect.cpp の先頭）
-//=============================================================================
-TSharedPtr<CEffectAsset> CAssetManagerSubsystem::LoadEffect( const FString& Path )
+CEffectLoader::CEffectLoader( CAssetLoadContext& InContext )
+	: Context( InContext )
+{
+}
+
+TSharedPtr<CEffectAsset> CEffectLoader::Load( const FString& Path )
 {
 	GAME_THREAD_ONLY( nullptr );
-	const TOptional<FString> Full = PrepareLoad( "effect", Path );
+	const TOptional<FString> Full = Context.PrepareLoad( "effect", Path );
 	if ( !Full.IsSet() )
 	{
 		return nullptr;
 	}
 
 	const FString FullPath = Full.Get( FString() );
-	const FString Key = MakeKey( FullPath );
-	if ( TWeakPtr<CEffectAsset>* Found = Effects.Find( Key ) )
+	const FString Key = CAssetPathResolver::MakeKey( FullPath );
+	if ( TSharedPtr<CEffectAsset> Existing = Cache.Find( Key ) )
 	{
-		if ( TSharedPtr<CEffectAsset> Existing = Found->Pin() )
-		{
-			RecordCacheHit();
-			return Existing;
-		}
+		Context.GetRecorder().RecordCacheHit();
+		return Existing;
 	}
 
 	const int64 StartTick = NPlatformTime::GetTicks();
@@ -36,7 +38,7 @@ TSharedPtr<CEffectAsset> CAssetManagerSubsystem::LoadEffect( const FString& Path
 	if ( !Json.LoadFromFile( FullPath ) || !FParticleEffectDefinition::FromJson( Json.GetRoot(), Definition, &Warnings ) )
 	{
 		LOG( LogAsset, Error, "Failed to read the effect '%s' (not valid JSON?).", *FullPath );
-		RecordFailure();
+		Context.GetRecorder().RecordFailure();
 		return nullptr;
 	}
 	for ( int32 i = 0; i < Warnings.Num() && i < 20; ++i )
@@ -49,15 +51,15 @@ TSharedPtr<CEffectAsset> CAssetManagerSubsystem::LoadEffect( const FString& Path
 	}
 
 	TSharedPtr<CEffectAsset> Asset = MakeShared<CEffectAsset>( FullPath, Definition, Warnings );
-	RecordLoad( *Asset, FullPath, StartTick );
-	Effects.Add( Key, Asset );
+	Context.GetRecorder().RecordLoad( *Asset, FullPath, StartTick );
+	Cache.Add( Key, Asset );
 	LOG( LogAsset, Verbose, "Loaded the effect '%s' (%d emitter(s))", *FullPath, Definition.Emitters.Num() );
 	return Asset;
 }
 
-bool CAssetManagerSubsystem::SaveEffect( const FString& Path, const FParticleEffectDefinition& Definition )
+bool CEffectLoader::Save( const FString& Path, const FParticleEffectDefinition& Definition )
 {
-	const TOptional<FString> Full = PrepareSavePath( Path );
+	const TOptional<FString> Full = Context.GetPaths().PrepareSavePath( Path );
 	if ( !Full.IsSet() )
 	{
 		return false;
@@ -70,7 +72,22 @@ bool CAssetManagerSubsystem::SaveEffect( const FString& Path, const FParticleEff
 		LOG( LogAsset, Error, "Failed to write the effect '%s'.", *Full.Get( FString() ) );
 		return false;
 	}
-	Effects.Remove( MakeKey( Full.Get( FString() ) ) );
+	Cache.Remove( CAssetPathResolver::MakeKey( Full.Get( FString() ) ) );
 	LOG( LogAsset, Log, "Saved the effect '%s' (%d emitter(s))", *Full.Get( FString() ), Definition.Emitters.Num() );
 	return true;
+}
+
+void CEffectLoader::CollectInfos( TArray<FAssetInfo>& Out ) const
+{
+	Cache.CollectInfos( Out );
+}
+
+void CEffectLoader::Prune()
+{
+	Cache.Prune();
+}
+
+void CEffectLoader::Clear()
+{
+	Cache.Clear();
 }

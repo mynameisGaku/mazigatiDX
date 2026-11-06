@@ -47,7 +47,7 @@ IEffectBackend* FEffectBackendRegistry::Find( const FString& Path ) const
 	return nullptr;
 }
 
-TSharedPtr<IEffectPlayback> FEffectBackendRegistry::Play( const FString& Path, CAssetManagerSubsystem* Assets, const FEffectPlayParams& Params, const FTransform& World ) const
+TSharedPtr<IEffectPlayback> FEffectBackendRegistry::Play( const FString& Path, CAssetSubsystem* Assets, const FEffectPlayParams& Params, const FTransform& World ) const
 {
 	// 扱えると言ったバックエンドが読み込めなかったら、次のバックエンドに聞く（拡張子が重なる外部ライブラリの置き換えのため）
 	for ( const TSharedPtr<IEffectBackend>& Backend : Backends )

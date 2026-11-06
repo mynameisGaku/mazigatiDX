@@ -6,7 +6,7 @@
 #include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/Common/EditorCommon.h"
-#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Platform/System/FileSystem.h"
 
@@ -18,7 +18,7 @@ namespace
 
 	constexpr const char* SheetExtension = ".gxsprite";
 
-	CAssetManagerSubsystem* GetAssets() { return GetAppSubsystem<CAssetManagerSubsystem>(); }
+	CAssetSubsystem* GetAssets() { return GetAppSubsystem<CAssetSubsystem>(); }
 
 	void SetStatus( FState& S, const FString& Text, bool bError = false )
 	{
@@ -32,7 +32,7 @@ namespace
 	//=========================================================================
 	void RescanFiles( FState& S, bool bForce )
 	{
-		CAssetManagerSubsystem* Assets = GetAssets();
+		CAssetSubsystem* Assets = GetAssets();
 		if ( Assets == nullptr ) return;
 		const double Now = ImGui::GetTime();
 		if ( !bForce && Now - S.LastScanTime < 3.0 ) return;
@@ -70,7 +70,7 @@ namespace
 
 	void SyncSheet( FState& S )
 	{
-		CAssetManagerSubsystem* Assets = GetAssets();
+		CAssetSubsystem* Assets = GetAssets();
 		const FSpriteSheetDefinition& Definition = S.Document.Get();
 		if ( Assets == nullptr ) return;
 
@@ -117,7 +117,7 @@ namespace
 
 	bool SaveCurrent( FState& S, const FString& AssetPath )
 	{
-		CAssetManagerSubsystem* Assets = GetAssets();
+		CAssetSubsystem* Assets = GetAssets();
 		if ( Assets == nullptr || AssetPath.IsEmpty() ) return false;
 
 		FString Path = NormalizePath( AssetPath );
@@ -1243,7 +1243,7 @@ namespace
 //=============================================================================
 bool NDebugUI::OpenSpriteSheetFile( FSpriteSheetEditorState& State, const FString& AssetPath )
 {
-	CAssetManagerSubsystem* Assets = GetAssets();
+	CAssetSubsystem* Assets = GetAssets();
 	if ( Assets == nullptr ) return false;
 
 	const TOptional<FString> Full = Assets->ResolvePath( AssetPath );

@@ -7,7 +7,7 @@
 #include "Library/Framework/Render/Draw/DrawCommand.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/Common/EditorCommon.h"
-#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Effect/Particle/ParticleEffect.h"
 #include "Library/Framework/Engine/Engine.h"
 
@@ -139,7 +139,7 @@ namespace
 		const bool bRendererSupportsDistortion = Executor != nullptr && ( bMeshPath ? Executor->SupportsEffectMaterialMesh() : ( bQuad ? Executor->SupportsEffectUVDistortion() : Executor->SupportsEffectRibbonUVDistortion() ) );
 		if ( bCanApply && !bRendererSupportsDistortion ) TextWarningWrapped( "The active renderer does not support UV distortion for this path." );
 		// テクスチャをメインスレッドで管理する既存のアセット窓口。
-		CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
+		CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
 		if ( bCanApply )
 		{
 			if ( Distortion.Texture != State.UVDistortionTextureCachePath )

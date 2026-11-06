@@ -7,7 +7,7 @@
 #include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/Common/EditorCommon.h"
-#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
 #include "Library/Framework/Asset/Texture/RenderTarget.h"
@@ -23,7 +23,7 @@ namespace
 
 	constexpr const char* DefinitionExtension = ".gxmodelanim";
 
-	CAssetManagerSubsystem* GetAssets() { return GetAppSubsystem<CAssetManagerSubsystem>(); }
+	CAssetSubsystem* GetAssets() { return GetAppSubsystem<CAssetSubsystem>(); }
 
 	void SetStatus( FState& S, const FString& Text, bool bError = false )
 	{
@@ -39,7 +39,7 @@ namespace
 
 	void RescanFiles( FState& S, bool bForce )
 	{
-		CAssetManagerSubsystem* Assets = GetAssets();
+		CAssetSubsystem* Assets = GetAssets();
 		if ( Assets == nullptr )
 		{
 			return;
@@ -104,7 +104,7 @@ namespace
 		}
 		// 前の描画先を手放してから、新しい大きさで作る（同じ名前を使い回す）
 		S.PreviewTarget.Reset();
-		CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
+		CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
 		if ( Assets == nullptr )
 		{
 			return;
@@ -229,7 +229,7 @@ namespace
 
 	void SyncPreview( FState& S )
 	{
-		CAssetManagerSubsystem* Assets = GetAssets();
+		CAssetSubsystem* Assets = GetAssets();
 		if ( Assets == nullptr )
 		{
 			return;
@@ -325,7 +325,7 @@ namespace
 
 	bool SaveCurrent( FState& S, const FString& AssetPath )
 	{
-		CAssetManagerSubsystem* Assets = GetAssets();
+		CAssetSubsystem* Assets = GetAssets();
 		if ( Assets == nullptr || AssetPath.IsEmpty() )
 		{
 			return false;
@@ -752,7 +752,7 @@ namespace
 	//=========================================================================
 	void DrawModelTab( FState& S )
 	{
-		CAssetManagerSubsystem* Assets = GetAssets();
+		CAssetSubsystem* Assets = GetAssets();
 		const FModelAnimationDefinition& Definition = S.Document.Get();
 		ImGui::TextUnformatted( "Model" );
 		if ( !Definition.ModelPath.IsEmpty() )
@@ -906,7 +906,7 @@ namespace
 
 	void DrawClipsTab( FState& S )
 	{
-		CAssetManagerSubsystem* Assets = GetAssets();
+		CAssetSubsystem* Assets = GetAssets();
 		const FModelAnimationDefinition& Definition = S.Document.Get();
 		bool bOpenAddPopup = false;
 		if ( ImGui::Button( "Add clip..." ) )
@@ -1220,7 +1220,7 @@ namespace
 			}
 			if ( ImGui::MenuItem( "Export used models to .mv1", nullptr, false, bCanSave ) )
 			{
-				if ( CAssetManagerSubsystem* Assets = GetAssets() )
+				if ( CAssetSubsystem* Assets = GetAssets() )
 				{
 					const FModelBatchExportResult Batch = Assets->ExportModelsUsedBy( Definition, false );
 					SetStatus( S, ".mv1 export: " + Batch.GetSummary(), Batch.NumFailed > 0 );
@@ -1411,7 +1411,7 @@ namespace
 //=============================================================================
 bool NDebugUI::OpenModelAnimationFile( FModelAnimationEditorState& State, const FString& AssetPath )
 {
-	CAssetManagerSubsystem* Assets = GetAssets();
+	CAssetSubsystem* Assets = GetAssets();
 	if ( Assets == nullptr )
 	{
 		return false;
@@ -1442,7 +1442,7 @@ bool NDebugUI::NewModelAnimationFromModel( FModelAnimationEditorState& State, co
 {
 	const FString Normalized = NormalizePath( ModelPath );
 	FModelAnimationDefinition Definition;
-	CAssetManagerSubsystem* Assets = GetAssets();
+	CAssetSubsystem* Assets = GetAssets();
 	const TSharedPtr<CModel> Loaded = ( Assets != nullptr && !Normalized.IsEmpty() ) ? Assets->LoadModel( Normalized ) : TSharedPtr<CModel>();
 	if ( Loaded.IsValid() && Loaded->IsAnimationOnly() )
 	{

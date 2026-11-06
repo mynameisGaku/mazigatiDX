@@ -6,7 +6,7 @@
 #include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/Common/EditorCommon.h"
 #include "Library/DebugUI/Effect/EffectEditorInternal.h"
-#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Audio/AudioSubsystem.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Profiler/ProfilerAnalyzer.h"
@@ -45,7 +45,7 @@ namespace
 			ImGui::End();
 			return;
 		}
-		CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
+		CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
 		if ( Assets == nullptr )
 		{
 			ImGui::TextUnformatted( "The asset manager is not running." );

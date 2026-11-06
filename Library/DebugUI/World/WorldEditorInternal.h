@@ -2,7 +2,7 @@
 #pragma once
 #include "Library/DebugUI/World/WorldEditor.h"
 
-class CAssetManagerSubsystem;
+class CAssetSubsystem;
 class IDrawExecutor;
 
 //=============================================================================
@@ -14,7 +14,7 @@ namespace NWorldEditorUI
 	constexpr const char* AssetPayloadType = "WORLD_ASSET";      // 中身: アセットのパス（'\0' で終わる文字列）
 	constexpr const char* ObjectPayloadType = "WORLD_OBJECTS";   // 中身は使わない（選択中のオブジェクトを動かす）
 
-	CAssetManagerSubsystem* GetAssets();
+	CAssetSubsystem* GetAssets();
 
 	// 次の窓の最初の位置と大きさを、アプリの画面に対する割合で決める（FirstUseEver。ユーザーが動かした位置は、ImGui が覚える）
 	void SetNextWindowRect( float32 X, float32 Y, float32 Width, float32 Height );

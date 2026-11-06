@@ -1,6 +1,6 @@
 ﻿#include "WorldAsset.h"
 
-#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Asset/Model/Import/ModelFormats.h"
 
 CWorldAsset::CWorldAsset( const FString& InPath, const FWorldDefinition& InDefinition, const TArray<FString>& InLoadWarnings )

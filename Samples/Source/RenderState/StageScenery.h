@@ -6,7 +6,7 @@
 #include "Library/Framework/Render/Draw/DrawContext.h"
 #include "Source/RenderState/RenderStateDemoState.h"
 
-class CAssetManagerSubsystem;
+class CAssetSubsystem;
 
 //=============================================================================
 // NStageScenery
@@ -26,7 +26,7 @@ namespace NStageScenery
 	};
 
 	// 舞台で使う画像を作って、State に入れる。作れなければ false
-	bool MakeTextures( CAssetManagerSubsystem& Assets, FRenderStateDemoState& State );
+	bool MakeTextures( CAssetSubsystem& Assets, FRenderStateDemoState& State );
 
 	// 名札を作る
 	TArray<FStageLabel> MakeLabels();

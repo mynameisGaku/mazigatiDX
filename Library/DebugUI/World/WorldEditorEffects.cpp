@@ -1,7 +1,7 @@
 ﻿
 #include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/World/WorldEditorInternal.h"
-#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
 #include "Library/Framework/World/Definition/WorldHierarchy.h"
 
@@ -57,7 +57,7 @@ namespace
 
 void NWorldEditorUI::UpdateEffectPreviews( FWorldEditorState& S, float32 DeltaTime )
 {
-	CAssetManagerSubsystem* Assets = GetAssets();
+	CAssetSubsystem* Assets = GetAssets();
 	if ( !S.bPlayEffects || Assets == nullptr )
 	{
 		S.EffectPreviews.Reset();

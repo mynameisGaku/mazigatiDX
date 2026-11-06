@@ -5,7 +5,7 @@
 #include "Library/DebugUI/Common/ImGuiTexture.h"
 #include "Library/DebugUI/World/WorldEditorInternal.h"
 #include "Library/DebugUI/World/WorldEditorModelMaterialPanel.h"
-#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/World/Editor/EditorOutliner.h"
 #include "Library/Framework/World/Runtime/WorldCollision.h"
 #include "Library/Framework/World/Definition/WorldHierarchy.h"
@@ -1034,7 +1034,7 @@ namespace
 				{
 					NWorldEdit::EditObject( Session.Document, Id )->Effect.GetValue().Loop = Loop - 1;
 				}
-				if ( CAssetManagerSubsystem* Assets = NWorldEditorUI::GetAssets(); Assets != nullptr && !Effect.Path.IsEmpty() )
+				if ( CAssetSubsystem* Assets = NWorldEditorUI::GetAssets(); Assets != nullptr && !Effect.Path.IsEmpty() )
 				{
 					if ( const TSharedPtr<CEffectAsset> Asset = Assets->LoadEffect( Effect.Path ); Asset.IsValid() )
 					{

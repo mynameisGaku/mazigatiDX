@@ -6,7 +6,7 @@
 #include "Library/Framework/Render/Draw/DrawContext.h"
 #include "Source/Shapes3D/Shapes3DDemoState.h"
 
-class CAssetManagerSubsystem;
+class CAssetSubsystem;
 
 //=============================================================================
 // NShapes3DScenery
@@ -28,7 +28,7 @@ namespace NShapes3DScenery
 	};
 
 	// 舞台で使う画像を作って、State に入れる。作れなければ false
-	bool MakeTextures( CAssetManagerSubsystem& Assets, FShapes3DDemoState& State );
+	bool MakeTextures( CAssetSubsystem& Assets, FShapes3DDemoState& State );
 
 	// 頂点バッファ・インデックスバッファ（森の木の形と、池の水面）を作って、State に入れる。作れなければ false。メインスレッドで呼ぶ
 	bool MakeBuffers( FShapes3DDemoState& State );

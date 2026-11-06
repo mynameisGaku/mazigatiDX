@@ -4,7 +4,7 @@
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/Common/EditorCommon.h"
-#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Effect/Geometry/EffectFlipbookFrames.h"
 #include "Library/Framework/Engine/Engine.h"
 
@@ -63,7 +63,7 @@ bool NEffectEditorUI::DrawFlipbookPanel( FEffectEditorState& State, FParticleEmi
 			bChanged = true;
 		}
 		// 選択中シートの読み込みをパスごとに一度だけ試す。
-		CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
+		CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
 		if ( Emitter.Flipbook.Sheet != State.FlipbookSheetCachePath )
 		{
 			State.FlipbookSheetCachePath = Emitter.Flipbook.Sheet;
@@ -147,14 +147,14 @@ bool NEffectEditorUI::DrawFlipbookPanel( FEffectEditorState& State, FParticleEmi
 		const uint64 ValidationKey = MakeFlipbookValidationKey( State.SelectedEmitter, Emitter.Flipbook );
 		if ( State.FlipbookValidationCacheKey != ValidationKey )
 		{
-			CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
+			CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
 			if ( Assets != nullptr )
 			{
 				State.FlipbookValidationIssues = NEffectFlipbook::ValidateAssets( Emitter.Flipbook, *Assets );
 				State.FlipbookValidationCacheKey = ValidationKey;
 			}
 		}
-		if ( GetAppSubsystem<CAssetManagerSubsystem>() == nullptr )
+		if ( GetAppSubsystem<CAssetSubsystem>() == nullptr )
 		{
 			ImGui::TextDisabled( "Asset manager unavailable; manual editing remains available." );
 		}

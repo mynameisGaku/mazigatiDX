@@ -5,7 +5,7 @@
 #include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/Common/EditorCommon.h"
 #include "Library/DebugUI/Effect/EffectEditorInternal.h"
-#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Effect/Particle/ParticleEffectBackend.h"
 #include "Library/Framework/Effect/Geometry/EffectFlipbookFrames.h"
 #include "Library/Framework/Engine/Engine.h"
@@ -47,7 +47,7 @@ namespace
 	void RescanFiles( FEffectEditorState& State )
 	{
 		// アセットのルートを所有する、既存の管理機構。
-		CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
+		CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
 		if ( Assets == nullptr )
 		{
 			return;
@@ -350,7 +350,7 @@ namespace
 bool NDebugUI::OpenEffectFile( FEffectEditorState& State, const FString& AssetPath )
 {
 	// アセットのルートから、明示的に開いたファイルの場所を解決する。
-	CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
+	CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
 	// 読み込みと、その後に保存する際の共通のパス。
 	const FString Path = NormalizePath( AssetPath );
 	if ( Assets == nullptr || Path.IsEmpty() )
@@ -449,7 +449,7 @@ bool NDebugUI::NewEffectFromPreset( FEffectEditorState& State, const FString& Pr
 bool NDebugUI::SaveEffectFile( FEffectEditorState& State, const FString& AssetPath )
 {
 	// 保存の成否を確かめるまで、文書の保存済み状態は更新しない。
-	CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
+	CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
 	// 指定を省略したときは、現在開いているファイルへ保存する。
 	FString Path = NormalizePath( AssetPath.IsEmpty() ? State.FilePath : AssetPath );
 	State.Issues = State.Document.Get().Validate();
@@ -545,7 +545,7 @@ void NDebugUI::UpdateEffectEditor( FEffectEditorState& State, float32 DeltaTime 
 		const TSharedPtr<const FParticleEffectDefinition> Snapshot = MakeShared<FParticleEffectDefinition>( State.Document.Get() );
 		if ( !FParticleEffectDefinition::HasErrors( State.Issues ) )
 		{
-			State.Playback = NEffect::CreateParticlePlayback( Snapshot, GetAppSubsystem<CAssetManagerSubsystem>(), FEffectPlayParams(), FTransform::Identity, "editor" );
+			State.Playback = NEffect::CreateParticlePlayback( Snapshot, GetAppSubsystem<CAssetSubsystem>(), FEffectPlayParams(), FTransform::Identity, "editor" );
 		}
 	}
 	if ( State.Playback.IsValid() )

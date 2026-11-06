@@ -1,42 +1,48 @@
-﻿#include "AssetManagerSubsystem.h"
+﻿// SPDX-License-Identifier: MIT
+#include "ModelImporter.h"
 
+#include "Library/Core/Interfaces/Asset/AssetBackend.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Profiler/ProfilerScope.h"
 #include "Library/Core/Types/Numeric.h"
+#include "Library/Framework/Asset/Loading/AssetLog.h"
+#include "Library/Framework/Asset/Loading/AssetPathResolver.h"
 #include "Library/Framework/Asset/Model/Import/ModelFormats.h"
 #include "Library/Platform/System/FileSystem.h"
 
-//=============================================================================
-// CAssetManagerSubsystem: モデルの取り込みと .mv1 への出力
-//=============================================================================
-bool CAssetManagerSubsystem::ResolveModelRequest( const FString& Path, FString& OutFullPath ) const
+CModelImporter::CModelImporter( CAssetLoadContext& InContext )
+	: Context( InContext )
 {
-	if ( GetBackend() == nullptr )
+}
+
+bool CModelImporter::ResolveRequest( const FString& Path, FString& OutFullPath ) const
+{
+	if ( Context.GetBackend() == nullptr )
 	{
 		LOG( LogAsset, Error, "Cannot load the model '%s': no asset backend.", *Path );
 		return false;
 	}
 
-	TOptional<FString> Found = ResolvePath( Path );
+	TOptional<FString> Found = Context.GetPaths().ResolvePath( Path );
 	// 元の .fbx が無くて、変換済みの .mv1 だけがある（配布版など）
 	if ( !Found.IsSet() && NModelFormat::CanConvertToMV1( Path ) )
 	{
-		Found = ResolvePath( NModelFormat::GetMV1Path( Path ) );
+		Found = Context.GetPaths().ResolvePath( NModelFormat::GetMV1Path( Path ) );
 	}
 	if ( !Found.IsSet() )
 	{
-		LOG( LogAsset, Error, "Cannot load the model '%s': the file was not found (root directory '%s').", *Path, *GetRootDirectory() );
+		LOG( LogAsset, Error, "Cannot load the model '%s': the file was not found (root directory '%s').", *Path, *Context.GetPaths().GetRootDirectory() );
 		return false;
 	}
 	OutFullPath = Found.Get( FString() );
 	return true;
 }
 
-bool CAssetManagerSubsystem::ResolveModelLoadPath( const FString& FullPath, FString& OutLoadPath )
+bool CModelImporter::ResolveLoadPath( const FString& FullPath, FString& OutLoadPath ) const
 {
 	OutLoadPath = FullPath;
 	const EModelFileKind Kind = NModelFormat::Classify( FullPath );
-	if ( Kind != EModelFileKind::Imported && !( Kind == EModelFileKind::DxLibNative && bPreferConvertedModels ) )
+	if ( Kind != EModelFileKind::Imported && !( Kind == EModelFileKind::DxLibNative && bPreferConverted ) )
 	{
 		return true;
 	}
@@ -58,9 +64,9 @@ bool CAssetManagerSubsystem::ResolveModelLoadPath( const FString& FullPath, FStr
 	}
 
 	// DxLib は .fbx / .obj を読めない
-	if ( bAutoImportModels )
+	if ( bAutoImport )
 	{
-		const FModelExportResult Result = NModelExport::Export( *GetBackend(), FullPath );
+		const FModelExportResult Result = NModelExport::Export( *Context.GetBackend(), FullPath );
 		if ( Result.bSuccess )
 		{
 			OutLoadPath = Result.OutputPath;
@@ -81,30 +87,30 @@ bool CAssetManagerSubsystem::ResolveModelLoadPath( const FString& FullPath, FStr
 	return false;
 }
 
-FModelExportResult CAssetManagerSubsystem::ExportModelAsMV1( const FString& SourcePath, const FModelExportOptions& Options )
+FModelExportResult CModelImporter::ExportAsMV1( const FString& SourcePath, const FModelExportOptions& Options ) const
 {
 	PROFILE_SCOPE_CAT( "Asset", "ExportModel" );
 	FModelExportResult Result;
 	Result.SourcePath = SourcePath;
-	if ( GetBackend() == nullptr )
+	if ( Context.GetBackend() == nullptr )
 	{
 		Result.Error = "no asset backend";
 		LOG( LogAsset, Error, "Cannot export the model '%s' as .mv1: %s.", *SourcePath, *Result.Error );
 		return Result;
 	}
 
-	const TOptional<FString> Full = ResolvePath( SourcePath );
+	const TOptional<FString> Full = Context.GetPaths().ResolvePath( SourcePath );
 	if ( !Full.IsSet() )
 	{
 		Result.Error = "the file was not found";
-		LOG( LogAsset, Error, "Cannot export the model '%s' as .mv1: %s (root directory '%s').", *SourcePath, *Result.Error, *GetRootDirectory() );
+		LOG( LogAsset, Error, "Cannot export the model '%s' as .mv1: %s (root directory '%s').", *SourcePath, *Result.Error, *Context.GetPaths().GetRootDirectory() );
 		return Result;
 	}
 
 	FModelExportOptions Resolved = Options;
 	if ( !Options.OutputPath.IsEmpty() )
 	{
-		const TOptional<FString> Output = PrepareSavePath( Options.OutputPath );
+		const TOptional<FString> Output = Context.GetPaths().PrepareSavePath( Options.OutputPath );
 		if ( !Output.IsSet() )
 		{
 			Result.SourcePath = Full.Get( FString() );
@@ -113,13 +119,13 @@ FModelExportResult CAssetManagerSubsystem::ExportModelAsMV1( const FString& Sour
 		}
 		Resolved.OutputPath = Output.Get( FString() );
 	}
-	return NModelExport::Export( *GetBackend(), Full.Get( FString() ), Resolved );
+	return NModelExport::Export( *Context.GetBackend(), Full.Get( FString() ), Resolved );
 }
 
-TArray<FModelSourceInfo> CAssetManagerSubsystem::ScanModelSources() const
+TArray<FModelSourceInfo> CModelImporter::ScanSources() const
 {
 	TArray<FModelSourceInfo> Infos;
-	const FString Root = GetRootDirectory();
+	const FString Root = Context.GetPaths().GetRootDirectory();
 	if ( Root.IsEmpty() || !NFileSystem::DirectoryExists( Root ) )
 	{
 		return Infos;
@@ -156,25 +162,25 @@ TArray<FModelSourceInfo> CAssetManagerSubsystem::ScanModelSources() const
 	return Infos;
 }
 
-FModelBatchExportResult CAssetManagerSubsystem::ExportAllModels( bool bForce, const FModelExportOptions& Options )
+FModelBatchExportResult CModelImporter::ExportAll( bool bForce, const FModelExportOptions& Options ) const
 {
 	FModelBatchExportResult Batch;
 	FModelExportOptions Each = Options;
 	Each.OutputPath.Empty();   // 1 つずつ、元の隣に出す
 	Each.bForce = bForce;
-	for ( const FModelSourceInfo& Info : ScanModelSources() )
+	for ( const FModelSourceInfo& Info : ScanSources() )
 	{
 		if ( !bForce && Info.Status == EModelExportStatus::UpToDate )
 		{
 			continue;
 		}
-		Batch.Add( ExportModelAsMV1( Info.Path, Each ) );
+		Batch.Add( ExportAsMV1( Info.Path, Each ) );
 	}
 	LOG( LogAsset, Log, "Exported the models as .mv1: %s", *Batch.GetSummary() );
 	return Batch;
 }
 
-FModelBatchExportResult CAssetManagerSubsystem::ExportModelsUsedBy( const FModelAnimationDefinition& Definition, bool bForce )
+FModelBatchExportResult CModelImporter::ExportUsedBy( const FModelAnimationDefinition& Definition, bool bForce ) const
 {
 	TArray<FString> Paths;
 	const auto AddPath = [&Paths]( const FString& Path )
@@ -196,7 +202,7 @@ FModelBatchExportResult CAssetManagerSubsystem::ExportModelsUsedBy( const FModel
 	Options.bForce = bForce;
 	for ( const FString& Path : Paths )
 	{
-		Batch.Add( ExportModelAsMV1( Path, Options ) );
+		Batch.Add( ExportAsMV1( Path, Options ) );
 	}
 	return Batch;
 }

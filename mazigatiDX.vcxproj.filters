@@ -136,22 +136,13 @@
     <ClCompile Include="Library\Framework\Animation\SpriteAnimator.cpp">
       <Filter>Library\Framework\Animation</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\AssetManagerEffects.cpp">
+    <ClCompile Include="Library\Framework\Asset\AssetSubsystem.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\AssetManagerImages.cpp">
+    <ClCompile Include="Library\Framework\Asset\AssetSubsystemImages.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\AssetManagerModels.cpp">
-      <Filter>Library\Framework\Asset</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\AssetManagerSubsystem.cpp">
-      <Filter>Library\Framework\Asset</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\AssetManagerTextureRegions.cpp">
-      <Filter>Library\Framework\Asset</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\AssetManagerWorlds.cpp">
+    <ClCompile Include="Library\Framework\Asset\AssetSubsystemTextureRegions.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\EditorAssetInfo.cpp">
@@ -160,10 +151,16 @@
     <ClCompile Include="Library\Framework\Asset\Data\EffectAsset.cpp">
       <Filter>Library\Framework\Asset\Data</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Data\EffectLoader.cpp">
+      <Filter>Library\Framework\Asset\Data</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Data\SpriteSheet.cpp">
       <Filter>Library\Framework\Asset\Data</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Data\WorldAsset.cpp">
+      <Filter>Library\Framework\Asset\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Data\WorldLoader.cpp">
       <Filter>Library\Framework\Asset\Data</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Definition\DefinitionEditing.cpp">
@@ -190,6 +187,15 @@
     <ClCompile Include="Library\Framework\Asset\Gpu\VertexBuffer.cpp">
       <Filter>Library\Framework\Asset\Gpu</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Loading\AssetLoadContext.cpp">
+      <Filter>Library\Framework\Asset\Loading</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Loading\AssetLoadRecorder.cpp">
+      <Filter>Library\Framework\Asset\Loading</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Loading\AssetPathResolver.cpp">
+      <Filter>Library\Framework\Asset\Loading</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Model\Model.cpp">
       <Filter>Library\Framework\Asset\Model</Filter>
     </ClCompile>
@@ -215,6 +221,9 @@
       <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Model\Import\ModelFormats.cpp">
+      <Filter>Library\Framework\Asset\Model\Import</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Model\Import\ModelImporter.cpp">
       <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Model\Import\XFileWriter.cpp">
@@ -1695,7 +1704,7 @@
     <ClInclude Include="Library\Framework\Asset\Asset.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\AssetManagerSubsystem.h">
+    <ClInclude Include="Library\Framework\Asset\AssetSubsystem.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\EditorAssetInfo.h">
@@ -1704,10 +1713,16 @@
     <ClInclude Include="Library\Framework\Asset\Data\EffectAsset.h">
       <Filter>Library\Framework\Asset\Data</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Data\EffectLoader.h">
+      <Filter>Library\Framework\Asset\Data</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Data\SpriteSheet.h">
       <Filter>Library\Framework\Asset\Data</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Data\WorldAsset.h">
+      <Filter>Library\Framework\Asset\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Data\WorldLoader.h">
       <Filter>Library\Framework\Asset\Data</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Definition\DefinitionDocument.h">
@@ -1739,6 +1754,24 @@
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Gpu\VertexBuffer.h">
       <Filter>Library\Framework\Asset\Gpu</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Loading\AssetCache.h">
+      <Filter>Library\Framework\Asset\Loading</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Loading\AssetInfo.h">
+      <Filter>Library\Framework\Asset\Loading</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Loading\AssetLoadContext.h">
+      <Filter>Library\Framework\Asset\Loading</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Loading\AssetLoadRecorder.h">
+      <Filter>Library\Framework\Asset\Loading</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Loading\AssetLog.h">
+      <Filter>Library\Framework\Asset\Loading</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Loading\AssetPathResolver.h">
+      <Filter>Library\Framework\Asset\Loading</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Model\Model.h">
       <Filter>Library\Framework\Asset\Model</Filter>
@@ -1783,6 +1816,9 @@
       <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Model\Import\ModelFormats.h">
+      <Filter>Library\Framework\Asset\Model\Import</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Model\Import\ModelImporter.h">
       <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Model\Import\XFileWriter.h">
@@ -4141,6 +4177,9 @@
     </Filter>
     <Filter Include="Library\Framework\Asset\Gpu">
       <UniqueIdentifier>{C1B7F89B-2D8C-E169-CCA7-C5378EA6BDF1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Asset\Loading">
+      <UniqueIdentifier>{7A2BF4EA-2C10-281A-BD14-F68D88D6C231}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\Asset\Model">
       <UniqueIdentifier>{8FEB4C7F-09CD-474E-D942-85C2B783045E}</UniqueIdentifier>

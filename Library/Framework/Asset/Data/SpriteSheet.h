@@ -155,7 +155,7 @@ public:
 	bool IsReady() const override;
 	FString Describe() const override;
 	int64 GetMemoryBytes() const override;
-	// 画像の読み込みを待っていたコマ割りを、読み込めていれば作る（メインスレッドで。CAssetManagerSubsystem が毎フレーム呼ぶ）。
+	// 画像の読み込みを待っていたコマ割りを、読み込めていれば作る（メインスレッドで。CAssetSubsystem が毎フレーム呼ぶ）。
 	// 描画システムなど別のスレッドから呼ぶ GetFrame は、これを呼ばない（読むだけ）
 	void Prepare() const;
 

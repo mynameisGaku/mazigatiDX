@@ -8,9 +8,9 @@
 //
 //   MV1        DxLib の形式（読み込みが速い。ゲームで使うのはこれ）
 //   DxLib 対応  DxLib がそのまま読める、変換前の形式（.x / .pmd / .pmx / .mqo / .mqoz / .vmd）。
-//              CAssetManagerSubsystem::ExportModelAsMV1 で .mv1 にできる
+//              CAssetSubsystem::ExportModelAsMV1 で .mv1 にできる
 //   取り込み    DxLib は読めないが、このフレームワークが読んで .mv1 にできる形式（.fbx / .obj）。
-//              CAssetManagerSubsystem::LoadModel( "Robot.fbx" ) は、同じ名前の .mv1 を（無ければ作って）読み込む
+//              CAssetSubsystem::LoadModel( "Robot.fbx" ) は、同じ名前の .mv1 を（無ければ作って）読み込む
 //=============================================================================
 enum class EModelFileKind : uint8
 {

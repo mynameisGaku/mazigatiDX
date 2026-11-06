@@ -10,7 +10,7 @@
 #include "Library/Core/Log/LogVerbosity.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
-#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Audio/AudioSubsystem.h"
 #include "Library/Framework/Component/TransformComponent.h"
 #include "Library/Framework/Console/ConsoleParse.h"
@@ -229,7 +229,7 @@ namespace
 	//-------------------------------------------------------------------------
 	// assets
 	//-------------------------------------------------------------------------
-	FString DescribeAssets( CAssetManagerSubsystem& Assets )
+	FString DescribeAssets( CAssetSubsystem& Assets )
 	{
 		Assets.UpdateStats();
 		const FAssetStats& Stats = Assets.GetStats();
@@ -652,7 +652,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	Add( "memory", "Show the process memory, the video memory and the asset memory",
 		 []()
 		 {
-			 CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
+			 CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
 			 if ( Assets == nullptr ) return FString( NotRunning );
 			 Assets->UpdateStats();
 			 const FAssetStats& Stats = Assets->GetStats();
@@ -1027,7 +1027,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	Add( "assets", "Show the asset statistics: counts, memory, load times, video memory",
 		 []()
 		 {
-			 CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
+			 CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
 			 return Assets != nullptr ? DescribeAssets( *Assets ) : FString( NotRunning );
 		 },
 		 {}, CategoryAssets );
@@ -1035,7 +1035,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	Add( "assets.list", "List the loaded assets (type, path, references, memory, load time)",
 		 []( FConsoleContext& Context, TOptional<FString> Filter )
 		 {
-			 CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
+			 CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
 			 if ( Assets == nullptr ) return false;
 			 TArray<FAssetInfo> Infos = Assets->GetLoadedAssets();
 			 Infos.StableSort( []( const FAssetInfo& A, const FAssetInfo& B ) { return A.MemoryBytes > B.MemoryBytes; } );
@@ -1054,7 +1054,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	Add( "assets.dump", "Write the asset list and statistics to the log",
 		 []( FConsoleContext& Context )
 		 {
-			 CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
+			 CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
 			 if ( Assets == nullptr ) return false;
 			 Assets->DumpToLog();
 			 Context.Print( "written to the log (category LogAsset)" );
@@ -1065,7 +1065,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	Add( "assets.release", "Forget the records of assets nobody uses any more",
 		 []( FConsoleContext& Context )
 		 {
-			 CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
+			 CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
 			 if ( Assets == nullptr ) return false;
 			 Assets->ReleaseUnused();
 			 Context.Print( "done" );
@@ -1076,7 +1076,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	Add( "assets.root", "Show the asset root folder",
 		 []()
 		 {
-			 CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
+			 CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
 			 return Assets != nullptr ? Assets->GetRootDirectory() : FString( NotRunning );
 		 },
 		 {}, CategoryAssets );
@@ -1084,7 +1084,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	Add( "assets.export", "Convert the models under the asset root (.fbx .obj .x .pmx ...) to .mv1",
 		 []( FConsoleContext& Context, TOptional<bool> Force )
 		 {
-			 CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
+			 CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
 			 if ( Assets == nullptr ) return false;
 			 const FModelBatchExportResult Batch = Assets->ExportAllModels( Force.IsSet() && Force.GetValue() );
 			 for ( const FModelExportResult& Item : Batch.Items )
@@ -1196,7 +1196,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 		 []( FConsoleContext& Context, const FString& Path, TOptional<FString> BusName, TOptional<float32> Volume, TOptional<float32> Pitch, TOptional<bool> Loop )
 		 {
 			 CAudioSubsystem* Audio = GetAppSubsystem<CAudioSubsystem>();
-			 CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
+			 CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
 			 if ( Audio == nullptr || Assets == nullptr ) return false;
 			 FSoundPlayParams Params;
 			 if ( BusName.IsSet() && !ParseBus( BusName.GetValue(), Params.Bus ) )

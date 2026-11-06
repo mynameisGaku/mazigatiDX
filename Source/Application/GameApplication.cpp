@@ -4,7 +4,7 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Profiler/ProfilerScope.h"
 #include "Library/Core/Types/CString.h"
-#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/World/Runtime/WorldSpawner.h"
 #include "Library/Physics/WorldPhysics.h"
@@ -44,7 +44,7 @@ void CGameApplication::OnInit()
 	const FString CommandLine = NCommandLine::Get();
 	if ( NCString::Find( *CommandLine, "--export-models" ) != nullptr )
 	{
-		if ( CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>() )
+		if ( CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>() )
 		{
 			const FModelBatchExportResult Batch = Assets->ExportAllModels( NCString::Find( *CommandLine, "--export-models=force" ) != nullptr );
 			LOG( LogGame, Log, "Exported the models in '%s' as .mv1: %s", *Assets->GetRootDirectory(), *Batch.GetSummary() );

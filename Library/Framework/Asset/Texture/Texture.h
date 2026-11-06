@@ -5,7 +5,7 @@
 
 //=============================================================================
 // CTexture
-//   画像。CAssetManagerSubsystem::LoadTexture で読み込む。描画の窓口（FDrawContext）には、IImage として渡せる。
+//   画像。CAssetSubsystem::LoadTexture で読み込む。描画の窓口（FDrawContext）には、IImage として渡せる。
 //
 //   TSharedPtr<CTexture> Texture = Assets->LoadTexture( "Textures/Hero.png" );
 //   Draw.Image( X, Y, Texture );                               // 描画システムの中でも、FImmediateDraw でも、そのまま渡せる（nullptr なら何も描かない）

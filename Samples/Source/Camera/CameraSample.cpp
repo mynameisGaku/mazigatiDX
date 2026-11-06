@@ -1,6 +1,6 @@
 ﻿#include "CameraSample.h"
 
-#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Render/Draw/ImmediateDraw.h"
 #include "Source/Camera/CameraRig.h"
@@ -26,7 +26,7 @@ namespace
 
 void CCameraSample::OnEnter()
 {
-	CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
+	CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
 	if ( Assets == nullptr )
 	{
 		return;

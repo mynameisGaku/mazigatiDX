@@ -1,13 +1,13 @@
 ﻿// SPDX-License-Identifier: MIT
 
-#include "AssetManagerSubsystem.h"
+#include "AssetSubsystem.h"
 
 
 #include "Library/Core/Thread/GameThread.h"
 #include "Library/Core/Time/PlatformTime.h"
 #include "Library/Core/Types/Numeric.h"
 
-TSharedPtr<CTexture> CAssetManagerSubsystem::CreateTextureRegion( const TSharedPtr<CTexture>& Source, int32 X, int32 Y, int32 Width, int32 Height )
+TSharedPtr<CTexture> CAssetSubsystem::CreateTextureRegion( const TSharedPtr<CTexture>& Source, int32 X, int32 Y, int32 Width, int32 Height )
 {
 	GAME_THREAD_ONLY( nullptr );
 	if ( GetBackend() == nullptr || !Source.IsValid() || !Source->IsReady() || Source->GetHandle() < 0 || X < 0 || Y < 0 || Width <= 0 || Height <= 0 )

@@ -7,13 +7,13 @@
 //=============================================================================
 // アセット（読み込んだ資源）の共通部分
 //
-//   アセットは CAssetManagerSubsystem が読み込み、TSharedPtr で渡す。同じファイルを何度読んでも 1 つを共有し、
+//   アセットは CAssetSubsystem が読み込み、TSharedPtr で渡す。同じファイルを何度読んでも 1 つを共有し、
 //   最後の TSharedPtr が消えると、資源（DxLib のハンドル）も自動で解放される。
 //
 //   TSharedPtr<CTexture> Texture = Assets->LoadTexture( "Textures/Hero.png" );
 //
 //   - 読み込み・解放はメインスレッドで行う。別のスレッドで最後の参照が消えた場合は、解放を
-//     メインスレッドの次の更新（CAssetManagerSubsystem::Tick）まで預かる
+//     メインスレッドの次の更新（CAssetSubsystem::Tick）まで預かる
 //   - アセットを保持している間は、ハンドルが有効（描画システムのラムダには、アセットではなくハンドルを渡してよいが、
 //     ハンドルを使うフレームの間は、アセットを保持しておくこと）
 //=============================================================================
@@ -54,7 +54,7 @@ public:
 	FORCEINLINE int64 GetFileBytes() const { return FileBytes; }
 	// 読み込みにかかった時間（ミリ秒。非同期の読み込みは、始めるまでの時間だけ）
 	FORCEINLINE float32 GetLoadMs() const { return LoadMs; }
-	// CAssetManagerSubsystem が、読み込んだ直後に記録する
+	// CAssetSubsystem が、読み込んだ直後に記録する
 	void SetLoadInfo( int64 InFileBytes, float32 InLoadMs )
 	{
 		FileBytes = InFileBytes;
@@ -73,7 +73,7 @@ private:
 
 //=============================================================================
 // NAssetService
-//   アセットの実装（CTexture など）が、バックエンドを使うための窓口。CAssetManagerSubsystem が動いている間だけ有効。
+//   アセットの実装（CTexture など）が、バックエンドを使うための窓口。CAssetSubsystem が動いている間だけ有効。
 //   ゲーム側が直接使うものではない。
 //=============================================================================
 namespace NAssetService

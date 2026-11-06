@@ -5,7 +5,7 @@
 
 //=============================================================================
 // CSound
-//   音声データ（WAV / OGG / MP3 など）。CAssetManagerSubsystem::LoadSound で読み込み、CAudioSubsystem で鳴らす。
+//   音声データ（WAV / OGG / MP3 など）。CAssetSubsystem::LoadSound で読み込み、CAudioSubsystem で鳴らす。
 //
 //   TSharedPtr<CSound> Jump = Assets->LoadSound( "Sound/Jump.wav" );                              // 効果音（メモリに展開）
 //   TSharedPtr<CSound> Theme = Assets->LoadSound( "Sound/Theme.ogg", ESoundLoadMode::Stream );    // BGM（再生しながら読む）

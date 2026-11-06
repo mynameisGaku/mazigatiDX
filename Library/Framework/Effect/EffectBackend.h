@@ -7,7 +7,7 @@
 #include "Library/Math/Transform.h"
 
 class FDrawContext;
-class CAssetManagerSubsystem;
+class CAssetSubsystem;
 
 //=============================================================================
 // エフェクトの窓口（バックエンド）
@@ -69,7 +69,7 @@ public:
 	// このファイル（アセットのルートからの相対）を扱えるか（拡張子など。読み込みはしない）
 	virtual bool CanPlay( const FString& Path ) const = 0;
 	// 再生を始める。読み込めなければ nullptr。Assets は、ファイルや画像の読み込み用（動いていなければ nullptr）
-	virtual TSharedPtr<IEffectPlayback> Play( const FString& Path, CAssetManagerSubsystem* Assets, const FEffectPlayParams& Params, const FTransform& World ) = 0;
+	virtual TSharedPtr<IEffectPlayback> Play( const FString& Path, CAssetSubsystem* Assets, const FEffectPlayParams& Params, const FTransform& World ) = 0;
 };
 
 //-----------------------------------------------------------------------------
@@ -86,7 +86,7 @@ public:
 	int32 Num() const { return Backends.Num(); }
 	// そのファイルを扱える、最初のバックエンド（無ければ nullptr）
 	IEffectBackend* Find( const FString& Path ) const;
-	TSharedPtr<IEffectPlayback> Play( const FString& Path, CAssetManagerSubsystem* Assets, const FEffectPlayParams& Params, const FTransform& World ) const;
+	TSharedPtr<IEffectPlayback> Play( const FString& Path, CAssetSubsystem* Assets, const FEffectPlayParams& Params, const FTransform& World ) const;
 
 	// アプリ全体で使う、内蔵のものが入った一覧
 	static FEffectBackendRegistry& Global();

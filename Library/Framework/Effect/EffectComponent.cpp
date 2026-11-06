@@ -1,7 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "EffectComponent.h"
 
-#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Component/TransformComponent.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Object/GameObject.h"
@@ -92,7 +92,7 @@ void CEffectComponent::SyncPlaybackTarget()
 bool CEffectComponent::Play()
 {
 	CGameObject* Owner = GetOwner();
-	CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
+	CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
 	if ( Owner == nullptr || Assets == nullptr )
 	{
 		return false;

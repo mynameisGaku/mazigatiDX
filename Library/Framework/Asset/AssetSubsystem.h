@@ -16,11 +16,17 @@
 #include "Library/Framework/Asset/Sound/Sound.h"
 #include "Library/Framework/Asset/Data/SpriteSheet.h"
 #include "Library/Framework/Asset/Data/EffectAsset.h"
+#include "Library/Framework/Asset/Data/EffectLoader.h"
 #include "Library/Framework/Asset/Data/WorldAsset.h"
+#include "Library/Framework/Asset/Data/WorldLoader.h"
+#include "Library/Framework/Asset/Loading/AssetInfo.h"
+#include "Library/Framework/Asset/Loading/AssetLoadContext.h"
+#include "Library/Framework/Asset/Loading/AssetLoadRecorder.h"
+#include "Library/Framework/Asset/Loading/AssetLog.h"
+#include "Library/Framework/Asset/Loading/AssetPathResolver.h"
+#include "Library/Framework/Asset/Model/Import/ModelImporter.h"
 #include "Library/Framework/Asset/Texture/Texture.h"
 #include "Library/Framework/Subsystem/AppSubsystem.h"
-
-DECLARE_LOG_CATEGORY_EXTERN( LogAsset, Log )
 
 // フォントの見た目の指定（大きさ以外）
 struct FFontStyle
@@ -33,19 +39,6 @@ struct FFontStyle
 	int32 LineHeight = -1;     // 行の送り幅（ピクセル。次の行の同じ位置までの距離）。-1 はフォントの既定
 };
 
-// 読み込んでいるアセット 1 つの情報（デバッグ表示用）
-struct FAssetInfo
-{
-	EAssetType Type = EAssetType::Texture;
-	FString Path;
-	FString Description;
-	int32 RefCount = 0;   // 使っている TSharedPtr の数（マネージャー自身は数えない）
-	bool bReady = true;
-	int64 MemoryBytes = 0;   // 使っているメモリの推定
-	int64 FileBytes = 0;     // ファイルの大きさ
-	float32 LoadMs = 0.0f;   // 読み込みにかかった時間
-};
-
 // アセットの種類ごとの集計
 struct FAssetTypeStats
 {
@@ -56,7 +49,7 @@ struct FAssetTypeStats
 	float64 LoadMs = 0.0;       // 読み込みにかかった時間の合計
 };
 
-// アセット全体の集計（CAssetManagerSubsystem::GetStats）。メモリは推定（GetMemoryBytes）。Backend は実際の値
+// アセット全体の集計（CAssetSubsystem::GetStats）。メモリは推定（GetMemoryBytes）。Backend は実際の値
 struct FAssetStats
 {
 	FAssetTypeStats Types[NumAssetTypes];   // EAssetType の順
@@ -114,10 +107,10 @@ private:
 };
 
 //=============================================================================
-// CAssetManagerSubsystem
+// CAssetSubsystem
 //   アセット（画像・スプライトシート・3D モデル・サウンド・フォント）の読み込みと管理を行う（アプリで 1 つ、自動で生成される）。
 //
-//   CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
+//   CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
 //   TSharedPtr<CTexture>     Hero  = Assets->LoadTexture( "Textures/Hero.png" );
 //   TSharedPtr<CSpriteSheet> Sheet = Assets->LoadSpriteSheet( "Sprites/Hero.gxsprite" );
 //   TSharedPtr<CModel>       Robot = Assets->LoadModel( "Models/Robot.fbx" );   // .fbx / .obj は、同じ名前の .mv1 を（無ければ作って）読む
@@ -136,11 +129,11 @@ private:
 //   フォルダ構成の例:
 //     Assets/Textures/  Assets/Sprites/  Assets/Models/  Assets/Sound/  Assets/Fonts/
 //=============================================================================
-class CAssetManagerSubsystem : public CAppSubsystem, public ITickable
+class CAssetSubsystem : public CAppSubsystem, public ITickable
 {
 public:
-	CAssetManagerSubsystem();
-	~CAssetManagerSubsystem() override;
+	CAssetSubsystem();
+	~CAssetSubsystem() override;
 
 	//-------------------------------------------------------------------------
 	// CAppSubsystem / ITickable
@@ -249,11 +242,11 @@ public:
 	// エディタの保存のときに、一緒に呼ぶ（アセット出力）
 	FModelBatchExportResult ExportModelsUsedBy( const FModelAnimationDefinition& Definition, bool bForce = false );
 	// LoadModel で、.fbx / .obj の .mv1 が無い・古いときに、自動で作る（既定 true）。false なら、あるものを（古くても警告つきで）読み、無ければ失敗
-	FORCEINLINE void SetAutoImportModels( bool bEnable ) { bAutoImportModels = bEnable; }
-	FORCEINLINE bool GetAutoImportModels() const { return bAutoImportModels; }
+	FORCEINLINE void SetAutoImportModels( bool bEnable ) { ModelImporter.SetAutoImport( bEnable ); }
+	FORCEINLINE bool GetAutoImportModels() const { return ModelImporter.GetAutoImport(); }
 	// LoadModel で、DxLib が読める形式（.x / .pmx など）にも、最新の .mv1 が隣にあれば、そちらを読む（既定 true）
-	FORCEINLINE void SetPreferConvertedModels( bool bEnable ) { bPreferConvertedModels = bEnable; }
-	FORCEINLINE bool GetPreferConvertedModels() const { return bPreferConvertedModels; }
+	FORCEINLINE void SetPreferConvertedModels( bool bEnable ) { ModelImporter.SetPreferConverted( bEnable ); }
+	FORCEINLINE bool GetPreferConvertedModels() const { return ModelImporter.GetPreferConverted(); }
 
 	//-------------------------------------------------------------------------
 	// サウンド
@@ -282,7 +275,7 @@ public:
 	TArray<FAssetInfo> GetLoadedAssets() const;
 	// 集計（種類ごとの個数・メモリ・読み込み時間、全体の累計、ビデオメモリなど）。UpdateStats の時点のもの。
 	// Tick が、プロファイラーの記録中は毎フレーム、それ以外は 0.5 秒ごとに UpdateStats する
-	FORCEINLINE const FAssetStats& GetStats() const { return Stats; }
+	const FAssetStats& GetStats() const;
 	void UpdateStats();
 	// 読み込んでいるアセットの一覧と集計を、ログ（Display）に出す
 	void DumpToLog() const;
@@ -299,20 +292,15 @@ private:
 	template<typename T>
 	using TCache = TMap<FString, TWeakPtr<T>>;
 
-	// 読み込む前の共通の確認（バックエンドがあるか・ファイルがあるか）。通れば実在する絶対パスを返す
-	TOptional<FString> PrepareLoad( const char* Kind, const FString& Path );
-	static FString MakeKey( const FString& FullPath );
+	// 以下 4 つは、パスを解決する人・読み込みを記録する人（それぞれ別のクラス）への取り次ぎ（残りの読み込みの処理が、ローダーへ移るまでの間）
+	TOptional<FString> PrepareLoad( const char* Kind, const FString& Path ) { return LoadContext.PrepareLoad( Kind, Path ); }
+	static FString MakeKey( const FString& FullPath ) { return CAssetPathResolver::MakeKey( FullPath ); }
+	TOptional<FString> PrepareSavePath( const FString& Path ) { return PathResolver.PrepareSavePath( Path ); }
+	void RecordLoad( CAsset& Asset, const FString& FullPath, int64 StartTick ) { LoadRecorder.RecordLoad( Asset, FullPath, StartTick ); }
+	void RecordCacheHit() { LoadRecorder.RecordCacheHit(); }
+	void RecordFailure() { LoadRecorder.RecordFailure(); }
 	TSharedPtr<CFont> LoadFontInternal( const FString& Key, const FFontDesc& Desc, const FString& FontFilePath );
 	void AddPendingSheet( const TSharedPtr<CSpriteSheet>& Sheet );
-	// 保存先の絶対パス（相対ならルートフォルダの下）。フォルダも作る。失敗したら空
-	TOptional<FString> PrepareSavePath( const FString& Path );
-	// LoadModel の下ごしらえ。ユーザーが指したファイルの絶対パス（キャッシュのキー）と、DxLib に実際に読ませるファイルを決める。失敗したら理由をログに出して false
-	bool ResolveModelRequest( const FString& Path, FString& OutFullPath ) const;
-	bool ResolveModelLoadPath( const FString& FullPath, FString& OutLoadPath );
-	// 読み込みの結果を記録する（読み込みにかかった時間・ファイルの大きさ・累計）
-	void RecordLoad( CAsset& Asset, const FString& FullPath, int64 StartTick );
-	void RecordCacheHit() { ++Stats.NumCacheHits; }
-	void RecordFailure() { ++Stats.NumLoadFailures; }
 	// プロファイラーが記録中なら、集計をカウンターとして記録する
 	void RecordCounters() const;
 
@@ -321,21 +309,23 @@ private:
 
 	IAssetBackend* Backend = nullptr;
 	IAssetBackend* BackendOverride = nullptr;
-	bool bAutoImportModels = true;
-	bool bPreferConvertedModels = true;
-	FString RootDirectoryName = "Assets";
-	mutable TOptional<FString> ResolvedRoot;
+
+	// 役割ごとのクラス（パスを解決する人・読み込みを記録する人・各ローダー）。このクラスは、入口と、寿命・集計・定期の片付けを受け持つ
+	CAssetPathResolver PathResolver;
+	CAssetLoadRecorder LoadRecorder;
+	CAssetLoadContext LoadContext { PathResolver, LoadRecorder };
+	CWorldLoader WorldLoader { LoadContext };
+	CEffectLoader EffectLoader { LoadContext };
+	CModelImporter ModelImporter { LoadContext };
 
 	TCache<CTexture> Textures;
 	TCache<CSpriteSheet> SpriteSheets;
 	TCache<CModel> Models;
 	TCache<CModelAnimationAsset> ModelAnimations;
-	TCache<CWorldAsset> Worlds;
-	TCache<CEffectAsset> Effects;
 	TCache<CSound> Sounds;
 	TCache<CFont> Fonts;
 	TArray<TWeakPtr<CSpriteSheet>> PendingSheets;
 	float32 PruneTimer = 0.0f;
 	float32 StatsTimer = 0.5f;
-	FAssetStats Stats;
+	mutable FAssetStats Stats;
 };

@@ -2,7 +2,7 @@
 #include "Library/Core/Thread/GameThread.h"
 #include "Library/Framework/PixelEffect/Playback/PixelEffectView.h"
 
-#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
 
 namespace
@@ -22,7 +22,7 @@ namespace
 	}
 }
 
-CPixelEffectView::CPixelEffectView( CAssetManagerSubsystem& Assets, TUniquePtr<IPixelEffect> InEffect )
+CPixelEffectView::CPixelEffectView( CAssetSubsystem& Assets, TUniquePtr<IPixelEffect> InEffect )
 	: Player( MoveTemp( InEffect ) )
 {
 	if ( !Player.IsValid() )

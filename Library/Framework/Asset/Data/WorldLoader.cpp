@@ -1,32 +1,34 @@
-﻿#include "AssetManagerSubsystem.h"
+﻿// SPDX-License-Identifier: MIT
+#include "WorldLoader.h"
 
-#include "Library/Core/Thread/GameThread.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Thread/GameThread.h"
 #include "Library/Core/Time/PlatformTime.h"
+#include "Library/Framework/Asset/Loading/AssetLoadRecorder.h"
+#include "Library/Framework/Asset/Loading/AssetLog.h"
+#include "Library/Framework/Asset/Loading/AssetPathResolver.h"
 #include "Library/Json/JsonObject.h"
-#include "Library/Platform/System/FileSystem.h"
 
-//=============================================================================
-// CAssetManagerSubsystem: ワールド（.gxworld。書式は WorldDefinition.cpp の先頭を参照）
-//=============================================================================
-TSharedPtr<CWorldAsset> CAssetManagerSubsystem::LoadWorld( const FString& Path )
+CWorldLoader::CWorldLoader( CAssetLoadContext& InContext )
+	: Context( InContext )
+{
+}
+
+TSharedPtr<CWorldAsset> CWorldLoader::Load( const FString& Path )
 {
 	GAME_THREAD_ONLY( nullptr );
-	const TOptional<FString> Full = PrepareLoad( "world", Path );
+	const TOptional<FString> Full = Context.PrepareLoad( "world", Path );
 	if ( !Full.IsSet() )
 	{
 		return nullptr;
 	}
 
 	const FString FullPath = Full.Get( FString() );
-	const FString Key = MakeKey( FullPath );
-	if ( TWeakPtr<CWorldAsset>* Found = Worlds.Find( Key ) )
+	const FString Key = CAssetPathResolver::MakeKey( FullPath );
+	if ( TSharedPtr<CWorldAsset> Existing = Cache.Find( Key ) )
 	{
-		if ( TSharedPtr<CWorldAsset> Existing = Found->Pin() )
-		{
-			RecordCacheHit();
-			return Existing;
-		}
+		Context.GetRecorder().RecordCacheHit();
+		return Existing;
 	}
 
 	const int64 StartTick = NPlatformTime::GetTicks();
@@ -36,7 +38,7 @@ TSharedPtr<CWorldAsset> CAssetManagerSubsystem::LoadWorld( const FString& Path )
 	if ( !Json.LoadFromFile( FullPath ) || !FWorldDefinition::FromJson( Json.GetRoot(), Definition, &Warnings ) )
 	{
 		LOG( LogAsset, Error, "Failed to read the world '%s' (not valid JSON?).", *FullPath );
-		RecordFailure();
+		Context.GetRecorder().RecordFailure();
 		return nullptr;
 	}
 	for ( int32 i = 0; i < Warnings.Num() && i < 20; ++i )
@@ -49,15 +51,15 @@ TSharedPtr<CWorldAsset> CAssetManagerSubsystem::LoadWorld( const FString& Path )
 	}
 
 	TSharedPtr<CWorldAsset> Asset = MakeShared<CWorldAsset>( FullPath, Definition, Warnings );
-	RecordLoad( *Asset, FullPath, StartTick );
-	Worlds.Add( Key, Asset );
+	Context.GetRecorder().RecordLoad( *Asset, FullPath, StartTick );
+	Cache.Add( Key, Asset );
 	LOG( LogAsset, Verbose, "Loaded the world '%s' (%d object(s))", *FullPath, Definition.Objects.Num() );
 	return Asset;
 }
 
-bool CAssetManagerSubsystem::SaveWorld( const FString& Path, const FWorldDefinition& Definition )
+bool CWorldLoader::Save( const FString& Path, const FWorldDefinition& Definition )
 {
-	const TOptional<FString> Full = PrepareSavePath( Path );
+	const TOptional<FString> Full = Context.GetPaths().PrepareSavePath( Path );
 	if ( !Full.IsSet() )
 	{
 		return false;
@@ -70,7 +72,22 @@ bool CAssetManagerSubsystem::SaveWorld( const FString& Path, const FWorldDefinit
 		LOG( LogAsset, Error, "Failed to write the world '%s'.", *Full.Get( FString() ) );
 		return false;
 	}
-	Worlds.Remove( MakeKey( Full.Get( FString() ) ) );
+	Cache.Remove( CAssetPathResolver::MakeKey( Full.Get( FString() ) ) );
 	LOG( LogAsset, Log, "Saved the world '%s' (%d object(s))", *Full.Get( FString() ), Definition.Objects.Num() );
 	return true;
+}
+
+void CWorldLoader::CollectInfos( TArray<FAssetInfo>& Out ) const
+{
+	Cache.CollectInfos( Out );
+}
+
+void CWorldLoader::Prune()
+{
+	Cache.Prune();
+}
+
+void CWorldLoader::Clear()
+{
+	Cache.Clear();
 }

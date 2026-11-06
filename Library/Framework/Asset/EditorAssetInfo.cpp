@@ -2,9 +2,9 @@
 
 #include "Library/Framework/Asset/Model/StaticModelSurface.h"
 
-#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
 
-FAssetEditorInfo::FAssetEditorInfo( CAssetManagerSubsystem& InAssets )
+FAssetEditorInfo::FAssetEditorInfo( CAssetSubsystem& InAssets )
 	: Assets( InAssets )
 	, Query( InAssets )
 {

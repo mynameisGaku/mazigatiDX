@@ -15,6 +15,6 @@ namespace NTestPattern
 	// 画像の大きさ（ピクセル）
 	constexpr int32 Size = 64;
 
-	// BMP ファイルの中身（CAssetManagerSubsystem::CreateTextureFromMemory に渡す）
+	// BMP ファイルの中身（CAssetSubsystem::CreateTextureFromMemory に渡す）
 	TArray<uint8> MakeBitmap();
 }
