@@ -24,7 +24,7 @@ FPixelImage CPixelImageCodec::Load( const FString& Path ) const
 	int32 Width = 0;
 	int32 Height = 0;
 	TArray<FColor32> Pixels;
-	if ( !Context.GetBackend()->DecodeImageFile( Full.Get( FString() ), Width, Height, Pixels ) || static_cast<int64>( Width ) * Height != Pixels.Num() )
+	if ( !Context.GetTextureBackend()->DecodeImageFile( Full.Get( FString() ), Width, Height, Pixels ) || static_cast<int64>( Width ) * Height != Pixels.Num() )
 	{
 		LOG( LogAsset, Error, "Failed to read the image '%s' (unsupported or broken image).", *Full.Get( FString() ) );
 		Context.GetRecorder().RecordFailure();
@@ -36,14 +36,14 @@ FPixelImage CPixelImageCodec::Load( const FString& Path ) const
 FPixelImage CPixelImageCodec::Decode( const void* FileImage, usize Size ) const
 {
 	GAME_THREAD_ONLY( FPixelImage() );
-	if ( Context.GetBackend() == nullptr || FileImage == nullptr || Size == 0 )
+	if ( Context.GetTextureBackend() == nullptr || FileImage == nullptr || Size == 0 )
 	{
 		return FPixelImage();
 	}
 	int32 Width = 0;
 	int32 Height = 0;
 	TArray<FColor32> Pixels;
-	if ( !Context.GetBackend()->DecodeImage( FileImage, Size, Width, Height, Pixels ) || static_cast<int64>( Width ) * Height != Pixels.Num() )
+	if ( !Context.GetTextureBackend()->DecodeImage( FileImage, Size, Width, Height, Pixels ) || static_cast<int64>( Width ) * Height != Pixels.Num() )
 	{
 		LOG( LogAsset, Error, "Failed to decode the image (%d byte(s)): unsupported or broken image.", static_cast<int32>( Size ) );
 		Context.GetRecorder().RecordFailure();
@@ -55,7 +55,7 @@ FPixelImage CPixelImageCodec::Decode( const void* FileImage, usize Size ) const
 bool CPixelImageCodec::Save( const FPixelImage& Image, const FString& Path, const FImageSaveOptions& Options ) const
 {
 	GAME_THREAD_ONLY( false );
-	if ( Context.GetBackend() == nullptr || !Image.IsValid() || Path.IsEmpty() )
+	if ( Context.GetTextureBackend() == nullptr || !Image.IsValid() || Path.IsEmpty() )
 	{
 		return false;
 	}
@@ -64,7 +64,7 @@ bool CPixelImageCodec::Save( const FPixelImage& Image, const FString& Path, cons
 	{
 		return false;
 	}
-	if ( !Context.GetBackend()->SavePixels( Image.GetWidth(), Image.GetHeight(), Image.GetData(), Full.Get( FString() ), Options ) )
+	if ( !Context.GetTextureBackend()->SavePixels( Image.GetWidth(), Image.GetHeight(), Image.GetData(), Full.Get( FString() ), Options ) )
 	{
 		LOG( LogAsset, Error, "Failed to save the image to '%s'.", *Full.Get( FString() ) );
 		return false;

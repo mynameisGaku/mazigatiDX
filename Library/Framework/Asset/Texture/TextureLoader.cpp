@@ -35,7 +35,7 @@ TSharedPtr<CTexture> CTextureLoader::Load( const FString& Path, bool bAsync )
 
 	PROFILE_SCOPE_LAZY( LoadScope, CAssetLoadRecorder::MakeProfileScope( "LoadTexture", FullPath ) );
 	const int64 StartTick = NPlatformTime::GetTicks();
-	const int32 Handle = Context.GetBackend()->LoadTexture( FullPath, bAsync );
+	const int32 Handle = Context.GetTextureBackend()->LoadTexture( FullPath, bAsync );
 	if ( Handle < 0 )
 	{
 		LOG( LogAsset, Error, "Failed to load the texture '%s' (unsupported or broken image).", *FullPath );
@@ -53,7 +53,7 @@ TSharedPtr<CTexture> CTextureLoader::Load( const FString& Path, bool bAsync )
 TSharedPtr<CTexture> CTextureLoader::CreateFromMemory( const FString& Name, const void* FileImage, usize Size )
 {
 	GAME_THREAD_ONLY( nullptr );
-	IAssetBackend* Backend = Context.GetBackend();
+	ITextureBackend* Backend = Context.GetTextureBackend();
 	if ( Backend == nullptr || FileImage == nullptr || Size == 0 )
 	{
 		LOG( LogAsset, Error, "Cannot create the texture '%s' from memory: %s.", *Name, Backend == nullptr ? "no asset backend" : "no data" );
@@ -80,7 +80,7 @@ TSharedPtr<CTexture> CTextureLoader::CreateFromMemory( const FString& Name, cons
 TSharedPtr<CRenderTarget> CTextureLoader::CreateRenderTarget( const FString& Name, const FRenderTargetDesc& Desc )
 {
 	GAME_THREAD_ONLY( nullptr );
-	IAssetBackend* Backend = Context.GetBackend();
+	ITextureBackend* Backend = Context.GetTextureBackend();
 	if ( Backend == nullptr )
 	{
 		LOG( LogAsset, Error, "Cannot create the render target '%s': no asset backend.", *Name );
@@ -117,7 +117,7 @@ TSharedPtr<CRenderTarget> CTextureLoader::CreateRenderTarget( const FString& Nam
 TSharedPtr<CDynamicTexture> CTextureLoader::CreateDynamic( const FString& Name, const FPixelImage& Image )
 {
 	GAME_THREAD_ONLY( nullptr );
-	IAssetBackend* Backend = Context.GetBackend();
+	ITextureBackend* Backend = Context.GetTextureBackend();
 	if ( Backend == nullptr )
 	{
 		LOG( LogAsset, Error, "Cannot create the texture '%s' from pixels: no asset backend.", *Name );
@@ -154,7 +154,7 @@ TSharedPtr<CDynamicTexture> CTextureLoader::CreateDynamic( const FString& Name, 
 TSharedPtr<CTexture> CTextureLoader::CreateRegion( const TSharedPtr<CTexture>& Source, int32 X, int32 Y, int32 Width, int32 Height )
 {
 	GAME_THREAD_ONLY( nullptr );
-	IAssetBackend* Backend = Context.GetBackend();
+	ITextureBackend* Backend = Context.GetTextureBackend();
 	if ( Backend == nullptr || !Source.IsValid() || !Source->IsReady() || Source->GetHandle() < 0 || X < 0 || Y < 0 || Width <= 0 || Height <= 0 )
 	{
 		return nullptr;
@@ -203,7 +203,7 @@ TArray<TSharedPtr<CTexture>> CTextureLoader::Split( const TSharedPtr<CTexture>& 
 {
 	GAME_THREAD_ONLY( TArray<TSharedPtr<CTexture>>() );
 	TArray<TSharedPtr<CTexture>> Pieces;
-	if ( Context.GetBackend() == nullptr || !Source.IsValid() || !Source->IsReady() || Source->GetHandle() < 0 )
+	if ( Context.GetTextureBackend() == nullptr || !Source.IsValid() || !Source->IsReady() || Source->GetHandle() < 0 )
 	{
 		return Pieces;
 	}

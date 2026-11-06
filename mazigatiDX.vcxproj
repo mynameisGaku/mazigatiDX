@@ -553,6 +553,12 @@
     <ClInclude Include="Library\Core\Collection\String.h" />
     <ClInclude Include="Library\Core\File\File.h" />
     <ClInclude Include="Library\Core\Interfaces\Asset\AssetBackend.h" />
+    <ClInclude Include="Library\Core\Interfaces\Asset\AssetBackendTypes.h" />
+    <ClInclude Include="Library\Core\Interfaces\Asset\FontBackend.h" />
+    <ClInclude Include="Library\Core\Interfaces\Asset\ModelBackend.h" />
+    <ClInclude Include="Library\Core\Interfaces\Asset\RenderResourceBackend.h" />
+    <ClInclude Include="Library\Core\Interfaces\Asset\SoundBackend.h" />
+    <ClInclude Include="Library\Core\Interfaces\Asset\TextureBackend.h" />
     <ClInclude Include="Library\Core\Interfaces\Audio\AudioBackend.h" />
     <ClInclude Include="Library\Core\Interfaces\Input\ICursorControl.h" />
     <ClInclude Include="Library\Core\Interfaces\Input\IGamepadInput.h" />

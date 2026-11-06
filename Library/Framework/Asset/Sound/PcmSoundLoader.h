@@ -6,7 +6,7 @@
 #include "Library/Framework/Asset/Sound/Sound.h"
 #include "Library/Framework/Asset/Sound/SoundTypes.h"
 
-class IAssetBackend;
+class ISoundBackend;
 
 //=============================================================================
 // CPcmSoundLoader
@@ -25,7 +25,7 @@ class IAssetBackend;
 class CPcmSoundLoader
 {
 public:
-	explicit CPcmSoundLoader( IAssetBackend* InBackend );
+	explicit CPcmSoundLoader( ISoundBackend* InBackend );
 
 	// 生の音（PCM）から、メモリに展開した音を作る。Name は表示のためだけ。作れなければ nullptr（PCM が不正、バックエンドが未対応の形、など）
 	TSharedPtr<CSound> CreateFromPcm( const FString& Name, const FPcmBuffer& Pcm ) const;
@@ -38,5 +38,5 @@ public:
 	static bool SaveWav( const FPcmBuffer& Pcm, const FString& FullPath );
 
 private:
-	IAssetBackend* Backend = nullptr;
+	ISoundBackend* Backend = nullptr;
 };

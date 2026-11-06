@@ -185,7 +185,7 @@ FString NModelExport::MakeRelativePath( const FString& FromDirectory, const FStr
 	return Result;
 }
 
-FModelExportResult NModelExport::Export( IAssetBackend& Backend, const FString& SourceFullPath, const FModelExportOptions& Options )
+FModelExportResult NModelExport::Export( IModelBackend& Backend, const FString& SourceFullPath, const FModelExportOptions& Options )
 {
 	const int64 StartTick = NPlatformTime::GetTicks();
 	FModelExportResult Result;

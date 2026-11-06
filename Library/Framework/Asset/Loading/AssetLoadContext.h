@@ -7,6 +7,10 @@
 class CAssetPathResolver;
 class CAssetLoadRecorder;
 class IAssetBackend;
+class ITextureBackend;
+class IModelBackend;
+class IFontBackend;
+class ISoundBackend;
 
 //=============================================================================
 // CAssetLoadContext
@@ -28,6 +32,12 @@ public:
 	{
 		return Backend;
 	}
+
+	// 役割ごとの窓口（バックエンドが無ければ nullptr）。ローダーは、自分に必要な窓口だけを使う
+	ITextureBackend* GetTextureBackend() const;
+	IModelBackend* GetModelBackend() const;
+	IFontBackend* GetFontBackend() const;
+	ISoundBackend* GetSoundBackend() const;
 
 	CAssetPathResolver& GetPaths() const
 	{

@@ -40,7 +40,7 @@ TSharedPtr<CModel> CModelLoader::Load( const FString& Path, bool bAsync )
 		Context.GetRecorder().RecordFailure();
 		return nullptr;
 	}
-	const int32 Handle = Context.GetBackend()->LoadModel( LoadPath, bAsync );
+	const int32 Handle = Context.GetModelBackend()->LoadModel( LoadPath, bAsync );
 	if ( Handle < 0 )
 	{
 		LOG( LogAsset, Error, "Failed to load the model '%s' (unsupported or broken file).", *LoadPath );

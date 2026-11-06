@@ -66,7 +66,7 @@ bool CModelImporter::ResolveLoadPath( const FString& FullPath, FString& OutLoadP
 	// DxLib は .fbx / .obj を読めない
 	if ( bAutoImport )
 	{
-		const FModelExportResult Result = NModelExport::Export( *Context.GetBackend(), FullPath );
+		const FModelExportResult Result = NModelExport::Export( *Context.GetModelBackend(), FullPath );
 		if ( Result.bSuccess )
 		{
 			OutLoadPath = Result.OutputPath;
@@ -119,7 +119,7 @@ FModelExportResult CModelImporter::ExportAsMV1( const FString& SourcePath, const
 		}
 		Resolved.OutputPath = Output.Get( FString() );
 	}
-	return NModelExport::Export( *Context.GetBackend(), Full.Get( FString() ), Resolved );
+	return NModelExport::Export( *Context.GetModelBackend(), Full.Get( FString() ), Resolved );
 }
 
 TArray<FModelSourceInfo> CModelImporter::ScanSources() const

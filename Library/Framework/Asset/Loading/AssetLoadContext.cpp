@@ -13,6 +13,26 @@ CAssetLoadContext::CAssetLoadContext( CAssetPathResolver& InPaths, CAssetLoadRec
 {
 }
 
+ITextureBackend* CAssetLoadContext::GetTextureBackend() const
+{
+	return Backend;
+}
+
+IModelBackend* CAssetLoadContext::GetModelBackend() const
+{
+	return Backend;
+}
+
+IFontBackend* CAssetLoadContext::GetFontBackend() const
+{
+	return Backend;
+}
+
+ISoundBackend* CAssetLoadContext::GetSoundBackend() const
+{
+	return Backend;
+}
+
 TOptional<FString> CAssetLoadContext::PrepareLoad( const char* Kind, const FString& Path ) const
 {
 	if ( Backend == nullptr )

@@ -9,7 +9,7 @@
 
 DEFINE_LOG_CATEGORY_STATIC( LogSoundLoader, Log )
 
-CPcmSoundLoader::CPcmSoundLoader( IAssetBackend* InBackend )
+CPcmSoundLoader::CPcmSoundLoader( ISoundBackend* InBackend )
 	: Backend( InBackend )
 {
 }

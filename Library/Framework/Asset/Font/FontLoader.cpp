@@ -42,7 +42,7 @@ TSharedPtr<CFont> CFontLoader::Create( const FString& Key, const FFontDesc& Desc
 	GAME_THREAD_ONLY( nullptr );
 	PROFILE_SCOPE_LAZY( LoadScope, CAssetLoadRecorder::MakeProfileScope( "LoadFont", Desc.Face.IsEmpty() ? FString( "(default)" ) : Desc.Face ) );
 	const int64 StartTick = NPlatformTime::GetTicks();
-	IAssetBackend* Backend = Context.GetBackend();
+	IFontBackend* Backend = Context.GetFontBackend();
 	const int32 Handle = Backend->MakeFont( Desc );
 	if ( Handle < 0 )
 	{
@@ -101,7 +101,7 @@ TSharedPtr<CFont> CFontLoader::LoadFile( const FString& FontFilePath, int32 Size
 
 TSharedPtr<CFont> CFontLoader::LoadSystem( const FString& FaceName, int32 Size, const FFontStyle& Style )
 {
-	if ( Context.GetBackend() == nullptr )
+	if ( Context.GetFontBackend() == nullptr )
 	{
 		LOG( LogAsset, Error, "Cannot create the font '%s': no asset backend.", *FaceName );
 		return nullptr;
@@ -117,14 +117,14 @@ TSharedPtr<CFont> CFontLoader::LoadSystem( const FString& FaceName, int32 Size, 
 
 bool CFontLoader::IsAvailable( const FString& FaceName ) const
 {
-	IAssetBackend* Backend = Context.GetBackend();
+	IFontBackend* Backend = Context.GetFontBackend();
 	return Backend != nullptr && !FaceName.IsEmpty() && Backend->IsFontAvailable( FaceName );
 }
 
 TArray<FString> CFontLoader::GetSystemFontNames() const
 {
 	TArray<FString> Names;
-	if ( IAssetBackend* Backend = Context.GetBackend() )
+	if ( IFontBackend* Backend = Context.GetFontBackend() )
 	{
 		Backend->GetFontNames( Names );
 	}

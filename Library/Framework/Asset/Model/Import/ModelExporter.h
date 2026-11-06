@@ -85,7 +85,7 @@ struct FModelBatchExportResult
 
 namespace NModelExport
 {
-	FModelExportResult Export( IAssetBackend& Backend, const FString& SourceFullPath, const FModelExportOptions& Options = FModelExportOptions() );
+	FModelExportResult Export( IModelBackend& Backend, const FString& SourceFullPath, const FModelExportOptions& Options = FModelExportOptions() );
 
 	// FromDirectory から見た ToPath の相対パス（区切りは '/'）。大文字小文字は区別しない。
 	// ドライブが違うなど、相対にできないときは ToPath をそのまま返す

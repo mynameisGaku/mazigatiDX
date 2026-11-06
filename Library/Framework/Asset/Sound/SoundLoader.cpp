@@ -34,7 +34,7 @@ TSharedPtr<CSound> CSoundLoader::Load( const FString& Path, ESoundLoadMode Mode,
 
 	PROFILE_SCOPE_LAZY( LoadScope, CAssetLoadRecorder::MakeProfileScope( "LoadSound", FullPath ) );
 	const int64 StartTick = NPlatformTime::GetTicks();
-	const int32 Handle = Context.GetBackend()->LoadSound( FullPath, Mode, bAsync );
+	const int32 Handle = Context.GetSoundBackend()->LoadSound( FullPath, Mode, bAsync );
 	if ( Handle < 0 )
 	{
 		LOG( LogAsset, Error, "Failed to load the sound '%s' (unsupported or broken file).", *FullPath );
