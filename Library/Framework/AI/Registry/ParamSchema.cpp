@@ -12,7 +12,7 @@ namespace
 
 	bool IsTextType( EParamType Type )
 	{
-		return Type == EParamType::String || Type == EParamType::Enum || Type == EParamType::BlackboardKey || Type == EParamType::Clip || Type == EParamType::AssetPath;
+		return Type == EParamType::String || Type == EParamType::Enum || Type == EParamType::BlackboardKey || Type == EParamType::Clip || Type == EParamType::AssetPath || Type == EParamType::Scalar;
 	}
 }
 
@@ -36,6 +36,8 @@ const char* ToString( EParamType Type )
 		return "Clip";
 	case EParamType::AssetPath:
 		return "AssetPath";
+	case EParamType::Scalar:
+		return "Scalar";
 	}
 	return "Unknown";
 }
@@ -110,6 +112,12 @@ FParamSchema& FParamSchema::Clip( const char* Name )
 FParamSchema& FParamSchema::AssetPath( const char* Name )
 {
 	Add( Name, EParamType::AssetPath );
+	return *this;
+}
+
+FParamSchema& FParamSchema::Scalar( const char* Name )
+{
+	Add( Name, EParamType::Scalar );
 	return *this;
 }
 
@@ -213,6 +221,18 @@ const FString& FParamSet::GetText( const char* Name ) const
 	return Values[Index].TextValue;
 }
 
+NlohmannJson FParamSet::GetJson( const char* Name ) const
+{
+	const int32 Index = Schema.FindIndex( Name );
+	if ( Index < 0 || Schema.GetParams()[Index].Type != EParamType::Scalar )
+	{
+		LOG( LogAI, Error, "Parameter '%s' is not a Scalar parameter in the schema (a bug in the part that reads it).", Name );
+		return NlohmannJson();
+	}
+	const FString& Text = Values[Index].TextValue;
+	return Text.IsEmpty() ? NlohmannJson() : NlohmannJson::parse( *Text, nullptr, false );
+}
+
 //=============================================================================
 // NAI
 //=============================================================================
@@ -300,6 +320,13 @@ FParamSet NAI::ResolveParams( const FParamSchema& Schema, const NlohmannJson* Pa
 				Out.TextValue = Item->get<FString>();
 			}
 			break;
+		case EParamType::Scalar:
+			bValid = Item->is_boolean() || Item->is_string() || ( Item->is_number() && NMath::IsFinite( Item->get<float32>() ) );
+			if ( bValid )
+			{
+				Out.TextValue = NJson::FromJsonString( Item->dump() );
+			}
+			break;
 		case EParamType::String:
 		case EParamType::BlackboardKey:
 		case EParamType::Clip:
@@ -357,6 +384,12 @@ NlohmannJson NAI::ParamsToJson( const FParamSchema& Schema, const FParamSet& Par
 			if ( Value.FloatValue != Definition.Default.FloatValue || Definition.bRequired )
 			{
 				Json[*Definition.Name] = NJson::Round4( Value.FloatValue );
+			}
+			break;
+		case EParamType::Scalar:
+			if ( !Value.TextValue.IsEmpty() )
+			{
+				Json[*Definition.Name] = NlohmannJson::parse( *Value.TextValue, nullptr, false );
 			}
 			break;
 		case EParamType::Enum:

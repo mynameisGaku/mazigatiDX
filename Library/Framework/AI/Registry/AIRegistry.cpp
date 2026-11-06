@@ -3,6 +3,7 @@
 
 #include "Library/Core/Log/Log.h"
 #include "Library/Framework/AI/AILog.h"
+#include "Library/Framework/AI/BehaviorTree/BuiltinParts.h"
 
 void CAIRegistry::AddAlias( const char* OldName, const char* Name )
 {
@@ -37,12 +38,28 @@ const CAIRegistry::FConditionEntry* CAIRegistry::FindCondition( const FString& N
 	return Index != nullptr ? &Conditions[*Index] : nullptr;
 }
 
+const CAIRegistry::FTaskEntry* CAIRegistry::FindTask( const FString& Name ) const
+{
+	const int32* Index = TaskIndex.Find( ResolveName( Name ) );
+	return Index != nullptr ? &Tasks[*Index] : nullptr;
+}
+
+const CAIRegistry::FServiceEntry* CAIRegistry::FindService( const FString& Name ) const
+{
+	const int32* Index = ServiceIndex.Find( ResolveName( Name ) );
+	return Index != nullptr ? &Services[*Index] : nullptr;
+}
+
 void CAIRegistry::Clear()
 {
 	StateActions.Empty();
 	StateActionIndex.Empty();
 	Conditions.Empty();
 	ConditionIndex.Empty();
+	Tasks.Empty();
+	TaskIndex.Empty();
+	Services.Empty();
+	ServiceIndex.Empty();
 	Aliases.Empty();
 }
 
@@ -54,5 +71,7 @@ void CAIRegistry::NotifyDuplicate( const FString& Name )
 CAIRegistry& NAI::GetRegistry()
 {
 	static CAIRegistry Registry;
+	static const bool bBuiltinRegistered = ( RegisterBuiltinParts( Registry ), true );
+	( void )bBuiltinRegistered;
 	return Registry;
 }

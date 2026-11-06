@@ -78,6 +78,7 @@
     <ClCompile Include="Source\Scene\GameScene.cpp" />
     <ClCompile Include="Source\Scene\TitleScene.cpp" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestAI.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestAI.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestAIBehaviorTree.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestAIBehaviorTree.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestAIStateMachine.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestAIStateMachine.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestAnimatorUnits.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestAnimatorUnits.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestBuffers3D.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestBuffers3D.cpp')" />

@@ -31,6 +31,7 @@ enum class EParamType : uint8
 	BlackboardKey,   // ブラックボードのキーの名前
 	Clip,            // アニメーションのクリップの名前
 	AssetPath,       // アセットのパス
+	Scalar,          // 真偽値・数・文字列のどれか（JSON のまま持つ。SetBlackboard の Value など、型が実行時に決まるもの）
 };
 
 const char* ToString( EParamType Type );
@@ -74,6 +75,7 @@ public:
 	FParamSchema& BlackboardKey( const char* Name );
 	FParamSchema& Clip( const char* Name );
 	FParamSchema& AssetPath( const char* Name );
+	FParamSchema& Scalar( const char* Name );
 
 	// 最後に足したパラメータに付ける
 	FParamSchema& Range( float32 Min, float32 Max );
@@ -101,8 +103,10 @@ public:
 	bool GetBool( const char* Name ) const;
 	int32 GetInt( const char* Name ) const;
 	float32 GetFloat( const char* Name ) const;
-	// String / Enum / BlackboardKey / Clip / AssetPath
+	// String / Enum / BlackboardKey / Clip / AssetPath（Scalar は JSON の文字列表現）
 	const FString& GetText( const char* Name ) const;
+	// Scalar を JSON の値として読む（未指定は null）
+	NlohmannJson GetJson( const char* Name ) const;
 
 	const TArray<FParamValue>& GetValues() const { return Values; }
 	TArray<FParamValue>& GetValues() { return Values; }

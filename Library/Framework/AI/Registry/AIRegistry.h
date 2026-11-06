@@ -37,6 +37,8 @@ public:
 	};
 	using FStateActionEntry = TEntry<FAIStateAction>;
 	using FConditionEntry = TEntry<FAICondition>;
+	using FTaskEntry = TEntry<FAITask>;
+	using FServiceEntry = TEntry<FAIService>;
 
 	template<typename T>
 	void RegisterStateAction( const char* Name, const FParamSchema& Schema = FParamSchema(), const char* Category = "", const char* Description = "" )
@@ -50,16 +52,32 @@ public:
 		AddEntry( Conditions, ConditionIndex, Name, Schema, Category, Description, &CreatePart<FAICondition, T> );
 	}
 
+	template<typename T>
+	void RegisterTask( const char* Name, const FParamSchema& Schema = FParamSchema(), const char* Category = "", const char* Description = "" )
+	{
+		AddEntry( Tasks, TaskIndex, Name, Schema, Category, Description, &CreatePart<FAITask, T> );
+	}
+
+	template<typename T>
+	void RegisterService( const char* Name, const FParamSchema& Schema = FParamSchema(), const char* Category = "", const char* Description = "" )
+	{
+		AddEntry( Services, ServiceIndex, Name, Schema, Category, Description, &CreatePart<FAIService, T> );
+	}
+
 	// 古い名前 OldName を、本名 Name へ引き直す。本名が未登録でも登録できる（検索のときに引き直す）
 	void AddAlias( const char* OldName, const char* Name );
 
 	// 名前（別名でもよい）の部品。無ければ nullptr
 	const FStateActionEntry* FindStateAction( const FString& Name ) const;
 	const FConditionEntry* FindCondition( const FString& Name ) const;
+	const FTaskEntry* FindTask( const FString& Name ) const;
+	const FServiceEntry* FindService( const FString& Name ) const;
 
 	// 登録順の一覧（エディタの Palette 用）
 	const TArray<FStateActionEntry>& GetStateActions() const { return StateActions; }
 	const TArray<FConditionEntry>& GetConditions() const { return Conditions; }
+	const TArray<FTaskEntry>& GetTasks() const { return Tasks; }
+	const TArray<FServiceEntry>& GetServices() const { return Services; }
 
 	void Clear();
 
@@ -97,6 +115,10 @@ private:
 	TMap<FString, int32> StateActionIndex;
 	TArray<FConditionEntry> Conditions;
 	TMap<FString, int32> ConditionIndex;
+	TArray<FTaskEntry> Tasks;
+	TMap<FString, int32> TaskIndex;
+	TArray<FServiceEntry> Services;
+	TMap<FString, int32> ServiceIndex;
 	TMap<FString, FString> Aliases;
 };
 
@@ -116,4 +138,19 @@ namespace NAI
 	{
 		GetRegistry().RegisterCondition<T>( Name, Schema, Category, Description );
 	}
+
+	template<typename T>
+	void RegisterTask( const char* Name, const FParamSchema& Schema = FParamSchema(), const char* Category = "", const char* Description = "" )
+	{
+		GetRegistry().RegisterTask<T>( Name, Schema, Category, Description );
+	}
+
+	template<typename T>
+	void RegisterService( const char* Name, const FParamSchema& Schema = FParamSchema(), const char* Category = "", const char* Description = "" )
+	{
+		GetRegistry().RegisterService<T>( Name, Schema, Category, Description );
+	}
+
+	// 標準の部品（Wait / SetBlackboard / Log / Succeed / Fail）を登録する。アプリのレジストリには、最初に取り出すときに自動で登録される
+	void RegisterBuiltinParts( CAIRegistry& Registry );
 }

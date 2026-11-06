@@ -419,51 +419,6 @@ namespace
 }
 
 //=============================================================================
-// 演算子
-//=============================================================================
-const char* NAI::ToString( EAICompareOp Op )
-{
-	switch ( Op )
-	{
-	case EAICompareOp::Equal:
-		return "==";
-	case EAICompareOp::NotEqual:
-		return "!=";
-	case EAICompareOp::Less:
-		return "<";
-	case EAICompareOp::LessEqual:
-		return "<=";
-	case EAICompareOp::Greater:
-		return ">";
-	case EAICompareOp::GreaterEqual:
-		return ">=";
-	}
-	return "==";
-}
-
-bool NAI::TryParseCompareOp( const FString& Text, EAICompareOp& OutOp )
-{
-	static const EAICompareOp Ops[] =
-	{
-		EAICompareOp::Equal,
-		EAICompareOp::NotEqual,
-		EAICompareOp::Less,
-		EAICompareOp::LessEqual,
-		EAICompareOp::Greater,
-		EAICompareOp::GreaterEqual,
-	};
-	for ( const EAICompareOp Op : Ops )
-	{
-		if ( Text == ToString( Op ) )
-		{
-			OutOp = Op;
-			return true;
-		}
-	}
-	return false;
-}
-
-//=============================================================================
 // FStateMachineDefinition
 //=============================================================================
 int32 FStateMachineDefinition::FindChild( int32 Parent, const FString& Name ) const

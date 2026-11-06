@@ -124,7 +124,19 @@
     <ClCompile Include="Library\Framework\AI\StateMachineComponent.cpp">
       <Filter>Library\Framework\AI</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\AI\BehaviorTree\BehaviorTreeDefinition.cpp">
+      <Filter>Library\Framework\AI\BehaviorTree</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\AI\BehaviorTree\BehaviorTreeRuntime.cpp">
+      <Filter>Library\Framework\AI\BehaviorTree</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\AI\BehaviorTree\BuiltinParts.cpp">
+      <Filter>Library\Framework\AI\BehaviorTree</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\AI\Blackboard\Blackboard.cpp">
+      <Filter>Library\Framework\AI\Blackboard</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\AI\Blackboard\BlackboardCompare.cpp">
       <Filter>Library\Framework\AI\Blackboard</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\AI\Blackboard\BlackboardDefinition.cpp">
@@ -1806,7 +1818,19 @@
     <ClInclude Include="Library\Framework\AI\StateMachineComponent.h">
       <Filter>Library\Framework\AI</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\AI\BehaviorTree\BehaviorTreeDefinition.h">
+      <Filter>Library\Framework\AI\BehaviorTree</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\AI\BehaviorTree\BehaviorTreeRuntime.h">
+      <Filter>Library\Framework\AI\BehaviorTree</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\AI\BehaviorTree\BuiltinParts.h">
+      <Filter>Library\Framework\AI\BehaviorTree</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\AI\Blackboard\Blackboard.h">
+      <Filter>Library\Framework\AI\Blackboard</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\AI\Blackboard\BlackboardCompare.h">
       <Filter>Library\Framework\AI\Blackboard</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\AI\Blackboard\BlackboardDefinition.h">
@@ -4381,6 +4405,9 @@
     </Filter>
     <Filter Include="Library\Framework\AI">
       <UniqueIdentifier>{DB01EF43-5DC9-0FFA-7E6F-3F1648B75CA2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\AI\BehaviorTree">
+      <UniqueIdentifier>{3987A53C-AEB2-EB20-DA7A-25BDD9F6E807}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\AI\Blackboard">
       <UniqueIdentifier>{3826CAE4-15A3-D142-E2E1-0317732FE46D}</UniqueIdentifier>

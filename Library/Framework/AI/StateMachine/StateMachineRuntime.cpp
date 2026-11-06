@@ -9,54 +9,6 @@
 
 namespace
 {
-	bool CompareValues( EBlackboardKeyType Type, const FBlackboardValue& Current, EAICompareOp Op, const FBlackboardValue& Expected )
-	{
-		if ( Op == EAICompareOp::Equal )
-		{
-			return Current.IsEqual( Type, Expected );
-		}
-		if ( Op == EAICompareOp::NotEqual )
-		{
-			return !Current.IsEqual( Type, Expected );
-		}
-
-		// 大小の比較は、数（Int / Float / Enum の番号）だけ
-		float64 A = 0.0;
-		float64 B = 0.0;
-		if ( Type == EBlackboardKeyType::Float )
-		{
-			A = Current.Real;
-			B = Expected.Real;
-		}
-		else if ( Type == EBlackboardKeyType::Int || Type == EBlackboardKeyType::Enum )
-		{
-			A = static_cast<float64>( Current.Integer );
-			B = static_cast<float64>( Expected.Integer );
-		}
-		else
-		{
-			return false;
-		}
-		switch ( Op )
-		{
-		case EAICompareOp::Less:
-			return A < B;
-		case EAICompareOp::LessEqual:
-			return A <= B;
-		case EAICompareOp::Greater:
-			return A > B;
-		case EAICompareOp::GreaterEqual:
-			return A >= B;
-		default:
-			return false;
-		}
-	}
-
-	bool SupportsOrdering( EBlackboardKeyType Type )
-	{
-		return Type == EBlackboardKeyType::Int || Type == EBlackboardKeyType::Float || Type == EBlackboardKeyType::Enum;
-	}
-
 	FString DescribeCondition( const FStateConditionDef& Condition )
 	{
 		FString Text;
@@ -151,15 +103,10 @@ void CStateMachine::CompileCondition( const FStateConditionDef& Def, FCompiledCo
 		Out.Key = FBlackboardKey( KeyIndex );
 		Out.KeyType = Key.Type;
 		Out.Op = Def.Op;
-		if ( !FBlackboardDefinition::ValueFromJson( Key, Def.Value, Out.Compare ) )
+		FString Reason;
+		if ( !NAI::PrepareCompare( Key, Def.Op, Def.Value, Out.Compare, Reason ) )
 		{
-			NAI::AddIssue( Issues, EAIIssueSeverity::Warning, Where, FString::Printf( "The Value does not fit the %s key '%s'. The condition is always false.", NBlackboard::ToString( Key.Type ), *Def.Key ) );
-			Out.bValid = false;
-			return;
-		}
-		if ( Def.Op != EAICompareOp::Equal && Def.Op != EAICompareOp::NotEqual && !SupportsOrdering( Key.Type ) )
-		{
-			NAI::AddIssue( Issues, EAIIssueSeverity::Warning, Where, FString::Printf( "The %s key '%s' can only be compared with == and !=. The condition is always false.", NBlackboard::ToString( Key.Type ), *Def.Key ) );
+			NAI::AddIssue( Issues, EAIIssueSeverity::Warning, Where, Reason + " The condition is always false." );
 			Out.bValid = false;
 		}
 		return;
@@ -529,7 +476,7 @@ bool CStateMachine::EvaluateCondition( const FCompiledCondition& Condition, int3
 	case EStateConditionType::BlackboardCompare:
 	{
 		FBlackboardValue Current;
-		bResult = Context.Blackboard != nullptr && Context.Blackboard->GetValue( Condition.Key, Current ) && CompareValues( Condition.KeyType, Current, Condition.Op, Condition.Compare );
+		bResult = Context.Blackboard != nullptr && Context.Blackboard->GetValue( Condition.Key, Current ) && NAI::CompareValues( Condition.KeyType, Current, Condition.Op, Condition.Compare );
 		break;
 	}
 	case EStateConditionType::Event:

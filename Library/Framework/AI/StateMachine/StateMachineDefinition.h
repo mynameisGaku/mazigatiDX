@@ -4,6 +4,7 @@
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
 #include "Library/Framework/AI/AIIssue.h"
+#include "Library/Framework/AI/Blackboard/BlackboardCompare.h"
 #include "Library/Json/JsonObject.h"
 
 //=============================================================================
@@ -33,23 +34,6 @@
 //   - To は同じマシンの子の名前。"A/B" のように書くと、入れ子の子へ直接入る
 //   - 状態は平らな配列（Parent が親の番号）で持つ。JSON では入れ子に書く。Editor 欄は実行側は読まない（エディタの座標など）
 //=============================================================================
-
-// ブラックボードの比較の演算子
-enum class EAICompareOp : uint8
-{
-	Equal,
-	NotEqual,
-	Less,
-	LessEqual,
-	Greater,
-	GreaterEqual,
-};
-
-namespace NAI
-{
-	const char* ToString( EAICompareOp Op );
-	bool TryParseCompareOp( const FString& Text, EAICompareOp& OutOp );
-}
 
 // 部品の呼び出し（登録した名前とパラメータ）
 struct FAICall

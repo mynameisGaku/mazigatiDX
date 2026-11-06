@@ -106,7 +106,11 @@
     <ClCompile Include="Library\DebugUI\World\WorldEditorViewport.cpp" />
     <ClCompile Include="Library\Framework\AI\AIIssue.cpp" />
     <ClCompile Include="Library\Framework\AI\StateMachineComponent.cpp" />
+    <ClCompile Include="Library\Framework\AI\BehaviorTree\BehaviorTreeDefinition.cpp" />
+    <ClCompile Include="Library\Framework\AI\BehaviorTree\BehaviorTreeRuntime.cpp" />
+    <ClCompile Include="Library\Framework\AI\BehaviorTree\BuiltinParts.cpp" />
     <ClCompile Include="Library\Framework\AI\Blackboard\Blackboard.cpp" />
+    <ClCompile Include="Library\Framework\AI\Blackboard\BlackboardCompare.cpp" />
     <ClCompile Include="Library\Framework\AI\Blackboard\BlackboardDefinition.cpp" />
     <ClCompile Include="Library\Framework\AI\Blackboard\BlackboardValue.cpp" />
     <ClCompile Include="Library\Framework\AI\Registry\AIRegistry.cpp" />
@@ -668,7 +672,11 @@
     <ClInclude Include="Library\Framework\AI\AIIssue.h" />
     <ClInclude Include="Library\Framework\AI\AILog.h" />
     <ClInclude Include="Library\Framework\AI\StateMachineComponent.h" />
+    <ClInclude Include="Library\Framework\AI\BehaviorTree\BehaviorTreeDefinition.h" />
+    <ClInclude Include="Library\Framework\AI\BehaviorTree\BehaviorTreeRuntime.h" />
+    <ClInclude Include="Library\Framework\AI\BehaviorTree\BuiltinParts.h" />
     <ClInclude Include="Library\Framework\AI\Blackboard\Blackboard.h" />
+    <ClInclude Include="Library\Framework\AI\Blackboard\BlackboardCompare.h" />
     <ClInclude Include="Library\Framework\AI\Blackboard\BlackboardDefinition.h" />
     <ClInclude Include="Library\Framework\AI\Blackboard\BlackboardValue.h" />
     <ClInclude Include="Library\Framework\AI\Registry\AIParts.h" />
