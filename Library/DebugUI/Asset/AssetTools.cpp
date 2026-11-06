@@ -386,6 +386,8 @@ void NDebugUI::DrawAssetToolsButtons( FAssetToolsState& State )
 	ImGui::SameLine();
 	ImGui::Checkbox( "Assets", &State.bShowAssets );
 	ImGui::SameLine();
+	ImGui::Checkbox( "Project", &State.bShowBrowser );
+	ImGui::SameLine();
 	ImGui::Checkbox( "Audio", &State.bShowAudio );
 	ImGui::SameLine();
 	ImGui::Checkbox( "Sprite sheet editor", &State.bShowSpriteSheetEditor );
@@ -411,9 +413,62 @@ void NDebugUI::DrawAssetToolsButtons( FAssetToolsState& State )
 	}
 }
 
+bool NDebugUI::OpenAssetInEditor( FAssetToolsState& State, const FString& AssetPath )
+{
+	EAssetBrowserKind Kind = EAssetBrowserKind::Texture;
+	if ( !TryGetAssetBrowserKind( AssetPath, Kind ) || !HasEditor( Kind ) )
+	{
+		return false;
+	}
+	const FString Path = AssetPath.Replace( "\\", "/" );
+	switch ( Kind )
+	{
+	case EAssetBrowserKind::SpriteSheet:
+		if ( State.SpriteSheet.Document.IsDirty() && State.SpriteSheet.FilePath != Path )
+		{
+			return false;
+		}
+		State.bShowSpriteSheetEditor = true;
+		return State.SpriteSheet.FilePath == Path && State.SpriteSheet.Document.IsDirty() ? true : OpenSpriteSheetFile( State.SpriteSheet, Path );
+	case EAssetBrowserKind::ModelAnimation:
+		if ( State.ModelAnimation.Document.IsDirty() && State.ModelAnimation.FilePath != Path )
+		{
+			return false;
+		}
+		State.bShowModelAnimationEditor = true;
+		return State.ModelAnimation.FilePath == Path && State.ModelAnimation.Document.IsDirty() ? true : OpenModelAnimationFile( State.ModelAnimation, Path );
+	case EAssetBrowserKind::World:
+		if ( State.WorldEditor.Session.Document.IsDirty() )
+		{
+			return false;
+		}
+		State.bShowWorldEditor = true;
+		return OpenWorldFile( State.WorldEditor, Path );
+	case EAssetBrowserKind::Effect:
+		if ( State.EffectEditor.Document.IsDirty() && State.EffectEditor.FilePath != Path )
+		{
+			return false;
+		}
+		State.bShowEffectEditor = true;
+		return State.EffectEditor.FilePath == Path && State.EffectEditor.Document.IsDirty() ? true : OpenEffectFile( State.EffectEditor, Path );
+	default:
+	{
+		// AI（ブラックボード・ステートマシン・ビヘイビアツリー）: 開くタブの文書に、未保存の変更があれば、開かない
+		const bool bDirty = Kind == EAssetBrowserKind::Blackboard ? State.AIEditor.Blackboard.IsDirty() : ( Kind == EAssetBrowserKind::StateMachine ? State.AIEditor.StateMachine.IsDirty() : State.AIEditor.BehaviorTree.IsDirty() );
+		if ( bDirty )
+		{
+			return false;
+		}
+		State.bShowAIEditor = true;
+		return OpenAIEditorFile( State.AIEditor, Path );
+	}
+	}
+}
+
 void NDebugUI::DrawAssetToolsMenuItems( FAssetToolsState& State )
 {
-	ImGui::MenuItem( "Assets", nullptr, &State.bShowAssets );
+	ImGui::MenuItem( "Project (asset browser)", nullptr, &State.bShowBrowser );
+	ImGui::MenuItem( "Assets (loaded)", nullptr, &State.bShowAssets );
 	ImGui::MenuItem( "Audio", nullptr, &State.bShowAudio );
 	ImGui::MenuItem( "Sprite sheet editor", nullptr, &State.bShowSpriteSheetEditor );
 	ImGui::MenuItem( "Model animation editor", nullptr, &State.bShowModelAnimationEditor );
@@ -471,6 +526,10 @@ void NDebugUI::DrawAssetTools( FAssetToolsState& State )
 	{
 		DrawAIDebugger( State.AIDebugger, &State.bShowAIDebugger );
 	}
+	if ( State.bShowBrowser )
+	{
+		DrawAssetBrowser( State.Browser, [&State]( const FString& Path ) { return OpenAssetInEditor( State, Path ); }, &State.bShowBrowser );
+	}
 	if ( State.bShowAIEditor )
 	{
 		DrawAIEditor( State.AIEditor, &State.bShowAIEditor );
@@ -498,12 +557,19 @@ void NDebugUI::ApplyAssetToolsCommandLine( FAssetToolsState& State )
 		State.bShowEffectEditor = ContainsToken( *Tools, "effect" );
 		State.bShowAIDebugger = ContainsToken( *Tools, "ai" );
 		State.bShowAIEditor = ContainsToken( *Tools, "aieditor" );
+		State.bShowBrowser = ContainsToken( *Tools, "project" );
 	}
 	const FString AIObject = GetArgument( "ai-object" );
 	if ( !AIObject.IsEmpty() )
 	{
 		State.bShowAIDebugger = true;
 		State.AIDebugger.InitialSelection = AIObject;
+	}
+	// --open=パス: そのファイルを、その種類のエディタで開く（エディタ専用の実行ファイルの起動引数。何でも開ける）
+	const FString OpenPath = GetArgument( "open" );
+	if ( !OpenPath.IsEmpty() )
+	{
+		OpenAssetInEditor( State, OpenPath );
 	}
 	const FString AIFile = GetArgument( "ai-file" );
 	if ( !AIFile.IsEmpty() )

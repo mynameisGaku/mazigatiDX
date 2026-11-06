@@ -3,6 +3,7 @@
 #include "Library/Core/Collection/String.h"
 #include "Library/DebugUI/AI/AIDebugger.h"
 #include "Library/DebugUI/AI/AIEditor.h"
+#include "Library/DebugUI/Asset/AssetBrowser.h"
 #include "Library/DebugUI/Effect/EffectEditor.h"
 #include "Library/DebugUI/Asset/ModelAnimationEditor.h"
 #include "Library/DebugUI/Asset/SpriteSheetEditor.h"
@@ -31,12 +32,15 @@ struct FAssetToolsState
 	bool bShowEffectEditor = false;
 	bool bShowAIDebugger = false;
 	bool bShowAIEditor = false;
+	// アセットのブラウザー（Project ウィンドウ）
+	bool bShowBrowser = false;
 
 	FSpriteSheetEditorState SpriteSheet;
 	FModelAnimationEditorState ModelAnimation;
 	FWorldEditorState WorldEditor;
 	FAIDebuggerState AIDebugger;
 	FAIEditorState AIEditor;
+	FAssetBrowserState Browser;
 	// 文書とプレビューの寿命を、ほかのツールと同じ所有元にまとめる。
 	FEffectEditorState EffectEditor;
 	// 配置済みのプレビューへ最後に反映した、エフェクト保存の成功番号。
@@ -62,6 +66,10 @@ namespace NDebugUI
 
 	// デバッグウィンドウの中に置く、ツールを開くボタン
 	void DrawAssetToolsButtons( FAssetToolsState& State );
+
+	// ファイル（アセットのルートからの相対パス）を、その種類のエディタで開く（.gxsprite / .gxmodelanim / .gxworld / .gxeffect / .gxblackboard / .gxstate / .gxbt）。
+	// エディタのウィンドウも出す。エディタが無い種類・そのエディタに未保存の変更がある（別のファイルを開くと失われる）ときは、開かずに false
+	bool OpenAssetInEditor( FAssetToolsState& State, const FString& AssetPath );
 
 	// 同じ切り替えを、メニューの項目として出す（エディタ専用の実行ファイルのメニューバー用。BeginMenu の中で呼ぶ）
 	void DrawAssetToolsMenuItems( FAssetToolsState& State );

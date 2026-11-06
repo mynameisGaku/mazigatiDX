@@ -61,6 +61,9 @@
     <ClCompile Include="Library\DebugUI\AI\NodeGraph.cpp">
       <Filter>Library\DebugUI\AI</Filter>
     </ClCompile>
+    <ClCompile Include="Library\DebugUI\Asset\AssetBrowser.cpp">
+      <Filter>Library\DebugUI\Asset</Filter>
+    </ClCompile>
     <ClCompile Include="Library\DebugUI\Asset\AssetTools.cpp">
       <Filter>Library\DebugUI\Asset</Filter>
     </ClCompile>
@@ -1823,6 +1826,9 @@
     </ClInclude>
     <ClInclude Include="Library\DebugUI\AI\NodeGraph.h">
       <Filter>Library\DebugUI\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\DebugUI\Asset\AssetBrowser.h">
+      <Filter>Library\DebugUI\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\DebugUI\Asset\AssetTools.h">
       <Filter>Library\DebugUI\Asset</Filter>

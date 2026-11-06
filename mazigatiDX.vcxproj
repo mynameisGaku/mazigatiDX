@@ -85,6 +85,7 @@
     <ClCompile Include="Library\DebugUI\AI\AIGraphViews.cpp" />
     <ClCompile Include="Library\DebugUI\AI\AIParamInspector.cpp" />
     <ClCompile Include="Library\DebugUI\AI\NodeGraph.cpp" />
+    <ClCompile Include="Library\DebugUI\Asset\AssetBrowser.cpp" />
     <ClCompile Include="Library\DebugUI\Asset\AssetTools.cpp" />
     <ClCompile Include="Library\DebugUI\Asset\ModelAnimationEditor.cpp" />
     <ClCompile Include="Library\DebugUI\Asset\SpriteSheetEditor.cpp" />
@@ -674,6 +675,7 @@
     <ClInclude Include="Library\DebugUI\AI\AIGraphViews.h" />
     <ClInclude Include="Library\DebugUI\AI\AIParamInspector.h" />
     <ClInclude Include="Library\DebugUI\AI\NodeGraph.h" />
+    <ClInclude Include="Library\DebugUI\Asset\AssetBrowser.h" />
     <ClInclude Include="Library\DebugUI\Asset\AssetTools.h" />
     <ClInclude Include="Library\DebugUI\Asset\ModelAnimationEditor.h" />
     <ClInclude Include="Library\DebugUI\Asset\SpriteSheetEditor.h" />

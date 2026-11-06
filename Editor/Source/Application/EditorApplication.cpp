@@ -34,9 +34,9 @@ void CEditorApplication::OnInit()
 	Overlay.SetDebugWindowVisible( false );
 	Overlay.SetStatusLineVisible( false );
 
-	// 起動引数で何も開かないときは、アセットの画面を開く
-	const bool bToolRequested = NCommandLine::GetValue( "tool" ).IsSet() || NCommandLine::GetValue( "ai-file" ).IsSet() || NCommandLine::GetValue( "world" ).IsSet();
-	Tools.bShowAssets = !bToolRequested;
+	// 起動引数で何も開かないときは、プロジェクトのブラウザー（アセットの一覧）を開く
+	const bool bToolRequested = NCommandLine::GetValue( "tool" ).IsSet() || NCommandLine::GetValue( "ai-file" ).IsSet() || NCommandLine::GetValue( "world" ).IsSet() || NCommandLine::GetValue( "open" ).IsSet();
+	Tools.bShowBrowser = !bToolRequested;
 
 	GetSceneManager().RegisterScene<CEditorScene>( "Editor" );
 	GetSceneManager().ChangeScene( "Editor" );
