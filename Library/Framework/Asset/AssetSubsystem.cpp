@@ -128,23 +128,6 @@ namespace
 		S.NumDeferredReleased.FetchAdd( Local.Num() );
 	}
 
-	// 読み込みの計測（プロファイラーのサンプルに、パスを表示名として付ける）
-	uint64 HashPath( const FString& Path )
-	{
-		uint64 Hash = 1469598103934665603ull;
-		for ( const char Ch : Path )
-		{
-			Hash ^= static_cast<uint8>( Ch );
-			Hash *= 1099511628211ull;
-		}
-		return Hash;
-	}
-
-	FProfileScope MakeLoadScope( const char* Name, const FString& Path )
-	{
-		IProfiler* Recorder = NProfiler::GRecorder;
-		return FProfileScope( "Asset", "", Name, HashPath( Path ), Recorder != nullptr ? Recorder->InternString( *Path ) : 0u );
-	}
 }
 
 IAssetBackend* NAssetService::GetBackend() { return Service().Backend.Load(); }
@@ -242,7 +225,7 @@ void CAssetSubsystem::Deinitialize()
 {
 	FlushDeferred();
 	PendingSheets.Empty();
-	Textures.Empty();
+	TextureLoader.Clear();
 	SpriteSheets.Empty();
 	Models.Empty();
 	ModelAnimations.Empty();
@@ -435,7 +418,7 @@ void CAssetSubsystem::PruneCache( TCache<T>& Cache )
 
 void CAssetSubsystem::ReleaseUnused()
 {
-	PruneCache( Textures );
+	TextureLoader.Prune();
 	PruneCache( SpriteSheets );
 	PruneCache( Models );
 	PruneCache( ModelAnimations );
@@ -446,111 +429,57 @@ void CAssetSubsystem::ReleaseUnused()
 }
 
 //-----------------------------------------------------------------------------
-// 画像
+// 画像（画像を読み込む・作る人 CTextureLoader、CPU 側の画像を読み書きする人 CPixelImageCodec に任せる）
 //-----------------------------------------------------------------------------
 TSharedPtr<CTexture> CAssetSubsystem::LoadTexture( const FString& Path, bool bAsync )
 {
-	GAME_THREAD_ONLY( nullptr );
-	const TOptional<FString> Full = PrepareLoad( "texture", Path );
-	if ( !Full.IsSet() )
-	{
-		return nullptr;
-	}
+	return TextureLoader.Load( Path, bAsync );
+}
 
-	const FString FullPath = Full.Get( FString() );
-	const FString Key = MakeKey( FullPath );
-	if ( TWeakPtr<CTexture>* Found = Textures.Find( Key ) )
-	{
-		if ( TSharedPtr<CTexture> Existing = Found->Pin() )
-		{
-			RecordCacheHit();
-			return Existing;
-		}
-	}
-
-	PROFILE_SCOPE_LAZY( LoadScope, MakeLoadScope( "LoadTexture", FullPath ) );
-	const int64 StartTick = NPlatformTime::GetTicks();
-	const int32 Handle = GetBackend()->LoadTexture( FullPath, bAsync );
-	if ( Handle < 0 )
-	{
-		LOG( LogAsset, Error, "Failed to load the texture '%s' (unsupported or broken image).", *FullPath );
-		RecordFailure();
-		return nullptr;
-	}
-
-	TSharedPtr<CTexture> Texture = MakeShared<CTexture>( FullPath, Handle, bAsync );
-	RecordLoad( *Texture, FullPath, StartTick );
-	Textures.Add( Key, Texture );
-	LOG( LogAsset, Verbose, "Loaded the texture '%s'%s", *FullPath, bAsync ? " (async)" : "" );
-	return Texture;
+TSharedPtr<CTexture> CAssetSubsystem::CreateTextureRegion( const TSharedPtr<CTexture>& Source, int32 X, int32 Y, int32 Width, int32 Height )
+{
+	return TextureLoader.CreateRegion( Source, X, Y, Width, Height );
 }
 
 TSharedPtr<CTexture> CAssetSubsystem::CreateTextureFromMemory( const FString& Name, const void* FileImage, usize Size )
 {
-	GAME_THREAD_ONLY( nullptr );
-	if ( GetBackend() == nullptr || FileImage == nullptr || Size == 0 )
-	{
-		LOG( LogAsset, Error, "Cannot create the texture '%s' from memory: %s.", *Name, GetBackend() == nullptr ? "no asset backend" : "no data" );
-		return nullptr;
-	}
-
-	const FString Key = "memory:" + MakeKey( Name );
-	if ( TWeakPtr<CTexture>* Found = Textures.Find( Key ) )
-	{
-		if ( TSharedPtr<CTexture> Existing = Found->Pin() )
-		{
-			return Existing;
-		}
-	}
-
-	const int32 Handle = GetBackend()->CreateTextureFromMemory( FileImage, Size );
-	if ( Handle < 0 )
-	{
-		LOG( LogAsset, Error, "Failed to create the texture '%s' from memory (%d byte(s)).", *Name, static_cast<int32>( Size ) );
-		return nullptr;
-	}
-	TSharedPtr<CTexture> Texture = MakeShared<CTexture>( Name, Handle, false );
-	Textures.Add( Key, Texture );
-	return Texture;
+	return TextureLoader.CreateFromMemory( Name, FileImage, Size );
 }
 
 TSharedPtr<CRenderTarget> CAssetSubsystem::CreateRenderTarget( const FString& Name, const FRenderTargetDesc& Desc )
 {
-	GAME_THREAD_ONLY( nullptr );
-	if ( GetBackend() == nullptr )
-	{
-		LOG( LogAsset, Error, "Cannot create the render target '%s': no asset backend.", *Name );
-		return nullptr;
-	}
-	if ( !Desc.IsValid() )
-	{
-		LOG( LogAsset, Error, "Cannot create the render target '%s': %d x %d (multisample %d, format %d, %d channel(s)) is not valid (the size must be 1 to %d, the multisample 0 to %d, the channels 4, or 1 / 2 for a float format).", *Name, Desc.Width, Desc.Height, Desc.MultiSamples, static_cast<int32>( Desc.Format ), Desc.Channels, FRenderTargetDesc::MaxSize, FRenderTargetDesc::MaxMultiSamples );
-		return nullptr;
-	}
+	return TextureLoader.CreateRenderTarget( Name, Desc );
+}
 
-	const FString Key = "target:" + MakeKey( Name );
-	if ( TWeakPtr<CTexture>* Found = Textures.Find( Key ) )
-	{
-		if ( TSharedPtr<CRenderTarget> Existing = DynamicCastSharedPtr<CRenderTarget>( Found->Pin() ) )
-		{
-			const FRenderTargetDesc& Old = Existing->GetDesc();
-			if ( Old.Width == Desc.Width && Old.Height == Desc.Height && Old.bAlpha == Desc.bAlpha && Old.bDepth == Desc.bDepth && Old.MultiSamples == Desc.MultiSamples && Old.Format == Desc.Format && Old.Channels == Desc.Channels )
-			{
-				return Existing;
-			}
-			LOG( LogAsset, Warning, "The render target '%s' is already in use with another setting (%d x %d). A new one is created.", *Name, Old.Width, Old.Height );
-		}
-	}
+TSharedPtr<CDynamicTexture> CAssetSubsystem::CreateDynamicTexture( const FString& Name, const FPixelImage& Image )
+{
+	return TextureLoader.CreateDynamic( Name, Image );
+}
 
-	const int32 Handle = GetBackend()->CreateRenderTarget( Desc );
-	if ( Handle < 0 )
-	{
-		LOG( LogAsset, Error, "Failed to create the render target '%s' (%d x %d).", *Name, Desc.Width, Desc.Height );
-		return nullptr;
-	}
-	TSharedPtr<CRenderTarget> Target = MakeShared<CRenderTarget>( Name, Handle, Desc );
-	Textures.Add( Key, Target );
-	return Target;
+FPixelImage CAssetSubsystem::LoadPixelImage( const FString& Path )
+{
+	return PixelImageCodec.Load( Path );
+}
+
+FPixelImage CAssetSubsystem::DecodePixelImage( const void* FileImage, usize Size )
+{
+	return PixelImageCodec.Decode( FileImage, Size );
+}
+
+bool CAssetSubsystem::SavePixelImage( const FPixelImage& Image, const FString& Path, const FImageSaveOptions& Options )
+{
+	return PixelImageCodec.Save( Image, Path, Options );
+}
+
+TArray<TSharedPtr<CTexture>> CAssetSubsystem::SplitTexture( const TSharedPtr<CTexture>& Source, const FSpriteSheetGrid& Grid )
+{
+	return TextureLoader.Split( Source, Grid );
+}
+
+TArray<TSharedPtr<CTexture>> CAssetSubsystem::LoadTextureGrid( const FString& Path, const FSpriteSheetGrid& Grid )
+{
+	GAME_THREAD_ONLY( TArray<TSharedPtr<CTexture>>() );
+	return TextureLoader.Split( TextureLoader.Load( Path, false ), Grid );
 }
 
 //-----------------------------------------------------------------------------
@@ -643,7 +572,7 @@ TSharedPtr<CSpriteSheet> CAssetSubsystem::LoadSpriteSheet( const FString& Defini
 		}
 	}
 
-	PROFILE_SCOPE_LAZY( LoadScope, MakeLoadScope( "LoadSpriteSheet", FullPath ) );
+	PROFILE_SCOPE_LAZY( LoadScope, CAssetLoadRecorder::MakeProfileScope( "LoadSpriteSheet", FullPath ) );
 	const int64 StartTick = NPlatformTime::GetTicks();
 	NJson::CJsonObject Json;
 	if ( !Json.LoadFromFile( FullPath ) )
@@ -736,7 +665,7 @@ TSharedPtr<CModelAnimationAsset> CAssetSubsystem::LoadModelAnimations( const FSt
 		}
 	}
 
-	PROFILE_SCOPE_LAZY( LoadScope, MakeLoadScope( "LoadModelAnimations", FullPath ) );
+	PROFILE_SCOPE_LAZY( LoadScope, CAssetLoadRecorder::MakeProfileScope( "LoadModelAnimations", FullPath ) );
 	const int64 StartTick = NPlatformTime::GetTicks();
 	NJson::CJsonObject Json;
 	FModelAnimationDefinition Definition;
@@ -800,7 +729,7 @@ TSharedPtr<CModel> CAssetSubsystem::LoadModel( const FString& Path, bool bAsync 
 		}
 	}
 
-	PROFILE_SCOPE_LAZY( LoadScope, MakeLoadScope( "LoadModel", FullPath ) );
+	PROFILE_SCOPE_LAZY( LoadScope, CAssetLoadRecorder::MakeProfileScope( "LoadModel", FullPath ) );
 	const int64 StartTick = NPlatformTime::GetTicks();
 	FString LoadPath;
 	if ( !ModelImporter.ResolveLoadPath( FullPath, LoadPath ) )
@@ -843,7 +772,7 @@ TSharedPtr<CSound> CAssetSubsystem::LoadSound( const FString& Path, ESoundLoadMo
 		}
 	}
 
-	PROFILE_SCOPE_LAZY( LoadScope, MakeLoadScope( "LoadSound", FullPath ) );
+	PROFILE_SCOPE_LAZY( LoadScope, CAssetLoadRecorder::MakeProfileScope( "LoadSound", FullPath ) );
 	const int64 StartTick = NPlatformTime::GetTicks();
 	const int32 Handle = GetBackend()->LoadSound( FullPath, Mode, bAsync );
 	if ( Handle < 0 )
@@ -865,7 +794,7 @@ TSharedPtr<CSound> CAssetSubsystem::LoadSound( const FString& Path, ESoundLoadMo
 TSharedPtr<CFont> CAssetSubsystem::LoadFontInternal( const FString& Key, const FFontDesc& Desc, const FString& FontFilePath )
 {
 	GAME_THREAD_ONLY( nullptr );
-	PROFILE_SCOPE_LAZY( LoadScope, MakeLoadScope( "LoadFont", Desc.Face.IsEmpty() ? FString( "(default)" ) : Desc.Face ) );
+	PROFILE_SCOPE_LAZY( LoadScope, CAssetLoadRecorder::MakeProfileScope( "LoadFont", Desc.Face.IsEmpty() ? FString( "(default)" ) : Desc.Face ) );
 	const int64 StartTick = NPlatformTime::GetTicks();
 	const int32 Handle = GetBackend()->MakeFont( Desc );
 	if ( Handle < 0 )
@@ -1021,7 +950,7 @@ namespace
 TArray<FAssetInfo> CAssetSubsystem::GetLoadedAssets() const
 {
 	TArray<FAssetInfo> Infos;
-	CollectInfos( Textures, Infos );
+	TextureLoader.CollectInfos( Infos );
 	CollectInfos( SpriteSheets, Infos );
 	CollectInfos( Models, Infos );
 	CollectInfos( ModelAnimations, Infos );

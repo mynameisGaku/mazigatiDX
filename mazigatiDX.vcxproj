@@ -111,8 +111,6 @@
     <ClCompile Include="Library\Framework\Animation\RootMotion.cpp" />
     <ClCompile Include="Library\Framework\Animation\SpriteAnimator.cpp" />
     <ClCompile Include="Library\Framework\Asset\AssetSubsystem.cpp" />
-    <ClCompile Include="Library\Framework\Asset\AssetSubsystemImages.cpp" />
-    <ClCompile Include="Library\Framework\Asset\AssetSubsystemTextureRegions.cpp" />
     <ClCompile Include="Library\Framework\Asset\EditorAssetInfo.cpp" />
     <ClCompile Include="Library\Framework\Asset\Data\EffectAsset.cpp" />
     <ClCompile Include="Library\Framework\Asset\Data\EffectLoader.cpp" />
@@ -146,8 +144,10 @@
     <ClCompile Include="Library\Framework\Asset\Sound\WavFile.cpp" />
     <ClCompile Include="Library\Framework\Asset\Texture\DynamicTexture.cpp" />
     <ClCompile Include="Library\Framework\Asset\Texture\PixelImage.cpp" />
+    <ClCompile Include="Library\Framework\Asset\Texture\PixelImageCodec.cpp" />
     <ClCompile Include="Library\Framework\Asset\Texture\RenderTarget.cpp" />
     <ClCompile Include="Library\Framework\Asset\Texture\Texture.cpp" />
+    <ClCompile Include="Library\Framework\Asset\Texture\TextureLoader.cpp" />
     <ClCompile Include="Library\Framework\Audio\AudioComponents.cpp" />
     <ClCompile Include="Library\Framework\Audio\AudioSubsystem.cpp" />
     <ClCompile Include="Library\Framework\Audio\AudioTypes.cpp" />
@@ -680,8 +680,10 @@
     <ClInclude Include="Library\Framework\Asset\Sound\WavFile.h" />
     <ClInclude Include="Library\Framework\Asset\Texture\DynamicTexture.h" />
     <ClInclude Include="Library\Framework\Asset\Texture\PixelImage.h" />
+    <ClInclude Include="Library\Framework\Asset\Texture\PixelImageCodec.h" />
     <ClInclude Include="Library\Framework\Asset\Texture\RenderTarget.h" />
     <ClInclude Include="Library\Framework\Asset\Texture\Texture.h" />
+    <ClInclude Include="Library\Framework\Asset\Texture\TextureLoader.h" />
     <ClInclude Include="Library\Framework\Audio\AudioComponents.h" />
     <ClInclude Include="Library\Framework\Audio\AudioSubsystem.h" />
     <ClInclude Include="Library\Framework\Audio\AudioTypes.h" />

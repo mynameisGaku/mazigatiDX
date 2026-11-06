@@ -139,12 +139,6 @@
     <ClCompile Include="Library\Framework\Asset\AssetSubsystem.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\AssetSubsystemImages.cpp">
-      <Filter>Library\Framework\Asset</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\AssetSubsystemTextureRegions.cpp">
-      <Filter>Library\Framework\Asset</Filter>
-    </ClCompile>
     <ClCompile Include="Library\Framework\Asset\EditorAssetInfo.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
@@ -244,10 +238,16 @@
     <ClCompile Include="Library\Framework\Asset\Texture\PixelImage.cpp">
       <Filter>Library\Framework\Asset\Texture</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Texture\PixelImageCodec.cpp">
+      <Filter>Library\Framework\Asset\Texture</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Texture\RenderTarget.cpp">
       <Filter>Library\Framework\Asset\Texture</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Texture\Texture.cpp">
+      <Filter>Library\Framework\Asset\Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Texture\TextureLoader.cpp">
       <Filter>Library\Framework\Asset\Texture</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Audio\AudioComponents.cpp">
@@ -1842,10 +1842,16 @@
     <ClInclude Include="Library\Framework\Asset\Texture\PixelImage.h">
       <Filter>Library\Framework\Asset\Texture</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Texture\PixelImageCodec.h">
+      <Filter>Library\Framework\Asset\Texture</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Texture\RenderTarget.h">
       <Filter>Library\Framework\Asset\Texture</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Texture\Texture.h">
+      <Filter>Library\Framework\Asset\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Texture\TextureLoader.h">
       <Filter>Library\Framework\Asset\Texture</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Audio\AudioComponents.h">

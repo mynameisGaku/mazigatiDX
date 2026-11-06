@@ -4,6 +4,8 @@
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Types/TypeDefinition.h"
 
+#include "Library/Core/Profiler/ProfilerScope.h"
+
 class CAsset;
 
 // 起動してからの、読み込みの累計
@@ -42,6 +44,9 @@ public:
 	{
 		return Counters;
 	}
+
+	// 読み込みの計測の目印（プロファイラーのサンプルに、パスを表示名として付ける）。PROFILE_SCOPE_LAZY( 名前, CAssetLoadRecorder::MakeProfileScope( "LoadTexture", FullPath ) ) のように使う
+	static FProfileScope MakeProfileScope( const char* Name, const FString& Path );
 
 	// 前に呼んでから、読み込みがあったか。あったら true を返して、印を下ろす（集計の更新を早めるために使う）
 	bool ConsumeLoadHappened();

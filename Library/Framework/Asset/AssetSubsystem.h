@@ -25,7 +25,9 @@
 #include "Library/Framework/Asset/Loading/AssetLog.h"
 #include "Library/Framework/Asset/Loading/AssetPathResolver.h"
 #include "Library/Framework/Asset/Model/Import/ModelImporter.h"
+#include "Library/Framework/Asset/Texture/PixelImageCodec.h"
 #include "Library/Framework/Asset/Texture/Texture.h"
+#include "Library/Framework/Asset/Texture/TextureLoader.h"
 #include "Library/Framework/Subsystem/AppSubsystem.h"
 
 // フォントの見た目の指定（大きさ以外）
@@ -314,11 +316,12 @@ private:
 	CAssetPathResolver PathResolver;
 	CAssetLoadRecorder LoadRecorder;
 	CAssetLoadContext LoadContext { PathResolver, LoadRecorder };
+	CTextureLoader TextureLoader { LoadContext };
+	CPixelImageCodec PixelImageCodec { LoadContext };
 	CWorldLoader WorldLoader { LoadContext };
 	CEffectLoader EffectLoader { LoadContext };
 	CModelImporter ModelImporter { LoadContext };
 
-	TCache<CTexture> Textures;
 	TCache<CSpriteSheet> SpriteSheets;
 	TCache<CModel> Models;
 	TCache<CModelAnimationAsset> ModelAnimations;
