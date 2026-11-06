@@ -203,13 +203,27 @@ void NDebugUI::DrawStateMachineGraph( FAIGraphState& State, CStateMachineCompone
 	}
 
 	// 2) 矢印（直角に折れる線）と、ラベル
+	// 矢印のラベルは、箱より手前に描くため、あとでまとめて描く
+	struct FPendingLabel
+	{
+		ImVec2 Pos;
+		ImU32 Color;
+		FString Text;
+	};
+	TArray<FPendingLabel> PendingLabels;
 	for ( const FStateGraphRoute& Route : Layout.Routes )
 	{
-		const FEdgeStyle& Style = Styles[Route.Id];
+		// まとめた矢印（同じ元・同じ先の遷移が複数）は、いちばん目立つもの（遷移した直後 > 条件が満たされた > 起こりうる）の見た目にする
+		int32 Shown = Route.Id;
+		for ( const int32 Id : Route.Ids )
+		{
+			Shown = Styles[Id].Rank > Styles[Shown].Rank || ( Styles[Id].Rank == Styles[Shown].Rank && Styles[Id].FiredAge < Styles[Shown].FiredAge ) ? Id : Shown;
+		}
+		const FEdgeStyle& Style = Styles[Shown];
 		const bool bNear = Canvas.DrawElbowArrow( Route.Points.GetData(), Route.Points.Num(), Style.Color, Style.Thickness );
 		if ( bNear )
 		{
-			HoverBuffer = Transitions[Route.Id].Description;
+			HoverBuffer = Transitions[Shown].Description;
 			if ( Style.FiredAge < 1.0e8f )
 			{
 				HoverBuffer += FString::Printf( "\nlast fired %.1f s ago", static_cast<float64>( Style.FiredAge ) );
@@ -218,15 +232,32 @@ void NDebugUI::DrawStateMachineGraph( FAIGraphState& State, CStateMachineCompone
 			{
 				HoverBuffer += "\nconditions are met now";
 			}
+			if ( Route.Ids.Num() > 1 )
+			{
+				HoverBuffer += FString::Printf( "\n(%d transitions between these states:)", Route.Ids.Num() );
+				for ( const int32 Id : Route.Ids )
+				{
+					HoverBuffer += "\n  " + Transitions[Id].Description;
+				}
+			}
 			HoverText = *HoverBuffer;
 		}
-		// 遷移した直後・条件が満たされている矢印には、短い説明を添える
+		// 遷移した直後・条件が満たされている矢印には、短い説明を添える（まとめた矢印は、本数も）
 		if ( Style.FiredAge < FiredFadeSeconds || Style.bReady )
 		{
-			const FString& Description = Transitions[Route.Id].Description;
+			const FString& Description = Transitions[Shown].Description;
 			const int32 WhenAt = Description.Find( " when " );
-			const FString Label = Truncated( WhenAt != INDEX_NONE ? Description.Mid( WhenAt + 6 ) : FString( "(always)" ), 26 );
-			Canvas.DrawText( ImVec2( Route.Label.x - FNodeGraphCanvas::MeasureText( *Label, 11.0f ) * 0.5f, Route.Label.y - 18.0f ), Style.Color, *Label, 11.0f );
+			FString Label = Truncated( WhenAt != INDEX_NONE ? Description.Mid( WhenAt + 6 ) : FString( "(always)" ), 26 );
+			if ( Route.Ids.Num() > 1 )
+			{
+				Label += FString::Printf( "  x%d", Route.Ids.Num() );
+			}
+			PendingLabels.Add( FPendingLabel { ImVec2( Route.Label.x - FNodeGraphCanvas::MeasureText( *Label, 11.0f ) * 0.5f, Route.Label.y - 18.0f ), Style.Color, Label } );
+		}
+		else if ( Route.Ids.Num() > 1 )
+		{
+			const FString Label = FString::Printf( "x%d", Route.Ids.Num() );
+			PendingLabels.Add( FPendingLabel { ImVec2( Route.Label.x - FNodeGraphCanvas::MeasureText( *Label, 11.0f ) * 0.5f, Route.Label.y - 18.0f ), Style.Color, Label } );
 		}
 	}
 
@@ -310,6 +341,10 @@ void NDebugUI::DrawStateMachineGraph( FAIGraphState& State, CStateMachineCompone
 			HoverBuffer = "Any State transitions: they can happen from any state of this machine.";
 			HoverText = *HoverBuffer;
 		}
+	}
+	for ( const FPendingLabel& Label : PendingLabels )
+	{
+		Canvas.DrawText( Label.Pos, Label.Color, *Label.Text, 11.0f );
 	}
 	Canvas.End();
 	if ( HoverText != nullptr )

@@ -483,6 +483,8 @@ namespace
 		bool bAny = false;
 		// 同じ 2 つの箱の間の矢印を、重ならないようにずらす量
 		float32 Offset = 0.0f;
+		// この矢印にまとめた遷移の Id（同じ元・同じ先・同じ種類の遷移）
+		TArray<int32> Ids;
 	};
 }
 
@@ -536,7 +538,23 @@ FStateMachineGraphLayout NAIGraph::BuildStateMachineLayout( const FStateMachineD
 		Edge.bAny = Info.bAnyTransition;
 		Edge.From = Info.bAnyTransition ? -1 : Info.FromChild;
 		Edge.To = TopChild( Definition, Info.Machine, Info.Target );
-		if ( Edge.To >= 0 )
+		Edge.Ids.Add( Info.Id );
+		if ( Edge.To < 0 )
+		{
+			continue;
+		}
+		// 同じ元・同じ先・同じ種類の遷移は、何本あっても 1 本の矢印にまとめる（矢印が重なって読めなくなるのを防ぐ）
+		bool bMerged = false;
+		for ( FEdgeInfo& Existing : Edges )
+		{
+			if ( Existing.Machine == Edge.Machine && Existing.From == Edge.From && Existing.To == Edge.To && Existing.bAny == Edge.bAny )
+			{
+				Existing.Ids.Add( Info.Id );
+				bMerged = true;
+				break;
+			}
+		}
+		if ( !bMerged )
 		{
 			Edges.Add( Edge );
 		}
@@ -594,6 +612,7 @@ FStateMachineGraphLayout NAIGraph::BuildStateMachineLayout( const FStateMachineD
 		Route.From = Edge.From;
 		Route.To = Edge.To;
 		Route.bAny = Edge.bAny;
+		Route.Ids = Edge.Ids;
 		TArray<ImVec2>& Points = Route.Points;
 
 		if ( Edge.bAny )

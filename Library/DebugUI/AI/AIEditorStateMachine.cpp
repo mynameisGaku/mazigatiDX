@@ -24,6 +24,8 @@ namespace
 	const ImU32 ColorNodeFill = IM_COL32( 46, 48, 58, 255 );
 	const ImU32 ColorContainerFill = IM_COL32( 36, 38, 48, 255 );
 	const ImU32 ColorAccent = IM_COL32( 110, 190, 255, 255 );
+	const ImU32 ColorDrop = IM_COL32( 110, 255, 140, 255 );
+	const ImU32 ColorBad = IM_COL32( 255, 120, 110, 255 );
 	const ImU32 ColorArrow = IM_COL32( 130, 134, 148, 255 );
 	const ImU32 ColorAnyArrow = IM_COL32( 170, 125, 80, 255 );
 	const ImU32 ColorAnyFill = IM_COL32( 70, 52, 34, 255 );
@@ -185,10 +187,48 @@ namespace
 		S.SelectedTransition.Index = Index;
 	}
 
+	// マシン Machine の、From（空なら Any State）から To への遷移の番号（無ければ -1）
+	int32 FindTransition( const FStateMachineDefinition& Definition, int32 Machine, bool bAny, const FString& From, const FString& To )
+	{
+		const TArray<FStateTransitionDef>& List = TransitionList( Definition, Machine, bAny );
+		for ( int32 Index = 0; Index < List.Num(); ++Index )
+		{
+			if ( List[Index].To == To && ( bAny || List[Index].From == From ) )
+			{
+				return Index;
+			}
+		}
+		return -1;
+	}
+
+	// 矢印をクリックしたとき: まとめた矢印（同じ 2 つのステートの間の遷移が複数）なら、クリックのたびに、組の中の次の遷移を選ぶ
+	void SelectRoute( FState& S, const FTransitionList& Transitions, const FStateGraphRoute& Route, bool bCycle )
+	{
+		int32 Pick = Route.Ids[0];
+		for ( int32 Index = 0; Index < Route.Ids.Num(); ++Index )
+		{
+			if ( SameRef( Transitions.Refs[Route.Ids[Index]], S.SelectedTransition ) )
+			{
+				Pick = bCycle ? Route.Ids[( Index + 1 ) % Route.Ids.Num()] : Route.Ids[Index];
+				break;
+			}
+		}
+		const FAIEditorTransitionRef& Ref = Transitions.Refs[Pick];
+		SelectTransition( S, Ref.Machine, Ref.bAny, Ref.Index );
+	}
+
 	void AddTransitionTo( FState& S, int32 State, int32 Target )
 	{
 		const FStateMachineDefinition& Definition = S.StateMachine.Get();
 		const int32 Machine = Definition.States[State].Parent;
+		// すでにつながっているなら、増やさずに、その遷移を選ぶ（条件を増やしたいときは、Inspector の条件か、Duplicate を使う）
+		const int32 Existing = FindTransition( Definition, Machine, false, Definition.States[State].Name, Definition.States[Target].Name );
+		if ( Existing >= 0 )
+		{
+			SelectTransition( S, Machine, false, Existing );
+			NAIEditor::SetStatus( S, "Already connected: " + Definition.States[State].Name + " -> " + Definition.States[Target].Name + " (selected the existing transition)." );
+			return;
+		}
 		const int32 Index = NStateMachineEdit::AddTransition( S.StateMachine, Machine, false, Definition.States[State].Name, Definition.States[Target].Name );
 		if ( Index != INDEX_NONE )
 		{
@@ -200,6 +240,13 @@ namespace
 	{
 		const FStateMachineDefinition& Definition = S.StateMachine.Get();
 		const int32 Machine = Definition.States[State].Parent;
+		const int32 Existing = FindTransition( Definition, Machine, true, FString(), Definition.States[State].Name );
+		if ( Existing >= 0 )
+		{
+			SelectTransition( S, Machine, true, Existing );
+			NAIEditor::SetStatus( S, "An Any State transition to " + Definition.States[State].Name + " already exists (selected it)." );
+			return;
+		}
 		const int32 Index = NStateMachineEdit::AddTransition( S.StateMachine, Machine, true, FString(), Definition.States[State].Name );
 		if ( Index != INDEX_NONE )
 		{
@@ -244,6 +291,27 @@ namespace
 
 		const FTransitionList Transitions = BuildTransitionList( Definition );
 		const FStateMachineGraphLayout Layout = NAIGraph::BuildStateMachineLayout( Definition, Transitions.Infos );
+		// Issues からのジャンプ: 選んだステート・遷移を真ん中へ
+		if ( S.bFocusRequested )
+		{
+			if ( IsValidState( Definition, S.SelectedState ) )
+			{
+				S.StateMachineView.bCenterRequested = true;
+				S.StateMachineView.CenterWorld = Add( Layout.Pos[S.SelectedState], ImVec2( Layout.Size[S.SelectedState].x * 0.5f, Layout.Size[S.SelectedState].y * 0.5f ) );
+			}
+			else if ( S.SelectedTransition.IsValid() )
+			{
+				for ( const FStateGraphRoute& Route : Layout.Routes )
+				{
+					if ( SameRef( Transitions.Refs[Route.Id], S.SelectedTransition ) )
+					{
+						S.StateMachineView.bCenterRequested = true;
+						S.StateMachineView.CenterWorld = Route.Label;
+					}
+				}
+			}
+		}
+		S.bFocusRequested = false;
 		FNodeGraphCanvas Canvas;
 		if ( !Canvas.Begin( "##smcanvas", S.StateMachineView, ImVec2( 0.0f, 0.0f ), Layout.Content ) )
 		{
@@ -252,6 +320,14 @@ namespace
 		const ImGuiIO& IO = ImGui::GetIO();
 		int32 HoveredState = INDEX_NONE;
 		int32 HoveredRoute = INDEX_NONE;
+		// 矢印のラベルは、箱より手前に描くため、あとでまとめて描く
+		struct FPendingLabel
+		{
+			ImVec2 Pos;
+			ImU32 Color;
+			FString Text;
+		};
+		TArray<FPendingLabel> PendingLabels;
 
 		// 入れ子のマシンの枠（親が先）
 		for ( int32 Index = 0; Index < Definition.States.Num(); ++Index )
@@ -275,9 +351,20 @@ namespace
 		}
 
 		// 矢印とラベル（選んでいる遷移は、強調する）
-		for ( const FStateGraphRoute& Route : Layout.Routes )
+		for ( int32 RouteIndex = 0; RouteIndex < Layout.Routes.Num(); ++RouteIndex )
 		{
-			const bool bSelected = SameRef( Transitions.Refs[Route.Id], S.SelectedTransition );
+			const FStateGraphRoute& Route = Layout.Routes[RouteIndex];
+			// まとめた矢印は、組の中に、選んでいる遷移があれば、それを代表にする
+			int32 Shown = Route.Id;
+			bool bSelected = false;
+			for ( const int32 Id : Route.Ids )
+			{
+				if ( SameRef( Transitions.Refs[Id], S.SelectedTransition ) )
+				{
+					Shown = Id;
+					bSelected = true;
+				}
+			}
 			ImU32 Color = Route.bAny ? ColorAnyArrow : ColorArrow;
 			float Thickness = 1.8f;
 			if ( bSelected )
@@ -288,19 +375,28 @@ namespace
 			const bool bNear = Canvas.DrawElbowArrow( Route.Points.GetData(), Route.Points.Num(), Color, Thickness );
 			if ( bNear && HoveredRoute == INDEX_NONE )
 			{
-				HoveredRoute = Route.Id;
+				HoveredRoute = RouteIndex;
 			}
-			const FString& Description = Transitions.Infos[Route.Id].Description;
+			const FString& Description = Transitions.Infos[Shown].Description;
 			const int32 WhenAt = Description.Find( " when " );
 			FString Label = WhenAt != INDEX_NONE ? Description.Mid( WhenAt + 6 ) : FString();
 			if ( Label.Len() > 26 )
 			{
 				Label = Label.Left( 25 ) + "~";
 			}
-			// 条件の説明は、選んでいる矢印と、マウスが乗っている矢印だけに出す（全部出すと、重なって読めない）
-			if ( !Label.IsEmpty() && ( bSelected || bNear ) )
+			const bool bGroup = Route.Ids.Num() > 1;
+			if ( bGroup )
 			{
-				Canvas.DrawText( ImVec2( Route.Label.x - FNodeGraphCanvas::MeasureText( *Label, 11.0f ) * 0.5f, Route.Label.y - 18.0f ), bSelected ? ColorAccent : ColorDimText, *Label, 11.0f );
+				Label += FString::Printf( "%sx%d", Label.IsEmpty() ? "" : "  ", Route.Ids.Num() );
+			}
+			// 条件の説明は、選んでいる矢印と、マウスが乗っている矢印だけに出す（全部出すと、重なって読めない）。まとめた矢印の本数は、いつも出す
+			if ( !Label.IsEmpty() && ( bSelected || bNear || bGroup ) )
+			{
+				FPendingLabel Pending;
+				Pending.Pos = ImVec2( Route.Label.x - FNodeGraphCanvas::MeasureText( *Label, 11.0f ) * 0.5f, Route.Label.y - 18.0f );
+				Pending.Color = bSelected ? ColorAccent : ColorDimText;
+				Pending.Text = Label;
+				PendingLabels.Add( Pending );
 			}
 		}
 		for ( int32 Parent = -1; Parent < Definition.States.Num(); ++Parent )
@@ -350,11 +446,74 @@ namespace
 			}
 		}
 
+		for ( const FPendingLabel& Label : PendingLabels )
+		{
+			Canvas.DrawText( Label.Pos, Label.Color, *Label.Text, 11.0f );
+		}
+
+		// 遷移を作るためのポート（各ステートの右端と ANY の箱の右端の丸）。ここから別のステートへドラッグすると、遷移ができる
+		const auto PortOfState = [&]( int32 State )
+		{
+			return ImVec2( Layout.Pos[State].x + Layout.Size[State].x, Layout.Pos[State].y + Layout.Size[State].y * 0.5f );
+		};
+		const auto PortOfAny = [&]( int32 Machine )
+		{
+			const FStateGraphMachine& MachineLayout = Layout.Machines[Machine + 1];
+			return ImVec2( MachineLayout.AnyPos.x + NAIGraph::AnyWidth, MachineLayout.AnyPos.y + NAIGraph::AnyHeight * 0.5f );
+		};
+		const auto IsOverPort = [&]( const ImVec2& World )
+		{
+			const ImVec2 Center = Canvas.ToScreen( World );
+			const float Dx = IO.MousePos.x - Center.x;
+			const float Dy = IO.MousePos.y - Center.y;
+			return Canvas.IsHovered() && Dx * Dx + Dy * Dy < 100.0f;
+		};
+		int32 HoveredPort = INDEX_NONE;
+		int32 HoveredAnyPort = -2;
+		for ( int32 Index = 0; Index < Definition.States.Num(); ++Index )
+		{
+			const bool bOver = IsOverPort( PortOfState( Index ) );
+			if ( bOver )
+			{
+				HoveredPort = Index;
+			}
+			Canvas.DrawDot( PortOfState( Index ), bOver || Index == S.SelectedState ? ColorAccent : ColorBorder, bOver ? 6.0f : 4.5f );
+		}
+		for ( int32 Parent = -1; Parent < Definition.States.Num(); ++Parent )
+		{
+			if ( Layout.Machines[Parent + 1].bHasAny )
+			{
+				const bool bOver = IsOverPort( PortOfAny( Parent ) );
+				if ( bOver )
+				{
+					HoveredAnyPort = Parent;
+				}
+				Canvas.DrawDot( PortOfAny( Parent ), bOver ? ColorAccent : ColorAnyArrow, bOver ? 6.0f : 4.5f );
+			}
+		}
+		if ( HoveredPort != INDEX_NONE || HoveredAnyPort != -2 )
+		{
+			ImGui::SetTooltip( "Drag to another state to create a transition." );
+		}
+
 		// 入力: クリックで選択、ドラッグでステートを動かす、右クリックでメニュー
 		int32 MenuKind = 0;
 		if ( Canvas.IsHovered() && ImGui::IsMouseClicked( ImGuiMouseButton_Left ) )
 		{
-			if ( HoveredState != INDEX_NONE )
+			if ( HoveredPort != INDEX_NONE )
+			{
+				// ポートから、遷移を作るドラッグを始める
+				S.LinkFromState = HoveredPort;
+				S.LinkFromAnyMachine = -2;
+				S.SelectedState = HoveredPort;
+				S.SelectedTransition.Clear();
+			}
+			else if ( HoveredAnyPort != -2 )
+			{
+				S.LinkFromAnyMachine = HoveredAnyPort;
+				S.LinkFromState = INDEX_NONE;
+			}
+			else if ( HoveredState != INDEX_NONE )
 			{
 				S.SelectedState = HoveredState;
 				S.SelectedTransition.Clear();
@@ -365,8 +524,8 @@ namespace
 			}
 			else if ( HoveredRoute != INDEX_NONE )
 			{
-				const FAIEditorTransitionRef& Ref = Transitions.Refs[HoveredRoute];
-				SelectTransition( S, Ref.Machine, Ref.bAny, Ref.Index );
+				S.SelectedState = INDEX_NONE;
+				SelectRoute( S, Transitions, Layout.Routes[HoveredRoute], true );
 			}
 			else
 			{
@@ -385,8 +544,8 @@ namespace
 			}
 			else if ( HoveredRoute != INDEX_NONE )
 			{
-				const FAIEditorTransitionRef& Ref = Transitions.Refs[HoveredRoute];
-				SelectTransition( S, Ref.Machine, Ref.bAny, Ref.Index );
+				S.SelectedState = INDEX_NONE;
+				SelectRoute( S, Transitions, Layout.Routes[HoveredRoute], false );
 				MenuKind = 2;
 			}
 			else
@@ -413,6 +572,48 @@ namespace
 				S.StateMachine.EndEditSession();
 			}
 		}
+		// 遷移を作るドラッグ: 元から、マウスの位置まで線を引く。ステートの上で放すと、そこへの遷移ができる（同じマシンの中だけ）
+		const bool bLinking = S.LinkFromState != INDEX_NONE || S.LinkFromAnyMachine != -2;
+		if ( bLinking )
+		{
+			const bool bFromState = S.LinkFromState != INDEX_NONE;
+			const int32 LinkMachine = bFromState ? ( IsValidState( Definition, S.LinkFromState ) ? Definition.States[S.LinkFromState].Parent : -2 ) : S.LinkFromAnyMachine;
+			const bool bValidTarget = LinkMachine >= -1 && HoveredState != INDEX_NONE && Definition.States[HoveredState].Parent == LinkMachine;
+			if ( LinkMachine < -1 )
+			{
+				S.LinkFromState = INDEX_NONE;
+				S.LinkFromAnyMachine = -2;
+			}
+			else if ( ImGui::IsMouseDown( ImGuiMouseButton_Left ) )
+			{
+				const ImVec2 From = bFromState ? PortOfState( S.LinkFromState ) : PortOfAny( LinkMachine );
+				Canvas.DrawLine( From, Canvas.ToWorld( IO.MousePos ), bValidTarget ? ColorDrop : ColorAccent, 3.0f );
+				if ( HoveredState != INDEX_NONE )
+				{
+					Canvas.DrawOutline( Layout.Pos[HoveredState], Layout.Size[HoveredState], bValidTarget ? ColorDrop : ColorBad, 3.0f, 7.0f );
+				}
+			}
+			else
+			{
+				if ( bValidTarget )
+				{
+					if ( bFromState )
+					{
+						AddTransitionTo( S, S.LinkFromState, HoveredState );
+					}
+					else
+					{
+						AddAnyTransitionTo( S, HoveredState );
+					}
+				}
+				else if ( HoveredState != INDEX_NONE )
+				{
+					NAIEditor::SetStatus( S, "A transition can only connect states of the same machine.", true );
+				}
+				S.LinkFromState = INDEX_NONE;
+				S.LinkFromAnyMachine = -2;
+			}
+		}
 		if ( ImGui::IsWindowFocused( ImGuiFocusedFlags_RootAndChildWindows ) && !IO.WantTextInput && ImGui::IsKeyPressed( ImGuiKey_Delete ) )
 		{
 			if ( S.SelectedTransition.IsValid() )
@@ -425,7 +626,7 @@ namespace
 			}
 		}
 
-		S.StateMachineView.bPanBlocked = HoveredState != INDEX_NONE || HoveredRoute != INDEX_NONE || S.DragState != INDEX_NONE;
+		S.StateMachineView.bPanBlocked = HoveredState != INDEX_NONE || HoveredRoute != INDEX_NONE || S.DragState != INDEX_NONE || HoveredPort != INDEX_NONE || HoveredAnyPort != -2 || bLinking;
 		Canvas.End();
 
 		if ( MenuKind == 1 )
@@ -853,6 +1054,18 @@ namespace
 			NStateMachineEdit::SetTransition( S.StateMachine, Ref.Machine, Ref.bAny, Ref.Index, Edited, CoalesceKey );
 		}
 		ImGui::Separator();
+		if ( ImGui::Button( "Duplicate" ) )
+		{
+			// 同じ 2 つのステートの間に、もう 1 本（条件や優先度を変えて使う）。グラフでは、1 本の矢印にまとまり、本数が出る
+			const int32 Copy = NStateMachineEdit::AddTransition( S.StateMachine, Ref.Machine, Ref.bAny, Edited.From, Edited.To );
+			if ( Copy != INDEX_NONE )
+			{
+				NStateMachineEdit::SetTransition( S.StateMachine, Ref.Machine, Ref.bAny, Copy, Edited );
+				SelectTransition( S, Ref.Machine, Ref.bAny, Copy );
+				return;
+			}
+		}
+		ImGui::SameLine();
 		if ( ImGui::Button( "Delete transition" ) )
 		{
 			DeleteTransition( S );

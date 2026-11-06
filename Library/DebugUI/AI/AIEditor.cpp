@@ -657,6 +657,95 @@ int32 NAIEditor::CountKeyUsage( const FAIEditorState& State, const FString& KeyN
 //=============================================================================
 namespace
 {
+	bool IsMemberSegment( const FString& Segment )
+	{
+		return Segment.StartsWith( "OnEnter[" ) || Segment.StartsWith( "OnTick[" ) || Segment.StartsWith( "OnExit[" ) || Segment.StartsWith( "OnClipEvent[" ) || Segment.StartsWith( "Transitions[" ) || Segment.StartsWith( "AnyTransitions[" ) || Segment.StartsWith( "When[" );
+	}
+
+	int32 IndexInBrackets( const FString& Segment )
+	{
+		const int32 Open = Segment.Find( "[" );
+		return Open == INDEX_NONE ? -1 : NCString::ToInt32( *Segment.Mid( Open + 1 ) );
+	}
+
+	// 問題の場所（コンパイルのときの書式。"States/Run/OnEnter[0]"・"States/Locomotion/Transitions[1]/When[0]"）から、ステートと遷移を探す
+	void JumpToStateMachineIssue( FState& S, const FString& Where )
+	{
+		const FStateMachineDefinition& Definition = S.StateMachine.Get();
+		const TArray<FString> Segments = Where.ParseIntoArray( "/" );
+		int32 Index = ( !Segments.IsEmpty() && Segments[0] == "States" ) ? 1 : 0;
+		FString Path;
+		for ( ; Index < Segments.Num() && !IsMemberSegment( Segments[Index] ); ++Index )
+		{
+			Path += ( Path.IsEmpty() ? "" : "/" ) + Segments[Index];
+		}
+		const int32 State = Path.IsEmpty() ? -1 : Definition.FindByPath( -1, Path );
+		if ( !Path.IsEmpty() && State < 0 )
+		{
+			return;
+		}
+		S.SelectedState = INDEX_NONE;
+		S.SelectedTransition.Clear();
+		if ( Index < Segments.Num() && ( Segments[Index].StartsWith( "Transitions[" ) || Segments[Index].StartsWith( "AnyTransitions[" ) ) )
+		{
+			S.SelectedTransition.Machine = State;
+			S.SelectedTransition.bAny = Segments[Index].StartsWith( "AnyTransitions[" );
+			S.SelectedTransition.Index = IndexInBrackets( Segments[Index] );
+		}
+		else if ( State >= 0 )
+		{
+			S.SelectedState = State;
+		}
+		S.bFocusRequested = true;
+	}
+
+	// 問題の場所（"Root/Attack/Wait #5/Decorators[0]" のような、ルートからのノードの名前）から、ノードを探す
+	void JumpToBehaviorTreeIssue( FState& S, const FString& Where )
+	{
+		const FBehaviorTreeDefinition& Definition = S.BehaviorTree.Get();
+		TArray<FString> Segments = Where.ParseIntoArray( "/" );
+		while ( !Segments.IsEmpty() && ( Segments.Last().StartsWith( "Decorators[" ) || Segments.Last().StartsWith( "Services[" ) ) )
+		{
+			Segments.Pop();
+		}
+		if ( Segments.IsEmpty() || Definition.Nodes.IsEmpty() || Definition.GetNodeLabel( 0 ) != Segments[0] )
+		{
+			return;
+		}
+		int32 Node = 0;
+		for ( int32 Index = 1; Index < Segments.Num(); ++Index )
+		{
+			int32 Found = INDEX_NONE;
+			for ( const int32 Child : Definition.GetChildren( Node ) )
+			{
+				if ( Definition.GetNodeLabel( Child ) == Segments[Index] )
+				{
+					Found = Child;
+					break;
+				}
+			}
+			if ( Found == INDEX_NONE )
+			{
+				return;
+			}
+			Node = Found;
+		}
+		S.SelectedNode = Node;
+		S.bFocusRequested = true;
+	}
+
+	void JumpToIssue( FState& S, const FAIIssue& Issue )
+	{
+		if ( S.Tab == EAIEditorTab::StateMachine )
+		{
+			JumpToStateMachineIssue( S, Issue.Where );
+		}
+		else if ( S.Tab == EAIEditorTab::BehaviorTree )
+		{
+			JumpToBehaviorTreeIssue( S, Issue.Where );
+		}
+	}
+
 	void RefreshIssues( FState& S )
 	{
 		uint32 DocumentRevision = 0;
@@ -763,9 +852,19 @@ void NAIEditor::DrawIssues( FAIEditorState& State )
 			Color = ImVec4( 0.95f, 0.82f, 0.35f, 1.0f );
 			Mark = "[W]";
 		}
-		ImGui::TextColored( Color, "%s", Mark );
-		ImGui::SameLine();
-		ImGui::TextUnformatted( UI_TEXT( Issue.Where.IsEmpty() ? Issue.Message : Issue.Where + ": " + Issue.Message ) );
+		ImGui::PushID( static_cast<int32>( &Issue - State.Issues.GetData() ) );
+		ImGui::PushStyleColor( ImGuiCol_Text, Color );
+		const bool bClicked = ImGui::Selectable( UI_TEXT( FString( Mark ) + " " + ( Issue.Where.IsEmpty() ? Issue.Message : Issue.Where + ": " + Issue.Message ) ) );
+		ImGui::PopStyleColor();
+		if ( State.Tab != EAIEditorTab::Blackboard && ImGui::IsItemHovered() )
+		{
+			ImGui::SetTooltip( "Click to select it in the graph." );
+		}
+		if ( bClicked )
+		{
+			JumpToIssue( State, Issue );
+		}
+		ImGui::PopID();
 	}
 }
 

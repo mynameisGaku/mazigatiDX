@@ -5,7 +5,8 @@
 
 namespace
 {
-	constexpr float FitMargin = 24.0f;
+	// 全体に合わせるときの、まわりの余白（ステートマシンの入口の印などが、範囲の外へ少しはみ出すため）
+	constexpr float FitMargin = 44.0f;
 	constexpr float MinZoom = 0.15f;
 	constexpr float MaxZoom = 2.5f;
 	// 文字を描かないズームの下限（これより小さいと読めない）
@@ -80,6 +81,14 @@ bool FNodeGraphCanvas::Begin( const char* Id, FNodeGraphView& InView, const ImVe
 		View->bFitted = true;
 		View->FittedContent = ContentSize;
 		View->FittedCanvas = CanvasSize;
+	}
+
+	// 指定の点を真ん中へ（全体に合わせたあとに処理する）
+	if ( View->bCenterRequested )
+	{
+		View->Zoom = NMath::Max( View->Zoom, 0.7f );
+		View->Pan = ImVec2( CanvasSize.x / View->Zoom * 0.5f - View->CenterWorld.x, CanvasSize.y / View->Zoom * 0.5f - View->CenterWorld.y );
+		View->bCenterRequested = false;
 	}
 
 	const ImGuiIO& IO = ImGui::GetIO();

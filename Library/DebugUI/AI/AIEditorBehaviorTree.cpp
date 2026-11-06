@@ -315,6 +315,13 @@ namespace
 		}
 
 		const FBehaviorTreeGraphLayout Layout = NAIGraph::BuildBehaviorTreeLayout( Definition );
+		// Issues からのジャンプ: 選んだノードを真ん中へ
+		if ( S.bFocusRequested && IsValidNode( Definition, S.SelectedNode ) )
+		{
+			S.BehaviorTreeView.bCenterRequested = true;
+			S.BehaviorTreeView.CenterWorld = Add( Layout.Pos[S.SelectedNode], ImVec2( Layout.Size[S.SelectedNode].x * 0.5f, Layout.Size[S.SelectedNode].y * 0.5f ) );
+		}
+		S.bFocusRequested = false;
 		FNodeGraphCanvas Canvas;
 		if ( !Canvas.Begin( "##btcanvas", S.BehaviorTreeView, ImVec2( 0.0f, 0.0f ), Layout.Content ) )
 		{

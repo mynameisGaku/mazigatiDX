@@ -68,6 +68,8 @@ struct FStateGraphRoute
 	int32 From = -1;
 	int32 To = -1;
 	bool bAny = false;
+	// この矢印にまとめた遷移の Id（同じ元・同じ先・同じ種類の遷移は、1 本の矢印にまとめる。先頭は Id と同じ）
+	TArray<int32> Ids;
 	// 始点から終点（矢じり）までの折れ線。隣の点どうしは、縦か横に並ぶ
 	TArray<ImVec2> Points;
 	// ラベルを置く位置（経路の途中）

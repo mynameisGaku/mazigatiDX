@@ -35,6 +35,9 @@ struct FNodeGraphView
 	ImVec2 FittedContent = ImVec2( 0.0f, 0.0f );
 	// 合わせたときの、キャンバスの大きさ（ウィンドウの大きさが変わったら、合わせ直す）
 	ImVec2 FittedCanvas = ImVec2( 0.0f, 0.0f );
+	// 指定したワールド座標が、キャンバスの真ん中に来るように動かす（次の Begin で 1 回だけ。小さすぎるときは、読める大きさまで拡大する）。Issues からのジャンプなどに使う
+	bool bCenterRequested = false;
+	ImVec2 CenterWorld = ImVec2( 0.0f, 0.0f );
 	// true の間は、ドラッグでパンしない（ノードを動かすなど、キャンバスの上の操作が優先されるとき。エディタが、毎フレーム、次のフレームの分を設定する）
 	bool bPanBlocked = false;
 };

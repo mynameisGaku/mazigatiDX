@@ -130,6 +130,11 @@ struct FAIEditorState
 	ImVec2 DragStartRelative = ImVec2( 0.0f, 0.0f );
 	// 右クリックしたワールド座標（「ここにステートを足す」用）
 	ImVec2 MenuWorld = ImVec2( 0.0f, 0.0f );
+	// Issues からのジャンプ・選んだものを、次に描くグラフの真ん中へ寄せる（1 回だけ）
+	bool bFocusRequested = false;
+	// 遷移を矢印のドラッグで作っているとき: 元のステート（INDEX_NONE なら作っていない）と、Any State の箱から作るときのマシン（-2 なら、Any State からではない）
+	int32 LinkFromState = INDEX_NONE;
+	int32 LinkFromAnyMachine = -2;
 	// 「キーを足す」の入力
 	FString NewKeyName = "Key";
 	int32 NewKeyType = 0;
