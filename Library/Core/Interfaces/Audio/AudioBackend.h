@@ -4,8 +4,8 @@
 //=============================================================================
 // IAudioBackend
 //   サウンドの再生を操作する、プラットフォーム層のインターフェース。
-//   フレームワーク側（CAudioSystem）はこれだけを知り、DxLib などの実装には依存しない。
-//   実装: CDxLibAudioBackend（DxLib）。確認用に、呼ばれた内容を記録するだけの実装を作ってもよい。
+//   フレームワーク側（CAudioSubsystem）はこれだけを知り、DxLib などの実装には依存しない。
+//   実装: CDxLibAudioBackendSubsystem（DxLib）。確認用に、呼ばれた内容を記録するだけの実装を作ってもよい。
 //
 //   - 「ボイス」は、再生中の音 1 つ分の入れ物（IAssetBackend::LoadSound / DuplicateSound で得たハンドル）。
 //     同じ音を重ねて鳴らすときは、別々のボイスを使う
@@ -34,6 +34,6 @@ public:
 	virtual void SetPlayPosition( int32 Voice, float32 Seconds ) = 0;
 
 	// ループして鳴らすときの区間（秒）。再生位置が EndSeconds に届くと StartSeconds へ戻る。EndSeconds が 0 以下なら音の最後まで。
-	// 対応していない実装は false を返す（CAudioSystem が、再生位置を見て戻して補う。ただし、実装より粗い精度になる）
+	// 対応していない実装は false を返す（CAudioSubsystem が、再生位置を見て戻して補う。ただし、実装より粗い精度になる）
 	virtual bool SetLoopRegion( int32 /*Voice*/, float32 /*StartSeconds*/, float32 /*EndSeconds*/ ) { return false; }
 };

@@ -1,5 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
-#include "NullAssetBackend.h"
+#include "NullAssetBackendSubsystem.h"
 
 #include "Library/Core/File/File.h"
 #include "Library/Core/Log/Log.h"
@@ -12,7 +12,7 @@
 
 DEFINE_LOG_CATEGORY_STATIC( LogNullAsset, Log )
 
-REGISTER_SUBSYSTEM( CNullAssetBackend )
+REGISTER_SUBSYSTEM( CNullAssetBackendSubsystem )
 
 namespace
 {
@@ -222,12 +222,12 @@ namespace
 	}
 }
 
-bool CNullAssetBackend::ShouldCreateSubsystem( CEngine& Engine ) const
+bool CNullAssetBackendSubsystem::ShouldCreateSubsystem( CEngine& Engine ) const
 {
 	return NBackendSelection::IsNullRequested();
 }
 
-void CNullAssetBackend::Deinitialize()
+void CNullAssetBackendSubsystem::Deinitialize()
 {
 	LOG( LogNullAsset, Log, "Asset handles at shutdown: %d texture(s), %d vertex buffer(s), %d index buffer(s), %d shadow map(s), %d shader(s), %d font(s), %d sound(s)",
 		 Textures.Num(), VertexBuffers.Num(), IndexBuffers.Num(), ShadowMaps.Num(), Shaders.Num(), Fonts.Num(), Sounds.Num() );
@@ -237,12 +237,12 @@ void CNullAssetBackend::Deinitialize()
 	}
 }
 
-int32 CNullAssetBackend::AllocateHandle()
+int32 CNullAssetBackendSubsystem::AllocateHandle()
 {
 	return NextHandle++;
 }
 
-int32 CNullAssetBackend::AddTexture( const FTextureRecord& Record )
+int32 CNullAssetBackendSubsystem::AddTexture( const FTextureRecord& Record )
 {
 	const int32 Handle = AllocateHandle();
 	Textures.Add( Handle, Record );
@@ -251,7 +251,7 @@ int32 CNullAssetBackend::AddTexture( const FTextureRecord& Record )
 
 #pragma region Textures
 
-int32 CNullAssetBackend::LoadTexture( const FString& Path, bool bAsync )
+int32 CNullAssetBackendSubsystem::LoadTexture( const FString& Path, bool bAsync )
 {
 	TArray<uint8> Bytes;
 	if ( !NFile::ReadAllBytes( Path, Bytes ) || Bytes.Num() == 0 )
@@ -271,7 +271,7 @@ int32 CNullAssetBackend::LoadTexture( const FString& Path, bool bAsync )
 	return AddTexture( Record );
 }
 
-int32 CNullAssetBackend::CreateTextureFromMemory( const void* FileImage, usize Size )
+int32 CNullAssetBackendSubsystem::CreateTextureFromMemory( const void* FileImage, usize Size )
 {
 	int64 Width = 0;
 	int64 Height = 0;
@@ -285,7 +285,7 @@ int32 CNullAssetBackend::CreateTextureFromMemory( const void* FileImage, usize S
 	return AddTexture( Record );
 }
 
-int32 CNullAssetBackend::CreateTextureRegion( int32 Source, int32 X, int32 Y, int32 Width, int32 Height )
+int32 CNullAssetBackendSubsystem::CreateTextureRegion( int32 Source, int32 X, int32 Y, int32 Width, int32 Height )
 {
 	const FTextureRecord* Parent = Textures.Find( Source );
 	if ( Parent == nullptr || X < 0 || Y < 0 || Width <= 0 || Height <= 0 )
@@ -307,7 +307,7 @@ int32 CNullAssetBackend::CreateTextureRegion( int32 Source, int32 X, int32 Y, in
 	return AddTexture( Record );
 }
 
-bool CNullAssetBackend::GetTextureUvBounds( int32 Texture, float32 ( &OutUV )[4] )
+bool CNullAssetBackendSubsystem::GetTextureUvBounds( int32 Texture, float32 ( &OutUV )[4] )
 {
 	const FTextureRecord* Region = Textures.Find( Texture );
 	if ( Region == nullptr || !Region->bRegion )
@@ -327,7 +327,7 @@ bool CNullAssetBackend::GetTextureUvBounds( int32 Texture, float32 ( &OutUV )[4]
 	return true;
 }
 
-bool CNullAssetBackend::GetTextureSize( int32 Texture, int32& OutWidth, int32& OutHeight )
+bool CNullAssetBackendSubsystem::GetTextureSize( int32 Texture, int32& OutWidth, int32& OutHeight )
 {
 	const FTextureRecord* Record = Textures.Find( Texture );
 	if ( Record == nullptr )
@@ -339,12 +339,12 @@ bool CNullAssetBackend::GetTextureSize( int32 Texture, int32& OutWidth, int32& O
 	return true;
 }
 
-void CNullAssetBackend::DeleteTexture( int32 Texture )
+void CNullAssetBackendSubsystem::DeleteTexture( int32 Texture )
 {
 	Textures.Remove( Texture );
 }
 
-int32 CNullAssetBackend::CreateRenderTarget( const FRenderTargetDesc& Desc )
+int32 CNullAssetBackendSubsystem::CreateRenderTarget( const FRenderTargetDesc& Desc )
 {
 	if ( !Desc.IsValid() )
 	{
@@ -358,7 +358,7 @@ int32 CNullAssetBackend::CreateRenderTarget( const FRenderTargetDesc& Desc )
 	return AddTexture( Record );
 }
 
-bool CNullAssetBackend::ReadRenderTargetPixels( int32 Target, int32 X, int32 Y, int32 Width, int32 Height, TArray<FColor32>& OutPixels )
+bool CNullAssetBackendSubsystem::ReadRenderTargetPixels( int32 Target, int32 X, int32 Y, int32 Width, int32 Height, TArray<FColor32>& OutPixels )
 {
 	const FTextureRecord* Record = Textures.Find( Target );
 	if ( Record == nullptr || !Record->bRenderTarget || X < 0 || Y < 0 || Width <= 0 || Height <= 0 )
@@ -375,13 +375,13 @@ bool CNullAssetBackend::ReadRenderTargetPixels( int32 Target, int32 X, int32 Y, 
 	return true;
 }
 
-bool CNullAssetBackend::SaveRenderTarget( int32 Target, int32 X, int32 Y, int32 Width, int32 Height, const FString& Path, const FImageSaveOptions& Options )
+bool CNullAssetBackendSubsystem::SaveRenderTarget( int32 Target, int32 X, int32 Y, int32 Width, int32 Height, const FString& Path, const FImageSaveOptions& Options )
 {
 	// 画像のファイルを作る機能を持たない
 	return false;
 }
 
-int32 CNullAssetBackend::CreateTextureFromPixels( int32 Width, int32 Height, const FColor32* Pixels )
+int32 CNullAssetBackendSubsystem::CreateTextureFromPixels( int32 Width, int32 Height, const FColor32* Pixels )
 {
 	if ( Pixels == nullptr || !IsValidTextureSize( Width, Height ) )
 	{
@@ -397,7 +397,7 @@ int32 CNullAssetBackend::CreateTextureFromPixels( int32 Width, int32 Height, con
 	return AddTexture( Record );
 }
 
-bool CNullAssetBackend::UpdateTexturePixels( int32 Texture, int32 Width, int32 Height, const FColor32* Pixels )
+bool CNullAssetBackendSubsystem::UpdateTexturePixels( int32 Texture, int32 Width, int32 Height, const FColor32* Pixels )
 {
 	FTextureRecord* Record = Textures.Find( Texture );
 	if ( Record == nullptr || !Record->bHasPixels || Pixels == nullptr || Record->Width != Width || Record->Height != Height )
@@ -408,7 +408,7 @@ bool CNullAssetBackend::UpdateTexturePixels( int32 Texture, int32 Width, int32 H
 	return true;
 }
 
-bool CNullAssetBackend::DecodeImage( const void* FileImage, usize Size, int32& OutWidth, int32& OutHeight, TArray<FColor32>& OutPixels )
+bool CNullAssetBackendSubsystem::DecodeImage( const void* FileImage, usize Size, int32& OutWidth, int32& OutHeight, TArray<FColor32>& OutPixels )
 {
 	int64 Width = 0;
 	int64 Height = 0;
@@ -424,7 +424,7 @@ bool CNullAssetBackend::DecodeImage( const void* FileImage, usize Size, int32& O
 	return true;
 }
 
-bool CNullAssetBackend::DecodeImageFile( const FString& Path, int32& OutWidth, int32& OutHeight, TArray<FColor32>& OutPixels )
+bool CNullAssetBackendSubsystem::DecodeImageFile( const FString& Path, int32& OutWidth, int32& OutHeight, TArray<FColor32>& OutPixels )
 {
 	TArray<uint8> Bytes;
 	if ( !NFile::ReadAllBytes( Path, Bytes ) )
@@ -434,7 +434,7 @@ bool CNullAssetBackend::DecodeImageFile( const FString& Path, int32& OutWidth, i
 	return DecodeImage( Bytes.GetData(), static_cast<usize>( Bytes.Num() ), OutWidth, OutHeight, OutPixels );
 }
 
-bool CNullAssetBackend::SavePixels( int32 Width, int32 Height, const FColor32* Pixels, const FString& Path, const FImageSaveOptions& Options )
+bool CNullAssetBackendSubsystem::SavePixels( int32 Width, int32 Height, const FColor32* Pixels, const FString& Path, const FImageSaveOptions& Options )
 {
 	// 画像のファイルを作る機能を持たない
 	return false;
@@ -444,7 +444,7 @@ bool CNullAssetBackend::SavePixels( int32 Width, int32 Height, const FColor32* P
 
 #pragma region Models
 
-int32 CNullAssetBackend::LoadModel( const FString& Path, bool bAsync )
+int32 CNullAssetBackendSubsystem::LoadModel( const FString& Path, bool bAsync )
 {
 	if ( !bWarnedModel )
 	{
@@ -454,55 +454,55 @@ int32 CNullAssetBackend::LoadModel( const FString& Path, bool bAsync )
 	return NAsset::InvalidHandle;
 }
 
-int32 CNullAssetBackend::DuplicateModel( int32 Source )
+int32 CNullAssetBackendSubsystem::DuplicateModel( int32 Source )
 {
 	return NAsset::InvalidHandle;
 }
 
-void CNullAssetBackend::DeleteModel( int32 Model )
+void CNullAssetBackendSubsystem::DeleteModel( int32 Model )
 {
 }
 
-int32 CNullAssetBackend::GetModelAnimCount( int32 Model )
+int32 CNullAssetBackendSubsystem::GetModelAnimCount( int32 Model )
 {
 	return 0;
 }
 
-FString CNullAssetBackend::GetModelAnimName( int32 Model, int32 AnimIndex )
+FString CNullAssetBackendSubsystem::GetModelAnimName( int32 Model, int32 AnimIndex )
 {
 	return FString();
 }
 
-float32 CNullAssetBackend::GetModelAnimLength( int32 Model, int32 AnimIndex )
+float32 CNullAssetBackendSubsystem::GetModelAnimLength( int32 Model, int32 AnimIndex )
 {
 	return 0.0f;
 }
 
-int32 CNullAssetBackend::AttachModelAnim( int32 Model, int32 AnimIndex, int32 SourceModel )
+int32 CNullAssetBackendSubsystem::AttachModelAnim( int32 Model, int32 AnimIndex, int32 SourceModel )
 {
 	return -1;
 }
 
-void CNullAssetBackend::DetachModelAnim( int32 Model, int32 AttachIndex )
+void CNullAssetBackendSubsystem::DetachModelAnim( int32 Model, int32 AttachIndex )
 {
 }
 
-int32 CNullAssetBackend::GetModelMeshCount( int32 Model )
-{
-	return 0;
-}
-
-int32 CNullAssetBackend::GetModelFrameCount( int32 Model )
+int32 CNullAssetBackendSubsystem::GetModelMeshCount( int32 Model )
 {
 	return 0;
 }
 
-FString CNullAssetBackend::GetModelFrameName( int32 Model, int32 FrameIndex )
+int32 CNullAssetBackendSubsystem::GetModelFrameCount( int32 Model )
+{
+	return 0;
+}
+
+FString CNullAssetBackendSubsystem::GetModelFrameName( int32 Model, int32 FrameIndex )
 {
 	return FString();
 }
 
-bool CNullAssetBackend::SaveModelToMV1( int32 Model, const FString& Path, const FModelSaveOptions& Options, FString& OutWarning )
+bool CNullAssetBackendSubsystem::SaveModelToMV1( int32 Model, const FString& Path, const FModelSaveOptions& Options, FString& OutWarning )
 {
 	return false;
 }
@@ -511,7 +511,7 @@ bool CNullAssetBackend::SaveModelToMV1( int32 Model, const FString& Path, const 
 
 #pragma region Buffers
 
-bool CNullAssetBackend::CreateMeshBuffers( const FMeshVertex* Vertices, int32 NumVertices, const uint32* Indices, int32 NumIndices, int32& OutVertexBuffer, int32& OutIndexBuffer )
+bool CNullAssetBackendSubsystem::CreateMeshBuffers( const FMeshVertex* Vertices, int32 NumVertices, const uint32* Indices, int32 NumIndices, int32& OutVertexBuffer, int32& OutIndexBuffer )
 {
 	if ( Vertices == nullptr || Indices == nullptr || NumVertices <= 0 || NumIndices <= 0 )
 	{
@@ -527,17 +527,17 @@ bool CNullAssetBackend::CreateMeshBuffers( const FMeshVertex* Vertices, int32 Nu
 	return true;
 }
 
-void CNullAssetBackend::DeleteVertexBuffer( int32 VertexBuffer )
+void CNullAssetBackendSubsystem::DeleteVertexBuffer( int32 VertexBuffer )
 {
 	VertexBuffers.Remove( VertexBuffer );
 }
 
-void CNullAssetBackend::DeleteIndexBuffer( int32 IndexBuffer )
+void CNullAssetBackendSubsystem::DeleteIndexBuffer( int32 IndexBuffer )
 {
 	IndexBuffers.Remove( IndexBuffer );
 }
 
-int32 CNullAssetBackend::MakeVertexBuffer( int32 NumVertices )
+int32 CNullAssetBackendSubsystem::MakeVertexBuffer( int32 NumVertices )
 {
 	if ( NumVertices <= 0 )
 	{
@@ -548,7 +548,7 @@ int32 CNullAssetBackend::MakeVertexBuffer( int32 NumVertices )
 	return Handle;
 }
 
-bool CNullAssetBackend::WriteVertexBuffer( int32 VertexBuffer, int32 StartIndex, const FDrawVertex3D* Vertices, int32 NumVertices )
+bool CNullAssetBackendSubsystem::WriteVertexBuffer( int32 VertexBuffer, int32 StartIndex, const FDrawVertex3D* Vertices, int32 NumVertices )
 {
 	const int32* Size = VertexBuffers.Find( VertexBuffer );
 	if ( Size == nullptr || Vertices == nullptr || StartIndex < 0 || NumVertices <= 0 )
@@ -558,7 +558,7 @@ bool CNullAssetBackend::WriteVertexBuffer( int32 VertexBuffer, int32 StartIndex,
 	return static_cast<int64>( StartIndex ) + NumVertices <= *Size;
 }
 
-int32 CNullAssetBackend::MakeIndexBuffer( int32 NumIndices, bool b32Bit )
+int32 CNullAssetBackendSubsystem::MakeIndexBuffer( int32 NumIndices, bool b32Bit )
 {
 	if ( NumIndices <= 0 )
 	{
@@ -572,7 +572,7 @@ int32 CNullAssetBackend::MakeIndexBuffer( int32 NumIndices, bool b32Bit )
 	return Handle;
 }
 
-bool CNullAssetBackend::WriteIndexBuffer( int32 IndexBuffer, int32 StartIndex, const void* Indices, int32 NumIndices )
+bool CNullAssetBackendSubsystem::WriteIndexBuffer( int32 IndexBuffer, int32 StartIndex, const void* Indices, int32 NumIndices )
 {
 	const FIndexBufferRecord* Record = IndexBuffers.Find( IndexBuffer );
 	if ( Record == nullptr || Indices == nullptr || StartIndex < 0 || NumIndices <= 0 )
@@ -582,7 +582,7 @@ bool CNullAssetBackend::WriteIndexBuffer( int32 IndexBuffer, int32 StartIndex, c
 	return static_cast<int64>( StartIndex ) + NumIndices <= Record->NumIndices;
 }
 
-int32 CNullAssetBackend::MakeShadowMap( int32 Width, int32 Height )
+int32 CNullAssetBackendSubsystem::MakeShadowMap( int32 Width, int32 Height )
 {
 	if ( Width < 1 || Width > NDrawShadowMap::MaxSize || Height < 1 || Height > NDrawShadowMap::MaxSize )
 	{
@@ -596,12 +596,12 @@ int32 CNullAssetBackend::MakeShadowMap( int32 Width, int32 Height )
 	return Handle;
 }
 
-void CNullAssetBackend::DeleteShadowMap( int32 ShadowMap )
+void CNullAssetBackendSubsystem::DeleteShadowMap( int32 ShadowMap )
 {
 	ShadowMaps.Remove( ShadowMap );
 }
 
-int32 CNullAssetBackend::MakeShader( EShaderStage Stage, const void* Code, int32 NumBytes )
+int32 CNullAssetBackendSubsystem::MakeShader( EShaderStage Stage, const void* Code, int32 NumBytes )
 {
 	if ( Stage != EShaderStage::Vertex && Stage != EShaderStage::Pixel )
 	{
@@ -617,12 +617,12 @@ int32 CNullAssetBackend::MakeShader( EShaderStage Stage, const void* Code, int32
 	return Handle;
 }
 
-void CNullAssetBackend::DeleteShader( int32 Shader )
+void CNullAssetBackendSubsystem::DeleteShader( int32 Shader )
 {
 	Shaders.Remove( Shader );
 }
 
-bool CNullAssetBackend::CompileShader( EShaderStage Stage, const char* Source, int32 NumBytes, const char* SourceName, const char* EntryPoint, const char* ShaderModel, TArray<uint8>& OutCode, FString& OutMessage )
+bool CNullAssetBackendSubsystem::CompileShader( EShaderStage Stage, const char* Source, int32 NumBytes, const char* SourceName, const char* EntryPoint, const char* ShaderModel, TArray<uint8>& OutCode, FString& OutMessage )
 {
 	OutCode.Reset();
 	OutMessage.Empty();
@@ -658,7 +658,7 @@ bool CNullAssetBackend::CompileShader( EShaderStage Stage, const char* Source, i
 
 #pragma region Fonts
 
-int32 CNullAssetBackend::GetAdvance( const FFontRecord& Font, uint32 CodePoint ) const
+int32 CNullAssetBackendSubsystem::GetAdvance( const FFontRecord& Font, uint32 CodePoint ) const
 {
 	if ( const int32* Custom = Font.CharAdvances.Find( CodePoint ) )
 	{
@@ -670,7 +670,7 @@ int32 CNullAssetBackend::GetAdvance( const FFontRecord& Font, uint32 CodePoint )
 	return NMath::Max( Base + Font.Desc.LetterSpacing + 2 * Font.Desc.EdgeSize, 0 );
 }
 
-void CNullAssetBackend::Layout( const FFontRecord& Font, const char* Text, FTextSize& OutSize, TArray<FTextGlyph>* OutGlyphs ) const
+void CNullAssetBackendSubsystem::Layout( const FFontRecord& Font, const char* Text, FTextSize& OutSize, TArray<FTextGlyph>* OutGlyphs ) const
 {
 	OutSize = FTextSize();
 	if ( OutGlyphs != nullptr )
@@ -720,7 +720,7 @@ void CNullAssetBackend::Layout( const FFontRecord& Font, const char* Text, FText
 	OutSize.Height = ( OutSize.NumLines - 1 ) * Font.Metrics.LineHeight + Font.Metrics.GlyphHeight;
 }
 
-int32 CNullAssetBackend::MakeFont( const FFontDesc& Desc )
+int32 CNullAssetBackendSubsystem::MakeFont( const FFontDesc& Desc )
 {
 	if ( Desc.Size < 1 || Desc.Size > MaxFontSize || Desc.EdgeSize < 0 || Desc.EdgeSize > MaxFontSize )
 	{
@@ -740,18 +740,18 @@ int32 CNullAssetBackend::MakeFont( const FFontDesc& Desc )
 	return Handle;
 }
 
-void CNullAssetBackend::DeleteFont( int32 Font )
+void CNullAssetBackendSubsystem::DeleteFont( int32 Font )
 {
 	Fonts.Remove( Font );
 }
 
-int32 CNullAssetBackend::MeasureText( int32 Font, const char* Text )
+int32 CNullAssetBackendSubsystem::MeasureText( int32 Font, const char* Text )
 {
 	FTextSize Size;
 	return MeasureTextSize( Font, Text, Size ) ? Size.Width : 0;
 }
 
-bool CNullAssetBackend::GetFontMetrics( int32 Font, FFontMetrics& OutMetrics )
+bool CNullAssetBackendSubsystem::GetFontMetrics( int32 Font, FFontMetrics& OutMetrics )
 {
 	const FFontRecord* Record = Fonts.Find( Font );
 	if ( Record == nullptr )
@@ -762,7 +762,7 @@ bool CNullAssetBackend::GetFontMetrics( int32 Font, FFontMetrics& OutMetrics )
 	return true;
 }
 
-bool CNullAssetBackend::MeasureTextSize( int32 Font, const char* Text, FTextSize& OutSize )
+bool CNullAssetBackendSubsystem::MeasureTextSize( int32 Font, const char* Text, FTextSize& OutSize )
 {
 	const FFontRecord* Record = Fonts.Find( Font );
 	if ( Record == nullptr )
@@ -773,7 +773,7 @@ bool CNullAssetBackend::MeasureTextSize( int32 Font, const char* Text, FTextSize
 	return true;
 }
 
-bool CNullAssetBackend::GetTextGlyphs( int32 Font, const char* Text, TArray<FTextGlyph>& OutGlyphs )
+bool CNullAssetBackendSubsystem::GetTextGlyphs( int32 Font, const char* Text, TArray<FTextGlyph>& OutGlyphs )
 {
 	const FFontRecord* Record = Fonts.Find( Font );
 	if ( Record == nullptr )
@@ -785,18 +785,18 @@ bool CNullAssetBackend::GetTextGlyphs( int32 Font, const char* Text, TArray<FTex
 	return true;
 }
 
-bool CNullAssetBackend::IsFontAvailable( const FString& Face )
+bool CNullAssetBackendSubsystem::IsFontAvailable( const FString& Face )
 {
 	return Face == NullFontName;
 }
 
-void CNullAssetBackend::GetFontNames( TArray<FString>& OutNames )
+void CNullAssetBackendSubsystem::GetFontNames( TArray<FString>& OutNames )
 {
 	OutNames.Reset();
 	OutNames.Add( FString( NullFontName ) );
 }
 
-bool CNullAssetBackend::AddFontCharImage( int32 Font, const char* Character, int32 Image, int32 DrawX, int32 DrawY, int32 Advance )
+bool CNullAssetBackendSubsystem::AddFontCharImage( int32 Font, const char* Character, int32 Image, int32 DrawX, int32 DrawY, int32 Advance )
 {
 	FFontRecord* Record = Fonts.Find( Font );
 	if ( Record == nullptr || Character == nullptr || Character[0] == '\0' || !Textures.Contains( Image ) || Advance < 0 )
@@ -814,7 +814,7 @@ bool CNullAssetBackend::AddFontCharImage( int32 Font, const char* Character, int
 	return true;
 }
 
-void CNullAssetBackend::RemoveFontCharImage( int32 Font, const char* Character )
+void CNullAssetBackendSubsystem::RemoveFontCharImage( int32 Font, const char* Character )
 {
 	FFontRecord* Record = Fonts.Find( Font );
 	if ( Record == nullptr || Character == nullptr || Character[0] == '\0' )
@@ -826,7 +826,7 @@ void CNullAssetBackend::RemoveFontCharImage( int32 Font, const char* Character )
 	Record->CharAdvances.Remove( CodePoint );
 }
 
-bool CNullAssetBackend::AddFontFile( const FString& Path )
+bool CNullAssetBackendSubsystem::AddFontFile( const FString& Path )
 {
 	if ( !NFileSystem::FileExists( Path ) )
 	{
@@ -836,7 +836,7 @@ bool CNullAssetBackend::AddFontFile( const FString& Path )
 	return true;
 }
 
-void CNullAssetBackend::RemoveFontFile( const FString& Path )
+void CNullAssetBackendSubsystem::RemoveFontFile( const FString& Path )
 {
 	FontFiles.Remove( Path );
 }
@@ -845,7 +845,7 @@ void CNullAssetBackend::RemoveFontFile( const FString& Path )
 
 #pragma region Sounds
 
-int32 CNullAssetBackend::LoadSound( const FString& Path, ESoundLoadMode Mode, bool bAsync )
+int32 CNullAssetBackendSubsystem::LoadSound( const FString& Path, ESoundLoadMode Mode, bool bAsync )
 {
 	TArray<uint8> Bytes;
 	if ( !NFile::ReadAllBytes( Path, Bytes ) || Bytes.Num() == 0 )
@@ -860,7 +860,7 @@ int32 CNullAssetBackend::LoadSound( const FString& Path, ESoundLoadMode Mode, bo
 	return Handle;
 }
 
-int32 CNullAssetBackend::DuplicateSound( int32 Source )
+int32 CNullAssetBackendSubsystem::DuplicateSound( int32 Source )
 {
 	const FSoundRecord* Record = Sounds.Find( Source );
 	// 複製できるのは、Memory で読み込んだものだけ
@@ -874,18 +874,18 @@ int32 CNullAssetBackend::DuplicateSound( int32 Source )
 	return Handle;
 }
 
-void CNullAssetBackend::DeleteSound( int32 Sound )
+void CNullAssetBackendSubsystem::DeleteSound( int32 Sound )
 {
 	Sounds.Remove( Sound );
 }
 
-float32 CNullAssetBackend::GetSoundLength( int32 Sound )
+float32 CNullAssetBackendSubsystem::GetSoundLength( int32 Sound )
 {
 	const FSoundRecord* Record = Sounds.Find( Sound );
 	return Record != nullptr ? Record->Length : -1.0f;
 }
 
-bool CNullAssetBackend::GetSoundInfo( int32 Sound, FSoundInfo& Out )
+bool CNullAssetBackendSubsystem::GetSoundInfo( int32 Sound, FSoundInfo& Out )
 {
 	const FSoundRecord* Record = Sounds.Find( Sound );
 	if ( Record == nullptr )
@@ -904,7 +904,7 @@ bool CNullAssetBackend::GetSoundInfo( int32 Sound, FSoundInfo& Out )
 	return true;
 }
 
-int32 CNullAssetBackend::CreateSoundFromPcm( const FPcmBuffer& Pcm )
+int32 CNullAssetBackendSubsystem::CreateSoundFromPcm( const FPcmBuffer& Pcm )
 {
 	if ( !Pcm.IsValid() )
 	{
@@ -927,7 +927,7 @@ int32 CNullAssetBackend::CreateSoundFromPcm( const FPcmBuffer& Pcm )
 
 #pragma region Memory
 
-FBackendMemoryInfo CNullAssetBackend::GetMemoryInfo()
+FBackendMemoryInfo CNullAssetBackendSubsystem::GetMemoryInfo()
 {
 	FBackendMemoryInfo Info;
 	int64 Used = 0;
@@ -960,12 +960,12 @@ FBackendMemoryInfo CNullAssetBackend::GetMemoryInfo()
 	return Info;
 }
 
-int64 CNullAssetBackend::EstimateModelBytes( int32 Model )
+int64 CNullAssetBackendSubsystem::EstimateModelBytes( int32 Model )
 {
 	return 0;
 }
 
-int64 CNullAssetBackend::EstimateSoundBytes( int32 Sound, ESoundLoadMode Mode )
+int64 CNullAssetBackendSubsystem::EstimateSoundBytes( int32 Sound, ESoundLoadMode Mode )
 {
 	const FSoundRecord* Record = Sounds.Find( Sound );
 	if ( Record == nullptr )
@@ -976,12 +976,12 @@ int64 CNullAssetBackend::EstimateSoundBytes( int32 Sound, ESoundLoadMode Mode )
 	return Mode == ESoundLoadMode::Memory ? static_cast<int64>( Record->Length * 44100.0f * 4.0f ) : 65536;
 }
 
-bool CNullAssetBackend::IsLoading( int32 Handle )
+bool CNullAssetBackendSubsystem::IsLoading( int32 Handle )
 {
 	return false;
 }
 
-int32 CNullAssetBackend::GetNumLoading()
+int32 CNullAssetBackendSubsystem::GetNumLoading()
 {
 	return 0;
 }
@@ -990,42 +990,42 @@ int32 CNullAssetBackend::GetNumLoading()
 
 #pragma region Counts
 
-int32 CNullAssetBackend::GetNumTextures() const
+int32 CNullAssetBackendSubsystem::GetNumTextures() const
 {
 	return Textures.Num();
 }
 
-int32 CNullAssetBackend::GetNumVertexBuffers() const
+int32 CNullAssetBackendSubsystem::GetNumVertexBuffers() const
 {
 	return VertexBuffers.Num();
 }
 
-int32 CNullAssetBackend::GetNumIndexBuffers() const
+int32 CNullAssetBackendSubsystem::GetNumIndexBuffers() const
 {
 	return IndexBuffers.Num();
 }
 
-int32 CNullAssetBackend::GetNumShadowMaps() const
+int32 CNullAssetBackendSubsystem::GetNumShadowMaps() const
 {
 	return ShadowMaps.Num();
 }
 
-int32 CNullAssetBackend::GetNumShaders() const
+int32 CNullAssetBackendSubsystem::GetNumShaders() const
 {
 	return Shaders.Num();
 }
 
-int32 CNullAssetBackend::GetNumFonts() const
+int32 CNullAssetBackendSubsystem::GetNumFonts() const
 {
 	return Fonts.Num();
 }
 
-int32 CNullAssetBackend::GetNumSounds() const
+int32 CNullAssetBackendSubsystem::GetNumSounds() const
 {
 	return Sounds.Num();
 }
 
-int32 CNullAssetBackend::GetNumLiveHandles() const
+int32 CNullAssetBackendSubsystem::GetNumLiveHandles() const
 {
 	return Textures.Num() + VertexBuffers.Num() + IndexBuffers.Num() + ShadowMaps.Num() + Shaders.Num() + Fonts.Num() + Sounds.Num();
 }

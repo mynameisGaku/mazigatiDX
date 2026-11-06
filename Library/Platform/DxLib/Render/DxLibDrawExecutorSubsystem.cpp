@@ -1,4 +1,4 @@
-﻿#include "DxLibDrawExecutor.h"
+﻿#include "DxLibDrawExecutorSubsystem.h"
 
 
 #include "Library/Core/Collection/Array.h"
@@ -13,7 +13,7 @@
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 #include "Library/Math/MathConstants.h"
 #include "Library/Math/MathUtils.h"
-#include "Library/Platform/DxLib/Asset/DxLibAssetBackend.h"
+#include "Library/Platform/DxLib/Asset/DxLibAssetBackendSubsystem.h"
 #include "Library/Platform/DxLib/Asset/DxLibImageOps.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 #include "Library/Platform/DxLib/Render/DxLibLighting.h"
@@ -24,7 +24,7 @@
 #include "Library/Platform/DxLib/Render/DxLibShapes3D.h"
 #include "Library/Platform/BackendSelection.h"
 
-REGISTER_SUBSYSTEM( CDxLibDrawExecutor )
+REGISTER_SUBSYSTEM( CDxLibDrawExecutorSubsystem )
 
 namespace
 {
@@ -403,23 +403,23 @@ namespace
 	}
 }
 
-bool CDxLibDrawExecutor::ShouldCreateSubsystem( CEngine& Engine ) const
+bool CDxLibDrawExecutorSubsystem::ShouldCreateSubsystem( CEngine& Engine ) const
 {
 	return !NBackendSelection::IsNullRequested();
 }
 
-void CDxLibDrawExecutor::Initialize( FSubsystemCollection& Collection )
+void CDxLibDrawExecutorSubsystem::Initialize( FSubsystemCollection& Collection )
 {
 	// DxLib（プラットフォーム）が初期化されたあとに使う
 	Collection.InitializeDependency<IPlatform>();
 	// asset managerと同じ寿命のplatform geometry backendを確保する。
-	AssetBackend = Collection.InitializeDependency<CDxLibAssetBackend>();
+	AssetBackend = Collection.InitializeDependency<CDxLibAssetBackendSubsystem>();
 	// platformが有効な間にnative材質描画資源を作る。失敗時は能力がfalseのまま。
 	EffectMaterialRenderer.Initialize();
 }
 
 // DxLib終了前にnative shaderとbufferなどの所有資源を解放する。
-void CDxLibDrawExecutor::Deinitialize()
+void CDxLibDrawExecutorSubsystem::Deinitialize()
 {
 	EffectMaterialRenderer.Deinitialize();
 	AssetBackend = nullptr;
@@ -431,7 +431,7 @@ void CDxLibDrawExecutor::Deinitialize()
 }
 
 // DxLib のマスクは、マスクスクリーンを作ってからでないと使えない。初めて使うときに 1 度だけ作る
-bool CDxLibDrawExecutor::EnsureMaskScreen()
+bool CDxLibDrawExecutorSubsystem::EnsureMaskScreen()
 {
 	if ( !bMaskScreenCreated && CreateMaskScreen() == 0 )
 	{
@@ -441,42 +441,42 @@ bool CDxLibDrawExecutor::EnsureMaskScreen()
 }
 
 // 現在のDirect3D device上で材質描画用shaderが準備済みか返す。
-bool CDxLibDrawExecutor::SupportsEffectMaterials() const
+bool CDxLibDrawExecutorSubsystem::SupportsEffectMaterials() const
 {
 	return EffectMaterialRenderer.IsAvailable();
 }
 
-bool CDxLibDrawExecutor::SupportsEffectMaterialRibbons() const
+bool CDxLibDrawExecutorSubsystem::SupportsEffectMaterialRibbons() const
 {
 	return EffectMaterialRenderer.IsRibbonAvailable();
 }
 
-bool CDxLibDrawExecutor::SupportsEffectUVDistortion() const
+bool CDxLibDrawExecutorSubsystem::SupportsEffectUVDistortion() const
 {
 	return EffectMaterialRenderer.IsUVDistortionAvailable();
 }
 
-bool CDxLibDrawExecutor::SupportsEffectRibbonUVDistortion() const
+bool CDxLibDrawExecutorSubsystem::SupportsEffectRibbonUVDistortion() const
 {
 	return EffectMaterialRenderer.IsRibbonUVDistortionAvailable();
 }
 
-bool CDxLibDrawExecutor::SupportsEffectMaterialMesh() const
+bool CDxLibDrawExecutorSubsystem::SupportsEffectMaterialMesh() const
 {
 	return EffectMaterialRenderer.IsMeshAvailable();
 }
 
-bool CDxLibDrawExecutor::SupportsModelMaterialEffects() const
+bool CDxLibDrawExecutorSubsystem::SupportsModelMaterialEffects() const
 {
 	return AssetBackend != nullptr && EffectMaterialRenderer.IsMeshAvailable();
 }
 
-bool CDxLibDrawExecutor::SupportsModelFrameOverrides() const
+bool CDxLibDrawExecutorSubsystem::SupportsModelFrameOverrides() const
 {
 	return AssetBackend != nullptr;
 }
 
-void CDxLibDrawExecutor::Execute( const FDrawSpan& Span )
+void CDxLibDrawExecutorSubsystem::Execute( const FDrawSpan& Span )
 {
 	// このオブジェクトの分で変えた状態。終わりで、元に戻す（変える前の値は、最初に変えるときに覚える）
 	// ブレンド・3D 図形の変換・明るさは、最初に変えるときに、変える前の値を DxLib から読んで覚え、終わりにその値へ戻す（実行の前の値に戻す）

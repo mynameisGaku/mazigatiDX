@@ -1,11 +1,11 @@
 ﻿// SPDX-License-Identifier: MIT
-#include "DxLibDrawExecutor.h"
+#include "DxLibDrawExecutorSubsystem.h"
 
 #include "Library/Core/Interfaces/Asset/AssetBackend.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Framework/Render/Draw/DrawModelFrameOverrideScope.h"
 #include "Library/Framework/Render/Draw/DrawModelFramePoseData.h"
-#include "Library/Platform/DxLib/Asset/DxLibAssetBackend.h"
+#include "Library/Platform/DxLib/Asset/DxLibAssetBackendSubsystem.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogModelFramePoseCommand, Log )
@@ -44,7 +44,7 @@ namespace
 	}
 }
 
-void CDxLibDrawExecutor::ExecuteModelFramePose( const FDrawCommandView& Command )
+void CDxLibDrawExecutorSubsystem::ExecuteModelFramePose( const FDrawCommandView& Command )
 {
 	static bool bInvalidLogged = false; // payload不正を一度だけ知らせる状態。
 	static bool bBackendUnavailableLogged = false; // backend未準備を一度だけ知らせる状態。

@@ -1,6 +1,6 @@
 ﻿#include "AudioComponents.h"
 
-#include "Library/Framework/Audio/AudioSystem.h"
+#include "Library/Framework/Audio/AudioSubsystem.h"
 #include "Library/Framework/Component/TransformComponent.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Object/GameObject.h"
@@ -12,7 +12,7 @@ void CAudioListenerComponent::Tick( float32 DeltaTime )
 {
 	(void)DeltaTime;
 	CGameObject* Owner = GetOwner();
-	CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>();
+	CAudioSubsystem* Audio = GetAppSubsystem<CAudioSubsystem>();
 	CTransformComponent* Transform = Owner != nullptr ? Owner->GetComponent<CTransformComponent>() : nullptr;
 	if ( Audio == nullptr || Transform == nullptr )
 	{
@@ -28,7 +28,7 @@ void CAudioListenerComponent::Tick( float32 DeltaTime )
 //=============================================================================
 void CAudioSourceComponent::Play()
 {
-	CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>();
+	CAudioSubsystem* Audio = GetAppSubsystem<CAudioSubsystem>();
 	CGameObject* Owner = GetOwner();
 	if ( Audio == nullptr || !Sound.IsValid() || IsPlaying() )
 	{
@@ -44,7 +44,7 @@ void CAudioSourceComponent::Play()
 
 void CAudioSourceComponent::Stop( float32 FadeOut )
 {
-	if ( CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>() )
+	if ( CAudioSubsystem* Audio = GetAppSubsystem<CAudioSubsystem>() )
 	{
 		Audio->Stop( Handle, FadeOut );
 	}
@@ -54,7 +54,7 @@ void CAudioSourceComponent::Stop( float32 FadeOut )
 
 bool CAudioSourceComponent::IsPlaying() const
 {
-	const CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>();
+	const CAudioSubsystem* Audio = GetAppSubsystem<CAudioSubsystem>();
 	return Audio != nullptr && Audio->IsPlaying( Handle );
 }
 
@@ -73,7 +73,7 @@ void CAudioSourceComponent::OnOwnerSceneChanged( CScene* NewScene )
 
 void CAudioSourceComponent::OnDetach()
 {
-	if ( CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>() )
+	if ( CAudioSubsystem* Audio = GetAppSubsystem<CAudioSubsystem>() )
 	{
 		Audio->Stop( Handle, 0.0f );
 	}
@@ -83,7 +83,7 @@ void CAudioSourceComponent::OnDetach()
 void CAudioSourceComponent::Tick( float32 DeltaTime )
 {
 	(void)DeltaTime;
-	CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>();
+	CAudioSubsystem* Audio = GetAppSubsystem<CAudioSubsystem>();
 	if ( Audio == nullptr )
 	{
 		return;

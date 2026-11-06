@@ -8,7 +8,7 @@
 // CDynamicTexture
 //   CPU 側の画素（FPixelImage）から作った画像。CTexture でもあるので、IImage として、ふつうの画像と同じように描ける。
 //   中身（画素）は、あとから Update で替えられる（ハンドルは変わらないので、貼ってある場所は、そのまま新しい絵になる）。
-//   CAssetManager::CreateDynamicTexture で作る。最後の参照が消えると、自動で解放される（CTexture と同じ）。
+//   CAssetManagerSubsystem::CreateDynamicTexture で作る。最後の参照が消えると、自動で解放される（CTexture と同じ）。
 //
 //   FPixelImage Canvas( 128, 128, FColor32( 0, 0, 0, 255 ) );
 //   TSharedPtr<CDynamicTexture> Texture = Assets->CreateDynamicTexture( "Canvas", Canvas );

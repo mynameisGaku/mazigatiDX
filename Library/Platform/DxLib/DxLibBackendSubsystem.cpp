@@ -1,4 +1,4 @@
-﻿#include "DxLibBackend.h"
+﻿#include "DxLibBackendSubsystem.h"
 
 
 #include "Library/Core/Collection/Set.h"
@@ -17,7 +17,7 @@
 
 DEFINE_LOG_CATEGORY( LogPlatform )
 
-REGISTER_SUBSYSTEM( CDxLibBackend )
+REGISTER_SUBSYSTEM( CDxLibBackendSubsystem )
 
 namespace
 {
@@ -42,12 +42,12 @@ namespace
 
 #pragma region Lifecycle
 
-bool CDxLibBackend::ShouldCreateSubsystem( CEngine& Engine ) const
+bool CDxLibBackendSubsystem::ShouldCreateSubsystem( CEngine& Engine ) const
 {
 	return !NBackendSelection::IsNullRequested();
 }
 
-void CDxLibBackend::Initialize( FSubsystemCollection& Collection )
+void CDxLibBackendSubsystem::Initialize( FSubsystemCollection& Collection )
 {
 	const TResult<void> InitResult = Init( GetEngine()->GetStartupSettings() );
 	if ( InitResult.IsErr() )
@@ -57,16 +57,16 @@ void CDxLibBackend::Initialize( FSubsystemCollection& Collection )
 	}
 }
 
-void CDxLibBackend::Deinitialize()
+void CDxLibBackendSubsystem::Deinitialize()
 {
 	Shutdown();
 }
 
-TResult<void> CDxLibBackend::Init( const FWindowSettings& InSettings )
+TResult<void> CDxLibBackendSubsystem::Init( const FWindowSettings& InSettings )
 {
 	if ( bInitialized )
 	{
-		return TResult<void>::Err( "CDxLibBackend is already initialized" );
+		return TResult<void>::Err( "CDxLibBackendSubsystem is already initialized" );
 	}
 
 	Settings       = InSettings;
@@ -128,7 +128,7 @@ TResult<void> CDxLibBackend::Init( const FWindowSettings& InSettings )
 	return TResult<void>::Ok();
 }
 
-void CDxLibBackend::Shutdown()
+void CDxLibBackendSubsystem::Shutdown()
 {
 	if ( !bInitialized )
 	{
@@ -152,7 +152,7 @@ void CDxLibBackend::Shutdown()
 	LOG( LogPlatform, Log, "Shutdown" );
 }
 
-void CDxLibBackend::ApplyPreInitSettings()
+void CDxLibBackendSubsystem::ApplyPreInitSettings()
 {
 	// DxLib に渡す文字列（ファイル名・描画する文字・フォント名・ウィンドウの題など）を UTF-8 として読ませる。
 	// DxLib_Init の前に呼ぶ必要がある（ほかの設定より先にしておく）
@@ -184,7 +184,7 @@ void CDxLibBackend::ApplyPreInitSettings()
 	}
 }
 
-void CDxLibBackend::ApplyRenderState()
+void CDxLibBackendSubsystem::ApplyRenderState()
 {
 	// SetDrawScreen はカメラ設定をリセットするので先に呼ぶ
 	SetDrawScreen( DX_SCREEN_BACK );
@@ -199,7 +199,7 @@ void CDxLibBackend::ApplyRenderState()
 
 #pragma region Frame
 
-bool CDxLibBackend::BeginFrame()
+bool CDxLibBackendSubsystem::BeginFrame()
 {
 	if ( !bInitialized )
 	{
@@ -248,7 +248,7 @@ bool CDxLibBackend::BeginFrame()
 	return true;
 }
 
-bool CDxLibBackend::RequestScreenshot( const FString& Path, int32 DelayFrames )
+bool CDxLibBackendSubsystem::RequestScreenshot( const FString& Path, int32 DelayFrames )
 {
 	if ( !bInitialized || Path.IsEmpty() )
 	{
@@ -262,12 +262,12 @@ bool CDxLibBackend::RequestScreenshot( const FString& Path, int32 DelayFrames )
 	return true;
 }
 
-void CDxLibBackend::SetFrameCaptureSink( IFrameCaptureSink* Sink )
+void CDxLibBackendSubsystem::SetFrameCaptureSink( IFrameCaptureSink* Sink )
 {
 	FrameCaptureSink = Sink;
 }
 
-void CDxLibBackend::DeliverFrameToSink( EFrameCaptureStage Stage )
+void CDxLibBackendSubsystem::DeliverFrameToSink( EFrameCaptureStage Stage )
 {
 	const uint64 FrameIndex = FrameCount + 1;
 	if ( FrameCaptureSink == nullptr || !FrameCaptureSink->WantsFrame( FrameIndex, Stage ) )
@@ -318,7 +318,7 @@ void CDxLibBackend::DeliverFrameToSink( EFrameCaptureStage Stage )
 	FrameCaptureSink->OnFrame( Frame );
 }
 
-void CDxLibBackend::CaptureScreenshotIfRequested()
+void CDxLibBackendSubsystem::CaptureScreenshotIfRequested()
 {
 	if ( bScreenshotDone || ScreenshotPath.IsEmpty() )
 	{
@@ -345,7 +345,7 @@ void CDxLibBackend::CaptureScreenshotIfRequested()
 	}
 }
 
-void CDxLibBackend::EndFrame()
+void CDxLibBackendSubsystem::EndFrame()
 {
 	if ( !bInFrame )
 	{
@@ -398,7 +398,7 @@ void CDxLibBackend::EndFrame()
 	bInFrame = false;
 }
 
-void CDxLibBackend::RenderImGuiViewports()
+void CDxLibBackendSubsystem::RenderImGuiViewports()
 {
 	// ImGui::RenderPlatformWindowsDefault と同じ手順を、表示する外部ウィンドウを選んだ上で行う
 	ImGuiPlatformIO& PlatformIO = ImGui::GetPlatformIO();
@@ -471,7 +471,7 @@ void CDxLibBackend::RenderImGuiViewports()
 	ViewportLastPresentTime.RemoveAll( [&AliveIds]( uint32 Id, int64 ) { return !AliveIds.Contains( Id ); } );
 }
 
-void CDxLibBackend::UpdateTime()
+void CDxLibBackendSubsystem::UpdateTime()
 {
 	const int64 Now = GetNowHiPerformanceCount();
 	float64 Delta = static_cast<float64>( Now - LastCounter ) / 1000000.0;
@@ -501,7 +501,7 @@ void CDxLibBackend::UpdateTime()
 	}
 }
 
-void CDxLibBackend::WaitForFrameLimit()
+void CDxLibBackendSubsystem::WaitForFrameLimit()
 {
 	// bVSync が有効でも、ディスプレイが省電力（画面オフ）のときは DWM が垂直同期の待ちを省いて 800 FPS 以上で空回りするため、既定で 60 FPS を上限にする
 	const int32 TargetFPS = Settings.MaxFPS > 0 ? Settings.MaxFPS : ( Settings.bVSync ? 60 : 0 );
@@ -534,7 +534,7 @@ void CDxLibBackend::WaitForFrameLimit()
 
 #pragma region Window
 
-void CDxLibBackend::SetWindowMode( EWindowMode Mode )
+void CDxLibBackendSubsystem::SetWindowMode( EWindowMode Mode )
 {
 	if ( !bInitialized )
 	{
@@ -550,13 +550,13 @@ void CDxLibBackend::SetWindowMode( EWindowMode Mode )
 	LOG( LogPlatform, Verbose, "Window mode change requested: %s (applied at the start of the next frame)", WindowModeToString( Mode ) );
 }
 
-void CDxLibBackend::ToggleFullscreen()
+void CDxLibBackendSubsystem::ToggleFullscreen()
 {
 	const EWindowMode Current = PendingWindowMode.Get( Settings.WindowMode );
 	SetWindowMode( Current == EWindowMode::Windowed ? LastFullscreenMode : EWindowMode::Windowed );
 }
 
-bool CDxLibBackend::ApplyWindowMode( EWindowMode Mode )
+bool CDxLibBackendSubsystem::ApplyWindowMode( EWindowMode Mode )
 {
 	if ( Mode == Settings.WindowMode )
 	{
@@ -601,7 +601,7 @@ bool CDxLibBackend::ApplyWindowMode( EWindowMode Mode )
 	return true;
 }
 
-void CDxLibBackend::SetWindowTitle( const FString& Title )
+void CDxLibBackendSubsystem::SetWindowTitle( const FString& Title )
 {
 	Settings.Title = Title;
 	if ( bInitialized )
@@ -611,7 +611,7 @@ void CDxLibBackend::SetWindowTitle( const FString& Title )
 	LOG( LogPlatform, Verbose, "Window title: %s", *Title );
 }
 
-void CDxLibBackend::SetMouseCursorVisible( bool bVisible )
+void CDxLibBackendSubsystem::SetMouseCursorVisible( bool bVisible )
 {
 	if ( Settings.bShowMouseCursor == bVisible )
 	{
@@ -625,7 +625,7 @@ void CDxLibBackend::SetMouseCursorVisible( bool bVisible )
 	LOG( LogPlatform, Verbose, "Mouse cursor %s", bVisible ? "shown" : "hidden" );
 }
 
-void CDxLibBackend::ApplyMouseCursor()
+void CDxLibBackendSubsystem::ApplyMouseCursor()
 {
 	SetMouseDispFlag( Settings.bShowMouseCursor ? TRUE : FALSE );
 
@@ -645,7 +645,7 @@ void CDxLibBackend::ApplyMouseCursor()
 	}
 }
 
-void CDxLibBackend::SetWindowExtendRate( float64 Rate )
+void CDxLibBackendSubsystem::SetWindowExtendRate( float64 Rate )
 {
 	Settings.WindowExtendRate = Rate;
 	if ( bInitialized && Settings.WindowMode == EWindowMode::Windowed )
@@ -655,7 +655,7 @@ void CDxLibBackend::SetWindowExtendRate( float64 Rate )
 	LOG( LogPlatform, Verbose, "Window scale: %.2f%s", Rate, Settings.WindowMode == EWindowMode::Windowed ? "" : " (applied when back to windowed)" );
 }
 
-void CDxLibBackend::GetDesktopSize( int32& OutWidth, int32& OutHeight ) const
+void CDxLibBackendSubsystem::GetDesktopSize( int32& OutWidth, int32& OutHeight ) const
 {
 	int Width = 0, Height = 0, ColorBitDepth = 0;
 	GetDefaultState( &Width, &Height, &ColorBitDepth );
@@ -667,7 +667,7 @@ void CDxLibBackend::GetDesktopSize( int32& OutWidth, int32& OutHeight ) const
 
 #pragma region ImGui
 
-void CDxLibBackend::InitImGui()
+void CDxLibBackendSubsystem::InitImGui()
 {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -707,7 +707,7 @@ void CDxLibBackend::InitImGui()
 	LOG( LogPlatform, Verbose, "ImGui %s context created (ini: %s)", IMGUI_VERSION, IO.IniFilename ? IO.IniFilename : "(not saved)" );
 }
 
-void CDxLibBackend::ShutdownImGui()
+void CDxLibBackendSubsystem::ShutdownImGui()
 {
 	if ( !bImGuiActive )
 	{
@@ -726,12 +726,12 @@ void CDxLibBackend::ShutdownImGui()
 
 // 仮想関数は vtable 経由で呼ばれインライン展開できないので、ヘッダーではなくここで定義する
 
-bool CDxLibBackend::IsInitialized() const
+bool CDxLibBackendSubsystem::IsInitialized() const
 {
 	return bInitialized;
 }
 
-void CDxLibBackend::RequestExit()
+void CDxLibBackendSubsystem::RequestExit()
 {
 	if ( !bExitRequested )
 	{
@@ -740,52 +740,52 @@ void CDxLibBackend::RequestExit()
 	bExitRequested = true;
 }
 
-bool CDxLibBackend::IsExitRequested() const
+bool CDxLibBackendSubsystem::IsExitRequested() const
 {
 	return bExitRequested;
 }
 
-float32 CDxLibBackend::GetDeltaTime() const
+float32 CDxLibBackendSubsystem::GetDeltaTime() const
 {
 	return DeltaTime;
 }
 
-float64 CDxLibBackend::GetTime() const
+float64 CDxLibBackendSubsystem::GetTime() const
 {
 	return TotalTime;
 }
 
-uint64 CDxLibBackend::GetFrameCount() const
+uint64 CDxLibBackendSubsystem::GetFrameCount() const
 {
 	return FrameCount;
 }
 
-float32 CDxLibBackend::GetFPS() const
+float32 CDxLibBackendSubsystem::GetFPS() const
 {
 	return FPS;
 }
 
-int32 CDxLibBackend::GetScreenWidth() const
+int32 CDxLibBackendSubsystem::GetScreenWidth() const
 {
 	return Settings.Width;
 }
 
-int32 CDxLibBackend::GetScreenHeight() const
+int32 CDxLibBackendSubsystem::GetScreenHeight() const
 {
 	return Settings.Height;
 }
 
-EWindowMode CDxLibBackend::GetWindowMode() const
+EWindowMode CDxLibBackendSubsystem::GetWindowMode() const
 {
 	return Settings.WindowMode;
 }
 
-const FString& CDxLibBackend::GetWindowTitle() const
+const FString& CDxLibBackendSubsystem::GetWindowTitle() const
 {
 	return Settings.Title;
 }
 
-bool CDxLibBackend::IsMouseCursorVisible() const
+bool CDxLibBackendSubsystem::IsMouseCursorVisible() const
 {
 	return Settings.bShowMouseCursor;
 }

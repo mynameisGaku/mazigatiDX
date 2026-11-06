@@ -1,5 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
-#include "DxLibAssetBackend.h"
+#include "DxLibAssetBackendSubsystem.h"
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Math/MathUtils.h"
@@ -7,7 +7,7 @@
 #include "Library/Platform/System/BackendSupport.h"
 
 //=============================================================================
-// CDxLibAssetBackend のうち、音の情報と PCM（生の音。DxLib のソフトサウンド）
+// CDxLibAssetBackendSubsystem のうち、音の情報と PCM（生の音。DxLib のソフトサウンド）
 //   DxLib 未対応: 3 チャンネル以上の音は作れない（ソフトサウンドが 1〜2 チャンネルだけ）。音のハンドルからチャンネル数を調べる関数も無い。
 //=============================================================================
 namespace
@@ -23,7 +23,7 @@ namespace
 	}
 }
 
-bool CDxLibAssetBackend::GetSoundInfo( int32 Sound, FSoundInfo& Out )
+bool CDxLibAssetBackendSubsystem::GetSoundInfo( int32 Sound, FSoundInfo& Out )
 {
 	if ( Sound < 0 || CheckHandleASyncLoad( Sound ) != FALSE )
 	{
@@ -45,7 +45,7 @@ bool CDxLibAssetBackend::GetSoundInfo( int32 Sound, FSoundInfo& Out )
 	return true;
 }
 
-int32 CDxLibAssetBackend::CreateSoundFromPcm( const FPcmBuffer& Pcm )
+int32 CDxLibAssetBackendSubsystem::CreateSoundFromPcm( const FPcmBuffer& Pcm )
 {
 	if ( !Pcm.IsValid() )
 	{
@@ -74,7 +74,7 @@ int32 CDxLibAssetBackend::CreateSoundFromPcm( const FPcmBuffer& Pcm )
 	return Sound;
 }
 
-bool CDxLibAssetBackend::DecodeSoundFile( const FString& Path, FPcmBuffer& Out )
+bool CDxLibAssetBackendSubsystem::DecodeSoundFile( const FString& Path, FPcmBuffer& Out )
 {
 	const int Soft = LoadSoftSound( *Path );
 	if ( Soft < 0 )

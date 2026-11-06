@@ -6,7 +6,7 @@
 #include "Library/DebugUI/World/WorldEditorModelPreview.h"
 #include "Library/DebugUI/World/WorldEditorModelPreviewKey.h"
 #include "Library/Framework/Asset/Asset.h"
-#include "Library/Framework/Asset/AssetManager.h"
+#include "Library/Framework/Asset/AssetManagerSubsystem.h"
 #include "Library/Framework/Asset/EditorAssetInfo.h"
 #include "Library/Framework/Asset/Model/ModelAnimationAsset.h"
 #include "Library/Framework/World/Definition/WorldHierarchy.h"
@@ -47,7 +47,7 @@ namespace
 	}
 
 	// model個体のsourceと設定を更新し、失敗も同じ入力で再試行しない値にする。
-	void BuildModelPreview( FWorldEditorModelPreview& Preview, const FWorldModel& Definition, const TSharedPtr<CModel>& Source, const bool bSourceReady, const IDrawExecutor* Executor, const bool bExecutorSupported, FAssetEditorInfo* Info, CAssetManager* Assets )
+	void BuildModelPreview( FWorldEditorModelPreview& Preview, const FWorldModel& Definition, const TSharedPtr<CModel>& Source, const bool bSourceReady, const IDrawExecutor* Executor, const bool bExecutorSupported, FAssetEditorInfo* Info, CAssetManagerSubsystem* Assets )
 	{
 		Preview.Animator.ClearMaterialEffect();
 		Preview.Animator = FModelAnimator();
@@ -104,7 +104,7 @@ namespace
 	void UpdateWorldModelPreviews( FWorldEditorState& State, const FWorldDefinition& World, TArray<int32>& ObjectIds, TArray<FString>& PrefabStack, int32 PrefabDepth, TSet<FWorldEditorModelPreviewKey>& Seen, float32 DeltaTime, const IDrawExecutor* Executor, bool bExecutorSupported )
 	{
 		FAssetEditorInfo* Info = State.AssetInfo.Get(); // pathごとのasset cache
-		CAssetManager* Assets = NWorldEditorUI::GetAssets(); // world animation assetを読むmanager
+		CAssetManagerSubsystem* Assets = NWorldEditorUI::GetAssets(); // world animation assetを読むmanager
 		for ( const FWorldObject& Object : World.Objects )
 		{
 			if ( !Object.bEnabled ) continue;

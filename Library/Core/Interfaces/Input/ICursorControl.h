@@ -6,7 +6,7 @@
 //=============================================================================
 // ICursorControl
 //   マウスカーソルの見た目と位置を操作する窓口（読み取りは IMouseInput）。
-//   実装: CDxLibInput（DxLib）、CNullInput（検査用）。すべてメインスレッドから使う。
+//   実装: CDxLibInputSubsystem（DxLib）、CNullInputSubsystem（検査用）。すべてメインスレッドから使う。
 //   座標はゲーム描画領域の左上を原点にする（IMouseInput と同じ）。
 //=============================================================================
 class ICursorControl

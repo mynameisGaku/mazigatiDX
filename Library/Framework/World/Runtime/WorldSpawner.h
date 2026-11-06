@@ -10,7 +10,7 @@
 #include "Library/Framework/World/Definition/WorldDefinition.h"
 #include "Library/Math/Transform.h"
 
-class CAssetManager;
+class CAssetManagerSubsystem;
 
 //=============================================================================
 // ワールドをシーンに置く（設置）
@@ -106,7 +106,7 @@ struct FWorldSpawnContext
 	const FWorldObject& Definition;
 	CGameObject& Object;                // 置き物
 	FTransform WorldTransform;          // 置き物の、ワールドでの位置・向き・大きさ（定義から計算したもの。設置の時点で確定している）
-	CAssetManager* Assets = nullptr;    // アセットの読み込み用。動いていなければ nullptr
+	CAssetManagerSubsystem* Assets = nullptr;    // アセットの読み込み用。動いていなければ nullptr
 	FWorldSpawnReport& Report;
 
 	// 警告を、報告とログに出す（オブジェクトの名前と Id がつく）
@@ -262,8 +262,8 @@ struct FWorldSpawnOptions
 {
 	// 使う部品のレジストリ。nullptr なら FWorldSpawnerRegistry::Global()
 	const FWorldSpawnerRegistry* Registry = nullptr;
-	// アセットの読み込み先。nullptr なら、動いている CAssetManager（無ければ、アセットを使う部品は置かれない）
-	CAssetManager* Assets = nullptr;
+	// アセットの読み込み先。nullptr なら、動いている CAssetManagerSubsystem（無ければ、アセットを使う部品は置かれない）
+	CAssetManagerSubsystem* Assets = nullptr;
 	// ワールド全体の置き場所（最上位のオブジェクトの位置に掛かる。同じレベルを、別の場所に置けるように）
 	FTransform Root = FTransform::Identity;
 	// true なら、bEnabled が false のオブジェクトも置く

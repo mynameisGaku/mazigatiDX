@@ -1,10 +1,10 @@
 ﻿// SPDX-License-Identifier: MIT
-#include "DxLibDrawExecutor.h"
+#include "DxLibDrawExecutorSubsystem.h"
 
 
 #include "Library/Framework/Render/Draw/DrawModelMaterial.h"
 #include "Library/Core/Log/Log.h"
-#include "Library/Platform/DxLib/Asset/DxLibAssetBackend.h"
+#include "Library/Platform/DxLib/Asset/DxLibAssetBackendSubsystem.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 #include "Library/Platform/DxLib/DxLibTypes.h"
 #include "Library/Math/Matrix4x4.h"
@@ -93,7 +93,7 @@ namespace
 }
 
 // 固定payloadを検査し、残りをnative描画、対象meshだけ材質効果描画する。
-void CDxLibDrawExecutor::ExecuteModelMaterial( const FDrawCommandView& Command )
+void CDxLibDrawExecutorSubsystem::ExecuteModelMaterial( const FDrawCommandView& Command )
 {
 	// commandが持つ固定payload word数。
 	constexpr int32 DataWords = sizeof( FDrawModelMaterialData ) / 4;

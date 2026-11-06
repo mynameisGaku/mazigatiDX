@@ -1,4 +1,4 @@
-﻿#include "AssetManager.h"
+﻿#include "AssetManagerSubsystem.h"
 
 #include "Library/Core/Thread/GameThread.h"
 #include "Library/Core/Log/Log.h"
@@ -7,9 +7,9 @@
 #include "Library/Platform/System/FileSystem.h"
 
 //=============================================================================
-// CAssetManager: ワールド（.gxworld。書式は WorldDefinition.cpp の先頭を参照）
+// CAssetManagerSubsystem: ワールド（.gxworld。書式は WorldDefinition.cpp の先頭を参照）
 //=============================================================================
-TSharedPtr<CWorldAsset> CAssetManager::LoadWorld( const FString& Path )
+TSharedPtr<CWorldAsset> CAssetManagerSubsystem::LoadWorld( const FString& Path )
 {
 	GAME_THREAD_ONLY( nullptr );
 	const TOptional<FString> Full = PrepareLoad( "world", Path );
@@ -55,7 +55,7 @@ TSharedPtr<CWorldAsset> CAssetManager::LoadWorld( const FString& Path )
 	return Asset;
 }
 
-bool CAssetManager::SaveWorld( const FString& Path, const FWorldDefinition& Definition )
+bool CAssetManagerSubsystem::SaveWorld( const FString& Path, const FWorldDefinition& Definition )
 {
 	const TOptional<FString> Full = PrepareSavePath( Path );
 	if ( !Full.IsSet() )

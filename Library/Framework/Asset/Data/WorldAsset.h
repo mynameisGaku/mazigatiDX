@@ -5,11 +5,11 @@
 #include "Library/Framework/World/Definition/WorldDefinition.h"
 #include "Library/Framework/World/Definition/WorldValidate.h"
 
-class CAssetManager;
+class CAssetManagerSubsystem;
 
 //=============================================================================
 // CWorldAsset
-//   読み込んだワールド（.gxworld）。CAssetManager::LoadWorld で読み込む。中身は FWorldDefinition（純粋なデータ。WorldDefinition.h）。
+//   読み込んだワールド（.gxworld）。CAssetManagerSubsystem::LoadWorld で読み込む。中身は FWorldDefinition（純粋なデータ。WorldDefinition.h）。
 //   シーンへの設置は NWorld::Spawn（WorldSpawner.h）。
 //
 //   TSharedPtr<CWorldAsset> Level = Assets->LoadWorld( "Levels/Stage1.gxworld" );
@@ -38,15 +38,15 @@ private:
 
 //=============================================================================
 // FAssetWorldQuery
-//   IWorldAssetQuery（検証が、アセットの有無を調べる窓口）の、CAssetManager による実装。
+//   IWorldAssetQuery（検証が、アセットの有無を調べる窓口）の、CAssetManagerSubsystem による実装。
 //   .fbx / .obj は、元のファイルが無くても、変換済みの .mv1 があればよい（配布版）。
 //=============================================================================
 class FAssetWorldQuery : public IWorldAssetQuery
 {
 public:
-	explicit FAssetWorldQuery( const CAssetManager& InAssets ) : Assets( InAssets ) {}
+	explicit FAssetWorldQuery( const CAssetManagerSubsystem& InAssets ) : Assets( InAssets ) {}
 	bool Exists( const FString& Path ) const override;
 
 private:
-	const CAssetManager& Assets;
+	const CAssetManagerSubsystem& Assets;
 };

@@ -10,7 +10,7 @@
 //=============================================================================
 // CRenderTarget
 //   描画先（レンダーターゲット）。描き込める画像で、描いたあとは、ふつうの画像（CTexture / IImage）として、画面や別の描画先へ貼れる。
-//   CAssetManager::CreateRenderTarget で作る。最後の参照が消えると、自動で解放される（CTexture と同じ）。
+//   CAssetManagerSubsystem::CreateRenderTarget で作る。最後の参照が消えると、自動で解放される（CTexture と同じ）。
 //
 //   FRenderTargetDesc Desc;
 //   Desc.Width = 256;

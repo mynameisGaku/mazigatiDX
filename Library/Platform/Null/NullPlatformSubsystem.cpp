@@ -1,5 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
-#include "NullPlatform.h"
+#include "NullPlatformSubsystem.h"
 
 #include "Library/Core/Collection/Optional.h"
 #include "Library/Core/Log/Log.h"
@@ -11,16 +11,16 @@
 
 DEFINE_LOG_CATEGORY_STATIC( LogNullPlatform, Log )
 
-REGISTER_SUBSYSTEM( CNullPlatform )
+REGISTER_SUBSYSTEM( CNullPlatformSubsystem )
 
 #pragma region Lifecycle
 
-bool CNullPlatform::ShouldCreateSubsystem( CEngine& Engine ) const
+bool CNullPlatformSubsystem::ShouldCreateSubsystem( CEngine& Engine ) const
 {
 	return NBackendSelection::IsNullRequested();
 }
 
-void CNullPlatform::Initialize( FSubsystemCollection& Collection )
+void CNullPlatformSubsystem::Initialize( FSubsystemCollection& Collection )
 {
 	if ( CEngine* Engine = GetEngine() )
 	{
@@ -65,7 +65,7 @@ void CNullPlatform::Initialize( FSubsystemCollection& Collection )
 		 bImGuiActive ? "on (no renderer)" : "off" );
 }
 
-void CNullPlatform::Deinitialize()
+void CNullPlatformSubsystem::Deinitialize()
 {
 	if ( !bInitialized )
 	{
@@ -76,7 +76,7 @@ void CNullPlatform::Deinitialize()
 	bInitialized = false;
 }
 
-void CNullPlatform::InitImGui()
+void CNullPlatformSubsystem::InitImGui()
 {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -95,7 +95,7 @@ void CNullPlatform::InitImGui()
 	bImGuiActive = true;
 }
 
-void CNullPlatform::ShutdownImGui()
+void CNullPlatformSubsystem::ShutdownImGui()
 {
 	if ( !bImGuiActive )
 	{
@@ -113,7 +113,7 @@ void CNullPlatform::ShutdownImGui()
 	bImGuiActive = false;
 }
 
-void CNullPlatform::AnswerImGuiTextureRequests()
+void CNullPlatformSubsystem::AnswerImGuiTextureRequests()
 {
 	for ( ImTextureData* Texture : ImGui::GetPlatformIO().Textures )
 	{
@@ -135,7 +135,7 @@ void CNullPlatform::AnswerImGuiTextureRequests()
 
 #pragma region Frame
 
-bool CNullPlatform::BeginFrame()
+bool CNullPlatformSubsystem::BeginFrame()
 {
 	if ( !bInitialized || bExitRequested )
 	{
@@ -162,7 +162,7 @@ bool CNullPlatform::BeginFrame()
 	return true;
 }
 
-void CNullPlatform::EndFrame()
+void CNullPlatformSubsystem::EndFrame()
 {
 	if ( !bInFrame )
 	{
@@ -184,12 +184,12 @@ void CNullPlatform::EndFrame()
 
 // 仮想関数は vtable 経由で呼ばれインライン展開できないので、ヘッダーではなくここで定義する
 
-bool CNullPlatform::IsInitialized() const
+bool CNullPlatformSubsystem::IsInitialized() const
 {
 	return bInitialized;
 }
 
-void CNullPlatform::RequestExit()
+void CNullPlatformSubsystem::RequestExit()
 {
 	if ( !bExitRequested )
 	{
@@ -198,47 +198,47 @@ void CNullPlatform::RequestExit()
 	bExitRequested = true;
 }
 
-bool CNullPlatform::IsExitRequested() const
+bool CNullPlatformSubsystem::IsExitRequested() const
 {
 	return bExitRequested;
 }
 
-float32 CNullPlatform::GetDeltaTime() const
+float32 CNullPlatformSubsystem::GetDeltaTime() const
 {
 	return DeltaTime;
 }
 
-float64 CNullPlatform::GetTime() const
+float64 CNullPlatformSubsystem::GetTime() const
 {
 	return TotalTime;
 }
 
-uint64 CNullPlatform::GetFrameCount() const
+uint64 CNullPlatformSubsystem::GetFrameCount() const
 {
 	return FrameCount;
 }
 
-float32 CNullPlatform::GetFPS() const
+float32 CNullPlatformSubsystem::GetFPS() const
 {
 	return 1.0f / FixedDeltaTime;
 }
 
-int32 CNullPlatform::GetScreenWidth() const
+int32 CNullPlatformSubsystem::GetScreenWidth() const
 {
 	return Settings.Width;
 }
 
-int32 CNullPlatform::GetScreenHeight() const
+int32 CNullPlatformSubsystem::GetScreenHeight() const
 {
 	return Settings.Height;
 }
 
-EWindowMode CNullPlatform::GetWindowMode() const
+EWindowMode CNullPlatformSubsystem::GetWindowMode() const
 {
 	return Settings.WindowMode;
 }
 
-void CNullPlatform::SetWindowMode( EWindowMode Mode )
+void CNullPlatformSubsystem::SetWindowMode( EWindowMode Mode )
 {
 	Settings.WindowMode = Mode;
 	if ( Mode != EWindowMode::Windowed )
@@ -247,32 +247,32 @@ void CNullPlatform::SetWindowMode( EWindowMode Mode )
 	}
 }
 
-void CNullPlatform::ToggleFullscreen()
+void CNullPlatformSubsystem::ToggleFullscreen()
 {
 	SetWindowMode( Settings.WindowMode == EWindowMode::Windowed ? LastFullscreenMode : EWindowMode::Windowed );
 }
 
-const FString& CNullPlatform::GetWindowTitle() const
+const FString& CNullPlatformSubsystem::GetWindowTitle() const
 {
 	return Settings.Title;
 }
 
-void CNullPlatform::SetWindowTitle( const FString& Title )
+void CNullPlatformSubsystem::SetWindowTitle( const FString& Title )
 {
 	Settings.Title = Title;
 }
 
-bool CNullPlatform::IsMouseCursorVisible() const
+bool CNullPlatformSubsystem::IsMouseCursorVisible() const
 {
 	return Settings.bShowMouseCursor;
 }
 
-void CNullPlatform::SetMouseCursorVisible( bool bVisible )
+void CNullPlatformSubsystem::SetMouseCursorVisible( bool bVisible )
 {
 	Settings.bShowMouseCursor = bVisible;
 }
 
-int32 CNullPlatform::GetMaxFrames() const
+int32 CNullPlatformSubsystem::GetMaxFrames() const
 {
 	return MaxFrames;
 }

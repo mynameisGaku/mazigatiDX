@@ -1,12 +1,12 @@
 ﻿// SPDX-License-Identifier: MIT
-#include "DxLibAssetBackend.h"
+#include "DxLibAssetBackendSubsystem.h"
 
 #include "Library/Math/MathUtils.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 #include "Library/Platform/DxLib/DxLibTypes.h"
 
 //=============================================================================
-// CDxLibAssetBackend のうち、モデルへの当たり判定（MV1SetupCollInfo / MV1CollCheck_Line / MV1CollCheck_Sphere）
+// CDxLibAssetBackendSubsystem のうち、モデルへの当たり判定（MV1SetupCollInfo / MV1CollCheck_Line / MV1CollCheck_Sphere）
 //   DxLib の当たり判定の情報は、MV1RefreshCollInfo を呼んだときのモデルの形（置き場所の行列・アニメーション・形状を含む）を写したもの。
 //   ここでは、置き場所の行列を一時的に単位行列にして写すので、情報はモデルの手元の座標になる（呼ぶ側が、線や球を手元の座標へ直す）。
 //=============================================================================
@@ -40,7 +40,7 @@ namespace
 	}
 }
 
-bool CDxLibAssetBackend::PrepareModelCollision( int32 Model )
+bool CDxLibAssetBackendSubsystem::PrepareModelCollision( int32 Model )
 {
 	if ( Model < 0 || CheckHandleASyncLoad( Model ) != FALSE || MV1GetMeshNum( Model ) <= 0 )
 	{
@@ -59,7 +59,7 @@ bool CDxLibAssetBackend::PrepareModelCollision( int32 Model )
 	return bRefreshed;
 }
 
-bool CDxLibAssetBackend::RaycastModel( int32 Model, const FVector3& From, const FVector3& To, FModelHit& Out )
+bool CDxLibAssetBackendSubsystem::RaycastModel( int32 Model, const FVector3& From, const FVector3& To, FModelHit& Out )
 {
 	if ( !CollisionReadyModels.Contains( Model ) && !PrepareModelCollision( Model ) )
 	{
@@ -75,7 +75,7 @@ bool CDxLibAssetBackend::RaycastModel( int32 Model, const FVector3& From, const 
 	return true;
 }
 
-bool CDxLibAssetBackend::OverlapModelSphere( int32 Model, const FVector3& Center, float32 Radius, TArray<FModelHit>& Out )
+bool CDxLibAssetBackendSubsystem::OverlapModelSphere( int32 Model, const FVector3& Center, float32 Radius, TArray<FModelHit>& Out )
 {
 	if ( !( Radius > 0.0f ) || ( !CollisionReadyModels.Contains( Model ) && !PrepareModelCollision( Model ) ) )
 	{

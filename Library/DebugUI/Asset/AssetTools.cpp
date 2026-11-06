@@ -6,8 +6,8 @@
 #include "Library/Core/Types/Numeric.h"
 #include "Library/DebugUI/Common/EditorCommon.h"
 #include "Library/DebugUI/Effect/EffectEditorInternal.h"
-#include "Library/Framework/Asset/AssetManager.h"
-#include "Library/Framework/Audio/AudioSystem.h"
+#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Audio/AudioSubsystem.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Profiler/ProfilerAnalyzer.h"
 #include "Library/Platform/System/CommandLine.h"
@@ -45,7 +45,7 @@ namespace
 			ImGui::End();
 			return;
 		}
-		CAssetManager* Assets = GetAppSubsystem<CAssetManager>();
+		CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
 		if ( Assets == nullptr )
 		{
 			ImGui::TextUnformatted( "The asset manager is not running." );
@@ -250,7 +250,7 @@ namespace
 			ImGui::End();
 			return;
 		}
-		CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>();
+		CAudioSubsystem* Audio = GetAppSubsystem<CAudioSubsystem>();
 		if ( Audio == nullptr )
 		{
 			ImGui::TextUnformatted( "The audio system is not running." );

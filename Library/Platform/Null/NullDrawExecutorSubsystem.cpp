@@ -1,5 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
-#include "NullDrawExecutor.h"
+#include "NullDrawExecutorSubsystem.h"
 
 #include "Library/Framework/Render/Draw/DrawDistortedMaterialQuad.h"
 #include "Library/Framework/Render/Draw/DrawDistortedMaterialRibbon.h"
@@ -15,7 +15,7 @@
 
 DEFINE_LOG_CATEGORY_STATIC( LogNullDraw, Log )
 
-REGISTER_SUBSYSTEM( CNullDrawExecutor )
+REGISTER_SUBSYSTEM( CNullDrawExecutorSubsystem )
 
 namespace
 {
@@ -173,12 +173,12 @@ namespace
 	}
 }
 
-bool CNullDrawExecutor::ShouldCreateSubsystem( CEngine& Engine ) const
+bool CNullDrawExecutorSubsystem::ShouldCreateSubsystem( CEngine& Engine ) const
 {
 	return NBackendSelection::IsNullRequested();
 }
 
-void CNullDrawExecutor::Deinitialize()
+void CNullDrawExecutorSubsystem::Deinitialize()
 {
 	LOG( LogNullDraw, Log, "Draw statistics: %lld span(s), %lld command(s), %lld word(s), %lld broken span(s), %lld broken command(s), %lld unbalanced span(s), %lld extra pop(s)",
 		 static_cast<long long>( Stats.NumSpans ), static_cast<long long>( Stats.NumCommands ), static_cast<long long>( Stats.NumWords ),
@@ -186,7 +186,7 @@ void CNullDrawExecutor::Deinitialize()
 		 static_cast<long long>( Stats.NumExtraPops ) );
 }
 
-void CNullDrawExecutor::Execute( const FDrawSpan& Span )
+void CNullDrawExecutorSubsystem::Execute( const FDrawSpan& Span )
 {
 	++Stats.NumSpans;
 
@@ -250,12 +250,12 @@ void CNullDrawExecutor::Execute( const FDrawSpan& Span )
 	}
 }
 
-const FNullDrawStats& CNullDrawExecutor::GetStats() const
+const FNullDrawStats& CNullDrawExecutorSubsystem::GetStats() const
 {
 	return Stats;
 }
 
-void CNullDrawExecutor::ResetStats()
+void CNullDrawExecutorSubsystem::ResetStats()
 {
 	Stats = FNullDrawStats();
 }

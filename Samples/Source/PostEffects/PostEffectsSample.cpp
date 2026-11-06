@@ -1,7 +1,7 @@
 ﻿#include "PostEffectsSample.h"
 
 #include "Library/Framework/Render/Types/RenderTargetTypes.h"
-#include "Library/Framework/Asset/AssetManager.h"
+#include "Library/Framework/Asset/AssetManagerSubsystem.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Render/Draw/ImmediateDraw.h"
 #include "Source/Catalog/SampleCatalog.h"
@@ -23,7 +23,7 @@ namespace
 	constexpr int32 LabelFontSize = 16;
 
 	// 描画先を作る（奥行きバッファは、3D を描く場面の色だけが持つ）
-	TSharedPtr<CRenderTarget> MakeTarget( CAssetManager& Assets, const char* Name, int32 Width, int32 Height, ERenderTargetFormat Format, int32 Channels, bool bDepth )
+	TSharedPtr<CRenderTarget> MakeTarget( CAssetManagerSubsystem& Assets, const char* Name, int32 Width, int32 Height, ERenderTargetFormat Format, int32 Channels, bool bDepth )
 	{
 		FRenderTargetDesc Desc;
 		Desc.Width = Width;
@@ -38,7 +38,7 @@ namespace
 
 void CPostEffectsSample::OnEnter()
 {
-	CAssetManager* Assets = GetAppSubsystem<CAssetManager>();
+	CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
 	if ( Assets == nullptr )
 	{
 		return;

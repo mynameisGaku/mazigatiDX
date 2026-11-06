@@ -1,12 +1,12 @@
 ﻿// SPDX-License-Identifier: MIT
-#include "DxLibAssetBackend.h"
+#include "DxLibAssetBackendSubsystem.h"
 
 #include "Library/Platform/DxLib/DxLibInclude.h"
 #include "Library/Platform/DxLib/DxLibTypes.h"
 #include "Library/Core/Types/Numeric.h"
 
 //=============================================================================
-// CDxLibAssetBackend のうち、メッシュの中身（頂点と三角形）を読む部分（MV1 の参照用メッシュ）
+// CDxLibAssetBackendSubsystem のうち、メッシュの中身（頂点と三角形）を読む部分（MV1 の参照用メッシュ）
 //   MV1SetupReferenceMesh で作った参照用メッシュを写して、すぐに MV1TerminateReferenceMesh で捨てる（DxLib に持たせたままにしない）。
 //=============================================================================
 namespace
@@ -39,7 +39,7 @@ namespace
 	}
 }
 
-bool CDxLibAssetBackend::GetModelMeshData( int32 Model, int32 Mesh, bool bCurrentPose, FModelMeshData& Out )
+bool CDxLibAssetBackendSubsystem::GetModelMeshData( int32 Model, int32 Mesh, bool bCurrentPose, FModelMeshData& Out )
 {
 	if ( Model < 0 || CheckHandleASyncLoad( Model ) != FALSE )
 	{

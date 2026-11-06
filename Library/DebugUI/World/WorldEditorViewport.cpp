@@ -10,7 +10,7 @@
 #include "Library/Framework/World/Runtime/WorldCollision.h"
 #include "Library/Framework/World/Definition/WorldHierarchy.h"
 #include "Library/Framework/World/Runtime/WorldRender.h"
-#include "Library/Framework/Asset/AssetManager.h"
+#include "Library/Framework/Asset/AssetManagerSubsystem.h"
 #include "Library/Framework/Asset/Texture/RenderTarget.h"
 #include "Library/Framework/Render/Camera/Camera.h"
 #include "Library/Framework/Render/State/Lighting.h"
@@ -51,7 +51,7 @@ namespace
 		}
 		// 前の描画先を手放してから、新しい大きさで作る（同じ名前を使い回す）
 		S.ViewTarget.Reset();
-		CAssetManager* Assets = GetAppSubsystem<CAssetManager>();
+		CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
 		if ( Assets == nullptr )
 		{
 			return;

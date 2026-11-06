@@ -5,13 +5,13 @@
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
-#include "Library/Framework/Asset/AssetManager.h"
+#include "Library/Framework/Asset/AssetManagerSubsystem.h"
 #include "Library/Framework/Asset/Data/SpriteSheet.h"
 
 namespace
 {
 	// 選択済みクリップの再生情報と矩形を、資源作成の前に一括で検証する。
-	bool ReadClipSnapshot( const FEffectFlipbookDefinition& Definition, CAssetManager& Assets, TSharedPtr<CSpriteSheet>& OutSheet, int32& OutClipIndex, TArray<FSpriteFrame>& OutFrames, TArray<float32>& OutDurations, EAnimLoopMode& OutLoop, FString* OutError )
+	bool ReadClipSnapshot( const FEffectFlipbookDefinition& Definition, CAssetManagerSubsystem& Assets, TSharedPtr<CSpriteSheet>& OutSheet, int32& OutClipIndex, TArray<FSpriteFrame>& OutFrames, TArray<float32>& OutDurations, EAnimLoopMode& OutLoop, FString* OutError )
 	{
 	// 呼出し側へ根拠を返し、部分状態を残さない。
 	auto Fail = [OutError]( const char* Message ) { if ( OutError != nullptr ) *OutError = Message; return false; };
@@ -62,7 +62,7 @@ namespace
 	}
 }
 
-TArray<FString> NEffectFlipbook::ValidateAssets( const FEffectFlipbookDefinition& Definition, CAssetManager& Assets )
+TArray<FString> NEffectFlipbook::ValidateAssets( const FEffectFlipbookDefinition& Definition, CAssetManagerSubsystem& Assets )
 {
 	TArray<FString> Issues;
 	if ( !Definition.bEnabled ) return Issues;
@@ -82,7 +82,7 @@ TArray<FString> NEffectFlipbook::ValidateAssets( const FEffectFlipbookDefinition
 	return Issues;
 }
 
-bool NEffectFlipbook::BuildFrames( const FEffectFlipbookDefinition& Definition, CAssetManager& Assets, FEffectFlipbookFrames& Out, FString* OutError )
+bool NEffectFlipbook::BuildFrames( const FEffectFlipbookDefinition& Definition, CAssetManagerSubsystem& Assets, FEffectFlipbookFrames& Out, FString* OutError )
 {
 	// sheetの参照を作成中だけ保持する。
 	TSharedPtr<CSpriteSheet> Sheet;

@@ -1,11 +1,11 @@
 ﻿// SPDX-License-Identifier: MIT
-#include "NullInput.h"
+#include "NullInputSubsystem.h"
 
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 #include "Library/Platform/BackendSelection.h"
 
-REGISTER_SUBSYSTEM( CNullInput )
+REGISTER_SUBSYSTEM( CNullInputSubsystem )
 
 namespace
 {
@@ -32,12 +32,12 @@ namespace
 	}
 }
 
-bool CNullInput::ShouldCreateSubsystem( CEngine& Engine ) const
+bool CNullInputSubsystem::ShouldCreateSubsystem( CEngine& Engine ) const
 {
 	return NBackendSelection::IsNullRequested();
 }
 
-void CNullInput::Tick( float32 DeltaTime )
+void CNullInputSubsystem::Tick( float32 DeltaTime )
 {
 	FMemory::Memcpy( PreviousKeys, CurrentKeys, sizeof( CurrentKeys ) );
 	FMemory::Memcpy( CurrentKeys, PendingKeys, sizeof( CurrentKeys ) );
@@ -72,50 +72,50 @@ void CNullInput::Tick( float32 DeltaTime )
 	PendingWheelY = 0.0f;
 }
 
-ETickGroup CNullInput::GetTickGroup() const
+ETickGroup CNullInputSubsystem::GetTickGroup() const
 {
 	return ETickGroup::PreUpdate;
 }
 
-bool CNullInput::IsKeyDown( EKey Key ) const
+bool CNullInputSubsystem::IsKeyDown( EKey Key ) const
 {
 	const int32 Index = ToKeyIndex( Key );
 	return Index >= 0 && CurrentKeys[Index];
 }
 
-bool CNullInput::IsKeyPressed( EKey Key ) const
+bool CNullInputSubsystem::IsKeyPressed( EKey Key ) const
 {
 	const int32 Index = ToKeyIndex( Key );
 	return Index >= 0 && CurrentKeys[Index] && !PreviousKeys[Index];
 }
 
-bool CNullInput::IsKeyReleased( EKey Key ) const
+bool CNullInputSubsystem::IsKeyReleased( EKey Key ) const
 {
 	const int32 Index = ToKeyIndex( Key );
 	return Index >= 0 && !CurrentKeys[Index] && PreviousKeys[Index];
 }
 
-const FMouseState& CNullInput::GetMouseState() const
+const FMouseState& CNullInputSubsystem::GetMouseState() const
 {
 	return MouseState;
 }
 
-bool CNullInput::IsMouseButtonDown( EMouseButton Button ) const
+bool CNullInputSubsystem::IsMouseButtonDown( EMouseButton Button ) const
 {
 	return ( MouseState.Buttons & ToButtonBit( Button ) ) != 0u;
 }
 
-bool CNullInput::IsMouseButtonPressed( EMouseButton Button ) const
+bool CNullInputSubsystem::IsMouseButtonPressed( EMouseButton Button ) const
 {
 	return ( MouseState.PressedButtons & ToButtonBit( Button ) ) != 0u;
 }
 
-bool CNullInput::IsMouseButtonReleased( EMouseButton Button ) const
+bool CNullInputSubsystem::IsMouseButtonReleased( EMouseButton Button ) const
 {
 	return ( MouseState.ReleasedButtons & ToButtonBit( Button ) ) != 0u;
 }
 
-void CNullInput::SetKeyDown( EKey Key, bool bDown )
+void CNullInputSubsystem::SetKeyDown( EKey Key, bool bDown )
 {
 	const int32 Index = ToKeyIndex( Key );
 	if ( Index >= 0 )
@@ -124,7 +124,7 @@ void CNullInput::SetKeyDown( EKey Key, bool bDown )
 	}
 }
 
-void CNullInput::SetMouseButtonDown( EMouseButton Button, bool bDown )
+void CNullInputSubsystem::SetMouseButtonDown( EMouseButton Button, bool bDown )
 {
 	const uint32 Bit = ToButtonBit( Button );
 	if ( Bit == 0u )
@@ -141,25 +141,25 @@ void CNullInput::SetMouseButtonDown( EMouseButton Button, bool bDown )
 	}
 }
 
-void CNullInput::SetMousePosition( int32 X, int32 Y )
+void CNullInputSubsystem::SetMousePosition( int32 X, int32 Y )
 {
 	PendingX = X;
 	PendingY = Y;
 }
 
-void CNullInput::AddMouseWheel( float32 WheelX, float32 WheelY )
+void CNullInputSubsystem::AddMouseWheel( float32 WheelX, float32 WheelY )
 {
 	PendingWheelX += WheelX;
 	PendingWheelY += WheelY;
 }
 
-void CNullInput::ReleaseAll()
+void CNullInputSubsystem::ReleaseAll()
 {
 	FMemory::Memset( PendingKeys, 0, sizeof( PendingKeys ) );
 	PendingButtons = 0u;
 }
 
-void CNullInput::SetTextInputActive( bool bActive )
+void CNullInputSubsystem::SetTextInputActive( bool bActive )
 {
 	if ( bActive == bTextInputActive )
 	{
@@ -173,69 +173,69 @@ void CNullInput::SetTextInputActive( bool bActive )
 	ImeComposition = FImeComposition();
 }
 
-bool CNullInput::IsTextInputActive() const
+bool CNullInputSubsystem::IsTextInputActive() const
 {
 	return bTextInputActive;
 }
 
-const TArray<FTextInputEvent>& CNullInput::GetTextInputEvents() const
+const TArray<FTextInputEvent>& CNullInputSubsystem::GetTextInputEvents() const
 {
 	return TextEvents;
 }
 
-const FImeComposition& CNullInput::GetImeComposition() const
+const FImeComposition& CNullInputSubsystem::GetImeComposition() const
 {
 	return ImeComposition;
 }
 
-bool CNullInput::SetCursorVisible( bool bVisible )
+bool CNullInputSubsystem::SetCursorVisible( bool bVisible )
 {
 	bCursorVisible = bVisible;
 	return true;
 }
 
-bool CNullInput::IsCursorVisible() const
+bool CNullInputSubsystem::IsCursorVisible() const
 {
 	return bCursorVisible;
 }
 
-bool CNullInput::SetCursorPosition( int32 X, int32 Y )
+bool CNullInputSubsystem::SetCursorPosition( int32 X, int32 Y )
 {
 	SetMousePosition( X, Y );
 	return true;
 }
 
-bool CNullInput::IsTouchAvailable() const
+bool CNullInputSubsystem::IsTouchAvailable() const
 {
 	return true;
 }
 
-const TArray<FTouchPoint>& CNullInput::GetTouches() const
+const TArray<FTouchPoint>& CNullInputSubsystem::GetTouches() const
 {
 	return TouchTracker.GetTouches();
 }
 
-const TArray<uint32>& CNullInput::GetReleasedTouchIds() const
+const TArray<uint32>& CNullInputSubsystem::GetReleasedTouchIds() const
 {
 	return TouchTracker.GetReleasedIds();
 }
 
-void CNullInput::AddTypedText( const FString& Text )
+void CNullInputSubsystem::AddTypedText( const FString& Text )
 {
 	PendingTextEvents.Add( FTextInputEvent::MakeText( Text ) );
 }
 
-void CNullInput::AddTextCommand( ETextEditCommand Command )
+void CNullInputSubsystem::AddTextCommand( ETextEditCommand Command )
 {
 	PendingTextEvents.Add( FTextInputEvent::MakeCommand( Command ) );
 }
 
-void CNullInput::SetImeComposition( const FImeComposition& Composition )
+void CNullInputSubsystem::SetImeComposition( const FImeComposition& Composition )
 {
 	PendingComposition = Composition;
 }
 
-void CNullInput::SetTouches( const TArray<FTouchPoint>& Touches )
+void CNullInputSubsystem::SetTouches( const TArray<FTouchPoint>& Touches )
 {
 	PendingTouches = Touches;
 }

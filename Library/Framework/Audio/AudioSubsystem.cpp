@@ -1,4 +1,4 @@
-﻿#include "AudioSystem.h"
+﻿#include "AudioSubsystem.h"
 
 
 #include "Library/Core/Log/Log.h"
@@ -8,7 +8,7 @@
 
 DEFINE_LOG_CATEGORY( LogAudio )
 
-REGISTER_SUBSYSTEM( CAudioSystem )
+REGISTER_SUBSYSTEM( CAudioSubsystem )
 
 namespace
 {
@@ -16,13 +16,13 @@ namespace
 	constexpr float32 ChangeEpsilon = 1.0e-4f;
 }
 
-CAudioSystem::CAudioSystem() = default;
-CAudioSystem::~CAudioSystem() = default;
+CAudioSubsystem::CAudioSubsystem() = default;
+CAudioSubsystem::~CAudioSubsystem() = default;
 
 //=============================================================================
 // 生成・破棄
 //=============================================================================
-void CAudioSystem::Initialize( FSubsystemCollection& Collection )
+void CAudioSubsystem::Initialize( FSubsystemCollection& Collection )
 {
 	for ( FBus& Bus : Buses ) Bus.Volume.Reset( 1.0f );
 
@@ -35,7 +35,7 @@ void CAudioSystem::Initialize( FSubsystemCollection& Collection )
 	LOG( LogAudio, Log, "Audio ready (max %d voice(s), %d bus(es))", MaxVoices, static_cast<int32>( EAudioBus::Count ) );
 }
 
-void CAudioSystem::Deinitialize()
+void CAudioSubsystem::Deinitialize()
 {
 	// 鳴らしている音を返す（CSound が先に壊れても困らないように）
 	for ( int32 Index = 0; Index < Voices.Num(); ++Index )
@@ -47,7 +47,7 @@ void CAudioSystem::Deinitialize()
 	Backend = nullptr;
 }
 
-void CAudioSystem::SetBackendOverride( IAudioBackend* InBackend )
+void CAudioSubsystem::SetBackendOverride( IAudioBackend* InBackend )
 {
 	// 差し替える前に、古い方で鳴らしていた音を片付ける
 	for ( int32 Index = 0; Index < Voices.Num(); ++Index )
@@ -60,14 +60,14 @@ void CAudioSystem::SetBackendOverride( IAudioBackend* InBackend )
 //=============================================================================
 // ハンドル
 //=============================================================================
-FSoundHandle CAudioSystem::MakeHandle( int32 Index ) const
+FSoundHandle CAudioSubsystem::MakeHandle( int32 Index ) const
 {
 	FSoundHandle Handle;
 	Handle.Id = ( Voices[Index].Generation << 16 ) | static_cast<uint32>( Index + 1 );
 	return Handle;
 }
 
-CAudioSystem::FVoice* CAudioSystem::Resolve( FSoundHandle Handle )
+CAudioSubsystem::FVoice* CAudioSubsystem::Resolve( FSoundHandle Handle )
 {
 	if ( !Handle.IsValid() ) return nullptr;
 	const int32 Index = static_cast<int32>( Handle.Id & 0xFFFFu ) - 1;
@@ -76,15 +76,15 @@ CAudioSystem::FVoice* CAudioSystem::Resolve( FSoundHandle Handle )
 	return Voice.bInUse && Voice.Generation == ( Handle.Id >> 16 ) ? &Voice : nullptr;
 }
 
-const CAudioSystem::FVoice* CAudioSystem::Resolve( FSoundHandle Handle ) const
+const CAudioSubsystem::FVoice* CAudioSubsystem::Resolve( FSoundHandle Handle ) const
 {
-	return const_cast<CAudioSystem*>( this )->Resolve( Handle );
+	return const_cast<CAudioSubsystem*>( this )->Resolve( Handle );
 }
 
 //=============================================================================
 // 鳴らす
 //=============================================================================
-float32 CAudioSystem::NextRandom()
+float32 CAudioSubsystem::NextRandom()
 {
 	// xorshift32。同じ種なら同じ並び
 	RandomState ^= RandomState << 13;
@@ -93,7 +93,7 @@ float32 CAudioSystem::NextRandom()
 	return static_cast<float32>( RandomState ) / 2147483648.0f - 1.0f;
 }
 
-bool CAudioSystem::AdmitNewVoice( const TSharedPtr<CSound>& Sound, const FSoundPlayParams& Params )
+bool CAudioSubsystem::AdmitNewVoice( const TSharedPtr<CSound>& Sound, const FSoundPlayParams& Params )
 {
 	if ( Params.MinInterval > 0.0f )
 	{
@@ -132,7 +132,7 @@ bool CAudioSystem::AdmitNewVoice( const TSharedPtr<CSound>& Sound, const FSoundP
 	return true;
 }
 
-int32 CAudioSystem::AllocateSlot( int32 NewPriority )
+int32 CAudioSubsystem::AllocateSlot( int32 NewPriority )
 {
 	for ( int32 Index = 0; Index < Voices.Num(); ++Index )
 	{
@@ -159,7 +159,7 @@ int32 CAudioSystem::AllocateSlot( int32 NewPriority )
 	return Victim;
 }
 
-void CAudioSystem::FreeVoice( int32 Index )
+void CAudioSubsystem::FreeVoice( int32 Index )
 {
 	FVoice& Voice = Voices[Index];
 	if ( !Voice.bInUse ) return;
@@ -173,7 +173,7 @@ void CAudioSystem::FreeVoice( int32 Index )
 	--NumActive;
 }
 
-FSoundHandle CAudioSystem::Play( const TSharedPtr<CSound>& Sound, const FSoundPlayParams& Params )
+FSoundHandle CAudioSubsystem::Play( const TSharedPtr<CSound>& Sound, const FSoundPlayParams& Params )
 {
 	PROFILE_SCOPE_CAT( "Audio", "Play" );
 	IAudioBackend* B = GetBackend();
@@ -273,7 +273,7 @@ FSoundHandle CAudioSystem::Play( const TSharedPtr<CSound>& Sound, const FSoundPl
 	return MakeHandle( Slot );
 }
 
-FSoundHandle CAudioSystem::PlayAt( const TSharedPtr<CSound>& Sound, const FVector3& Position, const FSoundPlayParams& Params )
+FSoundHandle CAudioSubsystem::PlayAt( const TSharedPtr<CSound>& Sound, const FVector3& Position, const FSoundPlayParams& Params )
 {
 	FSoundPlayParams Spatial = Params;
 	Spatial.bSpatial = true;
@@ -281,7 +281,7 @@ FSoundHandle CAudioSystem::PlayAt( const TSharedPtr<CSound>& Sound, const FVecto
 	return Play( Sound, Spatial );
 }
 
-void CAudioSystem::Stop( FSoundHandle Handle, float32 FadeOut, EFadeCurve Curve )
+void CAudioSubsystem::Stop( FSoundHandle Handle, float32 FadeOut, EFadeCurve Curve )
 {
 	FVoice* Voice = Resolve( Handle );
 	if ( Voice == nullptr ) return;
@@ -295,7 +295,7 @@ void CAudioSystem::Stop( FSoundHandle Handle, float32 FadeOut, EFadeCurve Curve 
 	Voice->bStopWhenFaded = true;
 }
 
-void CAudioSystem::StopAll( float32 FadeOut )
+void CAudioSubsystem::StopAll( float32 FadeOut )
 {
 	for ( int32 Index = 0; Index < Voices.Num(); ++Index )
 	{
@@ -303,7 +303,7 @@ void CAudioSystem::StopAll( float32 FadeOut )
 	}
 }
 
-void CAudioSystem::StopBus( EAudioBus Bus, float32 FadeOut )
+void CAudioSubsystem::StopBus( EAudioBus Bus, float32 FadeOut )
 {
 	for ( int32 Index = 0; Index < Voices.Num(); ++Index )
 	{
@@ -311,7 +311,7 @@ void CAudioSystem::StopBus( EAudioBus Bus, float32 FadeOut )
 	}
 }
 
-void CAudioSystem::StopSound( const TSharedPtr<CSound>& Sound, float32 FadeOut )
+void CAudioSubsystem::StopSound( const TSharedPtr<CSound>& Sound, float32 FadeOut )
 {
 	for ( int32 Index = 0; Index < Voices.Num(); ++Index )
 	{
@@ -319,7 +319,7 @@ void CAudioSystem::StopSound( const TSharedPtr<CSound>& Sound, float32 FadeOut )
 	}
 }
 
-bool CAudioSystem::IsPlaying( FSoundHandle Handle ) const
+bool CAudioSubsystem::IsPlaying( FSoundHandle Handle ) const
 {
 	const FVoice* Voice = Resolve( Handle );
 	return Voice != nullptr && !Voice->bStopWhenFaded;
@@ -328,22 +328,22 @@ bool CAudioSystem::IsPlaying( FSoundHandle Handle ) const
 //=============================================================================
 // 鳴らしている音の操作
 //=============================================================================
-void CAudioSystem::SetVolume( FSoundHandle Handle, float32 Volume, float32 FadeTime, EFadeCurve Curve )
+void CAudioSubsystem::SetVolume( FSoundHandle Handle, float32 Volume, float32 FadeTime, EFadeCurve Curve )
 {
 	if ( FVoice* Voice = Resolve( Handle ) ) Voice->Volume.FadeTo( NMath::Max( Volume, 0.0f ), FadeTime, Curve );
 }
 
-void CAudioSystem::SetPitch( FSoundHandle Handle, float32 Pitch, float32 FadeTime, EFadeCurve Curve )
+void CAudioSubsystem::SetPitch( FSoundHandle Handle, float32 Pitch, float32 FadeTime, EFadeCurve Curve )
 {
 	if ( FVoice* Voice = Resolve( Handle ) ) Voice->Pitch.FadeTo( NMath::Max( Pitch, 0.01f ), FadeTime, Curve );
 }
 
-void CAudioSystem::SetPan( FSoundHandle Handle, float32 Pan, float32 FadeTime, EFadeCurve Curve )
+void CAudioSubsystem::SetPan( FSoundHandle Handle, float32 Pan, float32 FadeTime, EFadeCurve Curve )
 {
 	if ( FVoice* Voice = Resolve( Handle ) ) Voice->Pan.FadeTo( NMath::Clamp( Pan, -1.0f, 1.0f ), FadeTime, Curve );
 }
 
-void CAudioSystem::SetPosition( FSoundHandle Handle, const FVector3& Position )
+void CAudioSubsystem::SetPosition( FSoundHandle Handle, const FVector3& Position )
 {
 	if ( FVoice* Voice = Resolve( Handle ) )
 	{
@@ -352,7 +352,7 @@ void CAudioSystem::SetPosition( FSoundHandle Handle, const FVector3& Position )
 	}
 }
 
-void CAudioSystem::Pause( FSoundHandle Handle )
+void CAudioSubsystem::Pause( FSoundHandle Handle )
 {
 	if ( FVoice* Voice = Resolve( Handle ) )
 	{
@@ -361,7 +361,7 @@ void CAudioSystem::Pause( FSoundHandle Handle )
 	}
 }
 
-void CAudioSystem::Resume( FSoundHandle Handle )
+void CAudioSubsystem::Resume( FSoundHandle Handle )
 {
 	if ( FVoice* Voice = Resolve( Handle ) )
 	{
@@ -373,27 +373,27 @@ void CAudioSystem::Resume( FSoundHandle Handle )
 //=============================================================================
 // バス・一時停止
 //=============================================================================
-void CAudioSystem::SetBusVolume( EAudioBus Bus, float32 Volume, float32 FadeTime, EFadeCurve Curve )
+void CAudioSubsystem::SetBusVolume( EAudioBus Bus, float32 Volume, float32 FadeTime, EFadeCurve Curve )
 {
 	Buses[static_cast<int32>( Bus )].Volume.FadeTo( NMath::Max( Volume, 0.0f ), FadeTime, Curve );
 }
 
-float32 CAudioSystem::GetBusVolume( EAudioBus Bus ) const
+float32 CAudioSubsystem::GetBusVolume( EAudioBus Bus ) const
 {
 	return Buses[static_cast<int32>( Bus )].Volume.Value;
 }
 
-void CAudioSystem::SetBusMuted( EAudioBus Bus, bool bMuted )
+void CAudioSubsystem::SetBusMuted( EAudioBus Bus, bool bMuted )
 {
 	Buses[static_cast<int32>( Bus )].bMuted = bMuted;
 }
 
-bool CAudioSystem::IsBusMuted( EAudioBus Bus ) const
+bool CAudioSubsystem::IsBusMuted( EAudioBus Bus ) const
 {
 	return Buses[static_cast<int32>( Bus )].bMuted;
 }
 
-float32 CAudioSystem::GetBusGain( EAudioBus Bus ) const
+float32 CAudioSubsystem::GetBusGain( EAudioBus Bus ) const
 {
 	auto Gain = [this]( EAudioBus B ) {
 		const FBus& State = Buses[static_cast<int32>( B )];
@@ -402,13 +402,13 @@ float32 CAudioSystem::GetBusGain( EAudioBus Bus ) const
 	return Bus == EAudioBus::Master ? Gain( Bus ) : Gain( Bus ) * Gain( EAudioBus::Master );
 }
 
-bool CAudioSystem::ShouldBePaused( const FVoice& Voice ) const
+bool CAudioSubsystem::ShouldBePaused( const FVoice& Voice ) const
 {
 	if ( Voice.bUserPaused ) return true;
 	return Voice.bPausable && ( bGlobalPaused || Buses[static_cast<int32>( Voice.Bus )].bPaused );
 }
 
-void CAudioSystem::ApplyPauseState()
+void CAudioSubsystem::ApplyPauseState()
 {
 	IAudioBackend* B = GetBackend();
 	if ( B == nullptr ) return;
@@ -430,14 +430,14 @@ void CAudioSystem::ApplyPauseState()
 	}
 }
 
-void CAudioSystem::SetPaused( bool bPaused )
+void CAudioSubsystem::SetPaused( bool bPaused )
 {
 	if ( bGlobalPaused == bPaused ) return;
 	bGlobalPaused = bPaused;
 	ApplyPauseState();
 }
 
-void CAudioSystem::SetBusPaused( EAudioBus Bus, bool bPaused )
+void CAudioSubsystem::SetBusPaused( EAudioBus Bus, bool bPaused )
 {
 	Buses[static_cast<int32>( Bus )].bPaused = bPaused;
 	ApplyPauseState();
@@ -446,7 +446,7 @@ void CAudioSystem::SetBusPaused( EAudioBus Bus, bool bPaused )
 //=============================================================================
 // 音楽・環境音
 //=============================================================================
-FSoundHandle CAudioSystem::PlayMusic( const TSharedPtr<CSound>& Music, const FMusicParams& Params )
+FSoundHandle CAudioSubsystem::PlayMusic( const TSharedPtr<CSound>& Music, const FMusicParams& Params )
 {
 	if ( !Music.IsValid() ) return FSoundHandle();
 
@@ -475,13 +475,13 @@ FSoundHandle CAudioSystem::PlayMusic( const TSharedPtr<CSound>& Music, const FMu
 	return MusicHandle;
 }
 
-void CAudioSystem::StopMusic( float32 FadeOut )
+void CAudioSubsystem::StopMusic( float32 FadeOut )
 {
 	Stop( MusicHandle, FadeOut, EFadeCurve::EqualPower );
 	MusicHandle = FSoundHandle();
 }
 
-FSoundHandle CAudioSystem::PlayAmbient( const TSharedPtr<CSound>& Sound, const FAmbientParams& Params )
+FSoundHandle CAudioSubsystem::PlayAmbient( const TSharedPtr<CSound>& Sound, const FAmbientParams& Params )
 {
 	FSoundPlayParams PlayParams;
 	PlayParams.Bus = EAudioBus::Ambient;
@@ -502,14 +502,14 @@ FSoundHandle CAudioSystem::PlayAmbient( const TSharedPtr<CSound>& Sound, const F
 //=============================================================================
 // リスナー・更新
 //=============================================================================
-void CAudioSystem::SetListener( const FVector3& Position, const FVector3& Forward, const FVector3& Up )
+void CAudioSubsystem::SetListener( const FVector3& Position, const FVector3& Forward, const FVector3& Up )
 {
 	Listener.Position = Position;
 	Listener.Forward = Forward;
 	Listener.Up = Up;
 }
 
-void CAudioSystem::Apply( FVoice& Voice, bool bForce )
+void CAudioSubsystem::Apply( FVoice& Voice, bool bForce )
 {
 	IAudioBackend* B = GetBackend();
 	if ( B == nullptr ) return;
@@ -546,12 +546,12 @@ void CAudioSystem::Apply( FVoice& Voice, bool bForce )
 	}
 }
 
-void CAudioSystem::Tick( float32 DeltaTime )
+void CAudioSubsystem::Tick( float32 DeltaTime )
 {
 	Update( DeltaTime );
 }
 
-void CAudioSystem::Update( float32 DeltaSeconds )
+void CAudioSubsystem::Update( float32 DeltaSeconds )
 {
 	PROFILE_SCOPE_CAT( "Audio", "Update" );
 	Clock += static_cast<float64>( DeltaSeconds );
@@ -619,7 +619,7 @@ void CAudioSystem::Update( float32 DeltaSeconds )
 	}
 }
 
-TArray<FVoiceInfo> CAudioSystem::GetVoiceInfos() const
+TArray<FVoiceInfo> CAudioSubsystem::GetVoiceInfos() const
 {
 	TArray<FVoiceInfo> Infos;
 	for ( int32 Index = 0; Index < Voices.Num(); ++Index )

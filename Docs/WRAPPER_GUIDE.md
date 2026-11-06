@@ -47,7 +47,7 @@ Library/Platform/Null   … DxLib を使わない実装（NullPlatform / NullAss
 
 ## 3. 資源とハンドル
 
-- DxLib のハンドル（`int`）を**そのまま公開しない**。画像・モデル・音・フォントなどは、型のある所有者（`CTexture` `CModel` `CSound` `CFont` など。`CAssetManager` が読み込み・共有・破棄を行う）か、型付きのハンドルで扱う。CPU の画素から作る画像は `CDynamicTexture`（`FPixelImage` から。`CAssetManager::CreateDynamicTexture`。`IAssetBackend` の `CreateTextureFromPixels` / `UpdateTexturePixels` / `DecodeImage` / `SavePixels`）。描画先（`MakeScreen`）は `CRenderTarget`（`CTexture` を継承。`CAssetManager::CreateRenderTarget` で作り、`IAssetBackend` の `CreateRenderTarget` / `ReadRenderTargetPixels` / `SaveRenderTarget` が、DxLib を呼ぶ）。画像は、描画の窓口（`FDrawContext`）に、インターフェース `IImage`（`CTexture` が実装。`Core/Interfaces/Render/IImage.h`）か、型付きのハンドル `FImageHandle` で渡す。描画の側は、`CTexture` などの具体的な型を知らない。
+- DxLib のハンドル（`int`）を**そのまま公開しない**。画像・モデル・音・フォントなどは、型のある所有者（`CTexture` `CModel` `CSound` `CFont` など。`CAssetManagerSubsystem` が読み込み・共有・破棄を行う）か、型付きのハンドルで扱う。CPU の画素から作る画像は `CDynamicTexture`（`FPixelImage` から。`CAssetManagerSubsystem::CreateDynamicTexture`。`IAssetBackend` の `CreateTextureFromPixels` / `UpdateTexturePixels` / `DecodeImage` / `SavePixels`）。描画先（`MakeScreen`）は `CRenderTarget`（`CTexture` を継承。`CAssetManagerSubsystem::CreateRenderTarget` で作り、`IAssetBackend` の `CreateRenderTarget` / `ReadRenderTargetPixels` / `SaveRenderTarget` が、DxLib を呼ぶ）。画像は、描画の窓口（`FDrawContext`）に、インターフェース `IImage`（`CTexture` が実装。`Core/Interfaces/Render/IImage.h`）か、型付きのハンドル `FImageHandle` で渡す。描画の側は、`CTexture` などの具体的な型を知らない。
 - 資源の寿命は参照（共有ポインター）で決める。使う側が強参照を持つ間は有効で、最後の参照が消えたとき、メインスレッドで破棄する（別スレッドからの解放は遅延させて受ける）。
 - 読み込みの失敗は、空の参照とログで返す。準備待ち（非同期）と恒久的な失敗を取り違えない。
 - 無効なハンドルを表す値（`-1`）は実装の中の都合で、利用者に見せない。
@@ -130,7 +130,7 @@ Library/Platform/Null   … DxLib を使わない実装（NullPlatform / NullAss
 
 - **文字列は UTF-8 に統一した**（2026-10-28）。`FString` の中身は UTF-8 のバイト列で、ソースの文字列リテラルも UTF-8。ImGui・SDL・JSON（nlohmann）・ログのファイルにも、DxLib にも、そのまま渡せる。窓口の文字列は `FString` / `const char*`（UTF-8）。
 - ソースファイルは **BOM つき UTF-8** で保存する。ビルドは `/execution-charset:utf-8`（文字列リテラルを UTF-8 にする）で、`/utf-8` ではない。`/utf-8` は BOM のないファイルも UTF-8 として読むので、BOM のない Shift-JIS の DxLib のヘッダー（`DxLib.h` など）が壊れる。BOM のあるファイルだけが UTF-8 として読まれるので、**BOM を落とすと、日本語のリテラルが警告なしで化ける**。BOM を保つこと。
-- DxLib は UTF-8 モード（`SetUseCharCodeFormat( DX_CHARCODEFORMAT_UTF8 )`）で使う。`CDxLibBackend` が `DxLib_Init` の前に切り替えるので、描画する文字・ファイル名・フォント名・ウィンドウの題・モデルのアニメーション名とフレーム名には、`FString` をそのまま渡せる。ゲームのコードが DxLib を直接呼ぶときも、UTF-8 で渡す。
+- DxLib は UTF-8 モード（`SetUseCharCodeFormat( DX_CHARCODEFORMAT_UTF8 )`）で使う。`CDxLibBackendSubsystem` が `DxLib_Init` の前に切り替えるので、描画する文字・ファイル名・フォント名・ウィンドウの題・モデルのアニメーション名とフレーム名には、`FString` をそのまま渡せる。ゲームのコードが DxLib を直接呼ぶときも、UTF-8 で渡す。
 - Windows の API は **W 系**（`CreateFileW` など）を使い、パスは `FString::ToWide()` で渡して、受け取った UTF-16 は `FString( const wchar_t* )` で UTF-8 にする。A 系（`...A`）はシステムのコードページ（日本語では Shift-JIS）の列を受け取るので使わない。起動引数は `NCommandLine`。
 - UTF-8 でない相手（昔の Shift-JIS のファイルなど）とのやりとりは、境目で `FString::FromCodePage( バイト列, 長さ, 932 )` / `ToCodePage( 932 )` で変換する。
 - 文字とフォントの DxLib の挙動（M2-7 の実測。既定のフォントは `ＭＳ ゴシック`）。サイズ 24 では、半角の幅 13・全角の幅 25、1 行の文字の高さ 26（サイズ + 2）、行の送り幅の既定 26。複数行の高さは `(行数 - 1) x 行の送り幅 + 1 行の文字の高さ`。`GetDrawStringSizeToHandle` が返すのは幅で（エラーコードではない）、空の文字列は幅・高さ 0 で 0 行、`"\n"` だけで 2 行、末尾の改行も 1 行と数える。字間（`SetFontSpaceToHandle`）は、最後の文字を含め、すべての文字の幅に足される。縁取りは、1 文字の幅と行の高さに、縁の太さの 2 倍を足す。斜体は幅を変えない。太さは、実質 2 段階（0〜5 と 6〜9）。アンチエイリアスの階調は、なし 1、標準 62、4x4 16、8x8 63、16x16 190 で、数えて確かめている。

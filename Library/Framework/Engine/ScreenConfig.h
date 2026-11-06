@@ -18,7 +18,7 @@ public:
 	FORCEINLINE TOptional<EWindowMode> GetWindowMode() const { return WindowMode; }
 	FORCEINLINE float64 GetExtendRate() const { return ExtendRate; }
 
-	// CDxLibBackend::Run / Init に渡す設定へ変換（その他の項目は Base の値を使う）
+	// CDxLibBackendSubsystem::Run / Init に渡す設定へ変換（その他の項目は Base の値を使う）
 	FWindowSettings ToWindowSettings( const FWindowSettings& Base = FWindowSettings() ) const;
 
 private:

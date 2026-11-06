@@ -11,14 +11,14 @@
 #include "Library/Framework/Subsystem/AppSubsystem.h"
 
 //=============================================================================
-// CJobSystem
+// CJobSubsystem
 //   IJobSystem の実装。アプリ全体で 1 つ、自動で生成される。
 //
 //   仕組み: ワーカーは 1 つの待ち行列を共有する（ロックは短い）。ParallelFor は「グループ」を登録して、呼び出したスレッドも
 //   ワーカーと一緒にバッチを取り合う。全バッチが終わるまで、呼び出したスレッドは他のグループの仕事を手伝いながら待つ
 //   （入れ子の ParallelFor でも詰まらない）。単発のジョブは待ち行列に入り、依存先が終わると実行できるようになる。
 //=============================================================================
-class CJobSystem : public CAppSubsystem, public IJobSystem
+class CJobSubsystem : public CAppSubsystem, public IJobSystem
 {
 public:
 	//-------------------------------------------------------------------------

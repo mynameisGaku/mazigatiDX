@@ -7,7 +7,7 @@
 
 //=============================================================================
 // CAudioListenerComponent
-//   このオブジェクトの位置と向きを、毎フレーム CAudioSystem のリスナー（聞き手）にする。カメラのオブジェクトに付ける。
+//   このオブジェクトの位置と向きを、毎フレーム CAudioSubsystem のリスナー（聞き手）にする。カメラのオブジェクトに付ける。
 //   CTransformComponent が必要。
 //
 //   Camera->AddComponent<CTransformComponent>();
@@ -55,7 +55,7 @@ public:
 	void Play();
 	void Stop( float32 FadeOut = 0.0f );
 	bool IsPlaying() const;
-	// 鳴らしている音。動かしたい（音量のフェードなど）ときは CAudioSystem の関数に渡す
+	// 鳴らしている音。動かしたい（音量のフェードなど）ときは CAudioSubsystem の関数に渡す
 	FORCEINLINE FSoundHandle GetHandle() const { return Handle; }
 
 	//-------------------------------------------------------------------------

@@ -6,10 +6,10 @@
 #include "Library/Framework/Subsystem/AppSubsystem.h"
 #include "Library/Platform/DxLib/Render/EffectMaterialRenderer.h"
 
-class CDxLibAssetBackend;
+class CDxLibAssetBackendSubsystem;
 
 //=============================================================================
-// CDxLibDrawExecutor
+// CDxLibDrawExecutorSubsystem
 //   IDrawExecutor の DxLib 実装。描画システムが（並列に）記録した描画コマンドを、メインスレッドで、記録された順に DxLib の
 //   描画関数へ流す。アプリで 1 つ、自動で生成される。
 //
@@ -32,7 +32,7 @@ class CDxLibAssetBackend;
 //   DxLib の DrawBox などは、頂点を内部でためてまとめて描く作りなので、こちらで頂点配列にまとめ直さない
 //   （DrawPrimitive2D でまとめると、10 万個の Box で DrawBox の約 8 倍遅かった。バッチの大きさを変えても同じ）。
 //=============================================================================
-class CDxLibDrawExecutor : public CAppSubsystem, public IDrawExecutor
+class CDxLibDrawExecutorSubsystem : public CAppSubsystem, public IDrawExecutor
 {
 public:
 	// --backend=null のときは作らない（Library/Platform/Null の実装を使う）
@@ -66,7 +66,7 @@ private:
 	// DxLibが動作中に解放する必要がある材質描画用GPU資源。
 	FEffectMaterialRenderer EffectMaterialRenderer;
 	// 選択材質の不変形状を引くplatform資源backend。
-	CDxLibAssetBackend* AssetBackend = nullptr;
+	CDxLibAssetBackendSubsystem* AssetBackend = nullptr;
 	// マスク（PushMask）を初めて使うときに作る、DxLib のマスクスクリーンを作ったか（Deinitialize で消す）
 	bool bMaskScreenCreated = false;
 	// マスクスクリーンを作ってあるようにする。使える状態なら true

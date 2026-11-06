@@ -1,18 +1,18 @@
 ﻿// SPDX-License-Identifier: MIT
-#include "NullAudioBackend.h"
+#include "NullAudioBackendSubsystem.h"
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 #include "Library/Platform/BackendSelection.h"
 
-REGISTER_SUBSYSTEM( CNullAudioBackend )
+REGISTER_SUBSYSTEM( CNullAudioBackendSubsystem )
 
-bool CNullAudioBackend::ShouldCreateSubsystem( CEngine& Engine ) const
+bool CNullAudioBackendSubsystem::ShouldCreateSubsystem( CEngine& Engine ) const
 {
 	return NBackendSelection::IsNullRequested();
 }
 
-bool CNullAudioBackend::Play( int32 Voice, bool bLoop, bool bFromStart )
+bool CNullAudioBackendSubsystem::Play( int32 Voice, bool bLoop, bool bFromStart )
 {
 	if ( Voice < 0 )
 	{
@@ -29,7 +29,7 @@ bool CNullAudioBackend::Play( int32 Voice, bool bLoop, bool bFromStart )
 	return true;
 }
 
-void CNullAudioBackend::Stop( int32 Voice )
+void CNullAudioBackendSubsystem::Stop( int32 Voice )
 {
 	if ( FVoiceState* State = Voices.Find( Voice ) )
 	{
@@ -37,13 +37,13 @@ void CNullAudioBackend::Stop( int32 Voice )
 	}
 }
 
-bool CNullAudioBackend::IsPlaying( int32 Voice )
+bool CNullAudioBackendSubsystem::IsPlaying( int32 Voice )
 {
 	const FVoiceState* State = Voices.Find( Voice );
 	return State != nullptr && State->bPlaying;
 }
 
-void CNullAudioBackend::SetVolume( int32 Voice, float32 Volume )
+void CNullAudioBackendSubsystem::SetVolume( int32 Voice, float32 Volume )
 {
 	if ( Voice >= 0 )
 	{
@@ -51,7 +51,7 @@ void CNullAudioBackend::SetVolume( int32 Voice, float32 Volume )
 	}
 }
 
-void CNullAudioBackend::SetPan( int32 Voice, float32 Pan )
+void CNullAudioBackendSubsystem::SetPan( int32 Voice, float32 Pan )
 {
 	if ( Voice >= 0 )
 	{
@@ -59,7 +59,7 @@ void CNullAudioBackend::SetPan( int32 Voice, float32 Pan )
 	}
 }
 
-void CNullAudioBackend::SetPitch( int32 Voice, float32 Pitch )
+void CNullAudioBackendSubsystem::SetPitch( int32 Voice, float32 Pitch )
 {
 	if ( Voice >= 0 )
 	{
@@ -67,13 +67,13 @@ void CNullAudioBackend::SetPitch( int32 Voice, float32 Pitch )
 	}
 }
 
-float32 CNullAudioBackend::GetPlayPosition( int32 Voice )
+float32 CNullAudioBackendSubsystem::GetPlayPosition( int32 Voice )
 {
 	const FVoiceState* State = Voices.Find( Voice );
 	return State != nullptr ? State->Position : 0.0f;
 }
 
-void CNullAudioBackend::SetPlayPosition( int32 Voice, float32 Seconds )
+void CNullAudioBackendSubsystem::SetPlayPosition( int32 Voice, float32 Seconds )
 {
 	if ( Voice >= 0 )
 	{
@@ -81,7 +81,7 @@ void CNullAudioBackend::SetPlayPosition( int32 Voice, float32 Seconds )
 	}
 }
 
-bool CNullAudioBackend::SetLoopRegion( int32 Voice, float32 StartSeconds, float32 EndSeconds )
+bool CNullAudioBackendSubsystem::SetLoopRegion( int32 Voice, float32 StartSeconds, float32 EndSeconds )
 {
 	if ( Voice < 0 )
 	{
@@ -94,13 +94,13 @@ bool CNullAudioBackend::SetLoopRegion( int32 Voice, float32 StartSeconds, float3
 	return true;
 }
 
-CNullAudioBackend::FVoiceState CNullAudioBackend::GetVoiceState( int32 Voice ) const
+CNullAudioBackendSubsystem::FVoiceState CNullAudioBackendSubsystem::GetVoiceState( int32 Voice ) const
 {
 	const FVoiceState* State = Voices.Find( Voice );
 	return State != nullptr ? *State : FVoiceState();
 }
 
-int32 CNullAudioBackend::GetNumPlayCalls() const
+int32 CNullAudioBackendSubsystem::GetNumPlayCalls() const
 {
 	return NumPlayCalls;
 }

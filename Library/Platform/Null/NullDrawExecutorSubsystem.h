@@ -7,7 +7,7 @@
 
 //=============================================================================
 // FNullDrawStats
-//   CNullDrawExecutor が数えた、実行された描画命令の記録。
+//   CNullDrawExecutorSubsystem が数えた、実行された描画命令の記録。
 //   1 つの Execute（1 つのオブジェクトの描画）の終わりに、命令の中身の長さと、対になる命令（PushTarget / PopTarget など）が揃っているかも調べる。
 //=============================================================================
 struct FNullDrawStats
@@ -46,7 +46,7 @@ struct FNullDrawStats
 };
 
 //=============================================================================
-// CNullDrawExecutor
+// CNullDrawExecutorSubsystem
 //   IDrawExecutor の、DxLib を使わない実装。何も描かず、命令の数と、命令の中身の長さと、対になる命令（描画先・クリップ・マスク・カメラ・
 //   ワールド変換・ライト・シャドウマップ）の組み合わせだけを調べる。--backend=null のときだけ作られる（選び方は Library/Platform/BackendSelection.h）。
 //
@@ -54,7 +54,7 @@ struct FNullDrawStats
 //   - 終了するときに、統計を 1 行のログに残す（"Draw statistics: ..."）。自動の検査は、この行を読む
 //   - 材質付きの効果・モデルの材質効果（Supports...）は、いつも非対応（false）
 //=============================================================================
-class CNullDrawExecutor : public CAppSubsystem, public IDrawExecutor
+class CNullDrawExecutorSubsystem : public CAppSubsystem, public IDrawExecutor
 {
 public:
 	// --backend=null のときだけ作る

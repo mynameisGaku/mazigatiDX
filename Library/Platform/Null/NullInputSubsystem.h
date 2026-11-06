@@ -12,18 +12,18 @@
 #include "Library/Framework/Subsystem/AppSubsystem.h"
 
 //=============================================================================
-// CNullInput
+// CNullInputSubsystem
 //   IInput（キーボードとマウス）の、DxLib を使わない実装。実機の入力は読まず、プログラムが決めた入力だけを返す（何も決めなければ、何も押されない）。
 //   --backend=null のときだけ作られる（選び方は Library/Platform/BackendSelection.h）。
 //
 //   自動の検査が、見本やゲームを「キーを押した」「マウスを動かした」状態で動かすのに使う:
-//     CNullInput* Input = GetAppSubsystem<CNullInput>();
+//     CNullInputSubsystem* Input = GetAppSubsystem<CNullInputSubsystem>();
 //     Input->SetKeyDown( EKey::Space, true );     // 次のフレームの頭（PreUpdate の Tick）から、Space が押された状態になる
 //
 //   - 設定した値は、次の Tick で、現在の状態になる。そのときの IsKeyPressed / IsMouseButtonPressed は、前の状態との差（押した瞬間）で決まる
 //   - マウスは、画面の中にあり、窓が有効（bFocused が true）として扱う。位置は SetMousePosition で決める（初めは 0, 0）
 //=============================================================================
-class CNullInput : public CAppSubsystem, public IInput, public ITextInput, public ICursorControl, public ITouchInput, public ITickable
+class CNullInputSubsystem : public CAppSubsystem, public IInput, public ITextInput, public ICursorControl, public ITouchInput, public ITickable
 {
 public:
 	// --backend=null のときだけ作る

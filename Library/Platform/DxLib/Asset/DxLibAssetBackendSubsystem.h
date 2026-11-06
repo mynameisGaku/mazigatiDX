@@ -9,9 +9,9 @@
 #include "Library/Platform/DxLib/Asset/DxLibModelMaterialGeometry.h"
 
 //=============================================================================
-// CDxLibAssetBackend
+// CDxLibAssetBackendSubsystem
 //   IAssetBackend の DxLib 実装。アプリで 1 つ、自動で生成される。
-//   ゲーム側は直接使わず、CAssetManager を通して読み込む。
+//   ゲーム側は直接使わず、CAssetManagerSubsystem を通して読み込む。
 //
 //   画像 -> LoadGraph / CreateGraphFromMem / DeleteGraph
 //   モデル -> MV1LoadModel / MV1DuplicateModel / MV1AttachAnim / MV1DeleteModel
@@ -19,7 +19,7 @@
 //   サウンド -> LoadSoundMem（Stream は DX_SOUNDDATATYPE_FILE）/ DuplicateSoundMem / DeleteSoundMem
 //   非同期 -> SetUseASyncLoadFlag / CheckHandleASyncLoad
 //=============================================================================
-class CDxLibAssetBackend : public CAppSubsystem, public IAssetBackend
+class CDxLibAssetBackendSubsystem : public CAppSubsystem, public IAssetBackend
 {
 public:
 	// --backend=null のときは作らない（Library/Platform/Null の実装を使う）

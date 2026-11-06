@@ -6,7 +6,7 @@
 #include "Library/Framework/Subsystem/AppSubsystem.h"
 
 //=============================================================================
-// CNullAudioBackend
+// CNullAudioBackendSubsystem
 //   IAudioBackend の、DxLib を使わない実装。音は出さず、ボイスごとの状態（再生中か・音量・パン・ピッチ・位置）を覚えるだけ。
 //   --backend=null のときだけ作られる（選び方は Library/Platform/BackendSelection.h）。
 //
@@ -14,7 +14,7 @@
 //   - どのボイスの番号（0 以上）も受け付ける。負の番号は、再生できない（Play は false）
 //   - 音量・パン・ピッチは、IAudioBackend が決めた範囲に収めずに、受け取った値のまま覚える
 //=============================================================================
-class CNullAudioBackend : public CAppSubsystem, public IAudioBackend
+class CNullAudioBackendSubsystem : public CAppSubsystem, public IAudioBackend
 {
 public:
 	// ボイス 1 つの状態

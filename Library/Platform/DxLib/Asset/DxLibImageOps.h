@@ -5,7 +5,7 @@
 
 //=============================================================================
 // NDxLibImageOps
-//   画像の処理（フィルター・混ぜる）の命令を、DxLib の GraphFilter / GraphBlend へ流す。CDxLibDrawExecutor が使う。
+//   画像の処理（フィルター・混ぜる）の命令を、DxLib の GraphFilter / GraphBlend へ流す。CDxLibDrawExecutorSubsystem が使う。
 //   メインスレッドだけから呼ぶ。DxLib の描画先・描画の状態（クリップ・ブレンドなど）は、読みも変えもしない
 //   （GraphFilter 系は、それらに影響されない。転送先のブレンドの設定 SetGraphFilterBltBlendMode だけは、呼ぶたびに決めて、終わりに元（ブレンドなし）へ戻す）。
 //=============================================================================

@@ -54,7 +54,7 @@ World EditorのModel Inspectorでは、任意の材質効果の追加・削除�
 
 DxLibでは個体の選択meshだけを一時非表示にし、残りを通常のモデルとして描きます。まとめ描画を確定してから可視状態を戻し、元のローカル形状へ配置行列を一度掛けて選択材質を描きます。元の拡散色を頂点色へ二重適用せず、不透明度は頂点alphaへ一度掛けます。効果は照明を使わないLDRのAlpha/Addで、消失・自己発光・UV移動・ゆがみを使えます。元の材質の照明・画像変換・透過判定の完全再現は含みません。通常部分の描画順を保ちますが、効果面はその後に描くため、通常の半透明面との完全な相対順序は保証しません。変形するモデル、HDRとブルームは後続の範囲です。
 
-準備・非対応・事前検査の失敗は通常モデルへ戻します。GPU描画の途中に失敗した場合は、描けなかった分割形状を省略して警告を一度記録します。成功した形状へ重ね描きする全体の再描画は行いません。backendの終了は、利用中のモデル・画像・効果資源を片付けてから行ってください。確認用の`CAssetManager::SetBackendOverride`は、既存のモデル・画像・効果資源と遅延解放を全て片付けてから切り替えます。
+準備・非対応・事前検査の失敗は通常モデルへ戻します。GPU描画の途中に失敗した場合は、描けなかった分割形状を省略して警告を一度記録します。成功した形状へ重ね描きする全体の再描画は行いません。backendの終了は、利用中のモデル・画像・効果資源を片付けてから行ってください。確認用の`CAssetManagerSubsystem::SetBackendOverride`は、既存のモデル・画像・効果資源と遅延解放を全て片付けてから切り替えます。
 
 オブジェクトの描画は、DX12のコマンドリストと同じ方式です。`CGameObject::Draw( FDrawContext& CommandList )`は、シーンが用意したコマンドリストに、`CommandList.Box(...)`などで「何を描くか」を記録するだけで、DxLibも実行先（`IDrawExecutor`）も知りません。シーンはオブジェクトごとにコマンドリストを空にして渡し（Reset）、記録されたものを描画順（`DrawOrder`）に実行する（ExecuteCommandLists）ので、ブレンドモードなどの状態は次のオブジェクトに漏れません。何も記録しなかったオブジェクトは、実行先を呼びません。
 
@@ -201,7 +201,7 @@ struct VertexInput
 - ゲームで使うときは`CPixelEffectView`が便利です。後ろの層と前の層を別々の画像（`CDynamicTexture`）にして、基準点を画面の好きな位置へ、好きな倍率で描きます。**エフェクトはキャラクターを描きません**。キャラクターは、`DrawBack`と`DrawFront`の間にふつうに描きます（キャラクターと重ならない爆発などは、どちらか片方の層しか使いません）。画像を作らずに層ごとの絵だけが欲しいときは`CPixelEffectPlayer`（CPUだけ）を使います。
 
 ```cpp
-// 作るとき（Assets は CAssetManager）
+// 作るとき（Assets は CAssetManagerSubsystem）
 CPixelEffectView Heal( *Assets, MakeUnique<CPixelHealEffect>() );
 Heal.Play( Seed );                         // 左右反転・色の段も渡せる
 
@@ -317,12 +317,12 @@ if ( Animator.ConsumeRootMotion( ReferenceToActorBasis, RootTranslation, RootRot
 |やりたいこと|使うもの|
 |---|---|
 |音の長さ・サンプルレートなどを知る|`CSound::GetInfo( FSoundInfo& )`（分からない項目は0。DxLibはチャンネル数を答えられないので0）|
-|計算で作った音を鳴らす|`FPcmBuffer`（チャンネルを交互に並べた-1〜1のfloat）を`CSoundLoader::CreateFromPcm( 名前, Pcm )`に渡すと、`CAudioSystem`で鳴らせる`CSound`になります|
+|計算で作った音を鳴らす|`FPcmBuffer`（チャンネルを交互に並べた-1〜1のfloat）を`CSoundLoader::CreateFromPcm( 名前, Pcm )`に渡すと、`CAudioSubsystem`で鳴らせる`CSound`になります|
 |音のファイルを生の音に読み出す|`CSoundLoader::Decode( 絶対パス, Pcm )`。WAVは`NWavFile`が読み、それ以外はバックエンドが読める形式による|
 |生の音をWAVに保存する|`CSoundLoader::SaveWav( Pcm, 絶対パス )`（16ビットPCM）|
 |イントロ付きBGM（頭は1度だけ、あとは繰り返す）|`CSound::SetLoopRegion( 始まり秒, 終わり秒 )`。`bLoop`で鳴らすと、終わりに届くたびに始まりへ戻ります。終わりが0以下なら音の最後まで。`ClearLoopRegion()`でやめます|
 
-ループ区間をバックエンドが扱えないとき（`IAudioBackend::SetLoopRegion`が`false`を返すとき）は、`CAudioSystem`が毎フレーム再生位置を見て始まりへ戻して補います（フレーム単位の精度で、バックエンドが再生中に位置を動かせることが前提です）。DxLibは区間を直接扱えます。ただし、区間の始まりより後ろから再生を始めた場合は区間が効かないことがあります（頭から鳴らすBGMでは問題になりません）。
+ループ区間をバックエンドが扱えないとき（`IAudioBackend::SetLoopRegion`が`false`を返すとき）は、`CAudioSubsystem`が毎フレーム再生位置を見て始まりへ戻して補います（フレーム単位の精度で、バックエンドが再生中に位置を動かせることが前提です）。DxLibは区間を直接扱えます。ただし、区間の始まりより後ろから再生を始めた場合は区間が効かないことがあります（頭から鳴らすBGMでは問題になりません）。
 
 DxLibで使えない機能（3チャンネル以上のPCMなど）は、黙って無視せず、ログに警告を1回だけ出します（`NBackendSupport::ReportUnsupported`）。実装を書くときは、DxLibでできないことを関数の近くに簡潔なコメントで書きます。
 
@@ -377,14 +377,14 @@ if ( Field.ConsumeSubmitted() )
 }
 ```
 
-バックエンドを作るときは、`FUtf8ByteAssembler`（1バイトずつ届く文字のまとめ）と`FTouchTracker`（いまの指の一覧から触れ始め・離れたを求める）を使えます。`--backend=null`の`CNullInput`は、`AddTypedText`・`AddTextCommand`・`SetImeComposition`・`SetTouches`で入力を決められます。IMEの変換中の状態は、本物のIMEでは未確認です（検査は決めた値の受け渡しだけ）。
+バックエンドを作るときは、`FUtf8ByteAssembler`（1バイトずつ届く文字のまとめ）と`FTouchTracker`（いまの指の一覧から触れ始め・離れたを求める）を使えます。`--backend=null`の`CNullInputSubsystem`は、`AddTypedText`・`AddTextCommand`・`SetImeComposition`・`SetTouches`で入力を決められます。IMEの変換中の状態は、本物のIMEでは未確認です（検査は決めた値の受け渡しだけ）。
 
 ## ゲームスレッドと AsyncTask
 
 描画・アセット・音・窓など、DxLibを触る仕事は**ゲームスレッド**（起動したスレッド。`NGameMain`と`CEngine::Run`が覚える）だけで行います。DxLibはスレッドセーフではないためです。
 
 - `IsInGameThread()`: いまゲームスレッドか。
-- `GAME_THREAD_ONLY();` / `GAME_THREAD_ONLY( 戻り値 );`: 関数の頭に書くと、ゲームスレッドの外から呼ばれたときに、エラーをログに出して何もせずに戻ります（DxLibを触って壊れる代わりに）。アセットの読み込み・作成（`CAssetManager`の`Load…` / `Create…`など）、モデルの見た目、画面の撮影の関数に入っています。
+- `GAME_THREAD_ONLY();` / `GAME_THREAD_ONLY( 戻り値 );`: 関数の頭に書くと、ゲームスレッドの外から呼ばれたときに、エラーをログに出して何もせずに戻ります（DxLibを触って壊れる代わりに）。アセットの読み込み・作成（`CAssetManagerSubsystem`の`Load…` / `Create…`など）、モデルの見た目、画面の撮影の関数に入っています。
 - `AsyncTask( EThreadType::Worker, 仕事 )`: 重い仕事（計算・ファイルの読み込みなど。DxLibは触らない）をワーカーで実行します。ワーカーが0本なら、その場で実行します。
 - `AsyncTask( EThreadType::Game, 仕事 )`: 仕事をゲームスレッドへ渡します。次のフレームのはじめ（更新の前）に、頼んだ順に実行されます。ワーカーで作った結果を、画面やアセットに反映するときに使います。
 
@@ -403,7 +403,7 @@ AsyncTask( EThreadType::Worker, [ Path ]()
 
 ## 画面の撮影（スクリーンショット・GIF）
 
-`CScreenCapture`（アプリのサブシステム）が、画面を撮って`Saved/Screenshots`へ保存します。名前を指定しなければ`Screenshot_00001.png`のような番号の名前になります（番号は、フォルダにあるものの次）。既定はゲームの絵だけで、デバッグ用のUI（ImGui）は写しません（`bIncludeDebugUI`で写せます）。形式はPNG・JPEG・BMP・GIFで、名前の拡張子か`Format`で選びます。
+`CScreenCaptureSubsystem`（アプリのサブシステム）が、画面を撮って`Saved/Screenshots`へ保存します。名前を指定しなければ`Screenshot_00001.png`のような番号の名前になります（番号は、フォルダにあるものの次）。既定はゲームの絵だけで、デバッグ用のUI（ImGui）は写しません（`bIncludeDebugUI`で写せます）。形式はPNG・JPEG・BMP・GIFで、名前の拡張子か`Format`で選びます。
 
 - **F9**でスクリーンショット、**Shift + F9**でGIFの記録を始める / 止める（フレームワークの決まり）。そのときの設定は`SetHotkeyScreenshotOptions` / `SetHotkeyRecordOptions`、キーを使わないゲームは`SetHotkeysEnabled( false )`。
 - コードから: `TakeScreenshot( 名前, Options )`（矩形の切り出し・縮小・待つフレーム）、`StartRecording` / `StopRecording`（何フレームごとに1枚・枚数の上限・繰り返し）。
@@ -465,7 +465,8 @@ Worldの`Components.Effect`には、任意の`Target`（追従先オブジェク
 
 - フォルダは、領域（役割のジャンル）ごとに切ります。`Library/Framework/Asset`の下なら`Texture / Model / Font / Sound / Gpu / Data / Definition`、`Render`の下なら`Draw / Camera / State / Types / Mesh / MaterialEffect`のようにです。本質的なジャンルが同じ（同じ題材の定義と処理、値の型と読み書きなど）ファイルは同じフォルダに置いてよいですが、ジャンルの違うファイルを一つのフォルダに並べません。フォルダ直下には、その領域の入口になる少数のファイル（`Asset.h`や`AssetManager.*`など）だけを置き、新しいファイルは、いちばん近い領域のフォルダへ置きます（合う所が無ければ新しい領域のフォルダを作ります）。ファイルを移したら、`#include`と文書の参照も合わせて直し、プロジェクト生成（`Tools\GenerateProjectFiles.ps1`）をやり直します。
 - インターフェース（`Library/Core/Interfaces`）と、その値の型は、ゲームとフレームワークが「何をしたいか」から決めます。DxLibの関数・単位・制約・ファイル形式・既定値に合わせません（DxLibを別のバックエンドに替えても、インターフェースは変わらないようにするため）。バックエンドごとの事情は、実装（`Library/Platform/<名前>`）の中で吸収し、できない機能は「未対応」（`false`）を返して、フレームワークの側で補えるものは補います。
-- クラスの責務は一つにします。登録とキャッシュの管理（`CAssetManager`）、作る・読み込む・書き出す（`CSoundLoader` などのローダー）、鳴らす・描くなどの実行（`CAudioSystem` など）は別のクラスです。新しい処理を既存の管理クラスに足さず、役割ごとのクラスを作ります（バックエンドは作るときに渡し、検査で偽物に替えられるようにします）。責務を分けるときは、関数を別ファイルに分けたり名前空間を作ったりして済ませず、クラスにします。ただし、状態も依存も寿命も差し替えも持たない小さな関数群（`NMath`・`NFile`・`NWavFile` のような変換や計算）は、名前空間のままでかまいません。何をクラスにするかは、状態・依存・差し替えの要る責務かどうかで考えます。
+- クラスの責務は一つにします。登録とキャッシュの管理（`CAssetManagerSubsystem`）、作る・読み込む・書き出す（`CSoundLoader` などのローダー）、鳴らす・描くなどの実行（`CAudioSubsystem` など）は別のクラスです。新しい処理を既存の管理クラスに足さず、役割ごとのクラスを作ります（バックエンドは作るときに渡し、検査で偽物に替えられるようにします）。責務を分けるときは、関数を別ファイルに分けたり名前空間を作ったりして済ませず、クラスにします。ただし、状態も依存も寿命も差し替えも持たない小さな関数群（`NMath`・`NFile`・`NWavFile` のような変換や計算）は、名前空間のままでかまいません。何をクラスにするかは、状態・依存・差し替えの要る責務かどうかで考えます。
+- サブシステム（`CAppSubsystem` / `CGameInstanceSubsystem` / `CSceneSubsystem` を継承するクラス）の名前には`Subsystem`を付けます（`CAssetManagerSubsystem`・`CDxLibInputSubsystem` など）。ファイル名もクラス名に合わせます。
 - 公開する主要な型は原則一つのヘッダーに置き、実装は同名cppへ分けます。templateの実装は同名ヘッダーまたはinlに置きます。
 - 新しい型の役割は`A`（所有される多態オブジェクト）、`F`（値・ハンドル・サービス）、`T`（template）、`E`（enum）、`I`（インターフェース）で示します。既存の型は無関係な変更で一括改名しません。
 - ヘッダー冒頭は`// SPDX-License-Identifier: MIT`と`#pragma once`を置き、長い使い方は文書へ分けます。
@@ -523,10 +524,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\NewProject.ps1 -Name M
 .\x64\Debug\project.exe --backend=null --max-frames=30
 ```
 
-- `CNullPlatform`: 窓を出さず、待たずに1フレーム`1/60`秒ずつ進め、`--max-frames=N`に達するか`RequestExit()`が呼ばれたら終了します。ImGuiは描画の実装なしでフレームだけ進め、`imgui.ini`は読み書きしません。
-- `CNullDrawExecutor`: `FDrawSpan`の命令列を先頭から読み、命令ごとの最小ワード数と、`PushTarget / PopTarget`・`PushClip / PopClip`・`PushMask / PopMask`・`PushCamera / PopCamera`・`PushWorldMatrix / PopWorldMatrix`・`PushLight / PopLight`・`BeginShadowMap / EndShadowMap`の7組の深さの釣り合いを検査して終了時に統計をログへ出します。
-- `CNullAssetBackend`: 画像（PNG・BMP・JPEGのヘッダーから寸法を読み、未知の形式は64x64）・描画先・頂点バッファ・インデックスバッファ・シャドウマップ・シェーダー（`CompileShader`はダミーの`"DXBC"`4バイトを返す）・フォント（半角はサイズの半分、全角はサイズ幅で折り返しと文字位置を計算）・音（WAVのヘッダーから秒数を計算）のハンドルを発行し、終了時に未解放のハンドルが残っていれば警告します。
-- `CNullInput` / `CNullAudioBackend`: キー・マウス・ボイスの状態をメモリ上で進め、テストから入力を差し込めます。
+- `CNullPlatformSubsystem`: 窓を出さず、待たずに1フレーム`1/60`秒ずつ進め、`--max-frames=N`に達するか`RequestExit()`が呼ばれたら終了します。ImGuiは描画の実装なしでフレームだけ進め、`imgui.ini`は読み書きしません。
+- `CNullDrawExecutorSubsystem`: `FDrawSpan`の命令列を先頭から読み、命令ごとの最小ワード数と、`PushTarget / PopTarget`・`PushClip / PopClip`・`PushMask / PopMask`・`PushCamera / PopCamera`・`PushWorldMatrix / PopWorldMatrix`・`PushLight / PopLight`・`BeginShadowMap / EndShadowMap`の7組の深さの釣り合いを検査して終了時に統計をログへ出します。
+- `CNullAssetBackendSubsystem`: 画像（PNG・BMP・JPEGのヘッダーから寸法を読み、未知の形式は64x64）・描画先・頂点バッファ・インデックスバッファ・シャドウマップ・シェーダー（`CompileShader`はダミーの`"DXBC"`4バイトを返す）・フォント（半角はサイズの半分、全角はサイズ幅で折り返しと文字位置を計算）・音（WAVのヘッダーから秒数を計算）のハンドルを発行し、終了時に未解放のハンドルが残っていれば警告します。
+- `CNullInputSubsystem` / `CNullAudioBackendSubsystem`: キー・マウス・ボイスの状態をメモリ上で進め、テストから入力を差し込めます。
 - `msbuild project.sln /p:Configuration=Release /p:Platform=x64 /p:MazigatiWithoutDxLib=true`で、`Library/Platform/DxLib`のソースとDxLibのライブラリを除いたままビルド・リンクできることを確かめられます。
 
 ## プロジェクト生成と確認

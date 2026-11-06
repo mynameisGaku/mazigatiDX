@@ -32,7 +32,7 @@ mazigatiDX（DxLib を使う C++ のフレームワーク）で作った、最�
 - **画面に描く**: オブジェクトの `Draw( FDrawContext& CommandList )` に、`CommandList.Box(...)` `CommandList.Text(...)` `CommandList.Image(...)` などで「何を描くか」を足します（DX12 のコマンドリストと同じ方式です。シーンがコマンドリストを渡して、記録されたものを描画順に実行します。`CPlayer` が見本です）。シーンの `OnDraw` では、`FImmediateDraw Screen( GetDrawExecutor() );` と書くと、同じ関数で描けて、関数を抜けるときに画面へ出ます。
 - **デバッグ表示を使う**: `CGameApplication` に `CDebugOverlay Overlay;`（`Library/DebugUI/DebugOverlay.h`）を持たせ、`OnInit` / `OnTick` / `OnDraw` / `OnTerm` から `Overlay.Init()` / `Overlay.Tick()` / `Overlay.Draw( *this )` / `Overlay.Term()` を呼びます。F1 で窓（FPS・入力・シーン・ログ）、F2 でプロファイラー、F3 でコンソール（Debug だけ）、F11 でフルスクリーンです。
 - **ファイルを足したり消したりしたとき**: `GenerateProjectFiles.bat` を実行して、プロジェクトのファイル一覧を作り直します。
-- **画像・音・モデル**: `Assets/` に置いて、アセット管理（`CAssetManager`）から読み込みます。
+- **画像・音・モデル**: `Assets/` に置いて、アセット管理（`CAssetManagerSubsystem`）から読み込みます。
 
 詳しくは、フレームワークの文書（`Docs/DEVELOPMENT.md`、`Docs/WRAPPER_GUIDE.md`）を参照してください。
 

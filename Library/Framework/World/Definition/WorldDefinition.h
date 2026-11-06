@@ -26,7 +26,7 @@
 //   - 角度は度、座標は左手系・Y 上（Library/Math と同じ）。
 //
 //   FWorldDefinition World;
-//   FWorldDefinition::FromJson( Json, World );        // ファイルからは、CAssetManager::LoadWorld（WorldAsset.h）
+//   FWorldDefinition::FromJson( Json, World );        // ファイルからは、CAssetManagerSubsystem::LoadWorld（WorldAsset.h）
 //   NlohmannJson Saved = World.ToJson();               // 編集は NWorldEdit（WorldEdit.h）を使う
 //=============================================================================
 

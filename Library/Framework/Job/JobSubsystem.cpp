@@ -1,4 +1,4 @@
-﻿#include "JobSystem.h"
+﻿#include "JobSubsystem.h"
 
 
 #define WIN32_LEAN_AND_MEAN
@@ -20,7 +20,7 @@
 
 DEFINE_LOG_CATEGORY_STATIC( LogJob, Log )
 
-REGISTER_SUBSYSTEM( CJobSystem )
+REGISTER_SUBSYSTEM( CJobSubsystem )
 
 namespace
 {
@@ -45,7 +45,7 @@ int32 IJobSystem::GetCurrentThreadIndex()
 
 #pragma region Lifecycle
 
-void CJobSystem::Initialize( FSubsystemCollection& Collection )
+void CJobSubsystem::Initialize( FSubsystemCollection& Collection )
 {
 	// プロファイラーより後に初期化させる（終了はその逆なので、ワーカーが止まってからプロファイラーが片付く）
 	Collection.InitializeDependency<IProfiler>();
@@ -67,7 +67,7 @@ void CJobSystem::Initialize( FSubsystemCollection& Collection )
 	LOG( LogJob, Log, "Ready (%d worker thread(s)%s)", NumWorkers, NumWorkers == 0 ? ": everything runs on the calling thread" : "" );
 }
 
-void CJobSystem::Deinitialize()
+void CJobSubsystem::Deinitialize()
 {
 	{
 		FScopedLock Lock( Mutex );
@@ -89,7 +89,7 @@ void CJobSystem::Deinitialize()
 
 #pragma region Workers
 
-void CJobSystem::WorkerMain( int32 Index )
+void CJobSubsystem::WorkerMain( int32 Index )
 {
 	GThreadIndex = Index + 1;
 	char Name[24];
@@ -108,7 +108,7 @@ void CJobSystem::WorkerMain( int32 Index )
 	}
 }
 
-bool CJobSystem::HasWorkLocked() const
+bool CJobSubsystem::HasWorkLocked() const
 {
 	if ( !ReadyJobs.IsEmpty() )
 	{
@@ -124,7 +124,7 @@ bool CJobSystem::HasWorkLocked() const
 	return false;
 }
 
-bool CJobSystem::RunOneLocked( FUniqueLock& Lock, bool bAllowJobs )
+bool CJobSubsystem::RunOneLocked( FUniqueLock& Lock, bool bAllowJobs )
 {
 	// データ並列のグループを優先する（呼び出し側が待っている）
 	for ( FGroup* Group : Groups )
@@ -154,7 +154,7 @@ bool CJobSystem::RunOneLocked( FUniqueLock& Lock, bool bAllowJobs )
 	return false;
 }
 
-void CJobSystem::RunBatches( FGroup& Group )
+void CJobSubsystem::RunBatches( FGroup& Group )
 {
 	for ( ;; )
 	{
@@ -178,7 +178,7 @@ void CJobSystem::RunBatches( FGroup& Group )
 
 #pragma region ParallelFor
 
-void CJobSystem::RunParallelRange( int32 Count, int32 MinBatchSize, FRangeFunction Body, const char* Name )
+void CJobSubsystem::RunParallelRange( int32 Count, int32 MinBatchSize, FRangeFunction Body, const char* Name )
 {
 	if ( Count <= 0 )
 	{
@@ -243,7 +243,7 @@ void CJobSystem::RunParallelRange( int32 Count, int32 MinBatchSize, FRangeFuncti
 
 #pragma region Jobs
 
-FJobHandle CJobSystem::Schedule( TCallable<void()> Function, const char* Name, const FJobHandle& Dependency )
+FJobHandle CJobSubsystem::Schedule( TCallable<void()> Function, const char* Name, const FJobHandle& Dependency )
 {
 	TSharedPtr<FJobState> Job = MakeShared<FJobState>();
 	Job->Function = MoveTemp( Function );
@@ -264,7 +264,7 @@ FJobHandle CJobSystem::Schedule( TCallable<void()> Function, const char* Name, c
 	return FJobHandle( Job );
 }
 
-void CJobSystem::ReleaseJob( const TSharedPtr<FJobState>& Job )
+void CJobSubsystem::ReleaseJob( const TSharedPtr<FJobState>& Job )
 {
 	if ( Job->NumPending.FetchSub( 1, EMemoryOrder::AcquireRelease ) == 1 )
 	{
@@ -272,7 +272,7 @@ void CJobSystem::ReleaseJob( const TSharedPtr<FJobState>& Job )
 	}
 }
 
-void CJobSystem::Enqueue( const TSharedPtr<FJobState>& Job )
+void CJobSubsystem::Enqueue( const TSharedPtr<FJobState>& Job )
 {
 	// ワーカーがいないときは、その場で実行する（依存先もその場で終わっているので、順番は守られる）
 	if ( Workers.IsEmpty() )
@@ -288,7 +288,7 @@ void CJobSystem::Enqueue( const TSharedPtr<FJobState>& Job )
 	WorkAvailable.NotifyOne();
 }
 
-void CJobSystem::RunJob( const TSharedPtr<FJobState>& Job )
+void CJobSubsystem::RunJob( const TSharedPtr<FJobState>& Job )
 {
 	{
 		PROFILE_SCOPE_CAT( "Job", Job->Name );
@@ -308,7 +308,7 @@ void CJobSystem::RunJob( const TSharedPtr<FJobState>& Job )
 	}
 }
 
-void CJobSystem::Wait( const FJobHandle& Handle )
+void CJobSubsystem::Wait( const FJobHandle& Handle )
 {
 	// 待っている間も、仕事（グループ・単発のジョブ）を手伝う
 	while ( !Handle.IsDone() )

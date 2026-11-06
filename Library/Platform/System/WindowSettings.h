@@ -51,7 +51,7 @@ enum class EScalingFilter : uint8
 
 //=============================================================================
 // FWindowSettings
-//   CDxLibBackend::Init / Run に渡す起動設定。
+//   CDxLibBackendSubsystem::Init / Run に渡す起動設定。
 //   ※ Width / Height はゲーム画面（描画先）の解像度。ウィンドウの大きさは Width * WindowExtendRate
 //=============================================================================
 struct FWindowSettings

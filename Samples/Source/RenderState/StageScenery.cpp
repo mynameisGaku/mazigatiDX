@@ -1,6 +1,6 @@
 ﻿#include "StageScenery.h"
 
-#include "Library/Framework/Asset/AssetManager.h"
+#include "Library/Framework/Asset/AssetManagerSubsystem.h"
 #include "Library/Framework/Asset/Texture/PixelImage.h"
 #include "Source/Common/SoftLighting.h"
 #include "Source/Common/TestPattern.h"
@@ -228,7 +228,7 @@ namespace
 	}
 }
 
-bool NStageScenery::MakeTextures( CAssetManager& Assets, FRenderStateDemoState& State )
+bool NStageScenery::MakeTextures( CAssetManagerSubsystem& Assets, FRenderStateDemoState& State )
 {
 	// 地面: 4 x 4 画素の濃淡の市松模様（1 周期 = 2 x 2 マス）
 	FPixelImage Checker( 8, 8 );

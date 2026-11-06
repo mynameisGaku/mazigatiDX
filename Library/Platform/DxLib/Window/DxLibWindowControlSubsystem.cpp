@@ -6,7 +6,7 @@
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 #include "Library/Platform/BackendSelection.h"
-#include "Library/Platform/DxLib/DxLibBackend.h"
+#include "Library/Platform/DxLib/DxLibBackendSubsystem.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 #include "Library/Platform/System/DisplayLayout.h"
 
@@ -89,13 +89,13 @@ bool CDxLibWindowControlSubsystem::MoveWindowToDisplay( int32 DisplayIndex )
 
 float64 CDxLibWindowControlSubsystem::GetWindowScale() const
 {
-	const CDxLibBackend* Backend = GetAppSubsystem<CDxLibBackend>();
+	const CDxLibBackendSubsystem* Backend = GetAppSubsystem<CDxLibBackendSubsystem>();
 	return Backend != nullptr ? Backend->GetSettings().WindowExtendRate : 1.0;
 }
 
 bool CDxLibWindowControlSubsystem::SetWindowScale( float64 Scale )
 {
-	CDxLibBackend* Backend = GetAppSubsystem<CDxLibBackend>();
+	CDxLibBackendSubsystem* Backend = GetAppSubsystem<CDxLibBackendSubsystem>();
 	if ( Backend == nullptr || !( Scale > 0.0 ) || !IsWindowed() )
 	{
 		return false;

@@ -4,7 +4,7 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
-#include "Library/Framework/Asset/AssetManager.h"
+#include "Library/Framework/Asset/AssetManagerSubsystem.h"
 #include "Library/Framework/Asset/Data/WorldAsset.h"
 #include "Library/Framework/Component/TransformComponent.h"
 #include "Library/Framework/Engine/Engine.h"
@@ -275,7 +275,7 @@ FWorldInstance NWorld::Spawn( CScene& Scene, const TSharedPtr<FWorldDefinition>&
 
 	const FWorldDefinition& World = *Definition;
 	const FWorldSpawnerRegistry& Registry = Options.Registry != nullptr ? *Options.Registry : FWorldSpawnerRegistry::Global();
-	CAssetManager* Assets = Options.Assets != nullptr ? Options.Assets : GetAppSubsystem<CAssetManager>();
+	CAssetManagerSubsystem* Assets = Options.Assets != nullptr ? Options.Assets : GetAppSubsystem<CAssetManagerSubsystem>();
 
 	const NWorld::FWorldSpawnOrder Order = NWorld::ComputeSpawnOrder( World, !Options.bSpawnDisabled );
 	for ( const int32 Index : Order.Orphans )

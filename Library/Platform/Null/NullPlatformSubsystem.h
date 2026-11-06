@@ -6,7 +6,7 @@
 #include "Library/Platform/System/WindowSettings.h"
 
 //=============================================================================
-// CNullPlatform
+// CNullPlatformSubsystem
 //   IPlatform の、DxLib を使わない実装。窓を出さず、画面に描かず、待たずに、決まった時間（1/60 秒）ずつフレームを進める。
 //   「DxLib を使わなくても、ゲームのコード・見本が動く」ことを確かめ続けるための実装で、起動の引数 --backend=null で選ぶ
 //   （選び方は Library/Platform/BackendSelection.h）。
@@ -17,7 +17,7 @@
 //   - ImGui は、窓も描画もなしで、フレームだけ進める（デバッグ表示の部品が、同じ手順で動くため）。imgui.ini は読まず、書かない
 //   - 画面の大きさ・ウィンドウモード・題・マウスカーソルの表示は、値を覚えるだけ
 //=============================================================================
-class CNullPlatform : public CAppSubsystem, public IPlatform
+class CNullPlatformSubsystem : public CAppSubsystem, public IPlatform
 {
 public:
 	// 1 フレームの長さ（秒）。いつも同じ値

@@ -1,7 +1,7 @@
 ﻿#include "PlasmaView.h"
 
 #include "Library/Core/Interfaces/Input/IInput.h"
-#include "Library/Framework/Asset/AssetManager.h"
+#include "Library/Framework/Asset/AssetManagerSubsystem.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
 #include "Library/Platform/System/FileSystem.h"
@@ -86,7 +86,7 @@ void CPlasmaView::Tick( float32 DeltaTime )
 
 	// 5. S キーで、PNG に保存して、読み直して、同じ画像か確かめる
 	const IInput* Input = GetAppSubsystem<IInput>();
-	CAssetManager* Assets = GetAppSubsystem<CAssetManager>();
+	CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
 	if ( Input != nullptr && Assets != nullptr && Input->IsKeyPressed( EKey::S ) )
 	{
 		const FString Path = GetSavePath();

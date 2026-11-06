@@ -1,10 +1,10 @@
 ﻿// SPDX-License-Identifier: MIT
-#include "DxLibDrawExecutor.h"
+#include "DxLibDrawExecutorSubsystem.h"
 
 #include "Library/Platform/DxLib/DxLibInclude.h"
 
 //=============================================================================
-// CDxLibDrawExecutor のうち、撮影のための描き直し（高解像度のスクリーンショット・被写体だけの撮影）
+// CDxLibDrawExecutorSubsystem のうち、撮影のための描き直し（高解像度のスクリーンショット・被写体だけの撮影）
 //   大きな描画先（MakeScreen）へ替え、2D の変換に撮影の倍率を入れておく（Execute の中の Apply2DTransform が、命令の変換と合わせる）。
 //   3D は、描画先を替えたときに DxLib がカメラを描画先の大きさに合わせるので、そのまま細かくなる。
 //=============================================================================
@@ -13,7 +13,7 @@ namespace
 	constexpr int32 MaxCaptureSize = 16384;
 }
 
-bool CDxLibDrawExecutor::BeginOffscreenCapture( const FOffscreenCaptureDesc& Desc )
+bool CDxLibDrawExecutorSubsystem::BeginOffscreenCapture( const FOffscreenCaptureDesc& Desc )
 {
 	if ( bOffscreenCapture || Desc.Width < 1 || Desc.Height < 1 || Desc.Width > MaxCaptureSize || Desc.Height > MaxCaptureSize || !( Desc.Scale > 0.0f ) )
 	{
@@ -55,7 +55,7 @@ bool CDxLibDrawExecutor::BeginOffscreenCapture( const FOffscreenCaptureDesc& Des
 	return true;
 }
 
-bool CDxLibDrawExecutor::EndOffscreenCapture( TArray<FColor32>& Out )
+bool CDxLibDrawExecutorSubsystem::EndOffscreenCapture( TArray<FColor32>& Out )
 {
 	if ( !bOffscreenCapture )
 	{

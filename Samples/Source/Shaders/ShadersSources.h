@@ -4,7 +4,7 @@
 #include "Library/Math/Math.h"
 #include "Source/Shaders/ShadersDemoState.h"
 
-class CAssetManager;
+class CAssetManagerSubsystem;
 
 //=============================================================================
 // NShadersSources

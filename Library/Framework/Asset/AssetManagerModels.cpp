@@ -1,4 +1,4 @@
-﻿#include "AssetManager.h"
+﻿#include "AssetManagerSubsystem.h"
 
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Profiler/ProfilerScope.h"
@@ -7,9 +7,9 @@
 #include "Library/Platform/System/FileSystem.h"
 
 //=============================================================================
-// CAssetManager: モデルの取り込みと .mv1 への出力
+// CAssetManagerSubsystem: モデルの取り込みと .mv1 への出力
 //=============================================================================
-bool CAssetManager::ResolveModelRequest( const FString& Path, FString& OutFullPath ) const
+bool CAssetManagerSubsystem::ResolveModelRequest( const FString& Path, FString& OutFullPath ) const
 {
 	if ( GetBackend() == nullptr )
 	{
@@ -32,7 +32,7 @@ bool CAssetManager::ResolveModelRequest( const FString& Path, FString& OutFullPa
 	return true;
 }
 
-bool CAssetManager::ResolveModelLoadPath( const FString& FullPath, FString& OutLoadPath )
+bool CAssetManagerSubsystem::ResolveModelLoadPath( const FString& FullPath, FString& OutLoadPath )
 {
 	OutLoadPath = FullPath;
 	const EModelFileKind Kind = NModelFormat::Classify( FullPath );
@@ -81,7 +81,7 @@ bool CAssetManager::ResolveModelLoadPath( const FString& FullPath, FString& OutL
 	return false;
 }
 
-FModelExportResult CAssetManager::ExportModelAsMV1( const FString& SourcePath, const FModelExportOptions& Options )
+FModelExportResult CAssetManagerSubsystem::ExportModelAsMV1( const FString& SourcePath, const FModelExportOptions& Options )
 {
 	PROFILE_SCOPE_CAT( "Asset", "ExportModel" );
 	FModelExportResult Result;
@@ -116,7 +116,7 @@ FModelExportResult CAssetManager::ExportModelAsMV1( const FString& SourcePath, c
 	return NModelExport::Export( *GetBackend(), Full.Get( FString() ), Resolved );
 }
 
-TArray<FModelSourceInfo> CAssetManager::ScanModelSources() const
+TArray<FModelSourceInfo> CAssetManagerSubsystem::ScanModelSources() const
 {
 	TArray<FModelSourceInfo> Infos;
 	const FString Root = GetRootDirectory();
@@ -156,7 +156,7 @@ TArray<FModelSourceInfo> CAssetManager::ScanModelSources() const
 	return Infos;
 }
 
-FModelBatchExportResult CAssetManager::ExportAllModels( bool bForce, const FModelExportOptions& Options )
+FModelBatchExportResult CAssetManagerSubsystem::ExportAllModels( bool bForce, const FModelExportOptions& Options )
 {
 	FModelBatchExportResult Batch;
 	FModelExportOptions Each = Options;
@@ -174,7 +174,7 @@ FModelBatchExportResult CAssetManager::ExportAllModels( bool bForce, const FMode
 	return Batch;
 }
 
-FModelBatchExportResult CAssetManager::ExportModelsUsedBy( const FModelAnimationDefinition& Definition, bool bForce )
+FModelBatchExportResult CAssetManagerSubsystem::ExportModelsUsedBy( const FModelAnimationDefinition& Definition, bool bForce )
 {
 	TArray<FString> Paths;
 	const auto AddPath = [&Paths]( const FString& Path )

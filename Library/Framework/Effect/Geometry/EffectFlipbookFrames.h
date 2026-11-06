@@ -8,7 +8,7 @@
 #include "Library/Framework/Asset/Texture/Texture.h"
 #include "Library/Framework/Effect/Definition/EffectFlipbookDefinition.h"
 
-class CAssetManager;
+class CAssetManagerSubsystem;
 
 // 再生開始時に固定した時間軸と、クリップ順の派生画像を所有する値。
 struct FEffectFlipbookFrames
@@ -22,9 +22,9 @@ struct FEffectFlipbookFrames
 namespace NEffectFlipbook
 {
 	// シートの検証済みスナップショットを派生画像付きで組み立て、失敗理由を返す。
-	bool BuildFrames( const FEffectFlipbookDefinition& Definition, CAssetManager& Assets, FEffectFlipbookFrames& Out, FString* OutError = nullptr );
+	bool BuildFrames( const FEffectFlipbookDefinition& Definition, CAssetManagerSubsystem& Assets, FEffectFlipbookFrames& Out, FString* OutError = nullptr );
 	// シート、選択クリップ、矩形、時間軸を調べる。派生GPU画像は作らない。
-	TArray<FString> ValidateAssets( const FEffectFlipbookDefinition& Definition, CAssetManager& Assets );
+	TArray<FString> ValidateAssets( const FEffectFlipbookDefinition& Definition, CAssetManagerSubsystem& Assets );
 }
 
 #endif

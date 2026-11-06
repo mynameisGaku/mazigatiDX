@@ -1,4 +1,4 @@
-﻿#include "DxLibAssetBackend.h"
+﻿#include "DxLibAssetBackendSubsystem.h"
 #include "Library/Core/Memory/Memory.h"
 
 
@@ -20,7 +20,7 @@
 
 DEFINE_LOG_CATEGORY_STATIC( LogAssetBackend, Log )
 
-REGISTER_SUBSYSTEM( CDxLibAssetBackend )
+REGISTER_SUBSYSTEM( CDxLibAssetBackendSubsystem )
 
 namespace
 {
@@ -51,12 +51,12 @@ namespace
 	};
 }
 
-bool CDxLibAssetBackend::ShouldCreateSubsystem( CEngine& Engine ) const
+bool CDxLibAssetBackendSubsystem::ShouldCreateSubsystem( CEngine& Engine ) const
 {
 	return !NBackendSelection::IsNullRequested();
 }
 
-void CDxLibAssetBackend::Initialize( FSubsystemCollection& Collection )
+void CDxLibAssetBackendSubsystem::Initialize( FSubsystemCollection& Collection )
 {
 	// DxLib（プラットフォーム）が初期化されたあとに使う
 	if ( Collection.InitializeDependency<IPlatform>() == nullptr )
@@ -68,18 +68,18 @@ void CDxLibAssetBackend::Initialize( FSubsystemCollection& Collection )
 //-----------------------------------------------------------------------------
 // 画像
 //-----------------------------------------------------------------------------
-int32 CDxLibAssetBackend::LoadTexture( const FString& Path, bool bAsync )
+int32 CDxLibAssetBackendSubsystem::LoadTexture( const FString& Path, bool bAsync )
 {
 	FAsyncScope Scope( bAsync );
 	return LoadGraph( *Path );
 }
 
-int32 CDxLibAssetBackend::CreateTextureFromMemory( const void* FileImage, usize Size )
+int32 CDxLibAssetBackendSubsystem::CreateTextureFromMemory( const void* FileImage, usize Size )
 {
 	return CreateGraphFromMem( FileImage, static_cast<int>( Size ) );
 }
 
-int32 CDxLibAssetBackend::CreateTextureRegion( int32 Source, int32 X, int32 Y, int32 Width, int32 Height )
+int32 CDxLibAssetBackendSubsystem::CreateTextureRegion( int32 Source, int32 X, int32 Y, int32 Width, int32 Height )
 {
 	if ( Source < 0 || X < 0 || Y < 0 || Width <= 0 || Height <= 0 )
 	{
@@ -99,7 +99,7 @@ int32 CDxLibAssetBackend::CreateTextureRegion( int32 Source, int32 X, int32 Y, i
 	return DerivationGraph( X, Y, Width, Height, Source );
 }
 
-bool CDxLibAssetBackend::GetTextureUvBounds( int32 Texture, float32 ( &OutUV )[4] )
+bool CDxLibAssetBackendSubsystem::GetTextureUvBounds( int32 Texture, float32 ( &OutUV )[4] )
 {
 	if ( Texture < 0 )
 	{
@@ -128,7 +128,7 @@ bool CDxLibAssetBackend::GetTextureUvBounds( int32 Texture, float32 ( &OutUV )[4
 	return NMath::IsFinite( OutUV[0] ) && NMath::IsFinite( OutUV[1] ) && NMath::IsFinite( OutUV[2] ) && NMath::IsFinite( OutUV[3] );
 }
 
-bool CDxLibAssetBackend::GetTextureSize( int32 Texture, int32& OutWidth, int32& OutHeight )
+bool CDxLibAssetBackendSubsystem::GetTextureSize( int32 Texture, int32& OutWidth, int32& OutHeight )
 {
 	int Width = 0;
 	int Height = 0;
@@ -141,12 +141,12 @@ bool CDxLibAssetBackend::GetTextureSize( int32 Texture, int32& OutWidth, int32& 
 	return true;
 }
 
-void CDxLibAssetBackend::DeleteTexture( int32 Texture )
+void CDxLibAssetBackendSubsystem::DeleteTexture( int32 Texture )
 {
 	DeleteGraph( Texture );
 }
 
-int32 CDxLibAssetBackend::CreateRenderTarget( const FRenderTargetDesc& Desc )
+int32 CDxLibAssetBackendSubsystem::CreateRenderTarget( const FRenderTargetDesc& Desc )
 {
 	if ( !Desc.IsValid() )
 	{
@@ -239,7 +239,7 @@ namespace
 	};
 }
 
-bool CDxLibAssetBackend::ReadRenderTargetPixels( int32 Target, int32 X, int32 Y, int32 Width, int32 Height, TArray<FColor32>& OutPixels )
+bool CDxLibAssetBackendSubsystem::ReadRenderTargetPixels( int32 Target, int32 X, int32 Y, int32 Width, int32 Height, TArray<FColor32>& OutPixels )
 {
 	if ( !IsInsideTarget( Target, X, Y, Width, Height ) )
 	{
@@ -276,7 +276,7 @@ bool CDxLibAssetBackend::ReadRenderTargetPixels( int32 Target, int32 X, int32 Y,
 	return bRead;
 }
 
-bool CDxLibAssetBackend::SaveRenderTarget( int32 Target, int32 X, int32 Y, int32 Width, int32 Height, const FString& Path, const FImageSaveOptions& Options )
+bool CDxLibAssetBackendSubsystem::SaveRenderTarget( int32 Target, int32 X, int32 Y, int32 Width, int32 Height, const FString& Path, const FImageSaveOptions& Options )
 {
 	if ( Path.IsEmpty() || !IsInsideTarget( Target, X, Y, Width, Height ) )
 	{
@@ -477,7 +477,7 @@ namespace
 	}
 }
 
-int32 CDxLibAssetBackend::CreateTextureFromPixels( int32 Width, int32 Height, const FColor32* Pixels )
+int32 CDxLibAssetBackendSubsystem::CreateTextureFromPixels( int32 Width, int32 Height, const FColor32* Pixels )
 {
 	if ( !IsValidPixelSize( Width, Height, Pixels ) )
 	{
@@ -493,7 +493,7 @@ int32 CDxLibAssetBackend::CreateTextureFromPixels( int32 Width, int32 Height, co
 	return Handle >= 0 ? Handle : NAsset::InvalidHandle;
 }
 
-bool CDxLibAssetBackend::UpdateTexturePixels( int32 Texture, int32 Width, int32 Height, const FColor32* Pixels )
+bool CDxLibAssetBackendSubsystem::UpdateTexturePixels( int32 Texture, int32 Width, int32 Height, const FColor32* Pixels )
 {
 	int TextureWidth = 0;
 	int TextureHeight = 0;
@@ -511,7 +511,7 @@ bool CDxLibAssetBackend::UpdateTexturePixels( int32 Texture, int32 Width, int32 
 	return Result == 0;
 }
 
-bool CDxLibAssetBackend::DecodeImage( const void* FileImage, usize Size, int32& OutWidth, int32& OutHeight, TArray<FColor32>& OutPixels )
+bool CDxLibAssetBackendSubsystem::DecodeImage( const void* FileImage, usize Size, int32& OutWidth, int32& OutHeight, TArray<FColor32>& OutPixels )
 {
 	if ( FileImage == nullptr || Size == 0 || Size > static_cast<usize>( INT_MAX ) )
 	{
@@ -532,7 +532,7 @@ bool CDxLibAssetBackend::DecodeImage( const void* FileImage, usize Size, int32& 
 	return bRead;
 }
 
-bool CDxLibAssetBackend::DecodeImageFile( const FString& Path, int32& OutWidth, int32& OutHeight, TArray<FColor32>& OutPixels )
+bool CDxLibAssetBackendSubsystem::DecodeImageFile( const FString& Path, int32& OutWidth, int32& OutHeight, TArray<FColor32>& OutPixels )
 {
 	if ( Path.IsEmpty() )
 	{
@@ -552,7 +552,7 @@ bool CDxLibAssetBackend::DecodeImageFile( const FString& Path, int32& OutWidth, 
 	return bRead;
 }
 
-bool CDxLibAssetBackend::SavePixels( int32 Width, int32 Height, const FColor32* Pixels, const FString& Path, const FImageSaveOptions& Options )
+bool CDxLibAssetBackendSubsystem::SavePixels( int32 Width, int32 Height, const FColor32* Pixels, const FString& Path, const FImageSaveOptions& Options )
 {
 	if ( Path.IsEmpty() || !IsValidPixelSize( Width, Height, Pixels ) )
 	{
@@ -591,7 +591,7 @@ bool CDxLibAssetBackend::SavePixels( int32 Width, int32 Height, const FColor32* 
 //-----------------------------------------------------------------------------
 // モデル
 //-----------------------------------------------------------------------------
-int32 CDxLibAssetBackend::LoadModel( const FString& Path, bool bAsync )
+int32 CDxLibAssetBackendSubsystem::LoadModel( const FString& Path, bool bAsync )
 {
 	FAsyncScope Scope( bAsync );
 	const int32 Model = MV1LoadModel( *Path ); // 新しく読み込んだnative model handle。
@@ -602,7 +602,7 @@ int32 CDxLibAssetBackend::LoadModel( const FString& Path, bool bAsync )
 	return Model;
 }
 
-int32 CDxLibAssetBackend::DuplicateModel( int32 Source )
+int32 CDxLibAssetBackendSubsystem::DuplicateModel( int32 Source )
 {
 	TMap<int32, FMatrix4x4> SourceOverrides; // 複製前に値として退避するframe pose上書き。
 	// outer mapから複製元の追跡値を探し、native複製前にコピーを完了する。
@@ -636,7 +636,7 @@ int32 CDxLibAssetBackend::DuplicateModel( int32 Source )
 	return Duplicate;
 }
 
-void CDxLibAssetBackend::DeleteModel( int32 Model )
+void CDxLibAssetBackendSubsystem::DeleteModel( int32 Model )
 {
 	// 当たり判定の情報は、モデルと一緒に消える
 	CollisionReadyModels.Remove( Model );
@@ -644,44 +644,44 @@ void CDxLibAssetBackend::DeleteModel( int32 Model )
 	MV1DeleteModel( Model );
 }
 
-int32 CDxLibAssetBackend::GetModelAnimCount( int32 Model )
+int32 CDxLibAssetBackendSubsystem::GetModelAnimCount( int32 Model )
 {
 	return MV1GetAnimNum( Model );
 }
 
-FString CDxLibAssetBackend::GetModelAnimName( int32 Model, int32 AnimIndex )
+FString CDxLibAssetBackendSubsystem::GetModelAnimName( int32 Model, int32 AnimIndex )
 {
 	const char* Name = MV1GetAnimName( Model, AnimIndex );
 	return Name != nullptr ? FString( Name ) : FString();
 }
 
-float32 CDxLibAssetBackend::GetModelAnimLength( int32 Model, int32 AnimIndex )
+float32 CDxLibAssetBackendSubsystem::GetModelAnimLength( int32 Model, int32 AnimIndex )
 {
 	return MV1GetAnimTotalTime( Model, AnimIndex );
 }
 
-float32 CDxLibAssetBackend::GetModelAnimUnitsPerSecond( int32 Model, int32 AnimIndex )
+float32 CDxLibAssetBackendSubsystem::GetModelAnimUnitsPerSecond( int32 Model, int32 AnimIndex )
 {
 	// DxLib のモデルの時間は、FBX / MV1 / X / PMD のどれも 30 = 1 秒。アニメーションが無い番号は、分からないので 0
 	return Model >= 0 && AnimIndex >= 0 && AnimIndex < MV1GetAnimNum( Model ) ? 30.0f : 0.0f;
 }
 
-int32 CDxLibAssetBackend::AttachModelAnim( int32 Model, int32 AnimIndex, int32 SourceModel )
+int32 CDxLibAssetBackendSubsystem::AttachModelAnim( int32 Model, int32 AnimIndex, int32 SourceModel )
 {
 	return MV1AttachAnim( Model, AnimIndex, SourceModel, TRUE );
 }
 
-void CDxLibAssetBackend::DetachModelAnim( int32 Model, int32 AttachIndex )
+void CDxLibAssetBackendSubsystem::DetachModelAnim( int32 Model, int32 AttachIndex )
 {
 	MV1DetachAnim( Model, AttachIndex );
 }
 
-int32 CDxLibAssetBackend::GetModelMeshCount( int32 Model )
+int32 CDxLibAssetBackendSubsystem::GetModelMeshCount( int32 Model )
 {
 	return MV1GetMeshNum( Model );
 }
 
-bool CDxLibAssetBackend::GetModelBounds( int32 Model, float32 ( &OutMin )[3], float32 ( &OutMax )[3] )
+bool CDxLibAssetBackendSubsystem::GetModelBounds( int32 Model, float32 ( &OutMin )[3], float32 ( &OutMax )[3] )
 {
 	const int32 NumMeshes = MV1GetMeshNum( Model );
 	if ( NumMeshes <= 0 )
@@ -727,7 +727,7 @@ bool CDxLibAssetBackend::GetModelBounds( int32 Model, float32 ( &OutMin )[3], fl
 	return bAny;
 }
 
-bool CDxLibAssetBackend::GetModelCollisionMesh( int32 Model, TArray<float32>& OutPositions, TArray<uint32>& OutIndices )
+bool CDxLibAssetBackendSubsystem::GetModelCollisionMesh( int32 Model, TArray<float32>& OutPositions, TArray<uint32>& OutIndices )
 {
 	if ( MV1GetMeshNum( Model ) <= 0 )
 	{
@@ -763,7 +763,7 @@ bool CDxLibAssetBackend::GetModelCollisionMesh( int32 Model, TArray<float32>& Ou
 	return bOk;
 }
 
-bool CDxLibAssetBackend::CreateMeshBuffers( const FMeshVertex* Vertices, int32 NumVertices, const uint32* Indices, int32 NumIndices, int32& OutVertexBuffer, int32& OutIndexBuffer )
+bool CDxLibAssetBackendSubsystem::CreateMeshBuffers( const FMeshVertex* Vertices, int32 NumVertices, const uint32* Indices, int32 NumIndices, int32& OutVertexBuffer, int32& OutIndexBuffer )
 {
 	OutVertexBuffer = NAsset::InvalidHandle;
 	OutIndexBuffer = NAsset::InvalidHandle;
@@ -808,7 +808,7 @@ bool CDxLibAssetBackend::CreateMeshBuffers( const FMeshVertex* Vertices, int32 N
 	return true;
 }
 
-void CDxLibAssetBackend::DeleteVertexBuffer( int32 VertexBuffer )
+void CDxLibAssetBackendSubsystem::DeleteVertexBuffer( int32 VertexBuffer )
 {
 	if ( VertexBuffer >= 0 )
 	{
@@ -816,7 +816,7 @@ void CDxLibAssetBackend::DeleteVertexBuffer( int32 VertexBuffer )
 	}
 }
 
-void CDxLibAssetBackend::DeleteIndexBuffer( int32 IndexBuffer )
+void CDxLibAssetBackendSubsystem::DeleteIndexBuffer( int32 IndexBuffer )
 {
 	if ( IndexBuffer >= 0 )
 	{
@@ -824,12 +824,12 @@ void CDxLibAssetBackend::DeleteIndexBuffer( int32 IndexBuffer )
 	}
 }
 
-int32 CDxLibAssetBackend::MakeVertexBuffer( int32 NumVertices )
+int32 CDxLibAssetBackendSubsystem::MakeVertexBuffer( int32 NumVertices )
 {
 	return NumVertices >= 1 ? ::CreateVertexBuffer( NumVertices, DX_VERTEX_TYPE_NORMAL_3D ) : NAsset::InvalidHandle;
 }
 
-bool CDxLibAssetBackend::WriteVertexBuffer( int32 VertexBuffer, int32 StartIndex, const FDrawVertex3D* Vertices, int32 NumVertices )
+bool CDxLibAssetBackendSubsystem::WriteVertexBuffer( int32 VertexBuffer, int32 StartIndex, const FDrawVertex3D* Vertices, int32 NumVertices )
 {
 	if ( VertexBuffer < 0 || Vertices == nullptr || StartIndex < 0 || NumVertices < 1 )
 	{
@@ -847,12 +847,12 @@ bool CDxLibAssetBackend::WriteVertexBuffer( int32 VertexBuffer, int32 StartIndex
 	return ::SetVertexBufferData( StartIndex, Converted.GetData(), NumVertices, VertexBuffer ) == 0;
 }
 
-int32 CDxLibAssetBackend::MakeIndexBuffer( int32 NumIndices, bool b32Bit )
+int32 CDxLibAssetBackendSubsystem::MakeIndexBuffer( int32 NumIndices, bool b32Bit )
 {
 	return NumIndices >= 1 ? ::CreateIndexBuffer( NumIndices, b32Bit ? DX_INDEX_TYPE_32BIT : DX_INDEX_TYPE_16BIT ) : NAsset::InvalidHandle;
 }
 
-bool CDxLibAssetBackend::WriteIndexBuffer( int32 IndexBuffer, int32 StartIndex, const void* Indices, int32 NumIndices )
+bool CDxLibAssetBackendSubsystem::WriteIndexBuffer( int32 IndexBuffer, int32 StartIndex, const void* Indices, int32 NumIndices )
 {
 	if ( IndexBuffer < 0 || Indices == nullptr || StartIndex < 0 || NumIndices < 1 )
 	{
@@ -861,7 +861,7 @@ bool CDxLibAssetBackend::WriteIndexBuffer( int32 IndexBuffer, int32 StartIndex, 
 	return ::SetIndexBufferData( StartIndex, Indices, NumIndices, IndexBuffer ) == 0;
 }
 
-int32 CDxLibAssetBackend::MakeShader( EShaderStage Stage, const void* Code, int32 NumBytes )
+int32 CDxLibAssetBackendSubsystem::MakeShader( EShaderStage Stage, const void* Code, int32 NumBytes )
 {
 	if ( Code == nullptr || NumBytes < 1 )
 	{
@@ -872,7 +872,7 @@ int32 CDxLibAssetBackend::MakeShader( EShaderStage Stage, const void* Code, int3
 	return Handle >= 0 ? Handle : NAsset::InvalidHandle;
 }
 
-void CDxLibAssetBackend::DeleteShader( int32 Shader )
+void CDxLibAssetBackendSubsystem::DeleteShader( int32 Shader )
 {
 	if ( Shader >= 0 )
 	{
@@ -880,7 +880,7 @@ void CDxLibAssetBackend::DeleteShader( int32 Shader )
 	}
 }
 
-bool CDxLibAssetBackend::CompileShader( EShaderStage Stage, const char* Source, int32 NumBytes, const char* SourceName, const char* EntryPoint, const char* ShaderModel, TArray<uint8>& OutCode, FString& OutMessage )
+bool CDxLibAssetBackendSubsystem::CompileShader( EShaderStage Stage, const char* Source, int32 NumBytes, const char* SourceName, const char* EntryPoint, const char* ShaderModel, TArray<uint8>& OutCode, FString& OutMessage )
 {
 	OutCode.Reset();
 	OutMessage = FString();
@@ -930,7 +930,7 @@ bool CDxLibAssetBackend::CompileShader( EShaderStage Stage, const char* Source, 
 	return true;
 }
 
-int32 CDxLibAssetBackend::MakeShadowMap( int32 Width, int32 Height )
+int32 CDxLibAssetBackendSubsystem::MakeShadowMap( int32 Width, int32 Height )
 {
 	// DxLib は 0 以下や大きすぎる大きさを断る（実測: 1〜16384 が作れる）が、渡す前にも確かめる
 	if ( Width < 1 || Height < 1 || Width > NDrawShadowMap::MaxSize || Height > NDrawShadowMap::MaxSize )
@@ -940,7 +940,7 @@ int32 CDxLibAssetBackend::MakeShadowMap( int32 Width, int32 Height )
 	return ::MakeShadowMap( Width, Height );
 }
 
-void CDxLibAssetBackend::DeleteShadowMap( int32 ShadowMap )
+void CDxLibAssetBackendSubsystem::DeleteShadowMap( int32 ShadowMap )
 {
 	if ( ShadowMap >= 0 )
 	{
@@ -948,7 +948,7 @@ void CDxLibAssetBackend::DeleteShadowMap( int32 ShadowMap )
 	}
 }
 
-bool CDxLibAssetBackend::GetShadowMapViewProjection( int32 ShadowMap, float32 ( &OutMatrix )[16] )
+bool CDxLibAssetBackendSubsystem::GetShadowMapViewProjection( int32 ShadowMap, float32 ( &OutMatrix )[16] )
 {
 	MATRIX Matrix = {};
 	if ( ShadowMap < 0 || ::GetShadowMapViewProjectionMatrix( ShadowMap, &Matrix ) != 0 )
@@ -970,12 +970,12 @@ bool CDxLibAssetBackend::GetShadowMapViewProjection( int32 ShadowMap, float32 ( 
 	return true;
 }
 
-int32 CDxLibAssetBackend::GetModelFrameCount( int32 Model )
+int32 CDxLibAssetBackendSubsystem::GetModelFrameCount( int32 Model )
 {
 	return MV1GetFrameNum( Model );
 }
 
-bool CDxLibAssetBackend::GetModelFramePosition( int32 Model, int32 FrameIndex, float32 ( &OutPosition )[3] )
+bool CDxLibAssetBackendSubsystem::GetModelFramePosition( int32 Model, int32 FrameIndex, float32 ( &OutPosition )[3] )
 {
 	if ( Model < 0 || FrameIndex < 0 || FrameIndex >= MV1GetFrameNum( Model ) )
 	{
@@ -988,13 +988,13 @@ bool CDxLibAssetBackend::GetModelFramePosition( int32 Model, int32 FrameIndex, f
 	return true;
 }
 
-FString CDxLibAssetBackend::GetModelFrameName( int32 Model, int32 FrameIndex )
+FString CDxLibAssetBackendSubsystem::GetModelFrameName( int32 Model, int32 FrameIndex )
 {
 	const char* Name = MV1GetFrameName( Model, FrameIndex );
 	return Name != nullptr ? FString( Name ) : FString();
 }
 
-bool CDxLibAssetBackend::SaveModelToMV1( int32 Model, const FString& Path, const FModelSaveOptions& Options, FString& OutWarning )
+bool CDxLibAssetBackendSubsystem::SaveModelToMV1( int32 Model, const FString& Path, const FModelSaveOptions& Options, FString& OutWarning )
 {
 	int SaveType = MV1_SAVETYPE_NORMAL;
 	if ( Options.Type == EModelSaveType::MeshOnly )
@@ -1045,7 +1045,7 @@ namespace
 	constexpr int MaxLineHeight = 4096;
 }
 
-int32 CDxLibAssetBackend::MakeFont( const FFontDesc& Desc )
+int32 CDxLibAssetBackendSubsystem::MakeFont( const FFontDesc& Desc )
 {
 	const int FontType = ToDxFontType( Desc.Antialias, Desc.EdgeSize > 0 );
 	const int Handle = CreateFontToHandle( Desc.Face.IsEmpty() ? nullptr : *Desc.Face, Desc.Size, Desc.Thickness, FontType, -1, Desc.EdgeSize > 0 ? Desc.EdgeSize : -1,
@@ -1065,12 +1065,12 @@ int32 CDxLibAssetBackend::MakeFont( const FFontDesc& Desc )
 	return Handle;
 }
 
-void CDxLibAssetBackend::DeleteFont( int32 Font )
+void CDxLibAssetBackendSubsystem::DeleteFont( int32 Font )
 {
 	DeleteFontToHandle( Font );
 }
 
-int32 CDxLibAssetBackend::MeasureText( int32 Font, const char* Text )
+int32 CDxLibAssetBackendSubsystem::MeasureText( int32 Font, const char* Text )
 {
 	if ( Text == nullptr )
 	{
@@ -1080,7 +1080,7 @@ int32 CDxLibAssetBackend::MeasureText( int32 Font, const char* Text )
 	return Font >= 0 ? GetDrawStringWidthToHandle( Text, Length, Font ) : GetDrawStringWidth( Text, Length );
 }
 
-bool CDxLibAssetBackend::GetFontMetrics( int32 Font, FFontMetrics& OutMetrics )
+bool CDxLibAssetBackendSubsystem::GetFontMetrics( int32 Font, FFontMetrics& OutMetrics )
 {
 	if ( Font < 0 || CheckFontHandleValid( Font ) == FALSE )
 	{
@@ -1101,7 +1101,7 @@ bool CDxLibAssetBackend::GetFontMetrics( int32 Font, FFontMetrics& OutMetrics )
 	return OutMetrics.Size >= 0;
 }
 
-bool CDxLibAssetBackend::MeasureTextSize( int32 Font, const char* Text, FTextSize& OutSize )
+bool CDxLibAssetBackendSubsystem::MeasureTextSize( int32 Font, const char* Text, FTextSize& OutSize )
 {
 	// 壊れた UTF-8（途中で切れた並びなど）を渡すと、DxLib は、文字列の終わりの先まで読む（実行のたびに結果が違い、まれに異常終了する）ので、渡さない
 	if ( Text == nullptr || Font < 0 || CheckFontHandleValid( Font ) == FALSE || !FString( Text ).IsValidUtf8() )
@@ -1122,7 +1122,7 @@ bool CDxLibAssetBackend::MeasureTextSize( int32 Font, const char* Text, FTextSiz
 	return true;
 }
 
-bool CDxLibAssetBackend::GetTextGlyphs( int32 Font, const char* Text, TArray<FTextGlyph>& OutGlyphs )
+bool CDxLibAssetBackendSubsystem::GetTextGlyphs( int32 Font, const char* Text, TArray<FTextGlyph>& OutGlyphs )
 {
 	OutGlyphs.Reset();
 	// MeasureTextSize と同じく、壊れた UTF-8 は、DxLib に渡さずに失敗にする（折り返しは、渡す前に、正しい形に直している）
@@ -1162,12 +1162,12 @@ bool CDxLibAssetBackend::GetTextGlyphs( int32 Font, const char* Text, TArray<FTe
 	return true;
 }
 
-bool CDxLibAssetBackend::IsFontAvailable( const FString& Face )
+bool CDxLibAssetBackendSubsystem::IsFontAvailable( const FString& Face )
 {
 	return !Face.IsEmpty() && CheckFontName( *Face ) != FALSE;
 }
 
-void CDxLibAssetBackend::GetFontNames( TArray<FString>& OutNames )
+void CDxLibAssetBackendSubsystem::GetFontNames( TArray<FString>& OutNames )
 {
 	OutNames.Reset();
 	// DxLib は、名前を 64 バイトずつ区切って返す。バッファが無い（nullptr）と、名前の数だけが返る
@@ -1188,7 +1188,7 @@ void CDxLibAssetBackend::GetFontNames( TArray<FString>& OutNames )
 	}
 }
 
-bool CDxLibAssetBackend::AddFontCharImage( int32 Font, const char* Character, int32 Image, int32 DrawX, int32 DrawY, int32 Advance )
+bool CDxLibAssetBackendSubsystem::AddFontCharImage( int32 Font, const char* Character, int32 Image, int32 DrawX, int32 DrawY, int32 Advance )
 {
 	if ( Font < 0 || Character == nullptr || Image < 0 || CheckFontHandleValid( Font ) == FALSE )
 	{
@@ -1197,7 +1197,7 @@ bool CDxLibAssetBackend::AddFontCharImage( int32 Font, const char* Character, in
 	return AddFontImageToHandle( Font, Character, Image, DrawX, DrawY, Advance ) == 0;
 }
 
-void CDxLibAssetBackend::RemoveFontCharImage( int32 Font, const char* Character )
+void CDxLibAssetBackendSubsystem::RemoveFontCharImage( int32 Font, const char* Character )
 {
 	if ( Font >= 0 && Character != nullptr && CheckFontHandleValid( Font ) != FALSE )
 	{
@@ -1205,13 +1205,13 @@ void CDxLibAssetBackend::RemoveFontCharImage( int32 Font, const char* Character 
 	}
 }
 
-bool CDxLibAssetBackend::AddFontFile( const FString& Path )
+bool CDxLibAssetBackendSubsystem::AddFontFile( const FString& Path )
 {
 	// パスは UTF-8 なので、A 系（システムのコードページ）ではなく W 系で渡す
 	return AddFontResourceExW( Path.ToWide().GetData(), FR_PRIVATE, nullptr ) > 0;
 }
 
-void CDxLibAssetBackend::RemoveFontFile( const FString& Path )
+void CDxLibAssetBackendSubsystem::RemoveFontFile( const FString& Path )
 {
 	RemoveFontResourceExW( Path.ToWide().GetData(), FR_PRIVATE, nullptr );
 }
@@ -1219,7 +1219,7 @@ void CDxLibAssetBackend::RemoveFontFile( const FString& Path )
 //-----------------------------------------------------------------------------
 // サウンド
 //-----------------------------------------------------------------------------
-int32 CDxLibAssetBackend::LoadSound( const FString& Path, ESoundLoadMode Mode, bool bAsync )
+int32 CDxLibAssetBackendSubsystem::LoadSound( const FString& Path, ESoundLoadMode Mode, bool bAsync )
 {
 	FAsyncScope Scope( bAsync );
 	SetCreateSoundDataType( Mode == ESoundLoadMode::Stream ? DX_SOUNDDATATYPE_FILE : DX_SOUNDDATATYPE_MEMNOPRESS );
@@ -1228,17 +1228,17 @@ int32 CDxLibAssetBackend::LoadSound( const FString& Path, ESoundLoadMode Mode, b
 	return Handle;
 }
 
-int32 CDxLibAssetBackend::DuplicateSound( int32 Source )
+int32 CDxLibAssetBackendSubsystem::DuplicateSound( int32 Source )
 {
 	return DuplicateSoundMem( Source );
 }
 
-void CDxLibAssetBackend::DeleteSound( int32 Sound )
+void CDxLibAssetBackendSubsystem::DeleteSound( int32 Sound )
 {
 	DeleteSoundMem( Sound );
 }
 
-float32 CDxLibAssetBackend::GetSoundLength( int32 Sound )
+float32 CDxLibAssetBackendSubsystem::GetSoundLength( int32 Sound )
 {
 	const LONGLONG Milliseconds = GetSoundTotalTime( Sound );
 	return Milliseconds > 0 ? static_cast<float32>( Milliseconds ) / 1000.0f : -1.0f;
@@ -1247,7 +1247,7 @@ float32 CDxLibAssetBackend::GetSoundLength( int32 Sound )
 //-----------------------------------------------------------------------------
 // メモリ
 //-----------------------------------------------------------------------------
-FBackendMemoryInfo CDxLibAssetBackend::GetMemoryInfo()
+FBackendMemoryInfo CDxLibAssetBackendSubsystem::GetMemoryInfo()
 {
 	FBackendMemoryInfo Info;
 	ULONGLONG Total = 0;
@@ -1272,7 +1272,7 @@ FBackendMemoryInfo CDxLibAssetBackend::GetMemoryInfo()
 	return Info;
 }
 
-int64 CDxLibAssetBackend::EstimateModelBytes( int32 Model )
+int64 CDxLibAssetBackendSubsystem::EstimateModelBytes( int32 Model )
 {
 	// 頂点（1 つ 64 バイトとして）、フレームの行列、使っているテクスチャ（幅 x 高さ x 4）
 	int64 Bytes = static_cast<int64>( MV1GetFrameNum( Model ) ) * 64;
@@ -1296,7 +1296,7 @@ int64 CDxLibAssetBackend::EstimateModelBytes( int32 Model )
 	return Bytes;
 }
 
-int64 CDxLibAssetBackend::EstimateSoundBytes( int32 Sound, ESoundLoadMode Mode )
+int64 CDxLibAssetBackendSubsystem::EstimateSoundBytes( int32 Sound, ESoundLoadMode Mode )
 {
 	// 展開後は 16bit ステレオ（1 サンプル 4 バイト）として見積もる。再生しながら読む音は、読み込み用の領域だけ
 	if ( Mode == ESoundLoadMode::Stream )
@@ -1309,12 +1309,12 @@ int64 CDxLibAssetBackend::EstimateSoundBytes( int32 Sound, ESoundLoadMode Mode )
 //-----------------------------------------------------------------------------
 // 非同期
 //-----------------------------------------------------------------------------
-bool CDxLibAssetBackend::IsLoading( int32 Handle )
+bool CDxLibAssetBackendSubsystem::IsLoading( int32 Handle )
 {
 	return CheckHandleASyncLoad( Handle ) == TRUE;
 }
 
-int32 CDxLibAssetBackend::GetNumLoading()
+int32 CDxLibAssetBackendSubsystem::GetNumLoading()
 {
 	return GetASyncLoadNum();
 }

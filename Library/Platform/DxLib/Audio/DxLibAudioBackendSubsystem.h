@@ -3,9 +3,9 @@
 #include "Library/Framework/Subsystem/AppSubsystem.h"
 
 //=============================================================================
-// CDxLibAudioBackend
+// CDxLibAudioBackendSubsystem
 //   IAudioBackend の DxLib 実装。アプリで 1 つ、自動で生成される。
-//   ゲーム側は直接使わず、CAudioSystem を通して鳴らす。
+//   ゲーム側は直接使わず、CAudioSubsystem を通して鳴らす。
 //
 //   Play -> PlaySoundMem / Stop -> StopSoundMem / IsPlaying -> CheckSoundMem
 //   音量 -> SetVolumeSoundMem（デシベル。0..1 の振幅を 20 * log10 で換算）
@@ -13,7 +13,7 @@
 //   ピッチ -> SetFrequencySoundMem（元の周波数 x 倍率）
 //   再生位置 -> GetSoundCurrentTime / SetSoundCurrentTime
 //=============================================================================
-class CDxLibAudioBackend : public CAppSubsystem, public IAudioBackend
+class CDxLibAudioBackendSubsystem : public CAppSubsystem, public IAudioBackend
 {
 public:
 	// --backend=null のときは作らない（Library/Platform/Null の実装を使う）

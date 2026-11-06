@@ -7,7 +7,7 @@
 //=============================================================================
 // CDxLibWindowControlSubsystem
 //   IWindowControl の DxLib 実装。位置とフォーカスは Windows の API（DxLib はメインウィンドウのハンドルを渡してくれる）、
-//   倍率は CDxLibBackend::SetWindowExtendRate（DxLib のウィンドウ倍率）に任せる。
+//   倍率は CDxLibBackendSubsystem::SetWindowExtendRate（DxLib のウィンドウ倍率）に任せる。
 //   ディスプレイの並びは IDisplayInfo から取る（DxLib の関数には直接依存しない）。
 //=============================================================================
 class CDxLibWindowControlSubsystem : public CAppSubsystem, public IWindowControl

@@ -9,12 +9,12 @@
 #include "Library/Framework/Subsystem/AppSubsystem.h"
 
 //=============================================================================
-// CDxLibInput
+// CDxLibInputSubsystem
 //   IInput（キーボード・マウス）と、ITextInput（文字入力・IME）、ICursorControl（カーソル）、ITouchInput（タッチ）の DxLib 実装。
 //   毎フレームの頭 (PreUpdate) に入力を取り込む。ゲーム側は GetAppSubsystem<IInput>() などで取得する。
 //   DxLib の文字コード・制御コード・IME の構造体は、DxLibInputText.cpp の中に閉じ込めてある。
 //=============================================================================
-class CDxLibInput : public CAppSubsystem, public IInput, public ITextInput, public ICursorControl, public ITouchInput, public ITickable
+class CDxLibInputSubsystem : public CAppSubsystem, public IInput, public ITextInput, public ICursorControl, public ITouchInput, public ITickable
 {
 public:
 	//-------------------------------------------------------------------------

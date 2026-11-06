@@ -1,4 +1,4 @@
-﻿#include "SdlGamepadInput.h"
+﻿#include "SdlGamepadInputSubsystem.h"
 
 
 #include "Library/Core/Interfaces/Input/IMouseInput.h"
@@ -14,7 +14,7 @@
 
 DEFINE_LOG_CATEGORY_STATIC( LogGamepad, Log )
 
-REGISTER_SUBSYSTEM( ASdlGamepadInput )
+REGISTER_SUBSYSTEM( CSdlGamepadInputSubsystem )
 
 namespace
 {
@@ -145,17 +145,17 @@ namespace
 
 #pragma region Lifecycle
 
-ASdlGamepadInput::~ASdlGamepadInput()
+CSdlGamepadInputSubsystem::~CSdlGamepadInputSubsystem()
 {
 	Deinitialize();
 }
 
-bool ASdlGamepadInput::ShouldCreateSubsystem( CEngine& Engine ) const
+bool CSdlGamepadInputSubsystem::ShouldCreateSubsystem( CEngine& Engine ) const
 {
 	return !NBackendSelection::IsNullRequested();
 }
 
-void ASdlGamepadInput::Initialize( FSubsystemCollection& Collection )
+void CSdlGamepadInputSubsystem::Initialize( FSubsystemCollection& Collection )
 {
 	Collection.InitializeDependency<IPlatform>();
 	FocusInput = Collection.InitializeDependency<IMouseInput>();
@@ -209,7 +209,7 @@ void ASdlGamepadInput::Initialize( FSubsystemCollection& Collection )
 	}
 }
 
-void ASdlGamepadInput::Deinitialize()
+void CSdlGamepadInputSubsystem::Deinitialize()
 {
 	if ( bInitialized )
 	{
@@ -240,7 +240,7 @@ void ASdlGamepadInput::Deinitialize()
 
 #pragma region Tick
 
-void ASdlGamepadInput::Tick( float32 DeltaTime )
+void CSdlGamepadInputSubsystem::Tick( float32 DeltaTime )
 {
 	Connected.Reset();
 	Disconnected.Reset();
@@ -361,7 +361,7 @@ void ASdlGamepadInput::Tick( float32 DeltaTime )
 
 #pragma region DeviceManagement
 
-ASdlGamepadInput::FDevice* ASdlGamepadInput::FindDevice( uint32 DeviceId )
+CSdlGamepadInputSubsystem::FDevice* CSdlGamepadInputSubsystem::FindDevice( uint32 DeviceId )
 {
 	return Devices.FindByPredicate( [DeviceId]( const FDevice& Device )
 	{
@@ -369,7 +369,7 @@ ASdlGamepadInput::FDevice* ASdlGamepadInput::FindDevice( uint32 DeviceId )
 	} );
 }
 
-void ASdlGamepadInput::OpenDevice( uint32 DeviceId )
+void CSdlGamepadInputSubsystem::OpenDevice( uint32 DeviceId )
 {
 	SDL_Gamepad* Gamepad = SDL_IsGamepad( DeviceId ) ? SDL_OpenGamepad( DeviceId ) : nullptr;
 	SDL_Joystick* Joystick = ( Gamepad != nullptr ) ? SDL_GetGamepadJoystick( Gamepad ) : SDL_OpenJoystick( DeviceId );
@@ -403,7 +403,7 @@ void ASdlGamepadInput::OpenDevice( uint32 DeviceId )
 	     DeviceId, *Device.Info.Name, Device.Info.Vendor, Device.Info.Product, Device.Info.bMapped ? 1 : 0 );
 }
 
-void ASdlGamepadInput::CloseDevice( FDevice& Device )
+void CSdlGamepadInputSubsystem::CloseDevice( FDevice& Device )
 {
 	if ( Device.Gamepad != nullptr )
 	{
@@ -422,7 +422,7 @@ void ASdlGamepadInput::CloseDevice( FDevice& Device )
 	}
 }
 
-void ASdlGamepadInput::RefreshInfo( FDevice& Device )
+void CSdlGamepadInputSubsystem::RefreshInfo( FDevice& Device )
 {
 	const char* RawName = ( Device.Gamepad != nullptr )
 		? SDL_GetGamepadName( Device.Gamepad )
@@ -468,7 +468,7 @@ void ASdlGamepadInput::RefreshInfo( FDevice& Device )
 	}
 }
 
-void ASdlGamepadInput::ReadState( FDevice& Device, bool bFocused )
+void CSdlGamepadInputSubsystem::ReadState( FDevice& Device, bool bFocused )
 {
 	FGamepadState& State = Device.State;
 	State.bConnected = true;
@@ -556,22 +556,22 @@ void ASdlGamepadInput::ReadState( FDevice& Device, bool bFocused )
 
 #pragma region Commands
 
-ETickGroup ASdlGamepadInput::GetTickGroup() const
+ETickGroup CSdlGamepadInputSubsystem::GetTickGroup() const
 {
 	return ETickGroup::PreUpdate;
 }
 
-bool ASdlGamepadInput::IsAvailable() const
+bool CSdlGamepadInputSubsystem::IsAvailable() const
 {
 	return bInitialized;
 }
 
-const TArray<FGamepadInfo>& ASdlGamepadInput::GetDevices() const
+const TArray<FGamepadInfo>& CSdlGamepadInputSubsystem::GetDevices() const
 {
 	return DeviceInfos;
 }
 
-const FGamepadState* ASdlGamepadInput::GetState( uint32 DeviceId ) const
+const FGamepadState* CSdlGamepadInputSubsystem::GetState( uint32 DeviceId ) const
 {
 	const FDevice* Device = Devices.FindByPredicate( [DeviceId]( const FDevice& Item )
 	{
@@ -580,17 +580,17 @@ const FGamepadState* ASdlGamepadInput::GetState( uint32 DeviceId ) const
 	return Device != nullptr ? &Device->State : nullptr;
 }
 
-const TArray<uint32>& ASdlGamepadInput::GetConnectedThisFrame() const
+const TArray<uint32>& CSdlGamepadInputSubsystem::GetConnectedThisFrame() const
 {
 	return Connected;
 }
 
-const TArray<uint32>& ASdlGamepadInput::GetDisconnectedThisFrame() const
+const TArray<uint32>& CSdlGamepadInputSubsystem::GetDisconnectedThisFrame() const
 {
 	return Disconnected;
 }
 
-bool ASdlGamepadInput::EnableSensor( uint32 DeviceId, EGamepadSensor Sensor, bool bEnabled )
+bool CSdlGamepadInputSubsystem::EnableSensor( uint32 DeviceId, EGamepadSensor Sensor, bool bEnabled )
 {
 	FDevice* Device = FindDevice( DeviceId );
 	if ( Device == nullptr || !Device->State.bConnected || Device->Gamepad == nullptr )
@@ -625,7 +625,7 @@ bool ASdlGamepadInput::EnableSensor( uint32 DeviceId, EGamepadSensor Sensor, boo
 	return true;
 }
 
-bool ASdlGamepadInput::Rumble( uint32 DeviceId, float32 Low, float32 High, uint32 Milliseconds )
+bool CSdlGamepadInputSubsystem::Rumble( uint32 DeviceId, float32 Low, float32 High, uint32 Milliseconds )
 {
 	if ( NMath::IsNaN( Low ) || NMath::IsNaN( High ) )
 	{
@@ -664,7 +664,7 @@ bool ASdlGamepadInput::Rumble( uint32 DeviceId, float32 Low, float32 High, uint3
 	return bOk;
 }
 
-bool ASdlGamepadInput::RumbleTriggers( uint32 DeviceId, float32 Left, float32 Right, uint32 Milliseconds )
+bool CSdlGamepadInputSubsystem::RumbleTriggers( uint32 DeviceId, float32 Left, float32 Right, uint32 Milliseconds )
 {
 	if ( NMath::IsNaN( Left ) || NMath::IsNaN( Right ) )
 	{
@@ -702,7 +702,7 @@ bool ASdlGamepadInput::RumbleTriggers( uint32 DeviceId, float32 Left, float32 Ri
 	return bOk;
 }
 
-bool ASdlGamepadInput::SetLed( uint32 DeviceId, uint8 Red, uint8 Green, uint8 Blue )
+bool CSdlGamepadInputSubsystem::SetLed( uint32 DeviceId, uint8 Red, uint8 Green, uint8 Blue )
 {
 	FDevice* Device = FindDevice( DeviceId );
 	if ( Device == nullptr || !Device->State.bConnected || !Device->Info.bLed )
@@ -725,7 +725,7 @@ bool ASdlGamepadInput::SetLed( uint32 DeviceId, uint8 Red, uint8 Green, uint8 Bl
 	return bOk;
 }
 
-bool ASdlGamepadInput::AddMappingsFromFile( const FString& Filename )
+bool CSdlGamepadInputSubsystem::AddMappingsFromFile( const FString& Filename )
 {
 	if ( !bInitialized || Filename.IsEmpty() )
 	{
@@ -745,7 +745,7 @@ bool ASdlGamepadInput::AddMappingsFromFile( const FString& Filename )
 	return true;
 }
 
-void ASdlGamepadInput::SetBackgroundInputEnabled( bool bEnabled )
+void CSdlGamepadInputSubsystem::SetBackgroundInputEnabled( bool bEnabled )
 {
 	if ( bBackgroundInputEnabled == bEnabled )
 	{

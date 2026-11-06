@@ -9,7 +9,7 @@
 
 //=============================================================================
 // CFont
-//   フォント（特定のフォント名・大きさ・太さなどで作った文字の描画設定）。CAssetManager で読み込む。
+//   フォント（特定のフォント名・大きさ・太さなどで作った文字の描画設定）。CAssetManagerSubsystem で読み込む。
 //
 //   TSharedPtr<CFont> Title = Assets->LoadFont( "Fonts/NotoSansJP-Bold.ttf", 48 );          // フォントファイル
 //   TSharedPtr<CFont> Body = Assets->LoadSystemFont( "Meiryo", 20 );                         // 入っているフォント名
@@ -69,7 +69,7 @@ public:
 	const FFontMetrics& GetMetrics() const { return Metrics; }
 	// 行の送り幅（次の行の同じ位置までの距離。ピクセル。GetMetrics().LineHeight）
 	int32 GetLineHeight() const { return Metrics.LineHeight; }
-	// 作るときに測った寸法を渡す（CAssetManager が呼ぶ）
+	// 作るときに測った寸法を渡す（CAssetManagerSubsystem が呼ぶ）
 	void SetMetrics( const FFontMetrics& InMetrics ) { Metrics = InMetrics; }
 	// 文字列を描いたときの大きさ（幅・高さ・行数。改行で複数行。末尾の改行のあとも 1 行。空の文字列は 0）。取れなければ、すべて 0
 	FTextSize MeasureSize( const char* Text ) const;

@@ -8,7 +8,7 @@
 #include "Library/Framework/Render/State/ShadowMapView.h"
 #include "Source/Shadows/ShadowsDemoState.h"
 
-class CAssetManager;
+class CAssetManagerSubsystem;
 
 //=============================================================================
 // NShadowsScenery
@@ -28,7 +28,7 @@ namespace NShadowsScenery
 	};
 
 	// 舞台で使う画像を作って、State に入れる。作れなければ false
-	bool MakeTextures( CAssetManager& Assets, FShadowsDemoState& State );
+	bool MakeTextures( CAssetManagerSubsystem& Assets, FShadowsDemoState& State );
 
 	// State のシャドウマップを、State.SizeLevel の大きさにする（もう同じ大きさなら、何もしない）。作れなければ false。メインスレッドで呼ぶ
 	bool UpdateShadowMap( FShadowsDemoState& State );

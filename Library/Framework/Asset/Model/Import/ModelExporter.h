@@ -15,7 +15,7 @@
 //   ・メッシュのないファイル（モーションだけ）は、アニメーションだけの .mv1 にする（SaveType = Auto）
 //   ・FBX に埋め込まれた画像は、出力の隣の「<名前>.textures/」フォルダに取り出す
 //   ・出力のほうが新しいときは、何もしない（bForce で作り直す）
-//   ・DxLib を使うので、メインスレッドから呼ぶ。普通は CAssetManager::ExportModelAsMV1 を使う
+//   ・DxLib を使うので、メインスレッドから呼ぶ。普通は CAssetManagerSubsystem::ExportModelAsMV1 を使う
 //=============================================================================
 struct FModelExportOptions
 {

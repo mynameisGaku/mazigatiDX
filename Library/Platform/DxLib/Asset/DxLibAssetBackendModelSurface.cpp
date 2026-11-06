@@ -1,5 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
-#include "DxLibAssetBackend.h"
+#include "DxLibAssetBackendSubsystem.h"
 
 
 #include "Library/Core/Types/Numeric.h"
@@ -70,7 +70,7 @@ namespace
 }
 
 // 元modelの変形・画像所有を変えず、静的reference meshを独立した値データへ写す。
-bool CDxLibAssetBackend::GetStaticModelSurface( int32 Model, FStaticModelSurfaceData& Out )
+bool CDxLibAssetBackendSubsystem::GetStaticModelSurface( int32 Model, FStaticModelSurfaceData& Out )
 {
 	// 元handleの存在と非同期読み込み完了を確認する。
 	if ( Model < 0 || CheckHandleASyncLoad( Model ) != FALSE ) return false;

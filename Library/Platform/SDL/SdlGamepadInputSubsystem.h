@@ -11,11 +11,11 @@ struct SDL_Gamepad;
 struct SDL_Joystick;
 
 // SDL の機器ハンドルを所有するアプリ入力。描画や SDL ウィンドウは作らない。
-class ASdlGamepadInput : public CAppSubsystem, public IGamepadInput, public ITickable
+class CSdlGamepadInputSubsystem : public CAppSubsystem, public IGamepadInput, public ITickable
 {
 public:
 	// 開いた機器をすべて閉じる。
-	~ASdlGamepadInput() override;
+	~CSdlGamepadInputSubsystem() override;
 	// プラットフォームとフォーカス入力を先に初期化する。
 	void Initialize( FSubsystemCollection& Collection ) override;
 	// 振動を停止し、この実装が取得した SDL の利用権だけを解放する。
@@ -88,6 +88,6 @@ private:
 	bool bBackgroundInputEnabled = false;
 };
 
-using CSdlGamepadInput = ASdlGamepadInput;
+using CSdlGamepadInput = CSdlGamepadInputSubsystem;
 
 #endif

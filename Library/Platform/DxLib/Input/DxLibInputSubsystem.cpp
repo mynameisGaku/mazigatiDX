@@ -1,4 +1,4 @@
-﻿#include "DxLibInput.h"
+﻿#include "DxLibInputSubsystem.h"
 
 
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
@@ -9,7 +9,7 @@
 
 DEFINE_LOG_CATEGORY_STATIC( LogInput, Log )
 
-REGISTER_SUBSYSTEM( CDxLibInput )
+REGISTER_SUBSYSTEM( CDxLibInputSubsystem )
 
 namespace
 {
@@ -40,12 +40,12 @@ namespace
 	static_assert( sizeof( DxKeyCodes ) / sizeof( DxKeyCodes[0] ) == static_cast<int>( EKey::Count ), "DxKeyCodes must match EKey" );
 }
 
-bool CDxLibInput::ShouldCreateSubsystem( CEngine& Engine ) const
+bool CDxLibInputSubsystem::ShouldCreateSubsystem( CEngine& Engine ) const
 {
 	return !NBackendSelection::IsNullRequested();
 }
 
-void CDxLibInput::Initialize( FSubsystemCollection& Collection )
+void CDxLibInputSubsystem::Initialize( FSubsystemCollection& Collection )
 {
 	// DxLib の初期化後に状態を読むので、プラットフォームを先に初期化させる
 	if ( Collection.InitializeDependency<IPlatform>() == nullptr )
@@ -56,7 +56,7 @@ void CDxLibInput::Initialize( FSubsystemCollection& Collection )
 	LOG( LogInput, Log, "Keyboard and mouse input ready (%d keys, %d mouse buttons)", static_cast<int32>( EKey::Count ), static_cast<int32>( EMouseButton::Count ) );
 }
 
-void CDxLibInput::Tick( float32 DeltaTime )
+void CDxLibInputSubsystem::Tick( float32 DeltaTime )
 {
 	const HWND MainWindow = GetMainWindowHandle();
 	const bool bFocused = ( MainWindow != nullptr ) && ( GetForegroundWindow() == MainWindow );
@@ -124,7 +124,7 @@ void CDxLibInput::Tick( float32 DeltaTime )
 	UpdateTouch();
 }
 
-bool CDxLibInput::IsDown( const char ( &State )[NumDxKeys], EKey Key )
+bool CDxLibInputSubsystem::IsDown( const char ( &State )[NumDxKeys], EKey Key )
 {
 	const int32 Index = static_cast<int32>( Key );
 	if ( Index < 0 || Index >= static_cast<int32>( EKey::Count ) )
@@ -134,7 +134,7 @@ bool CDxLibInput::IsDown( const char ( &State )[NumDxKeys], EKey Key )
 	return State[DxKeyCodes[Index]] != 0;
 }
 
-uint32 CDxLibInput::ToButtonBit( EMouseButton Button )
+uint32 CDxLibInputSubsystem::ToButtonBit( EMouseButton Button )
 {
 	const uint8 Index = static_cast<uint8>( Button );
 	if ( Index >= static_cast<uint8>( EMouseButton::Count ) )
@@ -148,42 +148,42 @@ uint32 CDxLibInput::ToButtonBit( EMouseButton Button )
 
 // 仮想関数は vtable 経由で呼ばれインライン展開できないので、ヘッダーではなくここで定義する
 
-ETickGroup CDxLibInput::GetTickGroup() const
+ETickGroup CDxLibInputSubsystem::GetTickGroup() const
 {
 	return ETickGroup::PreUpdate;
 }
 
-bool CDxLibInput::IsKeyDown( EKey Key ) const
+bool CDxLibInputSubsystem::IsKeyDown( EKey Key ) const
 {
 	return IsDown( Current, Key );
 }
 
-bool CDxLibInput::IsKeyPressed( EKey Key ) const
+bool CDxLibInputSubsystem::IsKeyPressed( EKey Key ) const
 {
 	return IsDown( Current, Key ) && !IsDown( Previous, Key );
 }
 
-bool CDxLibInput::IsKeyReleased( EKey Key ) const
+bool CDxLibInputSubsystem::IsKeyReleased( EKey Key ) const
 {
 	return !IsDown( Current, Key ) && IsDown( Previous, Key );
 }
 
-const FMouseState& CDxLibInput::GetMouseState() const
+const FMouseState& CDxLibInputSubsystem::GetMouseState() const
 {
 	return MouseState;
 }
 
-bool CDxLibInput::IsMouseButtonDown( EMouseButton Button ) const
+bool CDxLibInputSubsystem::IsMouseButtonDown( EMouseButton Button ) const
 {
 	return ( MouseState.Buttons & ToButtonBit( Button ) ) != 0u;
 }
 
-bool CDxLibInput::IsMouseButtonPressed( EMouseButton Button ) const
+bool CDxLibInputSubsystem::IsMouseButtonPressed( EMouseButton Button ) const
 {
 	return ( MouseState.PressedButtons & ToButtonBit( Button ) ) != 0u;
 }
 
-bool CDxLibInput::IsMouseButtonReleased( EMouseButton Button ) const
+bool CDxLibInputSubsystem::IsMouseButtonReleased( EMouseButton Button ) const
 {
 	return ( MouseState.ReleasedButtons & ToButtonBit( Button ) ) != 0u;
 }

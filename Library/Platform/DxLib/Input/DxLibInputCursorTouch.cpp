@@ -1,14 +1,14 @@
 ﻿// SPDX-License-Identifier: MIT
-#include "DxLibInput.h"
+#include "DxLibInputSubsystem.h"
 
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 
 //=============================================================================
-// CDxLibInput のうち、カーソルの操作（ICursorControl）とタッチ入力（ITouchInput）
+// CDxLibInputSubsystem のうち、カーソルの操作（ICursorControl）とタッチ入力（ITouchInput）
 //=============================================================================
-bool CDxLibInput::SetCursorVisible( bool bVisible )
+bool CDxLibInputSubsystem::SetCursorVisible( bool bVisible )
 {
 	// カーソルの表示は IPlatform が持っている（ImGui のカーソルも合わせて切り替え、ウィンドウモードの変更でも保たれる）。
 	// IPlatform が無いときだけ、DxLib に直接頼む
@@ -26,7 +26,7 @@ bool CDxLibInput::SetCursorVisible( bool bVisible )
 	return true;
 }
 
-bool CDxLibInput::IsCursorVisible() const
+bool CDxLibInputSubsystem::IsCursorVisible() const
 {
 	if ( const IPlatform* Platform = GetAppSubsystem<IPlatform>() )
 	{
@@ -35,28 +35,28 @@ bool CDxLibInput::IsCursorVisible() const
 	return bCursorVisible;
 }
 
-bool CDxLibInput::SetCursorPosition( int32 X, int32 Y )
+bool CDxLibInputSubsystem::SetCursorPosition( int32 X, int32 Y )
 {
 	return SetMousePoint( X, Y ) == 0;
 }
 
-bool CDxLibInput::IsTouchAvailable() const
+bool CDxLibInputSubsystem::IsTouchAvailable() const
 {
 	// DxLib は、タッチ画面が無い機器では、触れている指の数を 0 と答える（機器の有無は分からない）
 	return true;
 }
 
-const TArray<FTouchPoint>& CDxLibInput::GetTouches() const
+const TArray<FTouchPoint>& CDxLibInputSubsystem::GetTouches() const
 {
 	return TouchTracker.GetTouches();
 }
 
-const TArray<uint32>& CDxLibInput::GetReleasedTouchIds() const
+const TArray<uint32>& CDxLibInputSubsystem::GetReleasedTouchIds() const
 {
 	return TouchTracker.GetReleasedIds();
 }
 
-void CDxLibInput::UpdateTouch()
+void CDxLibInputSubsystem::UpdateTouch()
 {
 	TArray<FTouchPoint> Raw;
 	const int32 Count = GetTouchInputNum();

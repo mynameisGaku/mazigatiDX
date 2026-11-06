@@ -10,7 +10,7 @@
 DECLARE_LOG_CATEGORY_EXTERN( LogPlatform, Log )
 
 //=============================================================================
-// CDxLibBackend
+// CDxLibBackendSubsystem
 //   IPlatform の DxLib 実装。DxLib の初期化・フレーム進行・ImGui・ウィンドウモード切り替えを行う。
 //   CAppSubsystem として自動生成され、CEngine::GetStartupSettings() の設定で初期化される。
 //
@@ -19,9 +19,9 @@ DECLARE_LOG_CATEGORY_EXTERN( LogPlatform, Log )
 //   Platform->SetWindowMode( EWindowMode::Fullscreen );   // 次のフレームの頭で反映される
 //   Platform->ToggleFullscreen();                        // Windowed <-> 直前のフルスクリーン系モード
 //
-//   DxLib 固有の機能（ウィンドウ倍率など）が必要な場合だけ GetAppSubsystem<CDxLibBackend>() を使う。
+//   DxLib 固有の機能（ウィンドウ倍率など）が必要な場合だけ GetAppSubsystem<CDxLibBackendSubsystem>() を使う。
 //=============================================================================
-class CDxLibBackend : public CAppSubsystem, public IPlatform
+class CDxLibBackendSubsystem : public CAppSubsystem, public IPlatform
 {
 public:
 	//-------------------------------------------------------------------------

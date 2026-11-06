@@ -8,7 +8,7 @@
 #include "Library/Math/Color.h"
 
 //=============================================================================
-// CNullAssetBackend
+// CNullAssetBackendSubsystem
 //   IAssetBackend の、DxLib を使わない実装。画像・描画先・バッファ・シャドウマップ・シェーダー・フォント・サウンドを、
 //   「作ったふり」をして、ハンドルの発行と寸法・範囲の確認だけを行う。--backend=null のときだけ作られる（選び方は Library/Platform/BackendSelection.h）。
 //
@@ -25,7 +25,7 @@
 //   - ハンドルは、種類ごとに別の表で持つ。終了するときに、解放されていないハンドルの数をログに残す（"Asset handles at shutdown: ..."）。
 //     解放し忘れがあれば、警告にする
 //=============================================================================
-class CNullAssetBackend : public CAppSubsystem, public IAssetBackend
+class CNullAssetBackendSubsystem : public CAppSubsystem, public IAssetBackend
 {
 public:
 	// --backend=null のときだけ作る

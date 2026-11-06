@@ -83,7 +83,7 @@ struct FModelAnimationDefinition
 //=============================================================================
 // CModelAnimationAsset
 //   FModelAnimationDefinition と、それが指すモデルの読み込み結果（モデル本体・クリップごとのアニメーションの入ったモデル）。
-//   CAssetManager::LoadModelAnimations / CreateModelAnimations で作る。
+//   CAssetManagerSubsystem::LoadModelAnimations / CreateModelAnimations で作る。
 //=============================================================================
 class CModelAnimationAsset : public CAsset
 {

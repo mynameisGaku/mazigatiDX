@@ -7,7 +7,7 @@
 //=============================================================================
 // ITextInput
 //   文字入力（OS を通った文字・キーの自動反復・かな漢字変換）の窓口。キーの状態（IKeyboardInput）とは別。
-//   実装: CDxLibInput（DxLib）、CNullInput（検査用）。ゲームは GetAppSubsystem<ITextInput>() で取る。すべてメインスレッドから使う。
+//   実装: CDxLibInputSubsystem（DxLib）、CNullInputSubsystem（検査用）。ゲームは GetAppSubsystem<ITextInput>() で取る。すべてメインスレッドから使う。
 //
 //   - 欄に文字を打てるようにするときだけ SetTextInputActive( true ) にし、終わったら false に戻す。
 //     false の間は、文字もかな漢字変換も受けない（WASD などのゲーム操作に、変換や全角が割り込まない）

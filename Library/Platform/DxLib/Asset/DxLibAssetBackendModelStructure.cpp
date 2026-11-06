@@ -1,12 +1,12 @@
 ﻿// SPDX-License-Identifier: MIT
-#include "DxLibAssetBackend.h"
+#include "DxLibAssetBackendSubsystem.h"
 
 #include "Library/Platform/DxLib/DxLibInclude.h"
 #include "Library/Platform/DxLib/DxLibTypes.h"
 #include "Library/Core/Types/Numeric.h"
 
 //=============================================================================
-// CDxLibAssetBackend のうち、モデルの構造（フレーム・メッシュ・材質・テクスチャ）と、モデル 1 体ごとの見た目（MV1 の関数）
+// CDxLibAssetBackendSubsystem のうち、モデルの構造（フレーム・メッシュ・材質・テクスチャ）と、モデル 1 体ごとの見た目（MV1 の関数）
 //=============================================================================
 namespace
 {
@@ -75,7 +75,7 @@ namespace
 	}
 }
 
-bool CDxLibAssetBackend::GetModelStructure( int32 Model, FModelStructure& Out )
+bool CDxLibAssetBackendSubsystem::GetModelStructure( int32 Model, FModelStructure& Out )
 {
 	if ( Model < 0 || CheckHandleASyncLoad( Model ) != FALSE )
 	{
@@ -176,7 +176,7 @@ bool CDxLibAssetBackend::GetModelStructure( int32 Model, FModelStructure& Out )
 	return true;
 }
 
-bool CDxLibAssetBackend::GetModelMaterialColors( int32 Model, int32 Material, FModelMaterialColors& Out )
+bool CDxLibAssetBackendSubsystem::GetModelMaterialColors( int32 Model, int32 Material, FModelMaterialColors& Out )
 {
 	if ( !IsMaterialIndex( Model, Material ) )
 	{
@@ -186,7 +186,7 @@ bool CDxLibAssetBackend::GetModelMaterialColors( int32 Model, int32 Material, FM
 	return true;
 }
 
-bool CDxLibAssetBackend::SetModelMaterialColors( int32 Model, int32 Material, const FModelMaterialColors& Colors )
+bool CDxLibAssetBackendSubsystem::SetModelMaterialColors( int32 Model, int32 Material, const FModelMaterialColors& Colors )
 {
 	if ( !IsMaterialIndex( Model, Material ) )
 	{
@@ -200,7 +200,7 @@ bool CDxLibAssetBackend::SetModelMaterialColors( int32 Model, int32 Material, co
 	return bDiffuse && bAmbient && bSpecular && bPower && bEmissive;
 }
 
-bool CDxLibAssetBackend::GetModelMeshVisible( int32 Model, int32 Mesh, bool& bOut )
+bool CDxLibAssetBackendSubsystem::GetModelMeshVisible( int32 Model, int32 Mesh, bool& bOut )
 {
 	if ( !IsMeshIndex( Model, Mesh ) )
 	{
@@ -215,12 +215,12 @@ bool CDxLibAssetBackend::GetModelMeshVisible( int32 Model, int32 Mesh, bool& bOu
 	return true;
 }
 
-bool CDxLibAssetBackend::SetModelMeshVisible( int32 Model, int32 Mesh, bool bVisible )
+bool CDxLibAssetBackendSubsystem::SetModelMeshVisible( int32 Model, int32 Mesh, bool bVisible )
 {
 	return IsMeshIndex( Model, Mesh ) && MV1SetMeshVisible( Model, Mesh, bVisible ? TRUE : FALSE ) >= 0;
 }
 
-bool CDxLibAssetBackend::GetModelFrameVisible( int32 Model, int32 Frame, bool& bOut )
+bool CDxLibAssetBackendSubsystem::GetModelFrameVisible( int32 Model, int32 Frame, bool& bOut )
 {
 	if ( !IsFrameIndex( Model, Frame ) )
 	{
@@ -235,12 +235,12 @@ bool CDxLibAssetBackend::GetModelFrameVisible( int32 Model, int32 Frame, bool& b
 	return true;
 }
 
-bool CDxLibAssetBackend::SetModelFrameVisible( int32 Model, int32 Frame, bool bVisible )
+bool CDxLibAssetBackendSubsystem::SetModelFrameVisible( int32 Model, int32 Frame, bool bVisible )
 {
 	return IsFrameIndex( Model, Frame ) && MV1SetFrameVisible( Model, Frame, bVisible ? TRUE : FALSE ) >= 0;
 }
 
-bool CDxLibAssetBackend::GetModelOpacity( int32 Model, float32& Out )
+bool CDxLibAssetBackendSubsystem::GetModelOpacity( int32 Model, float32& Out )
 {
 	if ( Model < 0 || CheckHandleASyncLoad( Model ) != FALSE )
 	{
@@ -255,12 +255,12 @@ bool CDxLibAssetBackend::GetModelOpacity( int32 Model, float32& Out )
 	return true;
 }
 
-bool CDxLibAssetBackend::SetModelOpacity( int32 Model, float32 Opacity )
+bool CDxLibAssetBackendSubsystem::SetModelOpacity( int32 Model, float32 Opacity )
 {
 	return Model >= 0 && CheckHandleASyncLoad( Model ) == FALSE && MV1SetOpacityRate( Model, Opacity ) >= 0;
 }
 
-bool CDxLibAssetBackend::GetModelFrameMatrix( int32 Model, int32 Frame, EModelFrameSpace Space, FMatrix4x4& Out )
+bool CDxLibAssetBackendSubsystem::GetModelFrameMatrix( int32 Model, int32 Frame, EModelFrameSpace Space, FMatrix4x4& Out )
 {
 	if ( !IsFrameIndex( Model, Frame ) )
 	{
@@ -270,7 +270,7 @@ bool CDxLibAssetBackend::GetModelFrameMatrix( int32 Model, int32 Frame, EModelFr
 	return true;
 }
 
-bool CDxLibAssetBackend::GetModelFrameLocalMatrixOverride( int32 Model, int32 Frame, bool& bOutOverridden, FMatrix4x4& Out )
+bool CDxLibAssetBackendSubsystem::GetModelFrameLocalMatrixOverride( int32 Model, int32 Frame, bool& bOutOverridden, FMatrix4x4& Out )
 {
 	if ( Model < 0 || CheckHandleASyncLoad( Model ) != FALSE || !IsFrameIndex( Model, Frame ) )
 	{
@@ -293,7 +293,7 @@ bool CDxLibAssetBackend::GetModelFrameLocalMatrixOverride( int32 Model, int32 Fr
 	return true;
 }
 
-bool CDxLibAssetBackend::SetModelFrameLocalMatrixOverride( int32 Model, int32 Frame, const FMatrix4x4& LocalToParent )
+bool CDxLibAssetBackendSubsystem::SetModelFrameLocalMatrixOverride( int32 Model, int32 Frame, const FMatrix4x4& LocalToParent )
 {
 	if ( Model < 0 || CheckHandleASyncLoad( Model ) != FALSE || !IsFrameIndex( Model, Frame ) || !IsCanonicalAffinePose( LocalToParent ) )
 	{
@@ -307,7 +307,7 @@ bool CDxLibAssetBackend::SetModelFrameLocalMatrixOverride( int32 Model, int32 Fr
 	return true;
 }
 
-bool CDxLibAssetBackend::ClearModelFrameLocalMatrixOverride( int32 Model, int32 Frame )
+bool CDxLibAssetBackendSubsystem::ClearModelFrameLocalMatrixOverride( int32 Model, int32 Frame )
 {
 	if ( Model < 0 || CheckHandleASyncLoad( Model ) != FALSE || !IsFrameIndex( Model, Frame ) )
 	{
@@ -329,7 +329,7 @@ bool CDxLibAssetBackend::ClearModelFrameLocalMatrixOverride( int32 Model, int32 
 	return true;
 }
 
-int64 CDxLibAssetBackend::GetNumTrackedModelFrameOverrides() const
+int64 CDxLibAssetBackendSubsystem::GetNumTrackedModelFrameOverrides() const
 {
 	int64 NumTrackedFrames = 0; // backend窓口が追跡するpose上書き数。
 	// model handleごとの追跡件数を診断値へ加える。
@@ -340,7 +340,7 @@ int64 CDxLibAssetBackend::GetNumTrackedModelFrameOverrides() const
 	return NumTrackedFrames;
 }
 
-bool CDxLibAssetBackend::SampleModelAnimFrameLocalMatrix( int32 Model, int32 AttachIndex, int32 Frame, float32 Time, FMatrix4x4& Out )
+bool CDxLibAssetBackendSubsystem::SampleModelAnimFrameLocalMatrix( int32 Model, int32 AttachIndex, int32 Frame, float32 Time, FMatrix4x4& Out )
 {
 	if ( !IsFrameIndex( Model, Frame ) || AttachIndex < 0 || !NMath::IsFinite( Time ) )
 	{
@@ -360,7 +360,7 @@ bool CDxLibAssetBackend::SampleModelAnimFrameLocalMatrix( int32 Model, int32 Att
 	return true;
 }
 
-bool CDxLibAssetBackend::GetModelShapeRate( int32 Model, int32 Shape, float32& Out )
+bool CDxLibAssetBackendSubsystem::GetModelShapeRate( int32 Model, int32 Shape, float32& Out )
 {
 	if ( Model < 0 || Shape < 0 || Shape >= MV1GetShapeNum( Model ) )
 	{
@@ -370,7 +370,7 @@ bool CDxLibAssetBackend::GetModelShapeRate( int32 Model, int32 Shape, float32& O
 	return true;
 }
 
-bool CDxLibAssetBackend::SetModelShapeRate( int32 Model, int32 Shape, float32 Rate )
+bool CDxLibAssetBackendSubsystem::SetModelShapeRate( int32 Model, int32 Shape, float32 Rate )
 {
 	return Model >= 0 && Shape >= 0 && Shape < MV1GetShapeNum( Model ) && MV1SetShapeRate( Model, Shape, Rate, DX_MV1_SHAPERATE_OVERWRITE ) >= 0;
 }

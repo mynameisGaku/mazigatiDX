@@ -14,12 +14,12 @@ class FGifEncoder;
 class IPlatform;
 
 //=============================================================================
-// CScreenCapture
+// CScreenCaptureSubsystem
 //   画面を撮る（スクリーンショット・GIF の記録）。プラットフォームの窓口（IFrameCaptureSink）で、画面に出す直前の画素を受け取る。
 //   保存先は Saved/Screenshots。名前を指定しなければ Screenshot_00001 のような番号の名前（番号は、フォルダにあるもの + 1）。
 //   既定はゲームの絵だけ（デバッグ用の UI は写さない）。PNG・JPEG・BMP・GIF で保存できる。
 //
-//   CScreenCapture* Capture = GetAppSubsystem<CScreenCapture>();
+//   CScreenCaptureSubsystem* Capture = GetAppSubsystem<CScreenCaptureSubsystem>();
 //   Capture->TakeScreenshot();                               // Saved/Screenshots/Screenshot_00001.png
 //   Capture->TakeScreenshot( "Title.jpg" );                  // 名前と形式を指定
 //   Capture->StartRecording( "Walk" );                       // Saved/Screenshots/Walk.gif（StopRecording で保存）
@@ -33,11 +33,11 @@ class IPlatform;
 //
 //   キー: F9 でスクリーンショット、Shift + F9 で GIF の記録を始める / 止める（フレームワークの決まり）。起動引数は NCaptureCommandLine。
 //=============================================================================
-class CScreenCapture : public CAppSubsystem, public ITickable, public IFrameCaptureSink
+class CScreenCaptureSubsystem : public CAppSubsystem, public ITickable, public IFrameCaptureSink
 {
 public:
-	CScreenCapture();
-	~CScreenCapture() override;
+	CScreenCaptureSubsystem();
+	~CScreenCaptureSubsystem() override;
 
 	void Initialize( FSubsystemCollection& Collection ) override;
 	void Deinitialize() override;

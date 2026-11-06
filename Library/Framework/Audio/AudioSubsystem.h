@@ -50,10 +50,10 @@ struct FVoiceInfo
 };
 
 //=============================================================================
-// CAudioSystem
+// CAudioSubsystem
 //   サウンドを鳴らす・管理するシステム（アプリで 1 つ、自動で生成される）。
 //
-//   CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>();
+//   CAudioSubsystem* Audio = GetAppSubsystem<CAudioSubsystem>();
 //   TSharedPtr<CSound> Jump = Assets->LoadSound( "Sound/Jump.wav" );
 //
 //   // 効果音
@@ -82,11 +82,11 @@ struct FVoiceInfo
 //   - 戻り値の FSoundHandle で、鳴らしたあとの音を操作する。鳴り終わった音の FSoundHandle は無効になる
 //   - 音を鳴らすのはメインスレッドだけ（DxLib はスレッドセーフではない）。フェードは毎フレームの更新で進む
 //=============================================================================
-class CAudioSystem : public CAppSubsystem, public ITickable
+class CAudioSubsystem : public CAppSubsystem, public ITickable
 {
 public:
-	CAudioSystem();
-	~CAudioSystem() override;
+	CAudioSubsystem();
+	~CAudioSubsystem() override;
 
 	//-------------------------------------------------------------------------
 	// CAppSubsystem / ITickable
@@ -185,7 +185,7 @@ private:
 		EAudioBus Bus = EAudioBus::Sfx;
 		int32 Priority = 0;
 		bool bLoop = false;
-		// ループ区間をバックエンドが扱えないとき、CAudioSystem が再生位置を見て戻す
+		// ループ区間をバックエンドが扱えないとき、CAudioSubsystem が再生位置を見て戻す
 		bool bEmulateLoopRegion = false;
 		float32 LoopRegionStart = 0.0f;
 		float32 LoopRegionEnd = 0.0f;      // 0 以下は音の最後まで

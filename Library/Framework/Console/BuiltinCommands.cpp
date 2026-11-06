@@ -1,7 +1,7 @@
 ﻿#include "BuiltinCommands.h"
 
 
-#include "Library/Framework/Capture/ScreenCapture.h"
+#include "Library/Framework/Capture/ScreenCaptureSubsystem.h"
 #include "Library/Core/File/File.h"
 #include "Library/Core/Interfaces/Job/IJobSystem.h"
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
@@ -10,8 +10,8 @@
 #include "Library/Core/Log/LogVerbosity.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
-#include "Library/Framework/Asset/AssetManager.h"
-#include "Library/Framework/Audio/AudioSystem.h"
+#include "Library/Framework/Asset/AssetManagerSubsystem.h"
+#include "Library/Framework/Audio/AudioSubsystem.h"
 #include "Library/Framework/Component/TransformComponent.h"
 #include "Library/Framework/Console/ConsoleParse.h"
 #include "Library/Framework/Engine/Engine.h"
@@ -229,7 +229,7 @@ namespace
 	//-------------------------------------------------------------------------
 	// assets
 	//-------------------------------------------------------------------------
-	FString DescribeAssets( CAssetManager& Assets )
+	FString DescribeAssets( CAssetManagerSubsystem& Assets )
 	{
 		Assets.UpdateStats();
 		const FAssetStats& Stats = Assets.GetStats();
@@ -576,8 +576,8 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	Registry.AddVariable<bool>( "cursor.visible", []() { IPlatform* Platform = GetAppSubsystem<IPlatform>(); return Platform != nullptr && Platform->IsMouseCursorVisible(); },
 								[]( const bool& Value ) { if ( IPlatform* Platform = GetAppSubsystem<IPlatform>() ) Platform->SetMouseCursorVisible( Value ); },
 								"Whether the mouse cursor is shown", TConsoleVariableOptions<bool>(), CategoryWindow ).Keep();
-	Registry.AddVariable<float32>( "audio.master", []() { CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>(); return Audio != nullptr ? Audio->GetBusVolume( EAudioBus::Master ) : 1.0f; },
-								   []( const float32& Value ) { if ( CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>() ) Audio->SetBusVolume( EAudioBus::Master, Value ); },
+	Registry.AddVariable<float32>( "audio.master", []() { CAudioSubsystem* Audio = GetAppSubsystem<CAudioSubsystem>(); return Audio != nullptr ? Audio->GetBusVolume( EAudioBus::Master ) : 1.0f; },
+								   []( const float32& Value ) { if ( CAudioSubsystem* Audio = GetAppSubsystem<CAudioSubsystem>() ) Audio->SetBusVolume( EAudioBus::Master, Value ); },
 								   "Master volume (1 = normal)", [] { TConsoleVariableOptions<float32> Options; Options.Min = 0.0f; Options.Max = 2.0f; return Options; }(), CategoryAudio ).Keep();
 
 	//-------------------------------------------------------------------------
@@ -652,7 +652,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	Add( "memory", "Show the process memory, the video memory and the asset memory",
 		 []()
 		 {
-			 CAssetManager* Assets = GetAppSubsystem<CAssetManager>();
+			 CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
 			 if ( Assets == nullptr ) return FString( NotRunning );
 			 Assets->UpdateStats();
 			 const FAssetStats& Stats = Assets->GetStats();
@@ -667,7 +667,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 		 []( FConsoleContext& Context, TOptional<FString> Name, TOptional<float32> Delay, TOptional<bool> bWithUI )
 		 {
 			 IPlatform* Platform = GetAppSubsystem<IPlatform>();
-			 CScreenCapture* Capture = GetAppSubsystem<CScreenCapture>();
+			 CScreenCaptureSubsystem* Capture = GetAppSubsystem<CScreenCaptureSubsystem>();
 			 if ( Platform == nullptr || Capture == nullptr )
 			 {
 				 Context.Error( "the screen capture is not available" );
@@ -694,7 +694,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	Add( "gif", "Start or stop recording a GIF of the game screen to Saved/Screenshots (Shift + F9 does the same; F9 takes a screenshot)",
 		 []( FConsoleContext& Context, TOptional<FString> Name, TOptional<int32> Step, TOptional<int32> Downscale, TOptional<bool> bWithUI )
 		 {
-			 CScreenCapture* Capture = GetAppSubsystem<CScreenCapture>();
+			 CScreenCaptureSubsystem* Capture = GetAppSubsystem<CScreenCaptureSubsystem>();
 			 if ( Capture == nullptr )
 			 {
 				 Context.Error( "the screen capture is not available" );
@@ -722,7 +722,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	Add( "highresshot", "Redraw the game at a larger size and save it to Saved/Screenshots (like Unreal's HighResShot). Optionally only the subject, with a transparent background",
 		 []( FConsoleContext& Context, TOptional<FString> Size, TOptional<FString> Subject, TOptional<FString> Name )
 		 {
-			 CScreenCapture* Capture = GetAppSubsystem<CScreenCapture>();
+			 CScreenCaptureSubsystem* Capture = GetAppSubsystem<CScreenCaptureSubsystem>();
 			 if ( Capture == nullptr )
 			 {
 				 Context.Error( "the screen capture is not available" );
@@ -1027,7 +1027,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	Add( "assets", "Show the asset statistics: counts, memory, load times, video memory",
 		 []()
 		 {
-			 CAssetManager* Assets = GetAppSubsystem<CAssetManager>();
+			 CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
 			 return Assets != nullptr ? DescribeAssets( *Assets ) : FString( NotRunning );
 		 },
 		 {}, CategoryAssets );
@@ -1035,7 +1035,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	Add( "assets.list", "List the loaded assets (type, path, references, memory, load time)",
 		 []( FConsoleContext& Context, TOptional<FString> Filter )
 		 {
-			 CAssetManager* Assets = GetAppSubsystem<CAssetManager>();
+			 CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
 			 if ( Assets == nullptr ) return false;
 			 TArray<FAssetInfo> Infos = Assets->GetLoadedAssets();
 			 Infos.StableSort( []( const FAssetInfo& A, const FAssetInfo& B ) { return A.MemoryBytes > B.MemoryBytes; } );
@@ -1054,7 +1054,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	Add( "assets.dump", "Write the asset list and statistics to the log",
 		 []( FConsoleContext& Context )
 		 {
-			 CAssetManager* Assets = GetAppSubsystem<CAssetManager>();
+			 CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
 			 if ( Assets == nullptr ) return false;
 			 Assets->DumpToLog();
 			 Context.Print( "written to the log (category LogAsset)" );
@@ -1065,7 +1065,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	Add( "assets.release", "Forget the records of assets nobody uses any more",
 		 []( FConsoleContext& Context )
 		 {
-			 CAssetManager* Assets = GetAppSubsystem<CAssetManager>();
+			 CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
 			 if ( Assets == nullptr ) return false;
 			 Assets->ReleaseUnused();
 			 Context.Print( "done" );
@@ -1076,7 +1076,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	Add( "assets.root", "Show the asset root folder",
 		 []()
 		 {
-			 CAssetManager* Assets = GetAppSubsystem<CAssetManager>();
+			 CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
 			 return Assets != nullptr ? Assets->GetRootDirectory() : FString( NotRunning );
 		 },
 		 {}, CategoryAssets );
@@ -1084,7 +1084,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	Add( "assets.export", "Convert the models under the asset root (.fbx .obj .x .pmx ...) to .mv1",
 		 []( FConsoleContext& Context, TOptional<bool> Force )
 		 {
-			 CAssetManager* Assets = GetAppSubsystem<CAssetManager>();
+			 CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
 			 if ( Assets == nullptr ) return false;
 			 const FModelBatchExportResult Batch = Assets->ExportAllModels( Force.IsSet() && Force.GetValue() );
 			 for ( const FModelExportResult& Item : Batch.Items )
@@ -1103,7 +1103,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	Add( "audio", "Show the audio status: voices, pause, listener and the bus volumes",
 		 []( FConsoleContext& Context )
 		 {
-			 CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>();
+			 CAudioSubsystem* Audio = GetAppSubsystem<CAudioSubsystem>();
 			 if ( Audio == nullptr ) return false;
 			 const FAudioListener& Listener = Audio->GetListener();
 			 Context.Print( FString::Printf( "%d voice(s)%s, listener at %s facing %s", Audio->GetNumVoices(), Audio->IsPaused() ? " (paused)" : "", *Vec3Text( Listener.Position ), *Vec3Text( Listener.Forward ) ) );
@@ -1119,7 +1119,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	Add( "audio.voices", "List the sounds that are playing",
 		 []( FConsoleContext& Context )
 		 {
-			 CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>();
+			 CAudioSubsystem* Audio = GetAppSubsystem<CAudioSubsystem>();
 			 if ( Audio == nullptr ) return false;
 			 const TArray<FVoiceInfo> Voices = Audio->GetVoiceInfos();
 			 for ( const FVoiceInfo& Voice : Voices )
@@ -1135,7 +1135,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	Add( "audio.volume", "Show or set the volume of an audio bus",
 		 []( FConsoleContext& Context, const FString& BusName, TOptional<float32> Volume )
 		 {
-			 CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>();
+			 CAudioSubsystem* Audio = GetAppSubsystem<CAudioSubsystem>();
 			 EAudioBus Bus = EAudioBus::Master;
 			 if ( Audio == nullptr ) return false;
 			 if ( !ParseBus( BusName, Bus ) )
@@ -1153,7 +1153,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	Add( "audio.mute", "Mute or unmute an audio bus",
 		 []( FConsoleContext& Context, const FString& BusName, TOptional<bool> On )
 		 {
-			 CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>();
+			 CAudioSubsystem* Audio = GetAppSubsystem<CAudioSubsystem>();
 			 EAudioBus Bus = EAudioBus::Master;
 			 if ( Audio == nullptr ) return false;
 			 if ( !ParseBus( BusName, Bus ) )
@@ -1172,7 +1172,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	Add( "audio.pause", "Pause or resume all sounds",
 		 []( FConsoleContext& Context, TOptional<bool> On )
 		 {
-			 CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>();
+			 CAudioSubsystem* Audio = GetAppSubsystem<CAudioSubsystem>();
 			 if ( Audio == nullptr ) return false;
 			 const bool bPause = On.IsSet() ? On.GetValue() : !Audio->IsPaused();
 			 Audio->SetPaused( bPause );
@@ -1184,7 +1184,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	Add( "audio.stop", "Stop all sounds",
 		 []( FConsoleContext& Context, TOptional<float32> Fade )
 		 {
-			 CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>();
+			 CAudioSubsystem* Audio = GetAppSubsystem<CAudioSubsystem>();
 			 if ( Audio == nullptr ) return false;
 			 Audio->StopAll( Fade.IsSet() ? NMath::Max( Fade.GetValue(), 0.0f ) : 0.0f );
 			 Context.Print( "stopped" );
@@ -1195,8 +1195,8 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	Add( "audio.play", "Play a sound file once (or in a loop) to try it",
 		 []( FConsoleContext& Context, const FString& Path, TOptional<FString> BusName, TOptional<float32> Volume, TOptional<float32> Pitch, TOptional<bool> Loop )
 		 {
-			 CAudioSystem* Audio = GetAppSubsystem<CAudioSystem>();
-			 CAssetManager* Assets = GetAppSubsystem<CAssetManager>();
+			 CAudioSubsystem* Audio = GetAppSubsystem<CAudioSubsystem>();
+			 CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
 			 if ( Audio == nullptr || Assets == nullptr ) return false;
 			 FSoundPlayParams Params;
 			 if ( BusName.IsSet() && !ParseBus( BusName.GetValue(), Params.Bus ) )

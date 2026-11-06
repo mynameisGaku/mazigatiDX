@@ -1,6 +1,6 @@
 ﻿#include "ImagesSample.h"
 
-#include "Library/Framework/Asset/AssetManager.h"
+#include "Library/Framework/Asset/AssetManagerSubsystem.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Render/Draw/ImmediateDraw.h"
 #include "Source/Catalog/SampleCatalog.h"
@@ -18,7 +18,7 @@ namespace
 
 void CImagesSample::OnEnter()
 {
-	CAssetManager* Assets = GetAppSubsystem<CAssetManager>();
+	CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
 	if ( Assets == nullptr )
 	{
 		return;

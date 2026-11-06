@@ -1,4 +1,4 @@
-﻿#include "AssetManager.h"
+﻿#include "AssetManagerSubsystem.h"
 
 #include "Library/Core/Thread/GameThread.h"
 #include "Library/Core/Log/Log.h"
@@ -7,9 +7,9 @@
 #include "Library/Platform/System/FileSystem.h"
 
 //=============================================================================
-// CAssetManager: パーティクルのエフェクト（.gxeffect。書式は ParticleEffect.cpp の先頭）
+// CAssetManagerSubsystem: パーティクルのエフェクト（.gxeffect。書式は ParticleEffect.cpp の先頭）
 //=============================================================================
-TSharedPtr<CEffectAsset> CAssetManager::LoadEffect( const FString& Path )
+TSharedPtr<CEffectAsset> CAssetManagerSubsystem::LoadEffect( const FString& Path )
 {
 	GAME_THREAD_ONLY( nullptr );
 	const TOptional<FString> Full = PrepareLoad( "effect", Path );
@@ -55,7 +55,7 @@ TSharedPtr<CEffectAsset> CAssetManager::LoadEffect( const FString& Path )
 	return Asset;
 }
 
-bool CAssetManager::SaveEffect( const FString& Path, const FParticleEffectDefinition& Definition )
+bool CAssetManagerSubsystem::SaveEffect( const FString& Path, const FParticleEffectDefinition& Definition )
 {
 	const TOptional<FString> Full = PrepareSavePath( Path );
 	if ( !Full.IsSet() )

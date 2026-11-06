@@ -1,10 +1,10 @@
 ﻿// SPDX-License-Identifier: MIT
-#include "DxLibInput.h"
+#include "DxLibInputSubsystem.h"
 
 #include "Library/Platform/DxLib/DxLibInclude.h"
 
 //=============================================================================
-// CDxLibInput のうち、文字入力（ITextInput）
+// CDxLibInputSubsystem のうち、文字入力（ITextInput）
 //   DxLib の文字コードのバッファ（GetInputChar）と、IME の状態（GetIMEInputData）を、バックエンドに依らない形（FTextInputEvent /
 //   FImeComposition）へ写す。DxLib の制御コード（CTRL_CODE_*）と、1 バイトずつ届く文字は、ここで吸収する。
 //   文字コードは UTF-8（DxLibBackend が SetUseCharCodeFormat で設定している）。
@@ -76,7 +76,7 @@ namespace
 	}
 }
 
-void CDxLibInput::SetTextInputActive( bool bActive )
+void CDxLibInputSubsystem::SetTextInputActive( bool bActive )
 {
 	if ( bActive == bTextInputActive )
 	{
@@ -91,22 +91,22 @@ void CDxLibInput::SetTextInputActive( bool bActive )
 	ByteAssembler.Reset();
 }
 
-bool CDxLibInput::IsTextInputActive() const
+bool CDxLibInputSubsystem::IsTextInputActive() const
 {
 	return bTextInputActive;
 }
 
-const TArray<FTextInputEvent>& CDxLibInput::GetTextInputEvents() const
+const TArray<FTextInputEvent>& CDxLibInputSubsystem::GetTextInputEvents() const
 {
 	return TextEvents;
 }
 
-const FImeComposition& CDxLibInput::GetImeComposition() const
+const FImeComposition& CDxLibInputSubsystem::GetImeComposition() const
 {
 	return ImeComposition;
 }
 
-void CDxLibInput::UpdateText()
+void CDxLibInputSubsystem::UpdateText()
 {
 	TextEvents.Reset();
 	if ( !bTextInputActive )

@@ -29,7 +29,7 @@ struct FModelClipInfo
 
 //=============================================================================
 // CModel
-//   3D モデル（MV1 / FBX / X / PMD / PMX / MQO など）。CAssetManager::LoadModel で読み込む。
+//   3D モデル（MV1 / FBX / X / PMD / PMX / MQO など）。CAssetManagerSubsystem::LoadModel で読み込む。
 //   アニメーションだけが入ったファイル（モーション専用の FBX など）も、同じようにモデルとして読み込む。
 //
 //   TSharedPtr<CModel> Robot = Assets->LoadModel( "Models/Robot.fbx" );

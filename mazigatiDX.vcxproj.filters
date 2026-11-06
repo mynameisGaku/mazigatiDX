@@ -130,9 +130,6 @@
     <ClCompile Include="Library\Framework\Animation\SpriteAnimator.cpp">
       <Filter>Library\Framework\Animation</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\AssetManager.cpp">
-      <Filter>Library\Framework\Asset</Filter>
-    </ClCompile>
     <ClCompile Include="Library\Framework\Asset\AssetManagerEffects.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
@@ -140,6 +137,9 @@
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\AssetManagerModels.cpp">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\AssetManagerSubsystem.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\AssetManagerTextureRegions.cpp">
@@ -238,7 +238,7 @@
     <ClCompile Include="Library\Framework\Audio\AudioComponents.cpp">
       <Filter>Library\Framework\Audio</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Audio\AudioSystem.cpp">
+    <ClCompile Include="Library\Framework\Audio\AudioSubsystem.cpp">
       <Filter>Library\Framework\Audio</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Audio\AudioTypes.cpp">
@@ -253,7 +253,7 @@
     <ClCompile Include="Library\Framework\Capture\OffscreenShot.cpp">
       <Filter>Library\Framework\Capture</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Capture\ScreenCapture.cpp">
+    <ClCompile Include="Library\Framework\Capture\ScreenCaptureSubsystem.cpp">
       <Filter>Library\Framework\Capture</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Capture\ScreenshotNames.cpp">
@@ -406,7 +406,7 @@
     <ClCompile Include="Library\Framework\Job\AsyncTask.cpp">
       <Filter>Library\Framework\Job</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Job\JobSystem.cpp">
+    <ClCompile Include="Library\Framework\Job\JobSubsystem.cpp">
       <Filter>Library\Framework\Job</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Object\GameObject.cpp">
@@ -712,11 +712,8 @@
     <ClCompile Include="Library\Platform\BackendSelection.cpp">
       <Filter>Library\Platform</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\DxLibBackend.cpp">
+    <ClCompile Include="Library\Platform\DxLib\DxLibBackendSubsystem.cpp">
       <Filter>Library\Platform\DxLib</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\Asset\DxLibAssetBackend.cpp">
-      <Filter>Library\Platform\DxLib\Asset</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\Asset\DxLibAssetBackendModelCollision.cpp">
       <Filter>Library\Platform\DxLib\Asset</Filter>
@@ -736,23 +733,23 @@
     <ClCompile Include="Library\Platform\DxLib\Asset\DxLibAssetBackendSound.cpp">
       <Filter>Library\Platform\DxLib\Asset</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\Asset\DxLibAssetBackendSubsystem.cpp">
+      <Filter>Library\Platform\DxLib\Asset</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\Asset\DxLibImageOps.cpp">
       <Filter>Library\Platform\DxLib\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\Audio\DxLibAudioBackend.cpp">
+    <ClCompile Include="Library\Platform\DxLib\Audio\DxLibAudioBackendSubsystem.cpp">
       <Filter>Library\Platform\DxLib\Audio</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\Input\DxLibInput.cpp">
-      <Filter>Library\Platform\DxLib\Input</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\Input\DxLibInputCursorTouch.cpp">
       <Filter>Library\Platform\DxLib\Input</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\Input\DxLibInputText.cpp">
+    <ClCompile Include="Library\Platform\DxLib\Input\DxLibInputSubsystem.cpp">
       <Filter>Library\Platform\DxLib\Input</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\Render\DxLibDrawExecutor.cpp">
-      <Filter>Library\Platform\DxLib\Render</Filter>
+    <ClCompile Include="Library\Platform\DxLib\Input\DxLibInputText.cpp">
+      <Filter>Library\Platform\DxLib\Input</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\Render\DxLibDrawExecutorCapture.cpp">
       <Filter>Library\Platform\DxLib\Render</Filter>
@@ -761,6 +758,9 @@
       <Filter>Library\Platform\DxLib\Render</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\Render\DxLibDrawExecutorModelMaterial.cpp">
+      <Filter>Library\Platform\DxLib\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\Render\DxLibDrawExecutorSubsystem.cpp">
       <Filter>Library\Platform\DxLib\Render</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\Render\DxLibImGuiTexture.cpp">
@@ -796,28 +796,28 @@
     <ClCompile Include="Library\Platform\DxLib\Window\DxLibWindowControlSubsystem.cpp">
       <Filter>Library\Platform\DxLib\Window</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\Null\NullAssetBackend.cpp">
+    <ClCompile Include="Library\Platform\Null\NullAssetBackendSubsystem.cpp">
       <Filter>Library\Platform\Null</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\Null\NullAudioBackend.cpp">
+    <ClCompile Include="Library\Platform\Null\NullAudioBackendSubsystem.cpp">
       <Filter>Library\Platform\Null</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\Null\NullDisplayInfoSubsystem.cpp">
       <Filter>Library\Platform\Null</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\Null\NullDrawExecutor.cpp">
+    <ClCompile Include="Library\Platform\Null\NullDrawExecutorSubsystem.cpp">
       <Filter>Library\Platform\Null</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\Null\NullInput.cpp">
+    <ClCompile Include="Library\Platform\Null\NullInputSubsystem.cpp">
       <Filter>Library\Platform\Null</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\Null\NullPlatform.cpp">
+    <ClCompile Include="Library\Platform\Null\NullPlatformSubsystem.cpp">
       <Filter>Library\Platform\Null</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\Null\NullWindowControlSubsystem.cpp">
       <Filter>Library\Platform\Null</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\SDL\SdlGamepadInput.cpp">
+    <ClCompile Include="Library\Platform\SDL\SdlGamepadInputSubsystem.cpp">
       <Filter>Library\Platform\SDL</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\System\BackendSupport.cpp">
@@ -1674,7 +1674,7 @@
     <ClInclude Include="Library\Framework\Asset\Asset.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\AssetManager.h">
+    <ClInclude Include="Library\Framework\Asset\AssetManagerSubsystem.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\EditorAssetInfo.h">
@@ -1794,7 +1794,7 @@
     <ClInclude Include="Library\Framework\Audio\AudioComponents.h">
       <Filter>Library\Framework\Audio</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Audio\AudioSystem.h">
+    <ClInclude Include="Library\Framework\Audio\AudioSubsystem.h">
       <Filter>Library\Framework\Audio</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Audio\AudioTypes.h">
@@ -1812,7 +1812,7 @@
     <ClInclude Include="Library\Framework\Capture\OffscreenShot.h">
       <Filter>Library\Framework\Capture</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Capture\ScreenCapture.h">
+    <ClInclude Include="Library\Framework\Capture\ScreenCaptureSubsystem.h">
       <Filter>Library\Framework\Capture</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Capture\ScreenshotNames.h">
@@ -2004,7 +2004,7 @@
     <ClInclude Include="Library\Framework\Job\AsyncTask.h">
       <Filter>Library\Framework\Job</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Job\JobSystem.h">
+    <ClInclude Include="Library\Framework\Job\JobSubsystem.h">
       <Filter>Library\Framework\Job</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Object\GameObject.h">
@@ -2445,7 +2445,7 @@
     <ClInclude Include="Library\Platform\BackendSelection.h">
       <Filter>Library\Platform</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Platform\DxLib\DxLibBackend.h">
+    <ClInclude Include="Library\Platform\DxLib\DxLibBackendSubsystem.h">
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\DxLibInclude.h">
@@ -2454,7 +2454,7 @@
     <ClInclude Include="Library\Platform\DxLib\DxLibTypes.h">
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Platform\DxLib\Asset\DxLibAssetBackend.h">
+    <ClInclude Include="Library\Platform\DxLib\Asset\DxLibAssetBackendSubsystem.h">
       <Filter>Library\Platform\DxLib\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\Asset\DxLibImageOps.h">
@@ -2463,13 +2463,13 @@
     <ClInclude Include="Library\Platform\DxLib\Asset\DxLibModelMaterialGeometry.h">
       <Filter>Library\Platform\DxLib\Asset</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Platform\DxLib\Audio\DxLibAudioBackend.h">
+    <ClInclude Include="Library\Platform\DxLib\Audio\DxLibAudioBackendSubsystem.h">
       <Filter>Library\Platform\DxLib\Audio</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Platform\DxLib\Input\DxLibInput.h">
+    <ClInclude Include="Library\Platform\DxLib\Input\DxLibInputSubsystem.h">
       <Filter>Library\Platform\DxLib\Input</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Platform\DxLib\Render\DxLibDrawExecutor.h">
+    <ClInclude Include="Library\Platform\DxLib\Render\DxLibDrawExecutorSubsystem.h">
       <Filter>Library\Platform\DxLib\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\Render\DxLibImGuiTexture.h">
@@ -2505,28 +2505,28 @@
     <ClInclude Include="Library\Platform\DxLib\Window\DxLibWindowControlSubsystem.h">
       <Filter>Library\Platform\DxLib\Window</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Platform\Null\NullAssetBackend.h">
+    <ClInclude Include="Library\Platform\Null\NullAssetBackendSubsystem.h">
       <Filter>Library\Platform\Null</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Platform\Null\NullAudioBackend.h">
+    <ClInclude Include="Library\Platform\Null\NullAudioBackendSubsystem.h">
       <Filter>Library\Platform\Null</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\Null\NullDisplayInfoSubsystem.h">
       <Filter>Library\Platform\Null</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Platform\Null\NullDrawExecutor.h">
+    <ClInclude Include="Library\Platform\Null\NullDrawExecutorSubsystem.h">
       <Filter>Library\Platform\Null</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Platform\Null\NullInput.h">
+    <ClInclude Include="Library\Platform\Null\NullInputSubsystem.h">
       <Filter>Library\Platform\Null</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Platform\Null\NullPlatform.h">
+    <ClInclude Include="Library\Platform\Null\NullPlatformSubsystem.h">
       <Filter>Library\Platform\Null</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\Null\NullWindowControlSubsystem.h">
       <Filter>Library\Platform\Null</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Platform\SDL\SdlGamepadInput.h">
+    <ClInclude Include="Library\Platform\SDL\SdlGamepadInputSubsystem.h">
       <Filter>Library\Platform\SDL</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\System\BackendSupport.h">

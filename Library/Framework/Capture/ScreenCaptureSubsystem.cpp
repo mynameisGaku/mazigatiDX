@@ -1,7 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "Library/Core/Thread/GameThread.h"
 #include "Library/Core/Interfaces/Render/IDrawExecutor.h"
-#include "Library/Framework/Capture/ScreenCapture.h"
+#include "Library/Framework/Capture/ScreenCaptureSubsystem.h"
 
 #include "Library/Core/File/File.h"
 #include "Library/Core/Interfaces/Asset/AssetBackend.h"
@@ -24,7 +24,7 @@
 
 DEFINE_LOG_CATEGORY_STATIC( LogCapture, Log )
 
-REGISTER_SUBSYSTEM( CScreenCapture )
+REGISTER_SUBSYSTEM( CScreenCaptureSubsystem )
 
 namespace
 {
@@ -34,11 +34,11 @@ namespace
 	}
 }
 
-CScreenCapture::CScreenCapture() = default;
+CScreenCaptureSubsystem::CScreenCaptureSubsystem() = default;
 
-CScreenCapture::~CScreenCapture() = default;
+CScreenCaptureSubsystem::~CScreenCaptureSubsystem() = default;
 
-void CScreenCapture::Initialize( FSubsystemCollection& Collection )
+void CScreenCaptureSubsystem::Initialize( FSubsystemCollection& Collection )
 {
 	CAppSubsystem::Initialize( Collection );
 	Directory = NScreenshotNames::GetDefaultDirectory();
@@ -50,7 +50,7 @@ void CScreenCapture::Initialize( FSubsystemCollection& Collection )
 	}
 }
 
-void CScreenCapture::Deinitialize()
+void CScreenCaptureSubsystem::Deinitialize()
 {
 	if ( bRecording )
 	{
@@ -64,13 +64,13 @@ void CScreenCapture::Deinitialize()
 	CAppSubsystem::Deinitialize();
 }
 
-void CScreenCapture::SetDirectory( const FString& InDirectory )
+void CScreenCaptureSubsystem::SetDirectory( const FString& InDirectory )
 {
 	GAME_THREAD_ONLY();
 	Directory = InDirectory.IsEmpty() ? NScreenshotNames::GetDefaultDirectory() : InDirectory;
 }
 
-void CScreenCapture::Tick( float32 DeltaTime )
+void CScreenCaptureSubsystem::Tick( float32 DeltaTime )
 {
 	( void )DeltaTime;
 	if ( Platform == nullptr )
@@ -101,7 +101,7 @@ void CScreenCapture::Tick( float32 DeltaTime )
 	}
 }
 
-void CScreenCapture::ApplyCommandLine( uint64 FrameIndex )
+void CScreenCaptureSubsystem::ApplyCommandLine( uint64 FrameIndex )
 {
 	if ( CommandLine.bScreenshot && !bCommandScreenshotIssued && FrameIndex >= static_cast<uint64>( NMath::Max( 1, CommandLine.ScreenshotFrame ) ) )
 	{
@@ -134,7 +134,7 @@ void CScreenCapture::ApplyCommandLine( uint64 FrameIndex )
 	}
 }
 
-FString CScreenCapture::TakeScreenshot( const FString& Name, const FScreenshotOptions& Options )
+FString CScreenCaptureSubsystem::TakeScreenshot( const FString& Name, const FScreenshotOptions& Options )
 {
 	GAME_THREAD_ONLY( FString() );
 	if ( Platform == nullptr || bScreenshotPending )
@@ -150,7 +150,7 @@ FString CScreenCapture::TakeScreenshot( const FString& Name, const FScreenshotOp
 	return ScreenshotPath;
 }
 
-FString CScreenCapture::TakeHighResShot( const FString& Name, const FHighResShotOptions& Options )
+FString CScreenCaptureSubsystem::TakeHighResShot( const FString& Name, const FHighResShotOptions& Options )
 {
 	GAME_THREAD_ONLY( FString() );
 	int32 Width = 0;
@@ -167,13 +167,13 @@ FString CScreenCapture::TakeHighResShot( const FString& Name, const FHighResShot
 	return HighResPath;
 }
 
-void CScreenCapture::SetSubject( const TCallable<bool( const CGameObject& )>& Filter )
+void CScreenCaptureSubsystem::SetSubject( const TCallable<bool( const CGameObject& )>& Filter )
 {
 	GAME_THREAD_ONLY();
 	Subject = Filter;
 }
 
-void CScreenCapture::SetSubjectByName( const FString& Text )
+void CScreenCaptureSubsystem::SetSubjectByName( const FString& Text )
 {
 	GAME_THREAD_ONLY();
 	if ( Text.IsEmpty() )
@@ -187,13 +187,13 @@ void CScreenCapture::SetSubjectByName( const FString& Text )
 	};
 }
 
-void CScreenCapture::ClearSubject()
+void CScreenCaptureSubsystem::ClearSubject()
 {
 	GAME_THREAD_ONLY();
 	Subject = nullptr;
 }
 
-void CScreenCapture::TakePendingHighResShot()
+void CScreenCaptureSubsystem::TakePendingHighResShot()
 {
 	if ( !bHighResPending )
 	{
@@ -226,7 +226,7 @@ void CScreenCapture::TakePendingHighResShot()
 	}
 }
 
-FString CScreenCapture::StartRecording( const FString& Name, const FGifRecordOptions& Options )
+FString CScreenCaptureSubsystem::StartRecording( const FString& Name, const FGifRecordOptions& Options )
 {
 	GAME_THREAD_ONLY( FString() );
 	if ( Platform == nullptr || bRecording )
@@ -246,7 +246,7 @@ FString CScreenCapture::StartRecording( const FString& Name, const FGifRecordOpt
 	return RecordPath;
 }
 
-bool CScreenCapture::StopRecording()
+bool CScreenCaptureSubsystem::StopRecording()
 {
 	GAME_THREAD_ONLY( false );
 	if ( !bRecording )
@@ -272,14 +272,14 @@ bool CScreenCapture::StopRecording()
 	return bLastSaveSucceeded;
 }
 
-bool CScreenCapture::WantsFrame( uint64 FrameIndex, EFrameCaptureStage Stage ) const
+bool CScreenCaptureSubsystem::WantsFrame( uint64 FrameIndex, EFrameCaptureStage Stage ) const
 {
 	const bool bScreenshot = bScreenshotPending && FrameIndex >= ScreenshotFrame && Stage == ToStage( ScreenshotOptions.bIncludeDebugUI );
 	const bool bRecord = bRecording && FrameIndex >= RecordStartFrame && ( FrameIndex - RecordStartFrame ) % static_cast<uint64>( RecordOptions.FrameStep ) == 0 && Stage == ToStage( RecordOptions.bIncludeDebugUI );
 	return bScreenshot || bRecord;
 }
 
-void CScreenCapture::OnFrame( const FFramePixels& Frame )
+void CScreenCaptureSubsystem::OnFrame( const FFramePixels& Frame )
 {
 	if ( Frame.Pixels == nullptr )
 	{
@@ -295,7 +295,7 @@ void CScreenCapture::OnFrame( const FFramePixels& Frame )
 	}
 }
 
-void CScreenCapture::SaveScreenshot( const FFramePixels& Frame )
+void CScreenCaptureSubsystem::SaveScreenshot( const FFramePixels& Frame )
 {
 	bScreenshotPending = false;
 	int32 Width = 0;
@@ -313,7 +313,7 @@ void CScreenCapture::SaveScreenshot( const FFramePixels& Frame )
 	}
 }
 
-void CScreenCapture::RecordFrame( const FFramePixels& Frame )
+void CScreenCaptureSubsystem::RecordFrame( const FFramePixels& Frame )
 {
 	int32 Width = 0;
 	int32 Height = 0;

@@ -1,19 +1,19 @@
 ﻿// SPDX-License-Identifier: MIT
-#include "DxLibAssetBackend.h"
+#include "DxLibAssetBackendSubsystem.h"
 
 
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
 
-void CDxLibAssetBackend::Deinitialize()
+void CDxLibAssetBackendSubsystem::Deinitialize()
 {
 	ModelMaterialGeometries.Empty();
 	NextModelMaterialGeometry = 1;
 	CAppSubsystem::Deinitialize();
 }
 
-int32 CDxLibAssetBackend::CreateModelMaterialGeometry( const FStaticModelSurfaceData& Surface, int32 MaterialIndex )
+int32 CDxLibAssetBackendSubsystem::CreateModelMaterialGeometry( const FStaticModelSurfaceData& Surface, int32 MaterialIndex )
 {
 	if ( MaterialIndex < 0 || MaterialIndex >= Surface.Materials.Num() || Surface.Vertices.IsEmpty() || Surface.Indices.IsEmpty() || Surface.Indices.Num() % 3 != 0 || Surface.Sections.IsEmpty() )
 	{
@@ -158,7 +158,7 @@ int32 CDxLibAssetBackend::CreateModelMaterialGeometry( const FStaticModelSurface
 	return Handle;
 }
 
-void CDxLibAssetBackend::DeleteModelMaterialGeometry( int32 Geometry )
+void CDxLibAssetBackendSubsystem::DeleteModelMaterialGeometry( int32 Geometry )
 {
 	if ( Geometry >= 0 )
 	{
@@ -166,14 +166,14 @@ void CDxLibAssetBackend::DeleteModelMaterialGeometry( int32 Geometry )
 	}
 }
 
-const FDxLibModelMaterialGeometry* CDxLibAssetBackend::FindModelMaterialGeometry( int32 Geometry ) const
+const FDxLibModelMaterialGeometry* CDxLibAssetBackendSubsystem::FindModelMaterialGeometry( int32 Geometry ) const
 {
 	// handleから読み取る不変geometry共有参照。
 	const TSharedPtr<const FDxLibModelMaterialGeometry>* Found = ModelMaterialGeometries.Find( Geometry );
 	return Found != nullptr ? Found->Get() : nullptr;
 }
 
-int32 CDxLibAssetBackend::GetNumModelMaterialGeometries() const
+int32 CDxLibAssetBackendSubsystem::GetNumModelMaterialGeometries() const
 {
 	return ModelMaterialGeometries.Num();
 }

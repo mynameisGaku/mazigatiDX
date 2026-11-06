@@ -1,4 +1,4 @@
-﻿#include "DxLibAudioBackend.h"
+﻿#include "DxLibAudioBackendSubsystem.h"
 
 
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
@@ -12,14 +12,14 @@
 
 DEFINE_LOG_CATEGORY_STATIC( LogAudioBackend, Log )
 
-REGISTER_SUBSYSTEM( CDxLibAudioBackend )
+REGISTER_SUBSYSTEM( CDxLibAudioBackendSubsystem )
 
-bool CDxLibAudioBackend::ShouldCreateSubsystem( CEngine& Engine ) const
+bool CDxLibAudioBackendSubsystem::ShouldCreateSubsystem( CEngine& Engine ) const
 {
 	return !NBackendSelection::IsNullRequested();
 }
 
-void CDxLibAudioBackend::Initialize( FSubsystemCollection& Collection )
+void CDxLibAudioBackendSubsystem::Initialize( FSubsystemCollection& Collection )
 {
 	// DxLib（プラットフォーム）が初期化されたあとに使う
 	if ( Collection.InitializeDependency<IPlatform>() == nullptr )
@@ -28,29 +28,29 @@ void CDxLibAudioBackend::Initialize( FSubsystemCollection& Collection )
 	}
 }
 
-bool CDxLibAudioBackend::Play( int32 Voice, bool bLoop, bool bFromStart )
+bool CDxLibAudioBackendSubsystem::Play( int32 Voice, bool bLoop, bool bFromStart )
 {
 	return PlaySoundMem( Voice, bLoop ? DX_PLAYTYPE_LOOP : DX_PLAYTYPE_BACK, bFromStart ? TRUE : FALSE ) == 0;
 }
 
-void CDxLibAudioBackend::Stop( int32 Voice )
+void CDxLibAudioBackendSubsystem::Stop( int32 Voice )
 {
 	StopSoundMem( Voice );
 }
 
-bool CDxLibAudioBackend::IsPlaying( int32 Voice )
+bool CDxLibAudioBackendSubsystem::IsPlaying( int32 Voice )
 {
 	return CheckSoundMem( Voice ) == 1;
 }
 
-void CDxLibAudioBackend::SetVolume( int32 Voice, float32 Volume )
+void CDxLibAudioBackendSubsystem::SetVolume( int32 Voice, float32 Volume )
 {
 	// DxLib の値は 0（無音）..10000（元の大きさ）で、100 分の 1 デシベル単位
 	const int32 Pal = NMath::Clamp( 10000 + NAudio::VolumeToDecibel100( NMath::Min( Volume, 1.0f ) ), 0, 10000 );
 	SetVolumeSoundMem( Pal, Voice );
 }
 
-void CDxLibAudioBackend::SetPan( int32 Voice, float32 Pan )
+void CDxLibAudioBackendSubsystem::SetPan( int32 Voice, float32 Pan )
 {
 	// 遠い側の音量を (1 - |Pan|) 倍にする。DxLib の値は、正で右寄り・負で左寄り（100 分の 1 デシベル単位）
 	const float32 Far = NMath::Max( 1.0f - NMath::Abs( Pan ), 1.0e-5f );
@@ -58,7 +58,7 @@ void CDxLibAudioBackend::SetPan( int32 Voice, float32 Pan )
 	SetPanSoundMem( Pan >= 0.0f ? Attenuation : -Attenuation, Voice );
 }
 
-void CDxLibAudioBackend::SetPitch( int32 Voice, float32 Pitch )
+void CDxLibAudioBackendSubsystem::SetPitch( int32 Voice, float32 Pitch )
 {
 	// 元の周波数を基準にする（前に変えた周波数を基準にしない）
 	ResetFrequencySoundMem( Voice );
@@ -74,12 +74,12 @@ void CDxLibAudioBackend::SetPitch( int32 Voice, float32 Pitch )
 	}
 }
 
-float32 CDxLibAudioBackend::GetPlayPosition( int32 Voice )
+float32 CDxLibAudioBackendSubsystem::GetPlayPosition( int32 Voice )
 {
 	return static_cast<float32>( GetSoundCurrentTime( Voice ) ) / 1000.0f;
 }
 
-bool CDxLibAudioBackend::SetLoopRegion( int32 Voice, float32 StartSeconds, float32 EndSeconds )
+bool CDxLibAudioBackendSubsystem::SetLoopRegion( int32 Voice, float32 StartSeconds, float32 EndSeconds )
 {
 	// DxLib のループ区間は、ミリ秒で始まりと終わりを別々に決める。関数の名前から想像するのと逆で、実測では次のとおり
 	// （SetLoopTimePosSoundMem = 区間の始まり（終わりに届いたら戻る位置）、SetLoopStartTimePosSoundMem = 区間の終わり。呼ぶ順番は関係ない）。
@@ -99,7 +99,7 @@ bool CDxLibAudioBackend::SetLoopRegion( int32 Voice, float32 StartSeconds, float
 	return SetLoopStartTimePosSoundMem( End < Total ? End : Total, Voice ) == 0;
 }
 
-void CDxLibAudioBackend::SetPlayPosition( int32 Voice, float32 Seconds )
+void CDxLibAudioBackendSubsystem::SetPlayPosition( int32 Voice, float32 Seconds )
 {
 	SetSoundCurrentTime( static_cast<LONGLONG>( NMath::Max( Seconds, 0.0f ) * 1000.0f ), Voice );
 }

@@ -56,7 +56,7 @@ struct FAssetTypeStats
 	float64 LoadMs = 0.0;       // 読み込みにかかった時間の合計
 };
 
-// アセット全体の集計（CAssetManager::GetStats）。メモリは推定（GetMemoryBytes）。Backend は実際の値
+// アセット全体の集計（CAssetManagerSubsystem::GetStats）。メモリは推定（GetMemoryBytes）。Backend は実際の値
 struct FAssetStats
 {
 	FAssetTypeStats Types[NumAssetTypes];   // EAssetType の順
@@ -114,10 +114,10 @@ private:
 };
 
 //=============================================================================
-// CAssetManager
+// CAssetManagerSubsystem
 //   アセット（画像・スプライトシート・3D モデル・サウンド・フォント）の読み込みと管理を行う（アプリで 1 つ、自動で生成される）。
 //
-//   CAssetManager* Assets = GetAppSubsystem<CAssetManager>();
+//   CAssetManagerSubsystem* Assets = GetAppSubsystem<CAssetManagerSubsystem>();
 //   TSharedPtr<CTexture>     Hero  = Assets->LoadTexture( "Textures/Hero.png" );
 //   TSharedPtr<CSpriteSheet> Sheet = Assets->LoadSpriteSheet( "Sprites/Hero.gxsprite" );
 //   TSharedPtr<CModel>       Robot = Assets->LoadModel( "Models/Robot.fbx" );   // .fbx / .obj は、同じ名前の .mv1 を（無ければ作って）読む
@@ -136,11 +136,11 @@ private:
 //   フォルダ構成の例:
 //     Assets/Textures/  Assets/Sprites/  Assets/Models/  Assets/Sound/  Assets/Fonts/
 //=============================================================================
-class CAssetManager : public CAppSubsystem, public ITickable
+class CAssetManagerSubsystem : public CAppSubsystem, public ITickable
 {
 public:
-	CAssetManager();
-	~CAssetManager() override;
+	CAssetManagerSubsystem();
+	~CAssetManagerSubsystem() override;
 
 	//-------------------------------------------------------------------------
 	// CAppSubsystem / ITickable
