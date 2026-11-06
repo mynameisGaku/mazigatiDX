@@ -110,6 +110,9 @@
     <ClCompile Include="Library\Framework\Animation\ModelAnimator.cpp" />
     <ClCompile Include="Library\Framework\Animation\RootMotion.cpp" />
     <ClCompile Include="Library\Framework\Animation\SpriteAnimator.cpp" />
+    <ClCompile Include="Library\Framework\Asset\Asset.cpp" />
+    <ClCompile Include="Library\Framework\Asset\AssetBundle.cpp" />
+    <ClCompile Include="Library\Framework\Asset\AssetService.cpp" />
     <ClCompile Include="Library\Framework\Asset\AssetSubsystem.cpp" />
     <ClCompile Include="Library\Framework\Asset\EditorAssetInfo.cpp" />
     <ClCompile Include="Library\Framework\Asset\Data\EffectAsset.cpp" />
@@ -639,6 +642,7 @@
     <ClInclude Include="Library\Framework\Animation\RootMotion.h" />
     <ClInclude Include="Library\Framework\Animation\SpriteAnimator.h" />
     <ClInclude Include="Library\Framework\Asset\Asset.h" />
+    <ClInclude Include="Library\Framework\Asset\AssetBundle.h" />
     <ClInclude Include="Library\Framework\Asset\AssetSubsystem.h" />
     <ClInclude Include="Library\Framework\Asset\EditorAssetInfo.h" />
     <ClInclude Include="Library\Framework\Asset\Data\EffectAsset.h" />

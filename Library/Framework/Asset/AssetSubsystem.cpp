@@ -20,185 +20,6 @@ DEFINE_LOG_CATEGORY( LogAsset )
 
 REGISTER_SUBSYSTEM( CAssetSubsystem )
 
-const char* ToString( EAssetType Type )
-{
-	switch ( Type )
-	{
-	case EAssetType::Texture: return "Texture";
-	case EAssetType::SpriteSheet: return "SpriteSheet";
-	case EAssetType::Model: return "Model";
-	case EAssetType::Sound: return "Sound";
-	case EAssetType::Font: return "Font";
-	case EAssetType::ModelAnimation: return "ModelAnimation";
-	case EAssetType::World: return "World";
-	case EAssetType::Effect: return "Effect";
-	}
-	return "?";
-}
-
-//=============================================================================
-// NAssetService（アセットがバックエンドを使う窓口）
-//=============================================================================
-namespace
-{
-	enum class EResource : uint8
-	{
-		Texture,
-		Model,
-		ModelMaterialGeometry,
-		Font,
-		Sound,
-		VertexBuffer,
-		IndexBuffer,
-		ShadowMap,
-		Shader,
-	};
-
-	struct FService
-	{
-		TAtomic<IAssetBackend*> Backend { nullptr };
-		uint64 MainThread = 0;   // メインスレッドの識別子（NThread::GetCurrentThreadId）
-		FMutex Mutex;
-		TArray<TPair<EResource, int32>> Deferred;   // 別スレッドで手放されたもの（メインスレッドで解放する）
-		TAtomic<int32> NumDeferredReleased { 0 };        // 上のうち、解放したものの累計（統計用）
-		TMap<FString, int32> FontFileUsers;                  // メインスレッドだけ
-	};
-
-	FService& Service()
-	{
-		static FService Instance;
-		return Instance;
-	}
-
-	void ReleaseNow( IAssetBackend& Backend, EResource Kind, int32 Handle )
-	{
-		switch ( Kind )
-		{
-		case EResource::Texture: Backend.DeleteTexture( Handle ); break;
-		case EResource::Model: Backend.DeleteModel( Handle ); break;
-		case EResource::ModelMaterialGeometry: Backend.DeleteModelMaterialGeometry( Handle ); break;
-		case EResource::Font: Backend.DeleteFont( Handle ); break;
-		case EResource::Sound: Backend.DeleteSound( Handle ); break;
-		case EResource::VertexBuffer: Backend.DeleteVertexBuffer( Handle ); break;
-		case EResource::IndexBuffer: Backend.DeleteIndexBuffer( Handle ); break;
-		case EResource::ShadowMap: Backend.DeleteShadowMap( Handle ); break;
-		case EResource::Shader: Backend.DeleteShader( Handle ); break;
-		}
-	}
-
-	void Release( EResource Kind, int32 Handle )
-	{
-		if ( Handle < 0 )
-		{
-			return;
-		}
-		FService& S = Service();
-		IAssetBackend* Backend = S.Backend.Load();
-		if ( Backend == nullptr )
-		{
-			return;   // アプリの終了後。DxLib の終了処理がまとめて片付ける
-		}
-
-		if ( NThread::GetCurrentId() == S.MainThread )
-		{
-			ReleaseNow( *Backend, Kind, Handle );
-			return;
-		}
-		FScopedLock Lock( S.Mutex );
-		S.Deferred.Add( { Kind, Handle } );
-	}
-
-	void FlushDeferred()
-	{
-		FService& S = Service();
-		IAssetBackend* Backend = S.Backend.Load();
-		TArray<TPair<EResource, int32>> Local;
-		{
-			FScopedLock Lock( S.Mutex );
-			Local = MoveTemp( S.Deferred );
-		}
-		if ( Backend == nullptr )
-		{
-			return;
-		}
-		for ( const auto& Entry : Local )
-		{
-			ReleaseNow( *Backend, Entry.Key, Entry.Value );
-		}
-		S.NumDeferredReleased.FetchAdd( Local.Num() );
-	}
-
-}
-
-IAssetBackend* NAssetService::GetBackend() { return Service().Backend.Load(); }
-bool NAssetService::IsMainThread() { return NThread::GetCurrentId() == Service().MainThread; }
-void NAssetService::ReleaseTexture( int32 Handle ) { Release( EResource::Texture, Handle ); }
-void NAssetService::ReleaseModel( int32 Handle ) { Release( EResource::Model, Handle ); }
-void NAssetService::ReleaseModelMaterialGeometry( int32 Geometry ) { Release( EResource::ModelMaterialGeometry, Geometry ); }
-void NAssetService::ReleaseFont( int32 Handle ) { Release( EResource::Font, Handle ); }
-void NAssetService::ReleaseSound( int32 Handle ) { Release( EResource::Sound, Handle ); }
-void NAssetService::ReleaseVertexBuffer( int32 Handle ) { Release( EResource::VertexBuffer, Handle ); }
-void NAssetService::ReleaseIndexBuffer( int32 Handle ) { Release( EResource::IndexBuffer, Handle ); }
-void NAssetService::ReleaseShadowMap( int32 Handle ) { Release( EResource::ShadowMap, Handle ); }
-void NAssetService::ReleaseShader( int32 Handle ) { Release( EResource::Shader, Handle ); }
-
-bool NAssetService::AddFontFile( const FString& Path )
-{
-	FService& S = Service();
-	IAssetBackend* Backend = S.Backend.Load();
-	if ( Backend == nullptr )
-	{
-		return false;
-	}
-
-	if ( int32* Users = S.FontFileUsers.Find( Path ) )
-	{
-		++*Users;
-		return true;
-	}
-	if ( !Backend->AddFontFile( Path ) )
-	{
-		return false;
-	}
-	S.FontFileUsers.Add( Path, 1 );
-	return true;
-}
-
-void NAssetService::RemoveFontFile( const FString& Path )
-{
-	FService& S = Service();
-	int32* Users = S.FontFileUsers.Find( Path );
-	if ( Users == nullptr )
-	{
-		return;
-	}
-	if ( --*Users > 0 )
-	{
-		return;
-	}
-
-	S.FontFileUsers.Remove( Path );
-	if ( IAssetBackend* Backend = S.Backend.Load() )
-	{
-		Backend->RemoveFontFile( Path );
-	}
-}
-
-//=============================================================================
-// FAssetBundle
-//=============================================================================
-bool FAssetBundle::AreAllReady() const
-{
-	for ( const TSharedPtr<CAsset>& Asset : Assets )
-	{
-		if ( !Asset->IsReady() )
-		{
-			return false;
-		}
-	}
-	return true;
-}
-
 //=============================================================================
 // CAssetSubsystem
 //=============================================================================
@@ -208,9 +29,7 @@ CAssetSubsystem::~CAssetSubsystem() = default;
 void CAssetSubsystem::Initialize( FSubsystemCollection& Collection )
 {
 	Backend = Collection.InitializeDependency<IAssetBackend>();
-	FService& S = Service();
-	S.MainThread = NThread::GetCurrentId();
-	S.Backend.Store( GetBackend() );
+	NAssetService::Attach( GetBackend() );
 	LoadContext.SetBackend( GetBackend() );
 
 	if ( Backend == nullptr )
@@ -223,7 +42,7 @@ void CAssetSubsystem::Initialize( FSubsystemCollection& Collection )
 
 void CAssetSubsystem::Deinitialize()
 {
-	FlushDeferred();
+	NAssetService::FlushDeferred();
 	TextureLoader.Clear();
 	SpriteSheetLoader.Clear();
 	ModelLoader.Clear();
@@ -234,7 +53,7 @@ void CAssetSubsystem::Deinitialize()
 	FontLoader.Clear();
 
 	// これ以降に手放されるアセットは、何もしない（DxLib の終了処理が片付ける）
-	Service().Backend.Store( nullptr );
+	NAssetService::SetBackend( nullptr );
 	LoadContext.SetBackend( nullptr );
 	Backend = nullptr;
 }
@@ -246,16 +65,16 @@ IAssetBackend* CAssetSubsystem::GetBackend() const
 
 void CAssetSubsystem::SetBackendOverride( IAssetBackend* InBackend )
 {
-	FlushDeferred();
+	NAssetService::FlushDeferred();
 	BackendOverride = InBackend;
-	Service().Backend.Store( GetBackend() );
+	NAssetService::SetBackend( GetBackend() );
 	LoadContext.SetBackend( GetBackend() );
 }
 
 void CAssetSubsystem::Tick( float32 DeltaTime )
 {
 	PROFILE_SCOPE_CAT( "Asset", "Tick" );
-	FlushDeferred();
+	NAssetService::FlushDeferred();
 
 	SpriteSheetLoader.Update();
 
@@ -303,7 +122,7 @@ void CAssetSubsystem::UpdateStats()
 	Fresh.TotalCount = 0;
 	Fresh.TotalMemoryBytes = 0;
 	Fresh.TotalFileBytes = 0;
-	Fresh.NumDeferredReleases = Service().NumDeferredReleased.Load();
+	Fresh.NumDeferredReleases = NAssetService::GetNumDeferredReleased();
 
 	for ( const FAssetInfo& Info : GetLoadedAssets() )
 	{

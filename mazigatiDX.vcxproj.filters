@@ -136,6 +136,15 @@
     <ClCompile Include="Library\Framework\Animation\SpriteAnimator.cpp">
       <Filter>Library\Framework\Animation</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Asset.cpp">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\AssetBundle.cpp">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\AssetService.cpp">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Asset\AssetSubsystem.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
@@ -1717,6 +1726,9 @@
       <Filter>Library\Framework\Animation</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Asset.h">
+      <Filter>Library\Framework\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\AssetBundle.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\AssetSubsystem.h">

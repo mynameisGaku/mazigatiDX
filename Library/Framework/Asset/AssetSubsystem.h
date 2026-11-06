@@ -21,6 +21,7 @@
 #include "Library/Framework/Asset/Sound/SoundLoader.h"
 #include "Library/Framework/Asset/Data/SpriteSheet.h"
 #include "Library/Framework/Asset/Data/SpriteSheetLoader.h"
+#include "Library/Framework/Asset/AssetBundle.h"
 #include "Library/Framework/Asset/Data/EffectAsset.h"
 #include "Library/Framework/Asset/Data/EffectLoader.h"
 #include "Library/Framework/Asset/Data/WorldAsset.h"
@@ -68,39 +69,6 @@ struct FAssetStats
 	FBackendMemoryInfo Backend;    // ビデオメモリ・プロセスのメモリ・ハンドルの数（実測）
 
 	FORCEINLINE const FAssetTypeStats& Get( EAssetType Type ) const { return Types[static_cast<int32>( Type )]; }
-};
-
-//=============================================================================
-// FAssetBundle
-//   アセットをまとめて持っておく入れ物（シーンの OnEnter で読み込んで持ち、シーンの終わりで手放す、など）。
-//   持っている間は、使っていなくても解放されない。
-//
-//   FAssetBundle Bundle;
-//   Bundle.Add( Assets->LoadTexture( "Textures/Hero.png" ) );
-//   Bundle.Add( Assets->LoadSound( "Sound/Jump.wav" ) );
-//   ...
-//   Bundle.Clear();     // 他で使われていなければ、ここで解放される
-//=============================================================================
-class FAssetBundle
-{
-public:
-	template<typename T>
-	const TSharedPtr<T>& Add( const TSharedPtr<T>& Asset )
-	{
-		if ( Asset.IsValid() )
-		{
-			Assets.Add( TSharedPtr<CAsset>( Asset ) );
-		}
-		return Asset;
-	}
-
-	void Clear() { Assets.Empty(); }
-	int32 Num() const { return Assets.Num(); }
-	// すべて使える状態になったか（非同期の読み込みの完了待ちに）
-	bool AreAllReady() const;
-
-private:
-	TArray<TSharedPtr<CAsset>> Assets;
 };
 
 //=============================================================================

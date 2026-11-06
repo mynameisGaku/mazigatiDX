@@ -97,4 +97,13 @@ namespace NAssetService
 	void RemoveFontFile( const FString& Path );
 
 	bool IsMainThread();
+
+	// 以下は CAssetSubsystem が使う（バックエンドの設定と、別スレッドで手放された資源の解放）
+	// 呼んだスレッドをメインスレッドとして覚え、バックエンドを設定する
+	void Attach( IAssetBackend* InBackend );
+	void SetBackend( IAssetBackend* InBackend );
+	// 別スレッドで手放された資源を、メインスレッドで解放する
+	void FlushDeferred();
+	// 別スレッドで手放されて、あとでまとめて解放した数の累計
+	int32 GetNumDeferredReleased();
 }
