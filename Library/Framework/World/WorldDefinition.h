@@ -11,7 +11,7 @@
 #include "Library/Math/Vector3.h"
 
 //=============================================================================
-// ワールド（.world）の定義
+// ワールド（.gxworld）の定義
 //   レベル（置き物の集まり）を表す、純粋なデータ。DxLib・シーン・物理・ImGui を使わない。
 //   JSON と相互に変換できる（書式は WorldDefinition.cpp の先頭）。シーンへの設置は WorldSpawner.h、編集の操作は WorldEdit.h、
 //   検証は WorldValidate.h、当たり判定を付けるかどうかの決定は WorldCollision.h。
@@ -195,12 +195,12 @@ struct FWorldCollider
 	bool bTrigger = false;             // true なら、ぶつからず、重なりだけを知らせる
 };
 
-// 入れ子のワールド（プレハブ）。別の .world を、このオブジェクトの子として置く
-//   置くときは、その .world のオブジェクトが、このオブジェクトの子になる（このオブジェクトの位置・向き・大きさに従う）。
+// 入れ子のワールド（プレハブ）。別の .gxworld を、このオブジェクトの子として置く
+//   置くときは、その .gxworld のオブジェクトが、このオブジェクトの子になる（このオブジェクトの位置・向き・大きさに従う）。
 //   中のタグ・結び付け（FWorldBindings）・部品は、ふつうに働く。当たり判定のタグ規則は、中のワールドのものが使われる。
 struct FWorldPrefab
 {
-	FString Path;                 // 置く .world のファイル（アセットのルートからの相対）
+	FString Path;                 // 置く .gxworld のファイル（アセットのルートからの相対）
 };
 
 // 知らない種類の部品（JSON のまま保存する）
@@ -230,7 +230,7 @@ struct FWorldObject
 	TOptional<FWorldEffect> Effect;
 	TOptional<FWorldCollider> Collider;
 	TOptional<FEditMesh> Mesh;        // 編集メッシュ（レベル専用の形。Mesh/EditMesh.h）
-	TOptional<FWorldPrefab> Prefab;   // 入れ子のワールド（別の .world を、子として置く）
+	TOptional<FWorldPrefab> Prefab;   // 入れ子のワールド（別の .gxworld を、子として置く）
 	TArray<FWorldRawComponent> RawComponents;
 	NlohmannJson Extra;               // 知らない項目（書き戻すとき、そのまま出す）
 

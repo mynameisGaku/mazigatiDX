@@ -220,7 +220,7 @@ public:
 	bool SaveModelAnimationDefinition( const FString& Path, const FModelAnimationDefinition& Definition );
 
 	//-------------------------------------------------------------------------
-	// ワールド（.world。置き物の配置の定義。書式は WorldDefinition.cpp の先頭、使い方は WorldSpawner.h を参照）
+	// ワールド（.gxworld。置き物の配置の定義。書式は WorldDefinition.cpp の先頭、使い方は WorldSpawner.h を参照）
 	//-------------------------------------------------------------------------
 	// 定義ファイル（JSON）から。中のアセット（モデル・画像・音）は、シーンに置くとき（NWorld::Spawn）に読み込まれる
 	TSharedPtr<CWorldAsset> LoadWorld( const FString& Path );

@@ -307,9 +307,9 @@ if ( Animator.ConsumeRootMotion( ReferenceToActorBasis, RootTranslation, RootRot
 |スプライトシート|`.gxsprite`|
 |エフェクト|`.gxeffect`|
 |モデルのアニメーション|`.gxmodelanim`|
-|ワールド|`.world`|
+|ワールド|`.gxworld`|
 
-古い名前（`.sheet.json` / `.effect.json` / `.modelanim.json`）の資産は、一覧にも出ず、読み込まれません。手元の資産は、`Tools\MigrateAssetExtensions.ps1 -Root <資産のフォルダ>`で移せます。ファイルの名前を替え、ワールドや別の資産の中の古い名前の参照も、まとめて書き換えます（中身の形式、文字コード、改行は変わりません）。`-DryRun`を付けると、何が起きるかだけを表示して、何も変えません。同じ名前の新しいファイルがすでにあるときは、そのファイルを触らずに知らせます。
+古い名前（`.sheet.json` / `.effect.json` / `.modelanim.json` / `.world`）の資産は、一覧にも出ず、読み込まれません。手元の資産は、`Tools\MigrateAssetExtensions.ps1 -Root <資産のフォルダ>`で移せます。ファイルの名前を替え、ワールドや別の資産の中の古い名前の参照も、まとめて書き換えます（中身の形式、文字コード、改行は変わりません）。`-DryRun`を付けると、何が起きるかだけを表示して、何も変えません。同じ名前の新しいファイルがすでにあるときは、そのファイルを触らずに知らせます。
 
 ## ゲームスレッドと AsyncTask
 
@@ -389,7 +389,7 @@ Presetは原本を保ったまま編集し、`File > Save as...`で別名保存�
 
 Effect Editorの`Path`欄（`Lightning` / `TreeLightning`）に`Use target`を追加しました。保存値`Path.UseTarget`としてUndo / Redoに対応し、型不正の値は表示してResetで復旧できます。試し再生の終点は文書へ保存しない編集用の状態で、有効化のチェック・ワールド座標の数値入力・プレビュー画面のクリック（水平面への配置）と移動ギズモ・発生位置から終点への接続線と三軸の目印（Target guides）・終点を含む範囲へのカメラ合わせ（Focus target）を持ちます。終点を使う雷の判定は選択中のエミッターに関係なく文書全体を見るので、板のエミッターを選んでいても雷は終点へ向かいます。動的終点つきの雷を持つ文書（組み込みPresetを含む）を開くと試し再生の終点が自動で有効になり、終点を含む範囲へカメラを一度だけ合わせます。
 
-Worldの`Components.Effect`には、任意の`Target`（追従先オブジェクトのId）と`TargetOffset`（対象のローカル空間でのずれ）を追加しました。既定値ではどちらのJSONキーも書かず、既存の`.world`と同じ形を保ちます。型が壊れた値は`Target = -1`・有限でない`TargetOffset`として保持して検証エラーにし、自己参照・存在しないId・有限でないずれを検証で報告します。複製・貼り付けでは、一緒に複製された対象を指すようにIdを付け替え、複製されていない対象は元のまま残します（Objectプロパティと同じ扱い）。配置（`NWorld::Spawn`）は全オブジェクトを置いてから`CEffectComponent::SetTargetObject`へ接続するため、並び順に依存しません。自分自身・置かれなかった対象・有限でないずれは接続せず、警告して定義側の`Path.End`のままにします。World Editorのプレビューは対象のワールド姿勢と`TargetOffset`から毎フレーム終点を渡し、Inspectorの`Effect`欄で対象オブジェクトとオフセットをUndo付きで編集できます。
+Worldの`Components.Effect`には、任意の`Target`（追従先オブジェクトのId）と`TargetOffset`（対象のローカル空間でのずれ）を追加しました。既定値ではどちらのJSONキーも書かず、既存の`.gxworld`と同じ形を保ちます。型が壊れた値は`Target = -1`・有限でない`TargetOffset`として保持して検証エラーにし、自己参照・存在しないId・有限でないずれを検証で報告します。複製・貼り付けでは、一緒に複製された対象を指すようにIdを付け替え、複製されていない対象は元のまま残します（Objectプロパティと同じ扱い）。配置（`NWorld::Spawn`）は全オブジェクトを置いてから`CEffectComponent::SetTargetObject`へ接続するため、並び順に依存しません。自分自身・置かれなかった対象・有限でないずれは接続せず、警告して定義側の`Path.End`のままにします。World Editorのプレビューは対象のワールド姿勢と`TargetOffset`から毎フレーム終点を渡し、Inspectorの`Effect`欄で対象オブジェクトとオフセットをUndo付きで編集できます。
 
 組み込みPreset`Effects/target_lightning.gxeffect`（Presetメニューの`Target lightning`）は、動的終点を使う分岐雷です。複製して保存し、Worldの`Effect`部品の`Target`へ標的オブジェクトを指定すると、発射元から標的へ雷がつながります。
 

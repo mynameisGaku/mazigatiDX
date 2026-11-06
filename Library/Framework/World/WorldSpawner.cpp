@@ -348,7 +348,7 @@ FWorldInstance NWorld::Spawn( CScene& Scene, const TSharedPtr<FWorldDefinition>&
 			}
 		}
 
-		// 入れ子のワールド（Prefab 部品）: 別の .world を、この置き物の子として置く
+		// 入れ子のワールド（Prefab 部品）: 別の .gxworld を、この置き物の子として置く
 		if ( Definition_.Prefab.IsSet() )
 		{
 			const FString& PrefabPath = Definition_.Prefab.GetValue().Path;

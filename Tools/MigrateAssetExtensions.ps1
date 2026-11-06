@@ -1,4 +1,4 @@
-﻿# 古い資産の拡張子（.effect.json / .sheet.json / .modelanim.json）を、新しい拡張子（.gxeffect / .gxsprite / .gxmodelanim）へ移す。
+﻿# 古い資産の拡張子（.effect.json / .sheet.json / .modelanim.json / .world）を、新しい拡張子（.gxeffect / .gxsprite / .gxmodelanim / .gxworld）へ移す。
 #   1. Root の下の、古い拡張子のファイルの名前を、新しい拡張子に替える（同じ名前のファイルがあるときは、何もせず知らせる）
 #   2. Root の下の文字のファイル（資産・ワールド・文書など）の中の、古い名前の参照を、新しい名前へ書き換える
 # 中身（JSON の形式）は変わらない。文字コードと改行は、書き換えたファイルでも元のまま。x64 / .git / .vs / VendorModules の下は見ない。
@@ -16,9 +16,10 @@ $map = [ordered]@{
     '.effect.json'    = '.gxeffect'
     '.sheet.json'     = '.gxsprite'
     '.modelanim.json' = '.gxmodelanim'
+    '.world'          = '.gxworld'
 }
 # 中の参照を書き換える文字のファイルの拡張子（新しい拡張子のファイルも、JSON なので入れる）
-$textExtensions = @('.gxeffect', '.gxsprite', '.gxmodelanim', '.world', '.json', '.md', '.txt')
+$textExtensions = @('.gxeffect', '.gxsprite', '.gxmodelanim', '.gxworld', '.world', '.json', '.md', '.txt')
 $skipFolders = @('\x64\', '\.git\', '\.vs\', '\VendorModules\')
 
 if (-not (Test-Path -LiteralPath $Root -PathType Container)) { throw "Root was not found: $Root" }
@@ -64,7 +65,7 @@ foreach ($file in (Get-ChildItem -LiteralPath $rootFull -Recurse -File)) {
     $text = $utf8.GetString($bytes, $(if ($hasBom) { 3 } else { 0 }), $bytes.Length - $(if ($hasBom) { 3 } else { 0 }))
     $changedText = $text
     foreach ($old in $map.Keys) {
-        $changedText = [regex]::Replace($changedText, [regex]::Escape($old), $map[$old], 'IgnoreCase')
+        $changedText = [regex]::Replace($changedText, [regex]::Escape($old) + '(?![A-Za-z0-9_]|\.[A-Za-z_])', $map[$old], 'IgnoreCase')
     }
     if ($changedText -ne $text) {
         Write-Host "update references: $($file.FullName)"

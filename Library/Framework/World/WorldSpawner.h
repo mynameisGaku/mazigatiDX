@@ -18,7 +18,7 @@ class CAssetManager;
 //   置き物は、定義の位置・向き・大きさ（親があれば、親の子）と、定義の部品（モデル・ビルボード・環境音・当たり判定）を持つ。
 //
 //   // 1. 読み込んで、置く
-//   TSharedPtr<CWorldAsset> Level = Assets->LoadWorld( "Levels/Stage1.world" );
+//   TSharedPtr<CWorldAsset> Level = Assets->LoadWorld( "Levels/Stage1.gxworld" );
 //   FWorldBindings Bindings;
 //   Bindings.Add<CEnemy>( "Enemy" );                                       // タグ "Enemy" の置き物に、CEnemy を結び付ける（置き物の子になる）
 //   Bindings.Add( "Coin", []( const FWorldBindContext& Context )           // 作り方を自分で決めるなら

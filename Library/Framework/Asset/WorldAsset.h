@@ -9,10 +9,10 @@ class CAssetManager;
 
 //=============================================================================
 // CWorldAsset
-//   読み込んだワールド（.world）。CAssetManager::LoadWorld で読み込む。中身は FWorldDefinition（純粋なデータ。WorldDefinition.h）。
+//   読み込んだワールド（.gxworld）。CAssetManager::LoadWorld で読み込む。中身は FWorldDefinition（純粋なデータ。WorldDefinition.h）。
 //   シーンへの設置は NWorld::Spawn（WorldSpawner.h）。
 //
-//   TSharedPtr<CWorldAsset> Level = Assets->LoadWorld( "Levels/Stage1.world" );
+//   TSharedPtr<CWorldAsset> Level = Assets->LoadWorld( "Levels/Stage1.gxworld" );
 //   FWorldInstance Stage = NWorld::Spawn( Scene, Level->GetDefinitionShared(), Bindings );
 //
 //   定義を作り直して保存するときは Assets->SaveWorld( Path, Definition )（保存したパスのキャッシュは捨てるので、次の LoadWorld は新しい内容を読む）。

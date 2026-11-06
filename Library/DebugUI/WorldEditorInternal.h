@@ -59,7 +59,7 @@ namespace NWorldEditorUI
 	// 入れ子のワールド（Prefab）
 	// 別のワールドを開く（未保存の変更があれば、確認してから）
 	void RequestOpenWorld( FWorldEditorState& S, const FString& Path );
-	// 選んだオブジェクト（根と子孫）を、別の .world（Path）に保存して、その Prefab を置いたオブジェクト 1 つに置き換える。できたら true
+	// 選んだオブジェクト（根と子孫）を、別の .gxworld（Path）に保存して、その Prefab を置いたオブジェクト 1 つに置き換える。できたら true
 	bool MakePrefabFromSelection( FWorldEditorState& S, const FString& Path );
 
 	// エフェクトのプレビュー（WorldEditorEffects.cpp）

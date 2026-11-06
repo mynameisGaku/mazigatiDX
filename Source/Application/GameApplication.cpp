@@ -26,7 +26,7 @@ void CGameApplication::OnInit()
 	};
 	Overlay.Init();
 
-	// ワールド（.world）の Collider を、物理の剛体にできるようにする（Framework は Physics を知らないので、Physics 側の設置を登録する）。
+	// ワールド（.gxworld）の Collider を、物理の剛体にできるようにする（Framework は Physics を知らないので、Physics 側の設置を登録する）。
 	// 物理のあるシーン（IPhysicsScene）に置くときだけ、剛体になる
 	NPhysicsWorld::RegisterSpawners( FWorldSpawnerRegistry::Global() );
 

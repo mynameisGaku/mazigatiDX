@@ -72,7 +72,7 @@ EEditorAssetKind NWorldEditor::ClassifyAsset( const FString& Path )
 	{
 		return EEditorAssetKind::Sound;
 	}
-	if ( IsOneOf( Extension, { ".world" } ) )
+	if ( IsOneOf( Extension, { ".gxworld" } ) )
 	{
 		return EEditorAssetKind::World;
 	}

@@ -61,7 +61,7 @@ void NWorldEditorUI::RescanFiles( FWorldEditorState& S, bool bForce )
 	S.TextureFiles = NFileSystem::ListFilesRecursive( Root, { ".png", ".jpg", ".jpeg", ".bmp", ".tga", ".dds" } );
 	S.SoundFiles = NFileSystem::ListFilesRecursive( Root, { ".wav", ".ogg", ".mp3" } );
 	S.AnimationFiles = NFileSystem::ListFilesRecursive( Root, { ".gxmodelanim" } );
-	S.WorldFiles = NFileSystem::ListFilesRecursive( Root, { ".world" } );
+	S.WorldFiles = NFileSystem::ListFilesRecursive( Root, { ".gxworld" } );
 	S.EffectFiles = NFileSystem::ListFilesRecursive( Root, { ".gxeffect" } );
 }
 
@@ -146,9 +146,9 @@ namespace
 	FString EnsureWorldExtension( const FString& Path )
 	{
 		FString Result = NormalizePath( Path.TrimStartAndEnd() );
-		if ( !Result.IsEmpty() && !Result.EndsWith( ".world", ESearchCase::IgnoreCase ) )
+		if ( !Result.IsEmpty() && !Result.EndsWith( ".gxworld", ESearchCase::IgnoreCase ) )
 		{
-			Result += ".world";
+			Result += ".gxworld";
 		}
 		return Result;
 	}
@@ -632,7 +632,7 @@ namespace
 			S.bRequestOpenSaveAsPopup = false;
 			if ( S.SaveAsPath.IsEmpty() )
 			{
-				S.SaveAsPath = S.Session.FilePath.IsEmpty() ? FString( "Levels/NewWorld.world" ) : S.Session.FilePath;
+				S.SaveAsPath = S.Session.FilePath.IsEmpty() ? FString( "Levels/NewWorld.gxworld" ) : S.Session.FilePath;
 			}
 			ImGui::OpenPopup( "Save world as##World" );
 		}
@@ -713,7 +713,7 @@ namespace
 			S.bRequestOpenMakePrefabPopup = false;
 			if ( S.MakePrefabPath.IsEmpty() )
 			{
-				S.MakePrefabPath = "Prefabs/NewPrefab.world";
+				S.MakePrefabPath = "Prefabs/NewPrefab.gxworld";
 			}
 			ImGui::OpenPopup( "Make prefab##World" );
 		}
@@ -740,7 +740,7 @@ namespace
 
 		if ( ImGui::BeginPopupModal( "Save world as##World", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
 		{
-			ImGui::TextUnformatted( "Path under the asset folder (.world is added):" );
+			ImGui::TextUnformatted( "Path under the asset folder (.gxworld is added):" );
 			ImGui::SetNextItemWidth( 360.0f );
 			NDebugUI::InputString( "##SaveAsPath", S.SaveAsPath );
 			ImGui::BeginDisabled( S.SaveAsPath.TrimStartAndEnd().IsEmpty() );

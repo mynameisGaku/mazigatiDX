@@ -7,7 +7,7 @@
 #include "Library/Platform/FileSystem.h"
 
 //=============================================================================
-// CAssetManager: ワールド（.world。書式は WorldDefinition.cpp の先頭を参照）
+// CAssetManager: ワールド（.gxworld。書式は WorldDefinition.cpp の先頭を参照）
 //=============================================================================
 TSharedPtr<CWorldAsset> CAssetManager::LoadWorld( const FString& Path )
 {

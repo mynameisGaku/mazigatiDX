@@ -7,7 +7,7 @@
 #include "Library/Math/MathUtils.h"
 
 //=============================================================================
-// ワールドの定義ファイル（JSON、拡張子は .world）の書式
+// ワールドの定義ファイル（JSON、拡張子は .gxworld）の書式
 //
 //   {
 //     "Version": 1,
@@ -39,7 +39,7 @@
 //                         "Mesh": "Models/Floor.mv1" }     // Shape が "Mesh" のとき、三角形を取るモデル（省略なら、Model 部品のファイル）
 //           "Mesh": { "Vertices": [[0, 0, 0], [1, 0, 0], ...], "Faces": [[0, 1, 2, 3], ...], "FaceMaterials": [0, 1, ...],   // 編集メッシュ（EditMesh.h に詳しい）
 //                     "Materials": [{ "Name": "Wall", "Color": "#C8C8C8", "Texture": "Textures/Brick.png", "Tile": 2, "Offset": [0, 0], "TwoSided": false }], "Smooth": 30 },
-//           "Prefab": { "Path": "Prefabs/Door.world" }   // 別の .world を、このオブジェクトの子として置く（入れ子。深さは 8 まで。循環は置かれない）
+//           "Prefab": { "Path": "Prefabs/Door.gxworld" }   // 別の .gxworld を、このオブジェクトの子として置く（入れ子。深さは 8 まで。循環は置かれない）
 //         }
 //       }
 //     ]

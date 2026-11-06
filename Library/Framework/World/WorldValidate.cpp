@@ -401,9 +401,9 @@ namespace
 		{
 			const FString& Path = Object.Prefab.GetValue().Path;
 			CheckAsset( Report, Assets, Id, "the prefab", Path );
-			if ( !Path.IsEmpty() && !Path.EndsWith( ".world", ESearchCase::IgnoreCase ) )
+			if ( !Path.IsEmpty() && !Path.EndsWith( ".gxworld", ESearchCase::IgnoreCase ) )
 			{
-				Report.Warning( EWorldIssueCode::BadPrefab, Id, "the prefab '" + Path + "' is not a .world file" );
+				Report.Warning( EWorldIssueCode::BadPrefab, Id, "the prefab '" + Path + "' is not a .gxworld file" );
 			}
 			if ( !Path.IsEmpty() && Assets != nullptr )
 			{

@@ -11,7 +11,7 @@
 //   - Assets: 読み込んでいるアセットの一覧（種類・パス・参照の数・メモリ・読み込み時間）、種類ごとの集計、ビデオメモリなど
 //   - Audio : 鳴っている音の一覧、バスの音量・ミュート・一時停止、リスナー、数の上限
 //   - Sprite Sheet Editor / Model Animation Editor: データアセット（.gxsprite / .gxmodelanim）の編集
-//   - World Editor: ワールド（.world）のレベルエディタ（WorldEditor.h）
+//   - World Editor: ワールド（.gxworld）のレベルエディタ（WorldEditor.h）
 //   - Effect Editor: 内蔵の粒子定義（.gxeffect）の編集と保存前の試し再生
 //
 //   ゲーム側は FAssetToolsState を 1 つ持ち、毎フレーム DrawAssetTools を呼ぶだけ。
@@ -56,7 +56,7 @@ namespace NDebugUI
 	// デバッグウィンドウの中に置く、ツールを開くボタン
 	void DrawAssetToolsButtons( FAssetToolsState& State );
 
-	// 起動引数: --tool=assets|audio|sprite|model|world|effect（カンマ区切りで複数）、--sprite=Sprites/Hero.gxsprite、--modelanim=Models/Robot.gxmodelanim、--world=Levels/Stage1.world、--effect=Effects/campfire.gxeffect。
+	// 起動引数: --tool=assets|audio|sprite|model|world|effect（カンマ区切りで複数）、--sprite=Sprites/Hero.gxsprite、--modelanim=Models/Robot.gxmodelanim、--world=Levels/Stage1.gxworld、--effect=Effects/campfire.gxeffect。
 	// ワールドを開いたあとの確認用: --world-select=3,4 --world-mode=move|rotate|scale --world-colliders=off|all --world-camera=yaw,pitch,距離[,x,y,z]。
 	// 最初に 1 回呼ぶ（スクリーンショットでの確認や、すぐ編集を始めたいとき用）
 	void ApplyAssetToolsCommandLine( FAssetToolsState& State );

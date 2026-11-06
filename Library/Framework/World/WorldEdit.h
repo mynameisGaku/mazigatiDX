@@ -107,7 +107,7 @@ namespace NWorldEdit
 	//-------------------------------------------------------------------------
 	// 入れ子のワールド（プレハブ）
 	//-------------------------------------------------------------------------
-	// Ids の根と子孫を、別の .world にできる定義として取り出す（World は変えない）。Origin（ワールドでの位置）が、取り出した定義の原点になる
+	// Ids の根と子孫を、別の .gxworld にできる定義として取り出す（World は変えない）。Origin（ワールドでの位置）が、取り出した定義の原点になる
 	// （根の位置が、Origin からの相対になる）。Id は 1 から振り直す（中の参照は付け替える）。Ids に根が無ければ、空の定義
 	FWorldDefinition ExtractSubWorld( const FWorldDefinition& World, const TArray<int32>& Ids, const FVector3& Origin, const FString& Name );
 
@@ -115,7 +115,7 @@ namespace NWorldEdit
 	// 根がみな同じ親を持つなら、その親の子、そうでなければ最上位に置く。1 回の「元に戻す」
 	int32 ReplaceWithPrefab( TWorldDocument& Document, const TArray<int32>& Ids, const FVector3& Origin, const FString& PrefabPath, const FString& Name );
 
-	// Prefab 部品を持つオブジェクトを、Prefab（その .world の定義）の中身で置き換える: 中身のオブジェクトを、このオブジェクトの子として新しい Id で足し
+	// Prefab 部品を持つオブジェクトを、Prefab（その .gxworld の定義）の中身で置き換える: 中身のオブジェクトを、このオブジェクトの子として新しい Id で足し
 	// （位置・向き・大きさは、ホストからの相対のまま）、Prefab 部品を外す。ホストは残る。足した根の Id を返す。ホストが無い・Prefab 部品が無いなら空。1 回の「元に戻す」
 	TArray<int32> UnpackPrefab( TWorldDocument& Document, int32 ObjectId, const FWorldDefinition& Prefab );
 
