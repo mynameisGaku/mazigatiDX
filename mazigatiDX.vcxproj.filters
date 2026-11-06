@@ -25,6 +25,9 @@
     <ClCompile Include="Library\Core\Time\PlatformTime.cpp">
       <Filter>Library\Core\Time</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Core\Types\Checksum.cpp">
+      <Filter>Library\Core\Types</Filter>
+    </ClCompile>
     <ClCompile Include="Library\DebugUI\DebugOverlay.cpp">
       <Filter>Library\DebugUI</Filter>
     </ClCompile>
@@ -571,6 +574,9 @@
     <ClCompile Include="Library\Framework\Render\State\ShadowMapView.cpp">
       <Filter>Library\Framework\Render\State</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\SaveGame\SaveGameStorage.cpp">
+      <Filter>Library\Framework\SaveGame</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Scene\Scene.cpp">
       <Filter>Library\Framework\Scene</Filter>
     </ClCompile>
@@ -845,6 +851,9 @@
       <Filter>Library\Platform\System</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\System\LogArchive.cpp">
+      <Filter>Library\Platform\System</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\System\ProjectPaths.cpp">
       <Filter>Library\Platform\System</Filter>
     </ClCompile>
     <ClCompile Include="VendorModules\ImGui\imgui.cpp">
@@ -1575,6 +1584,9 @@
     <ClInclude Include="Library\Core\Types\Callable.h">
       <Filter>Library\Core\Types</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Types\Checksum.h">
+      <Filter>Library\Core\Types</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Types\CompilerMacros.h">
       <Filter>Library\Core\Types</Filter>
     </ClInclude>
@@ -2244,6 +2256,12 @@
     <ClInclude Include="Library\Framework\Render\Types\Vertex3D.h">
       <Filter>Library\Framework\Render\Types</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\SaveGame\SaveGameStorage.h">
+      <Filter>Library\Framework\SaveGame</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\SaveGame\SaveGameTypes.h">
+      <Filter>Library\Framework\SaveGame</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Scene\ISceneManager.h">
       <Filter>Library\Framework\Scene</Filter>
     </ClInclude>
@@ -2560,6 +2578,9 @@
       <Filter>Library\Platform\System</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\System\LogArchive.h">
+      <Filter>Library\Platform\System</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\System\ProjectPaths.h">
       <Filter>Library\Platform\System</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\System\WindowSettings.h">
@@ -4225,6 +4246,9 @@
     </Filter>
     <Filter Include="Library\Framework\Render\Types">
       <UniqueIdentifier>{5E0DB47E-4796-0897-9328-6B5A5A865181}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\SaveGame">
+      <UniqueIdentifier>{A2E5538A-21E5-9191-B637-2E6BF85B3052}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\Scene">
       <UniqueIdentifier>{471142BD-496D-11EE-3E4A-E067DE741C4F}</UniqueIdentifier>

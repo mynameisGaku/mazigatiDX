@@ -342,6 +342,17 @@ bool NFileSystem::RenameFile( const FString& From, const FString& To )
 	return true;
 }
 
+bool NFileSystem::OverwriteFile( const FString& From, const FString& To )
+{
+	if ( MoveFileExW( From.ToWide().GetData(), To.ToWide().GetData(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH ) == 0 )
+	{
+		LOG( LogFileSystem, Warning, "Failed to replace %s with %s (Windows error %lu)", *To, *From, GetLastError() );
+		return false;
+	}
+	LOG( LogFileSystem, Verbose, "Replaced %s with %s", *To, *From );
+	return true;
+}
+
 bool NFileSystem::RemoveFile( const FString& Path )
 {
 	if ( DeleteFileW( Path.ToWide().GetData() ) == 0 )

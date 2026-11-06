@@ -73,6 +73,7 @@
     <ClCompile Include="Library\Core\Thread\GameThread.cpp" />
     <ClCompile Include="Library\Core\Time\DateTime.cpp" />
     <ClCompile Include="Library\Core\Time\PlatformTime.cpp" />
+    <ClCompile Include="Library\Core\Types\Checksum.cpp" />
     <ClCompile Include="Library\DebugUI\DebugOverlay.cpp" />
     <ClCompile Include="Library\DebugUI\Asset\AssetTools.cpp" />
     <ClCompile Include="Library\DebugUI\Asset\ModelAnimationEditor.cpp" />
@@ -255,6 +256,7 @@
     <ClCompile Include="Library\Framework\Render\Mesh\MeshGeometryChunk.cpp" />
     <ClCompile Include="Library\Framework\Render\Mesh\MeshRender.cpp" />
     <ClCompile Include="Library\Framework\Render\State\ShadowMapView.cpp" />
+    <ClCompile Include="Library\Framework\SaveGame\SaveGameStorage.cpp" />
     <ClCompile Include="Library\Framework\Scene\Scene.cpp" />
     <ClCompile Include="Library\Framework\Scene\SceneManager.cpp" />
     <ClCompile Include="Library\Framework\Subsystem\Subsystem.cpp" />
@@ -347,6 +349,7 @@
     <ClCompile Include="Library\Platform\System\ImGuiAssert.cpp" />
     <ClCompile Include="Library\Platform\System\LeakReport.cpp" />
     <ClCompile Include="Library\Platform\System\LogArchive.cpp" />
+    <ClCompile Include="Library\Platform\System\ProjectPaths.cpp" />
     <ClCompile Include="VendorModules\ImGui\imgui.cpp" />
     <ClCompile Include="VendorModules\ImGui\imgui_draw.cpp" />
     <ClCompile Include="VendorModules\ImGui\imgui_impl_dx11.cpp" />
@@ -591,6 +594,7 @@
     <ClInclude Include="Library\Core\Time\DateTime.h" />
     <ClInclude Include="Library\Core\Time\PlatformTime.h" />
     <ClInclude Include="Library\Core\Types\Callable.h" />
+    <ClInclude Include="Library\Core\Types\Checksum.h" />
     <ClInclude Include="Library\Core\Types\CompilerMacros.h" />
     <ClInclude Include="Library\Core\Types\CString.h" />
     <ClInclude Include="Library\Core\Types\Numeric.h" />
@@ -814,6 +818,8 @@
     <ClInclude Include="Library\Framework\Render\Types\RenderTargetTypes.h" />
     <ClInclude Include="Library\Framework\Render\Types\ShaderVertex.h" />
     <ClInclude Include="Library\Framework\Render\Types\Vertex3D.h" />
+    <ClInclude Include="Library\Framework\SaveGame\SaveGameStorage.h" />
+    <ClInclude Include="Library\Framework\SaveGame\SaveGameTypes.h" />
     <ClInclude Include="Library\Framework\Scene\ISceneManager.h" />
     <ClInclude Include="Library\Framework\Scene\ObjectIterator.h" />
     <ClInclude Include="Library\Framework\Scene\Scene.h" />
@@ -920,6 +926,7 @@
     <ClInclude Include="Library\Platform\System\FileSystem.h" />
     <ClInclude Include="Library\Platform\System\LeakReport.h" />
     <ClInclude Include="Library\Platform\System\LogArchive.h" />
+    <ClInclude Include="Library\Platform\System\ProjectPaths.h" />
     <ClInclude Include="Library\Platform\System\WindowSettings.h" />
     <ClInclude Include="Library\Platform\System\WindowsInclude.h" />
     <ClInclude Include="VendorModules\ImGui\imconfig.h" />

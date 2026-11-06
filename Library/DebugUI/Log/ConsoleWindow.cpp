@@ -9,6 +9,7 @@
 #include "Library/Framework/Console/BuiltinCommands.h"
 #include "Library/Framework/Console/ConsoleParse.h"
 #include "Library/Platform/System/FileSystem.h"
+#include "Library/Platform/System/ProjectPaths.h"
 
 namespace
 {
@@ -18,7 +19,7 @@ namespace
 	FConsoleBuffer& GetOutput( FConsoleWindowState& S ) { return S.Output != nullptr ? *S.Output : NConsole::GetGlobalOutput(); }
 	FConsoleHistory& GetHistory( FConsoleWindowState& S ) { return S.History != nullptr ? *S.History : NConsole::GetGlobalHistory(); }
 
-	FString GetHistoryPath() { return NFileSystem::FindProjectRoot() / "Saved" / "ConsoleHistory.txt"; }
+	FString GetHistoryPath() { return FProjectPaths().GetConsoleHistoryFile(); }
 
 	ImVec4 LineColor( EConsoleLine Kind )
 	{
@@ -297,7 +298,7 @@ void NDebugUI::LoadConsoleHistory( FConsoleWindowState& State )
 void NDebugUI::SaveConsoleHistory( FConsoleWindowState& State )
 {
 	const FString Path = GetHistoryPath();
-	NFileSystem::EnsureDirectory( NFileSystem::FindProjectRoot() / "Saved" );
+	NFileSystem::EnsureDirectory( FProjectPaths().GetSavedDirectory() );
 	FFile File;
 	if ( !File.Open( Path, FFile::EMode::Write ) )
 	{

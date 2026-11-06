@@ -6,6 +6,7 @@
 #include "Library/Framework/Engine/ScreenConfig.h"
 #include "Library/Platform/System/CommandLine.h"
 #include "Library/Platform/System/FileSystem.h"
+#include "Library/Platform/System/ProjectPaths.h"
 #include "Library/Platform/System/LeakReport.h"
 #include "Library/Platform/System/LogArchive.h"
 
@@ -32,7 +33,7 @@ int32 NGameMain::Run( const FOptions& Options, const TCallable<int32( const FWin
 	//   書き込みは起動時から行う（終了時にまとめて書くと、クラッシュしたときにログが残らないため）
 	//   アプリを複数同時に起動しているときは、使用中のファイルを避けて <プロジェクト名>_2.log ... に書く（ログが混ざらない）
 	const FString ProjectName = NFileSystem::GetExecutableName();
-	const FString LogDirectory = NFileSystem::FindProjectRoot() / "Saved" / "Logs";
+	const FString LogDirectory = FProjectPaths().GetLogsDirectory();
 	const NLogArchive::FOpenResult LogFile = NLogArchive::OpenLogFile( LogDirectory, ProjectName, NLogArchive::DefaultMaxBackups );
 	const TSharedPtr<CFileLogSink> FileSink = LogFile.Sink;
 	if ( FileSink ) CLogManager::Get().AddSink( FileSink );

@@ -338,6 +338,29 @@ TSharedPtr<CSound> Sound = Loader.CreateFromPcm( "Beep", Beep );
 Audio->Play( Sound );
 ```
 
+## 保存先とセーブデータ
+
+**`FProjectPaths`**（`Library/Platform/System`）は、ログ・スクリーンショット・セーブデータ・プロファイラーの書き出し・コンソールの履歴など、「保存する物」の置き場所を1か所で決めるクラスです。プロジェクトのルートの下の`Saved`から組み立てます（`GetLogsDirectory()`、`GetScreenshotsDirectory()`、`GetSaveGamesDirectory()` など）。ルートを渡せるので、検査では一時フォルダを基準にして、本物の`Saved`に触らずに確かめられます。返すのはパスの文字列だけで、フォルダは使う側が作ります。
+
+**`CSaveGameStorage`**（`Library/Framework/SaveGame`）は、スロットごとのバイト列を壊れにくく保存・読み込みするクラスです。中身の形（JSONでもバイナリでも）と、何を保存するか（インベントリ・進行状況）はゲーム側が決めます。
+
+```cpp
+CSaveGameStorage Storage( FProjectPaths().GetSaveGamesDirectory() );
+Storage.Write( "Slot1", Bytes );
+TArray<uint8> Loaded;
+switch ( Storage.Read( "Slot1", Loaded ) )
+{
+case ESaveLoadResult::Ok:                  break;   // 読めた
+case ESaveLoadResult::RecoveredFromBackup: break;   // 本体が壊れていたので、1つ前のセーブから読んだ
+case ESaveLoadResult::NotFound:            break;   // そのスロットは無い
+case ESaveLoadResult::Corrupt:             break;   // 本体もバックアップも壊れている
+default:                                   break;
+}
+for ( const FSaveSlotInfo& Info : Storage.List() ) { /* 名前・大きさ・更新日時・壊れていないか・バックアップの有無 */ }
+```
+
+書き込みは、一時ファイル（`.tmp`）に全部書いてから、`NFileSystem::OverwriteFile`（ディスクへ書き終えてから置き換える）で本体にします。途中で電源が切れても、前のセーブが残ります。置き換えるときに、壊れていない本体を1つ前のセーブ（`.bak`）にします（本体が壊れているときは、良いバックアップを守ります）。ファイルは「識別子 + バージョン + 大きさ + CRC-32（`NChecksum::Crc32`）+ 中身」の形で、途中で切れた・書き換わったファイルは壊れたものとして扱います。スロットの名前は、英数字・`_`・`-`の1〜64文字です。
+
 ## 乱数と日時
 
 **`FRandomStream`**（`Library/Math`）は、シードで列が決まる乱数のクラスです。同じシードなら、環境に依らず同じ列になります（PCG32）。リプレイ・検査・手続き的な生成のように、毎回同じ結果にしたいときに使います。

@@ -79,5 +79,7 @@ namespace NFileSystem
 
 	// 移動・改名。移動先が既にあれば失敗する
 	bool RenameFile( const FString& From, const FString& To );
+	// 移動・改名。移動先が既にあれば置き換える（書き込みを終えた一時ファイルで、本物を置き換えるときなど。ディスクへ書き終えてから戻る）
+	bool OverwriteFile( const FString& From, const FString& To );
 	bool RemoveFile( const FString& Path );
 }

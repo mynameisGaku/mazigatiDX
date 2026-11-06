@@ -3,6 +3,7 @@
 
 #include "Library/Math/MathUtils.h"
 #include "Library/Platform/System/FileSystem.h"
+#include "Library/Platform/System/ProjectPaths.h"
 
 namespace
 {
@@ -25,7 +26,7 @@ namespace
 
 FString NScreenshotNames::GetDefaultDirectory()
 {
-	return NFileSystem::FindProjectRoot() / "Saved" / "Screenshots";
+	return FProjectPaths().GetScreenshotsDirectory();
 }
 
 int32 NScreenshotNames::FindNextNumber( TArrayView<const FString> ExistingFiles )

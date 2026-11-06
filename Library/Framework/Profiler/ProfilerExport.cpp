@@ -6,6 +6,7 @@
 #include "Library/Core/Time/PlatformTime.h"
 #include "Library/Framework/Profiler/ProfilerAnalyzer.h"
 #include "Library/Platform/System/FileSystem.h"
+#include "Library/Platform/System/ProjectPaths.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogProfilerExport, Log )
 
@@ -56,7 +57,7 @@ namespace
 FString NProfilerExport::MakeDefaultTracePath()
 {
 	const FString Name = NFileSystem::GetExecutableName() + "_" + NFileSystem::GetCurrentLocalTime().ToFileNameString() + ".json";
-	return NFileSystem::FindProjectRoot() / "Saved" / "Profiler" / Name;
+	return FProjectPaths().GetProfilerDirectory() / Name;
 }
 
 bool NProfilerExport::WriteChromeTrace( const IProfiler& Profiler, int32 FirstFrame, int32 LastFrame, const FString& Path )
