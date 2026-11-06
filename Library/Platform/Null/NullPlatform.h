@@ -3,7 +3,7 @@
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
 #include "Library/Core/Types/TypeDefinition.h"
 #include "Library/Framework/Subsystem/AppSubsystem.h"
-#include "Library/Platform/WindowSettings.h"
+#include "Library/Platform/System/WindowSettings.h"
 
 //=============================================================================
 // CNullPlatform

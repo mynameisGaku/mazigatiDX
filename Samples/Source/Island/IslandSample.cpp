@@ -1,9 +1,9 @@
 ﻿#include "IslandSample.h"
 
 #include "Library/Framework/Asset/AssetManager.h"
-#include "Library/Framework/Asset/PixelImage.h"
+#include "Library/Framework/Asset/Texture/PixelImage.h"
 #include "Library/Framework/Engine/Engine.h"
-#include "Library/Framework/Render/ImmediateDraw.h"
+#include "Library/Framework/Render/Draw/ImmediateDraw.h"
 #include "Source/Catalog/SampleCatalog.h"
 #include "Source/Island/IslandClock.h"
 #include "Source/Island/IslandCrystals.h"

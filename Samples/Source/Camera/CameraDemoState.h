@@ -3,8 +3,8 @@
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
-#include "Library/Framework/Render/Camera.h"
-#include "Library/Framework/Render/DrawContext.h"
+#include "Library/Framework/Render/Camera/Camera.h"
+#include "Library/Framework/Render/Draw/DrawContext.h"
 #include "Library/Math/Math.h"
 
 // 景色に置く物の形

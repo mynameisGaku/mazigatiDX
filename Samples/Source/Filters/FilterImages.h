@@ -1,7 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 
-#include "Library/Framework/Asset/PixelImage.h"
+#include "Library/Framework/Asset/Texture/PixelImage.h"
 
 //=============================================================================
 // NFilterImages

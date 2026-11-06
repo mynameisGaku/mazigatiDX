@@ -3,11 +3,11 @@
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Memory/SharedPtr.h"
-#include "Library/Framework/Asset/DynamicTexture.h"
-#include "Library/Framework/Asset/IndexBuffer.h"
-#include "Library/Framework/Asset/ShadowMap.h"
-#include "Library/Framework/Asset/VertexBuffer.h"
-#include "Library/Framework/Render/Camera.h"
+#include "Library/Framework/Asset/Texture/DynamicTexture.h"
+#include "Library/Framework/Asset/Gpu/IndexBuffer.h"
+#include "Library/Framework/Asset/Gpu/ShadowMap.h"
+#include "Library/Framework/Asset/Gpu/VertexBuffer.h"
+#include "Library/Framework/Render/Camera/Camera.h"
 #include "Library/Math/Math.h"
 
 //=============================================================================

@@ -1,8 +1,8 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 
-#include "Library/Framework/Asset/PixelImage.h"
-#include "Library/Framework/Render/Camera.h"
+#include "Library/Framework/Asset/Texture/PixelImage.h"
+#include "Library/Framework/Render/Camera/Camera.h"
 #include "Source/Island/IslandState.h"
 
 //=============================================================================

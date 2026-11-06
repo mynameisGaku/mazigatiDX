@@ -5,7 +5,7 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Result.h"
 #include "Library/Framework/Subsystem/AppSubsystem.h"
-#include "Library/Platform/WindowSettings.h"
+#include "Library/Platform/System/WindowSettings.h"
 
 DECLARE_LOG_CATEGORY_EXTERN( LogPlatform, Log )
 

@@ -1,6 +1,6 @@
 ﻿#include "__NAME__Sample.h"
 
-#include "Library/Framework/Render/ImmediateDraw.h"
+#include "Library/Framework/Render/Draw/ImmediateDraw.h"
 #include "Source/Catalog/SampleCatalog.h"
 
 namespace

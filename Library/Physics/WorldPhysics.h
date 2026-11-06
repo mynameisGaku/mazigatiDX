@@ -8,7 +8,7 @@
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Component/Component.h"
 #include "Library/Framework/Subsystem/SceneSubsystem.h"
-#include "Library/Framework/World/WorldSpawner.h"
+#include "Library/Framework/World/Runtime/WorldSpawner.h"
 
 class CPhysicsSubsystem;
 class FRigidBody;

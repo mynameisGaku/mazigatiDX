@@ -1,7 +1,7 @@
 ﻿#include "PostEffectsView.h"
 
-#include "Library/Framework/Render/DrawContext.h"
-#include "Library/Framework/Render/RenderState3D.h"
+#include "Library/Framework/Render/Draw/DrawContext.h"
+#include "Library/Framework/Render/State/RenderState3D.h"
 #include "Source/Common/ShaderMeshes.h"
 #include "Source/PostEffects/PostEffectsSources.h"
 

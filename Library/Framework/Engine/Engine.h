@@ -6,7 +6,7 @@
 #include "Library/Framework/Engine/TimeControl.h"
 #include "Library/Framework/GameInstance/GameInstance.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
-#include "Library/Platform/WindowSettings.h"
+#include "Library/Platform/System/WindowSettings.h"
 
 //=============================================================================
 // CEngine

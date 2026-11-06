@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "Library/DebugUI/AssetTools.h"
+#include "Library/DebugUI/Asset/AssetTools.h"
 #include "Library/DebugUI/DebugOverlay.h"
 #include "Library/Framework/GameInstance/GameInstance.h"
 

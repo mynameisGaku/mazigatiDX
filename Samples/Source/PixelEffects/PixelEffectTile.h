@@ -3,9 +3,9 @@
 
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Core/Memory/UniquePtr.h"
-#include "Library/Framework/Asset/DynamicTexture.h"
+#include "Library/Framework/Asset/Texture/DynamicTexture.h"
 #include "Library/Framework/Object/GameObject.h"
-#include "Library/Framework/PixelEffect/PixelEffectView.h"
+#include "Library/Framework/PixelEffect/Playback/PixelEffectView.h"
 
 class FDrawContext;
 

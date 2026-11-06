@@ -3,7 +3,7 @@
 #define FRAMEWORK_WORLD_MESH_EDITMESH_H
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
-#include "Library/Framework/Effect/MeshMaterialEffectDefinition.h"
+#include "Library/Framework/Effect/Definition/MeshMaterialEffectDefinition.h"
 #include "Library/Json/JsonObject.h"
 #include "Library/Math/Color.h"
 #include "Library/Math/Vector2.h"

@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "Library/Framework/World/Editor/EditorShapes.h"
-#include "Library/Framework/World/WorldEdit.h"
+#include "Library/Framework/World/Definition/WorldEdit.h"
 
 //=============================================================================
 // 当たり判定を、モデルに合わせて作る（エディタの補助）

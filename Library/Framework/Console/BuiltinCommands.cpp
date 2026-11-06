@@ -18,8 +18,8 @@
 #include "Library/Framework/Profiler/ProfilerExport.h"
 #include "Library/Framework/Scene/Scene.h"
 #include "Library/Math/MathUtils.h"
-#include "Library/Platform/CommandLine.h"
-#include "Library/Platform/FileSystem.h"
+#include "Library/Platform/System/CommandLine.h"
+#include "Library/Platform/System/FileSystem.h"
 
 namespace
 {

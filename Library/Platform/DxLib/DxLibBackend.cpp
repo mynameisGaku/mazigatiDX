@@ -5,15 +5,15 @@
 #include "Library/Core/Profiler/ProfilerScope.h"
 #include "Library/Core/Types/CString.h"
 #include "Library/Framework/Engine/Engine.h"
-#include "Library/Platform/CommandLine.h"
-#include "Library/Platform/FileSystem.h"
+#include "Library/Platform/System/CommandLine.h"
+#include "Library/Platform/System/FileSystem.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
-#include "Library/Platform/DxLib/DxLibLighting.h"
-#include "Library/Platform/DxLib/DxLibRenderState3D.h"
+#include "Library/Platform/DxLib/Render/DxLibLighting.h"
+#include "Library/Platform/DxLib/Render/DxLibRenderState3D.h"
 #include "VendorModules/ImGui/imgui_impl_dxlib.hpp"
-#include "Library/DebugUI/ImGuiTexture.h"
+#include "Library/DebugUI/Common/ImGuiTexture.h"
 #include "Library/Platform/BackendSelection.h"
-#include "Library/Platform/DxLib/DxLibImGuiTexture.h"
+#include "Library/Platform/DxLib/Render/DxLibImGuiTexture.h"
 
 DEFINE_LOG_CATEGORY( LogPlatform )
 

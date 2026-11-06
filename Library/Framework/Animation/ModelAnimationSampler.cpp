@@ -5,7 +5,7 @@
 #include "Library/Core/Thread/GameThread.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/AssetManager.h"
-#include "Library/Framework/Asset/Model.h"
+#include "Library/Framework/Asset/Model/Model.h"
 
 namespace
 {

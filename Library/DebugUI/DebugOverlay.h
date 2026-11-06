@@ -5,8 +5,8 @@
 #include "Library/Core/Log/LogSink.h"
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Core/Types/Callable.h"
-#include "Library/DebugUI/ConsoleWindow.h"
-#include "Library/DebugUI/ProfilerWindow.h"
+#include "Library/DebugUI/Log/ConsoleWindow.h"
+#include "Library/DebugUI/Profiler/ProfilerWindow.h"
 #include "Library/Framework/Console/ConsoleConfig.h"
 
 class CGameInstance;

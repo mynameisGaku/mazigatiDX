@@ -3,7 +3,7 @@
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Framework/Scene/SceneManager.h"
-#include "Library/Platform/CommandLine.h"
+#include "Library/Platform/System/CommandLine.h"
 #include "Source/Browser/BrowserScene.h"
 #include "Source/Catalog/SampleCatalog.h"
 

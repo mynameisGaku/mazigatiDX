@@ -3,8 +3,8 @@
 
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Memory/SharedPtr.h"
-#include "Library/Framework/Asset/DynamicTexture.h"
-#include "Library/Framework/Asset/PixelImage.h"
+#include "Library/Framework/Asset/Texture/DynamicTexture.h"
+#include "Library/Framework/Asset/Texture/PixelImage.h"
 #include "Library/Framework/Object/GameObject.h"
 #include "Library/Math/Math.h"
 

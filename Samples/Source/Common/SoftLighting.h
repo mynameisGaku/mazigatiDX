@@ -1,7 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 
-#include "Library/Framework/Render/DrawContext.h"
+#include "Library/Framework/Render/Draw/DrawContext.h"
 
 //=============================================================================
 // NSoftLighting / FSoftLightingScope

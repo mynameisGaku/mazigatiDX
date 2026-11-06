@@ -1,8 +1,8 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 
-#include "Library/Framework/Render/DrawContext.h"
-#include "Library/Framework/Render/Lighting.h"
+#include "Library/Framework/Render/Draw/DrawContext.h"
+#include "Library/Framework/Render/State/Lighting.h"
 #include "Source/Island/IslandState.h"
 
 //=============================================================================

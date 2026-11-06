@@ -18,7 +18,7 @@
 #pragma pop_macro( "max" )
 #pragma pop_macro( "min" )
 
-#include "Library/Physics/PhysicsLayerTypes.h"
+#include "Library/Physics/Layer/PhysicsLayerTypes.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Result.h"
 #include "Library/Math/Math.h"

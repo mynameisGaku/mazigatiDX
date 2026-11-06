@@ -2,7 +2,7 @@
 
 #include "Library/Core/Interfaces/Input/IInput.h"
 #include "Library/Framework/Engine/Engine.h"
-#include "Library/Framework/Render/ImmediateDraw.h"
+#include "Library/Framework/Render/Draw/ImmediateDraw.h"
 #include "Source/Catalog/SampleCatalog.h"
 
 void CSampleScene::OnTick( float32 DeltaTime )

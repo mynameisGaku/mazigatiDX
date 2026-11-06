@@ -11,11 +11,11 @@
 #include "Library/Core/Interfaces/Physics/IPhysicsDebug.h"
 #include "Library/Core/Interfaces/Physics/IPhysicsQuery.h"
 #include "Library/Physics/PhysicsTypes.h"
-#include "Library/Physics/CollisionShape.h"
-#include "Library/Physics/PhysicsCharacter.h"
-#include "Library/Physics/PhysicsContactRegistry.h"
-#include "Library/Physics/PhysicsConstraint.h"
-#include "Library/Physics/RigidBody.h"
+#include "Library/Physics/Body/CollisionShape.h"
+#include "Library/Physics/Character/PhysicsCharacter.h"
+#include "Library/Physics/Contact/PhysicsContactRegistry.h"
+#include "Library/Physics/Constraint/PhysicsConstraint.h"
+#include "Library/Physics/Body/RigidBody.h"
 
 namespace JPH
 {

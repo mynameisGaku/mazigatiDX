@@ -2,8 +2,8 @@
 #pragma once
 
 #include "Library/Core/Collection/Array.h"
-#include "Library/Framework/Render/Camera.h"
-#include "Library/Framework/Render/DrawContext.h"
+#include "Library/Framework/Render/Camera/Camera.h"
+#include "Library/Framework/Render/Draw/DrawContext.h"
 #include "Source/Camera/CameraDemoState.h"
 
 //=============================================================================

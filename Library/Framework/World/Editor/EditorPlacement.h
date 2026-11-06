@@ -2,7 +2,7 @@
 #include "Library/Core/Collection/String.h"
 #include "Library/Framework/World/Editor/EditorPicking.h"
 #include "Library/Framework/World/Mesh/EditMeshPrimitives.h"
-#include "Library/Framework/World/WorldEdit.h"
+#include "Library/Framework/World/Definition/WorldEdit.h"
 
 //=============================================================================
 // アセットをワールドに置く（ブラウザから視界へドラッグして置く、メニューから作る）

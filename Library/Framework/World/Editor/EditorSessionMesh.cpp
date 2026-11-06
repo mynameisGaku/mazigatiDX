@@ -1,7 +1,7 @@
 ﻿#include "EditorSession.h"
 
 
-#include "Library/Framework/World/WorldHierarchy.h"
+#include "Library/Framework/World/Definition/WorldHierarchy.h"
 
 //=============================================================================
 // ワールドエディタのセッション: 編集メッシュの編集（EditorSession.h の「編集メッシュの編集」）

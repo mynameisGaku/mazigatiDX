@@ -2,7 +2,7 @@
 #pragma once
 
 #include "Library/Core/Memory/SharedPtr.h"
-#include "Library/Framework/Asset/Texture.h"
+#include "Library/Framework/Asset/Texture/Texture.h"
 #include "Library/Framework/Object/GameObject.h"
 #include "Library/Math/Math.h"
 

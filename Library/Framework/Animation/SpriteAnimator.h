@@ -2,8 +2,8 @@
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Memory/SharedPtr.h"
-#include "Library/Framework/Asset/SpriteSheet.h"
-#include "Library/Framework/Render/DrawContext.h"
+#include "Library/Framework/Asset/Data/SpriteSheet.h"
+#include "Library/Framework/Render/Draw/DrawContext.h"
 #include "Library/Math/Color.h"
 #include "Library/Math/Vector2.h"
 

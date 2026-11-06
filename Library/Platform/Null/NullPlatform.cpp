@@ -6,7 +6,7 @@
 #include "Library/Core/Profiler/ProfilerScope.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Platform/BackendSelection.h"
-#include "Library/Platform/CommandLine.h"
+#include "Library/Platform/System/CommandLine.h"
 #include "VendorModules/ImGui/imgui.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogNullPlatform, Log )

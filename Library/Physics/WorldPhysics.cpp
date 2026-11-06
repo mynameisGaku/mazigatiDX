@@ -7,7 +7,7 @@
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Object/GameObject.h"
 #include "Library/Framework/Scene/Scene.h"
-#include "Library/Framework/World/WorldCollision.h"
+#include "Library/Framework/World/Runtime/WorldCollision.h"
 #include "Library/Physics/PhysicsSubsystem.h"
 
 REGISTER_SUBSYSTEM( CWorldTriggerSubsystem )

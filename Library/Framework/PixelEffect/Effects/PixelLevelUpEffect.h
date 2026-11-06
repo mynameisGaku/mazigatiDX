@@ -1,7 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 
-#include "Library/Framework/PixelEffect/PixelTimedEffect.h"
+#include "Library/Framework/PixelEffect/Playback/PixelTimedEffect.h"
 
 //=============================================================================
 // CPixelLevelUpEffect

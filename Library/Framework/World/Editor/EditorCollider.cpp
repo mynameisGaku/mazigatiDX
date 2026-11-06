@@ -2,7 +2,7 @@
 
 
 #include "Library/Core/Types/Numeric.h"
-#include "Library/Framework/World/WorldCollision.h"
+#include "Library/Framework/World/Runtime/WorldCollision.h"
 
 EEditorColliderDisplay NWorldEditor::ClassifyColliderDisplay( const FWorldSettings& Settings, const FWorldObject& Object )
 {

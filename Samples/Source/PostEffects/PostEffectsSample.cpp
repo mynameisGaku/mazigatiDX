@@ -1,9 +1,9 @@
 ﻿#include "PostEffectsSample.h"
 
-#include "Library/Framework/Render/RenderTargetTypes.h"
+#include "Library/Framework/Render/Types/RenderTargetTypes.h"
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Engine/Engine.h"
-#include "Library/Framework/Render/ImmediateDraw.h"
+#include "Library/Framework/Render/Draw/ImmediateDraw.h"
 #include "Source/Catalog/SampleCatalog.h"
 #include "Source/PostEffects/PostEffectsPanel.h"
 #include "Source/PostEffects/PostEffectsRig.h"

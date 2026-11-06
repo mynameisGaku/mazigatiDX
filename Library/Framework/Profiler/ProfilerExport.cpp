@@ -5,7 +5,7 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Time/PlatformTime.h"
 #include "Library/Framework/Profiler/ProfilerAnalyzer.h"
-#include "Library/Platform/FileSystem.h"
+#include "Library/Platform/System/FileSystem.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogProfilerExport, Log )
 

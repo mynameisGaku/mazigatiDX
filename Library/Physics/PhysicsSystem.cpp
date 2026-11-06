@@ -7,7 +7,7 @@
 #include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
-#include "Library/Physics/ContactListener.h"
+#include "Library/Physics/Contact/ContactListener.h"
 
 #pragma push_macro( "min" )
 #pragma push_macro( "max" )

@@ -2,7 +2,7 @@
 #pragma once
 
 #include "Library/Core/Collection/Array.h"
-#include "Library/Framework/PixelEffect/PixelTimedEffect.h"
+#include "Library/Framework/PixelEffect/Playback/PixelTimedEffect.h"
 
 //=============================================================================
 // CPixelSparkleEffect

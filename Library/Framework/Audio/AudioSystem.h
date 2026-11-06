@@ -5,7 +5,7 @@
 #include "Library/Core/Interfaces/Tickable/ITickable.h"
 #include "Library/Core/Log/LogCategory.h"
 #include "Library/Core/Memory/SharedPtr.h"
-#include "Library/Framework/Asset/Sound.h"
+#include "Library/Framework/Asset/Sound/Sound.h"
 #include "Library/Framework/Audio/AudioTypes.h"
 #include "Library/Framework/Subsystem/AppSubsystem.h"
 

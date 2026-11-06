@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "Library/Core/Collection/Array.h"
 #include "Library/Framework/World/Editor/EditorShapes.h"
-#include "Library/Framework/World/WorldDefinition.h"
+#include "Library/Framework/World/Definition/WorldDefinition.h"
 
 //=============================================================================
 // クリックと矩形でオブジェクトを選ぶ（ピッキング）

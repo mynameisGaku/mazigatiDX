@@ -2,7 +2,7 @@
 
 #include "Library/Framework/Asset/AssetManager.h"
 #include "Library/Framework/Engine/Engine.h"
-#include "Library/Framework/Render/ImmediateDraw.h"
+#include "Library/Framework/Render/Draw/ImmediateDraw.h"
 #include "Source/Catalog/SampleCatalog.h"
 #include "Source/Shadows/ShadowsPanel.h"
 #include "Source/Shadows/ShadowsRig.h"

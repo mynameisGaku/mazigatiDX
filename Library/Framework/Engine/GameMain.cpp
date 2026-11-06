@@ -4,10 +4,10 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Framework/Engine/ScreenConfig.h"
-#include "Library/Platform/CommandLine.h"
-#include "Library/Platform/FileSystem.h"
-#include "Library/Platform/LeakReport.h"
-#include "Library/Platform/LogArchive.h"
+#include "Library/Platform/System/CommandLine.h"
+#include "Library/Platform/System/FileSystem.h"
+#include "Library/Platform/System/LeakReport.h"
+#include "Library/Platform/System/LogArchive.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogMain, Log )
 

@@ -3,7 +3,7 @@
 
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
-#include "Library/Framework/World/WorldDefinition.h"
+#include "Library/Framework/World/Definition/WorldDefinition.h"
 #include "Library/Json/JsonHelpers.h"
 
 namespace

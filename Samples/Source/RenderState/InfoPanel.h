@@ -2,7 +2,7 @@
 #pragma once
 
 #include "Library/Core/Memory/SharedPtr.h"
-#include "Library/Framework/Asset/Font.h"
+#include "Library/Framework/Asset/Font/Font.h"
 #include "Library/Framework/Object/GameObject.h"
 #include "Source/RenderState/RenderStateDemoState.h"
 #include "Source/RenderState/StageScenery.h"

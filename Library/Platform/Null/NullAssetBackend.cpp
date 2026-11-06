@@ -8,7 +8,7 @@
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 #include "Library/Platform/BackendSelection.h"
-#include "Library/Platform/FileSystem.h"
+#include "Library/Platform/System/FileSystem.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogNullAsset, Log )
 

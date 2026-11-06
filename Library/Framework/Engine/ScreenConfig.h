@@ -2,7 +2,7 @@
 #pragma once
 #include "Library/Core/Types/TypeDefinition.h"
 #include "Library/Json/JsonObject.h"
-#include "Library/Platform/WindowSettings.h"
+#include "Library/Platform/System/WindowSettings.h"
 
 class FScreenConfig : public NJson::CJsonObject
 {

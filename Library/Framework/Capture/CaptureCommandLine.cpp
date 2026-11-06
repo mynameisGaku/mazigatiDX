@@ -1,7 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "Library/Framework/Capture/CaptureCommandLine.h"
 
-#include "Library/Platform/CommandLine.h"
+#include "Library/Platform/System/CommandLine.h"
 
 namespace
 {

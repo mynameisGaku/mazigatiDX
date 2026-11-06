@@ -1,6 +1,6 @@
 ﻿#include "EditorAssetInfo.h"
 
-#include "Library/Framework/Asset/StaticModelSurface.h"
+#include "Library/Framework/Asset/Model/StaticModelSurface.h"
 
 #include "Library/Framework/Asset/AssetManager.h"
 

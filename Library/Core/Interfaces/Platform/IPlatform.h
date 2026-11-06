@@ -2,7 +2,7 @@
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Types/TypeDefinition.h"
 #include "Library/Core/Interfaces/Platform/FrameCapture.h"
-#include "Library/Platform/WindowSettings.h"
+#include "Library/Platform/System/WindowSettings.h"
 
 //=============================================================================
 // IPlatform

@@ -2,8 +2,8 @@
 #pragma once
 
 #include "Library/Core/Memory/SharedPtr.h"
-#include "Library/Framework/Asset/DynamicTexture.h"
-#include "Library/Framework/Asset/RenderTarget.h"
+#include "Library/Framework/Asset/Texture/DynamicTexture.h"
+#include "Library/Framework/Asset/Texture/RenderTarget.h"
 #include "Library/Framework/Object/GameObject.h"
 #include "Library/Math/Math.h"
 

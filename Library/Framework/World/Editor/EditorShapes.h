@@ -1,8 +1,8 @@
 ﻿#pragma once
 #include "Library/Core/Collection/Array.h"
 #include "Library/Framework/World/Editor/EditorCamera.h"
-#include "Library/Framework/World/WorldDefinition.h"
-#include "Library/Framework/World/WorldValidate.h"
+#include "Library/Framework/World/Definition/WorldDefinition.h"
+#include "Library/Framework/World/Definition/WorldValidate.h"
 
 //=============================================================================
 // エディタが見せる・選ぶための、オブジェクトの形

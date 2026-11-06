@@ -3,7 +3,7 @@
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
-#include "Library/Framework/Asset/FontTypes.h"
+#include "Library/Framework/Asset/Font/FontTypes.h"
 #include "Library/Core/Types/TypeDefinition.h"
 
 //=============================================================================

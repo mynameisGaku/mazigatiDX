@@ -1,7 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 #include "Library/Core/Interfaces/Physics/IPhysicsDebugDrawer.h"
-#include "Library/Physics/PhysicsDebugTypes.h"
+#include "Library/Physics/DebugDraw/PhysicsDebugTypes.h"
 #include "Library/Core/Types/TypeDefinition.h"
 
 //=============================================================================

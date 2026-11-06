@@ -1,6 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
-#include "Library/Physics/PhysicsLayerTypes.h"
+#include "Library/Physics/Layer/PhysicsLayerTypes.h"
 #include "Library/Core/Types/TypeDefinition.h"
 
 //=============================================================================

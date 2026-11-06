@@ -2,7 +2,7 @@
 #include "Library/Framework/Capture/ScreenshotNames.h"
 
 #include "Library/Math/MathUtils.h"
-#include "Library/Platform/FileSystem.h"
+#include "Library/Platform/System/FileSystem.h"
 
 namespace
 {

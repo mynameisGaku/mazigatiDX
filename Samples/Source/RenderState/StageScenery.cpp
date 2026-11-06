@@ -1,7 +1,7 @@
 ﻿#include "StageScenery.h"
 
 #include "Library/Framework/Asset/AssetManager.h"
-#include "Library/Framework/Asset/PixelImage.h"
+#include "Library/Framework/Asset/Texture/PixelImage.h"
 #include "Source/Common/SoftLighting.h"
 #include "Source/Common/TestPattern.h"
 

@@ -2,8 +2,8 @@
 
 #include "Library/Core/Interfaces/Input/IInput.h"
 #include "Library/Framework/Engine/Engine.h"
-#include "Library/Framework/Render/DrawContext.h"
-#include "Library/Platform/FileSystem.h"
+#include "Library/Framework/Render/Draw/DrawContext.h"
+#include "Library/Platform/System/FileSystem.h"
 #include "Source/Common/TestPattern.h"
 
 namespace

@@ -4,7 +4,7 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Time/PlatformTime.h"
 #include "Library/Json/JsonObject.h"
-#include "Library/Platform/FileSystem.h"
+#include "Library/Platform/System/FileSystem.h"
 
 //=============================================================================
 // CAssetManager: ワールド（.gxworld。書式は WorldDefinition.cpp の先頭を参照）

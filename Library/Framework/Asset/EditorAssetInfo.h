@@ -2,9 +2,9 @@
 #pragma once
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Memory/SharedPtr.h"
-#include "Library/Framework/Asset/Model.h"
-#include "Library/Framework/Asset/Texture.h"
-#include "Library/Framework/Asset/WorldAsset.h"
+#include "Library/Framework/Asset/Model/Model.h"
+#include "Library/Framework/Asset/Texture/Texture.h"
+#include "Library/Framework/Asset/Data/WorldAsset.h"
 #include "Library/Framework/World/Editor/EditorShapes.h"
 
 class CAssetManager;

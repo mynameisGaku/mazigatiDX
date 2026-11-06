@@ -2,7 +2,7 @@
 
 
 #include "Library/Core/Types/Numeric.h"
-#include "Library/Framework/World/WorldHierarchy.h"
+#include "Library/Framework/World/Definition/WorldHierarchy.h"
 
 namespace
 {

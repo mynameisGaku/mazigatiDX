@@ -1,0 +1,1011 @@
+﻿#include "DrawContext.h"
+
+#include <cstdarg>
+
+#include "Library/Core/Collection/Array.h"
+#include "Library/Core/Types/CString.h"
+#include "Library/Core/Types/Numeric.h"
+#include "Library/Framework/Render/Draw/DrawModelFramePoseData.h"
+
+void FDrawContext::MaterialQuad3D( const FDrawMaterialQuadData& Data )
+{
+	if ( !NDrawMaterialQuad::IsValid( Data ) )
+	{
+		return;
+	}
+	Push( EDrawCommand::MaterialQuad3D, 0, Data );
+}
+
+void FDrawContext::DistortedMaterialQuad3D( const FDrawDistortedMaterialQuadData& Data )
+{
+	if ( !NDrawDistortedMaterialQuad::IsValid( Data ) )
+	{
+		return;
+	}
+	Push( EDrawCommand::DistortedMaterialQuad3D, 0, Data );
+}
+
+void FDrawContext::MaterialRibbon3D( const FDrawMaterialRibbonData& Data, const FDrawMaterialRibbonData::FPoint* Points )
+{
+	// 入力値が記録先の再確保で変わらないよう、固定設定を先に値として保持する。
+	FDrawMaterialRibbonData Header{};
+	FMemory::Memcpy( &Header, &Data, sizeof( Header ) );
+	// 既存命令と同じ設定・点列条件を、記録前に一括で検査する。
+	if ( !NDrawMaterialRibbon::IsValidHeader( Header ) || Points == nullptr )
+	{
+		return;
+	}
+	TArray<FDrawMaterialRibbonData::FPoint> Copied;
+	Copied.Append( Points, Header.Ribbon.NumPoints );
+	if ( !NDrawMaterialRibbon::IsValid( Header, Copied.GetData() ) )
+	{
+		return;
+	}
+	// 固定設定と全点を合わせた命令長。MaxPoints検査後なので積は安全な範囲。
+	constexpr size_t DataWords = sizeof( FDrawMaterialRibbonData ) / 4;
+	// 全点を4byte word単位で記録する長さ。
+	const size_t PointWords = static_cast<size_t>( Header.Ribbon.NumPoints ) * sizeof( FDrawMaterialRibbonData::FPoint ) / 4;
+	// command headerを含む最終word数。
+	const size_t CommandWords = 1 + DataWords + PointWords;
+	if ( CommandWords > static_cast<size_t>( NDrawCommand::MaxWords ) || Buffer->Words.Num() > TNumericLimits<int32>::Max() - static_cast<int32>( CommandWords ) )
+	{
+		return;
+	}
+	// PointsやDataが既存bufferを指す場合も、広げる前に所有コピーする。
+	TArray<uint32>& Words = Buffer->Words;
+	// 追記する新命令の開始word。
+	const int32 Begin = Words.AddZeroed( static_cast<int32>( CommandWords ) );
+	uint32* const Out = Words.GetData() + Begin;
+	Out[0] = NDrawCommand::MakeHeader( EDrawCommand::MaterialRibbon3D, 0, static_cast<int32>( CommandWords ) );
+	FMemory::Memcpy( Out + 1, &Header, sizeof( Header ) );
+	FMemory::Memcpy( Out + 1 + DataWords, Copied.GetData(), static_cast<size_t>( Header.Ribbon.NumPoints ) * sizeof( FDrawMaterialRibbonData::FPoint ) );
+}
+
+void FDrawContext::DistortedMaterialRibbon3D( const FDrawDistortedMaterialRibbonData& Data, const FDrawDistortedMaterialRibbonData::FPoint* Points )
+{
+	// buffer再確保で入力headerが変わらないよう、固定設定を先に値で保持する。
+	FDrawDistortedMaterialRibbonData Header{};
+	FMemory::Memcpy( &Header, &Data, sizeof( Header ) );
+	if ( Points == nullptr || !NDrawDistortedMaterialRibbon::IsValidHeader( Header ) )
+	{
+		return;
+	}
+	// 入力配列を所有し、検証後に一括記録するための点列。
+	TArray<FDrawDistortedMaterialRibbonData::FPoint> Copied;
+	Copied.Append( Points, Header.Material.Ribbon.NumPoints );
+	if ( !NDrawDistortedMaterialRibbon::IsValid( Header, Copied.GetData() ) )
+	{
+		return;
+	}
+	// 固定headerと全点を含む描画命令のword数。
+	constexpr size_t DataWords = sizeof( FDrawDistortedMaterialRibbonData ) / 4;
+	// 1024点以下の可変payload word数。
+	const size_t PointWords = static_cast<size_t>( Header.Material.Ribbon.NumPoints ) * sizeof( FDrawDistortedMaterialRibbonData::FPoint ) / 4;
+	// command header込みの合計word数。
+	const size_t CommandWords = 1 + DataWords + PointWords;
+	if ( CommandWords > static_cast<size_t>( NDrawCommand::MaxWords ) || Buffer->Words.Num() > TNumericLimits<int32>::Max() - static_cast<int32>( CommandWords ) )
+	{
+		return;
+	}
+	// 追記する描画命令が入る共有word buffer。
+	TArray<uint32>& Words = Buffer->Words;
+	// 新命令を記録する開始位置。
+	const int32 Begin = Words.AddZeroed( static_cast<int32>( CommandWords ) );
+	uint32* const Out = Words.GetData() + Begin;
+	Out[0] = NDrawCommand::MakeHeader( EDrawCommand::DistortedMaterialRibbon3D, 0, static_cast<int32>( CommandWords ) );
+	FMemory::Memcpy( Out + 1, &Header, sizeof( Header ) );
+	FMemory::Memcpy( Out + 1 + DataWords, Copied.GetData(), static_cast<size_t>( Header.Material.Ribbon.NumPoints ) * sizeof( FDrawDistortedMaterialRibbonData::FPoint ) );
+}
+
+bool FDrawContext::ModelMaterial( const FDrawModelMaterialData& Data )
+{
+	// buffer再確保や呼出側aliasから独立させる固定命令payload。
+	FDrawModelMaterialData Header{};
+	FMemory::Memcpy( &Header, &Data, sizeof( Header ) );
+	if ( !NDrawModelMaterial::IsValid( Header ) )
+	{
+		return false;
+	}
+	// 追加後のword数が上限を超えないかを先に調べる。
+	constexpr size_t CommandWords = 1 + sizeof( FDrawModelMaterialData ) / 4;
+	if ( CommandWords > static_cast<size_t>( NDrawCommand::MaxWords ) || Buffer->Words.Num() > TNumericLimits<int32>::Max() - static_cast<int32>( CommandWords ) )
+	{
+		return false;
+	}
+	// 固定命令を一度で広げて追記する共有word列。
+	TArray<uint32>& Words = Buffer->Words;
+	// 新命令を記録する開始位置。
+	const int32 Begin = Words.AddZeroed( static_cast<int32>( CommandWords ) );
+	uint32* const Out = Words.GetData() + Begin;
+	Out[0] = NDrawCommand::MakeHeader( EDrawCommand::ModelMaterial3D, 0, static_cast<int32>( CommandWords ) );
+	FMemory::Memcpy( Out + 1, &Header, sizeof( Header ) );
+	return true;
+}
+
+bool FDrawContext::ModelWithFrameOverrides( int32 ModelHandle, const FMatrix4x4& World, const FDrawModelFrameOverrideData* Overrides, int32 NumOverrides, int32 AnimAttachIndex, float32 AnimTime )
+{
+	if ( ModelHandle < 0 || AnimAttachIndex < -1 || !NMath::IsFinite( AnimTime ) || AnimTime < 0.0f || NumOverrides < 0 || NumOverrides > NDrawModelFramePose::MaxOverrides || ( NumOverrides > 0 && Overrides == nullptr ) )
+	{
+		return false;
+	}
+	// world行列の有限性を調べる行番号。
+	for ( int32 Row = 0; Row < 4; ++Row )
+	{
+		// 現在行の有限性を調べる列番号。
+		for ( int32 Column = 0; Column < 4; ++Column )
+		{
+			if ( !NMath::IsFinite( World.m[Row][Column] ) )
+			{
+				return false;
+			}
+		}
+	}
+	if ( World.m[0][3] != 0.0f || World.m[1][3] != 0.0f || World.m[2][3] != 0.0f || World.m[3][3] != 1.0f )
+	{
+		return false;
+	}
+	// buffer再確保より前に、呼出側配列を命令所有の値へ複写する。
+	TArray<FDrawModelFrameOverrideData> Snapshot; // buffer変更前に所有するpose snapshot。
+	if ( NumOverrides > 0 )
+	{
+		Snapshot.Append( Overrides, NumOverrides );
+	}
+	FDrawModelFramePoseData Data; // 可変長commandの固定header。
+	Data.Handle = ModelHandle;
+	PackAffine( Data.M, World );
+	Data.AnimIndex = AnimAttachIndex;
+	Data.AnimTime = AnimTime;
+	Data.NumOverrides = NumOverrides;
+	if ( !NDrawModelFramePose::IsValidHeader( Data ) || !NDrawModelFramePose::IsValidOverrides( Snapshot.GetData(), Snapshot.Num() ) )
+	{
+		return false;
+	}
+	constexpr int32 HeaderWords = sizeof( FDrawModelFramePoseData ) / 4; // 固定headerのword数。
+	constexpr int32 OverrideWords = sizeof( FDrawModelFrameOverrideData ) / 4; // 1pose recordのword数。
+	const int32 CommandWords = 1 + HeaderWords + NumOverrides * OverrideWords; // command header込みの長さ。
+	TArray<uint32>& Words = Buffer->Words; // 追記する共有command列。
+	if ( CommandWords > NDrawCommand::MaxWords || Words.Num() > TNumericLimits<int32>::Max() - CommandWords )
+	{
+		return false;
+	}
+	const int32 Begin = Words.AddZeroed( CommandWords ); // 新commandの先頭word位置。
+	uint32* const Out = Words.GetData() + Begin; // 新commandを書き込む位置。
+	Out[0] = NDrawCommand::MakeHeader( EDrawCommand::ModelFramePose3D, 0, CommandWords );
+	FMemory::Memcpy( Out + 1, &Data, sizeof( Data ) );
+	if ( NumOverrides > 0 )
+	{
+		FMemory::Memcpy( Out + 1 + HeaderWords, Snapshot.GetData(), static_cast<size_t>( NumOverrides ) * sizeof( FDrawModelFrameOverrideData ) );
+	}
+	return true;
+}
+
+void FDrawContext::MaterialMesh3D( const FDrawMaterialMeshData& Data, const FMeshVertex* Vertices, const uint32* Indices, bool bUseRegularCulling )
+{
+	// buffer再確保で入力headerが変わらないよう、固定設定を先に値として保持する。
+	FDrawMaterialMeshData Header{};
+	FMemory::Memcpy( &Header, &Data, sizeof( Header ) );
+	if ( Vertices == nullptr || Indices == nullptr || !NDrawMaterialMesh::IsValidHeader( Header ) )
+	{
+		return;
+	}
+	// 追記前に頂点payloadを所有し、入力aliasを切り離す配列。
+	TArray<FMeshVertex> CopiedVertices;
+	CopiedVertices.Append( Vertices, Header.NumVertices );
+	// 追記前にindex payloadを所有し、入力aliasを切り離す配列。
+	TArray<uint32> CopiedIndices;
+	CopiedIndices.Append( Indices, Header.NumIndices );
+	if ( !NDrawMaterialMesh::IsValid( Header, CopiedVertices.GetData(), CopiedIndices.GetData() ) )
+	{
+		return;
+	}
+	// 固定headerのword数。
+	constexpr size_t DataWords = sizeof( FDrawMaterialMeshData ) / 4;
+	// 頂点payloadのword数。
+	const size_t VertexWords = static_cast<size_t>( Header.NumVertices ) * sizeof( FMeshVertex ) / 4;
+	// index payloadのword数。
+	const size_t IndexWords = static_cast<size_t>( Header.NumIndices ) * sizeof( uint32 ) / 4;
+	// command headerを含めた全word数。
+	const size_t CommandWords = 1 + DataWords + VertexWords + IndexWords;
+	if ( CommandWords > static_cast<size_t>( NDrawCommand::MaxWords ) || Buffer->Words.Num() > TNumericLimits<int32>::Max() - static_cast<int32>( CommandWords ) )
+	{
+		return;
+	}
+	// 所有コピー済みデータを一度で広げて追記するword列。
+	TArray<uint32>& Words = Buffer->Words;
+	// 新しい命令を書き始める位置。
+	const int32 Begin = Words.AddZeroed( static_cast<int32>( CommandWords ) );
+	uint32* const Out = Words.GetData() + Begin;
+	// 材質meshの通常culling利用flag。
+	const uint8 Flags = bUseRegularCulling ? FDrawFlag::UseRegularCulling : 0;
+	Out[0] = NDrawCommand::MakeHeader( EDrawCommand::MaterialMesh3D, Flags, static_cast<int32>( CommandWords ) );
+	FMemory::Memcpy( Out + 1, &Header, sizeof( Header ) );
+	FMemory::Memcpy( Out + 1 + DataWords, CopiedVertices.GetData(), static_cast<size_t>( Header.NumVertices ) * sizeof( FMeshVertex ) );
+	FMemory::Memcpy( Out + 1 + DataWords + VertexWords, CopiedIndices.GetData(), static_cast<size_t>( Header.NumIndices ) * sizeof( uint32 ) );
+}
+
+void FDrawContext::Ribbon3D( const FDrawRibbonData::FPoint* Points, int32 NumPoints, int32 Texture, float32 UVRepeat, int32 JoinFlags )
+{
+	if ( Points == nullptr || NumPoints < 2 || NumPoints > FDrawRibbonData::MaxPoints || Texture < -1 || !NMath::IsFinite( UVRepeat ) || UVRepeat <= 0.0f || JoinFlags < 0 || ( JoinFlags & ~( FDrawRibbonData::PreviousPoint | FDrawRibbonData::NextPoint ) ) != 0 || NumPoints - static_cast<int32>( ( JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) - static_cast<int32>( ( JoinFlags & FDrawRibbonData::NextPoint ) != 0 ) < 2 )
+	{
+		return;
+	}
+	// テクスチャを反復する際に必要な、分割後の区間数。
+	int32 TextureSections = 0;
+	// 点列の途中だけを落として、不連続な経路へ変えてしまわないよう全点を先に確かめる。
+	for ( int32 Index = 0; Index < NumPoints; ++Index )
+	{
+		// 検査してから複写する、今回の経路の点。
+		const FDrawRibbonData::FPoint& Point = Points[Index];
+		if ( !NMath::IsFinite( Point.Pos[0] ) || !NMath::IsFinite( Point.Pos[1] ) || !NMath::IsFinite( Point.Pos[2] ) || !NMath::IsFinite( Point.Width ) || Point.Width < 0.0f || !NMath::IsFinite( Point.U ) || Point.U < 0.0f || !NMath::IsFinite( Point.U * UVRepeat ) )
+		{
+			return;
+		}
+		if ( Index > 0 && Point.U < Points[Index - 1].U )
+		{
+			return;
+		}
+		// 幅と接線には全点を使い、補助点が作る区間だけを除外する。
+		const bool bVisibleSegment = Index > 0 && !( Index == 1 && ( JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) && !( Index + 1 == NumPoints && ( JoinFlags & FDrawRibbonData::NextPoint ) != 0 );
+		if ( Texture >= 0 && bVisibleSegment )
+		{
+			// 始点側で使い始める画像の反復番号。
+			const float64 First = NMath::Floor( static_cast<float64>( Points[Index - 1].U * UVRepeat ) );
+			// 終点までに必要な反復数。整数境界と一致する終点では余分な区間を作らない。
+			const float64 Sections = NMath::Max( 1.0, NMath::Ceil( static_cast<float64>( Point.U * UVRepeat ) ) - First );
+			if ( Sections > static_cast<float64>( FDrawRibbonData::MaxTextureSections - TextureSections ) )
+			{
+				return;
+			}
+			TextureSections += static_cast<int32>( Sections );
+		}
+	}
+	// 命令の固定部分のワード数。
+	constexpr size_t DataWords = sizeof( FDrawRibbonData ) / 4;
+	// 点列の可変部分のワード数。点数の上限を検査した後に計算する。
+	const size_t PointWords = static_cast<size_t>( NumPoints ) * sizeof( FDrawRibbonData::FPoint ) / 4;
+	// 命令ヘッダー自身を含む全体のワード数。
+	const size_t CommandWords = 1 + DataWords + PointWords;
+	if ( CommandWords > static_cast<size_t>( NDrawCommand::MaxWords ) || Buffer->Words.Num() > TNumericLimits<int32>::Max() - static_cast<int32>( CommandWords ) )
+	{
+		return;
+	}
+	// Pointsが既存の記録領域を参照する場合も、広げて失効する前に複写する。
+	TArray<FDrawRibbonData::FPoint> Copied;
+	Copied.Append( Points, NumPoints );
+	// 点列に先行する、固定長の描画設定。
+	FDrawRibbonData Data;
+	Data.Texture = Texture;
+	Data.NumPoints = NumPoints;
+	Data.UVRepeat = UVRepeat;
+	Data.JoinFlags = JoinFlags;
+	// 既存の描画命令が入っている、今回の追記先。
+	TArray<uint32>& Words = Buffer->Words;
+	// 追加する命令の先頭。
+	const int32 Begin = Words.AddZeroed( static_cast<int32>( CommandWords ) );
+	uint32* const Out = Words.GetData() + Begin;
+	Out[0] = NDrawCommand::MakeHeader( EDrawCommand::Ribbon3D, 0, static_cast<int32>( CommandWords ) );
+	FMemory::Memcpy( Out + 1, &Data, sizeof( Data ) );
+	FMemory::Memcpy( Out + 1 + DataWords, Copied.GetData(), static_cast<size_t>( NumPoints ) * sizeof( FDrawRibbonData::FPoint ) );
+}
+
+bool FDrawContext::PushPrimitive3D( const FVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, EDrawPrimitive Type, int32 Texture )
+{
+	if ( Vertices == nullptr )
+	{
+		return false;
+	}
+	const bool bIndexed = Indices != nullptr;
+	if ( !bIndexed && NumIndices != 0 )
+	{
+		return false;
+	}
+	// つなぎ方に合う数か（添字があれば添字の数、なければ頂点の数）。範囲の外のつなぎ方と、0 以下の数は、使えない数なので、ここで弾かれる
+	// （添字つきで、頂点の数が 0 以下なら、あとの添字の確認が弾く）
+	if ( !NDrawPrimitive::IsValidCount( Type, bIndexed ? NumIndices : NumVertices ) )
+	{
+		return false;
+	}
+	// 1 つの命令に収まる大きさか
+	const size_t CommandWords = FDrawPrimitive3DData::GetCommandWords( NumVertices, NumIndices );
+	if ( CommandWords > static_cast<size_t>( NDrawCommand::MaxWords ) || Buffer->Words.Num() > TNumericLimits<int32>::Max() - static_cast<int32>( CommandWords ) )
+	{
+		return false;
+	}
+	// 一部の頂点だけ捨てると、形が変わってしまうので、全部を先に確かめる
+	for ( int32 Index = 0; Index < NumVertices; ++Index )
+	{
+		if ( !Vertices[Index].IsValid() )
+		{
+			return false;
+		}
+	}
+	for ( int32 Index = 0; Index < NumIndices; ++Index )
+	{
+		if ( Indices[Index] >= NumVertices )
+		{
+			return false;
+		}
+	}
+
+	constexpr size_t DataWords = sizeof( FDrawPrimitive3DData ) / 4;
+	constexpr size_t VertexWords = sizeof( FDrawVertex3D ) / 4;
+	FDrawPrimitive3DData Data;
+	Data.Type = static_cast<int32>( Type );
+	Data.Texture = Texture;
+	Data.NumVertices = NumVertices;
+	Data.NumIndices = NumIndices;
+	TArray<uint32>& Words = Buffer->Words;
+	const int32 Begin = Words.AddZeroed( static_cast<int32>( CommandWords ) );
+	uint32* const Out = Words.GetData() + Begin;
+	Out[0] = NDrawCommand::MakeHeader( EDrawCommand::Primitive3D, 0, static_cast<int32>( CommandWords ) );
+	FMemory::Memcpy( Out + 1, &Data, sizeof( Data ) );
+	for ( int32 Index = 0; Index < NumVertices; ++Index )
+	{
+		const FDrawVertex3D Vertex = Vertices[Index].ToDrawData();
+		FMemory::Memcpy( Out + 1 + DataWords + static_cast<size_t>( Index ) * VertexWords, &Vertex, sizeof( Vertex ) );
+	}
+	if ( bIndexed )
+	{
+		// 2 個で 1 ワード。奇数個の最後の半分は、AddZeroed の 0 のまま
+		FMemory::Memcpy( Out + 1 + DataWords + static_cast<size_t>( NumVertices ) * VertexWords, Indices, static_cast<size_t>( NumIndices ) * sizeof( uint16 ) );
+	}
+	return true;
+}
+
+bool FDrawContext::PushPrimitiveBuffer3D( FVertexBufferHandle Vertices, FIndexBufferHandle Indices, bool bIndexed, EDrawPrimitive Type, int32 Texture, const FBufferRange& Range )
+{
+	if ( !Vertices.IsValid() || ( bIndexed && !Indices.IsValid() ) )
+	{
+		return false;
+	}
+	// 添字なしでは、BaseVertex は意味がない（0 のまま）
+	if ( !bIndexed && Range.BaseVertex != 0 )
+	{
+		return false;
+	}
+	// 使う範囲（添字ありなら添字の範囲、なしなら頂点の範囲）が、バッファに収まり、つなぎ方に合う数か。足し算は、溢れないよう 64 ビットで
+	const int32 NumBuffer = bIndexed ? Indices.NumIndices : Vertices.NumVertices;
+	if ( Range.Start < 0 )
+	{
+		return false;
+	}
+	const int64 Num = Range.Num < 0 ? static_cast<int64>( NumBuffer ) - Range.Start : Range.Num;
+	if ( Range.Start + Num > NumBuffer || !NDrawPrimitive::IsValidCount( Type, static_cast<int32>( Num ) ) )
+	{
+		return false;
+	}
+	FDrawPrimitiveBuffer3DData Data;
+	Data.Type = static_cast<int32>( Type );
+	Data.Texture = Texture;
+	Data.VertexBuffer = Vertices.Value;
+	Data.NumBufferVertices = Vertices.NumVertices;
+	Data.IndexBuffer = bIndexed ? Indices.Value : -1;
+	Data.NumBufferIndices = bIndexed ? Indices.NumIndices : 0;
+	Data.Start = Range.Start;
+	Data.Num = static_cast<int32>( Num );
+	Data.BaseVertex = Range.BaseVertex;
+	Push( EDrawCommand::PrimitiveBuffer3D, 0, Data );
+	return true;
+}
+
+void FDrawContext::Text( int32 X, int32 Y, const char* String, const FColor32& Color )
+{
+	constexpr size_t DataWords = sizeof( FDrawTextData ) / 4;
+	// ヘッダに収まる大きさまで（それより長い文字列は切る）
+	const size_t MaxChars = ( static_cast<size_t>( NDrawCommand::MaxWords ) - 1 - DataWords ) * 4 - 1;
+	size_t Length = String != nullptr ? NCString::Length( String ) : 0;
+	if ( Length > MaxChars )
+	{
+		Length = MaxChars;
+	}
+	const size_t CharWords = ( Length + 1 + 3 ) / 4;   // '\0' を含めて、4 バイト境界まで
+
+	FDrawTextData Data;
+	Data.X = X;
+	Data.Y = Y;
+	Data.Color = Rgb( Color );
+	Data.Length = static_cast<int32>( Length );
+
+	TArray<uint32>& Words = Buffer->Words;
+	const int32 Begin = Words.AddZeroed( static_cast<int32>( 1 + DataWords + CharWords ) );   // 0 で埋まる（終端の '\0' と、境界までの隙間）
+	uint32* const Out = Words.GetData() + Begin;
+	Out[0] = NDrawCommand::MakeHeader( EDrawCommand::Text, 0, static_cast<int32>( 1 + DataWords + CharWords ) );
+	FMemory::Memcpy( Out + 1, &Data, sizeof( Data ) );
+	if ( Length > 0 )
+	{
+		FMemory::Memcpy( Out + 1 + DataWords, String, Length );
+	}
+}
+
+void FDrawContext::TextWithFont( int32 FontHandle, int32 X, int32 Y, const char* String, const FColor32& Color, EDrawTextAlign Align, const FColor32& EdgeColor )
+{
+	constexpr size_t DataWords = sizeof( FDrawTextFontData ) / 4;
+	const size_t MaxChars = ( static_cast<size_t>( NDrawCommand::MaxWords ) - 1 - DataWords ) * 4 - 1;
+	size_t Length = String != nullptr ? NCString::Length( String ) : 0;
+	if ( Length > MaxChars )
+	{
+		Length = MaxChars;
+	}
+	const size_t CharWords = ( Length + 1 + 3 ) / 4;
+
+	FDrawTextFontData Data;
+	Data.X = X;
+	Data.Y = Y;
+	Data.Color = Rgb( Color );
+	Data.Length = static_cast<int32>( Length );
+	Data.Font = FontHandle;
+	Data.EdgeColor = Rgb( EdgeColor );
+
+	uint8 Flags = 0;
+	if ( Align == EDrawTextAlign::Center )
+	{
+		Flags = FDrawFlag::AlignCenter;
+	}
+	else if ( Align == EDrawTextAlign::Right )
+	{
+		Flags = FDrawFlag::AlignRight;
+	}
+
+	TArray<uint32>& Words = Buffer->Words;
+	const int32 Begin = Words.AddZeroed( static_cast<int32>( 1 + DataWords + CharWords ) );
+	uint32* const Out = Words.GetData() + Begin;
+	Out[0] = NDrawCommand::MakeHeader( EDrawCommand::TextFont, Flags, static_cast<int32>( 1 + DataWords + CharWords ) );
+	FMemory::Memcpy( Out + 1, &Data, sizeof( Data ) );
+	if ( Length > 0 )
+	{
+		FMemory::Memcpy( Out + 1 + DataWords, String, Length );
+	}
+}
+
+namespace
+{
+	// 文字列つきの命令を、Buffer の最後に足す（命令のヘッダ + データ + 文字列 + 終端、4 バイト境界まで 0）。文字列は、長すぎれば切る
+	void PushStyledText( FDrawBuffer& Buffer, const FDrawTextStyledData& Source, const char* String )
+	{
+		constexpr size_t DataWords = sizeof( FDrawTextStyledData ) / 4;
+		const size_t MaxChars = ( static_cast<size_t>( NDrawCommand::MaxWords ) - 1 - DataWords ) * 4 - 1;
+		size_t Length = NCString::Length( String );
+		if ( Length > MaxChars )
+		{
+			Length = MaxChars;
+		}
+		const size_t CharWords = ( Length + 1 + 3 ) / 4;
+
+		FDrawTextStyledData Data = Source;
+		Data.Length = static_cast<int32>( Length );
+
+		TArray<uint32>& Words = Buffer.Words;
+		const int32 Begin = Words.AddZeroed( static_cast<int32>( 1 + DataWords + CharWords ) );
+		uint32* const Out = Words.GetData() + Begin;
+		Out[0] = NDrawCommand::MakeHeader( EDrawCommand::TextStyled, 0, static_cast<int32>( 1 + DataWords + CharWords ) );
+		FMemory::Memcpy( Out + 1, &Data, sizeof( Data ) );
+		if ( Length > 0 )
+		{
+			FMemory::Memcpy( Out + 1 + DataWords, String, Length );
+		}
+	}
+}
+
+void FDrawContext::Depth( const FDepthState& State )
+{
+	if ( !State.IsValid() )
+	{
+		return;
+	}
+	FDrawDepthData Data;
+	Data.TestDepth = State.bTestDepth ? 1 : 0;
+	Data.WriteDepth = State.bWriteDepth ? 1 : 0;
+	Data.Compare = static_cast<int32>( State.Compare );
+	Data.Bias = NMath::Clamp( State.Bias, -FDepthState::MaxBias, FDepthState::MaxBias );
+	Push( EDrawCommand::Depth, 0, Data );
+}
+
+void FDrawContext::TextureAddress( EDrawTextureAddress U, EDrawTextureAddress V )
+{
+	const int32 Last = static_cast<int32>( EDrawTextureAddress::Border );
+	if ( !IsInEnumRange( static_cast<int32>( U ), Last ) || !IsInEnumRange( static_cast<int32>( V ), Last ) )
+	{
+		return;
+	}
+	FDrawTextureAddressData Data;
+	Data.U = static_cast<int32>( U );
+	Data.V = static_cast<int32>( V );
+	Push( EDrawCommand::TextureAddress, 0, Data );
+}
+
+void FDrawContext::TextureTransform( const FTextureTransform& Transform )
+{
+	if ( !Transform.IsValid() )
+	{
+		return;
+	}
+	FDrawTextureTransformData Data;
+	if ( !Transform.IsIdentity() )
+	{
+		Data.Enabled = 1;
+		Data.TranslationU = Transform.Translation.x;
+		Data.TranslationV = Transform.Translation.y;
+		Data.ScaleU = Transform.Scale.x;
+		Data.ScaleV = Transform.Scale.y;
+		Data.CenterU = Transform.RotationCenter.x;
+		Data.CenterV = Transform.RotationCenter.y;
+		Data.Rotation = Transform.Rotation;
+	}
+	Push( EDrawCommand::TextureTransform, 0, Data );
+}
+
+namespace
+{
+	// フォグの設定を命令のデータにする（Mode が None なら、色などは使われない）
+	FDrawFogData MakeFogData( const FFogSettings& Settings )
+	{
+		FDrawFogData Data;
+		Data.Mode = static_cast<int32>( Settings.Mode );
+		if ( Settings.Mode != EDrawFogMode::None )
+		{
+			Data.Color = FDrawRgb{ Settings.Color.r, Settings.Color.g, Settings.Color.b, 0 };
+			Data.Start = Settings.Start;
+			Data.End = Settings.End;
+			Data.Density = Settings.Density;
+		}
+		return Data;
+	}
+}
+
+void FDrawContext::Fog( const FFogSettings& Settings )
+{
+	if ( !Settings.IsValid() )
+	{
+		return;
+	}
+	Push( EDrawCommand::Fog, 0, MakeFogData( Settings ) );
+}
+
+void FDrawContext::HeightFog( const FFogSettings& Settings )
+{
+	if ( !Settings.IsValid() )
+	{
+		return;
+	}
+	Push( EDrawCommand::HeightFog, 0, MakeFogData( Settings ) );
+}
+
+namespace
+{
+	// 色の 3 成分（アルファは使わない）を、命令のデータに入れる
+	void SetColor3( float32 ( &Out )[3], const FColor& Color )
+	{
+		Out[0] = Color.r;
+		Out[1] = Color.g;
+		Out[2] = Color.b;
+	}
+}
+
+void FDrawContext::AmbientLight( const FColor& Color )
+{
+	if ( !NMath::IsFinite( Color.r ) || !NMath::IsFinite( Color.g ) || !NMath::IsFinite( Color.b ) )
+	{
+		return;
+	}
+	FDrawAmbientLightData Data;
+	SetColor3( Data.Color, Color );
+	Push( EDrawCommand::AmbientLight, 0, Data );
+}
+
+void FDrawContext::SurfaceMaterial( const FSurfaceMaterial& Material )
+{
+	if ( !Material.IsValid() )
+	{
+		return;
+	}
+	FDrawSurfaceMaterialData Data;
+	SetColor3( Data.Diffuse, Material.Diffuse );
+	SetColor3( Data.Ambient, Material.Ambient );
+	SetColor3( Data.Specular, Material.Specular );
+	SetColor3( Data.Emissive, Material.Emissive );
+	Data.Shininess = Material.Shininess;
+	Data.UseVertexDiffuse = Material.bUseVertexDiffuse ? 1 : 0;
+	Data.UseVertexSpecular = Material.bUseVertexSpecular ? 1 : 0;
+	Push( EDrawCommand::SurfaceMaterial, 0, Data );
+}
+
+bool FDrawContext::PushLight( const FLight& Light )
+{
+	if ( !Light.IsValid() )
+	{
+		return false;
+	}
+	FDrawLightData Data;
+	Data.Type = static_cast<int32>( Light.Type );
+	Set3( Data.Position, Light.Position );
+	Set3( Data.Direction, Light.Direction );
+	SetColor3( Data.Diffuse, Light.Diffuse );
+	SetColor3( Data.Specular, Light.Specular );
+	SetColor3( Data.Ambient, Light.Ambient );
+	Data.Range = Light.Range;
+	Data.ConstantAttenuation = Light.ConstantAttenuation;
+	Data.LinearAttenuation = Light.LinearAttenuation;
+	Data.QuadraticAttenuation = Light.QuadraticAttenuation;
+	Data.OuterAngle = Light.OuterAngle;
+	Data.InnerAngle = Light.InnerAngle;
+	Data.ShadowMapSlots = Light.ShadowMapSlots;
+	Push( EDrawCommand::PushLight, 0, Data );
+	return true;
+}
+
+bool FDrawContext::BeginShadowMap( FShadowMapHandle ShadowMap, const FShadowMapView& View )
+{
+	// 使えない値でも記録する（ハンドルを負にして）。記録しないと、影を落とすはずの図形が、画面にそのまま描かれてしまう
+	const bool bValid = ShadowMap.IsValid() && View.IsValid();
+	FDrawBeginShadowMapData Data;
+	if ( bValid )
+	{
+		Data.Handle = ShadowMap.Value;
+		Set3( Data.Direction, View.LightDirection );
+		Data.HasArea = View.bFitToCamera ? 0 : 1;
+		Set3( Data.AreaMin, View.AreaMin );
+		Set3( Data.AreaMax, View.AreaMax );
+		Data.AdjustDepth = View.AdjustDepth;
+	}
+	Push( EDrawCommand::BeginShadowMap, 0, Data );
+	return bValid;
+}
+
+bool FDrawContext::UseShadowMap( int32 Slot, FShadowMapHandle ShadowMap )
+{
+	if ( Slot < 0 || Slot >= NDrawShadowMap::NumSlots || !ShadowMap.IsValid() )
+	{
+		return false;
+	}
+	FDrawUseShadowMapData Data;
+	Data.Slot = Slot;
+	Data.Handle = ShadowMap.Value;
+	Push( EDrawCommand::UseShadowMap, 0, Data );
+	return true;
+}
+
+void FDrawContext::StopUsingShadowMap( int32 Slot )
+{
+	if ( Slot < 0 || Slot >= NDrawShadowMap::NumSlots )
+	{
+		return;
+	}
+	FDrawUseShadowMapData Data;
+	Data.Slot = Slot;
+	Data.Handle = -1;
+	Push( EDrawCommand::UseShadowMap, 0, Data );
+}
+
+bool FDrawContext::PreviewShadowMap( FShadowMapHandle ShadowMap, int32 X0, int32 Y0, int32 X1, int32 Y1 )
+{
+	if ( !ShadowMap.IsValid() || X1 <= X0 || Y1 <= Y0 )
+	{
+		return false;
+	}
+	FDrawPreviewShadowMapData Data;
+	Data.Handle = ShadowMap.Value;
+	Data.X0 = X0;
+	Data.Y0 = Y0;
+	Data.X1 = X1;
+	Data.Y1 = Y1;
+	Push( EDrawCommand::PreviewShadowMap, 0, Data );
+	return true;
+}
+
+bool FDrawContext::PushUseShader( EShaderStage Stage, FShaderHandle Shader )
+{
+	if ( !Shader.IsValid() || Shader.Stage != Stage )
+	{
+		return false;
+	}
+	FDrawUseShaderData Data;
+	Data.Stage = static_cast<int32>( Stage );
+	Data.Handle = Shader.Value;
+	Push( EDrawCommand::UseShader, 0, Data );
+	return true;
+}
+
+bool FDrawContext::UseVertexShader( FShaderHandle Shader )
+{
+	return PushUseShader( EShaderStage::Vertex, Shader );
+}
+
+bool FDrawContext::UsePixelShader( FShaderHandle Shader )
+{
+	return PushUseShader( EShaderStage::Pixel, Shader );
+}
+
+void FDrawContext::StopUsingVertexShader()
+{
+	FDrawUseShaderData Data;
+	Data.Stage = static_cast<int32>( EShaderStage::Vertex );
+	Data.Handle = -1;
+	Push( EDrawCommand::UseShader, 0, Data );
+}
+
+void FDrawContext::StopUsingPixelShader()
+{
+	FDrawUseShaderData Data;
+	Data.Stage = static_cast<int32>( EShaderStage::Pixel );
+	Data.Handle = -1;
+	Push( EDrawCommand::UseShader, 0, Data );
+}
+
+bool FDrawContext::ShaderConstants( EShaderStage Stage, int32 Slot, const void* Data, int32 NumBytes )
+{
+	if ( ( Stage != EShaderStage::Vertex && Stage != EShaderStage::Pixel ) || Slot < NDrawShader::FirstUserSlot || Slot > NDrawShader::LastUserSlot
+		|| Data == nullptr || NumBytes < 16 || NumBytes > NDrawShader::MaxConstantBytes || NumBytes % 16 != 0 )
+	{
+		return false;
+	}
+	constexpr int32 HeaderWords = static_cast<int32>( sizeof( FDrawShaderConstantsData ) / 4 );
+	const int32 CommandWords = 1 + HeaderWords + NumBytes / 4;
+	TArray<uint32>& Words = Buffer->Words;
+	if ( Words.Num() > TNumericLimits<int32>::Max() - CommandWords )
+	{
+		return false;
+	}
+	FDrawShaderConstantsData Header;
+	Header.Stage = static_cast<int32>( Stage );
+	Header.Slot = Slot;
+	Header.NumBytes = NumBytes;
+	const int32 Begin = Words.AddZeroed( CommandWords );
+	uint32* const Out = Words.GetData() + Begin;
+	Out[0] = NDrawCommand::MakeHeader( EDrawCommand::ShaderConstants, 0, CommandWords );
+	FMemory::Memcpy( Out + 1, &Header, sizeof( Header ) );
+	FMemory::Memcpy( Out + 1 + HeaderWords, Data, static_cast<size_t>( NumBytes ) );
+	return true;
+}
+
+bool FDrawContext::ShaderTexture( int32 Stage, FImageHandle Image )
+{
+	if ( Stage < 0 || Stage >= NDrawShader::NumTextureStages || !Image.IsValid() )
+	{
+		return false;
+	}
+	FDrawShaderTextureData Data;
+	Data.Stage = Stage;
+	Data.Handle = Image.Value;
+	Push( EDrawCommand::ShaderTexture, 0, Data );
+	return true;
+}
+
+void FDrawContext::StopUsingShaderTexture( int32 Stage )
+{
+	if ( Stage < 0 || Stage >= NDrawShader::NumTextureStages )
+	{
+		return;
+	}
+	FDrawShaderTextureData Data;
+	Data.Stage = Stage;
+	Data.Handle = -1;
+	Push( EDrawCommand::ShaderTexture, 0, Data );
+}
+
+bool FDrawContext::ShaderOutputTarget( int32 Index, FImageHandle Target )
+{
+	if ( Index < 1 || Index >= NDrawShader::NumOutputTargets || !Target.IsValid() )
+	{
+		return false;
+	}
+	FDrawShaderOutputTargetData Data;
+	Data.Index = Index;
+	Data.Handle = Target.Value;
+	Push( EDrawCommand::ShaderOutputTarget, 0, Data );
+	return true;
+}
+
+void FDrawContext::StopUsingShaderOutputTarget( int32 Index )
+{
+	if ( Index < 1 || Index >= NDrawShader::NumOutputTargets )
+	{
+		return;
+	}
+	FDrawShaderOutputTargetData Data;
+	Data.Index = Index;
+	Data.Handle = -1;
+	Push( EDrawCommand::ShaderOutputTarget, 0, Data );
+}
+
+bool FDrawContext::PrimitiveShader3D( const FShaderVertex3D* Vertices, int32 NumVertices, EDrawPrimitive Type )
+{
+	return PushPrimitiveShader3D( Vertices, NumVertices, nullptr, 0, Type );
+}
+
+bool FDrawContext::PrimitiveIndexedShader3D( const FShaderVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, EDrawPrimitive Type )
+{
+	return Indices != nullptr && PushPrimitiveShader3D( Vertices, NumVertices, Indices, NumIndices, Type );
+}
+
+bool FDrawContext::PushPrimitiveShader3D( const FShaderVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, EDrawPrimitive Type )
+{
+	if ( Vertices == nullptr )
+	{
+		return false;
+	}
+	const bool bIndexed = Indices != nullptr;
+	if ( !bIndexed && NumIndices != 0 )
+	{
+		return false;
+	}
+	// つなぎ方に合う数か（添字があれば添字の数、なければ頂点の数）。範囲の外のつなぎ方と、0 以下の数は、使えない数なので、ここで弾かれる
+	if ( !NDrawPrimitive::IsValidCount( Type, bIndexed ? NumIndices : NumVertices ) )
+	{
+		return false;
+	}
+	// 1 つの命令に収まる大きさか
+	const size_t CommandWords = FDrawPrimitiveShader3DData::GetCommandWords( NumVertices, NumIndices );
+	if ( CommandWords == 0 || CommandWords > static_cast<size_t>( NDrawCommand::MaxWords ) || Buffer->Words.Num() > TNumericLimits<int32>::Max() - static_cast<int32>( CommandWords ) )
+	{
+		return false;
+	}
+	// 一部の頂点だけ捨てると、形が変わってしまうので、全部を先に確かめる
+	for ( int32 Index = 0; Index < NumVertices; ++Index )
+	{
+		if ( !Vertices[Index].IsValid() )
+		{
+			return false;
+		}
+	}
+	for ( int32 Index = 0; Index < NumIndices; ++Index )
+	{
+		if ( Indices[Index] >= NumVertices )
+		{
+			return false;
+		}
+	}
+
+	constexpr size_t DataWords = sizeof( FDrawPrimitiveShader3DData ) / 4;
+	constexpr size_t VertexWords = sizeof( FDrawShaderVertex3D ) / 4;
+	FDrawPrimitiveShader3DData Data;
+	Data.Type = static_cast<int32>( Type );
+	Data.NumVertices = NumVertices;
+	Data.NumIndices = NumIndices;
+	TArray<uint32>& Words = Buffer->Words;
+	const int32 Begin = Words.AddZeroed( static_cast<int32>( CommandWords ) );
+	uint32* const Out = Words.GetData() + Begin;
+	Out[0] = NDrawCommand::MakeHeader( EDrawCommand::PrimitiveShader3D, 0, static_cast<int32>( CommandWords ) );
+	FMemory::Memcpy( Out + 1, &Data, sizeof( Data ) );
+	for ( int32 Index = 0; Index < NumVertices; ++Index )
+	{
+		const FDrawShaderVertex3D Vertex = Vertices[Index].ToDrawData();
+		FMemory::Memcpy( Out + 1 + DataWords + static_cast<size_t>( Index ) * VertexWords, &Vertex, sizeof( Vertex ) );
+	}
+	if ( bIndexed )
+	{
+		// 2 個で 1 ワード。奇数個の最後の半分は、AddZeroed の 0 のまま
+		FMemory::Memcpy( Out + 1 + DataWords + static_cast<size_t>( NumVertices ) * VertexWords, Indices, static_cast<size_t>( NumIndices ) * sizeof( uint16 ) );
+	}
+	return true;
+}
+
+bool FDrawContext::ShaderRect( float32 X, float32 Y, float32 Width, float32 Height, const FColor32& Color )
+{
+	return ShaderRect( X, Y, Width, Height, 0.0f, 0.0f, 1.0f, 1.0f, Color );
+}
+
+bool FDrawContext::ShaderRect( float32 X, float32 Y, float32 Width, float32 Height, float32 U0, float32 V0, float32 U1, float32 V1, const FColor32& Color )
+{
+	if ( !AllDrawable( X, Y, Width, Height ) || Width <= 0.0f || Height <= 0.0f || !NMath::IsFinite( U0 ) || !NMath::IsFinite( V0 ) || !NMath::IsFinite( U1 ) || !NMath::IsFinite( V1 ) )
+	{
+		return false;
+	}
+	FDrawShaderRectData Data;
+	Data.X = X;
+	Data.Y = Y;
+	Data.Width = Width;
+	Data.Height = Height;
+	Data.U0 = U0;
+	Data.V0 = V0;
+	Data.U1 = U1;
+	Data.V1 = V1;
+	Data.Color[0] = Color.r;
+	Data.Color[1] = Color.g;
+	Data.Color[2] = Color.b;
+	Data.Color[3] = Color.a;
+	Push( EDrawCommand::ShaderRect, 0, Data );
+	return true;
+}
+
+bool FDrawContext::PushWorldMatrix( const FMatrix4x4& Local )
+{
+	FDrawMatrixData Data;
+	PackAffine( Data.M, Local );
+	for ( const float32 Value : Data.M )
+	{
+		if ( !NMath::IsFinite( Value ) )
+		{
+			return false;
+		}
+	}
+	Push( EDrawCommand::PushWorldMatrix, 0, Data );
+	return true;
+}
+
+bool FDrawContext::PushCamera( const FCamera& Camera )
+{
+	if ( !Camera.IsValid() )
+	{
+		return false;
+	}
+	FDrawCameraData Data;
+	Data.Position[0] = Camera.Position.x;
+	Data.Position[1] = Camera.Position.y;
+	Data.Position[2] = Camera.Position.z;
+	Data.Target[0] = Camera.Target.x;
+	Data.Target[1] = Camera.Target.y;
+	Data.Target[2] = Camera.Target.z;
+	Data.Up[0] = Camera.Up.x;
+	Data.Up[1] = Camera.Up.y;
+	Data.Up[2] = Camera.Up.z;
+	Data.Orthographic = Camera.Projection == ECameraProjection::Orthographic ? 1 : 0;
+	Data.FovY = Camera.FovY;
+	Data.OrthoHeight = Camera.OrthoHeight;
+	Data.Near = Camera.Near;
+	Data.Far = Camera.Far;
+	Data.HorizontalStretch = Camera.HorizontalStretch;
+	Data.ScreenOffsetX = Camera.ScreenOffset.x;
+	Data.ScreenOffsetY = Camera.ScreenOffset.y;
+	Push( EDrawCommand::PushCamera, 0, Data );
+	return true;
+}
+
+bool FDrawContext::TextStyled( int32 FontHandle, float32 X, float32 Y, const char* String, const FColor32& Color, const FTextStyle& Style )
+{
+	if ( String == nullptr || !AllDrawable( X, Y, Style.ScaleX, Style.ScaleY, Style.AngleRadians, Style.AnchorX, Style.AnchorY, Style.ShadowOffsetX, Style.ShadowOffsetY ) || Style.ScaleX <= 0.0f || Style.ScaleY <= 0.0f )
+	{
+		return false;
+	}
+	FDrawTextStyledData Data;
+	Data.X = X;
+	Data.Y = Y;
+	Data.ScaleX = Style.ScaleX;
+	Data.ScaleY = Style.ScaleY;
+	Data.Angle = Style.AngleRadians;
+	Data.AnchorX = Style.AnchorX;
+	Data.AnchorY = Style.AnchorY;
+	Data.Font = FontHandle;
+	Data.Vertical = Style.bVertical ? 1 : 0;
+	if ( Style.bShadow )
+	{
+		FDrawTextStyledData Shadow = Data;
+		Shadow.X = X + Style.ShadowOffsetX;
+		Shadow.Y = Y + Style.ShadowOffsetY;
+		Shadow.Color = Rgb( Style.ShadowColor );
+		Shadow.EdgeColor = Rgb( Style.ShadowColor );
+		PushStyledText( *Buffer, Shadow, String );
+	}
+	Data.Color = Rgb( Color );
+	Data.EdgeColor = Rgb( Style.EdgeColor );
+	PushStyledText( *Buffer, Data, String );
+	return true;
+}
+
+void FDrawContext::TextF( int32 X, int32 Y, const FColor32& Color, const char* Format, ... )
+{
+	char Small[256];
+
+	va_list Args;
+	va_start( Args, Format );
+	va_list ArgsCopy;
+	va_copy( ArgsCopy, Args );
+	const int Needed = NCString::FormatV( Small, sizeof( Small ), Format, Args );
+	va_end( Args );
+
+	if ( Needed < 0 )
+	{
+		Text( X, Y, "", Color );
+	}
+	else if ( Needed < static_cast<int>( sizeof( Small ) ) )
+	{
+		Text( X, Y, Small, Color );
+	}
+	else
+	{
+		TArray<char> Large;
+		Large.SetNum( Needed + 1 );
+		NCString::FormatV( Large.GetData(), static_cast<size_t>( Large.Num() ), Format, ArgsCopy );
+		Text( X, Y, Large.GetData(), Color );
+	}
+	va_end( ArgsCopy );
+}

@@ -2,8 +2,8 @@
 #pragma once
 
 #include "Library/Core/Memory/SharedPtr.h"
-#include "Library/Framework/Asset/Font.h"
-#include "Library/Framework/Asset/Texture.h"
+#include "Library/Framework/Asset/Font/Font.h"
+#include "Library/Framework/Asset/Texture/Texture.h"
 #include "Library/Framework/Object/GameObject.h"
 #include "Library/Math/Math.h"
 #include "Source/Village/VillageState.h"

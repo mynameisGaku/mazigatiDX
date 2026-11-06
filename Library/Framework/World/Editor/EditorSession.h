@@ -7,7 +7,7 @@
 #include "Library/Framework/World/Editor/EditorMeshPicking.h"
 #include "Library/Framework/World/Editor/EditorPicking.h"
 #include "Library/Framework/World/Editor/EditorPlacement.h"
-#include "Library/Framework/World/WorldEdit.h"
+#include "Library/Framework/World/Definition/WorldEdit.h"
 
 //=============================================================================
 // ワールドエディタの「編集の状態」

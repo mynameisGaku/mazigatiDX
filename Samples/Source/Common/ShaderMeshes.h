@@ -2,7 +2,7 @@
 #pragma once
 
 #include "Library/Core/Collection/Array.h"
-#include "Library/Framework/Render/ShaderVertex.h"
+#include "Library/Framework/Render/Types/ShaderVertex.h"
 
 //=============================================================================
 // NShaderMeshes

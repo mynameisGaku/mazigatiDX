@@ -1,7 +1,7 @@
 ﻿#include "LightingScenery.h"
 
 #include "Library/Framework/Asset/AssetManager.h"
-#include "Library/Framework/Asset/PixelImage.h"
+#include "Library/Framework/Asset/Texture/PixelImage.h"
 
 namespace
 {

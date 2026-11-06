@@ -5,7 +5,7 @@
 #include "Library/Core/Types/Callable.h"
 #include "Library/Core/Types/TypeDefinition.h"
 #include "Library/Framework/Engine/Engine.h"
-#include "Library/Platform/WindowSettings.h"
+#include "Library/Platform/System/WindowSettings.h"
 
 //=============================================================================
 // NGameMain

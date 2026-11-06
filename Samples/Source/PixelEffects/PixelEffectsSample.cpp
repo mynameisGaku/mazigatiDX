@@ -23,8 +23,8 @@
 #include "Library/Framework/PixelEffect/Effects/PixelSplashEffect.h"
 #include "Library/Framework/PixelEffect/Effects/PixelWarpEffect.h"
 #include "Library/Framework/PixelEffect/Effects/PixelWindEffect.h"
-#include "Library/Framework/PixelEffect/PixelStockActor.h"
-#include "Library/Framework/Render/ImmediateDraw.h"
+#include "Library/Framework/PixelEffect/Playback/PixelStockActor.h"
+#include "Library/Framework/Render/Draw/ImmediateDraw.h"
 #include "Source/Catalog/SampleCatalog.h"
 #include "Source/PixelEffects/PixelEffectTile.h"
 

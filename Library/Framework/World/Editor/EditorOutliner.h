@@ -2,7 +2,7 @@
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/Set.h"
 #include "Library/Core/Collection/String.h"
-#include "Library/Framework/World/WorldDefinition.h"
+#include "Library/Framework/World/Definition/WorldDefinition.h"
 
 //=============================================================================
 // アウトライナー（オブジェクトの一覧の木）の表示内容

@@ -2,10 +2,10 @@
 
 
 #include "Library/Core/Types/Numeric.h"
-#include "Library/Framework/Asset/Import/ModelFormats.h"
+#include "Library/Framework/Asset/Model/Import/ModelFormats.h"
 #include "Library/Framework/Effect/EffectBackend.h"
 #include "Library/Framework/World/Mesh/EditMeshOps.h"
-#include "Library/Framework/World/WorldHierarchy.h"
+#include "Library/Framework/World/Definition/WorldHierarchy.h"
 
 namespace
 {

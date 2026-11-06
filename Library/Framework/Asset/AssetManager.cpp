@@ -10,11 +10,11 @@
 #include "Library/Core/Thread/Mutex.h"
 #include "Library/Core/Thread/Thread.h"
 #include "Library/Core/Time/PlatformTime.h"
-#include "Library/Framework/Asset/FontFile.h"
+#include "Library/Framework/Asset/Font/FontFile.h"
 #include "Library/Framework/Profiler/ProfilerAnalyzer.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 #include "Library/Json/JsonObject.h"
-#include "Library/Platform/FileSystem.h"
+#include "Library/Platform/System/FileSystem.h"
 
 DEFINE_LOG_CATEGORY( LogAsset )
 

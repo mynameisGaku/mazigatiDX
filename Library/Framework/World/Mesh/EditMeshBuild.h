@@ -1,6 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
-#include "Library/Framework/Render/MeshTypes.h"
+#include "Library/Framework/Render/Types/MeshTypes.h"
 #include "Library/Framework/World/Mesh/EditMesh.h"
 
 //=============================================================================

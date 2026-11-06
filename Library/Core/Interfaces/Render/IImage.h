@@ -1,7 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 
-#include "Library/Framework/Render/ImageTypes.h"
+#include "Library/Framework/Render/Types/ImageTypes.h"
 
 //=============================================================================
 // IImage

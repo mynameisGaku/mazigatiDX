@@ -2,9 +2,9 @@
 #pragma once
 
 #include "Library/Core/Memory/SharedPtr.h"
-#include "Library/Framework/Asset/RenderTarget.h"
-#include "Library/Framework/Asset/Shader.h"
-#include "Library/Framework/Render/Camera.h"
+#include "Library/Framework/Asset/Texture/RenderTarget.h"
+#include "Library/Framework/Asset/Gpu/Shader.h"
+#include "Library/Framework/Render/Camera/Camera.h"
 #include "Library/Math/Math.h"
 
 //=============================================================================

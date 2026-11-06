@@ -1,0 +1,162 @@
+﻿// SPDX-License-Identifier: MIT
+#pragma once
+#include "Library/Core/Collection/Array.h"
+#include "Library/Core/Memory/SharedPtr.h"
+#include "Library/Framework/Asset/Model/ModelStructureTypes.h"
+#include "Library/Framework/Asset/Asset.h"
+#include "Library/Framework/Asset/Model/ModelAppearance.h"
+#include "Library/Framework/Asset/Model/ModelCollision.h"
+#include "Library/Framework/Asset/Model/ModelMeshTypes.h"
+#include "Library/Framework/Asset/Model/Import/ModelFormats.h"
+#include "Library/Math/Matrix4x4.h"
+#include "Library/Math/Vector3.h"
+
+class CModel;
+class CModelInstance;
+class FStaticModelSurface;
+
+//=============================================================================
+// FModelClipInfo
+//   モデルのファイルに入っているアニメーション 1 つ。
+//=============================================================================
+struct FModelClipInfo
+{
+	FString Name;           // ファイルに付いている名前（無ければ空）
+	int32 AnimIndex = 0;    // モデルの中での番号
+	float32 Length = 0.0f;  // 長さ（モデルの時間の単位。UnitsPerSecond で割ると秒）
+	float32 UnitsPerSecond = 0.0f;   // モデルの時間の 1 秒あたりの値（バックエンドが答える。0 なら分からない。DxLib は 30）
+};
+
+//=============================================================================
+// CModel
+//   3D モデル（MV1 / FBX / X / PMD / PMX / MQO など）。CAssetManager::LoadModel で読み込む。
+//   アニメーションだけが入ったファイル（モーション専用の FBX など）も、同じようにモデルとして読み込む。
+//
+//   TSharedPtr<CModel> Robot = Assets->LoadModel( "Models/Robot.fbx" );
+//   TSharedPtr<CModel> Walk = Assets->LoadModel( "Models/Robot_Walk.fbx" );   // 動きだけのファイル
+//   for ( const FModelClipInfo& Clip : Walk->GetClips() ) ...
+//
+//   CModel 自身は、読み込んだ元のデータ（共有される）。画面に出すときは CreateInstance() で自分用の
+//   インスタンス（位置やアニメーションの状態を持つ）を作る。インスタンスは FModelAnimator が使う。
+//=============================================================================
+class CModel : public CAsset, public TSharedFromThis<CModel>
+{
+public:
+	CModel( const FString& InPath, int32 InHandle, bool bInAsync );
+	~CModel() override;
+
+	// 元のデータのハンドル（直接描かない。描くのは CreateInstance() で作ったインスタンス）
+	FORCEINLINE int32 GetHandle() const { return Handle; }
+
+	bool IsReady() const override;
+	FString Describe() const override;
+	// 頂点・テクスチャ・フレームの推定（読み込みが終わってから）
+	int64 GetMemoryBytes() const override;
+
+	// アニメーション一覧。読み込みが終わるまで空
+	const TArray<FModelClipInfo>& GetClips() const;
+	// 名前で探す。無ければ nullptr
+	const FModelClipInfo* FindClip( const FString& Name ) const;
+
+	// メッシュの数（読み込みが終わるまで 0）。メッシュが無く、アニメーションだけが入ったファイル（モーション専用）は、
+	// 画面に出せない（CreateInstance は失敗する）。別のモデルのアニメーションの元として使う
+	int32 GetMeshCount() const;
+	FORCEINLINE bool HasMesh() const { return GetMeshCount() > 0; }
+	// すべてのメッシュを囲む箱（モデルのローカル座標）。読み込みが終わっていて、メッシュがあって、バックエンドが答えられるときだけ true
+	bool GetBounds( FVector3& OutMin, FVector3& OutMax ) const;
+	// すべてのメッシュの三角形（モデルのローカル座標。描くときと同じ位置）。当たり判定を作るときや、エディタの枠線のために、必要なときだけ取る（大きいので覚えない）。
+	// Indices は 3 つで 1 三角形。読み込みが終わっていて、メッシュがあって、バックエンドが答えられるときだけ true
+	bool GetCollisionMesh( TArray<FVector3>& OutVertices, TArray<uint32>& OutIndices ) const;
+	// 静的モデル面の不変な写しを作る。未対応・未準備・メインスレッド外なら nullptr
+	TSharedPtr<const FStaticModelSurface> CreateStaticSurfaceSnapshot() const;
+	// 読み込みが終わっていて、メッシュが無く、アニメーションがある
+	bool IsAnimationOnly() const;
+	// 骨（フレーム）の名前。アニメーションは、名前が合う骨だけを動かす
+	const TArray<FString>& GetBoneNames() const;
+	// このモデルの骨に、AnimSource のアニメーションの骨がどれだけ合うか（モーション専用ファイルを別のモデルに使うときの確認）
+	FBoneMatch CompareBones( const CModel& AnimSource ) const;
+
+	// 構造（フレームの木・メッシュ・材質と読み込んだときの色・テクスチャ）。読み込みが終わるまで、またはバックエンドが答えられないときは空（答えられるようになったら読む）
+	const FModelStructure& GetStructure() const;
+	// 名前で番号を探す（最初に見つかったもの。無ければ -1）
+	int32 FindFrame( const FString& Name ) const;
+	int32 FindMaterial( const FString& Name ) const;
+	int32 FindShape( const FString& Name ) const;
+
+	// 自分用のインスタンスを作る（元のデータを共有する）。失敗したら nullptr
+	TSharedPtr<CModelInstance> CreateInstance();
+
+private:
+	void RefreshClips() const;
+	void RefreshShape() const;
+	void RefreshStructure() const;
+
+	int32 Handle;
+	bool bAsync;
+	mutable int64 MemoryBytes = -1;
+	mutable bool bClipsRead = false;
+	mutable TArray<FModelClipInfo> Clips;
+	mutable bool bShapeRead = false;
+	mutable int32 MeshCount = 0;
+	mutable TArray<FString> Bones;
+	mutable bool bHasBounds = false;
+	mutable FVector3 BoundsMin = FVector3::Zero;
+	mutable FVector3 BoundsMax = FVector3::Zero;
+	mutable bool bStructureRead = false;
+	mutable FModelStructure Structure;
+};
+
+//=============================================================================
+// CModelInstance
+//   画面に出す 1 体分のモデル。位置・アニメーションの状態はインスタンスごとに別。
+//   どのアニメーションを付けているか（アタッチ）を覚えていて、同じ動きを重ねて付けない。
+//
+//   通常は FModelAnimator が管理するので、直接使うことは少ない。
+//=============================================================================
+class CModelInstance : public CObject
+{
+public:
+	CModelInstance( const TSharedPtr<CModel>& InSource, int32 InHandle );
+	~CModelInstance() override;
+
+	FORCEINLINE int32 GetHandle() const { return Handle; }
+	FORCEINLINE const TSharedPtr<CModel>& GetSource() const { return Source; }
+	// 骨（フレーム）の、いまの位置（ワールド座標。最後に描いたときのアニメーションと行列で決まる）を、骨の順に OutPositions へ。メインスレッドだけ。
+	// 骨が無い・バックエンドが答えられないときは false（OutPositions は空）
+	bool GetFramePositions( TArray<FVector3>& OutPositions ) const;
+	// フレームのいまの行列（最後に描いたときのアニメーションと置き場所で決まる）。番号が範囲の外・分からないときは false。メインスレッドだけ
+	bool GetFrameMatrix( int32 Frame, EModelFrameSpace Space, FMatrix4x4& OutMatrix ) const;
+	// backend窓口で設定したpose上書き状態を読む。未設定ならfalse flagだけを返し、失敗時は両Outを保つ。
+	bool GetFrameLocalMatrixOverride( int32 Frame, bool& bOutOverridden, FMatrix4x4& OutLocalToParent ) const;
+	// メインスレッドでframeの位置・向き・大きさを含む親基準pose全体を置き換える。失敗時は現在の上書き状態を保つ。
+	bool SetFrameLocalMatrixOverride( int32 Frame, const FMatrix4x4& LocalToParent );
+	// メインスレッドでframeのpose上書きを解除し、現在のanimation評価へ戻す。失敗時は現在の上書き状態を保つ。
+	bool ClearFrameLocalMatrixOverride( int32 Frame );
+
+	// メッシュの中身（頂点と三角形。モデルのローカル座標）。Mesh は FModelStructure::Meshes の番号で、-1 なら全部。メインスレッドだけ。
+	// bCurrentPose が true なら、いまの姿勢（アニメーション・骨の上書き・形状を含む）、false なら読み込んだままの形。
+	// 読み込み中・番号が範囲の外・バックエンドが答えられないときは false（Out は変えない）
+	bool GetMeshData( int32 Mesh, bool bCurrentPose, FModelMeshData& Out ) const;
+	// この 1 体の見た目（材質の色・表示・不透明度）を変える窓口。インスタンスより長く持たない
+	FModelAppearance GetAppearance() const;
+	// この 1 体への当たり判定の窓口（線・球）。インスタンスより長く持たない
+	FModelCollision GetCollision() const;
+
+	// AnimSource の AnimIndex 番のアニメーションを付ける。既定では同じものを再利用し、独立した時間が必要なら false を渡す。失敗時は -1
+	int32 AttachAnim( const TSharedPtr<CModel>& AnimSource, int32 AnimIndex, bool bReuseExisting = true );
+	// 付けたアニメーションを外す
+	void DetachAnim( int32 AttachIndex );
+	FORCEINLINE int32 GetNumAttached() const { return Attached.Num(); }
+
+private:
+	struct FAttached
+	{
+		TSharedPtr<CModel> AnimSource;   // 使っている間は、元のデータを手放さない
+		int32 AnimIndex = 0;
+		int32 AttachIndex = -1;
+	};
+
+	TSharedPtr<CModel> Source;
+	int32 Handle;
+	TArray<FAttached> Attached;
+};

@@ -1,8 +1,8 @@
 ﻿#include "IslandScenery.h"
 
-#include "Library/Framework/Render/RenderState3D.h"
-#include "Library/Framework/Render/ShadowMapView.h"
-#include "Library/Framework/Render/Vertex3D.h"
+#include "Library/Framework/Render/State/RenderState3D.h"
+#include "Library/Framework/Render/State/ShadowMapView.h"
+#include "Library/Framework/Render/Types/Vertex3D.h"
 #include "Source/Common/SoftLighting.h"
 
 namespace

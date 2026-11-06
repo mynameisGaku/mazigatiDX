@@ -3,8 +3,8 @@
 
 #include "Library/Core/Collection/Set.h"
 #include "Library/Core/Types/Numeric.h"
-#include "Library/Framework/World/WorldCollision.h"
-#include "Library/Framework/World/WorldHierarchy.h"
+#include "Library/Framework/World/Runtime/WorldCollision.h"
+#include "Library/Framework/World/Definition/WorldHierarchy.h"
 
 namespace
 {

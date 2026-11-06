@@ -1,8 +1,8 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "Library/Framework/PixelEffect/Effects/PixelDustEffect.h"
 
-#include "Library/Framework/PixelEffect/PixelColor.h"
-#include "Library/Framework/PixelEffect/PixelMath.h"
+#include "Library/Framework/PixelEffect/Canvas/PixelColor.h"
+#include "Library/Framework/PixelEffect/Math/PixelMath.h"
 #include "Library/Math/MathUtils.h"
 
 namespace

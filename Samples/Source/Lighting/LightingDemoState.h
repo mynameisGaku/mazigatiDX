@@ -2,8 +2,8 @@
 #pragma once
 
 #include "Library/Core/Memory/SharedPtr.h"
-#include "Library/Framework/Asset/Texture.h"
-#include "Library/Framework/Render/Camera.h"
+#include "Library/Framework/Asset/Texture/Texture.h"
+#include "Library/Framework/Render/Camera/Camera.h"
 #include "Library/Math/Math.h"
 
 //=============================================================================

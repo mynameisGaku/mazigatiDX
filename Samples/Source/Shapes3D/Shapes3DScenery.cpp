@@ -1,8 +1,8 @@
 ﻿#include "Shapes3DScenery.h"
 
 #include "Library/Framework/Asset/AssetManager.h"
-#include "Library/Framework/Asset/PixelImage.h"
-#include "Library/Framework/Render/Vertex3D.h"
+#include "Library/Framework/Asset/Texture/PixelImage.h"
+#include "Library/Framework/Render/Types/Vertex3D.h"
 #include "Source/Common/SoftLighting.h"
 
 namespace

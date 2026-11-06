@@ -22,95 +22,95 @@
     <ClCompile Include="Library\Core\Time\PlatformTime.cpp">
       <Filter>Library\Core\Time</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\AssetTools.cpp">
-      <Filter>Library\DebugUI</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\DebugUI\ConsoleWindow.cpp">
-      <Filter>Library\DebugUI</Filter>
-    </ClCompile>
     <ClCompile Include="Library\DebugUI\DebugOverlay.cpp">
       <Filter>Library\DebugUI</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\EditorCommon.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\Asset\AssetTools.cpp">
+      <Filter>Library\DebugUI\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\EffectEditor.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\Asset\ModelAnimationEditor.cpp">
+      <Filter>Library\DebugUI\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\EffectEditorAppearancePanel.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\Asset\SpriteSheetEditor.cpp">
+      <Filter>Library\DebugUI\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\EffectEditorCurveInput.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\Common\EditorCommon.cpp">
+      <Filter>Library\DebugUI\Common</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\EffectEditorFlipbookPanel.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\Common\ImGuiPropertyInspector.cpp">
+      <Filter>Library\DebugUI\Common</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\EffectEditorForceFieldPanel.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\Common\ImGuiTexture.cpp">
+      <Filter>Library\DebugUI\Common</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\EffectEditorForceFieldPreview.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\Effect\EffectEditor.cpp">
+      <Filter>Library\DebugUI\Effect</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\EffectEditorMaterialPanel.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\Effect\EffectEditorAppearancePanel.cpp">
+      <Filter>Library\DebugUI\Effect</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\EffectEditorMeshPanel.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\Effect\EffectEditorCurveInput.cpp">
+      <Filter>Library\DebugUI\Effect</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\EffectEditorPanels.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\Effect\EffectEditorFlipbookPanel.cpp">
+      <Filter>Library\DebugUI\Effect</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\EffectPreviewSurface.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\Effect\EffectEditorForceFieldPanel.cpp">
+      <Filter>Library\DebugUI\Effect</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\ImGuiPropertyInspector.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\Effect\EffectEditorForceFieldPreview.cpp">
+      <Filter>Library\DebugUI\Effect</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\ImGuiTexture.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\Effect\EffectEditorMaterialPanel.cpp">
+      <Filter>Library\DebugUI\Effect</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\LogCategoryPanel.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\Effect\EffectEditorMeshPanel.cpp">
+      <Filter>Library\DebugUI\Effect</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\ModelAnimationEditor.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\Effect\EffectEditorPanels.cpp">
+      <Filter>Library\DebugUI\Effect</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\ProfilerTimeline.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\Effect\EffectPreviewSurface.cpp">
+      <Filter>Library\DebugUI\Effect</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\ProfilerWindow.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\Log\ConsoleWindow.cpp">
+      <Filter>Library\DebugUI\Log</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\SpriteSheetEditor.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\Log\LogCategoryPanel.cpp">
+      <Filter>Library\DebugUI\Log</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\WorldEditor.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\Profiler\ProfilerTimeline.cpp">
+      <Filter>Library\DebugUI\Profiler</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\WorldEditorEffects.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\Profiler\ProfilerWindow.cpp">
+      <Filter>Library\DebugUI\Profiler</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\WorldEditorMesh.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\World\WorldEditor.cpp">
+      <Filter>Library\DebugUI\World</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\WorldEditorMeshMaterialPanel.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\World\WorldEditorEffects.cpp">
+      <Filter>Library\DebugUI\World</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\WorldEditorModelMaterialPanel.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\World\WorldEditorMesh.cpp">
+      <Filter>Library\DebugUI\World</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\WorldEditorModelPreviewKey.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\World\WorldEditorMeshMaterialPanel.cpp">
+      <Filter>Library\DebugUI\World</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\WorldEditorModels.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\World\WorldEditorModelMaterialPanel.cpp">
+      <Filter>Library\DebugUI\World</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\WorldEditorPanels.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\World\WorldEditorModelPreviewKey.cpp">
+      <Filter>Library\DebugUI\World</Filter>
     </ClCompile>
-    <ClCompile Include="Library\DebugUI\WorldEditorViewport.cpp">
-      <Filter>Library\DebugUI</Filter>
+    <ClCompile Include="Library\DebugUI\World\WorldEditorModels.cpp">
+      <Filter>Library\DebugUI\World</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\World\WorldEditorPanels.cpp">
+      <Filter>Library\DebugUI\World</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\World\WorldEditorViewport.cpp">
+      <Filter>Library\DebugUI\World</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Animation\AnimationBlend.cpp">
       <Filter>Library\Framework\Animation</Filter>
@@ -148,86 +148,86 @@
     <ClCompile Include="Library\Framework\Asset\AssetManagerWorlds.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\DefinitionEditing.cpp">
-      <Filter>Library\Framework\Asset</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\DynamicTexture.cpp">
-      <Filter>Library\Framework\Asset</Filter>
-    </ClCompile>
     <ClCompile Include="Library\Framework\Asset\EditorAssetInfo.cpp">
       <Filter>Library\Framework\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\EffectAsset.cpp">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClCompile Include="Library\Framework\Asset\Data\EffectAsset.cpp">
+      <Filter>Library\Framework\Asset\Data</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\Font.cpp">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClCompile Include="Library\Framework\Asset\Data\SpriteSheet.cpp">
+      <Filter>Library\Framework\Asset\Data</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\FontFile.cpp">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClCompile Include="Library\Framework\Asset\Data\WorldAsset.cpp">
+      <Filter>Library\Framework\Asset\Data</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\IndexBuffer.cpp">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClCompile Include="Library\Framework\Asset\Definition\DefinitionEditing.cpp">
+      <Filter>Library\Framework\Asset\Definition</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\MeshBuffer.cpp">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClCompile Include="Library\Framework\Asset\Font\Font.cpp">
+      <Filter>Library\Framework\Asset\Font</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\Model.cpp">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClCompile Include="Library\Framework\Asset\Font\FontFile.cpp">
+      <Filter>Library\Framework\Asset\Font</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\ModelAnimationAsset.cpp">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClCompile Include="Library\Framework\Asset\Gpu\IndexBuffer.cpp">
+      <Filter>Library\Framework\Asset\Gpu</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\ModelAppearance.cpp">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClCompile Include="Library\Framework\Asset\Gpu\MeshBuffer.cpp">
+      <Filter>Library\Framework\Asset\Gpu</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\ModelCollision.cpp">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClCompile Include="Library\Framework\Asset\Gpu\Shader.cpp">
+      <Filter>Library\Framework\Asset\Gpu</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\PixelImage.cpp">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClCompile Include="Library\Framework\Asset\Gpu\ShadowMap.cpp">
+      <Filter>Library\Framework\Asset\Gpu</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\RenderTarget.cpp">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClCompile Include="Library\Framework\Asset\Gpu\VertexBuffer.cpp">
+      <Filter>Library\Framework\Asset\Gpu</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\Shader.cpp">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClCompile Include="Library\Framework\Asset\Model\Model.cpp">
+      <Filter>Library\Framework\Asset\Model</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\ShadowMap.cpp">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClCompile Include="Library\Framework\Asset\Model\ModelAnimationAsset.cpp">
+      <Filter>Library\Framework\Asset\Model</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\Sound.cpp">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClCompile Include="Library\Framework\Asset\Model\ModelAppearance.cpp">
+      <Filter>Library\Framework\Asset\Model</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\SpriteSheet.cpp">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClCompile Include="Library\Framework\Asset\Model\ModelCollision.cpp">
+      <Filter>Library\Framework\Asset\Model</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\StaticModelSurface.cpp">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClCompile Include="Library\Framework\Asset\Model\StaticModelSurface.cpp">
+      <Filter>Library\Framework\Asset\Model</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\Texture.cpp">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClCompile Include="Library\Framework\Asset\Model\Import\FbxImporter.cpp">
+      <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\VertexBuffer.cpp">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClCompile Include="Library\Framework\Asset\Model\Import\ImportedScene.cpp">
+      <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\WorldAsset.cpp">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClCompile Include="Library\Framework\Asset\Model\Import\ModelExporter.cpp">
+      <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\Import\FbxImporter.cpp">
-      <Filter>Library\Framework\Asset\Import</Filter>
+    <ClCompile Include="Library\Framework\Asset\Model\Import\ModelFormats.cpp">
+      <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\Import\ImportedScene.cpp">
-      <Filter>Library\Framework\Asset\Import</Filter>
+    <ClCompile Include="Library\Framework\Asset\Model\Import\XFileWriter.cpp">
+      <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\Import\ModelExporter.cpp">
-      <Filter>Library\Framework\Asset\Import</Filter>
+    <ClCompile Include="Library\Framework\Asset\Sound\Sound.cpp">
+      <Filter>Library\Framework\Asset\Sound</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\Import\ModelFormats.cpp">
-      <Filter>Library\Framework\Asset\Import</Filter>
+    <ClCompile Include="Library\Framework\Asset\Texture\DynamicTexture.cpp">
+      <Filter>Library\Framework\Asset\Texture</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Asset\Import\XFileWriter.cpp">
-      <Filter>Library\Framework\Asset\Import</Filter>
+    <ClCompile Include="Library\Framework\Asset\Texture\PixelImage.cpp">
+      <Filter>Library\Framework\Asset\Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Texture\RenderTarget.cpp">
+      <Filter>Library\Framework\Asset\Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Texture\Texture.cpp">
+      <Filter>Library\Framework\Asset\Texture</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Audio\AudioComponents.cpp">
       <Filter>Library\Framework\Audio</Filter>
@@ -244,25 +244,7 @@
     <ClCompile Include="Library\Framework\Capture\CaptureCommandLine.cpp">
       <Filter>Library\Framework\Capture</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Capture\CaptureFileWriter.cpp">
-      <Filter>Library\Framework\Capture</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\Capture\CaptureImage.cpp">
-      <Filter>Library\Framework\Capture</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\Capture\ColorQuantizer.cpp">
-      <Filter>Library\Framework\Capture</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\Capture\GifEncoder.cpp">
-      <Filter>Library\Framework\Capture</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\Capture\GifLzw.cpp">
-      <Filter>Library\Framework\Capture</Filter>
-    </ClCompile>
     <ClCompile Include="Library\Framework\Capture\OffscreenShot.cpp">
-      <Filter>Library\Framework\Capture</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\Capture\PaletteMapper.cpp">
       <Filter>Library\Framework\Capture</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Capture\ScreenCapture.cpp">
@@ -270,6 +252,24 @@
     </ClCompile>
     <ClCompile Include="Library\Framework\Capture\ScreenshotNames.cpp">
       <Filter>Library\Framework\Capture</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Capture\Encoding\CaptureFileWriter.cpp">
+      <Filter>Library\Framework\Capture\Encoding</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Capture\Encoding\CaptureImage.cpp">
+      <Filter>Library\Framework\Capture\Encoding</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Capture\Encoding\ColorQuantizer.cpp">
+      <Filter>Library\Framework\Capture\Encoding</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Capture\Encoding\GifEncoder.cpp">
+      <Filter>Library\Framework\Capture\Encoding</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Capture\Encoding\GifLzw.cpp">
+      <Filter>Library\Framework\Capture\Encoding</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Capture\Encoding\PaletteMapper.cpp">
+      <Filter>Library\Framework\Capture\Encoding</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Component\Component.cpp">
       <Filter>Library\Framework\Component</Filter>
@@ -307,68 +307,68 @@
     <ClCompile Include="Library\Framework\Ecs\TransformWorld.cpp">
       <Filter>Library\Framework\Ecs</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Effect\EffectAppearanceDefinition.cpp">
-      <Filter>Library\Framework\Effect</Filter>
-    </ClCompile>
     <ClCompile Include="Library\Framework\Effect\EffectBackend.cpp">
-      <Filter>Library\Framework\Effect</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\Effect\EffectColorCurve.cpp">
       <Filter>Library\Framework\Effect</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Effect\EffectComponent.cpp">
       <Filter>Library\Framework\Effect</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Effect\EffectFlipbookDefinition.cpp">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClCompile Include="Library\Framework\Effect\Curve\EffectColorCurve.cpp">
+      <Filter>Library\Framework\Effect\Curve</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Effect\EffectFlipbookFrames.cpp">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClCompile Include="Library\Framework\Effect\Curve\EffectScalarCurve.cpp">
+      <Filter>Library\Framework\Effect\Curve</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Effect\EffectForceFieldDefinition.cpp">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClCompile Include="Library\Framework\Effect\Definition\EffectAppearanceDefinition.cpp">
+      <Filter>Library\Framework\Effect\Definition</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Effect\EffectLightningTreeDefinition.cpp">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClCompile Include="Library\Framework\Effect\Definition\EffectFlipbookDefinition.cpp">
+      <Filter>Library\Framework\Effect\Definition</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Effect\EffectMaterialDefinition.cpp">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClCompile Include="Library\Framework\Effect\Definition\EffectForceFieldDefinition.cpp">
+      <Filter>Library\Framework\Effect\Definition</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Effect\EffectMeshDefinition.cpp">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClCompile Include="Library\Framework\Effect\Definition\EffectLightningTreeDefinition.cpp">
+      <Filter>Library\Framework\Effect\Definition</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Effect\EffectMeshGeometry.cpp">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClCompile Include="Library\Framework\Effect\Definition\EffectMaterialDefinition.cpp">
+      <Filter>Library\Framework\Effect\Definition</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Effect\EffectPathDefinition.cpp">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClCompile Include="Library\Framework\Effect\Definition\EffectMeshDefinition.cpp">
+      <Filter>Library\Framework\Effect\Definition</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Effect\EffectPathGeometry.cpp">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClCompile Include="Library\Framework\Effect\Definition\EffectPathDefinition.cpp">
+      <Filter>Library\Framework\Effect\Definition</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Effect\EffectScalarCurve.cpp">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClCompile Include="Library\Framework\Effect\Definition\EffectUVDistortionDefinition.cpp">
+      <Filter>Library\Framework\Effect\Definition</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Effect\EffectTreeLightningGeometry.cpp">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClCompile Include="Library\Framework\Effect\Definition\MeshMaterialEffectDefinition.cpp">
+      <Filter>Library\Framework\Effect\Definition</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Effect\EffectUVDistortionDefinition.cpp">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClCompile Include="Library\Framework\Effect\Geometry\EffectFlipbookFrames.cpp">
+      <Filter>Library\Framework\Effect\Geometry</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Effect\MeshMaterialEffectDefinition.cpp">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClCompile Include="Library\Framework\Effect\Geometry\EffectMeshGeometry.cpp">
+      <Filter>Library\Framework\Effect\Geometry</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Effect\ParticleEffect.cpp">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClCompile Include="Library\Framework\Effect\Geometry\EffectPathGeometry.cpp">
+      <Filter>Library\Framework\Effect\Geometry</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Effect\ParticleEffectBackend.cpp">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClCompile Include="Library\Framework\Effect\Geometry\EffectTreeLightningGeometry.cpp">
+      <Filter>Library\Framework\Effect\Geometry</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Effect\ParticleEffectEditing.cpp">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClCompile Include="Library\Framework\Effect\Particle\ParticleEffect.cpp">
+      <Filter>Library\Framework\Effect\Particle</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Effect\ParticleSimulation.cpp">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClCompile Include="Library\Framework\Effect\Particle\ParticleEffectBackend.cpp">
+      <Filter>Library\Framework\Effect\Particle</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Effect\Particle\ParticleEffectEditing.cpp">
+      <Filter>Library\Framework\Effect\Particle</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Effect\Particle\ParticleSimulation.cpp">
+      <Filter>Library\Framework\Effect\Particle</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Engine\Engine.cpp">
       <Filter>Library\Framework\Engine</Filter>
@@ -400,50 +400,26 @@
     <ClCompile Include="Library\Framework\Object\Object.cpp">
       <Filter>Library\Framework\Object</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\PixelEffect\PixelBackdrop.cpp">
-      <Filter>Library\Framework\PixelEffect</Filter>
+    <ClCompile Include="Library\Framework\PixelEffect\Canvas\PixelBackdrop.cpp">
+      <Filter>Library\Framework\PixelEffect\Canvas</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\PixelEffect\PixelColor.cpp">
-      <Filter>Library\Framework\PixelEffect</Filter>
+    <ClCompile Include="Library\Framework\PixelEffect\Canvas\PixelColor.cpp">
+      <Filter>Library\Framework\PixelEffect\Canvas</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\PixelEffect\PixelEffectFrame.cpp">
-      <Filter>Library\Framework\PixelEffect</Filter>
+    <ClCompile Include="Library\Framework\PixelEffect\Canvas\PixelFont.cpp">
+      <Filter>Library\Framework\PixelEffect\Canvas</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\PixelEffect\PixelEffectPlayer.cpp">
-      <Filter>Library\Framework\PixelEffect</Filter>
+    <ClCompile Include="Library\Framework\PixelEffect\Canvas\PixelImageSurface.cpp">
+      <Filter>Library\Framework\PixelEffect\Canvas</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\PixelEffect\PixelEffectView.cpp">
-      <Filter>Library\Framework\PixelEffect</Filter>
+    <ClCompile Include="Library\Framework\PixelEffect\Canvas\PixelMask.cpp">
+      <Filter>Library\Framework\PixelEffect\Canvas</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\PixelEffect\PixelFont.cpp">
-      <Filter>Library\Framework\PixelEffect</Filter>
+    <ClCompile Include="Library\Framework\PixelEffect\Canvas\PixelPainter.cpp">
+      <Filter>Library\Framework\PixelEffect\Canvas</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\PixelEffect\PixelImageSurface.cpp">
-      <Filter>Library\Framework\PixelEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\PixelEffect\PixelMask.cpp">
-      <Filter>Library\Framework\PixelEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\PixelEffect\PixelMath.cpp">
-      <Filter>Library\Framework\PixelEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\PixelEffect\PixelPainter.cpp">
-      <Filter>Library\Framework\PixelEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\PixelEffect\PixelParticleSystem.cpp">
-      <Filter>Library\Framework\PixelEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\PixelEffect\PixelRandom.cpp">
-      <Filter>Library\Framework\PixelEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\PixelEffect\PixelRaster.cpp">
-      <Filter>Library\Framework\PixelEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\PixelEffect\PixelStockActor.cpp">
-      <Filter>Library\Framework\PixelEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\PixelEffect\PixelTimedEffect.cpp">
-      <Filter>Library\Framework\PixelEffect</Filter>
+    <ClCompile Include="Library\Framework\PixelEffect\Canvas\PixelRaster.cpp">
+      <Filter>Library\Framework\PixelEffect\Canvas</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\PixelEffect\Effects\PixelAuraEffect.cpp">
       <Filter>Library\Framework\PixelEffect\Effects</Filter>
@@ -505,6 +481,30 @@
     <ClCompile Include="Library\Framework\PixelEffect\Effects\PixelWindEffect.cpp">
       <Filter>Library\Framework\PixelEffect\Effects</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\PixelEffect\Math\PixelMath.cpp">
+      <Filter>Library\Framework\PixelEffect\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\PixelEffect\Math\PixelRandom.cpp">
+      <Filter>Library\Framework\PixelEffect\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\PixelEffect\Playback\PixelEffectFrame.cpp">
+      <Filter>Library\Framework\PixelEffect\Playback</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\PixelEffect\Playback\PixelEffectPlayer.cpp">
+      <Filter>Library\Framework\PixelEffect\Playback</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\PixelEffect\Playback\PixelEffectView.cpp">
+      <Filter>Library\Framework\PixelEffect\Playback</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\PixelEffect\Playback\PixelParticleSystem.cpp">
+      <Filter>Library\Framework\PixelEffect\Playback</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\PixelEffect\Playback\PixelStockActor.cpp">
+      <Filter>Library\Framework\PixelEffect\Playback</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\PixelEffect\Playback\PixelTimedEffect.cpp">
+      <Filter>Library\Framework\PixelEffect\Playback</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Profiler\ProfilerAnalyzer.cpp">
       <Filter>Library\Framework\Profiler</Filter>
     </ClCompile>
@@ -514,44 +514,44 @@
     <ClCompile Include="Library\Framework\Profiler\ProfilerSubsystem.cpp">
       <Filter>Library\Framework\Profiler</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Render\Billboard.cpp">
-      <Filter>Library\Framework\Render</Filter>
+    <ClCompile Include="Library\Framework\Render\Camera\Billboard.cpp">
+      <Filter>Library\Framework\Render\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Render\Camera.cpp">
-      <Filter>Library\Framework\Render</Filter>
+    <ClCompile Include="Library\Framework\Render\Camera\Camera.cpp">
+      <Filter>Library\Framework\Render\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Render\DrawContext.cpp">
-      <Filter>Library\Framework\Render</Filter>
+    <ClCompile Include="Library\Framework\Render\Draw\DrawContext.cpp">
+      <Filter>Library\Framework\Render\Draw</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Render\DrawModelFrameOverrideData.cpp">
-      <Filter>Library\Framework\Render</Filter>
+    <ClCompile Include="Library\Framework\Render\Draw\DrawModelFrameOverrideData.cpp">
+      <Filter>Library\Framework\Render\Draw</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Render\DrawModelFrameOverrideScope.cpp">
-      <Filter>Library\Framework\Render</Filter>
+    <ClCompile Include="Library\Framework\Render\Draw\DrawModelFrameOverrideScope.cpp">
+      <Filter>Library\Framework\Render\Draw</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Render\DrawModelFramePoseData.cpp">
-      <Filter>Library\Framework\Render</Filter>
+    <ClCompile Include="Library\Framework\Render\Draw\DrawModelFramePoseData.cpp">
+      <Filter>Library\Framework\Render\Draw</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Render\ImmediateDraw.cpp">
-      <Filter>Library\Framework\Render</Filter>
+    <ClCompile Include="Library\Framework\Render\Draw\ImmediateDraw.cpp">
+      <Filter>Library\Framework\Render\Draw</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Render\MeshGeometryChunk.cpp">
-      <Filter>Library\Framework\Render</Filter>
+    <ClCompile Include="Library\Framework\Render\MaterialEffect\MeshMaterialEffectPlayback.cpp">
+      <Filter>Library\Framework\Render\MaterialEffect</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Render\MeshMaterialEffectPlayback.cpp">
-      <Filter>Library\Framework\Render</Filter>
+    <ClCompile Include="Library\Framework\Render\MaterialEffect\ModelMaterialEffectRenderer.cpp">
+      <Filter>Library\Framework\Render\MaterialEffect</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Render\MeshRender.cpp">
-      <Filter>Library\Framework\Render</Filter>
+    <ClCompile Include="Library\Framework\Render\MaterialEffect\ModelMaterialEffectResources.cpp">
+      <Filter>Library\Framework\Render\MaterialEffect</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Render\ModelMaterialEffectRenderer.cpp">
-      <Filter>Library\Framework\Render</Filter>
+    <ClCompile Include="Library\Framework\Render\Mesh\MeshGeometryChunk.cpp">
+      <Filter>Library\Framework\Render\Mesh</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Render\ModelMaterialEffectResources.cpp">
-      <Filter>Library\Framework\Render</Filter>
+    <ClCompile Include="Library\Framework\Render\Mesh\MeshRender.cpp">
+      <Filter>Library\Framework\Render\Mesh</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\Render\ShadowMapView.cpp">
-      <Filter>Library\Framework\Render</Filter>
+    <ClCompile Include="Library\Framework\Render\State\ShadowMapView.cpp">
+      <Filter>Library\Framework\Render\State</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Scene\Scene.cpp">
       <Filter>Library\Framework\Scene</Filter>
@@ -568,32 +568,17 @@
     <ClCompile Include="Library\Framework\Text\TextLayout.cpp">
       <Filter>Library\Framework\Text</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\World\WorldBuiltinSpawners.cpp">
-      <Filter>Library\Framework\World</Filter>
+    <ClCompile Include="Library\Framework\World\Definition\WorldDefinition.cpp">
+      <Filter>Library\Framework\World\Definition</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\World\WorldCollision.cpp">
-      <Filter>Library\Framework\World</Filter>
+    <ClCompile Include="Library\Framework\World\Definition\WorldEdit.cpp">
+      <Filter>Library\Framework\World\Definition</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\World\WorldDefinition.cpp">
-      <Filter>Library\Framework\World</Filter>
+    <ClCompile Include="Library\Framework\World\Definition\WorldHierarchy.cpp">
+      <Filter>Library\Framework\World\Definition</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\World\WorldEdit.cpp">
-      <Filter>Library\Framework\World</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\World\WorldHierarchy.cpp">
-      <Filter>Library\Framework\World</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\World\WorldModelMaterialEffect.cpp">
-      <Filter>Library\Framework\World</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\World\WorldRender.cpp">
-      <Filter>Library\Framework\World</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\World\WorldSpawner.cpp">
-      <Filter>Library\Framework\World</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\World\WorldValidate.cpp">
-      <Filter>Library\Framework\World</Filter>
+    <ClCompile Include="Library\Framework\World\Definition\WorldValidate.cpp">
+      <Filter>Library\Framework\World\Definition</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\World\Editor\EditorCamera.cpp">
       <Filter>Library\Framework\World\Editor</Filter>
@@ -640,6 +625,21 @@
     <ClCompile Include="Library\Framework\World\Mesh\EditMeshPrimitives.cpp">
       <Filter>Library\Framework\World\Mesh</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\World\Runtime\WorldBuiltinSpawners.cpp">
+      <Filter>Library\Framework\World\Runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\World\Runtime\WorldCollision.cpp">
+      <Filter>Library\Framework\World\Runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\World\Runtime\WorldModelMaterialEffect.cpp">
+      <Filter>Library\Framework\World\Runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\World\Runtime\WorldRender.cpp">
+      <Filter>Library\Framework\World\Runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\World\Runtime\WorldSpawner.cpp">
+      <Filter>Library\Framework\World\Runtime</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Json\JsonObject.cpp">
       <Filter>Library\Json</Filter>
     </ClCompile>
@@ -652,134 +652,119 @@
     <ClCompile Include="Library\Math\Quaternion.cpp">
       <Filter>Library\Math</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Physics\CollisionShape.cpp">
-      <Filter>Library\Physics</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Physics\ContactListener.cpp">
-      <Filter>Library\Physics</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Physics\PhysicsCharacter.cpp">
-      <Filter>Library\Physics</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Physics\PhysicsCharacters.cpp">
-      <Filter>Library\Physics</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Physics\PhysicsConstraint.cpp">
-      <Filter>Library\Physics</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Physics\PhysicsConstraints.cpp">
-      <Filter>Library\Physics</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Physics\PhysicsContactRegistry.cpp">
-      <Filter>Library\Physics</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Physics\PhysicsDebugDraw.cpp">
-      <Filter>Library\Physics</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Physics\PhysicsLayers.cpp">
-      <Filter>Library\Physics</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Physics\PhysicsQuery.cpp">
-      <Filter>Library\Physics</Filter>
-    </ClCompile>
     <ClCompile Include="Library\Physics\PhysicsSubsystem.cpp">
       <Filter>Library\Physics</Filter>
     </ClCompile>
     <ClCompile Include="Library\Physics\PhysicsSystem.cpp">
       <Filter>Library\Physics</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Physics\RigidBody.cpp">
-      <Filter>Library\Physics</Filter>
-    </ClCompile>
     <ClCompile Include="Library\Physics\WorldPhysics.cpp">
       <Filter>Library\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Physics\Body\CollisionShape.cpp">
+      <Filter>Library\Physics\Body</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Physics\Body\RigidBody.cpp">
+      <Filter>Library\Physics\Body</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Physics\Character\PhysicsCharacter.cpp">
+      <Filter>Library\Physics\Character</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Physics\Character\PhysicsCharacters.cpp">
+      <Filter>Library\Physics\Character</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Physics\Constraint\PhysicsConstraint.cpp">
+      <Filter>Library\Physics\Constraint</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Physics\Constraint\PhysicsConstraints.cpp">
+      <Filter>Library\Physics\Constraint</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Physics\Contact\ContactListener.cpp">
+      <Filter>Library\Physics\Contact</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Physics\Contact\PhysicsContactRegistry.cpp">
+      <Filter>Library\Physics\Contact</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Physics\DebugDraw\PhysicsDebugDraw.cpp">
+      <Filter>Library\Physics\DebugDraw</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Physics\Layer\PhysicsLayers.cpp">
+      <Filter>Library\Physics\Layer</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Physics\Query\PhysicsQuery.cpp">
+      <Filter>Library\Physics\Query</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\BackendSelection.cpp">
       <Filter>Library\Platform</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\CommandLine.cpp">
-      <Filter>Library\Platform</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\FileSystem.cpp">
-      <Filter>Library\Platform</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\ImGuiAssert.cpp">
-      <Filter>Library\Platform</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\LeakReport.cpp">
-      <Filter>Library\Platform</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\LogArchive.cpp">
-      <Filter>Library\Platform</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackend.cpp">
-      <Filter>Library\Platform\DxLib</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackendModelCollision.cpp">
-      <Filter>Library\Platform\DxLib</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackendModelMaterial.cpp">
-      <Filter>Library\Platform\DxLib</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackendModelMesh.cpp">
-      <Filter>Library\Platform\DxLib</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackendModelStructure.cpp">
-      <Filter>Library\Platform\DxLib</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\DxLibAssetBackendModelSurface.cpp">
-      <Filter>Library\Platform\DxLib</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\DxLibAudioBackend.cpp">
-      <Filter>Library\Platform\DxLib</Filter>
-    </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\DxLibBackend.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\DxLibDrawExecutor.cpp">
-      <Filter>Library\Platform\DxLib</Filter>
+    <ClCompile Include="Library\Platform\DxLib\Asset\DxLibAssetBackend.cpp">
+      <Filter>Library\Platform\DxLib\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\DxLibDrawExecutorCapture.cpp">
-      <Filter>Library\Platform\DxLib</Filter>
+    <ClCompile Include="Library\Platform\DxLib\Asset\DxLibAssetBackendModelCollision.cpp">
+      <Filter>Library\Platform\DxLib\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\DxLibDrawExecutorModelFramePose.cpp">
-      <Filter>Library\Platform\DxLib</Filter>
+    <ClCompile Include="Library\Platform\DxLib\Asset\DxLibAssetBackendModelMaterial.cpp">
+      <Filter>Library\Platform\DxLib\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\DxLibDrawExecutorModelMaterial.cpp">
-      <Filter>Library\Platform\DxLib</Filter>
+    <ClCompile Include="Library\Platform\DxLib\Asset\DxLibAssetBackendModelMesh.cpp">
+      <Filter>Library\Platform\DxLib\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\DxLibImageOps.cpp">
-      <Filter>Library\Platform\DxLib</Filter>
+    <ClCompile Include="Library\Platform\DxLib\Asset\DxLibAssetBackendModelStructure.cpp">
+      <Filter>Library\Platform\DxLib\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\DxLibImGuiTexture.cpp">
-      <Filter>Library\Platform\DxLib</Filter>
+    <ClCompile Include="Library\Platform\DxLib\Asset\DxLibAssetBackendModelSurface.cpp">
+      <Filter>Library\Platform\DxLib\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\DxLibInput.cpp">
-      <Filter>Library\Platform\DxLib</Filter>
+    <ClCompile Include="Library\Platform\DxLib\Asset\DxLibImageOps.cpp">
+      <Filter>Library\Platform\DxLib\Asset</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\DxLibLighting.cpp">
-      <Filter>Library\Platform\DxLib</Filter>
+    <ClCompile Include="Library\Platform\DxLib\Audio\DxLibAudioBackend.cpp">
+      <Filter>Library\Platform\DxLib\Audio</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\DxLibRenderState3D.cpp">
-      <Filter>Library\Platform\DxLib</Filter>
+    <ClCompile Include="Library\Platform\DxLib\Input\DxLibInput.cpp">
+      <Filter>Library\Platform\DxLib\Input</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\DxLibRibbonMesh.cpp">
-      <Filter>Library\Platform\DxLib</Filter>
+    <ClCompile Include="Library\Platform\DxLib\Render\DxLibDrawExecutor.cpp">
+      <Filter>Library\Platform\DxLib\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\DxLibShader.cpp">
-      <Filter>Library\Platform\DxLib</Filter>
+    <ClCompile Include="Library\Platform\DxLib\Render\DxLibDrawExecutorCapture.cpp">
+      <Filter>Library\Platform\DxLib\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\DxLibShadowMap.cpp">
-      <Filter>Library\Platform\DxLib</Filter>
+    <ClCompile Include="Library\Platform\DxLib\Render\DxLibDrawExecutorModelFramePose.cpp">
+      <Filter>Library\Platform\DxLib\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\DxLibShapes3D.cpp">
-      <Filter>Library\Platform\DxLib</Filter>
+    <ClCompile Include="Library\Platform\DxLib\Render\DxLibDrawExecutorModelMaterial.cpp">
+      <Filter>Library\Platform\DxLib\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\DxLibVertex.cpp">
-      <Filter>Library\Platform\DxLib</Filter>
+    <ClCompile Include="Library\Platform\DxLib\Render\DxLibImGuiTexture.cpp">
+      <Filter>Library\Platform\DxLib\Render</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Platform\DxLib\EffectMaterialRenderer.cpp">
-      <Filter>Library\Platform\DxLib</Filter>
+    <ClCompile Include="Library\Platform\DxLib\Render\DxLibLighting.cpp">
+      <Filter>Library\Platform\DxLib\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\Render\DxLibRenderState3D.cpp">
+      <Filter>Library\Platform\DxLib\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\Render\DxLibRibbonMesh.cpp">
+      <Filter>Library\Platform\DxLib\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\Render\DxLibShader.cpp">
+      <Filter>Library\Platform\DxLib\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\Render\DxLibShadowMap.cpp">
+      <Filter>Library\Platform\DxLib\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\Render\DxLibShapes3D.cpp">
+      <Filter>Library\Platform\DxLib\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\Render\DxLibVertex.cpp">
+      <Filter>Library\Platform\DxLib\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\Render\EffectMaterialRenderer.cpp">
+      <Filter>Library\Platform\DxLib\Render</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\Null\NullAssetBackend.cpp">
       <Filter>Library\Platform\Null</Filter>
@@ -798,6 +783,21 @@
     </ClCompile>
     <ClCompile Include="Library\Platform\SDL\SdlGamepadInput.cpp">
       <Filter>Library\Platform\SDL</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\System\CommandLine.cpp">
+      <Filter>Library\Platform\System</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\System\FileSystem.cpp">
+      <Filter>Library\Platform\System</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\System\ImGuiAssert.cpp">
+      <Filter>Library\Platform\System</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\System\LeakReport.cpp">
+      <Filter>Library\Platform\System</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\System\LogArchive.cpp">
+      <Filter>Library\Platform\System</Filter>
     </ClCompile>
     <ClCompile Include="VendorModules\ImGui\imgui.cpp">
       <Filter>VendorModules\ImGui</Filter>
@@ -1533,68 +1533,68 @@
     <ClInclude Include="Library\Core\Types\Utility.h">
       <Filter>Library\Core\Types</Filter>
     </ClInclude>
-    <ClInclude Include="Library\DebugUI\AssetTools.h">
-      <Filter>Library\DebugUI</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\DebugUI\ConsoleWindow.h">
-      <Filter>Library\DebugUI</Filter>
-    </ClInclude>
     <ClInclude Include="Library\DebugUI\DebugOverlay.h">
       <Filter>Library\DebugUI</Filter>
     </ClInclude>
-    <ClInclude Include="Library\DebugUI\EditorCommon.h">
-      <Filter>Library\DebugUI</Filter>
+    <ClInclude Include="Library\DebugUI\Asset\AssetTools.h">
+      <Filter>Library\DebugUI\Asset</Filter>
     </ClInclude>
-    <ClInclude Include="Library\DebugUI\EffectEditor.h">
-      <Filter>Library\DebugUI</Filter>
+    <ClInclude Include="Library\DebugUI\Asset\ModelAnimationEditor.h">
+      <Filter>Library\DebugUI\Asset</Filter>
     </ClInclude>
-    <ClInclude Include="Library\DebugUI\EffectEditorCurveInput.h">
-      <Filter>Library\DebugUI</Filter>
+    <ClInclude Include="Library\DebugUI\Asset\SpriteSheetEditor.h">
+      <Filter>Library\DebugUI\Asset</Filter>
     </ClInclude>
-    <ClInclude Include="Library\DebugUI\EffectEditorInternal.h">
-      <Filter>Library\DebugUI</Filter>
+    <ClInclude Include="Library\DebugUI\Common\EditorCommon.h">
+      <Filter>Library\DebugUI\Common</Filter>
     </ClInclude>
-    <ClInclude Include="Library\DebugUI\EffectPreviewSurface.h">
-      <Filter>Library\DebugUI</Filter>
+    <ClInclude Include="Library\DebugUI\Common\ImGuiPropertyInspector.h">
+      <Filter>Library\DebugUI\Common</Filter>
     </ClInclude>
-    <ClInclude Include="Library\DebugUI\ImGuiPropertyInspector.h">
-      <Filter>Library\DebugUI</Filter>
+    <ClInclude Include="Library\DebugUI\Common\ImGuiTexture.h">
+      <Filter>Library\DebugUI\Common</Filter>
     </ClInclude>
-    <ClInclude Include="Library\DebugUI\ImGuiTexture.h">
-      <Filter>Library\DebugUI</Filter>
+    <ClInclude Include="Library\DebugUI\Effect\EffectEditor.h">
+      <Filter>Library\DebugUI\Effect</Filter>
     </ClInclude>
-    <ClInclude Include="Library\DebugUI\LogCategoryPanel.h">
-      <Filter>Library\DebugUI</Filter>
+    <ClInclude Include="Library\DebugUI\Effect\EffectEditorCurveInput.h">
+      <Filter>Library\DebugUI\Effect</Filter>
     </ClInclude>
-    <ClInclude Include="Library\DebugUI\ModelAnimationEditor.h">
-      <Filter>Library\DebugUI</Filter>
+    <ClInclude Include="Library\DebugUI\Effect\EffectEditorInternal.h">
+      <Filter>Library\DebugUI\Effect</Filter>
     </ClInclude>
-    <ClInclude Include="Library\DebugUI\ProfilerTimeline.h">
-      <Filter>Library\DebugUI</Filter>
+    <ClInclude Include="Library\DebugUI\Effect\EffectPreviewSurface.h">
+      <Filter>Library\DebugUI\Effect</Filter>
     </ClInclude>
-    <ClInclude Include="Library\DebugUI\ProfilerWindow.h">
-      <Filter>Library\DebugUI</Filter>
+    <ClInclude Include="Library\DebugUI\Log\ConsoleWindow.h">
+      <Filter>Library\DebugUI\Log</Filter>
     </ClInclude>
-    <ClInclude Include="Library\DebugUI\SpriteSheetEditor.h">
-      <Filter>Library\DebugUI</Filter>
+    <ClInclude Include="Library\DebugUI\Log\LogCategoryPanel.h">
+      <Filter>Library\DebugUI\Log</Filter>
     </ClInclude>
-    <ClInclude Include="Library\DebugUI\WorldEditor.h">
-      <Filter>Library\DebugUI</Filter>
+    <ClInclude Include="Library\DebugUI\Profiler\ProfilerTimeline.h">
+      <Filter>Library\DebugUI\Profiler</Filter>
     </ClInclude>
-    <ClInclude Include="Library\DebugUI\WorldEditorInternal.h">
-      <Filter>Library\DebugUI</Filter>
+    <ClInclude Include="Library\DebugUI\Profiler\ProfilerWindow.h">
+      <Filter>Library\DebugUI\Profiler</Filter>
     </ClInclude>
-    <ClInclude Include="Library\DebugUI\WorldEditorMeshMaterialPanel.h">
-      <Filter>Library\DebugUI</Filter>
+    <ClInclude Include="Library\DebugUI\World\WorldEditor.h">
+      <Filter>Library\DebugUI\World</Filter>
     </ClInclude>
-    <ClInclude Include="Library\DebugUI\WorldEditorModelMaterialPanel.h">
-      <Filter>Library\DebugUI</Filter>
+    <ClInclude Include="Library\DebugUI\World\WorldEditorInternal.h">
+      <Filter>Library\DebugUI\World</Filter>
     </ClInclude>
-    <ClInclude Include="Library\DebugUI\WorldEditorModelPreview.h">
-      <Filter>Library\DebugUI</Filter>
+    <ClInclude Include="Library\DebugUI\World\WorldEditorMeshMaterialPanel.h">
+      <Filter>Library\DebugUI\World</Filter>
     </ClInclude>
-    <ClInclude Include="Library\DebugUI\WorldEditorModelPreviewKey.h">
-      <Filter>Library\DebugUI</Filter>
+    <ClInclude Include="Library\DebugUI\World\WorldEditorModelMaterialPanel.h">
+      <Filter>Library\DebugUI\World</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\DebugUI\World\WorldEditorModelPreview.h">
+      <Filter>Library\DebugUI\World</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\DebugUI\World\WorldEditorModelPreviewKey.h">
+      <Filter>Library\DebugUI\World</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Animation\AnimationBlend.h">
       <Filter>Library\Framework\Animation</Filter>
@@ -1620,110 +1620,110 @@
     <ClInclude Include="Library\Framework\Asset\AssetManager.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\DefinitionDocument.h">
-      <Filter>Library\Framework\Asset</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\DefinitionEditing.h">
-      <Filter>Library\Framework\Asset</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\DynamicTexture.h">
-      <Filter>Library\Framework\Asset</Filter>
-    </ClInclude>
     <ClInclude Include="Library\Framework\Asset\EditorAssetInfo.h">
       <Filter>Library\Framework\Asset</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\EffectAsset.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Data\EffectAsset.h">
+      <Filter>Library\Framework\Asset\Data</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\Font.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Data\SpriteSheet.h">
+      <Filter>Library\Framework\Asset\Data</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\FontFile.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Data\WorldAsset.h">
+      <Filter>Library\Framework\Asset\Data</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\FontTypes.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Definition\DefinitionDocument.h">
+      <Filter>Library\Framework\Asset\Definition</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\IndexBuffer.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Definition\DefinitionEditing.h">
+      <Filter>Library\Framework\Asset\Definition</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\MeshBuffer.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Font\Font.h">
+      <Filter>Library\Framework\Asset\Font</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\Model.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Font\FontFile.h">
+      <Filter>Library\Framework\Asset\Font</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\ModelAnimationAsset.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Font\FontTypes.h">
+      <Filter>Library\Framework\Asset\Font</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\ModelAppearance.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Gpu\IndexBuffer.h">
+      <Filter>Library\Framework\Asset\Gpu</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\ModelCollision.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Gpu\MeshBuffer.h">
+      <Filter>Library\Framework\Asset\Gpu</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\ModelCollisionTypes.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Gpu\Shader.h">
+      <Filter>Library\Framework\Asset\Gpu</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\ModelMeshTypes.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Gpu\ShadowMap.h">
+      <Filter>Library\Framework\Asset\Gpu</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\ModelStructureTypes.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Gpu\VertexBuffer.h">
+      <Filter>Library\Framework\Asset\Gpu</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\PixelImage.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Model\Model.h">
+      <Filter>Library\Framework\Asset\Model</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\RenderTarget.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Model\ModelAnimationAsset.h">
+      <Filter>Library\Framework\Asset\Model</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\Shader.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Model\ModelAppearance.h">
+      <Filter>Library\Framework\Asset\Model</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\ShadowMap.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Model\ModelCollision.h">
+      <Filter>Library\Framework\Asset\Model</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\Sound.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Model\ModelCollisionTypes.h">
+      <Filter>Library\Framework\Asset\Model</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\SpriteSheet.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Model\ModelMeshTypes.h">
+      <Filter>Library\Framework\Asset\Model</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\StaticModelSurface.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Model\ModelStructureTypes.h">
+      <Filter>Library\Framework\Asset\Model</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\StaticModelSurfaceData.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Model\StaticModelSurface.h">
+      <Filter>Library\Framework\Asset\Model</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\StaticModelSurfaceMaterial.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Model\StaticModelSurfaceData.h">
+      <Filter>Library\Framework\Asset\Model</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\StaticModelSurfaceSection.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Model\StaticModelSurfaceMaterial.h">
+      <Filter>Library\Framework\Asset\Model</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\Texture.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Model\StaticModelSurfaceSection.h">
+      <Filter>Library\Framework\Asset\Model</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\VertexBuffer.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Model\Import\FbxImporter.h">
+      <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\WorldAsset.h">
-      <Filter>Library\Framework\Asset</Filter>
+    <ClInclude Include="Library\Framework\Asset\Model\Import\ImportedScene.h">
+      <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\Import\FbxImporter.h">
-      <Filter>Library\Framework\Asset\Import</Filter>
+    <ClInclude Include="Library\Framework\Asset\Model\Import\ModelExporter.h">
+      <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\Import\ImportedScene.h">
-      <Filter>Library\Framework\Asset\Import</Filter>
+    <ClInclude Include="Library\Framework\Asset\Model\Import\ModelFormats.h">
+      <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\Import\ModelExporter.h">
-      <Filter>Library\Framework\Asset\Import</Filter>
+    <ClInclude Include="Library\Framework\Asset\Model\Import\XFileWriter.h">
+      <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\Import\ModelFormats.h">
-      <Filter>Library\Framework\Asset\Import</Filter>
+    <ClInclude Include="Library\Framework\Asset\Sound\Sound.h">
+      <Filter>Library\Framework\Asset\Sound</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\Import\XFileWriter.h">
-      <Filter>Library\Framework\Asset\Import</Filter>
+    <ClInclude Include="Library\Framework\Asset\Texture\DynamicTexture.h">
+      <Filter>Library\Framework\Asset\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Texture\PixelImage.h">
+      <Filter>Library\Framework\Asset\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Texture\RenderTarget.h">
+      <Filter>Library\Framework\Asset\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Texture\Texture.h">
+      <Filter>Library\Framework\Asset\Texture</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Audio\AudioComponents.h">
       <Filter>Library\Framework\Audio</Filter>
@@ -1740,28 +1740,10 @@
     <ClInclude Include="Library\Framework\Capture\CaptureCommandLine.h">
       <Filter>Library\Framework\Capture</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Capture\CaptureFileWriter.h">
-      <Filter>Library\Framework\Capture</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\Capture\CaptureImage.h">
-      <Filter>Library\Framework\Capture</Filter>
-    </ClInclude>
     <ClInclude Include="Library\Framework\Capture\CaptureTypes.h">
       <Filter>Library\Framework\Capture</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Capture\ColorQuantizer.h">
-      <Filter>Library\Framework\Capture</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\Capture\GifEncoder.h">
-      <Filter>Library\Framework\Capture</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\Capture\GifLzw.h">
-      <Filter>Library\Framework\Capture</Filter>
-    </ClInclude>
     <ClInclude Include="Library\Framework\Capture\OffscreenShot.h">
-      <Filter>Library\Framework\Capture</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\Capture\PaletteMapper.h">
       <Filter>Library\Framework\Capture</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Capture\ScreenCapture.h">
@@ -1769,6 +1751,24 @@
     </ClInclude>
     <ClInclude Include="Library\Framework\Capture\ScreenshotNames.h">
       <Filter>Library\Framework\Capture</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Capture\Encoding\CaptureFileWriter.h">
+      <Filter>Library\Framework\Capture\Encoding</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Capture\Encoding\CaptureImage.h">
+      <Filter>Library\Framework\Capture\Encoding</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Capture\Encoding\ColorQuantizer.h">
+      <Filter>Library\Framework\Capture\Encoding</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Capture\Encoding\GifEncoder.h">
+      <Filter>Library\Framework\Capture\Encoding</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Capture\Encoding\GifLzw.h">
+      <Filter>Library\Framework\Capture\Encoding</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Capture\Encoding\PaletteMapper.h">
+      <Filter>Library\Framework\Capture\Encoding</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Component\Component.h">
       <Filter>Library\Framework\Component</Filter>
@@ -1815,65 +1815,65 @@
     <ClInclude Include="Library\Framework\Ecs\TransformWorld.h">
       <Filter>Library\Framework\Ecs</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Effect\EffectAppearanceDefinition.h">
-      <Filter>Library\Framework\Effect</Filter>
-    </ClInclude>
     <ClInclude Include="Library\Framework\Effect\EffectBackend.h">
-      <Filter>Library\Framework\Effect</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\Effect\EffectColorCurve.h">
       <Filter>Library\Framework\Effect</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Effect\EffectComponent.h">
       <Filter>Library\Framework\Effect</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Effect\EffectFlipbookDefinition.h">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClInclude Include="Library\Framework\Effect\Curve\EffectColorCurve.h">
+      <Filter>Library\Framework\Effect\Curve</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Effect\EffectFlipbookFrames.h">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClInclude Include="Library\Framework\Effect\Curve\EffectScalarCurve.h">
+      <Filter>Library\Framework\Effect\Curve</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Effect\EffectForceFieldDefinition.h">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClInclude Include="Library\Framework\Effect\Definition\EffectAppearanceDefinition.h">
+      <Filter>Library\Framework\Effect\Definition</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Effect\EffectLightningTreeDefinition.h">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClInclude Include="Library\Framework\Effect\Definition\EffectFlipbookDefinition.h">
+      <Filter>Library\Framework\Effect\Definition</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Effect\EffectMaterialDefinition.h">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClInclude Include="Library\Framework\Effect\Definition\EffectForceFieldDefinition.h">
+      <Filter>Library\Framework\Effect\Definition</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Effect\EffectMeshDefinition.h">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClInclude Include="Library\Framework\Effect\Definition\EffectLightningTreeDefinition.h">
+      <Filter>Library\Framework\Effect\Definition</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Effect\EffectMeshGeometry.h">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClInclude Include="Library\Framework\Effect\Definition\EffectMaterialDefinition.h">
+      <Filter>Library\Framework\Effect\Definition</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Effect\EffectPathDefinition.h">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClInclude Include="Library\Framework\Effect\Definition\EffectMeshDefinition.h">
+      <Filter>Library\Framework\Effect\Definition</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Effect\EffectPathGeometry.h">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClInclude Include="Library\Framework\Effect\Definition\EffectPathDefinition.h">
+      <Filter>Library\Framework\Effect\Definition</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Effect\EffectScalarCurve.h">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClInclude Include="Library\Framework\Effect\Definition\EffectUVDistortionDefinition.h">
+      <Filter>Library\Framework\Effect\Definition</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Effect\EffectUVDistortionDefinition.h">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClInclude Include="Library\Framework\Effect\Definition\MeshMaterialEffectDefinition.h">
+      <Filter>Library\Framework\Effect\Definition</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Effect\MeshMaterialEffectDefinition.h">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClInclude Include="Library\Framework\Effect\Geometry\EffectFlipbookFrames.h">
+      <Filter>Library\Framework\Effect\Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Effect\ParticleEffect.h">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClInclude Include="Library\Framework\Effect\Geometry\EffectMeshGeometry.h">
+      <Filter>Library\Framework\Effect\Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Effect\ParticleEffectBackend.h">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClInclude Include="Library\Framework\Effect\Geometry\EffectPathGeometry.h">
+      <Filter>Library\Framework\Effect\Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Effect\ParticleEffectEditing.h">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClInclude Include="Library\Framework\Effect\Particle\ParticleEffect.h">
+      <Filter>Library\Framework\Effect\Particle</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Effect\ParticleSimulation.h">
-      <Filter>Library\Framework\Effect</Filter>
+    <ClInclude Include="Library\Framework\Effect\Particle\ParticleEffectBackend.h">
+      <Filter>Library\Framework\Effect\Particle</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Effect\Particle\ParticleEffectEditing.h">
+      <Filter>Library\Framework\Effect\Particle</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Effect\Particle\ParticleSimulation.h">
+      <Filter>Library\Framework\Effect\Particle</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Engine\Engine.h">
       <Filter>Library\Framework\Engine</Filter>
@@ -1932,62 +1932,32 @@
     <ClInclude Include="Library\Framework\Object\Object.h">
       <Filter>Library\Framework\Object</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\PixelEffect\IPixelEffect.h">
-      <Filter>Library\Framework\PixelEffect</Filter>
+    <ClInclude Include="Library\Framework\PixelEffect\Canvas\IPixelSurface.h">
+      <Filter>Library\Framework\PixelEffect\Canvas</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\PixelEffect\IPixelSurface.h">
-      <Filter>Library\Framework\PixelEffect</Filter>
+    <ClInclude Include="Library\Framework\PixelEffect\Canvas\PixelBackdrop.h">
+      <Filter>Library\Framework\PixelEffect\Canvas</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\PixelEffect\PixelBackdrop.h">
-      <Filter>Library\Framework\PixelEffect</Filter>
+    <ClInclude Include="Library\Framework\PixelEffect\Canvas\PixelColor.h">
+      <Filter>Library\Framework\PixelEffect\Canvas</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\PixelEffect\PixelColor.h">
-      <Filter>Library\Framework\PixelEffect</Filter>
+    <ClInclude Include="Library\Framework\PixelEffect\Canvas\PixelDither.h">
+      <Filter>Library\Framework\PixelEffect\Canvas</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\PixelEffect\PixelDither.h">
-      <Filter>Library\Framework\PixelEffect</Filter>
+    <ClInclude Include="Library\Framework\PixelEffect\Canvas\PixelFont.h">
+      <Filter>Library\Framework\PixelEffect\Canvas</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\PixelEffect\PixelEffectFrame.h">
-      <Filter>Library\Framework\PixelEffect</Filter>
+    <ClInclude Include="Library\Framework\PixelEffect\Canvas\PixelImageSurface.h">
+      <Filter>Library\Framework\PixelEffect\Canvas</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\PixelEffect\PixelEffectPlayer.h">
-      <Filter>Library\Framework\PixelEffect</Filter>
+    <ClInclude Include="Library\Framework\PixelEffect\Canvas\PixelMask.h">
+      <Filter>Library\Framework\PixelEffect\Canvas</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\PixelEffect\PixelEffectTypes.h">
-      <Filter>Library\Framework\PixelEffect</Filter>
+    <ClInclude Include="Library\Framework\PixelEffect\Canvas\PixelPainter.h">
+      <Filter>Library\Framework\PixelEffect\Canvas</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\PixelEffect\PixelEffectView.h">
-      <Filter>Library\Framework\PixelEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\PixelEffect\PixelFont.h">
-      <Filter>Library\Framework\PixelEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\PixelEffect\PixelImageSurface.h">
-      <Filter>Library\Framework\PixelEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\PixelEffect\PixelMask.h">
-      <Filter>Library\Framework\PixelEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\PixelEffect\PixelMath.h">
-      <Filter>Library\Framework\PixelEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\PixelEffect\PixelPainter.h">
-      <Filter>Library\Framework\PixelEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\PixelEffect\PixelParticleSystem.h">
-      <Filter>Library\Framework\PixelEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\PixelEffect\PixelRandom.h">
-      <Filter>Library\Framework\PixelEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\PixelEffect\PixelRaster.h">
-      <Filter>Library\Framework\PixelEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\PixelEffect\PixelStockActor.h">
-      <Filter>Library\Framework\PixelEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\PixelEffect\PixelTimedEffect.h">
-      <Filter>Library\Framework\PixelEffect</Filter>
+    <ClInclude Include="Library\Framework\PixelEffect\Canvas\PixelRaster.h">
+      <Filter>Library\Framework\PixelEffect\Canvas</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\PixelEffect\Effects\PixelAuraEffect.h">
       <Filter>Library\Framework\PixelEffect\Effects</Filter>
@@ -2049,6 +2019,36 @@
     <ClInclude Include="Library\Framework\PixelEffect\Effects\PixelWindEffect.h">
       <Filter>Library\Framework\PixelEffect\Effects</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\PixelEffect\Math\PixelMath.h">
+      <Filter>Library\Framework\PixelEffect\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\PixelEffect\Math\PixelRandom.h">
+      <Filter>Library\Framework\PixelEffect\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\PixelEffect\Playback\IPixelEffect.h">
+      <Filter>Library\Framework\PixelEffect\Playback</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\PixelEffect\Playback\PixelEffectFrame.h">
+      <Filter>Library\Framework\PixelEffect\Playback</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\PixelEffect\Playback\PixelEffectPlayer.h">
+      <Filter>Library\Framework\PixelEffect\Playback</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\PixelEffect\Playback\PixelEffectTypes.h">
+      <Filter>Library\Framework\PixelEffect\Playback</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\PixelEffect\Playback\PixelEffectView.h">
+      <Filter>Library\Framework\PixelEffect\Playback</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\PixelEffect\Playback\PixelParticleSystem.h">
+      <Filter>Library\Framework\PixelEffect\Playback</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\PixelEffect\Playback\PixelStockActor.h">
+      <Filter>Library\Framework\PixelEffect\Playback</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\PixelEffect\Playback\PixelTimedEffect.h">
+      <Filter>Library\Framework\PixelEffect\Playback</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Profiler\ProfilerAnalyzer.h">
       <Filter>Library\Framework\Profiler</Filter>
     </ClInclude>
@@ -2058,101 +2058,101 @@
     <ClInclude Include="Library\Framework\Profiler\ProfilerSubsystem.h">
       <Filter>Library\Framework\Profiler</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\Billboard.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\Camera\Billboard.h">
+      <Filter>Library\Framework\Render\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\BufferRange.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\Camera\Camera.h">
+      <Filter>Library\Framework\Render\Camera</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\Camera.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\Draw\DrawCommand.h">
+      <Filter>Library\Framework\Render\Draw</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\DrawCommand.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\Draw\DrawContext.h">
+      <Filter>Library\Framework\Render\Draw</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\DrawContext.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\Draw\DrawDistortedMaterialQuad.h">
+      <Filter>Library\Framework\Render\Draw</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\DrawDistortedMaterialQuad.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\Draw\DrawDistortedMaterialRibbon.h">
+      <Filter>Library\Framework\Render\Draw</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\DrawDistortedMaterialRibbon.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\Draw\DrawMaterialMesh.h">
+      <Filter>Library\Framework\Render\Draw</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\DrawMaterialMesh.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\Draw\DrawMaterialQuad.h">
+      <Filter>Library\Framework\Render\Draw</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\DrawMaterialQuad.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\Draw\DrawMaterialRibbon.h">
+      <Filter>Library\Framework\Render\Draw</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\DrawMaterialRibbon.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\Draw\DrawModelFrameOverrideData.h">
+      <Filter>Library\Framework\Render\Draw</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\DrawModelFrameOverrideData.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\Draw\DrawModelFrameOverrideScope.h">
+      <Filter>Library\Framework\Render\Draw</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\DrawModelFrameOverrideScope.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\Draw\DrawModelFramePoseData.h">
+      <Filter>Library\Framework\Render\Draw</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\DrawModelFramePoseData.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\Draw\DrawModelMaterial.h">
+      <Filter>Library\Framework\Render\Draw</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\DrawModelMaterial.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\Draw\DrawRibbon.h">
+      <Filter>Library\Framework\Render\Draw</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\DrawRibbon.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\Draw\ImmediateDraw.h">
+      <Filter>Library\Framework\Render\Draw</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\GraphFilter.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\MaterialEffect\MeshMaterialEffectPlayback.h">
+      <Filter>Library\Framework\Render\MaterialEffect</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\ImageTypes.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\MaterialEffect\MeshMaterialEffectResources.h">
+      <Filter>Library\Framework\Render\MaterialEffect</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\ImmediateDraw.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\MaterialEffect\ModelMaterialEffectRenderer.h">
+      <Filter>Library\Framework\Render\MaterialEffect</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\Lighting.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\MaterialEffect\ModelMaterialEffectResources.h">
+      <Filter>Library\Framework\Render\MaterialEffect</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\MeshGeometryChunk.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\Mesh\MeshGeometryChunk.h">
+      <Filter>Library\Framework\Render\Mesh</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\MeshMaterialEffectPlayback.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\Mesh\MeshRender.h">
+      <Filter>Library\Framework\Render\Mesh</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\MeshMaterialEffectResources.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\State\GraphFilter.h">
+      <Filter>Library\Framework\Render\State</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\MeshRender.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\State\Lighting.h">
+      <Filter>Library\Framework\Render\State</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\MeshTypes.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\State\RenderState3D.h">
+      <Filter>Library\Framework\Render\State</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\ModelMaterialEffectRenderer.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\State\ShadowMapView.h">
+      <Filter>Library\Framework\Render\State</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\ModelMaterialEffectResources.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\State\TextStyle.h">
+      <Filter>Library\Framework\Render\State</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\RenderState3D.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\Types\BufferRange.h">
+      <Filter>Library\Framework\Render\Types</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\RenderTargetTypes.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\Types\ImageTypes.h">
+      <Filter>Library\Framework\Render\Types</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\ShaderVertex.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\Types\MeshTypes.h">
+      <Filter>Library\Framework\Render\Types</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\ShadowMapView.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\Types\RenderTargetTypes.h">
+      <Filter>Library\Framework\Render\Types</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\TextStyle.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\Types\ShaderVertex.h">
+      <Filter>Library\Framework\Render\Types</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\Render\Vertex3D.h">
-      <Filter>Library\Framework\Render</Filter>
+    <ClInclude Include="Library\Framework\Render\Types\Vertex3D.h">
+      <Filter>Library\Framework\Render\Types</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Scene\ISceneManager.h">
       <Filter>Library\Framework\Scene</Filter>
@@ -2190,29 +2190,17 @@
     <ClInclude Include="Library\Framework\Text\TextLayout.h">
       <Filter>Library\Framework\Text</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\World\WorldCollision.h">
-      <Filter>Library\Framework\World</Filter>
+    <ClInclude Include="Library\Framework\World\Definition\WorldDefinition.h">
+      <Filter>Library\Framework\World\Definition</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\World\WorldDefinition.h">
-      <Filter>Library\Framework\World</Filter>
+    <ClInclude Include="Library\Framework\World\Definition\WorldEdit.h">
+      <Filter>Library\Framework\World\Definition</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\World\WorldEdit.h">
-      <Filter>Library\Framework\World</Filter>
+    <ClInclude Include="Library\Framework\World\Definition\WorldHierarchy.h">
+      <Filter>Library\Framework\World\Definition</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\World\WorldHierarchy.h">
-      <Filter>Library\Framework\World</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\World\WorldModelMaterialEffect.h">
-      <Filter>Library\Framework\World</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\World\WorldRender.h">
-      <Filter>Library\Framework\World</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\World\WorldSpawner.h">
-      <Filter>Library\Framework\World</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\World\WorldValidate.h">
-      <Filter>Library\Framework\World</Filter>
+    <ClInclude Include="Library\Framework\World\Definition\WorldValidate.h">
+      <Filter>Library\Framework\World\Definition</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\World\Editor\EditorCamera.h">
       <Filter>Library\Framework\World\Editor</Filter>
@@ -2256,6 +2244,18 @@
     <ClInclude Include="Library\Framework\World\Mesh\EditMeshPrimitives.h">
       <Filter>Library\Framework\World\Mesh</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\World\Runtime\WorldCollision.h">
+      <Filter>Library\Framework\World\Runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\World\Runtime\WorldModelMaterialEffect.h">
+      <Filter>Library\Framework\World\Runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\World\Runtime\WorldRender.h">
+      <Filter>Library\Framework\World\Runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\World\Runtime\WorldSpawner.h">
+      <Filter>Library\Framework\World\Runtime</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Json\JsonHelpers.h">
       <Filter>Library\Json</Filter>
     </ClInclude>
@@ -2295,55 +2295,10 @@
     <ClInclude Include="Library\Math\Vector4.h">
       <Filter>Library\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Physics\CollisionShape.h">
-      <Filter>Library\Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Physics\ContactListener.h">
-      <Filter>Library\Physics</Filter>
-    </ClInclude>
     <ClInclude Include="Library\Physics\Physics.h">
       <Filter>Library\Physics</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Physics\PhysicsCharacter.h">
-      <Filter>Library\Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Physics\PhysicsCharacterRules.h">
-      <Filter>Library\Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Physics\PhysicsCharacterTypes.h">
-      <Filter>Library\Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Physics\PhysicsConstraint.h">
-      <Filter>Library\Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Physics\PhysicsConstraintRules.h">
-      <Filter>Library\Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Physics\PhysicsConstraintTypes.h">
-      <Filter>Library\Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Physics\PhysicsContactRegistry.h">
-      <Filter>Library\Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Physics\PhysicsContactRules.h">
-      <Filter>Library\Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Physics\PhysicsContactTypes.h">
-      <Filter>Library\Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Physics\PhysicsDebugDrawContext.h">
-      <Filter>Library\Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Physics\PhysicsDebugTypes.h">
-      <Filter>Library\Physics</Filter>
-    </ClInclude>
     <ClInclude Include="Library\Physics\PhysicsInput.h">
-      <Filter>Library\Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Physics\PhysicsLayerTypes.h">
-      <Filter>Library\Physics</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Physics\PhysicsQueryTypes.h">
       <Filter>Library\Physics</Filter>
     </ClInclude>
     <ClInclude Include="Library\Physics\PhysicsSubsystem.h">
@@ -2355,86 +2310,113 @@
     <ClInclude Include="Library\Physics\PhysicsTypes.h">
       <Filter>Library\Physics</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Physics\RigidBody.h">
-      <Filter>Library\Physics</Filter>
-    </ClInclude>
     <ClInclude Include="Library\Physics\WorldPhysics.h">
       <Filter>Library\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\Body\CollisionShape.h">
+      <Filter>Library\Physics\Body</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\Body\RigidBody.h">
+      <Filter>Library\Physics\Body</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\Character\PhysicsCharacter.h">
+      <Filter>Library\Physics\Character</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\Character\PhysicsCharacterRules.h">
+      <Filter>Library\Physics\Character</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\Character\PhysicsCharacterTypes.h">
+      <Filter>Library\Physics\Character</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\Constraint\PhysicsConstraint.h">
+      <Filter>Library\Physics\Constraint</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\Constraint\PhysicsConstraintRules.h">
+      <Filter>Library\Physics\Constraint</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\Constraint\PhysicsConstraintTypes.h">
+      <Filter>Library\Physics\Constraint</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\Contact\ContactListener.h">
+      <Filter>Library\Physics\Contact</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\Contact\PhysicsContactRegistry.h">
+      <Filter>Library\Physics\Contact</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\Contact\PhysicsContactRules.h">
+      <Filter>Library\Physics\Contact</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\Contact\PhysicsContactTypes.h">
+      <Filter>Library\Physics\Contact</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\DebugDraw\PhysicsDebugDrawContext.h">
+      <Filter>Library\Physics\DebugDraw</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\DebugDraw\PhysicsDebugTypes.h">
+      <Filter>Library\Physics\DebugDraw</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\Layer\PhysicsLayerTypes.h">
+      <Filter>Library\Physics\Layer</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\Query\PhysicsQueryTypes.h">
+      <Filter>Library\Physics\Query</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\BackendSelection.h">
       <Filter>Library\Platform</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Platform\CommandLine.h">
-      <Filter>Library\Platform</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\FileSystem.h">
-      <Filter>Library\Platform</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\LeakReport.h">
-      <Filter>Library\Platform</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\LogArchive.h">
-      <Filter>Library\Platform</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\WindowSettings.h">
-      <Filter>Library\Platform</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\WindowsInclude.h">
-      <Filter>Library\Platform</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\DxLib\DxLibAssetBackend.h">
-      <Filter>Library\Platform\DxLib</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\DxLib\DxLibAudioBackend.h">
-      <Filter>Library\Platform\DxLib</Filter>
-    </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\DxLibBackend.h">
-      <Filter>Library\Platform\DxLib</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\DxLib\DxLibDrawExecutor.h">
-      <Filter>Library\Platform\DxLib</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\DxLib\DxLibImageOps.h">
-      <Filter>Library\Platform\DxLib</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\DxLib\DxLibImGuiTexture.h">
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\DxLibInclude.h">
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Platform\DxLib\DxLibInput.h">
-      <Filter>Library\Platform\DxLib</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\DxLib\DxLibLighting.h">
-      <Filter>Library\Platform\DxLib</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\DxLib\DxLibModelMaterialGeometry.h">
-      <Filter>Library\Platform\DxLib</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\DxLib\DxLibRenderState3D.h">
-      <Filter>Library\Platform\DxLib</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\DxLib\DxLibRibbonMesh.h">
-      <Filter>Library\Platform\DxLib</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\DxLib\DxLibShader.h">
-      <Filter>Library\Platform\DxLib</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\DxLib\DxLibShadowMap.h">
-      <Filter>Library\Platform\DxLib</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\DxLib\DxLibShapes3D.h">
-      <Filter>Library\Platform\DxLib</Filter>
-    </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\DxLibTypes.h">
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Platform\DxLib\DxLibVertex.h">
-      <Filter>Library\Platform\DxLib</Filter>
+    <ClInclude Include="Library\Platform\DxLib\Asset\DxLibAssetBackend.h">
+      <Filter>Library\Platform\DxLib\Asset</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Platform\DxLib\EffectMaterialRenderer.h">
-      <Filter>Library\Platform\DxLib</Filter>
+    <ClInclude Include="Library\Platform\DxLib\Asset\DxLibImageOps.h">
+      <Filter>Library\Platform\DxLib\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\Asset\DxLibModelMaterialGeometry.h">
+      <Filter>Library\Platform\DxLib\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\Audio\DxLibAudioBackend.h">
+      <Filter>Library\Platform\DxLib\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\Input\DxLibInput.h">
+      <Filter>Library\Platform\DxLib\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\Render\DxLibDrawExecutor.h">
+      <Filter>Library\Platform\DxLib\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\Render\DxLibImGuiTexture.h">
+      <Filter>Library\Platform\DxLib\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\Render\DxLibLighting.h">
+      <Filter>Library\Platform\DxLib\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\Render\DxLibRenderState3D.h">
+      <Filter>Library\Platform\DxLib\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\Render\DxLibRibbonMesh.h">
+      <Filter>Library\Platform\DxLib\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\Render\DxLibShader.h">
+      <Filter>Library\Platform\DxLib\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\Render\DxLibShadowMap.h">
+      <Filter>Library\Platform\DxLib\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\Render\DxLibShapes3D.h">
+      <Filter>Library\Platform\DxLib\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\Render\DxLibVertex.h">
+      <Filter>Library\Platform\DxLib\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\Render\EffectMaterialRenderer.h">
+      <Filter>Library\Platform\DxLib\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\Null\NullAssetBackend.h">
       <Filter>Library\Platform\Null</Filter>
@@ -2453,6 +2435,24 @@
     </ClInclude>
     <ClInclude Include="Library\Platform\SDL\SdlGamepadInput.h">
       <Filter>Library\Platform\SDL</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\System\CommandLine.h">
+      <Filter>Library\Platform\System</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\System\FileSystem.h">
+      <Filter>Library\Platform\System</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\System\LeakReport.h">
+      <Filter>Library\Platform\System</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\System\LogArchive.h">
+      <Filter>Library\Platform\System</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\System\WindowSettings.h">
+      <Filter>Library\Platform\System</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\System\WindowsInclude.h">
+      <Filter>Library\Platform\System</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\ImGui\imconfig.h">
       <Filter>VendorModules\ImGui</Filter>
@@ -3968,6 +3968,24 @@
     <Filter Include="Library\DebugUI">
       <UniqueIdentifier>{0AA5C285-6E04-6419-91F7-E5C892A73076}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Library\DebugUI\Asset">
+      <UniqueIdentifier>{9275C6B6-5D51-342B-D03C-9581D7D759BF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\DebugUI\Common">
+      <UniqueIdentifier>{A51E9BB1-AAFE-CD8E-77EB-2CE4558B9778}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\DebugUI\Effect">
+      <UniqueIdentifier>{CA4404A5-A4E1-728D-ED06-56817869399D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\DebugUI\Log">
+      <UniqueIdentifier>{9E7A2C43-655C-CB1A-C621-D728C55EC73D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\DebugUI\Profiler">
+      <UniqueIdentifier>{E9C875E0-53C1-4EA8-DA59-08226B0F767B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\DebugUI\World">
+      <UniqueIdentifier>{1E4AF4CD-019D-C016-268B-33FFF3C3761E}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Library\Framework">
       <UniqueIdentifier>{3FD228C0-5E7D-7087-45D2-9A9CC6CD0828}</UniqueIdentifier>
     </Filter>
@@ -3977,14 +3995,38 @@
     <Filter Include="Library\Framework\Asset">
       <UniqueIdentifier>{94E11BD5-6AF6-9090-57D7-F08B7DC825B3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Library\Framework\Asset\Import">
-      <UniqueIdentifier>{7F17CDE5-E760-B4A8-0EDB-B4D594FE9CAC}</UniqueIdentifier>
+    <Filter Include="Library\Framework\Asset\Data">
+      <UniqueIdentifier>{63665383-D7BF-2D49-FBEA-C8E65E3FA74D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Asset\Definition">
+      <UniqueIdentifier>{7DFBF391-C2D9-F66C-4D97-6D3D655AE938}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Asset\Font">
+      <UniqueIdentifier>{D7C8FCF4-9CD7-4067-CD61-1C4445F6A2F1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Asset\Gpu">
+      <UniqueIdentifier>{C1B7F89B-2D8C-E169-CCA7-C5378EA6BDF1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Asset\Model">
+      <UniqueIdentifier>{8FEB4C7F-09CD-474E-D942-85C2B783045E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Asset\Model\Import">
+      <UniqueIdentifier>{F5046B95-2621-E116-E50D-EA170C48A8B8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Asset\Sound">
+      <UniqueIdentifier>{F9F9DC2B-BB1D-95B9-3FFF-88E746630D70}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Asset\Texture">
+      <UniqueIdentifier>{7B05548D-A395-9C74-5F71-4898AB4DF9BB}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\Audio">
       <UniqueIdentifier>{DBC1C3EF-2222-1E02-D560-CCA59AD3F34A}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\Capture">
       <UniqueIdentifier>{B9138185-555A-4DA5-D15C-F1E2D50DD866}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Capture\Encoding">
+      <UniqueIdentifier>{508DEEFE-F93B-7101-9729-A1B60EB7297D}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\Component">
       <UniqueIdentifier>{0C98A0D7-6F49-441F-3021-C371CC0ADB23}</UniqueIdentifier>
@@ -3997,6 +4039,18 @@
     </Filter>
     <Filter Include="Library\Framework\Effect">
       <UniqueIdentifier>{E4A3221F-96E8-CADF-FC7E-A64892C8FBDB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Effect\Curve">
+      <UniqueIdentifier>{ED5B08AD-B377-EA6F-2060-F021EE685D44}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Effect\Definition">
+      <UniqueIdentifier>{6D92EB58-A884-A9A6-049F-A602C026C957}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Effect\Geometry">
+      <UniqueIdentifier>{FE4B74E1-BCF4-AAFE-0C4D-C12EFF009F20}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Effect\Particle">
+      <UniqueIdentifier>{421551EE-D9A3-9674-3700-AFE7B6A70EE7}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\Engine">
       <UniqueIdentifier>{D88B6A6C-F74E-49BB-09F7-B15A88EA5D42}</UniqueIdentifier>
@@ -4016,14 +4070,41 @@
     <Filter Include="Library\Framework\PixelEffect">
       <UniqueIdentifier>{07EAA44A-80CA-D084-B885-79F7A4212CD2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Library\Framework\PixelEffect\Canvas">
+      <UniqueIdentifier>{BBC9213B-AEDF-4B4C-01DF-C20DA6299A70}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Library\Framework\PixelEffect\Effects">
       <UniqueIdentifier>{CF1D431C-8908-58D6-9F0F-2A079B54813F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\PixelEffect\Math">
+      <UniqueIdentifier>{FF26955A-7F71-175F-54BC-2C3CE8F0C900}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\PixelEffect\Playback">
+      <UniqueIdentifier>{77BD5DD0-51F1-328F-3D56-C789F444FD64}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\Profiler">
       <UniqueIdentifier>{7E59FA10-E1F2-0D81-27AA-AF78FED31A9A}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\Render">
       <UniqueIdentifier>{76BBD759-6EFA-AEFD-A778-9C97A593CCC7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Render\Camera">
+      <UniqueIdentifier>{A31E2B51-CDBB-9C12-A465-97FD7A22869B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Render\Draw">
+      <UniqueIdentifier>{7E6932F5-A37B-7AE2-3E44-4532394E0A61}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Render\MaterialEffect">
+      <UniqueIdentifier>{D9697180-14C4-CCF7-BFE9-CC9AAD3EBA3F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Render\Mesh">
+      <UniqueIdentifier>{E654C265-9F68-9EBB-9EA2-0E842A891F67}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Render\State">
+      <UniqueIdentifier>{D42D37FC-96AB-A9C8-F858-712F6D0F3AB5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Render\Types">
+      <UniqueIdentifier>{5E0DB47E-4796-0897-9328-6B5A5A865181}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\Scene">
       <UniqueIdentifier>{471142BD-496D-11EE-3E4A-E067DE741C4F}</UniqueIdentifier>
@@ -4037,11 +4118,17 @@
     <Filter Include="Library\Framework\World">
       <UniqueIdentifier>{2C0212B2-57A7-9272-B467-54D4E8580558}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Library\Framework\World\Definition">
+      <UniqueIdentifier>{681B6E86-89AA-77F7-014E-79D8F8B19C77}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Library\Framework\World\Editor">
       <UniqueIdentifier>{B6C013D2-BE11-55E0-30DE-C19C4D3FE34A}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\World\Mesh">
       <UniqueIdentifier>{C12C7043-2341-584A-D55B-46EC1F68D0AE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\World\Runtime">
+      <UniqueIdentifier>{9B81C3A4-1F6C-0490-5420-923F512F4CF9}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Json">
       <UniqueIdentifier>{D985901B-8222-8516-E9E1-CF4CF8C6A9D7}</UniqueIdentifier>
@@ -4052,17 +4139,53 @@
     <Filter Include="Library\Physics">
       <UniqueIdentifier>{4D7DCCB0-A36F-37B1-4B0E-19212D277F62}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Library\Physics\Body">
+      <UniqueIdentifier>{ECA3C7F6-D3A5-6D88-750C-6A0E5B623062}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Physics\Character">
+      <UniqueIdentifier>{0246F958-B626-ADA2-4A6D-5610D6B8C764}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Physics\Constraint">
+      <UniqueIdentifier>{27041789-DF14-6057-1332-293A717F083E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Physics\Contact">
+      <UniqueIdentifier>{5FC33A0F-32C9-BD3C-67CE-7DD7BB943EC5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Physics\DebugDraw">
+      <UniqueIdentifier>{9D7BB4BB-6053-4330-72A0-42EE619160B8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Physics\Layer">
+      <UniqueIdentifier>{B3843755-FC25-B04D-3D4C-CEFAC850D806}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Physics\Query">
+      <UniqueIdentifier>{79C6ABC4-2F6C-D013-AA40-1B8821D9426D}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Library\Platform">
       <UniqueIdentifier>{ADB500FA-0E39-4833-EAC0-DB5B2ED96559}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Platform\DxLib">
       <UniqueIdentifier>{F933E44F-D2AA-43FC-A5C7-40704577771B}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Library\Platform\DxLib\Asset">
+      <UniqueIdentifier>{AF6FABEA-D850-AC0D-2744-FFB90E26704A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DxLib\Audio">
+      <UniqueIdentifier>{20F4B5B0-495E-0583-B51D-FB98C8BDB3DD}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DxLib\Input">
+      <UniqueIdentifier>{E86D5568-BBF4-DB91-C1E4-4CE1D0F8285A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DxLib\Render">
+      <UniqueIdentifier>{E41253BB-00FD-FA77-8F11-EF28C94D8340}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Library\Platform\Null">
       <UniqueIdentifier>{F9C9031B-B8BD-65C1-0F4D-AB507CBB3645}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Platform\SDL">
       <UniqueIdentifier>{3D8D195C-3E36-1F77-B84D-0F6497285B86}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\System">
+      <UniqueIdentifier>{99AE29AE-4656-AB5F-AEF1-248A133899D5}</UniqueIdentifier>
     </Filter>
     <Filter Include="VendorModules">
       <UniqueIdentifier>{B1A1C350-5AF7-E473-B7EF-0832BEC4D313}</UniqueIdentifier>

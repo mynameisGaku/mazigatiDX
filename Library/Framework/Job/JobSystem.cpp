@@ -16,7 +16,7 @@
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
-#include "Library/Platform/CommandLine.h"
+#include "Library/Platform/System/CommandLine.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogJob, Log )
 

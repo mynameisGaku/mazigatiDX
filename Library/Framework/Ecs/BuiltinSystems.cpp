@@ -3,8 +3,8 @@
 #include "Library/Framework/Animation/ModelAnimator.h"
 #include "Library/Framework/Animation/SpriteAnimator.h"
 #include "Library/Framework/Effect/EffectComponent.h"
-#include "Library/Framework/Render/Billboard.h"
-#include "Library/Framework/Render/MeshRender.h"
+#include "Library/Framework/Render/Camera/Billboard.h"
+#include "Library/Framework/Render/Mesh/MeshRender.h"
 #include "Library/Framework/Ecs/System.h"
 
 void NEcs::RegisterBuiltinSystems( FSystemScheduler& Scheduler )

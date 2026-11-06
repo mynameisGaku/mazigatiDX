@@ -1,7 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 #include "Library/Core/Collection/Array.h"
-#include "Library/Physics/PhysicsQueryTypes.h"
+#include "Library/Physics/Query/PhysicsQueryTypes.h"
 #include "Library/Core/Types/TypeDefinition.h"
 #include "Library/Math/Quaternion.h"
 #include "Library/Math/Vector3.h"
