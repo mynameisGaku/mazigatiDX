@@ -1,0 +1,54 @@
+{
+  "Version": 1,
+  "Blackboard": "AI/Guard.gxblackboard",
+  "Root": {
+    "Type": "Selector",
+    "Name": "Brain",
+    "Services": [
+      { "Do": "SensePlayer", "Interval": 0.1, "Params": { "SightRange": 330, "AttackRange": 75 } }
+    ],
+    "Children": [
+      {
+        "Type": "Sequence",
+        "Name": "Hurt",
+        "Decorators": [
+          { "Type": "BlackboardCondition", "Key": "bHurt", "Op": "==", "Value": true, "Abort": "LowerPriority" }
+        ],
+        "Children": [
+          { "Do": "PlayClip", "Params": { "Clip": "Hurt", "WaitUntilFinished": true } },
+          { "Do": "SetBlackboard", "Params": { "Key": "bHurt", "Value": false } }
+        ]
+      },
+      {
+        "Type": "Sequence",
+        "Name": "Attack",
+        "Decorators": [
+          { "Type": "BlackboardCondition", "Key": "InAttackRange", "Op": "==", "Value": true, "Abort": "LowerPriority" },
+          { "Type": "Cooldown", "Seconds": 1.2 }
+        ],
+        "Children": [
+          { "Do": "FaceTarget" },
+          { "Do": "Strike", "Params": { "Reach": 85 } }
+        ]
+      },
+      {
+        "Type": "Sequence",
+        "Name": "Chase",
+        "Decorators": [
+          { "Type": "BlackboardCondition", "Key": "HasTarget", "Op": "==", "Value": true, "Abort": "Both" }
+        ],
+        "Children": [
+          { "Do": "MoveToTarget", "Params": { "Speed": 130, "AcceptRange": 60 } }
+        ]
+      },
+      {
+        "Type": "Sequence",
+        "Name": "Patrol",
+        "Children": [
+          { "Do": "MoveToPatrolPoint", "Params": { "Speed": 70, "Range": 170 } },
+          { "Do": "Wait", "Params": { "Seconds": 0.8 } }
+        ]
+      }
+    ]
+  }
+}

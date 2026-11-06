@@ -10,8 +10,8 @@
 
 //=============================================================================
 // ビヘイビアツリーの定義（.gxbt）
-//   判断を木で定義する。不変のデータなので、同じ定義を使う全インスタンスで共有してよい。
-//   ノードは平らな配列（先頭が根。Parent が親の番号。子の順 = 優先順位）で持つ。JSON では入れ子に書く。
+//   判断をツリーで定義する。不変のデータなので、同じ定義を使う全インスタンスで共有してよい。
+//   ノードは平らな配列（先頭がルート。Parent が親の番号。子の順 = 優先順位）で持つ。JSON では入れ子に書く。
 //
 //   {
 //     "Version": 1,
@@ -35,7 +35,7 @@
 //     条件のデコレーターは "Abort"（None / Self / LowerPriority / Both）で、条件が変わったときの中断を指定する
 //   - Service（ノードの "Services"）: 登録した Service を Interval 秒ごとに動かす
 //   - 子の順が優先順位（上のほうが先に評価される）
-//   - 壊れたノード（名前の無い葉・不明な種類など）は、警告して捨てる。根が無ければ読み込みは失敗する
+//   - 壊れたノード（名前の無い葉・不明な種類など）は、警告して捨てる。ルートが無ければ読み込みは失敗する
 //=============================================================================
 
 enum class EBTNodeType : uint8
@@ -112,7 +112,7 @@ struct FBTServiceDef
 struct FBTNodeDef
 {
 	FString Name;
-	// 親の番号（根は -1）
+	// 親の番号（ルートは -1）
 	int32 Parent = -1;
 	EBTNodeType Type = EBTNodeType::Task;
 	EBTParallelMode ParallelMode = EBTParallelMode::AllSuccess;
@@ -128,7 +128,7 @@ struct FBehaviorTreeDefinition
 {
 	// 使うブラックボードのアセットのパス
 	FString Blackboard;
-	// すべてのノード。先頭（0）が根。親の前に子が来る
+	// すべてのノード。先頭（0）がルート。親の前に子が来る
 	TArray<FBTNodeDef> Nodes;
 	// エディタ用
 	NlohmannJson Editor;
@@ -140,6 +140,6 @@ struct FBehaviorTreeDefinition
 	FString GetNodeLabel( int32 Index ) const;
 
 	NlohmannJson ToJson() const;
-	// JSON から読む。オブジェクトでなければ false。根が無くても true（Nodes が空）。問題（捨てた項目など）は Issues に足す
+	// JSON から読む。オブジェクトでなければ false。ルートが無くても true（Nodes が空）。問題（捨てた項目など）は Issues に足す
 	static bool FromJson( const NlohmannJson& Json, FBehaviorTreeDefinition& OutDefinition, TArray<FAIIssue>* Issues = nullptr );
 };

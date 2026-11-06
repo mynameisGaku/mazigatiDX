@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Keys": [
+    { "Name": "Target", "Type": "Object" },
+    { "Name": "TargetPos", "Type": "Vector3" },
+    { "Name": "DistanceToTarget", "Type": "Float", "Default": 999.0 },
+    { "Name": "HasTarget", "Type": "Bool" },
+    { "Name": "InAttackRange", "Type": "Bool" },
+    { "Name": "bHurt", "Type": "Bool" }
+  ]
+}

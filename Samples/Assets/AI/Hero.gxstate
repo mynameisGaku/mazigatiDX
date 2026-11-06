@@ -1,0 +1,23 @@
+{
+  "Version": 1,
+  "Blackboard": "AI/Hero.gxblackboard",
+  "Entry": "Idle",
+  "States": [
+    { "Name": "Idle", "Clip": "Idle", "OnEnter": [ { "Do": "Halt" } ] },
+    { "Name": "Run", "Clip": "Run", "OnTick": [ { "Do": "Move", "Params": { "Speed": 190 } } ] },
+    { "Name": "Attack", "Clip": "Attack", "OnEnter": [ { "Do": "Halt" } ],
+      "OnClipEvent": [ { "Event": "Hit", "Do": "HeroStrike", "Params": { "Reach": 95 } } ] },
+    { "Name": "Hurt", "Clip": "Hurt", "OnEnter": [ { "Do": "Halt" } ] }
+  ],
+  "Transitions": [
+    { "From": "Idle", "To": "Attack", "When": [ { "Key": "AttackPressed", "Op": "==", "Value": true } ], "Priority": 10 },
+    { "From": "Run", "To": "Attack", "When": [ { "Key": "AttackPressed", "Op": "==", "Value": true } ], "Priority": 10 },
+    { "From": "Idle", "To": "Run", "When": [ { "Key": "MoveAxis", "Op": "!=", "Value": 0 } ] },
+    { "From": "Run", "To": "Idle", "When": [ { "Key": "MoveAxis", "Op": "==", "Value": 0 } ] },
+    { "From": "Attack", "To": "Idle", "When": [ { "ClipFinished": true } ] },
+    { "From": "Hurt", "To": "Idle", "When": [ { "Time": 0.45 } ] }
+  ],
+  "AnyTransitions": [
+    { "To": "Hurt", "On": "Damaged", "Priority": 50 }
+  ]
+}

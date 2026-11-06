@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
+#include "Library/DebugUI/AI/AIDebugger.h"
 #include "Library/DebugUI/Effect/EffectEditor.h"
 #include "Library/DebugUI/Asset/ModelAnimationEditor.h"
 #include "Library/DebugUI/Asset/SpriteSheetEditor.h"
@@ -13,6 +14,7 @@
 //   - Sprite Sheet Editor / Model Animation Editor: データアセット（.gxsprite / .gxmodelanim）の編集
 //   - World Editor: ワールド（.gxworld）のレベルエディタ（WorldEditor.h）
 //   - Effect Editor: 内蔵の粒子定義（.gxeffect）の編集と保存前の試し再生
+//   - AI Debugger: ステートマシン・ビヘイビアツリーの状態、ブラックボードの値、遷移の履歴を追う（AIDebugger.h）
 //
 //   ゲーム側は FAssetToolsState を 1 つ持ち、毎フレーム DrawAssetTools を呼ぶだけ。
 //   メニューの出し方は DrawAssetToolsMenu（デバッグウィンドウの中に置く）。
@@ -26,10 +28,12 @@ struct FAssetToolsState
 	bool bShowWorldEditor = false;
 	// 内蔵エフェクトの定義編集画面を表示するか。
 	bool bShowEffectEditor = false;
+	bool bShowAIDebugger = false;
 
 	FSpriteSheetEditorState SpriteSheet;
 	FModelAnimationEditorState ModelAnimation;
 	FWorldEditorState WorldEditor;
+	FAIDebuggerState AIDebugger;
 	// 文書とプレビューの寿命を、ほかのツールと同じ所有元にまとめる。
 	FEffectEditorState EffectEditor;
 	// 配置済みのプレビューへ最後に反映した、エフェクト保存の成功番号。
@@ -56,7 +60,7 @@ namespace NDebugUI
 	// デバッグウィンドウの中に置く、ツールを開くボタン
 	void DrawAssetToolsButtons( FAssetToolsState& State );
 
-	// 起動引数: --tool=assets|audio|sprite|model|world|effect（カンマ区切りで複数）、--sprite=Sprites/Hero.gxsprite、--modelanim=Models/Robot.gxmodelanim、--world=Levels/Stage1.gxworld、--effect=Effects/campfire.gxeffect。
+	// 起動引数: --ai-object=Guard（AI デバッガで最初に選ぶオブジェクトの名前の一部。開きもする）、--tool=assets|audio|sprite|model|world|effect|ai（カンマ区切りで複数）、--sprite=Sprites/Hero.gxsprite、--modelanim=Models/Robot.gxmodelanim、--world=Levels/Stage1.gxworld、--effect=Effects/campfire.gxeffect。
 	// ワールドを開いたあとの確認用: --world-select=3,4 --world-mode=move|rotate|scale --world-colliders=off|all --world-camera=yaw,pitch,距離[,x,y,z]。
 	// 最初に 1 回呼ぶ（スクリーンショットでの確認や、すぐ編集を始めたいとき用）
 	void ApplyAssetToolsCommandLine( FAssetToolsState& State );

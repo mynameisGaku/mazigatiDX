@@ -11,6 +11,9 @@ DEFINE_LOG_CATEGORY_STATIC( LogSamples, Log )
 
 void CSamplesApplication::OnInit()
 {
+	// デバッグ表示のウィンドウに、アセットの画面・エディタ・AI デバッガのボタンを並べる
+	Overlay.OnDrawPanelItems = [this]() { NDebugUI::DrawAssetToolsButtons( AssetTools ); };
+	Overlay.OnDrawWindows = [this]() { NDebugUI::DrawAssetTools( AssetTools ); };
 	Overlay.Init();
 	Overlay.SetDebugWindowVisible( false );
 	Overlay.SetStatusLineVisible( false );
@@ -61,5 +64,6 @@ void CSamplesApplication::OnDraw()
 
 void CSamplesApplication::OnTerm()
 {
+	NDebugUI::ShutdownAssetTools( AssetTools );
 	Overlay.Term();
 }

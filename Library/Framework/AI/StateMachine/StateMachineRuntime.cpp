@@ -376,13 +376,14 @@ void CStateMachine::SendEvent( const FString& Name )
 	PendingEvents.Add( Name );
 }
 
-void CStateMachine::AddHistory( EStateTransitionCause Cause, int32 From, int32 To, const FString& Description, const FAIContext& Context )
+void CStateMachine::AddHistory( EStateTransitionCause Cause, int32 From, int32 To, int32 Transition, const FString& Description, const FAIContext& Context )
 {
 	FStateHistoryEntry& Entry = History[HistoryHead];
 	Entry.Time = Context.Time;
 	Entry.From = From;
 	Entry.To = To;
 	Entry.Cause = Cause;
+	Entry.Transition = Transition;
 	Entry.Description = Description;
 	HistoryHead = ( HistoryHead + 1 ) % MaxHistory;
 	if ( HistoryCount < MaxHistory )
@@ -449,7 +450,7 @@ void CStateMachine::Start( FAIContext& Context )
 	if ( RootEntry >= 0 )
 	{
 		EnterState( RootEntry, Context, true );
-		AddHistory( EStateTransitionCause::Initial, -1, ActivePath.Last(), "(start)", Context );
+		AddHistory( EStateTransitionCause::Initial, -1, ActivePath.Last(), -1, "(start)", Context );
 	}
 }
 
@@ -619,7 +620,7 @@ void CStateMachine::PerformTransition( int32 TransitionId, FAIContext& Context )
 	{
 		EnterState( Chain[Index], Context, Index == 0 );
 	}
-	AddHistory( Transition.bAnyTransition ? EStateTransitionCause::AnyTransition : EStateTransitionCause::Transition, FromLeaf, ActivePath.Last(), Transition.Description, Context );
+	AddHistory( Transition.bAnyTransition ? EStateTransitionCause::AnyTransition : EStateTransitionCause::Transition, FromLeaf, ActivePath.Last(), TransitionId, Transition.Description, Context );
 }
 
 void CStateMachine::Tick( FAIContext& Context, float32 DeltaTime )
@@ -674,6 +675,64 @@ void CStateMachine::Tick( FAIContext& Context, float32 DeltaTime )
 		}
 	}
 	PendingEvents.Empty();
+}
+
+void CStateMachine::GetTransitions( TArray<FStateTransitionInfo>& OutTransitions ) const
+{
+	OutTransitions.Empty();
+	for ( int32 Id = 0; Id < CompiledTransitions.Num(); ++Id )
+	{
+		const FCompiledTransition& Transition = CompiledTransitions[Id];
+		FStateTransitionInfo Info;
+		Info.Id = Id;
+		Info.Machine = Transition.Machine;
+		Info.FromChild = Transition.FromChild;
+		Info.Target = Transition.Target;
+		Info.Priority = Transition.Priority;
+		Info.bAnyTransition = Transition.bAnyTransition;
+		Info.Description = Transition.Description;
+		OutTransitions.Add( Info );
+	}
+}
+
+void CStateMachine::GetCandidateTransitions( FAIContext& Context, TArray<FStateTransitionCandidate>& OutCandidates ) const
+{
+	OutCandidates.Empty();
+	if ( !bRunning || ActivePath.IsEmpty() )
+	{
+		return;
+	}
+	const auto AddList = [&]( const TArray<int32>& List, int32 ActiveChild, int32 Level )
+	{
+		for ( const int32 Id : List )
+		{
+			const FCompiledTransition& Transition = CompiledTransitions[Id];
+			if ( Transition.FromChild >= 0 && Transition.FromChild != ActiveChild )
+			{
+				continue;
+			}
+			FStateTransitionCandidate Candidate;
+			Candidate.Id = Id;
+			Candidate.Description = Transition.Description;
+			Candidate.Priority = Transition.Priority;
+			Candidate.bAnyTransition = Transition.bAnyTransition;
+			Candidate.bConditionsMet = EvaluateTransition( Transition, Level, Context );
+			OutCandidates.Add( Candidate );
+		}
+	};
+
+	// 評価される順（FindTransition と同じ）
+	AddList( RootAnyTransitions, ActivePath[0], 0 );
+	for ( int32 Level = ActivePath.Num() - 1; Level >= 0; --Level )
+	{
+		const int32 State = ActivePath[Level];
+		const int32 Machine = States[State].Parent;
+		if ( Machine >= 0 )
+		{
+			AddList( States[Machine].AnyTransitions, State, Level );
+		}
+		AddList( Machine >= 0 ? States[Machine].Transitions : RootTransitions, State, Level );
+	}
 }
 
 //=============================================================================

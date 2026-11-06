@@ -218,7 +218,7 @@ public:
 	//-------------------------------------------------------------------------
 	// AI のビヘイビアツリー（.gxbt。書式は BehaviorTreeDefinition.h の先頭）
 	//-------------------------------------------------------------------------
-	// 定義ファイル（JSON）から。部品の名前・ブラックボードのキーの検証は、CBehaviorTree::Create のときに行う。読めない・根が無いときは nullptr
+	// 定義ファイル（JSON）から。部品の名前・ブラックボードのキーの検証は、CBehaviorTree::Create のときに行う。読めない・ルートが無いときは nullptr
 	TSharedPtr<CBehaviorTreeAsset> LoadBehaviorTree( const FString& Path );
 	// 定義を JSON ファイルに保存する（相対パスはルートフォルダの下。フォルダは作る）。そのパスのキャッシュは捨てるので、次の Load は読み直す
 	bool SaveBehaviorTree( const FString& Path, const FBehaviorTreeDefinition& Definition );

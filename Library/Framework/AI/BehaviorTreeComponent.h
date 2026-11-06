@@ -19,7 +19,7 @@ class CAssetSubsystem;
 //   CBehaviorTreeComponent* Brain = Object->AddComponent<CBehaviorTreeComponent>( "AI/Enemy.gxbt" );
 //   Brain->GetBlackboard()->SetBool( Brain->GetBlackboard()->FindKey( "HasTarget" ), true );
 //
-//   - 最初の Tick で読み込んで始める（AutoStart）。読み込みの問題は、ログと GetIssues に出る。根が無いなど致命的なら、動かない
+//   - 最初の Tick で読み込んで始める（AutoStart）。読み込みの問題は、ログと GetIssues に出る。ルートが無いなど致命的なら、動かない
 //   - ブラックボードは SetBlackboard で外から渡せる。同じオブジェクトの CStateMachineComponent が、同じパスのブラックボードを
 //     すでに持っているときは、それを共有する（ステートマシンと見る値が同じになる）
 //   - 共有したとき、Trigger（1 フレームだけ真になるキー）を戻すのは、あとから読み込んだほうだけ（コンポーネントは付けた順に Tick される前提）。
@@ -82,18 +82,23 @@ public:
 	// 読み込んだ定義の Blackboard のパス（ステートマシンとの共有の判定に使う）
 	const FString& GetBlackboardPath() const { return BlackboardPath; }
 	bool ClearsTriggers() const { return bClearsTriggers; }
-	// 今の状態の説明（複数行。コンソールの ai.dump 用）: 動いているノード・根の結果・ブラックボードの値
+	// コンポーネントが動いた時間の合計（秒。一時停止の間は進まない。ノードの結果の時刻と同じ）
+	float64 GetTime() const { return Time; }
+	// 今の状態の説明（複数行。コンソールの ai.dump 用）: 動いているノード・ルートの結果・ブラックボードの値
 	FString Describe() const;
 
 	//-------------------------------------------------------------------------
 	// CComponent / ITickable
 	//-------------------------------------------------------------------------
 	void OnDetach() override;
+	// 一時停止中でも、1 回だけ進める（デバッガのステップ実行用。読み込んで始める前なら、何もしない）
+	void Step( float32 DeltaTime );
 	void Tick( float32 DeltaTime ) override;
 	ETickGroup GetTickGroup() const override { return ETickGroup::PreUpdate; }
 
 private:
 	FAIContext MakeContext( float32 DeltaTime );
+	void Update( float32 DeltaTime );
 	bool BuildTree( const TSharedPtr<const FBehaviorTreeDefinition>& Definition );
 	void AdoptPeerBlackboard();
 

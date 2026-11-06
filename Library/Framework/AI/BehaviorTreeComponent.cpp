@@ -156,7 +156,19 @@ void CBehaviorTreeComponent::Tick( float32 DeltaTime )
 	{
 		return;
 	}
+	Update( DeltaTime );
+}
 
+void CBehaviorTreeComponent::Step( float32 DeltaTime )
+{
+	if ( Tree.IsValid() && bRunning )
+	{
+		Update( DeltaTime );
+	}
+}
+
+void CBehaviorTreeComponent::Update( float32 DeltaTime )
+{
 	PROFILE_SCOPE_CAT( "AI", "BehaviorTree" );
 	Time += static_cast<float64>( DeltaTime );
 	FAIContext Context = MakeContext( DeltaTime );

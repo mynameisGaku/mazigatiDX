@@ -86,6 +86,10 @@ public:
 	// 読み込んだ定義の Blackboard のパス（ビヘイビアツリーとの共有の判定に使う）
 	const FString& GetBlackboardPath() const { return BlackboardPath; }
 	bool ClearsTriggers() const { return bClearsTriggers; }
+	// コンポーネントが動いた時間の合計（秒。一時停止の間は進まない。履歴の時刻と同じ）
+	float64 GetTime() const { return Time; }
+	// 今のステートから起こりうる遷移と、その条件が今満たされているか（デバッガ用）
+	void GetCandidateTransitions( TArray<FStateTransitionCandidate>& OutCandidates );
 	// 今の状態の説明（複数行。コンソールの ai.dump 用）: ステートの経路・経過時間・ブラックボードの値・遷移の履歴
 	FString Describe() const;
 
@@ -93,11 +97,14 @@ public:
 	// CComponent / ITickable
 	//-------------------------------------------------------------------------
 	void OnDetach() override;
+	// 一時停止中でも、1 回だけ進める（デバッガのステップ実行用。読み込んで始める前なら、何もしない）
+	void Step( float32 DeltaTime );
 	void Tick( float32 DeltaTime ) override;
 	ETickGroup GetTickGroup() const override { return ETickGroup::PreUpdate; }
 
 private:
 	FAIContext MakeContext( float32 DeltaTime );
+	void Update( float32 DeltaTime );
 	bool BuildMachine( const TSharedPtr<const FStateMachineDefinition>& Definition );
 	void AdoptPeerBlackboard();
 

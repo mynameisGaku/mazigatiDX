@@ -47,8 +47,36 @@ struct FStateHistoryEntry
 	int32 From = -1;
 	int32 To = -1;
 	EStateTransitionCause Cause = EStateTransitionCause::Initial;
+	// 起こした遷移の番号（GetTransitions の Id。最初の入場は -1）
+	int32 Transition = -1;
 	// 起こした遷移の説明（"Idle -> Run when MoveAxis != 0"）
 	FString Description;
+};
+
+// コンパイルされた遷移 1 つ（デバッガのグラフ用。矢印を描く）
+struct FStateTransitionInfo
+{
+	int32 Id = -1;
+	// 持ち主のマシンのステートの番号（-1 は最上位）と、元の子（-1 は、どの子からでも）、先のステート（持ち主のマシンの子孫）
+	int32 Machine = -1;
+	int32 FromChild = -1;
+	int32 Target = -1;
+	int32 Priority = 0;
+	bool bAnyTransition = false;
+	FString Description;
+};
+
+// 今のステートから起こりうる遷移 1 つ（デバッガ用）
+struct FStateTransitionCandidate
+{
+	// GetTransitions の Id
+	int32 Id = -1;
+	// 起こしうる遷移の説明（"Idle -> Run when MoveAxis != 0"）
+	FString Description;
+	int32 Priority = 0;
+	// 今、条件が満たされているか（MinTime を含む）
+	bool bConditionsMet = false;
+	bool bAnyTransition = false;
 };
 
 class CStateMachine
@@ -98,6 +126,10 @@ public:
 	float32 GetStateTime( int32 Depth ) const;
 	// 遷移の履歴（古い順）
 	void GetHistory( TArray<FStateHistoryEntry>& OutHistory ) const;
+	// コンパイルされたすべての遷移（Id の順）
+	void GetTransitions( TArray<FStateTransitionInfo>& OutTransitions ) const;
+	// 今のステートから起こりうる遷移を、評価される順に並べて返す（条件が今満たされているかつき）。登録した判定（Custom）を評価するので、副作用のある判定は呼ばれる
+	void GetCandidateTransitions( FAIContext& Context, TArray<FStateTransitionCandidate>& OutCandidates ) const;
 	// 同じ Tick の連鎖の上限に当たったことがあるか
 	bool HasHitTransitionLimit() const { return bHitTransitionLimit; }
 
@@ -170,7 +202,7 @@ private:
 	// 状態へ入る（OnEnter・Clip）。bDescend なら、マシンの入口の子の葉まで続けて入る
 	void EnterState( int32 State, FAIContext& Context, bool bDescend );
 	void ExitDownTo( int32 Level, FAIContext& Context );
-	void AddHistory( EStateTransitionCause Cause, int32 From, int32 To, const FString& Description, const FAIContext& Context );
+	void AddHistory( EStateTransitionCause Cause, int32 From, int32 To, int32 Transition, const FString& Description, const FAIContext& Context );
 	bool HasPendingEvent( const FString& Name ) const;
 	void ConsumeEvent( const FString& Name );
 

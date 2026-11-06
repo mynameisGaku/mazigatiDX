@@ -10,7 +10,7 @@
 //   ビヘイビアツリーの定義（.gxbt。書式は BehaviorTreeDefinition.h の先頭）を読み込み・保存する人。読み込んだものは、同じファイルなら共有する。
 //   使うときは、CAssetSubsystem::LoadBehaviorTree / SaveBehaviorTree から呼ばれる（直接使うことは少ない）。
 //
-//   - 読み込むときは、形の問題（捨てた項目など）をログに出す。根が無い定義は、読み込みを失敗にする
+//   - 読み込むときは、形の問題（捨てた項目など）をログに出す。ルートが無い定義は、読み込みを失敗にする
 //   - 部品の名前・ブラックボードのキーの検証は、実行用のインスタンスを作るとき（CBehaviorTree::Create）に行う
 //=============================================================================
 class CBehaviorTreeLoader
@@ -18,7 +18,7 @@ class CBehaviorTreeLoader
 public:
 	explicit CBehaviorTreeLoader( CAssetLoadContext& InContext );
 
-	// 定義ファイル（JSON）から。読めない・根が無いときは nullptr
+	// 定義ファイル（JSON）から。読めない・ルートが無いときは nullptr
 	TSharedPtr<CBehaviorTreeAsset> Load( const FString& Path );
 
 	// 定義を JSON ファイルに保存する（相対パスはルートフォルダの下。フォルダは作る）。そのパスのキャッシュは捨てるので、次の Load は読み直す

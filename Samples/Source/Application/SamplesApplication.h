@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 
+#include "Library/DebugUI/Asset/AssetTools.h"
 #include "Library/DebugUI/DebugOverlay.h"
 #include "Library/Framework/GameInstance/GameInstance.h"
 
@@ -8,7 +9,8 @@
 // CSamplesApplication
 //   サンプル集のゲームインスタンス。起動したときに、一覧の画面と、登録されたすべてのサンプルのシーンを登録して、一覧から始める。
 //   起動引数 --sample=Name を付けると、一覧を飛ばして、そのサンプルから始める。
-//   デバッグ表示（F1: 窓、F2: プロファイラー、F3: コンソール、F11: フルスクリーン）は、最初は隠してある（状態行も、サンプルの見出しと重なるので隠す）。
+//   F1 のウィンドウには、アセットの画面・エディタ・AI デバッガのボタンが並ぶ（起動引数 --tool=ai などでも開く）。
+//   デバッグ表示（F1: ウィンドウ、F2: プロファイラー、F3: コンソール、F11: フルスクリーン）は、最初は隠してある（状態行も、サンプルの見出しと重なるので隠す）。
 //=============================================================================
 class CSamplesApplication : public CGameInstance
 {
@@ -20,4 +22,5 @@ protected:
 
 private:
 	CDebugOverlay Overlay;
+	FAssetToolsState AssetTools;
 };

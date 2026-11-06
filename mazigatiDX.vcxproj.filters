@@ -31,6 +31,18 @@
     <ClCompile Include="Library\DebugUI\DebugOverlay.cpp">
       <Filter>Library\DebugUI</Filter>
     </ClCompile>
+    <ClCompile Include="Library\DebugUI\AI\AIDebugger.cpp">
+      <Filter>Library\DebugUI\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\AI\AIGraphLayout.cpp">
+      <Filter>Library\DebugUI\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\AI\AIGraphViews.cpp">
+      <Filter>Library\DebugUI\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\AI\NodeGraph.cpp">
+      <Filter>Library\DebugUI\AI</Filter>
+    </ClCompile>
     <ClCompile Include="Library\DebugUI\Asset\AssetTools.cpp">
       <Filter>Library\DebugUI\Asset</Filter>
     </ClCompile>
@@ -1757,6 +1769,18 @@
     </ClInclude>
     <ClInclude Include="Library\DebugUI\DebugOverlay.h">
       <Filter>Library\DebugUI</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\DebugUI\AI\AIDebugger.h">
+      <Filter>Library\DebugUI\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\DebugUI\AI\AIGraphLayout.h">
+      <Filter>Library\DebugUI\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\DebugUI\AI\AIGraphViews.h">
+      <Filter>Library\DebugUI\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\DebugUI\AI\NodeGraph.h">
+      <Filter>Library\DebugUI\AI</Filter>
     </ClInclude>
     <ClInclude Include="Library\DebugUI\Asset\AssetTools.h">
       <Filter>Library\DebugUI\Asset</Filter>
@@ -4405,6 +4429,9 @@
     </Filter>
     <Filter Include="Library\DebugUI">
       <UniqueIdentifier>{0AA5C285-6E04-6419-91F7-E5C892A73076}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\DebugUI\AI">
+      <UniqueIdentifier>{3CEF7204-F16F-C75B-6FA3-47545A84D909}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\DebugUI\Asset">
       <UniqueIdentifier>{9275C6B6-5D51-342B-D03C-9581D7D759BF}</UniqueIdentifier>

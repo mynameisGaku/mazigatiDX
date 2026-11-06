@@ -95,7 +95,7 @@ bool CBehaviorTree::Compile( const CAIRegistry& Registry, const FBlackboardDefin
 		return false;
 	}
 
-	// 問題の場所（"Root/Attack/Wait #5" のような、根からの名前）
+	// 問題の場所（"Root/Attack/Wait #5" のような、ルートからの名前）
 	const auto WhereOf = [&Def]( int32 Index )
 	{
 		FString Path = Def.GetNodeLabel( Index );
@@ -236,6 +236,7 @@ bool CBehaviorTree::CanEnter( int32 NodeIndex, FAIContext& Context )
 		else if ( Decorator.Type == EBTDecoratorType::Cooldown && Context.Time < Decorator.CooldownEnd )
 		{
 			bPass = false;
+			Decorator.bBlockedByCooldown = true;
 		}
 	}
 	return bPass;
@@ -260,13 +261,30 @@ int32 CBehaviorTree::FindLowerPriorityTarget( int32 NodeIndex, FAIContext& Conte
 	{
 		const int32 Child = Node.Children[Position];
 		bool bBecameTrue = false;
+		bool bHasLowerPriority = false;
 		for ( FCompiledDecorator& Decorator : Nodes[Child].Decorators )
 		{
-			if ( IsConditionDecorator( Decorator.Type ) && AbortsLowerPriority( Decorator.Abort ) && NeedsReevaluation( Decorator, Context ) )
+			if ( IsConditionDecorator( Decorator.Type ) && AbortsLowerPriority( Decorator.Abort ) )
 			{
-				const bool bBefore = Decorator.bLastCondition;
-				if ( EvaluateCondition( Decorator, Context ) && !bBefore )
+				bHasLowerPriority = true;
+				if ( NeedsReevaluation( Decorator, Context ) )
 				{
+					const bool bBefore = Decorator.bLastCondition;
+					if ( EvaluateCondition( Decorator, Context ) && !bBefore )
+					{
+						bBecameTrue = true;
+					}
+				}
+			}
+		}
+		// クールダウンに阻まれていた子が、明けたとき
+		if ( bHasLowerPriority )
+		{
+			for ( FCompiledDecorator& Decorator : Nodes[Child].Decorators )
+			{
+				if ( Decorator.Type == EBTDecoratorType::Cooldown && Decorator.bBlockedByCooldown && Context.Time >= Decorator.CooldownEnd )
+				{
+					Decorator.bBlockedByCooldown = false;
 					bBecameTrue = true;
 				}
 			}

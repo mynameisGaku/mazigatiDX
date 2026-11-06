@@ -8,7 +8,7 @@ mazigatiDX の機能を、1 つずつ動かして見られるサンプル集で�
 2. `Samples` を起動します。作業フォルダーは `Samples` フォルダーです（`Config` と `Assets` を使います）。
 3. サンプルを直接動かすには、起動引数 `--sample=Hello` のように、サンプルの名前を付けます。
 
-デバッグ表示は、F1（窓）、F2（プロファイラー）、F3（コンソール。Debug だけ）、F11（フルスクリーン）です。
+デバッグ表示は、F1（ウィンドウ）、F2（プロファイラー）、F3（コンソール。Debug だけ）、F11（フルスクリーン）です。
 
 ## サンプル
 
@@ -17,7 +17,7 @@ mazigatiDX の機能を、1 つずつ動かして見られるサンプル集で�
 |`Hello`|図形・文字を、オブジェクトの `Draw( FDrawContext& CommandList )`（コマンドリストへの記録）で描く。`DeltaTime` で動くオブジェクト|
 |`Shapes`|2D の図形を、整数の座標（ギザギザ）と、なめらかな `*AA`（float の座標）で、同じ動きで並べて比べる|
 |`Images`|1 枚の画像を、等倍・拡大・自由な四角形・一部分・基準点と回転・タイル・円グラフの 7 通りで描く（画像は、メモリの上で作る）|
-|`DrawState`|描画の状態を、動かして見る。ブレンド（6 種類とカスタムブレンド）・加算する色・アルファテスト、クリップの窓（入れ子）、Nearest と Bilinear の拡大、拡大・回転・移動する 2D のカメラ|
+|`DrawState`|描画の状態を、動かして見る。ブレンド（6 種類とカスタムブレンド）・加算する色・アルファテスト、クリップのウィンドウ（入れ子）、Nearest と Bilinear の拡大、拡大・回転・移動する 2D のカメラ|
 |`Filters`|画像の処理とマスク。1 枚の画像に、フィルター（単色化・反転・ぼかし・色相・レベル補正・2 階調化・グラデーションマップ）と、別の画像との混ぜ方（乗算・加算・スクリーン・減算）を並べる。動くスポットライトの形のマスクで、絵を段階的に見せる|
 |`Pixels`|CPU 側の画像（`FPixelImage`）を、動かして見る。画素を毎フレーム書いて画像を更新する（模様の上に、半透明の光を重ねる）、スプライトシートを格子で 1 コマずつの画像に分ける、S キーで PNG に保存して読み直す|
 |`RenderTarget`|描画先（描き込める画像）を、動かして見る。ミニマップへ描いて、ふつうの画像として貼る（等倍・2 倍）、画面の一部を別の描画先へ写す、描画先から色を読む、S キーで PNG に保存する|
@@ -32,6 +32,7 @@ mazigatiDX の機能を、1 つずつ動かして見られるサンプル集で�
 |`PostEffects`|描画先とポストエフェクト。夜の広場（光る玉・ネオンの溝）を 16 ビットの浮動小数点の描画先へ描き（1 を超える明るさが残る）、同じピクセルシェーダーで深度を 32 ビットの描画先へ同時に書く（`ShaderOutputTarget`。複数の出力）。明るい所を抜き出してぼかし（ブルーム）、深度で霧をかけ、トーンマップ（ACES・Reinhard）で画面に貼る。1 キーで見せるもの（仕上がり・8 ビット相当・ブルームだけ・深度）、2〜5 キーでトーンマップ・ブルーム・霧・時間、Q / E キーで露出を切り替える|
 |`Island`|3D の見本（ゲームの画面らしい構成）。探検家が島を歩き、光る結晶を集める。地形（頂点バッファ + インデックスバッファ。決まったシードから作る）・木と灯台（3D 図形）・空を動く太陽と影（シャドウマップ）・回る灯台の光（スポットライト）・霧・半透明の海・加算の光のにじみ・地図・名札（`WorldToScreen`）・右クリックの目的地（`ScreenToRay`）。WASD で歩き、右クリックでその場所へ歩き、ドラッグでカメラを回し、ホイールで近づく。数字キーの 1〜3 で、影・霧・時刻を切り替える|
 |`Input`|キーボード・マウス・ゲームパッドの状態を表示する|
+|`AI`|AI（ステートマシンとビヘイビアツリー）。Hero（`Hero.gxstate`。Idle / Run / Attack / Hurt の階層ステートマシン）を A / D キーで歩かせ、Space / J で攻撃させる。Guard（`Guard.gxbt`。見回り・追いかけ・攻撃のビヘイビアツリー）が Hero を見つけて追う。F1 > AI Debugger で、ステート・ノード・ブラックボードを見て、グラフの矢印が遷移で光るのを確認できる（`--tool=ai` で最初から開く）|
 
 ## 構成（クラスとファイルの分け方）
 
@@ -58,10 +59,11 @@ Samples/
     Shaders/                    サンプル Shaders: シーン（CShadersSample）と、オブジェクト（CShadersRig、CShadersView、CShadersPanel）、共有する状態（FShadersDemoState）、HLSL のソース（NShadersSources）
     PostEffects/                サンプル PostEffects: シーン（CPostEffectsSample）と、オブジェクト（CPostEffectsRig、CPostEffectsView、CPostEffectsPanel）、共有する状態（FPostEffectsDemoState）、シェーダーのソースと定数（NPostEffectsSources）
     Island/                     サンプル Island: シーン（CIslandSample）と、オブジェクト（CIslandClock、CIslandExplorer、CIslandCrystals、CIslandView、CIslandHud）、共有する状態（FIslandState）、地形（NIslandTerrain）、舞台（NIslandScenery）
+    AI/                         サンプル AI: シーン（CAISample）と、オブジェクト（CAIActor、CAIHero、CAIGuard）、AI の部品（AIParts）
     Village/                    サンプル Village: シーン（CVillageSample）と、オブジェクト（CTileMap、CPlayer、CCoin、CVillager、CDialogue、CDarkness、CStatusPanel）、共有する状態（FVillageState）、絵を CPU で作る関数（NVillageArt）
     Common/                     複数のサンプルで使うもの。確認用の画像を、メモリの上で作る関数（NTestPattern）、光の当たらない側を真っ黒にしない、やわらかい光（FSoftLightingScope）、シェーダーで描く形（球・立方体・地面。NShaderMeshes）
     Input/                      サンプル Input: シーン（CInputSample）と、オブジェクト（CKeyboardView、CMouseView、CGamepadView）
-  Config/ScreenConfig.json      窓の設定
+  Config/ScreenConfig.json      ウィンドウの設定
   Assets/                       画像・音・モデルの置き場
 ```
 

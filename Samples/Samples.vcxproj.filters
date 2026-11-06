@@ -4,6 +4,21 @@
     <ClCompile Include="Source\main.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="Source\AI\AIActor.cpp">
+      <Filter>Source\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\AI\AIGuard.cpp">
+      <Filter>Source\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\AI\AIHero.cpp">
+      <Filter>Source\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\AI\AIParts.cpp">
+      <Filter>Source\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\AI\AISample.cpp">
+      <Filter>Source\AI</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Application\SamplesApplication.cpp">
       <Filter>Source\Application</Filter>
     </ClCompile>
@@ -273,6 +288,21 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\AI\AIActor.h">
+      <Filter>Source\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\AI\AIGuard.h">
+      <Filter>Source\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\AI\AIHero.h">
+      <Filter>Source\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\AI\AIParts.h">
+      <Filter>Source\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\AI\AISample.h">
+      <Filter>Source\AI</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Application\SamplesApplication.h">
       <Filter>Source\Application</Filter>
     </ClInclude>
@@ -577,6 +607,9 @@
   <ItemGroup>
     <Filter Include="Source">
       <UniqueIdentifier>{D1BD1BF3-E8B3-CC5B-D652-680E16935819}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\AI">
+      <UniqueIdentifier>{A6934994-D32C-E0C3-E1F2-E9EC7EFF28D2}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Application">
       <UniqueIdentifier>{3C309C29-8704-EF3C-6238-884C86DCE4EF}</UniqueIdentifier>

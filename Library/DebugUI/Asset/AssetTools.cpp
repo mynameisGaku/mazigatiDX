@@ -393,6 +393,7 @@ void NDebugUI::DrawAssetToolsButtons( FAssetToolsState& State )
 	ImGui::Checkbox( "Model animation editor", &State.bShowModelAnimationEditor );
 	ImGui::SameLine();
 	ImGui::Checkbox( "World editor", &State.bShowWorldEditor );
+	ImGui::Checkbox( "AI debugger", &State.bShowAIDebugger );
 	// 外側の表示切替から閉じるときも、未保存の確認を省略しない。
 	bool bShowEffect = State.bShowEffectEditor;
 	if ( ImGui::Checkbox( "Effect editor", &bShowEffect ) )
@@ -440,6 +441,10 @@ void NDebugUI::DrawAssetTools( FAssetToolsState& State )
 	{
 		DrawWorldEditor( State.WorldEditor, &State.bShowWorldEditor );
 	}
+	if ( State.bShowAIDebugger )
+	{
+		DrawAIDebugger( State.AIDebugger, &State.bShowAIDebugger );
+	}
 	if ( State.bShowAssets )
 	{
 		DrawAssetWindow( State, &State.bShowAssets );
@@ -461,6 +466,13 @@ void NDebugUI::ApplyAssetToolsCommandLine( FAssetToolsState& State )
 		State.bShowModelAnimationEditor = ContainsToken( *Tools, "model" );
 		State.bShowWorldEditor = ContainsToken( *Tools, "world" );
 		State.bShowEffectEditor = ContainsToken( *Tools, "effect" );
+		State.bShowAIDebugger = ContainsToken( *Tools, "ai" );
+	}
+	const FString AIObject = GetArgument( "ai-object" );
+	if ( !AIObject.IsEmpty() )
+	{
+		State.bShowAIDebugger = true;
+		State.AIDebugger.InitialSelection = AIObject;
 	}
 	const FString World = GetArgument( "world" );
 	if ( !World.IsEmpty() )

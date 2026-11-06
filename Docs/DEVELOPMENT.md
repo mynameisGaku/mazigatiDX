@@ -183,11 +183,11 @@ struct VertexInput
 3Dの機能をまとめて使った、ゲームの画面らしい見本は`Samples`の`Island`です（`Samples.exe --sample=Island`。探検家が島を歩き、光る結晶を集めます。地形は決まったシードから作った高さの格子を頂点バッファ + インデックスバッファで描き、木と灯台は3D図形、太陽は一日の時刻で空を動いて影（シャドウマップ）を落とし、影を受けない空の明かりで影の中も真っ黒にしません。灯台の回る光（スポットライト）・霧・半透明の海・加算の光のにじみ・地図・`WorldToScreen`の名札・右クリックの目的地（`ScreenToRay`で地形に当てる）を、1つの画面にまとめています。WASD / 矢印キーで歩き（Shiftで走る）、右クリックでその場所へ歩き、マウスの左ボタンを押したまま動かすとカメラが回り、ホイールで近づきます。数字キーの1〜3で、影・霧・時刻の停止を切り替えます）。影の絵を描き終えると、DxLibはクリップを画面全体に戻してしまうので、実行側で元のクリップに戻しています（影の絵のあとの3Dも、見せる範囲に収まります）。
 
 2Dの機能を1つの画面にまとめた見本が、`Samples`の`Village`です（`Samples.exe --sample=Village`。WASDか矢印キーで歩き、Shiftで走り、Enterで村人に話しかけ、Nキーで昼と夜を切り替えます。キーを押すまでは、ひとりで歩きます）。クラスとファイルは、1つの仕事ごとに分けてあります。`CTileMap`（タイルの地図。見えている範囲だけを`ImagePart`で描く）、`CPlayer`（入力・衝突・カメラの追従）、`CCoin`、`CVillager`、`CDialogue`（`CFont::Layout`で折り返し、1文字ずつ表示）、`CDarkness`（夜）、`CStatusPanel`（金貨の数・体力の円グラフ・ミニマップ）で、オブジェクトどうしは`FVillageState`で状態を分け合います。絵はすべて`FPixelImage`で作る（`NVillageArt`）ので、画像のファイルは要りません。
-- カメラ: 世界の座標で描くオブジェクトは、`Draw`の最初に`FWorldScope`（見せる範囲へのクリップと、`Transform2D`でカメラの移動を掛ける）を置きます。クリップと変換は、`Draw`が終わると戻るので、情報の表示や会話の窓のような、画面の座標のオブジェクトには影響しません。カメラの位置は、整数にそろえます（タイルの継ぎ目がずれないように）。
+- カメラ: 世界の座標で描くオブジェクトは、`Draw`の最初に`FWorldScope`（見せる範囲へのクリップと、`Transform2D`でカメラの移動を掛ける）を置きます。クリップと変換は、`Draw`が終わると戻るので、情報の表示や会話のウィンドウのような、画面の座標のオブジェクトには影響しません。カメラの位置は、整数にそろえます（タイルの継ぎ目がずれないように）。
 - 夜の明かり: 「夜の層」（アルファを持つ描画先）を、暗い青で塗り（アルファが夜の濃さ）、光の画像を、カスタムブレンド（`SrcAlpha = Zero`・`DestAlpha = InvSrcAlpha`。画像のアルファの分だけ、いまのアルファを減らす）で置いてから、その層を、ふつうのアルファブレンドで画面へ重ねます。光が重なると、さらに明るくなります。
 - マスク（`FMaskScope`）で、画面（アルファを持つ描画先）へ直接描くのは、うまくいきません。DxLibは、アルファを持つ描画先へ、マスクつきで描くと、色を置き換えてしまい（下の絵に混ざらない）、描いたところのアルファが下がります。マスクで描く先は、アルファのない描画先にします（`Filters`の見本）。マスクで描くときの濃さは、マスクの値そのもので決まり、`Blend`の強さの指定は効きません。
 
-組み込みのデバッグ表示は、`Library/DebugUI/DebugOverlay.h`の`CDebugOverlay`です。ゲームインスタンスが持ち、`Init() / Tick() / Draw( *this ) / Term()`を呼ぶと、F1の窓（FPS・入力・シーン・ログ）、F2のプロファイラー、F3のコンソール（Debugだけ）、F11のフルスクリーンが使えます。`OnDrawPanelItems`と`OnDrawWindows`に関数を渡すと、ゲーム側の項目や窓を同じ画面に並べられます。キーの処理は`HandleKeys`に切り出してあり、偽の入力・プロファイラー・プラットフォームで確かめられます。
+組み込みのデバッグ表示は、`Library/DebugUI/DebugOverlay.h`の`CDebugOverlay`です。ゲームインスタンスが持ち、`Init() / Tick() / Draw( *this ) / Term()`を呼ぶと、F1のウィンドウ（FPS・入力・シーン・ログ）、F2のプロファイラー、F3のコンソール（Debugだけ）、F11のフルスクリーンが使えます。`OnDrawPanelItems`と`OnDrawWindows`に関数を渡すと、ゲーム側の項目やウィンドウを同じ画面に並べられます。キーの処理は`HandleKeys`に切り出してあり、偽の入力・プロファイラー・プラットフォームで確かめられます。
 
 ## ピクセルアートのエフェクト
 
@@ -220,7 +220,7 @@ Heal.DrawFront( CommandList, Feet, 2.0f );
 
 ## モデルの構造・見た目・当たり判定
 
-- 構造: `CModel::GetStructure()`は、フレームの木（親・子・持っているメッシュ）、メッシュ（材質・頂点と三角形の数・範囲）、材質（読み込んだときの色・使うテクスチャ）、テクスチャ（ファイルのパス・大きさ）、形状（モーフ）の名前を返します。名前から番号は`FindFrame` / `FindMaterial` / `FindShape`。DxLibの`.x`は、`Mesh`ごとに子のフレームを作り、材質の一覧の1つずつにメッシュを作ります（使われない材質は三角形0のメッシュ）。
+- 構造: `CModel::GetStructure()`は、フレームのツリー（親・子・持っているメッシュ）、メッシュ（材質・頂点と三角形の数・範囲）、材質（読み込んだときの色・使うテクスチャ）、テクスチャ（ファイルのパス・大きさ）、形状（モーフ）の名前を返します。名前から番号は`FindFrame` / `FindMaterial` / `FindShape`。DxLibの`.x`は、`Mesh`ごとに子のフレームを作り、材質の一覧の1つずつにメッシュを作ります（使われない材質は三角形0のメッシュ）。
 - 見た目: `CModelInstance::GetAppearance()`の`FModelAppearance`で、その1体だけの材質の色（`SetMaterialColors` / `SetMaterialDiffuse`、`ResetMaterialColors`で読み込んだときの色へ）、メッシュとフレームの表示、全体の不透明度、形状の効き具合（`SetShapeRate`）を変えます。同じモデルから作ったほかのインスタンスは変わりません。
 - フレームの行列: `CModelInstance::GetFrameMatrix( 番号, EModelFrameSpace::World / Local, 行列 )`（最後に描いたときのアニメーションと置き場所で決まる）。
 - 骨の親基準pose: `SetFrameLocalMatrixOverride( 番号, 行列 )`はアニメーション姿勢を位置・向き・大きさを含む完全な行列で置き換え、成功後は解除まで優先されます。`GetFrameLocalMatrixOverride( 番号, bOutOverridden, 行列 )`はbackend窓口で設定した上書きだけを調べ、有効なframeに上書きが無ければtrueとfalse flagを返して行列を保ちます。失敗時は両出力を保ちます。有限な拡大縮小・せん断・反転・0 scaleを許し、右端の列は厳密に(0, 0, 0, 1)である必要があります。`ClearFrameLocalMatrixOverride( 番号 )`で現在のアニメーション評価へ戻ります。3つともゲームスレッド専用で、読み込み中・範囲外・不正入力・未対応backendでは失敗し、既存のoverrideを保ちます。Null backendは未対応です。`CModelInstance`経由で追跡したposeはモデル複製にも引き継がれます。DxLibの生model handleへ直接行う`MV1SetFrameUserLocalMatrix` / `MV1ResetFrameUserLocalMatrix`はbackendの追跡値には反映されず、getterの結果や複製への継承は保証されません。`FDrawContext::ModelWithFrameOverrides`は1命令の通常native model描画中だけposeを一時適用し、適用前の追跡状態へ戻します。1命令の上限は256 frame poseです。queryやapplyが失敗したときは描かず、途中までapplyした状態は逆順に戻します。`Restore()`は復元失敗frameだけを再試行し、scope破棄時にも残りを一度試します。最後の復元も失敗するとnative状態が残る可能性があり、警告とfalseで知らせます。生native操作のposeは追跡されないため、この一時描画の保存・復元対象外です。ModelMaterial描画への適用と`FModelAnimator::Record`からの自動接続は未対応です。
@@ -262,7 +262,7 @@ if ( Ground->GetCollision().Raycast( GroundWorld, Eye, Eye + Down * 50.0f, Hit )
 
 `Extended`は再生方式に従って連続化した姿勢です。Loopでは、姿勢を`P(t)`、先頭を`P0`、1周の差分を`C = P(Length) * Inverse(P0)`とすると、`t = n * Length + r`の連続姿勢は`P(r) * Inverse(P0) * C^n`です。共通の周回を相殺した同値な式で区間差分を求めます。
 
-この計算はバックエンドを参照せず、拡大率も含む完全な姿勢差分を返します。コールバックは呼び出し元のスレッドで実行するため、姿勢サンプラーを渡す場合はゲームスレッドから呼びます。Animatorからの明示的な取得APIは次節のとおりです。表示上の根の移動の除去、自動移動、物理へ適用する方針は含みません。
+この計算はバックエンドを参照せず、拡大率も含む完全な姿勢差分を返します。コールバックは呼び出し元のスレッドで実行するため、姿勢サンプラーを渡す場合はゲームスレッドから呼びます。Animatorからの明示的な取得APIは次節のとおりです。表示上のルートの移動の除去、自動移動、物理へ適用する方針は含みません。
 
 `TryExtractRigidMotion`はproper rigid（軸長1、軸同士が直交し、右手系）の差分だけを移動と回転へ分けます。軸長二乗・軸同士の内積は`1.0e-4`以内、行列式は1から`4.0e-4`以内を許容します。scale、shear、反転を黙って落とさず、条件を満たさない場合は`false`を返して両出力を保持します。`m03/m13/m23`は厳密に0である必要があり、積の丸めによる`m33`だけは1との差が`1.0e-4`以内なら1へ戻します。
 
@@ -297,7 +297,7 @@ if ( Animator.ConsumeRootMotion( ReferenceToActorBasis, RootTranslation, RootRot
 
 このoverloadもゲームスレッド専用です。native sampleまたはbasis補正に失敗した場合は両出力と未消費区間を保持し、basisを直して同じ区間を再試行できます。成功した区間はどちらのoverloadからも二度取得できません。非剛体の差分を移動・回転だけへ丸めず失敗します。full affineのoverloadは従来どおりscale等を含む行列を返します。単位・再生instance・添付clipの置換など構成の不連続を検出した場合は、既存契約により区間を破棄または再開まで拒否するため、sample/basis失敗の再試行とは異なります。
 
-差分は全身の主クリップだけを対象にし、クロスフェード中の前クリップと部分再生は含めません。複数の連続した`Update`は一つの区間にまとめます。同じクリップへの通常の`Play`は再生を再開せず、保留区間も維持します。停止・シーク・新しい再生・骨の選び直しは保留差分を捨てます。Animatorのコピーは保留区間を独立して持ち、ゲームスレッドの`ConsumeRootMotion`で共有samplerを順に使います。native sample失敗では出力と保留区間を残し、同じ差分を再試行できます。`UnitsPerSecond`変更を観測した後は、元の値へ戻しても成功した新しいPlay/restartまで拒否します。再生中のクリップを`AddClip`で置き換えた場合は`ClearClips`後にクリップを登録し直して再生してください。公開`Instance`の交換後は旧添付先と混同しないよう、新しい`FModelAnimator`を作成してください。取得した行列は親基準の完全な差分です。表示モデルから根の動きを除く処理やゲームオブジェクトの自動移動は行いません。
+差分は全身の主クリップだけを対象にし、クロスフェード中の前クリップと部分再生は含めません。複数の連続した`Update`は一つの区間にまとめます。同じクリップへの通常の`Play`は再生を再開せず、保留区間も維持します。停止・シーク・新しい再生・骨の選び直しは保留差分を捨てます。Animatorのコピーは保留区間を独立して持ち、ゲームスレッドの`ConsumeRootMotion`で共有samplerを順に使います。native sample失敗では出力と保留区間を残し、同じ差分を再試行できます。`UnitsPerSecond`変更を観測した後は、元の値へ戻しても成功した新しいPlay/restartまで拒否します。再生中のクリップを`AddClip`で置き換えた場合は`ClearClips`後にクリップを登録し直して再生してください。公開`Instance`の交換後は旧添付先と混同しないよう、新しい`FModelAnimator`を作成してください。取得した行列は親基準の完全な差分です。表示モデルからルートの動きを除く処理やゲームオブジェクトの自動移動は行いません。
 
 ## 資産ファイルの拡張子
 
@@ -335,7 +335,7 @@ if ( Animator.ConsumeRootMotion( ReferenceToActorBasis, RootTranslation, RootRot
 
 壊れた定義でもゲームは落ちません。未登録の部品・無いブラックボードのキー・型に合わない比較・無い遷移先は、問題の一覧（`GetIssues()`とログ）に出て、その部分だけが無効（条件は常に偽）になります。ステートが1つも無い・入口が無い・マシンの子が無いときは、動きません。### ビヘイビアツリー
 
-判断を木で定義します（`.gxbt`、`FBehaviorTreeDefinition`。書式は`BehaviorTreeDefinition.h`の先頭）。ステートマシンと同じブラックボード・同じレジストリを使います。
+判断をツリーで定義します（`.gxbt`、`FBehaviorTreeDefinition`。書式は`BehaviorTreeDefinition.h`の先頭）。ステートマシンと同じブラックボード・同じレジストリを使います。
 
 |やりたいこと|使うもの|
 |---|---|
@@ -347,11 +347,24 @@ if ( Animator.ConsumeRootMotion( ReferenceToActorBasis, RootTranslation, RootRot
 |デコレーター（`"Decorators"`）|`BlackboardCondition`（`Key` `Op` `Value`）・`Condition`（登録した`FAICondition`）・`Cooldown`・`Inverter`・`Succeeder`・`Failer`・`Repeat`（`Count` `UntilSuccess`）・`TimeLimit`。条件の2つは`"Not": true`で反転できます|
 |条件が変わったときの中断（`"Abort"`）|`Self`（実行中に条件が偽になったら、配下を中断して失敗）・`LowerPriority`（`Selector`の子が持つ。条件が偽から真に変わり、入れる状態なら、後ろの兄弟の実行を中断して、その子から実行）・`Both`。ブラックボードのキーはリビジョンで変化を見るので、変わっていないキーの条件は評価し直しません（登録した`Condition`は毎`Tick`評価し直します）|
 |ステートマシンと同じ値を見る|同じオブジェクトに両方を付け、定義の`Blackboard`が同じパスなら、あとから読み込んだほうが先のブラックボードを共有します。Trigger（1フレームだけ真になるキー）を戻すのも、あとから読み込んだほうだけです（コンポーネントは付けた順に`Tick`される前提。`SetShareBlackboard( false )`で共有をやめ、`SetClearsTriggers`で手動に決められます）|
-|実行中の状態を見る|コンソールの`ai.dump`（動いているノード・根の結果・ブラックボードの値）。コードからは`Component->Describe()`と、`CBehaviorTree`の`GetActiveNodes`・`GetNodeResult`・`WasNodeAborted`・`GetDecoratorResult`|
+|実行中の状態を見る|コンソールの`ai.dump`（動いているノード・ルートの結果・ブラックボードの値）。コードからは`Component->Describe()`と、`CBehaviorTree`の`GetActiveNodes`・`GetNodeResult`・`WasNodeAborted`・`GetDecoratorResult`|
 
-実行は、毎フレーム根から評価しますが、`Running`のノードの経路を覚えていて、`Selector`と`Sequence`は実行中の子から続けます。根が終わると、次の`Tick`で最初からやり直します。`Repeat`は終わったノードを入り直しますが、1`Tick`に1回までで、`Running`を返して続きます。1回の`Tick`で動かすノードの数には上限（1024）があり、超えると警告して残りを次の`Tick`に回します。壊れた定義でも落ちず、未登録の`Task`は常に失敗、無いキーの条件は常に偽になります（問題は`GetIssues()`とログに出ます）。`LowerPriority`は`Selector`の直接の子だけで効きます。
+実行は、毎フレームルートから評価しますが、`Running`のノードの経路を覚えていて、`Selector`と`Sequence`は実行中の子から続けます。ルートが終わると、次の`Tick`で最初からやり直します。`Repeat`は終わったノードを入り直しますが、1`Tick`に1回までで、`Running`を返して続きます。1回の`Tick`で動かすノードの数には上限（1024）があり、超えると警告して残りを次の`Tick`に回します。壊れた定義でも落ちず、未登録の`Task`は常に失敗、無いキーの条件は常に偽になります（問題は`GetIssues()`とログに出ます）。`LowerPriority`は`Selector`の直接の子だけで効きます。
 
-エディタとデバッガ画面は、これから足します。
+### AIデバッガ（ステートマシン・ビヘイビアツリー）
+
+|やりたいこと|使うもの|
+|---|---|
+|AIの状態を画面で見る|デバッグオーバーレイのアセットツールの「AI Debugger」。`--tool=ai`で最初から開き、`--ai-object=名前`で見るオブジェクトを選べます（Samplesの`AI`サンプルでは、`--hero-x=`でHeroの位置も決められます）|
+|ステートマシンをグラフで見る|ステートが箱、遷移が矢印です。今のステートは緑の枠、遷移した矢印は緑で太く光って時間とともに消え、条件が満たされた矢印は黄色、起こりうる矢印は明るい灰色です。入れ子のマシンは外枠になり、Any Stateは左の「ANY」の箱から出ます。入口は「点 + start」の矢印です|
+|ビヘイビアツリーをグラフで見る|ノードが箱で、動いている経路は緑で太く、`Running`のTaskは黄色の枠です。箱の上の帯が最後の結果（成功・失敗・中断）の色で、時間とともに暗くなります。デコレーターの条件は`T` / `F`で出ます。子は優先順位の順（`#1`から）に並びます|
+|グラフの操作|ドラッグで動かし、ホイールで拡大・縮小します。「Fit」で全体に合わせます。箱・矢印・中継ノードにマウスを置くと説明が出ます|
+|1ステップずつ進める|「Pause」で止め、「Step」で1回だけ進めます（`Step( 秒 )`はコードからも呼べます）。「Send event」でステートマシンへイベントを送れます|
+|ブラックボードを見る・書き換える|値の一覧から直接書き換えられます（`Rev`は変更の回数）。変わった値は強調されます|
+
+グラフの矢印は、直角に折れる線で描きます（角は丸め、終点に矢じり）。分かれ目・合わさる所や、箱の上下を回る長い矢印の途中には、中継ノード（丸い点）を置きます。他の矢印と並んで重なる矢印は、真ん中の線や経路全体をずらして避け、関係のない矢印と重なる中継ノードは、自分の矢印の上でずらします。配置と経路の計算は描画に依存しない`NAIGraph::BuildStateMachineLayout` / `BuildBehaviorTreeLayout`（`Library/DebugUI/AI/AIGraphLayout.h`）が行い、描く部品は`FNodeGraphCanvas`（`NodeGraph.h`。パン・ズーム・箱・矢印・中継ノード）です。どちらも、これから足すエディタで使い回します。
+
+エディタ（グラフの編集・インスペクタ・検証）は、これから足します。
 
 ## ムービー
 
@@ -487,7 +500,7 @@ if ( Field.ConsumeSubmitted() )
 
 ## ゲームスレッドと AsyncTask
 
-描画・アセット・音・窓など、DxLibを触る仕事は**ゲームスレッド**（起動したスレッド。`NGameMain`と`CEngine::Run`が覚える）だけで行います。DxLibはスレッドセーフではないためです。
+描画・アセット・音・ウィンドウなど、DxLibを触る仕事は**ゲームスレッド**（起動したスレッド。`NGameMain`と`CEngine::Run`が覚える）だけで行います。DxLibはスレッドセーフではないためです。
 
 - `IsInGameThread()`: いまゲームスレッドか。
 - `GAME_THREAD_ONLY();` / `GAME_THREAD_ONLY( 戻り値 );`: 関数の頭に書くと、ゲームスレッドの外から呼ばれたときに、エラーをログに出して何もせずに戻ります（DxLibを触って壊れる代わりに）。アセットの読み込み・作成（`CAssetSubsystem`の`Load…` / `Create…`など）、モデルの見た目、画面の撮影の関数に入っています。
@@ -597,7 +610,7 @@ Worldの`Components.Effect`には、任意の`Target`（追従先オブジェク
 |`Samples`|実行ファイル|`Samples/Source`（機能別のサンプル集。下の「サンプル集」）|
 
 - フレームワークを使うプロジェクトは、`Build/mazigatiDX.props`を取り込み、`mazigatiDX`への参照を持ちます。propsが、インクルード検索先（`#include "Library/..."`）、C++17、文字列リテラルをUTF-8にする設定（`/execution-charset:utf-8`）、DxLibとSDL3のライブラリ検索先、`main`で始められる入口の設定、`SDL3.dll`のコピーを引き受けるので、ゲーム側の`.vcxproj`は短く済みます。
-- 入口は`main`です。`Source/main.cpp`が`NGameMain::RunGame<CGameApplication>()`を呼ぶだけで、リーク報告、ログ（コンソールとファイル）、窓の設定（`Config/ScreenConfig.json`）、終了時の後片付けは、`Library/Framework/Engine/GameMain.h`が担当します。
+- 入口は`main`です。`Source/main.cpp`が`NGameMain::RunGame<CGameApplication>()`を呼ぶだけで、リーク報告、ログ（コンソールとファイル）、ウィンドウの設定（`Config/ScreenConfig.json`）、終了時の後片付けは、`Library/Framework/Engine/GameMain.h`が担当します。
 - サブシステムの登録（`REGISTER_SUBSYSTEM`）とコンソールコマンドの登録は、静的な初期化で行います。静的ライブラリの`.obj`は参照されないとリンクされず登録が消えるので、実行ファイルはライブラリ全体を取り込んでリンクします（propsが`/WHOLEARCHIVE:mazigatiDX.lib`を設定）。
 - 各`.vcxproj`の`<MazigatiSourceRoots>`に書いたフォルダーの下のファイルを、`GenerateProjectFiles.bat`が`ClCompile` / `ClInclude`と`.filters`へ書き出します。プロジェクトを足すときも、`<MazigatiSourceRoots>`を書けば再生成の対象になります。
 - 中間ファイルは、プロジェクトごとのフォルダー（`project/`、`mazigatiDX/`）に出ます。出力は`x64/Debug`と`x64/Release`です。
@@ -632,7 +645,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\NewProject.ps1 -Name M
 .\x64\Debug\project.exe --backend=null --max-frames=30
 ```
 
-- `CNullPlatformSubsystem`: 窓を出さず、待たずに1フレーム`1/60`秒ずつ進め、`--max-frames=N`に達するか`RequestExit()`が呼ばれたら終了します。ImGuiは描画の実装なしでフレームだけ進め、`imgui.ini`は読み書きしません。
+- `CNullPlatformSubsystem`: ウィンドウを出さず、待たずに1フレーム`1/60`秒ずつ進め、`--max-frames=N`に達するか`RequestExit()`が呼ばれたら終了します。ImGuiは描画の実装なしでフレームだけ進め、`imgui.ini`は読み書きしません。
 - `CNullDrawExecutorSubsystem`: `FDrawSpan`の命令列を先頭から読み、命令ごとの最小ワード数と、`PushTarget / PopTarget`・`PushClip / PopClip`・`PushMask / PopMask`・`PushCamera / PopCamera`・`PushWorldMatrix / PopWorldMatrix`・`PushLight / PopLight`・`BeginShadowMap / EndShadowMap`の7組の深さの釣り合いを検査して終了時に統計をログへ出します。
 - `CNullAssetBackendSubsystem`: 画像（PNG・BMP・JPEGのヘッダーから寸法を読み、未知の形式は64x64）・描画先・頂点バッファ・インデックスバッファ・シャドウマップ・シェーダー（`CompileShader`はダミーの`"DXBC"`4バイトを返す）・フォント（半角はサイズの半分、全角はサイズ幅で折り返しと文字位置を計算）・音（WAVのヘッダーから秒数を計算）のハンドルを発行し、終了時に未解放のハンドルが残っていれば警告します。
 - `CNullInputSubsystem` / `CNullAudioBackendSubsystem`: キー・マウス・ボイスの状態をメモリ上で進め、テストから入力を差し込めます。

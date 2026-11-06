@@ -1,0 +1,7 @@
+{
+  "Version": 1,
+  "Keys": [
+    { "Name": "MoveAxis", "Type": "Int" },
+    { "Name": "AttackPressed", "Type": "Bool", "Trigger": true }
+  ]
+}

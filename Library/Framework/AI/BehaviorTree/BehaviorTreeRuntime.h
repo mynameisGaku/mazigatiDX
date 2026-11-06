@@ -18,16 +18,17 @@
 //   Tree->Tick( Context, DeltaTime );            // 毎フレーム
 //
 //   実行のしかた:
-//   - 毎フレーム根から評価するが、Running のノードの経路を覚えていて、続きから実行する（Selector / Sequence は、実行中の子から再開する）
-//   - 各ノードは Success / Failure / Running を返す。根が終わる（Success / Failure）と、次の Tick で最初からやり直す
+//   - 毎フレームルートから評価するが、Running のノードの経路を覚えていて、続きから実行する（Selector / Sequence は、実行中の子から再開する）
+//   - 各ノードは Success / Failure / Running を返す。ルートが終わる（Success / Failure）と、次の Tick で最初からやり直す
 //   - デコレーター: 入るときの条件（BlackboardCondition / Condition / Cooldown）と、結果を変えるもの（Inverter / Succeeder / Failer / Repeat / TimeLimit）
 //   - 中断（条件のデコレーターの Abort）:
 //       Self          実行中に条件が偽になったら、自分の配下の実行を中断して失敗（Task の OnAbort が呼ばれる）
 //       LowerPriority Selector の子が持つ。条件が偽から真に変わり、その子に入れる状態なら、後ろ（優先度の低い）の兄弟の実行を中断して、その子から実行する
+//                     （クールダウンに阻まれていた子は、クールダウンが明けたときも同じ）
 //     ブラックボードのキーは、リビジョンで変化を見る。変わっていないキーの条件は、評価し直さない（登録した判定 Condition は、毎 Tick 評価し直す）
 //   - Service: 付いているノードが動いている間、Interval 秒ごとに Tick される（最初の 1 回は、動き始めてすぐ）
 //   - 1 回の Tick で動かすノードの数に上限がある（MaxNodeVisitsPerTick）。超えたら警告して、その Tick の残りを打ち切る
-//   - 壊れた定義は、問題を Issues に出して、可能なら続行する（未登録の Task は常に失敗、無いキーの条件は常に偽）。根が無ければ nullptr を返す
+//   - 壊れた定義は、問題を Issues に出して、可能なら続行する（未登録の Task は常に失敗、無いキーの条件は常に偽）。ルートが無ければ nullptr を返す
 //   - ゲームのオブジェクトに触るので、メインスレッドで使う
 //=============================================================================
 class CBehaviorTree
@@ -36,7 +37,7 @@ public:
 	// 1 回の Tick で動かしてよいノードの数
 	static constexpr int32 MaxNodeVisitsPerTick = 1024;
 
-	// コンパイルして作る。根が無ければ nullptr（Issues にエラーが出る）。Blackboard は、実行時に渡すブラックボードの定義
+	// コンパイルして作る。ルートが無ければ nullptr（Issues にエラーが出る）。Blackboard は、実行時に渡すブラックボードの定義
 	static TUniquePtr<CBehaviorTree> Create( const TSharedPtr<const FBehaviorTreeDefinition>& Definition, const CAIRegistry& Registry, const FBlackboardDefinition& Blackboard, TArray<FAIIssue>* Issues );
 
 	~CBehaviorTree();
@@ -48,7 +49,7 @@ public:
 	//-------------------------------------------------------------------------
 	// 実行
 	//-------------------------------------------------------------------------
-	// 1 回進める。根の結果を返す（Running なら、まだ続いている）
+	// 1 回進める。ルートの結果を返す（Running なら、まだ続いている）
 	EBTStatus Tick( FAIContext& Context, float32 DeltaTime );
 	// 動いているノードをすべて中断する（Task の OnAbort・Service の OnDeactivate）。次の Tick は最初から
 	void Abort( FAIContext& Context );
@@ -64,7 +65,7 @@ public:
 	bool WasNodeAborted( int32 Node ) const;
 	// ノードが最後に終わった時刻（FAIContext::Time）
 	float64 GetNodeResultTime( int32 Node ) const;
-	// 動いているノードの番号（根から。深さ優先）
+	// 動いているノードの番号（ルートから。深さ優先）
 	void GetActiveNodes( TArray<int32>& OutNodes ) const;
 	// 条件のデコレーターの、最後の評価結果（Decorator は、ノードの Decorators の番号）。評価したことがなければ false
 	bool GetDecoratorResult( int32 Node, int32 Decorator ) const;
@@ -72,7 +73,7 @@ public:
 	int32 GetLastNumVisits() const { return NumVisits; }
 	// 動かすノードの数の上限に当たったことがあるか
 	bool HasHitVisitLimit() const { return bHitVisitLimit; }
-	// 根の、最後の結果
+	// ルートの、最後の結果
 	EBTStatus GetRootResult() const { return RootResult; }
 
 private:
@@ -93,6 +94,8 @@ private:
 		bool bUntilSuccess = false;
 		// 実行時の状態
 		float64 CooldownEnd = 0.0;
+		// 入ろうとして、クールダウンに阻まれたか（明けたときに、LowerPriority の再評価の対象にする）
+		bool bBlockedByCooldown = false;
 		int32 RepeatCounter = 0;
 		uint32 ObservedRevision = 0;
 		bool bObserved = false;

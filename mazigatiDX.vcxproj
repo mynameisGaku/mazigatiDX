@@ -75,6 +75,10 @@
     <ClCompile Include="Library\Core\Time\PlatformTime.cpp" />
     <ClCompile Include="Library\Core\Types\Checksum.cpp" />
     <ClCompile Include="Library\DebugUI\DebugOverlay.cpp" />
+    <ClCompile Include="Library\DebugUI\AI\AIDebugger.cpp" />
+    <ClCompile Include="Library\DebugUI\AI\AIGraphLayout.cpp" />
+    <ClCompile Include="Library\DebugUI\AI\AIGraphViews.cpp" />
+    <ClCompile Include="Library\DebugUI\AI\NodeGraph.cpp" />
     <ClCompile Include="Library\DebugUI\Asset\AssetTools.cpp" />
     <ClCompile Include="Library\DebugUI\Asset\ModelAnimationEditor.cpp" />
     <ClCompile Include="Library\DebugUI\Asset\SpriteSheetEditor.cpp" />
@@ -652,6 +656,10 @@
     <ClInclude Include="Library\Core\Types\TypeTraits.h" />
     <ClInclude Include="Library\Core\Types\Utility.h" />
     <ClInclude Include="Library\DebugUI\DebugOverlay.h" />
+    <ClInclude Include="Library\DebugUI\AI\AIDebugger.h" />
+    <ClInclude Include="Library\DebugUI\AI\AIGraphLayout.h" />
+    <ClInclude Include="Library\DebugUI\AI\AIGraphViews.h" />
+    <ClInclude Include="Library\DebugUI\AI\NodeGraph.h" />
     <ClInclude Include="Library\DebugUI\Asset\AssetTools.h" />
     <ClInclude Include="Library\DebugUI\Asset\ModelAnimationEditor.h" />
     <ClInclude Include="Library\DebugUI\Asset\SpriteSheetEditor.h" />

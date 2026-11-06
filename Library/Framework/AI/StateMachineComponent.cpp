@@ -167,7 +167,19 @@ void CStateMachineComponent::Tick( float32 DeltaTime )
 	{
 		Start();
 	}
+	Update( DeltaTime );
+}
 
+void CStateMachineComponent::Step( float32 DeltaTime )
+{
+	if ( Machine.IsValid() && Machine->IsRunning() )
+	{
+		Update( DeltaTime );
+	}
+}
+
+void CStateMachineComponent::Update( float32 DeltaTime )
+{
 	PROFILE_SCOPE_CAT( "AI", "StateMachine" );
 	Time += static_cast<float64>( DeltaTime );
 	FAIContext Context = MakeContext( DeltaTime );
@@ -175,6 +187,16 @@ void CStateMachineComponent::Tick( float32 DeltaTime )
 	if ( bClearsTriggers )
 	{
 		Blackboard->ClearTriggers();
+	}
+}
+
+void CStateMachineComponent::GetCandidateTransitions( TArray<FStateTransitionCandidate>& OutCandidates )
+{
+	OutCandidates.Empty();
+	if ( Machine.IsValid() )
+	{
+		FAIContext Context = MakeContext( 0.0f );
+		Machine->GetCandidateTransitions( Context, OutCandidates );
 	}
 }
 
