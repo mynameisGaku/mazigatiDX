@@ -118,7 +118,13 @@
     <ClCompile Include="Library\DebugUI\World\WorldEditorViewport.cpp">
       <Filter>Library\DebugUI\World</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\AI\AIBlackboardSetup.cpp">
+      <Filter>Library\Framework\AI</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\AI\AIIssue.cpp">
+      <Filter>Library\Framework\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\AI\BehaviorTreeComponent.cpp">
       <Filter>Library\Framework\AI</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\AI\StateMachineComponent.cpp">
@@ -189,6 +195,12 @@
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\EditorAssetInfo.cpp">
       <Filter>Library\Framework\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Data\BehaviorTreeAsset.cpp">
+      <Filter>Library\Framework\Asset\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Data\BehaviorTreeLoader.cpp">
+      <Filter>Library\Framework\Asset\Data</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Data\BlackboardAsset.cpp">
       <Filter>Library\Framework\Asset\Data</Filter>
@@ -1806,6 +1818,9 @@
     <ClInclude Include="Library\DebugUI\World\WorldEditorModelPreviewKey.h">
       <Filter>Library\DebugUI\World</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\AI\AIBlackboardSetup.h">
+      <Filter>Library\Framework\AI</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\AI\AIContext.h">
       <Filter>Library\Framework\AI</Filter>
     </ClInclude>
@@ -1813,6 +1828,9 @@
       <Filter>Library\Framework\AI</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\AI\AILog.h">
+      <Filter>Library\Framework\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\AI\BehaviorTreeComponent.h">
       <Filter>Library\Framework\AI</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\AI\StateMachineComponent.h">
@@ -1883,6 +1901,12 @@
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\EditorAssetInfo.h">
       <Filter>Library\Framework\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Data\BehaviorTreeAsset.h">
+      <Filter>Library\Framework\Asset\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Data\BehaviorTreeLoader.h">
+      <Filter>Library\Framework\Asset\Data</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Data\BlackboardAsset.h">
       <Filter>Library\Framework\Asset\Data</Filter>

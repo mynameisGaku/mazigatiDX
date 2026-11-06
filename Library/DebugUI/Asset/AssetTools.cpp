@@ -30,6 +30,7 @@ namespace
 		case EAssetType::Effect: return ImVec4( 1.0f, 0.85f, 0.4f, 1.0f );
 		case EAssetType::Blackboard: return ImVec4( 0.6f, 0.9f, 0.9f, 1.0f );
 		case EAssetType::StateMachine: return ImVec4( 0.8f, 0.75f, 1.0f, 1.0f );
+		case EAssetType::BehaviorTree: return ImVec4( 0.7f, 1.0f, 0.65f, 1.0f );
 		}
 		return ImVec4( 1.0f, 1.0f, 1.0f, 1.0f );
 	}

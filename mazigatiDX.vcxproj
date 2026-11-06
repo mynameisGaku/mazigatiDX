@@ -104,7 +104,9 @@
     <ClCompile Include="Library\DebugUI\World\WorldEditorModels.cpp" />
     <ClCompile Include="Library\DebugUI\World\WorldEditorPanels.cpp" />
     <ClCompile Include="Library\DebugUI\World\WorldEditorViewport.cpp" />
+    <ClCompile Include="Library\Framework\AI\AIBlackboardSetup.cpp" />
     <ClCompile Include="Library\Framework\AI\AIIssue.cpp" />
+    <ClCompile Include="Library\Framework\AI\BehaviorTreeComponent.cpp" />
     <ClCompile Include="Library\Framework\AI\StateMachineComponent.cpp" />
     <ClCompile Include="Library\Framework\AI\BehaviorTree\BehaviorTreeDefinition.cpp" />
     <ClCompile Include="Library\Framework\AI\BehaviorTree\BehaviorTreeRuntime.cpp" />
@@ -128,6 +130,8 @@
     <ClCompile Include="Library\Framework\Asset\AssetService.cpp" />
     <ClCompile Include="Library\Framework\Asset\AssetSubsystem.cpp" />
     <ClCompile Include="Library\Framework\Asset\EditorAssetInfo.cpp" />
+    <ClCompile Include="Library\Framework\Asset\Data\BehaviorTreeAsset.cpp" />
+    <ClCompile Include="Library\Framework\Asset\Data\BehaviorTreeLoader.cpp" />
     <ClCompile Include="Library\Framework\Asset\Data\BlackboardAsset.cpp" />
     <ClCompile Include="Library\Framework\Asset\Data\BlackboardLoader.cpp" />
     <ClCompile Include="Library\Framework\Asset\Data\EffectAsset.cpp" />
@@ -668,9 +672,11 @@
     <ClInclude Include="Library\DebugUI\World\WorldEditorModelMaterialPanel.h" />
     <ClInclude Include="Library\DebugUI\World\WorldEditorModelPreview.h" />
     <ClInclude Include="Library\DebugUI\World\WorldEditorModelPreviewKey.h" />
+    <ClInclude Include="Library\Framework\AI\AIBlackboardSetup.h" />
     <ClInclude Include="Library\Framework\AI\AIContext.h" />
     <ClInclude Include="Library\Framework\AI\AIIssue.h" />
     <ClInclude Include="Library\Framework\AI\AILog.h" />
+    <ClInclude Include="Library\Framework\AI\BehaviorTreeComponent.h" />
     <ClInclude Include="Library\Framework\AI\StateMachineComponent.h" />
     <ClInclude Include="Library\Framework\AI\BehaviorTree\BehaviorTreeDefinition.h" />
     <ClInclude Include="Library\Framework\AI\BehaviorTree\BehaviorTreeRuntime.h" />
@@ -694,6 +700,8 @@
     <ClInclude Include="Library\Framework\Asset\AssetBundle.h" />
     <ClInclude Include="Library\Framework\Asset\AssetSubsystem.h" />
     <ClInclude Include="Library\Framework\Asset\EditorAssetInfo.h" />
+    <ClInclude Include="Library\Framework\Asset\Data\BehaviorTreeAsset.h" />
+    <ClInclude Include="Library\Framework\Asset\Data\BehaviorTreeLoader.h" />
     <ClInclude Include="Library\Framework\Asset\Data\BlackboardAsset.h" />
     <ClInclude Include="Library\Framework\Asset\Data\BlackboardLoader.h" />
     <ClInclude Include="Library\Framework\Asset\Data\EffectAsset.h" />

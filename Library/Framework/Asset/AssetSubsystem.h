@@ -22,6 +22,8 @@
 #include "Library/Framework/Asset/Data/SpriteSheet.h"
 #include "Library/Framework/Asset/Data/SpriteSheetLoader.h"
 #include "Library/Framework/Asset/AssetBundle.h"
+#include "Library/Framework/Asset/Data/BehaviorTreeAsset.h"
+#include "Library/Framework/Asset/Data/BehaviorTreeLoader.h"
 #include "Library/Framework/Asset/Data/BlackboardAsset.h"
 #include "Library/Framework/Asset/Data/BlackboardLoader.h"
 #include "Library/Framework/Asset/Data/EffectAsset.h"
@@ -214,6 +216,14 @@ public:
 	bool SaveStateMachine( const FString& Path, const FStateMachineDefinition& Definition );
 
 	//-------------------------------------------------------------------------
+	// AI のビヘイビアツリー（.gxbt。書式は BehaviorTreeDefinition.h の先頭）
+	//-------------------------------------------------------------------------
+	// 定義ファイル（JSON）から。部品の名前・ブラックボードのキーの検証は、CBehaviorTree::Create のときに行う。読めない・根が無いときは nullptr
+	TSharedPtr<CBehaviorTreeAsset> LoadBehaviorTree( const FString& Path );
+	// 定義を JSON ファイルに保存する（相対パスはルートフォルダの下。フォルダは作る）。そのパスのキャッシュは捨てるので、次の Load は読み直す
+	bool SaveBehaviorTree( const FString& Path, const FBehaviorTreeDefinition& Definition );
+
+	//-------------------------------------------------------------------------
 	// 取り込みと .mv1 への出力（FBX / OBJ / .x / .pmx ... -> .mv1）
 	//-------------------------------------------------------------------------
 	// 元のファイルを .mv1 にして保存する（既定は同じフォルダ・同じ名前）。出力が新しければ何もしない（Options.bForce で作り直す）。
@@ -290,6 +300,7 @@ private:
 	CEffectLoader EffectLoader { LoadContext };
 	CBlackboardLoader BlackboardLoader { LoadContext };
 	CStateMachineLoader StateMachineLoader { LoadContext };
+	CBehaviorTreeLoader BehaviorTreeLoader { LoadContext };
 	CModelImporter ModelImporter { LoadContext };
 	CModelLoader ModelLoader { LoadContext, ModelImporter };
 	CModelAnimationLoader ModelAnimationLoader { LoadContext, ModelLoader };

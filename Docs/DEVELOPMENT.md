@@ -311,6 +311,7 @@ if ( Animator.ConsumeRootMotion( ReferenceToActorBasis, RootTranslation, RootRot
 |ワールド|`.gxworld`|
 |AIのブラックボード|`.gxblackboard`|
 |AIのステートマシン|`.gxstate`|
+|AIのビヘイビアツリー|`.gxbt`|
 
 古い名前（`.sheet.json` / `.effect.json` / `.modelanim.json` / `.world`）の資産は、一覧にも出ず、読み込まれません。手元の資産は、`Tools\MigrateAssetExtensions.ps1 -Root <資産のフォルダ>`で移せます。ファイルの名前を替え、ワールドや別の資産の中の古い名前の参照も、まとめて書き換えます（中身の形式、文字コード、改行は変わりません）。`-DryRun`を付けると、何が起きるかだけを表示して、何も変えません。同じ名前の新しいファイルがすでにあるときは、そのファイルを触らずに知らせます。
 
@@ -332,7 +333,25 @@ if ( Animator.ConsumeRootMotion( ReferenceToActorBasis, RootTranslation, RootRot
 
 1回の`Tick`の動きは、(1)経過時間を進める、(2)遷移を探す（最上位のAny State遷移→今のステートの遷移を葉から親へ。同じ一覧の中では`Priority`の大きい順、同じなら書いた順）、(3)あれば離れるステートの`OnExit`（葉から）→入るステートの`OnEnter`（親から）、(4)いるステートの`OnTick`とアニメーションの出来事への反応、です。同じ`Tick`で続けて遷移できるのは8回までで、同じ遷移は1回の`Tick`で2度起きません（上限に当たると警告して残りは次の`Tick`へ）。Any State遷移は、どのステートからでも（終点の`Dead`などからも）起きるので、終わりのステートが入れない条件（`bDead == false`など）を付けます。
 
-壊れた定義でもゲームは落ちません。未登録の部品・無いブラックボードのキー・型に合わない比較・無い遷移先は、問題の一覧（`GetIssues()`とログ）に出て、その部分だけが無効（条件は常に偽）になります。ステートが1つも無い・入口が無い・マシンの子が無いときは、動きません。ビヘイビアツリー・エディタ・デバッガは、これから足します。
+壊れた定義でもゲームは落ちません。未登録の部品・無いブラックボードのキー・型に合わない比較・無い遷移先は、問題の一覧（`GetIssues()`とログ）に出て、その部分だけが無効（条件は常に偽）になります。ステートが1つも無い・入口が無い・マシンの子が無いときは、動きません。### ビヘイビアツリー
+
+判断を木で定義します（`.gxbt`、`FBehaviorTreeDefinition`。書式は`BehaviorTreeDefinition.h`の先頭）。ステートマシンと同じブラックボード・同じレジストリを使います。
+
+|やりたいこと|使うもの|
+|---|---|
+|オブジェクトで動かす|`CBehaviorTreeComponent`を付けます（`AddComponent<CBehaviorTreeComponent>( "AI/Enemy.gxbt" )`）。所有者の更新の前（`PreUpdate`）に動き、最初の`Tick`で読み込んで始まります。外す・壊れるときは、動いているノードを中断します（`Task`の`OnAbort`）|
+|行動（葉）をC++で書く|`FAITask`を継承し、`OnEnter`・`OnTick`（`EBTStatus::Success` / `Failure` / `Running`を返す）・`OnAbort`を書いて、`NAI::RegisterTask<T>( "名前", FParamSchema()... )`で登録します。終わった（`Success` / `Failure`を返した）ときは`OnAbort`は呼ばれないので、後始末は`OnTick`の中で済ませます|
+|一定間隔で動く処理（センサー）|`FAIService`（`OnActivate` `Tick` `OnDeactivate`）を継承し、`NAI::RegisterService<T>`で登録します。ノードの`"Services": [ { "Do": "名前", "Interval": 0.1 } ]`に付けると、そのノードが動いている間、`Interval`秒ごとに動きます（最初の1回は動き始めてすぐ）|
+|標準のTask|`Wait`（`Seconds`）・`SetBlackboard`（`Key` `Value`。Valueはキーの型に合わせて読み、Boolはtrue/false、Enumは選択肢の名前）・`Log`・`Succeed`・`Fail`。アプリのレジストリには最初から入っています|
+|ノードの種類|`Selector`（子を順に。成功したら成功）・`Sequence`（子を順に。失敗したら失敗）・`Parallel`（`"Mode"`: `AllSuccess` `AnySuccess` `Primary`）・葉（`"Do"`）。子の順が優先順位です|
+|デコレーター（`"Decorators"`）|`BlackboardCondition`（`Key` `Op` `Value`）・`Condition`（登録した`FAICondition`）・`Cooldown`・`Inverter`・`Succeeder`・`Failer`・`Repeat`（`Count` `UntilSuccess`）・`TimeLimit`。条件の2つは`"Not": true`で反転できます|
+|条件が変わったときの中断（`"Abort"`）|`Self`（実行中に条件が偽になったら、配下を中断して失敗）・`LowerPriority`（`Selector`の子が持つ。条件が偽から真に変わり、入れる状態なら、後ろの兄弟の実行を中断して、その子から実行）・`Both`。ブラックボードのキーはリビジョンで変化を見るので、変わっていないキーの条件は評価し直しません（登録した`Condition`は毎`Tick`評価し直します）|
+|ステートマシンと同じ値を見る|同じオブジェクトに両方を付け、定義の`Blackboard`が同じパスなら、あとから読み込んだほうが先のブラックボードを共有します。Trigger（1フレームだけ真になるキー）を戻すのも、あとから読み込んだほうだけです（コンポーネントは付けた順に`Tick`される前提。`SetShareBlackboard( false )`で共有をやめ、`SetClearsTriggers`で手動に決められます）|
+|実行中の状態を見る|コンソールの`ai.dump`（動いているノード・根の結果・ブラックボードの値）。コードからは`Component->Describe()`と、`CBehaviorTree`の`GetActiveNodes`・`GetNodeResult`・`WasNodeAborted`・`GetDecoratorResult`|
+
+実行は、毎フレーム根から評価しますが、`Running`のノードの経路を覚えていて、`Selector`と`Sequence`は実行中の子から続けます。根が終わると、次の`Tick`で最初からやり直します。`Repeat`は終わったノードを入り直しますが、1`Tick`に1回までで、`Running`を返して続きます。1回の`Tick`で動かすノードの数には上限（1024）があり、超えると警告して残りを次の`Tick`に回します。壊れた定義でも落ちず、未登録の`Task`は常に失敗、無いキーの条件は常に偽になります（問題は`GetIssues()`とログに出ます）。`LowerPriority`は`Selector`の直接の子だけで効きます。
+
+エディタとデバッガ画面は、これから足します。
 
 ## ムービー
 

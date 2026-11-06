@@ -3,7 +3,9 @@
 
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Thread/GameThread.h"
+#include "Library/Framework/AI/AIBlackboardSetup.h"
 #include "Library/Framework/AI/AILog.h"
+#include "Library/Framework/AI/BehaviorTreeComponent.h"
 #include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Object/GameObject.h"
@@ -39,25 +41,34 @@ bool CStateMachineComponent::Load( CAssetSubsystem& Assets )
 		return false;
 	}
 
-	// ブラックボード: 外から渡されていればそれ、無ければ定義の Blackboard のパスから読み込む（無ければ空）
+	// ブラックボード: 外から渡されていればそれ、同じパスを持つ相手（ビヘイビアツリー）がいればそれ、無ければ定義のパスから作る
+	BlackboardPath = Asset->GetDefinition().Blackboard;
 	if ( !Blackboard.IsValid() )
 	{
-		TSharedPtr<const FBlackboardDefinition> BlackboardDefinition;
-		if ( !Asset->GetDefinition().Blackboard.IsEmpty() )
-		{
-			if ( const TSharedPtr<CBlackboardAsset> BlackboardAsset = Assets.LoadBlackboard( Asset->GetDefinition().Blackboard ) )
-			{
-				BlackboardDefinition = BlackboardAsset->GetDefinitionShared();
-			}
-			else
-			{
-				LOG( LogAI, Warning, "StateMachine '%s': the blackboard '%s' could not be loaded. An empty blackboard is used.", *Path, *Asset->GetDefinition().Blackboard );
-			}
-		}
-		Blackboard = MakeShared<CBlackboard>( BlackboardDefinition );
+		AdoptPeerBlackboard();
+	}
+	if ( !Blackboard.IsValid() )
+	{
+		Blackboard = NAI::CreateBlackboard( Assets, BlackboardPath, Path );
 	}
 	Issues = Asset->GetLoadIssues();
 	return BuildMachine( Asset->GetDefinitionShared() );
+}
+
+void CStateMachineComponent::AdoptPeerBlackboard()
+{
+	if ( !bShareBlackboard || BlackboardPath.IsEmpty() || GetOwner() == nullptr )
+	{
+		return;
+	}
+	CBehaviorTreeComponent* Peer = GetOwner()->GetComponent<CBehaviorTreeComponent>();
+	if ( Peer != nullptr && Peer->GetBlackboard().IsValid() && Peer->GetBlackboardPath() == BlackboardPath )
+	{
+		Blackboard = Peer->GetBlackboard();
+		// あとから読み込んだほうが、Trigger を戻す（先に読み込んだほうは、戻さない）
+		Peer->SetClearsTriggers( false );
+		bClearsTriggers = true;
+	}
 }
 
 bool CStateMachineComponent::SetDefinition( const TSharedPtr<const FStateMachineDefinition>& Definition, const TSharedPtr<const FBlackboardDefinition>& BlackboardDefinition )
@@ -161,7 +172,10 @@ void CStateMachineComponent::Tick( float32 DeltaTime )
 	Time += static_cast<float64>( DeltaTime );
 	FAIContext Context = MakeContext( DeltaTime );
 	Machine->Tick( Context, DeltaTime );
-	Blackboard->ClearTriggers();
+	if ( bClearsTriggers )
+	{
+		Blackboard->ClearTriggers();
+	}
 }
 
 FString CStateMachineComponent::Describe() const
@@ -178,40 +192,7 @@ FString CStateMachineComponent::Describe() const
 	}
 	if ( Blackboard.IsValid() )
 	{
-		Text += "\n  blackboard:";
-		for ( int32 Index = 0; Index < Blackboard->GetNumKeys(); ++Index )
-		{
-			const FBlackboardKey Key( Index );
-			FString Value;
-			switch ( Blackboard->GetKeyType( Key ) )
-			{
-			case EBlackboardKeyType::Bool:
-				Value = Blackboard->GetBool( Key ) ? "true" : "false";
-				break;
-			case EBlackboardKeyType::Int:
-				Value = FString::Printf( "%d", Blackboard->GetInt( Key ) );
-				break;
-			case EBlackboardKeyType::Float:
-				Value = FString::Printf( "%g", static_cast<float64>( Blackboard->GetFloat( Key ) ) );
-				break;
-			case EBlackboardKeyType::Vector3:
-			{
-				const FVector3 Vector = Blackboard->GetVector( Key );
-				Value = FString::Printf( "(%g, %g, %g)", static_cast<float64>( Vector.x ), static_cast<float64>( Vector.y ), static_cast<float64>( Vector.z ) );
-				break;
-			}
-			case EBlackboardKeyType::Name:
-				Value = "\"" + Blackboard->GetName( Key ) + "\"";
-				break;
-			case EBlackboardKeyType::Object:
-				Value = FString::Printf( "#%llu", static_cast<unsigned long long>( Blackboard->GetObjectId( Key ) ) );
-				break;
-			case EBlackboardKeyType::Enum:
-				Value = Blackboard->GetEnumName( Key );
-				break;
-			}
-			Text += FString::Printf( "\n    %s = %s", *Blackboard->GetKeyName( Key ), *Value );
-		}
+		Text += "\n  blackboard:" + NAI::DescribeBlackboard( *Blackboard, "\n    " );
 	}
 	TArray<FStateHistoryEntry> History;
 	Machine->GetHistory( History );

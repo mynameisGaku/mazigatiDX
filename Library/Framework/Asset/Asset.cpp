@@ -15,6 +15,7 @@ const char* ToString( EAssetType Type )
 	case EAssetType::Effect: return "Effect";
 	case EAssetType::Blackboard: return "Blackboard";
 	case EAssetType::StateMachine: return "StateMachine";
+	case EAssetType::BehaviorTree: return "BehaviorTree";
 	}
 	return "?";
 }

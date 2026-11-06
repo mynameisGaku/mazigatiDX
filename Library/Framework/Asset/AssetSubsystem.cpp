@@ -51,6 +51,7 @@ void CAssetSubsystem::Deinitialize()
 	EffectLoader.Clear();
 	BlackboardLoader.Clear();
 	StateMachineLoader.Clear();
+	BehaviorTreeLoader.Clear();
 	SoundLoader.Clear();
 	FontLoader.Clear();
 
@@ -163,9 +164,9 @@ void CAssetSubsystem::RecordCounters() const
 	}
 
 	static const char* const CountNames[NumAssetTypes] = { "Asset.Count.Texture", "Asset.Count.SpriteSheet", "Asset.Count.Model", "Asset.Count.Sound", "Asset.Count.Font",
-														   "Asset.Count.ModelAnimation", "Asset.Count.World", "Asset.Count.Effect", "Asset.Count.Blackboard", "Asset.Count.StateMachine" };
+														   "Asset.Count.ModelAnimation", "Asset.Count.World", "Asset.Count.Effect", "Asset.Count.Blackboard", "Asset.Count.StateMachine", "Asset.Count.BehaviorTree" };
 	static const char* const MemoryNames[NumAssetTypes] = { "Asset.Memory.Texture", "Asset.Memory.SpriteSheet", "Asset.Memory.Model", "Asset.Memory.Sound", "Asset.Memory.Font",
-															"Asset.Memory.ModelAnimation", "Asset.Memory.World", "Asset.Memory.Effect", "Asset.Memory.Blackboard", "Asset.Memory.StateMachine" };
+															"Asset.Memory.ModelAnimation", "Asset.Memory.World", "Asset.Memory.Effect", "Asset.Memory.Blackboard", "Asset.Memory.StateMachine", "Asset.Memory.BehaviorTree" };
 	for ( int32 i = 0; i < NumAssetTypes; ++i )
 	{
 		Recorder->RecordCounter( Recorder->InternLiteral( CountNames[i] ), Stats.Types[i].Count, EProfileCounterUnit::Count );
@@ -226,6 +227,7 @@ void CAssetSubsystem::ReleaseUnused()
 	EffectLoader.Prune();
 	BlackboardLoader.Prune();
 	StateMachineLoader.Prune();
+	BehaviorTreeLoader.Prune();
 	SoundLoader.Prune();
 	FontLoader.Prune();
 }
@@ -376,6 +378,7 @@ TArray<FAssetInfo> CAssetSubsystem::GetLoadedAssets() const
 	EffectLoader.CollectInfos( Infos );
 	BlackboardLoader.CollectInfos( Infos );
 	StateMachineLoader.CollectInfos( Infos );
+	BehaviorTreeLoader.CollectInfos( Infos );
 	SoundLoader.CollectInfos( Infos );
 	FontLoader.CollectInfos( Infos );
 	Infos.Sort( []( const FAssetInfo& A, const FAssetInfo& B ) { return A.Type != B.Type ? A.Type < B.Type : A.Path < B.Path; } );
@@ -457,6 +460,16 @@ TSharedPtr<CStateMachineAsset> CAssetSubsystem::LoadStateMachine( const FString&
 bool CAssetSubsystem::SaveStateMachine( const FString& Path, const FStateMachineDefinition& Definition )
 {
 	return StateMachineLoader.Save( Path, Definition );
+}
+
+TSharedPtr<CBehaviorTreeAsset> CAssetSubsystem::LoadBehaviorTree( const FString& Path )
+{
+	return BehaviorTreeLoader.Load( Path );
+}
+
+bool CAssetSubsystem::SaveBehaviorTree( const FString& Path, const FBehaviorTreeDefinition& Definition )
+{
+	return BehaviorTreeLoader.Save( Path, Definition );
 }
 
 FModelExportResult CAssetSubsystem::ExportModelAsMV1( const FString& SourcePath, const FModelExportOptions& Options )

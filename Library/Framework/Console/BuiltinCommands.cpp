@@ -10,6 +10,7 @@
 #include "Library/Core/Log/LogVerbosity.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
+#include "Library/Framework/AI/BehaviorTreeComponent.h"
 #include "Library/Framework/AI/StateMachineComponent.h"
 #include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Audio/AudioSubsystem.h"
@@ -1240,7 +1241,7 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 	//-------------------------------------------------------------------------
 	// AI
 	//-------------------------------------------------------------------------
-	Add( "ai.dump", "Show the state, the blackboard and the recent transitions of the state machines in the current scene",
+	Add( "ai.dump", "Show the state machines and behavior trees in the current scene (state, active nodes, blackboard, recent transitions)",
 		 []( FConsoleContext& Context, TOptional<int64> ObjectId )
 		 {
 			 CScene* Scene = FindCurrentScene();
@@ -1253,17 +1254,26 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 			 for ( const TSharedPtr<CGameObject>& Object : Scene->GetObjects() )
 			 {
 				 CStateMachineComponent* Machine = Object.IsValid() ? Object->GetComponent<CStateMachineComponent>() : nullptr;
-				 if ( Machine == nullptr || ( ObjectId.IsSet() && static_cast<int64>( Object->GetId() ) != ObjectId.GetValue() ) )
+				 CBehaviorTreeComponent* Brain = Object.IsValid() ? Object->GetComponent<CBehaviorTreeComponent>() : nullptr;
+				 if ( ( Machine == nullptr && Brain == nullptr ) || ( ObjectId.IsSet() && static_cast<int64>( Object->GetId() ) != ObjectId.GetValue() ) )
 				 {
 					 continue;
 				 }
-				 Context.Print( FString::Printf( "#%llu %s: %s", static_cast<unsigned long long>( Object->GetId() ), *Object->GetDebugName(), *Machine->Describe() ) );
-				 ++Count;
+				 if ( Machine != nullptr )
+				 {
+					 Context.Print( FString::Printf( "#%llu %s: %s", static_cast<unsigned long long>( Object->GetId() ), *Object->GetDebugName(), *Machine->Describe() ) );
+					 ++Count;
+				 }
+				 if ( Brain != nullptr )
+				 {
+					 Context.Print( FString::Printf( "#%llu %s: %s", static_cast<unsigned long long>( Object->GetId() ), *Object->GetDebugName(), *Brain->Describe() ) );
+					 ++Count;
+				 }
 			 }
-			 Context.Print( FString::Printf( "%d state machine(s)", Count ) );
+			 Context.Print( FString::Printf( "%d AI component(s)", Count ) );
 			 return true;
 		 },
-		 { { "object", "Object id. Without it, shows every object that has a state machine." } }, CategoryAI );
+		 { { "object", "Object id. Without it, shows every object that has a state machine or a behavior tree." } }, CategoryAI );
 
 	Add( "ai.event", "Send an event to the state machine of an object",
 		 []( FConsoleContext& Context, int64 ObjectId, const FString& Event )

@@ -22,7 +22,10 @@ class CAssetSubsystem;
 //   Machine->SendEvent( "Damaged" );
 //
 //   - 最初の Tick で読み込んで始める（AutoStart）。読み込みの問題は、ログと GetIssues に出る。ステートが 1 つも無いなど致命的なら、動かない
-//   - ブラックボードは SetBlackboard で外から渡せる（ビヘイビアツリーのコンポーネントと共有する、など）。渡さなければ、自分で作る
+//   - ブラックボードは SetBlackboard で外から渡せる。同じオブジェクトの CBehaviorTreeComponent が、同じパスのブラックボードを
+//     すでに持っているときは、それを共有する（ビヘイビアツリーと見る値が同じになる）。渡さず共有もしなければ、自分で作る
+//   - 共有したとき、Trigger（1 フレームだけ真になるキー）を戻すのは、あとから読み込んだほうだけ（コンポーネントは付けた順に Tick される前提）。
+//     手動で決めるなら SetClearsTriggers
 //   - 部品（State の処理・Condition）は、ゲームが NAI::RegisterStateAction などで登録しておく（SetRegistry で、別のレジストリも指せる）
 //   - フレームの終わりに、ブラックボードの Trigger（1 フレームだけ真になるキー）を戻す
 //   - 外す・所有者が壊れるときは、ステートマシンを止める（今いるステートの OnExit が呼ばれる）
@@ -49,6 +52,10 @@ public:
 	void SetAnimationControl( IAIAnimationControl* InAnimation ) { Animation = InAnimation; }
 	// ブラックボードを外から渡す（定義は、そのブラックボードのものを使う）。Load の前に呼ぶ
 	void SetBlackboard( const TSharedPtr<CBlackboard>& InBlackboard ) { Blackboard = InBlackboard; }
+	// false にすると、同じオブジェクトのビヘイビアツリーとブラックボードを共有しない
+	void SetShareBlackboard( bool bInShare ) { bShareBlackboard = bInShare; }
+	// フレームの終わりに、ブラックボードの Trigger を戻すか（既定は true）
+	void SetClearsTriggers( bool bInClears ) { bClearsTriggers = bInClears; }
 	// true（既定）なら、最初の Tick で読み込んで始める
 	void SetAutoStart( bool bInAutoStart ) { bAutoStart = bInAutoStart; }
 	// true の間は Tick しない（ステートも時間も進まない）
@@ -76,6 +83,9 @@ public:
 	CStateMachine* GetStateMachine() const { return Machine.Get(); }
 	// 読み込み・コンパイルで出た問題
 	const TArray<FAIIssue>& GetIssues() const { return Issues; }
+	// 読み込んだ定義の Blackboard のパス（ビヘイビアツリーとの共有の判定に使う）
+	const FString& GetBlackboardPath() const { return BlackboardPath; }
+	bool ClearsTriggers() const { return bClearsTriggers; }
 	// 今の状態の説明（複数行。コンソールの ai.dump 用）: ステートの経路・経過時間・ブラックボードの値・遷移の履歴
 	FString Describe() const;
 
@@ -89,8 +99,10 @@ public:
 private:
 	FAIContext MakeContext( float32 DeltaTime );
 	bool BuildMachine( const TSharedPtr<const FStateMachineDefinition>& Definition );
+	void AdoptPeerBlackboard();
 
 	FString Path;
+	FString BlackboardPath;
 	const CAIRegistry* Registry = nullptr;
 	IAIAnimationControl* Animation = nullptr;
 	TSharedPtr<CBlackboard> Blackboard;
@@ -100,4 +112,6 @@ private:
 	bool bAutoStart = true;
 	bool bPaused = false;
 	bool bTriedLoad = false;
+	bool bShareBlackboard = true;
+	bool bClearsTriggers = true;
 };
