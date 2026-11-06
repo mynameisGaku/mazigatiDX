@@ -7,6 +7,7 @@
 #include "Library/Framework/AI/AIHotReload.h"
 #include "Library/Framework/AI/BehaviorTree/BehaviorTreeRuntime.h"
 #include "Library/Framework/AI/Registry/AIRegistry.h"
+#include "Library/Framework/AI/Registry/AIPartsCatalog.h"
 #include "Library/Framework/AI/StateMachine/StateMachineRuntime.h"
 #include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Asset/Data/SpriteSheet.h"
@@ -341,6 +342,31 @@ namespace
 	}
 
 	//=========================================================================
+	// 部品のカタログ（ゲームが書き出した、部品の名前とスキーマ）
+	//=========================================================================
+	void LoadPartsCatalog( FState& S )
+	{
+		S.bPartsCatalogTried = true;
+		CAssetSubsystem* Assets = GetAssets();
+		if ( Assets == nullptr )
+		{
+			return;
+		}
+		TArray<FAIIssue> Issues;
+		const int32 Count = NAI::LoadPartsCatalog( *Assets, NAI::GetRegistry(), FString(), &Issues );
+		if ( Count < 0 )
+		{
+			// カタログが無い（ゲームの部品は「未登録」と出る）。ゲームの実行ファイルでは、本物の部品が登録されているので、気にしない
+			NAIEditor::SetStatus( S, FString::Printf( "No parts catalog (%s). Game-specific parts show as not registered; write it from the game with the console command 'ai.parts'.", NAI::DefaultPartsCatalogPath ) );
+		}
+		else
+		{
+			NAIEditor::SetStatus( S, FString::Printf( "Parts catalog: %d part(s) added from %s.", Count, NAI::DefaultPartsCatalogPath ) );
+		}
+		S.bIssuesValid = false;
+	}
+
+	//=========================================================================
 	// メニューバーと、ファイルのポップアップ
 	//=========================================================================
 	void DrawMenuBar( FState& S, bool* pOpen )
@@ -382,6 +408,10 @@ namespace
 			if ( ImGui::MenuItem( "Reload from disk", nullptr, false, !PathOf( S, Tab ).IsEmpty() ) )
 			{
 				RequestAction( S, FState::EPending::Open, PathOf( S, Tab ) );
+			}
+			if ( ImGui::MenuItem( "Reload parts catalog" ) )
+			{
+				LoadPartsCatalog( S );
 			}
 			ImGui::Separator();
 			if ( ImGui::MenuItem( "Close window" ) && pOpen != nullptr )
@@ -903,6 +933,10 @@ void NDebugUI::DrawAIEditor( FAIEditorState& S, bool* pOpen )
 		return;
 	}
 
+	if ( !S.bPartsCatalogTried )
+	{
+		LoadPartsCatalog( S );
+	}
 	NAIEditor::RescanFiles( S, false );
 	DrawMenuBar( S, pOpen );
 

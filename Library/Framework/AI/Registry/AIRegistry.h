@@ -79,6 +79,9 @@ public:
 	const TArray<FTaskEntry>& GetTasks() const { return Tasks; }
 	const TArray<FServiceEntry>& GetServices() const { return Services; }
 
+	// 別名（古い名前 -> 本名）の一覧（部品のカタログの書き出し用）
+	const TMap<FString, FString>& GetAliases() const { return Aliases; }
+
 	void Clear();
 
 private:

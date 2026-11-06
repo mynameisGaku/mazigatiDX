@@ -63,6 +63,9 @@ namespace NDebugUI
 	// デバッグウィンドウの中に置く、ツールを開くボタン
 	void DrawAssetToolsButtons( FAssetToolsState& State );
 
+	// 同じ切り替えを、メニューの項目として出す（エディタ専用の実行ファイルのメニューバー用。BeginMenu の中で呼ぶ）
+	void DrawAssetToolsMenuItems( FAssetToolsState& State );
+
 	// 起動引数: --ai-object=Guard（AI デバッガで最初に選ぶオブジェクトの名前の一部。開きもする）、--ai-file=AI/Guard.gxbt（AI エディタで開くファイル。開きもする）、--tool=assets|audio|sprite|model|world|effect|ai|aieditor（カンマ区切りで複数）、--sprite=Sprites/Hero.gxsprite、--modelanim=Models/Robot.gxmodelanim、--world=Levels/Stage1.gxworld、--effect=Effects/campfire.gxeffect。
 	// ワールドを開いたあとの確認用: --world-select=3,4 --world-mode=move|rotate|scale --world-colliders=off|all --world-camera=yaw,pitch,距離[,x,y,z]。
 	// 最初に 1 回呼ぶ（スクリーンショットでの確認や、すぐ編集を始めたいとき用）

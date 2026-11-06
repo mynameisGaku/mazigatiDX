@@ -11,6 +11,7 @@
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/AI/BehaviorTreeComponent.h"
+#include "Library/Framework/AI/Registry/AIPartsCatalog.h"
 #include "Library/Framework/AI/StateMachineComponent.h"
 #include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Audio/AudioSubsystem.h"
@@ -1274,6 +1275,26 @@ void NConsole::RegisterBuiltinCommands( FConsoleRegistry& Registry )
 			 return true;
 		 },
 		 { { "object", "Object id. Without it, shows every object that has a state machine or a behavior tree." } }, CategoryAI );
+
+	Add( "ai.parts", "Write the catalog of the registered AI parts (names, categories, parameter schemas) for the editor executable (Editor.exe)",
+		 []( FConsoleContext& Context, TOptional<FString> Path )
+		 {
+			 CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
+			 if ( Assets == nullptr )
+			 {
+				 Context.Error( "no asset subsystem" );
+				 return false;
+			 }
+			 const FString Relative = Path.IsSet() ? Path.GetValue() : FString( NAI::DefaultPartsCatalogPath );
+			 if ( !NAI::SavePartsCatalog( *Assets, Relative ) )
+			 {
+				 Context.Error( "could not write '" + Relative + "'" );
+				 return false;
+			 }
+			 Context.Print( "wrote the parts catalog: " + Relative + " (under the asset folder)" );
+			 return true;
+		 },
+		 { { "path", "Path under the asset folder. Default: AI/AIParts.gxparts." } }, CategoryAI );
 
 	Add( "ai.event", "Send an event to the state machine of an object",
 		 []( FConsoleContext& Context, int64 ObjectId, const FString& Event )

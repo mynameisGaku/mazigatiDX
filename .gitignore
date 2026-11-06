@@ -7,6 +7,7 @@
 /project/
 /mazigatiDX/
 /Samples/x64/
+/Editor/x64/
 **/__pycache__/
 *.pdb
 *.obj

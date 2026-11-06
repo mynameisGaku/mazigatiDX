@@ -129,6 +129,7 @@
     <ClCompile Include="Library\Framework\AI\Edit\BehaviorTreeEdit.cpp" />
     <ClCompile Include="Library\Framework\AI\Edit\BlackboardEdit.cpp" />
     <ClCompile Include="Library\Framework\AI\Edit\StateMachineEdit.cpp" />
+    <ClCompile Include="Library\Framework\AI\Registry\AIPartsCatalog.cpp" />
     <ClCompile Include="Library\Framework\AI\Registry\AIRegistry.cpp" />
     <ClCompile Include="Library\Framework\AI\Registry\ParamSchema.cpp" />
     <ClCompile Include="Library\Framework\AI\StateMachine\StateMachineDefinition.cpp" />
@@ -711,6 +712,7 @@
     <ClInclude Include="Library\Framework\AI\Edit\BlackboardEdit.h" />
     <ClInclude Include="Library\Framework\AI\Edit\StateMachineEdit.h" />
     <ClInclude Include="Library\Framework\AI\Registry\AIParts.h" />
+    <ClInclude Include="Library\Framework\AI\Registry\AIPartsCatalog.h" />
     <ClInclude Include="Library\Framework\AI\Registry\AIRegistry.h" />
     <ClInclude Include="Library\Framework\AI\Registry\ParamSchema.h" />
     <ClInclude Include="Library\Framework\AI\StateMachine\StateMachineDefinition.h" />

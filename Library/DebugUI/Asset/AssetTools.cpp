@@ -411,6 +411,30 @@ void NDebugUI::DrawAssetToolsButtons( FAssetToolsState& State )
 	}
 }
 
+void NDebugUI::DrawAssetToolsMenuItems( FAssetToolsState& State )
+{
+	ImGui::MenuItem( "Assets", nullptr, &State.bShowAssets );
+	ImGui::MenuItem( "Audio", nullptr, &State.bShowAudio );
+	ImGui::MenuItem( "Sprite sheet editor", nullptr, &State.bShowSpriteSheetEditor );
+	ImGui::MenuItem( "Model animation editor", nullptr, &State.bShowModelAnimationEditor );
+	ImGui::MenuItem( "World editor", nullptr, &State.bShowWorldEditor );
+	ImGui::MenuItem( "AI editor", nullptr, &State.bShowAIEditor );
+	ImGui::MenuItem( "AI debugger", nullptr, &State.bShowAIDebugger );
+	// 外側の表示切替から閉じるときも、未保存の確認を省略しない。
+	bool bShowEffect = State.bShowEffectEditor;
+	if ( ImGui::MenuItem( "Effect editor", nullptr, &bShowEffect ) )
+	{
+		if ( bShowEffect )
+		{
+			State.bShowEffectEditor = true;
+		}
+		else
+		{
+			NEffectEditorUI::RequestAction( State.EffectEditor, FEffectEditorState::EPending::Close, FString(), &State.bShowEffectEditor );
+		}
+	}
+}
+
 void NDebugUI::DrawAssetTools( FAssetToolsState& State )
 {
 	if ( !State.bCommandLineApplied )

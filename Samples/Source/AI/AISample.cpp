@@ -1,6 +1,10 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "AISample.h"
 
+#include "Library/Core/Log/Log.h"
+#include "Library/Framework/AI/Registry/AIPartsCatalog.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
+#include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Render/Draw/ImmediateDraw.h"
 #include "Library/Platform/System/CommandLine.h"
 #include "Source/AI/AIActor.h"
@@ -19,6 +23,15 @@ void CAISample::OnEnter()
 {
 	// ゲーム固有の部品（Halt / Move / MoveToTarget / SensePlayer など）を、名前で登録する
 	NAISample::RegisterParts();
+
+	// 確認用の起動引数 --export-ai-parts: 登録した部品のカタログを、アセットのルートの AI/AIParts.gxparts へ書き出す（エディタ専用の実行ファイル（Editor.exe）が、ゲームの部品を知るため）
+	if ( NCommandLine::HasFlag( "export-ai-parts" ) )
+	{
+		if ( CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>() )
+		{
+			LOG( LogTemp, Log, "AI parts catalog %s", NAI::SavePartsCatalog( *Assets ) ? "written" : "FAILED" );
+		}
+	}
 
 	// 確認用の起動引数 --hero-x=700: 主人公の最初の位置（見張りの近くから始めて、追う・殴るを見たいとき）
 	float32 HeroX = 260.0f;

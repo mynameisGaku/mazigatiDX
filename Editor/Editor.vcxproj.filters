@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Source\main.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Application\EditorApplication.cpp">
+      <Filter>Source\Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scene\EditorScene.cpp">
+      <Filter>Source\Scene</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Source\Application\EditorApplication.h">
+      <Filter>Source\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scene\EditorScene.h">
+      <Filter>Source\Scene</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source">
+      <UniqueIdentifier>{D1BD1BF3-E8B3-CC5B-D652-680E16935819}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Application">
+      <UniqueIdentifier>{3C309C29-8704-EF3C-6238-884C86DCE4EF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Scene">
+      <UniqueIdentifier>{F6E0D136-EFA2-E535-8AA8-669E645FEABC}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -634,13 +634,14 @@ Worldの`Components.Effect`には、任意の`Target`（追従先オブジェク
 
 ## ソリューションの構成
 
-`project.sln`は、三つのプロジェクトからなります。
+`project.sln`は、四つのプロジェクトからなります。
 
 |プロジェクト|種類|中身|
 |---|---|---|
 |`mazigatiDX`|静的ライブラリ|`Library`（フレームワーク本体）と`VendorModules`（第三者のライブラリ）|
 |`project`|実行ファイル|`Source`（このリポジトリのゲーム。検査を置いたときはその分も）|
 |`Samples`|実行ファイル|`Samples/Source`（機能別のサンプル集。下の「サンプル集」）|
+|`Editor`|実行ファイル|`Editor/Source`（エディタ専用の実行ファイル`Editor.exe`。下の「エディタ専用の実行ファイル」）|
 
 - フレームワークを使うプロジェクトは、`Build/mazigatiDX.props`を取り込み、`mazigatiDX`への参照を持ちます。propsが、インクルード検索先（`#include "Library/..."`）、C++17、文字列リテラルをUTF-8にする設定（`/execution-charset:utf-8`）、DxLibとSDL3のライブラリ検索先、`main`で始められる入口の設定、`SDL3.dll`のコピーを引き受けるので、ゲーム側の`.vcxproj`は短く済みます。
 - 入口は`main`です。`Source/main.cpp`が`NGameMain::RunGame<CGameApplication>()`を呼ぶだけで、リーク報告、ログ（コンソールとファイル）、ウィンドウの設定（`Config/ScreenConfig.json`）、終了時の後片付けは、`Library/Framework/Engine/GameMain.h`が担当します。
@@ -648,6 +649,21 @@ Worldの`Components.Effect`には、任意の`Target`（追従先オブジェク
 - 各`.vcxproj`の`<MazigatiSourceRoots>`に書いたフォルダーの下のファイルを、`GenerateProjectFiles.bat`が`ClCompile` / `ClInclude`と`.filters`へ書き出します。プロジェクトを足すときも、`<MazigatiSourceRoots>`を書けば再生成の対象になります。
 - 中間ファイルは、プロジェクトごとのフォルダー（`project/`、`mazigatiDX/`）に出ます。出力は`x64/Debug`と`x64/Release`です。
 - 静的ライブラリは、デバッグ情報を`.obj`の中に持ちます（`/Z7`）。`.pdb`を指す形（`/Zi`）だと、Releaseのリンクで`LNK4020`（型レコードが壊れている）が出るためです。実行ファイルのリンクが、全部を1つの`.pdb`にまとめます。
+
+## エディタ専用の実行ファイル（Editor.exe）
+
+ゲームの実行ファイルにエディタを含めないための、別のアプリです（`Editor/`。ロードマップのM6）。ゲームのシーンは持たず、メニューバーの「Tools」から、アセットの画面・オーディオ・スプライトシートエディタ・モデルのアニメーションエディタ・ワールドエディタ・エフェクトエディタ・AIエディタ・AIデバッガを開きます。
+
+|やりたいこと|操作|
+|---|---|
+|起動する|`x64/Debug/Editor.exe`（または`Release`）。作業フォルダーに`Config/ScreenConfig.json`（ウィンドウの設定）を置きます|
+|編集するゲームのアセットを指す|`--assets=フォルダー`（そのゲームのアセットのルートフォルダー。無ければ、作業フォルダーの`Assets`）|
+|最初に開くツールを指す|`--tool=assets,aieditor`（`assets` `audio` `sprite` `model` `world` `effect` `ai` `aieditor`。カンマ区切り）、`--ai-file=AI/Guard.gxbt`、`--world=...`など（`AssetTools.h`の起動引数。何も指定しなければ、アセットの画面を開きます）|
+|ゲーム固有のAIの部品を、エディタで使う|ゲームの部品（C++）は、エディタ専用の実行ファイルにはありません。ゲームが、部品の**カタログ**（`.gxparts`。名前・カテゴリ・説明・パラメータのスキーマ・別名）を書き出し、エディタがそれを読んで「名前とスキーマだけの部品」（何もしない）を登録します。これで、部品を一覧から選べ、パラメータの入力欄がスキーマから出て、「未登録」の警告も出ません（実行は、ゲームの実行ファイルが、本物の部品で行います）|
+|カタログを書き出す|ゲームのコンソール（F3）の`ai.parts`（アセットのルートの`AI/AIParts.gxparts`へ。パスも指せます）。Samplesは、`--sample=AI --export-ai-parts`で書き出せます。コードからは`NAI::SavePartsCatalog( Assets )`（`Library/Framework/AI/Registry/AIPartsCatalog.h`）|
+|カタログを読む|AIエディタが、起動時と「File > Reload parts catalog」で、`AI/AIParts.gxparts`を読みます（`NAI::LoadPartsCatalog`）。すでに登録されている部品（本物）は、上書きしません|
+
+エディタの画面（`Library/DebugUI`）は、これまでどおり`mazigatiDX`の中にあり、ゲームの実行ファイルでも使えます（ゲームの実行ファイルから外す作業は、公開準備（M9）で行います）。
 
 ## 新しいゲームを始める
 

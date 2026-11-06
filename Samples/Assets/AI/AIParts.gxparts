@@ -1,0 +1,208 @@
+{
+  "Aliases": [],
+  "Conditions": [],
+  "Services": [
+    {
+      "Category": "Sensor",
+      "Description": "主人公との距離を測る",
+      "Name": "SensePlayer",
+      "Params": [
+        {
+          "Default": 320.0,
+          "Max": 2000.0,
+          "Min": 0.0,
+          "Name": "SightRange",
+          "Type": "Float"
+        },
+        {
+          "Default": 70.0,
+          "Max": 400.0,
+          "Min": 0.0,
+          "Name": "AttackRange",
+          "Type": "Float"
+        }
+      ]
+    }
+  ],
+  "StateActions": [
+    {
+      "Category": "Movement",
+      "Description": "止まる",
+      "Name": "Halt",
+      "Params": []
+    },
+    {
+      "Category": "Movement",
+      "Description": "MoveAxis の向きに歩く",
+      "Name": "Move",
+      "Params": [
+        {
+          "Default": 180.0,
+          "Hint": "歩く速さ（ピクセル / 秒）",
+          "Max": 600.0,
+          "Min": 0.0,
+          "Name": "Speed",
+          "Type": "Float"
+        }
+      ]
+    },
+    {
+      "Category": "Combat",
+      "Description": "攻撃の出来事で、前の見張りを殴る",
+      "Name": "HeroStrike",
+      "Params": [
+        {
+          "Default": 90.0,
+          "Hint": "殴れる距離",
+          "Max": 400.0,
+          "Min": 0.0,
+          "Name": "Reach",
+          "Type": "Float"
+        }
+      ]
+    }
+  ],
+  "Tasks": [
+    {
+      "Category": "Flow",
+      "Description": "指定の秒数が過ぎるまで Running",
+      "Name": "Wait",
+      "Params": [
+        {
+          "Default": 1.0,
+          "Hint": "待つ秒数",
+          "Max": 3600.0,
+          "Min": 0.0,
+          "Name": "Seconds",
+          "Type": "Float"
+        }
+      ]
+    },
+    {
+      "Category": "Blackboard",
+      "Description": "ブラックボードのキーに値を書く",
+      "Name": "SetBlackboard",
+      "Params": [
+        {
+          "Default": "",
+          "Name": "Key",
+          "Required": true,
+          "Type": "BlackboardKey"
+        },
+        {
+          "Default": "",
+          "Hint": "キーの型に合わせた値（Bool は true / false、Enum は選択肢の名前）",
+          "Name": "Value",
+          "Required": true,
+          "Type": "Scalar"
+        }
+      ]
+    },
+    {
+      "Category": "Debug",
+      "Description": "ログに出す",
+      "Name": "Log",
+      "Params": [
+        {
+          "Default": "",
+          "Name": "Message",
+          "Type": "String"
+        }
+      ]
+    },
+    {
+      "Category": "Flow",
+      "Description": "すぐ Success",
+      "Name": "Succeed",
+      "Params": []
+    },
+    {
+      "Category": "Flow",
+      "Description": "すぐ Failure",
+      "Name": "Fail",
+      "Params": []
+    },
+    {
+      "Category": "Animation",
+      "Description": "クリップを再生する",
+      "Name": "PlayClip",
+      "Params": [
+        {
+          "Default": "",
+          "Name": "Clip",
+          "Required": true,
+          "Type": "Clip"
+        },
+        {
+          "Default": true,
+          "Name": "WaitUntilFinished",
+          "Type": "Bool"
+        }
+      ]
+    },
+    {
+      "Category": "Movement",
+      "Description": "巡回の次の地点へ行く",
+      "Name": "MoveToPatrolPoint",
+      "Params": [
+        {
+          "Default": 70.0,
+          "Max": 600.0,
+          "Min": 0.0,
+          "Name": "Speed",
+          "Type": "Float"
+        },
+        {
+          "Default": 160.0,
+          "Hint": "出発点の左右へ行く距離",
+          "Max": 600.0,
+          "Min": 0.0,
+          "Name": "Range",
+          "Type": "Float"
+        }
+      ]
+    },
+    {
+      "Category": "Movement",
+      "Description": "TargetPos へ近づく（終わらない）",
+      "Name": "MoveToTarget",
+      "Params": [
+        {
+          "Default": 140.0,
+          "Max": 600.0,
+          "Min": 0.0,
+          "Name": "Speed",
+          "Type": "Float"
+        },
+        {
+          "Default": 55.0,
+          "Max": 400.0,
+          "Min": 0.0,
+          "Name": "AcceptRange",
+          "Type": "Float"
+        }
+      ]
+    },
+    {
+      "Category": "Movement",
+      "Description": "TargetPos の向きを見る",
+      "Name": "FaceTarget",
+      "Params": []
+    },
+    {
+      "Category": "Combat",
+      "Description": "殴る",
+      "Name": "Strike",
+      "Params": [
+        {
+          "Default": 80.0,
+          "Max": 400.0,
+          "Min": 0.0,
+          "Name": "Reach",
+          "Type": "Float"
+        }
+      ]
+    }
+  ],
+  "Version": 1
+}

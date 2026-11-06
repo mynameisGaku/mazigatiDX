@@ -113,6 +113,9 @@ struct FAIEditorState
 	bool bIssuesValid = false;
 
 	//-------------------------------------------------------------------------
+	// 部品のカタログ（AI/AIParts.gxparts。ゲームが書き出したもの）を読んだか（起動時に 1 回。File > Reload parts catalog で、読み直す）
+	bool bPartsCatalogTried = false;
+
 	// ファイル操作の入力
 	//-------------------------------------------------------------------------
 	FString OpenSelection;

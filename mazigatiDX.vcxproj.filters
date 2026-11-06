@@ -193,6 +193,9 @@
     <ClCompile Include="Library\Framework\AI\Edit\StateMachineEdit.cpp">
       <Filter>Library\Framework\AI\Edit</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\AI\Registry\AIPartsCatalog.cpp">
+      <Filter>Library\Framework\AI\Registry</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\AI\Registry\AIRegistry.cpp">
       <Filter>Library\Framework\AI\Registry</Filter>
     </ClCompile>
@@ -1933,6 +1936,9 @@
       <Filter>Library\Framework\AI\Edit</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\AI\Registry\AIParts.h">
+      <Filter>Library\Framework\AI\Registry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\AI\Registry\AIPartsCatalog.h">
       <Filter>Library\Framework\AI\Registry</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\AI\Registry\AIRegistry.h">

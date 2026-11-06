@@ -1,0 +1,18 @@
+﻿{
+  "Viewport": {
+    "Title": "mazigatiDX Editor",
+
+    "Offset": {
+      "X": 0,
+      "Y": 0
+    },
+
+    "Size": {
+      "Width": 1600,
+      "Height": 900
+    },
+
+    "ExtendRate": 1.0,
+    "WindowMode": "Windowed"
+  }
+}
