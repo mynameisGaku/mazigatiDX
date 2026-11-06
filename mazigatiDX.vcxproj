@@ -104,6 +104,12 @@
     <ClCompile Include="Library\DebugUI\World\WorldEditorModels.cpp" />
     <ClCompile Include="Library\DebugUI\World\WorldEditorPanels.cpp" />
     <ClCompile Include="Library\DebugUI\World\WorldEditorViewport.cpp" />
+    <ClCompile Include="Library\Framework\AI\AIIssue.cpp" />
+    <ClCompile Include="Library\Framework\AI\Blackboard\Blackboard.cpp" />
+    <ClCompile Include="Library\Framework\AI\Blackboard\BlackboardDefinition.cpp" />
+    <ClCompile Include="Library\Framework\AI\Blackboard\BlackboardValue.cpp" />
+    <ClCompile Include="Library\Framework\AI\Registry\AIRegistry.cpp" />
+    <ClCompile Include="Library\Framework\AI\Registry\ParamSchema.cpp" />
     <ClCompile Include="Library\Framework\Animation\AnimationBlend.cpp" />
     <ClCompile Include="Library\Framework\Animation\AnimationTimeline.cpp" />
     <ClCompile Include="Library\Framework\Animation\ModelAnimationSampler.cpp" />
@@ -559,6 +565,7 @@
     <ClInclude Include="Library\Core\Collection\Sort.inl" />
     <ClInclude Include="Library\Core\Collection\String.h" />
     <ClInclude Include="Library\Core\File\File.h" />
+    <ClInclude Include="Library\Core\Interfaces\AI\AIAnimationControl.h" />
     <ClInclude Include="Library\Core\Interfaces\Asset\AssetBackend.h" />
     <ClInclude Include="Library\Core\Interfaces\Asset\AssetBackendTypes.h" />
     <ClInclude Include="Library\Core\Interfaces\Asset\FontBackend.h" />
@@ -650,6 +657,15 @@
     <ClInclude Include="Library\DebugUI\World\WorldEditorModelMaterialPanel.h" />
     <ClInclude Include="Library\DebugUI\World\WorldEditorModelPreview.h" />
     <ClInclude Include="Library\DebugUI\World\WorldEditorModelPreviewKey.h" />
+    <ClInclude Include="Library\Framework\AI\AIContext.h" />
+    <ClInclude Include="Library\Framework\AI\AIIssue.h" />
+    <ClInclude Include="Library\Framework\AI\AILog.h" />
+    <ClInclude Include="Library\Framework\AI\Blackboard\Blackboard.h" />
+    <ClInclude Include="Library\Framework\AI\Blackboard\BlackboardDefinition.h" />
+    <ClInclude Include="Library\Framework\AI\Blackboard\BlackboardValue.h" />
+    <ClInclude Include="Library\Framework\AI\Registry\AIParts.h" />
+    <ClInclude Include="Library\Framework\AI\Registry\AIRegistry.h" />
+    <ClInclude Include="Library\Framework\AI\Registry\ParamSchema.h" />
     <ClInclude Include="Library\Framework\Animation\AnimationBlend.h" />
     <ClInclude Include="Library\Framework\Animation\AnimationTimeline.h" />
     <ClInclude Include="Library\Framework\Animation\ModelAnimationSampler.h" />

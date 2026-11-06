@@ -118,6 +118,24 @@
     <ClCompile Include="Library\DebugUI\World\WorldEditorViewport.cpp">
       <Filter>Library\DebugUI\World</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\AI\AIIssue.cpp">
+      <Filter>Library\Framework\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\AI\Blackboard\Blackboard.cpp">
+      <Filter>Library\Framework\AI\Blackboard</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\AI\Blackboard\BlackboardDefinition.cpp">
+      <Filter>Library\Framework\AI\Blackboard</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\AI\Blackboard\BlackboardValue.cpp">
+      <Filter>Library\Framework\AI\Blackboard</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\AI\Registry\AIRegistry.cpp">
+      <Filter>Library\Framework\AI\Registry</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\AI\Registry\ParamSchema.cpp">
+      <Filter>Library\Framework\AI\Registry</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Animation\AnimationBlend.cpp">
       <Filter>Library\Framework\Animation</Filter>
     </ClCompile>
@@ -1479,6 +1497,9 @@
     <ClInclude Include="Library\Core\File\File.h">
       <Filter>Library\Core\File</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\AI\AIAnimationControl.h">
+      <Filter>Library\Core\Interfaces\AI</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Asset\AssetBackend.h">
       <Filter>Library\Core\Interfaces\Asset</Filter>
     </ClInclude>
@@ -1751,6 +1772,33 @@
     </ClInclude>
     <ClInclude Include="Library\DebugUI\World\WorldEditorModelPreviewKey.h">
       <Filter>Library\DebugUI\World</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\AI\AIContext.h">
+      <Filter>Library\Framework\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\AI\AIIssue.h">
+      <Filter>Library\Framework\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\AI\AILog.h">
+      <Filter>Library\Framework\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\AI\Blackboard\Blackboard.h">
+      <Filter>Library\Framework\AI\Blackboard</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\AI\Blackboard\BlackboardDefinition.h">
+      <Filter>Library\Framework\AI\Blackboard</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\AI\Blackboard\BlackboardValue.h">
+      <Filter>Library\Framework\AI\Blackboard</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\AI\Registry\AIParts.h">
+      <Filter>Library\Framework\AI\Registry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\AI\Registry\AIRegistry.h">
+      <Filter>Library\Framework\AI\Registry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\AI\Registry\ParamSchema.h">
+      <Filter>Library\Framework\AI\Registry</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Animation\AnimationBlend.h">
       <Filter>Library\Framework\Animation</Filter>
@@ -4208,6 +4256,9 @@
     <Filter Include="Library\Core\Interfaces">
       <UniqueIdentifier>{82EDBB72-7A10-C684-5397-F1C42D109881}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Library\Core\Interfaces\AI">
+      <UniqueIdentifier>{67CDE855-F253-ECEF-9BA3-033695EEC8EA}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Library\Core\Interfaces\Asset">
       <UniqueIdentifier>{083F275F-9E76-D37B-AE7A-6F88FB392A0A}</UniqueIdentifier>
     </Filter>
@@ -4285,6 +4336,15 @@
     </Filter>
     <Filter Include="Library\Framework">
       <UniqueIdentifier>{3FD228C0-5E7D-7087-45D2-9A9CC6CD0828}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\AI">
+      <UniqueIdentifier>{DB01EF43-5DC9-0FFA-7E6F-3F1648B75CA2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\AI\Blackboard">
+      <UniqueIdentifier>{3826CAE4-15A3-D142-E2E1-0317732FE46D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\AI\Registry">
+      <UniqueIdentifier>{BB823820-134F-A8ED-AD12-56431E399109}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\Animation">
       <UniqueIdentifier>{D26C0573-73A0-0B57-BD96-BE5DC8E92C5F}</UniqueIdentifier>
