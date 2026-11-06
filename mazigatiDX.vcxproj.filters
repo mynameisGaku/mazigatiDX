@@ -790,10 +790,19 @@
     <ClCompile Include="Library\Platform\DxLib\Render\EffectMaterialRenderer.cpp">
       <Filter>Library\Platform\DxLib\Render</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\Window\DxLibDisplayInfoSubsystem.cpp">
+      <Filter>Library\Platform\DxLib\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\Window\DxLibWindowControlSubsystem.cpp">
+      <Filter>Library\Platform\DxLib\Window</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\Null\NullAssetBackend.cpp">
       <Filter>Library\Platform\Null</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\Null\NullAudioBackend.cpp">
+      <Filter>Library\Platform\Null</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Null\NullDisplayInfoSubsystem.cpp">
       <Filter>Library\Platform\Null</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\Null\NullDrawExecutor.cpp">
@@ -805,6 +814,9 @@
     <ClCompile Include="Library\Platform\Null\NullPlatform.cpp">
       <Filter>Library\Platform\Null</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\Null\NullWindowControlSubsystem.cpp">
+      <Filter>Library\Platform\Null</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\SDL\SdlGamepadInput.cpp">
       <Filter>Library\Platform\SDL</Filter>
     </ClCompile>
@@ -812,6 +824,9 @@
       <Filter>Library\Platform\System</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\System\CommandLine.cpp">
+      <Filter>Library\Platform\System</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\System\DisplayLayout.cpp">
       <Filter>Library\Platform\System</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\System\FileSystem.cpp">
@@ -1452,7 +1467,13 @@
     <ClInclude Include="Library\Core\Interfaces\Platform\FrameCapture.h">
       <Filter>Library\Core\Interfaces\Platform</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Platform\IDisplayInfo.h">
+      <Filter>Library\Core\Interfaces\Platform</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Platform\IPlatform.h">
+      <Filter>Library\Core\Interfaces\Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Platform\IWindowControl.h">
       <Filter>Library\Core\Interfaces\Platform</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Profiler\IProfiler.h">
@@ -2478,10 +2499,19 @@
     <ClInclude Include="Library\Platform\DxLib\Render\EffectMaterialRenderer.h">
       <Filter>Library\Platform\DxLib\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\Window\DxLibDisplayInfoSubsystem.h">
+      <Filter>Library\Platform\DxLib\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\Window\DxLibWindowControlSubsystem.h">
+      <Filter>Library\Platform\DxLib\Window</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Platform\Null\NullAssetBackend.h">
       <Filter>Library\Platform\Null</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\Null\NullAudioBackend.h">
+      <Filter>Library\Platform\Null</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Null\NullDisplayInfoSubsystem.h">
       <Filter>Library\Platform\Null</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\Null\NullDrawExecutor.h">
@@ -2493,6 +2523,9 @@
     <ClInclude Include="Library\Platform\Null\NullPlatform.h">
       <Filter>Library\Platform\Null</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Platform\Null\NullWindowControlSubsystem.h">
+      <Filter>Library\Platform\Null</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Platform\SDL\SdlGamepadInput.h">
       <Filter>Library\Platform\SDL</Filter>
     </ClInclude>
@@ -2500,6 +2533,12 @@
       <Filter>Library\Platform\System</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\System\CommandLine.h">
+      <Filter>Library\Platform\System</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\System\DisplayLayout.h">
+      <Filter>Library\Platform\System</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\System\DisplayTypes.h">
       <Filter>Library\Platform\System</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\System\FileSystem.h">
@@ -4246,6 +4285,9 @@
     </Filter>
     <Filter Include="Library\Platform\DxLib\Render">
       <UniqueIdentifier>{E41253BB-00FD-FA77-8F11-EF28C94D8340}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DxLib\Window">
+      <UniqueIdentifier>{37409DE1-352B-CC5F-CFF7-B96539B867EF}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Platform\Null">
       <UniqueIdentifier>{F9C9031B-B8BD-65C1-0F4D-AB507CBB3645}</UniqueIdentifier>

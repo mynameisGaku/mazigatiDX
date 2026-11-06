@@ -1,6 +1,8 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DxLibInput.h"
 
+#include "Library/Core/Interfaces/Platform/IPlatform.h"
+#include "Library/Framework/Engine/Engine.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 
 //=============================================================================
@@ -8,6 +10,14 @@
 //=============================================================================
 bool CDxLibInput::SetCursorVisible( bool bVisible )
 {
+	// カーソルの表示は IPlatform が持っている（ImGui のカーソルも合わせて切り替え、ウィンドウモードの変更でも保たれる）。
+	// IPlatform が無いときだけ、DxLib に直接頼む
+	if ( IPlatform* Platform = GetAppSubsystem<IPlatform>() )
+	{
+		Platform->SetMouseCursorVisible( bVisible );
+		bCursorVisible = bVisible;
+		return true;
+	}
 	if ( SetMouseDispFlag( bVisible ? TRUE : FALSE ) != 0 )
 	{
 		return false;
@@ -18,6 +28,10 @@ bool CDxLibInput::SetCursorVisible( bool bVisible )
 
 bool CDxLibInput::IsCursorVisible() const
 {
+	if ( const IPlatform* Platform = GetAppSubsystem<IPlatform>() )
+	{
+		return Platform->IsMouseCursorVisible();
+	}
 	return bCursorVisible;
 }
 

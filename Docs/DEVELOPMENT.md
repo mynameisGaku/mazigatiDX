@@ -338,6 +338,22 @@ TSharedPtr<CSound> Sound = Loader.CreateFromPcm( "Beep", Beep );
 Audio->Play( Sound );
 ```
 
+## ディスプレイとウィンドウ
+
+|窓口|内容|
+|---|---|
+|`IDisplayInfo`|つながっているディスプレイの一覧（`GetDisplay`: 位置・大きさ・リフレッシュレート・表示の拡大率・名前・`bPrimary`）、OSで「メインのディスプレイ」に設定されているものの番号（`GetPrimaryDisplayIndex`）、切り替えられる解像度（`GetDisplayModes`）、ウィンドウのいるディスプレイ（`GetWindowDisplayIndex`）と拡大率（`GetWindowDpiScale`）|
+|`IWindowControl`|ウィンドウの位置（`GetWindowPosition` / `SetWindowPosition`）、ディスプレイの中央へ移動（`MoveWindowToDisplay`）、ゲーム画面に対するウィンドウの倍率（`GetWindowScale` / `SetWindowScale`）、前面か（`IsWindowFocused`）|
+|`IPlatform`|全画面・枠なし・通常のウィンドウの切り替え（`SetWindowMode`）、タイトル、マウスカーソルの表示|
+
+座標はデスクトップ全体の座標です（OSのメインディスプレイの左上が原点。左や上にあるディスプレイは負になります）。位置と倍率を変えられるのは通常のウィンドウ（`EWindowMode::Windowed`）のときだけで、それ以外は`false`を返します。複数モニターの並びの計算（点がどのディスプレイか、中央の位置）は`FDisplayLayout`（`Library/Platform/System`）が受け持つので、別のバックエンドでもそのまま使えます。DxLibはディスプレイの名前を答えられないため、Windowsのデバイス名（`\\.\DISPLAY1`など）を使います。
+
+```cpp
+const IDisplayInfo* Displays = GetAppSubsystem<IDisplayInfo>();
+IWindowControl* Window = GetAppSubsystem<IWindowControl>();
+Window->MoveWindowToDisplay( Displays->GetPrimaryDisplayIndex() );   // OSのメインディスプレイの中央へ
+```
+
 ## 文字入力・カーソル・タッチ
 
 キーの状態（`IKeyboardInput`）とは別に、OSを通った文字入力、カーソルの操作、タッチを、バックエンドに依らない窓口で扱います。どれも`GetAppSubsystem<…>()`で取り、メインスレッドから使います。DxLibの文字コード・制御コード・IMEの構造体は`Library/Platform/DxLib/Input`の中に閉じ込めてあり、別のバックエンドでも同じ窓口と値の型をそのまま使えます。
