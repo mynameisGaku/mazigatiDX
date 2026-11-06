@@ -27,6 +27,7 @@ void CAudioSubsystem::Initialize( FSubsystemCollection& Collection )
 	for ( FBus& Bus : Buses ) Bus.Volume.Reset( 1.0f );
 
 	Backend = Collection.InitializeDependency<IAudioBackend>();
+	PcmStreamBackend = Collection.InitializeDependency<IPcmStreamBackend>();
 	if ( Backend == nullptr )
 	{
 		LOG( LogAudio, Warning, "No audio backend is available. Sounds will not be played." );
@@ -44,7 +45,45 @@ void CAudioSubsystem::Deinitialize()
 	}
 	Voices.Empty();
 	LastPlayTime.Empty();
+	for ( const TWeakPtr<CPcmStream>& Weak : PcmStreams )
+	{
+		if ( TSharedPtr<CPcmStream> Stream = Weak.Pin() )
+		{
+			Stream->Detach();
+		}
+	}
+	PcmStreams.Empty();
 	Backend = nullptr;
+	PcmStreamBackend = nullptr;
+}
+
+TSharedPtr<CPcmStream> CAudioSubsystem::CreatePcmStream( int32 SampleRate, int32 Channels )
+{
+	IPcmStreamBackend* Streams = PcmStreamBackendOverride != nullptr ? PcmStreamBackendOverride : PcmStreamBackend;
+	if ( Streams == nullptr )
+	{
+		LOG( LogAudio, Warning, "No PCM stream backend is available." );
+		return nullptr;
+	}
+	TSharedPtr<CPcmStream> Stream = CPcmStream::Create( *Streams, SampleRate, Channels );
+	if ( Stream.IsValid() )
+	{
+		// 手放された分を片付けてから足す
+		for ( int32 Index = PcmStreams.Num() - 1; Index >= 0; --Index )
+		{
+			if ( !PcmStreams[Index].Pin().IsValid() )
+			{
+				PcmStreams.RemoveAtSwap( Index );
+			}
+		}
+		PcmStreams.Add( Stream );
+	}
+	return Stream;
+}
+
+void CAudioSubsystem::SetPcmStreamBackendOverride( IPcmStreamBackend* InBackend )
+{
+	PcmStreamBackendOverride = InBackend;
 }
 
 void CAudioSubsystem::SetBackendOverride( IAudioBackend* InBackend )

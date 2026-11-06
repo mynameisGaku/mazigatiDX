@@ -320,6 +320,7 @@ if ( Animator.ConsumeRootMotion( ReferenceToActorBasis, RootTranslation, RootRot
 |計算で作った音を鳴らす|`FPcmBuffer`（チャンネルを交互に並べた-1〜1のfloat）を`CPcmSoundLoader::CreateFromPcm( 名前, Pcm )`に渡すと、`CAudioSubsystem`で鳴らせる`CSound`になります|
 |音のファイルを生の音に読み出す|`CPcmSoundLoader::Decode( 絶対パス, Pcm )`。WAVは`NWavFile`が読み、それ以外はバックエンドが読める形式による|
 |生の音をWAVに保存する|`CPcmSoundLoader::SaveWav( Pcm, 絶対パス )`（16ビットPCM）|
+|実行時に作った波形を、流しながら鳴らす（シンセ・手続き的な音・独自のデコーダー）|`CAudioSubsystem::CreatePcmStream( サンプルレート, チャンネル数 )`で`CPcmStream`を作り、`Submit`で波形（チャンネルを交互に並べた-1〜1のfloat）を足して、`Start`で鳴らします。毎フレーム`GetQueuedSeconds`を見て、足りなくならないように足します（足りなくなると無音で待ち、足せば続きから鳴ります）。音量・パン・ピッチはなく、ミキサーのバスにも入りません（波形を作る側で決めます）。DxLibはチャンネル数が1か2だけで、それ以外は作れずログに出ます|
 |イントロ付きBGM（頭は1度だけ、あとは繰り返す）|`CSound::SetLoopRegion( 始まり秒, 終わり秒 )`。`bLoop`で鳴らすと、終わりに届くたびに始まりへ戻ります。終わりが0以下なら音の最後まで。`ClearLoopRegion()`でやめます|
 
 ループ区間をバックエンドが扱えないとき（`IAudioBackend::SetLoopRegion`が`false`を返すとき）は、`CAudioSubsystem`が毎フレーム再生位置を見て始まりへ戻して補います（フレーム単位の精度で、バックエンドが再生中に位置を動かせることが前提です）。DxLibは区間を直接扱えます。ただし、区間の始まりより後ろから再生を始めた場合は区間が効かないことがあります（頭から鳴らすBGMでは問題になりません）。

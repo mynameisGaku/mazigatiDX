@@ -2,11 +2,13 @@
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Interfaces/Audio/AudioBackend.h"
+#include "Library/Core/Interfaces/Audio/PcmStreamBackend.h"
 #include "Library/Core/Interfaces/Tickable/ITickable.h"
 #include "Library/Core/Log/LogCategory.h"
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Framework/Asset/Sound/Sound.h"
 #include "Library/Framework/Audio/AudioTypes.h"
+#include "Library/Framework/Audio/PcmStream.h"
 #include "Library/Framework/Subsystem/AppSubsystem.h"
 
 DECLARE_LOG_CATEGORY_EXTERN( LogAudio, Log )
@@ -100,6 +102,11 @@ public:
 	void Update( float32 DeltaSeconds );
 	// 確認用: バックエンドを差し替える（nullptr で元に戻す）
 	void SetBackendOverride( IAudioBackend* InBackend );
+
+	// 実行時に作った波形を流して鳴らすストリームを作る（手続き的な音・シンセなど。使い方は CPcmStream）。作れなければ nullptr
+	TSharedPtr<CPcmStream> CreatePcmStream( int32 SampleRate, int32 Channels );
+	// 確認用: ストリームの窓口を差し替える（nullptr で元に戻す）
+	void SetPcmStreamBackendOverride( IPcmStreamBackend* InBackend );
 
 	//-------------------------------------------------------------------------
 	// 鳴らす
@@ -247,6 +254,10 @@ private:
 
 	IAudioBackend* Backend = nullptr;
 	IAudioBackend* BackendOverride = nullptr;
+	IPcmStreamBackend* PcmStreamBackend = nullptr;
+	IPcmStreamBackend* PcmStreamBackendOverride = nullptr;
+	// 作ったストリーム（終わるときに使えなくする）
+	TArray<TWeakPtr<CPcmStream>> PcmStreams;
 	TArray<FVoice> Voices;
 	FBus Buses[static_cast<int32>( EAudioBus::Count )];
 	FAudioListener Listener;

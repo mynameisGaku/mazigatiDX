@@ -283,6 +283,9 @@
     <ClCompile Include="Library\Framework\Audio\AudioTypes.cpp">
       <Filter>Library\Framework\Audio</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Audio\PcmStream.cpp">
+      <Filter>Library\Framework\Audio</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Capture\AlphaMatte.cpp">
       <Filter>Library\Framework\Capture</Filter>
     </ClCompile>
@@ -787,6 +790,9 @@
     <ClCompile Include="Library\Platform\DxLib\Audio\DxLibAudioBackendSubsystem.cpp">
       <Filter>Library\Platform\DxLib\Audio</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\Audio\DxLibPcmStreamBackendSubsystem.cpp">
+      <Filter>Library\Platform\DxLib\Audio</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\Input\DxLibInputCursorTouch.cpp">
       <Filter>Library\Platform\DxLib\Input</Filter>
     </ClCompile>
@@ -854,6 +860,9 @@
       <Filter>Library\Platform\Null</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\Null\NullInputSubsystem.cpp">
+      <Filter>Library\Platform\Null</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Null\NullPcmStreamBackendSubsystem.cpp">
       <Filter>Library\Platform\Null</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\Null\NullPlatformSubsystem.cpp">
@@ -1482,6 +1491,9 @@
     <ClInclude Include="Library\Core\Interfaces\Audio\AudioBackend.h">
       <Filter>Library\Core\Interfaces\Audio</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Audio\PcmStreamBackend.h">
+      <Filter>Library\Core\Interfaces\Audio</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Input\ICursorControl.h">
       <Filter>Library\Core\Interfaces\Input</Filter>
     </ClInclude>
@@ -1924,6 +1936,9 @@
       <Filter>Library\Framework\Audio</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Audio\AudioTypes.h">
+      <Filter>Library\Framework\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Audio\PcmStream.h">
       <Filter>Library\Framework\Audio</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Capture\AlphaMatte.h">
@@ -2604,6 +2619,9 @@
     <ClInclude Include="Library\Platform\DxLib\Audio\DxLibAudioBackendSubsystem.h">
       <Filter>Library\Platform\DxLib\Audio</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\Audio\DxLibPcmStreamBackendSubsystem.h">
+      <Filter>Library\Platform\DxLib\Audio</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\Input\DxLibInputSubsystem.h">
       <Filter>Library\Platform\DxLib\Input</Filter>
     </ClInclude>
@@ -2656,6 +2674,9 @@
       <Filter>Library\Platform\Null</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\Null\NullInputSubsystem.h">
+      <Filter>Library\Platform\Null</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Null\NullPcmStreamBackendSubsystem.h">
       <Filter>Library\Platform\Null</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\Null\NullPlatformSubsystem.h">
