@@ -69,6 +69,7 @@
   <ItemGroup>
     <ClCompile Include="Library\Core\Collection\String.cpp" />
     <ClCompile Include="Library\Core\Interfaces\Tickable\ITickable.cpp" />
+    <ClCompile Include="Library\Core\Log\Assert.cpp" />
     <ClCompile Include="Library\Core\Log\LogManager.cpp" />
     <ClCompile Include="Library\Core\Log\LogSink.cpp" />
     <ClCompile Include="Library\Core\Log\LogVerbosity.cpp" />
@@ -250,6 +251,7 @@
     <ClCompile Include="Library\Framework\Effect\Particle\ParticleEffectEditing.cpp" />
     <ClCompile Include="Library\Framework\Effect\Particle\ParticleSimulation.cpp" />
     <ClCompile Include="Library\Framework\Engine\Engine.cpp" />
+    <ClCompile Include="Library\Framework\Engine\EngineCrashHandlers.cpp" />
     <ClCompile Include="Library\Framework\Engine\GameMain.cpp" />
     <ClCompile Include="Library\Framework\Engine\ScreenConfig.cpp" />
     <ClCompile Include="Library\Framework\Engine\TimeControl.cpp" />
@@ -408,6 +410,7 @@
     <ClCompile Include="Library\Platform\SDL\SdlGamepadInputSubsystem.cpp" />
     <ClCompile Include="Library\Platform\System\BackendSupport.cpp" />
     <ClCompile Include="Library\Platform\System\CommandLine.cpp" />
+    <ClCompile Include="Library\Platform\System\CrashReporter.cpp" />
     <ClCompile Include="Library\Platform\System\DisplayLayout.cpp" />
     <ClCompile Include="Library\Platform\System\FileSystem.cpp" />
     <ClCompile Include="Library\Platform\System\ImGuiAssert.cpp" />
@@ -644,6 +647,7 @@
     <ClInclude Include="Library\Core\Interfaces\Render\IVertexBuffer.h" />
     <ClInclude Include="Library\Core\Interfaces\Tickable\ITickable.h" />
     <ClInclude Include="Library\Core\Interfaces\Video\MovieBackend.h" />
+    <ClInclude Include="Library\Core\Log\Assert.h" />
     <ClInclude Include="Library\Core\Log\Log.h" />
     <ClInclude Include="Library\Core\Log\LogCategory.h" />
     <ClInclude Include="Library\Core\Log\LogManager.h" />
@@ -856,6 +860,7 @@
     <ClInclude Include="Library\Framework\Effect\Particle\ParticleEffectEditing.h" />
     <ClInclude Include="Library\Framework\Effect\Particle\ParticleSimulation.h" />
     <ClInclude Include="Library\Framework\Engine\Engine.h" />
+    <ClInclude Include="Library\Framework\Engine\EngineCrashHandlers.h" />
     <ClInclude Include="Library\Framework\Engine\GameMain.h" />
     <ClInclude Include="Library\Framework\Engine\ScreenConfig.h" />
     <ClInclude Include="Library\Framework\Engine\TimeControl.h" />
@@ -1065,6 +1070,7 @@
     <ClInclude Include="Library\Platform\SDL\SdlGamepadInputSubsystem.h" />
     <ClInclude Include="Library\Platform\System\BackendSupport.h" />
     <ClInclude Include="Library\Platform\System\CommandLine.h" />
+    <ClInclude Include="Library\Platform\System\CrashReporter.h" />
     <ClInclude Include="Library\Platform\System\DisplayLayout.h" />
     <ClInclude Include="Library\Platform\System\DisplayTypes.h" />
     <ClInclude Include="Library\Platform\System\FileSystem.h" />

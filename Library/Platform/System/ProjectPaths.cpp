@@ -38,6 +38,11 @@ FString FProjectPaths::GetSaveGamesDirectory() const
 	return GetSavedDirectory() / "SaveGames";
 }
 
+FString FProjectPaths::GetCrashesDirectory() const
+{
+	return GetSavedDirectory() / "Crashes";
+}
+
 FString FProjectPaths::GetProfilerDirectory() const
 {
 	return GetSavedDirectory() / "Profiler";

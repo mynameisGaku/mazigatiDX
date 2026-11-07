@@ -670,6 +670,52 @@ Worldの`Components.Effect`には、任意の`Target`（追従先オブジェク
 
 エディタの画面（`Library/DebugUI`）は、これまでどおり`mazigatiDX`の中にあり、ゲームの実行ファイルでも使えます（ゲームの実行ファイルから外す作業は、公開準備（M9）で行います）。
 
+## 一時ファイル・不要ファイルを消す（Clean.bat）
+
+ルートの`Clean.bat`が、一時ファイルと、ビルドの出力を消します（実体は`Tools/Clean.ps1`）。消す前に、消すものと大きさを一覧にして、確認します。
+
+|やりたいこと|コマンド|
+|---|---|
+|一時ファイルを消す（既定）|`Clean.bat`。ログ（`Saved/Logs`）・クラッシュ報告とダンプ（`Saved/Crashes`）・プロファイラーの記録（`Saved/Profiler`）・コンソールの履歴・`Temp`・`__pycache__`・セルフテストが`%TEMP%`に残した`AssetSelfTest_*`。`Samples`と`Editor`の`Saved`も同じ|
+|消すものだけ見る|`Clean.bat --dry-run`（何も消さない）|
+|ビルドの出力も消す|`Clean.bat build`（`x64`・`project`・`mazigatiDX`・`Samples/x64`・`Editor/x64`・`.vs`。Visual Studioを閉じてから）。`Clean.bat all`で、一時ファイルと両方|
+|スクリーンショット・セーブデータも消す|`--screenshots`（`Saved/Screenshots`）、`--savegames`（`Saved/SaveGames`。**元に戻せません**）。付けたときだけ消します|
+|確認なしで消す・キー待ちなし|`--yes`、`--no-pause`（スクリプトから呼ぶとき）|
+
+**消さないもの**: ソース・`Assets`・`Config`・`imgui.ini`（ウィンドウの配置）・`Source/SelfTest`（別のリポジトリへのジャンクション）。ジャンクションは、リンクだけを外し、先のファイルは消しません。使用中のファイル（動いているexeなど）は消せないので、その場所を報告して、残りを続けます。フレームワークのフォルダー（`Library`と`project.sln`がある所）でなければ、何も消さずに断ります。
+
+## クラッシュ報告・CHECK / ENSURE・落ちたときの後始末
+
+落ちた（クラッシュした）ときに、原因をあとから調べられるように、フレームワークが報告を書きます（`Library/Platform/System/CrashReporter.h`。`NGameMain`が、起動の最初に有効にします。DebugでもReleaseでも）。
+
+|知りたいこと|答え|
+|---|---|
+|報告はどこに出る？|`<プロジェクト>/Saved/Crashes/Crash_<日時>_<プロセス番号>.txt`（人が読む）と`.dmp`（Visual StudioやWinDbgで開くミニダンプ）。同じ秒に2つ目が出るときは`_2`が付きます|
+|報告に何が書かれる？|理由・例外の種類と場所（`モジュール+位置`・アクセス違反なら読み書きしたアドレス）・呼び出し履歴・OSとメモリ・起動引数・読み込んでいるモジュール・直前のログ（ログファイルの末尾）|
+|何で報告が出る？|処理されない例外（アクセス違反・0除算・スタックオーバーフローなど）・`abort()`（標準の`assert`・`std::terminate`・`CHECK`・Fatalのログも）・CRTの不正な引数|
+|関数名・行番号は出る？|exeと同じフォルダーに`.pdb`があれば出ます（無ければ`モジュール+位置`だけ。位置は`.pdb`から引けます）|
+|落とす練習をしたい|起動引数`--crash-test=access` / `divide` / `stackoverflow` / `abort` / `check` / `ensure`（`ensure`は落ちずに続きます）。`Docs/AI_WORKFLOW/tools/crash_run.ps1`が、使い捨てのフォルダーで落として、報告を表示します|
+
+**CHECK / ENSURE**（`Library/Core/Log/Assert.h`。標準の`assert`は使いません）:
+
+```cpp
+CHECK( Index >= 0 );                                   // 偽ならFatal: 式・場所・呼び出し履歴をログに出して止める（Releaseでも有効）
+CHECKF( Handle != 0, "no handle for '%s'", *Name );    // 理由（printf形式）つき
+if ( !ENSURE( Target != nullptr ) ) { return; }        // 偽でも続けられる: Errorを（場所ごとに最初の1回だけ、呼び出し履歴つきで）出し、falseを返す
+DEBUG_CHECK( ExpensiveTest() );                        // Debugだけ（Releaseでは式を評価しない）
+```
+
+使い分け: `CHECK`＝偽だと先へ進むと壊れる。`ENSURE`＝偽でも、その場を避ければ続けられる。読み込みの失敗のような、起こりうる失敗には使わず、ErrorやWarningのログと戻り値で扱います。
+
+**落ちたときの流れ**（落ちたスレッドで、この順に動きます）:
+1. 報告（`.txt`と`.dmp`）を書く（別のスレッドで書くので、スタックを使い切った落ち方でも書けます）
+2. 入力の解放（マウスの拘束・カーソルの非表示を戻す。Platformが必ず行う）
+3. ログを書き出す
+4. **エンジンの後始末**（`NCrashReporter::AddEngineCrashHandler`で登録した順）。標準では`Stop all sounds`（音を全部止める。エラー報告のダイアログが出ている間、音が鳴り続けないように）と`Save the profiler trace`（プロファイラーに記録があれば、直近600フレームを`Saved/Profiler/..._crash.json`に書く）。`NGameMain`が登録します（`Library/Framework/Engine/EngineCrashHandlers.h`）
+5. **ユーザーのコールバック**（`NCrashReporter::SetCrashCallback( []( const FCrashInfo& Info ) { ... } )`。フレームワークは何も設定しません。`FCrashInfo`は理由・報告と`.dmp`のパス・例外の種類）
+
+後始末もコールバックも、中で落ちたら握りつぶして（ログに出して）次へ進みます。落ちた直後の壊れているかもしれない状態で動くので、短く終わらせ、ヒープの確保やロックは避けてください。
+
 ## 新しいゲームを始める
 
 `Tools/NewProject.ps1`が、`Templates/Minimal`から新しいゲームのプロジェクトを作ります。

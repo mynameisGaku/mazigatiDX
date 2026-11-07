@@ -35,6 +35,8 @@ public:
 	FString GetSavedDirectory() const;
 	// <ルート>/Saved/Logs
 	FString GetLogsDirectory() const;
+	// <ルート>/Saved/Crashes（クラッシュ報告と、ダンプ）
+	FString GetCrashesDirectory() const;
 	// <ルート>/Saved/Screenshots
 	FString GetScreenshotsDirectory() const;
 	// <ルート>/Saved/SaveGames（CSaveGameStorage の既定の置き場所）

@@ -7,6 +7,9 @@
     <ClCompile Include="Library\Core\Interfaces\Tickable\ITickable.cpp">
       <Filter>Library\Core\Interfaces\Tickable</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Core\Log\Assert.cpp">
+      <Filter>Library\Core\Log</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Core\Log\LogManager.cpp">
       <Filter>Library\Core\Log</Filter>
     </ClCompile>
@@ -550,6 +553,9 @@
     <ClCompile Include="Library\Framework\Engine\Engine.cpp">
       <Filter>Library\Framework\Engine</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Engine\EngineCrashHandlers.cpp">
+      <Filter>Library\Framework\Engine</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Engine\GameMain.cpp">
       <Filter>Library\Framework\Engine</Filter>
     </ClCompile>
@@ -1022,6 +1028,9 @@
       <Filter>Library\Platform\System</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\System\CommandLine.cpp">
+      <Filter>Library\Platform\System</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\System\CrashReporter.cpp">
       <Filter>Library\Platform\System</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\System\DisplayLayout.cpp">
@@ -1728,6 +1737,9 @@
     <ClInclude Include="Library\Core\Interfaces\Video\MovieBackend.h">
       <Filter>Library\Core\Interfaces\Video</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Log\Assert.h">
+      <Filter>Library\Core\Log</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Log\Log.h">
       <Filter>Library\Core\Log</Filter>
     </ClInclude>
@@ -2364,6 +2376,9 @@
     <ClInclude Include="Library\Framework\Engine\Engine.h">
       <Filter>Library\Framework\Engine</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Engine\EngineCrashHandlers.h">
+      <Filter>Library\Framework\Engine</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Engine\GameMain.h">
       <Filter>Library\Framework\Engine</Filter>
     </ClInclude>
@@ -2989,6 +3004,9 @@
       <Filter>Library\Platform\System</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\System\CommandLine.h">
+      <Filter>Library\Platform\System</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\System\CrashReporter.h">
       <Filter>Library\Platform\System</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\System\DisplayLayout.h">
