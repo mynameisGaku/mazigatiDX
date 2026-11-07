@@ -8,6 +8,7 @@
 #include "Library/Framework/Asset/Loading/AssetLoadRecorder.h"
 #include "Library/Framework/Asset/Loading/AssetLog.h"
 #include "Library/Framework/Asset/Loading/AssetPathResolver.h"
+#include "Library/Framework/Asset/Sound/WavFile.h"
 
 CSoundLoader::CSoundLoader( CAssetLoadContext& InContext )
 	: Context( InContext )
@@ -42,6 +43,17 @@ TSharedPtr<CSound> CSoundLoader::Load( const FString& Path, ESoundLoadMode Mode,
 		return nullptr;
 	}
 	TSharedPtr<CSound> Sound = MakeShared<CSound>( FullPath, Handle, Mode, bAsync );
+	// WAV のループの印（smpl）があれば、ループ区間にする（あとから SetLoopRegion / ClearLoopRegion で変えられる）
+	if ( FullPath.EndsWith( ".wav", ESearchCase::IgnoreCase ) )
+	{
+		int64 LoopStart = 0;
+		int64 LoopEnd = 0;
+		int32 SampleRate = 0;
+		if ( NWavFile::ReadLoopFrames( FullPath, LoopStart, LoopEnd, SampleRate ) )
+		{
+			Sound->SetLoopRegion( static_cast<float32>( LoopStart ) / static_cast<float32>( SampleRate ), static_cast<float32>( LoopEnd ) / static_cast<float32>( SampleRate ) );
+		}
+	}
 	Context.GetRecorder().RecordLoad( *Sound, FullPath, StartTick );
 	Cache.Add( Key, Sound );
 	LOG( LogAsset, Verbose, "Loaded the sound '%s' (%s)%s", *FullPath, Mode == ESoundLoadMode::Stream ? "stream" : "memory", bAsync ? " async" : "" );

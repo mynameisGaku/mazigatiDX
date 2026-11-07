@@ -190,6 +190,60 @@ namespace
 		SetStatus( S, "Deleted " + FormatSeconds( S, Range.GetLength() ) + ".", false );
 	}
 
+	// 選んだ範囲を、ループ区間にする（WAV の smpl として保存される）
+	void SetLoopFromSelection( FSoundEditorState& S )
+	{
+		if ( !HasSelection( S ) )
+		{
+			SetStatus( S, "Select a range first.", true );
+			return;
+		}
+		PushUndo( S );
+		S.Pcm.LoopStartFrame = S.SelectionStart;
+		S.Pcm.LoopEndFrame = S.SelectionEnd;
+		S.bDirty = true;
+		SetStatus( S, "Loop set: " + FormatSeconds( S, S.SelectionStart ) + " - " + FormatSeconds( S, S.SelectionEnd ) + " (saved in the WAV)", false );
+	}
+
+	void ClearLoopRegion( FSoundEditorState& S )
+	{
+		if ( !S.Pcm.HasLoop() )
+		{
+			return;
+		}
+		PushUndo( S );
+		S.Pcm.ClearLoop();
+		S.bDirty = true;
+		SetStatus( S, "Loop cleared.", false );
+	}
+
+	// ループの聞こえ方: 全体を、ループ区間つきで鳴らす（開始位置があれば、そこから）
+	void PreviewLoop( FSoundEditorState& S )
+	{
+		StopPreview( S );
+		CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
+		CAudioSubsystem* Audio = GetAppSubsystem<CAudioSubsystem>();
+		if ( Assets == nullptr || Audio == nullptr || !S.Pcm.HasLoop() )
+		{
+			SetStatus( S, "Set a loop first.", true );
+			return;
+		}
+		CPcmSoundLoader Loader( Assets->GetBackend() );
+		const TSharedPtr<CSound> Sound = Loader.CreateFromPcm( "SoundEditorLoopPreview", S.Pcm );
+		if ( !Sound.IsValid() )
+		{
+			SetStatus( S, "The sound could not be played.", true );
+			return;
+		}
+		const float32 Rate = static_cast<float32>( S.Pcm.SampleRate );
+		Sound->SetLoopRegion( static_cast<float32>( S.Pcm.LoopStartFrame ) / Rate, static_cast<float32>( S.Pcm.LoopEndFrame ) / Rate );
+		FSoundPlayParams Params;
+		Params.Volume = NMath::Clamp( S.PreviewVolume, 0.0f, 1.0f );
+		Params.bLoop = true;
+		Params.StartTime = S.bHasCursor ? static_cast<float32>( S.CursorFrame ) / Rate : 0.0f;
+		S.PreviewHandle = Audio->Play( Sound, Params );
+	}
+
 	void FindSilences( FSoundEditorState& S )
 	{
 		const FFrameRange Range = TargetRange( S );
@@ -370,7 +424,7 @@ namespace
 		S.bDirty = false;
 		S.bOverwrite = false;
 		S.LastScanTime = -100.0;
-		SetStatus( S, "Saved " + Path + " (the original file is unchanged).", false );
+		SetStatus( S, "Saved " + Path + ( S.Pcm.HasLoop() ? " (with the loop)" : "" ) + " (the original file is unchanged).", false );
 		return true;
 	}
 
@@ -557,6 +611,29 @@ namespace
 				Draw->AddLine( ImVec2( X, YTop ), ImVec2( X, NMath::Max( YBottom, YTop + 1.0f ) ), bClipped ? IM_COL32( 255, 80, 70, 255 ) : IM_COL32( 110, 200, 160, 255 ) );
 			}
 		}
+		// ループ区間（緑の帯と線）
+		if ( S.Pcm.HasLoop() )
+		{
+			const auto XOfLoop = [&]( int64 Frame ) { return Origin.x + static_cast<float32>( static_cast<float64>( Frame - S.ViewStart ) / static_cast<float64>( S.ViewFrames ) * static_cast<float64>( Width ) ); };
+			const float32 X0 = XOfLoop( S.Pcm.LoopStartFrame );
+			const float32 X1 = XOfLoop( S.Pcm.LoopEndFrame );
+			const float32 Left = NMath::Clamp( X0, Origin.x, End.x );
+			const float32 Right = NMath::Clamp( X1, Origin.x, End.x );
+			if ( Right > Left )
+			{
+				Draw->AddRectFilled( ImVec2( Left, Origin.y + RulerHeight ), ImVec2( Right, End.y ), IM_COL32( 90, 210, 120, 28 ) );
+			}
+			if ( X0 >= Origin.x && X0 <= End.x )
+			{
+				Draw->AddLine( ImVec2( X0, Origin.y + RulerHeight ), ImVec2( X0, End.y ), IM_COL32( 90, 230, 130, 255 ), 1.5f );
+				Draw->AddText( ImVec2( X0 + 3.0f, End.y - 16.0f ), IM_COL32( 90, 230, 130, 255 ), "loop" );
+			}
+			if ( X1 >= Origin.x && X1 <= End.x )
+			{
+				Draw->AddLine( ImVec2( X1, Origin.y + RulerHeight ), ImVec2( X1, End.y ), IM_COL32( 90, 230, 130, 255 ), 1.5f );
+			}
+		}
+
 		// 再生の開始位置（黄色い線。目盛りをクリックすると動く）
 		if ( S.bHasCursor && S.CursorFrame >= S.ViewStart && S.CursorFrame <= S.ViewStart + S.ViewFrames )
 		{
@@ -660,6 +737,11 @@ void NDebugUI::DrawSoundEditor( FSoundEditorState& S, bool* pOpen )
 
 	// 情報
 	const float32 Peak = NPcmEdit::GetPeak( S.Pcm );
+	if ( S.Pcm.HasLoop() )
+	{
+		ImGui::TextColored( ImVec4( 0.45f, 0.9f, 0.55f, 1.0f ), "Loop: %s - %s", UI_TEXT( FormatTime( static_cast<float64>( S.Pcm.LoopStartFrame ) / static_cast<float64>( S.Pcm.SampleRate ) ) ), UI_TEXT( FormatTime( static_cast<float64>( S.Pcm.LoopEndFrame ) / static_cast<float64>( S.Pcm.SampleRate ) ) ) );
+		ImGui::SameLine();
+	}
 	ImGui::Text( "%lld frames, %d Hz, %d ch, %s   peak %.1f dB   clipped: %d range(s)", static_cast<long long>( S.Pcm.GetFrameCount() ), S.Pcm.SampleRate, S.Pcm.Channels,
 				 UI_TEXT( FormatTime( static_cast<float64>( S.Pcm.GetLengthSeconds() ) ) ), ToDb( Peak ), S.Clipped.Num() );
 	if ( HasSelection( S ) )
@@ -886,6 +968,29 @@ void NDebugUI::DrawSoundEditor( FSoundEditorState& S, bool* pOpen )
 	}
 	ImGui::SameLine();
 	ImGui::Checkbox( "Show silences", &S.bShowSilences );
+
+	// ループ区間
+	ImGui::SeparatorText( "Loop" );
+	ImGui::BeginDisabled( !HasSelection( S ) );
+	if ( ImGui::Button( "Set loop = selection" ) )
+	{
+		SetLoopFromSelection( S );
+	}
+	ImGui::EndDisabled();
+	ImGui::SameLine();
+	ImGui::BeginDisabled( !S.Pcm.HasLoop() );
+	if ( ImGui::Button( "Clear loop" ) )
+	{
+		ClearLoopRegion( S );
+	}
+	ImGui::SameLine();
+	if ( ImGui::Button( "Play looped" ) )
+	{
+		PreviewLoop( S );
+	}
+	ImGui::EndDisabled();
+	ImGui::SameLine();
+	ImGui::TextDisabled( "(saved in the WAV's smpl chunk; the game applies it when the WAV is loaded)" );
 
 	// 試し聞き
 	ImGui::SeparatorText( "Preview" );

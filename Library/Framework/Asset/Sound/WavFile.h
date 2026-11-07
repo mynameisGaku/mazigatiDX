@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Library/Core/Collection/Array.h"
+#include "Library/Core/Collection/String.h"
 #include "Library/Core/Types/TypeDefinition.h"
 #include "Library/Framework/Asset/Sound/SoundTypes.h"
 
@@ -18,6 +19,7 @@
 //   - 読めるのは、整数の PCM（8 / 16 / 24 / 32 ビット）と、32 ビットの浮動小数（WAVE_FORMAT_EXTENSIBLE を含む）。圧縮された WAV は読めない
 //   - 書くのは 16 ビット PCM（-1..1 を 32767 倍して丸め、範囲の外は切る。数でない値は無音）
 //   - 1〜8 チャンネルを扱う
+//   - ループ区間（FPcmBuffer::LoopStartFrame / LoopEndFrame）は、smpl チャンクとして書く・読む（最初のループだけ。先でも後ろでも読む。壊れていたら、ループなしとして読む）
 //=============================================================================
 namespace NWavFile
 {
@@ -26,4 +28,8 @@ namespace NWavFile
 
 	// WAV の中身を読む。読めなければ false（OutPcm は変えない）
 	bool Decode( const uint8* Data, usize Size, FPcmBuffer& OutPcm );
+
+	// WAV ファイル（絶対パス）の、ループ区間と、サンプルレートだけを読む（音のデータは読まない。ヘッダーを順にたどるだけなので、大きなファイルでも速い）。
+	// ループ区間が無い・WAV でない・読めないなら false。OutEnd は含まない（FPcmBuffer と同じ）
+	bool ReadLoopFrames( const FString& FullPath, int64& OutStart, int64& OutEnd, int32& OutSampleRate );
 }

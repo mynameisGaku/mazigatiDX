@@ -21,6 +21,30 @@ namespace
 		return NMath::IsFinite( Value ) ? Value : 0.0f;
 	}
 
+	// 長さが変わる加工のあとの、ループ区間。In のループが、手を入れた範囲（KeepBefore より前 / SkipTo より後ろ）の外にあれば、Out に引き継ぐ（後ろにあれば Delta だけずらす）。重なれば、ループなし
+	void CarryLoop( const FPcmBuffer& In, int64 KeepBefore, int64 SkipTo, int64 Delta, FPcmBuffer& Out )
+	{
+		Out.ClearLoop();
+		if ( !In.HasLoop() )
+		{
+			return;
+		}
+		if ( In.LoopEndFrame <= KeepBefore )
+		{
+			Out.LoopStartFrame = In.LoopStartFrame;
+			Out.LoopEndFrame = In.LoopEndFrame;
+		}
+		else if ( In.LoopStartFrame >= SkipTo )
+		{
+			Out.LoopStartFrame = In.LoopStartFrame + Delta;
+			Out.LoopEndFrame = In.LoopEndFrame + Delta;
+		}
+		if ( !Out.HasLoop() )
+		{
+			Out.ClearLoop();
+		}
+	}
+
 	// フレームの、全チャンネルの平均
 	float32 MixAt( const FPcmBuffer& Pcm, int64 Frame )
 	{
@@ -77,6 +101,7 @@ bool NPcmEdit::Remove( const FPcmBuffer& In, int64 Start, int64 End, int64 Cross
 	{
 		Result.Samples.Add( In.Samples[static_cast<int32>( Index )] );
 	}
+	CarryLoop( In, Range.Start - Fade, Range.End + Fade, -( Range.GetLength() + Fade ), Result );
 	Out = Result;
 	return true;
 }
@@ -115,6 +140,7 @@ bool NPcmEdit::Replace( const FPcmBuffer& In, int64 Start, int64 End, const FPcm
 	{
 		return false;
 	}
+	CarryLoop( In, Range.Start, Range.End, ( bHasWith ? With.GetFrameCount() : 0 ) - Range.GetLength(), Result );
 	Out = Result;
 	return true;
 }
@@ -160,6 +186,12 @@ bool NPcmEdit::Slice( const FPcmBuffer& In, int64 Start, int64 End, FPcmBuffer& 
 	for ( int32 Index = 0; Index < NumSamples; ++Index )
 	{
 		Result.Samples.Add( In.Samples[FirstSample + Index] );
+	}
+	// ループ区間が、切り出した範囲に収まっていれば、位置をずらして引き継ぐ
+	if ( In.HasLoop() && In.LoopStartFrame >= Range.Start && In.LoopEndFrame <= Range.End )
+	{
+		Result.LoopStartFrame = In.LoopStartFrame - Range.Start;
+		Result.LoopEndFrame = In.LoopEndFrame - Range.Start;
 	}
 	Out = Result;
 	return true;

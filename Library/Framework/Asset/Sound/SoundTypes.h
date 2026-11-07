@@ -42,6 +42,23 @@ struct FPcmBuffer
 		return SampleRate > 0 ? static_cast<float32>( GetFrameCount() ) / static_cast<float32>( SampleRate ) : 0.0f;
 	}
 
+	// ループ区間（フレーム。LoopStartFrame を含み、LoopEndFrame を含まない）。負なら、ループ区間なし。
+	// WAV の smpl チャンク（他のツールとも共通の、ループの印）として、保存・読み込みされる。加工（NPcmEdit）は、区間が無事な範囲で、位置を保つ
+	int64 LoopStartFrame = -1;
+	int64 LoopEndFrame = -1;
+
+	// 音の中に収まる、空でないループ区間があるか
+	bool HasLoop() const
+	{
+		return LoopStartFrame >= 0 && LoopEndFrame > LoopStartFrame && LoopEndFrame <= GetFrameCount();
+	}
+
+	void ClearLoop()
+	{
+		LoopStartFrame = -1;
+		LoopEndFrame = -1;
+	}
+
 	// 音として使える形か（サンプルがあり、チャンネル数で割り切れ、1〜8 チャンネル、1 Hz 以上）
 	bool IsValid() const
 	{

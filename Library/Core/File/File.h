@@ -111,6 +111,9 @@ public:
 	// Buffer へ最大 Size バイト読み、読めたバイト数を返す。ファイルの終わりか失敗で、Size より少なくなる。
 	usize Read( void* Buffer, usize Size ) { return Handle != nullptr ? std::fread( Buffer, 1, Size, Handle ) : 0; }
 
+	// 先頭から Position バイトの所へ動く（読み込み・書き込みの位置）。動けたら true。開いていなければ false
+	bool Seek( int64 Position ) { return Handle != nullptr && ::_fseeki64( Handle, Position, SEEK_SET ) == 0; }
+
 	// Data から Size バイトを書き、書けたバイト数を返す。失敗すると Size より少なくなる。
 	usize Write( const void* Data, usize Size ) { return Handle != nullptr && Size > 0 ? std::fwrite( Data, 1, Size, Handle ) : 0; }
 

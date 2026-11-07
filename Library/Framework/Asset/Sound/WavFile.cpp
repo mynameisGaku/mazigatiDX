@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "WavFile.h"
 
+#include "Library/Core/File/File.h"
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Math/MathUtils.h"
@@ -37,6 +38,26 @@ namespace
 		}
 	}
 
+	// smpl チャンクの、最初のループ（開始・終わりは、どちらも含む位置で書かれている）を読む。形が足りなければ false
+	//   本体: 製造者・製品・サンプル周期・MIDI の音・ピッチ・SMPTE の形式と位置・ループの数・付属データの大きさ（9 つの 32 ビット = 36 バイト）、
+	//   ループ: ID・種類・開始・終わり・端数・回数（6 つの 32 ビット = 24 バイト）
+	bool ReadSmplLoop( const uint8* Chunk, uint32 ChunkSize, int64& OutStart, int64& OutEnd )
+	{
+		if ( ChunkSize < 60 || ReadLe32( Chunk + 28 ) < 1 )
+		{
+			return false;
+		}
+		const uint32 Start = ReadLe32( Chunk + 44 );
+		const uint32 End = ReadLe32( Chunk + 48 );
+		if ( End < Start )
+		{
+			return false;
+		}
+		OutStart = static_cast<int64>( Start );
+		OutEnd = static_cast<int64>( End ) + 1;
+		return true;
+	}
+
 	constexpr uint16 FormatPcm = 1;
 	constexpr uint16 FormatFloat = 3;
 	constexpr uint16 FormatExtensible = 0xFFFE;
@@ -51,9 +72,11 @@ bool NWavFile::Encode( const FPcmBuffer& Pcm, TArray<uint8>& OutBytes )
 	}
 	const uint32 DataBytes = static_cast<uint32>( Pcm.Samples.Num() ) * 2u;
 	const uint32 BlockAlign = static_cast<uint32>( Pcm.Channels ) * 2u;
-	OutBytes.Reserve( static_cast<int32>( 44u + DataBytes ) );
+	const bool bLoop = Pcm.HasLoop();
+	const uint32 SmplBytes = bLoop ? 8u + 60u : 0u;
+	OutBytes.Reserve( static_cast<int32>( 44u + DataBytes + SmplBytes ) );
 	WriteTag( OutBytes, "RIFF" );
-	WriteLe32( OutBytes, 36u + DataBytes );
+	WriteLe32( OutBytes, 36u + DataBytes + SmplBytes );
 	WriteTag( OutBytes, "WAVE" );
 	WriteTag( OutBytes, "fmt " );
 	WriteLe32( OutBytes, 16u );
@@ -72,6 +95,27 @@ bool NWavFile::Encode( const FPcmBuffer& Pcm, TArray<uint8>& OutBytes )
 		const int32 Value = static_cast<int32>( NMath::RoundToInt( Clamped * 32767.0f ) );
 		WriteLe16( OutBytes, static_cast<uint16>( static_cast<int16>( Value ) ) );
 	}
+	if ( bLoop )
+	{
+		// ループの印（smpl）。最初の 1 つのループだけ。終わりは「含む」位置で書く
+		WriteTag( OutBytes, "smpl" );
+		WriteLe32( OutBytes, 60u );
+		WriteLe32( OutBytes, 0u );                                                                   // 製造者
+		WriteLe32( OutBytes, 0u );                                                                   // 製品
+		WriteLe32( OutBytes, static_cast<uint32>( 1000000000.0 / static_cast<float64>( Pcm.SampleRate ) ) );   // サンプル周期（ナノ秒）
+		WriteLe32( OutBytes, 60u );                                                                  // MIDI の音（中央のド）
+		WriteLe32( OutBytes, 0u );
+		WriteLe32( OutBytes, 0u );
+		WriteLe32( OutBytes, 0u );
+		WriteLe32( OutBytes, 1u );                                                                   // ループの数
+		WriteLe32( OutBytes, 0u );                                                                   // 付属データの大きさ
+		WriteLe32( OutBytes, 0u );                                                                   // ループの ID
+		WriteLe32( OutBytes, 0u );                                                                   // 種類（前へ進むだけ）
+		WriteLe32( OutBytes, static_cast<uint32>( Pcm.LoopStartFrame ) );
+		WriteLe32( OutBytes, static_cast<uint32>( Pcm.LoopEndFrame - 1 ) );
+		WriteLe32( OutBytes, 0u );                                                                   // 端数
+		WriteLe32( OutBytes, 0u );                                                                   // 回数（0 = 無限）
+	}
 	return true;
 }
 
@@ -86,6 +130,10 @@ bool NWavFile::Decode( const uint8* Data, usize Size, FPcmBuffer& OutPcm )
 	int32 SampleRate = 0;
 	int32 Bits = 0;
 	bool bHasFormat = false;
+	int64 LoopStart = -1;
+	int64 LoopEnd = -1;
+	FPcmBuffer Decoded;
+	bool bDecoded = false;
 	usize Position = 12;
 	while ( Position + 8 <= Size )
 	{
@@ -105,7 +153,11 @@ bool NWavFile::Decode( const uint8* Data, usize Size, FPcmBuffer& OutPcm )
 			}
 			bHasFormat = true;
 		}
-		else if ( FMemory::Memcmp( Data + Position, "data", 4 ) == 0 )
+		else if ( FMemory::Memcmp( Data + Position, "smpl", 4 ) == 0 && Available >= ChunkSize )
+		{
+			ReadSmplLoop( Chunk, ChunkSize, LoopStart, LoopEnd );
+		}
+		else if ( FMemory::Memcmp( Data + Position, "data", 4 ) == 0 && !bDecoded )
 		{
 			if ( !bHasFormat || Channels < 1 || Channels > 8 || SampleRate <= 0 )
 			{
@@ -159,10 +211,75 @@ bool NWavFile::Decode( const uint8* Data, usize Size, FPcmBuffer& OutPcm )
 				}
 				Result.Samples.Add( Value );
 			}
-			OutPcm = MoveTemp( Result );
-			return true;
+			Decoded = MoveTemp( Result );
+			bDecoded = true;
 		}
 		Position += 8 + static_cast<usize>( ChunkSize ) + ( ChunkSize & 1u );
 	}
-	return false;
+	if ( !bDecoded )
+	{
+		return false;
+	}
+	// ループの印は、data の前にも後ろにもありうる。音の中に収まらなければ、ループなし
+	Decoded.LoopStartFrame = LoopStart;
+	Decoded.LoopEndFrame = LoopEnd;
+	if ( !Decoded.HasLoop() )
+	{
+		Decoded.ClearLoop();
+	}
+	OutPcm = MoveTemp( Decoded );
+	return true;
+}
+
+bool NWavFile::ReadLoopFrames( const FString& FullPath, int64& OutStart, int64& OutEnd, int32& OutSampleRate )
+{
+	FFile File;
+	if ( !File.Open( FullPath, FFile::EMode::Read ) )
+	{
+		return false;
+	}
+	uint8 Header[12];
+	if ( File.Read( Header, sizeof( Header ) ) != sizeof( Header ) || FMemory::Memcmp( Header, "RIFF", 4 ) != 0 || FMemory::Memcmp( Header + 8, "WAVE", 4 ) != 0 )
+	{
+		return false;
+	}
+	int64 Start = -1;
+	int64 End = -1;
+	int32 SampleRate = 0;
+	int64 Position = 12;
+	// チャンクのヘッダーだけをたどる（data の中は読まない）。壊れたファイルで終わらないように、数に上限を付ける
+	for ( int32 Guard = 0; Guard < 256; ++Guard )
+	{
+		uint8 Head[8];
+		if ( !File.Seek( Position ) || File.Read( Head, sizeof( Head ) ) != sizeof( Head ) )
+		{
+			break;
+		}
+		const uint32 ChunkSize = ReadLe32( Head + 4 );
+		if ( FMemory::Memcmp( Head, "fmt ", 4 ) == 0 && ChunkSize >= 16 )
+		{
+			uint8 Body[16];
+			if ( File.Read( Body, sizeof( Body ) ) == sizeof( Body ) )
+			{
+				SampleRate = static_cast<int32>( ReadLe32( Body + 4 ) );
+			}
+		}
+		else if ( FMemory::Memcmp( Head, "smpl", 4 ) == 0 && ChunkSize >= 60 )
+		{
+			uint8 Body[60];
+			if ( File.Read( Body, sizeof( Body ) ) == sizeof( Body ) )
+			{
+				ReadSmplLoop( Body, ChunkSize, Start, End );
+			}
+		}
+		Position += 8 + static_cast<int64>( ChunkSize ) + static_cast<int64>( ChunkSize & 1u );
+	}
+	if ( Start < 0 || End <= Start || SampleRate <= 0 )
+	{
+		return false;
+	}
+	OutStart = Start;
+	OutEnd = End;
+	OutSampleRate = SampleRate;
+	return true;
 }
