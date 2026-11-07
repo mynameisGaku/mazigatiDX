@@ -188,6 +188,12 @@
     <ClCompile Include="Source\Village\VillageArt.cpp" />
     <ClCompile Include="Source\Village\Villager.cpp" />
     <ClCompile Include="Source\Village\VillageSample.cpp" />
+    <ClCompile Include="Source\World\WorldCoin.cpp" />
+    <ClCompile Include="Source\World\WorldCrystal.cpp" />
+    <ClCompile Include="Source\World\WorldExplorer.cpp" />
+    <ClCompile Include="Source\World\WorldSample.cpp" />
+    <ClCompile Include="Source\World\WorldSampleHud.cpp" />
+    <ClCompile Include="Source\World\WorldSampleView.cpp" />
     <ClCompile Include="Source\SelfTest\**\*.cpp" Exclude="@(ClCompile)" />
   </ItemGroup>
   <ItemGroup>
@@ -339,6 +345,14 @@
     <ClInclude Include="Source\Village\Villager.h" />
     <ClInclude Include="Source\Village\VillageSample.h" />
     <ClInclude Include="Source\Village\VillageState.h" />
+    <ClInclude Include="Source\World\WorldCoin.h" />
+    <ClInclude Include="Source\World\WorldCrystal.h" />
+    <ClInclude Include="Source\World\WorldExplorer.h" />
+    <ClInclude Include="Source\World\WorldSample.h" />
+    <ClInclude Include="Source\World\WorldSampleActor.h" />
+    <ClInclude Include="Source\World\WorldSampleHud.h" />
+    <ClInclude Include="Source\World\WorldSampleState.h" />
+    <ClInclude Include="Source\World\WorldSampleView.h" />
     <ClInclude Include="Source\SelfTest\**\*.h" Exclude="@(ClInclude)" />
   </ItemGroup>
 </Project>

@@ -406,6 +406,24 @@
     <ClCompile Include="Source\Village\VillageSample.cpp">
       <Filter>Source\Village</Filter>
     </ClCompile>
+    <ClCompile Include="Source\World\WorldCoin.cpp">
+      <Filter>Source\World</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\World\WorldCrystal.cpp">
+      <Filter>Source\World</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\World\WorldExplorer.cpp">
+      <Filter>Source\World</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\World\WorldSample.cpp">
+      <Filter>Source\World</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\World\WorldSampleHud.cpp">
+      <Filter>Source\World</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\World\WorldSampleView.cpp">
+      <Filter>Source\World</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\AI\AIActor.h">
@@ -852,6 +870,30 @@
     <ClInclude Include="Source\Village\VillageState.h">
       <Filter>Source\Village</Filter>
     </ClInclude>
+    <ClInclude Include="Source\World\WorldCoin.h">
+      <Filter>Source\World</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\World\WorldCrystal.h">
+      <Filter>Source\World</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\World\WorldExplorer.h">
+      <Filter>Source\World</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\World\WorldSample.h">
+      <Filter>Source\World</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\World\WorldSampleActor.h">
+      <Filter>Source\World</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\World\WorldSampleHud.h">
+      <Filter>Source\World</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\World\WorldSampleState.h">
+      <Filter>Source\World</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\World\WorldSampleView.h">
+      <Filter>Source\World</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source">
@@ -943,6 +985,9 @@
     </Filter>
     <Filter Include="Source\Village">
       <UniqueIdentifier>{BDD5A596-60AB-DBCC-967A-473E787C29E4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\World">
+      <UniqueIdentifier>{9545843A-BF34-331E-0E76-B7FB4D10CB13}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
