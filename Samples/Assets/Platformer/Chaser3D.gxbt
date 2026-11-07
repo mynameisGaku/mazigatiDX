@@ -1,0 +1,71 @@
+{
+  "Version": 1,
+  "Blackboard": "Platformer/Enemy.gxblackboard",
+  "Root": {
+    "Type": "Selector",
+    "Name": "Brain",
+    "Children": [
+      {
+        "Type": "Sequence",
+        "Name": "Dead",
+        "Decorators": [
+          {
+            "Type": "BlackboardCondition",
+            "Key": "Alive",
+            "Op": "==",
+            "Value": false,
+            "Abort": "Both"
+          }
+        ],
+        "Children": [
+          {
+            "Do": "Wait",
+            "Params": {
+              "Seconds": 0.1
+            }
+          }
+        ]
+      },
+      {
+        "Type": "Sequence",
+        "Name": "Chase",
+        "Decorators": [
+          {
+            "Type": "BlackboardCondition",
+            "Key": "PlayerNear",
+            "Op": "==",
+            "Value": true,
+            "Abort": "Both"
+          }
+        ],
+        "Children": [
+          {
+            "Do": "Enemy.ChaseTarget",
+            "Params": {
+              "Speed": 3.0
+            }
+          }
+        ]
+      },
+      {
+        "Type": "Sequence",
+        "Name": "Wander",
+        "Children": [
+          {
+            "Do": "Enemy.Wander",
+            "Params": {
+              "Speed": 1.2,
+              "Seconds": 2.5
+            }
+          },
+          {
+            "Do": "Wait",
+            "Params": {
+              "Seconds": 0.6
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

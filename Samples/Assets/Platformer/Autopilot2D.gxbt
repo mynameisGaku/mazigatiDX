@@ -1,0 +1,95 @@
+{
+  "Version": 1,
+  "Blackboard": "Platformer/Player.gxblackboard",
+  "Root": {
+    "Type": "Selector",
+    "Name": "Pilot",
+    "Services": [
+      {
+        "Do": "Platformer.Sense",
+        "Interval": 0.016
+      }
+    ],
+    "Children": [
+      {
+        "Type": "Sequence",
+        "Name": "Jump",
+        "Decorators": [
+          {
+            "Type": "BlackboardCondition",
+            "Key": "ShouldJump",
+            "Op": "==",
+            "Value": true,
+            "Abort": "LowerPriority"
+          },
+          {
+            "Type": "Cooldown",
+            "Seconds": 0.1
+          }
+        ],
+        "Children": [
+          {
+            "Do": "Platformer.Jump",
+            "Params": {
+              "HoldSeconds": 0.5
+            }
+          }
+        ]
+      },
+      {
+        "Type": "Sequence",
+        "Name": "Fire",
+        "Decorators": [
+          {
+            "Type": "BlackboardCondition",
+            "Key": "CanShoot",
+            "Op": "==",
+            "Value": true,
+            "Abort": "LowerPriority"
+          },
+          {
+            "Type": "Cooldown",
+            "Seconds": 0.9
+          }
+        ],
+        "Children": [
+          {
+            "Do": "Platformer.Fire"
+          }
+        ]
+      },
+      {
+        "Type": "Sequence",
+        "Name": "Item",
+        "Decorators": [
+          {
+            "Type": "BlackboardCondition",
+            "Key": "ItemNear",
+            "Op": "==",
+            "Value": true,
+            "Abort": "Both"
+          }
+        ],
+        "Children": [
+          {
+            "Do": "Platformer.SeekItem"
+          }
+        ]
+      },
+      {
+        "Type": "Sequence",
+        "Name": "Cruise",
+        "Children": [
+          {
+            "Do": "Platformer.Cruise",
+            "Params": {
+              "MoveX": 1.0,
+              "MoveY": 0.0,
+              "Run": true
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

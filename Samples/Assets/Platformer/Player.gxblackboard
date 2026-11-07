@@ -1,0 +1,59 @@
+{
+  "Version": 1,
+  "Keys": [
+    {
+      "Name": "Lives",
+      "Type": "Int"
+    },
+    {
+      "Name": "IsBig",
+      "Type": "Bool"
+    },
+    {
+      "Name": "MoveX",
+      "Type": "Float"
+    },
+    {
+      "Name": "MoveY",
+      "Type": "Float"
+    },
+    {
+      "Name": "Run",
+      "Type": "Bool"
+    },
+    {
+      "Name": "JumpPressed",
+      "Type": "Bool",
+      "Trigger": true
+    },
+    {
+      "Name": "JumpHeld",
+      "Type": "Bool"
+    },
+    {
+      "Name": "FirePressed",
+      "Type": "Bool",
+      "Trigger": true
+    },
+    {
+      "Name": "ShouldJump",
+      "Type": "Bool"
+    },
+    {
+      "Name": "CanShoot",
+      "Type": "Bool"
+    },
+    {
+      "Name": "ItemNear",
+      "Type": "Bool"
+    },
+    {
+      "Name": "ItemMoveX",
+      "Type": "Float"
+    },
+    {
+      "Name": "ItemMoveY",
+      "Type": "Float"
+    }
+  ]
+}

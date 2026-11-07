@@ -73,6 +73,9 @@
     <ClCompile Include="Source\Common\PlatformerOptions.cpp">
       <Filter>Source\Common</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Common\PlatformerParts.cpp">
+      <Filter>Source\Common</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Common\PlatformerStatus.cpp">
       <Filter>Source\Common</Filter>
     </ClCompile>
@@ -495,10 +498,16 @@
     <ClInclude Include="Source\Common\PhysicsView.h">
       <Filter>Source\Common</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Common\PlatformerBody.h">
+      <Filter>Source\Common</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Common\PlatformerHud.h">
       <Filter>Source\Common</Filter>
     </ClInclude>
     <ClInclude Include="Source\Common\PlatformerOptions.h">
+      <Filter>Source\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Common\PlatformerParts.h">
       <Filter>Source\Common</Filter>
     </ClInclude>
     <ClInclude Include="Source\Common\PlatformerStatus.h">

@@ -2,6 +2,9 @@
 
 #include "Library/Core/Interfaces/Input/IInput.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/Framework/AI/Blackboard/Blackboard.h"
+#include "Library/Framework/AI/BehaviorTreeComponent.h"
+#include "Library/Framework/AI/StateMachineComponent.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
 #include "Library/Framework/Scene/Scene.h"
@@ -36,7 +39,6 @@ namespace
 	constexpr float32 StompBounceHeld = 700.0f;
 
 	constexpr int32 MaxFireballs = 2;
-	constexpr float32 DeathSeconds = 2.2f;
 
 	float32 MoveToward( float32 Value, float32 Target, float32 MaxDelta )
 	{
@@ -56,6 +58,31 @@ void CPlatformer2DPlayer::OnSpawn()
 {
 	Position = State->Level.PlayerStart;
 	PreviousFeetY = Position.y;
+
+	// 最初の姿（--form=big / fire）は、ステートマシンを進めて作る（キノコ・花のイベントを、1 フレームに 1 つ送る）
+	const EPlatformerForm StartForm = State->Status.Form;
+	State->Status.Form = EPlatformerForm::Small;
+	if ( StartForm == EPlatformerForm::Big )
+	{
+		StartEvents.Add( "Mushroom" );
+	}
+	else if ( StartForm == EPlatformerForm::Fire )
+	{
+		StartEvents.Add( "Flower" );
+		StartEvents.Add( "Flower" );
+	}
+
+	// 自動操作（--autoplay）: ビヘイビアツリーを、先に付けて読む（ブラックボードを作る側。ステートマシンは、それを共有する。
+	// トリガー（JumpPressed など）は、あとから読んだ側 = ステートマシンが、動いたあとに戻す。ツリーが書いた操作を、ステートマシンが読める）
+	if ( State->bAutoPlay )
+	{
+		Pilot = AddComponent<CBehaviorTreeComponent>( "Platformer/Autopilot2D.gxbt" );
+		Pilot->Load();
+	}
+
+	// 状態のステートマシン（階層）。すぐ読み込む（ブラックボードを、最初のフレームから使えるように）
+	Machine = AddComponent<CStateMachineComponent>( "Platformer/Player.gxstate" );
+	Machine->Load();
 }
 
 float32 CPlatformer2DPlayer::GetHeight() const
@@ -63,11 +90,39 @@ float32 CPlatformer2DPlayer::GetHeight() const
 	return State->Status.IsBig() ? BigHeight : SmallHeight;
 }
 
+void CPlatformer2DPlayer::Tick( float32 DeltaTime )
+{
+	if ( DeltaTime > 1.0f / 30.0f )
+	{
+		DeltaTime = 1.0f / 30.0f;
+	}
+	State->Status.Tick( DeltaTime );
+
+	// センサー: ステートマシンの遷移の条件に使う値を、ブラックボードへ書く
+	CBlackboard* Blackboard = Machine != nullptr ? Machine->GetBlackboard().Get() : nullptr;
+	if ( Blackboard != nullptr )
+	{
+		Blackboard->SetInt( Blackboard->FindKey( "Lives" ), State->Status.Lives );
+		Blackboard->SetBool( Blackboard->FindKey( "IsBig" ), State->Status.IsBig() );
+	}
+	// ためておいたイベントを、ステートマシンへ送る（次のフレームの、遷移の条件になる）
+	for ( const FString& Event : OutgoingEvents )
+	{
+		Machine->SendEvent( Event );
+	}
+	OutgoingEvents.Reset();
+	if ( !StartEvents.IsEmpty() )
+	{
+		Machine->SendEvent( StartEvents[0] );
+		StartEvents.RemoveAt( 0 );
+	}
+}
+
 CPlatformer2DPlayer::FControls CPlatformer2DPlayer::ReadControls( float32 DeltaTime )
 {
 	if ( State->bAutoPlay )
 	{
-		return ThinkAutoPlay( DeltaTime );
+		return ReadPilotControls();
 	}
 	FControls Controls;
 	const IInput* Input = GetAppSubsystem<IInput>();
@@ -90,12 +145,26 @@ CPlatformer2DPlayer::FControls CPlatformer2DPlayer::ReadControls( float32 DeltaT
 	return Controls;
 }
 
-CPlatformer2DPlayer::FControls CPlatformer2DPlayer::ThinkAutoPlay( float32 DeltaTime )
+CPlatformer2DPlayer::FControls CPlatformer2DPlayer::ReadPilotControls()
 {
-	// 右へ走り続けて、壁・穴・敵が近づいたら跳ぶ（画面の確認と、検査のための、かんたんな自動操作）
+	// 自動操作: ビヘイビアツリー（Autopilot2D.gxbt）が、ブラックボードへ書いた操作を読む（人のキー入力と同じ入口）
 	FControls Controls;
-	Controls.Move = 1.0f;
-	Controls.bRun = true;
+	CBlackboard* Blackboard = Machine != nullptr ? Machine->GetBlackboard().Get() : nullptr;
+	if ( Blackboard == nullptr )
+	{
+		return Controls;
+	}
+	Controls.Move = Blackboard->GetFloat( Blackboard->FindKey( "MoveX" ) );
+	Controls.bRun = Blackboard->GetBool( Blackboard->FindKey( "Run" ) );
+	Controls.bJumpPressed = Blackboard->GetBool( Blackboard->FindKey( "JumpPressed" ) );
+	Controls.bJumpHeld = Blackboard->GetBool( Blackboard->FindKey( "JumpHeld" ) );
+	Controls.bFirePressed = Blackboard->GetBool( Blackboard->FindKey( "FirePressed" ) );
+	return Controls;
+}
+
+void CPlatformer2DPlayer::Sense( CBlackboard& Blackboard )
+{
+	// 自動操作のセンサー: 壁・穴・敵・頭上のブロックが近ければ、跳ぶべき。近くにアイテムがあれば、取りに行く
 	const FPlatformer2DLevel& Level = State->Level;
 	const float32 Ahead = Position.x + HalfWidth + 26.0f;
 	const bool bWall = Level.IsSolid( FPlatformer2DLevel::ToTile( Ahead ), FPlatformer2DLevel::ToTile( Position.y - 8.0f ) );
@@ -105,53 +174,41 @@ CPlatformer2DPlayer::FControls CPlatformer2DPlayer::ThinkAutoPlay( float32 Delta
 	for ( const TSharedPtr<CPlatformer2DEnemy>& Enemy : GetScene()->FindObjects<CPlatformer2DEnemy>() )
 	{
 		const float32 DX = Enemy->GetPosition().x - Position.x;
-		if ( Enemy->IsAlive() && DX > 0.0f && DX < 120.0f && NMath::Abs( Enemy->GetPosition().y - Position.y ) < 40.0f )
+		if ( Enemy->IsAlive() && DX > -10.0f && DX < 170.0f && NMath::Abs( Enemy->GetPosition().y - Position.y ) < 40.0f )
 		{
 			bEnemy = true;
 		}
 	}
-	// ブロック（?・M・*）が、すぐ前の頭の上にあれば、跳んで叩く
 	const char Above = Level.Get( FPlatformer2DLevel::ToTile( Position.x + 20.0f ), 15 );
 	const bool bBlockAbove = Above == '?' || Above == 'M' || Above == '*';
-	// 出てきたアイテムが近くにあれば、取りに行く（行き過ぎていたら、戻る）
+	Blackboard.SetBool( Blackboard.FindKey( "ShouldJump" ), bOnGround && ( bWall || bPit || bEnemy || bBlockAbove ) );
+	Blackboard.SetBool( Blackboard.FindKey( "CanShoot" ), State->Status.CanShoot() );
+
+	bool bItemNear = false;
+	float32 ItemMove = 0.0f;
 	for ( const TSharedPtr<CPlatformer2DPowerUp>& PowerUp : GetScene()->FindObjects<CPlatformer2DPowerUp>() )
 	{
 		const float32 DX = PowerUp->GetPosition().x - Position.x;
 		if ( !PowerUp->IsEmerging() && NMath::Abs( DX ) < 260.0f )
 		{
-			Controls.Move = DX >= 0.0f ? 1.0f : -1.0f;
-			Controls.bRun = false;
+			bItemNear = true;
+			ItemMove = DX >= 0.0f ? 1.0f : -1.0f;
 		}
 	}
-	Controls.bJumpPressed = bOnGround && ( bWall || bPit || bEnemy || bBlockAbove );
-	Controls.bJumpHeld = ( Controls.bJumpPressed || ( Velocity.y < 0.0f && AirTime < 0.5f ) );
-	AutoFireTimer -= DeltaTime;
-	if ( State->Status.CanShoot() && AutoFireTimer <= 0.0f )
-	{
-		Controls.bFirePressed = true;
-		AutoFireTimer = 0.9f;
-	}
-	return Controls;
+	// 敵が近いときは、アイテムより、よけるのが先（取りに行かない）
+	Blackboard.SetBool( Blackboard.FindKey( "ItemNear" ), bItemNear && !bEnemy );
+	Blackboard.SetFloat( Blackboard.FindKey( "ItemMoveX" ), ItemMove );
 }
 
-void CPlatformer2DPlayer::Tick( float32 DeltaTime )
+//-----------------------------------------------------------------------------
+// ステートの動き: 生きている間
+//-----------------------------------------------------------------------------
+void CPlatformer2DPlayer::StepAlive( float32 DeltaTime )
 {
 	if ( DeltaTime > 1.0f / 30.0f )
 	{
 		DeltaTime = 1.0f / 30.0f;
 	}
-	State->Status.Tick( DeltaTime );
-	if ( State->bGoalReached )
-	{
-		TickGoal( DeltaTime );
-		return;
-	}
-	if ( bDying )
-	{
-		TickDeath( DeltaTime );
-		return;
-	}
-
 	const FControls Controls = ReadControls( DeltaTime );
 	if ( Controls.Move != 0.0f )
 	{
@@ -194,29 +251,21 @@ void CPlatformer2DPlayer::Tick( float32 DeltaTime )
 
 	CollectTouching();
 	HandleEnemies( Controls.bJumpHeld );
-	if ( bDying )
-	{
-		return;
-	}
 	if ( Controls.bFirePressed && State->Status.CanShoot() )
 	{
 		ShootFireball();
 	}
 
-	// 穴に落ちた（姿にも、無敵にも関係なく、やられる）
+	// 穴に落ちた: やられる（姿にも、無敵にも関係なく）
 	if ( Position.y > static_cast<float32>( ( State->Level.Height + 2 ) * FPlatformer2DLevel::TileSize ) )
 	{
-		State->Status.Die();
-		StartDeath();
+		PostEvent( "Died" );
 		return;
 	}
 	// ゴール
 	if ( Position.x >= State->Level.GoalX - 20.0f )
 	{
-		State->bGoalReached = true;
-		State->Status.AddScore( 5000 );
-		Velocity = FVector2::Zero;
-		GoalSlide = 0.0f;
+		PostEvent( "Goal" );
 		return;
 	}
 	UpdateCamera();
@@ -281,7 +330,7 @@ void CPlatformer2DPlayer::CollectTouching()
 		State->Level.Set( TileX, TileY, ' ' );
 		State->Status.Collect( EPlatformerItem::Coin );
 	}
-	// 出てきたアイテム
+	// 出てきたアイテム: 点数などは Status へ、姿の変化は、ステートマシンへ（イベント）
 	for ( const TSharedPtr<CPlatformer2DPowerUp>& PowerUp : GetScene()->FindObjects<CPlatformer2DPowerUp>() )
 	{
 		if ( PowerUp->IsEmerging() )
@@ -293,6 +342,14 @@ void CPlatformer2DPlayer::CollectTouching()
 		if ( bTouch )
 		{
 			State->Status.Collect( PowerUp->GetItem() );
+			if ( PowerUp->GetItem() == EPlatformerItem::Mushroom )
+			{
+				PostEvent( "Mushroom" );
+			}
+			else if ( PowerUp->GetItem() == EPlatformerItem::Flower )
+			{
+				PostEvent( "Flower" );
+			}
 			PowerUp->Destroy();
 		}
 	}
@@ -332,60 +389,35 @@ void CPlatformer2DPlayer::HandleEnemies( bool bJumpHeld )
 			Status.AddScore( 400 );
 			continue;
 		}
-		if ( Enemy->IsDeadly() )
+		if ( Enemy->IsDeadly() && !Status.IsInvincible() )
 		{
-			Hurt();
-			if ( bDying )
-			{
-				return;
-			}
+			// ダメージ: 小さくなるか、やられるかは、ステートマシン（いまの姿）が決める
+			PostEvent( "Hurt" );
 		}
 	}
 }
 
-void CPlatformer2DPlayer::Hurt()
+//-----------------------------------------------------------------------------
+// ステートの動き: 姿・やられた・ゴール・ゲームオーバー
+//-----------------------------------------------------------------------------
+void CPlatformer2DPlayer::OnFormEntered( EPlatformerForm Form )
 {
-	const EPlatformerHit Result = State->Status.TakeHit();
-	if ( Result == EPlatformerHit::Died )
-	{
-		StartDeath();
-	}
+	State->Status.Form = Form;
 }
 
-void CPlatformer2DPlayer::StartDeath()
+void CPlatformer2DPlayer::BeginHurtBreather()
 {
-	if ( bDying )
+	State->Status.GrantBreather();
+}
+
+void CPlatformer2DPlayer::EnterAlive()
+{
+	if ( !bRespawnPending )
 	{
 		return;
 	}
-	LOG( LogSamples, Log, "Platformer2D: died at x=%.0f y=%.0f lives=%d", Position.x, Position.y, State->Status.Lives );
-	bDying = true;
-	DeathTime = 0.0f;
-	Velocity = FVector2( 0.0f, -760.0f );
-}
-
-void CPlatformer2DPlayer::TickDeath( float32 DeltaTime )
-{
-	// ぴょんと跳ねてから、落ちていく（タイルには当たらない）
-	DeathTime += DeltaTime;
-	if ( DeathTime > 0.4f )
-	{
-		Velocity.y = NMath::Min( Velocity.y + FallGravity * DeltaTime, MaxFallSpeed );
-		Position.y += Velocity.y * DeltaTime;
-	}
-	if ( DeathTime >= DeathSeconds )
-	{
-		if ( State->Status.Lives <= 0 )
-		{
-			State->bGameOver = true;
-			return;
-		}
-		StartAgain();
-	}
-}
-
-void CPlatformer2DPlayer::StartAgain()
-{
+	// やられたあと、続きから: 最初の位置へ戻る（姿は、Alive の最初のステート = ちいさい）
+	bRespawnPending = false;
 	bDying = false;
 	State->Status.Respawn();
 	Position = State->Level.PlayerStart;
@@ -395,13 +427,50 @@ void CPlatformer2DPlayer::StartAgain()
 	bOnGround = false;
 }
 
-void CPlatformer2DPlayer::TickGoal( float32 DeltaTime )
+void CPlatformer2DPlayer::BeginDeath()
+{
+	LOG( LogSamples, Log, "Platformer2D: died at x=%.0f y=%.0f lives=%d", Position.x, Position.y, State->Status.Lives );
+	State->Status.Die();
+	bDying = true;
+	bRespawnPending = true;
+	DeathTime = 0.0f;
+	Velocity = FVector2( 0.0f, -760.0f );
+}
+
+void CPlatformer2DPlayer::StepDying( float32 DeltaTime )
+{
+	// ぴょんと跳ねてから、落ちていく（タイルには当たらない）。続きから始める / ゲームオーバーは、ステートマシンの遷移
+	DeathTime += DeltaTime;
+	if ( DeathTime > 0.4f )
+	{
+		Velocity.y = NMath::Min( Velocity.y + FallGravity * DeltaTime, MaxFallSpeed );
+		Position.y += Velocity.y * DeltaTime;
+	}
+}
+
+void CPlatformer2DPlayer::BeginGoal()
+{
+	State->bGoalReached = true;
+	State->Status.AddScore( 5000 );
+	Velocity = FVector2::Zero;
+}
+
+void CPlatformer2DPlayer::StepGoal( float32 DeltaTime )
 {
 	// ポールをすべり降りて、地面に着いたら、止まる
 	const float32 GroundY = static_cast<float32>( 19 * FPlatformer2DLevel::TileSize );
-	GoalSlide += DeltaTime;
 	Position.x = State->Level.GoalX - 16.0f;
 	Position.y = NMath::Min( Position.y + 220.0f * DeltaTime, GroundY );
+}
+
+void CPlatformer2DPlayer::BeginGameOver()
+{
+	State->bGameOver = true;
+}
+
+void CPlatformer2DPlayer::PostEvent( const char* Name )
+{
+	OutgoingEvents.Add( Name );
 }
 
 void CPlatformer2DPlayer::ShootFireball()

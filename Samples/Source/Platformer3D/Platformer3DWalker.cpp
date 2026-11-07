@@ -1,5 +1,6 @@
 ﻿#include "Platformer3DWalker.h"
 
+#include "Library/Framework/AI/Blackboard/Blackboard.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
 #include "Source/Platformer3D/Platformer3DState.h"
 
@@ -8,31 +9,38 @@ namespace
 	constexpr float32 WalkerHalfWidth = 0.45f;
 	constexpr float32 WalkerHeight = 0.9f;
 	constexpr float32 ChaseDistance = 10.0f;
-	constexpr float32 ChaseSpeed = 3.0f;
-	constexpr float32 WanderSpeed = 1.2f;
 }
 
 CPlatformer3DWalker::CPlatformer3DWalker( const TSharedPtr<FPlatformer3DState>& InState, const FVector3& InFeetPosition )
-	: CPlatformer3DEnemy( InState, InFeetPosition, WalkerHalfWidth, WalkerHeight )
+	: CPlatformer3DEnemy( InState, InFeetPosition, WalkerHalfWidth, WalkerHeight, "Platformer/Chaser3D.gxstate" )
 {}
 
 void CPlatformer3DWalker::OnStomped( const FVector3& PlayerPosition )
 {
-	Squash( 0.5f );
+	// すぐ、生きていないことにする（同じフレームに、ほかのものが、また踏まない）。つぶれる姿へは、ステートマシンが遷移する
+	bSquashed = true;
+	CPlatformer3DEnemy::OnStomped( PlayerPosition );
 }
 
-void CPlatformer3DWalker::OnTickActive( float32 DeltaTime )
+void CPlatformer3DWalker::Sense( CBlackboard& Blackboard )
 {
-	// 主人公が近くにいて、ほぼ同じ高さなら、追いかける。そうでなければ、うろうろ歩く
-	FVector3 ToPlayer = State->PlayerPosition - Position;
+	// 主人公が近くにいて、ほぼ同じ高さなら、追いかける（Wander → Chase の条件）
+	const FVector3 ToPlayer = State->PlayerPosition - Position;
 	const float32 Flat = NMath::Sqrt( ToPlayer.x * ToPlayer.x + ToPlayer.z * ToPlayer.z );
-	if ( Flat < ChaseDistance && Flat > 0.05f && NMath::Abs( ToPlayer.y ) < 2.0f && !State->bGoalReached )
+	const bool bNear = Flat < ChaseDistance && Flat > 0.05f && NMath::Abs( ToPlayer.y ) < 2.0f && !State->bGoalReached;
+	Blackboard.SetBool( Blackboard.FindKey( "PlayerNear" ), bNear );
+	Blackboard.SetBool( Blackboard.FindKey( "Alive" ), IsAlive() );
+}
+
+void CPlatformer3DWalker::StepChase( float32 DeltaTime, float32 Speed )
+{
+	const FVector3 ToPlayer = State->PlayerPosition - Position;
+	const float32 Flat = NMath::Sqrt( ToPlayer.x * ToPlayer.x + ToPlayer.z * ToPlayer.z );
+	if ( Flat > 0.05f )
 	{
 		Direction = FVector3( ToPlayer.x / Flat, 0.0f, ToPlayer.z / Flat );
-		Walk( DeltaTime, ChaseSpeed, true );
-		return;
 	}
-	Walk( DeltaTime, WanderSpeed, true );
+	StepWalk( DeltaTime, Speed, true );
 }
 
 void CPlatformer3DWalker::Record3D( FDrawContext& CommandList )

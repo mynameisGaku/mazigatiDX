@@ -2,6 +2,9 @@
 
 #include "Library/Core/Interfaces/Input/IInput.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/Framework/AI/Blackboard/Blackboard.h"
+#include "Library/Framework/AI/BehaviorTreeComponent.h"
+#include "Library/Framework/AI/StateMachineComponent.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
 #include "Library/Framework/Scene/Scene.h"
@@ -35,7 +38,6 @@ namespace
 	constexpr float32 StompBounceHeld = 10.0f;
 
 	constexpr int32 MaxFireballs = 2;
-	constexpr float32 DeathSeconds = 2.2f;
 
 	// カメラ: 主人公の後ろ（水平に CameraDistance、上に CameraHeight）から、少し上を見る
 	constexpr float32 CameraDistance = 7.5f;
@@ -55,6 +57,59 @@ void CPlatformer3DPlayer::OnSpawn()
 	PreviousFeetY = Position.y;
 	State->PlayerPosition = Position;
 	UpdateCamera();
+
+	// 最初の姿（--form=big / fire）は、ステートマシンを進めて作る（キノコ・花のイベントを、1 フレームに 1 つ送る）
+	const EPlatformerForm StartForm = State->Status.Form;
+	State->Status.Form = EPlatformerForm::Small;
+	if ( StartForm == EPlatformerForm::Big )
+	{
+		StartEvents.Add( "Mushroom" );
+	}
+	else if ( StartForm == EPlatformerForm::Fire )
+	{
+		StartEvents.Add( "Flower" );
+		StartEvents.Add( "Flower" );
+	}
+
+	// 自動操作（--autoplay）: ビヘイビアツリーを、先に付けて読む（ブラックボードを作る側。ステートマシンは、それを共有する。
+	// トリガー（JumpPressed など）は、あとから読んだ側 = ステートマシンが、動いたあとに戻す。ツリーが書いた操作を、ステートマシンが読める）
+	if ( State->bAutoPlay )
+	{
+		Pilot = AddComponent<CBehaviorTreeComponent>( "Platformer/Autopilot3D.gxbt" );
+		Pilot->Load();
+	}
+
+	// 状態のステートマシン（階層。2D と同じファイル）。すぐ読み込む（ブラックボードを、最初のフレームから使えるように）
+	Machine = AddComponent<CStateMachineComponent>( "Platformer/Player.gxstate" );
+	Machine->Load();
+}
+
+void CPlatformer3DPlayer::Tick( float32 DeltaTime )
+{
+	if ( DeltaTime > 1.0f / 30.0f )
+	{
+		DeltaTime = 1.0f / 30.0f;
+	}
+	State->Status.Tick( DeltaTime );
+
+	// センサー: ステートマシンの遷移の条件に使う値を、ブラックボードへ書く
+	CBlackboard* Blackboard = Machine != nullptr ? Machine->GetBlackboard().Get() : nullptr;
+	if ( Blackboard != nullptr )
+	{
+		Blackboard->SetInt( Blackboard->FindKey( "Lives" ), State->Status.Lives );
+		Blackboard->SetBool( Blackboard->FindKey( "IsBig" ), State->Status.IsBig() );
+	}
+	// ためておいたイベントを、ステートマシンへ送る（次のフレームの、遷移の条件になる）
+	for ( const FString& Event : OutgoingEvents )
+	{
+		Machine->SendEvent( Event );
+	}
+	OutgoingEvents.Reset();
+	if ( !StartEvents.IsEmpty() )
+	{
+		Machine->SendEvent( StartEvents[0] );
+		StartEvents.RemoveAt( 0 );
+	}
 }
 
 float32 CPlatformer3DPlayer::GetHeight() const
@@ -66,7 +121,7 @@ CPlatformer3DPlayer::FControls CPlatformer3DPlayer::ReadControls( float32 DeltaT
 {
 	if ( State->bAutoPlay )
 	{
-		return ThinkAutoPlay( DeltaTime );
+		return ReadPilotControls();
 	}
 	FControls Controls;
 	const IInput* Input = GetAppSubsystem<IInput>();
@@ -105,12 +160,26 @@ CPlatformer3DPlayer::FControls CPlatformer3DPlayer::ReadControls( float32 DeltaT
 	return Controls;
 }
 
-CPlatformer3DPlayer::FControls CPlatformer3DPlayer::ThinkAutoPlay( float32 DeltaTime )
+CPlatformer3DPlayer::FControls CPlatformer3DPlayer::ReadPilotControls()
 {
-	// +Z（奥）へ走り続けて、壁・穴・敵が近づいたら跳ぶ（画面の確認と、検査のための、かんたんな自動操作）
+	// 自動操作: ビヘイビアツリー（Autopilot3D.gxbt）が、ブラックボードへ書いた操作を読む（人のキー入力と同じ入口）
 	FControls Controls;
-	Controls.Move = FVector2( 0.0f, 1.0f );
-	Controls.bRun = true;
+	CBlackboard* Blackboard = Machine != nullptr ? Machine->GetBlackboard().Get() : nullptr;
+	if ( Blackboard == nullptr )
+	{
+		return Controls;
+	}
+	Controls.Move = FVector2( Blackboard->GetFloat( Blackboard->FindKey( "MoveX" ) ), Blackboard->GetFloat( Blackboard->FindKey( "MoveY" ) ) );
+	Controls.bRun = Blackboard->GetBool( Blackboard->FindKey( "Run" ) );
+	Controls.bJumpPressed = Blackboard->GetBool( Blackboard->FindKey( "JumpPressed" ) );
+	Controls.bJumpHeld = Blackboard->GetBool( Blackboard->FindKey( "JumpHeld" ) );
+	Controls.bFirePressed = Blackboard->GetBool( Blackboard->FindKey( "FirePressed" ) );
+	return Controls;
+}
+
+void CPlatformer3DPlayer::Sense( CBlackboard& Blackboard )
+{
+	// 自動操作のセンサー: 壁・穴・敵・頭上のブロックが近ければ、跳ぶべき。近くにアイテムがあれば、取りに行く
 	const FPlatformer3DLevel& Level = State->Level;
 	const FVector3 Forward( 0.0f, 0.0f, 1.0f );
 	const bool bWall = Level.Overlaps( Position + Forward * 1.0f + FVector3( 0.0f, 0.2f, 0.0f ), 0.35f, 0.4f );
@@ -124,7 +193,6 @@ CPlatformer3DPlayer::FControls CPlatformer3DPlayer::ThinkAutoPlay( float32 Delta
 			bEnemy = true;
 		}
 	}
-	// ブロックが、すぐ前の頭の上にあれば、跳んで叩く
 	bool bBlockAbove = false;
 	for ( const FBlock3D& Block : Level.Blocks )
 	{
@@ -136,46 +204,32 @@ CPlatformer3DPlayer::FControls CPlatformer3DPlayer::ThinkAutoPlay( float32 Delta
 			bBlockAbove = true;
 		}
 	}
-	// 出てきたアイテムが近くにあれば、取りに行く
+	Blackboard.SetBool( Blackboard.FindKey( "ShouldJump" ), bOnGround && ( bWall || bPit || bEnemy || bBlockAbove ) );
+	Blackboard.SetBool( Blackboard.FindKey( "CanShoot" ), State->Status.CanShoot() );
+
+	bool bItemNear = false;
+	FVector2 ItemMove;
 	for ( const TSharedPtr<CPlatformer3DPowerUp>& PowerUp : GetScene()->FindObjects<CPlatformer3DPowerUp>() )
 	{
 		const FVector3 Delta = PowerUp->GetPosition() - Position;
 		const float32 Flat = NMath::Sqrt( Delta.x * Delta.x + Delta.z * Delta.z );
 		if ( !PowerUp->IsEmerging() && Flat < 7.0f && Flat > 0.1f && NMath::Abs( Delta.y ) < 3.0f )
 		{
-			Controls.Move = FVector2( Delta.x / Flat, Delta.z / Flat );
-			Controls.bRun = false;
+			bItemNear = true;
+			ItemMove = FVector2( Delta.x / Flat, Delta.z / Flat );
 		}
 	}
-	Controls.bJumpPressed = bOnGround && ( bWall || bPit || bEnemy || bBlockAbove );
-	Controls.bJumpHeld = Controls.bJumpPressed || ( Velocity.y > 0.0f && AirTime < 0.45f );
-	AutoFireTimer -= DeltaTime;
-	if ( State->Status.CanShoot() && AutoFireTimer <= 0.0f )
-	{
-		Controls.bFirePressed = true;
-		AutoFireTimer = 0.9f;
-	}
-	return Controls;
+	Blackboard.SetBool( Blackboard.FindKey( "ItemNear" ), bItemNear );
+	Blackboard.SetFloat( Blackboard.FindKey( "ItemMoveX" ), ItemMove.x );
+	Blackboard.SetFloat( Blackboard.FindKey( "ItemMoveY" ), ItemMove.y );
 }
 
-void CPlatformer3DPlayer::Tick( float32 DeltaTime )
+void CPlatformer3DPlayer::StepAlive( float32 DeltaTime )
 {
 	if ( DeltaTime > 1.0f / 30.0f )
 	{
 		DeltaTime = 1.0f / 30.0f;
 	}
-	State->Status.Tick( DeltaTime );
-	if ( State->bGoalReached )
-	{
-		TickGoal( DeltaTime );
-		return;
-	}
-	if ( bDying )
-	{
-		TickDeath( DeltaTime );
-		return;
-	}
-
 	const FControls Controls = ReadControls( DeltaTime );
 	State->CameraYaw += Controls.Turn * CameraTurnSpeed * DeltaTime;
 
@@ -226,20 +280,15 @@ void CPlatformer3DPlayer::Tick( float32 DeltaTime )
 
 	CollectTouching();
 	HandleEnemies( Controls.bJumpHeld );
-	if ( bDying )
-	{
-		return;
-	}
 	if ( Controls.bFirePressed && State->Status.CanShoot() )
 	{
 		ShootFireball();
 	}
 
-	// 穴に落ちた（姿にも、無敵にも関係なく、やられる）
+	// 穴に落ちた: やられる（姿にも、無敵にも関係なく）
 	if ( Position.y < FPlatformer3DLevel::KillHeight )
 	{
-		State->Status.Die();
-		StartDeath();
+		PostEvent( "Died" );
 		return;
 	}
 	// ゴール: ポールの近くへ来た
@@ -247,9 +296,7 @@ void CPlatformer3DPlayer::Tick( float32 DeltaTime )
 	const float32 GoalDZ = Position.z - State->Level.GoalPosition.z;
 	if ( GoalDX * GoalDX + GoalDZ * GoalDZ < GoalRadius * GoalRadius && Position.y < State->Level.GoalPosition.y + 6.0f )
 	{
-		State->bGoalReached = true;
-		State->Status.AddScore( 5000 );
-		Velocity = FVector3::Zero;
+		PostEvent( "Goal" );
 		return;
 	}
 	State->PlayerPosition = Position;
@@ -334,7 +381,16 @@ void CPlatformer3DPlayer::CollectTouching()
 			&& At.y < Position.y + GetHeight() && At.y + CPlatformer3DPowerUp::Height > Position.y;
 		if ( bTouch )
 		{
+			// 点数などは Status へ、姿の変化は、ステートマシンへ（イベント）
 			State->Status.Collect( PowerUp->GetItem() );
+			if ( PowerUp->GetItem() == EPlatformerItem::Mushroom )
+			{
+				PostEvent( "Mushroom" );
+			}
+			else if ( PowerUp->GetItem() == EPlatformerItem::Flower )
+			{
+				PostEvent( "Flower" );
+			}
 			PowerUp->Destroy();
 		}
 	}
@@ -375,59 +431,35 @@ void CPlatformer3DPlayer::HandleEnemies( bool bJumpHeld )
 			Status.AddScore( 400 );
 			continue;
 		}
-		if ( Enemy->IsDeadly() )
+		if ( Enemy->IsDeadly() && !Status.IsInvincible() )
 		{
-			Hurt();
-			if ( bDying )
-			{
-				return;
-			}
+			// ダメージ: 小さくなるか、やられるかは、ステートマシン（いまの姿）が決める
+			PostEvent( "Hurt" );
 		}
 	}
 }
 
-void CPlatformer3DPlayer::Hurt()
+//-----------------------------------------------------------------------------
+// ステートの動き: 姿・やられた・ゴール・ゲームオーバー
+//-----------------------------------------------------------------------------
+void CPlatformer3DPlayer::OnFormEntered( EPlatformerForm Form )
 {
-	if ( State->Status.TakeHit() == EPlatformerHit::Died )
-	{
-		StartDeath();
-	}
+	State->Status.Form = Form;
 }
 
-void CPlatformer3DPlayer::StartDeath()
+void CPlatformer3DPlayer::BeginHurtBreather()
 {
-	if ( bDying )
+	State->Status.GrantBreather();
+}
+
+void CPlatformer3DPlayer::EnterAlive()
+{
+	if ( !bRespawnPending )
 	{
 		return;
 	}
-	LOG( LogSamples, Log, "Platformer3D: died at (%.1f, %.1f, %.1f) lives=%d", Position.x, Position.y, Position.z, State->Status.Lives );
-	bDying = true;
-	DeathTime = 0.0f;
-	Velocity = FVector3( 0.0f, 11.0f, 0.0f );
-}
-
-void CPlatformer3DPlayer::TickDeath( float32 DeltaTime )
-{
-	// ぴょんと跳ねてから、落ちていく（箱には当たらない）
-	DeathTime += DeltaTime;
-	if ( DeathTime > 0.3f )
-	{
-		Velocity.y = NMath::Max( Velocity.y - FallGravity * DeltaTime, -MaxFallSpeed );
-	}
-	Position.y += Velocity.y * DeltaTime;
-	if ( DeathTime >= DeathSeconds )
-	{
-		if ( State->Status.Lives <= 0 )
-		{
-			State->bGameOver = true;
-			return;
-		}
-		StartAgain();
-	}
-}
-
-void CPlatformer3DPlayer::StartAgain()
-{
+	// やられたあと、続きから: 最初の位置へ戻る（姿は、Alive の最初のステート = ちいさい）
+	bRespawnPending = false;
 	bDying = false;
 	State->Status.Respawn();
 	Position = State->Level.PlayerStart;
@@ -439,11 +471,49 @@ void CPlatformer3DPlayer::StartAgain()
 	UpdateCamera();
 }
 
-void CPlatformer3DPlayer::TickGoal( float32 DeltaTime )
+void CPlatformer3DPlayer::BeginDeath()
+{
+	LOG( LogSamples, Log, "Platformer3D: died at (%.1f, %.1f, %.1f) lives=%d", Position.x, Position.y, Position.z, State->Status.Lives );
+	State->Status.Die();
+	bDying = true;
+	bRespawnPending = true;
+	DeathTime = 0.0f;
+	Velocity = FVector3( 0.0f, 11.0f, 0.0f );
+}
+
+void CPlatformer3DPlayer::StepDying( float32 DeltaTime )
+{
+	// ぴょんと跳ねてから、落ちていく（箱には当たらない）。続きから始める / ゲームオーバーは、ステートマシンの遷移
+	DeathTime += DeltaTime;
+	if ( DeathTime > 0.3f )
+	{
+		Velocity.y = NMath::Max( Velocity.y - FallGravity * DeltaTime, -MaxFallSpeed );
+	}
+	Position.y += Velocity.y * DeltaTime;
+}
+
+void CPlatformer3DPlayer::BeginGoal()
+{
+	State->bGoalReached = true;
+	State->Status.AddScore( 5000 );
+	Velocity = FVector3::Zero;
+}
+
+void CPlatformer3DPlayer::StepGoal( float32 DeltaTime )
 {
 	// ゴール: その場で、くるくる回る（カメラは、そのまま）
 	FacingYaw += 6.0f * DeltaTime;
 	UpdateCamera();
+}
+
+void CPlatformer3DPlayer::BeginGameOver()
+{
+	State->bGameOver = true;
+}
+
+void CPlatformer3DPlayer::PostEvent( const char* Name )
+{
+	OutgoingEvents.Add( Name );
 }
 
 void CPlatformer3DPlayer::ShootFireball()

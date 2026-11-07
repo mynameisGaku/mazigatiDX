@@ -1,0 +1,70 @@
+{
+  "Version": 1,
+  "Entry": "Walk",
+  "States": [
+    {
+      "Name": "Walk",
+      "OnTick": [
+        {
+          "Do": "Enemy.Walk",
+          "Params": {
+            "Speed": 60,
+            "AvoidEdges": false
+          }
+        }
+      ]
+    },
+    {
+      "Name": "Squashed",
+      "OnEnter": [
+        {
+          "Do": "Enemy.Squash"
+        }
+      ]
+    },
+    {
+      "Name": "Gone",
+      "OnEnter": [
+        {
+          "Do": "Enemy.Remove"
+        }
+      ]
+    },
+    {
+      "Name": "Flying",
+      "OnEnter": [
+        {
+          "Do": "Enemy.Fly"
+        }
+      ],
+      "OnTick": [
+        {
+          "Do": "Enemy.Fly"
+        }
+      ]
+    }
+  ],
+  "Transitions": [
+    {
+      "From": "Walk",
+      "To": "Squashed",
+      "On": "Stomped"
+    },
+    {
+      "From": "Squashed",
+      "To": "Gone",
+      "When": [
+        {
+          "Time": 0.5
+        }
+      ]
+    }
+  ],
+  "AnyTransitions": [
+    {
+      "To": "Flying",
+      "On": "KnockedOff",
+      "Priority": 50
+    }
+  ]
+}

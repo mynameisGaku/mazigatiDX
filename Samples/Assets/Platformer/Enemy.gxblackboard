@@ -1,0 +1,14 @@
+{
+  "Version": 1,
+  "Keys": [
+    {
+      "Name": "PlayerNear",
+      "Type": "Bool"
+    },
+    {
+      "Name": "Alive",
+      "Type": "Bool",
+      "Default": true
+    }
+  ]
+}

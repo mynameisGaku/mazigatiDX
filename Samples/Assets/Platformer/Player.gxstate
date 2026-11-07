@@ -1,0 +1,205 @@
+{
+  "Version": 1,
+  "Blackboard": "Platformer/Player.gxblackboard",
+  "Entry": "Alive",
+  "States": [
+    {
+      "Name": "Alive",
+      "Entry": "Small",
+      "OnEnter": [
+        {
+          "Do": "Player.EnterAlive"
+        }
+      ],
+      "OnTick": [
+        {
+          "Do": "Player.Alive"
+        }
+      ],
+      "States": [
+        {
+          "Name": "Small",
+          "OnEnter": [
+            {
+              "Do": "Player.SetForm",
+              "Params": {
+                "Form": "Small"
+              }
+            }
+          ]
+        },
+        {
+          "Name": "Shrunk",
+          "OnEnter": [
+            {
+              "Do": "Player.SetForm",
+              "Params": {
+                "Form": "Small"
+              }
+            },
+            {
+              "Do": "Player.HurtBreather"
+            }
+          ]
+        },
+        {
+          "Name": "Big",
+          "OnEnter": [
+            {
+              "Do": "Player.SetForm",
+              "Params": {
+                "Form": "Big"
+              }
+            }
+          ]
+        },
+        {
+          "Name": "Fire",
+          "OnEnter": [
+            {
+              "Do": "Player.SetForm",
+              "Params": {
+                "Form": "Fire"
+              }
+            }
+          ]
+        }
+      ],
+      "Transitions": [
+        {
+          "From": "Small",
+          "To": "Big",
+          "On": "Mushroom"
+        },
+        {
+          "From": "Shrunk",
+          "To": "Big",
+          "On": "Mushroom"
+        },
+        {
+          "From": "Small",
+          "To": "Big",
+          "On": "Flower"
+        },
+        {
+          "From": "Shrunk",
+          "To": "Big",
+          "On": "Flower"
+        },
+        {
+          "From": "Big",
+          "To": "Fire",
+          "When": [
+            {
+              "Event": "Flower"
+            },
+            {
+              "Time": 0.001
+            }
+          ]
+        },
+        {
+          "From": "Big",
+          "To": "Shrunk",
+          "On": "Hurt"
+        },
+        {
+          "From": "Fire",
+          "To": "Shrunk",
+          "On": "Hurt"
+        }
+      ]
+    },
+    {
+      "Name": "Dying",
+      "OnEnter": [
+        {
+          "Do": "Player.Death"
+        }
+      ],
+      "OnTick": [
+        {
+          "Do": "Player.Death"
+        }
+      ]
+    },
+    {
+      "Name": "Goal",
+      "OnEnter": [
+        {
+          "Do": "Player.Goal"
+        }
+      ],
+      "OnTick": [
+        {
+          "Do": "Player.Goal"
+        }
+      ]
+    },
+    {
+      "Name": "GameOver",
+      "OnEnter": [
+        {
+          "Do": "Player.GameOver"
+        }
+      ]
+    }
+  ],
+  "Transitions": [
+    {
+      "From": "Alive",
+      "To": "Dying",
+      "On": "Died",
+      "Priority": 50
+    },
+    {
+      "From": "Alive",
+      "To": "Dying",
+      "When": [
+        {
+          "Event": "Hurt"
+        },
+        {
+          "Key": "IsBig",
+          "Op": "==",
+          "Value": false
+        }
+      ],
+      "Priority": 40
+    },
+    {
+      "From": "Alive",
+      "To": "Goal",
+      "On": "Goal",
+      "Priority": 60
+    },
+    {
+      "From": "Dying",
+      "To": "Alive",
+      "When": [
+        {
+          "Time": 2.2
+        },
+        {
+          "Key": "Lives",
+          "Op": ">",
+          "Value": 0
+        }
+      ]
+    },
+    {
+      "From": "Dying",
+      "To": "GameOver",
+      "When": [
+        {
+          "Time": 2.2
+        },
+        {
+          "Key": "Lives",
+          "Op": "==",
+          "Value": 0
+        }
+      ]
+    }
+  ]
+}

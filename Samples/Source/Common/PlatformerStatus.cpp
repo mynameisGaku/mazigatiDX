@@ -26,21 +26,7 @@ void FPlatformerStatus::Collect( EPlatformerItem Item )
 		}
 		break;
 	case EPlatformerItem::Mushroom:
-		if ( Form == EPlatformerForm::Small )
-		{
-			Form = EPlatformerForm::Big;
-		}
-		Score += 1000;
-		break;
 	case EPlatformerItem::Flower:
-		if ( Form == EPlatformerForm::Small )
-		{
-			Form = EPlatformerForm::Big;
-		}
-		else
-		{
-			Form = EPlatformerForm::Fire;
-		}
 		Score += 1000;
 		break;
 	case EPlatformerItem::Star:
@@ -48,22 +34,6 @@ void FPlatformerStatus::Collect( EPlatformerItem Item )
 		Score += 1000;
 		break;
 	}
-}
-
-EPlatformerHit FPlatformerStatus::TakeHit()
-{
-	if ( IsInvincible() )
-	{
-		return EPlatformerHit::Ignored;
-	}
-	if ( Form != EPlatformerForm::Small )
-	{
-		Form = EPlatformerForm::Small;
-		HurtTime = HurtSeconds;
-		return EPlatformerHit::Shrunk;
-	}
-	Die();
-	return EPlatformerHit::Died;
 }
 
 void FPlatformerStatus::Die()
@@ -76,7 +46,6 @@ void FPlatformerStatus::Die()
 
 void FPlatformerStatus::Respawn()
 {
-	Form = EPlatformerForm::Small;
 	StarTime = 0.0f;
 	HurtTime = 0.0f;
 }

@@ -9,69 +9,61 @@ namespace
 	constexpr float32 ShellHalfWidth = 14.0f;
 	constexpr float32 WalkingHeight = 36.0f;
 	constexpr float32 ShellHeight = 24.0f;
-	constexpr float32 SlideSpeed = 460.0f;
-	constexpr float32 WalkSpeed = 50.0f;
+
+	// 止まった甲羅は、止まってから、この時間は、蹴れない（踏んだ足が、そのまま蹴ってしまわないように）
+	constexpr float32 StillGrace = 0.15f;
+
+	// 蹴り出した直後の、主人公にダメージを与えない時間（蹴った足が、そのまま当たらないように）
+	constexpr float32 KickGrace = 0.25f;
 }
 
 CPlatformer2DShelled::CPlatformer2DShelled( const TSharedPtr<FPlatformer2DState>& InState, const FVector2& InFeetPosition )
-	: CPlatformer2DEnemy( InState, InFeetPosition, ShellHalfWidth, WalkingHeight )
+	: CPlatformer2DEnemy( InState, InFeetPosition, ShellHalfWidth, WalkingHeight, "Platformer/Shelled2D.gxstate" )
 {}
 
 bool CPlatformer2DShelled::IsDeadly() const
 {
-	if ( Mode == EMode::Still )
+	if ( IsInMachineState( "Sliding" ) )
 	{
-		return false;
+		return GetMachineStateTime() > KickGrace;
 	}
-	return KickGrace <= 0.0f;
+	// 歩いているときは、ダメージ。止まった甲羅は、ダメージを与えない
+	return IsInMachineState( "Walk" );
 }
 
-void CPlatformer2DShelled::OnStomped( float32 PlayerX )
+bool CPlatformer2DShelled::IsStill() const
 {
-	if ( Mode == EMode::Walking || Mode == EMode::Sliding )
-	{
-		// 甲羅にこもって、止まる（背が低くなる）
-		Mode = EMode::Still;
-		Height = ShellHeight;
-		Velocity.x = 0.0f;
-		return;
-	}
-	OnKicked( PlayerX );
+	return IsInMachineState( "Still" ) && GetMachineStateTime() > StillGrace;
 }
 
-void CPlatformer2DShelled::OnKicked( float32 PlayerX )
+bool CPlatformer2DShelled::IsDangerousToEnemies() const
 {
-	Mode = EMode::Sliding;
-	Direction = Position.x >= PlayerX ? 1.0f : -1.0f;
-	KickGrace = 0.25f;
+	return IsInMachineState( "Sliding" );
 }
 
-void CPlatformer2DShelled::OnTickActive( float32 DeltaTime )
+void CPlatformer2DShelled::BeginShell()
 {
-	if ( KickGrace > 0.0f )
+	// 甲羅にこもって、止まる（背が低くなる）
+	Height = ShellHeight;
+	Velocity.x = 0.0f;
+}
+
+void CPlatformer2DShelled::BeginSlide()
+{
+	Height = ShellHeight;
+	Direction = Position.x >= LastPlayerX ? 1.0f : -1.0f;
+}
+
+void CPlatformer2DShelled::StepSlide( float32 DeltaTime, float32 Speed )
+{
+	StepWalk( DeltaTime, Speed, false );
+	// すべっている甲羅は、ぶつかった敵を倒す
+	for ( const TSharedPtr<CPlatformer2DEnemy>& Other : GetScene()->FindObjects<CPlatformer2DEnemy>() )
 	{
-		KickGrace -= DeltaTime;
-	}
-	switch ( Mode )
-	{
-	case EMode::Walking:
-		Walk( DeltaTime, WalkSpeed );
-		break;
-	case EMode::Still:
-		// 止まったまま（重力だけ）
-		Walk( DeltaTime, 0.0f );
-		break;
-	case EMode::Sliding:
-		Walk( DeltaTime, SlideSpeed );
-		// すべっている甲羅は、ぶつかった敵を倒す
-		for ( const TSharedPtr<CPlatformer2DEnemy>& Other : GetScene()->FindObjects<CPlatformer2DEnemy>() )
+		if ( Other.Get() != this && Other->IsAlive() && Other->Overlaps( Position, HalfWidth, Height ) )
 		{
-			if ( Other.Get() != this && Other->IsAlive() && Other->Overlaps( Position, HalfWidth, Height ) )
-			{
-				Other->KnockOff( Direction );
-			}
+			Other->KnockOff( Direction );
 		}
-		break;
 	}
 }
 
@@ -80,7 +72,7 @@ void CPlatformer2DShelled::Draw( FDrawContext& CommandList )
 	const int32 X = State->ToScreenX( Position.x );
 	const int32 Y = static_cast<int32>( Position.y );
 	const FColor32 ShellColor( 40, 168, 72 );
-	if ( Mode == EMode::Walking )
+	if ( IsInMachineState( "Walk" ) )
 	{
 		const bool bStep = ( static_cast<int32>( State->Time * 5.0f ) % 2 ) == 0;
 		// 足と、頭（進む向きに出る）
@@ -95,7 +87,7 @@ void CPlatformer2DShelled::Draw( FDrawContext& CommandList )
 		return;
 	}
 	// こもった甲羅（すべっているときは、模様が回る）
-	const int32 Spin = Mode == EMode::Sliding ? static_cast<int32>( State->Time * 20.0f ) % 3 : 0;
+	const int32 Spin = IsInMachineState( "Sliding" ) ? static_cast<int32>( State->Time * 20.0f ) % 3 : 0;
 	CommandList.Oval( X, Y - 12, 15, 12, ShellColor, true );
 	CommandList.Oval( X, Y - 12, 15, 12, FColor32( 20, 100, 44 ), false, 2 );
 	CommandList.Line( X - 10 + Spin * 4, Y - 22, X - 10 + Spin * 4, Y - 2, FColor32( 20, 100, 44 ), 2 );

@@ -1,0 +1,62 @@
+{
+  "Version": 1,
+  "Blackboard": "Platformer/Enemy.gxblackboard",
+  "Entry": "Alive",
+  "States": [
+    {
+      "Name": "Alive"
+    },
+    {
+      "Name": "Squashed",
+      "OnEnter": [
+        {
+          "Do": "Enemy.Squash"
+        }
+      ]
+    },
+    {
+      "Name": "Gone",
+      "OnEnter": [
+        {
+          "Do": "Enemy.Remove"
+        }
+      ]
+    },
+    {
+      "Name": "Flying",
+      "OnEnter": [
+        {
+          "Do": "Enemy.Fly"
+        }
+      ],
+      "OnTick": [
+        {
+          "Do": "Enemy.Fly"
+        }
+      ]
+    }
+  ],
+  "Transitions": [
+    {
+      "From": "Alive",
+      "To": "Squashed",
+      "On": "Stomped"
+    },
+    {
+      "From": "Squashed",
+      "To": "Gone",
+      "When": [
+        {
+          "Time": 0.5
+        }
+      ]
+    }
+  ],
+  "AnyTransitions": [
+    {
+      "To": "Flying",
+      "On": "KnockedOff",
+      "Priority": 50
+    }
+  ]
+}

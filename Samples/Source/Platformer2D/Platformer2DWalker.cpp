@@ -10,12 +10,14 @@ namespace
 }
 
 CPlatformer2DWalker::CPlatformer2DWalker( const TSharedPtr<FPlatformer2DState>& InState, const FVector2& InFeetPosition )
-	: CPlatformer2DEnemy( InState, InFeetPosition, WalkerHalfWidth, WalkerHeight )
+	: CPlatformer2DEnemy( InState, InFeetPosition, WalkerHalfWidth, WalkerHeight, "Platformer/Walker2D.gxstate" )
 {}
 
 void CPlatformer2DWalker::OnStomped( float32 PlayerX )
 {
-	Squash( 0.5f );
+	// すぐ、生きていないことにする（同じフレームに、ほかのものが、また踏まない）。つぶれる姿へは、ステートマシンが遷移する
+	bSquashed = true;
+	CPlatformer2DEnemy::OnStomped( PlayerX );
 }
 
 void CPlatformer2DWalker::Draw( FDrawContext& CommandList )

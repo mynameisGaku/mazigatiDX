@@ -22,6 +22,11 @@ FPlatformerOptions FPlatformerOptions::FromCommandLine()
 void FPlatformerOptions::ApplyTo( FPlatformerStatus& Status ) const
 {
 	Status.Form = Form;
+	// 自動操作は、最後まで見られるように、残機を多くする
+	if ( bAutoPlay )
+	{
+		Status.Lives = 9;
+	}
 	if ( bStar )
 	{
 		Status.StarTime = FPlatformerStatus::StarSeconds;

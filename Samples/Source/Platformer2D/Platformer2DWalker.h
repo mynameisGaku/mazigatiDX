@@ -6,6 +6,7 @@
 //=============================================================================
 // CPlatformer2DWalker
 //   いちばん基本の敵。まっすぐ歩いて、壁で向きを変える。上から踏まれると、ぺしゃんこになって消える。横からふれると、ダメージ。
+//   ステートマシン: Samples/Assets/Platformer/Walker2D.gxstate（Walk → Squashed → Gone、どこからでも Flying）
 //=============================================================================
 class CPlatformer2DWalker : public CPlatformer2DEnemy
 {

@@ -5,6 +5,7 @@
 #include "Library/Framework/Render/Draw/ImmediateDraw.h"
 #include "Source/Catalog/SampleCatalog.h"
 #include "Source/Common/PlatformerOptions.h"
+#include "Source/Common/PlatformerParts.h"
 #include "Source/Platformer3D/Platformer3DHud.h"
 #include "Source/Platformer3D/Platformer3DPlayer.h"
 #include "Source/Platformer3D/Platformer3DShelled.h"
@@ -24,6 +25,9 @@ namespace
 
 void CPlatformer3DSample::OnEnter()
 {
+	// ステートマシン（Samples/Assets/Platformer/*.gxstate）が呼ぶ、ステートの処理を登録する（2D と 3D で共通。1 回だけ）
+	NPlatformerParts::Register();
+
 	State = MakeShared<FPlatformer3DState>();
 
 	// 起動の引数（--autoplay、--form=big / fire、--star）
