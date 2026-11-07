@@ -791,7 +791,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\NewProject.ps1 -Name M
 
 ## サンプル集
 
-`Samples`は、機能を1つずつ動かして見られるサンプル集です。起動すると一覧が出て、上下キーで選び、Enterで動かし、サンプルの中からEscで一覧へ戻ります。`--sample=Hello`のように名前を付けて起動すると、一覧を飛ばしてそのサンプルから始まります（`NCommandLine::GetValue( "sample" )`で読みます）。
+`Samples`は、機能を1つずつ動かして見られるサンプル集です。起動すると一覧が出て（サンプルが増えても収まるように2列。左の列を上から順に、続けて右の列）、上下キーで選び（左右キーで列を移り）、Enterで動かし、サンプルの中からEscで一覧へ戻ります。`--sample=Hello`のように名前を付けて起動すると、一覧を飛ばしてそのサンプルから始まります（`NCommandLine::GetValue( "sample" )`で読みます）。
 
 - **1サンプル = 1フォルダー**（`Samples/Source/<名前>/`）。中身は、シーン1つ（`CSampleScene`を継承）と、そのシーンが置くオブジェクトのクラスで、**1ファイルに1クラス**です。シーンは何をどこに置くかだけを決め、描き方・動き方はオブジェクトが持ちます。
 - サンプルは、自分の`.cpp`の中で`TSampleRegistrar<T>`を静的変数として置いて、自分を`CSampleCatalog`へ登録します（名前・一覧に出す題・説明・並び順）。サンプルを足しても、アプリケーション（`Application/`）と一覧の画面（`Browser/`）は書き換えません。

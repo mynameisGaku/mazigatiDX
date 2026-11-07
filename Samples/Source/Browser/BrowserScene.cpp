@@ -11,6 +11,14 @@ namespace
 	// 一覧の 1 行の高さと、最初の行の位置（ピクセル）
 	constexpr int32 FirstRowY = 120;
 	constexpr int32 RowHeight = 28;
+
+	// 一覧の列の数と、列の幅、最初の列の左端（ピクセル）
+	constexpr int32 NumColumns = 2;
+	constexpr int32 ColumnWidth = 600;
+	constexpr int32 FirstColumnX = 32;
+
+	// 選んでいるサンプルの説明の位置（画面の下に固定。サンプルが増えても動かない）
+	constexpr int32 DescriptionY = 660;
 }
 
 void CBrowserScene::OnEnter()
@@ -45,6 +53,15 @@ void CBrowserScene::OnTick( float32 DeltaTime )
 		MoveSelection( 1 );
 	}
 
+	if ( Input->IsKeyPressed( EKey::Left ) || Input->IsKeyPressed( EKey::A ) )
+	{
+		MoveSelection( -GetRowsPerColumn() );
+	}
+	if ( Input->IsKeyPressed( EKey::Right ) || Input->IsKeyPressed( EKey::D ) )
+	{
+		MoveSelection( GetRowsPerColumn() );
+	}
+
 	if ( Input->IsKeyPressed( EKey::Enter ) || Input->IsKeyPressed( EKey::Space ) )
 	{
 		const FSampleInfo& Selected = Entries[SelectedIndex];
@@ -57,7 +74,7 @@ void CBrowserScene::OnDraw()
 {
 	FImmediateDraw Screen( GetDrawExecutor() );
 	Screen.Text( 16, 16, "mazigatiDX Samples", FColor32::White );
-	Screen.Text( 16, 40, "[Up / Down] Choose    [Enter] Run    [Esc] (in a sample) Back to this list", FColor32::Gray );
+	Screen.Text( 16, 40, "[Up / Down / Left / Right] Choose    [Enter] Run    [Esc] (in a sample) Back to this list", FColor32::Gray );
 
 	if ( Entries.IsEmpty() )
 	{
@@ -65,15 +82,22 @@ void CBrowserScene::OnDraw()
 		return;
 	}
 
+	const int32 RowsPerColumn = GetRowsPerColumn();
 	for ( int32 i = 0; i < Entries.Num(); ++i )
 	{
 		const bool bSelected = i == SelectedIndex;
-		Screen.TextF( 32, FirstRowY + i * RowHeight, bSelected ? FColor32::Yellow : FColor32::White, "%s %s", bSelected ? ">" : " ", *Entries[i].Title );
+		const int32 X = FirstColumnX + ( i / RowsPerColumn ) * ColumnWidth;
+		const int32 Y = FirstRowY + ( i % RowsPerColumn ) * RowHeight;
+		Screen.TextF( X, Y, bSelected ? FColor32::Yellow : FColor32::White, "%s %s", bSelected ? ">" : " ", *Entries[i].Title );
 	}
 
 	// 選んでいるサンプルの説明
-	const int32 DescriptionY = FirstRowY + Entries.Num() * RowHeight + 24;
-	Screen.Text( 32, DescriptionY, *Entries[SelectedIndex].Description, FColor32::Gray );
+	Screen.Text( FirstColumnX, DescriptionY, *Entries[SelectedIndex].Description, FColor32::Gray );
+}
+
+int32 CBrowserScene::GetRowsPerColumn() const
+{
+	return NMath::Max( 1, ( Entries.Num() + NumColumns - 1 ) / NumColumns );
 }
 
 void CBrowserScene::MoveSelection( int32 Delta )

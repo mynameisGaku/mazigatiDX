@@ -49,6 +49,9 @@
     <ClCompile Include="Source\Catalog\SampleScene.cpp">
       <Filter>Source\Catalog</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Common\PhysicsView.cpp">
+      <Filter>Source\Common</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Common\ShaderMeshes.cpp">
       <Filter>Source\Common</Filter>
     </ClCompile>
@@ -141,6 +144,21 @@
     </ClCompile>
     <ClCompile Include="Source\Lighting\LightingView.cpp">
       <Filter>Source\Lighting</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Physics\PhysicsBody.cpp">
+      <Filter>Source\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Physics\PhysicsSample.cpp">
+      <Filter>Source\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Physics\RopeJoint.cpp">
+      <Filter>Source\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Physics\SensorZone.cpp">
+      <Filter>Source\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Physics\StaticBlock.cpp">
+      <Filter>Source\Physics</Filter>
     </ClCompile>
     <ClCompile Include="Source\PixelEffects\PixelEffectsSample.cpp">
       <Filter>Source\PixelEffects</Filter>
@@ -339,6 +357,9 @@
     <ClInclude Include="Source\Catalog\SampleScene.h">
       <Filter>Source\Catalog</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Common\PhysicsView.h">
+      <Filter>Source\Common</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Common\ShaderMeshes.h">
       <Filter>Source\Common</Filter>
     </ClInclude>
@@ -440,6 +461,21 @@
     </ClInclude>
     <ClInclude Include="Source\Lighting\LightingView.h">
       <Filter>Source\Lighting</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Physics\PhysicsBody.h">
+      <Filter>Source\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Physics\PhysicsSample.h">
+      <Filter>Source\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Physics\RopeJoint.h">
+      <Filter>Source\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Physics\SensorZone.h">
+      <Filter>Source\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Physics\StaticBlock.h">
+      <Filter>Source\Physics</Filter>
     </ClInclude>
     <ClInclude Include="Source\PixelEffects\PixelEffectsSample.h">
       <Filter>Source\PixelEffects</Filter>
@@ -646,6 +682,9 @@
     </Filter>
     <Filter Include="Source\Lighting">
       <UniqueIdentifier>{4EB65EA3-3FEC-7570-1AA7-399CE99C056E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Physics">
+      <UniqueIdentifier>{E38D2DD8-C584-E77B-3BFE-E6AE76D6AEFB}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\PixelEffects">
       <UniqueIdentifier>{173D6A76-D99B-63C5-0023-893638D4E51C}</UniqueIdentifier>

@@ -69,6 +69,7 @@
     <ClCompile Include="Source\Camera\TopView.cpp" />
     <ClCompile Include="Source\Catalog\SampleCatalog.cpp" />
     <ClCompile Include="Source\Catalog\SampleScene.cpp" />
+    <ClCompile Include="Source\Common\PhysicsView.cpp" />
     <ClCompile Include="Source\Common\ShaderMeshes.cpp" />
     <ClCompile Include="Source\Common\TestPattern.cpp" />
     <ClCompile Include="Source\DrawState\BlendShowcase.cpp" />
@@ -100,6 +101,11 @@
     <ClCompile Include="Source\Lighting\LightingSample.cpp" />
     <ClCompile Include="Source\Lighting\LightingScenery.cpp" />
     <ClCompile Include="Source\Lighting\LightingView.cpp" />
+    <ClCompile Include="Source\Physics\PhysicsBody.cpp" />
+    <ClCompile Include="Source\Physics\PhysicsSample.cpp" />
+    <ClCompile Include="Source\Physics\RopeJoint.cpp" />
+    <ClCompile Include="Source\Physics\SensorZone.cpp" />
+    <ClCompile Include="Source\Physics\StaticBlock.cpp" />
     <ClCompile Include="Source\PixelEffects\PixelEffectsSample.cpp" />
     <ClCompile Include="Source\PixelEffects\PixelEffectTile.cpp" />
     <ClCompile Include="Source\Pixels\PixelsSample.cpp" />
@@ -168,6 +174,7 @@
     <ClInclude Include="Source\Catalog\SampleCatalog.h" />
     <ClInclude Include="Source\Catalog\SampleInfo.h" />
     <ClInclude Include="Source\Catalog\SampleScene.h" />
+    <ClInclude Include="Source\Common\PhysicsView.h" />
     <ClInclude Include="Source\Common\ShaderMeshes.h" />
     <ClInclude Include="Source\Common\SoftLighting.h" />
     <ClInclude Include="Source\Common\TestPattern.h" />
@@ -202,6 +209,11 @@
     <ClInclude Include="Source\Lighting\LightingSample.h" />
     <ClInclude Include="Source\Lighting\LightingScenery.h" />
     <ClInclude Include="Source\Lighting\LightingView.h" />
+    <ClInclude Include="Source\Physics\PhysicsBody.h" />
+    <ClInclude Include="Source\Physics\PhysicsSample.h" />
+    <ClInclude Include="Source\Physics\RopeJoint.h" />
+    <ClInclude Include="Source\Physics\SensorZone.h" />
+    <ClInclude Include="Source\Physics\StaticBlock.h" />
     <ClInclude Include="Source\PixelEffects\PixelEffectsSample.h" />
     <ClInclude Include="Source\PixelEffects\PixelEffectTile.h" />
     <ClInclude Include="Source\Pixels\PixelsSample.h" />
