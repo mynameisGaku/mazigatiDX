@@ -775,6 +775,9 @@
     <ClCompile Include="Library\Framework\Text\TextLayout.cpp">
       <Filter>Library\Framework\Text</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\UI\Brush\UIBrush.cpp">
+      <Filter>Library\Framework\UI\Brush</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\UI\Core\UIPanels.cpp">
       <Filter>Library\Framework\UI\Core</Filter>
     </ClCompile>
@@ -2759,6 +2762,9 @@
     </ClInclude>
     <ClInclude Include="Library\Framework\Text\TextLayout.h">
       <Filter>Library\Framework\Text</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\UI\Brush\UIBrush.h">
+      <Filter>Library\Framework\UI\Brush</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\UI\Core\UIPanels.h">
       <Filter>Library\Framework\UI\Core</Filter>
@@ -4795,6 +4801,9 @@
     </Filter>
     <Filter Include="Library\Framework\UI">
       <UniqueIdentifier>{B48D1ABF-C151-C6CA-11D0-7E60B20F1D52}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\UI\Brush">
+      <UniqueIdentifier>{2F32AA68-8735-2EA0-3D3C-2F9D590F2D83}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\UI\Core">
       <UniqueIdentifier>{C81896F2-AAE1-6853-A8B3-5A8A563C8260}</UniqueIdentifier>

@@ -1,6 +1,8 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "UIWidget.h"
 
+#include <cmath>
+
 #include "Library/Core/Types/Numeric.h"
 
 namespace
@@ -146,6 +148,50 @@ CUIWidget* CUIWidget::HitTest( const FVector2& Point )
 		}
 	}
 	return ( bHitTestable && bInside ) ? this : nullptr;
+}
+
+void CUIWidget::OnPaint( FDrawContext&, float32 )
+{
+}
+
+void CUIWidget::Paint( FDrawContext& CommandList )
+{
+	PaintRecursive( CommandList, 1.0f );
+	// ブラシが設定したブレンド（アルファ）と画像に掛ける色を、元（不透明・白）に戻す
+	CommandList.Blend( EDrawBlend::Opaque );
+	CommandList.Tint( FColor32( 255, 255, 255 ) );
+}
+
+void CUIWidget::PaintRecursive( FDrawContext& CommandList, float32 ParentOpacity )
+{
+	if ( Visibility != EUIVisibility::Visible )
+	{
+		return;
+	}
+	const float32 EffectiveOpacity = ParentOpacity * Opacity;
+	if ( EffectiveOpacity <= 0.0f )
+	{
+		return;
+	}
+
+	NUIBrush::Draw( CommandList, Background, Rect, EffectiveOpacity );
+	OnPaint( CommandList, EffectiveOpacity );
+
+	// クリップは整数の範囲。矩形を含む最小の整数の範囲にする
+	bool bPushedClip = false;
+	if ( bClipChildren )
+	{
+		bPushedClip = CommandList.PushClip( static_cast<int32>( std::floor( Rect.Left() ) ), static_cast<int32>( std::floor( Rect.Top() ) ),
+											static_cast<int32>( std::ceil( Rect.Right() ) ), static_cast<int32>( std::ceil( Rect.Bottom() ) ) );
+	}
+	for ( int32 Index = 0; Index < Children.Num(); ++Index )
+	{
+		Children[Index]->PaintRecursive( CommandList, EffectiveOpacity );
+	}
+	if ( bPushedClip )
+	{
+		CommandList.PopClip();
+	}
 }
 
 void CUIWidget::SetLayout( const FUILayoutProperties& InLayout )

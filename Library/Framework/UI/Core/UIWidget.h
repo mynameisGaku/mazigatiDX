@@ -4,6 +4,7 @@
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Memory/SharedPtr.h"
+#include "Library/Framework/UI/Brush/UIBrush.h"
 #include "Library/Framework/UI/Core/UITypes.h"
 
 //=============================================================================
@@ -49,6 +50,7 @@ struct FUILayoutProperties
 //   レイアウトは 2 段階:
 //     Measure（子から親へ）: 各部品の「ほしい大きさ」（DesiredSize。外側の余白を含む）を決める。
 //     Arrange（親から子へ）: 親が決めた置き場所（Slot）の中に、寄せ方・余白・最小 / 最大を使って、実際の矩形（GetRect）を決める。
+//   見た目: 背景のブラシ（FUIBrush）と不透明度（子孫にも掛かる）を持ち、Paint が、木の描画命令を FDrawContext へ記録する（描く順は、背景 → OnPaint → 子）。
 //   レイアウトは変更のあった木だけ計算し直す（UpdateLayout が、ダーティフラグと領域の変化を見て、必要なときだけ実行する）。
 //
 //   TSharedPtr<CUIWidget> Root = MakeShared<CUIWidget>();
@@ -94,6 +96,19 @@ public:
 	// 点に当たる、いちばん手前の部品（Visible で、HitTestable で、矩形の中にあるもの）。なければ null。子は、あとのものほど手前
 	CUIWidget* HitTest( const FVector2& Point );
 
+	// --- 見た目 -----------------------------------------------------------
+	// 背景のブラシ（部品の矩形いっぱいに描く。既定は何も描かない）
+	void SetBackground( const FUIBrush& InBackground ) { Background = InBackground; }
+	const FUIBrush& GetBackground() const { return Background; }
+	// 不透明度（0〜1。範囲の外は収める）。子孫にも掛かる（親の不透明度との積）
+	void SetOpacity( float32 InOpacity ) { Opacity = NMath::Clamp( InOpacity, 0.0f, 1.0f ); }
+	float32 GetOpacity() const { return Opacity; }
+
+	// この部品と子孫を描く命令を、CommandList へ記録する（ルートに対して呼ぶ。先に UpdateLayout で矩形を決めておく）。
+	// Visible の部品だけを描く（Hidden / Collapsed は、子ごと描かない）。クリップする部品は、子を矩形でクリップする。
+	// 最後に、ブレンドと画像に掛ける色を、元に戻す
+	void Paint( FDrawContext& CommandList );
+
 	// --- レイアウト -------------------------------------------------------
 	const FUILayoutProperties& GetLayout() const { return Layout; }
 	void SetLayout( const FUILayoutProperties& InLayout );
@@ -124,17 +139,20 @@ protected:
 	// 内側の矩形 ContentRect（Padding を引いたもの）の中に、子を置く。既定は、子をすべて、いっぱいに置く
 	virtual void ArrangeChildren( const FUIRect& ContentRect );
 
-	// 子の一覧を、パネルが読むための窓口（Collapsed の子は、パネルが飛ばす）
-	TArray<TSharedPtr<CUIWidget>>& GetMutableChildren() { return Children; }
+	// 背景を描いたあとに、部品が自分の中身（文字・画像など）を描く。EffectiveOpacity は、親から掛け合わせた不透明度。既定は何もしない
+	virtual void OnPaint( FDrawContext& CommandList, float32 EffectiveOpacity );
 
 private:
 	void ClearLayoutDirty();
+	void PaintRecursive( FDrawContext& CommandList, float32 ParentOpacity );
 
 	FString Name;
 	CUIWidget* Parent = nullptr;
 	TArray<TSharedPtr<CUIWidget>> Children;
 	FUILayoutProperties Layout;
 	EUIVisibility Visibility = EUIVisibility::Visible;
+	FUIBrush Background;
+	float32 Opacity = 1.0f;
 	bool bHitTestable = true;
 	bool bClipChildren = false;
 	bool bLayoutDirty = true;
