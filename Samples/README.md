@@ -32,6 +32,7 @@ mazigatiDX の機能を、1 つずつ動かして見られるサンプル集で�
 |`PostEffects`|描画先とポストエフェクト。夜の広場（光る玉・ネオンの溝）を 16 ビットの浮動小数点の描画先へ描き（1 を超える明るさが残る）、同じピクセルシェーダーで深度を 32 ビットの描画先へ同時に書く（`ShaderOutputTarget`。複数の出力）。明るい所を抜き出してぼかし（ブルーム）、深度で霧をかけ、トーンマップ（ACES・Reinhard）で画面に貼る。1 キーで見せるもの（仕上がり・8 ビット相当・ブルームだけ・深度）、2〜5 キーでトーンマップ・ブルーム・霧・時間、Q / E キーで露出を切り替える|
 |`Island`|3D の見本（ゲームの画面らしい構成）。探検家が島を歩き、光る結晶を集める。地形（頂点バッファ + インデックスバッファ。決まったシードから作る）・木と灯台（3D 図形）・空を動く太陽と影（シャドウマップ）・回る灯台の光（スポットライト）・霧・半透明の海・加算の光のにじみ・地図・名札（`WorldToScreen`）・右クリックの目的地（`ScreenToRay`）。WASD で歩き、右クリックでその場所へ歩き、ドラッグでカメラを回し、ホイールで近づく。数字キーの 1〜3 で、影・霧・時刻を切り替える|
 |`Input`|キーボード・マウス・ゲームパッドの状態を表示する|
+|`Audio`|音。音のファイルを使わず、計算で作った音を鳴らす（始めは無音。操作したときだけ鳴る。音量は小さめ）。鍵盤（1〜8 キー / クリック。1 つの音を`Pitch`と`Pan`を変えて鳴らす）、左右に動く球（Enter / クリックで、ずっと鳴る音を始める / フェードで止める。球の位置を`SetPan`に渡す）、シンセ（左ボタンを押しながらなぞると、その場で計算した波形を`CPcmStream`に足し続けて鳴らす）、上下キーで全体の音量（`SetMasterVolume`）|
 |`Physics`|物理（Jolt）。横から見た 2D の画面で、剛体（球・箱が落ちて積もる。動かない床・壁・足場）、関節（ロープでぶら下がった球が振り子のように揺れる。`FConstraintSettings::Distance`）、センサー（緑の枠。入った / 出た物を接触の通知で数える）、空間クエリ（マウスが指す物を`RayCast`で見つけて白く縁取り、左クリックで蹴る）を見せる。Space / 右クリックで物を足せる。F4 で物理の形の線（デバッグビュー）を出せる|
 |`AI`|AI（ステートマシンとビヘイビアツリー）。Hero（`Hero.gxstate`。Idle / Run / Attack / Hurt のステートマシン）を A / D キーで歩かせ、Space / J で攻撃させる。Guard（`Guard.gxbt`。見回り・追いかけ・攻撃）・Scout（`Scout.gxbt`。遠くから見つけて付きまとう）・Villager（`Villager.gxbt`。巡回するだけ）は、同じ C++ のクラスに別のツリー（JSON）を渡しただけ。F1 > AI Debugger で、ステート・ノード・ブラックボードを見られ、AI Editor で、ファイルを編集して保存すると、動いたまま反映される（`--tool=ai` / `--tool=aieditor` で最初から開く。`--ai-count=300` で、負荷の確認用に見張りを増やす）|
 
@@ -63,6 +64,7 @@ Samples/
     AI/                         サンプル AI: シーン（CAISample）と、オブジェクト（CAIActor、CAIHero、CAIGuard）、AI の部品（AIParts）
     Village/                    サンプル Village: シーン（CVillageSample）と、オブジェクト（CTileMap、CPlayer、CCoin、CVillager、CDialogue、CDarkness、CStatusPanel）、共有する状態（FVillageState）、絵を CPU で作る関数（NVillageArt）
     Common/                     複数のサンプルで使うもの。確認用の画像を、メモリの上で作る関数（NTestPattern）、光の当たらない側を真っ黒にしない、やわらかい光（FSoftLightingScope）、シェーダーで描く形（球・立方体・地面。NShaderMeshes）
+    Audio/                      サンプル Audio: シーン（CAudioSample）と、オブジェクト（CToneKeys、CPanBall、CSynthPad）、音を計算で作る関数（NToneMaker）
     Physics/                    サンプル Physics: シーン（CPhysicsSample。`IPhysicsScene` も継承して、物理のワールドを持つ）と、オブジェクト（CStaticBlock、CPhysicsBody、CRopeJoint、CSensorZone）
     Input/                      サンプル Input: シーン（CInputSample）と、オブジェクト（CKeyboardView、CMouseView、CGamepadView）
   Config/ScreenConfig.json      ウィンドウの設定

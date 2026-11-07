@@ -22,6 +22,21 @@
     <ClCompile Include="Source\Application\SamplesApplication.cpp">
       <Filter>Source\Application</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Audio\AudioSample.cpp">
+      <Filter>Source\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Audio\PanBall.cpp">
+      <Filter>Source\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Audio\SynthPad.cpp">
+      <Filter>Source\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Audio\ToneKeys.cpp">
+      <Filter>Source\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Audio\ToneMaker.cpp">
+      <Filter>Source\Audio</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Browser\BrowserScene.cpp">
       <Filter>Source\Browser</Filter>
     </ClCompile>
@@ -323,6 +338,21 @@
     </ClInclude>
     <ClInclude Include="Source\Application\SamplesApplication.h">
       <Filter>Source\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Audio\AudioSample.h">
+      <Filter>Source\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Audio\PanBall.h">
+      <Filter>Source\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Audio\SynthPad.h">
+      <Filter>Source\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Audio\ToneKeys.h">
+      <Filter>Source\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Audio\ToneMaker.h">
+      <Filter>Source\Audio</Filter>
     </ClInclude>
     <ClInclude Include="Source\Browser\BrowserScene.h">
       <Filter>Source\Browser</Filter>
@@ -649,6 +679,9 @@
     </Filter>
     <Filter Include="Source\Application">
       <UniqueIdentifier>{3C309C29-8704-EF3C-6238-884C86DCE4EF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Audio">
+      <UniqueIdentifier>{8910E515-6B55-5D30-B7AF-14EDF4D3D31E}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Browser">
       <UniqueIdentifier>{D8D78B2D-2923-6F91-261A-33237F267A69}</UniqueIdentifier>

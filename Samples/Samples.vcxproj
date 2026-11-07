@@ -60,6 +60,11 @@
     <ClCompile Include="Source\AI\AIParts.cpp" />
     <ClCompile Include="Source\AI\AISample.cpp" />
     <ClCompile Include="Source\Application\SamplesApplication.cpp" />
+    <ClCompile Include="Source\Audio\AudioSample.cpp" />
+    <ClCompile Include="Source\Audio\PanBall.cpp" />
+    <ClCompile Include="Source\Audio\SynthPad.cpp" />
+    <ClCompile Include="Source\Audio\ToneKeys.cpp" />
+    <ClCompile Include="Source\Audio\ToneMaker.cpp" />
     <ClCompile Include="Source\Browser\BrowserScene.cpp" />
     <ClCompile Include="Source\Camera\CameraRig.cpp" />
     <ClCompile Include="Source\Camera\CameraSample.cpp" />
@@ -163,6 +168,11 @@
     <ClInclude Include="Source\AI\AIParts.h" />
     <ClInclude Include="Source\AI\AISample.h" />
     <ClInclude Include="Source\Application\SamplesApplication.h" />
+    <ClInclude Include="Source\Audio\AudioSample.h" />
+    <ClInclude Include="Source\Audio\PanBall.h" />
+    <ClInclude Include="Source\Audio\SynthPad.h" />
+    <ClInclude Include="Source\Audio\ToneKeys.h" />
+    <ClInclude Include="Source\Audio\ToneMaker.h" />
     <ClInclude Include="Source\Browser\BrowserScene.h" />
     <ClInclude Include="Source\Camera\CameraDemoState.h" />
     <ClInclude Include="Source\Camera\CameraRig.h" />
