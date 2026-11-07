@@ -1,4 +1,5 @@
 ﻿#include "ProfilerExport.h"
+#include "Library/Framework/Profiler/ProfilerLog.h"
 
 
 #include "Library/Core/File/File.h"
@@ -7,8 +8,6 @@
 #include "Library/Framework/Profiler/ProfilerAnalyzer.h"
 #include "Library/Platform/System/FileSystem.h"
 #include "Library/Platform/System/ProjectPaths.h"
-
-DEFINE_LOG_CATEGORY_STATIC( LogProfilerExport, Log )
 
 namespace
 {
@@ -64,7 +63,7 @@ bool NProfilerExport::WriteChromeTrace( const IProfiler& Profiler, int32 FirstFr
 {
 	if ( !NProfilerAnalyzer::ClampFrameRange( Profiler, FirstFrame, LastFrame ) )
 	{
-		LOG( LogProfilerExport, Warning, "Nothing to export: no frames have been recorded." );
+		LOG( LogProfiler, Warning, "Nothing to export: no frames have been recorded." );
 		return false;
 	}
 
@@ -72,14 +71,14 @@ bool NProfilerExport::WriteChromeTrace( const IProfiler& Profiler, int32 FirstFr
 	const int32 SeparatorIndex = Path.Replace( "/", "\\" ).FindLast( "\\" );
 	if ( SeparatorIndex > 0 && !NFileSystem::EnsureDirectory( Path.Left( SeparatorIndex ) ) )
 	{
-		LOG( LogProfilerExport, Error, "Failed to create the folder for %s", *Path );
+		LOG( LogProfiler, Error, "Failed to create the folder for %s", *Path );
 		return false;
 	}
 
 	FFile File;
 	if ( !File.Open( Path, FFile::EMode::Write ) )
 	{
-		LOG( LogProfilerExport, Error, "Failed to open %s for writing", *Path );
+		LOG( LogProfiler, Error, "Failed to open %s for writing", *Path );
 		return false;
 	}
 
@@ -166,11 +165,11 @@ bool NProfilerExport::WriteChromeTrace( const IProfiler& Profiler, int32 FirstFr
 
 	if ( bOk )
 	{
-		LOG( LogProfilerExport, Log, "Exported %d frame(s), %lld event(s) to %s", LastFrame - FirstFrame + 1, static_cast<long long>( NumEvents ), *Path );
+		LOG( LogProfiler, Log, "Exported %d frame(s), %lld event(s) to %s", LastFrame - FirstFrame + 1, static_cast<long long>( NumEvents ), *Path );
 	}
 	else
 	{
-		LOG( LogProfilerExport, Error, "Failed while writing %s (disk full?)", *Path );
+		LOG( LogProfiler, Error, "Failed while writing %s (disk full?)", *Path );
 	}
 	return bOk;
 }

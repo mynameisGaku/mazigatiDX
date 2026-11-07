@@ -1,4 +1,5 @@
 ﻿#include "DxLibAssetBackendSubsystem.h"
+#include "Library/Platform/DxLib/DxLibBackendSubsystem.h"
 #include "Library/Core/Memory/Memory.h"
 
 
@@ -17,8 +18,6 @@
 #include <climits>
 #include <cstring>
 #include "Library/Platform/BackendSelection.h"
-
-DEFINE_LOG_CATEGORY_STATIC( LogAssetBackend, Log )
 
 REGISTER_SUBSYSTEM( CDxLibAssetBackendSubsystem )
 
@@ -73,7 +72,7 @@ void CDxLibAssetBackendSubsystem::Initialize( FSubsystemCollection& Collection )
 	// DxLib（プラットフォーム）が初期化されたあとに使う
 	if ( Collection.InitializeDependency<IPlatform>() == nullptr )
 	{
-		LOG( LogAssetBackend, Error, "No platform is available. Assets cannot be loaded." );
+		LOG( LogPlatform, Error, "No platform is available. Assets cannot be loaded." );
 	}
 }
 

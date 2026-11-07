@@ -1,4 +1,5 @@
 ﻿#include "ModelExporter.h"
+#include "Library/Framework/Asset/Loading/AssetLog.h"
 
 
 #include "Library/Core/Collection/Array.h"
@@ -10,8 +11,6 @@
 #include "Library/Framework/Asset/Model/Import/ModelFormats.h"
 #include "Library/Framework/Asset/Model/Import/XFileWriter.h"
 #include "Library/Platform/System/FileSystem.h"
-
-DEFINE_LOG_CATEGORY_STATIC( LogModelExport, Log )
 
 namespace
 {
@@ -55,14 +54,14 @@ namespace
 			Result.Warning += "\n";
 		}
 		Result.Warning += Text;
-		LOG( LogModelExport, Warning, "'%s': %s", *Result.SourcePath, *Text );
+		LOG( LogAsset, Warning, "'%s': %s", *Result.SourcePath, *Text );
 	}
 
 	FModelExportResult Fail( FModelExportResult Result, const FString& Reason )
 	{
 		Result.bSuccess = false;
 		Result.Error = Reason;
-		LOG( LogModelExport, Error, "Cannot export '%s' as .mv1: %s", *Result.SourcePath, *Reason );
+		LOG( LogAsset, Error, "Cannot export '%s' as .mv1: %s", *Result.SourcePath, *Reason );
 		return Result;
 	}
 
@@ -334,6 +333,6 @@ FModelExportResult NModelExport::Export( IModelBackend& Backend, const FString& 
 	Result.bSuccess = true;
 	Result.OutputBytes = NFileSystem::GetFileSize( Result.OutputPath );
 	Result.Milliseconds = static_cast<float32>( NPlatformTime::TicksToMs( NPlatformTime::GetTicks() - StartTick ) );
-	LOG( LogModelExport, Log, "%s", *Result.GetSummary() );
+	LOG( LogAsset, Log, "%s", *Result.GetSummary() );
 	return Result;
 }

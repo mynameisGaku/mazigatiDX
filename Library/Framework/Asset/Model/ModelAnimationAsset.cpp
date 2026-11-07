@@ -1,4 +1,5 @@
 ﻿#include "ModelAnimationAsset.h"
+#include "Library/Framework/Asset/Loading/AssetLog.h"
 
 
 #include "Library/Core/Log/Log.h"
@@ -6,8 +7,6 @@
 #include "Library/Framework/Animation/ModelAnimator.h"
 #include "Library/Json/JsonHelpers.h"
 #include "Library/Math/MathUtils.h"
-
-DEFINE_LOG_CATEGORY_STATIC( LogModelAnimationAsset, Log )
 
 //=============================================================================
 // FModelAnimationDefinition
@@ -104,7 +103,7 @@ bool FModelAnimationDefinition::FromJson( const NlohmannJson& Json, FModelAnimat
 			Clip.Name = NJson::GetOr<FString>( Item, "Name", FString() );
 			if ( Clip.Name.IsEmpty() )
 			{
-				LOG( LogModelAnimationAsset, Warning, "A clip without a Name was skipped." );
+				LOG( LogAsset, Warning, "A clip without a Name was skipped." );
 				continue;
 			}
 			Clip.SourcePath = NJson::GetOr<FString>( Item, "Source", FString() );
@@ -202,7 +201,7 @@ int32 CModelAnimationAsset::ApplyTo( FModelAnimator& Animator, const TSharedPtr<
 		}
 		if ( !Source.IsValid() )
 		{
-			LOG( LogModelAnimationAsset, Warning, "'%s': the clip '%s' has no animation file and the set has no model, skipped.", *GetPath(), *Clip.Name );
+			LOG( LogAsset, Warning, "'%s': the clip '%s' has no animation file and the set has no model, skipped.", *GetPath(), *Clip.Name );
 			continue;
 		}
 
@@ -216,7 +215,7 @@ int32 CModelAnimationAsset::ApplyTo( FModelAnimator& Animator, const TSharedPtr<
 			}
 			else if ( Source->IsReady() )
 			{
-				LOG( LogModelAnimationAsset, Warning, "'%s': the animation '%s' was not found in '%s'. Animation %d is used.", *GetPath(), *Clip.AnimName, *Source->GetPath(), AnimIndex );
+				LOG( LogAsset, Warning, "'%s': the animation '%s' was not found in '%s'. Animation %d is used.", *GetPath(), *Clip.AnimName, *Source->GetPath(), AnimIndex );
 			}
 		}
 

@@ -1,8 +1,7 @@
 ﻿#include "DynamicTexture.h"
+#include "Library/Framework/Asset/Loading/AssetLog.h"
 
 #include "Library/Core/Log/Log.h"
-
-DEFINE_LOG_CATEGORY_STATIC( LogDynamicTexture, Log )
 
 CDynamicTexture::CDynamicTexture( const FString& InName, int32 InHandle, int32 InWidth, int32 InHeight )
 	: CTexture( InName, InHandle, false )
@@ -19,7 +18,7 @@ bool CDynamicTexture::Update( const FPixelImage& Image )
 	}
 	if ( Image.GetWidth() != GetWidth() || Image.GetHeight() != GetHeight() )
 	{
-		LOG( LogDynamicTexture, Warning, "Cannot update the texture '%s' (%d x %d) with an image of another size (%d x %d).", *GetPath(), GetWidth(), GetHeight(), Image.GetWidth(), Image.GetHeight() );
+		LOG( LogAsset, Warning, "Cannot update the texture '%s' (%d x %d) with an image of another size (%d x %d).", *GetPath(), GetWidth(), GetHeight(), Image.GetWidth(), Image.GetHeight() );
 		return false;
 	}
 	return Backend->UpdateTexturePixels( GetHandle(), Image.GetWidth(), Image.GetHeight(), Image.GetData() );

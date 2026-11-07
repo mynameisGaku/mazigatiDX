@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "EffectMaterialRenderer.h"
+#include "Library/Platform/DxLib/Render/DxLibRenderLog.h"
 
 #include <d3d11.h>
 #include <d3dcompiler.h>
@@ -16,8 +17,6 @@
 
 namespace
 {
-	DEFINE_LOG_CATEGORY_STATIC( LogEffectMaterial, Log );
-
 	// 四角形一枚の頂点位置と画像座標を渡す値。
 	struct FVertex
 	{
@@ -153,7 +152,7 @@ float4 PSMain(VertexOutput Input) : SV_TARGET
 		ID3DBlob* Errors = nullptr;
 		// 指定entryとprofileのcompile結果。
 		const HRESULT Result = D3DCompile( ShaderSource, NCString::Length( ShaderSource ), "EffectMaterial", nullptr, nullptr, Entry, Target, D3DCOMPILE_ENABLE_STRICTNESS, 0, Blob, &Errors );
-		if ( FAILED( Result ) && Errors != nullptr ) LOG( LogEffectMaterial, Error, "材質シェーダーのコンパイルに失敗しました: %s", static_cast<const char*>( Errors->GetBufferPointer() ) );
+		if ( FAILED( Result ) && Errors != nullptr ) LOG( LogDxLibDraw, Error, "材質シェーダーのコンパイルに失敗しました: %s", static_cast<const char*>( Errors->GetBufferPointer() ) );
 		if ( Errors != nullptr ) Errors->Release();
 		return SUCCEEDED( Result ) && Device != nullptr;
 	}
@@ -361,7 +360,7 @@ struct FEffectMaterialRenderer::FImpl
 		if ( NewDevice == nullptr || NewContext == nullptr )
 		{
 			Deinitialize();
-			if ( !bFailedLogged ) { LOG( LogEffectMaterial, Warning, "材質描画に必要なDirect3D 11を使用できません" ); bFailedLogged = true; }
+			if ( !bFailedLogged ) { LOG( LogDxLibDraw, Warning, "材質描画に必要なDirect3D 11を使用できません" ); bFailedLogged = true; }
 			return false;
 		}
 		if ( Device == NewDevice && Context == NewContext && VertexShader != nullptr ) return true;
@@ -413,7 +412,7 @@ Failed:
 		if ( VsBlob != nullptr ) VsBlob->Release();
 		if ( PsBlob != nullptr ) PsBlob->Release();
 		Deinitialize();
-		if ( !bFailedLogged ) { LOG( LogEffectMaterial, Error, "材質描画用のDirect3D 11資源を作成できません" ); bFailedLogged = true; }
+		if ( !bFailedLogged ) { LOG( LogDxLibDraw, Error, "材質描画用のDirect3D 11資源を作成できません" ); bFailedLogged = true; }
 		return false;
 	}
 
@@ -473,7 +472,7 @@ Failed:
 		const FDrawQuad3DData& Quad = Data.Quad;
 		if ( ( Data.DepthTest != 0 && Data.DepthTest != 1 ) || ( Data.DepthWrite != 0 && Data.DepthWrite != 1 ) || Quad.Handle < 0 || Data.MaskTexture < -1 || !NMath::IsFinite( Quad.Width ) || !NMath::IsFinite( Quad.Height ) || Quad.Width <= 0.0f || Quad.Height <= 0.0f || !NMath::IsFinite( Data.UVScale[0] ) || !NMath::IsFinite( Data.UVScale[1] ) || !NMath::IsFinite( Data.UVOffset[0] ) || !NMath::IsFinite( Data.UVOffset[1] ) || !NMath::IsFinite( Data.MaskScale ) || Data.MaskScale <= 0.0f || !NMath::IsFinite( Data.Dissolve ) || Data.Dissolve < 0.0f || Data.Dissolve > 1.0f || !NMath::IsFinite( Data.Emission ) || Data.Emission < 0.0f || !NMath::IsFinite( Data.EdgeWidth ) || Data.EdgeWidth < 0.0f || !NMath::IsFinite( Data.EdgeEmission ) || Data.EdgeEmission < 0.0f || ( Data.bDissolve != 0 && Data.bDissolve != 1 ) )
 		{
-			if ( !bInvalidDataLogged ) { LOG( LogEffectMaterial, Warning, "不正な材質付き四角形を描画せずに読み飛ばしました" ); bInvalidDataLogged = true; }
+			if ( !bInvalidDataLogged ) { LOG( LogDxLibDraw, Warning, "不正な材質付き四角形を描画せずに読み飛ばしました" ); bInvalidDataLogged = true; }
 			return false;
 		}
 		if ( !Initialize() ) return false;
@@ -483,7 +482,7 @@ Failed:
 		const ID3D11ShaderResourceView* Distortion = DistortionData != nullptr ? GetTexture( DistortionData->DistortionTexture, DistortionView, DistortionHandle, DistortionTextureIdentity ) : nullptr;
 		if ( Source == nullptr || ( Data.MaskTexture >= 0 && Mask == nullptr ) || ( DistortionData != nullptr && Distortion == nullptr ) )
 		{
-			if ( !bFailedLogged ) { LOG( LogEffectMaterial, Warning, "材質描画用またはUVゆがみ用の画像をDirect3D 11から取得できません" ); bFailedLogged = true; }
+			if ( !bFailedLogged ) { LOG( LogDxLibDraw, Warning, "材質描画用またはUVゆがみ用の画像をDirect3D 11から取得できません" ); bFailedLogged = true; }
 			return false;
 		}
 		// 呼び出し元が選んだ合成種類と強さを反映する。
@@ -494,7 +493,7 @@ Failed:
 		ID3D11BlendState* BlendState = BlendMode == DX_BLENDMODE_ALPHA ? AlphaBlend : BlendMode == DX_BLENDMODE_ADD ? AddBlend : nullptr;
 		if ( BlendState == nullptr )
 		{
-			if ( !bUnsupportedBlendLogged ) { LOG( LogEffectMaterial, Warning, "材質描画はAlphaとAdd以外の合成方法を扱えません" ); bUnsupportedBlendLogged = true; }
+			if ( !bUnsupportedBlendLogged ) { LOG( LogDxLibDraw, Warning, "材質描画はAlphaとAdd以外の合成方法を扱えません" ); bUnsupportedBlendLogged = true; }
 			return false;
 		}
 		RenderVertex();
@@ -515,7 +514,7 @@ Failed:
 		if ( CurrentTarget != nullptr ) CurrentTarget->Release();
 		if ( !bTargetMatches || !bViewportMatches )
 		{
-			if ( !bStateMismatchLogged ) { LOG( LogEffectMaterial, Warning, "Direct3Dの描画先または表示範囲がDxLibの現在設定と一致しません" ); bStateMismatchLogged = true; }
+			if ( !bStateMismatchLogged ) { LOG( LogDxLibDraw, Warning, "Direct3Dの描画先または表示範囲がDxLibの現在設定と一致しません" ); bStateMismatchLogged = true; }
 			return false;
 		}
 		// 描画後にDxLibへ戻すnative stateを参照付きで確保する。
@@ -676,7 +675,7 @@ Failed:
 		const ID3D11ShaderResourceView* Distortion = DistortionData != nullptr ? GetTexture( DistortionData->DistortionTexture, DistortionView, DistortionHandle, DistortionTextureIdentity ) : nullptr;
 		if ( Source == nullptr || ( Material.MaskTexture >= 0 && Mask == nullptr ) || ( DistortionData != nullptr && Distortion == nullptr ) )
 		{
-			if ( !bFailedLogged ) { LOG( LogEffectMaterial, Warning, "材質付き帯の画像をDirect3D 11から取得できません" ); bFailedLogged = true; }
+			if ( !bFailedLogged ) { LOG( LogDxLibDraw, Warning, "材質付き帯の画像をDirect3D 11から取得できません" ); bFailedLogged = true; }
 			return false;
 		}
 		// 現在のDxLib合成種類と濃さ。
@@ -688,7 +687,7 @@ Failed:
 		ID3D11BlendState* BlendState = BlendMode == DX_BLENDMODE_ALPHA ? AlphaBlend : BlendMode == DX_BLENDMODE_ADD ? AddBlend : nullptr;
 		if ( BlendState == nullptr )
 		{
-			if ( !bUnsupportedBlendLogged ) { LOG( LogEffectMaterial, Warning, "材質付き帯はAlphaとAdd以外の合成方法を扱えません" ); bUnsupportedBlendLogged = true; }
+			if ( !bUnsupportedBlendLogged ) { LOG( LogDxLibDraw, Warning, "材質付き帯はAlphaとAdd以外の合成方法を扱えません" ); bUnsupportedBlendLogged = true; }
 			return false;
 		}
 		RenderVertex();
@@ -713,7 +712,7 @@ Failed:
 		if ( CurrentTarget != nullptr ) CurrentTarget->Release();
 		if ( !bTargetMatches || !bViewportMatches )
 		{
-			if ( !bStateMismatchLogged ) { LOG( LogEffectMaterial, Warning, "材質付き帯の描画先または表示範囲がDxLib設定と一致しません" ); bStateMismatchLogged = true; }
+			if ( !bStateMismatchLogged ) { LOG( LogDxLibDraw, Warning, "材質付き帯の描画先または表示範囲がDxLib設定と一致しません" ); bStateMismatchLogged = true; }
 			return false;
 		}
 		// native drawで変更する全stateとCOM参照の退避先。
@@ -784,7 +783,7 @@ Failed:
 	{
 		if ( !NDrawMaterialMesh::IsValid( Data, SourceVertices, Indices ) )
 		{
-			if ( !bInvalidDataLogged ) { LOG( LogEffectMaterial, Warning, "材質付きメッシュの頂点またはindexが不正なため描画を読み飛ばしました" ); bInvalidDataLogged = true; }
+			if ( !bInvalidDataLogged ) { LOG( LogDxLibDraw, Warning, "材質付きメッシュの頂点またはindexが不正なため描画を読み飛ばしました" ); bInvalidDataLogged = true; }
 			return false;
 		}
 		if ( !Initialize() ) return false;
@@ -799,7 +798,7 @@ Failed:
 		const ID3D11ShaderResourceView* Distortion = bUseDistortion ? GetTexture( Data.DistortionTexture, DistortionView, DistortionHandle, DistortionTextureIdentity ) : nullptr;
 		if ( Source == nullptr || ( Data.Material.MaskTexture >= 0 && Mask == nullptr ) || ( bUseDistortion && Distortion == nullptr ) )
 		{
-			if ( !bFailedLogged ) { LOG( LogEffectMaterial, Warning, "材質付きメッシュの画像をDirect3D 11から取得できません" ); bFailedLogged = true; }
+			if ( !bFailedLogged ) { LOG( LogDxLibDraw, Warning, "材質付きメッシュの画像をDirect3D 11から取得できません" ); bFailedLogged = true; }
 			return false;
 		}
 		// 描画設定から対応するalphaまたはadd合成stateを選ぶ。
@@ -813,7 +812,7 @@ Failed:
 		ID3D11BlendState* BlendState = BlendMode == DX_BLENDMODE_ALPHA ? AlphaBlend : BlendMode == DX_BLENDMODE_ADD ? AddBlend : nullptr;
 		if ( BlendState == nullptr )
 		{
-			if ( !bUnsupportedBlendLogged ) { LOG( LogEffectMaterial, Warning, "材質付きメッシュはAlphaとAdd以外の合成方法を扱えません" ); bUnsupportedBlendLogged = true; }
+			if ( !bUnsupportedBlendLogged ) { LOG( LogDxLibDraw, Warning, "材質付きメッシュはAlphaとAdd以外の合成方法を扱えません" ); bUnsupportedBlendLogged = true; }
 			return false;
 		}
 		// DxLibの保留中頂点を先にflushしてnative drawの順序を保つ。
@@ -841,7 +840,7 @@ Failed:
 		if ( CurrentTarget != nullptr ) CurrentTarget->Release();
 		if ( !bTargetMatches || !bViewportMatches )
 		{
-			if ( !bStateMismatchLogged ) { LOG( LogEffectMaterial, Warning, "材質付きメッシュの描画先または表示範囲がDxLib設定と一致しません" ); bStateMismatchLogged = true; }
+			if ( !bStateMismatchLogged ) { LOG( LogDxLibDraw, Warning, "材質付きメッシュの描画先または表示範囲がDxLib設定と一致しません" ); bStateMismatchLogged = true; }
 			return false;
 		}
 		// native drawで変更する全stateを参照付きで退避する。

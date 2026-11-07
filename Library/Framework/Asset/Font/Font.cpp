@@ -9,8 +9,6 @@
 #include "Library/Core/Types/CString.h"
 #include "Library/Framework/Engine/Engine.h"
 
-DEFINE_LOG_CATEGORY_STATIC( LogFont, Log )
-
 CFont::CFont( const FString& InKey, int32 InHandle, const FFontDesc& InDesc, const FString& InFontFilePath )
 	: CAsset( EAssetType::Font, InKey )
 	, Handle( InHandle )

@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "ModelMaterialEffectRenderer.h"
+#include "Library/Framework/Render/RenderLog.h"
 #include "Library/Core/Interfaces/Render/IDrawExecutor.h"
 
 
@@ -14,7 +15,7 @@
 #include "Library/Framework/Render/MaterialEffect/ModelMaterialEffectResources.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
 
-DEFINE_LOG_CATEGORY_STATIC( LogModelMaterialEffect, Log )
+DEFINE_LOG_CATEGORY( LogRender )
 
 namespace
 {
@@ -88,41 +89,41 @@ bool FModelMaterialEffectRenderer::Prepare( const TSharedPtr<CModel>& Source, in
 	if ( !Definition.Material.bEnabled ) return false;
 	if ( !NAssetService::IsMainThread() )
 	{
-		LOG( LogModelMaterialEffect, Warning, "モデル材質効果の準備はアセットのメインスレッドで行う必要があります。" );
+		LOG( LogRender, Warning, "モデル材質効果の準備はアセットのメインスレッドで行う必要があります。" );
 		return false;
 	}
 	if ( !Source.IsValid() || Source->GetHandle() < 0 )
 	{
-		LOG( LogModelMaterialEffect, Warning, "モデル材質効果の元モデルが無効です。" );
+		LOG( LogRender, Warning, "モデル材質効果の元モデルが無効です。" );
 		return false;
 	}
 	if ( !Definition.IsValidSettings() )
 	{
-		LOG( LogModelMaterialEffect, Warning, "モデル材質効果の設定が不正です。" );
+		LOG( LogRender, Warning, "モデル材質効果の設定が不正です。" );
 		return false;
 	}
 	if ( !Executor.SupportsModelMaterialEffects() )
 	{
-		LOG( LogModelMaterialEffect, Warning, "現在の描画実行先はモデル材質効果に対応していません。" );
+		LOG( LogRender, Warning, "現在の描画実行先はモデル材質効果に対応していません。" );
 		return false;
 	}
 	if ( !Source->IsReady() )
 	{
-		LOG( LogModelMaterialEffect, Warning, "モデル材質効果の元モデルがまだ使用できません。" );
+		LOG( LogRender, Warning, "モデル材質効果の元モデルがまだ使用できません。" );
 		return false;
 	}
 	// 借用画像と三角形の対応を調べる不変面データ。
 	const TSharedPtr<const FStaticModelSurface> Snapshot = Source->CreateStaticSurfaceSnapshot();
 	if ( !Snapshot.IsValid() )
 	{
-		LOG( LogModelMaterialEffect, Warning, "元モデルのbackendは静的な面データを提供できません。" );
+		LOG( LogRender, Warning, "元モデルのbackendは静的な面データを提供できません。" );
 		return false;
 	}
 	// 選択材質の範囲を検証する取得済み面データ。
 	const FStaticModelSurfaceData& Surface = Snapshot->GetData();
 	if ( !Surface.Materials.IsValidIndex( MaterialIndex ) || Surface.Indices.IsEmpty() )
 	{
-		LOG( LogModelMaterialEffect, Warning, "静的モデルに指定材質の面がありません。" );
+		LOG( LogRender, Warning, "静的モデルに指定材質の面がありません。" );
 		return false;
 	}
 	// 選択材質が有効なtriangle sectionを少なくとも一つ持つか確かめる。
@@ -137,7 +138,7 @@ bool FModelMaterialEffectRenderer::Prepare( const TSharedPtr<CModel>& Source, in
 	}
 	if ( !bHasSelectedIndices )
 	{
-		LOG( LogModelMaterialEffect, Warning, "静的モデルに指定材質の有効な三角形範囲がありません。" );
+		LOG( LogRender, Warning, "静的モデルに指定材質の有効な三角形範囲がありません。" );
 		return false;
 	}
 
@@ -150,7 +151,7 @@ bool FModelMaterialEffectRenderer::Prepare( const TSharedPtr<CModel>& Source, in
 	const FStaticModelSurfaceMaterial& SurfaceMaterial = Surface.Materials[MaterialIndex];
 	if ( SurfaceMaterial.BorrowedDiffuseTexture < -1 )
 	{
-		LOG( LogModelMaterialEffect, Warning, "元モデルの材質画像handleが不正です。" );
+		LOG( LogRender, Warning, "元モデルの材質画像handleが不正です。" );
 		return false;
 	}
 	if ( SurfaceMaterial.BorrowedDiffuseTexture >= 0 ) NewResources->TextureHandle = SurfaceMaterial.BorrowedDiffuseTexture;
@@ -160,7 +161,7 @@ bool FModelMaterialEffectRenderer::Prepare( const TSharedPtr<CModel>& Source, in
 		NewResources->OwnedTexture = LoadReadyModelEffectTexture( LoadTexture, FString( "Effects/material_white.tga" ) );
 		if ( !NewResources->OwnedTexture.IsValid() )
 		{
-			LOG( LogModelMaterialEffect, Warning, "モデル材質効果用の白画像を読み込めませんでした。" );
+			LOG( LogRender, Warning, "モデル材質効果用の白画像を読み込めませんでした。" );
 			return false;
 		}
 		NewResources->TextureHandle = NewResources->OwnedTexture->GetHandle();
@@ -170,7 +171,7 @@ bool FModelMaterialEffectRenderer::Prepare( const TSharedPtr<CModel>& Source, in
 		NewResources->MaskTexture = LoadReadyModelEffectTexture( LoadTexture, Definition.Material.MaskTexture );
 		if ( !NewResources->MaskTexture.IsValid() )
 		{
-			LOG( LogModelMaterialEffect, Warning, "モデル材質効果の消失mask画像を読み込めませんでした。" );
+			LOG( LogRender, Warning, "モデル材質効果の消失mask画像を読み込めませんでした。" );
 			return false;
 		}
 		NewResources->MaskTextureHandle = NewResources->MaskTexture->GetHandle();
@@ -180,14 +181,14 @@ bool FModelMaterialEffectRenderer::Prepare( const TSharedPtr<CModel>& Source, in
 		NewResources->DistortionTexture = LoadReadyModelEffectTexture( LoadTexture, Definition.Material.Distortion.Texture );
 		if ( !NewResources->DistortionTexture.IsValid() )
 		{
-			LOG( LogModelMaterialEffect, Warning, "モデル材質効果のゆがみ画像を読み込めませんでした。" );
+			LOG( LogRender, Warning, "モデル材質効果のゆがみ画像を読み込めませんでした。" );
 			return false;
 		}
 		NewResources->DistortionTextureHandle = NewResources->DistortionTexture->GetHandle();
 	}
 	if ( NewResources->TextureHandle < 0 || ( NewResources->MaskTexture.IsValid() && NewResources->MaskTextureHandle < 0 ) || ( NewResources->DistortionTexture.IsValid() && NewResources->DistortionTextureHandle < 0 ) )
 	{
-		LOG( LogModelMaterialEffect, Warning, "モデル材質効果の画像handleが無効です。" );
+		LOG( LogRender, Warning, "モデル材質効果の画像handleが無効です。" );
 		return false;
 	}
 	// 画像をすべてready確認したあと、選択材質の不変geometryを作る。
@@ -195,13 +196,13 @@ bool FModelMaterialEffectRenderer::Prepare( const TSharedPtr<CModel>& Source, in
 	IAssetBackend* Backend = NAssetService::GetBackend();
 	if ( Backend == nullptr )
 	{
-		LOG( LogModelMaterialEffect, Warning, "モデル材質効果のgeometry作成先がありません。" );
+		LOG( LogRender, Warning, "モデル材質効果のgeometry作成先がありません。" );
 		return false;
 	}
 	NewResources->GeometryHandle = Backend->CreateModelMaterialGeometry( Surface, MaterialIndex );
 	if ( NewResources->GeometryHandle < 0 )
 	{
-		LOG( LogModelMaterialEffect, Warning, "backendがモデル材質効果のgeometryを作成できませんでした。" );
+		LOG( LogRender, Warning, "backendがモデル材質効果のgeometryを作成できませんでした。" );
 		return false;
 	}
 	Resources = NewResources;

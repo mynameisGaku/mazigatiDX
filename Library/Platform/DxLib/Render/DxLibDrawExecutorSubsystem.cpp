@@ -1,4 +1,5 @@
 ﻿#include "DxLibDrawExecutorSubsystem.h"
+#include "Library/Platform/DxLib/Render/DxLibRenderLog.h"
 
 
 #include "Library/Core/Collection/Array.h"
@@ -24,13 +25,12 @@
 #include "Library/Platform/DxLib/Render/DxLibShapes3D.h"
 #include "Library/Platform/BackendSelection.h"
 
+DEFINE_LOG_CATEGORY( LogDxLibDraw )
+
 REGISTER_SUBSYSTEM( CDxLibDrawExecutorSubsystem )
 
 namespace
-{
-	DEFINE_LOG_CATEGORY_STATIC( LogDxLibDraw, Log );
-
-	FORCEINLINE unsigned int ToDxColor( const FDrawRgb& Color )
+{	FORCEINLINE unsigned int ToDxColor( const FDrawRgb& Color )
 	{
 		return GetColor( Color.R, Color.G, Color.B );
 	}

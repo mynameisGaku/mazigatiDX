@@ -1,4 +1,5 @@
 ﻿#include "SpriteSheetEditor.h"
+#include "Library/DebugUI/Common/EditorLog.h"
 
 
 #include "Library/Core/Collection/Sort.h"
@@ -9,8 +10,6 @@
 #include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Platform/System/FileSystem.h"
-
-DEFINE_LOG_CATEGORY_STATIC( LogSpriteSheetEditor, Log )
 
 namespace
 {
@@ -24,7 +23,7 @@ namespace
 	{
 		S.StatusMessage = Text;
 		S.bStatusIsError = bError;
-		if ( bError ) LOG( LogSpriteSheetEditor, Warning, "%s", *Text );
+		if ( bError ) LOG( LogEditorUI, Warning, "%s", *Text );
 	}
 
 	//=========================================================================

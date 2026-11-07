@@ -8,8 +8,6 @@
 #include "Library/Math/MathUtils.h"
 #include "VendorModules/ImGui/imgui.h"
 
-DEFINE_LOG_CATEGORY_STATIC( LogProfilerUI, Log )
-
 namespace
 {
 	// Stats タブの列

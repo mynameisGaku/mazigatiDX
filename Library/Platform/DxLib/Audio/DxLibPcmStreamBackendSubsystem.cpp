@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DxLibPcmStreamBackendSubsystem.h"
+#include "Library/Platform/DxLib/DxLibBackendSubsystem.h"
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
@@ -9,8 +10,6 @@
 #include "Library/Platform/BackendSelection.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
 #include "Library/Platform/System/BackendSupport.h"
-
-DEFINE_LOG_CATEGORY_STATIC( LogPcmStreamBackend, Log )
 
 REGISTER_SUBSYSTEM( CDxLibPcmStreamBackendSubsystem )
 
@@ -24,7 +23,7 @@ void CDxLibPcmStreamBackendSubsystem::Initialize( FSubsystemCollection& Collecti
 	// DxLib（プラットフォーム）が初期化されたあとに使う
 	if ( Collection.InitializeDependency<IPlatform>() == nullptr )
 	{
-		LOG( LogPcmStreamBackend, Error, "No platform is available. PCM streams will not be played." );
+		LOG( LogPlatform, Error, "No platform is available. PCM streams will not be played." );
 	}
 }
 

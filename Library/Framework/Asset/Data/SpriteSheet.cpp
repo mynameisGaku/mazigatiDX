@@ -1,11 +1,10 @@
 ﻿#include "SpriteSheet.h"
+#include "Library/Framework/Asset/Loading/AssetLog.h"
 
 
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Json/JsonHelpers.h"
-
-DEFINE_LOG_CATEGORY_STATIC( LogSpriteSheet, Log )
 
 //=============================================================================
 // スプライトシートの定義ファイル（JSON、拡張子は .gxsprite）の書式
@@ -410,7 +409,7 @@ bool FSpriteSheetDefinition::FromJson( const NlohmannJson& Json, FSpriteSheetDef
 			FSpriteClip Clip;
 			if ( !ClipFromJson( Item, Clip ) )
 			{
-				LOG( LogSpriteSheet, Warning, "A clip without a Name or frames (\"Range\" / \"Frames\") was skipped." );
+				LOG( LogAsset, Warning, "A clip without a Name or frames (\"Range\" / \"Frames\") was skipped." );
 				continue;
 			}
 			Definition.Clips.Add( Clip );
@@ -528,7 +527,7 @@ void CSpriteSheet::FillGrid( const FSpriteSheetGrid& Grid, int32 StartIndex, int
 		// 画像の外にはみ出していたら、警告して空のコマにする（描いても何も出ない）
 		if ( Frame.Width <= 0 || Frame.Height <= 0 || Frame.X < 0 || Frame.Y < 0 || Frame.X + Frame.Width > TextureWidth || Frame.Y + Frame.Height > TextureHeight )
 		{
-			LOG( LogSpriteSheet, Warning, "Frame %d of '%s' (%d,%d %dx%d) is outside the texture (%dx%d).", StartIndex + Index, *GetPath(), Frame.X, Frame.Y, Frame.Width, Frame.Height,
+			LOG( LogAsset, Warning, "Frame %d of '%s' (%d,%d %dx%d) is outside the texture (%dx%d).", StartIndex + Index, *GetPath(), Frame.X, Frame.Y, Frame.Width, Frame.Height,
 				 TextureWidth, TextureHeight );
 			Frame.Width = 0;
 			Frame.Height = 0;
@@ -561,7 +560,7 @@ void CSpriteSheet::RebuildFrames() const
 	}
 	if ( !Texture.IsValid() && !Definition.Grids.IsEmpty() )
 	{
-		LOG( LogSpriteSheet, Warning, "'%s' has no texture. The grid frames stay empty.", *GetPath() );
+		LOG( LogAsset, Warning, "'%s' has no texture. The grid frames stay empty.", *GetPath() );
 	}
 	for ( const FSpriteFrame& Frame : Definition.Frames )
 	{

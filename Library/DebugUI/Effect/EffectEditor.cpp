@@ -1,4 +1,5 @@
 ﻿#include "EffectEditor.h"
+#include "Library/DebugUI/Common/EditorLog.h"
 
 
 #include "Library/Core/Log/Log.h"
@@ -11,8 +12,6 @@
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Platform/System/FileSystem.h"
 
-DEFINE_LOG_CATEGORY_STATIC( LogEffectEditor, Log )
-
 namespace
 {
 	// 操作結果を表示し、失敗の場合はログにも残す。
@@ -22,7 +21,7 @@ namespace
 		State.bStatusIsError = bError;
 		if ( bError )
 		{
-			LOG( LogEffectEditor, Warning, "%s", *Message );
+			LOG( LogEditorUI, Warning, "%s", *Message );
 		}
 	}
 

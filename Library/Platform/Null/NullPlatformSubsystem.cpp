@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "NullPlatformSubsystem.h"
+#include "Library/Platform/Null/NullLog.h"
 
 #include "Library/Core/Collection/Optional.h"
 #include "Library/Core/Log/Log.h"
@@ -9,7 +10,7 @@
 #include "Library/Platform/System/CommandLine.h"
 #include "VendorModules/ImGui/imgui.h"
 
-DEFINE_LOG_CATEGORY_STATIC( LogNullPlatform, Log )
+DEFINE_LOG_CATEGORY( LogNull )
 
 REGISTER_SUBSYSTEM( CNullPlatformSubsystem )
 
@@ -61,7 +62,7 @@ void CNullPlatformSubsystem::Initialize( FSubsystemCollection& Collection )
 	}
 	bInitialized = true;
 
-	LOG( LogNullPlatform, Log, "Initialized (no window, fixed %.4f s per frame) %dx%d, max frames %d, ImGui %s", FixedDeltaTime, Settings.Width, Settings.Height, MaxFrames,
+	LOG( LogNull, Log, "Initialized (no window, fixed %.4f s per frame) %dx%d, max frames %d, ImGui %s", FixedDeltaTime, Settings.Width, Settings.Height, MaxFrames,
 		 bImGuiActive ? "on (no renderer)" : "off" );
 }
 
@@ -71,7 +72,7 @@ void CNullPlatformSubsystem::Deinitialize()
 	{
 		return;
 	}
-	LOG( LogNullPlatform, Log, "Shutting down (%llu frame(s) run)", static_cast<unsigned long long>( FrameCount ) );
+	LOG( LogNull, Log, "Shutting down (%llu frame(s) run)", static_cast<unsigned long long>( FrameCount ) );
 	ShutdownImGui();
 	bInitialized = false;
 }
@@ -143,7 +144,7 @@ bool CNullPlatformSubsystem::BeginFrame()
 	}
 	if ( MaxFrames > 0 && FrameCount >= static_cast<uint64>( MaxFrames ) )
 	{
-		LOG( LogNullPlatform, Log, "Reached the frame limit (%d)", MaxFrames );
+		LOG( LogNull, Log, "Reached the frame limit (%d)", MaxFrames );
 		return false;
 	}
 
@@ -193,7 +194,7 @@ void CNullPlatformSubsystem::RequestExit()
 {
 	if ( !bExitRequested )
 	{
-		LOG( LogNullPlatform, Log, "Exit requested" );
+		LOG( LogNull, Log, "Exit requested" );
 	}
 	bExitRequested = true;
 }

@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DxLibMovieBackendSubsystem.h"
+#include "Library/Platform/DxLib/DxLibBackendSubsystem.h"
 
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
 #include "Library/Core/Log/Log.h"
@@ -8,8 +9,6 @@
 #include "Library/Math/MathUtils.h"
 #include "Library/Platform/BackendSelection.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
-
-DEFINE_LOG_CATEGORY_STATIC( LogMovieBackend, Log )
 
 REGISTER_SUBSYSTEM( CDxLibMovieBackendSubsystem )
 
@@ -23,7 +22,7 @@ void CDxLibMovieBackendSubsystem::Initialize( FSubsystemCollection& Collection )
 	// DxLib（プラットフォーム）が初期化されたあとに使う
 	if ( Collection.InitializeDependency<IPlatform>() == nullptr )
 	{
-		LOG( LogMovieBackend, Error, "No platform is available. Movies will not be played." );
+		LOG( LogPlatform, Error, "No platform is available. Movies will not be played." );
 	}
 }
 

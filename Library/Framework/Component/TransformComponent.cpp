@@ -6,8 +6,6 @@
 #include "Library/Framework/Scene/Scene.h"
 #include "Library/Math/MathUtils.h"
 
-DEFINE_LOG_CATEGORY_STATIC( LogTransform, Log )
-
 namespace
 {
 	float32 SafeDivide( float32 A, float32 B )
@@ -183,7 +181,7 @@ void CTransformComponent::SetWorldPosition( const FVector3& WorldPosition )
 	const FTransform Parent = ParentTransform->GetWorldTransform();
 	if ( Parent.Scale.x == 0.0f || Parent.Scale.y == 0.0f || Parent.Scale.z == 0.0f )
 	{
-		LOG( LogTransform, Warning, "SetWorldPosition: the parent scale has a zero component (%s). That axis of the local position is set to 0.",
+		LOG( LogGameObject, Warning, "SetWorldPosition: the parent scale has a zero component (%s). That axis of the local position is set to 0.",
 			 *Parent.Scale.ToString() );
 	}
 	const FVector3 Unrotated = Parent.Rotation.UnrotateVector( WorldPosition - Parent.Position );

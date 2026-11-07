@@ -1,6 +1,9 @@
 ﻿#include "EditorCommon.h"
+#include "Library/DebugUI/Common/EditorLog.h"
 
 #include "Library/Core/Types/CString.h"
+
+DEFINE_LOG_CATEGORY( LogEditorUI )
 
 bool NDebugUI::InputString( const char* Label, FString& Value, ImGuiInputTextFlags Flags )
 {

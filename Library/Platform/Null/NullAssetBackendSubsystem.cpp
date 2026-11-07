@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "NullAssetBackendSubsystem.h"
+#include "Library/Platform/Null/NullLog.h"
 
 #include "Library/Core/File/File.h"
 #include "Library/Core/Log/Log.h"
@@ -9,8 +10,6 @@
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 #include "Library/Platform/BackendSelection.h"
 #include "Library/Platform/System/FileSystem.h"
-
-DEFINE_LOG_CATEGORY_STATIC( LogNullAsset, Log )
 
 REGISTER_SUBSYSTEM( CNullAssetBackendSubsystem )
 
@@ -229,11 +228,11 @@ bool CNullAssetBackendSubsystem::ShouldCreateSubsystem( CEngine& Engine ) const
 
 void CNullAssetBackendSubsystem::Deinitialize()
 {
-	LOG( LogNullAsset, Log, "Asset handles at shutdown: %d texture(s), %d vertex buffer(s), %d index buffer(s), %d shadow map(s), %d shader(s), %d font(s), %d sound(s)",
+	LOG( LogNull, Log, "Asset handles at shutdown: %d texture(s), %d vertex buffer(s), %d index buffer(s), %d shadow map(s), %d shader(s), %d font(s), %d sound(s)",
 		 Textures.Num(), VertexBuffers.Num(), IndexBuffers.Num(), ShadowMaps.Num(), Shaders.Num(), Fonts.Num(), Sounds.Num() );
 	if ( GetNumLiveHandles() > 0 )
 	{
-		LOG( LogNullAsset, Warning, "%d asset handle(s) were not released before shutdown", GetNumLiveHandles() );
+		LOG( LogNull, Warning, "%d asset handle(s) were not released before shutdown", GetNumLiveHandles() );
 	}
 }
 
@@ -449,7 +448,7 @@ int32 CNullAssetBackendSubsystem::LoadModel( const FString& Path, bool bAsync )
 	if ( !bWarnedModel )
 	{
 		bWarnedModel = true;
-		LOG( LogNullAsset, Warning, "The null backend cannot load models (first request: %s). Models are skipped.", *Path );
+		LOG( LogNull, Warning, "The null backend cannot load models (first request: %s). Models are skipped.", *Path );
 	}
 	return NAsset::InvalidHandle;
 }

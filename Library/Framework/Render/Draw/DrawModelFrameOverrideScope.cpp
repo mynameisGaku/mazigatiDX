@@ -1,11 +1,10 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DrawModelFrameOverrideScope.h"
+#include "Library/Framework/Render/RenderLog.h"
 
 #include "Library/Core/Interfaces/Asset/AssetBackend.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Framework/Render/Draw/DrawModelFramePoseData.h"
-
-DEFINE_LOG_CATEGORY_STATIC( LogModelFrameOverrideScope, Log )
 
 namespace
 {
@@ -52,7 +51,7 @@ FModelFrameOverrideScope::FModelFrameOverrideScope( IAssetBackend& InBackend, in
 		Previous.Frame = RequestedOverrides[Index].Frame;
 		if ( !Backend->GetModelFrameLocalMatrixOverride( Model, Previous.Frame, Previous.bOverridden, Previous.Matrix ) )
 		{
-			LOG( LogModelFrameOverrideScope, Warning, "一時骨poseの現在状態を取得できませんでした (model %d, frame %d)。", Model, Previous.Frame );
+			LOG( LogRender, Warning, "一時骨poseの現在状態を取得できませんでした (model %d, frame %d)。", Model, Previous.Frame );
 			PreviousStates.Empty();
 			return;
 		}
@@ -64,7 +63,7 @@ FModelFrameOverrideScope::FModelFrameOverrideScope( IAssetBackend& InBackend, in
 		const FDrawModelFrameOverrideData& Requested = RequestedOverrides[Index]; // 次に適用するpose値。
 		if ( !Backend->SetModelFrameLocalMatrixOverride( Model, Requested.Frame, ToMatrix( Requested.M ) ) )
 		{
-			LOG( LogModelFrameOverrideScope, Warning, "一時骨poseを設定できませんでした (model %d, frame %d)。", Model, Requested.Frame );
+			LOG( LogRender, Warning, "一時骨poseを設定できませんでした (model %d, frame %d)。", Model, Requested.Frame );
 			bRestoreStarted = true;
 			RestorePending();
 			return;
@@ -110,7 +109,7 @@ bool FModelFrameOverrideScope::RestorePending()
 			: Backend->ClearModelFrameLocalMatrixOverride( Model, Previous.Frame );
 		if ( !bRestored )
 		{
-			LOG( LogModelFrameOverrideScope, Warning, "モデルの一時骨pose復元に失敗しました (model %d, frame %d)。", Model, Previous.Frame );
+			LOG( LogRender, Warning, "モデルの一時骨pose復元に失敗しました (model %d, frame %d)。", Model, Previous.Frame );
 			bSucceeded = false;
 		}
 		else

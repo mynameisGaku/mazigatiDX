@@ -1,12 +1,11 @@
 ﻿#include "Model.h"
+#include "Library/Framework/Asset/Loading/AssetLog.h"
 
 #include "Library/Core/Thread/GameThread.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Asset/Model/StaticModelSurface.h"
 #include "Library/Math/MathUtils.h"
-
-DEFINE_LOG_CATEGORY_STATIC( LogModel, Log )
 
 namespace
 {
@@ -237,14 +236,14 @@ TSharedPtr<CModelInstance> CModel::CreateInstance()
 	if ( Backend == nullptr || Handle < 0 ) return nullptr;
 	if ( IsReady() && GetMeshCount() == 0 )
 	{
-		LOG( LogModel, Error, "Cannot create an instance of '%s': it has no mesh (it only holds animations). Use it as an animation source for another model.", *GetPath() );
+		LOG( LogAsset, Error, "Cannot create an instance of '%s': it has no mesh (it only holds animations). Use it as an animation source for another model.", *GetPath() );
 		return nullptr;
 	}
 
 	const int32 InstanceHandle = Backend->DuplicateModel( Handle );
 	if ( InstanceHandle < 0 )
 	{
-		LOG( LogModel, Error, "Failed to create an instance of the model '%s'.", *GetPath() );
+		LOG( LogAsset, Error, "Failed to create an instance of the model '%s'.", *GetPath() );
 		return nullptr;
 	}
 	return MakeShared<CModelInstance>( AsShared(), InstanceHandle );
@@ -286,7 +285,7 @@ int32 CModelInstance::AttachAnim( const TSharedPtr<CModel>& AnimSource, int32 An
 	const int32 AttachIndex = Backend->AttachModelAnim( Handle, AnimIndex, SourceHandle );
 	if ( AttachIndex < 0 )
 	{
-		LOG( LogModel, Warning, "Failed to attach animation %d of '%s' to the model '%s'.", AnimIndex, *AnimSource->GetPath(), *Source->GetPath() );
+		LOG( LogAsset, Warning, "Failed to attach animation %d of '%s' to the model '%s'.", AnimIndex, *AnimSource->GetPath(), *Source->GetPath() );
 		return -1;
 	}
 

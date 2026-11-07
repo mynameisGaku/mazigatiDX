@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DxLibDrawExecutorSubsystem.h"
+#include "Library/Platform/DxLib/Render/DxLibRenderLog.h"
 
 
 #include "Library/Framework/Render/Draw/DrawModelMaterial.h"
@@ -11,9 +12,6 @@
 
 namespace
 {
-	// モデル材質効果命令の診断分類。
-	DEFINE_LOG_CATEGORY_STATIC( LogModelMaterialCommand, Log );
-
 	// commandの12個の値をDxLib行列へ写す。
 	MATRIX ToModelMaterialMatrix( const float32 ( &Values )[12] )
 	{
@@ -103,7 +101,7 @@ void CDxLibDrawExecutorSubsystem::ExecuteModelMaterial( const FDrawCommandView& 
 	static bool bModelMaterialDrawFailedLogged = false;
 	if ( Command.NumDataWords != DataWords )
 	{
-		if ( !bInvalidLogged ) { LOG( LogModelMaterialCommand, Warning, "モデル材質効果命令のpayload長が不正なため描画を読み飛ばしました" ); bInvalidLogged = true; }
+		if ( !bInvalidLogged ) { LOG( LogDxLibDraw, Warning, "モデル材質効果命令のpayload長が不正なため描画を読み飛ばしました" ); bInvalidLogged = true; }
 		return;
 	}
 	// command bytesから型付き固定値へ複写するheader。
@@ -111,7 +109,7 @@ void CDxLibDrawExecutorSubsystem::ExecuteModelMaterial( const FDrawCommandView& 
 	FMemory::Memcpy( &Data, Command.Data, sizeof( Data ) );
 	if ( !NDrawModelMaterial::IsValid( Data ) )
 	{
-		if ( !bInvalidLogged ) { LOG( LogModelMaterialCommand, Warning, "モデル材質効果命令の設定値が不正なため描画を読み飛ばしました" ); bInvalidLogged = true; }
+		if ( !bInvalidLogged ) { LOG( LogDxLibDraw, Warning, "モデル材質効果命令の設定値が不正なため描画を読み飛ばしました" ); bInvalidLogged = true; }
 		return;
 	}
 	// 行列配列からDxLibのinstance変換を作る値。
@@ -218,7 +216,7 @@ void CDxLibDrawExecutorSubsystem::ExecuteModelMaterial( const FDrawCommandView& 
 			const bool bDrawSucceeded = EffectMaterialRenderer.DrawModelMesh( MeshData, Chunk.Vertices.GetData(), Chunk.Indices.GetData(), World, NativeCull, Data.Opacity );
 			if ( !bDrawSucceeded && !bModelMaterialDrawFailedLogged )
 			{
-				LOG( LogModelMaterialCommand, Warning, "モデル材質効果のGPU描画に失敗しました (instance %d, geometry %d, mesh %d, source mesh %d)。このchunkは描画されません。", Data.Handle, Data.Geometry, MeshIndex, Mesh.SourceMeshIndex );
+				LOG( LogDxLibDraw, Warning, "モデル材質効果のGPU描画に失敗しました (instance %d, geometry %d, mesh %d, source mesh %d)。このchunkは描画されません。", Data.Handle, Data.Geometry, MeshIndex, Mesh.SourceMeshIndex );
 				bModelMaterialDrawFailedLogged = true;
 			}
 		}

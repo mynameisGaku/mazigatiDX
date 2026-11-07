@@ -700,6 +700,7 @@
     <ClInclude Include="Library\DebugUI\Asset\SpriteSheetEditor.h" />
     <ClInclude Include="Library\DebugUI\Common\DebugViewPanel.h" />
     <ClInclude Include="Library\DebugUI\Common\EditorCommon.h" />
+    <ClInclude Include="Library\DebugUI\Common\EditorLog.h" />
     <ClInclude Include="Library\DebugUI\Common\ImGuiPropertyInspector.h" />
     <ClInclude Include="Library\DebugUI\Common\ImGuiTexture.h" />
     <ClInclude Include="Library\DebugUI\Effect\EffectEditor.h" />
@@ -934,7 +935,9 @@
     <ClInclude Include="Library\Framework\PixelEffect\Playback\PixelTimedEffect.h" />
     <ClInclude Include="Library\Framework\Profiler\ProfilerAnalyzer.h" />
     <ClInclude Include="Library\Framework\Profiler\ProfilerExport.h" />
+    <ClInclude Include="Library\Framework\Profiler\ProfilerLog.h" />
     <ClInclude Include="Library\Framework\Profiler\ProfilerSubsystem.h" />
+    <ClInclude Include="Library\Framework\Render\RenderLog.h" />
     <ClInclude Include="Library\Framework\Render\Camera\Billboard.h" />
     <ClInclude Include="Library\Framework\Render\Camera\Camera.h" />
     <ClInclude Include="Library\Framework\Render\Draw\DrawCommand.h" />
@@ -1055,6 +1058,7 @@
     <ClInclude Include="Library\Platform\DxLib\Render\DxLibDrawExecutorSubsystem.h" />
     <ClInclude Include="Library\Platform\DxLib\Render\DxLibImGuiTexture.h" />
     <ClInclude Include="Library\Platform\DxLib\Render\DxLibLighting.h" />
+    <ClInclude Include="Library\Platform\DxLib\Render\DxLibRenderLog.h" />
     <ClInclude Include="Library\Platform\DxLib\Render\DxLibRenderState3D.h" />
     <ClInclude Include="Library\Platform\DxLib\Render\DxLibRibbonMesh.h" />
     <ClInclude Include="Library\Platform\DxLib\Render\DxLibShader.h" />
@@ -1070,6 +1074,7 @@
     <ClInclude Include="Library\Platform\Null\NullDisplayInfoSubsystem.h" />
     <ClInclude Include="Library\Platform\Null\NullDrawExecutorSubsystem.h" />
     <ClInclude Include="Library\Platform\Null\NullInputSubsystem.h" />
+    <ClInclude Include="Library\Platform\Null\NullLog.h" />
     <ClInclude Include="Library\Platform\Null\NullMovieBackendSubsystem.h" />
     <ClInclude Include="Library\Platform\Null\NullPcmStreamBackendSubsystem.h" />
     <ClInclude Include="Library\Platform\Null\NullPlatformSubsystem.h" />

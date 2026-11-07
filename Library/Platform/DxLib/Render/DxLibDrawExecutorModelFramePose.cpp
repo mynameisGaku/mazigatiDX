@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DxLibDrawExecutorSubsystem.h"
+#include "Library/Platform/DxLib/Render/DxLibRenderLog.h"
 
 #include "Library/Core/Interfaces/Asset/AssetBackend.h"
 #include "Library/Core/Log/Log.h"
@@ -7,8 +8,6 @@
 #include "Library/Framework/Render/Draw/DrawModelFramePoseData.h"
 #include "Library/Platform/DxLib/Asset/DxLibAssetBackendSubsystem.h"
 #include "Library/Platform/DxLib/DxLibInclude.h"
-
-DEFINE_LOG_CATEGORY_STATIC( LogModelFramePoseCommand, Log )
 
 namespace
 {
@@ -56,7 +55,7 @@ void CDxLibDrawExecutorSubsystem::ExecuteModelFramePose( const FDrawCommandView&
 	{
 		if ( !bInvalidLogged )
 		{
-			LOG( LogModelFramePoseCommand, Warning, "モデル骨pose命令の設定値またはpayload長が不正なため描画を読み飛ばしました。" );
+			LOG( LogDxLibDraw, Warning, "モデル骨pose命令の設定値またはpayload長が不正なため描画を読み飛ばしました。" );
 			bInvalidLogged = true;
 		}
 		return;
@@ -65,7 +64,7 @@ void CDxLibDrawExecutorSubsystem::ExecuteModelFramePose( const FDrawCommandView&
 	{
 		if ( !DrawModelFramePose( Data ) && !bModelDrawFailedLogged )
 		{
-			LOG( LogModelFramePoseCommand, Warning, "一時骨pose付きモデル描画のnative処理に失敗しました (model %d)。", Data.Handle );
+			LOG( LogDxLibDraw, Warning, "一時骨pose付きモデル描画のnative処理に失敗しました (model %d)。", Data.Handle );
 			bModelDrawFailedLogged = true;
 		}
 		return;
@@ -74,7 +73,7 @@ void CDxLibDrawExecutorSubsystem::ExecuteModelFramePose( const FDrawCommandView&
 	{
 		if ( !bBackendUnavailableLogged )
 		{
-			LOG( LogModelFramePoseCommand, Warning, "一時骨pose描画に必要なasset backendが無いため描画を読み飛ばしました (model %d)。", Data.Handle );
+			LOG( LogDxLibDraw, Warning, "一時骨pose描画に必要なasset backendが無いため描画を読み飛ばしました (model %d)。", Data.Handle );
 			bBackendUnavailableLogged = true;
 		}
 		return;
@@ -97,7 +96,7 @@ void CDxLibDrawExecutorSubsystem::ExecuteModelFramePose( const FDrawCommandView&
 	{
 		if ( !bApplyFailedLogged )
 		{
-			LOG( LogModelFramePoseCommand, Warning, "一時骨poseを設定できないためモデル描画を読み飛ばしました (model %d)。", Data.Handle );
+			LOG( LogDxLibDraw, Warning, "一時骨poseを設定できないためモデル描画を読み飛ばしました (model %d)。", Data.Handle );
 			bApplyFailedLogged = true;
 		}
 		return;
@@ -106,12 +105,12 @@ void CDxLibDrawExecutorSubsystem::ExecuteModelFramePose( const FDrawCommandView&
 	const bool bRestored = OverrideScope.Restore(); // native処理後のpose復元結果。
 	if ( !bDrawSucceeded && !bModelDrawFailedLogged )
 	{
-		LOG( LogModelFramePoseCommand, Warning, "一時骨pose付きモデル描画のnative処理に失敗しました (model %d)。", Data.Handle );
+		LOG( LogDxLibDraw, Warning, "一時骨pose付きモデル描画のnative処理に失敗しました (model %d)。", Data.Handle );
 		bModelDrawFailedLogged = true;
 	}
 	if ( !bRestored && !bRestoreFailedLogged )
 	{
-		LOG( LogModelFramePoseCommand, Warning, "一時骨poseを元の状態へ戻せませんでした (model %d)。", Data.Handle );
+		LOG( LogDxLibDraw, Warning, "一時骨poseを元の状態へ戻せませんでした (model %d)。", Data.Handle );
 		bRestoreFailedLogged = true;
 	}
 }

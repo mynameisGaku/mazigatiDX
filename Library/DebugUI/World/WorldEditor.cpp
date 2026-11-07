@@ -1,4 +1,5 @@
 ﻿#include "WorldEditor.h"
+#include "Library/DebugUI/Common/EditorLog.h"
 
 
 #include "Library/Core/Log/Log.h"
@@ -14,8 +15,6 @@
 #include "Library/Framework/World/Definition/WorldHierarchy.h"
 #include "Library/Platform/System/FileSystem.h"
 #include "VendorModules/ImGui/imgui_internal.h"   // NavMoveRequestCancel（Tab で、ImGui が入力欄へ移るのを止める）
-
-DEFINE_LOG_CATEGORY_STATIC( LogWorldEditor, Log )
 
 //=============================================================================
 // 共通の補助
@@ -38,7 +37,7 @@ void NWorldEditorUI::SetStatus( FWorldEditorState& S, const FString& Text, bool 
 	S.bStatusIsError = bError;
 	if ( bError )
 	{
-		LOG( LogWorldEditor, Warning, "%s", *Text );
+		LOG( LogEditorUI, Warning, "%s", *Text );
 	}
 }
 
@@ -182,7 +181,7 @@ bool NDebugUI::OpenWorldFile( FWorldEditorState& S, const FString& AssetPath )
 	NWorldEditorUI::FrameAll( S );
 	for ( const FString& Warning : Asset->GetLoadWarnings() )
 	{
-		LOG( LogWorldEditor, Warning, "%s: %s", *Path, *Warning );
+		LOG( LogEditorUI, Warning, "%s: %s", *Path, *Warning );
 	}
 	NWorldEditorUI::SetStatus( S, FString::Printf( "Opened %s (%d objects%s)", *Path, S.Session.Document.Get().Objects.Num(), Asset->GetLoadWarnings().IsEmpty() ? "" : ", repaired on load: see the log" ) );
 	return true;

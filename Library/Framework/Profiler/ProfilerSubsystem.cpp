@@ -1,4 +1,5 @@
 ﻿#include "ProfilerSubsystem.h"
+#include "Library/Framework/Profiler/ProfilerLog.h"
 
 
 #include "Library/Core/Log/Log.h"
@@ -10,8 +11,7 @@
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Profiler/ProfilerAnalyzer.h"
 
-DEFINE_LOG_CATEGORY_STATIC( LogProfiler, Log )
-
+DEFINE_LOG_CATEGORY( LogProfiler )
 REGISTER_SUBSYSTEM( CProfilerSubsystem )
 
 namespace

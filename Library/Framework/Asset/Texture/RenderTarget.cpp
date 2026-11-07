@@ -1,9 +1,8 @@
 ﻿#include "RenderTarget.h"
+#include "Library/Framework/Asset/Loading/AssetLog.h"
 
 #include "Library/Core/Log/Log.h"
 #include "Library/Platform/System/FileSystem.h"
-
-DEFINE_LOG_CATEGORY_STATIC( LogRenderTarget, Log )
 
 CRenderTarget::CRenderTarget( const FString& InName, int32 InHandle, const FRenderTargetDesc& InDesc )
 	: CTexture( InName, InHandle, false )
@@ -26,7 +25,7 @@ bool CRenderTarget::ReadPixels( int32 X, int32 Y, int32 Width, int32 Height, TAr
 	}
 	if ( !IsInside( X, Y, Width, Height ) )
 	{
-		LOG( LogRenderTarget, Warning, "Cannot read (%d, %d, %d x %d) from the render target '%s' (%d x %d): the area is not inside it.", X, Y, Width, Height, *GetPath(), Desc.Width, Desc.Height );
+		LOG( LogAsset, Warning, "Cannot read (%d, %d, %d x %d) from the render target '%s' (%d x %d): the area is not inside it.", X, Y, Width, Height, *GetPath(), Desc.Width, Desc.Height );
 		return false;
 	}
 	return Backend->ReadRenderTargetPixels( GetHandle(), X, Y, Width, Height, OutPixels );
@@ -67,7 +66,7 @@ bool CRenderTarget::SaveRegion( int32 X, int32 Y, int32 Width, int32 Height, con
 	}
 	if ( !IsInside( X, Y, Width, Height ) )
 	{
-		LOG( LogRenderTarget, Warning, "Cannot save (%d, %d, %d x %d) of the render target '%s' (%d x %d): the area is not inside it.", X, Y, Width, Height, *GetPath(), Desc.Width, Desc.Height );
+		LOG( LogAsset, Warning, "Cannot save (%d, %d, %d x %d) of the render target '%s' (%d x %d): the area is not inside it.", X, Y, Width, Height, *GetPath(), Desc.Width, Desc.Height );
 		return false;
 	}
 
@@ -77,12 +76,12 @@ bool CRenderTarget::SaveRegion( int32 X, int32 Y, int32 Width, int32 Height, con
 	const int32 Slash = Full.FindLast( "/" );
 	if ( Slash > 0 && !NFileSystem::EnsureDirectory( Full.Left( Slash ) ) )
 	{
-		LOG( LogRenderTarget, Error, "Cannot save '%s': the folder could not be created.", *Full );
+		LOG( LogAsset, Error, "Cannot save '%s': the folder could not be created.", *Full );
 		return false;
 	}
 	if ( !Backend->SaveRenderTarget( GetHandle(), X, Y, Width, Height, Full, Options ) )
 	{
-		LOG( LogRenderTarget, Error, "Failed to save the render target '%s' to '%s'.", *GetPath(), *Full );
+		LOG( LogAsset, Error, "Failed to save the render target '%s' to '%s'.", *GetPath(), *Full );
 		return false;
 	}
 	return true;

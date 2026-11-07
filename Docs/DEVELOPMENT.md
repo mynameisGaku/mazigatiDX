@@ -689,6 +689,24 @@ Worldの`Components.Effect`には、任意の`Target`（追従先オブジェク
 
 **自分のビューを足す**: `FDebugView`に、名前・オン/オフの実体へのポインター・（キー）・項目（スイッチ / 整数 / 実数。実体へのポインターと範囲）を入れて、`FDebugViewRegistry::Global().Register( View )`。描く側は、オンのときに描きます。シーン全体に重ねて描く場所は`CScene::AddSceneDraw( 名前, []( FDrawContext& Draw ) { ... } )`（オブジェクトの`Draw`が終わったあと、`OnDraw`の前。撮影の「被写体だけ」では呼ばれません）。
 
+## ログのカテゴリ
+
+ログは`LOG( カテゴリ, 重要度, 書式, ... )`で出します（`Library/Core/Log/Log.h`）。カテゴリは、**クラスごとではなく、機能・領域ごとに1つ**にします（ログの1行には、クラス名と関数名が入るので、細かく分けなくても、どこで出たかは分かります。細かく分けると、F1の「Log categories」と`--log=`の候補が増えて、探しにくくなります）。
+
+|領域|カテゴリ|
+|---|---|
+|起動・エンジン|`LogMain` `LogEngine` `LogEngineCrash`（落ちたときの後始末）`LogGameInstance` `LogScene` `LogSubsystem` `LogGameObject`（コンポーネント・Transformを含む）`LogGameThread` `LogJob` `LogScreenConfig`|
+|アセット|`LogAsset`（読み込み・保存・モデル・アニメーション・スプライトシート・音・テクスチャ・描画先を含む）`LogModelAnimator` `LogMovie` `LogAudio` `LogSaveGame` `LogJson` `LogFileSystem`|
+|描画|`LogRender`（モデルの材質エフェクトなど。フレームワーク側）`LogDxLibDraw`（描画コマンドをDxLibの呼び出しにする所）`LogCapture`（撮影）|
+|物理・AI・ワールド|`LogPhysics` `LogAI` `LogWorld`|
+|入力・OS|`LogInput` `LogGamepad` `LogPlatform`（DxLibの実装。アセット・音・ムービーのバックエンドを含む）`LogNull`（Nullバックエンド）`LogBackendSupport`|
+|エディタ・デバッグ|`LogEditor`（Editor.exeのアプリ）`LogEditorUI`（各エディタの画面）`LogDebugOverlay` `LogProfiler`（記録・書き出し）`LogCrashReporter` `LogAssert`（CHECK / ENSURE）`LogImGuiAssert`|
+|ゲーム・サンプル・検査|`LogGame` `LogGameScene` `LogTitleScene` `LogPhysicsObjects`（ゲームのコード）、`LogSamples` `LogPostEffectsSample` `LogShadersSample`、`LogAssetSelfTest` `LogEcsSelfTest` `LogWorldSelfTest`（セルフテスト）、`LogTemp`（とりあえず出したいとき）|
+
+**足すとき**: その`.cpp`だけで使うなら`DEFINE_LOG_CATEGORY_STATIC( LogXxx, Log )`。複数のファイルで使うなら、ヘッダーに`DECLARE_LOG_CATEGORY_EXTERN( LogXxx, Log )`、1つの`.cpp`に`DEFINE_LOG_CATEGORY( LogXxx )`（例: `AssetLog.h` `ProfilerLog.h` `RenderLog.h` `EditorLog.h` `NullLog.h` `DxLibRenderLog.h`）。新しい機能のために、まず、**上の既存のカテゴリで足りないか**を考えてください。定義だけして、`LOG( ... )`で1度も使っていない（その`.cpp`だけで使うカテゴリ）ものは、`CheckSourceFormat.ps1`が検出します。
+
+**実行中に切り替える**: F1のパネルの「Log categories」、コンソールの`log`、起動引数`--log-verbose`・`--log=LogScene:Verbose,LogAsset:Warning`。
+
 ## プロファイラー（計測の分類）
 
 処理の時間は、`PROFILE_SCOPE`などのマクロで測り（`Library/Core/Profiler/ProfilerScope.h`）、F2で記録をオン/オフして、ウィンドウで見ます。記録は、コンソールの`profiler`・`profiler.capture`・`profiler.save`でも扱え、Chromeトレース形式（`chrome://tracing`で開ける）で`Saved/Profiler`に書けます。落ちたときは、直近の記録が、自動で`..._crash.json`に書かれます。

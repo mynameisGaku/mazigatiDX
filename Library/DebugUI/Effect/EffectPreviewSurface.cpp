@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "EffectPreviewSurface.h"
+#include "Library/DebugUI/Common/EditorLog.h"
 #include "Library/Core/Interfaces/Render/IDrawExecutor.h"
 
 
@@ -13,8 +14,6 @@
 #include "Library/Framework/Render/Draw/DrawContext.h"
 #include "Library/Framework/Render/State/RenderState3D.h"
 #include "Library/Framework/World/Editor/EditorCamera.h"
-
-DEFINE_LOG_CATEGORY_STATIC( LogEffectPreview, Log );
 
 namespace
 {
@@ -148,7 +147,7 @@ bool FEffectPreviewSurface::Render( const FEditorCamera& Camera, const FEditorVi
 		const TSharedPtr<CRenderTarget> NewTarget = Assets->CreateRenderTarget( FString::Printf( "Editor/Effect/Preview/%dx%d", View.Width, View.Height ), Desc );
 		if ( !NewTarget.IsValid() )
 		{
-			LOG( LogEffectPreview, Warning, "プレビュー画面を確保できませんでした: %d x %d", View.Width, View.Height );
+			LOG( LogEditorUI, Warning, "プレビュー画面を確保できませんでした: %d x %d", View.Width, View.Height );
 			return false;
 		}
 		Target = NewTarget;

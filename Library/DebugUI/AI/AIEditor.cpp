@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "AIEditorInternal.h"
+#include "Library/DebugUI/Common/EditorLog.h"
 
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Types/CString.h"
@@ -16,8 +17,6 @@
 #include "Library/Framework/Scene/Scene.h"
 #include "Library/Math/MathUtils.h"
 #include "Library/Platform/System/FileSystem.h"
-
-DEFINE_LOG_CATEGORY_STATIC( LogAIEditor, Log )
 
 namespace
 {
@@ -578,7 +577,7 @@ void NAIEditor::SetStatus( FAIEditorState& State, const FString& Text, bool bErr
 	State.bStatusIsError = bError;
 	if ( bError )
 	{
-		LOG( LogAIEditor, Warning, "%s", *Text );
+		LOG( LogEditorUI, Warning, "%s", *Text );
 	}
 }
 

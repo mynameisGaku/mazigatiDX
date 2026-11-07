@@ -1896,6 +1896,9 @@
     <ClInclude Include="Library\DebugUI\Common\EditorCommon.h">
       <Filter>Library\DebugUI\Common</Filter>
     </ClInclude>
+    <ClInclude Include="Library\DebugUI\Common\EditorLog.h">
+      <Filter>Library\DebugUI\Common</Filter>
+    </ClInclude>
     <ClInclude Include="Library\DebugUI\Common\ImGuiPropertyInspector.h">
       <Filter>Library\DebugUI\Common</Filter>
     </ClInclude>
@@ -2598,8 +2601,14 @@
     <ClInclude Include="Library\Framework\Profiler\ProfilerExport.h">
       <Filter>Library\Framework\Profiler</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Profiler\ProfilerLog.h">
+      <Filter>Library\Framework\Profiler</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Profiler\ProfilerSubsystem.h">
       <Filter>Library\Framework\Profiler</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\RenderLog.h">
+      <Filter>Library\Framework\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\Camera\Billboard.h">
       <Filter>Library\Framework\Render\Camera</Filter>
@@ -2961,6 +2970,9 @@
     <ClInclude Include="Library\Platform\DxLib\Render\DxLibLighting.h">
       <Filter>Library\Platform\DxLib\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\Render\DxLibRenderLog.h">
+      <Filter>Library\Platform\DxLib\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\Render\DxLibRenderState3D.h">
       <Filter>Library\Platform\DxLib\Render</Filter>
     </ClInclude>
@@ -3004,6 +3016,9 @@
       <Filter>Library\Platform\Null</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\Null\NullInputSubsystem.h">
+      <Filter>Library\Platform\Null</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Null\NullLog.h">
       <Filter>Library\Platform\Null</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\Null\NullMovieBackendSubsystem.h">

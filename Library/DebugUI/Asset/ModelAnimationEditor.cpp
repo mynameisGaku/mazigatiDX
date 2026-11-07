@@ -1,4 +1,5 @@
 ﻿#include "ModelAnimationEditor.h"
+#include "Library/DebugUI/Common/EditorLog.h"
 #include "Library/Core/Interfaces/Render/IDrawExecutor.h"
 
 
@@ -15,8 +16,6 @@
 #include "Library/Framework/Render/State/RenderState3D.h"
 #include "Library/Platform/System/FileSystem.h"
 
-DEFINE_LOG_CATEGORY_STATIC( LogModelAnimationEditor, Log )
-
 namespace
 {
 	using FState = FModelAnimationEditorState;
@@ -31,7 +30,7 @@ namespace
 		S.bStatusIsError = bError;
 		if ( bError )
 		{
-			LOG( LogModelAnimationEditor, Warning, "%s", *Text );
+			LOG( LogEditorUI, Warning, "%s", *Text );
 		}
 	}
 

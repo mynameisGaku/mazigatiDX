@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "NullDrawExecutorSubsystem.h"
+#include "Library/Platform/Null/NullLog.h"
 
 #include "Library/Framework/Render/Draw/DrawDistortedMaterialQuad.h"
 #include "Library/Framework/Render/Draw/DrawDistortedMaterialRibbon.h"
@@ -12,8 +13,6 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 #include "Library/Platform/BackendSelection.h"
-
-DEFINE_LOG_CATEGORY_STATIC( LogNullDraw, Log )
 
 REGISTER_SUBSYSTEM( CNullDrawExecutorSubsystem )
 
@@ -180,7 +179,7 @@ bool CNullDrawExecutorSubsystem::ShouldCreateSubsystem( CEngine& Engine ) const
 
 void CNullDrawExecutorSubsystem::Deinitialize()
 {
-	LOG( LogNullDraw, Log, "Draw statistics: %lld span(s), %lld command(s), %lld word(s), %lld broken span(s), %lld broken command(s), %lld unbalanced span(s), %lld extra pop(s)",
+	LOG( LogNull, Log, "Draw statistics: %lld span(s), %lld command(s), %lld word(s), %lld broken span(s), %lld broken command(s), %lld unbalanced span(s), %lld extra pop(s)",
 		 static_cast<long long>( Stats.NumSpans ), static_cast<long long>( Stats.NumCommands ), static_cast<long long>( Stats.NumWords ),
 		 static_cast<long long>( Stats.NumBrokenSpans ), static_cast<long long>( Stats.NumBrokenCommands ), static_cast<long long>( Stats.NumUnbalancedSpans ),
 		 static_cast<long long>( Stats.NumExtraPops ) );
