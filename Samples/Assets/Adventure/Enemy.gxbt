@@ -1,0 +1,86 @@
+{
+  "Version": 1,
+  "Blackboard": "Adventure/Enemy.gxblackboard",
+  "Root": {
+    "Type": "Selector",
+    "Name": "Brain",
+    "Children": [
+      {
+        "Type": "Sequence",
+        "Name": "Stunned",
+        "Decorators": [
+          {
+            "Type": "BlackboardCondition",
+            "Key": "Alive",
+            "Op": "==",
+            "Value": false,
+            "Abort": "Both"
+          }
+        ],
+        "Children": [
+          {
+            "Do": "Wait",
+            "Params": {
+              "Seconds": 0.1
+            }
+          }
+        ]
+      },
+      {
+        "Type": "Sequence",
+        "Name": "Attack",
+        "Decorators": [
+          {
+            "Type": "BlackboardCondition",
+            "Key": "InAttackRange",
+            "Op": "==",
+            "Value": true,
+            "Abort": "LowerPriority"
+          },
+          {
+            "Type": "Cooldown",
+            "Seconds": 0.8
+          }
+        ],
+        "Children": [
+          {
+            "Do": "Adv.Enemy.Strike"
+          }
+        ]
+      },
+      {
+        "Type": "Sequence",
+        "Name": "Chase",
+        "Decorators": [
+          {
+            "Type": "BlackboardCondition",
+            "Key": "CanSee",
+            "Op": "==",
+            "Value": true,
+            "Abort": "Both"
+          }
+        ],
+        "Children": [
+          {
+            "Do": "Adv.Enemy.Chase"
+          }
+        ]
+      },
+      {
+        "Type": "Sequence",
+        "Name": "Patrol",
+        "Children": [
+          {
+            "Do": "Adv.Enemy.Patrol"
+          },
+          {
+            "Do": "Wait",
+            "Params": {
+              "Seconds": 1.2
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

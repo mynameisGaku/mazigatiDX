@@ -1,0 +1,19 @@
+{
+  "Version": 1,
+  "Keys": [
+    {
+      "Name": "MoveAmount",
+      "Type": "Float"
+    },
+    {
+      "Name": "AttackPressed",
+      "Type": "Bool",
+      "Trigger": true
+    },
+    {
+      "Name": "RollPressed",
+      "Type": "Bool",
+      "Trigger": true
+    }
+  ]
+}

@@ -1,0 +1,195 @@
+{
+  "Version": 1,
+  "Blackboard": "Adventure/Player.gxblackboard",
+  "Entry": "Idle",
+  "States": [
+    {
+      "Name": "Idle",
+      "OnTick": [
+        {
+          "Do": "Adv.Player.Idle"
+        }
+      ]
+    },
+    {
+      "Name": "Run",
+      "OnTick": [
+        {
+          "Do": "Adv.Player.Run"
+        }
+      ]
+    },
+    {
+      "Name": "Attack",
+      "OnEnter": [
+        {
+          "Do": "Adv.Player.Attack"
+        }
+      ],
+      "OnTick": [
+        {
+          "Do": "Adv.Player.Attack"
+        }
+      ]
+    },
+    {
+      "Name": "Roll",
+      "OnEnter": [
+        {
+          "Do": "Adv.Player.Roll"
+        }
+      ],
+      "OnTick": [
+        {
+          "Do": "Adv.Player.Roll"
+        }
+      ],
+      "OnExit": [
+        {
+          "Do": "Adv.Player.Roll"
+        }
+      ]
+    },
+    {
+      "Name": "Hurt",
+      "OnEnter": [
+        {
+          "Do": "Adv.Player.Hurt"
+        }
+      ],
+      "OnTick": [
+        {
+          "Do": "Adv.Player.Hurt"
+        }
+      ]
+    },
+    {
+      "Name": "Dead",
+      "OnEnter": [
+        {
+          "Do": "Adv.Player.Dead"
+        }
+      ]
+    }
+  ],
+  "Transitions": [
+    {
+      "From": "Idle",
+      "To": "Attack",
+      "When": [
+        {
+          "Key": "AttackPressed",
+          "Op": "==",
+          "Value": true
+        }
+      ],
+      "Priority": 20
+    },
+    {
+      "From": "Run",
+      "To": "Attack",
+      "When": [
+        {
+          "Key": "AttackPressed",
+          "Op": "==",
+          "Value": true
+        }
+      ],
+      "Priority": 20
+    },
+    {
+      "From": "Idle",
+      "To": "Roll",
+      "When": [
+        {
+          "Key": "RollPressed",
+          "Op": "==",
+          "Value": true
+        }
+      ],
+      "Priority": 30
+    },
+    {
+      "From": "Run",
+      "To": "Roll",
+      "When": [
+        {
+          "Key": "RollPressed",
+          "Op": "==",
+          "Value": true
+        }
+      ],
+      "Priority": 30
+    },
+    {
+      "From": "Idle",
+      "To": "Run",
+      "When": [
+        {
+          "Key": "MoveAmount",
+          "Op": ">",
+          "Value": 0.1
+        }
+      ]
+    },
+    {
+      "From": "Run",
+      "To": "Idle",
+      "When": [
+        {
+          "Key": "MoveAmount",
+          "Op": "<=",
+          "Value": 0.1
+        }
+      ]
+    },
+    {
+      "From": "Attack",
+      "To": "Idle",
+      "When": [
+        {
+          "Time": 0.4
+        }
+      ]
+    },
+    {
+      "From": "Roll",
+      "To": "Idle",
+      "When": [
+        {
+          "Time": 0.42
+        }
+      ]
+    },
+    {
+      "From": "Dead",
+      "To": "Idle",
+      "When": [
+        {
+          "Event": "Revived"
+        }
+      ]
+    },
+    {
+      "From": "Hurt",
+      "To": "Idle",
+      "When": [
+        {
+          "Time": 0.3
+        }
+      ]
+    }
+  ],
+  "AnyTransitions": [
+    {
+      "To": "Dead",
+      "On": "Died",
+      "Priority": 100
+    },
+    {
+      "To": "Hurt",
+      "On": "Damaged",
+      "Priority": 50
+    }
+  ]
+}

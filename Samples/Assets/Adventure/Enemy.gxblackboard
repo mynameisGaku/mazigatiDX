@@ -1,0 +1,18 @@
+{
+  "Version": 1,
+  "Keys": [
+    {
+      "Name": "Alive",
+      "Type": "Bool",
+      "Default": true
+    },
+    {
+      "Name": "CanSee",
+      "Type": "Bool"
+    },
+    {
+      "Name": "InAttackRange",
+      "Type": "Bool"
+    }
+  ]
+}

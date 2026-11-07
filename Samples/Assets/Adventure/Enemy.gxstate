@@ -1,0 +1,71 @@
+{
+  "Version": 1,
+  "Blackboard": "Adventure/Enemy.gxblackboard",
+  "Entry": "Alive",
+  "States": [
+    {
+      "Name": "Alive"
+    },
+    {
+      "Name": "Hurt",
+      "OnEnter": [
+        {
+          "Do": "Adv.Enemy.Hurt"
+        }
+      ],
+      "OnTick": [
+        {
+          "Do": "Adv.Enemy.Hurt"
+        }
+      ]
+    },
+    {
+      "Name": "Dead",
+      "OnEnter": [
+        {
+          "Do": "Adv.Enemy.Dead"
+        }
+      ]
+    },
+    {
+      "Name": "Gone",
+      "OnEnter": [
+        {
+          "Do": "Adv.Enemy.Remove"
+        }
+      ]
+    }
+  ],
+  "Transitions": [
+    {
+      "From": "Hurt",
+      "To": "Alive",
+      "When": [
+        {
+          "Time": 0.35
+        }
+      ]
+    },
+    {
+      "From": "Dead",
+      "To": "Gone",
+      "When": [
+        {
+          "Time": 0.9
+        }
+      ]
+    }
+  ],
+  "AnyTransitions": [
+    {
+      "To": "Dead",
+      "On": "Died",
+      "Priority": 100
+    },
+    {
+      "To": "Hurt",
+      "On": "Damaged",
+      "Priority": 50
+    }
+  ]
+}

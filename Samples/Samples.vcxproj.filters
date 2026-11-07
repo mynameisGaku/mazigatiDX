@@ -4,6 +4,48 @@
     <ClCompile Include="Source\main.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Adventure\AdventureActor.cpp">
+      <Filter>Source\Adventure</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Adventure\AdventureCampfire.cpp">
+      <Filter>Source\Adventure</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Adventure\AdventureChest.cpp">
+      <Filter>Source\Adventure</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Adventure\AdventureCollision.cpp">
+      <Filter>Source\Adventure</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Adventure\AdventureEnemy.cpp">
+      <Filter>Source\Adventure</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Adventure\AdventureGate.cpp">
+      <Filter>Source\Adventure</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Adventure\AdventureHud.cpp">
+      <Filter>Source\Adventure</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Adventure\AdventureParts.cpp">
+      <Filter>Source\Adventure</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Adventure\AdventurePickup.cpp">
+      <Filter>Source\Adventure</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Adventure\AdventurePlayer.cpp">
+      <Filter>Source\Adventure</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Adventure\AdventureSample.cpp">
+      <Filter>Source\Adventure</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Adventure\AdventureSave.cpp">
+      <Filter>Source\Adventure</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Adventure\AdventureState.cpp">
+      <Filter>Source\Adventure</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Adventure\AdventureView.cpp">
+      <Filter>Source\Adventure</Filter>
+    </ClCompile>
     <ClCompile Include="Source\AI\AIActor.cpp">
       <Filter>Source\AI</Filter>
     </ClCompile>
@@ -456,6 +498,48 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Adventure\AdventureActor.h">
+      <Filter>Source\Adventure</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Adventure\AdventureCampfire.h">
+      <Filter>Source\Adventure</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Adventure\AdventureChest.h">
+      <Filter>Source\Adventure</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Adventure\AdventureCollision.h">
+      <Filter>Source\Adventure</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Adventure\AdventureEnemy.h">
+      <Filter>Source\Adventure</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Adventure\AdventureGate.h">
+      <Filter>Source\Adventure</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Adventure\AdventureHud.h">
+      <Filter>Source\Adventure</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Adventure\AdventureParts.h">
+      <Filter>Source\Adventure</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Adventure\AdventurePickup.h">
+      <Filter>Source\Adventure</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Adventure\AdventurePlayer.h">
+      <Filter>Source\Adventure</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Adventure\AdventureSample.h">
+      <Filter>Source\Adventure</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Adventure\AdventureSave.h">
+      <Filter>Source\Adventure</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Adventure\AdventureState.h">
+      <Filter>Source\Adventure</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Adventure\AdventureView.h">
+      <Filter>Source\Adventure</Filter>
+    </ClInclude>
     <ClInclude Include="Source\AI\AIActor.h">
       <Filter>Source\AI</Filter>
     </ClInclude>
@@ -964,6 +1048,9 @@
   <ItemGroup>
     <Filter Include="Source">
       <UniqueIdentifier>{D1BD1BF3-E8B3-CC5B-D652-680E16935819}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Adventure">
+      <UniqueIdentifier>{024ECB44-4DC9-2D06-53B3-FA9F46F64743}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\AI">
       <UniqueIdentifier>{A6934994-D32C-E0C3-E1F2-E9EC7EFF28D2}</UniqueIdentifier>
