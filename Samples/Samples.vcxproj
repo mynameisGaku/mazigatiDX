@@ -83,6 +83,9 @@
     <ClCompile Include="Source\DrawState\BlendShowcase.cpp" />
     <ClCompile Include="Source\DrawState\DrawStateSample.cpp" />
     <ClCompile Include="Source\DrawState\ViewShowcase.cpp" />
+    <ClCompile Include="Source\Effects\EffectsGallery.cpp" />
+    <ClCompile Include="Source\Effects\EffectsSample.cpp" />
+    <ClCompile Include="Source\Effects\EffectsView.cpp" />
     <ClCompile Include="Source\Filters\FilterGallery.cpp" />
     <ClCompile Include="Source\Filters\FilterImages.cpp" />
     <ClCompile Include="Source\Filters\FiltersSample.cpp" />
@@ -220,6 +223,10 @@
     <ClInclude Include="Source\DrawState\BlendShowcase.h" />
     <ClInclude Include="Source\DrawState\DrawStateSample.h" />
     <ClInclude Include="Source\DrawState\ViewShowcase.h" />
+    <ClInclude Include="Source\Effects\EffectsGallery.h" />
+    <ClInclude Include="Source\Effects\EffectsSample.h" />
+    <ClInclude Include="Source\Effects\EffectsState.h" />
+    <ClInclude Include="Source\Effects\EffectsView.h" />
     <ClInclude Include="Source\Filters\FilterGallery.h" />
     <ClInclude Include="Source\Filters\FilterImages.h" />
     <ClInclude Include="Source\Filters\FiltersSample.h" />

@@ -1,0 +1,23 @@
+{
+	"Version": 1,
+	"Name": "Sparks",
+	"Duration": 0.1,
+	"Loop": false,
+	"Seed": 5,
+	"Emitters": [
+		{
+			"Name": "Sparks",
+			"Blend": "Add",
+			"MaxParticles": 80,
+			"Rate": 0,
+			"Bursts": [ { "Time": 0, "Count": 50 } ],
+			"Lifetime": [0.4, 0.9],
+			"Speed": [2, 5],
+			"Shape": { "Type": "Sphere", "Radius": 0.05 },
+			"Gravity": [0, -9.8, 0],
+			"Drag": 0.5,
+			"Size": { "Start": [0.06, 0.1], "End": 0 },
+			"Color": { "Start": "#FFE080FF", "End": "#FF400000" }
+		}
+	]
+}

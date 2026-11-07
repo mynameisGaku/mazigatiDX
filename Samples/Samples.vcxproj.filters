@@ -91,6 +91,15 @@
     <ClCompile Include="Source\DrawState\ViewShowcase.cpp">
       <Filter>Source\DrawState</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Effects\EffectsGallery.cpp">
+      <Filter>Source\Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Effects\EffectsSample.cpp">
+      <Filter>Source\Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Effects\EffectsView.cpp">
+      <Filter>Source\Effects</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Filters\FilterGallery.cpp">
       <Filter>Source\Filters</Filter>
     </ClCompile>
@@ -495,6 +504,18 @@
     <ClInclude Include="Source\DrawState\ViewShowcase.h">
       <Filter>Source\DrawState</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Effects\EffectsGallery.h">
+      <Filter>Source\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Effects\EffectsSample.h">
+      <Filter>Source\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Effects\EffectsState.h">
+      <Filter>Source\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Effects\EffectsView.h">
+      <Filter>Source\Effects</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Filters\FilterGallery.h">
       <Filter>Source\Filters</Filter>
     </ClInclude>
@@ -859,6 +880,9 @@
     </Filter>
     <Filter Include="Source\DrawState">
       <UniqueIdentifier>{A5D3EA37-A556-1B7C-9583-96BCF9291E1F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Effects">
+      <UniqueIdentifier>{6412751E-CDBD-8C1D-2FCA-CEC6D4E5C23B}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Filters">
       <UniqueIdentifier>{5A1BC48D-C648-F4E9-C883-1FD6805EF4D2}</UniqueIdentifier>
