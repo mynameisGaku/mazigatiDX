@@ -1779,6 +1779,9 @@
     <ClInclude Include="Library\Core\Memory\UniquePtr.h">
       <Filter>Library\Core\Memory</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Profiler\ProfilerCategories.h">
+      <Filter>Library\Core\Profiler</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Profiler\ProfilerScope.h">
       <Filter>Library\Core\Profiler</Filter>
     </ClInclude>

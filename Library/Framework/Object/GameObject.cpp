@@ -220,7 +220,7 @@ void CGameObject::TickComponents( float32 DeltaTime, ETickGroup Group )
 			continue;
 		}
 
-		PROFILE_SCOPE_LAZY( ComponentScope, FProfileScope( "Component", Scene ? Scene->GetProfilerOwnerId() : 0u,
+		PROFILE_SCOPE_LAZY( ComponentScope, FProfileScope( NProfileCategory::Component, Scene ? Scene->GetProfilerOwnerId() : 0u,
 														   typeid( *Components[i].Component.Get() ).name(), Id, GetProfilerLabelId( *NProfiler::GRecorder ) ) );
 		Tickable->Tick( DeltaTime );
 	}

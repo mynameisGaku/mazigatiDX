@@ -158,7 +158,7 @@ void CSceneManager::Tick( float32 DeltaTime )
 {
 	if ( !Requests.IsEmpty() )
 	{
-		PROFILE_SCOPE_OWNER( "Scene", "SceneManager", "ApplyRequests" );
+		PROFILE_SCOPE_OWNER( NProfileCategory::Scene, "SceneManager", "ApplyRequests" );
 		ApplyRequests();
 	}
 

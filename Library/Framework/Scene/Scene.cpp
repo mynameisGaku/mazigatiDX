@@ -205,14 +205,14 @@ void CScene::TickScene( float32 DeltaTime )
 
 	// 記録中なら、シーン名を ID にしておく（以降の計測区間の Owner になる）
 	ProfilerOwnerId = NProfiler::GRecorder ? NProfiler::GRecorder->InternString( *GetName() ) : 0u;
-	PROFILE_SCOPE_LAZY( SceneScope, FProfileScope( "Scene", ProfilerOwnerId, "TickScene" ) );
+	PROFILE_SCOPE_LAZY( SceneScope, FProfileScope( NProfileCategory::Scene, ProfilerOwnerId, "TickScene" ) );
 
 	{
-		PROFILE_SCOPE_LAZY( PreScope, FProfileScope( "Scene", ProfilerOwnerId, "Subsystems.PreUpdate" ) );
+		PROFILE_SCOPE_LAZY( PreScope, FProfileScope( NProfileCategory::Scene, ProfilerOwnerId, "Subsystems.PreUpdate" ) );
 		Subsystems.Tick( DeltaTime, ETickGroup::PreUpdate );
 	}
 	{
-		PROFILE_SCOPE_LAZY( OnTickScope, FProfileScope( "Scene", ProfilerOwnerId, "OnTick" ) );
+		PROFILE_SCOPE_LAZY( OnTickScope, FProfileScope( NProfileCategory::Scene, ProfilerOwnerId, "OnTick" ) );
 		OnTick( DeltaTime );
 	}
 
@@ -220,12 +220,12 @@ void CScene::TickScene( float32 DeltaTime )
 	const uint64 TickCutoffId = NextObjectId - 1;
 	IJobSystem* Jobs = GetAppSubsystem<IJobSystem>();
 	{
-		PROFILE_SCOPE_LAZY( SystemsScope, FProfileScope( "Scene", ProfilerOwnerId, "Systems.PreUpdate" ) );
+		PROFILE_SCOPE_LAZY( SystemsScope, FProfileScope( NProfileCategory::Scene, ProfilerOwnerId, "Systems.PreUpdate" ) );
 		Systems.Run( NEcs::EPhase::PreUpdate, DeltaTime, TickCutoffId, EcsWorld, TransformWorld, Jobs );
 	}
 
 	{
-		PROFILE_SCOPE_LAZY( ObjectsScope, FProfileScope( "Scene", ProfilerOwnerId, "Objects.Tick" ) );
+		PROFILE_SCOPE_LAZY( ObjectsScope, FProfileScope( NProfileCategory::Scene, ProfilerOwnerId, "Objects.Tick" ) );
 
 		const int32 NumToTick = Objects.Num();
 		for ( int32 i = 0; i < NumToTick; ++i )
@@ -240,17 +240,17 @@ void CScene::TickScene( float32 DeltaTime )
 	}
 
 	{
-		PROFILE_SCOPE_LAZY( SystemsScope, FProfileScope( "Scene", ProfilerOwnerId, "Systems.PostUpdate" ) );
+		PROFILE_SCOPE_LAZY( SystemsScope, FProfileScope( NProfileCategory::Scene, ProfilerOwnerId, "Systems.PostUpdate" ) );
 		Systems.Run( NEcs::EPhase::PostUpdate, DeltaTime, TickCutoffId, EcsWorld, TransformWorld, Jobs );
 	}
 
 	{
-		PROFILE_SCOPE_LAZY( PostScope, FProfileScope( "Scene", ProfilerOwnerId, "Subsystems.PostUpdate" ) );
+		PROFILE_SCOPE_LAZY( PostScope, FProfileScope( NProfileCategory::Scene, ProfilerOwnerId, "Subsystems.PostUpdate" ) );
 		Subsystems.Tick( DeltaTime, ETickGroup::PostUpdate );
 	}
 
 	{
-		PROFILE_SCOPE_LAZY( CleanupScope, FProfileScope( "Scene", ProfilerOwnerId, "RemoveDestroyedObjects" ) );
+		PROFILE_SCOPE_LAZY( CleanupScope, FProfileScope( NProfileCategory::Scene, ProfilerOwnerId, "RemoveDestroyedObjects" ) );
 		RemoveDestroyedObjects();
 	}
 }
@@ -302,17 +302,17 @@ void CScene::DrawObjectsAndScene( const TCallable<bool( const CGameObject& )>* F
 {
 	// Tick されていないシーン（スタックの下にあるもの）も Draw されるので、ここでも ID を更新する
 	ProfilerOwnerId = NProfiler::GRecorder ? NProfiler::GRecorder->InternString( *GetName() ) : 0u;
-	PROFILE_SCOPE_LAZY( SceneScope, FProfileScope( "Scene", ProfilerOwnerId, "DrawScene" ) );
+	PROFILE_SCOPE_LAZY( SceneScope, FProfileScope( NProfileCategory::Scene, ProfilerOwnerId, "DrawScene" ) );
 
 	if ( bDrawOrderDirty )
 	{
-		PROFILE_SCOPE_LAZY( SortScope, FProfileScope( "Scene", ProfilerOwnerId, "RebuildDrawList" ) );
+		PROFILE_SCOPE_LAZY( SortScope, FProfileScope( NProfileCategory::Scene, ProfilerOwnerId, "RebuildDrawList" ) );
 		RebuildDrawList();
 	}
 
 	// 描画の前に、古くなったワールド値を、ジョブシステムで一斉に計算しておく（呼ばなくても、読む側が最新を計算するので結果は同じ）
 	{
-		PROFILE_SCOPE_LAZY( TransformScope, FProfileScope( "Scene", ProfilerOwnerId, "Transforms.Update" ) );
+		PROFILE_SCOPE_LAZY( TransformScope, FProfileScope( NProfileCategory::Scene, ProfilerOwnerId, "Transforms.Update" ) );
 		TransformWorld.Update( GetAppSubsystem<IJobSystem>() );
 	}
 
@@ -321,12 +321,12 @@ void CScene::DrawObjectsAndScene( const TCallable<bool( const CGameObject& )>* F
 	const bool bRunDrawSystems = Executor != nullptr && Systems.HasDrawSystems();
 	if ( bRunDrawSystems )
 	{
-		PROFILE_SCOPE_LAZY( RecordScope, FProfileScope( "Scene", ProfilerOwnerId, "Systems.Draw" ) );
+		PROFILE_SCOPE_LAZY( RecordScope, FProfileScope( NProfileCategory::Scene, ProfilerOwnerId, "Systems.Draw" ) );
 		Systems.Run( NEcs::EPhase::Draw, 0.0f, ~0ull, EcsWorld, TransformWorld, GetAppSubsystem<IJobSystem>() );
 	}
 
 	{
-		PROFILE_SCOPE_LAZY( ObjectsScope, FProfileScope( "Scene", ProfilerOwnerId, "Objects.Draw" ) );
+		PROFILE_SCOPE_LAZY( ObjectsScope, FProfileScope( NProfileCategory::Scene, ProfilerOwnerId, "Objects.Draw" ) );
 		for ( int32 i = 0; i < DrawList.Num(); ++i )
 		{
 			CGameObject* Object = DrawList[i];
@@ -358,7 +358,7 @@ void CScene::DrawObjectsAndScene( const TCallable<bool( const CGameObject& )>* F
 		// シーン全体の描画（デバッグ表示など）。オブジェクトと同じ流れで、コマンドリストを空にして記録させ、実行する
 		if ( Executor != nullptr && SceneDraws.Num() > 0 )
 		{
-			PROFILE_SCOPE_LAZY( SceneDrawScope, FProfileScope( "Scene", ProfilerOwnerId, "SceneDraws" ) );
+			PROFILE_SCOPE_LAZY( SceneDrawScope, FProfileScope( NProfileCategory::Scene, ProfilerOwnerId, "SceneDraws" ) );
 			for ( int32 i = 0; i < SceneDraws.Num(); ++i )
 			{
 				ObjectCommandList.Clear();
@@ -371,7 +371,7 @@ void CScene::DrawObjectsAndScene( const TCallable<bool( const CGameObject& )>* F
 			}
 		}
 
-		PROFILE_SCOPE_LAZY( OnDrawScope, FProfileScope( "Scene", ProfilerOwnerId, "OnDraw" ) );
+		PROFILE_SCOPE_LAZY( OnDrawScope, FProfileScope( NProfileCategory::Scene, ProfilerOwnerId, "OnDraw" ) );
 		OnDraw();
 	}
 }

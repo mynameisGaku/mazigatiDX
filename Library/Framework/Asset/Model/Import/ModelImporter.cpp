@@ -89,7 +89,7 @@ bool CModelImporter::ResolveLoadPath( const FString& FullPath, FString& OutLoadP
 
 FModelExportResult CModelImporter::ExportAsMV1( const FString& SourcePath, const FModelExportOptions& Options ) const
 {
-	PROFILE_SCOPE_CAT( "Asset", "ExportModel" );
+	PROFILE_SCOPE_CAT( NProfileCategory::Asset, "ExportModel" );
 	FModelExportResult Result;
 	Result.SourcePath = SourcePath;
 	if ( Context.GetBackend() == nullptr )

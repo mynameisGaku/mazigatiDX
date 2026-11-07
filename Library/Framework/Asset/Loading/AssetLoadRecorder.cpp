@@ -22,7 +22,7 @@ namespace
 FProfileScope CAssetLoadRecorder::MakeProfileScope( const char* Name, const FString& Path )
 {
 	IProfiler* Recorder = NProfiler::GRecorder;
-	return FProfileScope( "Asset", "", Name, HashPath( Path ), Recorder != nullptr ? Recorder->InternString( *Path ) : 0u );
+	return FProfileScope( NProfileCategory::Asset, "", Name, HashPath( Path ), Recorder != nullptr ? Recorder->InternString( *Path ) : 0u );
 }
 
 void CAssetLoadRecorder::RecordLoad( CAsset& Asset, const FString& FullPath, int64 StartTick )

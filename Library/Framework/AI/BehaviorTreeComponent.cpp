@@ -227,7 +227,7 @@ void CBehaviorTreeComponent::Step( float32 DeltaTime )
 
 void CBehaviorTreeComponent::Update( float32 DeltaTime )
 {
-	PROFILE_SCOPE_CAT( "AI", "BehaviorTree" );
+	PROFILE_SCOPE_CAT( NProfileCategory::AI, "BehaviorTree" );
 	Time += static_cast<float64>( DeltaTime );
 	FAIContext Context = MakeContext( DeltaTime );
 	Tree->Tick( Context, DeltaTime );

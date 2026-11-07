@@ -121,7 +121,7 @@ void FSubsystemCollection::Tick( float32 DeltaTime, ETickGroup Group )
 		}
 
 		// typeid().name() はプログラム中ずっと有効なポインタ。型名が Name になる
-		PROFILE_SCOPE_LAZY( SubsystemScope, FProfileScope( "Subsystem", OwnerId, typeid( *Tickable ).name() ) );
+		PROFILE_SCOPE_LAZY( SubsystemScope, FProfileScope( NProfileCategory::Subsystem, OwnerId, typeid( *Tickable ).name() ) );
 		Tickable->Tick( DeltaTime );
 	}
 }

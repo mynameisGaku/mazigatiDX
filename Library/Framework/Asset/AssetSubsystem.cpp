@@ -76,7 +76,7 @@ void CAssetSubsystem::SetBackendOverride( IAssetBackend* InBackend )
 
 void CAssetSubsystem::Tick( float32 DeltaTime )
 {
-	PROFILE_SCOPE_CAT( "Asset", "Tick" );
+	PROFILE_SCOPE_CAT( NProfileCategory::Asset, "Tick" );
 	NAssetService::FlushDeferred();
 
 	SpriteSheetLoader.Update();

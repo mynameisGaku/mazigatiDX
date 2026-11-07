@@ -661,6 +661,7 @@
     <ClInclude Include="Library\Core\Memory\SharedPtr.h" />
     <ClInclude Include="Library\Core\Memory\SmartPointer.h" />
     <ClInclude Include="Library\Core\Memory\UniquePtr.h" />
+    <ClInclude Include="Library\Core\Profiler\ProfilerCategories.h" />
     <ClInclude Include="Library\Core\Profiler\ProfilerScope.h" />
     <ClInclude Include="Library\Core\Profiler\ProfilerTypes.h" />
     <ClInclude Include="Library\Core\Render\DrawSpan.h" />

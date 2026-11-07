@@ -182,7 +182,7 @@ void CDebugOverlay::Draw( CGameInstance& Game )
 
 	if ( bShowDebugWindow )
 	{
-		PROFILE_SCOPE_OWNER( "Debug", "Game", "DebugWindows" );
+		PROFILE_SCOPE_OWNER( NProfileCategory::Debug, "Game", "DebugWindows" );
 		DrawDebugWindow( Game );
 	}
 
@@ -191,7 +191,7 @@ void CDebugOverlay::Draw( CGameInstance& Game )
 		if ( IProfiler* Profiler = GetAppSubsystem<IProfiler>() )
 		{
 			// 画面自体の描画コストも計測に出る（表示が重い場合は Debug/ProfilerWindow を見る）
-			PROFILE_SCOPE_OWNER( "Debug", "Game", "ProfilerWindow" );
+			PROFILE_SCOPE_OWNER( NProfileCategory::Debug, "Game", "ProfilerWindow" );
 			NDebugUI::DrawProfilerWindow( *Profiler, ProfilerWindowState, &bShowProfilerWindow );
 		}
 	}
@@ -201,7 +201,7 @@ void CDebugOverlay::Draw( CGameInstance& Game )
 #if COG_DEBUG_CONSOLE
 	if ( bShowConsole )
 	{
-		PROFILE_SCOPE_OWNER( "Debug", "Game", "Console" );
+		PROFILE_SCOPE_OWNER( NProfileCategory::Debug, "Game", "Console" );
 		NDebugUI::DrawConsoleWindow( ConsoleWindow, &bShowConsole );
 	}
 #endif

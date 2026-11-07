@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "Library/Core/Interfaces/Profiler/IProfiler.h"
+#include "Library/Core/Profiler/ProfilerCategories.h"
 
 //=============================================================================
 // PROFILE_SCOPE
@@ -116,10 +117,10 @@ private:
 	#define PROFILE_CONCAT( A, B ) PROFILE_CONCAT_INNER( A, B )
 	#define PROFILE_SCOPE_VAR PROFILE_CONCAT( ProfileScope_, __LINE__ )
 
-	#define PROFILE_SCOPE( Name )                         FProfileScope PROFILE_SCOPE_VAR( "General", "", Name )
+	#define PROFILE_SCOPE( Name )                         FProfileScope PROFILE_SCOPE_VAR( NProfileCategory::General, "", Name )
 	#define PROFILE_SCOPE_CAT( Category, Name )           FProfileScope PROFILE_SCOPE_VAR( Category, "", Name )
 	#define PROFILE_SCOPE_OWNER( Category, Owner, Name )  FProfileScope PROFILE_SCOPE_VAR( Category, Owner, Name )
-	#define PROFILE_FUNCTION()                            FProfileScope PROFILE_SCOPE_VAR( "Function", "", __FUNCTION__ )
+	#define PROFILE_FUNCTION()                            FProfileScope PROFILE_SCOPE_VAR( NProfileCategory::Function, "", __FUNCTION__ )
 
 	// Expression（FProfileScope を返す式）は、記録中のときだけ評価される
 	#define PROFILE_SCOPE_LAZY( Var, Expression )         FProfileScope Var = NProfiler::GRecorder ? ( Expression ) : FProfileScope()

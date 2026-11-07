@@ -167,7 +167,7 @@ void CJobSubsystem::RunBatches( FGroup& Group )
 		const int32 Begin = Batch * Group.BatchSize;
 		const int32 End = NMath::Min( Begin + Group.BatchSize, Group.Count );
 		{
-			PROFILE_SCOPE_CAT( "Job", Group.Name );
+			PROFILE_SCOPE_CAT( NProfileCategory::Job, Group.Name );
 			Group.Body.Invoke( Group.Body.Object, Begin, End );
 		}
 		Group.NumDone.FetchAdd( 1, EMemoryOrder::Release );
@@ -196,7 +196,7 @@ void CJobSubsystem::RunParallelRange( int32 Count, int32 MinBatchSize, FRangeFun
 		for ( int32 Batch = 0; Batch < NumBatches; ++Batch )
 		{
 			const int32 Begin = Batch * BatchSize;
-			PROFILE_SCOPE_CAT( "Job", Name );
+			PROFILE_SCOPE_CAT( NProfileCategory::Job, Name );
 			Body.Invoke( Body.Object, Begin, NMath::Min( Begin + BatchSize, Count ) );
 		}
 		return;
@@ -291,7 +291,7 @@ void CJobSubsystem::Enqueue( const TSharedPtr<FJobState>& Job )
 void CJobSubsystem::RunJob( const TSharedPtr<FJobState>& Job )
 {
 	{
-		PROFILE_SCOPE_CAT( "Job", Job->Name );
+		PROFILE_SCOPE_CAT( NProfileCategory::Job, Job->Name );
 		Job->Function();
 	}
 	Job->Function = nullptr;   // 取り込んだものを早く手放す

@@ -689,6 +689,32 @@ Worldの`Components.Effect`には、任意の`Target`（追従先オブジェク
 
 **自分のビューを足す**: `FDebugView`に、名前・オン/オフの実体へのポインター・（キー）・項目（スイッチ / 整数 / 実数。実体へのポインターと範囲）を入れて、`FDebugViewRegistry::Global().Register( View )`。描く側は、オンのときに描きます。シーン全体に重ねて描く場所は`CScene::AddSceneDraw( 名前, []( FDrawContext& Draw ) { ... } )`（オブジェクトの`Draw`が終わったあと、`OnDraw`の前。撮影の「被写体だけ」では呼ばれません）。
 
+## プロファイラー（計測の分類）
+
+処理の時間は、`PROFILE_SCOPE`などのマクロで測り（`Library/Core/Profiler/ProfilerScope.h`）、F2で記録をオン/オフして、ウィンドウで見ます。記録は、コンソールの`profiler`・`profiler.capture`・`profiler.save`でも扱え、Chromeトレース形式（`chrome://tracing`で開ける）で`Saved/Profiler`に書けます。落ちたときは、直近の記録が、自動で`..._crash.json`に書かれます。
+
+計測は、4つの軸で分けます: **分類**（何の処理か）・**持ち主**（どの持ち主の下か。シーン名など）・**名前**（処理や型の名前）・**個体**（オブジェクトのID）。このうち分類が、画面の並び・色・絞り込み（Group by Category）の単位です。
+
+```cpp
+PROFILE_SCOPE( "Enemy.Tick" );                                             // 名前だけ（分類はGeneral）
+PROFILE_SCOPE_CAT( NProfileCategory::AI, "FindTarget" );                   // 分類 + 名前
+PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "DxLib", "ScreenFlip" );  // 分類 + 持ち主 + 名前
+PROFILE_COUNTER_BYTES( "Asset.Memory.Texture", TextureBytes );             // 時間でない値（個数・バイト数など）
+```
+
+**分類は、`Library/Core/Profiler/ProfilerCategories.h`の定数で決めます**（綴りの違いで、別の分類に割れるのを防ぐため）。
+
+|分類|何の処理か|
+|---|---|
+|`Engine`・`Platform`・`GameInstance`・`Scene`|フレームの流れ（エンジンの大きな区切り / OS・描画の実装の呼び出し / ゲームインスタンス / シーンのTickとDraw）|
+|`Subsystem`・`Component`・`System`・`Job`|仕組みごとの処理（サブシステムのTick / コンポーネント / ECSのシステム / ジョブのワーカー）|
+|`Physics`・`Audio`・`Asset`・`AI`|それぞれの機能|
+|`Debug`|デバッグ表示そのもの（計測の邪魔をしていないかを見る）|
+|`General`・`Function`|`PROFILE_SCOPE( Name )`・`PROFILE_FUNCTION()`の既定|
+|`Memory`・`Handle`・`Pool`|カウンターだけの分組（`Memory.VRAM.Used`など）|
+
+決まり: ライブラリの中（`Library`）では、`PROFILE_SCOPE_CAT`・`PROFILE_SCOPE_OWNER`・`FProfileScope`の分類に、**文字列リテラルを書かず、定数を使います**。カウンター名は`<分類>.<名前>`で、最初の`.`の前は、この一覧のどれかです。どちらも`CheckSourceFormat.ps1`が検査します。新しい分類が要るときは、`ProfilerCategories.h`に、何の処理かを書いて足します。ゲーム側（`Source`・`Samples`）は、自分の分類を文字列で決めてかまいません。持ち主と名前は、分類の下で自由に決めてかまいません。
+
 ## 一時ファイル・不要ファイルを消す（Clean.bat）
 
 ルートの`Clean.bat`が、一時ファイルと、ビルドの出力を消します（実体は`Tools/Clean.ps1`）。消す前に、消すものと大きさを一覧にして、確認します。

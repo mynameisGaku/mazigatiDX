@@ -79,7 +79,7 @@ int32 CEngine::Run( TUniquePtr<CGameInstance> InGameInstance, const FWindowSetti
 		}
 
 		{
-			PROFILE_SCOPE_OWNER( "Engine", "Engine", "Platform.BeginFrame" );
+			PROFILE_SCOPE_OWNER( NProfileCategory::Engine, "Engine", "Platform.BeginFrame" );
 			if ( !Platform->BeginFrame() )
 			{
 				break;
@@ -89,28 +89,28 @@ int32 CEngine::Run( TUniquePtr<CGameInstance> InGameInstance, const FWindowSetti
 
 		// ほかのスレッドから AsyncTask( EThreadType::Game, ... ) で頼まれた仕事を、更新の前に実行する
 		{
-			PROFILE_SCOPE_OWNER( "Engine", "Engine", "GameThreadTasks" );
+			PROFILE_SCOPE_OWNER( NProfileCategory::Engine, "Engine", "GameThreadTasks" );
 			NGameThread::RunPendingTasks();
 		}
 
 		{
-			PROFILE_SCOPE_OWNER( "Engine", "Engine", "AppSubsystems.PreUpdate" );
+			PROFILE_SCOPE_OWNER( NProfileCategory::Engine, "Engine", "AppSubsystems.PreUpdate" );
 			Subsystems.Tick( DeltaTime, ETickGroup::PreUpdate );
 		}
 		{
-			PROFILE_SCOPE_OWNER( "Engine", "Engine", "GameInstance.Tick" );
+			PROFILE_SCOPE_OWNER( NProfileCategory::Engine, "Engine", "GameInstance.Tick" );
 			GameInstance->Tick( DeltaTime );
 		}
 		{
-			PROFILE_SCOPE_OWNER( "Engine", "Engine", "AppSubsystems.PostUpdate" );
+			PROFILE_SCOPE_OWNER( NProfileCategory::Engine, "Engine", "AppSubsystems.PostUpdate" );
 			Subsystems.Tick( DeltaTime, ETickGroup::PostUpdate );
 		}
 		{
-			PROFILE_SCOPE_OWNER( "Engine", "Engine", "GameInstance.Draw" );
+			PROFILE_SCOPE_OWNER( NProfileCategory::Engine, "Engine", "GameInstance.Draw" );
 			GameInstance->Draw();
 		}
 		{
-			PROFILE_SCOPE_OWNER( "Engine", "Engine", "Platform.EndFrame" );
+			PROFILE_SCOPE_OWNER( NProfileCategory::Engine, "Engine", "Platform.EndFrame" );
 			Platform->EndFrame();
 		}
 	}

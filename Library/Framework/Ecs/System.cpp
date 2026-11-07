@@ -124,7 +124,7 @@ void NEcs::FSystemScheduler::Run( EPhase Phase, float32 DeltaTime, uint64 MaxObj
 			for ( int32 i = First; i < Last; ++i )
 			{
 				const FWorkItem& Item = WorkData[i];
-				PROFILE_SCOPE_CAT( "System", Item.Name );
+				PROFILE_SCOPE_CAT( NProfileCategory::System, Item.Name );
 				Item.Runner->RunRange( Item.Begin, Item.End );
 			}
 		};

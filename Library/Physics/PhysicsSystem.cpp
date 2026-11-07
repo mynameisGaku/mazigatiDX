@@ -235,13 +235,13 @@ void CPhysicsSystem::Step( float32 DeltaTime )
 {
 	if ( !Characters.IsEmpty() )
 	{
-		PROFILE_SCOPE_CAT( "Physics", "Characters" );
+		PROFILE_SCOPE_CAT( NProfileCategory::Physics, "Characters" );
 		UpdateCharacters( DeltaTime );
 	}
 
 	JPH::EPhysicsUpdateError Error;
 	{
-		PROFILE_SCOPE_CAT( "Physics", "Jolt.Update" );
+		PROFILE_SCOPE_CAT( NProfileCategory::Physics, "Jolt.Update" );
 		Error = JoltSystem->Update( DeltaTime, Settings.CollisionSteps, TempAllocator.Get(), JobSystem.Get() );
 	}
 	if ( Error != JPH::EPhysicsUpdateError::None )
@@ -251,14 +251,14 @@ void CPhysicsSystem::Step( float32 DeltaTime )
 
 	if ( !Constraints.IsEmpty() )
 	{
-		PROFILE_SCOPE_CAT( "Physics", "ConstraintLoads" );
+		PROFILE_SCOPE_CAT( NProfileCategory::Physics, "ConstraintLoads" );
 		UpdateConstraintLoads( DeltaTime );
 	}
 
 	if ( !ContactListeners.IsEmpty() )
 	{
 		// コールバック内での Add/Remove は、レジストリが配っている間の扱いを決めている
-		PROFILE_SCOPE_CAT( "Physics", "DispatchContacts" );
+		PROFILE_SCOPE_CAT( NProfileCategory::Physics, "DispatchContacts" );
 		ContactQueue->Dispatch( *this, ContactListeners );
 	}
 }

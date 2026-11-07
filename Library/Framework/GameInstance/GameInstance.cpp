@@ -21,19 +21,19 @@ void CGameInstance::Init( CEngine* InEngine )
 void CGameInstance::Tick( float32 DeltaTime )
 {
 	{
-		PROFILE_SCOPE_OWNER( "GameInstance", "GameInstance", "Subsystems.PreUpdate" );
+		PROFILE_SCOPE_OWNER( NProfileCategory::GameInstance, "GameInstance", "Subsystems.PreUpdate" );
 		Subsystems.Tick( DeltaTime, ETickGroup::PreUpdate );
 	}
 	{
-		PROFILE_SCOPE_OWNER( "GameInstance", "GameInstance", "OnTick" );
+		PROFILE_SCOPE_OWNER( NProfileCategory::GameInstance, "GameInstance", "OnTick" );
 		OnTick( DeltaTime );
 	}
 	{
-		PROFILE_SCOPE_OWNER( "GameInstance", "GameInstance", "SceneManager.Tick" );
+		PROFILE_SCOPE_OWNER( NProfileCategory::GameInstance, "GameInstance", "SceneManager.Tick" );
 		SceneManager.Tick( DeltaTime );
 	}
 	{
-		PROFILE_SCOPE_OWNER( "GameInstance", "GameInstance", "Subsystems.PostUpdate" );
+		PROFILE_SCOPE_OWNER( NProfileCategory::GameInstance, "GameInstance", "Subsystems.PostUpdate" );
 		Subsystems.Tick( DeltaTime, ETickGroup::PostUpdate );
 	}
 }
@@ -41,11 +41,11 @@ void CGameInstance::Tick( float32 DeltaTime )
 void CGameInstance::Draw()
 {
 	{
-		PROFILE_SCOPE_OWNER( "GameInstance", "GameInstance", "SceneManager.Draw" );
+		PROFILE_SCOPE_OWNER( NProfileCategory::GameInstance, "GameInstance", "SceneManager.Draw" );
 		SceneManager.Draw();
 	}
 	{
-		PROFILE_SCOPE_OWNER( "GameInstance", "GameInstance", "OnDraw" );
+		PROFILE_SCOPE_OWNER( NProfileCategory::GameInstance, "GameInstance", "OnDraw" );
 		OnDraw();
 	}
 }

@@ -207,7 +207,7 @@ bool CDxLibBackendSubsystem::BeginFrame()
 	}
 
 	{
-		PROFILE_SCOPE_OWNER( "Platform", "DxLib", "ProcessMessage" );
+		PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "DxLib", "ProcessMessage" );
 		if ( ProcessMessage() == -1 )
 		{
 			LOG( LogPlatform, Log, "Window closed by the user (ProcessMessage returned -1)" );
@@ -224,24 +224,24 @@ bool CDxLibBackendSubsystem::BeginFrame()
 	{
 		const EWindowMode Mode = PendingWindowMode.GetValue();
 		PendingWindowMode.Reset();
-		PROFILE_SCOPE_OWNER( "Platform", "DxLib", "ApplyWindowMode" );
+		PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "DxLib", "ApplyWindowMode" );
 		ApplyWindowMode( Mode );
 	}
 
 	{
-		PROFILE_SCOPE_OWNER( "Platform", "DxLib", "UpdateTime" );
+		PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "DxLib", "UpdateTime" );
 		UpdateTime();
 	}
 
 	if ( bImGuiActive )
 	{
-		PROFILE_SCOPE_OWNER( "Platform", "ImGui", "NewFrame" );
+		PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "ImGui", "NewFrame" );
 		ImGui_ImplDXlib_NewFrame();
 		ImGui::NewFrame();
 	}
 
 	{
-		PROFILE_SCOPE_OWNER( "Platform", "DxLib", "ClearDrawScreen" );
+		PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "DxLib", "ClearDrawScreen" );
 		ClearDrawScreen();
 	}
 	bInFrame = true;
@@ -274,7 +274,7 @@ void CDxLibBackendSubsystem::DeliverFrameToSink( EFrameCaptureStage Stage )
 	{
 		return;
 	}
-	PROFILE_SCOPE_OWNER( "Platform", "DxLib", "FrameCapture" );
+	PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "DxLib", "FrameCapture" );
 	const int32 Width = GetScreenWidth();
 	const int32 Height = GetScreenHeight();
 	if ( CaptureSoftImage < 0 || CaptureWidth != Width || CaptureHeight != Height )
@@ -360,25 +360,25 @@ void CDxLibBackendSubsystem::EndFrame()
 		// ImGui（特にメインウィンドウ外のウィンドウ）は Direct3D の描画先を切り替えるので、
 		// 溜まったままだと DxLib の描画が別ウィンドウに描かれたり消えたりしてちらつく。先に吐き出しておく
 		{
-			PROFILE_SCOPE_OWNER( "Platform", "DxLib", "RenderVertex" );
+			PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "DxLib", "RenderVertex" );
 			RenderVertex();
 		}
 
 		{
-			PROFILE_SCOPE_OWNER( "Platform", "ImGui", "Render" );
+			PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "ImGui", "Render" );
 			ImGui::Render();
 			ImGui_ImplDXlib_RenderDrawData();
 		}
 		if ( ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable )
 		{
 			{
-				PROFILE_SCOPE_OWNER( "Platform", "ImGui", "UpdatePlatformWindows" );
+				PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "ImGui", "UpdatePlatformWindows" );
 				ImGui::UpdatePlatformWindows();
 			}
 			RenderImGuiViewports();
 		}
 		// ImGui が変更した Direct3D の状態を DxLib 用に戻す
-		PROFILE_SCOPE_OWNER( "Platform", "DxLib", "RefreshDirect3DSetting" );
+		PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "DxLib", "RefreshDirect3DSetting" );
 		RefreshDxLibDirect3DSetting();
 	}
 
@@ -386,11 +386,11 @@ void CDxLibBackendSubsystem::EndFrame()
 	DeliverFrameToSink( EFrameCaptureStage::WithDebugUI );
 
 	{
-		PROFILE_SCOPE_OWNER( "Platform", "DxLib", "ScreenFlip" );
+		PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "DxLib", "ScreenFlip" );
 		ScreenFlip();
 	}
 	{
-		PROFILE_SCOPE_OWNER( "Platform", "DxLib", "FrameLimiter" );
+		PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "DxLib", "FrameLimiter" );
 		WaitForFrameLimit();
 	}
 

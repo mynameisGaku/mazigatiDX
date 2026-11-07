@@ -152,7 +152,7 @@ bool CNullPlatformSubsystem::BeginFrame()
 
 	if ( bImGuiActive )
 	{
-		PROFILE_SCOPE_OWNER( "Platform", "Null", "ImGui.NewFrame" );
+		PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "Null", "ImGui.NewFrame" );
 		ImGuiIO& IO = ImGui::GetIO();
 		IO.DisplaySize = ImVec2( static_cast<float32>( Settings.Width ), static_cast<float32>( Settings.Height ) );
 		IO.DeltaTime = FixedDeltaTime;
@@ -170,7 +170,7 @@ void CNullPlatformSubsystem::EndFrame()
 	}
 	if ( bImGuiActive )
 	{
-		PROFILE_SCOPE_OWNER( "Platform", "Null", "ImGui.Render" );
+		PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "Null", "ImGui.Render" );
 		ImGui::Render();
 		AnswerImGuiTextureRequests();
 	}

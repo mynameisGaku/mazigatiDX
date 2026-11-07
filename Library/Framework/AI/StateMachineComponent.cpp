@@ -238,7 +238,7 @@ void CStateMachineComponent::Step( float32 DeltaTime )
 
 void CStateMachineComponent::Update( float32 DeltaTime )
 {
-	PROFILE_SCOPE_CAT( "AI", "StateMachine" );
+	PROFILE_SCOPE_CAT( NProfileCategory::AI, "StateMachine" );
 	Time += static_cast<float64>( DeltaTime );
 	FAIContext Context = MakeContext( DeltaTime );
 	Machine->Tick( Context, DeltaTime );

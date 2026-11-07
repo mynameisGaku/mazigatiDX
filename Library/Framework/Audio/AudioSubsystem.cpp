@@ -214,7 +214,7 @@ void CAudioSubsystem::FreeVoice( int32 Index )
 
 FSoundHandle CAudioSubsystem::Play( const TSharedPtr<CSound>& Sound, const FSoundPlayParams& Params )
 {
-	PROFILE_SCOPE_CAT( "Audio", "Play" );
+	PROFILE_SCOPE_CAT( NProfileCategory::Audio, "Play" );
 	IAudioBackend* B = GetBackend();
 	if ( B == nullptr ) return FSoundHandle();
 	if ( !Sound.IsValid() )
@@ -592,7 +592,7 @@ void CAudioSubsystem::Tick( float32 DeltaTime )
 
 void CAudioSubsystem::Update( float32 DeltaSeconds )
 {
-	PROFILE_SCOPE_CAT( "Audio", "Update" );
+	PROFILE_SCOPE_CAT( NProfileCategory::Audio, "Update" );
 	Clock += static_cast<float64>( DeltaSeconds );
 	for ( FBus& Bus : Buses ) Bus.Volume.Step( DeltaSeconds );
 
