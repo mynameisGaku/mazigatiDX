@@ -325,6 +325,8 @@
     <ClCompile Include="Library\Framework\Subsystem\Subsystem.cpp" />
     <ClCompile Include="Library\Framework\Subsystem\SubsystemCollection.cpp" />
     <ClCompile Include="Library\Framework\Text\TextLayout.cpp" />
+    <ClCompile Include="Library\Framework\UI\Core\UIPanels.cpp" />
+    <ClCompile Include="Library\Framework\UI\Core\UIWidget.cpp" />
     <ClCompile Include="Library\Framework\World\Definition\WorldAssetUse.cpp" />
     <ClCompile Include="Library\Framework\World\Definition\WorldDefinition.cpp" />
     <ClCompile Include="Library\Framework\World\Definition\WorldEdit.cpp" />
@@ -586,6 +588,7 @@
   <ItemGroup>
     <ClInclude Include="Library\Core\Result.h" />
     <ClInclude Include="Library\Core\Result.inl" />
+    <ClInclude Include="Library\Core\Version.h" />
     <ClInclude Include="Library\Core\Collection\Array.h" />
     <ClInclude Include="Library\Core\Collection\Array.inl" />
     <ClInclude Include="Library\Core\Collection\ArrayView.h" />
@@ -985,6 +988,9 @@
     <ClInclude Include="Library\Framework\Subsystem\SubsystemCollection.h" />
     <ClInclude Include="Library\Framework\Subsystem\SubsystemCollection.inl" />
     <ClInclude Include="Library\Framework\Text\TextLayout.h" />
+    <ClInclude Include="Library\Framework\UI\Core\UIPanels.h" />
+    <ClInclude Include="Library\Framework\UI\Core\UITypes.h" />
+    <ClInclude Include="Library\Framework\UI\Core\UIWidget.h" />
     <ClInclude Include="Library\Framework\World\Definition\WorldAssetUse.h" />
     <ClInclude Include="Library\Framework\World\Definition\WorldDefinition.h" />
     <ClInclude Include="Library\Framework\World\Definition\WorldEdit.h" />
