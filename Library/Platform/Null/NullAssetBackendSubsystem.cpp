@@ -139,10 +139,39 @@ namespace
 		return false;
 	}
 
-	// PNG・BMP・JPEG のどれかのヘッダーから、大きさを読む。どれでもなければ false
+	// TGA のヘッダー（18 バイト。印が無いので、種類・色の深さ・大きさが、矛盾しないことで、TGA と見なす）から、大きさを読む。
+	// 圧縮していない TGA は、画素のぶんの長さがあることも確かめる（ほかの形式の、でたらめな並びを、TGA と見なさないため）
+	bool ReadTgaSize( const uint8* Data, usize Size, int64& OutWidth, int64& OutHeight )
+	{
+		if ( Size < 18 )
+		{
+			return false;
+		}
+		const uint8 ColorMapType = Data[1];
+		const uint8 ImageType = Data[2];
+		const bool bKnownType = ImageType == 1 || ImageType == 2 || ImageType == 3 || ImageType == 9 || ImageType == 10 || ImageType == 11;
+		const int64 Width = static_cast<int64>( Data[12] ) | ( static_cast<int64>( Data[13] ) << 8 );
+		const int64 Height = static_cast<int64>( Data[14] ) | ( static_cast<int64>( Data[15] ) << 8 );
+		const int32 BitsPerPixel = Data[16];
+		const bool bKnownDepth = BitsPerPixel == 8 || BitsPerPixel == 16 || BitsPerPixel == 24 || BitsPerPixel == 32;
+		if ( ColorMapType > 1 || !bKnownType || !bKnownDepth || Width <= 0 || Height <= 0 )
+		{
+			return false;
+		}
+		const bool bCompressed = ImageType >= 9;
+		if ( !bCompressed && ColorMapType == 0 && static_cast<int64>( Size ) < 18 + Width * Height * ( BitsPerPixel / 8 ) )
+		{
+			return false;
+		}
+		OutWidth = Width;
+		OutHeight = Height;
+		return true;
+	}
+
+	// PNG・BMP・JPEG・TGA のどれかのヘッダーから、大きさを読む。どれでもなければ false（TGA は、印が無いので、いちばん最後に調べる）
 	bool ReadImageSize( const uint8* Data, usize Size, int64& OutWidth, int64& OutHeight )
 	{
-		return ReadPngSize( Data, Size, OutWidth, OutHeight ) || ReadBmpSize( Data, Size, OutWidth, OutHeight ) || ReadJpegSize( Data, Size, OutWidth, OutHeight );
+		return ReadPngSize( Data, Size, OutWidth, OutHeight ) || ReadBmpSize( Data, Size, OutWidth, OutHeight ) || ReadJpegSize( Data, Size, OutWidth, OutHeight ) || ReadTgaSize( Data, Size, OutWidth, OutHeight );
 	}
 
 	// WAV のヘッダーから、長さ（秒）を読む。読めなければ FallbackSoundLength

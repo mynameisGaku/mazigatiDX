@@ -4,7 +4,7 @@ mazigatiDX のコードは [MIT ライセンス](LICENSE)です。次の第三�
 
 | 名前 | バージョン | 置き場所 | ライセンス | 著作権者 |
 |---|---|---|---|---|
-| DxLib | 3.24f | 同梱しない（`C:\DxLib` へ配置） | DxLib 独自（使用料なし、商用可。下記の条件あり） | 山田 巧 |
+| DxLib | 3.24f | 同梱しない（`FetchDxLib.bat` が、公式サイトから `C:\DxLib` へ取得） | DxLib 独自（使用料なし、商用可。下記の条件あり） | 山田 巧 |
 | Jolt Physics | 5.6.0 | `VendorModules/Jolt` | MIT | Jorrit Rouwe |
 | Dear ImGui | v1.93.0-docking | `VendorModules/ImGui` | MIT | Omar Cornut |
 | SDL | 3.4.18 | `VendorModules/SDL3` | zlib | Sam Lantinga |

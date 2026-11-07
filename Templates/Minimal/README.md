@@ -5,7 +5,7 @@ mazigatiDX（DxLib を使う C++ のフレームワーク）で作った、最�
 ## 必要なもの
 
 - Visual Studio（MSVC ツールセット v145）、Windows SDK 10.0.26100.0
-- DxLib 3.24f。`C:\DxLib`（と、あれば `C:\DxLib_VC\プロジェクトに追加すべきファイル_VC用`）に置きます。別の場所に置いたときは、環境変数 `MazigatiDxLibDir`（と `MazigatiDxLibVcDir`）にその場所を入れます。
+- DxLib 3.24f。フレームワークのフォルダーの `FetchDxLib.bat` で、公式サイトから `C:\DxLib` へ取得できます。手で置くなら、`C:\DxLib`（と、あれば `C:\DxLib_VC\プロジェクトに追加すべきファイル_VC用`）に置きます。別の場所に置いたときは、環境変数 `MazigatiDxLibDir`（と `MazigatiDxLibVcDir`）にその場所を入れます。
 - フレームワーク（mazigatiDX）のフォルダー。`__NAME__.vcxproj` の `MazigatiDXRoot` が、このフォルダーからの相対パスで指しています（`__FRAMEWORK_RELPATH__`）。
 
 ## 動かす

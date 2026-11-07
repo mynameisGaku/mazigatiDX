@@ -814,6 +814,17 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\NewProject.ps1 -Name M
 - `CNullInputSubsystem` / `CNullAudioBackendSubsystem`: キー・マウス・ボイスの状態をメモリ上で進め、テストから入力を差し込めます。
 - `msbuild project.sln /p:Configuration=Release /p:Platform=x64 /p:MazigatiWithoutDxLib=true`で、`Library/Platform/DxLib`のソースとDxLibのライブラリを除いたままビルド・リンクできることを確かめられます。
 
+## 依存の取得と、まっさらな環境での確認
+
+- **DxLib**: リポジトリには入っていません（再配布できないため）。`FetchDxLib.bat`（本体は`Tools/FetchDxLib.ps1`）が、公式サイトから、固定版（3.24f）・固定ハッシュで取得して、`C:\DxLib`へ置きます。`-Destination`で場所を変えたら、`Build/mazigatiDX.props`の`MazigatiDxLibDir`（または同じ名前の環境変数）を、同じ場所に合わせます。置き済みなら、何もしません。ほかの依存（Jolt・ImGui・SDL・nlohmann・ufbx）は、`VendorModules`に入っています（`FetchJolt.bat`・`FetchImGui.bat`・`FetchSDL.bat`は、入れ直すとき用）。
+- **まっさらな環境での確認**: `Tools/VerifyCleanBuild.ps1`が、リポジトリを新しいフォルダーへ clone し（コミットしたものだけ）、プロジェクトのファイル一覧を作り、`project.sln`をビルドして（警告・エラーが無いこと、4 つの実行ファイルができること）、Null バックエンドで`project`と`Samples`のいくつかのサンプルを動かします。公開の前や、ファイルを足した・消したあとに使います（先に`FetchDxLib.bat`）。`-Source`にリポジトリのフォルダーを渡すと、push する前の確認になります。
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File Tools\VerifyCleanBuild.ps1 -Source C:\dev\mazigatiDX -Branch dev
+```
+
+- **Samples の作業フォルダー**: `Samples.exe`は、`Samples`フォルダーで起動します（`Config`と`Assets`を、作業フォルダーから探すため）。ルートから起動すると、サンプルの資産が見つかりません。
+
 ## プロジェクト生成と確認
 
 cpp・header・inlを追加・削除・移動したら、次でプロジェクトを再生成します（本体は`Tools/GenerateProjectFiles.ps1`で、`-Root`にプロジェクトのフォルダーを渡します。ルートの`.bat`はそれを呼びます）。
