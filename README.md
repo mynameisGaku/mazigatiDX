@@ -81,7 +81,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\NewProject.ps1 -Name M
 |---|---|
 |[開発手順](Docs/DEVELOPMENT.md)|構成と依存、各機能の使い方、コードの書き方の決まり、プロジェクトの生成と確認、変更の統合|
 |[エフェクトの使い方](Docs/EFFECTS.md)|エフェクトエディタの使い方と、見本のエフェクト|
-|[バージョン方針](Docs/VERSIONING.md)・[変更履歴](CHANGELOG.md)|版の付け方、互換を約束する範囲、対象環境、ブランチとタグ、変更の記録|
+|[バージョン方針](Docs/VERSIONING.md)・[変更履歴](CHANGELOG.md)|バージョンの付け方、互換を約束する範囲、対象環境、ブランチとタグ、変更の記録|
 |[Samples/README.md](Samples/README.md)|サンプル集の構成と、サンプルの足し方|
 |[第三者のソフトウェア](THIRD_PARTY_NOTICES.md)|使っているライブラリと、配布の条件|
 
@@ -105,8 +105,8 @@ mazigatiDX のコードは [MIT ライセンス](LICENSE)です。使ってい�
 
 |ブランチ|役割|
 |---|---|
-|`main`|検証を終えた安定版|
-|`dev`|全機能を統合して確認する開発版|
+|`main`|検証を終えた安定バージョン|
+|`dev`|全機能を統合して確認する開発バージョン|
 |`Effect`|エフェクト機能の開発|
 |`Asset`|アセット機能の開発|
 |`Core`|基盤・共通インターフェースの開発|

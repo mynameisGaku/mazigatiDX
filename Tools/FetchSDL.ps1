@@ -1,4 +1,4 @@
-﻿# SDL の公式配布物を固定版・固定ハッシュで取得する。
+﻿# SDL の公式配布物を固定バージョン・固定ハッシュで取得する。
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))

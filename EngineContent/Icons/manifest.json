@@ -1,0 +1,370 @@
+﻿{
+    "Description":  "Engine UI icons. 64x64, white, meant to be tinted by the brush color. Tags are search words.",
+    "Icons":  [
+                  {
+                      "Name":  "ArrowRight",
+                      "File":  "ArrowRight.png",
+                      "Tags":  "arrow right next forward"
+                  },
+                  {
+                      "Name":  "ArrowDown",
+                      "File":  "ArrowDown.png",
+                      "Tags":  "arrow down"
+                  },
+                  {
+                      "Name":  "ArrowLeft",
+                      "File":  "ArrowLeft.png",
+                      "Tags":  "arrow left back previous"
+                  },
+                  {
+                      "Name":  "ArrowUp",
+                      "File":  "ArrowUp.png",
+                      "Tags":  "arrow up"
+                  },
+                  {
+                      "Name":  "ChevronRight",
+                      "File":  "ChevronRight.png",
+                      "Tags":  "chevron right expand"
+                  },
+                  {
+                      "Name":  "ChevronDown",
+                      "File":  "ChevronDown.png",
+                      "Tags":  "chevron down expand dropdown"
+                  },
+                  {
+                      "Name":  "ChevronLeft",
+                      "File":  "ChevronLeft.png",
+                      "Tags":  "chevron left collapse"
+                  },
+                  {
+                      "Name":  "ChevronUp",
+                      "File":  "ChevronUp.png",
+                      "Tags":  "chevron up collapse"
+                  },
+                  {
+                      "Name":  "Close",
+                      "File":  "Close.png",
+                      "Tags":  "close cancel x delete"
+                  },
+                  {
+                      "Name":  "Plus",
+                      "File":  "Plus.png",
+                      "Tags":  "plus add new"
+                  },
+                  {
+                      "Name":  "Minus",
+                      "File":  "Minus.png",
+                      "Tags":  "minus remove subtract"
+                  },
+                  {
+                      "Name":  "Check",
+                      "File":  "Check.png",
+                      "Tags":  "check ok done confirm"
+                  },
+                  {
+                      "Name":  "Menu",
+                      "File":  "Menu.png",
+                      "Tags":  "menu list hamburger"
+                  },
+                  {
+                      "Name":  "More",
+                      "File":  "More.png",
+                      "Tags":  "more dots options"
+                  },
+                  {
+                      "Name":  "Search",
+                      "File":  "Search.png",
+                      "Tags":  "search find zoom"
+                  },
+                  {
+                      "Name":  "Settings",
+                      "File":  "Settings.png",
+                      "Tags":  "settings gear options config"
+                  },
+                  {
+                      "Name":  "Home",
+                      "File":  "Home.png",
+                      "Tags":  "home house start"
+                  },
+                  {
+                      "Name":  "Refresh",
+                      "File":  "Refresh.png",
+                      "Tags":  "refresh reload retry"
+                  },
+                  {
+                      "Name":  "Download",
+                      "File":  "Download.png",
+                      "Tags":  "download save arrow"
+                  },
+                  {
+                      "Name":  "Upload",
+                      "File":  "Upload.png",
+                      "Tags":  "upload send arrow"
+                  },
+                  {
+                      "Name":  "Edit",
+                      "File":  "Edit.png",
+                      "Tags":  "edit pencil write rename"
+                  },
+                  {
+                      "Name":  "Copy",
+                      "File":  "Copy.png",
+                      "Tags":  "copy duplicate"
+                  },
+                  {
+                      "Name":  "Trash",
+                      "File":  "Trash.png",
+                      "Tags":  "trash delete remove bin"
+                  },
+                  {
+                      "Name":  "Save",
+                      "File":  "Save.png",
+                      "Tags":  "save disk floppy"
+                  },
+                  {
+                      "Name":  "Folder",
+                      "File":  "Folder.png",
+                      "Tags":  "folder open directory"
+                  },
+                  {
+                      "Name":  "File",
+                      "File":  "File.png",
+                      "Tags":  "file document page"
+                  },
+                  {
+                      "Name":  "Link",
+                      "File":  "Link.png",
+                      "Tags":  "link chain url"
+                  },
+                  {
+                      "Name":  "Pin",
+                      "File":  "Pin.png",
+                      "Tags":  "pin location marker map"
+                  },
+                  {
+                      "Name":  "Lock",
+                      "File":  "Lock.png",
+                      "Tags":  "lock locked secure"
+                  },
+                  {
+                      "Name":  "Unlock",
+                      "File":  "Unlock.png",
+                      "Tags":  "unlock unlocked open"
+                  },
+                  {
+                      "Name":  "Eye",
+                      "File":  "Eye.png",
+                      "Tags":  "eye view visible show"
+                  },
+                  {
+                      "Name":  "EyeClosed",
+                      "File":  "EyeClosed.png",
+                      "Tags":  "eye closed hidden hide sleep blink"
+                  },
+                  {
+                      "Name":  "EyeOff",
+                      "File":  "EyeOff.png",
+                      "Tags":  "eye off hidden hide invisible slash"
+                  },
+                  {
+                      "Name":  "Bell",
+                      "File":  "Bell.png",
+                      "Tags":  "bell notification alert"
+                  },
+                  {
+                      "Name":  "Mail",
+                      "File":  "Mail.png",
+                      "Tags":  "mail envelope message"
+                  },
+                  {
+                      "Name":  "User",
+                      "File":  "User.png",
+                      "Tags":  "user person profile account"
+                  },
+                  {
+                      "Name":  "Clock",
+                      "File":  "Clock.png",
+                      "Tags":  "clock time wait"
+                  },
+                  {
+                      "Name":  "Flag",
+                      "File":  "Flag.png",
+                      "Tags":  "flag goal mark"
+                  },
+                  {
+                      "Name":  "Star",
+                      "File":  "Star.png",
+                      "Tags":  "star favorite rating"
+                  },
+                  {
+                      "Name":  "Heart",
+                      "File":  "Heart.png",
+                      "Tags":  "heart like life health"
+                  },
+                  {
+                      "Name":  "Info",
+                      "File":  "Info.png",
+                      "Tags":  "info information help"
+                  },
+                  {
+                      "Name":  "Warning",
+                      "File":  "Warning.png",
+                      "Tags":  "warning caution alert"
+                  },
+                  {
+                      "Name":  "Error",
+                      "File":  "Error.png",
+                      "Tags":  "error failure stop"
+                  },
+                  {
+                      "Name":  "Success",
+                      "File":  "Success.png",
+                      "Tags":  "success done complete ok"
+                  },
+                  {
+                      "Name":  "Question",
+                      "File":  "Question.png",
+                      "Tags":  "question help unknown"
+                  },
+                  {
+                      "Name":  "Play",
+                      "File":  "Play.png",
+                      "Tags":  "play start run"
+                  },
+                  {
+                      "Name":  "Pause",
+                      "File":  "Pause.png",
+                      "Tags":  "pause hold"
+                  },
+                  {
+                      "Name":  "Stop",
+                      "File":  "Stop.png",
+                      "Tags":  "stop halt"
+                  },
+                  {
+                      "Name":  "Next",
+                      "File":  "Next.png",
+                      "Tags":  "next skip forward"
+                  },
+                  {
+                      "Name":  "Previous",
+                      "File":  "Previous.png",
+                      "Tags":  "previous skip back"
+                  },
+                  {
+                      "Name":  "Record",
+                      "File":  "Record.png",
+                      "Tags":  "record rec"
+                  },
+                  {
+                      "Name":  "Volume",
+                      "File":  "Volume.png",
+                      "Tags":  "volume sound speaker audio"
+                  },
+                  {
+                      "Name":  "Mute",
+                      "File":  "Mute.png",
+                      "Tags":  "mute silent no sound"
+                  },
+                  {
+                      "Name":  "Music",
+                      "File":  "Music.png",
+                      "Tags":  "music note song bgm"
+                  },
+                  {
+                      "Name":  "Mic",
+                      "File":  "Mic.png",
+                      "Tags":  "microphone voice record"
+                  },
+                  {
+                      "Name":  "Sword",
+                      "File":  "Sword.png",
+                      "Tags":  "sword attack weapon"
+                  },
+                  {
+                      "Name":  "Shield",
+                      "File":  "Shield.png",
+                      "Tags":  "shield defense guard armor"
+                  },
+                  {
+                      "Name":  "Potion",
+                      "File":  "Potion.png",
+                      "Tags":  "potion bottle heal item"
+                  },
+                  {
+                      "Name":  "Key",
+                      "File":  "Key.png",
+                      "Tags":  "key unlock item"
+                  },
+                  {
+                      "Name":  "Coin",
+                      "File":  "Coin.png",
+                      "Tags":  "coin money gold currency"
+                  },
+                  {
+                      "Name":  "Gem",
+                      "File":  "Gem.png",
+                      "Tags":  "gem jewel crystal diamond"
+                  },
+                  {
+                      "Name":  "Bag",
+                      "File":  "Bag.png",
+                      "Tags":  "bag inventory backpack items"
+                  },
+                  {
+                      "Name":  "Map",
+                      "File":  "Map.png",
+                      "Tags":  "map world navigate"
+                  },
+                  {
+                      "Name":  "Chest",
+                      "File":  "Chest.png",
+                      "Tags":  "chest treasure box loot"
+                  },
+                  {
+                      "Name":  "Skull",
+                      "File":  "Skull.png",
+                      "Tags":  "skull death danger"
+                  },
+                  {
+                      "Name":  "Bolt",
+                      "File":  "Bolt.png",
+                      "Tags":  "bolt lightning energy power"
+                  },
+                  {
+                      "Name":  "Flame",
+                      "File":  "Flame.png",
+                      "Tags":  "flame fire burn"
+                  },
+                  {
+                      "Name":  "Drop",
+                      "File":  "Drop.png",
+                      "Tags":  "drop water liquid"
+                  },
+                  {
+                      "Name":  "Leaf",
+                      "File":  "Leaf.png",
+                      "Tags":  "leaf nature plant"
+                  },
+                  {
+                      "Name":  "Crown",
+                      "File":  "Crown.png",
+                      "Tags":  "crown king rank"
+                  },
+                  {
+                      "Name":  "Target",
+                      "File":  "Target.png",
+                      "Tags":  "target aim crosshair"
+                  },
+                  {
+                      "Name":  "Gamepad",
+                      "File":  "Gamepad.png",
+                      "Tags":  "gamepad controller input"
+                  },
+                  {
+                      "Name":  "Trophy",
+                      "File":  "Trophy.png",
+                      "Tags":  "trophy award win achievement"
+                  }
+              ]
+}

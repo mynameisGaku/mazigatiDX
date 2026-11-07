@@ -1,7 +1,7 @@
-﻿# Dear ImGui (docking ブランチのリリースタグ) を固定版・固定ハッシュで取得し、本体とバックエンドを VendorModules/ImGui へ配置する。
+﻿# Dear ImGui (docking ブランチのリリースタグ) を固定バージョン・固定ハッシュで取得し、本体とバックエンドを VendorModules/ImGui へ配置する。
 # 自前のファイル（imgui_impl_dxlib.hpp / imgui_ja_gryph_ranges.cpp など）は上書きしない。
 #
-# 版を上げるとき: $imguiTag を新しいタグ（例: v1.93.1-docking）にして $archiveHash を空にして実行すると、
+# バージョンを上げるとき: $imguiTag を新しいタグ（例: v1.93.1-docking）にして $archiveHash を空にして実行すると、
 # 取得したアーカイブのハッシュが表示されるので、内容を確認したうえで $archiveHash に書き戻す。
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'

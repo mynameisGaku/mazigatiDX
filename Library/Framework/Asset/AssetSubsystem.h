@@ -120,6 +120,10 @@ public:
 	// アセットのルートフォルダ。相対パスなら、作業ディレクトリ・exe のフォルダ・その親から探す
 	void SetRootDirectory( const FString& Directory );
 	FString GetRootDirectory() const;
+
+	// エンジン組み込みの素材のフォルダ（既定は "EngineContent"。"Engine:/UI/Window.png" のように読む。読み取り専用）
+	void SetEngineContentDirectory( const FString& Directory );
+	FString GetEngineContentDirectory() const;
 	// アセットのパスを、実在するファイルの絶対パスにする。見つからなければ空
 	TOptional<FString> ResolvePath( const FString& Path ) const;
 

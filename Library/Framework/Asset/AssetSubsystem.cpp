@@ -212,6 +212,16 @@ FString CAssetSubsystem::GetRootDirectory() const
 	return PathResolver.GetRootDirectory();
 }
 
+void CAssetSubsystem::SetEngineContentDirectory( const FString& Directory )
+{
+	PathResolver.SetEngineContentDirectory( Directory );
+}
+
+FString CAssetSubsystem::GetEngineContentDirectory() const
+{
+	return PathResolver.GetEngineContentDirectory();
+}
+
 TOptional<FString> CAssetSubsystem::ResolvePath( const FString& Path ) const
 {
 	return PathResolver.ResolvePath( Path );

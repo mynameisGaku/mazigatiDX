@@ -1,4 +1,4 @@
-﻿# DxLib の公式配布物（Visual C++ 版）を、固定版・固定ハッシュで取得して、ビルドが探す場所（既定は C:\DxLib）へ置く。
+﻿# DxLib の公式配布物（Visual C++ 版）を、固定バージョン・固定ハッシュで取得して、ビルドが探す場所（既定は C:\DxLib）へ置く。
 #   powershell -NoProfile -ExecutionPolicy Bypass -File Tools\FetchDxLib.ps1 [-Destination C:\DxLib] [-ArchivePath <取得済みの zip>]
 #
 #   - 置くのは、配布物の「プロジェクトに追加すべきファイル_VC用」フォルダーの中身（ヘッダーと .lib。424 個）だけ。

@@ -816,7 +816,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\NewProject.ps1 -Name M
 
 ## 依存の取得と、まっさらな環境での確認
 
-- **DxLib**: リポジトリには入っていません（再配布できないため）。`FetchDxLib.bat`（本体は`Tools/FetchDxLib.ps1`）が、公式サイトから、固定版（3.24f）・固定ハッシュで取得して、`C:\DxLib`へ置きます。`-Destination`で場所を変えたら、`Build/mazigatiDX.props`の`MazigatiDxLibDir`（または同じ名前の環境変数）を、同じ場所に合わせます。置き済みなら、何もしません。ほかの依存（Jolt・ImGui・SDL・nlohmann・ufbx）は、`VendorModules`に入っています（`FetchJolt.bat`・`FetchImGui.bat`・`FetchSDL.bat`は、入れ直すとき用）。
+- **DxLib**: リポジトリには入っていません（再配布できないため）。`FetchDxLib.bat`（本体は`Tools/FetchDxLib.ps1`）が、公式サイトから、固定バージョン（3.24f）・固定ハッシュで取得して、`C:\DxLib`へ置きます。`-Destination`で場所を変えたら、`Build/mazigatiDX.props`の`MazigatiDxLibDir`（または同じ名前の環境変数）を、同じ場所に合わせます。置き済みなら、何もしません。ほかの依存（Jolt・ImGui・SDL・nlohmann・ufbx）は、`VendorModules`に入っています（`FetchJolt.bat`・`FetchImGui.bat`・`FetchSDL.bat`は、入れ直すとき用）。
 - **まっさらな環境での確認**: `Tools/VerifyCleanBuild.ps1`が、リポジトリを新しいフォルダーへ clone し（コミットしたものだけ）、プロジェクトのファイル一覧を作り、`project.sln`をビルドして（警告・エラーが無いこと、4 つの実行ファイルができること）、Null バックエンドで`project`と`Samples`のいくつかのサンプルを動かします。公開の前や、ファイルを足した・消したあとに使います（先に`FetchDxLib.bat`）。`-Source`にリポジトリのフォルダーを渡すと、push する前の確認になります。
 
 ```powershell
@@ -824,6 +824,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\VerifyCleanBuild.ps1 -
 ```
 
 - **Samples の作業フォルダー**: `Samples.exe`は、`Samples`フォルダーで起動します（`Config`と`Assets`を、作業フォルダーから探すため）。ルートから起動すると、サンプルの資産が見つかりません。
+
+## エンジン組み込みの素材（EngineContent）
+
+エンジンが最初から用意している素材（UI の基本画像・アイコンなど）は、ルートの`EngineContent`にあります。ユーザーの`Assets`とは別で、読み取り専用です。`Assets->LoadTexture( "Engine:/UI/Window.png" )`のように、接頭辞`Engine:/`を付けたパスで読みます（`CAssetPathResolver::IsEnginePath`で判定し、`EngineContent`の下だけを探します。`..`で外へ出るパスは解決せず、保存先（`PrepareSavePath`）は作りません）。フォルダーの場所は、`Assets->SetEngineContentDirectory`で変えられます（既定は`EngineContent`。実行ファイル・作業フォルダー・その親から探します）。中身と作り方は[`EngineContent/README.md`](../EngineContent/README.md)にあります。
 
 ## プロジェクト生成と確認
 
@@ -857,9 +861,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\RunAllChecks.ps1      
 
 ## 変更の統合
 
-版の付け方・互換の約束・ブランチとタグは[バージョン方針](VERSIONING.md)に、変更の記録は[変更履歴](../CHANGELOG.md)にあります。
+バージョンの付け方・互換の約束・ブランチとタグは[バージョン方針](VERSIONING.md)に、変更の記録は[変更履歴](../CHANGELOG.md)にあります。
 
-`main`は安定版、`dev`は統合版です。作業は`Effect`・`Asset`・`Core`など責務に応じたブランチへ分けます。機能ブランチで実装と関連する確認を揃えてから`dev`へ統合し、安定版の確認を終えた区切りを`main`へ反映します。
+`main`は安定バージョン、`dev`は統合バージョンです。作業は`Effect`・`Asset`・`Core`など責務に応じたブランチへ分けます。機能ブランチで実装と関連する確認を揃えてから`dev`へ統合し、安定バージョンの確認を終えた区切りを`main`へ反映します。
 
 コミットは変更のまとまりごとに分け、`feat`・`fix`・`refactor`・`other`と、原因や変化が分かる日本語の説明を使います。push前にはremoteとの差分と追跡ファイルを確認し、履歴の強制的な書き換えは行いません。
 

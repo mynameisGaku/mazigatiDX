@@ -1,0 +1,149 @@
+﻿{
+    "Description":  "Engine UI images. NineSlice margins are Left, Top, Right, Bottom in pixels.",
+    "Images":  {
+                   "Window.png":  {
+                                      "NineSlice":  [
+                                                        14,
+                                                        14,
+                                                        14,
+                                                        14
+                                                    ]
+                                  },
+                   "Panel.png":  {
+                                     "NineSlice":  [
+                                                       12,
+                                                       12,
+                                                       12,
+                                                       12
+                                                   ]
+                                 },
+                   "Frame.png":  {
+                                     "NineSlice":  [
+                                                       12,
+                                                       12,
+                                                       12,
+                                                       12
+                                                   ]
+                                 },
+                   "Tooltip.png":  {
+                                       "NineSlice":  [
+                                                         10,
+                                                         10,
+                                                         10,
+                                                         10
+                                                     ]
+                                   },
+                   "Button_Normal.png":  {
+                                             "NineSlice":  [
+                                                               12,
+                                                               12,
+                                                               12,
+                                                               12
+                                                           ]
+                                         },
+                   "Button_Hover.png":  {
+                                            "NineSlice":  [
+                                                              12,
+                                                              12,
+                                                              12,
+                                                              12
+                                                          ]
+                                        },
+                   "Button_Pressed.png":  {
+                                              "NineSlice":  [
+                                                                12,
+                                                                12,
+                                                                12,
+                                                                12
+                                                            ]
+                                          },
+                   "Button_Disabled.png":  {
+                                               "NineSlice":  [
+                                                                 12,
+                                                                 12,
+                                                                 12,
+                                                                 12
+                                                             ]
+                                           },
+                   "TextBox.png":  {
+                                       "NineSlice":  [
+                                                         8,
+                                                         8,
+                                                         8,
+                                                         8
+                                                     ]
+                                   },
+                   "TextBox_Focused.png":  {
+                                               "NineSlice":  [
+                                                                 8,
+                                                                 8,
+                                                                 8,
+                                                                 8
+                                                             ]
+                                           },
+                   "Shadow.png":  {
+                                      "NineSlice":  [
+                                                        24,
+                                                        24,
+                                                        24,
+                                                        24
+                                                    ]
+                                  },
+                   "Slider_Track.png":  {
+                                            "NineSlice":  [
+                                                              8,
+                                                              0,
+                                                              8,
+                                                              0
+                                                          ]
+                                        },
+                   "ProgressBar_Back.png":  {
+                                                "NineSlice":  [
+                                                                  8,
+                                                                  0,
+                                                                  8,
+                                                                  0
+                                                              ]
+                                            },
+                   "ProgressBar_Fill.png":  {
+                                                "NineSlice":  [
+                                                                  8,
+                                                                  0,
+                                                                  8,
+                                                                  0
+                                                              ]
+                                            },
+                   "RoundedWhite.png":  {
+                                            "NineSlice":  [
+                                                              11,
+                                                              11,
+                                                              11,
+                                                              11
+                                                          ]
+                                        },
+                   "CheckBox_Off.png":  {
+
+                                        },
+                   "CheckBox_On.png":  {
+
+                                       },
+                   "Radio_Off.png":  {
+
+                                     },
+                   "Radio_On.png":  {
+
+                                    },
+                   "Slider_Handle.png":  {
+
+                                         },
+                   "Arrow.png":  {
+
+                                 },
+                   "Close.png":  {
+
+                                 },
+                   "Circle.png":  {
+
+                                  }
+               }
+}
