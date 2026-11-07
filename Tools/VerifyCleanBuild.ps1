@@ -9,7 +9,7 @@
 #   -Source を省くと、このスクリプトのあるリポジトリの origin を使う。まだ push していない変更を確かめるなら、-Source にリポジトリのフォルダーを渡す
 #   （ローカルの clone になるので、コミットしたものだけが入る）。
 #   -RunChecks を付けると、そのあと、同じ clone へ、検査のリポジトリを取り付けて（Tools\SetupSelfTests.ps1）、検査（Tools\RunAllChecks.ps1 -Quick）も通す
-#   検査のリポジトリ（framework-test）は非公開なので、-TestRepository にフォルダー（または URL）を渡す。省略すると、このリポジトリの隣の framework-test を使う（clone して取り付ける）。
+#   検査のリポジトリ（framework-test）は非公開なので、-TestRepository にフォルダー（または URL）を渡す。省略すると、このリポジトリに取り付け済みの検査（なければ、隣の framework-test）を使う（clone して取り付ける）。
 #   作業フォルダーは、作業のたびに作り直す（既定は %TEMP%\mazigati_clean_verify。同じ名前のフォルダーが、すでにあれば、消す）。
 param(
     [string]$Source = '',
@@ -102,7 +102,20 @@ try {
 
     if ($RunChecks) {
         Write-Host '== self tests (mount framework-test, then Tools\RunAllChecks.ps1 -Quick)'
-        if ($TestRepository -eq '') { $TestRepository = Join-Path (Split-Path -Parent ([IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))) ) 'framework-test' }
+        if ($TestRepository -eq '')
+        {
+            # 省略したときは、このリポジトリに取り付け済みの検査（Source\SelfTest の指す先）、なければ、隣の framework-test を使う
+            $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+            $mountedTests = Join-Path $repositoryRoot 'Source\SelfTest'
+            if ((Test-Path -LiteralPath $mountedTests) -and ((Get-Item -LiteralPath $mountedTests -Force).Target))
+            {
+                $TestRepository = @((Get-Item -LiteralPath $mountedTests -Force).Target)[0]
+            }
+            else
+            {
+                $TestRepository = Join-Path (Split-Path -Parent $repositoryRoot) 'framework-test'
+            }
+        }
         & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $WorkDirectory 'Tools\SetupSelfTests.ps1') -TestRepository $TestRepository -Destination $testsDirectory | Out-Host
         Check ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath (Join-Path $WorkDirectory 'Source\SelfTest\RunSelfTests.ps1'))) 'framework-test was fetched and mounted'
         & cmd /c ".\GenerateProjectFiles.bat < NUL" | Out-Null
