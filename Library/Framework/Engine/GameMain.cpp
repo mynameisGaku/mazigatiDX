@@ -3,6 +3,7 @@
 #include "Library/Core/Thread/GameThread.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Memory/SharedPtr.h"
+#include "Library/Core/Version.h"
 #include "Library/Framework/Engine/EngineCrashHandlers.h"
 #include "Library/Framework/Engine/ScreenConfig.h"
 #include "Library/Platform/System/CommandLine.h"
@@ -13,12 +14,6 @@
 #include "Library/Platform/System/LogArchive.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogMain, Log )
-
-namespace
-{
-	// フレームワークの版（起動ログに出す）
-	constexpr float64 FrameworkVersion = 4.1;
-}
 
 int32 NGameMain::Run( const FOptions& Options, const TCallable<int32( const FWindowSettings& )>& RunEngine )
 {
@@ -59,7 +54,7 @@ int32 NGameMain::Run( const FOptions& Options, const TCallable<int32( const FWin
 #else
 	const char* BuildConfiguration = "Release";
 #endif
-	LOG( LogMain, Log, "CoG Framework %.1f starting (%s, %s)", FrameworkVersion, BuildConfiguration, sizeof( void* ) == 8 ? "x64" : "x86" );
+	LOG( LogMain, Log, "%s %s starting (%s, %s)", NVersion::ProductName, NVersion::String, BuildConfiguration, sizeof( void* ) == 8 ? "x64" : "x86" );
 	LOG( LogMain, Log, "Executable: %s", *NFileSystem::GetExecutableDirectory() );
 	LOG( LogMain, Log, "Working directory: %s", *NFileSystem::GetWorkingDirectory() );
 	if ( FileSink )

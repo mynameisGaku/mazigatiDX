@@ -6,6 +6,7 @@
 
 #include "Library/Core/File/File.h"
 #include "Library/Core/Log/Assert.h"
+#include "Library/Core/Version.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Process.h"
@@ -279,7 +280,7 @@ namespace
 		const EXCEPTION_RECORD* Record = Job.Pointers != nullptr ? Job.Pointers->ExceptionRecord : nullptr;
 
 		FString Text;
-		AppendFormat( Text, "CoG Framework crash report\n" );
+		AppendFormat( Text, "%s crash report\nVersion: %s\n", NVersion::ProductName, NVersion::String );
 		AppendFormat( Text, "Time: %04d-%02d-%02d %02d:%02d:%02d\n", Time.wYear, Time.wMonth, Time.wDay, Time.wHour, Time.wMinute, Time.wSecond );
 		AppendFormat( Text, "Reason: %s\n", Job.Reason );
 		if ( Record != nullptr )

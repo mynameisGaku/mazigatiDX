@@ -857,6 +857,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\RunAllChecks.ps1      
 
 ## 変更の統合
 
+版の付け方・互換の約束・ブランチとタグは[バージョン方針](VERSIONING.md)に、変更の記録は[変更履歴](../CHANGELOG.md)にあります。
+
 `main`は安定版、`dev`は統合版です。作業は`Effect`・`Asset`・`Core`など責務に応じたブランチへ分けます。機能ブランチで実装と関連する確認を揃えてから`dev`へ統合し、安定版の確認を終えた区切りを`main`へ反映します。
 
 コミットは変更のまとまりごとに分け、`feat`・`fix`・`refactor`・`other`と、原因や変化が分かる日本語の説明を使います。push前にはremoteとの差分と追跡ファイルを確認し、履歴の強制的な書き換えは行いません。

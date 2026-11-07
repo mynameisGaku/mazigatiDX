@@ -18,7 +18,7 @@ DxLib を使う、Windows 向けの C++ フレームワークです。描画・�
 
 ## 必要なもの
 
-- Windows 10 / 11（64 ビット）。
+- Windows 10 / 11（64 ビット）。ほかの OS は、将来の目標です（v1.0 の約束には含みません。[バージョン方針](Docs/VERSIONING.md)）。
 - Visual Studio（MSVC ツールセット v145、Windows SDK 10.0.26100.0）。C++17。
 - DxLib 3.24f（リポジトリには含めません。下の手順で取得します）。
 
@@ -81,6 +81,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\NewProject.ps1 -Name M
 |---|---|
 |[開発手順](Docs/DEVELOPMENT.md)|構成と依存、各機能の使い方、コードの書き方の決まり、プロジェクトの生成と確認、変更の統合|
 |[エフェクトの使い方](Docs/EFFECTS.md)|エフェクトエディタの使い方と、見本のエフェクト|
+|[バージョン方針](Docs/VERSIONING.md)・[変更履歴](CHANGELOG.md)|版の付け方、互換を約束する範囲、対象環境、ブランチとタグ、変更の記録|
 |[Samples/README.md](Samples/README.md)|サンプル集の構成と、サンプルの足し方|
 |[第三者のソフトウェア](THIRD_PARTY_NOTICES.md)|使っているライブラリと、配布の条件|
 
