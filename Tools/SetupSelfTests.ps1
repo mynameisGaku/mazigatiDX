@@ -1,14 +1,16 @@
 ﻿# 自己確認（検査）のリポジトリ framework-test を取得して、このリポジトリの Source\SelfTest へ取り付ける（ジャンクション）。
-#   powershell -NoProfile -ExecutionPolicy Bypass -File Tools\SetupSelfTests.ps1 [-TestRepository <URL またはフォルダー>] [-Branch main] [-Destination <取得先>]
+#   powershell -NoProfile -ExecutionPolicy Bypass -File Tools\SetupSelfTests.ps1 [-TestRepository <URL またはフォルダー>] [-Branch <ブランチ>] [-Destination <取得先>]
 #
 #   - 検査は、このリポジトリに含めず、別のリポジトリ（framework-test）で管理している。取り付けると、GenerateProjectFiles が、
 #     Source\SelfTest の cpp を取り込み、起動の引数 --selftest=ecs|assets|world が使えるようになる。取り付けなくても、ビルドはできる。
+#   - ブランチの既定: URL なら main。フォルダーを渡したときは、そのフォルダーで今取り出しているブランチ（フォルダーの main が古いことがあるため）。
+#     フォルダーから clone するのは、コミット済みの内容だけ（コミットしていない変更は入らない）。
 #   - 取得先の既定は、このリポジトリのフォルダーの隣の framework-test（すでにあれば、取得し直さず、そのまま使う）。
 #   - 取り付けたあとは、GenerateProjectFiles.bat を、もう一度実行する。検査は、Tools\RunAllChecks.ps1 で、まとめて実行できる。
 #   - 取り外すときは、ジャンクションだけを消す（cmd /c rmdir Source\SelfTest）。中身ごと消さないよう、Remove-Item -Recurse は使わない。
 param(
     [string]$TestRepository = 'https://github.com/mynameisGaku/framework-test.git',
-    [string]$Branch = 'main',
+    [string]$Branch = '',
     [string]$Destination = ''
 )
 
@@ -17,6 +19,14 @@ $frameworkRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 if ($Destination -eq '') { $Destination = Join-Path (Split-Path -Parent $frameworkRoot) 'framework-test' }
 $Destination = [IO.Path]::GetFullPath($Destination)
 $mount = Join-Path $frameworkRoot 'Source\SelfTest'
+
+if ($Branch -eq '') {
+    $Branch = 'main'
+    if (Test-Path -LiteralPath $TestRepository -PathType Container) {
+        $current = (& git -C $TestRepository branch --show-current 2>$null)
+        if ($LASTEXITCODE -eq 0 -and $current) { $Branch = ([string]$current).Trim() }
+    }
+}
 
 if (Test-Path -LiteralPath $mount) {
     $item = Get-Item -LiteralPath $mount -Force
