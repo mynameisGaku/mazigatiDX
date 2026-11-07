@@ -142,6 +142,33 @@
     <ClCompile Include="Source\Input\MouseView.cpp">
       <Filter>Source\Input</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Inventory\EquipmentPanel.cpp">
+      <Filter>Source\Inventory</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Inventory\InventoryGrid.cpp">
+      <Filter>Source\Inventory</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Inventory\InventoryModel.cpp">
+      <Filter>Source\Inventory</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Inventory\InventoryOverlay.cpp">
+      <Filter>Source\Inventory</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Inventory\InventorySample.cpp">
+      <Filter>Source\Inventory</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Inventory\InventoryUi.cpp">
+      <Filter>Source\Inventory</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Inventory\ItemDatabase.cpp">
+      <Filter>Source\Inventory</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Inventory\SavePanel.cpp">
+      <Filter>Source\Inventory</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Inventory\ShopPanel.cpp">
+      <Filter>Source\Inventory</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Island\IslandClock.cpp">
       <Filter>Source\Island</Filter>
     </ClCompile>
@@ -582,6 +609,36 @@
     <ClInclude Include="Source\Input\MouseView.h">
       <Filter>Source\Input</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Inventory\EquipmentPanel.h">
+      <Filter>Source\Inventory</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Inventory\InventoryGrid.h">
+      <Filter>Source\Inventory</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Inventory\InventoryModel.h">
+      <Filter>Source\Inventory</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Inventory\InventoryOverlay.h">
+      <Filter>Source\Inventory</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Inventory\InventorySample.h">
+      <Filter>Source\Inventory</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Inventory\InventoryState.h">
+      <Filter>Source\Inventory</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Inventory\InventoryTypes.h">
+      <Filter>Source\Inventory</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Inventory\InventoryUi.h">
+      <Filter>Source\Inventory</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Inventory\SavePanel.h">
+      <Filter>Source\Inventory</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Inventory\ShopPanel.h">
+      <Filter>Source\Inventory</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Island\IslandClock.h">
       <Filter>Source\Island</Filter>
     </ClInclude>
@@ -946,6 +1003,9 @@
     </Filter>
     <Filter Include="Source\Input">
       <UniqueIdentifier>{FFE14168-86E4-9D5A-B4DA-C4ACB9D88FCD}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Inventory">
+      <UniqueIdentifier>{ED157EA1-91AF-D9D2-1E81-086699FA912C}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Island">
       <UniqueIdentifier>{20B19AF9-A3DC-23D7-70A9-42A4E8FCF35C}</UniqueIdentifier>
