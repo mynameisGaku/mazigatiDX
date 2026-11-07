@@ -42,7 +42,7 @@ namespace
 		Effect = FMeshMaterialEffectDefinition();
 		Effect.Material.bEnabled = true;
 		Effect.Material.bDissolve = true;
-		Effect.Material.MaskTexture = "Effects/mesh_surface_barrier.tga";
+		Effect.Material.MaskTexture = "Engine:/Effects/mesh_surface_barrier.tga";
 		Effect.Material.UVScale = FVector2( 2.0f, 2.0f );
 		Effect.Material.UVScroll = FVector2( 0.0f, 0.05f );
 		Effect.Material.EdgeWidth = 0.18f;
@@ -51,7 +51,7 @@ namespace
 		SetCurve( Effect.Material.Dissolve, { { 0.0f, 0.08f }, { 0.5f, 0.26f }, { 1.0f, 0.08f } } );
 		SetCurve( Effect.Material.Emission, { { 0.0f, 0.75f }, { 0.45f, 1.7f }, { 0.7f, 0.85f }, { 1.0f, 1.4f } } );
 		Effect.Material.Distortion.bEnabled = true;
-		Effect.Material.Distortion.Texture = "Effects/uv_distortion_flow.tga";
+		Effect.Material.Distortion.Texture = "Engine:/Effects/uv_distortion_flow.tga";
 		Effect.Material.Distortion.UVScale = FVector2( 1.5f, 1.5f );
 		Effect.Material.Distortion.UVScroll = FVector2( 0.11f, -0.07f );
 		SetCurve( Effect.Material.Distortion.Strength, { { 0.0f, 0.045f }, { 0.5f, 0.09f }, { 1.0f, 0.045f } } );
@@ -59,7 +59,7 @@ namespace
 		Effect.bLoop = true;
 		Effect.Opacity = 0.88f;
 		Effect.Blend = EDrawBlend::Alpha;
-		SourceTexture = "Effects/mesh_surface_barrier.tga";
+		SourceTexture = "Engine:/Effects/mesh_surface_barrier.tga";
 	}
 
 	// 溶岩の流れと熱い亀裂の境界を設定し、専用source画像を選ぶ。
@@ -77,7 +77,7 @@ namespace
 		SetCurve( Effect.Material.Dissolve, { { 0.0f, 0.17f }, { 0.55f, 0.48f }, { 1.0f, 0.16f } } );
 		SetCurve( Effect.Material.Emission, { { 0.0f, 1.1f }, { 0.32f, 1.4f }, { 0.72f, 0.9f }, { 1.0f, 1.25f } } );
 		Effect.Material.Distortion.bEnabled = true;
-		Effect.Material.Distortion.Texture = "Effects/uv_distortion_flow.tga";
+		Effect.Material.Distortion.Texture = "Engine:/Effects/uv_distortion_flow.tga";
 		Effect.Material.Distortion.UVScale = FVector2( 2.0f, 2.0f );
 		Effect.Material.Distortion.UVScroll = FVector2( 0.08f, 0.19f );
 		SetCurve( Effect.Material.Distortion.Strength, { { 0.0f, 0.055f }, { 0.45f, 0.12f }, { 1.0f, 0.06f } } );
@@ -85,7 +85,7 @@ namespace
 		Effect.bLoop = true;
 		Effect.Opacity = 1.0f;
 		Effect.Blend = EDrawBlend::Add;
-		SourceTexture = "Effects/mesh_surface_lava.tga";
+		SourceTexture = "Engine:/Effects/mesh_surface_lava.tga";
 	}
 
 	// 曲線UIの終了通知を既存fieldの通知とORで集約する。

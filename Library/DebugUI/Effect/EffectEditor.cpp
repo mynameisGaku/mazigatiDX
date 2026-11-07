@@ -7,6 +7,7 @@
 #include "Library/DebugUI/Common/EditorCommon.h"
 #include "Library/DebugUI/Effect/EffectEditorInternal.h"
 #include "Library/Framework/Asset/AssetSubsystem.h"
+#include "Library/Framework/Asset/Loading/AssetPathResolver.h"
 #include "Library/Framework/Effect/Particle/ParticleEffectBackend.h"
 #include "Library/Framework/Effect/Geometry/EffectFlipbookFrames.h"
 #include "Library/Framework/Engine/Engine.h"
@@ -171,95 +172,95 @@ namespace
 			{
 				if ( ImGui::MenuItem( "Campfire" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/campfire.gxeffect", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Engine:/Effects/campfire.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Sparks" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/sparks.gxeffect", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Engine:/Effects/sparks.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Aura" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/aura.gxeffect", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Engine:/Effects/aura.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Ribbon trail" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/ribbon_trail.gxeffect", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Engine:/Effects/ribbon_trail.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Branch lightning" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/branch_lightning.gxeffect", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Engine:/Effects/branch_lightning.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Target lightning" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/target_lightning.gxeffect", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Engine:/Effects/target_lightning.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Realistic lightning tree" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/tree_lightning.gxeffect", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Engine:/Effects/tree_lightning.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Growing lightning tree" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/growing_tree_lightning.gxeffect", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Engine:/Effects/growing_tree_lightning.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Dissolve sigil" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/material_dissolve.gxeffect", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Engine:/Effects/material_dissolve.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Material ribbon trail" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/material_ribbon_trail.gxeffect", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Engine:/Effects/material_ribbon_trail.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Material branch lightning" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/material_branch_lightning.gxeffect", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Engine:/Effects/material_branch_lightning.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Chromatic ribbon" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/appearance_ribbon_spectrum.gxeffect", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Engine:/Effects/appearance_ribbon_spectrum.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Pulse lightning" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/appearance_pulse_lightning.gxeffect", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Engine:/Effects/appearance_pulse_lightning.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Flipbook sigil burst" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/flipbook_sigil_burst.gxeffect", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Engine:/Effects/flipbook_sigil_burst.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Flowing energy veil" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/uv_distortion_energy_veil.gxeffect", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Engine:/Effects/uv_distortion_energy_veil.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Distorted ribbon trail" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/uv_distortion_ribbon.gxeffect", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Engine:/Effects/uv_distortion_ribbon.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Flowing lightning tree" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/uv_distortion_tree_lightning.gxeffect", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Engine:/Effects/uv_distortion_tree_lightning.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Mesh energy ring" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/mesh_energy_ring.gxeffect", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Engine:/Effects/mesh_energy_ring.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Mesh tilted veil" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/mesh_tilted_veil.gxeffect", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Engine:/Effects/mesh_tilted_veil.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Force field wind" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_wind.gxeffect", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Engine:/Effects/force_field_wind.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Gravity well" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_gravity_well.gxeffect", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Engine:/Effects/force_field_gravity_well.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Whirlwind" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_whirlwind.gxeffect", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Engine:/Effects/force_field_whirlwind.gxeffect", pOpen );
 				}
 				if ( ImGui::MenuItem( "Gust" ) )
 				{
-					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Effects/force_field_gust.gxeffect", pOpen );
+					NEffectEditorUI::RequestAction( State, FEffectEditorState::EPending::Preset, "Engine:/Effects/force_field_gust.gxeffect", pOpen );
 				}
 				ImGui::EndMenu();
 			}
@@ -424,8 +425,13 @@ bool NDebugUI::NewEffectFromPreset( FEffectEditorState& State, const FString& Pr
 	State.Document.BeginEdit() = Copy;
 	State.Document.EndEditSession();
 	State.FilePath.Empty();
-	// 定義ファイルの拡張子がある場合だけ外し、コピー専用の保存先を提案する。
-	const FString Base = Path.EndsWith( ".gxeffect", ESearchCase::IgnoreCase ) ? Path.Left( Path.Len() - FString( ".gxeffect" ).Len() ) : Path;
+	// 定義ファイルの拡張子がある場合だけ外し、コピー専用の保存先を提案する。エンジン組み込みの素材は読み取り専用なので、保存先は、ユーザーのアセットの下（接頭辞 Engine:/ を外す）。
+	FString Base = Path.EndsWith( ".gxeffect", ESearchCase::IgnoreCase ) ? Path.Left( Path.Len() - FString( ".gxeffect" ).Len() ) : Path;
+	FString EngineRelative;
+	if ( CAssetPathResolver::IsEnginePath( Base, &EngineRelative ) )
+	{
+		Base = EngineRelative;
+	}
 	State.SaveAsPath = Base + "_copy.gxeffect";
 	State.bPreviewMotion = false;
 	ResetPreviewTargetState( State );

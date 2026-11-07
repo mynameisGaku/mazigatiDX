@@ -827,7 +827,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\VerifyCleanBuild.ps1 -
 
 ## エンジン組み込みの素材（EngineContent）
 
-エンジンが最初から用意している素材（UI の基本画像・アイコンなど）は、ルートの`EngineContent`にあります。ユーザーの`Assets`とは別で、読み取り専用です。`Assets->LoadTexture( "Engine:/UI/Window.png" )`のように、接頭辞`Engine:/`を付けたパスで読みます（`CAssetPathResolver::IsEnginePath`で判定し、`EngineContent`の下だけを探します。`..`で外へ出るパスは解決せず、保存先（`PrepareSavePath`）は作りません）。フォルダーの場所は、`Assets->SetEngineContentDirectory`で変えられます（既定は`EngineContent`。実行ファイル・作業フォルダー・その親から探します）。中身と作り方は[`EngineContent/README.md`](../EngineContent/README.md)にあります。
+エンジンが最初から用意している素材（UI の基本画像・アイコン・Effect Editor の`Preset`のエフェクトなど）は、ルートの`EngineContent`にあります。ユーザーの`Assets`とは別で、読み取り専用です。`Assets->LoadTexture( "Engine:/UI/Window.png" )`のように、接頭辞`Engine:/`を付けたパスで読みます（`CAssetPathResolver::IsEnginePath`で判定し、`EngineContent`の下だけを探します。`..`で外へ出るパスは解決せず、保存先（`PrepareSavePath`）は作りません）。フォルダーの場所は、`Assets->SetEngineContentDirectory`で変えられます（既定は`EngineContent`。実行ファイル・作業フォルダー・その親から探します）。中身と作り方は[`EngineContent/README.md`](../EngineContent/README.md)にあります。
 
 ## プロジェクト生成と確認
 

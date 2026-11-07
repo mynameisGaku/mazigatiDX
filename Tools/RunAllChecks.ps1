@@ -71,7 +71,8 @@ if (-not $SkipBuild) {
             & $msbuild @arguments '/m:1' *> $log
             $code = $LASTEXITCODE
         }
-        $problems = @(Select-String -Path $log -Pattern 'error|warning' | ForEach-Object { $_.Line } | Sort-Object -Unique)
+        # MSB8029（一時フォルダーの下で作ると出る警告）は、確認用の clone でだけ出る既知のものなので、数えない
+        $problems = @(Select-String -Path $log -Pattern 'error|warning' | ForEach-Object { $_.Line } | Where-Object { $_ -notmatch 'MSB8029' } | Sort-Object -Unique)
         $ok = $code -eq 0 -and $problems.Count -eq 0
         if ($ok) { Write-Host "  ok   build $configuration (0 warnings, 0 errors)" } else { Write-Host "  FAIL build $configuration (exit $code, $($problems.Count) warning/error line(s); log: $log)" -ForegroundColor Red }
         $results.Add([pscustomobject]@{ Name = "build $configuration"; Passed = $ok })
