@@ -194,6 +194,30 @@ void CUIWidget::PaintRecursive( FDrawContext& CommandList, float32 ParentOpacity
 	}
 }
 
+bool CUIWidget::IsEffectivelyEnabled() const
+{
+	for ( const CUIWidget* Widget = this; Widget != nullptr; Widget = Widget->Parent )
+	{
+		if ( !Widget->bEnabled )
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+bool CUIWidget::IsEffectivelyVisible() const
+{
+	for ( const CUIWidget* Widget = this; Widget != nullptr; Widget = Widget->Parent )
+	{
+		if ( Widget->Visibility != EUIVisibility::Visible )
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
 void CUIWidget::SetLayout( const FUILayoutProperties& InLayout )
 {
 	Layout = InLayout;

@@ -102,6 +102,15 @@ enum class EUIOrientation : uint8
 	Vertical
 };
 
+// フォーカスを動かす向き
+enum class EUINavDirection : uint8
+{
+	Up,
+	Down,
+	Left,
+	Right
+};
+
 // Grid の列・行の大きさの決め方
 enum class EUITrackKind : uint8
 {

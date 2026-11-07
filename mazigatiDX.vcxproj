@@ -326,6 +326,7 @@
     <ClCompile Include="Library\Framework\Subsystem\SubsystemCollection.cpp" />
     <ClCompile Include="Library\Framework\Text\TextLayout.cpp" />
     <ClCompile Include="Library\Framework\UI\Brush\UIBrush.cpp" />
+    <ClCompile Include="Library\Framework\UI\Core\UIContext.cpp" />
     <ClCompile Include="Library\Framework\UI\Core\UIPanels.cpp" />
     <ClCompile Include="Library\Framework\UI\Core\UIWidget.cpp" />
     <ClCompile Include="Library\Framework\World\Definition\WorldAssetUse.cpp" />
@@ -990,6 +991,8 @@
     <ClInclude Include="Library\Framework\Subsystem\SubsystemCollection.inl" />
     <ClInclude Include="Library\Framework\Text\TextLayout.h" />
     <ClInclude Include="Library\Framework\UI\Brush\UIBrush.h" />
+    <ClInclude Include="Library\Framework\UI\Core\UIContext.h" />
+    <ClInclude Include="Library\Framework\UI\Core\UIEvent.h" />
     <ClInclude Include="Library\Framework\UI\Core\UIPanels.h" />
     <ClInclude Include="Library\Framework\UI\Core\UITypes.h" />
     <ClInclude Include="Library\Framework\UI\Core\UIWidget.h" />

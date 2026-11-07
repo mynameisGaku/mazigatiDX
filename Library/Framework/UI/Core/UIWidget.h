@@ -5,6 +5,7 @@
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Framework/UI/Brush/UIBrush.h"
+#include "Library/Framework/UI/Core/UIEvent.h"
 #include "Library/Framework/UI/Core/UITypes.h"
 
 //=============================================================================
@@ -96,6 +97,37 @@ public:
 	// 点に当たる、いちばん手前の部品（Visible で、HitTestable で、矩形の中にあるもの）。なければ null。子は、あとのものほど手前
 	CUIWidget* HitTest( const FVector2& Point );
 
+	// --- 入力の状態とイベント（入力は CUIContext が配る。ここは、部品が持つ設定・状態・イベント） ---------------
+	// 使えるか（false なら、自分と子孫は、クリックもフォーカスも受けない。見た目を変えるのは、部品の側）
+	void SetEnabled( bool bInEnabled ) { bEnabled = bInEnabled; }
+	bool IsEnabled() const { return bEnabled; }
+	// 自分と、すべての祖先が、使える状態か
+	bool IsEffectivelyEnabled() const;
+	// 自分と、すべての祖先が、Visible か（Hidden / Collapsed の祖先がいると false）
+	bool IsEffectivelyVisible() const;
+	// ポインター（マウス・タッチ）の対象か。true の部品が、ホバー・押下・クリックを受ける（ボタンなど）。false の部品は、当たっても、その親の側へ通る
+	void SetInteractive( bool bInInteractive ) { bInteractive = bInInteractive; }
+	bool IsInteractive() const { return bInteractive; }
+	// キーボード・パッドのフォーカスを受けられるか
+	void SetFocusable( bool bInFocusable ) { bFocusable = bInFocusable; }
+	bool IsFocusable() const { return bFocusable; }
+	// いま、ポインターが乗っているか / 押されているか / フォーカスを持っているか（CUIContext が更新する）
+	bool IsHovered() const { return bHovered; }
+	bool IsPressed() const { return bPressed; }
+	bool IsFocused() const { return bFocused; }
+	// 矢印・パッドでフォーカスを動かすとき、向きごとの移動先を、名前で決める（空なら、位置から自動で選ぶ）
+	void SetNavigationTarget( EUINavDirection Direction, const FString& TargetName ) { NavigationTargets[static_cast<int32>( Direction )] = TargetName; }
+	const FString& GetNavigationTarget( EUINavDirection Direction ) const { return NavigationTargets[static_cast<int32>( Direction )]; }
+
+	// イベント（引数は、イベントを起こした部品）
+	TUIEvent<CUIWidget&> OnClicked;      // 押して、同じ部品の上で離した（Confirm でフォーカス中の部品を決定したときも）
+	TUIEvent<CUIWidget&> OnPressed;      // 押した
+	TUIEvent<CUIWidget&> OnReleased;     // 離した（別の部品の上で離しても起こる）
+	TUIEvent<CUIWidget&> OnHoverBegin;   // ポインターが乗った
+	TUIEvent<CUIWidget&> OnHoverEnd;     // ポインターが外れた
+	TUIEvent<CUIWidget&> OnFocusGained;  // フォーカスを得た
+	TUIEvent<CUIWidget&> OnFocusLost;    // フォーカスを失った
+
 	// --- 見た目 -----------------------------------------------------------
 	// 背景のブラシ（部品の矩形いっぱいに描く。既定は何も描かない）
 	void SetBackground( const FUIBrush& InBackground ) { Background = InBackground; }
@@ -143,6 +175,8 @@ protected:
 	virtual void OnPaint( FDrawContext& CommandList, float32 EffectiveOpacity );
 
 private:
+	friend class CUIContext;
+
 	void ClearLayoutDirty();
 	void PaintRecursive( FDrawContext& CommandList, float32 ParentOpacity );
 
@@ -153,6 +187,13 @@ private:
 	EUIVisibility Visibility = EUIVisibility::Visible;
 	FUIBrush Background;
 	float32 Opacity = 1.0f;
+	FString NavigationTargets[4];
+	bool bEnabled = true;
+	bool bInteractive = false;
+	bool bFocusable = false;
+	bool bHovered = false;
+	bool bPressed = false;
+	bool bFocused = false;
 	bool bHitTestable = true;
 	bool bClipChildren = false;
 	bool bLayoutDirty = true;
