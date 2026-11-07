@@ -8,12 +8,15 @@
 #   DxLib は、リポジトリに入っていないので、先に FetchDxLib.bat で、ビルドが探す場所へ置いておく（無ければ、止まる）。
 #   -Source を省くと、このスクリプトのあるリポジトリの origin を使う。まだ push していない変更を確かめるなら、-Source にリポジトリのフォルダーを渡す
 #   （ローカルの clone になるので、コミットしたものだけが入る）。
+#   -RunChecks を付けると、そのあと、同じ clone へ、検査のリポジトリを取り付けて（Tools\SetupSelfTests.ps1）、検査（Tools\RunAllChecks.ps1 -Quick）も通す
+#   （検査のリポジトリは、作業フォルダーの隣の「<作業フォルダー>_tests」へ clone する）。
 #   作業フォルダーは、作業のたびに作り直す（既定は %TEMP%\mazigati_clean_verify。同じ名前のフォルダーが、すでにあれば、消す）。
 param(
     [string]$Source = '',
     [string]$Branch = 'dev',
     [ValidateSet('Debug', 'Release')][string]$Configuration = 'Debug',
-    [string]$WorkDirectory = ''
+    [string]$WorkDirectory = '',
+    [switch]$RunChecks
 )
 
 $ErrorActionPreference = 'Stop'
@@ -36,11 +39,17 @@ if (-not (Test-Path -LiteralPath (Join-Path $dxDir 'DxLib.h'))) {
 # 消してよいのは、この確認が作る、決まった名前のフォルダーだけ
 $temporaryRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\') + '\'
 $leaf = Split-Path $WorkDirectory -Leaf
-if ((Test-Path -LiteralPath $WorkDirectory)) {
-    if (-not ($WorkDirectory.StartsWith($temporaryRoot, [StringComparison]::OrdinalIgnoreCase) -and $leaf.StartsWith('mazigati_clean'))) {
-        throw "The work directory already exists and is not a temporary mazigati_clean* folder: $WorkDirectory"
+$testsDirectory = $WorkDirectory + '_tests'
+foreach ($candidate in @($WorkDirectory, $testsDirectory)) {
+    if (Test-Path -LiteralPath $candidate) {
+        if (-not ($candidate.StartsWith($temporaryRoot, [StringComparison]::OrdinalIgnoreCase) -and (Split-Path $candidate -Leaf).StartsWith('mazigati_clean'))) {
+            throw "The folder already exists and is not a temporary mazigati_clean* folder: $candidate"
+        }
+        # 取り付けたジャンクションがあれば、中身（検査のリポジトリ）ごと消さないよう、ジャンクションだけを、先に外す
+        $mounted = Join-Path $candidate 'Source\SelfTest'
+        if ((Test-Path -LiteralPath $mounted) -and ((Get-Item -LiteralPath $mounted -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) { & cmd /c "rmdir `"$mounted`"" | Out-Null }
+        Remove-Item -LiteralPath $candidate -Recurse -Force
     }
-    Remove-Item -LiteralPath $WorkDirectory -Recurse -Force
 }
 
 Write-Host "== clone ($Source, branch $Branch)"
@@ -88,6 +97,15 @@ try {
         $done = $process.WaitForExit(120000)
         if (-not $done) { $process.Kill() }
         Check ($done -and $process.ExitCode -eq 0) "$($run.Exe) $($run.Arguments) exits with 0"
+    }
+
+    if ($RunChecks) {
+        Write-Host '== self tests (mount framework-test, then Tools\RunAllChecks.ps1 -Quick)'
+        & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $WorkDirectory 'Tools\SetupSelfTests.ps1') -Destination $testsDirectory | Out-Host
+        Check ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath (Join-Path $WorkDirectory 'Source\SelfTest\RunSelfTests.ps1'))) 'framework-test was fetched and mounted'
+        & cmd /c ".\GenerateProjectFiles.bat < NUL" | Out-Null
+        & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $WorkDirectory 'Tools\RunAllChecks.ps1') -Configurations $Configuration -Quick | Out-Host
+        Check ($LASTEXITCODE -eq 0) 'Tools\RunAllChecks.ps1 -Quick passes'
     }
 } finally { Pop-Location }
 

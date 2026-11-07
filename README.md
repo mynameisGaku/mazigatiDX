@@ -86,7 +86,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\NewProject.ps1 -Name M
 
 ## 確認
 
-自己確認（単体の検査・画面の検査）は、このリポジトリに含めず、別のリポジトリ `framework-test` で管理しています。ルートの `Source\SelfTest` へ置いたときだけ、ビルドに加わります（置かなくても、ビルドできます）。置き方と、実行のしかたは [開発手順](Docs/DEVELOPMENT.md) の「プロジェクト生成と確認」にあります。
+自己確認（単体の検査・画面の検査）は、このリポジトリに含めず、別のリポジトリ `framework-test` で管理しています。ルートの `Source\SelfTest` へ取り付けたときだけ、ビルドに加わります（取り付けなくても、ビルドできます）。
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File Tools\SetupSelfTests.ps1    # framework-test を取得して、取り付ける（1 回だけ）
+powershell -NoProfile -ExecutionPolicy Bypass -File Tools\RunAllChecks.ps1       # すべての検査を実行する
+powershell -NoProfile -ExecutionPolicy Bypass -File Tools\VerifyCleanBuild.ps1   # まっさらな環境（新しい clone）で、ビルドして動くか
+```
+
+詳しくは [開発手順](Docs/DEVELOPMENT.md) の「プロジェクト生成と確認」にあります。
 
 ## ライセンス
 

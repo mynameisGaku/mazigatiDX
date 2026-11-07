@@ -1,4 +1,4 @@
-# 開発手順
+﻿# 開発手順
 
 ## 構成と依存
 
@@ -844,6 +844,16 @@ msbuild .\project.sln /p:Configuration=Release /p:Platform=x64 /m
 ```
 
 両構成で実行し、ecsはワーカー0／1／4／15の結果を照合します。PowerShellから`-WorkerCounts`へ配列を渡す場合は、`-File`の文字列引数にせず、PowerShell内で呼び出します。項目数は検査を足すたびに増えるため、数値だけで合格とせず、失敗・スキップ・正常終了を確認します。Debugはリーク報告も調べます。描画の変更は実GPUの既知画素、状態復元、資源の解放を確認します。
+
+### 検査を、まとめて動かす（取得と実行）
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File Tools\SetupSelfTests.ps1     # framework-test を取得して、Source\SelfTest へ取り付ける（1 回だけ）
+cmd /c "GenerateProjectFiles.bat < nul"                                          # 検査のファイルを、プロジェクトへ取り込む
+powershell -NoProfile -ExecutionPolicy Bypass -File Tools\RunAllChecks.ps1        # すべての検査を、順に実行して、結果をまとめる
+```
+
+`Tools/RunAllChecks.ps1`は、ビルド（Debug・Release。警告・エラーが 0）→ 書式の検査と、その検査自身・掃除（`Clean.bat`）の確認 → 自己確認（構成ごとに ecs・assets・world）→ サンプル集の確認・テンプレートの確認、の順に実行して、1 行ずつ結果を出し、最後に PASS / FAIL をまとめます（失敗があれば、終了コード 1。各ステップのログは、一時フォルダーに残ります）。`-Configurations Debug`（片方だけ）、`-SkipBuild`、`-Quick`（時間のかかるサンプル集・テンプレートの確認を飛ばす）が使えます。自己確認は、環境によっては、グラフィックスドライバーのクラッシュで、まれに失敗する（アプリの問題ではない）ので、`-Retries`（既定 3）まで、やり直します。実行中に、`x64`の下の実行ファイル（`Samples.exe`など）が動いていると、リンクできないので、先に閉じてください（動いていれば、止まります）。
 
 ## 変更の統合
 
