@@ -82,6 +82,9 @@
     <ClCompile Include="Library\DebugUI\Asset\SpriteSheetEditor.cpp">
       <Filter>Library\DebugUI\Asset</Filter>
     </ClCompile>
+    <ClCompile Include="Library\DebugUI\Common\DebugViewPanel.cpp">
+      <Filter>Library\DebugUI\Common</Filter>
+    </ClCompile>
     <ClCompile Include="Library\DebugUI\Common\EditorCommon.cpp">
       <Filter>Library\DebugUI\Common</Filter>
     </ClCompile>
@@ -474,6 +477,9 @@
     </ClCompile>
     <ClCompile Include="Library\Framework\Console\ConsoleTypes.cpp">
       <Filter>Library\Framework\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\DebugView\DebugViews.cpp">
+      <Filter>Library\Framework\DebugView</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Ecs\BuiltinSystems.cpp">
       <Filter>Library\Framework\Ecs</Filter>
@@ -893,6 +899,9 @@
       <Filter>Library\Physics\Contact</Filter>
     </ClCompile>
     <ClCompile Include="Library\Physics\DebugDraw\PhysicsDebugDraw.cpp">
+      <Filter>Library\Physics\DebugDraw</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Physics\DebugDraw\PhysicsDebugView.cpp">
       <Filter>Library\Physics\DebugDraw</Filter>
     </ClCompile>
     <ClCompile Include="Library\Physics\Layer\PhysicsLayers.cpp">
@@ -1878,6 +1887,9 @@
     <ClInclude Include="Library\DebugUI\Asset\SpriteSheetEditor.h">
       <Filter>Library\DebugUI\Asset</Filter>
     </ClInclude>
+    <ClInclude Include="Library\DebugUI\Common\DebugViewPanel.h">
+      <Filter>Library\DebugUI\Common</Filter>
+    </ClInclude>
     <ClInclude Include="Library\DebugUI\Common\EditorCommon.h">
       <Filter>Library\DebugUI\Common</Filter>
     </ClInclude>
@@ -2294,6 +2306,9 @@
     </ClInclude>
     <ClInclude Include="Library\Framework\Console\ConsoleTypes.h">
       <Filter>Library\Framework\Console</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\DebugView\DebugViews.h">
+      <Filter>Library\Framework\DebugView</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Ecs\BuiltinSystems.h">
       <Filter>Library\Framework\Ecs</Filter>
@@ -2893,6 +2908,9 @@
       <Filter>Library\Physics\DebugDraw</Filter>
     </ClInclude>
     <ClInclude Include="Library\Physics\DebugDraw\PhysicsDebugTypes.h">
+      <Filter>Library\Physics\DebugDraw</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Physics\DebugDraw\PhysicsDebugView.h">
       <Filter>Library\Physics\DebugDraw</Filter>
     </ClInclude>
     <ClInclude Include="Library\Physics\Layer\PhysicsLayerTypes.h">
@@ -4642,6 +4660,9 @@
     </Filter>
     <Filter Include="Library\Framework\Console">
       <UniqueIdentifier>{A3F967EC-ADCA-8C6B-0DF2-E37DA997137B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\DebugView">
+      <UniqueIdentifier>{F7BA4CC6-A954-30AA-BA21-D15F2B746002}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\Ecs">
       <UniqueIdentifier>{E7D53A9D-6911-1421-CF9C-92B141AC49A4}</UniqueIdentifier>

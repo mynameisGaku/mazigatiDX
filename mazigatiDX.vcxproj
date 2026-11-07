@@ -94,6 +94,7 @@
     <ClCompile Include="Library\DebugUI\Asset\ModelAnimationEditor.cpp" />
     <ClCompile Include="Library\DebugUI\Asset\SoundEditor.cpp" />
     <ClCompile Include="Library\DebugUI\Asset\SpriteSheetEditor.cpp" />
+    <ClCompile Include="Library\DebugUI\Common\DebugViewPanel.cpp" />
     <ClCompile Include="Library\DebugUI\Common\EditorCommon.cpp" />
     <ClCompile Include="Library\DebugUI\Common\ImGuiPropertyInspector.cpp" />
     <ClCompile Include="Library\DebugUI\Common\ImGuiTexture.cpp" />
@@ -225,6 +226,7 @@
     <ClCompile Include="Library\Framework\Console\ConsoleParse.cpp" />
     <ClCompile Include="Library\Framework\Console\ConsoleRegistry.cpp" />
     <ClCompile Include="Library\Framework\Console\ConsoleTypes.cpp" />
+    <ClCompile Include="Library\Framework\DebugView\DebugViews.cpp" />
     <ClCompile Include="Library\Framework\Ecs\BuiltinSystems.cpp" />
     <ClCompile Include="Library\Framework\Ecs\EcsWorld.cpp" />
     <ClCompile Include="Library\Framework\Ecs\System.cpp" />
@@ -365,6 +367,7 @@
     <ClCompile Include="Library\Physics\Contact\ContactListener.cpp" />
     <ClCompile Include="Library\Physics\Contact\PhysicsContactRegistry.cpp" />
     <ClCompile Include="Library\Physics\DebugDraw\PhysicsDebugDraw.cpp" />
+    <ClCompile Include="Library\Physics\DebugDraw\PhysicsDebugView.cpp" />
     <ClCompile Include="Library\Physics\Layer\PhysicsLayers.cpp" />
     <ClCompile Include="Library\Physics\Query\PhysicsQuery.cpp" />
     <ClCompile Include="Library\Platform\BackendSelection.cpp" />
@@ -694,6 +697,7 @@
     <ClInclude Include="Library\DebugUI\Asset\ModelAnimationEditor.h" />
     <ClInclude Include="Library\DebugUI\Asset\SoundEditor.h" />
     <ClInclude Include="Library\DebugUI\Asset\SpriteSheetEditor.h" />
+    <ClInclude Include="Library\DebugUI\Common\DebugViewPanel.h" />
     <ClInclude Include="Library\DebugUI\Common\EditorCommon.h" />
     <ClInclude Include="Library\DebugUI\Common\ImGuiPropertyInspector.h" />
     <ClInclude Include="Library\DebugUI\Common\ImGuiTexture.h" />
@@ -833,6 +837,7 @@
     <ClInclude Include="Library\Framework\Console\ConsoleParse.h" />
     <ClInclude Include="Library\Framework\Console\ConsoleRegistry.h" />
     <ClInclude Include="Library\Framework\Console\ConsoleTypes.h" />
+    <ClInclude Include="Library\Framework\DebugView\DebugViews.h" />
     <ClInclude Include="Library\Framework\Ecs\BuiltinSystems.h" />
     <ClInclude Include="Library\Framework\Ecs\ChunkedPool.h" />
     <ClInclude Include="Library\Framework\Ecs\EcsWorld.h" />
@@ -1033,6 +1038,7 @@
     <ClInclude Include="Library\Physics\Contact\PhysicsContactTypes.h" />
     <ClInclude Include="Library\Physics\DebugDraw\PhysicsDebugDrawContext.h" />
     <ClInclude Include="Library\Physics\DebugDraw\PhysicsDebugTypes.h" />
+    <ClInclude Include="Library\Physics\DebugDraw\PhysicsDebugView.h" />
     <ClInclude Include="Library\Physics\Layer\PhysicsLayerTypes.h" />
     <ClInclude Include="Library\Physics\Query\PhysicsQueryTypes.h" />
     <ClInclude Include="Library\Platform\BackendSelection.h" />

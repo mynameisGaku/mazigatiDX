@@ -20,6 +20,7 @@ class IProfiler;
 //     F1   デバッグウィンドウ（Window / Input / Scene / Output Log）の表示切り替え
 //     F2   プロファイラーの記録のオン / オフ（オンにしたとき、プロファイラーのウィンドウも出る）
 //     F3   コンソールの開閉（Debug ビルドだけ。COG_DEBUG_CONSOLE が 1 のとき）
+//     F4   デバッグビュー（FDebugViewRegistry に登録されたもの。物理の形の線など）のうち、キーを持つものの、オン / オフ（Physics は F4）
 //     F11  フルスクリーンの切り替え
 //
 //   class CMyGame : public CGameInstance

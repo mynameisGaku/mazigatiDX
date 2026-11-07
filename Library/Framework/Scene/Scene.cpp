@@ -260,6 +260,39 @@ void CScene::DrawScene()
 	DrawObjectsAndScene( nullptr, true );
 }
 
+void CScene::AddSceneDraw( const char* Name, const TCallable<void( FDrawContext& )>& Function )
+{
+	if ( Name == nullptr || !Function )
+	{
+		return;
+	}
+	for ( FSceneDrawEntry& Entry : SceneDraws )
+	{
+		if ( Entry.Name == Name )
+		{
+			Entry.Function = Function;
+			return;
+		}
+	}
+	FSceneDrawEntry Entry;
+	Entry.Name = Name;
+	Entry.Function = Function;
+	SceneDraws.Add( MoveTemp( Entry ) );
+}
+
+bool CScene::RemoveSceneDraw( const char* Name )
+{
+	for ( int32 i = 0; i < SceneDraws.Num(); ++i )
+	{
+		if ( Name != nullptr && SceneDraws[i].Name == Name )
+		{
+			SceneDraws.RemoveAt( i );
+			return true;
+		}
+	}
+	return false;
+}
+
 void CScene::RedrawForCapture( const TCallable<bool( const CGameObject& )>* Filter )
 {
 	DrawObjectsAndScene( Filter, Filter == nullptr );
@@ -322,6 +355,22 @@ void CScene::DrawObjectsAndScene( const TCallable<bool( const CGameObject& )>* F
 
 	if ( bDrawSceneOverlay )
 	{
+		// シーン全体の描画（デバッグ表示など）。オブジェクトと同じ流れで、コマンドリストを空にして記録させ、実行する
+		if ( Executor != nullptr && SceneDraws.Num() > 0 )
+		{
+			PROFILE_SCOPE_LAZY( SceneDrawScope, FProfileScope( "Scene", ProfilerOwnerId, "SceneDraws" ) );
+			for ( int32 i = 0; i < SceneDraws.Num(); ++i )
+			{
+				ObjectCommandList.Clear();
+				FDrawContext CommandList( ObjectCommandList );
+				SceneDraws[i].Function( CommandList );
+				if ( CommandList.GetNumWords() > 0 )
+				{
+					Executor->Execute( FDrawSpan { ObjectCommandList.Words.GetData(), ObjectCommandList.Words.Num() } );
+				}
+			}
+		}
+
 		PROFILE_SCOPE_LAZY( OnDrawScope, FProfileScope( "Scene", ProfilerOwnerId, "OnDraw" ) );
 		OnDraw();
 	}

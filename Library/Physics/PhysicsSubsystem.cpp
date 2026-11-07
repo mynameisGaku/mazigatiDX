@@ -1,6 +1,7 @@
 ﻿#include "PhysicsSubsystem.h"
 
 #include "Library/Framework/Scene/Scene.h"
+#include "Library/Physics/DebugDraw/PhysicsDebugView.h"
 
 REGISTER_SUBSYSTEM( CPhysicsSubsystem )
 
@@ -17,10 +18,17 @@ void CPhysicsSubsystem::Initialize( FSubsystemCollection& Collection )
 	{
 		LOG( LogPhysics, Error, "%s", *InitResult.UnwrapErr() );
 	}
+	// デバッグビュー（F4 / view Physics on）: 登録して、このシーンの描画に、物理の形の線を重ねる（オフのときは、何も描かない）
+	NPhysicsDebugView::Register();
+	GetScene()->AddSceneDraw( NPhysicsDebugView::SceneDrawName, [this]( FDrawContext& Draw ) { NPhysicsDebugView::Draw( *this, Draw ); } );
 }
 
 void CPhysicsSubsystem::Deinitialize()
 {
+	if ( GetScene() != nullptr )
+	{
+		GetScene()->RemoveSceneDraw( NPhysicsDebugView::SceneDrawName );
+	}
 	Shutdown();
 }
 

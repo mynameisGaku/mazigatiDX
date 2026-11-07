@@ -670,6 +670,25 @@ Worldの`Components.Effect`には、任意の`Target`（追従先オブジェク
 
 エディタの画面（`Library/DebugUI`）は、これまでどおり`mazigatiDX`の中にあり、ゲームの実行ファイルでも使えます（ゲームの実行ファイルから外す作業は、公開準備（M9）で行います）。
 
+## デバッグビュー（物理の形の線など）
+
+ゲームの画面に重ねて描く、デバッグ用の表示（物理の形の線など）を、**デバッグビュー**として、名前・オン/オフ・調整項目で扱います（`Library/Framework/DebugView/DebugViews.h`の`FDebugViewRegistry`）。デバッグ画面とコンソールは、持ち主を知らずに、どのビューも同じように扱えます（依存は、持ち主→Frameworkの一方向）。
+
+**物理の形の線**（`Physics`ビュー。`Library/Physics/DebugDraw/PhysicsDebugView.h`）: 剛体の形・外接の箱・関節・キャラクターの足元の法線を、線で重ねます。物理を使うシーン（`IPhysicsScene`）で、オンにするだけで描かれます（ゲームのコードは何も要りません）。
+
+|やりたいこと|操作|
+|---|---|
+|オン/オフ|**F4**（デバッグ画面があるとき）/ F1のパネルの「Physics view」/ コンソール`view Physics on`（`off`・`toggle`）/ 起動引数`--physics-debug`|
+|描くものを選ぶ・範囲を絞る|F1のパネルの「Physics view」の`options`、またはコンソール`view.set Physics static off`・`view.set Physics radius 30`。項目: `static` `kinematic` `dynamic` `sensors`（種類ごと）・`bounds`（外接の箱）・`constraints`（関節）・`characters`・`region` + `radius` + `centerx` / `centery` / `centerz`（範囲を絞る）・`segments`（円の線の数）・`maxtriangles`（形が細かいものの上限）|
+|項目の一覧・値を見る|`view`（ビューの一覧）、`view.set Physics`（項目の一覧）、`view.set Physics radius`（値）|
+|コードから|`NPhysicsDebugView::SetEnabled( true )`、`NPhysicsDebugView::GetSettings().bDrawStatic = false`（色などの細かい設定も、ここ）|
+
+色: 動かない=灰、キネマティック=青、動いている=緑、眠っている=暗い緑、センサー=黄、キャラクター=ピンク、関節=橙。
+
+**2Dのゲームなど**（物理の座標が、画面にそのまま対応しないとき）: 既定の線は3Dの線（いまのカメラで見える）です。`NPhysicsDebugView::SetLineMapper( ... )`で、線1本を、ゲームの画面の座標に変えて描く関数を渡します。シーンの`OnEnter`で渡し、`OnExit`で空にします（`Source/Scene/GameScene.cpp`が例: 1メートル=100ピクセル、yは上向き）。
+
+**自分のビューを足す**: `FDebugView`に、名前・オン/オフの実体へのポインター・（キー）・項目（スイッチ / 整数 / 実数。実体へのポインターと範囲）を入れて、`FDebugViewRegistry::Global().Register( View )`。描く側は、オンのときに描きます。シーン全体に重ねて描く場所は`CScene::AddSceneDraw( 名前, []( FDrawContext& Draw ) { ... } )`（オブジェクトの`Draw`が終わったあと、`OnDraw`の前。撮影の「被写体だけ」では呼ばれません）。
+
 ## 一時ファイル・不要ファイルを消す（Clean.bat）
 
 ルートの`Clean.bat`が、一時ファイルと、ビルドの出力を消します（実体は`Tools/Clean.ps1`）。消す前に、消すものと大きさを一覧にして、確認します。

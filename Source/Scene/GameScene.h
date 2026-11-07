@@ -11,6 +11,7 @@ class CGameScene : public CScene, public IPhysicsScene
 {
 protected:
 	void OnEnter() override;
+	void OnExit() override;
 	void OnTick( float32 DeltaTime ) override;
 	void OnDraw() override;
 

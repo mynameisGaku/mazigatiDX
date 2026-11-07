@@ -9,9 +9,11 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Profiler/ProfilerScope.h"
 #include "Library/Core/Types/CString.h"
+#include "Library/DebugUI/Common/DebugViewPanel.h"
 #include "Library/DebugUI/Common/ImGuiPropertyInspector.h"
 #include "Library/DebugUI/Log/LogCategoryPanel.h"
 #include "Library/Framework/Console/BuiltinCommands.h"
+#include "Library/Framework/DebugView/DebugViews.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/GameInstance/GameInstance.h"
 #include "Library/Framework/Render/Draw/ImmediateDraw.h"
@@ -124,6 +126,20 @@ void CDebugOverlay::HandleKeys( const IKeyboardInput& Keys, IProfiler* Profiler,
 	// F2 でプロファイラーの記録を切り替え（止めたあとも記録は残るので、画面で結果を見られる）
 	if ( Keys.IsKeyPressed( EKey::F2 ) ) ToggleProfiler( Profiler );
 
+	// デバッグビューの、キー（物理の形の線は F4）。ビューごとに、決まったキーを持つ
+	{
+		const FDebugViewRegistry& Views = FDebugViewRegistry::Global();
+		for ( int32 Index = 0; Index < Views.Num(); ++Index )
+		{
+			const FDebugView& View = Views.Get( Index );
+			if ( View.bHasHotkey && Keys.IsKeyPressed( View.Hotkey ) )
+			{
+				*View.pEnabled = !*View.pEnabled;
+				LOG( LogDebugOverlay, Verbose, "Debug view '%s' %s", *View.Name, *View.pEnabled ? "on" : "off" );
+			}
+		}
+	}
+
 #if COG_DEBUG_CONSOLE
 	// F3 でコンソールの開閉（開いたら、入力欄にフォーカスを移す）
 	if ( Keys.IsKeyPressed( EKey::F3 ) )
@@ -228,6 +244,40 @@ void CDebugOverlay::DrawDebugWindow( CGameInstance& Game )
 			if ( ImGui::Button( Profiler->IsEnabled() ? "Profiler: ON   [F2]" : "Profiler: OFF  [F2]" ) ) ToggleProfiler();
 			ImGui::SameLine();
 			ImGui::Checkbox( "Show profiler window", &bShowProfilerWindow );
+		}
+
+		// デバッグビュー（FDebugViewRegistry に登録されたもの）: 名前のチェックボックスと、調整項目
+		{
+			const FDebugViewRegistry& Views = FDebugViewRegistry::Global();
+			for ( int32 Index = 0; Index < Views.Num(); ++Index )
+			{
+				const FDebugView& View = Views.Get( Index );
+				ImGui::PushID( *View.Name );
+				char Label[96];
+				if ( View.bHasHotkey )
+				{
+					NCString::Format( Label, sizeof( Label ), "%s view  [%s]", *View.Name, *FDebugViewRegistry::GetKeyLabel( View.Hotkey ) );
+				}
+				else
+				{
+					NCString::Format( Label, sizeof( Label ), "%s view", *View.Name );
+				}
+				ImGui::Checkbox( Label, View.pEnabled );
+				if ( ImGui::IsItemHovered() && !View.Description.IsEmpty() )
+				{
+					ImGui::SetTooltip( "%s", *View.Description );
+				}
+				if ( View.Options.Num() > 0 )
+				{
+					ImGui::SameLine();
+					if ( ImGui::TreeNodeEx( "options", ImGuiTreeNodeFlags_SpanAvailWidth ) )
+					{
+						NDebugUI::DrawDebugViewOptions( View );
+						ImGui::TreePop();
+					}
+				}
+				ImGui::PopID();
+			}
 		}
 
 		if ( OnDrawPanelItems ) OnDrawPanelItems();

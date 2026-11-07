@@ -6,6 +6,7 @@
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Render/Draw/ImmediateDraw.h"
 #include "Source/Object/OrbitMarker.h"
+#include "Library/Physics/DebugDraw/PhysicsDebugView.h"
 #include "Source/Object/PhysicsObjects.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogGameScene, Log )
@@ -21,6 +22,13 @@ namespace
 void CGameScene::OnEnter()
 {
 	LOG( LogGameScene, Log, "Game scene started (%d initial ball(s))", NumInitialBalls );
+
+	// 物理のデバッグビュー（F4）の線を、このゲームの 2D の画面（1 メートル = PixelsPerMeter ピクセル。y は上向き）に合わせる。
+	// 3D のゲームなら、これは要らない（線は、いまのカメラで見える 3D の線になる）
+	NPhysicsDebugView::SetLineMapper( []( FDrawContext& Draw, const FVector3& A, const FVector3& B, const FColor32& Color )
+	{
+		Draw.Line( NSampleView::ToScreenX( A.x ), NSampleView::ToScreenY( A.y ), NSampleView::ToScreenX( B.x ), NSampleView::ToScreenY( B.y ), Color );
+	} );
 
 	// 画面幅 1280px = 25.6m。下端に床を置く
 	SpawnObject<CPhysicsFloor>( FVector3( 12.8f, 0.5f, 0.0f ), FVector3( 12.0f, 0.5f, 2.0f ) )->SetName( "Floor" );
@@ -39,6 +47,12 @@ void CGameScene::OnEnter()
 	TSharedPtr<COrbitMarker> Moon = SpawnObject<COrbitMarker>( FVector3( 1.0f, 0.0f, 0.0f ), 0.0f, 5, FColor32::White );
 	Moon->SetName( "Moon" );
 	Moon->AttachToParent( Planet.Get() );
+}
+
+void CGameScene::OnExit()
+{
+	// 次のシーンに、この画面の変換を残さない
+	NPhysicsDebugView::SetLineMapper( NPhysicsDebugView::FLineMapper() );
 }
 
 void CGameScene::OnTick( float32 DeltaTime )

@@ -240,6 +240,13 @@ public:
 	// シーンが使う描画先を返す。差し替えがなければアプリの描画先を返し、所有権は持たない
 	IDrawExecutor* GetDrawExecutor() const;
 
+	// シーン全体の描画（オブジェクトの Draw が全部終わったあと、OnDraw の前）に、毎フレーム呼ばれる関数を足す。デバッグ表示（物理の形の線など）のように、
+	// 特定のオブジェクトに属さない、重ねて描くもの用。Name は、置き換え・外すときの目印（同じ名前は置き換わる。大文字小文字を区別する）。
+	// Draw には、このフレームの分の描画コマンドを記録する（実行は、呼んだあとにフレームワークが行う）。撮影の「被写体だけ」では呼ばれない（OnDraw と同じ）
+	void AddSceneDraw( const char* Name, const TCallable<void( FDrawContext& )>& Function );
+	// 外す。無ければ false
+	bool RemoveSceneDraw( const char* Name );
+
 	// 撮影のための描き直し: 見えているオブジェクトを、描画順にもう一度記録して実行する（実行先は GetDrawExecutor()）。
 	// Filter があれば、それが true を返すオブジェクトだけ（被写体だけの撮影）。Filter が無ければ OnDraw も描く（画面と同じ絵）。
 	// オブジェクトの Draw は記録だけなので、何度呼んでもよい
@@ -303,6 +310,13 @@ private:
 	IDrawExecutor* DrawExecutorOverride = nullptr;
 	// オブジェクトの Draw に渡すコマンドリストの入れ物。オブジェクトごとに空にして使い回す（確保した領域は残る）
 	FDrawBuffer ObjectCommandList;
+	// シーン全体の描画（AddSceneDraw）。Name は、置き換え・外すときの目印
+	struct FSceneDrawEntry
+	{
+		FString Name;
+		TCallable<void( FDrawContext& )> Function;
+	};
+	TArray<FSceneDrawEntry> SceneDraws;
 
 	uint64 NextObjectId = 1;
 	float64 ElapsedTime = 0.0;
