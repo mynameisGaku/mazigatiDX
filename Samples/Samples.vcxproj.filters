@@ -67,6 +67,15 @@
     <ClCompile Include="Source\Common\PhysicsView.cpp">
       <Filter>Source\Common</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Common\PlatformerHud.cpp">
+      <Filter>Source\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Common\PlatformerOptions.cpp">
+      <Filter>Source\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Common\PlatformerStatus.cpp">
+      <Filter>Source\Common</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Common\ShaderMeshes.cpp">
       <Filter>Source\Common</Filter>
     </ClCompile>
@@ -192,6 +201,75 @@
     </ClCompile>
     <ClCompile Include="Source\Pixels\TileView.cpp">
       <Filter>Source\Pixels</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Platformer2D\Platformer2DCoinPop.cpp">
+      <Filter>Source\Platformer2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Platformer2D\Platformer2DEnemy.cpp">
+      <Filter>Source\Platformer2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Platformer2D\Platformer2DFireball.cpp">
+      <Filter>Source\Platformer2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Platformer2D\Platformer2DHud.cpp">
+      <Filter>Source\Platformer2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Platformer2D\Platformer2DLevel.cpp">
+      <Filter>Source\Platformer2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Platformer2D\Platformer2DLevelView.cpp">
+      <Filter>Source\Platformer2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Platformer2D\Platformer2DPlayer.cpp">
+      <Filter>Source\Platformer2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Platformer2D\Platformer2DPowerUp.cpp">
+      <Filter>Source\Platformer2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Platformer2D\Platformer2DSample.cpp">
+      <Filter>Source\Platformer2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Platformer2D\Platformer2DShelled.cpp">
+      <Filter>Source\Platformer2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Platformer2D\Platformer2DWalker.cpp">
+      <Filter>Source\Platformer2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Platformer3D\Platformer3DActor.cpp">
+      <Filter>Source\Platformer3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Platformer3D\Platformer3DCoinPop.cpp">
+      <Filter>Source\Platformer3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Platformer3D\Platformer3DEnemy.cpp">
+      <Filter>Source\Platformer3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Platformer3D\Platformer3DFireball.cpp">
+      <Filter>Source\Platformer3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Platformer3D\Platformer3DHud.cpp">
+      <Filter>Source\Platformer3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Platformer3D\Platformer3DLevel.cpp">
+      <Filter>Source\Platformer3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Platformer3D\Platformer3DPlayer.cpp">
+      <Filter>Source\Platformer3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Platformer3D\Platformer3DPowerUp.cpp">
+      <Filter>Source\Platformer3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Platformer3D\Platformer3DSample.cpp">
+      <Filter>Source\Platformer3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Platformer3D\Platformer3DShelled.cpp">
+      <Filter>Source\Platformer3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Platformer3D\Platformer3DView.cpp">
+      <Filter>Source\Platformer3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Platformer3D\Platformer3DWalker.cpp">
+      <Filter>Source\Platformer3D</Filter>
     </ClCompile>
     <ClCompile Include="Source\PostEffects\PostEffectsPanel.cpp">
       <Filter>Source\PostEffects</Filter>
@@ -390,6 +468,15 @@
     <ClInclude Include="Source\Common\PhysicsView.h">
       <Filter>Source\Common</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Common\PlatformerHud.h">
+      <Filter>Source\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Common\PlatformerOptions.h">
+      <Filter>Source\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Common\PlatformerStatus.h">
+      <Filter>Source\Common</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Common\ShaderMeshes.h">
       <Filter>Source\Common</Filter>
     </ClInclude>
@@ -524,6 +611,81 @@
     </ClInclude>
     <ClInclude Include="Source\Pixels\TileView.h">
       <Filter>Source\Pixels</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer2D\Platformer2DCoinPop.h">
+      <Filter>Source\Platformer2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer2D\Platformer2DEnemy.h">
+      <Filter>Source\Platformer2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer2D\Platformer2DFireball.h">
+      <Filter>Source\Platformer2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer2D\Platformer2DHud.h">
+      <Filter>Source\Platformer2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer2D\Platformer2DLevel.h">
+      <Filter>Source\Platformer2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer2D\Platformer2DLevelView.h">
+      <Filter>Source\Platformer2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer2D\Platformer2DPlayer.h">
+      <Filter>Source\Platformer2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer2D\Platformer2DPowerUp.h">
+      <Filter>Source\Platformer2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer2D\Platformer2DSample.h">
+      <Filter>Source\Platformer2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer2D\Platformer2DShelled.h">
+      <Filter>Source\Platformer2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer2D\Platformer2DState.h">
+      <Filter>Source\Platformer2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer2D\Platformer2DWalker.h">
+      <Filter>Source\Platformer2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer3D\Platformer3DActor.h">
+      <Filter>Source\Platformer3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer3D\Platformer3DCoinPop.h">
+      <Filter>Source\Platformer3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer3D\Platformer3DEnemy.h">
+      <Filter>Source\Platformer3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer3D\Platformer3DFireball.h">
+      <Filter>Source\Platformer3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer3D\Platformer3DHud.h">
+      <Filter>Source\Platformer3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer3D\Platformer3DLevel.h">
+      <Filter>Source\Platformer3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer3D\Platformer3DPlayer.h">
+      <Filter>Source\Platformer3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer3D\Platformer3DPowerUp.h">
+      <Filter>Source\Platformer3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer3D\Platformer3DSample.h">
+      <Filter>Source\Platformer3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer3D\Platformer3DShelled.h">
+      <Filter>Source\Platformer3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer3D\Platformer3DState.h">
+      <Filter>Source\Platformer3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer3D\Platformer3DView.h">
+      <Filter>Source\Platformer3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Platformer3D\Platformer3DWalker.h">
+      <Filter>Source\Platformer3D</Filter>
     </ClInclude>
     <ClInclude Include="Source\PostEffects\PostEffectsDemoState.h">
       <Filter>Source\PostEffects</Filter>
@@ -724,6 +886,12 @@
     </Filter>
     <Filter Include="Source\Pixels">
       <UniqueIdentifier>{7FACA93B-34CC-117D-96B2-DB56EAC4A18F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Platformer2D">
+      <UniqueIdentifier>{AEDE44C7-54C3-F7C1-F591-AFBAE5608E33}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Platformer3D">
+      <UniqueIdentifier>{1A0A904B-F4FC-8396-D27E-01CC91BE9BEA}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\PostEffects">
       <UniqueIdentifier>{A05B2755-E2D5-DE2B-99EF-DC5BE9CF9E46}</UniqueIdentifier>
