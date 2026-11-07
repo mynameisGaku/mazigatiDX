@@ -220,7 +220,7 @@ void CDebugOverlay::DrawDebugWindow( CGameInstance& Game )
 
 	// 初めて開くときの配置（以降は ImGui が imgui.ini に覚えている位置と大きさを使う）。重ならないように並べる
 	ImGui::SetNextWindowPos( ImVec2( MainOrigin.x + 16.0f, MainOrigin.y + 64.0f ), ImGuiCond_FirstUseEver );
-	ImGui::SetNextWindowSize( ImVec2( 360.0f, 430.0f ), ImGuiCond_FirstUseEver );
+	ImGui::SetNextWindowSize( ImVec2( 360.0f, 560.0f ), ImGuiCond_FirstUseEver );
 	if ( ImGui::Begin( "Window", &bShowDebugWindow ) )
 	{
 		ImGui::Text( "FPS: %.1f  (%.2f ms)", Platform->GetFPS(), Platform->GetDeltaTime() * 1000.0f );
@@ -245,8 +245,12 @@ void CDebugOverlay::DrawDebugWindow( CGameInstance& Game )
 			ImGui::SameLine();
 			ImGui::Checkbox( "Show profiler window", &bShowProfilerWindow );
 		}
+#if COG_DEBUG_CONSOLE
+		if ( ImGui::Checkbox( "Console  [F3]", &bShowConsole ) && bShowConsole ) ConsoleWindow.bFocusInput = true;
+#endif
 
-		// デバッグビュー（FDebugViewRegistry に登録されたもの）: 名前のチェックボックスと、調整項目
+		// デバッグビュー（FDebugViewRegistry に登録されたもの）: 名前のチェックボックスと、調整項目。登録が無ければ（物理のシーンの前など）、見出しごと出さない
+		if ( FDebugViewRegistry::Global().Num() > 0 && ImGui::CollapsingHeader( "Debug views", ImGuiTreeNodeFlags_DefaultOpen ) )
 		{
 			const FDebugViewRegistry& Views = FDebugViewRegistry::Global();
 			for ( int32 Index = 0; Index < Views.Num(); ++Index )
@@ -280,12 +284,31 @@ void CDebugOverlay::DrawDebugWindow( CGameInstance& Game )
 			}
 		}
 
-		if ( OnDrawPanelItems ) OnDrawPanelItems();
-#if COG_DEBUG_CONSOLE
-		if ( ImGui::Checkbox( "Console  [F3]", &bShowConsole ) && bShowConsole ) ConsoleWindow.bFocusInput = true;
-#endif
+		// ツール（アプリが足すもの: アセット・エディタ・AI のウィンドウの切り替えなど）
+		if ( OnDrawPanelItems && ImGui::CollapsingHeader( "Tools", ImGuiTreeNodeFlags_DefaultOpen ) ) OnDrawPanelItems();
 
 		if ( ImGui::CollapsingHeader( "Log categories" ) ) NDebugUI::DrawLogCategories();
+
+		// キーの一覧（固定のキーと、デバッグビューが持つキー）
+		if ( ImGui::CollapsingHeader( "Keys" ) )
+		{
+			ImGui::TextUnformatted( "F1   debug windows on / off" );
+			ImGui::TextUnformatted( "F2   profiler on / off" );
+#if COG_DEBUG_CONSOLE
+			ImGui::TextUnformatted( "F3   console" );
+#endif
+			const FDebugViewRegistry& Views = FDebugViewRegistry::Global();
+			for ( int32 Index = 0; Index < Views.Num(); ++Index )
+			{
+				const FDebugView& View = Views.Get( Index );
+				if ( View.bHasHotkey )
+				{
+					ImGui::Text( "%-4s %s view on / off", *FDebugViewRegistry::GetKeyLabel( View.Hotkey ), *View.Name );
+				}
+			}
+			ImGui::TextUnformatted( "F9   screenshot  (Shift + F9: GIF)" );
+			ImGui::TextUnformatted( "F11  fullscreen" );
+		}
 
 		if ( ImGui::Button( "Exit" ) ) Platform->RequestExit();
 	}

@@ -382,25 +382,25 @@ namespace
 
 void NDebugUI::DrawAssetToolsButtons( FAssetToolsState& State )
 {
-	ImGui::TextUnformatted( "Asset tools:" );
-	ImGui::SameLine();
-	ImGui::Checkbox( "Assets", &State.bShowAssets );
-	ImGui::SameLine();
-	ImGui::Checkbox( "Project", &State.bShowBrowser );
-	ImGui::SameLine();
-	ImGui::Checkbox( "Audio", &State.bShowAudio );
-	ImGui::SameLine();
-	ImGui::Checkbox( "Sound editor", &State.bShowSoundEditor );
-	ImGui::SameLine();
-	ImGui::Checkbox( "Sprite sheet editor", &State.bShowSpriteSheetEditor );
-	ImGui::SameLine();
-	ImGui::Checkbox( "Model animation editor", &State.bShowModelAnimationEditor );
-	ImGui::SameLine();
-	ImGui::Checkbox( "World editor", &State.bShowWorldEditor );
-	ImGui::Checkbox( "AI debugger", &State.bShowAIDebugger );
-	ImGui::SameLine();
-	ImGui::Checkbox( "AI editor", &State.bShowAIEditor );
+	// 2 列の表（横に長く並べず、種類ごとにまとめる: アセットの画面 / エディタ / AI）
+	if ( !ImGui::BeginTable( "##assettools", 2, ImGuiTableFlags_SizingStretchSame ) )
+	{
+		return;
+	}
+	const auto Cell = []( const char* Label, bool* pValue )
+	{
+		ImGui::TableNextColumn();
+		ImGui::Checkbox( Label, pValue );
+	};
+	Cell( "Project (browser)", &State.bShowBrowser );
+	Cell( "Assets (loaded)", &State.bShowAssets );
+	Cell( "Audio", &State.bShowAudio );
+	Cell( "Sound editor", &State.bShowSoundEditor );
+	Cell( "Sprite sheet editor", &State.bShowSpriteSheetEditor );
+	Cell( "Model animation editor", &State.bShowModelAnimationEditor );
+	Cell( "World editor", &State.bShowWorldEditor );
 	// 外側の表示切替から閉じるときも、未保存の確認を省略しない。
+	ImGui::TableNextColumn();
 	bool bShowEffect = State.bShowEffectEditor;
 	if ( ImGui::Checkbox( "Effect editor", &bShowEffect ) )
 	{
@@ -413,6 +413,9 @@ void NDebugUI::DrawAssetToolsButtons( FAssetToolsState& State )
 			NEffectEditorUI::RequestAction( State.EffectEditor, FEffectEditorState::EPending::Close, FString(), &State.bShowEffectEditor );
 		}
 	}
+	Cell( "AI editor", &State.bShowAIEditor );
+	Cell( "AI debugger", &State.bShowAIDebugger );
+	ImGui::EndTable();
 }
 
 bool NDebugUI::IsAssetOpenInEditor( const FAssetToolsState& State, const FString& AssetPath )
