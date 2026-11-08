@@ -119,114 +119,66 @@ void CUIScreen::SetStatus( const char* Text )
 	ViewModel.Status.Set( Text );
 }
 
-TSharedPtr<CUIWidget> CUIScreen::BuildSettingsWindow( const TSharedPtr<CFont>& Body, const TSharedPtr<CFont>& Title )
+TSharedPtr<CUIWidget> CUIScreen::BuildSettingsWindow( CAssetSubsystem& Assets, const TSharedPtr<CFont>& Body, const TSharedPtr<CFont>& Title )
 {
-	TSharedPtr<CUIWidget> Window = MakeShared<CUIWidget>();
-	Window->SetBackground( Style.Window );
-	FUILayoutProperties WindowLayout;
-	WindowLayout.Padding = FUIMargin( 28.0f, 24.0f );
-	Window->SetLayout( WindowLayout );
-
-	TSharedPtr<CUIStackPanel> Column = MakeStack( EUIOrientation::Vertical, 18.0f );
-	Window->AddChild( Column );
-
-	TSharedPtr<CUILabel> Heading = MakeLabel( Title, "Settings" );
-	Heading->SetColor( FColor32( 255, 226, 150 ) );
-	Column->AddChild( Heading );
-
-	// チェックボックス 2 つ（ラベルとの並び）
-	auto AddCheck = [&]( TSharedPtr<CUICheckBox>& Out, const char* Text, TObservable<bool>& Source )
-	{
-		TSharedPtr<CUIStackPanel> Row = MakeStack( EUIOrientation::Horizontal, 14.0f );
-		Row->SetLayout( FixedHeight( 28.0f ) );
-		Out = MakeShared<CUICheckBox>();
-		Out->SetStyle( Style.CheckBox );
-		FUILayoutProperties BoxLayout;
-		BoxLayout.FixedWidth = 28.0f;
-		BoxLayout.FixedHeight = 28.0f;
-		BoxLayout.HorizontalAlignment = EUIAlignment::Start;
-		BoxLayout.VerticalAlignment = EUIAlignment::Center;
-		Out->SetLayout( BoxLayout );
-		Bindings.BindChecked( Source, Out );   // 双方向: チェックボックス ⇔ ビューモデル
-		Row->AddChild( Out );
-		Row->AddChild( MakeLabel( Body, Text ) );
-		Column->AddChild( Row );
-	};
-	AddCheck( MusicBox, "Music", ViewModel.Music );
-	AddCheck( SoundBox, "Sound effects", ViewModel.Sound );
-
-	// 音量: ラベル + 値 + スライダー + プログレスバー
-	TSharedPtr<CUIStackPanel> VolumeRow = MakeStack( EUIOrientation::Horizontal, 14.0f );
-	VolumeRow->SetLayout( FixedHeight( 28.0f ) );
-	VolumeRow->AddChild( MakeLabel( Body, "Volume" ) );
-	ValueLabel = MakeLabel( Body, "", FColor32( 180, 220, 255 ) );
-	Bindings.BindLabel( ViewModel.VolumeText, ValueLabel );   // 一方向: ビューモデル → 文字
-	VolumeRow->AddChild( ValueLabel );
-	Column->AddChild( VolumeRow );
-
-	VolumeSlider = MakeShared<CUISlider>();
-	// 溝を、矩形より細くする（矩形の高さ 28 に対して、溝は 12）
+	// 設定の窓は、マークアップ（Assets/UI/Settings.gxui）に書いてある。使う名前だけ、ここで渡す
+	MarkupContext.RegisterFont( "Body", Body );
+	MarkupContext.RegisterFont( "Title", Title );
+	MarkupContext.RegisterBrush( "Window", Style.Window );
+	MarkupContext.RegisterBrush( "ProgressBack", Style.ProgressBack );
+	MarkupContext.RegisterBrush( "ProgressFill", Style.ProgressFill );
+	MarkupContext.RegisterButtonStyle( "Default", Style.Button );
+	MarkupContext.RegisterCheckBoxStyle( "Default", Style.CheckBox );
 	FUISliderStyle SliderStyle = Style.Slider;
-	SliderStyle.TrackInset = FUIMargin( 0.0f, 8.0f, 0.0f, 8.0f );
-	VolumeSlider->SetStyle( SliderStyle );
-	VolumeSlider->SetRange( 0.0f, 100.0f );
-	VolumeSlider->SetStep( 5.0f );
-	VolumeSlider->SetLayout( FixedHeight( 28.0f ) );
-	Bindings.BindValue( ViewModel.Volume, VolumeSlider );   // 双方向: スライダー ⇔ 音量
-	Column->AddChild( VolumeSlider );
-
-	VolumeBar = MakeShared<CUIProgressBar>();
-	VolumeBar->SetBackBrush( Style.ProgressBack );
-	VolumeBar->SetFillBrush( Style.ProgressFill );
-	VolumeBar->SetFillInset( Style.ProgressInset );
-	VolumeBar->SetLayout( FixedHeight( 18.0f ) );
-	Bindings.BindProgress( ViewModel.VolumeRatio, VolumeBar );   // 一方向: 音量の割合 → バー
-	Column->AddChild( VolumeBar );
-
-	// 名前の入力欄
-	TSharedPtr<CUIStackPanel> NameRow = MakeStack( EUIOrientation::Horizontal, 14.0f );
-	NameRow->SetLayout( FixedHeight( 38.0f ) );
-	NameRow->AddChild( MakeLabel( Body, "Name" ) );
-	NameBox = MakeShared<CUITextBox>();
+	SliderStyle.TrackInset = FUIMargin( 0.0f, 8.0f, 0.0f, 8.0f );   // 溝を、矩形より細くする（矩形の高さ 28 に対して、溝は 12）
+	MarkupContext.RegisterSliderStyle( "Thin", SliderStyle );
 	FUITextBoxStyle NameStyle;
 	NameStyle.Normal = Style.TextBox;
 	NameStyle.Focused = Style.TextBoxFocused;
 	NameStyle.Disabled = Style.TextBox;
-	NameBox->SetStyle( NameStyle );
-	NameBox->SetFont( Body );
-	NameBox->SetPlaceholder( "Type your name" );
-	NameBox->SetMaxLength( 16 );
-	FUILayoutProperties NameLayout;
-	NameLayout.Weight = 1.0f;
-	NameLayout.FixedHeight = 38.0f;
-	NameLayout.VerticalAlignment = EUIAlignment::Center;
-	NameBox->SetLayout( NameLayout );
-	Bindings.BindText( ViewModel.Name, NameBox );   // 双方向: 入力欄 ⇔ 名前
-	NameBox->OnSubmitted.Add( [this]( CUIWidget&, const FString& Text ) { SetStatus( *FString::Printf( "Hello, %s!", *Text ) ); } );
-	NameBox->OnCancelled.Add( [this]( CUIWidget& ) { SetStatus( "Name edit was cancelled" ); } );
-	NameRow->AddChild( NameBox );
-	Column->AddChild( NameRow );
+	MarkupContext.RegisterTextBoxStyle( "Name", NameStyle );
 
-	// ボタン
-	TSharedPtr<CUIStackPanel> Buttons = MakeStack( EUIOrientation::Horizontal, 12.0f );
-	Buttons->SetLayout( FixedHeight( 44.0f ) );
-	TSharedPtr<CUIButton> Ok = MakeButton( Body, "OK", 120.0f );
-	TSharedPtr<CUIButton> Cancel = MakeButton( Body, "Cancel", 120.0f );
-	TSharedPtr<CUIButton> Reset = MakeButton( Body, "Reset", 120.0f );
-	Ok->OnClicked.Add( [this]( CUIWidget& ) { SetStatus( "OK was clicked" ); } );
-	Cancel->OnClicked.Add( [this]( CUIWidget& ) { SetStatus( "Cancel was clicked" ); } );
-	Bindings.BindCommand( Reset, ViewModel.Reset );   // 押す → ビューモデルの操作（確認を求める）
-	Buttons->AddChild( Ok );
-	Buttons->AddChild( Cancel );
-	Buttons->AddChild( Reset );
-	Column->AddChild( Buttons );
+	MarkupContext.RegisterHandler( "OkClicked", [this]() { SetStatus( "OK was clicked" ); } );
+	MarkupContext.RegisterHandler( "CancelClicked", [this]() { SetStatus( "Cancel was clicked" ); } );
+	MarkupContext.RegisterHandler( "NameSubmitted", [this]() { SetStatus( *FString::Printf( "Hello, %s!", *ViewModel.Name.Get() ) ); } );
+	MarkupContext.RegisterHandler( "NameCancelled", [this]() { SetStatus( "Name edit was cancelled" ); } );
 
-	// 状態の表示
-	StatusLabel = MakeLabel( Body, "", FColor32( 150, 160, 180 ) );
-	StatusLabel->SetMaxWidth( 480.0f );
-	Bindings.BindLabel( ViewModel.Status, StatusLabel );   // 一方向: 状態の文章 → ラベル
-	Column->AddChild( StatusLabel );
-	return Window;
+	MarkupContext.RegisterBool( "Music", ViewModel.Music );
+	MarkupContext.RegisterBool( "Sound", ViewModel.Sound );
+	MarkupContext.RegisterFloat( "Volume", ViewModel.Volume );
+	MarkupContext.RegisterFloat( "VolumeRatio", ViewModel.VolumeRatio );
+	MarkupContext.RegisterString( "VolumeText", ViewModel.VolumeText );
+	MarkupContext.RegisterString( "Name", ViewModel.Name );
+	MarkupContext.RegisterString( "Status", ViewModel.Status );
+	MarkupContext.RegisterCommand( "Reset", ViewModel.Reset );
+
+	if ( !SettingsDocument.Load( Assets, "UI/Settings.gxui", MarkupContext, SettingsBindings ) )
+	{
+		// 読めなかったら、理由を窓に出す
+		TSharedPtr<CUIWidget> Failed = MakeShared<CUIWidget>();
+		Failed->SetBackground( Style.Window );
+		TSharedPtr<CUILabel> Message = MakeLabel( Body, *SettingsDocument.GetLastError(), FColor32( 255, 150, 150 ) );
+		Message->SetMaxWidth( 480.0f );
+		Failed->AddChild( Message );
+		return Failed;
+	}
+	return SettingsDocument.GetRoot();
+}
+
+void CUIScreen::ReloadSettingsWindow()
+{
+	CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
+	if ( Assets == nullptr || !Root || !SettingsDocument.ReloadIfChanged( *Assets, MarkupContext, SettingsBindings ) )
+	{
+		return;
+	}
+	// 古い窓を外し、同じ場所へ、新しい窓を置く
+	if ( SettingsWindow )
+	{
+		Root->RemoveChild( SettingsWindow.Get() );
+	}
+	SettingsWindow = SettingsDocument.GetRoot();
+	PlaceAt( *Root, SettingsWindow, 60.0f, 90.0f, 560.0f, 530.0f );
 }
 
 TSharedPtr<CUIWidget> CUIScreen::BuildViewWindow( CAssetSubsystem& Assets, const TSharedPtr<CFont>& Body )
@@ -400,7 +352,8 @@ void CUIScreen::Build()
 	Shadow->SetHitTestable( false );
 	PlaceAt( *Root, Shadow, 40.0f, 74.0f, 600.0f, 590.0f );
 
-	PlaceAt( *Root, BuildSettingsWindow( Body, Title ), 60.0f, 90.0f, 560.0f, 530.0f );
+	SettingsWindow = BuildSettingsWindow( *Assets, Body, Title );
+	PlaceAt( *Root, SettingsWindow, 60.0f, 90.0f, 560.0f, 530.0f );
 	PlaceAt( *Root, BuildViewWindow( *Assets, Body ), 680.0f, 90.0f, 560.0f, 300.0f );
 	PlaceAt( *Root, BuildIconWindow( *Assets, Body ), 680.0f, 400.0f, 560.0f, 290.0f );
 
@@ -436,6 +389,13 @@ void CUIScreen::Tick( float32 DeltaTime )
 		return;
 	}
 	ElapsedTime += DeltaTime;
+	// 設定の窓のマークアップが保存し直されたら、作り直す（半秒ごとに調べる）
+	ReloadTimer += DeltaTime;
+	if ( ReloadTimer >= 0.5f )
+	{
+		ReloadTimer = 0.0f;
+		ReloadSettingsWindow();
+	}
 	// ミニマップは、動く内容なので、毎回描き直す（既定の更新の頻度）
 	const IInput* Input = GetAppSubsystem<IInput>();
 	const IGamepadInput* Gamepad = GetAppSubsystem<IGamepadInput>();

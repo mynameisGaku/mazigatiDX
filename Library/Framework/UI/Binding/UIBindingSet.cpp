@@ -15,6 +15,18 @@ void CUIBindingSet::Clear()
 	Polls.Empty();
 }
 
+void CUIBindingSet::Absorb( CUIBindingSet& Other )
+{
+	if ( &Other == this )
+	{
+		return;
+	}
+	Unbinders.Append( Other.Unbinders );
+	Polls.Append( Other.Polls );
+	Other.Unbinders.Empty();
+	Other.Polls.Empty();
+}
+
 void CUIBindingSet::Update()
 {
 	// 関数を呼んでいる最中に、結び付けが増えても、安全なように、数を先に決める

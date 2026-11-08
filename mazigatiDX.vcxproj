@@ -332,6 +332,7 @@
     <ClCompile Include="Library\Framework\UI\Core\UIPanels.cpp" />
     <ClCompile Include="Library\Framework\UI\Core\UIScreenStack.cpp" />
     <ClCompile Include="Library\Framework\UI\Core\UIWidget.cpp" />
+    <ClCompile Include="Library\Framework\UI\Markup\UIMarkupDocument.cpp" />
     <ClCompile Include="Library\Framework\UI\Markup\UIMarkupLoader.cpp" />
     <ClCompile Include="Library\Framework\UI\Markup\UIXml.cpp" />
     <ClCompile Include="Library\Framework\UI\Style\UIDefaultStyle.cpp" />
@@ -1013,6 +1014,7 @@
     <ClInclude Include="Library\Framework\UI\Core\UIScreenStack.h" />
     <ClInclude Include="Library\Framework\UI\Core\UITypes.h" />
     <ClInclude Include="Library\Framework\UI\Core\UIWidget.h" />
+    <ClInclude Include="Library\Framework\UI\Markup\UIMarkupDocument.h" />
     <ClInclude Include="Library\Framework\UI\Markup\UIMarkupLoader.h" />
     <ClInclude Include="Library\Framework\UI\Markup\UIXml.h" />
     <ClInclude Include="Library\Framework\UI\Style\UIDefaultStyle.h" />

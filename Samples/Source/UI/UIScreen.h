@@ -5,6 +5,7 @@
 #include "Library/Framework/UI/Binding/UIBindingSet.h"
 #include "Library/Framework/UI/Core/UIContext.h"
 #include "Library/Framework/UI/Core/UIScreenStack.h"
+#include "Library/Framework/UI/Markup/UIMarkupDocument.h"
 #include "Library/Framework/UI/Core/UIPanels.h"
 #include "Library/Framework/UI/Style/UIDefaultStyle.h"
 #include "Library/Framework/UI/Widgets/UIControlWidgets.h"
@@ -36,7 +37,8 @@ public:
 private:
 	// 最初の Tick で、部品の木を作る（アセットなどが、シーンに入ってから使えるため）
 	void Build();
-	TSharedPtr<CUIWidget> BuildSettingsWindow( const TSharedPtr<CFont>& Body, const TSharedPtr<CFont>& Title );
+	TSharedPtr<CUIWidget> BuildSettingsWindow( CAssetSubsystem& Assets, const TSharedPtr<CFont>& Body, const TSharedPtr<CFont>& Title );
+	void ReloadSettingsWindow();
 	TSharedPtr<CUIWidget> BuildViewWindow( CAssetSubsystem& Assets, const TSharedPtr<CFont>& Body );
 	TSharedPtr<CUIWidget> BuildIconWindow( CAssetSubsystem& Assets, const TSharedPtr<CFont>& Body );
 	TSharedPtr<CUILabel> MakeLabel( const TSharedPtr<CFont>& Font, const char* Text, const FColor32& Color = FColor32( 235, 238, 245 ) );
@@ -49,17 +51,14 @@ private:
 	TSharedPtr<CUICanvasPanel> Root;
 	FSettingsViewModel ViewModel;                   // 設定の窓のビューモデル（結び付けより先に、宣言する）
 	CUIBindingSet Bindings;                         // 部品とビューモデルの結び付け
+	CUIBindingSet SettingsBindings;                 // 設定の窓（マークアップ）の結び付け
+	FUIMarkupContext MarkupContext;                 // マークアップで使う名前の表
+	CUIMarkupDocument SettingsDocument;             // 設定の窓のマークアップ（Assets/UI/Settings.gxui。保存すると作り直す）
+	TSharedPtr<CUIWidget> SettingsWindow;
+	float32 ReloadTimer = 0.0f;
 	CUIScreenStack Screens;                         // 画面のスタック: 下は、この画面。確認のダイアログが、上に積まれる
 	TSharedPtr<CFont> BodyFont;
 	TSharedPtr<CFont> TitleFont;
-	TSharedPtr<CUITextBox> NameBox;
-
-	TSharedPtr<CUILabel> StatusLabel;
-	TSharedPtr<CUILabel> ValueLabel;
-	TSharedPtr<CUISlider> VolumeSlider;
-	TSharedPtr<CUIProgressBar> VolumeBar;
-	TSharedPtr<CUICheckBox> MusicBox;
-	TSharedPtr<CUICheckBox> SoundBox;
 	TSharedPtr<CUIRenderTargetView> MinimapView;
 	TSharedPtr<CUIListView> NameList;
 

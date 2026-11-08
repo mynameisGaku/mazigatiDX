@@ -12,7 +12,7 @@
 |部品|`CUIImage`・`CUILabel`・`CUIProgressBar`・`CUIButton`・`CUICheckBox`・`CUISlider`・`CUIScrollBox`・`CUIListView`・`CUITextBox`（入力欄）・`CUIDialog`（確認のダイアログ）・`CUIRenderTargetView`|`Widgets`|
 |画面のスタック|`CUIScreenStack`: 画面を積み重ねて、描く順と入力の行き先を決める（HUD・メニュー・ダイアログ）|`Core`|
 |結び付け|`TObservable` / `TObservableArray` / `FUICommand`（ビューモデルの値・配列・操作）と、`CUIBindingSet`（部品との結び付け）|`Binding`|
-|マークアップ|`NUIXml`（XML の読み取り）と `CUIMarkupLoader`（XML から部品の木を作る）|`Markup`|
+|マークアップ|`NUIXml`（XML の読み取り）・`CUIMarkupLoader`（XML から部品の木を作る）・`CUIMarkupDocument`（`.gxui` ファイルの読み込みとホットリロード）|`Markup`|
 |既定のスタイル|`FUIDefaultStyle`: `EngineContent` の画像から作る、部品の既定の見た目|`Style`|
 
 ## 使い方
@@ -197,7 +197,7 @@ if ( Result.bSuccess ) { Screen->AddChild( Result.Root ); }
 |`Button`|`Text` `Font` `TextColor` `Style` `OnClicked` `Command`|
 |`CheckBox`|`Checked` `Style` `OnToggled` `OnClicked`|
 |`Slider`|`Value` `Min` `Max` `Step` `Orientation` `Style` `OnValueChanged`|
-|`TextBox`|`Text` `Placeholder` `MaxLength` `Password` `Font` `Style` `OnSubmitted`|
+|`TextBox`|`Text` `Placeholder` `MaxLength` `Password` `Font` `Style` `OnSubmitted` `OnCancelled`|
 |`ListView`|`Items`（`{Binding 名前}`）`ItemHeight` `Font` `ItemColor` `SelectedBackground` `ItemPadding` `ScrollBarWidth` `ScrollBarTrack` `ScrollBarThumb` `OnItemClicked`|
 
 **結び付け** `{Binding 名前}` は、`Label.Text`（一方向）・`TextBox.Text` `CheckBox.Checked` `Slider.Value`（双方向）・`ProgressBar.Value`・`Button.Command`・`ListView.Items`・`Enabled`・`Visible` に書けます。
@@ -206,6 +206,26 @@ if ( Result.bSuccess ) { Screen->AddChild( Result.Root ); }
 - 読めない XML・知らない要素・属性の値の書き間違い（数・色・列挙・範囲）は、**失敗**です（`bSuccess = false`。理由は `Error`、行番号つき。何も作らず、結び付けも残りません）。
 - 文脈に無い名前（フォント・ブラシ・スタイル・イベントの受け手・結び付け）と、知らない属性は、**警告**（`Warnings`、行番号つき）にして、その属性を無視して続けます。`Context.bWarningsAreErrors = true` で、警告も失敗にできます。
 - XML は、要素・属性（`"` か `'`）・文字・コメント・CDATA・`&lt; &gt; &amp; &quot; &apos; &#65; &#x41;` を読みます。名前空間と DTD は扱いません。入れ子は 100 段までです。
+
+**ファイル（`.gxui`）とホットリロード**: マークアップの文字列は、ファイル（拡張子 `.gxui`）に書いて、アセットのパスで読めます。`CUIMarkupDocument` が、読み込みと作り直しを受け持ちます。
+
+```cpp
+CUIMarkupDocument Document;
+if ( Document.Load( Assets, "UI/Settings.gxui", Context, Bindings ) )      // 先頭の BOM はあってもなくてもよい
+{
+    Parent->AddChild( Document.GetRoot() );
+}
+// 毎フレーム（または数秒おき）
+if ( Document.ReloadIfChanged( Assets, Context, Bindings ) )                // 中身が前と違えば、作り直す
+{
+    Parent->RemoveChild( OldRoot.Get() );                                   // 古い木を外し、新しい木（GetRoot）を同じ場所へ付ける
+    Parent->AddChild( Document.GetRoot() );
+}
+```
+
+- 作り直しに失敗したとき（XML を書き換えている途中など）は、**古い木も結び付けも、そのまま残します**（`GetLastError()` に理由）。同じ壊れた中身は、繰り返し試しません。直して保存すると、また試します。
+- 作り直しが成功すると、古い木の結び付けは外れ、新しい木が結ばれます（1 つの文書に、専用の `CUIBindingSet` を 1 つ使ってください）。
+- 見本: サンプル `UI` の設定の窓は、`Samples/Assets/UI/Settings.gxui` に書いてあります。サンプルを動かしたまま、そのファイルを編集して保存すると、窓が作り直されます。
 
 ## 入力欄（文字入力）
 

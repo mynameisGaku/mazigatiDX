@@ -1153,7 +1153,7 @@ struct FMarkupBuilder
 				}
 				return true;
 			}
-			if ( N == "OnSubmitted" )
+			if ( N == "OnSubmitted" || N == "OnCancelled" )
 			{
 				return true;
 			}
@@ -1577,6 +1577,14 @@ struct FMarkupBuilder
 				if ( Handler )
 				{
 					StaticCastSharedPtr<CUITextBox>( Widget )->OnSubmitted.Add( [Handler]( CUIWidget&, const FString& ) { Handler(); } );
+				}
+			}
+			if ( const FString* Value = Node.FindAttribute( "OnCancelled" ) )
+			{
+				const TCallable<void()> Handler = FindHandler( Node, *Value );
+				if ( Handler )
+				{
+					StaticCastSharedPtr<CUITextBox>( Widget )->OnCancelled.Add( [Handler]( CUIWidget& ) { Handler(); } );
 				}
 			}
 			break;

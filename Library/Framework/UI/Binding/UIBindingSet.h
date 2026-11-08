@@ -37,6 +37,8 @@ public:
 
 	// すべての結び付けを解除する
 	void Clear();
+	// 別の組の結び付けを、すべて、この組へ移す（Other は空になる。解除は、この組が受け持つ）
+	void Absorb( CUIBindingSet& Other );
 	// 結んでいる数
 	int32 Num() const { return Unbinders.Num(); }
 	// BindFunction の関数を調べて、変わったものを反映する（毎フレーム呼ぶ）
