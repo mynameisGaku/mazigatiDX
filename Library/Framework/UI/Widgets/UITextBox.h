@@ -52,6 +52,7 @@ public:
 	const FString& GetText() const { return Buffer.GetText(); }
 	// 何も入っていない・フォーカスも無いときに、薄く出す文字
 	void SetPlaceholder( const FString& InPlaceholder ) { Placeholder = InPlaceholder; }
+	const FString& GetPlaceholder() const { return Placeholder; }
 	// 文字数の上限（0 は上限なし）
 	void SetMaxLength( int32 InMaxLength ) { Buffer.SetMaxCharCount( InMaxLength ); }
 	void SetPasswordMode( bool bInPassword ) { bPasswordMode = bInPassword; }

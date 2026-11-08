@@ -165,6 +165,7 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestUIInputBridge.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestUIInputBridge.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestUILayout.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestUILayout.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestUIList.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestUIList.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestUIMarkup.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestUIMarkup.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestUIRenderTarget.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestUIRenderTarget.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestUIScreens.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestUIScreens.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestUITextBox.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestUITextBox.cpp')" />
@@ -294,6 +295,7 @@
     <ClInclude Include="Source\SelfTest\AssetSelfTestUIInputBridge.h" Condition="Exists('Source\SelfTest\AssetSelfTestUIInputBridge.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestUILayout.h" Condition="Exists('Source\SelfTest\AssetSelfTestUILayout.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestUIList.h" Condition="Exists('Source\SelfTest\AssetSelfTestUIList.h')" />
+    <ClInclude Include="Source\SelfTest\AssetSelfTestUIMarkup.h" Condition="Exists('Source\SelfTest\AssetSelfTestUIMarkup.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestUIRenderTarget.h" Condition="Exists('Source\SelfTest\AssetSelfTestUIRenderTarget.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestUIScreens.h" Condition="Exists('Source\SelfTest\AssetSelfTestUIScreens.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestUITextBox.h" Condition="Exists('Source\SelfTest\AssetSelfTestUITextBox.h')" />

@@ -12,6 +12,7 @@
 |部品|`CUIImage`・`CUILabel`・`CUIProgressBar`・`CUIButton`・`CUICheckBox`・`CUISlider`・`CUIScrollBox`・`CUIListView`・`CUITextBox`（入力欄）・`CUIDialog`（確認のダイアログ）・`CUIRenderTargetView`|`Widgets`|
 |画面のスタック|`CUIScreenStack`: 画面を積み重ねて、描く順と入力の行き先を決める（HUD・メニュー・ダイアログ）|`Core`|
 |結び付け|`TObservable` / `TObservableArray` / `FUICommand`（ビューモデルの値・配列・操作）と、`CUIBindingSet`（部品との結び付け）|`Binding`|
+|マークアップ|`NUIXml`（XML の読み取り）と `CUIMarkupLoader`（XML から部品の木を作る）|`Markup`|
 |既定のスタイル|`FUIDefaultStyle`: `EngineContent` の画像から作る、部品の既定の見た目|`Style`|
 
 ## 使い方
@@ -133,6 +134,79 @@ Bindings.BindFunction<int32>( []() { return Score; }, []( const int32& V ) { /* 
 - ビューモデルは、結び付けの組より先に消えても安全です（解除のとき、ビューモデルが、まだあるかを確かめます）。部品は、結び付けが共有の参照で持ちます。
 - 見本は、サンプル `UI` の設定の窓（`Samples/Source/UI/SettingsViewModel.h`）です。
 
+## マークアップ（XML）
+
+UI は、コードで組む代わりに、XML で書けます（`Library/Framework/UI/Markup`）。読み込むと、コードで組んだものと同じ部品の木になります。名前（フォント・ブラシ・スタイル・イベントの受け手・ビューモデルの値）は、**文脈**（`FUIMarkupContext`）に登録したものを使います。ゲームの種類にも描画の方式にも、依存しません。
+
+```xml
+<Panel Name="Window" Padding="24,20" Background="Window">
+  <VerticalStack Spacing="12">
+    <Label Text="{Binding Title}" Font="Title" Color="#FFE296" />
+    <CheckBox Checked="{Binding Music}" Style="Default" Width="28" Height="28" />
+    <Slider Value="{Binding Volume}" Min="0" Max="100" Step="5" Height="28" Style="Default" />
+    <TextBox Text="{Binding Name}" Placeholder="Your name" MaxLength="16" Height="38" Style="Default" />
+    <HorizontalStack Spacing="8" Height="44">
+      <Button Text="OK" Width="120" Style="Default" OnClicked="Confirm" />
+      <Button Text="Reset" Width="120" Style="Default" Command="{Binding Reset}" />
+    </HorizontalStack>
+    <ListView Items="{Binding Items}" ItemHeight="24" Height="120" Font="Body" />
+  </VerticalStack>
+</Panel>
+```
+
+```cpp
+FUIMarkupContext Context;
+Context.RegisterFont( "Title", TitleFont );
+Context.RegisterBrush( "Window", WindowBrush );
+Context.RegisterButtonStyle( "Default", ButtonStyle );          // ほか RegisterCheckBoxStyle / RegisterSliderStyle / RegisterTextBoxStyle
+Context.RegisterHandler( "Confirm", []() { /* ... */ } );
+Context.RegisterString( "Title", ViewModel.Title );             // ほか RegisterFloat / RegisterBool / RegisterCommand / RegisterStringList
+CUIBindingSet Bindings;                                         // 結び付けは、この組が持つ
+const FUIMarkupResult Result = CUIMarkupLoader::Load( XmlText, Context, Bindings );
+if ( Result.bSuccess ) { Screen->AddChild( Result.Root ); }
+```
+
+**要素**: `Panel`（子を重ねる）・`Canvas`・`VerticalStack`・`HorizontalStack`・`Stack`・`Grid`・`ScrollBox`・`Label`・`Image`・`ProgressBar`・`Button`・`CheckBox`・`Slider`・`TextBox`・`ListView`。
+
+**どの要素にも書ける属性**
+
+|属性|意味|
+|---|---|
+|`Name`|名前（`FindByName` で探せる）|
+|`Width` `Height` `MinWidth` `MinHeight` `MaxWidth` `MaxHeight`|大きさ（0 以上の数）|
+|`Margin` `Padding`|余白。数が 1 個（四辺）・2 個（左右, 上下）・4 個（左, 上, 右, 下）|
+|`HAlign` `VAlign`|寄せ方: `Start` `Center` `End` `Stretch`|
+|`Weight`|スタックの余りを分ける割合|
+|`Column` `Row` `ColumnSpan` `RowSpan`|グリッドの置き場所（Span は 1 以上）|
+|`Anchor` `AnchorMin` `AnchorMax` `Pivot` `Offsets`|キャンバスの置き場所。`Anchor` は `TopLeft` `Top` `TopRight` `Left` `Center` `Right` `BottomLeft` `Bottom` `BottomRight` `Stretch`。`Offsets` は 4 個の数|
+|`Visibility`|`Visible` `Hidden` `Collapsed`|
+|`Enabled` `Visible`|`true` `false`、または `{Binding 名前}`|
+|`Opacity` `Clip` `HitTestable` `Interactive` `Focusable`|不透明度と、真偽の設定|
+|`Background`|`#RRGGBB` `#RRGGBBAA` `#RGB`、または登録したブラシの名前|
+
+**要素ごとの属性**
+
+|要素|属性|
+|---|---|
+|`VerticalStack` `HorizontalStack` `Stack`|`Spacing` `Orientation`|
+|`Grid`|`Columns` `Rows`（`"100, Auto, *, 2*"`: 数 = 画素、`Auto` = 中身、`*` = 残りを 1、`n*` = 残りを n）|
+|`ScrollBox`|`Orientation` `WheelStep` `ScrollBarWidth` `ScrollBarTrack` `ScrollBarThumb`|
+|`Label`|`Text` `Font` `Color` `TextAlign` `VTextAlign` `WrapWidth` `Lines`|
+|`Image`|`Source`（画像を読む関数を `SetImageLoader` で渡す）`Mode`（`Stretch` `Fit` `Fill` `Tile` `NineSlice`）`NineSlice`（余白。書くと 9 スライス）`Tint`|
+|`ProgressBar`|`Value` `Orientation` `Back` `Fill` `FillInset`|
+|`Button`|`Text` `Font` `TextColor` `Style` `OnClicked` `Command`|
+|`CheckBox`|`Checked` `Style` `OnToggled` `OnClicked`|
+|`Slider`|`Value` `Min` `Max` `Step` `Orientation` `Style` `OnValueChanged`|
+|`TextBox`|`Text` `Placeholder` `MaxLength` `Password` `Font` `Style` `OnSubmitted`|
+|`ListView`|`Items`（`{Binding 名前}`）`ItemHeight` `Font` `ItemColor` `SelectedBackground` `ItemPadding` `ScrollBarWidth` `ScrollBarTrack` `ScrollBarThumb` `OnItemClicked`|
+
+**結び付け** `{Binding 名前}` は、`Label.Text`（一方向）・`TextBox.Text` `CheckBox.Checked` `Slider.Value`（双方向）・`ProgressBar.Value`・`Button.Command`・`ListView.Items`・`Enabled`・`Visible` に書けます。
+
+**失敗と警告**
+- 読めない XML・知らない要素・属性の値の書き間違い（数・色・列挙・範囲）は、**失敗**です（`bSuccess = false`。理由は `Error`、行番号つき。何も作らず、結び付けも残りません）。
+- 文脈に無い名前（フォント・ブラシ・スタイル・イベントの受け手・結び付け）と、知らない属性は、**警告**（`Warnings`、行番号つき）にして、その属性を無視して続けます。`Context.bWarningsAreErrors = true` で、警告も失敗にできます。
+- XML は、要素・属性（`"` か `'`）・文字・コメント・CDATA・`&lt; &gt; &amp; &quot; &apos; &#65; &#x41;` を読みます。名前空間と DTD は扱いません。入れ子は 100 段までです。
+
 ## 入力欄（文字入力）
 
 `CUITextBox` は、1 行の入力欄です。フォーカスがあるとき、`ITextInput` が届ける文字と編集の操作（かな漢字変換を含む）を受けて、文字列を編集します。
@@ -221,4 +295,4 @@ UI の基本画像（窓・パネル・ボタンの 4 状態・チェック・�
 
 ## これから
 
-スタイルのテーマ、ツールチップ・ドロップダウン・入力欄の範囲選択とコピー・貼り付け・スクロールバーのドラッグ・横向きのリスト・行の高さが違うリスト、マークアップ（`.gxui`）での結び付けの指定（`{Binding ...}`）、マテリアルのブラシ（シェーダーでの表現）は、順に足していきます。
+スタイルのテーマ、ツールチップ・ドロップダウン・入力欄の範囲選択とコピー・貼り付け・スクロールバーのドラッグ・横向きのリスト・行の高さが違うリスト、マテリアルのブラシ（シェーダーでの表現）は、順に足していきます。
