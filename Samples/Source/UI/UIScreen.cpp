@@ -23,7 +23,8 @@ namespace
 		"Sword", "Shield", "Potion", "Bag", "Map", "Chest", "Gem", "Flame",
 		"Eye", "EyeClosed", "Lock", "Unlock", "Bell", "Mail", "Trophy", "Gamepad",
 	};
-	constexpr int32 IconColumns = 8;
+	constexpr int32 IconColumns = 4;
+	constexpr int32 NumListItems = 10000;
 	constexpr float32 IconCell = 56.0f;
 
 	// Canvas の中に、位置と大きさを決めて置く
@@ -257,7 +258,24 @@ TSharedPtr<CUIWidget> CUIScreen::BuildIconWindow( CAssetSubsystem& Assets, const
 
 	TSharedPtr<CUIStackPanel> Column = MakeStack( EUIOrientation::Vertical, 10.0f );
 	Window->AddChild( Column );
-	Column->AddChild( MakeLabel( Body, "Built-in icons (Engine:/Icons)", FColor32( 255, 226, 150 ) ) );
+	Column->AddChild( MakeLabel( Body, "Icons (scroll)            10000-row list", FColor32( 255, 226, 150 ) ) );
+
+	// 左: スクロール枠に入れたアイコン。右: 1 万行のリスト
+	TSharedPtr<CUIStackPanel> Row = MakeStack( EUIOrientation::Horizontal, 16.0f );
+	FUILayoutProperties RowLayout;
+	RowLayout.FixedHeight = 214.0f;
+	Row->SetLayout( RowLayout );
+	Column->AddChild( Row );
+
+	const FUIBrush BarTrack = FUIBrush::MakeSolid( FColor32( 255, 255, 255, 24 ), 4.0f );
+	const FUIBrush BarThumb = FUIBrush::MakeSolid( FColor32( 170, 185, 220, 210 ), 4.0f );
+
+	TSharedPtr<CUIScrollBox> Scroll = MakeShared<CUIScrollBox>();
+	Scroll->SetScrollBar( BarTrack, BarThumb, 8.0f );
+	FUILayoutProperties ScrollLayout;
+	ScrollLayout.FixedWidth = 244.0f;
+	Scroll->SetLayout( ScrollLayout );
+	Row->AddChild( Scroll );
 
 	TSharedPtr<CUIGridPanel> Grid = MakeShared<CUIGridPanel>();
 	TArray<FUITrack> Columns;
@@ -290,7 +308,33 @@ TSharedPtr<CUIWidget> CUIScreen::BuildIconWindow( CAssetSubsystem& Assets, const
 		Icon->SetLayout( Layout );
 		Grid->AddChild( Icon );
 	}
-	Column->AddChild( Grid );
+	Scroll->AddChild( Grid );
+
+	NameList = MakeShared<CUIListView>();
+	NameList->SetItemHeight( 28.0f );
+	NameList->SetScrollBar( BarTrack, BarThumb, 8.0f );
+	NameList->SetItemFactory(
+		[Body, this]() -> TSharedPtr<CUIWidget >
+		{
+			TSharedPtr<CUILabel> Label = MakeLabel( Body, "" );
+			FUILayoutProperties LabelLayout = Label->GetLayout();
+			LabelLayout.Padding = FUIMargin( 10.0f, 0.0f );
+			Label->SetLayout( LabelLayout );
+			return Label;
+		},
+		[]( CUIWidget& Item, int32 Index, bool bSelected )
+		{
+			CUILabel& Label = static_cast<CUILabel&>( Item );
+			Label.SetText( FString::Printf( "Item %d", Index + 1 ) );
+			Label.SetColor( bSelected ? FColor32( 255, 255, 255 ) : FColor32( 190, 200, 220 ) );
+			Label.SetBackground( bSelected ? FUIBrush::MakeSolid( FColor32( 60, 100, 170, 220 ), 4.0f ) : FUIBrush() );
+		} );
+	NameList->SetItemCount( NumListItems );
+	NameList->OnItemClicked.Add( [this]( CUIWidget&, int32 Index ) { SetStatus( *FString::Printf( "Item %d was clicked", Index + 1 ) ); } );
+	FUILayoutProperties ListLayout;
+	ListLayout.FixedWidth = 244.0f;
+	NameList->SetLayout( ListLayout );
+	Row->AddChild( NameList );
 	return Window;
 }
 

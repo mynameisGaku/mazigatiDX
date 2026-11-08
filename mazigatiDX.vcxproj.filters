@@ -802,6 +802,9 @@
     <ClCompile Include="Library\Framework\UI\Widgets\UIDisplayWidgets.cpp">
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\UI\Widgets\UIListView.cpp">
+      <Filter>Library\Framework\UI\Widgets</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\UI\Widgets\UIRenderTargetView.cpp">
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClCompile>
@@ -2818,6 +2821,9 @@
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\UI\Widgets\UIDisplayWidgets.h">
+      <Filter>Library\Framework\UI\Widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\UI\Widgets\UIListView.h">
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\UI\Widgets\UIRenderTargetView.h">

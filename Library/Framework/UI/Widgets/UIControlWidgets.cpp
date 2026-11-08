@@ -135,6 +135,18 @@ FUIRect CUISlider::GetHandleRect() const
 	return FUIRect( Box.Left() + ( Box.Size.x - Size.x ) * 0.5f, Box.Bottom() - Size.y - T * Usable, Size.x, Size.y );
 }
 
+FUIRect CUISlider::GetFillRect() const
+{
+	const FUIRect Area = GetRect().Deflate( Style.TrackInset ).Deflate( Style.FillInset );
+	const FVector2 Center = GetHandleRect().GetCenter();
+	if ( Orientation == EUIOrientation::Horizontal )
+	{
+		return FUIRect( Area.Left(), Area.Top(), NMath::Clamp( Center.x - Area.Left(), 0.0f, Area.Size.x ), Area.Size.y );
+	}
+	const float32 Height = NMath::Clamp( Area.Bottom() - Center.y, 0.0f, Area.Size.y );
+	return FUIRect( Area.Left(), Area.Bottom() - Height, Area.Size.x, Height );
+}
+
 void CUISlider::SetFromPosition( const FVector2& Position )
 {
 	const FUIRect Box = GetRect();
@@ -192,18 +204,8 @@ void CUISlider::OnPaint( FDrawContext& CommandList, float32 EffectiveOpacity )
 	const FUIRect Handle = GetHandleRect();
 	if ( !Style.Fill.IsEmpty() )
 	{
-		// 中身は、溝の端から、つまみの中心まで
-		FUIRect FillRect = Track;
-		if ( Orientation == EUIOrientation::Horizontal )
-		{
-			FillRect.Size.x = NMath::Max( 0.0f, Handle.GetCenter().x - Track.Left() );
-		}
-		else
-		{
-			FillRect.Position.y = Handle.GetCenter().y;
-			FillRect.Size.y = NMath::Max( 0.0f, Track.Bottom() - Handle.GetCenter().y );
-		}
-		NUIBrush::Draw( CommandList, Style.Fill, FillRect, EffectiveOpacity );
+		// 中身は、溝の端から、つまみの中心まで（溝の枠の内側）
+		NUIBrush::Draw( CommandList, Style.Fill, GetFillRect(), EffectiveOpacity );
 	}
 
 	const bool bActive = IsHovered() || IsPressed();

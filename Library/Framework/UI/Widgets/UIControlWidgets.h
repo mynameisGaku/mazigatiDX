@@ -94,6 +94,7 @@ struct FUISliderStyle
 	FUIBrush HandleHover;   // ホバー中・押下中のつまみ（空なら Handle）
 	FVector2 HandleSize = FVector2( 20.0f, 20.0f );
 	FUIMargin TrackInset;   // 溝の描く範囲を、矩形から内側へ縮める量（溝を、矩形より細くするとき）
+	FUIMargin FillInset;    // 中身（Fill）の描く範囲を、溝から内側へ縮める量（中身が、溝の枠・丸みの上に、はみ出さないように）
 };
 
 class CUISlider : public CUIWidget
@@ -118,8 +119,9 @@ public:
 	void SetStyle( const FUISliderStyle& InStyle ) { Style = InStyle; }
 	const FUISliderStyle& GetStyle() const { return Style; }
 
-	// つまみの矩形（確認や、独自の描き方に使える）
+	// つまみの矩形・中身（溝の端から、つまみの中心まで。FillInset だけ内側）の矩形（確認や、独自の描き方に使える）
 	FUIRect GetHandleRect() const;
+	FUIRect GetFillRect() const;
 
 	// 値が変わったとき（引数: この部品・新しい値）
 	TUIEvent<CUIWidget&, float32> OnValueChanged;

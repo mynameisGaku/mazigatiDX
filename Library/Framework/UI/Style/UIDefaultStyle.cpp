@@ -128,6 +128,8 @@ bool FUIDefaultStyle::Load( CAssetSubsystem& Assets, FUIDefaultStyle& OutStyle )
 	OutStyle.Slider.Handle = Loader.Stretched( "Slider_Handle.png" );
 	OutStyle.Slider.HandleHover = Loader.Stretched( "Slider_Handle.png", FColor32( 255, 235, 190, 255 ) );
 	OutStyle.Slider.HandleSize = FVector2( 20.0f, 20.0f );
+	// 溝の画像には、1 画素の枠と丸みがあるので、中身は、その内側に収める
+	OutStyle.Slider.FillInset = FUIMargin( 2.0f );
 
 	return Loader.bAllLoaded;
 }

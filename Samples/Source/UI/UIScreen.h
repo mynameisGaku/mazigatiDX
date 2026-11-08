@@ -7,6 +7,8 @@
 #include "Library/Framework/UI/Style/UIDefaultStyle.h"
 #include "Library/Framework/UI/Widgets/UIControlWidgets.h"
 #include "Library/Framework/UI/Widgets/UIDisplayWidgets.h"
+#include "Library/Framework/UI/Widgets/UIListView.h"
+#include "Library/Framework/UI/Widgets/UIScrollBox.h"
 #include "Library/Framework/UI/Widgets/UIRenderTargetView.h"
 
 //=============================================================================
@@ -14,7 +16,7 @@
 //   UI の部品で作った画面（1280 x 720）。エンジン組み込みの画像（Engine:/UI・Engine:/Icons）の既定のスタイルで、
 //     左: 設定の窓（チェックボックス・スライダー・プログレスバー・ボタン・ラベル）
 //     右上: 描画先（レンダーターゲット）を表示する部品（動くミニマップ。クリックした位置に印が付く）
-//     右下: アイコンの一覧
+//     右下: スクロール枠の中のアイコンの一覧（ホイールでスクロール）と、1 万行のリスト（見える分だけ作る。クリック・上下の矢印で選ぶ）
 //   入力は、ゲームの入力（IInput・IGamepadInput）から NUIInput::MakeFrame で UI の入力に直して、CUIContext へ渡す。
 //   マウス・矢印キー・Tab・Enter・Escape・パッドで操作できる。
 //=============================================================================
@@ -46,6 +48,7 @@ private:
 	TSharedPtr<CUICheckBox> MusicBox;
 	TSharedPtr<CUICheckBox> SoundBox;
 	TSharedPtr<CUIRenderTargetView> MinimapView;
+	TSharedPtr<CUIListView> NameList;
 
 	float32 ElapsedTime = 0.0f;
 	FVector2 Marker = FVector2( -1.0f, -1.0f );   // ミニマップに付けた印（描画先の座標。負なら、まだ無い）

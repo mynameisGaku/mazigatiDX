@@ -9,7 +9,7 @@
 |部品の木とレイアウト|`CUIWidget`（余白・寄せ方・最小 / 最大・固定の大きさ・不透明度・当たり判定）、`CUICanvasPanel`（アンカー）、`CUIStackPanel`（縦横）、`CUIGridPanel`（格子）|`Core`|
 |見た目|`FUIBrush`: 色（角丸・枠）・画像（引き伸ばし / 収める / 覆う / タイル / 9 分割）・コールバック・重ね|`Brush`|
 |入力|`CUIContext`（ホバー・押下・クリック・フォーカス・決定・戻る）、`NUIInput::MakeFrame`（ゲームの入力 → UI の入力）|`Core`|
-|部品|`CUIImage`・`CUILabel`・`CUIProgressBar`・`CUIButton`・`CUICheckBox`・`CUISlider`・`CUIScrollBox`・`CUIRenderTargetView`|`Widgets`|
+|部品|`CUIImage`・`CUILabel`・`CUIProgressBar`・`CUIButton`・`CUICheckBox`・`CUISlider`・`CUIScrollBox`・`CUIListView`・`CUIRenderTargetView`|`Widgets`|
 |画面のスタック|`CUIScreenStack`: 画面を積み重ねて、描く順と入力の行き先を決める（HUD・メニュー・ダイアログ）|`Core`|
 |既定のスタイル|`FUIDefaultStyle`: `EngineContent` の画像から作る、部品の既定の見た目|`Style`|
 
@@ -74,6 +74,27 @@ Root->Paint( CommandList );                                                // �
 - **スクロールバー**: `SetScrollBar( 溝, つまみ, 太さ )`。中身が収まらないときだけ、枠の端に出ます（つまみの長さは、見えている割合）。いまは、見せるだけです。
 - 量は `SetScrollOffset` / `GetScrollOffset` / `GetMaxScrollOffset`、画面の矩形を見える位置へ動かすには `ScrollIntoView`。
 
+## リスト（仮想化）
+
+`CUIListView` は、行が何千・何万あっても、見えている分だけの部品（行）を作って、スクロールで使い回します。行の中身は、ユーザーが決めます（部品を作る関数と、データを行へ入れる関数を渡す）。
+
+```cpp
+List->SetItemFactory(
+    []() -> TSharedPtr<CUIWidget> { return MakeShared<CUILabel>(); },        // 行の部品を作る（使い回すので、少ししか呼ばれない）
+    [&Names]( CUIWidget& Item, int32 Index, bool bSelected )                 // データを行へ入れる（行が別の番号に使われるたびに）
+    {
+        static_cast<CUILabel&>( Item ).SetText( Names[Index] );
+    } );
+List->SetItemCount( Names.Num() );
+List->OnSelectionChanged.Add( []( CUIWidget&, int32 Index ) { /* 選択が変わった */ } );
+List->OnItemClicked.Add( []( CUIWidget&, int32 Index ) { /* クリック・決定された */ } );
+```
+
+- 行の高さは、すべて同じ（`SetItemHeight`）。実体のある行は、高さ 120 のリストで 4〜5 個ほどです（`GetNumRealizedItems`）。
+- 選択は 1 つ（`SetSelectedIndex`。-1 は、なし）。クリックで選び、フォーカス中は上下の矢印で選びます（端では、フォーカスが外へ動く）。選んだ行は、見える位置までスクロールします。決定（Enter・A ボタン）は、選んでいる行のクリックです。
+- データが変わったら、`SetItemCount`（数が変わるとき）か `Refresh`（中身だけ変わるとき）。数が減って、選択やスクロールの量が範囲の外になったら、範囲に収めます。
+- ホイールとスクロールバーは、スクロール枠と同じです。
+
 ## 画面のスタックと、ゲームの入力
 
 `CUIScreenStack` は、画面（部品の木のルート）を積み重ねます。入力は、上の画面から先に渡し、上の画面が使った入力は、下の画面へは届きません。
@@ -122,4 +143,4 @@ UI の基本画像（窓・パネル・ボタンの 4 状態・チェック・�
 
 ## これから
 
-スタイルのテーマ、リスト（仮想化）・入力欄・ツールチップ・ドロップダウン・ダイアログ、スクロールバーのドラッグ、プロパティの結び付け（MVVM）、マークアップ（`.gxui`）、マテリアルのブラシ（シェーダーでの表現）は、順に足していきます。
+スタイルのテーマ、入力欄・ツールチップ・ドロップダウン・ダイアログ、スクロールバーのドラッグ、横向きのリスト・行の高さが違うリスト、プロパティの結び付け（MVVM）、マークアップ（`.gxui`）、マテリアルのブラシ（シェーダーでの表現）は、順に足していきます。
