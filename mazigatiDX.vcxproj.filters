@@ -781,6 +781,9 @@
     <ClCompile Include="Library\Framework\UI\Core\UIContext.cpp">
       <Filter>Library\Framework\UI\Core</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\UI\Core\UIInputBridge.cpp">
+      <Filter>Library\Framework\UI\Core</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\UI\Core\UIPanels.cpp">
       <Filter>Library\Framework\UI\Core</Filter>
     </ClCompile>
@@ -791,6 +794,9 @@
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\UI\Widgets\UIDisplayWidgets.cpp">
+      <Filter>Library\Framework\UI\Widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\UI\Widgets\UIRenderTargetView.cpp">
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\World\Definition\WorldAssetUse.cpp">
@@ -2781,6 +2787,9 @@
     <ClInclude Include="Library\Framework\UI\Core\UIEvent.h">
       <Filter>Library\Framework\UI\Core</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\UI\Core\UIInputBridge.h">
+      <Filter>Library\Framework\UI\Core</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\UI\Core\UIPanels.h">
       <Filter>Library\Framework\UI\Core</Filter>
     </ClInclude>
@@ -2794,6 +2803,9 @@
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\UI\Widgets\UIDisplayWidgets.h">
+      <Filter>Library\Framework\UI\Widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\UI\Widgets\UIRenderTargetView.h">
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\World\Definition\WorldAssetUse.h">

@@ -327,10 +327,12 @@
     <ClCompile Include="Library\Framework\Text\TextLayout.cpp" />
     <ClCompile Include="Library\Framework\UI\Brush\UIBrush.cpp" />
     <ClCompile Include="Library\Framework\UI\Core\UIContext.cpp" />
+    <ClCompile Include="Library\Framework\UI\Core\UIInputBridge.cpp" />
     <ClCompile Include="Library\Framework\UI\Core\UIPanels.cpp" />
     <ClCompile Include="Library\Framework\UI\Core\UIWidget.cpp" />
     <ClCompile Include="Library\Framework\UI\Widgets\UIControlWidgets.cpp" />
     <ClCompile Include="Library\Framework\UI\Widgets\UIDisplayWidgets.cpp" />
+    <ClCompile Include="Library\Framework\UI\Widgets\UIRenderTargetView.cpp" />
     <ClCompile Include="Library\Framework\World\Definition\WorldAssetUse.cpp" />
     <ClCompile Include="Library\Framework\World\Definition\WorldDefinition.cpp" />
     <ClCompile Include="Library\Framework\World\Definition\WorldEdit.cpp" />
@@ -995,11 +997,13 @@
     <ClInclude Include="Library\Framework\UI\Brush\UIBrush.h" />
     <ClInclude Include="Library\Framework\UI\Core\UIContext.h" />
     <ClInclude Include="Library\Framework\UI\Core\UIEvent.h" />
+    <ClInclude Include="Library\Framework\UI\Core\UIInputBridge.h" />
     <ClInclude Include="Library\Framework\UI\Core\UIPanels.h" />
     <ClInclude Include="Library\Framework\UI\Core\UITypes.h" />
     <ClInclude Include="Library\Framework\UI\Core\UIWidget.h" />
     <ClInclude Include="Library\Framework\UI\Widgets\UIControlWidgets.h" />
     <ClInclude Include="Library\Framework\UI\Widgets\UIDisplayWidgets.h" />
+    <ClInclude Include="Library\Framework\UI\Widgets\UIRenderTargetView.h" />
     <ClInclude Include="Library\Framework\World\Definition\WorldAssetUse.h" />
     <ClInclude Include="Library\Framework\World\Definition\WorldDefinition.h" />
     <ClInclude Include="Library\Framework\World\Definition\WorldEdit.h" />
