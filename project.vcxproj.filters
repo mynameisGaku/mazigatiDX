@@ -271,7 +271,13 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestUILayout.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestUIList.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
     <ClCompile Include="Source\SelfTest\AssetSelfTestUIRenderTarget.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestUIScreens.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
     <ClCompile Include="Source\SelfTest\AssetSelfTestUIWidgets.cpp">
@@ -636,7 +642,13 @@
     <ClInclude Include="Source\SelfTest\AssetSelfTestUILayout.h">
       <Filter>Source\SelfTest</Filter>
     </ClInclude>
+    <ClInclude Include="Source\SelfTest\AssetSelfTestUIList.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
     <ClInclude Include="Source\SelfTest\AssetSelfTestUIRenderTarget.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\AssetSelfTestUIScreens.h">
       <Filter>Source\SelfTest</Filter>
     </ClInclude>
     <ClInclude Include="Source\SelfTest\AssetSelfTestUIWidgets.h">
