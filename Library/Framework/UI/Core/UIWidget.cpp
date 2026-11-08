@@ -154,6 +154,23 @@ void CUIWidget::OnPaint( FDrawContext&, float32 )
 {
 }
 
+void CUIWidget::OnPointerPressed( const FVector2& )
+{
+}
+
+void CUIWidget::OnPointerDragged( const FVector2& )
+{
+}
+
+void CUIWidget::OnPointerReleased( const FVector2& )
+{
+}
+
+bool CUIWidget::OnNavigate( EUINavDirection )
+{
+	return false;
+}
+
 void CUIWidget::Paint( FDrawContext& CommandList )
 {
 	PaintRecursive( CommandList, 1.0f );

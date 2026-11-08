@@ -162,7 +162,7 @@ CUIWidget* CUIContext::FindNavigationTarget( CUIWidget& From, EUINavDirection Di
 	return FindNearestInDirection( From, Direction );
 }
 
-void CUIContext::Press( CUIWidget& Target )
+void CUIContext::Press( CUIWidget& Target, const FVector2& Position )
 {
 	Pressed = &Target;
 	Target.bPressed = true;
@@ -170,10 +170,11 @@ void CUIContext::Press( CUIWidget& Target )
 	{
 		SetFocus( &Target );
 	}
+	Target.OnPointerPressed( Position );
 	Target.OnPressed.Broadcast( Target );
 }
 
-void CUIContext::Release( CUIWidget* Over )
+void CUIContext::Release( CUIWidget* Over, const FVector2& Position )
 {
 	CUIWidget* Released = Pressed;
 	Pressed = nullptr;
@@ -182,6 +183,7 @@ void CUIContext::Release( CUIWidget* Over )
 		return;
 	}
 	Released->bPressed = false;
+	Released->OnPointerReleased( Position );
 	Released->OnReleased.Broadcast( *Released );
 	if ( Released == Over )
 	{
@@ -276,7 +278,7 @@ FUIInputResult CUIContext::Update( const FUIInputFrame& Frame )
 	{
 		if ( EventTarget != nullptr )
 		{
-			Press( *EventTarget );
+			Press( *EventTarget, Frame.PointerPosition );
 		}
 		else if ( !bTargetBlocked )
 		{
@@ -284,9 +286,14 @@ FUIInputResult CUIContext::Update( const FUIInputFrame& Frame )
 			SetFocus( nullptr );
 		}
 	}
+	// 押している間は、ポインターが外へ出ても、押した部品へ位置を届ける（スライダーのドラッグ）
+	if ( Pressed != nullptr && Frame.bPointerValid && Frame.bPointerDown && !bPressEdge )
+	{
+		Pressed->OnPointerDragged( Frame.PointerPosition );
+	}
 	if ( bReleaseEdge && Pressed != nullptr )
 	{
-		Release( EventTarget );
+		Release( EventTarget, Frame.PointerPosition );
 	}
 	if ( Frame.bPointerSecondaryDown && Hit != nullptr )
 	{
@@ -326,7 +333,11 @@ FUIInputResult CUIContext::Update( const FUIInputFrame& Frame )
 			else
 			{
 				const EUINavDirection Direction = Frame.bNavigateUp ? EUINavDirection::Up : ( Frame.bNavigateDown ? EUINavDirection::Down : ( Frame.bNavigateLeft ? EUINavDirection::Left : EUINavDirection::Right ) );
-				Next = FindNavigationTarget( *Focused, Direction );
+				// フォーカス中の部品が矢印を使うなら（スライダーの値の変更など）、フォーカスは動かさない
+				if ( !Focused->OnNavigate( Direction ) )
+				{
+					Next = FindNavigationTarget( *Focused, Direction );
+				}
 			}
 			if ( Next != nullptr && Next != Focused )
 			{

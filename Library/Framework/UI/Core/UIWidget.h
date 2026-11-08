@@ -171,6 +171,13 @@ protected:
 	// 内側の矩形 ContentRect（Padding を引いたもの）の中に、子を置く。既定は、子をすべて、いっぱいに置く
 	virtual void ArrangeChildren( const FUIRect& ContentRect );
 
+	// 入力の通知（CUIContext が呼ぶ。スライダーのように、ポインターの位置が要る部品が、受け取って使う。既定は何もしない）
+	virtual void OnPointerPressed( const FVector2& Position );   // 押した（この部品がポインターの対象になった）
+	virtual void OnPointerDragged( const FVector2& Position );   // 押している間、毎フレーム（ポインターが部品の外へ出ても、押している間は届く）
+	virtual void OnPointerReleased( const FVector2& Position );  // 離した
+	// フォーカス中に矢印が押されたとき、部品が使うか（true ならフォーカスは動かない。スライダーが左右で値を変えるときなど）
+	virtual bool OnNavigate( EUINavDirection Direction );
+
 	// 背景を描いたあとに、部品が自分の中身（文字・画像など）を描く。EffectiveOpacity は、親から掛け合わせた不透明度。既定は何もしない
 	virtual void OnPaint( FDrawContext& CommandList, float32 EffectiveOpacity );
 

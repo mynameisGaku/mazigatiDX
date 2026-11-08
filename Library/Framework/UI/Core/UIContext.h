@@ -81,8 +81,8 @@ private:
 	void CollectFocusable( CUIWidget& Widget, TArray<CUIWidget*>& OutList ) const;
 	CUIWidget* FindNavigationTarget( CUIWidget& From, EUINavDirection Direction ) const;
 	CUIWidget* FindNearestInDirection( CUIWidget& From, EUINavDirection Direction ) const;
-	void Press( CUIWidget& Target );
-	void Release( CUIWidget* Over );
+	void Press( CUIWidget& Target, const FVector2& Position );
+	void Release( CUIWidget* Over, const FVector2& Position );
 	void Activate( CUIWidget& Target );
 
 	TSharedPtr<CUIWidget> Root;
