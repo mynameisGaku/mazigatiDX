@@ -124,12 +124,12 @@ bool FUIDefaultStyle::Load( CAssetSubsystem& Assets, FUIDefaultStyle& OutStyle )
 	OutStyle.CheckBox.FocusOverlay = Loader.NineSlice( "Frame.png", FocusTint );
 
 	OutStyle.Slider.Track = Loader.NineSlice( "Slider_Track.png" );
-	OutStyle.Slider.Fill = Loader.NineSlice( "ProgressBar_Fill.png" );
+	OutStyle.Slider.Fill = Loader.NineSlice( "Slider_Fill.png" );
 	OutStyle.Slider.Handle = Loader.Stretched( "Slider_Handle.png" );
 	OutStyle.Slider.HandleHover = Loader.Stretched( "Slider_Handle.png", FColor32( 255, 235, 190, 255 ) );
 	OutStyle.Slider.HandleSize = FVector2( 20.0f, 20.0f );
-	// 溝の画像には、1 画素の枠と丸みがあるので、中身は、その内側に収める
-	OutStyle.Slider.FillInset = FUIMargin( 2.0f );
+	// 中身の画像は、溝の画像と同じ大きさで、枠の内側に収まる形なので、溝と同じ矩形に重ねる（縮めない）
+	OutStyle.Slider.FillInset = FUIMargin( 0.0f );
 
 	return Loader.bAllLoaded;
 }

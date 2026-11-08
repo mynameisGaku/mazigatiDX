@@ -97,6 +97,14 @@
                                                               0
                                                           ]
                                         },
+                   "Slider_Fill.png":  {
+                                           "NineSlice":  [
+                                                             8,
+                                                             0,
+                                                             8,
+                                                             0
+                                                         ]
+                                       },
                    "ProgressBar_Back.png":  {
                                                 "NineSlice":  [
                                                                   8,

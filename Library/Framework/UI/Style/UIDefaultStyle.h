@@ -33,7 +33,7 @@ struct FUIDefaultStyle
 	FUIBrush Shadow;            // 窓の下に敷く影（9 分割。窓より、四方に大きく描く）
 	FUIBrush ProgressBack;      // プログレスバーの背景（9 分割）
 	FUIBrush ProgressFill;      // プログレスバーの中身（9 分割）
-	FUIMargin ProgressInset = FUIMargin( 2.0f );   // 中身を、背景から内側へ縮める量
+	FUIMargin ProgressInset;    // 中身を、背景から内側へ縮める量（0。中身の画像が、背景の枠の内側に収まる形なので、縮めない）
 
 	// 画像から、既定の見た目を作る。1 つでも読めなかったら false
 	static bool Load( CAssetSubsystem& Assets, FUIDefaultStyle& OutStyle );

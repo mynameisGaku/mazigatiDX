@@ -126,6 +126,12 @@ $track.Graphics.FillPath((New-Object System.Drawing.SolidBrush((Get-Color 255 16
 $track.Graphics.DrawPath((New-Object System.Drawing.Pen((Get-Color 255 100 110 140), 1)), $trackPath)
 Save-Canvas $track 'Slider_Track.png'
 
+# スライダーの中身（溝と同じ 32 x 12 の画面。溝の枠の 1 画素内側に収まる。溝と同じ矩形に、重ねて描く）
+$sliderFill = New-Canvas 32 12
+$sliderFillPath = Get-RoundedPath 2 3 28 6 3
+$sliderFill.Graphics.FillPath((New-Object System.Drawing.Drawing2D.LinearGradientBrush((New-Object System.Drawing.RectangleF(0, 3, 32, 6)), (Get-Color 255 140 210 255), (Get-Color 255 70 140 230), 90.0)), $sliderFillPath)
+Save-Canvas $sliderFill 'Slider_Fill.png'
+
 $handle = New-Canvas 20 20
 $handle.Graphics.FillEllipse((New-Object System.Drawing.SolidBrush((Get-Color 255 210 220 245))), 2, 2, 16, 16)
 $handle.Graphics.DrawEllipse((New-Object System.Drawing.Pen((Get-Color 255 120 190 255), 2)), 2, 2, 16, 16)
@@ -179,6 +185,7 @@ $manifest = [ordered]@{
         'TextBox_Focused.png' = @{ NineSlice = @(8, 8, 8, 8) }
         'Shadow.png'          = @{ NineSlice = @(24, 24, 24, 24) }
         'Slider_Track.png'    = @{ NineSlice = @(8, 0, 8, 0) }
+        'Slider_Fill.png'     = @{ NineSlice = @(8, 0, 8, 0) }
         'ProgressBar_Back.png' = @{ NineSlice = @(8, 0, 8, 0) }
         'ProgressBar_Fill.png' = @{ NineSlice = @(8, 0, 8, 0) }
         'RoundedWhite.png'    = @{ NineSlice = @(11, 11, 11, 11) }
