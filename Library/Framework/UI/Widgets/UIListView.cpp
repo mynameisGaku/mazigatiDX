@@ -1,8 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "UIListView.h"
 
-#include <cmath>
-
 #include "Library/Core/Types/Numeric.h"
 
 CUIListView::CUIListView()
@@ -161,7 +159,7 @@ int32 CUIListView::IndexAtOffset( float32 Offset ) const
 	}
 	if ( !SizeProvider )
 	{
-		return NMath::Min( ItemCount - 1, static_cast<int32>( std::floor( Offset / ItemHeight ) ) );
+		return NMath::Min( ItemCount - 1, static_cast<int32>( NMath::Floor( Offset / ItemHeight ) ) );
 	}
 	EnsureOffsets();
 	// ItemOffsets[Index] <= Offset となる、最後の Index

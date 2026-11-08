@@ -1,8 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "UIMarkupLoader.h"
 
-#include <cstdlib>
-
 #include "Library/Core/Types/Numeric.h"
 
 namespace
@@ -16,18 +14,13 @@ namespace
 
 	bool ParseFloat( const FString& Text, float32& Out )
 	{
-		const FString Trimmed = Trim( Text );
-		if ( Trimmed.IsEmpty() )
+		// 前後の空白を除いて、全体が数のときだけ（FString::TryParseFloat）
+		const TOptional<float64> Value = Text.TryParseFloat();
+		if ( !Value.IsSet() )
 		{
 			return false;
 		}
-		char* End = nullptr;
-		const double Value = std::strtod( *Trimmed, &End );
-		if ( End == nullptr || *End != '\0' )
-		{
-			return false;
-		}
-		Out = static_cast<float32>( Value );
+		Out = static_cast<float32>( Value.GetValue() );
 		return true;
 	}
 

@@ -25,8 +25,8 @@ namespace
 		{
 			return Entries;
 		}
-		const std::string Text( reinterpret_cast<const char*>( Bytes.GetData() ), static_cast<size_t>( Bytes.Num() ) );
-		const NlohmannJson Document = NlohmannJson::parse( Text, nullptr, false, true );
+		const FString Text( reinterpret_cast<const char*>( Bytes.GetData() ), Bytes.Num() );
+		const NlohmannJson Document = NlohmannJson::parse( NJson::ToJsonString( Text ), nullptr, false, true );
 		if ( Document.is_discarded() || !Document.contains( "Images" ) || !Document["Images"].is_object() )
 		{
 			return Entries;

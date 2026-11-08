@@ -1,9 +1,8 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "UIControlWidgets.h"
 
-#include <cmath>
-
 #include "Library/Core/Types/Numeric.h"
+#include "Library/Math/MathUtils.h"
 
 //-----------------------------------------------------------------------------
 // CUIButton
@@ -107,7 +106,7 @@ void CUISlider::SetValue( float32 InValue, bool bNotify )
 	if ( Step > 0.0f )
 	{
 		// Minimum から Step ずつの刻みに丸める（最後が Maximum に届かない刻みでも、Maximum を超えない）
-		Next = Minimum + std::round( ( Next - Minimum ) / Step ) * Step;
+		Next = Minimum + NMath::Round( ( Next - Minimum ) / Step ) * Step;
 		Next = NMath::Clamp( Next, Minimum, Maximum );
 	}
 	if ( Next == Value )

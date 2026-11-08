@@ -1,7 +1,36 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "UIBrush.h"
 
+#include "Library/Framework/Engine/Engine.h"
+#include "Library/Framework/Material/MaterialSubsystem.h"
+
 #include "Library/Core/Types/Numeric.h"
+
+namespace
+{
+	// マテリアルのブラシへ渡す、部品の状態（スレッドごと）
+	thread_local FUIMaterialState CurrentMaterialState;
+}
+
+FUIMaterialStateScope::FUIMaterialStateScope( const FUIMaterialState& State )
+	: Previous( CurrentMaterialState )
+{
+	CurrentMaterialState = State;
+}
+
+FUIMaterialStateScope::~FUIMaterialStateScope()
+{
+	CurrentMaterialState = Previous;
+}
+
+FUIBrush FUIBrush::MakeMaterial( const TSharedPtr<CMaterial>& InMaterial, const FColor32& InTint )
+{
+	FUIBrush Brush;
+	Brush.Kind = EUIBrushKind::Material;
+	Brush.Material = InMaterial;
+	Brush.Color = InTint;
+	return Brush;
+}
 
 namespace
 {
@@ -220,6 +249,8 @@ bool FUIBrush::IsEmpty() const
 		return !Image || Color.a == 0;
 	case EUIBrushKind::Callback:
 		return !Paint;
+	case EUIBrushKind::Material:
+		return !Material || Color.a == 0;
 	case EUIBrushKind::Layered:
 	{
 		for ( int32 Index = 0; Index < Layers.Num(); ++Index )
@@ -324,6 +355,23 @@ void NUIBrush::Draw( FDrawContext& CommandList, const FUIBrush& Brush, const FUI
 		if ( Brush.Paint )
 		{
 			Brush.Paint( CommandList, Rect, NMath::Clamp( Opacity, 0.0f, 1.0f ) );
+		}
+		break;
+	case EUIBrushKind::Material:
+		if ( Brush.Material )
+		{
+			// 時間は、マテリアルのサブシステムから（無ければ 0）。部品の状態は、FUIMaterialStateScope から
+			FMaterialFrameState Frame;
+			if ( const CMaterialSubsystem* Materials = GetAppSubsystem<CMaterialSubsystem>() )
+			{
+				Frame = Materials->MakeFrameState();
+			}
+			Frame.Hover = CurrentMaterialState.Hover;
+			Frame.Press = CurrentMaterialState.Press;
+			Frame.Value = CurrentMaterialState.Value;
+			Frame.Enabled = CurrentMaterialState.Enabled;
+			CommandList.Blend( EDrawBlend::Alpha, 255 );
+			Brush.Material->DrawRect( CommandList, Rect.Left(), Rect.Top(), Rect.Size.x, Rect.Size.y, FColor32( Brush.Color.r, Brush.Color.g, Brush.Color.b, static_cast<uint8>( ToAlpha( Brush.Color, Opacity ) ) ), Frame );
 		}
 		break;
 	case EUIBrushKind::Layered:

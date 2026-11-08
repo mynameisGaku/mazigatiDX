@@ -1,15 +1,13 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "UIDisplayWidgets.h"
 
-#include <cmath>
-
 #include "Library/Core/Types/Numeric.h"
 
 namespace
 {
 	int32 FloorToInt( float32 Value )
 	{
-		return static_cast<int32>( std::floor( Value ) );
+		return static_cast<int32>( NMath::Floor( Value ) );
 	}
 
 	EDrawTextAlign ToTextAlign( EUIAlignment Alignment )

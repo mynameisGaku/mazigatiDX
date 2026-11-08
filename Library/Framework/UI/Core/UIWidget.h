@@ -206,6 +206,9 @@ protected:
 	// 子を描いたあと（クリップを戻したあと）に、部品が描く（スクロールバーなど、子の上に出すもの）。既定は何もしない
 	virtual void OnPaintOverlay( FDrawContext& CommandList, float32 EffectiveOpacity );
 
+	// マテリアルのブラシに渡す、部品の値（Value01。0〜1）。スライダー・プログレスバー・チェックボックスが、自分の値にする。既定は 0
+	virtual float32 GetBrushValue() const;
+
 	// 背景を描いたあとに、部品が自分の中身（文字・画像など）を描く。EffectiveOpacity は、親から掛け合わせた不透明度。既定は何もしない
 	virtual void OnPaint( FDrawContext& CommandList, float32 EffectiveOpacity );
 

@@ -592,6 +592,42 @@
     <ClCompile Include="Library\Framework\Job\JobSubsystem.cpp">
       <Filter>Library\Framework\Job</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Material\Material.cpp">
+      <Filter>Library\Framework\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Material\MaterialCompiler.cpp">
+      <Filter>Library\Framework\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Material\MaterialDefinition.cpp">
+      <Filter>Library\Framework\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Material\MaterialEval.cpp">
+      <Filter>Library\Framework\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Material\MaterialGraph.cpp">
+      <Filter>Library\Framework\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Material\MaterialHlsl.cpp">
+      <Filter>Library\Framework\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Material\MaterialInstance.cpp">
+      <Filter>Library\Framework\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Material\MaterialParameterCollection.cpp">
+      <Filter>Library\Framework\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Material\MaterialPreviewMesh.cpp">
+      <Filter>Library\Framework\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Material\MaterialSubsystem.cpp">
+      <Filter>Library\Framework\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Material\MaterialTypes.cpp">
+      <Filter>Library\Framework\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Material\PostProcessStack.cpp">
+      <Filter>Library\Framework\Material</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Movie\Movie.cpp">
       <Filter>Library\Framework\Movie</Filter>
     </ClCompile>
@@ -2531,6 +2567,45 @@
     </ClInclude>
     <ClInclude Include="Library\Framework\Job\JobSubsystem.h">
       <Filter>Library\Framework\Job</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Material\Material.h">
+      <Filter>Library\Framework\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Material\MaterialCompiler.h">
+      <Filter>Library\Framework\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Material\MaterialDefinition.h">
+      <Filter>Library\Framework\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Material\MaterialEval.h">
+      <Filter>Library\Framework\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Material\MaterialGraph.h">
+      <Filter>Library\Framework\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Material\MaterialHlsl.h">
+      <Filter>Library\Framework\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Material\MaterialInstance.h">
+      <Filter>Library\Framework\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Material\MaterialParameterCollection.h">
+      <Filter>Library\Framework\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Material\MaterialPreviewMesh.h">
+      <Filter>Library\Framework\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Material\MaterialProgram.h">
+      <Filter>Library\Framework\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Material\MaterialSubsystem.h">
+      <Filter>Library\Framework\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Material\MaterialTypes.h">
+      <Filter>Library\Framework\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Material\PostProcessStack.h">
+      <Filter>Library\Framework\Material</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Movie\Movie.h">
       <Filter>Library\Framework\Movie</Filter>
@@ -4858,6 +4933,9 @@
     </Filter>
     <Filter Include="Library\Framework\Job">
       <UniqueIdentifier>{7D8BE6D1-5987-EFE3-7845-5AD79F48D4EF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Material">
+      <UniqueIdentifier>{EE5879BA-F2B9-2469-43D7-24F37C4DE364}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\Movie">
       <UniqueIdentifier>{1E3A05B7-EB01-58E3-4280-B85818AA3FEF}</UniqueIdentifier>

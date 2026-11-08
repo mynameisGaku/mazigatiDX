@@ -100,6 +100,7 @@ public:
 
 protected:
 	void OnPaint( FDrawContext& CommandList, float32 EffectiveOpacity ) override;
+	float32 GetBrushValue() const override { return Value; }
 
 private:
 	float32 Value = 0.0f;

@@ -1,0 +1,91 @@
+{
+    "Format":  "gxmaterial",
+    "Version":  1,
+    "Name":  "Grayscale",
+    "Domain":  "PostProcess",
+    "Nodes":  [
+                  {
+                      "Id":  1,
+                      "Kind":  "SceneColor",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  2,
+                      "Kind":  "Mask",
+                      "Name":  "rgb",
+                      "Position":  [
+                                       210,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     1
+                                 ]
+                  },
+                  {
+                      "Id":  3,
+                      "Kind":  "Constant",
+                      "Value":  [
+                                    0.299,
+                                    0.587,
+                                    0.114
+                                ],
+                      "Components":  3,
+                      "Position":  [
+                                       420,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  4,
+                      "Kind":  "Dot",
+                      "Position":  [
+                                       630,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     2,
+                                     3
+                                 ]
+                  },
+                  {
+                      "Id":  5,
+                      "Kind":  "ScalarParameter",
+                      "Name":  "Intensity",
+                      "Value":  [
+                                    1
+                                ],
+                      "Position":  [
+                                       840,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  6,
+                      "Kind":  "Lerp",
+                      "Position":  [
+                                       1050,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     2,
+                                     4,
+                                     5
+                                 ]
+                  }
+              ],
+    "Outputs":  {
+                    "Color":  6
+                }
+}

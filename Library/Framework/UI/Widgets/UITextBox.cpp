@@ -1,8 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "UITextBox.h"
 
-#include <cmath>
-
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Render/Draw/DrawScopes.h"
 
@@ -343,8 +341,8 @@ void CUITextBox::OnPaint( FDrawContext& CommandList, float32 EffectiveOpacity )
 	}
 
 	// 文字・下線・カーソルは、欄の矩形でクリップ
-	FClipScope Clip( CommandList, static_cast<int32>( std::floor( Area.Left() ) ), static_cast<int32>( std::floor( Area.Top() ) ), static_cast<int32>( std::ceil( Area.Right() ) ),
-					 static_cast<int32>( std::ceil( Area.Bottom() ) ) );
+	FClipScope Clip( CommandList, static_cast<int32>( NMath::Floor( Area.Left() ) ), static_cast<int32>( NMath::Floor( Area.Top() ) ), static_cast<int32>( NMath::Ceil( Area.Right() ) ),
+					 static_cast<int32>( NMath::Ceil( Area.Bottom() ) ) );
 	const float32 OriginX = Area.Left() - ScrollX;
 
 	// 選んでいる範囲の背景（変換中は、出さない）
@@ -372,7 +370,7 @@ void CUITextBox::OnPaint( FDrawContext& CommandList, float32 EffectiveOpacity )
 			CommandList.Blend( EDrawBlend::Alpha, Alpha );
 			FTextLayoutOptions Options;
 			const FTextLayout Layout = Font->Layout( *Shown, Options );
-			Font->RecordLayout( CommandList, Layout, static_cast<int32>( std::floor( OriginX ) ), static_cast<int32>( std::floor( TextY ) ), Font->MeasureWidth( Shown ) + 2, TextColor, EDrawTextAlign::Left,
+			Font->RecordLayout( CommandList, Layout, static_cast<int32>( NMath::Floor( OriginX ) ), static_cast<int32>( NMath::Floor( TextY ) ), Font->MeasureWidth( Shown ) + 2, TextColor, EDrawTextAlign::Left,
 								FColor32( 0, 0, 0, 0 ) );
 		}
 	}

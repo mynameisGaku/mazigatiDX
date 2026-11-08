@@ -73,6 +73,7 @@ public:
 
 protected:
 	void OnPaint( FDrawContext& CommandList, float32 EffectiveOpacity ) override;
+	float32 GetBrushValue() const override { return bChecked ? 1.0f : 0.0f; }
 
 private:
 	FUICheckBoxStyle Style;
@@ -128,6 +129,7 @@ public:
 
 protected:
 	void OnPaint( FDrawContext& CommandList, float32 EffectiveOpacity ) override;
+	float32 GetBrushValue() const override { return GetNormalizedValue(); }
 	void OnPointerPressed( const FVector2& Position ) override;
 	void OnPointerDragged( const FVector2& Position ) override;
 	bool OnNavigate( EUINavDirection Direction ) override;

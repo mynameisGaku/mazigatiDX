@@ -1,8 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "UIWidget.h"
 
-#include <cmath>
-
 #include "Library/Core/Types/Numeric.h"
 
 namespace
@@ -171,6 +169,11 @@ bool CUIWidget::OnNavigate( EUINavDirection )
 	return false;
 }
 
+float32 CUIWidget::GetBrushValue() const
+{
+	return 0.0f;
+}
+
 bool CUIWidget::OwnsPointerAt( const FVector2& ) const
 {
 	return false;
@@ -223,15 +226,24 @@ void CUIWidget::PaintRecursive( FDrawContext& CommandList, float32 ParentOpacity
 		return;
 	}
 
-	NUIBrush::Draw( CommandList, Background, Rect, EffectiveOpacity );
-	OnPaint( CommandList, EffectiveOpacity );
+	{
+		// マテリアルのブラシが読む、部品の状態（ホバー・押下・値・使える）
+		FUIMaterialState MaterialState;
+		MaterialState.Hover = bHovered ? 1.0f : 0.0f;
+		MaterialState.Press = bPressed ? 1.0f : 0.0f;
+		MaterialState.Value = GetBrushValue();
+		MaterialState.Enabled = IsEffectivelyEnabled() ? 1.0f : 0.0f;
+		FUIMaterialStateScope StateScope( MaterialState );
+		NUIBrush::Draw( CommandList, Background, Rect, EffectiveOpacity );
+		OnPaint( CommandList, EffectiveOpacity );
+	}
 
 	// クリップは整数の範囲。矩形を含む最小の整数の範囲にする
 	bool bPushedClip = false;
 	if ( bClipChildren )
 	{
-		bPushedClip = CommandList.PushClip( static_cast<int32>( std::floor( Rect.Left() ) ), static_cast<int32>( std::floor( Rect.Top() ) ),
-											static_cast<int32>( std::ceil( Rect.Right() ) ), static_cast<int32>( std::ceil( Rect.Bottom() ) ) );
+		bPushedClip = CommandList.PushClip( static_cast<int32>( NMath::Floor( Rect.Left() ) ), static_cast<int32>( NMath::Floor( Rect.Top() ) ),
+											static_cast<int32>( NMath::Ceil( Rect.Right() ) ), static_cast<int32>( NMath::Ceil( Rect.Bottom() ) ) );
 	}
 	for ( int32 Index = 0; Index < Children.Num(); ++Index )
 	{

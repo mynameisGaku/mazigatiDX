@@ -1,0 +1,173 @@
+{
+    "Format":  "gxmaterial",
+    "Version":  1,
+    "Name":  "Pixelate",
+    "Domain":  "PostProcess",
+    "Nodes":  [
+                  {
+                      "Id":  1,
+                      "Kind":  "TexCoord",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  2,
+                      "Kind":  "ScalarParameter",
+                      "Name":  "Blocks",
+                      "Value":  [
+                                    96
+                                ],
+                      "Position":  [
+                                       210,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  3,
+                      "Kind":  "Multiply",
+                      "Position":  [
+                                       420,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     1,
+                                     2
+                                 ]
+                  },
+                  {
+                      "Id":  4,
+                      "Kind":  "Floor",
+                      "Position":  [
+                                       630,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     3
+                                 ]
+                  },
+                  {
+                      "Id":  5,
+                      "Kind":  "Constant",
+                      "Value":  [
+                                    0.5
+                                ],
+                      "Components":  1,
+                      "Position":  [
+                                       840,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  6,
+                      "Kind":  "Add",
+                      "Position":  [
+                                       1050,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     4,
+                                     5
+                                 ]
+                  },
+                  {
+                      "Id":  7,
+                      "Kind":  "Divide",
+                      "Position":  [
+                                       0,
+                                       110
+                                   ],
+                      "Inputs":  [
+                                     6,
+                                     2
+                                 ]
+                  },
+                  {
+                      "Id":  8,
+                      "Kind":  "SceneColor",
+                      "Position":  [
+                                       210,
+                                       110
+                                   ],
+                      "Inputs":  [
+                                     7
+                                 ]
+                  },
+                  {
+                      "Id":  9,
+                      "Kind":  "Mask",
+                      "Name":  "rgb",
+                      "Position":  [
+                                       420,
+                                       110
+                                   ],
+                      "Inputs":  [
+                                     8
+                                 ]
+                  },
+                  {
+                      "Id":  10,
+                      "Kind":  "SceneColor",
+                      "Position":  [
+                                       630,
+                                       110
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  11,
+                      "Kind":  "Mask",
+                      "Name":  "rgb",
+                      "Position":  [
+                                       840,
+                                       110
+                                   ],
+                      "Inputs":  [
+                                     10
+                                 ]
+                  },
+                  {
+                      "Id":  12,
+                      "Kind":  "ScalarParameter",
+                      "Name":  "Intensity",
+                      "Value":  [
+                                    1
+                                ],
+                      "Position":  [
+                                       1050,
+                                       110
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  13,
+                      "Kind":  "Lerp",
+                      "Position":  [
+                                       0,
+                                       220
+                                   ],
+                      "Inputs":  [
+                                     11,
+                                     9,
+                                     12
+                                 ]
+                  }
+              ],
+    "Outputs":  {
+                    "Color":  13
+                }
+}

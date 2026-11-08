@@ -1,0 +1,82 @@
+{
+    "Format":  "gxmaterial",
+    "Version":  1,
+    "Name":  "RimGlow",
+    "Domain":  "Surface",
+    "Shading":  "Unlit",
+    "Nodes":  [
+                  {
+                      "Id":  1,
+                      "Kind":  "VectorParameter",
+                      "Name":  "Color",
+                      "Value":  [
+                                    0.35,
+                                    0.75,
+                                    1,
+                                    1
+                                ],
+                      "Components":  4,
+                      "Color":  true,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  2,
+                      "Kind":  "Mask",
+                      "Name":  "xyz",
+                      "Position":  [
+                                       210,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     1
+                                 ]
+                  },
+                  {
+                      "Id":  3,
+                      "Kind":  "ScalarParameter",
+                      "Name":  "Exponent",
+                      "Value":  [
+                                    2.5
+                                ],
+                      "Position":  [
+                                       420,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  4,
+                      "Kind":  "Fresnel",
+                      "Position":  [
+                                       630,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     3
+                                 ]
+                  },
+                  {
+                      "Id":  5,
+                      "Kind":  "Multiply",
+                      "Position":  [
+                                       840,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     2,
+                                     4
+                                 ]
+                  }
+              ],
+    "Outputs":  {
+                    "Emissive":  5
+                }
+}

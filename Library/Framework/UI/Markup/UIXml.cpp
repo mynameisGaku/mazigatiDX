@@ -1,7 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "UIXml.h"
 
-#include <cstring>
+#include "Library/Core/Types/CString.h"
 
 namespace
 {
@@ -103,8 +103,8 @@ namespace
 
 		bool StartsWith( const char* Prefix ) const
 		{
-			const size_t Length = std::strlen( Prefix );
-			return static_cast<size_t>( End - Cursor ) >= Length && std::strncmp( Cursor, Prefix, Length ) == 0;
+			const size_t Length = NCString::Length( Prefix );
+			return static_cast<size_t>( End - Cursor ) >= Length && NCString::CompareN( Cursor, Prefix, Length ) == 0;
 		}
 
 		void Advance( int32 Count )
@@ -127,7 +127,7 @@ namespace
 		// 閉じの印 Terminator まで読み飛ばす（無ければ失敗）
 		void SkipUntil( const char* Terminator, const char* FailMessage )
 		{
-			const size_t Length = std::strlen( Terminator );
+			const size_t Length = NCString::Length( Terminator );
 			while ( Cursor < End )
 			{
 				if ( StartsWith( Terminator ) )

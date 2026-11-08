@@ -1,8 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "UIRenderTargetView.h"
 
-#include <cmath>
-
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Render/Draw/DrawScopes.h"
 
@@ -40,8 +38,8 @@ void CUIRenderTargetView::ComputeTargetSize( int32& OutWidth, int32& OutHeight )
 		OutHeight = 0;
 		return;
 	}
-	OutWidth = NMath::Clamp( static_cast<int32>( std::ceil( Size.x * ResolutionScale ) ), 1, MaxTargetSize );
-	OutHeight = NMath::Clamp( static_cast<int32>( std::ceil( Size.y * ResolutionScale ) ), 1, MaxTargetSize );
+	OutWidth = NMath::Clamp( static_cast<int32>( NMath::Ceil( Size.x * ResolutionScale ) ), 1, MaxTargetSize );
+	OutHeight = NMath::Clamp( static_cast<int32>( NMath::Ceil( Size.y * ResolutionScale ) ), 1, MaxTargetSize );
 }
 
 void CUIRenderTargetView::OnPaint( FDrawContext& CommandList, float32 EffectiveOpacity )

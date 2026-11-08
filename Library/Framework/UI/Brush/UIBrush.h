@@ -5,6 +5,7 @@
 #include "Library/Core/Interfaces/Render/IImage.h"
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Core/Types/Callable.h"
+#include "Library/Framework/Material/Material.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
 #include "Library/Framework/UI/Core/UITypes.h"
 #include "Library/Math/Color.h"
@@ -19,6 +20,7 @@
 //   FUIBrush::MakeNineSlice( Texture, FUIMargin( 12.0f ) )                                   // 9 分割（角は拡大せず、辺と中央を伸ばす）
 //   FUIBrush::MakeCallback( []( FDrawContext& CommandList, const FUIRect& Rect, float32 Opacity ) { ... } )   // 自由に描く
 //   FUIBrush::MakeLayered( { Back, Frame, Icon } )                                           // 重ねる（先のものが奥）
+//   FUIBrush::MakeMaterial( GlowMaterial )                                                   // マテリアル（UI ドメイン。シェーダーで、うにょうにょ・ビカビカ）
 //=============================================================================
 
 // 画像の貼り方
@@ -37,7 +39,8 @@ enum class EUIBrushKind : uint8
 	Solid,     // 単色の面（角丸・枠つき）
 	Image,     // 画像
 	Callback,  // 呼び出し側が、自由に記録する
-	Layered    // 複数のブラシを重ねる
+	Layered,   // 複数のブラシを重ねる
+	Material   // マテリアル（UI ドメインの CMaterial を、矩形に描く）
 };
 
 struct FUIBrush
@@ -63,6 +66,9 @@ struct FUIBrush
 
 	FPaintFunction Paint;                       // Callback
 	TArray<TSharedPtr<FUIBrush>> Layers;        // Layered（先のものが奥）
+	// Material: 描くマテリアル。色（Color）は、マテリアルの出力に掛ける（白なら、そのまま。アルファは、不透明度に掛かる）。
+	//   マテリアルの入力（HoverAmount・PressAmount・Value01・Enabled）は、このブラシを描く部品の状態（CUIWidget::PaintRecursive が決める）。時間は、CMaterialSubsystem の時間
+	TSharedPtr<CMaterial> Material;
 
 	// 何も描かないブラシか（None、色のアルファが 0 の面など、見えないものも含む）
 	bool IsEmpty() const;
@@ -76,6 +82,30 @@ struct FUIBrush
 	static FUIBrush MakeNineSlice( const TSharedPtr<IImage>& InImage, const FVector2& InImageSize, const FUIMargin& InMargin, const FColor32& InTint = FColor32( 255, 255, 255, 255 ) );
 	static FUIBrush MakeCallback( const FPaintFunction& InPaint );
 	static FUIBrush MakeLayered( const TArray<FUIBrush>& InLayers );
+	// UI ドメインの（または Particle の）マテリアル。それ以外のドメインのマテリアルは、描かれない
+	static FUIBrush MakeMaterial( const TSharedPtr<CMaterial>& InMaterial, const FColor32& InTint = FColor32( 255, 255, 255, 255 ) );
+};
+
+// マテリアルのブラシへ渡す、部品の状態
+struct FUIMaterialState
+{
+	float32 Hover = 0.0f;
+	float32 Press = 0.0f;
+	float32 Value = 0.0f;
+	float32 Enabled = 1.0f;
+};
+
+// この範囲（描くとき）の間、マテリアルのブラシに渡す部品の状態を決める（スレッドごと。範囲を出ると、前の状態へ戻る）。CUIWidget が、自分の背景と OnPaint を描くときに使う
+class FUIMaterialStateScope
+{
+public:
+	explicit FUIMaterialStateScope( const FUIMaterialState& State );
+	~FUIMaterialStateScope();
+	FUIMaterialStateScope( const FUIMaterialStateScope& ) = delete;
+	FUIMaterialStateScope& operator=( const FUIMaterialStateScope& ) = delete;
+
+private:
+	FUIMaterialState Previous;
 };
 
 //=============================================================================

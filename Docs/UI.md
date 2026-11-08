@@ -230,6 +230,10 @@ if ( Document.ReloadIfChanged( Assets, Context, Bindings ) )                // �
 - 作り直しが成功すると、古い木の結び付けは外れ、新しい木が結ばれます（1 つの文書に、専用の `CUIBindingSet` を 1 つ使ってください）。
 - 見本: サンプル `UI` の設定の窓は、`Samples/Assets/UI/Settings.gxui` に書いてあります。サンプルを動かしたまま、そのファイルを編集して保存すると、窓が作り直されます。
 
+## マテリアルのブラシ
+
+`FUIBrush::MakeMaterial( マテリアル )` は、UI ドメインのマテリアル（[Docs/MATERIAL.md](MATERIAL.md)）を、矩形に描くブラシです。シェーダーで、うにょうにょ・ビカビカさせられます。マテリアルの入力 `HoverAmount`・`PressAmount`・`Value01`・`Enabled` は、このブラシを描く部品の状態（ホバー・押下・スライダーなどの値・使えるか）で、`Time` は `CMaterialSubsystem` の時間です。ブラシの `Color` は、出力に掛ける色です。エンジン組み込みの `Engine:/Materials/UI/GlowButton`（ホバーで光る）・`Shimmer`（光の帯が流れる）が、すぐ使えます。
+
 ## テーマ
 
 見た目の「名前つきの値」（色・数・ブラシ・フォント・部品のスタイル）は、**テーマ**（`FUITheme`。`Library/Framework/UI/Style/UITheme.h`）にまとめられます。UI は、値そのものではなく、名前で参照します。テーマを差し替えれば、同じ UI の見た目が、まとめて変わります。
