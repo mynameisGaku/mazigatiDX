@@ -109,6 +109,11 @@ bool CUIContext::SetFocus( CUIWidget* Widget )
 	{
 		Focused->bFocused = true;
 		Focused->OnFocusGained.Broadcast( *Focused );
+		// 祖先に伝える（スクロール枠が、フォーカスした部品を見える位置へ動かす）
+		for ( CUIWidget* Ancestor = Focused->GetParent(); Ancestor != nullptr; Ancestor = Ancestor->GetParent() )
+		{
+			Ancestor->OnChildFocused( *Focused );
+		}
 	}
 	return true;
 }
@@ -252,6 +257,19 @@ FUIInputResult CUIContext::Update( const FUIInputFrame& Frame )
 	const bool bTargetBlocked = Target != nullptr && !Target->IsEffectivelyEnabled();
 	CUIWidget* EventTarget = ( Target != nullptr && !bTargetBlocked ) ? Target : nullptr;
 	Result.bPointerOverUI = Hit != nullptr;
+
+	// ホイール: 当たった部品から親へたどって、最初に使う部品へ（使えない部品は飛ばす）
+	if ( Hit != nullptr && Frame.WheelDelta != 0.0f )
+	{
+		for ( CUIWidget* Walk = Hit; Walk != nullptr; Walk = Walk->GetParent() )
+		{
+			if ( Walk->IsEffectivelyEnabled() && Walk->OnWheel( Frame.PointerPosition, Frame.WheelDelta ) )
+			{
+				Result.bWheelConsumed = true;
+				break;
+			}
+		}
+	}
 
 	// ホバーの出入り
 	if ( EventTarget != Hovered )

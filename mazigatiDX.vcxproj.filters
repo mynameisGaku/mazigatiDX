@@ -787,6 +787,9 @@
     <ClCompile Include="Library\Framework\UI\Core\UIPanels.cpp">
       <Filter>Library\Framework\UI\Core</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\UI\Core\UIScreenStack.cpp">
+      <Filter>Library\Framework\UI\Core</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\UI\Core\UIWidget.cpp">
       <Filter>Library\Framework\UI\Core</Filter>
     </ClCompile>
@@ -800,6 +803,9 @@
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\UI\Widgets\UIRenderTargetView.cpp">
+      <Filter>Library\Framework\UI\Widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\UI\Widgets\UIScrollBox.cpp">
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\World\Definition\WorldAssetUse.cpp">
@@ -2796,6 +2802,9 @@
     <ClInclude Include="Library\Framework\UI\Core\UIPanels.h">
       <Filter>Library\Framework\UI\Core</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\UI\Core\UIScreenStack.h">
+      <Filter>Library\Framework\UI\Core</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\UI\Core\UITypes.h">
       <Filter>Library\Framework\UI\Core</Filter>
     </ClInclude>
@@ -2812,6 +2821,9 @@
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\UI\Widgets\UIRenderTargetView.h">
+      <Filter>Library\Framework\UI\Widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\UI\Widgets\UIScrollBox.h">
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\World\Definition\WorldAssetUse.h">

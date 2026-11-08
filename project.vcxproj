@@ -163,6 +163,7 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestUIInputBridge.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestUIInputBridge.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestUILayout.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestUILayout.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestUIRenderTarget.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestUIRenderTarget.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestUIScreens.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestUIScreens.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestUIWidgets.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestUIWidgets.cpp')" />
     <ClCompile Include="Source\SelfTest\ConsoleSelfTest.cpp" Condition="Exists('Source\SelfTest\ConsoleSelfTest.cpp')" />
     <ClCompile Include="Source\SelfTest\EcsSelfTestScene.cpp" Condition="Exists('Source\SelfTest\EcsSelfTestScene.cpp')" />
@@ -287,6 +288,7 @@
     <ClInclude Include="Source\SelfTest\AssetSelfTestUIInputBridge.h" Condition="Exists('Source\SelfTest\AssetSelfTestUIInputBridge.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestUILayout.h" Condition="Exists('Source\SelfTest\AssetSelfTestUILayout.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestUIRenderTarget.h" Condition="Exists('Source\SelfTest\AssetSelfTestUIRenderTarget.h')" />
+    <ClInclude Include="Source\SelfTest\AssetSelfTestUIScreens.h" Condition="Exists('Source\SelfTest\AssetSelfTestUIScreens.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestUIWidgets.h" Condition="Exists('Source\SelfTest\AssetSelfTestUIWidgets.h')" />
     <ClInclude Include="Source\SelfTest\EcsSelfTestScene.h" Condition="Exists('Source\SelfTest\EcsSelfTestScene.h')" />
     <ClInclude Include="Source\SelfTest\WorldEditorSelfTestSupport.h" Condition="Exists('Source\SelfTest\WorldEditorSelfTestSupport.h')" />

@@ -9,7 +9,8 @@
 |部品の木とレイアウト|`CUIWidget`（余白・寄せ方・最小 / 最大・固定の大きさ・不透明度・当たり判定）、`CUICanvasPanel`（アンカー）、`CUIStackPanel`（縦横）、`CUIGridPanel`（格子）|`Core`|
 |見た目|`FUIBrush`: 色（角丸・枠）・画像（引き伸ばし / 収める / 覆う / タイル / 9 分割）・コールバック・重ね|`Brush`|
 |入力|`CUIContext`（ホバー・押下・クリック・フォーカス・決定・戻る）、`NUIInput::MakeFrame`（ゲームの入力 → UI の入力）|`Core`|
-|部品|`CUIImage`・`CUILabel`・`CUIProgressBar`・`CUIButton`・`CUICheckBox`・`CUISlider`・`CUIRenderTargetView`|`Widgets`|
+|部品|`CUIImage`・`CUILabel`・`CUIProgressBar`・`CUIButton`・`CUICheckBox`・`CUISlider`・`CUIScrollBox`・`CUIRenderTargetView`|`Widgets`|
+|画面のスタック|`CUIScreenStack`: 画面を積み重ねて、描く順と入力の行き先を決める（HUD・メニュー・ダイアログ）|`Core`|
 |既定のスタイル|`FUIDefaultStyle`: `EngineContent` の画像から作る、部品の既定の見た目|`Style`|
 
 ## 使い方
@@ -64,6 +65,35 @@ Root->Paint( CommandList );                                                // �
 - イベントは `TUIEvent`（`OnClicked`・`OnPressed`・`OnReleased`・`OnHoverBegin` など）。複数の受け手を登録でき、呼んでいる最中の登録・解除も安全です。
 - 木から外した・破棄した部品が、ホバー・押下・フォーカスに残っていても、安全に外されます。
 
+## スクロール枠
+
+`CUIScrollBox` は、中身（子）が枠より大きいとき、スクロールして見せます（縦・横）。子は、枠の矩形でクリップされます（外へはみ出した部分は、描かれず、当たりません）。
+
+- **ホイール**: 枠の上で回すと、`SetWheelStep`（既定 48 画素）ずつ動きます。動かせない（中身が収まっている）枠は、ホイールを使わずに、外側のスクロール枠へ伝えます。
+- **フォーカス**: 中の部品がフォーカスを得ると、その部品が見える位置まで、自動でスクロールします（矢印・Tab で動いても、見失いません）。
+- **スクロールバー**: `SetScrollBar( 溝, つまみ, 太さ )`。中身が収まらないときだけ、枠の端に出ます（つまみの長さは、見えている割合）。いまは、見せるだけです。
+- 量は `SetScrollOffset` / `GetScrollOffset` / `GetMaxScrollOffset`、画面の矩形を見える位置へ動かすには `ScrollIntoView`。
+
+## 画面のスタックと、ゲームの入力
+
+`CUIScreenStack` は、画面（部品の木のルート）を積み重ねます。入力は、上の画面から先に渡し、上の画面が使った入力は、下の画面へは届きません。
+
+```cpp
+CUIScreenStack Screens;
+Screens.SetArea( FUIRect( 0, 0, 1280, 720 ) );
+Screens.Push( Hud, FUIScreenOptions { false, false, false } );   // HUD: モーダルでなく、ゲームの入力も止めず、戻るでも閉じない
+const int32 Menu = Screens.Push( PauseMenu );                    // メニュー: モーダル・ゲームの入力を止める・Escape で閉じる
+
+const FUIScreenInputResult Result = Screens.Update( Frame );     // 毎フレーム（レイアウトも更新する）
+if ( !Result.bGameInputBlocked ) { /* ゲーム自身の入力 */ }
+Screens.Paint( CommandList );                                    // 下から順に描く
+```
+
+- **モーダル**（既定）の画面は、下の画面へ、ポインターもナビゲーションも渡しません。モーダルでない画面は、自分の部品の上にポインターが無いときだけ、ポインターを下へ渡します。ナビゲーション（矢印・Tab・決定・戻る）は、いちばん上の画面にだけ渡します。
+- **ゲームの入力を止めるか**は、`bGameInputBlocked` で分かります（止める画面がある・ポインターを UI が使っている・ナビゲーションやホイールを UI が使った）。メニューを開いている間は、攻撃が出ません。
+- 戻る（Escape・B ボタン）で、いちばん上の画面が `bPopOnCancel` なら、その画面が外れます（`OnPopped( 画面の番号 )`）。外れた画面の部品は、ホバー・フォーカスを失います。
+- 画面ごとにコンテキスト（ホバー・フォーカス）を持ちます（`FindContext( 番号 )`）。
+
 ## 描画先（レンダーターゲット）を表示する
 
 `CUIRenderTargetView` は、描画先を、ウィジェットとして表示します（ミニマップ・3D のプレビュー・キャラクターの立ち絵・ワールドの中のモニターなど）。
@@ -92,4 +122,4 @@ UI の基本画像（窓・パネル・ボタンの 4 状態・チェック・�
 
 ## これから
 
-スタイルのテーマ、スクロール枠・リスト・入力欄・ツールチップ、入力の文脈（メニューを開いている間は、ゲームの入力を止める）、プロパティの結び付け（MVVM）、マークアップ（`.gxui`）、マテリアルのブラシ（シェーダーでの表現）は、順に足していきます。
+スタイルのテーマ、リスト（仮想化）・入力欄・ツールチップ・ドロップダウン・ダイアログ、スクロールバーのドラッグ、プロパティの結び付け（MVVM）、マークアップ（`.gxui`）、マテリアルのブラシ（シェーダーでの表現）は、順に足していきます。

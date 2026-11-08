@@ -68,6 +68,7 @@ FUIInputFrame NUIInput::MakeFrame( const IKeyboardInput* Keyboard, const IMouseI
 		Frame.PointerPosition = FVector2( static_cast<float32>( State.X ), static_cast<float32>( State.Y ) );
 		Frame.bPointerDown = Frame.bPointerValid && Mouse->IsMouseButtonDown( EMouseButton::Left );
 		Frame.bPointerSecondaryDown = Frame.bPointerValid && Mouse->IsMouseButtonDown( EMouseButton::Right );
+		Frame.WheelDelta = Frame.bPointerValid ? State.WheelY : 0.0f;
 	}
 
 	// キーボード

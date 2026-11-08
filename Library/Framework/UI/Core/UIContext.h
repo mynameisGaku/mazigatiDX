@@ -15,6 +15,7 @@ struct FUIInputFrame
 	FVector2 PointerPosition = FVector2( 0.0f, 0.0f );
 	bool bPointerValid = true;
 	bool bPointerDown = false;      // 主ボタン（左・タッチ）
+	float32 WheelDelta = 0.0f;      // このフレームのホイールの回転（上へ回すと正。1 段が 1）。ポインターが有効なときだけ使う
 	bool bPointerSecondaryDown = false; // 副ボタン（右）。いまはイベントを起こさず、「UI の上で押された」の判定にだけ使う
 
 	// ナビゲーション（このフレームで押された）
@@ -35,6 +36,7 @@ struct FUIInputResult
 	bool bPointerCaptured = false;      // 部品を押している最中（ドラッグ中）
 	bool bNavigationConsumed = false;   // ナビゲーション・決定・戻るを、UI が使った（フォーカスを動かした・決定した・戻るの受け手がいた）
 	bool bCancelRequested = false;      // 戻るが押された（受け手の有無に関わらず）
+	bool bWheelConsumed = false;        // ホイールを、UI の部品（スクロール枠など）が使った
 
 	// ポインターの入力を、UI が使っているか（ゲームの側が、クリックなどを無視するかの判断に）
 	bool ConsumesPointer() const { return bPointerOverUI || bPointerCaptured; }

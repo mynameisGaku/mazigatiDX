@@ -178,6 +178,14 @@ protected:
 	// フォーカス中に矢印が押されたとき、部品が使うか（true ならフォーカスは動かない。スライダーが左右で値を変えるときなど）
 	virtual bool OnNavigate( EUINavDirection Direction );
 
+	// ポインターの上でホイールが回ったとき、この部品（または、当たった部品の祖先）が使うか。true なら、ホイールを使った扱い（親へは伝えない）。
+	// Delta は、回した量（上へ回すと正。1 段が 1）。スクロール枠などが使う。既定は false
+	virtual bool OnWheel( const FVector2& Position, float32 Delta );
+	// 子孫の部品がフォーカスを得たとき、祖先に伝わる（スクロール枠が、フォーカスした部品を見える位置へ動かす）。既定は何もしない
+	virtual void OnChildFocused( CUIWidget& Child );
+	// 子を描いたあと（クリップを戻したあと）に、部品が描く（スクロールバーなど、子の上に出すもの）。既定は何もしない
+	virtual void OnPaintOverlay( FDrawContext& CommandList, float32 EffectiveOpacity );
+
 	// 背景を描いたあとに、部品が自分の中身（文字・画像など）を描く。EffectiveOpacity は、親から掛け合わせた不透明度。既定は何もしない
 	virtual void OnPaint( FDrawContext& CommandList, float32 EffectiveOpacity );
 

@@ -171,6 +171,19 @@ bool CUIWidget::OnNavigate( EUINavDirection )
 	return false;
 }
 
+bool CUIWidget::OnWheel( const FVector2&, float32 )
+{
+	return false;
+}
+
+void CUIWidget::OnChildFocused( CUIWidget& )
+{
+}
+
+void CUIWidget::OnPaintOverlay( FDrawContext&, float32 )
+{
+}
+
 void CUIWidget::Paint( FDrawContext& CommandList )
 {
 	PaintRecursive( CommandList, 1.0f );
@@ -209,6 +222,7 @@ void CUIWidget::PaintRecursive( FDrawContext& CommandList, float32 ParentOpacity
 	{
 		CommandList.PopClip();
 	}
+	OnPaintOverlay( CommandList, EffectiveOpacity );
 }
 
 bool CUIWidget::IsEffectivelyEnabled() const
