@@ -39,6 +39,8 @@ private:
 	void Build();
 	TSharedPtr<CUIWidget> BuildSettingsWindow( CAssetSubsystem& Assets, const TSharedPtr<CFont>& Body, const TSharedPtr<CFont>& Title );
 	void ReloadSettingsWindow();
+	void ReplaceSettingsWindow();
+	void NextTheme();
 	TSharedPtr<CUIWidget> BuildViewWindow( CAssetSubsystem& Assets, const TSharedPtr<CFont>& Body );
 	TSharedPtr<CUIWidget> BuildIconWindow( CAssetSubsystem& Assets, const TSharedPtr<CFont>& Body );
 	TSharedPtr<CUILabel> MakeLabel( const TSharedPtr<CFont>& Font, const char* Text, const FColor32& Color = FColor32( 235, 238, 245 ) );
@@ -56,6 +58,9 @@ private:
 	CUIMarkupDocument SettingsDocument;             // 設定の窓のマークアップ（Assets/UI/Settings.gxui。保存すると作り直す）
 	TSharedPtr<CUIWidget> SettingsWindow;
 	float32 ReloadTimer = 0.0f;
+	TArray<TSharedPtr<FUITheme>> Themes;            // 基本のテーマと、色だけ変えた子のテーマ
+	int32 ThemeIndex = 0;
+	bool bThemeChangePending = false;
 	CUIScreenStack Screens;                         // 画面のスタック: 下は、この画面。確認のダイアログが、上に積まれる
 	TSharedPtr<CFont> BodyFont;
 	TSharedPtr<CFont> TitleFont;

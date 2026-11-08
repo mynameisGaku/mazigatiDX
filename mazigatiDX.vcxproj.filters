@@ -808,6 +808,9 @@
     <ClCompile Include="Library\Framework\UI\Style\UIDefaultStyle.cpp">
       <Filter>Library\Framework\UI\Style</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\UI\Style\UITheme.cpp">
+      <Filter>Library\Framework\UI\Style</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\UI\Widgets\UIControlWidgets.cpp">
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClCompile>
@@ -2848,6 +2851,9 @@
       <Filter>Library\Framework\UI\Markup</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\UI\Style\UIDefaultStyle.h">
+      <Filter>Library\Framework\UI\Style</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\UI\Style\UITheme.h">
       <Filter>Library\Framework\UI\Style</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\UI\Widgets\UIControlWidgets.h">

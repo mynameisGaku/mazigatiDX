@@ -1,38 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- サンプル UI の設定の窓。ビューモデルの値は {Binding 名前}、フォント・ブラシ・スタイルは名前で、コードから渡している。
+<!-- サンプル UI の設定の窓。ビューモデルの値は {Binding 名前}、色・数は @名前（テーマ）、フォント・ブラシ・スタイルも名前（テーマ）で書いてある。
+     Theme ボタンでテーマを替えると、同じこのファイルから、色の違う窓が作り直される。
      このファイルを保存すると、動いているサンプルの窓が、作り直される（ホットリロード）。 -->
 <Panel Name="SettingsWindow" Background="Window" Padding="28,24">
-  <VerticalStack Spacing="18">
-    <Label Text="Settings" Font="Title" Color="#FFE296" HAlign="Start" VAlign="Center" />
+  <VerticalStack Spacing="@Spacing">
+    <Label Text="Settings" Font="Title" Color="@Accent" HAlign="Start" VAlign="Center" />
 
-    <HorizontalStack Spacing="14" Height="28">
+    <HorizontalStack Spacing="@Gap" Height="28">
       <CheckBox Name="MusicBox" Checked="{Binding Music}" Style="Default" Width="28" Height="28" HAlign="Start" VAlign="Center" />
-      <Label Text="Music" Font="Body" Color="#EBEEF5" HAlign="Start" VAlign="Center" />
+      <Label Text="Music" Font="Body" Color="@Text" HAlign="Start" VAlign="Center" />
     </HorizontalStack>
-    <HorizontalStack Spacing="14" Height="28">
+    <HorizontalStack Spacing="@Gap" Height="28">
       <CheckBox Name="SoundBox" Checked="{Binding Sound}" Style="Default" Width="28" Height="28" HAlign="Start" VAlign="Center" />
-      <Label Text="Sound effects" Font="Body" Color="#EBEEF5" HAlign="Start" VAlign="Center" />
+      <Label Text="Sound effects" Font="Body" Color="@Text" HAlign="Start" VAlign="Center" />
     </HorizontalStack>
 
-    <HorizontalStack Spacing="14" Height="28">
-      <Label Text="Volume" Font="Body" Color="#EBEEF5" HAlign="Start" VAlign="Center" />
-      <Label Text="{Binding VolumeText}" Font="Body" Color="#B4DCFF" HAlign="Start" VAlign="Center" />
+    <HorizontalStack Spacing="@Gap" Height="28">
+      <Label Text="Volume" Font="Body" Color="@Text" HAlign="Start" VAlign="Center" />
+      <Label Text="{Binding VolumeText}" Font="Body" Color="@Value" HAlign="Start" VAlign="Center" />
     </HorizontalStack>
     <Slider Name="VolumeSlider" Value="{Binding Volume}" Min="0" Max="100" Step="5" Height="28" Style="Thin" />
     <ProgressBar Name="VolumeBar" Value="{Binding VolumeRatio}" Back="ProgressBack" Fill="ProgressFill" Height="18" />
 
-    <HorizontalStack Spacing="14" Height="38">
-      <Label Text="Name" Font="Body" Color="#EBEEF5" HAlign="Start" VAlign="Center" />
-      <TextBox Name="NameBox" Text="{Binding Name}" Placeholder="Type your name" MaxLength="16" Font="Body" Style="Name"
+    <HorizontalStack Spacing="@Gap" Height="38">
+      <Label Text="Name" Font="Body" Color="@Text" HAlign="Start" VAlign="Center" />
+      <TextBox Name="NameBox" Text="{Binding Name}" Placeholder="Type your name" MaxLength="16" Font="Body" Style="Default"
                Weight="1" Height="38" VAlign="Center" OnSubmitted="NameSubmitted" OnCancelled="NameCancelled" />
     </HorizontalStack>
 
     <HorizontalStack Spacing="12" Height="44">
-      <Button Name="Ok" Text="OK" Font="Body" TextColor="#EBEEF5" Width="120" Height="44" VAlign="Center" Style="Default" OnClicked="OkClicked" />
-      <Button Name="Cancel" Text="Cancel" Font="Body" TextColor="#EBEEF5" Width="120" Height="44" VAlign="Center" Style="Default" OnClicked="CancelClicked" />
-      <Button Name="Reset" Text="Reset" Font="Body" TextColor="#EBEEF5" Width="120" Height="44" VAlign="Center" Style="Default" Command="{Binding Reset}" />
+      <Button Name="Ok" Text="OK" Font="Body" TextColor="@Text" Width="108" Height="44" VAlign="Center" Style="Default" OnClicked="OkClicked" />
+      <Button Name="Cancel" Text="Cancel" Font="Body" TextColor="@Text" Width="108" Height="44" VAlign="Center" Style="Default" OnClicked="CancelClicked" />
+      <Button Name="Reset" Text="Reset" Font="Body" TextColor="@Text" Width="108" Height="44" VAlign="Center" Style="Default" Command="{Binding Reset}" />
+      <Button Name="Theme" Text="Theme" Font="Body" TextColor="@Accent" Width="108" Height="44" VAlign="Center" Style="Default" OnClicked="NextTheme" />
     </HorizontalStack>
 
-    <Label Name="StatusLabel" Text="{Binding Status}" Font="Body" Color="#96A0B4" WrapWidth="480" HAlign="Start" VAlign="Center" />
+    <Label Name="StatusLabel" Text="{Binding Status}" Font="Body" Color="@TextMuted" WrapWidth="480" HAlign="Start" VAlign="Center" />
   </VerticalStack>
 </Panel>

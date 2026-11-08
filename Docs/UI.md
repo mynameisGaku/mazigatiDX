@@ -12,6 +12,7 @@
 |部品|`CUIImage`・`CUILabel`・`CUIProgressBar`・`CUIButton`・`CUICheckBox`・`CUISlider`・`CUIScrollBox`・`CUIListView`・`CUITextBox`（入力欄）・`CUIDialog`（確認のダイアログ）・`CUIRenderTargetView`|`Widgets`|
 |画面のスタック|`CUIScreenStack`: 画面を積み重ねて、描く順と入力の行き先を決める（HUD・メニュー・ダイアログ）|`Core`|
 |結び付け|`TObservable` / `TObservableArray` / `FUICommand`（ビューモデルの値・配列・操作）と、`CUIBindingSet`（部品との結び付け）|`Binding`|
+|テーマ|`FUITheme`（名前つきの色・数・ブラシ・フォント・スタイル。親を持てる）。`FUIDefaultStyle::MakeTheme` が基本のテーマを作る|`Style`|
 |マークアップ|`NUIXml`（XML の読み取り）・`CUIMarkupLoader`（XML から部品の木を作る）・`CUIMarkupDocument`（`.gxui` ファイルの読み込みとホットリロード）|`Markup`|
 |既定のスタイル|`FUIDefaultStyle`: `EngineContent` の画像から作る、部品の既定の見た目|`Style`|
 
@@ -227,6 +228,31 @@ if ( Document.ReloadIfChanged( Assets, Context, Bindings ) )                // �
 - 作り直しが成功すると、古い木の結び付けは外れ、新しい木が結ばれます（1 つの文書に、専用の `CUIBindingSet` を 1 つ使ってください）。
 - 見本: サンプル `UI` の設定の窓は、`Samples/Assets/UI/Settings.gxui` に書いてあります。サンプルを動かしたまま、そのファイルを編集して保存すると、窓が作り直されます。
 
+## テーマ
+
+見た目の「名前つきの値」（色・数・ブラシ・フォント・部品のスタイル）は、**テーマ**（`FUITheme`。`Library/Framework/UI/Style/UITheme.h`）にまとめられます。UI は、値そのものではなく、名前で参照します。テーマを差し替えれば、同じ UI の見た目が、まとめて変わります。
+
+```cpp
+TSharedPtr<FUITheme> Base = Style.MakeTheme( BodyFont, TitleFont );     // FUIDefaultStyle から、基本のテーマ
+Base->SetColor( "Danger", FColor32( 255, 120, 120 ) );                  // 自分の名前を足す
+TSharedPtr<FUITheme> Blue = MakeShared<FUITheme>();
+Blue->SetParent( Base );                                                // 親: 名前が自分に無ければ、親で探す
+Blue->SetColor( "Accent", FColor32( 130, 190, 255 ) );                  // 違うところだけ上書き
+Context.SetTheme( Blue );                                               // マークアップの文脈へ
+```
+
+- **名前の種類**: 色（`SetColor`）・数（`SetNumber`: 余白や間隔など）・ブラシ・フォント・ボタン／チェックボックス／スライダー／入力欄のスタイル。種類ごとに、別の名前の置き場です。大文字と小文字は区別します。
+- **継承**: テーマは、親のテーマを持てます（親の親へも）。基本のテーマを作り、子で変えたいところだけを上書きします。輪になる親（自分を祖先に持つテーマ）は、`SetParent` が断ります。
+- **基本のテーマ**: `FUIDefaultStyle::MakeTheme` が作ります。
+  - ブラシ: `Window` `Panel` `Frame` `Tooltip` `TextBox` `TextBoxFocused` `Shadow` `ProgressBack` `ProgressFill`
+  - スタイル: ボタン・チェックボックス・スライダー・入力欄の `Default`
+  - 色: `Text` `TextMuted` `Accent` `Value` `Error`
+  - 数: `Gap`（14）`Spacing`（18）
+  - フォント: `Body` `Title`（渡したとき）
+- **マークアップでの使い方**: 色と数の属性に、`@名前` と書けます（`Color="@Accent"`、`Spacing="@Gap"`、`Width="@Gap"`、`Background="@Panel"` など）。フォント・ブラシ・スタイルの名前は、**文脈に登録したものを先に**、無ければテーマから探します。テーマに無い `@名前` は、**失敗**です（名前と行番号つき）。余白（`Padding` など、数が 1〜4 個のもの）には、`@` は使えません。
+- **テーマの切り替え**: 文脈のテーマを替えて、`CUIMarkupDocument::Rebuild` で作り直すと、同じ `.gxui` が別の見た目になります（`ReloadIfChanged` は、ファイルの中身が同じなら作り直さないので、テーマの切り替えには、`Rebuild` を使います）。ボタンの処理の最中に窓ごと作り直すと危ないので、印だけ付けて、次の更新で作り直します。
+- 見本: サンプル `UI` の **Theme** ボタンが、基本・Blue・Green・Rose の順に切り替えます（子のテーマが、`Accent` と `Value` だけ上書きしています）。起動の引数 `--theme-steps=N` で、N 回進めた状態から始められます。
+
 ## 入力欄（文字入力）
 
 `CUITextBox` は、1 行の入力欄です。フォーカスがあるとき、`ITextInput` が届ける文字と編集の操作（かな漢字変換を含む）を受けて、文字列を編集します。
@@ -315,4 +341,4 @@ UI の基本画像（窓・パネル・ボタンの 4 状態・チェック・�
 
 ## これから
 
-スタイルのテーマ、ツールチップ・ドロップダウン・入力欄の範囲選択とコピー・貼り付け・スクロールバーのドラッグ・横向きのリスト・行の高さが違うリスト、マテリアルのブラシ（シェーダーでの表現）は、順に足していきます。
+テーマの JSON ファイル、状態ごとのスタイル、ツールチップ・ドロップダウン・入力欄の範囲選択とコピー・貼り付け・スクロールバーのドラッグ・横向きのリスト・行の高さが違うリスト、マテリアルのブラシ（シェーダーでの表現）は、順に足していきます。

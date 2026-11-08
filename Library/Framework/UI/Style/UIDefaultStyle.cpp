@@ -133,3 +133,44 @@ bool FUIDefaultStyle::Load( CAssetSubsystem& Assets, FUIDefaultStyle& OutStyle )
 
 	return Loader.bAllLoaded;
 }
+
+TSharedPtr<FUITheme> FUIDefaultStyle::MakeTheme( const TSharedPtr<CFont>& Body, const TSharedPtr<CFont>& Title ) const
+{
+	TSharedPtr<FUITheme> Theme = MakeShared<FUITheme>();
+	Theme->SetName( "Default" );
+	Theme->SetBrush( "Window", Window );
+	Theme->SetBrush( "Panel", Panel );
+	Theme->SetBrush( "Frame", Frame );
+	Theme->SetBrush( "Tooltip", Tooltip );
+	Theme->SetBrush( "TextBox", TextBox );
+	Theme->SetBrush( "TextBoxFocused", TextBoxFocused );
+	Theme->SetBrush( "Shadow", Shadow );
+	Theme->SetBrush( "ProgressBack", ProgressBack );
+	Theme->SetBrush( "ProgressFill", ProgressFill );
+
+	Theme->SetButtonStyle( "Default", Button );
+	Theme->SetCheckBoxStyle( "Default", CheckBox );
+	Theme->SetSliderStyle( "Default", Slider );
+	FUITextBoxStyle TextBoxStyle;
+	TextBoxStyle.Normal = TextBox;
+	TextBoxStyle.Focused = TextBoxFocused;
+	TextBoxStyle.Disabled = TextBox;
+	Theme->SetTextBoxStyle( "Default", TextBoxStyle );
+
+	Theme->SetColor( "Text", FColor32( 235, 238, 245, 255 ) );
+	Theme->SetColor( "TextMuted", FColor32( 150, 160, 180, 255 ) );
+	Theme->SetColor( "Accent", FColor32( 255, 226, 150, 255 ) );
+	Theme->SetColor( "Value", FColor32( 180, 220, 255, 255 ) );
+	Theme->SetColor( "Error", FColor32( 255, 150, 150, 255 ) );
+	Theme->SetNumber( "Gap", 14.0f );
+	Theme->SetNumber( "Spacing", 18.0f );
+	if ( Body )
+	{
+		Theme->SetFont( "Body", Body );
+	}
+	if ( Title )
+	{
+		Theme->SetFont( "Title", Title );
+	}
+	return Theme;
+}

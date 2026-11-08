@@ -121,27 +121,41 @@ void CUIScreen::SetStatus( const char* Text )
 
 TSharedPtr<CUIWidget> CUIScreen::BuildSettingsWindow( CAssetSubsystem& Assets, const TSharedPtr<CFont>& Body, const TSharedPtr<CFont>& Title )
 {
-	// 設定の窓は、マークアップ（Assets/UI/Settings.gxui）に書いてある。使う名前だけ、ここで渡す
-	MarkupContext.RegisterFont( "Body", Body );
-	MarkupContext.RegisterFont( "Title", Title );
-	MarkupContext.RegisterBrush( "Window", Style.Window );
-	MarkupContext.RegisterBrush( "ProgressBack", Style.ProgressBack );
-	MarkupContext.RegisterBrush( "ProgressFill", Style.ProgressFill );
-	MarkupContext.RegisterButtonStyle( "Default", Style.Button );
-	MarkupContext.RegisterCheckBoxStyle( "Default", Style.CheckBox );
+	// 見た目は、テーマ（名前つきの色・ブラシ・フォント・スタイル）にまとめてある。基本のテーマから、色だけ変えた子のテーマを作る
+	TSharedPtr<FUITheme> Base = Style.MakeTheme( Body, Title );
 	FUISliderStyle SliderStyle = Style.Slider;
 	SliderStyle.TrackInset = FUIMargin( 0.0f, 8.0f, 0.0f, 8.0f );   // 溝を、矩形より細くする（矩形の高さ 28 に対して、溝は 12）
-	MarkupContext.RegisterSliderStyle( "Thin", SliderStyle );
-	FUITextBoxStyle NameStyle;
-	NameStyle.Normal = Style.TextBox;
-	NameStyle.Focused = Style.TextBoxFocused;
-	NameStyle.Disabled = Style.TextBox;
-	MarkupContext.RegisterTextBoxStyle( "Name", NameStyle );
+	Base->SetSliderStyle( "Thin", SliderStyle );
+	Themes.Add( Base );
+	struct FAccent
+	{
+		const char* Name;
+		FColor32 Accent;
+		FColor32 Value;
+	};
+	const FAccent Accents[] = {
+		{ "Blue", FColor32( 130, 190, 255 ), FColor32( 190, 255, 225 ) },
+		{ "Green", FColor32( 160, 230, 150 ), FColor32( 255, 232, 160 ) },
+		{ "Rose", FColor32( 255, 160, 190 ), FColor32( 200, 220, 255 ) },
+	};
+	for ( const FAccent& Accent : Accents )
+	{
+		TSharedPtr<FUITheme> Variant = MakeShared<FUITheme>();
+		Variant->SetName( Accent.Name );
+		Variant->SetParent( Base );            // 上書きした名前だけ違い、あとは基本のテーマと同じ
+		Variant->SetColor( "Accent", Accent.Accent );
+		Variant->SetColor( "Value", Accent.Value );
+		Themes.Add( Variant );
+	}
+	MarkupContext.SetTheme( Themes[0] );
 
+	// マークアップの {Binding ...} と、イベントの受け手は、ここで渡す
 	MarkupContext.RegisterHandler( "OkClicked", [this]() { SetStatus( "OK was clicked" ); } );
 	MarkupContext.RegisterHandler( "CancelClicked", [this]() { SetStatus( "Cancel was clicked" ); } );
 	MarkupContext.RegisterHandler( "NameSubmitted", [this]() { SetStatus( *FString::Printf( "Hello, %s!", *ViewModel.Name.Get() ) ); } );
 	MarkupContext.RegisterHandler( "NameCancelled", [this]() { SetStatus( "Name edit was cancelled" ); } );
+	// ボタンの処理の最中に、そのボタンを含む窓を作り直すと危ないので、印だけ付けて、次の Tick で替える
+	MarkupContext.RegisterHandler( "NextTheme", [this]() { bThemeChangePending = true; } );
 
 	MarkupContext.RegisterBool( "Music", ViewModel.Music );
 	MarkupContext.RegisterBool( "Sound", ViewModel.Sound );
@@ -165,13 +179,8 @@ TSharedPtr<CUIWidget> CUIScreen::BuildSettingsWindow( CAssetSubsystem& Assets, c
 	return SettingsDocument.GetRoot();
 }
 
-void CUIScreen::ReloadSettingsWindow()
+void CUIScreen::ReplaceSettingsWindow()
 {
-	CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
-	if ( Assets == nullptr || !Root || !SettingsDocument.ReloadIfChanged( *Assets, MarkupContext, SettingsBindings ) )
-	{
-		return;
-	}
 	// 古い窓を外し、同じ場所へ、新しい窓を置く
 	if ( SettingsWindow )
 	{
@@ -179,6 +188,32 @@ void CUIScreen::ReloadSettingsWindow()
 	}
 	SettingsWindow = SettingsDocument.GetRoot();
 	PlaceAt( *Root, SettingsWindow, 60.0f, 90.0f, 560.0f, 530.0f );
+}
+
+void CUIScreen::ReloadSettingsWindow()
+{
+	CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
+	if ( Assets != nullptr && Root && SettingsDocument.ReloadIfChanged( *Assets, MarkupContext, SettingsBindings ) )
+	{
+		ReplaceSettingsWindow();
+	}
+}
+
+void CUIScreen::NextTheme()
+{
+	// テーマを替えて、同じマークアップを作り直す（色もスタイルも、名前でテーマから引かれる）
+	CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
+	if ( Assets == nullptr || !Root || Themes.IsEmpty() )
+	{
+		return;
+	}
+	ThemeIndex = ( ThemeIndex + 1 ) % Themes.Num();
+	MarkupContext.SetTheme( Themes[ThemeIndex] );
+	if ( SettingsDocument.Rebuild( *Assets, MarkupContext, SettingsBindings ) )
+	{
+		ReplaceSettingsWindow();
+	}
+	SetStatus( *FString::Printf( "Theme: %s", *Themes[ThemeIndex]->GetName() ) );
 }
 
 TSharedPtr<CUIWidget> CUIScreen::BuildViewWindow( CAssetSubsystem& Assets, const TSharedPtr<CFont>& Body )
@@ -376,6 +411,15 @@ void CUIScreen::Build()
 	{
 		AskReset();
 	}
+	// 同じく --theme-steps=N で、テーマを N 回進めた状態から始める（Theme ボタンを N 回押した状態）
+	if ( const TOptional<FString> Steps = NCommandLine::GetValue( "theme-steps" ) )
+	{
+		const int32 Count = static_cast<int32>( Steps.GetValue().ToFloat() );
+		for ( int32 Index = 0; Index < Count; ++Index )
+		{
+			NextTheme();
+		}
+	}
 }
 
 void CUIScreen::Tick( float32 DeltaTime )
@@ -390,6 +434,11 @@ void CUIScreen::Tick( float32 DeltaTime )
 	}
 	ElapsedTime += DeltaTime;
 	// 設定の窓のマークアップが保存し直されたら、作り直す（半秒ごとに調べる）
+	if ( bThemeChangePending )
+	{
+		bThemeChangePending = false;
+		NextTheme();
+	}
 	ReloadTimer += DeltaTime;
 	if ( ReloadTimer >= 0.5f )
 	{

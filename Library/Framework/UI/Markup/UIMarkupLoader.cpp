@@ -390,6 +390,43 @@ struct FMarkupBuilder
 
 	FMarkupBuilder( FUIMarkupContext& InContext, CUIBindingSet& InBindings, FUIMarkupResult& InResult ) : Context( InContext ), Bindings( InBindings ), Result( InResult ) {}
 
+	// "@名前" の、見つからなかった名前（直前の ResolveColor / ResolveFloat が失敗した理由）
+	FString MissingToken;
+
+	// 色: "@名前"（テーマ）か、#RGB・#RRGGBB・#RRGGBBAA
+	bool ResolveColor( const FString& Text, FColor32& Out )
+	{
+		const FString Trimmed = Trim( Text );
+		if ( Trimmed.Len() >= 2 && ( *Trimmed )[0] == '@' )
+		{
+			const FString TokenName = Trimmed.Mid( 1 );
+			if ( Context.Theme && Context.Theme->FindColor( TokenName, Out ) )
+			{
+				return true;
+			}
+			MissingToken = Trimmed;
+			return false;
+		}
+		return ParseColor( Text, Out );
+	}
+
+	// 数: "@名前"（テーマ）か、数
+	bool ResolveFloat( const FString& Text, float32& Out )
+	{
+		const FString Trimmed = Trim( Text );
+		if ( Trimmed.Len() >= 2 && ( *Trimmed )[0] == '@' )
+		{
+			const FString TokenName = Trimmed.Mid( 1 );
+			if ( Context.Theme && Context.Theme->FindNumber( TokenName, Out ) )
+			{
+				return true;
+			}
+			MissingToken = Trimmed;
+			return false;
+		}
+		return ParseFloat( Text, Out );
+	}
+
 	void Warn( const FUIXmlNode& Node, const FString& Message )
 	{
 		Result.Warnings.Add( FString::Printf( "line %d: <%s> %s", Node.Line, *Node.Name, *Message ) );
@@ -406,6 +443,12 @@ struct FMarkupBuilder
 
 	bool BadValue( const FUIXmlNode& Node, const FUIXmlAttribute& Attribute, const char* Expected )
 	{
+		if ( !MissingToken.IsEmpty() )
+		{
+			const FString Token = MissingToken;
+			MissingToken.Empty();
+			return Fail( Node, FString::Printf( "the attribute %s=\"%s\" is not valid (the theme token '%s' is not defined)", *Attribute.Name, *Attribute.Value, *Token ) );
+		}
 		return Fail( Node, FString::Printf( "the attribute %s=\"%s\" is not valid (%s expected)", *Attribute.Name, *Attribute.Value, Expected ) );
 	}
 
@@ -416,6 +459,11 @@ struct FMarkupBuilder
 		{
 			return *Found;
 		}
+		TSharedPtr<CFont> ThemeFont;
+		if ( Context.Theme && Context.Theme->FindFont( Name, ThemeFont ) )
+		{
+			return ThemeFont;
+		}
 		Warn( Node, FString::Printf( "the font '%s' is not registered", *Name ) );
 		return TSharedPtr<CFont>();
 	}
@@ -424,7 +472,7 @@ struct FMarkupBuilder
 	bool FindBrush( const FString& Value, FUIBrush& Out )
 	{
 		FColor32 Color;
-		if ( ParseColor( Value, Color ) )
+		if ( ResolveColor( Value, Color ) )
 		{
 			Out = FUIBrush::MakeSolid( Color );
 			return true;
@@ -434,15 +482,19 @@ struct FMarkupBuilder
 			Out = *Found;
 			return true;
 		}
-		return false;
+		return Context.Theme && Context.Theme->FindBrush( Trim( Value ), Out );
 	}
 
 	template<typename TStyle>
-	bool FindStyle( const FUIXmlNode& Node, const TMap<FString, TStyle>& Table, const FString& Name, TStyle& Out, const char* Kind )
+	bool FindStyle( const FUIXmlNode& Node, const TMap<FString, TStyle>& Table, const FString& Name, TStyle& Out, const char* Kind, bool ( FUITheme::*ThemeFind )( const FString&, TStyle& ) const )
 	{
 		if ( const TStyle* Found = Table.Find( Name ) )
 		{
 			Out = *Found;
+			return true;
+		}
+		if ( Context.Theme && ( ( *Context.Theme ).*ThemeFind )( Name, Out ) )
+		{
 			return true;
 		}
 		Warn( Node, FString::Printf( "the %s style '%s' is not registered", Kind, *Name ) );
@@ -553,7 +605,7 @@ struct FMarkupBuilder
 		}
 		else if ( N == "Width" || N == "Height" || N == "MinWidth" || N == "MinHeight" || N == "MaxWidth" || N == "MaxHeight" )
 		{
-			if ( !ParseFloat( A.Value, Number ) || Number < 0.0f )
+			if ( !ResolveFloat( A.Value, Number ) || Number < 0.0f )
 			{
 				bOk = BadValue( Node, A, "a number of 0 or more" );
 				return true;
@@ -585,7 +637,7 @@ struct FMarkupBuilder
 		}
 		else if ( N == "Margin" || N == "Padding" || N == "Offsets" )
 		{
-			if ( !ParseMargin( A.Value, Margin ) || ( N == "Offsets" && ParseFloat( A.Value, Number ) ) )
+			if ( !ParseMargin( A.Value, Margin ) || ( N == "Offsets" && ResolveFloat( A.Value, Number ) ) )
 			{
 				// Offsets は、4 個の数だけ（1 個・2 個は、意味が曖昧）
 				bOk = BadValue( Node, A, N == "Offsets" ? "four numbers: left, top, right, bottom" : "1, 2 or 4 numbers" );
@@ -622,7 +674,7 @@ struct FMarkupBuilder
 		}
 		else if ( N == "Weight" )
 		{
-			if ( !ParseFloat( A.Value, Number ) || Number < 0.0f )
+			if ( !ResolveFloat( A.Value, Number ) || Number < 0.0f )
 			{
 				bOk = BadValue( Node, A, "a number of 0 or more" );
 				return true;
@@ -668,7 +720,7 @@ struct FMarkupBuilder
 		}
 		else if ( N == "Opacity" )
 		{
-			if ( !ParseFloat( A.Value, Number ) )
+			if ( !ResolveFloat( A.Value, Number ) )
 			{
 				bOk = BadValue( Node, A, "a number from 0 to 1" );
 				return true;
@@ -791,7 +843,7 @@ struct FMarkupBuilder
 			CUIStackPanel& Stack = static_cast<CUIStackPanel&>( *Widget );
 			if ( N == "Spacing" )
 			{
-				if ( !ParseFloat( A.Value, Number ) || Number < 0.0f )
+				if ( !ResolveFloat( A.Value, Number ) || Number < 0.0f )
 				{
 					return BadValue( Node, A, "a number of 0 or more" );
 				}
@@ -847,7 +899,7 @@ struct FMarkupBuilder
 			}
 			if ( N == "WheelStep" )
 			{
-				if ( !ParseFloat( A.Value, Number ) || Number < 1.0f )
+				if ( !ResolveFloat( A.Value, Number ) || Number < 1.0f )
 				{
 					return BadValue( Node, A, "a number of 1 or more" );
 				}
@@ -881,7 +933,7 @@ struct FMarkupBuilder
 			if ( N == "Color" )
 			{
 				FColor32 Color;
-				if ( !ParseColor( A.Value, Color ) )
+				if ( !ResolveColor( A.Value, Color ) )
 				{
 					return BadValue( Node, A, "a color like #RRGGBB" );
 				}
@@ -911,7 +963,7 @@ struct FMarkupBuilder
 			}
 			if ( N == "WrapWidth" )
 			{
-				if ( !ParseFloat( A.Value, Number ) || Number < 0.0f )
+				if ( !ResolveFloat( A.Value, Number ) || Number < 0.0f )
 				{
 					return BadValue( Node, A, "a number of 0 or more" );
 				}
@@ -949,7 +1001,7 @@ struct FMarkupBuilder
 				{
 					return true;
 				}
-				if ( !ParseFloat( A.Value, Number ) )
+				if ( !ResolveFloat( A.Value, Number ) )
 				{
 					return BadValue( Node, A, "a number from 0 to 1" );
 				}
@@ -1001,7 +1053,7 @@ struct FMarkupBuilder
 			if ( N == "Style" )
 			{
 				FUIButtonStyle Style;
-				if ( FindStyle( Node, Context.ButtonStyles, A.Value, Style, "button" ) )
+				if ( FindStyle( Node, Context.ButtonStyles, A.Value, Style, "button", &FUITheme::FindButtonStyle ) )
 				{
 					Button.SetStyle( Style );
 				}
@@ -1037,7 +1089,7 @@ struct FMarkupBuilder
 			if ( N == "Style" )
 			{
 				FUICheckBoxStyle Style;
-				if ( FindStyle( Node, Context.CheckBoxStyles, A.Value, Style, "check box" ) )
+				if ( FindStyle( Node, Context.CheckBoxStyles, A.Value, Style, "check box", &FUITheme::FindCheckBoxStyle ) )
 				{
 					Box.SetStyle( Style );
 				}
@@ -1058,7 +1110,7 @@ struct FMarkupBuilder
 			}
 			if ( N == "Step" )
 			{
-				if ( !ParseFloat( A.Value, Number ) || Number < 0.0f )
+				if ( !ResolveFloat( A.Value, Number ) || Number < 0.0f )
 				{
 					return BadValue( Node, A, "a number of 0 or more" );
 				}
@@ -1072,7 +1124,7 @@ struct FMarkupBuilder
 				{
 					return true;
 				}
-				if ( !ParseFloat( A.Value, Number ) )
+				if ( !ResolveFloat( A.Value, Number ) )
 				{
 					return BadValue( Node, A, "a number or {Binding name}" );
 				}
@@ -1091,7 +1143,7 @@ struct FMarkupBuilder
 			if ( N == "Style" )
 			{
 				FUISliderStyle Style;
-				if ( FindStyle( Node, Context.SliderStyles, A.Value, Style, "slider" ) )
+				if ( FindStyle( Node, Context.SliderStyles, A.Value, Style, "slider", &FUITheme::FindSliderStyle ) )
 				{
 					Slider.SetStyle( Style );
 				}
@@ -1147,7 +1199,7 @@ struct FMarkupBuilder
 			if ( N == "Style" )
 			{
 				FUITextBoxStyle Style;
-				if ( FindStyle( Node, Context.TextBoxStyles, A.Value, Style, "text box" ) )
+				if ( FindStyle( Node, Context.TextBoxStyles, A.Value, Style, "text box", &FUITheme::FindTextBoxStyle ) )
 				{
 					Box.SetStyle( Style );
 				}
@@ -1164,7 +1216,7 @@ struct FMarkupBuilder
 			CUIListView& List = static_cast<CUIListView&>( *Widget );
 			if ( N == "ItemHeight" )
 			{
-				if ( !ParseFloat( A.Value, Number ) || Number < 1.0f )
+				if ( !ResolveFloat( A.Value, Number ) || Number < 1.0f )
 				{
 					return BadValue( Node, A, "a number of 1 or more" );
 				}
@@ -1197,7 +1249,7 @@ struct FMarkupBuilder
 		float32 Width = 0.0f;
 		if ( const FString* Value = Node.FindAttribute( "ScrollBarWidth" ) )
 		{
-			if ( !ParseFloat( *Value, Width ) || Width < 0.0f )
+			if ( !ResolveFloat( *Value, Width ) || Width < 0.0f )
 			{
 				return Fail( Node, "the attribute ScrollBarWidth is not valid (a number of 0 or more expected)" );
 			}
@@ -1242,7 +1294,7 @@ struct FMarkupBuilder
 		FColor32 Tint( 255, 255, 255, 255 );
 		if ( const FString* Value = Node.FindAttribute( "Tint" ) )
 		{
-			if ( !ParseColor( *Value, Tint ) )
+			if ( !ResolveColor( *Value, Tint ) )
 			{
 				return Fail( Node, "the attribute Tint is not valid (a color like #RRGGBB expected)" );
 			}
@@ -1286,7 +1338,7 @@ struct FMarkupBuilder
 		if ( const FString* ColorText = Node.FindAttribute( "TextColor" ) )
 		{
 			FColor32 Color;
-			if ( !ParseColor( *ColorText, Color ) )
+			if ( !ResolveColor( *ColorText, Color ) )
 			{
 				return Fail( Node, "the attribute TextColor is not valid (a color like #RRGGBB expected)" );
 			}
@@ -1307,14 +1359,14 @@ struct FMarkupBuilder
 		float32 Maximum = 1.0f;
 		if ( const FString* Value = Node.FindAttribute( "Min" ) )
 		{
-			if ( !ParseFloat( *Value, Minimum ) )
+			if ( !ResolveFloat( *Value, Minimum ) )
 			{
 				return Fail( Node, "the attribute Min is not valid (a number expected)" );
 			}
 		}
 		if ( const FString* Value = Node.FindAttribute( "Max" ) )
 		{
-			if ( !ParseFloat( *Value, Maximum ) )
+			if ( !ResolveFloat( *Value, Maximum ) )
 			{
 				return Fail( Node, "the attribute Max is not valid (a number expected)" );
 			}
@@ -1329,7 +1381,7 @@ struct FMarkupBuilder
 		{
 			FString BindingName;
 			float32 Number = 0.0f;
-			if ( !ParseBinding( *Value, BindingName ) && ParseFloat( *Value, Number ) )
+			if ( !ParseBinding( *Value, BindingName ) && ResolveFloat( *Value, Number ) )
 			{
 				Slider->SetValue( Number, false );
 			}
@@ -1345,7 +1397,7 @@ struct FMarkupBuilder
 		float32 BarWidth = 0.0f;
 		if ( const FString* Value = Node.FindAttribute( "ScrollBarWidth" ) )
 		{
-			if ( !ParseFloat( *Value, BarWidth ) || BarWidth < 0.0f )
+			if ( !ResolveFloat( *Value, BarWidth ) || BarWidth < 0.0f )
 			{
 				return Fail( Node, "the attribute ScrollBarWidth is not valid (a number of 0 or more expected)" );
 			}
@@ -1375,7 +1427,7 @@ struct FMarkupBuilder
 		FColor32 ItemColor( 235, 238, 245, 255 );
 		if ( const FString* Value = Node.FindAttribute( "ItemColor" ) )
 		{
-			if ( !ParseColor( *Value, ItemColor ) )
+			if ( !ResolveColor( *Value, ItemColor ) )
 			{
 				return Fail( Node, "the attribute ItemColor is not valid (a color like #RRGGBB expected)" );
 			}

@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 
+#include "Library/Framework/UI/Style/UITheme.h"
 #include "Library/Framework/UI/Widgets/UIControlWidgets.h"
 
 class CAssetSubsystem;
@@ -37,4 +38,11 @@ struct FUIDefaultStyle
 
 	// 画像から、既定の見た目を作る。1 つでも読めなかったら false
 	static bool Load( CAssetSubsystem& Assets, FUIDefaultStyle& OutStyle );
+
+	// この見た目を、基本のテーマにする（名前は下の通り。フォントは、渡したときだけ入れる）。これの子のテーマで、変えたいところだけ上書きする
+	//   ブラシ: Window Panel Frame Tooltip TextBox TextBoxFocused Shadow ProgressBack ProgressFill
+	//   スタイル: Button / CheckBox / Slider / TextBox の "Default"
+	//   色: Text TextMuted Accent Value Error    数: Gap（14）Spacing（18）
+	//   フォント: Body Title
+	TSharedPtr<FUITheme> MakeTheme( const TSharedPtr<CFont>& Body = TSharedPtr<CFont>(), const TSharedPtr<CFont>& Title = TSharedPtr<CFont>() ) const;
 };

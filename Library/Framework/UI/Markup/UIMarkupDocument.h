@@ -31,6 +31,9 @@ public:
 	// ファイルの中身が前と違えば、作り直す。作り直して成功したときだけ true
 	bool ReloadIfChanged( CAssetSubsystem& Assets, FUIMarkupContext& Context, CUIBindingSet& Bindings );
 
+	// 中身が同じでも、作り直す（テーマや文脈を替えたあと用）。作り直して成功したときだけ true。失敗したら、古い木を残す
+	bool Rebuild( CAssetSubsystem& Assets, FUIMarkupContext& Context, CUIBindingSet& Bindings );
+
 	const TSharedPtr<CUIWidget>& GetRoot() const { return Root; }
 	const FString& GetPath() const { return Path; }
 	const FString& GetLastError() const { return LastError; }

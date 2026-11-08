@@ -5,6 +5,7 @@
 #include "Library/Framework/UI/Binding/UIBindingSet.h"
 #include "Library/Framework/UI/Core/UIPanels.h"
 #include "Library/Framework/UI/Markup/UIXml.h"
+#include "Library/Framework/UI/Style/UITheme.h"
 #include "Library/Framework/UI/Widgets/UIControlWidgets.h"
 #include "Library/Framework/UI/Widgets/UIDisplayWidgets.h"
 #include "Library/Framework/UI/Widgets/UIListView.h"
@@ -42,6 +43,8 @@
 //   Weight・Column・Row・ColumnSpan・RowSpan・Anchor（TopLeft・Top・TopRight・Left・Center・Right・BottomLeft・Bottom・BottomRight・Stretch）・AnchorMin・AnchorMax・
 //   Offsets（左・上・右・下）・Pivot・Visibility（Visible / Hidden / Collapsed）・Enabled・Opacity・Clip・HitTestable・Background（#RRGGBB[AA] か、ブラシの名前）
 //   各要素の属性は、Docs/UI.md の「マークアップ（XML）」を参照。
+// テーマ: 文脈にテーマ（FUITheme）を渡すと、フォント・ブラシ・スタイルの名前は、文脈の登録に無ければ、テーマから探す。
+//   色と数の属性には、"@名前" と書ける（Color="@Accent"、Spacing="@Gap"）。
 // 値の書き方:
 //   {Binding 名前}  : ビューモデルの値へ結ぶ（文脈に登録した名前。Text・Checked・Value・Command・Items・Enabled・Visible など）。双方向になる属性は、入力欄の Text・
 //                     チェックボックスの Checked・スライダーの Value
@@ -74,6 +77,11 @@ public:
 	void RegisterCommand( const FString& Name, FUICommand& Command ) { Commands.Add( Name, &Command ); }
 	void RegisterStringList( const FString& Name, TObservableArray<FString>& Items ) { StringLists.Add( Name, &Items ); }
 
+	// テーマ（名前つきの色・数・ブラシ・フォント・スタイル）。文脈に登録した名前を先に探し、無ければテーマから探す。
+	// 色と数は、"@名前" でテーマから読む（Color="@Accent"、Spacing="@Gap"）。テーマに無い "@名前" は、失敗にする
+	void SetTheme( const TSharedPtr<FUITheme>& InTheme ) { Theme = InTheme; }
+	const TSharedPtr<FUITheme>& GetTheme() const { return Theme; }
+
 	// true なら、警告（文脈に無い名前・知らない属性）も、読み込みの失敗にする
 	bool bWarningsAreErrors = false;
 
@@ -88,6 +96,7 @@ private:
 	TMap<FString, FUISliderStyle> SliderStyles;
 	TMap<FString, FUITextBoxStyle> TextBoxStyles;
 	FImageLoader ImageLoader;
+	TSharedPtr<FUITheme> Theme;
 	TMap<FString, TCallable<void()>> Handlers;
 	TMap<FString, TObservable<FString>*> Strings;
 	TMap<FString, TObservable<float32>*> Floats;

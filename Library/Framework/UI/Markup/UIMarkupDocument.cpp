@@ -63,6 +63,16 @@ bool CUIMarkupDocument::Load( CAssetSubsystem& Assets, const FString& InPath, FU
 	return Build( Text, Context, Bindings );
 }
 
+bool CUIMarkupDocument::Rebuild( CAssetSubsystem& Assets, FUIMarkupContext& Context, CUIBindingSet& Bindings )
+{
+	FString Text;
+	if ( Path.IsEmpty() || !ReadText( Assets, Path, Text ) )
+	{
+		return false;
+	}
+	return Build( Text, Context, Bindings );
+}
+
 bool CUIMarkupDocument::ReloadIfChanged( CAssetSubsystem& Assets, FUIMarkupContext& Context, CUIBindingSet& Bindings )
 {
 	FString Text;
