@@ -1,0 +1,53 @@
+﻿// SPDX-License-Identifier: MIT
+#pragma once
+
+#include "Library/Framework/Object/GameObject.h"
+#include "Library/Framework/UI/Core/UIContext.h"
+#include "Library/Framework/UI/Core/UIPanels.h"
+#include "Library/Framework/UI/Style/UIDefaultStyle.h"
+#include "Library/Framework/UI/Widgets/UIControlWidgets.h"
+#include "Library/Framework/UI/Widgets/UIDisplayWidgets.h"
+#include "Library/Framework/UI/Widgets/UIRenderTargetView.h"
+
+//=============================================================================
+// CUIScreen
+//   UI の部品で作った画面（1280 x 720）。エンジン組み込みの画像（Engine:/UI・Engine:/Icons）の既定のスタイルで、
+//     左: 設定の窓（チェックボックス・スライダー・プログレスバー・ボタン・ラベル）
+//     右上: 描画先（レンダーターゲット）を表示する部品（動くミニマップ。クリックした位置に印が付く）
+//     右下: アイコンの一覧
+//   入力は、ゲームの入力（IInput・IGamepadInput）から NUIInput::MakeFrame で UI の入力に直して、CUIContext へ渡す。
+//   マウス・矢印キー・Tab・Enter・Escape・パッドで操作できる。
+//=============================================================================
+class CUIScreen : public CGameObject
+{
+public:
+	void Tick( float32 DeltaTime ) override;
+	void Draw( FDrawContext& CommandList ) override;
+
+private:
+	// 最初の Tick で、部品の木を作る（アセットなどが、シーンに入ってから使えるため）
+	void Build();
+	TSharedPtr<CUIWidget> BuildSettingsWindow( const TSharedPtr<CFont>& Body, const TSharedPtr<CFont>& Title );
+	TSharedPtr<CUIWidget> BuildViewWindow( CAssetSubsystem& Assets, const TSharedPtr<CFont>& Body );
+	TSharedPtr<CUIWidget> BuildIconWindow( CAssetSubsystem& Assets, const TSharedPtr<CFont>& Body );
+	TSharedPtr<CUILabel> MakeLabel( const TSharedPtr<CFont>& Font, const char* Text, const FColor32& Color = FColor32( 235, 238, 245 ) );
+	TSharedPtr<CUIButton> MakeButton( const TSharedPtr<CFont>& Font, const char* Text, float32 Width );
+	void SetStatus( const char* Text );
+
+	bool bBuilt = false;
+	FUIDefaultStyle Style;
+	TSharedPtr<CUICanvasPanel> Root;
+	CUIContext Context;
+
+	TSharedPtr<CUILabel> StatusLabel;
+	TSharedPtr<CUILabel> ValueLabel;
+	TSharedPtr<CUISlider> VolumeSlider;
+	TSharedPtr<CUIProgressBar> VolumeBar;
+	TSharedPtr<CUICheckBox> MusicBox;
+	TSharedPtr<CUICheckBox> SoundBox;
+	TSharedPtr<CUIRenderTargetView> MinimapView;
+
+	float32 ElapsedTime = 0.0f;
+	FVector2 Marker = FVector2( -1.0f, -1.0f );   // ミニマップに付けた印（描画先の座標。負なら、まだ無い）
+	int32 CreatedTargets = 0;
+};

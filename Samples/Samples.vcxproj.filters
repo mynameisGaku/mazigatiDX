@@ -451,6 +451,12 @@
     <ClCompile Include="Source\Text\WrapShowcase.cpp">
       <Filter>Source\Text</Filter>
     </ClCompile>
+    <ClCompile Include="Source\UI\UISample.cpp">
+      <Filter>Source\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\UI\UIScreen.cpp">
+      <Filter>Source\UI</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Village\Coin.cpp">
       <Filter>Source\Village</Filter>
     </ClCompile>
@@ -990,6 +996,12 @@
     <ClInclude Include="Source\Text\WrapShowcase.h">
       <Filter>Source\Text</Filter>
     </ClInclude>
+    <ClInclude Include="Source\UI\UISample.h">
+      <Filter>Source\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\UI\UIScreen.h">
+      <Filter>Source\UI</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Village\Coin.h">
       <Filter>Source\Village</Filter>
     </ClInclude>
@@ -1138,6 +1150,9 @@
     </Filter>
     <Filter Include="Source\Text">
       <UniqueIdentifier>{E16AE2E4-2C5F-54A3-6946-41A12BC58602}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\UI">
+      <UniqueIdentifier>{6313DDFA-A94A-2CD0-F68A-AE2FCDBC5321}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Village">
       <UniqueIdentifier>{BDD5A596-60AB-DBCC-967A-473E787C29E4}</UniqueIdentifier>

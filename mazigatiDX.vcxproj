@@ -330,6 +330,7 @@
     <ClCompile Include="Library\Framework\UI\Core\UIInputBridge.cpp" />
     <ClCompile Include="Library\Framework\UI\Core\UIPanels.cpp" />
     <ClCompile Include="Library\Framework\UI\Core\UIWidget.cpp" />
+    <ClCompile Include="Library\Framework\UI\Style\UIDefaultStyle.cpp" />
     <ClCompile Include="Library\Framework\UI\Widgets\UIControlWidgets.cpp" />
     <ClCompile Include="Library\Framework\UI\Widgets\UIDisplayWidgets.cpp" />
     <ClCompile Include="Library\Framework\UI\Widgets\UIRenderTargetView.cpp" />
@@ -1001,6 +1002,7 @@
     <ClInclude Include="Library\Framework\UI\Core\UIPanels.h" />
     <ClInclude Include="Library\Framework\UI\Core\UITypes.h" />
     <ClInclude Include="Library\Framework\UI\Core\UIWidget.h" />
+    <ClInclude Include="Library\Framework\UI\Style\UIDefaultStyle.h" />
     <ClInclude Include="Library\Framework\UI\Widgets\UIControlWidgets.h" />
     <ClInclude Include="Library\Framework\UI\Widgets\UIDisplayWidgets.h" />
     <ClInclude Include="Library\Framework\UI\Widgets\UIRenderTargetView.h" />

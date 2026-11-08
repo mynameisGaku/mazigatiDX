@@ -790,6 +790,9 @@
     <ClCompile Include="Library\Framework\UI\Core\UIWidget.cpp">
       <Filter>Library\Framework\UI\Core</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\UI\Style\UIDefaultStyle.cpp">
+      <Filter>Library\Framework\UI\Style</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\UI\Widgets\UIControlWidgets.cpp">
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClCompile>
@@ -2798,6 +2801,9 @@
     </ClInclude>
     <ClInclude Include="Library\Framework\UI\Core\UIWidget.h">
       <Filter>Library\Framework\UI\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\UI\Style\UIDefaultStyle.h">
+      <Filter>Library\Framework\UI\Style</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\UI\Widgets\UIControlWidgets.h">
       <Filter>Library\Framework\UI\Widgets</Filter>
@@ -4840,6 +4846,9 @@
     </Filter>
     <Filter Include="Library\Framework\UI\Core">
       <UniqueIdentifier>{C81896F2-AAE1-6853-A8B3-5A8A563C8260}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\UI\Style">
+      <UniqueIdentifier>{EAF93D88-122D-07F2-0C70-FB115B0524E6}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\UI\Widgets">
       <UniqueIdentifier>{A8BFFC02-C462-F68E-89D2-E3104A3C54BC}</UniqueIdentifier>
