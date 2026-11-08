@@ -109,6 +109,9 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestDrawStateReal.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestEngineContent.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
     <ClCompile Include="Source\SelfTest\AssetSelfTestFilter.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
@@ -254,6 +257,24 @@
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
     <ClCompile Include="Source\SelfTest\AssetSelfTestTextReal.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestUIBrush.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestUIInput.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestUIInputBridge.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestUILayout.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestUIRenderTarget.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestUIWidgets.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
     <ClCompile Include="Source\SelfTest\ConsoleSelfTest.cpp">
@@ -510,6 +531,9 @@
     <ClInclude Include="Source\SelfTest\AssetSelfTestDrawState.h">
       <Filter>Source\SelfTest</Filter>
     </ClInclude>
+    <ClInclude Include="Source\SelfTest\AssetSelfTestEngineContent.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
     <ClInclude Include="Source\SelfTest\AssetSelfTestFbx.h">
       <Filter>Source\SelfTest</Filter>
     </ClInclude>
@@ -598,6 +622,24 @@
       <Filter>Source\SelfTest</Filter>
     </ClInclude>
     <ClInclude Include="Source\SelfTest\AssetSelfTestTextInput.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\AssetSelfTestUIBrush.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\AssetSelfTestUIInput.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\AssetSelfTestUIInputBridge.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\AssetSelfTestUILayout.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\AssetSelfTestUIRenderTarget.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\AssetSelfTestUIWidgets.h">
       <Filter>Source\SelfTest</Filter>
     </ClInclude>
     <ClInclude Include="Source\SelfTest\EcsSelfTestScene.h">
