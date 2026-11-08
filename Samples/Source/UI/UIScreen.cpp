@@ -5,11 +5,13 @@
 
 #include "Library/Core/Interfaces/Input/IGamepadInput.h"
 #include "Library/Core/Interfaces/Input/IInput.h"
+#include "Library/Core/Interfaces/Input/ITextInput.h"
 #include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
 #include "Library/Framework/Scene/Scene.h"
 #include "Library/Framework/UI/Core/UIInputBridge.h"
+#include "Library/Platform/System/CommandLine.h"
 
 namespace
 {
@@ -82,6 +84,38 @@ TSharedPtr<CUIButton> CUIScreen::MakeButton( const TSharedPtr<CFont>& Font, cons
 	Caption->SetHitTestable( false );
 	Button->AddChild( Caption );
 	return Button;
+}
+
+void CUIScreen::AskReset()
+{
+	// 確認のダイアログ: Yes で、既定へ戻す
+	FUIDialogStyle DialogStyle;
+	DialogStyle.Dim = FUIBrush::MakeSolid( FColor32( 0, 0, 0, 150 ) );
+	DialogStyle.Window = Style.Window;
+	DialogStyle.Button = Style.Button;
+	DialogStyle.TitleFont = TitleFont;
+	DialogStyle.BodyFont = BodyFont;
+	DialogStyle.WindowSize = FVector2( 480.0f, 230.0f );
+	TArray<FUIDialogButton> Buttons;
+	Buttons.Add( FUIDialogButton { "Yes", 1 } );
+	Buttons.Add( FUIDialogButton { "No", 2 } );
+	TSharedPtr<CUIDialog> Dialog = MakeShared<CUIDialog>( DialogStyle, "Reset?", "The name, the volume and the check boxes go back to their defaults.", Buttons, 2, 2 );
+	Dialog->OnResult.Add( [this]( CUIWidget&, int32 Id )
+	{
+		if ( Id == 1 )
+		{
+			VolumeSlider->SetValue( 50.0f );
+			MusicBox->SetChecked( true, false );
+			SoundBox->SetChecked( true, false );
+			NameBox->SetText( "" );
+			SetStatus( "Reset to the defaults" );
+		}
+		else
+		{
+			SetStatus( "Reset was cancelled" );
+		}
+	} );
+	NUIDialog::Show( Screens, Dialog );
 }
 
 void CUIScreen::SetStatus( const char* Text )
@@ -163,6 +197,29 @@ TSharedPtr<CUIWidget> CUIScreen::BuildSettingsWindow( const TSharedPtr<CFont>& B
 		VolumeBar->SetValue( Value / 100.0f );
 	} );
 
+	// 名前の入力欄
+	TSharedPtr<CUIStackPanel> NameRow = MakeStack( EUIOrientation::Horizontal, 14.0f );
+	NameRow->SetLayout( FixedHeight( 38.0f ) );
+	NameRow->AddChild( MakeLabel( Body, "Name" ) );
+	NameBox = MakeShared<CUITextBox>();
+	FUITextBoxStyle NameStyle;
+	NameStyle.Normal = Style.TextBox;
+	NameStyle.Focused = Style.TextBoxFocused;
+	NameStyle.Disabled = Style.TextBox;
+	NameBox->SetStyle( NameStyle );
+	NameBox->SetFont( Body );
+	NameBox->SetPlaceholder( "Type your name" );
+	NameBox->SetMaxLength( 16 );
+	FUILayoutProperties NameLayout;
+	NameLayout.Weight = 1.0f;
+	NameLayout.FixedHeight = 38.0f;
+	NameLayout.VerticalAlignment = EUIAlignment::Center;
+	NameBox->SetLayout( NameLayout );
+	NameBox->OnSubmitted.Add( [this]( CUIWidget&, const FString& Text ) { SetStatus( *FString::Printf( "Hello, %s!", *Text ) ); } );
+	NameBox->OnCancelled.Add( [this]( CUIWidget& ) { SetStatus( "Name edit was cancelled" ); } );
+	NameRow->AddChild( NameBox );
+	Column->AddChild( NameRow );
+
 	// ボタン
 	TSharedPtr<CUIStackPanel> Buttons = MakeStack( EUIOrientation::Horizontal, 12.0f );
 	Buttons->SetLayout( FixedHeight( 44.0f ) );
@@ -171,13 +228,7 @@ TSharedPtr<CUIWidget> CUIScreen::BuildSettingsWindow( const TSharedPtr<CFont>& B
 	TSharedPtr<CUIButton> Reset = MakeButton( Body, "Reset", 120.0f );
 	Ok->OnClicked.Add( [this]( CUIWidget& ) { SetStatus( "OK was clicked" ); } );
 	Cancel->OnClicked.Add( [this]( CUIWidget& ) { SetStatus( "Cancel was clicked" ); } );
-	Reset->OnClicked.Add( [this]( CUIWidget& )
-	{
-		VolumeSlider->SetValue( 50.0f );
-		MusicBox->SetChecked( true, false );
-		SoundBox->SetChecked( true, false );
-		SetStatus( "Reset to the defaults" );
-	} );
+	Reset->OnClicked.Add( [this]( CUIWidget& ) { AskReset(); } );
 	Buttons->AddChild( Ok );
 	Buttons->AddChild( Cancel );
 	Buttons->AddChild( Reset );
@@ -347,8 +398,10 @@ void CUIScreen::Build()
 		return;
 	}
 	FUIDefaultStyle::Load( *Assets, Style );
-	const TSharedPtr<CFont> Body = Assets->GetDefaultFont( 22 );
-	const TSharedPtr<CFont> Title = Assets->GetDefaultFont( 30 );
+	BodyFont = Assets->GetDefaultFont( 22 );
+	TitleFont = Assets->GetDefaultFont( 30 );
+	const TSharedPtr<CFont> Body = BodyFont;
+	const TSharedPtr<CFont> Title = TitleFont;
 
 	Root = MakeShared<CUICanvasPanel>();
 	Root->SetHitTestable( false );
@@ -357,15 +410,28 @@ void CUIScreen::Build()
 	TSharedPtr<CUIWidget> Shadow = MakeShared<CUIWidget>();
 	Shadow->SetBackground( Style.Shadow );
 	Shadow->SetHitTestable( false );
-	PlaceAt( *Root, Shadow, 40.0f, 74.0f, 600.0f, 530.0f );
+	PlaceAt( *Root, Shadow, 40.0f, 74.0f, 600.0f, 590.0f );
 
-	PlaceAt( *Root, BuildSettingsWindow( Body, Title ), 60.0f, 90.0f, 560.0f, 470.0f );
+	PlaceAt( *Root, BuildSettingsWindow( Body, Title ), 60.0f, 90.0f, 560.0f, 530.0f );
 	PlaceAt( *Root, BuildViewWindow( *Assets, Body ), 680.0f, 90.0f, 560.0f, 300.0f );
 	PlaceAt( *Root, BuildIconWindow( *Assets, Body ), 680.0f, 400.0f, 560.0f, 290.0f );
 
-	Context.SetRoot( Root );
-	Context.OnCancel.Add( [this]() { SetStatus( "Cancel (Escape / B) was pressed" ); } );
-	Root->UpdateLayout( FUIRect( 0.0f, 0.0f, ScreenWidth, ScreenHeight ) );
+	// 画面のスタック: 下は、この画面（モーダルではなく、ゲームの入力も止めない）。ダイアログが、上に積まれる
+	Screens.SetArea( FUIRect( 0.0f, 0.0f, ScreenWidth, ScreenHeight ) );
+	FUIScreenOptions BaseOptions;
+	BaseOptions.bModal = false;
+	BaseOptions.bBlocksGameInput = false;
+	BaseOptions.bPopOnCancel = false;
+	const int32 BaseId = Screens.Push( Root, BaseOptions );
+	if ( CUIContext* BaseContext = Screens.FindContext( BaseId ) )
+	{
+		BaseContext->OnCancel.Add( [this]() { SetStatus( "Cancel (Escape / B) was pressed" ); } );
+	}
+	// 画面の撮影・確認用: 起動の引数 --ask-reset で、最初から確認のダイアログを出す
+	if ( NCommandLine::HasFlag( "ask-reset" ) )
+	{
+		AskReset();
+	}
 }
 
 void CUIScreen::Tick( float32 DeltaTime )
@@ -382,15 +448,20 @@ void CUIScreen::Tick( float32 DeltaTime )
 	// ミニマップは、動く内容なので、毎回描き直す（既定の更新の頻度）
 	const IInput* Input = GetAppSubsystem<IInput>();
 	const IGamepadInput* Gamepad = GetAppSubsystem<IGamepadInput>();
-	const FUIInputFrame Frame = NUIInput::MakeFrame( Input, Input, Gamepad );
-	Root->UpdateLayout( FUIRect( 0.0f, 0.0f, ScreenWidth, ScreenHeight ) );
-	Context.Update( Frame );
+	ITextInput* TextInput = GetAppSubsystem<ITextInput>();
+	const FUIInputFrame Frame = NUIInput::MakeFrame( Input, Input, Gamepad, FUIInputMapping(), TextInput );
+	const FUIScreenInputResult Result = Screens.Update( Frame );
+	// 入力欄にフォーカスがあるときだけ、文字入力（と、かな漢字変換）を受ける
+	if ( TextInput != nullptr )
+	{
+		TextInput->SetTextInputActive( Result.bWantsTextInput );
+	}
 }
 
 void CUIScreen::Draw( FDrawContext& CommandList )
 {
 	if ( Root )
 	{
-		Root->Paint( CommandList );
+		Screens.Paint( CommandList );
 	}
 }

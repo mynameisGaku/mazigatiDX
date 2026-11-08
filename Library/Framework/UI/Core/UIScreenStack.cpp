@@ -23,6 +23,8 @@ namespace
 		Frame.bCancel = false;
 		Frame.bFocusNext = false;
 		Frame.bFocusPrevious = false;
+		Frame.TextEvents = nullptr;
+		Frame.Ime = nullptr;
 	}
 }
 
@@ -38,20 +40,114 @@ int32 CUIScreenStack::Push( const TSharedPtr<CUIWidget>& Root, const FUIScreenOp
 	Screen.Options = Options;
 	Screen.Context = MakeShared<CUIContext>();
 	Screen.Context->SetRoot( Root );
-	Screens.Add( Screen );
+	if ( bUpdating )
+	{
+		FPendingChange Change;
+		Change.bPush = true;
+		Change.Screen = Screen;
+		Pending.Add( Change );
+	}
+	else
+	{
+		Screens.Add( Screen );
+	}
 	return Screen.Id;
+}
+
+bool CUIScreenStack::IsKnown( int32 Id ) const
+{
+	for ( int32 Index = 0; Index < Screens.Num(); ++Index )
+	{
+		if ( Screens[Index].Id == Id )
+		{
+			return true;
+		}
+	}
+	for ( int32 Index = 0; Index < Pending.Num(); ++Index )
+	{
+		if ( Pending[Index].bPush && Pending[Index].Screen.Id == Id )
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 bool CUIScreenStack::Pop()
 {
-	if ( Screens.IsEmpty() )
+	if ( !bUpdating )
 	{
-		return false;
+		return Screens.IsEmpty() ? false : Remove( Screens.Last().Id );
 	}
-	return Remove( Screens.Last().Id );
+	// 最中: 反映されたあとの、いちばん上（あとから積まれる画面があれば、それ。外す予定の画面は、数えない）
+	int32 TopId = 0;
+	for ( int32 Index = 0; Index < Screens.Num(); ++Index )
+	{
+		TopId = Screens[Index].Id;
+	}
+	for ( int32 Index = 0; Index < Pending.Num(); ++Index )
+	{
+		if ( Pending[Index].bPush )
+		{
+			TopId = Pending[Index].Screen.Id;
+		}
+	}
+	for ( int32 Index = 0; Index < Pending.Num(); ++Index )
+	{
+		if ( !Pending[Index].bPush && Pending[Index].RemoveId == TopId )
+		{
+			// すでに外す予定。その下の画面を、探す
+			TopId = 0;
+			for ( int32 Search = Screens.Num() - 1; Search >= 0 && TopId == 0; --Search )
+			{
+				bool bPendingRemoval = false;
+				for ( int32 Check = 0; Check < Pending.Num(); ++Check )
+				{
+					bPendingRemoval = bPendingRemoval || ( !Pending[Check].bPush && Pending[Check].RemoveId == Screens[Search].Id );
+				}
+				TopId = bPendingRemoval ? 0 : Screens[Search].Id;
+			}
+			break;
+		}
+	}
+	return TopId != 0 && Remove( TopId );
 }
 
 bool CUIScreenStack::Remove( int32 Id )
+{
+	if ( bUpdating )
+	{
+		if ( !IsKnown( Id ) )
+		{
+			return false;
+		}
+		FPendingChange Change;
+		Change.RemoveId = Id;
+		Pending.Add( Change );
+		return true;
+	}
+	return RemoveNow( Id );
+}
+
+void CUIScreenStack::ApplyPending()
+{
+	// 反映の最中に、イベントの受け手が、また積む・外すを呼んでも、混ざらないよう、いまの分を取り出してから反映する
+	const TArray<FPendingChange> Changes = Pending;
+	Pending.Empty();
+	for ( int32 Index = 0; Index < Changes.Num(); ++Index )
+	{
+		if ( Changes[Index].bPush )
+		{
+			Screens.Add( Changes[Index].Screen );
+		}
+		else
+		{
+			RemoveNow( Changes[Index].RemoveId );
+		}
+	}
+}
+
+bool CUIScreenStack::RemoveNow( int32 Id )
 {
 	for ( int32 Index = 0; Index < Screens.Num(); ++Index )
 	{
@@ -69,6 +165,27 @@ bool CUIScreenStack::Remove( int32 Id )
 
 void CUIScreenStack::Clear()
 {
+	if ( bUpdating )
+	{
+		// 最中: いまある画面と、これから積まれる画面を、すべて外す予定にする
+		TArray<int32> Ids;
+		for ( int32 Index = 0; Index < Screens.Num(); ++Index )
+		{
+			Ids.Add( Screens[Index].Id );
+		}
+		for ( int32 Index = 0; Index < Pending.Num(); ++Index )
+		{
+			if ( Pending[Index].bPush )
+			{
+				Ids.Add( Pending[Index].Screen.Id );
+			}
+		}
+		for ( int32 Index = Ids.Num() - 1; Index >= 0; --Index )
+		{
+			Remove( Ids[Index] );
+		}
+		return;
+	}
 	while ( !Screens.IsEmpty() )
 	{
 		Pop();
@@ -94,12 +211,21 @@ CUIContext* CUIScreenStack::FindContext( int32 Id ) const
 			return Screens[Index].Context.Get();
 		}
 	}
+	// これから積まれる画面（Update の最中に Push した画面）も探す
+	for ( int32 Index = 0; Index < Pending.Num(); ++Index )
+	{
+		if ( Pending[Index].bPush && Pending[Index].Screen.Id == Id )
+		{
+			return Pending[Index].Screen.Context.Get();
+		}
+	}
 	return nullptr;
 }
 
 FUIScreenInputResult CUIScreenStack::Update( const FUIInputFrame& Frame )
 {
 	FUIScreenInputResult Result;
+	bUpdating = true;
 	bool bPointerTaken = false;
 	bool bNavigationTaken = false;
 	int32 CancelledId = 0;
@@ -125,6 +251,7 @@ FUIScreenInputResult CUIScreenStack::Update( const FUIInputFrame& Frame )
 		Result.bPointerCaptured = Result.bPointerCaptured || ScreenResult.bPointerCaptured;
 		Result.bNavigationConsumed = Result.bNavigationConsumed || ScreenResult.bNavigationConsumed;
 		Result.bWheelConsumed = Result.bWheelConsumed || ScreenResult.bWheelConsumed;
+		Result.bWantsTextInput = Result.bWantsTextInput || ScreenResult.bWantsTextInput;
 		if ( Screen.Options.bBlocksGameInput )
 		{
 			Result.bGameInputBlocked = true;
@@ -142,7 +269,9 @@ FUIScreenInputResult CUIScreenStack::Update( const FUIInputFrame& Frame )
 		bNavigationTaken = true;
 	}
 
-	// 戻るで外す（更新の最中に外すと、画面の一覧が変わるので、最後にまとめて）
+	// 最中に呼ばれた、積む・外すを反映する。そのあとで、戻るで外す
+	bUpdating = false;
+	ApplyPending();
 	if ( CancelledId != 0 )
 	{
 		Remove( CancelledId );

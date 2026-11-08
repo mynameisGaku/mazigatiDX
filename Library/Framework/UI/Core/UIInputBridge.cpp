@@ -55,9 +55,16 @@ namespace
 	}
 }
 
-FUIInputFrame NUIInput::MakeFrame( const IKeyboardInput* Keyboard, const IMouseInput* Mouse, const IGamepadInput* Gamepad, const FUIInputMapping& Mapping )
+FUIInputFrame NUIInput::MakeFrame( const IKeyboardInput* Keyboard, const IMouseInput* Mouse, const IGamepadInput* Gamepad, const FUIInputMapping& Mapping, const ITextInput* TextInput )
 {
 	FUIInputFrame Frame;
+
+	// 文字入力: 受けている間だけ
+	if ( TextInput != nullptr && TextInput->IsTextInputActive() )
+	{
+		Frame.TextEvents = &TextInput->GetTextInputEvents();
+		Frame.Ime = &TextInput->GetImeComposition();
+	}
 
 	// ポインター: 位置が取れて、ゲームのウィンドウに入力の対象があるときだけ
 	Frame.bPointerValid = false;

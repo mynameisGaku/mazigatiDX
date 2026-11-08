@@ -18,6 +18,8 @@
 //   if ( !Result.bGameInputBlocked ) { /* ゲームの入力 */ }
 //   Screens.Paint( CommandList );                                       // 下から順に描く
 //
+//   - 積む・外す（Push・Pop・Remove・Clear）を、Update の最中（ボタンのイベントの中など）に呼んでも安全。その場合は、Update の終わりに、呼んだ順で反映する
+//     （Push の戻り値の番号は、すぐに使える。Num・GetTopRoot などは、反映されるまで、前の状態を返す）。
 //   - 画面ごとに、自分のコンテキスト（ホバー・フォーカス）を持つ。下の画面の状態は、上に別の画面が載っている間も残る
 //     （入力が届かない間は、ホバーなどが外れる）。
 //   - モーダルな画面（既定）は、下の画面へ、ポインターもナビゲーションも渡さない。モーダルでない画面は、自分の部品の上にポインターが
@@ -37,6 +39,7 @@ struct FUIScreenInputResult
 	bool bPointerCaptured = false;      // 部品を押している最中
 	bool bNavigationConsumed = false;   // ナビゲーション・決定・戻るを、UI が使った
 	bool bWheelConsumed = false;        // ホイールを、UI が使った
+	bool bWantsTextInput = false;       // 文字入力を受ける部品（入力欄）にフォーカスがある（ホストは、ITextInput::SetTextInputActive にこの値を渡す）
 	bool bGameInputBlocked = false;     // ゲーム自身の入力を止めるべきか（止める画面がある・ポインターを UI が使っている・ナビゲーションを UI が使った）
 
 	bool ConsumesPointer() const { return bPointerOverUI || bPointerCaptured; }
@@ -49,11 +52,11 @@ public:
 	void SetArea( const FUIRect& InArea ) { Area = InArea; }
 	const FUIRect& GetArea() const { return Area; }
 
-	// 画面を、いちばん上へ積む。戻り値は、画面の番号（1 以上。Remove に使う）。Root が null なら 0
+	// 画面を、いちばん上へ積む。戻り値は、画面の番号（1 以上。Remove に使う）。Root が null なら 0。Update の最中なら、Update の終わりに積まれる
 	int32 Push( const TSharedPtr<CUIWidget>& Root, const FUIScreenOptions& Options = FUIScreenOptions() );
-	// いちばん上の画面を外す。画面が無ければ false
+	// いちばん上の画面を外す。画面が無ければ false。Update の最中なら、Update の終わりに外れる
 	bool Pop();
-	// 番号の画面を外す（上でなくてもよい）。なければ false
+	// 番号の画面を外す（上でなくてもよい）。なければ false。Update の最中なら、Update の終わりに外れる
 	bool Remove( int32 Id );
 	void Clear();
 
@@ -82,7 +85,21 @@ private:
 		TSharedPtr<CUIContext> Context;
 	};
 
+	// Update の最中に呼ばれた、積む・外す。Update の終わりに、呼ばれた順で反映する
+	struct FPendingChange
+	{
+		bool bPush = false;
+		FScreen Screen;
+		int32 RemoveId = 0;
+	};
+
+	bool RemoveNow( int32 Id );
+	void ApplyPending();
+	bool IsKnown( int32 Id ) const;
+
 	TArray<FScreen> Screens;
+	TArray<FPendingChange> Pending;
+	bool bUpdating = false;
 	FUIRect Area = FUIRect( 0.0f, 0.0f, 1280.0f, 720.0f );
 	int32 NextId = 1;
 };

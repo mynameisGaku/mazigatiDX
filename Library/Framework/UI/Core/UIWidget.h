@@ -4,6 +4,7 @@
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Memory/SharedPtr.h"
+#include "Library/Framework/Input/Text/TextInputTypes.h"
 #include "Library/Framework/UI/Brush/UIBrush.h"
 #include "Library/Framework/UI/Core/UIEvent.h"
 #include "Library/Framework/UI/Core/UITypes.h"
@@ -175,6 +176,11 @@ protected:
 	virtual void OnPointerPressed( const FVector2& Position );   // 押した（この部品がポインターの対象になった）
 	virtual void OnPointerDragged( const FVector2& Position );   // 押している間、毎フレーム（ポインターが部品の外へ出ても、押している間は届く）
 	virtual void OnPointerReleased( const FVector2& Position );  // 離した
+	// 文字を受ける部品（入力欄）か。true の部品にフォーカスがあると、CUIContext が文字入力のイベントを OnTextInput へ渡す（既定は false）
+	virtual bool WantsTextInput() const;
+	// 文字入力のイベント（このフレームに届いたもの。空のこともある）と、かな漢字変換の途中の状態（null なら、変換していない）。
+	// 戻り値が true なら、この部品は、フォーカスを手放す（確定・取り消しのあと、など）。既定は何もせず false
+	virtual bool OnTextInput( const TArray<FTextInputEvent>& Events, const FImeComposition* Ime );
 	// フォーカス中に矢印が押されたとき、部品が使うか（true ならフォーカスは動かない。スライダーが左右で値を変えるときなど）
 	virtual bool OnNavigate( EUINavDirection Direction );
 

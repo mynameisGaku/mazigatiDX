@@ -799,6 +799,9 @@
     <ClCompile Include="Library\Framework\UI\Widgets\UIControlWidgets.cpp">
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\UI\Widgets\UIDialog.cpp">
+      <Filter>Library\Framework\UI\Widgets</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\UI\Widgets\UIDisplayWidgets.cpp">
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClCompile>
@@ -809,6 +812,9 @@
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\UI\Widgets\UIScrollBox.cpp">
+      <Filter>Library\Framework\UI\Widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\UI\Widgets\UITextBox.cpp">
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\World\Definition\WorldAssetUse.cpp">
@@ -2820,6 +2826,9 @@
     <ClInclude Include="Library\Framework\UI\Widgets\UIControlWidgets.h">
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\UI\Widgets\UIDialog.h">
+      <Filter>Library\Framework\UI\Widgets</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\UI\Widgets\UIDisplayWidgets.h">
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClInclude>
@@ -2830,6 +2839,9 @@
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\UI\Widgets\UIScrollBox.h">
+      <Filter>Library\Framework\UI\Widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\UI\Widgets\UITextBox.h">
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\World\Definition\WorldAssetUse.h">

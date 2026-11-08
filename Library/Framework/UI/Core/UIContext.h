@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 
+#include "Library/Framework/Input/Text/TextInputTypes.h"
 #include "Library/Framework/UI/Core/UIWidget.h"
 
 //=============================================================================
@@ -27,6 +28,12 @@ struct FUIInputFrame
 	bool bCancel = false;           // 戻る（Esc・B ボタン）
 	bool bFocusNext = false;        // フォーカスを次へ（Tab）
 	bool bFocusPrevious = false;    // フォーカスを前へ（Shift + Tab）
+
+	// 文字入力（ITextInput が、このフレームに届けた文字と編集の操作。入力欄にフォーカスがあるときだけ使う）。
+	// 指しているのは、Update を呼んでいる間だけ有効な配列（ホストが持つ）。null なら、文字入力は無い
+	const TArray<FTextInputEvent>* TextEvents = nullptr;
+	// かな漢字変換の途中の状態（null なら、変換していない）
+	const FImeComposition* Ime = nullptr;
 };
 
 // Update の結果。ゲームは、これを見て、入力を UI が食べたかを知る（UI の上でクリックしたとき、攻撃が出ないように）
@@ -37,6 +44,7 @@ struct FUIInputResult
 	bool bNavigationConsumed = false;   // ナビゲーション・決定・戻るを、UI が使った（フォーカスを動かした・決定した・戻るの受け手がいた）
 	bool bCancelRequested = false;      // 戻るが押された（受け手の有無に関わらず）
 	bool bWheelConsumed = false;        // ホイールを、UI の部品（スクロール枠など）が使った
+	bool bWantsTextInput = false;       // 文字入力を受ける部品（入力欄）にフォーカスがある。ホストは、ITextInput::SetTextInputActive にこの値を渡す
 
 	// ポインターの入力を、UI が使っているか（ゲームの側が、クリックなどを無視するかの判断に）
 	bool ConsumesPointer() const { return bPointerOverUI || bPointerCaptured; }
@@ -53,6 +61,9 @@ struct FUIInputResult
 //   const FUIInputResult Result = Context.Update( Frame );
 //   if ( !Result.ConsumesPointer() ) { /* ゲームの入力へ */ }
 //
+//   - 文字入力: 入力欄（WantsTextInput が true の部品）にフォーカスがあるとき、FUIInputFrame の文字入力のイベントを、その部品へ渡す。
+//     このとき、左右の矢印・決定・戻るは、入力欄が使うので、フォーカスの移動や決定・戻るには使わない（上下の矢印と Tab は、これまでどおり）。
+//     結果の bWantsTextInput を、ホストが ITextInput::SetTextInputActive へ渡す（入力欄が無いときは、文字入力を切って、WASD などに変換が割り込まないように）。
 //   - 部品は、ルートの木に入っている間だけ有効（木から外された部品が、ホバー・押下・フォーカスを持っていたら、イベントなしで外す）。
 //   - ポインターの対象は、当たった部品から親へたどって、最初の Interactive な部品。使えない（Disabled）部品は、イベントを受けず、入力を止めるだけ。
 //   - フォーカスを動かす: 矢印は、部品の位置から自動で選ぶ（向きの半平面にある、いちばん近い Focusable。部品ごとの名前の指定が先）。

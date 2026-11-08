@@ -5,6 +5,7 @@
 #include "Library/Core/Interfaces/Input/IGamepadInput.h"
 #include "Library/Core/Interfaces/Input/IKeyboardInput.h"
 #include "Library/Core/Interfaces/Input/IMouseInput.h"
+#include "Library/Core/Interfaces/Input/ITextInput.h"
 #include "Library/Framework/UI/Core/UIContext.h"
 
 //=============================================================================
@@ -36,5 +37,7 @@ namespace NUIInput
 	//   どの窓口も、null でよい（その入力は、何も押されていない扱い）。
 	//   マウス: 位置が取れ、ゲームのウィンドウに入力の対象があるときだけ、ポインターが有効。主ボタン = 左、副ボタン = 右。
 	//   パッド: つながっているすべてのパッドの、このフレームで押されたボタンをまとめる。
-	FUIInputFrame MakeFrame( const IKeyboardInput* Keyboard, const IMouseInput* Mouse, const IGamepadInput* Gamepad, const FUIInputMapping& Mapping = FUIInputMapping() );
+	//   文字入力（TextInput）: 受けている間（IsTextInputActive）だけ、そのフレームの文字と編集の操作・かな漢字変換の状態を、フレームへ入れる
+	//   （配列は、TextInput が持つもので、次の入力更新まで有効。結果の bWantsTextInput を、SetTextInputActive へ渡す）。
+	FUIInputFrame MakeFrame( const IKeyboardInput* Keyboard, const IMouseInput* Mouse, const IGamepadInput* Gamepad, const FUIInputMapping& Mapping = FUIInputMapping(), const ITextInput* TextInput = nullptr );
 }

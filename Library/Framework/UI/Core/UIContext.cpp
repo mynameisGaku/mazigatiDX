@@ -203,8 +203,10 @@ void CUIContext::Activate( CUIWidget& Target )
 	Target.OnClicked.Broadcast( Target );
 }
 
-FUIInputResult CUIContext::Update( const FUIInputFrame& Frame )
+FUIInputResult CUIContext::Update( const FUIInputFrame& InputFrame )
 {
+	// 入力欄にフォーカスがあるときは、一部の入力を、取り除いて使うので、手元の複写で扱う
+	FUIInputFrame Frame = InputFrame;
 	FUIInputResult Result;
 	if ( !Root )
 	{
@@ -319,6 +321,23 @@ FUIInputResult CUIContext::Update( const FUIInputFrame& Frame )
 	}
 	Result.bPointerCaptured = Pressed != nullptr;
 
+	// 文字入力: 入力欄にフォーカスがあれば、文字と編集の操作を渡す。左右の矢印・決定・戻るは、入力欄が（文字入力として）使うので、ここでは使わない
+	if ( Focused != nullptr && Focused->WantsTextInput() && Focused->IsEffectivelyEnabled() )
+	{
+		Result.bWantsTextInput = true;
+		Frame.bNavigateLeft = false;
+		Frame.bNavigateRight = false;
+		Frame.bConfirm = false;
+		Frame.bCancel = false;
+		static const TArray<FTextInputEvent> NoEvents;
+		CUIWidget* TextWidget = Focused;
+		if ( TextWidget->OnTextInput( Frame.TextEvents != nullptr ? *Frame.TextEvents : NoEvents, Frame.Ime ) )
+		{
+			SetFocus( nullptr );
+			Result.bWantsTextInput = false;
+		}
+	}
+
 	// フォーカスの移動
 	TArray<CUIWidget*> Order;
 	const bool bNavigationPressed = Frame.bNavigateUp || Frame.bNavigateDown || Frame.bNavigateLeft || Frame.bNavigateRight || Frame.bFocusNext || Frame.bFocusPrevious;
@@ -382,5 +401,7 @@ FUIInputResult CUIContext::Update( const FUIInputFrame& Frame )
 			Result.bNavigationConsumed = true;
 		}
 	}
+	// 最後に、いまのフォーカスで決める（このフレームの中で、矢印・Tab で入力欄へ動いたときも、ホストに、文字入力を始めさせる）
+	Result.bWantsTextInput = Focused != nullptr && Focused->WantsTextInput() && Focused->IsEffectivelyEnabled();
 	return Result;
 }

@@ -9,7 +9,7 @@
 |部品の木とレイアウト|`CUIWidget`（余白・寄せ方・最小 / 最大・固定の大きさ・不透明度・当たり判定）、`CUICanvasPanel`（アンカー）、`CUIStackPanel`（縦横）、`CUIGridPanel`（格子）|`Core`|
 |見た目|`FUIBrush`: 色（角丸・枠）・画像（引き伸ばし / 収める / 覆う / タイル / 9 分割）・コールバック・重ね|`Brush`|
 |入力|`CUIContext`（ホバー・押下・クリック・フォーカス・決定・戻る）、`NUIInput::MakeFrame`（ゲームの入力 → UI の入力）|`Core`|
-|部品|`CUIImage`・`CUILabel`・`CUIProgressBar`・`CUIButton`・`CUICheckBox`・`CUISlider`・`CUIScrollBox`・`CUIListView`・`CUIRenderTargetView`|`Widgets`|
+|部品|`CUIImage`・`CUILabel`・`CUIProgressBar`・`CUIButton`・`CUICheckBox`・`CUISlider`・`CUIScrollBox`・`CUIListView`・`CUITextBox`（入力欄）・`CUIDialog`（確認のダイアログ）・`CUIRenderTargetView`|`Widgets`|
 |画面のスタック|`CUIScreenStack`: 画面を積み重ねて、描く順と入力の行き先を決める（HUD・メニュー・ダイアログ）|`Core`|
 |既定のスタイル|`FUIDefaultStyle`: `EngineContent` の画像から作る、部品の既定の見た目|`Style`|
 
@@ -95,6 +95,46 @@ List->OnItemClicked.Add( []( CUIWidget&, int32 Index ) { /* クリック・決�
 - データが変わったら、`SetItemCount`（数が変わるとき）か `Refresh`（中身だけ変わるとき）。数が減って、選択やスクロールの量が範囲の外になったら、範囲に収めます。
 - ホイールとスクロールバーは、スクロール枠と同じです。
 
+## 入力欄（文字入力）
+
+`CUITextBox` は、1 行の入力欄です。フォーカスがあるとき、`ITextInput` が届ける文字と編集の操作（かな漢字変換を含む）を受けて、文字列を編集します。
+
+```cpp
+TSharedPtr<CUITextBox> Name = MakeShared<CUITextBox>();
+Name->SetFont( Font );
+Name->SetPlaceholder( "Your name" );
+Name->SetMaxLength( 16 );
+Name->OnSubmitted.Add( []( CUIWidget&, const FString& Text ) { /* Enter で確定された */ } );
+
+// 毎フレーム: 文字入力の窓口（ITextInput）を、橋渡しへ渡し、結果を、窓口へ返す
+const FUIInputFrame Frame = NUIInput::MakeFrame( Input, Input, Gamepad, FUIInputMapping(), TextInput );
+const FUIScreenInputResult Result = Screens.Update( Frame );
+TextInput->SetTextInputActive( Result.bWantsTextInput );   // 入力欄にフォーカスがあるときだけ、文字入力（変換）を受ける
+```
+
+- 操作: 文字・Backspace・Delete・左右・Home・End。Enter で確定（`OnSubmitted`。フォーカスを手放す）、Escape で取り消し（フォーカスを得たときの文字列へ戻し、`OnCancelled`。フォーカスを手放す）。クリックで、その位置へカーソルを置く。範囲選択・コピー・貼り付けは、まだ扱いません。
+- 入力欄にフォーカスがあるとき、**左右の矢印・決定・戻る**は、入力欄が使います（フォーカスの移動や、ボタンの決定、画面を戻すことには使われない）。上下の矢印と Tab は、これまでどおり、フォーカスを動かします。
+- 文字列が欄より長いときは、カーソルが見える位置まで、横へずらして表示します（欄の矩形でクリップ）。かな漢字変換の途中の文字列は、カーソルの位置に、下線つきで出ます。`SetPasswordMode( true )` で `*` 表示。
+- カーソルの点滅は、描いた回数で数えます（`SetCaretBlinkFrames`）。文字やカーソルが動いた直後は、必ず見えます。
+
+## ダイアログ
+
+`CUIDialog` は、確認のダイアログ（タイトル・メッセージ・ボタンのいくつか）です。画面のスタックの 1 画面として使い、`NUIDialog::Show` で、モーダルな画面として積みます。
+
+```cpp
+FUIDialogStyle Style;   // 暗幕・窓・ボタンのブラシ、フォント、大きさ
+TArray<FUIDialogButton> Buttons;
+Buttons.Add( FUIDialogButton { "Yes", 1 } );
+Buttons.Add( FUIDialogButton { "No", 2 } );
+TSharedPtr<CUIDialog> Dialog = MakeShared<CUIDialog>( Style, "Quit?", "Unsaved changes will be lost.", Buttons, /*既定*/ 2, /*戻る*/ 2 );
+Dialog->OnResult.Add( []( CUIWidget&, int32 Id ) { if ( Id == 1 ) { /* Yes */ } } );
+NUIDialog::Show( Screens, Dialog );   // どれかを選ぶと、自動で閉じる
+```
+
+- 画面全体を暗幕で覆い（下の画面へ、クリックを通しません）、中央に窓を置きます。最初のフォーカスは、既定のボタンです（Enter・A ボタンですぐに決められる）。
+- 結果は `OnResult`（選んだボタンの番号）。戻る（Escape・B ボタン）は、`CancelId` として届きます（`-1` なら、何も起こさず、ダイアログも閉じません）。
+- 画面のスタックの、積む・外す（`Push`・`Pop`・`Remove`・`Clear`）は、`Update` の最中（ボタンのイベントの中など）に呼んでも安全です。その場合は、`Update` の終わりに、呼んだ順で反映されます（`Push` が返す番号は、すぐに使えます）。
+
 ## 画面のスタックと、ゲームの入力
 
 `CUIScreenStack` は、画面（部品の木のルート）を積み重ねます。入力は、上の画面から先に渡し、上の画面が使った入力は、下の画面へは届きません。
@@ -143,4 +183,4 @@ UI の基本画像（窓・パネル・ボタンの 4 状態・チェック・�
 
 ## これから
 
-スタイルのテーマ、入力欄・ツールチップ・ドロップダウン・ダイアログ、スクロールバーのドラッグ、横向きのリスト・行の高さが違うリスト、プロパティの結び付け（MVVM）、マークアップ（`.gxui`）、マテリアルのブラシ（シェーダーでの表現）は、順に足していきます。
+スタイルのテーマ、ツールチップ・ドロップダウン・入力欄の範囲選択とコピー・貼り付け・スクロールバーのドラッグ・横向きのリスト・行の高さが違うリスト、プロパティの結び付け（MVVM）、マークアップ（`.gxui`）、マテリアルのブラシ（シェーダーでの表現）は、順に足していきます。

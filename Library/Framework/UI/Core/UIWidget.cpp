@@ -171,6 +171,16 @@ bool CUIWidget::OnNavigate( EUINavDirection )
 	return false;
 }
 
+bool CUIWidget::WantsTextInput() const
+{
+	return false;
+}
+
+bool CUIWidget::OnTextInput( const TArray<FTextInputEvent>&, const FImeComposition* )
+{
+	return false;
+}
+
 bool CUIWidget::OnWheel( const FVector2&, float32 )
 {
 	return false;
