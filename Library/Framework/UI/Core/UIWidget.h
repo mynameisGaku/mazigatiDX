@@ -9,6 +9,8 @@
 #include "Library/Framework/UI/Core/UIEvent.h"
 #include "Library/Framework/UI/Core/UITypes.h"
 
+class IClipboard;
+
 //=============================================================================
 // FUILayoutProperties
 //   部品の置き方の指定。どの値が効くかは、親の種類で決まる（効かない値は無視される）。
@@ -120,6 +122,14 @@ public:
 	void SetNavigationTarget( EUINavDirection Direction, const FString& TargetName ) { NavigationTargets[static_cast<int32>( Direction )] = TargetName; }
 	const FString& GetNavigationTarget( EUINavDirection Direction ) const { return NavigationTargets[static_cast<int32>( Direction )]; }
 
+	// ツールチップ: ポインターが、この部品（または、中の部品）の上に、しばらく止まっていると、近くに出る説明。文字か、好きな部品（木に入れない）。
+	// 出す仕事は CUIScreenStack が受け持つ（SetTooltipStyle）。どちらも空なら、出さない。内側の部品の設定が先（祖先へは、無い部品だけ）
+	void SetTooltip( const FString& InText ) { TooltipText = InText; }
+	const FString& GetTooltip() const { return TooltipText; }
+	void SetTooltipWidget( const TSharedPtr<CUIWidget>& InWidget ) { TooltipWidget = InWidget; }
+	const TSharedPtr<CUIWidget>& GetTooltipWidget() const { return TooltipWidget; }
+	bool HasTooltip() const { return !TooltipText.IsEmpty() || TooltipWidget.IsValid(); }
+
 	// イベント（引数は、イベントを起こした部品）
 	TUIEvent<CUIWidget&> OnClicked;      // 押して、同じ部品の上で離した（Confirm でフォーカス中の部品を決定したときも）
 	TUIEvent<CUIWidget&> OnPressed;      // 押した
@@ -176,6 +186,10 @@ protected:
 	virtual void OnPointerPressed( const FVector2& Position );   // 押した（この部品がポインターの対象になった）
 	virtual void OnPointerDragged( const FVector2& Position );   // 押している間、毎フレーム（ポインターが部品の外へ出ても、押している間は届く）
 	virtual void OnPointerReleased( const FVector2& Position );  // 離した
+	// ポインターが、Interactive でなくても、この位置では、この部品が受ける（スクロールバーのつまみなど）。true なら、CUIContext は、この部品を押す対象にする。既定は false
+	virtual bool OwnsPointerAt( const FVector2& Position ) const;
+	// 文字入力を渡す直前に、CUIContext が呼ぶ。クリップボード（無ければ null。このフレームの間だけ有効）。入力欄が、コピー・貼り付けに使う。既定は何もしない
+	virtual void SetTextInputClipboard( IClipboard* InClipboard );
 	// 文字を受ける部品（入力欄）か。true の部品にフォーカスがあると、CUIContext が文字入力のイベントを OnTextInput へ渡す（既定は false）
 	virtual bool WantsTextInput() const;
 	// 文字入力のイベント（このフレームに届いたもの。空のこともある）と、かな漢字変換の途中の状態（null なら、変換していない）。
@@ -209,6 +223,8 @@ private:
 	FUIBrush Background;
 	float32 Opacity = 1.0f;
 	FString NavigationTargets[4];
+	FString TooltipText;
+	TSharedPtr<CUIWidget> TooltipWidget;
 	bool bEnabled = true;
 	bool bInteractive = false;
 	bool bFocusable = false;

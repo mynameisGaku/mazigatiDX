@@ -74,6 +74,24 @@ namespace
 			return false;
 		}
 	}
+
+	// 移動の操作を、範囲を広げる操作にする（それ以外は、そのまま）
+	ETextEditCommand ToSelectCommand( ETextEditCommand Command )
+	{
+		switch ( Command )
+		{
+		case ETextEditCommand::Left:
+			return ETextEditCommand::SelectLeft;
+		case ETextEditCommand::Right:
+			return ETextEditCommand::SelectRight;
+		case ETextEditCommand::Home:
+			return ETextEditCommand::SelectHome;
+		case ETextEditCommand::End:
+			return ETextEditCommand::SelectEnd;
+		default:
+			return Command;
+		}
+	}
 }
 
 void CDxLibInputSubsystem::SetTextInputActive( bool bActive )
@@ -136,6 +154,11 @@ void CDxLibInputSubsystem::UpdateText()
 			ETextEditCommand Command = ETextEditCommand::Backspace;
 			if ( TryMapControlCode( Code, Command ) )
 			{
+				// Shift を押しながらの左右・Home・End は、範囲を広げる操作にする
+				if ( CheckHitKey( KEY_INPUT_LSHIFT ) != 0 || CheckHitKey( KEY_INPUT_RSHIFT ) != 0 )
+				{
+					Command = ToSelectCommand( Command );
+				}
 				TextEvents.Add( FTextInputEvent::MakeCommand( Command ) );
 			}
 			continue;

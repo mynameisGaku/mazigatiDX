@@ -14,6 +14,8 @@ struct FSettingsViewModel
 	TObservable<bool> Music { true };
 	TObservable<bool> Sound { true };
 	TObservable<FString> Name;
+	TObservable<int32> Quality { 1 };                                       // 画質（QualityItems の番号）
+	TObservableArray<FString> QualityItems;
 	TObservable<FString> Status { FString( "Use the mouse, arrow keys, Tab, Enter or a gamepad" ) };
 
 	// 音量から作る値（音量が変わると、ここで更新する）
@@ -38,6 +40,14 @@ struct FSettingsViewModel
 			VolumeText.Set( FString::Printf( "%d%%", static_cast<int32>( Value ) ) );
 			VolumeRatio.Set( Value / 100.0f );
 		} );
+		QualityItems.Add( "Low" );
+		QualityItems.Add( "Medium" );
+		QualityItems.Add( "High" );
+		QualityItems.Add( "Ultra" );
+		Quality.OnChanged.Add( [this]( const int32& Index )
+		{
+			Status.Set( QualityItems.GetItems().IsValidIndex( Index ) ? FString::Printf( "Quality: %s", *QualityItems[Index] ) : FString( "Quality: none" ) );
+		} );
 		Music.OnChanged.Add( [this]( const bool& bOn ) { Status.Set( bOn ? "Music on" : "Music off" ); } );
 		Sound.OnChanged.Add( [this]( const bool& bOn ) { Status.Set( bOn ? "Sound effects on" : "Sound effects off" ); } );
 	}
@@ -48,6 +58,7 @@ struct FSettingsViewModel
 		Volume.Set( 50.0f );
 		Music.Set( true );
 		Sound.Set( true );
+		Quality.Set( 1 );
 		Name.Set( FString() );
 		Status.Set( "Reset to the defaults" );
 	}

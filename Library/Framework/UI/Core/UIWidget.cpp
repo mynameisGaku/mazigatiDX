@@ -171,6 +171,15 @@ bool CUIWidget::OnNavigate( EUINavDirection )
 	return false;
 }
 
+bool CUIWidget::OwnsPointerAt( const FVector2& ) const
+{
+	return false;
+}
+
+void CUIWidget::SetTextInputClipboard( IClipboard* )
+{
+}
+
 bool CUIWidget::WantsTextInput() const
 {
 	return false;

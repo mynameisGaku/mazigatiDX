@@ -41,7 +41,7 @@ struct FUIDefaultStyle
 
 	// この見た目を、基本のテーマにする（名前は下の通り。フォントは、渡したときだけ入れる）。これの子のテーマで、変えたいところだけ上書きする
 	//   ブラシ: Window Panel Frame Tooltip TextBox TextBoxFocused Shadow ProgressBack ProgressFill
-	//   スタイル: Button / CheckBox / Slider / TextBox の "Default"
+	//   スタイル: Button / CheckBox / Slider / TextBox / Dropdown の "Default"（Dropdown の矢印の画像は、無い。使うときに、Arrow へ足す）
 	//   色: Text TextMuted Accent Value Error    数: Gap（14）Spacing（18）
 	//   フォント: Body Title
 	TSharedPtr<FUITheme> MakeTheme( const TSharedPtr<CFont>& Body = TSharedPtr<CFont>(), const TSharedPtr<CFont>& Title = TSharedPtr<CFont>() ) const;

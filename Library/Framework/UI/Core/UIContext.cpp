@@ -57,6 +57,9 @@ void CUIContext::SetRoot( const TSharedPtr<CUIWidget>& InRoot )
 	Hovered = nullptr;
 	Pressed = nullptr;
 	Focused = nullptr;
+	TooltipSource = nullptr;
+	TooltipHoverTime = 0.0f;
+	bTooltipShown = false;
 	bPreviousPointerDown = false;
 	Root = InRoot;
 }
@@ -203,6 +206,18 @@ void CUIContext::Activate( CUIWidget& Target )
 	Target.OnClicked.Broadcast( Target );
 }
 
+FUITooltipRequest CUIContext::GetTooltip() const
+{
+	FUITooltipRequest Request;
+	if ( TooltipSource != nullptr && bTooltipShown )
+	{
+		Request.bVisible = true;
+		Request.Source = TooltipSource;
+		Request.Anchor = TooltipAnchor;
+	}
+	return Request;
+}
+
 FUIInputResult CUIContext::Update( const FUIInputFrame& InputFrame )
 {
 	// 入力欄にフォーカスがあるときは、一部の入力を、取り除いて使うので、手元の複写で扱う
@@ -221,6 +236,12 @@ FUIInputResult CUIContext::Update( const FUIInputFrame& InputFrame )
 			Hovered->bHovered = false;
 		}
 		Hovered = nullptr;
+	}
+	if ( TooltipSource != nullptr && !IsLive( TooltipSource ) )
+	{
+		TooltipSource = nullptr;
+		TooltipHoverTime = 0.0f;
+		bTooltipShown = false;
 	}
 	if ( Pressed != nullptr && !IsLive( Pressed ) )
 	{
@@ -250,7 +271,7 @@ FUIInputResult CUIContext::Update( const FUIInputFrame& InputFrame )
 	CUIWidget* Target = nullptr;
 	for ( CUIWidget* Walk = Hit; Walk != nullptr; Walk = Walk->GetParent() )
 	{
-		if ( Walk->IsInteractive() )
+		if ( Walk->IsInteractive() || Walk->OwnsPointerAt( Frame.PointerPosition ) )
 		{
 			Target = Walk;
 			break;
@@ -287,6 +308,35 @@ FUIInputResult CUIContext::Update( const FUIInputFrame& InputFrame )
 		{
 			Hovered->bHovered = true;
 			Hovered->OnHoverBegin.Broadcast( *Hovered );
+		}
+	}
+
+	// ツールチップ: 当たった部品から親へたどって、最初にツールチップを持つ部品の上に、止まっている時間を数える（ボタンを押している間は、出さない）
+	{
+		CUIWidget* TipSource = nullptr;
+		if ( Hit != nullptr && !Frame.bPointerDown && !Frame.bPointerSecondaryDown )
+		{
+			for ( CUIWidget* Walk = Hit; Walk != nullptr; Walk = Walk->GetParent() )
+			{
+				if ( Walk->HasTooltip() )
+				{
+					TipSource = Walk;
+					break;
+				}
+			}
+		}
+		if ( TipSource != TooltipSource )
+		{
+			TooltipSource = TipSource;
+			TooltipHoverTime = 0.0f;
+			TooltipAnchor = Frame.PointerPosition;
+			bTooltipShown = false;
+		}
+		if ( TooltipSource != nullptr && !bTooltipShown )
+		{
+			TooltipHoverTime += NMath::Max( 0.0f, Frame.DeltaTime );
+			TooltipAnchor = Frame.PointerPosition;
+			bTooltipShown = TooltipHoverTime >= TooltipDelay;
 		}
 	}
 
@@ -331,6 +381,7 @@ FUIInputResult CUIContext::Update( const FUIInputFrame& InputFrame )
 		Frame.bCancel = false;
 		static const TArray<FTextInputEvent> NoEvents;
 		CUIWidget* TextWidget = Focused;
+		TextWidget->SetTextInputClipboard( Frame.Clipboard );
 		if ( TextWidget->OnTextInput( Frame.TextEvents != nullptr ? *Frame.TextEvents : NoEvents, Frame.Ime ) )
 		{
 			SetFocus( nullptr );

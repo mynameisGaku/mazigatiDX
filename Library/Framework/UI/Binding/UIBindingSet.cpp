@@ -80,6 +80,38 @@ void CUIBindingSet::BindChecked( TObservable<bool>& Source, const TSharedPtr<CUI
 	AddUnbinder( [CheckBox, Id]() { CheckBox->OnToggled.Remove( Id ); } );
 }
 
+void CUIBindingSet::BindSelectedIndex( TObservable<int32>& Source, const TSharedPtr<CUIDropdown>& Dropdown )
+{
+	Bind( Source, [Dropdown]( const int32& Index ) { Dropdown->SetSelectedIndex( Index, false ); } );
+
+	TObservable<int32>* Pointer = &Source;
+	const TWeakPtr<bool> Alive = Source.GetAliveToken();
+	const int32 Id = Dropdown->OnSelectionChanged.Add( [Pointer, Alive]( CUIWidget&, int32 Index )
+	{
+		if ( Alive.IsValid() )
+		{
+			Pointer->Set( Index );
+		}
+	} );
+	AddUnbinder( [Dropdown, Id]() { Dropdown->OnSelectionChanged.Remove( Id ); } );
+}
+
+void CUIBindingSet::BindItems( TObservableArray<FString>& Source, const TSharedPtr<CUIDropdown>& Dropdown )
+{
+	TObservableArray<FString>* Pointer = &Source;
+	auto Apply = [Pointer, Dropdown]() { Dropdown->SetItems( Pointer->GetItems() ); };
+	Apply();
+	const int32 Id = Source.OnChanged.Add( [Apply]( const FObservableChange& ) { Apply(); } );
+	const TWeakPtr<bool> Alive = Source.GetAliveToken();
+	AddUnbinder( [Pointer, Alive, Id]()
+	{
+		if ( Alive.IsValid() )
+		{
+			Pointer->OnChanged.Remove( Id );
+		}
+	} );
+}
+
 void CUIBindingSet::BindValue( TObservable<float32>& Source, const TSharedPtr<CUISlider>& Slider )
 {
 	// スライダーは、範囲と刻みに収めた値を見せる（観測値は、そのまま）

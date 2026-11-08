@@ -34,6 +34,7 @@ void FTextEditBuffer::SetMaxCharCount( int32 InMaxCharCount )
 	{
 		Text = Text.Left( CountBytesOfChars( Text, MaxCharCount ) );
 		CursorByteOffset = CursorByteOffset > Text.Len() ? Text.Len() : CursorByteOffset;
+		SelectionAnchor = -1;
 	}
 }
 
@@ -55,12 +56,14 @@ void FTextEditBuffer::SetText( const FString& InText )
 		Text = Text.Left( CountBytesOfChars( Text, MaxCharCount ) );
 	}
 	CursorByteOffset = Text.Len();
+	SelectionAnchor = -1;
 }
 
 void FTextEditBuffer::Clear()
 {
 	Text = FString();
 	CursorByteOffset = 0;
+	SelectionAnchor = -1;
 	bSubmitted = false;
 	bCancelled = false;
 }
@@ -74,6 +77,48 @@ void FTextEditBuffer::SetCursorByteOffset( int32 InByteOffset )
 		--Offset;
 	}
 	CursorByteOffset = Offset;
+	SelectionAnchor = -1;
+}
+
+FString FTextEditBuffer::GetSelectedText() const
+{
+	return HasSelection() ? Text.Mid( GetSelectionStart(), GetSelectionEnd() - GetSelectionStart() ) : FString();
+}
+
+void FTextEditBuffer::SetSelection( int32 InAnchorByteOffset, int32 InCursorByteOffset )
+{
+	// どちらも文字の境目へ寄せる（SetCursorByteOffset と同じ。範囲は、いったん、やめる）
+	SetCursorByteOffset( InAnchorByteOffset );
+	const int32 Anchor = CursorByteOffset;
+	SetCursorByteOffset( InCursorByteOffset );
+	SelectionAnchor = Anchor;
+}
+
+void FTextEditBuffer::SelectAll()
+{
+	SelectionAnchor = 0;
+	CursorByteOffset = Text.Len();
+}
+
+bool FTextEditBuffer::DeleteSelection()
+{
+	if ( !HasSelection() )
+	{
+		SelectionAnchor = -1;
+		return false;
+	}
+	const int32 Start = GetSelectionStart();
+	const int32 End = GetSelectionEnd();
+	Text = Text.Left( Start ) + Text.RightChop( End );
+	CursorByteOffset = Start;
+	SelectionAnchor = -1;
+	return true;
+}
+
+bool FTextEditBuffer::InsertText( const FString& Inserted )
+{
+	const bool bDeleted = DeleteSelection();
+	return InsertAtCursor( Inserted ) || bDeleted;
 }
 
 bool FTextEditBuffer::InsertAtCursor( const FString& Inserted )
@@ -149,13 +194,18 @@ bool FTextEditBuffer::Apply( const FTextInputEvent& Event )
 {
 	if ( !Event.bCommand )
 	{
-		return InsertAtCursor( Event.Text );
+		return InsertText( Event.Text );
 	}
 
 	switch ( Event.Command )
 	{
 	case ETextEditCommand::Backspace:
 	{
+		if ( DeleteSelection() )
+		{
+			return true;
+		}
+		SelectionAnchor = -1;
 		if ( CursorByteOffset <= 0 )
 		{
 			return false;
@@ -167,6 +217,11 @@ bool FTextEditBuffer::Apply( const FTextInputEvent& Event )
 	}
 	case ETextEditCommand::Delete:
 	{
+		if ( DeleteSelection() )
+		{
+			return true;
+		}
+		SelectionAnchor = -1;
 		if ( CursorByteOffset >= Text.Len() )
 		{
 			return false;
@@ -177,6 +232,13 @@ bool FTextEditBuffer::Apply( const FTextInputEvent& Event )
 	}
 	case ETextEditCommand::Left:
 	{
+		if ( HasSelection() )
+		{
+			CursorByteOffset = GetSelectionStart();
+			SelectionAnchor = -1;
+			return true;
+		}
+		SelectionAnchor = -1;
 		const int32 Moved = PreviousBoundary( CursorByteOffset );
 		const bool bChanged = Moved != CursorByteOffset;
 		CursorByteOffset = Moved;
@@ -184,6 +246,13 @@ bool FTextEditBuffer::Apply( const FTextInputEvent& Event )
 	}
 	case ETextEditCommand::Right:
 	{
+		if ( HasSelection() )
+		{
+			CursorByteOffset = GetSelectionEnd();
+			SelectionAnchor = -1;
+			return true;
+		}
+		SelectionAnchor = -1;
 		const int32 Moved = NextBoundary( CursorByteOffset );
 		const bool bChanged = Moved != CursorByteOffset;
 		CursorByteOffset = Moved;
@@ -191,17 +260,57 @@ bool FTextEditBuffer::Apply( const FTextInputEvent& Event )
 	}
 	case ETextEditCommand::Home:
 	{
+		const bool bHadSelection = HasSelection();
+		SelectionAnchor = -1;
 		const int32 Moved = LineStart( CursorByteOffset );
-		const bool bChanged = Moved != CursorByteOffset;
+		const bool bChanged = Moved != CursorByteOffset || bHadSelection;
 		CursorByteOffset = Moved;
 		return bChanged;
 	}
 	case ETextEditCommand::End:
 	{
+		const bool bHadSelection = HasSelection();
+		SelectionAnchor = -1;
 		const int32 Moved = LineEnd( CursorByteOffset );
+		const bool bChanged = Moved != CursorByteOffset || bHadSelection;
+		CursorByteOffset = Moved;
+		return bChanged;
+	}
+	case ETextEditCommand::SelectLeft:
+	case ETextEditCommand::SelectRight:
+	case ETextEditCommand::SelectHome:
+	case ETextEditCommand::SelectEnd:
+	{
+		// 動かない端を決めてから、カーソルだけ動かす
+		if ( SelectionAnchor < 0 )
+		{
+			SelectionAnchor = CursorByteOffset;
+		}
+		int32 Moved = CursorByteOffset;
+		switch ( Event.Command )
+		{
+		case ETextEditCommand::SelectLeft:
+			Moved = PreviousBoundary( CursorByteOffset );
+			break;
+		case ETextEditCommand::SelectRight:
+			Moved = NextBoundary( CursorByteOffset );
+			break;
+		case ETextEditCommand::SelectHome:
+			Moved = LineStart( CursorByteOffset );
+			break;
+		default:
+			Moved = LineEnd( CursorByteOffset );
+			break;
+		}
 		const bool bChanged = Moved != CursorByteOffset;
 		CursorByteOffset = Moved;
 		return bChanged;
+	}
+	case ETextEditCommand::SelectAll:
+	{
+		const bool bChanged = !( SelectionAnchor == 0 && CursorByteOffset == Text.Len() );
+		SelectAll();
+		return bChanged && Text.Len() > 0;
 	}
 	case ETextEditCommand::Enter:
 	{
@@ -218,7 +327,7 @@ bool FTextEditBuffer::Apply( const FTextInputEvent& Event )
 		return false;
 	}
 	default:
-		// 上下・Tab・ページ・コピー・切り取り・貼り付け・すべて選ぶは、何もしない
+		// 上下・Tab・ページ・コピー・切り取り・貼り付けは、何もしない（コピーと貼り付けは、クリップボードを持つ側が扱う）
 		return false;
 	}
 }

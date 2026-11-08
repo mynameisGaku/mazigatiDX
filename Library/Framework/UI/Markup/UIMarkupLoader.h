@@ -7,6 +7,7 @@
 #include "Library/Framework/UI/Markup/UIXml.h"
 #include "Library/Framework/UI/Style/UITheme.h"
 #include "Library/Framework/UI/Widgets/UIControlWidgets.h"
+#include "Library/Framework/UI/Widgets/UIDropdown.h"
 #include "Library/Framework/UI/Widgets/UIDisplayWidgets.h"
 #include "Library/Framework/UI/Widgets/UIListView.h"
 #include "Library/Framework/UI/Widgets/UIScrollBox.h"
@@ -38,7 +39,7 @@
 //   CUIBindingSet Bindings;                           // 結び付けは、この組が持つ（消えると解除される）
 //   const FUIMarkupResult Result = CUIMarkupLoader::Load( Markup, Context, Bindings );
 //
-// 要素: Panel（子を重ねる）・Canvas・VerticalStack・HorizontalStack・Grid・ScrollBox・Label・Image・ProgressBar・Button・CheckBox・Slider・TextBox・ListView
+// 要素: Panel（子を重ねる）・Canvas・VerticalStack・HorizontalStack・Grid・ScrollBox・Label・Image・ProgressBar・Button・CheckBox・Slider・TextBox・ListView・Dropdown
 // 共通の属性: Name・Width・Height（固定の大きさ）・MinWidth・MinHeight・MaxWidth・MaxHeight・Margin・Padding（数が 1・2・4 個）・HAlign・VAlign（Start / Center / End / Stretch）・
 //   Weight・Column・Row・ColumnSpan・RowSpan・Anchor（TopLeft・Top・TopRight・Left・Center・Right・BottomLeft・Bottom・BottomRight・Stretch）・AnchorMin・AnchorMax・
 //   Offsets（左・上・右・下）・Pivot・Visibility（Visible / Hidden / Collapsed）・Enabled・Opacity・Clip・HitTestable・Background（#RRGGBB[AA] か、ブラシの名前）
@@ -63,6 +64,9 @@ public:
 	void RegisterCheckBoxStyle( const FString& Name, const FUICheckBoxStyle& Style ) { CheckBoxStyles.Add( Name, Style ); }
 	void RegisterSliderStyle( const FString& Name, const FUISliderStyle& Style ) { SliderStyles.Add( Name, Style ); }
 	void RegisterTextBoxStyle( const FString& Name, const FUITextBoxStyle& Style ) { TextBoxStyles.Add( Name, Style ); }
+	void RegisterDropdownStyle( const FString& Name, const FUIDropdownStyle& Style ) { DropdownStyles.Add( Name, Style ); }
+	// ドロップダウンの一覧を積む画面のスタック（Dropdown を使うときに渡す。ドロップダウンより長く生きること）
+	void SetPopupHost( CUIScreenStack* InHost ) { PopupHost = InHost; }
 	// ブラシの画像を読む関数（Image の Source。成功したら true で、画像とその大きさ（画素）を返す）
 	using FImageLoader = TCallable<bool( const FString& Path, TSharedPtr<IImage>& OutImage, FVector2& OutSize )>;
 	void SetImageLoader( const FImageLoader& Loader ) { ImageLoader = Loader; }
@@ -74,6 +78,7 @@ public:
 	void RegisterString( const FString& Name, TObservable<FString>& Value ) { Strings.Add( Name, &Value ); }
 	void RegisterFloat( const FString& Name, TObservable<float32>& Value ) { Floats.Add( Name, &Value ); }
 	void RegisterBool( const FString& Name, TObservable<bool>& Value ) { Bools.Add( Name, &Value ); }
+	void RegisterInt( const FString& Name, TObservable<int32>& Value ) { Ints.Add( Name, &Value ); }
 	void RegisterCommand( const FString& Name, FUICommand& Command ) { Commands.Add( Name, &Command ); }
 	void RegisterStringList( const FString& Name, TObservableArray<FString>& Items ) { StringLists.Add( Name, &Items ); }
 
@@ -95,12 +100,15 @@ private:
 	TMap<FString, FUICheckBoxStyle> CheckBoxStyles;
 	TMap<FString, FUISliderStyle> SliderStyles;
 	TMap<FString, FUITextBoxStyle> TextBoxStyles;
+	TMap<FString, FUIDropdownStyle> DropdownStyles;
+	CUIScreenStack* PopupHost = nullptr;
 	FImageLoader ImageLoader;
 	TSharedPtr<FUITheme> Theme;
 	TMap<FString, TCallable<void()>> Handlers;
 	TMap<FString, TObservable<FString>*> Strings;
 	TMap<FString, TObservable<float32>*> Floats;
 	TMap<FString, TObservable<bool>*> Bools;
+	TMap<FString, TObservable<int32>*> Ints;
 	TMap<FString, FUICommand*> Commands;
 	TMap<FString, TObservableArray<FString>*> StringLists;
 };

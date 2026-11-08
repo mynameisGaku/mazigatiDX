@@ -49,9 +49,19 @@ int32 CUIScreenStack::Push( const TSharedPtr<CUIWidget>& Root, const FUIScreenOp
 	}
 	else
 	{
-		Screens.Add( Screen );
+		AddScreen( Screen );
 	}
 	return Screen.Id;
+}
+
+void CUIScreenStack::AddScreen( const FScreen& Screen )
+{
+	Screens.Add( Screen );
+	// 最初にフォーカスを持たせる部品（この画面の木の中のものだけ）
+	if ( Screen.Options.InitialFocus != nullptr )
+	{
+		Screen.Context->SetFocus( Screen.Options.InitialFocus );
+	}
 }
 
 bool CUIScreenStack::IsKnown( int32 Id ) const
@@ -138,7 +148,7 @@ void CUIScreenStack::ApplyPending()
 	{
 		if ( Changes[Index].bPush )
 		{
-			Screens.Add( Changes[Index].Screen );
+			AddScreen( Changes[Index].Screen );
 		}
 		else
 		{
@@ -245,6 +255,7 @@ FUIScreenInputResult CUIScreenStack::Update( const FUIInputFrame& Frame )
 		{
 			RemoveNavigation( Local );
 		}
+		Screen.Context->SetTooltipDelay( TooltipStyle.Delay );
 		const FUIInputResult ScreenResult = Screen.Context->Update( Local );
 
 		Result.bPointerOverUI = Result.bPointerOverUI || ScreenResult.bPointerOverUI;
@@ -279,7 +290,60 @@ FUIScreenInputResult CUIScreenStack::Update( const FUIInputFrame& Frame )
 	}
 
 	Result.bGameInputBlocked = Result.bGameInputBlocked || Result.ConsumesPointer() || Result.bNavigationConsumed || Result.bWheelConsumed;
+	UpdateTooltip();
 	return Result;
+}
+
+void CUIScreenStack::SetTooltipStyle( const FUITooltipStyle& InStyle )
+{
+	TooltipStyle = InStyle;
+	// 文字のツールチップの部品を、作り直す
+	TextTooltip.Reset();
+	TextTooltipLabel.Reset();
+}
+
+void CUIScreenStack::UpdateTooltip()
+{
+	ShownTooltip.Reset();
+	ShownTooltipRect = FUIRect();
+	// いちばん上の画面から順に、ツールチップを出す依頼を探す（下の画面は、上の画面がポインターを使うと、ポインターを受けない）
+	for ( int32 Index = Screens.Num() - 1; Index >= 0; --Index )
+	{
+		const FUITooltipRequest Request = Screens[Index].Context->GetTooltip();
+		if ( !Request.bVisible || Request.Source == nullptr )
+		{
+			continue;
+		}
+		if ( Request.Source->GetTooltipWidget() )
+		{
+			ShownTooltip = Request.Source->GetTooltipWidget();
+		}
+		else if ( TooltipStyle.Font && !Request.Source->GetTooltip().IsEmpty() )
+		{
+			if ( !TextTooltip )
+			{
+				TextTooltip = MakeShared<CUIWidget>();
+				TextTooltip->SetHitTestable( false );
+				TextTooltip->SetBackground( TooltipStyle.Background );
+				FUILayoutProperties PanelLayout;
+				PanelLayout.Padding = TooltipStyle.Padding;
+				TextTooltip->SetLayout( PanelLayout );
+				TextTooltipLabel = MakeShared<CUILabel>();
+				TextTooltipLabel->SetFont( TooltipStyle.Font );
+				TextTooltipLabel->SetColor( TooltipStyle.TextColor );
+				TextTooltipLabel->SetMaxWidth( TooltipStyle.MaxWidth );
+				TextTooltipLabel->SetHitTestable( false );
+				TextTooltip->AddChild( TextTooltipLabel );
+			}
+			TextTooltipLabel->SetText( Request.Source->GetTooltip() );
+			ShownTooltip = TextTooltip;
+		}
+		if ( ShownTooltip )
+		{
+			ShownTooltipAnchor = Request.Anchor;
+			return;
+		}
+	}
 }
 
 void CUIScreenStack::Paint( FDrawContext& CommandList )
@@ -287,5 +351,28 @@ void CUIScreenStack::Paint( FDrawContext& CommandList )
 	for ( int32 Index = 0; Index < Screens.Num(); ++Index )
 	{
 		Screens[Index].Root->Paint( CommandList );
+	}
+
+	// ツールチップは、いちばん上に。ポインターの右下へ出し、画面からはみ出すなら、反対側へ寄せて、画面の中に収める
+	ShownTooltipRect = FUIRect();
+	if ( ShownTooltip )
+	{
+		ShownTooltip->Measure();
+		const FVector2 Size = ShownTooltip->GetDesiredSize();
+		float32 X = ShownTooltipAnchor.x + TooltipStyle.Offset.x;
+		float32 Y = ShownTooltipAnchor.y + TooltipStyle.Offset.y;
+		if ( X + Size.x > Area.Right() )
+		{
+			X = ShownTooltipAnchor.x - TooltipStyle.Offset.x - Size.x;
+		}
+		if ( Y + Size.y > Area.Bottom() )
+		{
+			Y = ShownTooltipAnchor.y - 6.0f - Size.y;
+		}
+		X = NMath::Max( Area.Left(), NMath::Min( X, Area.Right() - Size.x ) );
+		Y = NMath::Max( Area.Top(), NMath::Min( Y, Area.Bottom() - Size.y ) );
+		ShownTooltipRect = FUIRect( X, Y, Size.x, Size.y );
+		ShownTooltip->ArrangeExact( ShownTooltipRect );
+		ShownTooltip->Paint( CommandList );
 	}
 }

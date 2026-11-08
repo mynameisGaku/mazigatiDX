@@ -61,6 +61,7 @@ private:
 	TArray<TSharedPtr<FUITheme>> Themes;            // 基本のテーマと、色だけ変えた子のテーマ
 	int32 ThemeIndex = 0;
 	bool bThemeChangePending = false;
+	bool bOpenDropdownPending = false;   // 撮影用: 最初の更新のあとで、ドロップダウンを開く
 	CUIScreenStack Screens;                         // 画面のスタック: 下は、この画面。確認のダイアログが、上に積まれる
 	TSharedPtr<CFont> BodyFont;
 	TSharedPtr<CFont> TitleFont;

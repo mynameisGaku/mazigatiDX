@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "Library/Core/Interfaces/Input/IClipboard.h"
 #include "Library/Core/Interfaces/Input/ICursorControl.h"
 #include "Library/Core/Interfaces/Input/IInput.h"
 #include "Library/Core/Interfaces/Input/ITextInput.h"
@@ -14,7 +15,7 @@
 //   毎フレームの頭 (PreUpdate) に入力を取り込む。ゲーム側は GetAppSubsystem<IInput>() などで取得する。
 //   DxLib の文字コード・制御コード・IME の構造体は、DxLibInputText.cpp の中に閉じ込めてある。
 //=============================================================================
-class CDxLibInputSubsystem : public CAppSubsystem, public IInput, public ITextInput, public ICursorControl, public ITouchInput, public ITickable
+class CDxLibInputSubsystem : public CAppSubsystem, public IInput, public ITextInput, public IClipboard, public ICursorControl, public ITouchInput, public ITickable
 {
 public:
 	//-------------------------------------------------------------------------
@@ -52,6 +53,12 @@ public:
 	bool IsTextInputActive() const override;
 	const TArray<FTextInputEvent>& GetTextInputEvents() const override;
 	const FImeComposition& GetImeComposition() const override;
+
+	//-------------------------------------------------------------------------
+	// IClipboard（DxLibInputClipboard.cpp。OS のクリップボード）
+	//-------------------------------------------------------------------------
+	bool GetText( FString& OutText ) const override;
+	bool SetText( const FString& Text ) override;
 
 	//-------------------------------------------------------------------------
 	// ICursorControl / ITouchInput（DxLibInputCursorTouch.cpp）

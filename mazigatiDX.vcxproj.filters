@@ -820,6 +820,9 @@
     <ClCompile Include="Library\Framework\UI\Widgets\UIDisplayWidgets.cpp">
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\UI\Widgets\UIDropdown.cpp">
+      <Filter>Library\Framework\UI\Widgets</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\UI\Widgets\UIListView.cpp">
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClCompile>
@@ -1002,6 +1005,9 @@
     </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\Audio\DxLibPcmStreamBackendSubsystem.cpp">
       <Filter>Library\Platform\DxLib\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DxLib\Input\DxLibInputClipboard.cpp">
+      <Filter>Library\Platform\DxLib\Input</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\Input\DxLibInputCursorTouch.cpp">
       <Filter>Library\Platform\DxLib\Input</Filter>
@@ -1718,6 +1724,9 @@
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Audio\PcmStreamBackend.h">
       <Filter>Library\Core\Interfaces\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Input\IClipboard.h">
+      <Filter>Library\Core\Interfaces\Input</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Input\ICursorControl.h">
       <Filter>Library\Core\Interfaces\Input</Filter>
@@ -2835,6 +2844,9 @@
     <ClInclude Include="Library\Framework\UI\Core\UIScreenStack.h">
       <Filter>Library\Framework\UI\Core</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\UI\Core\UIScrollBar.h">
+      <Filter>Library\Framework\UI\Core</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\UI\Core\UITypes.h">
       <Filter>Library\Framework\UI\Core</Filter>
     </ClInclude>
@@ -2863,6 +2875,9 @@
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\UI\Widgets\UIDisplayWidgets.h">
+      <Filter>Library\Framework\UI\Widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\UI\Widgets\UIDropdown.h">
       <Filter>Library\Framework\UI\Widgets</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\UI\Widgets\UIListView.h">

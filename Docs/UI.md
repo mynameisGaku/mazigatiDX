@@ -9,7 +9,7 @@
 |部品の木とレイアウト|`CUIWidget`（余白・寄せ方・最小 / 最大・固定の大きさ・不透明度・当たり判定）、`CUICanvasPanel`（アンカー）、`CUIStackPanel`（縦横）、`CUIGridPanel`（格子）|`Core`|
 |見た目|`FUIBrush`: 色（角丸・枠）・画像（引き伸ばし / 収める / 覆う / タイル / 9 分割）・コールバック・重ね|`Brush`|
 |入力|`CUIContext`（ホバー・押下・クリック・フォーカス・決定・戻る）、`NUIInput::MakeFrame`（ゲームの入力 → UI の入力）|`Core`|
-|部品|`CUIImage`・`CUILabel`・`CUIProgressBar`・`CUIButton`・`CUICheckBox`・`CUISlider`・`CUIScrollBox`・`CUIListView`・`CUITextBox`（入力欄）・`CUIDialog`（確認のダイアログ）・`CUIRenderTargetView`|`Widgets`|
+|部品|`CUIImage`・`CUILabel`・`CUIProgressBar`・`CUIButton`・`CUICheckBox`・`CUISlider`・`CUIScrollBox`・`CUIListView`・`CUITextBox`（入力欄）・`CUIDropdown`・`CUIDialog`（確認のダイアログ）・`CUIRenderTargetView`|`Widgets`|
 |画面のスタック|`CUIScreenStack`: 画面を積み重ねて、描く順と入力の行き先を決める（HUD・メニュー・ダイアログ）|`Core`|
 |結び付け|`TObservable` / `TObservableArray` / `FUICommand`（ビューモデルの値・配列・操作）と、`CUIBindingSet`（部品との結び付け）|`Binding`|
 |テーマ|`FUITheme`（名前つきの色・数・ブラシ・フォント・スタイル。親を持てる）。`FUIDefaultStyle::MakeTheme` が基本のテーマを作る|`Style`|
@@ -74,7 +74,7 @@ Root->Paint( CommandList );                                                // �
 
 - **ホイール**: 枠の上で回すと、`SetWheelStep`（既定 48 画素）ずつ動きます。動かせない（中身が収まっている）枠は、ホイールを使わずに、外側のスクロール枠へ伝えます。
 - **フォーカス**: 中の部品がフォーカスを得ると、その部品が見える位置まで、自動でスクロールします（矢印・Tab で動いても、見失いません）。
-- **スクロールバー**: `SetScrollBar( 溝, つまみ, 太さ )`。中身が収まらないときだけ、枠の端に出ます（つまみの長さは、見えている割合）。いまは、見せるだけです。
+- **スクロールバー**: `SetScrollBar( 溝, つまみ, 太さ )`。中身が収まらないときだけ、枠の端に出ます（つまみの長さは、見えている割合）。つまみは、つかんで動かせます（ドラッグ）。つまみの外の溝を押すと、押した側へ 1 ページ（枠の大きさ）ずつ送ります。
 - 量は `SetScrollOffset` / `GetScrollOffset` / `GetMaxScrollOffset`、画面の矩形を見える位置へ動かすには `ScrollIntoView`。
 
 ## リスト（仮想化）
@@ -93,10 +93,10 @@ List->OnSelectionChanged.Add( []( CUIWidget&, int32 Index ) { /* 選択が変わ
 List->OnItemClicked.Add( []( CUIWidget&, int32 Index ) { /* クリック・決定された */ } );
 ```
 
-- 行の高さは、すべて同じ（`SetItemHeight`）。実体のある行は、高さ 120 のリストで 4〜5 個ほどです（`GetNumRealizedItems`）。
+- 行の大きさ（縦なら高さ、横なら幅）は、すべて同じ（`SetItemHeight`）。行ごとに違うなら、`SetItemSizeProvider( []( int32 Index ) { return 28.0f; } )`（データが変わって大きさも変わるときは、`SetItemCount` か `InvalidateItemSizes`）。向きは `SetOrientation( EUIOrientation::Horizontal )` で、横に並べられます（矢印は左右、ホイールも横）。実体のある行は、高さ 120 のリストで 4〜5 個ほどです（`GetNumRealizedItems`）。
 - 選択は 1 つ（`SetSelectedIndex`。-1 は、なし）。クリックで選び、フォーカス中は上下の矢印で選びます（端では、フォーカスが外へ動く）。選んだ行は、見える位置までスクロールします。決定（Enter・A ボタン）は、選んでいる行のクリックです。
 - データが変わったら、`SetItemCount`（数が変わるとき）か `Refresh`（中身だけ変わるとき）。数が減って、選択やスクロールの量が範囲の外になったら、範囲に収めます。
-- ホイールとスクロールバーは、スクロール枠と同じです。
+- ホイールとスクロールバー（つまみのドラッグ・溝のクリックの 1 ページ送りも）は、スクロール枠と同じです。スクロールバーを押した操作は、行の選択にも、クリックにも、なりません。
 
 ## 結び付け（MVVM）
 
@@ -184,6 +184,7 @@ if ( Result.bSuccess ) { Screen->AddChild( Result.Root ); }
 |`Enabled` `Visible`|`true` `false`、または `{Binding 名前}`|
 |`Opacity` `Clip` `HitTestable` `Interactive` `Focusable`|不透明度と、真偽の設定|
 |`Background`|`#RRGGBB` `#RRGGBBAA` `#RGB`、または登録したブラシの名前|
+|`Tooltip`|ツールチップの文字（ポインターが止まると出る）|
 
 **要素ごとの属性**
 
@@ -199,9 +200,10 @@ if ( Result.bSuccess ) { Screen->AddChild( Result.Root ); }
 |`CheckBox`|`Checked` `Style` `OnToggled` `OnClicked`|
 |`Slider`|`Value` `Min` `Max` `Step` `Orientation` `Style` `OnValueChanged`|
 |`TextBox`|`Text` `Placeholder` `MaxLength` `Password` `Font` `Style` `OnSubmitted` `OnCancelled`|
-|`ListView`|`Items`（`{Binding 名前}`）`ItemHeight` `Font` `ItemColor` `SelectedBackground` `ItemPadding` `ScrollBarWidth` `ScrollBarTrack` `ScrollBarThumb` `OnItemClicked`|
+|`Dropdown`|`Items`（`{Binding 名前}`、または `"Low, Medium, High"`）`SelectedIndex`（番号、または `{Binding 名前}`）`Placeholder` `Font` `Style` `OnSelectionChanged`|
+|`ListView`|`Items`（`{Binding 名前}`）`Orientation` `ItemHeight` `Font` `ItemColor` `SelectedBackground` `ItemPadding` `ScrollBarWidth` `ScrollBarTrack` `ScrollBarThumb` `OnItemClicked`|
 
-**結び付け** `{Binding 名前}` は、`Label.Text`（一方向）・`TextBox.Text` `CheckBox.Checked` `Slider.Value`（双方向）・`ProgressBar.Value`・`Button.Command`・`ListView.Items`・`Enabled`・`Visible` に書けます。
+**結び付け** `{Binding 名前}` は、`Label.Text`（一方向）・`TextBox.Text` `CheckBox.Checked` `Slider.Value`（双方向）・`ProgressBar.Value`・`Button.Command`・`ListView.Items`・`Dropdown.Items`・`Dropdown.SelectedIndex`（双方向）・`Enabled`・`Visible` に書けます。
 
 **失敗と警告**
 - 読めない XML・知らない要素・属性の値の書き間違い（数・色・列挙・範囲）は、**失敗**です（`bSuccess = false`。理由は `Error`、行番号つき。何も作らず、結び付けも残りません）。
@@ -265,15 +267,59 @@ Name->SetMaxLength( 16 );
 Name->OnSubmitted.Add( []( CUIWidget&, const FString& Text ) { /* Enter で確定された */ } );
 
 // 毎フレーム: 文字入力の窓口（ITextInput）を、橋渡しへ渡し、結果を、窓口へ返す
-const FUIInputFrame Frame = NUIInput::MakeFrame( Input, Input, Gamepad, FUIInputMapping(), TextInput );
+const FUIInputFrame Frame = NUIInput::MakeFrame( Input, Input, Gamepad, FUIInputMapping(), TextInput, Clipboard );   // Clipboard は IClipboard*（コピー・貼り付けに使う。null なら、できない）
 const FUIScreenInputResult Result = Screens.Update( Frame );
 TextInput->SetTextInputActive( Result.bWantsTextInput );   // 入力欄にフォーカスがあるときだけ、文字入力（変換）を受ける
 ```
 
 - 操作: 文字・Backspace・Delete・左右・Home・End。Enter で確定（`OnSubmitted`。フォーカスを手放す）、Escape で取り消し（フォーカスを得たときの文字列へ戻し、`OnCancelled`。フォーカスを手放す）。クリックで、その位置へカーソルを置く。範囲選択・コピー・貼り付けは、まだ扱いません。
+- **範囲選択**: ドラッグで選びます。`Shift` + 左右・Home・End で広げ（`ITextInput` が `SelectLeft` などを届けます。DxLib の実装は、Shift が押されているときに、そう届けます）、`Ctrl` + A ですべて選びます。選んだ範囲は、`SelectionColor` の背景で見えます。範囲があるとき、文字を打つと範囲が置き換わり、Backspace・Delete は範囲を消し、左右の矢印は範囲の端へ動いて範囲をやめます。`HasSelection` / `GetSelectedText` / `SetSelection` / `SelectAll`。
+- **コピー・切り取り・貼り付け**（`Ctrl` + C / X / V）は、クリップボード（`IClipboard`。DxLib は OS のクリップボード、Null は、アプリの中だけ）で行います。`NUIInput::MakeFrame` の最後の引数（または `FUIInputFrame::Clipboard`）で渡します。渡さなければ、選ぶだけです。パスワード表示の欄は、コピー・切り取りをしません。貼り付ける文字列の改行・タブは、空白になります。
 - 入力欄にフォーカスがあるとき、**左右の矢印・決定・戻る**は、入力欄が使います（フォーカスの移動や、ボタンの決定、画面を戻すことには使われない）。上下の矢印と Tab は、これまでどおり、フォーカスを動かします。
 - 文字列が欄より長いときは、カーソルが見える位置まで、横へずらして表示します（欄の矩形でクリップ）。かな漢字変換の途中の文字列は、カーソルの位置に、下線つきで出ます。`SetPasswordMode( true )` で `*` 表示。
 - カーソルの点滅は、描いた回数で数えます（`SetCaretBlinkFrames`）。文字やカーソルが動いた直後は、必ず見えます。
+
+## ツールチップ
+
+部品に `SetTooltip( "説明" )`（文字）か `SetTooltipWidget( 部品 )`（好きな部品。木に入れない）を決めると、ポインターがその部品の上に、しばらく止まったとき、近くに説明が出ます。
+
+```cpp
+Button->SetTooltip( "Back to the defaults" );
+
+FUITooltipStyle Tip;
+Tip.Background = Style.Tooltip;       // 背景（9 分割など）
+Tip.Font = Font;                      // 無ければ、文字のツールチップは出ない
+Tip.Delay = 0.5f;                     // 出すまでの待ち時間（秒）
+Screens.SetTooltipStyle( Tip );       // 出す仕事は、画面のスタックが受け持つ（全部の画面の上に描く）
+
+FUIInputFrame Frame = NUIInput::MakeFrame( ... );
+Frame.DeltaTime = DeltaTime;          // 待ち時間は、これを足して数える（0 のままだと、出ない）
+```
+
+- 当たった部品から親へたどって、**最初にツールチップを持つ部品**が対象です（子に無ければ、親の説明）。ボタンを押している間は出ず、押すと消えます。
+- 待ち時間が過ぎると出て、**出る位置は、そのときのポインターの右下**（`Offset`、既定 14, 22）。出たあとは、動かしても追いません。画面からはみ出すときは、反対側（左・上）へ寄せて、画面の中に収めます。
+- 上にモーダルな画面があるとき、下の画面のツールチップは出ません。`CUIContext` だけで使うときは、`GetTooltip()` の `bVisible`・`Source`・`Anchor` を読んで、自分で描きます（`SetTooltipDelay` で待ち時間）。
+- マークアップでは、どの要素にも `Tooltip="説明"` と書けます。
+
+## ドロップダウン
+
+`CUIDropdown` は、選んでいる項目と矢印を見せるボタンです。押す（クリック・決定）と、下（入りきらなければ上）に、項目の一覧（`CUIListView`）が開きます。
+
+```cpp
+TSharedPtr<CUIDropdown> Quality = MakeShared<CUIDropdown>();
+Quality->SetFont( Font );
+Quality->SetDropdownStyle( Style );                     // FUIDropdownStyle: ボタン・矢印・一覧の背景・選んでいる項目の背景・項目の高さ・見せる数
+Quality->SetPopupHost( &Screens );                      // 一覧を積む画面のスタック（ドロップダウンより長く生きること）
+Quality->SetItems( { "Low", "Medium", "High" } );       // TArray<FString>
+Quality->SetSelectedIndex( 1 );
+Quality->OnSelectionChanged.Add( []( CUIWidget&, int32 Index ) { /* 選ばれた */ } );
+```
+
+- 一覧は、画面のスタックに**モーダルな画面**として積まれ、開いた直後は、一覧にフォーカスがあります。項目をクリックするか、上下の矢印 + 決定で選ぶと、決まって閉じます。一覧の外のクリックと Escape は、選ばずに閉じます。
+- 選ぶ番号は -1（何も選んでいない。`SetPlaceholder` の文字を薄く出す）か 0 以上です。`SetItems` で項目が減ったら、範囲に収めます（番号が変わるなら `OnSelectionChanged`）。
+- `SetPopupHost` が無い・項目が無い・使えない（Disabled）ときは、開きません。一覧が開いている間にドロップダウンが消えても、安全です。
+- 結び付け: `Bindings.BindItems( 配列, ドロップダウン )`、`Bindings.BindSelectedIndex( TObservable<int32>, ドロップダウン )`（双方向）。マークアップでは `<Dropdown Items="{Binding 名前}" SelectedIndex="{Binding 名前}" />`（`Items="Low, Medium, High"` のように、コンマで区切った文字でもよい。`RegisterInt` と `SetPopupHost` を文脈へ）。
+- テーマに `Default` などの名前で、ドロップダウンのスタイルを入れられます（`SetDropdownStyle`。`FUIDefaultStyle::MakeTheme` が `Default` を入れます。矢印の画像だけ、使うときに足してください）。
 
 ## ダイアログ
 
@@ -341,4 +387,4 @@ UI の基本画像（窓・パネル・ボタンの 4 状態・チェック・�
 
 ## これから
 
-テーマの JSON ファイル、状態ごとのスタイル、ツールチップ・ドロップダウン・入力欄の範囲選択とコピー・貼り付け・スクロールバーのドラッグ・横向きのリスト・行の高さが違うリスト、マテリアルのブラシ（シェーダーでの表現）は、順に足していきます。
+テーマの JSON ファイル、状態ごとのスタイル、入力欄の複数行とダブルクリックの選択、マテリアルのブラシ（シェーダーでの表現）は、順に足していきます。

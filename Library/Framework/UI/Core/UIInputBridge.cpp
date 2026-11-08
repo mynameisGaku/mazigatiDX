@@ -55,9 +55,10 @@ namespace
 	}
 }
 
-FUIInputFrame NUIInput::MakeFrame( const IKeyboardInput* Keyboard, const IMouseInput* Mouse, const IGamepadInput* Gamepad, const FUIInputMapping& Mapping, const ITextInput* TextInput )
+FUIInputFrame NUIInput::MakeFrame( const IKeyboardInput* Keyboard, const IMouseInput* Mouse, const IGamepadInput* Gamepad, const FUIInputMapping& Mapping, const ITextInput* TextInput, IClipboard* Clipboard )
 {
 	FUIInputFrame Frame;
+	Frame.Clipboard = Clipboard;
 
 	// 文字入力: 受けている間だけ
 	if ( TextInput != nullptr && TextInput->IsTextInputActive() )

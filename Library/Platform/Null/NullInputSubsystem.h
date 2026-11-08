@@ -4,6 +4,7 @@
 #include "Library/Framework/Input/EMouseButton.h"
 #include "Library/Core/Interfaces/Input/ICursorControl.h"
 #include "Library/Core/Interfaces/Input/IInput.h"
+#include "Library/Core/Interfaces/Input/IClipboard.h"
 #include "Library/Core/Interfaces/Input/ITextInput.h"
 #include "Library/Core/Interfaces/Input/ITouchInput.h"
 #include "Library/Core/Interfaces/Tickable/ITickable.h"
@@ -23,7 +24,7 @@
 //   - 設定した値は、次の Tick で、現在の状態になる。そのときの IsKeyPressed / IsMouseButtonPressed は、前の状態との差（押した瞬間）で決まる
 //   - マウスは、画面の中にあり、ウィンドウが有効（bFocused が true）として扱う。位置は SetMousePosition で決める（初めは 0, 0）
 //=============================================================================
-class CNullInputSubsystem : public CAppSubsystem, public IInput, public ITextInput, public ICursorControl, public ITouchInput, public ITickable
+class CNullInputSubsystem : public CAppSubsystem, public IInput, public ITextInput, public IClipboard, public ICursorControl, public ITouchInput, public ITickable
 {
 public:
 	// --backend=null のときだけ作る
@@ -57,6 +58,20 @@ public:
 	bool IsTextInputActive() const override;
 	const TArray<FTextInputEvent>& GetTextInputEvents() const override;
 	const FImeComposition& GetImeComposition() const override;
+
+	//-------------------------------------------------------------------------
+	// IClipboard（アプリの中だけで持つ。OS のクリップボードには触れない）
+	//-------------------------------------------------------------------------
+	bool GetText( FString& OutText ) const override
+	{
+		OutText = ClipboardText;
+		return !ClipboardText.IsEmpty();
+	}
+	bool SetText( const FString& Text ) override
+	{
+		ClipboardText = Text;
+		return true;
+	}
 
 	//-------------------------------------------------------------------------
 	// ICursorControl（位置は、次の Tick からマウスの位置になる）
@@ -110,6 +125,9 @@ private:
 	bool PreviousKeys[NumKeys] = {};
 	FMouseState MouseState;
 	bool bHadMouseTick = false;
+
+	// クリップボード
+	FString ClipboardText;
 
 	// 文字入力
 	bool bTextInputActive = false;

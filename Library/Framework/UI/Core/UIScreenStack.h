@@ -1,7 +1,9 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 
+#include "Library/Framework/Asset/Font/Font.h"
 #include "Library/Framework/UI/Core/UIContext.h"
+#include "Library/Framework/UI/Widgets/UIDisplayWidgets.h"
 
 //=============================================================================
 // CUIScreenStack
@@ -25,12 +27,28 @@
 //   - モーダルな画面（既定）は、下の画面へ、ポインターもナビゲーションも渡さない。モーダルでない画面は、自分の部品の上にポインターが
 //     無いときだけ、ポインターを下の画面へ渡す。ナビゲーション（矢印・Tab・決定・戻る）は、いちばん上の画面にだけ渡す。
 //   - 戻る（Escape・B ボタン）が押され、いちばん上の画面が bPopOnCancel なら、その画面を外す。
+//   - ツールチップ: 部品の SetTooltip（文字）か SetTooltipWidget（好きな部品。木に入れない）の指定を、ポインターがしばらく止まったときに、全部の画面の上へ描く（Paint の最後）。
+//     SetTooltipStyle で、文字のツールチップの見た目（背景のブラシ・フォント・余白・待ち時間など）を決める。フォントが無ければ、文字のツールチップは出さない。
+//     画面の端からはみ出すときは、ポインターの反対側（左・上）へ寄せて、画面の中に収める。時間は、FUIInputFrame::DeltaTime で数える。
 //=============================================================================
 struct FUIScreenOptions
 {
 	bool bModal = true;             // 下の画面へ、入力を渡さない
 	bool bBlocksGameInput = true;   // この画面がある間、ゲーム自身の入力を止める
 	bool bPopOnCancel = true;       // 戻る（Escape・B ボタン）で、この画面を外す（いちばん上のときだけ）
+	CUIWidget* InitialFocus = nullptr;   // 積まれたとき、最初にフォーカスを持たせる部品（この画面の木の中。null なら、フォーカスなし）
+};
+
+// 文字のツールチップの見た目
+struct FUITooltipStyle
+{
+	FUIBrush Background;                                     // 背景（9 分割など）
+	TSharedPtr<CFont> Font;                                  // 文字のフォント（無ければ、文字のツールチップは出さない）
+	FColor32 TextColor = FColor32( 240, 244, 255, 255 );
+	FUIMargin Padding = FUIMargin( 10.0f, 6.0f );            // 背景の内側の余白
+	float32 MaxWidth = 320.0f;                               // 文字の折り返す幅（0 なら、折り返さない）
+	float32 Delay = 0.5f;                                    // 出すまでの待ち時間（秒）
+	FVector2 Offset = FVector2( 14.0f, 22.0f );              // ポインターから、ツールチップの左上までのずれ
 };
 
 struct FUIScreenInputResult
@@ -73,6 +91,14 @@ public:
 	// 下から順に、描く命令を記録する
 	void Paint( FDrawContext& CommandList );
 
+	// 文字のツールチップの見た目（既定は、フォントなし = 文字のツールチップは出ない）
+	void SetTooltipStyle( const FUITooltipStyle& InStyle );
+	const FUITooltipStyle& GetTooltipStyle() const { return TooltipStyle; }
+	// いま出ているツールチップの部品（出ていなければ null。確認用）
+	const TSharedPtr<CUIWidget>& GetShownTooltip() const { return ShownTooltip; }
+	// 出ているツールチップの矩形（Paint のあとで有効。出ていなければ、大きさ 0）
+	const FUIRect& GetShownTooltipRect() const { return ShownTooltipRect; }
+
 	// 画面が外れたとき（Pop・Remove・戻る・Clear）。引数は、画面の番号
 	TUIEvent<int32> OnPopped;
 
@@ -94,6 +120,8 @@ private:
 	};
 
 	bool RemoveNow( int32 Id );
+	void UpdateTooltip();
+	void AddScreen( const FScreen& Screen );
 	void ApplyPending();
 	bool IsKnown( int32 Id ) const;
 
@@ -102,4 +130,12 @@ private:
 	bool bUpdating = false;
 	FUIRect Area = FUIRect( 0.0f, 0.0f, 1280.0f, 720.0f );
 	int32 NextId = 1;
+
+	// ツールチップ
+	FUITooltipStyle TooltipStyle;
+	TSharedPtr<CUIWidget> TextTooltip;          // 文字のツールチップ用の部品（背景 + ラベル。使い回す）
+	TSharedPtr<CUILabel> TextTooltipLabel;
+	TSharedPtr<CUIWidget> ShownTooltip;         // いま出すもの（Update で決め、Paint で描く）
+	FVector2 ShownTooltipAnchor = FVector2( 0.0f, 0.0f );
+	FUIRect ShownTooltipRect;
 };

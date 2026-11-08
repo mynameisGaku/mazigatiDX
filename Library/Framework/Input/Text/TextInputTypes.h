@@ -31,6 +31,11 @@ enum class ETextEditCommand : uint8
 	Cut,
 	Paste,
 	SelectAll,
+	// 選ぶ範囲を、動かしながら広げる（Shift を押しながらの左右・Home・End）
+	SelectLeft,
+	SelectRight,
+	SelectHome,
+	SelectEnd,
 };
 
 // 文字入力 1 つぶん。文字列か、編集の操作のどちらか

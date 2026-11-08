@@ -11,7 +11,15 @@ CUIListView::CUIListView()
 	SetInteractive( true );
 	SetFocusable( true );
 	// クリック・決定は、選んでいる行のクリックとして届ける
-	OnClicked.Add( [this]( CUIWidget& ) { OnItemClicked.Broadcast( *this, SelectedIndex ); } );
+	OnClicked.Add( [this]( CUIWidget& )
+	{
+		if ( bIgnoreNextClick )
+		{
+			bIgnoreNextClick = false;
+			return;
+		}
+		OnItemClicked.Broadcast( *this, SelectedIndex );
+	} );
 }
 
 void CUIListView::SetItemFactory( const FCreateItem& InCreate, const FBindItem& InBind )
@@ -31,7 +39,8 @@ void CUIListView::SetItemCount( int32 InCount )
 		return;
 	}
 	ItemCount = Safe;
-	ContentExtent = static_cast<float32>( ItemCount ) * ItemHeight;
+	bOffsetsValid = false;
+	ContentExtent = TotalExtent();
 	const int32 OldSelection = SelectedIndex;
 	if ( SelectedIndex >= ItemCount )
 	{
@@ -53,9 +62,124 @@ void CUIListView::SetItemHeight( float32 InHeight )
 		return;
 	}
 	ItemHeight = Safe;
-	ContentExtent = static_cast<float32>( ItemCount ) * ItemHeight;
+	bOffsetsValid = false;
+	ContentExtent = TotalExtent();
 	ScrollOffset = NMath::Clamp( ScrollOffset, 0.0f, GetMaxScrollOffset() );
 	MarkLayoutDirty();
+}
+
+void CUIListView::SetItemSizeProvider( const FItemExtent& InProvider )
+{
+	SizeProvider = InProvider;
+	InvalidateItemSizes();
+}
+
+void CUIListView::InvalidateItemSizes()
+{
+	bOffsetsValid = false;
+	ContentExtent = TotalExtent();
+	ScrollOffset = NMath::Clamp( ScrollOffset, 0.0f, GetMaxScrollOffset() );
+	MarkLayoutDirty();
+}
+
+void CUIListView::SetOrientation( EUIOrientation InOrientation )
+{
+	if ( Orientation == InOrientation )
+	{
+		return;
+	}
+	Orientation = InOrientation;
+	ScrollOffset = 0.0f;
+	Drag = NUIScrollBar::FDrag();
+	MarkLayoutDirty();
+}
+
+void CUIListView::EnsureOffsets() const
+{
+	if ( bOffsetsValid || !SizeProvider )
+	{
+		return;
+	}
+	ItemOffsets.Reset();
+	float32 Total = 0.0f;
+	for ( int32 Index = 0; Index < ItemCount; ++Index )
+	{
+		ItemOffsets.Add( Total );
+		Total += NMath::Max( 1.0f, SizeProvider( Index ) );
+	}
+	ItemOffsets.Add( Total );
+	bOffsetsValid = true;
+}
+
+float32 CUIListView::TotalExtent() const
+{
+	if ( SizeProvider )
+	{
+		EnsureOffsets();
+		return ItemOffsets.Last();
+	}
+	return static_cast<float32>( ItemCount ) * ItemHeight;
+}
+
+float32 CUIListView::GetItemOffset( int32 Index ) const
+{
+	if ( Index < 0 || Index >= ItemCount )
+	{
+		return TotalExtent();
+	}
+	if ( SizeProvider )
+	{
+		EnsureOffsets();
+		return ItemOffsets[Index];
+	}
+	return static_cast<float32>( Index ) * ItemHeight;
+}
+
+float32 CUIListView::GetItemExtent( int32 Index ) const
+{
+	if ( Index < 0 || Index >= ItemCount )
+	{
+		return 0.0f;
+	}
+	if ( SizeProvider )
+	{
+		EnsureOffsets();
+		return ItemOffsets[Index + 1] - ItemOffsets[Index];
+	}
+	return ItemHeight;
+}
+
+int32 CUIListView::IndexAtOffset( float32 Offset ) const
+{
+	if ( ItemCount <= 0 )
+	{
+		return -1;
+	}
+	if ( Offset <= 0.0f )
+	{
+		return 0;
+	}
+	if ( !SizeProvider )
+	{
+		return NMath::Min( ItemCount - 1, static_cast<int32>( std::floor( Offset / ItemHeight ) ) );
+	}
+	EnsureOffsets();
+	// ItemOffsets[Index] <= Offset となる、最後の Index
+	int32 Low = 0;
+	int32 High = ItemCount - 1;
+	while ( Low < High )
+	{
+		const int32 Middle = ( Low + High + 1 ) / 2;
+		if ( ItemOffsets[Middle] <= Offset )
+		{
+			Low = Middle;
+		}
+		else
+		{
+			High = Middle - 1;
+		}
+	}
+	return Low;
 }
 
 CUIWidget* CUIListView::FindRealized( int32 Index ) const
@@ -92,6 +216,9 @@ void CUIListView::ReleaseAll()
 
 void CUIListView::Refresh()
 {
+	bOffsetsValid = false;
+	ContentExtent = TotalExtent();
+	ScrollOffset = NMath::Clamp( ScrollOffset, 0.0f, GetMaxScrollOffset() );
 	for ( int32 Position = 0; Position < RealizedIndices.Num(); ++Position )
 	{
 		BindIndex( RealizedIndices[Position] );
@@ -138,8 +265,8 @@ void CUIListView::ScrollToIndex( int32 Index )
 		return;
 	}
 	// 見える範囲は、配置のあとの値。配置の前（まだ 0）なら、最大を超えない範囲で、先頭へ寄せる
-	const float32 Top = static_cast<float32>( Index ) * ItemHeight;
-	const float32 Bottom = Top + ItemHeight;
+	const float32 Top = GetItemOffset( Index );
+	const float32 Bottom = Top + GetItemExtent( Index );
 	if ( Top < ScrollOffset )
 	{
 		SetScrollOffset( Top );
@@ -170,24 +297,39 @@ FUIRect CUIListView::GetItemRect( int32 Index ) const
 		return FUIRect( View.Position, FVector2( 0.0f, 0.0f ) );
 	}
 	const float32 BarSpace = IsScrollBarShown() ? ScrollBarWidth : 0.0f;
-	return FUIRect( View.Left(), View.Top() + static_cast<float32>( Index ) * ItemHeight - ScrollOffset, NMath::Max( 0.0f, View.Size.x - BarSpace ), ItemHeight );
+	const float32 Extent = GetItemExtent( Index );
+	if ( IsVertical() )
+	{
+		return FUIRect( View.Left(), View.Top() + GetItemOffset( Index ) - ScrollOffset, NMath::Max( 0.0f, View.Size.x - BarSpace ), Extent );
+	}
+	return FUIRect( View.Left() + GetItemOffset( Index ) - ScrollOffset, View.Top(), Extent, NMath::Max( 0.0f, View.Size.y - BarSpace ) );
 }
 
 int32 CUIListView::GetIndexAt( const FVector2& Position ) const
 {
-	const FUIRect View = GetViewRect();
-	if ( !View.Contains( Position ) )
+	// スクロールバーの上は、行ではない
+	FUIRect Area = GetViewRect();
+	if ( IsScrollBarShown() )
+	{
+		Area = IsVertical() ? FUIRect( Area.Left(), Area.Top(), NMath::Max( 0.0f, Area.Size.x - ScrollBarWidth ), Area.Size.y ) : FUIRect( Area.Left(), Area.Top(), Area.Size.x, NMath::Max( 0.0f, Area.Size.y - ScrollBarWidth ) );
+	}
+	if ( !Area.Contains( Position ) )
 	{
 		return -1;
 	}
-	const int32 Index = static_cast<int32>( std::floor( ( Position.y - View.Top() + ScrollOffset ) / ItemHeight ) );
-	return ( Index >= 0 && Index < ItemCount ) ? Index : -1;
+	const float32 Along = IsVertical() ? Position.y - Area.Top() : Position.x - Area.Left();
+	const float32 Offset = Along + ScrollOffset;
+	if ( Offset < 0.0f || Offset >= TotalExtent() )
+	{
+		return -1;
+	}
+	return IndexAtOffset( Offset );
 }
 
 void CUIListView::ArrangeChildren( const FUIRect& ContentRect )
 {
-	ContentExtent = static_cast<float32>( ItemCount ) * ItemHeight;
-	ViewportExtent = ContentRect.Size.y;
+	ContentExtent = TotalExtent();
+	ViewportExtent = IsVertical() ? ContentRect.Size.y : ContentRect.Size.x;
 	ScrollOffset = NMath::Clamp( ScrollOffset, 0.0f, GetMaxScrollOffset() );
 
 	// 見える行の範囲
@@ -195,8 +337,8 @@ void CUIListView::ArrangeChildren( const FUIRect& ContentRect )
 	int32 Last = -1;
 	if ( ItemCount > 0 && ViewportExtent > 0.0f && CreateItem )
 	{
-		First = static_cast<int32>( std::floor( ScrollOffset / ItemHeight ) );
-		Last = NMath::Min( ItemCount - 1, static_cast<int32>( std::floor( ( ScrollOffset + ViewportExtent - 0.001f ) / ItemHeight ) ) );
+		First = IndexAtOffset( ScrollOffset );
+		Last = IndexAtOffset( ScrollOffset + ViewportExtent - 0.001f );
 	}
 	FirstIndex = First;
 
@@ -241,7 +383,7 @@ void CUIListView::ArrangeChildren( const FUIRect& ContentRect )
 		Item->Measure();
 	}
 
-	// 置く: 行ごとに、高さは ItemHeight、幅はリストの幅（バーが出ていれば、その分だけ狭い）
+	// 置く: 行ごとに、主軸は行の大きさ、交差軸はリストの幅（高さ。バーが出ていれば、その分だけ狭い）
 	for ( int32 Position = 0; Position < RealizedIndices.Num(); ++Position )
 	{
 		CUIWidget& Item = *GetChildren()[Position];
@@ -250,8 +392,22 @@ void CUIListView::ArrangeChildren( const FUIRect& ContentRect )
 	}
 }
 
+bool CUIListView::OwnsPointerAt( const FVector2& Position ) const
+{
+	return IsScrollBarShown() && GetTrackRect().Contains( Position );
+}
+
 void CUIListView::OnPointerPressed( const FVector2& Position )
 {
+	bIgnoreNextClick = false;
+	// スクロールバー（つまみのつかみ・溝のクリック）が先。行を選ばず、クリックにもしない
+	float32 Offset = ScrollOffset;
+	if ( NUIScrollBar::Press( GetTrackRect(), GetThumbRect(), Orientation, Position, ScrollOffset, ViewportExtent, GetMaxScrollOffset(), Drag, Offset ) )
+	{
+		SetScrollOffset( Offset );
+		bIgnoreNextClick = true;
+		return;
+	}
 	const int32 Index = GetIndexAt( Position );
 	if ( Index >= 0 )
 	{
@@ -259,13 +415,28 @@ void CUIListView::OnPointerPressed( const FVector2& Position )
 	}
 }
 
+void CUIListView::OnPointerDragged( const FVector2& Position )
+{
+	if ( Drag.bActive )
+	{
+		SetScrollOffset( NUIScrollBar::DragOffset( GetTrackRect(), GetThumbRect(), Orientation, Position, Drag, GetMaxScrollOffset() ) );
+	}
+}
+
+void CUIListView::OnPointerReleased( const FVector2& )
+{
+	Drag = NUIScrollBar::FDrag();
+}
+
 bool CUIListView::OnNavigate( EUINavDirection Direction )
 {
-	if ( ItemCount == 0 || ( Direction != EUINavDirection::Up && Direction != EUINavDirection::Down ) )
+	const EUINavDirection Backward = IsVertical() ? EUINavDirection::Up : EUINavDirection::Left;
+	const EUINavDirection Forward = IsVertical() ? EUINavDirection::Down : EUINavDirection::Right;
+	if ( ItemCount == 0 || ( Direction != Backward && Direction != Forward ) )
 	{
 		return false;
 	}
-	const int32 Step = Direction == EUINavDirection::Down ? 1 : -1;
+	const int32 Step = Direction == Forward ? 1 : -1;
 	// 選択が無いときの最初の矢印は、先頭（上なら末尾）を選ぶ
 	const int32 Target = SelectedIndex < 0 ? ( Step > 0 ? 0 : ItemCount - 1 ) : SelectedIndex + Step;
 	if ( Target < 0 || Target >= ItemCount )
@@ -288,24 +459,12 @@ bool CUIListView::OnWheel( const FVector2&, float32 Delta )
 
 FUIRect CUIListView::GetTrackRect() const
 {
-	if ( !IsScrollBarShown() )
-	{
-		return FUIRect( GetRect().Position, FVector2( 0.0f, 0.0f ) );
-	}
-	const FUIRect View = GetViewRect();
-	return FUIRect( View.Right() - ScrollBarWidth, View.Top(), ScrollBarWidth, View.Size.y );
+	return NUIScrollBar::MakeTrack( GetViewRect(), Orientation, ScrollBarWidth, IsScrollBarShown() );
 }
 
 FUIRect CUIListView::GetThumbRect() const
 {
-	const FUIRect Track = GetTrackRect();
-	if ( Track.Size.x <= 0.0f || ContentExtent <= 0.0f )
-	{
-		return FUIRect( Track.Position, FVector2( 0.0f, 0.0f ) );
-	}
-	const float32 ThumbLength = NMath::Min( Track.Size.y, NMath::Max( 24.0f, Track.Size.y * ViewportExtent / ContentExtent ) );
-	const float32 Ratio = GetMaxScrollOffset() > 0.0f ? ScrollOffset / GetMaxScrollOffset() : 0.0f;
-	return FUIRect( Track.Left(), Track.Top() + ( Track.Size.y - ThumbLength ) * Ratio, Track.Size.x, ThumbLength );
+	return NUIScrollBar::MakeThumb( GetTrackRect(), Orientation, ContentExtent, ViewportExtent, ScrollOffset, GetMaxScrollOffset() );
 }
 
 void CUIListView::OnPaintOverlay( FDrawContext& CommandList, float32 EffectiveOpacity )

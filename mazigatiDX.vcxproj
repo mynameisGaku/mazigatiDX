@@ -340,6 +340,7 @@
     <ClCompile Include="Library\Framework\UI\Widgets\UIControlWidgets.cpp" />
     <ClCompile Include="Library\Framework\UI\Widgets\UIDialog.cpp" />
     <ClCompile Include="Library\Framework\UI\Widgets\UIDisplayWidgets.cpp" />
+    <ClCompile Include="Library\Framework\UI\Widgets\UIDropdown.cpp" />
     <ClCompile Include="Library\Framework\UI\Widgets\UIListView.cpp" />
     <ClCompile Include="Library\Framework\UI\Widgets\UIRenderTargetView.cpp" />
     <ClCompile Include="Library\Framework\UI\Widgets\UIScrollBox.cpp" />
@@ -401,6 +402,7 @@
     <ClCompile Include="Library\Platform\DxLib\Asset\DxLibImageOps.cpp" />
     <ClCompile Include="Library\Platform\DxLib\Audio\DxLibAudioBackendSubsystem.cpp" />
     <ClCompile Include="Library\Platform\DxLib\Audio\DxLibPcmStreamBackendSubsystem.cpp" />
+    <ClCompile Include="Library\Platform\DxLib\Input\DxLibInputClipboard.cpp" />
     <ClCompile Include="Library\Platform\DxLib\Input\DxLibInputCursorTouch.cpp" />
     <ClCompile Include="Library\Platform\DxLib\Input\DxLibInputSubsystem.cpp" />
     <ClCompile Include="Library\Platform\DxLib\Input\DxLibInputText.cpp" />
@@ -641,6 +643,7 @@
     <ClInclude Include="Library\Core\Interfaces\Asset\TextureBackend.h" />
     <ClInclude Include="Library\Core\Interfaces\Audio\AudioBackend.h" />
     <ClInclude Include="Library\Core\Interfaces\Audio\PcmStreamBackend.h" />
+    <ClInclude Include="Library\Core\Interfaces\Input\IClipboard.h" />
     <ClInclude Include="Library\Core\Interfaces\Input\ICursorControl.h" />
     <ClInclude Include="Library\Core\Interfaces\Input\IGamepadInput.h" />
     <ClInclude Include="Library\Core\Interfaces\Input\IInput.h" />
@@ -1013,6 +1016,7 @@
     <ClInclude Include="Library\Framework\UI\Core\UIInputBridge.h" />
     <ClInclude Include="Library\Framework\UI\Core\UIPanels.h" />
     <ClInclude Include="Library\Framework\UI\Core\UIScreenStack.h" />
+    <ClInclude Include="Library\Framework\UI\Core\UIScrollBar.h" />
     <ClInclude Include="Library\Framework\UI\Core\UITypes.h" />
     <ClInclude Include="Library\Framework\UI\Core\UIWidget.h" />
     <ClInclude Include="Library\Framework\UI\Markup\UIMarkupDocument.h" />
@@ -1023,6 +1027,7 @@
     <ClInclude Include="Library\Framework\UI\Widgets\UIControlWidgets.h" />
     <ClInclude Include="Library\Framework\UI\Widgets\UIDialog.h" />
     <ClInclude Include="Library\Framework\UI\Widgets\UIDisplayWidgets.h" />
+    <ClInclude Include="Library\Framework\UI\Widgets\UIDropdown.h" />
     <ClInclude Include="Library\Framework\UI\Widgets\UIListView.h" />
     <ClInclude Include="Library\Framework\UI\Widgets\UIRenderTargetView.h" />
     <ClInclude Include="Library\Framework\UI\Widgets\UIScrollBox.h" />

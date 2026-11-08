@@ -4,6 +4,7 @@
 #include "Library/Core/Collection/Optional.h"
 #include "Library/Framework/UI/Binding/UIObservable.h"
 #include "Library/Framework/UI/Widgets/UIControlWidgets.h"
+#include "Library/Framework/UI/Widgets/UIDropdown.h"
 #include "Library/Framework/UI/Widgets/UIDisplayWidgets.h"
 #include "Library/Framework/UI/Widgets/UIListView.h"
 #include "Library/Framework/UI/Widgets/UITextBox.h"
@@ -108,10 +109,15 @@ public:
 		} );
 	}
 
+	// 文字列の配列 → ドロップダウンの項目（変わるたびに、SetItems）
+	void BindItems( TObservableArray<FString>& Source, const TSharedPtr<CUIDropdown>& Dropdown );
+
 	// 双方向
 	void BindText( TObservable<FString>& Source, const TSharedPtr<CUITextBox>& Box );
 	void BindChecked( TObservable<bool>& Source, const TSharedPtr<CUICheckBox>& CheckBox );
 	void BindValue( TObservable<float32>& Source, const TSharedPtr<CUISlider>& Slider );
+	// ドロップダウン ⇔ 選ぶ番号（-1 は、なし）
+	void BindSelectedIndex( TObservable<int32>& Source, const TSharedPtr<CUIDropdown>& Dropdown );
 
 	// 一方向
 	void BindLabel( TObservable<FString>& Source, const TSharedPtr<CUILabel>& Label );

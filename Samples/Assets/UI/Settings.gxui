@@ -19,20 +19,27 @@
       <Label Text="Volume" Font="Body" Color="@Text" HAlign="Start" VAlign="Center" />
       <Label Text="{Binding VolumeText}" Font="Body" Color="@Value" HAlign="Start" VAlign="Center" />
     </HorizontalStack>
-    <Slider Name="VolumeSlider" Value="{Binding Volume}" Min="0" Max="100" Step="5" Height="28" Style="Thin" />
+    <Slider Name="VolumeSlider" Value="{Binding Volume}" Min="0" Max="100" Step="5" Height="28" Style="Thin" Tooltip="Drag it, or use the left and right keys" />
     <ProgressBar Name="VolumeBar" Value="{Binding VolumeRatio}" Back="ProgressBack" Fill="ProgressFill" Height="18" />
+
+    <HorizontalStack Spacing="@Gap" Height="38">
+      <Label Text="Quality" Font="Body" Color="@Text" HAlign="Start" VAlign="Center" />
+      <Dropdown Name="QualityBox" Items="{Binding QualityItems}" SelectedIndex="{Binding Quality}" Font="Body" Style="Default"
+                Weight="1" Height="38" VAlign="Center" Tooltip="Pick how detailed the picture is" />
+    </HorizontalStack>
 
     <HorizontalStack Spacing="@Gap" Height="38">
       <Label Text="Name" Font="Body" Color="@Text" HAlign="Start" VAlign="Center" />
       <TextBox Name="NameBox" Text="{Binding Name}" Placeholder="Type your name" MaxLength="16" Font="Body" Style="Default"
-               Weight="1" Height="38" VAlign="Center" OnSubmitted="NameSubmitted" OnCancelled="NameCancelled" />
+               Weight="1" Height="38" VAlign="Center" OnSubmitted="NameSubmitted" OnCancelled="NameCancelled"
+               Tooltip="Drag or Shift + arrows to select. Ctrl + C, X, V to copy, cut and paste." />
     </HorizontalStack>
 
     <HorizontalStack Spacing="12" Height="44">
       <Button Name="Ok" Text="OK" Font="Body" TextColor="@Text" Width="108" Height="44" VAlign="Center" Style="Default" OnClicked="OkClicked" />
       <Button Name="Cancel" Text="Cancel" Font="Body" TextColor="@Text" Width="108" Height="44" VAlign="Center" Style="Default" OnClicked="CancelClicked" />
-      <Button Name="Reset" Text="Reset" Font="Body" TextColor="@Text" Width="108" Height="44" VAlign="Center" Style="Default" Command="{Binding Reset}" />
-      <Button Name="Theme" Text="Theme" Font="Body" TextColor="@Accent" Width="108" Height="44" VAlign="Center" Style="Default" OnClicked="NextTheme" />
+      <Button Name="Reset" Text="Reset" Font="Body" TextColor="@Text" Width="108" Height="44" VAlign="Center" Style="Default" Command="{Binding Reset}" Tooltip="Back to the defaults (asks first)" />
+      <Button Name="Theme" Text="Theme" Font="Body" TextColor="@Accent" Width="108" Height="44" VAlign="Center" Style="Default" OnClicked="NextTheme" Tooltip="Switch the color theme" />
     </HorizontalStack>
 
     <Label Name="StatusLabel" Text="{Binding Status}" Font="Body" Color="@TextMuted" WrapWidth="480" HAlign="Start" VAlign="Center" />

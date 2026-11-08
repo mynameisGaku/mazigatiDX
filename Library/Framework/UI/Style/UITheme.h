@@ -5,6 +5,7 @@
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Framework/UI/Widgets/UIControlWidgets.h"
+#include "Library/Framework/UI/Widgets/UIDropdown.h"
 #include "Library/Framework/UI/Widgets/UITextBox.h"
 
 class CFont;
@@ -59,11 +60,13 @@ public:
 	bool FindCheckBoxStyle( const FString& StyleName, FUICheckBoxStyle& OutStyle ) const { return Find( &FUITheme::CheckBoxStyles, StyleName, OutStyle ); }
 	void SetSliderStyle( const FString& StyleName, const FUISliderStyle& Style ) { SliderStyles.Add( StyleName, Style ); }
 	bool FindSliderStyle( const FString& StyleName, FUISliderStyle& OutStyle ) const { return Find( &FUITheme::SliderStyles, StyleName, OutStyle ); }
+	void SetDropdownStyle( const FString& StyleName, const FUIDropdownStyle& Style ) { DropdownStyles.Add( StyleName, Style ); }
+	bool FindDropdownStyle( const FString& StyleName, FUIDropdownStyle& OutStyle ) const { return Find( &FUITheme::DropdownStyles, StyleName, OutStyle ); }
 	void SetTextBoxStyle( const FString& StyleName, const FUITextBoxStyle& Style ) { TextBoxStyles.Add( StyleName, Style ); }
 	bool FindTextBoxStyle( const FString& StyleName, FUITextBoxStyle& OutStyle ) const { return Find( &FUITheme::TextBoxStyles, StyleName, OutStyle ); }
 
 	// 自分だけが持つ名前の数（親の分は数えない）
-	int32 NumOwnTokens() const { return Colors.Num() + Numbers.Num() + Brushes.Num() + Fonts.Num() + ButtonStyles.Num() + CheckBoxStyles.Num() + SliderStyles.Num() + TextBoxStyles.Num(); }
+	int32 NumOwnTokens() const { return Colors.Num() + Numbers.Num() + Brushes.Num() + Fonts.Num() + ButtonStyles.Num() + CheckBoxStyles.Num() + SliderStyles.Num() + TextBoxStyles.Num() + DropdownStyles.Num(); }
 
 private:
 	// 自分から親へ、名前を探す
@@ -91,4 +94,5 @@ private:
 	TMap<FString, FUICheckBoxStyle> CheckBoxStyles;
 	TMap<FString, FUISliderStyle> SliderStyles;
 	TMap<FString, FUITextBoxStyle> TextBoxStyles;
+	TMap<FString, FUIDropdownStyle> DropdownStyles;
 };

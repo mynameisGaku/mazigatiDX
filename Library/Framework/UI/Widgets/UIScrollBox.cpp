@@ -144,35 +144,39 @@ void CUIScrollBox::OnChildFocused( CUIWidget& Child )
 
 FUIRect CUIScrollBox::GetTrackRect() const
 {
-	if ( !IsScrollBarShown() )
-	{
-		return FUIRect( GetRect().Position, FVector2( 0.0f, 0.0f ) );
-	}
-	const FUIRect View = GetRect().Deflate( GetLayout().Padding );
-	if ( IsVertical() )
-	{
-		return FUIRect( View.Right() - ScrollBarWidth, View.Top(), ScrollBarWidth, View.Size.y );
-	}
-	return FUIRect( View.Left(), View.Bottom() - ScrollBarWidth, View.Size.x, ScrollBarWidth );
+	return NUIScrollBar::MakeTrack( GetRect().Deflate( GetLayout().Padding ), Orientation, ScrollBarWidth, IsScrollBarShown() );
 }
 
 FUIRect CUIScrollBox::GetThumbRect() const
 {
-	const FUIRect Track = GetTrackRect();
-	if ( Track.Size.x <= 0.0f || Track.Size.y <= 0.0f || ContentExtent <= 0.0f )
+	return NUIScrollBar::MakeThumb( GetTrackRect(), Orientation, ContentExtent, ViewportExtent, ScrollOffset, GetMaxScrollOffset() );
+}
+
+bool CUIScrollBox::OwnsPointerAt( const FVector2& Position ) const
+{
+	return IsScrollBarShown() && GetTrackRect().Contains( Position );
+}
+
+void CUIScrollBox::OnPointerPressed( const FVector2& Position )
+{
+	float32 Offset = ScrollOffset;
+	if ( NUIScrollBar::Press( GetTrackRect(), GetThumbRect(), Orientation, Position, ScrollOffset, ViewportExtent, GetMaxScrollOffset(), Drag, Offset ) )
 	{
-		return FUIRect( Track.Position, FVector2( 0.0f, 0.0f ) );
+		SetScrollOffset( Offset );
 	}
-	const float32 TrackLength = IsVertical() ? Track.Size.y : Track.Size.x;
-	// つまみの長さは、見えている割合（短すぎると見えないので、最小を設ける）
-	const float32 ThumbLength = NMath::Min( TrackLength, NMath::Max( 24.0f, TrackLength * ViewportExtent / ContentExtent ) );
-	const float32 Travel = TrackLength - ThumbLength;
-	const float32 Ratio = GetMaxScrollOffset() > 0.0f ? ScrollOffset / GetMaxScrollOffset() : 0.0f;
-	if ( IsVertical() )
+}
+
+void CUIScrollBox::OnPointerDragged( const FVector2& Position )
+{
+	if ( Drag.bActive )
 	{
-		return FUIRect( Track.Left(), Track.Top() + Travel * Ratio, Track.Size.x, ThumbLength );
+		SetScrollOffset( NUIScrollBar::DragOffset( GetTrackRect(), GetThumbRect(), Orientation, Position, Drag, GetMaxScrollOffset() ) );
 	}
-	return FUIRect( Track.Left() + Travel * Ratio, Track.Top(), ThumbLength, Track.Size.y );
+}
+
+void CUIScrollBox::OnPointerReleased( const FVector2& )
+{
+	Drag = NUIScrollBar::FDrag();
 }
 
 void CUIScrollBox::OnPaintOverlay( FDrawContext& CommandList, float32 EffectiveOpacity )

@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 
+#include "Library/Framework/UI/Core/UIScrollBar.h"
 #include "Library/Framework/UI/Core/UIWidget.h"
 
 //=============================================================================
@@ -12,7 +13,7 @@
 //   - ホイール: ポインターが枠の上にあるとき、回すとスクロールする（SetWheelStep の画素ずつ）。スクロールできない（中身が収まっている）ときは、
 //     ホイールを使わない扱いにして、外側のスクロール枠へ伝える。
 //   - フォーカス: 中の部品がフォーカスを得ると、その部品が見える位置まで、自動でスクロールする（矢印・Tab で動いても、見失わない）。
-//   - スクロールバー: 中身が収まらないときだけ、枠の端に出る（溝とつまみのブラシ。つまみの長さは、見えている割合）。いまは、見せるだけ（つまみのドラッグはしない）。
+//   - スクロールバー: 中身が収まらないときだけ、枠の端に出る（溝とつまみのブラシ。つまみの長さは、見えている割合）。つまみは、ドラッグできる（つかんで動かす）。溝のつまみの外を押すと、押した側へ 1 ページ送る。
 //   - ほしい大きさ: 主軸は 0（親の置き方か、FixedWidth / FixedHeight で決める）、交差軸は、子のほしい大きさの最大。
 //=============================================================================
 class CUIScrollBox : public CUIWidget
@@ -49,6 +50,10 @@ protected:
 	void ArrangeChildren( const FUIRect& ContentRect ) override;
 	bool OnWheel( const FVector2& Position, float32 Delta ) override;
 	void OnChildFocused( CUIWidget& Child ) override;
+	bool OwnsPointerAt( const FVector2& Position ) const override;
+	void OnPointerPressed( const FVector2& Position ) override;
+	void OnPointerDragged( const FVector2& Position ) override;
+	void OnPointerReleased( const FVector2& Position ) override;
 	void OnPaintOverlay( FDrawContext& CommandList, float32 EffectiveOpacity ) override;
 
 private:
@@ -63,4 +68,5 @@ private:
 	FUIBrush TrackBrush;
 	FUIBrush ThumbBrush;
 	float32 ScrollBarWidth = 0.0f;
+	NUIScrollBar::FDrag Drag;
 };

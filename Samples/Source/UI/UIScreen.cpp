@@ -28,6 +28,7 @@ namespace
 	constexpr int32 IconColumns = 4;
 	constexpr int32 NumListItems = 10000;
 	constexpr float32 IconCell = 56.0f;
+	constexpr float32 SettingsHeight = 600.0f;
 
 	// Canvas の中に、位置と大きさを決めて置く
 	void PlaceAt( CUICanvasPanel& Canvas, const TSharedPtr<CUIWidget>& Widget, float32 X, float32 Y, float32 Width, float32 Height )
@@ -147,6 +148,17 @@ TSharedPtr<CUIWidget> CUIScreen::BuildSettingsWindow( CAssetSubsystem& Assets, c
 		Variant->SetColor( "Value", Accent.Value );
 		Themes.Add( Variant );
 	}
+	// ドロップダウン: 矢印は、アイコンの画像。一覧は、このスタックに積む
+	FUIDropdownStyle DropdownStyle;
+	if ( Base->FindDropdownStyle( "Default", DropdownStyle ) )
+	{
+		if ( const TSharedPtr<CTexture> Chevron = Assets.LoadTexture( "Engine:/Icons/ChevronDown.png" ) )
+		{
+			DropdownStyle.Arrow = FUIBrush::MakeImage( Chevron, FVector2( static_cast<float32>( Chevron->GetWidth() ), static_cast<float32>( Chevron->GetHeight() ) ), EUIImageMode::Fit, FColor32( 235, 238, 245, 255 ) );
+		}
+		Base->SetDropdownStyle( "Default", DropdownStyle );
+	}
+	MarkupContext.SetPopupHost( &Screens );
 	MarkupContext.SetTheme( Themes[0] );
 
 	// マークアップの {Binding ...} と、イベントの受け手は、ここで渡す
@@ -158,6 +170,8 @@ TSharedPtr<CUIWidget> CUIScreen::BuildSettingsWindow( CAssetSubsystem& Assets, c
 	MarkupContext.RegisterHandler( "NextTheme", [this]() { bThemeChangePending = true; } );
 
 	MarkupContext.RegisterBool( "Music", ViewModel.Music );
+	MarkupContext.RegisterInt( "Quality", ViewModel.Quality );
+	MarkupContext.RegisterStringList( "QualityItems", ViewModel.QualityItems );
 	MarkupContext.RegisterBool( "Sound", ViewModel.Sound );
 	MarkupContext.RegisterFloat( "Volume", ViewModel.Volume );
 	MarkupContext.RegisterFloat( "VolumeRatio", ViewModel.VolumeRatio );
@@ -187,7 +201,7 @@ void CUIScreen::ReplaceSettingsWindow()
 		Root->RemoveChild( SettingsWindow.Get() );
 	}
 	SettingsWindow = SettingsDocument.GetRoot();
-	PlaceAt( *Root, SettingsWindow, 60.0f, 90.0f, 560.0f, 530.0f );
+	PlaceAt( *Root, SettingsWindow, 60.0f, 90.0f, 560.0f, SettingsHeight );
 }
 
 void CUIScreen::ReloadSettingsWindow()
@@ -338,6 +352,8 @@ TSharedPtr<CUIWidget> CUIScreen::BuildIconWindow( CAssetSubsystem& Assets, const
 
 	NameList = MakeShared<CUIListView>();
 	NameList->SetItemHeight( 28.0f );
+	// 10 行ごとに、少し高い行（行ごとに、高さが違ってもよい）
+	NameList->SetItemSizeProvider( []( int32 Index ) { return Index % 10 == 0 ? 44.0f : 28.0f; } );
 	NameList->SetScrollBar( BarTrack, BarThumb, 8.0f );
 	NameList->SetItemFactory(
 		[Body, this]() -> TSharedPtr<CUIWidget >
@@ -385,10 +401,10 @@ void CUIScreen::Build()
 	TSharedPtr<CUIWidget> Shadow = MakeShared<CUIWidget>();
 	Shadow->SetBackground( Style.Shadow );
 	Shadow->SetHitTestable( false );
-	PlaceAt( *Root, Shadow, 40.0f, 74.0f, 600.0f, 590.0f );
+	PlaceAt( *Root, Shadow, 40.0f, 74.0f, 600.0f, SettingsHeight + 60.0f );
 
 	SettingsWindow = BuildSettingsWindow( *Assets, Body, Title );
-	PlaceAt( *Root, SettingsWindow, 60.0f, 90.0f, 560.0f, 530.0f );
+	PlaceAt( *Root, SettingsWindow, 60.0f, 90.0f, 560.0f, SettingsHeight );
 	PlaceAt( *Root, BuildViewWindow( *Assets, Body ), 680.0f, 90.0f, 560.0f, 300.0f );
 	PlaceAt( *Root, BuildIconWindow( *Assets, Body ), 680.0f, 400.0f, 560.0f, 290.0f );
 
@@ -397,6 +413,12 @@ void CUIScreen::Build()
 
 	// 画面のスタック: 下は、この画面（モーダルではなく、ゲームの入力も止めない）。ダイアログが、上に積まれる
 	Screens.SetArea( FUIRect( 0.0f, 0.0f, ScreenWidth, ScreenHeight ) );
+	// ツールチップ（部品の Tooltip）の見た目
+	FUITooltipStyle TooltipStyle;
+	TooltipStyle.Background = Style.Tooltip;
+	TooltipStyle.Font = Assets->GetDefaultFont( 18 );
+	TooltipStyle.Padding = FUIMargin( 12.0f, 8.0f );
+	Screens.SetTooltipStyle( TooltipStyle );
 	FUIScreenOptions BaseOptions;
 	BaseOptions.bModal = false;
 	BaseOptions.bBlocksGameInput = false;
@@ -411,6 +433,8 @@ void CUIScreen::Build()
 	{
 		AskReset();
 	}
+	// 同じく --open-dropdown で、画質のドロップダウンを開いた状態にする（レイアウトが決まってから開くので、最初の更新のあと）
+	bOpenDropdownPending = NCommandLine::HasFlag( "open-dropdown" );
 	// 同じく --theme-steps=N で、テーマを N 回進めた状態から始める（Theme ボタンを N 回押した状態）
 	if ( const TOptional<FString> Steps = NCommandLine::GetValue( "theme-steps" ) )
 	{
@@ -449,8 +473,17 @@ void CUIScreen::Tick( float32 DeltaTime )
 	const IInput* Input = GetAppSubsystem<IInput>();
 	const IGamepadInput* Gamepad = GetAppSubsystem<IGamepadInput>();
 	ITextInput* TextInput = GetAppSubsystem<ITextInput>();
-	const FUIInputFrame Frame = NUIInput::MakeFrame( Input, Input, Gamepad, FUIInputMapping(), TextInput );
+	FUIInputFrame Frame = NUIInput::MakeFrame( Input, Input, Gamepad, FUIInputMapping(), TextInput, GetAppSubsystem<IClipboard>() );
+	Frame.DeltaTime = DeltaTime;   // ツールチップの待ち時間を数えるため
 	const FUIScreenInputResult Result = Screens.Update( Frame );
+	if ( bOpenDropdownPending && SettingsWindow )
+	{
+		bOpenDropdownPending = false;
+		if ( CUIDropdown* Dropdown = static_cast<CUIDropdown*>( SettingsWindow->FindByName( "QualityBox" ) ) )
+		{
+			Dropdown->Open();
+		}
+	}
 	// 入力欄にフォーカスがあるときだけ、文字入力（と、かな漢字変換）を受ける
 	if ( TextInput != nullptr )
 	{

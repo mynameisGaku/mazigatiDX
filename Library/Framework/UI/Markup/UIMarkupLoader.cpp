@@ -377,7 +377,8 @@ namespace
 		CheckBox,
 		Slider,
 		TextBox,
-		ListView
+		ListView,
+		Dropdown
 	};
 }
 
@@ -582,9 +583,16 @@ struct FMarkupBuilder
 			OutKind = EKind::ListView;
 			OutWidget = MakeShared<CUIListView>();
 		}
+		else if ( Name == "Dropdown" )
+		{
+			OutKind = EKind::Dropdown;
+			TSharedPtr<CUIDropdown> Dropdown = MakeShared<CUIDropdown>();
+			Dropdown->SetPopupHost( Context.PopupHost );
+			OutWidget = Dropdown;
+		}
 		else
 		{
-			return Fail( Node, "is not a known element (Panel, Canvas, VerticalStack, HorizontalStack, Stack, Grid, ScrollBox, Label, Image, ProgressBar, Button, CheckBox, Slider, TextBox, ListView)" );
+			return Fail( Node, "is not a known element (Panel, Canvas, VerticalStack, HorizontalStack, Stack, Grid, ScrollBox, Label, Image, ProgressBar, Button, CheckBox, Slider, TextBox, ListView, Dropdown)" );
 		}
 		return true;
 	}
@@ -602,6 +610,10 @@ struct FMarkupBuilder
 		if ( N == "Name" )
 		{
 			Widget.SetName( A.Value );
+		}
+		else if ( N == "Tooltip" )
+		{
+			Widget.SetTooltip( A.Value );
 		}
 		else if ( N == "Width" || N == "Height" || N == "MinWidth" || N == "MinHeight" || N == "MaxWidth" || N == "MaxHeight" )
 		{
@@ -797,7 +809,7 @@ struct FMarkupBuilder
 	{
 		static const char* Names[] = { "Name", "Width", "Height", "MinWidth", "MinHeight", "MaxWidth", "MaxHeight", "Margin", "Padding", "Offsets", "HAlign", "VAlign", "Weight", "Column", "Row",
 									   "ColumnSpan", "RowSpan", "Anchor", "AnchorMin", "AnchorMax", "Pivot", "Visibility", "Opacity", "Clip", "HitTestable", "Interactive", "Focusable",
-									   "Background", "Enabled", "Visible" };
+									   "Background", "Enabled", "Visible", "Tooltip" };
 		for ( const char* Name : Names )
 		{
 			if ( N == Name )
@@ -1214,6 +1226,16 @@ struct FMarkupBuilder
 		case EKind::ListView:
 		{
 			CUIListView& List = static_cast<CUIListView&>( *Widget );
+			if ( N == "Orientation" )
+			{
+				EUIOrientation Orientation = EUIOrientation::Vertical;
+				if ( !ParseOrientation( A.Value, Orientation ) )
+				{
+					return BadValue( Node, A, "Horizontal or Vertical" );
+				}
+				List.SetOrientation( Orientation );
+				return true;
+			}
 			if ( N == "ItemHeight" )
 			{
 				if ( !ResolveFloat( A.Value, Number ) || Number < 1.0f )
@@ -1228,6 +1250,48 @@ struct FMarkupBuilder
 				return true; // まとめて、あとで（SetupList）
 			}
 			if ( N == "OnItemClicked" )
+			{
+				return true;
+			}
+			break;
+		}
+		case EKind::Dropdown:
+		{
+			CUIDropdown& Dropdown = static_cast<CUIDropdown&>( *Widget );
+			if ( N == "Placeholder" )
+			{
+				Dropdown.SetPlaceholder( A.Value );
+				return true;
+			}
+			if ( N == "Font" )
+			{
+				Dropdown.SetFont( FindFont( Node, A.Value ) );
+				return true;
+			}
+			if ( N == "Style" )
+			{
+				FUIDropdownStyle Style;
+				if ( FindStyle( Node, Context.DropdownStyles, A.Value, Style, "dropdown", &FUITheme::FindDropdownStyle ) )
+				{
+					Dropdown.SetDropdownStyle( Style );
+				}
+				return true;
+			}
+			if ( N == "SelectedIndex" )
+			{
+				FString BindingName;
+				int32 Index = 0;
+				if ( ParseBinding( A.Value, BindingName ) )
+				{
+					return true;
+				}
+				if ( !ParseInt( A.Value, Index ) || Index < -1 )
+				{
+					return BadValue( Node, A, "a whole number of -1 or more, or {Binding name}" );
+				}
+				return true; // 項目を入れてから（SetupDropdown）
+			}
+			if ( N == "Items" || N == "OnSelectionChanged" )
 			{
 				return true;
 			}
@@ -1389,6 +1453,30 @@ struct FMarkupBuilder
 		return true;
 	}
 
+	bool SetupDropdown( const FUIXmlNode& Node, const TSharedPtr<CUIDropdown>& Dropdown )
+	{
+		// 項目: 結び付け {Binding 名前}（文字列の配列）か、コンマで区切った文字（Items="Low, Medium, High"）
+		if ( const FString* Value = Node.FindAttribute( "Items" ) )
+		{
+			FString BindingName;
+			if ( !ParseBinding( *Value, BindingName ) )
+			{
+				Dropdown->SetItems( SplitList( *Value ) );
+			}
+		}
+		// 選ぶ番号（リテラル）。結び付けのときは、結び付けの段階で
+		if ( const FString* Value = Node.FindAttribute( "SelectedIndex" ) )
+		{
+			FString BindingName;
+			int32 Index = 0;
+			if ( !ParseBinding( *Value, BindingName ) && ParseInt( *Value, Index ) )
+			{
+				Dropdown->SetSelectedIndex( Index, false );
+			}
+		}
+		return true;
+	}
+
 	bool SetupList( const FUIXmlNode& Node, const TSharedPtr<CUIListView>& List )
 	{
 		// ScrollBar（3 つ組）
@@ -1493,6 +1581,24 @@ struct FMarkupBuilder
 	// ---- 結び付け（{Binding ...}）----
 	bool ApplyBindings( const FUIXmlNode& Node, EKind Kind, const TSharedPtr<CUIWidget>& Widget )
 	{
+		// ドロップダウンは、項目の結び付けを先に（選ぶ番号は、項目が入ってから決まるので、属性の並びに左右されないように）
+		if ( Kind == EKind::Dropdown )
+		{
+			FString ItemsBinding;
+			const FString* ItemsValue = Node.FindAttribute( "Items" );
+			if ( ItemsValue != nullptr && ParseBinding( *ItemsValue, ItemsBinding ) )
+			{
+				TObservableArray<FString>* const* Found = Context.StringLists.Find( ItemsBinding );
+				if ( Found == nullptr )
+				{
+					Warn( Node, FString::Printf( "the string list binding '%s' is not registered", *ItemsBinding ) );
+				}
+				else
+				{
+					Bindings.BindItems( **Found, StaticCastSharedPtr<CUIDropdown>( Widget ) );
+				}
+			}
+		}
 		for ( int32 Index = 0; Index < Node.Attributes.Num(); ++Index )
 		{
 			const FUIXmlAttribute& A = Node.Attributes[Index];
@@ -1574,6 +1680,22 @@ struct FMarkupBuilder
 			{
 				// SetupList で済み
 			}
+			else if ( Kind == EKind::Dropdown && N == "Items" )
+			{
+				// 先に済ませた
+			}
+			else if ( Kind == EKind::Dropdown && N == "SelectedIndex" )
+			{
+				TObservable<int32>* const* Found = Context.Ints.Find( BindingName );
+				if ( Found == nullptr )
+				{
+					Warn( Node, FString::Printf( "the number (whole) binding '%s' is not registered", *BindingName ) );
+				}
+				else
+				{
+					Bindings.BindSelectedIndex( **Found, StaticCastSharedPtr<CUIDropdown>( Widget ) );
+				}
+			}
 			else
 			{
 				Warn( Node, FString::Printf( "the attribute %s cannot be bound", *N ) );
@@ -1637,6 +1759,16 @@ struct FMarkupBuilder
 				if ( Handler )
 				{
 					StaticCastSharedPtr<CUITextBox>( Widget )->OnCancelled.Add( [Handler]( CUIWidget& ) { Handler(); } );
+				}
+			}
+			break;
+		case EKind::Dropdown:
+			if ( const FString* Value = Node.FindAttribute( "OnSelectionChanged" ) )
+			{
+				const TCallable<void()> Handler = FindHandler( Node, *Value );
+				if ( Handler )
+				{
+					StaticCastSharedPtr<CUIDropdown>( Widget )->OnSelectionChanged.Add( [Handler]( CUIWidget&, int32 ) { Handler(); } );
 				}
 			}
 			break;
@@ -1708,6 +1840,9 @@ struct FMarkupBuilder
 			break;
 		case EKind::ListView:
 			bOk = SetupList( Node, StaticCastSharedPtr<CUIListView>( Widget ) );
+			break;
+		case EKind::Dropdown:
+			bOk = SetupDropdown( Node, StaticCastSharedPtr<CUIDropdown>( Widget ) );
 			break;
 		default:
 			break;

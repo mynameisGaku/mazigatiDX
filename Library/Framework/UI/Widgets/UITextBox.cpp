@@ -65,6 +65,8 @@ CUITextBox::CUITextBox()
 	{
 		CompositionText.Empty();
 		CompositionCursor = 0;
+		bDragSelecting = false;
+		Buffer.ClearSelection();
 	} );
 }
 
@@ -84,6 +86,28 @@ void CUITextBox::SetText( const FString& InText, bool bNotify )
 	{
 		OnTextChanged.Broadcast( *this, Buffer.GetText() );
 	}
+}
+
+void CUITextBox::SetSelection( int32 InAnchorByteOffset, int32 InCursorByteOffset )
+{
+	Buffer.SetSelection( InAnchorByteOffset, InCursorByteOffset );
+	PaintCounter = 0;
+}
+
+void CUITextBox::SelectAll()
+{
+	Buffer.SelectAll();
+	PaintCounter = 0;
+}
+
+bool CUITextBox::CopySelection()
+{
+	// パスワードの欄は、中身をクリップボードへ出さない
+	if ( Clipboard == nullptr || bPasswordMode || !Buffer.HasSelection() )
+	{
+		return false;
+	}
+	return Clipboard->SetText( Buffer.GetSelectedText() );
 }
 
 void CUITextBox::SetCursorByteOffset( int32 InOffset )
@@ -157,8 +181,46 @@ bool CUITextBox::OnTextInput( const TArray<FTextInputEvent>& Events, const FImeC
 
 	const FString Before = Buffer.GetText();
 	const int32 CursorBefore = Buffer.GetCursorByteOffset();
-	Buffer.ApplyAll( Events );
-	if ( Buffer.GetText() != Before || Buffer.GetCursorByteOffset() != CursorBefore )
+	const int32 SelectionBefore = Buffer.GetSelectionStart();
+	const int32 SelectionEndBefore = Buffer.GetSelectionEnd();
+	for ( const FTextInputEvent& Event : Events )
+	{
+		if ( Event.bCommand && Event.Command == ETextEditCommand::Copy )
+		{
+			CopySelection();
+		}
+		else if ( Event.bCommand && Event.Command == ETextEditCommand::Cut )
+		{
+			if ( CopySelection() )
+			{
+				Buffer.DeleteSelection();
+			}
+		}
+		else if ( Event.bCommand && Event.Command == ETextEditCommand::Paste )
+		{
+			FString Pasted;
+			if ( Clipboard != nullptr && Clipboard->GetText( Pasted ) )
+			{
+				// 1 行の欄なので、改行・タブは、空白にする
+				FString Line;
+				for ( int32 Index = 0; Index < Pasted.Len(); ++Index )
+				{
+					const char Character = Pasted[Index];
+					if ( Character == '\r' && Index + 1 < Pasted.Len() && Pasted[Index + 1] == '\n' )
+					{
+						continue;
+					}
+					Line += ( Character == '\r' || Character == '\n' || Character == '\t' ) ? ' ' : Character;
+				}
+				Buffer.InsertText( Line );
+			}
+		}
+		else
+		{
+			Buffer.Apply( Event );
+		}
+	}
+	if ( Buffer.GetText() != Before || Buffer.GetCursorByteOffset() != CursorBefore || Buffer.GetSelectionStart() != SelectionBefore || Buffer.GetSelectionEnd() != SelectionEndBefore )
 	{
 		PaintCounter = 0; // 動いた直後は、カーソルを見せる
 	}
@@ -189,15 +251,15 @@ bool CUITextBox::OnTextInput( const TArray<FTextInputEvent>& Events, const FImeC
 	return false;
 }
 
-void CUITextBox::OnPointerPressed( const FVector2& Position )
+int32 CUITextBox::ByteOffsetAt( float32 PointerX ) const
 {
 	if ( !Font )
 	{
-		return;
+		return 0;
 	}
-	// クリックした位置にいちばん近い、文字の境目へ
+	// 位置にいちばん近い、文字の境目へ
 	const FString& Text = Buffer.GetText();
-	const float32 X = Position.x - ( GetTextArea().Left() - ScrollX );
+	const float32 X = PointerX - ( GetTextArea().Left() - ScrollX );
 	int32 Best = 0;
 	float32 BestDistance = NMath::Abs( X );
 	int32 Offset = 0;
@@ -211,8 +273,35 @@ void CUITextBox::OnPointerPressed( const FVector2& Position )
 			Best = Offset;
 		}
 	}
-	Buffer.SetCursorByteOffset( Best );
+	return Best;
+}
+
+void CUITextBox::OnPointerPressed( const FVector2& Position )
+{
+	if ( !Font )
+	{
+		return;
+	}
+	// クリックした位置へカーソルを置き、ここを起点に、ドラッグで範囲を選べるようにする
+	DragAnchor = ByteOffsetAt( Position.x );
+	Buffer.SetSelection( DragAnchor, DragAnchor );
+	bDragSelecting = true;
 	PaintCounter = 0;
+}
+
+void CUITextBox::OnPointerDragged( const FVector2& Position )
+{
+	if ( !bDragSelecting || !Font )
+	{
+		return;
+	}
+	Buffer.SetSelection( DragAnchor, ByteOffsetAt( Position.x ) );
+	PaintCounter = 0;
+}
+
+void CUITextBox::OnPointerReleased( const FVector2& )
+{
+	bDragSelecting = false;
 }
 
 void CUITextBox::OnPaint( FDrawContext& CommandList, float32 EffectiveOpacity )
@@ -257,6 +346,19 @@ void CUITextBox::OnPaint( FDrawContext& CommandList, float32 EffectiveOpacity )
 	FClipScope Clip( CommandList, static_cast<int32>( std::floor( Area.Left() ) ), static_cast<int32>( std::floor( Area.Top() ) ), static_cast<int32>( std::ceil( Area.Right() ) ),
 					 static_cast<int32>( std::ceil( Area.Bottom() ) ) );
 	const float32 OriginX = Area.Left() - ScrollX;
+
+	// 選んでいる範囲の背景（変換中は、出さない）
+	if ( Buffer.HasSelection() && CompositionText.IsEmpty() && IsFocused() )
+	{
+		const float32 StartX = OriginX + PrefixWidth( Buffer.GetSelectionStart() );
+		const float32 EndX = OriginX + PrefixWidth( Buffer.GetSelectionEnd() );
+		const int32 SelectionAlpha = NUIBrush::ToAlpha( Style.SelectionColor, EffectiveOpacity );
+		if ( SelectionAlpha > 0 && EndX > StartX )
+		{
+			CommandList.Blend( EDrawBlend::Alpha, SelectionAlpha );
+			CommandList.BoxAA( StartX, TextY, EndX, TextY + GlyphHeight, Style.SelectionColor, true );
+		}
+	}
 
 	// 文字（空で、フォーカスも無ければ、薄い案内の文字）
 	const bool bShowPlaceholder = Display.IsEmpty() && !IsFocused() && !Placeholder.IsEmpty();

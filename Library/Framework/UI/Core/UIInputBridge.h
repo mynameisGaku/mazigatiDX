@@ -39,5 +39,5 @@ namespace NUIInput
 	//   パッド: つながっているすべてのパッドの、このフレームで押されたボタンをまとめる。
 	//   文字入力（TextInput）: 受けている間（IsTextInputActive）だけ、そのフレームの文字と編集の操作・かな漢字変換の状態を、フレームへ入れる
 	//   （配列は、TextInput が持つもので、次の入力更新まで有効。結果の bWantsTextInput を、SetTextInputActive へ渡す）。
-	FUIInputFrame MakeFrame( const IKeyboardInput* Keyboard, const IMouseInput* Mouse, const IGamepadInput* Gamepad, const FUIInputMapping& Mapping = FUIInputMapping(), const ITextInput* TextInput = nullptr );
+	FUIInputFrame MakeFrame( const IKeyboardInput* Keyboard, const IMouseInput* Mouse, const IGamepadInput* Gamepad, const FUIInputMapping& Mapping = FUIInputMapping(), const ITextInput* TextInput = nullptr, IClipboard* Clipboard = nullptr );
 }

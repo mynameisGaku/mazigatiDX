@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 
+#include "Library/Core/Interfaces/Input/IClipboard.h"
 #include "Library/Framework/Input/Text/TextInputTypes.h"
 #include "Library/Framework/UI/Core/UIWidget.h"
 
@@ -29,6 +30,11 @@ struct FUIInputFrame
 	bool bFocusNext = false;        // フォーカスを次へ（Tab）
 	bool bFocusPrevious = false;    // フォーカスを前へ（Shift + Tab）
 
+	// このフレームの経過時間（秒）。ツールチップの待ち時間の計算に使う（0 なら、時間は進まない）
+	float32 DeltaTime = 0.0f;
+	// クリップボード（入力欄のコピー・貼り付けに使う。null なら、コピー・貼り付けはできない。Update の間だけ有効）
+	IClipboard* Clipboard = nullptr;
+
 	// 文字入力（ITextInput が、このフレームに届けた文字と編集の操作。入力欄にフォーカスがあるときだけ使う）。
 	// 指しているのは、Update を呼んでいる間だけ有効な配列（ホストが持つ）。null なら、文字入力は無い
 	const TArray<FTextInputEvent>* TextEvents = nullptr;
@@ -50,6 +56,14 @@ struct FUIInputResult
 	bool ConsumesPointer() const { return bPointerOverUI || bPointerCaptured; }
 };
 
+// ツールチップを出す依頼（CUIContext が決める。出す仕事は CUIScreenStack）
+struct FUITooltipRequest
+{
+	bool bVisible = false;          // 待ち時間が過ぎて、いま出すべきか
+	CUIWidget* Source = nullptr;    // ツールチップを持っている部品（bVisible が true のときだけ有効）
+	FVector2 Anchor = FVector2( 0.0f, 0.0f );   // 出す位置の基準（待っている間のポインターの位置。出したあとは、動かない）
+};
+
 //=============================================================================
 // CUIContext
 //   部品の木（ルート）に、入力を配る。ホバー・押下（キャプチャ）・クリック・フォーカス（矢印・Tab・決定）・戻るを扱い、
@@ -64,6 +78,8 @@ struct FUIInputResult
 //   - 文字入力: 入力欄（WantsTextInput が true の部品）にフォーカスがあるとき、FUIInputFrame の文字入力のイベントを、その部品へ渡す。
 //     このとき、左右の矢印・決定・戻るは、入力欄が使うので、フォーカスの移動や決定・戻るには使わない（上下の矢印と Tab は、これまでどおり）。
 //     結果の bWantsTextInput を、ホストが ITextInput::SetTextInputActive へ渡す（入力欄が無いときは、文字入力を切って、WASD などに変換が割り込まないように）。
+//   - ツールチップ: ポインターが、ツールチップを持つ部品（当たった部品から親へたどって、最初に持つもの）の上に、SetTooltipDelay の間（既定 0.5 秒）
+//     止まる（同じ部品の上に居続ける）と、GetTooltip の bVisible が true になる。ボタンを押すと消える。時間は FUIInputFrame::DeltaTime を足して数える。
 //   - 部品は、ルートの木に入っている間だけ有効（木から外された部品が、ホバー・押下・フォーカスを持っていたら、イベントなしで外す）。
 //   - ポインターの対象は、当たった部品から親へたどって、最初の Interactive な部品。使えない（Disabled）部品は、イベントを受けず、入力を止めるだけ。
 //   - フォーカスを動かす: 矢印は、部品の位置から自動で選ぶ（向きの半平面にある、いちばん近い Focusable。部品ごとの名前の指定が先）。
@@ -85,6 +101,12 @@ public:
 	// フォーカスを動かす。木にない・Focusable でない・使えない・見えない部品なら、false（フォーカスは変わらない）。nullptr で外す
 	bool SetFocus( CUIWidget* Widget );
 
+	// ツールチップを出すまでの待ち時間（秒。既定 0.5。0 以下なら、乗ったらすぐ）
+	void SetTooltipDelay( float32 InSeconds ) { TooltipDelay = InSeconds; }
+	float32 GetTooltipDelay() const { return TooltipDelay; }
+	// いまのツールチップの依頼（Update のあとで読む）
+	FUITooltipRequest GetTooltip() const;
+
 	// 戻る（Cancel）が押されたときのイベント（画面を 1 つ戻す、などに使う）。受け手がいれば、戻るを使ったことになる
 	TUIEvent<> OnCancel;
 
@@ -103,4 +125,11 @@ private:
 	CUIWidget* Pressed = nullptr;
 	CUIWidget* Focused = nullptr;
 	bool bPreviousPointerDown = false;
+
+	// ツールチップ: 待っている部品・待った時間・出す位置の基準・出しているか
+	float32 TooltipDelay = 0.5f;
+	CUIWidget* TooltipSource = nullptr;
+	float32 TooltipHoverTime = 0.0f;
+	FVector2 TooltipAnchor = FVector2( 0.0f, 0.0f );
+	bool bTooltipShown = false;
 };

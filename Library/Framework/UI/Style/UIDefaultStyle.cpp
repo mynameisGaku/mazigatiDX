@@ -156,6 +156,12 @@ TSharedPtr<FUITheme> FUIDefaultStyle::MakeTheme( const TSharedPtr<CFont>& Body, 
 	TextBoxStyle.Focused = TextBoxFocused;
 	TextBoxStyle.Disabled = TextBox;
 	Theme->SetTextBoxStyle( "Default", TextBoxStyle );
+	FUIDropdownStyle DropdownStyle;
+	DropdownStyle.Button = Button;
+	// 一覧は、後ろが透けないよう、不透明にする
+	DropdownStyle.PopupBackground = FUIBrush::MakeSolidWithOutline( FColor32( 26, 31, 46, 255 ), 6.0f, FColor32( 120, 136, 184, 255 ), 1.5f );
+	DropdownStyle.ItemSelected = FUIBrush::MakeSolid( FColor32( 60, 100, 170, 220 ), 4.0f );
+	Theme->SetDropdownStyle( "Default", DropdownStyle );
 
 	Theme->SetColor( "Text", FColor32( 235, 238, 245, 255 ) );
 	Theme->SetColor( "TextMuted", FColor32( 150, 160, 180, 255 ) );
