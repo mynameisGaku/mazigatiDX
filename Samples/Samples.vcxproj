@@ -136,6 +136,9 @@
     <ClCompile Include="Source\Lighting\LightingSample.cpp" />
     <ClCompile Include="Source\Lighting\LightingScenery.cpp" />
     <ClCompile Include="Source\Lighting\LightingView.cpp" />
+    <ClCompile Include="Source\Materials\MaterialsRig.cpp" />
+    <ClCompile Include="Source\Materials\MaterialsSample.cpp" />
+    <ClCompile Include="Source\Materials\MaterialsView.cpp" />
     <ClCompile Include="Source\Physics\PhysicsBody.cpp" />
     <ClCompile Include="Source\Physics\PhysicsSample.cpp" />
     <ClCompile Include="Source\Physics\RopeJoint.cpp" />
@@ -313,6 +316,10 @@
     <ClInclude Include="Source\Lighting\LightingSample.h" />
     <ClInclude Include="Source\Lighting\LightingScenery.h" />
     <ClInclude Include="Source\Lighting\LightingView.h" />
+    <ClInclude Include="Source\Materials\MaterialsDemoState.h" />
+    <ClInclude Include="Source\Materials\MaterialsRig.h" />
+    <ClInclude Include="Source\Materials\MaterialsSample.h" />
+    <ClInclude Include="Source\Materials\MaterialsView.h" />
     <ClInclude Include="Source\Physics\PhysicsBody.h" />
     <ClInclude Include="Source\Physics\PhysicsSample.h" />
     <ClInclude Include="Source\Physics\RopeJoint.h" />

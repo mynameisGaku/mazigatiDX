@@ -110,6 +110,8 @@
     <ClCompile Include="Library\DebugUI\Effect\EffectPreviewSurface.cpp" />
     <ClCompile Include="Library\DebugUI\Log\ConsoleWindow.cpp" />
     <ClCompile Include="Library\DebugUI\Log\LogCategoryPanel.cpp" />
+    <ClCompile Include="Library\DebugUI\Material\MaterialEditor.cpp" />
+    <ClCompile Include="Library\DebugUI\Material\MaterialPreviewSurface.cpp" />
     <ClCompile Include="Library\DebugUI\Profiler\ProfilerTimeline.cpp" />
     <ClCompile Include="Library\DebugUI\Profiler\ProfilerWindow.cpp" />
     <ClCompile Include="Library\DebugUI\World\WorldEditor.cpp" />
@@ -744,6 +746,8 @@
     <ClInclude Include="Library\DebugUI\Effect\EffectPreviewSurface.h" />
     <ClInclude Include="Library\DebugUI\Log\ConsoleWindow.h" />
     <ClInclude Include="Library\DebugUI\Log\LogCategoryPanel.h" />
+    <ClInclude Include="Library\DebugUI\Material\MaterialEditor.h" />
+    <ClInclude Include="Library\DebugUI\Material\MaterialPreviewSurface.h" />
     <ClInclude Include="Library\DebugUI\Profiler\ProfilerTimeline.h" />
     <ClInclude Include="Library\DebugUI\Profiler\ProfilerWindow.h" />
     <ClInclude Include="Library\DebugUI\World\WorldEditor.h" />

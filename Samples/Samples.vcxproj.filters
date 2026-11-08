@@ -250,6 +250,15 @@
     <ClCompile Include="Source\Lighting\LightingView.cpp">
       <Filter>Source\Lighting</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Materials\MaterialsRig.cpp">
+      <Filter>Source\Materials</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Materials\MaterialsSample.cpp">
+      <Filter>Source\Materials</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Materials\MaterialsView.cpp">
+      <Filter>Source\Materials</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Physics\PhysicsBody.cpp">
       <Filter>Source\Physics</Filter>
     </ClCompile>
@@ -774,6 +783,18 @@
     <ClInclude Include="Source\Lighting\LightingView.h">
       <Filter>Source\Lighting</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Materials\MaterialsDemoState.h">
+      <Filter>Source\Materials</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Materials\MaterialsRig.h">
+      <Filter>Source\Materials</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Materials\MaterialsSample.h">
+      <Filter>Source\Materials</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Materials\MaterialsView.h">
+      <Filter>Source\Materials</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Physics\PhysicsBody.h">
       <Filter>Source\Physics</Filter>
     </ClInclude>
@@ -1114,6 +1135,9 @@
     </Filter>
     <Filter Include="Source\Lighting">
       <UniqueIdentifier>{4EB65EA3-3FEC-7570-1AA7-399CE99C056E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Materials">
+      <UniqueIdentifier>{08F0118C-2678-5E7D-868E-526FFF313AF2}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Physics">
       <UniqueIdentifier>{E38D2DD8-C584-E77B-3BFE-E6AE76D6AEFB}</UniqueIdentifier>

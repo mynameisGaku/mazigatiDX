@@ -130,6 +130,12 @@
     <ClCompile Include="Library\DebugUI\Log\LogCategoryPanel.cpp">
       <Filter>Library\DebugUI\Log</Filter>
     </ClCompile>
+    <ClCompile Include="Library\DebugUI\Material\MaterialEditor.cpp">
+      <Filter>Library\DebugUI\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\Material\MaterialPreviewSurface.cpp">
+      <Filter>Library\DebugUI\Material</Filter>
+    </ClCompile>
     <ClCompile Include="Library\DebugUI\Profiler\ProfilerTimeline.cpp">
       <Filter>Library\DebugUI\Profiler</Filter>
     </ClCompile>
@@ -2027,6 +2033,12 @@
     </ClInclude>
     <ClInclude Include="Library\DebugUI\Log\LogCategoryPanel.h">
       <Filter>Library\DebugUI\Log</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\DebugUI\Material\MaterialEditor.h">
+      <Filter>Library\DebugUI\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\DebugUI\Material\MaterialPreviewSurface.h">
+      <Filter>Library\DebugUI\Material</Filter>
     </ClInclude>
     <ClInclude Include="Library\DebugUI\Profiler\ProfilerTimeline.h">
       <Filter>Library\DebugUI\Profiler</Filter>
@@ -4819,6 +4831,9 @@
     </Filter>
     <Filter Include="Library\DebugUI\Log">
       <UniqueIdentifier>{9E7A2C43-655C-CB1A-C621-D728C55EC73D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\DebugUI\Material">
+      <UniqueIdentifier>{056D6379-CA9F-D67D-3792-C9255DCFB0BB}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\DebugUI\Profiler">
       <UniqueIdentifier>{E9C875E0-53C1-4EA8-DA59-08226B0F767B}</UniqueIdentifier>
