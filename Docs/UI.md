@@ -11,6 +11,7 @@
 |入力|`CUIContext`（ホバー・押下・クリック・フォーカス・決定・戻る）、`NUIInput::MakeFrame`（ゲームの入力 → UI の入力）|`Core`|
 |部品|`CUIImage`・`CUILabel`・`CUIProgressBar`・`CUIButton`・`CUICheckBox`・`CUISlider`・`CUIScrollBox`・`CUIListView`・`CUITextBox`（入力欄）・`CUIDialog`（確認のダイアログ）・`CUIRenderTargetView`|`Widgets`|
 |画面のスタック|`CUIScreenStack`: 画面を積み重ねて、描く順と入力の行き先を決める（HUD・メニュー・ダイアログ）|`Core`|
+|結び付け|`TObservable` / `TObservableArray` / `FUICommand`（ビューモデルの値・配列・操作）と、`CUIBindingSet`（部品との結び付け）|`Binding`|
 |既定のスタイル|`FUIDefaultStyle`: `EngineContent` の画像から作る、部品の既定の見た目|`Style`|
 
 ## 使い方
@@ -94,6 +95,43 @@ List->OnItemClicked.Add( []( CUIWidget&, int32 Index ) { /* クリック・決�
 - 選択は 1 つ（`SetSelectedIndex`。-1 は、なし）。クリックで選び、フォーカス中は上下の矢印で選びます（端では、フォーカスが外へ動く）。選んだ行は、見える位置までスクロールします。決定（Enter・A ボタン）は、選んでいる行のクリックです。
 - データが変わったら、`SetItemCount`（数が変わるとき）か `Refresh`（中身だけ変わるとき）。数が減って、選択やスクロールの量が範囲の外になったら、範囲に収めます。
 - ホイールとスクロールバーは、スクロール枠と同じです。
+
+## 結び付け（MVVM）
+
+ゲームのデータ（ビューモデル）と、UI の部品を、**結び付け**で結べます。イベントの結び付け（`OnClicked` など）・部品の直接の操作と、混ぜて使ってかまいません。ビューモデルは、UI の部品を、いっさい知りません。
+
+```cpp
+// ビューモデル: UI を知らない。値のルールは、ここに書く
+struct FSettingsViewModel
+{
+    TObservable<float32> Volume { 50.0f };
+    TObservable<bool> Music { true };
+    TObservable<FString> Name;
+    TObservable<FString> VolumeText { FString( "50%" ) };       // 音量から作る値
+    TObservableArray<FString> Items;
+    FUICommand Reset { []() { /* 既定へ戻す */ } };
+    FSettingsViewModel() { Volume.OnChanged.Add( [this]( const float32& V ) { VolumeText.Set( FString::Printf( "%d%%", int32( V ) ) ); } ); }
+};
+
+// 窓: 結ぶだけ（組が消えると、すべて解除される）
+CUIBindingSet Bindings;
+Bindings.BindValue( ViewModel.Volume, VolumeSlider );        // 双方向: スライダーを動かすと Volume が変わり、Volume を変えるとスライダーが動く
+Bindings.BindChecked( ViewModel.Music, MusicCheckBox );      // 双方向
+Bindings.BindText( ViewModel.Name, NameBox );                // 双方向
+Bindings.BindLabel( ViewModel.VolumeText, ValueLabel );      // 一方向
+Bindings.BindList( ViewModel.Items, ItemList );              // 配列が変わると、リストの行の数と中身が替わる
+Bindings.BindCommand( ResetButton, ViewModel.Reset );        // 押すと実行する。実行できるか（Enabled）で、押せるかも替わる
+Bindings.BindEnabled( ViewModel.CanEdit, EditPanel );        // true なら使える
+Bindings.BindVisible( ViewModel.ShowHelp, HelpPanel );       // true なら見える（false は、場所も取らない）
+Bindings.Bind( ViewModel.Volume, []( const float32& V ) { /* 好きな反映 */ } );
+Bindings.BindFunction<int32>( []() { return Score; }, []( const int32& V ) { /* 毎フレームの関数 */ } );   // Bindings.Update() を毎フレーム呼ぶ
+```
+
+- 結んだ直後に、いまの値を、部品へ 1 回反映します。
+- `TObservable::Set` は、値が変わったときだけ通知します（同じ値なら何もしない）。双方向でも、往復して止まらなくなりません。入力欄のカーソルも、同じ値なら動きません。
+- スライダーは、範囲と刻みに収めた値を見せます（観測値は、収める前の値のまま）。
+- ビューモデルは、結び付けの組より先に消えても安全です（解除のとき、ビューモデルが、まだあるかを確かめます）。部品は、結び付けが共有の参照で持ちます。
+- 見本は、サンプル `UI` の設定の窓（`Samples/Source/UI/SettingsViewModel.h`）です。
 
 ## 入力欄（文字入力）
 
@@ -183,4 +221,4 @@ UI の基本画像（窓・パネル・ボタンの 4 状態・チェック・�
 
 ## これから
 
-スタイルのテーマ、ツールチップ・ドロップダウン・入力欄の範囲選択とコピー・貼り付け・スクロールバーのドラッグ・横向きのリスト・行の高さが違うリスト、プロパティの結び付け（MVVM）、マークアップ（`.gxui`）、マテリアルのブラシ（シェーダーでの表現）は、順に足していきます。
+スタイルのテーマ、ツールチップ・ドロップダウン・入力欄の範囲選択とコピー・貼り付け・スクロールバーのドラッグ・横向きのリスト・行の高さが違うリスト、マークアップ（`.gxui`）での結び付けの指定（`{Binding ...}`）、マテリアルのブラシ（シェーダーでの表現）は、順に足していきます。

@@ -104,11 +104,7 @@ void CUIScreen::AskReset()
 	{
 		if ( Id == 1 )
 		{
-			VolumeSlider->SetValue( 50.0f );
-			MusicBox->SetChecked( true, false );
-			SoundBox->SetChecked( true, false );
-			NameBox->SetText( "" );
-			SetStatus( "Reset to the defaults" );
+			ViewModel.ResetToDefaults();   // ビューモデルを替えれば、結んだ部品が、すべて追従する
 		}
 		else
 		{
@@ -120,10 +116,7 @@ void CUIScreen::AskReset()
 
 void CUIScreen::SetStatus( const char* Text )
 {
-	if ( StatusLabel )
-	{
-		StatusLabel->SetText( Text );
-	}
+	ViewModel.Status.Set( Text );
 }
 
 TSharedPtr<CUIWidget> CUIScreen::BuildSettingsWindow( const TSharedPtr<CFont>& Body, const TSharedPtr<CFont>& Title )
@@ -142,7 +135,7 @@ TSharedPtr<CUIWidget> CUIScreen::BuildSettingsWindow( const TSharedPtr<CFont>& B
 	Column->AddChild( Heading );
 
 	// チェックボックス 2 つ（ラベルとの並び）
-	auto AddCheck = [&]( TSharedPtr<CUICheckBox>& Out, const char* Text, bool bChecked )
+	auto AddCheck = [&]( TSharedPtr<CUICheckBox>& Out, const char* Text, TObservable<bool>& Source )
 	{
 		TSharedPtr<CUIStackPanel> Row = MakeStack( EUIOrientation::Horizontal, 14.0f );
 		Row->SetLayout( FixedHeight( 28.0f ) );
@@ -154,21 +147,20 @@ TSharedPtr<CUIWidget> CUIScreen::BuildSettingsWindow( const TSharedPtr<CFont>& B
 		BoxLayout.HorizontalAlignment = EUIAlignment::Start;
 		BoxLayout.VerticalAlignment = EUIAlignment::Center;
 		Out->SetLayout( BoxLayout );
-		Out->SetChecked( bChecked, false );
-		const FString Name = Text;
-		Out->OnToggled.Add( [this, Name]( CUIWidget&, bool bOn ) { SetStatus( *( Name + ( bOn ? " on" : " off" ) ) ); } );
+		Bindings.BindChecked( Source, Out );   // 双方向: チェックボックス ⇔ ビューモデル
 		Row->AddChild( Out );
 		Row->AddChild( MakeLabel( Body, Text ) );
 		Column->AddChild( Row );
 	};
-	AddCheck( MusicBox, "Music", true );
-	AddCheck( SoundBox, "Sound effects", true );
+	AddCheck( MusicBox, "Music", ViewModel.Music );
+	AddCheck( SoundBox, "Sound effects", ViewModel.Sound );
 
 	// 音量: ラベル + 値 + スライダー + プログレスバー
 	TSharedPtr<CUIStackPanel> VolumeRow = MakeStack( EUIOrientation::Horizontal, 14.0f );
 	VolumeRow->SetLayout( FixedHeight( 28.0f ) );
 	VolumeRow->AddChild( MakeLabel( Body, "Volume" ) );
-	ValueLabel = MakeLabel( Body, "50%", FColor32( 180, 220, 255 ) );
+	ValueLabel = MakeLabel( Body, "", FColor32( 180, 220, 255 ) );
+	Bindings.BindLabel( ViewModel.VolumeText, ValueLabel );   // 一方向: ビューモデル → 文字
 	VolumeRow->AddChild( ValueLabel );
 	Column->AddChild( VolumeRow );
 
@@ -179,23 +171,17 @@ TSharedPtr<CUIWidget> CUIScreen::BuildSettingsWindow( const TSharedPtr<CFont>& B
 	VolumeSlider->SetStyle( SliderStyle );
 	VolumeSlider->SetRange( 0.0f, 100.0f );
 	VolumeSlider->SetStep( 5.0f );
-	VolumeSlider->SetValue( 50.0f, false );
 	VolumeSlider->SetLayout( FixedHeight( 28.0f ) );
+	Bindings.BindValue( ViewModel.Volume, VolumeSlider );   // 双方向: スライダー ⇔ 音量
 	Column->AddChild( VolumeSlider );
 
 	VolumeBar = MakeShared<CUIProgressBar>();
 	VolumeBar->SetBackBrush( Style.ProgressBack );
 	VolumeBar->SetFillBrush( Style.ProgressFill );
 	VolumeBar->SetFillInset( Style.ProgressInset );
-	VolumeBar->SetValue( 0.5f );
 	VolumeBar->SetLayout( FixedHeight( 18.0f ) );
+	Bindings.BindProgress( ViewModel.VolumeRatio, VolumeBar );   // 一方向: 音量の割合 → バー
 	Column->AddChild( VolumeBar );
-
-	VolumeSlider->OnValueChanged.Add( [this]( CUIWidget&, float32 Value )
-	{
-		ValueLabel->SetText( FString::Printf( "%d%%", static_cast<int32>( Value ) ) );
-		VolumeBar->SetValue( Value / 100.0f );
-	} );
 
 	// 名前の入力欄
 	TSharedPtr<CUIStackPanel> NameRow = MakeStack( EUIOrientation::Horizontal, 14.0f );
@@ -215,6 +201,7 @@ TSharedPtr<CUIWidget> CUIScreen::BuildSettingsWindow( const TSharedPtr<CFont>& B
 	NameLayout.FixedHeight = 38.0f;
 	NameLayout.VerticalAlignment = EUIAlignment::Center;
 	NameBox->SetLayout( NameLayout );
+	Bindings.BindText( ViewModel.Name, NameBox );   // 双方向: 入力欄 ⇔ 名前
 	NameBox->OnSubmitted.Add( [this]( CUIWidget&, const FString& Text ) { SetStatus( *FString::Printf( "Hello, %s!", *Text ) ); } );
 	NameBox->OnCancelled.Add( [this]( CUIWidget& ) { SetStatus( "Name edit was cancelled" ); } );
 	NameRow->AddChild( NameBox );
@@ -228,15 +215,16 @@ TSharedPtr<CUIWidget> CUIScreen::BuildSettingsWindow( const TSharedPtr<CFont>& B
 	TSharedPtr<CUIButton> Reset = MakeButton( Body, "Reset", 120.0f );
 	Ok->OnClicked.Add( [this]( CUIWidget& ) { SetStatus( "OK was clicked" ); } );
 	Cancel->OnClicked.Add( [this]( CUIWidget& ) { SetStatus( "Cancel was clicked" ); } );
-	Reset->OnClicked.Add( [this]( CUIWidget& ) { AskReset(); } );
+	Bindings.BindCommand( Reset, ViewModel.Reset );   // 押す → ビューモデルの操作（確認を求める）
 	Buttons->AddChild( Ok );
 	Buttons->AddChild( Cancel );
 	Buttons->AddChild( Reset );
 	Column->AddChild( Buttons );
 
 	// 状態の表示
-	StatusLabel = MakeLabel( Body, "Use the mouse, arrow keys, Tab, Enter or a gamepad", FColor32( 150, 160, 180 ) );
+	StatusLabel = MakeLabel( Body, "", FColor32( 150, 160, 180 ) );
 	StatusLabel->SetMaxWidth( 480.0f );
+	Bindings.BindLabel( ViewModel.Status, StatusLabel );   // 一方向: 状態の文章 → ラベル
 	Column->AddChild( StatusLabel );
 	return Window;
 }
@@ -415,6 +403,9 @@ void CUIScreen::Build()
 	PlaceAt( *Root, BuildSettingsWindow( Body, Title ), 60.0f, 90.0f, 560.0f, 530.0f );
 	PlaceAt( *Root, BuildViewWindow( *Assets, Body ), 680.0f, 90.0f, 560.0f, 300.0f );
 	PlaceAt( *Root, BuildIconWindow( *Assets, Body ), 680.0f, 400.0f, 560.0f, 290.0f );
+
+	// Reset の操作は、確認のダイアログを出す（ビューモデルは、UI を知らないので、出す仕事は、ここで渡す）
+	ViewModel.OnResetRequested = [this]() { AskReset(); };
 
 	// 画面のスタック: 下は、この画面（モーダルではなく、ゲームの入力も止めない）。ダイアログが、上に積まれる
 	Screens.SetArea( FUIRect( 0.0f, 0.0f, ScreenWidth, ScreenHeight ) );

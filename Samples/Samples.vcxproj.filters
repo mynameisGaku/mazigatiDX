@@ -996,6 +996,9 @@
     <ClInclude Include="Source\Text\WrapShowcase.h">
       <Filter>Source\Text</Filter>
     </ClInclude>
+    <ClInclude Include="Source\UI\SettingsViewModel.h">
+      <Filter>Source\UI</Filter>
+    </ClInclude>
     <ClInclude Include="Source\UI\UISample.h">
       <Filter>Source\UI</Filter>
     </ClInclude>

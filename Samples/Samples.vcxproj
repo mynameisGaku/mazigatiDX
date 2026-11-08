@@ -387,6 +387,7 @@
     <ClInclude Include="Source\Text\StyledShowcase.h" />
     <ClInclude Include="Source\Text\TextSample.h" />
     <ClInclude Include="Source\Text\WrapShowcase.h" />
+    <ClInclude Include="Source\UI\SettingsViewModel.h" />
     <ClInclude Include="Source\UI\UISample.h" />
     <ClInclude Include="Source\UI\UIScreen.h" />
     <ClInclude Include="Source\Village\Coin.h" />
