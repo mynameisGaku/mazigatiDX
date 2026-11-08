@@ -232,7 +232,7 @@ if ( Document.ReloadIfChanged( Assets, Context, Bindings ) )                // �
 
 ## マテリアルのブラシ
 
-`FUIBrush::MakeMaterial( マテリアル )` は、UI ドメインのマテリアル（[Docs/MATERIAL.md](MATERIAL.md)）を、矩形に描くブラシです。シェーダーで、うにょうにょ・ビカビカさせられます。マテリアルの入力 `HoverAmount`・`PressAmount`・`Value01`・`Enabled` は、このブラシを描く部品の状態（ホバー・押下・スライダーなどの値・使えるか）で、`Time` は `CMaterialSubsystem` の時間です。ブラシの `Color` は、出力に掛ける色です。エンジン組み込みの `Engine:/Materials/UI/GlowButton`（ホバーで光る）・`Shimmer`（光の帯が流れる）が、すぐ使えます。
+`FUIBrush::MakeMaterial( マテリアル )` は、UI ドメインのマテリアル（[Docs/MATERIAL.md](MATERIAL.md)）を、矩形に描くブラシです。シェーダーで、うにょうにょ・ビカビカさせられます。マテリアルの入力 `HoverAmount`・`PressAmount`・`Value01`・`Enabled` は、このブラシを描く部品の状態（ホバー・押下・スライダーなどの値・使えるか）で、`Time` は `CMaterialSubsystem` の時間です。ブラシの `Color` は、出力に掛ける色です。エンジン組み込みの `Engine:/Materials/UI/GlowButton`（ホバーで光る）・`Shimmer`（光の帯が流れる）が、すぐ使えます。マークアップでは、`Background="{Material Engine:/Materials/UI/GlowButton.gxmaterial}"` と書くと、`CMaterialSubsystem` が読んだ（キャッシュした）マテリアルのブラシになります（読めない・UI などのドメインではないときは、警告を出して、背景は空のままです）。
 
 ## テーマ
 

@@ -2,6 +2,8 @@
 #include "UIMarkupLoader.h"
 
 #include "Library/Core/Types/Numeric.h"
+#include "Library/Framework/Engine/Engine.h"
+#include "Library/Framework/Material/MaterialSubsystem.h"
 
 namespace
 {
@@ -190,6 +192,23 @@ namespace
 		}
 		OutName = Trim( Inner.Mid( 7 ) );
 		return !OutName.IsEmpty();
+	}
+
+	// "{Material パス}" なら、パスを返す（例: {Material Engine:/Materials/UI/GlowButton.gxmaterial}）
+	bool ParseMaterialReference( const FString& Text, FString& OutPath )
+	{
+		const FString Trimmed = Trim( Text );
+		if ( Trimmed.Len() < 3 || ( *Trimmed )[0] != '{' || ( *Trimmed )[Trimmed.Len() - 1] != '}' )
+		{
+			return false;
+		}
+		const FString Inner = Trim( Trimmed.Mid( 1, Trimmed.Len() - 2 ) );
+		if ( !Inner.StartsWith( "Material " ) )
+		{
+			return false;
+		}
+		OutPath = Trim( Inner.Mid( 9 ) );
+		return !OutPath.IsEmpty();
 	}
 
 	bool ParseAlignment( const FString& Text, EUIAlignment& Out )
@@ -462,9 +481,21 @@ struct FMarkupBuilder
 		return TSharedPtr<CFont>();
 	}
 
-	// ブラシ: #色 か、登録した名前。見つからなければ、false（警告は、呼んだ側で）
+	// ブラシ: #色・{Material パス}（マテリアルのブラシ）・登録した名前。見つからなければ、false（警告は、呼んだ側で）
 	bool FindBrush( const FString& Value, FUIBrush& Out )
 	{
+		FString MaterialPath;
+		if ( ParseMaterialReference( Value, MaterialPath ) )
+		{
+			CMaterialSubsystem* Materials = GetAppSubsystem<CMaterialSubsystem>();
+			const TSharedPtr<CMaterial> Material = Materials != nullptr ? Materials->LoadMaterial( MaterialPath ) : TSharedPtr<CMaterial>();
+			if ( !Material.IsValid() || !Material->IsValid() )
+			{
+				return false;
+			}
+			Out = FUIBrush::MakeMaterial( Material );
+			return true;
+		}
 		FColor32 Color;
 		if ( ResolveColor( Value, Color ) )
 		{
