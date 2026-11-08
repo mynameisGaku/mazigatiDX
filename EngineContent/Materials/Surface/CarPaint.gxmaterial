@@ -30,7 +30,7 @@
                       "Kind":  "Mask",
                       "Name":  "xyz",
                       "Position":  [
-                                       210,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -45,7 +45,7 @@
                                     0.55
                                 ],
                       "Position":  [
-                                       420,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -60,7 +60,7 @@
                                     1
                                 ],
                       "Position":  [
-                                       630,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -75,7 +75,7 @@
                                     0.12
                                 ],
                       "Position":  [
-                                       840,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -86,7 +86,7 @@
                       "Id":  6,
                       "Kind":  "SubstrateSlab",
                       "Position":  [
-                                       1050,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [

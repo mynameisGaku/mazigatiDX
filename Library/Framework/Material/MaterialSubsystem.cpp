@@ -14,6 +14,13 @@ CMaterialSubsystem::CMaterialSubsystem() = default;
 
 CMaterialSubsystem::~CMaterialSubsystem() = default;
 
+void CMaterialSubsystem::Deinitialize()
+{
+	Loaded.Empty();
+	ParameterCollections.Empty();
+	Alive.Reset();
+}
+
 ETickGroup CMaterialSubsystem::GetTickGroup() const
 {
 	return ETickGroup::PreUpdate;

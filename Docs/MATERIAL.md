@@ -131,6 +131,16 @@ FUIBrush Glow = FUIBrush::MakeMaterial( GlowMaterial );                 // UI �
 
 `NMaterialPreview::MakeSphere` / `MakeCube` / `MakePlane` が、`FShaderVertex3D` とインデックス（`uint16`）のメッシュを返します（半径 1、UV は 0〜1、法線は外向き）。`DrawSurfaceMesh` に渡せます。
 
+## マテリアルエディタ（`Editor.exe` の Material editor）
+
+ノードのグラフを、見ながら作って、保存できます（`Library/DebugUI/Material`。`Editor.exe --tool=material`、`--material=Engine:/Materials/Surface/Marble.gxmaterial` で、開いて始められます）。
+
+- 中央: グラフ。ノードはドラッグで動かし、右の出力のピンから、別のノードの左の入力のピンへドラッグでつなぎます（つないだ入力のピンを押すと、線を外して、つなぎ直せます）。右端の「Result」が、ドメインごとの出力のピン（Surface なら BaseColor・Roughness など）です。右クリック（または左の一覧）でノードを足し（検索つき。使えないドメインのノードは出しません）、Delete で消します。背景のドラッグでパン、ホイールでズームです。
+- 左: ノードの一覧と、パラメーター（プレビューの値を変えられます）。下: 診断の一覧（押すと、そのノードへ移ります。エラーのノードは赤、警告は黄の枠になります）。
+- 右: 選んだノードの設定（名前・値・成分の数・色・つないでいないピンの数）と、プレビュー（Surface は球・立方体・板をドラッグで回し、UI・Particle は矩形（後ろに市松模様）、PostProcess は決まった場面に掛けます）。
+- 変更するたびに、コンパイルし直して（`CMaterial::Reload`）、診断とプレビューを更新します。Arrange は、つながり方に合わせて、左から右へ並べ直します（位置の無いマテリアルは、開くときに並べます）。
+- 保存は `.gxmaterial`（JSON）です。`Engine:/` の組み込みのマテリアルは読み取り専用なので、別の名前で保存します。
+
 ## これから
 
-ノードのエディタ（球のプレビューつき）、Particle ドメインの、エフェクトの粒子への適用、Substrate のフル評価（フルに評価できるバックエンドの追加）。
+Particle ドメインの、エフェクトの粒子への適用、Substrate のフル評価（フルに評価できるバックエンドの追加）。

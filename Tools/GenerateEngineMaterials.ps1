@@ -25,12 +25,13 @@ function Add-Node
     $index = $script:Nodes.Count
     $node = [ordered]@{ Id = $id; Kind = $Kind }
     if ($Name -ne '') { $node['Name'] = $Name }
-    if ($Collection -ne '') { $node['Collection'] = $Collection }
+    if ($Collection -ne '') { $node['ParameterCollection'] = $Collection }
     if ($TexturePath -ne '') { $node['TexturePath'] = $TexturePath }
     if ($Value.Count -gt 0) { $node['Value'] = [object[]]$Value }
     if ($Components -gt 0) { $node['Components'] = $Components }
     if ($Color) { $node['Color'] = $true }
-    $node['Position'] = [object[]]@((($index % 6) * 210), ([math]::Floor($index / 6) * 110))
+    # 位置は決めない（エディタが開くときに、つながり方に合わせて並べる）
+    $node['Position'] = [object[]]@(0, 0)
     $node['Inputs'] = [object[]]$Inputs
     if ($PinDefaults.Count -gt 0) { $node['PinDefaults'] = [object[]]$PinDefaults }
     $script:Nodes += , $node

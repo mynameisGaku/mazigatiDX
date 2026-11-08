@@ -413,6 +413,7 @@ void NDebugUI::DrawAssetToolsButtons( FAssetToolsState& State )
 			NEffectEditorUI::RequestAction( State.EffectEditor, FEffectEditorState::EPending::Close, FString(), &State.bShowEffectEditor );
 		}
 	}
+	Cell( "Material editor", &State.bShowMaterialEditor );
 	Cell( "AI editor", &State.bShowAIEditor );
 	Cell( "AI debugger", &State.bShowAIDebugger );
 	ImGui::EndTable();
@@ -496,6 +497,7 @@ void NDebugUI::DrawAssetToolsMenuItems( FAssetToolsState& State )
 	ImGui::MenuItem( "Sprite sheet editor", nullptr, &State.bShowSpriteSheetEditor );
 	ImGui::MenuItem( "Model animation editor", nullptr, &State.bShowModelAnimationEditor );
 	ImGui::MenuItem( "World editor", nullptr, &State.bShowWorldEditor );
+	ImGui::MenuItem( "Material editor", nullptr, &State.bShowMaterialEditor );
 	ImGui::MenuItem( "AI editor", nullptr, &State.bShowAIEditor );
 	ImGui::MenuItem( "AI debugger", nullptr, &State.bShowAIDebugger );
 	// 外側の表示切替から閉じるときも、未保存の確認を省略しない。
@@ -547,6 +549,10 @@ void NDebugUI::DrawAssetTools( FAssetToolsState& State )
 	{
 		DrawEffectEditor( State.EffectEditor, &State.bShowEffectEditor );
 	}
+	if ( State.bShowMaterialEditor )
+	{
+		DrawMaterialEditor( State.MaterialEditor, &State.bShowMaterialEditor );
+	}
 	// 画面を閉じた後や別の窓口から保存した場合も、更新を一度だけ伝える。
 	if ( State.ObservedEffectSaveSerial != State.EffectEditor.SaveSerial )
 	{
@@ -592,6 +598,7 @@ void NDebugUI::ApplyAssetToolsCommandLine( FAssetToolsState& State )
 		State.bShowModelAnimationEditor = ContainsToken( *Tools, "model" );
 		State.bShowWorldEditor = ContainsToken( *Tools, "world" );
 		State.bShowEffectEditor = ContainsToken( *Tools, "effect" );
+		State.bShowMaterialEditor = ContainsToken( *Tools, "material" );
 		State.bShowAIDebugger = ContainsToken( *Tools, "ai" );
 		State.bShowAIEditor = ContainsToken( *Tools, "aieditor" );
 		State.bShowBrowser = ContainsToken( *Tools, "project" );
@@ -711,6 +718,14 @@ void NDebugUI::ApplyAssetToolsCommandLine( FAssetToolsState& State )
 		State.EffectEditor.bInitialized = true;
 		OpenEffectFile( State.EffectEditor, Effect );
 	}
+	// マテリアルのファイルを指定した場合は、マテリアルエディタで開く（"Engine:/Materials/..." も開ける）。
+	const FString Material = GetArgument( "material" );
+	if ( !Material.IsEmpty() )
+	{
+		State.bShowMaterialEditor = true;
+		State.MaterialEditor.bInitialized = true;
+		NMaterialEditorUI::OpenMaterial( State.MaterialEditor, Material );
+	}
 	// 原本を保ったコピーから始める起動経路。移動する帯の画像確認にも使う。
 	const FString EffectPreset = GetArgument( "effect-preset" );
 	if ( !EffectPreset.IsEmpty() )
@@ -745,6 +760,8 @@ void NDebugUI::ApplyAssetToolsCommandLine( FAssetToolsState& State )
 void NDebugUI::ShutdownAssetTools( FAssetToolsState& State )
 {
 	ReleaseEffectEditor( State.EffectEditor );
+	State.MaterialEditor.Preview.Release();
+	State.MaterialEditor.Material.Reset();
 	ReleaseModelAnimationEditor( State.ModelAnimation );
 	ReleaseWorldEditor( State.WorldEditor );
 	State.SpriteSheet.Sheet.Reset();

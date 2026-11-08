@@ -20,7 +20,7 @@
                       "Kind":  "Mask",
                       "Name":  "rgb",
                       "Position":  [
-                                       210,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -31,7 +31,7 @@
                       "Id":  3,
                       "Kind":  "TexCoord",
                       "Position":  [
-                                       420,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -46,7 +46,7 @@
                                 ],
                       "Components":  1,
                       "Position":  [
-                                       630,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -57,7 +57,7 @@
                       "Id":  5,
                       "Kind":  "Subtract",
                       "Position":  [
-                                       840,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -69,7 +69,7 @@
                       "Id":  6,
                       "Kind":  "Dot",
                       "Position":  [
-                                       1050,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -86,7 +86,7 @@
                                 ],
                       "Position":  [
                                        0,
-                                       110
+                                       0
                                    ],
                       "Inputs":  [
 
@@ -100,8 +100,8 @@
                                 ],
                       "Components":  1,
                       "Position":  [
-                                       210,
-                                       110
+                                       0,
+                                       0
                                    ],
                       "Inputs":  [
 
@@ -111,8 +111,8 @@
                       "Id":  9,
                       "Kind":  "Multiply",
                       "Position":  [
-                                       420,
-                                       110
+                                       0,
+                                       0
                                    ],
                       "Inputs":  [
                                      7,
@@ -123,8 +123,8 @@
                       "Id":  10,
                       "Kind":  "Multiply",
                       "Position":  [
-                                       630,
-                                       110
+                                       0,
+                                       0
                                    ],
                       "Inputs":  [
                                      6,
@@ -135,8 +135,8 @@
                       "Id":  11,
                       "Kind":  "Saturate",
                       "Position":  [
-                                       840,
-                                       110
+                                       0,
+                                       0
                                    ],
                       "Inputs":  [
                                      10
@@ -146,8 +146,8 @@
                       "Id":  12,
                       "Kind":  "OneMinus",
                       "Position":  [
-                                       1050,
-                                       110
+                                       0,
+                                       0
                                    ],
                       "Inputs":  [
                                      11
@@ -158,7 +158,7 @@
                       "Kind":  "Multiply",
                       "Position":  [
                                        0,
-                                       220
+                                       0
                                    ],
                       "Inputs":  [
                                      2,
@@ -173,8 +173,8 @@
                                     1
                                 ],
                       "Position":  [
-                                       210,
-                                       220
+                                       0,
+                                       0
                                    ],
                       "Inputs":  [
 
@@ -184,8 +184,8 @@
                       "Id":  15,
                       "Kind":  "Lerp",
                       "Position":  [
-                                       420,
-                                       220
+                                       0,
+                                       0
                                    ],
                       "Inputs":  [
                                      2,

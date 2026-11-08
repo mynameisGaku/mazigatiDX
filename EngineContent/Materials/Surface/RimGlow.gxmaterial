@@ -30,7 +30,7 @@
                       "Kind":  "Mask",
                       "Name":  "xyz",
                       "Position":  [
-                                       210,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -45,7 +45,7 @@
                                     2.5
                                 ],
                       "Position":  [
-                                       420,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -56,7 +56,7 @@
                       "Id":  4,
                       "Kind":  "Fresnel",
                       "Position":  [
-                                       630,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -67,7 +67,7 @@
                       "Id":  5,
                       "Kind":  "Multiply",
                       "Position":  [
-                                       840,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [

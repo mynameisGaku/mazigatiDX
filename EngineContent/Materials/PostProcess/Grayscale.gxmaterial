@@ -20,7 +20,7 @@
                       "Kind":  "Mask",
                       "Name":  "rgb",
                       "Position":  [
-                                       210,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -37,7 +37,7 @@
                                 ],
                       "Components":  3,
                       "Position":  [
-                                       420,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -48,7 +48,7 @@
                       "Id":  4,
                       "Kind":  "Dot",
                       "Position":  [
-                                       630,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -64,7 +64,7 @@
                                     1
                                 ],
                       "Position":  [
-                                       840,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -75,7 +75,7 @@
                       "Id":  6,
                       "Kind":  "Lerp",
                       "Position":  [
-                                       1050,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [

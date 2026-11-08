@@ -5,6 +5,7 @@
 #include "Library/DebugUI/AI/AIEditor.h"
 #include "Library/DebugUI/Asset/AssetBrowser.h"
 #include "Library/DebugUI/Effect/EffectEditor.h"
+#include "Library/DebugUI/Material/MaterialEditor.h"
 #include "Library/DebugUI/Asset/ModelAnimationEditor.h"
 #include "Library/DebugUI/Asset/SoundEditor.h"
 #include "Library/DebugUI/Asset/SpriteSheetEditor.h"
@@ -32,6 +33,8 @@ struct FAssetToolsState
 	bool bShowWorldEditor = false;
 	// 内蔵エフェクトの定義編集画面を表示するか。
 	bool bShowEffectEditor = false;
+	// マテリアルエディタ（.gxmaterial）を表示するか。
+	bool bShowMaterialEditor = false;
 	bool bShowAIDebugger = false;
 	bool bShowAIEditor = false;
 	// アセットのブラウザー（Project ウィンドウ）
@@ -46,6 +49,7 @@ struct FAssetToolsState
 	FAssetBrowserState Browser;
 	// 文書とプレビューの寿命を、ほかのツールと同じ所有元にまとめる。
 	FEffectEditorState EffectEditor;
+	FMaterialEditorState MaterialEditor;
 	// 配置済みのプレビューへ最後に反映した、エフェクト保存の成功番号。
 	uint32 ObservedEffectSaveSerial = 0;
 

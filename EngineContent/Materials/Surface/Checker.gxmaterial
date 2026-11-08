@@ -30,7 +30,7 @@
                       "Kind":  "Mask",
                       "Name":  "xyz",
                       "Position":  [
-                                       210,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -50,7 +50,7 @@
                       "Components":  4,
                       "Color":  true,
                       "Position":  [
-                                       420,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -62,7 +62,7 @@
                       "Kind":  "Mask",
                       "Name":  "xyz",
                       "Position":  [
-                                       630,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -77,7 +77,7 @@
                                     8
                                 ],
                       "Position":  [
-                                       840,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -88,7 +88,7 @@
                       "Id":  6,
                       "Kind":  "Checker",
                       "Position":  [
-                                       1050,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -101,7 +101,7 @@
                       "Kind":  "Lerp",
                       "Position":  [
                                        0,
-                                       110
+                                       0
                                    ],
                       "Inputs":  [
                                      2,
@@ -117,8 +117,8 @@
                                 ],
                       "Components":  1,
                       "Position":  [
-                                       210,
-                                       110
+                                       0,
+                                       0
                                    ],
                       "Inputs":  [
 

@@ -23,7 +23,7 @@
                                     96
                                 ],
                       "Position":  [
-                                       210,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -34,7 +34,7 @@
                       "Id":  3,
                       "Kind":  "Multiply",
                       "Position":  [
-                                       420,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -46,7 +46,7 @@
                       "Id":  4,
                       "Kind":  "Floor",
                       "Position":  [
-                                       630,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -61,7 +61,7 @@
                                 ],
                       "Components":  1,
                       "Position":  [
-                                       840,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -72,7 +72,7 @@
                       "Id":  6,
                       "Kind":  "Add",
                       "Position":  [
-                                       1050,
+                                       0,
                                        0
                                    ],
                       "Inputs":  [
@@ -85,7 +85,7 @@
                       "Kind":  "Divide",
                       "Position":  [
                                        0,
-                                       110
+                                       0
                                    ],
                       "Inputs":  [
                                      6,
@@ -96,8 +96,8 @@
                       "Id":  8,
                       "Kind":  "SceneColor",
                       "Position":  [
-                                       210,
-                                       110
+                                       0,
+                                       0
                                    ],
                       "Inputs":  [
                                      7
@@ -108,8 +108,8 @@
                       "Kind":  "Mask",
                       "Name":  "rgb",
                       "Position":  [
-                                       420,
-                                       110
+                                       0,
+                                       0
                                    ],
                       "Inputs":  [
                                      8
@@ -119,8 +119,8 @@
                       "Id":  10,
                       "Kind":  "SceneColor",
                       "Position":  [
-                                       630,
-                                       110
+                                       0,
+                                       0
                                    ],
                       "Inputs":  [
 
@@ -131,8 +131,8 @@
                       "Kind":  "Mask",
                       "Name":  "rgb",
                       "Position":  [
-                                       840,
-                                       110
+                                       0,
+                                       0
                                    ],
                       "Inputs":  [
                                      10
@@ -146,8 +146,8 @@
                                     1
                                 ],
                       "Position":  [
-                                       1050,
-                                       110
+                                       0,
+                                       0
                                    ],
                       "Inputs":  [
 
@@ -158,7 +158,7 @@
                       "Kind":  "Lerp",
                       "Position":  [
                                        0,
-                                       220
+                                       0
                                    ],
                       "Inputs":  [
                                      11,
