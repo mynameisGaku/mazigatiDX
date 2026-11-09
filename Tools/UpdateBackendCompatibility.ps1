@@ -146,7 +146,7 @@ foreach ($menu in [regex]::Matches($editorBody, 'ImGui::MenuItem\(\s*"([^"\r\n]+
 }
 
 $items = [Collections.Generic.Dictionary[string, object]]::new([StringComparer]::Ordinal) # 人が持つ判定を項目へ対応させる。
-$states = @('Unreviewed', 'Missing', 'Partial', 'Implemented', 'Verified') # Verifiedだけが互換確認済み。
+$states = @('Unreviewed', 'Missing', 'Partial', 'Implemented', 'Verified', 'Excluded') # Verifiedだけが互換確認済み。
 if (Test-Path -LiteralPath $catalogPath)
 {
     foreach ($item in Import-Csv -LiteralPath $catalogPath -Encoding UTF8)
@@ -217,12 +217,12 @@ $report = [Text.StringBuilder]::new() # 一覧は手で編集せず、台帳か�
 [void]$report.AppendLine('')
 [void]$report.AppendLine('[ロードマップ](ROADMAP.md)のR0で使うDX12構成の互換台帳です。Core/Interfacesの非破棄virtual関数、EDrawCommand、登録サンプル、Toolsメニューの入口を列挙します。値の全組み合わせや各編集画面内の全操作を自動で網羅するものではなく、検査計画で補います。')
 [void]$report.AppendLine('')
-[void]$report.AppendLine('`Unreviewed`は未分類、`Missing`は未実装／未接続、`Partial`は部分対応、`Implemented`は実装を確認したが互換検査前、`Verified`は証拠を伴う互換確認済みです。関数の宣言や正常な戻り値だけから、Verifiedへ自動で進めません。共通実装の機能と内部描画契約も含むため、すべてがDxLib専用機能ではありません。')
+[void]$report.AppendLine('`Unreviewed`は未分類、`Missing`は未実装／未接続、`Partial`は部分対応、`Implemented`は実装を確認したが互換検査前、`Verified`は証拠を伴う互換確認済み、`Excluded`はロードマップで明示したv1.0.0の対象外です。Excludedの理由と未対応時の期待結果もNoteとPlanに記録します。関数の宣言や正常な戻り値だけから、Verifiedへ自動で進めません。共通実装の機能と内部描画契約も含むため、すべてがDxLib専用機能ではありません。')
 [void]$report.AppendLine('')
 [void]$report.AppendLine('更新は `Tools/UpdateBackendCompatibility.ps1`、台帳の欠落・削除・重複と文書の古さの確認は `Tools/UpdateBackendCompatibility.ps1 -Check`。判定と検査計画はCSVへ記録し、確認結果はEvidenceへ残します。ソースが増えたときはUnreviewedへ追加し、消えた項目は自動で取り除きません。関数宣言や命令の並びが変わった項目はUnreviewedへ戻し、以前の確認結果を外します。宣言の字句を比較するもので、C++の完全な構文・ABI検査ではありません。')
 [void]$report.AppendLine('')
-[void]$report.AppendLine('|分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|')
-[void]$report.AppendLine('|---|---:|---:|---:|---:|---:|---:|')
+[void]$report.AppendLine('|分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|')
+[void]$report.AppendLine('|---|---:|---:|---:|---:|---:|---:|---:|')
 foreach ($kind in @('API', 'Draw', 'Sample', 'Editor'))
 {
     $members = @($ordered | Where-Object { $symbols[$_.Id].Kind -eq $kind }) # 分類内の台帳。

@@ -145,7 +145,7 @@ bool FStaticModelBuilder::Build( const FImportedScene& Scene, FStaticModelDefini
 	for ( int32 MeshIndex = 0; MeshIndex < Scene.Meshes.Num(); ++MeshIndex )
 	{
 		const auto& Mesh = Scene.Meshes[MeshIndex]; // 元の三角形順を保つ。
-		if ( Mesh.IsSkinned() || Mesh.bHasBlendShapes || Mesh.bHasVertexCache || Mesh.Node < -1 || Mesh.Node >= Global.Num() || Mesh.Positions.IsEmpty() || Mesh.Normals.Num() != Mesh.Positions.Num()
+		if ( Mesh.IsSkinned() || Mesh.bHasUnsupportedSkinning || Mesh.NumDiscardedSkinInfluences > 0 || Mesh.bHasBlendShapes || Mesh.bHasVertexCache || Mesh.Node < -1 || Mesh.Node >= Global.Num() || Mesh.Positions.IsEmpty() || Mesh.Normals.Num() != Mesh.Positions.Num()
 			|| ( !Mesh.UVs.IsEmpty() && Mesh.UVs.Num() != Mesh.Positions.Num() ) || Mesh.Indices.IsEmpty() || Mesh.Indices.Num() % 3 != 0
 			|| ( !Mesh.TriangleMaterials.IsEmpty() && Mesh.TriangleMaterials.Num() != Mesh.Indices.Num() / 3 )
 			|| static_cast<int64>( Result.Surface.Vertices.Num() ) + Mesh.Positions.Num() > 262144 || static_cast<int64>( Result.Surface.Indices.Num() ) + Mesh.Indices.Num() > 786432 )

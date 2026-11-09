@@ -4,16 +4,16 @@
 
 [ロードマップ](ROADMAP.md)のR0で使うDX12構成の互換台帳です。Core/Interfacesの非破棄virtual関数、EDrawCommand、登録サンプル、Toolsメニューの入口を列挙します。値の全組み合わせや各編集画面内の全操作を自動で網羅するものではなく、検査計画で補います。
 
-`Unreviewed`は未分類、`Missing`は未実装／未接続、`Partial`は部分対応、`Implemented`は実装を確認したが互換検査前、`Verified`は証拠を伴う互換確認済みです。関数の宣言や正常な戻り値だけから、Verifiedへ自動で進めません。共通実装の機能と内部描画契約も含むため、すべてがDxLib専用機能ではありません。
+`Unreviewed`は未分類、`Missing`は未実装／未接続、`Partial`は部分対応、`Implemented`は実装を確認したが互換検査前、`Verified`は証拠を伴う互換確認済み、`Excluded`はロードマップで明示したv1.0.0の対象外です。Excludedの理由と未対応時の期待結果もNoteとPlanに記録します。関数の宣言や正常な戻り値だけから、Verifiedへ自動で進めません。共通実装の機能と内部描画契約も含むため、すべてがDxLib専用機能ではありません。
 
 更新は `Tools/UpdateBackendCompatibility.ps1`、台帳の欠落・削除・重複と文書の古さの確認は `Tools/UpdateBackendCompatibility.ps1 -Check`。判定と検査計画はCSVへ記録し、確認結果はEvidenceへ残します。ソースが増えたときはUnreviewedへ追加し、消えた項目は自動で取り除きません。関数宣言や命令の並びが変わった項目はUnreviewedへ戻し、以前の確認結果を外します。宣言の字句を比較するもので、C++の完全な構文・ABI検査ではありません。
 
-|分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|
-|---|---:|---:|---:|---:|---:|---:|
-|API|302|4|125|58|115|0|
-|Draw|100|0|52|8|40|0|
-|Sample|33|30|0|3|0|0|
-|Editor|11|11|0|0|0|0|
+|分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|
+|---|---:|---:|---:|---:|---:|---:|---:|
+|API|302|4|124|58|115|0|1|
+|Draw|100|0|52|8|40|0|0|
+|Sample|33|30|0|3|0|0|0|
+|Editor|11|11|0|0|0|0|0|
 
 ## API
 
@@ -104,44 +104,44 @@
 |[API.IKeyboardInput.IsKeyPressed](../Library/Core/Interfaces/Input/IKeyboardInput.h#L15)|Partial|R8|押下・保持・解放、focus喪失、座標拡大、wheel、連続frameでDxLibと比較|Windows入力へ接続。テンキーEnterの独立判定と実機の入力比較は未完了||
 |[API.IKeyboardInput.IsKeyReleased](../Library/Core/Interfaces/Input/IKeyboardInput.h#L17)|Partial|R8|押下・保持・解放、focus喪失、座標拡大、wheel、連続frameでDxLibと比較|Windows入力へ接続。テンキーEnterの独立判定と実機の入力比較は未完了||
 |[API.IModelBackend.AttachModelAnim](../Library/Core/Interfaces/Asset/ModelBackend.h#L34)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IModelBackend.CanLoadModelSource](../Library/Core/Interfaces/Asset/ModelBackend.h#L20)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。MV1・スキン・モーフ・動的pose等の互換は未完了||
+|[API.IModelBackend.CanLoadModelSource](../Library/Core/Interfaces/Asset/ModelBackend.h#L20)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
 |[API.IModelBackend.ClearModelFrameLocalMatrixOverride](../Library/Core/Interfaces/Asset/ModelBackend.h#L94)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IModelBackend.CreateModelMaterialGeometry](../Library/Core/Interfaces/Asset/ModelBackend.h#L49)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IModelBackend.DeleteModel](../Library/Core/Interfaces/Asset/ModelBackend.h#L23)|Implemented|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。MV1・スキン・モーフ・動的pose等の互換は未完了||
+|[API.IModelBackend.DeleteModel](../Library/Core/Interfaces/Asset/ModelBackend.h#L23)|Implemented|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
 |[API.IModelBackend.DeleteModelMaterialGeometry](../Library/Core/Interfaces/Asset/ModelBackend.h#L51)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IModelBackend.DetachModelAnim](../Library/Core/Interfaces/Asset/ModelBackend.h#L35)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IModelBackend.DuplicateModel](../Library/Core/Interfaces/Asset/ModelBackend.h#L22)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。MV1・スキン・モーフ・動的pose等の互換は未完了||
+|[API.IModelBackend.DuplicateModel](../Library/Core/Interfaces/Asset/ModelBackend.h#L22)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
 |[API.IModelBackend.GetModelAnimCount](../Library/Core/Interfaces/Asset/ModelBackend.h#L26)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IModelBackend.GetModelAnimLength](../Library/Core/Interfaces/Asset/ModelBackend.h#L29)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IModelBackend.GetModelAnimName](../Library/Core/Interfaces/Asset/ModelBackend.h#L27)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IModelBackend.GetModelAnimUnitsPerSecond](../Library/Core/Interfaces/Asset/ModelBackend.h#L32)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IModelBackend.GetModelBounds](../Library/Core/Interfaces/Asset/ModelBackend.h#L53)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。MV1・スキン・モーフ・動的pose等の互換は未完了||
-|[API.IModelBackend.GetModelCollisionMesh](../Library/Core/Interfaces/Asset/ModelBackend.h#L56)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。MV1・スキン・モーフ・動的pose等の互換は未完了||
-|[API.IModelBackend.GetModelFrameCount](../Library/Core/Interfaces/Asset/ModelBackend.h#L58)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。MV1・スキン・モーフ・動的pose等の互換は未完了||
+|[API.IModelBackend.GetModelBounds](../Library/Core/Interfaces/Asset/ModelBackend.h#L53)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
+|[API.IModelBackend.GetModelCollisionMesh](../Library/Core/Interfaces/Asset/ModelBackend.h#L56)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
+|[API.IModelBackend.GetModelFrameCount](../Library/Core/Interfaces/Asset/ModelBackend.h#L58)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
 |[API.IModelBackend.GetModelFrameLocalMatrixOverride](../Library/Core/Interfaces/Asset/ModelBackend.h#L90)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IModelBackend.GetModelFrameMatrix](../Library/Core/Interfaces/Asset/ModelBackend.h#L88)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的フレームのLocalだけ対応。Worldはfalseで出力を保つ||
-|[API.IModelBackend.GetModelFrameName](../Library/Core/Interfaces/Asset/ModelBackend.h#L59)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。MV1・スキン・モーフ・動的pose等の互換は未完了||
+|[API.IModelBackend.GetModelFrameName](../Library/Core/Interfaces/Asset/ModelBackend.h#L59)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
 |[API.IModelBackend.GetModelFramePosition](../Library/Core/Interfaces/Asset/ModelBackend.h#L61)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IModelBackend.GetModelFrameVisible](../Library/Core/Interfaces/Asset/ModelBackend.h#L82)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IModelBackend.GetModelMaterialColors](../Library/Core/Interfaces/Asset/ModelBackend.h#L77)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。MV1・スキン・モーフ・動的pose等の互換は未完了||
-|[API.IModelBackend.GetModelMeshCount](../Library/Core/Interfaces/Asset/ModelBackend.h#L40)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。MV1・スキン・モーフ・動的pose等の互換は未完了||
+|[API.IModelBackend.GetModelMaterialColors](../Library/Core/Interfaces/Asset/ModelBackend.h#L77)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
+|[API.IModelBackend.GetModelMeshCount](../Library/Core/Interfaces/Asset/ModelBackend.h#L40)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
 |[API.IModelBackend.GetModelMeshData](../Library/Core/Interfaces/Asset/ModelBackend.h#L75)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IModelBackend.GetModelMeshVisible](../Library/Core/Interfaces/Asset/ModelBackend.h#L80)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IModelBackend.GetModelOpacity](../Library/Core/Interfaces/Asset/ModelBackend.h#L85)|Implemented|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。MV1・スキン・モーフ・動的pose等の互換は未完了||
+|[API.IModelBackend.GetModelOpacity](../Library/Core/Interfaces/Asset/ModelBackend.h#L85)|Implemented|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
 |[API.IModelBackend.GetModelShapeRate](../Library/Core/Interfaces/Asset/ModelBackend.h#L96)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IModelBackend.GetModelStructure](../Library/Core/Interfaces/Asset/ModelBackend.h#L71)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。MV1・スキン・モーフ・動的pose等の互換は未完了||
-|[API.IModelBackend.GetStaticModelSurface](../Library/Core/Interfaces/Asset/ModelBackend.h#L46)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。MV1・スキン・モーフ・動的pose等の互換は未完了||
-|[API.IModelBackend.LoadModel](../Library/Core/Interfaces/Asset/ModelBackend.h#L18)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。MV1・スキン・モーフ・動的pose等の互換は未完了||
+|[API.IModelBackend.GetModelStructure](../Library/Core/Interfaces/Asset/ModelBackend.h#L71)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
+|[API.IModelBackend.GetStaticModelSurface](../Library/Core/Interfaces/Asset/ModelBackend.h#L46)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
+|[API.IModelBackend.LoadModel](../Library/Core/Interfaces/Asset/ModelBackend.h#L18)|Partial|R5|MV1を除く対象形式で入出力・無効handle・共有・非同期・失敗・解放と終了時の寿命を比較。MV1は未対応を返す|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
 |[API.IModelBackend.OverlapModelSphere](../Library/Core/Interfaces/Asset/ModelBackend.h#L105)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IModelBackend.PrepareModelCollision](../Library/Core/Interfaces/Asset/ModelBackend.h#L101)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IModelBackend.RaycastModel](../Library/Core/Interfaces/Asset/ModelBackend.h#L103)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IModelBackend.SampleModelAnimFrameLocalMatrix](../Library/Core/Interfaces/Asset/ModelBackend.h#L37)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IModelBackend.SaveModelToMV1](../Library/Core/Interfaces/Asset/ModelBackend.h#L64)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.IModelBackend.SaveModelToMV1](../Library/Core/Interfaces/Asset/ModelBackend.h#L64)|Excluded|R5|DX12で未対応を返し出力を作らないこと、DxLibの既存保存機能を維持することを確認|ROADMAPの対象外規定によりDX12のMV1保存互換はv1.0.0対象外。実装済み・検証済みとは扱わない||
 |[API.IModelBackend.SetModelFrameLocalMatrixOverride](../Library/Core/Interfaces/Asset/ModelBackend.h#L92)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IModelBackend.SetModelFrameVisible](../Library/Core/Interfaces/Asset/ModelBackend.h#L83)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IModelBackend.SetModelMaterialColors](../Library/Core/Interfaces/Asset/ModelBackend.h#L78)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IModelBackend.SetModelMeshVisible](../Library/Core/Interfaces/Asset/ModelBackend.h#L81)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IModelBackend.SetModelOpacity](../Library/Core/Interfaces/Asset/ModelBackend.h#L86)|Implemented|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。MV1・スキン・モーフ・動的pose等の互換は未完了||
+|[API.IModelBackend.SetModelOpacity](../Library/Core/Interfaces/Asset/ModelBackend.h#L86)|Implemented|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
 |[API.IModelBackend.SetModelShapeRate](../Library/Core/Interfaces/Asset/ModelBackend.h#L97)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IMouseInput.GetMouseState](../Library/Core/Interfaces/Input/IMouseInput.h#L14)|Implemented|R8|押下・保持・解放、focus喪失、座標拡大、wheel、連続frameでDxLibと比較|Windows入力へ接続。論理座標・focus・wheel等の実機比較前||
 |[API.IMouseInput.IsMouseButtonDown](../Library/Core/Interfaces/Input/IMouseInput.h#L16)|Implemented|R8|押下・保持・解放、focus喪失、座標拡大、wheel、連続frameでDxLibと比較|Windows入力へ接続。論理座標・focus・wheel等の実機比較前||
@@ -373,7 +373,7 @@
 |[Draw.MaterialQuad3D](../Library/Framework/Render/Draw/DrawCommand.h#L58)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、Spanの残りを中止する||
 |[Draw.MaterialRibbon3D](../Library/Framework/Render/Draw/DrawCommand.h#L59)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、Spanの残りを中止する||
 |[Draw.Mesh3D](../Library/Framework/Render/Draw/DrawCommand.h#L56)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|CPU形状から毎回展開。照明と高度な材質は未対応||
-|[Draw.Model3D](../Library/Framework/Render/Draw/DrawCommand.h#L49)|Partial|R5|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|静的FBX／OBJのみ。アニメーションとMV1は未対応||
+|[Draw.Model3D](../Library/Framework/Render/Draw/DrawCommand.h#L49)|Partial|R5|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|静的FBX／OBJのみ。アニメーションは未対応。MV1形式はv1.0.0対象外||
 |[Draw.ModelAnim](../Library/Framework/Render/Draw/DrawCommand.h#L54)|Missing|R5|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、Spanの残りを中止する||
 |[Draw.ModelAnimFrame](../Library/Framework/Render/Draw/DrawCommand.h#L153)|Missing|R5|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、Spanの残りを中止する||
 |[Draw.ModelFramePose3D](../Library/Framework/Render/Draw/DrawCommand.h#L155)|Missing|R5|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、Spanの残りを中止する||
@@ -475,8 +475,8 @@
 |[Editor.Audio](../Library/DebugUI/Asset/AssetTools.cpp#L495)|Unreviewed|R9|開く・編集・プレビュー・undo／redo・保存／再読込・未保存確認・閉じるを該当画面で比較|Toolsの入口あり。各画面の操作と依存機能のDX12対応は未確認||
 |[Editor.Effect_editor](../Library/DebugUI/Asset/AssetTools.cpp#L505)|Unreviewed|R9|開く・編集・プレビュー・undo／redo・保存／再読込・未保存確認・閉じるを該当画面で比較|Toolsの入口あり。各画面の操作と依存機能のDX12対応は未確認||
 |[Editor.Material_editor](../Library/DebugUI/Asset/AssetTools.cpp#L500)|Unreviewed|R9|開く・編集・プレビュー・undo／redo・保存／再読込・未保存確認・閉じるを該当画面で比較|Toolsの入口あり。各画面の操作と依存機能のDX12対応は未確認||
-|[Editor.Model_animation_editor](../Library/DebugUI/Asset/AssetTools.cpp#L498)|Unreviewed|R9|開く・編集・プレビュー・undo／redo・保存／再読込・未保存確認・閉じるを該当画面で比較|Toolsの入口あり。各画面の操作と依存機能のDX12対応は未確認||
-|[Editor.Project_asset_browser](../Library/DebugUI/Asset/AssetTools.cpp#L493)|Unreviewed|R9|開く・編集・プレビュー・undo／redo・保存／再読込・未保存確認・閉じるを該当画面で比較|Toolsの入口あり。各画面の操作と依存機能のDX12対応は未確認||
+|[Editor.Model_animation_editor](../Library/DebugUI/Asset/AssetTools.cpp#L498)|Unreviewed|R9|MV1出力を除き、開く・編集・プレビュー・undo／redo・保存／再読込・未保存確認・閉じるを比較。DX12のMV1専用操作は未対応を表示し成功扱いしない|Toolsの入口あり。各画面のDX12対応は未確認。MV1専用入出力はv1.0.0対象外||
+|[Editor.Project_asset_browser](../Library/DebugUI/Asset/AssetTools.cpp#L493)|Unreviewed|R9|MV1出力を除き、開く・編集・プレビュー・undo／redo・保存／再読込・未保存確認・閉じるを比較。DX12のMV1専用操作は未対応を表示し成功扱いしない|Toolsの入口あり。各画面のDX12対応は未確認。MV1専用入出力はv1.0.0対象外||
 |[Editor.Sound_editor](../Library/DebugUI/Asset/AssetTools.cpp#L496)|Unreviewed|R9|開く・編集・プレビュー・undo／redo・保存／再読込・未保存確認・閉じるを該当画面で比較|Toolsの入口あり。各画面の操作と依存機能のDX12対応は未確認||
 |[Editor.Sprite_sheet_editor](../Library/DebugUI/Asset/AssetTools.cpp#L497)|Unreviewed|R9|開く・編集・プレビュー・undo／redo・保存／再読込・未保存確認・閉じるを該当画面で比較|Toolsの入口あり。各画面の操作と依存機能のDX12対応は未確認||
 |[Editor.World_editor](../Library/DebugUI/Asset/AssetTools.cpp#L499)|Unreviewed|R9|開く・編集・プレビュー・undo／redo・保存／再読込・未保存確認・閉じるを該当画面で比較|Toolsの入口あり。各画面の操作と依存機能のDX12対応は未確認||

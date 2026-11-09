@@ -1,4 +1,5 @@
-﻿#include "FbxImporter.h"
+﻿// SPDX-License-Identifier: MIT
+#include "FbxImporter.h"
 
 #include <cstdint>
 
@@ -223,6 +224,7 @@ namespace
 			Imported.bHasVertexCache = Mesh.cache_deformers.count > 0;
 
 			const ufbx_skin_deformer* Skin = Mesh.skin_deformers.count > 0 ? Mesh.skin_deformers.data[0] : nullptr;
+			Imported.bHasUnsupportedSkinning = Mesh.skin_deformers.count > 1 || ( Skin != nullptr && Skin->skinning_method != UFBX_SKINNING_METHOD_LINEAR && Skin->skinning_method != UFBX_SKINNING_METHOD_RIGID );
 			const bool bHasUV = Mesh.vertex_uv.exists;
 			const bool bHasNormal = Mesh.vertex_normal.exists;
 
@@ -234,12 +236,26 @@ namespace
 				for ( size_t Vertex = 0; Vertex < Mesh.num_vertices && Vertex < Skin->vertices.count; ++Vertex )
 				{
 					const ufbx_skin_vertex& SkinVertex = Skin->vertices.data[Vertex];
+					int64 NumPositiveInfluences = 0; // 切り捨て前の正の影響数。
 					for ( uint32_t k = 0; k < SkinVertex.num_weights; ++k )
 					{
 						const ufbx_skin_weight& Weight = Skin->weights.data[SkinVertex.weight_begin + k];
-						Influences[static_cast<int32>( Vertex )].Add( FImportInfluence { static_cast<int32>( Weight.cluster_index ), static_cast<float32>( Weight.weight ) } );
+						const float32 ImportedWeight = static_cast<float32>( Weight.weight ); // 中間形式で保持する重み。
+						if ( Weight.weight > 0.0 )
+						{
+							++NumPositiveInfluences;
+						}
+						if ( !NMath::IsFinite( ImportedWeight ) )
+						{
+							Imported.bHasUnsupportedSkinning = true;
+							continue;
+						}
+						Influences[static_cast<int32>( Vertex )].Add( FImportInfluence { static_cast<int32>( Weight.cluster_index ), ImportedWeight } );
 					}
-					NImportedScene::LimitInfluences( Influences[static_cast<int32>( Vertex )] );
+					NImportedScene::LimitInfluences( Influences[static_cast<int32>( Vertex )], Options.MaxSkinInfluences == 0 ? TNumericLimits<int32>::Max() : Options.MaxSkinInfluences );
+					// 正規化後にfloat32で0になった影響も欠落として数える。
+					Influences[static_cast<int32>( Vertex )].RemoveAll( []( const FImportInfluence& Influence ) { return !( Influence.Weight > 0.0f ); } );
+					Imported.NumDiscardedSkinInfluences += NumPositiveInfluences - Influences[static_cast<int32>( Vertex )].Num();
 				}
 			}
 
@@ -335,10 +351,18 @@ namespace
 					{
 						if ( !Imported.Clusters.IsValidIndex( Influence.Cluster ) )
 						{
+							Imported.bHasUnsupportedSkinning = true;
 							continue;
 						}
 						Imported.Clusters[Influence.Cluster].Vertices.Add( Vertex );
 						Imported.Clusters[Influence.Cluster].Weights.Add( Influence.Weight );
+					}
+				}
+				for ( const FImportedCluster& Cluster : Imported.Clusters )
+				{
+					if ( Cluster.BoneNode < 0 && !Cluster.Vertices.IsEmpty() )
+					{
+						Imported.bHasUnsupportedSkinning = true;
 					}
 				}
 				// 骨が見つからなかった・頂点が 1 つもないクラスターは捨てる
@@ -411,6 +435,12 @@ bool NModelImport::ImportFromMemory( const void* Data, usize Size, const FString
 	if ( Data == nullptr || Size == 0 )
 	{
 		OutError = "the file is empty";
+		return false;
+	}
+
+	if ( Options.MaxSkinInfluences < 0 )
+	{
+		OutError = "MaxSkinInfluences must be zero or greater";
 		return false;
 	}
 
