@@ -2,6 +2,10 @@
 
 最終整理: 2026-11-09（日本時間）。作業ブランチは `backend-dx12`、取り込み元devの基点は `c1d2143262d246c73bffd55c60ef2d84ac4773ba`。実装の直近コミットは `3344e8f` です。最新版のHEADはGitHubのbackend-dx12または `git rev-parse HEAD` で確認してください。別途作成したオフライン配布物では、同梱の `DELIVERY.md` に配布時のHEADを記録します。
 
+## Windows での再開記録（2026-11-09 追記）
+
+Windows の全体ビルドで見つかった画面消去の定義漏れと警告を修正しました。Debug／Release の4 project と、DX12／WARP／DxLib／Null の起動確認は [Windows 検証記録](DX12_WINDOWS_VALIDATION.md) を参照してください。自己検査の対応版と残る制限も同記録へ分けています。以下の未確認一覧は引き継ぎ時点の記録です。
+
 ## 最初に読むもの
 
 1. [ROADMAP.md](ROADMAP.md): v1.0.0の必須範囲、R0〜R10の順序と完了条件。

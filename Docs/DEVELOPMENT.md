@@ -938,6 +938,8 @@ Windowsの通常ビルド後、同じCanvas2Dサンプルを各実装で起動�
 追加時のLinux環境では、MinGWによるWindows向けの構文検査と、新規ソース・公式DX12描画実装のオブジェクト生成を行いました。既存CoreのMSVC固有の型特性組み込み2種類だけを検査用ヘッダーで置き換え、製品コードは変更していません。別置きの検査プログラムでバックエンド選択、状態の分離、クリップ復元、壊れた命令、文字範囲、非有限座標、画像の登録番号とUV範囲をWine上で確認しました。WICの不正入力時の出力保持とBMPからRGBAへの展開も確認しました。MSVCでの全体ビルド、Windows上のDX12表示・WARP・GPUデバッグ層による検証は別途必要です。
 
 
+2026-11-09 の Windows 再開確認では、画面消去の定義漏れと警告を修正し、MSVC の x64 Debug／Release 全体ビルド、既定アダプター／WARP の初期 sample を確認しました。自己検査の対応版・結果と、画素比較・resize・デバッグ層などの未確認範囲は [Windows 検証記録](DX12_WINDOWS_VALIDATION.md) を参照してください。
+
 ### 頂点色の基本3D
 
 `Library/Platform/Render/Geometry/FGeometryCommandExecutor`がカメラ・ワールド変換・深度と表裏を解釈します。2Dと同じSpan内の順番を保ち、状態はSpanごとに初期化します。ワールド変換は既存の行ベクトル規約を使い、Pushは「新しいローカル変換 * 現在のワールド変換」です。カメラの射影と画面中心のずらしは既存の`FCamera`と同じ規約です。既定のカメラは`FCamera`の既定値です。起動設定のCameraNear／CameraFarを使いたい場面はカメラを明示してPushしてください。
