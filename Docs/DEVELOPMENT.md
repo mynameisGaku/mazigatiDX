@@ -868,3 +868,63 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\RunAllChecks.ps1      
 コミットは変更のまとまりごとに分け、`feat`・`fix`・`refactor`・`other`と、原因や変化が分かる日本語の説明を使います。push前にはremoteとの差分と追跡ファイルを確認し、履歴の強制的な書き換えは行いません。
 
 追跡するものは本体・必要なアセット・設定・ビルド手順・プロジェクト文書です。実行結果、個人のIDE設定、ローカルの作業記録、認証情報、一時テスト資料は含めません。第三者ライブラリの使用に必要なファイルとライセンスは保持します。
+
+
+## DX12バックエンド
+
+`--backend=dx12`でDirect3D 12を選びます。既定のDxLib、`--backend=null`は従来どおりです。未知の選択値も従来どおりDxLibになります。DX12を選んだときはDxLibの実装を一つも生成しません。初期化に失敗した場合は終了し、別の実装へ暗黙に切り替えません。
+
+Windows 10以降とWindows SDKのD3D12・DXGI・WICを使います。追加のGPU SDKやAgility SDKは不要です。ImGuiは既存の固定バージョンの公式DX12実装を使います（`FetchImGui.bat`の取得対象にも追加）。DX12を組み込まない場合は`/p:MazigatiWithoutDX12=true`でDX12の実装と公式DX12描画ファイルを除外できます。DxLibを組み込まない場合の`/p:MazigatiWithoutDxLib=true`とも独立です。
+
+### 責務と依存
+
+新しいインターフェースは全て`Library/Core/Interfaces`にあります。Direct3D・DXGI・WIC・ImGuiのヘッダーは含みません。
+
+|窓口|役割|
+|---|---|
+|`IRenderCanvas2D`|論理画素座標の図形・文字・借用画像・クリップを描く|
+|`IRenderSurface`|フレーム内だけキャンバスを貸す、順序を保った画面消去、終了時のGPU完了待ち|
+|`ITextureDrawSource`|登録番号から借用画像の寸法と描画実装内のbindingを得る|
+|`INativeWindow`|OS接続用の窓と、フレームに固定したホイールを借りる|
+
+`FTextureDrawView::Binding`は描画実装内だけで解釈する値です。ゲームへ返したり、異なる描画実装間で使い回したりしません。登録画像の読み込み・所有と、描画側の画像参照を分離するための窓口です。`INativeWindow`のハンドルはWindowsではHWNDで、OS接続だけが解釈します。
+
+- `Library/Platform/Render/Canvas/FCanvasDrawExecutor`は、共通描画命令の長さと値を検査して`IRenderCanvas2D`へ渡します。GPUの型を参照しません。ブレンド・乗算色は呼び出しごとの局所値で、クリップは正常終了・不正命令・未対応命令のいずれでも戻します。
+- `Library/Platform/ImGui/Render/FImGuiCanvas2D`は2D図形を三角形へ変換します。GPUのデバイスを持たないため、今後のVulkan／OpenGLのImGui描画実装にも使えます。異なる図形生成器を使う場合は、同じキャンバス窓口を実装できます。
+- `Library/Platform/Windows/Input/CWindowsInputSubsystem`はキーボードとマウス、`Library/Platform/Windows/Image/FWicImageDecoder`はCPU画像の展開を担当します。どちらもDirect3Dへ依存しません。文字入力・IMEはゲームの入力窓口には未接続です（ImGuiの文字入力は公式Win32実装が扱います）。テンキーEnterの独立判定は未対応です。
+- `Library/Platform/DX12/Window/CDX12PlatformSubsystem`は窓とフレーム、`Render/FDX12Device`はGPU資源と同期、`Asset/CDX12AssetBackendSubsystem`は画像の登録と寿命、`Render/CDX12DrawExecutorSubsystem`は窓口の接続を担当します。Frameworkへ具体クラスの依存を追加しません。
+
+画像は同期で展開・アップロードします。`bAsync=true`でもその場で完了し、`IsLoading`はfalseです。解放を頼まれた登録番号は直ちに無効にし、実画像はそのフレームの描画が完了するまで保ちます。終了時もGPUを待ってから画像を解放し、その後にGPU・ImGui・窓を片付けます。
+
+### 現在の対応範囲
+
+これは2D描画から追加した実装で、DxLibの全機能との同等性はありません。
+
+|対応|内容|
+|---|---|
+|フレームと窓|作成・終了、実時間、タイトル、論理解像度、通常の窓／枠なし全画面、VSync、FPS上限、カーソル、`--max-frames=N`|
+|2D命令|Box／BoxAA、Line／LineAA、Circle／CircleAA、Pixel、Triangle、Quad、Text、Opaque／Alphaブレンド、Bright、PushClip／PopClip、Clear|
+|画像命令|Image、ImageStretch、ImageQuad、ImagePart、ImagePartStretch、ImagePartQuad、対応する上下左右の反転|
+|画像の資源|WICで展開できるPNG・JPEG・BMP等、メモリからの展開、RGBA画素からの生成・同寸法更新、登録数の取得（同時に保持する画像は遅延解放分を含め1024枚まで）|
+|入力と編集画面|キーボード、5ボタンのマウス、縦横ホイール、SDLの既存ゲームパッド、ImGuiのメインウィンドウ|
+
+AA指定のない図形は端の補間を無効にしますが、DxLibと全ての境界画素が一致する保証はありません。TextはImGuiの既定フォントを使います。個別フォント・TextFont／TextStyledは未対応です。描画先の解像度は起動時に固定し、表示先の大きさへ拡大します。Nearest指定、排他Fullscreen、ImGuiの別ウィンドウは未対応です。
+
+3Dモデル・3D描画・材質・深度・照明・影・独自シェーダー・描画先画像・画像保存・派生画像・画像フィルター・マスク・2D変換・回転スプライト・加算等のブレンド・音声・動画・ゲーム側のIME／タッチ／クリップボード・窓位置とモニター情報の窓口は未対応です。アセットは無効ハンドル・false・空の値を返し、対応能力もfalseのままです。別の実装の仮ハンドルを返しません。
+
+未対応の描画命令は警告を一度出し、そのSpanの残りを省略します。描画先や変換などの未対応状態を無視して誤った場所へ描くことを防ぐためです。次のSpanの状態には影響しません。3D中心の既存サンプルやEditorの全機能の動作は保証しません。
+
+### 確認
+
+Windowsの通常ビルド後、同じCanvas2Dサンプルを各実装で起動できます。
+
+```powershell
+.\x64\Debug\Samples.exe --backend=dx12 --sample=Canvas2D --max-frames=120
+.\x64\Debug\Samples.exe --backend=dx12 --dx12-warp=true --sample=Canvas2D --max-frames=120
+.\x64\Debug\Samples.exe --sample=Canvas2D
+.\x64\Debug\Samples.exe --backend=null --sample=Canvas2D --max-frames=30
+```
+
+`--dx12-warp=true`はWindowsのソフトウェアGPUを選ぶ確認用です。矩形・円・線、緑の矩形のクリップ、半透明の赤い矩形、市松模様の画像、文字、通常の窓と枠なしの切り替え、拡大時のマウス座標、終了時のGPU資源解放を確認します。スクリーンショットの窓口はDX12では未対応です。
+
+追加時のLinux環境では、MinGWによるWindows向けの構文検査と、新規ソース・公式DX12描画実装のオブジェクト生成を行いました。既存CoreのMSVC固有の型特性組み込み2種類だけを検査用ヘッダーで置き換え、製品コードは変更していません。別置きの検査プログラムでバックエンド選択、状態の分離、クリップ復元、壊れた命令、文字範囲、非有限座標、画像の登録番号とUV範囲をWine上で確認しました。WICの不正入力時の出力保持とBMPからRGBAへの展開も確認しました。MSVCでの全体ビルド、Windows上のDX12表示・WARP・GPUデバッグ層による検証は別途必要です。

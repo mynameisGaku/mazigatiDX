@@ -1,6 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <ClCompile Include="Library\Platform\DX12\Asset\DX12AssetBackendSubsystem.cpp">
+      <Filter>Library\Platform\DX12\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\DX12Device.cpp">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\DX12DrawExecutorSubsystem.cpp">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Window\DX12PlatformSubsystem.cpp">
+      <Filter>Library\Platform\DX12\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\ImGui\Render\ImGuiCanvas2D.cpp">
+      <Filter>Library\Platform\ImGui\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Canvas\CanvasDrawExecutor.cpp">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Windows\Image\WicImageDecoder.cpp">
+      <Filter>Library\Platform\Windows\Image</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Windows\Input\WindowsInputSubsystem.cpp">
+      <Filter>Library\Platform\Windows\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="VendorModules\ImGui\imgui_impl_dx12.cpp">
+      <Filter>VendorModules\ImGui</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Core\Collection\String.cpp">
       <Filter>Library\Core\Collection</Filter>
     </ClCompile>
@@ -1651,8 +1678,83 @@
     <ClCompile Include="VendorModules\ufbx\ufbx.c">
       <Filter>VendorModules\ufbx</Filter>
     </ClCompile>
+    <Filter Include="Library\Platform\DX12">
+      <UniqueIdentifier>{7C46CEA2-399E-5E06-997C-9325BF91F6AE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Asset">
+      <UniqueIdentifier>{20157066-4F94-5E49-B3D9-740909FEA94F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Render">
+      <UniqueIdentifier>{BD89178F-32EA-5D79-ABE1-79229F759CC4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Window">
+      <UniqueIdentifier>{68472BF7-CE2A-5551-97E4-48F9176F6487}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\ImGui">
+      <UniqueIdentifier>{F1A3FBD4-7912-5DE6-B0A6-E232273F3FA6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\ImGui\Render">
+      <UniqueIdentifier>{3AA93B0A-E8DF-52CD-A850-CE9601419CDA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Render">
+      <UniqueIdentifier>{064EFABF-7CA5-54A3-8C30-E7A714248C6E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Render\Canvas">
+      <UniqueIdentifier>{4DDA0871-9B79-52AD-A277-1F9FD683A3F4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Windows">
+      <UniqueIdentifier>{CAA869BC-2225-5DBB-8263-97667FF889FA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Windows\Image">
+      <UniqueIdentifier>{08D1F678-BC63-5523-8DC5-10F785A51991}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Windows\Input">
+      <UniqueIdentifier>{672467B0-FE93-51B4-A727-E5F7D2066A66}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Library\Core\Render\TextureDrawView.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Platform\INativeWindow.h">
+      <Filter>Library\Core\Interfaces\Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IRenderCanvas2D.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IRenderSurface.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\ITextureDrawSource.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Asset\DX12AssetBackendSubsystem.h">
+      <Filter>Library\Platform\DX12\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\DX12Device.h">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\DX12DrawExecutorSubsystem.h">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Window\DX12PlatformSubsystem.h">
+      <Filter>Library\Platform\DX12\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\ImGui\Render\ImGuiCanvas2D.h">
+      <Filter>Library\Platform\ImGui\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Canvas\CanvasDrawExecutor.h">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Windows\Image\WicImageDecoder.h">
+      <Filter>Library\Platform\Windows\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Windows\Input\WindowsInputSubsystem.h">
+      <Filter>Library\Platform\Windows\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="VendorModules\ImGui\imgui_impl_dx12.h">
+      <Filter>VendorModules\ImGui</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Result.h">
       <Filter>Library\Core</Filter>
     </ClInclude>

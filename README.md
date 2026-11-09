@@ -113,3 +113,6 @@ mazigatiDX のコードは [MIT ライセンス](LICENSE)です。使ってい�
 |`Core`|基盤・共通インターフェースの開発|
 
 機能ブランチから `dev` へ統合し、必要な確認を終えた区切りを `main` へ反映します。
+
+
+DX12による2Dバックエンドは`--backend=dx12`で選べます。`Samples.exe --backend=dx12 --sample=Canvas2D`で図形と画像の見本を起動できます。現段階では3D・音声等は未対応です。設計・対応範囲・確認手順は[開発手順](Docs/DEVELOPMENT.md#dx12バックエンド)を参照してください。

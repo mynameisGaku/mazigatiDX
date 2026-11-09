@@ -67,6 +67,15 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets"></ImportGroup>
   <ItemGroup>
+    <ClCompile Include="Library\Platform\DX12\Asset\DX12AssetBackendSubsystem.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Render\DX12Device.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Render\DX12DrawExecutorSubsystem.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Window\DX12PlatformSubsystem.cpp" />
+    <ClCompile Include="Library\Platform\ImGui\Render\ImGuiCanvas2D.cpp" />
+    <ClCompile Include="Library\Platform\Render\Canvas\CanvasDrawExecutor.cpp" />
+    <ClCompile Include="Library\Platform\Windows\Image\WicImageDecoder.cpp" />
+    <ClCompile Include="Library\Platform\Windows\Input\WindowsInputSubsystem.cpp" />
+    <ClCompile Include="VendorModules\ImGui\imgui_impl_dx12.cpp" />
     <ClCompile Include="Library\Core\Collection\String.cpp" />
     <ClCompile Include="Library\Core\Interfaces\Tickable\ITickable.cpp" />
     <ClCompile Include="Library\Core\Log\Assert.cpp" />
@@ -619,6 +628,20 @@
     <ClCompile Include="VendorModules\ufbx\ufbx.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Library\Core\Render\TextureDrawView.h" />
+    <ClInclude Include="Library\Core\Interfaces\Platform\INativeWindow.h" />
+    <ClInclude Include="Library\Core\Interfaces\Render\IRenderCanvas2D.h" />
+    <ClInclude Include="Library\Core\Interfaces\Render\IRenderSurface.h" />
+    <ClInclude Include="Library\Core\Interfaces\Render\ITextureDrawSource.h" />
+    <ClInclude Include="Library\Platform\DX12\Asset\DX12AssetBackendSubsystem.h" />
+    <ClInclude Include="Library\Platform\DX12\Render\DX12Device.h" />
+    <ClInclude Include="Library\Platform\DX12\Render\DX12DrawExecutorSubsystem.h" />
+    <ClInclude Include="Library\Platform\DX12\Window\DX12PlatformSubsystem.h" />
+    <ClInclude Include="Library\Platform\ImGui\Render\ImGuiCanvas2D.h" />
+    <ClInclude Include="Library\Platform\Render\Canvas\CanvasDrawExecutor.h" />
+    <ClInclude Include="Library\Platform\Windows\Image\WicImageDecoder.h" />
+    <ClInclude Include="Library\Platform\Windows\Input\WindowsInputSubsystem.h" />
+    <ClInclude Include="VendorModules\ImGui\imgui_impl_dx12.h" />
     <ClInclude Include="Library\Core\Result.h" />
     <ClInclude Include="Library\Core\Result.inl" />
     <ClInclude Include="Library\Core\Version.h" />

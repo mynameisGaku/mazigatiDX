@@ -53,6 +53,8 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets"></ImportGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Canvas2D\Canvas2DGallery.cpp" />
+    <ClCompile Include="Source\Canvas2D\Canvas2DSample.cpp" />
     <ClCompile Include="Source\main.cpp" />
     <ClCompile Include="Source\Adventure\AdventureActor.cpp" />
     <ClCompile Include="Source\Adventure\AdventureCampfire.cpp" />
@@ -226,6 +228,8 @@
     <ClCompile Include="Source\SelfTest\**\*.cpp" Exclude="@(ClCompile)" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Canvas2D\Canvas2DGallery.h" />
+    <ClInclude Include="Source\Canvas2D\Canvas2DSample.h" />
     <ClInclude Include="Source\Adventure\AdventureActor.h" />
     <ClInclude Include="Source\Adventure\AdventureCampfire.h" />
     <ClInclude Include="Source\Adventure\AdventureChest.h" />

@@ -1,0 +1,19 @@
+﻿// SPDX-License-Identifier: MIT
+#pragma once
+#include "Library/Core/Render/DrawSpan.h"
+#include "Library/Core/Interfaces/Render/IRenderSurface.h"
+#include "Library/Core/Interfaces/Render/IRenderCanvas2D.h"
+#include "Library/Core/Interfaces/Render/ITextureDrawSource.h"
+
+// 共通命令をAPI非依存の2Dキャンバスへ変換する。状態はExecuteごとに初期化する。
+class FCanvasDrawExecutor
+{
+public:
+	// SurfaceとTexturesは借用。実行が終わるまで所有側が生存させる。
+	FCanvasDrawExecutor( IRenderSurface& InSurface, ITextureDrawSource* InTextures );
+	// 命令の長さを検査して実行する。未対応命令以降はそのSpan内で省略する。
+	void Execute( const FDrawSpan& Span );
+private:
+	IRenderSurface& Surface; // 借用する描画先。
+	ITextureDrawSource* Textures; // 借用する登録画像。nullptrなら画像を描かない。
+};

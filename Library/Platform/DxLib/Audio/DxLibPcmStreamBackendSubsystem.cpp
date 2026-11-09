@@ -15,7 +15,7 @@ REGISTER_SUBSYSTEM( CDxLibPcmStreamBackendSubsystem )
 
 bool CDxLibPcmStreamBackendSubsystem::ShouldCreateSubsystem( CEngine& Engine ) const
 {
-	return !NBackendSelection::IsNullRequested();
+	return NBackendSelection::GetRequested() == EPlatformBackend::DxLib;
 }
 
 void CDxLibPcmStreamBackendSubsystem::Initialize( FSubsystemCollection& Collection )

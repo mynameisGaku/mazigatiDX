@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <ClCompile Include="Source\Canvas2D\Canvas2DGallery.cpp">
+      <Filter>Source\Canvas2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Canvas2D\Canvas2DSample.cpp">
+      <Filter>Source\Canvas2D</Filter>
+    </ClCompile>
     <ClCompile Include="Source\main.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -511,8 +517,17 @@
     <ClCompile Include="Source\World\WorldSampleView.cpp">
       <Filter>Source\World</Filter>
     </ClCompile>
+    <Filter Include="Source\Canvas2D">
+      <UniqueIdentifier>{2760671A-D9E1-5093-9150-7C8C2B2D4D5F}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Canvas2D\Canvas2DGallery.h">
+      <Filter>Source\Canvas2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Canvas2D\Canvas2DSample.h">
+      <Filter>Source\Canvas2D</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Adventure\AdventureActor.h">
       <Filter>Source\Adventure</Filter>
     </ClInclude>

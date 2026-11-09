@@ -81,6 +81,13 @@
     </ItemGroup>
   </Target>
 
+  <!-- DX12を組み込まない配布向け。共通のキャンバス・Windows実装は残す -->
+  <Target Name="ExcludeDX12Sources" BeforeTargets="CreateObjectDirectories;ClCompile" Condition="'$(MazigatiWithoutDX12)'=='true'">
+    <ItemGroup>
+      <ClCompile Remove="$(MazigatiRoot)Library\Platform\DX12\**;Library\Platform\DX12\**;$(MazigatiRoot)VendorModules\ImGui\imgui_impl_dx12.cpp;VendorModules\ImGui\imgui_impl_dx12.cpp" />
+    </ItemGroup>
+  </Target>
+
   <!-- ObjectFileName=$(IntDir)%(RelativeDir) 用の出力ディレクトリを作成（同名 .cpp の衝突回避） -->
   <Target Name="CreateObjectDirectories" BeforeTargets="ClCompile">
     <MakeDir Directories="@(ClCompile->'$(IntDir)%(RelativeDir)')" />

@@ -64,7 +64,7 @@ namespace
 
 bool CDxLibAssetBackendSubsystem::ShouldCreateSubsystem( CEngine& Engine ) const
 {
-	return !NBackendSelection::IsNullRequested();
+	return NBackendSelection::GetRequested() == EPlatformBackend::DxLib;
 }
 
 void CDxLibAssetBackendSubsystem::Initialize( FSubsystemCollection& Collection )
