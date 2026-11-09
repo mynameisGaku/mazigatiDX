@@ -17,9 +17,15 @@ FDX12Device::~FDX12Device()
 
 bool FDX12Device::Initialize( HWND Window, int32 Width, int32 Height, bool bWarp )
 {
+	if ( Device || bClosing || !IsWindow( Window ) || Width <= 0 || Height <= 0 || Width > 16384 || Height > 16384 )
+	{
+		return false;
+	}
 	using Microsoft::WRL::ComPtr;
 	ComPtr<IDXGIFactory4> Factory; // アダプターの列挙元。
 	ComPtr<IDXGIAdapter> Adapter; // WARP指定時のソフトウェアGPU。
+	ComPtr<ID3D12Device> CreatedDevice; // 所有先へ渡す前の描画デバイス。
+	ComPtr<ID3D12CommandQueue> CreatedQueue; // 同じデバイスで作るDIRECTキュー。
 	if ( FAILED( CreateDXGIFactory1( IID_PPV_ARGS( &Factory ) ) ) )
 	{
 		return false;
@@ -28,18 +34,35 @@ bool FDX12Device::Initialize( HWND Window, int32 Width, int32 Height, bool bWarp
 	{
 		return false;
 	}
-	if ( FAILED( D3D12CreateDevice( Adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS( &Device ) ) ) )
+	if ( FAILED( D3D12CreateDevice( Adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS( &CreatedDevice ) ) ) )
 	{
 		LOG( LogDX12, Error, "Direct3D 12 device creation failed" );
 		return false;
 	}
 	D3D12_COMMAND_QUEUE_DESC QueueDesc = {}; // 通常の描画キュー。
 	QueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-	if ( FAILED( Device->CreateCommandQueue( &QueueDesc, IID_PPV_ARGS( &Queue ) ) )
-		|| FAILED( Device->CreateCommandAllocator( D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS( &Allocator ) ) )
-		|| FAILED( Device->CreateCommandList( 0, D3D12_COMMAND_LIST_TYPE_DIRECT, Allocator.Get(), nullptr, IID_PPV_ARGS( &Commands ) ) )
-		|| FAILED( Commands->Close() )
-		|| FAILED( Device->CreateFence( 0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS( &Fence ) ) ) )
+	if ( FAILED( CreatedDevice->CreateCommandQueue( &QueueDesc, IID_PPV_ARGS( &CreatedQueue ) ) ) )
+	{
+		return false;
+	}
+	return InitializeOnQueue( Window, Width, Height, CreatedQueue.Get() );
+}
+
+bool FDX12Device::InitializeOnQueue( HWND Window, int32 Width, int32 Height, ID3D12CommandQueue* InQueue )
+{
+	if ( Device || bClosing || !IsWindow( Window ) || Width <= 0 || Height <= 0 || Width > 16384 || Height > 16384 || !InQueue || InQueue->GetDesc().Type != D3D12_COMMAND_LIST_TYPE_DIRECT || !ImGui::GetCurrentContext() || ImGui::GetIO().BackendRendererUserData )
+	{
+		return false;
+	}
+	Microsoft::WRL::ComPtr<ID3D12Device> QueueDevice; // キューが実際に属するデバイスを共有する。
+	if ( FAILED( InQueue->GetDevice( IID_PPV_ARGS( &QueueDevice ) ) ) || FAILED( QueueDevice->GetDeviceRemovedReason() ) )
+	{
+		return false;
+	}
+	Device = QueueDevice;
+	Queue = InQueue;
+	Microsoft::WRL::ComPtr<IDXGIFactory4> Factory; // このキューへ交換用画面を接続する列挙元。
+	if ( FAILED( CreateDXGIFactory1( IID_PPV_ARGS( &Factory ) ) ) || FAILED( Device->CreateCommandAllocator( D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS( &Allocator ) ) ) || FAILED( Device->CreateCommandList( 0, D3D12_COMMAND_LIST_TYPE_DIRECT, Allocator.Get(), nullptr, IID_PPV_ARGS( &Commands ) ) ) || FAILED( Commands->Close() ) || FAILED( Device->CreateFence( 0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS( &Fence ) ) ) )
 	{
 		return false;
 	}
@@ -57,7 +80,7 @@ bool FDX12Device::Initialize( HWND Window, int32 Width, int32 Height, bool bWarp
 	Desc.BufferCount = BufferCount;
 	Desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	Desc.Scaling = DXGI_SCALING_STRETCH;
-	ComPtr<IDXGISwapChain1> InitialSwapChain; // 交換先の作成結果。
+	Microsoft::WRL::ComPtr<IDXGISwapChain1> InitialSwapChain; // 交換先の作成結果。
 	if ( FAILED( Factory->CreateSwapChainForHwnd( Queue.Get(), Window, &Desc, nullptr, nullptr, &InitialSwapChain ) )
 		|| FAILED( InitialSwapChain.As( &SwapChain ) )
 		|| FAILED( Factory->MakeWindowAssociation( Window, DXGI_MWA_NO_ALT_ENTER ) ) )
@@ -95,12 +118,13 @@ bool FDX12Device::Initialize( HWND Window, int32 Width, int32 Height, bool bWarp
 	{
 		return false;
 	}
-	return ImGuiRenderer.Initialize( Device.Get(), Queue.Get(), BufferCount, Desc.Format, Descriptors );
+	bInitialized = ImGuiRenderer.Initialize( Device.Get(), Queue.Get(), BufferCount, Desc.Format, Descriptors );
+	return bInitialized;
 }
 
-bool FDX12Device::Wait()
+bool FDX12Device::Wait( uint32 TimeoutMs )
 {
-	if ( !Queue || !Fence || !FenceEvent )
+	if ( TimeoutMs > 60000 || !Device || !Queue || !Fence || !FenceEvent || FenceValue >= UINT64_MAX - 1 || FAILED( Device->GetDeviceRemovedReason() ) )
 	{
 		return false;
 	}
@@ -109,25 +133,70 @@ bool FDX12Device::Wait()
 	{
 		return false;
 	}
-	if ( Fence->GetCompletedValue() == UINT64_MAX )
+	const uint64 Started = GetTickCount64(); // 古い通知で起こされても今回の期限は延長しない。
+	for ( ;; )
 	{
-		return false; // デバイス喪失。再利用せず終了する。
-	}
-	if ( Fence->GetCompletedValue() < FenceValue )
-	{
-		if ( FAILED( Fence->SetEventOnCompletion( FenceValue, FenceEvent ) ) )
+		const uint64 Completed = Fence->GetCompletedValue(); // 喪失を通常の完了番号と混同しない。
+		if ( Completed == UINT64_MAX || FAILED( Device->GetDeviceRemovedReason() ) )
 		{
 			return false;
 		}
-		// OSがデバイス喪失を検出しない場合も無期限には待たない。
-		return WaitForSingleObject( FenceEvent, 10000 ) == WAIT_OBJECT_0;
+		if ( Completed >= FenceValue )
+		{
+			return true;
+		}
+		const uint64 Elapsed = GetTickCount64() - Started; // 経過時間を単調な時計で求める。
+		if ( Elapsed >= TimeoutMs )
+		{
+			return false;
+		}
+		if ( NotifiedValue == 0 || Completed >= NotifiedValue )
+		{
+			if ( FAILED( Fence->SetEventOnCompletion( FenceValue, FenceEvent ) ) )
+			{
+				return false;
+			}
+			NotifiedValue = FenceValue;
+		}
+		const DWORD Result = WaitForSingleObject( FenceEvent, static_cast<DWORD>( TimeoutMs - Elapsed ) ); // 残り時間だけ待つ。
+		if ( Result != WAIT_OBJECT_0 && Result != WAIT_TIMEOUT )
+		{
+			return false;
+		}
 	}
+}
+
+bool FDX12Device::TryShutdown( uint32 TimeoutMs )
+{
+	if ( TimeoutMs > 60000 )
+	{
+		return false;
+	}
+	bClosing = true;
+	// 待機機構の作成前はまだGPUへ提出していない。完成後は停止の確認を必須にする。
+	if ( Device && Queue && Fence && FenceEvent && !Wait( TimeoutMs ) && SUCCEEDED( Device->GetDeviceRemovedReason() ) )
+	{
+		return false;
+	}
+	ReleaseAfterGPUStopped();
 	return true;
 }
 
 void FDX12Device::Shutdown()
 {
-	Wait();
+	if ( TryShutdown() )
+	{
+		return;
+	}
+	LOG( LogDX12, Warning, "DX12 shutdown is retaining resources until GPU completion or device removal" );
+	while ( !TryShutdown( 1000 ) )
+	{
+		Sleep( 1 );
+	}
+}
+
+void FDX12Device::ReleaseAfterGPUStopped()
+{
 	ImGuiRenderer.Shutdown();
 	for ( auto& Buffer : Buffers )
 	{
@@ -153,12 +222,17 @@ void FDX12Device::Shutdown()
 		FenceEvent = nullptr;
 	}
 	FenceValue = 0;
+	NotifiedValue = 0;
+	BufferIndex = RtvStride = 0;
+	CurrentRtv = {};
 	bRecording = false;
+	bInitialized = false;
+	bClosing = false;
 }
 
 bool FDX12Device::BeginFrame()
 {
-	if ( !SwapChain || bRecording || !Wait() || FAILED( Allocator->Reset() ) || FAILED( Commands->Reset( Allocator.Get(), nullptr ) ) )
+	if ( !bInitialized || bClosing || bRecording || !Wait() || FAILED( Allocator->Reset() ) || FAILED( Commands->Reset( Allocator.Get(), nullptr ) ) )
 	{
 		return false;
 	}
@@ -192,9 +266,13 @@ bool FDX12Device::BeginFrame()
 
 bool FDX12Device::EndFrame( ImDrawData* Data, bool bVSync )
 {
-	if ( !bRecording )
+	if ( !bInitialized || bClosing || !bRecording )
 	{
 		return false;
+	}
+	if ( Data && Data->DisplaySize.x > 0 && Data->DisplaySize.y > 0 )
+	{
+		Data->FramebufferScale = ImVec2( Geometry->GetWidth() / Data->DisplaySize.x, Geometry->GetHeight() / Data->DisplaySize.y );
 	}
 	if ( !ImGuiRenderer.Render( Data, Commands.Get() ) )
 	{
@@ -220,7 +298,7 @@ bool FDX12Device::EndFrame( ImDrawData* Data, bool bVSync )
 
 void FDX12Device::RecordClear( ImDrawList& List, ImU32 Color )
 {
-	if ( !bRecording )
+	if ( !bInitialized || bClosing || !bRecording )
 	{
 		return;
 	}
@@ -238,25 +316,25 @@ void FDX12Device::ClearCallback( const ImDrawList*, const ImDrawCmd* Command )
 
 IRenderGeometry3D* FDX12Device::GetGeometry3D()
 {
-	return bRecording ? Geometry : nullptr;
+	return bInitialized && !bClosing && bRecording ? Geometry : nullptr;
 }
 
 IRenderTextureResources* FDX12Device::GetTextureResources()
 {
-	return &Textures;
+	return bInitialized && !bClosing ? &Textures : nullptr;
 }
 
 IRenderBufferResources* FDX12Device::GetBufferResources()
 {
-	return &BufferResources;
+	return bInitialized && !bClosing ? &BufferResources : nullptr;
 }
 
 IComputePipelineResources* FDX12Device::GetComputePipelineResources()
 {
-	return &ComputePipelines;
+	return bInitialized && !bClosing ? &ComputePipelines : nullptr;
 }
 
 IComputeQueue* FDX12Device::GetComputeQueue()
 {
-	return &ComputeQueue;
+	return bInitialized && !bClosing ? &ComputeQueue : nullptr;
 }

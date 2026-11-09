@@ -55,7 +55,7 @@ bool FDX12GeometryRenderer::Initialize( ID3D12Device* InDevice, int32 InWidth, i
 		Sampler.AddressV = static_cast<D3D12_TEXTURE_ADDRESS_MODE>( ( ( Index >> 2 ) & 3 ) + 1 );
 		Sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
 		Sampler.MaxAnisotropy = 1;
-		Sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+		Sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
 		Sampler.MaxLOD = D3D12_FLOAT32_MAX;
 		auto Handle = SamplerHeap->GetCPUDescriptorHandleForHeapStart(); // この設定の保存先。
 		Handle.ptr += Index * SamplerStride;
@@ -256,7 +256,7 @@ bool FDX12GeometryRenderer::DrawInternal( const FGeometryVertex* Vertices, int32
 		: State.Topology == EGeometryTopology::Lines ? D3D_PRIMITIVE_TOPOLOGY_LINELIST : D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	Uploads.Add( FUploadRecord { MoveTemp( Upload ) } );
 	UploadBytes += Desc.Width;
-	ImDrawList* List = ImGui::GetBackgroundDrawList(); // 2Dと3Dの記録順を保つ。
+	ImDrawList* List = ImGui::GetBackgroundDrawList( ImGui::GetMainViewport() ); // 2Dと3Dの記録順を保つ。
 	List->AddCallback( DrawCallback, &Pending, sizeof( Pending ) );
 	List->AddCallback( ImDrawCallback_ResetRenderState, nullptr );
 	return true;
@@ -304,7 +304,7 @@ void FDX12GeometryRenderer::ClearDepth()
 {
 	if ( Commands )
 	{
-		ImGui::GetBackgroundDrawList()->AddCallback( ClearDepthCallback, this );
+		ImGui::GetBackgroundDrawList( ImGui::GetMainViewport() )->AddCallback( ClearDepthCallback, this );
 	}
 }
 

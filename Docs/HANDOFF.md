@@ -14,6 +14,10 @@ R1の最小のバッファ所有・同期転送・readbackを追加しました�
 
 共通窓口からRAWバッファのcompute提出・完了照会・期限付き待機・readbackを接続しました。CS5.0／5.1、提出後の番号解除とGPU参照の保持、CPU参照／既定GPU／WARPとDebug／Releaseの検査は [computeの記録](R1_COMPUTE.md) を参照してください。互換台帳は455項目、Verifiedは0です。描画との資源共有、DXC／SM6、障害時の終了を含むR1全体は未完了です。
 
+## ImGuiの複数ウィンドウ（2026-11-10 追記）
+
+DX12でImGuiのウィンドウを主画面から切り離せます。公式のWin32／DX12実装を接続し、DxLibの更新順・頻度設定を共通化しました。座標補正、GPU待機・終了保持の修正、Windows実GPU／WARPの窓と画素の検査は [マルチビューポートの記録](DX12_IMGUI_VIEWPORTS.md) を参照してください。複数DPI・複数ベンダーや外部窓を含むGPU障害回復全体は残っています。
+
 ## 最初に読むもの
 
 1. [ROADMAP.md](ROADMAP.md): v1.0.0の必須範囲、R0〜R10の順序と完了条件。

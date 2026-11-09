@@ -2,10 +2,14 @@
 #pragma once
 #include "Library/Core/Interfaces/Render/IRenderCanvas2D.h"
 
+struct ImDrawList;
+
 // ImGuiの図形生成だけを再利用する。DX12・Vulkan・OpenGLのGPU型を持たない。
 class FImGuiCanvas2D : public IRenderCanvas2D
 {
 public:
+	// 論理画素の寸法を設定する。表示先の移動・拡大は各描画で主画面から取得する。不正な寸法はfalse。
+	bool SetLogicalSize( int32 Width, int32 Height );
 	// 矩形を描く。座標は論理画素。
 	void Box( float32 X0, float32 Y0, float32 X1, float32 Y1, FColor32 Color, bool bFill, float32 Thickness ) override;
 	// 線分を描く。
@@ -28,4 +32,8 @@ public:
 	bool SetTextureFilter( bool bLinear ) override;
 	// 図形の端の補間を指定する。
 	void SetAntiAlias( bool bEnabled ) override;
+private:
+	// 今回追加した頂点だけを、主画面の位置と実際の表示寸法へ変換する。
+	void TransformVertices( ImDrawList& List, int32 FirstVertex ) const;
+	int32 LogicalWidth = 0, LogicalHeight = 0; // 0なら表示先と同じ画素寸法として扱う。
 };

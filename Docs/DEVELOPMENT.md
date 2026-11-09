@@ -914,9 +914,9 @@ Windows 10以降とWindows SDKのD3D12・DXGI・WICを使います。追加のGP
 |基本3D命令|Line3D、Triangle3D、Cube3D、Sphere3D、Capsule3D、Quad3D、Billboard3D／BillboardPivot3D／BillboardQuad3D、Sprite3D／SpriteStretch3D／SpritePivot3D、Primitive3D、Mesh3D、PrimitiveBuffer3D、TextureAddress、Nearest／BilinearのFilter、WorldMatrixとそのPush／Pop、PushCamera／PopCamera、Depth、Culling、ClearDepth、照明の無効化|
 |画像命令|Image、ImageStretch、ImageQuad、ImagePart、ImagePartStretch、ImagePartQuad、対応する上下左右の反転|
 |画像の資源|WICで展開できるPNG・JPEG・BMP等、メモリからの展開、RGBA画素からの生成・同寸法更新、登録数の取得（同時に保持する画像は遅延解放分を含め1024枚まで）|
-|入力と編集画面|キーボード、5ボタンのマウス、縦横ホイール、SDLの既存ゲームパッド、ImGuiのメインウィンドウ|
+|入力と編集画面|キーボード、5ボタンのマウス、縦横ホイール、SDLの既存ゲームパッド、ImGuiの主画面とマルチビューポート|
 
-AA指定のない図形は端の補間を無効にしますが、DxLibと全ての境界画素が一致する保証はありません。TextはImGuiの既定フォントを使います。個別フォント・TextFont／TextStyledは未対応です。描画先の解像度は起動時に固定し、表示先の大きさへ拡大します。画面拡大時のScalingFilter::Nearest指定、排他Fullscreen、ImGuiの別ウィンドウは未対応です。
+AA指定のない図形は端の補間を無効にしますが、DxLibと全ての境界画素が一致する保証はありません。TextはImGuiの既定フォントを使います。個別フォント・TextFont／TextStyledは未対応です。描画先の解像度は起動時に固定し、表示先の大きさへ拡大します。画面拡大時のScalingFilter::Nearest指定と排他Fullscreenは未対応です。ImGuiの別ウィンドウの設定・所有・座標・検査は [マルチビューポートの記録](DX12_IMGUI_VIEWPORTS.md) を参照してください。
 
 MV1／スキン／モーフ・アニメーションモデル・円錐・帯等の未対応図形・材質・照明・影・独自シェーダー・描画先画像・画像保存・派生画像・画像処理のフィルター・異方性補間・マスク・2D変換・回転スプライト・加算等のブレンド・音声・動画・ゲーム側のIME／タッチ／クリップボード・窓位置とモニター情報の窓口は未対応です。アセットは無効ハンドル・false・空の値を返し、対応能力もfalseのままです。別の実装の仮ハンドルを返しません。
 

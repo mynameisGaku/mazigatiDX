@@ -310,6 +310,9 @@
     <ClCompile Include="Source\SelfTest\ConsoleSelfTest.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
+    <ClCompile Include="Source\SelfTest\DeviceLifecycleMain.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
     <ClCompile Include="Source\SelfTest\EcsSelfTestScene.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
@@ -320,6 +323,12 @@
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
     <ClCompile Include="Source\SelfTest\SelfTestEntry.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\ViewportContractMain.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\ViewportPlatformSelfTest.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
     <ClCompile Include="Source\SelfTest\WorldEditorSelfTestInput.cpp">

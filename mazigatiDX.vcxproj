@@ -451,6 +451,7 @@
     <ClCompile Include="Library\Platform\DxLib\Window\DxLibDisplayInfoSubsystem.cpp" />
     <ClCompile Include="Library\Platform\DxLib\Window\DxLibWindowControlSubsystem.cpp" />
     <ClCompile Include="Library\Platform\ImGui\Render\ImGuiCanvas2D.cpp" />
+    <ClCompile Include="Library\Platform\ImGui\Render\ImGuiViewportScheduler.cpp" />
     <ClCompile Include="Library\Platform\Null\NullAssetBackendSubsystem.cpp" />
     <ClCompile Include="Library\Platform\Null\NullAudioBackendSubsystem.cpp" />
     <ClCompile Include="Library\Platform\Null\NullDisplayInfoSubsystem.cpp" />
@@ -1212,6 +1213,7 @@
     <ClInclude Include="Library\Platform\DxLib\Window\DxLibDisplayInfoSubsystem.h" />
     <ClInclude Include="Library\Platform\DxLib\Window\DxLibWindowControlSubsystem.h" />
     <ClInclude Include="Library\Platform\ImGui\Render\ImGuiCanvas2D.h" />
+    <ClInclude Include="Library\Platform\ImGui\Render\ImGuiViewportScheduler.h" />
     <ClInclude Include="Library\Platform\Null\NullAssetBackendSubsystem.h" />
     <ClInclude Include="Library\Platform\Null\NullAudioBackendSubsystem.h" />
     <ClInclude Include="Library\Platform\Null\NullDisplayInfoSubsystem.h" />

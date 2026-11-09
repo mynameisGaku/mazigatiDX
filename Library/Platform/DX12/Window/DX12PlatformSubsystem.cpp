@@ -104,10 +104,9 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection& )
 	{
 		IO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	}
-	// 複数窓はGPU完了待ちと寿命管理を共有しないため、現段階では無効。
 	if ( Settings.bEnableImGui && Settings.bImGuiViewports )
 	{
-		NBackendSupport::ReportUnsupported( "DX12", "ImGui viewports" );
+		IO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 	}
 	if ( !Settings.ImGuiFontPath.IsEmpty() && NFileSystem::FileExists( Settings.ImGuiFontPath ) )
 	{
@@ -128,6 +127,7 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection& )
 	ShowWindow( static_cast<HWND>( Window ), SW_SHOW );
 	LastTick = NPlatformTime::GetTicks();
 	bInitialized = true;
+	Canvas.SetLogicalSize( Settings.Width, Settings.Height );
 	LOG( LogDX12, Log, "DX12 initialized (%dx%d). Static FBX/OBJ models supported; lighting, animated models, audio and offscreen targets are not supported yet.", Settings.Width, Settings.Height );
 }
 
@@ -140,6 +140,7 @@ void CDX12PlatformSubsystem::Deinitialize()
 	bInFrame = false;
 	delete Device;
 	Device = nullptr;
+	Viewports.Reset();
 	if ( bWin32 )
 	{
 		ImGui_ImplWin32_Shutdown();
@@ -199,16 +200,8 @@ bool CDX12PlatformSubsystem::BeginFrame()
 	TotalTime += DeltaTime;
 	ImGui_ImplWin32_NewFrame();
 	ImGuiIO& IO = ImGui::GetIO(); // 論理解像度に固定する。
-	IO.DisplaySize = ImVec2( static_cast<float32>( Settings.Width ), static_cast<float32>( Settings.Height ) );
 	IO.DeltaTime = DeltaTime;
 	IO.ConfigFlags = Settings.bShowMouseCursor ? IO.ConfigFlags & ~ImGuiConfigFlags_NoMouseCursorChange : IO.ConfigFlags | ImGuiConfigFlags_NoMouseCursorChange;
-	// ウィンドウ倍率・枠なし表示でも、編集画面の入力を論理解像度へそろえる。
-	POINT Cursor = {}; // OSの現在位置。
-	RECT Client = {}; // 実際に表示する領域。
-	if ( GetCursorPos( &Cursor ) && ScreenToClient( static_cast<HWND>( Window ), &Cursor ) && GetClientRect( static_cast<HWND>( Window ), &Client ) && Client.right > 0 && Client.bottom > 0 )
-	{
-		IO.AddMousePosEvent( static_cast<float32>( Cursor.x ) * Settings.Width / Client.right, static_cast<float32>( Cursor.y ) * Settings.Height / Client.bottom );
-	}
 	ImGui::NewFrame();
 	bInFrame = true;
 	return true;
@@ -225,6 +218,11 @@ void CDX12PlatformSubsystem::EndFrame()
 	{
 		LOG( LogDX12, Error, "DX12 present failed" );
 		bExit = true;
+	}
+	if ( !bExit && ( ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable ) )
+	{
+		ImGui::UpdatePlatformWindows();
+		Viewports.Render( Settings.ImGuiViewportMaxFPS, Settings.ImGuiViewportMaxPresentsPerFrame );
 	}
 	bInFrame = false;
 	++FrameCount;
@@ -299,7 +297,7 @@ void CDX12PlatformSubsystem::RecordClear( FColor32 Color )
 {
 	if ( bInFrame )
 	{
-		Device->RecordClear( *ImGui::GetBackgroundDrawList(), IM_COL32( Color.r, Color.g, Color.b, Color.a ) );
+		Device->RecordClear( *ImGui::GetBackgroundDrawList( ImGui::GetMainViewport() ), IM_COL32( Color.r, Color.g, Color.b, Color.a ) );
 	}
 }
 

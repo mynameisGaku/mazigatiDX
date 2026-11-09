@@ -21,11 +21,17 @@ public:
 	FDX12Device() = default;
 	FDX12Device( const FDX12Device& ) = delete;
 	FDX12Device& operator=( const FDX12Device& ) = delete;
-	// 途中の初期化失敗でも所有した資源を解放する。
+	// GPU完了またはデバイス喪失まで保持して破棄する。停止しないGPUでは待機を続ける。
 	~FDX12Device();
 	// Windowへ表示するデバイスを作る。WARP指定はGPUなしの確認用。
 	bool Initialize( HWND Window, int32 Width, int32 Height, bool bWarp );
-	// 使用中のGPU処理が終わるまで待って、すべて解放する。
+	// 既存のDIRECTキューとそのデバイスを共有してWindowへ表示する。参照は完了まで保持する。
+	// 終了中は呼出側も新しい命令を提出しない。無効な窓・寸法・種類・二重初期化ではfalse。
+	bool InitializeOnQueue( HWND Window, int32 Width, int32 Height, ID3D12CommandQueue* InQueue );
+	// 新しい利用を止め、最大60000msの範囲で終了を試す。タイムアウト・待機失敗では全資源を保持してfalse。
+	// falseの後もWaitと終了の再試行は可能。デバイス喪失またはGPU完了後だけ解放してtrue。
+	bool TryShutdown( uint32 TimeoutMs = 10000 );
+	// 使用中のGPU処理が終わるか、デバイスが失われるまで待って解放する。タイムアウトで早期解放しない。
 	void Shutdown();
 	// 前フレームを待ち、記録を開始する。失敗時はfalse。
 	bool BeginFrame();
@@ -43,9 +49,11 @@ public:
 	IComputePipelineResources* GetComputePipelineResources();
 	// 同じ描画キューへcomputeを提出する窓口を貸す。
 	IComputeQueue* GetComputeQueue();
-	// GPU完了を待つ。デバイス喪失時はfalse。
-	bool Wait();
+	// 呼出前に提出したGPU処理を最大60000msまで待つ。0は待たず、失敗・喪失・タイムアウトはfalse。
+	bool Wait( uint32 TimeoutMs = 10000 );
 private:
+	// GPU完了またはデバイス喪失を確認してから資源とUI接続を解放する。
+	void ReleaseAfterGPUStopped();
 	// GPUの記録中に画面を消す。
 	static void ClearCallback( const ImDrawList*, const ImDrawCmd* Command );
 	// 消去命令の所有コピー。実行までGPU所有者を保持する。
@@ -73,8 +81,11 @@ private:
 	FDX12GeometryRenderer* Geometry = nullptr; // 所有する基本3Dパイプライン。
 	HANDLE FenceEvent = nullptr; // CPUが完了を待つイベント。
 	UINT64 FenceValue = 0; // 次の完了番号。
+	UINT64 NotifiedValue = 0; // まだ到達していないイベント登録値。同時に一つだけ登録する。
 	UINT BufferIndex = 0; // 今描く画面。
 	UINT RtvStride = 0; // 画面記述子の幅。
 	D3D12_CPU_DESCRIPTOR_HANDLE CurrentRtv = {}; // 今描く画面の記述子。
 	bool bRecording = false; // 記録中の印。
+	bool bInitialized = false; // 初期化が最後まで成功した印。
+	bool bClosing = false; // 終了開始後は新しい描画と窓口取得を禁止する。
 };

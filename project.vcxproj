@@ -175,10 +175,13 @@
     <ClCompile Include="Source\SelfTest\ComputeContractMain.cpp" Condition="Exists('Source\SelfTest\ComputeContractMain.cpp')" />
     <ClCompile Include="Source\SelfTest\ComputePlatformSelfTest.cpp" Condition="Exists('Source\SelfTest\ComputePlatformSelfTest.cpp')" />
     <ClCompile Include="Source\SelfTest\ConsoleSelfTest.cpp" Condition="Exists('Source\SelfTest\ConsoleSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\DeviceLifecycleMain.cpp" Condition="Exists('Source\SelfTest\DeviceLifecycleMain.cpp')" />
     <ClCompile Include="Source\SelfTest\EcsSelfTestScene.cpp" Condition="Exists('Source\SelfTest\EcsSelfTestScene.cpp')" />
     <ClCompile Include="Source\SelfTest\RenderBufferContractMain.cpp" Condition="Exists('Source\SelfTest\RenderBufferContractMain.cpp')" />
     <ClCompile Include="Source\SelfTest\RenderBufferPlatformSelfTest.cpp" Condition="Exists('Source\SelfTest\RenderBufferPlatformSelfTest.cpp')" />
     <ClCompile Include="Source\SelfTest\SelfTestEntry.cpp" Condition="Exists('Source\SelfTest\SelfTestEntry.cpp')" />
+    <ClCompile Include="Source\SelfTest\ViewportContractMain.cpp" Condition="Exists('Source\SelfTest\ViewportContractMain.cpp')" />
+    <ClCompile Include="Source\SelfTest\ViewportPlatformSelfTest.cpp" Condition="Exists('Source\SelfTest\ViewportPlatformSelfTest.cpp')" />
     <ClCompile Include="Source\SelfTest\WorldEditorSelfTestInput.cpp" Condition="Exists('Source\SelfTest\WorldEditorSelfTestInput.cpp')" />
     <ClCompile Include="Source\SelfTest\WorldEditorSelfTestMath.cpp" Condition="Exists('Source\SelfTest\WorldEditorSelfTestMath.cpp')" />
     <ClCompile Include="Source\SelfTest\WorldEditorSelfTestReal.cpp" Condition="Exists('Source\SelfTest\WorldEditorSelfTestReal.cpp')" />

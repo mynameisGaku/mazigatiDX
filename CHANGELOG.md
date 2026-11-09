@@ -5,6 +5,7 @@
 ## [未リリース]
 
 ### 追加
+- DX12のImGuiマルチビューポート。公式の外部窓を接続し、DxLibの表示順・更新頻度の制限を共通化。主画面の論理描画・クリップと実画素のUI座標を合わせ、GPU待機の完了再確認と終了失敗時の資源保持を追加。
 - RAWバッファの用途とIComputePipelineResources／IComputeQueue。DX12のCS5.0／5.1、非同期提出・完了照会・期限付き待機と提出後の資源保持を接続し、CPU参照／既定GPU／WARP・Debug／Releaseの検査を追加。描画との資源共有とDXC／SM6は未接続。
 - 初期バイト列を所有するIRenderBufferResourcesと型付きのFBufferResourceHandle。DX12の同期転送・readback・登録解除後の回収を実装し、CPU参照／既定GPU／WARPの契約検査を追加。
 - codec・UIに依存しない画像資源の窓口IRenderTextureResourcesと、アセット番号の共通登録FTextureAssetStore。DX12の画像・転送・遅延解放、記述子のpool、ImGui描画の接続を責務ごとのクラスへ分離。

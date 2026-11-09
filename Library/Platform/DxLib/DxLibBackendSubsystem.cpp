@@ -146,6 +146,7 @@ void CDxLibBackendSubsystem::Shutdown()
 	}
 	FrameCaptureSink = nullptr;
 	DxLib_End();
+	Viewports.Reset();
 	bInitialized = false;
 	PendingWindowMode.Reset();
 
@@ -400,75 +401,7 @@ void CDxLibBackendSubsystem::EndFrame()
 
 void CDxLibBackendSubsystem::RenderImGuiViewports()
 {
-	// ImGui::RenderPlatformWindowsDefault と同じ手順を、表示する外部ウィンドウを選んだ上で行う
-	ImGuiPlatformIO& PlatformIO = ImGui::GetPlatformIO();
-	const int64 Now = GetNowHiPerformanceCount();
-	const int64 MinInterval = Settings.ImGuiViewportMaxFPS > 0 ? 1000000 / Settings.ImGuiViewportMaxFPS : 0;
-
-	struct FCandidate
-	{
-		ImGuiViewport* Viewport = nullptr;
-		int64 LastPresentTime = 0;
-	};
-	TArray<FCandidate> Candidates;
-	TSet<uint32> AliveIds;
-
-	// index 0 はメインウィンドウ（アプリ側で描画済み）
-	for ( int32 i = 1; i < PlatformIO.Viewports.Size; ++i )
-	{
-		ImGuiViewport* Viewport = PlatformIO.Viewports[i];
-		AliveIds.Add( Viewport->ID );
-		if ( Viewport->Flags & ImGuiViewportFlags_IsMinimized )
-		{
-			continue;
-		}
-
-		// 初めて表示するウィンドウは時刻 0（= 一番古い）として最優先で表示する
-		const int64* Last = ViewportLastPresentTime.Find( Viewport->ID );
-		const int64 LastPresentTime = Last ? *Last : 0;
-		if ( Last == nullptr || Now - LastPresentTime >= MinInterval )
-		{
-			Candidates.Add( { Viewport, LastPresentTime } );
-		}
-	}
-
-	// 一番長く更新していないウィンドウから表示する（回数に上限があっても全ウィンドウが順番に更新される）
-	Candidates.StableSort( []( const FCandidate& A, const FCandidate& B ) { return A.LastPresentTime < B.LastPresentTime; } );
-	const int32 MaxPresents = Settings.ImGuiViewportMaxPresentsPerFrame;
-	if ( MaxPresents > 0 && Candidates.Num() > MaxPresents )
-	{
-		Candidates.RemoveAt( MaxPresents, Candidates.Num() - MaxPresents );
-	}
-
-	for ( const FCandidate& Candidate : Candidates )
-	{
-		FProfileScope Scope( "Platform", "ImGui", "Viewport.Render", Candidate.Viewport->ID );
-		if ( PlatformIO.Platform_RenderWindow )
-		{
-			PlatformIO.Platform_RenderWindow( Candidate.Viewport, nullptr );
-		}
-		if ( PlatformIO.Renderer_RenderWindow )
-		{
-			PlatformIO.Renderer_RenderWindow( Candidate.Viewport, nullptr );
-		}
-	}
-	for ( const FCandidate& Candidate : Candidates )
-	{
-		// 環境によっては 1 回の Present が垂直同期 1 回分かかる。どのウィンドウが何 ms かかったかをここで見る
-		FProfileScope Scope( "Platform", "ImGui", "Viewport.Present", Candidate.Viewport->ID );
-		if ( PlatformIO.Platform_SwapBuffers )
-		{
-			PlatformIO.Platform_SwapBuffers( Candidate.Viewport, nullptr );
-		}
-		if ( PlatformIO.Renderer_SwapBuffers )
-		{
-			PlatformIO.Renderer_SwapBuffers( Candidate.Viewport, nullptr );
-		}
-		ViewportLastPresentTime.Add( Candidate.Viewport->ID, Now );
-	}
-
-	// 閉じられたウィンドウの記録を消す
-	ViewportLastPresentTime.RemoveAll( [&AliveIds]( uint32 Id, int64 ) { return !AliveIds.Contains( Id ); } );
+	Viewports.Render( Settings.ImGuiViewportMaxFPS, Settings.ImGuiViewportMaxPresentsPerFrame );
 }
 
 void CDxLibBackendSubsystem::UpdateTime()

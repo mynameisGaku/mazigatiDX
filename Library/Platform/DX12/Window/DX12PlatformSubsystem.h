@@ -9,6 +9,7 @@
 #include "Library/Core/Interfaces/Render/IComputeQueue.h"
 #include "Library/Core/Interfaces/Platform/INativeWindow.h"
 #include "Library/Platform/ImGui/Render/ImGuiCanvas2D.h"
+#include "Library/Platform/ImGui/Render/ImGuiViewportScheduler.h"
 
 class FDX12Device;
 
@@ -102,6 +103,7 @@ public:
 	void AddWheel( float32 X, float32 Y );
 private:
 	FImGuiCanvas2D Canvas; // API共通の2D図形生成。
+	FImGuiViewportScheduler Viewports; // 外部窓の更新頻度と表示順。
 	FWindowSettings Settings; // 起動設定と現在の表示設定。
 	FDX12Device* Device = nullptr; // 所有するGPU。Deinitializeで破棄する。
 	void* Window = nullptr; // 所有するHWND。公開ヘッダーにWindowsを出さない。

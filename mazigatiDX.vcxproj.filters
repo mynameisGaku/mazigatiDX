@@ -1153,6 +1153,9 @@
     <ClCompile Include="Library\Platform\ImGui\Render\ImGuiCanvas2D.cpp">
       <Filter>Library\Platform\ImGui\Render</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\ImGui\Render\ImGuiViewportScheduler.cpp">
+      <Filter>Library\Platform\ImGui\Render</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\Null\NullAssetBackendSubsystem.cpp">
       <Filter>Library\Platform\Null</Filter>
     </ClCompile>
@@ -3430,6 +3433,9 @@
       <Filter>Library\Platform\DxLib\Window</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\ImGui\Render\ImGuiCanvas2D.h">
+      <Filter>Library\Platform\ImGui\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\ImGui\Render\ImGuiViewportScheduler.h">
       <Filter>Library\Platform\ImGui\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\Null\NullAssetBackendSubsystem.h">

@@ -1,0 +1,66 @@
+# DX12のImGuiマルチビューポート
+
+2026-11-10（日本時間）。ImGuiのウィンドウを主画面から切り離し、別のOSウィンドウとして表示できます。同梱の公式Win32／DX12実装を接続し、VendorModulesのソースは変更していません。
+
+## 設定
+
+既存のFWindowSettingsのbEnableImGuiとbImGuiViewportsがtrueなら有効です。どちらも既定はtrueです。Dockingの設定はbImGuiDockingで別に選べます。ウィンドウをドラッグして主画面の外へ移せます。外部窓を閉じても主画面の終了要求にはしません。
+
+|設定|既定|意味|
+|---|---:|---|
+|ImGuiViewportMaxFPS|30|外部窓一枚あたりの更新回数上限。0以下なら制限なし|
+|ImGuiViewportMaxPresentsPerFrame|1|一フレームに表示する外部窓の枚数上限。0以下なら制限なし|
+
+DxLibにあった更新順・頻度制限をFImGuiViewportSchedulerへ移し、DX12からも使います。主画面を候補から除き、最小化した窓を飛ばし、表示時刻の古い窓から順番に更新します。閉じた窓の記録は除去し、文脈の終了時には全記録を戻します。新しいSubsystemは追加していません。
+
+## 描画と座標
+
+CDX12PlatformSubsystemは初期化時にViewportsEnableを設定します。主画面を提出した後、UpdatePlatformWindowsで外部窓の作成・移動・リサイズ・破棄を処理し、共通の更新順に従って公式の描画・表示コールバックを呼びます。
+
+外部窓のswap chain、RTV、命令列、フレーム別の記録領域とImGui頂点領域は、同梱の公式DX12実装が所有します。主画面・外部窓・画像転送・computeは同じDIRECTキューを使います。次のフレームの資源回収前には、そのキューへすでに提出した外部窓の処理も待ちます。共有画像は既存のFDX12DescriptorPoolとFDX12TextureStoreのままで、別の画像番号やUI専用の複製を作りません。
+
+マルチビューポートではImGuiの座標がデスクトップ上の座標になります。Win32実装から届く実画素の表示寸法とマウス位置を使い、主画面だけを論理寸法へ上書きする処理を外しました。FImGuiCanvas2Dはゲームの論理座標を主画面の位置・表示寸法へ変換し、クリップも同じ変換を使います。3Dと消去のコールバックも主画面の背景描画へ明示して記録します。
+
+主画面のGPU描画先は従来どおり起動時の論理解像度に固定します。ImGuiの主画面のFramebufferScaleで実画素から描画先へ合わせ、表示先へ拡大します。これにより、主画面の移動・拡大や枠なし表示でもゲーム描画の位置を保ち、編集UIは外部窓と同じ実画素の座標系で操作できます。排他Fullscreenやゲーム側のモニター情報APIを追加した意味ではありません。
+
+## GPU待機と終了
+
+FDX12Device::Waitはイベントが通知されたことだけで成功にせず、今回の完了番号とデバイスの状態を再確認します。過去の短い待機の通知で起きた場合は残り時間だけ待ち、同時に未完了のイベント登録を一つに抑えます。タイムアウト後の再待機が可能です。
+
+TryShutdownは新しいフレームと窓口取得を止めて終了を試します。タイムアウトや待機失敗では、GPU資源・提出・UI接続を保持してfalseを返します。GPU完了またはデバイス喪失を確認してから、ImGuiの描画接続と外部窓、ゲーム資源、キューとデバイスの順に戻します。呼出側は終了開始後に借用した窓口や共有キューへ新しい仕事を提出しない契約です。
+
+最終的なShutdownと破棄は、待機の失敗を無視して資源を早く戻す処理をやめました。GPUが停止も完了もしない場合は保持して待ち続けます。終了時間を制限したい所有者はTryShutdownを使い、文脈・窓・GPU所有者を残して後から再試行します。初期化前・二重終了・再初期化にも対応します。InitializeOnQueueはAPI固有層だけの共有キュー接続で、通常初期化も同じ資源作成処理を使います。
+
+## 検査
+
+検査は別リポジトリframework-dx12-selftestsで管理します。製品を対応する構成でビルドした後に実行します。
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File Source\SelfTest\RunDX12WindowTests.ps1 -FrameworkRoot (Get-Location).Path -Configuration Debug -Platform
+powershell -NoProfile -ExecutionPolicy Bypass -File Source\SelfTest\RunDX12WindowTests.ps1 -FrameworkRoot (Get-Location).Path -Configuration Release -Platform
+```
+
+独立した検査は製品の静的ライブラリを使い、SDKデバッグ層が利用できる場合は意図しない警告・エラーを失敗にします。専用プロセスで既定GPUとWARPを分け、二枚の実ウィンドウの生成、共有画像、移動・リサイズ、最小化・復帰、閉じ直し、更新順・枚数・頻度の制限、終了時の破棄を検査します。有効・無効の起動を別々に確認します。
+
+ゲームの緑の矩形を主画面の論理座標に描き、主画面の移動・拡大後も実際の表示画素が緑であることを確認します。外部窓にも独立して作った2×2のゲーム画像を表示し、窓だけを取得したBMPの赤・緑の画素と見た目を確認します。出力はSaved/DX12Windows/<構成>/main-<GPU>.bmpとviewport-<GPU>.bmpです。
+
+終了検査はGPUキューをCPU側のfenceで意図的に待たせます。短い待機・0ms・古いイベントの後の再待機、終了失敗時の資源とUIの保持、終了中の新しいフレームの拒否、再試行・再初期化・破棄を確認します。喪失検査は専用プロセスのデバイスにRemoveDeviceを明示し、その通知だけを診断の例外にします。物理GPUの障害やOS全体のデバイスリセットを起こす検査ではありません（[Microsoftの説明](https://learn.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-id3d12device5-removedevice)）。
+
+|検査|Debug|Release|
+|---|---|---|
+|viewport有効（既定GPU／WARP）|各153条件、失敗0|各153条件、失敗0|
+|viewport無効（既定GPU／WARP）|各99条件、失敗0|各99条件、失敗0|
+|終了の通常経路（既定GPU／WARP）|各23条件、失敗0|各23条件、失敗0|
+|明示した喪失（既定GPU／WARP）|各13条件、失敗0|各13条件、失敗0|
+|SDKデバッグ層|有効、意図しない警告・エラー0|同じ結果|
+|実アプリのDX12／WARP／DxLib|各45フレーム、分離・閉じる・再作成成功|同じ結果|
+
+両構成でソリューションの4 projectが警告・エラー0でビルドされ、その後のRunAllChecks.ps1 -SkipBuild -Quickも16項目すべて成功しました。書式・書式検査自体・Clean.bat・台帳の整合、既存ecs／assets／worldのワーカー数0／1／4／15、バッファとcomputeの契約検査を含みます。Canvas2D／Geometry3D／StaticModelも両構成の既定GPU／WARPで各120フレーム、合計12起動が成功しました。sample／template検査一式や配布物のクリーンビルド・性能測定の完了とは区別します。
+
+最初のReleaseリンクではMSVCがLNK1103（デバッグ情報の破損）で停止しました。検証用コピーのproject／Samples／Editorのiobj・ipdbを退避し、同じ最適化設定で作り直すと成功しました。その後の増分ビルドも成功しています。ソースや最適化設定による回避は追加せず、原因は断定しません。失敗・再作成・最終ビルドと回帰結果のログはSaved/R1Shutdown/へ残しています。
+
+対応する検査コミットは5c6bca9f8d9c52c5f4d150d7885945fe00808bef（ローカル）です。検証はframework-dx12-verifyで行い、開発用の中間ファイルを共有していません。互換台帳は455項目のまま、画像共有の証拠を追記し、Verifiedへの昇格はしていません。
+
+## 残る確認
+
+複数DPIの実モニター間をドラッグする手動確認、複数ベンダー、GPU喪失中に外部窓の作成・リサイズ・破棄が同時に進む場合、表示先ごとの失敗回復や上限能力は包括的には確認していません。公式DX12実装の内部には無期限の待機と失敗時のassertがあるため、外部窓を含めた障害回復全体の完了とは扱いません。今回の停止確認の修正も、全サービスのGPU喪失復旧やR1全体の完了を意味しません。

@@ -2,6 +2,7 @@
 #include "Library/Core/Types/CompilerMacros.h"
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
 #include "Library/Core/Collection/Map.h"
+#include "Library/Platform/ImGui/Render/ImGuiViewportScheduler.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Result.h"
 #include "Library/Framework/Subsystem/AppSubsystem.h"
@@ -101,7 +102,7 @@ private:
 	bool bInFrame       = false;
 	bool bExitRequested = false;
 
-	TMap<uint32, int64> ViewportLastPresentTime;  // key: ImGuiViewport::ID, value: 最後に表示した時刻 (マイクロ秒)
+	FImGuiViewportScheduler Viewports; // 外部窓の更新頻度と表示順。
 
 	// 起動引数 --screenshot=パス.png [--screenshot-frame=N（既定 90）] [--screenshot-exit]: N フレーム目の画面（ImGui も含む）を保存する。
 	// 画面の見た目の確認（スクリーンショットの撮影）用。--screenshot-exit なら、保存したあと終了する
