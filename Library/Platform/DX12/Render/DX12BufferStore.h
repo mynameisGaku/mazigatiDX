@@ -5,6 +5,7 @@
 #include "Library/Platform/System/WindowsInclude.h"
 #include <d3d12.h>
 #include <wrl/client.h>
+#include "DX12BufferBinding.h"
 
 // GPU上のバイト列・転送領域・完了待ちと解放を所有する。画像・記述子・ImGuiは扱わない。
 class FDX12BufferStore : public IRenderBufferResources
@@ -23,22 +24,27 @@ public:
 	// 同じキューの完了またはデバイス喪失後に全資源を戻す。以後は再初期化が必要。
 	void ResetAfterGPUIdle();
 	// 初期バイト列を既定のGPUメモリへ転送する。失敗時は番号を公開しない。
-	FBufferResourceHandle CreateBuffer( TArrayView<const uint8> Bytes ) override;
+	FBufferResourceHandle CreateBuffer( TArrayView<const uint8> Bytes, ERenderBufferShaderAccess Access = ERenderBufferShaderAccess::None ) override;
 	// 番号だけを無効にし、実体の解放をGPU完了後へ延期する。
 	void ReleaseBuffer( FBufferResourceHandle Buffer ) override;
 	// 有効な資源の大きさを返す。失敗時はOutSizeを保つ。
 	bool GetBufferSize( FBufferResourceHandle Buffer, uint64& OutSize ) const override;
 	// 別のreadback領域へコピーし、完了後だけOutを置き換える。
 	bool ReadBuffer( FBufferResourceHandle Buffer, uint64 Offset, int32 NumBytes, TArray<uint8>& Out ) override;
+	// 同じ提出先から使用できるかを確認する。異なるキューでの状態管理を混在させない。
+	bool UsesDeviceAndQueue( ID3D12Device* InDevice, ID3D12CommandQueue* InQueue ) const;
+	// 用途が合う有効な資源を、提出完了まで保持できる参照として渡す。失敗時はOutを保つ。
+	bool AcquireComputeBuffer( FBufferResourceHandle Buffer, ERenderBufferShaderAccess Access, FDX12BufferBinding& Out ) const;
 private:
 	// COM参照を通常の構造体へ包み、コンテナの処理とoperator&を衝突させない。
 	struct FBufferRecord
 	{
 		Microsoft::WRL::ComPtr<ID3D12Resource> Resource; // GPUが読むバッファ。
 		uint64 Size = 0; // 実際のデータのバイト数。
+		ERenderBufferShaderAccess Access = ERenderBufferShaderAccess::None; // 作成時に固定したシェーダーの用途。
 	};
 	// 指定した置き場と初期状態でバッファを作る。失敗時はOutを保つ。
-	bool CreateResource( uint64 Size, D3D12_HEAP_TYPE HeapType, D3D12_RESOURCE_STATES State, Microsoft::WRL::ComPtr<ID3D12Resource>& Out );
+	bool CreateResource( uint64 Size, D3D12_HEAP_TYPE HeapType, D3D12_RESOURCE_STATES State, Microsoft::WRL::ComPtr<ID3D12Resource>& Out, D3D12_RESOURCE_FLAGS Flags = D3D12_RESOURCE_FLAG_NONE );
 	// 前の提出が終わっている記録領域を開く。失敗後は再初期化まで提出しない。
 	bool BeginCopy();
 	// 記録を閉じて提出し、完了を待つ。失敗時もSourceとTargetを保持する。

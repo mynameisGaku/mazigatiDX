@@ -104,4 +104,4 @@ MV1形式のDX12互換はv1.0.0の対象外です。調査結果は上のモデ�
 
 ## バッファ資源の初期契約
 
-[IRenderBufferResourcesの4操作](R1_BUFFER_RESOURCES.md) とDX12の同期転送・readback・遅延回収を追加しました。CPU参照との契約照合、既定GPU／WARP、SDK診断を検査へ接続します。画像と同じキューの完了条件へ接続するR1の一部であり、compute・SRV／UAV・非同期の提出と完了番号・シーンの永続メッシュは未完成です。
+[IRenderBufferResourcesの4操作](R1_BUFFER_RESOURCES.md) とDX12の同期転送・readback・遅延回収を追加しました。続いて明示した用途とRAWのSRV／UAV、[computeの非同期提出・完了番号・期限付き待機](R1_COMPUTE.md) を接続し、CPU参照・既定GPU／WARP・SDK診断で検査しました。R1の一部であり、描画との資源共有・シーンの永続メッシュ・DXC／SM6・障害時の終了全体は未完成です。

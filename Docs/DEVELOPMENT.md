@@ -1053,4 +1053,8 @@ FImportOptions::MaxSkinInfluencesは取り込み後に残す影響数で、既�
 
 ## 共通GPUバッファの初期転送
 
-IRenderBufferResourcesの4操作で、初期データのGPU転送・サイズ照会・同期readback・登録解除に対応します。型付き番号とGPU資源の所有は画像・アセット・UIから独立です。上限、失敗時の出力保持と資源の寿命、既定GPU／WARPとCPU参照の検査、まだ接続していないcompute等は [バッファ資源の契約](R1_BUFFER_RESOURCES.md) を参照してください。
+IRenderBufferResourcesの4操作で、初期データのGPU転送・サイズ照会・同期readback・登録解除に対応します。型付き番号とGPU資源の所有は画像・アセット・UIから独立です。初期契約と上限は [バッファ資源の契約](R1_BUFFER_RESOURCES.md) を参照してください。
+
+## 共通バッファからのcompute提出
+
+CreateBufferに明示したRead／ReadWrite用途を持たせ、IComputePipelineResourcesでコンパイル済みCS5.0／5.1と配置を所有し、IComputeQueueから命令列を非同期に提出します。提出ごとに記録領域・記述子・実体参照を保持し、登録解除後も完了までは回収しません。用途・配置・番号の検査、遷移、完了番号と再待機、初期上限、CPU参照／Windows既定GPU／WARP・SDK診断の検査手順と制限は [computeの契約](R1_COMPUTE.md) に記録します。

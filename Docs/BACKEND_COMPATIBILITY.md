@@ -10,7 +10,7 @@
 
 |分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|
 |---|---:|---:|---:|---:|---:|---:|---:|
-|API|306|4|124|58|119|0|1|
+|API|311|4|124|58|124|0|1|
 |Draw|100|0|52|8|40|0|0|
 |Sample|33|30|0|3|0|0|0|
 |Editor|11|11|0|0|0|0|0|
@@ -48,6 +48,11 @@
 |[API.ICollisionLayers.ResetLayerCollision](../Library/Core/Interfaces/Physics/ICollisionLayers.h#L35)|Implemented|R9|既存の自己確認とDxLib／DX12／Nullの起動・呼出・通知・終了を比較|GPUを所有しない共通実装／callback契約。DX12構成の回帰検査は未完了||
 |[API.ICollisionLayers.SetLayerCollision](../Library/Core/Interfaces/Physics/ICollisionLayers.h#L26)|Implemented|R9|既存の自己確認とDxLib／DX12／Nullの起動・呼出・通知・終了を比較|GPUを所有しない共通実装／callback契約。DX12構成の回帰検査は未完了||
 |[API.ICollisionLayers.SetLayerCollisionMask](../Library/Core/Interfaces/Physics/ICollisionLayers.h#L31)|Implemented|R9|既存の自己確認とDxLib／DX12／Nullの起動・呼出・通知・終了を比較|GPUを所有しない共通実装／callback契約。DX12構成の回帰検査は未完了||
+|[API.IComputePipelineResources.CreateComputePipeline](../Library/Core/Interfaces/Render/IComputePipelineResources.h#L15)|Implemented|R1|CPU参照とDX12の共通契約、SM5/5.1、既定GPU/WARP、Debug/Release、SDK診断、全入力拒否・順序・番号解放・未完了寿命・再待機を確認|RAWバッファのSRV/UAVと同じDIRECTキューへの非同期提出・完了照会・期限付き待機。SM6/DXC、描画との資源共有と複数キューは未接続|Docs/R1_COMPUTE.md|
+|[API.IComputePipelineResources.ReleaseComputePipeline](../Library/Core/Interfaces/Render/IComputePipelineResources.h#L17)|Implemented|R1|CPU参照とDX12の共通契約、SM5/5.1、既定GPU/WARP、Debug/Release、SDK診断、全入力拒否・順序・番号解放・未完了寿命・再待機を確認|RAWバッファのSRV/UAVと同じDIRECTキューへの非同期提出・完了照会・期限付き待機。SM6/DXC、描画との資源共有と複数キューは未接続|Docs/R1_COMPUTE.md|
+|[API.IComputeQueue.GetComputeCompletion](../Library/Core/Interfaces/Render/IComputeQueue.h#L17)|Implemented|R1|CPU参照とDX12の共通契約、SM5/5.1、既定GPU/WARP、Debug/Release、SDK診断、全入力拒否・順序・番号解放・未完了寿命・再待機を確認|RAWバッファのSRV/UAVと同じDIRECTキューへの非同期提出・完了照会・期限付き待機。SM6/DXC、描画との資源共有と複数キューは未接続|Docs/R1_COMPUTE.md|
+|[API.IComputeQueue.SubmitCompute](../Library/Core/Interfaces/Render/IComputeQueue.h#L15)|Implemented|R1|CPU参照とDX12の共通契約、SM5/5.1、既定GPU/WARP、Debug/Release、SDK診断、全入力拒否・順序・番号解放・未完了寿命・再待機を確認|RAWバッファのSRV/UAVと同じDIRECTキューへの非同期提出・完了照会・期限付き待機。SM6/DXC、描画との資源共有と複数キューは未接続|Docs/R1_COMPUTE.md|
+|[API.IComputeQueue.WaitCompute](../Library/Core/Interfaces/Render/IComputeQueue.h#L20)|Implemented|R1|CPU参照とDX12の共通契約、SM5/5.1、既定GPU/WARP、Debug/Release、SDK診断、全入力拒否・順序・番号解放・未完了寿命・再待機を確認|RAWバッファのSRV/UAVと同じDIRECTキューへの非同期提出・完了照会・期限付き待機。SM6/DXC、描画との資源共有と複数キューは未接続|Docs/R1_COMPUTE.md|
 |[API.ICursorControl.IsCursorVisible](../Library/Core/Interfaces/Input/ICursorControl.h#L20)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
 |[API.ICursorControl.SetCursorPosition](../Library/Core/Interfaces/Input/ICursorControl.h#L23)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
 |[API.ICursorControl.SetCursorVisible](../Library/Core/Interfaces/Input/ICursorControl.h#L18)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
@@ -241,10 +246,10 @@
 |[API.IPropertyInspector.Int](../Library/Core/Interfaces/Inspector/IPropertyInspector.h#L27)|Implemented|R9|既存の自己確認とDxLib／DX12／Nullの起動・呼出・通知・終了を比較|GPUを所有しない共通実装／callback契約。DX12構成の回帰検査は未完了||
 |[API.IPropertyInspector.Text](../Library/Core/Interfaces/Inspector/IPropertyInspector.h#L23)|Implemented|R9|既存の自己確認とDxLib／DX12／Nullの起動・呼出・通知・終了を比較|GPUを所有しない共通実装／callback契約。DX12構成の回帰検査は未完了||
 |[API.IPropertyInspector.Vector3](../Library/Core/Interfaces/Inspector/IPropertyInspector.h#L29)|Implemented|R9|既存の自己確認とDxLib／DX12／Nullの起動・呼出・通知・終了を比較|GPUを所有しない共通実装／callback契約。DX12構成の回帰検査は未完了||
-|[API.IRenderBufferResources.CreateBuffer](../Library/Core/Interfaces/Render/IRenderBufferResources.h#L14)|Implemented|R1|CPU参照とDX12の共通契約、既定GPU/WARP、Debug/Release、SDK診断、範囲・所有・解放・待機失敗を確認|同期の初期転送・サイズ照会・readback・解放。描画/compute/SRV/UAV/更新/非同期提出は未接続|Docs/R1_BUFFER_RESOURCES.md|
-|[API.IRenderBufferResources.GetBufferSize](../Library/Core/Interfaces/Render/IRenderBufferResources.h#L18)|Implemented|R1|CPU参照とDX12の共通契約、既定GPU/WARP、Debug/Release、SDK診断、範囲・所有・解放・待機失敗を確認|同期の初期転送・サイズ照会・readback・解放。描画/compute/SRV/UAV/更新/非同期提出は未接続|Docs/R1_BUFFER_RESOURCES.md|
-|[API.IRenderBufferResources.ReadBuffer](../Library/Core/Interfaces/Render/IRenderBufferResources.h#L21)|Implemented|R1|CPU参照とDX12の共通契約、既定GPU/WARP、Debug/Release、SDK診断、範囲・所有・解放・待機失敗を確認|同期の初期転送・サイズ照会・readback・解放。描画/compute/SRV/UAV/更新/非同期提出は未接続|Docs/R1_BUFFER_RESOURCES.md|
-|[API.IRenderBufferResources.ReleaseBuffer](../Library/Core/Interfaces/Render/IRenderBufferResources.h#L16)|Implemented|R1|CPU参照とDX12の共通契約、既定GPU/WARP、Debug/Release、SDK診断、範囲・所有・解放・待機失敗を確認|同期の初期転送・サイズ照会・readback・解放。描画/compute/SRV/UAV/更新/非同期提出は未接続|Docs/R1_BUFFER_RESOURCES.md|
+|[API.IRenderBufferResources.CreateBuffer](../Library/Core/Interfaces/Render/IRenderBufferResources.h#L16)|Implemented|R1|CPU参照とDX12の共通契約、既定GPU/WARP、Debug/Release、SDK診断、範囲・所有・解放・待機失敗を確認|同期の初期転送と明示したRead/ReadWrite用途。RAWのSRV/UAVでcomputeへ貸し出す。既定Noneは従来の転送専用。描画・更新は未接続|Docs/R1_BUFFER_RESOURCES.md; Docs/R1_COMPUTE.md|
+|[API.IRenderBufferResources.GetBufferSize](../Library/Core/Interfaces/Render/IRenderBufferResources.h#L20)|Implemented|R1|CPU参照とDX12の共通契約、既定GPU/WARP、Debug/Release、SDK診断、範囲・所有・解放・待機失敗を確認|同期の初期転送・サイズ照会・readback・解放。描画/compute/SRV/UAV/更新/非同期提出は未接続|Docs/R1_BUFFER_RESOURCES.md|
+|[API.IRenderBufferResources.ReadBuffer](../Library/Core/Interfaces/Render/IRenderBufferResources.h#L23)|Implemented|R1|CPU参照とDX12の共通契約、既定GPU/WARP、Debug/Release、SDK診断、範囲・所有・解放・待機失敗を確認|同期の初期転送・サイズ照会・readback・解放。描画/compute/SRV/UAV/更新/非同期提出は未接続|Docs/R1_BUFFER_RESOURCES.md|
+|[API.IRenderBufferResources.ReleaseBuffer](../Library/Core/Interfaces/Render/IRenderBufferResources.h#L18)|Implemented|R1|CPU参照とDX12の共通契約、既定GPU/WARP、Debug/Release、SDK診断、範囲・所有・解放・待機失敗を確認|同期の初期転送・サイズ照会・readback・解放。描画/compute/SRV/UAV/更新/非同期提出は未接続|Docs/R1_BUFFER_RESOURCES.md|
 |[API.IRenderCanvas2D.Box](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L14)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
 |[API.IRenderCanvas2D.Circle](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L18)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
 |[API.IRenderCanvas2D.Image](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L26)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||

@@ -74,6 +74,7 @@
     <ClCompile Include="Library\Core\Log\LogSink.cpp" />
     <ClCompile Include="Library\Core\Log\LogVerbosity.cpp" />
     <ClCompile Include="Library\Core\Render\BufferResourceHandle.cpp" />
+    <ClCompile Include="Library\Core\Render\RenderResourceSerial.cpp" />
     <ClCompile Include="Library\Core\Thread\GameThread.cpp" />
     <ClCompile Include="Library\Core\Time\DateTime.cpp" />
     <ClCompile Include="Library\Core\Time\PlatformTime.cpp" />
@@ -410,6 +411,8 @@
     <ClCompile Include="Library\Platform\DX12\Asset\DX12AssetBackendSubsystem.cpp" />
     <ClCompile Include="Library\Platform\DX12\ImGui\DX12ImGuiRenderer.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\DX12BufferStore.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Render\DX12ComputePipelineStore.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Render\DX12ComputeQueue.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\DX12DescriptorPool.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\DX12Device.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\DX12DrawExecutorSubsystem.cpp" />
@@ -702,6 +705,8 @@
     <ClInclude Include="Library\Core\Interfaces\Platform\IPlatform.h" />
     <ClInclude Include="Library\Core\Interfaces\Platform\IWindowControl.h" />
     <ClInclude Include="Library\Core\Interfaces\Profiler\IProfiler.h" />
+    <ClInclude Include="Library\Core\Interfaces\Render\IComputePipelineResources.h" />
+    <ClInclude Include="Library\Core\Interfaces\Render\IComputeQueue.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IDrawExecutor.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IGeometryBufferSource.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IImage.h" />
@@ -733,12 +738,18 @@
     <ClInclude Include="Library\Core\Profiler\ProfilerScope.h" />
     <ClInclude Include="Library\Core\Profiler\ProfilerTypes.h" />
     <ClInclude Include="Library\Core\Render\BufferResourceHandle.h" />
+    <ClInclude Include="Library\Core\Render\ComputeBufferSlot.h" />
+    <ClInclude Include="Library\Core\Render\ComputeDispatch.h" />
+    <ClInclude Include="Library\Core\Render\ComputePipelineHandle.h" />
+    <ClInclude Include="Library\Core\Render\ComputeSubmission.h" />
     <ClInclude Include="Library\Core\Render\DrawSpan.h" />
     <ClInclude Include="Library\Core\Render\DrawVertex3D.h" />
     <ClInclude Include="Library\Core\Render\GeometryBufferView.h" />
     <ClInclude Include="Library\Core\Render\GeometryDrawState.h" />
     <ClInclude Include="Library\Core\Render\GeometryVertex.h" />
     <ClInclude Include="Library\Core\Render\OffscreenCaptureDesc.h" />
+    <ClInclude Include="Library\Core\Render\RenderBufferShaderAccess.h" />
+    <ClInclude Include="Library\Core\Render\RenderResourceSerial.h" />
     <ClInclude Include="Library\Core\Render\StaticModelDrawView.h" />
     <ClInclude Include="Library\Core\Render\TextureDrawView.h" />
     <ClInclude Include="Library\Core\Render\TextureResourceHandle.h" />
@@ -1166,7 +1177,11 @@
     <ClInclude Include="Library\Platform\DX12\DX12Log.h" />
     <ClInclude Include="Library\Platform\DX12\Asset\DX12AssetBackendSubsystem.h" />
     <ClInclude Include="Library\Platform\DX12\ImGui\DX12ImGuiRenderer.h" />
+    <ClInclude Include="Library\Platform\DX12\Render\DX12BufferBinding.h" />
     <ClInclude Include="Library\Platform\DX12\Render\DX12BufferStore.h" />
+    <ClInclude Include="Library\Platform\DX12\Render\DX12ComputePipelineBinding.h" />
+    <ClInclude Include="Library\Platform\DX12\Render\DX12ComputePipelineStore.h" />
+    <ClInclude Include="Library\Platform\DX12\Render\DX12ComputeQueue.h" />
     <ClInclude Include="Library\Platform\DX12\Render\DX12DescriptorPool.h" />
     <ClInclude Include="Library\Platform\DX12\Render\DX12Device.h" />
     <ClInclude Include="Library\Platform\DX12\Render\DX12DrawExecutorSubsystem.h" />

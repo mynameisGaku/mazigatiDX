@@ -22,6 +22,9 @@
     <ClCompile Include="Library\Core\Render\BufferResourceHandle.cpp">
       <Filter>Library\Core\Render</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Core\Render\RenderResourceSerial.cpp">
+      <Filter>Library\Core\Render</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Core\Thread\GameThread.cpp">
       <Filter>Library\Core\Thread</Filter>
     </ClCompile>
@@ -1030,6 +1033,12 @@
     <ClCompile Include="Library\Platform\DX12\Render\DX12BufferStore.cpp">
       <Filter>Library\Platform\DX12\Render</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\DX12ComputePipelineStore.cpp">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\DX12ComputeQueue.cpp">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Render\DX12DescriptorPool.cpp">
       <Filter>Library\Platform\DX12\Render</Filter>
     </ClCompile>
@@ -1902,6 +1911,12 @@
     <ClInclude Include="Library\Core\Interfaces\Profiler\IProfiler.h">
       <Filter>Library\Core\Interfaces\Profiler</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IComputePipelineResources.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IComputeQueue.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IDrawExecutor.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
@@ -1995,6 +2010,18 @@
     <ClInclude Include="Library\Core\Render\BufferResourceHandle.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Render\ComputeBufferSlot.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\ComputeDispatch.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\ComputePipelineHandle.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\ComputeSubmission.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Render\DrawSpan.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
@@ -2011,6 +2038,12 @@
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Render\OffscreenCaptureDesc.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\RenderBufferShaderAccess.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\RenderResourceSerial.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Render\StaticModelDrawView.h">
@@ -3294,7 +3327,19 @@
     <ClInclude Include="Library\Platform\DX12\ImGui\DX12ImGuiRenderer.h">
       <Filter>Library\Platform\DX12\ImGui</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\DX12BufferBinding.h">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Render\DX12BufferStore.h">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\DX12ComputePipelineBinding.h">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\DX12ComputePipelineStore.h">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\DX12ComputeQueue.h">
       <Filter>Library\Platform\DX12\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Render\DX12DescriptorPool.h">

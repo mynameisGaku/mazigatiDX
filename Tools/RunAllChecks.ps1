@@ -93,6 +93,7 @@ foreach ($configuration in $Configurations) {
         Invoke-Step "self test $suite $configuration" (Join-Path $selfTest 'RunSelfTests.ps1') @('-Suite', $suite, '-Configuration', $configuration) $Retries
     }
     Invoke-Step "render buffer contracts $configuration" (Join-Path $selfTest 'RunRenderBufferTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
+    Invoke-Step "compute contracts $configuration" (Join-Path $selfTest 'RunComputeTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
 }
 
 if (-not $Quick) {

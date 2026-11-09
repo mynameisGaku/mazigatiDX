@@ -2,6 +2,8 @@
 
 2026-11-09（日本時間）。R1の最初のバッファ資源の契約です。R0・R1全体の完了や、compute・永続GPUメッシュの完成とは区別します。
 
+2026-11-10追記: CreateBufferへRead／ReadWrite用途を追加し、RAWのSRV／UAVとcompute提出・完了番号を接続しました。以下は初期転送を追加した時点の記録です。現在の用途と非同期処理、検査結果、残る制限は [computeの契約](R1_COMPUTE.md) を参照してください。既定Noneの転送専用呼出しはそのまま利用できます。
+
 ## 今回の窓口
 
 `Library/Core/Interfaces/Render/IRenderBufferResources.h` の4操作を追加しました。

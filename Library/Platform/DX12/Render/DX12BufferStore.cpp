@@ -65,7 +65,7 @@ void FDX12BufferStore::ResetAfterGPUIdle()
 	}
 }
 
-bool FDX12BufferStore::CreateResource( uint64 Size, D3D12_HEAP_TYPE HeapType, D3D12_RESOURCE_STATES State, Microsoft::WRL::ComPtr<ID3D12Resource>& Out )
+bool FDX12BufferStore::CreateResource( uint64 Size, D3D12_HEAP_TYPE HeapType, D3D12_RESOURCE_STATES State, Microsoft::WRL::ComPtr<ID3D12Resource>& Out, D3D12_RESOURCE_FLAGS Flags )
 {
 	D3D12_HEAP_PROPERTIES Heap = {}; // GPU・upload・readbackのいずれかの置き場。
 	Heap.Type = HeapType;
@@ -74,6 +74,7 @@ bool FDX12BufferStore::CreateResource( uint64 Size, D3D12_HEAP_TYPE HeapType, D3
 	Desc.Width = Size;
 	Desc.Height = Desc.DepthOrArraySize = Desc.MipLevels = Desc.SampleDesc.Count = 1;
 	Desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	Desc.Flags = Flags;
 	Microsoft::WRL::ComPtr<ID3D12Resource> Created; // 成功するまで呼出側へ公開しない。
 	if ( FAILED( Device->CreateCommittedResource( &Heap, D3D12_HEAP_FLAG_NONE, &Desc, State, nullptr, IID_PPV_ARGS( &Created ) ) ) )
 	{
@@ -126,16 +127,17 @@ bool FDX12BufferStore::SubmitCopy( ID3D12Resource* Source, ID3D12Resource* Targe
 	return bHealthy;
 }
 
-FBufferResourceHandle FDX12BufferStore::CreateBuffer( TArrayView<const uint8> Bytes )
+FBufferResourceHandle FDX12BufferStore::CreateBuffer( TArrayView<const uint8> Bytes, ERenderBufferShaderAccess Access )
 {
-	if ( !bHealthy || !Bytes.GetData() || Bytes.Num() <= 0 || static_cast<uint64>( Bytes.Num() ) > MaxBufferBytes || Buffers.Num() + Retired.Num() >= MaxBuffers || static_cast<uint64>( Bytes.Num() ) > MaxResidentBytes - ResidentBytes )
+	if ( !bHealthy || !Bytes.GetData() || Bytes.Num() <= 0 || static_cast<uint64>( Bytes.Num() ) > MaxBufferBytes || Buffers.Num() + Retired.Num() >= MaxBuffers || static_cast<uint64>( Bytes.Num() ) > MaxResidentBytes - ResidentBytes || ( Access != ERenderBufferShaderAccess::None && Access != ERenderBufferShaderAccess::Read && Access != ERenderBufferShaderAccess::ReadWrite ) || ( Access != ERenderBufferShaderAccess::None && Bytes.Num() % 4 != 0 ) )
 	{
 		return FBufferResourceHandle();
 	}
 	FBufferRecord Created; // GPU転送が終わった資源だけを登録する。
 	Created.Size = static_cast<uint64>( Bytes.Num() );
+	Created.Access = Access;
 	Microsoft::WRL::ComPtr<ID3D12Resource> Upload; // 完了まで残すCPU書き込み用の領域。
-	if ( !CreateResource( Created.Size, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_COMMON, Created.Resource ) || !CreateResource( Created.Size, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ, Upload ) )
+	if ( !CreateResource( Created.Size, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_COMMON, Created.Resource, Access == ERenderBufferShaderAccess::ReadWrite ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE ) || !CreateResource( Created.Size, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ, Upload ) )
 	{
 		return FBufferResourceHandle();
 	}
@@ -194,6 +196,23 @@ bool FDX12BufferStore::GetBufferSize( FBufferResourceHandle Buffer, uint64& OutS
 		return false;
 	}
 	OutSize = Found->Size;
+	return true;
+}
+
+bool FDX12BufferStore::UsesDeviceAndQueue( ID3D12Device* InDevice, ID3D12CommandQueue* InQueue ) const
+{
+	return bHealthy && Device.Get() == InDevice && Queue.Get() == InQueue;
+}
+
+bool FDX12BufferStore::AcquireComputeBuffer( FBufferResourceHandle Buffer, ERenderBufferShaderAccess Access, FDX12BufferBinding& Out ) const
+{
+	const FBufferRecord* Found = Buffers.Find( Buffer.Value ); // 公開番号が残っている間だけ新しい提出を許す。
+	if ( !bHealthy || !Found || ( Access != ERenderBufferShaderAccess::Read && Access != ERenderBufferShaderAccess::ReadWrite ) || Found->Access == ERenderBufferShaderAccess::None || ( Access == ERenderBufferShaderAccess::ReadWrite && Found->Access != ERenderBufferShaderAccess::ReadWrite ) )
+	{
+		return false;
+	}
+	Out.Resource = Found->Resource;
+	Out.Size = Found->Size;
 	return true;
 }
 

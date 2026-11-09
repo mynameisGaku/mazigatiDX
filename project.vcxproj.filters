@@ -301,6 +301,12 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestUIWidgets.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
+    <ClCompile Include="Source\SelfTest\ComputeContractMain.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\ComputePlatformSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
     <ClCompile Include="Source\SelfTest\ConsoleSelfTest.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>

@@ -86,6 +86,10 @@ bool FDX12Device::Initialize( HWND Window, int32 Width, int32 Height, bool bWarp
 	{
 		return false;
 	}
+	if ( !ComputePipelines.Initialize( Device.Get() ) || !ComputeQueue.Initialize( Device.Get(), Queue.Get(), BufferResources, ComputePipelines ) )
+	{
+		return false;
+	}
 	Geometry = new FDX12GeometryRenderer();
 	if ( !Geometry->Initialize( Device.Get(), Width, Height ) )
 	{
@@ -134,6 +138,8 @@ void FDX12Device::Shutdown()
 	Commands.Reset();
 	Allocator.Reset();
 	SwapChain.Reset();
+	ComputeQueue.ResetAfterGPUIdle();
+	ComputePipelines.ResetAfterGPUIdle();
 	Textures.ResetAfterGPUIdle();
 	BufferResources.ResetAfterGPUIdle();
 	Descriptors.Reset();
@@ -156,6 +162,8 @@ bool FDX12Device::BeginFrame()
 	{
 		return false;
 	}
+	ComputeQueue.CollectAfterGPUIdle();
+	ComputePipelines.CollectAfterGPUIdle();
 	Textures.CollectAfterGPUIdle(); // 記録済みの描画が残らない時点でだけ旧版を戻す。
 	BufferResources.CollectAfterGPUIdle();
 	BufferIndex = SwapChain->GetCurrentBackBufferIndex();
@@ -241,4 +249,14 @@ IRenderTextureResources* FDX12Device::GetTextureResources()
 IRenderBufferResources* FDX12Device::GetBufferResources()
 {
 	return &BufferResources;
+}
+
+IComputePipelineResources* FDX12Device::GetComputePipelineResources()
+{
+	return &ComputePipelines;
+}
+
+IComputeQueue* FDX12Device::GetComputeQueue()
+{
+	return &ComputeQueue;
 }

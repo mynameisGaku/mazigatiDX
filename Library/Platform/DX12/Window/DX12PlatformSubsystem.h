@@ -5,13 +5,15 @@
 #include "Library/Core/Interfaces/Render/IRenderSurface.h"
 #include "Library/Core/Interfaces/Render/IRenderTextureResources.h"
 #include "Library/Core/Interfaces/Render/IRenderBufferResources.h"
+#include "Library/Core/Interfaces/Render/IComputePipelineResources.h"
+#include "Library/Core/Interfaces/Render/IComputeQueue.h"
 #include "Library/Core/Interfaces/Platform/INativeWindow.h"
 #include "Library/Platform/ImGui/Render/ImGuiCanvas2D.h"
 
 class FDX12Device;
 
 // Windowsの窓とフレーム進行を所有する。GPUの資源管理はFDX12Deviceへ委譲する。
-class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IRenderSurface, public IRenderTextureResources, public IRenderBufferResources, public INativeWindow
+class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IRenderSurface, public IRenderTextureResources, public IRenderBufferResources, public IComputePipelineResources, public IComputeQueue, public INativeWindow
 {
 public:
 	// 途中の初期化失敗時も資源を解放する。
@@ -77,13 +79,23 @@ public:
 	// 所有先から画像を借りる。失敗時はOutを保つ。
 	bool GetTextureResourceView( FTextureResourceHandle Texture, FTextureDrawView& Out ) const override;
 	// 初期バイト列のGPU転送を待ち、完成した資源だけを登録する。
-	FBufferResourceHandle CreateBuffer( TArrayView<const uint8> Bytes ) override;
+	FBufferResourceHandle CreateBuffer( TArrayView<const uint8> Bytes, ERenderBufferShaderAccess Access = ERenderBufferShaderAccess::None ) override;
 	// 番号を無効にし、同じキューの完了後に実体を解放する。
 	void ReleaseBuffer( FBufferResourceHandle Buffer ) override;
 	// 有効なバッファのバイト数を返す。失敗時はOutSizeを保つ。
 	bool GetBufferSize( FBufferResourceHandle Buffer, uint64& OutSize ) const override;
 	// バッファの範囲を同期で読み戻す。初期化前・不正な範囲・GPU失敗時はOutを保つ。
 	bool ReadBuffer( FBufferResourceHandle Buffer, uint64 Offset, int32 NumBytes, TArray<uint8>& Out ) override;
+	// バイナリとslot定義を検査してからプログラムを登録する。失敗時は無効値。
+	FComputePipelineHandle CreateComputePipeline( TArrayView<const uint8> Bytecode, TArrayView<const FComputeBufferSlot> Slots ) override;
+	// 番号を直ちに無効にし、提出済み処理が終わってから実体を解放する。
+	void ReleaseComputePipeline( FComputePipelineHandle Pipeline ) override;
+	// 全compute命令の検査後に、完了を待たず同じキューへ提出する。
+	FComputeSubmission SubmitCompute( TArrayView<const FComputeDispatch> Dispatches ) override;
+	// 有効な提出の完了状態を照会する。失敗時はOutCompletedを保つ。
+	bool GetComputeCompletion( FComputeSubmission Submission, bool& OutCompleted ) override;
+	// 有効な提出を指定した時間だけ待つ。タイムアウトしても参照を保持する。
+	bool WaitCompute( FComputeSubmission Submission, uint32 TimeoutMs ) override;
 	// 今フレームのホイールを返す。
 	void GetWheel( float32& X, float32& Y ) const override;
 	// OSのホイール通知を貯める。ウィンドウ手続きからのみ呼ぶ。

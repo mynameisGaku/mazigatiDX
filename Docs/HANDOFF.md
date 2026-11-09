@@ -10,6 +10,10 @@ Windows の全体ビルドで見つかった画面消去の定義漏れと警告
 
 R1の最小のバッファ所有・同期転送・readbackを追加しました。窓口、失敗時と回収の契約、自己検査の対応版、まだ未接続のcompute等は [バッファ資源の記録](R1_BUFFER_RESOURCES.md) を参照してください。互換台帳は450件で、Verifiedは増やしていません。
 
+## compute提出の作業（2026-11-10 追記）
+
+共通窓口からRAWバッファのcompute提出・完了照会・期限付き待機・readbackを接続しました。CS5.0／5.1、提出後の番号解除とGPU参照の保持、CPU参照／既定GPU／WARPとDebug／Releaseの検査は [computeの記録](R1_COMPUTE.md) を参照してください。互換台帳は455項目、Verifiedは0です。描画との資源共有、DXC／SM6、障害時の終了を含むR1全体は未完了です。
+
 ## 最初に読むもの
 
 1. [ROADMAP.md](ROADMAP.md): v1.0.0の必須範囲、R0〜R10の順序と完了条件。

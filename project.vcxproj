@@ -172,6 +172,8 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestUIScreens.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestUIScreens.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestUITextBox.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestUITextBox.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestUIWidgets.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestUIWidgets.cpp')" />
+    <ClCompile Include="Source\SelfTest\ComputeContractMain.cpp" Condition="Exists('Source\SelfTest\ComputeContractMain.cpp')" />
+    <ClCompile Include="Source\SelfTest\ComputePlatformSelfTest.cpp" Condition="Exists('Source\SelfTest\ComputePlatformSelfTest.cpp')" />
     <ClCompile Include="Source\SelfTest\ConsoleSelfTest.cpp" Condition="Exists('Source\SelfTest\ConsoleSelfTest.cpp')" />
     <ClCompile Include="Source\SelfTest\EcsSelfTestScene.cpp" Condition="Exists('Source\SelfTest\EcsSelfTestScene.cpp')" />
     <ClCompile Include="Source\SelfTest\RenderBufferContractMain.cpp" Condition="Exists('Source\SelfTest\RenderBufferContractMain.cpp')" />

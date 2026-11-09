@@ -406,9 +406,9 @@ bool CDX12PlatformSubsystem::GetTextureResourceView( FTextureResourceHandle Text
 	return bInitialized && Device && Device->GetTextureResources()->GetTextureResourceView( Texture, Out );
 }
 
-FBufferResourceHandle CDX12PlatformSubsystem::CreateBuffer( TArrayView<const uint8> Bytes )
+FBufferResourceHandle CDX12PlatformSubsystem::CreateBuffer( TArrayView<const uint8> Bytes, ERenderBufferShaderAccess Access )
 {
-	return bInitialized && Device ? Device->GetBufferResources()->CreateBuffer( Bytes ) : FBufferResourceHandle();
+	return bInitialized && Device ? Device->GetBufferResources()->CreateBuffer( Bytes, Access ) : FBufferResourceHandle();
 }
 
 void CDX12PlatformSubsystem::ReleaseBuffer( FBufferResourceHandle Buffer )
@@ -427,4 +427,32 @@ bool CDX12PlatformSubsystem::GetBufferSize( FBufferResourceHandle Buffer, uint64
 bool CDX12PlatformSubsystem::ReadBuffer( FBufferResourceHandle Buffer, uint64 Offset, int32 NumBytes, TArray<uint8>& Out )
 {
 	return bInitialized && Device && Device->GetBufferResources()->ReadBuffer( Buffer, Offset, NumBytes, Out );
+}
+
+FComputePipelineHandle CDX12PlatformSubsystem::CreateComputePipeline( TArrayView<const uint8> Bytecode, TArrayView<const FComputeBufferSlot> Slots )
+{
+	return bInitialized && Device ? Device->GetComputePipelineResources()->CreateComputePipeline( Bytecode, Slots ) : FComputePipelineHandle();
+}
+
+void CDX12PlatformSubsystem::ReleaseComputePipeline( FComputePipelineHandle Pipeline )
+{
+	if ( Device )
+	{
+		Device->GetComputePipelineResources()->ReleaseComputePipeline( Pipeline );
+	}
+}
+
+FComputeSubmission CDX12PlatformSubsystem::SubmitCompute( TArrayView<const FComputeDispatch> Dispatches )
+{
+	return bInitialized && Device ? Device->GetComputeQueue()->SubmitCompute( Dispatches ) : FComputeSubmission();
+}
+
+bool CDX12PlatformSubsystem::GetComputeCompletion( FComputeSubmission Submission, bool& OutCompleted )
+{
+	return bInitialized && Device && Device->GetComputeQueue()->GetComputeCompletion( Submission, OutCompleted );
+}
+
+bool CDX12PlatformSubsystem::WaitCompute( FComputeSubmission Submission, uint32 TimeoutMs )
+{
+	return bInitialized && Device && Device->GetComputeQueue()->WaitCompute( Submission, TimeoutMs );
 }
