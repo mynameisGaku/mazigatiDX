@@ -16,6 +16,12 @@
     <ClCompile Include="Library\Platform\Render\Geometry\GeometryCommandExecutor.cpp">
       <Filter>Library\Platform\Render\Geometry</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryQuadBuilder.cpp">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryShapeBuilder.cpp">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Asset\DX12AssetBackendSubsystem.cpp">
       <Filter>Library\Platform\DX12\Asset</Filter>
     </ClCompile>
@@ -1777,6 +1783,12 @@
       <Filter>Library\Platform\DX12\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\Render\Geometry\GeometryCommandExecutor.h">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryQuadBuilder.h">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryShapeBuilder.h">
       <Filter>Library\Platform\Render\Geometry</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Render\TextureDrawView.h">

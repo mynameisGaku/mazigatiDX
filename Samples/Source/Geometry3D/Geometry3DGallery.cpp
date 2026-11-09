@@ -69,6 +69,23 @@ void CGeometry3DGallery::Draw( FDrawContext& Draw )
 	Draw.WorldMatrix( FMatrix4x4::Translate( FVector3( 0, 2.5f, 0 ) ) );
 	Draw.PrimitiveIndexedBuffer3D( Vertices, Indices, EDrawPrimitive::Triangles, Texture );
 	Draw.WorldMatrix( FMatrix4x4() );
+	Draw.Sphere3D( FVector3( -3, 0.2f, 3 ), 1.0f, 24, FColor32( 220, 140, 40 ) );
+	Draw.Sphere3D( FVector3( -3, 0.2f, 3 ), 1.03f, 12, FColor32( 255, 255, 255 ), FColor32::Black, false );
+	Draw.Capsule3D( FVector3( 0, -0.6f, 3 ), FVector3( 0.8f, 1.4f, 3 ), 0.4f, 20, FColor32( 70, 210, 140 ) );
+	if ( Texture.IsValid() )
+	{
+		Draw.BillboardPivot3D( FVector3( -3, 2, 0 ), 1.4f, Texture, 0.5f, 1.0f, Time * 0.4f );
+		FDrawQuad3DData Quad; // Y軸を保った、半透明の市松模様。
+		Quad.Pos[0] = 3;
+		Quad.Pos[1] = 2;
+		Quad.Pos[2] = 3;
+		Quad.Width = 1.6f;
+		Quad.Height = 2;
+		Quad.Orient = static_cast<int32>( EDrawQuadOrient::CameraY );
+		Quad.Handle = Texture->GetHandle();
+		Quad.Color.A = 160;
+		Draw.Quad3D( Quad );
+	}
 	for ( int32 Index = -5; Index <= 5; ++Index )
 	{
 		const float32 Position = static_cast<float32>( Index ); // 地面の格子の位置。
@@ -76,5 +93,5 @@ void CGeometry3DGallery::Draw( FDrawContext& Draw )
 		Draw.Line3D( FVector3( -5, -1.2f, Position ), FVector3( 5, -1.2f, Position ), FColor32( 80, 80, 80 ) );
 	}
 	Draw.PopCamera();
-	Draw.Text( 20, 80, "Camera / transform / depth / textured mesh and buffers", FColor32( 255, 255, 255 ) );
+	Draw.Text( 20, 80, "Camera / depth / sphere / capsule / billboard / textured mesh and buffers", FColor32( 255, 255, 255 ) );
 }

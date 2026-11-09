@@ -1,5 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "GeometryCommandExecutor.h"
+#include "GeometryShapeBuilder.h"
+#include "GeometryQuadBuilder.h"
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Types/Numeric.h"
 
@@ -299,6 +301,164 @@ FGeometryCommandExecutor::EResult FGeometryCommandExecutor::Execute( const FDraw
 		}
 		return Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, Alpha, bAlphaBlend ) ? EResult::Executed : EResult::Rejected;
 	}
+	case EDrawCommand::Sphere3D:
+	{
+		if ( !View.CanRead<FDrawSphere3DData>() )
+		{
+			return EResult::Rejected;
+		}
+		const auto Data = View.Read<FDrawSphere3DData>(); // ローカルの球。
+		TArray<FDrawVertex3D> Vertices; // 面または緯線・経線。
+		const bool bFill = View.Has( FDrawFlag::Fill ); // 塗りつぶしを選ぶ。
+		if ( !FGeometryShapeBuilder::BuildSphere( FVector3( Data.Center[0], Data.Center[1], Data.Center[2] ), Data.Radius, Data.Div, bFill, FColor32( Data.Diffuse.R, Data.Diffuse.G, Data.Diffuse.B ), Vertices ) )
+		{
+			return EResult::Rejected;
+		}
+		return Vertices.IsEmpty() || Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, Alpha, bAlphaBlend ) ? EResult::Executed : EResult::Rejected;
+	}
+	case EDrawCommand::Capsule3D:
+	{
+		if ( !View.CanRead<FDrawCapsule3DData>() )
+		{
+			return EResult::Rejected;
+		}
+		const auto Data = View.Read<FDrawCapsule3DData>(); // 両端は半球の中心。
+		TArray<FDrawVertex3D> Vertices; // GPUによらない展開結果。
+		const bool bFill = View.Has( FDrawFlag::Fill ); // 塗りつぶしを選ぶ。
+		if ( !FGeometryShapeBuilder::BuildCapsule( FVector3( Data.P0[0], Data.P0[1], Data.P0[2] ), FVector3( Data.P1[0], Data.P1[1], Data.P1[2] ), Data.Radius, Data.Div, bFill, FColor32( Data.Diffuse.R, Data.Diffuse.G, Data.Diffuse.B ), Vertices ) )
+		{
+			return EResult::Rejected;
+		}
+		return Vertices.IsEmpty() || Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, Alpha, bAlphaBlend ) ? EResult::Executed : EResult::Rejected;
+	}
+	case EDrawCommand::Quad3D:
+	{
+		if ( !View.CanRead<FDrawQuad3DData>() )
+		{
+			return EResult::Rejected;
+		}
+		const auto Data = View.Read<FDrawQuad3DData>(); // 向きと基準点を持つ画像。
+		TArray<FDrawVertex3D> Vertices; // 表とUVを共通処理で作る。
+		return FGeometryQuadBuilder::Build( Data, Camera, Vertices ) && SubmitQuad( Vertices, Data.Handle, Bright, Alpha ) ? EResult::Executed : EResult::Rejected;
+	}
+	case EDrawCommand::Billboard3D:
+	case EDrawCommand::BillboardPivot3D:
+	case EDrawCommand::Sprite3D:
+	case EDrawCommand::SpriteStretch3D:
+	case EDrawCommand::SpritePivot3D:
+	{
+		FDrawQuad3DData Quad; // 大きさ・基準点の異なる命令を同じ四角形へそろえる。
+		bool bPixelSize = false, bPixelPivot = false; // 画素単位で受け取った項目。
+		if ( View.Type == EDrawCommand::Billboard3D )
+		{
+			if ( !View.CanRead<FDrawBillboard3DData>() )
+			{
+				return EResult::Rejected;
+			}
+			const auto Data = View.Read<FDrawBillboard3DData>(); // 中心を基準に横幅で指定する画像。
+			FMemory::Memcpy( Quad.Pos, Data.Pos, sizeof( Quad.Pos ) );
+			Quad.Width = Quad.Height = Data.Size;
+			Quad.Angle = Data.Angle;
+			Quad.Handle = Data.Handle;
+		}
+		else if ( View.Type == EDrawCommand::BillboardPivot3D )
+		{
+			if ( !View.CanRead<FDrawBillboardPivot3DData>() )
+			{
+				return EResult::Rejected;
+			}
+			const auto Data = View.Read<FDrawBillboardPivot3DData>(); // 0〜1を基準とする画像。
+			FMemory::Memcpy( Quad.Pos, Data.Pos, sizeof( Quad.Pos ) );
+			Quad.Width = Quad.Height = Data.Size;
+			Quad.PivotX = Data.PivotX;
+			Quad.PivotY = Data.PivotY;
+			Quad.Angle = Data.Angle;
+			Quad.Handle = Data.Handle;
+		}
+		else if ( View.Type == EDrawCommand::Sprite3D )
+		{
+			if ( !View.CanRead<FDrawSprite3DData>() )
+			{
+				return EResult::Rejected;
+			}
+			const auto Data = View.Read<FDrawSprite3DData>(); // 1画素あたりのワールド長。
+			FMemory::Memcpy( Quad.Pos, Data.Pos, sizeof( Quad.Pos ) );
+			Quad.Width = Quad.Height = Data.Scale;
+			Quad.Angle = Data.Angle;
+			Quad.Handle = Data.Handle;
+			bPixelSize = true;
+		}
+		else if ( View.Type == EDrawCommand::SpriteStretch3D )
+		{
+			if ( !View.CanRead<FDrawSpriteStretch3DData>() )
+			{
+				return EResult::Rejected;
+			}
+			const auto Data = View.Read<FDrawSpriteStretch3DData>(); // 横と縦で違う画素の大きさ。
+			FMemory::Memcpy( Quad.Pos, Data.Pos, sizeof( Quad.Pos ) );
+			Quad.Width = Data.ScaleX;
+			Quad.Height = Data.ScaleY;
+			Quad.Handle = Data.Handle;
+			bPixelSize = true;
+		}
+		else
+		{
+			if ( !View.CanRead<FDrawSpritePivot3DData>() )
+			{
+				return EResult::Rejected;
+			}
+			const auto Data = View.Read<FDrawSpritePivot3DData>(); // 画素単位の基準点と拡大率。
+			FMemory::Memcpy( Quad.Pos, Data.Pos, sizeof( Quad.Pos ) );
+			Quad.Width = Data.ScaleX;
+			Quad.Height = Data.ScaleY;
+			Quad.PivotX = Data.PivotX;
+			Quad.PivotY = Data.PivotY;
+			Quad.Angle = Data.Angle;
+			Quad.Handle = Data.Handle;
+			bPixelSize = bPixelPivot = true;
+		}
+		FTextureDrawView Image; // 縦横比と画素寸法だけを使い、GPUの型は見ない。
+		if ( Quad.Handle < 0 || !Textures || !Textures->GetTextureDrawView( Quad.Handle, Image ) || Image.Width <= 0 || Image.Height <= 0 || Image.Binding == 0 )
+		{
+			return EResult::Rejected;
+		}
+		if ( bPixelSize )
+		{
+			Quad.Width *= Image.Width;
+			Quad.Height *= Image.Height;
+		}
+		else
+		{
+			Quad.Height *= static_cast<float32>( Image.Height ) / Image.Width;
+		}
+		if ( bPixelPivot )
+		{
+			Quad.PivotX /= Image.Width;
+			Quad.PivotY /= Image.Height;
+		}
+		if ( View.Has( FDrawFlag::FlipX ) )
+		{
+			Quad.U0 = 1;
+			Quad.U1 = 0;
+		}
+		if ( View.Has( FDrawFlag::FlipY ) )
+		{
+			Quad.V0 = 1;
+			Quad.V1 = 0;
+		}
+		TArray<FDrawVertex3D> Vertices; // 反転はUVだけに反映し、基準点を動かさない。
+		return FGeometryQuadBuilder::Build( Quad, Camera, Vertices ) && SubmitQuad( Vertices, Quad.Handle, Bright, Alpha ) ? EResult::Executed : EResult::Rejected;
+	}
+	case EDrawCommand::BillboardQuad3D:
+	{
+		if ( !View.CanRead<FDrawBillboardQuad3DData>() )
+		{
+			return EResult::Rejected;
+		}
+		const auto Data = View.Read<FDrawBillboardQuad3DData>(); // 四隅を自由に動かした画像。
+		TArray<FDrawVertex3D> Vertices; // つぶれていない三角形だけを描く。
+		return FGeometryQuadBuilder::BuildCorners( FVector3( Data.Pos[0], Data.Pos[1], Data.Pos[2] ), Data.Corner, Camera, Vertices ) && SubmitQuad( Vertices, Data.Handle, Bright, Alpha ) ? EResult::Executed : EResult::Rejected;
+	}
 	case EDrawCommand::Primitive3D:
 	{
 		if ( !View.CanRead<FDrawPrimitive3DData>() )
@@ -578,4 +738,23 @@ bool FGeometryCommandExecutor::SubmitPrimitive( const TArray<FDrawVertex3D>& Ord
 		}
 	}
 	return Submit( Output, Topology, Bright, Alpha, bAlphaBlend, Texture );
+}
+
+// 画像の四角形は両面を描き、完全な透明画素はGPU側で深度も含めて捨てる。
+bool FGeometryCommandExecutor::SubmitQuad( const TArray<FDrawVertex3D>& Vertices, int32 Texture, FDrawRgb Bright, int32 Alpha )
+{
+	FTextureDrawView Image; // 大きさ0でも無効な画像の要求を見逃さない。
+	if ( Texture < 0 || !Textures || !Textures->GetTextureDrawView( Texture, Image ) || Image.Width <= 0 || Image.Height <= 0 || Image.Binding == 0 )
+	{
+		return false;
+	}
+	if ( Vertices.IsEmpty() )
+	{
+		return true;
+	}
+	const EGeometryCulling OldCulling = State.Culling; // 成功・失敗のどちらでも元に戻す。
+	State.Culling = EGeometryCulling::None;
+	const bool bSuccess = Submit( Vertices, EGeometryTopology::Triangles, Bright, Alpha, true, Texture ); // 画像と頂点のAlphaを通常合成する。
+	State.Culling = OldCulling;
+	return bSuccess;
 }

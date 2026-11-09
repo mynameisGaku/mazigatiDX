@@ -18,6 +18,7 @@ public:
 	// VerticesはNumVertices個の有限な同次座標。失敗時はfalseで描画を記録しない。
 	virtual bool DrawGeometry( const FGeometryVertex* Vertices, int32 NumVertices, const FGeometryDrawState& State ) = 0;
 	// 同じ頂点に借用画像を貼る。TextureはGPU完了まで所有側が生存させる。
+	// 画像と頂点色の積のAlphaが0なら色・深度を更新しない。
 	// 未対応の実行先はfalse。頂点のUVと画像のbindingは呼び出し中に複写する。
 	virtual bool DrawTexturedGeometry( const FGeometryVertex* Vertices, int32 NumVertices, const FGeometryDrawState& State, const FTextureDrawView& Texture ) { return false; }
 	// 既存の描画より後に深度を1へ消す。クリップに関係なく全体を対象にする。

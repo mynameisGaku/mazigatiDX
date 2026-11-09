@@ -25,6 +25,8 @@ public:
 private:
 	// ワールド座標を同次クリップ座標にして記録する。全入力を検査してからGPUへ渡す。
 	bool Submit( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend, int32 Texture = -1 );
+	// 両面・画像の透明度を一命令だけ適用する。カリングは失敗時も戻す。
+	bool SubmitQuad( const TArray<FDrawVertex3D>& Vertices, int32 Texture, FDrawRgb Bright, int32 Alpha );
 	// indexを解決した点列をリストへ展開する。GPU・画像に依存しない。
 	bool SubmitPrimitive( const TArray<FDrawVertex3D>& Ordered, EDrawPrimitive Type, int32 Texture, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend );
 	ITextureDrawSource* Textures; // 登録済み画像を同期実行中だけ借りる。

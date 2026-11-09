@@ -8,7 +8,7 @@ bool FDX12GeometryRenderer::Initialize( ID3D12Device* InDevice, int32 InWidth, i
 	Device = InDevice;
 	Width = InWidth;
 	Height = InHeight;
-	const char Source[] = "struct V { float4 p:POSITION; float4 c:COLOR; float2 uv:TEXCOORD; }; struct P { float4 p:SV_POSITION; float4 c:COLOR; float2 uv:TEXCOORD; }; P VS(V v) { P p; p.p=v.p; p.c=v.c; p.uv=v.uv; return p; } float4 PS(P p):SV_TARGET { return p.c; } Texture2D image:register(t0); SamplerState sampling:register(s0); float4 TexturePS(P p):SV_TARGET { return image.Sample(sampling,p.uv)*p.c; }"; // 透視補間はGPUが行う。
+	const char Source[] = "struct V { float4 p:POSITION; float4 c:COLOR; float2 uv:TEXCOORD; }; struct P { float4 p:SV_POSITION; float4 c:COLOR; float2 uv:TEXCOORD; }; P VS(V v) { P p; p.p=v.p; p.c=v.c; p.uv=v.uv; return p; } float4 PS(P p):SV_TARGET { return p.c; } Texture2D image:register(t0); SamplerState sampling:register(s0); float4 TexturePS(P p):SV_TARGET { float4 color=image.Sample(sampling,p.uv)*p.c; if(color.a<=0) discard; return color; }"; // 透視補間はGPUが行う。完全な透明画素は色・深度のどちらも書かない。
 	if ( !Device || Width <= 0 || Height <= 0
 		|| FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", nullptr, nullptr, "VS", "vs_5_0", 0, 0, &VertexShader, nullptr ) )
 		|| FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", nullptr, nullptr, "PS", "ps_5_0", 0, 0, &PixelShader, nullptr ) )

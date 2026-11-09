@@ -908,14 +908,14 @@ Windows 10以降とWindows SDKのD3D12・DXGI・WICを使います。追加のGP
 |フレームと窓|作成・終了、実時間、タイトル、論理解像度、通常の窓／枠なし全画面、VSync、FPS上限、カーソル、`--max-frames=N`|
 |2D命令|Box／BoxAA、Line／LineAA、Circle／CircleAA、Pixel、Triangle、Quad、Text、Opaque／Alphaブレンド、Bright、PushClip／PopClip、Clear|
 |静的モデル|FBX／OBJの同期取り込み、複製、Model3D、個体別の不透明度、外接箱、衝突用三角形、静的面・構造・材質色・親基準フレーム行列の取得|
-|基本3D命令|Line3D、Triangle3D、Cube3D、Primitive3D、Mesh3D、PrimitiveBuffer3D、TextureAddress、Nearest／BilinearのFilter、WorldMatrixとそのPush／Pop、PushCamera／PopCamera、Depth、Culling、ClearDepth、照明の無効化|
+|基本3D命令|Line3D、Triangle3D、Cube3D、Sphere3D、Capsule3D、Quad3D、Billboard3D／BillboardPivot3D／BillboardQuad3D、Sprite3D／SpriteStretch3D／SpritePivot3D、Primitive3D、Mesh3D、PrimitiveBuffer3D、TextureAddress、Nearest／BilinearのFilter、WorldMatrixとそのPush／Pop、PushCamera／PopCamera、Depth、Culling、ClearDepth、照明の無効化|
 |画像命令|Image、ImageStretch、ImageQuad、ImagePart、ImagePartStretch、ImagePartQuad、対応する上下左右の反転|
 |画像の資源|WICで展開できるPNG・JPEG・BMP等、メモリからの展開、RGBA画素からの生成・同寸法更新、登録数の取得（同時に保持する画像は遅延解放分を含め1024枚まで）|
 |入力と編集画面|キーボード、5ボタンのマウス、縦横ホイール、SDLの既存ゲームパッド、ImGuiのメインウィンドウ|
 
 AA指定のない図形は端の補間を無効にしますが、DxLibと全ての境界画素が一致する保証はありません。TextはImGuiの既定フォントを使います。個別フォント・TextFont／TextStyledは未対応です。描画先の解像度は起動時に固定し、表示先の大きさへ拡大します。画面拡大時のScalingFilter::Nearest指定、排他Fullscreen、ImGuiの別ウィンドウは未対応です。
 
-MV1／スキン／モーフ・アニメーションモデル・球やカプセル等の未対応図形・材質・照明・影・独自シェーダー・描画先画像・画像保存・派生画像・画像処理のフィルター・異方性補間・マスク・2D変換・回転スプライト・加算等のブレンド・音声・動画・ゲーム側のIME／タッチ／クリップボード・窓位置とモニター情報の窓口は未対応です。アセットは無効ハンドル・false・空の値を返し、対応能力もfalseのままです。別の実装の仮ハンドルを返しません。
+MV1／スキン／モーフ・アニメーションモデル・円錐・帯等の未対応図形・材質・照明・影・独自シェーダー・描画先画像・画像保存・派生画像・画像処理のフィルター・異方性補間・マスク・2D変換・回転スプライト・加算等のブレンド・音声・動画・ゲーム側のIME／タッチ／クリップボード・窓位置とモニター情報の窓口は未対応です。アセットは無効ハンドル・false・空の値を返し、対応能力もfalseのままです。別の実装の仮ハンドルを返しません。
 
 未対応の描画命令は警告を一度出し、そのSpanの残りを省略します。描画先や変換などの未対応状態を無視して誤った場所へ描くことを防ぐためです。次のSpanの状態には影響しません。モデルや照明を使う既存サンプル、Editorの全機能の動作は保証しません。
 
@@ -992,3 +992,20 @@ Pop-Location
 ```
 
 検査ではOBJ取り込み、サンプルOBJ／MTLの三角形と材質、親子変換、法線の逆転置、外接箱、循環と不正値・スキン・モーフ・動くtrackの拒否、材質色の一度だけの適用、画像と形状の共有、個体別の不透明度、途中の画像読み込み失敗の後片付けと解放済みハンドルの拒否を確認しました。Wine／vkd3d／lavapipeでも、静的モデル登録からModel3Dを通ってGPUへ描画し、前後関係・ClearDepth・クリップ・2Dへの状態復元を画素で検査しました。不透明な赤は(255,0,0)、不透明度0.5の赤は黒い背景上で(128,0,0)でした。Windows実機・MSVC全体ビルドの確認は引き続き必要です。
+
+
+### 球・カプセルと画像付き四角形
+
+`FGeometryShapeBuilder`は、球とカプセルをローカル座標の三角形／線分へ展開します。`FGeometryQuadBuilder`は、画像付き四角形の向き・基準点・UVを頂点へ変えます。どちらもGPU・ImGui・画像の所有に依存しません。実行側は既存のIRenderGeometry3DとITextureDrawSourceへ接続するだけで、Vulkan／OpenGLでも同じ計算を使えます。インターフェースや命令の保存形式の追加・変更はありません。
+
+Sphere3D／Capsule3Dは塗りつぶしと輪郭に対応し、法線も形状の外向きに用意します。照明は引き続き未対応で、拡散色にBrightとAlphaだけを掛けます。円周のDivは3〜128、半球の緯度はDivを4で割って切り上げた数です。輪郭は緯線・経線だけで、三角形の対角線を描きません。半径0は描かず成功、負の半径・範囲外のDiv・非有限値・生成座標の桁あふれは描画前に拒否します。カプセルの両端は半球の中心で、軸長が十分小さい場合は最初の中心の球として描きます。最大分割でも、一描画65536頂点以内です。
+
+Quad3DはFixed／Camera／CameraYに対応します。Fixedは指定Right／Upを使い、Cameraは画面に平行にしてAngleだけ回転、CameraYはY軸を保ってカメラの位置へ面を向けます。真上・真下の場合はカメラの横向きを水平へ投影し、それも零ならX軸を使います。球・カプセル・四角形は展開した座標に現在のWorldMatrixを適用します。カメラ向きも展開時に決まるので、画面に平行な画像を置く場合はWorldMatrixを単位行列に戻して記録してください。
+
+Billboard3D／BillboardPivot3Dは画像の横幅をワールド長で指定し、縦は借用画像の寸法から決めます。Sprite3D／SpriteStretch3D／SpritePivot3Dは、一画素あたりのワールド長から寸法を決めます。基準点はBillboardPivot3Dでは左上を0,0とする比率、SpritePivot3Dでは画素です。比率の範囲外も使えます。反転はUVだけに適用し、配置と基準点は動かしません。BillboardQuad3Dは、カメラから見た右・上方向の四隅のずれを使い、つぶれた三角形だけを省略します。
+
+画像付き四角形は一命令の間だけ両面・通常アルファ合成にし、深度の読み書き・比較と補間設定は現在の状態を使います。画像と頂点色を掛けたAlphaが0の画素は、DX12の画像付き3Dシェーダーが色・深度の両方を捨てます。この処理はモデルやメッシュの透明画像にも共通です。半透明画素の深度書き込みはDepthで選び、透明物の描画順は呼び出し側で決めてください。不正・欠落画像、座標の不正、GPU作成の失敗はfalseとなり、カリングは失敗時も元へ戻します。
+
+Geometry3Dサンプルには、球とその輪郭・斜めのカプセル・回転と基準点を持つ画像・半透明のCameraY四角形を追加しました。
+
+追加の検査ではDivの全範囲（3〜128）の面の外向き・法線・外接距離・輪郭の零長辺の有無と、入力不正時の出力保持を確認しました。四角形の向き・真上からのCameraY・基準点・反転・縦横比・画素単位の拡大率、不正命令・欠落画像の拒否と、GPU失敗時の状態復元も検査しています。Wine／vkd3d／lavapipeの実DX12描画では、球とカプセルの前後関係と表裏、輪郭、反転、両面、半透明の赤（黒背景上で128,0,0）、透明画像の後ろに後続の青い三角形が描かれること、クリップと2Dへの復帰を読み戻しました。MSVCの全体ビルド・Windows実機・WARP・SDKデバッグ層は引き続き未確認です。
