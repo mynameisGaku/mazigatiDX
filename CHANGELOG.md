@@ -5,6 +5,8 @@
 ## [未リリース]
 
 ### 追加
+- DX12構成のバックエンド互換台帳と自動更新・確認（`Docs/BackendCompatibility.csv`・`Tools/UpdateBackendCompatibility.ps1`）。公開窓口・描画命令・サンプル・Editor入口の欠落と宣言変更を検出し、既存の全検査手順へ追加。
+- MV1・シェーダー・音声／動画の初期調査と、共通GPU基盤の責務と未解決事項（`Docs/BACKEND_AUDIT.md`）。
 - meshletの生成・GPUカリング・index付きindirect drawをv1.0.0の性能計画へ追加。Mesh Shader対応は能力別の拡張経路として次版以降に計画。
 - v1.0.0までのロードマップ（`Docs/ROADMAP.md`）。DX12のForward／Deferred／Forward+／Deferred+、既存DxLib公開機能の完全互換、高品質描画と制作機能、Vulkan／OpenGL以降の計画と段階ごとの完了条件を定義。
 - バージョンの定義（`Library/Core/Version.h`）。起動ログとクラッシュ報告にバージョンを出す。

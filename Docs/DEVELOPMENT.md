@@ -872,7 +872,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\RunAllChecks.ps1      
 
 ## DX12バックエンド
 
-v1.0.0までの開発順序と完了条件は[ロードマップ](ROADMAP.md)で定めます。この節は現在の実装と検査状況を記録し、予定機能を対応済みには数えません。
+v1.0.0までの開発順序と完了条件は[ロードマップ](ROADMAP.md)で定めます。 公開機能ごとの判定と検査計画は[互換表](BACKEND_COMPATIBILITY.md)、形式・サービスとGPU基盤の課題は[初期調査](BACKEND_AUDIT.md)へ記録します。この節は現在の実装と検査状況を記録し、予定機能を対応済みには数えません。
 
 `--backend=dx12`でDirect3D 12を選びます。既定のDxLib、`--backend=null`は従来どおりです。未知の選択値も従来どおりDxLibになります。DX12を選んだときはDxLibの実装を一つも生成しません。初期化に失敗した場合は終了し、別の実装へ暗黙に切り替えません。
 

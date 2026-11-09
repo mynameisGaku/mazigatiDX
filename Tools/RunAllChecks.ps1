@@ -4,7 +4,7 @@
 #   先に、Tools\SetupSelfTests.ps1 で、検査のリポジトリ（framework-test）を、Source\SelfTest へ取り付けておく（DxLib は、FetchDxLib.bat で）。
 #   順番:
 #     1. ビルド（構成ごとに project.sln。警告・エラーが 0）。-SkipBuild で飛ばせる
-#     2. 書式の検査（CheckSourceFormat.ps1）と、その検査自身の確認、掃除（Clean.bat）の確認
+#     2. バックエンド互換台帳の確認、書式の検査（CheckSourceFormat.ps1）と、その検査自身の確認、掃除（Clean.bat）の確認
 #     3. 自己確認（RunSelfTests.ps1）: 構成ごとに ecs / assets / world
 #     4. サンプル集の確認（RunSamplesTest.ps1）と、テンプレートの確認（RunTemplateTest.ps1）。どちらも、自分でビルドして動かす（時間がかかる）。-Quick で飛ばせる
 #   結果は、1 行ずつ出して、最後に PASS / FAIL をまとめる（失敗があれば、終了コード 1）。各ステップのログは、一時フォルダーに残す。
@@ -78,6 +78,9 @@ if (-not $SkipBuild) {
         $results.Add([pscustomobject]@{ Name = "build $configuration"; Passed = $ok })
     }
 }
+
+# 公開機能の追加・削除を、互換台帳へ反映し忘れていないか。
+Invoke-Step 'backend compatibility inventory' (Join-Path $frameworkRoot 'Tools\UpdateBackendCompatibility.ps1') @('-Check')
 
 Write-Host '== source format and clean'
 Invoke-Step 'source format' (Join-Path $selfTest 'CheckSourceFormat.ps1')
