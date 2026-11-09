@@ -6,11 +6,12 @@
 #include "Library/Framework/Subsystem/AppSubsystem.h"
 #include "Library/Core/Interfaces/Render/ITextureDrawSource.h"
 #include "VendorModules/ImGui/imgui.h"
+#include "Library/Platform/Render/Geometry/GeometryBufferStore.h"
 
 class IPlatform;
 
 // 実画像だけを登録する。モデル・音声・GPUの独自シェーダーは未対応として返す。
-class CDX12AssetBackendSubsystem : public CAppSubsystem, public IAssetBackend, public ITextureDrawSource, public ITickable
+class CDX12AssetBackendSubsystem : public CAppSubsystem, public IAssetBackend, public ITextureDrawSource, public IGeometryBufferSource, public ITickable
 {
 public:
 	// DX12が選ばれた場合だけ作る。
@@ -39,6 +40,24 @@ public:
 	bool DecodeImageFile( const FString& Path, int32& OutWidth, int32& OutHeight, TArray<FColor32>& OutPixels ) override;
 	// 有効な画像だけ描画側へ貸す。
 	bool GetTextureDrawView( int32 Handle, FTextureDrawView& Out ) override;
+	// 編集メッシュを共通の形状保管へ変換する。失敗時は両出力を保つ。
+	bool CreateMeshBuffers( const FMeshVertex* Vertices, int32 NumVertices, const uint32* Indices, int32 NumIndices, int32& OutVertexBuffer, int32& OutIndexBuffer ) override;
+	// ゼロ頂点を登録する。不正な数・保持上限超過は-1。
+	int32 MakeVertexBuffer( int32 NumVertices ) override;
+	// 検査済みの頂点だけを書き込む。失敗時は内容を保つ。
+	bool WriteVertexBuffer( int32 VertexBuffer, int32 StartIndex, const FDrawVertex3D* Vertices, int32 NumVertices ) override;
+	// 頂点の登録を解放する。
+	void DeleteVertexBuffer( int32 VertexBuffer ) override;
+	// ゼロindexと入力形式を登録する。
+	int32 MakeIndexBuffer( int32 NumIndices, bool b32Bit ) override;
+	// 16／32bitのindexを展開して更新する。失敗時は内容を保つ。
+	bool WriteIndexBuffer( int32 IndexBuffer, int32 StartIndex, const void* Indices, int32 NumIndices ) override;
+	// indexの登録を解放する。
+	void DeleteIndexBuffer( int32 IndexBuffer ) override;
+	// 同期の命令解釈にだけ頂点を貸す。
+	bool GetVertexBufferView( int32 Handle, FGeometryVertexBufferView& Out ) override;
+	// 同期の命令解釈にだけindexを貸す。
+	bool GetIndexBufferView( int32 Handle, FGeometryIndexBufferView& Out ) override;
 	// GetMemoryInfoの未対応時の既定値。出力引数と外部状態は変更しない。
 	FBackendMemoryInfo GetMemoryInfo() override;
 	// EstimateModelBytesの未対応時の既定値。出力引数と外部状態は変更しない。
@@ -102,6 +121,7 @@ private:
 	};
 	// GPU待ち後に画像を破棄する。
 	void DestroyTexture( ImTextureData* Texture );
+	FGeometryBufferStore Buffers; // APIに依存しない登録形状。
 	TMap<int32, ImTextureData*> Textures; // 登録番号から実画像への表。
 	TArray<FRetiredTexture> Retired; // 描画の終了待ち。
 	IPlatform* Platform = nullptr; // 借用するフレーム進行。

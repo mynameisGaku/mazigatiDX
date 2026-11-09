@@ -7,4 +7,5 @@ struct FGeometryVertex
 {
 	float32 Position[4] = {}; // 同次クリップ座標。Wを除算せず渡す。
 	FColor32 Color; // 照明計算を済ませたRGBA。
+	float32 U = 0, V = 0; // 透視補間する画像座標。
 };

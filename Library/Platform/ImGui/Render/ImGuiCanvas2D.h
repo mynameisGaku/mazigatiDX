@@ -24,6 +24,8 @@ public:
 	void PushClip( int32 X0, int32 Y0, int32 X1, int32 Y1 ) override;
 	// 直前のクリップ範囲へ戻す。Pushと対にする。
 	void PopClip() override;
+	// 公式GPU実装の補間切り替えを使う。窓口がなければfalse。
+	bool SetTextureFilter( bool bLinear ) override;
 	// 図形の端の補間を指定する。
 	void SetAntiAlias( bool bEnabled ) override;
 };

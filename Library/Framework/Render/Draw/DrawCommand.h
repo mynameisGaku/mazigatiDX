@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
+#include "Library/Core/Render/DrawVertex3D.h"
 
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Render/DrawSpan.h"
@@ -664,17 +665,6 @@ struct FDrawSprite3DData { float32 Pos[3] = {}; float32 Scale = 1.0f; float32 An
 struct FDrawSpriteStretch3DData { float32 Pos[3] = {}; float32 ScaleX = 1.0f, ScaleY = 1.0f; int32 Handle = -1; };
 // 画像の中の点 (PivotX, PivotY)（ピクセル。左上が 0, 0）が Pos に来る（DrawRota2Graph3D）。回転と反転の中心は、画像の中心でなく、この点
 struct FDrawSpritePivot3DData { float32 Pos[3] = {}; float32 PivotX = 0.0f, PivotY = 0.0f; float32 ScaleX = 1.0f, ScaleY = 1.0f; float32 Angle = 0.0f; int32 Handle = -1; };
-
-// 頂点 1 つ（DxLib の VERTEX3D）。色は R, G, B, A。光の計算を切ると、Specular が Diffuse に足される（実測）。SubU / SubV は、固定機能の描画では使われない（シェーダー用）
-struct FDrawVertex3D
-{
-	float32 Position[3] = {};
-	float32 Normal[3] = { 0.0f, 1.0f, 0.0f };
-	uint8 Diffuse[4] = { 255, 255, 255, 255 };
-	uint8 Specular[4] = { 0, 0, 0, 0 };
-	float32 U = 0.0f, V = 0.0f;
-	float32 SubU = 0.0f, SubV = 0.0f;
-};
 
 // 頂点の並びを、点・線・三角形として描く（DrawPrimitive3D / DrawPrimitiveIndexed3D）。後ろに、頂点 NumVertices 個（FDrawVertex3D）、続けてインデックス NumIndices 個（uint16。2 個で 1 ワード。奇数個なら 0 で埋める）が続く。
 // NumIndices が 0 なら、頂点を順に使う。0 より大きければ、インデックスの順に頂点を使う。Texture が負なら、画像なし

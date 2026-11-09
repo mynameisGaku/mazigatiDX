@@ -109,7 +109,7 @@ bool FDX12Device::Initialize( HWND Window, int32 Width, int32 Height, bool bWarp
 	Info.SrvDescriptorAllocFn = AllocateDescriptor;
 	Info.SrvDescriptorFreeFn = FreeDescriptor;
 	bRendererInitialized = ImGui_ImplDX12_Init( &Info );
-	return bRendererInitialized;
+	return bRendererInitialized && ImGui_ImplDX12_CreateDeviceObjects(); // 最初のフレーム前の画像アップロードにも必要。
 }
 
 bool FDX12Device::Wait()
@@ -192,7 +192,7 @@ bool FDX12Device::BeginFrame()
 	Commands->SetDescriptorHeaps( 1, Heaps );
 	const float Black[4] = { 0, 0, 0, 1 }; // 毎フレームの背景。
 	Commands->ClearRenderTargetView( CurrentRtv, Black, 0, nullptr );
-	Geometry->BeginFrame( Commands.Get(), CurrentRtv );
+	Geometry->BeginFrame( Commands.Get(), CurrentRtv, SrvHeap.Get() );
 	ImGui_ImplDX12_NewFrame();
 	bRecording = true;
 	return true;

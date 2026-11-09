@@ -48,6 +48,7 @@ void CDX12AssetBackendSubsystem::Deinitialize()
 	{
 		DestroyTexture( Item.Texture );
 	}
+	Buffers.Reset();
 	Textures.Reset();
 	Retired.Reset();
 	Platform = nullptr;
@@ -296,4 +297,64 @@ void CDX12AssetBackendSubsystem::DeleteSound( int32 /*Sound*/ )
 float32 CDX12AssetBackendSubsystem::GetSoundLength( int32 /*Sound*/ )
 {
 	return 0;
+}
+
+
+bool CDX12AssetBackendSubsystem::CreateMeshBuffers( const FMeshVertex* Vertices, int32 NumVertices, const uint32* Indices, int32 NumIndices, int32& OutVertexBuffer, int32& OutIndexBuffer )
+{
+	if ( !Vertices || !Indices || NumVertices <= 0 || NumVertices > 1048576 || NumIndices <= 0 || NumIndices > 16777216 || NumIndices % 3 != 0 || static_cast<uint64>( NumVertices ) * sizeof( FDrawVertex3D ) + static_cast<uint64>( NumIndices ) * sizeof( uint32 ) > 64 * 1024 * 1024 )
+	{
+		return false;
+	}
+	TArray<FDrawVertex3D> Converted; // 編集メッシュの値を共通頂点へ移す。
+	Converted.SetNum( NumVertices );
+	for ( int32 Index = 0; Index < NumVertices; ++Index )
+	{
+		FMemory::Memcpy( Converted[Index].Position, Vertices[Index].Position, sizeof( Vertices[Index].Position ) );
+		FMemory::Memcpy( Converted[Index].Normal, Vertices[Index].Normal, sizeof( Vertices[Index].Normal ) );
+		FMemory::Memcpy( Converted[Index].Diffuse, Vertices[Index].Color, sizeof( Vertices[Index].Color ) );
+		Converted[Index].U = Vertices[Index].U;
+		Converted[Index].V = Vertices[Index].V;
+	}
+	return Buffers.CreateMesh( Converted.GetData(), NumVertices, Indices, NumIndices, OutVertexBuffer, OutIndexBuffer );
+}
+
+int32 CDX12AssetBackendSubsystem::MakeVertexBuffer( int32 NumVertices )
+{
+	return Buffers.MakeVertexBuffer( NumVertices );
+}
+
+bool CDX12AssetBackendSubsystem::WriteVertexBuffer( int32 VertexBuffer, int32 StartIndex, const FDrawVertex3D* Vertices, int32 NumVertices )
+{
+	return Buffers.WriteVertexBuffer( VertexBuffer, StartIndex, Vertices, NumVertices );
+}
+
+void CDX12AssetBackendSubsystem::DeleteVertexBuffer( int32 VertexBuffer )
+{
+	Buffers.DeleteVertexBuffer( VertexBuffer );
+}
+
+int32 CDX12AssetBackendSubsystem::MakeIndexBuffer( int32 NumIndices, bool b32Bit )
+{
+	return Buffers.MakeIndexBuffer( NumIndices, b32Bit );
+}
+
+bool CDX12AssetBackendSubsystem::WriteIndexBuffer( int32 IndexBuffer, int32 StartIndex, const void* Indices, int32 NumIndices )
+{
+	return Buffers.WriteIndexBuffer( IndexBuffer, StartIndex, Indices, NumIndices );
+}
+
+void CDX12AssetBackendSubsystem::DeleteIndexBuffer( int32 IndexBuffer )
+{
+	Buffers.DeleteIndexBuffer( IndexBuffer );
+}
+
+bool CDX12AssetBackendSubsystem::GetVertexBufferView( int32 Handle, FGeometryVertexBufferView& Out )
+{
+	return Buffers.GetVertexBufferView( Handle, Out );
+}
+
+bool CDX12AssetBackendSubsystem::GetIndexBufferView( int32 Handle, FGeometryIndexBufferView& Out )
+{
+	return Buffers.GetIndexBufferView( Handle, Out );
 }

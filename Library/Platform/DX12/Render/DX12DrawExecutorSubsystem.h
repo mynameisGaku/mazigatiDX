@@ -5,6 +5,7 @@
 
 class IRenderSurface;
 class ITextureDrawSource;
+class IGeometryBufferSource;
 
 // DX12の描画先を共通のキャンバス命令実行側へ接続する。
 class CDX12DrawExecutorSubsystem : public CAppSubsystem, public IDrawExecutor
@@ -20,5 +21,6 @@ public:
 	void Execute( const FDrawSpan& Span ) override;
 private:
 	IRenderSurface* Surface = nullptr; // 借用する描画先。
+	IGeometryBufferSource* Buffers = nullptr; // 借用する登録形状。
 	ITextureDrawSource* Textures = nullptr; // 借用する画像窓口。
 };

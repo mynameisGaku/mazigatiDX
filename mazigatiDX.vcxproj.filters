@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryBufferStore.cpp">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Render\DX12GeometryRenderer.cpp">
       <Filter>Library\Platform\DX12\Render</Filter>
     </ClCompile>
@@ -1722,6 +1725,18 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Library\Core\Interfaces\Render\IGeometryBufferSource.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\DrawVertex3D.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GeometryBufferView.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryBufferStore.h">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IRenderGeometry3D.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>

@@ -67,6 +67,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets"></ImportGroup>
   <ItemGroup>
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryBufferStore.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\DX12GeometryRenderer.cpp" />
     <ClCompile Include="Library\Platform\Render\Geometry\GeometryCommandExecutor.cpp" />
     <ClCompile Include="Library\Platform\DX12\Asset\DX12AssetBackendSubsystem.cpp" />
@@ -630,6 +631,10 @@
     <ClCompile Include="VendorModules\ufbx\ufbx.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Library\Core\Interfaces\Render\IGeometryBufferSource.h" />
+    <ClInclude Include="Library\Core\Render\DrawVertex3D.h" />
+    <ClInclude Include="Library\Core\Render\GeometryBufferView.h" />
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryBufferStore.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IRenderGeometry3D.h" />
     <ClInclude Include="Library\Core\Render\GeometryDrawState.h" />
     <ClInclude Include="Library\Core\Render\GeometryVertex.h" />

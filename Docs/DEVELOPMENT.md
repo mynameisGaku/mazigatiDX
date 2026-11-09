@@ -885,6 +885,7 @@ Windows 10以降とWindows SDKのD3D12・DXGI・WICを使います。追加のGP
 |`IRenderCanvas2D`|論理画素座標の図形・文字・借用画像・クリップを描く|
 |`IRenderGeometry3D`|同次クリップ座標の頂点色リストを描き、深度を消す|
 |`IRenderSurface`|フレーム内だけ2D・3Dの実行先を貸す、順序を保った画面消去、終了時のGPU完了待ち|
+|`IGeometryBufferSource`|登録済みのローカル頂点・32bitへ統一したindex列を同期処理中だけ貸す|
 |`ITextureDrawSource`|登録番号から借用画像の寸法と描画実装内のbindingを得る|
 |`INativeWindow`|OS接続用の窓と、フレームに固定したホイールを借りる|
 
@@ -905,14 +906,14 @@ Windows 10以降とWindows SDKのD3D12・DXGI・WICを使います。追加のGP
 |---|---|
 |フレームと窓|作成・終了、実時間、タイトル、論理解像度、通常の窓／枠なし全画面、VSync、FPS上限、カーソル、`--max-frames=N`|
 |2D命令|Box／BoxAA、Line／LineAA、Circle／CircleAA、Pixel、Triangle、Quad、Text、Opaque／Alphaブレンド、Bright、PushClip／PopClip、Clear|
-|基本3D命令|Line3D、Triangle3D、Cube3D、画像なしのPrimitive3D、WorldMatrixとそのPush／Pop、PushCamera／PopCamera、Depth、Culling、ClearDepth、照明の無効化|
+|基本3D命令|Line3D、Triangle3D、Cube3D、Primitive3D、Mesh3D、PrimitiveBuffer3D、TextureAddress、Nearest／BilinearのFilter、WorldMatrixとそのPush／Pop、PushCamera／PopCamera、Depth、Culling、ClearDepth、照明の無効化|
 |画像命令|Image、ImageStretch、ImageQuad、ImagePart、ImagePartStretch、ImagePartQuad、対応する上下左右の反転|
 |画像の資源|WICで展開できるPNG・JPEG・BMP等、メモリからの展開、RGBA画素からの生成・同寸法更新、登録数の取得（同時に保持する画像は遅延解放分を含め1024枚まで）|
 |入力と編集画面|キーボード、5ボタンのマウス、縦横ホイール、SDLの既存ゲームパッド、ImGuiのメインウィンドウ|
 
-AA指定のない図形は端の補間を無効にしますが、DxLibと全ての境界画素が一致する保証はありません。TextはImGuiの既定フォントを使います。個別フォント・TextFont／TextStyledは未対応です。描画先の解像度は起動時に固定し、表示先の大きさへ拡大します。Nearest指定、排他Fullscreen、ImGuiの別ウィンドウは未対応です。
+AA指定のない図形は端の補間を無効にしますが、DxLibと全ての境界画素が一致する保証はありません。TextはImGuiの既定フォントを使います。個別フォント・TextFont／TextStyledは未対応です。描画先の解像度は起動時に固定し、表示先の大きさへ拡大します。画面拡大時のScalingFilter::Nearest指定、排他Fullscreen、ImGuiの別ウィンドウは未対応です。
 
-3Dモデル・画像付き3D・球やカプセル等の未対応図形・材質・照明・影・独自シェーダー・描画先画像・画像保存・派生画像・画像フィルター・マスク・2D変換・回転スプライト・加算等のブレンド・音声・動画・ゲーム側のIME／タッチ／クリップボード・窓位置とモニター情報の窓口は未対応です。アセットは無効ハンドル・false・空の値を返し、対応能力もfalseのままです。別の実装の仮ハンドルを返しません。
+3Dモデル・球やカプセル等の未対応図形・材質・照明・影・独自シェーダー・描画先画像・画像保存・派生画像・画像処理のフィルター・異方性補間・マスク・2D変換・回転スプライト・加算等のブレンド・音声・動画・ゲーム側のIME／タッチ／クリップボード・窓位置とモニター情報の窓口は未対応です。アセットは無効ハンドル・false・空の値を返し、対応能力もfalseのままです。別の実装の仮ハンドルを返しません。
 
 未対応の描画命令は警告を一度出し、そのSpanの残りを省略します。描画先や変換などの未対応状態を無視して誤った場所へ描くことを防ぐためです。次のSpanの状態には影響しません。モデルや照明を使う既存サンプル、Editorの全機能の動作は保証しません。
 
@@ -940,16 +941,29 @@ GPUへ渡す`FGeometryVertex`は透視除算前の同次座標です。近い面
 
 `FDX12GeometryRenderer`が深度画像・頂点色シェーダー・パイプラインとフレーム内の頂点資源を所有します。描画と深度消去を2Dと同じ命令列へ記録し、3Dの直後には2DのGPU状態を復元します。入力の頂点を呼び出し中に複写し、前フレームのGPU完了まで保持します。1命令の上限は65536頂点、1フレームで保持する頂点領域は64MiB、異なるパイプライン状態のキャッシュは128種類までです。上限超過や作成失敗はfalseとなり、そのSpanの残りを省略します。
 
-Primitive3Dは点・線・三角形のリストと、折れ線・TriangleStrip・TriangleFanに対応し、帯や扇は共通処理でリストへ展開します。可変長の全長と全indexを確認してから描画します。画像付きPrimitive3Dと照明の有効化は未対応として拒否します。頂点色は非照明のDiffuse+Specular（飽和加算）にBrightとAlphaを適用します。図形は非照明の拡散色です。
+Primitive3DとPrimitiveBuffer3Dは点・線・三角形のリストと、折れ線・TriangleStrip・TriangleFanに対応し、帯や扇は共通処理でリストへ展開します。可変長の全長と全indexを確認してから描画します。画像の登録番号はITextureDrawSourceで解決し、画像がない・無効な場合はその描画を拒否します。照明の有効化は未対応として拒否します。頂点色は非照明のDiffuse+Specular（飽和加算）にBrightとAlphaを適用します。図形は非照明の拡散色です。
 
 ```powershell
 .\x64\Debug\Samples.exe --backend=dx12 --sample=Geometry3D --max-frames=120
 .\x64\Debug\Samples.exe --backend=dx12 --dx12-warp=true --sample=Geometry3D --max-frames=120
 ```
 
-`Geometry3D`は共通窓口だけで、回転する箱・輪郭・地面の線・手前と奥の三角形を描きます。照明・モデル・画像付き3D・編集画面全体への対応は別の作業です。
+`Geometry3D`は共通窓口だけで、回転する箱・輪郭・地面の線・手前と奥の三角形に加え、市松模様のメッシュと汎用頂点／indexバッファを描きます。照明・モデル・編集画面全体への対応は別の作業です。
 
 
 追加の検査では、Windows向けの3D共通命令検査をWineで実行し、射影・透視除算前の座標・ワールド変換の積み順・カメラと状態の復元・深度／表裏・色・線の輪郭・TriangleStrip展開・可変長データと非有限値の拒否・描画失敗の伝達を確認しました。
 
 さらにWine 10／vkd3d／Mesa lavapipeで実際のDX12デバイスと64×64の描画先を作り、GPUの結果を読み戻しました。手前の赤い三角形の後に奥の青い三角形を記録しても中央が赤(255,0,0)、間にClearDepthを入れると青(0,0,255)、クリップ外は黒(0,0,0)、3Dの後に描く2Dの矩形は緑(0,255,0)となりました。呼び出し元の頂点を書き換えても描画が変わらず、フレーム間の遅延解放も検査しました。これは変換層上でのGPU検査で、Windows実機のDX12ドライバー・WARP・SDKデバッグ層・MSVCの全体ビルドの代わりにはなりません。
+
+
+### 画像付き3Dと形状バッファ
+
+`FGeometryVertex`のUVをGPUで透視補間し、画像と頂点色を乗算します。補間はNearest（既定）とBilinear、画像の外側はWrap／Mirror／Clamp／透明Borderに対応します。補間の設定は2D画像と3D画像に反映し、文字の描画とSpanの終わりでは外側のImGui用の補間へ戻します。異方性補間は未対応です。DX12のSRVとsamplerは実装内に閉じ、GPUへ提出する際に画像のbindingが同じheap内にあることを検査します。最初のフレーム前に画像を作れるよう、画像アップロードに必要な公式GPU実装の資源も初期化時に作ります。
+
+`FDrawVertex3D`は形式と既定値を変えず`Core/Render/DrawVertex3D.h`へ移しました。`FGeometryBufferStore`はCPU上でローカル頂点・indexを所有する共通実装です。作成・更新・解放は既存のIRenderResourceBackend、参照はCore/InterfacesのIGeometryBufferSourceを通します。描画APIのデバイスやGPUバッファの型を公開しません。indexの書き込みは元の16／32bit形式を尊重し、描画側へは32bitの参照列を貸します。バッファの追加・更新・解放より前に借用を消費してください。
+
+Mesh3Dは独自の配置行列を1命令の間だけ使い、元のWorldとカリングを成功・失敗のいずれでも戻します。TwoSidedもこの1命令に限ります。既存のメッシュの契約に合わせ、Brightは重ねず、保存された頂点色を使います。PrimitiveBuffer3DはStart・Num・BaseVertexと、記録時の寸法を検査します。全indexを検査してから頂点を送るため、途中の三角形だけを描くことはありません。画像が無効なら、頂点色だけの代替描画には切り替えません。
+
+CPU形状の合計上限は64MiB、登録数は頂点・indexを合わせて1024件です。ハンドルは解放後も再利用しません。メッシュの二つのバッファの作成に失敗した場合は、途中の登録も戻し、出力引数を保ちます。現段階では、所有するCPU形状から描画のたびに必要な頂点を展開・射影してGPUへ複写します。永続GPUバッファによる高速化は未実装です。1描画65536頂点と1フレーム64MiBのGPUアップロード上限も引き続き適用します。
+
+追加の検査では、ゼロ初期化、部分更新、更新失敗時の値の保持、16bitの展開、基準頂点・index・記録寸法の検査、メッシュの行列／表裏の復元、無効画像・解放済みハンドルの拒否とメッシュ生成の失敗時の後片付けを確認しました。Wine／vkd3d／lavapipeで画像付きDX12描画を実行し、2×2の画像でWrap・Clamp・Mirror・透明Border・Nearest・Bilinearを読み戻して検査しました。線形補間で中央が(128,128,128)になること、クリップ外は黒で、画像付き3Dの直後の2D矩形が緑になることも確認しています。Windows実機とMSVCの全体ビルドは引き続き未確認です。

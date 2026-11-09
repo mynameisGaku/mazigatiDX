@@ -1,6 +1,8 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 #include "Library/Core/Interfaces/Render/IRenderGeometry3D.h"
+#include "Library/Core/Interfaces/Render/ITextureDrawSource.h"
+#include "Library/Core/Interfaces/Render/IGeometryBufferSource.h"
 #include "Library/Framework/Render/Camera/Camera.h"
 #include "Library/Framework/Render/Draw/DrawCommand.h"
 
@@ -16,12 +18,16 @@ public:
 		Rejected, // 不正・未対応・GPU準備の失敗。
 	};
 	// Geometryは借用。nullptrでも状態命令は読めるが、描画は失敗する。
-	explicit FGeometryCommandExecutor( IRenderGeometry3D* InGeometry );
+	explicit FGeometryCommandExecutor( IRenderGeometry3D* InGeometry, ITextureDrawSource* InTextures = nullptr, IGeometryBufferSource* InBuffers = nullptr );
 	// 1命令を検査して実行する。Stateはこのインスタンス内だけに閉じる。
 	EResult Execute( const FDrawCommandView& View, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend );
 private:
 	// ワールド座標を同次クリップ座標にして記録する。全入力を検査してからGPUへ渡す。
-	bool Submit( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend );
+	bool Submit( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend, int32 Texture = -1 );
+	// indexを解決した点列をリストへ展開する。GPU・画像に依存しない。
+	bool SubmitPrimitive( const TArray<FDrawVertex3D>& Ordered, EDrawPrimitive Type, int32 Texture, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend );
+	ITextureDrawSource* Textures; // 登録済み画像を同期実行中だけ借りる。
+	IGeometryBufferSource* Buffers; // 登録済みのローカル形状を借りる。
 	IRenderGeometry3D* Geometry; // 借用するGPU実行先。
 	FMatrix4x4 World; // 現在のワールド行列。
 	FCamera Camera; // 現在のカメラ。

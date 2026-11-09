@@ -71,6 +71,7 @@ void FImGuiCanvas2D::Quad( const float32 ( &Points )[8], FColor32 Color, bool bF
 
 void FImGuiCanvas2D::Text( float32 X, float32 Y, FColor32 Color, const char* Begin, const char* End )
 {
+	SetTextureFilter( true ); // 画像の補間設定を文字へ持ち越さない。
 	ImDrawList* List = ImGui::GetBackgroundDrawList(); // このフレームの2D描画先。
 	List->AddText( ImVec2( X, Y ), ToColor( Color ), Begin, End );
 }
@@ -104,4 +105,15 @@ void FImGuiCanvas2D::SetAntiAlias( bool bEnabled )
 	{
 		List->Flags &= ~( ImDrawListFlags_AntiAliasedLines | ImDrawListFlags_AntiAliasedFill );
 	}
+}
+
+bool FImGuiCanvas2D::SetTextureFilter( bool bLinear )
+{
+	const auto Callback = bLinear ? ImGui::GetPlatformIO().DrawCallback_SetSamplerLinear : ImGui::GetPlatformIO().DrawCallback_SetSamplerNearest; // GPU実装が提供する切り替え。
+	if ( !Callback )
+	{
+		return false;
+	}
+	ImGui::GetBackgroundDrawList()->AddCallback( Callback, nullptr );
+	return true;
 }

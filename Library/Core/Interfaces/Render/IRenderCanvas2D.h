@@ -28,6 +28,8 @@ public:
 	virtual void PushClip( int32 X0, int32 Y0, int32 X1, int32 Y1 ) = 0;
 	// 直前のクリップ範囲へ戻す。Pushと対にする。
 	virtual void PopClip() = 0;
+	// 次の画像の補間を指定する。未対応ならfalse。
+	virtual bool SetTextureFilter( bool /*bLinear*/ ) { return false; }
 	// 図形の端の補間を指定する。
 	virtual void SetAntiAlias( bool bEnabled ) = 0;
 };

@@ -31,6 +31,15 @@ enum class EGeometryCulling : uint8
 	FrontFaces, // 表面を除去。
 };
 
+// 画像の外側の参照方法。API固有の値は実装側が変換する。
+enum class EGeometryTextureAddress : uint8
+{
+	Wrap, // 繰り返す。
+	Mirror, // 折り返して繰り返す。
+	Clamp, // 端の画素を伸ばす。
+	Border, // 外側は透明な黒。
+};
+
 // 1回の描画に閉じたGPU状態。ほかの命令へ持ち越さない。
 struct FGeometryDrawState
 {
@@ -40,5 +49,8 @@ struct FGeometryDrawState
 	bool bTestDepth = true; // 深度を比べるか。
 	bool bWriteDepth = true; // 通過した深度を書くか。
 	bool bAlphaBlend = false; // 通常の非乗算済みアルファ合成か。
+	EGeometryTextureAddress AddressU = EGeometryTextureAddress::Wrap; // 横方向の画像の外側。
+	EGeometryTextureAddress AddressV = EGeometryTextureAddress::Wrap; // 縦方向の画像の外側。
+	bool bLinearFilter = false; // falseなら最近傍、trueなら線形補間。
 	int32 DepthBias = 0; // GPUの整数深度偏り。
 };

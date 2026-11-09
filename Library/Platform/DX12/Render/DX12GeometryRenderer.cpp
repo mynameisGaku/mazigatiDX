@@ -8,20 +8,58 @@ bool FDX12GeometryRenderer::Initialize( ID3D12Device* InDevice, int32 InWidth, i
 	Device = InDevice;
 	Width = InWidth;
 	Height = InHeight;
-	const char Source[] = "struct V { float4 p:POSITION; float4 c:COLOR; }; struct P { float4 p:SV_POSITION; float4 c:COLOR; }; P VS(V v) { P p; p.p=v.p; p.c=v.c; return p; } float4 PS(P p):SV_TARGET { return p.c; }"; // GPUが同次クリップと透視補間を行う。
+	const char Source[] = "struct V { float4 p:POSITION; float4 c:COLOR; float2 uv:TEXCOORD; }; struct P { float4 p:SV_POSITION; float4 c:COLOR; float2 uv:TEXCOORD; }; P VS(V v) { P p; p.p=v.p; p.c=v.c; p.uv=v.uv; return p; } float4 PS(P p):SV_TARGET { return p.c; } Texture2D image:register(t0); SamplerState sampling:register(s0); float4 TexturePS(P p):SV_TARGET { return image.Sample(sampling,p.uv)*p.c; }"; // 透視補間はGPUが行う。
 	if ( !Device || Width <= 0 || Height <= 0
-		|| FAILED( D3DCompile( Source, sizeof( Source ) - 1, "GeometryVertexColor", nullptr, nullptr, "VS", "vs_5_0", 0, 0, &VertexShader, nullptr ) )
-		|| FAILED( D3DCompile( Source, sizeof( Source ) - 1, "GeometryVertexColor", nullptr, nullptr, "PS", "ps_5_0", 0, 0, &PixelShader, nullptr ) ) )
+		|| FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", nullptr, nullptr, "VS", "vs_5_0", 0, 0, &VertexShader, nullptr ) )
+		|| FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", nullptr, nullptr, "PS", "ps_5_0", 0, 0, &PixelShader, nullptr ) )
+		|| FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", nullptr, nullptr, "TexturePS", "ps_5_0", 0, 0, &TexturedPixelShader, nullptr ) ) )
 	{
 		return false;
 	}
-	D3D12_ROOT_SIGNATURE_DESC RootDesc = {}; // 定数・画像を使わない頂点色描画。
+	D3D12_DESCRIPTOR_RANGE Ranges[2] = {}; // 画像と補間を独立したheapから参照する。
+	Ranges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	Ranges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+	D3D12_ROOT_PARAMETER Parameters[2] = {}; // t0とs0をピクセルシェーダーへ渡す。
+	for ( int32 Index = 0; Index < 2; ++Index )
+	{
+		Ranges[Index].NumDescriptors = 1;
+		Parameters[Index].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+		Parameters[Index].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		Parameters[Index].DescriptorTable.NumDescriptorRanges = 1;
+		Parameters[Index].DescriptorTable.pDescriptorRanges = &Ranges[Index];
+	}
+	D3D12_ROOT_SIGNATURE_DESC RootDesc = {}; // 画像なしのPSではdescriptorを参照しない。
+	RootDesc.NumParameters = 2;
+	RootDesc.pParameters = Parameters;
 	RootDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 	Microsoft::WRL::ComPtr<ID3DBlob> Serialized; // GPUへ渡す設定。
 	if ( FAILED( D3D12SerializeRootSignature( &RootDesc, D3D_ROOT_SIGNATURE_VERSION_1, &Serialized, nullptr ) )
 		|| FAILED( Device->CreateRootSignature( 0, Serialized->GetBufferPointer(), Serialized->GetBufferSize(), IID_PPV_ARGS( &RootSignature ) ) ) )
 	{
 		return false;
+	}
+	D3D12_DESCRIPTOR_HEAP_DESC SamplerDesc = {}; // 各設定を一度だけ作る。
+	SamplerDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+	SamplerDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	SamplerDesc.NumDescriptors = 32;
+	if ( FAILED( Device->CreateDescriptorHeap( &SamplerDesc, IID_PPV_ARGS( &SamplerHeap ) ) ) )
+	{
+		return false;
+	}
+	SamplerStride = Device->GetDescriptorHandleIncrementSize( D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER );
+	for ( UINT Index = 0; Index < 32; ++Index )
+	{
+		D3D12_SAMPLER_DESC Sampler = {}; // 参照方法の組み合わせ。
+		Sampler.Filter = Index & 16 ? D3D12_FILTER_MIN_MAG_MIP_LINEAR : D3D12_FILTER_MIN_MAG_MIP_POINT;
+		Sampler.AddressU = static_cast<D3D12_TEXTURE_ADDRESS_MODE>( ( Index & 3 ) + 1 );
+		Sampler.AddressV = static_cast<D3D12_TEXTURE_ADDRESS_MODE>( ( ( Index >> 2 ) & 3 ) + 1 );
+		Sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+		Sampler.MaxAnisotropy = 1;
+		Sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+		Sampler.MaxLOD = D3D12_FLOAT32_MAX;
+		auto Handle = SamplerHeap->GetCPUDescriptorHandleForHeapStart(); // この設定の保存先。
+		Handle.ptr += Index * SamplerStride;
+		Device->CreateSampler( &Sampler, Handle );
 	}
 	D3D12_DESCRIPTOR_HEAP_DESC HeapDesc = {}; // 深度用は1枚。
 	HeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
@@ -49,18 +87,20 @@ bool FDX12GeometryRenderer::Initialize( ID3D12Device* InDevice, int32 InWidth, i
 	return true;
 }
 
-void FDX12GeometryRenderer::BeginFrame( ID3D12GraphicsCommandList* InCommands, D3D12_CPU_DESCRIPTOR_HANDLE InRtv )
+void FDX12GeometryRenderer::BeginFrame( ID3D12GraphicsCommandList* InCommands, D3D12_CPU_DESCRIPTOR_HANDLE InRtv, ID3D12DescriptorHeap* InSrvHeap )
 {
 	Uploads.Reset();
 	UploadBytes = 0;
 	Commands = InCommands;
 	Rtv = InRtv;
+	SrvHeap = InSrvHeap;
 	Commands->ClearDepthStencilView( DsvHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1, 0, 0, nullptr );
 }
 
 void FDX12GeometryRenderer::EndFrame()
 {
 	Commands = nullptr;
+	SrvHeap = nullptr;
 }
 
 int32 FDX12GeometryRenderer::GetWidth() const
@@ -73,11 +113,11 @@ int32 FDX12GeometryRenderer::GetHeight() const
 	return Height;
 }
 
-ID3D12PipelineState* FDX12GeometryRenderer::GetPipeline( const FGeometryDrawState& State )
+ID3D12PipelineState* FDX12GeometryRenderer::GetPipeline( const FGeometryDrawState& State, bool bTextured )
 {
 	const uint64 Key = ( static_cast<uint64>( static_cast<uint32>( State.DepthBias ) ) << 32 ) | static_cast<uint64>( State.Topology )
 		| ( static_cast<uint64>( State.Compare ) << 2 ) | ( static_cast<uint64>( State.Culling ) << 5 )
-		| ( static_cast<uint64>( State.bTestDepth ) << 7 ) | ( static_cast<uint64>( State.bWriteDepth ) << 8 ) | ( static_cast<uint64>( State.bAlphaBlend ) << 9 ); // 状態の全要素を重複なしで含める。
+		| ( static_cast<uint64>( State.bTestDepth ) << 7 ) | ( static_cast<uint64>( State.bWriteDepth ) << 8 ) | ( static_cast<uint64>( State.bAlphaBlend ) << 9 ) | ( static_cast<uint64>( bTextured ) << 10 ); // PSOを決める全要素を含める。補間はsamplerで指定する。
 	if ( const auto* Found = Pipelines.Find( Key ) )
 	{
 		return Found->Resource.Get();
@@ -87,12 +127,14 @@ ID3D12PipelineState* FDX12GeometryRenderer::GetPipeline( const FGeometryDrawStat
 		return nullptr;
 	}
 	const D3D12_INPUT_ELEMENT_DESC Elements[] = { { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 } }; // 共通頂点の配置。
+		{ "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 20, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 } }; // 共通頂点の配置。
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC Desc = {}; // 状態を呼び出し単位で固定する。
 	Desc.pRootSignature = RootSignature.Get();
 	Desc.VS = { VertexShader->GetBufferPointer(), VertexShader->GetBufferSize() };
-	Desc.PS = { PixelShader->GetBufferPointer(), PixelShader->GetBufferSize() };
-	Desc.InputLayout = { Elements, 2 };
+	ID3DBlob* Pixel = bTextured ? TexturedPixelShader.Get() : PixelShader.Get(); // 画像の有無でPSを固定する。
+	Desc.PS = { Pixel->GetBufferPointer(), Pixel->GetBufferSize() };
+	Desc.InputLayout = { Elements, 3 };
 	Desc.SampleMask = UINT_MAX;
 	Desc.PrimitiveTopologyType = State.Topology == EGeometryTopology::Points ? D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT
 		: State.Topology == EGeometryTopology::Lines ? D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE : D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
@@ -134,14 +176,38 @@ ID3D12PipelineState* FDX12GeometryRenderer::GetPipeline( const FGeometryDrawStat
 
 bool FDX12GeometryRenderer::DrawGeometry( const FGeometryVertex* Vertices, int32 NumVertices, const FGeometryDrawState& State )
 {
+	return DrawInternal( Vertices, NumVertices, State, nullptr );
+}
+
+bool FDX12GeometryRenderer::DrawTexturedGeometry( const FGeometryVertex* Vertices, int32 NumVertices, const FGeometryDrawState& State, const FTextureDrawView& Texture )
+{
+	return DrawInternal( Vertices, NumVertices, State, &Texture );
+}
+
+bool FDX12GeometryRenderer::DrawInternal( const FGeometryVertex* Vertices, int32 NumVertices, const FGeometryDrawState& State, const FTextureDrawView* Texture )
+{
 	const int32 Group = State.Topology == EGeometryTopology::Points ? 1 : State.Topology == EGeometryTopology::Lines ? 2 : 3; // リストの最小単位。
 	if ( !Commands || !Vertices || NumVertices <= 0 || NumVertices > 65536 || NumVertices % Group != 0
-		|| State.Topology > EGeometryTopology::Triangles || State.Compare > EGeometryCompare::Always || State.Culling > EGeometryCulling::FrontFaces )
+		|| State.Topology > EGeometryTopology::Triangles || State.Compare > EGeometryCompare::Always || State.Culling > EGeometryCulling::FrontFaces || State.AddressU > EGeometryTextureAddress::Border || State.AddressV > EGeometryTextureAddress::Border
+		|| ( Texture && ( !SrvHeap || Texture->Binding == 0 || Texture->Width <= 0 || Texture->Height <= 0 ) ) )
 	{
 		return false;
 	}
+	if ( Texture )
+	{
+		const UINT64 Base = SrvHeap->GetGPUDescriptorHandleForHeapStart().ptr; // この実装が所有するheapの先頭。
+		const UINT Stride = Device->GetDescriptorHandleIncrementSize( D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV ); // 画像記述子の幅。
+		if ( Texture->Binding < Base || ( Texture->Binding - Base ) % Stride != 0 || ( Texture->Binding - Base ) / Stride >= SrvHeap->GetDesc().NumDescriptors )
+		{
+			return false;
+		}
+	}
 	for ( int32 Index = 0; Index < NumVertices; ++Index )
 	{
+		if ( !NMath::IsFinite( Vertices[Index].U ) || !NMath::IsFinite( Vertices[Index].V ) )
+		{
+			return false;
+		}
 		for ( float32 Value : Vertices[Index].Position )
 		{
 			if ( !NMath::IsFinite( Value ) )
@@ -154,7 +220,7 @@ bool FDX12GeometryRenderer::DrawGeometry( const FGeometryVertex* Vertices, int32
 	{
 		return false;
 	}
-	ID3D12PipelineState* Pipeline = GetPipeline( State ); // 今回だけのGPU状態。
+	ID3D12PipelineState* Pipeline = GetPipeline( State, Texture != nullptr ); // 今回だけのGPU状態。
 	if ( !Pipeline )
 	{
 		return false;
@@ -181,6 +247,8 @@ bool FDX12GeometryRenderer::DrawGeometry( const FGeometryVertex* Vertices, int32
 	Upload->Unmap( 0, nullptr );
 	FPendingDraw Pending; // コールバックへ値で複写する。
 	Pending.Owner = this;
+	Pending.TextureBinding = Texture ? Texture->Binding : 0;
+	Pending.SamplerIndex = static_cast<UINT>( State.AddressU ) | ( static_cast<UINT>( State.AddressV ) << 2 ) | ( State.bLinearFilter ? 16 : 0 );
 	Pending.Pipeline = Pipeline;
 	Pending.Vertices = { Upload->GetGPUVirtualAddress(), static_cast<UINT>( Desc.Width ), sizeof( FGeometryVertex ) };
 	Pending.NumVertices = static_cast<UINT>( NumVertices );
@@ -212,11 +280,24 @@ void FDX12GeometryRenderer::DrawCallback( const ImDrawList*, const ImDrawCmd* Co
 	Owner.Commands->RSSetViewports( 1, &Viewport );
 	Owner.Commands->RSSetScissorRects( 1, &Clip );
 	Owner.Commands->SetGraphicsRootSignature( Owner.RootSignature.Get() );
+	if ( Pending.TextureBinding != 0 )
+	{
+		ID3D12DescriptorHeap* Heaps[] = { Owner.SrvHeap, Owner.SamplerHeap.Get() }; // 画像は所有側のheap、補間は実行側のheap。
+		Owner.Commands->SetDescriptorHeaps( 2, Heaps );
+		Owner.Commands->SetGraphicsRootDescriptorTable( 0, D3D12_GPU_DESCRIPTOR_HANDLE { Pending.TextureBinding } );
+		auto Sampler = Owner.SamplerHeap->GetGPUDescriptorHandleForHeapStart(); // この命令に固定した補間。
+		Sampler.ptr += Pending.SamplerIndex * Owner.SamplerStride;
+		Owner.Commands->SetGraphicsRootDescriptorTable( 1, Sampler );
+	}
 	Owner.Commands->SetPipelineState( Pending.Pipeline );
 	Owner.Commands->IASetPrimitiveTopology( Pending.Topology );
 	Owner.Commands->IASetVertexBuffers( 0, 1, &Pending.Vertices );
 	Owner.Commands->DrawInstanced( Pending.NumVertices, 1, 0, 0 );
 	Owner.Commands->OMSetRenderTargets( 1, &Owner.Rtv, FALSE, nullptr );
+	if ( Pending.TextureBinding != 0 )
+	{
+		Owner.Commands->SetDescriptorHeaps( 1, &Owner.SrvHeap );
+	}
 }
 
 void FDX12GeometryRenderer::ClearDepth()

@@ -27,8 +27,8 @@ namespace
 	}
 }
 
-FCanvasDrawExecutor::FCanvasDrawExecutor( IRenderSurface& InSurface, ITextureDrawSource* InTextures )
-	: Surface( InSurface ), Textures( InTextures )
+FCanvasDrawExecutor::FCanvasDrawExecutor( IRenderSurface& InSurface, ITextureDrawSource* InTextures, IGeometryBufferSource* InBuffers )
+	: Surface( InSurface ), Buffers( InBuffers ), Textures( InTextures )
 {
 }
 
@@ -39,7 +39,9 @@ void FCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 	{
 		return;
 	}
-	FGeometryCommandExecutor Geometry( Surface.GetGeometry3D() ); // このSpanだけの3D状態。
+	FGeometryCommandExecutor Geometry( Surface.GetGeometry3D(), Textures, Buffers ); // このSpanだけの3D状態。
+	bool bLinearFilter = false; // 画像の既定は最近傍。
+	bool bExplicitFilter = false; // 明示した補間を使えない実行先では画像を省略する。
 	bool bAlphaBlend = false; // 3Dへ渡す合成方式。
 	FDrawRgb Bright; // このSpanだけの乗算色。
 	int32 Alpha = 255; // このSpanだけの不透明度。
@@ -95,6 +97,24 @@ void FCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			}
 			bAlphaBlend = Data.Mode == static_cast<int32>( EDrawBlend::Alpha );
 			Alpha = Data.Mode == static_cast<int32>( EDrawBlend::Opaque ) ? 255 : NMath::Clamp( Data.Param, 0, 255 );
+			break;
+		}
+		case EDrawCommand::Filter:
+		{
+			if ( !View.CanRead<FDrawFilterData>() )
+			{
+				bStopped = true;
+				break;
+			}
+			const auto Data = View.Read<FDrawFilterData>(); // 2Dと3Dで同じ設定を使う。
+			if ( Data.Mode < 0 || Data.Mode > 1 )
+			{
+				bStopped = true;
+				break;
+			}
+			bLinearFilter = Data.Mode == 1;
+			bExplicitFilter = true;
+			Geometry.Execute( View, Bright, Alpha, bAlphaBlend );
 			break;
 		}
 		case EDrawCommand::Bright:
@@ -310,6 +330,11 @@ void FCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			const float32 Points[8] = { Data.X, Data.Y, Data.X + static_cast<float32>( Image.Width ), Data.Y, Data.X + static_cast<float32>( Image.Width ), Data.Y + static_cast<float32>( Image.Height ), Data.X, Data.Y + static_cast<float32>( Image.Height ) }; // 描画先の4点。
 			if ( ValidPoints( Points ) )
 			{
+				if ( !Canvas->SetTextureFilter( bLinearFilter ) && bExplicitFilter )
+				{
+					bStopped = true;
+					break;
+				}
 				Canvas->Image( Image, Points, UV, Color( FDrawRgb() ) );
 			}
 			break;
@@ -344,6 +369,11 @@ void FCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			const float32 Points[8] = { Data.X0, Data.Y0, Data.X1, Data.Y0, Data.X1, Data.Y1, Data.X0, Data.Y1 }; // 描画先の4点。
 			if ( ValidPoints( Points ) )
 			{
+				if ( !Canvas->SetTextureFilter( bLinearFilter ) && bExplicitFilter )
+				{
+					bStopped = true;
+					break;
+				}
 				Canvas->Image( Image, Points, UV, Color( FDrawRgb() ) );
 			}
 			break;
@@ -378,6 +408,11 @@ void FCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			const float32 Points[8] = { Data.X[0], Data.Y[0], Data.X[1], Data.Y[1], Data.X[2], Data.Y[2], Data.X[3], Data.Y[3] }; // 描画先の4点。
 			if ( ValidPoints( Points ) )
 			{
+				if ( !Canvas->SetTextureFilter( bLinearFilter ) && bExplicitFilter )
+				{
+					bStopped = true;
+					break;
+				}
 				Canvas->Image( Image, Points, UV, Color( FDrawRgb() ) );
 			}
 			break;
@@ -419,6 +454,11 @@ void FCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			const float32 Points[8] = { Data.X, Data.Y, Data.X + static_cast<float32>( Data.SrcW ), Data.Y, Data.X + static_cast<float32>( Data.SrcW ), Data.Y + static_cast<float32>( Data.SrcH ), Data.X, Data.Y + static_cast<float32>( Data.SrcH ) }; // 描画先の4点。
 			if ( ValidPoints( Points ) )
 			{
+				if ( !Canvas->SetTextureFilter( bLinearFilter ) && bExplicitFilter )
+				{
+					bStopped = true;
+					break;
+				}
 				Canvas->Image( Image, Points, UV, Color( FDrawRgb() ) );
 			}
 			break;
@@ -460,6 +500,11 @@ void FCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			const float32 Points[8] = { Data.X0, Data.Y0, Data.X1, Data.Y0, Data.X1, Data.Y1, Data.X0, Data.Y1 }; // 描画先の4点。
 			if ( ValidPoints( Points ) )
 			{
+				if ( !Canvas->SetTextureFilter( bLinearFilter ) && bExplicitFilter )
+				{
+					bStopped = true;
+					break;
+				}
 				Canvas->Image( Image, Points, UV, Color( FDrawRgb() ) );
 			}
 			break;
@@ -501,6 +546,11 @@ void FCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			const float32 Points[8] = { Data.X[0], Data.Y[0], Data.X[1], Data.Y[1], Data.X[2], Data.Y[2], Data.X[3], Data.Y[3] }; // 描画先の4点。
 			if ( ValidPoints( Points ) )
 			{
+				if ( !Canvas->SetTextureFilter( bLinearFilter ) && bExplicitFilter )
+				{
+					bStopped = true;
+					break;
+				}
 				Canvas->Image( Image, Points, UV, Color( FDrawRgb() ) );
 			}
 			break;
@@ -525,6 +575,7 @@ void FCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 		Canvas->PopClip();
 		--ClipDepth;
 	}
+	Canvas->SetTextureFilter( true ); // 外側のImGui描画の既定へ戻す。
 	Canvas->SetAntiAlias( true );
 	if ( bStopped )
 	{
