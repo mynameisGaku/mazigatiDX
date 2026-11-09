@@ -105,9 +105,26 @@ void FImGuiCanvas2D::Quad( const float32 ( &Points )[8], FColor32 Color, bool bF
 void FImGuiCanvas2D::Text( float32 X, float32 Y, FColor32 Color, const char* Begin, const char* End )
 {
 	SetTextureFilter( true ); // 画像の補間設定を文字へ持ち越さない。
+	if ( Begin == End || !Begin || Begin[0] == 0 || Color.a == 0 )
+	{
+		return;
+	}
 	ImDrawList* List = ImGui::GetBackgroundDrawList( ImGui::GetMainViewport() ); // このフレームの2D描画先。
+	const ImGuiViewport* Viewport = ImGui::GetMainViewport(); // 表示範囲も文字の生成前に論理座標へ戻す。
+	const float32 ScaleX = LogicalWidth > 0 ? Viewport->Size.x / LogicalWidth : 1; // 横方向の拡大率。
+	const float32 ScaleY = LogicalHeight > 0 ? Viewport->Size.y / LogicalHeight : 1; // 縦方向の拡大率。
+	if ( !( ScaleX > 0 && ScaleY > 0 ) )
+	{
+		return;
+	}
+	const ImVec2 ClipMin = List->GetClipRectMin(), ClipMax = List->GetClipRectMax(); // GPUへ渡す表示座標の範囲は変えない。
+	const ImVec4 LogicalClip( ( ClipMin.x - Viewport->Pos.x ) / ScaleX, ( ClipMin.y - Viewport->Pos.y ) / ScaleY, ( ClipMax.x - Viewport->Pos.x ) / ScaleX, ( ClipMax.y - Viewport->Pos.y ) / ScaleY ); // 文字生成時だけ使う論理画素の範囲。
+	if ( LogicalClip.x >= LogicalClip.z || LogicalClip.y >= LogicalClip.w )
+	{
+		return;
+	}
 	const int32 FirstVertex = List->VtxBuffer.Size; // 今回追加する頂点の先頭。
-	List->AddText( ImVec2( X, Y ), ToColor( Color ), Begin, End );
+	ImGui::GetFont()->RenderText( List, ImGui::GetFontSize(), ImVec2( X, Y ), ToColor( Color ), LogicalClip, Begin, End );
 	TransformVertices( *List, FirstVertex );
 }
 

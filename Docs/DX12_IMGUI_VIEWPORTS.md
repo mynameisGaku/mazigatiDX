@@ -35,6 +35,13 @@ TryShutdownは新しいフレームと窓口取得を止めて終了を試しま
 
 検査は別リポジトリframework-dx12-selftestsで管理します。製品を対応する構成でビルドした後に実行します。
 
+対応する検査ブランチは [codex/dx12-windows-validation](https://github.com/mynameisGaku/framework-test/tree/codex/dx12-windows-validation) です。新しく取り付ける場合は、製品のルートで次を実行します。既存の取り付け先やブランチは自動で切り替えません。
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File Tools\SetupSelfTests.ps1 -Branch codex/dx12-windows-validation -Destination ..\framework-dx12-selftests
+git -C Source\SelfTest branch --show-current
+```
+
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File Source\SelfTest\RunDX12WindowTests.ps1 -FrameworkRoot (Get-Location).Path -Configuration Debug -Platform
 powershell -NoProfile -ExecutionPolicy Bypass -File Source\SelfTest\RunDX12WindowTests.ps1 -FrameworkRoot (Get-Location).Path -Configuration Release -Platform
@@ -48,18 +55,26 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Source\SelfTest\RunDX12Windo
 
 |検査|Debug|Release|
 |---|---|---|
-|viewport有効（既定GPU／WARP）|各153条件、失敗0|各153条件、失敗0|
-|viewport無効（既定GPU／WARP）|各99条件、失敗0|各99条件、失敗0|
+|viewport有効（既定GPU／WARP）|各168条件、失敗0|各168条件、失敗0|
+|viewport無効（既定GPU／WARP）|各114条件、失敗0|各114条件、失敗0|
 |終了の通常経路（既定GPU／WARP）|各23条件、失敗0|各23条件、失敗0|
 |明示した喪失（既定GPU／WARP）|各13条件、失敗0|各13条件、失敗0|
 |SDKデバッグ層|有効、意図しない警告・エラー0|同じ結果|
 |実アプリのDX12／WARP／DxLib|各45フレーム、分離・閉じる・再作成成功|同じ結果|
 
-両構成でソリューションの4 projectが警告・エラー0でビルドされ、その後のRunAllChecks.ps1 -SkipBuild -Quickも16項目すべて成功しました。書式・書式検査自体・Clean.bat・台帳の整合、既存ecs／assets／worldのワーカー数0／1／4／15、バッファとcomputeの契約検査を含みます。Canvas2D／Geometry3D／StaticModelも両構成の既定GPU／WARPで各120フレーム、合計12起動が成功しました。sample／template検査一式や配布物のクリーンビルド・性能測定の完了とは区別します。
+初期対応では、両構成でソリューションの4 projectが警告・エラー0でビルドされ、その後のRunAllChecks.ps1 -SkipBuild -Quickも16項目すべて成功しました。書式・書式検査自体・Clean.bat・台帳の整合、既存ecs／assets／worldのワーカー数0／1／4／15、バッファとcomputeの契約検査を含みます。後述の文字修正後にも、両構成の全体ビルド、表の窓・終了検査、書式検査とCanvas2D／Geometry3D／StaticModelの各120フレーム（既定GPU／WARP、合計12起動）が成功しました。sample／template検査一式や配布物のクリーンビルド・性能測定の完了とは区別します。
 
 最初のReleaseリンクではMSVCがLNK1103（デバッグ情報の破損）で停止しました。検証用コピーのproject／Samples／Editorのiobj・ipdbを退避し、同じ最適化設定で作り直すと成功しました。その後の増分ビルドも成功しています。ソースや最適化設定による回避は追加せず、原因は断定しません。失敗・再作成・最終ビルドと回帰結果のログはSaved/R1Shutdown/へ残しています。
 
-対応する検査コミットは5c6bca9f8d9c52c5f4d150d7885945fe00808bef（ローカル）です。検証はframework-dx12-verifyで行い、開発用の中間ファイルを共有していません。互換台帳は455項目のまま、画像共有の証拠を追記し、Verifiedへの昇格はしていません。
+対応する検査コミットは [377f1b49489277adc105f320208658dba421d801](https://github.com/mynameisGaku/framework-test/commit/377f1b49489277adc105f320208658dba421d801) です。GitHub接続経由で公開し、ローカルで検証したファイル群とのGit treeの一致を確認しています。検証はframework-dx12-verifyで行い、開発用の中間ファイルを共有していません。互換台帳は455項目のまま、画像共有の証拠を追記し、Verifiedへの昇格はしていません。
+
+## 文字の位置と切り取りの修正
+
+主画面を移動するとゲーム側の文字が消える不具合を再現しました。文字を論理座標のままImGuiへ渡す一方、文字生成前の切り取りにはデスクトップ上の範囲が使われていたためです。頂点を後から移動しても、すでに除外された文字は戻りません。
+
+FImGuiCanvas2D::Textは現在の表示範囲を論理座標へ戻し、既存のImFont::RenderTextで文字を生成してから主画面へ変換します。GPUへ渡すクリップ範囲は変更しません。表示寸法が0、空の範囲や透明文字では頂点を追加しません。
+
+修正前の既定GPU検査は、文字と画素の10条件で失敗しました。修正後は、主画面の移動・縦横で異なる拡大、部分クリップと復元、UTF-8の範囲指定・改行・文字サイズ変更を原点の独立した描画リストと比較し、形状・UV・色の一致を確認しています。主画面のBMPでも通常文字と切り取った文字の画素を確認し、クリップ外へ漏れないことを検査しました。ログはSaved/ViewportText/に残しています。
 
 ## 残る確認
 

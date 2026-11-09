@@ -21,6 +21,9 @@
 - マテリアル（`Library/Framework/Material`。[Docs/MATERIAL.md](Docs/MATERIAL.md)）: ドメイン（UI・Surface・Particle・PostProcess）・ノードのグラフ（`.gxmaterial`）・中間表現・HLSL の生成・CPU での評価・診断・バックエンドの能力の宣言、インスタンス（`.gxmaterialinstance`）、パラメーターコレクション（`.gxmaterialparametercollection`）、ポストプロセスのチェーン、Substrate 風の万能モデル（簡略版）、HLSL の直指定、ホットリロード、UI のブラシ（`FUIBrush::MakeMaterial`）、エンジン組み込みのマテリアル（`EngineContent/Materials`）。
 - マテリアルエディタ（`Editor.exe`。ノードのグラフ・プレビュー・診断・保存）と、サンプル `Materials`。
 
+### 修正
+- DX12の主画面を移動・拡大したときにゲーム側の文字が消える問題。文字生成時の切り取りと、生成後の頂点変換を同じ論理座標へ合わせ、文字と画素の回帰検査を追加。
+
 ### 変更
 - DX12でのMV1形式の読み込み・保存互換をv1.0.0の必須範囲から除外。モデルのスキン・モーフ・アニメーション等は引き続き対象。互換台帳へ明示した対象外のExcluded判定を追加。
 - FBX取り込みのスキン影響数を指定可能にし、削減と未対応方式を記録。既存のMV1変換は8本を使い、X経由で保持できない変形は既定でエラーにする。省略を許す場合はbAllowUnsupportedDeformationsで明示し、既存の出力を再診断する場合はbForceを指定する。

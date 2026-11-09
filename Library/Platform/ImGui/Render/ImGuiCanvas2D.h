@@ -20,7 +20,7 @@ public:
 	void Triangle( const float32 ( &Points )[6], FColor32 Color, bool bFill, float32 Thickness ) override;
 	// 凸四角形を描く。座標はXYの順で4点。
 	void Quad( const float32 ( &Points )[8], FColor32 Color, bool bFill, float32 Thickness ) override;
-	// 既定フォントでUTF-8の範囲を描く。
+	// 既定フォントでUTF-8の範囲を描く。文字の切り取りを論理画素で行ってから主画面へ合わせる。
 	void Text( float32 X, float32 Y, FColor32 Color, const char* Begin, const char* End ) override;
 	// 借用画像を凸四角形に貼る。UVは左上と右下。
 	void Image( const FTextureDrawView& Texture, const float32 ( &Points )[8], const float32 ( &UV )[4], FColor32 Color ) override;
