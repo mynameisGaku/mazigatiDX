@@ -5,6 +5,7 @@
 ## [未リリース]
 
 ### 追加
+- meshletの生成・GPUカリング・index付きindirect drawをv1.0.0の性能計画へ追加。Mesh Shader対応は能力別の拡張経路として次版以降に計画。
 - v1.0.0までのロードマップ（`Docs/ROADMAP.md`）。DX12のForward／Deferred／Forward+／Deferred+、既存DxLib公開機能の完全互換、高品質描画と制作機能、Vulkan／OpenGL以降の計画と段階ごとの完了条件を定義。
 - バージョンの定義（`Library/Core/Version.h`）。起動ログとクラッシュ報告にバージョンを出す。
 - DxLib の取得スクリプト（`FetchDxLib.bat`）、まっさらな環境でのビルドの確認（`Tools/VerifyCleanBuild.ps1`）、検査の取り付けと実行（`Tools/SetupSelfTests.ps1`・`Tools/RunAllChecks.ps1`）。
