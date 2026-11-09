@@ -1,28 +1,24 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 #include "Library/Core/Interfaces/Asset/AssetBackend.h"
-#include "Library/Core/Interfaces/Tickable/ITickable.h"
-#include "Library/Core/Collection/Map.h"
+#include "Library/Core/Interfaces/Render/IRenderTextureResources.h"
+#include "Library/Platform/Render/Texture/TextureAssetStore.h"
 #include "Library/Framework/Subsystem/AppSubsystem.h"
 #include "Library/Core/Interfaces/Render/ITextureDrawSource.h"
-#include "VendorModules/ImGui/imgui.h"
 #include "Library/Platform/Render/Geometry/GeometryBufferStore.h"
 #include "Library/Platform/Render/Model/StaticModelStore.h"
 
-class IPlatform;
 
 // 画像と静的モデルを登録する。音声・GPUの独自シェーダーは未対応として返す。
-class CDX12AssetBackendSubsystem : public CAppSubsystem, public IAssetBackend, public ITextureDrawSource, public IGeometryBufferSource, public IStaticModelSource, public ITickable
+class CDX12AssetBackendSubsystem : public CAppSubsystem, public IAssetBackend, public ITextureDrawSource, public IGeometryBufferSource, public IStaticModelSource
 {
 public:
 	// DX12が選ばれた場合だけ作る。
 	bool ShouldCreateSubsystem( CEngine& Engine ) const override;
 	// GPUと文脈を先に作る。
 	void Initialize( FSubsystemCollection& Collection ) override;
-	// GPUを待ってから画像を解放する。プラットフォームより先に呼ばれる。
+	// GPU資源の所有者へ解放を戻す。プラットフォームより先に呼ばれる。
 	void Deinitialize() override;
-	// 前フレームまで使った画像の遅延解放。
-	void Tick( float32 DeltaTime ) override;
 	// 画像を同期読み込みする。bAsyncでもその場で完了する。
 	int32 LoadTexture( const FString& Path, bool bAsync ) override;
 	// WICが対応するファイル内容を展開して登録する。失敗時は-1。
@@ -132,21 +128,7 @@ public:
 	// GetSoundLengthの未対応時の既定値。出力引数と外部状態は変更しない。
 	float32 GetSoundLength( int32 Sound ) override;
 private:
-	// 登録済みの画像だけ返す。所有権は移さない。
-	ImTextureData* FindTexture( int32 Handle );
-	// 遅延解放する画像と最後に使ったフレーム。
-	struct FRetiredTexture
-	{
-		ImTextureData* Texture = nullptr; // 所有する画像。
-		uint64 Frame = 0; // 解放を頼まれたフレーム。
-	};
-	// GPU待ち後に画像を破棄する。
-	void DestroyTexture( ImTextureData* Texture );
 	FGeometryBufferStore Buffers; // APIに依存しない登録形状。
-	TMap<int32, ImTextureData*> Textures; // 登録番号から実画像への表。
-	TArray<FRetiredTexture> Retired; // 描画の終了待ち。
-	IPlatform* Platform = nullptr; // 借用するフレーム進行。
-	static constexpr int32 MaxTextureHandles = 1024; // フォント用の記述子を別に残す登録上限。
-	int32 NextHandle = 0; // 再利用しない登録番号。
+	FTextureAssetStore Textures; // API共通の画像登録。所有先の寿命までに解放する。
 	FStaticModelStore Models; // 画像の所有先より先に解放する共有モデル。
 };

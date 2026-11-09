@@ -10,6 +10,9 @@
     <ClCompile Include="Library\Platform\Render\Geometry\GeometryBufferStore.cpp">
       <Filter>Library\Platform\Render\Geometry</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Texture\TextureAssetStore.cpp">
+      <Filter>Library\Platform\Render\Texture</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Render\DX12GeometryRenderer.cpp">
       <Filter>Library\Platform\DX12\Render</Filter>
     </ClCompile>
@@ -26,6 +29,15 @@
       <Filter>Library\Platform\DX12\Asset</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Render\DX12Device.cpp">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\ImGui\DX12ImGuiRenderer.cpp">
+      <Filter>Library\Platform\DX12\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\DX12TextureStore.cpp">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\DX12DescriptorPool.cpp">
       <Filter>Library\Platform\DX12\Render</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Render\DX12DrawExecutorSubsystem.cpp">
@@ -1699,6 +1711,12 @@
     <ClCompile Include="VendorModules\ufbx\ufbx.c">
       <Filter>VendorModules\ufbx</Filter>
     </ClCompile>
+    <Filter Include="Library\Platform\DX12\ImGui">
+      <UniqueIdentifier>{C168E55C-20BE-5960-B602-E37599B054AD}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Render\Texture">
+      <UniqueIdentifier>{E87E3FF2-B8E6-5669-BB4C-265C47111794}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Library\Platform\DX12">
       <UniqueIdentifier>{7C46CEA2-399E-5E06-997C-9325BF91F6AE}</UniqueIdentifier>
     </Filter>
@@ -1767,6 +1785,9 @@
     <ClInclude Include="Library\Platform\Render\Geometry\GeometryBufferStore.h">
       <Filter>Library\Platform\Render\Geometry</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Texture\TextureAssetStore.h">
+      <Filter>Library\Platform\Render\Texture</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IRenderGeometry3D.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
@@ -1811,6 +1832,21 @@
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Render\DX12Device.h">
       <Filter>Library\Platform\DX12\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\ImGui\DX12ImGuiRenderer.h">
+      <Filter>Library\Platform\DX12\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\DX12TextureStore.h">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\DX12DescriptorPool.h">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IRenderTextureResources.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\TextureResourceHandle.h">
+      <Filter>Library\Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Render\DX12DrawExecutorSubsystem.h">
       <Filter>Library\Platform\DX12\Render</Filter>

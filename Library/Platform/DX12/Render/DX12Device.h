@@ -4,9 +4,9 @@
 #include <d3d12.h>
 #include <dxgi1_4.h>
 #include <wrl/client.h>
-#include "Library/Core/Collection/Array.h"
-#include "VendorModules/ImGui/imgui.h"
-#include "VendorModules/ImGui/imgui_impl_dx12.h"
+#include "DX12DescriptorPool.h"
+#include "DX12TextureStore.h"
+#include "Library/Platform/DX12/ImGui/DX12ImGuiRenderer.h"
 
 class FDX12GeometryRenderer;
 class IRenderGeometry3D;
@@ -33,13 +33,11 @@ public:
 	void RecordClear( ImDrawList& List, ImU32 Color );
 	// 記録中だけ基本3Dの実行先を貸す。
 	IRenderGeometry3D* GetGeometry3D();
+	// ファイルやUIを介さず、画像資源の所有先を貸す。
+	IRenderTextureResources* GetTextureResources();
 	// GPU完了を待つ。デバイス喪失時はfalse。
 	bool Wait();
 private:
-	// ImGuiが要求する画像の記述子を貸し出す。
-	static void AllocateDescriptor( ImGui_ImplDX12_InitInfo* Info, D3D12_CPU_DESCRIPTOR_HANDLE* Cpu, D3D12_GPU_DESCRIPTOR_HANDLE* Gpu );
-	// 貸し出した記述子を戻す。
-	static void FreeDescriptor( ImGui_ImplDX12_InitInfo* Info, D3D12_CPU_DESCRIPTOR_HANDLE Cpu, D3D12_GPU_DESCRIPTOR_HANDLE Gpu );
 	// GPUの記録中に画面を消す。
 	static void ClearCallback( const ImDrawList*, const ImDrawCmd* Command );
 	// 消去命令の所有コピー。実行までGPU所有者を保持する。
@@ -56,17 +54,16 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> Allocator; // 記録領域。
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> Commands; // 今フレームの命令。
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> RtvHeap; // 画面の記述子。
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> SrvHeap; // 画像の記述子。
+	FDX12DescriptorPool Descriptors; // ゲーム画像とUIへ独立した区画を貸す。
+	FDX12TextureStore Textures; // poolより先に破棄するゲーム画像の所有者。
 	Microsoft::WRL::ComPtr<ID3D12Resource> Buffers[BufferCount]; // 交換用画面。
 	Microsoft::WRL::ComPtr<ID3D12Fence> Fence; // 完了通知。
-	TArray<int32> FreeDescriptors; // 未使用の画像記述子。
+	FDX12ImGuiRenderer ImGuiRenderer; // UIへの接続とその資源は専用の実装が所有する。
 	FDX12GeometryRenderer* Geometry = nullptr; // 所有する基本3Dパイプライン。
 	HANDLE FenceEvent = nullptr; // CPUが完了を待つイベント。
 	UINT64 FenceValue = 0; // 次の完了番号。
 	UINT BufferIndex = 0; // 今描く画面。
 	UINT RtvStride = 0; // 画面記述子の幅。
-	UINT SrvStride = 0; // 画像記述子の幅。
 	D3D12_CPU_DESCRIPTOR_HANDLE CurrentRtv = {}; // 今描く画面の記述子。
-	bool bRendererInitialized = false; // ImGui描画実装の生成済み印。
 	bool bRecording = false; // 記録中の印。
 };

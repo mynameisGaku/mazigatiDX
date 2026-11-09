@@ -890,6 +890,7 @@ Windows 10以降とWindows SDKのD3D12・DXGI・WICを使います。追加のGP
 |`IStaticModelSource`|準備済みの静的モデル形状・材質範囲と個体の不透明度を同期実行中だけ貸す|
 |`IGeometryBufferSource`|登録済みのローカル頂点・32bitへ統一したindex列を同期処理中だけ貸す|
 |`ITextureDrawSource`|登録番号から借用画像の寸法と描画実装内のbindingを得る|
+|`IRenderTextureResources`|codecやUIに依存せずRGBA8画像資源を作成・更新・解放し、借用viewを得る|
 |`INativeWindow`|OS接続用の窓と、フレームに固定したホイールを借りる|
 
 `FTextureDrawView::Binding`は描画実装内だけで解釈する値です。ゲームへ返したり、異なる描画実装間で使い回したりしません。登録画像の読み込み・所有と、描画側の画像参照を分離するための窓口です。`INativeWindow`のハンドルはWindowsではHWNDで、OS接続だけが解釈します。
@@ -897,7 +898,7 @@ Windows 10以降とWindows SDKのD3D12・DXGI・WICを使います。追加のGP
 - `Library/Platform/Render/Canvas/FCanvasDrawExecutor`は、共通描画命令の長さと値を検査して`IRenderCanvas2D`へ渡します。GPUの型を参照しません。ブレンド・乗算色は呼び出しごとの局所値で、クリップは正常終了・不正命令・未対応命令のいずれでも戻します。
 - `Library/Platform/ImGui/Render/FImGuiCanvas2D`は2D図形を三角形へ変換します。GPUのデバイスを持たないため、今後のVulkan／OpenGLのImGui描画実装にも使えます。異なる図形生成器を使う場合は、同じキャンバス窓口を実装できます。
 - `Library/Platform/Windows/Input/CWindowsInputSubsystem`はキーボードとマウス、`Library/Platform/Windows/Image/FWicImageDecoder`はCPU画像の展開を担当します。どちらもDirect3Dへ依存しません。文字入力・IMEはゲームの入力窓口には未接続です（ImGuiの文字入力は公式Win32実装が扱います）。テンキーEnterの独立判定は未対応です。
-- `Library/Platform/DX12/Window/CDX12PlatformSubsystem`は窓とフレーム、`Render/FDX12Device`はGPU資源と同期、`Asset/CDX12AssetBackendSubsystem`は画像の登録と寿命、`Render/CDX12DrawExecutorSubsystem`は窓口の接続を担当します。Frameworkへ具体クラスの依存を追加しません。
+- `Library/Platform/DX12/Window/CDX12PlatformSubsystem`は窓とフレーム、`Render/FDX12Device`はGPU資源と同期、`Asset/CDX12AssetBackendSubsystem`はデコードと共通の画像登録への接続、`Render/CDX12DrawExecutorSubsystem`は窓口の接続を担当します。Frameworkへ具体クラスの依存を追加しません。
 
 画像は同期で展開・アップロードします。`bAsync=true`でもその場で完了し、`IsLoading`はfalseです。解放を頼まれた登録番号は直ちに無効にし、実画像はそのフレームの描画が完了するまで保ちます。終了時もGPUを待ってから画像を解放し、その後にGPU・ImGui・窓を片付けます。
 
@@ -962,7 +963,7 @@ Primitive3DとPrimitiveBuffer3Dは点・線・三角形のリストと、折れ�
 
 ### 画像付き3Dと形状バッファ
 
-`FGeometryVertex`のUVをGPUで透視補間し、画像と頂点色を乗算します。補間はNearest（既定）とBilinear、画像の外側はWrap／Mirror／Clamp／透明Borderに対応します。補間の設定は2D画像と3D画像に反映し、文字の描画とSpanの終わりでは外側のImGui用の補間へ戻します。異方性補間は未対応です。DX12のSRVとsamplerは実装内に閉じ、GPUへ提出する際に画像のbindingが同じheap内にあることを検査します。最初のフレーム前に画像を作れるよう、画像アップロードに必要な公式GPU実装の資源も初期化時に作ります。
+`FGeometryVertex`のUVをGPUで透視補間し、画像と頂点色を乗算します。補間はNearest（既定）とBilinear、画像の外側はWrap／Mirror／Clamp／透明Borderに対応します。補間の設定は2D画像と3D画像に反映し、文字の描画とSpanの終わりでは外側のImGui用の補間へ戻します。異方性補間は未対応です。DX12のSRVとsamplerは実装内に閉じ、GPUへ提出する際に画像のbindingが同じheap内にあることを検査します。画像の作成・更新はFDX12TextureStoreが担当し、ImGuiのdevice objectsや画像アップロードを必要としません。
 
 `FDrawVertex3D`は形式と既定値を変えず`Core/Render/DrawVertex3D.h`へ移しました。`FGeometryBufferStore`はCPU上でローカル頂点・indexを所有する共通実装です。作成・更新・解放は既存のIRenderResourceBackend、参照はCore/InterfacesのIGeometryBufferSourceを通します。描画APIのデバイスやGPUバッファの型を公開しません。indexの書き込みは元の16／32bit形式を尊重し、描画側へは32bitの参照列を貸します。バッファの追加・更新・解放より前に借用を消費してください。
 
@@ -1011,3 +1012,29 @@ Billboard3D／BillboardPivot3Dは画像の横幅をワールド長で指定し�
 Geometry3Dサンプルには、球とその輪郭・斜めのカプセル・回転と基準点を持つ画像・半透明のCameraY四角形を追加しました。
 
 追加の検査ではDivの全範囲（3〜128）の面の外向き・法線・外接距離・輪郭の零長辺の有無と、入力不正時の出力保持を確認しました。四角形の向き・真上からのCameraY・基準点・反転・縦横比・画素単位の拡大率、不正命令・欠落画像の拒否と、GPU失敗時の状態復元も検査しています。Wine／vkd3d／lavapipeの実DX12描画では、球とカプセルの前後関係と表裏、輪郭、反転、両面、半透明の赤（黒背景上で128,0,0）、透明画像の後ろに後続の青い三角形が描かれること、クリップと2Dへの復帰を読み戻しました。MSVCの全体ビルド・Windows実機・WARP・SDKデバッグ層は引き続き未確認です。
+
+
+### 画像資源とUIの責務
+
+エンジンの画像は、ImTextureDataやImGui_ImplDX12_UpdateTextureを使って作成・更新・解放しません。ファイルはWICでCPUのRGBA8へ展開し、次の役割を通してGPUへ送ります。
+
+|実装・窓口|責務|
+|---|---|
+|既存ITextureBackend／ITextureDrawSource|ゲームとFrameworkが使う画像の入口、登録番号からの描画用参照|
+|FTextureAssetStore（Platform/Render/Texture）|アセット番号と画像資源番号の対応、登録・更新・登録解除。GPU・codec・UIの型を持たず、資源窓口をコンストラクターまたはInitializeで渡す|
+|IRenderTextureResources（Core/Interfaces/Render）|画像資源の作成・更新・解放・参照の4操作だけを定義する、所有先への接続|
+|FWicImageDecoder（Platform/Windows/Image）|ファイル内容をCPUのRGBA8へ展開。GPUやUIを扱わない|
+|FDX12TextureStore（Platform/DX12/Render）|D3D12画像・転送用領域と記録先・転送完了待ち・旧版の遅延解放|
+|FDX12DescriptorPool（Platform/DX12/Render）|SRV heapの区画を貸し、所有先と世代を検査して返却する。画像内容・UI文脈は扱わない|
+|FDX12ImGuiRenderer（Platform/DX12/ImGui）|公式ImGui描画実装の初期化・フレーム・描画・終了と、UIの記述子の仲介。ゲーム画像を所有しない|
+|FDX12Device|device・swapchain・フレームの記録と提出・完了待ちを所有し、各実装へ接続する|
+
+追加したインターフェースはIRenderTextureResources一つです。既存のアセット窓口へGPUのdeviceやImGuiの型を足さず、descriptor pool・転送・UIごとにインターフェースを作りません。Vulkan／OpenGLでは資源の実装を替え、FTextureAssetStoreとデコード側を再利用します。資源番号はCore/RenderのFTextureResourceHandleで表し、アセット番号・APIのbindingと区別します。
+
+同寸法の更新は、別のGPU画像とSRVを完成させてから現在の版へ切り替えます。更新前に取得したviewで記録済みの描画は、旧版を参照します。更新や作成に失敗した場合は現在の内容とbindingを保ちます。登録解除は直ちに番号を無効にし、実体と記述子はフレームのGPU完了後まで保ちます。FDX12Deviceは次のフレーム開始時に完了を待ってから旧版を回収し、終了時もUI・画像・poolの順で、GPUの完了後に解放します。転送待機の失敗時も、完了が確認できるまで転送元と画像を保持します。
+
+画像の資源数は旧版を含め1024までで、RGBA8・1 mip・同期転送です。アセット番号、画像資源番号、poolの貸出世代は巻き戻さず、同じ所有者の再初期化でも古い番号が別の資源に作用しないようにします。新しい版の一時領域・記述子を確保できない更新は失敗します。非同期転送、他の画素形式・mip、フレームの並列進行等は、R1以降で共通の資源契約を整えてから拡張します。
+
+この分離は画像の所有と転送が対象です。初期描画経路の2D図形・文字の生成と、3Dと混在させる記録順には、引き続きImGuiを使っています。ネイティブな描画パスと資源の読み書きは、ロードマップのR1以降で整えます。
+
+検査では、GPUもUIも使わない偽物の資源所有者を渡し、番号の分離・登録上限・失敗時の保持・無効番号・所有分だけの解放・再初期化後の番号を確認しました。ImGuiをリンクせず、DX12の画像を作り、行paddingのあるRGBA8・更新前後の版・記録後の登録解除・記述子不足時の保持と回収をcomputeで読み戻しました。さらにImGui文脈の作成前に用意した画像を2D／3Dへ渡し、補間・クリップ・描画状態の復帰と、UI終了・再初期化・文脈切り替えによってゲーム画像が壊れないことを確認しました。GPU検査はWine／vkd3d／lavapipe上で、MSVCの全体ビルド・Windows実機・WARP・SDKデバッグ層は未確認です。

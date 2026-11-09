@@ -4,9 +4,9 @@
 
 ## 台帳と判定
 
-初期の抽出対象は、Core/Interfacesの非破棄virtual関数298件、EDrawCommandの100件、登録サンプル33件、Toolsメニューの入口11件の計442件です。APIの継承は重複させず、CPU側の共通実装とcallback契約、DX12追加時の内部描画契約も含めます。Frameworkの公開ヘッダーの補助関数や、各編集画面の全操作まで自動抽出した数ではありません。これらは文書と呼出側を追加で照合し、各項目の検査計画へ展開します。
+初期の抽出対象は、Core/Interfacesの非破棄virtual関数302件、EDrawCommandの100件、登録サンプル33件、Toolsメニューの入口11件の計446件です。APIの継承は重複させず、CPU側の共通実装とcallback契約、DX12追加時の内部描画契約も含めます。Frameworkの公開ヘッダーの補助関数や、各編集画面の全操作まで自動抽出した数ではありません。これらは文書と呼出側を追加で照合し、各項目の検査計画へ展開します。
 
-台帳は実装状況と互換検査を区別します。現在はUnreviewed 45件、Missing 177件、Partial 69件、Implemented 151件、Verified 0件です。Implementedは処理または共通経路の存在をソースで確認した判定であり、Windows実機での互換を意味しません。Unreviewedの大半はサンプル・Editorの操作確認、残りはAIアニメーション制御の接続確認です。個々の機能が等しい重さではないため、件数の割合を開発の進捗率には使いません。
+台帳は実装状況と互換検査を区別します。現在はUnreviewed 45件、Missing 177件、Partial 69件、Implemented 155件、Verified 0件です。Implementedは処理または共通経路の存在をソースで確認した判定であり、Windows実機での互換を意味しません。Unreviewedの大半はサンプル・Editorの操作確認、残りはAIアニメーション制御の接続確認です。個々の機能が等しい重さではないため、件数の割合を開発の進捗率には使いません。
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File Tools\UpdateBackendCompatibility.ps1
@@ -83,3 +83,10 @@ DxLibのGetMovieImageは動画の番号をそのまま画像番号として使�
 - 最低GPU能力と、性能測定に使うGPU・CPU・解像度・参照シーンの確定。今回のsoftware GPUの結果から、実機の性能予算は決めないこと。
 
 R0を進める間も、確認前の機能をVerifiedへ進めず、未解決項目をロードマップの必須範囲から外しません。
+
+
+## 画像資源の依存の修正
+
+初期DX12経路では、WICのデコード後の画像をImTextureDataへ置き、ImGuiの公式描画実装へ転送と破棄を委ねていました。この依存を外し、IRenderTextureResourcesの4操作と、GPUを知らないFTextureAssetStore、DX12画像の所有者、記述子のpool、ImGui描画の接続へ責務を分けました。追加インターフェースは一つで、各内部実装を抽象化するための窓口は増やしていません。実装と寿命・検査の詳細は[開発手順](DEVELOPMENT.md#画像資源とuiの責務)に記録します。これはR1の資源境界の一部で、R0の形式互換やR1全体の完了とは扱いません。
+
+MV1については、固定版SDKでX形式への保存機能を確認しました。描画を無効にした補助環境では初期化は成功しましたが、モデル読み込みは失敗しており、変換経路としての成立はまだ確認できていません。この調査は保持し、画像資源の依存修正後に継続します。

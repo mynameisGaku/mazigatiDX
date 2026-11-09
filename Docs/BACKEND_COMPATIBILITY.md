@@ -10,7 +10,7 @@
 
 |分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|
 |---|---:|---:|---:|---:|---:|---:|
-|API|298|4|125|58|111|0|
+|API|302|4|125|58|115|0|
 |Draw|100|0|52|8|40|0|
 |Sample|33|30|0|3|0|0|
 |Editor|11|11|0|0|0|0|
@@ -274,6 +274,10 @@
 |[API.IRenderSurface.GetGeometry3D](../Library/Core/Interfaces/Render/IRenderSurface.h#L16)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
 |[API.IRenderSurface.RecordClear](../Library/Core/Interfaces/Render/IRenderSurface.h#L18)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
 |[API.IRenderSurface.WaitForGPU](../Library/Core/Interfaces/Render/IRenderSurface.h#L20)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
+|[API.IRenderTextureResources.CreateTextureRGBA8](../Library/Core/Interfaces/Render/IRenderTextureResources.h#L16)|Implemented|R1|ImGuiなしの作成・更新・解放、入力不正、旧viewのGPU完了までの保持、失敗と再初期化を検査|DX12画像所有者へ接続。アセット登録とUIの所有から分離。Windows実機での確認前|補助検証: NativeStoreのcompute readbackと、共通登録の偽物による検査。完全互換のVerifiedではない|
+|[API.IRenderTextureResources.GetTextureResourceView](../Library/Core/Interfaces/Render/IRenderTextureResources.h#L25)|Implemented|R1|ImGuiなしの作成・更新・解放、入力不正、旧viewのGPU完了までの保持、失敗と再初期化を検査|DX12画像所有者へ接続。アセット登録とUIの所有から分離。Windows実機での確認前|補助検証: NativeStoreのcompute readbackと、共通登録の偽物による検査。完全互換のVerifiedではない|
+|[API.IRenderTextureResources.ReleaseTexture](../Library/Core/Interfaces/Render/IRenderTextureResources.h#L22)|Implemented|R1|ImGuiなしの作成・更新・解放、入力不正、旧viewのGPU完了までの保持、失敗と再初期化を検査|DX12画像所有者へ接続。アセット登録とUIの所有から分離。Windows実機での確認前|補助検証: NativeStoreのcompute readbackと、共通登録の偽物による検査。完全互換のVerifiedではない|
+|[API.IRenderTextureResources.UpdateTextureRGBA8](../Library/Core/Interfaces/Render/IRenderTextureResources.h#L19)|Implemented|R1|ImGuiなしの作成・更新・解放、入力不正、旧viewのGPU完了までの保持、失敗と再初期化を検査|DX12画像所有者へ接続。アセット登録とUIの所有から分離。Windows実機での確認前|補助検証: NativeStoreのcompute readbackと、共通登録の偽物による検査。完全互換のVerifiedではない|
 |[API.IShader.GetShaderHandle](../Library/Core/Interfaces/Render/IShader.h#L55)|Missing|R6|作成前・作成後・破棄後のhandle、型の違い、描画までの寿命を確認|Frameworkの型付き借用handle。DX12資源の作成／解放と組み合わせて確認する||
 |[API.IShadowMap.GetShadowMapHandle](../Library/Core/Interfaces/Render/IShadowMap.h#L47)|Missing|R6|作成前・作成後・破棄後のhandle、型の違い、描画までの寿命を確認|Frameworkの型付き借用handle。DX12資源の作成／解放と組み合わせて確認する||
 |[API.ISoundBackend.CreateSoundFromPcm](../Library/Core/Interfaces/Asset/SoundBackend.h#L28)|Missing|R8|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||

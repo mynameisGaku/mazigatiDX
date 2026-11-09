@@ -70,12 +70,16 @@
     <ClCompile Include="Library\Framework\Asset\Model\Import\StaticModelBuilder.cpp" />
     <ClCompile Include="Library\Platform\Render\Model\StaticModelStore.cpp" />
     <ClCompile Include="Library\Platform\Render\Geometry\GeometryBufferStore.cpp" />
+    <ClCompile Include="Library\Platform\Render\Texture\TextureAssetStore.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\DX12GeometryRenderer.cpp" />
     <ClCompile Include="Library\Platform\Render\Geometry\GeometryCommandExecutor.cpp" />
     <ClCompile Include="Library\Platform\Render\Geometry\GeometryQuadBuilder.cpp" />
     <ClCompile Include="Library\Platform\Render\Geometry\GeometryShapeBuilder.cpp" />
     <ClCompile Include="Library\Platform\DX12\Asset\DX12AssetBackendSubsystem.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\DX12Device.cpp" />
+    <ClCompile Include="Library\Platform\DX12\ImGui\DX12ImGuiRenderer.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Render\DX12TextureStore.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Render\DX12DescriptorPool.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\DX12DrawExecutorSubsystem.cpp" />
     <ClCompile Include="Library\Platform\DX12\Window\DX12PlatformSubsystem.cpp" />
     <ClCompile Include="Library\Platform\ImGui\Render\ImGuiCanvas2D.cpp" />
@@ -644,6 +648,7 @@
     <ClInclude Include="Library\Core\Render\DrawVertex3D.h" />
     <ClInclude Include="Library\Core\Render\GeometryBufferView.h" />
     <ClInclude Include="Library\Platform\Render\Geometry\GeometryBufferStore.h" />
+    <ClInclude Include="Library\Platform\Render\Texture\TextureAssetStore.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IRenderGeometry3D.h" />
     <ClInclude Include="Library\Core\Render\GeometryDrawState.h" />
     <ClInclude Include="Library\Core\Render\GeometryVertex.h" />
@@ -659,6 +664,11 @@
     <ClInclude Include="Library\Core\Interfaces\Render\ITextureDrawSource.h" />
     <ClInclude Include="Library\Platform\DX12\Asset\DX12AssetBackendSubsystem.h" />
     <ClInclude Include="Library\Platform\DX12\Render\DX12Device.h" />
+    <ClInclude Include="Library\Platform\DX12\ImGui\DX12ImGuiRenderer.h" />
+    <ClInclude Include="Library\Platform\DX12\Render\DX12TextureStore.h" />
+    <ClInclude Include="Library\Platform\DX12\Render\DX12DescriptorPool.h" />
+    <ClInclude Include="Library\Core\Interfaces\Render\IRenderTextureResources.h" />
+    <ClInclude Include="Library\Core\Render\TextureResourceHandle.h" />
     <ClInclude Include="Library\Platform\DX12\Render\DX12DrawExecutorSubsystem.h" />
     <ClInclude Include="Library\Platform\DX12\Window\DX12PlatformSubsystem.h" />
     <ClInclude Include="Library\Platform\ImGui\Render\ImGuiCanvas2D.h" />

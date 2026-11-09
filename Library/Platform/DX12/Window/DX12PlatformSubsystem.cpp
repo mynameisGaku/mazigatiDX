@@ -382,3 +382,26 @@ IRenderGeometry3D* CDX12PlatformSubsystem::GetGeometry3D()
 {
 	return bInFrame && Device ? Device->GetGeometry3D() : nullptr;
 }
+
+FTextureResourceHandle CDX12PlatformSubsystem::CreateTextureRGBA8( int32 Width, int32 Height, const FColor32* Pixels )
+{
+	return bInitialized && Device ? Device->GetTextureResources()->CreateTextureRGBA8( Width, Height, Pixels ) : FTextureResourceHandle();
+}
+
+bool CDX12PlatformSubsystem::UpdateTextureRGBA8( FTextureResourceHandle Texture, int32 Width, int32 Height, const FColor32* Pixels )
+{
+	return bInitialized && Device && Device->GetTextureResources()->UpdateTextureRGBA8( Texture, Width, Height, Pixels );
+}
+
+void CDX12PlatformSubsystem::ReleaseTexture( FTextureResourceHandle Texture )
+{
+	if ( Device )
+	{
+		Device->GetTextureResources()->ReleaseTexture( Texture );
+	}
+}
+
+bool CDX12PlatformSubsystem::GetTextureResourceView( FTextureResourceHandle Texture, FTextureDrawView& Out ) const
+{
+	return bInitialized && Device && Device->GetTextureResources()->GetTextureResourceView( Texture, Out );
+}

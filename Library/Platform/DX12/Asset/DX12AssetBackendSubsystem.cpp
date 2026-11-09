@@ -1,15 +1,9 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DX12AssetBackendSubsystem.h"
-#include "Library/Core/Interfaces/Render/IRenderSurface.h"
 #include "Library/Platform/BackendSelection.h"
 #include "Library/Platform/System/BackendSupport.h"
-#include "Library/Platform/System/WindowsInclude.h"
 #include "Library/Core/File/File.h"
-#include "Library/Core/Memory/Memory.h"
-#include "Library/Core/Types/Numeric.h"
-#include "Library/Core/Interfaces/Platform/IPlatform.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
-#include "VendorModules/ImGui/imgui_impl_dx12.h"
 #include "Library/Platform/Windows/Image/WicImageDecoder.h"
 #include "Library/Framework/Asset/Model/Import/FbxImporter.h"
 #include "Library/Framework/Asset/Model/Import/ModelFormats.h"
@@ -26,51 +20,17 @@ bool CDX12AssetBackendSubsystem::ShouldCreateSubsystem( CEngine& ) const
 
 void CDX12AssetBackendSubsystem::Initialize( FSubsystemCollection& Collection )
 {
-	Platform = Collection.InitializeDependency<IPlatform>();
-}
-
-void CDX12AssetBackendSubsystem::DestroyTexture( ImTextureData* Texture )
-{
-	Texture->WantDestroyNextFrame = true;
-	Texture->UnusedFrames = 2;
-	Texture->SetStatus( ImTextureStatus_WantDestroy );
-	ImGui_ImplDX12_UpdateTexture( Texture );
-	delete Texture;
+	if ( auto* Resources = Collection.InitializeDependency<IRenderTextureResources>() )
+	{
+		Textures.Initialize( *Resources );
+	}
 }
 
 void CDX12AssetBackendSubsystem::Deinitialize()
 {
-	Models.Reset(); // モデルが所有する画像も遅延解放へ移してからGPUを待つ。
-	// フレームの提出後でも資源を安全に解放できるよう、プラットフォームの待ち窓口を使う。
-	if ( auto* Frame = dynamic_cast<IRenderSurface*>( Platform ) )
-	{
-		Frame->WaitForGPU();
-	}
-	for ( auto& Pair : Textures )
-	{
-		DestroyTexture( Pair.Value );
-	}
-	for ( auto& Item : Retired )
-	{
-		DestroyTexture( Item.Texture );
-	}
+	Models.Reset(); // 共有モデルが所有する画像を、先に登録から外す。
+	Textures.Shutdown(); // 資源の所有者がGPUの完了と解放を行う。
 	Buffers.Reset();
-	Textures.Reset();
-	Retired.Reset();
-	Platform = nullptr;
-}
-
-void CDX12AssetBackendSubsystem::Tick( float32 )
-{
-	// BeginFrameはGPU完了を待ってから入力・アセットのTickへ進む。
-	for ( int32 Index = Retired.Num() - 1; Index >= 0; --Index )
-	{
-		if ( Platform && Retired[Index].Frame < Platform->GetFrameCount() )
-		{
-			DestroyTexture( Retired[Index].Texture );
-			Retired.RemoveAt( Index );
-		}
-	}
 }
 
 int32 CDX12AssetBackendSubsystem::LoadTexture( const FString& Path, bool )
@@ -88,77 +48,27 @@ int32 CDX12AssetBackendSubsystem::CreateTextureFromMemory( const void* FileImage
 
 int32 CDX12AssetBackendSubsystem::CreateTextureFromPixels( int32 Width, int32 Height, const FColor32* Pixels )
 {
-	if ( !Platform || !Platform->IsInitialized() || !Pixels || Width < 1 || Height < 1 || Width > 16384 || Height > 16384
-		|| static_cast<int64>( Width ) * Height > 64 * 1024 * 1024 || Textures.Num() + Retired.Num() >= MaxTextureHandles || NextHandle == TNumericLimits<int32>::Max() )
-	{
-		return NAsset::InvalidHandle;
-	}
-	auto* Texture = new ImTextureData(); // 自前で所有し、ImGuiのフォント一覧には登録しない。
-	Texture->Create( ImTextureFormat_RGBA32, Width, Height );
-	FMemory::Memcpy( Texture->Pixels, Pixels, static_cast<usize>( Width ) * Height * sizeof( FColor32 ) );
-	ImGui_ImplDX12_UpdateTexture( Texture );
-	if ( Texture->Status != ImTextureStatus_OK )
-	{
-		DestroyTexture( Texture );
-		return NAsset::InvalidHandle;
-	}
-	const int32 Handle = NextHandle++; // この登録だけに使う番号。
-	Textures.Add( Handle, Texture );
-	return Handle;
+	return Textures.Create( Width, Height, Pixels );
 }
 
 bool CDX12AssetBackendSubsystem::UpdateTexturePixels( int32 Texture, int32 Width, int32 Height, const FColor32* Pixels )
 {
-	ImTextureData* Image = FindTexture( Texture ); // 更新先。
-	if ( !Image || !Pixels || Width != Image->Width || Height != Image->Height )
-	{
-		return false;
-	}
-	FMemory::Memcpy( Image->Pixels, Pixels, static_cast<usize>( Width ) * Height * sizeof( FColor32 ) );
-	Image->UpdateRect = { 0, 0, static_cast<unsigned short>( Width ), static_cast<unsigned short>( Height ) };
-	Image->Updates.resize( 0 );
-	Image->Updates.push_back( Image->UpdateRect );
-	Image->SetStatus( ImTextureStatus_WantUpdates );
-	ImGui_ImplDX12_UpdateTexture( Image );
-	return Image->Status == ImTextureStatus_OK;
+	return Textures.Update( Texture, Width, Height, Pixels );
 }
 
 bool CDX12AssetBackendSubsystem::GetTextureDrawView( int32 Handle, FTextureDrawView& Out )
 {
-	ImTextureData* Image = FindTexture( Handle ); // 登録済みの画像。
-	if ( !Image )
-	{
-		return false;
-	}
-	Out = { Image->GetTexID(), Image->Width, Image->Height };
-	return true;
-}
-
-ImTextureData* CDX12AssetBackendSubsystem::FindTexture( int32 Handle )
-{
-	ImTextureData** Found = Textures.Find( Handle ); // 登録済みの画像。
-	return Found ? *Found : nullptr;
+	return Textures.GetTextureDrawView( Handle, Out );
 }
 
 bool CDX12AssetBackendSubsystem::GetTextureSize( int32 Texture, int32& OutWidth, int32& OutHeight )
 {
-	ImTextureData* Image = FindTexture( Texture ); // 登録済みの画像。
-	if ( !Image )
-	{
-		return false;
-	}
-	OutWidth = Image->Width;
-	OutHeight = Image->Height;
-	return true;
+	return Textures.GetSize( Texture, OutWidth, OutHeight );
 }
 
 void CDX12AssetBackendSubsystem::DeleteTexture( int32 Texture )
 {
-	if ( ImTextureData* Image = FindTexture( Texture ) )
-	{
-		Retired.Add( { Image, Platform ? Platform->GetFrameCount() : 0 } );
-		Textures.Remove( Texture );
-	}
+	Textures.Delete( Texture );
 }
 
 bool CDX12AssetBackendSubsystem::DecodeImageFile( const FString& Path, int32& OutWidth, int32& OutHeight, TArray<FColor32>& OutPixels )

@@ -82,34 +82,16 @@ bool FDX12Device::Initialize( HWND Window, int32 Width, int32 Height, bool bWarp
 		Device->CreateRenderTargetView( Buffers[Index].Get(), nullptr, Rtv );
 		Rtv.ptr += RtvStride;
 	}
-	HeapDesc.NumDescriptors = DescriptorCount;
-	HeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	HeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	if ( FAILED( Device->CreateDescriptorHeap( &HeapDesc, IID_PPV_ARGS( &SrvHeap ) ) ) )
+	if ( !Descriptors.Initialize( Device.Get(), DescriptorCount ) || !Textures.Initialize( Device.Get(), Queue.Get(), Descriptors ) )
 	{
 		return false;
-	}
-	SrvStride = Device->GetDescriptorHandleIncrementSize( HeapDesc.Type );
-	for ( int32 Index = DescriptorCount - 1; Index >= 0; --Index )
-	{
-		FreeDescriptors.Add( Index );
 	}
 	Geometry = new FDX12GeometryRenderer();
 	if ( !Geometry->Initialize( Device.Get(), Width, Height ) )
 	{
 		return false;
 	}
-	ImGui_ImplDX12_InitInfo Info; // 公式描画実装へGPUだけを渡す。
-	Info.Device = Device.Get();
-	Info.CommandQueue = Queue.Get();
-	Info.NumFramesInFlight = BufferCount;
-	Info.RTVFormat = Desc.Format;
-	Info.UserData = this;
-	Info.SrvDescriptorHeap = SrvHeap.Get();
-	Info.SrvDescriptorAllocFn = AllocateDescriptor;
-	Info.SrvDescriptorFreeFn = FreeDescriptor;
-	bRendererInitialized = ImGui_ImplDX12_Init( &Info );
-	return bRendererInitialized && ImGui_ImplDX12_CreateDeviceObjects(); // 最初のフレーム前の画像アップロードにも必要。
+	return ImGuiRenderer.Initialize( Device.Get(), Queue.Get(), BufferCount, Desc.Format, Descriptors );
 }
 
 bool FDX12Device::Wait()
@@ -142,11 +124,7 @@ bool FDX12Device::Wait()
 void FDX12Device::Shutdown()
 {
 	Wait();
-	if ( bRendererInitialized )
-	{
-		ImGui_ImplDX12_Shutdown();
-		bRendererInitialized = false;
-	}
+	ImGuiRenderer.Shutdown();
 	for ( auto& Buffer : Buffers )
 	{
 		Buffer.Reset();
@@ -156,12 +134,12 @@ void FDX12Device::Shutdown()
 	Commands.Reset();
 	Allocator.Reset();
 	SwapChain.Reset();
-	SrvHeap.Reset();
+	Textures.ResetAfterGPUIdle();
+	Descriptors.Reset();
 	RtvHeap.Reset();
 	Fence.Reset();
 	Queue.Reset();
 	Device.Reset();
-	FreeDescriptors.Reset();
 	if ( FenceEvent )
 	{
 		CloseHandle( FenceEvent );
@@ -177,6 +155,7 @@ bool FDX12Device::BeginFrame()
 	{
 		return false;
 	}
+	Textures.CollectAfterGPUIdle(); // 記録済みの描画が残らない時点でだけ旧版を戻す。
 	BufferIndex = SwapChain->GetCurrentBackBufferIndex();
 	CurrentRtv = RtvHeap->GetCPUDescriptorHandleForHeapStart();
 	CurrentRtv.ptr += BufferIndex * RtvStride;
@@ -188,12 +167,15 @@ bool FDX12Device::BeginFrame()
 	Barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	Commands->ResourceBarrier( 1, &Barrier );
 	Commands->OMSetRenderTargets( 1, &CurrentRtv, FALSE, nullptr );
-	ID3D12DescriptorHeap* Heaps[] = { SrvHeap.Get() }; // 画像を描くための記述子。
+	ID3D12DescriptorHeap* Heaps[] = { Descriptors.GetHeap() }; // 画像を描くための記述子。
 	Commands->SetDescriptorHeaps( 1, Heaps );
 	const float Black[4] = { 0, 0, 0, 1 }; // 毎フレームの背景。
 	Commands->ClearRenderTargetView( CurrentRtv, Black, 0, nullptr );
-	Geometry->BeginFrame( Commands.Get(), CurrentRtv, SrvHeap.Get() );
-	ImGui_ImplDX12_NewFrame();
+	Geometry->BeginFrame( Commands.Get(), CurrentRtv, Descriptors.GetHeap() );
+	if ( !ImGuiRenderer.BeginFrame() )
+	{
+		return false;
+	}
 	bRecording = true;
 	return true;
 }
@@ -204,7 +186,10 @@ bool FDX12Device::EndFrame( ImDrawData* Data, bool bVSync )
 	{
 		return false;
 	}
-	ImGui_ImplDX12_RenderDrawData( Data, Commands.Get() );
+	if ( !ImGuiRenderer.Render( Data, Commands.Get() ) )
+	{
+		return false;
+	}
 	Geometry->EndFrame();
 	D3D12_RESOURCE_BARRIER Barrier = {}; // 描画結果を表示用へ戻す。
 	Barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -223,34 +208,6 @@ bool FDX12Device::EndFrame( ImDrawData* Data, bool bVSync )
 	return SUCCEEDED( SwapChain->Present( bVSync ? 1 : 0, 0 ) );
 }
 
-void FDX12Device::AllocateDescriptor( ImGui_ImplDX12_InitInfo* Info, D3D12_CPU_DESCRIPTOR_HANDLE* Cpu, D3D12_GPU_DESCRIPTOR_HANDLE* Gpu )
-{
-	auto* Self = static_cast<FDX12Device*>( Info->UserData ); // 所有するGPU。
-	// 公式コールバックに失敗の戻り値がないため、上限超過は明示的な致命エラー。
-	if ( Self->FreeDescriptors.IsEmpty() )
-	{
-		LOG( LogDX12, Fatal, "DX12 texture descriptor capacity exceeded" );
-		return;
-	}
-	const int32 Index = Self->FreeDescriptors.Pop(); // 貸し出す番号。
-	*Cpu = Self->SrvHeap->GetCPUDescriptorHandleForHeapStart();
-	*Gpu = Self->SrvHeap->GetGPUDescriptorHandleForHeapStart();
-	Cpu->ptr += static_cast<SIZE_T>( Index ) * Self->SrvStride;
-	Gpu->ptr += static_cast<UINT64>( Index ) * Self->SrvStride;
-}
-
-void FDX12Device::FreeDescriptor( ImGui_ImplDX12_InitInfo* Info, D3D12_CPU_DESCRIPTOR_HANDLE Cpu, D3D12_GPU_DESCRIPTOR_HANDLE )
-{
-	auto* Self = static_cast<FDX12Device*>( Info->UserData ); // 戻す先。
-	Self->FreeDescriptors.Add( static_cast<int32>( ( Cpu.ptr - Self->SrvHeap->GetCPUDescriptorHandleForHeapStart().ptr ) / Self->SrvStride ) );
-}
-
-void FDX12Device::RecordClear( ImDrawList& List, ImU32 Color )
-{
-	FClearCommand Clear = { this, Color }; // 命令列へ値で複写する。
-	List.AddCallback( ClearCallback, &Clear, sizeof( Clear ) );
-}
-
 void FDX12Device::ClearCallback( const ImDrawList*, const ImDrawCmd* Command )
 {
 	const auto& Clear = *static_cast<const FClearCommand*>( Command->UserCallbackData ); // 記録済みの消去。
@@ -262,4 +219,9 @@ void FDX12Device::ClearCallback( const ImDrawList*, const ImDrawCmd* Command )
 IRenderGeometry3D* FDX12Device::GetGeometry3D()
 {
 	return bRecording ? Geometry : nullptr;
+}
+
+IRenderTextureResources* FDX12Device::GetTextureResources()
+{
+	return &Textures;
 }

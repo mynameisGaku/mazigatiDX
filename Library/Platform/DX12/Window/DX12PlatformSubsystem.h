@@ -3,13 +3,14 @@
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
 #include "Library/Framework/Subsystem/AppSubsystem.h"
 #include "Library/Core/Interfaces/Render/IRenderSurface.h"
+#include "Library/Core/Interfaces/Render/IRenderTextureResources.h"
 #include "Library/Core/Interfaces/Platform/INativeWindow.h"
 #include "Library/Platform/ImGui/Render/ImGuiCanvas2D.h"
 
 class FDX12Device;
 
 // Windowsの窓とフレーム進行を所有する。GPUの資源管理はFDX12Deviceへ委譲する。
-class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IRenderSurface, public INativeWindow
+class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IRenderSurface, public IRenderTextureResources, public INativeWindow
 {
 public:
 	// 途中の初期化失敗時も資源を解放する。
@@ -66,6 +67,14 @@ public:
 	void RecordClear( FColor32 Color ) override;
 	// アセットの終了時にGPUを待つ。
 	bool WaitForGPU() override;
+	// RGBA8の画像資源を、UIを介さず作る。
+	FTextureResourceHandle CreateTextureRGBA8( int32 Width, int32 Height, const FColor32* Pixels ) override;
+	// 記録済みの画像を保ったまま更新する。
+	bool UpdateTextureRGBA8( FTextureResourceHandle Texture, int32 Width, int32 Height, const FColor32* Pixels ) override;
+	// GPU完了後に画像資源を解放する。
+	void ReleaseTexture( FTextureResourceHandle Texture ) override;
+	// 所有先から画像を借りる。失敗時はOutを保つ。
+	bool GetTextureResourceView( FTextureResourceHandle Texture, FTextureDrawView& Out ) const override;
 	// 今フレームのホイールを返す。
 	void GetWheel( float32& X, float32& Y ) const override;
 	// OSのホイール通知を貯める。ウィンドウ手続きからのみ呼ぶ。
