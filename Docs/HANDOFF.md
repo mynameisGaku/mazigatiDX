@@ -1,6 +1,6 @@
 ﻿# DX12バックエンド開発の引き継ぎ
 
-最終整理: 2026-11-09（日本時間）。作業ブランチは `backend-dx12`、取り込み元devの基点は `c1d2143262d246c73bffd55c60ef2d84ac4773ba`。実装の直近コミットは `3344e8f` です。この文書を追加するコミットと配布物の正確なHEADは、同梱の `DELIVERY.md` を参照してください。
+最終整理: 2026-11-09（日本時間）。作業ブランチは `backend-dx12`、取り込み元devの基点は `c1d2143262d246c73bffd55c60ef2d84ac4773ba`。実装の直近コミットは `3344e8f` です。最新版のHEADはGitHubのbackend-dx12または `git rev-parse HEAD` で確認してください。別途作成したオフライン配布物では、同梱の `DELIVERY.md` に配布時のHEADを記録します。
 
 ## 最初に読むもの
 
@@ -78,7 +78,7 @@ GPU補助検査では、基本3Dと画像付き描画、深度・表裏・クリ
 
 **MSVCによるソリューション全体のビルド、Windows実機、WARP、SDKデバッグ層、複数ベンダー、性能評価、既存自己検査一式は未確認です。** 補助GPUの能力照会はSM5.1で、DXC／SM6は未検証。Wine側のHLSLコンパイラーではRWStructuredBuffer書き込みが未実装だったため、compute実証だけ公式SDKのコンパイラーで確認しました。SDKバイナリは配布に含めません。
 
-同梱の `verification/` は別置きの補助検査ソースと自作fixtureです。製品のSource/SelfTestへ勝手に取り込まないでください。既存のframework-testリポジトリはこの作業環境に取り付けておらず、今回の配布にも含みません。補助検査には元環境の固定パスがあり、移設時はverification/README.mdに従って調整が必要です。
+補助検査ソースと自作fixtureは作業環境の `/workspace/scratch/` に別置きし、オフライン配布物の `verification/` にも控えを作成しました。GitHubのソースZIPにはverificationを含みません。製品のSource/SelfTestへ勝手に取り込まないでください。既存のframework-testリポジトリはこの作業環境に取り付けておらず、GitHubのソースZIPにも含みません。補助検査には元環境の固定パスがあり、移設時は調整が必要です。検査結果と限界は上記およびDEVELOPMENTに記録しています。
 
 ## 次に進める作業
 
@@ -115,11 +115,10 @@ Set-Location Samples
 
 規約はDEVELOPMENTの「コードとコメント」を正本とします。自作h／cpp／inl／ps1はUTF-8 BOM一つ・CRLF・NULなし。hはSPDX MITとpragma once。宣言・field・変数に日本語の役割コメント、Allman、既存Coreコンテナ・FString・NMathを優先。OS／標準ライブラリの橋渡しを低層へ閉じます。第三者ソースの書式は変えません。
 
-作業先はbackend-dx12。現環境ではGitHubへのpushがHTTP 403で失敗しており、これまでの実装コミットはリモートへ反映できていません。配布のGit bundleには、このブランチと復元に必要な全祖先を含めます。Gitの認証設定や作業環境の.gitフォルダーは同梱しません。
+作業先はbackend-dx12。GitHub側の接続設定の更新後、同ブランチへのpushが成功し、実装コミットと引き継ぎ文書をリモートへ反映しました。履歴を含めて再開する場合は次を使います。
 
 ```powershell
-git clone --branch backend-dx12 .\backend-dx12-full.bundle .\mazigatiDX-restored
-git -C .\mazigatiDX-restored remote set-url origin https://github.com/mynameisGaku/mazigatiDX.git
+git clone --branch backend-dx12 https://github.com/mynameisGaku/mazigatiDX.git .\mazigatiDX-restored
 ```
 
-認証と権限を使える環境へ移した後に、既存のリモート状態を確認してpushしてください。統合・公開はロードマップと既存ブランチ運用に従い、この引き継ぎだけでdev／mainへマージしません。
+ソース一式だけを取得する場合は [backend-dx12のZIP](https://github.com/mynameisGaku/mazigatiDX/archive/refs/heads/backend-dx12.zip) を使えます。GitHubのZIPはGit履歴を含まないため、履歴が必要な場合はcloneします。別途作成したオフライン配布物のbackend-dx12-full.bundleにも全祖先を含めています。認証設定や作業環境の.gitフォルダーは同梱しません。統合・公開はロードマップと既存ブランチ運用に従い、この引き継ぎだけでdev／mainへマージしません。
