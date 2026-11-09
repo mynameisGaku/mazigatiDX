@@ -1,12 +1,14 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DX12Device.h"
+#include "DX12GeometryRenderer.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/Platform/DX12/DX12Log.h"
 #include "Library/Core/Memory/Memory.h"
 
 #pragma comment( lib, "d3d12.lib" )
 #pragma comment( lib, "dxgi.lib" )
 #pragma comment( lib, "d3dcompiler.lib" )
-DEFINE_LOG_CATEGORY_STATIC( LogDX12, Log )
+DEFINE_LOG_CATEGORY( LogDX12 )
 
 FDX12Device::~FDX12Device()
 {
@@ -92,6 +94,11 @@ bool FDX12Device::Initialize( HWND Window, int32 Width, int32 Height, bool bWarp
 	{
 		FreeDescriptors.Add( Index );
 	}
+	Geometry = new FDX12GeometryRenderer();
+	if ( !Geometry->Initialize( Device.Get(), Width, Height ) )
+	{
+		return false;
+	}
 	ImGui_ImplDX12_InitInfo Info; // 公式描画実装へGPUだけを渡す。
 	Info.Device = Device.Get();
 	Info.CommandQueue = Queue.Get();
@@ -144,6 +151,8 @@ void FDX12Device::Shutdown()
 	{
 		Buffer.Reset();
 	}
+	delete Geometry;
+	Geometry = nullptr;
 	Commands.Reset();
 	Allocator.Reset();
 	SwapChain.Reset();
@@ -183,6 +192,7 @@ bool FDX12Device::BeginFrame()
 	Commands->SetDescriptorHeaps( 1, Heaps );
 	const float Black[4] = { 0, 0, 0, 1 }; // 毎フレームの背景。
 	Commands->ClearRenderTargetView( CurrentRtv, Black, 0, nullptr );
+	Geometry->BeginFrame( Commands.Get(), CurrentRtv );
 	ImGui_ImplDX12_NewFrame();
 	bRecording = true;
 	return true;
@@ -195,6 +205,7 @@ bool FDX12Device::EndFrame( ImDrawData* Data, bool bVSync )
 		return false;
 	}
 	ImGui_ImplDX12_RenderDrawData( Data, Commands.Get() );
+	Geometry->EndFrame();
 	D3D12_RESOURCE_BARRIER Barrier = {}; // 描画結果を表示用へ戻す。
 	Barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	Barrier.Transition.pResource = Buffers[BufferIndex].Get();
@@ -246,4 +257,9 @@ void FDX12Device::ClearCallback( const ImDrawList*, const ImDrawCmd* Command )
 	const ImVec4 Rgba = ImGui::ColorConvertU32ToFloat4( Clear.Color ); // GPUへ渡すRGBA。
 	const float Values[4] = { Rgba.x, Rgba.y, Rgba.z, Rgba.w }; // 消去色。
 	Clear.Owner->Commands->ClearRenderTargetView( Clear.Owner->CurrentRtv, Values, 0, nullptr );
+}
+
+IRenderGeometry3D* FDX12Device::GetGeometry3D()
+{
+	return bRecording ? Geometry : nullptr;
 }

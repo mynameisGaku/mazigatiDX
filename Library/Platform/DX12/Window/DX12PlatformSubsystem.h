@@ -60,6 +60,8 @@ public:
 	void* GetNativeWindow() const override;
 	// フレーム中だけゲームの描画先を貸す。
 	IRenderCanvas2D* GetCanvas2D() override;
+	// フレーム中だけ基本3Dの実行先を貸す。
+	IRenderGeometry3D* GetGeometry3D() override;
 	// 色を所有コピーして消去命令を積む。
 	void RecordClear( FColor32 Color ) override;
 	// アセットの終了時にGPUを待つ。

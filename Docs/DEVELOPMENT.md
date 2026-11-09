@@ -699,7 +699,7 @@ Worldの`Components.Effect`には、任意の`Target`（追従先オブジェク
 |アセット|`LogAsset`（読み込み・保存・モデル・アニメーション・スプライトシート・音・テクスチャ・描画先を含む）`LogModelAnimator` `LogMovie` `LogAudio` `LogSaveGame` `LogJson` `LogFileSystem`|
 |描画|`LogRender`（モデルの材質エフェクトなど。フレームワーク側）`LogDxLibDraw`（描画コマンドをDxLibの呼び出しにする所）`LogCapture`（撮影）|
 |物理・AI・ワールド|`LogPhysics` `LogAI` `LogWorld`|
-|入力・OS|`LogInput` `LogGamepad` `LogPlatform`（DxLibの実装。アセット・音・ムービーのバックエンドを含む）`LogNull`（Nullバックエンド）`LogBackendSupport`|
+|入力・OS|`LogInput` `LogGamepad` `LogPlatform`（DxLibの実装。アセット・音・ムービーのバックエンドを含む）`LogNull`（Nullバックエンド）`LogDX12`（DX12バックエンド）`LogBackendSupport`|
 |エディタ・デバッグ|`LogEditor`（Editor.exeのアプリ）`LogEditorUI`（各エディタの画面）`LogDebugOverlay` `LogProfiler`（記録・書き出し）`LogCrashReporter` `LogAssert`（CHECK / ENSURE）`LogImGuiAssert`|
 |ゲーム・サンプル・検査|`LogGame` `LogGameScene` `LogTitleScene` `LogPhysicsObjects`（ゲームのコード）、`LogSamples` `LogPostEffectsSample` `LogShadersSample`、`LogAssetSelfTest` `LogEcsSelfTest` `LogWorldSelfTest`（セルフテスト）、`LogTemp`（とりあえず出したいとき）|
 
@@ -883,7 +883,8 @@ Windows 10以降とWindows SDKのD3D12・DXGI・WICを使います。追加のGP
 |窓口|役割|
 |---|---|
 |`IRenderCanvas2D`|論理画素座標の図形・文字・借用画像・クリップを描く|
-|`IRenderSurface`|フレーム内だけキャンバスを貸す、順序を保った画面消去、終了時のGPU完了待ち|
+|`IRenderGeometry3D`|同次クリップ座標の頂点色リストを描き、深度を消す|
+|`IRenderSurface`|フレーム内だけ2D・3Dの実行先を貸す、順序を保った画面消去、終了時のGPU完了待ち|
 |`ITextureDrawSource`|登録番号から借用画像の寸法と描画実装内のbindingを得る|
 |`INativeWindow`|OS接続用の窓と、フレームに固定したホイールを借りる|
 
@@ -898,21 +899,22 @@ Windows 10以降とWindows SDKのD3D12・DXGI・WICを使います。追加のGP
 
 ### 現在の対応範囲
 
-これは2D描画から追加した実装で、DxLibの全機能との同等性はありません。
+2Dと頂点色の基本3Dに対応しています。DxLibの全機能との同等性はありません。
 
 |対応|内容|
 |---|---|
 |フレームと窓|作成・終了、実時間、タイトル、論理解像度、通常の窓／枠なし全画面、VSync、FPS上限、カーソル、`--max-frames=N`|
 |2D命令|Box／BoxAA、Line／LineAA、Circle／CircleAA、Pixel、Triangle、Quad、Text、Opaque／Alphaブレンド、Bright、PushClip／PopClip、Clear|
+|基本3D命令|Line3D、Triangle3D、Cube3D、画像なしのPrimitive3D、WorldMatrixとそのPush／Pop、PushCamera／PopCamera、Depth、Culling、ClearDepth、照明の無効化|
 |画像命令|Image、ImageStretch、ImageQuad、ImagePart、ImagePartStretch、ImagePartQuad、対応する上下左右の反転|
 |画像の資源|WICで展開できるPNG・JPEG・BMP等、メモリからの展開、RGBA画素からの生成・同寸法更新、登録数の取得（同時に保持する画像は遅延解放分を含め1024枚まで）|
 |入力と編集画面|キーボード、5ボタンのマウス、縦横ホイール、SDLの既存ゲームパッド、ImGuiのメインウィンドウ|
 
 AA指定のない図形は端の補間を無効にしますが、DxLibと全ての境界画素が一致する保証はありません。TextはImGuiの既定フォントを使います。個別フォント・TextFont／TextStyledは未対応です。描画先の解像度は起動時に固定し、表示先の大きさへ拡大します。Nearest指定、排他Fullscreen、ImGuiの別ウィンドウは未対応です。
 
-3Dモデル・3D描画・材質・深度・照明・影・独自シェーダー・描画先画像・画像保存・派生画像・画像フィルター・マスク・2D変換・回転スプライト・加算等のブレンド・音声・動画・ゲーム側のIME／タッチ／クリップボード・窓位置とモニター情報の窓口は未対応です。アセットは無効ハンドル・false・空の値を返し、対応能力もfalseのままです。別の実装の仮ハンドルを返しません。
+3Dモデル・画像付き3D・球やカプセル等の未対応図形・材質・照明・影・独自シェーダー・描画先画像・画像保存・派生画像・画像フィルター・マスク・2D変換・回転スプライト・加算等のブレンド・音声・動画・ゲーム側のIME／タッチ／クリップボード・窓位置とモニター情報の窓口は未対応です。アセットは無効ハンドル・false・空の値を返し、対応能力もfalseのままです。別の実装の仮ハンドルを返しません。
 
-未対応の描画命令は警告を一度出し、そのSpanの残りを省略します。描画先や変換などの未対応状態を無視して誤った場所へ描くことを防ぐためです。次のSpanの状態には影響しません。3D中心の既存サンプルやEditorの全機能の動作は保証しません。
+未対応の描画命令は警告を一度出し、そのSpanの残りを省略します。描画先や変換などの未対応状態を無視して誤った場所へ描くことを防ぐためです。次のSpanの状態には影響しません。モデルや照明を使う既存サンプル、Editorの全機能の動作は保証しません。
 
 ### 確認
 
@@ -928,3 +930,26 @@ Windowsの通常ビルド後、同じCanvas2Dサンプルを各実装で起動�
 `--dx12-warp=true`はWindowsのソフトウェアGPUを選ぶ確認用です。矩形・円・線、緑の矩形のクリップ、半透明の赤い矩形、市松模様の画像、文字、通常の窓と枠なしの切り替え、拡大時のマウス座標、終了時のGPU資源解放を確認します。スクリーンショットの窓口はDX12では未対応です。
 
 追加時のLinux環境では、MinGWによるWindows向けの構文検査と、新規ソース・公式DX12描画実装のオブジェクト生成を行いました。既存CoreのMSVC固有の型特性組み込み2種類だけを検査用ヘッダーで置き換え、製品コードは変更していません。別置きの検査プログラムでバックエンド選択、状態の分離、クリップ復元、壊れた命令、文字範囲、非有限座標、画像の登録番号とUV範囲をWine上で確認しました。WICの不正入力時の出力保持とBMPからRGBAへの展開も確認しました。MSVCでの全体ビルド、Windows上のDX12表示・WARP・GPUデバッグ層による検証は別途必要です。
+
+
+### 頂点色の基本3D
+
+`Library/Platform/Render/Geometry/FGeometryCommandExecutor`がカメラ・ワールド変換・深度と表裏を解釈します。2Dと同じSpan内の順番を保ち、状態はSpanごとに初期化します。ワールド変換は既存の行ベクトル規約を使い、Pushは「新しいローカル変換 * 現在のワールド変換」です。カメラの射影と画面中心のずらしは既存の`FCamera`と同じ規約です。既定のカメラは`FCamera`の既定値です。起動設定のCameraNear／CameraFarを使いたい場面はカメラを明示してPushしてください。
+
+GPUへ渡す`FGeometryVertex`は透視除算前の同次座標です。近い面・遠い面や画面端のクリッピング、透視補間はGPUが行います。座標がカメラの後ろにあるだけではCPU側で三角形全体を捨てません。`FGeometryDrawState`は深度の読み書き・比較・整数bias、時計回りの表面を基準とするカリング、Opaque／Alphaの合成を表します。API固有の列挙値は公開しません。
+
+`FDX12GeometryRenderer`が深度画像・頂点色シェーダー・パイプラインとフレーム内の頂点資源を所有します。描画と深度消去を2Dと同じ命令列へ記録し、3Dの直後には2DのGPU状態を復元します。入力の頂点を呼び出し中に複写し、前フレームのGPU完了まで保持します。1命令の上限は65536頂点、1フレームで保持する頂点領域は64MiB、異なるパイプライン状態のキャッシュは128種類までです。上限超過や作成失敗はfalseとなり、そのSpanの残りを省略します。
+
+Primitive3Dは点・線・三角形のリストと、折れ線・TriangleStrip・TriangleFanに対応し、帯や扇は共通処理でリストへ展開します。可変長の全長と全indexを確認してから描画します。画像付きPrimitive3Dと照明の有効化は未対応として拒否します。頂点色は非照明のDiffuse+Specular（飽和加算）にBrightとAlphaを適用します。図形は非照明の拡散色です。
+
+```powershell
+.\x64\Debug\Samples.exe --backend=dx12 --sample=Geometry3D --max-frames=120
+.\x64\Debug\Samples.exe --backend=dx12 --dx12-warp=true --sample=Geometry3D --max-frames=120
+```
+
+`Geometry3D`は共通窓口だけで、回転する箱・輪郭・地面の線・手前と奥の三角形を描きます。照明・モデル・画像付き3D・編集画面全体への対応は別の作業です。
+
+
+追加の検査では、Windows向けの3D共通命令検査をWineで実行し、射影・透視除算前の座標・ワールド変換の積み順・カメラと状態の復元・深度／表裏・色・線の輪郭・TriangleStrip展開・可変長データと非有限値の拒否・描画失敗の伝達を確認しました。
+
+さらにWine 10／vkd3d／Mesa lavapipeで実際のDX12デバイスと64×64の描画先を作り、GPUの結果を読み戻しました。手前の赤い三角形の後に奥の青い三角形を記録しても中央が赤(255,0,0)、間にClearDepthを入れると青(0,0,255)、クリップ外は黒(0,0,0)、3Dの後に描く2Dの矩形は緑(0,255,0)となりました。呼び出し元の頂点を書き換えても描画が変わらず、フレーム間の遅延解放も検査しました。これは変換層上でのGPU検査で、Windows実機のDX12ドライバー・WARP・SDKデバッグ層・MSVCの全体ビルドの代わりにはなりません。

@@ -9,9 +9,9 @@
 #include "Library/Core/Time/PlatformTime.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/Platform/DX12/DX12Log.h"
 #include "VendorModules/ImGui/imgui_impl_win32.h"
 
-DEFINE_LOG_CATEGORY_STATIC( LogDX12Window, Log )
 REGISTER_SUBSYSTEM( CDX12PlatformSubsystem )
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler( HWND Window, UINT Message, WPARAM WParam, LPARAM LParam );
@@ -69,7 +69,7 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection& )
 	if ( Settings.Width <= 0 || Settings.Height <= 0 || Settings.Width > 16384 || Settings.Height > 16384
 		|| !NMath::IsFinite( Settings.WindowExtendRate ) || Settings.WindowExtendRate <= 0 || Settings.WindowExtendRate > 16 )
 	{
-		LOG( LogDX12Window, Error, "Invalid DX12 window size" );
+		LOG( LogDX12, Error, "Invalid DX12 window size" );
 		return;
 	}
 	const auto Limit = NCommandLine::GetValue( "max-frames" ); // 検査用のフレーム上限。
@@ -118,7 +118,7 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection& )
 	const auto Warp = NCommandLine::GetValue( "dx12-warp" ); // ソフトウェアGPUを選ぶ検査用引数。
 	if ( !bWin32 || !Device->Initialize( static_cast<HWND>( Window ), Settings.Width, Settings.Height, Warp.IsSet() && Warp.GetValue().Equals( "true", ESearchCase::IgnoreCase ) ) )
 	{
-		LOG( LogDX12Window, Error, "DX12 initialization failed" );
+		LOG( LogDX12, Error, "DX12 initialization failed" );
 		Deinitialize();
 		return;
 	}
@@ -128,7 +128,7 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection& )
 	ShowWindow( static_cast<HWND>( Window ), SW_SHOW );
 	LastTick = NPlatformTime::GetTicks();
 	bInitialized = true;
-	LOG( LogDX12Window, Log, "DX12 initialized (%dx%d). Models, audio, movies and offscreen targets are not supported yet.", Settings.Width, Settings.Height );
+	LOG( LogDX12, Log, "DX12 initialized (%dx%d). Models, lighting, audio, movies and offscreen targets are not supported yet.", Settings.Width, Settings.Height );
 }
 
 void CDX12PlatformSubsystem::Deinitialize()
@@ -188,7 +188,7 @@ bool CDX12PlatformSubsystem::BeginFrame()
 	PendingWheelX = PendingWheelY = 0;
 	if ( !Device->BeginFrame() )
 	{
-		LOG( LogDX12Window, Error, "DX12 frame could not start (device lost or GPU wait failed)" );
+		LOG( LogDX12, Error, "DX12 frame could not start (device lost or GPU wait failed)" );
 		bExit = true;
 		return false;
 	}
@@ -223,7 +223,7 @@ void CDX12PlatformSubsystem::EndFrame()
 	ImGui::Render();
 	if ( !Device->EndFrame( ImGui::GetDrawData(), Settings.bVSync ) )
 	{
-		LOG( LogDX12Window, Error, "DX12 present failed" );
+		LOG( LogDX12, Error, "DX12 present failed" );
 		bExit = true;
 	}
 	bInFrame = false;
@@ -376,4 +376,9 @@ void CDX12PlatformSubsystem::SetWindowMode( EWindowMode Mode )
 void CDX12PlatformSubsystem::ToggleFullscreen()
 {
 	SetWindowMode( Settings.WindowMode == EWindowMode::Windowed ? EWindowMode::Borderless : EWindowMode::Windowed );
+}
+
+IRenderGeometry3D* CDX12PlatformSubsystem::GetGeometry3D()
+{
+	return bInFrame && Device ? Device->GetGeometry3D() : nullptr;
 }

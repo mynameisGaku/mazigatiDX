@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <ClCompile Include="Source\Geometry3D\Geometry3DGallery.cpp">
+      <Filter>Source\Geometry3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Geometry3D\Geometry3DSample.cpp">
+      <Filter>Source\Geometry3D</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Canvas2D\Canvas2DGallery.cpp">
       <Filter>Source\Canvas2D</Filter>
     </ClCompile>
@@ -520,8 +526,17 @@
     <Filter Include="Source\Canvas2D">
       <UniqueIdentifier>{2760671A-D9E1-5093-9150-7C8C2B2D4D5F}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Geometry3D">
+      <UniqueIdentifier>{AE8E7E20-A0EA-5354-8E12-5503651D9A2B}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Geometry3D\Geometry3DGallery.h">
+      <Filter>Source\Geometry3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Geometry3D\Geometry3DSample.h">
+      <Filter>Source\Geometry3D</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Canvas2D\Canvas2DGallery.h">
       <Filter>Source\Canvas2D</Filter>
     </ClInclude>

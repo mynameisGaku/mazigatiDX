@@ -5,7 +5,7 @@
 #include "Library/Core/Interfaces/Render/IRenderCanvas2D.h"
 #include "Library/Core/Interfaces/Render/ITextureDrawSource.h"
 
-// 共通命令をAPI非依存の2Dキャンバスへ変換する。状態はExecuteごとに初期化する。
+// 共通命令を2Dキャンバスと基本3Dへ振り分ける。状態はExecuteごとに初期化する。
 class FCanvasDrawExecutor
 {
 public:

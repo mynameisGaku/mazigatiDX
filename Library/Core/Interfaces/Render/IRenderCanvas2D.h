@@ -27,7 +27,7 @@ public:
 	// 現在の範囲との共通部分を積む。空なら描かない。
 	virtual void PushClip( int32 X0, int32 Y0, int32 X1, int32 Y1 ) = 0;
 	// 直前のクリップ範囲へ戻す。Pushと対にする。
-	virtual void PopClip(  ) = 0;
+	virtual void PopClip() = 0;
 	// 図形の端の補間を指定する。
 	virtual void SetAntiAlias( bool bEnabled ) = 0;
 };

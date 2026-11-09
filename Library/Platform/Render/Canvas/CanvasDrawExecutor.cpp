@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "CanvasDrawExecutor.h"
+#include "Library/Platform/Render/Geometry/GeometryCommandExecutor.h"
 #include "Library/Framework/Render/Draw/DrawCommand.h"
 #include "Library/Platform/System/BackendSupport.h"
 #include "Library/Core/Types/Numeric.h"
@@ -38,6 +39,8 @@ void FCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 	{
 		return;
 	}
+	FGeometryCommandExecutor Geometry( Surface.GetGeometry3D() ); // このSpanだけの3D状態。
+	bool bAlphaBlend = false; // 3Dへ渡す合成方式。
 	FDrawRgb Bright; // このSpanだけの乗算色。
 	int32 Alpha = 255; // このSpanだけの不透明度。
 	int32 ClipDepth = 0; // 終了時に必ず戻すクリップ段数。
@@ -54,7 +57,7 @@ void FCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 		const int32 Count = static_cast<int32>( Header >> 16 ); // ヘッダー込みの長さ。
 		if ( Count < 1 || Count > Span.NumWords - Offset )
 		{
-			NBackendSupport::ReportUnsupported( "Canvas2D", "Malformed command span" );
+			NBackendSupport::ReportUnsupported( "DrawCommands", "Malformed command span" );
 			break;
 		}
 		FDrawCommandView View; // 検査済みの範囲だけを読む。
@@ -88,8 +91,9 @@ void FCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			if ( Data.Mode != static_cast<int32>( EDrawBlend::Opaque ) && Data.Mode != static_cast<int32>( EDrawBlend::Alpha ) )
 			{
 				bStopped = true;
-				NBackendSupport::ReportUnsupported( "Canvas2D", "Blend mode", "Only Opaque and Alpha are supported" );
+				NBackendSupport::ReportUnsupported( "DrawCommands", "Blend mode", "Only Opaque and Alpha are supported" );
 			}
+			bAlphaBlend = Data.Mode == static_cast<int32>( EDrawBlend::Alpha );
 			Alpha = Data.Mode == static_cast<int32>( EDrawBlend::Opaque ) ? 255 : NMath::Clamp( Data.Param, 0, 255 );
 			break;
 		}
@@ -502,10 +506,17 @@ void FCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			break;
 		}
 		default:
+		{
+			const auto Result = Geometry.Execute( View, Bright, Alpha, bAlphaBlend ); // 同じ順序で3Dへ渡す。
+			if ( Result == FGeometryCommandExecutor::EResult::Executed )
+			{
+				break;
+			}
 			// 未対応の状態を無視して描くと、別の描画先や変換で誤表示するためSpanを止める。
-			NBackendSupport::ReportUnsupported( "Canvas2D", *FString::Printf( "Draw command %u", static_cast<unsigned>( View.Type ) ) );
+			NBackendSupport::ReportUnsupported( "DrawCommands", *FString::Printf( "Draw command %u", static_cast<unsigned>( View.Type ) ) );
 			bStopped = true;
 			break;
+		}
 		}
 		Offset += Count;
 	}
@@ -517,6 +528,6 @@ void FCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 	Canvas->SetAntiAlias( true );
 	if ( bStopped )
 	{
-		NBackendSupport::ReportUnsupported( "Canvas2D", "Incomplete span", "Unsupported state or malformed payload: remaining commands were skipped" );
+		NBackendSupport::ReportUnsupported( "DrawCommands", "Incomplete span", "Unsupported state or malformed payload: remaining commands were skipped" );
 	}
 }

@@ -8,10 +8,17 @@
 #include "VendorModules/ImGui/imgui.h"
 #include "VendorModules/ImGui/imgui_impl_dx12.h"
 
+class FDX12GeometryRenderer;
+class IRenderGeometry3D;
+
 // GPU・交換用画面・同期を所有する。ウィンドウとImGui文脈は呼び出し側が保持する。
 class FDX12Device
 {
 public:
+	// 所有するGPU資源とフレーム状態は複写しない。
+	FDX12Device() = default;
+	FDX12Device( const FDX12Device& ) = delete;
+	FDX12Device& operator=( const FDX12Device& ) = delete;
 	// 途中の初期化失敗でも所有した資源を解放する。
 	~FDX12Device();
 	// Windowへ表示するデバイスを作る。WARP指定はGPUなしの確認用。
@@ -24,6 +31,8 @@ public:
 	bool EndFrame( ImDrawData* Data, bool bVSync );
 	// 過去の描画より後で画面全体を消すコールバックを記録する。
 	void RecordClear( ImDrawList& List, ImU32 Color );
+	// 記録中だけ基本3Dの実行先を貸す。
+	IRenderGeometry3D* GetGeometry3D();
 	// GPU完了を待つ。デバイス喪失時はfalse。
 	bool Wait();
 private:
@@ -51,6 +60,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> Buffers[BufferCount]; // 交換用画面。
 	Microsoft::WRL::ComPtr<ID3D12Fence> Fence; // 完了通知。
 	TArray<int32> FreeDescriptors; // 未使用の画像記述子。
+	FDX12GeometryRenderer* Geometry = nullptr; // 所有する基本3Dパイプライン。
 	HANDLE FenceEvent = nullptr; // CPUが完了を待つイベント。
 	UINT64 FenceValue = 0; // 次の完了番号。
 	UINT BufferIndex = 0; // 今描く画面。

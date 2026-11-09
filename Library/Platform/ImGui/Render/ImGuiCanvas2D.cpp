@@ -87,7 +87,7 @@ void FImGuiCanvas2D::PushClip( int32 X0, int32 Y0, int32 X1, int32 Y1 )
 	List->PushClipRect( ImVec2( static_cast<float32>( X0 ), static_cast<float32>( Y0 ) ), ImVec2( static_cast<float32>( X1 ), static_cast<float32>( Y1 ) ), true );
 }
 
-void FImGuiCanvas2D::PopClip(  )
+void FImGuiCanvas2D::PopClip()
 {
 	ImDrawList* List = ImGui::GetBackgroundDrawList(); // このフレームの2D描画先。
 	List->PopClipRect();
