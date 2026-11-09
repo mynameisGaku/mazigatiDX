@@ -208,6 +208,16 @@ bool FDX12Device::EndFrame( ImDrawData* Data, bool bVSync )
 	return SUCCEEDED( SwapChain->Present( bVSync ? 1 : 0, 0 ) );
 }
 
+void FDX12Device::RecordClear( ImDrawList& List, ImU32 Color )
+{
+	if ( !bRecording )
+	{
+		return;
+	}
+	FClearCommand Clear = { this, Color }; // 実行まで残す所有先と消去色。
+	List.AddCallback( ClearCallback, &Clear, sizeof( Clear ) );
+}
+
 void FDX12Device::ClearCallback( const ImDrawList*, const ImDrawCmd* Command )
 {
 	const auto& Clear = *static_cast<const FClearCommand*>( Command->UserCallbackData ); // 記録済みの消去。

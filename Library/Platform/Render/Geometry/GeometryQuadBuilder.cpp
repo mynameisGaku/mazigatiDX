@@ -137,7 +137,7 @@ bool FGeometryQuadBuilder::BuildCorners( const FVector3& Position, const float32
 		{
 			return false;
 		}
-		Vertices[Index] = MakeVertex( Point, -Camera.GetForward(), Index == 1 || Index == 2 ? 1 : 0, Index >= 2 ? 1 : 0, FDrawRgba() );
+		Vertices[Index] = MakeVertex( Point, -Camera.GetForward(), Index == 1 || Index == 2 ? 1.0f : 0.0f, Index >= 2 ? 1.0f : 0.0f, FDrawRgba() );
 	}
 	TArray<FDrawVertex3D> Output; // つぶれた三角形を除いてから出力する。
 	const int32 Triangles[2][3] = { { 0, 1, 3 }, { 1, 2, 3 } }; // 既存の四角形と同じ対角線。
