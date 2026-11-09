@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <ClCompile Include="Source\StaticModel\StaticModelGallery.cpp">
+      <Filter>Source\StaticModel</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\StaticModel\StaticModelSample.cpp">
+      <Filter>Source\StaticModel</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Geometry3D\Geometry3DGallery.cpp">
       <Filter>Source\Geometry3D</Filter>
     </ClCompile>
@@ -529,8 +535,17 @@
     <Filter Include="Source\Geometry3D">
       <UniqueIdentifier>{AE8E7E20-A0EA-5354-8E12-5503651D9A2B}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\StaticModel">
+      <UniqueIdentifier>{85B93412-F2E0-51C4-89D3-FCFADFEF4B6E}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\StaticModel\StaticModelGallery.h">
+      <Filter>Source\StaticModel</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\StaticModel\StaticModelSample.h">
+      <Filter>Source\StaticModel</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Geometry3D\Geometry3DGallery.h">
       <Filter>Source\Geometry3D</Filter>
     </ClInclude>

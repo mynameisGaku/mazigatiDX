@@ -16,6 +16,8 @@ public:
 	// 3D モデル（アニメーションだけが入ったファイルも、モデルとして読み込む）
 	//-------------------------------------------------------------------------
 	virtual int32 LoadModel( const FString& Path, bool bAsync ) = 0;
+	// 元形式を直接読める場合だけtrue。既定falseで既存の変換経路を保つ。
+	virtual bool CanLoadModelSource( const FString& /*Path*/ ) const { return false; }
 	// 同じデータを共有する、別の状態（位置・アニメーション）を持つモデルを作る
 	virtual int32 DuplicateModel( int32 Source ) = 0;
 	virtual void DeleteModel( int32 Model ) = 0;

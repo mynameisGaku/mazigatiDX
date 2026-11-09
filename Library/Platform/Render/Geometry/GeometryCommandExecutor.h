@@ -3,6 +3,7 @@
 #include "Library/Core/Interfaces/Render/IRenderGeometry3D.h"
 #include "Library/Core/Interfaces/Render/ITextureDrawSource.h"
 #include "Library/Core/Interfaces/Render/IGeometryBufferSource.h"
+#include "Library/Core/Interfaces/Render/IStaticModelSource.h"
 #include "Library/Framework/Render/Camera/Camera.h"
 #include "Library/Framework/Render/Draw/DrawCommand.h"
 
@@ -18,7 +19,7 @@ public:
 		Rejected, // 不正・未対応・GPU準備の失敗。
 	};
 	// Geometryは借用。nullptrでも状態命令は読めるが、描画は失敗する。
-	explicit FGeometryCommandExecutor( IRenderGeometry3D* InGeometry, ITextureDrawSource* InTextures = nullptr, IGeometryBufferSource* InBuffers = nullptr );
+	explicit FGeometryCommandExecutor( IRenderGeometry3D* InGeometry, ITextureDrawSource* InTextures = nullptr, IGeometryBufferSource* InBuffers = nullptr, IStaticModelSource* InModels = nullptr );
 	// 1命令を検査して実行する。Stateはこのインスタンス内だけに閉じる。
 	EResult Execute( const FDrawCommandView& View, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend );
 private:
@@ -27,6 +28,7 @@ private:
 	// indexを解決した点列をリストへ展開する。GPU・画像に依存しない。
 	bool SubmitPrimitive( const TArray<FDrawVertex3D>& Ordered, EDrawPrimitive Type, int32 Texture, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend );
 	ITextureDrawSource* Textures; // 登録済み画像を同期実行中だけ借りる。
+	IStaticModelSource* Models; // 同期実行中だけ借りる静的モデル。
 	IGeometryBufferSource* Buffers; // 登録済みのローカル形状を借りる。
 	IRenderGeometry3D* Geometry; // 借用するGPU実行先。
 	FMatrix4x4 World; // 現在のワールド行列。

@@ -67,6 +67,8 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets"></ImportGroup>
   <ItemGroup>
+    <ClCompile Include="Library\Framework\Asset\Model\Import\StaticModelBuilder.cpp" />
+    <ClCompile Include="Library\Platform\Render\Model\StaticModelStore.cpp" />
     <ClCompile Include="Library\Platform\Render\Geometry\GeometryBufferStore.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\DX12GeometryRenderer.cpp" />
     <ClCompile Include="Library\Platform\Render\Geometry\GeometryCommandExecutor.cpp" />
@@ -631,6 +633,11 @@
     <ClCompile Include="VendorModules\ufbx\ufbx.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Library\Core\Interfaces\Render\IStaticModelSource.h" />
+    <ClInclude Include="Library\Core\Render\StaticModelDrawView.h" />
+    <ClInclude Include="Library\Framework\Asset\Model\Import\StaticModelBuilder.h" />
+    <ClInclude Include="Library\Framework\Asset\Model\Import\StaticModelDefinition.h" />
+    <ClInclude Include="Library\Platform\Render\Model\StaticModelStore.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IGeometryBufferSource.h" />
     <ClInclude Include="Library\Core\Render\DrawVertex3D.h" />
     <ClInclude Include="Library\Core\Render\GeometryBufferView.h" />

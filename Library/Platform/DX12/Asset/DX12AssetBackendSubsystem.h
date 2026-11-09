@@ -7,11 +7,12 @@
 #include "Library/Core/Interfaces/Render/ITextureDrawSource.h"
 #include "VendorModules/ImGui/imgui.h"
 #include "Library/Platform/Render/Geometry/GeometryBufferStore.h"
+#include "Library/Platform/Render/Model/StaticModelStore.h"
 
 class IPlatform;
 
-// 実画像だけを登録する。モデル・音声・GPUの独自シェーダーは未対応として返す。
-class CDX12AssetBackendSubsystem : public CAppSubsystem, public IAssetBackend, public ITextureDrawSource, public IGeometryBufferSource, public ITickable
+// 画像と静的モデルを登録する。音声・GPUの独自シェーダーは未対応として返す。
+class CDX12AssetBackendSubsystem : public CAppSubsystem, public IAssetBackend, public ITextureDrawSource, public IGeometryBufferSource, public IStaticModelSource, public ITickable
 {
 public:
 	// DX12が選ばれた場合だけ作る。
@@ -58,9 +59,9 @@ public:
 	bool GetVertexBufferView( int32 Handle, FGeometryVertexBufferView& Out ) override;
 	// 同期の命令解釈にだけindexを貸す。
 	bool GetIndexBufferView( int32 Handle, FGeometryIndexBufferView& Out ) override;
-	// GetMemoryInfoの未対応時の既定値。出力引数と外部状態は変更しない。
+	// 有効な画像・モデルの登録数を返す。GPU容量は不明。
 	FBackendMemoryInfo GetMemoryInfo() override;
-	// EstimateModelBytesの未対応時の既定値。出力引数と外部状態は変更しない。
+	// 共有している静的形状のメモリを推定する。
 	int64 EstimateModelBytes( int32 Model ) override;
 	// EstimateSoundBytesの未対応時の既定値。出力引数と外部状態は変更しない。
 	int64 EstimateSoundBytes( int32 Sound, ESoundLoadMode Mode ) override;
@@ -68,11 +69,31 @@ public:
 	bool IsLoading( int32 Handle ) override;
 	// GetNumLoadingの未対応時の既定値。出力引数と外部状態は変更しない。
 	int32 GetNumLoading() override;
-	// LoadModelの未対応時の既定値。出力引数と外部状態は変更しない。
+	// FBX／OBJを同期で取り込む。非静的・不正な入力は負を返す。
 	int32 LoadModel( const FString& Path, bool bAsync ) override;
-	// DuplicateModelの未対応時の既定値。出力引数と外部状態は変更しない。
+	// FBXとOBJは元形式を直接取り込む。アニメーション等の対応は読み込み時に検査する。
+	bool CanLoadModelSource( const FString& Path ) const override;
+	// 描画中だけ不変形状を借りる。
+	bool GetStaticModelDrawView( int32 Handle, FStaticModelDrawView& Out ) override;
+	// 借用画像を含む静的面データをコピーする。
+	bool GetStaticModelSurface( int32 Model, FStaticModelSurfaceData& Out ) override;
+	// モデル座標の外接箱。失敗時は両出力を保つ。
+	bool GetModelBounds( int32 Model, float32 ( &OutMin )[3], float32 ( &OutMax )[3] ) override;
+	// フレーム変換済みの静的三角形をコピーする。
+	bool GetModelCollisionMesh( int32 Model, TArray<float32>& OutPositions, TArray<uint32>& OutIndices ) override;
+	// 静的なフレーム・メッシュ・材質・画像の構造をコピーする。
+	bool GetModelStructure( int32 Model, FModelStructure& Out ) override;
+	// 現在は読み込んだ材質色だけを答える。
+	bool GetModelMaterialColors( int32 Model, int32 Material, FModelMaterialColors& Out ) override;
+	// 個体別の不透明度を取得する。
+	bool GetModelOpacity( int32 Model, float32& Out ) override;
+	// 個体別の不透明度を設定する。0〜1の有限値のみ。
+	bool SetModelOpacity( int32 Model, float32 Opacity ) override;
+	// 静的フレームの親基準行列だけを取得する。Worldは未対応。
+	bool GetModelFrameMatrix( int32 Model, int32 Frame, EModelFrameSpace Space, FMatrix4x4& Out ) override;
+	// 不変形状と画像を共有する別の個体を作る。
 	int32 DuplicateModel( int32 Source ) override;
-	// DeleteModelの未対応時の既定値。出力引数と外部状態は変更しない。
+	// 個体を解放する。最後の共有個体が画像も解放する。
 	void DeleteModel( int32 Model ) override;
 	// GetModelAnimCountの未対応時の既定値。出力引数と外部状態は変更しない。
 	int32 GetModelAnimCount( int32 Model ) override;
@@ -84,11 +105,11 @@ public:
 	int32 AttachModelAnim( int32 Model, int32 AnimIndex, int32 SourceModel ) override;
 	// DetachModelAnimの未対応時の既定値。出力引数と外部状態は変更しない。
 	void DetachModelAnim( int32 Model, int32 AttachIndex ) override;
-	// GetModelMeshCountの未対応時の既定値。出力引数と外部状態は変更しない。
+	// 静的モデルの元メッシュ数を返す。
 	int32 GetModelMeshCount( int32 Model ) override;
-	// GetModelFrameCountの未対応時の既定値。出力引数と外部状態は変更しない。
+	// 静的モデルのフレーム数を返す。
 	int32 GetModelFrameCount( int32 Model ) override;
-	// GetModelFrameNameの未対応時の既定値。出力引数と外部状態は変更しない。
+	// 有効な静的フレームの名前を返す。
 	FString GetModelFrameName( int32 Model, int32 FrameIndex ) override;
 	// SaveModelToMV1の未対応時の既定値。出力引数と外部状態は変更しない。
 	bool SaveModelToMV1( int32 Model, const FString& Path, const FModelSaveOptions& Options, FString& OutWarning ) override;
@@ -127,4 +148,5 @@ private:
 	IPlatform* Platform = nullptr; // 借用するフレーム進行。
 	static constexpr int32 MaxTextureHandles = 1024; // フォント用の記述子を別に残す登録上限。
 	int32 NextHandle = 0; // 再利用しない登録番号。
+	FStaticModelStore Models; // 画像の所有先より先に解放する共有モデル。
 };

@@ -128,7 +128,7 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection& )
 	ShowWindow( static_cast<HWND>( Window ), SW_SHOW );
 	LastTick = NPlatformTime::GetTicks();
 	bInitialized = true;
-	LOG( LogDX12, Log, "DX12 initialized (%dx%d). Models, lighting, audio, movies and offscreen targets are not supported yet.", Settings.Width, Settings.Height );
+	LOG( LogDX12, Log, "DX12 initialized (%dx%d). Static FBX/OBJ models supported; lighting, animated models, audio and offscreen targets are not supported yet.", Settings.Width, Settings.Height );
 }
 
 void CDX12PlatformSubsystem::Deinitialize()

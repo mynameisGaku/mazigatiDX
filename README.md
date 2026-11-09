@@ -115,4 +115,4 @@ mazigatiDX のコードは [MIT ライセンス](LICENSE)です。使ってい�
 機能ブランチから `dev` へ統合し、必要な確認を終えた区切りを `main` へ反映します。
 
 
-DX12による2D・基本3Dバックエンドは`--backend=dx12`で選べます。`Samples.exe --backend=dx12 --sample=Canvas2D`で図形と画像の見本を起動できます。`--sample=Geometry3D`ではカメラ・回転する箱・深度・画像付きメッシュと頂点／indexバッファの見本を起動できます。現段階では3Dモデル・照明・音声等は未対応です。設計・対応範囲・確認手順は[開発手順](Docs/DEVELOPMENT.md#dx12バックエンド)を参照してください。
+DX12による2D・基本3Dバックエンドは`--backend=dx12`で選べます。`Samples.exe --backend=dx12 --sample=Canvas2D`で図形と画像の見本を起動できます。`--sample=Geometry3D`ではカメラ・回転する箱・深度・画像付きメッシュと頂点／indexバッファの見本を起動できます。`--sample=StaticModel`では静的OBJから作る複数個体の見本を起動できます。現段階ではアニメーションモデル・照明・音声等は未対応です。設計・対応範囲・確認手順は[開発手順](Docs/DEVELOPMENT.md#dx12バックエンド)を参照してください。

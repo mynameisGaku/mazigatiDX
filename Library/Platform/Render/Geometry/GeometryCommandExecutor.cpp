@@ -43,7 +43,7 @@ namespace
 	}
 }
 
-FGeometryCommandExecutor::FGeometryCommandExecutor( IRenderGeometry3D* InGeometry, ITextureDrawSource* InTextures, IGeometryBufferSource* InBuffers ) : Textures( InTextures ), Buffers( InBuffers ), Geometry( InGeometry )
+FGeometryCommandExecutor::FGeometryCommandExecutor( IRenderGeometry3D* InGeometry, ITextureDrawSource* InTextures, IGeometryBufferSource* InBuffers, IStaticModelSource* InModels ) : Textures( InTextures ), Models( InModels ), Buffers( InBuffers ), Geometry( InGeometry )
 {
 }
 
@@ -407,6 +407,89 @@ FGeometryCommandExecutor::EResult FGeometryCommandExecutor::Execute( const FDraw
 			Ordered.Add( Vertices.Vertices[static_cast<int32>( VertexIndex )] );
 		}
 		return SubmitPrimitive( Ordered, static_cast<EDrawPrimitive>( Data.Type ), Data.Texture, Bright, Alpha, bAlphaBlend ) ? EResult::Executed : EResult::Rejected;
+	}
+	case EDrawCommand::Model3D:
+	{
+		if ( !Models || !View.CanRead<FDrawModelData>() )
+		{
+			return EResult::Rejected;
+		}
+		const auto Data = View.Read<FDrawModelData>(); // 個体の配置と、静的モデルの登録番号。
+		FStaticModelDrawView Model; // 同期実行中だけ借りる不変形状。
+		if ( Data.AnimIndex >= 0 || !Finite( Data.M ) || !Models->GetStaticModelDrawView( Data.Handle, Model ) || !Model.Vertices || !Model.Indices || !Model.Sections
+			|| Model.NumVertices <= 0 || Model.NumVertices > 786432 || Model.NumIndices <= 0 || Model.NumIndices > 786432 || Model.NumSections <= 0 || Model.NumSections > 4096
+			|| !NMath::IsFinite( Model.Opacity ) || Model.Opacity < 0 || Model.Opacity > 1 )
+		{
+			return EResult::Rejected;
+		}
+		int32 ExpectedIndex = 0; // すべての範囲を描く前に検査する。
+		for ( int32 Index = 0; Index < Model.NumSections; ++Index )
+		{
+			const auto& Section = Model.Sections[Index]; // 連続した材質範囲。
+			if ( Section.FirstIndex != ExpectedIndex || Section.NumIndices <= 0 || Section.NumIndices % 3 != 0 || static_cast<int64>( Section.FirstIndex ) + Section.NumIndices > Model.NumIndices )
+			{
+				return EResult::Rejected;
+			}
+			if ( Section.Texture >= 0 )
+			{
+				FTextureDrawView Image; // 後の材質の画像が無い場合も先に失敗する。
+				if ( !Textures || !Textures->GetTextureDrawView( Section.Texture, Image ) || Image.Binding == 0 || Image.Width <= 0 || Image.Height <= 0 )
+				{
+					return EResult::Rejected;
+				}
+			}
+			ExpectedIndex += Section.NumIndices;
+		}
+		if ( ExpectedIndex != Model.NumIndices )
+		{
+			return EResult::Rejected;
+		}
+		for ( int32 Index = 0; Index < Model.NumVertices; ++Index )
+		{
+			const auto& Vertex = Model.Vertices[Index]; // 数値の検査も描画より前に済ませる。
+			if ( !Finite( Vertex.Position ) || !NMath::IsFinite( Vertex.U ) || !NMath::IsFinite( Vertex.V ) )
+			{
+				return EResult::Rejected;
+			}
+		}
+		for ( int32 Index = 0; Index < Model.NumIndices; ++Index )
+		{
+			if ( Model.Indices[Index] >= static_cast<uint32>( Model.NumVertices ) )
+			{
+				return EResult::Rejected;
+			}
+		}
+		if ( Model.Opacity == 0 )
+		{
+			return EResult::Executed;
+		}
+		const FMatrix4x4 OldWorld = World; // モデルの配置をほかの命令へ漏らさない。
+		FDrawMatrixData Matrix; // モデル個体の配置。
+		FMemory::Memcpy( Matrix.M, Data.M, sizeof( Data.M ) );
+		World = ToMatrix( Matrix );
+		const int32 ModelAlpha = NMath::Clamp( static_cast<int32>( Alpha * Model.Opacity + 0.5f ), 0, 255 ); // 個体の不透明度を一度だけ掛ける。
+		bool bSuccess = true; // GPU作成失敗時も配置は復元する。
+		for ( int32 SectionIndex = 0; SectionIndex < Model.NumSections && bSuccess; ++SectionIndex )
+		{
+			const auto& Section = Model.Sections[SectionIndex]; // 三角形順を保つ範囲。
+			for ( int32 Offset = 0; Offset < Section.NumIndices && bSuccess; )
+			{
+				const int32 Count = NMath::Min( 65535, Section.NumIndices - Offset ); // 三角形単位でGPU上限以内へ分ける。
+				TArray<FDrawVertex3D> Ordered; // 今回の分割だけを所有する。
+				Ordered.Reserve( Count );
+				bool bUseAlpha = bAlphaBlend || ModelAlpha < 255 || Section.Texture >= 0; // 画像の透明画素も合成する。
+				for ( int32 Index = 0; Index < Count; ++Index )
+				{
+					const auto& Vertex = Model.Vertices[Model.Indices[Section.FirstIndex + Offset + Index]]; // 検査済みの参照。
+					Ordered.Add( Vertex );
+					bUseAlpha = bUseAlpha || Vertex.Diffuse[3] < 255;
+				}
+				bSuccess = Submit( Ordered, EGeometryTopology::Triangles, FDrawRgb(), ModelAlpha, bUseAlpha, Section.Texture );
+				Offset += Count;
+			}
+		}
+		World = OldWorld;
+		return bSuccess ? EResult::Executed : EResult::Rejected;
 	}
 	case EDrawCommand::Mesh3D:
 	{

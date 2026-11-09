@@ -27,8 +27,8 @@ namespace
 	}
 }
 
-FCanvasDrawExecutor::FCanvasDrawExecutor( IRenderSurface& InSurface, ITextureDrawSource* InTextures, IGeometryBufferSource* InBuffers )
-	: Surface( InSurface ), Buffers( InBuffers ), Textures( InTextures )
+FCanvasDrawExecutor::FCanvasDrawExecutor( IRenderSurface& InSurface, ITextureDrawSource* InTextures, IGeometryBufferSource* InBuffers, IStaticModelSource* InModels )
+	: Surface( InSurface ), Models( InModels ), Buffers( InBuffers ), Textures( InTextures )
 {
 }
 
@@ -39,7 +39,7 @@ void FCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 	{
 		return;
 	}
-	FGeometryCommandExecutor Geometry( Surface.GetGeometry3D(), Textures, Buffers ); // このSpanだけの3D状態。
+	FGeometryCommandExecutor Geometry( Surface.GetGeometry3D(), Textures, Buffers, Models ); // このSpanだけの3D状態。
 	bool bLinearFilter = false; // 画像の既定は最近傍。
 	bool bExplicitFilter = false; // 明示した補間を使えない実行先では画像を省略する。
 	bool bAlphaBlend = false; // 3Dへ渡す合成方式。

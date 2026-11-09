@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: MIT
+newmtl Gold
+Kd 0.95 0.55 0.10
+newmtl Blue
+Kd 0.10 0.45 0.90

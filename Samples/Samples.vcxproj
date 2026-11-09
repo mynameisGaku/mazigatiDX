@@ -53,6 +53,8 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets"></ImportGroup>
   <ItemGroup>
+    <ClCompile Include="Source\StaticModel\StaticModelGallery.cpp" />
+    <ClCompile Include="Source\StaticModel\StaticModelSample.cpp" />
     <ClCompile Include="Source\Geometry3D\Geometry3DGallery.cpp" />
     <ClCompile Include="Source\Geometry3D\Geometry3DSample.cpp" />
     <ClCompile Include="Source\Canvas2D\Canvas2DGallery.cpp" />
@@ -230,6 +232,8 @@
     <ClCompile Include="Source\SelfTest\**\*.cpp" Exclude="@(ClCompile)" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\StaticModel\StaticModelGallery.h" />
+    <ClInclude Include="Source\StaticModel\StaticModelSample.h" />
     <ClInclude Include="Source\Geometry3D\Geometry3DGallery.h" />
     <ClInclude Include="Source\Geometry3D\Geometry3DSample.h" />
     <ClInclude Include="Source\Canvas2D\Canvas2DGallery.h" />

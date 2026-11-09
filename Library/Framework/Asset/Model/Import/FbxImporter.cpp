@@ -164,6 +164,14 @@ namespace
 					Imported.Diffuse[2] = static_cast<float32>( Base.value_vec4.z );
 					Imported.Diffuse[3] = 1.0f;
 				}
+				if ( Material->pbr.opacity.has_value )
+				{
+					Imported.Diffuse[3] = NMath::Clamp( static_cast<float32>( Material->pbr.opacity.value_real ), 0.0f, 1.0f );
+				}
+				else if ( Material->fbx.transparency_factor.has_value )
+				{
+					Imported.Diffuse[3] = NMath::Clamp( 1.0f - static_cast<float32>( Material->fbx.transparency_factor.value_real ), 0.0f, 1.0f );
+				}
 				Imported.Texture = AddTexture( Base.texture );
 
 				if ( Material->fbx.specular_color.has_value )
@@ -211,6 +219,8 @@ namespace
 			FImportedMesh Imported;
 			Imported.Name = ToFString( Node.name );
 			Imported.Node = ImportedNode;
+			Imported.bHasBlendShapes = Mesh.blend_deformers.count > 0;
+			Imported.bHasVertexCache = Mesh.cache_deformers.count > 0;
 
 			const ufbx_skin_deformer* Skin = Mesh.skin_deformers.count > 0 ? Mesh.skin_deformers.data[0] : nullptr;
 			const bool bHasUV = Mesh.vertex_uv.exists;
@@ -405,6 +415,11 @@ bool NModelImport::ImportFromMemory( const void* Data, usize Size, const FString
 	}
 
 	ufbx_load_opts LoadOptions = {};
+	if ( Options.bRequireStatic )
+	{
+		LoadOptions.temp_allocator.memory_limit = 256 * 1024 * 1024;
+		LoadOptions.result_allocator.memory_limit = 256 * 1024 * 1024;
+	}
 	// Y が上の右手系に回す（FBX の上の軸が Z の場合など）。単位は変えない
 	LoadOptions.target_axes = ufbx_axes_right_handed_y_up;
 	LoadOptions.space_conversion = UFBX_SPACE_CONVERSION_ADJUST_TRANSFORMS;
@@ -415,7 +430,7 @@ bool NModelImport::ImportFromMemory( const void* Data, usize Size, const FString
 	LoadOptions.generate_missing_normals = true;
 	// OBJ が参照する .mtl を読む（無くても失敗にしない）
 	LoadOptions.load_external_files = true;
-	LoadOptions.ignore_missing_external_files = true;
+	LoadOptions.ignore_missing_external_files = !Options.bRequireStatic; // 静的取り込みではMTL欠落も失敗にする。
 	LoadOptions.filename.data = *FileName;
 	LoadOptions.filename.length = SIZE_MAX;
 
@@ -429,6 +444,12 @@ bool NModelImport::ImportFromMemory( const void* Data, usize Size, const FString
 		return false;
 	}
 
+	if ( Options.bRequireStatic && ( Scene->skin_deformers.count > 0 || Scene->blend_deformers.count > 0 || Scene->cache_deformers.count > 0 || Scene->anim_curves.count > 0 ) )
+	{
+		OutError = "Static import does not support skinning, morphs, vertex caches or animation curves";
+		ufbx_free_scene( Scene );
+		return false;
+	}
 	FSceneBuilder Builder( *Scene, Options, OutScene );
 	Builder.Build();
 	ufbx_free_scene( Scene );

@@ -49,6 +49,8 @@ struct FImportedMesh
 	TArray<FVector2> UVs;                  // 無ければ空。あれば Positions と同じ数（V は上が 0 に直してある）
 	TArray<int32> Indices;                 // 3 つで 1 つの三角形
 	TArray<int32> TriangleMaterials;       // 三角形ごとの FImportedScene::Materials の番号（-1 で既定）
+	bool bHasVertexCache = false; // 頂点キャッシュによる変形の存在。
+	bool bHasBlendShapes = false; // モーフの存在。静的描画で変形を黙って落とさないため保持する。
 	TArray<FImportedCluster> Clusters;     // 空ならスキンなし
 
 	FORCEINLINE bool IsSkinned() const { return !Clusters.IsEmpty(); }

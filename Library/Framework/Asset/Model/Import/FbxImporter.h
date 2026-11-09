@@ -19,6 +19,7 @@ struct FImportOptions
 {
 	float32 AnimFps = 30.0f;           // アニメーションをサンプリングする、毎秒のコマ数
 	bool bImportAnimations = true;
+	bool bRequireStatic = false; // スキン・モーフ・アニメーション曲線を変換前に拒否し、解析メモリを制限する。
 };
 
 namespace NModelImport

@@ -11,6 +11,11 @@
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 #include "VendorModules/ImGui/imgui_impl_dx12.h"
 #include "Library/Platform/Windows/Image/WicImageDecoder.h"
+#include "Library/Framework/Asset/Model/Import/FbxImporter.h"
+#include "Library/Framework/Asset/Model/Import/ModelFormats.h"
+#include "Library/Platform/System/FileSystem.h"
+#include "Library/Platform/DX12/DX12Log.h"
+#include "Library/Core/Log/Log.h"
 
 REGISTER_SUBSYSTEM( CDX12AssetBackendSubsystem )
 
@@ -35,6 +40,7 @@ void CDX12AssetBackendSubsystem::DestroyTexture( ImTextureData* Texture )
 
 void CDX12AssetBackendSubsystem::Deinitialize()
 {
+	Models.Reset(); // モデルが所有する画像も遅延解放へ移してからGPUを待つ。
 	// フレームの提出後でも資源を安全に解放できるよう、プラットフォームの待ち窓口を使う。
 	if ( auto* Frame = dynamic_cast<IRenderSurface*>( Platform ) )
 	{
@@ -170,12 +176,13 @@ FBackendMemoryInfo CDX12AssetBackendSubsystem::GetMemoryInfo()
 {
 	FBackendMemoryInfo Info; // GPU容量は不明、登録数だけ正確に返す。
 	Info.NumTextureHandles = Textures.Num();
+	Info.NumModelHandles = Models.Num();
 	return Info;
 }
 
-int64 CDX12AssetBackendSubsystem::EstimateModelBytes( int32 /*Model*/ )
+int64 CDX12AssetBackendSubsystem::EstimateModelBytes( int32 Model )
 {
-	return 0;
+	return Models.EstimateBytes( Model );
 }
 
 int64 CDX12AssetBackendSubsystem::EstimateSoundBytes( int32 /*Sound*/, ESoundLoadMode /*Mode*/ )
@@ -193,19 +200,42 @@ int32 CDX12AssetBackendSubsystem::GetNumLoading()
 	return 0;
 }
 
-int32 CDX12AssetBackendSubsystem::LoadModel( const FString& /*Path*/, bool /*bAsync*/ )
+int32 CDX12AssetBackendSubsystem::LoadModel( const FString& Path, bool /*bAsync*/ )
 {
-	NBackendSupport::ReportUnsupported( "DX12", "LoadModel" );
-	return NAsset::InvalidHandle;
+	const int64 Size = NFileSystem::GetFileSize( Path ); // 解析前に元ファイルの大きさを制限する。
+	TArray<uint8> Bytes; // 同期で読み取る元ファイル。
+	if ( !CanLoadModelSource( Path ) || Size <= 0 || Size > 64 * 1024 * 1024 || !NFile::ReadAllBytes( Path, Bytes ) || Bytes.Num() > 64 * 1024 * 1024 )
+	{
+		LOG( LogDX12, Error, "Cannot read static FBX/OBJ model '%s' (unsupported format or file size)", *Path );
+		return NAsset::InvalidHandle;
+	}
+	FImportedScene Scene; // 既存の中間形式を使い、GPUをインポーターへ渡さない。
+	FString Error; // 失敗理由を読み込み元と一緒に出す。
+	FImportOptions Options; // 動くモデルを静的な形へ誤変換しない。
+	Options.bRequireStatic = true;
+	Options.bImportAnimations = false;
+	if ( !NModelImport::ImportFromMemory( Bytes.GetData(), Bytes.Num(), Path, Options, Scene, Error ) )
+	{
+		LOG( LogDX12, Error, "Cannot import static model '%s': %s", *Path, *Error );
+		return NAsset::InvalidHandle;
+	}
+	NImportedScene::ConvertToLeftHanded( Scene );
+	const int32 Handle = Models.Create( Scene, Path, *this, Error ); // 失敗時は途中の画像も片付ける。
+	if ( Handle < 0 )
+	{
+		LOG( LogDX12, Error, "Cannot prepare static model '%s': %s", *Path, *Error );
+	}
+	return Handle;
 }
 
-int32 CDX12AssetBackendSubsystem::DuplicateModel( int32 /*Source*/ )
+int32 CDX12AssetBackendSubsystem::DuplicateModel( int32 Source )
 {
-	return NAsset::InvalidHandle;
+	return Models.Duplicate( Source );
 }
 
-void CDX12AssetBackendSubsystem::DeleteModel( int32 /*Model*/ )
+void CDX12AssetBackendSubsystem::DeleteModel( int32 Model )
 {
+	Models.Delete( Model );
 }
 
 int32 CDX12AssetBackendSubsystem::GetModelAnimCount( int32 /*Model*/ )
@@ -233,19 +263,22 @@ void CDX12AssetBackendSubsystem::DetachModelAnim( int32 /*Model*/, int32 /*Attac
 {
 }
 
-int32 CDX12AssetBackendSubsystem::GetModelMeshCount( int32 /*Model*/ )
+int32 CDX12AssetBackendSubsystem::GetModelMeshCount( int32 Model )
 {
-	return 0;
+	const auto* Definition = Models.GetDefinition( Model ); // 準備済みの静的定義。
+	return Definition ? Definition->NumMeshes : 0;
 }
 
-int32 CDX12AssetBackendSubsystem::GetModelFrameCount( int32 /*Model*/ )
+int32 CDX12AssetBackendSubsystem::GetModelFrameCount( int32 Model )
 {
-	return 0;
+	const auto* Definition = Models.GetDefinition( Model ); // 準備済みの静的定義。
+	return Definition ? Definition->Nodes.Num() : 0;
 }
 
-FString CDX12AssetBackendSubsystem::GetModelFrameName( int32 /*Model*/, int32 /*FrameIndex*/ )
+FString CDX12AssetBackendSubsystem::GetModelFrameName( int32 Model, int32 FrameIndex )
 {
-	return {};
+	const auto* Definition = Models.GetDefinition( Model ); // 準備済みの静的定義。
+	return Definition && FrameIndex >= 0 && FrameIndex < Definition->Nodes.Num() ? Definition->Nodes[FrameIndex].Name : FString();
 }
 
 bool CDX12AssetBackendSubsystem::SaveModelToMV1( int32 /*Model*/, const FString& /*Path*/, const FModelSaveOptions& /*Options*/, FString& /*OutWarning*/ )
@@ -357,4 +390,99 @@ bool CDX12AssetBackendSubsystem::GetVertexBufferView( int32 Handle, FGeometryVer
 bool CDX12AssetBackendSubsystem::GetIndexBufferView( int32 Handle, FGeometryIndexBufferView& Out )
 {
 	return Buffers.GetIndexBufferView( Handle, Out );
+}
+
+bool CDX12AssetBackendSubsystem::CanLoadModelSource( const FString& Path ) const
+{
+	return NModelFormat::Classify( Path ) == EModelFileKind::Imported;
+}
+
+bool CDX12AssetBackendSubsystem::GetStaticModelDrawView( int32 Handle, FStaticModelDrawView& Out )
+{
+	return Models.GetStaticModelDrawView( Handle, Out );
+}
+
+bool CDX12AssetBackendSubsystem::GetStaticModelSurface( int32 Model, FStaticModelSurfaceData& Out )
+{
+	return Models.GetSurface( Model, Out );
+}
+
+bool CDX12AssetBackendSubsystem::GetModelBounds( int32 Model, float32 ( &OutMin )[3], float32 ( &OutMax )[3] )
+{
+	const auto* Definition = Models.GetDefinition( Model ); // モデル座標での箱。
+	if ( !Definition )
+	{
+		return false;
+	}
+	OutMin[0] = Definition->BoundsMin.x;
+	OutMin[1] = Definition->BoundsMin.y;
+	OutMin[2] = Definition->BoundsMin.z;
+	OutMax[0] = Definition->BoundsMax.x;
+	OutMax[1] = Definition->BoundsMax.y;
+	OutMax[2] = Definition->BoundsMax.z;
+	return true;
+}
+
+bool CDX12AssetBackendSubsystem::GetModelCollisionMesh( int32 Model, TArray<float32>& OutPositions, TArray<uint32>& OutIndices )
+{
+	const auto* Definition = Models.GetDefinition( Model ); // 描画と同じ静的面。
+	if ( !Definition )
+	{
+		return false;
+	}
+	TArray<float32> Positions; // 成功するまで出力を変えない。
+	Positions.Reserve( Definition->Surface.Vertices.Num() * 3 );
+	for ( const auto& Vertex : Definition->Surface.Vertices )
+	{
+		for ( float32 Value : Vertex.Position )
+		{
+			Positions.Add( Value );
+		}
+	}
+	OutPositions = MoveTemp( Positions );
+	OutIndices = Definition->Surface.Indices;
+	return true;
+}
+
+bool CDX12AssetBackendSubsystem::GetModelOpacity( int32 Model, float32& Out )
+{
+	return Models.GetOpacity( Model, Out );
+}
+
+bool CDX12AssetBackendSubsystem::SetModelOpacity( int32 Model, float32 Opacity )
+{
+	return Models.SetOpacity( Model, Opacity );
+}
+
+bool CDX12AssetBackendSubsystem::GetModelFrameMatrix( int32 Model, int32 Frame, EModelFrameSpace Space, FMatrix4x4& Out )
+{
+	const auto* Definition = Models.GetDefinition( Model ); // 最後の描画配置を追跡しないためWorldは答えない。
+	if ( !Definition || Frame < 0 || Frame >= Definition->Nodes.Num() || Space != EModelFrameSpace::Local )
+	{
+		return false;
+	}
+	FMemory::Memcpy( Out.m, Definition->Nodes[Frame].Local.M, sizeof( Out.m ) );
+	return true;
+}
+
+bool CDX12AssetBackendSubsystem::GetModelStructure( int32 Model, FModelStructure& Out )
+{
+	const auto* Definition = Models.GetDefinition( Model ); // 静的な読み取り専用構造。
+	if ( !Definition )
+	{
+		return false;
+	}
+	Out = Definition->Structure;
+	return true;
+}
+
+bool CDX12AssetBackendSubsystem::GetModelMaterialColors( int32 Model, int32 Material, FModelMaterialColors& Out )
+{
+	const auto* Definition = Models.GetDefinition( Model ); // 形状へ色を反映済みの材質。
+	if ( !Definition || Material < 0 || Material >= Definition->Structure.Materials.Num() )
+	{
+		return false;
+	}
+	Out = Definition->Structure.Materials[Material].Colors;
+	return true;
 }
