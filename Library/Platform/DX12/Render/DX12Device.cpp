@@ -82,7 +82,7 @@ bool FDX12Device::Initialize( HWND Window, int32 Width, int32 Height, bool bWarp
 		Device->CreateRenderTargetView( Buffers[Index].Get(), nullptr, Rtv );
 		Rtv.ptr += RtvStride;
 	}
-	if ( !Descriptors.Initialize( Device.Get(), DescriptorCount ) || !Textures.Initialize( Device.Get(), Queue.Get(), Descriptors ) )
+	if ( !Descriptors.Initialize( Device.Get(), DescriptorCount ) || !Textures.Initialize( Device.Get(), Queue.Get(), Descriptors ) || !BufferResources.Initialize( Device.Get(), Queue.Get() ) )
 	{
 		return false;
 	}
@@ -135,6 +135,7 @@ void FDX12Device::Shutdown()
 	Allocator.Reset();
 	SwapChain.Reset();
 	Textures.ResetAfterGPUIdle();
+	BufferResources.ResetAfterGPUIdle();
 	Descriptors.Reset();
 	RtvHeap.Reset();
 	Fence.Reset();
@@ -156,6 +157,7 @@ bool FDX12Device::BeginFrame()
 		return false;
 	}
 	Textures.CollectAfterGPUIdle(); // 記録済みの描画が残らない時点でだけ旧版を戻す。
+	BufferResources.CollectAfterGPUIdle();
 	BufferIndex = SwapChain->GetCurrentBackBufferIndex();
 	CurrentRtv = RtvHeap->GetCPUDescriptorHandleForHeapStart();
 	CurrentRtv.ptr += BufferIndex * RtvStride;
@@ -234,4 +236,9 @@ IRenderGeometry3D* FDX12Device::GetGeometry3D()
 IRenderTextureResources* FDX12Device::GetTextureResources()
 {
 	return &Textures;
+}
+
+IRenderBufferResources* FDX12Device::GetBufferResources()
+{
+	return &BufferResources;
 }

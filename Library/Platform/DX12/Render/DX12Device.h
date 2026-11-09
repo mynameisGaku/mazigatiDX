@@ -6,6 +6,7 @@
 #include <wrl/client.h>
 #include "DX12DescriptorPool.h"
 #include "DX12TextureStore.h"
+#include "DX12BufferStore.h"
 #include "Library/Platform/DX12/ImGui/DX12ImGuiRenderer.h"
 
 class FDX12GeometryRenderer;
@@ -35,6 +36,8 @@ public:
 	IRenderGeometry3D* GetGeometry3D();
 	// ファイルやUIを介さず、画像資源の所有先を貸す。
 	IRenderTextureResources* GetTextureResources();
+	// UIと独立したバッファ資源の所有先を貸す。
+	IRenderBufferResources* GetBufferResources();
 	// GPU完了を待つ。デバイス喪失時はfalse。
 	bool Wait();
 private:
@@ -56,6 +59,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> RtvHeap; // 画面の記述子。
 	FDX12DescriptorPool Descriptors; // ゲーム画像とUIへ独立した区画を貸す。
 	FDX12TextureStore Textures; // poolより先に破棄するゲーム画像の所有者。
+	FDX12BufferStore BufferResources; // 同じキューへバイト列を転送する独立した所有者。
 	Microsoft::WRL::ComPtr<ID3D12Resource> Buffers[BufferCount]; // 交換用画面。
 	Microsoft::WRL::ComPtr<ID3D12Fence> Fence; // 完了通知。
 	FDX12ImGuiRenderer ImGuiRenderer; // UIへの接続とその資源は専用の実装が所有する。

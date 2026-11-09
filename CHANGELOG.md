@@ -5,6 +5,7 @@
 ## [未リリース]
 
 ### 追加
+- 初期バイト列を所有するIRenderBufferResourcesと型付きのFBufferResourceHandle。DX12の同期転送・readback・登録解除後の回収を実装し、CPU参照／既定GPU／WARPの契約検査を追加。compute・描画への貸し出しは未接続。
 - codec・UIに依存しない画像資源の窓口IRenderTextureResourcesと、アセット番号の共通登録FTextureAssetStore。DX12の画像・転送・遅延解放、記述子のpool、ImGui描画の接続を責務ごとのクラスへ分離。
 - DX12構成のバックエンド互換台帳と自動更新・確認（`Docs/BackendCompatibility.csv`・`Tools/UpdateBackendCompatibility.ps1`）。公開窓口・描画命令・サンプル・Editor入口の欠落と宣言変更を検出し、既存の全検査手順へ追加。
 - MV1・シェーダー・音声／動画の初期調査と、共通GPU基盤の責務と未解決事項（`Docs/BACKEND_AUDIT.md`）。

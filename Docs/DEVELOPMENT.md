@@ -1050,3 +1050,7 @@ FBX／OBJから既存DxLib経路でMV1へ書き出す際は、X形式へ保持�
 FImportOptions::MaxSkinInfluencesは取り込み後に残す影響数で、既定4、0なら全保持、負数は失敗です。MV1書き出し側だけ8を指定します。FImportedMeshのNumDiscardedSkinInfluencesとbHasUnsupportedSkinningは、静的描画や書き出しで情報の欠落を見落とさないための診断情報です。実際のモーフdelta・頂点キャッシュ・dual quaternionの実装は追加していません。静的モデルの組み立ても、この診断情報がある入力を拒否します。
 
 別置きの補助検査では、自作FBXの4／8／全保持、9本から8本への削減、正規化、dual quaternion／混合方式／複数deformer／モーフの検出、exporterがbackendを呼ばず既存出力を保つこと、警告付きの明示許可、一時ファイルの後始末、キャッシュの既存挙動を確認します。MinGWとWine上の検査で、MSVC・Windows実機での確認は別途必要です。
+
+## 共通GPUバッファの初期転送
+
+IRenderBufferResourcesの4操作で、初期データのGPU転送・サイズ照会・同期readback・登録解除に対応します。型付き番号とGPU資源の所有は画像・アセット・UIから独立です。上限、失敗時の出力保持と資源の寿命、既定GPU／WARPとCPU参照の検査、まだ接続していないcompute等は [バッファ資源の契約](R1_BUFFER_RESOURCES.md) を参照してください。

@@ -4,13 +4,14 @@
 #include "Library/Framework/Subsystem/AppSubsystem.h"
 #include "Library/Core/Interfaces/Render/IRenderSurface.h"
 #include "Library/Core/Interfaces/Render/IRenderTextureResources.h"
+#include "Library/Core/Interfaces/Render/IRenderBufferResources.h"
 #include "Library/Core/Interfaces/Platform/INativeWindow.h"
 #include "Library/Platform/ImGui/Render/ImGuiCanvas2D.h"
 
 class FDX12Device;
 
 // Windowsの窓とフレーム進行を所有する。GPUの資源管理はFDX12Deviceへ委譲する。
-class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IRenderSurface, public IRenderTextureResources, public INativeWindow
+class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IRenderSurface, public IRenderTextureResources, public IRenderBufferResources, public INativeWindow
 {
 public:
 	// 途中の初期化失敗時も資源を解放する。
@@ -75,6 +76,14 @@ public:
 	void ReleaseTexture( FTextureResourceHandle Texture ) override;
 	// 所有先から画像を借りる。失敗時はOutを保つ。
 	bool GetTextureResourceView( FTextureResourceHandle Texture, FTextureDrawView& Out ) const override;
+	// 初期バイト列のGPU転送を待ち、完成した資源だけを登録する。
+	FBufferResourceHandle CreateBuffer( TArrayView<const uint8> Bytes ) override;
+	// 番号を無効にし、同じキューの完了後に実体を解放する。
+	void ReleaseBuffer( FBufferResourceHandle Buffer ) override;
+	// 有効なバッファのバイト数を返す。失敗時はOutSizeを保つ。
+	bool GetBufferSize( FBufferResourceHandle Buffer, uint64& OutSize ) const override;
+	// バッファの範囲を同期で読み戻す。初期化前・不正な範囲・GPU失敗時はOutを保つ。
+	bool ReadBuffer( FBufferResourceHandle Buffer, uint64 Offset, int32 NumBytes, TArray<uint8>& Out ) override;
 	// 今フレームのホイールを返す。
 	void GetWheel( float32& X, float32& Y ) const override;
 	// OSのホイール通知を貯める。ウィンドウ手続きからのみ呼ぶ。

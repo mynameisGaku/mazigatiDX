@@ -307,6 +307,12 @@
     <ClCompile Include="Source\SelfTest\EcsSelfTestScene.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
+    <ClCompile Include="Source\SelfTest\RenderBufferContractMain.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SelfTest\RenderBufferPlatformSelfTest.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
     <ClCompile Include="Source\SelfTest\SelfTestEntry.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>

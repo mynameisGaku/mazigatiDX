@@ -405,3 +405,26 @@ bool CDX12PlatformSubsystem::GetTextureResourceView( FTextureResourceHandle Text
 {
 	return bInitialized && Device && Device->GetTextureResources()->GetTextureResourceView( Texture, Out );
 }
+
+FBufferResourceHandle CDX12PlatformSubsystem::CreateBuffer( TArrayView<const uint8> Bytes )
+{
+	return bInitialized && Device ? Device->GetBufferResources()->CreateBuffer( Bytes ) : FBufferResourceHandle();
+}
+
+void CDX12PlatformSubsystem::ReleaseBuffer( FBufferResourceHandle Buffer )
+{
+	if ( Device )
+	{
+		Device->GetBufferResources()->ReleaseBuffer( Buffer );
+	}
+}
+
+bool CDX12PlatformSubsystem::GetBufferSize( FBufferResourceHandle Buffer, uint64& OutSize ) const
+{
+	return bInitialized && Device && Device->GetBufferResources()->GetBufferSize( Buffer, OutSize );
+}
+
+bool CDX12PlatformSubsystem::ReadBuffer( FBufferResourceHandle Buffer, uint64 Offset, int32 NumBytes, TArray<uint8>& Out )
+{
+	return bInitialized && Device && Device->GetBufferResources()->ReadBuffer( Buffer, Offset, NumBytes, Out );
+}

@@ -1,66 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="Library\Framework\Asset\Model\Import\StaticModelBuilder.cpp">
-      <Filter>Library\Framework\Asset\Model\Import</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\Render\Model\StaticModelStore.cpp">
-      <Filter>Library\Platform\Render\Model</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\Render\Geometry\GeometryBufferStore.cpp">
-      <Filter>Library\Platform\Render\Geometry</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\Render\Texture\TextureAssetStore.cpp">
-      <Filter>Library\Platform\Render\Texture</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\DX12\Render\DX12GeometryRenderer.cpp">
-      <Filter>Library\Platform\DX12\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\Render\Geometry\GeometryCommandExecutor.cpp">
-      <Filter>Library\Platform\Render\Geometry</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\Render\Geometry\GeometryQuadBuilder.cpp">
-      <Filter>Library\Platform\Render\Geometry</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\Render\Geometry\GeometryShapeBuilder.cpp">
-      <Filter>Library\Platform\Render\Geometry</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\DX12\Asset\DX12AssetBackendSubsystem.cpp">
-      <Filter>Library\Platform\DX12\Asset</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\DX12\Render\DX12Device.cpp">
-      <Filter>Library\Platform\DX12\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\DX12\ImGui\DX12ImGuiRenderer.cpp">
-      <Filter>Library\Platform\DX12\ImGui</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\DX12\Render\DX12TextureStore.cpp">
-      <Filter>Library\Platform\DX12\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\DX12\Render\DX12DescriptorPool.cpp">
-      <Filter>Library\Platform\DX12\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\DX12\Render\DX12DrawExecutorSubsystem.cpp">
-      <Filter>Library\Platform\DX12\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\DX12\Window\DX12PlatformSubsystem.cpp">
-      <Filter>Library\Platform\DX12\Window</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\ImGui\Render\ImGuiCanvas2D.cpp">
-      <Filter>Library\Platform\ImGui\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\Render\Canvas\CanvasDrawExecutor.cpp">
-      <Filter>Library\Platform\Render\Canvas</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\Windows\Image\WicImageDecoder.cpp">
-      <Filter>Library\Platform\Windows\Image</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\Windows\Input\WindowsInputSubsystem.cpp">
-      <Filter>Library\Platform\Windows\Input</Filter>
-    </ClCompile>
-    <ClCompile Include="VendorModules\ImGui\imgui_impl_dx12.cpp">
-      <Filter>VendorModules\ImGui</Filter>
-    </ClCompile>
     <ClCompile Include="Library\Core\Collection\String.cpp">
       <Filter>Library\Core\Collection</Filter>
     </ClCompile>
@@ -78,6 +18,9 @@
     </ClCompile>
     <ClCompile Include="Library\Core\Log\LogVerbosity.cpp">
       <Filter>Library\Core\Log</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Core\Render\BufferResourceHandle.cpp">
+      <Filter>Library\Core\Render</Filter>
     </ClCompile>
     <ClCompile Include="Library\Core\Thread\GameThread.cpp">
       <Filter>Library\Core\Thread</Filter>
@@ -434,6 +377,9 @@
       <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Model\Import\ModelImporter.cpp">
+      <Filter>Library\Framework\Asset\Model\Import</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Model\Import\StaticModelBuilder.cpp">
       <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Model\Import\XFileWriter.cpp">
@@ -1075,6 +1021,33 @@
     <ClCompile Include="Library\Platform\BackendSelection.cpp">
       <Filter>Library\Platform</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Asset\DX12AssetBackendSubsystem.cpp">
+      <Filter>Library\Platform\DX12\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\ImGui\DX12ImGuiRenderer.cpp">
+      <Filter>Library\Platform\DX12\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\DX12BufferStore.cpp">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\DX12DescriptorPool.cpp">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\DX12Device.cpp">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\DX12DrawExecutorSubsystem.cpp">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\DX12GeometryRenderer.cpp">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\DX12TextureStore.cpp">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Window\DX12PlatformSubsystem.cpp">
+      <Filter>Library\Platform\DX12\Window</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\DxLibBackendSubsystem.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
@@ -1168,6 +1141,9 @@
     <ClCompile Include="Library\Platform\DxLib\Window\DxLibWindowControlSubsystem.cpp">
       <Filter>Library\Platform\DxLib\Window</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\ImGui\Render\ImGuiCanvas2D.cpp">
+      <Filter>Library\Platform\ImGui\Render</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\Null\NullAssetBackendSubsystem.cpp">
       <Filter>Library\Platform\Null</Filter>
     </ClCompile>
@@ -1194,6 +1170,27 @@
     </ClCompile>
     <ClCompile Include="Library\Platform\Null\NullWindowControlSubsystem.cpp">
       <Filter>Library\Platform\Null</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Canvas\CanvasDrawExecutor.cpp">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryBufferStore.cpp">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryCommandExecutor.cpp">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryQuadBuilder.cpp">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryShapeBuilder.cpp">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Model\StaticModelStore.cpp">
+      <Filter>Library\Platform\Render\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Texture\TextureAssetStore.cpp">
+      <Filter>Library\Platform\Render\Texture</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\SDL\SdlGamepadInputSubsystem.cpp">
       <Filter>Library\Platform\SDL</Filter>
@@ -1225,6 +1222,12 @@
     <ClCompile Include="Library\Platform\System\ProjectPaths.cpp">
       <Filter>Library\Platform\System</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\Windows\Image\WicImageDecoder.cpp">
+      <Filter>Library\Platform\Windows\Image</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Windows\Input\WindowsInputSubsystem.cpp">
+      <Filter>Library\Platform\Windows\Input</Filter>
+    </ClCompile>
     <ClCompile Include="VendorModules\ImGui\imgui.cpp">
       <Filter>VendorModules\ImGui</Filter>
     </ClCompile>
@@ -1232,6 +1235,9 @@
       <Filter>VendorModules\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="VendorModules\ImGui\imgui_impl_dx11.cpp">
+      <Filter>VendorModules\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="VendorModules\ImGui\imgui_impl_dx12.cpp">
       <Filter>VendorModules\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="VendorModules\ImGui\imgui_impl_dx9.cpp">
@@ -1711,164 +1717,8 @@
     <ClCompile Include="VendorModules\ufbx\ufbx.c">
       <Filter>VendorModules\ufbx</Filter>
     </ClCompile>
-    <Filter Include="Library\Platform\DX12\ImGui">
-      <UniqueIdentifier>{C168E55C-20BE-5960-B602-E37599B054AD}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Library\Platform\Render\Texture">
-      <UniqueIdentifier>{E87E3FF2-B8E6-5669-BB4C-265C47111794}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Library\Platform\DX12">
-      <UniqueIdentifier>{7C46CEA2-399E-5E06-997C-9325BF91F6AE}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Library\Platform\DX12\Asset">
-      <UniqueIdentifier>{20157066-4F94-5E49-B3D9-740909FEA94F}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Library\Platform\DX12\Render">
-      <UniqueIdentifier>{BD89178F-32EA-5D79-ABE1-79229F759CC4}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Library\Platform\DX12\Window">
-      <UniqueIdentifier>{68472BF7-CE2A-5551-97E4-48F9176F6487}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Library\Platform\ImGui">
-      <UniqueIdentifier>{F1A3FBD4-7912-5DE6-B0A6-E232273F3FA6}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Library\Platform\ImGui\Render">
-      <UniqueIdentifier>{3AA93B0A-E8DF-52CD-A850-CE9601419CDA}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Library\Platform\Render">
-      <UniqueIdentifier>{064EFABF-7CA5-54A3-8C30-E7A714248C6E}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Library\Platform\Render\Canvas">
-      <UniqueIdentifier>{4DDA0871-9B79-52AD-A277-1F9FD683A3F4}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Library\Platform\Windows">
-      <UniqueIdentifier>{CAA869BC-2225-5DBB-8263-97667FF889FA}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Library\Platform\Windows\Image">
-      <UniqueIdentifier>{08D1F678-BC63-5523-8DC5-10F785A51991}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Library\Platform\Windows\Input">
-      <UniqueIdentifier>{672467B0-FE93-51B4-A727-E5F7D2066A66}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Library\Platform\Render\Geometry">
-      <UniqueIdentifier>{9D0B843F-592A-5182-A671-E224173B490C}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Library\Platform\Render\Model">
-      <UniqueIdentifier>{63767365-168B-50F7-8998-E1F884D9F441}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Library\Core\Interfaces\Render\IStaticModelSource.h">
-      <Filter>Library\Core\Interfaces\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Render\StaticModelDrawView.h">
-      <Filter>Library\Core\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\Model\Import\StaticModelBuilder.h">
-      <Filter>Library\Framework\Asset\Model\Import</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\Asset\Model\Import\StaticModelDefinition.h">
-      <Filter>Library\Framework\Asset\Model\Import</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\Render\Model\StaticModelStore.h">
-      <Filter>Library\Platform\Render\Model</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Render\IGeometryBufferSource.h">
-      <Filter>Library\Core\Interfaces\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Render\DrawVertex3D.h">
-      <Filter>Library\Core\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Render\GeometryBufferView.h">
-      <Filter>Library\Core\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\Render\Geometry\GeometryBufferStore.h">
-      <Filter>Library\Platform\Render\Geometry</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\Render\Texture\TextureAssetStore.h">
-      <Filter>Library\Platform\Render\Texture</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Render\IRenderGeometry3D.h">
-      <Filter>Library\Core\Interfaces\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Render\GeometryDrawState.h">
-      <Filter>Library\Core\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Render\GeometryVertex.h">
-      <Filter>Library\Core\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\DX12\DX12Log.h">
-      <Filter>Library\Platform\DX12</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\DX12\Render\DX12GeometryRenderer.h">
-      <Filter>Library\Platform\DX12\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\Render\Geometry\GeometryCommandExecutor.h">
-      <Filter>Library\Platform\Render\Geometry</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\Render\Geometry\GeometryQuadBuilder.h">
-      <Filter>Library\Platform\Render\Geometry</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\Render\Geometry\GeometryShapeBuilder.h">
-      <Filter>Library\Platform\Render\Geometry</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Render\TextureDrawView.h">
-      <Filter>Library\Core\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Platform\INativeWindow.h">
-      <Filter>Library\Core\Interfaces\Platform</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Render\IRenderCanvas2D.h">
-      <Filter>Library\Core\Interfaces\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Render\IRenderSurface.h">
-      <Filter>Library\Core\Interfaces\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Render\ITextureDrawSource.h">
-      <Filter>Library\Core\Interfaces\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\DX12\Asset\DX12AssetBackendSubsystem.h">
-      <Filter>Library\Platform\DX12\Asset</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\DX12\Render\DX12Device.h">
-      <Filter>Library\Platform\DX12\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\DX12\ImGui\DX12ImGuiRenderer.h">
-      <Filter>Library\Platform\DX12\ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\DX12\Render\DX12TextureStore.h">
-      <Filter>Library\Platform\DX12\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\DX12\Render\DX12DescriptorPool.h">
-      <Filter>Library\Platform\DX12\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Interfaces\Render\IRenderTextureResources.h">
-      <Filter>Library\Core\Interfaces\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Core\Render\TextureResourceHandle.h">
-      <Filter>Library\Core\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\DX12\Render\DX12DrawExecutorSubsystem.h">
-      <Filter>Library\Platform\DX12\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\DX12\Window\DX12PlatformSubsystem.h">
-      <Filter>Library\Platform\DX12\Window</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\ImGui\Render\ImGuiCanvas2D.h">
-      <Filter>Library\Platform\ImGui\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\Render\Canvas\CanvasDrawExecutor.h">
-      <Filter>Library\Platform\Render\Canvas</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\Windows\Image\WicImageDecoder.h">
-      <Filter>Library\Platform\Windows\Image</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\Windows\Input\WindowsInputSubsystem.h">
-      <Filter>Library\Platform\Windows\Input</Filter>
-    </ClInclude>
-    <ClInclude Include="VendorModules\ImGui\imgui_impl_dx12.h">
-      <Filter>VendorModules\ImGui</Filter>
-    </ClInclude>
     <ClInclude Include="Library\Core\Result.h">
       <Filter>Library\Core</Filter>
     </ClInclude>
@@ -2040,6 +1890,9 @@
     <ClInclude Include="Library\Core\Interfaces\Platform\IDisplayInfo.h">
       <Filter>Library\Core\Interfaces\Platform</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Platform\INativeWindow.h">
+      <Filter>Library\Core\Interfaces\Platform</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Platform\IPlatform.h">
       <Filter>Library\Core\Interfaces\Platform</Filter>
     </ClInclude>
@@ -2052,16 +1905,40 @@
     <ClInclude Include="Library\Core\Interfaces\Render\IDrawExecutor.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IGeometryBufferSource.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IImage.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IIndexBuffer.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IRenderBufferResources.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IRenderCanvas2D.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IRenderGeometry3D.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IRenderSurface.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IRenderTextureResources.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IShader.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IShadowMap.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IStaticModelSource.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\ITextureDrawSource.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IVertexBuffer.h">
@@ -2115,10 +1992,34 @@
     <ClInclude Include="Library\Core\Profiler\ProfilerTypes.h">
       <Filter>Library\Core\Profiler</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Render\BufferResourceHandle.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Render\DrawSpan.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Render\DrawVertex3D.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GeometryBufferView.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GeometryDrawState.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GeometryVertex.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Render\OffscreenCaptureDesc.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\StaticModelDrawView.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\TextureDrawView.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\TextureResourceHandle.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Thread\Atomic.h">
@@ -2527,6 +2428,12 @@
       <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Model\Import\ModelImporter.h">
+      <Filter>Library\Framework\Asset\Model\Import</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Model\Import\StaticModelBuilder.h">
+      <Filter>Library\Framework\Asset\Model\Import</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Model\Import\StaticModelDefinition.h">
       <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Model\Import\XFileWriter.h">
@@ -3378,6 +3285,36 @@
     <ClInclude Include="Library\Platform\BackendSelection.h">
       <Filter>Library\Platform</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\DX12Log.h">
+      <Filter>Library\Platform\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Asset\DX12AssetBackendSubsystem.h">
+      <Filter>Library\Platform\DX12\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\ImGui\DX12ImGuiRenderer.h">
+      <Filter>Library\Platform\DX12\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\DX12BufferStore.h">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\DX12DescriptorPool.h">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\DX12Device.h">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\DX12DrawExecutorSubsystem.h">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\DX12GeometryRenderer.h">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\DX12TextureStore.h">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Window\DX12PlatformSubsystem.h">
+      <Filter>Library\Platform\DX12\Window</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\DxLibBackendSubsystem.h">
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
@@ -3447,6 +3384,9 @@
     <ClInclude Include="Library\Platform\DxLib\Window\DxLibWindowControlSubsystem.h">
       <Filter>Library\Platform\DxLib\Window</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Platform\ImGui\Render\ImGuiCanvas2D.h">
+      <Filter>Library\Platform\ImGui\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Platform\Null\NullAssetBackendSubsystem.h">
       <Filter>Library\Platform\Null</Filter>
     </ClInclude>
@@ -3476,6 +3416,27 @@
     </ClInclude>
     <ClInclude Include="Library\Platform\Null\NullWindowControlSubsystem.h">
       <Filter>Library\Platform\Null</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Canvas\CanvasDrawExecutor.h">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryBufferStore.h">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryCommandExecutor.h">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryQuadBuilder.h">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryShapeBuilder.h">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Model\StaticModelStore.h">
+      <Filter>Library\Platform\Render\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Texture\TextureAssetStore.h">
+      <Filter>Library\Platform\Render\Texture</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\SDL\SdlGamepadInputSubsystem.h">
       <Filter>Library\Platform\SDL</Filter>
@@ -3513,6 +3474,12 @@
     <ClInclude Include="Library\Platform\System\WindowsInclude.h">
       <Filter>Library\Platform\System</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Platform\Windows\Image\WicImageDecoder.h">
+      <Filter>Library\Platform\Windows\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Windows\Input\WindowsInputSubsystem.h">
+      <Filter>Library\Platform\Windows\Input</Filter>
+    </ClInclude>
     <ClInclude Include="VendorModules\ImGui\imconfig.h">
       <Filter>VendorModules\ImGui</Filter>
     </ClInclude>
@@ -3520,6 +3487,9 @@
       <Filter>VendorModules\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\ImGui\imgui_impl_dx11.h">
+      <Filter>VendorModules\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="VendorModules\ImGui\imgui_impl_dx12.h">
       <Filter>VendorModules\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\ImGui\imgui_impl_dx9.h">
@@ -5294,6 +5264,21 @@
     <Filter Include="Library\Platform">
       <UniqueIdentifier>{ADB500FA-0E39-4833-EAC0-DB5B2ED96559}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Library\Platform\DX12">
+      <UniqueIdentifier>{0633C785-490F-A126-FE21-66DC0128DFAE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Asset">
+      <UniqueIdentifier>{F7292C24-3E33-6BC1-EBAF-15BF5E5C7A76}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\ImGui">
+      <UniqueIdentifier>{534E2C7E-4D6F-EBA8-3B64-5213E7FBCE15}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Render">
+      <UniqueIdentifier>{B97C14A7-3033-B05E-0F5F-78BC1E644601}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Window">
+      <UniqueIdentifier>{37D65420-DC1F-A8F9-F304-85E799095E27}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Library\Platform\DxLib">
       <UniqueIdentifier>{F933E44F-D2AA-43FC-A5C7-40704577771B}</UniqueIdentifier>
     </Filter>
@@ -5315,14 +5300,44 @@
     <Filter Include="Library\Platform\DxLib\Window">
       <UniqueIdentifier>{37409DE1-352B-CC5F-CFF7-B96539B867EF}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Library\Platform\ImGui">
+      <UniqueIdentifier>{6AD4EEA6-B4FD-89ED-1BC7-1ECF7606DA55}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\ImGui\Render">
+      <UniqueIdentifier>{C56018E6-DA79-EF33-6D9E-9166CA99376F}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Library\Platform\Null">
       <UniqueIdentifier>{F9C9031B-B8BD-65C1-0F4D-AB507CBB3645}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Render">
+      <UniqueIdentifier>{7A8807D1-B70C-8DCE-8982-7DE2478B2F3B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Render\Canvas">
+      <UniqueIdentifier>{02D34393-6C89-60D2-88D3-867CACDF59A2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Render\Geometry">
+      <UniqueIdentifier>{818CECE2-C56F-495C-14B9-C481213FA1D0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Render\Model">
+      <UniqueIdentifier>{06B78CD1-FC94-9503-F5B5-C1546C1F5231}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Render\Texture">
+      <UniqueIdentifier>{BADFE362-9748-2B0F-1F6A-2876BA6BDFB6}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Platform\SDL">
       <UniqueIdentifier>{3D8D195C-3E36-1F77-B84D-0F6497285B86}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Platform\System">
       <UniqueIdentifier>{99AE29AE-4656-AB5F-AEF1-248A133899D5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Windows">
+      <UniqueIdentifier>{FBD14D2B-5D0F-DFFE-6E69-7F18B3BA4B9B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Windows\Image">
+      <UniqueIdentifier>{45AF11BB-2AA2-AD60-CA54-B28594AAE7AA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Windows\Input">
+      <UniqueIdentifier>{C0168D10-FA87-AC91-1B48-2031C516A4A2}</UniqueIdentifier>
     </Filter>
     <Filter Include="VendorModules">
       <UniqueIdentifier>{B1A1C350-5AF7-E473-B7EF-0832BEC4D313}</UniqueIdentifier>

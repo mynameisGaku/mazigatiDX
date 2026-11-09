@@ -6,6 +6,10 @@
 
 Windows の全体ビルドで見つかった画面消去の定義漏れと警告を修正しました。Debug／Release の4 project と、DX12／WARP／DxLib／Null の起動確認は [Windows 検証記録](DX12_WINDOWS_VALIDATION.md) を参照してください。自己検査の対応版と残る制限も同記録へ分けています。以下の未確認一覧は引き継ぎ時点の記録です。
 
+## バッファ資源の作業（2026-11-09 追記）
+
+R1の最小のバッファ所有・同期転送・readbackを追加しました。窓口、失敗時と回収の契約、自己検査の対応版、まだ未接続のcompute等は [バッファ資源の記録](R1_BUFFER_RESOURCES.md) を参照してください。互換台帳は450件で、Verifiedは増やしていません。
+
 ## 最初に読むもの
 
 1. [ROADMAP.md](ROADMAP.md): v1.0.0の必須範囲、R0〜R10の順序と完了条件。
