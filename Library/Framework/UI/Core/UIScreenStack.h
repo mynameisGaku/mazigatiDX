@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Library/Framework/Asset/Font/Font.h"
+#include "Library/Framework/UI/Animation/UIEasing.h"
 #include "Library/Framework/UI/Core/UIContext.h"
 #include "Library/Framework/UI/Widgets/UIDisplayWidgets.h"
 
@@ -27,16 +28,42 @@
 //   - モーダルな画面（既定）は、下の画面へ、ポインターもナビゲーションも渡さない。モーダルでない画面は、自分の部品の上にポインターが
 //     無いときだけ、ポインターを下の画面へ渡す。ナビゲーション（矢印・Tab・決定・戻る）は、いちばん上の画面にだけ渡す。
 //   - 戻る（Escape・B ボタン）が押され、いちばん上の画面が bPopOnCancel なら、その画面を外す。
+//   - 出入りの演出（FUIScreenOptions::Transition）: 消える演出の間の画面は、まだ描かれるが、入力は受けず、ゲームの入力も止めず、「いちばん上」にも数えない。
+//     演出が終わったときに、実際に外れて、OnPopped が起きる（Num は、それまで、その画面も数える。NumOpen は、数えない）。Clear は、演出なしで、すぐ外す。
 //   - ツールチップ: 部品の SetTooltip（文字）か SetTooltipWidget（好きな部品。木に入れない）の指定を、ポインターがしばらく止まったときに、全部の画面の上へ描く（Paint の最後）。
 //     SetTooltipStyle で、文字のツールチップの見た目（背景のブラシ・フォント・余白・待ち時間など）を決める。フォントが無ければ、文字のツールチップは出さない。
 //     画面の端からはみ出すときは、ポインターの反対側（左・上）へ寄せて、画面の中に収める。時間は、FUIInputFrame::DeltaTime で数える。
 //=============================================================================
+// 画面の出入りの演出
+enum class EUIScreenTransitionKind : uint8
+{
+	None,        // すぐ出る・すぐ消える
+	Fade,        // 不透明度
+	SlideUp,     // 下から上がってくる（消えるときは、下へ）
+	SlideDown,   // 上から降りてくる
+	SlideLeft,   // 右から入ってくる
+	SlideRight,  // 左から入ってくる
+	Scale        // 少し小さいところから、広がる
+};
+
+// 出るとき（Push）は 0 → 1、消えるとき（Pop・Remove・戻る）は 1 → 0 へ、Duration 秒で動く。どの演出も、不透明度も一緒に変わる。
+// 演出の間、スタックが、ルートの不透明度と描くときの変換（SetOpacity・SetRenderTransform）を決める。
+struct FUIScreenTransition
+{
+	EUIScreenTransitionKind Kind = EUIScreenTransitionKind::None;
+	float32 Duration = 0.2f;                       // 秒（0 以下なら、演出なし）
+	EUIEasing Easing = EUIEasing::CubicOut;
+	float32 Distance = 48.0f;                      // Slide: ずらす画素
+	float32 StartScale = 0.9f;                     // Scale: 始まりの倍率
+};
+
 struct FUIScreenOptions
 {
 	bool bModal = true;             // 下の画面へ、入力を渡さない
 	bool bBlocksGameInput = true;   // この画面がある間、ゲーム自身の入力を止める
 	bool bPopOnCancel = true;       // 戻る（Escape・B ボタン）で、この画面を外す（いちばん上のときだけ）
 	CUIWidget* InitialFocus = nullptr;   // 積まれたとき、最初にフォーカスを持たせる部品（この画面の木の中。null なら、フォーカスなし）
+	FUIScreenTransition Transition;      // 出入りの演出（既定は、なし）
 };
 
 // 文字のツールチップの見た目
@@ -80,6 +107,10 @@ public:
 
 	int32 Num() const { return Screens.Num(); }
 	bool IsEmpty() const { return Screens.IsEmpty(); }
+	// 消える演出の途中の画面を除いた数
+	int32 NumOpen() const;
+	// 番号の画面が、消える演出の途中か
+	bool IsClosing( int32 Id ) const;
 	// いちばん上の画面のルート・コンテキスト（無ければ null）
 	CUIWidget* GetTopRoot() const;
 	CUIContext* GetTopContext() const;
@@ -109,6 +140,8 @@ private:
 		TSharedPtr<CUIWidget> Root;
 		FUIScreenOptions Options;
 		TSharedPtr<CUIContext> Context;
+		float32 TransitionProgress = 1.0f;   // 0（見えない）〜 1（出きった）
+		bool bClosing = false;               // 消える演出の途中
 	};
 
 	// Update の最中に呼ばれた、積む・外す。Update の終わりに、呼ばれた順で反映する
@@ -120,6 +153,13 @@ private:
 	};
 
 	bool RemoveNow( int32 Id );
+	// 演出なしで、すぐ外す
+	bool RemoveImmediately( int32 Id );
+	// 演出を進めて、ルートの見た目を決める。消えきった画面を外す
+	void AdvanceTransitions( float32 DeltaTime );
+	static void ApplyTransition( FScreen& Screen );
+	// いちばん上の、消える途中でない画面の位置（無ければ -1）
+	int32 FindTopOpenIndex() const;
 	void UpdateTooltip();
 	void AddScreen( const FScreen& Screen );
 	void ApplyPending();

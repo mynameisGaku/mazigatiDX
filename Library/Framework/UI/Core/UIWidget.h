@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 
+#include "Library/Math/Matrix4x4.h"
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Memory/SharedPtr.h"
@@ -146,6 +147,10 @@ public:
 	// 不透明度（0〜1。範囲の外は収める）。子孫にも掛かる（親の不透明度との積）
 	void SetOpacity( float32 InOpacity ) { Opacity = NMath::Clamp( InOpacity, 0.0f, 1.0f ); }
 	float32 GetOpacity() const { return Opacity; }
+	// 描くときだけ掛ける変換（ずらす・拡大・回す。子孫にも掛かる）。レイアウトと当たり判定は、変えない（動きの演出用。CUIAnimator が動かせる）。
+	// 図形・画像・文字に掛かる。子のクリップは、変換後の矩形を含む、軸に平行な範囲になる。マテリアルのブラシ（シェーダーの矩形）には掛からない
+	void SetRenderTransform( const FUIRenderTransform& InTransform ) { RenderTransform = InTransform; }
+	const FUIRenderTransform& GetRenderTransform() const { return RenderTransform; }
 
 	// この部品と子孫を描く命令を、CommandList へ記録する（ルートに対して呼ぶ。先に UpdateLayout で矩形を決めておく）。
 	// Visible の部品だけを描く（Hidden / Collapsed は、子ごと描かない）。クリップする部品は、子を矩形でクリップする。
@@ -216,7 +221,7 @@ private:
 	friend class CUIContext;
 
 	void ClearLayoutDirty();
-	void PaintRecursive( FDrawContext& CommandList, float32 ParentOpacity );
+	void PaintRecursive( FDrawContext& CommandList, float32 ParentOpacity, const FMatrix4x4& ParentTransform );
 
 	FString Name;
 	CUIWidget* Parent = nullptr;
@@ -225,6 +230,7 @@ private:
 	EUIVisibility Visibility = EUIVisibility::Visible;
 	FUIBrush Background;
 	float32 Opacity = 1.0f;
+	FUIRenderTransform RenderTransform;
 	FString NavigationTargets[4];
 	FString TooltipText;
 	TSharedPtr<CUIWidget> TooltipWidget;

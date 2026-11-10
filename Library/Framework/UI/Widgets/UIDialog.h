@@ -84,4 +84,6 @@ namespace NUIDialog
 	// ダイアログを、モーダルな画面として積み、既定のボタンにフォーカスを置く。どれかが選ばれたら（OnResult のあと）、画面を外す。戻り値は、画面の番号（積めなければ 0）。
 	// Screens は、ダイアログが閉じるまで、生きていること
 	int32 Show( CUIScreenStack& Screens, const TSharedPtr<CUIDialog>& Dialog );
+	// 出入りの演出つき（ふわっと出る・広がる、など）
+	int32 Show( CUIScreenStack& Screens, const TSharedPtr<CUIDialog>& Dialog, const FUIScreenTransition& Transition );
 }

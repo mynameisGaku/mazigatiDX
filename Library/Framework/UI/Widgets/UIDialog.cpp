@@ -122,6 +122,11 @@ void CUIDialog::Cancel()
 
 int32 NUIDialog::Show( CUIScreenStack& Screens, const TSharedPtr<CUIDialog>& Dialog )
 {
+	return Show( Screens, Dialog, FUIScreenTransition() );
+}
+
+int32 NUIDialog::Show( CUIScreenStack& Screens, const TSharedPtr<CUIDialog>& Dialog, const FUIScreenTransition& Transition )
+{
 	if ( !Dialog )
 	{
 		return 0;
@@ -130,6 +135,7 @@ int32 NUIDialog::Show( CUIScreenStack& Screens, const TSharedPtr<CUIDialog>& Dia
 	Options.bModal = true;
 	Options.bBlocksGameInput = true;
 	Options.bPopOnCancel = false; // 戻るは、ダイアログ自身が、結果として扱う
+	Options.Transition = Transition;
 	const int32 Id = Screens.Push( Dialog, Options );
 	if ( Id == 0 )
 	{

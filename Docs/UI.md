@@ -385,10 +385,35 @@ View->SetInteractive( true );
 View->OnViewPressed.Add( []( CUIWidget&, const FVector2& ViewPosition ) { /* 描画先の画素の座標 */ } );
 ```
 
+## 動き（アニメーション）
+
+部品を、レイアウトを変えずに動かせます（ほかの部品は、動きません）。
+
+- **描くときの変換**: `Widget->SetRenderTransform( FUIRenderTransform )` で、ずらす（`Translation`）・拡大（`Scale`）・回す（`Rotation`。ラジアン）を、矩形の中の `Pivot`（既定は中央）を中心に掛けます。子孫にも掛かります。当たり判定とレイアウトは、変わりません。図形・画像・文字に掛かります（マテリアルのブラシには、掛かりません）。
+- **`CUIAnimator`**（`Library/Framework/UI/Animation`）: 値を、時間をかけて動かします。ホストが 1 つ持ち、毎フレーム `Update( 秒 )` を呼びます。
+
+```cpp
+CUIAnimator Animator;
+Animator.Play( Panel, EUIAnimatedProperty::Opacity, 0.0f, 1.0f );                  // 0.25 秒で、ふわっと出す
+FUIAnimationOptions Slide;
+Slide.Duration = 0.4f;
+Slide.Easing = EUIEasing::BackOut;                                                 // 少し行き過ぎて、戻る
+Slide.OnFinished = [this]() { /* 終わったとき */ };
+Animator.Play( Panel, EUIAnimatedProperty::TranslationY, 40.0f, 0.0f, Slide );
+Animator.PlayValue( 0.0f, 100.0f, Slide, [this]( float32 Value ) { /* 好きな値 */ } );
+Animator.Update( DeltaTime );
+```
+
+  - 動かせる値は、`Opacity`・`TranslationX` / `Y`・`Scale`・`ScaleX` / `Y`・`Rotation` です。`PlayTo` は、いまの値から動かします。
+  - `FUIAnimationOptions`: `Duration`・`Delay`・`Easing`・`Loop`（`Once`・`Loop`・`PingPong`）・`OnFinished`。
+  - イージング（`EUIEasing`）は、`Linear`・`QuadIn` / `Out` / `InOut`・`CubicIn` / `Out` / `InOut`・`SineInOut`・`BackOut`・`ElasticOut`・`BounceOut` です。
+  - 同じ部品の同じ値を、もう一度 `Play` すると、前の動きを置き換えます。部品が消えると、その動きも消えます。
+- **画面の出入り**: `FUIScreenOptions::Transition`（`Fade`・`SlideUp` / `Down` / `Left` / `Right`・`Scale`、`Duration`、`Easing`）を決めて `Push` すると、出るときと消えるときに、演出が付きます。消える演出の間の画面は、描かれますが、入力は受けません（ゲームの入力も、止めません）。演出が終わると、実際に外れて、`OnPopped` が起きます。ダイアログは、`NUIDialog::Show( Screens, Dialog, Transition )` です。
+
 ## エンジン組み込みの素材
 
 UI の基本画像（窓・パネル・ボタンの 4 状態・チェック・スライダー・プログレスバーなど）と、アイコン（73 個。白一色なので、ブラシの色で好きな色にして使う）は、`EngineContent` にあります（`Engine:/UI/...`・`Engine:/Icons/...`）。中身と作り方は [`EngineContent/README.md`](../EngineContent/README.md) にあります。
 
 ## これから
 
-テーマの JSON ファイル、状態ごとのスタイル、入力欄の複数行とダブルクリックの選択、マテリアルのブラシ（シェーダーでの表現）は、順に足していきます。
+テーマの JSON ファイル、状態ごとのスタイル、入力欄の複数行とダブルクリックの選択、マークアップでの動きの指定は、順に足していきます。

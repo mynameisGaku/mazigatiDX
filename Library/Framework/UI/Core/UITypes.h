@@ -129,3 +129,16 @@ struct FUITrack
 	static FUITrack MakeFixed( float32 Pixels ) { return FUITrack { EUITrackKind::Fixed, Pixels }; }
 	static FUITrack MakeWeight( float32 Weight = 1.0f ) { return FUITrack { EUITrackKind::Weight, Weight }; }
 };
+
+// 描くときだけ掛ける変換（レイアウトと当たり判定には影響しない。動きの演出に使う）
+//   部品の矩形の中の Pivot（0〜1。既定は中央）を中心に、Scale 倍して、Rotation（ラジアン。時計回り）だけ回し、Translation（画素）だけずらす。子孫にも掛かる。
+struct FUIRenderTransform
+{
+	FVector2 Translation = FVector2( 0.0f, 0.0f );
+	FVector2 Scale = FVector2( 1.0f, 1.0f );
+	float32 Rotation = 0.0f;
+	FVector2 Pivot = FVector2( 0.5f, 0.5f );
+
+	// 何も変えない変換か
+	constexpr bool IsIdentity() const { return Translation.x == 0.0f && Translation.y == 0.0f && Scale.x == 1.0f && Scale.y == 1.0f && Rotation == 0.0f; }
+};

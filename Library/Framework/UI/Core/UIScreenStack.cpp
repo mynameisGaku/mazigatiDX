@@ -54,8 +54,15 @@ int32 CUIScreenStack::Push( const TSharedPtr<CUIWidget>& Root, const FUIScreenOp
 	return Screen.Id;
 }
 
-void CUIScreenStack::AddScreen( const FScreen& Screen )
+void CUIScreenStack::AddScreen( const FScreen& InScreen )
 {
+	FScreen Screen = InScreen;
+	const bool bAnimated = Screen.Options.Transition.Kind != EUIScreenTransitionKind::None && Screen.Options.Transition.Duration > 0.0f;
+	Screen.TransitionProgress = bAnimated ? 0.0f : 1.0f;
+	if ( bAnimated )
+	{
+		ApplyTransition( Screen );
+	}
 	Screens.Add( Screen );
 	// 最初にフォーカスを持たせる部品（この画面の木の中のものだけ）
 	if ( Screen.Options.InitialFocus != nullptr )
@@ -87,13 +94,17 @@ bool CUIScreenStack::Pop()
 {
 	if ( !bUpdating )
 	{
-		return Screens.IsEmpty() ? false : Remove( Screens.Last().Id );
+		const int32 TopIndex = FindTopOpenIndex();
+		return TopIndex < 0 ? false : Remove( Screens[TopIndex].Id );
 	}
-	// 最中: 反映されたあとの、いちばん上（あとから積まれる画面があれば、それ。外す予定の画面は、数えない）
+	// 最中: 反映されたあとの、いちばん上（あとから積まれる画面があれば、それ。外す予定の画面・消える途中の画面は、数えない）
 	int32 TopId = 0;
 	for ( int32 Index = 0; Index < Screens.Num(); ++Index )
 	{
-		TopId = Screens[Index].Id;
+		if ( !Screens[Index].bClosing )
+		{
+			TopId = Screens[Index].Id;
+		}
 	}
 	for ( int32 Index = 0; Index < Pending.Num(); ++Index )
 	{
@@ -115,7 +126,7 @@ bool CUIScreenStack::Pop()
 				{
 					bPendingRemoval = bPendingRemoval || ( !Pending[Check].bPush && Pending[Check].RemoveId == Screens[Search].Id );
 				}
-				TopId = bPendingRemoval ? 0 : Screens[Search].Id;
+				TopId = bPendingRemoval || Screens[Search].bClosing ? 0 : Screens[Search].Id;
 			}
 			break;
 		}
@@ -161,6 +172,32 @@ bool CUIScreenStack::RemoveNow( int32 Id )
 {
 	for ( int32 Index = 0; Index < Screens.Num(); ++Index )
 	{
+		if ( Screens[Index].Id != Id )
+		{
+			continue;
+		}
+		FScreen& Screen = Screens[Index];
+		if ( Screen.bClosing )
+		{
+			// すでに、消える途中
+			return false;
+		}
+		if ( Screen.Options.Transition.Kind == EUIScreenTransitionKind::None || Screen.Options.Transition.Duration <= 0.0f )
+		{
+			return RemoveImmediately( Id );
+		}
+		// 消える演出を始める。入力は、もう受けない（ホバー・フォーカスの印を外す）。描くのは、演出が終わるまで続ける
+		Screen.bClosing = true;
+		Screen.Context->SetRoot( TSharedPtr<CUIWidget>() );
+		return true;
+	}
+	return false;
+}
+
+bool CUIScreenStack::RemoveImmediately( int32 Id )
+{
+	for ( int32 Index = 0; Index < Screens.Num(); ++Index )
+	{
 		if ( Screens[Index].Id == Id )
 		{
 			// 状態を外してから、取り除く（部品の側の、ホバー・フォーカスの印を残さない）
@@ -198,18 +235,121 @@ void CUIScreenStack::Clear()
 	}
 	while ( !Screens.IsEmpty() )
 	{
-		Pop();
+		RemoveImmediately( Screens.Last().Id );
+	}
+}
+
+int32 CUIScreenStack::FindTopOpenIndex() const
+{
+	for ( int32 Index = Screens.Num() - 1; Index >= 0; --Index )
+	{
+		if ( !Screens[Index].bClosing )
+		{
+			return Index;
+		}
+	}
+	return -1;
+}
+
+int32 CUIScreenStack::NumOpen() const
+{
+	int32 Count = 0;
+	for ( int32 Index = 0; Index < Screens.Num(); ++Index )
+	{
+		Count += Screens[Index].bClosing ? 0 : 1;
+	}
+	return Count;
+}
+
+bool CUIScreenStack::IsClosing( int32 Id ) const
+{
+	for ( int32 Index = 0; Index < Screens.Num(); ++Index )
+	{
+		if ( Screens[Index].Id == Id )
+		{
+			return Screens[Index].bClosing;
+		}
+	}
+	return false;
+}
+
+void CUIScreenStack::ApplyTransition( FScreen& Screen )
+{
+	const FUIScreenTransition& Transition = Screen.Options.Transition;
+	const float32 Amount = NUIEasing::Evaluate( Transition.Easing, Screen.TransitionProgress );
+	// 行き過ぎるイージング（Back・Elastic）でも、不透明度は 0〜1（SetOpacity が収める）
+	Screen.Root->SetOpacity( Amount );
+	FUIRenderTransform Pose;
+	const float32 Remaining = ( 1.0f - Amount ) * Transition.Distance;
+	switch ( Transition.Kind )
+	{
+	case EUIScreenTransitionKind::SlideUp:
+		Pose.Translation = FVector2( 0.0f, Remaining );
+		break;
+	case EUIScreenTransitionKind::SlideDown:
+		Pose.Translation = FVector2( 0.0f, -Remaining );
+		break;
+	case EUIScreenTransitionKind::SlideLeft:
+		Pose.Translation = FVector2( Remaining, 0.0f );
+		break;
+	case EUIScreenTransitionKind::SlideRight:
+		Pose.Translation = FVector2( -Remaining, 0.0f );
+		break;
+	case EUIScreenTransitionKind::Scale:
+	{
+		const float32 Scale = Transition.StartScale + ( 1.0f - Transition.StartScale ) * Amount;
+		Pose.Scale = FVector2( Scale, Scale );
+		break;
+	}
+	default:
+		break;
+	}
+	Screen.Root->SetRenderTransform( Pose );
+}
+
+void CUIScreenStack::AdvanceTransitions( float32 DeltaTime )
+{
+	TArray<int32> Finished;
+	for ( int32 Index = 0; Index < Screens.Num(); ++Index )
+	{
+		FScreen& Screen = Screens[Index];
+		const FUIScreenTransition& Transition = Screen.Options.Transition;
+		if ( Transition.Kind == EUIScreenTransitionKind::None || Transition.Duration <= 0.0f )
+		{
+			continue;
+		}
+		const float32 Step = NMath::Max( 0.0f, DeltaTime ) / Transition.Duration;
+		if ( Screen.bClosing )
+		{
+			Screen.TransitionProgress = NMath::Max( 0.0f, Screen.TransitionProgress - Step );
+			ApplyTransition( Screen );
+			if ( Screen.TransitionProgress <= 0.0f )
+			{
+				Finished.Add( Screen.Id );
+			}
+		}
+		else if ( Screen.TransitionProgress < 1.0f )
+		{
+			Screen.TransitionProgress = NMath::Min( 1.0f, Screen.TransitionProgress + Step );
+			ApplyTransition( Screen );
+		}
+	}
+	for ( int32 Index = 0; Index < Finished.Num(); ++Index )
+	{
+		RemoveImmediately( Finished[Index] );
 	}
 }
 
 CUIWidget* CUIScreenStack::GetTopRoot() const
 {
-	return Screens.IsEmpty() ? nullptr : Screens.Last().Root.Get();
+	const int32 TopIndex = FindTopOpenIndex();
+	return TopIndex < 0 ? nullptr : Screens[TopIndex].Root.Get();
 }
 
 CUIContext* CUIScreenStack::GetTopContext() const
 {
-	return Screens.IsEmpty() ? nullptr : Screens.Last().Context.Get();
+	const int32 TopIndex = FindTopOpenIndex();
+	return TopIndex < 0 ? nullptr : Screens[TopIndex].Context.Get();
 }
 
 CUIContext* CUIScreenStack::FindContext( int32 Id ) const
@@ -235,15 +375,23 @@ CUIContext* CUIScreenStack::FindContext( int32 Id ) const
 FUIScreenInputResult CUIScreenStack::Update( const FUIInputFrame& Frame )
 {
 	FUIScreenInputResult Result;
+	// 出入りの演出を進める（消えきった画面は、ここで外れる）
+	AdvanceTransitions( Frame.DeltaTime );
 	bUpdating = true;
 	bool bPointerTaken = false;
 	bool bNavigationTaken = false;
 	int32 CancelledId = 0;
+	const int32 TopOpenIndex = FindTopOpenIndex();
 
 	for ( int32 Index = Screens.Num() - 1; Index >= 0; --Index )
 	{
 		FScreen& Screen = Screens[Index];
 		Screen.Root->UpdateLayout( Area );
+		if ( Screen.bClosing )
+		{
+			// 消える途中の画面は、描くだけ（入力を受けず、下の画面へ、そのまま渡す）
+			continue;
+		}
 
 		// 上の画面が使った入力は、この画面には届かない（ナビゲーションは、いちばん上の画面だけ）
 		FUIInputFrame Local = Frame;
@@ -267,7 +415,7 @@ FUIScreenInputResult CUIScreenStack::Update( const FUIInputFrame& Frame )
 		{
 			Result.bGameInputBlocked = true;
 		}
-		if ( Index == Screens.Num() - 1 && ScreenResult.bCancelRequested && Screen.Options.bPopOnCancel )
+		if ( Index == TopOpenIndex && ScreenResult.bCancelRequested && Screen.Options.bPopOnCancel )
 		{
 			CancelledId = Screen.Id;
 		}
@@ -309,6 +457,10 @@ void CUIScreenStack::UpdateTooltip()
 	// いちばん上の画面から順に、ツールチップを出す依頼を探す（下の画面は、上の画面がポインターを使うと、ポインターを受けない）
 	for ( int32 Index = Screens.Num() - 1; Index >= 0; --Index )
 	{
+		if ( Screens[Index].bClosing )
+		{
+			continue;
+		}
 		const FUITooltipRequest Request = Screens[Index].Context->GetTooltip();
 		if ( !Request.bVisible || Request.Source == nullptr )
 		{

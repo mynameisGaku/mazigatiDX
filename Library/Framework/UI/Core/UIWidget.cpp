@@ -208,13 +208,13 @@ void CUIWidget::OnPaintOverlay( FDrawContext&, float32 )
 
 void CUIWidget::Paint( FDrawContext& CommandList )
 {
-	PaintRecursive( CommandList, 1.0f );
+	PaintRecursive( CommandList, 1.0f, FMatrix4x4::Identity );
 	// ブラシが設定したブレンド（アルファ）と画像に掛ける色を、元（不透明・白）に戻す
 	CommandList.Blend( EDrawBlend::Opaque );
 	CommandList.Tint( FColor32( 255, 255, 255 ) );
 }
 
-void CUIWidget::PaintRecursive( FDrawContext& CommandList, float32 ParentOpacity )
+void CUIWidget::PaintRecursive( FDrawContext& CommandList, float32 ParentOpacity, const FMatrix4x4& ParentTransform )
 {
 	if ( Visibility != EUIVisibility::Visible )
 	{
@@ -224,6 +224,18 @@ void CUIWidget::PaintRecursive( FDrawContext& CommandList, float32 ParentOpacity
 	if ( EffectiveOpacity <= 0.0f )
 	{
 		return;
+	}
+
+	// 描くときの変換: 矩形の中の Pivot を中心に、拡大 → 回す → ずらす。親の変換の内側に掛ける
+	const bool bTransformed = !RenderTransform.IsIdentity();
+	FMatrix4x4 Transform = ParentTransform;
+	if ( bTransformed )
+	{
+		const FVector3 Center( Rect.Left() + Rect.Size.x * RenderTransform.Pivot.x, Rect.Top() + Rect.Size.y * RenderTransform.Pivot.y, 0.0f );
+		const FMatrix4x4 Local = FMatrix4x4::Translate( FVector3( -Center.x, -Center.y, 0.0f ) ) * FMatrix4x4::Scale( FVector3( RenderTransform.Scale.x, RenderTransform.Scale.y, 1.0f ) ) * FMatrix4x4::RotateZ( RenderTransform.Rotation )
+								  * FMatrix4x4::Translate( FVector3( Center.x + RenderTransform.Translation.x, Center.y + RenderTransform.Translation.y, 0.0f ) );
+		Transform = Local * ParentTransform;
+		CommandList.Transform2D( Transform );
 	}
 
 	{
@@ -242,18 +254,36 @@ void CUIWidget::PaintRecursive( FDrawContext& CommandList, float32 ParentOpacity
 	bool bPushedClip = false;
 	if ( bClipChildren )
 	{
-		bPushedClip = CommandList.PushClip( static_cast<int32>( NMath::Floor( Rect.Left() ) ), static_cast<int32>( NMath::Floor( Rect.Top() ) ),
-											static_cast<int32>( NMath::Ceil( Rect.Right() ) ), static_cast<int32>( NMath::Ceil( Rect.Bottom() ) ) );
+		// クリップは、変換を受けないので、変換後の四隅を含む範囲にする
+		const FVector3 Corners[4] = { Transform.TransformPoint( FVector3( Rect.Left(), Rect.Top(), 0.0f ) ), Transform.TransformPoint( FVector3( Rect.Right(), Rect.Top(), 0.0f ) ),
+									  Transform.TransformPoint( FVector3( Rect.Left(), Rect.Bottom(), 0.0f ) ), Transform.TransformPoint( FVector3( Rect.Right(), Rect.Bottom(), 0.0f ) ) };
+		float32 ClipLeft = Corners[0].x;
+		float32 ClipTop = Corners[0].y;
+		float32 ClipRight = Corners[0].x;
+		float32 ClipBottom = Corners[0].y;
+		for ( int32 Index = 1; Index < 4; ++Index )
+		{
+			ClipLeft = NMath::Min( ClipLeft, Corners[Index].x );
+			ClipTop = NMath::Min( ClipTop, Corners[Index].y );
+			ClipRight = NMath::Max( ClipRight, Corners[Index].x );
+			ClipBottom = NMath::Max( ClipBottom, Corners[Index].y );
+		}
+		bPushedClip = CommandList.PushClip( static_cast<int32>( NMath::Floor( ClipLeft ) ), static_cast<int32>( NMath::Floor( ClipTop ) ), static_cast<int32>( NMath::Ceil( ClipRight ) ), static_cast<int32>( NMath::Ceil( ClipBottom ) ) );
 	}
 	for ( int32 Index = 0; Index < Children.Num(); ++Index )
 	{
-		Children[Index]->PaintRecursive( CommandList, EffectiveOpacity );
+		Children[Index]->PaintRecursive( CommandList, EffectiveOpacity, Transform );
 	}
 	if ( bPushedClip )
 	{
 		CommandList.PopClip();
 	}
 	OnPaintOverlay( CommandList, EffectiveOpacity );
+	if ( bTransformed )
+	{
+		// 親の変換に戻す
+		CommandList.Transform2D( ParentTransform );
+	}
 }
 
 bool CUIWidget::IsEffectivelyEnabled() const

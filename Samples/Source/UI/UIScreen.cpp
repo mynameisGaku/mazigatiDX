@@ -112,7 +112,12 @@ void CUIScreen::AskReset()
 			SetStatus( "Reset was cancelled" );
 		}
 	} );
-	NUIDialog::Show( Screens, Dialog );
+	// 少し小さいところから広がって出て、縮んで消える
+	FUIScreenTransition Transition;
+	Transition.Kind = EUIScreenTransitionKind::Scale;
+	Transition.Duration = 0.18f;
+	Transition.Easing = EUIEasing::CubicOut;
+	NUIDialog::Show( Screens, Dialog, Transition );
 }
 
 void CUIScreen::SetStatus( const char* Text )
