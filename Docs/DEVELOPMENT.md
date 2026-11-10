@@ -876,6 +876,8 @@ v1.0.0までの開発順序と完了条件は[ロードマップ](ROADMAP.md)で
 
 `--backend=dx12`でDirect3D 12を選びます。既定のDxLib、`--backend=null`は従来どおりです。未知の選択値も従来どおりDxLibになります。DX12を選んだときはDxLibの実装を一つも生成しません。初期化に失敗した場合は終了し、別の実装へ暗黙に切り替えません。
 
+ソリューションから`project`をデバッグ起動する場合、x64のDebug／Releaseでは共有の`project.vcxproj`に指定した`--backend=dx12`を使います。個人の`project.vcxproj.user`では上書きできます。同ファイルの履歴や個人設定はGitへ含めません。実行ファイルを引数なしで直接起動した場合の既定は、従来どおりDxLibです。
+
 Windows 10以降とWindows SDKのD3D12・DXGI・WICを使います。追加のGPU SDKやAgility SDKは不要です。ImGuiは既存の固定バージョンの公式DX12実装を使います（`FetchImGui.bat`の取得対象にも追加）。DX12を組み込まない場合は`/p:MazigatiWithoutDX12=true`でDX12の実装と公式DX12描画ファイルを除外できます。DxLibを組み込まない場合の`/p:MazigatiWithoutDxLib=true`とも独立です。
 
 ### 責務と依存

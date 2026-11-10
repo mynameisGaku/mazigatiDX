@@ -62,6 +62,11 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(MSBuildThisFileDirectory)Build\mazigatiDX.props" />
   </ImportGroup>
+  <!-- ソリューションからのx64起動で使う共有のデバッグ設定。 -->
+  <PropertyGroup Condition="'$(Platform)'=='x64'">
+    <LocalDebuggerCommandArguments>--backend=dx12</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
   <ItemGroup>
