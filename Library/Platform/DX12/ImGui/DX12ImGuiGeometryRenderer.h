@@ -9,18 +9,18 @@
 #include <d3dcompiler.h>
 #include <wrl/client.h>
 
-// 画像と頂点色の3Dパイプライン・深度・フレーム内のアップロード領域を所有する。
-class FDX12GeometryRenderer : public IRenderGeometry3D
+// ImGuiの記録順へ基本3Dを挿入し、パイプラインとフレーム内のGPU頂点を保持する。
+class FDX12ImGuiGeometryRenderer : public IRenderGeometry3D
 {
 public:
 	// 所有するGPU資源とフレーム状態は複写しない。
-	FDX12GeometryRenderer() = default;
-	FDX12GeometryRenderer( const FDX12GeometryRenderer& ) = delete;
-	FDX12GeometryRenderer& operator=( const FDX12GeometryRenderer& ) = delete;
-	// 所有GPUと論理解像度を固定する。失敗時はfalse。
-	bool Initialize( ID3D12Device* InDevice, int32 InWidth, int32 InHeight );
+	FDX12ImGuiGeometryRenderer() = default;
+	FDX12ImGuiGeometryRenderer( const FDX12ImGuiGeometryRenderer& ) = delete;
+	FDX12ImGuiGeometryRenderer& operator=( const FDX12ImGuiGeometryRenderer& ) = delete;
+	// GPUと寸法を固定する。撮影時は指定した深度を共有し、通常時は専用の深度を作る。
+	bool Initialize( ID3D12Device* InDevice, int32 InWidth, int32 InHeight, ID3D12Resource* InDepth = nullptr, ID3D12DescriptorHeap* InDepthHeap = nullptr );
 	// GPU待ち後だけ呼ぶ。前フレームの頂点を解放して深度を消す。
-	void BeginFrame( ID3D12GraphicsCommandList* InCommands, D3D12_CPU_DESCRIPTOR_HANDLE InRtv, ID3D12DescriptorHeap* InSrvHeap = nullptr );
+	void BeginFrame( ID3D12GraphicsCommandList* InCommands, D3D12_CPU_DESCRIPTOR_HANDLE InRtv, ID3D12DescriptorHeap* InSrvHeap = nullptr, ImDrawList* InDrawList = nullptr );
 	// 記録先を外す。GPU上で使用中の頂点は保持する。
 	void EndFrame();
 	// 論理幅。
@@ -45,7 +45,7 @@ private:
 	// コールバックへ値で渡す描画。GPU資源は所有者が完了まで保持する。
 	struct FPendingDraw
 	{
-		FDX12GeometryRenderer* Owner = nullptr; // 記録先。
+		FDX12ImGuiGeometryRenderer* Owner = nullptr; // 記録先。
 		ID3D12PipelineState* Pipeline = nullptr; // 所有者のキャッシュにある状態。
 		D3D12_VERTEX_BUFFER_VIEW Vertices = {}; // 所有者が保持する頂点領域。
 		D3D_PRIMITIVE_TOPOLOGY Topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST; // 頂点のつなぎ方。
@@ -74,6 +74,7 @@ private:
 	TMap<uint64, FPipelineRecord> Pipelines; // 状態ごとのパイプライン。
 	TArray<FUploadRecord> Uploads; // GPU完了まで保持する頂点。
 	ID3D12GraphicsCommandList* Commands = nullptr; // 今フレームだけ借用する記録先。
+	ImDrawList* DrawList = nullptr; // 撮影中だけ借りる描画リスト。nullptrなら主画面。
 	D3D12_CPU_DESCRIPTOR_HANDLE Rtv = {}; // 今フレームだけ借用する画面。
 	uint64 UploadBytes = 0; // 今フレームに保持した頂点のバイト数。
 	int32 Width = 0, Height = 0; // 固定の論理解像度。

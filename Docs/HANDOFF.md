@@ -18,6 +18,10 @@ R1の最小のバッファ所有・同期転送・readbackを追加しました�
 
 DX12でImGuiのウィンドウを主画面から切り離せます。公式のWin32／DX12実装を接続し、DxLibの更新順・頻度設定を共通化しました。無効起動からの有効化と、実行中の繰り返し切り替えにも対応しています。座標補正、GPU待機・終了保持の修正、Windows実GPU／WARPの窓と画素の検査は [マルチビューポートの記録](DX12_IMGUI_VIEWPORTS.md) を参照してください。複数DPI・複数ベンダーや外部窓を含むGPU障害回復全体は残っています。
 
+## 撮影と責務の分離（2026-11-10 追記）
+
+DX12の画素読み戻しを既存の撮影サービスへ接続し、通常PNG・GIF、高解像度の描き直しと被写体だけの透明撮影を追加しました。GPU撮影先のFDX12CaptureTarget、共通ImGui記録のFImGuiCaptureDrawList、接続層のFDX12ImGuiCaptureRendererへ分けています。UIなしのGPU検査、依存の拒否、実GPU／WARPの画素と保存物の結果は [撮影の記録](DX12_CAPTURE.md) を参照してください。互換台帳は457項目、Verifiedは0です。
+
 ## 最初に読むもの
 
 1. [ROADMAP.md](ROADMAP.md): v1.0.0の必須範囲、R0〜R10の順序と完了条件。

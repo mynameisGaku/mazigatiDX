@@ -12,6 +12,7 @@
 #include "Library/Platform/ImGui/Render/ImGuiViewportScheduler.h"
 
 class FDX12Device;
+class FDX12ImGuiCaptureRenderer;
 
 // Windowsの窓とフレーム進行を所有する。GPUの資源管理はFDX12Deviceへ委譲する。
 class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IRenderSurface, public IRenderTextureResources, public IRenderBufferResources, public IComputePipelineResources, public IComputeQueue, public INativeWindow
@@ -31,6 +32,12 @@ public:
 	bool BeginFrame() override;
 	// ゲームと編集画面の描画を表示する。
 	void EndFrame() override;
+	// 主画面のゲーム描画とUI込みの画素を受け取る借用先を設定する。nullptrで解除する。
+	void SetFrameCaptureSink( IFrameCaptureSink* Sink ) override;
+	// 通常のフレーム記録を保持して、別の大きさへ描き直す。
+	bool BeginOffscreenCapture( const FOffscreenCaptureDesc& Desc ) override;
+	// 描き直しの結果を同期で読む。失敗時はOutを保つ。
+	bool EndOffscreenCapture( TArray<FColor32>& Out ) override;
 	// 次のフレームで終了する。
 	void RequestExit() override;
 	// 終了要求を返す。
@@ -106,6 +113,9 @@ private:
 	FImGuiViewportScheduler Viewports; // 外部窓の更新頻度と表示順。
 	FWindowSettings Settings; // 起動設定と現在の表示設定。
 	FDX12Device* Device = nullptr; // 所有するGPU。Deinitializeで破棄する。
+	FDX12ImGuiCaptureRenderer* CaptureRenderer = nullptr; // 通常画面と撮影用のImGui描画をつなぐ所有者。
+	IFrameCaptureSink* FrameCaptureSink = nullptr; // 撮影サービスの借用先。終了前に解除する。
+	TArray<FColor32> CapturePixels; // 通知中だけ受け取り手へ借用する画素。
 	void* Window = nullptr; // 所有するHWND。公開ヘッダーにWindowsを出さない。
 	bool bContext = false; // ImGui文脈の所有印。
 	bool bWin32 = false; // ImGuiのOS接続済み印。

@@ -35,6 +35,8 @@ public:
 	bool DecodeImage( const void* FileImage, usize Size, int32& OutWidth, int32& OutHeight, TArray<FColor32>& OutPixels ) override;
 	// ファイルを展開する。失敗時は出力を保つ。
 	bool DecodeImageFile( const FString& Path, int32& OutWidth, int32& OutHeight, TArray<FColor32>& OutPixels ) override;
+	// RGBA8をPNG・BMP・JPEGへ保存する。PNG圧縮率の個別指定は未対応としてfalse。
+	bool SavePixels( int32 Width, int32 Height, const FColor32* Pixels, const FString& Path, const FImageSaveOptions& Options ) override;
 	// 有効な画像だけ描画側へ貸す。
 	bool GetTextureDrawView( int32 Handle, FTextureDrawView& Out ) override;
 	// 編集メッシュを共通の形状保管へ変換する。失敗時は両出力を保つ。

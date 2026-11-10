@@ -10,7 +10,7 @@
 
 |分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|
 |---|---:|---:|---:|---:|---:|---:|---:|
-|API|311|4|124|58|124|0|1|
+|API|313|4|118|59|131|0|1|
 |Draw|100|0|52|8|40|0|0|
 |Sample|33|30|0|3|0|0|0|
 |Editor|11|11|0|0|0|0|0|
@@ -62,8 +62,8 @@
 |[API.IDisplayInfo.GetPrimaryDisplayIndex](../Library/Core/Interfaces/Platform/IDisplayInfo.h#L24)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
 |[API.IDisplayInfo.GetWindowDisplayIndex](../Library/Core/Interfaces/Platform/IDisplayInfo.h#L33)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
 |[API.IDisplayInfo.GetWindowDpiScale](../Library/Core/Interfaces/Platform/IDisplayInfo.h#L36)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
-|[API.IDrawExecutor.BeginOffscreenCapture](../Library/Core/Interfaces/Render/IDrawExecutor.h#L43)|Missing|R6|全命令、能力応答、空clip・不正命令、Span終了と撮影終了の状態復元を比較|共通Canvasへ接続。材質効果・pose能力とoffscreen撮影は未対応||
-|[API.IDrawExecutor.EndOffscreenCapture](../Library/Core/Interfaces/Render/IDrawExecutor.h#L45)|Missing|R6|全命令、能力応答、空clip・不正命令、Span終了と撮影終了の状態復元を比較|共通Canvasへ接続。材質効果・pose能力とoffscreen撮影は未対応||
+|[API.IDrawExecutor.BeginOffscreenCapture](../Library/Core/Interfaces/Render/IDrawExecutor.h#L43)|Implemented|R1|指定寸法・倍率、2D/基本3D/画像/文字、失敗時の出力保持、通常描画への復帰と終了時の保持を比較|GPUの描画先と共通ImGui記録を分離し、接続層から同期の描き直しを実行。全描画命令の互換はR6で継続|Docs/DX12_CAPTURE.md; CaptureTargetContract/CaptureContract; dx12-capture|
+|[API.IDrawExecutor.EndOffscreenCapture](../Library/Core/Interfaces/Render/IDrawExecutor.h#L45)|Implemented|R1|指定寸法・倍率、2D/基本3D/画像/文字、失敗時の出力保持、通常描画への復帰と終了時の保持を比較|GPUの描画先と共通ImGui記録を分離し、接続層から同期の描き直しを実行。全描画命令の互換はR6で継続|Docs/DX12_CAPTURE.md; CaptureTargetContract/CaptureContract; dx12-capture|
 |[API.IDrawExecutor.Execute](../Library/Core/Interfaces/Render/IDrawExecutor.h#L25)|Partial|R6|全命令、能力応答、空clip・不正命令、Span終了と撮影終了の状態復元を比較|共通Canvasへ接続。材質効果・pose能力とoffscreen撮影は未対応||
 |[API.IDrawExecutor.SupportsEffectMaterialMesh](../Library/Core/Interfaces/Render/IDrawExecutor.h#L35)|Missing|R6|全命令、能力応答、空clip・不正命令、Span終了と撮影終了の状態復元を比較|共通Canvasへ接続。材質効果・pose能力とoffscreen撮影は未対応||
 |[API.IDrawExecutor.SupportsEffectMaterialRibbons](../Library/Core/Interfaces/Render/IDrawExecutor.h#L29)|Missing|R6|全命令、能力応答、空clip・不正命令、Span終了と撮影終了の状態復元を比較|共通Canvasへ接続。材質効果・pose能力とoffscreen撮影は未対応||
@@ -84,8 +84,8 @@
 |[API.IFontBackend.MeasureTextSize](../Library/Core/Interfaces/Asset/FontBackend.h#L26)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IFontBackend.RemoveFontCharImage](../Library/Core/Interfaces/Asset/FontBackend.h#L36)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IFontBackend.RemoveFontFile](../Library/Core/Interfaces/Asset/FontBackend.h#L39)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IFrameCaptureSink.OnFrame](../Library/Core/Interfaces/Platform/FrameCapture.h#L44)|Missing|R8|撮影開始・受信・停止、画素寸法と順序、終了時の寿命を比較|DX12の画素readbackと撮影サービスの接続が未実装||
-|[API.IFrameCaptureSink.WantsFrame](../Library/Core/Interfaces/Platform/FrameCapture.h#L41)|Missing|R8|撮影開始・受信・停止、画素寸法と順序、終了時の寿命を比較|DX12の画素readbackと撮影サービスの接続が未実装||
+|[API.IFrameCaptureSink.OnFrame](../Library/Core/Interfaces/Platform/FrameCapture.h#L44)|Implemented|R8|撮影開始・受信・停止、画素寸法と順序、終了時の寿命を比較|主画面のゲーム描画とUI込みをRGBA8で通知。段階の順序・番号と通知中の解除、PNG/GIF保存を検査|Docs/DX12_CAPTURE.md; dx12-capture|
+|[API.IFrameCaptureSink.WantsFrame](../Library/Core/Interfaces/Platform/FrameCapture.h#L41)|Implemented|R8|撮影開始・受信・停止、画素寸法と順序、終了時の寿命を比較|主画面のゲーム描画とUI込みをRGBA8で通知。段階の順序・番号と通知中の解除、PNG/GIF保存を検査|Docs/DX12_CAPTURE.md; dx12-capture|
 |[API.IGamepadInput.AddMappingsFromFile](../Library/Core/Interfaces/Input/IGamepadInput.h#L32)|Implemented|R8|ゲームパッド実機の接続／切断、ボタン・軸、sensor、rumble、無効番号を比較|非Null選択で共通SDL実装を作る。実機での接続・切断・sensor・rumble比較前||
 |[API.IGamepadInput.EnableSensor](../Library/Core/Interfaces/Input/IGamepadInput.h#L24)|Implemented|R8|ゲームパッド実機の接続／切断、ボタン・軸、sensor、rumble、無効番号を比較|非Null選択で共通SDL実装を作る。実機での接続・切断・sensor・rumble比較前||
 |[API.IGamepadInput.GetConnectedThisFrame](../Library/Core/Interfaces/Input/IGamepadInput.h#L20)|Implemented|R8|ゲームパッド実機の接続／切断、ボタン・軸、sensor、rumble、無効番号を比較|非Null選択で共通SDL実装を作る。実機での接続・切断・sensor・rumble比較前||
@@ -209,7 +209,7 @@
 |[API.IPlatform.IsMouseCursorVisible](../Library/Core/Interfaces/Platform/IPlatform.h#L56)|Partial|R8|起動・終了、時間・frame、窓modeとtitle、focus、撮影をWindowsで比較|DX12窓とフレームの処理あり。撮影・排他全画面等の対応は未完了||
 |[API.IPlatform.RequestExit](../Library/Core/Interfaces/Platform/IPlatform.h#L28)|Partial|R8|起動・終了、時間・frame、窓modeとtitle、focus、撮影をWindowsで比較|DX12窓とフレームの処理あり。撮影・排他全画面等の対応は未完了||
 |[API.IPlatform.RequestScreenshot](../Library/Core/Interfaces/Platform/IPlatform.h#L64)|Missing|R8|起動・終了、時間・frame、窓modeとtitle、focus、撮影をWindowsで比較|DX12窓とフレームの処理あり。撮影・排他全画面等の対応は未完了||
-|[API.IPlatform.SetFrameCaptureSink](../Library/Core/Interfaces/Platform/IPlatform.h#L66)|Missing|R8|起動・終了、時間・frame、窓modeとtitle、focus、撮影をWindowsで比較|DX12窓とフレームの処理あり。撮影・排他全画面等の対応は未完了||
+|[API.IPlatform.SetFrameCaptureSink](../Library/Core/Interfaces/Platform/IPlatform.h#L66)|Implemented|R8|起動・終了、時間・frame、窓modeとtitle、focus、撮影をWindowsで比較|主画面のゲーム描画とUI込みをRGBA8で通知。段階の順序・番号と通知中の解除、PNG/GIF保存を検査|Docs/DX12_CAPTURE.md; dx12-capture|
 |[API.IPlatform.SetMouseCursorVisible](../Library/Core/Interfaces/Platform/IPlatform.h#L57)|Partial|R8|起動・終了、時間・frame、窓modeとtitle、focus、撮影をWindowsで比較|DX12窓とフレームの処理あり。撮影・排他全画面等の対応は未完了||
 |[API.IPlatform.SetWindowMode](../Library/Core/Interfaces/Platform/IPlatform.h#L46)|Partial|R8|起動・終了、時間・frame、窓modeとtitle、focus、撮影をWindowsで比較|DX12窓とフレームの処理あり。撮影・排他全画面等の対応は未完了||
 |[API.IPlatform.SetWindowTitle](../Library/Core/Interfaces/Platform/IPlatform.h#L51)|Partial|R8|起動・終了、時間・frame、窓modeとtitle、focus、撮影をWindowsで比較|DX12窓とフレームの処理あり。撮影・排他全画面等の対応は未完了||
@@ -279,10 +279,12 @@
 |[API.IRenderResourceBackend.MakeVertexBuffer](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L26)|Implemented|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|FGeometryBufferStoreへ接続。CPU保管の作成・更新・範囲検査あり。Windows互換比較前||
 |[API.IRenderResourceBackend.WriteIndexBuffer](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L32)|Implemented|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|FGeometryBufferStoreへ接続。CPU保管の作成・更新・範囲検査あり。Windows互換比較前||
 |[API.IRenderResourceBackend.WriteVertexBuffer](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L28)|Implemented|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|FGeometryBufferStoreへ接続。CPU保管の作成・更新・範囲検査あり。Windows互換比較前||
-|[API.IRenderSurface.GetCanvas2D](../Library/Core/Interfaces/Render/IRenderSurface.h#L14)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
-|[API.IRenderSurface.GetGeometry3D](../Library/Core/Interfaces/Render/IRenderSurface.h#L16)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
-|[API.IRenderSurface.RecordClear](../Library/Core/Interfaces/Render/IRenderSurface.h#L18)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
-|[API.IRenderSurface.WaitForGPU](../Library/Core/Interfaces/Render/IRenderSurface.h#L20)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
+|[API.IRenderSurface.BeginOffscreenCapture](../Library/Core/Interfaces/Render/IRenderSurface.h#L24)|Implemented|R1|指定寸法・倍率、2D/基本3D/画像/文字、失敗時の出力保持、通常描画への復帰と終了時の保持を比較|GPUの描画先と共通ImGui記録を分離し、接続層から同期の描き直しを実行。全描画命令の互換はR6で継続|Docs/DX12_CAPTURE.md; CaptureTargetContract/CaptureContract; dx12-capture|
+|[API.IRenderSurface.EndOffscreenCapture](../Library/Core/Interfaces/Render/IRenderSurface.h#L26)|Implemented|R1|指定寸法・倍率、2D/基本3D/画像/文字、失敗時の出力保持、通常描画への復帰と終了時の保持を比較|GPUの描画先と共通ImGui記録を分離し、接続層から同期の描き直しを実行。全描画命令の互換はR6で継続|Docs/DX12_CAPTURE.md; CaptureTargetContract/CaptureContract; dx12-capture|
+|[API.IRenderSurface.GetCanvas2D](../Library/Core/Interfaces/Render/IRenderSurface.h#L16)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
+|[API.IRenderSurface.GetGeometry3D](../Library/Core/Interfaces/Render/IRenderSurface.h#L18)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
+|[API.IRenderSurface.RecordClear](../Library/Core/Interfaces/Render/IRenderSurface.h#L20)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
+|[API.IRenderSurface.WaitForGPU](../Library/Core/Interfaces/Render/IRenderSurface.h#L22)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
 |[API.IRenderTextureResources.CreateTextureRGBA8](../Library/Core/Interfaces/Render/IRenderTextureResources.h#L16)|Implemented|R1|ImGuiなしの作成・更新・解放、入力不正、旧viewのGPU完了までの保持、失敗と再初期化を検査|DX12画像所有者へ接続。アセット登録とUIの所有から分離。Windowsの外部ImGui窓との共有画像・表示画素を確認。全更新・失敗経路の互換は未網羅|補助検証: NativeStoreのcompute readbackと共通登録の偽物。Windowsの外部窓共有: Docs/DX12_IMGUI_VIEWPORTS.md|
 |[API.IRenderTextureResources.GetTextureResourceView](../Library/Core/Interfaces/Render/IRenderTextureResources.h#L25)|Implemented|R1|ImGuiなしの作成・更新・解放、入力不正、旧viewのGPU完了までの保持、失敗と再初期化を検査|DX12画像所有者へ接続。アセット登録とUIの所有から分離。Windowsの外部ImGui窓との共有画像・表示画素を確認。全更新・失敗経路の互換は未網羅|補助検証: NativeStoreのcompute readbackと共通登録の偽物。Windowsの外部窓共有: Docs/DX12_IMGUI_VIEWPORTS.md|
 |[API.IRenderTextureResources.ReleaseTexture](../Library/Core/Interfaces/Render/IRenderTextureResources.h#L22)|Implemented|R1|ImGuiなしの作成・更新・解放、入力不正、旧viewのGPU完了までの保持、失敗と再初期化を検査|DX12画像所有者へ接続。アセット登録とUIの所有から分離。Windowsの外部ImGui窓との共有画像・表示画素を確認。全更新・失敗経路の互換は未網羅|補助検証: NativeStoreのcompute readbackと共通登録の偽物。Windowsの外部窓共有: Docs/DX12_IMGUI_VIEWPORTS.md|
@@ -313,7 +315,7 @@
 |[API.ITextureBackend.GetTextureUvBounds](../Library/Core/Interfaces/Asset/TextureBackend.h#L25)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.ITextureBackend.LoadTexture](../Library/Core/Interfaces/Asset/TextureBackend.h#L19)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|WIC画像経路あり。対応形式の同等性と非同期処理が未完了||
 |[API.ITextureBackend.ReadRenderTargetPixels](../Library/Core/Interfaces/Asset/TextureBackend.h#L37)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.ITextureBackend.SavePixels](../Library/Core/Interfaces/Asset/TextureBackend.h#L53)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.ITextureBackend.SavePixels](../Library/Core/Interfaces/Asset/TextureBackend.h#L53)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|WICでPNG/BMP/JPEG保存。PNG透明度・JPEG品質・Unicode名に対応。PNG圧縮率の個別指定は副作用なく拒否|Docs/DX12_CAPTURE.md; CaptureContractMain.cpp|
 |[API.ITextureBackend.SaveRenderTarget](../Library/Core/Interfaces/Asset/TextureBackend.h#L39)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.ITextureBackend.UpdateTexturePixels](../Library/Core/Interfaces/Asset/TextureBackend.h#L47)|Implemented|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|登録画像の処理あり。GPU完了まで遅延解放。Windows互換比較前||
 |[API.ITextureDrawSource.GetTextureDrawView](../Library/Core/Interfaces/Render/ITextureDrawSource.h#L12)|Implemented|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||

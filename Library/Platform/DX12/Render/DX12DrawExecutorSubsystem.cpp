@@ -35,3 +35,13 @@ void CDX12DrawExecutorSubsystem::Execute( const FDrawSpan& Span )
 		Executor.Execute( Span );
 	}
 }
+
+bool CDX12DrawExecutorSubsystem::BeginOffscreenCapture( const FOffscreenCaptureDesc& Desc )
+{
+	return Surface && Surface->BeginOffscreenCapture( Desc );
+}
+
+bool CDX12DrawExecutorSubsystem::EndOffscreenCapture( TArray<FColor32>& Out )
+{
+	return Surface && Surface->EndOffscreenCapture( Out );
+}

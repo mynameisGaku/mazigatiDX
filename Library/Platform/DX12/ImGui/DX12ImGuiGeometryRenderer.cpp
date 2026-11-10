@@ -1,9 +1,9 @@
 ﻿// SPDX-License-Identifier: MIT
-#include "DX12GeometryRenderer.h"
+#include "Library/Platform/DX12/ImGui/DX12ImGuiGeometryRenderer.h"
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Types/Numeric.h"
 
-bool FDX12GeometryRenderer::Initialize( ID3D12Device* InDevice, int32 InWidth, int32 InHeight )
+bool FDX12ImGuiGeometryRenderer::Initialize( ID3D12Device* InDevice, int32 InWidth, int32 InHeight, ID3D12Resource* InDepth, ID3D12DescriptorHeap* InDepthHeap )
 {
 	Device = InDevice;
 	Width = InWidth;
@@ -61,7 +61,13 @@ bool FDX12GeometryRenderer::Initialize( ID3D12Device* InDevice, int32 InWidth, i
 		Handle.ptr += Index * SamplerStride;
 		Device->CreateSampler( &Sampler, Handle );
 	}
-	D3D12_DESCRIPTOR_HEAP_DESC HeapDesc = {}; // 深度用は1枚。
+	if ( InDepth && InDepthHeap )
+	{
+		Depth = InDepth;
+		DsvHeap = InDepthHeap;
+		return true;
+	}
+	D3D12_DESCRIPTOR_HEAP_DESC HeapDesc = {}; // 通常描画では専用の深度を作る。
 	HeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 	HeapDesc.NumDescriptors = 1;
 	D3D12_HEAP_PROPERTIES Heap = {}; // GPUが読み書きする領域。
@@ -87,33 +93,34 @@ bool FDX12GeometryRenderer::Initialize( ID3D12Device* InDevice, int32 InWidth, i
 	return true;
 }
 
-void FDX12GeometryRenderer::BeginFrame( ID3D12GraphicsCommandList* InCommands, D3D12_CPU_DESCRIPTOR_HANDLE InRtv, ID3D12DescriptorHeap* InSrvHeap )
+void FDX12ImGuiGeometryRenderer::BeginFrame( ID3D12GraphicsCommandList* InCommands, D3D12_CPU_DESCRIPTOR_HANDLE InRtv, ID3D12DescriptorHeap* InSrvHeap, ImDrawList* InDrawList )
 {
 	Uploads.Reset();
 	UploadBytes = 0;
 	Commands = InCommands;
 	Rtv = InRtv;
 	SrvHeap = InSrvHeap;
+	DrawList = InDrawList;
 	Commands->ClearDepthStencilView( DsvHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1, 0, 0, nullptr );
 }
 
-void FDX12GeometryRenderer::EndFrame()
+void FDX12ImGuiGeometryRenderer::EndFrame()
 {
 	Commands = nullptr;
 	SrvHeap = nullptr;
 }
 
-int32 FDX12GeometryRenderer::GetWidth() const
+int32 FDX12ImGuiGeometryRenderer::GetWidth() const
 {
 	return Width;
 }
 
-int32 FDX12GeometryRenderer::GetHeight() const
+int32 FDX12ImGuiGeometryRenderer::GetHeight() const
 {
 	return Height;
 }
 
-ID3D12PipelineState* FDX12GeometryRenderer::GetPipeline( const FGeometryDrawState& State, bool bTextured )
+ID3D12PipelineState* FDX12ImGuiGeometryRenderer::GetPipeline( const FGeometryDrawState& State, bool bTextured )
 {
 	const uint64 Key = ( static_cast<uint64>( static_cast<uint32>( State.DepthBias ) ) << 32 ) | static_cast<uint64>( State.Topology )
 		| ( static_cast<uint64>( State.Compare ) << 2 ) | ( static_cast<uint64>( State.Culling ) << 5 )
@@ -174,17 +181,17 @@ ID3D12PipelineState* FDX12GeometryRenderer::GetPipeline( const FGeometryDrawStat
 	return Result;
 }
 
-bool FDX12GeometryRenderer::DrawGeometry( const FGeometryVertex* Vertices, int32 NumVertices, const FGeometryDrawState& State )
+bool FDX12ImGuiGeometryRenderer::DrawGeometry( const FGeometryVertex* Vertices, int32 NumVertices, const FGeometryDrawState& State )
 {
 	return DrawInternal( Vertices, NumVertices, State, nullptr );
 }
 
-bool FDX12GeometryRenderer::DrawTexturedGeometry( const FGeometryVertex* Vertices, int32 NumVertices, const FGeometryDrawState& State, const FTextureDrawView& Texture )
+bool FDX12ImGuiGeometryRenderer::DrawTexturedGeometry( const FGeometryVertex* Vertices, int32 NumVertices, const FGeometryDrawState& State, const FTextureDrawView& Texture )
 {
 	return DrawInternal( Vertices, NumVertices, State, &Texture );
 }
 
-bool FDX12GeometryRenderer::DrawInternal( const FGeometryVertex* Vertices, int32 NumVertices, const FGeometryDrawState& State, const FTextureDrawView* Texture )
+bool FDX12ImGuiGeometryRenderer::DrawInternal( const FGeometryVertex* Vertices, int32 NumVertices, const FGeometryDrawState& State, const FTextureDrawView* Texture )
 {
 	const int32 Group = State.Topology == EGeometryTopology::Points ? 1 : State.Topology == EGeometryTopology::Lines ? 2 : 3; // リストの最小単位。
 	if ( !Commands || !Vertices || NumVertices <= 0 || NumVertices > 65536 || NumVertices % Group != 0
@@ -256,20 +263,21 @@ bool FDX12GeometryRenderer::DrawInternal( const FGeometryVertex* Vertices, int32
 		: State.Topology == EGeometryTopology::Lines ? D3D_PRIMITIVE_TOPOLOGY_LINELIST : D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	Uploads.Add( FUploadRecord { MoveTemp( Upload ) } );
 	UploadBytes += Desc.Width;
-	ImDrawList* List = ImGui::GetBackgroundDrawList( ImGui::GetMainViewport() ); // 2Dと3Dの記録順を保つ。
+	ImDrawList* List = DrawList ? DrawList : ImGui::GetBackgroundDrawList( ImGui::GetMainViewport() ); // 2Dと3Dの記録順を保つ。
 	List->AddCallback( DrawCallback, &Pending, sizeof( Pending ) );
 	List->AddCallback( ImDrawCallback_ResetRenderState, nullptr );
 	return true;
 }
 
-void FDX12GeometryRenderer::DrawCallback( const ImDrawList*, const ImDrawCmd* Command )
+void FDX12ImGuiGeometryRenderer::DrawCallback( const ImDrawList*, const ImDrawCmd* Command )
 {
 	const auto& Pending = *static_cast<const FPendingDraw*>( Command->UserCallbackData ); // 所有済みの描画。
 	auto& Owner = *Pending.Owner; // フレーム中のGPU記録先。
-	D3D12_RECT Clip = { static_cast<LONG>( NMath::Clamp( Command->ClipRect.x, 0.0f, static_cast<float32>( Owner.Width ) ) ),
-		static_cast<LONG>( NMath::Clamp( Command->ClipRect.y, 0.0f, static_cast<float32>( Owner.Height ) ) ),
-		static_cast<LONG>( NMath::Clamp( Command->ClipRect.z, 0.0f, static_cast<float32>( Owner.Width ) ) ),
-		static_cast<LONG>( NMath::Clamp( Command->ClipRect.w, 0.0f, static_cast<float32>( Owner.Height ) ) ) }; // 現在のクリップを3Dにも適用する。
+	const ImGuiViewport* Main = ImGui::GetMainViewport(); // 通常描画のクリップはデスクトップ上の座標になっている。
+	const ImVec2 Origin = Owner.DrawList ? ImVec2( 0, 0 ) : Main->Pos; // 撮影先は原点0。
+	const float32 ScaleX = Owner.DrawList ? 1 : Main->Size.x > 0 ? Owner.Width / Main->Size.x : 0; // 描画先の実画素へ戻す倍率。
+	const float32 ScaleY = Owner.DrawList ? 1 : Main->Size.y > 0 ? Owner.Height / Main->Size.y : 0; // 縦方向も独立して変換する。
+	D3D12_RECT Clip = { static_cast<LONG>( NMath::Clamp( ( Command->ClipRect.x - Origin.x ) * ScaleX, 0.0f, static_cast<float32>( Owner.Width ) ) ), static_cast<LONG>( NMath::Clamp( ( Command->ClipRect.y - Origin.y ) * ScaleY, 0.0f, static_cast<float32>( Owner.Height ) ) ), static_cast<LONG>( NMath::Clamp( ( Command->ClipRect.z - Origin.x ) * ScaleX, 0.0f, static_cast<float32>( Owner.Width ) ) ), static_cast<LONG>( NMath::Clamp( ( Command->ClipRect.w - Origin.y ) * ScaleY, 0.0f, static_cast<float32>( Owner.Height ) ) ) }; // 現在のクリップを3Dにも適用する。
 	if ( Clip.left >= Clip.right || Clip.top >= Clip.bottom )
 	{
 		return;
@@ -300,16 +308,17 @@ void FDX12GeometryRenderer::DrawCallback( const ImDrawList*, const ImDrawCmd* Co
 	}
 }
 
-void FDX12GeometryRenderer::ClearDepth()
+void FDX12ImGuiGeometryRenderer::ClearDepth()
 {
 	if ( Commands )
 	{
-		ImGui::GetBackgroundDrawList( ImGui::GetMainViewport() )->AddCallback( ClearDepthCallback, this );
+		ImDrawList* List = DrawList ? DrawList : ImGui::GetBackgroundDrawList( ImGui::GetMainViewport() ); // 撮影先の深度だけを消す。
+		List->AddCallback( ClearDepthCallback, this );
 	}
 }
 
-void FDX12GeometryRenderer::ClearDepthCallback( const ImDrawList*, const ImDrawCmd* Command )
+void FDX12ImGuiGeometryRenderer::ClearDepthCallback( const ImDrawList*, const ImDrawCmd* Command )
 {
-	auto* Owner = static_cast<FDX12GeometryRenderer*>( Command->UserCallbackData ); // フレームを所有する実行先。
+	auto* Owner = static_cast<FDX12ImGuiGeometryRenderer*>( Command->UserCallbackData ); // フレームを所有する実行先。
 	Owner->Commands->ClearDepthStencilView( Owner->DsvHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1, 0, 0, nullptr );
 }

@@ -20,6 +20,10 @@ public:
 	void Deinitialize() override;
 	// フレーム内の命令を共通実行側へ渡す。
 	void Execute( const FDrawSpan& Span ) override;
+	// 以後のExecuteを、指定寸法と倍率の撮影先へ向ける。通常のフレーム外・二重開始はfalse。
+	bool BeginOffscreenCapture( const FOffscreenCaptureDesc& Desc ) override;
+	// 撮影先の画素を読み、通常描画へ戻す。失敗時はOutを保つ。
+	bool EndOffscreenCapture( TArray<FColor32>& Out ) override;
 private:
 	IRenderSurface* Surface = nullptr; // 借用する描画先。
 	IStaticModelSource* Models = nullptr; // 借用する静的モデル。

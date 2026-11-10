@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DX12PlatformSubsystem.h"
 #include "Library/Platform/DX12/Render/DX12Device.h"
+#include "Library/Platform/DX12/ImGui/DX12ImGuiCaptureRenderer.h"
 #include "Library/Platform/BackendSelection.h"
 #include "Library/Platform/System/BackendSupport.h"
 #include "Library/Platform/System/CommandLine.h"
@@ -18,6 +19,11 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler( HWND Window, UINT 
 
 namespace
 {
+	// ImGuiのゲーム描画が終わる位置から、GPU側のコピー処理だけを呼ぶ。
+	void CaptureGameFrame( const ImDrawList*, const ImDrawCmd* Command )
+	{
+		static_cast<FDX12Device*>( Command->UserCallbackData )->RecordGameFrameCopy();
+	}
 	// この実装の窓だけが受け取るイベント。
 	LRESULT CALLBACK WindowProc( HWND Window, UINT Message, WPARAM WParam, LPARAM LParam )
 	{
@@ -122,24 +128,30 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection& )
 		return;
 	}
 	const EWindowMode InitialMode = Settings.WindowMode; // 窓の作成後に起動モードへ移す。
+	CaptureRenderer = new FDX12ImGuiCaptureRenderer( *Device );
 	Settings.WindowMode = EWindowMode::Windowed;
 	SetWindowMode( InitialMode );
 	ShowWindow( static_cast<HWND>( Window ), SW_SHOW );
 	LastTick = NPlatformTime::GetTicks();
 	bInitialized = true;
 	Canvas.SetLogicalSize( Settings.Width, Settings.Height );
-	LOG( LogDX12, Log, "DX12 initialized (%dx%d). Static FBX/OBJ models supported; lighting, animated models, audio and offscreen targets are not supported yet.", Settings.Width, Settings.Height );
+	LOG( LogDX12, Log, "DX12 initialized (%dx%d). Static FBX/OBJ models supported; lighting, animated models, audio and general render target assets are not supported yet.", Settings.Width, Settings.Height );
 }
 
 void CDX12PlatformSubsystem::Deinitialize()
 {
+	FrameCaptureSink = nullptr;
 	if ( bInFrame && bContext )
 	{
 		ImGui::EndFrame();
 	}
 	bInFrame = false;
+	// 撮影側がGPU完了を待ち、借用したUI接続と画像heapより先に記録を戻す。
+	delete CaptureRenderer;
+	CaptureRenderer = nullptr;
 	delete Device;
 	Device = nullptr;
+	CapturePixels.Reset();
 	Viewports.Reset();
 	if ( bWin32 )
 	{
@@ -213,11 +225,45 @@ void CDX12PlatformSubsystem::EndFrame()
 	{
 		return;
 	}
+	IFrameCaptureSink* RequestedSink = FrameCaptureSink; // 通知中の解除・差し替え後に古い借用先を呼ばない。
+	const uint64 CaptureFrame = FrameCount + 1; // 通常描画と同じフレーム番号。
+	const bool bGame = RequestedSink && RequestedSink->WantsFrame( CaptureFrame, EFrameCaptureStage::Game ); // 必要な段階だけGPUコピーする。
+	const bool bUI = RequestedSink && RequestedSink->WantsFrame( CaptureFrame, EFrameCaptureStage::WithDebugUI ); // 外部窓を含まない主画面のUIまで。
+	const bool bCapturePrepared = ( bGame || bUI ) && ImGui::GetMainViewport()->Size.x > 0 && ImGui::GetMainViewport()->Size.y > 0 && Device->PrepareFrameCapture( bGame, bUI ); // GPU完了前に古い読み取り領域を再利用しない。
+	if ( bCapturePrepared && bGame )
+	{
+		ImGui::GetBackgroundDrawList( ImGui::GetMainViewport() )->AddCallback( CaptureGameFrame, Device );
+	}
 	ImGui::Render();
-	if ( !Device->EndFrame( ImGui::GetDrawData(), Settings.bVSync ) )
+	const bool bPresented = Device->EndFrame( ImGui::GetDrawData(), Settings.bVSync ); // 撮影に失敗しても通常の表示とは区別する。
+	if ( !bPresented )
 	{
 		LOG( LogDX12, Error, "DX12 present failed" );
 		bExit = true;
+	}
+	if ( bCapturePrepared && bPresented )
+	{
+		for ( EFrameCaptureStage Stage : { EFrameCaptureStage::Game, EFrameCaptureStage::WithDebugUI } )
+		{
+			if ( FrameCaptureSink != RequestedSink || !( Stage == EFrameCaptureStage::Game ? bGame : bUI ) )
+			{
+				continue;
+			}
+			if ( Device->ReadFrameCapture( Stage, CapturePixels ) )
+			{
+				FFramePixels Frame; // この通知中だけ画素列を借用する。
+				Frame.Width = Settings.Width;
+				Frame.Height = Settings.Height;
+				Frame.Pixels = CapturePixels.GetData();
+				Frame.FrameIndex = CaptureFrame;
+				Frame.Stage = Stage;
+				RequestedSink->OnFrame( Frame );
+			}
+			else
+			{
+				LOG( LogDX12, Warning, "DX12 frame capture readback failed" );
+			}
+		}
 	}
 	if ( !bExit )
 	{
@@ -291,11 +337,35 @@ void* CDX12PlatformSubsystem::GetNativeWindow() const
 }
 IRenderCanvas2D* CDX12PlatformSubsystem::GetCanvas2D()
 {
+	if ( bInFrame && CaptureRenderer && CaptureRenderer->IsActive() )
+	{
+		return CaptureRenderer->GetCanvas2D();
+	}
 	return bInFrame ? &Canvas : nullptr;
+}
+
+void CDX12PlatformSubsystem::SetFrameCaptureSink( IFrameCaptureSink* Sink )
+{
+	FrameCaptureSink = Sink;
+}
+
+bool CDX12PlatformSubsystem::BeginOffscreenCapture( const FOffscreenCaptureDesc& Desc )
+{
+	return bInFrame && CaptureRenderer && CaptureRenderer->Begin( Desc );
+}
+
+bool CDX12PlatformSubsystem::EndOffscreenCapture( TArray<FColor32>& Out )
+{
+	return bInFrame && CaptureRenderer && CaptureRenderer->End( Out );
 }
 
 void CDX12PlatformSubsystem::RecordClear( FColor32 Color )
 {
+	if ( bInFrame && CaptureRenderer && CaptureRenderer->IsActive() )
+	{
+		CaptureRenderer->RecordClear( Color );
+		return;
+	}
 	if ( bInFrame )
 	{
 		Device->RecordClear( *ImGui::GetBackgroundDrawList( ImGui::GetMainViewport() ), IM_COL32( Color.r, Color.g, Color.b, Color.a ) );
@@ -379,6 +449,10 @@ void CDX12PlatformSubsystem::ToggleFullscreen()
 
 IRenderGeometry3D* CDX12PlatformSubsystem::GetGeometry3D()
 {
+	if ( bInFrame && CaptureRenderer && CaptureRenderer->IsActive() )
+	{
+		return CaptureRenderer->GetGeometry3D();
+	}
 	return bInFrame && Device ? Device->GetGeometry3D() : nullptr;
 }
 

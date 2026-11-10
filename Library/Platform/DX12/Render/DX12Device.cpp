@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DX12Device.h"
-#include "DX12GeometryRenderer.h"
+#include "Library/Platform/DX12/ImGui/DX12ImGuiGeometryRenderer.h"
+#include "DX12CaptureTarget.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Platform/DX12/DX12Log.h"
 #include "Library/Core/Memory/Memory.h"
@@ -62,12 +63,7 @@ bool FDX12Device::InitializeOnQueue( HWND Window, int32 Width, int32 Height, ID3
 	Device = QueueDevice;
 	Queue = InQueue;
 	Microsoft::WRL::ComPtr<IDXGIFactory4> Factory; // このキューへ交換用画面を接続する列挙元。
-	if ( FAILED( CreateDXGIFactory1( IID_PPV_ARGS( &Factory ) ) ) || FAILED( Device->CreateCommandAllocator( D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS( &Allocator ) ) ) || FAILED( Device->CreateCommandList( 0, D3D12_COMMAND_LIST_TYPE_DIRECT, Allocator.Get(), nullptr, IID_PPV_ARGS( &Commands ) ) ) || FAILED( Commands->Close() ) || FAILED( Device->CreateFence( 0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS( &Fence ) ) ) )
-	{
-		return false;
-	}
-	FenceEvent = CreateEventW( nullptr, FALSE, FALSE, nullptr );
-	if ( !FenceEvent )
+	if ( FAILED( CreateDXGIFactory1( IID_PPV_ARGS( &Factory ) ) ) || FAILED( Device->CreateCommandAllocator( D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS( &Allocator ) ) ) || FAILED( Device->CreateCommandList( 0, D3D12_COMMAND_LIST_TYPE_DIRECT, Allocator.Get(), nullptr, IID_PPV_ARGS( &Commands ) ) ) || FAILED( Commands->Close() ) || !Completion.Initialize( Device.Get(), Queue.Get() ) )
 	{
 		return false;
 	}
@@ -113,7 +109,7 @@ bool FDX12Device::InitializeOnQueue( HWND Window, int32 Width, int32 Height, ID3
 	{
 		return false;
 	}
-	Geometry = new FDX12GeometryRenderer();
+	Geometry = new FDX12ImGuiGeometryRenderer();
 	if ( !Geometry->Initialize( Device.Get(), Width, Height ) )
 	{
 		return false;
@@ -124,46 +120,7 @@ bool FDX12Device::InitializeOnQueue( HWND Window, int32 Width, int32 Height, ID3
 
 bool FDX12Device::Wait( uint32 TimeoutMs )
 {
-	if ( TimeoutMs > 60000 || !Device || !Queue || !Fence || !FenceEvent || FenceValue >= UINT64_MAX - 1 || FAILED( Device->GetDeviceRemovedReason() ) )
-	{
-		return false;
-	}
-	++FenceValue;
-	if ( FAILED( Queue->Signal( Fence.Get(), FenceValue ) ) )
-	{
-		return false;
-	}
-	const uint64 Started = GetTickCount64(); // 古い通知で起こされても今回の期限は延長しない。
-	for ( ;; )
-	{
-		const uint64 Completed = Fence->GetCompletedValue(); // 喪失を通常の完了番号と混同しない。
-		if ( Completed == UINT64_MAX || FAILED( Device->GetDeviceRemovedReason() ) )
-		{
-			return false;
-		}
-		if ( Completed >= FenceValue )
-		{
-			return true;
-		}
-		const uint64 Elapsed = GetTickCount64() - Started; // 経過時間を単調な時計で求める。
-		if ( Elapsed >= TimeoutMs )
-		{
-			return false;
-		}
-		if ( NotifiedValue == 0 || Completed >= NotifiedValue )
-		{
-			if ( FAILED( Fence->SetEventOnCompletion( FenceValue, FenceEvent ) ) )
-			{
-				return false;
-			}
-			NotifiedValue = FenceValue;
-		}
-		const DWORD Result = WaitForSingleObject( FenceEvent, static_cast<DWORD>( TimeoutMs - Elapsed ) ); // 残り時間だけ待つ。
-		if ( Result != WAIT_OBJECT_0 && Result != WAIT_TIMEOUT )
-		{
-			return false;
-		}
-	}
+	return Completion.Wait( TimeoutMs );
 }
 
 bool FDX12Device::TryShutdown( uint32 TimeoutMs )
@@ -174,7 +131,7 @@ bool FDX12Device::TryShutdown( uint32 TimeoutMs )
 	}
 	bClosing = true;
 	// 待機機構の作成前はまだGPUへ提出していない。完成後は停止の確認を必須にする。
-	if ( Device && Queue && Fence && FenceEvent && !Wait( TimeoutMs ) && SUCCEEDED( Device->GetDeviceRemovedReason() ) )
+	if ( Device && Queue && Completion.IsInitialized() && !Wait( TimeoutMs ) && SUCCEEDED( Device->GetDeviceRemovedReason() ) )
 	{
 		return false;
 	}
@@ -197,6 +154,8 @@ void FDX12Device::Shutdown()
 
 void FDX12Device::ReleaseAfterGPUStopped()
 {
+	GameReadback.ResetAfterGPUIdle();
+	UIReadback.ResetAfterGPUIdle();
 	ImGuiRenderer.Shutdown();
 	for ( auto& Buffer : Buffers )
 	{
@@ -213,16 +172,9 @@ void FDX12Device::ReleaseAfterGPUStopped()
 	BufferResources.ResetAfterGPUIdle();
 	Descriptors.Reset();
 	RtvHeap.Reset();
-	Fence.Reset();
+	Completion.ResetAfterGPUIdle();
 	Queue.Reset();
 	Device.Reset();
-	if ( FenceEvent )
-	{
-		CloseHandle( FenceEvent );
-		FenceEvent = nullptr;
-	}
-	FenceValue = 0;
-	NotifiedValue = 0;
 	BufferIndex = RtvStride = 0;
 	CurrentRtv = {};
 	bRecording = false;
@@ -240,6 +192,8 @@ bool FDX12Device::BeginFrame()
 	ComputePipelines.CollectAfterGPUIdle();
 	Textures.CollectAfterGPUIdle(); // 記録済みの描画が残らない時点でだけ旧版を戻す。
 	BufferResources.CollectAfterGPUIdle();
+	bCaptureGame = bCaptureUI = bGameCopied = bUICopied = false;
+	bFrameSubmitted = false;
 	BufferIndex = SwapChain->GetCurrentBackBufferIndex();
 	CurrentRtv = RtvHeap->GetCPUDescriptorHandleForHeapStart();
 	CurrentRtv.ptr += BufferIndex * RtvStride;
@@ -279,6 +233,10 @@ bool FDX12Device::EndFrame( ImDrawData* Data, bool bVSync )
 		return false;
 	}
 	Geometry->EndFrame();
+	if ( bCaptureUI )
+	{
+		bUICopied = UIReadback.RecordCopy( Commands.Get(), Buffers[BufferIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET );
+	}
 	D3D12_RESOURCE_BARRIER Barrier = {}; // 描画結果を表示用へ戻す。
 	Barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	Barrier.Transition.pResource = Buffers[BufferIndex].Get();
@@ -293,6 +251,7 @@ bool FDX12Device::EndFrame( ImDrawData* Data, bool bVSync )
 	}
 	ID3D12CommandList* Lists[] = { Commands.Get() }; // 今フレームを一度だけ送る。
 	Queue->ExecuteCommandLists( 1, Lists );
+	bFrameSubmitted = true;
 	return SUCCEEDED( SwapChain->Present( bVSync ? 1 : 0, 0 ) );
 }
 
@@ -318,6 +277,55 @@ IRenderGeometry3D* FDX12Device::GetGeometry3D()
 {
 	return bInitialized && !bClosing && bRecording ? Geometry : nullptr;
 }
+
+bool FDX12Device::PrepareFrameCapture( bool bGame, bool bWithUI )
+{
+	if ( !bInitialized || bClosing || !bRecording || bCaptureGame || bCaptureUI )
+	{
+		return false;
+	}
+	if ( ( bGame && !GameReadback.InitializeAfterGPUIdle( Device.Get(), Buffers[BufferIndex].Get() ) ) || ( bWithUI && !UIReadback.InitializeAfterGPUIdle( Device.Get(), Buffers[BufferIndex].Get() ) ) )
+	{
+		return false;
+	}
+	bCaptureGame = bGame;
+	bCaptureUI = bWithUI;
+	return true;
+}
+
+void FDX12Device::RecordGameFrameCopy()
+{
+	if ( bInitialized && !bClosing && bRecording && bCaptureGame )
+	{
+		bGameCopied = GameReadback.RecordCopy( Commands.Get(), Buffers[BufferIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET );
+	}
+}
+
+bool FDX12Device::ReadFrameCapture( EFrameCaptureStage Stage, TArray<FColor32>& Out )
+{
+	if ( !bInitialized || bClosing || bRecording || !bFrameSubmitted || ( Stage != EFrameCaptureStage::Game && Stage != EFrameCaptureStage::WithDebugUI ) || !( Stage == EFrameCaptureStage::Game ? bGameCopied : bUICopied ) || !Wait() )
+	{
+		return false;
+	}
+	return ( Stage == EFrameCaptureStage::Game ? GameReadback : UIReadback ).ReadAfterGPUIdle( Out, true );
+}
+
+bool FDX12Device::InitializeCaptureTarget( FDX12CaptureTarget& Target )
+{
+	return bInitialized && !bClosing && Target.Initialize( Device.Get(), Queue.Get() );
+}
+
+FDX12ImGuiRenderer* FDX12Device::GetImGuiRenderer()
+{
+	return bInitialized && !bClosing ? &ImGuiRenderer : nullptr;
+}
+
+ID3D12DescriptorHeap* FDX12Device::GetImageDescriptorHeap()
+{
+	return bInitialized && !bClosing ? Descriptors.GetHeap() : nullptr;
+}
+
+bool FDX12Device::IsRecording() const { return bInitialized && !bClosing && bRecording; }
 
 IRenderTextureResources* FDX12Device::GetTextureResources()
 {

@@ -5,6 +5,7 @@
 #include "Library/Core/File/File.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 #include "Library/Platform/Windows/Image/WicImageDecoder.h"
+#include "Library/Platform/Windows/Image/WicImageEncoder.h"
 #include "Library/Framework/Asset/Model/Import/FbxImporter.h"
 #include "Library/Framework/Asset/Model/Import/ModelFormats.h"
 #include "Library/Platform/System/FileSystem.h"
@@ -88,6 +89,11 @@ FBackendMemoryInfo CDX12AssetBackendSubsystem::GetMemoryInfo()
 	Info.NumTextureHandles = Textures.Num();
 	Info.NumModelHandles = Models.Num();
 	return Info;
+}
+
+bool CDX12AssetBackendSubsystem::SavePixels( int32 Width, int32 Height, const FColor32* Pixels, const FString& Path, const FImageSaveOptions& Options )
+{
+	return FWicImageEncoder::Save( Width, Height, Pixels, Path, Options );
 }
 
 int64 CDX12AssetBackendSubsystem::EstimateModelBytes( int32 Model )

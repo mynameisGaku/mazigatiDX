@@ -416,7 +416,11 @@
     <ClCompile Include="Library\Platform\DX12\Render\DX12DescriptorPool.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\DX12Device.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\DX12DrawExecutorSubsystem.cpp" />
-    <ClCompile Include="Library\Platform\DX12\Render\DX12GeometryRenderer.cpp" />
+    <ClCompile Include="Library\Platform\DX12\ImGui\DX12ImGuiGeometryRenderer.cpp" />
+    <ClCompile Include="Library\Platform\DX12\ImGui\DX12ImGuiCaptureRenderer.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Render\DX12TextureReadback.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Render\DX12CaptureTarget.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Render\DX12QueueCompletion.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\DX12TextureStore.cpp" />
     <ClCompile Include="Library\Platform\DX12\Window\DX12PlatformSubsystem.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibBackendSubsystem.cpp" />
@@ -451,6 +455,7 @@
     <ClCompile Include="Library\Platform\DxLib\Window\DxLibDisplayInfoSubsystem.cpp" />
     <ClCompile Include="Library\Platform\DxLib\Window\DxLibWindowControlSubsystem.cpp" />
     <ClCompile Include="Library\Platform\ImGui\Render\ImGuiCanvas2D.cpp" />
+    <ClCompile Include="Library\Platform\ImGui\Render\ImGuiCaptureDrawList.cpp" />
     <ClCompile Include="Library\Platform\ImGui\Render\ImGuiViewportScheduler.cpp" />
     <ClCompile Include="Library\Platform\Null\NullAssetBackendSubsystem.cpp" />
     <ClCompile Include="Library\Platform\Null\NullAudioBackendSubsystem.cpp" />
@@ -479,6 +484,7 @@
     <ClCompile Include="Library\Platform\System\LogArchive.cpp" />
     <ClCompile Include="Library\Platform\System\ProjectPaths.cpp" />
     <ClCompile Include="Library\Platform\Windows\Image\WicImageDecoder.cpp" />
+    <ClCompile Include="Library\Platform\Windows\Image\WicImageEncoder.cpp" />
     <ClCompile Include="Library\Platform\Windows\Input\WindowsInputSubsystem.cpp" />
     <ClCompile Include="VendorModules\ImGui\imgui.cpp" />
     <ClCompile Include="VendorModules\ImGui\imgui_draw.cpp" />
@@ -1186,7 +1192,11 @@
     <ClInclude Include="Library\Platform\DX12\Render\DX12DescriptorPool.h" />
     <ClInclude Include="Library\Platform\DX12\Render\DX12Device.h" />
     <ClInclude Include="Library\Platform\DX12\Render\DX12DrawExecutorSubsystem.h" />
-    <ClInclude Include="Library\Platform\DX12\Render\DX12GeometryRenderer.h" />
+    <ClInclude Include="Library\Platform\DX12\ImGui\DX12ImGuiGeometryRenderer.h" />
+    <ClInclude Include="Library\Platform\DX12\ImGui\DX12ImGuiCaptureRenderer.h" />
+    <ClInclude Include="Library\Platform\DX12\Render\DX12TextureReadback.h" />
+    <ClInclude Include="Library\Platform\DX12\Render\DX12CaptureTarget.h" />
+    <ClInclude Include="Library\Platform\DX12\Render\DX12QueueCompletion.h" />
     <ClInclude Include="Library\Platform\DX12\Render\DX12TextureStore.h" />
     <ClInclude Include="Library\Platform\DX12\Window\DX12PlatformSubsystem.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibBackendSubsystem.h" />
@@ -1213,6 +1223,7 @@
     <ClInclude Include="Library\Platform\DxLib\Window\DxLibDisplayInfoSubsystem.h" />
     <ClInclude Include="Library\Platform\DxLib\Window\DxLibWindowControlSubsystem.h" />
     <ClInclude Include="Library\Platform\ImGui\Render\ImGuiCanvas2D.h" />
+    <ClInclude Include="Library\Platform\ImGui\Render\ImGuiCaptureDrawList.h" />
     <ClInclude Include="Library\Platform\ImGui\Render\ImGuiViewportScheduler.h" />
     <ClInclude Include="Library\Platform\Null\NullAssetBackendSubsystem.h" />
     <ClInclude Include="Library\Platform\Null\NullAudioBackendSubsystem.h" />
@@ -1244,6 +1255,7 @@
     <ClInclude Include="Library\Platform\System\WindowSettings.h" />
     <ClInclude Include="Library\Platform\System\WindowsInclude.h" />
     <ClInclude Include="Library\Platform\Windows\Image\WicImageDecoder.h" />
+    <ClInclude Include="Library\Platform\Windows\Image\WicImageEncoder.h" />
     <ClInclude Include="Library\Platform\Windows\Input\WindowsInputSubsystem.h" />
     <ClInclude Include="VendorModules\ImGui\imconfig.h" />
     <ClInclude Include="VendorModules\ImGui\imgui.h" />

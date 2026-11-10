@@ -8,10 +8,14 @@
 #include "DX12TextureStore.h"
 #include "DX12BufferStore.h"
 #include "DX12ComputeQueue.h"
+#include "DX12TextureReadback.h"
+#include "DX12QueueCompletion.h"
+#include "Library/Core/Interfaces/Platform/FrameCapture.h"
 #include "Library/Platform/DX12/ImGui/DX12ImGuiRenderer.h"
 
-class FDX12GeometryRenderer;
+class FDX12ImGuiGeometryRenderer;
 class IRenderGeometry3D;
+class FDX12CaptureTarget;
 
 // GPU・交換用画面・同期を所有する。ウィンドウとImGui文脈は呼び出し側が保持する。
 class FDX12Device
@@ -37,6 +41,20 @@ public:
 	bool BeginFrame();
 	// ImGuiの描画データを表示する。失敗時はfalse。
 	bool EndFrame( ImDrawData* Data, bool bVSync );
+	// 要求された段階のコピー先だけを用意する。描画順への挿入は接続層が行う。
+	bool PrepareFrameCapture( bool bGame, bool bWithUI );
+	// 表示の提出後に完了を待ち、要求した主画面の画素を読む。失敗時はOutを保つ。
+	bool ReadFrameCapture( EFrameCaptureStage Stage, TArray<FColor32>& Out );
+	// GPU側だけの撮影先を、既存のデバイスとキューへ接続する。
+	bool InitializeCaptureTarget( FDX12CaptureTarget& Target );
+	// ImGui接続層へ既存の描画実装を貸す。終了中はnullptr。
+	FDX12ImGuiRenderer* GetImGuiRenderer();
+	// API固有の描画実装へ既存の画像heapを貸す。終了中はnullptr。
+	ID3D12DescriptorHeap* GetImageDescriptorHeap();
+	// 通常フレームへのGPU記録中だけtrue。
+	bool IsRecording() const;
+	// 呼出側の描画が完了した位置で、ゲーム画面をコピーする。
+	void RecordGameFrameCopy();
 	// 過去の描画より後で画面全体を消すコールバックを記録する。
 	void RecordClear( ImDrawList& List, ImU32 Color );
 	// 記録中だけ基本3Dの実行先を貸す。
@@ -76,16 +94,17 @@ private:
 	FDX12ComputePipelineStore ComputePipelines; // プログラムとその配置の所有者。
 	FDX12ComputeQueue ComputeQueue; // 上の所有者より先に借用参照を戻す提出先。
 	Microsoft::WRL::ComPtr<ID3D12Resource> Buffers[BufferCount]; // 交換用画面。
-	Microsoft::WRL::ComPtr<ID3D12Fence> Fence; // 完了通知。
+	FDX12QueueCompletion Completion; // UIと独立したキューの完了待機。
 	FDX12ImGuiRenderer ImGuiRenderer; // UIへの接続とその資源は専用の実装が所有する。
-	FDX12GeometryRenderer* Geometry = nullptr; // 所有する基本3Dパイプライン。
-	HANDLE FenceEvent = nullptr; // CPUが完了を待つイベント。
-	UINT64 FenceValue = 0; // 次の完了番号。
-	UINT64 NotifiedValue = 0; // まだ到達していないイベント登録値。同時に一つだけ登録する。
+	FDX12ImGuiGeometryRenderer* Geometry = nullptr; // 所有する基本3Dパイプライン。
+	FDX12TextureReadback GameReadback, UIReadback; // 必要な段階だけ準備する画素のコピー先。
 	UINT BufferIndex = 0; // 今描く画面。
 	UINT RtvStride = 0; // 画面記述子の幅。
 	D3D12_CPU_DESCRIPTOR_HANDLE CurrentRtv = {}; // 今描く画面の記述子。
 	bool bRecording = false; // 記録中の印。
 	bool bInitialized = false; // 初期化が最後まで成功した印。
 	bool bClosing = false; // 終了開始後は新しい描画と窓口取得を禁止する。
+	bool bCaptureGame = false, bCaptureUI = false; // このフレームで要求された撮影段階。
+	bool bGameCopied = false, bUICopied = false; // 実際にコピーを記録できた段階。
+	bool bFrameSubmitted = false; // 命令列の失敗で古いコピーを読み出さないための提出印。
 };
