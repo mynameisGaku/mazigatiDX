@@ -13,6 +13,11 @@ void FImGuiViewportScheduler::Reset()
 
 void FImGuiViewportScheduler::Render( int32 MaxFPS, int32 MaxPresents )
 {
+	if ( !ImGui::GetCurrentContext() || !( ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable ) )
+	{
+		Reset();
+		return;
+	}
 	ImGuiPlatformIO& Platform = ImGui::GetPlatformIO(); // 現在の文脈が持つ窓と公式描画の窓口。
 	const int64 Now = NPlatformTime::GetTicks(); // 更新順を揃えるため、一呼出内では同じ時刻を使う。
 	const float64 MinInterval = MaxFPS > 0 ? 1000.0 / MaxFPS : 0; // 各窓の表示間隔のミリ秒。

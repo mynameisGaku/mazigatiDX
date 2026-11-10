@@ -370,14 +370,12 @@ void CDxLibBackendSubsystem::EndFrame()
 			ImGui::Render();
 			ImGui_ImplDXlib_RenderDrawData();
 		}
-		if ( ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable )
+		// 無効なフレームも完了を通知し、表示時刻は共通処理でリセットする。
 		{
-			{
-				PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "ImGui", "UpdatePlatformWindows" );
-				ImGui::UpdatePlatformWindows();
-			}
-			RenderImGuiViewports();
+			PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "ImGui", "UpdatePlatformWindows" );
+			ImGui::UpdatePlatformWindows();
 		}
+		RenderImGuiViewports();
 		// ImGui が変更した Direct3D の状態を DxLib 用に戻す
 		PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "DxLib", "RefreshDirect3DSetting" );
 		RefreshDxLibDirect3DSetting();

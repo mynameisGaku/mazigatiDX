@@ -29,7 +29,14 @@ bool FDX12ImGuiRenderer::Initialize( ID3D12Device* Device, ID3D12CommandQueue* Q
 	Info.SrvDescriptorHeap = Pool->GetHeap();
 	Info.SrvDescriptorAllocFn = AllocateDescriptor;
 	Info.SrvDescriptorFreeFn = FreeDescriptor;
+	ImGuiIO& IO = ImGui::GetIO(); // 初期設定を保ちながら、後から使う外部窓の接続も登録する。
+	const bool bInitiallyEnabled = ( IO.ConfigFlags & ImGuiConfigFlags_ViewportsEnable ) != 0; // 起動時に指定した表示モード。
+	IO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 	bInitialized = ImGui_ImplDX12_Init( &Info );
+	if ( !bInitiallyEnabled )
+	{
+		IO.ConfigFlags &= ~ImGuiConfigFlags_ViewportsEnable;
+	}
 	if ( !bInitialized || !ImGui_ImplDX12_CreateDeviceObjects() )
 	{
 		Shutdown();

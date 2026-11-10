@@ -13,9 +13,13 @@
 
 DxLibにあった更新順・頻度制限をFImGuiViewportSchedulerへ移し、DX12からも使います。主画面を候補から除き、最小化した窓を飛ばし、表示時刻の古い窓から順番に更新します。閉じた窓の記録は除去し、文脈の終了時には全記録を戻します。新しいSubsystemは追加していません。
 
+実行中は描画スレッドで `ImGui::GetIO().ConfigFlags` の `ImGuiConfigFlags_ViewportsEnable` を切り替えられます。無効にしたフレームで更新時刻を消し、再有効化した窓を古い頻度制限で待たせません。起動時に無効でも公式DX12実装の外部窓用コールバックを登録し、元の設定は保持します。FWindowSettingsの値は初期化時に読み取る設定であり、その値だけを書き換えて実行中のモードを変更する仕組みは追加していません。
+
 ## 描画と座標
 
 CDX12PlatformSubsystemは初期化時にViewportsEnableを設定します。主画面を提出した後、UpdatePlatformWindowsで外部窓の作成・移動・リサイズ・破棄を処理し、共通の更新順に従って公式の描画・表示コールバックを呼びます。
+
+DX12とDxLibは、マルチビューポートが無効のフレームもUpdatePlatformWindowsへ完了を通知します。次のNewFrameの前やシーンの更新中に有効化しても、前フレームの完了通知を欠かしません。公式実装は無効時に外部窓の更新を省略します。
 
 外部窓のswap chain、RTV、命令列、フレーム別の記録領域とImGui頂点領域は、同梱の公式DX12実装が所有します。主画面・外部窓・画像転送・computeは同じDIRECTキューを使います。次のフレームの資源回収前には、そのキューへすでに提出した外部窓の処理も待ちます。共有画像は既存のFDX12DescriptorPoolとFDX12TextureStoreのままで、別の画像番号やUI専用の複製を作りません。
 
@@ -57,16 +61,18 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Source\SelfTest\RunDX12Windo
 |---|---|---|
 |viewport有効（既定GPU／WARP）|各168条件、失敗0|各168条件、失敗0|
 |viewport無効（既定GPU／WARP）|各114条件、失敗0|各114条件、失敗0|
+|無効起動から三回切り替え（既定GPU／WARP）|各228条件、失敗0|各228条件、失敗0|
 |終了の通常経路（既定GPU／WARP）|各23条件、失敗0|各23条件、失敗0|
 |明示した喪失（既定GPU／WARP）|各13条件、失敗0|各13条件、失敗0|
 |SDKデバッグ層|有効、意図しない警告・エラー0|同じ結果|
 |実アプリのDX12／WARP／DxLib|各45フレーム、分離・閉じる・再作成成功|同じ結果|
+|実アプリの三回切り替え（DX12／WARP／DxLib）|各78フレーム成功|同じ結果|
 
 初期対応では、両構成でソリューションの4 projectが警告・エラー0でビルドされ、その後のRunAllChecks.ps1 -SkipBuild -Quickも16項目すべて成功しました。書式・書式検査自体・Clean.bat・台帳の整合、既存ecs／assets／worldのワーカー数0／1／4／15、バッファとcomputeの契約検査を含みます。後述の文字修正後にも、両構成の全体ビルド、表の窓・終了検査、書式検査とCanvas2D／Geometry3D／StaticModelの各120フレーム（既定GPU／WARP、合計12起動）が成功しました。sample／template検査一式や配布物のクリーンビルド・性能測定の完了とは区別します。
 
 最初のReleaseリンクではMSVCがLNK1103（デバッグ情報の破損）で停止しました。検証用コピーのproject／Samples／Editorのiobj・ipdbを退避し、同じ最適化設定で作り直すと成功しました。その後の増分ビルドも成功しています。ソースや最適化設定による回避は追加せず、原因は断定しません。失敗・再作成・最終ビルドと回帰結果のログはSaved/R1Shutdown/へ残しています。
 
-対応する検査コミットは [377f1b49489277adc105f320208658dba421d801](https://github.com/mynameisGaku/framework-test/commit/377f1b49489277adc105f320208658dba421d801) です。GitHub接続経由で公開し、ローカルで検証したファイル群とのGit treeの一致を確認しています。検証はframework-dx12-verifyで行い、開発用の中間ファイルを共有していません。互換台帳は455項目のまま、画像共有の証拠を追記し、Verifiedへの昇格はしていません。
+対応する検査コミットは [bc82a696834cd0b49633618fcdcbb99c5866c78f](https://github.com/mynameisGaku/framework-test/commit/bc82a696834cd0b49633618fcdcbb99c5866c78f) です。GitHub接続経由で公開し、ローカルで検証したファイル群とのGit treeの一致を確認しています。検証はframework-dx12-verifyで行い、開発用の中間ファイルを共有していません。互換台帳は455項目のまま、画像共有の証拠を追記し、Verifiedへの昇格はしていません。
 
 ## 文字の位置と切り取りの修正
 
@@ -75,6 +81,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Source\SelfTest\RunDX12Windo
 FImGuiCanvas2D::Textは現在の表示範囲を論理座標へ戻し、既存のImFont::RenderTextで文字を生成してから主画面へ変換します。GPUへ渡すクリップ範囲は変更しません。表示寸法が0、空の範囲や透明文字では頂点を追加しません。
 
 修正前の既定GPU検査は、文字と画素の10条件で失敗しました。修正後は、主画面の移動・縦横で異なる拡大、部分クリップと復元、UTF-8の範囲指定・改行・文字サイズ変更を原点の独立した描画リストと比較し、形状・UV・色の一致を確認しています。主画面のBMPでも通常文字と切り取った文字の画素を確認し、クリップ外へ漏れないことを検査しました。ログはSaved/ViewportText/に残しています。
+
+## 実行中の切り替えの修正
+
+無効起動したDX12の文脈に外部窓の描画コールバックが登録されない問題を再現しました。修正前の専用検査は4条件のうち、この接続確認で1条件失敗しました。修正後は、同じ文脈と共有画像のまま三回切り替え、窓の生成・表示・破棄とbindingの維持を確認しています。1FPS制限でも、再有効化した二枚がすぐ表示されることを検査します。実アプリではシーンの更新中に設定を変える経路も通します。今回もDebug／Releaseの4 projectが警告・エラー0でビルドされ、RunAllChecks.ps1 -SkipBuild -Quickの16項目すべてと、Canvas2D／Geometry3D／StaticModelの各120フレーム（既定GPU／WARP、合計12起動）が成功しました。最初のStaticModel起動では検査用のデータを配置し忘れて読み込みに失敗したため、Samples/Assetsを専用の起動先へコピーして再検査しました。ログと成功した12起動の一覧はSaved/ViewportRuntime/に残しています。
 
 ## 残る確認
 

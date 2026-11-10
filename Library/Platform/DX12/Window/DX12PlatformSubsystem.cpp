@@ -219,8 +219,9 @@ void CDX12PlatformSubsystem::EndFrame()
 		LOG( LogDX12, Error, "DX12 present failed" );
 		bExit = true;
 	}
-	if ( !bExit && ( ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable ) )
+	if ( !bExit )
 	{
+		// 無効なフレームも完了を通知し、次のNewFrame前の有効化を許す。
 		ImGui::UpdatePlatformWindows();
 		Viewports.Render( Settings.ImGuiViewportMaxFPS, Settings.ImGuiViewportMaxPresentsPerFrame );
 	}
