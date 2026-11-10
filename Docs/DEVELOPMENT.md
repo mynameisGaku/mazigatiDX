@@ -898,7 +898,7 @@ Windows 10以降とWindows SDKのD3D12・DXGI・WICを使います。追加のGP
 - `Library/Platform/Render/Canvas/FCanvasDrawExecutor`は、共通描画命令の長さと値を検査して`IRenderCanvas2D`へ渡します。GPUの型を参照しません。ブレンド・乗算色は呼び出しごとの局所値で、クリップは正常終了・不正命令・未対応命令のいずれでも戻します。
 - `Library/Platform/ImGui/Render/FImGuiCanvas2D`は2D図形を三角形へ変換します。GPUのデバイスを持たないため、今後のVulkan／OpenGLのImGui描画実装にも使えます。異なる図形生成器を使う場合は、同じキャンバス窓口を実装できます。
 - `Library/Platform/Windows/Input/CWindowsInputSubsystem`はキーボードとマウス、`Library/Platform/Windows/Image/FWicImageDecoder`はCPU画像の展開を担当します。どちらもDirect3Dへ依存しません。文字入力・IMEはゲームの入力窓口には未接続です（ImGuiの文字入力は公式Win32実装が扱います）。テンキーEnterの独立判定は未対応です。
-- `Library/Platform/DX12/Window/CDX12PlatformSubsystem`は窓とフレーム、`Render/FDX12Device`はGPU資源と同期、`Asset/CDX12AssetBackendSubsystem`はデコードと共通の画像登録への接続、`Render/CDX12DrawExecutorSubsystem`は窓口の接続を担当します。Frameworkへ具体クラスの依存を追加しません。
+- `Library/Platform/DX12/Window/CDX12PlatformSubsystem`は窓とフレーム、`Render/FDX12Device`はGPU資源と同期、`Asset/CDX12AssetBackendSubsystem`はデコードと共通の画像登録への接続、`Render/CDX12DrawExecutorSubsystem`は窓口の接続を担当します。Frameworkへ具体クラスの依存を追加しません。GPUとImGuiの所有・提出・終了の境界は [デバイスの分離](DX12_DEVICE.md) を参照してください。
 
 画像は同期で展開・アップロードします。`bAsync=true`でもその場で完了し、`IsLoading`はfalseです。解放を頼まれた登録番号は直ちに無効にし、実画像はそのフレームの描画が完了するまで保ちます。終了時もGPUを待ってから画像を解放し、その後にGPU・ImGui・窓を片付けます。
 
@@ -1029,11 +1029,12 @@ Geometry3Dサンプルには、球とその輪郭・斜めのカプセル・回�
 |FDX12TextureStore（Platform/DX12/Render）|D3D12画像・転送用領域と記録先・転送完了待ち・旧版の遅延解放|
 |FDX12DescriptorPool（Platform/DX12/Render）|SRV heapの区画を貸し、所有先と世代を検査して返却する。画像内容・UI文脈は扱わない|
 |FDX12ImGuiRenderer（Platform/DX12/ImGui）|公式ImGui描画実装の初期化・フレーム・描画・終了と、UIの記述子の仲介。ゲーム画像を所有しない|
-|FDX12Device|device・swapchain・フレームの記録と提出・完了待ちを所有し、各実装へ接続する|
+|FDX12Device|device・swapchain・フレームの記録と提出・完了待ち。ImGuiの型・文脈・所有を必要としない|
+|FDX12ImGuiFrameRenderer|GPUを借りてUIを記録する利用者。GPUの作成・開始・提出・破棄を行わない|
 
 追加したインターフェースはIRenderTextureResources一つです。既存のアセット窓口へGPUのdeviceやImGuiの型を足さず、descriptor pool・転送・UIごとにインターフェースを作りません。Vulkan／OpenGLでは資源の実装を替え、FTextureAssetStoreとデコード側を再利用します。資源番号はCore/RenderのFTextureResourceHandleで表し、アセット番号・APIのbindingと区別します。
 
-同寸法の更新は、別のGPU画像とSRVを完成させてから現在の版へ切り替えます。更新前に取得したviewで記録済みの描画は、旧版を参照します。更新や作成に失敗した場合は現在の内容とbindingを保ちます。登録解除は直ちに番号を無効にし、実体と記述子はフレームのGPU完了後まで保ちます。FDX12Deviceは次のフレーム開始時に完了を待ってから旧版を回収し、終了時もUI・画像・poolの順で、GPUの完了後に解放します。転送待機の失敗時も、完了が確認できるまで転送元と画像を保持します。
+同寸法の更新は、別のGPU画像とSRVを完成させてから現在の版へ切り替えます。更新前に取得したviewで記録済みの描画は、旧版を参照します。更新や作成に失敗した場合は現在の内容とbindingを保ちます。登録解除は直ちに番号を無効にし、実体と記述子はフレームのGPU完了後まで保ちます。FDX12Deviceは次のフレーム開始時に完了を待ってから旧版を回収します。終了時は所有側がGPUの提出を止め、完了確認後にUI等の借用先を戻してから、GPU側の画像・poolを解放します。FDX12DeviceはUIを所有しません。転送待機の失敗時も、完了が確認できるまで転送元と画像を保持します。
 
 画像の資源数は旧版を含め1024までで、RGBA8・1 mip・同期転送です。アセット番号、画像資源番号、poolの貸出世代は巻き戻さず、同じ所有者の再初期化でも古い番号が別の資源に作用しないようにします。新しい版の一時領域・記述子を確保できない更新は失敗します。非同期転送、他の画素形式・mip、フレームの並列進行等は、R1以降で共通の資源契約を整えてから拡張します。
 

@@ -410,6 +410,7 @@
     <ClCompile Include="Library\Platform\BackendSelection.cpp" />
     <ClCompile Include="Library\Platform\DX12\Asset\DX12AssetBackendSubsystem.cpp" />
     <ClCompile Include="Library\Platform\DX12\ImGui\DX12ImGuiRenderer.cpp" />
+    <ClCompile Include="Library\Platform\DX12\ImGui\DX12ImGuiFrameRenderer.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\DX12BufferStore.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\DX12ComputePipelineStore.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\DX12ComputeQueue.cpp" />
@@ -1184,6 +1185,7 @@
     <ClInclude Include="Library\Platform\DX12\DX12Log.h" />
     <ClInclude Include="Library\Platform\DX12\Asset\DX12AssetBackendSubsystem.h" />
     <ClInclude Include="Library\Platform\DX12\ImGui\DX12ImGuiRenderer.h" />
+    <ClInclude Include="Library\Platform\DX12\ImGui\DX12ImGuiFrameRenderer.h" />
     <ClInclude Include="Library\Platform\DX12\Render\DX12BufferBinding.h" />
     <ClInclude Include="Library\Platform\DX12\Render\DX12BufferStore.h" />
     <ClInclude Include="Library\Platform\DX12\Render\DX12ComputePipelineBinding.h" />

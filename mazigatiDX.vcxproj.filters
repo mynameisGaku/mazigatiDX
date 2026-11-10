@@ -1030,6 +1030,9 @@
     <ClCompile Include="Library\Platform\DX12\ImGui\DX12ImGuiRenderer.cpp">
       <Filter>Library\Platform\DX12\ImGui</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\ImGui\DX12ImGuiFrameRenderer.cpp">
+      <Filter>Library\Platform\DX12\ImGui</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Render\DX12BufferStore.cpp">
       <Filter>Library\Platform\DX12\Render</Filter>
     </ClCompile>
@@ -3346,6 +3349,9 @@
       <Filter>Library\Platform\DX12\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\ImGui\DX12ImGuiRenderer.h">
+      <Filter>Library\Platform\DX12\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\ImGui\DX12ImGuiFrameRenderer.h">
       <Filter>Library\Platform\DX12\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Render\DX12BufferBinding.h">

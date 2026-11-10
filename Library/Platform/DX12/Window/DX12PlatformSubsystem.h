@@ -12,9 +12,11 @@
 #include "Library/Platform/ImGui/Render/ImGuiViewportScheduler.h"
 
 class FDX12Device;
+class FDX12ImGuiGeometryRenderer;
+class FDX12ImGuiFrameRenderer;
 class FDX12ImGuiCaptureRenderer;
 
-// Windowsの窓とフレーム進行を所有する。GPUの資源管理はFDX12Deviceへ委譲する。
+// Windowsの窓とフレーム進行を所有する。GPUを所有し、ImGuiへは描画に必要な参照だけを貸す。
 class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IRenderSurface, public IRenderTextureResources, public IRenderBufferResources, public IComputePipelineResources, public IComputeQueue, public INativeWindow
 {
 public:
@@ -112,7 +114,9 @@ private:
 	FImGuiCanvas2D Canvas; // API共通の2D図形生成。
 	FImGuiViewportScheduler Viewports; // 外部窓の更新頻度と表示順。
 	FWindowSettings Settings; // 起動設定と現在の表示設定。
-	FDX12Device* Device = nullptr; // 所有するGPU。Deinitializeで破棄する。
+	FDX12Device* Device = nullptr; // ゲームとUIが共有するGPU所有者。利用者より後に破棄する。
+	FDX12ImGuiGeometryRenderer* ImGuiGeometry = nullptr; // 既存の基本3DをImGui順序へ接続する互換経路。GPU基盤から分離する。
+	FDX12ImGuiFrameRenderer* ImGuiFrameRenderer = nullptr; // GPUを借りるUIの記録先。GPUは所有しない。
 	FDX12ImGuiCaptureRenderer* CaptureRenderer = nullptr; // 通常画面と撮影用のImGui描画をつなぐ所有者。
 	IFrameCaptureSink* FrameCaptureSink = nullptr; // 撮影サービスの借用先。終了前に解除する。
 	TArray<FColor32> CapturePixels; // 通知中だけ受け取り手へ借用する画素。

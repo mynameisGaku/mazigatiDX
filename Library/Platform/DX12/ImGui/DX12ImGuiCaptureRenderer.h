@@ -15,7 +15,7 @@ class FDX12ImGuiCaptureRenderer : public IRenderSurface
 {
 public:
 	// 既存のGPUとImGui描画実装を借り、撮影用の描画先を所有する。
-	explicit FDX12ImGuiCaptureRenderer( FDX12Device& InOwner );
+	explicit FDX12ImGuiCaptureRenderer( FDX12Device& InOwner, FDX12ImGuiRenderer& InRenderer );
 	FDX12ImGuiCaptureRenderer( const FDX12ImGuiCaptureRenderer& ) = delete;
 	FDX12ImGuiCaptureRenderer& operator=( const FDX12ImGuiCaptureRenderer& ) = delete;
 	// 撮影のGPU処理が終わってから、描画リストと3D記録を破棄する。

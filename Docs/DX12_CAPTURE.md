@@ -15,7 +15,7 @@
 |`Platform/Windows/Image/FWicImageEncoder`|CPU画素をPNG・BMP・JPEGへ符号化する。GPUとUIを知らない|
 |既存の`CScreenCaptureSubsystem`|撮影要求、切り抜き・縮小、保存名、被写体の選択、黒白二回からの透明度復元、GIFの記録|
 
-`CDX12PlatformSubsystem`が接続層を所有し、`FDX12Device`は撮影用のImGui描画記録を所有しません。GPU側の撮影先は、デバイスとDIRECTキューだけで初期化できます。主画面の既存ImGui描画接続は引き続きFDX12Deviceが持ちます。
+`CDX12PlatformSubsystem`が接続層を所有し、`FDX12Device`は撮影用のImGui描画記録を所有しません。GPU側の撮影先は、デバイスとDIRECTキューだけで初期化できます。通常画面も[GPU所有者とImGui利用者を分離](DX12_DEVICE.md)し、FDX12DeviceはImGui接続を所有しません。撮影接続にはGPUとImGui描画実装を別々の引数で渡します。
 
 `Tools/CheckCaptureDependencies.ps1`は、GPU撮影用の三実装からImGui・Framework・通常デバイスへのincludeと、共通ImGui記録からDX12等へのincludeを拒否します。検査側の負例でも両方向の拒否を確認します。GPU専用テストのリンク結果にImGuiのシンボルが含まれないことも調べます。
 
@@ -53,7 +53,7 @@ WICのPNG設定は圧縮率0〜9を直接指定する窓口を持たないため
 
 ## 検査
 
-対応する検査は別リポジトリの`codex/dx12-windows-validation`、[08a7632](https://github.com/mynameisGaku/framework-test/commit/08a76320b0dbe123d578438c0cae170090beea26)に置きます。対応する製品の静的ライブラリとproject.exeをビルドしてから実行します。
+対応する検査は別リポジトリの`codex/dx12-windows-validation`、[0cf93ea](https://github.com/mynameisGaku/framework-test/commit/0cf93ea1197365da54b046567f29591f6ddaf9a5)に置きます。対応する製品の静的ライブラリとproject.exeをビルドしてから実行します。
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File Source\SelfTest\RunCaptureTests.ps1 -FrameworkRoot (Get-Location).Path -Configuration Debug -Platform
@@ -63,7 +63,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Source\SelfTest\RunCaptureTe
 |検査|Debug|Release|
 |---|---|---|
 |ImGui・OS窓なしのGPU撮影先（既定GPU／WARP）|各28条件、失敗0|各28条件、失敗0|
-|描画記録・画像保存（既定GPU／WARP）|各60条件、失敗0|各60条件、失敗0|
+|描画記録・画像保存（既定GPU／WARP）|各61条件、失敗0|各61条件、失敗0|
 |SDKデバッグ層|意図しない警告・エラー0|同じ結果|
 |実アプリの撮影サービス（DX12／WARP）|通常PNG、UI込みPNG、別寸法、被写体の透明度、三枚のGIFまで成功|同じ結果|
 |依存の確認|GPU専用実行ファイルにImGuiなし。両方向の不正includeを拒否|同じ結果|

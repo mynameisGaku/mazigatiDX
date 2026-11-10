@@ -22,6 +22,10 @@ DX12でImGuiのウィンドウを主画面から切り離せます。公式のWi
 
 DX12の画素読み戻しを既存の撮影サービスへ接続し、通常PNG・GIF、高解像度の描き直しと被写体だけの透明撮影を追加しました。GPU撮影先のFDX12CaptureTarget、共通ImGui記録のFImGuiCaptureDrawList、接続層のFDX12ImGuiCaptureRendererへ分けています。UIなしのGPU検査、依存の拒否、実GPU／WARPの画素と保存物の結果は [撮影の記録](DX12_CAPTURE.md) を参照してください。互換台帳は457項目、Verifiedは0です。
 
+## GPU所有者とImGui利用者（2026-11-10 追記）
+
+FDX12DeviceからImGuiの型・初期化条件・所有・描画呼出しを外しました。GPUの所有とフレーム提出はプラットフォーム側に残し、FDX12ImGuiFrameRendererはGPUを借りてUIの記録だけを行います。UIなしの通常表示・画素読み戻し、UI解除後のゲーム資源保持と再接続は [デバイスの分離](DX12_DEVICE.md) を参照してください。既存ゲーム2D／基本3DのImGui依存は互換の接続側に残り、独立したゲーム描画経路の完成とは扱いません。
+
 ## 最初に読むもの
 
 1. [ROADMAP.md](ROADMAP.md): v1.0.0の必須範囲、R0〜R10の順序と完了条件。

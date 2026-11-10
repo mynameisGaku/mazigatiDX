@@ -4,9 +4,9 @@
 #include "Library/Platform/DX12/Render/DX12Device.h"
 #include "Library/Platform/DX12/ImGui/DX12ImGuiGeometryRenderer.h"
 
-FDX12ImGuiCaptureRenderer::FDX12ImGuiCaptureRenderer( FDX12Device& InOwner ) : Owner( InOwner )
+FDX12ImGuiCaptureRenderer::FDX12ImGuiCaptureRenderer( FDX12Device& InOwner, FDX12ImGuiRenderer& InRenderer ) : Owner( InOwner )
 {
-	Renderer = Owner.GetImGuiRenderer();
+	Renderer = &InRenderer;
 	ImageHeap = Owner.GetImageDescriptorHeap();
 	bHealthy = Renderer && ImageHeap && Owner.InitializeCaptureTarget( Target );
 }

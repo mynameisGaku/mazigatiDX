@@ -11,13 +11,10 @@
 #include "DX12TextureReadback.h"
 #include "DX12QueueCompletion.h"
 #include "Library/Core/Interfaces/Platform/FrameCapture.h"
-#include "Library/Platform/DX12/ImGui/DX12ImGuiRenderer.h"
 
-class FDX12ImGuiGeometryRenderer;
-class IRenderGeometry3D;
 class FDX12CaptureTarget;
 
-// GPU・交換用画面・同期を所有する。ウィンドウとImGui文脈は呼び出し側が保持する。
+// GPU・交換用画面・同期を所有する。UIの文脈や描画実装を必要としない。
 class FDX12Device
 {
 public:
@@ -39,26 +36,40 @@ public:
 	void Shutdown();
 	// 前フレームを待ち、記録を開始する。失敗時はfalse。
 	bool BeginFrame();
-	// ImGuiの描画データを表示する。失敗時はfalse。
-	bool EndFrame( ImDrawData* Data, bool bVSync );
+	// 呼出側がGPUへ記録した画面を提出して表示する。未開始・終了中・GPU失敗はfalse。
+	bool EndFrame( bool bVSync );
 	// 要求された段階のコピー先だけを用意する。描画順への挿入は接続層が行う。
 	bool PrepareFrameCapture( bool bGame, bool bWithUI );
 	// 表示の提出後に完了を待ち、要求した主画面の画素を読む。失敗時はOutを保つ。
 	bool ReadFrameCapture( EFrameCaptureStage Stage, TArray<FColor32>& Out );
 	// GPU側だけの撮影先を、既存のデバイスとキューへ接続する。
 	bool InitializeCaptureTarget( FDX12CaptureTarget& Target );
-	// ImGui接続層へ既存の描画実装を貸す。終了中はnullptr。
-	FDX12ImGuiRenderer* GetImGuiRenderer();
+	// 外側の描画実装へGPUを貸す。終了中・未初期化はnullptr。
+	ID3D12Device* GetNativeDevice();
+	// 同じデバイスのDIRECTキューを貸す。終了中・未初期化はnullptr。
+	ID3D12CommandQueue* GetNativeQueue();
+	// 画像と描画実装で共有する貸出表。終了中・未初期化はnullptr。
+	FDX12DescriptorPool* GetDescriptorPool();
+	// 記録中のGPU命令列だけを貸す。フレーム外・終了中はnullptr。
+	ID3D12GraphicsCommandList* GetFrameCommands();
+	// 記録中の色の描画先。フレーム外・終了中は空の値。
+	D3D12_CPU_DESCRIPTOR_HANDLE GetFrameColorView() const;
+	// GPUの固定描画幅。未初期化・終了後は0。
+	int32 GetWidth() const;
+	// GPUの固定描画高さ。未初期化・終了後は0。
+	int32 GetHeight() const;
+	// 新規記録を止め、借用先を外せるまで待つ。失敗時は全資源を保持し、再試行できる。
+	bool PrepareShutdown( uint32 TimeoutMs = 10000 );
 	// API固有の描画実装へ既存の画像heapを貸す。終了中はnullptr。
 	ID3D12DescriptorHeap* GetImageDescriptorHeap();
+	// GPUが喪失した場合だけtrue。UI等の借用先が安全に終了するために使う。
+	bool IsDeviceRemoved() const;
 	// 通常フレームへのGPU記録中だけtrue。
 	bool IsRecording() const;
 	// 呼出側の描画が完了した位置で、ゲーム画面をコピーする。
 	void RecordGameFrameCopy();
-	// 過去の描画より後で画面全体を消すコールバックを記録する。
-	void RecordClear( ImDrawList& List, ImU32 Color );
-	// 記録中だけ基本3Dの実行先を貸す。
-	IRenderGeometry3D* GetGeometry3D();
+	// 現在のGPU記録位置で色を消す。描画順の管理は呼出側が行う。
+	void ClearFrameColor( FColor32 Color );
 	// ファイルやUIを介さず、画像資源の所有先を貸す。
 	IRenderTextureResources* GetTextureResources();
 	// UIと独立したバッファ資源の所有先を貸す。
@@ -70,16 +81,8 @@ public:
 	// 呼出前に提出したGPU処理を最大60000msまで待つ。0は待たず、失敗・喪失・タイムアウトはfalse。
 	bool Wait( uint32 TimeoutMs = 10000 );
 private:
-	// GPU完了またはデバイス喪失を確認してから資源とUI接続を解放する。
+	// GPU完了またはデバイス喪失を確認してから資源を解放する。
 	void ReleaseAfterGPUStopped();
-	// GPUの記録中に画面を消す。
-	static void ClearCallback( const ImDrawList*, const ImDrawCmd* Command );
-	// 消去命令の所有コピー。実行までGPU所有者を保持する。
-	struct FClearCommand
-	{
-		FDX12Device* Owner = nullptr; // 実行先。プラットフォームより先には実行しない。
-		ImU32 Color = 0; // 消去色。
-	};
 	static constexpr int32 BufferCount = 2; // 交換用画面の枚数。
 	static constexpr int32 DescriptorCount = 2048; // 同時に持てる画像の上限。
 	Microsoft::WRL::ComPtr<ID3D12Device> Device; // 描画デバイス。
@@ -95,12 +98,12 @@ private:
 	FDX12ComputeQueue ComputeQueue; // 上の所有者より先に借用参照を戻す提出先。
 	Microsoft::WRL::ComPtr<ID3D12Resource> Buffers[BufferCount]; // 交換用画面。
 	FDX12QueueCompletion Completion; // UIと独立したキューの完了待機。
-	FDX12ImGuiRenderer ImGuiRenderer; // UIへの接続とその資源は専用の実装が所有する。
-	FDX12ImGuiGeometryRenderer* Geometry = nullptr; // 所有する基本3Dパイプライン。
 	FDX12TextureReadback GameReadback, UIReadback; // 必要な段階だけ準備する画素のコピー先。
 	UINT BufferIndex = 0; // 今描く画面。
 	UINT RtvStride = 0; // 画面記述子の幅。
 	D3D12_CPU_DESCRIPTOR_HANDLE CurrentRtv = {}; // 今描く画面の記述子。
+	int32 Width = 0, Height = 0; // 交換用画面の固定描画寸法。
+	bool bGPUStopped = false; // 終了開始後に借用資源を返せる完了確認。
 	bool bRecording = false; // 記録中の印。
 	bool bInitialized = false; // 初期化が最後まで成功した印。
 	bool bClosing = false; // 終了開始後は新しい描画と窓口取得を禁止する。

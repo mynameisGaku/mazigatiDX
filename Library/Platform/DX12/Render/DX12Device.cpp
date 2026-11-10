@@ -1,6 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DX12Device.h"
-#include "Library/Platform/DX12/ImGui/DX12ImGuiGeometryRenderer.h"
 #include "DX12CaptureTarget.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Platform/DX12/DX12Log.h"
@@ -51,7 +50,7 @@ bool FDX12Device::Initialize( HWND Window, int32 Width, int32 Height, bool bWarp
 
 bool FDX12Device::InitializeOnQueue( HWND Window, int32 Width, int32 Height, ID3D12CommandQueue* InQueue )
 {
-	if ( Device || bClosing || !IsWindow( Window ) || Width <= 0 || Height <= 0 || Width > 16384 || Height > 16384 || !InQueue || InQueue->GetDesc().Type != D3D12_COMMAND_LIST_TYPE_DIRECT || !ImGui::GetCurrentContext() || ImGui::GetIO().BackendRendererUserData )
+	if ( Device || bClosing || !IsWindow( Window ) || Width <= 0 || Height <= 0 || Width > 16384 || Height > 16384 || !InQueue || InQueue->GetDesc().Type != D3D12_COMMAND_LIST_TYPE_DIRECT )
 	{
 		return false;
 	}
@@ -109,13 +108,10 @@ bool FDX12Device::InitializeOnQueue( HWND Window, int32 Width, int32 Height, ID3
 	{
 		return false;
 	}
-	Geometry = new FDX12ImGuiGeometryRenderer();
-	if ( !Geometry->Initialize( Device.Get(), Width, Height ) )
-	{
-		return false;
-	}
-	bInitialized = ImGuiRenderer.Initialize( Device.Get(), Queue.Get(), BufferCount, Desc.Format, Descriptors );
-	return bInitialized;
+	this->Width = Width;
+	this->Height = Height;
+	bInitialized = true;
+	return true;
 }
 
 bool FDX12Device::Wait( uint32 TimeoutMs )
@@ -123,15 +119,25 @@ bool FDX12Device::Wait( uint32 TimeoutMs )
 	return Completion.Wait( TimeoutMs );
 }
 
-bool FDX12Device::TryShutdown( uint32 TimeoutMs )
+bool FDX12Device::PrepareShutdown( uint32 TimeoutMs )
 {
 	if ( TimeoutMs > 60000 )
 	{
 		return false;
 	}
 	bClosing = true;
-	// 待機機構の作成前はまだGPUへ提出していない。完成後は停止の確認を必須にする。
-	if ( Device && Queue && Completion.IsInitialized() && !Wait( TimeoutMs ) && SUCCEEDED( Device->GetDeviceRemovedReason() ) )
+	// 完了後は呼出側も提出しない契約。借用先を外す前後に異なる待機を追加しない。
+	if ( !bGPUStopped && Device && Queue && Completion.IsInitialized() && !Wait( TimeoutMs ) && SUCCEEDED( Device->GetDeviceRemovedReason() ) )
+	{
+		return false;
+	}
+	bGPUStopped = true;
+	return true;
+}
+
+bool FDX12Device::TryShutdown( uint32 TimeoutMs )
+{
+	if ( !PrepareShutdown( TimeoutMs ) )
 	{
 		return false;
 	}
@@ -156,13 +162,10 @@ void FDX12Device::ReleaseAfterGPUStopped()
 {
 	GameReadback.ResetAfterGPUIdle();
 	UIReadback.ResetAfterGPUIdle();
-	ImGuiRenderer.Shutdown();
 	for ( auto& Buffer : Buffers )
 	{
 		Buffer.Reset();
 	}
-	delete Geometry;
-	Geometry = nullptr;
 	Commands.Reset();
 	Allocator.Reset();
 	SwapChain.Reset();
@@ -180,6 +183,8 @@ void FDX12Device::ReleaseAfterGPUStopped()
 	bRecording = false;
 	bInitialized = false;
 	bClosing = false;
+	bGPUStopped = false;
+	Width = Height = 0;
 }
 
 bool FDX12Device::BeginFrame()
@@ -209,30 +214,16 @@ bool FDX12Device::BeginFrame()
 	Commands->SetDescriptorHeaps( 1, Heaps );
 	const float Black[4] = { 0, 0, 0, 1 }; // 毎フレームの背景。
 	Commands->ClearRenderTargetView( CurrentRtv, Black, 0, nullptr );
-	Geometry->BeginFrame( Commands.Get(), CurrentRtv, Descriptors.GetHeap() );
-	if ( !ImGuiRenderer.BeginFrame() )
-	{
-		return false;
-	}
 	bRecording = true;
 	return true;
 }
 
-bool FDX12Device::EndFrame( ImDrawData* Data, bool bVSync )
+bool FDX12Device::EndFrame( bool bVSync )
 {
 	if ( !bInitialized || bClosing || !bRecording )
 	{
 		return false;
 	}
-	if ( Data && Data->DisplaySize.x > 0 && Data->DisplaySize.y > 0 )
-	{
-		Data->FramebufferScale = ImVec2( Geometry->GetWidth() / Data->DisplaySize.x, Geometry->GetHeight() / Data->DisplaySize.y );
-	}
-	if ( !ImGuiRenderer.Render( Data, Commands.Get() ) )
-	{
-		return false;
-	}
-	Geometry->EndFrame();
 	if ( bCaptureUI )
 	{
 		bUICopied = UIReadback.RecordCopy( Commands.Get(), Buffers[BufferIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET );
@@ -255,27 +246,13 @@ bool FDX12Device::EndFrame( ImDrawData* Data, bool bVSync )
 	return SUCCEEDED( SwapChain->Present( bVSync ? 1 : 0, 0 ) );
 }
 
-void FDX12Device::RecordClear( ImDrawList& List, ImU32 Color )
+void FDX12Device::ClearFrameColor( FColor32 Color )
 {
-	if ( !bInitialized || bClosing || !bRecording )
+	if ( IsRecording() )
 	{
-		return;
+		const float Values[4] = { Color.r / 255.0f, Color.g / 255.0f, Color.b / 255.0f, Color.a / 255.0f }; // GPUへ渡す正規化した色。
+		Commands->ClearRenderTargetView( CurrentRtv, Values, 0, nullptr );
 	}
-	FClearCommand Clear = { this, Color }; // 実行まで残す所有先と消去色。
-	List.AddCallback( ClearCallback, &Clear, sizeof( Clear ) );
-}
-
-void FDX12Device::ClearCallback( const ImDrawList*, const ImDrawCmd* Command )
-{
-	const auto& Clear = *static_cast<const FClearCommand*>( Command->UserCallbackData ); // 記録済みの消去。
-	const ImVec4 Rgba = ImGui::ColorConvertU32ToFloat4( Clear.Color ); // GPUへ渡すRGBA。
-	const float Values[4] = { Rgba.x, Rgba.y, Rgba.z, Rgba.w }; // 消去色。
-	Clear.Owner->Commands->ClearRenderTargetView( Clear.Owner->CurrentRtv, Values, 0, nullptr );
-}
-
-IRenderGeometry3D* FDX12Device::GetGeometry3D()
-{
-	return bInitialized && !bClosing && bRecording ? Geometry : nullptr;
 }
 
 bool FDX12Device::PrepareFrameCapture( bool bGame, bool bWithUI )
@@ -315,15 +292,20 @@ bool FDX12Device::InitializeCaptureTarget( FDX12CaptureTarget& Target )
 	return bInitialized && !bClosing && Target.Initialize( Device.Get(), Queue.Get() );
 }
 
-FDX12ImGuiRenderer* FDX12Device::GetImGuiRenderer()
-{
-	return bInitialized && !bClosing ? &ImGuiRenderer : nullptr;
-}
+ID3D12Device* FDX12Device::GetNativeDevice() { return bInitialized && !bClosing ? Device.Get() : nullptr; }
+ID3D12CommandQueue* FDX12Device::GetNativeQueue() { return bInitialized && !bClosing ? Queue.Get() : nullptr; }
+FDX12DescriptorPool* FDX12Device::GetDescriptorPool() { return bInitialized && !bClosing ? &Descriptors : nullptr; }
+ID3D12GraphicsCommandList* FDX12Device::GetFrameCommands() { return IsRecording() ? Commands.Get() : nullptr; }
+D3D12_CPU_DESCRIPTOR_HANDLE FDX12Device::GetFrameColorView() const { return IsRecording() ? CurrentRtv : D3D12_CPU_DESCRIPTOR_HANDLE {}; }
+int32 FDX12Device::GetWidth() const { return Width; }
+int32 FDX12Device::GetHeight() const { return Height; }
 
 ID3D12DescriptorHeap* FDX12Device::GetImageDescriptorHeap()
 {
 	return bInitialized && !bClosing ? Descriptors.GetHeap() : nullptr;
 }
+
+bool FDX12Device::IsDeviceRemoved() const { return Device && FAILED( Device->GetDeviceRemovedReason() ); }
 
 bool FDX12Device::IsRecording() const { return bInitialized && !bClosing && bRecording; }
 

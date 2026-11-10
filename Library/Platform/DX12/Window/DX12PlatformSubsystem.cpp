@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DX12PlatformSubsystem.h"
-#include "Library/Platform/DX12/Render/DX12Device.h"
+#include "Library/Platform/DX12/ImGui/DX12ImGuiFrameRenderer.h"
+#include "Library/Platform/DX12/ImGui/DX12ImGuiGeometryRenderer.h"
 #include "Library/Platform/DX12/ImGui/DX12ImGuiCaptureRenderer.h"
 #include "Library/Platform/BackendSelection.h"
 #include "Library/Platform/System/BackendSupport.h"
@@ -19,6 +20,19 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler( HWND Window, UINT 
 
 namespace
 {
+	// 既存のゲーム命令列とImGuiの記録順を接続するための消去記録。
+	struct FFrameClearCommand
+	{
+		FDX12Device* Device = nullptr; // GPUの所有はプラットフォームに残す。
+		FColor32 Color; // この描画位置で適用する色。
+	};
+	// 互換の記録順に到達した位置で、GPUへ色の消去だけを渡す。
+	void ClearGameFrame( const ImDrawList*, const ImDrawCmd* Command )
+	{
+		const auto& Clear = *static_cast<const FFrameClearCommand*>( Command->UserCallbackData ); // 所有コピーした消去命令。
+		Clear.Device->ClearFrameColor( Clear.Color );
+	}
+
 	// ImGuiのゲーム描画が終わる位置から、GPU側のコピー処理だけを呼ぶ。
 	void CaptureGameFrame( const ImDrawList*, const ImDrawCmd* Command )
 	{
@@ -120,15 +134,22 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection& )
 	}
 	bWin32 = ImGui_ImplWin32_Init( Window );
 	Device = new FDX12Device();
+	ImGuiFrameRenderer = new FDX12ImGuiFrameRenderer();
 	const auto Warp = NCommandLine::GetValue( "dx12-warp" ); // ソフトウェアGPUを選ぶ検査用引数。
-	if ( !bWin32 || !Device->Initialize( static_cast<HWND>( Window ), Settings.Width, Settings.Height, Warp.IsSet() && Warp.GetValue().Equals( "true", ESearchCase::IgnoreCase ) ) )
+	if ( !bWin32 || !Device->Initialize( static_cast<HWND>( Window ), Settings.Width, Settings.Height, Warp.IsSet() && Warp.GetValue().Equals( "true", ESearchCase::IgnoreCase ) ) || !ImGuiFrameRenderer->Initialize( *Device ) )
 	{
 		LOG( LogDX12, Error, "DX12 initialization failed" );
 		Deinitialize();
 		return;
 	}
+	ImGuiGeometry = new FDX12ImGuiGeometryRenderer();
+	if ( !ImGuiGeometry->Initialize( Device->GetNativeDevice(), Settings.Width, Settings.Height ) )
+	{
+		Deinitialize();
+		return;
+	}
 	const EWindowMode InitialMode = Settings.WindowMode; // 窓の作成後に起動モードへ移す。
-	CaptureRenderer = new FDX12ImGuiCaptureRenderer( *Device );
+	CaptureRenderer = new FDX12ImGuiCaptureRenderer( *Device, ImGuiFrameRenderer->GetImGuiRenderer() );
 	Settings.WindowMode = EWindowMode::Windowed;
 	SetWindowMode( InitialMode );
 	ShowWindow( static_cast<HWND>( Window ), SW_SHOW );
@@ -149,6 +170,15 @@ void CDX12PlatformSubsystem::Deinitialize()
 	// 撮影側がGPU完了を待ち、借用したUI接続と画像heapより先に記録を戻す。
 	delete CaptureRenderer;
 	CaptureRenderer = nullptr;
+	// GPU所有者が新規提出を止めてから、UIの資源と外部窓を外す。
+	while ( Device && !Device->PrepareShutdown( 1000 ) )
+	{
+		Sleep( 1 );
+	}
+	delete ImGuiGeometry;
+	ImGuiGeometry = nullptr;
+	delete ImGuiFrameRenderer;
+	ImGuiFrameRenderer = nullptr;
 	delete Device;
 	Device = nullptr;
 	CapturePixels.Reset();
@@ -199,12 +229,13 @@ bool CDX12PlatformSubsystem::BeginFrame()
 	WheelX = PendingWheelX;
 	WheelY = PendingWheelY;
 	PendingWheelX = PendingWheelY = 0;
-	if ( !Device->BeginFrame() )
+	if ( !Device->BeginFrame() || !ImGuiFrameRenderer->BeginFrame() )
 	{
 		LOG( LogDX12, Error, "DX12 frame could not start (device lost or GPU wait failed)" );
 		bExit = true;
 		return false;
 	}
+	ImGuiGeometry->BeginFrame( Device->GetFrameCommands(), Device->GetFrameColorView(), Device->GetImageDescriptorHeap() );
 	const int64 Now = NPlatformTime::GetTicks(); // 今フレームの時刻。
 	DeltaTime = static_cast<float32>( NPlatformTime::TicksToMs( Now - LastTick ) / 1000.0 );
 	DeltaTime = NMath::Max( DeltaTime, 0.000001f );
@@ -235,7 +266,9 @@ void CDX12PlatformSubsystem::EndFrame()
 		ImGui::GetBackgroundDrawList( ImGui::GetMainViewport() )->AddCallback( CaptureGameFrame, Device );
 	}
 	ImGui::Render();
-	const bool bPresented = Device->EndFrame( ImGui::GetDrawData(), Settings.bVSync ); // 撮影に失敗しても通常の表示とは区別する。
+	const bool bRendered = ImGuiFrameRenderer->Render( ImGui::GetDrawData() ); // UI利用者の記録とGPU所有者の提出を分ける。
+	ImGuiGeometry->EndFrame();
+	const bool bPresented = bRendered && Device->EndFrame( Settings.bVSync ); // 撮影に失敗しても通常の表示とは区別する。
 	if ( !bPresented )
 	{
 		LOG( LogDX12, Error, "DX12 present failed" );
@@ -368,7 +401,8 @@ void CDX12PlatformSubsystem::RecordClear( FColor32 Color )
 	}
 	if ( bInFrame )
 	{
-		Device->RecordClear( *ImGui::GetBackgroundDrawList( ImGui::GetMainViewport() ), IM_COL32( Color.r, Color.g, Color.b, Color.a ) );
+		FFrameClearCommand Clear = { Device, Color }; // 既存の命令順を保持するための所有コピー。
+		ImGui::GetBackgroundDrawList( ImGui::GetMainViewport() )->AddCallback( ClearGameFrame, &Clear, sizeof( Clear ) );
 	}
 }
 
@@ -453,7 +487,7 @@ IRenderGeometry3D* CDX12PlatformSubsystem::GetGeometry3D()
 	{
 		return CaptureRenderer->GetGeometry3D();
 	}
-	return bInFrame && Device ? Device->GetGeometry3D() : nullptr;
+	return bInFrame && Device ? ImGuiGeometry : nullptr;
 }
 
 FTextureResourceHandle CDX12PlatformSubsystem::CreateTextureRGBA8( int32 Width, int32 Height, const FColor32* Pixels )

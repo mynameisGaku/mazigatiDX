@@ -2,6 +2,8 @@
 
 2026-11-10（日本時間）。ImGuiのウィンドウを主画面から切り離し、別のOSウィンドウとして表示できます。同梱の公式Win32／DX12実装を接続し、VendorModulesのソースは変更していません。
 
+通常画面のGPU所有とImGui利用者の寿命は、後続の[デバイス分離](DX12_DEVICE.md)で分けました。FDX12DeviceはImGuiを所有せず、UIの記録後にGPU所有者が提出します。以下の初期検証記録に加え、分離後も外部窓・入力・終了・撮影を両構成で再検査しています。
+
 ## 設定
 
 既存のFWindowSettingsのbEnableImGuiとbImGuiViewportsがtrueなら有効です。どちらも既定はtrueです。Dockingの設定はbImGuiDockingで別に選べます。ウィンドウをドラッグして主画面の外へ移せます。外部窓を閉じても主画面の終了要求にはしません。
