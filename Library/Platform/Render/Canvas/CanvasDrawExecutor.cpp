@@ -27,19 +27,19 @@ namespace
 	}
 }
 
-FCanvasDrawExecutor::FCanvasDrawExecutor( IRenderSurface& InSurface, ITextureDrawSource* InTextures, IGeometryBufferSource* InBuffers, IStaticModelSource* InModels )
+CCanvasDrawExecutor::CCanvasDrawExecutor( IRenderSurface& InSurface, ITextureDrawSource* InTextures, IGeometryBufferSource* InBuffers, IStaticModelSource* InModels )
 	: Surface( InSurface ), Models( InModels ), Buffers( InBuffers ), Textures( InTextures )
 {
 }
 
-void FCanvasDrawExecutor::Execute( const FDrawSpan& Span )
+void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 {
 	IRenderCanvas2D* Canvas = Surface.GetCanvas2D(); // フレーム内だけ借りる。
 	if ( !Canvas || !Span.Words || Span.NumWords <= 0 )
 	{
 		return;
 	}
-	FGeometryCommandExecutor Geometry( Surface.GetGeometry3D(), Textures, Buffers, Models ); // このSpanだけの3D状態。
+	CGeometryCommandExecutor Geometry( Surface.GetGeometry3D(), Textures, Buffers, Models ); // このSpanだけの3D状態。
 	bool bLinearFilter = false; // 画像の既定は最近傍。
 	bool bExplicitFilter = false; // 明示した補間を使えない実行先では画像を省略する。
 	bool bAlphaBlend = false; // 3Dへ渡す合成方式。
@@ -558,7 +558,7 @@ void FCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 		default:
 		{
 			const auto Result = Geometry.Execute( View, Bright, Alpha, bAlphaBlend ); // 同じ順序で3Dへ渡す。
-			if ( Result == FGeometryCommandExecutor::EResult::Executed )
+			if ( Result == CGeometryCommandExecutor::EResult::Executed )
 			{
 				break;
 			}

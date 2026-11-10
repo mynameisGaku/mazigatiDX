@@ -4,7 +4,7 @@
 #include "Library/Framework/Render/Camera/Camera.h"
 
 // 四角形の向き・基準点・UVを三角形へ展開する。画像やGPU資源は取得しない。
-class FGeometryQuadBuilder
+class CGeometryQuadBuilder
 {
 public:
 	// Fixedは指定軸、Cameraは画面と平行、CameraYはY軸を保つ。

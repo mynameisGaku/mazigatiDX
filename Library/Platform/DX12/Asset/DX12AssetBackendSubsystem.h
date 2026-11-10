@@ -130,7 +130,7 @@ public:
 	// GetSoundLengthの未対応時の既定値。出力引数と外部状態は変更しない。
 	float32 GetSoundLength( int32 Sound ) override;
 private:
-	FGeometryBufferStore Buffers; // APIに依存しない登録形状。
-	FTextureAssetStore Textures; // API共通の画像登録。所有先の寿命までに解放する。
-	FStaticModelStore Models; // 画像の所有先より先に解放する共有モデル。
+	CGeometryBufferStore Buffers; // APIに依存しない登録形状。
+	CTextureAssetStore Textures; // API共通の画像登録。所有先の寿命までに解放する。
+	CStaticModelStore Models; // 画像の所有先より先に解放する共有モデル。
 };

@@ -3,7 +3,7 @@
 #include "Library/Core/Collection/Map.h"
 
 // 外部ImGuiウィンドウの表示頻度と順番を管理する。GPUと窓の作成・破棄は公式実装が担当する。
-class FImGuiViewportScheduler
+class CImGuiViewportScheduler
 {
 public:
 	// 最後に表示した時刻を消す。ImGui文脈の終了時に呼ぶ。

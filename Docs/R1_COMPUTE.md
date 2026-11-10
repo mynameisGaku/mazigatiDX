@@ -14,14 +14,14 @@
 |FComputeDispatch|プログラム番号、バッファ番号の借用配列、XYZのグループ数|
 |FComputeSubmission|提出先の識別番号と、その提出の完了番号。再初期化後の番号や別の提出先と混同しない|
 
-共通の値はCore/Render、3つの窓口はCore/Interfaces/Renderに置きます。FDX12Deviceが既存のデバイスとDIRECTキューを使い、FDX12BufferStore・FDX12ComputePipelineStore・FDX12ComputeQueueを所有します。既存のCDX12PlatformSubsystemが窓口を提供し、新しいSubsystemは追加しません。操作はゲームスレッドから行い、並行呼出しには対応しません。
+共通の値はCore/Render、3つの窓口はCore/Interfaces/Renderに置きます。FDX12Deviceが既存のデバイスとDIRECTキューを使い、CDX12BufferStore・CDX12ComputePipelineStore・FDX12ComputeQueueを所有します。既存のCDX12PlatformSubsystemが窓口を提供し、新しいSubsystemは追加しません。操作はゲームスレッドから行い、並行呼出しには対応しません。
 
 バッファ・プログラム・提出先の番号は、既存のTAtomicを使うRenderResourceSerialから発行します。同じプロセス内で再利用せず、番号枯渇では失敗します。バッファの公開型は従来のFBufferResourceHandleを保ちます。DxLib／Nullは3つのGPU窓口を生成しません。
 
 ## 受け入れる入力
 
-- 初期DX12実装はDXBCのCS5.0／5.1と、ByteAddressBuffer／RWByteAddressBufferだけです。reflection情報が必要で、段・形式・コンテナ全長・実際の資源宣言を検査します。Pixel、reflectionを取り除いたデータ、切断・末尾余剰、不一致の配置は拒否します。DXIL／SM6、構造化・型付きバッファ、画像、定数バッファ、samplerは未対応です。
-- Readはt、ReadWriteはuのspace 0へ対応します。読み取りの場所は0〜127、読み書きは0〜63。種類と番号が重なる配置は拒否し、shaderで実際に使う資源と一致させます。同じ数のtとuは別の場所です。
+- DX12はDXBCのCS5.0／5.1で、RAWに加え [定数と構造体配列](R1_COMPUTE_BUFFER_LAYOUTS.md) を受け付けます。reflection情報が必要で、段・形式・コンテナ全長・実際の資源宣言を検査します。Pixel、reflectionを取り除いたデータ、切断・末尾余剰、不一致の配置は拒否します。DXIL／SM6、型付きバッファ、画像、sampler、counter付きの構造体配列は未対応です。
+- Raw／StructuredのReadはt、ReadWriteはu、ConstantのReadはb0〜13のspace 0へ対応します。読み取りの場所は0〜127、読み書きは0〜63。種類と番号が重なる配置は拒否し、shaderで実際に使う資源と一致させます。同じ数のtとuは別の場所です。
 - シェーダー用途のバッファ長は4の倍数です。ReadWriteだけにGPU書き込みを許可し、ReadWriteをReadの入力にも使えます。NoneからのSRV／UAV利用、ReadからのUAV利用は拒否します。
 - 命令列全体のプログラム、用途、バッファ番号、グループ数を検査してから記録・提出します。後ろに不正な命令があっても前の命令だけを実行しません。同じdispatchで同じバッファを複数箇所に置くことは、読み取り同士を含めて拒否します。
 - グループ数は各軸1〜65535です。一グループのスレッド数はreflectionで検査し、合計1024以下、X／Yは1024以下、Zは64以下とします。範囲内の巨大な実行量が短時間で終わる保証はありません。
@@ -32,7 +32,7 @@
 
 SubmitComputeはGPU完了を待たずに戻ります。提出ごとに専用の記録領域、命令列、サイズ付きのSRV／UAV記述子、プログラムとバッファへの実体参照を持ちます。呼出側の配列変更・バイナリ解放・番号の登録解除は提出済みの処理へ影響しません。解除済み番号で新しい命令を提出することはできません。
 
-一dispatchの入口でCOMMONからSRV／UAV用途へ移し、書き込みの後にUAV barrierを記録し、出口でCOMMONへ戻します。次のdispatchは同じバッファを入力として読めます。同期readbackも同じDIRECTキューに順序通り提出するため、先行computeの結果を読めます。描画用の画像heap・ImGuiの状態へ依存せず、computeは専用heapを使います。バッファの範囲を持つ記述子を選んだ理由は、root descriptorにサイズ情報がないためです（[Microsoftのroot signature説明](https://learn.microsoft.com/en-us/windows/win32/direct3d12/root-signatures-overview)）。
+一dispatchの入口でCOMMONからCBV／SRV／UAV用途へ移し、書き込みの後にUAV barrierを記録し、出口でCOMMONへ戻します。次のdispatchは同じバッファを入力として読めます。同期readbackも同じDIRECTキューに順序通り提出するため、先行computeの結果を読めます。描画用の画像heap・ImGuiの状態へ依存せず、computeは専用heapを使います。バッファの範囲を持つ記述子を選んだ理由は、root descriptorにサイズ情報がないためです（[Microsoftのroot signature説明](https://learn.microsoft.com/en-us/windows/win32/direct3d12/root-signatures-overview)）。
 
 完了照会で回収済みの提出番号も、同じ提出先が生きている間は照会できます。不正・未来・別の提出先の番号では出力を保って失敗します。タイムアウトは資源回収や番号無効化を伴わず、後から再待機できます。以前の短い待機のイベント通知を受けても、今回の完了番号を確認するまで成功にはしません。同じ未完了番号への通知の重複登録も抑止します。
 
@@ -69,4 +69,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Source\SelfTest\RunComputeTe
 
 ## 残る範囲
 
-同じバッファを頂点・indexとして使う契約は [GPUバッファ描画](R1_BUFFER_GEOMETRY.md) で接続しました。交互の提出管理、定数／構造化バッファ・画像の用途、能力照会、DXC／SM6、非同期copy、複数キュー、フレーム別の領域再利用、timestamp、終了・resize・GPU失敗の包括的検査は残っています。今回の非同期待機はCPUを止めずに提出する意味で、専用のasync computeキューを追加した意味ではありません。通常フレーム開始時の全GPU待機も既存のままです。
+同じバッファを頂点・indexとして使う契約は [GPUバッファ描画](R1_BUFFER_GEOMETRY.md) で接続しました。交互の提出管理、画像の用途、能力照会、DXC／SM6、非同期copy、複数キュー、フレーム別の領域再利用、timestamp、終了・resize・GPU失敗の包括的検査は残っています。今回の非同期待機はCPUを止めずに提出する意味で、専用のasync computeキューを追加した意味ではありません。通常フレーム開始時の全GPU待機も既存のままです。
+
+## 定数と構造体配列の後続対応
+
+定数のサイズ付きCBVと構造体のSRV／UAV、幅と宣言範囲の照合、同じ提出内のGPU更新→定数読み取りを [R1_COMPUTE_BUFFER_LAYOUTS.md](R1_COMPUTE_BUFFER_LAYOUTS.md) で接続しました。上記の当初の検査結果とは分け、追加分の検査と制限を同記録へ置きます。

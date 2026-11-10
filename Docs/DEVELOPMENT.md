@@ -622,7 +622,7 @@ Worldの`Components.Effect`には、任意の`Target`（追従先オブジェク
 - クラス名とファイル名は、「何をする人か」が分かる名前にします（`CAssetPathResolver`＝パスを解決する人、`CTextureLoader`＝画像を読み込む人、`CModelImporter`＝モデルを取り込む人）。`Manager`・`Helper`・`Utility`・`Subsystem` に分けたファイル名（`AssetSubsystemImages.cpp` など、クラスの一部を分けただけの名前）は付けません。分けたい処理は、その役割の名前のクラスにします。サブシステムの名前は、「役割 + `Subsystem`」の2つの要素だけ（`CAssetSubsystem`・`CAudioSubsystem`）にします。
 - サブシステム（`CAppSubsystem` / `CGameInstanceSubsystem` / `CSceneSubsystem` を継承するクラス）の名前には`Subsystem`を付けます（`CAssetSubsystem`・`CDxLibInputSubsystem` など）。ファイル名もクラス名に合わせます。
 - 公開する主要な型は原則一つのヘッダーに置き、実装は同名cppへ分けます。templateの実装は同名ヘッダーまたはinlに置きます。
-- 新しい型の役割は`A`（所有される多態オブジェクト）、`F`（値・ハンドル・サービス）、`T`（template）、`E`（enum）、`I`（インターフェース）で示します。既存の型は無関係な変更で一括改名しません。
+- 型は構文上のclass／structではなく責務で分類します。`C`は作成・実行・変換・登録・外部資源管理などの機能を担う型、`F`はデータ・値・ハンドルやデータを効率的に保持する型です。F型が操作関数や内部メモリを持つこともできます。サービスをFへ一律分類しません。`T`はtemplate、`E`はenum、`I`はインターフェース、`N`は名前空間です。既存の型は無関係な変更で一括改名しません。
 - ヘッダー冒頭は`// SPDX-License-Identifier: MIT`と`#pragma once`を置き、長い使い方は文書へ分けます。
 - 型や関数の宣言直前に、日本語で役割・入力・失敗条件を記述します。複数の引数を説明するときは引数ごとに改行します。
 - field、変数、定数、列挙値にも、その場所の役割が分かる短い日本語コメントを付けます。専門用語が必要な場合は短く補足します。
@@ -895,10 +895,10 @@ Windows 10以降とWindows SDKのD3D12・DXGI・WICを使います。追加のGP
 
 `FTextureDrawView::Binding`は描画実装内だけで解釈する値です。ゲームへ返したり、異なる描画実装間で使い回したりしません。登録画像の読み込み・所有と、描画側の画像参照を分離するための窓口です。`INativeWindow`のハンドルはWindowsではHWNDで、OS接続だけが解釈します。
 
-- `Library/Platform/Render/Canvas/FCanvasDrawExecutor`は、共通描画命令の長さと値を検査して`IRenderCanvas2D`へ渡します。GPUの型を参照しません。ブレンド・乗算色は呼び出しごとの局所値で、クリップは正常終了・不正命令・未対応命令のいずれでも戻します。
-- `Library/Platform/ImGui/Render/FImGuiCanvas2D`は2D図形を三角形へ変換します。GPUのデバイスを持たないため、今後のVulkan／OpenGLのImGui描画実装にも使えます。異なる図形生成器を使う場合は、同じキャンバス窓口を実装できます。
+- `Library/Platform/Render/Canvas/CCanvasDrawExecutor`は、共通描画命令の長さと値を検査して`IRenderCanvas2D`へ渡します。GPUの型を参照しません。ブレンド・乗算色は呼び出しごとの局所値で、クリップは正常終了・不正命令・未対応命令のいずれでも戻します。
+- `Library/Platform/ImGui/Render/CImGuiCanvas2D`は2D図形を三角形へ変換します。GPUのデバイスを持たないため、今後のVulkan／OpenGLのImGui描画実装にも使えます。異なる図形生成器を使う場合は、同じキャンバス窓口を実装できます。
 - `Library/Platform/Windows/Input/CWindowsInputSubsystem`はキーボードとマウス、`Library/Platform/Windows/Image/FWicImageDecoder`はCPU画像の展開を担当します。どちらもDirect3Dへ依存しません。文字入力・IMEはゲームの入力窓口には未接続です（ImGuiの文字入力は公式Win32実装が扱います）。テンキーEnterの独立判定は未対応です。
-- `Library/Platform/DX12/Window/CDX12PlatformSubsystem`は窓とフレーム、`Render/FDX12Device`はGPU資源と同期、`Asset/CDX12AssetBackendSubsystem`はデコードと共通の画像登録への接続、`Render/CDX12DrawExecutorSubsystem`は窓口の接続を担当します。Frameworkへ具体クラスの依存を追加しません。GPUとImGuiの所有・提出・終了の境界は [デバイスの分離](DX12_DEVICE.md)、2D・3D・文字・撮影の直接経路と--no-imguiは [ゲーム描画の分離](DX12_GAME_RENDER.md) を参照してください。
+- `Library/Platform/DX12/Window/CDX12PlatformSubsystem`は窓とフレーム、`Render/CDX12Device`はGPU資源と同期、`Asset/CDX12AssetBackendSubsystem`はデコードと共通の画像登録への接続、`Render/CDX12DrawExecutorSubsystem`は窓口の接続を担当します。Frameworkへ具体クラスの依存を追加しません。GPUとImGuiの所有・提出・終了の境界は [デバイスの分離](DX12_DEVICE.md)、2D・3D・文字・撮影の直接経路と--no-imguiは [ゲーム描画の分離](DX12_GAME_RENDER.md) を参照してください。
 
 画像は同期で展開・アップロードします。`bAsync=true`でもその場で完了し、`IsLoading`はfalseです。解放を頼まれた登録番号は直ちに無効にし、実画像はそのフレームの描画が完了するまで保ちます。終了時もGPUを待ってから画像を解放し、その後にGPU・ImGui・窓を片付けます。
 
@@ -942,11 +942,11 @@ Windowsの通常ビルド後、同じCanvas2Dサンプルを各実装で起動�
 
 ### 頂点色の基本3D
 
-`Library/Platform/Render/Geometry/FGeometryCommandExecutor`がカメラ・ワールド変換・深度と表裏を解釈します。2Dと同じSpan内の順番を保ち、状態はSpanごとに初期化します。ワールド変換は既存の行ベクトル規約を使い、Pushは「新しいローカル変換 * 現在のワールド変換」です。カメラの射影と画面中心のずらしは既存の`FCamera`と同じ規約です。既定のカメラは`FCamera`の既定値です。起動設定のCameraNear／CameraFarを使いたい場面はカメラを明示してPushしてください。
+`Library/Platform/Render/Geometry/CGeometryCommandExecutor`がカメラ・ワールド変換・深度と表裏を解釈します。2Dと同じSpan内の順番を保ち、状態はSpanごとに初期化します。ワールド変換は既存の行ベクトル規約を使い、Pushは「新しいローカル変換 * 現在のワールド変換」です。カメラの射影と画面中心のずらしは既存の`FCamera`と同じ規約です。既定のカメラは`FCamera`の既定値です。起動設定のCameraNear／CameraFarを使いたい場面はカメラを明示してPushしてください。
 
 GPUへ渡す`FGeometryVertex`は透視除算前の同次座標です。近い面・遠い面や画面端のクリッピング、透視補間はGPUが行います。座標がカメラの後ろにあるだけではCPU側で三角形全体を捨てません。`FGeometryDrawState`は深度の読み書き・比較・整数bias、時計回りの表面を基準とするカリング、Opaque／Alphaの合成を表します。API固有の列挙値は公開しません。
 
-`FDX12GeometryRenderer`が深度画像・頂点色シェーダー・パイプラインとフレーム内の頂点資源を所有します。描画と深度消去を2Dと同じGPU命令列へ直接記録し、2D・3D・UIの各利用者が必要なGPU状態を設定します。ImGuiのコールバックや描画リストは使いません。入力の頂点を呼び出し中に複写し、前フレームのGPU完了まで保持します。1命令の上限は65536頂点、1フレームで保持する頂点領域は64MiB、異なるパイプライン状態のキャッシュは128種類までです。上限超過や作成失敗はfalseとなり、そのSpanの残りを省略します。
+`CDX12GeometryRenderer`が深度画像・頂点色シェーダー・パイプラインとフレーム内の頂点資源を所有します。描画と深度消去を2Dと同じGPU命令列へ直接記録し、2D・3D・UIの各利用者が必要なGPU状態を設定します。ImGuiのコールバックや描画リストは使いません。入力の頂点を呼び出し中に複写し、前フレームのGPU完了まで保持します。1命令の上限は65536頂点、1フレームで保持する頂点領域は64MiB、異なるパイプライン状態のキャッシュは128種類までです。上限超過や作成失敗はfalseとなり、そのSpanの残りを省略します。
 
 Primitive3DとPrimitiveBuffer3Dは点・線・三角形のリストと、折れ線・TriangleStrip・TriangleFanに対応し、帯や扇は共通処理でリストへ展開します。可変長の全長と全indexを確認してから描画します。画像の登録番号はITextureDrawSourceで解決し、画像がない・無効な場合はその描画を拒否します。照明の有効化は未対応として拒否します。頂点色は非照明のDiffuse+Specular（飽和加算）にBrightとAlphaを適用します。図形は非照明の拡散色です。
 
@@ -967,7 +967,7 @@ Primitive3DとPrimitiveBuffer3Dは点・線・三角形のリストと、折れ�
 
 `FGeometryVertex`のUVをGPUで透視補間し、画像と頂点色を乗算します。補間はNearest（既定）とBilinear、画像の外側はWrap／Mirror／Clamp／透明Borderに対応します。補間の設定は2D画像と3D画像に反映し、文字の描画とSpanの終わりでは外側のImGui用の補間へ戻します。異方性補間は未対応です。DX12のSRVとsamplerは実装内に閉じ、GPUへ提出する際に画像のbindingが同じheap内にあることを検査します。画像の作成・更新はFDX12TextureStoreが担当し、ImGuiのdevice objectsや画像アップロードを必要としません。
 
-`FDrawVertex3D`は形式と既定値を変えず`Core/Render/DrawVertex3D.h`へ移しました。`FGeometryBufferStore`はCPU上でローカル頂点・indexを所有する共通実装です。作成・更新・解放は既存のIRenderResourceBackend、参照はCore/InterfacesのIGeometryBufferSourceを通します。描画APIのデバイスやGPUバッファの型を公開しません。indexの書き込みは元の16／32bit形式を尊重し、描画側へは32bitの参照列を貸します。バッファの追加・更新・解放より前に借用を消費してください。
+`FDrawVertex3D`は形式と既定値を変えず`Core/Render/DrawVertex3D.h`へ移しました。`CGeometryBufferStore`はCPU上でローカル頂点・indexを所有する共通実装です。作成・更新・解放は既存のIRenderResourceBackend、参照はCore/InterfacesのIGeometryBufferSourceを通します。描画APIのデバイスやGPUバッファの型を公開しません。indexの書き込みは元の16／32bit形式を尊重し、描画側へは32bitの参照列を貸します。バッファの追加・更新・解放より前に借用を消費してください。
 
 Mesh3Dは独自の配置行列を1命令の間だけ使い、元のWorldとカリングを成功・失敗のいずれでも戻します。TwoSidedもこの1命令に限ります。既存のメッシュの契約に合わせ、Brightは重ねず、保存された頂点色を使います。PrimitiveBuffer3DはStart・Num・BaseVertexと、記録時の寸法を検査します。全indexを検査してから頂点を送るため、途中の三角形だけを描くことはありません。画像が無効なら、頂点色だけの代替描画には切り替えません。
 
@@ -982,7 +982,7 @@ CPU形状の合計上限は64MiB、登録数は頂点・indexを合わせて1024
 
 既存の`NModelImport`（ufbx）と中間形式`FImportedScene`を再利用し、左手系へ一度変換してから`FStaticModelBuilder`が静的な面データを作ります。単位は既存インポーターと同じく元ファイルの単位を保ちます。親が後ろにある階層も解決し、循環・不正な番号・非有限値・非アフィン行列・逆行列を作れないメッシュ変換は失敗とします。法線は逆転置で変換します。DX12の取り込みはスキン・モーフ・頂点キャッシュ・アニメーション曲線を変換前に拒否します。中間データから静的形状を作る場合も、スキン・モーフ・頂点キャッシュ・動くフレームtrackを拒否します。動くtrackを持たない空のclipメタデータは描画へ影響しません。元の頂点色・照明・特殊材質など、中間形式が保持しない情報の再現は含みません。
 
-`FStaticModelStore`はGPUに依存せず、不変形状と画像を複製間で共有します。画像の所有にはITextureBackendだけを使い、埋め込み画像と元モデルのフォルダーに相対の外部画像に対応します。静的取り込みでは参照MTLの欠落も失敗にします。参照画像を読み込めない場合はモデル全体を失敗とし、途中で取得した画像も片付けます。最後の共有個体を解放すると、所有画像をバックエンドの通常の解放経路へ戻します。個体の不透明度は値でコピーし、別個体や元モデルへ影響しません。モデルの解放は画像のバックエンドより先に行ってください。
+`CStaticModelStore`はGPUに依存せず、不変形状と画像を複製間で共有します。画像の所有にはITextureBackendだけを使い、埋め込み画像と元モデルのフォルダーに相対の外部画像に対応します。静的取り込みでは参照MTLの欠落も失敗にします。参照画像を読み込めない場合はモデル全体を失敗とし、途中で取得した画像も片付けます。最後の共有個体を解放すると、所有画像をバックエンドの通常の解放経路へ戻します。個体の不透明度は値でコピーし、別個体や元モデルへ影響しません。モデルの解放は画像のバックエンドより先に行ってください。
 
 描画側はCore/InterfacesのIStaticModelSourceから借用形状だけを受け取り、読み込みや所有は行いません。全材質範囲・index・数値と必要な画像を先に検査し、Model3Dの配置を一命令の間だけ適用します。元の不透明度も中間形式の拡散色のAlphaへ保持します。材質色は頂点のreference色へ一度だけ含めるため、保存した拡散色を再び掛けません。材質のアルファ・画像の透明度と個体の不透明度を通常のアルファ合成で描き、透明三角形はファイルの順を保ちます（透明物の自動ソートは未実装）。大きな材質範囲は65535頂点ずつの三角形へ分けます。途中のGPU資源作成失敗時は残りを省略し、全体の重ね描きはしません。
 
@@ -1001,7 +1001,7 @@ Pop-Location
 
 ### 球・カプセルと画像付き四角形
 
-`FGeometryShapeBuilder`は、球とカプセルをローカル座標の三角形／線分へ展開します。`FGeometryQuadBuilder`は、画像付き四角形の向き・基準点・UVを頂点へ変えます。どちらもGPU・ImGui・画像の所有に依存しません。実行側は既存のIRenderGeometry3DとITextureDrawSourceへ接続するだけで、Vulkan／OpenGLでも同じ計算を使えます。インターフェースや命令の保存形式の追加・変更はありません。
+`CGeometryShapeBuilder`は、球とカプセルをローカル座標の三角形／線分へ展開します。`CGeometryQuadBuilder`は、画像付き四角形の向き・基準点・UVを頂点へ変えます。どちらもGPU・ImGui・画像の所有に依存しません。実行側は既存のIRenderGeometry3DとITextureDrawSourceへ接続するだけで、Vulkan／OpenGLでも同じ計算を使えます。インターフェースや命令の保存形式の追加・変更はありません。
 
 Sphere3D／Capsule3Dは塗りつぶしと輪郭に対応し、法線も形状の外向きに用意します。照明は引き続き未対応で、拡散色にBrightとAlphaだけを掛けます。円周のDivは3〜128、半球の緯度はDivを4で割って切り上げた数です。輪郭は緯線・経線だけで、三角形の対角線を描きません。半径0は描かず成功、負の半径・範囲外のDiv・非有限値・生成座標の桁あふれは描画前に拒否します。カプセルの両端は半球の中心で、軸長が十分小さい場合は最初の中心の球として描きます。最大分割でも、一描画65536頂点以内です。
 
@@ -1023,14 +1023,14 @@ Geometry3Dサンプルには、球とその輪郭・斜めのカプセル・回�
 |実装・窓口|責務|
 |---|---|
 |既存ITextureBackend／ITextureDrawSource|ゲームとFrameworkが使う画像の入口、登録番号からの描画用参照|
-|FTextureAssetStore（Platform/Render/Texture）|アセット番号と画像資源番号の対応、登録・更新・登録解除。GPU・codec・UIの型を持たず、資源窓口をコンストラクターまたはInitializeで渡す|
+|CTextureAssetStore（Platform/Render/Texture）|アセット番号と画像資源番号の対応、登録・更新・登録解除。GPU・codec・UIの型を持たず、資源窓口をコンストラクターまたはInitializeで渡す|
 |IRenderTextureResources（Core/Interfaces/Render）|画像資源の作成・更新・解放・参照の4操作だけを定義する、所有先への接続|
 |FWicImageDecoder（Platform/Windows/Image）|ファイル内容をCPUのRGBA8へ展開。GPUやUIを扱わない|
-|FDX12TextureStore（Platform/DX12/Render）|D3D12画像・転送用領域と記録先・転送完了待ち・旧版の遅延解放|
-|FDX12DescriptorPool（Platform/DX12/Render）|SRV heapの区画を貸し、所有先と世代を検査して返却する。画像内容・UI文脈は扱わない|
-|FDX12ImGuiRenderer（Platform/DX12/ImGui）|公式ImGui描画実装の初期化・フレーム・描画・終了と、UIの記述子の仲介。ゲーム画像を所有しない|
-|FDX12Device|device・swapchain・フレームの記録と提出・完了待ち。ImGuiの型・文脈・所有を必要としない|
-|FDX12ImGuiFrameRenderer|GPUを借りてUIを記録する利用者。GPUの作成・開始・提出・破棄を行わない|
+|CDX12TextureStore（Platform/DX12/Render）|D3D12画像・転送用領域と記録先・転送完了待ち・旧版の遅延解放|
+|CDX12DescriptorPool（Platform/DX12/Render）|SRV heapの区画を貸し、所有先と世代を検査して返却する。画像内容・UI文脈は扱わない|
+|CDX12ImGuiRenderer（Platform/DX12/ImGui）|公式ImGui描画実装の初期化・フレーム・描画・終了と、UIの記述子の仲介。ゲーム画像を所有しない|
+|CDX12Device|device・swapchain・フレームの記録と提出・完了待ち。ImGuiの型・文脈・所有を必要としない|
+|CDX12ImGuiFrameRenderer|GPUを借りてUIを記録する利用者。GPUの作成・開始・提出・破棄を行わない|
 
 追加したインターフェースはIRenderTextureResources一つです。既存のアセット窓口へGPUのdeviceやImGuiの型を足さず、descriptor pool・転送・UIごとにインターフェースを作りません。Vulkan／OpenGLでは資源の実装を替え、FTextureAssetStoreとデコード側を再利用します。資源番号はCore/RenderのFTextureResourceHandleで表し、アセット番号・APIのbindingと区別します。
 
@@ -1063,3 +1063,11 @@ CreateBufferに明示したRead／ReadWrite用途を持たせ、IComputePipeline
 ## compute出力を頂点・indexへ接続する
 
 IRenderGeometry3D::DrawBufferGeometryは、FGeometryBufferDrawの共通番号と範囲からGPU上の28バイトの同次頂点を直接描きます。CPUへの読み戻しと再転送を挟まず、同じキューへ先に提出したcomputeを参照します。ImGuiと独立したゲーム描画器が範囲・所有先を検査して資源をGPU完了まで保持します。配置、呼出側による内容保証、提出順、保持の上限、検査と残件は [GPUバッファ描画の契約](R1_BUFFER_GEOMETRY.md) を参照してください。
+
+## computeの定数と構造体配列
+
+FComputeBufferSlotのLayoutでRaw／Structured／Constantを指定します。構造体幅・定数の宣言範囲をバイナリと照合し、提出前に全バッファのサイズを検査します。所有と提出の窓口は既存のままです。256バイト整列の定数、構造体の幅、名前空間と状態・寿命、二項目指定の維持と利用側の再ビルドは [computeのバッファ配置](R1_COMPUTE_BUFFER_LAYOUTS.md) を参照してください。
+
+## DX12の責務・命名・配置
+
+描画用PSOの作成と所有はCDX12GeometryPipelineStore、描画命令の記録はCDX12GeometryRendererへ分けます。GPU基盤をDevice／Resource／Pipeline／Command、利用側をRender／ImGuiへ分け、役割ごとの下位フォルダーへ配置します。CとFの適用範囲・配置と参照の更新・再発防止検査は [DX12の構成](DX12_ARCHITECTURE.md) を参照してください。

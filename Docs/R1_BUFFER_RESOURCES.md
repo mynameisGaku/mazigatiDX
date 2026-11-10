@@ -17,7 +17,7 @@
 
 番号は `FBufferResourceHandle` です。画像番号・アセット番号・GPUアドレスを流用せず、同じプロセスの登録番号を再利用しません。番号の有無と実際の生存は別で、所有先は登録表も確認します。OSや描画APIの型は共通契約へ出しません。
 
-`FDX12BufferStore` がGPUバッファ・upload/readback領域・コピーの記録領域・fenceを所有します。`FDX12Device` は既存のデバイスとDIRECTキューを渡して、フレーム開始時と終了時の回収を接続します。既存の `CDX12PlatformSubsystem` から共通窓口を取得できます。新しいSubsystemは追加していません。DxLib／NullはGPU機能を持つふりをせず、この窓口を生成しません。
+`CDX12BufferStore` がGPUバッファ・upload/readback領域・コピーの記録領域・fenceを所有します。`CDX12Device` は既存のデバイスとDIRECTキューを渡して、フレーム開始時と終了時の回収を接続します。既存の `CDX12PlatformSubsystem` から共通窓口を取得できます。新しいSubsystemは追加していません。DxLib／NullはGPU機能を持つふりをせず、この窓口を生成しません。
 
 ## 状態・寿命・上限
 

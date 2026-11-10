@@ -82,6 +82,9 @@ if (-not $SkipBuild) {
 # 公開機能の追加・削除を、互換台帳へ反映し忘れていないか。
 Invoke-Step 'backend compatibility inventory' (Join-Path $frameworkRoot 'Tools\UpdateBackendCompatibility.ps1') @('-Check')
 
+Invoke-Step 'DX12 architecture' (Join-Path $frameworkRoot 'Tools\CheckDX12Architecture.ps1')
+Invoke-Step 'DX12 architecture check (self)' (Join-Path $selfTest 'RunDX12ArchitectureCheckTest.ps1') @('-FrameworkRoot', $frameworkRoot)
+
 Write-Host '== source format and clean'
 Invoke-Step 'source format' (Join-Path $selfTest 'CheckSourceFormat.ps1')
 Invoke-Step 'source format check (self)' (Join-Path $selfTest 'RunSourceFormatCheckTest.ps1')
@@ -93,7 +96,9 @@ foreach ($configuration in $Configurations) {
         Invoke-Step "self test $suite $configuration" (Join-Path $selfTest 'RunSelfTests.ps1') @('-Suite', $suite, '-Configuration', $configuration) $Retries
     }
     Invoke-Step "render buffer contracts $configuration" (Join-Path $selfTest 'RunRenderBufferTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
+    Invoke-Step "geometry pipeline contracts $configuration" (Join-Path $selfTest 'RunGeometryPipelineTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration)
     Invoke-Step "GPU buffer geometry $configuration" (Join-Path $selfTest 'RunBufferGeometryTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
+    Invoke-Step "compute buffer layouts $configuration" (Join-Path $selfTest 'RunComputeBufferLayoutsTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
     Invoke-Step "compute contracts $configuration" (Join-Path $selfTest 'RunComputeTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
     Invoke-Step "DX12 window contracts $configuration" (Join-Path $selfTest 'RunDX12WindowTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
     Invoke-Step "DX12 capture contracts $configuration" (Join-Path $selfTest 'RunCaptureTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')

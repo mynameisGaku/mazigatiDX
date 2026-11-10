@@ -3,9 +3,9 @@
 #include "Library/Math/MathUtils.h"
 #include "Library/Core/Types/Numeric.h"
 
-FGeometryCanvas2D::~FGeometryCanvas2D() { EndFrame(); }
+CGeometryCanvas2D::~CGeometryCanvas2D() { EndFrame(); }
 
-bool FGeometryCanvas2D::BeginFrame( IRenderGeometry3D &InGeometry, IRenderTextureResources &InTextures, IRenderTextRasterizer &InText, FRenderClipRect &InClip, float32 InScale )
+bool CGeometryCanvas2D::BeginFrame( IRenderGeometry3D &InGeometry, IRenderTextureResources &InTextures, IRenderTextRasterizer &InText, FRenderClipRect &InClip, float32 InScale )
 {
 	if ( Geometry || InGeometry.GetWidth() <= 0 || InGeometry.GetHeight() <= 0 || !NMath::IsFinite( InScale ) || InScale <= 0 || InScale > 16384 )
 	{
@@ -26,7 +26,7 @@ bool FGeometryCanvas2D::BeginFrame( IRenderGeometry3D &InGeometry, IRenderTextur
 	return true;
 }
 
-void FGeometryCanvas2D::EndFrame()
+void CGeometryCanvas2D::EndFrame()
 {
 	if ( Textures )
 	{
@@ -44,12 +44,12 @@ void FGeometryCanvas2D::EndFrame()
 	Clip = nullptr;
 }
 
-FGeometryVertex FGeometryCanvas2D::Vertex( float32 X, float32 Y, FColor32 Color, float32 U, float32 V ) const
+FGeometryVertex CGeometryCanvas2D::Vertex( float32 X, float32 Y, FColor32 Color, float32 U, float32 V ) const
 {
 	return { { X * Scale * 2 / Width - 1, 1 - Y * Scale * 2 / Height, 0, 1 }, Color, U, V };
 }
 
-void FGeometryCanvas2D::Draw( const TArray<FGeometryVertex> &Vertices, const FTextureDrawView *Texture )
+void CGeometryCanvas2D::Draw( const TArray<FGeometryVertex> &Vertices, const FTextureDrawView *Texture )
 {
 	if ( !Geometry || Vertices.Num() == 0 )
 	{
@@ -70,7 +70,7 @@ void FGeometryCanvas2D::Draw( const TArray<FGeometryVertex> &Vertices, const FTe
 	}
 }
 
-void FGeometryCanvas2D::Polygon( const float32 *Points, int32 Count, FColor32 Color, bool bFill, float32 Thickness )
+void CGeometryCanvas2D::Polygon( const float32 *Points, int32 Count, FColor32 Color, bool bFill, float32 Thickness )
 {
 	if ( !Geometry || !Points || Count < 3 || Count > 512 || Color.a == 0 || !NMath::IsFinite( Thickness ) || ( !bFill && Thickness <= 0 ) )
 	{
@@ -150,13 +150,13 @@ void FGeometryCanvas2D::Polygon( const float32 *Points, int32 Count, FColor32 Co
 	Draw( Vertices );
 }
 
-void FGeometryCanvas2D::Box( float32 X0, float32 Y0, float32 X1, float32 Y1, FColor32 Color, bool bFill, float32 Thickness )
+void CGeometryCanvas2D::Box( float32 X0, float32 Y0, float32 X1, float32 Y1, FColor32 Color, bool bFill, float32 Thickness )
 {
 	const float32 Points[] = { X0, Y0, X1, Y0, X1, Y1, X0, Y1 }; // 四辺を共有する凸な点列。
 	Polygon( Points, 4, Color, bFill, Thickness );
 }
 
-void FGeometryCanvas2D::Line( float32 X0, float32 Y0, float32 X1, float32 Y1, FColor32 Color, float32 Thickness )
+void CGeometryCanvas2D::Line( float32 X0, float32 Y0, float32 X1, float32 Y1, FColor32 Color, float32 Thickness )
 {
 	const float32 X = X1 - X0, Y = Y1 - Y0, Length = NMath::Sqrt( X * X + Y * Y ); // 線に直交する幅を求める。
 	if ( !NMath::IsFinite( Length ) || Length <= 0 || !NMath::IsFinite( Thickness ) || Thickness <= 0 )
@@ -168,7 +168,7 @@ void FGeometryCanvas2D::Line( float32 X0, float32 Y0, float32 X1, float32 Y1, FC
 	Polygon( Points, 4, Color, true, 1 );
 }
 
-void FGeometryCanvas2D::Circle( float32 X, float32 Y, float32 Radius, FColor32 Color, bool bFill, float32 Thickness, int32 Segments )
+void CGeometryCanvas2D::Circle( float32 X, float32 Y, float32 Radius, FColor32 Color, bool bFill, float32 Thickness, int32 Segments )
 {
 	if ( !NMath::IsFinite( Radius ) || Radius <= 0 || Radius > 1000000 )
 	{
@@ -186,10 +186,10 @@ void FGeometryCanvas2D::Circle( float32 X, float32 Y, float32 Radius, FColor32 C
 	Polygon( Points.GetData(), Count, Color, bFill, Thickness );
 }
 
-void FGeometryCanvas2D::Triangle( const float32 ( &Points )[6], FColor32 Color, bool bFill, float32 Thickness ) { Polygon( Points, 3, Color, bFill, Thickness ); }
-void FGeometryCanvas2D::Quad( const float32 ( &Points )[8], FColor32 Color, bool bFill, float32 Thickness ) { Polygon( Points, 4, Color, bFill, Thickness ); }
+void CGeometryCanvas2D::Triangle( const float32 ( &Points )[6], FColor32 Color, bool bFill, float32 Thickness ) { Polygon( Points, 3, Color, bFill, Thickness ); }
+void CGeometryCanvas2D::Quad( const float32 ( &Points )[8], FColor32 Color, bool bFill, float32 Thickness ) { Polygon( Points, 4, Color, bFill, Thickness ); }
 
-void FGeometryCanvas2D::Image( const FTextureDrawView &Texture, const float32 ( &Points )[8], const float32 ( &UV )[4], FColor32 Color )
+void CGeometryCanvas2D::Image( const FTextureDrawView &Texture, const float32 ( &Points )[8], const float32 ( &UV )[4], FColor32 Color )
 {
 	if ( !Geometry || !Texture.Binding || Texture.Width <= 0 || Texture.Height <= 0 )
 	{
@@ -200,7 +200,7 @@ void FGeometryCanvas2D::Image( const FTextureDrawView &Texture, const float32 ( 
 	Draw( Vertices, &Texture );
 }
 
-void FGeometryCanvas2D::Text( float32 X, float32 Y, FColor32 Color, const char *Begin, const char *End )
+void CGeometryCanvas2D::Text( float32 X, float32 Y, FColor32 Color, const char *Begin, const char *End )
 {
 	if ( !Geometry || !Begin || Begin == End || Begin[0] == 0 || Color.a == 0 || !Clip || Clip->Left >= Clip->Right || Clip->Top >= Clip->Bottom )
 	{
@@ -269,7 +269,7 @@ void FGeometryCanvas2D::Text( float32 X, float32 Y, FColor32 Color, const char *
 	bLinear = bPreviousFilter;
 }
 
-void FGeometryCanvas2D::PushClip( int32 X0, int32 Y0, int32 X1, int32 Y1 )
+void CGeometryCanvas2D::PushClip( int32 X0, int32 Y0, int32 X1, int32 Y1 )
 {
 	if ( !Clip )
 	{
@@ -283,18 +283,18 @@ void FGeometryCanvas2D::PushClip( int32 X0, int32 Y0, int32 X1, int32 Y1 )
 	*Clip = { NMath::Max( Clip->Left, Coordinate( X0, Width ) ), NMath::Max( Clip->Top, Coordinate( Y0, Height ) ), NMath::Min( Clip->Right, Coordinate( X1, Width ) ), NMath::Min( Clip->Bottom, Coordinate( Y1, Height ) ) };
 }
 
-void FGeometryCanvas2D::PopClip()
+void CGeometryCanvas2D::PopClip()
 {
 	if ( Clip && ClipStack.Num() > 0 )
 	{
 		*Clip = ClipStack.Pop();
 	}
 }
-bool FGeometryCanvas2D::SetTextureFilter( bool bInLinear )
+bool CGeometryCanvas2D::SetTextureFilter( bool bInLinear )
 {
 	bLinear = bInLinear;
 	return Geometry != nullptr;
 }
-void FGeometryCanvas2D::SetAntiAlias( bool bEnabled ) { bAntiAlias = bEnabled; }
+void CGeometryCanvas2D::SetAntiAlias( bool bEnabled ) { bAntiAlias = bEnabled; }
 
-bool FGeometryCanvas2D::DidFrameSucceed() const { return !bFailed; }
+bool CGeometryCanvas2D::DidFrameSucceed() const { return !bFailed; }

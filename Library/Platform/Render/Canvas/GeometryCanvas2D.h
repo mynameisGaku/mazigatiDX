@@ -8,15 +8,15 @@
 #include "Library/Core/Render/RenderClipRect.h"
 
 // APIとUIに依存せず、2Dの形状を共通の頂点へ展開する。文字画像の作成先とGPU画像は借用する。
-class FGeometryCanvas2D : public IRenderCanvas2D
+class CGeometryCanvas2D : public IRenderCanvas2D
 {
   public:
 	// フレーム中の借用参照と一時画像の所有を複写しない。
-	FGeometryCanvas2D() = default;
-	FGeometryCanvas2D( const FGeometryCanvas2D & ) = delete;
-	FGeometryCanvas2D &operator=( const FGeometryCanvas2D & ) = delete;
+	CGeometryCanvas2D() = default;
+	CGeometryCanvas2D( const CGeometryCanvas2D & ) = delete;
+	CGeometryCanvas2D &operator=( const CGeometryCanvas2D & ) = delete;
 	// 画像所有者より先に破棄し、一時画像の番号を返す。
-	~FGeometryCanvas2D();
+	~CGeometryCanvas2D();
 	// 既に完了した描画先へ接続する。借用先はEndFrameまで生存させる。
 	bool BeginFrame( IRenderGeometry3D &InGeometry, IRenderTextureResources &InTextures, IRenderTextRasterizer &InText, FRenderClipRect &InClip, float32 InScale = 1 );
 	// 一時画像の番号を返し、借用先を外す。画像のGPU実体は所有先が完了まで保持する。

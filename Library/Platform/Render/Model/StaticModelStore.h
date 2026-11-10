@@ -7,13 +7,13 @@
 #include "Library/Framework/Asset/Model/Import/StaticModelDefinition.h"
 
 // 不変形状と画像を共有し、個体の状態と登録番号を所有する。GPUに依存しない。
-class FStaticModelStore : public IStaticModelSource
+class CStaticModelStore : public IStaticModelSource
 {
 public:
 	// 画像の解放先の寿命を変えないよう、所有者を複写しない。
-	FStaticModelStore() = default;
-	FStaticModelStore( const FStaticModelStore& ) = delete;
-	FStaticModelStore& operator=( const FStaticModelStore& ) = delete;
+	CStaticModelStore() = default;
+	CStaticModelStore( const CStaticModelStore& ) = delete;
+	CStaticModelStore& operator=( const CStaticModelStore& ) = delete;
 	// 左手系のSceneを登録する。Texturesは全個体の解放まで生存させる。
 	// 失敗時は-1と理由を返し、読み込み途中の画像を残さない。
 	int32 Create( const FImportedScene& Scene, const FString& SourcePath, ITextureBackend& Textures, FString& Error );

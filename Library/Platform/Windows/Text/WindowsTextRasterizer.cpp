@@ -6,7 +6,7 @@
 #pragma comment( lib, "gdi32.lib" )
 #pragma comment( lib, "user32.lib" )
 
-FWindowsTextRasterizer::~FWindowsTextRasterizer()
+CWindowsTextRasterizer::~CWindowsTextRasterizer()
 {
 	if ( Context && PreviousFont )
 	{
@@ -22,7 +22,7 @@ FWindowsTextRasterizer::~FWindowsTextRasterizer()
 	}
 }
 
-bool FWindowsTextRasterizer::Initialize()
+bool CWindowsTextRasterizer::Initialize()
 {
 	if ( Context )
 	{
@@ -55,7 +55,7 @@ bool FWindowsTextRasterizer::Initialize()
 	return true;
 }
 
-bool FWindowsTextRasterizer::RasterizeText( TArrayView<const char> Text, TArray<FColor32> &OutPixels, int32 &OutWidth, int32 &OutHeight )
+bool CWindowsTextRasterizer::RasterizeText( TArrayView<const char> Text, TArray<FColor32> &OutPixels, int32 &OutWidth, int32 &OutHeight )
 {
 	if ( !Context || !Font || !Text.GetData() || Text.Num() <= 0 || Text.Num() > 65536 )
 	{

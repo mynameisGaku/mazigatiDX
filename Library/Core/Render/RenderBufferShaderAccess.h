@@ -6,6 +6,6 @@
 enum class ERenderBufferShaderAccess : uint8
 {
 	None, // シェーダーへ渡さない既定の転送用。
-	Read, // シェーダーから読むSRVとして使用する。
+	Read, // シェーダーから読むSRVまたは定数として使用する。
 	ReadWrite // 読み取りに加えて、UAVからの書き込みを許可する。
 };

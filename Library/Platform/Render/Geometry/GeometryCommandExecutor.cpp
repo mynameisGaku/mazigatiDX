@@ -45,11 +45,11 @@ namespace
 	}
 }
 
-FGeometryCommandExecutor::FGeometryCommandExecutor( IRenderGeometry3D* InGeometry, ITextureDrawSource* InTextures, IGeometryBufferSource* InBuffers, IStaticModelSource* InModels ) : Textures( InTextures ), Models( InModels ), Buffers( InBuffers ), Geometry( InGeometry )
+CGeometryCommandExecutor::CGeometryCommandExecutor( IRenderGeometry3D* InGeometry, ITextureDrawSource* InTextures, IGeometryBufferSource* InBuffers, IStaticModelSource* InModels ) : Textures( InTextures ), Models( InModels ), Buffers( InBuffers ), Geometry( InGeometry )
 {
 }
 
-bool FGeometryCommandExecutor::Submit( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend, int32 Texture )
+bool CGeometryCommandExecutor::Submit( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend, int32 Texture )
 {
 	if ( !Geometry || Vertices.IsEmpty() || Vertices.Num() > 65536 || Geometry->GetWidth() <= 0 || Geometry->GetHeight() <= 0 || !Camera.IsValid() )
 	{
@@ -94,7 +94,7 @@ bool FGeometryCommandExecutor::Submit( const TArray<FDrawVertex3D>& Vertices, EG
 	return Texture >= 0 ? Geometry->DrawTexturedGeometry( Output.GetData(), Output.Num(), State, Image ) : Geometry->DrawGeometry( Output.GetData(), Output.Num(), State );
 }
 
-FGeometryCommandExecutor::EResult FGeometryCommandExecutor::Execute( const FDrawCommandView& View, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend )
+CGeometryCommandExecutor::EResult CGeometryCommandExecutor::Execute( const FDrawCommandView& View, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend )
 {
 	switch ( View.Type )
 	{
@@ -310,7 +310,7 @@ FGeometryCommandExecutor::EResult FGeometryCommandExecutor::Execute( const FDraw
 		const auto Data = View.Read<FDrawSphere3DData>(); // ローカルの球。
 		TArray<FDrawVertex3D> Vertices; // 面または緯線・経線。
 		const bool bFill = View.Has( FDrawFlag::Fill ); // 塗りつぶしを選ぶ。
-		if ( !FGeometryShapeBuilder::BuildSphere( FVector3( Data.Center[0], Data.Center[1], Data.Center[2] ), Data.Radius, Data.Div, bFill, FColor32( Data.Diffuse.R, Data.Diffuse.G, Data.Diffuse.B ), Vertices ) )
+		if ( !CGeometryShapeBuilder::BuildSphere( FVector3( Data.Center[0], Data.Center[1], Data.Center[2] ), Data.Radius, Data.Div, bFill, FColor32( Data.Diffuse.R, Data.Diffuse.G, Data.Diffuse.B ), Vertices ) )
 		{
 			return EResult::Rejected;
 		}
@@ -325,7 +325,7 @@ FGeometryCommandExecutor::EResult FGeometryCommandExecutor::Execute( const FDraw
 		const auto Data = View.Read<FDrawCapsule3DData>(); // 両端は半球の中心。
 		TArray<FDrawVertex3D> Vertices; // GPUによらない展開結果。
 		const bool bFill = View.Has( FDrawFlag::Fill ); // 塗りつぶしを選ぶ。
-		if ( !FGeometryShapeBuilder::BuildCapsule( FVector3( Data.P0[0], Data.P0[1], Data.P0[2] ), FVector3( Data.P1[0], Data.P1[1], Data.P1[2] ), Data.Radius, Data.Div, bFill, FColor32( Data.Diffuse.R, Data.Diffuse.G, Data.Diffuse.B ), Vertices ) )
+		if ( !CGeometryShapeBuilder::BuildCapsule( FVector3( Data.P0[0], Data.P0[1], Data.P0[2] ), FVector3( Data.P1[0], Data.P1[1], Data.P1[2] ), Data.Radius, Data.Div, bFill, FColor32( Data.Diffuse.R, Data.Diffuse.G, Data.Diffuse.B ), Vertices ) )
 		{
 			return EResult::Rejected;
 		}
@@ -339,7 +339,7 @@ FGeometryCommandExecutor::EResult FGeometryCommandExecutor::Execute( const FDraw
 		}
 		const auto Data = View.Read<FDrawQuad3DData>(); // 向きと基準点を持つ画像。
 		TArray<FDrawVertex3D> Vertices; // 表とUVを共通処理で作る。
-		return FGeometryQuadBuilder::Build( Data, Camera, Vertices ) && SubmitQuad( Vertices, Data.Handle, Bright, Alpha ) ? EResult::Executed : EResult::Rejected;
+		return CGeometryQuadBuilder::Build( Data, Camera, Vertices ) && SubmitQuad( Vertices, Data.Handle, Bright, Alpha ) ? EResult::Executed : EResult::Rejected;
 	}
 	case EDrawCommand::Billboard3D:
 	case EDrawCommand::BillboardPivot3D:
@@ -447,7 +447,7 @@ FGeometryCommandExecutor::EResult FGeometryCommandExecutor::Execute( const FDraw
 			Quad.V1 = 0;
 		}
 		TArray<FDrawVertex3D> Vertices; // 反転はUVだけに反映し、基準点を動かさない。
-		return FGeometryQuadBuilder::Build( Quad, Camera, Vertices ) && SubmitQuad( Vertices, Quad.Handle, Bright, Alpha ) ? EResult::Executed : EResult::Rejected;
+		return CGeometryQuadBuilder::Build( Quad, Camera, Vertices ) && SubmitQuad( Vertices, Quad.Handle, Bright, Alpha ) ? EResult::Executed : EResult::Rejected;
 	}
 	case EDrawCommand::BillboardQuad3D:
 	{
@@ -457,7 +457,7 @@ FGeometryCommandExecutor::EResult FGeometryCommandExecutor::Execute( const FDraw
 		}
 		const auto Data = View.Read<FDrawBillboardQuad3DData>(); // 四隅を自由に動かした画像。
 		TArray<FDrawVertex3D> Vertices; // つぶれていない三角形だけを描く。
-		return FGeometryQuadBuilder::BuildCorners( FVector3( Data.Pos[0], Data.Pos[1], Data.Pos[2] ), Data.Corner, Camera, Vertices ) && SubmitQuad( Vertices, Data.Handle, Bright, Alpha ) ? EResult::Executed : EResult::Rejected;
+		return CGeometryQuadBuilder::BuildCorners( FVector3( Data.Pos[0], Data.Pos[1], Data.Pos[2] ), Data.Corner, Camera, Vertices ) && SubmitQuad( Vertices, Data.Handle, Bright, Alpha ) ? EResult::Executed : EResult::Rejected;
 	}
 	case EDrawCommand::Primitive3D:
 	{
@@ -697,7 +697,7 @@ FGeometryCommandExecutor::EResult FGeometryCommandExecutor::Execute( const FDraw
 	}
 }
 
-bool FGeometryCommandExecutor::SubmitPrimitive( const TArray<FDrawVertex3D>& Ordered, EDrawPrimitive Type, int32 Texture, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend )
+bool CGeometryCommandExecutor::SubmitPrimitive( const TArray<FDrawVertex3D>& Ordered, EDrawPrimitive Type, int32 Texture, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend )
 {
 	const int32 Count = Ordered.Num(); // 展開前の点数。
 	if ( Count > 65536 || !NDrawPrimitive::IsValidCount( Type, Count ) )
@@ -741,7 +741,7 @@ bool FGeometryCommandExecutor::SubmitPrimitive( const TArray<FDrawVertex3D>& Ord
 }
 
 // 画像の四角形は両面を描き、完全な透明画素はGPU側で深度も含めて捨てる。
-bool FGeometryCommandExecutor::SubmitQuad( const TArray<FDrawVertex3D>& Vertices, int32 Texture, FDrawRgb Bright, int32 Alpha )
+bool CGeometryCommandExecutor::SubmitQuad( const TArray<FDrawVertex3D>& Vertices, int32 Texture, FDrawRgb Bright, int32 Alpha )
 {
 	FTextureDrawView Image; // 大きさ0でも無効な画像の要求を見逃さない。
 	if ( Texture < 0 || !Textures || !Textures->GetTextureDrawView( Texture, Image ) || Image.Width <= 0 || Image.Height <= 0 || Image.Binding == 0 )

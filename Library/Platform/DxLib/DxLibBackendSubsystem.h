@@ -102,7 +102,7 @@ private:
 	bool bInFrame       = false;
 	bool bExitRequested = false;
 
-	FImGuiViewportScheduler Viewports; // 外部窓の更新頻度と表示順。
+	CImGuiViewportScheduler Viewports; // 外部窓の更新頻度と表示順。
 
 	// 起動引数 --screenshot=パス.png [--screenshot-frame=N（既定 90）] [--screenshot-exit]: N フレーム目の画面（ImGui も含む）を保存する。
 	// 画面の見た目の確認（スクリーンショットの撮影）用。--screenshot-exit なら、保存したあと終了する

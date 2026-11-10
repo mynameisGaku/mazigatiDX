@@ -5,7 +5,7 @@ $ErrorActionPreference = 'Stop'
 $rootPath = if ($Root) { [IO.Path]::GetFullPath($Root) } else { [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..')) } # 調べる作業コピー。
 $pending = New-Object 'System.Collections.Generic.Stack[string]' # 間接的なincludeも調べる未確認のファイル。
 $visited = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase) # 循環参照と重複確認を避ける。
-foreach ($extension in @('.h', '.cpp')) { $pending.Push((Join-Path $rootPath "Library/Platform/DX12/Render/DX12Device$extension")) }
+foreach ($extension in @('.h', '.cpp')) { $pending.Push((Join-Path $rootPath "Library/Platform/DX12/Device/DX12Device$extension")) }
 $failed = $false # すべての違反をまとめて報告する。
 while ($pending.Count -gt 0)
 {

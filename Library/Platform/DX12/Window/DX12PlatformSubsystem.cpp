@@ -1,8 +1,8 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DX12PlatformSubsystem.h"
-#include "Library/Platform/DX12/ImGui/DX12ImGuiFrameRenderer.h"
-#include "Library/Platform/DX12/Render/DX12GameRenderer.h"
-#include "Library/Platform/DX12/Render/DX12GameCapture.h"
+#include "Library/Platform/DX12/ImGui/Frame/DX12ImGuiFrameRenderer.h"
+#include "Library/Platform/DX12/Render/Game/DX12GameRenderer.h"
+#include "Library/Platform/DX12/Render/Game/DX12GameCapture.h"
 #include "Library/Platform/BackendSelection.h"
 #include "Library/Platform/System/BackendSupport.h"
 #include "Library/Platform/System/CommandLine.h"
@@ -96,7 +96,7 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection & )
 		Deinitialize();
 		return;
 	}
-	Device = new FDX12Device();
+	Device = new CDX12Device();
 	const auto Warp = NCommandLine::GetValue( "dx12-warp" ); // UIの有無とは独立したGPU選択。
 	if ( !Device->Initialize( static_cast<HWND>( Window ), Settings.Width, Settings.Height, Warp.IsSet() && Warp.GetValue().Equals( "true", ESearchCase::IgnoreCase ) ) || !GameText.Initialize() )
 	{
@@ -104,7 +104,7 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection & )
 		Deinitialize();
 		return;
 	}
-	GameRenderer = new FDX12GameRenderer();
+	GameRenderer = new CDX12GameRenderer();
 	if ( !GameRenderer->Initialize( Device->GetNativeDevice(), Settings.Width, Settings.Height, *Device->GetTextureResources(), GameText, nullptr, nullptr, Device->GetBufferResources(), Device->GetNativeQueue() ) )
 	{
 		Deinitialize();
@@ -130,7 +130,7 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection & )
 			IO.Fonts->AddFontFromFileTTF( *Settings.ImGuiFontPath, Settings.ImGuiFontSize );
 		}
 		bWin32 = ImGui_ImplWin32_Init( Window );
-		ImGuiFrameRenderer = new FDX12ImGuiFrameRenderer();
+		ImGuiFrameRenderer = new CDX12ImGuiFrameRenderer();
 		if ( !bWin32 || !ImGuiFrameRenderer->Initialize( *Device ) )
 		{
 			Deinitialize();
@@ -138,7 +138,7 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection & )
 		}
 	}
 	const EWindowMode InitialMode = Settings.WindowMode; // 窓の作成後に起動モードへ移す。
-	CaptureRenderer = new FDX12GameCapture( *Device, GameText );
+	CaptureRenderer = new CDX12GameCapture( *Device, GameText );
 	Settings.WindowMode = EWindowMode::Windowed;
 	SetWindowMode( InitialMode );
 	ShowWindow( static_cast<HWND>( Window ), SW_SHOW );

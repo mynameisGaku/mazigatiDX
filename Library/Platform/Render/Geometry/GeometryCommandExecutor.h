@@ -8,7 +8,7 @@
 #include "Library/Framework/Render/Draw/DrawCommand.h"
 
 // カメラ・ワールド・深度を共通命令から解釈する。GPUやImGuiには依存しない。
-class FGeometryCommandExecutor
+class CGeometryCommandExecutor
 {
 public:
 	// 呼び出した命令を扱ったか。未対応・不正はSpanを中止するため区別する。
@@ -19,7 +19,7 @@ public:
 		Rejected, // 不正・未対応・GPU準備の失敗。
 	};
 	// Geometryは借用。nullptrでも状態命令は読めるが、描画は失敗する。
-	explicit FGeometryCommandExecutor( IRenderGeometry3D* InGeometry, ITextureDrawSource* InTextures = nullptr, IGeometryBufferSource* InBuffers = nullptr, IStaticModelSource* InModels = nullptr );
+	explicit CGeometryCommandExecutor( IRenderGeometry3D* InGeometry, ITextureDrawSource* InTextures = nullptr, IGeometryBufferSource* InBuffers = nullptr, IStaticModelSource* InModels = nullptr );
 	// 1命令を検査して実行する。Stateはこのインスタンス内だけに閉じる。
 	EResult Execute( const FDrawCommandView& View, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend );
 private:

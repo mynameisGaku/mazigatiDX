@@ -11,7 +11,7 @@ namespace
 	}
 }
 
-bool FImGuiCanvas2D::SetLogicalSize( int32 Width, int32 Height )
+bool CImGuiCanvas2D::SetLogicalSize( int32 Width, int32 Height )
 {
 	if ( Width <= 0 || Height <= 0 )
 	{
@@ -22,18 +22,18 @@ bool FImGuiCanvas2D::SetLogicalSize( int32 Width, int32 Height )
 	return true;
 }
 
-void FImGuiCanvas2D::SetDrawList( ImDrawList* List, float32 Scale )
+void CImGuiCanvas2D::SetDrawList( ImDrawList* List, float32 Scale )
 {
 	DrawList = List;
 	DrawScale = Scale;
 }
 
-ImDrawList* FImGuiCanvas2D::GetDrawList() const
+ImDrawList* CImGuiCanvas2D::GetDrawList() const
 {
 	return DrawList ? DrawList : ImGui::GetBackgroundDrawList( ImGui::GetMainViewport() );
 }
 
-ImVec4 FImGuiCanvas2D::GetTransform() const
+ImVec4 CImGuiCanvas2D::GetTransform() const
 {
 	if ( DrawList )
 	{
@@ -43,7 +43,7 @@ ImVec4 FImGuiCanvas2D::GetTransform() const
 	return ImVec4( Viewport->Pos.x, Viewport->Pos.y, LogicalWidth > 0 ? Viewport->Size.x / LogicalWidth : 1, LogicalHeight > 0 ? Viewport->Size.y / LogicalHeight : 1 );
 }
 
-void FImGuiCanvas2D::TransformVertices( ImDrawList& List, int32 FirstVertex ) const
+void CImGuiCanvas2D::TransformVertices( ImDrawList& List, int32 FirstVertex ) const
 {
 	const ImVec4 Transform = GetTransform(); // 撮影先と主画面で同じ変換を使う。
 	for ( int32 Index = FirstVertex; Index < List.VtxBuffer.Size; ++Index )
@@ -53,7 +53,7 @@ void FImGuiCanvas2D::TransformVertices( ImDrawList& List, int32 FirstVertex ) co
 	}
 }
 
-void FImGuiCanvas2D::Box( float32 X0, float32 Y0, float32 X1, float32 Y1, FColor32 Color, bool bFill, float32 Thickness )
+void CImGuiCanvas2D::Box( float32 X0, float32 Y0, float32 X1, float32 Y1, FColor32 Color, bool bFill, float32 Thickness )
 {
 	ImDrawList* List = GetDrawList(); // このフレームの2D描画先。
 	const int32 FirstVertex = List->VtxBuffer.Size; // 今回追加する頂点の先頭。
@@ -68,7 +68,7 @@ void FImGuiCanvas2D::Box( float32 X0, float32 Y0, float32 X1, float32 Y1, FColor
 	TransformVertices( *List, FirstVertex );
 }
 
-void FImGuiCanvas2D::Line( float32 X0, float32 Y0, float32 X1, float32 Y1, FColor32 Color, float32 Thickness )
+void CImGuiCanvas2D::Line( float32 X0, float32 Y0, float32 X1, float32 Y1, FColor32 Color, float32 Thickness )
 {
 	ImDrawList* List = GetDrawList(); // このフレームの2D描画先。
 	const int32 FirstVertex = List->VtxBuffer.Size; // 今回追加する頂点の先頭。
@@ -76,7 +76,7 @@ void FImGuiCanvas2D::Line( float32 X0, float32 Y0, float32 X1, float32 Y1, FColo
 	TransformVertices( *List, FirstVertex );
 }
 
-void FImGuiCanvas2D::Circle( float32 X, float32 Y, float32 Radius, FColor32 Color, bool bFill, float32 Thickness, int32 Segments )
+void CImGuiCanvas2D::Circle( float32 X, float32 Y, float32 Radius, FColor32 Color, bool bFill, float32 Thickness, int32 Segments )
 {
 	ImDrawList* List = GetDrawList(); // このフレームの2D描画先。
 	const int32 FirstVertex = List->VtxBuffer.Size; // 今回追加する頂点の先頭。
@@ -91,7 +91,7 @@ void FImGuiCanvas2D::Circle( float32 X, float32 Y, float32 Radius, FColor32 Colo
 	TransformVertices( *List, FirstVertex );
 }
 
-void FImGuiCanvas2D::Triangle( const float32 ( &Points )[6], FColor32 Color, bool bFill, float32 Thickness )
+void CImGuiCanvas2D::Triangle( const float32 ( &Points )[6], FColor32 Color, bool bFill, float32 Thickness )
 {
 	ImDrawList* List = GetDrawList(); // このフレームの2D描画先。
 	const int32 FirstVertex = List->VtxBuffer.Size; // 今回追加する頂点の先頭。
@@ -106,7 +106,7 @@ void FImGuiCanvas2D::Triangle( const float32 ( &Points )[6], FColor32 Color, boo
 	TransformVertices( *List, FirstVertex );
 }
 
-void FImGuiCanvas2D::Quad( const float32 ( &Points )[8], FColor32 Color, bool bFill, float32 Thickness )
+void CImGuiCanvas2D::Quad( const float32 ( &Points )[8], FColor32 Color, bool bFill, float32 Thickness )
 {
 	ImDrawList* List = GetDrawList(); // このフレームの2D描画先。
 	const int32 FirstVertex = List->VtxBuffer.Size; // 今回追加する頂点の先頭。
@@ -121,7 +121,7 @@ void FImGuiCanvas2D::Quad( const float32 ( &Points )[8], FColor32 Color, bool bF
 	TransformVertices( *List, FirstVertex );
 }
 
-void FImGuiCanvas2D::Text( float32 X, float32 Y, FColor32 Color, const char* Begin, const char* End )
+void CImGuiCanvas2D::Text( float32 X, float32 Y, FColor32 Color, const char* Begin, const char* End )
 {
 	SetTextureFilter( true ); // 画像の補間設定を文字へ持ち越さない。
 	if ( Begin == End || !Begin || Begin[0] == 0 || Color.a == 0 )
@@ -146,7 +146,7 @@ void FImGuiCanvas2D::Text( float32 X, float32 Y, FColor32 Color, const char* Beg
 	TransformVertices( *List, FirstVertex );
 }
 
-void FImGuiCanvas2D::Image( const FTextureDrawView& Texture, const float32 ( &Points )[8], const float32 ( &UV )[4], FColor32 Color )
+void CImGuiCanvas2D::Image( const FTextureDrawView& Texture, const float32 ( &Points )[8], const float32 ( &UV )[4], FColor32 Color )
 {
 	ImDrawList* List = GetDrawList(); // このフレームの2D描画先。
 	const int32 FirstVertex = List->VtxBuffer.Size; // 今回追加する頂点の先頭。
@@ -154,20 +154,20 @@ void FImGuiCanvas2D::Image( const FTextureDrawView& Texture, const float32 ( &Po
 	TransformVertices( *List, FirstVertex );
 }
 
-void FImGuiCanvas2D::PushClip( int32 X0, int32 Y0, int32 X1, int32 Y1 )
+void CImGuiCanvas2D::PushClip( int32 X0, int32 Y0, int32 X1, int32 Y1 )
 {
 	ImDrawList* List = GetDrawList(); // このフレームの2D描画先。
 	const ImVec4 Transform = GetTransform(); // 頂点と同じ原点と倍率を使う。
 	List->PushClipRect( ImVec2( Transform.x + X0 * Transform.z, Transform.y + Y0 * Transform.w ), ImVec2( Transform.x + X1 * Transform.z, Transform.y + Y1 * Transform.w ), true );
 }
 
-void FImGuiCanvas2D::PopClip()
+void CImGuiCanvas2D::PopClip()
 {
 	ImDrawList* List = GetDrawList(); // このフレームの2D描画先。
 	List->PopClipRect();
 }
 
-void FImGuiCanvas2D::SetAntiAlias( bool bEnabled )
+void CImGuiCanvas2D::SetAntiAlias( bool bEnabled )
 {
 	ImDrawList* List = GetDrawList(); // このフレームの2D描画先。
 	if ( bEnabled )
@@ -180,7 +180,7 @@ void FImGuiCanvas2D::SetAntiAlias( bool bEnabled )
 	}
 }
 
-bool FImGuiCanvas2D::SetTextureFilter( bool bLinear )
+bool CImGuiCanvas2D::SetTextureFilter( bool bLinear )
 {
 	const auto Callback = bLinear ? ImGui::GetPlatformIO().DrawCallback_SetSamplerLinear : ImGui::GetPlatformIO().DrawCallback_SetSamplerNearest; // GPU実装が提供する切り替え。
 	if ( !Callback )

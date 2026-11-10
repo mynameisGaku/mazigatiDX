@@ -72,10 +72,10 @@ DX12の初期描画経路を実装した段階です。Forward／Deferred／Forw
 |`Core/Render/TextureResourceHandle.h`|APIに依存しない型付き画像資源番号。アセット番号・GPU bindingと区別する|
 |`Platform/Render/Texture/TextureAssetStore.*`|GPU・UI・codecを知らないアセット番号と資源番号の登録・所有管理|
 |`Platform/Windows/Image/WicImageDecoder.*`|CPUでの画像展開。ImGuiとD3D12へ依存しない|
-|`Platform/DX12/Render/DX12TextureStore.*`|D3D12画像、転送領域、完了待ち、更新前の版と解放済み画像の遅延回収|
-|`Platform/DX12/Render/DX12DescriptorPool.*`|共有SRV heapの貸し出しと返却、所有先と世代の検査|
-|`Platform/DX12/ImGui/DX12ImGuiRenderer.*`|公式ImGui描画実装の初期化・フレーム・描画・終了とUI記述子の仲介|
-|`Platform/DX12/Render/DX12Device.*`|device・swapchain・queue・フレーム記録と提出の所有と、上記の接続|
+|`Platform/DX12/Resource/Texture/DX12TextureStore.*`|D3D12画像、転送領域、完了待ち、更新前の版と解放済み画像の遅延回収|
+|`Platform/DX12/Resource/Descriptor/DX12DescriptorPool.*`|共有SRV heapの貸し出しと返却、所有先と世代の検査|
+|`Platform/DX12/ImGui/Render/DX12ImGuiRenderer.*`|公式ImGui描画実装の初期化・フレーム・描画・終了とUI記述子の仲介|
+|`Platform/DX12/Device/DX12Device.*`|device・swapchain・queue・フレーム記録と提出の所有と、上記の接続|
 |`Platform/Render/Canvas/CanvasDrawExecutor.*`|共通2D命令の検査と展開先への接続|
 |`Platform/Render/Geometry/GeometryCommandExecutor.*`|共通3D命令と描画状態の検査・実行|
 |`Platform/Render/Geometry/GeometryBufferStore.*`|現在のCPU側の不変バッファ。最終的な永続GPUメッシュの代替とはしない|
@@ -154,3 +154,11 @@ git clone --branch backend-dx12 https://github.com/mynameisGaku/mazigatiDX.git .
 ## computeからGPU描画への接続（2026-11-10追記）
 
 共通のGPUバッファを、CPUへ読み戻さず頂点と16／32bitのindexに使えるよう接続しました。同居する頂点・index、画像付き描画、記録後の番号解除と実体保持に対応します。通常画面と撮影先は同じ所有先とキューを借り、ImGuiへ依存しません。入力と提出順・上限・検査結果は [GPUバッファ描画](R1_BUFFER_GEOMETRY.md) を参照してください。互換台帳は459項目でVerifiedは増やしません。ローカル座標のGPU meshと変換、indirect draw、R1／R2全体は未完了です。
+
+## computeの定数と構造体配列（2026-11-10追記）
+
+既存RAW computeへ、定数の読み取りと構造体配列の読み書きを追加しました。シェーダーの宣言と配置・幅・必要範囲を照合し、GPUが更新した定数を次の計算で読むこともできます。定数行列→構造体の頂点→直接描画とUIなし起動の検査は [バッファ配置の記録](R1_COMPUTE_BUFFER_LAYOUTS.md) を参照してください。新しい資源所有者・Subsystem・UI依存はありません。互換台帳は459項目、Verifiedは0で、R1全体とR2のシーン描画は未完了です。
+
+## 描画パイプライン所有と命名・配置（2026-11-10追記）
+
+GeometryRenderer内のシェーダー・root signature・PSOの作成とキャッシュをCDX12GeometryPipelineStoreへ分離しました。機能型25個をCへ揃え、データ型のFを保ち、開発文書の食い違う命名規則も統一しました。DX12の既存32ファイルを役割別フォルダーへ移し、参照・ビルド・検査も更新しています。適用範囲と描画方式のパスとの違い、検証結果は [責務・命名・配置](DX12_ARCHITECTURE.md) を参照してください。

@@ -5,7 +5,7 @@
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Types/Numeric.h"
 
-FStaticModelStore::FResource::~FResource()
+CStaticModelStore::FResource::~FResource()
 {
 	if ( TextureBackend )
 	{
@@ -16,7 +16,7 @@ FStaticModelStore::FResource::~FResource()
 	}
 }
 
-int32 FStaticModelStore::Create( const FImportedScene& Scene, const FString& SourcePath, ITextureBackend& Textures, FString& Error )
+int32 CStaticModelStore::Create( const FImportedScene& Scene, const FString& SourcePath, ITextureBackend& Textures, FString& Error )
 {
 	if ( Instances.Num() >= 128 || NextHandle == TNumericLimits<int32>::Max() )
 	{
@@ -124,7 +124,7 @@ int32 FStaticModelStore::Create( const FImportedScene& Scene, const FString& Sou
 	return Handle;
 }
 
-int32 FStaticModelStore::Duplicate( int32 Source )
+int32 CStaticModelStore::Duplicate( int32 Source )
 {
 	const FInstance* Instance = Instances.Find( Source ); // 複写前の個体。
 	if ( !Instance || Instances.Num() >= 128 || NextHandle == TNumericLimits<int32>::Max() )
@@ -137,22 +137,22 @@ int32 FStaticModelStore::Duplicate( int32 Source )
 	return Handle;
 }
 
-void FStaticModelStore::Delete( int32 Handle )
+void CStaticModelStore::Delete( int32 Handle )
 {
 	Instances.Remove( Handle );
 }
 
-void FStaticModelStore::Reset()
+void CStaticModelStore::Reset()
 {
 	Instances.Reset();
 }
 
-int32 FStaticModelStore::Num() const
+int32 CStaticModelStore::Num() const
 {
 	return Instances.Num();
 }
 
-bool FStaticModelStore::GetStaticModelDrawView( int32 Handle, FStaticModelDrawView& Out )
+bool CStaticModelStore::GetStaticModelDrawView( int32 Handle, FStaticModelDrawView& Out )
 {
 	const auto* Instance = Instances.Find( Handle ); // 描画まで生存する個体。
 	if ( !Instance )
@@ -164,13 +164,13 @@ bool FStaticModelStore::GetStaticModelDrawView( int32 Handle, FStaticModelDrawVi
 	return true;
 }
 
-const FStaticModelDefinition* FStaticModelStore::GetDefinition( int32 Handle ) const
+const FStaticModelDefinition* CStaticModelStore::GetDefinition( int32 Handle ) const
 {
 	const auto* Instance = Instances.Find( Handle ); // 定義の借用元。
 	return Instance ? &Instance->Resource->Definition : nullptr;
 }
 
-bool FStaticModelStore::GetSurface( int32 Handle, FStaticModelSurfaceData& Out ) const
+bool CStaticModelStore::GetSurface( int32 Handle, FStaticModelSurfaceData& Out ) const
 {
 	const auto* Definition = GetDefinition( Handle ); // 有効な登録だけ返す。
 	if ( !Definition )
@@ -181,7 +181,7 @@ bool FStaticModelStore::GetSurface( int32 Handle, FStaticModelSurfaceData& Out )
 	return true;
 }
 
-bool FStaticModelStore::GetOpacity( int32 Handle, float32& Out ) const
+bool CStaticModelStore::GetOpacity( int32 Handle, float32& Out ) const
 {
 	const auto* Instance = Instances.Find( Handle ); // 個体別の状態。
 	if ( !Instance )
@@ -192,7 +192,7 @@ bool FStaticModelStore::GetOpacity( int32 Handle, float32& Out ) const
 	return true;
 }
 
-bool FStaticModelStore::SetOpacity( int32 Handle, float32 Opacity )
+bool CStaticModelStore::SetOpacity( int32 Handle, float32 Opacity )
 {
 	auto* Instance = Instances.Find( Handle ); // 共有形状は変更しない。
 	if ( !Instance || !NMath::IsFinite( Opacity ) || Opacity < 0 || Opacity > 1 )
@@ -203,7 +203,7 @@ bool FStaticModelStore::SetOpacity( int32 Handle, float32 Opacity )
 	return true;
 }
 
-int64 FStaticModelStore::EstimateBytes( int32 Handle ) const
+int64 CStaticModelStore::EstimateBytes( int32 Handle ) const
 {
 	const auto* Instance = Instances.Find( Handle ); // この個体が共有する形状。
 	return Instance ? Instance->Resource->Bytes : 0;

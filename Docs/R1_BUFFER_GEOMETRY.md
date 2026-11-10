@@ -9,10 +9,10 @@
 |Core/Render/FGeometryBufferDraw|型付きの頂点／indexバッファ番号、バイト位置、個数、indexの整数幅。GPUアドレスを公開しない|
 |Core/Render/EGeometryIndexFormat|UInt16／UInt32の頂点番号|
 |IRenderGeometry3D::DrawBufferGeometry|フレーム中の既存描画先でGPU上の共通頂点を読む。未対応の実装はfalse|
-|FDX12BufferStore|バッファの作成・登録解除・転送・compute用参照と、描画用の実体参照の取得|
-|FDX12GeometryRenderer|描画範囲の検査、GPU参照の保持、VB／IBへの遷移、既存の深度・画像・合成での記録|
-|FDX12GameRenderer／FDX12GameCapture|通常画面と撮影先へ同じバッファ所有先とキューを渡す|
-|FDX12Device／CDX12PlatformSubsystem|既存のGPU所有・提出・完了待ちと、共通サービスへの接続|
+|CDX12BufferStore|バッファの作成・登録解除・転送・compute用参照と、描画用の実体参照の取得|
+|CDX12GeometryRenderer|描画範囲の検査、GPU参照の保持、VB／IBへの遷移、既存の深度・画像・合成での記録|
+|CDX12GameRenderer／CDX12GameCapture|通常画面と撮影先へ同じバッファ所有先とキューを渡す|
+|CDX12Device／CDX12PlatformSubsystem|既存のGPU所有・提出・完了待ちと、共通サービスへの接続|
 
 新しいSubsystem・別のGPUバッファ所有者・ImGui経由の実行先は追加しません。既存のIRenderSurface::GetGeometry3D()から利用します。ネイティブ描画器の初期化へ所有先とキューを省略した場合、従来のCPU頂点描画だけが使えます。所有先とキューは両方指定し、同じデバイスとキューを使います。借用する所有先は描画器より長く生存させます。
 
@@ -80,4 +80,8 @@ GPU・ゲーム描画・共通Canvas・OS文字とUIの依存検査、依存検�
 
 ## 残る範囲
 
-GPUバッファの直接描画は、固定の同次座標と画像・頂点色を扱う基礎です。ローカル座標の永続mesh、GPU変換、instancing、indirect draw、スキン・モーフ、PBR、定数／構造化バッファ・画像をcomputeで使う経路、DXC／SM6、複数キューと能力照会、包括的な障害回復・性能評価は引き続き残ります。R1／R2全体の完了や他バックエンドのGPUバッファ描画対応は宣言しません。
+GPUバッファの直接描画は、固定の同次座標と画像・頂点色を扱う基礎です。ローカル座標の永続mesh、GPU変換、instancing、indirect draw、スキン・モーフ、PBR、画像をcomputeで使う経路、DXC／SM6、複数キューと能力照会、包括的な障害回復・性能評価は引き続き残ります。R1／R2全体の完了や他バックエンドのGPUバッファ描画対応は宣言しません。
+
+## 後続のcompute配置
+
+[定数と構造体配列](R1_COMPUTE_BUFFER_LAYOUTS.md) を追加し、定数の行列と構造体入力からGPUで同次頂点を作り、この直接描画へ渡す検査を接続しました。頂点の生成方法が増えても、本描画窓口の固定28バイト形式は変えていません。

@@ -5,18 +5,18 @@
 #include "Library/Core/Collection/Map.h"
 
 // アセット番号と画像資源番号の対応を所有する。codec・GPU・ImGuiを知らない。
-class FTextureAssetStore : public ITextureDrawSource
+class CTextureAssetStore : public ITextureDrawSource
 {
 public:
 	// 未接続で作る。Initializeまで作成・参照は失敗する。
-	FTextureAssetStore() = default;
+	CTextureAssetStore() = default;
 	// Resourcesは、Shutdownまで生存させる。
-	explicit FTextureAssetStore( IRenderTextureResources& InResources );
+	explicit CTextureAssetStore( IRenderTextureResources& InResources );
 	// 登録画像の解放要求を資源の所有者へ戻す。
-	~FTextureAssetStore() override;
+	~CTextureAssetStore() override;
 	// 登録番号と所有画像は複写しない。
-	FTextureAssetStore( const FTextureAssetStore& ) = delete;
-	FTextureAssetStore& operator=( const FTextureAssetStore& ) = delete;
+	CTextureAssetStore( const CTextureAssetStore& ) = delete;
+	CTextureAssetStore& operator=( const CTextureAssetStore& ) = delete;
 	// 未接続の場合だけ資源の所有先を固定する。既存の登録と番号を保つ。
 	bool Initialize( IRenderTextureResources& InResources );
 	// 全登録を外して接続を切る。再初期化しても番号は再利用しない。

@@ -8,12 +8,12 @@
 |---|---|
 |`Core/Interfaces/Render/IRenderTextRasterizer`|UTF-8の指定範囲をCPU上の白いRGBAと文字の被覆率へ変換する窓口。GPUとUIを知らない|
 |`Core/Render/FRenderClipRect`|描画先の画素による、右・下を含まない切り取り範囲|
-|`Platform/Render/Canvas/FGeometryCanvas2D`|矩形・線・円・三角形・凸四角形・画像・文字の共通頂点生成。GPUの型とWindows・ImGuiを知らない|
-|`Platform/Windows/Text/FWindowsTextRasterizer`|OSの文字をCPU画像へ変換する。GPU資源とUIフォントを所有しない|
-|`Platform/DX12/Render/FDX12GeometryRenderer`|頂点の所有コピー、画像・補間・深度・描画状態、GPUへの直接記録。UIの描画順を知らない|
-|`Platform/DX12/Render/FDX12GameRenderer`|共通CanvasとGPUの描画実装を接続する。2Dと3Dで切り取り範囲を共有し、呼出順に記録する。提出・待機の所有者ではない|
-|`Platform/DX12/Render/FDX12GameCapture`|同じゲーム描画をFDX12CaptureTargetへ描き直し、完了後にRGBA8を返す。ImGui実装を借りない|
-|`Platform/DX12/ImGui/FDX12ImGuiFrameRenderer`|ゲーム描画の後にUIだけを記録する。GPUの所有・作成・フレーム提出を担当しない|
+|`Platform/Render/Canvas/CGeometryCanvas2D`|矩形・線・円・三角形・凸四角形・画像・文字の共通頂点生成。GPUの型とWindows・ImGuiを知らない|
+|`Platform/Windows/Text/CWindowsTextRasterizer`|OSの文字をCPU画像へ変換する。GPU資源とUIフォントを所有しない|
+|`Platform/DX12/Render/CDX12GeometryRenderer`|頂点の所有コピー、画像・補間・深度・描画状態、GPUへの直接記録。UIの描画順を知らない|
+|`Platform/DX12/Render/CDX12GameRenderer`|共通CanvasとGPUの描画実装を接続する。2Dと3Dで切り取り範囲を共有し、呼出順に記録する。提出・待機の所有者ではない|
+|`Platform/DX12/Render/CDX12GameCapture`|同じゲーム描画をFDX12CaptureTargetへ描き直し、完了後にRGBA8を返す。ImGui実装を借りない|
+|`Platform/DX12/ImGui/CDX12ImGuiFrameRenderer`|ゲーム描画の後にUIだけを記録する。GPUの所有・作成・フレーム提出を担当しない|
 
 操作は既存の描画スレッドで行います。既存のCDX12PlatformSubsystemがGPUと利用者を別々に所有し、フレーム開始・ゲーム描画・UI描画・提出・終了をつなぎます。新しいSubsystemは追加していません。内部のFDX12GameRendererには、所有しない提出・待機の窓口を無理に継承させていません。
 

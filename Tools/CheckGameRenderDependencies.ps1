@@ -4,12 +4,16 @@ param([string]$Root = '')
 $ErrorActionPreference = 'Stop'
 $rootPath = if ($Root) { [IO.Path]::GetFullPath($Root) } else { [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..')) } # 検査する作業コピー。
 $groups = @(
-    @{ Directory = 'Library/Platform/DX12/Render'; Names = @('DX12CaptureTarget', 'DX12TextureReadback', 'DX12QueueCompletion'); Forbidden = '(?i)imgui|dxlib|DX12Device|Framework/|Core/Interfaces/(Asset|Platform)|IRenderSurface' },
-    @{ Directory = 'Library/Platform/DX12/Render'; Names = @('DX12GeometryRenderer', 'DX12GameRenderer', 'DX12GameCapture'); Forbidden = '(?i)imgui|dxlib|Framework/|Platform/Windows' },
+    @{ Directory = 'Library/Platform/DX12/Render/Capture'; Names = @('DX12CaptureTarget'); Forbidden = '(?i)imgui|dxlib|DX12Device|Framework/|Core/Interfaces/(Asset|Platform)|IRenderSurface' },
+    @{ Directory = 'Library/Platform/DX12/Resource/Readback'; Names = @('DX12TextureReadback'); Forbidden = '(?i)imgui|dxlib|DX12Device|Framework/|Core/Interfaces/(Asset|Platform)|IRenderSurface' },
+    @{ Directory = 'Library/Platform/DX12/Device'; Names = @('DX12QueueCompletion'); Forbidden = '(?i)imgui|dxlib|DX12Device|Framework/|Core/Interfaces/(Asset|Platform)|IRenderSurface' },
+    @{ Directory = 'Library/Platform/DX12/Render/Geometry'; Names = @('DX12GeometryRenderer'); Forbidden = '(?i)imgui|dxlib|Framework/|Platform/Windows' },
+    @{ Directory = 'Library/Platform/DX12/Pipeline/Geometry'; Names = @('DX12GeometryPipelineStore'); Forbidden = '(?i)imgui|dxlib|Framework/|Platform/Windows|IRenderSurface|DX12Device|DX12GeometryRenderer|DX12GameRenderer|DX12BufferStore' },
+    @{ Directory = 'Library/Platform/DX12/Render/Game'; Names = @('DX12GameRenderer', 'DX12GameCapture'); Forbidden = '(?i)imgui|dxlib|Framework/|Platform/Windows' },
     @{ Directory = 'Library/Platform/Render/Canvas'; Names = @('GeometryCanvas2D'); Forbidden = '(?i)imgui|dxlib|Framework/|Platform/(DX12|Windows)|d3d|dxgi|WindowsInclude|wrl/' },
     @{ Directory = 'Library/Platform/Windows/Text'; Names = @('WindowsTextRasterizer'); Forbidden = '(?i)imgui|dxlib|Framework/|Platform/DX12|d3d|dxgi|wrl/' },
     @{ Directory = 'Library/Platform/ImGui/Render'; Names = @('ImGuiCanvas2D'); Forbidden = '(?i)Platform/(DX12|DxLib|Windows)|d3d\d|dxgi|wincodec|WindowsInclude|imgui_impl_|windows\.h|wrl/' }
-) # GPU・形状生成・OS文字・UIは、それぞれが必要な参照だけを持つ。
+) # 資源・パイプライン・描画記録・OS文字・UIは必要な参照だけを持つ。
 $failed = $false # 見つかった違反を一度に報告する。
 foreach ($group in $groups)
 {

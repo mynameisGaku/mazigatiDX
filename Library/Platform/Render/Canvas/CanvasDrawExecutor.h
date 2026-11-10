@@ -8,11 +8,11 @@
 #include "Library/Core/Interfaces/Render/IStaticModelSource.h"
 
 // 共通命令を2Dキャンバスと基本3Dへ振り分ける。状態はExecuteごとに初期化する。
-class FCanvasDrawExecutor
+class CCanvasDrawExecutor
 {
 public:
 	// SurfaceとTexturesは借用。実行が終わるまで所有側が生存させる。
-	FCanvasDrawExecutor( IRenderSurface& InSurface, ITextureDrawSource* InTextures, IGeometryBufferSource* InBuffers = nullptr, IStaticModelSource* InModels = nullptr );
+	CCanvasDrawExecutor( IRenderSurface& InSurface, ITextureDrawSource* InTextures, IGeometryBufferSource* InBuffers = nullptr, IStaticModelSource* InModels = nullptr );
 	// 命令の長さを検査して実行する。未対応命令以降はそのSpan内で省略する。
 	void Execute( const FDrawSpan& Span );
 private:

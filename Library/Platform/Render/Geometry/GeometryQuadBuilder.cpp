@@ -38,7 +38,7 @@ namespace
 	}
 }
 
-bool FGeometryQuadBuilder::Build( const FDrawQuad3DData& Data, const FCamera& Camera, TArray<FDrawVertex3D>& Out )
+bool CGeometryQuadBuilder::Build( const FDrawQuad3DData& Data, const FCamera& Camera, TArray<FDrawVertex3D>& Out )
 {
 	const FVector3 Position( Data.Pos[0], Data.Pos[1], Data.Pos[2] ); // 基準点の位置。
 	const float32 Values[] = { Data.Width, Data.Height, Data.PivotX, Data.PivotY, Data.Angle, Data.U0, Data.V0, Data.U1, Data.V1 }; // 向きに関係なく使う入力。
@@ -118,7 +118,7 @@ bool FGeometryQuadBuilder::Build( const FDrawQuad3DData& Data, const FCamera& Ca
 	return true;
 }
 
-bool FGeometryQuadBuilder::BuildCorners( const FVector3& Position, const float32 ( &Corners )[8], const FCamera& Camera, TArray<FDrawVertex3D>& Out )
+bool CGeometryQuadBuilder::BuildCorners( const FVector3& Position, const float32 ( &Corners )[8], const FCamera& Camera, TArray<FDrawVertex3D>& Out )
 {
 	if ( !Finite( Position ) || !Camera.IsValid() )
 	{

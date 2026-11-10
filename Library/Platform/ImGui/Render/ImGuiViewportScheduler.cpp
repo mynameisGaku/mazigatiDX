@@ -6,12 +6,12 @@
 #include "Library/Core/Time/PlatformTime.h"
 #include "VendorModules/ImGui/imgui.h"
 
-void FImGuiViewportScheduler::Reset()
+void CImGuiViewportScheduler::Reset()
 {
 	LastPresentTicks.Reset();
 }
 
-void FImGuiViewportScheduler::Render( int32 MaxFPS, int32 MaxPresents )
+void CImGuiViewportScheduler::Render( int32 MaxFPS, int32 MaxPresents )
 {
 	if ( !ImGui::GetCurrentContext() || !( ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable ) )
 	{

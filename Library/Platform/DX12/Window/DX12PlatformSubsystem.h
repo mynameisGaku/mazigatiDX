@@ -11,10 +11,10 @@
 #include "Library/Platform/Windows/Text/WindowsTextRasterizer.h"
 #include "Library/Platform/ImGui/Render/ImGuiViewportScheduler.h"
 
-class FDX12Device;
-class FDX12GameRenderer;
-class FDX12ImGuiFrameRenderer;
-class FDX12GameCapture;
+class CDX12Device;
+class CDX12GameRenderer;
+class CDX12ImGuiFrameRenderer;
+class CDX12GameCapture;
 
 // Windowsの窓とフレーム進行を所有する。GPUを所有し、ImGuiへは描画に必要な参照だけを貸す。
 class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IRenderSurface, public IRenderTextureResources, public IRenderBufferResources, public IComputePipelineResources, public IComputeQueue, public INativeWindow
@@ -112,13 +112,13 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
 	void AddWheel( float32 X, float32 Y );
 
   private:
-	FWindowsTextRasterizer GameText; // UI設定とGPUから独立したゲーム文字の画像化。
-	FImGuiViewportScheduler Viewports; // 外部窓の更新頻度と表示順。
+	CWindowsTextRasterizer GameText; // UI設定とGPUから独立したゲーム文字の画像化。
+	CImGuiViewportScheduler Viewports; // 外部窓の更新頻度と表示順。
 	FWindowSettings Settings; // 起動設定と現在の表示設定。
-	FDX12Device *Device = nullptr; // ゲームとUIが共有するGPU所有者。利用者より後に破棄する。
-	FDX12GameRenderer *GameRenderer = nullptr; // ゲームの2D・3DをUIと別の順序へ記録する。
-	FDX12ImGuiFrameRenderer *ImGuiFrameRenderer = nullptr; // GPUを借りるUIの記録先。GPUは所有しない。
-	FDX12GameCapture *CaptureRenderer = nullptr; // UIとは独立したゲーム描画の撮影先。
+	CDX12Device *Device = nullptr; // ゲームとUIが共有するGPU所有者。利用者より後に破棄する。
+	CDX12GameRenderer *GameRenderer = nullptr; // ゲームの2D・3DをUIと別の順序へ記録する。
+	CDX12ImGuiFrameRenderer *ImGuiFrameRenderer = nullptr; // GPUを借りるUIの記録先。GPUは所有しない。
+	CDX12GameCapture *CaptureRenderer = nullptr; // UIとは独立したゲーム描画の撮影先。
 	IFrameCaptureSink *FrameCaptureSink = nullptr; // 撮影サービスの借用先。終了前に解除する。
 	TArray<FColor32> CapturePixels; // 通知中だけ受け取り手へ借用する画素。
 	void *Window = nullptr; // 所有するHWND。公開ヘッダーにWindowsを出さない。

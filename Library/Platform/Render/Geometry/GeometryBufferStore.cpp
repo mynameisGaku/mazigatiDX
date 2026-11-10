@@ -3,7 +3,7 @@
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Types/Numeric.h"
 
-bool FGeometryBufferStore::IsValidVertex( const FDrawVertex3D& Vertex )
+bool CGeometryBufferStore::IsValidVertex( const FDrawVertex3D& Vertex )
 {
 	for ( int32 Index = 0; Index < 3; ++Index )
 	{
@@ -15,7 +15,7 @@ bool FGeometryBufferStore::IsValidVertex( const FDrawVertex3D& Vertex )
 	return NMath::IsFinite( Vertex.U ) && NMath::IsFinite( Vertex.V ) && NMath::IsFinite( Vertex.SubU ) && NMath::IsFinite( Vertex.SubV );
 }
 
-int32 FGeometryBufferStore::MakeVertexBuffer( int32 NumVertices )
+int32 CGeometryBufferStore::MakeVertexBuffer( int32 NumVertices )
 {
 	if ( NumVertices <= 0 || static_cast<uint64>( NumVertices ) * sizeof( FDrawVertex3D ) > MaxBytes - Bytes || NextHandle == TNumericLimits<int32>::Max() || Vertices.Num() + Indices.Num() >= 1024 )
 	{
@@ -30,7 +30,7 @@ int32 FGeometryBufferStore::MakeVertexBuffer( int32 NumVertices )
 	return Handle;
 }
 
-bool FGeometryBufferStore::WriteVertexBuffer( int32 Handle, int32 Start, const FDrawVertex3D* Source, int32 Count )
+bool CGeometryBufferStore::WriteVertexBuffer( int32 Handle, int32 Start, const FDrawVertex3D* Source, int32 Count )
 {
 	auto* Values = Vertices.Find( Handle ); // 更新先の登録。
 	if ( !Values || !Source || Start < 0 || Count <= 0 || static_cast<int64>( Start ) + Count > Values->Num() )
@@ -48,7 +48,7 @@ bool FGeometryBufferStore::WriteVertexBuffer( int32 Handle, int32 Start, const F
 	return true;
 }
 
-void FGeometryBufferStore::DeleteVertexBuffer( int32 Handle )
+void CGeometryBufferStore::DeleteVertexBuffer( int32 Handle )
 {
 	if ( const auto* Values = Vertices.Find( Handle ) )
 	{
@@ -57,7 +57,7 @@ void FGeometryBufferStore::DeleteVertexBuffer( int32 Handle )
 	}
 }
 
-int32 FGeometryBufferStore::MakeIndexBuffer( int32 NumIndices, bool b32Bit )
+int32 CGeometryBufferStore::MakeIndexBuffer( int32 NumIndices, bool b32Bit )
 {
 	if ( NumIndices <= 0 || static_cast<uint64>( NumIndices ) * sizeof( uint32 ) > MaxBytes - Bytes || NextHandle == TNumericLimits<int32>::Max() || Vertices.Num() + Indices.Num() >= 1024 )
 	{
@@ -73,7 +73,7 @@ int32 FGeometryBufferStore::MakeIndexBuffer( int32 NumIndices, bool b32Bit )
 	return Handle;
 }
 
-bool FGeometryBufferStore::WriteIndexBuffer( int32 Handle, int32 Start, const void* Source, int32 Count )
+bool CGeometryBufferStore::WriteIndexBuffer( int32 Handle, int32 Start, const void* Source, int32 Count )
 {
 	auto* Record = Indices.Find( Handle ); // 更新先の登録。
 	if ( !Record || !Source || Start < 0 || Count <= 0 || static_cast<int64>( Start ) + Count > Record->Values.Num() )
@@ -99,7 +99,7 @@ bool FGeometryBufferStore::WriteIndexBuffer( int32 Handle, int32 Start, const vo
 	return true;
 }
 
-void FGeometryBufferStore::DeleteIndexBuffer( int32 Handle )
+void CGeometryBufferStore::DeleteIndexBuffer( int32 Handle )
 {
 	if ( const auto* Record = Indices.Find( Handle ) )
 	{
@@ -108,7 +108,7 @@ void FGeometryBufferStore::DeleteIndexBuffer( int32 Handle )
 	}
 }
 
-bool FGeometryBufferStore::CreateMesh( const FDrawVertex3D* Source, int32 NumVertices, const uint32* SourceIndices, int32 NumIndices, int32& OutVertexBuffer, int32& OutIndexBuffer )
+bool CGeometryBufferStore::CreateMesh( const FDrawVertex3D* Source, int32 NumVertices, const uint32* SourceIndices, int32 NumIndices, int32& OutVertexBuffer, int32& OutIndexBuffer )
 {
 	if ( !Source || !SourceIndices || NumVertices <= 0 || NumIndices <= 0 || NumIndices % 3 != 0 || static_cast<uint64>( NumVertices ) * sizeof( FDrawVertex3D ) + static_cast<uint64>( NumIndices ) * sizeof( uint32 ) > MaxBytes - Bytes
 		|| Vertices.Num() + Indices.Num() > 1022 || NextHandle > TNumericLimits<int32>::Max() - 2 )
@@ -151,7 +151,7 @@ bool FGeometryBufferStore::CreateMesh( const FDrawVertex3D* Source, int32 NumVer
 	return true;
 }
 
-bool FGeometryBufferStore::GetVertexBufferView( int32 Handle, FGeometryVertexBufferView& Out )
+bool CGeometryBufferStore::GetVertexBufferView( int32 Handle, FGeometryVertexBufferView& Out )
 {
 	const auto* Values = Vertices.Find( Handle ); // 登録済みの頂点。
 	if ( !Values )
@@ -162,7 +162,7 @@ bool FGeometryBufferStore::GetVertexBufferView( int32 Handle, FGeometryVertexBuf
 	return true;
 }
 
-bool FGeometryBufferStore::GetIndexBufferView( int32 Handle, FGeometryIndexBufferView& Out )
+bool CGeometryBufferStore::GetIndexBufferView( int32 Handle, FGeometryIndexBufferView& Out )
 {
 	const auto* Record = Indices.Find( Handle ); // 登録済みのindex。
 	if ( !Record )
@@ -173,7 +173,7 @@ bool FGeometryBufferStore::GetIndexBufferView( int32 Handle, FGeometryIndexBuffe
 	return true;
 }
 
-void FGeometryBufferStore::Reset()
+void CGeometryBufferStore::Reset()
 {
 	Vertices.Reset();
 	Indices.Reset();

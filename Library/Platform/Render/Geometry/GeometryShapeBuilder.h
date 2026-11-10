@@ -6,7 +6,7 @@
 #include "Library/Math/Vector3.h"
 
 // 球とカプセルをローカル座標の三角形・線分へ展開する。GPUや描画状態を持たない。
-class FGeometryShapeBuilder
+class CGeometryShapeBuilder
 {
 public:
 	// 円周をDiv分割する球。Divは3〜128、Radiusは0以上の有限値。

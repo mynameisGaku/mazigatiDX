@@ -5,7 +5,7 @@
 #include "Library/Core/Collection/Map.h"
 
 // APIに依存しない形状の所有。GPUへ送る前のローカル頂点とindexを保持する。
-class FGeometryBufferStore : public IGeometryBufferSource
+class CGeometryBufferStore : public IGeometryBufferSource
 {
 public:
 	// 指定数のゼロ頂点を作る。不正・容量超過時は-1。

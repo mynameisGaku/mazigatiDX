@@ -6,7 +6,7 @@ struct ImDrawList;
 struct ImVec4;
 
 // ImGuiの図形生成だけを再利用する。DX12・Vulkan・OpenGLのGPU型を持たない。
-class FImGuiCanvas2D : public IRenderCanvas2D
+class CImGuiCanvas2D : public IRenderCanvas2D
 {
 public:
 	// 論理画素の寸法を設定する。表示先の移動・拡大は各描画で主画面から取得する。不正な寸法はfalse。

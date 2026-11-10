@@ -2,16 +2,16 @@
 #include "TextureAssetStore.h"
 #include "Library/Core/Types/Numeric.h"
 
-FTextureAssetStore::FTextureAssetStore( IRenderTextureResources& InResources ) : Resources( &InResources )
+CTextureAssetStore::CTextureAssetStore( IRenderTextureResources& InResources ) : Resources( &InResources )
 {
 }
 
-FTextureAssetStore::~FTextureAssetStore()
+CTextureAssetStore::~CTextureAssetStore()
 {
 	Shutdown();
 }
 
-bool FTextureAssetStore::Initialize( IRenderTextureResources& InResources )
+bool CTextureAssetStore::Initialize( IRenderTextureResources& InResources )
 {
 	if ( Resources )
 	{
@@ -21,13 +21,13 @@ bool FTextureAssetStore::Initialize( IRenderTextureResources& InResources )
 	return true;
 }
 
-void FTextureAssetStore::Shutdown()
+void CTextureAssetStore::Shutdown()
 {
 	Reset();
 	Resources = nullptr;
 }
 
-int32 FTextureAssetStore::Create( int32 Width, int32 Height, const FColor32* Pixels )
+int32 CTextureAssetStore::Create( int32 Width, int32 Height, const FColor32* Pixels )
 {
 	if ( !Resources || !Pixels || Width <= 0 || Height <= 0 || Width > 16384 || Height > 16384 || static_cast<int64>( Width ) * Height > 64 * 1024 * 1024
 		|| Textures.Num() >= MaxHandles || NextHandle == TNumericLimits<int32>::Max() )
@@ -44,13 +44,13 @@ int32 FTextureAssetStore::Create( int32 Width, int32 Height, const FColor32* Pix
 	return Handle;
 }
 
-bool FTextureAssetStore::Update( int32 Handle, int32 Width, int32 Height, const FColor32* Pixels )
+bool CTextureAssetStore::Update( int32 Handle, int32 Width, int32 Height, const FColor32* Pixels )
 {
 	const auto* Resource = Textures.Find( Handle ); // 有効な登録だけを更新する。
 	return Resource && Resources && Pixels && Resources->UpdateTextureRGBA8( *Resource, Width, Height, Pixels );
 }
 
-void FTextureAssetStore::Delete( int32 Handle )
+void CTextureAssetStore::Delete( int32 Handle )
 {
 	if ( const auto* Resource = Textures.Find( Handle ) )
 	{
@@ -62,7 +62,7 @@ void FTextureAssetStore::Delete( int32 Handle )
 	}
 }
 
-void FTextureAssetStore::Reset()
+void CTextureAssetStore::Reset()
 {
 	for ( const auto& Pair : Textures )
 	{
@@ -74,12 +74,12 @@ void FTextureAssetStore::Reset()
 	Textures.Reset();
 }
 
-int32 FTextureAssetStore::Num() const
+int32 CTextureAssetStore::Num() const
 {
 	return Textures.Num();
 }
 
-bool FTextureAssetStore::GetSize( int32 Handle, int32& OutWidth, int32& OutHeight ) const
+bool CTextureAssetStore::GetSize( int32 Handle, int32& OutWidth, int32& OutHeight ) const
 {
 	const auto* Resource = Textures.Find( Handle ); // 自分の登録だけを問い合わせる。
 	FTextureDrawView View; // 失敗時に出力を保つ。
@@ -92,7 +92,7 @@ bool FTextureAssetStore::GetSize( int32 Handle, int32& OutWidth, int32& OutHeigh
 	return true;
 }
 
-bool FTextureAssetStore::GetTextureDrawView( int32 Handle, FTextureDrawView& Out )
+bool CTextureAssetStore::GetTextureDrawView( int32 Handle, FTextureDrawView& Out )
 {
 	const auto* Resource = Textures.Find( Handle ); // 解放した番号を実行先へ渡さない。
 	return Resource && Resources && Resources->GetTextureResourceView( *Resource, Out );

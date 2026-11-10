@@ -35,7 +35,7 @@ Library/Platform/Null   … DxLib を使わない実装（NullPlatform / NullAss
 
 | 対象 | 規約 |
 |---|---|
-| 名前 | 第三者でない名前空間は `N` で始める。型の接頭辞は `F`（値・構造体）、`C`（クラス）、`I`（インターフェース）、`E`（`enum class`）、`T`（テンプレート） |
+| 名前 | 第三者でない名前空間は `N` で始める。型の接頭辞は `F`（データ・値・ハンドル・効率的なデータ保持）、`C`（機能・実行・登録・外部資源管理を担う型。class／structの構文では決めない）、`I`（インターフェース）、`E`（`enum class`）、`T`（テンプレート） |
 | 整数・実数 | `int32` / `uint32` / `float32` / `float64` など、`Library/Core/Types` の型。素の `int` / `long` を窓口に出さない |
 | 色 | `FColor32`（`r g b a`、0..255）。DxLib の色（`unsigned int`）への変換は実装の中だけ |
 | ベクトル・行列 | `FVector2/3` `FMatrix4x4` `FQuaternion`（左手系・Y 上・行ベクトル）。DxLib の `VECTOR` / `MATRIX` への変換は実装の中だけ（`Platform/DxLib/DxLibTypes.h` の `NDxLibTypes::ToDxLib` / `FromDxLib`。数学の型には、DxLib の型への暗黙の変換はない） |

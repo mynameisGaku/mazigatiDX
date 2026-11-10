@@ -4,15 +4,15 @@
 #include "Library/Platform/System/WindowsInclude.h"
 
 // Windowsの既定ゲーム文字をCPU画像へ変換する。GPUとImGuiは所有しない。
-class FWindowsTextRasterizer : public IRenderTextRasterizer
+class CWindowsTextRasterizer : public IRenderTextRasterizer
 {
   public:
 	// OSの描画文脈とフォントの所有は複写しない。
-	FWindowsTextRasterizer() = default;
-	FWindowsTextRasterizer( const FWindowsTextRasterizer & ) = delete;
-	FWindowsTextRasterizer &operator=( const FWindowsTextRasterizer & ) = delete;
+	CWindowsTextRasterizer() = default;
+	CWindowsTextRasterizer( const CWindowsTextRasterizer & ) = delete;
+	CWindowsTextRasterizer &operator=( const CWindowsTextRasterizer & ) = delete;
 	// 選択したOS資源を戻して破棄する。
-	~FWindowsTextRasterizer();
+	~CWindowsTextRasterizer();
 	// UI設定から独立した13画素の等幅文字を用意する。OS資源不足ではfalse。
 	bool Initialize();
 	// UTF-8を白いRGBAへ変換する。空・不正・64KiB超・4096辺超は全出力を保ってfalse。

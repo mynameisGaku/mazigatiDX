@@ -128,12 +128,12 @@ namespace
 	}
 }
 
-bool FGeometryShapeBuilder::BuildSphere( const FVector3& Center, float32 Radius, int32 Div, bool bFill, FColor32 Color, TArray<FDrawVertex3D>& Out )
+bool CGeometryShapeBuilder::BuildSphere( const FVector3& Center, float32 Radius, int32 Div, bool bFill, FColor32 Color, TArray<FDrawVertex3D>& Out )
 {
 	return BuildRounded( Center, Center, Radius, Div, bFill, Color, Out );
 }
 
-bool FGeometryShapeBuilder::BuildCapsule( const FVector3& A, const FVector3& B, float32 Radius, int32 Div, bool bFill, FColor32 Color, TArray<FDrawVertex3D>& Out )
+bool CGeometryShapeBuilder::BuildCapsule( const FVector3& A, const FVector3& B, float32 Radius, int32 Div, bool bFill, FColor32 Color, TArray<FDrawVertex3D>& Out )
 {
 	return BuildRounded( A, B, Radius, Div, bFill, Color, Out );
 }

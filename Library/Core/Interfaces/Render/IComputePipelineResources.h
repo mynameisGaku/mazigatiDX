@@ -11,7 +11,7 @@ public:
 	// 提出済み処理の借用が終わった後で所有先を破棄する。
 	virtual ~IComputePipelineResources() = default;
 	// 完成したバイナリとslot定義を呼出中に消費する。不正・未対応の形式や不一致では無効値。
-	// 初期DX12経路はDXBCのCS5.0/5.1、バイト列のSRV/UAV、space 0だけを受け付ける。
+	// 初期DX12経路はDXBCのCS5.0/5.1、RAW／構造体配列のSRV/UAV、読み取り専用の定数、space 0を受け付ける。
 	virtual FComputePipelineHandle CreateComputePipeline( TArrayView<const uint8> Bytecode, TArrayView<const FComputeBufferSlot> Slots ) = 0;
 	// 番号を直ちに無効にし、提出済み処理の実体は完了まで保持する。無効・別の所有先・二重解放は無視する。
 	virtual void ReleaseComputePipeline( FComputePipelineHandle Pipeline ) = 0;

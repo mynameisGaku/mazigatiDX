@@ -4,8 +4,8 @@
 
 ## 修正
 
-- `c316035` の画像資源の責務分離で `FDX12Device::RecordClear` の定義が欠け、Windows の実行ファイルで LNK2019 が発生しました。記録中だけ画面消去を追加し、所有先と色を ImGui の命令内へコピーします。既存の `ClearCallback` によって、前後の描画との順序を保ちます。
-- `FGeometryQuadBuilder::BuildCorners` の UV の 0・1 を浮動小数点リテラルにし、C4244 の2件を解消しました。
+- `c316035` の画像資源の責務分離で `CDX12Device::RecordClear` の定義が欠け、Windows の実行ファイルで LNK2019 が発生しました。記録中だけ画面消去を追加し、所有先と色を ImGui の命令内へコピーします。既存の `ClearCallback` によって、前後の描画との順序を保ちます。
+- `CGeometryQuadBuilder::BuildCorners` の UV の 0・1 を浮動小数点リテラルにし、C4244 の2件を解消しました。
 - 公開 API・既存の DxLib／Null の選択条件・画像資源の所有境界は変更していません。
 
 ## 環境
