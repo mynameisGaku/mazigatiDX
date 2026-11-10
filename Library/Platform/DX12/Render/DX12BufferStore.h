@@ -35,6 +35,8 @@ public:
 	bool UsesDeviceAndQueue( ID3D12Device* InDevice, ID3D12CommandQueue* InQueue ) const;
 	// 用途が合う有効な資源を、提出完了まで保持できる参照として渡す。失敗時はOutを保つ。
 	bool AcquireComputeBuffer( FBufferResourceHandle Buffer, ERenderBufferShaderAccess Access, FDX12BufferBinding& Out ) const;
+	// 描画へ貸す有効な資源を保持参照で渡す。シェーダー用途には制限せず、失敗時はOutを保つ。
+	bool AcquireGeometryBuffer( FBufferResourceHandle Buffer, FDX12BufferBinding& Out ) const;
 private:
 	// COM参照を通常の構造体へ包み、コンテナの処理とoperator&を衝突させない。
 	struct FBufferRecord

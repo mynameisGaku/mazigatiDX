@@ -14,7 +14,8 @@ class FDX12GameRenderer
 	// 呼出側はGPU完了後、画像所有者と文字作成先より先に破棄する。
 	~FDX12GameRenderer();
 	// GPUと寸法を固定する。未対応の深度・不正寸法・二重初期化はfalse。
-	bool Initialize( ID3D12Device *Device, int32 Width, int32 Height, IRenderTextureResources &Textures, IRenderTextRasterizer &Text, ID3D12Resource *Depth = nullptr, ID3D12DescriptorHeap *DepthHeap = nullptr );
+	// BuffersとQueueは両方省略するか同じGPU・キューで指定する。不一致はfalse。借用する所有先は本描画器より長く生存させる。
+	bool Initialize( ID3D12Device *Device, int32 Width, int32 Height, IRenderTextureResources &Textures, IRenderTextRasterizer &Text, ID3D12Resource *Depth = nullptr, ID3D12DescriptorHeap *DepthHeap = nullptr, FDX12BufferStore *Buffers = nullptr, ID3D12CommandQueue *Queue = nullptr );
 	// GPU完了後に記録先を借りる。撮影時はScaleを論理座標へ適用する。不正設定はfalse。
 	bool BeginFrame( ID3D12GraphicsCommandList *Commands, D3D12_CPU_DESCRIPTOR_HANDLE ColorView, ID3D12DescriptorHeap *Images, float32 Scale = 1 );
 	// 一時画像の番号を返し、記録先を外す。文字・頂点・消去の記録失敗はfalse。GPU実体は保持する。

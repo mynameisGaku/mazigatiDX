@@ -73,7 +73,7 @@ public:
 	// ファイルやUIを介さず、画像資源の所有先を貸す。
 	IRenderTextureResources* GetTextureResources();
 	// UIと独立したバッファ資源の所有先を貸す。
-	IRenderBufferResources* GetBufferResources();
+	FDX12BufferStore* GetBufferResources();
 	// computeプログラムの所有先を貸す。
 	IComputePipelineResources* GetComputePipelineResources();
 	// 同じ描画キューへcomputeを提出する窓口を貸す。

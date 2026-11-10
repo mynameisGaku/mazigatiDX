@@ -105,7 +105,7 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection & )
 		return;
 	}
 	GameRenderer = new FDX12GameRenderer();
-	if ( !GameRenderer->Initialize( Device->GetNativeDevice(), Settings.Width, Settings.Height, *Device->GetTextureResources(), GameText ) )
+	if ( !GameRenderer->Initialize( Device->GetNativeDevice(), Settings.Width, Settings.Height, *Device->GetTextureResources(), GameText, nullptr, nullptr, Device->GetBufferResources(), Device->GetNativeQueue() ) )
 	{
 		Deinitialize();
 		return;

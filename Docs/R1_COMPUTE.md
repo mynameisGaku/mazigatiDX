@@ -1,6 +1,6 @@
 # 共通バッファからのcompute提出
 
-2026-11-10（日本時間）。R1の一部として、共通窓口による「buffer作成→compute書込→状態遷移→copy→完了確認→readback」をWindowsで接続しました。描画→compute→描画、DXC／SM6、R1全体の完了は引き続き残っています。
+2026-11-10（日本時間）。R1の一部として、共通窓口による「buffer作成→compute書込→状態遷移→copy→完了確認→readback」をWindowsで接続しました。後続で [GPUバッファ描画](R1_BUFFER_GEOMETRY.md) を接続しました。交互の提出管理、DXC／SM6、R1全体の完了は引き続き残っています。
 
 ## 契約と所有者
 
@@ -69,4 +69,4 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Source\SelfTest\RunComputeTe
 
 ## 残る範囲
 
-描画が同じバッファを使う契約、定数／構造化バッファ・画像の用途、能力照会、DXC／SM6、非同期copy、複数キュー、フレーム別の領域再利用、timestamp、終了・resize・GPU失敗の包括的検査は残っています。今回の非同期待機はCPUを止めずに提出する意味で、専用のasync computeキューを追加した意味ではありません。通常フレーム開始時の全GPU待機も既存のままです。
+同じバッファを頂点・indexとして使う契約は [GPUバッファ描画](R1_BUFFER_GEOMETRY.md) で接続しました。交互の提出管理、定数／構造化バッファ・画像の用途、能力照会、DXC／SM6、非同期copy、複数キュー、フレーム別の領域再利用、timestamp、終了・resize・GPU失敗の包括的検査は残っています。今回の非同期待機はCPUを止めずに提出する意味で、専用のasync computeキューを追加した意味ではありません。通常フレーム開始時の全GPU待機も既存のままです。

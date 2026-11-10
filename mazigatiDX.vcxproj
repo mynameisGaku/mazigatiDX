@@ -757,6 +757,8 @@
     <ClInclude Include="Library\Core\Render\GeometryBufferView.h" />
     <ClInclude Include="Library\Core\Render\GeometryDrawState.h" />
     <ClInclude Include="Library\Core\Render\GeometryVertex.h" />
+    <ClInclude Include="Library\Core\Render\GeometryBufferDraw.h" />
+    <ClInclude Include="Library\Core\Render\GeometryIndexFormat.h" />
     <ClInclude Include="Library\Core\Render\OffscreenCaptureDesc.h" />
     <ClInclude Include="Library\Core\Render\RenderBufferShaderAccess.h" />
     <ClInclude Include="Library\Core\Render\RenderResourceSerial.h" />

@@ -9,5 +9,5 @@
 struct FDX12BufferBinding
 {
 	Microsoft::WRL::ComPtr<ID3D12Resource> Resource; // 登録解除後も提出済み処理が保持する参照。
-	uint64 Size = 0; // SRV/UAVに設定する範囲のバイト数。
+	uint64 Size = 0; // 資源全体のバイト数。用途別の読み取り範囲と保持量を検査する。
 };

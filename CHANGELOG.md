@@ -5,11 +5,12 @@
 ## [未リリース]
 
 ### 追加
+- GPUバッファを頂点・16／32bit indexとして直接描く共通窓口。compute出力をCPUへ読み戻さず、通常画面と撮影へ接続。同じ実体の頂点・index、画像付き描画、登録解除後の保持と上限を検査。
 - DX12のゲーム2D・基本3D・文字・画像・撮影をImGuiから独立。共通の形状生成、DX12への直接記録、WindowsのCPU文字画像へ分離し、旧UI経由の描画・撮影接続を削除。--no-imguiと、UIをリンクしない画素検査・UIなしの実アプリ撮影を追加。
 - GPUデバイスからImGuiの型・文脈・所有・描画呼出しを分離。ImGuiはGPUを借りる利用者とし、GPUの作成・フレーム提出・解放を担当しない。UIなしの通常表示とreadback、UI終了後のゲーム資源保持・再接続、間接includeとリンク結果の依存検査を追加。
 - DX12の主画面の画素読み戻しと撮影サービス。ゲーム／UI込みのPNG・BMP・JPEG・GIF、別寸法の描き直しと被写体の透明撮影を接続。GPU撮影先・共通ImGui記録・接続層を分離し、UIなしのGPU検査と依存検査を追加。
 - DX12のImGuiマルチビューポート。公式の外部窓を接続し、DxLibの表示順・更新頻度の制限を共通化。主画面の論理描画・クリップと実画素のUI座標を合わせ、GPU待機の完了再確認と終了失敗時の資源保持を追加。
-- RAWバッファの用途とIComputePipelineResources／IComputeQueue。DX12のCS5.0／5.1、非同期提出・完了照会・期限付き待機と提出後の資源保持を接続し、CPU参照／既定GPU／WARP・Debug／Releaseの検査を追加。描画との資源共有とDXC／SM6は未接続。
+- RAWバッファの用途とIComputePipelineResources／IComputeQueue。DX12のCS5.0／5.1、非同期提出・完了照会・期限付き待機と提出後の資源保持を接続し、CPU参照／既定GPU／WARP・Debug／Releaseの検査を追加。描画との資源共有は後続のGPUバッファ描画で接続。DXC／SM6は未対応。
 - 初期バイト列を所有するIRenderBufferResourcesと型付きのFBufferResourceHandle。DX12の同期転送・readback・登録解除後の回収を実装し、CPU参照／既定GPU／WARPの契約検査を追加。
 - codec・UIに依存しない画像資源の窓口IRenderTextureResourcesと、アセット番号の共通登録FTextureAssetStore。DX12の画像・転送・遅延解放、記述子のpool、ImGui描画の接続を責務ごとのクラスへ分離。
 - DX12構成のバックエンド互換台帳と自動更新・確認（`Docs/BackendCompatibility.csv`・`Tools/UpdateBackendCompatibility.ps1`）。公開窓口・描画命令・サンプル・Editor入口の欠落と宣言変更を検出し、既存の全検査手順へ追加。

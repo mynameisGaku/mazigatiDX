@@ -2067,6 +2067,12 @@
     <ClInclude Include="Library\Core\Render\GeometryDrawState.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Render\GeometryIndexFormat.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GeometryBufferDraw.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Render\GeometryVertex.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>

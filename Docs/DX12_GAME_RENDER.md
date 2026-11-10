@@ -74,3 +74,7 @@ UIなしの実行ファイルのmap、依存とその負例、全1723ファイ�
 検証のログ・画像はSaved/NativeGameDrawとSaved/CaptureTests/<構成>へ保存します。互換台帳は458項目で、Verifiedは増やしていません。ゲームの既存全描画命令とFontアセット、一般描画先、非同期転送、複数ベンダーの一致や性能評価、R1／R2全体を完成させた意味ではありません。
 
 制御文のAllman形式と括弧内を一行に保つ書式はTools/GameRendering.clang-formatで固定しています。今回のC++だけへ明示適用する設定で、通常ビルドの依存は増やしません。Visual Studio同梱clang-format 22.1.3の--dry-run --Werror --style=file:Tools/GameRendering.clang-formatを対象ファイルへ適用して確認しています。既存のSource/SelfTest/CheckSourceFormat.ps1でもUTF-8 BOM・CRLF・括弧を確認します。
+
+## GPUバッファからの後続描画
+
+computeが書いたバッファを既存の深度・画像・合成で描く経路を追加しました。通常画面・撮影先で同じバッファ所有先とキューを渡し、UIの依存は追加しません。固定の28バイト頂点、index、寿命と提出順は [GPUバッファ描画](R1_BUFFER_GEOMETRY.md) を参照してください。

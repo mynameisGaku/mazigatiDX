@@ -1059,3 +1059,7 @@ IRenderBufferResourcesの4操作で、初期データのGPU転送・サイズ照
 ## 共通バッファからのcompute提出
 
 CreateBufferに明示したRead／ReadWrite用途を持たせ、IComputePipelineResourcesでコンパイル済みCS5.0／5.1と配置を所有し、IComputeQueueから命令列を非同期に提出します。提出ごとに記録領域・記述子・実体参照を保持し、登録解除後も完了までは回収しません。用途・配置・番号の検査、遷移、完了番号と再待機、初期上限、CPU参照／Windows既定GPU／WARP・SDK診断の検査手順と制限は [computeの契約](R1_COMPUTE.md) に記録します。
+
+## compute出力を頂点・indexへ接続する
+
+IRenderGeometry3D::DrawBufferGeometryは、FGeometryBufferDrawの共通番号と範囲からGPU上の28バイトの同次頂点を直接描きます。CPUへの読み戻しと再転送を挟まず、同じキューへ先に提出したcomputeを参照します。ImGuiと独立したゲーム描画器が範囲・所有先を検査して資源をGPU完了まで保持します。配置、呼出側による内容保証、提出順、保持の上限、検査と残件は [GPUバッファ描画の契約](R1_BUFFER_GEOMETRY.md) を参照してください。

@@ -150,3 +150,7 @@ git clone --branch backend-dx12 https://github.com/mynameisGaku/mazigatiDX.git .
 ```
 
 ソース一式だけを取得する場合は [backend-dx12のZIP](https://github.com/mynameisGaku/mazigatiDX/archive/refs/heads/backend-dx12.zip) を使えます。GitHubのZIPはGit履歴を含まないため、履歴が必要な場合はcloneします。別途作成したオフライン配布物のbackend-dx12-full.bundleにも全祖先を含めています。認証設定や作業環境の.gitフォルダーは同梱しません。統合・公開はロードマップと既存ブランチ運用に従い、この引き継ぎだけでdev／mainへマージしません。
+
+## computeからGPU描画への接続（2026-11-10追記）
+
+共通のGPUバッファを、CPUへ読み戻さず頂点と16／32bitのindexに使えるよう接続しました。同居する頂点・index、画像付き描画、記録後の番号解除と実体保持に対応します。通常画面と撮影先は同じ所有先とキューを借り、ImGuiへ依存しません。入力と提出順・上限・検査結果は [GPUバッファ描画](R1_BUFFER_GEOMETRY.md) を参照してください。互換台帳は459項目でVerifiedは増やしません。ローカル座標のGPU meshと変換、indirect draw、R1／R2全体は未完了です。

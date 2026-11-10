@@ -314,7 +314,7 @@ IRenderTextureResources* FDX12Device::GetTextureResources()
 	return bInitialized && !bClosing ? &Textures : nullptr;
 }
 
-IRenderBufferResources* FDX12Device::GetBufferResources()
+FDX12BufferStore* FDX12Device::GetBufferResources()
 {
 	return bInitialized && !bClosing ? &BufferResources : nullptr;
 }

@@ -66,3 +66,7 @@ Releaseの最初のリンクと直列での再試行では、MSVCがString.cpp�
 ## 次の区切り
 
 次は共通の用途・SRV／UAVとcompute命令の記録・提出・完了番号を定め、今回の所有と失敗時の保持へ接続します。シェーダー形式と能力はR0のWindows確認を続けます。「buffer→compute書込→遷移→copy→完了→readback」のうち、今回完了する範囲は初期データの所有と同期コピー／readbackだけです。R1全体の完了条件である描画→compute→描画の共通経路は残っています。
+
+## 後続の接続
+
+compute提出は [R1_COMPUTE.md](R1_COMPUTE.md)、GPU出力を読み戻さず頂点・16／32bit indexに使う描画は [R1_BUFFER_GEOMETRY.md](R1_BUFFER_GEOMETRY.md) で接続しました。上記「次の区切り」は初期実装時点の記録です。R1全体の完了は引き続き残ります。

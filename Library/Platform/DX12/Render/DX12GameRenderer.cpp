@@ -4,9 +4,9 @@
 
 FDX12GameRenderer::~FDX12GameRenderer() { EndFrame(); }
 
-bool FDX12GameRenderer::Initialize( ID3D12Device *Device, int32 Width, int32 Height, IRenderTextureResources &InTextures, IRenderTextRasterizer &InText, ID3D12Resource *Depth, ID3D12DescriptorHeap *DepthHeap )
+bool FDX12GameRenderer::Initialize( ID3D12Device *Device, int32 Width, int32 Height, IRenderTextureResources &InTextures, IRenderTextRasterizer &InText, ID3D12Resource *Depth, ID3D12DescriptorHeap *DepthHeap, FDX12BufferStore *Buffers, ID3D12CommandQueue *Queue )
 {
-	if ( Textures || !Geometry.Initialize( Device, Width, Height, Depth, DepthHeap ) )
+	if ( Textures || !Geometry.Initialize( Device, Width, Height, Depth, DepthHeap, Buffers, Queue ) )
 	{
 		return false;
 	}

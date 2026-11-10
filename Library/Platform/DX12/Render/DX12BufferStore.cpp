@@ -262,3 +262,15 @@ bool FDX12BufferStore::ReadBuffer( FBufferResourceHandle Buffer, uint64 Offset, 
 	Out = MoveTemp( Result );
 	return true;
 }
+
+bool FDX12BufferStore::AcquireGeometryBuffer( FBufferResourceHandle Buffer, FDX12BufferBinding& Out ) const
+{
+	const FBufferRecord* Found = Buffers.Find( Buffer.Value ); // 解除済み・別所有先の番号では新しい描画を許可しない。
+	if ( !bHealthy || !Found || !Device || FAILED( Device->GetDeviceRemovedReason() ) )
+	{
+		return false;
+	}
+	Out.Resource = Found->Resource;
+	Out.Size = Found->Size;
+	return true;
+}

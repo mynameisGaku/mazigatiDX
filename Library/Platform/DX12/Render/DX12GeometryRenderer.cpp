@@ -1,9 +1,11 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DX12GeometryRenderer.h"
+#include "DX12BufferStore.h"
+#include <cstddef>
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Types/Numeric.h"
 
-bool FDX12GeometryRenderer::Initialize( ID3D12Device *InDevice, int32 InWidth, int32 InHeight, ID3D12Resource *InDepth, ID3D12DescriptorHeap *InDepthHeap )
+bool FDX12GeometryRenderer::Initialize( ID3D12Device *InDevice, int32 InWidth, int32 InHeight, ID3D12Resource *InDepth, ID3D12DescriptorHeap *InDepthHeap, FDX12BufferStore *InBuffers, ID3D12CommandQueue *InQueue )
 {
 	if ( Device || !InDevice || InWidth <= 0 || InHeight <= 0 || InWidth > 16384 || InHeight > 16384 || ( InDepth == nullptr ) != ( InDepthHeap == nullptr ) )
 	{
@@ -18,6 +20,12 @@ bool FDX12GeometryRenderer::Initialize( ID3D12Device *InDevice, int32 InWidth, i
 			return false;
 		}
 	}
+	if ( ( InBuffers == nullptr ) != ( InQueue == nullptr ) || ( InBuffers && !InBuffers->UsesDeviceAndQueue( InDevice, InQueue ) ) )
+	{
+		return false;
+	}
+	Buffers = InBuffers;
+	BufferQueue = InQueue;
 	Device = InDevice;
 	Width = InWidth;
 	Height = InHeight;
@@ -116,6 +124,9 @@ bool FDX12GeometryRenderer::BeginFrame( ID3D12GraphicsCommandList *InCommands, D
 	{
 		return false;
 	}
+	BufferPins.Reset();
+	PinnedBytes = 0;
+	BufferDrawCount = 0;
 	Uploads.Reset();
 	UploadBytes = 0;
 	Commands = InCommands;
@@ -214,22 +225,31 @@ bool FDX12GeometryRenderer::DrawTexturedGeometry( const FGeometryVertex *Vertice
 	return DrawInternal( Vertices, NumVertices, State, &Texture );
 }
 
-bool FDX12GeometryRenderer::DrawInternal( const FGeometryVertex *Vertices, int32 NumVertices, const FGeometryDrawState &State, const FTextureDrawView *Texture )
+bool FDX12GeometryRenderer::ValidateDrawState( const FGeometryDrawState &State, const FTextureDrawView *Texture ) const
 {
-	const int32 Group = State.Topology == EGeometryTopology::Points ? 1 : State.Topology == EGeometryTopology::Lines ? 2
-																													 : 3; // リストの最小単位。
-	if ( !Commands || !Vertices || NumVertices <= 0 || NumVertices > 65536 || NumVertices % Group != 0 || State.Topology > EGeometryTopology::Triangles || State.Compare > EGeometryCompare::Always || State.Culling > EGeometryCulling::FrontFaces || State.AddressU > EGeometryTextureAddress::Border || State.AddressV > EGeometryTextureAddress::Border || ( Texture && ( !SrvHeap || Texture->Binding == 0 || Texture->Width <= 0 || Texture->Height <= 0 ) ) )
+	if ( !Commands || State.Topology > EGeometryTopology::Triangles || State.Compare > EGeometryCompare::Always || State.Culling > EGeometryCulling::FrontFaces || State.AddressU > EGeometryTextureAddress::Border || State.AddressV > EGeometryTextureAddress::Border || ( Texture && ( !SrvHeap || Texture->Binding == 0 || Texture->Width <= 0 || Texture->Height <= 0 ) ) )
 	{
 		return false;
 	}
 	if ( Texture )
 	{
-		const UINT64 Base = SrvHeap->GetGPUDescriptorHandleForHeapStart().ptr; // この実装が所有するheapの先頭。
+		const UINT64 Base = SrvHeap->GetGPUDescriptorHandleForHeapStart().ptr; // 同じ画像heapの範囲だけを使う。
 		const UINT Stride = Device->GetDescriptorHandleIncrementSize( D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV ); // 画像記述子の幅。
 		if ( Texture->Binding < Base || ( Texture->Binding - Base ) % Stride != 0 || ( Texture->Binding - Base ) / Stride >= SrvHeap->GetDesc().NumDescriptors )
 		{
 			return false;
 		}
+	}
+	return true;
+}
+
+bool FDX12GeometryRenderer::DrawInternal( const FGeometryVertex *Vertices, int32 NumVertices, const FGeometryDrawState &State, const FTextureDrawView *Texture )
+{
+	const int32 Group = State.Topology == EGeometryTopology::Points ? 1 : State.Topology == EGeometryTopology::Lines ? 2
+																													 : 3; // リストの最小単位。
+	if ( !ValidateDrawState( State, Texture ) || !Vertices || NumVertices <= 0 || NumVertices > 65536 || NumVertices % Group != 0 )
+	{
+		return false;
 	}
 	for ( int32 Index = 0; Index < NumVertices; ++Index )
 	{
@@ -314,7 +334,15 @@ void FDX12GeometryRenderer::DrawPrepared( const FPendingDraw &Pending )
 	Commands->SetPipelineState( Pending.Pipeline );
 	Commands->IASetPrimitiveTopology( Pending.Topology );
 	Commands->IASetVertexBuffers( 0, 1, &Pending.Vertices );
-	Commands->DrawInstanced( Pending.NumVertices, 1, 0, 0 );
+	Commands->IASetIndexBuffer( Pending.NumIndices ? &Pending.Indices : nullptr );
+	if ( Pending.NumIndices )
+	{
+		Commands->DrawIndexedInstanced( Pending.NumIndices, 1, 0, 0, 0 );
+	}
+	else
+	{
+		Commands->DrawInstanced( Pending.NumVertices, 1, 0, 0 );
+	}
 	Commands->OMSetRenderTargets( 1, &Rtv, FALSE, nullptr );
 }
 
@@ -336,4 +364,102 @@ bool FDX12GeometryRenderer::ClearColor( FColor32 Color )
 	const bool bResult = DrawGeometry( Vertices, 3, State ); // 頂点の所有は通常の描画と同じ扱い。
 	Clip = Previous;
 	return bResult;
+}
+
+bool FDX12GeometryRenderer::DrawBufferGeometry( const FGeometryBufferDraw &Draw, const FGeometryDrawState &State, const FTextureDrawView *Texture )
+{
+	static_assert( sizeof( FGeometryVertex ) == 28 && offsetof( FGeometryVertex, Position ) == 0 && offsetof( FGeometryVertex, Color ) == 16 && offsetof( FGeometryVertex, U ) == 20 && offsetof( FGeometryVertex, V ) == 24, "GPU geometry uses the fixed clip vertex layout" );
+	const bool bIndexed = Draw.IndexBuffer.IsValid(); // 頂点番号の有無は番号の有効値で明示する。
+	// プリミティブを構成する最小の頂点数。
+	const int32 Group = State.Topology == EGeometryTopology::Points ? 1 : State.Topology == EGeometryTopology::Lines ? 2
+																													 : 3;
+	if ( !ValidateDrawState( State, Texture ) || !Buffers || !Buffers->UsesDeviceAndQueue( Device.Get(), BufferQueue.Get() ) || BufferDrawCount >= 1024 || Draw.VertexCount <= 0 || Draw.VertexCount > 65536 || Draw.VertexOffset % 4 != 0 || Draw.IndexFormat > EGeometryIndexFormat::UInt32 || ( bIndexed ? Draw.IndexCount <= 0 || Draw.IndexCount > 196608 || Draw.IndexCount % Group != 0 : Draw.IndexCount != 0 || Draw.IndexOffset != 0 || Draw.VertexCount % Group != 0 ) )
+	{
+		return false;
+	}
+	FDX12BufferBinding Vertices, Indices; // 全範囲を検査し終わるまでGPU命令は記録しない。
+	if ( !Buffers->AcquireGeometryBuffer( Draw.VertexBuffer, Vertices ) || ( bIndexed && !Buffers->AcquireGeometryBuffer( Draw.IndexBuffer, Indices ) ) )
+	{
+		return false;
+	}
+	const uint64 VertexBytes = static_cast<uint64>( Draw.VertexCount ) * sizeof( FGeometryVertex ); // 頂点viewに公開する範囲。
+	const uint64 IndexStride = Draw.IndexFormat == EGeometryIndexFormat::UInt16 ? 2 : 4; // indexの整数幅。
+	const uint64 IndexBytes = bIndexed ? static_cast<uint64>( Draw.IndexCount ) * IndexStride : 0; // 未使用なら番号列を参照しない。
+	if ( Draw.VertexOffset > Vertices.Size || VertexBytes > Vertices.Size - Draw.VertexOffset || ( bIndexed && ( Draw.IndexOffset % IndexStride != 0 || Draw.IndexOffset > Indices.Size || IndexBytes > Indices.Size - Draw.IndexOffset ) ) )
+	{
+		return false;
+	}
+	const auto HasPin = [&]( ID3D12Resource *Resource ) // 重複した資源は参照数と保持量を増やさない。
+	{
+		for ( const FDX12BufferBinding &Pin : BufferPins )
+		{
+			if ( Pin.Resource.Get() == Resource )
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+	const bool bPinVertices = !HasPin( Vertices.Resource.Get() ); // この描画で初めて参照する頂点実体。
+	const bool bPinIndices = bIndexed && Indices.Resource.Get() != Vertices.Resource.Get() && !HasPin( Indices.Resource.Get() ); // 同じ実体のVBとIBは一度だけ保持する。
+	const uint64 AddedBytes = ( bPinVertices ? Vertices.Size : 0 ) + ( bPinIndices ? Indices.Size : 0 ); // 部分viewでも、保持する実体全体の容量を数える。
+	if ( BufferPins.Num() + static_cast<int32>( bPinVertices ) + static_cast<int32>( bPinIndices ) > 256 || AddedBytes > 256ull * 1024 * 1024 - PinnedBytes )
+	{
+		return false;
+	}
+	ID3D12PipelineState *Pipeline = GetPipeline( State, Texture != nullptr ); // すべての検査後に描画状態を用意する。
+	if ( !Pipeline )
+	{
+		return false;
+	}
+	FPendingDraw Pending; // GPUアドレスと状態は呼出中に固定する。バッファ内容はGPUが実行時に読む。
+	Pending.Pipeline = Pipeline;
+	Pending.Vertices = { Vertices.Resource->GetGPUVirtualAddress() + Draw.VertexOffset, static_cast<UINT>( VertexBytes ), sizeof( FGeometryVertex ) };
+	Pending.NumVertices = static_cast<UINT>( Draw.VertexCount );
+	Pending.TextureBinding = Texture ? Texture->Binding : 0;
+	Pending.SamplerIndex = static_cast<UINT>( State.AddressU ) | ( static_cast<UINT>( State.AddressV ) << 2 ) | ( State.bLinearFilter ? 16 : 0 );
+	Pending.Topology = State.Topology == EGeometryTopology::Points ? D3D_PRIMITIVE_TOPOLOGY_POINTLIST : State.Topology == EGeometryTopology::Lines ? D3D_PRIMITIVE_TOPOLOGY_LINELIST
+																																				   : D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	if ( bIndexed )
+	{
+		Pending.Indices = { Indices.Resource->GetGPUVirtualAddress() + Draw.IndexOffset, static_cast<UINT>( IndexBytes ), Draw.IndexFormat == EGeometryIndexFormat::UInt16 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT };
+		Pending.NumIndices = static_cast<UINT>( Draw.IndexCount );
+	}
+	if ( bPinVertices )
+	{
+		BufferPins.Add( Vertices );
+	}
+	if ( bPinIndices )
+	{
+		BufferPins.Add( Indices );
+	}
+	PinnedBytes += AddedBytes;
+	++BufferDrawCount;
+	D3D12_RESOURCE_BARRIER Barriers[2] = {}; // 読み取り用途をまとめ、同じ実体へ二重の遷移を記録しない。
+	Barriers[0].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	Barriers[0].Transition.pResource = Vertices.Resource.Get();
+	Barriers[0].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	Barriers[0].Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+	Barriers[0].Transition.StateAfter = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+	const bool bShared = bIndexed && Vertices.Resource.Get() == Indices.Resource.Get(); // 同一バッファに頂点とindexを格納した場合。
+	const UINT Count = bIndexed && !bShared ? 2 : 1; // 実際に状態を変える資源の数。
+	if ( bShared )
+	{
+		Barriers[0].Transition.StateAfter |= D3D12_RESOURCE_STATE_INDEX_BUFFER;
+	}
+	if ( Count == 2 )
+	{
+		Barriers[1] = Barriers[0];
+		Barriers[1].Transition.pResource = Indices.Resource.Get();
+		Barriers[1].Transition.StateAfter = D3D12_RESOURCE_STATE_INDEX_BUFFER;
+	}
+	Commands->ResourceBarrier( Count, Barriers );
+	DrawPrepared( Pending );
+	for ( UINT Index = 0; Index < Count; ++Index )
+	{
+		Barriers[Index].Transition.StateBefore = Barriers[Index].Transition.StateAfter;
+		Barriers[Index].Transition.StateAfter = D3D12_RESOURCE_STATE_COMMON;
+	}
+	Commands->ResourceBarrier( Count, Barriers );
+	return true;
 }

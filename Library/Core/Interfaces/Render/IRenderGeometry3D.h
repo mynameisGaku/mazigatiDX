@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 #include "Library/Core/Render/GeometryVertex.h"
+#include "Library/Core/Render/GeometryBufferDraw.h"
 #include "Library/Core/Render/GeometryDrawState.h"
 #include "Library/Core/Render/TextureDrawView.h"
 
@@ -21,6 +22,10 @@ public:
 	// 画像と頂点色の積のAlphaが0なら色・深度を更新しない。
 	// 未対応の実行先はfalse。頂点のUVと画像のbindingは呼び出し中に複写する。
 	virtual bool DrawTexturedGeometry( const FGeometryVertex* Vertices, int32 NumVertices, const FGeometryDrawState& State, const FTextureDrawView& Texture ) { return false; }
+	// GPU上の頂点・indexを読み戻さず描く。Textureは省略可能。未対応・範囲不正・別所有先はfalseで記録しない。
+	// 頂点の有限性、indexがVertexCount未満であること、GPUの実行時点の内容は呼出側が保証する。
+	// 同じキューへ先に提出したcomputeを参照できる。記録後の番号解除でも、実体はGPU完了まで保持する。
+	virtual bool DrawBufferGeometry( const FGeometryBufferDraw& Draw, const FGeometryDrawState& State, const FTextureDrawView* Texture = nullptr ) { return false; }
 	// 既存の描画より後に深度を1へ消す。クリップに関係なく全体を対象にする。
 	virtual void ClearDepth() = 0;
 };
