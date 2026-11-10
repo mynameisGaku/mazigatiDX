@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: MIT
+# ゲーム描画のC++へ明示適用する。既存全体の書式を一括変更しない。
+BasedOnStyle: Microsoft
+ColumnLimit: 0
+IndentWidth: 4
+TabWidth: 4
+UseTab: Always
+BreakBeforeBraces: Allman
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Never
+AllowShortFunctionsOnASingleLine: All
+SpacesInParentheses: true
+SpaceInEmptyParentheses: false
+Cpp11BracedListStyle: false
+BinPackArguments: true
+BinPackParameters: true
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+PackConstructorInitializers: CurrentLine
+NamespaceIndentation: All
+SortIncludes: Never
+ReflowComments: Never
+AlignTrailingComments: Never
+LineEnding: CRLF

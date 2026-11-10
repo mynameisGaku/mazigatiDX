@@ -4,26 +4,15 @@
 
 ## 責務と依存
 
-|配置・型|担当するもの|
-|---|---|
-|`Platform/DX12/Render/FDX12CaptureTarget`|RGBA8の色、D32の深度、専用命令列、コピーと読み戻し。ImGui・OSウィンドウ・アセット登録を必要としない|
-|`Platform/DX12/Render/FDX12TextureReadback`|GPUの行間隔を持つコピー先と、余白を除いたRGBA8画素列。画素の保存形式を知らない|
-|`Platform/DX12/Render/FDX12QueueCompletion`|完了番号・イベント・期限付き待機。通常デバイスと撮影先で同じ待機処理を使う|
-|`Platform/ImGui/Render/FImGuiCaptureDrawList`|原点0と撮影倍率で2Dを記録し、文字画像の更新と描画データをまとめる。DX12・Windows・GPU提出を知らない|
-|`Platform/DX12/ImGui/FDX12ImGuiCaptureRenderer`|上の描画記録とGPU描画先を接続し、既存のImGui描画実装で再生する|
-|`Platform/DX12/ImGui/FDX12ImGuiGeometryRenderer`|ImGuiの記録順へ基本3Dと深度消去を挿入する接続。従来のFDX12GeometryRendererから、依存が分かる名前と配置へ変更|
-|`Platform/Windows/Image/FWicImageEncoder`|CPU画素をPNG・BMP・JPEGへ符号化する。GPUとUIを知らない|
-|既存の`CScreenCaptureSubsystem`|撮影要求、切り抜き・縮小、保存名、被写体の選択、黒白二回からの透明度復元、GIFの記録|
+通常画面と描き直しは[ImGuiから独立したゲーム描画](DX12_GAME_RENDER.md)を使います。FDX12CaptureTargetはGPUの色・深度・命令列・読み戻し、FDX12GameCaptureはゲーム描画との接続、FGeometryCanvas2DはAPI非依存の形状、WindowsTextRasterizerはCPU文字画像、WicImageEncoderは保存形式を担当します。既存のCScreenCaptureSubsystemが要求・切り抜き・縮小・被写体選択・GIFを管理します。
 
-`CDX12PlatformSubsystem`が接続層を所有し、`FDX12Device`は撮影用のImGui描画記録を所有しません。GPU側の撮影先は、デバイスとDIRECTキューだけで初期化できます。通常画面も[GPU所有者とImGui利用者を分離](DX12_DEVICE.md)し、FDX12DeviceはImGui接続を所有しません。撮影接続にはGPUとImGui描画実装を別々の引数で渡します。
-
-`Tools/CheckCaptureDependencies.ps1`は、GPU撮影用の三実装からImGui・Framework・通常デバイスへのincludeと、共通ImGui記録からDX12等へのincludeを拒否します。検査側の負例でも両方向の拒否を確認します。GPU専用テストのリンク結果にImGuiのシンボルが含まれないことも調べます。
+旧FDX12ImGuiCaptureRenderer・FDX12ImGuiGeometryRenderer・FImGuiCaptureDrawListは削除しました。撮影はImGui文脈・フォント・描画リストを使わず、GPUとCPU文字の窓口だけを借ります。CheckGameRenderDependencies.ps1と、ImGuiをリンクしないNativeGameContractで依存を確認します。
 
 ## 通常の撮影
 
 `IPlatform::SetFrameCaptureSink`へ既存の撮影サービスを接続します。必要なフレームと段階だけをコピーし、GPU完了後にゲーム→UI込みの順で通知します。通知番号は描き終えるフレームの`GetFrameCount() + 1`、寸法はゲームの論理解像度、透明度は255です。主画面の移動・拡大後も、固定の描画先から同じ論理寸法で受け取ります。UI込みの画像には主画面内のUIを含めます。切り離した外部窓をデスクトップ画像へ合成する処理は追加していません。
 
-ゲームの画素は背景描画リストの末尾で、UI込みの画素は主画面の描画後にコピーします。GPU実装にはImGuiのコールバックを置かず、接続側からコピー操作だけを呼びます。撮影が不要なフレームにはコピーと撮影用のGPU待機を追加しません。通知中に受け取り先を解除・差し替えた場合、残る段階を古い相手へ通知しません。画素列の借用はOnFrameの呼出中だけです。
+ゲームの画素はゲーム描画後・UI記録前、UI込みの画素は主画面のUI記録後にコピーします。ゲームの記録順へImGuiのコールバックを挿入しません。撮影が不要なフレームにはコピーと撮影用のGPU待機を追加しません。通知中に受け取り先を解除・差し替えた場合、残る段階を古い相手へ通知しません。画素列の借用はOnFrameの呼出中だけです。
 
 既存の撮影APIと起動引数を使えます。既定の保存先は`Saved/Screenshots`です。
 
@@ -37,11 +26,11 @@ WARPでは`--dx12-warp=true`を追加します。`--capture-ui`・`--record-ui`�
 
 ## 別の大きさへの描き直し
 
-`IDrawExecutor::BeginOffscreenCapture`／`EndOffscreenCapture`を、既存のIRenderSurfaceの省略可能な操作へ接続します。DX12は通常の命令列と別に、撮影用の色・深度・命令列・頂点を持ちます。2Dの頂点・文字生成時のクリップ・画像へ撮影倍率を適用し、基本3Dには撮影先の寸法と専用深度を使います。通常画面の描画リスト、論理座標と記録済みの命令は変更しません。
+`IDrawExecutor::BeginOffscreenCapture`／`EndOffscreenCapture`を、既存のIRenderSurfaceの省略可能な操作へ接続します。DX12は通常の命令列と別に、撮影用の色・深度・命令列・頂点を持ちます。2Dの頂点・文字生成時のクリップ・画像へ撮影倍率を適用し、基本3Dには撮影先の寸法と専用深度を使います。通常画面の論理座標と記録済みの命令は変更しません。
 
-ImGuiの通常EndFrameより前に描き直すため、FImGuiCaptureDrawListが実際に参照した文字画像の更新を描画データへ添えます。GPUへのアップロードは既存の公式DX12描画実装が行います。VendorModulesは変更していません。
+文字はWindows側でCPU画像へ変換して、通常のゲーム画像と同じ経路で描きます。描き直しにImGuiのEndFrameや文字画像更新を必要としません。VendorModulesは変更していません。
 
-GPUの完了を待ってから、コピー先の行の余白を除き、左上から行順のRGBA8で返します。二重開始・未開始の終了・別文脈・不正な寸法や倍率は拒否します。失敗時に呼出側の画素列を上書きしません。提出後の待機失敗では資源と命令列を保持して再利用を止め、終了を再試行できます。最終破棄はGPU完了かデバイス喪失まで待ちます。
+GPUの完了を待ってから、コピー先の行の余白を除き、左上から行順のRGBA8で返します。二重開始・未開始の終了・不正な寸法や倍率は拒否します。UI文脈の有無や切り替えは撮影へ影響しません。失敗時に呼出側の画素列を上書きしません。提出後の待機失敗では資源と命令列を保持して再利用を止め、終了を再試行できます。最終破棄はGPU完了かデバイス喪失まで待ちます。
 
 撮影先は各辺1〜16384、色の画素列は256MiBまで、2D倍率は有限の0より大きく16384以下です。色と深度、コピー先の割り当ては別に必要です。メモリ不足では作成に失敗します。操作は既存の描画APIと同じスレッドで行い、並行呼出しには対応しません。
 
@@ -53,7 +42,7 @@ WICのPNG設定は圧縮率0〜9を直接指定する窓口を持たないため
 
 ## 検査
 
-対応する検査は別リポジトリの`codex/dx12-windows-validation`、[0cf93ea](https://github.com/mynameisGaku/framework-test/commit/0cf93ea1197365da54b046567f29591f6ddaf9a5)に置きます。対応する製品の静的ライブラリとproject.exeをビルドしてから実行します。
+対応する検査は別リポジトリの`codex/dx12-windows-validation`、[0456903](https://github.com/mynameisGaku/framework-test/commit/045690330c92d20a409e9bdccccd35e276579854)に置きます。対応する製品の静的ライブラリとproject.exeをビルドしてから実行します。
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File Source\SelfTest\RunCaptureTests.ps1 -FrameworkRoot (Get-Location).Path -Configuration Debug -Platform
@@ -63,12 +52,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Source\SelfTest\RunCaptureTe
 |検査|Debug|Release|
 |---|---|---|
 |ImGui・OS窓なしのGPU撮影先（既定GPU／WARP）|各28条件、失敗0|各28条件、失敗0|
-|描画記録・画像保存（既定GPU／WARP）|各61条件、失敗0|各61条件、失敗0|
+|UIなし／ありのゲーム描画と保存|最新の結果は[独立描画の記録](DX12_GAME_RENDER.md)を参照|同左|
 |SDKデバッグ層|意図しない警告・エラー0|同じ結果|
 |実アプリの撮影サービス（DX12／WARP）|通常PNG、UI込みPNG、別寸法、被写体の透明度、三枚のGIFまで成功|同じ結果|
 |依存の確認|GPU専用実行ファイルにImGuiなし。両方向の不正includeを拒否|同じ結果|
 
-GPU専用テストは奇数の寸法・繰り返すresize・RGBA全数比較・初期消去色と異なる消去・提出後のタイムアウト保持・終了再試行を含みます。接続テストは2Dの拡大とクリップ、文字の実画素、共有画像の向き、基本3Dの深度、通常描画への復帰、移動・拡大後の主画面の3Dクリップ、ゲームとUIの違い、無効入力と文脈違い、PNG透明度とUnicode名を確認します。GIFは別の読み込み器でも32×32・三枚を確認します。
+GPU専用テストは奇数の寸法・繰り返すresize・RGBA全数比較・初期消去色と異なる消去・提出後のタイムアウト保持・終了再試行を含みます。接続テストは2Dの拡大とクリップ、独立したゲーム文字の実画素、共有画像の向き、基本3Dの深度、通常描画への復帰、移動・拡大後の主画面の3Dクリップ、ゲームとUIの違い、無効入力とUI文脈からの独立、PNG透明度とUnicode名を確認します。GIFは別の読み込み器でも32×32・三枚を確認します。
 
 Releaseの最初のリンクはLNK1103で停止しました。検証用コピーのproject／Samples／Editorのiobj・ipdbだけを退避し、同じ最適化設定で作り直して成功しました。ソースや最適化設定での回避は追加していません。途中と最終のログは`Saved/DX12Capture`、各起動の画像と診断は`Saved/CaptureTests/<構成>`へ保存します。
 

@@ -416,9 +416,12 @@
     <ClCompile Include="Library\Platform\DX12\Render\DX12ComputeQueue.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\DX12DescriptorPool.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\DX12Device.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Render\DX12GameCapture.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Render\DX12GameRenderer.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Render\DX12GeometryRenderer.cpp" />
+    <ClCompile Include="Library\Platform\Windows\Text\WindowsTextRasterizer.cpp" />
+    <ClCompile Include="Library\Platform\Render\Canvas\GeometryCanvas2D.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\DX12DrawExecutorSubsystem.cpp" />
-    <ClCompile Include="Library\Platform\DX12\ImGui\DX12ImGuiGeometryRenderer.cpp" />
-    <ClCompile Include="Library\Platform\DX12\ImGui\DX12ImGuiCaptureRenderer.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\DX12TextureReadback.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\DX12CaptureTarget.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\DX12QueueCompletion.cpp" />
@@ -456,7 +459,6 @@
     <ClCompile Include="Library\Platform\DxLib\Window\DxLibDisplayInfoSubsystem.cpp" />
     <ClCompile Include="Library\Platform\DxLib\Window\DxLibWindowControlSubsystem.cpp" />
     <ClCompile Include="Library\Platform\ImGui\Render\ImGuiCanvas2D.cpp" />
-    <ClCompile Include="Library\Platform\ImGui\Render\ImGuiCaptureDrawList.cpp" />
     <ClCompile Include="Library\Platform\ImGui\Render\ImGuiViewportScheduler.cpp" />
     <ClCompile Include="Library\Platform\Null\NullAssetBackendSubsystem.cpp" />
     <ClCompile Include="Library\Platform\Null\NullAudioBackendSubsystem.cpp" />
@@ -1193,9 +1195,14 @@
     <ClInclude Include="Library\Platform\DX12\Render\DX12ComputeQueue.h" />
     <ClInclude Include="Library\Platform\DX12\Render\DX12DescriptorPool.h" />
     <ClInclude Include="Library\Platform\DX12\Render\DX12Device.h" />
+    <ClInclude Include="Library\Platform\DX12\Render\DX12GameCapture.h" />
+    <ClInclude Include="Library\Platform\DX12\Render\DX12GameRenderer.h" />
+    <ClInclude Include="Library\Platform\DX12\Render\DX12GeometryRenderer.h" />
+    <ClInclude Include="Library\Platform\Windows\Text\WindowsTextRasterizer.h" />
+    <ClInclude Include="Library\Platform\Render\Canvas\GeometryCanvas2D.h" />
+    <ClInclude Include="Library\Core\Interfaces\Render\IRenderTextRasterizer.h" />
+    <ClInclude Include="Library\Core\Render\RenderClipRect.h" />
     <ClInclude Include="Library\Platform\DX12\Render\DX12DrawExecutorSubsystem.h" />
-    <ClInclude Include="Library\Platform\DX12\ImGui\DX12ImGuiGeometryRenderer.h" />
-    <ClInclude Include="Library\Platform\DX12\ImGui\DX12ImGuiCaptureRenderer.h" />
     <ClInclude Include="Library\Platform\DX12\Render\DX12TextureReadback.h" />
     <ClInclude Include="Library\Platform\DX12\Render\DX12CaptureTarget.h" />
     <ClInclude Include="Library\Platform\DX12\Render\DX12QueueCompletion.h" />
@@ -1225,7 +1232,6 @@
     <ClInclude Include="Library\Platform\DxLib\Window\DxLibDisplayInfoSubsystem.h" />
     <ClInclude Include="Library\Platform\DxLib\Window\DxLibWindowControlSubsystem.h" />
     <ClInclude Include="Library\Platform\ImGui\Render\ImGuiCanvas2D.h" />
-    <ClInclude Include="Library\Platform\ImGui\Render\ImGuiCaptureDrawList.h" />
     <ClInclude Include="Library\Platform\ImGui\Render\ImGuiViewportScheduler.h" />
     <ClInclude Include="Library\Platform\Null\NullAssetBackendSubsystem.h" />
     <ClInclude Include="Library\Platform\Null\NullAudioBackendSubsystem.h" />

@@ -89,6 +89,11 @@ int32 NGameMain::Run( const FOptions& Options, const TCallable<int32( const FWin
 		LOG( LogMain, Warning, "%s not found. Using default window settings.", *Options.ScreenConfigFile );
 	}
 
+	// ゲーム描画はUIの有無から独立して起動する。
+	if ( NCommandLine::HasFlag( "no-imgui" ) )
+	{
+		Settings.bEnableImGui = false;
+	}
 	const int32 ExitCode = RunEngine( Settings );
 	LOG( LogMain, Log, "Exited with code %d", ExitCode );
 

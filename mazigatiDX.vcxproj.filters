@@ -1045,17 +1045,26 @@
     <ClCompile Include="Library\Platform\DX12\Render\DX12DescriptorPool.cpp">
       <Filter>Library\Platform\DX12\Render</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Canvas\GeometryCanvas2D.cpp">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Windows\Text\WindowsTextRasterizer.cpp">
+      <Filter>Library\Platform\Windows\Text</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\DX12GeometryRenderer.cpp">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\DX12GameRenderer.cpp">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\DX12GameCapture.cpp">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Render\DX12Device.cpp">
       <Filter>Library\Platform\DX12\Render</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Render\DX12DrawExecutorSubsystem.cpp">
       <Filter>Library\Platform\DX12\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\DX12\ImGui\DX12ImGuiGeometryRenderer.cpp">
-      <Filter>Library\Platform\DX12\ImGui</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\DX12\ImGui\DX12ImGuiCaptureRenderer.cpp">
-      <Filter>Library\Platform\DX12\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Render\DX12TextureReadback.cpp">
       <Filter>Library\Platform\DX12\Render</Filter>
@@ -1166,9 +1175,6 @@
       <Filter>Library\Platform\DxLib\Window</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\ImGui\Render\ImGuiCanvas2D.cpp">
-      <Filter>Library\Platform\ImGui\Render</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Platform\ImGui\Render\ImGuiCaptureDrawList.cpp">
       <Filter>Library\Platform\ImGui\Render</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\ImGui\Render\ImGuiViewportScheduler.cpp">
@@ -1750,6 +1756,9 @@
     <ClCompile Include="VendorModules\ufbx\ufbx.c">
       <Filter>VendorModules\ufbx</Filter>
     </ClCompile>
+    <Filter Include="Library\Platform\Windows\Text">
+      <UniqueIdentifier>{2CF6A7F6-91F9-4FBB-87EC-9C44F7567633}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Library\Core\Result.h">
@@ -3372,17 +3381,32 @@
     <ClInclude Include="Library\Platform\DX12\Render\DX12DescriptorPool.h">
       <Filter>Library\Platform\DX12\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Render\RenderClipRect.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IRenderTextRasterizer.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Canvas\GeometryCanvas2D.h">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Windows\Text\WindowsTextRasterizer.h">
+      <Filter>Library\Platform\Windows\Text</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\DX12GeometryRenderer.h">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\DX12GameRenderer.h">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\DX12GameCapture.h">
+      <Filter>Library\Platform\DX12\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Render\DX12Device.h">
       <Filter>Library\Platform\DX12\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Render\DX12DrawExecutorSubsystem.h">
       <Filter>Library\Platform\DX12\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\DX12\ImGui\DX12ImGuiGeometryRenderer.h">
-      <Filter>Library\Platform\DX12\ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\DX12\ImGui\DX12ImGuiCaptureRenderer.h">
-      <Filter>Library\Platform\DX12\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Render\DX12TextureReadback.h">
       <Filter>Library\Platform\DX12\Render</Filter>
@@ -3469,9 +3493,6 @@
       <Filter>Library\Platform\DxLib\Window</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\ImGui\Render\ImGuiCanvas2D.h">
-      <Filter>Library\Platform\ImGui\Render</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Platform\ImGui\Render\ImGuiCaptureDrawList.h">
       <Filter>Library\Platform\ImGui\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\ImGui\Render\ImGuiViewportScheduler.h">

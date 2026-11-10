@@ -1,12 +1,15 @@
 ﻿# SPDX-License-Identifier: MIT
-# GPU撮影先とImGuiの撮影記録が、接続層を飛び越えて依存しないか確認する。
+# ゲーム描画・GPU・OS文字・UIの依存が責務の境界を越えないか確認する。
 param([string]$Root = '')
 $ErrorActionPreference = 'Stop'
 $rootPath = if ($Root) { [IO.Path]::GetFullPath($Root) } else { [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..')) } # 検査する作業コピー。
 $groups = @(
     @{ Directory = 'Library/Platform/DX12/Render'; Names = @('DX12CaptureTarget', 'DX12TextureReadback', 'DX12QueueCompletion'); Forbidden = '(?i)imgui|dxlib|DX12Device|Framework/|Core/Interfaces/(Asset|Platform)|IRenderSurface' },
-    @{ Directory = 'Library/Platform/ImGui/Render'; Names = @('ImGuiCaptureDrawList', 'ImGuiCanvas2D'); Forbidden = '(?i)Platform/(DX12|DxLib|Windows)|d3d\d|dxgi|wincodec|WindowsInclude|imgui_impl_|windows\.h|wrl/' }
-) # 両方を知る実装はDX12/ImGuiの接続層へ置く。
+    @{ Directory = 'Library/Platform/DX12/Render'; Names = @('DX12GeometryRenderer', 'DX12GameRenderer', 'DX12GameCapture'); Forbidden = '(?i)imgui|dxlib|Framework/|Platform/Windows' },
+    @{ Directory = 'Library/Platform/Render/Canvas'; Names = @('GeometryCanvas2D'); Forbidden = '(?i)imgui|dxlib|Framework/|Platform/(DX12|Windows)|d3d|dxgi|WindowsInclude|wrl/' },
+    @{ Directory = 'Library/Platform/Windows/Text'; Names = @('WindowsTextRasterizer'); Forbidden = '(?i)imgui|dxlib|Framework/|Platform/DX12|d3d|dxgi|wrl/' },
+    @{ Directory = 'Library/Platform/ImGui/Render'; Names = @('ImGuiCanvas2D'); Forbidden = '(?i)Platform/(DX12|DxLib|Windows)|d3d\d|dxgi|wincodec|WindowsInclude|imgui_impl_|windows\.h|wrl/' }
+) # GPU・形状生成・OS文字・UIは、それぞれが必要な参照だけを持つ。
 $failed = $false # 見つかった違反を一度に報告する。
 foreach ($group in $groups)
 {
@@ -25,9 +28,15 @@ foreach ($group in $groups)
                     Write-Output "Forbidden include: ${relative}:$line $text"
                     $failed = $true
                 }
+                elseif ($group.Directory -ne 'Library/Platform/ImGui/Render' -and ($text -replace '//.*$', '') -match '\b(ImGui\w*|ImDraw\w*|ImTexture\w*)\b')
+                {
+                    Write-Output "Forbidden UI type: ${relative}:$line $text"
+                    $failed = $true
+                }
             }
+
         }
     }
 }
 if ($failed) { exit 1 }
-Write-Output 'CAPTURE DEPENDENCIES PASS'
+Write-Output 'GAME RENDER DEPENDENCIES PASS'

@@ -83,6 +83,8 @@ bool FDX12ImGuiRenderer::Render( ImDrawData* Data, ID3D12GraphicsCommandList* Co
 	{
 		return false;
 	}
+	ID3D12DescriptorHeap* Heap = Pool->GetHeap(); // 他のゲーム描画が使ったheapへ依存しない。
+	Commands->SetDescriptorHeaps( 1, &Heap );
 	ImGui_ImplDX12_RenderDrawData( Data, Commands );
 	return true;
 }

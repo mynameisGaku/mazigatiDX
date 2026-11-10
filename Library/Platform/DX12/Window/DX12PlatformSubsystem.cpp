@@ -1,8 +1,8 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DX12PlatformSubsystem.h"
 #include "Library/Platform/DX12/ImGui/DX12ImGuiFrameRenderer.h"
-#include "Library/Platform/DX12/ImGui/DX12ImGuiGeometryRenderer.h"
-#include "Library/Platform/DX12/ImGui/DX12ImGuiCaptureRenderer.h"
+#include "Library/Platform/DX12/Render/DX12GameRenderer.h"
+#include "Library/Platform/DX12/Render/DX12GameCapture.h"
 #include "Library/Platform/BackendSelection.h"
 #include "Library/Platform/System/BackendSupport.h"
 #include "Library/Platform/System/CommandLine.h"
@@ -20,31 +20,13 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler( HWND Window, UINT 
 
 namespace
 {
-	// 既存のゲーム命令列とImGuiの記録順を接続するための消去記録。
-	struct FFrameClearCommand
-	{
-		FDX12Device* Device = nullptr; // GPUの所有はプラットフォームに残す。
-		FColor32 Color; // この描画位置で適用する色。
-	};
-	// 互換の記録順に到達した位置で、GPUへ色の消去だけを渡す。
-	void ClearGameFrame( const ImDrawList*, const ImDrawCmd* Command )
-	{
-		const auto& Clear = *static_cast<const FFrameClearCommand*>( Command->UserCallbackData ); // 所有コピーした消去命令。
-		Clear.Device->ClearFrameColor( Clear.Color );
-	}
-
-	// ImGuiのゲーム描画が終わる位置から、GPU側のコピー処理だけを呼ぶ。
-	void CaptureGameFrame( const ImDrawList*, const ImDrawCmd* Command )
-	{
-		static_cast<FDX12Device*>( Command->UserCallbackData )->RecordGameFrameCopy();
-	}
 	// この実装の窓だけが受け取るイベント。
 	LRESULT CALLBACK WindowProc( HWND Window, UINT Message, WPARAM WParam, LPARAM LParam )
 	{
-		auto* Owner = reinterpret_cast<CDX12PlatformSubsystem*>( GetWindowLongPtrW( Window, GWLP_USERDATA ) ); // 窓の所有者。
+		auto *Owner = reinterpret_cast<CDX12PlatformSubsystem *>( GetWindowLongPtrW( Window, GWLP_USERDATA ) ); // 窓の所有者。
 		if ( Message == WM_NCCREATE )
 		{
-			Owner = static_cast<CDX12PlatformSubsystem*>( reinterpret_cast<CREATESTRUCTW*>( LParam )->lpCreateParams );
+			Owner = static_cast<CDX12PlatformSubsystem *>( reinterpret_cast<CREATESTRUCTW *>( LParam )->lpCreateParams );
 			SetWindowLongPtrW( Window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>( Owner ) );
 		}
 		if ( Owner )
@@ -71,23 +53,22 @@ namespace
 		}
 		return DefWindowProcW( Window, Message, WParam, LParam );
 	}
-}
+} // namespace
 
 CDX12PlatformSubsystem::~CDX12PlatformSubsystem()
 {
 	Deinitialize();
 }
 
-bool CDX12PlatformSubsystem::ShouldCreateSubsystem( CEngine& ) const
+bool CDX12PlatformSubsystem::ShouldCreateSubsystem( CEngine & ) const
 {
 	return NBackendSelection::GetRequested() == EPlatformBackend::DX12;
 }
 
-void CDX12PlatformSubsystem::Initialize( FSubsystemCollection& )
+void CDX12PlatformSubsystem::Initialize( FSubsystemCollection & )
 {
 	Settings = GetEngine()->GetStartupSettings();
-	if ( Settings.Width <= 0 || Settings.Height <= 0 || Settings.Width > 16384 || Settings.Height > 16384
-		|| !NMath::IsFinite( Settings.WindowExtendRate ) || Settings.WindowExtendRate <= 0 || Settings.WindowExtendRate > 16 )
+	if ( Settings.Width <= 0 || Settings.Height <= 0 || Settings.Width > 16384 || Settings.Height > 16384 || !NMath::IsFinite( Settings.WindowExtendRate ) || Settings.WindowExtendRate <= 0 || Settings.WindowExtendRate > 16 )
 	{
 		LOG( LogDX12, Error, "Invalid DX12 window size" );
 		return;
@@ -108,54 +89,61 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection& )
 	RECT Rect = { 0, 0, static_cast<LONG>( Settings.Width * Settings.WindowExtendRate ), static_cast<LONG>( Settings.Height * Settings.WindowExtendRate ) }; // クライアント領域。
 	AdjustWindowRect( &Rect, Style, FALSE );
 	Window = CreateWindowExW( 0, Class.lpszClassName, Settings.Title.ToWide().GetData(), Style,
-		Settings.PositionX < 0 ? CW_USEDEFAULT : Settings.PositionX, Settings.PositionY < 0 ? CW_USEDEFAULT : Settings.PositionY,
-		Rect.right - Rect.left, Rect.bottom - Rect.top, nullptr, nullptr, Class.hInstance, this );
+							  Settings.PositionX < 0 ? CW_USEDEFAULT : Settings.PositionX, Settings.PositionY < 0 ? CW_USEDEFAULT : Settings.PositionY,
+							  Rect.right - Rect.left, Rect.bottom - Rect.top, nullptr, nullptr, Class.hInstance, this );
 	if ( !Window )
 	{
 		Deinitialize();
 		return;
 	}
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	bContext = true;
-	ImGuiIO& IO = ImGui::GetIO(); // DX12描画でも使う既存の2D三角形生成器。
-	IO.IniFilename = Settings.bImGuiSaveIni && Settings.bEnableImGui ? "imgui.ini" : nullptr;
-	if ( Settings.bEnableImGui && Settings.bImGuiDocking )
-	{
-		IO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-	}
-	if ( Settings.bEnableImGui && Settings.bImGuiViewports )
-	{
-		IO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-	}
-	if ( !Settings.ImGuiFontPath.IsEmpty() && NFileSystem::FileExists( Settings.ImGuiFontPath ) )
-	{
-		IO.Fonts->AddFontFromFileTTF( *Settings.ImGuiFontPath, Settings.ImGuiFontSize );
-	}
-	bWin32 = ImGui_ImplWin32_Init( Window );
 	Device = new FDX12Device();
-	ImGuiFrameRenderer = new FDX12ImGuiFrameRenderer();
-	const auto Warp = NCommandLine::GetValue( "dx12-warp" ); // ソフトウェアGPUを選ぶ検査用引数。
-	if ( !bWin32 || !Device->Initialize( static_cast<HWND>( Window ), Settings.Width, Settings.Height, Warp.IsSet() && Warp.GetValue().Equals( "true", ESearchCase::IgnoreCase ) ) || !ImGuiFrameRenderer->Initialize( *Device ) )
+	const auto Warp = NCommandLine::GetValue( "dx12-warp" ); // UIの有無とは独立したGPU選択。
+	if ( !Device->Initialize( static_cast<HWND>( Window ), Settings.Width, Settings.Height, Warp.IsSet() && Warp.GetValue().Equals( "true", ESearchCase::IgnoreCase ) ) || !GameText.Initialize() )
 	{
-		LOG( LogDX12, Error, "DX12 initialization failed" );
+		LOG( LogDX12, Error, "DX12 game resources could not initialize" );
 		Deinitialize();
 		return;
 	}
-	ImGuiGeometry = new FDX12ImGuiGeometryRenderer();
-	if ( !ImGuiGeometry->Initialize( Device->GetNativeDevice(), Settings.Width, Settings.Height ) )
+	GameRenderer = new FDX12GameRenderer();
+	if ( !GameRenderer->Initialize( Device->GetNativeDevice(), Settings.Width, Settings.Height, *Device->GetTextureResources(), GameText ) )
 	{
 		Deinitialize();
 		return;
+	}
+	if ( Settings.bEnableImGui )
+	{
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		bContext = true;
+		ImGuiIO &IO = ImGui::GetIO(); // UIの設定はゲーム文字や描画先へ適用しない。
+		IO.IniFilename = Settings.bImGuiSaveIni ? "imgui.ini" : nullptr;
+		if ( Settings.bImGuiDocking )
+		{
+			IO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+		}
+		if ( Settings.bImGuiViewports )
+		{
+			IO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+		}
+		if ( !Settings.ImGuiFontPath.IsEmpty() && NFileSystem::FileExists( Settings.ImGuiFontPath ) )
+		{
+			IO.Fonts->AddFontFromFileTTF( *Settings.ImGuiFontPath, Settings.ImGuiFontSize );
+		}
+		bWin32 = ImGui_ImplWin32_Init( Window );
+		ImGuiFrameRenderer = new FDX12ImGuiFrameRenderer();
+		if ( !bWin32 || !ImGuiFrameRenderer->Initialize( *Device ) )
+		{
+			Deinitialize();
+			return;
+		}
 	}
 	const EWindowMode InitialMode = Settings.WindowMode; // 窓の作成後に起動モードへ移す。
-	CaptureRenderer = new FDX12ImGuiCaptureRenderer( *Device, ImGuiFrameRenderer->GetImGuiRenderer() );
+	CaptureRenderer = new FDX12GameCapture( *Device, GameText );
 	Settings.WindowMode = EWindowMode::Windowed;
 	SetWindowMode( InitialMode );
 	ShowWindow( static_cast<HWND>( Window ), SW_SHOW );
 	LastTick = NPlatformTime::GetTicks();
 	bInitialized = true;
-	Canvas.SetLogicalSize( Settings.Width, Settings.Height );
 	LOG( LogDX12, Log, "DX12 initialized (%dx%d). Static FBX/OBJ models supported; lighting, animated models, audio and general render target assets are not supported yet.", Settings.Width, Settings.Height );
 }
 
@@ -175,8 +163,8 @@ void CDX12PlatformSubsystem::Deinitialize()
 	{
 		Sleep( 1 );
 	}
-	delete ImGuiGeometry;
-	ImGuiGeometry = nullptr;
+	delete GameRenderer;
+	GameRenderer = nullptr;
 	delete ImGuiFrameRenderer;
 	ImGuiFrameRenderer = nullptr;
 	delete Device;
@@ -229,23 +217,25 @@ bool CDX12PlatformSubsystem::BeginFrame()
 	WheelX = PendingWheelX;
 	WheelY = PendingWheelY;
 	PendingWheelX = PendingWheelY = 0;
-	if ( !Device->BeginFrame() || !ImGuiFrameRenderer->BeginFrame() )
+	if ( !Device->BeginFrame() || !GameRenderer->BeginFrame( Device->GetFrameCommands(), Device->GetFrameColorView(), Device->GetImageDescriptorHeap() ) || ( ImGuiFrameRenderer && !ImGuiFrameRenderer->BeginFrame() ) )
 	{
 		LOG( LogDX12, Error, "DX12 frame could not start (device lost or GPU wait failed)" );
 		bExit = true;
 		return false;
 	}
-	ImGuiGeometry->BeginFrame( Device->GetFrameCommands(), Device->GetFrameColorView(), Device->GetImageDescriptorHeap() );
 	const int64 Now = NPlatformTime::GetTicks(); // 今フレームの時刻。
 	DeltaTime = static_cast<float32>( NPlatformTime::TicksToMs( Now - LastTick ) / 1000.0 );
 	DeltaTime = NMath::Max( DeltaTime, 0.000001f );
 	LastTick = Now;
 	TotalTime += DeltaTime;
-	ImGui_ImplWin32_NewFrame();
-	ImGuiIO& IO = ImGui::GetIO(); // 論理解像度に固定する。
-	IO.DeltaTime = DeltaTime;
-	IO.ConfigFlags = Settings.bShowMouseCursor ? IO.ConfigFlags & ~ImGuiConfigFlags_NoMouseCursorChange : IO.ConfigFlags | ImGuiConfigFlags_NoMouseCursorChange;
-	ImGui::NewFrame();
+	if ( bContext )
+	{
+		ImGui_ImplWin32_NewFrame();
+		ImGuiIO &IO = ImGui::GetIO(); // 論理解像度に固定する。
+		IO.DeltaTime = DeltaTime;
+		IO.ConfigFlags = Settings.bShowMouseCursor ? IO.ConfigFlags & ~ImGuiConfigFlags_NoMouseCursorChange : IO.ConfigFlags | ImGuiConfigFlags_NoMouseCursorChange;
+		ImGui::NewFrame();
+	}
 	bInFrame = true;
 	return true;
 }
@@ -256,18 +246,21 @@ void CDX12PlatformSubsystem::EndFrame()
 	{
 		return;
 	}
-	IFrameCaptureSink* RequestedSink = FrameCaptureSink; // 通知中の解除・差し替え後に古い借用先を呼ばない。
+	IFrameCaptureSink *RequestedSink = FrameCaptureSink; // 通知中の解除・差し替え後に古い借用先を呼ばない。
 	const uint64 CaptureFrame = FrameCount + 1; // 通常描画と同じフレーム番号。
 	const bool bGame = RequestedSink && RequestedSink->WantsFrame( CaptureFrame, EFrameCaptureStage::Game ); // 必要な段階だけGPUコピーする。
 	const bool bUI = RequestedSink && RequestedSink->WantsFrame( CaptureFrame, EFrameCaptureStage::WithDebugUI ); // 外部窓を含まない主画面のUIまで。
-	const bool bCapturePrepared = ( bGame || bUI ) && ImGui::GetMainViewport()->Size.x > 0 && ImGui::GetMainViewport()->Size.y > 0 && Device->PrepareFrameCapture( bGame, bUI ); // GPU完了前に古い読み取り領域を再利用しない。
+	const bool bCapturePrepared = ( bGame || bUI ) && Device->PrepareFrameCapture( bGame, bUI ); // GPU完了前に古い読み取り領域を再利用しない。
 	if ( bCapturePrepared && bGame )
 	{
-		ImGui::GetBackgroundDrawList( ImGui::GetMainViewport() )->AddCallback( CaptureGameFrame, Device );
+		Device->RecordGameFrameCopy();
 	}
-	ImGui::Render();
-	const bool bRendered = ImGuiFrameRenderer->Render( ImGui::GetDrawData() ); // UI利用者の記録とGPU所有者の提出を分ける。
-	ImGuiGeometry->EndFrame();
+	bool bRendered = GameRenderer->EndFrame(); // UIがなくてもゲーム描画だけで提出できる。
+	if ( ImGuiFrameRenderer )
+	{
+		ImGui::Render();
+		bRendered = ImGuiFrameRenderer->Render( ImGui::GetDrawData() ) && bRendered;
+	}
 	const bool bPresented = bRendered && Device->EndFrame( Settings.bVSync ); // 撮影に失敗しても通常の表示とは区別する。
 	if ( !bPresented )
 	{
@@ -298,7 +291,7 @@ void CDX12PlatformSubsystem::EndFrame()
 			}
 		}
 	}
-	if ( !bExit )
+	if ( !bExit && bContext )
 	{
 		// 無効なフレームも完了を通知し、次のNewFrame前の有効化を許す。
 		ImGui::UpdatePlatformWindows();
@@ -356,7 +349,7 @@ EWindowMode CDX12PlatformSubsystem::GetWindowMode() const
 {
 	return Settings.WindowMode;
 }
-const FString& CDX12PlatformSubsystem::GetWindowTitle() const
+const FString &CDX12PlatformSubsystem::GetWindowTitle() const
 {
 	return Settings.Title;
 }
@@ -364,30 +357,30 @@ bool CDX12PlatformSubsystem::IsMouseCursorVisible() const
 {
 	return Settings.bShowMouseCursor;
 }
-void* CDX12PlatformSubsystem::GetNativeWindow() const
+void *CDX12PlatformSubsystem::GetNativeWindow() const
 {
 	return Window;
 }
-IRenderCanvas2D* CDX12PlatformSubsystem::GetCanvas2D()
+IRenderCanvas2D *CDX12PlatformSubsystem::GetCanvas2D()
 {
 	if ( bInFrame && CaptureRenderer && CaptureRenderer->IsActive() )
 	{
 		return CaptureRenderer->GetCanvas2D();
 	}
-	return bInFrame ? &Canvas : nullptr;
+	return bInFrame && GameRenderer ? GameRenderer->GetCanvas2D() : nullptr;
 }
 
-void CDX12PlatformSubsystem::SetFrameCaptureSink( IFrameCaptureSink* Sink )
+void CDX12PlatformSubsystem::SetFrameCaptureSink( IFrameCaptureSink *Sink )
 {
 	FrameCaptureSink = Sink;
 }
 
-bool CDX12PlatformSubsystem::BeginOffscreenCapture( const FOffscreenCaptureDesc& Desc )
+bool CDX12PlatformSubsystem::BeginOffscreenCapture( const FOffscreenCaptureDesc &Desc )
 {
 	return bInFrame && CaptureRenderer && CaptureRenderer->Begin( Desc );
 }
 
-bool CDX12PlatformSubsystem::EndOffscreenCapture( TArray<FColor32>& Out )
+bool CDX12PlatformSubsystem::EndOffscreenCapture( TArray<FColor32> &Out )
 {
 	return bInFrame && CaptureRenderer && CaptureRenderer->End( Out );
 }
@@ -401,8 +394,7 @@ void CDX12PlatformSubsystem::RecordClear( FColor32 Color )
 	}
 	if ( bInFrame )
 	{
-		FFrameClearCommand Clear = { Device, Color }; // 既存の命令順を保持するための所有コピー。
-		ImGui::GetBackgroundDrawList( ImGui::GetMainViewport() )->AddCallback( ClearGameFrame, &Clear, sizeof( Clear ) );
+		GameRenderer->RecordClear( Color );
 	}
 }
 
@@ -411,7 +403,7 @@ bool CDX12PlatformSubsystem::WaitForGPU()
 	return !Device || Device->Wait();
 }
 
-void CDX12PlatformSubsystem::GetWheel( float32& X, float32& Y ) const
+void CDX12PlatformSubsystem::GetWheel( float32 &X, float32 &Y ) const
 {
 	X = WheelX;
 	Y = WheelY;
@@ -423,7 +415,7 @@ void CDX12PlatformSubsystem::AddWheel( float32 X, float32 Y )
 	PendingWheelY += Y;
 }
 
-void CDX12PlatformSubsystem::SetWindowTitle( const FString& Title )
+void CDX12PlatformSubsystem::SetWindowTitle( const FString &Title )
 {
 	Settings.Title = Title;
 	if ( Window )
@@ -466,7 +458,7 @@ void CDX12PlatformSubsystem::SetWindowMode( EWindowMode Mode )
 		}
 		SetWindowLongPtrW( Handle, GWL_STYLE, WS_POPUP );
 		SetWindowPos( Handle, nullptr, Monitor.rcMonitor.left, Monitor.rcMonitor.top, Monitor.rcMonitor.right - Monitor.rcMonitor.left,
-			Monitor.rcMonitor.bottom - Monitor.rcMonitor.top, SWP_FRAMECHANGED | SWP_NOZORDER );
+					  Monitor.rcMonitor.bottom - Monitor.rcMonitor.top, SWP_FRAMECHANGED | SWP_NOZORDER );
 	}
 	else
 	{
@@ -481,21 +473,21 @@ void CDX12PlatformSubsystem::ToggleFullscreen()
 	SetWindowMode( Settings.WindowMode == EWindowMode::Windowed ? EWindowMode::Borderless : EWindowMode::Windowed );
 }
 
-IRenderGeometry3D* CDX12PlatformSubsystem::GetGeometry3D()
+IRenderGeometry3D *CDX12PlatformSubsystem::GetGeometry3D()
 {
 	if ( bInFrame && CaptureRenderer && CaptureRenderer->IsActive() )
 	{
 		return CaptureRenderer->GetGeometry3D();
 	}
-	return bInFrame && Device ? ImGuiGeometry : nullptr;
+	return bInFrame && GameRenderer ? GameRenderer->GetGeometry3D() : nullptr;
 }
 
-FTextureResourceHandle CDX12PlatformSubsystem::CreateTextureRGBA8( int32 Width, int32 Height, const FColor32* Pixels )
+FTextureResourceHandle CDX12PlatformSubsystem::CreateTextureRGBA8( int32 Width, int32 Height, const FColor32 *Pixels )
 {
 	return bInitialized && Device ? Device->GetTextureResources()->CreateTextureRGBA8( Width, Height, Pixels ) : FTextureResourceHandle();
 }
 
-bool CDX12PlatformSubsystem::UpdateTextureRGBA8( FTextureResourceHandle Texture, int32 Width, int32 Height, const FColor32* Pixels )
+bool CDX12PlatformSubsystem::UpdateTextureRGBA8( FTextureResourceHandle Texture, int32 Width, int32 Height, const FColor32 *Pixels )
 {
 	return bInitialized && Device && Device->GetTextureResources()->UpdateTextureRGBA8( Texture, Width, Height, Pixels );
 }
@@ -508,7 +500,7 @@ void CDX12PlatformSubsystem::ReleaseTexture( FTextureResourceHandle Texture )
 	}
 }
 
-bool CDX12PlatformSubsystem::GetTextureResourceView( FTextureResourceHandle Texture, FTextureDrawView& Out ) const
+bool CDX12PlatformSubsystem::GetTextureResourceView( FTextureResourceHandle Texture, FTextureDrawView &Out ) const
 {
 	return bInitialized && Device && Device->GetTextureResources()->GetTextureResourceView( Texture, Out );
 }
@@ -526,12 +518,12 @@ void CDX12PlatformSubsystem::ReleaseBuffer( FBufferResourceHandle Buffer )
 	}
 }
 
-bool CDX12PlatformSubsystem::GetBufferSize( FBufferResourceHandle Buffer, uint64& OutSize ) const
+bool CDX12PlatformSubsystem::GetBufferSize( FBufferResourceHandle Buffer, uint64 &OutSize ) const
 {
 	return bInitialized && Device && Device->GetBufferResources()->GetBufferSize( Buffer, OutSize );
 }
 
-bool CDX12PlatformSubsystem::ReadBuffer( FBufferResourceHandle Buffer, uint64 Offset, int32 NumBytes, TArray<uint8>& Out )
+bool CDX12PlatformSubsystem::ReadBuffer( FBufferResourceHandle Buffer, uint64 Offset, int32 NumBytes, TArray<uint8> &Out )
 {
 	return bInitialized && Device && Device->GetBufferResources()->ReadBuffer( Buffer, Offset, NumBytes, Out );
 }
@@ -554,7 +546,7 @@ FComputeSubmission CDX12PlatformSubsystem::SubmitCompute( TArrayView<const FComp
 	return bInitialized && Device ? Device->GetComputeQueue()->SubmitCompute( Dispatches ) : FComputeSubmission();
 }
 
-bool CDX12PlatformSubsystem::GetComputeCompletion( FComputeSubmission Submission, bool& OutCompleted )
+bool CDX12PlatformSubsystem::GetComputeCompletion( FComputeSubmission Submission, bool &OutCompleted )
 {
 	return bInitialized && Device && Device->GetComputeQueue()->GetComputeCompletion( Submission, OutCompleted );
 }

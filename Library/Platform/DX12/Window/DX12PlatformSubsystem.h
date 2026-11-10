@@ -8,24 +8,24 @@
 #include "Library/Core/Interfaces/Render/IComputePipelineResources.h"
 #include "Library/Core/Interfaces/Render/IComputeQueue.h"
 #include "Library/Core/Interfaces/Platform/INativeWindow.h"
-#include "Library/Platform/ImGui/Render/ImGuiCanvas2D.h"
+#include "Library/Platform/Windows/Text/WindowsTextRasterizer.h"
 #include "Library/Platform/ImGui/Render/ImGuiViewportScheduler.h"
 
 class FDX12Device;
-class FDX12ImGuiGeometryRenderer;
+class FDX12GameRenderer;
 class FDX12ImGuiFrameRenderer;
-class FDX12ImGuiCaptureRenderer;
+class FDX12GameCapture;
 
 // Windowsの窓とフレーム進行を所有する。GPUを所有し、ImGuiへは描画に必要な参照だけを貸す。
 class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IRenderSurface, public IRenderTextureResources, public IRenderBufferResources, public IComputePipelineResources, public IComputeQueue, public INativeWindow
 {
-public:
+  public:
 	// 途中の初期化失敗時も資源を解放する。
 	~CDX12PlatformSubsystem() override;
 	// --backend=dx12のときだけ作る。
-	bool ShouldCreateSubsystem( CEngine& Engine ) const override;
+	bool ShouldCreateSubsystem( CEngine &Engine ) const override;
 	// 窓・ImGui・GPUをこの順に作る。失敗時はIsInitializedがfalse。
-	void Initialize( FSubsystemCollection& Collection ) override;
+	void Initialize( FSubsystemCollection &Collection ) override;
 	// GPU完了を待ち、生成と逆順に解放する。
 	void Deinitialize() override;
 	// 起動成功時だけtrue。
@@ -35,11 +35,11 @@ public:
 	// ゲームと編集画面の描画を表示する。
 	void EndFrame() override;
 	// 主画面のゲーム描画とUI込みの画素を受け取る借用先を設定する。nullptrで解除する。
-	void SetFrameCaptureSink( IFrameCaptureSink* Sink ) override;
+	void SetFrameCaptureSink( IFrameCaptureSink *Sink ) override;
 	// 通常のフレーム記録を保持して、別の大きさへ描き直す。
-	bool BeginOffscreenCapture( const FOffscreenCaptureDesc& Desc ) override;
+	bool BeginOffscreenCapture( const FOffscreenCaptureDesc &Desc ) override;
 	// 描き直しの結果を同期で読む。失敗時はOutを保つ。
-	bool EndOffscreenCapture( TArray<FColor32>& Out ) override;
+	bool EndOffscreenCapture( TArray<FColor32> &Out ) override;
 	// 次のフレームで終了する。
 	void RequestExit() override;
 	// 終了要求を返す。
@@ -63,39 +63,39 @@ public:
 	// 通常の窓と枠なしの画面全体を切り替える。
 	void ToggleFullscreen() override;
 	// 現在の題。
-	const FString& GetWindowTitle() const override;
+	const FString &GetWindowTitle() const override;
 	// UTF-8の題をOSへ渡す。
-	void SetWindowTitle( const FString& Title ) override;
+	void SetWindowTitle( const FString &Title ) override;
 	// カーソル表示の設定値。
 	bool IsMouseCursorVisible() const override;
 	// クライアント領域のカーソル表示を切り替える。
 	void SetMouseCursorVisible( bool bVisible ) override;
 	// DX12内の実装へ窓を貸す。
-	void* GetNativeWindow() const override;
+	void *GetNativeWindow() const override;
 	// フレーム中だけゲームの描画先を貸す。
-	IRenderCanvas2D* GetCanvas2D() override;
+	IRenderCanvas2D *GetCanvas2D() override;
 	// フレーム中だけ基本3Dの実行先を貸す。
-	IRenderGeometry3D* GetGeometry3D() override;
+	IRenderGeometry3D *GetGeometry3D() override;
 	// 色を所有コピーして消去命令を積む。
 	void RecordClear( FColor32 Color ) override;
 	// アセットの終了時にGPUを待つ。
 	bool WaitForGPU() override;
 	// RGBA8の画像資源を、UIを介さず作る。
-	FTextureResourceHandle CreateTextureRGBA8( int32 Width, int32 Height, const FColor32* Pixels ) override;
+	FTextureResourceHandle CreateTextureRGBA8( int32 Width, int32 Height, const FColor32 *Pixels ) override;
 	// 記録済みの画像を保ったまま更新する。
-	bool UpdateTextureRGBA8( FTextureResourceHandle Texture, int32 Width, int32 Height, const FColor32* Pixels ) override;
+	bool UpdateTextureRGBA8( FTextureResourceHandle Texture, int32 Width, int32 Height, const FColor32 *Pixels ) override;
 	// GPU完了後に画像資源を解放する。
 	void ReleaseTexture( FTextureResourceHandle Texture ) override;
 	// 所有先から画像を借りる。失敗時はOutを保つ。
-	bool GetTextureResourceView( FTextureResourceHandle Texture, FTextureDrawView& Out ) const override;
+	bool GetTextureResourceView( FTextureResourceHandle Texture, FTextureDrawView &Out ) const override;
 	// 初期バイト列のGPU転送を待ち、完成した資源だけを登録する。
 	FBufferResourceHandle CreateBuffer( TArrayView<const uint8> Bytes, ERenderBufferShaderAccess Access = ERenderBufferShaderAccess::None ) override;
 	// 番号を無効にし、同じキューの完了後に実体を解放する。
 	void ReleaseBuffer( FBufferResourceHandle Buffer ) override;
 	// 有効なバッファのバイト数を返す。失敗時はOutSizeを保つ。
-	bool GetBufferSize( FBufferResourceHandle Buffer, uint64& OutSize ) const override;
+	bool GetBufferSize( FBufferResourceHandle Buffer, uint64 &OutSize ) const override;
 	// バッファの範囲を同期で読み戻す。初期化前・不正な範囲・GPU失敗時はOutを保つ。
-	bool ReadBuffer( FBufferResourceHandle Buffer, uint64 Offset, int32 NumBytes, TArray<uint8>& Out ) override;
+	bool ReadBuffer( FBufferResourceHandle Buffer, uint64 Offset, int32 NumBytes, TArray<uint8> &Out ) override;
 	// バイナリとslot定義を検査してからプログラムを登録する。失敗時は無効値。
 	FComputePipelineHandle CreateComputePipeline( TArrayView<const uint8> Bytecode, TArrayView<const FComputeBufferSlot> Slots ) override;
 	// 番号を直ちに無効にし、提出済み処理が終わってから実体を解放する。
@@ -103,24 +103,25 @@ public:
 	// 全compute命令の検査後に、完了を待たず同じキューへ提出する。
 	FComputeSubmission SubmitCompute( TArrayView<const FComputeDispatch> Dispatches ) override;
 	// 有効な提出の完了状態を照会する。失敗時はOutCompletedを保つ。
-	bool GetComputeCompletion( FComputeSubmission Submission, bool& OutCompleted ) override;
+	bool GetComputeCompletion( FComputeSubmission Submission, bool &OutCompleted ) override;
 	// 有効な提出を指定した時間だけ待つ。タイムアウトしても参照を保持する。
 	bool WaitCompute( FComputeSubmission Submission, uint32 TimeoutMs ) override;
 	// 今フレームのホイールを返す。
-	void GetWheel( float32& X, float32& Y ) const override;
+	void GetWheel( float32 &X, float32 &Y ) const override;
 	// OSのホイール通知を貯める。ウィンドウ手続きからのみ呼ぶ。
 	void AddWheel( float32 X, float32 Y );
-private:
-	FImGuiCanvas2D Canvas; // API共通の2D図形生成。
+
+  private:
+	FWindowsTextRasterizer GameText; // UI設定とGPUから独立したゲーム文字の画像化。
 	FImGuiViewportScheduler Viewports; // 外部窓の更新頻度と表示順。
 	FWindowSettings Settings; // 起動設定と現在の表示設定。
-	FDX12Device* Device = nullptr; // ゲームとUIが共有するGPU所有者。利用者より後に破棄する。
-	FDX12ImGuiGeometryRenderer* ImGuiGeometry = nullptr; // 既存の基本3DをImGui順序へ接続する互換経路。GPU基盤から分離する。
-	FDX12ImGuiFrameRenderer* ImGuiFrameRenderer = nullptr; // GPUを借りるUIの記録先。GPUは所有しない。
-	FDX12ImGuiCaptureRenderer* CaptureRenderer = nullptr; // 通常画面と撮影用のImGui描画をつなぐ所有者。
-	IFrameCaptureSink* FrameCaptureSink = nullptr; // 撮影サービスの借用先。終了前に解除する。
+	FDX12Device *Device = nullptr; // ゲームとUIが共有するGPU所有者。利用者より後に破棄する。
+	FDX12GameRenderer *GameRenderer = nullptr; // ゲームの2D・3DをUIと別の順序へ記録する。
+	FDX12ImGuiFrameRenderer *ImGuiFrameRenderer = nullptr; // GPUを借りるUIの記録先。GPUは所有しない。
+	FDX12GameCapture *CaptureRenderer = nullptr; // UIとは独立したゲーム描画の撮影先。
+	IFrameCaptureSink *FrameCaptureSink = nullptr; // 撮影サービスの借用先。終了前に解除する。
 	TArray<FColor32> CapturePixels; // 通知中だけ受け取り手へ借用する画素。
-	void* Window = nullptr; // 所有するHWND。公開ヘッダーにWindowsを出さない。
+	void *Window = nullptr; // 所有するHWND。公開ヘッダーにWindowsを出さない。
 	bool bContext = false; // ImGui文脈の所有印。
 	bool bWin32 = false; // ImGuiのOS接続済み印。
 	bool bInitialized = false; // 全初期化の成功印。
