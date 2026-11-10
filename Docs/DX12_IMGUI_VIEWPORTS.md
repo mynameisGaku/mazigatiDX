@@ -59,7 +59,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Source\SelfTest\RunDX12Windo
 
 |検査|Debug|Release|
 |---|---|---|
-|viewport有効（既定GPU／WARP）|各168条件、失敗0|各168条件、失敗0|
+|viewport有効（既定GPU／WARP、入力通知を含む）|各180条件、失敗0|各180条件、失敗0|
 |viewport無効（既定GPU／WARP）|各114条件、失敗0|各114条件、失敗0|
 |無効起動から三回切り替え（既定GPU／WARP）|各228条件、失敗0|各228条件、失敗0|
 |終了の通常経路（既定GPU／WARP）|各23条件、失敗0|各23条件、失敗0|
@@ -72,7 +72,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Source\SelfTest\RunDX12Windo
 
 最初のReleaseリンクではMSVCがLNK1103（デバッグ情報の破損）で停止しました。検証用コピーのproject／Samples／Editorのiobj・ipdbを退避し、同じ最適化設定で作り直すと成功しました。その後の増分ビルドも成功しています。ソースや最適化設定による回避は追加せず、原因は断定しません。失敗・再作成・最終ビルドと回帰結果のログはSaved/R1Shutdown/へ残しています。
 
-対応する検査コミットは [bc82a696834cd0b49633618fcdcbb99c5866c78f](https://github.com/mynameisGaku/framework-test/commit/bc82a696834cd0b49633618fcdcbb99c5866c78f) です。GitHub接続経由で公開し、ローカルで検証したファイル群とのGit treeの一致を確認しています。検証はframework-dx12-verifyで行い、開発用の中間ファイルを共有していません。互換台帳は455項目のまま、画像共有の証拠を追記し、Verifiedへの昇格はしていません。
+対応する検査コミットは [9c9ce159b1c0db8a0bb063e3b835e15486b5fad2](https://github.com/mynameisGaku/framework-test/commit/9c9ce159b1c0db8a0bb063e3b835e15486b5fad2) です。GitHub接続経由で公開し、ローカルで検証したファイル群とのGit treeの一致を確認しています。検証はframework-dx12-verifyで行い、開発用の中間ファイルを共有していません。互換台帳は455項目のまま、画像共有の証拠を追記し、Verifiedへの昇格はしていません。
 
 ## 文字の位置と切り取りの修正
 
@@ -85,6 +85,12 @@ FImGuiCanvas2D::Textは現在の表示範囲を論理座標へ戻し、既存の
 ## 実行中の切り替えの修正
 
 無効起動したDX12の文脈に外部窓の描画コールバックが登録されない問題を再現しました。修正前の専用検査は4条件のうち、この接続確認で1条件失敗しました。修正後は、同じ文脈と共有画像のまま三回切り替え、窓の生成・表示・破棄とbindingの維持を確認しています。1FPS制限でも、再有効化した二枚がすぐ表示されることを検査します。実アプリではシーンの更新中に設定を変える経路も通します。今回もDebug／Releaseの4 projectが警告・エラー0でビルドされ、RunAllChecks.ps1 -SkipBuild -Quickの16項目すべてと、Canvas2D／Geometry3D／StaticModelの各120フレーム（既定GPU／WARP、合計12起動）が成功しました。最初のStaticModel起動では検査用のデータを配置し忘れて読み込みに失敗したため、Samples/Assetsを専用の起動先へコピーして再検査しました。ログと成功した12起動の一覧はSaved/ViewportRuntime/に残しています。
+
+## 外部窓からの入力通知の検査
+
+外部窓のリサイズ後に、キーの押下・解放、日本語、UTF-16の二単位で表す文字、縦横ホイール、窓内のマウス座標をOSの窓の手続きへ渡す検査を追加しました。外部窓を所有するImGui文脈への到達と、デスクトップ上への座標変換を確認します。別の文脈を現在にして通知しても、入力の混線と現在の文脈の変更がないことを検査しています。現在の16bit文字設定ではBMP外は代替文字一つです。
+
+実アプリでもDX12／WARPの主画面と、閉じ直した外部窓からキー・日本語の通知が届くことを確認しました。検査は専用プロセスの窓へSendMessageWで通知し、OS全体のキー状態やカーソル位置を変更しません。入力経路の実装変更は不要でした。Debug／Releaseのアプリの再ビルドは警告・エラー0で、両構成の窓・終了・三回切り替え検査と書式検査も成功しました。物理操作、IMEでの変換中の候補表示、入力欄への確定操作は検査に含めていません。ログはSaved/ViewportInput/へ残しています。
 
 ## 残る確認
 
