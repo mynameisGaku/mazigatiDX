@@ -262,6 +262,9 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestTextReal.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
+    <ClCompile Include="Source\SelfTest\AssetSelfTestUIAnimation.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
     <ClCompile Include="Source\SelfTest\AssetSelfTestUIBinding.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
@@ -649,6 +652,9 @@
       <Filter>Source\SelfTest</Filter>
     </ClInclude>
     <ClInclude Include="Source\SelfTest\AssetSelfTestTextInput.h">
+      <Filter>Source\SelfTest</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SelfTest\AssetSelfTestUIAnimation.h">
       <Filter>Source\SelfTest</Filter>
     </ClInclude>
     <ClInclude Include="Source\SelfTest\AssetSelfTestUIBinding.h">

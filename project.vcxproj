@@ -159,6 +159,7 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestText.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestText.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestTextInput.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestTextInput.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestTextReal.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestTextReal.cpp')" />
+    <ClCompile Include="Source\SelfTest\AssetSelfTestUIAnimation.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestUIAnimation.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestUIBinding.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestUIBinding.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestUIBrush.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestUIBrush.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestUIDialog.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestUIDialog.cpp')" />
@@ -291,6 +292,7 @@
     <ClInclude Include="Source\SelfTest\AssetSelfTestSupport.h" Condition="Exists('Source\SelfTest\AssetSelfTestSupport.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestText.h" Condition="Exists('Source\SelfTest\AssetSelfTestText.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestTextInput.h" Condition="Exists('Source\SelfTest\AssetSelfTestTextInput.h')" />
+    <ClInclude Include="Source\SelfTest\AssetSelfTestUIAnimation.h" Condition="Exists('Source\SelfTest\AssetSelfTestUIAnimation.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestUIBinding.h" Condition="Exists('Source\SelfTest\AssetSelfTestUIBinding.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestUIBrush.h" Condition="Exists('Source\SelfTest\AssetSelfTestUIBrush.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestUIDialog.h" Condition="Exists('Source\SelfTest\AssetSelfTestUIDialog.h')" />

@@ -817,6 +817,12 @@
     <ClCompile Include="Library\Framework\Text\TextLayout.cpp">
       <Filter>Library\Framework\Text</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\UI\Animation\UIAnimator.cpp">
+      <Filter>Library\Framework\UI\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\UI\Animation\UIEasing.cpp">
+      <Filter>Library\Framework\UI\Animation</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\UI\Binding\UIBindingSet.cpp">
       <Filter>Library\Framework\UI\Binding</Filter>
     </ClCompile>
@@ -2906,6 +2912,12 @@
     </ClInclude>
     <ClInclude Include="Library\Framework\Text\TextLayout.h">
       <Filter>Library\Framework\Text</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\UI\Animation\UIAnimator.h">
+      <Filter>Library\Framework\UI\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\UI\Animation\UIEasing.h">
+      <Filter>Library\Framework\UI\Animation</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\UI\Binding\UIBindingSet.h">
       <Filter>Library\Framework\UI\Binding</Filter>
@@ -5011,6 +5023,9 @@
     </Filter>
     <Filter Include="Library\Framework\UI">
       <UniqueIdentifier>{B48D1ABF-C151-C6CA-11D0-7E60B20F1D52}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\UI\Animation">
+      <UniqueIdentifier>{C70F3A3B-C389-3886-0361-B14494F216E9}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\UI\Binding">
       <UniqueIdentifier>{9D0E0089-ED53-1859-2694-622ACA933460}</UniqueIdentifier>
