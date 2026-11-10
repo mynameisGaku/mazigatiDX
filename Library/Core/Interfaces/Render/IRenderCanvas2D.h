@@ -3,7 +3,8 @@
 #include "Library/Math/Color.h"
 #include "Library/Core/Interfaces/Render/ITextureDrawSource.h"
 
-// APIに依存しない2D実行先。メインスレッド・フレーム内だけ使用する。
+// APIに依存しない2D実行先。フロント側はゲームスレッド・フレーム内で使用する。
+// 記録した値を別の実行先へ渡す場合、その実行先は定めた所有スレッドだけで操作する。
 // 呼び出し側は有限座標、正の寸法と太さ、凸な点列を保証する。
 class IRenderCanvas2D
 {

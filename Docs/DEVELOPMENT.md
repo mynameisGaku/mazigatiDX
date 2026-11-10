@@ -535,6 +535,8 @@ if ( Field.ConsumeSubmitted() )
 
 ## ゲームスレッドと AsyncTask
 
+DX12は共通の`CThreadedRenderSurface`から専用の`CRenderCommandThread`へ描画を渡します。`Core/Thread/RenderThread.h`の`IsInRenderThread()`と`RENDER_THREAD_ONLY()`で実行側を識別できます。`IRenderCommandQueue`はゲーム側から値を所有する命令を渡す窓口です。GPU完了・窓側の排他的な貸出・終了順序は [スレッド設計](THREADING.md) に従います。
+
 新しい並列・非同期処理は、実装前にローカルの規約と対象API／Unreal Engineの公式オンライン文書を必ず参照します。所有するスレッド、渡す値、順序、完了、終了を設計し、参照資料と実装範囲を関連文書へ記録します。共有ワーカーで直列化する`CJobPipe`、同じ専用スレッドで実行する`CCommandThread`、CPU完了を表す`FTaskFence`と選択基準は [スレッド設計](THREADING.md) を参照してください。
 
 描画・アセット・音・ウィンドウなど、DxLibを触る仕事は**ゲームスレッド**（起動したスレッド。`NGameMain`と`CEngine::Run`が覚える）だけで行います。DxLibはスレッドセーフではないためです。

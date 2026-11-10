@@ -7,24 +7,29 @@
 #include "Library/Core/Interfaces/Render/IRenderBufferResources.h"
 #include "Library/Core/Interfaces/Render/IComputePipelineResources.h"
 #include "Library/Core/Interfaces/Render/IComputeQueue.h"
+#include "Library/Core/Interfaces/Render/IRenderCommandQueue.h"
 #include "Library/Core/Interfaces/Platform/INativeWindow.h"
 #include "Library/Platform/Windows/Text/WindowsTextRasterizer.h"
+#include "Library/Core/Types/Callable.h"
 #include "Library/Platform/ImGui/Render/ImGuiViewportScheduler.h"
 
+class CRenderCommandThread;
+class CThreadedRenderSurface;
 class CDX12Device;
 class CDX12GameRenderer;
+class CDX12GameSurface;
 class CDX12ImGuiFrameRenderer;
 class CDX12GameCapture;
 
 // Windowsの窓とフレーム進行を所有する。GPUを所有し、ImGuiへは描画に必要な参照だけを貸す。
-class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IRenderSurface, public IRenderTextureResources, public IRenderBufferResources, public IComputePipelineResources, public IComputeQueue, public INativeWindow
+class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IRenderSurface, public IRenderTextureResources, public IRenderBufferResources, public IComputePipelineResources, public IComputeQueue, public IRenderCommandQueue, public INativeWindow
 {
   public:
 	// 途中の初期化失敗時も資源を解放する。
 	~CDX12PlatformSubsystem() override;
 	// --backend=dx12のときだけ作る。
 	bool ShouldCreateSubsystem( CEngine &Engine ) const override;
-	// 窓・ImGui・GPUをこの順に作る。失敗時はIsInitializedがfalse。
+	// 窓・GPU・UIを作り、描画の実行を専用スレッドへ引き渡す。失敗時はIsInitializedがfalse。
 	void Initialize( FSubsystemCollection &Collection ) override;
 	// GPU完了を待ち、生成と逆順に解放する。
 	void Deinitialize() override;
@@ -106,16 +111,23 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
 	bool GetComputeCompletion( FComputeSubmission Submission, bool &OutCompleted ) override;
 	// 有効な提出を指定した時間だけ待つ。タイムアウトしても参照を保持する。
 	bool WaitCompute( FComputeSubmission Submission, uint32 TimeoutMs ) override;
+	// 先行する2D記録を渡してから、ゲーム側が所有する値を専用描画スレッドへ積む。
+	FTaskFence EnqueueRenderCommand( TCallable<void( const FRenderCommandContext & )> Task, const char *Name = nullptr ) override;
 	// 今フレームのホイールを返す。
 	void GetWheel( float32 &X, float32 &Y ) const override;
 	// OSのホイール通知を貯める。ウィンドウ手続きからのみ呼ぶ。
 	void AddWheel( float32 X, float32 Y );
 
   private:
+	// 記録済みの2Dを同じ列へ渡し、借用値を使う処理が終わるまで待つ。初期化・解放時は所有スレッドで直接実行する。
+	bool ExecuteRender( TCallable<void()> Task ) const;
+	CRenderCommandThread *RenderCommands = nullptr; // 描画の専用実行列。GPU利用者より先に終了する。
+	CThreadedRenderSurface *ThreadedSurface = nullptr; // ゲーム側の値を所有コピーする記録窓口。
 	CWindowsTextRasterizer GameText; // UI設定とGPUから独立したゲーム文字の画像化。
 	CImGuiViewportScheduler Viewports; // 外部窓の更新頻度と表示順。
 	FWindowSettings Settings; // 起動設定と現在の表示設定。
 	CDX12Device *Device = nullptr; // ゲームとUIが共有するGPU所有者。利用者より後に破棄する。
+	CDX12GameSurface *NativeSurface = nullptr; // 描画側だけが借りる実行先。窓側の公開窓口とは分離する。
 	CDX12GameRenderer *GameRenderer = nullptr; // ゲームの2D・3DをUIと別の順序へ記録する。
 	CDX12ImGuiFrameRenderer *ImGuiFrameRenderer = nullptr; // GPUを借りるUIの記録先。GPUは所有しない。
 	CDX12GameCapture *CaptureRenderer = nullptr; // UIとは独立したゲーム描画の撮影先。
@@ -125,6 +137,7 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
 	bool bContext = false; // ImGui文脈の所有印。
 	bool bWin32 = false; // ImGuiのOS接続済み印。
 	bool bInitialized = false; // 全初期化の成功印。
+	bool bWindowRenderPhase = false; // Presentと外部窓の間だけ、窓側がGPU接続を排他的に借りる。
 	bool bInFrame = false; // 描画記録中の印。
 	bool bExit = false; // 終了要求。
 	int32 MaxFrames = 0; // 検査用のフレーム上限。0なら制限なし。

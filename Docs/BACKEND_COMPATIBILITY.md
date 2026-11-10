@@ -10,7 +10,7 @@
 
 |分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|
 |---|---:|---:|---:|---:|---:|---:|---:|
-|API|316|4|118|59|134|0|1|
+|API|317|4|118|59|135|0|1|
 |Draw|100|0|52|8|40|0|0|
 |Sample|33|30|0|3|0|0|0|
 |Editor|11|11|0|0|0|0|0|
@@ -251,23 +251,24 @@
 |[API.IRenderBufferResources.GetBufferSize](../Library/Core/Interfaces/Render/IRenderBufferResources.h#L20)|Implemented|R1|CPU参照とDX12の共通契約、既定GPU/WARP、Debug/Release、SDK診断、範囲・所有・解放・待機失敗を確認|同期の初期転送・サイズ照会・readback・解放。描画/compute/SRV/UAV/更新/非同期提出は未接続|Docs/R1_BUFFER_RESOURCES.md|
 |[API.IRenderBufferResources.ReadBuffer](../Library/Core/Interfaces/Render/IRenderBufferResources.h#L23)|Implemented|R1|CPU参照とDX12の共通契約、既定GPU/WARP、Debug/Release、SDK診断、範囲・所有・解放・待機失敗を確認|同期の初期転送・サイズ照会・readback・解放。描画/compute/SRV/UAV/更新/非同期提出は未接続|Docs/R1_BUFFER_RESOURCES.md|
 |[API.IRenderBufferResources.ReleaseBuffer](../Library/Core/Interfaces/Render/IRenderBufferResources.h#L18)|Implemented|R1|CPU参照とDX12の共通契約、既定GPU/WARP、Debug/Release、SDK診断、範囲・所有・解放・待機失敗を確認|同期の初期転送・サイズ照会・readback・解放。描画/compute/SRV/UAV/更新/非同期提出は未接続|Docs/R1_BUFFER_RESOURCES.md|
-|[API.IRenderCanvas2D.Box](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L14)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderCanvas2D.Circle](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L18)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderCanvas2D.Image](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L26)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderCanvas2D.Line](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L16)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderCanvas2D.PopClip](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L30)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderCanvas2D.PushClip](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L28)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderCanvas2D.Quad](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L22)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderCanvas2D.SetAntiAlias](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L34)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderCanvas2D.SetTextureFilter](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L32)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderCanvas2D.Text](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L24)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderCanvas2D.Triangle](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L20)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderGeometry3D.ClearDepth](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L30)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderGeometry3D.DrawBufferGeometry](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L28)|Implemented|R1|既定GPU／WARPでcompute→GPU頂点・index描画をCPU式の画素と比較。範囲・所有・保持上限とUIなし起動を検査|28byte同次頂点と16／32bit index。描画記録後の解除に耐える。内容の有限性とindex範囲は呼出側保証。R1／R2全体の完了ではない|Docs/R1_BUFFER_GEOMETRY.md; Library/Platform/DX12/Render/Geometry/DX12GeometryRenderer.cpp; Source/SelfTest/RunBufferGeometryTests.ps1|
-|[API.IRenderGeometry3D.DrawGeometry](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L20)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderGeometry3D.DrawTexturedGeometry](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L24)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderGeometry3D.GetHeight](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L17)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderGeometry3D.GetWidth](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L15)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.Box](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L15)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.Circle](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L19)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.Image](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L27)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.Line](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L17)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.PopClip](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L31)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.PushClip](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L29)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.Quad](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L23)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.SetAntiAlias](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L35)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.SetTextureFilter](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L33)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.Text](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L25)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.Triangle](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L21)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCommandQueue.EnqueueRenderCommand](../Library/Core/Interfaces/Render/IRenderCommandQueue.h#L17)|Implemented|R1|ゲーム側で受付順を決め、専用側の識別・命令所有・GPU画素・UI記録と終了をDebug／Release・既定GPU／WARPで確認|DX12の専用描画窓口。実行中だけの2D／3Dコンテキストを借り、CPU完了とGPU完了を分ける。窓側の貸出中は拒否。DxLib／Nullでは提供しない|Docs/THREADING.md; Library/Platform/DX12/Window/DX12PlatformSubsystem.cpp; Source/SelfTest/RunRenderThreadTests.ps1|
+|[API.IRenderGeometry3D.ClearDepth](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L31)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderGeometry3D.DrawBufferGeometry](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L29)|Implemented|R1|既定GPU／WARPでcompute→GPU頂点・index描画をCPU式の画素と比較。範囲・所有・保持上限とUIなし起動を検査|28byte同次頂点と16／32bit index。描画記録後の解除に耐える。内容の有限性とindex範囲は呼出側保証。R1／R2全体の完了ではない|Docs/R1_BUFFER_GEOMETRY.md; Library/Platform/DX12/Render/Geometry/DX12GeometryRenderer.cpp; Source/SelfTest/RunBufferGeometryTests.ps1|
+|[API.IRenderGeometry3D.DrawGeometry](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L21)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderGeometry3D.DrawTexturedGeometry](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L25)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderGeometry3D.GetHeight](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L18)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderGeometry3D.GetWidth](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L16)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
 |[API.IRenderResourceBackend.CompileShader](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L52)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IRenderResourceBackend.CreateMeshBuffers](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L20)|Implemented|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|FGeometryBufferStoreへ接続。CPU保管の作成・更新・範囲検査あり。Windows互換比較前||
 |[API.IRenderResourceBackend.DeleteIndexBuffer](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L22)|Implemented|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|FGeometryBufferStoreへ接続。CPU保管の作成・更新・範囲検査あり。Windows互換比較前||

@@ -1,8 +1,13 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DX12PlatformSubsystem.h"
+#include "Library/Core/Thread/GameThread.h"
+#include "Library/Core/Interfaces/Profiler/IProfiler.h"
+#include "Library/Framework/Render/Thread/RenderCommandThread.h"
+#include "Library/Framework/Render/Thread/ThreadedRenderSurface.h"
 #include "Library/Platform/DX12/ImGui/Frame/DX12ImGuiFrameRenderer.h"
 #include "Library/Platform/DX12/Render/Game/DX12GameRenderer.h"
 #include "Library/Platform/DX12/Render/Game/DX12GameCapture.h"
+#include "Library/Platform/DX12/Render/Game/DX12GameSurface.h"
 #include "Library/Platform/BackendSelection.h"
 #include "Library/Platform/System/BackendSupport.h"
 #include "Library/Platform/System/CommandLine.h"
@@ -65,8 +70,11 @@ bool CDX12PlatformSubsystem::ShouldCreateSubsystem( CEngine & ) const
 	return NBackendSelection::GetRequested() == EPlatformBackend::DX12;
 }
 
-void CDX12PlatformSubsystem::Initialize( FSubsystemCollection & )
+void CDX12PlatformSubsystem::Initialize( FSubsystemCollection &Collection )
 {
+	GAME_THREAD_ONLY();
+	// 終了時は専用スレッドを止めてから、計測先の所有者を解放する。
+	Collection.InitializeDependency<IProfiler>();
 	Settings = GetEngine()->GetStartupSettings();
 	if ( Settings.Width <= 0 || Settings.Height <= 0 || Settings.Width > 16384 || Settings.Height > 16384 || !NMath::IsFinite( Settings.WindowExtendRate ) || Settings.WindowExtendRate <= 0 || Settings.WindowExtendRate > 16 )
 	{
@@ -139,6 +147,15 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection & )
 	}
 	const EWindowMode InitialMode = Settings.WindowMode; // 窓の作成後に起動モードへ移す。
 	CaptureRenderer = new CDX12GameCapture( *Device, GameText );
+	NativeSurface = new CDX12GameSurface( *Device, *GameRenderer, *CaptureRenderer );
+	RenderCommands = new CRenderCommandThread();
+	if ( !RenderCommands->IsReady() )
+	{
+		LOG( LogDX12, Error, "DX12 render thread could not bind" );
+		Deinitialize();
+		return;
+	}
+	ThreadedSurface = new CThreadedRenderSurface( *NativeSurface, *RenderCommands );
 	Settings.WindowMode = EWindowMode::Windowed;
 	SetWindowMode( InitialMode );
 	ShowWindow( static_cast<HWND>( Window ), SW_SHOW );
@@ -149,22 +166,35 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection & )
 
 void CDX12PlatformSubsystem::Deinitialize()
 {
+	GAME_THREAD_ONLY();
+	// 窓側の再入でも、新しい作成や非同期受付を開始させない。
+	bInitialized = false;
+	// 受付済みの命令を残さず実行し、Targetへの借用を戻す。
+	delete ThreadedSurface;
+	ThreadedSurface = nullptr;
 	FrameCaptureSink = nullptr;
 	if ( bInFrame && bContext )
 	{
 		ImGui::EndFrame();
 	}
 	bInFrame = false;
-	// 撮影側がGPU完了を待ち、借用したUI接続と画像heapより先に記録を戻す。
-	delete CaptureRenderer;
-	CaptureRenderer = nullptr;
-	// GPU所有者が新規提出を止めてから、UIの資源と外部窓を外す。
-	while ( Device && !Device->PrepareShutdown( 1000 ) )
+	auto StopGame = [this]()
 	{
-		Sleep( 1 );
-	}
-	delete GameRenderer;
-	GameRenderer = nullptr;
+		delete NativeSurface;
+		NativeSurface = nullptr;
+		delete CaptureRenderer;
+		CaptureRenderer = nullptr;
+		while ( Device && !Device->PrepareShutdown( 1000 ) )
+		{
+			Sleep( 1 );
+		}
+		delete GameRenderer;
+		GameRenderer = nullptr;
+	};
+	ExecuteRender( MoveTemp( StopGame ) );
+	delete RenderCommands;
+	RenderCommands = nullptr;
+	// UIの外部窓と交換用画面は、作成した窓スレッドで解放する。
 	delete ImGuiFrameRenderer;
 	ImGuiFrameRenderer = nullptr;
 	delete Device;
@@ -196,6 +226,7 @@ void CDX12PlatformSubsystem::Deinitialize()
 
 bool CDX12PlatformSubsystem::BeginFrame()
 {
+	GAME_THREAD_ONLY( false );
 	if ( !bInitialized || bInFrame || bExit || ( MaxFrames > 0 && FrameCount >= static_cast<uint64>( MaxFrames ) ) )
 	{
 		return false;
@@ -217,7 +248,11 @@ bool CDX12PlatformSubsystem::BeginFrame()
 	WheelX = PendingWheelX;
 	WheelY = PendingWheelY;
 	PendingWheelX = PendingWheelY = 0;
-	if ( !Device->BeginFrame() || !GameRenderer->BeginFrame( Device->GetFrameCommands(), Device->GetFrameColorView(), Device->GetImageDescriptorHeap() ) || ( ImGuiFrameRenderer && !ImGuiFrameRenderer->BeginFrame() ) )
+	const uint32 BackBuffer = Device->GetCurrentBackBufferIndex(); // DXGIへの照会は窓の所有側で行う。
+	bool bStarted = false; // CPU側の区切りが戻るまで結果を借用する。
+	auto Start = [this, BackBuffer, &bStarted]()
+	{ bStarted = Device->BeginFrameForBuffer( BackBuffer ) && GameRenderer->BeginFrame( Device->GetFrameCommands(), Device->GetFrameColorView(), Device->GetImageDescriptorHeap() ) && ( !ImGuiFrameRenderer || ImGuiFrameRenderer->BeginFrame() ); };
+	if ( !ExecuteRender( MoveTemp( Start ) ) || !bStarted || !ThreadedSurface->BeginFrame( Settings.Width, Settings.Height ) )
 	{
 		LOG( LogDX12, Error, "DX12 frame could not start (device lost or GPU wait failed)" );
 		bExit = true;
@@ -242,6 +277,7 @@ bool CDX12PlatformSubsystem::BeginFrame()
 
 void CDX12PlatformSubsystem::EndFrame()
 {
+	GAME_THREAD_ONLY();
 	if ( !bInFrame )
 	{
 		return;
@@ -250,18 +286,33 @@ void CDX12PlatformSubsystem::EndFrame()
 	const uint64 CaptureFrame = FrameCount + 1; // 通常描画と同じフレーム番号。
 	const bool bGame = RequestedSink && RequestedSink->WantsFrame( CaptureFrame, EFrameCaptureStage::Game ); // 必要な段階だけGPUコピーする。
 	const bool bUI = RequestedSink && RequestedSink->WantsFrame( CaptureFrame, EFrameCaptureStage::WithDebugUI ); // 外部窓を含まない主画面のUIまで。
-	const bool bCapturePrepared = ( bGame || bUI ) && Device->PrepareFrameCapture( bGame, bUI ); // GPU完了前に古い読み取り領域を再利用しない。
-	if ( bCapturePrepared && bGame )
-	{
-		Device->RecordGameFrameCopy();
-	}
-	bool bRendered = GameRenderer->EndFrame(); // UIがなくてもゲーム描画だけで提出できる。
-	if ( ImGuiFrameRenderer )
+	// UIを組み立てる間、先に渡したゲーム描画のバッチは専用スレッドで進行できる。
+	if ( bContext )
 	{
 		ImGui::Render();
-		bRendered = ImGuiFrameRenderer->Render( ImGui::GetDrawData() ) && bRendered;
 	}
-	const bool bPresented = bRendered && Device->EndFrame( Settings.bVSync ); // 撮影に失敗しても通常の表示とは区別する。
+	ImDrawData *UIData = bContext ? ImGui::GetDrawData() : nullptr; // 待機が戻るまでゲーム側は変更しない。
+	const bool bGameCommands = ThreadedSurface->EndFrame(); // ここでゲームの全命令のCPU記録を確定する。
+	bool bCapturePrepared = false, bSubmitted = false; // 描画スレッドが返すこのフレームの結果。
+	auto Submit = [&, this]()
+	{
+		bCapturePrepared = ( bGame || bUI ) && Device->PrepareFrameCapture( bGame, bUI );
+		if ( bCapturePrepared && bGame )
+		{
+			Device->RecordGameFrameCopy();
+		}
+		bool bRendered = GameRenderer->EndFrame() && bGameCommands;
+		if ( ImGuiFrameRenderer )
+		{
+			bRendered = ImGuiFrameRenderer->Render( UIData ) && bRendered;
+		}
+		bSubmitted = bRendered && Device->SubmitFrame();
+	};
+	const bool bRecorded = ExecuteRender( MoveTemp( Submit ) );
+	// PresentはOSからの通知を待つ場合があるため、窓のスレッドに残す。
+	bWindowRenderPhase = true;
+	const bool bPresented = bRecorded && bSubmitted && Device->PresentFrame( Settings.bVSync );
+	bWindowRenderPhase = false;
 	if ( !bPresented )
 	{
 		LOG( LogDX12, Error, "DX12 present failed" );
@@ -275,7 +326,10 @@ void CDX12PlatformSubsystem::EndFrame()
 			{
 				continue;
 			}
-			if ( Device->ReadFrameCapture( Stage, CapturePixels ) )
+			bool bRead = false; // 通知する画素は同期処理の完了後だけ読む。
+			auto Read = [this, Stage, &bRead]()
+			{ bRead = Device->ReadFrameCapture( Stage, CapturePixels ); };
+			if ( ExecuteRender( MoveTemp( Read ) ) && bRead )
 			{
 				FFramePixels Frame; // この通知中だけ画素列を借用する。
 				Frame.Width = Settings.Width;
@@ -294,8 +348,12 @@ void CDX12PlatformSubsystem::EndFrame()
 	if ( !bExit && bContext )
 	{
 		// 無効なフレームも完了を通知し、次のNewFrame前の有効化を許す。
+		// 画素通知の中で追加された命令も終えてから、窓側へ排他的に貸す。
+		RenderCommands->WaitForCommands();
+		bWindowRenderPhase = true;
 		ImGui::UpdatePlatformWindows();
 		Viewports.Render( Settings.ImGuiViewportMaxFPS, Settings.ImGuiViewportMaxPresentsPerFrame );
+		bWindowRenderPhase = false;
 	}
 	bInFrame = false;
 	++FrameCount;
@@ -363,11 +421,8 @@ void *CDX12PlatformSubsystem::GetNativeWindow() const
 }
 IRenderCanvas2D *CDX12PlatformSubsystem::GetCanvas2D()
 {
-	if ( bInFrame && CaptureRenderer && CaptureRenderer->IsActive() )
-	{
-		return CaptureRenderer->GetCanvas2D();
-	}
-	return bInFrame && GameRenderer ? GameRenderer->GetCanvas2D() : nullptr;
+	GAME_THREAD_ONLY( nullptr );
+	return bInFrame && ThreadedSurface ? ThreadedSurface->GetCanvas2D() : nullptr;
 }
 
 void CDX12PlatformSubsystem::SetFrameCaptureSink( IFrameCaptureSink *Sink )
@@ -377,30 +432,52 @@ void CDX12PlatformSubsystem::SetFrameCaptureSink( IFrameCaptureSink *Sink )
 
 bool CDX12PlatformSubsystem::BeginOffscreenCapture( const FOffscreenCaptureDesc &Desc )
 {
-	return bInFrame && CaptureRenderer && CaptureRenderer->Begin( Desc );
+	GAME_THREAD_ONLY( false );
+	return bInFrame && ThreadedSurface && ThreadedSurface->BeginOffscreenCapture( Desc );
 }
 
 bool CDX12PlatformSubsystem::EndOffscreenCapture( TArray<FColor32> &Out )
 {
-	return bInFrame && CaptureRenderer && CaptureRenderer->End( Out );
+	GAME_THREAD_ONLY( false );
+	return bInFrame && ThreadedSurface && ThreadedSurface->EndOffscreenCapture( Out );
 }
 
 void CDX12PlatformSubsystem::RecordClear( FColor32 Color )
 {
-	if ( bInFrame && CaptureRenderer && CaptureRenderer->IsActive() )
+	GAME_THREAD_ONLY();
+	if ( bInFrame && ThreadedSurface )
 	{
-		CaptureRenderer->RecordClear( Color );
-		return;
-	}
-	if ( bInFrame )
-	{
-		GameRenderer->RecordClear( Color );
+		ThreadedSurface->RecordClear( Color );
 	}
 }
 
 bool CDX12PlatformSubsystem::WaitForGPU()
 {
-	return !Device || Device->Wait();
+	GAME_THREAD_ONLY( false );
+	bool bResult = false;
+	auto Wait = [this, &bResult]()
+	{ bResult = !Device || Device->Wait(); };
+	return ExecuteRender( MoveTemp( Wait ) ) && bResult;
+}
+
+bool CDX12PlatformSubsystem::ExecuteRender( TCallable<void()> Task ) const
+{
+	if ( bWindowRenderPhase )
+	{
+		// 窓側へ貸している間の再入は、その所有側で完了させる。専用側には未完了命令がない。
+		Task();
+		return true;
+	}
+	if ( RenderCommands && RenderCommands->IsReady() )
+	{
+		if ( ThreadedSurface && !ThreadedSurface->Flush() )
+		{
+			return false;
+		}
+		return RenderCommands->Execute( MoveTemp( Task ) );
+	}
+	Task();
+	return true;
 }
 
 void CDX12PlatformSubsystem::GetWheel( float32 &X, float32 &Y ) const
@@ -475,83 +552,198 @@ void CDX12PlatformSubsystem::ToggleFullscreen()
 
 IRenderGeometry3D *CDX12PlatformSubsystem::GetGeometry3D()
 {
-	if ( bInFrame && CaptureRenderer && CaptureRenderer->IsActive() )
-	{
-		return CaptureRenderer->GetGeometry3D();
-	}
-	return bInFrame && GameRenderer ? GameRenderer->GetGeometry3D() : nullptr;
+	GAME_THREAD_ONLY( nullptr );
+	return bInFrame && ThreadedSurface ? ThreadedSurface->GetGeometry3D() : nullptr;
 }
 
 FTextureResourceHandle CDX12PlatformSubsystem::CreateTextureRGBA8( int32 Width, int32 Height, const FColor32 *Pixels )
 {
-	return bInitialized && Device ? Device->GetTextureResources()->CreateTextureRGBA8( Width, Height, Pixels ) : FTextureResourceHandle();
+	GAME_THREAD_ONLY( FTextureResourceHandle() );
+	if ( !( bInitialized && Device ) )
+	{
+		return FTextureResourceHandle();
+	}
+	// 呼出し元は同期処理の完了まで、入力と出力の寿命を保持する。
+	FTextureResourceHandle Result = FTextureResourceHandle();
+	auto Work = [&]()
+	{ Result = Device->GetTextureResources()->CreateTextureRGBA8( Width, Height, Pixels ); };
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : FTextureResourceHandle();
 }
 
 bool CDX12PlatformSubsystem::UpdateTextureRGBA8( FTextureResourceHandle Texture, int32 Width, int32 Height, const FColor32 *Pixels )
 {
-	return bInitialized && Device && Device->GetTextureResources()->UpdateTextureRGBA8( Texture, Width, Height, Pixels );
+	GAME_THREAD_ONLY( false );
+	if ( !( bInitialized && Device ) )
+	{
+		return false;
+	}
+	// 呼出し元は同期処理の完了まで、入力と出力の寿命を保持する。
+	bool Result = false;
+	auto Work = [&]()
+	{ Result = Device->GetTextureResources()->UpdateTextureRGBA8( Texture, Width, Height, Pixels ); };
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : false;
 }
 
 void CDX12PlatformSubsystem::ReleaseTexture( FTextureResourceHandle Texture )
 {
-	if ( Device )
+	GAME_THREAD_ONLY();
+	if ( !( Device ) )
 	{
-		Device->GetTextureResources()->ReleaseTexture( Texture );
+		return;
 	}
+	auto Work = [&]()
+	{ if ( auto* Resources = Device->GetTextureResources() ) { Resources->ReleaseTexture( Texture ); } };
+	ExecuteRender( MoveTemp( Work ) );
 }
 
 bool CDX12PlatformSubsystem::GetTextureResourceView( FTextureResourceHandle Texture, FTextureDrawView &Out ) const
 {
-	return bInitialized && Device && Device->GetTextureResources()->GetTextureResourceView( Texture, Out );
+	GAME_THREAD_ONLY( false );
+	if ( !( bInitialized && Device ) )
+	{
+		return false;
+	}
+	// 呼出し元は同期処理の完了まで、入力と出力の寿命を保持する。
+	bool Result = false;
+	auto Work = [&]()
+	{ Result = Device->GetTextureResources()->GetTextureResourceView( Texture, Out ); };
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : false;
 }
 
 FBufferResourceHandle CDX12PlatformSubsystem::CreateBuffer( TArrayView<const uint8> Bytes, ERenderBufferShaderAccess Access )
 {
-	return bInitialized && Device ? Device->GetBufferResources()->CreateBuffer( Bytes, Access ) : FBufferResourceHandle();
+	GAME_THREAD_ONLY( FBufferResourceHandle() );
+	if ( !( bInitialized && Device ) )
+	{
+		return FBufferResourceHandle();
+	}
+	// 呼出し元は同期処理の完了まで、入力と出力の寿命を保持する。
+	FBufferResourceHandle Result = FBufferResourceHandle();
+	auto Work = [&]()
+	{ Result = Device->GetBufferResources()->CreateBuffer( Bytes, Access ); };
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : FBufferResourceHandle();
 }
 
 void CDX12PlatformSubsystem::ReleaseBuffer( FBufferResourceHandle Buffer )
 {
-	if ( Device )
+	GAME_THREAD_ONLY();
+	if ( !( Device ) )
 	{
-		Device->GetBufferResources()->ReleaseBuffer( Buffer );
+		return;
 	}
+	auto Work = [&]()
+	{ if ( auto* Resources = Device->GetBufferResources() ) { Resources->ReleaseBuffer( Buffer ); } };
+	ExecuteRender( MoveTemp( Work ) );
 }
 
 bool CDX12PlatformSubsystem::GetBufferSize( FBufferResourceHandle Buffer, uint64 &OutSize ) const
 {
-	return bInitialized && Device && Device->GetBufferResources()->GetBufferSize( Buffer, OutSize );
+	GAME_THREAD_ONLY( false );
+	if ( !( bInitialized && Device ) )
+	{
+		return false;
+	}
+	// 呼出し元は同期処理の完了まで、入力と出力の寿命を保持する。
+	bool Result = false;
+	auto Work = [&]()
+	{ Result = Device->GetBufferResources()->GetBufferSize( Buffer, OutSize ); };
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : false;
 }
 
 bool CDX12PlatformSubsystem::ReadBuffer( FBufferResourceHandle Buffer, uint64 Offset, int32 NumBytes, TArray<uint8> &Out )
 {
-	return bInitialized && Device && Device->GetBufferResources()->ReadBuffer( Buffer, Offset, NumBytes, Out );
+	GAME_THREAD_ONLY( false );
+	if ( !( bInitialized && Device ) )
+	{
+		return false;
+	}
+	// 呼出し元は同期処理の完了まで、入力と出力の寿命を保持する。
+	bool Result = false;
+	auto Work = [&]()
+	{ Result = Device->GetBufferResources()->ReadBuffer( Buffer, Offset, NumBytes, Out ); };
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : false;
 }
 
 FComputePipelineHandle CDX12PlatformSubsystem::CreateComputePipeline( TArrayView<const uint8> Bytecode, TArrayView<const FComputeBufferSlot> Slots )
 {
-	return bInitialized && Device ? Device->GetComputePipelineResources()->CreateComputePipeline( Bytecode, Slots ) : FComputePipelineHandle();
+	GAME_THREAD_ONLY( FComputePipelineHandle() );
+	if ( !( bInitialized && Device ) )
+	{
+		return FComputePipelineHandle();
+	}
+	// 呼出し元は同期処理の完了まで、入力と出力の寿命を保持する。
+	FComputePipelineHandle Result = FComputePipelineHandle();
+	auto Work = [&]()
+	{ Result = Device->GetComputePipelineResources()->CreateComputePipeline( Bytecode, Slots ); };
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : FComputePipelineHandle();
 }
 
 void CDX12PlatformSubsystem::ReleaseComputePipeline( FComputePipelineHandle Pipeline )
 {
-	if ( Device )
+	GAME_THREAD_ONLY();
+	if ( !( Device ) )
 	{
-		Device->GetComputePipelineResources()->ReleaseComputePipeline( Pipeline );
+		return;
 	}
+	auto Work = [&]()
+	{ if ( auto* Resources = Device->GetComputePipelineResources() ) { Resources->ReleaseComputePipeline( Pipeline ); } };
+	ExecuteRender( MoveTemp( Work ) );
 }
 
 FComputeSubmission CDX12PlatformSubsystem::SubmitCompute( TArrayView<const FComputeDispatch> Dispatches )
 {
-	return bInitialized && Device ? Device->GetComputeQueue()->SubmitCompute( Dispatches ) : FComputeSubmission();
+	GAME_THREAD_ONLY( FComputeSubmission() );
+	if ( !( bInitialized && Device ) )
+	{
+		return FComputeSubmission();
+	}
+	// 呼出し元は同期処理の完了まで、入力と出力の寿命を保持する。
+	FComputeSubmission Result = FComputeSubmission();
+	auto Work = [&]()
+	{ Result = Device->GetComputeQueue()->SubmitCompute( Dispatches ); };
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : FComputeSubmission();
 }
 
 bool CDX12PlatformSubsystem::GetComputeCompletion( FComputeSubmission Submission, bool &OutCompleted )
 {
-	return bInitialized && Device && Device->GetComputeQueue()->GetComputeCompletion( Submission, OutCompleted );
+	GAME_THREAD_ONLY( false );
+	if ( !( bInitialized && Device ) )
+	{
+		return false;
+	}
+	// 呼出し元は同期処理の完了まで、入力と出力の寿命を保持する。
+	bool Result = false;
+	auto Work = [&]()
+	{ Result = Device->GetComputeQueue()->GetComputeCompletion( Submission, OutCompleted ); };
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : false;
 }
 
 bool CDX12PlatformSubsystem::WaitCompute( FComputeSubmission Submission, uint32 TimeoutMs )
 {
-	return bInitialized && Device && Device->GetComputeQueue()->WaitCompute( Submission, TimeoutMs );
+	GAME_THREAD_ONLY( false );
+	if ( !( bInitialized && Device ) )
+	{
+		return false;
+	}
+	// 呼出し元は同期処理の完了まで、入力と出力の寿命を保持する。
+	bool Result = false;
+	auto Work = [&]()
+	{ Result = Device->GetComputeQueue()->WaitCompute( Submission, TimeoutMs ); };
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : false;
+}
+
+FTaskFence CDX12PlatformSubsystem::EnqueueRenderCommand( TCallable<void( const FRenderCommandContext & )> Task, const char *Name )
+{
+	GAME_THREAD_ONLY( FTaskFence() );
+	if ( !bInitialized || bWindowRenderPhase || !RenderCommands || !ThreadedSurface || !NativeSurface || !Task || !ThreadedSurface->Flush() )
+	{
+		return {};
+	}
+	// 公開のゲーム側サービスを使い回さず、実行中だけ有効な描画窓口を渡す。
+	auto Work = [Command = MoveTemp( Task ), Target = NativeSurface]()
+	{
+		const FRenderCommandContext Context{ Target->GetCanvas2D(), Target->GetGeometry3D() };
+		Command( Context );
+	};
+	return RenderCommands->Enqueue( MoveTemp( Work ), Name ? Name : "Render.UserCommand" );
 }

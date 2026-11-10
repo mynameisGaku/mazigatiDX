@@ -38,6 +38,14 @@ public:
 	bool BeginFrame();
 	// 呼出側がGPUへ記録した画面を提出して表示する。未開始・終了中・GPU失敗はfalse。
 	bool EndFrame( bool bVSync );
+	// 窓の所有スレッドで現在の表示先番号だけを読む。未初期化では0。
+	uint32 GetCurrentBackBufferIndex() const;
+	// 窓側で取得した番号へGPU記録を開始する。範囲外や表示未完了の前フレームがあればfalse。
+	bool BeginFrameForBuffer( uint32 Index );
+	// 描画を閉じてGPUへ提出する。窓を操作せず、表示は後でPresentFrameを呼ぶ。
+	bool SubmitFrame();
+	// 提出済みのフレームを窓の所有スレッドで1回だけ表示する。GPU記録側と同時には呼ばない。
+	bool PresentFrame( bool bVSync );
 	// 要求された段階のコピー先だけを用意する。描画順への挿入は接続層が行う。
 	bool PrepareFrameCapture( bool bGame, bool bWithUI );
 	// 表示の提出後に完了を待ち、要求した主画面の画素を読む。失敗時はOutを保つ。
@@ -109,5 +117,6 @@ private:
 	bool bClosing = false; // 終了開始後は新しい描画と窓口取得を禁止する。
 	bool bCaptureGame = false, bCaptureUI = false; // このフレームで要求された撮影段階。
 	bool bGameCopied = false, bUICopied = false; // 実際にコピーを記録できた段階。
+	bool bPresentPending = false; // GPU提出後、窓側でまだ表示していないフレーム。
 	bool bFrameSubmitted = false; // 命令列の失敗で古いコピーを読み出さないための提出印。
 };

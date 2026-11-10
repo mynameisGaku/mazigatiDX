@@ -181,15 +181,26 @@ void CDX12Device::ReleaseAfterGPUStopped()
 	BufferIndex = RtvStride = 0;
 	CurrentRtv = {};
 	bRecording = false;
+	bPresentPending = false;
 	bInitialized = false;
 	bClosing = false;
 	bGPUStopped = false;
 	Width = Height = 0;
 }
 
+uint32 CDX12Device::GetCurrentBackBufferIndex() const
+{
+	return bInitialized && !bClosing && SwapChain ? SwapChain->GetCurrentBackBufferIndex() : 0;
+}
+
 bool CDX12Device::BeginFrame()
 {
-	if ( !bInitialized || bClosing || bRecording || !Wait() || FAILED( Allocator->Reset() ) || FAILED( Commands->Reset( Allocator.Get(), nullptr ) ) )
+	return BeginFrameForBuffer( GetCurrentBackBufferIndex() );
+}
+
+bool CDX12Device::BeginFrameForBuffer( uint32 Index )
+{
+	if ( !bInitialized || bClosing || bRecording || bPresentPending || Index >= BufferCount || !Wait() || FAILED( Allocator->Reset() ) || FAILED( Commands->Reset( Allocator.Get(), nullptr ) ) )
 	{
 		return false;
 	}
@@ -199,7 +210,7 @@ bool CDX12Device::BeginFrame()
 	BufferResources.CollectAfterGPUIdle();
 	bCaptureGame = bCaptureUI = bGameCopied = bUICopied = false;
 	bFrameSubmitted = false;
-	BufferIndex = SwapChain->GetCurrentBackBufferIndex();
+	BufferIndex = Index;
 	CurrentRtv = RtvHeap->GetCPUDescriptorHandleForHeapStart();
 	CurrentRtv.ptr += BufferIndex * RtvStride;
 	D3D12_RESOURCE_BARRIER Barrier = {}; // 表示から描画へ切り替える。
@@ -219,6 +230,11 @@ bool CDX12Device::BeginFrame()
 }
 
 bool CDX12Device::EndFrame( bool bVSync )
+{
+	return SubmitFrame() && PresentFrame( bVSync );
+}
+
+bool CDX12Device::SubmitFrame()
 {
 	if ( !bInitialized || bClosing || !bRecording )
 	{
@@ -243,6 +259,17 @@ bool CDX12Device::EndFrame( bool bVSync )
 	ID3D12CommandList* Lists[] = { Commands.Get() }; // 今フレームを一度だけ送る。
 	Queue->ExecuteCommandLists( 1, Lists );
 	bFrameSubmitted = true;
+	bPresentPending = true;
+	return true;
+}
+
+bool CDX12Device::PresentFrame( bool bVSync )
+{
+	if ( !bInitialized || bClosing || bRecording || !bPresentPending )
+	{
+		return false;
+	}
+	bPresentPending = false;
 	return SUCCEEDED( SwapChain->Present( bVSync ? 1 : 0, 0 ) );
 }
 

@@ -28,6 +28,9 @@
     <ClCompile Include="Library\Core\Thread\GameThread.cpp">
       <Filter>Library\Core\Thread</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Core\Thread\RenderThread.cpp">
+      <Filter>Library\Core\Thread</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Core\Thread\TaskFence.cpp">
       <Filter>Library\Core\Thread</Filter>
     </ClCompile>
@@ -814,6 +817,12 @@
     <ClCompile Include="Library\Framework\Render\State\ShadowMapView.cpp">
       <Filter>Library\Framework\Render\State</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Render\Thread\RenderCommandThread.cpp">
+      <Filter>Library\Framework\Render\Thread</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Render\Thread\ThreadedRenderSurface.cpp">
+      <Filter>Library\Framework\Render\Thread</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\SaveGame\SaveGameStorage.cpp">
       <Filter>Library\Framework\SaveGame</Filter>
     </ClCompile>
@@ -1070,6 +1079,9 @@
       <Filter>Library\Platform\DX12\Render\Game</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Render\Game\DX12GameRenderer.cpp">
+      <Filter>Library\Platform\DX12\Render\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\Game\DX12GameSurface.cpp">
       <Filter>Library\Platform\DX12\Render\Game</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Render\Geometry\DX12GeometryRenderer.cpp">
@@ -1980,6 +1992,9 @@
     <ClInclude Include="Library\Core\Interfaces\Render\IRenderCanvas2D.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IRenderCommandQueue.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IRenderGeometry3D.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
@@ -2103,6 +2118,9 @@
     <ClInclude Include="Library\Core\Render\RenderClipRect.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Render\RenderCommandContext.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Render\RenderResourceSerial.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
@@ -2128,6 +2146,9 @@
       <Filter>Library\Core\Thread</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Thread\Mutex.h">
+      <Filter>Library\Core\Thread</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Thread\RenderThread.h">
       <Filter>Library\Core\Thread</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Thread\TaskFence.h">
@@ -3072,6 +3093,12 @@
     <ClInclude Include="Library\Framework\Render\State\TextStyle.h">
       <Filter>Library\Framework\Render\State</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Render\Thread\RenderCommandThread.h">
+      <Filter>Library\Framework\Render\Thread</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\Thread\ThreadedRenderSurface.h">
+      <Filter>Library\Framework\Render\Thread</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Render\Types\BufferRange.h">
       <Filter>Library\Framework\Render\Types</Filter>
     </ClInclude>
@@ -3433,6 +3460,9 @@
       <Filter>Library\Platform\DX12\Render\Game</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Render\Game\DX12GameRenderer.h">
+      <Filter>Library\Platform\DX12\Render\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\Game\DX12GameSurface.h">
       <Filter>Library\Platform\DX12\Render\Game</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Render\Geometry\DX12GeometryRenderer.h">
@@ -5332,6 +5362,9 @@
     </Filter>
     <Filter Include="Library\Framework\Render\State">
       <UniqueIdentifier>{D42D37FC-96AB-A9C8-F858-712F6D0F3AB5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Render\Thread">
+      <UniqueIdentifier>{D417DBED-1130-B1FB-F600-41F41111F86B}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\Render\Types">
       <UniqueIdentifier>{5E0DB47E-4796-0897-9328-6B5A5A865181}</UniqueIdentifier>

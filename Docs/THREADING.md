@@ -33,11 +33,37 @@ IJobSystem::Scheduleは空の仕事と別のスケジューラーが発行した
 
 WaitIdleはジョブの本体と取り込んだ値、子の完了を待ちます。継続的な外部の要求元は先に停止します。Initialize／DeinitializeとParallelForの呼出しを競合させないでください。CEngineはメインループ終了後、ワーカーの結果とゲームスレッドへの返送を処理し、返送から発生したジョブも終えてからGameInstanceを終了します。ジョブがゲームスレッドの返送完了を同期的に待つ設計は禁止です。Term／Deinitialize内で新しい仕事を発行する所有者も、自分の資源を破棄する前に完了させます。ジョブを使うsubsystemはInitializeDependency<IJobSystem>で終了順序を定めます。
 
-## DX12への適用範囲
+## DX12の専用描画スレッド
 
-今回追加したのは共通の実行・完了・終了の基盤です。DX12の資源サービス、通常のフレーム提出、ImGuiを専用スレッドへ移してはいません。現行のゲームスレッド専用契約を維持し、それらのAPIを任意のワーカーから直接呼んではいけません。
+DX12ではCRenderCommandThread（Framework/Render/Thread）が既存CCommandThreadを1本保持し、開始時に描画スレッドを登録し、全CPU命令の終了後に解除して結合します。GPUデバイスへFrameworkやImGuiの依存は追加しません。CThreadedRenderSurfaceはCoreの描画窓口と所有した命令値だけを使い、DX12・Windows・ImGuiを知りません。
 
-描画の移行では、ゲーム側の状態を不変の描画用データへ写し、描画の所有者へ渡します。ワーカーごとのcommand list／allocator、確定した提出順、GPUフェンスまでの資源保持を揃えてから並列記録を接続します。同じcommand listやallocatorの同時操作を許しません。ImGuiは引き続き描画基盤の利用者であり、基盤の実行スレッドやGPUを所有しません。画像computeを含む新しいGPU経路も、この所有と提出の境界へ接続します。
+|段階|所有するスレッド|順序と寿命|
+|---|---|---|
+|窓・GPU・UIの初期作成|ゲーム／窓|作成後、専用側へ実行の所有を渡す|
+|主画面のDXGI番号照会|ゲーム／窓|前の専用処理を終えた段階で番号を固定する|
+|フレーム開始・GPU完了確認・allocator再利用|描画|BeginFrameForBufferへ固定した番号を渡す|
+|2Dの引数記録、オブジェクト状態の参照、UIの構築|ゲーム|生きたゲーム状態を別スレッドから読ませない|
+|2Dの頂点展開、文字画像化、3DのGPU記録、画像・バッファ・compute操作|描画|同じ命令列へ受付順に集約する|
+|主画面のImGui GPU記録とフレーム提出|描画|ゲーム側の全命令の後。UIデータはゲーム側が変更せず、CPU完了まで借用する|
+|Present、外部窓のOS処理と公式UI接続|ゲーム／窓|専用側を完了させ、GPU接続を排他的に借りる。終了後に専用側へ戻す|
+|撮影のCPU受信者への通知|ゲーム|GPU読み戻し自体を専用側で完了させてから通知する|
+|終了|両側の所有順|命令を全件実行→専用側で撮影・GPU完了・ゲーム描画を片付ける→識別解除と結合→窓側でUI・GPU・窓を解放する|
+
+2Dは固定長の操作値と所有するUTF-8で保持し、64件ずつ配列を移動します。1フレーム65536命令、文字列は1回64KiB・合計8MiBまでです。点列・UV・色・クリップを呼出し時に写すので、元の変数を後から変更しても使いません。画像のbindingは借用値で、既存のGPU所有先の遅延解放を使います。資源更新・登録解除の前には未送信の2Dも同じ列へ渡し、記録前の解放や別スレッドのMap参照を起こしません。
+
+3Dの成否、画像の登録、buffer readback、compute提出の検査結果など、既存APIが即座に返す値は同期で返します。同期呼出しでは入力・出力の参照を実行終了まで保持します。CPU待機が60秒を過ぎたことを理由に、借用参照を残して戻りません。GPU処理側の既存の期限・喪失処理は維持します。同期呼出しの列が満杯なら先行CPU処理を待って再受付し、空の区切りを追加できない満杯状態でもGetFenceで全件完了を確認します。
+
+GPU提出と表示はCDX12Device::SubmitFrame／PresentFrameに分けました。従来のEndFrameはこの2つを連続して呼ぶ形で互換を保ちます。未表示の提出を残して次を開始したり、同じ提出を二度表示したりすることは拒否します。Presentと外部窓処理中は専用側に未完了CPU命令を残さず、新規の非同期描画命令は無効票で拒否します。その窓側の再入から必要な同期GPU操作は排他的な貸出中の所有側で実行します。窓側のメッセージ処理を止めたまま、別スレッドのDXGI処理を待つ構成を避けます。
+
+現段階ではフレームをまたぐCPU／GPUの複数同時進行や、複数のnative command listの並列記録は追加していません。allocatorの再利用と資源回収は、既存どおりGPU完了後です。ゲーム更新や2D命令準備と、渡したバッチの実行は並行に進められます。成否を同期で返す操作の待機点は残しています。描画順を変えずに、後から複数フレーム・複数記録先へ広げる境界を先に作っています。
+
+## 識別と描画命令の窓口
+
+Core/Thread/RenderThread.hのIsInRenderThread()は、登録された専用スレッドだけでtrueです。起動前・終了後・ゲームスレッド・共有ワーカー上ではfalseです。フレーム外でも、その専用スレッドならtrueです。これは処理の種類でなく、実際に動いているスレッドの識別です。専用側が自分で別のCPU関数を実行しても識別は変わりません。IsInGameThread()の未登録時の既存仕様は変更せず、エンジンの起動時にBindした後で比較します。
+
+RENDER_THREAD_ONLY()／RENDER_THREAD_ONLY( 戻り値 )は、別のスレッドからの呼出しを記録して戻します。NRenderThread::IsBoundは専用スレッドの有無を返します。Bind／Unbindは調停する所有者専用で、利用側は呼びません。別スレッドからの上書き・解除、同時に2つの描画所有者を作ることを拒否します。
+
+ゲーム側はGetAppSubsystem<IRenderCommandQueue>()で、値を所有する仕事を先行描画と同じ順序へ渡せます。コールバックの引数FRenderCommandContextは、実行中だけ有効なCanvas／Geometryを借りる値です。フレーム外では両方nullptrです。ゲーム側の公開サービスは描画側から使い回しません。CDX12GameSurfaceが通常画面と撮影先のバックエンド実行先を選び、窓・ゲーム側の受付状態・スケジューラーを知りません。コンテキストは窓やフレーム・撮影先の管理操作を公開しません。EnqueueRenderCommandの呼出しはゲームスレッドで、渡した仕事は描画スレッドで実行します。戻るFTaskFenceはCPU完了で、GPU完了ではありません。窓・UI文脈やゲームの可変状態へ触れず、ゲームスレッドからの返送を同期的に待ちません。共有ワーカーの計算結果は既存のAsyncTask Gameへ返してから、この窓口へ渡します。DxLib／Nullにはこの専用窓口を追加せず、存在しない場合はnullptrです。
 
 ## 検査と参照資料
 
@@ -50,4 +76,11 @@ Source/SelfTestのRunThreadExecutionTests.ps1は、本物のCJobSubsystemを使�
 - [Epic: FRunnable](https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Runtime/Core/FRunnable): 専用スレッド内の初期化・実行・終了という寿命の考え方を参考にしました。独自の仮想基底型を増やさず、既存のFThreadと受付列を使います。
 - [Microsoft: Command queues and command lists](https://learn.microsoft.com/en-us/windows/win32/direct3d12/design-philosophy-of-command-queues-and-command-lists): 個別のcommand listの同時操作を避けること、提出順とGPU完了をアプリが管理することを、今後のDX12移行の条件とします。
 
-検査の固定点: framework-test `592181f6a6d734f9ad108e3db1a1273dceaa80cf`（`codex/dx12-windows-validation`）。Debug／Releaseの各4プロジェクトは警告・エラー0件、ワーカー0・1・4・15本を含む`RunAllChecks -SkipBuild -Quick`の全28項目を確認済みです。CPU実行列の検査は各構成30条件（ワーカー1本のみ譲渡順の1条件を加え31条件）、実アプリの終了は各構成6起動で確認しました。GPU／描画の専用スレッド移行は未実施です。
+検査の固定点: framework-test `1d02c862a043f364d4e5f05b988a3993699073c2`（`codex/dx12-windows-validation`）。Debug／Releaseの各4プロジェクトは警告・エラー0件、`RunAllChecks -SkipBuild -Quick`の全30項目を確認済みです。専用描画のCPU契約は各構成32条件をワーカー0・1・4・15本で実行し、実アプリは各構成6起動×6フレームで2D／3D記録・UI記録・フレーム後の空コンテキストを確認しました。主画面の専用描画への移行まで対応し、複数フレームの同時進行は未実施です。
+
+追加の検査: RunRenderThreadTests.ps1は、識別の登録・解除・再起動・競合拒否、誤スレッドのガード、通常ジョブとの区別、点列・文字列・UVの所有、描画順、成否の同期返却、撮影切替、受付上限と破棄時の全件回収を確認します。既定GPU／WARP、ワーカー0・1・4、UIあり／なしの実アプリでも、6フレームの実画素と主画面UIのGPU記録コールバックが専用スレッド上で動くことを確認します。共通実行側のmapにGPU／ImGuiを含めず、依存検査へAPI逆流の負例も追加しています。
+
+追加の公式資料（2026-11-10確認）:
+
+- [Epic: Parallel Rendering Overview](https://dev.epicgames.com/documentation/en-us/unreal-engine/parallel-rendering-overview-for-unreal-engine): APIに依存しない命令と実行側を分け、並列化してもGPU提出順を維持する考え方を参照しました。
+- [Microsoft: DXGI Best Practices — Multithreading](https://learn.microsoft.com/en-us/windows/win32/direct3darticles/dxgi-best-practices): DXGIの窓メッセージ処理との相互待機を避けるため、表示と外部窓を窓側へ残す判断に使いました。

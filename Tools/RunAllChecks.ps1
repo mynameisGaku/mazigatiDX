@@ -96,6 +96,7 @@ foreach ($configuration in $Configurations) {
         Invoke-Step "self test $suite $configuration" (Join-Path $selfTest 'RunSelfTests.ps1') @('-Suite', $suite, '-Configuration', $configuration) $Retries
     }
     Invoke-Step "thread execution contracts $configuration" (Join-Path $selfTest 'RunThreadExecutionTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
+    Invoke-Step "render thread contracts $configuration" (Join-Path $selfTest 'RunRenderThreadTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
     Invoke-Step "render buffer contracts $configuration" (Join-Path $selfTest 'RunRenderBufferTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
     Invoke-Step "geometry pipeline contracts $configuration" (Join-Path $selfTest 'RunGeometryPipelineTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration)
     Invoke-Step "GPU buffer geometry $configuration" (Join-Path $selfTest 'RunBufferGeometryTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')

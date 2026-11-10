@@ -1,6 +1,6 @@
 ﻿# GPU所有者とImGui利用者の分離
 
-スレッドの共通基盤と描画移行の条件は [スレッド設計](THREADING.md) を参照してください。現時点のDX12実行はゲームスレッド所有で、共通基盤の追加だけで任意スレッドから呼べるようにはなりません。
+DX12の主画面のGPU記録・資源・computeは専用描画スレッドへ集約しました。ゲーム側は値を記録し、窓とPresent・外部窓の接続はゲーム側で排他的に扱います。[スレッド設計とIsInRenderThread](THREADING.md) を参照してください。公開の資源サービスを任意のワーカーから直接呼ぶ契約には変えていません。
 
 2026-11-10（日本時間）。DX12はゲームとUIが利用するグラフィックスの実装です。ImGuiのためにGPUを作る構成へ固定せず、UIは初期化済みのGPUを借ります。
 
@@ -14,11 +14,11 @@
 |`CDX12PlatformSubsystem`|GPUと利用者を別々に所有し、窓・ゲーム描画・UI記録・提出・終了の順序をつなぐ|
 |`CDX12GeometryRenderer`|ゲームの共通頂点を直接GPUへ記録する。UIと記録順の借用を必要としない|
 
-FDX12Deviceの公開操作からImDrawData・ImDrawList・ImU32を外しました。初期化にImGui文脈は不要です。外側の描画実装は、記録中の命令列・描画先と共有する画像heapを借ります。API固有の型をCore／Frameworkへ追加しません。
+CDX12Deviceの公開操作からImDrawData・ImDrawList・ImU32を外しました。初期化にImGui文脈は不要です。外側の描画実装は、記録中の命令列・描画先と共有する画像heapを借ります。API固有の型をCore／Frameworkへ追加しません。
 
 ## フレームと終了
 
-GPU所有者がBeginFrameを行い、各利用者がGPUへ描画を記録し、GPU所有者がEndFrameで提出・表示します。ImGuiのRenderは描画データを記録するだけで、フレームを提出しません。UIを外してもGPUを作り直さず、ゲーム用の画像・バッファ・computeを使えます。
+通常のアプリでは窓側で表示先番号を取得し、専用側でBeginFrameForBuffer・描画記録・SubmitFrameを行ってから、窓側でPresentFrameを呼びます。従来の同期利用のBeginFrame／EndFrameも維持します。ImGuiのRenderは描画データを記録するだけで、フレームを提出しません。UIを外してもGPUを作り直さず、ゲーム用の画像・バッファ・computeを使えます。
 
 UIだけの終了はGPUの完了を確認してUIの借用だけを戻します。通常フレームを記録中の解除は拒否します。GPU全体を終了するときは、撮影側の終了後、所有側がPrepareShutdownで新規記録を止めて完了を確認します。その後、基本3D・UIの利用者を外してからGPUの資源を解放します。期限切れでは参照を保持し、再試行できます。最終破棄ではGPU完了か喪失まで保持します。
 

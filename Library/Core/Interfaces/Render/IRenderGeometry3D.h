@@ -5,7 +5,8 @@
 #include "Library/Core/Render/GeometryDrawState.h"
 #include "Library/Core/Render/TextureDrawView.h"
 
-// APIに依存しない頂点色・画像の3D実行先。ゲームスレッド・フレーム内だけ呼ぶ。
+// APIに依存しない頂点色・画像の3D実行先。公開のフロント側はゲームスレッド・フレーム内で呼ぶ。
+// バックエンド側の実行先は、その所有スレッドだけで操作し、両側から同じ実体を並行に触らない。
 class IRenderGeometry3D
 {
 public:

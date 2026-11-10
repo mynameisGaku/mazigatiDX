@@ -1,6 +1,6 @@
 ﻿# ImGuiから独立したゲーム描画
 
-スレッドの共通基盤と描画移行の条件は [スレッド設計](THREADING.md) を参照してください。現時点のDX12実行はゲームスレッド所有で、共通基盤の追加だけで任意スレッドから呼べるようにはなりません。
+DX12の主画面のGPU記録・資源・computeは専用描画スレッドへ集約しました。ゲーム側は値を記録し、窓とPresent・外部窓の接続はゲーム側で排他的に扱います。[スレッド設計とIsInRenderThread](THREADING.md) を参照してください。公開の資源サービスを任意のワーカーから直接呼ぶ契約には変えていません。
 
 2026-11-10（日本時間）。DX12の通常画面と撮影を、ゲームの2D・基本3D・文字・画像からGPUへ直接記録する経路へ切り替えました。ゲーム描画はImGuiの文脈・描画リスト・フォント画像・コールバック・終了順を必要としません。ImGuiは同じGPUを借りる、後段のUI利用者です。
 
@@ -8,6 +8,9 @@
 
 |配置・型|担当|
 |---|---|
+|`Framework/Render/Thread/CThreadedRenderSurface`|ゲーム側の2D値を所有コピーし、バックエンドの実行先へ渡す。APIとUIを知らない|
+|`Platform/DX12/Render/Game/CDX12GameSurface`|通常画面と撮影先の実行側だけを切り替える。窓とゲーム側の公開窓口を使わない|
+|`Core/Render/FRenderCommandContext`|描画命令の中でだけ借りる2D／3D窓口。フレーム外はnullptr|
 |`Core/Interfaces/Render/IRenderTextRasterizer`|UTF-8の指定範囲をCPU上の白いRGBAと文字の被覆率へ変換する窓口。GPUとUIを知らない|
 |`Core/Render/FRenderClipRect`|描画先の画素による、右・下を含まない切り取り範囲|
 |`Platform/Render/Canvas/CGeometryCanvas2D`|矩形・線・円・三角形・凸四角形・画像・文字の共通頂点生成。GPUの型とWindows・ImGuiを知らない|
@@ -80,3 +83,7 @@ UIなしの実行ファイルのmap、依存とその負例、全1723ファイ�
 ## GPUバッファからの後続描画
 
 computeが書いたバッファを既存の深度・画像・合成で描く経路を追加しました。通常画面・撮影先で同じバッファ所有先とキューを渡し、UIの依存は追加しません。固定の28バイト頂点、index、寿命と提出順は [GPUバッファ描画](R1_BUFFER_GEOMETRY.md) を参照してください。
+
+## 専用描画スレッドとの接続
+
+共通の`CThreadedRenderSurface`が2D引数を所有コピーし、`CRenderCommandThread`へ64件単位で渡します。頂点展開・文字画像化・GPU記録は実行側で行い、3Dの成否は同じ列の同期処理で既存どおり返します。撮影の切り替え・読み戻し、画像の更新と登録解除、computeの検査と提出も同じ所有側へ接続します。主画面のゲーム描画とUI記録は区切りの前後で競合せず、ImGuiへの逆依存は増やしません。

@@ -76,6 +76,7 @@
     <ClCompile Include="Library\Core\Render\BufferResourceHandle.cpp" />
     <ClCompile Include="Library\Core\Render\RenderResourceSerial.cpp" />
     <ClCompile Include="Library\Core\Thread\GameThread.cpp" />
+    <ClCompile Include="Library\Core\Thread\RenderThread.cpp" />
     <ClCompile Include="Library\Core\Thread\TaskFence.cpp" />
     <ClCompile Include="Library\Core\Time\DateTime.cpp" />
     <ClCompile Include="Library\Core\Time\PlatformTime.cpp" />
@@ -338,6 +339,8 @@
     <ClCompile Include="Library\Framework\Render\Mesh\MeshGeometryChunk.cpp" />
     <ClCompile Include="Library\Framework\Render\Mesh\MeshRender.cpp" />
     <ClCompile Include="Library\Framework\Render\State\ShadowMapView.cpp" />
+    <ClCompile Include="Library\Framework\Render\Thread\RenderCommandThread.cpp" />
+    <ClCompile Include="Library\Framework\Render\Thread\ThreadedRenderSurface.cpp" />
     <ClCompile Include="Library\Framework\SaveGame\SaveGameStorage.cpp" />
     <ClCompile Include="Library\Framework\Scene\Scene.cpp" />
     <ClCompile Include="Library\Framework\Scene\SceneManager.cpp" />
@@ -424,6 +427,7 @@
     <ClCompile Include="Library\Platform\DX12\Render\Draw\DX12DrawExecutorSubsystem.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\Game\DX12GameCapture.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\Game\DX12GameRenderer.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Render\Game\DX12GameSurface.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\Geometry\DX12GeometryRenderer.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Buffer\DX12BufferStore.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Descriptor\DX12DescriptorPool.cpp" />
@@ -728,6 +732,7 @@
     <ClInclude Include="Library\Core\Interfaces\Render\IIndexBuffer.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IRenderBufferResources.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IRenderCanvas2D.h" />
+    <ClInclude Include="Library\Core\Interfaces\Render\IRenderCommandQueue.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IRenderGeometry3D.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IRenderSurface.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IRenderTextRasterizer.h" />
@@ -769,6 +774,7 @@
     <ClInclude Include="Library\Core\Render\OffscreenCaptureDesc.h" />
     <ClInclude Include="Library\Core\Render\RenderBufferShaderAccess.h" />
     <ClInclude Include="Library\Core\Render\RenderClipRect.h" />
+    <ClInclude Include="Library\Core\Render\RenderCommandContext.h" />
     <ClInclude Include="Library\Core\Render\RenderResourceSerial.h" />
     <ClInclude Include="Library\Core\Render\StaticModelDrawView.h" />
     <ClInclude Include="Library\Core\Render\TextureDrawView.h" />
@@ -778,6 +784,7 @@
     <ClInclude Include="Library\Core\Thread\JobHandle.h" />
     <ClInclude Include="Library\Core\Thread\JobState.h" />
     <ClInclude Include="Library\Core\Thread\Mutex.h" />
+    <ClInclude Include="Library\Core\Thread\RenderThread.h" />
     <ClInclude Include="Library\Core\Thread\TaskFence.h" />
     <ClInclude Include="Library\Core\Thread\TaskFenceState.h" />
     <ClInclude Include="Library\Core\Thread\Thread.h" />
@@ -1092,6 +1099,8 @@
     <ClInclude Include="Library\Framework\Render\State\RenderState3D.h" />
     <ClInclude Include="Library\Framework\Render\State\ShadowMapView.h" />
     <ClInclude Include="Library\Framework\Render\State\TextStyle.h" />
+    <ClInclude Include="Library\Framework\Render\Thread\RenderCommandThread.h" />
+    <ClInclude Include="Library\Framework\Render\Thread\ThreadedRenderSurface.h" />
     <ClInclude Include="Library\Framework\Render\Types\BufferRange.h" />
     <ClInclude Include="Library\Framework\Render\Types\ImageTypes.h" />
     <ClInclude Include="Library\Framework\Render\Types\MeshTypes.h" />
@@ -1213,6 +1222,7 @@
     <ClInclude Include="Library\Platform\DX12\Render\Draw\DX12DrawExecutorSubsystem.h" />
     <ClInclude Include="Library\Platform\DX12\Render\Game\DX12GameCapture.h" />
     <ClInclude Include="Library\Platform\DX12\Render\Game\DX12GameRenderer.h" />
+    <ClInclude Include="Library\Platform\DX12\Render\Game\DX12GameSurface.h" />
     <ClInclude Include="Library\Platform\DX12\Render\Geometry\DX12GeometryRenderer.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Buffer\DX12BufferBinding.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Buffer\DX12BufferStore.h" />

@@ -4,6 +4,10 @@ param([string]$Root = '')
 $ErrorActionPreference = 'Stop'
 $rootPath = if ($Root) { [IO.Path]::GetFullPath($Root) } else { [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..')) } # 今回検査する作業コピー。
 $types = @(
+    @{ Path = 'Library/Platform/DX12/Render/Game/DX12GameSurface.h'; Type = 'CDX12GameSurface'; Role = '機能' },
+    @{ Path = 'Library/Core/Render/RenderCommandContext.h'; Type = 'FRenderCommandContext'; Role = 'データ' },
+    @{ Path = 'Library/Framework/Render/Thread/RenderCommandThread.h'; Type = 'CRenderCommandThread'; Role = '機能' },
+    @{ Path = 'Library/Framework/Render/Thread/ThreadedRenderSurface.h'; Type = 'CThreadedRenderSurface'; Role = '機能' },
     @{ Path = 'Library/Platform/DX12/Command/Compute/DX12ComputeQueue.h'; Type = 'CDX12ComputeQueue'; Role = '機能' },
     @{ Path = 'Library/Platform/DX12/Device/DX12Device.h'; Type = 'CDX12Device'; Role = '機能' },
     @{ Path = 'Library/Platform/DX12/Device/DX12QueueCompletion.h'; Type = 'CDX12QueueCompletion'; Role = '機能' },
