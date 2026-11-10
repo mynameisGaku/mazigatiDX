@@ -76,6 +76,7 @@
     <ClCompile Include="Library\Core\Render\BufferResourceHandle.cpp" />
     <ClCompile Include="Library\Core\Render\RenderResourceSerial.cpp" />
     <ClCompile Include="Library\Core\Thread\GameThread.cpp" />
+    <ClCompile Include="Library\Core\Thread\TaskFence.cpp" />
     <ClCompile Include="Library\Core\Time\DateTime.cpp" />
     <ClCompile Include="Library\Core\Time\PlatformTime.cpp" />
     <ClCompile Include="Library\Core\Types\Checksum.cpp" />
@@ -268,6 +269,7 @@
     <ClCompile Include="Library\Framework\Input\Text\Utf8ByteAssembler.cpp" />
     <ClCompile Include="Library\Framework\Input\Touch\TouchTracker.cpp" />
     <ClCompile Include="Library\Framework\Job\AsyncTask.cpp" />
+    <ClCompile Include="Library\Framework\Job\JobPipe.cpp" />
     <ClCompile Include="Library\Framework\Job\JobSubsystem.cpp" />
     <ClCompile Include="Library\Framework\Material\Material.cpp" />
     <ClCompile Include="Library\Framework\Material\MaterialCompiler.cpp" />
@@ -342,6 +344,8 @@
     <ClCompile Include="Library\Framework\Subsystem\Subsystem.cpp" />
     <ClCompile Include="Library\Framework\Subsystem\SubsystemCollection.cpp" />
     <ClCompile Include="Library\Framework\Text\TextLayout.cpp" />
+    <ClCompile Include="Library\Framework\Thread\CommandThread.cpp" />
+    <ClCompile Include="Library\Framework\Thread\Private\OrderedTaskQueue.cpp" />
     <ClCompile Include="Library\Framework\UI\Binding\UIBindingSet.cpp" />
     <ClCompile Include="Library\Framework\UI\Brush\UIBrush.cpp" />
     <ClCompile Include="Library\Framework\UI\Core\UIContext.cpp" />
@@ -774,6 +778,8 @@
     <ClInclude Include="Library\Core\Thread\JobHandle.h" />
     <ClInclude Include="Library\Core\Thread\JobState.h" />
     <ClInclude Include="Library\Core\Thread\Mutex.h" />
+    <ClInclude Include="Library\Core\Thread\TaskFence.h" />
+    <ClInclude Include="Library\Core\Thread\TaskFenceState.h" />
     <ClInclude Include="Library\Core\Thread\Thread.h" />
     <ClInclude Include="Library\Core\Time\DateTime.h" />
     <ClInclude Include="Library\Core\Time\PlatformTime.h" />
@@ -995,6 +1001,7 @@
     <ClInclude Include="Library\Framework\Input\Touch\TouchTracker.h" />
     <ClInclude Include="Library\Framework\Input\Touch\TouchTypes.h" />
     <ClInclude Include="Library\Framework\Job\AsyncTask.h" />
+    <ClInclude Include="Library\Framework\Job\JobPipe.h" />
     <ClInclude Include="Library\Framework\Job\JobSubsystem.h" />
     <ClInclude Include="Library\Framework\Material\Material.h" />
     <ClInclude Include="Library\Framework\Material\MaterialCompiler.h" />
@@ -1105,6 +1112,8 @@
     <ClInclude Include="Library\Framework\Subsystem\SubsystemCollection.h" />
     <ClInclude Include="Library\Framework\Subsystem\SubsystemCollection.inl" />
     <ClInclude Include="Library\Framework\Text\TextLayout.h" />
+    <ClInclude Include="Library\Framework\Thread\CommandThread.h" />
+    <ClInclude Include="Library\Framework\Thread\Private\OrderedTaskQueue.h" />
     <ClInclude Include="Library\Framework\UI\Binding\UIBindingSet.h" />
     <ClInclude Include="Library\Framework\UI\Binding\UIObservable.h" />
     <ClInclude Include="Library\Framework\UI\Brush\UIBrush.h" />

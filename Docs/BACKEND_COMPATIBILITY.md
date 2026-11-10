@@ -10,7 +10,7 @@
 
 |分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|
 |---|---:|---:|---:|---:|---:|---:|---:|
-|API|315|4|118|59|133|0|1|
+|API|316|4|118|59|134|0|1|
 |Draw|100|0|52|8|40|0|0|
 |Sample|33|30|0|3|0|0|0|
 |Editor|11|11|0|0|0|0|0|
@@ -105,6 +105,7 @@
 |[API.IJobSystem.RunParallelRange](../Library/Core/Interfaces/Job/IJobSystem.h#L47)|Implemented|R9|既存の自己確認とDxLib／DX12／Nullの起動・呼出・通知・終了を比較|GPUを所有しない共通実装／callback契約。DX12構成の回帰検査は未完了||
 |[API.IJobSystem.Schedule](../Library/Core/Interfaces/Job/IJobSystem.h#L49)|Implemented|R9|既存の自己確認とDxLib／DX12／Nullの起動・呼出・通知・終了を比較|GPUを所有しない共通実装／callback契約。DX12構成の回帰検査は未完了||
 |[API.IJobSystem.Wait](../Library/Core/Interfaces/Job/IJobSystem.h#L50)|Implemented|R9|既存の自己確認とDxLib／DX12／Nullの起動・呼出・通知・終了を比較|GPUを所有しない共通実装／callback契約。DX12構成の回帰検査は未完了||
+|[API.IJobSystem.WaitIdle](../Library/Core/Interfaces/Job/IJobSystem.h#L52)|Implemented|R9|Debug／Releaseとワーカー0・1・4・15で受付済み全件と派生する子の終了・自己呼出し拒否を検査|CPUジョブの共有実装。描画の並列記録やGPUの完了は対象外|Docs/THREADING.md; Library/Framework/Job/JobSubsystem.cpp; Source/SelfTest/RunThreadExecutionTests.ps1|
 |[API.IKeyboardInput.IsKeyDown](../Library/Core/Interfaces/Input/IKeyboardInput.h#L13)|Partial|R8|押下・保持・解放、focus喪失、座標拡大、wheel、連続frameでDxLibと比較|Windows入力へ接続。テンキーEnterの独立判定と実機の入力比較は未完了||
 |[API.IKeyboardInput.IsKeyPressed](../Library/Core/Interfaces/Input/IKeyboardInput.h#L15)|Partial|R8|押下・保持・解放、focus喪失、座標拡大、wheel、連続frameでDxLibと比較|Windows入力へ接続。テンキーEnterの独立判定と実機の入力比較は未完了||
 |[API.IKeyboardInput.IsKeyReleased](../Library/Core/Interfaces/Input/IKeyboardInput.h#L17)|Partial|R8|押下・保持・解放、focus喪失、座標拡大、wheel、連続frameでDxLibと比較|Windows入力へ接続。テンキーEnterの独立判定と実機の入力比較は未完了||

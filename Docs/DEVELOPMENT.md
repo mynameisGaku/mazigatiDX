@@ -2,6 +2,8 @@
 
 ## 構成と依存
 
+実装前には、ローカルの開発文書と、対象機能および参考にするUnreal Engineの公式オンライン文書を必ず確認します。既存の仕組み、所有と寿命、実行順序、失敗条件を照合し、参照先と判断を関連文書へ残します。
+
 `Library/Core`は値・コンテナ・インターフェース、`Library/Framework`はエンジンと資源の管理、`Library/Platform`はDxLibやSDLの実装、`Library/DebugUI`は編集画面、`Source`はアプリを持ちます（自己確認は`Source/SelfTest`へ置く別のリポジトリで、このリポジトリには含めません）。ジョブの共有状態とhandleは`Library/Core/Thread`、描画の共通契約値は`Library/Core/Render`、各実行側は`Library/Framework`や`Library/Platform`に置きます。
 
 FrameworkからDxLibやImGuiの実装へ依存を追加せず、`IDrawExecutor`・`IAssetBackend`・入力など既存の窓口を使います。既存の型・所有・更新・終了処理を優先し、局所状態や単純な計算のためのsubsystemは作りません。
@@ -532,6 +534,8 @@ if ( Field.ConsumeSubmitted() )
 バックエンドを作るときは、`FUtf8ByteAssembler`（1バイトずつ届く文字のまとめ）と`FTouchTracker`（いまの指の一覧から触れ始め・離れたを求める）を使えます。`--backend=null`の`CNullInputSubsystem`は、`AddTypedText`・`AddTextCommand`・`SetImeComposition`・`SetTouches`で入力を決められます。IMEの変換中の状態は、本物のIMEでは未確認です（検査は決めた値の受け渡しだけ）。
 
 ## ゲームスレッドと AsyncTask
+
+新しい並列・非同期処理は、実装前にローカルの規約と対象API／Unreal Engineの公式オンライン文書を必ず参照します。所有するスレッド、渡す値、順序、完了、終了を設計し、参照資料と実装範囲を関連文書へ記録します。共有ワーカーで直列化する`CJobPipe`、同じ専用スレッドで実行する`CCommandThread`、CPU完了を表す`FTaskFence`と選択基準は [スレッド設計](THREADING.md) を参照してください。
 
 描画・アセット・音・ウィンドウなど、DxLibを触る仕事は**ゲームスレッド**（起動したスレッド。`NGameMain`と`CEngine::Run`が覚える）だけで行います。DxLibはスレッドセーフではないためです。
 

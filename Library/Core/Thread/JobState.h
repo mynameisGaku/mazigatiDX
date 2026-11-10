@@ -8,9 +8,13 @@
 #include "Library/Core/Types/Callable.h"
 #include "Library/Core/Types/TypeDefinition.h"
 
+class IJobSystem;
+
 // スケジューラーが実行待ち、依存関係、完了状態を共有するジョブの状態。
 struct FJobState
 {
+	// 依存を登録できる発行元。設定後は変えず、handleから呼び出さない。
+	const IJobSystem* Owner = nullptr;
 	// 実行時に呼び出すジョブ本体。
 	TCallable<void()> Function;
 	// プロファイラーに表示するジョブ名。

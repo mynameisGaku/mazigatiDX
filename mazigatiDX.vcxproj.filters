@@ -28,6 +28,9 @@
     <ClCompile Include="Library\Core\Thread\GameThread.cpp">
       <Filter>Library\Core\Thread</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Core\Thread\TaskFence.cpp">
+      <Filter>Library\Core\Thread</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Core\Time\DateTime.cpp">
       <Filter>Library\Core\Time</Filter>
     </ClCompile>
@@ -604,6 +607,9 @@
     <ClCompile Include="Library\Framework\Job\AsyncTask.cpp">
       <Filter>Library\Framework\Job</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Job\JobPipe.cpp">
+      <Filter>Library\Framework\Job</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Job\JobSubsystem.cpp">
       <Filter>Library\Framework\Job</Filter>
     </ClCompile>
@@ -825,6 +831,12 @@
     </ClCompile>
     <ClCompile Include="Library\Framework\Text\TextLayout.cpp">
       <Filter>Library\Framework\Text</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Thread\CommandThread.cpp">
+      <Filter>Library\Framework\Thread</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Thread\Private\OrderedTaskQueue.cpp">
+      <Filter>Library\Framework\Thread\Private</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\UI\Binding\UIBindingSet.cpp">
       <Filter>Library\Framework\UI\Binding</Filter>
@@ -2118,6 +2130,12 @@
     <ClInclude Include="Library\Core\Thread\Mutex.h">
       <Filter>Library\Core\Thread</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Thread\TaskFence.h">
+      <Filter>Library\Core\Thread</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Thread\TaskFenceState.h">
+      <Filter>Library\Core\Thread</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Thread\Thread.h">
       <Filter>Library\Core\Thread</Filter>
     </ClInclude>
@@ -2781,6 +2799,9 @@
     <ClInclude Include="Library\Framework\Job\AsyncTask.h">
       <Filter>Library\Framework\Job</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Job\JobPipe.h">
+      <Filter>Library\Framework\Job</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Job\JobSubsystem.h">
       <Filter>Library\Framework\Job</Filter>
     </ClInclude>
@@ -3110,6 +3131,12 @@
     </ClInclude>
     <ClInclude Include="Library\Framework\Text\TextLayout.h">
       <Filter>Library\Framework\Text</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Thread\CommandThread.h">
+      <Filter>Library\Framework\Thread</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Thread\Private\OrderedTaskQueue.h">
+      <Filter>Library\Framework\Thread\Private</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\UI\Binding\UIBindingSet.h">
       <Filter>Library\Framework\UI\Binding</Filter>
@@ -5320,6 +5347,12 @@
     </Filter>
     <Filter Include="Library\Framework\Text">
       <UniqueIdentifier>{EDEBE803-9A86-DA1F-7EC2-C3911AB2DD0D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Thread">
+      <UniqueIdentifier>{E46F1CE3-FB76-023A-7265-73B20DA817ED}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Thread\Private">
+      <UniqueIdentifier>{3524CE9B-4079-3759-1E8F-5E83DF3C50B0}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\UI">
       <UniqueIdentifier>{B48D1ABF-C151-C6CA-11D0-7E60B20F1D52}</UniqueIdentifier>
