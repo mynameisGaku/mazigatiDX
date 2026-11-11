@@ -276,7 +276,7 @@ bool CUIScreenStack::IsClosing( int32 Id ) const
 void CUIScreenStack::ApplyTransition( FScreen& Screen )
 {
 	const FUIScreenTransition& Transition = Screen.Options.Transition;
-	const float32 Amount = NUIEasing::Evaluate( Transition.Easing, Screen.TransitionProgress );
+	const float32 Amount = NEasing::Evaluate( Transition.Easing, Screen.TransitionProgress );
 	// 行き過ぎるイージング（Back・Elastic）でも、不透明度は 0〜1（SetOpacity が収める）
 	Screen.Root->SetOpacity( Amount );
 	FUIRenderTransform Pose;

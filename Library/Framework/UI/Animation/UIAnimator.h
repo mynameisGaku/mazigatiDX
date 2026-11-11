@@ -4,7 +4,7 @@
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Core/Types/Callable.h"
-#include "Library/Framework/UI/Animation/UIEasing.h"
+#include "Library/Math/Easing.h"
 #include "Library/Framework/UI/Core/UIWidget.h"
 
 // 動かせる、部品の値
@@ -31,7 +31,7 @@ struct FUIAnimationOptions
 {
 	float32 Duration = 0.25f;                       // 秒（0 以下なら、すぐ終わりの値になる）
 	float32 Delay = 0.0f;                           // 始めるまでの待ち時間（秒。待つ間は、始めの値）
-	EUIEasing Easing = EUIEasing::CubicOut;
+	EEasing Easing = EEasing::CubicOut;
 	EUIAnimationLoop Loop = EUIAnimationLoop::Once;
 	TCallable<void()> OnFinished;                   // Once で、終わりの値になったとき（Stop で止めたときは、呼ばない）
 };
@@ -45,7 +45,7 @@ struct FUIAnimationOptions
 //   Animator.Play( Panel, EUIAnimatedProperty::Opacity, 0.0f, 1.0f );                          // 0.25 秒で、ふわっと出す
 //   FUIAnimationOptions Slide;
 //   Slide.Duration = 0.4f;
-//   Slide.Easing = EUIEasing::BackOut;
+//   Slide.Easing = EEasing::BackOut;
 //   Animator.Play( Panel, EUIAnimatedProperty::TranslationY, 40.0f, 0.0f, Slide );             // 下から、少し行き過ぎて止まる
 //   Animator.PlayValue( 0.0f, 100.0f, Options, [&]( float32 Value ) { Bar->SetValue( Value ); } );   // 好きな値
 //   Animator.Update( DeltaTime );                                                             // 毎フレーム

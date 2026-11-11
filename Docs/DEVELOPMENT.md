@@ -630,6 +630,7 @@ Worldの`Components.Effect`には、任意の`Target`（追従先オブジェク
 - 自作のh・cpp・inl・ps1はUTF-8 BOM一つ、CRLF、NULなしとします。第三者のソースとライセンスは元の形式を保ちます。BOMは必須です。ビルドは`/execution-charset:utf-8`（`/utf-8`ではありません）なので、BOMのあるファイルだけがUTF-8として読まれ、BOMを落とすと、日本語の文字列リテラルが警告なしで化けます。
 - 文字列は`FString`（UTF-8）です。文字列リテラルもUTF-8で、ImGui・SDL・JSON・DxLibにそのまま渡せます。Win32のAPIは`W`系を使い、パスは`ToWide()`で渡します。UTF-8でないファイルなどとの境目は`FromCodePage` / `ToCodePage`で変換します。詳しくは`WRAPPER_GUIDE.md`の第6節にあります。
 - 標準ライブラリより先に、フレームワークの機能を使います。数値の比較・範囲・有限判定は`Library/Core/Types/Numeric.h`（`NMath::Abs / Min / Max / Clamp / IsFinite / IsNaN / IsInfinite`と`TNumericLimits<T>`）、右辺値の受け渡しは`Library/Core/Types/Utility.h`（`MoveTemp / Forward`）にあります。浮動小数点の`NMath::Abs`は`std::fabs`と同じく符号ビットを落とし、`Min / Max`は`std::min / std::max`と同じ向きで値を返します。同等の機能が無い場合は利用側に`std::`を残さず既存moduleに必要最小限の共通実装を加え、標準ライブラリやOSとの橋渡しは既存の低層実装へ集約します（第三者コードは対象外です）。
+- 動きの緩急（イージング）は、`EEasing` / `NEasing::Evaluate( 種類, 0〜1 )` / `NEasing::Interpolate( 始め, 終わり, 種類, 0〜1 )`（`Library/Math/Easing.h`）を使います。UI・カメラ・演出のどこからでも使えます。
 - 機能、公開API、ソースの配置を変えた場合は、関連する文書と参照も更新します。
 
 ## ソリューションの構成

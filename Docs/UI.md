@@ -397,7 +397,7 @@ CUIAnimator Animator;
 Animator.Play( Panel, EUIAnimatedProperty::Opacity, 0.0f, 1.0f );                  // 0.25 秒で、ふわっと出す
 FUIAnimationOptions Slide;
 Slide.Duration = 0.4f;
-Slide.Easing = EUIEasing::BackOut;                                                 // 少し行き過ぎて、戻る
+Slide.Easing = EEasing::BackOut;                                                 // 少し行き過ぎて、戻る
 Slide.OnFinished = [this]() { /* 終わったとき */ };
 Animator.Play( Panel, EUIAnimatedProperty::TranslationY, 40.0f, 0.0f, Slide );
 Animator.PlayValue( 0.0f, 100.0f, Slide, [this]( float32 Value ) { /* 好きな値 */ } );
@@ -406,7 +406,7 @@ Animator.Update( DeltaTime );
 
   - 動かせる値は、`Opacity`・`TranslationX` / `Y`・`Scale`・`ScaleX` / `Y`・`Rotation` です。`PlayTo` は、いまの値から動かします。
   - `FUIAnimationOptions`: `Duration`・`Delay`・`Easing`・`Loop`（`Once`・`Loop`・`PingPong`）・`OnFinished`。
-  - イージング（`EUIEasing`）は、`Linear`・`QuadIn` / `Out` / `InOut`・`CubicIn` / `Out` / `InOut`・`SineInOut`・`BackOut`・`ElasticOut`・`BounceOut` です。
+  - イージング（緩急）は、UI 専用ではなく、どこからでも使える `EEasing` / `NEasing`（`Library/Math/Easing.h`）です: `Linear`、`Quad`・`Cubic`・`Quart`・`Sine`・`Expo`・`Back` の `In` / `Out` / `InOut`、`ElasticOut`、`BounceOut`。
   - 同じ部品の同じ値を、もう一度 `Play` すると、前の動きを置き換えます。部品が消えると、その動きも消えます。
 - **画面の出入り**: `FUIScreenOptions::Transition`（`Fade`・`SlideUp` / `Down` / `Left` / `Right`・`Scale`、`Duration`、`Easing`）を決めて `Push` すると、出るときと消えるときに、演出が付きます。消える演出の間の画面は、描かれますが、入力は受けません（ゲームの入力も、止めません）。演出が終わると、実際に外れて、`OnPopped` が起きます。ダイアログは、`NUIDialog::Show( Screens, Dialog, Transition )` です。
 

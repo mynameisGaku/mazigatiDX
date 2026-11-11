@@ -2,7 +2,7 @@
 #pragma once
 
 #include "Library/Framework/Asset/Font/Font.h"
-#include "Library/Framework/UI/Animation/UIEasing.h"
+#include "Library/Math/Easing.h"
 #include "Library/Framework/UI/Core/UIContext.h"
 #include "Library/Framework/UI/Widgets/UIDisplayWidgets.h"
 
@@ -52,7 +52,7 @@ struct FUIScreenTransition
 {
 	EUIScreenTransitionKind Kind = EUIScreenTransitionKind::None;
 	float32 Duration = 0.2f;                       // 秒（0 以下なら、演出なし）
-	EUIEasing Easing = EUIEasing::CubicOut;
+	EEasing Easing = EEasing::CubicOut;
 	float32 Distance = 48.0f;                      // Slide: ずらす画素
 	float32 StartScale = 0.9f;                     // Scale: 始まりの倍率
 };

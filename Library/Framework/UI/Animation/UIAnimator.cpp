@@ -262,7 +262,7 @@ void CUIAnimator::Update( float32 InDeltaTime )
 			// 先に外す（値を入れる関数・OnFinished の中で、同じ値を Play し直せるように）
 			Tweens.RemoveAt( Index );
 		}
-		const bool bAlive = ApplyTween( Tween, bFinished ? 1.0f : NUIEasing::Evaluate( Tween.Options.Easing, Progress ) );
+		const bool bAlive = ApplyTween( Tween, bFinished ? 1.0f : NEasing::Evaluate( Tween.Options.Easing, Progress ) );
 		if ( !bAlive && !bFinished )
 		{
 			// 部品が消えた

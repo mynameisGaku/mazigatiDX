@@ -8,3 +8,4 @@
 #include "Library/Math/Matrix4x4.h"
 #include "Library/Math/Transform.h"
 #include "Library/Math/Color.h"
+#include "Library/Math/Easing.h"

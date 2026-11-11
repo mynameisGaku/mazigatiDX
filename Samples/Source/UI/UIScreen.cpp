@@ -116,7 +116,7 @@ void CUIScreen::AskReset()
 	FUIScreenTransition Transition;
 	Transition.Kind = EUIScreenTransitionKind::Scale;
 	Transition.Duration = 0.18f;
-	Transition.Easing = EUIEasing::CubicOut;
+	Transition.Easing = EEasing::CubicOut;
 	NUIDialog::Show( Screens, Dialog, Transition );
 }
 
