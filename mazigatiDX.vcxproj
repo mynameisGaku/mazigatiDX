@@ -340,7 +340,6 @@
     <ClCompile Include="Library\Framework\Subsystem\SubsystemCollection.cpp" />
     <ClCompile Include="Library\Framework\Text\TextLayout.cpp" />
     <ClCompile Include="Library\Framework\UI\Animation\UIAnimator.cpp" />
-    <ClCompile Include="Library\Framework\UI\Animation\UIEasing.cpp" />
     <ClCompile Include="Library\Framework\UI\Binding\UIBindingSet.cpp" />
     <ClCompile Include="Library\Framework\UI\Brush\UIBrush.cpp" />
     <ClCompile Include="Library\Framework\UI\Core\UIContext.cpp" />
@@ -388,6 +387,7 @@
     <ClCompile Include="Library\Framework\World\Runtime\WorldSpawner.cpp" />
     <ClCompile Include="Library\Json\JsonObject.cpp" />
     <ClCompile Include="Library\Math\Color.cpp" />
+    <ClCompile Include="Library\Math\Easing.cpp" />
     <ClCompile Include="Library\Math\Matrix4x4.cpp" />
     <ClCompile Include="Library\Math\Quaternion.cpp" />
     <ClCompile Include="Library\Math\RandomStream.cpp" />
@@ -1040,7 +1040,6 @@
     <ClInclude Include="Library\Framework\Subsystem\SubsystemCollection.inl" />
     <ClInclude Include="Library\Framework\Text\TextLayout.h" />
     <ClInclude Include="Library\Framework\UI\Animation\UIAnimator.h" />
-    <ClInclude Include="Library\Framework\UI\Animation\UIEasing.h" />
     <ClInclude Include="Library\Framework\UI\Binding\UIBindingSet.h" />
     <ClInclude Include="Library\Framework\UI\Binding\UIObservable.h" />
     <ClInclude Include="Library\Framework\UI\Brush\UIBrush.h" />
@@ -1092,6 +1091,7 @@
     <ClInclude Include="Library\Json\JsonObject.h" />
     <ClInclude Include="Library\Json\JsonObject.inl" />
     <ClInclude Include="Library\Math\Color.h" />
+    <ClInclude Include="Library\Math\Easing.h" />
     <ClInclude Include="Library\Math\Math.h" />
     <ClInclude Include="Library\Math\MathConstants.h" />
     <ClInclude Include="Library\Math\MathUtils.h" />

@@ -820,9 +820,6 @@
     <ClCompile Include="Library\Framework\UI\Animation\UIAnimator.cpp">
       <Filter>Library\Framework\UI\Animation</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\UI\Animation\UIEasing.cpp">
-      <Filter>Library\Framework\UI\Animation</Filter>
-    </ClCompile>
     <ClCompile Include="Library\Framework\UI\Binding\UIBindingSet.cpp">
       <Filter>Library\Framework\UI\Binding</Filter>
     </ClCompile>
@@ -962,6 +959,9 @@
       <Filter>Library\Json</Filter>
     </ClCompile>
     <ClCompile Include="Library\Math\Color.cpp">
+      <Filter>Library\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Math\Easing.cpp">
       <Filter>Library\Math</Filter>
     </ClCompile>
     <ClCompile Include="Library\Math\Matrix4x4.cpp">
@@ -2916,9 +2916,6 @@
     <ClInclude Include="Library\Framework\UI\Animation\UIAnimator.h">
       <Filter>Library\Framework\UI\Animation</Filter>
     </ClInclude>
-    <ClInclude Include="Library\Framework\UI\Animation\UIEasing.h">
-      <Filter>Library\Framework\UI\Animation</Filter>
-    </ClInclude>
     <ClInclude Include="Library\Framework\UI\Binding\UIBindingSet.h">
       <Filter>Library\Framework\UI\Binding</Filter>
     </ClInclude>
@@ -3070,6 +3067,9 @@
       <Filter>Library\Json</Filter>
     </ClInclude>
     <ClInclude Include="Library\Math\Color.h">
+      <Filter>Library\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Math\Easing.h">
       <Filter>Library\Math</Filter>
     </ClInclude>
     <ClInclude Include="Library\Math\Math.h">
