@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- サンプル UI の設定の窓。ビューモデルの値は {Binding 名前}、色・数は @名前（テーマ）、フォント・ブラシ・スタイルも名前（テーマ）で書いてある。
      Theme ボタンでテーマを替えると、同じこのファイルから、色の違う窓が作り直される。
-     このファイルを保存すると、動いているサンプルの窓が、作り直される（ホットリロード）。 -->
+     このファイルを保存すると、動いているサンプルの窓が、作り直される（ホットリロード）。
+     <Animation> は、窓が作られたときの動き。ボタンの HoverScale・PressedScale は、乗ったとき・押したときの大きさ。 -->
 <Panel Name="SettingsWindow" Background="Window" Padding="28,24">
+  <Animation Property="Opacity" From="0" To="1" Duration="0.3" />
+  <Animation Property="TranslationY" From="28" To="0" Duration="0.45" Easing="BackOut" />
   <VerticalStack Spacing="@Spacing">
     <Label Text="Settings" Font="Title" Color="@Accent" HAlign="Start" VAlign="Center" />
 
@@ -36,10 +39,10 @@
     </HorizontalStack>
 
     <HorizontalStack Spacing="12" Height="44">
-      <Button Name="Ok" Text="OK" Font="Body" TextColor="@Text" Width="108" Height="44" VAlign="Center" Style="Default" OnClicked="OkClicked" />
-      <Button Name="Cancel" Text="Cancel" Font="Body" TextColor="@Text" Width="108" Height="44" VAlign="Center" Style="Default" OnClicked="CancelClicked" />
-      <Button Name="Reset" Text="Reset" Font="Body" TextColor="@Text" Width="108" Height="44" VAlign="Center" Style="Default" Command="{Binding Reset}" Tooltip="Back to the defaults (asks first)" />
-      <Button Name="Theme" Text="Theme" Font="Body" TextColor="@Accent" Width="108" Height="44" VAlign="Center" Style="Default" OnClicked="NextTheme" Tooltip="Switch the color theme" />
+      <Button Name="Ok" Text="OK" Font="Body" TextColor="@Text" Width="108" Height="44" VAlign="Center" Style="Default" HoverScale="1.06" PressedScale="0.95" OnClicked="OkClicked" />
+      <Button Name="Cancel" Text="Cancel" Font="Body" TextColor="@Text" Width="108" Height="44" VAlign="Center" Style="Default" HoverScale="1.06" PressedScale="0.95" OnClicked="CancelClicked" />
+      <Button Name="Reset" Text="Reset" Font="Body" TextColor="@Text" Width="108" Height="44" VAlign="Center" Style="Default" HoverScale="1.06" PressedScale="0.95" Command="{Binding Reset}" Tooltip="Back to the defaults (asks first)" />
+      <Button Name="Theme" Text="Theme" Font="Body" TextColor="@Accent" Width="108" Height="44" VAlign="Center" Style="Default" HoverScale="1.06" PressedScale="0.95" OnClicked="NextTheme" Tooltip="Switch the color theme" />
     </HorizontalStack>
 
     <Label Name="StatusLabel" Text="{Binding Status}" Font="Body" Color="@TextMuted" WrapWidth="480" HAlign="Start" VAlign="Center" />

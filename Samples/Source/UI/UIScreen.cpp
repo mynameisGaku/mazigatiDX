@@ -164,6 +164,7 @@ TSharedPtr<CUIWidget> CUIScreen::BuildSettingsWindow( CAssetSubsystem& Assets, c
 		Base->SetDropdownStyle( "Default", DropdownStyle );
 	}
 	MarkupContext.SetPopupHost( &Screens );
+	MarkupContext.SetAnimator( &Animator );
 	MarkupContext.SetTheme( Themes[0] );
 
 	// マークアップの {Binding ...} と、イベントの受け手は、ここで渡す
@@ -481,6 +482,8 @@ void CUIScreen::Tick( float32 DeltaTime )
 	FUIInputFrame Frame = NUIInput::MakeFrame( Input, Input, Gamepad, FUIInputMapping(), TextInput, GetAppSubsystem<IClipboard>() );
 	Frame.DeltaTime = DeltaTime;   // ツールチップの待ち時間を数えるため
 	const FUIScreenInputResult Result = Screens.Update( Frame );
+	// 部品の動きを進める（入力のあと。このフレームのホバー・押下が、すぐ動きに出る）
+	Animator.Update( DeltaTime );
 	if ( bOpenDropdownPending && SettingsWindow )
 	{
 		bOpenDropdownPending = false;

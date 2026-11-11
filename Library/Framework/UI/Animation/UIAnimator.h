@@ -36,6 +36,24 @@ struct FUIAnimationOptions
 	TCallable<void()> OnFinished;                   // Once で、終わりの値になったとき（Stop で止めたときは、呼ばない）
 };
 
+// 状態（ホバー・押下・フォーカス）に合わせた動き。部品の状態が変わると、描くときの倍率とずれを、その状態の値へ、なめらかに動かす。
+//   倍率は、登録したときの倍率に掛ける。ずれは、登録したときのずれに足す。使えない部品（祖先が使えない場合も）は、元の値に戻る。
+//   状態は、押下 → ホバー → フォーカス → 何もなし の順に選ぶ。
+struct FUIStateMotion
+{
+	float32 HoverScale = 1.0f;
+	float32 PressedScale = 1.0f;
+	float32 FocusScale = 1.0f;
+	FVector2 HoverOffset = FVector2( 0.0f, 0.0f );     // 画素
+	FVector2 PressedOffset = FVector2( 0.0f, 0.0f );
+	FVector2 FocusOffset = FVector2( 0.0f, 0.0f );
+	float32 Duration = 0.12f;                          // 状態が変わってから、その値になるまでの秒
+	EEasing Easing = EEasing::CubicOut;
+
+	// どの状態でも、何も変えないか
+	bool IsIdentity() const;
+};
+
 //=============================================================================
 // CUIAnimator
 //   部品の値（不透明度・描くときのずれ・倍率・回転）や、好きな値を、時間をかけて動かす（補間）。レイアウトは変えないので、動かしても、ほかの部品は動かない。
@@ -49,6 +67,11 @@ struct FUIAnimationOptions
 //   Animator.Play( Panel, EUIAnimatedProperty::TranslationY, 40.0f, 0.0f, Slide );             // 下から、少し行き過ぎて止まる
 //   Animator.PlayValue( 0.0f, 100.0f, Options, [&]( float32 Value ) { Bar->SetValue( Value ); } );   // 好きな値
 //   Animator.Update( DeltaTime );                                                             // 毎フレーム
+//
+//   FUIStateMotion Motion;                                                                    // 状態に合わせた動き
+//   Motion.HoverScale = 1.05f;
+//   Motion.PressedScale = 0.96f;
+//   Animator.SetStateMotion( Button, Motion );                                                // 乗ると少し大きく、押すと少し小さく
 //
 //   - 同じ部品の同じ値を、もう一度 Play すると、前の動きを置き換える（2 つの動きが、取り合わない）。
 //   - 部品は、弱い参照で持つ。部品が消えたら、その動きも消える（OnFinished は、呼ばない）。
@@ -69,7 +92,16 @@ public:
 	bool Stop( int32 Id );
 	// 部品の動きを、すべて止める。止めた数を返す
 	int32 StopAll( const CUIWidget& Widget );
+	// 動きと、状態に合わせた動きを、すべて消す（値は、いまのまま）
 	void Clear();
+
+	// 状態に合わせた動きを、部品に付ける（すでにあれば、置き換える。元の値は、最初に付けたときのまま）。部品が null なら false。
+	// 部品は、弱い参照で持つ（消えたら、外れる）。状態は、Update のたびに見る
+	bool SetStateMotion( const TSharedPtr<CUIWidget>& Widget, const FUIStateMotion& Motion );
+	// 外す（描くときの倍率とずれを、元の値に戻す）。なければ false
+	bool RemoveStateMotion( CUIWidget& Widget );
+	bool HasStateMotion( const CUIWidget& Widget ) const;
+	int32 NumStateMotions() const { return StateMotions.Num(); }
 	// 動きを、終わりの値まで進めて、終える（Once だけ。OnFinished を呼ぶ）。繰り返す動きは、止めるだけ。なければ false
 	bool Finish( int32 Id );
 
@@ -104,6 +136,29 @@ private:
 	static bool ApplyTween( const FTween& Tween, float32 Amount );
 	int32 FindIndex( int32 Id ) const;
 
+	enum class EWidgetState : uint8
+	{
+		None,       // まだ、どの状態の値も入れていない
+		Rest,
+		Focused,
+		Hovered,
+		Pressed
+	};
+
+	struct FStateMotionEntry
+	{
+		TWeakPtr<CUIWidget> Widget;
+		FUIStateMotion Motion;
+		FVector2 BaseScale = FVector2( 1.0f, 1.0f );
+		FVector2 BaseTranslation = FVector2( 0.0f, 0.0f );
+		EWidgetState State = EWidgetState::None;
+	};
+
+	int32 FindStateMotion( const CUIWidget& Widget ) const;
+	// 部品の状態が変わっていたら、その状態の値へ動かし始める
+	void UpdateStateMotions();
+
+	TArray<FStateMotionEntry> StateMotions;
 	TArray<FTween> Tweens;
 	int32 NextId = 1;
 };

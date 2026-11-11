@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Library/Core/Collection/Map.h"
+#include "Library/Framework/UI/Animation/UIAnimator.h"
 #include "Library/Framework/UI/Binding/UIBindingSet.h"
 #include "Library/Framework/UI/Core/UIPanels.h"
 #include "Library/Framework/UI/Markup/UIXml.h"
@@ -43,7 +44,12 @@
 // 共通の属性: Name・Width・Height（固定の大きさ）・MinWidth・MinHeight・MaxWidth・MaxHeight・Margin・Padding（数が 1・2・4 個）・HAlign・VAlign（Start / Center / End / Stretch）・
 //   Weight・Column・Row・ColumnSpan・RowSpan・Anchor（TopLeft・Top・TopRight・Left・Center・Right・BottomLeft・Bottom・BottomRight・Stretch）・AnchorMin・AnchorMax・
 //   Offsets（左・上・右・下）・Pivot・Visibility（Visible / Hidden / Collapsed）・Enabled・Opacity・Clip・HitTestable・Background（#RRGGBB[AA] か、ブラシの名前）
+//   Translation（x,y）・Scale（1 個か x,y）・Rotation（度）・TransformPivot（x,y。0〜1）: 描くときだけ掛ける変換（レイアウトは変えない）
 //   各要素の属性は、Docs/UI.md の「マークアップ（XML）」を参照。
+// 動き（文脈に SetAnimator で CUIAnimator を渡す。無ければ、警告して無視する）:
+//   HoverScale・PressedScale・FocusScale・HoverOffset・PressedOffset・FocusOffset・MotionDuration・MotionEasing: 状態に合わせた動き（FUIStateMotion）
+//   <Animation Property="Opacity" From="0" To="1" Duration="0.3" Delay="0.1" Easing="CubicOut" Loop="Once" />: 親の要素を、読み込んだときに動かし始める
+//     Property は Opacity・TranslationX・TranslationY・Scale・ScaleX・ScaleY・Rotation（度）。From を省くと、いまの値から。Loop は Once・Loop・PingPong
 // テーマ: 文脈にテーマ（FUITheme）を渡すと、フォント・ブラシ・スタイルの名前は、文脈の登録に無ければ、テーマから探す。
 //   色と数の属性には、"@名前" と書ける（Color="@Accent"、Spacing="@Gap"）。
 // 値の書き方:
@@ -70,6 +76,9 @@ public:
 	// ブラシの画像を読む関数（Image の Source。成功したら true で、画像とその大きさ（画素）を返す）
 	using FImageLoader = TCallable<bool( const FString& Path, TSharedPtr<IImage>& OutImage, FVector2& OutSize )>;
 	void SetImageLoader( const FImageLoader& Loader ) { ImageLoader = Loader; }
+
+	// 動かす仕組み（状態に合わせた動きと <Animation> に使う。部品の木より長く生きること。ホストが、毎フレーム Update を呼ぶ）
+	void SetAnimator( CUIAnimator* InAnimator ) { Animator = InAnimator; }
 
 	// イベントの受け手（OnClicked="名前" など）
 	void RegisterHandler( const FString& Name, const TCallable<void()>& Handler ) { Handlers.Add( Name, Handler ); }
@@ -102,6 +111,7 @@ private:
 	TMap<FString, FUITextBoxStyle> TextBoxStyles;
 	TMap<FString, FUIDropdownStyle> DropdownStyles;
 	CUIScreenStack* PopupHost = nullptr;
+	CUIAnimator* Animator = nullptr;
 	FImageLoader ImageLoader;
 	TSharedPtr<FUITheme> Theme;
 	TMap<FString, TCallable<void()>> Handlers;

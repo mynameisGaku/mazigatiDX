@@ -178,6 +178,161 @@ int32 CUIAnimator::StopAll( const CUIWidget& Widget )
 void CUIAnimator::Clear()
 {
 	Tweens.Empty();
+	StateMotions.Empty();
+}
+
+bool FUIStateMotion::IsIdentity() const
+{
+	const bool bNoScale = HoverScale == 1.0f && PressedScale == 1.0f && FocusScale == 1.0f;
+	const bool bNoOffset = HoverOffset.x == 0.0f && HoverOffset.y == 0.0f && PressedOffset.x == 0.0f && PressedOffset.y == 0.0f && FocusOffset.x == 0.0f && FocusOffset.y == 0.0f;
+	return bNoScale && bNoOffset;
+}
+
+int32 CUIAnimator::FindStateMotion( const CUIWidget& Widget ) const
+{
+	for ( int32 Index = 0; Index < StateMotions.Num(); ++Index )
+	{
+		if ( StateMotions[Index].Widget.Pin().Get() == &Widget )
+		{
+			return Index;
+		}
+	}
+	return -1;
+}
+
+bool CUIAnimator::SetStateMotion( const TSharedPtr<CUIWidget>& Widget, const FUIStateMotion& Motion )
+{
+	if ( !Widget )
+	{
+		return false;
+	}
+	const int32 Existing = FindStateMotion( *Widget );
+	if ( Existing >= 0 )
+	{
+		// 元の値は、そのまま。次の Update で、新しい値へ動かし直す
+		StateMotions[Existing].Motion = Motion;
+		StateMotions[Existing].State = EWidgetState::None;
+		return true;
+	}
+	FStateMotionEntry Entry;
+	Entry.Widget = Widget;
+	Entry.Motion = Motion;
+	Entry.BaseScale = Widget->GetRenderTransform().Scale;
+	Entry.BaseTranslation = Widget->GetRenderTransform().Translation;
+	StateMotions.Add( Entry );
+	return true;
+}
+
+bool CUIAnimator::RemoveStateMotion( CUIWidget& Widget )
+{
+	const int32 Index = FindStateMotion( Widget );
+	if ( Index < 0 )
+	{
+		return false;
+	}
+	const FStateMotionEntry Entry = StateMotions[Index];
+	StateMotions.RemoveAt( Index );
+	// 状態の動きが動かしていた値を止めて、元に戻す
+	for ( int32 TweenIndex = Tweens.Num() - 1; TweenIndex >= 0; --TweenIndex )
+	{
+		const FTween& Tween = Tweens[TweenIndex];
+		const bool bOwned = Tween.Property == EUIAnimatedProperty::ScaleX || Tween.Property == EUIAnimatedProperty::ScaleY || Tween.Property == EUIAnimatedProperty::TranslationX
+							|| Tween.Property == EUIAnimatedProperty::TranslationY;
+		if ( !Tween.bCustom && bOwned && Tween.Widget.Pin().Get() == &Widget )
+		{
+			Tweens.RemoveAt( TweenIndex );
+		}
+	}
+	FUIRenderTransform Transform = Widget.GetRenderTransform();
+	Transform.Scale = Entry.BaseScale;
+	Transform.Translation = Entry.BaseTranslation;
+	Widget.SetRenderTransform( Transform );
+	return true;
+}
+
+bool CUIAnimator::HasStateMotion( const CUIWidget& Widget ) const
+{
+	return FindStateMotion( Widget ) >= 0;
+}
+
+void CUIAnimator::UpdateStateMotions()
+{
+	for ( int32 Index = StateMotions.Num() - 1; Index >= 0; --Index )
+	{
+		const TSharedPtr<CUIWidget> Widget = StateMotions[Index].Widget.Pin();
+		if ( !Widget )
+		{
+			StateMotions.RemoveAt( Index );
+			continue;
+		}
+		EWidgetState State = EWidgetState::Rest;
+		if ( Widget->IsEffectivelyEnabled() )
+		{
+			if ( Widget->IsPressed() )
+			{
+				State = EWidgetState::Pressed;
+			}
+			else if ( Widget->IsHovered() )
+			{
+				State = EWidgetState::Hovered;
+			}
+			else if ( Widget->IsFocused() )
+			{
+				State = EWidgetState::Focused;
+			}
+		}
+		if ( State == StateMotions[Index].State )
+		{
+			continue;
+		}
+		const bool bFirst = StateMotions[Index].State == EWidgetState::None;
+		StateMotions[Index].State = State;
+		// 写しを取ってから動かす（Play の中で、配列が動いても、安全なように）
+		const FStateMotionEntry Entry = StateMotions[Index];
+		if ( bFirst && State == EWidgetState::Rest )
+		{
+			// 付けた直後で、何の状態でもない。値は、もう元の値なので、動かさない
+			continue;
+		}
+		float32 Scale = 1.0f;
+		FVector2 Offset = FVector2( 0.0f, 0.0f );
+		if ( State == EWidgetState::Pressed )
+		{
+			Scale = Entry.Motion.PressedScale;
+			Offset = Entry.Motion.PressedOffset;
+		}
+		else if ( State == EWidgetState::Hovered )
+		{
+			Scale = Entry.Motion.HoverScale;
+			Offset = Entry.Motion.HoverOffset;
+		}
+		else if ( State == EWidgetState::Focused )
+		{
+			Scale = Entry.Motion.FocusScale;
+			Offset = Entry.Motion.FocusOffset;
+		}
+		FUIAnimationOptions Options;
+		Options.Duration = Entry.Motion.Duration;
+		Options.Easing = Entry.Motion.Easing;
+		// 使っていない値は、触らない（ほかの動き（出てくるときのずれ など）と、取り合わないように）
+		const FUIStateMotion& Motion = Entry.Motion;
+		const bool bUsesScale = Motion.HoverScale != 1.0f || Motion.PressedScale != 1.0f || Motion.FocusScale != 1.0f;
+		const bool bUsesOffsetX = Motion.HoverOffset.x != 0.0f || Motion.PressedOffset.x != 0.0f || Motion.FocusOffset.x != 0.0f;
+		const bool bUsesOffsetY = Motion.HoverOffset.y != 0.0f || Motion.PressedOffset.y != 0.0f || Motion.FocusOffset.y != 0.0f;
+		if ( bUsesScale )
+		{
+			PlayTo( Widget, EUIAnimatedProperty::ScaleX, Entry.BaseScale.x * Scale, Options );
+			PlayTo( Widget, EUIAnimatedProperty::ScaleY, Entry.BaseScale.y * Scale, Options );
+		}
+		if ( bUsesOffsetX )
+		{
+			PlayTo( Widget, EUIAnimatedProperty::TranslationX, Entry.BaseTranslation.x + Offset.x, Options );
+		}
+		if ( bUsesOffsetY )
+		{
+			PlayTo( Widget, EUIAnimatedProperty::TranslationY, Entry.BaseTranslation.y + Offset.y, Options );
+		}
+	}
 }
 
 bool CUIAnimator::Finish( int32 Id )
@@ -219,6 +374,8 @@ bool CUIAnimator::IsAnimating( const CUIWidget& Widget ) const
 void CUIAnimator::Update( float32 InDeltaTime )
 {
 	const float32 DeltaTime = NMath::Max( 0.0f, InDeltaTime );
+	// 状態が変わった部品の動きを、先に始める（このフレームから進む）
+	UpdateStateMotions();
 	// いまある動きの番号を取り出してから進める（進める最中に、Play・Stop されても、混ざらない。このフレームに足された動きは、次のフレームから進む）
 	TArray<int32> Ids;
 	for ( int32 Index = 0; Index < Tweens.Num(); ++Index )

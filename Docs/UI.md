@@ -185,6 +185,8 @@ if ( Result.bSuccess ) { Screen->AddChild( Result.Root ); }
 |`Opacity` `Clip` `HitTestable` `Interactive` `Focusable`|不透明度と、真偽の設定|
 |`Background`|`#RRGGBB` `#RRGGBBAA` `#RGB`、または登録したブラシの名前|
 |`Tooltip`|ツールチップの文字（ポインターが止まると出る）|
+|`Translation` `Scale` `Rotation` `TransformPivot`|描くときだけ掛ける変換（ずれ `x,y`・倍率（1 個か `x,y`）・回転（度）・中心（0〜1 の `x,y`）。レイアウトは変えない）|
+|`HoverScale` `PressedScale` `FocusScale` `HoverOffset` `PressedOffset` `FocusOffset` `MotionDuration` `MotionEasing`|状態に合わせた動き（「動き（アニメーション）」を参照。`CUIAnimator` が要る）|
 
 **要素ごとの属性**
 
@@ -408,6 +410,28 @@ Animator.Update( DeltaTime );
   - `FUIAnimationOptions`: `Duration`・`Delay`・`Easing`・`Loop`（`Once`・`Loop`・`PingPong`）・`OnFinished`。
   - イージング（緩急）は、UI 専用ではなく、どこからでも使える `EEasing` / `NEasing`（`Library/Math/Easing.h`）です: `Linear`、`Quad`・`Cubic`・`Quart`・`Sine`・`Expo`・`Back` の `In` / `Out` / `InOut`、`ElasticOut`、`BounceOut`。
   - 同じ部品の同じ値を、もう一度 `Play` すると、前の動きを置き換えます。部品が消えると、その動きも消えます。
+- **状態に合わせた動き**: `Animator.SetStateMotion( 部品, FUIStateMotion )` を付けると、ポインターが乗ったとき（`HoverScale`・`HoverOffset`）・押したとき（`PressedScale`・`PressedOffset`）・フォーカスがあるとき（`FocusScale`・`FocusOffset`）に、描くときの倍率とずれが、その値へ、なめらかに動きます（`Duration`・`Easing`）。倍率は、付けたときの倍率に掛け、ずれは、付けたときのずれに足します。使えない部品は、元の値に戻ります。使っていない値（倍率だけ決めたときの、ずれ など）は、触りません。`RemoveStateMotion` で外すと、元の値に戻ります。
+
+```cpp
+FUIStateMotion Motion;
+Motion.HoverScale = 1.05f;      // 乗ると、少し大きく
+Motion.PressedScale = 0.96f;    // 押すと、少し小さく
+Animator.SetStateMotion( Button, Motion );
+```
+
+- **マークアップでの動き**: 文脈に `Context.SetAnimator( &Animator )` で `CUIAnimator` を渡すと、マークアップに動きを書けます（渡していないと、警告して無視します）。
+  - 描くときの変換は、どの要素にも、属性で書けます: `Translation="x,y"`・`Scale="1.2"`（または `"x,y"`）・`Rotation="度"`・`TransformPivot="0.5,0.5"`（これらは、`CUIAnimator` が無くても使えます）。
+  - 状態に合わせた動き: `HoverScale`・`PressedScale`・`FocusScale`・`HoverOffset`・`PressedOffset`・`FocusOffset`・`MotionDuration`・`MotionEasing`。
+  - `<Animation>`: 要素の中に書くと、その要素を、読み込んだとき（ホットリロードで作り直したときも）に動かし始めます。`Property`（`Opacity`・`TranslationX`・`TranslationY`・`Scale`・`ScaleX`・`ScaleY`・`Rotation`（度））と `To` は必須です。`From` を省くと、いまの値から動きます。`Duration`・`Delay`・`Easing`（`CubicOut` など）・`Loop`（`Once`・`Loop`・`PingPong`）も書けます。
+
+```xml
+<Panel Background="Window">
+  <Animation Property="Opacity" From="0" To="1" Duration="0.3" />
+  <Animation Property="TranslationY" From="28" To="0" Duration="0.45" Easing="BackOut" />
+  <Button Text="OK" Style="Default" HoverScale="1.06" PressedScale="0.95" />
+</Panel>
+```
+
 - **画面の出入り**: `FUIScreenOptions::Transition`（`Fade`・`SlideUp` / `Down` / `Left` / `Right`・`Scale`、`Duration`、`Easing`）を決めて `Push` すると、出るときと消えるときに、演出が付きます。消える演出の間の画面は、描かれますが、入力は受けません（ゲームの入力も、止めません）。演出が終わると、実際に外れて、`OnPopped` が起きます。ダイアログは、`NUIDialog::Show( Screens, Dialog, Transition )` です。
 
 ## エンジン組み込みの素材
@@ -416,4 +440,4 @@ UI の基本画像（窓・パネル・ボタンの 4 状態・チェック・�
 
 ## これから
 
-テーマの JSON ファイル、状態ごとのスタイル、入力欄の複数行とダブルクリックの選択、マークアップでの動きの指定は、順に足していきます。
+テーマの JSON ファイル、状態ごとのスタイル、入力欄の複数行とダブルクリックの選択は、順に足していきます。

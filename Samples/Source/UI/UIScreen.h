@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Library/Framework/Object/GameObject.h"
+#include "Library/Framework/UI/Animation/UIAnimator.h"
 #include "Library/Framework/UI/Binding/UIBindingSet.h"
 #include "Library/Framework/UI/Core/UIContext.h"
 #include "Library/Framework/UI/Core/UIScreenStack.h"
@@ -26,6 +27,7 @@
 //   入力は、ゲームの入力（IInput・IGamepadInput）から NUIInput::MakeFrame で UI の入力に直して、CUIContext へ渡す。
 //   左の窓は、ビューモデル（FSettingsViewModel）に結んである（MVVM）: スライダー・チェックボックス・入力欄は双方向、文字・バーは一方向、Reset は操作。
 //   左の窓には、名前を入れる入力欄（文字入力は ITextInput から。日本語の変換も使える）。Reset を押すと、確認のダイアログ（画面のスタックに積む）が出る。
+//   設定の窓は、出てくるときに、ふわっと下から現れ、ボタンは、乗ると少し大きく、押すと少し小さくなる（マークアップの <Animation> と HoverScale・PressedScale）。
 //   マウス・矢印キー・Tab・Enter・Escape・パッドで操作できる。
 //=============================================================================
 class CUIScreen : public CGameObject
@@ -55,6 +57,7 @@ private:
 	CUIBindingSet Bindings;                         // 部品とビューモデルの結び付け
 	CUIBindingSet SettingsBindings;                 // 設定の窓（マークアップ）の結び付け
 	FUIMarkupContext MarkupContext;                 // マークアップで使う名前の表
+	CUIAnimator Animator;                           // 部品の動き（マークアップの <Animation> と、ホバー・押下の動き）
 	CUIMarkupDocument SettingsDocument;             // 設定の窓のマークアップ（Assets/UI/Settings.gxui。保存すると作り直す）
 	TSharedPtr<CUIWidget> SettingsWindow;
 	float32 ReloadTimer = 0.0f;

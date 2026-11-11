@@ -11,7 +11,7 @@
 - UI（ウィジェット）システム（`Library/Framework/UI`。[Docs/UI.md](Docs/UI.md)）: 部品（画像・文字・ボタン・チェック・スライダー・プログレスバー・スクロール枠・仮想化したリスト（縦・横・行ごとの大きさ）・入力欄（日本語の変換・範囲選択・コピーと貼り付け）・ドロップダウン・ダイアログ・描画先の表示）、ツールチップ、画面のスタック、結び付け（MVVM）、テーマ、XML のマークアップ（`.gxui`・ホットリロード）。
 - クリップボードの窓口（`IClipboard`）。
 - マテリアル（`Library/Framework/Material`。[Docs/MATERIAL.md](Docs/MATERIAL.md)）: ドメイン（UI・Surface・Particle・PostProcess）・ノードのグラフ（`.gxmaterial`）・中間表現・HLSL の生成・CPU での評価・診断・バックエンドの能力の宣言、インスタンス（`.gxmaterialinstance`）、パラメーターコレクション（`.gxmaterialparametercollection`）、ポストプロセスのチェーン、Substrate 風の万能モデル（簡略版）、HLSL の直指定、ホットリロード、UI のブラシ（`FUIBrush::MakeMaterial`）、エンジン組み込みのマテリアル（`EngineContent/Materials`）。
-- UI の動き（`CUIAnimator`・イージング・部品の描くときの変換・画面の出入りの演出）。
+- UI の動き（`CUIAnimator`・部品の描くときの変換・画面の出入りの演出・ホバーや押下に合わせた動き・マークアップの `<Animation>`）と、どこからでも使えるイージング（`Library/Math/Easing.h`）。
 - マテリアルエディタ（`Editor.exe`。ノードのグラフ・プレビュー・診断・保存）と、サンプル `Materials`。
 
 ### 変更
