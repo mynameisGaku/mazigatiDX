@@ -1,0 +1,414 @@
+{
+    "Format":  "gxmaterial",
+    "Version":  1,
+    "Name":  "Flame",
+    "Domain":  "Particle",
+    "Nodes":  [
+                  {
+                      "Id":  1,
+                      "Kind":  "TexCoord",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  2,
+                      "Kind":  "Constant",
+                      "Value":  [
+                                    0.5
+                                ],
+                      "Components":  1,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  3,
+                      "Kind":  "Subtract",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     1,
+                                     2
+                                 ]
+                  },
+                  {
+                      "Id":  4,
+                      "Kind":  "Dot",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     3,
+                                     3
+                                 ]
+                  },
+                  {
+                      "Id":  5,
+                      "Kind":  "Constant",
+                      "Value":  [
+                                    4
+                                ],
+                      "Components":  1,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  6,
+                      "Kind":  "Multiply",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     4,
+                                     5
+                                 ]
+                  },
+                  {
+                      "Id":  7,
+                      "Kind":  "OneMinus",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     6
+                                 ]
+                  },
+                  {
+                      "Id":  8,
+                      "Kind":  "Saturate",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     7
+                                 ]
+                  },
+                  {
+                      "Id":  9,
+                      "Kind":  "Constant",
+                      "Value":  [
+                                    0,
+                                    1
+                                ],
+                      "Components":  2,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  10,
+                      "Kind":  "Time",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  11,
+                      "Kind":  "ScalarParameter",
+                      "Name":  "Speed",
+                      "Value":  [
+                                    0.9
+                                ],
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  12,
+                      "Kind":  "Multiply",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     10,
+                                     11
+                                 ]
+                  },
+                  {
+                      "Id":  13,
+                      "Kind":  "Multiply",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     9,
+                                     12
+                                 ]
+                  },
+                  {
+                      "Id":  14,
+                      "Kind":  "Add",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     1,
+                                     13
+                                 ]
+                  },
+                  {
+                      "Id":  15,
+                      "Kind":  "ScalarParameter",
+                      "Name":  "Scale",
+                      "Value":  [
+                                    4
+                                ],
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  16,
+                      "Kind":  "Noise",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     14,
+                                     15
+                                 ]
+                  },
+                  {
+                      "Id":  17,
+                      "Kind":  "Constant",
+                      "Value":  [
+                                    0.35
+                                ],
+                      "Components":  1,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  18,
+                      "Kind":  "Constant",
+                      "Value":  [
+                                    0.75
+                                ],
+                      "Components":  1,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  19,
+                      "Kind":  "Constant",
+                      "Value":  [
+                                    0.6
+                                ],
+                      "Components":  1,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  20,
+                      "Kind":  "Multiply",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     16,
+                                     19
+                                 ]
+                  },
+                  {
+                      "Id":  21,
+                      "Kind":  "Constant",
+                      "Value":  [
+                                    0.7
+                                ],
+                      "Components":  1,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  22,
+                      "Kind":  "Multiply",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     8,
+                                     21
+                                 ]
+                  },
+                  {
+                      "Id":  23,
+                      "Kind":  "Add",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     20,
+                                     22
+                                 ]
+                  },
+                  {
+                      "Id":  24,
+                      "Kind":  "SmoothStep",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     17,
+                                     18,
+                                     23
+                                 ]
+                  },
+                  {
+                      "Id":  25,
+                      "Kind":  "VectorParameter",
+                      "Name":  "Inner",
+                      "Value":  [
+                                    1,
+                                    0.92,
+                                    0.55,
+                                    1
+                                ],
+                      "Components":  4,
+                      "Color":  true,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  26,
+                      "Kind":  "Mask",
+                      "Name":  "xyz",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     25
+                                 ]
+                  },
+                  {
+                      "Id":  27,
+                      "Kind":  "VectorParameter",
+                      "Name":  "Outer",
+                      "Value":  [
+                                    1,
+                                    0.35,
+                                    0.08,
+                                    1
+                                ],
+                      "Components":  4,
+                      "Color":  true,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  28,
+                      "Kind":  "Mask",
+                      "Name":  "xyz",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     27
+                                 ]
+                  },
+                  {
+                      "Id":  29,
+                      "Kind":  "Multiply",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     24,
+                                     8
+                                 ]
+                  },
+                  {
+                      "Id":  30,
+                      "Kind":  "Lerp",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     28,
+                                     26,
+                                     29
+                                 ]
+                  }
+              ],
+    "Outputs":  {
+                    "Color":  30,
+                    "Opacity":  29
+                }
+}

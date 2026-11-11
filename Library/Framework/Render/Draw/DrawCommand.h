@@ -152,6 +152,8 @@ enum class EDrawCommand : uint8
 	ModelAnimFrame,     // FDrawModelAnimFrameData。次の Model3D で描くモデルに付けたアニメーション 1 つの、フレーム（骨）ごとのブレンド率（MV1SetAttachAnimBlendRateToFrame。ModelAnim のあとに記録する）
 	// 通常モデルを一度描く間だけ骨poseを適用し、直後に元へ戻す命令。
 	ModelFramePose3D,
+	// シェーダーで描く 3D の四角形の追加（上のコマンドの形式は変えていない）
+	ShaderQuad3D,       // FDrawQuad3DData。ワールドの四角形（Quad3D と同じ向きの決め方）を、利用者のピクセルシェーダーで描く（組み込みの頂点シェーダーが、色と画像の座標を渡す。Handle は使わない）
 };
 
 // Primitive3D の頂点のつなぎ方（DxLib の DX_PRIMTYPE_*）

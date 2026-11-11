@@ -6,6 +6,7 @@
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
 #include "Library/Framework/Render/Draw/DrawRibbon.h"
 #include "Library/Framework/Render/Draw/DrawMaterialQuad.h"
+#include "Library/Platform/DxLib/Render/DxLibQuad3D.h"
 #include "Library/Framework/Render/Draw/DrawDistortedMaterialQuad.h"
 #include "Library/Framework/Render/Draw/DrawDistortedMaterialRibbon.h"
 #include "Library/Framework/Render/Draw/DrawMaterialMesh.h"
@@ -63,50 +64,12 @@ namespace
 			return;
 		}
 
-		const VECTOR Position = ToVector( Data.Pos );
-		VECTOR Right = ToVector( Data.Right );
-		VECTOR Up = ToVector( Data.Up );
-		switch ( static_cast<EDrawQuadOrient>( Data.Orient ) )
-		{
-		case EDrawQuadOrient::Fixed:
-			break;
-		case EDrawQuadOrient::CameraY:
-		{
-			// カメラ -> 物の向き（水平だけ）。真上・真下から見ているときは、カメラの横向きを使う
-			const VECTOR CameraPosition = GetCameraPosition();
-			VECTOR Forward = VGet( Position.x - CameraPosition.x, 0.0f, Position.z - CameraPosition.z );
-			Up = VGet( 0.0f, 1.0f, 0.0f );
-			if ( VSquareSize( Forward ) < 1.0e-8f )
-			{
-				Right = GetCameraRightVector();
-			}
-			else
-			{
-				Forward = VNorm( Forward );
-				Right = VCross( Up, Forward );
-			}
-			break;
-		}
-		case EDrawQuadOrient::Camera:
-		default:
-		{
-			const VECTOR CameraRight = GetCameraRightVector();
-			const VECTOR CameraUp = GetCameraUpVector();
-			const float Cos = NMath::Cos( Data.Angle );
-			const float Sin = NMath::Sin( Data.Angle );
-			// Angle だけ回す。正の向きは、オブジェクトを視線（Forward）の軸まわりに正の Roll で回したときと同じ（右向きが、上へ傾く）
-			Right = VAdd( VScale( CameraRight, Cos ), VScale( CameraUp, Sin ) );
-			Up = VAdd( VScale( CameraUp, Cos ), VScale( CameraRight, -Sin ) );
-			break;
-		}
-		}
-
-		// 四角形の四隅（画像の左上・右上・左下・右下）。基準点が Pos に来る
-		const float Left = -Data.PivotX * Data.Width;
-		const float RightEdge = ( 1.0f - Data.PivotX ) * Data.Width;
-		const float Top = Data.PivotY * Data.Height;
-		const float Bottom = -( 1.0f - Data.PivotY ) * Data.Height;
-		const auto Corner = [&]( float A, float B ) { return VAdd( Position, VAdd( VScale( Right, A ), VScale( Up, B ) ) ); };
+		// 向きと四隅（画像の左上・右上・左下・右下）は、ShaderQuad3D と同じ決め方
+		VECTOR Right;
+		VECTOR Up;
+		NDxLibQuad3D::ComputeBasis( Data, Right, Up );
+		VECTOR Corners[4];
+		NDxLibQuad3D::ComputeCorners( Data, Right, Up, Corners );
 
 		const VECTOR Normal = VScale( VNorm( VCross( Right, Up ) ), -1.0f );   // 見ている人の側
 		const COLOR_U8 Diffuse = GetColorU8( Data.Color.R, Data.Color.G, Data.Color.B, Data.Color.A );
@@ -122,10 +85,10 @@ namespace
 			Vertex.v = V;
 			return Vertex;
 		};
-		const VERTEX3D TopLeft = MakeVertex( Corner( Left, Top ), Data.U0, Data.V0 );
-		const VERTEX3D TopRight = MakeVertex( Corner( RightEdge, Top ), Data.U1, Data.V0 );
-		const VERTEX3D BottomLeft = MakeVertex( Corner( Left, Bottom ), Data.U0, Data.V1 );
-		const VERTEX3D BottomRight = MakeVertex( Corner( RightEdge, Bottom ), Data.U1, Data.V1 );
+		const VERTEX3D TopLeft = MakeVertex( Corners[0], Data.U0, Data.V0 );
+		const VERTEX3D TopRight = MakeVertex( Corners[1], Data.U1, Data.V0 );
+		const VERTEX3D BottomLeft = MakeVertex( Corners[2], Data.U0, Data.V1 );
+		const VERTEX3D BottomRight = MakeVertex( Corners[3], Data.U1, Data.V1 );
 		const VERTEX3D Vertices[6] = { TopLeft, TopRight, BottomLeft, TopRight, BottomRight, BottomLeft };
 
 		// 両面を描く。色の不透明度が効くよう、ブレンドしていなければ、この 1 枚の間だけアルファブレンドにする

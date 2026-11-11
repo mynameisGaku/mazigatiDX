@@ -130,6 +130,10 @@ namespace
 		NlohmannJson Json = NlohmannJson::object();
 		Json["Name"] = Emitter.Name;
 		if ( !Emitter.Texture.IsEmpty() ) Json["Texture"] = Emitter.Texture;
+		if ( !Emitter.MaterialAsset.IsEmpty() )
+		{
+			Json["MaterialAsset"] = Emitter.MaterialAsset;
+		}
 		if ( Emitter.Blend != Default.Blend ) Json["Blend"] = ToString( Emitter.Blend );
 		if ( Emitter.Space != Default.Space ) Json["Space"] = ToString( Emitter.Space );
 		if ( Emitter.Orient != Default.Orient ) Json["Orient"] = ToString( Emitter.Orient );
@@ -217,6 +221,7 @@ namespace
 		}
 		Emitter.Name = NJson::GetOr<FString>( Json, "Name", Emitter.Name );
 		Emitter.Texture = NJson::GetOr<FString>( Json, "Texture", FString() );
+		Emitter.MaterialAsset = NJson::GetOr<FString>( Json, "MaterialAsset", FString() );
 		ReadEnum( Json, "Blend", Emitter.Blend, Warnings, Where );
 		ReadEnum( Json, "Space", Emitter.Space, Warnings, Where );
 		ReadEnum( Json, "Orient", Emitter.Orient, Warnings, Where );
@@ -601,6 +606,12 @@ uint64 FParticleEffectDefinition::ComputeHash() const
 	{
 		Hasher.String( E.Name );
 		Hasher.String( E.Texture );
+		// 空のときは、足さない（このマテリアルを使わない定義の識別値を、前と同じに保つ）
+		if ( !E.MaterialAsset.IsEmpty() )
+		{
+			Hasher.String( "MaterialAsset" );
+			Hasher.String( E.MaterialAsset );
+		}
 		Hasher.Value( static_cast<uint8>( E.Blend ) );
 		Hasher.Value( static_cast<uint8>( E.Space ) );
 		Hasher.Value( static_cast<uint8>( E.Orient ) );

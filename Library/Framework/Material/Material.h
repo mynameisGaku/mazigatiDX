@@ -28,6 +28,9 @@ class CAssetSubsystem;
 //
 //   // UI・Particle: 矩形に描く（ブレンドは、呼ぶ側で決める）
 //   Material->DrawRect( Draw, X, Y, Width, Height, FColor32( 255, 255, 255, 255 ), FrameState );
+//   // Particle: ワールドの四角形（粒子）を描く
+//   Material->PrepareShaders();   // 先に、メインスレッドで
+//   if ( Material->BeginParticles( Draw, FrameState ) ) { Material->DrawParticleQuad( Draw, Quad ); Material->EndParticles( Draw ); }
 //   // PostProcess: シーンの絵（と深度）を読んで、矩形に描く
 //   Material->DrawPostProcess( Draw, X, Y, Width, Height, SceneImage, DepthImage, FrameState );
 //   // Surface: 球などのメッシュ（FShaderVertex3D）を、標準の頂点シェーダーで描く
@@ -138,6 +141,13 @@ public:
 
 	// UI・Particle: 矩形に描く。ドメインが違う・シェーダーが作れないなら、何も記録せず false
 	bool DrawRect( FDrawContext& Draw, float32 X, float32 Y, float32 Width, float32 Height, const FColor32& Tint, const FMaterialFrameState& State );
+	// Particle: ワールドの四角形（粒子。ビルボード・向きが固定の板）を描く。使うシェーダー・定数・画像を決める → 四角形を描く（何度でも）→ 止める。
+	// 四角形の色（FDrawQuad3DData::Color）は、マテリアルの出力に掛かる（VertexColor ノードでも読める）。画像の座標は U0・V0〜U1・V1。Handle は使わない。ブレンドと奥行きは、呼ぶ側で決める。
+	// 先に、メインスレッドで PrepareShaders を呼んでおく（ここでは、シェーダーを作らない）。記録は、どのスレッドからでもよい（その間に、パラメーターを変えないこと。
+	// 描画システムが、並列に記録するため）。ドメインが Particle でない・シェーダーの用意ができていないなら、何も記録せず false（そのときは、DrawParticleQuad・EndParticles を呼ばない）
+	bool BeginParticles( FDrawContext& Draw, const FMaterialFrameState& State ) const;
+	bool DrawParticleQuad( FDrawContext& Draw, const FDrawQuad3DData& Quad ) const;
+	void EndParticles( FDrawContext& Draw ) const;
 	// PostProcess: Scene（シーンの絵。ShaderRect で矩形に貼る）と Depth（無ければ null）を読んで、矩形に描く
 	bool DrawPostProcess( FDrawContext& Draw, float32 X, float32 Y, float32 Width, float32 Height, const TSharedPtr<IImage>& Scene, const TSharedPtr<IImage>& Depth, const FMaterialFrameState& State );
 	// Surface: 使うシェーダー・場面の定数・パラメーター・画像を決める → メッシュを描く（何度でも）→ 止める

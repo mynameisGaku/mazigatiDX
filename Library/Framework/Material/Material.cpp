@@ -528,6 +528,38 @@ bool CMaterial::DrawRect( FDrawContext& Draw, float32 X, float32 Y, float32 Widt
 	return bOk;
 }
 
+bool CMaterial::BeginParticles( FDrawContext& Draw, const FMaterialFrameState& State ) const
+{
+	// 並列に記録されるので、ここでは、状態を変えない（シェーダーは、先に PrepareShaders で作っておく）
+	if ( GetDomain() != EMaterialDomain::Particle || !IsValid() || !IsReady() )
+	{
+		return false;
+	}
+	TArray<FVector4> Block;
+	BuildParamBlock( Block );
+	FMaterialFrameConstants Frame;
+	Frame.Time = FVector4( State.Time, State.DeltaTime, State.NearPlane, State.FarPlane );
+	Frame.Rect = FVector4( 1.0f, 1.0f, 0.0f, 0.0f );
+	Frame.State = FVector4( State.Hover, State.Press, State.Value, State.Enabled );
+	const FMaterialCompiled& Data = GetCompiled();
+	Draw.ShaderConstants( EShaderStage::Pixel, 4, Block.GetData(), Block.Num() * static_cast<int32>( sizeof( FVector4 ) ) );
+	Draw.ShaderConstants( EShaderStage::Pixel, 5, Frame );
+	BindTextures( Draw, TSharedPtr<IImage>(), TSharedPtr<IImage>() );
+	Draw.UsePixelShader( Data.Pixel );
+	return true;
+}
+
+bool CMaterial::DrawParticleQuad( FDrawContext& Draw, const FDrawQuad3DData& Quad ) const
+{
+	return Draw.ShaderQuad3D( Quad );
+}
+
+void CMaterial::EndParticles( FDrawContext& Draw ) const
+{
+	Draw.StopUsingPixelShader();
+	UnbindTextures( Draw );
+}
+
 bool CMaterial::DrawPostProcess( FDrawContext& Draw, float32 X, float32 Y, float32 Width, float32 Height, const TSharedPtr<IImage>& Scene, const TSharedPtr<IImage>& Depth, const FMaterialFrameState& State )
 {
 	if ( GetDomain() != EMaterialDomain::PostProcess )

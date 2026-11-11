@@ -7,13 +7,14 @@
 //=============================================================================
 // FDxLibShader
 //   1 回の Execute の間に行った、シェーダーの設定（使わせた頂点シェーダー・ピクセルシェーダー、置いた画像、置いた定数バッファ）を覚えて、終わりに元に戻す。
-//   シェーダーで描く命令（PrimitiveShader3D / ShaderRect）も、ここで実行する。
+//   シェーダーで描く命令（PrimitiveShader3D / ShaderRect / ShaderQuad3D）も、ここで実行する。
 //
 //   DxLib の実測（Direct3D 11）:
 //   - シェーダーで描く命令（Draw...ToShader）は、頂点シェーダーとピクセルシェーダーの両方が決まっていないと、何も描かない。ふつうの図形・モデルの描画には、影響しない
 //   - 頂点シェーダーの入力は、宣言した順に、詰めて読まれる（FShaderVertex3D の並びのとおりに宣言する）
 //   - 2D のシェーダーの描画（DrawPrimitive2DToShader）は、頂点シェーダーの中身を使わず、DxLib 自身の頂点処理で描く（実測）ので、使わない。
 //     ShaderRect は、組み込みの頂点シェーダー（クリップ座標をそのまま渡す）と、3D のシェーダーの描画で、矩形を描く
+//     ShaderQuad3D は、ワールドの四角形（Quad3D と同じ向きの決め方）の四隅を、いまのカメラでクリップ座標に直して、組み込みの頂点シェーダーで描く
 //   - 定数バッファのスロットは、HLSL の register( bN ) の N。0〜3 は DxLib 自身が使う（上書きすると、普通の 3D の描画が壊れる）ので、4〜13 だけを使わせる。
 //     中身は、書き換えて UpdateShaderConstantBuffer したものが、そのあとに描くものに効く（同じフレームの中で、描く順に替えられる）
 //   - 画像は、HLSL の Texture2D を t0 から連続して宣言する。t1 だけを宣言すると、DxLib が落ちる（なので、段は実行側では確かめられない。呼び出す側の約束）
@@ -46,6 +47,7 @@ private:
 	void SetOutputTarget( const FDrawCommandView& Command );
 	void DrawPrimitive3D( const FDrawCommandView& Command );
 	void DrawRect( const FDrawCommandView& Command );
+	void DrawQuad3D( const FDrawCommandView& Command );
 
 	// 段 Stage を空にする（空の画像を置く）
 	static void SetEmptyTexture( int32 Stage );

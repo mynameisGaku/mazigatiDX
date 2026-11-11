@@ -1,0 +1,33 @@
+{
+	"Version": 1,
+	"Name": "MaterialFlame",
+	"Seed": 23,
+	"Emitters": [
+		{
+			"Name": "Flames",
+			"MaterialAsset": "Engine:/Materials/Particle/Flame.gxmaterial",
+			"Blend": "Add",
+			"MaxParticles": 60,
+			"Rate": 10,
+			"Lifetime": [0.8, 1.3],
+			"Speed": [0.3, 0.7],
+			"Shape": { "Type": "Cone", "Radius": 0.12, "Angle": 10 },
+			"Gravity": [0, 1.0, 0],
+			"Size": { "Start": [0.7, 1.0], "End": 0.35 },
+			"Color": { "Start": "#FFFFFF90", "End": "#FF906000" }
+		},
+		{
+			"Name": "Glow",
+			"MaterialAsset": "Engine:/Materials/Particle/SoftGlow.gxmaterial",
+			"Blend": "Add",
+			"MaxParticles": 30,
+			"Rate": 10,
+			"Lifetime": [1.2, 2.0],
+			"Speed": [0.5, 1.2],
+			"Shape": { "Type": "Cone", "Radius": 0.2, "Angle": 30 },
+			"Gravity": [0, 0.3, 0],
+			"Size": { "Start": [0.1, 0.18], "End": 0.02 },
+			"Color": { "Start": "#FFC050FF", "End": "#FF400000" }
+		}
+	]
+}

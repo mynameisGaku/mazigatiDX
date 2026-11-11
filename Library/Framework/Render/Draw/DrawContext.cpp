@@ -907,6 +907,24 @@ bool FDrawContext::ShaderRect( float32 X, float32 Y, float32 Width, float32 Heig
 	return true;
 }
 
+bool FDrawContext::ShaderQuad3D( const FDrawQuad3DData& Data )
+{
+	const float32 Numbers[] = { Data.Pos[0], Data.Pos[1], Data.Pos[2], Data.Right[0], Data.Right[1], Data.Right[2], Data.Up[0], Data.Up[1], Data.Up[2], Data.Width, Data.Height, Data.PivotX, Data.PivotY, Data.Angle, Data.U0, Data.V0, Data.U1, Data.V1 };
+	for ( const float32 Number : Numbers )
+	{
+		if ( !NMath::IsFinite( Number ) )
+		{
+			return false;
+		}
+	}
+	if ( Data.Width <= 0.0f || Data.Height <= 0.0f )
+	{
+		return false;
+	}
+	Push( EDrawCommand::ShaderQuad3D, 0, Data );
+	return true;
+}
+
 bool FDrawContext::PushWorldMatrix( const FMatrix4x4& Local )
 {
 	FDrawMatrixData Data;

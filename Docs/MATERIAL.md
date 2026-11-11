@@ -9,7 +9,7 @@
 |ドメイン|適用先|入力のノード|出力ピン|
 |---|---|---|---|
 |`UI`|部品のブラシ（矩形）|`TexCoord`・`Size`・`HoverAmount`・`PressAmount`・`Value01`・`Enabled`・`VertexColor`・`Time`|`Color`（Float3）・`Opacity`（Float）|
-|`Particle`|粒子の矩形|`TexCoord`・`VertexColor`（粒子の色）・`Time`|`Color`・`Opacity`|
+|`Particle`|エフェクトの粒子（ワールドの四角形）・矩形|`TexCoord`・`VertexColor`（粒子の色）・`Time`|`Color`・`Opacity`（粒子の色が、出力に掛かる）|
 |`PostProcess`|画面全体|`TexCoord`・`SceneColor`・`SceneDepth`・`Size`（画面の大きさ）・`Time`|`Color`（つながないと、シーンの色のまま）|
 |`Surface`|メッシュの表面|`TexCoord`・`WorldPosition`・`WorldNormal`・`CameraVector`・`VertexColor`・`Time`|陰影で変わる（下）|
 
@@ -63,6 +63,12 @@ Material->SetVector( "Tint", FVector4( 0.0f, 1.0f, 0.0f, 1.0f ) );
 
 // UI・Particle: 矩形に描く
 Material->DrawRect( Draw, X, Y, Width, Height, FColor32( 255, 255, 255, 255 ), FrameState );
+// Particle: ワールドの四角形（粒子）を描く。先に、メインスレッドで PrepareShaders を呼んでおく
+if ( Material->BeginParticles( Draw, FrameState ) )
+{
+    Material->DrawParticleQuad( Draw, Quad );   // FDrawQuad3DData（位置・大きさ・向き・色）。何度でも
+    Material->EndParticles( Draw );
+}
 // PostProcess: シーンの絵（と深度）を読んで、矩形に描く
 Material->DrawPostProcess( Draw, X, Y, Width, Height, SceneImage, DepthImage, FrameState );
 // Surface: 標準の頂点シェーダーで、メッシュ（FShaderVertex3D）を描く
@@ -141,6 +147,31 @@ FUIBrush Glow = FUIBrush::MakeMaterial( GlowMaterial );                 // UI �
 - 変更するたびに、コンパイルし直して（`CMaterial::Reload`）、診断とプレビューを更新します。Arrange は、つながり方に合わせて、左から右へ並べ直します（位置の無いマテリアルは、開くときに並べます）。
 - 保存は `.gxmaterial`（JSON）です。`Engine:/` の組み込みのマテリアルは読み取り専用なので、別の名前で保存します。
 
+## エフェクトの粒子に使う（Particle ドメイン）
+
+`.gxeffect` のエミッターに `"MaterialAsset": "パス.gxmaterial"` と書くと、その四角形の粒子を、Particle ドメインのマテリアルで描きます。
+
+```json
+{
+  "Name": "Flames",
+  "MaterialAsset": "Engine:/Materials/Particle/Flame.gxmaterial",
+  "Blend": "Add",
+  "Rate": 10,
+  "Size": { "Start": [0.7, 1.0], "End": 0.35 },
+  "Color": { "Start": "#FFFFFF90", "End": "#FF906000" }
+}
+```
+
+- 粒子の色（寿命に沿って変わる色と不透明度）は、マテリアルの出力（`Color`・`Opacity`）に掛かります。マテリアルの中で、もう一度掛ける必要はありません（`VertexColor` ノードでも読めます）。
+- `TexCoord` は、四角形の左上が (0, 0)、右下が (1, 1) です。`Time` は、再生を始めてからの秒です（ループでも巻き戻りません）。
+- 画像は、マテリアルの中のもの（`TextureSample`）を使います。エミッターの `Texture` は使いません。
+- 向き（`Camera`・`CameraY`・`Fixed`）・大きさ・回転・ブレンドは、ふつうの粒子と同じです。奥行きの比べ方は、いまの描画の状態に従います。
+- 四角形の粒子だけに使えます。帯・雷・メッシュ・コマ送りのエミッターに書くと、警告して無視します。
+- マテリアルが読めない・Particle ドメインでない・シェーダーを使えない（ピクセルシェーダーの無いバックエンド）ときは、警告して、従来の描き方（画像の四角形）に戻ります。
+- 粒子の寿命の位置（0〜1）や速さは、まだマテリアルから読めません（色で渡してください）。
+- 組み込み: `Engine:/Materials/Particle/SoftGlow.gxmaterial`（やわらかい光の玉）・`Flame.gxmaterial`（上へ流れるノイズの炎）。見本は、サンプル `Effects` の **Material flame** です。
+- 描く命令は `FDrawContext::ShaderQuad3D`（`Quad3D` と同じ向きの決め方の四角形を、決めてあるピクセルシェーダーで描く）です。自分のシェーダーでも使えます。
+
 ## これから
 
-Particle ドメインの、エフェクトの粒子への適用、Substrate のフル評価（フルに評価できるバックエンドの追加）。
+Substrate のフル評価（フルに評価できるバックエンドの追加）、粒子の寿命・速さを読む入力。

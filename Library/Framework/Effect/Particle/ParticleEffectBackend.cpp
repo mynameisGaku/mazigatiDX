@@ -7,6 +7,8 @@
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Effect/Geometry/EffectPathGeometry.h"
+#include "Library/Framework/Engine/Engine.h"
+#include "Library/Framework/Material/MaterialSubsystem.h"
 #include "Library/Framework/Render/Draw/DrawMaterialMesh.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
 #include "Library/Math/MathUtils.h"
@@ -577,7 +579,47 @@ TSharedPtr<IEffectPlayback> NEffect::CreateParticlePlayback( const TSharedPtr<co
 		}
 		DistortionTextures.Add( DistortionTexture );
 	}
-	return MakeShared<FParticlePlayback>( Definition, Textures, Params, World, MaskTextures, FlipbookFrames, DistortionTextures );
+	TSharedPtr<FParticlePlayback> Playback = MakeShared<FParticlePlayback>( Definition, Textures, Params, World, MaskTextures, FlipbookFrames, DistortionTextures );
+
+	// 四角形の粒子を描くマテリアル（MaterialAsset）。使えるものだけを渡す（使えないものは、警告して、従来の描き方）
+	TArray<TSharedPtr<CMaterial>> EmitterMaterials;
+	bool bAnyMaterial = false;
+	for ( const FParticleEmitterDefinition& Emitter : Definition->Emitters )
+	{
+		TSharedPtr<CMaterial> Material;
+		const bool bQuad = Emitter.Path.Kind == FEffectPathDefinition::EKind::None && Emitter.Mesh.Kind == FEffectMeshDefinition::EKind::None && !Emitter.Flipbook.bEnabled;
+		if ( !Emitter.MaterialAsset.IsEmpty() && !bQuad )
+		{
+			LOG( LogAsset, Warning, "Effect '%s': the material '%s' of emitter '%s' is ignored (a material is only for plain quads, not for paths, meshes or flipbooks)", *Label, *Emitter.MaterialAsset, *Emitter.Name );
+		}
+		else if ( !Emitter.MaterialAsset.IsEmpty() )
+		{
+			CMaterialSubsystem* Materials = GetAppSubsystem<CMaterialSubsystem>();
+			Material = Materials != nullptr ? Materials->LoadMaterial( Emitter.MaterialAsset ) : TSharedPtr<CMaterial>();
+			if ( !Material.IsValid() || !Material->IsValid() )
+			{
+				LOG( LogAsset, Warning, "Effect '%s': the material '%s' of emitter '%s' could not be loaded (the emitter is drawn without it)", *Label, *Emitter.MaterialAsset, *Emitter.Name );
+				Material.Reset();
+			}
+			else if ( Material->GetDomain() != EMaterialDomain::Particle )
+			{
+				LOG( LogAsset, Warning, "Effect '%s': the material '%s' of emitter '%s' is not a Particle material (the emitter is drawn without it)", *Label, *Emitter.MaterialAsset, *Emitter.Name );
+				Material.Reset();
+			}
+			else if ( !Material->PrepareShaders() )
+			{
+				LOG( LogAsset, Warning, "Effect '%s': the shaders of the material '%s' of emitter '%s' are not available (the emitter is drawn without it)", *Label, *Emitter.MaterialAsset, *Emitter.Name );
+				Material.Reset();
+			}
+		}
+		bAnyMaterial = bAnyMaterial || Material.IsValid();
+		EmitterMaterials.Add( Material );
+	}
+	if ( bAnyMaterial )
+	{
+		Playback->SetEmitterMaterials( EmitterMaterials );
+	}
+	return Playback;
 }
 
 //=============================================================================
@@ -699,12 +741,34 @@ void FParticlePlayback::Record( FDrawContext& Draw ) const
 		++MeshParticleCount;
 	}
 	int32 CurrentEmitter = -1;
+	// いま、設定（シェーダー・定数・画像）を使わせているマテリアル（無ければ null）。関数を出る前に、必ず止める
+	const CMaterial* ActiveMaterial = nullptr;
+	struct FActiveMaterialGuard
+	{
+		FDrawContext& Draw;
+		const CMaterial*& Active;
+		~FActiveMaterialGuard()
+		{
+			if ( Active != nullptr )
+			{
+				Active->EndParticles( Draw );
+				Active = nullptr;
+			}
+		}
+	};
+	const FActiveMaterialGuard ActiveMaterialGuard { Draw, ActiveMaterial };
 	for ( int32 ParticleIndex = 0; ParticleIndex < Particles.Num(); ++ParticleIndex )
 	{
 		// 現在記録する生成順particle。
 		const NParticle::FDrawParticle& Particle = Particles[ParticleIndex];
 		if ( Particle.Size <= 0.0f || Particle.Color.a == 0 ) continue;
 		const FParticleEmitterDefinition& Emitter = Simulation.Definition->Emitters[Particle.Emitter];
+		// 別のエミッターの描画に入る前に、マテリアルの設定を止める（ほかの描き方に、シェーダーを残さない）
+		if ( ActiveMaterial != nullptr && Particle.Emitter != CurrentEmitter )
+		{
+			ActiveMaterial->EndParticles( Draw );
+			ActiveMaterial = nullptr;
+		}
 		// 壊れたmesh値や排他設定を別の形状へ黙って置き換えない。
 		const bool bMeshRequested = Emitter.Mesh.Kind != FEffectMeshDefinition::EKind::None;
 		if ( !Emitter.Mesh.IsValidSettings() || ( bMeshRequested && ( Emitter.Path.Kind != FEffectPathDefinition::EKind::None || Emitter.Flipbook.bEnabled ) ) ) continue;
@@ -814,6 +878,38 @@ void FParticlePlayback::Record( FDrawContext& Draw ) const
 			Data.Up[2] = Up.z;
 		}
 		else if ( Emitter.Orient == EParticleOrient::Camera ) Data.Angle = Particle.Angle;
+		// マテリアル（Particle ドメイン）で描くエミッター: 生の色を渡し、画像の座標は全体（0〜1）。同じマテリアルが続く間は、設定を使い回す
+		const CMaterial* EmitterMaterial = !bUseFlipbook && EmitterMaterials.IsValidIndex( Particle.Emitter ) ? EmitterMaterials[Particle.Emitter].Get() : nullptr;
+		if ( EmitterMaterial != ActiveMaterial )
+		{
+			if ( ActiveMaterial != nullptr )
+			{
+				ActiveMaterial->EndParticles( Draw );
+			}
+			ActiveMaterial = nullptr;
+			if ( EmitterMaterial != nullptr )
+			{
+				FMaterialFrameState FrameState;
+				FrameState.Time = MaterialTime;
+				if ( EmitterMaterial->BeginParticles( Draw, FrameState ) )
+				{
+					ActiveMaterial = EmitterMaterial;
+				}
+			}
+		}
+		if ( EmitterMaterial != nullptr && ActiveMaterial == EmitterMaterial )
+		{
+			Data.Color.R = Particle.Color.r;
+			Data.Color.G = Particle.Color.g;
+			Data.Color.B = Particle.Color.b;
+			Data.Color.A = Particle.Color.a;
+			Data.U0 = 0.0f;
+			Data.V0 = 0.0f;
+			Data.U1 = 1.0f;
+			Data.V1 = 1.0f;
+			ActiveMaterial->DrawParticleQuad( Draw, Data );
+			continue;
+		}
 		if ( Emitter.Material.bEnabled )
 		{
 			// 材質シェーダーへは元の色を渡し、従来の加算用前掛けを重ねない。

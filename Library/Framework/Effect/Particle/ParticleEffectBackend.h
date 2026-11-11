@@ -6,6 +6,7 @@
 #include "Library/Framework/Effect/Particle/ParticleSimulation.h"
 
 class CTexture;
+class CMaterial;
 
 //=============================================================================
 // 内蔵のパーティクルのバックエンド（.gxeffect を扱う）
@@ -16,6 +17,7 @@ class CTexture;
 //
 //   描き方の約束:
 //   - 旧非材質の加算命令はRGBへalphaを掛ける。材質付き四角形・帯・meshは生RGBAを渡し、blend stateがalphaを適用する。
+//   - エミッターの MaterialAsset（Particle ドメインのマテリアル）がある四角形の粒子は、そのマテリアルのピクセルシェーダーで描く（ShaderQuad3D。生の RGBA を渡す）。
 //   - 粒子は、エミッターの順に、生まれた順に描く（カメラからの距離では並べない。透明な粒子が重なると、見え方が、描く順に依る）。
 	//   - 既存の四角形・帯・雷命令は DxLib の深度設定に従う。材質四角形は深度比較を行い、深度を書き込まない。
 //=============================================================================
@@ -48,7 +50,15 @@ public:
 	void SetTargetPosition( const FVector3& WorldTarget ) override;
 	// 動的終点の指定を解除し、定義側の終点へ戻す。
 	void ClearTargetPosition() override;
-	void Update( float32 DeltaTime ) override { NParticle::Advance( Simulation, DeltaTime ); }
+	void Update( float32 DeltaTime ) override
+	{
+		NParticle::Advance( Simulation, DeltaTime );
+		MaterialTime += DeltaTime > 0.0f ? DeltaTime : 0.0f;
+	}
+	// エミッターごとの、四角形の粒子を描くマテリアル（FParticleEmitterDefinition::MaterialAsset を読んだもの。null の項目は、従来の描き方）。
+	// Particle ドメインで、シェーダーの用意（PrepareShaders）が済んだものだけを渡す。再生が終わるまで持つ
+	void SetEmitterMaterials( const TArray<TSharedPtr<CMaterial>>& InMaterials ) { EmitterMaterials = InMaterials; }
+	const TArray<TSharedPtr<CMaterial>>& GetEmitterMaterials() const { return EmitterMaterials; }
 	void Record( FDrawContext& Draw ) const override;
 	void Stop( bool bImmediate ) override { NParticle::Stop( Simulation, bImmediate ); }
 	bool IsFinished() const override { return Simulation.IsFinished(); }
@@ -71,6 +81,9 @@ private:
 	TArray<int32> MeshTextureHandles;
 	// emitterごとに再生開始時に作った変更しないCPU形状。
 	TArray<FEffectMeshGeometry> MeshGeometries;
+	// エミッターごとのマテリアル（無ければ null）と、マテリアルに渡す時間（再生を始めてからの秒。ループでも巻き戻らない）
+	TArray<TSharedPtr<CMaterial>> EmitterMaterials;
+	float32 MaterialTime = 0.0f;
 	// 再生指定のシードを保持し、描画順や粒子更新の回数に雷の形を依存させない。
 	uint32 PathSeed = 1;
 };

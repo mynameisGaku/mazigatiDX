@@ -1,0 +1,191 @@
+{
+    "Format":  "gxmaterial",
+    "Version":  1,
+    "Name":  "SoftGlow",
+    "Domain":  "Particle",
+    "Nodes":  [
+                  {
+                      "Id":  1,
+                      "Kind":  "TexCoord",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  2,
+                      "Kind":  "Constant",
+                      "Value":  [
+                                    0.5
+                                ],
+                      "Components":  1,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  3,
+                      "Kind":  "Subtract",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     1,
+                                     2
+                                 ]
+                  },
+                  {
+                      "Id":  4,
+                      "Kind":  "Dot",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     3,
+                                     3
+                                 ]
+                  },
+                  {
+                      "Id":  5,
+                      "Kind":  "Constant",
+                      "Value":  [
+                                    4
+                                ],
+                      "Components":  1,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  6,
+                      "Kind":  "Multiply",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     4,
+                                     5
+                                 ]
+                  },
+                  {
+                      "Id":  7,
+                      "Kind":  "OneMinus",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     6
+                                 ]
+                  },
+                  {
+                      "Id":  8,
+                      "Kind":  "Saturate",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     7
+                                 ]
+                  },
+                  {
+                      "Id":  9,
+                      "Kind":  "Multiply",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     8,
+                                     8
+                                 ]
+                  },
+                  {
+                      "Id":  10,
+                      "Kind":  "Multiply",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     9,
+                                     9
+                                 ]
+                  },
+                  {
+                      "Id":  11,
+                      "Kind":  "ScalarParameter",
+                      "Name":  "Core",
+                      "Value":  [
+                                    0.6
+                                ],
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  12,
+                      "Kind":  "Multiply",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     10,
+                                     11
+                                 ]
+                  },
+                  {
+                      "Id":  13,
+                      "Kind":  "Constant",
+                      "Value":  [
+                                    1,
+                                    1,
+                                    1
+                                ],
+                      "Components":  3,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  14,
+                      "Kind":  "Add",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     13,
+                                     12
+                                 ]
+                  }
+              ],
+    "Outputs":  {
+                    "Color":  14,
+                    "Opacity":  9
+                }
+}

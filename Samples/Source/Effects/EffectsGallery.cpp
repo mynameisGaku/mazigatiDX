@@ -34,6 +34,7 @@ void CEffectsGallery::OnSpawn()
 	State->Entries.Add( MakeEntry( "Aura", "Effects/aura.gxeffect", "Particles that rise and fade around a point." ) );
 	State->Entries.Add( MakeEntry( "Campfire", "Effects/campfire.gxeffect", "Flame and smoke: many particles with colour and size over their life." ) );
 	State->Entries.Add( MakeEntry( "Sparks", "Effects/sparks.gxeffect", "Short-lived sparks that fly out and fall." ) );
+	State->Entries.Add( MakeEntry( "Material flame", "Effects/material_flame.gxeffect", "Particles drawn with node-graph materials (Particle domain): a flame shaped by flowing noise." ) );
 	State->Entries.Add( MakeEntry( "Ribbon trail", "Effects/ribbon_trail.gxeffect", "A ribbon that follows the moving point. Move the mouse." ) );
 	State->Entries.Add( MakeEntry( "Branch lightning", "Effects/branch_lightning.gxeffect", "Lightning with branches, redrawn with a new shape over time." ) );
 	State->Entries.Add( MakeEntry( "Target lightning", "Effects/target_lightning.gxeffect", "Lightning to a dynamic end point. Move the mouse." ) );
