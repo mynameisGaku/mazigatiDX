@@ -1140,6 +1140,7 @@
     <ClInclude Include="Library\Platform\DxLib\Render\DxLibDrawExecutorSubsystem.h" />
     <ClInclude Include="Library\Platform\DxLib\Render\DxLibImGuiTexture.h" />
     <ClInclude Include="Library\Platform\DxLib\Render\DxLibLighting.h" />
+    <ClInclude Include="Library\Platform\DxLib\Render\DxLibQuad3D.h" />
     <ClInclude Include="Library\Platform\DxLib\Render\DxLibRenderLog.h" />
     <ClInclude Include="Library\Platform\DxLib\Render\DxLibRenderState3D.h" />
     <ClInclude Include="Library\Platform\DxLib\Render\DxLibRibbonMesh.h" />

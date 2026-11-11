@@ -3216,6 +3216,9 @@
     <ClInclude Include="Library\Platform\DxLib\Render\DxLibLighting.h">
       <Filter>Library\Platform\DxLib\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Platform\DxLib\Render\DxLibQuad3D.h">
+      <Filter>Library\Platform\DxLib\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\Render\DxLibRenderLog.h">
       <Filter>Library\Platform\DxLib\Render</Filter>
     </ClInclude>
