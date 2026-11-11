@@ -12,7 +12,7 @@
 - クリップボードの窓口（`IClipboard`）。
 - マテリアル（`Library/Framework/Material`。[Docs/MATERIAL.md](Docs/MATERIAL.md)）: ドメイン（UI・Surface・Particle・PostProcess）・ノードのグラフ（`.gxmaterial`）・中間表現・HLSL の生成・CPU での評価・診断・バックエンドの能力の宣言、インスタンス（`.gxmaterialinstance`）、パラメーターコレクション（`.gxmaterialparametercollection`）、ポストプロセスのチェーン、Substrate 風の万能モデル（簡略版）、HLSL の直指定、ホットリロード、UI のブラシ（`FUIBrush::MakeMaterial`）、エンジン組み込みのマテリアル（`EngineContent/Materials`）。
 - UI の動き（`CUIAnimator`・部品の描くときの変換・画面の出入りの演出・ホバーや押下に合わせた動き・マークアップの `<Animation>`）と、どこからでも使えるイージング（`Library/Math/Easing.h`）。
-- UI のテーマのファイル（`.gxuitheme`。`CUIThemeLoader`）と、色の文字の読み取り（`FColor32::TryParseHex`）。
+- UI のテーマのファイル（`.gxuitheme`。`CUIThemeLoader`。色・数・ブラシ・部品のスタイルと、スタイルの `Extends`）、そのホットリロード（`CUIThemeDocument`）、色の文字の読み取り（`FColor32::TryParseHex`）。
 - エフェクトの粒子を、Particle ドメインのマテリアルで描く（エミッターの `MaterialAsset`。`CMaterial::BeginParticles`・描画命令 `ShaderQuad3D`・組み込みの `Engine:/Materials/Particle`）。
 - マテリアルエディタ（`Editor.exe`。ノードのグラフ・プレビュー・診断・保存）と、サンプル `Materials`。
 

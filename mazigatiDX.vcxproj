@@ -352,6 +352,7 @@
     <ClCompile Include="Library\Framework\UI\Markup\UIXml.cpp" />
     <ClCompile Include="Library\Framework\UI\Style\UIDefaultStyle.cpp" />
     <ClCompile Include="Library\Framework\UI\Style\UITheme.cpp" />
+    <ClCompile Include="Library\Framework\UI\Style\UIThemeDocument.cpp" />
     <ClCompile Include="Library\Framework\UI\Style\UIThemeLoader.cpp" />
     <ClCompile Include="Library\Framework\UI\Widgets\UIControlWidgets.cpp" />
     <ClCompile Include="Library\Framework\UI\Widgets\UIDialog.cpp" />
@@ -1057,6 +1058,7 @@
     <ClInclude Include="Library\Framework\UI\Markup\UIXml.h" />
     <ClInclude Include="Library\Framework\UI\Style\UIDefaultStyle.h" />
     <ClInclude Include="Library\Framework\UI\Style\UITheme.h" />
+    <ClInclude Include="Library\Framework\UI\Style\UIThemeDocument.h" />
     <ClInclude Include="Library\Framework\UI\Style\UIThemeLoader.h" />
     <ClInclude Include="Library\Framework\UI\Widgets\UIControlWidgets.h" />
     <ClInclude Include="Library\Framework\UI\Widgets\UIDialog.h" />

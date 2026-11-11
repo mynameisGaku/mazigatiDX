@@ -9,7 +9,7 @@
 #include "Library/Framework/UI/Markup/UIMarkupDocument.h"
 #include "Library/Framework/UI/Core/UIPanels.h"
 #include "Library/Framework/UI/Style/UIDefaultStyle.h"
-#include "Library/Framework/UI/Style/UIThemeLoader.h"
+#include "Library/Framework/UI/Style/UIThemeDocument.h"
 #include "Library/Framework/UI/Widgets/UIControlWidgets.h"
 #include "Library/Framework/UI/Widgets/UIDialog.h"
 #include "Library/Framework/UI/Widgets/UIDisplayWidgets.h"
@@ -62,7 +62,8 @@ private:
 	CUIMarkupDocument SettingsDocument;             // 設定の窓のマークアップ（Assets/UI/Settings.gxui。保存すると作り直す）
 	TSharedPtr<CUIWidget> SettingsWindow;
 	float32 ReloadTimer = 0.0f;
-	TArray<TSharedPtr<FUITheme>> Themes;            // 基本のテーマと、色だけ変えた子のテーマ
+	TArray<TSharedPtr<FUITheme>> Themes;            // 共通のテーマと、色だけ変えた子のテーマ
+	TArray<CUIThemeDocument> ThemeDocuments;        // テーマのファイル（保存し直されたら、読み直す）
 	int32 ThemeIndex = 0;
 	bool bThemeChangePending = false;
 	bool bOpenDropdownPending = false;   // 撮影用: 最初の更新のあとで、ドロップダウンを開く

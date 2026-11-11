@@ -130,36 +130,34 @@ void CUIScreen::SetStatus( const char* Text )
 
 TSharedPtr<CUIWidget> CUIScreen::BuildSettingsWindow( CAssetSubsystem& Assets, const TSharedPtr<CFont>& Body, const TSharedPtr<CFont>& Title )
 {
-	// 見た目は、テーマ（名前つきの色・ブラシ・フォント・スタイル）にまとめてある。基本のテーマはコードで作り、その子のテーマは、ファイル（Assets/UI/Themes/*.gxuitheme）から読む
-	TSharedPtr<FUITheme> Base = Style.MakeTheme( Body, Title );
-	FUISliderStyle SliderStyle = Style.Slider;
-	SliderStyle.TrackInset = FUIMargin( 0.0f, 8.0f, 0.0f, 8.0f );   // 溝を、矩形より細くする（矩形の高さ 28 に対して、溝は 12）
-	Base->SetSliderStyle( "Thin", SliderStyle );
-	Themes.Add( Base );
+	// 見た目は、テーマ（名前つきの色・ブラシ・フォント・スタイル）にまとめてある。基本のテーマ（画像とフォント）はコードで作り、
+	// その子のテーマは、ファイル（Assets/UI/Themes/*.gxuitheme）から読む: Common（どのテーマでも同じスタイル）→ Blue・Green・Rose（色などを上書き）
+	const TSharedPtr<FUITheme> Base = Style.MakeTheme( Body, Title );
+	ThemeDocuments.Reserve( 4 );
+	TSharedPtr<FUITheme> Common = Base;
+	ThemeDocuments.AddDefaulted();
+	if ( ThemeDocuments.Last().Load( Assets, "UI/Themes/Common.gxuitheme", Base ) )
+	{
+		Common = ThemeDocuments.Last().GetTheme();
+	}
+	else
+	{
+		LOG( LogSamples, Warning, "the UI theme could not be loaded: %s", *ThemeDocuments.Last().GetLastError() );
+	}
+	Themes.Add( Common );
 	const char* ThemeFiles[] = { "UI/Themes/Blue.gxuitheme", "UI/Themes/Green.gxuitheme", "UI/Themes/Rose.gxuitheme" };
 	for ( const char* ThemeFile : ThemeFiles )
 	{
-		// 上書きした名前だけ違い、あとは基本のテーマと同じ（読めなかったテーマは、飛ばす）
-		FString ThemeError;
-		const TSharedPtr<FUITheme> Variant = CUIThemeLoader::Load( Assets, ThemeFile, Base, ThemeError );
-		if ( Variant )
+		// 上書きした名前だけ違い、あとは共通のテーマと同じ（読めなかったテーマは、飛ばす）
+		ThemeDocuments.AddDefaulted();
+		if ( ThemeDocuments.Last().Load( Assets, ThemeFile, Common ) )
 		{
-			Themes.Add( Variant );
+			Themes.Add( ThemeDocuments.Last().GetTheme() );
 		}
 		else
 		{
-			LOG( LogSamples, Warning, "the UI theme could not be loaded: %s", *ThemeError );
+			LOG( LogSamples, Warning, "the UI theme could not be loaded: %s", *ThemeDocuments.Last().GetLastError() );
 		}
-	}
-	// ドロップダウン: 矢印は、アイコンの画像。一覧は、このスタックに積む
-	FUIDropdownStyle DropdownStyle;
-	if ( Base->FindDropdownStyle( "Default", DropdownStyle ) )
-	{
-		if ( const TSharedPtr<CTexture> Chevron = Assets.LoadTexture( "Engine:/Icons/ChevronDown.png" ) )
-		{
-			DropdownStyle.Arrow = FUIBrush::MakeImage( Chevron, FVector2( static_cast<float32>( Chevron->GetWidth() ), static_cast<float32>( Chevron->GetHeight() ) ), EUIImageMode::Fit, FColor32( 235, 238, 245, 255 ) );
-		}
-		Base->SetDropdownStyle( "Default", DropdownStyle );
 	}
 	MarkupContext.SetPopupHost( &Screens );
 	MarkupContext.SetAnimator( &Animator );
@@ -211,7 +209,25 @@ void CUIScreen::ReplaceSettingsWindow()
 void CUIScreen::ReloadSettingsWindow()
 {
 	CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
-	if ( Assets != nullptr && Root && SettingsDocument.ReloadIfChanged( *Assets, MarkupContext, SettingsBindings ) )
+	if ( Assets == nullptr || !Root )
+	{
+		return;
+	}
+	// テーマのファイルが保存し直されたら、読み直す。作ってある窓は、ブラシや色を写して持っているので、作り直す
+	bool bThemeChanged = false;
+	for ( CUIThemeDocument& ThemeDocument : ThemeDocuments )
+	{
+		const FString OldError = ThemeDocument.GetLastError();
+		if ( ThemeDocument.ReloadIfChanged( *Assets ) )
+		{
+			bThemeChanged = true;
+		}
+		else if ( !ThemeDocument.GetLastError().IsEmpty() && ThemeDocument.GetLastError() != OldError )
+		{
+			LOG( LogSamples, Warning, "the UI theme could not be loaded again: %s", *ThemeDocument.GetLastError() );
+		}
+	}
+	if ( SettingsDocument.ReloadIfChanged( *Assets, MarkupContext, SettingsBindings ) || ( bThemeChanged && SettingsDocument.Rebuild( *Assets, MarkupContext, SettingsBindings ) ) )
 	{
 		ReplaceSettingsWindow();
 	}
@@ -461,7 +477,7 @@ void CUIScreen::Tick( float32 DeltaTime )
 		return;
 	}
 	ElapsedTime += DeltaTime;
-	// 設定の窓のマークアップが保存し直されたら、作り直す（半秒ごとに調べる）
+	// 設定の窓のマークアップか、テーマのファイルが保存し直されたら、作り直す（半秒ごとに調べる）
 	if ( bThemeChangePending )
 	{
 		bThemeChangePending = false;

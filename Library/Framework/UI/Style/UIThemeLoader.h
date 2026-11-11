@@ -7,8 +7,9 @@ class CAssetSubsystem;
 
 //=============================================================================
 // CUIThemeLoader: テーマのファイル（.gxuitheme。JSON）から、テーマ（FUITheme）を作る
-//   色・数・ブラシ・ボタンとチェックボックスのスタイルを、コードではなく、ファイルに書ける。
-//   フォントと、ほかの部品のスタイル（スライダー・入力欄・ドロップダウン）は、コードで足す（親のテーマに入れておけば、そこから引かれる）。
+//   色・数・ブラシ・部品のスタイル（ボタン・チェックボックス・スライダー・入力欄・ドロップダウン）を、コードではなく、ファイルに書ける。
+//   フォントは、コードで足す（親のテーマに入れておけば、そこから引かれる）。
+//   ファイルを保存し直したら読み直す（ホットリロード）のは、CUIThemeDocument（UIThemeDocument.h）。
 //
 //   {
 //     "Name": "Blue",
@@ -22,7 +23,10 @@ class CAssetSubsystem;
 //       "Framed": { "Layers": [ "Card", { "Image": "Engine:/UI/Frame.png", "Mode": "NineSlice" } ] }
 //     },
 //     "ButtonStyles":   { "Flat": { "Normal": "Card", "Hover": "#2C3848", "Pressed": "#182028", "Disabled": "#40444C", "FocusOverlay": "Framed" } },
-//     "CheckBoxStyles": { "Flat": { "Off": "Card", "On": "@Accent" } }
+//     "CheckBoxStyles": { "Flat": { "Off": "Card", "On": "@Accent" } },
+//     "SliderStyles":   { "Thin": { "Extends": "Default", "TrackInset": [ 0, 8 ], "HandleSize": 18 } },
+//     "TextBoxStyles":  { "Flat": { "Normal": "Card", "Focused": "Framed", "TextColor": "#FFFFFF", "TextPadding": [ 10, 4 ] } },
+//     "DropdownStyles": { "Flat": { "Button": "Flat", "PopupBackground": "Card", "ItemSelected": "@Accent", "ItemHeight": 32, "MaxVisibleItems": 6 } }
 //   }
 //
 //   TSharedPtr<FUITheme> Blue = CUIThemeLoader::Load( Assets, "UI/Themes/Blue.gxuitheme", Base, Error );   // Base の子のテーマ。失敗なら null（Error に理由）
@@ -35,7 +39,17 @@ class CAssetSubsystem;
 //       マテリアル { "Material": パス, "Tint" }
 //       重ね     { "Layers": [ ブラシ, ... ] }（先のものが奥）
 //   - "Brushes" の中の、名前での参照は、同じファイルの中なら、書く順に関係なく使える（輪になる参照は、失敗）。
-//   - スタイルの項目は、ブラシ（上と同じ書き方）。書かなかった項目は、空のブラシ。
+//   - スタイル: "Extends": 名前 で、同じ種類のスタイル（このファイルか、親のテーマ。同じファイルの中なら、書く順に関係なく）を元にして、書いた項目だけを変える。
+//     自分と同じ名前を書くと、親のテーマの、同じ名前のスタイルが元になる（"Default": { "Extends": "Default", ... } で、親の Default を、一部だけ変える）。
+//     "Extends" が無ければ、書かなかった項目は、既定の値（ブラシは空）。項目は、次の通り（ブラシは、上と同じ書き方。色は "#RRGGBB" か "@名前"）:
+//       ButtonStyles    ブラシ: Normal Hover Pressed Disabled FocusOverlay
+//       CheckBoxStyles  ブラシ: Off On HoverOverlay DisabledOverlay FocusOverlay
+//       SliderStyles    ブラシ: Track Fill Handle HandleHover ／ 大きさ: HandleSize ／ 余白: TrackInset FillInset
+//       TextBoxStyles   ブラシ: Normal Focused Disabled ／ 色: TextColor PlaceholderColor DisabledTextColor CaretColor SelectionColor ／ 余白: TextPadding
+//       DropdownStyles  Button（ボタンのスタイルの名前か、ボタンのスタイルと同じ書き方）／ ブラシ: Arrow PopupBackground ItemSelected ScrollTrack ScrollThumb ／
+//                       色: TextColor PlaceholderColor ItemTextColor ／ 余白: TextPadding PopupPadding ItemPadding ／ 大きさ: ArrowSize ／
+//                       数（0 以上）: ItemHeight ScrollBarWidth ／ 1 以上の整数: MaxVisibleItems
+//     大きさは、数（縦横とも）か [幅, 高さ]。余白は、数（四辺）・[左右, 上下]・[左, 上, 右, 下]。
 // 失敗（JSON が壊れている・型が違う・知らない項目・見つからない名前・読めない画像やマテリアル）は、null を返し、Error に理由（英語）。
 //=============================================================================
 class CUIThemeLoader

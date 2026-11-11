@@ -8,5 +8,12 @@
   "Brushes": {
     // プログレスバーの中身を、このテーマのアクセントの色の、角丸の面にする
     "ProgressFill": { "Color": "@Accent", "CornerRadius": 9 }
+  },
+  // 入力欄とドロップダウンも、このテーマの色に寄せる（親の Default を元に、書いた項目だけを変える）
+  "TextBoxStyles": {
+    "Default": { "Extends": "Default", "CaretColor": "@Accent", "SelectionColor": "#FFA0BE80" }
+  },
+  "DropdownStyles": {
+    "Default": { "Extends": "Default", "ItemSelected": { "Color": "#FFA0BE70", "CornerRadius": 4 } }
   }
 }

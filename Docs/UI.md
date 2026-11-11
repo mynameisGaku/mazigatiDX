@@ -259,11 +259,11 @@ Context.SetTheme( Blue );                                               // マ�
   - フォント: `Body` `Title`（渡したとき）
 - **マークアップでの使い方**: 色と数の属性に、`@名前` と書けます（`Color="@Accent"`、`Spacing="@Gap"`、`Width="@Gap"`、`Background="@Panel"` など）。フォント・ブラシ・スタイルの名前は、**文脈に登録したものを先に**、無ければテーマから探します。テーマに無い `@名前` は、**失敗**です（名前と行番号つき）。余白（`Padding` など、数が 1〜4 個のもの）には、`@` は使えません。
 - **テーマの切り替え**: 文脈のテーマを替えて、`CUIMarkupDocument::Rebuild` で作り直すと、同じ `.gxui` が別の見た目になります（`ReloadIfChanged` は、ファイルの中身が同じなら作り直さないので、テーマの切り替えには、`Rebuild` を使います）。ボタンの処理の最中に窓ごと作り直すと危ないので、印だけ付けて、次の更新で作り直します。
-- 見本: サンプル `UI` の **Theme** ボタンが、基本・Blue・Green・Rose の順に切り替えます（子のテーマは、ファイル `Samples/Assets/UI/Themes/*.gxuitheme` から読み、`Accent`・`Value` と、プログレスバーの中身のブラシだけ上書きしています）。起動の引数 `--theme-steps=N` で、N 回進めた状態から始められます。
+- 見本: サンプル `UI` の **Theme** ボタンが、共通（Default）・Blue・Green・Rose の順に切り替えます（どれも、ファイル `Samples/Assets/UI/Themes/*.gxuitheme` から読みます。`Common` が、細いスライダーと、矢印つきのドロップダウンのスタイルを持ち、その子の 3 つが、`Accent`・`Value` と、プログレスバーの中身のブラシなどを上書きしています）。起動の引数 `--theme-steps=N` で、N 回進めた状態から始められます。
 
 ### テーマのファイル（`.gxuitheme`）
 
-色・数・ブラシ・ボタンとチェックボックスのスタイルは、JSON のファイルに書けます（`CUIThemeLoader`。`Library/Framework/UI/Style/UIThemeLoader.h`）。フォントと、ほかの部品のスタイル（スライダー・入力欄・ドロップダウン）は、コードで足します（親のテーマに入れておけば、そこから引かれます）。
+色・数・ブラシ・部品のスタイル（ボタン・チェックボックス・スライダー・入力欄・ドロップダウン）は、JSON のファイルに書けます（`CUIThemeLoader`。`Library/Framework/UI/Style/UIThemeLoader.h`）。フォントは、コードで足します（親のテーマに入れておけば、そこから引かれます）。
 
 ```json
 {
@@ -279,7 +279,10 @@ Context.SetTheme( Blue );                                               // マ�
     "Framed": { "Layers": [ "Card", { "Image": "Engine:/UI/Frame.png", "Mode": "NineSlice" } ] }
   },
   "ButtonStyles":   { "Flat": { "Normal": "Card", "Hover": "#2C3848", "Pressed": "#182028", "Disabled": "#40444C", "FocusOverlay": "Framed" } },
-  "CheckBoxStyles": { "Flat": { "Off": "Card", "On": "@Accent" } }
+  "CheckBoxStyles": { "Flat": { "Off": "Card", "On": "@Accent" } },
+  "SliderStyles":   { "Thin": { "Extends": "Default", "TrackInset": [ 0, 8 ], "HandleSize": 18 } },
+  "TextBoxStyles":  { "Default": { "Extends": "Default", "CaretColor": "@Accent" } },
+  "DropdownStyles": { "Flat": { "Button": "Flat", "PopupBackground": "Card", "ItemSelected": "@Accent", "ItemHeight": 32, "MaxVisibleItems": 6 } }
 }
 ```
 
@@ -295,7 +298,17 @@ TSharedPtr<FUITheme> Blue = CUIThemeLoader::Load( Assets, "UI/Themes/Blue.gxuith
   - マテリアル: `Material`（パス）・`Tint`
   - 重ね: `Layers`（ブラシの並び。先のものが奥）
 - `Brushes` の中の、名前での参照は、同じファイルの中なら、書く順に関係なく使えます（輪になる参照は、失敗です）。
-- **スタイル**: `ButtonStyles`（`Normal`・`Hover`・`Pressed`・`Disabled`・`FocusOverlay`）と `CheckBoxStyles`（`Off`・`On`・`HoverOverlay`・`DisabledOverlay`・`FocusOverlay`）。項目は、ブラシです。書かなかった項目は、空のブラシになります。
+- **スタイル**: 部品の種類ごとの表に、名前をつけて書きます。ブラシは、上と同じ書き方です。色は、`"#RRGGBB"` か `"@名前"`。大きさは、数（縦横とも）か `[幅, 高さ]`。余白は、数（四辺）・`[左右, 上下]`・`[左, 上, 右, 下]`。
+
+  |表|項目|
+  |---|---|
+  |`ButtonStyles`|ブラシ: `Normal`・`Hover`・`Pressed`・`Disabled`・`FocusOverlay`|
+  |`CheckBoxStyles`|ブラシ: `Off`・`On`・`HoverOverlay`・`DisabledOverlay`・`FocusOverlay`|
+  |`SliderStyles`|ブラシ: `Track`・`Fill`・`Handle`・`HandleHover` ／ 大きさ: `HandleSize` ／ 余白: `TrackInset`・`FillInset`|
+  |`TextBoxStyles`|ブラシ: `Normal`・`Focused`・`Disabled` ／ 色: `TextColor`・`PlaceholderColor`・`DisabledTextColor`・`CaretColor`・`SelectionColor` ／ 余白: `TextPadding`|
+  |`DropdownStyles`|`Button`（ボタンのスタイルの名前か、ボタンのスタイルと同じ書き方）／ ブラシ: `Arrow`・`PopupBackground`・`ItemSelected`・`ScrollTrack`・`ScrollThumb` ／ 色: `TextColor`・`PlaceholderColor`・`ItemTextColor` ／ 余白: `TextPadding`・`PopupPadding`・`ItemPadding` ／ 大きさ: `ArrowSize` ／ 数（0 以上）: `ItemHeight`・`ScrollBarWidth` ／ 1 以上の整数: `MaxVisibleItems`|
+
+- **`Extends`（元にするスタイル）**: `"Extends": "名前"` で、同じ種類のスタイル（このファイルか、親のテーマ。同じファイルの中なら、書く順に関係なく）を元にして、書いた項目だけを変えます。自分と同じ名前を書くと、親のテーマの、同じ名前のスタイルが元になります（`"Default": { "Extends": "Default", ... }` で、親の `Default` を一部だけ変える）。`Extends` が無ければ、書かなかった項目は、既定の値（ブラシは空）です。輪になる `Extends` と、見つからない名前は、失敗です。
 - **失敗**: JSON が壊れている・型が違う・知らない項目・見つからない名前・読めない画像やマテリアルは、`null` を返し、`Error` に、場所つきの理由（英語）が入ります。途中まで読んだテーマは、残りません。
 
 ## 入力欄（文字入力）
@@ -362,7 +375,7 @@ Quality->OnSelectionChanged.Add( []( CUIWidget&, int32 Index ) { /* 選ばれた
 - 選ぶ番号は -1（何も選んでいない。`SetPlaceholder` の文字を薄く出す）か 0 以上です。`SetItems` で項目が減ったら、範囲に収めます（番号が変わるなら `OnSelectionChanged`）。
 - `SetPopupHost` が無い・項目が無い・使えない（Disabled）ときは、開きません。一覧が開いている間にドロップダウンが消えても、安全です。
 - 結び付け: `Bindings.BindItems( 配列, ドロップダウン )`、`Bindings.BindSelectedIndex( TObservable<int32>, ドロップダウン )`（双方向）。マークアップでは `<Dropdown Items="{Binding 名前}" SelectedIndex="{Binding 名前}" />`（`Items="Low, Medium, High"` のように、コンマで区切った文字でもよい。`RegisterInt` と `SetPopupHost` を文脈へ）。
-- テーマに `Default` などの名前で、ドロップダウンのスタイルを入れられます（`SetDropdownStyle`。`FUIDefaultStyle::MakeTheme` が `Default` を入れます。矢印の画像だけ、使うときに足してください）。
+- テーマに `Default` などの名前で、ドロップダウンのスタイルを入れられます（`SetDropdownStyle` か、テーマのファイルの `DropdownStyles`。`FUIDefaultStyle::MakeTheme` が `Default` を入れます。矢印の画像だけ、使うときに足してください）。
 
 ## ダイアログ
 
@@ -473,8 +486,28 @@ Animator.SetStateMotion( Button, Motion );
 
 ## エンジン組み込みの素材
 
+#### ファイルを保存し直したら、読み直す（ホットリロード）
+
+`CUIThemeDocument`（`Library/Framework/UI/Style/UIThemeDocument.h`）は、テーマのファイルを覚えていて、中身が変わったら読み直します。
+
+```cpp
+CUIThemeDocument Document;
+Document.Load( Assets, "UI/Themes/Blue.gxuitheme", Base );   // 失敗なら false（GetLastError() に理由）
+Context.SetTheme( Document.GetTheme() );
+// 毎フレームか、数秒おきに
+if ( Document.ReloadIfChanged( Assets ) )
+{
+    MarkupDocument.Rebuild( Assets, Context, Bindings );   // 作ってある UI は、ブラシや色を写して持っているので、作り直す
+}
+```
+
+- 読み直しても、`GetTheme()` は**同じテーマのまま**で、中身だけが替わります。このテーマを渡してある文脈や、これを親にしている子のテーマは、そのまま新しい値を見ます。
+- 読み直しに失敗したとき（書いている途中で JSON が壊れているなど）は、前の中身のままです（`GetLastError()` に理由）。同じ壊れた中身は、何度も読み直しません。
+- 比べるのは、テーマのファイルの文字だけです。画像やマテリアルのファイルの変更は、見ません。
+- 見本: サンプル `UI` は、`Samples/Assets/UI/Themes/*.gxuitheme` を半秒ごとに調べます。動かしたまま、色やスタイルを書き換えて保存すると、設定の窓の見た目が変わります。
+
 UI の基本画像（窓・パネル・ボタンの 4 状態・チェック・スライダー・プログレスバーなど）と、アイコン（73 個。白一色なので、ブラシの色で好きな色にして使う）は、`EngineContent` にあります（`Engine:/UI/...`・`Engine:/Icons/...`）。中身と作り方は [`EngineContent/README.md`](../EngineContent/README.md) にあります。
 
 ## これから
 
-テーマのファイルでの、スライダー・入力欄・ドロップダウンのスタイル、入力欄の複数行とダブルクリックの選択は、順に足していきます。
+状態ごとのスタイル（ブラシの切り替えに動きを付ける）、入力欄の複数行とダブルクリックの選択は、順に足していきます。
