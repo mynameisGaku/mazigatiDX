@@ -162,3 +162,7 @@ git clone --branch backend-dx12 https://github.com/mynameisGaku/mazigatiDX.git .
 ## 描画パイプライン所有と命名・配置（2026-11-10追記）
 
 GeometryRenderer内のシェーダー・root signature・PSOの作成とキャッシュをCDX12GeometryPipelineStoreへ分離しました。機能型25個をCへ揃え、データ型のFを保ち、開発文書の食い違う命名規則も統一しました。DX12の既存32ファイルを役割別フォルダーへ移し、参照・ビルド・検査も更新しています。適用範囲と描画方式のパスとの違い、検証結果は [責務・命名・配置](DX12_ARCHITECTURE.md) を参照してください。
+
+## compute画像の能力照会と読み書き・描画連携（2026-11-11追記）
+
+RGBA8画像のcompute能力照会（`GetComputeTextureCapabilities`）、UAV対応画像の作成（`CreateComputeTextureRGBA8`）、画像slot付きcomputeプログラム（`CreateComputePipelineWithTextures`）、compute提出での画像SRV／UAV束縛と状態遷移、2D／3D描画への直接受け渡しを接続しました。提出後の `ReleaseTexture` や `UpdateTextureRGBA8` に対する版保持、CPU参照／既定GPU／WARPおよび通常アプリ6起動の検査結果は [compute画像の記録](R1_COMPUTE_TEXTURE_RESOURCES.md) を参照してください。互換台帳は464項目（API 320、Draw 100、Sample 33、Editor 11；Implemented 178、Verified 0）です。

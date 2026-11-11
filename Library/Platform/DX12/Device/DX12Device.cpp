@@ -48,7 +48,7 @@ bool CDX12Device::Initialize( HWND Window, int32 Width, int32 Height, bool bWarp
 	return InitializeOnQueue( Window, Width, Height, CreatedQueue.Get() );
 }
 
-bool CDX12Device::InitializeOnQueue( HWND Window, int32 Width, int32 Height, ID3D12CommandQueue* InQueue )
+bool CDX12Device::InitializeOnQueue( HWND Window, int32 Width, int32 Height, ID3D12CommandQueue *InQueue )
 {
 	if ( Device || bClosing || !IsWindow( Window ) || Width <= 0 || Height <= 0 || Width > 16384 || Height > 16384 || !InQueue || InQueue->GetDesc().Type != D3D12_COMMAND_LIST_TYPE_DIRECT )
 	{
@@ -76,9 +76,7 @@ bool CDX12Device::InitializeOnQueue( HWND Window, int32 Width, int32 Height, ID3
 	Desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	Desc.Scaling = DXGI_SCALING_STRETCH;
 	Microsoft::WRL::ComPtr<IDXGISwapChain1> InitialSwapChain; // 交換先の作成結果。
-	if ( FAILED( Factory->CreateSwapChainForHwnd( Queue.Get(), Window, &Desc, nullptr, nullptr, &InitialSwapChain ) )
-		|| FAILED( InitialSwapChain.As( &SwapChain ) )
-		|| FAILED( Factory->MakeWindowAssociation( Window, DXGI_MWA_NO_ALT_ENTER ) ) )
+	if ( FAILED( Factory->CreateSwapChainForHwnd( Queue.Get(), Window, &Desc, nullptr, nullptr, &InitialSwapChain ) ) || FAILED( InitialSwapChain.As( &SwapChain ) ) || FAILED( Factory->MakeWindowAssociation( Window, DXGI_MWA_NO_ALT_ENTER ) ) )
 	{
 		return false;
 	}
@@ -104,7 +102,7 @@ bool CDX12Device::InitializeOnQueue( HWND Window, int32 Width, int32 Height, ID3
 	{
 		return false;
 	}
-	if ( !ComputePipelines.Initialize( Device.Get() ) || !ComputeQueue.Initialize( Device.Get(), Queue.Get(), BufferResources, ComputePipelines ) )
+	if ( !ComputePipelines.Initialize( Device.Get() ) || !ComputeQueue.Initialize( Device.Get(), Queue.Get(), BufferResources, ComputePipelines, &Textures ) )
 	{
 		return false;
 	}
@@ -162,7 +160,7 @@ void CDX12Device::ReleaseAfterGPUStopped()
 {
 	GameReadback.ResetAfterGPUIdle();
 	UIReadback.ResetAfterGPUIdle();
-	for ( auto& Buffer : Buffers )
+	for ( auto &Buffer : Buffers )
 	{
 		Buffer.Reset();
 	}
@@ -221,7 +219,7 @@ bool CDX12Device::BeginFrameForBuffer( uint32 Index )
 	Barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	Commands->ResourceBarrier( 1, &Barrier );
 	Commands->OMSetRenderTargets( 1, &CurrentRtv, FALSE, nullptr );
-	ID3D12DescriptorHeap* Heaps[] = { Descriptors.GetHeap() }; // 画像を描くための記述子。
+	ID3D12DescriptorHeap *Heaps[] = { Descriptors.GetHeap() }; // 画像を描くための記述子。
 	Commands->SetDescriptorHeaps( 1, Heaps );
 	const float Black[4] = { 0, 0, 0, 1 }; // 毎フレームの背景。
 	Commands->ClearRenderTargetView( CurrentRtv, Black, 0, nullptr );
@@ -256,7 +254,7 @@ bool CDX12Device::SubmitFrame()
 	{
 		return false;
 	}
-	ID3D12CommandList* Lists[] = { Commands.Get() }; // 今フレームを一度だけ送る。
+	ID3D12CommandList *Lists[] = { Commands.Get() }; // 今フレームを一度だけ送る。
 	Queue->ExecuteCommandLists( 1, Lists );
 	bFrameSubmitted = true;
 	bPresentPending = true;
@@ -305,7 +303,7 @@ void CDX12Device::RecordGameFrameCopy()
 	}
 }
 
-bool CDX12Device::ReadFrameCapture( EFrameCaptureStage Stage, TArray<FColor32>& Out )
+bool CDX12Device::ReadFrameCapture( EFrameCaptureStage Stage, TArray<FColor32> &Out )
 {
 	if ( !bInitialized || bClosing || bRecording || !bFrameSubmitted || ( Stage != EFrameCaptureStage::Game && Stage != EFrameCaptureStage::WithDebugUI ) || !( Stage == EFrameCaptureStage::Game ? bGameCopied : bUICopied ) || !Wait() )
 	{
@@ -314,20 +312,20 @@ bool CDX12Device::ReadFrameCapture( EFrameCaptureStage Stage, TArray<FColor32>& 
 	return ( Stage == EFrameCaptureStage::Game ? GameReadback : UIReadback ).ReadAfterGPUIdle( Out, true );
 }
 
-bool CDX12Device::InitializeCaptureTarget( CDX12CaptureTarget& Target )
+bool CDX12Device::InitializeCaptureTarget( CDX12CaptureTarget &Target )
 {
 	return bInitialized && !bClosing && Target.Initialize( Device.Get(), Queue.Get() );
 }
 
-ID3D12Device* CDX12Device::GetNativeDevice() { return bInitialized && !bClosing ? Device.Get() : nullptr; }
-ID3D12CommandQueue* CDX12Device::GetNativeQueue() { return bInitialized && !bClosing ? Queue.Get() : nullptr; }
-CDX12DescriptorPool* CDX12Device::GetDescriptorPool() { return bInitialized && !bClosing ? &Descriptors : nullptr; }
-ID3D12GraphicsCommandList* CDX12Device::GetFrameCommands() { return IsRecording() ? Commands.Get() : nullptr; }
-D3D12_CPU_DESCRIPTOR_HANDLE CDX12Device::GetFrameColorView() const { return IsRecording() ? CurrentRtv : D3D12_CPU_DESCRIPTOR_HANDLE {}; }
+ID3D12Device *CDX12Device::GetNativeDevice() { return bInitialized && !bClosing ? Device.Get() : nullptr; }
+ID3D12CommandQueue *CDX12Device::GetNativeQueue() { return bInitialized && !bClosing ? Queue.Get() : nullptr; }
+CDX12DescriptorPool *CDX12Device::GetDescriptorPool() { return bInitialized && !bClosing ? &Descriptors : nullptr; }
+ID3D12GraphicsCommandList *CDX12Device::GetFrameCommands() { return IsRecording() ? Commands.Get() : nullptr; }
+D3D12_CPU_DESCRIPTOR_HANDLE CDX12Device::GetFrameColorView() const { return IsRecording() ? CurrentRtv : D3D12_CPU_DESCRIPTOR_HANDLE{}; }
 int32 CDX12Device::GetWidth() const { return Width; }
 int32 CDX12Device::GetHeight() const { return Height; }
 
-ID3D12DescriptorHeap* CDX12Device::GetImageDescriptorHeap()
+ID3D12DescriptorHeap *CDX12Device::GetImageDescriptorHeap()
 {
 	return bInitialized && !bClosing ? Descriptors.GetHeap() : nullptr;
 }
@@ -336,22 +334,22 @@ bool CDX12Device::IsDeviceRemoved() const { return Device && FAILED( Device->Get
 
 bool CDX12Device::IsRecording() const { return bInitialized && !bClosing && bRecording; }
 
-IRenderTextureResources* CDX12Device::GetTextureResources()
+IRenderTextureResources *CDX12Device::GetTextureResources()
 {
 	return bInitialized && !bClosing ? &Textures : nullptr;
 }
 
-CDX12BufferStore* CDX12Device::GetBufferResources()
+CDX12BufferStore *CDX12Device::GetBufferResources()
 {
 	return bInitialized && !bClosing ? &BufferResources : nullptr;
 }
 
-IComputePipelineResources* CDX12Device::GetComputePipelineResources()
+IComputePipelineResources *CDX12Device::GetComputePipelineResources()
 {
 	return bInitialized && !bClosing ? &ComputePipelines : nullptr;
 }
 
-IComputeQueue* CDX12Device::GetComputeQueue()
+IComputeQueue *CDX12Device::GetComputeQueue()
 {
 	return bInitialized && !bClosing ? &ComputeQueue : nullptr;
 }

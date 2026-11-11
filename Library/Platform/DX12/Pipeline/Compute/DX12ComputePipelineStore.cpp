@@ -2,6 +2,7 @@
 #include "DX12ComputePipelineStore.h"
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Render/RenderResourceSerial.h"
+#include "Library/Platform/DX12/Resource/Texture/DX12TextureFormat.h"
 #include <d3dcompiler.h>
 #include <d3d12shader.h>
 
@@ -34,9 +35,9 @@ void CDX12ComputePipelineStore::ResetAfterGPUIdle()
 	Device.Reset();
 }
 
-bool CDX12ComputePipelineStore::Build( TArrayView<const uint8> Bytecode, TArrayView<const FComputeBufferSlot> Slots, FDX12ComputePipelineBinding &Out )
+bool CDX12ComputePipelineStore::Build( TArrayView<const uint8> Bytecode, TArrayView<const FComputeBufferSlot> Slots, TArrayView<const FComputeTextureSlot> TextureSlots, FDX12ComputePipelineBinding &Out )
 {
-	if ( !Device || !Bytecode.GetData() || Bytecode.Num() < 32 || Bytecode.Num() > MaxBytecodeBytes || FMemory::Memcmp( Bytecode.GetData(), "DXBC", 4 ) != 0 || !Slots.GetData() || Slots.Num() <= 0 || Slots.Num() > MaxSlots )
+	if ( !Device || !Bytecode.GetData() || Bytecode.Num() < 32 || Bytecode.Num() > MaxBytecodeBytes || FMemory::Memcmp( Bytecode.GetData(), "DXBC", 4 ) != 0 || Slots.Num() < 0 || TextureSlots.Num() < 0 || Slots.Num() > MaxSlots || TextureSlots.Num() > MaxSlots || Slots.Num() + TextureSlots.Num() <= 0 || Slots.Num() + TextureSlots.Num() > MaxSlots || ( Slots.Num() != 0 && !Slots.GetData() ) || ( TextureSlots.Num() != 0 && !TextureSlots.GetData() ) )
 	{
 		return false;
 	}
@@ -65,9 +66,37 @@ bool CDX12ComputePipelineStore::Build( TArrayView<const uint8> Bytecode, TArrayV
 			}
 		}
 	}
+	FComputeTextureCapabilities Capabilities; // 画像を使うプログラムだけ、実行先の対応能力を確認する。
+	if ( TextureSlots.Num() != 0 && ( !NDX12TextureFormat::GetComputeCapabilities( Device.Get(), Capabilities ) || !Capabilities.bRGBA8Read ) )
+	{
+		return false;
+	}
+	for ( int32 Index = 0; Index < TextureSlots.Num(); ++Index )
+	{
+		const FComputeTextureSlot &Slot = TextureSlots[Index]; // バッファと共有するt／uの場所。
+		if ( ( Slot.Access != EComputeTextureAccess::Read && Slot.Access != EComputeTextureAccess::ReadWrite ) || Slot.Binding >= ( Slot.Access == EComputeTextureAccess::Read ? 128u : 64u ) || ( Slot.Access == EComputeTextureAccess::ReadWrite && !Capabilities.bRGBA8ReadWrite ) )
+		{
+			return false;
+		}
+		for ( int32 Earlier = 0; Earlier < Index; ++Earlier )
+		{
+			if ( TextureSlots[Earlier].Access == Slot.Access && TextureSlots[Earlier].Binding == Slot.Binding )
+			{
+				return false;
+			}
+		}
+		for ( const FComputeBufferSlot &Buffer : Slots )
+		{
+			const bool bRead = Buffer.Access == ERenderBufferShaderAccess::Read; // 定数のbは画像と競合しない。
+			if ( Buffer.Layout != EComputeBufferLayout::Constant && bRead == ( Slot.Access == EComputeTextureAccess::Read ) && Buffer.Binding == Slot.Binding )
+			{
+				return false;
+			}
+		}
+	}
 	Microsoft::WRL::ComPtr<ID3D12ShaderReflection> Reflection; // バイナリに残っている段と使用資源の情報。
 	D3D12_SHADER_DESC Shader = {}; // バイナリが要求するcomputeの段と資源数。
-	if ( FAILED( D3DReflect( Bytecode.GetData(), static_cast<SIZE_T>( Bytecode.Num() ), IID_PPV_ARGS( &Reflection ) ) ) || FAILED( Reflection->GetDesc( &Shader ) ) || D3D12_SHVER_GET_TYPE( Shader.Version ) != D3D12_SHVER_COMPUTE_SHADER || D3D12_SHVER_GET_MAJOR( Shader.Version ) != 5 || D3D12_SHVER_GET_MINOR( Shader.Version ) > 1 || Shader.BoundResources != static_cast<UINT>( Slots.Num() ) )
+	if ( FAILED( D3DReflect( Bytecode.GetData(), static_cast<SIZE_T>( Bytecode.Num() ), IID_PPV_ARGS( &Reflection ) ) ) || FAILED( Reflection->GetDesc( &Shader ) ) || D3D12_SHVER_GET_TYPE( Shader.Version ) != D3D12_SHVER_COMPUTE_SHADER || D3D12_SHVER_GET_MAJOR( Shader.Version ) != 5 || D3D12_SHVER_GET_MINOR( Shader.Version ) > 1 || Shader.BoundResources != static_cast<UINT>( Slots.Num() + TextureSlots.Num() ) )
 	{
 		return false;
 	}
@@ -86,7 +115,27 @@ bool CDX12ComputePipelineStore::Build( TArrayView<const uint8> Bytecode, TArrayV
 		{
 			return false;
 		}
-		const bool bConstant = Binding.Type == D3D_SIT_CBUFFER; // 画像やcounter付きの配列は今回の契約に含めない。
+		const bool bTextureRead = Binding.Type == D3D_SIT_TEXTURE; // samplerを使わないTexture2D.Loadだけを受け付ける。
+		const bool bTextureWrite = Binding.Type == D3D_SIT_UAV_RWTYPED; // RGBA8の型付き読み書き。
+		if ( bTextureRead || bTextureWrite )
+		{
+			if ( Binding.Dimension != D3D_SRV_DIMENSION_TEXTURE2D || ( Binding.ReturnType != D3D_RETURN_TYPE_FLOAT && Binding.ReturnType != D3D_RETURN_TYPE_UNORM ) || ( Binding.uFlags & D3D_SIF_TEXTURE_COMPONENTS ) != D3D_SIF_TEXTURE_COMPONENTS )
+			{
+				return false;
+			}
+			const EComputeTextureAccess Access = bTextureWrite ? EComputeTextureAccess::ReadWrite : EComputeTextureAccess::Read; // 画像の用途を宣言と照合する。
+			bool bMatched = false; // 列挙順でなく、種類と場所で照合する。
+			for ( const FComputeTextureSlot &Slot : TextureSlots )
+			{
+				bMatched |= Slot.Access == Access && Slot.Binding == Binding.BindPoint;
+			}
+			if ( !bMatched )
+			{
+				return false;
+			}
+			continue;
+		}
+		const bool bConstant = Binding.Type == D3D_SIT_CBUFFER; // counter付きの配列は今回の契約に含めない。
 		const bool bStructured = Binding.Type == D3D_SIT_STRUCTURED || Binding.Type == D3D_SIT_UAV_RWSTRUCTURED; // 型付き配列とは区別する。
 		const bool bRaw = Binding.Type == D3D_SIT_BYTEADDRESS || Binding.Type == D3D_SIT_UAV_RWBYTEADDRESS; // 従来のバイト列。
 		if ( ( !bConstant && !bStructured && !bRaw ) || ( !bConstant && Binding.Dimension != D3D_SRV_DIMENSION_BUFFER ) )
@@ -127,14 +176,23 @@ bool CDX12ComputePipelineStore::Build( TArrayView<const uint8> Bytecode, TArrayV
 	}
 	TArray<D3D12_DESCRIPTOR_RANGE> Ranges; // 各slotを一つのサイズ付きCBV／SRV／UAVへ対応させる。
 	TArray<D3D12_ROOT_PARAMETER> Parameters; // 配列の順をdispatchのバッファ列へ対応させる。
-	Ranges.SetNum( Slots.Num() );
-	Parameters.SetNum( Slots.Num() );
-	for ( int32 Index = 0; Index < Slots.Num(); ++Index )
+	Ranges.SetNum( Slots.Num() + TextureSlots.Num() );
+	Parameters.SetNum( Ranges.Num() );
+	for ( int32 Index = 0; Index < Ranges.Num(); ++Index )
 	{
-		Ranges[Index].RangeType = Slots[Index].Layout == EComputeBufferLayout::Constant ? D3D12_DESCRIPTOR_RANGE_TYPE_CBV : Slots[Index].Access == ERenderBufferShaderAccess::Read ? D3D12_DESCRIPTOR_RANGE_TYPE_SRV
-																																												   : D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+		if ( Index < Slots.Num() )
+		{
+			Ranges[Index].RangeType = Slots[Index].Layout == EComputeBufferLayout::Constant ? D3D12_DESCRIPTOR_RANGE_TYPE_CBV : Slots[Index].Access == ERenderBufferShaderAccess::Read ? D3D12_DESCRIPTOR_RANGE_TYPE_SRV
+																																													   : D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+			Ranges[Index].BaseShaderRegister = Slots[Index].Binding;
+		}
+		else
+		{
+			const FComputeTextureSlot &Slot = TextureSlots[Index - Slots.Num()]; // バッファの後ろに画像を配置する。
+			Ranges[Index].RangeType = Slot.Access == EComputeTextureAccess::Read ? D3D12_DESCRIPTOR_RANGE_TYPE_SRV : D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+			Ranges[Index].BaseShaderRegister = Slot.Binding;
+		}
 		Ranges[Index].NumDescriptors = 1;
-		Ranges[Index].BaseShaderRegister = Slots[Index].Binding;
 		Parameters[Index].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 		Parameters[Index].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 		Parameters[Index].DescriptorTable.NumDescriptorRanges = 1;
@@ -157,6 +215,7 @@ bool CDX12ComputePipelineStore::Build( TArrayView<const uint8> Bytecode, TArrayV
 		return false;
 	}
 	Created.Slots = Slots.ToArray();
+	Created.TextureSlots = TextureSlots.ToArray();
 	Created.MinimumBytes = MoveTemp( MinimumBytes );
 	Out = MoveTemp( Created );
 	return true;
@@ -164,12 +223,17 @@ bool CDX12ComputePipelineStore::Build( TArrayView<const uint8> Bytecode, TArrayV
 
 FComputePipelineHandle CDX12ComputePipelineStore::CreateComputePipeline( TArrayView<const uint8> Bytecode, TArrayView<const FComputeBufferSlot> Slots )
 {
+	return CreateComputePipelineWithTextures( Bytecode, Slots, {} );
+}
+
+FComputePipelineHandle CDX12ComputePipelineStore::CreateComputePipelineWithTextures( TArrayView<const uint8> Bytecode, TArrayView<const FComputeBufferSlot> Slots, TArrayView<const FComputeTextureSlot> TextureSlots )
+{
 	if ( Pipelines.Num() + Retired.Num() >= MaxPipelines )
 	{
 		return FComputePipelineHandle();
 	}
 	FDX12ComputePipelineBinding Created; // バイナリの検査後に完成した実体。
-	if ( !Build( Bytecode, Slots, Created ) )
+	if ( !Build( Bytecode, Slots, TextureSlots, Created ) )
 	{
 		return FComputePipelineHandle();
 	}

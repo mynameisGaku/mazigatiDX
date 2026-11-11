@@ -8,9 +8,9 @@ CDX12ComputeQueue::~CDX12ComputeQueue()
 	ResetAfterGPUIdle();
 }
 
-bool CDX12ComputeQueue::Initialize( ID3D12Device *InDevice, ID3D12CommandQueue *InQueue, CDX12BufferStore &InBuffers, CDX12ComputePipelineStore &InPipelines )
+bool CDX12ComputeQueue::Initialize( ID3D12Device *InDevice, ID3D12CommandQueue *InQueue, CDX12BufferStore &InBuffers, CDX12ComputePipelineStore &InPipelines, CDX12TextureStore *InTextures )
 {
-	if ( Device || !InDevice || !InQueue || InQueue->GetDesc().Type != D3D12_COMMAND_LIST_TYPE_DIRECT || !InBuffers.UsesDeviceAndQueue( InDevice, InQueue ) || !InPipelines.UsesDevice( InDevice ) )
+	if ( Device || !InDevice || !InQueue || InQueue->GetDesc().Type != D3D12_COMMAND_LIST_TYPE_DIRECT || !InBuffers.UsesDeviceAndQueue( InDevice, InQueue ) || !InPipelines.UsesDevice( InDevice ) || ( InTextures && !InTextures->UsesDeviceAndQueue( InDevice, InQueue ) ) )
 	{
 		return false;
 	}
@@ -18,6 +18,7 @@ bool CDX12ComputeQueue::Initialize( ID3D12Device *InDevice, ID3D12CommandQueue *
 	Queue = InQueue;
 	Buffers = &InBuffers;
 	Pipelines = &InPipelines;
+	Textures = InTextures;
 	if ( FAILED( Device->CreateFence( 0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS( &Fence ) ) ) )
 	{
 		ResetAfterGPUIdle();
@@ -48,6 +49,7 @@ void CDX12ComputeQueue::ResetAfterGPUIdle()
 	Device.Reset();
 	Buffers = nullptr;
 	Pipelines = nullptr;
+	Textures = nullptr;
 	QueueSerial = LastSubmitted = NextValue = 0;
 	bHealthy = false;
 	if ( FenceEvent )
@@ -81,7 +83,7 @@ bool CDX12ComputeQueue::IsKnown( FComputeSubmission Submission ) const
 
 bool CDX12ComputeQueue::Record( TArrayView<const FComputeDispatch> Dispatches, FSubmissionRecord &Out )
 {
-	if ( !Dispatches.GetData() || Dispatches.Num() <= 0 || Dispatches.Num() > MaxDispatches || !Buffers->UsesDeviceAndQueue( Device.Get(), Queue.Get() ) )
+	if ( !Dispatches.GetData() || Dispatches.Num() <= 0 || Dispatches.Num() > MaxDispatches || !Buffers->UsesDeviceAndQueue( Device.Get(), Queue.Get() ) || !Pipelines->UsesDevice( Device.Get() ) || ( Textures && !Textures->UsesDeviceAndQueue( Device.Get(), Queue.Get() ) ) )
 	{
 		return false;
 	}
@@ -90,7 +92,7 @@ bool CDX12ComputeQueue::Record( TArrayView<const FComputeDispatch> Dispatches, F
 	for ( const FComputeDispatch &Dispatch : Dispatches )
 	{
 		FDispatchRecord Copy; // 呼出側の配列と独立させる実体の参照。
-		if ( Dispatch.GroupsX == 0 || Dispatch.GroupsX > 65535 || Dispatch.GroupsY == 0 || Dispatch.GroupsY > 65535 || Dispatch.GroupsZ == 0 || Dispatch.GroupsZ > 65535 || !Pipelines->AcquirePipeline( Dispatch.Pipeline, Copy.Pipeline ) || !Dispatch.Buffers.GetData() || Dispatch.Buffers.Num() != Copy.Pipeline.Slots.Num() )
+		if ( Dispatch.GroupsX == 0 || Dispatch.GroupsX > 65535 || Dispatch.GroupsY == 0 || Dispatch.GroupsY > 65535 || Dispatch.GroupsZ == 0 || Dispatch.GroupsZ > 65535 || !Pipelines->AcquirePipeline( Dispatch.Pipeline, Copy.Pipeline ) || ( Dispatch.Buffers.Num() != 0 && !Dispatch.Buffers.GetData() ) || Dispatch.Buffers.Num() != Copy.Pipeline.Slots.Num() || Dispatch.Textures.Num() != Copy.Pipeline.TextureSlots.Num() || ( Dispatch.Textures.Num() != 0 && ( !Textures || !Dispatch.Textures.GetData() ) ) )
 		{
 			return false;
 		}
@@ -118,7 +120,23 @@ bool CDX12ComputeQueue::Record( TArrayView<const FComputeDispatch> Dispatches, F
 			}
 			Copy.Buffers.Add( MoveTemp( Buffer ) );
 		}
-		DescriptorCount += Copy.Buffers.Num();
+		for ( int32 Index = 0; Index < Dispatch.Textures.Num(); ++Index )
+		{
+			for ( int32 Earlier = 0; Earlier < Index; ++Earlier )
+			{
+				if ( Dispatch.Textures[Earlier] == Dispatch.Textures[Index] )
+				{
+					return false;
+				}
+			}
+			FDX12TextureBinding Texture; // 用途と版を確定してから命令全体へ保持する。
+			if ( !Textures->AcquireComputeTexture( Dispatch.Textures[Index], Copy.Pipeline.TextureSlots[Index].Access, Texture ) )
+			{
+				return false;
+			}
+			Copy.Textures.Add( MoveTemp( Texture ) );
+		}
+		DescriptorCount += Copy.Buffers.Num() + Copy.Textures.Num();
 		Created.Dispatches.Add( MoveTemp( Copy ) );
 	}
 	D3D12_DESCRIPTOR_HEAP_DESC Heap = {}; // UIと共有せず、提出が終わるまで保持する記述子。
@@ -185,6 +203,37 @@ bool CDX12ComputeQueue::Record( TArrayView<const FComputeDispatch> Dispatches, F
 			Cpu.ptr += Stride;
 			Gpu.ptr += Stride;
 		}
+		for ( int32 Index = 0; Index < Dispatch.Textures.Num(); ++Index )
+		{
+			const FDX12TextureBinding &Texture = Dispatch.Textures[Index]; // 提出が保持する画像の版。
+			const bool bWrite = Dispatch.Pipeline.TextureSlots[Index].Access == EComputeTextureAccess::ReadWrite; // 書き込みだけUAV状態へ移す。
+			if ( bWrite )
+			{
+				D3D12_UNORDERED_ACCESS_VIEW_DESC View = {}; // RGBA8の二次元UAV。
+				View.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+				View.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+				Device->CreateUnorderedAccessView( Texture.Resource.Get(), nullptr, &View, Cpu );
+				D3D12_RESOURCE_BARRIER Barrier = {}; // 描画とcompute読み取りを許す共通の状態から入る。
+				Barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+				Barrier.Transition.pResource = Texture.Resource.Get();
+				Barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+				Barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+				Barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+				Created.Commands->ResourceBarrier( 1, &Barrier );
+			}
+			else
+			{
+				D3D12_SHADER_RESOURCE_VIEW_DESC View = {}; // 通常描画用とは独立した、この提出専用のSRV。
+				View.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+				View.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+				View.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+				View.Texture2D.MipLevels = 1;
+				Device->CreateShaderResourceView( Texture.Resource.Get(), &View, Cpu );
+			}
+			Created.Commands->SetComputeRootDescriptorTable( static_cast<UINT>( Dispatch.Buffers.Num() + Index ), Gpu );
+			Cpu.ptr += Stride;
+			Gpu.ptr += Stride;
+		}
 		Created.Commands->Dispatch( Dispatch.GroupsX, Dispatch.GroupsY, Dispatch.GroupsZ );
 		for ( int32 Index = 0; Index < Dispatch.Buffers.Num(); ++Index )
 		{
@@ -203,6 +252,24 @@ bool CDX12ComputeQueue::Record( TArrayView<const FComputeDispatch> Dispatches, F
 			Barrier.Transition.StateBefore = Dispatch.Pipeline.Slots[Index].Layout == EComputeBufferLayout::Constant ? D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER : bWrite ? D3D12_RESOURCE_STATE_UNORDERED_ACCESS
 																																												: D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 			Barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COMMON;
+			Created.Commands->ResourceBarrier( 1, &Barrier );
+		}
+		for ( int32 Index = 0; Index < Dispatch.Textures.Num(); ++Index )
+		{
+			if ( Dispatch.Pipeline.TextureSlots[Index].Access != EComputeTextureAccess::ReadWrite )
+			{
+				continue;
+			}
+			D3D12_RESOURCE_BARRIER Barrier = {}; // 書き込み完了を次のcompute・描画へ渡す。
+			Barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+			Barrier.UAV.pResource = Dispatch.Textures[Index].Resource.Get();
+			Created.Commands->ResourceBarrier( 1, &Barrier );
+			Barrier = {};
+			Barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+			Barrier.Transition.pResource = Dispatch.Textures[Index].Resource.Get();
+			Barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+			Barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+			Barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 			Created.Commands->ResourceBarrier( 1, &Barrier );
 		}
 	}

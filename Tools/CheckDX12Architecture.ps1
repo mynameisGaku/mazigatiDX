@@ -35,9 +35,12 @@ $types = @(
     @{ Path = 'Library/Platform/Render/Texture/TextureAssetStore.h'; Type = 'CTextureAssetStore'; Role = '機能' },
     @{ Path = 'Library/Platform/Windows/Text/WindowsTextRasterizer.h'; Type = 'CWindowsTextRasterizer'; Role = '機能' },
     @{ Path = 'Library/Platform/DX12/Resource/Buffer/DX12BufferBinding.h'; Type = 'FDX12BufferBinding'; Role = 'データ' },
+    @{ Path = 'Library/Platform/DX12/Resource/Texture/DX12TextureBinding.h'; Type = 'FDX12TextureBinding'; Role = 'データ' },
     @{ Path = 'Library/Platform/DX12/Pipeline/Compute/DX12ComputePipelineBinding.h'; Type = 'FDX12ComputePipelineBinding'; Role = 'データ' },
     @{ Path = 'Library/Core/Render/GeometryBufferDraw.h'; Type = 'FGeometryBufferDraw'; Role = 'データ' },
-    @{ Path = 'Library/Core/Render/ComputeBufferSlot.h'; Type = 'FComputeBufferSlot'; Role = 'データ' }
+    @{ Path = 'Library/Core/Render/ComputeBufferSlot.h'; Type = 'FComputeBufferSlot'; Role = 'データ' },
+    @{ Path = 'Library/Core/Render/ComputeTextureCapabilities.h'; Type = 'FComputeTextureCapabilities'; Role = 'データ' },
+    @{ Path = 'Library/Core/Render/ComputeTextureSlot.h'; Type = 'FComputeTextureSlot'; Role = 'データ' }
 ) # class／structの構文でなく、所有する責務で分類した主要型。
 $failed = $false # すべての問題をまとめて報告する。
 foreach ($type in $types)

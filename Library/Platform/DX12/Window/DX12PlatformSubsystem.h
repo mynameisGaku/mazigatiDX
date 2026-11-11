@@ -87,6 +87,10 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
 	bool WaitForGPU() override;
 	// RGBA8の画像資源を、UIを介さず作る。
 	FTextureResourceHandle CreateTextureRGBA8( int32 Width, int32 Height, const FColor32 *Pixels ) override;
+	// ゲームスレッドから能力を照会する。未初期化・GPU失敗時はOutを保ってfalse。
+	bool GetComputeTextureCapabilities( FComputeTextureCapabilities &Out ) const override;
+	// ゲームスレッドから、computeで読み書き可能な画像を描画所有側へ作成する。
+	FTextureResourceHandle CreateComputeTextureRGBA8( int32 Width, int32 Height, const FColor32 *Pixels ) override;
 	// 記録済みの画像を保ったまま更新する。
 	bool UpdateTextureRGBA8( FTextureResourceHandle Texture, int32 Width, int32 Height, const FColor32 *Pixels ) override;
 	// GPU完了後に画像資源を解放する。
@@ -103,6 +107,8 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
 	bool ReadBuffer( FBufferResourceHandle Buffer, uint64 Offset, int32 NumBytes, TArray<uint8> &Out ) override;
 	// バイナリとslot定義を検査してからプログラムを登録する。失敗時は無効値。
 	FComputePipelineHandle CreateComputePipeline( TArrayView<const uint8> Bytecode, TArrayView<const FComputeBufferSlot> Slots ) override;
+	// ゲームスレッドから画像を含む配置を渡す。作成・検査は描画所有側で完了させる。
+	FComputePipelineHandle CreateComputePipelineWithTextures( TArrayView<const uint8> Bytecode, TArrayView<const FComputeBufferSlot> Slots, TArrayView<const FComputeTextureSlot> TextureSlots ) override;
 	// 番号を直ちに無効にし、提出済み処理が終わってから実体を解放する。
 	void ReleaseComputePipeline( FComputePipelineHandle Pipeline ) override;
 	// 全compute命令の検査後に、完了を待たず同じキューへ提出する。

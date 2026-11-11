@@ -570,6 +570,32 @@ FTextureResourceHandle CDX12PlatformSubsystem::CreateTextureRGBA8( int32 Width, 
 	return ExecuteRender( MoveTemp( Work ) ) ? Result : FTextureResourceHandle();
 }
 
+bool CDX12PlatformSubsystem::GetComputeTextureCapabilities( FComputeTextureCapabilities &Out ) const
+{
+	GAME_THREAD_ONLY( false );
+	if ( !bInitialized || !Device )
+	{
+		return false;
+	}
+	bool bResult = false; // 出力は同期実行が完了するまで呼び出し元が保持する。
+	auto Work = [&]()
+	{ bResult = Device->GetTextureResources()->GetComputeTextureCapabilities( Out ); };
+	return ExecuteRender( MoveTemp( Work ) ) && bResult;
+}
+
+FTextureResourceHandle CDX12PlatformSubsystem::CreateComputeTextureRGBA8( int32 Width, int32 Height, const FColor32 *Pixels )
+{
+	GAME_THREAD_ONLY( FTextureResourceHandle() );
+	if ( !bInitialized || !Device )
+	{
+		return {};
+	}
+	FTextureResourceHandle Result; // 入力画素の借用は同期実行から戻るまでに終える。
+	auto Work = [&]()
+	{ Result = Device->GetTextureResources()->CreateComputeTextureRGBA8( Width, Height, Pixels ); };
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : FTextureResourceHandle();
+}
+
 bool CDX12PlatformSubsystem::UpdateTextureRGBA8( FTextureResourceHandle Texture, int32 Width, int32 Height, const FColor32 *Pixels )
 {
 	GAME_THREAD_ONLY( false );
@@ -675,6 +701,19 @@ FComputePipelineHandle CDX12PlatformSubsystem::CreateComputePipeline( TArrayView
 	FComputePipelineHandle Result = FComputePipelineHandle();
 	auto Work = [&]()
 	{ Result = Device->GetComputePipelineResources()->CreateComputePipeline( Bytecode, Slots ); };
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : FComputePipelineHandle();
+}
+
+FComputePipelineHandle CDX12PlatformSubsystem::CreateComputePipelineWithTextures( TArrayView<const uint8> Bytecode, TArrayView<const FComputeBufferSlot> Slots, TArrayView<const FComputeTextureSlot> TextureSlots )
+{
+	GAME_THREAD_ONLY( FComputePipelineHandle() );
+	if ( !bInitialized || !Device )
+	{
+		return {};
+	}
+	FComputePipelineHandle Result; // 宣言とバイナリの借用は同期実行から戻るまでに終える。
+	auto Work = [&]()
+	{ Result = Device->GetComputePipelineResources()->CreateComputePipelineWithTextures( Bytecode, Slots, TextureSlots ); };
 	return ExecuteRender( MoveTemp( Work ) ) ? Result : FComputePipelineHandle();
 }
 

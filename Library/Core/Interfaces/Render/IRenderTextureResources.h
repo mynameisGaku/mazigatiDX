@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 #include "Library/Core/Render/TextureResourceHandle.h"
+#include "Library/Core/Render/ComputeTextureCapabilities.h"
 #include "Library/Core/Render/TextureDrawView.h"
 #include "Library/Math/Color.h"
 
@@ -14,6 +15,10 @@ public:
 	// 左上から行順の非乗算済みRGBA8を呼び出し中に複写する。
 	// 不正な寸法・画素・作成失敗は無効値。既存資源へ影響しない。
 	virtual FTextureResourceHandle CreateTextureRGBA8( int32 Width, int32 Height, const FColor32* Pixels ) = 0;
+	// 実行先のcompute画像の能力を返す。未対応・照会失敗ではOutを保ってfalse。
+	virtual bool GetComputeTextureCapabilities( FComputeTextureCapabilities &Out ) const { return false; }
+	// 初期RGBA8を所有する読み書き可能なcompute画像を作る。描画でも使える。未対応・不正入力では無効値。
+	virtual FTextureResourceHandle CreateComputeTextureRGBA8( int32 Width, int32 Height, const FColor32 *Pixels ) { return {}; }
 	// 同じ寸法で内容を更新する。失敗時は内容と借用viewを保つ。
 	// 更新前に取得したviewは、それを使ったGPU処理が完了するまで保つ。
 	virtual bool UpdateTextureRGBA8( FTextureResourceHandle Texture, int32 Width, int32 Height, const FColor32* Pixels ) = 0;

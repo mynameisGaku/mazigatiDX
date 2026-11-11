@@ -101,6 +101,7 @@ foreach ($configuration in $Configurations) {
     Invoke-Step "geometry pipeline contracts $configuration" (Join-Path $selfTest 'RunGeometryPipelineTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration)
     Invoke-Step "GPU buffer geometry $configuration" (Join-Path $selfTest 'RunBufferGeometryTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
     Invoke-Step "compute buffer layouts $configuration" (Join-Path $selfTest 'RunComputeBufferLayoutsTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
+    Invoke-Step "compute texture contracts $configuration" (Join-Path $selfTest 'RunComputeTextureTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
     Invoke-Step "compute contracts $configuration" (Join-Path $selfTest 'RunComputeTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
     Invoke-Step "DX12 window contracts $configuration" (Join-Path $selfTest 'RunDX12WindowTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
     Invoke-Step "DX12 capture contracts $configuration" (Join-Path $selfTest 'RunCaptureTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
