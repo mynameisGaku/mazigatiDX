@@ -72,7 +72,7 @@ struct FParticleEmitterDefinition
 	FString Name = "Emitter";
 	FString Texture;                                   // 粒子の画像。空なら、組み込みの、ふちがぼやけた丸
 	// 四角形の粒子を描くマテリアル（.gxmaterial。Particle ドメイン。Docs/MATERIAL.md）。空なら、使わない（従来の描き方）。
-	// 粒子の色は、マテリアルの出力に掛かる（VertexColor ノードでも読める）。画像は、マテリアルの中のものを使う（Texture は使わない）。帯・雷・メッシュ・コマ送りには、使わない。
+	// 粒子の色は、マテリアルの出力に掛かる（VertexColor ノードでも読める）。寿命の位置・生まれてからの秒・粒子ごとの乱数は、ParticleLife・ParticleAge・ParticleRandom ノードで読める。画像は、マテリアルの中のものを使う（Texture は使わない）。帯・雷・メッシュ・コマ送りには、使わない。
 	// 読めない・Particle ドメインでない・シェーダーを使えないときは、警告して、従来の描き方に戻る
 	FString MaterialAsset;
 	EParticleBlend Blend = EParticleBlend::Add;

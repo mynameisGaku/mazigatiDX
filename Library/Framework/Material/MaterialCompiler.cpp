@@ -529,6 +529,12 @@ namespace
 				return ScalarResult( EmitInput( EMaterialInput::WorldNormal, EMaterialValueType::Float3, Id ) );
 			case K::CameraVector:
 				return ScalarResult( EmitInput( EMaterialInput::CameraVector, EMaterialValueType::Float3, Id ) );
+			case K::ParticleLife:
+				return ScalarResult( EmitInput( EMaterialInput::ParticleLife, EMaterialValueType::Float, Id ) );
+			case K::ParticleAge:
+				return ScalarResult( EmitInput( EMaterialInput::ParticleAge, EMaterialValueType::Float, Id ) );
+			case K::ParticleRandom:
+				return ScalarResult( EmitInput( EMaterialInput::ParticleRandom, EMaterialValueType::Float, Id ) );
 			case K::SceneColor:
 			{
 				const int32 Uv = PinValue( Node, 0 );

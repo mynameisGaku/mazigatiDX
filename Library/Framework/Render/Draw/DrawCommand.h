@@ -153,7 +153,7 @@ enum class EDrawCommand : uint8
 	// 通常モデルを一度描く間だけ骨poseを適用し、直後に元へ戻す命令。
 	ModelFramePose3D,
 	// シェーダーで描く 3D の四角形の追加（上のコマンドの形式は変えていない）
-	ShaderQuad3D,       // FDrawQuad3DData。ワールドの四角形（Quad3D と同じ向きの決め方）を、利用者のピクセルシェーダーで描く（組み込みの頂点シェーダーが、色と画像の座標を渡す。Handle は使わない）
+	ShaderQuad3D,       // FDrawShaderQuad3DData。ワールドの四角形（Quad3D と同じ向きの決め方）を、利用者のピクセルシェーダーで描く（組み込みの頂点シェーダーが、色・画像の座標・四角形ごとの 4 つの数を渡す。Handle は使わない）
 };
 
 // Primitive3D の頂点のつなぎ方（DxLib の DX_PRIMTYPE_*）
@@ -789,7 +789,7 @@ struct FDrawPrimitiveShader3DData
 
 // 画面の矩形を、利用者のピクセルシェーダーで描く。位置と大きさは、描画先の画素の座標（左上が 0, 0）。実行のときに、いまの描画先の大きさでクリップ座標に直す。
 // 画像の座標は、矩形の左上が (U0, V0)、右下が (U1, V1)。Color は頂点の色（R, G, B, A）
-// 組み込みの頂点シェーダーが、ピクセルシェーダーに渡すもの: float4 Position : SV_POSITION、float4 Color : COLOR0、float2 Uv : TEXCOORD0
+// 組み込みの頂点シェーダーが、ピクセルシェーダーに渡すもの: float4 Position : SV_POSITION、float4 Color : COLOR0、float2 Uv : TEXCOORD0、float4 Extra : TEXCOORD1（ShaderRect では 0。使わなければ、宣言しなくてよい）
 struct FDrawShaderRectData
 {
 	float32 X = 0.0f, Y = 0.0f;
@@ -797,6 +797,14 @@ struct FDrawShaderRectData
 	float32 U0 = 0.0f, V0 = 0.0f;
 	float32 U1 = 1.0f, V1 = 1.0f;
 	uint8 Color[4] = { 255, 255, 255, 255 };
+};
+
+// ワールドの四角形（Quad。向きの決め方と各項目は FDrawQuad3DData。Handle は使わない）を、利用者のピクセルシェーダーで描く。
+// Extra は、四角形ごとに渡す 4 つの数（ピクセルシェーダーの float4 Extra : TEXCOORD1。粒子の寿命の位置などに使う）
+struct FDrawShaderQuad3DData
+{
+	FDrawQuad3DData Quad;
+	float32 Extra[4] = {};
 };
 
 #define DRAW_DATA_CHECK( Type ) \
@@ -892,6 +900,7 @@ DRAW_DATA_CHECK( FDrawShaderOutputTargetData );
 DRAW_DATA_CHECK( FDrawShaderVertex3D );
 DRAW_DATA_CHECK( FDrawPrimitiveShader3DData );
 DRAW_DATA_CHECK( FDrawShaderRectData );
+DRAW_DATA_CHECK( FDrawShaderQuad3DData );
 #undef DRAW_DATA_CHECK
 static_assert( sizeof( FDrawVertex3D ) == 48 && sizeof( FDrawPrimitive3DData ) == 16, "unexpected padding in a draw command data type" );
 // シェーダーの頂点は、DxLib の VERTEX3DSHADER（88 バイト）と同じ並びでないと、頂点シェーダーが読めない

@@ -61,6 +61,7 @@ namespace
 		State.LastScanTime = Now;
 		State.EffectFiles = NFileSystem::ListFilesRecursive( Assets->GetRootDirectory(), { ".gxeffect" } );
 		State.TextureFiles = NFileSystem::ListFilesRecursive( Assets->GetRootDirectory(), { ".png", ".jpg", ".jpeg", ".bmp", ".tga", ".dds" } );
+		State.MaterialFiles = NFileSystem::ListFilesRecursive( Assets->GetRootDirectory(), { ".gxmaterial" } );
 		State.SheetFiles = NFileSystem::ListFilesRecursive( Assets->GetRootDirectory(), { ".gxsprite" } );
 	}
 

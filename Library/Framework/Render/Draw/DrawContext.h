@@ -1190,9 +1190,10 @@ public:
 	// 大きさが 0 以下・数値が有限でない・大きすぎる座標のときは、何も記録せず false を返す
 	bool ShaderRect( float32 X, float32 Y, float32 Width, float32 Height, const FColor32& Color = FColor32( 255, 255, 255, 255 ) );
 	// ワールドの四角形（ビルボード・向きが固定の板。向きの決め方と各項目は FDrawQuad3DData。Quad3D と同じ）を、UsePixelShader で決めたピクセルシェーダーで描く。
-	// 頂点シェーダーは、組み込みのものを使う（ピクセルシェーダーへ、float4 Position : SV_POSITION、float4 Color : COLOR0、float2 Uv : TEXCOORD0 を渡す）。Handle は使わない
-	// （画像は、ShaderTexture で渡す）。奥行きの比べ方・ブレンドは、いまの描画の状態に従う。両面が見える。使えない値（有限でない数・大きさが 0 以下）は、何も記録せず false
-	bool ShaderQuad3D( const FDrawQuad3DData& Data );
+	// 頂点シェーダーは、組み込みのものを使う（ピクセルシェーダーへ、float4 Position : SV_POSITION、float4 Color : COLOR0、float2 Uv : TEXCOORD0、float4 Extra : TEXCOORD1 を渡す）。Handle は使わない
+	// （画像は、ShaderTexture で渡す）。Extra は、四角形ごとに渡す 4 つの数（粒子の寿命の位置など。使わなければ、ピクセルシェーダーで宣言しなくてよい）。
+	// 奥行きの比べ方・ブレンドは、いまの描画の状態に従う。両面が見える。使えない値（有限でない数・大きさが 0 以下）は、何も記録せず false
+	bool ShaderQuad3D( const FDrawQuad3DData& Data, const FVector4& Extra = FVector4( 0.0f, 0.0f, 0.0f, 0.0f ) );
 
 	// 画像の座標も決める版（矩形の左上が (U0, V0)、右下が (U1, V1)）
 	bool ShaderRect( float32 X, float32 Y, float32 Width, float32 Height, float32 U0, float32 V0, float32 U1, float32 V1, const FColor32& Color = FColor32( 255, 255, 255, 255 ) );

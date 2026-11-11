@@ -148,6 +148,15 @@ bool NMaterialEval::Evaluate( const FMaterialProgram& Program, const FMaterialEv
 			case EMaterialInput::WorldNormal:
 				Result = FVector4( Context.WorldNormal.x, Context.WorldNormal.y, Context.WorldNormal.z, 0.0f );
 				break;
+			case EMaterialInput::ParticleLife:
+				Result.x = Context.ParticleLife;
+				break;
+			case EMaterialInput::ParticleAge:
+				Result.x = Context.ParticleAge;
+				break;
+			case EMaterialInput::ParticleRandom:
+				Result.x = Context.ParticleRandom;
+				break;
 			default:
 				Result = FVector4( Context.CameraVector.x, Context.CameraVector.y, Context.CameraVector.z, 0.0f );
 				break;

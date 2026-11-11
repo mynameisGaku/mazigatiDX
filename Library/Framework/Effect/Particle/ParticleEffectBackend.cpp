@@ -907,7 +907,16 @@ void FParticlePlayback::Record( FDrawContext& Draw ) const
 			Data.V0 = 0.0f;
 			Data.U1 = 1.0f;
 			Data.V1 = 1.0f;
-			ActiveMaterial->DrawParticleQuad( Draw, Data );
+			// 粒子ごとの数: 寿命の位置・生まれてからの秒・生まれた番号から決めた 0〜1 の数（消えるまで変わらない）
+			FMaterialParticleState ParticleState;
+			ParticleState.Life = NMath::IsFinite( Particle.NormalizedAge ) ? NMath::Clamp( Particle.NormalizedAge, 0.0f, 1.0f ) : 0.0f;
+			ParticleState.Age = NMath::IsFinite( Particle.Age ) ? Particle.Age : 0.0f;
+			uint32 Mixed = Particle.Serial * 2654435761u + static_cast<uint32>( Particle.Emitter ) * 40503u;
+			Mixed ^= Mixed >> 15;
+			Mixed *= 2246822519u;
+			Mixed ^= Mixed >> 13;
+			ParticleState.Random = static_cast<float32>( Mixed & 0xFFFFu ) / 65535.0f;
+			ActiveMaterial->DrawParticleQuad( Draw, Data, ParticleState );
 			continue;
 		}
 		if ( Emitter.Material.bEnabled )

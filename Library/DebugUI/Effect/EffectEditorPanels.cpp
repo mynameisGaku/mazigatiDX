@@ -264,6 +264,34 @@ namespace
 			Emitter.Texture.Empty();
 			bChanged = true;
 		}
+		// 四角形の粒子を描くマテリアル（Particle ドメインの .gxmaterial。空なら、使わない）。組み込みのものは、パスを直接書く（Engine:/Materials/Particle/Flame.gxmaterial など）
+		bChanged |= TrackInputEnd( NDebugUI::FileCombo( "Material", Emitter.MaterialAsset, S.MaterialFiles, "(none)" ), S.Document );
+		bChanged |= TrackInputEnd( NDebugUI::InputString( "Material path", Emitter.MaterialAsset ), S.Document );
+		if ( !Emitter.MaterialAsset.IsEmpty() )
+		{
+			if ( ImGui::SmallButton( "Use no material" ) )
+			{
+				Emitter.MaterialAsset.Empty();
+				bChanged = true;
+			}
+			ImGui::SameLine();
+			if ( ImGui::SmallButton( "Engine flame" ) )
+			{
+				Emitter.MaterialAsset = "Engine:/Materials/Particle/Flame.gxmaterial";
+				bChanged = true;
+			}
+			ImGui::SameLine();
+			if ( ImGui::SmallButton( "Engine soft glow" ) )
+			{
+				Emitter.MaterialAsset = "Engine:/Materials/Particle/SoftGlow.gxmaterial";
+				bChanged = true;
+			}
+		}
+		else if ( ImGui::SmallButton( "Use engine flame material" ) )
+		{
+			Emitter.MaterialAsset = "Engine:/Materials/Particle/Flame.gxmaterial";
+			bChanged = true;
+		}
 		bForceFieldChanged = NEffectEditorUI::DrawForceFieldPanel( S, Emitter, bForceFieldInputEnded, bForceFieldStructureChanged );
 		bChanged |= bForceFieldChanged;
 		bChanged |= NEffectEditorUI::DrawFlipbookPanel( S, Emitter );

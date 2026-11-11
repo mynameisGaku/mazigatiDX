@@ -43,6 +43,9 @@ enum class EMaterialNodeKind : uint8
 	CameraVector,       // Surface: 表面からカメラへの向き（長さ 1）（Float3）
 	SceneColor,         // PostProcess: シーンの色（Float4）。入力: UV（つながなければ、画面の UV）
 	SceneDepth,         // PostProcess: シーンの深度（カメラからの距離に直したもの。Float）。入力: UV
+	ParticleLife,       // Particle: 粒子の寿命の位置（生まれたときが 0、消えるときが 1）（Float）
+	ParticleAge,        // Particle: 粒子が生まれてからの秒（Float）
+	ParticleRandom,     // Particle: 粒子ごとに決まった、0〜1 のばらばらな数（生まれてから消えるまで、変わらない）（Float）
 
 	// 算術（2 つ: A, B）
 	Add,

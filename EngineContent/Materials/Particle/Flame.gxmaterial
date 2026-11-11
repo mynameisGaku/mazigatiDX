@@ -171,6 +171,44 @@
                   },
                   {
                       "Id":  14,
+                      "Kind":  "ParticleRandom",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  15,
+                      "Kind":  "Constant",
+                      "Value":  [
+                                    7.3
+                                ],
+                      "Components":  1,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  16,
+                      "Kind":  "Multiply",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     14,
+                                     15
+                                 ]
+                  },
+                  {
+                      "Id":  17,
                       "Kind":  "Add",
                       "Position":  [
                                        0,
@@ -182,7 +220,19 @@
                                  ]
                   },
                   {
-                      "Id":  15,
+                      "Id":  18,
+                      "Kind":  "Add",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     17,
+                                     16
+                                 ]
+                  },
+                  {
+                      "Id":  19,
                       "Kind":  "ScalarParameter",
                       "Name":  "Scale",
                       "Value":  [
@@ -197,19 +247,19 @@
                                  ]
                   },
                   {
-                      "Id":  16,
+                      "Id":  20,
                       "Kind":  "Noise",
                       "Position":  [
                                        0,
                                        0
                                    ],
                       "Inputs":  [
-                                     14,
-                                     15
+                                     18,
+                                     19
                                  ]
                   },
                   {
-                      "Id":  17,
+                      "Id":  21,
                       "Kind":  "Constant",
                       "Value":  [
                                     0.35
@@ -224,7 +274,7 @@
                                  ]
                   },
                   {
-                      "Id":  18,
+                      "Id":  22,
                       "Kind":  "Constant",
                       "Value":  [
                                     0.75
@@ -239,7 +289,7 @@
                                  ]
                   },
                   {
-                      "Id":  19,
+                      "Id":  23,
                       "Kind":  "Constant",
                       "Value":  [
                                     0.6
@@ -254,19 +304,19 @@
                                  ]
                   },
                   {
-                      "Id":  20,
+                      "Id":  24,
                       "Kind":  "Multiply",
                       "Position":  [
                                        0,
                                        0
                                    ],
                       "Inputs":  [
-                                     16,
-                                     19
+                                     20,
+                                     23
                                  ]
                   },
                   {
-                      "Id":  21,
+                      "Id":  25,
                       "Kind":  "Constant",
                       "Value":  [
                                     0.7
@@ -281,7 +331,7 @@
                                  ]
                   },
                   {
-                      "Id":  22,
+                      "Id":  26,
                       "Kind":  "Multiply",
                       "Position":  [
                                        0,
@@ -289,36 +339,36 @@
                                    ],
                       "Inputs":  [
                                      8,
-                                     21
+                                     25
                                  ]
                   },
                   {
-                      "Id":  23,
+                      "Id":  27,
                       "Kind":  "Add",
                       "Position":  [
                                        0,
                                        0
                                    ],
                       "Inputs":  [
-                                     20,
-                                     22
+                                     24,
+                                     26
                                  ]
                   },
                   {
-                      "Id":  24,
+                      "Id":  28,
                       "Kind":  "SmoothStep",
                       "Position":  [
                                        0,
                                        0
                                    ],
                       "Inputs":  [
-                                     17,
-                                     18,
-                                     23
+                                     21,
+                                     22,
+                                     27
                                  ]
                   },
                   {
-                      "Id":  25,
+                      "Id":  29,
                       "Kind":  "VectorParameter",
                       "Name":  "Inner",
                       "Value":  [
@@ -338,7 +388,7 @@
                                  ]
                   },
                   {
-                      "Id":  26,
+                      "Id":  30,
                       "Kind":  "Mask",
                       "Name":  "xyz",
                       "Position":  [
@@ -346,11 +396,11 @@
                                        0
                                    ],
                       "Inputs":  [
-                                     25
+                                     29
                                  ]
                   },
                   {
-                      "Id":  27,
+                      "Id":  31,
                       "Kind":  "VectorParameter",
                       "Name":  "Outer",
                       "Value":  [
@@ -370,7 +420,7 @@
                                  ]
                   },
                   {
-                      "Id":  28,
+                      "Id":  32,
                       "Kind":  "Mask",
                       "Name":  "xyz",
                       "Position":  [
@@ -378,37 +428,71 @@
                                        0
                                    ],
                       "Inputs":  [
-                                     27
+                                     31
                                  ]
                   },
                   {
-                      "Id":  29,
+                      "Id":  33,
                       "Kind":  "Multiply",
                       "Position":  [
                                        0,
                                        0
                                    ],
                       "Inputs":  [
-                                     24,
+                                     28,
                                      8
                                  ]
                   },
                   {
-                      "Id":  30,
+                      "Id":  34,
+                      "Kind":  "ParticleLife",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  35,
+                      "Kind":  "OneMinus",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     34
+                                 ]
+                  },
+                  {
+                      "Id":  36,
+                      "Kind":  "Multiply",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     33,
+                                     35
+                                 ]
+                  },
+                  {
+                      "Id":  37,
                       "Kind":  "Lerp",
                       "Position":  [
                                        0,
                                        0
                                    ],
                       "Inputs":  [
-                                     28,
-                                     26,
-                                     29
+                                     32,
+                                     30,
+                                     36
                                  ]
                   }
               ],
     "Outputs":  {
-                    "Color":  30,
-                    "Opacity":  29
+                    "Color":  37,
+                    "Opacity":  33
                 }
 }

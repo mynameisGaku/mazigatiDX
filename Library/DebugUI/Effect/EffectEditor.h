@@ -41,6 +41,8 @@ struct FEffectEditorState
 	TArray<FString> EffectFiles;
 	// 粒子の画像として選べるファイル。
 	TArray<FString> TextureFiles;
+	// アセットのフォルダにあるマテリアル（.gxmaterial）。エミッターの MaterialAsset の候補
+	TArray<FString> MaterialFiles;
 	// Flipbook のシート候補。
 	TArray<FString> SheetFiles;
 	// 同じ選択パスを毎frame読み直さないためのcache key。

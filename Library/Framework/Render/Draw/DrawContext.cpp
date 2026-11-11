@@ -907,9 +907,10 @@ bool FDrawContext::ShaderRect( float32 X, float32 Y, float32 Width, float32 Heig
 	return true;
 }
 
-bool FDrawContext::ShaderQuad3D( const FDrawQuad3DData& Data )
+bool FDrawContext::ShaderQuad3D( const FDrawQuad3DData& Data, const FVector4& Extra )
 {
-	const float32 Numbers[] = { Data.Pos[0], Data.Pos[1], Data.Pos[2], Data.Right[0], Data.Right[1], Data.Right[2], Data.Up[0], Data.Up[1], Data.Up[2], Data.Width, Data.Height, Data.PivotX, Data.PivotY, Data.Angle, Data.U0, Data.V0, Data.U1, Data.V1 };
+	const float32 Numbers[] = { Data.Pos[0], Data.Pos[1], Data.Pos[2], Data.Right[0], Data.Right[1], Data.Right[2], Data.Up[0], Data.Up[1], Data.Up[2], Data.Width, Data.Height, Data.PivotX, Data.PivotY, Data.Angle, Data.U0, Data.V0, Data.U1, Data.V1,
+								Extra.x, Extra.y, Extra.z, Extra.w };
 	for ( const float32 Number : Numbers )
 	{
 		if ( !NMath::IsFinite( Number ) )
@@ -921,7 +922,13 @@ bool FDrawContext::ShaderQuad3D( const FDrawQuad3DData& Data )
 	{
 		return false;
 	}
-	Push( EDrawCommand::ShaderQuad3D, 0, Data );
+	FDrawShaderQuad3DData Command;
+	Command.Quad = Data;
+	Command.Extra[0] = Extra.x;
+	Command.Extra[1] = Extra.y;
+	Command.Extra[2] = Extra.z;
+	Command.Extra[3] = Extra.w;
+	Push( EDrawCommand::ShaderQuad3D, 0, Command );
 	return true;
 }
 

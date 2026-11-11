@@ -9,7 +9,7 @@
 |ドメイン|適用先|入力のノード|出力ピン|
 |---|---|---|---|
 |`UI`|部品のブラシ（矩形）|`TexCoord`・`Size`・`HoverAmount`・`PressAmount`・`Value01`・`Enabled`・`VertexColor`・`Time`|`Color`（Float3）・`Opacity`（Float）|
-|`Particle`|エフェクトの粒子（ワールドの四角形）・矩形|`TexCoord`・`VertexColor`（粒子の色）・`Time`|`Color`・`Opacity`（粒子の色が、出力に掛かる）|
+|`Particle`|エフェクトの粒子（ワールドの四角形）・矩形|`TexCoord`・`VertexColor`（粒子の色）・`Time`・`ParticleLife`・`ParticleAge`・`ParticleRandom`|`Color`・`Opacity`（粒子の色が、出力に掛かる）|
 |`PostProcess`|画面全体|`TexCoord`・`SceneColor`・`SceneDepth`・`Size`（画面の大きさ）・`Time`|`Color`（つながないと、シーンの色のまま）|
 |`Surface`|メッシュの表面|`TexCoord`・`WorldPosition`・`WorldNormal`・`CameraVector`・`VertexColor`・`Time`|陰影で変わる（下）|
 
@@ -66,7 +66,7 @@ Material->DrawRect( Draw, X, Y, Width, Height, FColor32( 255, 255, 255, 255 ), F
 // Particle: ワールドの四角形（粒子）を描く。先に、メインスレッドで PrepareShaders を呼んでおく
 if ( Material->BeginParticles( Draw, FrameState ) )
 {
-    Material->DrawParticleQuad( Draw, Quad );   // FDrawQuad3DData（位置・大きさ・向き・色）。何度でも
+    Material->DrawParticleQuad( Draw, Quad, ParticleState );   // FDrawQuad3DData（位置・大きさ・向き・色）と、粒子ごとの数（FMaterialParticleState。省ける）。何度でも
     Material->EndParticles( Draw );
 }
 // PostProcess: シーンの絵（と深度）を読んで、矩形に描く
@@ -168,10 +168,11 @@ FUIBrush Glow = FUIBrush::MakeMaterial( GlowMaterial );                 // UI �
 - 向き（`Camera`・`CameraY`・`Fixed`）・大きさ・回転・ブレンドは、ふつうの粒子と同じです。奥行きの比べ方は、いまの描画の状態に従います。
 - 四角形の粒子だけに使えます。帯・雷・メッシュ・コマ送りのエミッターに書くと、警告して無視します。
 - マテリアルが読めない・Particle ドメインでない・シェーダーを使えない（ピクセルシェーダーの無いバックエンド）ときは、警告して、従来の描き方（画像の四角形）に戻ります。
-- 粒子の寿命の位置（0〜1）や速さは、まだマテリアルから読めません（色で渡してください）。
+- **粒子ごとの入力**（Particle ドメインだけ）: `ParticleLife`（寿命の位置。生まれたときが 0、消えるときが 1）・`ParticleAge`（生まれてからの秒）・`ParticleRandom`（粒子ごとに決まった、0〜1 のばらばらな数。消えるまで変わらない）。模様を粒子ごとにずらす・寿命で溶かす、などに使います。矩形に描くとき（エディタのプレビュー・`DrawRect`）は、どれも 0 です。粒子の速さは、まだ読めません。
+- Effect Editor では、エミッターの **Material** で選びます（アセットのフォルダの `.gxmaterial` の一覧か、パスを直接。組み込みの炎・光の玉は、ボタンで入ります）。
 - 組み込み: `Engine:/Materials/Particle/SoftGlow.gxmaterial`（やわらかい光の玉）・`Flame.gxmaterial`（上へ流れるノイズの炎）。見本は、サンプル `Effects` の **Material flame** です。
-- 描く命令は `FDrawContext::ShaderQuad3D`（`Quad3D` と同じ向きの決め方の四角形を、決めてあるピクセルシェーダーで描く）です。自分のシェーダーでも使えます。
+- 描く命令は `FDrawContext::ShaderQuad3D( 四角形, 4 つの数 )`（`Quad3D` と同じ向きの決め方の四角形を、決めてあるピクセルシェーダーで描く。4 つの数は、ピクセルシェーダーの `float4 : TEXCOORD1` に届く）です。自分のシェーダーでも使えます。
 
 ## これから
 
-Substrate のフル評価（フルに評価できるバックエンドの追加）、粒子の寿命・速さを読む入力。
+Substrate のフル評価（フルに評価できるバックエンドの追加）、粒子の速さを読む入力。

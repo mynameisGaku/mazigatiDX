@@ -59,6 +59,14 @@ struct FMaterialFrameState
 	float32 FarPlane = 1000.0f;
 };
 
+// 粒子 1 つの状態（Particle ドメインの ParticleLife・ParticleAge・ParticleRandom ノードが読む）
+struct FMaterialParticleState
+{
+	float32 Life = 0.0f;     // 寿命の位置（生まれたときが 0、消えるときが 1）
+	float32 Age = 0.0f;      // 生まれてからの秒
+	float32 Random = 0.0f;   // 粒子ごとに決まった、0〜1 の数
+};
+
 // Surface の場面の状態。HLSL の cbScene
 struct FMaterialSceneState
 {
@@ -146,7 +154,8 @@ public:
 	// 先に、メインスレッドで PrepareShaders を呼んでおく（ここでは、シェーダーを作らない）。記録は、どのスレッドからでもよい（その間に、パラメーターを変えないこと。
 	// 描画システムが、並列に記録するため）。ドメインが Particle でない・シェーダーの用意ができていないなら、何も記録せず false（そのときは、DrawParticleQuad・EndParticles を呼ばない）
 	bool BeginParticles( FDrawContext& Draw, const FMaterialFrameState& State ) const;
-	bool DrawParticleQuad( FDrawContext& Draw, const FDrawQuad3DData& Quad ) const;
+	// Particle は、粒子ごとの数（ParticleLife・ParticleAge・ParticleRandom ノードが読む）
+	bool DrawParticleQuad( FDrawContext& Draw, const FDrawQuad3DData& Quad, const FMaterialParticleState& Particle = FMaterialParticleState() ) const;
 	void EndParticles( FDrawContext& Draw ) const;
 	// PostProcess: Scene（シーンの絵。ShaderRect で矩形に貼る）と Depth（無ければ null）を読んで、矩形に描く
 	bool DrawPostProcess( FDrawContext& Draw, float32 X, float32 Y, float32 Width, float32 Height, const TSharedPtr<IImage>& Scene, const TSharedPtr<IImage>& Depth, const FMaterialFrameState& State );

@@ -87,6 +87,9 @@ namespace
 		Set( Make( K::CameraVector, "CameraVector", "Inputs", DomainSurface ) );
 		Set( Make( K::SceneColor, "SceneColor", "Inputs", DomainPost, { UvPin() } ) );
 		Set( Make( K::SceneDepth, "SceneDepth", "Inputs", DomainPost, { UvPin() } ) );
+		Set( Make( K::ParticleLife, "ParticleLife", "Inputs", DomainParticle ) );
+		Set( Make( K::ParticleAge, "ParticleAge", "Inputs", DomainParticle ) );
+		Set( Make( K::ParticleRandom, "ParticleRandom", "Inputs", DomainParticle ) );
 
 		Set( Make( K::Add, "Add", "Math", DomainAll, { Pin( "A", 0.0f ), Pin( "B", 0.0f ) } ) );
 		Set( Make( K::Subtract, "Subtract", "Math", DomainAll, { Pin( "A", 0.0f ), Pin( "B", 0.0f ) } ) );

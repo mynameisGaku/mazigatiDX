@@ -127,18 +127,19 @@ $core = Op2 'Multiply' (Op2 'Multiply' $soft $soft) (Scalar 'Core' 0.6)
 $color = Op2 'Add' (Vec3 1.0 1.0 1.0) $core
 Save-Material 'Particle\SoftGlow.gxmaterial' 'SoftGlow' 'Particle' '' @{ Color = $color; Opacity = $soft }
 
-# 炎: 上へ流れるノイズで、形がゆらぐ
+# 炎: 上へ流れるノイズで、形がゆらぐ。粒子ごとに模様をずらし（ParticleRandom）、寿命が進むと、外側の色に寄る（ParticleLife）
 Reset-Graph
 $uv = Add-Node -Kind 'TexCoord'
 $centered = Op2 'Subtract' $uv (Num 0.5)
 $falloff = Op1 'Saturate' (Op1 'OneMinus' (Op2 'Multiply' (Add-Node -Kind 'Dot' -Inputs @($centered, $centered)) (Num 4.0)))
 $scroll = Op2 'Multiply' (Add-Node -Kind 'Constant' -Value @(0.0, 1.0) -Components 2) (Op2 'Multiply' (Add-Node -Kind 'Time') (Scalar 'Speed' 0.9))
-$noise = Add-Node -Kind 'Noise' -Inputs @((Op2 'Add' $uv $scroll), (Scalar 'Scale' 4.0))
+$offset = Op2 'Multiply' (Add-Node -Kind 'ParticleRandom') (Num 7.3)
+$noise = Add-Node -Kind 'Noise' -Inputs @((Op2 'Add' (Op2 'Add' $uv $scroll) $offset), (Scalar 'Scale' 4.0))
 $shape = Add-Node -Kind 'SmoothStep' -Inputs @((Num 0.35), (Num 0.75), (Op2 'Add' (Op2 'Multiply' $noise (Num 0.6)) (Op2 'Multiply' $falloff (Num 0.7))))
 $inner = Mask (ColorParam 'Inner' 1.0 0.92 0.55) 'xyz'
 $outer = Mask (ColorParam 'Outer' 1.0 0.35 0.08) 'xyz'
 $flame = Op2 'Multiply' $shape $falloff
-$color = Lerp3 $outer $inner $flame
+$color = Lerp3 $outer $inner (Op2 'Multiply' $flame (Op1 'OneMinus' (Add-Node -Kind 'ParticleLife')))
 Save-Material 'Particle\Flame.gxmaterial' 'Flame' 'Particle' '' @{ Color = $color; Opacity = $flame }
 
 # ---- Surface -------------------------------------------------------------------------------------

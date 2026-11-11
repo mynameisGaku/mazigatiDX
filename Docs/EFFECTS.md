@@ -12,6 +12,6 @@ Effect Editorの`Preset`から元になる表現を選び、未保存のコピ�
 
 取り込みモデルはWorld Editorで選び、Inspectorの`Model material effect`から`Add material effect (disabled)`を押します。実際の材質一覧で色・画像の有無を確認し、`Choose material slot`で対象を選び、`Enable material effect`を有効にして調整します。無効中の設定も保存され、`Remove material effect`で設定自体を取り除けます。`Placement preview transport`は選択した配置だけを操作し、再生操作ではワールドの保存値を変えません。静的モデルの一材質が対象で、アニメーションが結び付いた個体は通常のモデル描画になります。
 
-四角形の粒子は、ノードで作ったマテリアル（Particle ドメイン。[MATERIAL.md](MATERIAL.md)）でも描けます。`.gxeffect` のエミッターに `"MaterialAsset": "Engine:/Materials/Particle/Flame.gxmaterial"` のように書きます（いまは、ファイルに直接書きます。Effect Editor には、まだ項目がありません）。
+四角形の粒子は、ノードで作ったマテリアル（Particle ドメイン。[MATERIAL.md](MATERIAL.md)）でも描けます。Effect Editor のエミッターの **Material** で選ぶか、`.gxeffect` のエミッターに `"MaterialAsset": "Engine:/Materials/Particle/Flame.gxmaterial"` のように書きます。
 
 エフェクトの再生をコードから使う見本は、`Samples`の`Effects`（`Samples/README.md`）です。ゲームのオブジェクトには、`CEffectComponent`を付けるのが手軽です。

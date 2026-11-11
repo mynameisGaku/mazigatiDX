@@ -83,6 +83,12 @@ namespace
 			return "i.World";
 		case EMaterialInput::WorldNormal:
 			return "normalize( i.Normal )";
+		case EMaterialInput::ParticleLife:
+			return "i.Particle.x";
+		case EMaterialInput::ParticleAge:
+			return "i.Particle.y";
+		case EMaterialInput::ParticleRandom:
+			return "i.Particle.z";
 		default:
 			( void ) Domain;
 			return "normalize( g_CameraPosition.xyz - i.World )";
@@ -193,6 +199,7 @@ struct PixelInput
 	float4 Position : SV_POSITION;
 	float4 Color : COLOR0;
 	float2 Uv : TEXCOORD0;
+	float4 Particle : TEXCOORD1;   // 粒子ごとの数（x = 寿命の位置、y = 生まれてからの秒、z = 粒子ごとの 0〜1 の数）。矩形に描くときは 0
 };
 )HLSL";
 

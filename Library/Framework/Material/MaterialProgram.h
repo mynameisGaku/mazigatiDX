@@ -38,7 +38,10 @@ enum class EMaterialInput : uint8
 	VertexColor,
 	WorldPosition,
 	WorldNormal,
-	CameraVector
+	CameraVector,
+	ParticleLife,
+	ParticleAge,
+	ParticleRandom
 };
 
 enum class EMaterialUnary : uint8
