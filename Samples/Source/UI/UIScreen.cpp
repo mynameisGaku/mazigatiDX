@@ -6,12 +6,15 @@
 #include "Library/Core/Interfaces/Input/IGamepadInput.h"
 #include "Library/Core/Interfaces/Input/IInput.h"
 #include "Library/Core/Interfaces/Input/ITextInput.h"
+#include "Library/Core/Log/Log.h"
 #include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
 #include "Library/Framework/Scene/Scene.h"
 #include "Library/Framework/UI/Core/UIInputBridge.h"
 #include "Library/Platform/System/CommandLine.h"
+
+DEFINE_LOG_CATEGORY_STATIC( LogSamples, Log )
 
 namespace
 {
@@ -127,31 +130,26 @@ void CUIScreen::SetStatus( const char* Text )
 
 TSharedPtr<CUIWidget> CUIScreen::BuildSettingsWindow( CAssetSubsystem& Assets, const TSharedPtr<CFont>& Body, const TSharedPtr<CFont>& Title )
 {
-	// 見た目は、テーマ（名前つきの色・ブラシ・フォント・スタイル）にまとめてある。基本のテーマから、色だけ変えた子のテーマを作る
+	// 見た目は、テーマ（名前つきの色・ブラシ・フォント・スタイル）にまとめてある。基本のテーマはコードで作り、その子のテーマは、ファイル（Assets/UI/Themes/*.gxuitheme）から読む
 	TSharedPtr<FUITheme> Base = Style.MakeTheme( Body, Title );
 	FUISliderStyle SliderStyle = Style.Slider;
 	SliderStyle.TrackInset = FUIMargin( 0.0f, 8.0f, 0.0f, 8.0f );   // 溝を、矩形より細くする（矩形の高さ 28 に対して、溝は 12）
 	Base->SetSliderStyle( "Thin", SliderStyle );
 	Themes.Add( Base );
-	struct FAccent
+	const char* ThemeFiles[] = { "UI/Themes/Blue.gxuitheme", "UI/Themes/Green.gxuitheme", "UI/Themes/Rose.gxuitheme" };
+	for ( const char* ThemeFile : ThemeFiles )
 	{
-		const char* Name;
-		FColor32 Accent;
-		FColor32 Value;
-	};
-	const FAccent Accents[] = {
-		{ "Blue", FColor32( 130, 190, 255 ), FColor32( 190, 255, 225 ) },
-		{ "Green", FColor32( 160, 230, 150 ), FColor32( 255, 232, 160 ) },
-		{ "Rose", FColor32( 255, 160, 190 ), FColor32( 200, 220, 255 ) },
-	};
-	for ( const FAccent& Accent : Accents )
-	{
-		TSharedPtr<FUITheme> Variant = MakeShared<FUITheme>();
-		Variant->SetName( Accent.Name );
-		Variant->SetParent( Base );            // 上書きした名前だけ違い、あとは基本のテーマと同じ
-		Variant->SetColor( "Accent", Accent.Accent );
-		Variant->SetColor( "Value", Accent.Value );
-		Themes.Add( Variant );
+		// 上書きした名前だけ違い、あとは基本のテーマと同じ（読めなかったテーマは、飛ばす）
+		FString ThemeError;
+		const TSharedPtr<FUITheme> Variant = CUIThemeLoader::Load( Assets, ThemeFile, Base, ThemeError );
+		if ( Variant )
+		{
+			Themes.Add( Variant );
+		}
+		else
+		{
+			LOG( LogSamples, Warning, "the UI theme could not be loaded: %s", *ThemeError );
+		}
 	}
 	// ドロップダウン: 矢印は、アイコンの画像。一覧は、このスタックに積む
 	FUIDropdownStyle DropdownStyle;

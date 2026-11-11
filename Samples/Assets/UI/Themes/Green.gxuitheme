@@ -1,0 +1,12 @@
+{
+  // サンプル UI のテーマ（Green）。基本のテーマ（コードで作る）の子で、ここに書いた名前だけを上書きする。
+  "Name": "Green",
+  "Colors": {
+    "Accent": "#A0E696",
+    "Value": "#FFE8A0"
+  },
+  "Brushes": {
+    // プログレスバーの中身を、このテーマのアクセントの色の、角丸の面にする
+    "ProgressFill": { "Color": "@Accent", "CornerRadius": 9 }
+  }
+}

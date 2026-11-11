@@ -9,6 +9,7 @@
 #include "Library/Framework/UI/Markup/UIMarkupDocument.h"
 #include "Library/Framework/UI/Core/UIPanels.h"
 #include "Library/Framework/UI/Style/UIDefaultStyle.h"
+#include "Library/Framework/UI/Style/UIThemeLoader.h"
 #include "Library/Framework/UI/Widgets/UIControlWidgets.h"
 #include "Library/Framework/UI/Widgets/UIDialog.h"
 #include "Library/Framework/UI/Widgets/UIDisplayWidgets.h"

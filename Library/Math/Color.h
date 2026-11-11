@@ -99,6 +99,10 @@ struct FColor32
 			static_cast<uint8>( RGBA & 0xFF ) };
 	}
 
+	// 色の文字（"#RGB"・"#RRGGBB"・"#RRGGBBAA"。16 進。前後の空白は無視）を読む。アルファを書かなければ、不透明。
+	// 読めない文字（# が無い・桁の数が違う・16 進でない字）なら false（OutColor は変えない）
+	static bool TryParseHex( const FString& Text, FColor32& OutColor );
+
 	// 0xRRGGBBAA
 	FORCEINLINE constexpr uint32 ToRGBA() const { return ( uint32( r ) << 24 ) | ( uint32( g ) << 16 ) | ( uint32( b ) << 8 ) | uint32( a ); }
 	// 0xAARRGGBB

@@ -12,6 +12,7 @@
 - クリップボードの窓口（`IClipboard`）。
 - マテリアル（`Library/Framework/Material`。[Docs/MATERIAL.md](Docs/MATERIAL.md)）: ドメイン（UI・Surface・Particle・PostProcess）・ノードのグラフ（`.gxmaterial`）・中間表現・HLSL の生成・CPU での評価・診断・バックエンドの能力の宣言、インスタンス（`.gxmaterialinstance`）、パラメーターコレクション（`.gxmaterialparametercollection`）、ポストプロセスのチェーン、Substrate 風の万能モデル（簡略版）、HLSL の直指定、ホットリロード、UI のブラシ（`FUIBrush::MakeMaterial`）、エンジン組み込みのマテリアル（`EngineContent/Materials`）。
 - UI の動き（`CUIAnimator`・部品の描くときの変換・画面の出入りの演出・ホバーや押下に合わせた動き・マークアップの `<Animation>`）と、どこからでも使えるイージング（`Library/Math/Easing.h`）。
+- UI のテーマのファイル（`.gxuitheme`。`CUIThemeLoader`）と、色の文字の読み取り（`FColor32::TryParseHex`）。
 - マテリアルエディタ（`Editor.exe`。ノードのグラフ・プレビュー・診断・保存）と、サンプル `Materials`。
 
 ### 変更

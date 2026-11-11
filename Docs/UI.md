@@ -259,7 +259,44 @@ Context.SetTheme( Blue );                                               // マ�
   - フォント: `Body` `Title`（渡したとき）
 - **マークアップでの使い方**: 色と数の属性に、`@名前` と書けます（`Color="@Accent"`、`Spacing="@Gap"`、`Width="@Gap"`、`Background="@Panel"` など）。フォント・ブラシ・スタイルの名前は、**文脈に登録したものを先に**、無ければテーマから探します。テーマに無い `@名前` は、**失敗**です（名前と行番号つき）。余白（`Padding` など、数が 1〜4 個のもの）には、`@` は使えません。
 - **テーマの切り替え**: 文脈のテーマを替えて、`CUIMarkupDocument::Rebuild` で作り直すと、同じ `.gxui` が別の見た目になります（`ReloadIfChanged` は、ファイルの中身が同じなら作り直さないので、テーマの切り替えには、`Rebuild` を使います）。ボタンの処理の最中に窓ごと作り直すと危ないので、印だけ付けて、次の更新で作り直します。
-- 見本: サンプル `UI` の **Theme** ボタンが、基本・Blue・Green・Rose の順に切り替えます（子のテーマが、`Accent` と `Value` だけ上書きしています）。起動の引数 `--theme-steps=N` で、N 回進めた状態から始められます。
+- 見本: サンプル `UI` の **Theme** ボタンが、基本・Blue・Green・Rose の順に切り替えます（子のテーマは、ファイル `Samples/Assets/UI/Themes/*.gxuitheme` から読み、`Accent`・`Value` と、プログレスバーの中身のブラシだけ上書きしています）。起動の引数 `--theme-steps=N` で、N 回進めた状態から始められます。
+
+### テーマのファイル（`.gxuitheme`）
+
+色・数・ブラシ・ボタンとチェックボックスのスタイルは、JSON のファイルに書けます（`CUIThemeLoader`。`Library/Framework/UI/Style/UIThemeLoader.h`）。フォントと、ほかの部品のスタイル（スライダー・入力欄・ドロップダウン）は、コードで足します（親のテーマに入れておけば、そこから引かれます）。
+
+```json
+{
+  // コメントを書けます
+  "Name": "Blue",
+  "Colors":  { "Accent": "#82BEFF", "Value": "#BEFFE1" },
+  "Numbers": { "Gap": 14, "Spacing": 18 },
+  "Brushes": {
+    "Flat":   "#202830",
+    "Card":   { "Color": "#202830", "CornerRadius": 8, "OutlineColor": "@Accent", "OutlineThickness": 1.5 },
+    "Window": { "Image": "Engine:/UI/Window.png", "Mode": "NineSlice", "Margin": [ 12, 12, 12, 12 ] },
+    "Glow":   { "Material": "Engine:/Materials/UI/GlowButton.gxmaterial" },
+    "Framed": { "Layers": [ "Card", { "Image": "Engine:/UI/Frame.png", "Mode": "NineSlice" } ] }
+  },
+  "ButtonStyles":   { "Flat": { "Normal": "Card", "Hover": "#2C3848", "Pressed": "#182028", "Disabled": "#40444C", "FocusOverlay": "Framed" } },
+  "CheckBoxStyles": { "Flat": { "Off": "Card", "On": "@Accent" } }
+}
+```
+
+```cpp
+FString Error;
+TSharedPtr<FUITheme> Blue = CUIThemeLoader::Load( Assets, "UI/Themes/Blue.gxuitheme", Base, Error );   // Base の子のテーマ。失敗なら null（Error に理由）
+```
+
+- **色**: `"#RGB"`・`"#RRGGBB"`・`"#RRGGBBAA"`。ブラシとスタイルの中では、`"@名前"`（このテーマか、親のテーマの色）も書けます。色の文字は、`FColor32::TryParseHex` で、どこからでも読めます。
+- **ブラシ**: 文字なら、色（単色の面）か、ブラシの名前（このファイルか、親のテーマ）。オブジェクトなら、次のどれか 1 つです。
+  - 単色: `Color`・`CornerRadius`・`OutlineColor`・`OutlineThickness`
+  - 画像: `Image`（パス）・`Mode`（`Stretch`・`Fit`・`Fill`・`Tile`・`NineSlice`。既定は `Stretch`）・`Margin`（9 分割の余白。数か、`[左, 上, 右, 下]`。省くと、画像の 1/4）・`Tint`
+  - マテリアル: `Material`（パス）・`Tint`
+  - 重ね: `Layers`（ブラシの並び。先のものが奥）
+- `Brushes` の中の、名前での参照は、同じファイルの中なら、書く順に関係なく使えます（輪になる参照は、失敗です）。
+- **スタイル**: `ButtonStyles`（`Normal`・`Hover`・`Pressed`・`Disabled`・`FocusOverlay`）と `CheckBoxStyles`（`Off`・`On`・`HoverOverlay`・`DisabledOverlay`・`FocusOverlay`）。項目は、ブラシです。書かなかった項目は、空のブラシになります。
+- **失敗**: JSON が壊れている・型が違う・知らない項目・見つからない名前・読めない画像やマテリアルは、`null` を返し、`Error` に、場所つきの理由（英語）が入ります。途中まで読んだテーマは、残りません。
 
 ## 入力欄（文字入力）
 
@@ -440,4 +477,4 @@ UI の基本画像（窓・パネル・ボタンの 4 状態・チェック・�
 
 ## これから
 
-テーマの JSON ファイル、状態ごとのスタイル、入力欄の複数行とダブルクリックの選択は、順に足していきます。
+テーマのファイルでの、スライダー・入力欄・ドロップダウンのスタイル、入力欄の複数行とダブルクリックの選択は、順に足していきます。
