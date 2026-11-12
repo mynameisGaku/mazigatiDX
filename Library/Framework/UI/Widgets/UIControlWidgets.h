@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 
+#include "Library/Framework/UI/Brush/UIBrushFade.h"
 #include "Library/Framework/UI/Core/UIWidget.h"
 
 //=============================================================================
@@ -18,6 +19,9 @@ struct FUIButtonStyle
 	FUIBrush Pressed;
 	FUIBrush Disabled;
 	FUIBrush FocusOverlay;   // フォーカス中、状態のブラシの上に重ねる（枠など）
+	// 状態のブラシが切り替わるとき、前のブラシから、なめらかに替わるまでの秒（フォーカスの重ねの出入りも）。0 なら、すぐ切り替わる。
+	// 時間は、CUIContext::Update（か、CUIWidget::AdvanceTime）で進む
+	float32 TransitionDuration = 0.0f;
 };
 
 //-----------------------------------------------------------------------------
@@ -36,11 +40,22 @@ public:
 	// いまの状態のブラシ（確認や、独自の描き方に使える）
 	const FUIBrush& GetCurrentBrush() const;
 
+	// 状態のブラシの切り替えの進み具合（確認用。TransitionDuration が 0 より大きいときに動く）
+	const FUIStateFade& GetStateFade() const { return StateFade; }
+	const FUIOverlayFade& GetFocusFade() const { return FocusFade; }
+
 protected:
 	void OnPaint( FDrawContext& CommandList, float32 EffectiveOpacity ) override;
+	void OnAdvanceTime( float32 DeltaTime ) override;
 
 private:
+	// 状態の番号（0 = 通常、1 = ホバー、2 = 押下、3 = 使えない）と、そのブラシ
+	int32 GetStateIndex() const;
+	const FUIBrush& GetStateBrush( int32 StateIndex ) const;
+
 	FUIButtonStyle Style;
+	FUIStateFade StateFade;
+	FUIOverlayFade FocusFade;
 };
 
 //-----------------------------------------------------------------------------
@@ -54,6 +69,7 @@ struct FUICheckBoxStyle
 	FUIBrush HoverOverlay;      // ホバー中に重ねる
 	FUIBrush DisabledOverlay;   // 使えないとき重ねる
 	FUIBrush FocusOverlay;      // フォーカス中に重ねる
+	float32 TransitionDuration = 0.0f;   // オフとオンの切り替え・重ねるブラシの出入りにかける秒（0 なら、すぐ）
 };
 
 class CUICheckBox : public CUIWidget
@@ -73,10 +89,15 @@ public:
 
 protected:
 	void OnPaint( FDrawContext& CommandList, float32 EffectiveOpacity ) override;
+	void OnAdvanceTime( float32 DeltaTime ) override;
 	float32 GetBrushValue() const override { return bChecked ? 1.0f : 0.0f; }
 
 private:
 	FUICheckBoxStyle Style;
+	FUIStateFade CheckFade;        // 0 = オフ、1 = オン
+	FUIOverlayFade HoverFade;
+	FUIOverlayFade DisabledFade;
+	FUIOverlayFade FocusFade;
 	bool bChecked = false;
 };
 
@@ -96,6 +117,7 @@ struct FUISliderStyle
 	FVector2 HandleSize = FVector2( 20.0f, 20.0f );
 	FUIMargin TrackInset;   // 溝の描く範囲を、矩形から内側へ縮める量（溝を、矩形より細くするとき）
 	FUIMargin FillInset;    // 中身（Fill）の描く範囲を、溝から内側へ縮める量（中身が、溝の枠・丸みの上に、はみ出さないように）
+	float32 TransitionDuration = 0.0f;   // つまみの、通常とホバーの切り替えにかける秒（0 なら、すぐ）
 };
 
 class CUISlider : public CUIWidget
@@ -129,6 +151,7 @@ public:
 
 protected:
 	void OnPaint( FDrawContext& CommandList, float32 EffectiveOpacity ) override;
+	void OnAdvanceTime( float32 DeltaTime ) override;
 	float32 GetBrushValue() const override { return GetNormalizedValue(); }
 	void OnPointerPressed( const FVector2& Position ) override;
 	void OnPointerDragged( const FVector2& Position ) override;
@@ -136,8 +159,11 @@ protected:
 
 private:
 	void SetFromPosition( const FVector2& Position );
+	// つまみの状態の番号（0 = 通常、1 = ホバー・押下）
+	int32 GetHandleStateIndex() const;
 
 	FUISliderStyle Style;
+	FUIStateFade HandleFade;
 	EUIOrientation Orientation = EUIOrientation::Horizontal;
 	float32 Minimum = 0.0f;
 	float32 Maximum = 1.0f;

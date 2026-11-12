@@ -30,8 +30,56 @@ const FUIBrush& CUIButton::GetCurrentBrush() const
 	return Style.Normal;
 }
 
+int32 CUIButton::GetStateIndex() const
+{
+	if ( !IsEffectivelyEnabled() )
+	{
+		return 3;
+	}
+	if ( IsPressed() )
+	{
+		return 2;
+	}
+	return IsHovered() ? 1 : 0;
+}
+
+const FUIBrush& CUIButton::GetStateBrush( int32 StateIndex ) const
+{
+	switch ( StateIndex )
+	{
+		case 1:
+			return Style.Hover;
+		case 2:
+			return Style.Pressed;
+		case 3:
+			return Style.Disabled;
+		default:
+			return Style.Normal;
+	}
+}
+
+void CUIButton::OnAdvanceTime( float32 DeltaTime )
+{
+	StateFade.Advance( GetStateIndex(), DeltaTime, Style.TransitionDuration );
+	FocusFade.Advance( IsFocused(), DeltaTime, Style.TransitionDuration );
+}
+
 void CUIButton::OnPaint( FDrawContext& CommandList, float32 EffectiveOpacity )
 {
+	if ( Style.TransitionDuration > 0.0f && StateFade.IsStarted() )
+	{
+		// 切り替えを、時間をかけて混ぜる
+		if ( StateFade.IsFading() )
+		{
+			NUIBrush::DrawFade( CommandList, GetStateBrush( StateFade.Previous ), GetStateBrush( StateFade.Current ), StateFade.Progress, GetRect(), EffectiveOpacity );
+		}
+		else
+		{
+			NUIBrush::Draw( CommandList, GetStateBrush( StateFade.Current ), GetRect(), EffectiveOpacity );
+		}
+		NUIBrush::Draw( CommandList, Style.FocusOverlay, GetRect(), EffectiveOpacity * FocusFade.Amount );
+		return;
+	}
 	NUIBrush::Draw( CommandList, GetCurrentBrush(), GetRect(), EffectiveOpacity );
 	if ( IsFocused() )
 	{
@@ -62,8 +110,34 @@ void CUICheckBox::SetChecked( bool bInChecked, bool bNotify )
 	}
 }
 
+void CUICheckBox::OnAdvanceTime( float32 DeltaTime )
+{
+	const bool bEnabled = IsEffectivelyEnabled();
+	CheckFade.Advance( bChecked ? 1 : 0, DeltaTime, Style.TransitionDuration );
+	HoverFade.Advance( bEnabled && IsHovered(), DeltaTime, Style.TransitionDuration );
+	DisabledFade.Advance( !bEnabled, DeltaTime, Style.TransitionDuration );
+	FocusFade.Advance( IsFocused(), DeltaTime, Style.TransitionDuration );
+}
+
 void CUICheckBox::OnPaint( FDrawContext& CommandList, float32 EffectiveOpacity )
 {
+	if ( Style.TransitionDuration > 0.0f && CheckFade.IsStarted() )
+	{
+		// 切り替えを、時間をかけて混ぜる
+		const FUIBrush& Current = CheckFade.Current == 1 ? Style.On : Style.Off;
+		if ( CheckFade.IsFading() )
+		{
+			NUIBrush::DrawFade( CommandList, CheckFade.Previous == 1 ? Style.On : Style.Off, Current, CheckFade.Progress, GetRect(), EffectiveOpacity );
+		}
+		else
+		{
+			NUIBrush::Draw( CommandList, Current, GetRect(), EffectiveOpacity );
+		}
+		NUIBrush::Draw( CommandList, Style.DisabledOverlay, GetRect(), EffectiveOpacity * DisabledFade.Amount );
+		NUIBrush::Draw( CommandList, Style.HoverOverlay, GetRect(), EffectiveOpacity * HoverFade.Amount );
+		NUIBrush::Draw( CommandList, Style.FocusOverlay, GetRect(), EffectiveOpacity * FocusFade.Amount );
+		return;
+	}
 	NUIBrush::Draw( CommandList, bChecked ? Style.On : Style.Off, GetRect(), EffectiveOpacity );
 	if ( !IsEffectivelyEnabled() )
 	{
@@ -207,6 +281,29 @@ void CUISlider::OnPaint( FDrawContext& CommandList, float32 EffectiveOpacity )
 		NUIBrush::Draw( CommandList, Style.Fill, GetFillRect(), EffectiveOpacity );
 	}
 
-	const bool bActive = IsHovered() || IsPressed();
-	NUIBrush::Draw( CommandList, ( bActive && !Style.HandleHover.IsEmpty() ) ? Style.HandleHover : Style.Handle, Handle, EffectiveOpacity );
+	if ( Style.TransitionDuration > 0.0f && HandleFade.IsStarted() )
+	{
+		// つまみの切り替えを、時間をかけて混ぜる
+		const FUIBrush& Current = HandleFade.Current == 1 ? Style.HandleHover : Style.Handle;
+		if ( HandleFade.IsFading() )
+		{
+			NUIBrush::DrawFade( CommandList, HandleFade.Previous == 1 ? Style.HandleHover : Style.Handle, Current, HandleFade.Progress, Handle, EffectiveOpacity );
+		}
+		else
+		{
+			NUIBrush::Draw( CommandList, Current, Handle, EffectiveOpacity );
+		}
+		return;
+	}
+	NUIBrush::Draw( CommandList, GetHandleStateIndex() == 1 ? Style.HandleHover : Style.Handle, Handle, EffectiveOpacity );
+}
+
+int32 CUISlider::GetHandleStateIndex() const
+{
+	return ( ( IsHovered() || IsPressed() ) && !Style.HandleHover.IsEmpty() ) ? 1 : 0;
+}
+
+void CUISlider::OnAdvanceTime( float32 DeltaTime )
+{
+	HandleFade.Advance( GetHandleStateIndex(), DeltaTime, Style.TransitionDuration );
 }

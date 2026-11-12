@@ -302,10 +302,10 @@ TSharedPtr<FUITheme> Blue = CUIThemeLoader::Load( Assets, "UI/Themes/Blue.gxuith
 
   |表|項目|
   |---|---|
-  |`ButtonStyles`|ブラシ: `Normal`・`Hover`・`Pressed`・`Disabled`・`FocusOverlay`|
-  |`CheckBoxStyles`|ブラシ: `Off`・`On`・`HoverOverlay`・`DisabledOverlay`・`FocusOverlay`|
-  |`SliderStyles`|ブラシ: `Track`・`Fill`・`Handle`・`HandleHover` ／ 大きさ: `HandleSize` ／ 余白: `TrackInset`・`FillInset`|
-  |`TextBoxStyles`|ブラシ: `Normal`・`Focused`・`Disabled` ／ 色: `TextColor`・`PlaceholderColor`・`DisabledTextColor`・`CaretColor`・`SelectionColor` ／ 余白: `TextPadding`|
+  |`ButtonStyles`|ブラシ: `Normal`・`Hover`・`Pressed`・`Disabled`・`FocusOverlay` ／ 数: `TransitionDuration`|
+  |`CheckBoxStyles`|ブラシ: `Off`・`On`・`HoverOverlay`・`DisabledOverlay`・`FocusOverlay` ／ 数: `TransitionDuration`|
+  |`SliderStyles`|ブラシ: `Track`・`Fill`・`Handle`・`HandleHover` ／ 大きさ: `HandleSize` ／ 余白: `TrackInset`・`FillInset` ／ 数: `TransitionDuration`|
+  |`TextBoxStyles`|ブラシ: `Normal`・`Focused`・`Disabled` ／ 色: `TextColor`・`PlaceholderColor`・`DisabledTextColor`・`CaretColor`・`SelectionColor` ／ 余白: `TextPadding` ／ 数: `TransitionDuration`|
   |`DropdownStyles`|`Button`（ボタンのスタイルの名前か、ボタンのスタイルと同じ書き方）／ ブラシ: `Arrow`・`PopupBackground`・`ItemSelected`・`ScrollTrack`・`ScrollThumb` ／ 色: `TextColor`・`PlaceholderColor`・`ItemTextColor` ／ 余白: `TextPadding`・`PopupPadding`・`ItemPadding` ／ 大きさ: `ArrowSize` ／ 数（0 以上）: `ItemHeight`・`ScrollBarWidth` ／ 1 以上の整数: `MaxVisibleItems`|
 
 - **`Extends`（元にするスタイル）**: `"Extends": "名前"` で、同じ種類のスタイル（このファイルか、親のテーマ。同じファイルの中なら、書く順に関係なく）を元にして、書いた項目だけを変えます。自分と同じ名前を書くと、親のテーマの、同じ名前のスタイルが元になります（`"Default": { "Extends": "Default", ... }` で、親の `Default` を一部だけ変える）。`Extends` が無ければ、書かなかった項目は、既定の値（ブラシは空）です。輪になる `Extends` と、見つからない名前は、失敗です。
@@ -486,6 +486,22 @@ Animator.SetStateMotion( Button, Motion );
 
 ## エンジン組み込みの素材
 
+#### 状態のブラシを、なめらかに切り替える（`TransitionDuration`）
+
+ボタン・チェックボックス・スライダー・入力欄のスタイルには、`TransitionDuration`（秒。既定は 0）があります。0 より大きくすると、状態のブラシ（通常・ホバー・押下・使えない、オフとオン、つまみ、入力欄の背景）が、ぱっと替わらず、その秒数をかけて替わります。フォーカスの枠や、ホバーの重ねも、同じ秒数で出入りします。
+
+```cpp
+FUIButtonStyle Style = Theme->...;
+Style.TransitionDuration = 0.12f;   // コードで。テーマのファイルなら "TransitionDuration": 0.12
+Button->SetStyle( Style );
+```
+
+- **仕組み**: 前の状態のブラシの上に、いまの状態のブラシを、だんだん濃く重ねます（いまの状態のブラシが空なら、前のブラシを薄くします）。途中で前の状態へ戻ると、進んだ分だけ戻ります（ホバーの出入りを繰り返しても、飛びません）。
+- **時間**: `CUIContext::Update`（`CUIScreenStack::Update` も）が、入力を配ったあとに、`FUIInputFrame::DeltaTime` だけ進めます。`CUIContext` を使わないときは、ルートの部品の `AdvanceTime( 秒 )` を、毎フレーム呼んでください（呼ばなければ、すぐ切り替わります）。
+- **半透明のブラシ**: 重ねて描くので、半透明のブラシどうしは、途中で少し濃く見えます。気になるときは、マテリアルのブラシ（`UIHover`・`UIPress` ノード）で、1 枚の中で混ぜてください。
+- 大きさや位置を動かすのは、`CUIAnimator` の「状態に合わせた動き」（`HoverScale` など）です。併用できます。
+- 見本: サンプル `UI` の `Common.gxuitheme` が、ボタン・チェックボックス・入力欄・スライダーに 0.12 秒を入れています。
+
 #### ファイルを保存し直したら、読み直す（ホットリロード）
 
 `CUIThemeDocument`（`Library/Framework/UI/Style/UIThemeDocument.h`）は、テーマのファイルを覚えていて、中身が変わったら読み直します。
@@ -510,4 +526,4 @@ UI の基本画像（窓・パネル・ボタンの 4 状態・チェック・�
 
 ## これから
 
-状態ごとのスタイル（ブラシの切り替えに動きを付ける）、入力欄の複数行とダブルクリックの選択は、順に足していきます。
+入力欄の複数行とダブルクリックの選択は、順に足していきます。

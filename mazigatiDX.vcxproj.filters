@@ -826,6 +826,9 @@
     <ClCompile Include="Library\Framework\UI\Brush\UIBrush.cpp">
       <Filter>Library\Framework\UI\Brush</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\UI\Brush\UIBrushFade.cpp">
+      <Filter>Library\Framework\UI\Brush</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\UI\Core\UIContext.cpp">
       <Filter>Library\Framework\UI\Core</Filter>
     </ClCompile>
@@ -2929,6 +2932,9 @@
       <Filter>Library\Framework\UI\Binding</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\UI\Brush\UIBrush.h">
+      <Filter>Library\Framework\UI\Brush</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\UI\Brush\UIBrushFade.h">
       <Filter>Library\Framework\UI\Brush</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\UI\Core\UIContext.h">

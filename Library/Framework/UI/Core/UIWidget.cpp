@@ -152,6 +152,20 @@ void CUIWidget::OnPaint( FDrawContext&, float32 )
 {
 }
 
+void CUIWidget::OnAdvanceTime( float32 )
+{
+}
+
+void CUIWidget::AdvanceTime( float32 DeltaTime )
+{
+	const float32 Seconds = DeltaTime > 0.0f ? DeltaTime : 0.0f;
+	OnAdvanceTime( Seconds );
+	for ( int32 Index = 0; Index < Children.Num(); ++Index )
+	{
+		Children[Index]->AdvanceTime( Seconds );
+	}
+}
+
 void CUIWidget::OnPointerPressed( const FVector2& )
 {
 }

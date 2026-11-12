@@ -145,6 +145,10 @@ public:
 	void SetBackground( const FUIBrush& InBackground ) { Background = InBackground; }
 	const FUIBrush& GetBackground() const { return Background; }
 	// 不透明度（0〜1。範囲の外は収める）。子孫にも掛かる（親の不透明度との積）
+	// この部品と、子孫の時間を進める（秒。負は 0 として扱う）。CUIContext::Update が、ルートから毎フレーム呼ぶ。
+	// CUIContext を使わずに、状態のブラシのフェード（スタイルの TransitionDuration）を使うときは、自分で呼ぶ
+	void AdvanceTime( float32 DeltaTime );
+
 	void SetOpacity( float32 InOpacity ) { Opacity = NMath::Clamp( InOpacity, 0.0f, 1.0f ); }
 	float32 GetOpacity() const { return Opacity; }
 	// 描くときだけ掛ける変換（ずらす・拡大・回す。子孫にも掛かる）。レイアウトと当たり判定は、変えない（動きの演出用。CUIAnimator が動かせる）。
@@ -216,6 +220,9 @@ protected:
 
 	// 背景を描いたあとに、部品が自分の中身（文字・画像など）を描く。EffectiveOpacity は、親から掛け合わせた不透明度。既定は何もしない
 	virtual void OnPaint( FDrawContext& CommandList, float32 EffectiveOpacity );
+
+	// 時間が進んだとき（AdvanceTime から。状態のブラシの切り替えを、時間をかけて混ぜる部品が使う）。既定は何もしない
+	virtual void OnAdvanceTime( float32 DeltaTime );
 
 private:
 	friend class CUIContext;

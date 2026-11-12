@@ -220,6 +220,17 @@ FUITooltipRequest CUIContext::GetTooltip() const
 
 FUIInputResult CUIContext::Update( const FUIInputFrame& InputFrame )
 {
+	const FUIInputResult Result = ProcessInput( InputFrame );
+	// 入力で変わった状態を見てから、時間を進める（状態のブラシのフェードが、変わったフレームから始まる）。イベントの中で、ルートが替わっていてもよい
+	if ( const TSharedPtr<CUIWidget> Current = Root )
+	{
+		Current->AdvanceTime( InputFrame.DeltaTime );
+	}
+	return Result;
+}
+
+FUIInputResult CUIContext::ProcessInput( const FUIInputFrame& InputFrame )
+{
 	// 入力欄にフォーカスがあるときは、一部の入力を、取り除いて使うので、手元の複写で扱う
 	FUIInputFrame Frame = InputFrame;
 	FUIInputResult Result;

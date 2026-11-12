@@ -91,7 +91,7 @@ public:
 	void SetRoot( const TSharedPtr<CUIWidget>& InRoot );
 	CUIWidget* GetRoot() const { return Root.Get(); }
 
-	// 入力を配る。戻り値は、UI が入力を使ったか（上の説明）
+	// 入力を配り、そのあと、部品の時間を FUIInputFrame::DeltaTime だけ進める（CUIWidget::AdvanceTime）。戻り値は、UI が入力を使ったか（上の説明）
 	FUIInputResult Update( const FUIInputFrame& Frame );
 
 	CUIWidget* GetHovered() const { return Hovered; }
@@ -111,6 +111,7 @@ public:
 	TUIEvent<> OnCancel;
 
 private:
+	FUIInputResult ProcessInput( const FUIInputFrame& InputFrame );
 	bool IsInTree( const CUIWidget* Widget ) const;
 	bool IsLive( const CUIWidget* Widget ) const;
 	void CollectFocusable( CUIWidget& Widget, TArray<CUIWidget*>& OutList ) const;

@@ -342,6 +342,7 @@
     <ClCompile Include="Library\Framework\UI\Animation\UIAnimator.cpp" />
     <ClCompile Include="Library\Framework\UI\Binding\UIBindingSet.cpp" />
     <ClCompile Include="Library\Framework\UI\Brush\UIBrush.cpp" />
+    <ClCompile Include="Library\Framework\UI\Brush\UIBrushFade.cpp" />
     <ClCompile Include="Library\Framework\UI\Core\UIContext.cpp" />
     <ClCompile Include="Library\Framework\UI\Core\UIInputBridge.cpp" />
     <ClCompile Include="Library\Framework\UI\Core\UIPanels.cpp" />
@@ -1045,6 +1046,7 @@
     <ClInclude Include="Library\Framework\UI\Binding\UIBindingSet.h" />
     <ClInclude Include="Library\Framework\UI\Binding\UIObservable.h" />
     <ClInclude Include="Library\Framework\UI\Brush\UIBrush.h" />
+    <ClInclude Include="Library\Framework\UI\Brush\UIBrushFade.h" />
     <ClInclude Include="Library\Framework\UI\Core\UIContext.h" />
     <ClInclude Include="Library\Framework\UI\Core\UIEvent.h" />
     <ClInclude Include="Library\Framework\UI\Core\UIInputBridge.h" />

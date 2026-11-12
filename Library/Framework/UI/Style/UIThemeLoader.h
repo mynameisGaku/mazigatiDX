@@ -42,10 +42,11 @@ class CAssetSubsystem;
 //   - スタイル: "Extends": 名前 で、同じ種類のスタイル（このファイルか、親のテーマ。同じファイルの中なら、書く順に関係なく）を元にして、書いた項目だけを変える。
 //     自分と同じ名前を書くと、親のテーマの、同じ名前のスタイルが元になる（"Default": { "Extends": "Default", ... } で、親の Default を、一部だけ変える）。
 //     "Extends" が無ければ、書かなかった項目は、既定の値（ブラシは空）。項目は、次の通り（ブラシは、上と同じ書き方。色は "#RRGGBB" か "@名前"）:
-//       ButtonStyles    ブラシ: Normal Hover Pressed Disabled FocusOverlay
-//       CheckBoxStyles  ブラシ: Off On HoverOverlay DisabledOverlay FocusOverlay
-//       SliderStyles    ブラシ: Track Fill Handle HandleHover ／ 大きさ: HandleSize ／ 余白: TrackInset FillInset
-//       TextBoxStyles   ブラシ: Normal Focused Disabled ／ 色: TextColor PlaceholderColor DisabledTextColor CaretColor SelectionColor ／ 余白: TextPadding
+//       ButtonStyles    ブラシ: Normal Hover Pressed Disabled FocusOverlay ／ 数: TransitionDuration
+//       CheckBoxStyles  ブラシ: Off On HoverOverlay DisabledOverlay FocusOverlay ／ 数: TransitionDuration
+//       SliderStyles    ブラシ: Track Fill Handle HandleHover ／ 大きさ: HandleSize ／ 余白: TrackInset FillInset ／ 数: TransitionDuration
+//       TextBoxStyles   ブラシ: Normal Focused Disabled ／ 色: TextColor PlaceholderColor DisabledTextColor CaretColor SelectionColor ／ 余白: TextPadding ／ 数: TransitionDuration
+//     TransitionDuration は、状態のブラシが切り替わるとき、なめらかに替わるまでの秒（0 なら、すぐ。既定）。
 //       DropdownStyles  Button（ボタンのスタイルの名前か、ボタンのスタイルと同じ書き方）／ ブラシ: Arrow PopupBackground ItemSelected ScrollTrack ScrollThumb ／
 //                       色: TextColor PlaceholderColor ItemTextColor ／ 余白: TextPadding PopupPadding ItemPadding ／ 大きさ: ArrowSize ／
 //                       数（0 以上）: ItemHeight ScrollBarWidth ／ 1 以上の整数: MaxVisibleItems

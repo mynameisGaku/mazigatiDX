@@ -4,6 +4,7 @@
 #include "Library/Framework/Asset/Font/Font.h"
 #include "Library/Core/Interfaces/Input/IClipboard.h"
 #include "Library/Framework/Input/Text/TextEditBuffer.h"
+#include "Library/Framework/UI/Brush/UIBrushFade.h"
 #include "Library/Framework/UI/Core/UIWidget.h"
 
 //=============================================================================
@@ -40,6 +41,7 @@ struct FUITextBoxStyle
 	FColor32 CaretColor = FColor32( 255, 255, 255, 255 );
 	FColor32 SelectionColor = FColor32( 70, 120, 210, 150 );   // 選んでいる範囲の背景
 	FUIMargin TextPadding = FUIMargin( 10.0f, 4.0f );
+	float32 TransitionDuration = 0.0f;   // 背景（通常・フォーカス中・使えない）の切り替えにかける秒（0 なら、すぐ）
 };
 
 class CUITextBox : public CUIWidget
@@ -90,6 +92,7 @@ public:
 protected:
 	FVector2 ComputeContentSize() const override;
 	void OnPaint( FDrawContext& CommandList, float32 EffectiveOpacity ) override;
+	void OnAdvanceTime( float32 DeltaTime ) override;
 	void OnPointerPressed( const FVector2& Position ) override;
 	void OnPointerDragged( const FVector2& Position ) override;
 	void OnPointerReleased( const FVector2& Position ) override;
@@ -106,7 +109,12 @@ private:
 	bool CopySelection();
 
 	TSharedPtr<CFont> Font;
+	// 背景の状態の番号（0 = 通常、1 = フォーカス中、2 = 使えない）と、そのブラシ
+	int32 GetBackgroundStateIndex() const;
+	const FUIBrush& GetBackgroundBrush( int32 StateIndex ) const;
+
 	FUITextBoxStyle Style;
+	FUIStateFade BackgroundFade;
 	FTextEditBuffer Buffer;
 	FString Placeholder;
 	FString TextAtFocus;

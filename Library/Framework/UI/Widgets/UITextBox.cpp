@@ -302,10 +302,38 @@ void CUITextBox::OnPointerReleased( const FVector2& )
 	bDragSelecting = false;
 }
 
+int32 CUITextBox::GetBackgroundStateIndex() const
+{
+	if ( !IsEffectivelyEnabled() )
+	{
+		return 2;
+	}
+	return IsFocused() ? 1 : 0;
+}
+
+const FUIBrush& CUITextBox::GetBackgroundBrush( int32 StateIndex ) const
+{
+	return StateIndex == 2 ? Style.Disabled : ( StateIndex == 1 ? Style.Focused : Style.Normal );
+}
+
+void CUITextBox::OnAdvanceTime( float32 DeltaTime )
+{
+	BackgroundFade.Advance( GetBackgroundStateIndex(), DeltaTime, Style.TransitionDuration );
+}
+
 void CUITextBox::OnPaint( FDrawContext& CommandList, float32 EffectiveOpacity )
 {
 	const bool bEnabled = IsEffectivelyEnabled();
-	NUIBrush::Draw( CommandList, !bEnabled ? Style.Disabled : ( IsFocused() ? Style.Focused : Style.Normal ), GetRect(), EffectiveOpacity );
+	if ( Style.TransitionDuration > 0.0f && BackgroundFade.IsStarted() && BackgroundFade.IsFading() )
+	{
+		// 背景の切り替えを、時間をかけて混ぜる
+		NUIBrush::DrawFade( CommandList, GetBackgroundBrush( BackgroundFade.Previous ), GetBackgroundBrush( BackgroundFade.Current ), BackgroundFade.Progress, GetRect(), EffectiveOpacity );
+	}
+	else
+	{
+		const bool bUseFade = Style.TransitionDuration > 0.0f && BackgroundFade.IsStarted();
+		NUIBrush::Draw( CommandList, GetBackgroundBrush( bUseFade ? BackgroundFade.Current : GetBackgroundStateIndex() ), GetRect(), EffectiveOpacity );
+	}
 	if ( !Font )
 	{
 		return;

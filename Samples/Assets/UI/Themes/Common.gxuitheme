@@ -2,14 +2,25 @@
   // サンプル UI の、どのテーマでも同じ部分。基本のテーマ（コードで作る。画像とフォント）の子で、Blue・Green・Rose の親。
   // このファイルを保存し直すと、動いているサンプルの見た目が、すぐ変わる。
   "Name": "Default",
+  // 状態のブラシ（通常・ホバー・押下など）が、ぱっと切り替わらず、0.12 秒かけて替わるようにする
+  "ButtonStyles": {
+    "Default": { "Extends": "Default", "TransitionDuration": 0.12 }
+  },
+  "CheckBoxStyles": {
+    "Default": { "Extends": "Default", "TransitionDuration": 0.12 }
+  },
+  "TextBoxStyles": {
+    "Default": { "Extends": "Default", "TransitionDuration": 0.12 }
+  },
   "SliderStyles": {
     // 溝を、矩形より細くする（矩形の高さ 28 に対して、溝は 12）
-    "Thin": { "Extends": "Default", "TrackInset": [ 0, 8 ] }
+    "Thin": { "Extends": "Default", "TrackInset": [ 0, 8 ], "TransitionDuration": 0.12 }
   },
   "DropdownStyles": {
     // 基本のドロップダウンに、矢印のアイコンを足す
     "Default": {
       "Extends": "Default",
+      "Button": "Default",
       "Arrow": { "Image": "Engine:/Icons/ChevronDown.png", "Mode": "Fit", "Tint": "#EBEEF5" }
     }
   }

@@ -454,8 +454,9 @@ namespace
 				{ "Pressed", EStyleFieldType::Brush, &Style.Pressed },
 				{ "Disabled", EStyleFieldType::Brush, &Style.Disabled },
 				{ "FocusOverlay", EStyleFieldType::Brush, &Style.FocusOverlay },
+				{ "TransitionDuration", EStyleFieldType::Number, &Style.TransitionDuration },
 			};
-			return ReadStyleFields( Value, Where, Fields, 5 );
+			return ReadStyleFields( Value, Where, Fields, 6 );
 		}
 
 		bool ReadCheckBoxStyle( const NlohmannJson& Value, const FString& Where, FUICheckBoxStyle& Style )
@@ -466,8 +467,9 @@ namespace
 				{ "HoverOverlay", EStyleFieldType::Brush, &Style.HoverOverlay },
 				{ "DisabledOverlay", EStyleFieldType::Brush, &Style.DisabledOverlay },
 				{ "FocusOverlay", EStyleFieldType::Brush, &Style.FocusOverlay },
+				{ "TransitionDuration", EStyleFieldType::Number, &Style.TransitionDuration },
 			};
-			return ReadStyleFields( Value, Where, Fields, 5 );
+			return ReadStyleFields( Value, Where, Fields, 6 );
 		}
 
 		bool ReadSliderStyle( const NlohmannJson& Value, const FString& Where, FUISliderStyle& Style )
@@ -480,8 +482,9 @@ namespace
 				{ "HandleSize", EStyleFieldType::Size, &Style.HandleSize },
 				{ "TrackInset", EStyleFieldType::Margin, &Style.TrackInset },
 				{ "FillInset", EStyleFieldType::Margin, &Style.FillInset },
+				{ "TransitionDuration", EStyleFieldType::Number, &Style.TransitionDuration },
 			};
-			return ReadStyleFields( Value, Where, Fields, 7 );
+			return ReadStyleFields( Value, Where, Fields, 8 );
 		}
 
 		bool ReadTextBoxStyle( const NlohmannJson& Value, const FString& Where, FUITextBoxStyle& Style )
@@ -496,8 +499,9 @@ namespace
 				{ "CaretColor", EStyleFieldType::Color, &Style.CaretColor },
 				{ "SelectionColor", EStyleFieldType::Color, &Style.SelectionColor },
 				{ "TextPadding", EStyleFieldType::Margin, &Style.TextPadding },
+				{ "TransitionDuration", EStyleFieldType::Number, &Style.TransitionDuration },
 			};
-			return ReadStyleFields( Value, Where, Fields, 9 );
+			return ReadStyleFields( Value, Where, Fields, 10 );
 		}
 
 		bool ReadDropdownStyle( const NlohmannJson& Value, const FString& Where, FUIDropdownStyle& Style )
