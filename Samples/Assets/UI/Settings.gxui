@@ -35,7 +35,14 @@
       <Label Text="Name" Font="Body" Color="@Text" HAlign="Start" VAlign="Center" />
       <TextBox Name="NameBox" Text="{Binding Name}" Placeholder="Type your name" MaxLength="16" Font="Body" Style="Default"
                Weight="1" Height="38" VAlign="Center" OnSubmitted="NameSubmitted" OnCancelled="NameCancelled"
-               Tooltip="Drag or Shift + arrows to select. Ctrl + C, X, V to copy, cut and paste." />
+               Tooltip="Drag or Shift + arrows to select. Double-click selects a word. Ctrl + C, X, V to copy, cut and paste." />
+    </HorizontalStack>
+
+    <!-- 複数行の入力欄: Enter で改行、上下で行を移る。行が増えると、縦にずれる（ホイールでも動く） -->
+    <HorizontalStack Spacing="@Gap" Height="64">
+      <Label Text="Memo" Font="Body" Color="@Text" HAlign="Start" VAlign="Start" />
+      <TextBox Name="MemoBox" Text="{Binding Memo}" Placeholder="Notes (Enter makes a new line)" Multiline="true" MaxLength="200" Font="Body" Style="Default"
+               Weight="1" Height="64" VAlign="Center" Tooltip="A multi-line box. Enter makes a new line, Tab leaves the box." />
     </HorizontalStack>
 
     <HorizontalStack Spacing="12" Height="44">

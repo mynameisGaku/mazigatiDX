@@ -20,7 +20,7 @@
 //   - Escape: 取り消しの合図（ConsumeCancelled で 1 度だけ true）。文字は変えない
 //   - 範囲選択: SelectLeft / SelectRight / SelectHome / SelectEnd（Shift を押しながらの移動）と SelectAll で、選ぶ範囲を広げる。範囲があるとき、文字を打つ・Backspace・Delete は、範囲を消す
 //     （文字は、消してから入れる）。Left / Right は、範囲の端へ動いて、範囲をやめる。Home / End も、範囲をやめる。
-//   - 上下・Tab・ページは、何もしない。Copy / Cut / Paste は、クリップボードを扱えないので、Apply では何もしない（GetSelectedText・DeleteSelection・InsertText を、呼ぶ側が使う）
+//   - 上下（と SelectUp / SelectDown）・Tab・ページは、何もしない（上下の行への移動は、文字の幅が要るので、CUITextBox が行う）。Copy / Cut / Paste は、クリップボードを扱えないので、Apply では何もしない（GetSelectedText・DeleteSelection・InsertText を、呼ぶ側が使う）
 //   - 文字数の上限は MaxCharCount（0 は上限なし）。超える分の文字は入れない
 //=============================================================================
 class FTextEditBuffer
@@ -72,6 +72,11 @@ public:
 	void SetSelection( int32 InAnchorByteOffset, int32 InCursorByteOffset );
 	void SelectAll();
 	void ClearSelection() { SelectionAnchor = -1; }
+	// ByteOffset の所の「単語」の範囲（ダブルクリックで選ぶ範囲）。同じ種類の文字（英数字と _・ひらがな・カタカナ・漢字・そのほかの文字・記号・空白）の
+	// 続きを、1 つの単語とする。ByteOffset が行の末尾なら、その前の文字の単語。空の行なら、空の範囲。改行はまたがない
+	void GetWordRange( int32 ByteOffset, int32& OutStart, int32& OutEnd ) const;
+	// ByteOffset のある行の範囲（改行は含まない。1 行の欄では、文字列の全体）
+	void GetLineRange( int32 ByteOffset, int32& OutStart, int32& OutEnd ) const;
 	// 範囲を消す。消したら true（カーソルは、消した所へ）
 	bool DeleteSelection();
 	// 文字列を、カーソルの所へ入れる（範囲があれば、先に消す。上限を超える分は入れない）。文字列か範囲が変わったら true

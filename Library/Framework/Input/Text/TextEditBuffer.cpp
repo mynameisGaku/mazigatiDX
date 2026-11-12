@@ -25,6 +25,146 @@ namespace
 		}
 		return Offset;
 	}
+
+	// Offset から始まる 1 文字のコードポイント（壊れていれば、そのバイトの値）
+	uint32 DecodeAt( const FString& Text, int32 Offset )
+	{
+		const uint32 Lead = static_cast<uint8>( Text[Offset] );
+		int32 Extra = 0;
+		uint32 Code = Lead;
+		if ( Lead >= 0xF0 )
+		{
+			Extra = 3;
+			Code = Lead & 0x07;
+		}
+		else if ( Lead >= 0xE0 )
+		{
+			Extra = 2;
+			Code = Lead & 0x0F;
+		}
+		else if ( Lead >= 0xC0 )
+		{
+			Extra = 1;
+			Code = Lead & 0x1F;
+		}
+		for ( int32 Index = 1; Index <= Extra; ++Index )
+		{
+			if ( Offset + Index >= Text.Len() || !IsContinuation( Text[Offset + Index] ) )
+			{
+				return Lead;
+			}
+			Code = ( Code << 6 ) | ( static_cast<uint8>( Text[Offset + Index] ) & 0x3F );
+		}
+		return Code;
+	}
+
+	// 単語を分ける、文字の種類
+	enum class ECharClass : uint8
+	{
+		Space,
+		Word,          // 英数字と _（全角の英数字も）
+		Hiragana,
+		Katakana,
+		Kanji,
+		OtherLetter,   // そのほかの、ASCII でない文字
+		Punctuation,
+		NewLine
+	};
+
+	bool InRange( uint32 Code, uint32 First, uint32 Last )
+	{
+		return Code >= First && Code <= Last;
+	}
+
+	ECharClass ClassOf( uint32 Code )
+	{
+		if ( Code == '\n' || Code == '\r' )
+		{
+			return ECharClass::NewLine;
+		}
+		if ( Code == ' ' || Code == '\t' || Code == 0x3000 )
+		{
+			return ECharClass::Space;
+		}
+		if ( InRange( Code, '0', '9' ) || InRange( Code, 'A', 'Z' ) || InRange( Code, 'a', 'z' ) || Code == '_' || InRange( Code, 0xFF10, 0xFF19 ) || InRange( Code, 0xFF21, 0xFF3A ) || InRange( Code, 0xFF41, 0xFF5A ) )
+		{
+			return ECharClass::Word;
+		}
+		if ( Code < 0x80 )
+		{
+			return ECharClass::Punctuation;
+		}
+		if ( InRange( Code, 0x3041, 0x309F ) )
+		{
+			return ECharClass::Hiragana;
+		}
+		// 長音の記号（ー）は、カタカナの続きとして扱う
+		if ( InRange( Code, 0x30A1, 0x30FA ) || InRange( Code, 0x30FC, 0x30FF ) || InRange( Code, 0x31F0, 0x31FF ) || InRange( Code, 0xFF66, 0xFF9F ) )
+		{
+			return ECharClass::Katakana;
+		}
+		if ( Code == 0x3005 || InRange( Code, 0x3400, 0x4DBF ) || InRange( Code, 0x4E00, 0x9FFF ) || InRange( Code, 0xF900, 0xFAFF ) || InRange( Code, 0x20000, 0x2FFFF ) )
+		{
+			return ECharClass::Kanji;
+		}
+		// 全角の記号・句読点
+		if ( InRange( Code, 0x2000, 0x206F ) || InRange( Code, 0x3001, 0x303F ) || Code == 0x30A0 || Code == 0x30FB || InRange( Code, 0xFF01, 0xFF0F ) || InRange( Code, 0xFF1A, 0xFF20 ) || InRange( Code, 0xFF3B, 0xFF40 )
+			 || InRange( Code, 0xFF5B, 0xFF65 ) )
+		{
+			return ECharClass::Punctuation;
+		}
+		return ECharClass::OtherLetter;
+	}
+}
+
+void FTextEditBuffer::GetWordRange( int32 ByteOffset, int32& OutStart, int32& OutEnd ) const
+{
+	// 文字の境目へ寄せる
+	int32 Offset = ByteOffset < 0 ? 0 : ( ByteOffset > Text.Len() ? Text.Len() : ByteOffset );
+	while ( Offset > 0 && Offset < Text.Len() && IsContinuation( Text[Offset] ) )
+	{
+		--Offset;
+	}
+	OutStart = Offset;
+	OutEnd = Offset;
+	// 行の末尾（文字列の末尾・改行の前）なら、その前の文字の単語
+	if ( Offset >= Text.Len() || ClassOf( DecodeAt( Text, Offset ) ) == ECharClass::NewLine )
+	{
+		if ( Offset == 0 )
+		{
+			return;
+		}
+		Offset = PreviousBoundary( Offset );
+		if ( ClassOf( DecodeAt( Text, Offset ) ) == ECharClass::NewLine )
+		{
+			return; // 空の行
+		}
+	}
+	const ECharClass Class = ClassOf( DecodeAt( Text, Offset ) );
+	int32 Start = Offset;
+	while ( Start > 0 )
+	{
+		const int32 Previous = PreviousBoundary( Start );
+		if ( ClassOf( DecodeAt( Text, Previous ) ) != Class )
+		{
+			break;
+		}
+		Start = Previous;
+	}
+	int32 End = NextBoundary( Offset );
+	while ( End < Text.Len() && ClassOf( DecodeAt( Text, End ) ) == Class )
+	{
+		End = NextBoundary( End );
+	}
+	OutStart = Start;
+	OutEnd = End;
+}
+
+void FTextEditBuffer::GetLineRange( int32 ByteOffset, int32& OutStart, int32& OutEnd ) const
+{
+	const int32 Offset = ByteOffset < 0 ? 0 : ( ByteOffset > Text.Len() ? Text.Len() : ByteOffset );
+	OutStart = LineStart( Offset );
+	OutEnd = LineEnd( Offset );
 }
 
 void FTextEditBuffer::SetMaxCharCount( int32 InMaxCharCount )

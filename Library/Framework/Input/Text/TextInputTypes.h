@@ -36,6 +36,9 @@ enum class ETextEditCommand : uint8
 	SelectRight,
 	SelectHome,
 	SelectEnd,
+	// 複数行の欄で、選ぶ範囲を、上下の行へ広げる（Shift を押しながらの上下）
+	SelectUp,
+	SelectDown,
 };
 
 // 文字入力 1 つぶん。文字列か、編集の操作のどちらか

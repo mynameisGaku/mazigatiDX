@@ -1220,6 +1220,15 @@ struct FMarkupBuilder
 				Box.SetPasswordMode( bFlag );
 				return true;
 			}
+			if ( N == "Multiline" )
+			{
+				if ( !ParseBool( A.Value, bFlag ) )
+				{
+					return BadValue( Node, A, "true or false" );
+				}
+				Box.SetMultiline( bFlag );
+				return true;
+			}
 			if ( N == "Font" )
 			{
 				Box.SetFont( FindFont( Node, A.Value ) );

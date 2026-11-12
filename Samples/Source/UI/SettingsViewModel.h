@@ -14,6 +14,7 @@ struct FSettingsViewModel
 	TObservable<bool> Music { true };
 	TObservable<bool> Sound { true };
 	TObservable<FString> Name;
+	TObservable<FString> Memo;                                              // 複数行のメモ
 	TObservable<int32> Quality { 1 };                                       // 画質（QualityItems の番号）
 	TObservableArray<FString> QualityItems;
 	TObservable<FString> Status { FString( "Use the mouse, arrow keys, Tab, Enter or a gamepad" ) };
@@ -52,7 +53,7 @@ struct FSettingsViewModel
 		Sound.OnChanged.Add( [this]( const bool& bOn ) { Status.Set( bOn ? "Sound effects on" : "Sound effects off" ); } );
 	}
 
-	// 既定へ戻す（名前・音量・チェック）
+	// 既定へ戻す（名前・メモ・音量・チェック）
 	void ResetToDefaults()
 	{
 		Volume.Set( 50.0f );
@@ -60,6 +61,7 @@ struct FSettingsViewModel
 		Sound.Set( true );
 		Quality.Set( 1 );
 		Name.Set( FString() );
+		Memo.Set( FString() );
 		Status.Set( "Reset to the defaults" );
 	}
 };

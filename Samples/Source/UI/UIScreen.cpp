@@ -31,7 +31,8 @@ namespace
 	constexpr int32 IconColumns = 4;
 	constexpr int32 NumListItems = 10000;
 	constexpr float32 IconCell = 56.0f;
-	constexpr float32 SettingsHeight = 600.0f;
+	constexpr float32 SettingsTop = 84.0f;
+	constexpr float32 SettingsHeight = 620.0f;
 
 	// Canvas の中に、位置と大きさを決めて置く
 	void PlaceAt( CUICanvasPanel& Canvas, const TSharedPtr<CUIWidget>& Widget, float32 X, float32 Y, float32 Width, float32 Height )
@@ -179,6 +180,7 @@ TSharedPtr<CUIWidget> CUIScreen::BuildSettingsWindow( CAssetSubsystem& Assets, c
 	MarkupContext.RegisterFloat( "VolumeRatio", ViewModel.VolumeRatio );
 	MarkupContext.RegisterString( "VolumeText", ViewModel.VolumeText );
 	MarkupContext.RegisterString( "Name", ViewModel.Name );
+	MarkupContext.RegisterString( "Memo", ViewModel.Memo );
 	MarkupContext.RegisterString( "Status", ViewModel.Status );
 	MarkupContext.RegisterCommand( "Reset", ViewModel.Reset );
 
@@ -203,7 +205,7 @@ void CUIScreen::ReplaceSettingsWindow()
 		Root->RemoveChild( SettingsWindow.Get() );
 	}
 	SettingsWindow = SettingsDocument.GetRoot();
-	PlaceAt( *Root, SettingsWindow, 60.0f, 90.0f, 560.0f, SettingsHeight );
+	PlaceAt( *Root, SettingsWindow, 60.0f, SettingsTop, 560.0f, SettingsHeight );
 }
 
 void CUIScreen::ReloadSettingsWindow()
@@ -421,12 +423,12 @@ void CUIScreen::Build()
 	TSharedPtr<CUIWidget> Shadow = MakeShared<CUIWidget>();
 	Shadow->SetBackground( Style.Shadow );
 	Shadow->SetHitTestable( false );
-	PlaceAt( *Root, Shadow, 40.0f, 74.0f, 600.0f, SettingsHeight + 60.0f );
+	PlaceAt( *Root, Shadow, 40.0f, SettingsTop - 16.0f, 600.0f, SettingsHeight + 60.0f );
 
 	SettingsWindow = BuildSettingsWindow( *Assets, Body, Title );
-	PlaceAt( *Root, SettingsWindow, 60.0f, 90.0f, 560.0f, SettingsHeight );
-	PlaceAt( *Root, BuildViewWindow( *Assets, Body ), 680.0f, 90.0f, 560.0f, 300.0f );
-	PlaceAt( *Root, BuildIconWindow( *Assets, Body ), 680.0f, 400.0f, 560.0f, 290.0f );
+	PlaceAt( *Root, SettingsWindow, 60.0f, SettingsTop, 560.0f, SettingsHeight );
+	PlaceAt( *Root, BuildViewWindow( *Assets, Body ), 680.0f, SettingsTop, 560.0f, 300.0f );
+	PlaceAt( *Root, BuildIconWindow( *Assets, Body ), 680.0f, SettingsTop + 310.0f, 560.0f, SettingsHeight - 310.0f );
 
 	// Reset の操作は、確認のダイアログを出す（ビューモデルは、UI を知らないので、出す仕事は、ここで渡す）
 	ViewModel.OnResetRequested = [this]() { AskReset(); };
@@ -452,6 +454,11 @@ void CUIScreen::Build()
 	if ( NCommandLine::HasFlag( "ask-reset" ) )
 	{
 		AskReset();
+	}
+	// 同じく --memo-demo で、メモの欄に、欄より多い行を入れておく（複数行の表示の確認）
+	if ( NCommandLine::HasFlag( "memo-demo" ) )
+	{
+		ViewModel.Memo.Set( "Buy milk\nCall Hana at 3 pm\nFinish the level" );
 	}
 	// 同じく --open-dropdown で、画質のドロップダウンを開いた状態にする（レイアウトが決まってから開くので、最初の更新のあと）
 	bOpenDropdownPending = NCommandLine::HasFlag( "open-dropdown" );

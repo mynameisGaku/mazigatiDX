@@ -201,7 +201,7 @@ if ( Result.bSuccess ) { Screen->AddChild( Result.Root ); }
 |`Button`|`Text` `Font` `TextColor` `Style` `OnClicked` `Command`|
 |`CheckBox`|`Checked` `Style` `OnToggled` `OnClicked`|
 |`Slider`|`Value` `Min` `Max` `Step` `Orientation` `Style` `OnValueChanged`|
-|`TextBox`|`Text` `Placeholder` `MaxLength` `Password` `Font` `Style` `OnSubmitted` `OnCancelled`|
+|`TextBox`|`Text` `Placeholder` `MaxLength` `Password` `Multiline` `Font` `Style` `OnSubmitted` `OnCancelled`|
 |`Dropdown`|`Items`（`{Binding 名前}`、または `"Low, Medium, High"`）`SelectedIndex`（番号、または `{Binding 名前}`）`Placeholder` `Font` `Style` `OnSelectionChanged`|
 |`ListView`|`Items`（`{Binding 名前}`）`Orientation` `ItemHeight` `Font` `ItemColor` `SelectedBackground` `ItemPadding` `ScrollBarWidth` `ScrollBarTrack` `ScrollBarThumb` `OnItemClicked`|
 
@@ -313,7 +313,7 @@ TSharedPtr<FUITheme> Blue = CUIThemeLoader::Load( Assets, "UI/Themes/Blue.gxuith
 
 ## 入力欄（文字入力）
 
-`CUITextBox` は、1 行の入力欄です。フォーカスがあるとき、`ITextInput` が届ける文字と編集の操作（かな漢字変換を含む）を受けて、文字列を編集します。
+`CUITextBox` は、入力欄です（1 行。`SetMultiline( true )` で、複数行）。フォーカスがあるとき、`ITextInput` が届ける文字と編集の操作（かな漢字変換を含む）を受けて、文字列を編集します。
 
 ```cpp
 TSharedPtr<CUITextBox> Name = MakeShared<CUITextBox>();
@@ -328,10 +328,18 @@ const FUIScreenInputResult Result = Screens.Update( Frame );
 TextInput->SetTextInputActive( Result.bWantsTextInput );   // 入力欄にフォーカスがあるときだけ、文字入力（変換）を受ける
 ```
 
-- 操作: 文字・Backspace・Delete・左右・Home・End。Enter で確定（`OnSubmitted`。フォーカスを手放す）、Escape で取り消し（フォーカスを得たときの文字列へ戻し、`OnCancelled`。フォーカスを手放す）。クリックで、その位置へカーソルを置く。範囲選択・コピー・貼り付けは、まだ扱いません。
+- 操作: 文字・Backspace・Delete・左右・Home・End。Enter で確定（`OnSubmitted`。フォーカスを手放す）、Escape で取り消し（フォーカスを得たときの文字列へ戻し、`OnCancelled`。フォーカスを手放す）。クリックで、その位置へカーソルを置く。
 - **範囲選択**: ドラッグで選びます。`Shift` + 左右・Home・End で広げ（`ITextInput` が `SelectLeft` などを届けます。DxLib の実装は、Shift が押されているときに、そう届けます）、`Ctrl` + A ですべて選びます。選んだ範囲は、`SelectionColor` の背景で見えます。範囲があるとき、文字を打つと範囲が置き換わり、Backspace・Delete は範囲を消し、左右の矢印は範囲の端へ動いて範囲をやめます。`HasSelection` / `GetSelectedText` / `SetSelection` / `SelectAll`。
-- **コピー・切り取り・貼り付け**（`Ctrl` + C / X / V）は、クリップボード（`IClipboard`。DxLib は OS のクリップボード、Null は、アプリの中だけ）で行います。`NUIInput::MakeFrame` の最後の引数（または `FUIInputFrame::Clipboard`）で渡します。渡さなければ、選ぶだけです。パスワード表示の欄は、コピー・切り取りをしません。貼り付ける文字列の改行・タブは、空白になります。
-- 入力欄にフォーカスがあるとき、**左右の矢印・決定・戻る**は、入力欄が使います（フォーカスの移動や、ボタンの決定、画面を戻すことには使われない）。上下の矢印と Tab は、これまでどおり、フォーカスを動かします。
+- **ダブルクリック**: 単語を選びます。そのままドラッグすると、単語ごとに広がります。3 回目のクリックは、全体（複数行の欄では、その行）を選びます。単語は、同じ種類の文字（英数字と `_`・ひらがな・カタカナ・漢字・そのほかの文字・記号・空白）の続きです。クリックの間隔は `SetDoubleClickSeconds`（既定 0.4 秒。0 以下で、切る）。時間は `CUIContext::Update` が進めるので、`FUIInputFrame::DeltaTime` を渡してください（時間が進まないと、ダブルクリックは起こりません）。
+- **複数行**（`SetMultiline( true )`。マークアップは `Multiline="true"`）:
+  - Enter で改行を入れます（確定の `OnSubmitted` は、起こりません。中身は `OnTextChanged` や、結び付けで受けます）。Escape の取り消しは、1 行のときと同じです。
+  - 上下で、行を移ります（同じ横の位置に、いちばん近い所へ。`Shift` つきなら、範囲を広げます）。Home / End は、行の端です。
+  - 行は、欄の上から並びます。行が欄に入りきらないときは、カーソルが見える位置まで、縦にずれます。ホイールでも動きます（そのあと、文字やカーソルが動くまで、戻りません）。
+  - 貼り付けは、改行を残します（CR LF と CR は、LF にします）。
+  - 折り返しは、しません（長い行は、横へずれます）。欄の高さは、自分で決めてください（`Height`）。
+  - フォーカス中は、上下の矢印を欄が使います。フォーカスを移すには、Tab か、ほかの部品のクリックを使います。
+- **コピー・切り取り・貼り付け**（`Ctrl` + C / X / V）は、クリップボード（`IClipboard`。DxLib は OS のクリップボード、Null は、アプリの中だけ）で行います。`NUIInput::MakeFrame` の最後の引数（または `FUIInputFrame::Clipboard`）で渡します。渡さなければ、選ぶだけです。パスワード表示の欄は、コピー・切り取りをしません。貼り付ける文字列の改行・タブは、空白になります（複数行の欄では、改行は残ります）。
+- 入力欄にフォーカスがあるとき、**左右の矢印・決定・戻る**は、入力欄が使います（フォーカスの移動や、ボタンの決定、画面を戻すことには使われない）。上下の矢印と Tab は、これまでどおり、フォーカスを動かします（複数行の欄では、上下の矢印も、欄が使います）。
 - 文字列が欄より長いときは、カーソルが見える位置まで、横へずらして表示します（欄の矩形でクリップ）。かな漢字変換の途中の文字列は、カーソルの位置に、下線つきで出ます。`SetPasswordMode( true )` で `*` 表示。
 - カーソルの点滅は、描いた回数で数えます（`SetCaretBlinkFrames`）。文字やカーソルが動いた直後は、必ず見えます。
 
@@ -526,4 +534,4 @@ UI の基本画像（窓・パネル・ボタンの 4 状態・チェック・�
 
 ## これから
 
-入力欄の複数行とダブルクリックの選択は、順に足していきます。
+入力欄の折り返しは、順に足していきます。

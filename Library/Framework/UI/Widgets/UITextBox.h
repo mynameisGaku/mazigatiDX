@@ -9,7 +9,7 @@
 
 //=============================================================================
 // CUITextBox
-//   1 行の入力欄。フォーカスがあるとき、ITextInput が届ける文字と編集の操作（かな漢字変換を含む）を受けて、文字列を編集する。
+//   入力欄（1 行。SetMultiline で、複数行）。フォーカスがあるとき、ITextInput が届ける文字と編集の操作（かな漢字変換を含む）を受けて、文字列を編集する。
 //   入力は CUIContext が渡す（結果の bWantsTextInput を、ホストが ITextInput::SetTextInputActive へ渡す）。
 //   バッファは FTextEditBuffer（UTF-8・カーソルは文字の境目）。
 //
@@ -24,7 +24,12 @@
 //   - 範囲選択: ドラッグで選ぶ。Shift + 左右・Home・End で広げる（ITextInput が SelectLeft などを届ける）、Ctrl + A ですべて選ぶ。選んだ範囲は、色で見せる。
 //     コピー・切り取り・貼り付け（Ctrl + C / X / V）は、クリップボード（CUIContext に渡す FUIInputFrame::Clipboard）で行う。クリップボードが無ければ、選ぶだけ。
 //     パスワード表示（SetPasswordMode）の欄は、コピー・切り取りをしない（貼り付けはできる）。貼り付ける文字列の改行は、空白にする。
+//     ダブルクリックで、単語を選ぶ（そのままドラッグすると、単語ごとに広がる）。3 回目のクリックで、全体（複数行の欄では、その行）を選ぶ。
+//     クリックの間隔は、SetDoubleClickSeconds（既定 0.4 秒）。時間は、CUIWidget::AdvanceTime（CUIContext::Update が呼ぶ）で進む。時間が進まないホストでは、ダブルクリックは起こらない。
 //   - 文字列が欄より長いときは、カーソルが見える位置まで、横へずらして表示する（欄の矩形でクリップ）。
+//   - 複数行（SetMultiline( true )）: Enter で改行を入れる（確定の OnSubmitted は、起こらない。中身は OnTextChanged で受ける）。上下で、行を移る（Shift つきなら、範囲を広げる）。
+//     Home / End は、行の端。貼り付けは、改行を残す。行は、欄の上から並べ、カーソルが見える位置まで、縦にもずらす。ホイールでも、縦に動く。
+//     折り返しは、しない（長い行は、横へずれる）。フォーカス中は、上下の矢印を欄が使うので、フォーカスを移すには、Tab か、Escape（取り消し）を使う。
 //   - かな漢字変換の途中の文字列は、カーソルの位置に差し込んで、下線つきで表示する。
 //   - SetPasswordMode( true ) なら、文字を * で表示する（GetText は、本当の文字列）。
 //   - カーソルの点滅は、描いた回数で数える（SetCaretBlinkFrames。0 なら、点滅しない）。文字やカーソルが動いた直後は、必ず見える。
@@ -62,6 +67,14 @@ public:
 	// 文字数の上限（0 は上限なし）
 	void SetMaxLength( int32 InMaxLength ) { Buffer.SetMaxCharCount( InMaxLength ); }
 	void SetPasswordMode( bool bInPassword ) { bPasswordMode = bInPassword; }
+	// 複数行の欄にするか（上の説明）。1 行へ戻しても、入っている改行は、消さない
+	void SetMultiline( bool bInMultiline );
+	bool IsMultiline() const { return Buffer.IsMultiline(); }
+	// ダブルクリックと見なす、クリックの間隔（秒。0 以下なら、ダブルクリックをしない）
+	void SetDoubleClickSeconds( float32 InSeconds ) { DoubleClickSeconds = InSeconds; }
+	float32 GetDoubleClickSeconds() const { return DoubleClickSeconds; }
+	// 縦にずらしている量（画素。複数行の欄）
+	float32 GetScrollY() const { return ScrollY; }
 	void SetCaretBlinkFrames( int32 InFrames ) { CaretBlinkFrames = NMath::Max( 0, InFrames ); }
 
 	// カーソルの位置（先頭からのバイト数。文字の境目）
@@ -98,13 +111,33 @@ protected:
 	void OnPointerReleased( const FVector2& Position ) override;
 	void SetTextInputClipboard( IClipboard* InClipboard ) override { Clipboard = InClipboard; }
 	bool OnTextInput( const TArray<FTextInputEvent>& Events, const FImeComposition* Ime ) override;
+	bool OnNavigate( EUINavDirection Direction ) override;
+	bool OnWheel( const FVector2& Position, float32 Delta ) override;
 
 private:
-	// 実際の文字列の先頭 ByteOffset バイトを、表示するときの幅（画素）
-	float32 PrefixWidth( int32 ByteOffset ) const;
+	// 1 行の範囲（バイト。改行は含まない）
+	struct FLine
+	{
+		int32 Start = 0;
+		int32 End = 0;
+	};
+	// 文字列を、行に分ける（1 行の欄では、全体で 1 行）
+	void BuildLines( TArray<FLine>& OutLines ) const;
+	// 実際の文字列の [Start, End) を、表示するときの文字列（パスワードなら *）と、その幅（画素）
+	FString GetShownRange( int32 Start, int32 End ) const;
+	float32 MeasureRange( int32 Start, int32 End ) const;
+	float32 GetLineHeight() const;
+	// LineIndex 行目の文字の上の y（1 行の欄では、欄の中央に置いた行）
+	float32 GetLineTop( int32 LineIndex ) const;
 	FUIRect GetTextArea() const { return GetRect().Deflate( Style.TextPadding ); }
-	// 画面の x 座標にいちばん近い、文字の境目（バイト）
-	int32 ByteOffsetAt( float32 PointerX ) const;
+	// 行の中で、行の先頭からの幅 LocalX にいちばん近い、文字の境目（バイト）
+	int32 ByteOffsetInLine( const FLine& Line, float32 LocalX ) const;
+	// 画面の位置にいちばん近い、文字の境目（バイト）
+	int32 ByteOffsetAt( const FVector2& Position ) const;
+	// カーソルを、上（-1）・下（+1）の行へ動かす（複数行の欄）。bSelect なら、範囲を広げる
+	void MoveCaretVertically( int32 Direction, bool bSelect );
+	// 文字やカーソルが動いた: カーソルを見せ、見える位置までずらす
+	void MarkCaretMoved();
 	// 範囲をクリップボードへ（コピー）。入れたら true
 	bool CopySelection();
 
@@ -124,6 +157,15 @@ private:
 	int32 CaretBlinkFrames = 30;
 	int32 PaintCounter = 0;
 	float32 ScrollX = 0.0f;
+	float32 ScrollY = 0.0f;
+	bool bScrollToCaret = false;       // 次に描くとき、カーソルが見える位置まで、縦にずらす
+	float32 DoubleClickSeconds = 0.4f;
+	float32 TimeSincePress = 0.0f;     // 最後に押してからの秒
+	FVector2 LastPressPosition = FVector2( 0.0f, 0.0f );
+	int32 ClickCount = 0;              // 続けて押した回数（1 = クリック、2 = ダブルクリック、3 = 3 回目）
+	bool bDragByWord = false;          // ダブルクリックからのドラッグ（単語ごとに広げる）
+	int32 DragWordStart = 0;
+	int32 DragWordEnd = 0;
 	IClipboard* Clipboard = nullptr;   // このフレームの間だけ有効（CUIContext が、文字入力を渡す直前に決める）
 	bool bDragSelecting = false;
 	int32 DragAnchor = 0;

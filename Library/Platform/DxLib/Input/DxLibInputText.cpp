@@ -88,6 +88,10 @@ namespace
 			return ETextEditCommand::SelectHome;
 		case ETextEditCommand::End:
 			return ETextEditCommand::SelectEnd;
+		case ETextEditCommand::Up:
+			return ETextEditCommand::SelectUp;
+		case ETextEditCommand::Down:
+			return ETextEditCommand::SelectDown;
 		default:
 			return Command;
 		}
@@ -154,7 +158,7 @@ void CDxLibInputSubsystem::UpdateText()
 			ETextEditCommand Command = ETextEditCommand::Backspace;
 			if ( TryMapControlCode( Code, Command ) )
 			{
-				// Shift を押しながらの左右・Home・End は、範囲を広げる操作にする
+				// Shift を押しながらの左右・上下・Home・End は、範囲を広げる操作にする
 				if ( CheckHitKey( KEY_INPUT_LSHIFT ) != 0 || CheckHitKey( KEY_INPUT_RSHIFT ) != 0 )
 				{
 					Command = ToSelectCommand( Command );
