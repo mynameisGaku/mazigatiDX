@@ -4,6 +4,8 @@
 #include "Library/Platform/DX12/Resource/Readback/DX12TextureReadback.h"
 
 // 画面外のRGBA8色・深度・命令列・読み戻しを所有する。ImGuiとウィンドウを必要としない。
+class CDX12UploadArena;
+
 class CDX12CaptureTarget
 {
 public:
@@ -18,7 +20,7 @@ public:
 	// GPU完了後に描画先を用意して色と深度を消す。不正な寸法・二重開始ではfalse。
 	bool Begin( int32 Width, int32 Height, FColor32 ClearColor );
 	// 色をコピーして提出し、完了後に詰めたRGBA8を返す。失敗時はOutを保って資源を保持する。
-	bool SubmitAndRead( TArray<FColor32>& Out, uint32 TimeoutMs = 10000 );
+	bool SubmitAndRead( TArray<FColor32>& Out, uint32 TimeoutMs = 10000, CDX12UploadArena* UploadArena = nullptr, uint64 UploadTicket = 0 );
 	// 記録中の色全体を消す。描画状態を変更するため、呼出側は後続描画の状態を設定する。
 	bool ClearColor( FColor32 Color );
 	// 最大60000msの範囲で終了を試す。falseなら資源を保持して再試行できる。

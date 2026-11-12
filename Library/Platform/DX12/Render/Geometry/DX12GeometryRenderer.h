@@ -13,6 +13,7 @@
 class CDX12BufferStore;
 class CDX12TextureStore;
 class CDX12GraphicsPipelineStore;
+class CDX12UploadArena;
 #include <d3d12.h>
 #include <wrl/client.h>
 
@@ -24,11 +25,15 @@ class CDX12GeometryRenderer : public IRenderGeometry3D
 	CDX12GeometryRenderer() = default;
 	CDX12GeometryRenderer( const CDX12GeometryRenderer & ) = delete;
 	CDX12GeometryRenderer &operator=( const CDX12GeometryRenderer & ) = delete;
+	// 提出されずに残ったアップロード予約を安全に破棄する。
+	~CDX12GeometryRenderer();
 	// GPUと寸法を固定する。撮影時は指定した深度を共有し、通常時は専用の深度を作る。
 	// BuffersとQueueは同時に指定し、同じGPU・キューを使用する。Buffersは本描画器より長く生存させる。不一致はfalse。
-	bool Initialize( ID3D12Device *InDevice, int32 InWidth, int32 InHeight, ID3D12Resource *InDepth = nullptr, ID3D12DescriptorHeap *InDepthHeap = nullptr, CDX12BufferStore *InBuffers = nullptr, ID3D12CommandQueue *InQueue = nullptr, CDX12TextureStore *InTextureStore = nullptr, CDX12GraphicsPipelineStore *InGraphicsPipelines = nullptr );
+	bool Initialize( ID3D12Device *InDevice, int32 InWidth, int32 InHeight, ID3D12Resource *InDepth = nullptr, ID3D12DescriptorHeap *InDepthHeap = nullptr, CDX12BufferStore *InBuffers = nullptr, ID3D12CommandQueue *InQueue = nullptr, CDX12TextureStore *InTextureStore = nullptr, CDX12GraphicsPipelineStore *InGraphicsPipelines = nullptr, CDX12UploadArena *InUploadArena = nullptr );
 	// フレーム外で描画先の寸法と深度を差し替える。PSOとsamplerは再利用する。
 	bool BindTarget( int32 InWidth, int32 InHeight, ID3D12Resource *InDepth, ID3D12DescriptorHeap *InDepthHeap );
+	// GPUアイドル後のフレーム外で内部深度の寸法を更新する。外部深度使用時はfalse。
+	bool Resize( int32 InWidth, int32 InHeight );
 	// GPU待ち後だけ呼ぶ。前フレームの頂点を解放し、指定時は深度を消す。
 	bool BeginFrame( ID3D12GraphicsCommandList *InCommands, D3D12_CPU_DESCRIPTOR_HANDLE InRtv, ID3D12DescriptorHeap *InSrvHeap = nullptr, const FRenderClipRect *InClip = nullptr, bool bInClearDepth = true, float32 InClearDepth = 1.0f, uint64 InForbiddenTextureBinding = 0 );
 	// GPU待ち後だけ呼ぶ。1〜8枚の色描画先と書き込み中画像への自己参照禁止を同時に設定する。
@@ -41,6 +46,10 @@ class CDX12GeometryRenderer : public IRenderGeometry3D
 	void MoveFrameResources( TArray<FDX12BufferBinding> &OutBuffers, TArray<Microsoft::WRL::ComPtr<ID3D12Resource>> &OutUploads );
 	// フレーム外で、記録した頂点・GPUバッファ・画像・パイプライン参照を提出レコードへ移動する。
 	void MoveFrameResources( TArray<FDX12BufferBinding> &OutBuffers, TArray<Microsoft::WRL::ComPtr<ID3D12Resource>> &OutUploads, TArray<FDX12TextureBinding> &OutTextures, TArray<FDX12GraphicsPipelineBinding> &OutPipelines );
+	// 現在フレームで開いているアップロードアリーナのチケットを取得し、提出側へ受け渡す。
+	uint64 TakeUploadTicket();
+	// 提出前に記録を中断した場合に、開いているアップロード予約を取り消す。
+	void AbortUploadTicket();
 	// 論理幅。
 	int32 GetWidth() const override;
 	// 論理高さ。
@@ -89,6 +98,8 @@ class CDX12GeometryRenderer : public IRenderGeometry3D
 		UINT NumIndices = 0; // 0なら番号を使わない。
 		UINT NumVertices = 0; // 描く数。
 	};
+	// GPUアイドル確認済みの寸法で専用のD32深度資源とDSVを構築する。
+	bool CreateOwnedDepth( int32 InWidth, int32 InHeight, Microsoft::WRL::ComPtr<ID3D12Resource> &OutDepth, Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> &OutHeap ) const;
 	// 検査と所有コピーを終えた描画を、現在のクリップでGPUへ記録する。
 	void DrawPrepared( const FPendingDraw &Pending );
 	// 頂点バッファの所有参照。コンテナ自体はCOMの取得窓口を扱わない。
@@ -106,6 +117,9 @@ class CDX12GeometryRenderer : public IRenderGeometry3D
 	CDX12BufferStore *Buffers = nullptr; // GPUバイト列の所有先。GPUと描画キューを共有する借用先。
 	CDX12TextureStore *TextureStore = nullptr; // カスタム描画が画像・深度SRVを借りる所有先。
 	CDX12GraphicsPipelineStore *GraphicsPipelines = nullptr; // カスタムグラフィックスPSOの所有先。
+	CDX12UploadArena *UploadArena = nullptr; // 頂点一時転送領域を貸し出す共有アリーナ（任意）。
+	uint64 UploadTicket = 0; // 現在フレームで開いているアップロードアリーナの予約番号。
+	bool bOwnsDepth = false; // 自身で作成したD32深度だけをResizeで再生成する。
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> BufferQueue; // 別キューへ再初期化された所有先を混在させない。
 	TArray<FDX12BufferBinding> BufferPins; // 記録後に登録解除されても残す、重複しないGPUバッファ参照。
 	TArray<FDX12TextureBinding> TexturePins; // 記録後に登録解除されても残す、重複しない画像参照。

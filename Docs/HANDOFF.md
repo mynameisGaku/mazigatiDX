@@ -178,3 +178,8 @@ API非依存のカスタムグラフィックスパイプライン作成・遅�
 ## GPUタイムスタンプ計測契約（2026-11-12追記）
 
 GPUタイムスタンプの能力照会・作成・遅延解放（`IGpuTimestampResources`）、主画面および `BeginRenderTargetPass`〜`EndRenderTargetPass` MRT/D32パス内の計測（`IRenderSurface::BeginGpuTimestamp`／`EndGpuTimestamp`）、compute一括提出計測（`IComputeQueue::SubmitComputeWithTimestamp`）を同一 `DIRECT` キュー上の `CDX12TimestampStore` へ接続しました。詳細は [GPUタイムスタンプ計測契約](R1_GPU_TIMESTAMPS.md) を参照してください。`Tools/RunAllChecks.ps1 -SkipBuild -Quick` 全38ステップが合格し、互換台帳は481項目（API 337、Draw 100、Sample 33、Editor 11；Implemented 195、Verified 0）です。
+
+
+## フレームの転送ページとresize（2026-11-13）
+
+DX12デバイスが所有する共有アップロードページを主画面・描画先パス・撮影へ接続し、GPU完了前の再利用を防ぎます。窓の寸法変更は専用描画側を完了させて窓側で交換先を更新し、描画側で主画面深度を再作成します。最小化では有効寸法を保持します。最大64MiB要求の境界とresize失敗時の回収順序をレビュー・修正し、Debug／Releaseの実機・WARP各1306条件と6起動、両構成の全40項目の回帰を確認しました（-Quickでサンプル集・テンプレートの全検査は除外）。詳細は[R1の転送領域と寸法変更](R1_FRAME_UPLOAD_RESIZE.md)に記録しています。

@@ -42,6 +42,10 @@ namespace
 				Owner->RequestExit();
 				return 0;
 			}
+			if ( Message == WM_SIZE )
+			{
+				Owner->HandleWindowResize( static_cast<uint32>( WParam ), static_cast<int32>( LOWORD( LParam ) ), static_cast<int32>( HIWORD( LParam ) ) );
+			}
 			if ( Message == WM_MOUSEWHEEL || Message == WM_MOUSEHWHEEL )
 			{
 				const float32 Amount = static_cast<float32>( GET_WHEEL_DELTA_WPARAM( WParam ) ) / WHEEL_DELTA; // 1段を1とする。
@@ -94,6 +98,15 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection &Collection )
 	{
 		return;
 	}
+	const auto Resizable = NCommandLine::GetValue( "dx12-resizable" ); // 論理・SwapChain追従リサイズの起動スイッチ。
+	if ( Resizable.IsSet() )
+	{
+		Settings.bResizable = !Resizable.GetValue().Equals( "false", ESearchCase::IgnoreCase );
+	}
+	else if ( NCommandLine::HasFlag( "dx12-resizable" ) )
+	{
+		Settings.bResizable = true;
+	}
 	const DWORD Style = Settings.bResizable ? WS_OVERLAPPEDWINDOW : WS_OVERLAPPEDWINDOW & ~( WS_THICKFRAME | WS_MAXIMIZEBOX ); // 窓の枠。
 	RECT Rect = { 0, 0, static_cast<LONG>( Settings.Width * Settings.WindowExtendRate ), static_cast<LONG>( Settings.Height * Settings.WindowExtendRate ) }; // クライアント領域。
 	AdjustWindowRect( &Rect, Style, FALSE );
@@ -114,7 +127,7 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection &Collection )
 		return;
 	}
 	GameRenderer = new CDX12GameRenderer();
-	if ( !GameRenderer->Initialize( Device->GetNativeDevice(), Settings.Width, Settings.Height, *Device->GetTextureResources(), GameText, nullptr, nullptr, Device->GetBufferResources(), Device->GetNativeQueue(), Device->GetTextureResources(), Device->GetGraphicsPipelineStore() ) )
+	if ( !GameRenderer->Initialize( Device->GetNativeDevice(), Settings.Width, Settings.Height, *Device->GetTextureResources(), GameText, nullptr, nullptr, Device->GetBufferResources(), Device->GetNativeQueue(), Device->GetTextureResources(), Device->GetGraphicsPipelineStore(), Device->GetUploadArena() ) )
 	{
 		Deinitialize();
 		return;
@@ -149,7 +162,7 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection &Collection )
 	const EWindowMode InitialMode = Settings.WindowMode; // 窓の作成後に起動モードへ移す。
 	CaptureRenderer = new CDX12GameCapture( *Device, GameText );
 	TargetPassRenderer = new CDX12RenderTargetPass();
-	if ( !TargetPassRenderer->Initialize( Device->GetNativeDevice(), Device->GetNativeQueue(), *Device->GetTextureResources(), GameText, Device->GetImageDescriptorHeap(), Device->GetBufferResources(), Device->GetGraphicsPipelineStore(), Device->GetTimestampStore() ) )
+	if ( !TargetPassRenderer->Initialize( Device->GetNativeDevice(), Device->GetNativeQueue(), *Device->GetTextureResources(), GameText, Device->GetImageDescriptorHeap(), Device->GetBufferResources(), Device->GetGraphicsPipelineStore(), Device->GetTimestampStore(), Device->GetUploadArena() ) )
 	{
 		Deinitialize();
 		return;
@@ -185,6 +198,10 @@ void CDX12PlatformSubsystem::Deinitialize()
 		ImGui::EndFrame();
 	}
 	bInFrame = false;
+	bMinimized = false;
+	bPendingResize = false;
+	PendingResizeWidth = 0;
+	PendingResizeHeight = 0;
 	auto StopGame = [this]()
 	{
 		delete NativeSurface;
@@ -254,6 +271,35 @@ bool CDX12PlatformSubsystem::BeginFrame()
 	{
 		return false;
 	}
+	if ( bPendingResize && !bMinimized )
+	{
+		const int32 NewWidth = PendingResizeWidth;
+		const int32 NewHeight = PendingResizeHeight;
+		bPendingResize = false;
+		// DXGIが窓へ通知を送っても相互待機にならないよう、専用側を空にして窓側で交換先を更新する。
+		const bool bDrained = ThreadedSurface->Flush() && RenderCommands->WaitForCommands(); // GPU接続を排他的に借りる前のCPU完了。
+		bWindowRenderPhase = true;
+		const bool bSwapResized = bDrained && Device->Resize( NewWidth, NewHeight ); // この中のGPU完了確認が失敗すれば資源を回収しない。
+		bWindowRenderPhase = false;
+		bool bResized = false; // 描画スレッドに所有を戻してから主画面の深度を張り替える。
+		auto ApplyResize = [this, NewWidth, NewHeight, &bResized]()
+		{
+			// ResizeがGPU完了を確認した後だけ、別パスの提出参照と主画面の深度を戻す。
+			if ( TargetPassRenderer )
+			{
+				TargetPassRenderer->CollectAfterGPUIdle();
+			}
+			bResized = GameRenderer->Resize( NewWidth, NewHeight );
+		};
+		if ( !bSwapResized || !ExecuteRender( MoveTemp( ApplyResize ) ) || !bResized )
+		{
+			LOG( LogDX12, Error, "DX12 resize failed" );
+			bExit = true;
+			return false;
+		}
+		Settings.Width = NewWidth;
+		Settings.Height = NewHeight;
+	}
 	WheelX = PendingWheelX;
 	WheelY = PendingWheelY;
 	PendingWheelX = PendingWheelY = 0;
@@ -317,11 +363,20 @@ void CDX12PlatformSubsystem::EndFrame()
 			Device->RecordGameFrameCopy();
 		}
 		bool bRendered = GameRenderer->EndFrame() && bGameCommands;
+		const uint64 UploadTicket = GameRenderer->TakeUploadTicket(); // 提出成否に応じてアリーナ予約を確定または解放する。
 		if ( ImGuiFrameRenderer )
 		{
 			bRendered = ImGuiFrameRenderer->Render( UIData ) && bRendered;
 		}
-		bSubmitted = bRendered && Device->SubmitFrame();
+		if ( bRendered )
+		{
+			bSubmitted = Device->SubmitFrame( UploadTicket );
+		}
+		else
+		{
+			Device->ResolvePendingUploadTicket( UploadTicket, false );
+			bSubmitted = false;
+		}
 	};
 	const bool bRecorded = ExecuteRender( MoveTemp( Submit ) );
 	// PresentはOSからの通知を待つ場合があるため、窓のスレッドに残す。
@@ -529,6 +584,28 @@ void CDX12PlatformSubsystem::AddWheel( float32 X, float32 Y )
 {
 	PendingWheelX += X;
 	PendingWheelY += Y;
+}
+
+void CDX12PlatformSubsystem::HandleWindowResize( uint32 SizeType, int32 ClientWidth, int32 ClientHeight )
+{
+	if ( SizeType == SIZE_MINIMIZED || ClientWidth <= 0 || ClientHeight <= 0 )
+	{
+		bMinimized = true;
+		bPendingResize = false;
+		PendingResizeWidth = 0;
+		PendingResizeHeight = 0;
+		return;
+	}
+	bMinimized = false;
+	if ( !Settings.bResizable )
+	{
+		return;
+	}
+	const int32 ClampedWidth = NMath::Clamp( ClientWidth, 1, 16384 ); // GPUの最大画像寸法へ収める。
+	const int32 ClampedHeight = NMath::Clamp( ClientHeight, 1, 16384 );
+	PendingResizeWidth = ClampedWidth;
+	PendingResizeHeight = ClampedHeight;
+	bPendingResize = ClampedWidth != Settings.Width || ClampedHeight != Settings.Height;
 }
 
 void CDX12PlatformSubsystem::SetWindowTitle( const FString &Title )

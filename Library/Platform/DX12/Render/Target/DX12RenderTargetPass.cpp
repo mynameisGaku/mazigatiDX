@@ -3,6 +3,7 @@
 #include "Library/Platform/DX12/Pipeline/Graphics/DX12GraphicsPipelineStore.h"
 #include "Library/Platform/DX12/Resource/Buffer/DX12BufferStore.h"
 #include "Library/Platform/DX12/Resource/Timestamp/DX12TimestampStore.h"
+#include "Library/Platform/DX12/Resource/Upload/DX12UploadArena.h"
 #include "Library/Core/Types/Numeric.h"
 #include <d3dcompiler.h>
 
@@ -14,9 +15,9 @@ CDX12RenderTargetPass::~CDX12RenderTargetPass()
 	}
 }
 
-bool CDX12RenderTargetPass::Initialize( ID3D12Device *InDevice, ID3D12CommandQueue *InQueue, CDX12TextureStore &InTextures, IRenderTextRasterizer &InText, ID3D12DescriptorHeap *InImageHeap, CDX12BufferStore *InBuffers, CDX12GraphicsPipelineStore *InGraphicsPipelines, CDX12TimestampStore *InTimestamps )
+bool CDX12RenderTargetPass::Initialize( ID3D12Device *InDevice, ID3D12CommandQueue *InQueue, CDX12TextureStore &InTextures, IRenderTextRasterizer &InText, ID3D12DescriptorHeap *InImageHeap, CDX12BufferStore *InBuffers, CDX12GraphicsPipelineStore *InGraphicsPipelines, CDX12TimestampStore *InTimestamps, CDX12UploadArena *InUploadArena )
 {
-	if ( Device || bClosing || !InDevice || !InQueue || InQueue->GetDesc().Type != D3D12_COMMAND_LIST_TYPE_DIRECT || !InTextures.UsesDeviceAndQueue( InDevice, InQueue ) || ( InBuffers && !InBuffers->UsesDeviceAndQueue( InDevice, InQueue ) ) || ( InGraphicsPipelines && !InGraphicsPipelines->UsesDevice( InDevice ) ) || ( InTimestamps && !InTimestamps->UsesDeviceAndQueue( InDevice, InQueue ) ) )
+	if ( Device || bClosing || !InDevice || !InQueue || InQueue->GetDesc().Type != D3D12_COMMAND_LIST_TYPE_DIRECT || !InTextures.UsesDeviceAndQueue( InDevice, InQueue ) || ( InBuffers && !InBuffers->UsesDeviceAndQueue( InDevice, InQueue ) ) || ( InGraphicsPipelines && !InGraphicsPipelines->UsesDevice( InDevice ) ) || ( InTimestamps && !InTimestamps->UsesDeviceAndQueue( InDevice, InQueue ) ) || ( InUploadArena && !InUploadArena->UsesDeviceAndQueue( InDevice, InQueue ) ) )
 	{
 		return false;
 	}
@@ -43,6 +44,7 @@ bool CDX12RenderTargetPass::Initialize( ID3D12Device *InDevice, ID3D12CommandQue
 	Buffers = InBuffers;
 	GraphicsPipelines = InGraphicsPipelines;
 	Timestamps = InTimestamps;
+	UploadArena = InUploadArena;
 	bHealthy = true;
 	return true;
 }
@@ -103,6 +105,7 @@ void CDX12RenderTargetPass::ResetAfterGPUIdle()
 	Buffers = nullptr;
 	GraphicsPipelines = nullptr;
 	Timestamps = nullptr;
+	UploadArena = nullptr;
 	ActiveTimestampBatchId = 0;
 	NextFenceValue = 0;
 	FallbackClearDepth = 1.0f;
@@ -361,7 +364,7 @@ bool CDX12RenderTargetPass::Begin( const FRenderTargetPassDesc &Desc )
 	if ( !Renderer )
 	{
 		Renderer = new CDX12GameRenderer();
-		if ( !Renderer->Initialize( Device.Get(), PassWidth, PassHeight, *Textures, *Text, DepthBinding.Resource.Get(), DepthBinding.TargetHeap.Get(), Buffers, Queue.Get(), Textures, GraphicsPipelines ) )
+		if ( !Renderer->Initialize( Device.Get(), PassWidth, PassHeight, *Textures, *Text, DepthBinding.Resource.Get(), DepthBinding.TargetHeap.Get(), Buffers, Queue.Get(), Textures, GraphicsPipelines, UploadArena ) )
 		{
 			delete Renderer;
 			Renderer = nullptr;
@@ -440,6 +443,7 @@ bool CDX12RenderTargetPass::Begin( const FRenderTargetPassDesc &Desc )
 		if ( RequestedColors[i].bClear && !ClearColorAttachment( ColorBindings[i], RequestedColors[i].ClearColor ) )
 		{
 			Renderer->EndFrame();
+			Renderer->AbortUploadTicket();
 			CurrentCommands.Reset();
 			CurrentAllocator.Reset();
 			Textures->EndRenderTargetPass();
@@ -456,6 +460,7 @@ bool CDX12RenderTargetPass::Begin( const FRenderTargetPassDesc &Desc )
 	if ( Timestamps && ActiveTimestampBatchId == 0 )
 	{
 		Renderer->EndFrame();
+		Renderer->AbortUploadTicket();
 		CurrentCommands.Reset();
 		CurrentAllocator.Reset();
 		ActiveColors.Reset();
@@ -477,6 +482,7 @@ bool CDX12RenderTargetPass::End()
 	}
 	const bool bHasUnclosedTimestamps = Timestamps && ActiveTimestampBatchId != 0 && Timestamps->HasActiveRecording( ActiveTimestampBatchId );
 	const bool bRendered = Renderer->EndFrame() && !bRecordClearFailed && !bHasUnclosedTimestamps; // 文字失敗・任意クリア失敗・自己参照競合・未閉鎖タイムスタンプがあれば提出しない。
+	const uint64 UploadTicket = Renderer->TakeUploadTicket(); // 提出成否に応じて完了または破棄するアップロード予約。
 	Textures->EndRenderTargetPass();
 	bActive = false;
 	bRecordClearFailed = false;
@@ -484,6 +490,10 @@ bool CDX12RenderTargetPass::End()
 	Renderer->MoveFrameResources( Created.Buffers, Created.Uploads, Created.Textures, Created.Pipelines );
 	if ( !bRendered )
 	{
+		if ( UploadArena && UploadTicket != 0 )
+		{
+			UploadArena->AbortTicket( UploadTicket );
+		}
 		if ( Timestamps && ActiveTimestampBatchId != 0 )
 		{
 			Timestamps->AbortBatch( ActiveTimestampBatchId );
@@ -521,6 +531,10 @@ bool CDX12RenderTargetPass::End()
 	CurrentCommands->ResourceBarrier( static_cast<UINT>( Barriers.Num() ), Barriers.GetData() );
 	if ( FAILED( CurrentCommands->Close() ) )
 	{
+		if ( UploadArena && UploadTicket != 0 )
+		{
+			UploadArena->AbortTicket( UploadTicket );
+		}
 		if ( Timestamps && ActiveTimestampBatchId != 0 )
 		{
 			Timestamps->AbortBatch( ActiveTimestampBatchId );
@@ -551,7 +565,8 @@ bool CDX12RenderTargetPass::End()
 	}
 	const uint64 BatchToCommit = ActiveTimestampBatchId;
 	ActiveTimestampBatchId = 0;
-	if ( ( BatchToCommit != 0 && !Timestamps->CommitBatch( BatchToCommit ) ) || FAILED( Queue->Signal( Fence.Get(), Submitted.Value ) ) )
+	const bool bUploadCommitted = !UploadArena || UploadTicket == 0 || UploadArena->CommitTicket( UploadTicket );
+	if ( !bUploadCommitted || ( BatchToCommit != 0 && !Timestamps->CommitBatch( BatchToCommit ) ) || FAILED( Queue->Signal( Fence.Get(), Submitted.Value ) ) )
 	{
 		bHealthy = false;
 		return false;

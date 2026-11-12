@@ -25,7 +25,7 @@
 ## スロット状態遷移・DIRECTキュー同期・安全保証
 
 1. **同一 `DIRECT` キューとReadback配置**:
-   - `CDX12TimestampStore` は描画・computeと同一の `ID3D12CommandQueue`（`D3D12_COMMAND_LIST_TYPE_DIRECT`）から `GetTimestampFrequency()` を取得し、`D3D12_QUERY_HEAP_TYPE_TIMESTAMP`（`MaxActiveQueries * 2 = 512` 個）と `4096` バイトの `D3D12_HEAP_TYPE_READBACK`（初期状態 `D3D12_RESOURCE_STATE_COPY_DEST`、1フレーム当たり 8 バイト境界・32KiB/256ペア）を作成します。
+   - `CDX12TimestampStore` は描画・computeと同一の `ID3D12CommandQueue`（`D3D12_COMMAND_LIST_TYPE_DIRECT`）から `GetTimestampFrequency()` を取得し、`D3D12_QUERY_HEAP_TYPE_TIMESTAMP`（`MaxActiveQueries * 2 = 512` 個）と `4096` バイトの `D3D12_HEAP_TYPE_READBACK`（初期状態 `D3D12_RESOURCE_STATE_COPY_DEST`、1値8バイト・256ペアで計4096バイト）を作成します。
    - `ElapsedMs` は `((EndTicks - BeginTicks) * 1000.0) / FrequencyHz` で算出し、ラップ・異常値時もアンダーフローしません。
 2. **状態遷移と物理スロットの遅延解放**:
    - 各ハンドルは `Idle` → `Recording`（`BeginQuery` の代わりに `EndQuery(TIMESTAMP, Slot*2)`）→ `PendingSubmit`（`EndQuery(TIMESTAMP, Slot*2+1)` ＋ `ResolveQueryData`）→ `Submitted(FenceValue)`（`ExecuteCommandLists` ＋ `Queue->Signal` 後）→ `Completed`（Fence完了後に1度だけMapして `CachedResult` へ読出し）へ遷移します。`Completed` 後の再記録（`BeginGpuTimestamp` / `SubmitComputeWithTimestamp`）も許可します。

@@ -1,15 +1,14 @@
 # DX12開発の引き継ぎ
 
-最終更新: 2026-11-11（日本時間）。この文書は作業中も更新します。実装済み、未接続、検証済みを分け、予定を完了扱いにしません。
+最終更新: 2026-11-13（日本時間）。この文書は作業中も更新します。実装済み、未接続、検証済みを分け、予定を完了扱いにしません。
 
-## 目的と公開済みの基点
+## 目的と公開の基点
 
-作業ブランチは`backend-dx12`です。[ロードマップ](ROADMAP.md)のR0／R1を整え、共有メッシュ・材質とForwardへ進む依存を先に満たします。v1.0.0のR1全体、四描画方式、完全互換は未完了です。
+作業ブランチは`backend-dx12`です。[ロードマップ](ROADMAP.md)のR1基盤を進めています。R1全体、四描画方式、完全互換は未完了です。
 
-- 本体の公開済み基点: `d580e767a37bfb42b49684ad43832a2368480a9d`。
-- 対応する検査: framework-testの`codex/dx12-windows-validation`、`1d02c862a043f364d4e5f05b988a3993699073c2`。
-- この基点は、DX12主画面の専用描画、IsInRenderThread／RENDER_THREAD_ONLY、描画コンテキスト、2D操作の所有コピーまで実装済みです。Debug／Release各4プロジェクトは警告・エラー0件、全30項目を確認して公開しました。
-- 現在の変更はこの基点からのR1追加です。下の作業欄と新しい検査結果を確認してから次へ進めてください。
+- 今回の公開前基点: 本体`a4fca5021e83387c132564fe29c3f8ea841dff9a`、検査`45c2635ce7fd854eec7de99e44f68ad0f69b1451`。
+- 描画先・MRT・GPU計測はローカルで実装・コミット済みです。フレーム転送領域とresizeのレビューを含めて検証し、対応する検査コミットを確定してから公開します。
+- 最新の公開位置は[本体ブランチ](https://github.com/mynameisGaku/mazigatiDX/tree/backend-dx12)と検査ブランチを確認します。ローカルの作業完了を公開済みとは扱いません。
 
 ## この端末の作業コピーと保護対象
 
@@ -36,7 +35,17 @@ DX12はゲームとUIが使うグラフィックス実装です。GPUデバイ�
 - 描画命令ではconst FRenderCommandContext&のCanvas／Geometryだけを実行中に借ります。窓・UI文脈・ゲームの可変状態へ触れません。フレーム外は両方nullptrです。
 - 複数フレームの同時進行、複数native command listの並列記録、DXC／SM6は未対応です。
 
-## 現在の作業: R1のGPUタイムスタンプ計測契約（2026-11-12）
+## 現在の作業: フレーム転送領域とresize（2026-11-13）
+
+`CDX12UploadArena`を既存デバイスへ所有させ、主画面・描画先パス・撮影の一時頂点を共有ページへ書き込みます。記録中の予約とGPUフェンス完了まで先頭を再利用せず、主画面の途中提出後に失敗した場合も未提出として取り消しません。窓の寸法変更はCPU命令を完了させて窓側へ排他的に貸し、GPU完了後に交換先を更新してから描画側で深度を再作成します。詳細は[転送領域と寸法変更](R1_FRAME_UPLOAD_RESIZE.md)を参照します。
+
+レビューで、最大64MiB要求へ整列余裕を余分に足して拒否する不具合を再現・修正しました。GPU待機の失敗後に別パス資源を回収する順序も修正しました。修正後のDebug／Release各4プロジェクトは警告・エラー0件。両構成でCPU615・既定GPU1306・WARP1306・デバイス喪失6と通常アプリ6モードが成功し、全40項目の回帰も通過しました。記録はSaved/ArgonCoordination/codex-r1-upload-resize-all-checks.log（詳細ログmazigati_checks_20261113_083017）です。-Quick指定によりサンプル集とテンプレートの全検査は含みません。
+
+現在の編集・検証・公開担当はCodexです。Antigravity側は引き継ぎを受領し、既存ログの報告を終えて待機しています。古いtask-2808のRUNNING表示や11月11日のクレジット不足記録を、現在のソース所有の根拠にはしません。Saved/ArgonCoordination/codex-status.jsonとstatus.jsonを照合し、同じソースの編集と同じ構成のビルドを競合させません。
+
+今回の転送領域・resize検査の対応コミット: `725b8be50b6fc45f2e28ffb77190b13812708d4f`（`codex/dx12-windows-validation`）。
+
+## 先行の作業: R1のGPUタイムスタンプ計測契約（2026-11-12）
 
 選定理由: [ロードマップ](ROADMAP.md) R1 GPU基盤の `timestamp` 項目およびR4/R9のGPU時間計測基礎として、API非依存のGPUタイムスタンプ能力照会・計測ハンドル作成・遅延スロット回収（`IGpuTimestampResources`）、主画面および `BeginRenderTargetPass`〜`EndRenderTargetPass` 内の範囲計測（`IRenderSurface::BeginGpuTimestamp`／`EndGpuTimestamp`）、ならびに `IComputeQueue::SubmitComputeWithTimestamp` を追加し、同一 `DIRECT` キュー上のGraphics→Compute→Readback区間のGPU計測と未完了スロット保護を成立させました。詳細は [GPUタイムスタンプ計測契約](R1_GPU_TIMESTAMPS.md) を参照してください。
 
@@ -46,7 +55,7 @@ DX12はゲームとUIが使うグラフィックス実装です。GPUデバイ�
 |DX12実装・同期・寿命|`CDX12TimestampStore`（`D3D12_QUERY_HEAP_TYPE_TIMESTAMP` 512スロット = 256ペア、`D3D12_HEAP_TYPE_READBACK` 4KiB、専用 `ID3D12Fence`、`RetiredSlots` によるGPU完了後物理スロット回収）を `CDX12Device`・`CDX12ComputeQueue`・`CDX12RenderTargetPass`・`CDX12GameSurface` へ接続し、主画面・パス中未閉じスコープ・撮影中・別スレッド・デバイス喪失を安全に制御済み|
 |検査と互換台帳|Debug／Release x64 `project.sln` ビルド（警告・エラー0件）、`RunTimestampTests.ps1 -Platform`（CPU 11・既定GPU 34・WARP 34・デバイス喪失 5、通常アプリ6起動 `dx12`/`warp`/`dx12-no-ui`/`warp-no-ui`/`dxlib`/`null`）および `Tools/RunAllChecks.ps1 -SkipBuild -Quick` 全38ステップ合格（`Saved/ArgonCoordination/run_all_checks_r1_timestamps.log`）。互換台帳は481項目（API 337、Draw 100、Sample 33、Editor 11；Implemented 195、Verified 0）|
 
-検査側の対応コミット: `a50b46154a5fda99657ce4fc509efcda78f8f4b3`（tree `a85bd573d9feaf4b39e94a7c4a768bc847f58dae`、ローカル）。
+検査側の対応コミット: `803133630f3e69f64ddc682dcbe03c9524f51069`（tree `a85bd573d9feaf4b39e94a7c4a768bc847f58dae`、対応する公開済み検査）。
 残る範囲（R1後続・R2以降）: `RGBA16F`／HDR形式・MSAA・`SV_Depth`・swapchain `resize` と終了/フレーム別領域・DXC／SM6・Copyキュー専用／Pipeline Statistics／`CProfilerSubsystem`連携・全R1横断のデバイス喪失復旧・R2共有メッシュ／材質／Forward・R3フレームグラフ／Deferred。
 
 ## 先行の作業: R1のカスタムグラフィックスパイプライン契約とMRT複数描画先（2026-11-12）
@@ -60,7 +69,7 @@ DX12はゲームとUIが使うグラフィックス実装です。GPUデバイ�
 |reflection・MRT実装|`CDX12GraphicsPipelineStore`（DXBC SM5.0／5.1、VS入力・PS `SV_Target0..N-1`・`Constant`/`Raw`/`Structured`・`RGBA8`/`R32Float` reflection照合、遅延破棄 `Retired`）、`CDX12RenderTargetPass`（1〜8枚MRT、任意色クリアPSO、未完了寿命保持）、`CDX12GeometryRenderer::DrawGraphicsPipeline`、`CDX12GameRenderer::BeginFrame`（MRT時の `Clip` 初期化）を実装済み|
 |検査と互換台帳|Debug／Release x64 `project.sln` ビルド（警告・エラー0件）、`RunGraphicsPipelineTests.ps1 -Platform`（CPU 3・既定GPU 66・WARP 66、通常アプリ6起動 `dx12`/`warp`/`dx12-no-ui`/`warp-no-ui`/`dxlib`/`null`）、および `Tools/RunAllChecks.ps1 -SkipBuild -Quick` 全36ステップ合格。互換台帳は472項目（API 328、Draw 100、Sample 33、Editor 11；Implemented 186、Verified 0）|
 
-検査側の対応コミット: `a8ad0b810bc1059237dfed51f844b013486b9ec2`（tree `00dc9638fbf05eabc9baf37af8253a8c93f9d42e`、ローカル。公開は運用担当で実施）。
+検査側の対応コミット: `3d9de630583479533a8eb109fd0b0b41db8a9ef4`（tree `00dc9638fbf05eabc9baf37af8253a8c93f9d42e`、対応する公開済み検査）。
 残る範囲（R1後続・R2以降）: `RGBA16F`／HDR形式・MSAA・`SV_Depth`・読み取り専用DSV同時参照・DXC／SM6・timestamp計測・全R1横断のデバイス喪失復旧・R2共有メッシュ／材質／Forward・R3フレームグラフ／Deferred。
 
 ## 先行の作業: R1のオフスクリーン描画先資源と読み取れる深度・compute連携
@@ -83,7 +92,7 @@ DX12はゲームとUIが使うグラフィックス実装です。GPUデバイ�
 4. `CDX12ComputePipelineStore` と `CDX12ComputeQueue` で `EComputeTextureFormat::R32Float`（`Texture2D<float>` 読み取り専用）を検査・束縛し、色（`Texture2D<float4>`）とスカラー深度の同時読み取り・可視化画像生成を通す。
 5. 描画した色ターゲットの通常画面／撮影への直接描画、深度のcompute可視化経由の描画、提出直後の `ReleaseTexture` と別寸法再作成をCPU参照実装・既定GPU・WARP・通常アプリ6起動で確認した。
 
-検査側の対応コミット: `633d2edc7f25ebe181c7f0e78031454c2dafd9e4`（ローカル。公開はCodex担当）。
+検査側の対応コミット: `5c4020649ada15663a19202282359b0f964e9a95`（対応する公開済み検査）。
 
 参照した公式文書（2026-11-11確認）:
 
@@ -104,12 +113,9 @@ MSVC v145では、型の変更後のRelease増分リンクでLNK1103、Debugの�
 commitはfeat:／fix:／refactor:／other:に日本語の説明を続けます。検査を先に対応する専用ブランチへ公開し、その実コミットを本体の文書へ記録します。本体はbackend-dx12へ履歴を前進させて公開し、GitHub上のtreeと検証したtreeが一致すること、ユーザーの既存変更が保持されることを確認します。
 
 
-## Goalによる継続と現在の担当（2026-11-11）
+## 継続と現在の担当
 
-Docs/ROADMAP.mdのR1完了をGoalとして継続中です。ArgonはAIクレジット不足で停止したため、Codexが未コミットの描画先・深度対応を引き継いでレビューしています。Argonの状態通知は停止前のworkingのままなので、それを現在の進行と解釈しません。現在の所有と作業記録はSaved/ArgonCoordination/owner.json、codex-status.jsonを確認します。同じ実装ファイルを別担当で並行編集しません。
-
-公開基点は本体a4fca5021e83387c132564fe29c3f8ea841dff9a、検査45c2635ce7fd854eec7de99e44f68ad0f69b1451です。未公開の単一描画先・読み取れる深度の詳細とレビュー残件はR1_RENDER_TARGET_RESOURCES.mdへ記録します。MRT、timestamp、フレーム領域、resize・終了・GPU失敗とgraphics/computeの包括的検査もR1完了条件に照合して進めます。
-
+R1の残件は、計画済みのRGBA16F資源・画像コピーとreadback、失敗・終了の横断検査です。現在の担当と最新検証結果は上の作業欄とSaved/ArgonCoordination/codex-status.jsonに記録します。MRT・タイムスタンプの成功だけでR1完了とは扱いません。
 
 ### Codexレビューで追加した回帰確認
 

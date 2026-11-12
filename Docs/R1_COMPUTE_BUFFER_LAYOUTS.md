@@ -12,7 +12,7 @@ FComputeBufferSlotにEComputeBufferLayoutのLayoutと、一要素の幅ElementSt
 |Structured|Read／ReadWrite|4〜2048、4の倍数|t0〜127／u0〜63|全長が要素幅で割り切れる|
 |Constant|Readだけ|0|b0〜13|256バイトの倍数、256〜65536バイト、シェーダーの宣言範囲以上|
 
-Core/Renderの新しいenumと既存slotはAPI固有の列挙やGPUアドレスを持ちません。FDX12ComputePipelineStoreがコンパイル済みCS5.0／5.1の資源宣言を照合し、FDX12ComputeQueueが実際のバッファ範囲を検査して記録します。FDX12BufferStoreは引き続き同じバイト列と番号の所有先で、別の定数専用storeやSubsystemは作りません。
+Core/Renderの新しいenumと既存slotはAPI固有の列挙やGPUアドレスを持ちません。CDX12ComputePipelineStoreがコンパイル済みCS5.0／5.1の資源宣言を照合し、CDX12ComputeQueueが実際のバッファ範囲を検査して記録します。CDX12BufferStoreは引き続き同じバイト列と番号の所有先で、別の定数専用storeやSubsystemは作りません。
 
 FComputeBufferSlotはfield追加でメモリ配置が変わるため、利用側も同じheaderで再ビルドします。二項目指定のソース互換を保つことと、以前のバイナリとの互換は別です。
 

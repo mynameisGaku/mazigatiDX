@@ -8,6 +8,7 @@ $groups = @(
     @{ Directory = 'Library/Platform/DX12/Render/Capture'; Names = @('DX12CaptureTarget'); Forbidden = '(?i)imgui|dxlib|DX12Device|Framework/|Core/Interfaces/(Asset|Platform)|IRenderSurface' },
     @{ Directory = 'Library/Platform/DX12/Resource/Readback'; Names = @('DX12TextureReadback'); Forbidden = '(?i)imgui|dxlib|DX12Device|Framework/|Core/Interfaces/(Asset|Platform)|IRenderSurface' },
     @{ Directory = 'Library/Platform/DX12/Resource/Timestamp'; Names = @('DX12TimestampStore'); Forbidden = '(?i)imgui|dxlib|DX12Device|Framework/|Core/Interfaces/(Asset|Platform)|IRenderSurface' },
+    @{ Directory = 'Library/Platform/DX12/Resource/Upload'; Names = @('DX12UploadArena'); Forbidden = '(?i)imgui|dxlib|DX12Device|Framework/|Core/Interfaces/(Asset|Platform)|IRenderSurface' },
     @{ Directory = 'Library/Platform/DX12/Device'; Names = @('DX12QueueCompletion'); Forbidden = '(?i)imgui|dxlib|DX12Device|Framework/|Core/Interfaces/(Asset|Platform)|IRenderSurface' },
     @{ Directory = 'Library/Platform/DX12/Render/Geometry'; Names = @('DX12GeometryRenderer'); Forbidden = '(?i)imgui|dxlib|Framework/|Platform/Windows' },
     @{ Directory = 'Library/Platform/DX12/Pipeline/Geometry'; Names = @('DX12GeometryPipelineStore'); Forbidden = '(?i)imgui|dxlib|Framework/|Platform/Windows|IRenderSurface|DX12Device|DX12GeometryRenderer|DX12GameRenderer|DX12BufferStore' },

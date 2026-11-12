@@ -3,6 +3,7 @@
 #include "Library/Platform/DX12/Resource/Buffer/DX12BufferStore.h"
 #include "Library/Platform/DX12/Resource/Texture/DX12TextureStore.h"
 #include "Library/Platform/DX12/Pipeline/Graphics/DX12GraphicsPipelineStore.h"
+#include "Library/Platform/DX12/Resource/Upload/DX12UploadArena.h"
 #include <cstddef>
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Types/Numeric.h"
@@ -37,7 +38,47 @@ namespace
 	}
 } // namespace
 
-bool CDX12GeometryRenderer::Initialize( ID3D12Device *InDevice, int32 InWidth, int32 InHeight, ID3D12Resource *InDepth, ID3D12DescriptorHeap *InDepthHeap, CDX12BufferStore *InBuffers, ID3D12CommandQueue *InQueue, CDX12TextureStore *InTextureStore, CDX12GraphicsPipelineStore *InGraphicsPipelines )
+CDX12GeometryRenderer::~CDX12GeometryRenderer()
+{
+	AbortUploadTicket();
+}
+
+bool CDX12GeometryRenderer::CreateOwnedDepth( int32 InWidth, int32 InHeight, Microsoft::WRL::ComPtr<ID3D12Resource> &OutDepth, Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> &OutHeap ) const
+{
+	if ( !Device || InWidth <= 0 || InHeight <= 0 || InWidth > 16384 || InHeight > 16384 )
+	{
+		return false;
+	}
+	D3D12_DESCRIPTOR_HEAP_DESC HeapDesc = {}; // 通常描画では専用の深度を作る。
+	HeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+	HeapDesc.NumDescriptors = 1;
+	D3D12_HEAP_PROPERTIES Heap = {}; // GPUが読み書きする領域。
+	Heap.Type = D3D12_HEAP_TYPE_DEFAULT;
+	D3D12_RESOURCE_DESC Desc = {}; // 深度画像。
+	Desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	Desc.Width = static_cast<UINT64>( InWidth );
+	Desc.Height = static_cast<UINT>( InHeight );
+	Desc.DepthOrArraySize = 1;
+	Desc.MipLevels = 1;
+	Desc.Format = DXGI_FORMAT_D32_FLOAT;
+	Desc.SampleDesc.Count = 1;
+	Desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+	D3D12_CLEAR_VALUE Clear = {}; // 未描画部分の深度。
+	Clear.Format = Desc.Format;
+	Clear.DepthStencil.Depth = 1;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> NewHeap; // 再作成成功後にだけ差し替える仮記述子。
+	Microsoft::WRL::ComPtr<ID3D12Resource> NewDepth; // 再作成成功後にだけ差し替える仮深度。
+	if ( FAILED( Device->CreateDescriptorHeap( &HeapDesc, IID_PPV_ARGS( &NewHeap ) ) ) || FAILED( Device->CreateCommittedResource( &Heap, D3D12_HEAP_FLAG_NONE, &Desc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &Clear, IID_PPV_ARGS( &NewDepth ) ) ) )
+	{
+		return false;
+	}
+	Device->CreateDepthStencilView( NewDepth.Get(), nullptr, NewHeap->GetCPUDescriptorHandleForHeapStart() );
+	OutHeap = MoveTemp( NewHeap );
+	OutDepth = MoveTemp( NewDepth );
+	return true;
+}
+
+bool CDX12GeometryRenderer::Initialize( ID3D12Device *InDevice, int32 InWidth, int32 InHeight, ID3D12Resource *InDepth, ID3D12DescriptorHeap *InDepthHeap, CDX12BufferStore *InBuffers, ID3D12CommandQueue *InQueue, CDX12TextureStore *InTextureStore, CDX12GraphicsPipelineStore *InGraphicsPipelines, CDX12UploadArena *InUploadArena )
 {
 	if ( Device || !InDevice || InWidth <= 0 || InHeight <= 0 || InWidth > 16384 || InHeight > 16384 || ( InDepth == nullptr ) != ( InDepthHeap == nullptr ) )
 	{
@@ -52,17 +93,19 @@ bool CDX12GeometryRenderer::Initialize( ID3D12Device *InDevice, int32 InWidth, i
 			return false;
 		}
 	}
-	if ( ( InBuffers == nullptr ) != ( InQueue == nullptr ) || ( InBuffers && !InBuffers->UsesDeviceAndQueue( InDevice, InQueue ) ) )
+	if ( ( InBuffers && !InQueue ) || ( !InBuffers && !InUploadArena && InQueue ) || ( InBuffers && !InBuffers->UsesDeviceAndQueue( InDevice, InQueue ) ) )
 	{
 		return false;
 	}
-	if ( ( InTextureStore && ( !InQueue || !InTextureStore->UsesDeviceAndQueue( InDevice, InQueue ) ) ) || ( InGraphicsPipelines && !InGraphicsPipelines->UsesDevice( InDevice ) ) )
+	if ( ( InTextureStore && ( !InQueue || !InTextureStore->UsesDeviceAndQueue( InDevice, InQueue ) ) ) || ( InGraphicsPipelines && !InGraphicsPipelines->UsesDevice( InDevice ) ) || ( InUploadArena && ( !InQueue || !InUploadArena->UsesDeviceAndQueue( InDevice, InQueue ) ) ) )
 	{
 		return false;
 	}
 	Buffers = InBuffers;
 	TextureStore = InTextureStore;
 	GraphicsPipelines = InGraphicsPipelines;
+	UploadArena = InUploadArena;
+	UploadTicket = 0;
 	BufferQueue = InQueue;
 	Device = InDevice;
 	Width = InWidth;
@@ -98,30 +141,14 @@ bool CDX12GeometryRenderer::Initialize( ID3D12Device *InDevice, int32 InWidth, i
 	{
 		Depth = InDepth;
 		DsvHeap = InDepthHeap;
+		bOwnsDepth = false;
 		return true;
 	}
-	D3D12_DESCRIPTOR_HEAP_DESC HeapDesc = {}; // 通常描画では専用の深度を作る。
-	HeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-	HeapDesc.NumDescriptors = 1;
-	D3D12_HEAP_PROPERTIES Heap = {}; // GPUが読み書きする領域。
-	Heap.Type = D3D12_HEAP_TYPE_DEFAULT;
-	D3D12_RESOURCE_DESC Desc = {}; // 深度画像。
-	Desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-	Desc.Width = Width;
-	Desc.Height = Height;
-	Desc.DepthOrArraySize = 1;
-	Desc.MipLevels = 1;
-	Desc.Format = DXGI_FORMAT_D32_FLOAT;
-	Desc.SampleDesc.Count = 1;
-	Desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-	D3D12_CLEAR_VALUE Clear = {}; // 未描画部分の深度。
-	Clear.Format = Desc.Format;
-	Clear.DepthStencil.Depth = 1;
-	if ( FAILED( Device->CreateDescriptorHeap( &HeapDesc, IID_PPV_ARGS( &DsvHeap ) ) ) || FAILED( Device->CreateCommittedResource( &Heap, D3D12_HEAP_FLAG_NONE, &Desc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &Clear, IID_PPV_ARGS( &Depth ) ) ) )
+	if ( !CreateOwnedDepth( Width, Height, Depth, DsvHeap ) )
 	{
 		return false;
 	}
-	Device->CreateDepthStencilView( Depth.Get(), nullptr, DsvHeap->GetCPUDescriptorHandleForHeapStart() );
+	bOwnsDepth = true;
 	return true;
 }
 
@@ -141,6 +168,30 @@ bool CDX12GeometryRenderer::BindTarget( int32 InWidth, int32 InHeight, ID3D12Res
 	Height = InHeight;
 	Depth = InDepth;
 	DsvHeap = InDepthHeap;
+	bOwnsDepth = false;
+	return true;
+}
+
+bool CDX12GeometryRenderer::Resize( int32 InWidth, int32 InHeight )
+{
+	if ( !Device || Commands || !bOwnsDepth || !Depth || !DsvHeap || InWidth <= 0 || InHeight <= 0 || InWidth > 16384 || InHeight > 16384 || FAILED( Device->GetDeviceRemovedReason() ) )
+	{
+		return false;
+	}
+	if ( InWidth == Width && InHeight == Height )
+	{
+		return true;
+	}
+	Microsoft::WRL::ComPtr<ID3D12Resource> NewDepth; // 再作成成功後にだけ差し替える仮深度。
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> NewHeap; // 再作成成功後にだけ差し替える仮DSV。
+	if ( !CreateOwnedDepth( InWidth, InHeight, NewDepth, NewHeap ) )
+	{
+		return false;
+	}
+	Depth = MoveTemp( NewDepth );
+	DsvHeap = MoveTemp( NewHeap );
+	Width = InWidth;
+	Height = InHeight;
 	return true;
 }
 
@@ -173,6 +224,20 @@ bool CDX12GeometryRenderer::BeginFrame( ID3D12GraphicsCommandList *InCommands, T
 	{
 		return false;
 	}
+	uint64 NewUploadTicket = 0; // 新規フレームの頂点転送予約。失敗時は描画状態を汚さない。
+	if ( UploadArena )
+	{
+		if ( !UploadArena->UsesDeviceAndQueue( Device.Get(), BufferQueue.Get() ) )
+		{
+			return false;
+		}
+		AbortUploadTicket();
+		NewUploadTicket = UploadArena->BeginTicket();
+		if ( NewUploadTicket == 0 )
+		{
+			return false;
+		}
+	}
 	BufferPins.Reset();
 	PinnedBytes = 0;
 	BufferDrawCount = 0;
@@ -181,6 +246,7 @@ bool CDX12GeometryRenderer::BeginFrame( ID3D12GraphicsCommandList *InCommands, T
 	GraphicsDrawCount = 0;
 	Uploads.Reset();
 	UploadBytes = 0;
+	UploadTicket = NewUploadTicket;
 	ColorViewCount = static_cast<uint32>( InColorViews.Num() );
 	for ( uint32 i = 0; i < ColorViewCount; ++i )
 	{
@@ -212,6 +278,26 @@ void CDX12GeometryRenderer::EndFrame()
 	ForbiddenBindingCount = 0;
 	SrvHeap = nullptr;
 	Clip = nullptr;
+}
+
+uint64 CDX12GeometryRenderer::TakeUploadTicket()
+{
+	if ( Commands )
+	{
+		return 0;
+	}
+	const uint64 Ticket = UploadTicket;
+	UploadTicket = 0;
+	return Ticket;
+}
+
+void CDX12GeometryRenderer::AbortUploadTicket()
+{
+	if ( UploadArena && UploadTicket != 0 )
+	{
+		UploadArena->AbortTicket( UploadTicket );
+	}
+	UploadTicket = 0;
 }
 
 bool CDX12GeometryRenderer::DidFrameSucceed() const
@@ -479,7 +565,8 @@ bool CDX12GeometryRenderer::DrawInternal( const FGeometryVertex *Vertices, int32
 			}
 		}
 	}
-	if ( UploadBytes + static_cast<uint64>( NumVertices ) * sizeof( FGeometryVertex ) > 64 * 1024 * 1024 )
+	const UINT64 ByteWidth = static_cast<UINT64>( NumVertices ) * sizeof( FGeometryVertex ); // 今回の頂点バイト数。
+	if ( UploadBytes + ByteWidth > 64ull * 1024ull * 1024ull )
 	{
 		return false;
 	}
@@ -488,36 +575,51 @@ bool CDX12GeometryRenderer::DrawInternal( const FGeometryVertex *Vertices, int32
 	{
 		return false;
 	}
-	D3D12_HEAP_PROPERTIES Heap = {}; // CPUから一度書き、GPUが読む領域。
-	Heap.Type = D3D12_HEAP_TYPE_UPLOAD;
-	D3D12_RESOURCE_DESC Desc = {}; // 頂点を所有コピーするバッファ。
-	Desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	Desc.Width = static_cast<UINT64>( NumVertices ) * sizeof( FGeometryVertex );
-	Desc.Height = 1;
-	Desc.DepthOrArraySize = 1;
-	Desc.MipLevels = 1;
-	Desc.SampleDesc.Count = 1;
-	Desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-	Microsoft::WRL::ComPtr<ID3D12Resource> Upload; // GPU待ちまで保持する領域。
-	void *Mapped = nullptr; // CPUが書く先。
-	const D3D12_RANGE NoRead = { 0, 0 }; // CPUは読み戻さない。
-	if ( FAILED( Device->CreateCommittedResource( &Heap, D3D12_HEAP_FLAG_NONE, &Desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS( &Upload ) ) ) || FAILED( Upload->Map( 0, &NoRead, &Mapped ) ) )
+	D3D12_GPU_VIRTUAL_ADDRESS VertexGpuAddress = 0; // IAへ束縛する頂点バッファGPUアドレス。
+	if ( UploadArena && UploadTicket != 0 )
 	{
-		return false;
+		CDX12UploadArena::FAllocation Alloc = {}; // 永続マップ済みページからのサブ割り当て。
+		if ( !UploadArena->Allocate( UploadTicket, ByteWidth, 16, Alloc ) )
+		{
+			return false;
+		}
+		FMemory::Memcpy( Alloc.CpuAddress, Vertices, static_cast<usize>( ByteWidth ) );
+		VertexGpuAddress = Alloc.GpuAddress;
 	}
-	FMemory::Memcpy( Mapped, Vertices, static_cast<usize>( Desc.Width ) );
-	Upload->Unmap( 0, nullptr );
+	else
+	{
+		D3D12_HEAP_PROPERTIES Heap = {}; // CPUから一度書き、GPUが読む領域。
+		Heap.Type = D3D12_HEAP_TYPE_UPLOAD;
+		D3D12_RESOURCE_DESC Desc = {}; // 頂点を所有コピーするバッファ。
+		Desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+		Desc.Width = ByteWidth;
+		Desc.Height = 1;
+		Desc.DepthOrArraySize = 1;
+		Desc.MipLevels = 1;
+		Desc.SampleDesc.Count = 1;
+		Desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+		Microsoft::WRL::ComPtr<ID3D12Resource> Upload; // GPU待ちまで保持する領域。
+		void *Mapped = nullptr; // CPUが書く先。
+		const D3D12_RANGE NoRead = { 0, 0 }; // CPUは読み戻さない。
+		if ( FAILED( Device->CreateCommittedResource( &Heap, D3D12_HEAP_FLAG_NONE, &Desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS( &Upload ) ) ) || FAILED( Upload->Map( 0, &NoRead, &Mapped ) ) )
+		{
+			return false;
+		}
+		FMemory::Memcpy( Mapped, Vertices, static_cast<usize>( ByteWidth ) );
+		Upload->Unmap( 0, nullptr );
+		VertexGpuAddress = Upload->GetGPUVirtualAddress();
+		Uploads.Add( FUploadRecord{ MoveTemp( Upload ) } );
+	}
 	FPendingDraw Pending; // 検査済みのGPU参照を、この位置で命令列へ渡す。
 	Pending.TextureBinding = Texture ? Texture->Binding : 0;
 	Pending.SamplerIndex = static_cast<UINT>( State.AddressU ) | ( static_cast<UINT>( State.AddressV ) << 2 ) | ( State.bLinearFilter ? 16 : 0 );
 	Pending.Pipeline = Pipeline;
-	Pending.Vertices = { Upload->GetGPUVirtualAddress(), static_cast<UINT>( Desc.Width ), sizeof( FGeometryVertex ) };
+	Pending.Vertices = { VertexGpuAddress, static_cast<UINT>( ByteWidth ), sizeof( FGeometryVertex ) };
 	Pending.NumVertices = static_cast<UINT>( NumVertices );
 	Pending.Topology = State.Topology == EGeometryTopology::Points	? D3D_PRIMITIVE_TOPOLOGY_POINTLIST
 					   : State.Topology == EGeometryTopology::Lines ? D3D_PRIMITIVE_TOPOLOGY_LINELIST
 																	: D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	Uploads.Add( FUploadRecord{ MoveTemp( Upload ) } );
-	UploadBytes += Desc.Width;
+	UploadBytes += ByteWidth;
 	DrawPrepared( Pending );
 	return true;
 }

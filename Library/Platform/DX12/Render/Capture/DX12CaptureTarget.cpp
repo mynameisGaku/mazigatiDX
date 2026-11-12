@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DX12CaptureTarget.h"
+#include "Library/Platform/DX12/Resource/Upload/DX12UploadArena.h"
 #include <d3dcompiler.h>
 
 CDX12CaptureTarget::~CDX12CaptureTarget()
@@ -160,24 +161,40 @@ bool CDX12CaptureTarget::ClearColor( FColor32 Color )
 	return true;
 }
 
-bool CDX12CaptureTarget::SubmitAndRead( TArray<FColor32>& Out, uint32 TimeoutMs )
+bool CDX12CaptureTarget::SubmitAndRead( TArray<FColor32>& Out, uint32 TimeoutMs, CDX12UploadArena* UploadArena, uint64 UploadTicket )
 {
 	if ( !bRecording || bClosing || !bHealthy || TimeoutMs > 60000 )
 	{
+		if ( UploadArena && UploadTicket != 0 )
+		{
+			UploadArena->AbortTicket( UploadTicket );
+		}
 		return false;
 	}
 	bRecording = false;
 	if ( !Readback.RecordCopy( Commands.Get(), ColorTexture.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET ) || FAILED( Commands->Close() ) )
 	{
+		if ( UploadArena && UploadTicket != 0 )
+		{
+			UploadArena->AbortTicket( UploadTicket );
+		}
 		bHealthy = false;
 		return false;
 	}
 	ID3D12CommandList* Lists[] = { Commands.Get() }; // 通常描画と同じキューへ順番に提出する。
 	Queue->ExecuteCommandLists( 1, Lists );
+	if ( UploadArena && UploadTicket != 0 )
+	{
+		UploadArena->CommitTicket( UploadTicket );
+	}
 	if ( !Completion.Wait( TimeoutMs ) )
 	{
 		bHealthy = false;
 		return false;
+	}
+	if ( UploadArena )
+	{
+		UploadArena->CollectCompleted();
 	}
 	return Readback.ReadAfterGPUIdle( Out, false );
 }

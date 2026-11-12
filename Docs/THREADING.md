@@ -45,7 +45,7 @@ DX12ではCRenderCommandThread（Framework/Render/Thread）が既存CCommandThre
 |2Dの引数記録、オブジェクト状態の参照、UIの構築|ゲーム|生きたゲーム状態を別スレッドから読ませない|
 |2Dの頂点展開、文字画像化、3DのGPU記録、画像・バッファ・compute操作|描画|同じ命令列へ受付順に集約する|
 |主画面のImGui GPU記録とフレーム提出|描画|ゲーム側の全命令の後。UIデータはゲーム側が変更せず、CPU完了まで借用する|
-|Present、外部窓のOS処理と公式UI接続|ゲーム／窓|専用側を完了させ、GPU接続を排他的に借りる。終了後に専用側へ戻す|
+|Present・交換先resize、外部窓のOS処理と公式UI接続|ゲーム／窓|専用側を完了させ、GPU接続を排他的に借りる。終了後に専用側へ戻す|
 |撮影のCPU受信者への通知|ゲーム|GPU読み戻し自体を専用側で完了させてから通知する|
 |終了|両側の所有順|命令を全件実行→専用側で撮影・GPU完了・ゲーム描画を片付ける→識別解除と結合→窓側でUI・GPU・窓を解放する|
 
@@ -86,3 +86,6 @@ Source/SelfTestのRunThreadExecutionTests.ps1は、本物のCJobSubsystemを使�
 
 - [Epic: Parallel Rendering Overview](https://dev.epicgames.com/documentation/en-us/unreal-engine/parallel-rendering-overview-for-unreal-engine): APIに依存しない命令と実行側を分け、並列化してもGPU提出順を維持する考え方を参照しました。
 - [Microsoft: DXGI Best Practices — Multithreading](https://learn.microsoft.com/en-us/windows/win32/direct3darticles/dxgi-best-practices): DXGIの窓メッセージ処理との相互待機を避けるため、表示と外部窓を窓側へ残す判断に使いました。
+
+
+追加の転送ページとresize: 主画面・別パス・撮影はCDX12Deviceが所有するアリーナを共有し、記録予約とGPUフェンスでページの再利用を管理します。交換先resizeは、専用側のCPU命令完了後に窓のスレッドへ排他的に貸して実行します。GPU待機失敗では旧資源を回収せず、成功後に描画側で主画面の深度と完了済みの別パス参照を更新します。[実装と検査](R1_FRAME_UPLOAD_RESIZE.md)を参照してください。

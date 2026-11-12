@@ -9,6 +9,7 @@
 #include "Library/Platform/DX12/Resource/Buffer/DX12BufferStore.h"
 #include "Library/Platform/DX12/Pipeline/Graphics/DX12GraphicsPipelineStore.h"
 #include "Library/Platform/DX12/Resource/Timestamp/DX12TimestampStore.h"
+#include "Library/Platform/DX12/Resource/Upload/DX12UploadArena.h"
 #include "Library/Platform/DX12/Command/Compute/DX12ComputeQueue.h"
 #include "Library/Platform/DX12/Resource/Readback/DX12TextureReadback.h"
 #include "DX12QueueCompletion.h"
@@ -44,12 +45,18 @@ class CDX12Device
 	uint32 GetCurrentBackBufferIndex() const;
 	// 窓側で取得した番号へGPU記録を開始する。範囲外や表示未完了の前フレームがあればfalse。
 	bool BeginFrameForBuffer( uint32 Index );
-	// 描画を閉じてGPUへ提出する。窓を操作せず、表示は後でPresentFrameを呼ぶ。
-	bool SubmitFrame();
+	// 描画を閉じてGPUへ提出する。窓を操作せず、表示は後でPresentFrameを呼ぶ。アップロードチケットがあれば提出直後に完了管理へ渡す。
+	bool SubmitFrame( uint64 UploadTicket = 0 );
+	// 窓の所有スレッドがGPU接続を排他的に借り、GPU完了後にバックバッファ寸法・RTV・撮影資源を更新する。不正寸法・記録中・表示待ち・終了中はfalse。
+	bool Resize( int32 NewWidth, int32 NewHeight );
 	// 記録済みの主画面命令だけを提出して同じallocatorで記録を継続する。表示・消去・GPU待機は行わない。
 	// 呼出側は描画状態を各命令で再設定し、allocatorと借用資源をフレーム全体のGPU完了まで保持する。
 	// フレーム外・終了中・GPU失敗ではfalse。失敗後は通常のフレーム提出も成功しない。
 	bool SubmitFrameSegment();
+	// 描画記録が途中で失敗した際、先行セグメントの有無に応じてアップロードチケットを確定または破棄する。
+	void ResolvePendingUploadTicket( uint64 UploadTicket, bool bExecuted );
+	// 同じデバイスとDIRECTキューを共有するアップロードアリーナを貸す。未初期化・終了中はnullptr。
+	CDX12UploadArena *GetUploadArena();
 	// 提出済みのフレームを窓の所有スレッドで1回だけ表示する。GPU記録側と同時には呼ばない。
 	bool PresentFrame( bool bVSync );
 	// 要求された段階のコピー先だけを用意する。描画順への挿入は接続層が行う。
@@ -124,6 +131,7 @@ class CDX12Device
 	CDX12ComputePipelineStore ComputePipelines; // プログラムとその配置の所有者。
 	CDX12GraphicsPipelineStore GraphicsPipelines; // カスタムグラフィックスPSOとルート署名の所有者。
 	CDX12TimestampStore Timestamps; // DIRECTキュー上のGPUタイムスタンプQueryHeap・Fenceの所有者。
+	CDX12UploadArena UploadArena; // フレームと撮影パスで共有する永続マップ済みUPLOADページの所有者。
 	CDX12ComputeQueue ComputeQueue; // 上の所有者より先に借用参照を戻す提出先。
 	uint64 MainTimestampBatchId = 0; // 通常フレーム記録中コマンド列のタイムスタンプバッチ番号。
 	Microsoft::WRL::ComPtr<ID3D12Resource> Buffers[BufferCount]; // 交換用画面。
@@ -135,6 +143,7 @@ class CDX12Device
 	int32 Width = 0, Height = 0; // 交換用画面の固定描画寸法。
 	bool bGPUStopped = false; // 終了開始後に借用資源を返せる完了確認。
 	bool bRecording = false; // 記録中の印。
+	bool bSegmentSubmittedThisFrame = false; // 現フレームで中間セグメントをGPUへ提出済みか。
 	bool bInitialized = false; // 初期化が最後まで成功した印。
 	bool bClosing = false; // 終了開始後は新しい描画と窓口取得を禁止する。
 	bool bCaptureGame = false, bCaptureUI = false; // このフレームで要求された撮影段階。

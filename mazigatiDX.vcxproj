@@ -437,6 +437,7 @@
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureFormat.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureStore.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Timestamp\DX12TimestampStore.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Resource\Upload\DX12UploadArena.cpp" />
     <ClCompile Include="Library\Platform\DX12\Window\DX12PlatformSubsystem.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibBackendSubsystem.cpp" />
     <ClCompile Include="Library\Platform\DxLib\Asset\DxLibAssetBackendModelCollision.cpp" />
@@ -1259,6 +1260,7 @@
     <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureFormat.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureStore.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Timestamp\DX12TimestampStore.h" />
+    <ClInclude Include="Library\Platform\DX12\Resource\Upload\DX12UploadArena.h" />
     <ClInclude Include="Library\Platform\DX12\Window\DX12PlatformSubsystem.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibBackendSubsystem.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibInclude.h" />

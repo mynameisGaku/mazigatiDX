@@ -27,7 +27,7 @@ bool CDX12GameCapture::Begin( const FOffscreenCaptureDesc &Desc )
 	{
 		delete Renderer;
 		Renderer = new CDX12GameRenderer();
-		if ( !Renderer->Initialize( Target.GetDevice(), Desc.Width, Desc.Height, *Owner.GetTextureResources(), Text, Target.GetDepthTexture(), Target.GetDepthHeap(), Owner.GetBufferResources(), Owner.GetNativeQueue(), Owner.GetTextureResources(), Owner.GetGraphicsPipelineStore() ) )
+		if ( !Renderer->Initialize( Target.GetDevice(), Desc.Width, Desc.Height, *Owner.GetTextureResources(), Text, Target.GetDepthTexture(), Target.GetDepthHeap(), Owner.GetBufferResources(), Owner.GetNativeQueue(), Owner.GetTextureResources(), Owner.GetGraphicsPipelineStore(), Owner.GetUploadArena() ) )
 		{
 			bHealthy = false;
 			return false;
@@ -36,6 +36,7 @@ bool CDX12GameCapture::Begin( const FOffscreenCaptureDesc &Desc )
 	}
 	if ( !Renderer->BeginFrame( Target.GetCommands(), Target.GetColorView(), Owner.GetImageDescriptorHeap(), Desc.Scale ) )
 	{
+		Renderer->AbortUploadTicket();
 		bHealthy = false;
 		return false;
 	}
@@ -50,8 +51,18 @@ bool CDX12GameCapture::End( TArray<FColor32> &Out )
 		return false;
 	}
 	const bool bRendered = Renderer->EndFrame(); // GPUへ記録できなかった文字や図形も撮影失敗へ含める。
+	const uint64 UploadTicket = Renderer->TakeUploadTicket(); // 提出成功時だけアリーナへ完了フェンスを関連づける。
 	bActive = false;
-	if ( !bRendered || !Target.SubmitAndRead( Out ) )
+	if ( !bRendered )
+	{
+		if ( CDX12UploadArena *Arena = Owner.GetUploadArena(); Arena && UploadTicket != 0 )
+		{
+			Arena->AbortTicket( UploadTicket );
+		}
+		bHealthy = false;
+		return false;
+	}
+	if ( !Target.SubmitAndRead( Out, 10000, Owner.GetUploadArena(), UploadTicket ) )
 	{
 		bHealthy = false;
 		return false;

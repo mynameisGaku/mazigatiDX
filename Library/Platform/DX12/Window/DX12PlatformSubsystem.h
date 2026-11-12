@@ -158,6 +158,8 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
 	void GetWheel( float32 &X, float32 &Y ) const override;
 	// OSのホイール通知を貯める。ウィンドウ手続きからのみ呼ぶ。
 	void AddWheel( float32 X, float32 Y );
+	// OSのWM_SIZE通知を受けて最小化状態と次フレームのサイズ追従を記録する。ウィンドウ手続きからのみ呼ぶ。
+	void HandleWindowResize( uint32 SizeType, int32 ClientWidth, int32 ClientHeight );
 
   private:
 	// 記録済みの2Dを同じ列へ渡し、借用値を使う処理が終わるまで待つ。初期化・解放時は所有スレッドで直接実行する。
@@ -184,6 +186,10 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
 	bool bWindowRenderPhase = false; // Presentと外部窓の間だけ、窓側がGPU接続を排他的に借りる。
 	bool bInFrame = false; // 描画記録中の印。
 	bool bExit = false; // 終了要求。
+	bool bMinimized = false; // 最小化中の0x0リサイズを避けて既存バックバッファを維持する印。
+	bool bPendingResize = false; // Resizable有効時に次フレーム冒頭でSwapChainと深度を再構築する印。
+	int32 PendingResizeWidth = 0; // WM_SIZEで受け取った保留幅。
+	int32 PendingResizeHeight = 0; // WM_SIZEで受け取った保留高さ。
 	int32 MaxFrames = 0; // 検査用のフレーム上限。0なら制限なし。
 	int64 LastTick = 0; // 前フレームの時刻。
 	float32 DeltaTime = 0; // 今フレームの秒数。
