@@ -261,6 +261,28 @@ bool CDX12Device::SubmitFrame()
 	return true;
 }
 
+bool CDX12Device::SubmitFrameSegment()
+{
+	if ( !IsRecording() )
+	{
+		return false;
+	}
+	bRecording = false;
+	if ( FAILED( Commands->Close() ) )
+	{
+		return false;
+	}
+	ID3D12CommandList *Lists[] = { Commands.Get() }; // 後続の別パスより前に、ここまでの描画を確定する。
+	Queue->ExecuteCommandLists( 1, Lists );
+	// allocatorは次のフレーム冒頭でGPU完了を待つまでResetしない。色と深度の内容も保つ。
+	if ( FAILED( Device->GetDeviceRemovedReason() ) || FAILED( Commands->Reset( Allocator.Get(), nullptr ) ) )
+	{
+		return false;
+	}
+	bRecording = true;
+	return true;
+}
+
 bool CDX12Device::PresentFrame( bool bVSync )
 {
 	if ( !bInitialized || bClosing || bRecording || !bPresentPending )
@@ -334,7 +356,7 @@ bool CDX12Device::IsDeviceRemoved() const { return Device && FAILED( Device->Get
 
 bool CDX12Device::IsRecording() const { return bInitialized && !bClosing && bRecording; }
 
-IRenderTextureResources *CDX12Device::GetTextureResources()
+CDX12TextureStore *CDX12Device::GetTextureResources()
 {
 	return bInitialized && !bClosing ? &Textures : nullptr;
 }

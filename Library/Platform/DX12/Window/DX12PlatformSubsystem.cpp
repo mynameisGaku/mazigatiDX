@@ -8,6 +8,7 @@
 #include "Library/Platform/DX12/Render/Game/DX12GameRenderer.h"
 #include "Library/Platform/DX12/Render/Game/DX12GameCapture.h"
 #include "Library/Platform/DX12/Render/Game/DX12GameSurface.h"
+#include "Library/Platform/DX12/Render/Target/DX12RenderTargetPass.h"
 #include "Library/Platform/BackendSelection.h"
 #include "Library/Platform/System/BackendSupport.h"
 #include "Library/Platform/System/CommandLine.h"
@@ -147,7 +148,13 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection &Collection )
 	}
 	const EWindowMode InitialMode = Settings.WindowMode; // 窓の作成後に起動モードへ移す。
 	CaptureRenderer = new CDX12GameCapture( *Device, GameText );
-	NativeSurface = new CDX12GameSurface( *Device, *GameRenderer, *CaptureRenderer );
+	TargetPassRenderer = new CDX12RenderTargetPass();
+	if ( !TargetPassRenderer->Initialize( Device->GetNativeDevice(), Device->GetNativeQueue(), *Device->GetTextureResources(), GameText, Device->GetImageDescriptorHeap(), Device->GetBufferResources() ) )
+	{
+		Deinitialize();
+		return;
+	}
+	NativeSurface = new CDX12GameSurface( *Device, *GameRenderer, *CaptureRenderer, TargetPassRenderer );
 	RenderCommands = new CRenderCommandThread();
 	if ( !RenderCommands->IsReady() )
 	{
@@ -182,6 +189,8 @@ void CDX12PlatformSubsystem::Deinitialize()
 	{
 		delete NativeSurface;
 		NativeSurface = nullptr;
+		delete TargetPassRenderer;
+		TargetPassRenderer = nullptr;
 		delete CaptureRenderer;
 		CaptureRenderer = nullptr;
 		while ( Device && !Device->PrepareShutdown( 1000 ) )
@@ -251,7 +260,13 @@ bool CDX12PlatformSubsystem::BeginFrame()
 	const uint32 BackBuffer = Device->GetCurrentBackBufferIndex(); // DXGIへの照会は窓の所有側で行う。
 	bool bStarted = false; // CPU側の区切りが戻るまで結果を借用する。
 	auto Start = [this, BackBuffer, &bStarted]()
-	{ bStarted = Device->BeginFrameForBuffer( BackBuffer ) && GameRenderer->BeginFrame( Device->GetFrameCommands(), Device->GetFrameColorView(), Device->GetImageDescriptorHeap() ) && ( !ImGuiFrameRenderer || ImGuiFrameRenderer->BeginFrame() ); };
+	{
+		bStarted = Device->BeginFrameForBuffer( BackBuffer ) && GameRenderer->BeginFrame( Device->GetFrameCommands(), Device->GetFrameColorView(), Device->GetImageDescriptorHeap() ) && ( !ImGuiFrameRenderer || ImGuiFrameRenderer->BeginFrame() );
+		if ( bStarted && TargetPassRenderer )
+		{
+			TargetPassRenderer->CollectAfterGPUIdle();
+		}
+	};
 	if ( !ExecuteRender( MoveTemp( Start ) ) || !bStarted || !ThreadedSurface->BeginFrame( Settings.Width, Settings.Height ) )
 	{
 		LOG( LogDX12, Error, "DX12 frame could not start (device lost or GPU wait failed)" );
@@ -442,6 +457,18 @@ bool CDX12PlatformSubsystem::EndOffscreenCapture( TArray<FColor32> &Out )
 	return bInFrame && ThreadedSurface && ThreadedSurface->EndOffscreenCapture( Out );
 }
 
+bool CDX12PlatformSubsystem::BeginRenderTargetPass( const FRenderTargetPassDesc &Desc )
+{
+	GAME_THREAD_ONLY( false );
+	return bInFrame && ThreadedSurface && ThreadedSurface->BeginRenderTargetPass( Desc );
+}
+
+bool CDX12PlatformSubsystem::EndRenderTargetPass()
+{
+	GAME_THREAD_ONLY( false );
+	return bInFrame && ThreadedSurface && ThreadedSurface->EndRenderTargetPass();
+}
+
 void CDX12PlatformSubsystem::RecordClear( FColor32 Color )
 {
 	GAME_THREAD_ONLY();
@@ -596,6 +623,45 @@ FTextureResourceHandle CDX12PlatformSubsystem::CreateComputeTextureRGBA8( int32 
 	return ExecuteRender( MoveTemp( Work ) ) ? Result : FTextureResourceHandle();
 }
 
+bool CDX12PlatformSubsystem::GetRenderTargetCapabilities( FRenderTargetCapabilities &Out ) const
+{
+	GAME_THREAD_ONLY( false );
+	if ( !bInitialized || !Device )
+	{
+		return false;
+	}
+	bool bResult = false; // 出力は同期実行が完了するまで呼び出し元が保持する。
+	auto Work = [&]()
+	{ bResult = Device->GetTextureResources()->GetRenderTargetCapabilities( Out ); };
+	return ExecuteRender( MoveTemp( Work ) ) && bResult;
+}
+
+FTextureResourceHandle CDX12PlatformSubsystem::CreateRenderTargetRGBA8( int32 Width, int32 Height, FColor32 ClearColor )
+{
+	GAME_THREAD_ONLY( FTextureResourceHandle() );
+	if ( !bInitialized || !Device )
+	{
+		return {};
+	}
+	FTextureResourceHandle Result; // 描画所有側で初期消去とSRV登録を完了させる。
+	auto Work = [&]()
+	{ Result = Device->GetTextureResources()->CreateRenderTargetRGBA8( Width, Height, ClearColor ); };
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : FTextureResourceHandle();
+}
+
+FTextureResourceHandle CDX12PlatformSubsystem::CreateDepthTextureD32( int32 Width, int32 Height, float32 ClearDepth )
+{
+	GAME_THREAD_ONLY( FTextureResourceHandle() );
+	if ( !bInitialized || !Device )
+	{
+		return {};
+	}
+	FTextureResourceHandle Result; // 描画所有側で初期深度消去と登録を完了させる。
+	auto Work = [&]()
+	{ Result = Device->GetTextureResources()->CreateDepthTextureD32( Width, Height, ClearDepth ); };
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : FTextureResourceHandle();
+}
+
 bool CDX12PlatformSubsystem::UpdateTextureRGBA8( FTextureResourceHandle Texture, int32 Width, int32 Height, const FColor32 *Pixels )
 {
 	GAME_THREAD_ONLY( false );
@@ -739,7 +805,7 @@ FComputeSubmission CDX12PlatformSubsystem::SubmitCompute( TArrayView<const FComp
 	// 呼出し元は同期処理の完了まで、入力と出力の寿命を保持する。
 	FComputeSubmission Result = FComputeSubmission();
 	auto Work = [&]()
-	{ Result = Device->GetComputeQueue()->SubmitCompute( Dispatches ); };
+	{ if ( NativeSurface && NativeSurface->SubmitPendingMainCommands() ) { Result = Device->GetComputeQueue()->SubmitCompute( Dispatches ); } };
 	return ExecuteRender( MoveTemp( Work ) ) ? Result : FComputeSubmission();
 }
 

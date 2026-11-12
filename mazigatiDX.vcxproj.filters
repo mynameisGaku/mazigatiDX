@@ -1087,6 +1087,9 @@
     <ClCompile Include="Library\Platform\DX12\Render\Geometry\DX12GeometryRenderer.cpp">
       <Filter>Library\Platform\DX12\Render\Geometry</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\Target\DX12RenderTargetPass.cpp">
+      <Filter>Library\Platform\DX12\Render\Target</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Resource\Buffer\DX12BufferStore.cpp">
       <Filter>Library\Platform\DX12\Resource\Buffer</Filter>
     </ClCompile>
@@ -2097,6 +2100,9 @@
     <ClInclude Include="Library\Core\Render\ComputeTextureCapabilities.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Render\ComputeTextureFormat.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Render\ComputeTextureSlot.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
@@ -2134,6 +2140,12 @@
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Render\RenderResourceSerial.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\RenderTargetCapabilities.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\RenderTargetPassDesc.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Render\StaticModelDrawView.h">
@@ -3479,6 +3491,9 @@
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Render\Geometry\DX12GeometryRenderer.h">
       <Filter>Library\Platform\DX12\Render\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\Target\DX12RenderTargetPass.h">
+      <Filter>Library\Platform\DX12\Render\Target</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Resource\Buffer\DX12BufferBinding.h">
       <Filter>Library\Platform\DX12\Resource\Buffer</Filter>
@@ -5521,6 +5536,9 @@
     </Filter>
     <Filter Include="Library\Platform\DX12\Render\Geometry">
       <UniqueIdentifier>{66992AD4-2DFF-89A2-82FE-C87488EB6B27}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Render\Target">
+      <UniqueIdentifier>{D6A0E974-8D51-4A10-B368-54CA17E19C08}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Platform\DX12\Resource">
       <UniqueIdentifier>{9A7691AC-C7B9-2910-03C0-8AEA5D25BC91}</UniqueIdentifier>

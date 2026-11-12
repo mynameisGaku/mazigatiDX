@@ -36,33 +36,35 @@ DX12はゲームとUIが使うグラフィックス実装です。GPUデバイ�
 - 描画命令ではconst FRenderCommandContext&のCanvas／Geometryだけを実行中に借ります。窓・UI文脈・ゲームの可変状態へ触れません。フレーム外は両方nullptrです。
 - 複数フレームの同時進行、複数native command listの並列記録、DXC／SM6は未対応です。
 
-## 現在の作業: R1の画像能力照会とcompute用途
+## 現在の作業: R1のオフスクリーン描画先資源と読み取れる深度・compute連携
 
-選定理由: R1は能力照会・画像の読み書き・barrier・寿命の確認が残り、R2の共有メッシュ／材質へ必要な基礎です。既存のbuffer→compute→描画を保ち、RGBA8画像のcompute読取／読書きと描画への受渡しを追加します。画像所有・プログラム作成・提出を別々の既存所有者へ接続し、新しいsubsystemは増やしません。詳細は [compute画像の記録](R1_COMPUTE_TEXTURE_RESOURCES.md) を参照してください。
+選定理由: R1のcompute画像に続き、オフスクリーン色描画先（RGBA8 RTV＋SRV）と読み取れる深度（D32 DSV＋R32_FLOAT SRV）の能力照会・資源所有、共通窓口からのオフスクリーン描画と同一 `DIRECT` キューへの実GPU提出、色とスカラー深度を同時に読むcompute、通常描画と撮影への受け渡しを完結させ、R2の共有メッシュ／材質・ForwardおよびR3のフレームグラフ・Deferredの基礎を整えます。新しい資源番号体系や別インターフェースは増やさず、既存の `IRenderTextureResources`・`IRenderSurface`・`CDX12TextureStore`・`CDX12ComputePipelineStore`・`CDX12ComputeQueue` を拡張して接続しました。詳細は [オフスクリーン描画先と深度の記録](R1_RENDER_TARGET_RESOURCES.md) および先行の [compute画像の記録](R1_COMPUTE_TEXTURE_RESOURCES.md) を参照してください。
 
 |項目|現在の状態|
 |---|---|
-|共通の用途・配置・能力値|`EComputeTextureAccess`、`FComputeTextureSlot`、`FComputeTextureCapabilities` を追加・実装済み|
-|既存窓口の追加操作|`IRenderTextureResources` へ能力照会とcompute画像作成、`IComputePipelineResources` へ画像を含む作成を追加・実装済み。既定実装は未対応で、他の提供元を壊さない|
-|dispatchの画像|既存の5要素aggregateを保つため `FComputeDispatch::Textures` を末尾へ追加・実装済み|
-|GPU実体と形式照会|`FDX12TextureBinding` と `NDX12TextureFormat` を実装し、`CDX12TextureStore`・`CDX12ComputePipelineStore`・`CDX12ComputeQueue`・`CDX12Device`・`CDX12PlatformSubsystem` へ接続済み|
-|検査と互換台帳|Debug／Release各4プロジェクトのビルド（警告・エラー0件）、`RunComputeTextureTests.ps1 -Platform`（CPU 27条件・既定GPU 67条件・WARP 67条件・通常アプリ6起動）、および `RunAllChecks.ps1 -SkipBuild -Quick` 全32項目を確認済み（`Saved/ArgonCoordination/run_all_checks.log`）。互換台帳は464項目（Implemented 178、Verified 0）。検査側の公開コミットは `45c2635ce7fd854eec7de99e44f68ad0f69b1451`（tree `e1df9788f48c9abcf37eb79024f9f5a79daf5a43`、検証済みローカル `5a609de7307934626f9eb37e66eabd0016ca4e4b` と同一tree）|
+|共通の形式・能力・パス値|`EComputeTextureFormat`（`RGBA8`、`R32Float`）、`FComputeTextureCapabilities::bR32FloatRead`、`FComputeTextureSlot::Format`、`FRenderTargetCapabilities`、`FRenderTargetPassDesc` を追加・実装済み|
+|既存窓口の追加操作|`IRenderTextureResources` へ描画先能力照会・RGBA8描画先作成・D32深度作成、`IRenderSurface` へ `BeginRenderTargetPass`／`EndRenderTargetPass` を追加・実装済み。既定実装は未対応で、他の提供元を壊さない|
+|GPU実体とオフスクリーン提出|`CDX12RenderTargetPass` を追加し、`CDX12TextureStore`（`R32_TYPELESS`／`D32_FLOAT`／`R32_FLOAT`、パス中ハザード拒否）・`CDX12GameRenderer`・`CDX12Device`・`CDX12GameSurface`・`CThreadedRenderSurface`・`CDX12PlatformSubsystem` へ接続済み。`EndRenderTargetPass` で同一 `DIRECT` キューへ実GPU提出を行う|
+|スカラー深度compute|`CDX12ComputePipelineStore` で `Texture2D<float>`（1成分）と `Texture2D<float4>`（4成分）をreflectionで識別し、`CDX12ComputeQueue` で `DXGI_FORMAT_R32_FLOAT` のSRV束縛を実装済み|
+|検査と互換台帳|Debug／Release各4プロジェクトのビルド（警告・エラー0件）、`RunRenderTargetTests.ps1 -Platform`、および `RunAllChecks.ps1 -SkipBuild -Quick` 全34項目を検証。互換台帳は469項目（Implemented 183、Verified 0）|
 
 実装・確認した接続は以下です。
 
-1. `CDX12TextureStore` へ用途と実体の取得を追加し、`UpdateTextureRGBA8` 後も読み書き用途を保つ。資源番号を既存 `RenderResourceSerial` から発行し、別の所有先の番号を拒否する。
-2. 転送の完了確認は既存 `CDX12QueueCompletion` を再利用する。待機失敗でも提出済み実体を手放さない。
-3. pipelineのreflectionでbuffer／texture共通のt／u重複、2D・RGBA8に合う浮動小数4要素、space・個数・宣言を検査する。画像だけのプログラムも許可する。
-4. compute提出へ画像の実体参照と提出専用SRV／UAVを持たせる。通常の読取状態は `PIXEL_SHADER_RESOURCE | NON_PIXEL_SHADER_RESOURCE`、読書き時はUAVへ遷移し、完了位置で元へ戻す。同じdispatch内の実体重複を拒否する。
-5. 既存のDX12公開窓口から専用スレッドへ接続し、提出後の画像更新・登録解除と、compute結果の通常画面／撮影描画を確認した。
-6. 正常・不正入力・能力未対応・別所有先・型の不一致・全命令の一括拒否を、CPUの参照実装と既定GPU／WARPで検査し、ロードマップと互換台帳を更新して全32項目の回帰を通した。
+1. `CDX12TextureStore` で `CreateRenderTargetRGBA8`（RTV＋SRV）と `CreateDepthTextureD32`（`R32_TYPELESS` 資源、`D32_FLOAT` DSV、`R32_FLOAT` SRV）を所有し、作成時に初期クリア値でクリアして定常SRV状態へ遷移する。深度に対する `GetTextureResourceView`／`UpdateTextureRGBA8`／UAV要求を拒否する。
+2. `CDX12RenderTargetPass` でオフスクリーン用のRTV／DSV記述子とパス状態を管理し、`BeginRenderTargetPass` で描画先と深度の所有・種別・寸法一致・パス中ハザード（自己参照描画・更新・compute競合・二重開始・撮影中開始）を検査する。
+3. `EndRenderTargetPass` で描画バッチを記録してSRV定常状態へ戻した後、コマンドリストを閉じて主画面・computeと共有する同じ `DIRECT` キューへ直ちに `ExecuteCommandLists` で提出し、完了まで提出記録へ参照を保持して、後続の `SubmitCompute` が描画結果を確実に読めるようにする。
+4. `CDX12ComputePipelineStore` と `CDX12ComputeQueue` で `EComputeTextureFormat::R32Float`（`Texture2D<float>` 読み取り専用）を検査・束縛し、色（`Texture2D<float4>`）とスカラー深度の同時読み取り・可視化画像生成を通す。
+5. 描画した色ターゲットの通常画面／撮影への直接描画、深度のcompute可視化経由の描画、提出直後の `ReleaseTexture` と別寸法再作成をCPU参照実装・既定GPU・WARP・通常アプリ6起動で確認した。
+
+検査側の対応コミット: `633d2edc7f25ebe181c7f0e78031454c2dafd9e4`（ローカル。公開はCodex担当）。
 
 参照した公式文書（2026-11-11確認）:
 
-- [Typed UAV loads](https://learn.microsoft.com/en-us/windows/win32/direct3d12/typed-unordered-access-view-loads): 追加形式群と個別形式の能力を照会する。現在の公式記載では、UNORM UAVにもfloatの要素型を利用できる。古い「unorm修飾必須」の仮定を引き継がず、float4とunorm float4を実GPUで確かめる。
-- [形式のUAV能力](https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_format_support2): typed loadとstoreの両方を照合する。
-- [資源状態の同期](https://learn.microsoft.com/en-us/windows/win32/direct3d12/using-resource-barriers-to-synchronize-resource-states-in-direct3d-12): 同じキューの前後で用途と資源の寿命を管理する。
-- [reflectionの入力flags](https://learn.microsoft.com/en-us/windows/win32/api/d3dcommon/ne-d3dcommon-d3d_shader_input_flags): 画像の要素数も検査する。
+- [Typed UAV loads](https://learn.microsoft.com/en-us/windows/win32/direct3d12/typed-unordered-access-view-loads): 追加形式群と個別形式の能力を照会する。
+- [形式のサポート1](https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_format_support1) / [サポート2](https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_format_support2): RTV・DSV・SRV sample／load・typed UAV load／storeの能力を照合する。
+- [DXGI_FORMAT](https://learn.microsoft.com/en-us/windows/win32/api/dxgiformat/ne-dxgiformat-dxgi_format): 同一深度資源でDSVとSRVを共存させるための `DXGI_FORMAT_R32_TYPELESS`・`DXGI_FORMAT_D32_FLOAT`・`DXGI_FORMAT_R32_FLOAT` の対応。
+- [資源状態の同期](https://learn.microsoft.com/en-us/windows/win32/direct3d12/using-resource-barriers-to-synchronize-resource-states-in-direct3d-12) / [コマンドリストの実行と同期](https://learn.microsoft.com/en-us/windows/win32/direct3d12/executing-command-lists): 同一 `DIRECT` キューでの描画先遷移・提出順序と資源寿命を管理する。
+- [reflectionの入力flags](https://learn.microsoft.com/en-us/windows/win32/api/d3dcommon/ne-d3dcommon-d3d_shader_input_flags): `D3D_SIF_TEXTURE_COMPONENTS` により `Texture2D<float>` と `Texture2D<float4>` の成分数を検査する。
 
 ## 検査、書式、公開
 
@@ -73,3 +75,17 @@ C++とPowerShellはUTF-8 BOM＋CRLF、vcxproj／filtersはBOMなしCRLFです。
 MSVC v145では、型の変更後のRelease増分リンクでLNK1103、Debugの生成物でLNK1236を観測しました。前回はソースの最適化設定を変えず、検証側の該当obj、またはproject／Samples／Editorのx64/Releaseのiobj・ipdbをSavedへ退避して再生成すると通りました。再発時も対象が検証側の配下であることを絶対パスで確認し、必要な生成物だけを扱います。ユーザーの作業コピーを再帰削除しません。
 
 commitはfeat:／fix:／refactor:／other:に日本語の説明を続けます。検査を先に対応する専用ブランチへ公開し、その実コミットを本体の文書へ記録します。本体はbackend-dx12へ履歴を前進させて公開し、GitHub上のtreeと検証したtreeが一致すること、ユーザーの既存変更が保持されることを確認します。
+
+
+## Goalによる継続と現在の担当（2026-11-11）
+
+Docs/ROADMAP.mdのR1完了をGoalとして継続中です。ArgonはAIクレジット不足で停止したため、Codexが未コミットの描画先・深度対応を引き継いでレビューしています。Argonの状態通知は停止前のworkingのままなので、それを現在の進行と解釈しません。現在の所有と作業記録はSaved/ArgonCoordination/owner.json、codex-status.jsonを確認します。同じ実装ファイルを別担当で並行編集しません。
+
+公開基点は本体a4fca5021e83387c132564fe29c3f8ea841dff9a、検査45c2635ce7fd854eec7de99e44f68ad0f69b1451です。未公開の単一描画先・読み取れる深度の詳細とレビュー残件はR1_RENDER_TARGET_RESOURCES.mdへ記録します。MRT、timestamp、フレーム領域、resize・終了・GPU失敗とgraphics/computeの包括的検査もR1完了条件に照合して進めます。
+
+
+### Codexレビューで追加した回帰確認
+
+撮影の検査用接続を製品の描画先パスから除去し、検査側の組み合わせへ移しました。省略した内部深度の初回Loadと保持、最初のパスが失敗した場合の未提出消去値も検査します。通常画面へ既に記録した画像の読み取りが、後続の描画先更新・compute書き込みより後に実行される不具合を画素で再現し、Deviceの主画面命令を同じDIRECTキューへ区切って提出する接続へ修正しました。区切りではallocator・色・深度・クリップを初期化せず、追加のCPU側GPU待機も行いません。ゲーム用接続では描画先パス・撮影を閉じてからcomputeを提出します。
+
+Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.jsonに最新結果を残します。全34項目の回帰と公開前の保全確認が終わるまでは、この節だけで公開済みとは扱いません。

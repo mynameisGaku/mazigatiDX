@@ -2,6 +2,7 @@
 #pragma once
 #include "Library/Math/Color.h"
 #include "Library/Core/Render/OffscreenCaptureDesc.h"
+#include "Library/Core/Render/RenderTargetPassDesc.h"
 #include "Library/Core/Collection/Array.h"
 class IRenderCanvas2D;
 class IRenderGeometry3D;
@@ -24,4 +25,8 @@ public:
 	virtual bool BeginOffscreenCapture( const FOffscreenCaptureDesc& ) { return false; }
 	// 撮影用の画素を読み、通常の描画先へ戻す。失敗時はOutを保つ。
 	virtual bool EndOffscreenCapture( TArray<FColor32>& ) { return false; }
+	// 所有済みの描画先資源へ描くパスを開始する。未対応・二重開始・不正な設定はfalse。
+	virtual bool BeginRenderTargetPass( const FRenderTargetPassDesc& ) { return false; }
+	// 描画先パスの命令を同じGPUキューへ提出し、通常の描画先へ戻す。失敗時はfalse。
+	virtual bool EndRenderTargetPass() { return false; }
 };

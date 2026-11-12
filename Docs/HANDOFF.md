@@ -166,3 +166,7 @@ GeometryRenderer内のシェーダー・root signature・PSOの作成とキャ�
 ## compute画像の能力照会と読み書き・描画連携（2026-11-11追記）
 
 RGBA8画像のcompute能力照会（`GetComputeTextureCapabilities`）、UAV対応画像の作成（`CreateComputeTextureRGBA8`）、画像slot付きcomputeプログラム（`CreateComputePipelineWithTextures`）、compute提出での画像SRV／UAV束縛と状態遷移、2D／3D描画への直接受け渡しを接続しました。提出後の `ReleaseTexture` や `UpdateTextureRGBA8` に対する版保持、CPU参照／既定GPU／WARPおよび通常アプリ6起動の検査結果は [compute画像の記録](R1_COMPUTE_TEXTURE_RESOURCES.md) を参照してください。互換台帳は464項目（API 320、Draw 100、Sample 33、Editor 11；Implemented 178、Verified 0）です。
+
+## オフスクリーン描画先資源と読み取れる深度・compute連携（2026-11-11追記）
+
+単一のRGBA8色描画先（`CreateRenderTargetRGBA8`）と読み取れるD32深度（`CreateDepthTextureD32`）の能力照会・作成、共通窓口（`BeginRenderTargetPass`／`EndRenderTargetPass`）によるオフスクリーン描画と同一 `DIRECT` キューへの実GPU提出、色（`Texture2D<float4>`）とスカラー深度（`Texture2D<float>`、`EComputeTextureFormat::R32Float`）を同時に読むcompute、ならびに通常画面・撮影への受け渡しを接続しました。詳細は [オフスクリーン描画先と深度の記録](R1_RENDER_TARGET_RESOURCES.md) を参照してください。互換台帳は469項目（API 325、Draw 100、Sample 33、Editor 11；Implemented 183、Verified 0）です。

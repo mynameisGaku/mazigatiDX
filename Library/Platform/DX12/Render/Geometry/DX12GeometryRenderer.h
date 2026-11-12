@@ -21,10 +21,16 @@ class CDX12GeometryRenderer : public IRenderGeometry3D
 	// GPUと寸法を固定する。撮影時は指定した深度を共有し、通常時は専用の深度を作る。
 	// BuffersとQueueは同時に指定し、同じGPU・キューを使用する。Buffersは本描画器より長く生存させる。不一致はfalse。
 	bool Initialize( ID3D12Device *InDevice, int32 InWidth, int32 InHeight, ID3D12Resource *InDepth = nullptr, ID3D12DescriptorHeap *InDepthHeap = nullptr, CDX12BufferStore *InBuffers = nullptr, ID3D12CommandQueue *InQueue = nullptr );
-	// GPU待ち後だけ呼ぶ。前フレームの頂点を解放して深度を消す。
-	bool BeginFrame( ID3D12GraphicsCommandList *InCommands, D3D12_CPU_DESCRIPTOR_HANDLE InRtv, ID3D12DescriptorHeap *InSrvHeap = nullptr, const FRenderClipRect *InClip = nullptr );
+	// フレーム外で描画先の寸法と深度を差し替える。PSOとsamplerは再利用する。
+	bool BindTarget( int32 InWidth, int32 InHeight, ID3D12Resource *InDepth, ID3D12DescriptorHeap *InDepthHeap );
+	// GPU待ち後だけ呼ぶ。前フレームの頂点を解放し、指定時は深度を消す。
+	bool BeginFrame( ID3D12GraphicsCommandList *InCommands, D3D12_CPU_DESCRIPTOR_HANDLE InRtv, ID3D12DescriptorHeap *InSrvHeap = nullptr, const FRenderClipRect *InClip = nullptr, bool bInClearDepth = true, float32 InClearDepth = 1.0f, uint64 InForbiddenTextureBinding = 0 );
 	// 記録先を外す。GPU上で使用中の頂点は保持する。
 	void EndFrame();
+	// 書き込み先を入力へ束縛する競合が起きなかったか。
+	bool DidFrameSucceed() const;
+	// フレーム外で、記録した頂点とGPUバッファ参照を提出レコードへ移動する。
+	void MoveFrameResources( TArray<FDX12BufferBinding> &OutBuffers, TArray<Microsoft::WRL::ComPtr<ID3D12Resource>> &OutUploads );
 	// 論理幅。
 	int32 GetWidth() const override;
 	// 論理高さ。
@@ -37,6 +43,8 @@ class CDX12GeometryRenderer : public IRenderGeometry3D
 	bool DrawBufferGeometry( const FGeometryBufferDraw &Draw, const FGeometryDrawState &State, const FTextureDrawView *Texture = nullptr ) override;
 	// 現在の命令位置で描画先全体の深度を消す。
 	void ClearDepth() override;
+	// 現在の命令位置で描画先全体の深度を指定値（0.0〜1.0）へ消す。
+	bool ClearDepthValue( float32 DepthValue );
 	// クリップと深度を変えず、全画素の色だけを置き換える。不正な状態・資源不足はfalse。
 	bool ClearColor( FColor32 Color );
 
@@ -80,6 +88,8 @@ class CDX12GeometryRenderer : public IRenderGeometry3D
 	ID3D12GraphicsCommandList *Commands = nullptr; // 今フレームだけ借用する記録先。
 	const FRenderClipRect *Clip = nullptr; // 呼出位置の切り取り範囲。フレーム中だけ借用する。
 	D3D12_CPU_DESCRIPTOR_HANDLE Rtv = {}; // 今フレームだけ借用する画面。
+	uint64 ForbiddenTextureBinding = 0; // 同じパスの書き込み先SRVを同時に入力へ束縛させない番号。
+	mutable bool bHazardRejected = false; // 書き込み先と入力の競合を検出した印。
 	uint64 UploadBytes = 0; // 今フレームに保持した頂点のバイト数。
 	int32 Width = 0, Height = 0; // 固定の論理解像度。
 };

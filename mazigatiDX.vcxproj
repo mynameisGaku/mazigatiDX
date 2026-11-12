@@ -429,6 +429,7 @@
     <ClCompile Include="Library\Platform\DX12\Render\Game\DX12GameRenderer.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\Game\DX12GameSurface.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\Geometry\DX12GeometryRenderer.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Render\Target\DX12RenderTargetPass.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Buffer\DX12BufferStore.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Descriptor\DX12DescriptorPool.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Readback\DX12TextureReadback.cpp" />
@@ -767,6 +768,7 @@
     <ClInclude Include="Library\Core\Render\ComputeSubmission.h" />
     <ClInclude Include="Library\Core\Render\ComputeTextureAccess.h" />
     <ClInclude Include="Library\Core\Render\ComputeTextureCapabilities.h" />
+    <ClInclude Include="Library\Core\Render\ComputeTextureFormat.h" />
     <ClInclude Include="Library\Core\Render\ComputeTextureSlot.h" />
     <ClInclude Include="Library\Core\Render\DrawSpan.h" />
     <ClInclude Include="Library\Core\Render\DrawVertex3D.h" />
@@ -780,6 +782,8 @@
     <ClInclude Include="Library\Core\Render\RenderClipRect.h" />
     <ClInclude Include="Library\Core\Render\RenderCommandContext.h" />
     <ClInclude Include="Library\Core\Render\RenderResourceSerial.h" />
+    <ClInclude Include="Library\Core\Render\RenderTargetCapabilities.h" />
+    <ClInclude Include="Library\Core\Render\RenderTargetPassDesc.h" />
     <ClInclude Include="Library\Core\Render\StaticModelDrawView.h" />
     <ClInclude Include="Library\Core\Render\TextureDrawView.h" />
     <ClInclude Include="Library\Core\Render\TextureResourceHandle.h" />
@@ -1228,6 +1232,7 @@
     <ClInclude Include="Library\Platform\DX12\Render\Game\DX12GameRenderer.h" />
     <ClInclude Include="Library\Platform\DX12\Render\Game\DX12GameSurface.h" />
     <ClInclude Include="Library\Platform\DX12\Render\Geometry\DX12GeometryRenderer.h" />
+    <ClInclude Include="Library\Platform\DX12\Render\Target\DX12RenderTargetPass.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Buffer\DX12BufferBinding.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Buffer\DX12BufferStore.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Descriptor\DX12DescriptorPool.h" />

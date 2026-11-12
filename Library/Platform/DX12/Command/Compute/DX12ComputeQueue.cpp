@@ -129,8 +129,8 @@ bool CDX12ComputeQueue::Record( TArrayView<const FComputeDispatch> Dispatches, F
 					return false;
 				}
 			}
-			FDX12TextureBinding Texture; // 用途と版を確定してから命令全体へ保持する。
-			if ( !Textures->AcquireComputeTexture( Dispatch.Textures[Index], Copy.Pipeline.TextureSlots[Index].Access, Texture ) )
+			FDX12TextureBinding Texture; // 用途・形式と版を確定してから命令全体へ保持する。
+			if ( !Textures->AcquireComputeTexture( Dispatch.Textures[Index], Copy.Pipeline.TextureSlots[Index].Access, Texture, Copy.Pipeline.TextureSlots[Index].Format ) )
 			{
 				return false;
 			}
@@ -224,7 +224,7 @@ bool CDX12ComputeQueue::Record( TArrayView<const FComputeDispatch> Dispatches, F
 			else
 			{
 				D3D12_SHADER_RESOURCE_VIEW_DESC View = {}; // 通常描画用とは独立した、この提出専用のSRV。
-				View.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+				View.Format = Texture.Format == EComputeTextureFormat::R32Float ? DXGI_FORMAT_R32_FLOAT : DXGI_FORMAT_R8G8B8A8_UNORM;
 				View.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 				View.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 				View.Texture2D.MipLevels = 1;

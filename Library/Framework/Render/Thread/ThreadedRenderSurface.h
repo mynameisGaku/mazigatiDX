@@ -36,6 +36,10 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 	bool BeginOffscreenCapture( const FOffscreenCaptureDesc &Desc ) override;
 	// 撮影の描画を確定し、画素を同期で返して通常寸法へ戻す。
 	bool EndOffscreenCapture( TArray<FColor32> &Out ) override;
+	// それ以前の描画を確定し、同期で所有済みの描画先パスへ切り替える。
+	bool BeginRenderTargetPass( const FRenderTargetPassDesc &Desc ) override;
+	// 描画先パスの描画を確定して同じGPUキューへ提出し、通常寸法へ戻す。
+	bool EndRenderTargetPass() override;
 	// 実行列と借用先の寿命を複製しない。
 	CThreadedRenderSurface( const CThreadedRenderSurface & ) = delete;
 	// 実行中に所有先を代入で差し替えない。
@@ -124,8 +128,8 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 	TArray<FCommand> Pending;
 	// 両スレッドから記録する、このフレームの失敗印。
 	TAtomic<bool> bFailed{ false };
-	// ゲーム側のフレームと撮影の受付状態。
-	bool bActive = false, bCapture = false;
+	// ゲーム側のフレーム・撮影・描画先パスの受付状態。
+	bool bActive = false, bCapture = false, bRenderTargetPass = false;
 	// 現在の実行先が提供する窓口。描画スレッドで調べた結果だけを保持する。
 	bool bHasCanvas = false, bHasGeometry = false;
 	// 現在の描画先と、通常フレームへ復元する寸法。

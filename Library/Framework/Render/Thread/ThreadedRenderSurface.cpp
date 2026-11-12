@@ -27,6 +27,7 @@ bool CThreadedRenderSurface::BeginFrame( int32 InWidth, int32 InHeight )
 	NumCommands = TextBytes = 0;
 	bFailed.Store( false );
 	bCapture = false;
+	bRenderTargetPass = false;
 	bActive = true;
 	return true;
 }
@@ -37,6 +38,11 @@ bool CThreadedRenderSurface::EndFrame()
 	if ( !bActive )
 	{
 		return true;
+	}
+	if ( bRenderTargetPass )
+	{
+		EndRenderTargetPass();
+		bFailed.Store( true );
 	}
 	// 空の区切りも同じ実行列へ積み、既に渡した全件が終わるまで所有者を生存させる。
 	const bool bFlushed = Flush();
@@ -117,7 +123,7 @@ bool CThreadedRenderSurface::WaitForGPU()
 bool CThreadedRenderSurface::BeginOffscreenCapture( const FOffscreenCaptureDesc &Desc )
 {
 	GAME_THREAD_ONLY( false );
-	if ( !bActive || bCapture )
+	if ( !bActive || bCapture || bRenderTargetPass )
 	{
 		return false;
 	}
@@ -137,7 +143,7 @@ bool CThreadedRenderSurface::BeginOffscreenCapture( const FOffscreenCaptureDesc 
 bool CThreadedRenderSurface::EndOffscreenCapture( TArray<FColor32> &Out )
 {
 	GAME_THREAD_ONLY( false );
-	if ( !bActive || !bCapture )
+	if ( !bActive || !bCapture || bRenderTargetPass )
 	{
 		return false;
 	}
@@ -148,6 +154,54 @@ bool CThreadedRenderSurface::EndOffscreenCapture( TArray<FColor32> &Out )
 	Width = FrameWidth;
 	Height = FrameHeight;
 	bCapture = false;
+	return bExecuted && bResult;
+}
+
+bool CThreadedRenderSurface::BeginRenderTargetPass( const FRenderTargetPassDesc &Desc )
+{
+	GAME_THREAD_ONLY( false );
+	if ( !bActive || bCapture || bRenderTargetPass )
+	{
+		return false;
+	}
+	bool bResult = false;
+	int32 TargetWidth = 0, TargetHeight = 0; // 描画先の実寸を描画スレッド側で取得する。
+	auto Begin = [&]()
+	{
+		bResult = Target.BeginRenderTargetPass( Desc );
+		if ( bResult )
+		{
+			if ( IRenderGeometry3D *Geometry = Target.GetGeometry3D() )
+			{
+				TargetWidth = Geometry->GetWidth();
+				TargetHeight = Geometry->GetHeight();
+			}
+		}
+	};
+	if ( !Execute( MoveTemp( Begin ) ) || !bResult || TargetWidth <= 0 || TargetHeight <= 0 )
+	{
+		return false;
+	}
+	Width = TargetWidth;
+	Height = TargetHeight;
+	bRenderTargetPass = true;
+	return true;
+}
+
+bool CThreadedRenderSurface::EndRenderTargetPass()
+{
+	GAME_THREAD_ONLY( false );
+	if ( !bActive || bCapture || !bRenderTargetPass )
+	{
+		return false;
+	}
+	bool bResult = false;
+	auto End = [&]()
+	{ bResult = Target.EndRenderTargetPass(); };
+	const bool bExecuted = Execute( MoveTemp( End ) );
+	Width = FrameWidth;
+	Height = FrameHeight;
+	bRenderTargetPass = false;
 	return bExecuted && bResult;
 }
 

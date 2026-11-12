@@ -16,10 +16,14 @@ class CDX12GameRenderer
 	// GPUと寸法を固定する。未対応の深度・不正寸法・二重初期化はfalse。
 	// BuffersとQueueは両方省略するか同じGPU・キューで指定する。不一致はfalse。借用する所有先は本描画器より長く生存させる。
 	bool Initialize( ID3D12Device *Device, int32 Width, int32 Height, IRenderTextureResources &Textures, IRenderTextRasterizer &Text, ID3D12Resource *Depth = nullptr, ID3D12DescriptorHeap *DepthHeap = nullptr, CDX12BufferStore *Buffers = nullptr, ID3D12CommandQueue *Queue = nullptr );
-	// GPU完了後に記録先を借りる。撮影時はScaleを論理座標へ適用する。不正設定はfalse。
-	bool BeginFrame( ID3D12GraphicsCommandList *Commands, D3D12_CPU_DESCRIPTOR_HANDLE ColorView, ID3D12DescriptorHeap *Images, float32 Scale = 1 );
-	// 一時画像の番号を返し、記録先を外す。文字・頂点・消去の記録失敗はfalse。GPU実体は保持する。
+	// フレーム外で描画先の寸法と深度を差し替える。
+	bool BindTarget( int32 Width, int32 Height, ID3D12Resource *Depth, ID3D12DescriptorHeap *DepthHeap );
+	// GPU完了後に記録先を借りる。撮影・描画先パスではScaleや深度消去設定を適用する。不正設定はfalse。
+	bool BeginFrame( ID3D12GraphicsCommandList *Commands, D3D12_CPU_DESCRIPTOR_HANDLE ColorView, ID3D12DescriptorHeap *Images, float32 Scale = 1, bool bClearDepth = true, float32 ClearDepth = 1.0f, uint64 ForbiddenTextureBinding = 0 );
+	// 一時画像の番号を返し、記録先を外す。文字・頂点・消去の記録失敗や自己参照競合はfalse。GPU実体は保持する。
 	bool EndFrame();
+	// フレーム外で、記録した頂点とGPUバッファ参照を提出レコードへ移動する。
+	void MoveFrameResources( TArray<FDX12BufferBinding> &OutBuffers, TArray<Microsoft::WRL::ComPtr<ID3D12Resource>> &OutUploads );
 	// 記録中だけ2Dの窓口を貸す。
 	IRenderCanvas2D *GetCanvas2D();
 	// 記録中だけ基本3Dの窓口を貸す。

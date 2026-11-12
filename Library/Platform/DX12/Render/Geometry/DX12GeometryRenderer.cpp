@@ -14,8 +14,8 @@ bool CDX12GeometryRenderer::Initialize( ID3D12Device *InDevice, int32 InWidth, i
 	if ( InDepth )
 	{
 		Microsoft::WRL::ComPtr<ID3D12Device> DepthDevice, HeapDevice; // 別のGPUや不一致の深度を借りない。
-		const D3D12_RESOURCE_DESC Desc = InDepth->GetDesc(); // 撮影先の寸法・形式を確認する。
-		if ( FAILED( InDepth->GetDevice( IID_PPV_ARGS( &DepthDevice ) ) ) || FAILED( InDepthHeap->GetDevice( IID_PPV_ARGS( &HeapDevice ) ) ) || DepthDevice.Get() != InDevice || HeapDevice.Get() != InDevice || Desc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D || Desc.Width != static_cast<UINT64>( InWidth ) || Desc.Height != static_cast<UINT>( InHeight ) || Desc.Format != DXGI_FORMAT_D32_FLOAT || Desc.SampleDesc.Count != 1 || InDepthHeap->GetDesc().Type != D3D12_DESCRIPTOR_HEAP_TYPE_DSV || InDepthHeap->GetDesc().NumDescriptors < 1 )
+		const D3D12_RESOURCE_DESC Desc = InDepth->GetDesc(); // 撮影・描画先の寸法・形式を確認する。
+		if ( FAILED( InDepth->GetDevice( IID_PPV_ARGS( &DepthDevice ) ) ) || FAILED( InDepthHeap->GetDevice( IID_PPV_ARGS( &HeapDevice ) ) ) || DepthDevice.Get() != InDevice || HeapDevice.Get() != InDevice || Desc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D || Desc.Width != static_cast<UINT64>( InWidth ) || Desc.Height != static_cast<UINT>( InHeight ) || ( Desc.Format != DXGI_FORMAT_D32_FLOAT && Desc.Format != DXGI_FORMAT_R32_TYPELESS ) || Desc.SampleDesc.Count != 1 || InDepthHeap->GetDesc().Type != D3D12_DESCRIPTOR_HEAP_TYPE_DSV || InDepthHeap->GetDesc().NumDescriptors < 1 )
 		{
 			return false;
 		}
@@ -87,9 +87,28 @@ bool CDX12GeometryRenderer::Initialize( ID3D12Device *InDevice, int32 InWidth, i
 	return true;
 }
 
-bool CDX12GeometryRenderer::BeginFrame( ID3D12GraphicsCommandList *InCommands, D3D12_CPU_DESCRIPTOR_HANDLE InRtv, ID3D12DescriptorHeap *InSrvHeap, const FRenderClipRect *InClip )
+bool CDX12GeometryRenderer::BindTarget( int32 InWidth, int32 InHeight, ID3D12Resource *InDepth, ID3D12DescriptorHeap *InDepthHeap )
 {
-	if ( !Device || !Depth || !DsvHeap || Commands || !InCommands || InCommands->GetType() != D3D12_COMMAND_LIST_TYPE_DIRECT || !InRtv.ptr )
+	if ( !Device || Commands || InWidth <= 0 || InHeight <= 0 || InWidth > 16384 || InHeight > 16384 || !InDepth || !InDepthHeap )
+	{
+		return false;
+	}
+	Microsoft::WRL::ComPtr<ID3D12Device> DepthDevice, HeapDevice; // 同じGPUの深度だけを受け付ける。
+	const D3D12_RESOURCE_DESC Desc = InDepth->GetDesc(); // 描画先と同じ寸法のD32深度を確認する。
+	if ( FAILED( InDepth->GetDevice( IID_PPV_ARGS( &DepthDevice ) ) ) || FAILED( InDepthHeap->GetDevice( IID_PPV_ARGS( &HeapDevice ) ) ) || DepthDevice.Get() != Device.Get() || HeapDevice.Get() != Device.Get() || Desc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE2D || Desc.Width != static_cast<UINT64>( InWidth ) || Desc.Height != static_cast<UINT>( InHeight ) || ( Desc.Format != DXGI_FORMAT_D32_FLOAT && Desc.Format != DXGI_FORMAT_R32_TYPELESS ) || Desc.SampleDesc.Count != 1 || InDepthHeap->GetDesc().Type != D3D12_DESCRIPTOR_HEAP_TYPE_DSV || InDepthHeap->GetDesc().NumDescriptors < 1 )
+	{
+		return false;
+	}
+	Width = InWidth;
+	Height = InHeight;
+	Depth = InDepth;
+	DsvHeap = InDepthHeap;
+	return true;
+}
+
+bool CDX12GeometryRenderer::BeginFrame( ID3D12GraphicsCommandList *InCommands, D3D12_CPU_DESCRIPTOR_HANDLE InRtv, ID3D12DescriptorHeap *InSrvHeap, const FRenderClipRect *InClip, bool bInClearDepth, float32 InClearDepth, uint64 InForbiddenTextureBinding )
+{
+	if ( !Device || !Depth || !DsvHeap || Commands || !InCommands || InCommands->GetType() != D3D12_COMMAND_LIST_TYPE_DIRECT || !InRtv.ptr || ( bInClearDepth && ( !NMath::IsFinite( InClearDepth ) || InClearDepth < 0.0f || InClearDepth > 1.0f ) ) )
 	{
 		return false;
 	}
@@ -111,7 +130,12 @@ bool CDX12GeometryRenderer::BeginFrame( ID3D12GraphicsCommandList *InCommands, D
 	Rtv = InRtv;
 	SrvHeap = InSrvHeap;
 	Clip = InClip;
-	ClearDepth();
+	ForbiddenTextureBinding = InForbiddenTextureBinding;
+	bHazardRejected = false;
+	if ( bInClearDepth )
+	{
+		ClearDepthValue( InClearDepth );
+	}
 	return true;
 }
 
@@ -120,6 +144,28 @@ void CDX12GeometryRenderer::EndFrame()
 	Commands = nullptr;
 	SrvHeap = nullptr;
 	Clip = nullptr;
+	ForbiddenTextureBinding = 0;
+}
+
+bool CDX12GeometryRenderer::DidFrameSucceed() const
+{
+	return !bHazardRejected;
+}
+
+void CDX12GeometryRenderer::MoveFrameResources( TArray<FDX12BufferBinding> &OutBuffers, TArray<Microsoft::WRL::ComPtr<ID3D12Resource>> &OutUploads )
+{
+	for ( FDX12BufferBinding &Pin : BufferPins )
+	{
+		OutBuffers.Add( MoveTemp( Pin ) );
+	}
+	BufferPins.Reset();
+	PinnedBytes = 0;
+	for ( FUploadRecord &Record : Uploads )
+	{
+		OutUploads.Add( MoveTemp( Record.Resource ) );
+	}
+	Uploads.Reset();
+	UploadBytes = 0;
 }
 
 int32 CDX12GeometryRenderer::GetWidth() const
@@ -150,6 +196,11 @@ bool CDX12GeometryRenderer::ValidateDrawState( const FGeometryDrawState &State, 
 	}
 	if ( Texture )
 	{
+		if ( ForbiddenTextureBinding != 0 && Texture->Binding == ForbiddenTextureBinding )
+		{
+			bHazardRejected = true;
+			return false;
+		}
 		const UINT64 Base = SrvHeap->GetGPUDescriptorHandleForHeapStart().ptr; // 同じ画像heapの範囲だけを使う。
 		const UINT Stride = Device->GetDescriptorHandleIncrementSize( D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV ); // 画像記述子の幅。
 		if ( Texture->Binding < Base || ( Texture->Binding - Base ) % Stride != 0 || ( Texture->Binding - Base ) / Stride >= SrvHeap->GetDesc().NumDescriptors )
@@ -265,10 +316,17 @@ void CDX12GeometryRenderer::DrawPrepared( const FPendingDraw &Pending )
 
 void CDX12GeometryRenderer::ClearDepth()
 {
-	if ( Commands )
+	ClearDepthValue( 1.0f );
+}
+
+bool CDX12GeometryRenderer::ClearDepthValue( float32 DepthValue )
+{
+	if ( !Commands || !NMath::IsFinite( DepthValue ) || DepthValue < 0.0f || DepthValue > 1.0f )
 	{
-		Commands->ClearDepthStencilView( DsvHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1, 0, 0, nullptr );
+		return false;
 	}
+	Commands->ClearDepthStencilView( DsvHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, DepthValue, 0, 0, nullptr );
+	return true;
 }
 
 bool CDX12GeometryRenderer::ClearColor( FColor32 Color )

@@ -20,6 +20,7 @@ class CDX12GameRenderer;
 class CDX12GameSurface;
 class CDX12ImGuiFrameRenderer;
 class CDX12GameCapture;
+class CDX12RenderTargetPass;
 
 // Windowsの窓とフレーム進行を所有する。GPUを所有し、ImGuiへは描画に必要な参照だけを貸す。
 class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IRenderSurface, public IRenderTextureResources, public IRenderBufferResources, public IComputePipelineResources, public IComputeQueue, public IRenderCommandQueue, public INativeWindow
@@ -45,6 +46,10 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
 	bool BeginOffscreenCapture( const FOffscreenCaptureDesc &Desc ) override;
 	// 描き直しの結果を同期で読む。失敗時はOutを保つ。
 	bool EndOffscreenCapture( TArray<FColor32> &Out ) override;
+	// 通常のフレーム記録中に、所有済みの描画先資源へ描くパスを開始する。
+	bool BeginRenderTargetPass( const FRenderTargetPassDesc &Desc ) override;
+	// 描画先パスの命令を同じDIRECTキューへ提出し、通常のフレーム記録へ戻す。
+	bool EndRenderTargetPass() override;
 	// 次のフレームで終了する。
 	void RequestExit() override;
 	// 終了要求を返す。
@@ -91,6 +96,12 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
 	bool GetComputeTextureCapabilities( FComputeTextureCapabilities &Out ) const override;
 	// ゲームスレッドから、computeで読み書き可能な画像を描画所有側へ作成する。
 	FTextureResourceHandle CreateComputeTextureRGBA8( int32 Width, int32 Height, const FColor32 *Pixels ) override;
+	// ゲームスレッドから描画先画像と読み取れる深度の能力を照会する。
+	bool GetRenderTargetCapabilities( FRenderTargetCapabilities &Out ) const override;
+	// ゲームスレッドからRGBA8の色描画先画像を描画所有側へ作成する。
+	FTextureResourceHandle CreateRenderTargetRGBA8( int32 Width, int32 Height, FColor32 ClearColor = FColor32( 0, 0, 0, 255 ) ) override;
+	// ゲームスレッドから読み取れるD32深度を描画所有側へ作成する。
+	FTextureResourceHandle CreateDepthTextureD32( int32 Width, int32 Height, float32 ClearDepth = 1.0f ) override;
 	// 記録済みの画像を保ったまま更新する。
 	bool UpdateTextureRGBA8( FTextureResourceHandle Texture, int32 Width, int32 Height, const FColor32 *Pixels ) override;
 	// GPU完了後に画像資源を解放する。
@@ -137,6 +148,7 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
 	CDX12GameRenderer *GameRenderer = nullptr; // ゲームの2D・3DをUIと別の順序へ記録する。
 	CDX12ImGuiFrameRenderer *ImGuiFrameRenderer = nullptr; // GPUを借りるUIの記録先。GPUは所有しない。
 	CDX12GameCapture *CaptureRenderer = nullptr; // UIとは独立したゲーム描画の撮影先。
+	CDX12RenderTargetPass *TargetPassRenderer = nullptr; // UIとは独立したオフスクリーン描画先パスの記録・提出先。
 	IFrameCaptureSink *FrameCaptureSink = nullptr; // 撮影サービスの借用先。終了前に解除する。
 	TArray<FColor32> CapturePixels; // 通知中だけ受け取り手へ借用する画素。
 	void *Window = nullptr; // 所有するHWND。公開ヘッダーにWindowsを出さない。

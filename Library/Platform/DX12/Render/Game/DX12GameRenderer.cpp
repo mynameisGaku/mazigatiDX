@@ -15,9 +15,14 @@ bool CDX12GameRenderer::Initialize( ID3D12Device *Device, int32 Width, int32 Hei
 	return true;
 }
 
-bool CDX12GameRenderer::BeginFrame( ID3D12GraphicsCommandList *Commands, D3D12_CPU_DESCRIPTOR_HANDLE ColorView, ID3D12DescriptorHeap *Images, float32 Scale )
+bool CDX12GameRenderer::BindTarget( int32 Width, int32 Height, ID3D12Resource *Depth, ID3D12DescriptorHeap *DepthHeap )
 {
-	if ( bActive || !Textures || !Text || !NMath::IsFinite( Scale ) || Scale <= 0 || Scale > 16384 || !Geometry.BeginFrame( Commands, ColorView, Images, &Clip ) )
+	return !bActive && Textures && Geometry.BindTarget( Width, Height, Depth, DepthHeap );
+}
+
+bool CDX12GameRenderer::BeginFrame( ID3D12GraphicsCommandList *Commands, D3D12_CPU_DESCRIPTOR_HANDLE ColorView, ID3D12DescriptorHeap *Images, float32 Scale, bool bClearDepth, float32 ClearDepth, uint64 ForbiddenTextureBinding )
+{
+	if ( bActive || !Textures || !Text || !NMath::IsFinite( Scale ) || Scale <= 0 || Scale > 16384 || !Geometry.BeginFrame( Commands, ColorView, Images, &Clip, bClearDepth, ClearDepth, ForbiddenTextureBinding ) )
 	{
 		return false;
 	}
@@ -33,11 +38,19 @@ bool CDX12GameRenderer::BeginFrame( ID3D12GraphicsCommandList *Commands, D3D12_C
 
 bool CDX12GameRenderer::EndFrame()
 {
-	const bool bResult = !bActive || ( bDrawSucceeded && Canvas.DidFrameSucceed() ); // 失敗した文字を黙って省略した画像を成功扱いしない。
+	const bool bResult = !bActive || ( bDrawSucceeded && Canvas.DidFrameSucceed() && Geometry.DidFrameSucceed() ); // 失敗した文字や自己参照競合を成功扱いしない。
 	Canvas.EndFrame();
 	Geometry.EndFrame();
 	bActive = false;
 	return bResult;
+}
+
+void CDX12GameRenderer::MoveFrameResources( TArray<FDX12BufferBinding> &OutBuffers, TArray<Microsoft::WRL::ComPtr<ID3D12Resource>> &OutUploads )
+{
+	if ( !bActive )
+	{
+		Geometry.MoveFrameResources( OutBuffers, OutUploads );
+	}
 }
 
 IRenderCanvas2D *CDX12GameRenderer::GetCanvas2D() { return bActive ? &Canvas : nullptr; }

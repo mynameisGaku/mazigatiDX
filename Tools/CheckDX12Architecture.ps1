@@ -19,6 +19,7 @@ $types = @(
     @{ Path = 'Library/Platform/DX12/Render/Game/DX12GameCapture.h'; Type = 'CDX12GameCapture'; Role = '機能' },
     @{ Path = 'Library/Platform/DX12/Render/Game/DX12GameRenderer.h'; Type = 'CDX12GameRenderer'; Role = '機能' },
     @{ Path = 'Library/Platform/DX12/Render/Geometry/DX12GeometryRenderer.h'; Type = 'CDX12GeometryRenderer'; Role = '機能' },
+    @{ Path = 'Library/Platform/DX12/Render/Target/DX12RenderTargetPass.h'; Type = 'CDX12RenderTargetPass'; Role = '機能' },
     @{ Path = 'Library/Platform/DX12/Resource/Buffer/DX12BufferStore.h'; Type = 'CDX12BufferStore'; Role = '機能' },
     @{ Path = 'Library/Platform/DX12/Resource/Descriptor/DX12DescriptorPool.h'; Type = 'CDX12DescriptorPool'; Role = '機能' },
     @{ Path = 'Library/Platform/DX12/Resource/Readback/DX12TextureReadback.h'; Type = 'CDX12TextureReadback'; Role = '機能' },
@@ -40,7 +41,9 @@ $types = @(
     @{ Path = 'Library/Core/Render/GeometryBufferDraw.h'; Type = 'FGeometryBufferDraw'; Role = 'データ' },
     @{ Path = 'Library/Core/Render/ComputeBufferSlot.h'; Type = 'FComputeBufferSlot'; Role = 'データ' },
     @{ Path = 'Library/Core/Render/ComputeTextureCapabilities.h'; Type = 'FComputeTextureCapabilities'; Role = 'データ' },
-    @{ Path = 'Library/Core/Render/ComputeTextureSlot.h'; Type = 'FComputeTextureSlot'; Role = 'データ' }
+    @{ Path = 'Library/Core/Render/ComputeTextureSlot.h'; Type = 'FComputeTextureSlot'; Role = 'データ' },
+    @{ Path = 'Library/Core/Render/RenderTargetCapabilities.h'; Type = 'FRenderTargetCapabilities'; Role = 'データ' },
+    @{ Path = 'Library/Core/Render/RenderTargetPassDesc.h'; Type = 'FRenderTargetPassDesc'; Role = 'データ' }
 ) # class／structの構文でなく、所有する責務で分類した主要型。
 $failed = $false # すべての問題をまとめて報告する。
 foreach ($type in $types)

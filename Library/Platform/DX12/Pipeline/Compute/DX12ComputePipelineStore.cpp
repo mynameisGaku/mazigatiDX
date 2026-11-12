@@ -67,14 +67,18 @@ bool CDX12ComputePipelineStore::Build( TArrayView<const uint8> Bytecode, TArrayV
 		}
 	}
 	FComputeTextureCapabilities Capabilities; // 画像を使うプログラムだけ、実行先の対応能力を確認する。
-	if ( TextureSlots.Num() != 0 && ( !NDX12TextureFormat::GetComputeCapabilities( Device.Get(), Capabilities ) || !Capabilities.bRGBA8Read ) )
+	if ( TextureSlots.Num() != 0 && !NDX12TextureFormat::GetComputeCapabilities( Device.Get(), Capabilities ) )
 	{
 		return false;
 	}
 	for ( int32 Index = 0; Index < TextureSlots.Num(); ++Index )
 	{
 		const FComputeTextureSlot &Slot = TextureSlots[Index]; // バッファと共有するt／uの場所。
-		if ( ( Slot.Access != EComputeTextureAccess::Read && Slot.Access != EComputeTextureAccess::ReadWrite ) || Slot.Binding >= ( Slot.Access == EComputeTextureAccess::Read ? 128u : 64u ) || ( Slot.Access == EComputeTextureAccess::ReadWrite && !Capabilities.bRGBA8ReadWrite ) )
+		const bool bValidFormat = Slot.Format == EComputeTextureFormat::RGBA8 || Slot.Format == EComputeTextureFormat::R32Float; // 定義済みの画像形式だけを受け付ける。
+		const bool bFormatSupported = Slot.Format == EComputeTextureFormat::R32Float
+			? ( Slot.Access == EComputeTextureAccess::Read && Capabilities.bR32FloatRead )
+			: ( Slot.Access == EComputeTextureAccess::Read ? Capabilities.bRGBA8Read : Capabilities.bRGBA8ReadWrite ); // 形式と用途に応じた能力照合。
+		if ( !bValidFormat || ( Slot.Access != EComputeTextureAccess::Read && Slot.Access != EComputeTextureAccess::ReadWrite ) || Slot.Binding >= ( Slot.Access == EComputeTextureAccess::Read ? 128u : 64u ) || !bFormatSupported )
 		{
 			return false;
 		}
@@ -119,7 +123,15 @@ bool CDX12ComputePipelineStore::Build( TArrayView<const uint8> Bytecode, TArrayV
 		const bool bTextureWrite = Binding.Type == D3D_SIT_UAV_RWTYPED; // RGBA8の型付き読み書き。
 		if ( bTextureRead || bTextureWrite )
 		{
-			if ( Binding.Dimension != D3D_SRV_DIMENSION_TEXTURE2D || ( Binding.ReturnType != D3D_RETURN_TYPE_FLOAT && Binding.ReturnType != D3D_RETURN_TYPE_UNORM ) || ( Binding.uFlags & D3D_SIF_TEXTURE_COMPONENTS ) != D3D_SIF_TEXTURE_COMPONENTS )
+			const UINT Components = Binding.uFlags & D3D_SIF_TEXTURE_COMPONENTS; // 0なら1成分(float)、D3D_SIF_TEXTURE_COMPONENTSなら4成分(float4)。
+			const bool bFourComponents = Components == D3D_SIF_TEXTURE_COMPONENTS; // RGBA8に対応する4成分。
+			const bool bOneComponent = Components == 0; // R32Floatに対応する1成分。
+			if ( Binding.Dimension != D3D_SRV_DIMENSION_TEXTURE2D || ( Binding.ReturnType != D3D_RETURN_TYPE_FLOAT && Binding.ReturnType != D3D_RETURN_TYPE_UNORM ) || ( !bFourComponents && !bOneComponent ) )
+			{
+				return false;
+			}
+			const EComputeTextureFormat Format = bOneComponent ? EComputeTextureFormat::R32Float : EComputeTextureFormat::RGBA8; // 成分数から画像形式を決める。
+			if ( Format == EComputeTextureFormat::R32Float && ( bTextureWrite || Binding.ReturnType != D3D_RETURN_TYPE_FLOAT ) )
 			{
 				return false;
 			}
@@ -127,7 +139,7 @@ bool CDX12ComputePipelineStore::Build( TArrayView<const uint8> Bytecode, TArrayV
 			bool bMatched = false; // 列挙順でなく、種類と場所で照合する。
 			for ( const FComputeTextureSlot &Slot : TextureSlots )
 			{
-				bMatched |= Slot.Access == Access && Slot.Binding == Binding.BindPoint;
+				bMatched |= Slot.Access == Access && Slot.Format == Format && Slot.Binding == Binding.BindPoint;
 			}
 			if ( !bMatched )
 			{
