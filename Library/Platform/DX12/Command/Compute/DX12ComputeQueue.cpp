@@ -2,15 +2,16 @@
 #include "DX12ComputeQueue.h"
 #include "Library/Core/Render/RenderResourceSerial.h"
 #include "Library/Core/Types/Numeric.h"
+#include "Library/Platform/DX12/Resource/Timestamp/DX12TimestampStore.h"
 
 CDX12ComputeQueue::~CDX12ComputeQueue()
 {
 	ResetAfterGPUIdle();
 }
 
-bool CDX12ComputeQueue::Initialize( ID3D12Device *InDevice, ID3D12CommandQueue *InQueue, CDX12BufferStore &InBuffers, CDX12ComputePipelineStore &InPipelines, CDX12TextureStore *InTextures )
+bool CDX12ComputeQueue::Initialize( ID3D12Device *InDevice, ID3D12CommandQueue *InQueue, CDX12BufferStore &InBuffers, CDX12ComputePipelineStore &InPipelines, CDX12TextureStore *InTextures, CDX12TimestampStore *InTimestamps )
 {
-	if ( Device || !InDevice || !InQueue || InQueue->GetDesc().Type != D3D12_COMMAND_LIST_TYPE_DIRECT || !InBuffers.UsesDeviceAndQueue( InDevice, InQueue ) || !InPipelines.UsesDevice( InDevice ) || ( InTextures && !InTextures->UsesDeviceAndQueue( InDevice, InQueue ) ) )
+	if ( Device || !InDevice || !InQueue || InQueue->GetDesc().Type != D3D12_COMMAND_LIST_TYPE_DIRECT || !InBuffers.UsesDeviceAndQueue( InDevice, InQueue ) || !InPipelines.UsesDevice( InDevice ) || ( InTextures && !InTextures->UsesDeviceAndQueue( InDevice, InQueue ) ) || ( InTimestamps && !InTimestamps->UsesDeviceAndQueue( InDevice, InQueue ) ) )
 	{
 		return false;
 	}
@@ -19,6 +20,7 @@ bool CDX12ComputeQueue::Initialize( ID3D12Device *InDevice, ID3D12CommandQueue *
 	Buffers = &InBuffers;
 	Pipelines = &InPipelines;
 	Textures = InTextures;
+	Timestamps = InTimestamps;
 	if ( FAILED( Device->CreateFence( 0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS( &Fence ) ) ) )
 	{
 		ResetAfterGPUIdle();
@@ -50,6 +52,7 @@ void CDX12ComputeQueue::ResetAfterGPUIdle()
 	Buffers = nullptr;
 	Pipelines = nullptr;
 	Textures = nullptr;
+	Timestamps = nullptr;
 	QueueSerial = LastSubmitted = NextValue = 0;
 	bHealthy = false;
 	if ( FenceEvent )
@@ -81,9 +84,9 @@ bool CDX12ComputeQueue::IsKnown( FComputeSubmission Submission ) const
 	return bHealthy && Submission.Queue == QueueSerial && Submission.Value != 0 && Submission.Value <= LastSubmitted;
 }
 
-bool CDX12ComputeQueue::Record( TArrayView<const FComputeDispatch> Dispatches, FSubmissionRecord &Out )
+bool CDX12ComputeQueue::Record( TArrayView<const FComputeDispatch> Dispatches, FSubmissionRecord &Out, const uint32 *TimestampBeginSlot )
 {
-	if ( !Dispatches.GetData() || Dispatches.Num() <= 0 || Dispatches.Num() > MaxDispatches || !Buffers->UsesDeviceAndQueue( Device.Get(), Queue.Get() ) || !Pipelines->UsesDevice( Device.Get() ) || ( Textures && !Textures->UsesDeviceAndQueue( Device.Get(), Queue.Get() ) ) )
+	if ( !Dispatches.GetData() || Dispatches.Num() <= 0 || Dispatches.Num() > MaxDispatches || !Buffers->UsesDeviceAndQueue( Device.Get(), Queue.Get() ) || !Pipelines->UsesDevice( Device.Get() ) || ( Textures && !Textures->UsesDeviceAndQueue( Device.Get(), Queue.Get() ) ) || ( TimestampBeginSlot && ( !Timestamps || !Timestamps->UsesDeviceAndQueue( Device.Get(), Queue.Get() ) ) ) )
 	{
 		return false;
 	}
@@ -152,6 +155,10 @@ bool CDX12ComputeQueue::Record( TArrayView<const FComputeDispatch> Dispatches, F
 	D3D12_GPU_DESCRIPTOR_HANDLE Gpu = Created.Descriptors->GetGPUDescriptorHandleForHeapStart(); // 対応するGPU参照。
 	ID3D12DescriptorHeap *Heaps[] = { Created.Descriptors.Get() }; // この命令列専用のheap。
 	Created.Commands->SetDescriptorHeaps( 1, Heaps );
+	if ( TimestampBeginSlot )
+	{
+		Timestamps->RecordBeginAtSlot( Created.Commands.Get(), *TimestampBeginSlot );
+	}
 	for ( const FDispatchRecord &Dispatch : Created.Dispatches )
 	{
 		Created.Commands->SetPipelineState( Dispatch.Pipeline.Pipeline.Get() );
@@ -273,6 +280,10 @@ bool CDX12ComputeQueue::Record( TArrayView<const FComputeDispatch> Dispatches, F
 			Created.Commands->ResourceBarrier( 1, &Barrier );
 		}
 	}
+	if ( TimestampBeginSlot )
+	{
+		Timestamps->RecordEndAndResolveAtSlot( Created.Commands.Get(), *TimestampBeginSlot );
+	}
 	if ( FAILED( Created.Commands->Close() ) )
 	{
 		return false;
@@ -281,14 +292,23 @@ bool CDX12ComputeQueue::Record( TArrayView<const FComputeDispatch> Dispatches, F
 	return true;
 }
 
-FComputeSubmission CDX12ComputeQueue::SubmitCompute( TArrayView<const FComputeDispatch> Dispatches )
+FComputeSubmission CDX12ComputeQueue::SubmitComputeInternal( TArrayView<const FComputeDispatch> Dispatches, FGpuTimestampHandle Timestamp )
 {
 	if ( !CollectCompleted() || Pending.Num() >= MaxPending || NextValue >= TNumericLimits<uint64>::Max() - 1 )
 	{
 		return {};
 	}
+	uint32 TimestampBeginSlot = 0; // 先行検査に通過した場合だけ計測ペアへ記録する。
+	const bool bWithTimestamp = Timestamp.IsValid();
+	if ( bWithTimestamp )
+	{
+		if ( !Timestamps || !Timestamps->UsesDeviceAndQueue( Device.Get(), Queue.Get() ) || !Timestamps->TryPrepareComputeSlot( Timestamp, TimestampBeginSlot ) )
+		{
+			return {};
+		}
+	}
 	FSubmissionRecord Created; // 全命令の検証後にだけ提出する。
-	if ( !Record( Dispatches, Created ) )
+	if ( !Record( Dispatches, Created, bWithTimestamp ? &TimestampBeginSlot : nullptr ) )
 	{
 		return {};
 	}
@@ -302,8 +322,27 @@ FComputeSubmission CDX12ComputeQueue::SubmitCompute( TArrayView<const FComputeDi
 		bHealthy = false;
 		return {};
 	}
+	if ( bWithTimestamp && !Timestamps->CommitComputeSlot( Timestamp, TimestampBeginSlot ) )
+	{
+		bHealthy = false;
+		return {};
+	}
 	LastSubmitted = Submitted.Value;
 	return { QueueSerial, LastSubmitted };
+}
+
+FComputeSubmission CDX12ComputeQueue::SubmitCompute( TArrayView<const FComputeDispatch> Dispatches )
+{
+	return SubmitComputeInternal( Dispatches, FGpuTimestampHandle() );
+}
+
+FComputeSubmission CDX12ComputeQueue::SubmitComputeWithTimestamp( TArrayView<const FComputeDispatch> Dispatches, FGpuTimestampHandle Timestamp )
+{
+	if ( !Timestamp.IsValid() )
+	{
+		return {};
+	}
+	return SubmitComputeInternal( Dispatches, Timestamp );
 }
 
 bool CDX12ComputeQueue::GetComputeCompletion( FComputeSubmission Submission, bool &OutCompleted )

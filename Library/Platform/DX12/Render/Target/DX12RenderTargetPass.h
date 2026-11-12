@@ -4,6 +4,7 @@
 #include "Library/Platform/DX12/Device/DX12QueueCompletion.h"
 #include "Library/Platform/DX12/Render/Game/DX12GameRenderer.h"
 #include "Library/Platform/DX12/Resource/Texture/DX12TextureStore.h"
+class CDX12TimestampStore;
 
 // オフスクリーン色描画先と読み取れる深度への2D/3D描画を記録し、同じDIRECTキューへ提出する。
 class CDX12RenderTargetPass : public IRenderSurface
@@ -16,7 +17,7 @@ class CDX12RenderTargetPass : public IRenderSurface
 	// 提出済みのGPU処理が完了するかデバイスが喪失するまで待って破棄する。
 	~CDX12RenderTargetPass() override;
 	// 同じGPUとDIRECTキューを共有する画像・バッファ所有先へ接続する。UIや窓を必要としない。
-	bool Initialize( ID3D12Device *InDevice, ID3D12CommandQueue *InQueue, CDX12TextureStore &InTextures, IRenderTextRasterizer &InText, ID3D12DescriptorHeap *InImageHeap = nullptr, CDX12BufferStore *InBuffers = nullptr, CDX12GraphicsPipelineStore *InGraphicsPipelines = nullptr );
+	bool Initialize( ID3D12Device *InDevice, ID3D12CommandQueue *InQueue, CDX12TextureStore &InTextures, IRenderTextRasterizer &InText, ID3D12DescriptorHeap *InImageHeap = nullptr, CDX12BufferStore *InBuffers = nullptr, CDX12GraphicsPipelineStore *InGraphicsPipelines = nullptr, CDX12TimestampStore *InTimestamps = nullptr );
 	// 同じキューのGPU完了後に、完了済みの提出参照を回収する。
 	void CollectAfterGPUIdle();
 	// GPU完了または喪失後に全資源を解放する。
@@ -41,6 +42,10 @@ class CDX12RenderTargetPass : public IRenderSurface
 	bool BeginRenderTargetPass( const FRenderTargetPassDesc &Desc ) override;
 	// IRenderSurface経由で描画先パスを終了・提出する。
 	bool EndRenderTargetPass() override;
+	// パス内のコマンド列へGPUタイムスタンプの開始点を積む。
+	bool BeginGpuTimestamp( FGpuTimestampHandle Query ) override;
+	// パス内で開始したGPUタイムスタンプを閉じ、同じパス内で解決を記録する。
+	bool EndGpuTimestamp( FGpuTimestampHandle Query ) override;
 
   private:
 	// 1回のオフスクリーン描画パス提出が完了するまで保持するGPU参照。
@@ -91,6 +96,8 @@ class CDX12RenderTargetPass : public IRenderSurface
 	TArray<FDX12TextureBinding> ActiveColors; // 現在記録中の1〜8枚の色描画先。
 	FDX12TextureBinding ActiveDepth; // 現在記録中の深度描画先。
 	TArray<FSubmissionRecord> Pending; // GPU未完了の提出レコード列。
+	CDX12TimestampStore *Timestamps = nullptr; // 任意のGPUタイムスタンプ所有者。
+	uint64 ActiveTimestampBatchId = 0; // パス中のタイムスタンプ計測に使うバッチ番号。
 	uint64 NextFenceValue = 0; // 次に発行するフェンス番号。
 	float32 FallbackClearDepth = 1.0f; // 内部深度の作成時クリア値。
 	int32 FallbackWidth = 0, FallbackHeight = 0; // 内部深度の寸法。

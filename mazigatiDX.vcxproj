@@ -436,6 +436,7 @@
     <ClCompile Include="Library\Platform\DX12\Resource\Readback\DX12TextureReadback.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureFormat.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureStore.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Resource\Timestamp\DX12TimestampStore.cpp" />
     <ClCompile Include="Library\Platform\DX12\Window\DX12PlatformSubsystem.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibBackendSubsystem.cpp" />
     <ClCompile Include="Library\Platform\DxLib\Asset\DxLibAssetBackendModelCollision.cpp" />
@@ -731,6 +732,7 @@
     <ClInclude Include="Library\Core\Interfaces\Render\IComputeQueue.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IDrawExecutor.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IGeometryBufferSource.h" />
+    <ClInclude Include="Library\Core\Interfaces\Render\IGpuTimestampResources.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IGraphicsPipelineResources.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IImage.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IIndexBuffer.h" />
@@ -779,6 +781,9 @@
     <ClInclude Include="Library\Core\Render\GeometryDrawState.h" />
     <ClInclude Include="Library\Core\Render\GeometryIndexFormat.h" />
     <ClInclude Include="Library\Core\Render\GeometryVertex.h" />
+    <ClInclude Include="Library\Core\Render\GpuTimestampCapabilities.h" />
+    <ClInclude Include="Library\Core\Render\GpuTimestampHandle.h" />
+    <ClInclude Include="Library\Core\Render\GpuTimestampResult.h" />
     <ClInclude Include="Library\Core\Render\GraphicsBufferLayout.h" />
     <ClInclude Include="Library\Core\Render\GraphicsBufferSlot.h" />
     <ClInclude Include="Library\Core\Render\GraphicsInputElement.h" />
@@ -1253,6 +1258,7 @@
     <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureBinding.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureFormat.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureStore.h" />
+    <ClInclude Include="Library\Platform\DX12\Resource\Timestamp\DX12TimestampStore.h" />
     <ClInclude Include="Library\Platform\DX12\Window\DX12PlatformSubsystem.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibBackendSubsystem.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibInclude.h" />

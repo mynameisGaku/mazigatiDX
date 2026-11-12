@@ -174,3 +174,7 @@ RGBA8画像のcompute能力照会（`GetComputeTextureCapabilities`）、UAV対�
 ## カスタムグラフィックスパイプライン契約とMRT複数描画先（2026-11-12追記）
 
 API非依存のカスタムグラフィックスパイプライン作成・遅延破棄契約（`IGraphicsPipelineResources`）、DXBC SM5.0／5.1 reflection照合（`CDX12GraphicsPipelineStore`）、1〜8枚の `RGBA8` MRT描画先＋任意 `D32` 深度へのパス記録（`FRenderTargetPassDesc::ColorTargets`・`CDX12RenderTargetPass`）、汎用バッファ・画像入力の `IRenderGeometry3D::DrawGraphicsPipeline`、MRT色＋`R32Float` 深度の合成・compute・撮影・主画面連携を接続しました。詳細は [カスタムグラフィックスパイプラインとMRTの記録](R1_GRAPHICS_PIPELINE_MRT.md) を参照してください。互換台帳は472項目（API 328、Draw 100、Sample 33、Editor 11；Implemented 186、Verified 0）で、`RunAllChecks.ps1 -SkipBuild -Quick` 全36ステップが通過済みです。
+
+## GPUタイムスタンプ計測契約（2026-11-12追記）
+
+GPUタイムスタンプの能力照会・作成・遅延解放（`IGpuTimestampResources`）、主画面および `BeginRenderTargetPass`〜`EndRenderTargetPass` MRT/D32パス内の計測（`IRenderSurface::BeginGpuTimestamp`／`EndGpuTimestamp`）、compute一括提出計測（`IComputeQueue::SubmitComputeWithTimestamp`）を同一 `DIRECT` キュー上の `CDX12TimestampStore` へ接続しました。詳細は [GPUタイムスタンプ計測契約](R1_GPU_TIMESTAMPS.md) を参照してください。`Tools/RunAllChecks.ps1 -SkipBuild -Quick` 全38ステップが合格し、互換台帳は481項目（API 337、Draw 100、Sample 33、Editor 11；Implemented 195、Verified 0）です。

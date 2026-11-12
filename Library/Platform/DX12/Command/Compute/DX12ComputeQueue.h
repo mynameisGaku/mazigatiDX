@@ -4,6 +4,7 @@
 #include "Library/Platform/DX12/Resource/Buffer/DX12BufferStore.h"
 #include "Library/Platform/DX12/Pipeline/Compute/DX12ComputePipelineStore.h"
 #include "Library/Platform/DX12/Resource/Texture/DX12TextureStore.h"
+class CDX12TimestampStore;
 
 // compute専用の記録領域とサイズ付きの記述子を提出ごとに所有し、完了まで借用実体を保持する。
 class CDX12ComputeQueue : public IComputeQueue
@@ -16,13 +17,15 @@ class CDX12ComputeQueue : public IComputeQueue
 	// GPU完了またはデバイス喪失後に所有者が破棄する。
 	~CDX12ComputeQueue() override;
 	// 同じデバイス・DIRECTキューの所有先だけを接続する。失敗時はfalse。
-	bool Initialize( ID3D12Device *InDevice, ID3D12CommandQueue *InQueue, CDX12BufferStore &InBuffers, CDX12ComputePipelineStore &InPipelines, CDX12TextureStore *InTextures = nullptr );
+	bool Initialize( ID3D12Device *InDevice, ID3D12CommandQueue *InQueue, CDX12BufferStore &InBuffers, CDX12ComputePipelineStore &InPipelines, CDX12TextureStore *InTextures = nullptr, CDX12TimestampStore *InTimestamps = nullptr );
 	// 同じキューの完了後だけ呼ぶ。資源所有先より先に提出時の参照を戻す。
 	void CollectAfterGPUIdle();
 	// GPU完了またはデバイス喪失後に全参照を戻し、過去の提出番号を無効にする。
 	void ResetAfterGPUIdle();
 	// 全入力を検査してから、寿命を保持した命令列を待たずに提出する。
 	FComputeSubmission SubmitCompute( TArrayView<const FComputeDispatch> Dispatches ) override;
+	// GPUタイムスタンプ計測ペアを前後へ積んで同じDIRECTキューへ提出する。
+	FComputeSubmission SubmitComputeWithTimestamp( TArrayView<const FComputeDispatch> Dispatches, FGpuTimestampHandle Timestamp ) override;
 	// 有効な提出の状態だけを返す。失敗時はOutCompletedを保つ。
 	bool GetComputeCompletion( FComputeSubmission Submission, bool &OutCompleted ) override;
 	// 完了済みなら直ちに成功する。タイムアウト時も提出資源を保持する。
@@ -46,8 +49,10 @@ class CDX12ComputeQueue : public IComputeQueue
 		TArray<FDispatchRecord> Dispatches; // 実体を保持する命令の配列。
 		uint64 Value = 0; // GPUに通知する完了番号。
 	};
+	// 通常の提出とタイムスタンプ付き提出を共有経路で検証・実行する。
+	FComputeSubmission SubmitComputeInternal( TArrayView<const FComputeDispatch> Dispatches, FGpuTimestampHandle Timestamp );
 	// 全命令を検査してから記録する。失敗時はGPUへ提出せず、Outを保つ。
-	bool Record( TArrayView<const FComputeDispatch> Dispatches, FSubmissionRecord &Out );
+	bool Record( TArrayView<const FComputeDispatch> Dispatches, FSubmissionRecord &Out, const uint32 *TimestampBeginSlot = nullptr );
 	// 完了済みだけを回収する。デバイス喪失時は保持したまま再使用を禁止する。
 	bool CollectCompleted();
 	// 現在の提出先から発行した番号かを確認する。
@@ -58,6 +63,7 @@ class CDX12ComputeQueue : public IComputeQueue
 	CDX12BufferStore *Buffers = nullptr; // より長く生存するバッファの所有先。
 	CDX12ComputePipelineStore *Pipelines = nullptr; // より長く生存するプログラムの所有先。
 	CDX12TextureStore *Textures = nullptr; // 任意接続の画像所有先。提出先より長く生存する。
+	CDX12TimestampStore *Timestamps = nullptr; // 任意接続のGPUタイムスタンプ所有者。提出先より長く生存する。
 	TArray<FSubmissionRecord> Pending; // 未完了の実体と記述子を保持する。
 	TArray<uint64> Notifications; // 同じ未完了番号へ待機通知を重複登録しないための値。
 	HANDLE FenceEvent = nullptr; // 待機用の自動解除イベント。

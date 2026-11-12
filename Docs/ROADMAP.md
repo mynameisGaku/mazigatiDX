@@ -130,15 +130,15 @@ R0から順に進めます。依存する段階を、仮のハンドルや定数
 
 ## 現在地と次の作業
 
-現在は、DX12の窓・画像・2D・非照明の基本3D・静的FBX／OBJを実装した初期段階です。球・カプセル・画像付き四角形の展開は基本経路の補完であり、Forward+／Deferred+や完全互換の達成ではありません。[Windowsの全体ビルドと起動](DX12_WINDOWS_VALIDATION.md)、[バッファ転送](R1_BUFFER_RESOURCES.md)、[compute提出](R1_COMPUTE.md)、[GPUバッファ描画](R1_BUFFER_GEOMETRY.md)、[定数と構造体配列](R1_COMPUTE_BUFFER_LAYOUTS.md)、[compute画像の能力照会と読み書き](R1_COMPUTE_TEXTURE_RESOURCES.md)、[オフスクリーン描画先と読み取れる深度](R1_RENDER_TARGET_RESOURCES.md)、[カスタムグラフィックスパイプラインとMRT](R1_GRAPHICS_PIPELINE_MRT.md) を接続しましたが、複数ベンダーや全機能のWindows互換は未完了です。
+現在は、DX12の窓・画像・2D・非照明の基本3D・静的FBX／OBJを実装した初期段階です。球・カプセル・画像付き四角形の展開は基本経路の補完であり、Forward+／Deferred+や完全互換の達成ではありません。[Windowsの全体ビルドと起動](DX12_WINDOWS_VALIDATION.md)、[バッファ転送](R1_BUFFER_RESOURCES.md)、[compute提出](R1_COMPUTE.md)、[GPUバッファ描画](R1_BUFFER_GEOMETRY.md)、[定数と構造体配列](R1_COMPUTE_BUFFER_LAYOUTS.md)、[compute画像の能力照会と読み書き](R1_COMPUTE_TEXTURE_RESOURCES.md)、[オフスクリーン描画先と読み取れる深度](R1_RENDER_TARGET_RESOURCES.md)、[カスタムグラフィックスパイプラインとMRT](R1_GRAPHICS_PIPELINE_MRT.md)、[GPUタイムスタンプ計測契約](R1_GPU_TIMESTAMPS.md) を接続しましたが、複数ベンダーや全機能のWindows互換は未完了です。
 
 |項目|状態|
 |---|---|
 |v1.0.0の範囲|DX12の四方式、MV1形式を除く既存DxLib公開機能の互換、Vulkan／OpenGL実装は次版とする方針を決定|
 |初期DX12経路|基本描画・画像・静的モデルを実装。検査内容と制限は開発手順に記録|
-|R0|進行中。472項目の台帳・更新と確認ツール・形式とサービスの初期調査を作成。既存シェーダーのPSOとcompute／readbackを補助環境で確認。完全な形式互換、最低能力と性能参照環境、Windowsの包括的な互換確認が残る|
-|R1〜R10|未完了。R1の画像資源境界として、登録・GPU所有・記述子・UI接続を分離。バッファの4操作と同期転送／readback、RAWのSRV／UAV・compute提出／完了確認を追加。画像の作成・転送・寿命管理はImGuiを必要としない。GPUバッファを頂点・indexとして読む描画、computeの定数・構造体配列、RGBA8画像のcompute能力照会と読み取り／読み書き・描画連携、単一／複数（MRT最大8枚）のRGBA8オフスクリーン描画先と読み取れるD32深度（`R32Float` compute・グラフィックス読み取り）、カスタムグラフィックスパイプライン契約（`IGraphicsPipelineResources`・`DrawGraphicsPipeline`）も接続。timestamp・HDR・MSAA・障害回復全体等は残る|
+|R0|進行中。481項目の台帳・更新と確認ツール・形式とサービスの初期調査を作成。既存シェーダーのPSOとcompute／readbackを補助環境で確認。完全な形式互換、最低能力と性能参照環境、Windowsの包括的な互換確認が残る|
+|R1〜R10|未完了。R1の画像資源境界として、登録・GPU所有・記述子・UI接続を分離。バッファの4操作と同期転送／readback、RAWのSRV／UAV・compute提出／完了確認を追加。画像の作成・転送・寿命管理はImGuiを必要としない。GPUバッファを頂点・indexとして読む描画、computeの定数・構造体配列、RGBA8画像のcompute能力照会と読み取り／読み書き・描画連携、単一／複数（MRT最大8枚）のRGBA8オフスクリーン描画先と読み取れるD32深度（`R32Float` compute・グラフィックス読み取り）、カスタムグラフィックスパイプライン契約（`IGraphicsPipelineResources`・`DrawGraphicsPipeline`）、GPUタイムスタンプ計測（`IGpuTimestampResources`・`BeginGpuTimestamp`／`EndGpuTimestamp`・`SubmitComputeWithTimestamp`）も接続。`RGBA16F`／HDR形式・MSAA・resize/終了/フレーム領域・障害回復全体等は残る|
 
-次はR0の台帳を基に、MV1以外のモデル形式の取り込みと変形データの保持、既存シェーダーのWindows互換、音声／動画の実装経路を実証します。GPU資源→compute→描画の基礎経路を保ち、R1に残る描画先・深度・計測と、R2の共有メッシュ・材質へ必要な契約を整えます。R0で見つかった重大な制約は、後段の機能追加より先に解消します。
+次はR0の台帳を基に、MV1以外のモデル形式の取り込みと変形データの保持、既存シェーダーのWindows互換、音声／動画の実装経路を実証します。GPU資源→compute→描画の基礎経路を保ち、R1に残る描画先・フレーム領域・resize/終了と、R2の共有メッシュ・材質へ必要な契約を整えます。R0で見つかった重大な制約は、後段の機能追加より先に解消します。
 
 予定を変えるときは、この文書の対象段階・完了条件・次版へ送る理由と、互換への影響を更新します。v1.0.0の必須条件を、実装が難しいという理由だけで未対応へ読み替えません。作業は責務ごとに小さくコミットし、backend-dx12で進め、統合と公開は既存のブランチ運用に従います。

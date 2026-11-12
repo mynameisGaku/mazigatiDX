@@ -2,6 +2,7 @@
 #include "DX12RenderTargetPass.h"
 #include "Library/Platform/DX12/Pipeline/Graphics/DX12GraphicsPipelineStore.h"
 #include "Library/Platform/DX12/Resource/Buffer/DX12BufferStore.h"
+#include "Library/Platform/DX12/Resource/Timestamp/DX12TimestampStore.h"
 #include "Library/Core/Types/Numeric.h"
 #include <d3dcompiler.h>
 
@@ -13,9 +14,9 @@ CDX12RenderTargetPass::~CDX12RenderTargetPass()
 	}
 }
 
-bool CDX12RenderTargetPass::Initialize( ID3D12Device *InDevice, ID3D12CommandQueue *InQueue, CDX12TextureStore &InTextures, IRenderTextRasterizer &InText, ID3D12DescriptorHeap *InImageHeap, CDX12BufferStore *InBuffers, CDX12GraphicsPipelineStore *InGraphicsPipelines )
+bool CDX12RenderTargetPass::Initialize( ID3D12Device *InDevice, ID3D12CommandQueue *InQueue, CDX12TextureStore &InTextures, IRenderTextRasterizer &InText, ID3D12DescriptorHeap *InImageHeap, CDX12BufferStore *InBuffers, CDX12GraphicsPipelineStore *InGraphicsPipelines, CDX12TimestampStore *InTimestamps )
 {
-	if ( Device || bClosing || !InDevice || !InQueue || InQueue->GetDesc().Type != D3D12_COMMAND_LIST_TYPE_DIRECT || !InTextures.UsesDeviceAndQueue( InDevice, InQueue ) || ( InBuffers && !InBuffers->UsesDeviceAndQueue( InDevice, InQueue ) ) || ( InGraphicsPipelines && !InGraphicsPipelines->UsesDevice( InDevice ) ) )
+	if ( Device || bClosing || !InDevice || !InQueue || InQueue->GetDesc().Type != D3D12_COMMAND_LIST_TYPE_DIRECT || !InTextures.UsesDeviceAndQueue( InDevice, InQueue ) || ( InBuffers && !InBuffers->UsesDeviceAndQueue( InDevice, InQueue ) ) || ( InGraphicsPipelines && !InGraphicsPipelines->UsesDevice( InDevice ) ) || ( InTimestamps && !InTimestamps->UsesDeviceAndQueue( InDevice, InQueue ) ) )
 	{
 		return false;
 	}
@@ -41,6 +42,7 @@ bool CDX12RenderTargetPass::Initialize( ID3D12Device *InDevice, ID3D12CommandQue
 	ImageHeap = InImageHeap;
 	Buffers = InBuffers;
 	GraphicsPipelines = InGraphicsPipelines;
+	Timestamps = InTimestamps;
 	bHealthy = true;
 	return true;
 }
@@ -73,6 +75,11 @@ void CDX12RenderTargetPass::ResetAfterGPUIdle()
 	{
 		Textures->EndRenderTargetPass();
 	}
+	if ( Timestamps && ActiveTimestampBatchId != 0 )
+	{
+		Timestamps->AbortBatch( ActiveTimestampBatchId );
+		ActiveTimestampBatchId = 0;
+	}
 	delete Renderer;
 	Renderer = nullptr;
 	Pending.Reset();
@@ -95,6 +102,8 @@ void CDX12RenderTargetPass::ResetAfterGPUIdle()
 	ImageHeap = nullptr;
 	Buffers = nullptr;
 	GraphicsPipelines = nullptr;
+	Timestamps = nullptr;
+	ActiveTimestampBatchId = 0;
 	NextFenceValue = 0;
 	FallbackClearDepth = 1.0f;
 	FallbackWidth = FallbackHeight = 0;
@@ -443,6 +452,19 @@ bool CDX12RenderTargetPass::Begin( const FRenderTargetPassDesc &Desc )
 	ActiveDepth = MoveTemp( DepthBinding );
 	bUsingExternalDepth = bExternalDepth;
 	bRecordClearFailed = false;
+	ActiveTimestampBatchId = Timestamps ? Timestamps->BeginBatch() : 0;
+	if ( Timestamps && ActiveTimestampBatchId == 0 )
+	{
+		Renderer->EndFrame();
+		CurrentCommands.Reset();
+		CurrentAllocator.Reset();
+		ActiveColors.Reset();
+		ActiveDepth = FDX12TextureBinding();
+		bUsingExternalDepth = false;
+		Textures->EndRenderTargetPass();
+		bHealthy = false;
+		return false;
+	}
 	bActive = true;
 	return true;
 }
@@ -453,7 +475,8 @@ bool CDX12RenderTargetPass::End()
 	{
 		return false;
 	}
-	const bool bRendered = Renderer->EndFrame() && !bRecordClearFailed; // 文字失敗・任意クリア失敗・自己参照競合があれば提出しない。
+	const bool bHasUnclosedTimestamps = Timestamps && ActiveTimestampBatchId != 0 && Timestamps->HasActiveRecording( ActiveTimestampBatchId );
+	const bool bRendered = Renderer->EndFrame() && !bRecordClearFailed && !bHasUnclosedTimestamps; // 文字失敗・任意クリア失敗・自己参照競合・未閉鎖タイムスタンプがあれば提出しない。
 	Textures->EndRenderTargetPass();
 	bActive = false;
 	bRecordClearFailed = false;
@@ -461,6 +484,11 @@ bool CDX12RenderTargetPass::End()
 	Renderer->MoveFrameResources( Created.Buffers, Created.Uploads, Created.Textures, Created.Pipelines );
 	if ( !bRendered )
 	{
+		if ( Timestamps && ActiveTimestampBatchId != 0 )
+		{
+			Timestamps->AbortBatch( ActiveTimestampBatchId );
+			ActiveTimestampBatchId = 0;
+		}
 		CurrentCommands->Close();
 		CurrentCommands.Reset();
 		CurrentAllocator.Reset();
@@ -493,6 +521,11 @@ bool CDX12RenderTargetPass::End()
 	CurrentCommands->ResourceBarrier( static_cast<UINT>( Barriers.Num() ), Barriers.GetData() );
 	if ( FAILED( CurrentCommands->Close() ) )
 	{
+		if ( Timestamps && ActiveTimestampBatchId != 0 )
+		{
+			Timestamps->AbortBatch( ActiveTimestampBatchId );
+			ActiveTimestampBatchId = 0;
+		}
 		CurrentCommands.Reset();
 		CurrentAllocator.Reset();
 		ActiveColors.Reset();
@@ -516,7 +549,9 @@ bool CDX12RenderTargetPass::End()
 		// 記録失敗で破棄したパスは初期化済みにせず、実際の提出位置で更新する。
 		bFallbackInitialized = true;
 	}
-	if ( FAILED( Queue->Signal( Fence.Get(), Submitted.Value ) ) )
+	const uint64 BatchToCommit = ActiveTimestampBatchId;
+	ActiveTimestampBatchId = 0;
+	if ( ( BatchToCommit != 0 && !Timestamps->CommitBatch( BatchToCommit ) ) || FAILED( Queue->Signal( Fence.Get(), Submitted.Value ) ) )
 	{
 		bHealthy = false;
 		return false;
@@ -579,4 +614,14 @@ bool CDX12RenderTargetPass::BeginRenderTargetPass( const FRenderTargetPassDesc &
 bool CDX12RenderTargetPass::EndRenderTargetPass()
 {
 	return End();
+}
+
+bool CDX12RenderTargetPass::BeginGpuTimestamp( FGpuTimestampHandle Query )
+{
+	return bActive && bHealthy && CurrentCommands && Timestamps && ActiveTimestampBatchId != 0 && Timestamps->BeginRecording( CurrentCommands.Get(), ActiveTimestampBatchId, Query );
+}
+
+bool CDX12RenderTargetPass::EndGpuTimestamp( FGpuTimestampHandle Query )
+{
+	return bActive && bHealthy && CurrentCommands && Timestamps && ActiveTimestampBatchId != 0 && Timestamps->EndRecording( CurrentCommands.Get(), ActiveTimestampBatchId, Query );
 }

@@ -102,7 +102,7 @@ bool CDX12Device::InitializeOnQueue( HWND Window, int32 Width, int32 Height, ID3
 	{
 		return false;
 	}
-	if ( !ComputePipelines.Initialize( Device.Get() ) || !GraphicsPipelines.Initialize( Device.Get() ) || !ComputeQueue.Initialize( Device.Get(), Queue.Get(), BufferResources, ComputePipelines, &Textures ) )
+	if ( !ComputePipelines.Initialize( Device.Get() ) || !GraphicsPipelines.Initialize( Device.Get() ) || !Timestamps.Initialize( Device.Get(), Queue.Get() ) || !ComputeQueue.Initialize( Device.Get(), Queue.Get(), BufferResources, ComputePipelines, &Textures, &Timestamps ) )
 	{
 		return false;
 	}
@@ -114,7 +114,12 @@ bool CDX12Device::InitializeOnQueue( HWND Window, int32 Width, int32 Height, ID3
 
 bool CDX12Device::Wait( uint32 TimeoutMs )
 {
-	return Completion.Wait( TimeoutMs );
+	const bool bCompleted = Completion.Wait( TimeoutMs );
+	if ( bCompleted )
+	{
+		Timestamps.CollectCompleted();
+	}
+	return bCompleted;
 }
 
 bool CDX12Device::PrepareShutdown( uint32 TimeoutMs )
@@ -168,6 +173,7 @@ void CDX12Device::ReleaseAfterGPUStopped()
 	Allocator.Reset();
 	SwapChain.Reset();
 	ComputeQueue.ResetAfterGPUIdle();
+	Timestamps.ResetAfterGPUIdle();
 	ComputePipelines.ResetAfterGPUIdle();
 	GraphicsPipelines.ResetAfterGPUIdle();
 	Textures.ResetAfterGPUIdle();
@@ -178,6 +184,7 @@ void CDX12Device::ReleaseAfterGPUStopped()
 	Queue.Reset();
 	Device.Reset();
 	BufferIndex = RtvStride = 0;
+	MainTimestampBatchId = 0;
 	CurrentRtv = {};
 	bRecording = false;
 	bPresentPending = false;
@@ -199,7 +206,7 @@ bool CDX12Device::BeginFrame()
 
 bool CDX12Device::BeginFrameForBuffer( uint32 Index )
 {
-	if ( !bInitialized || bClosing || bRecording || bPresentPending || Index >= BufferCount || !Wait() || FAILED( Allocator->Reset() ) || FAILED( Commands->Reset( Allocator.Get(), nullptr ) ) )
+	if ( !bInitialized || bClosing || bRecording || bPresentPending || Index >= BufferCount || !Wait() || !Timestamps.CollectCompleted() || FAILED( Allocator->Reset() ) || FAILED( Commands->Reset( Allocator.Get(), nullptr ) ) )
 	{
 		return false;
 	}
@@ -208,6 +215,12 @@ bool CDX12Device::BeginFrameForBuffer( uint32 Index )
 	GraphicsPipelines.CollectAfterGPUIdle();
 	Textures.CollectAfterGPUIdle(); // 記録済みの描画が残らない時点でだけ旧版を戻す。
 	BufferResources.CollectAfterGPUIdle();
+	const uint64 CreatedBatch = Timestamps.BeginBatch();
+	if ( CreatedBatch == 0 )
+	{
+		return false;
+	}
+	MainTimestampBatchId = CreatedBatch;
 	bCaptureGame = bCaptureUI = bGameCopied = bUICopied = false;
 	bFrameSubmitted = false;
 	BufferIndex = Index;
@@ -240,6 +253,10 @@ bool CDX12Device::SubmitFrame()
 	{
 		return false;
 	}
+	if ( MainTimestampBatchId != 0 )
+	{
+		Timestamps.AbortUnclosedInBatch( MainTimestampBatchId );
+	}
 	if ( bCaptureUI )
 	{
 		bUICopied = UIReadback.RecordCopy( Commands.Get(), Buffers[BufferIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET );
@@ -254,10 +271,21 @@ bool CDX12Device::SubmitFrame()
 	bRecording = false;
 	if ( FAILED( Commands->Close() ) )
 	{
+		if ( MainTimestampBatchId != 0 )
+		{
+			Timestamps.AbortBatch( MainTimestampBatchId );
+			MainTimestampBatchId = 0;
+		}
 		return false;
 	}
 	ID3D12CommandList *Lists[] = { Commands.Get() }; // 今フレームを一度だけ送る。
 	Queue->ExecuteCommandLists( 1, Lists );
+	const uint64 BatchToCommit = MainTimestampBatchId;
+	MainTimestampBatchId = 0;
+	if ( BatchToCommit != 0 && !Timestamps.CommitBatch( BatchToCommit ) )
+	{
+		return false;
+	}
 	bFrameSubmitted = true;
 	bPresentPending = true;
 	return true;
@@ -265,22 +293,35 @@ bool CDX12Device::SubmitFrame()
 
 bool CDX12Device::SubmitFrameSegment()
 {
-	if ( !IsRecording() )
+	if ( !IsRecording() || ( MainTimestampBatchId != 0 && Timestamps.HasActiveRecording( MainTimestampBatchId ) ) )
 	{
 		return false;
 	}
 	bRecording = false;
 	if ( FAILED( Commands->Close() ) )
 	{
+		if ( MainTimestampBatchId != 0 )
+		{
+			Timestamps.AbortBatch( MainTimestampBatchId );
+			MainTimestampBatchId = 0;
+		}
 		return false;
 	}
 	ID3D12CommandList *Lists[] = { Commands.Get() }; // 後続の別パスより前に、ここまでの描画を確定する。
 	Queue->ExecuteCommandLists( 1, Lists );
+	const uint64 BatchToCommit = MainTimestampBatchId;
+	MainTimestampBatchId = 0;
 	// allocatorは次のフレーム冒頭でGPU完了を待つまでResetしない。色と深度の内容も保つ。
-	if ( FAILED( Device->GetDeviceRemovedReason() ) || FAILED( Commands->Reset( Allocator.Get(), nullptr ) ) )
+	if ( ( BatchToCommit != 0 && !Timestamps.CommitBatch( BatchToCommit ) ) || FAILED( Device->GetDeviceRemovedReason() ) || FAILED( Commands->Reset( Allocator.Get(), nullptr ) ) )
 	{
 		return false;
 	}
+	const uint64 NextBatch = Timestamps.BeginBatch();
+	if ( NextBatch == 0 )
+	{
+		return false;
+	}
+	MainTimestampBatchId = NextBatch;
 	bRecording = true;
 	return true;
 }
@@ -386,4 +427,24 @@ CDX12GraphicsPipelineStore *CDX12Device::GetGraphicsPipelineStore()
 IComputeQueue *CDX12Device::GetComputeQueue()
 {
 	return bInitialized && !bClosing ? &ComputeQueue : nullptr;
+}
+
+IGpuTimestampResources *CDX12Device::GetTimestampResources()
+{
+	return bInitialized && !bClosing ? &Timestamps : nullptr;
+}
+
+CDX12TimestampStore *CDX12Device::GetTimestampStore()
+{
+	return bInitialized && !bClosing ? &Timestamps : nullptr;
+}
+
+bool CDX12Device::BeginMainTimestamp( FGpuTimestampHandle Query )
+{
+	return IsRecording() && MainTimestampBatchId != 0 && Timestamps.BeginRecording( Commands.Get(), MainTimestampBatchId, Query );
+}
+
+bool CDX12Device::EndMainTimestamp( FGpuTimestampHandle Query )
+{
+	return IsRecording() && MainTimestampBatchId != 0 && Timestamps.EndRecording( Commands.Get(), MainTimestampBatchId, Query );
 }

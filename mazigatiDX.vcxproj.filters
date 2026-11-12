@@ -1108,6 +1108,9 @@
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureStore.cpp">
       <Filter>Library\Platform\DX12\Resource\Texture</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Resource\Timestamp\DX12TimestampStore.cpp">
+      <Filter>Library\Platform\DX12\Resource\Timestamp</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Window\DX12PlatformSubsystem.cpp">
       <Filter>Library\Platform\DX12\Window</Filter>
     </ClCompile>
@@ -1989,6 +1992,9 @@
     <ClInclude Include="Library\Core\Interfaces\Render\IGeometryBufferSource.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IGpuTimestampResources.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IGraphicsPipelineResources.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
@@ -2131,6 +2137,15 @@
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Render\GeometryVertex.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GpuTimestampCapabilities.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GpuTimestampHandle.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GpuTimestampResult.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Render\GraphicsBufferLayout.h">
@@ -3554,6 +3569,9 @@
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureStore.h">
       <Filter>Library\Platform\DX12\Resource\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Resource\Timestamp\DX12TimestampStore.h">
+      <Filter>Library\Platform\DX12\Resource\Timestamp</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Window\DX12PlatformSubsystem.h">
       <Filter>Library\Platform\DX12\Window</Filter>
@@ -5596,6 +5614,9 @@
     </Filter>
     <Filter Include="Library\Platform\DX12\Resource\Texture">
       <UniqueIdentifier>{79C43A66-DCFC-4FF5-AB23-22A1618707FE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Resource\Timestamp">
+      <UniqueIdentifier>{6E4A1C32-8F0B-4D7E-9A51-3B9C7E2D4F10}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Platform\DX12\Window">
       <UniqueIdentifier>{37D65420-DC1F-A8F9-F304-85E799095E27}</UniqueIdentifier>

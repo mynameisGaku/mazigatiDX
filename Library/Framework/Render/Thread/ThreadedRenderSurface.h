@@ -40,6 +40,10 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 	bool BeginRenderTargetPass( const FRenderTargetPassDesc &Desc ) override;
 	// 描画先パスの描画を確定して同じGPUキューへ提出し、通常寸法へ戻す。
 	bool EndRenderTargetPass() override;
+	// 先行する2D命令を確定し、現在の記録先（主画面または描画先パス）へGPUタイムスタンプの開始点を積む。
+	bool BeginGpuTimestamp( FGpuTimestampHandle Query ) override;
+	// 先行する2D命令を確定し、開始済みのGPUタイムスタンプを閉じて解決を記録する。
+	bool EndGpuTimestamp( FGpuTimestampHandle Query ) override;
 	// 実行列と借用先の寿命を複製しない。
 	CThreadedRenderSurface( const CThreadedRenderSurface & ) = delete;
 	// 実行中に所有先を代入で差し替えない。

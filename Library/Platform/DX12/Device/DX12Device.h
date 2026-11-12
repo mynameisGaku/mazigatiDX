@@ -8,6 +8,7 @@
 #include "Library/Platform/DX12/Resource/Texture/DX12TextureStore.h"
 #include "Library/Platform/DX12/Resource/Buffer/DX12BufferStore.h"
 #include "Library/Platform/DX12/Pipeline/Graphics/DX12GraphicsPipelineStore.h"
+#include "Library/Platform/DX12/Resource/Timestamp/DX12TimestampStore.h"
 #include "Library/Platform/DX12/Command/Compute/DX12ComputeQueue.h"
 #include "Library/Platform/DX12/Resource/Readback/DX12TextureReadback.h"
 #include "DX12QueueCompletion.h"
@@ -95,6 +96,14 @@ class CDX12Device
 	CDX12GraphicsPipelineStore *GetGraphicsPipelineStore();
 	// 同じ描画キューへcomputeを提出する窓口を貸す。
 	IComputeQueue *GetComputeQueue();
+	// GPUタイムスタンプ計測資源の公開窓口を貸す。
+	IGpuTimestampResources *GetTimestampResources();
+	// 描画パスや記録器が共有するGPUタイムスタンプ所有者を貸す。
+	CDX12TimestampStore *GetTimestampStore();
+	// 通常フレームのコマンド列へGPUタイムスタンプの開始点を積む。フレーム外はfalse。
+	bool BeginMainTimestamp( FGpuTimestampHandle Query );
+	// 通常フレームのコマンド列でGPUタイムスタンプを閉じ、解決を記録する。
+	bool EndMainTimestamp( FGpuTimestampHandle Query );
 	// 呼出前に提出したGPU処理を最大60000msまで待つ。0は待たず、失敗・喪失・タイムアウトはfalse。
 	bool Wait( uint32 TimeoutMs = 10000 );
 
@@ -114,7 +123,9 @@ class CDX12Device
 	CDX12BufferStore BufferResources; // 同じキューへバイト列を転送する独立した所有者。
 	CDX12ComputePipelineStore ComputePipelines; // プログラムとその配置の所有者。
 	CDX12GraphicsPipelineStore GraphicsPipelines; // カスタムグラフィックスPSOとルート署名の所有者。
+	CDX12TimestampStore Timestamps; // DIRECTキュー上のGPUタイムスタンプQueryHeap・Fenceの所有者。
 	CDX12ComputeQueue ComputeQueue; // 上の所有者より先に借用参照を戻す提出先。
+	uint64 MainTimestampBatchId = 0; // 通常フレーム記録中コマンド列のタイムスタンプバッチ番号。
 	Microsoft::WRL::ComPtr<ID3D12Resource> Buffers[BufferCount]; // 交換用画面。
 	CDX12QueueCompletion Completion; // UIと独立したキューの完了待機。
 	CDX12TextureReadback GameReadback, UIReadback; // 必要な段階だけ準備する画素のコピー先。

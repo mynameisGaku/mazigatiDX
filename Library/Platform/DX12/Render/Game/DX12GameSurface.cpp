@@ -71,3 +71,29 @@ bool CDX12GameSurface::EndRenderTargetPass()
 {
 	return TargetPass && !Capture.IsActive() && Device.IsRecording() && TargetPass->End();
 }
+
+bool CDX12GameSurface::BeginGpuTimestamp( FGpuTimestampHandle Query )
+{
+	if ( !Device.IsRecording() || Capture.IsActive() )
+	{
+		return false;
+	}
+	if ( TargetPass && TargetPass->IsActive() )
+	{
+		return TargetPass->BeginGpuTimestamp( Query );
+	}
+	return Device.BeginMainTimestamp( Query );
+}
+
+bool CDX12GameSurface::EndGpuTimestamp( FGpuTimestampHandle Query )
+{
+	if ( !Device.IsRecording() || Capture.IsActive() )
+	{
+		return false;
+	}
+	if ( TargetPass && TargetPass->IsActive() )
+	{
+		return TargetPass->EndGpuTimestamp( Query );
+	}
+	return Device.EndMainTimestamp( Query );
+}

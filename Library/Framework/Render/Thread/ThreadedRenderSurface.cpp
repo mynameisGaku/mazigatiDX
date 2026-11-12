@@ -217,6 +217,32 @@ bool CThreadedRenderSurface::EndRenderTargetPass()
 	return bExecuted && bResult;
 }
 
+bool CThreadedRenderSurface::BeginGpuTimestamp( FGpuTimestampHandle Query )
+{
+	GAME_THREAD_ONLY( false );
+	if ( !bActive )
+	{
+		return false;
+	}
+	bool bResult = false;
+	auto Work = [&]()
+	{ bResult = Target.BeginGpuTimestamp( Query ); };
+	return Execute( MoveTemp( Work ) ) && bResult;
+}
+
+bool CThreadedRenderSurface::EndGpuTimestamp( FGpuTimestampHandle Query )
+{
+	GAME_THREAD_ONLY( false );
+	if ( !bActive )
+	{
+		return false;
+	}
+	bool bResult = false;
+	auto Work = [&]()
+	{ bResult = Target.EndGpuTimestamp( Query ); };
+	return Execute( MoveTemp( Work ) ) && bResult;
+}
+
 bool CThreadedRenderSurface::DrawGeometry( const FGeometryVertex *Vertices, int32 Count, const FGeometryDrawState &State )
 {
 	GAME_THREAD_ONLY( false );

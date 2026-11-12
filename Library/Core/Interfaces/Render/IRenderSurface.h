@@ -3,6 +3,7 @@
 #include "Library/Math/Color.h"
 #include "Library/Core/Render/OffscreenCaptureDesc.h"
 #include "Library/Core/Render/RenderTargetPassDesc.h"
+#include "Library/Core/Render/GpuTimestampHandle.h"
 #include "Library/Core/Collection/Array.h"
 class IRenderCanvas2D;
 class IRenderGeometry3D;
@@ -29,4 +30,8 @@ public:
 	virtual bool BeginRenderTargetPass( const FRenderTargetPassDesc& ) { return false; }
 	// 描画先パスの命令を同じGPUキューへ提出し、通常の描画先へ戻す。失敗時はfalse。
 	virtual bool EndRenderTargetPass() { return false; }
+	// 現在の記録先（主画面または描画先パス）へGPUタイムスタンプの開始点を積む。未対応・フレーム外・不正番号はfalse。
+	virtual bool BeginGpuTimestamp( FGpuTimestampHandle Query ) { (void)Query; return false; }
+	// 開始済みのGPUタイムスタンプを閉じ、同じコマンド列へ解決を記録する。未開始・別ターゲットへ跨ぐ呼び出しはfalse。
+	virtual bool EndGpuTimestamp( FGpuTimestampHandle Query ) { (void)Query; return false; }
 };

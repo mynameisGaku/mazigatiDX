@@ -149,7 +149,7 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection &Collection )
 	const EWindowMode InitialMode = Settings.WindowMode; // 窓の作成後に起動モードへ移す。
 	CaptureRenderer = new CDX12GameCapture( *Device, GameText );
 	TargetPassRenderer = new CDX12RenderTargetPass();
-	if ( !TargetPassRenderer->Initialize( Device->GetNativeDevice(), Device->GetNativeQueue(), *Device->GetTextureResources(), GameText, Device->GetImageDescriptorHeap(), Device->GetBufferResources(), Device->GetGraphicsPipelineStore() ) )
+	if ( !TargetPassRenderer->Initialize( Device->GetNativeDevice(), Device->GetNativeQueue(), *Device->GetTextureResources(), GameText, Device->GetImageDescriptorHeap(), Device->GetBufferResources(), Device->GetGraphicsPipelineStore(), Device->GetTimestampStore() ) )
 	{
 		Deinitialize();
 		return;
@@ -467,6 +467,18 @@ bool CDX12PlatformSubsystem::EndRenderTargetPass()
 {
 	GAME_THREAD_ONLY( false );
 	return bInFrame && ThreadedSurface && ThreadedSurface->EndRenderTargetPass();
+}
+
+bool CDX12PlatformSubsystem::BeginGpuTimestamp( FGpuTimestampHandle Query )
+{
+	GAME_THREAD_ONLY( false );
+	return bInFrame && ThreadedSurface && ThreadedSurface->BeginGpuTimestamp( Query );
+}
+
+bool CDX12PlatformSubsystem::EndGpuTimestamp( FGpuTimestampHandle Query )
+{
+	GAME_THREAD_ONLY( false );
+	return bInFrame && ThreadedSurface && ThreadedSurface->EndGpuTimestamp( Query );
 }
 
 void CDX12PlatformSubsystem::RecordClear( FColor32 Color )
@@ -821,7 +833,114 @@ void CDX12PlatformSubsystem::ReleaseGraphicsPipeline( FGraphicsPipelineHandle Pi
 	ExecuteRender( MoveTemp( Work ) );
 }
 
-FComputeSubmission CDX12PlatformSubsystem::SubmitCompute( TArrayView<const FComputeDispatch> Dispatches )
+bool CDX12PlatformSubsystem::GetGpuTimestampCapabilities( FGpuTimestampCapabilities &Out ) const
+{
+	GAME_THREAD_ONLY( false );
+	if ( !( bInitialized && Device ) )
+	{
+		return false;
+	}
+	bool Result = false;
+	auto Work = [&]()
+	{
+		if ( auto *Resources = Device->GetTimestampResources() )
+		{
+			Result = Resources->GetGpuTimestampCapabilities( Out );
+		}
+	};
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : false;
+}
+
+FGpuTimestampHandle CDX12PlatformSubsystem::CreateGpuTimestampQuery()
+{
+	GAME_THREAD_ONLY( FGpuTimestampHandle() );
+	if ( !( bInitialized && Device ) )
+	{
+		return FGpuTimestampHandle();
+	}
+	FGpuTimestampHandle Result;
+	auto Work = [&]()
+	{
+		if ( auto *Resources = Device->GetTimestampResources() )
+		{
+			Result = Resources->CreateGpuTimestampQuery();
+		}
+	};
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : FGpuTimestampHandle();
+}
+
+void CDX12PlatformSubsystem::ReleaseGpuTimestampQuery( FGpuTimestampHandle Query )
+{
+	GAME_THREAD_ONLY();
+	if ( !( Device ) )
+	{
+		return;
+	}
+	auto Work = [&]()
+	{
+		if ( auto *Resources = Device->GetTimestampResources() )
+		{
+			Resources->ReleaseGpuTimestampQuery( Query );
+		}
+	};
+	ExecuteRender( MoveTemp( Work ) );
+}
+
+bool CDX12PlatformSubsystem::IsGpuTimestampReady( FGpuTimestampHandle Query, bool &OutReady )
+{
+	GAME_THREAD_ONLY( false );
+	if ( !( bInitialized && Device ) )
+	{
+		return false;
+	}
+	bool Result = false;
+	auto Work = [&]()
+	{
+		if ( auto *Resources = Device->GetTimestampResources() )
+		{
+			Result = Resources->IsGpuTimestampReady( Query, OutReady );
+		}
+	};
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : false;
+}
+
+bool CDX12PlatformSubsystem::WaitGpuTimestamp( FGpuTimestampHandle Query, uint32 TimeoutMs )
+{
+	GAME_THREAD_ONLY( false );
+	if ( !( bInitialized && Device ) )
+	{
+		return false;
+	}
+	bool Result = false;
+	auto Work = [&]()
+	{
+		if ( auto *Resources = Device->GetTimestampResources() )
+		{
+			Result = Resources->WaitGpuTimestamp( Query, TimeoutMs );
+		}
+	};
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : false;
+}
+
+bool CDX12PlatformSubsystem::GetGpuTimestampResult( FGpuTimestampHandle Query, FGpuTimestampResult &Out )
+{
+	GAME_THREAD_ONLY( false );
+	if ( !( bInitialized && Device ) )
+	{
+		return false;
+	}
+	bool Result = false;
+	auto Work = [&]()
+	{
+		if ( auto *Resources = Device->GetTimestampResources() )
+		{
+			Result = Resources->GetGpuTimestampResult( Query, Out );
+		}
+	};
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : false;
+}
+
+FComputeSubmission CDX12PlatformSubsystem::SubmitComputeInternal( TArrayView<const FComputeDispatch> Dispatches, const FGpuTimestampHandle *Timestamp )
 {
 	GAME_THREAD_ONLY( FComputeSubmission() );
 	if ( !( bInitialized && Device ) )
@@ -831,8 +950,24 @@ FComputeSubmission CDX12PlatformSubsystem::SubmitCompute( TArrayView<const FComp
 	// 呼出し元は同期処理の完了まで、入力と出力の寿命を保持する。
 	FComputeSubmission Result = FComputeSubmission();
 	auto Work = [&]()
-	{ if ( NativeSurface && NativeSurface->SubmitPendingMainCommands() ) { Result = Device->GetComputeQueue()->SubmitCompute( Dispatches ); } };
+	{
+		if ( NativeSurface && NativeSurface->SubmitPendingMainCommands() )
+		{
+			IComputeQueue *Queue = Device->GetComputeQueue();
+			Result = Timestamp ? Queue->SubmitComputeWithTimestamp( Dispatches, *Timestamp ) : Queue->SubmitCompute( Dispatches );
+		}
+	};
 	return ExecuteRender( MoveTemp( Work ) ) ? Result : FComputeSubmission();
+}
+
+FComputeSubmission CDX12PlatformSubsystem::SubmitCompute( TArrayView<const FComputeDispatch> Dispatches )
+{
+	return SubmitComputeInternal( Dispatches, nullptr );
+}
+
+FComputeSubmission CDX12PlatformSubsystem::SubmitComputeWithTimestamp( TArrayView<const FComputeDispatch> Dispatches, FGpuTimestampHandle Timestamp )
+{
+	return SubmitComputeInternal( Dispatches, &Timestamp );
 }
 
 bool CDX12PlatformSubsystem::GetComputeCompletion( FComputeSubmission Submission, bool &OutCompleted )
