@@ -46,6 +46,7 @@ enum class EMaterialNodeKind : uint8
 	ParticleLife,       // Particle: 粒子の寿命の位置（生まれたときが 0、消えるときが 1）（Float）
 	ParticleAge,        // Particle: 粒子が生まれてからの秒（Float）
 	ParticleRandom,     // Particle: 粒子ごとに決まった、0〜1 のばらばらな数（生まれてから消えるまで、変わらない）（Float）
+	ParticleSpeed,      // Particle: 粒子の速さ（ワールドの長さ / 秒）（Float）
 
 	// 算術（2 つ: A, B）
 	Add,

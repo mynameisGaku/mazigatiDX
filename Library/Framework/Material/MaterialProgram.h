@@ -41,7 +41,8 @@ enum class EMaterialInput : uint8
 	CameraVector,
 	ParticleLife,
 	ParticleAge,
-	ParticleRandom
+	ParticleRandom,
+	ParticleSpeed
 };
 
 enum class EMaterialUnary : uint8

@@ -157,6 +157,9 @@ bool NMaterialEval::Evaluate( const FMaterialProgram& Program, const FMaterialEv
 			case EMaterialInput::ParticleRandom:
 				Result.x = Context.ParticleRandom;
 				break;
+			case EMaterialInput::ParticleSpeed:
+				Result.x = Context.ParticleSpeed;
+				break;
 			default:
 				Result = FVector4( Context.CameraVector.x, Context.CameraVector.y, Context.CameraVector.z, 0.0f );
 				break;

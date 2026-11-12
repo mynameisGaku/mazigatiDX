@@ -32,6 +32,7 @@ struct FMaterialEvalContext
 	float32 ParticleLife = 0.0f;     // Particle: 寿命の位置（0〜1）
 	float32 ParticleAge = 0.0f;      // Particle: 生まれてからの秒
 	float32 ParticleRandom = 0.0f;   // Particle: 粒子ごとの 0〜1 の数
+	float32 ParticleSpeed = 0.0f;    // Particle: 速さ（ワールドの長さ / 秒）
 
 	// パラメーターの値（Params の Index ごと。足りない分は、既定の値）
 	TArray<FVector4> ParamValues;

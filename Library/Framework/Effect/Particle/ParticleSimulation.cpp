@@ -480,6 +480,9 @@ void NParticle::CollectDrawParticles( const FParticleSimulation& Simulation, TAr
 			Item.Serial = P.Serial;
 			Item.Age = P.Age;
 			Item.NormalizedAge = T;
+			// 速さ（向きは、Local でも World でも、長さが同じ）
+			const float32 Speed = P.Velocity.Length();
+			Item.Speed = NMath::IsFinite( Speed ) ? Speed : 0.0f;
 			Out.Add( Item );
 		}
 	}

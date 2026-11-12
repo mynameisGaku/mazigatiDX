@@ -551,7 +551,7 @@ bool CMaterial::BeginParticles( FDrawContext& Draw, const FMaterialFrameState& S
 
 bool CMaterial::DrawParticleQuad( FDrawContext& Draw, const FDrawQuad3DData& Quad, const FMaterialParticleState& Particle ) const
 {
-	return Draw.ShaderQuad3D( Quad, FVector4( Particle.Life, Particle.Age, Particle.Random, 0.0f ) );
+	return Draw.ShaderQuad3D( Quad, FVector4( Particle.Life, Particle.Age, Particle.Random, Particle.Speed ) );
 }
 
 void CMaterial::EndParticles( FDrawContext& Draw ) const

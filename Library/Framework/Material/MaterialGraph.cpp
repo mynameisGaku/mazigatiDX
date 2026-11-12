@@ -90,6 +90,7 @@ namespace
 		Set( Make( K::ParticleLife, "ParticleLife", "Inputs", DomainParticle ) );
 		Set( Make( K::ParticleAge, "ParticleAge", "Inputs", DomainParticle ) );
 		Set( Make( K::ParticleRandom, "ParticleRandom", "Inputs", DomainParticle ) );
+		Set( Make( K::ParticleSpeed, "ParticleSpeed", "Inputs", DomainParticle ) );
 
 		Set( Make( K::Add, "Add", "Math", DomainAll, { Pin( "A", 0.0f ), Pin( "B", 0.0f ) } ) );
 		Set( Make( K::Subtract, "Subtract", "Math", DomainAll, { Pin( "A", 0.0f ), Pin( "B", 0.0f ) } ) );

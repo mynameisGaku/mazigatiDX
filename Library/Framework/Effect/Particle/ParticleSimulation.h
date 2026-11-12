@@ -89,6 +89,7 @@ namespace NParticle
 		uint32 Serial = 0;                    // 生まれたときの番号。雷の形を粒子の残数から独立させる。
 		float32 Age = 0.0f;                   // 生まれてからの秒。エフェクトの周回で巻き戻さない。
 		float32 NormalizedAge = 0.0f;         // 寿命に対する経過の割合。曲線などの材質評価へ渡す。
+		float32 Speed = 0.0f;                 // 速さ（m / 秒）。マテリアルの ParticleSpeed ノードへ渡す。
 	};
 
 	// 描く粒子を、エミッターの順に、生まれた順に集める（Out は空にしてから）

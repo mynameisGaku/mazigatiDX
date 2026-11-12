@@ -535,6 +535,8 @@ namespace
 				return ScalarResult( EmitInput( EMaterialInput::ParticleAge, EMaterialValueType::Float, Id ) );
 			case K::ParticleRandom:
 				return ScalarResult( EmitInput( EMaterialInput::ParticleRandom, EMaterialValueType::Float, Id ) );
+			case K::ParticleSpeed:
+				return ScalarResult( EmitInput( EMaterialInput::ParticleSpeed, EMaterialValueType::Float, Id ) );
 			case K::SceneColor:
 			{
 				const int32 Uv = PinValue( Node, 0 );
