@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DX12RenderTargetPass.h"
+#include "Library/Platform/DX12/Pipeline/Graphics/DX12GraphicsPipelineStore.h"
 #include "Library/Platform/DX12/Resource/Buffer/DX12BufferStore.h"
 #include "Library/Core/Types/Numeric.h"
 #include <d3dcompiler.h>
@@ -12,9 +13,9 @@ CDX12RenderTargetPass::~CDX12RenderTargetPass()
 	}
 }
 
-bool CDX12RenderTargetPass::Initialize( ID3D12Device *InDevice, ID3D12CommandQueue *InQueue, CDX12TextureStore &InTextures, IRenderTextRasterizer &InText, ID3D12DescriptorHeap *InImageHeap, CDX12BufferStore *InBuffers )
+bool CDX12RenderTargetPass::Initialize( ID3D12Device *InDevice, ID3D12CommandQueue *InQueue, CDX12TextureStore &InTextures, IRenderTextRasterizer &InText, ID3D12DescriptorHeap *InImageHeap, CDX12BufferStore *InBuffers, CDX12GraphicsPipelineStore *InGraphicsPipelines )
 {
-	if ( Device || bClosing || !InDevice || !InQueue || InQueue->GetDesc().Type != D3D12_COMMAND_LIST_TYPE_DIRECT || !InTextures.UsesDeviceAndQueue( InDevice, InQueue ) || ( InBuffers && !InBuffers->UsesDeviceAndQueue( InDevice, InQueue ) ) )
+	if ( Device || bClosing || !InDevice || !InQueue || InQueue->GetDesc().Type != D3D12_COMMAND_LIST_TYPE_DIRECT || !InTextures.UsesDeviceAndQueue( InDevice, InQueue ) || ( InBuffers && !InBuffers->UsesDeviceAndQueue( InDevice, InQueue ) ) || ( InGraphicsPipelines && !InGraphicsPipelines->UsesDevice( InDevice ) ) )
 	{
 		return false;
 	}
@@ -39,6 +40,7 @@ bool CDX12RenderTargetPass::Initialize( ID3D12Device *InDevice, ID3D12CommandQue
 	Text = &InText;
 	ImageHeap = InImageHeap;
 	Buffers = InBuffers;
+	GraphicsPipelines = InGraphicsPipelines;
 	bHealthy = true;
 	return true;
 }
@@ -76,12 +78,14 @@ void CDX12RenderTargetPass::ResetAfterGPUIdle()
 	Pending.Reset();
 	CurrentCommands.Reset();
 	CurrentAllocator.Reset();
-	ActiveColor = FDX12TextureBinding();
+	ActiveColors.Reset();
 	ActiveDepth = FDX12TextureBinding();
 	FallbackDepth.Reset();
 	FallbackDepthHeap.Reset();
 	DepthClearPipeline.Reset();
 	DepthClearRoot.Reset();
+	ColorClearPipeline.Reset();
+	ColorClearRoot.Reset();
 	Fence.Reset();
 	Completion.ResetAfterGPUIdle();
 	Queue.Reset();
@@ -90,11 +94,13 @@ void CDX12RenderTargetPass::ResetAfterGPUIdle()
 	Text = nullptr;
 	ImageHeap = nullptr;
 	Buffers = nullptr;
+	GraphicsPipelines = nullptr;
 	NextFenceValue = 0;
 	FallbackClearDepth = 1.0f;
 	FallbackWidth = FallbackHeight = 0;
 	bFallbackInitialized = false;
 	bUsingExternalDepth = false;
+	bRecordClearFailed = false;
 	bActive = false;
 	bHealthy = false;
 	bClosing = false;
@@ -207,30 +213,133 @@ bool CDX12RenderTargetPass::ClearDepthWithShader( int32 Width, int32 Height, D3D
 	return true;
 }
 
+bool CDX12RenderTargetPass::PrepareColorClearPipeline()
+{
+	if ( ColorClearPipeline )
+	{
+		return true;
+	}
+	const char Shader[] = "cbuffer C:register(b0){float4 clearColor;} float4 VS(uint id:SV_VertexID):SV_POSITION{return float4(id==2?3:-1,id==1?3:-1,0,1);} float4 PS():SV_TARGET{return clearColor;}"; // 最適化消去色と異なっても警告なしで全画面を塗る。
+	Microsoft::WRL::ComPtr<ID3DBlob> VS, PS, Root; // 任意色クリア専用の小さなプログラム。
+	D3D12_ROOT_PARAMETER Parameter = {}; // RGBAの4つの32bit定数。
+	Parameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+	Parameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	Parameter.Constants.Num32BitValues = 4;
+	D3D12_ROOT_SIGNATURE_DESC Signature = {}; // 記述子ヒープを使わない最小構成。
+	Signature.NumParameters = 1;
+	Signature.pParameters = &Parameter;
+	if ( FAILED( D3DCompile( Shader, sizeof( Shader ) - 1, "ColorClear", nullptr, nullptr, "VS", "vs_5_0", 0, 0, &VS, nullptr ) ) || FAILED( D3DCompile( Shader, sizeof( Shader ) - 1, "ColorClear", nullptr, nullptr, "PS", "ps_5_0", 0, 0, &PS, nullptr ) ) || FAILED( D3D12SerializeRootSignature( &Signature, D3D_ROOT_SIGNATURE_VERSION_1, &Root, nullptr ) ) || FAILED( Device->CreateRootSignature( 0, Root->GetBufferPointer(), Root->GetBufferSize(), IID_PPV_ARGS( &ColorClearRoot ) ) ) )
+	{
+		return false;
+	}
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC State = {}; // 深度へ触れず1枚のRGBA8だけを上書きするPSO。
+	State.pRootSignature = ColorClearRoot.Get();
+	State.VS = { VS->GetBufferPointer(), VS->GetBufferSize() };
+	State.PS = { PS->GetBufferPointer(), PS->GetBufferSize() };
+	State.BlendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+	State.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+	State.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	State.RasterizerState.DepthClipEnable = TRUE;
+	State.DepthStencilState.DepthEnable = FALSE;
+	State.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	State.SampleMask = UINT_MAX;
+	State.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	State.NumRenderTargets = 1;
+	State.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	State.DSVFormat = DXGI_FORMAT_UNKNOWN;
+	State.SampleDesc.Count = 1;
+	return SUCCEEDED( Device->CreateGraphicsPipelineState( &State, IID_PPV_ARGS( &ColorClearPipeline ) ) );
+}
+
+bool CDX12RenderTargetPass::ClearColorWithShader( int32 Width, int32 Height, D3D12_CPU_DESCRIPTOR_HANDLE Rtv, FColor32 Color )
+{
+	if ( !CurrentCommands || !PrepareColorClearPipeline() )
+	{
+		return false;
+	}
+	const float Values[4] = { Color.r / 255.0f, Color.g / 255.0f, Color.b / 255.0f, Color.a / 255.0f };
+	const D3D12_VIEWPORT Viewport = { 0, 0, static_cast<float>( Width ), static_cast<float>( Height ), 0, 1 };
+	const D3D12_RECT Scissor = { 0, 0, Width, Height };
+	CurrentCommands->OMSetRenderTargets( 1, &Rtv, FALSE, nullptr );
+	CurrentCommands->RSSetViewports( 1, &Viewport );
+	CurrentCommands->RSSetScissorRects( 1, &Scissor );
+	CurrentCommands->SetGraphicsRootSignature( ColorClearRoot.Get() );
+	CurrentCommands->SetGraphicsRoot32BitConstants( 0, 4, Values, 0 );
+	CurrentCommands->SetPipelineState( ColorClearPipeline.Get() );
+	CurrentCommands->IASetPrimitiveTopology( D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
+	CurrentCommands->DrawInstanced( 3, 1, 0, 0 );
+	return true;
+}
+
+bool CDX12RenderTargetPass::ClearColorAttachment( const FDX12TextureBinding &Target, FColor32 Color )
+{
+	if ( !CurrentCommands || !Target.TargetHeap )
+	{
+		return false;
+	}
+	const D3D12_CPU_DESCRIPTOR_HANDLE Rtv = Target.TargetHeap->GetCPUDescriptorHandleForHeapStart();
+	if ( Color.r == Target.InitialClearColor.r && Color.g == Target.InitialClearColor.g && Color.b == Target.InitialClearColor.b && Color.a == Target.InitialClearColor.a )
+	{
+		const float Values[4] = { Color.r / 255.0f, Color.g / 255.0f, Color.b / 255.0f, Color.a / 255.0f };
+		CurrentCommands->ClearRenderTargetView( Rtv, Values, 0, nullptr );
+		return true;
+	}
+	return ClearColorWithShader( Target.Width, Target.Height, Rtv, Color );
+}
+
 bool CDX12RenderTargetPass::Begin( const FRenderTargetPassDesc &Desc )
 {
-	if ( bActive || bClosing || !bHealthy || !Device || !Textures || !Text || !CollectCompleted() || Pending.Num() >= MaxPending || NextFenceValue >= TNumericLimits<uint64>::Max() - 1 || !Desc.ColorTarget.IsValid() || !NMath::IsFinite( Desc.Scale ) || Desc.Scale <= 0.0f || Desc.Scale > 16384.0f || ( Desc.bClearDepth && ( !NMath::IsFinite( Desc.ClearDepth ) || Desc.ClearDepth < 0.0f || Desc.ClearDepth > 1.0f ) ) )
+	if ( bActive || bClosing || !bHealthy || !Device || !Textures || !Text || !CollectCompleted() || Pending.Num() >= MaxPending || NextFenceValue >= TNumericLimits<uint64>::Max() - 1 || !NMath::IsFinite( Desc.Scale ) || Desc.Scale <= 0.0f || Desc.Scale > 16384.0f || ( Desc.bClearDepth && ( !NMath::IsFinite( Desc.ClearDepth ) || Desc.ClearDepth < 0.0f || Desc.ClearDepth > 1.0f ) ) )
 	{
 		return false;
 	}
-	FDX12TextureBinding ColorBinding, DepthBinding; // 検証済みの色描画先と任意の深度。
-	if ( !Textures->BeginRenderTargetPass( Desc.ColorTarget, Desc.DepthTarget, ColorBinding, DepthBinding ) )
+	TArray<FRenderTargetColorAttachment> RequestedColors; // 単一指定またはMRT指定の描画先群。
+	if ( !Desc.ColorTargets.IsEmpty() )
+	{
+		if ( Desc.ColorTarget.IsValid() || !Desc.ColorTargets.GetData() || Desc.ColorTargets.Num() <= 0 || Desc.ColorTargets.Num() > static_cast<int32>( FRenderTargetPassDesc::MaxColorTargets ) )
+		{
+			return false;
+		}
+		for ( const FRenderTargetColorAttachment &Item : Desc.ColorTargets )
+		{
+			RequestedColors.Add( Item );
+		}
+	}
+	else
+	{
+		if ( !Desc.ColorTarget.IsValid() )
+		{
+			return false;
+		}
+		RequestedColors.Add( FRenderTargetColorAttachment{ Desc.ColorTarget, Desc.ClearColor, Desc.bClearColor } );
+	}
+	TArray<FTextureResourceHandle> Handles; // ストア検証へ渡すハンドル配列。
+	Handles.SetNum( RequestedColors.Num() );
+	for ( int32 i = 0; i < RequestedColors.Num(); ++i )
+	{
+		Handles[i] = RequestedColors[i].Target;
+	}
+	TArray<FDX12TextureBinding> ColorBindings; // 検証済みの色描画先群。
+	FDX12TextureBinding DepthBinding; // 検証済みの任意深度。
+	if ( !Textures->BeginRenderTargetPass( TArrayView<const FTextureResourceHandle>( Handles.GetData(), Handles.Num() ), Desc.DepthTarget, ColorBindings, DepthBinding ) )
 	{
 		return false;
 	}
+	const int32 PassWidth = ColorBindings[0].Width;
+	const int32 PassHeight = ColorBindings[0].Height;
 	const bool bExternalDepth = Desc.DepthTarget.IsValid(); // 呼び出し側の読み取れる深度を使うか。
 	if ( !bExternalDepth )
 	{
 		const float32 DesiredDepth = Desc.bClearDepth ? Desc.ClearDepth : 1.0f; // 内部深度の初期値。
-		if ( !PrepareFallbackDepth( ColorBinding.Width, ColorBinding.Height, DesiredDepth ) )
+		if ( !PrepareFallbackDepth( PassWidth, PassHeight, DesiredDepth ) )
 		{
 			Textures->EndRenderTargetPass();
 			return false;
 		}
 		DepthBinding.Resource = FallbackDepth;
 		DepthBinding.TargetHeap = FallbackDepthHeap;
-		DepthBinding.Width = ColorBinding.Width;
-		DepthBinding.Height = ColorBinding.Height;
+		DepthBinding.Width = PassWidth;
+		DepthBinding.Height = PassHeight;
 		DepthBinding.InitialClearDepth = FallbackClearDepth;
 	}
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> Allocator; // このパス専用の記録領域。
@@ -243,7 +352,7 @@ bool CDX12RenderTargetPass::Begin( const FRenderTargetPassDesc &Desc )
 	if ( !Renderer )
 	{
 		Renderer = new CDX12GameRenderer();
-		if ( !Renderer->Initialize( Device.Get(), ColorBinding.Width, ColorBinding.Height, *Textures, *Text, DepthBinding.Resource.Get(), DepthBinding.TargetHeap.Get(), Buffers, Queue.Get() ) )
+		if ( !Renderer->Initialize( Device.Get(), PassWidth, PassHeight, *Textures, *Text, DepthBinding.Resource.Get(), DepthBinding.TargetHeap.Get(), Buffers, Queue.Get(), Textures, GraphicsPipelines ) )
 		{
 			delete Renderer;
 			Renderer = nullptr;
@@ -252,35 +361,56 @@ bool CDX12RenderTargetPass::Begin( const FRenderTargetPassDesc &Desc )
 			return false;
 		}
 	}
-	else if ( !Renderer->BindTarget( ColorBinding.Width, ColorBinding.Height, DepthBinding.Resource.Get(), DepthBinding.TargetHeap.Get() ) )
+	else if ( !Renderer->BindTarget( PassWidth, PassHeight, DepthBinding.Resource.Get(), DepthBinding.TargetHeap.Get() ) )
 	{
 		Textures->EndRenderTargetPass();
 		bHealthy = false;
 		return false;
 	}
-	D3D12_RESOURCE_BARRIER Barriers[2] = {}; // 定常のSRV状態から描画書き込み状態へ遷移する。
-	Barriers[0].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	Barriers[0].Transition.pResource = ColorBinding.Resource.Get();
-	Barriers[0].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-	Barriers[0].Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-	Barriers[0].Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	TArray<D3D12_RESOURCE_BARRIER> Barriers; // 定常のSRV状態から描画書き込み状態へ遷移する。
+	Barriers.SetNum( ColorBindings.Num() + ( bExternalDepth ? 1 : 0 ) );
+	for ( int32 i = 0; i < ColorBindings.Num(); ++i )
+	{
+		Barriers[i] = {};
+		Barriers[i].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		Barriers[i].Transition.pResource = ColorBindings[i].Resource.Get();
+		Barriers[i].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		Barriers[i].Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+		Barriers[i].Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	}
 	if ( bExternalDepth )
 	{
-		Barriers[1].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-		Barriers[1].Transition.pResource = DepthBinding.Resource.Get();
-		Barriers[1].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-		Barriers[1].Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-		Barriers[1].Transition.StateAfter = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+		D3D12_RESOURCE_BARRIER &DepthBarrier = Barriers[ColorBindings.Num()];
+		DepthBarrier = {};
+		DepthBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		DepthBarrier.Transition.pResource = DepthBinding.Resource.Get();
+		DepthBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		DepthBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+		DepthBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_DEPTH_WRITE;
 	}
-	Commands->ResourceBarrier( bExternalDepth ? 2 : 1, Barriers );
+	Commands->ResourceBarrier( static_cast<UINT>( Barriers.Num() ), Barriers.GetData() );
 	CurrentAllocator = MoveTemp( Allocator );
 	CurrentCommands = MoveTemp( Commands );
-	const D3D12_CPU_DESCRIPTOR_HANDLE ColorRtv = ColorBinding.TargetHeap->GetCPUDescriptorHandleForHeapStart(); // 色描画先のRTV。
+	TArray<D3D12_CPU_DESCRIPTOR_HANDLE> ColorRtvs;
+	TArray<uint64> ForbiddenBindings;
+	ColorRtvs.SetNum( ColorBindings.Num() );
+	for ( int32 i = 0; i < ColorBindings.Num(); ++i )
+	{
+		ColorRtvs[i] = ColorBindings[i].TargetHeap->GetCPUDescriptorHandleForHeapStart();
+		if ( ColorBindings[i].SrvGpuDescriptor != 0 )
+		{
+			ForbiddenBindings.Add( ColorBindings[i].SrvGpuDescriptor );
+		}
+	}
+	if ( bExternalDepth && DepthBinding.SrvGpuDescriptor != 0 )
+	{
+		ForbiddenBindings.Add( DepthBinding.SrvGpuDescriptor );
+	}
 	const D3D12_CPU_DESCRIPTOR_HANDLE DepthDsv = DepthBinding.TargetHeap->GetCPUDescriptorHandleForHeapStart(); // 深度描画先のDSV。
 	const bool bClearDepth = Desc.bClearDepth || ( !bExternalDepth && !bFallbackInitialized ); // 新規の内部深度はLoad要求でも一度初期化する。
 	const float32 ClearDepthValue = Desc.bClearDepth ? Desc.ClearDepth : 1.0f; // 未提出で破棄した消去値に初回Loadを依存させない。
 	const bool bFastDepthClear = bClearDepth && ClearDepthValue == DepthBinding.InitialClearDepth; // 作成時の最適化深度と一致する場合。
-	if ( bClearDepth && !bFastDepthClear && !ClearDepthWithShader( ColorBinding.Width, ColorBinding.Height, DepthDsv, ClearDepthValue ) )
+	if ( bClearDepth && !bFastDepthClear && !ClearDepthWithShader( PassWidth, PassHeight, DepthDsv, ClearDepthValue ) )
 	{
 		CurrentCommands.Reset();
 		CurrentAllocator.Reset();
@@ -288,7 +418,7 @@ bool CDX12RenderTargetPass::Begin( const FRenderTargetPassDesc &Desc )
 		bHealthy = false;
 		return false;
 	}
-	if ( !Renderer->BeginFrame( CurrentCommands.Get(), ColorRtv, ImageHeap, Desc.Scale, bFastDepthClear, ClearDepthValue, ColorBinding.SrvGpuDescriptor ) )
+	if ( !Renderer->BeginFrame( CurrentCommands.Get(), TArrayView<const D3D12_CPU_DESCRIPTOR_HANDLE>( ColorRtvs.GetData(), ColorRtvs.Num() ), ImageHeap, Desc.Scale, bFastDepthClear, ClearDepthValue, TArrayView<const uint64>( ForbiddenBindings.GetData(), ForbiddenBindings.Num() ) ) )
 	{
 		CurrentCommands.Reset();
 		CurrentAllocator.Reset();
@@ -296,21 +426,23 @@ bool CDX12RenderTargetPass::Begin( const FRenderTargetPassDesc &Desc )
 		bHealthy = false;
 		return false;
 	}
-	if ( Desc.bClearColor )
+	for ( int32 i = 0; i < ColorBindings.Num(); ++i )
 	{
-		if ( Desc.ClearColor.r == ColorBinding.InitialClearColor.r && Desc.ClearColor.g == ColorBinding.InitialClearColor.g && Desc.ClearColor.b == ColorBinding.InitialClearColor.b && Desc.ClearColor.a == ColorBinding.InitialClearColor.a )
+		if ( RequestedColors[i].bClear && !ClearColorAttachment( ColorBindings[i], RequestedColors[i].ClearColor ) )
 		{
-			const float Values[4] = { Desc.ClearColor.r / 255.0f, Desc.ClearColor.g / 255.0f, Desc.ClearColor.b / 255.0f, Desc.ClearColor.a / 255.0f }; // 最適化消去色と一致するRGBA。
-			CurrentCommands->ClearRenderTargetView( ColorRtv, Values, 0, nullptr );
-		}
-		else
-		{
-			Renderer->RecordClear( Desc.ClearColor );
+			Renderer->EndFrame();
+			CurrentCommands.Reset();
+			CurrentAllocator.Reset();
+			Textures->EndRenderTargetPass();
+			bHealthy = false;
+			return false;
 		}
 	}
-	ActiveColor = MoveTemp( ColorBinding );
+	CurrentCommands->OMSetRenderTargets( static_cast<UINT>( ColorRtvs.Num() ), ColorRtvs.GetData(), FALSE, nullptr );
+	ActiveColors = MoveTemp( ColorBindings );
 	ActiveDepth = MoveTemp( DepthBinding );
 	bUsingExternalDepth = bExternalDepth;
+	bRecordClearFailed = false;
 	bActive = true;
 	return true;
 }
@@ -321,41 +453,49 @@ bool CDX12RenderTargetPass::End()
 	{
 		return false;
 	}
-	const bool bRendered = Renderer->EndFrame(); // 文字失敗や自己参照競合があれば提出しない。
+	const bool bRendered = Renderer->EndFrame() && !bRecordClearFailed; // 文字失敗・任意クリア失敗・自己参照競合があれば提出しない。
 	Textures->EndRenderTargetPass();
 	bActive = false;
+	bRecordClearFailed = false;
 	FSubmissionRecord Created; // 完了まで保持する提出レコード。
-	Renderer->MoveFrameResources( Created.Buffers, Created.Uploads );
+	Renderer->MoveFrameResources( Created.Buffers, Created.Uploads, Created.Textures, Created.Pipelines );
 	if ( !bRendered )
 	{
 		CurrentCommands->Close();
 		CurrentCommands.Reset();
 		CurrentAllocator.Reset();
-		ActiveColor = FDX12TextureBinding();
+		ActiveColors.Reset();
 		ActiveDepth = FDX12TextureBinding();
 		bUsingExternalDepth = false;
 		return false;
 	}
-	D3D12_RESOURCE_BARRIER Barriers[2] = {}; // パス終了時に後続の描画・compute読み取り用のSRV状態へ戻す。
-	Barriers[0].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	Barriers[0].Transition.pResource = ActiveColor.Resource.Get();
-	Barriers[0].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-	Barriers[0].Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	Barriers[0].Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+	TArray<D3D12_RESOURCE_BARRIER> Barriers; // パス終了時に後続の描画・compute読み取り用のSRV状態へ戻す。
+	Barriers.SetNum( ActiveColors.Num() + ( bUsingExternalDepth ? 1 : 0 ) );
+	for ( int32 i = 0; i < ActiveColors.Num(); ++i )
+	{
+		Barriers[i] = {};
+		Barriers[i].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		Barriers[i].Transition.pResource = ActiveColors[i].Resource.Get();
+		Barriers[i].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		Barriers[i].Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+		Barriers[i].Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+	}
 	if ( bUsingExternalDepth )
 	{
-		Barriers[1].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-		Barriers[1].Transition.pResource = ActiveDepth.Resource.Get();
-		Barriers[1].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-		Barriers[1].Transition.StateBefore = D3D12_RESOURCE_STATE_DEPTH_WRITE;
-		Barriers[1].Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+		D3D12_RESOURCE_BARRIER &DepthBarrier = Barriers[ActiveColors.Num()];
+		DepthBarrier = {};
+		DepthBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		DepthBarrier.Transition.pResource = ActiveDepth.Resource.Get();
+		DepthBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		DepthBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+		DepthBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 	}
-	CurrentCommands->ResourceBarrier( bUsingExternalDepth ? 2 : 1, Barriers );
+	CurrentCommands->ResourceBarrier( static_cast<UINT>( Barriers.Num() ), Barriers.GetData() );
 	if ( FAILED( CurrentCommands->Close() ) )
 	{
 		CurrentCommands.Reset();
 		CurrentAllocator.Reset();
-		ActiveColor = FDX12TextureBinding();
+		ActiveColors.Reset();
 		ActiveDepth = FDX12TextureBinding();
 		bUsingExternalDepth = false;
 		bHealthy = false;
@@ -363,7 +503,7 @@ bool CDX12RenderTargetPass::End()
 	}
 	Created.Allocator = MoveTemp( CurrentAllocator );
 	Created.Commands = MoveTemp( CurrentCommands );
-	Created.Color = MoveTemp( ActiveColor );
+	Created.Colors = MoveTemp( ActiveColors );
 	Created.Depth = MoveTemp( ActiveDepth );
 	Created.Value = ++NextFenceValue;
 	bUsingExternalDepth = false;
@@ -401,9 +541,23 @@ IRenderGeometry3D *CDX12RenderTargetPass::GetGeometry3D()
 
 void CDX12RenderTargetPass::RecordClear( FColor32 Color )
 {
-	if ( bActive && Renderer )
+	if ( !bActive || !Renderer || ActiveColors.IsEmpty() )
 	{
-		Renderer->RecordClear( Color );
+		return;
+	}
+	TArray<D3D12_CPU_DESCRIPTOR_HANDLE> ColorRtvs;
+	ColorRtvs.SetNum( ActiveColors.Num() );
+	for ( int32 i = 0; i < ActiveColors.Num(); ++i )
+	{
+		ColorRtvs[i] = ActiveColors[i].TargetHeap->GetCPUDescriptorHandleForHeapStart();
+		if ( !ClearColorAttachment( ActiveColors[i], Color ) )
+		{
+			bRecordClearFailed = true;
+		}
+	}
+	if ( CurrentCommands )
+	{
+		CurrentCommands->OMSetRenderTargets( static_cast<UINT>( ColorRtvs.Num() ), ColorRtvs.GetData(), FALSE, nullptr );
 	}
 }
 

@@ -114,7 +114,7 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection &Collection )
 		return;
 	}
 	GameRenderer = new CDX12GameRenderer();
-	if ( !GameRenderer->Initialize( Device->GetNativeDevice(), Settings.Width, Settings.Height, *Device->GetTextureResources(), GameText, nullptr, nullptr, Device->GetBufferResources(), Device->GetNativeQueue() ) )
+	if ( !GameRenderer->Initialize( Device->GetNativeDevice(), Settings.Width, Settings.Height, *Device->GetTextureResources(), GameText, nullptr, nullptr, Device->GetBufferResources(), Device->GetNativeQueue(), Device->GetTextureResources(), Device->GetGraphicsPipelineStore() ) )
 	{
 		Deinitialize();
 		return;
@@ -149,7 +149,7 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection &Collection )
 	const EWindowMode InitialMode = Settings.WindowMode; // 窓の作成後に起動モードへ移す。
 	CaptureRenderer = new CDX12GameCapture( *Device, GameText );
 	TargetPassRenderer = new CDX12RenderTargetPass();
-	if ( !TargetPassRenderer->Initialize( Device->GetNativeDevice(), Device->GetNativeQueue(), *Device->GetTextureResources(), GameText, Device->GetImageDescriptorHeap(), Device->GetBufferResources() ) )
+	if ( !TargetPassRenderer->Initialize( Device->GetNativeDevice(), Device->GetNativeQueue(), *Device->GetTextureResources(), GameText, Device->GetImageDescriptorHeap(), Device->GetBufferResources(), Device->GetGraphicsPipelineStore() ) )
 	{
 		Deinitialize();
 		return;
@@ -792,6 +792,32 @@ void CDX12PlatformSubsystem::ReleaseComputePipeline( FComputePipelineHandle Pipe
 	}
 	auto Work = [&]()
 	{ if ( auto* Resources = Device->GetComputePipelineResources() ) { Resources->ReleaseComputePipeline( Pipeline ); } };
+	ExecuteRender( MoveTemp( Work ) );
+}
+
+FGraphicsPipelineHandle CDX12PlatformSubsystem::CreateGraphicsPipeline( const FGraphicsPipelineDesc &Desc )
+{
+	GAME_THREAD_ONLY( FGraphicsPipelineHandle() );
+	if ( !( bInitialized && Device ) )
+	{
+		return FGraphicsPipelineHandle();
+	}
+	// 宣言配列とシェーダーバイナリの借用は同期実行から戻るまでに終える。
+	FGraphicsPipelineHandle Result = FGraphicsPipelineHandle();
+	auto Work = [&]()
+	{ Result = Device->GetGraphicsPipelineResources()->CreateGraphicsPipeline( Desc ); };
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : FGraphicsPipelineHandle();
+}
+
+void CDX12PlatformSubsystem::ReleaseGraphicsPipeline( FGraphicsPipelineHandle Pipeline )
+{
+	GAME_THREAD_ONLY();
+	if ( !( Device ) )
+	{
+		return;
+	}
+	auto Work = [&]()
+	{ if ( auto* Resources = Device->GetGraphicsPipelineResources() ) { Resources->ReleaseGraphicsPipeline( Pipeline ); } };
 	ExecuteRender( MoveTemp( Work ) );
 }
 

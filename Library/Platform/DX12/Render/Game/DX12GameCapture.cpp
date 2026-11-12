@@ -27,7 +27,7 @@ bool CDX12GameCapture::Begin( const FOffscreenCaptureDesc &Desc )
 	{
 		delete Renderer;
 		Renderer = new CDX12GameRenderer();
-		if ( !Renderer->Initialize( Target.GetDevice(), Desc.Width, Desc.Height, *Owner.GetTextureResources(), Text, Target.GetDepthTexture(), Target.GetDepthHeap(), Owner.GetBufferResources(), Owner.GetNativeQueue() ) )
+		if ( !Renderer->Initialize( Target.GetDevice(), Desc.Width, Desc.Height, *Owner.GetTextureResources(), Text, Target.GetDepthTexture(), Target.GetDepthHeap(), Owner.GetBufferResources(), Owner.GetNativeQueue(), Owner.GetTextureResources(), Owner.GetGraphicsPipelineStore() ) )
 		{
 			bHealthy = false;
 			return false;

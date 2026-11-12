@@ -3,6 +3,7 @@
 #include "Library/Core/Render/GeometryVertex.h"
 #include "Library/Core/Render/GeometryBufferDraw.h"
 #include "Library/Core/Render/GeometryDrawState.h"
+#include "Library/Core/Render/GraphicsPipelineDraw.h"
 #include "Library/Core/Render/TextureDrawView.h"
 
 // APIに依存しない頂点色・画像の3D実行先。公開のフロント側はゲームスレッド・フレーム内で呼ぶ。
@@ -27,6 +28,9 @@ public:
 	// 頂点の有限性、indexがVertexCount未満であること、GPUの実行時点の内容は呼出側が保証する。
 	// 同じキューへ先に提出したcomputeを参照できる。記録後の番号解除でも、実体はGPU完了まで保持する。
 	virtual bool DrawBufferGeometry( const FGeometryBufferDraw& Draw, const FGeometryDrawState& State, const FTextureDrawView* Texture = nullptr ) { return false; }
+	// 登録済みカスタムパイプラインとGPUバッファ・画像で描く。複数描画先（MRT）パスにも対応する。
+	// パスや状態と一致しないパイプライン、範囲外バッファ、書き込み中ターゲットとの競合時はfalseで記録しない。
+	virtual bool DrawGraphicsPipeline( const FGraphicsPipelineDraw& Draw ) { (void)Draw; return false; }
 	// 既存の描画より後に深度を1へ消す。クリップに関係なく全体を対象にする。
 	virtual void ClearDepth() = 0;
 };

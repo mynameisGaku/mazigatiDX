@@ -165,12 +165,15 @@ bool CThreadedRenderSurface::BeginRenderTargetPass( const FRenderTargetPassDesc 
 		return false;
 	}
 	bool bResult = false;
+	bool bPassCanvas = false, bPassGeometry = false; // パス開始後のMRT有無に応じて有効窓口を更新する。
 	int32 TargetWidth = 0, TargetHeight = 0; // 描画先の実寸を描画スレッド側で取得する。
 	auto Begin = [&]()
 	{
 		bResult = Target.BeginRenderTargetPass( Desc );
 		if ( bResult )
 		{
+			bPassCanvas = Target.GetCanvas2D() != nullptr;
+			bPassGeometry = Target.GetGeometry3D() != nullptr;
 			if ( IRenderGeometry3D *Geometry = Target.GetGeometry3D() )
 			{
 				TargetWidth = Geometry->GetWidth();
@@ -184,6 +187,8 @@ bool CThreadedRenderSurface::BeginRenderTargetPass( const FRenderTargetPassDesc 
 	}
 	Width = TargetWidth;
 	Height = TargetHeight;
+	bHasCanvas = bPassCanvas;
+	bHasGeometry = bPassGeometry;
 	bRenderTargetPass = true;
 	return true;
 }
@@ -196,11 +201,18 @@ bool CThreadedRenderSurface::EndRenderTargetPass()
 		return false;
 	}
 	bool bResult = false;
+	bool bAfterCanvas = false, bAfterGeometry = false; // 通常描画へ戻した後の窓口状態を復元する。
 	auto End = [&]()
-	{ bResult = Target.EndRenderTargetPass(); };
+	{
+		bResult = Target.EndRenderTargetPass();
+		bAfterCanvas = Target.GetCanvas2D() != nullptr;
+		bAfterGeometry = Target.GetGeometry3D() != nullptr;
+	};
 	const bool bExecuted = Execute( MoveTemp( End ) );
 	Width = FrameWidth;
 	Height = FrameHeight;
+	bHasCanvas = bAfterCanvas;
+	bHasGeometry = bAfterGeometry;
 	bRenderTargetPass = false;
 	return bExecuted && bResult;
 }
@@ -241,6 +253,19 @@ bool CThreadedRenderSurface::DrawBufferGeometry( const FGeometryBufferDraw &Draw
 	bool bResult = false;
 	auto Work = [&]()
 	{ if ( IRenderGeometry3D* Geometry = Target.GetGeometry3D() ) { bResult = Geometry->DrawBufferGeometry( Draw, State, Texture ); } };
+	return Execute( MoveTemp( Work ) ) && bResult;
+}
+
+bool CThreadedRenderSurface::DrawGraphicsPipeline( const FGraphicsPipelineDraw &Draw )
+{
+	GAME_THREAD_ONLY( false );
+	if ( !bActive )
+	{
+		return false;
+	}
+	bool bResult = false;
+	auto Work = [&]()
+	{ if ( IRenderGeometry3D *Geometry = Target.GetGeometry3D() ) { bResult = Geometry->DrawGraphicsPipeline( Draw ); } };
 	return Execute( MoveTemp( Work ) ) && bResult;
 }
 

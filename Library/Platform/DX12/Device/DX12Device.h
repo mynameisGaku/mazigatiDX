@@ -7,6 +7,7 @@
 #include "Library/Platform/DX12/Resource/Descriptor/DX12DescriptorPool.h"
 #include "Library/Platform/DX12/Resource/Texture/DX12TextureStore.h"
 #include "Library/Platform/DX12/Resource/Buffer/DX12BufferStore.h"
+#include "Library/Platform/DX12/Pipeline/Graphics/DX12GraphicsPipelineStore.h"
 #include "Library/Platform/DX12/Command/Compute/DX12ComputeQueue.h"
 #include "Library/Platform/DX12/Resource/Readback/DX12TextureReadback.h"
 #include "DX12QueueCompletion.h"
@@ -88,6 +89,10 @@ class CDX12Device
 	CDX12BufferStore *GetBufferResources();
 	// computeプログラムの所有先を貸す。
 	IComputePipelineResources *GetComputePipelineResources();
+	// カスタムグラフィックスパイプラインの所有先を貸す。
+	IGraphicsPipelineResources *GetGraphicsPipelineResources();
+	// 描画記録器がパイプライン照合に使う具象ストアを貸す。
+	CDX12GraphicsPipelineStore *GetGraphicsPipelineStore();
 	// 同じ描画キューへcomputeを提出する窓口を貸す。
 	IComputeQueue *GetComputeQueue();
 	// 呼出前に提出したGPU処理を最大60000msまで待つ。0は待たず、失敗・喪失・タイムアウトはfalse。
@@ -108,6 +113,7 @@ class CDX12Device
 	CDX12TextureStore Textures; // poolより先に破棄するゲーム画像の所有者。
 	CDX12BufferStore BufferResources; // 同じキューへバイト列を転送する独立した所有者。
 	CDX12ComputePipelineStore ComputePipelines; // プログラムとその配置の所有者。
+	CDX12GraphicsPipelineStore GraphicsPipelines; // カスタムグラフィックスPSOとルート署名の所有者。
 	CDX12ComputeQueue ComputeQueue; // 上の所有者より先に借用参照を戻す提出先。
 	Microsoft::WRL::ComPtr<ID3D12Resource> Buffers[BufferCount]; // 交換用画面。
 	CDX12QueueCompletion Completion; // UIと独立したキューの完了待機。

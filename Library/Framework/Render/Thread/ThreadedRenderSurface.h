@@ -96,6 +96,8 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 	bool DrawTexturedGeometry( const FGeometryVertex *Vertices, int32 Count, const FGeometryDrawState &State, const FTextureDrawView &Texture ) override;
 	// GPU上の範囲と任意の画像を同じ順序で渡し、既存の所有参照保持と検査を使う。
 	bool DrawBufferGeometry( const FGeometryBufferDraw &Draw, const FGeometryDrawState &State, const FTextureDrawView *Texture ) override;
+	// 登録済みカスタムパイプラインを使ったGPU描画を同じ順序で実行する。
+	bool DrawGraphicsPipeline( const FGraphicsPipelineDraw &Draw ) override;
 	// 深度消去を同じ順序で渡す。
 	void ClearDepth() override;
 	// 図形の引数は所有コピーし、頂点への展開とGPU記録を描画スレッドで行う。

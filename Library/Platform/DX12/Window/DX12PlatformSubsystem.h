@@ -6,6 +6,7 @@
 #include "Library/Core/Interfaces/Render/IRenderTextureResources.h"
 #include "Library/Core/Interfaces/Render/IRenderBufferResources.h"
 #include "Library/Core/Interfaces/Render/IComputePipelineResources.h"
+#include "Library/Core/Interfaces/Render/IGraphicsPipelineResources.h"
 #include "Library/Core/Interfaces/Render/IComputeQueue.h"
 #include "Library/Core/Interfaces/Render/IRenderCommandQueue.h"
 #include "Library/Core/Interfaces/Platform/INativeWindow.h"
@@ -23,7 +24,7 @@ class CDX12GameCapture;
 class CDX12RenderTargetPass;
 
 // Windowsの窓とフレーム進行を所有する。GPUを所有し、ImGuiへは描画に必要な参照だけを貸す。
-class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IRenderSurface, public IRenderTextureResources, public IRenderBufferResources, public IComputePipelineResources, public IComputeQueue, public IRenderCommandQueue, public INativeWindow
+class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IRenderSurface, public IRenderTextureResources, public IRenderBufferResources, public IComputePipelineResources, public IGraphicsPipelineResources, public IComputeQueue, public IRenderCommandQueue, public INativeWindow
 {
   public:
 	// 途中の初期化失敗時も資源を解放する。
@@ -122,6 +123,10 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
 	FComputePipelineHandle CreateComputePipelineWithTextures( TArrayView<const uint8> Bytecode, TArrayView<const FComputeBufferSlot> Slots, TArrayView<const FComputeTextureSlot> TextureSlots ) override;
 	// 番号を直ちに無効にし、提出済み処理が終わってから実体を解放する。
 	void ReleaseComputePipeline( FComputePipelineHandle Pipeline ) override;
+	// VS／PS DXBCと入力・スロット・描画先数・状態を照合してカスタムパイプラインを登録する。
+	FGraphicsPipelineHandle CreateGraphicsPipeline( const FGraphicsPipelineDesc &Desc ) override;
+	// 番号を直ちに無効にし、記録・提出済み処理が終わってから実体を解放する。
+	void ReleaseGraphicsPipeline( FGraphicsPipelineHandle Pipeline ) override;
 	// 全compute命令の検査後に、完了を待たず同じキューへ提出する。
 	FComputeSubmission SubmitCompute( TArrayView<const FComputeDispatch> Dispatches ) override;
 	// 有効な提出の完了状態を照会する。失敗時はOutCompletedを保つ。

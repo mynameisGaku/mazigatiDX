@@ -1069,6 +1069,9 @@
     <ClCompile Include="Library\Platform\DX12\Pipeline\Geometry\DX12GeometryPipelineStore.cpp">
       <Filter>Library\Platform\DX12\Pipeline\Geometry</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Pipeline\Graphics\DX12GraphicsPipelineStore.cpp">
+      <Filter>Library\Platform\DX12\Pipeline\Graphics</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Render\Capture\DX12CaptureTarget.cpp">
       <Filter>Library\Platform\DX12\Render\Capture</Filter>
     </ClCompile>
@@ -1986,6 +1989,9 @@
     <ClInclude Include="Library\Core\Interfaces\Render\IGeometryBufferSource.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IGraphicsPipelineResources.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IImage.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
@@ -2127,6 +2133,30 @@
     <ClInclude Include="Library\Core\Render\GeometryVertex.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Render\GraphicsBufferLayout.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GraphicsBufferSlot.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GraphicsInputElement.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GraphicsPipelineDesc.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GraphicsPipelineDraw.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GraphicsPipelineHandle.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GraphicsTextureSlot.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GraphicsVertexAttributeFormat.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Render\OffscreenCaptureDesc.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
@@ -2143,6 +2173,9 @@
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Render\RenderTargetCapabilities.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\RenderTargetFormat.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Render\RenderTargetPassDesc.h">
@@ -3473,6 +3506,12 @@
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Pipeline\Geometry\DX12GeometryPipelineStore.h">
       <Filter>Library\Platform\DX12\Pipeline\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Pipeline\Graphics\DX12GraphicsPipelineBinding.h">
+      <Filter>Library\Platform\DX12\Pipeline\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Pipeline\Graphics\DX12GraphicsPipelineStore.h">
+      <Filter>Library\Platform\DX12\Pipeline\Graphics</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Render\Capture\DX12CaptureTarget.h">
       <Filter>Library\Platform\DX12\Render\Capture</Filter>
@@ -5521,6 +5560,9 @@
     </Filter>
     <Filter Include="Library\Platform\DX12\Pipeline\Geometry">
       <UniqueIdentifier>{CE26363D-DDC4-2FFE-A657-D93320111E59}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Pipeline\Graphics">
+      <UniqueIdentifier>{A14C6E3B-9D24-4B8F-9A11-3F5D8C2E0417}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Platform\DX12\Render">
       <UniqueIdentifier>{B97C14A7-3033-B05E-0F5F-78BC1E644601}</UniqueIdentifier>

@@ -15,6 +15,7 @@ $types = @(
     @{ Path = 'Library/Platform/DX12/ImGui/Render/DX12ImGuiRenderer.h'; Type = 'CDX12ImGuiRenderer'; Role = '機能' },
     @{ Path = 'Library/Platform/DX12/Pipeline/Compute/DX12ComputePipelineStore.h'; Type = 'CDX12ComputePipelineStore'; Role = '機能' },
     @{ Path = 'Library/Platform/DX12/Pipeline/Geometry/DX12GeometryPipelineStore.h'; Type = 'CDX12GeometryPipelineStore'; Role = '機能' },
+    @{ Path = 'Library/Platform/DX12/Pipeline/Graphics/DX12GraphicsPipelineStore.h'; Type = 'CDX12GraphicsPipelineStore'; Role = '機能' },
     @{ Path = 'Library/Platform/DX12/Render/Capture/DX12CaptureTarget.h'; Type = 'CDX12CaptureTarget'; Role = '機能' },
     @{ Path = 'Library/Platform/DX12/Render/Game/DX12GameCapture.h'; Type = 'CDX12GameCapture'; Role = '機能' },
     @{ Path = 'Library/Platform/DX12/Render/Game/DX12GameRenderer.h'; Type = 'CDX12GameRenderer'; Role = '機能' },
@@ -38,11 +39,19 @@ $types = @(
     @{ Path = 'Library/Platform/DX12/Resource/Buffer/DX12BufferBinding.h'; Type = 'FDX12BufferBinding'; Role = 'データ' },
     @{ Path = 'Library/Platform/DX12/Resource/Texture/DX12TextureBinding.h'; Type = 'FDX12TextureBinding'; Role = 'データ' },
     @{ Path = 'Library/Platform/DX12/Pipeline/Compute/DX12ComputePipelineBinding.h'; Type = 'FDX12ComputePipelineBinding'; Role = 'データ' },
+    @{ Path = 'Library/Platform/DX12/Pipeline/Graphics/DX12GraphicsPipelineBinding.h'; Type = 'FDX12GraphicsPipelineBinding'; Role = 'データ' },
     @{ Path = 'Library/Core/Render/GeometryBufferDraw.h'; Type = 'FGeometryBufferDraw'; Role = 'データ' },
+    @{ Path = 'Library/Core/Render/GraphicsBufferSlot.h'; Type = 'FGraphicsBufferSlot'; Role = 'データ' },
+    @{ Path = 'Library/Core/Render/GraphicsInputElement.h'; Type = 'FGraphicsInputElement'; Role = 'データ' },
+    @{ Path = 'Library/Core/Render/GraphicsPipelineDesc.h'; Type = 'FGraphicsPipelineDesc'; Role = 'データ' },
+    @{ Path = 'Library/Core/Render/GraphicsPipelineDraw.h'; Type = 'FGraphicsPipelineDraw'; Role = 'データ' },
+    @{ Path = 'Library/Core/Render/GraphicsPipelineHandle.h'; Type = 'FGraphicsPipelineHandle'; Role = 'データ' },
+    @{ Path = 'Library/Core/Render/GraphicsTextureSlot.h'; Type = 'FGraphicsTextureSlot'; Role = 'データ' },
     @{ Path = 'Library/Core/Render/ComputeBufferSlot.h'; Type = 'FComputeBufferSlot'; Role = 'データ' },
     @{ Path = 'Library/Core/Render/ComputeTextureCapabilities.h'; Type = 'FComputeTextureCapabilities'; Role = 'データ' },
     @{ Path = 'Library/Core/Render/ComputeTextureSlot.h'; Type = 'FComputeTextureSlot'; Role = 'データ' },
     @{ Path = 'Library/Core/Render/RenderTargetCapabilities.h'; Type = 'FRenderTargetCapabilities'; Role = 'データ' },
+    @{ Path = 'Library/Core/Render/RenderTargetFormat.h'; Type = 'FRenderTargetColorAttachment'; Role = 'データ' },
     @{ Path = 'Library/Core/Render/RenderTargetPassDesc.h'; Type = 'FRenderTargetPassDesc'; Role = 'データ' }
 ) # class／structの構文でなく、所有する責務で分類した主要型。
 $failed = $false # すべての問題をまとめて報告する。

@@ -170,3 +170,7 @@ RGBA8画像のcompute能力照会（`GetComputeTextureCapabilities`）、UAV対�
 ## オフスクリーン描画先資源と読み取れる深度・compute連携（2026-11-11追記）
 
 単一のRGBA8色描画先（`CreateRenderTargetRGBA8`）と読み取れるD32深度（`CreateDepthTextureD32`）の能力照会・作成、共通窓口（`BeginRenderTargetPass`／`EndRenderTargetPass`）によるオフスクリーン描画と同一 `DIRECT` キューへの実GPU提出、色（`Texture2D<float4>`）とスカラー深度（`Texture2D<float>`、`EComputeTextureFormat::R32Float`）を同時に読むcompute、ならびに通常画面・撮影への受け渡しを接続しました。詳細は [オフスクリーン描画先と深度の記録](R1_RENDER_TARGET_RESOURCES.md) を参照してください。互換台帳は469項目（API 325、Draw 100、Sample 33、Editor 11；Implemented 183、Verified 0）です。
+
+## カスタムグラフィックスパイプライン契約とMRT複数描画先（2026-11-12追記）
+
+API非依存のカスタムグラフィックスパイプライン作成・遅延破棄契約（`IGraphicsPipelineResources`）、DXBC SM5.0／5.1 reflection照合（`CDX12GraphicsPipelineStore`）、1〜8枚の `RGBA8` MRT描画先＋任意 `D32` 深度へのパス記録（`FRenderTargetPassDesc::ColorTargets`・`CDX12RenderTargetPass`）、汎用バッファ・画像入力の `IRenderGeometry3D::DrawGraphicsPipeline`、MRT色＋`R32Float` 深度の合成・compute・撮影・主画面連携を接続しました。詳細は [カスタムグラフィックスパイプラインとMRTの記録](R1_GRAPHICS_PIPELINE_MRT.md) を参照してください。互換台帳は472項目（API 328、Draw 100、Sample 33、Editor 11；Implemented 186、Verified 0）で、`RunAllChecks.ps1 -SkipBuild -Quick` 全36ステップが通過済みです。

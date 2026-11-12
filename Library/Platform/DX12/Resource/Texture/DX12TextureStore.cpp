@@ -70,7 +70,7 @@ void CDX12TextureStore::ResetAfterGPUIdle()
 	Queue.Reset();
 	Device.Reset();
 	Pool = nullptr;
-	ActiveColorTarget = ActiveDepthTarget = 0;
+	EndRenderTargetPass();
 	bHealthy = false;
 	Capabilities = FComputeTextureCapabilities();
 	RenderTargetCapabilities = FRenderTargetCapabilities();
@@ -342,6 +342,16 @@ FTextureResourceHandle CDX12TextureStore::CreateDepthTextureD32( int32 Width, in
 		return FTextureResourceHandle();
 	}
 	PendingTexture.Reset();
+	if ( !Pool || !Pool->Allocate( Created.Descriptor ) )
+	{
+		return FTextureResourceHandle();
+	}
+	D3D12_SHADER_RESOURCE_VIEW_DESC Srv = {}; // カスタムグラフィックスおよびcompute読み取り用R32_FLOAT SRV。
+	Srv.Format = DXGI_FORMAT_R32_FLOAT;
+	Srv.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	Srv.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	Srv.Texture2D.MipLevels = 1;
+	Device->CreateShaderResourceView( Created.Resource.Get(), &Srv, Created.Descriptor.Cpu );
 	Created.Width = Width;
 	Created.Height = Height;
 	Created.InitialClearDepth = ClearDepth;
@@ -349,6 +359,7 @@ FTextureResourceHandle CDX12TextureStore::CreateDepthTextureD32( int32 Width, in
 	const FTextureResourceHandle Handle( NRenderResourceSerial::Allocate() ); // 既存の画像資源と重複しない通し番号。
 	if ( !Handle.IsValid() )
 	{
+		Destroy( Created );
 		return FTextureResourceHandle();
 	}
 	Textures.Add( Handle.Value, MoveTemp( Created ) );
@@ -360,10 +371,30 @@ bool CDX12TextureStore::UsesDeviceAndQueue( ID3D12Device *InDevice, ID3D12Comman
 	return Device && Queue && Device.Get() == InDevice && Queue.Get() == InQueue;
 }
 
+bool CDX12TextureStore::IsActiveTarget( uint64 TextureValue ) const
+{
+	if ( TextureValue == 0 )
+	{
+		return false;
+	}
+	if ( ActiveDepthTarget != 0 && TextureValue == ActiveDepthTarget )
+	{
+		return true;
+	}
+	for ( uint32 i = 0; i < ActiveColorTargetCount; ++i )
+	{
+		if ( ActiveColorTargets[i] == TextureValue )
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 bool CDX12TextureStore::AcquireComputeTexture( FTextureResourceHandle Texture, EComputeTextureAccess Access, FDX12TextureBinding &Out, EComputeTextureFormat Format ) const
 {
 	const FTextureRecord *Found = Textures.Find( Texture.Value ); // 現在の版だけを新しい提出へ渡す。
-	if ( !bHealthy || !Device || FAILED( Device->GetDeviceRemovedReason() ) || !Found || !bCapabilitiesAvailable || ( ActiveColorTarget != 0 && Texture.Value == ActiveColorTarget ) || ( ActiveDepthTarget != 0 && Texture.Value == ActiveDepthTarget ) || ( Access != EComputeTextureAccess::Read && Access != EComputeTextureAccess::ReadWrite ) )
+	if ( !bHealthy || !Device || FAILED( Device->GetDeviceRemovedReason() ) || !Found || !bCapabilitiesAvailable || IsActiveTarget( Texture.Value ) || ( Access != EComputeTextureAccess::Read && Access != EComputeTextureAccess::ReadWrite ) )
 	{
 		return false;
 	}
@@ -398,60 +429,147 @@ bool CDX12TextureStore::AcquireComputeTexture( FTextureResourceHandle Texture, E
 	return true;
 }
 
-bool CDX12TextureStore::BeginRenderTargetPass( FTextureResourceHandle ColorTarget, FTextureResourceHandle DepthTarget, FDX12TextureBinding &OutColor, FDX12TextureBinding &OutDepth )
+bool CDX12TextureStore::AcquireGraphicsTexture( FTextureResourceHandle Texture, EComputeTextureFormat Format, FDX12TextureBinding &Out ) const
 {
-	if ( !bHealthy || !Device || FAILED( Device->GetDeviceRemovedReason() ) || ActiveColorTarget != 0 || ActiveDepthTarget != 0 || !ColorTarget.IsValid() )
+	const FTextureRecord *Found = Textures.Find( Texture.Value ); // パス書き込み中のターゲットや解放済み番号は読ませない。
+	if ( !bHealthy || !Device || FAILED( Device->GetDeviceRemovedReason() ) || !Found || IsActiveTarget( Texture.Value ) || Found->Descriptor.Serial == 0 || Found->Descriptor.Gpu.ptr == 0 )
 	{
 		return false;
 	}
-	const FTextureRecord *Color = Textures.Find( ColorTarget.Value ); // 書き込み先の色描画先。
-	if ( !Color || Color->Kind != ETextureKind::RenderTargetRGBA8 || !Color->Resource || !Color->TargetHeap )
+	if ( Format == EComputeTextureFormat::RGBA8 )
+	{
+		if ( Found->Kind == ETextureKind::DepthD32 )
+		{
+			return false;
+		}
+	}
+	else if ( Format == EComputeTextureFormat::R32Float )
+	{
+		if ( Found->Kind != ETextureKind::DepthD32 || !bCapabilitiesAvailable || !Capabilities.bR32FloatRead )
+		{
+			return false;
+		}
+	}
+	else
 	{
 		return false;
+	}
+	FDX12TextureBinding Binding; // 描画終了のGPU完了まで保持する参照。
+	Binding.Resource = Found->Resource;
+	Binding.TargetHeap = Found->TargetHeap;
+	Binding.SrvGpuDescriptor = Found->Descriptor.Gpu.ptr;
+	Binding.Width = Found->Width;
+	Binding.Height = Found->Height;
+	Binding.InitialClearColor = Found->InitialClearColor;
+	Binding.InitialClearDepth = Found->InitialClearDepth;
+	Binding.Format = Format;
+	Out = MoveTemp( Binding );
+	return true;
+}
+
+bool CDX12TextureStore::BeginRenderTargetPass( TArrayView<const FTextureResourceHandle> ColorTargets, FTextureResourceHandle DepthTarget, TArray<FDX12TextureBinding> &OutColors, FDX12TextureBinding &OutDepth )
+{
+	const int32 TargetCount = ColorTargets.Num(); // 同時束縛する色描画先の枚数。
+	if ( !bHealthy || !Device || FAILED( Device->GetDeviceRemovedReason() ) || ActiveColorTargetCount != 0 || ActiveDepthTarget != 0 || !ColorTargets.GetData() || TargetCount <= 0 || TargetCount > static_cast<int32>( FRenderTargetPassDesc::MaxColorTargets ) || !bRenderTargetCapabilitiesAvailable || !RenderTargetCapabilities.bRGBA8RenderTarget || static_cast<uint32>( TargetCount ) > RenderTargetCapabilities.MaxColorTargets )
+	{
+		return false;
+	}
+	TArray<FDX12TextureBinding> ColorBindings; // 全ターゲットを検証できるまで確定しない。
+	ColorBindings.SetNum( TargetCount );
+	int32 RefWidth = 0, RefHeight = 0; // すべての色・深度ターゲットで揃える画素寸法。
+	for ( int32 i = 0; i < TargetCount; ++i )
+	{
+		const FTextureResourceHandle Handle = ColorTargets[i]; // i番目の色描画先。
+		if ( !Handle.IsValid() || ( DepthTarget.IsValid() && Handle.Value == DepthTarget.Value ) )
+		{
+			return false;
+		}
+		for ( int32 Earlier = 0; Earlier < i; ++Earlier )
+		{
+			if ( ColorTargets[Earlier].Value == Handle.Value )
+			{
+				return false;
+			}
+		}
+		const FTextureRecord *Color = Textures.Find( Handle.Value ); // 所有するRGBA8描画先か検査する。
+		if ( !Color || Color->Kind != ETextureKind::RenderTargetRGBA8 || !Color->Resource || !Color->TargetHeap )
+		{
+			return false;
+		}
+		if ( i == 0 )
+		{
+			RefWidth = Color->Width;
+			RefHeight = Color->Height;
+		}
+		else if ( Color->Width != RefWidth || Color->Height != RefHeight )
+		{
+			return false;
+		}
+		ColorBindings[i].Resource = Color->Resource;
+		ColorBindings[i].TargetHeap = Color->TargetHeap;
+		ColorBindings[i].SrvGpuDescriptor = Color->Descriptor.Gpu.ptr;
+		ColorBindings[i].Width = Color->Width;
+		ColorBindings[i].Height = Color->Height;
+		ColorBindings[i].InitialClearColor = Color->InitialClearColor;
+		ColorBindings[i].Format = EComputeTextureFormat::RGBA8;
 	}
 	FDX12TextureBinding DepthBinding; // 任意の読み取れる深度。
 	if ( DepthTarget.IsValid() )
 	{
-		if ( DepthTarget.Value == ColorTarget.Value )
-		{
-			return false;
-		}
 		const FTextureRecord *Depth = Textures.Find( DepthTarget.Value ); // 書き込み先の深度。
-		if ( !Depth || Depth->Kind != ETextureKind::DepthD32 || !Depth->Resource || !Depth->TargetHeap || Depth->Width != Color->Width || Depth->Height != Color->Height )
+		if ( !Depth || Depth->Kind != ETextureKind::DepthD32 || !Depth->Resource || !Depth->TargetHeap || Depth->Width != RefWidth || Depth->Height != RefHeight )
 		{
 			return false;
 		}
 		DepthBinding.Resource = Depth->Resource;
 		DepthBinding.TargetHeap = Depth->TargetHeap;
+		DepthBinding.SrvGpuDescriptor = Depth->Descriptor.Gpu.ptr;
 		DepthBinding.Width = Depth->Width;
 		DepthBinding.Height = Depth->Height;
 		DepthBinding.InitialClearDepth = Depth->InitialClearDepth;
 		DepthBinding.Format = EComputeTextureFormat::R32Float;
 	}
-	FDX12TextureBinding ColorBinding; // GPU完了まで保持する色描画先の実体。
-	ColorBinding.Resource = Color->Resource;
-	ColorBinding.TargetHeap = Color->TargetHeap;
-	ColorBinding.SrvGpuDescriptor = Color->Descriptor.Gpu.ptr;
-	ColorBinding.Width = Color->Width;
-	ColorBinding.Height = Color->Height;
-	ColorBinding.InitialClearColor = Color->InitialClearColor;
-	ColorBinding.Format = EComputeTextureFormat::RGBA8;
-	ActiveColorTarget = ColorTarget.Value;
+	ActiveColorTargetCount = static_cast<uint32>( TargetCount );
+	for ( int32 i = 0; i < TargetCount; ++i )
+	{
+		ActiveColorTargets[i] = ColorTargets[i].Value;
+	}
 	ActiveDepthTarget = DepthTarget.IsValid() ? DepthTarget.Value : 0;
-	OutColor = MoveTemp( ColorBinding );
+	OutColors = MoveTemp( ColorBindings );
 	OutDepth = MoveTemp( DepthBinding );
+	return true;
+}
+
+bool CDX12TextureStore::BeginRenderTargetPass( FTextureResourceHandle ColorTarget, FTextureResourceHandle DepthTarget, FDX12TextureBinding &OutColor, FDX12TextureBinding &OutDepth )
+{
+	TArray<FDX12TextureBinding> Colors; // 既存の単一ターゲット版はMRT版へ委譲する。
+	const FTextureResourceHandle Single[1] = { ColorTarget };
+	if ( !BeginRenderTargetPass( TArrayView<const FTextureResourceHandle>( Single, 1 ), DepthTarget, Colors, OutDepth ) )
+	{
+		return false;
+	}
+	OutColor = MoveTemp( Colors[0] );
 	return true;
 }
 
 void CDX12TextureStore::EndRenderTargetPass()
 {
-	ActiveColorTarget = 0;
+	for ( uint32 i = 0; i < ActiveColorTargetCount; ++i )
+	{
+		ActiveColorTargets[i] = 0;
+	}
+	ActiveColorTargetCount = 0;
 	ActiveDepthTarget = 0;
 }
 
 bool CDX12TextureStore::IsRenderTargetPassActive() const
 {
-	return ActiveColorTarget != 0 || ActiveDepthTarget != 0;
+	return ActiveColorTargetCount != 0 || ActiveDepthTarget != 0;
+}
+
+bool CDX12TextureStore::IsActiveTarget( FTextureResourceHandle Texture ) const
+{
+	return Texture.IsValid() && IsActiveTarget( Texture.Value );
 }
 
 FTextureResourceHandle CDX12TextureStore::Create( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable )
@@ -500,7 +618,7 @@ void CDX12TextureStore::ReleaseTexture( FTextureResourceHandle Texture )
 bool CDX12TextureStore::GetTextureResourceView( FTextureResourceHandle Texture, FTextureDrawView &Out ) const
 {
 	const auto *Found = Textures.Find( Texture.Value ); // 解放済み・深度・現在書き込み中の番号は描画viewとして貸さない。
-	if ( !Found || Found->Kind == ETextureKind::DepthD32 || Found->Descriptor.Serial == 0 || ( ActiveColorTarget != 0 && Texture.Value == ActiveColorTarget ) )
+	if ( !Found || Found->Kind == ETextureKind::DepthD32 || Found->Descriptor.Serial == 0 || IsActiveTarget( Texture.Value ) )
 	{
 		return false;
 	}

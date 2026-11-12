@@ -102,7 +102,7 @@ bool CDX12Device::InitializeOnQueue( HWND Window, int32 Width, int32 Height, ID3
 	{
 		return false;
 	}
-	if ( !ComputePipelines.Initialize( Device.Get() ) || !ComputeQueue.Initialize( Device.Get(), Queue.Get(), BufferResources, ComputePipelines, &Textures ) )
+	if ( !ComputePipelines.Initialize( Device.Get() ) || !GraphicsPipelines.Initialize( Device.Get() ) || !ComputeQueue.Initialize( Device.Get(), Queue.Get(), BufferResources, ComputePipelines, &Textures ) )
 	{
 		return false;
 	}
@@ -169,6 +169,7 @@ void CDX12Device::ReleaseAfterGPUStopped()
 	SwapChain.Reset();
 	ComputeQueue.ResetAfterGPUIdle();
 	ComputePipelines.ResetAfterGPUIdle();
+	GraphicsPipelines.ResetAfterGPUIdle();
 	Textures.ResetAfterGPUIdle();
 	BufferResources.ResetAfterGPUIdle();
 	Descriptors.Reset();
@@ -204,6 +205,7 @@ bool CDX12Device::BeginFrameForBuffer( uint32 Index )
 	}
 	ComputeQueue.CollectAfterGPUIdle();
 	ComputePipelines.CollectAfterGPUIdle();
+	GraphicsPipelines.CollectAfterGPUIdle();
 	Textures.CollectAfterGPUIdle(); // 記録済みの描画が残らない時点でだけ旧版を戻す。
 	BufferResources.CollectAfterGPUIdle();
 	bCaptureGame = bCaptureUI = bGameCopied = bUICopied = false;
@@ -369,6 +371,16 @@ CDX12BufferStore *CDX12Device::GetBufferResources()
 IComputePipelineResources *CDX12Device::GetComputePipelineResources()
 {
 	return bInitialized && !bClosing ? &ComputePipelines : nullptr;
+}
+
+IGraphicsPipelineResources *CDX12Device::GetGraphicsPipelineResources()
+{
+	return bInitialized && !bClosing ? &GraphicsPipelines : nullptr;
+}
+
+CDX12GraphicsPipelineStore *CDX12Device::GetGraphicsPipelineStore()
+{
+	return bInitialized && !bClosing ? &GraphicsPipelines : nullptr;
 }
 
 IComputeQueue *CDX12Device::GetComputeQueue()

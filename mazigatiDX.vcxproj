@@ -423,6 +423,7 @@
     <ClCompile Include="Library\Platform\DX12\ImGui\Render\DX12ImGuiRenderer.cpp" />
     <ClCompile Include="Library\Platform\DX12\Pipeline\Compute\DX12ComputePipelineStore.cpp" />
     <ClCompile Include="Library\Platform\DX12\Pipeline\Geometry\DX12GeometryPipelineStore.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Pipeline\Graphics\DX12GraphicsPipelineStore.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\Capture\DX12CaptureTarget.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\Draw\DX12DrawExecutorSubsystem.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\Game\DX12GameCapture.cpp" />
@@ -730,6 +731,7 @@
     <ClInclude Include="Library\Core\Interfaces\Render\IComputeQueue.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IDrawExecutor.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IGeometryBufferSource.h" />
+    <ClInclude Include="Library\Core\Interfaces\Render\IGraphicsPipelineResources.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IImage.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IIndexBuffer.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IRenderBufferResources.h" />
@@ -777,12 +779,21 @@
     <ClInclude Include="Library\Core\Render\GeometryDrawState.h" />
     <ClInclude Include="Library\Core\Render\GeometryIndexFormat.h" />
     <ClInclude Include="Library\Core\Render\GeometryVertex.h" />
+    <ClInclude Include="Library\Core\Render\GraphicsBufferLayout.h" />
+    <ClInclude Include="Library\Core\Render\GraphicsBufferSlot.h" />
+    <ClInclude Include="Library\Core\Render\GraphicsInputElement.h" />
+    <ClInclude Include="Library\Core\Render\GraphicsPipelineDesc.h" />
+    <ClInclude Include="Library\Core\Render\GraphicsPipelineDraw.h" />
+    <ClInclude Include="Library\Core\Render\GraphicsPipelineHandle.h" />
+    <ClInclude Include="Library\Core\Render\GraphicsTextureSlot.h" />
+    <ClInclude Include="Library\Core\Render\GraphicsVertexAttributeFormat.h" />
     <ClInclude Include="Library\Core\Render\OffscreenCaptureDesc.h" />
     <ClInclude Include="Library\Core\Render\RenderBufferShaderAccess.h" />
     <ClInclude Include="Library\Core\Render\RenderClipRect.h" />
     <ClInclude Include="Library\Core\Render\RenderCommandContext.h" />
     <ClInclude Include="Library\Core\Render\RenderResourceSerial.h" />
     <ClInclude Include="Library\Core\Render\RenderTargetCapabilities.h" />
+    <ClInclude Include="Library\Core\Render\RenderTargetFormat.h" />
     <ClInclude Include="Library\Core\Render\RenderTargetPassDesc.h" />
     <ClInclude Include="Library\Core\Render\StaticModelDrawView.h" />
     <ClInclude Include="Library\Core\Render\TextureDrawView.h" />
@@ -1226,6 +1237,8 @@
     <ClInclude Include="Library\Platform\DX12\Pipeline\Compute\DX12ComputePipelineBinding.h" />
     <ClInclude Include="Library\Platform\DX12\Pipeline\Compute\DX12ComputePipelineStore.h" />
     <ClInclude Include="Library\Platform\DX12\Pipeline\Geometry\DX12GeometryPipelineStore.h" />
+    <ClInclude Include="Library\Platform\DX12\Pipeline\Graphics\DX12GraphicsPipelineBinding.h" />
+    <ClInclude Include="Library\Platform\DX12\Pipeline\Graphics\DX12GraphicsPipelineStore.h" />
     <ClInclude Include="Library\Platform\DX12\Render\Capture\DX12CaptureTarget.h" />
     <ClInclude Include="Library\Platform\DX12\Render\Draw\DX12DrawExecutorSubsystem.h" />
     <ClInclude Include="Library\Platform\DX12\Render\Game\DX12GameCapture.h" />

@@ -10,6 +10,8 @@ $groups = @(
     @{ Directory = 'Library/Platform/DX12/Device'; Names = @('DX12QueueCompletion'); Forbidden = '(?i)imgui|dxlib|DX12Device|Framework/|Core/Interfaces/(Asset|Platform)|IRenderSurface' },
     @{ Directory = 'Library/Platform/DX12/Render/Geometry'; Names = @('DX12GeometryRenderer'); Forbidden = '(?i)imgui|dxlib|Framework/|Platform/Windows' },
     @{ Directory = 'Library/Platform/DX12/Pipeline/Geometry'; Names = @('DX12GeometryPipelineStore'); Forbidden = '(?i)imgui|dxlib|Framework/|Platform/Windows|IRenderSurface|DX12Device|DX12GeometryRenderer|DX12GameRenderer|DX12BufferStore' },
+    @{ Directory = 'Library/Platform/DX12/Pipeline/Graphics'; Names = @('DX12GraphicsPipelineStore'); Forbidden = '(?i)imgui|dxlib|Framework/|Platform/Windows|IRenderSurface|DX12Device|DX12GeometryRenderer|DX12GameRenderer|DX12BufferStore' },
+    @{ Directory = 'Library/Platform/DX12/Render/Target'; Names = @('DX12RenderTargetPass'); Forbidden = '(?i)imgui|dxlib|Framework/|Platform/Windows' },
     @{ Directory = 'Library/Platform/DX12/Render/Game'; Names = @('DX12GameRenderer', 'DX12GameCapture', 'DX12GameSurface'); Forbidden = '(?i)imgui|dxlib|Framework/|Platform/Windows' },
     @{ Directory = 'Library/Platform/Render/Canvas'; Names = @('GeometryCanvas2D'); Forbidden = '(?i)imgui|dxlib|Framework/|Platform/(DX12|Windows)|d3d|dxgi|WindowsInclude|wrl/' },
     @{ Directory = 'Library/Platform/Windows/Text'; Names = @('WindowsTextRasterizer'); Forbidden = '(?i)imgui|dxlib|Framework/|Platform/DX12|d3d|dxgi|wrl/' },

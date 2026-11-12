@@ -43,6 +43,7 @@ bool NDX12TextureFormat::GetRenderTargetCapabilities( ID3D12Device *Device, FRen
 	FRenderTargetCapabilities Result; // 照会が全て成功した場合だけ返す。
 	Result.bRGBA8RenderTarget = ( Color.Support1 & RequiredColor ) == RequiredColor;
 	Result.bReadableDepthD32 = ( Depth.Support1 & RequiredDepthWrite ) == RequiredDepthWrite && ( DepthRead.Support1 & RequiredDepthRead ) == RequiredDepthRead;
+	Result.MaxColorTargets = Result.bRGBA8RenderTarget ? D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT : 0;
 	Out = Result;
 	return true;
 }
