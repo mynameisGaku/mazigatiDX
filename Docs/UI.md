@@ -201,7 +201,7 @@ if ( Result.bSuccess ) { Screen->AddChild( Result.Root ); }
 |`Button`|`Text` `Font` `TextColor` `Style` `OnClicked` `Command`|
 |`CheckBox`|`Checked` `Style` `OnToggled` `OnClicked`|
 |`Slider`|`Value` `Min` `Max` `Step` `Orientation` `Style` `OnValueChanged`|
-|`TextBox`|`Text` `Placeholder` `MaxLength` `Password` `Multiline` `Font` `Style` `OnSubmitted` `OnCancelled`|
+|`TextBox`|`Text` `Placeholder` `MaxLength` `Password` `Multiline` `WordWrap` `Font` `Style` `OnSubmitted` `OnCancelled`|
 |`Dropdown`|`Items`（`{Binding 名前}`、または `"Low, Medium, High"`）`SelectedIndex`（番号、または `{Binding 名前}`）`Placeholder` `Font` `Style` `OnSelectionChanged`|
 |`ListView`|`Items`（`{Binding 名前}`）`Orientation` `ItemHeight` `Font` `ItemColor` `SelectedBackground` `ItemPadding` `ScrollBarWidth` `ScrollBarTrack` `ScrollBarThumb` `OnItemClicked`|
 
@@ -336,7 +336,8 @@ TextInput->SetTextInputActive( Result.bWantsTextInput );   // 入力欄にフォ
   - 上下で、行を移ります（同じ横の位置に、いちばん近い所へ。`Shift` つきなら、範囲を広げます）。Home / End は、行の端です。
   - 行は、欄の上から並びます。行が欄に入りきらないときは、カーソルが見える位置まで、縦にずれます。ホイールでも動きます（そのあと、文字やカーソルが動くまで、戻りません）。
   - 貼り付けは、改行を残します（CR LF と CR は、LF にします）。
-  - 折り返しは、しません（長い行は、横へずれます）。欄の高さは、自分で決めてください（`Height`）。
+  - **折り返し**（`SetWordWrap( true )`。マークアップは `WordWrap="true"`）: 欄の幅で折り返します。折る所は、空白の後ろか、日本語などの文字の間です（禁則は、しません。空白の無い長い英単語は、入る所で折ります）。折り返すと、横へは、ずれません。上下・クリックは、折り返した見た目の行で働きます。Home / End と、3 回目のクリックは、改行までの行です。折り返さなければ（既定）、長い行は、横へずれます。
+  - 欄の高さは、自分で決めてください（`Height`）。
   - フォーカス中は、上下の矢印を欄が使います。フォーカスを移すには、Tab か、ほかの部品のクリックを使います。
 - **コピー・切り取り・貼り付け**（`Ctrl` + C / X / V）は、クリップボード（`IClipboard`。DxLib は OS のクリップボード、Null は、アプリの中だけ）で行います。`NUIInput::MakeFrame` の最後の引数（または `FUIInputFrame::Clipboard`）で渡します。渡さなければ、選ぶだけです。パスワード表示の欄は、コピー・切り取りをしません。貼り付ける文字列の改行・タブは、空白になります（複数行の欄では、改行は残ります）。
 - 入力欄にフォーカスがあるとき、**左右の矢印・決定・戻る**は、入力欄が使います（フォーカスの移動や、ボタンの決定、画面を戻すことには使われない）。上下の矢印と Tab は、これまでどおり、フォーカスを動かします（複数行の欄では、上下の矢印も、欄が使います）。
@@ -534,4 +535,4 @@ UI の基本画像（窓・パネル・ボタンの 4 状態・チェック・�
 
 ## これから
 
-入力欄の折り返しは、順に足していきます。
+入力欄の禁則（行の頭に句読点を置かない、など）は、順に足していきます。

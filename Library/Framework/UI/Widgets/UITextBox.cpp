@@ -158,25 +158,89 @@ void CUITextBox::MarkCaretMoved()
 	bScrollToCaret = true;
 }
 
+void CUITextBox::SetWordWrap( bool bInWordWrap )
+{
+	bWordWrap = bInWordWrap;
+	MarkCaretMoved();
+}
+
+int32 CUITextBox::GetNumVisualLines() const
+{
+	TArray<FLine> Lines;
+	BuildLines( Lines );
+	return Lines.Num();
+}
+
 void CUITextBox::BuildLines( TArray<FLine>& OutLines ) const
 {
 	OutLines.Reset();
 	const FString& Text = Buffer.GetText();
-	FLine Line;
+	// 折り返す幅（カーソルの太さの分を空ける）。折り返さないなら 0
+	const float32 WrapWidth = ( Buffer.IsMultiline() && bWordWrap && Font ) ? GetTextArea().Size.x - 2.0f : 0.0f;
+	// 改行までの 1 行 [Start, End) を、折り返して足す
+	auto AddWrapped = [&]( int32 Start, int32 End )
+	{
+		int32 LineStart = Start;
+		while ( WrapWidth > 0.0f && LineStart < End )
+		{
+			// 幅に入る所まで進む。折ってよい所（空白の後ろ・ASCII でない文字の前後）を覚えておく
+			int32 Fit = LineStart;
+			int32 BreakAt = LineStart;
+			int32 Offset = LineStart;
+			bool bOverflow = false;
+			while ( Offset < End )
+			{
+				const int32 Next = NMath::Min( NextBoundary( Text, Offset ), End );
+				const bool bSpace = Text[Offset] == ' ';
+				// 行の末尾の空白は、幅からはみ出してもよい（次の行の先頭へ送らない）
+				if ( !bSpace && MeasureRange( LineStart, Next ) > WrapWidth )
+				{
+					bOverflow = true;
+					break;
+				}
+				const bool bWide = ( static_cast<unsigned char>( Text[Offset] ) & 0x80 ) != 0;
+				const bool bNextWide = Next < End && ( static_cast<unsigned char>( Text[Next] ) & 0x80 ) != 0;
+				Fit = Next;
+				if ( bSpace || bWide || bNextWide )
+				{
+					BreakAt = Next;
+				}
+				Offset = Next;
+			}
+			if ( !bOverflow )
+			{
+				break;
+			}
+			// 折る所: 折ってよい所 → 入った所 → どちらも無ければ（1 文字も入らない幅）、1 文字だけ
+			int32 Cut = BreakAt > LineStart ? BreakAt : Fit;
+			if ( Cut <= LineStart )
+			{
+				Cut = NMath::Min( NextBoundary( Text, LineStart ), End );
+			}
+			FLine Wrapped;
+			Wrapped.Start = LineStart;
+			Wrapped.End = Cut;
+			OutLines.Add( Wrapped );
+			LineStart = Cut;
+		}
+		FLine Last;
+		Last.Start = LineStart;
+		Last.End = End;
+		OutLines.Add( Last );
+	};
+	int32 Start = 0;
 	if ( Buffer.IsMultiline() )
 	{
 		for ( int32 Index = 0; Index < Text.Len(); ++Index )
 		{
 			if ( Text[Index] == '\n' )
 			{
-				Line.End = Index;
-				OutLines.Add( Line );
-				Line.Start = Index + 1;
+				AddWrapped( Start, Index );
+				Start = Index + 1;
 			}
 		}
 	}
-	Line.End = Text.Len();
-	OutLines.Add( Line );
+	AddWrapped( Start, Text.Len() );
 }
 
 FString CUITextBox::GetShownRange( int32 Start, int32 End ) const
@@ -459,7 +523,7 @@ void CUITextBox::OnPointerPressed( const FVector2& Position )
 	}
 	else if ( ClickCount == 3 )
 	{
-		// 3 回目: 全体（複数行の欄では、その行）を選ぶ
+		// 3 回目: 全体（複数行の欄では、改行までの行）を選ぶ
 		int32 Start = 0;
 		int32 End = 0;
 		Buffer.GetLineRange( Offset, Start, End );
@@ -584,7 +648,7 @@ void CUITextBox::OnPaint( FDrawContext& CommandList, float32 EffectiveOpacity )
 	// カーソルの位置（行の左端から。ずらす前）を測って、見える位置まで、横へ（複数行の欄では、縦にも）ずらす
 	const float32 CaretPrefix = MeasureRange( Lines[CaretLine].Start, Cursor );
 	const float32 CaretOffset = CaretPrefix + ( bComposing && CompositionCaret > 0 ? static_cast<float32>( Font->MeasureWidth( CompositionText.Left( CompositionCaret ) ) ) : 0.0f );
-	if ( bFocused )
+	if ( bFocused && !( bMultiline && bWordWrap ) )
 	{
 		if ( CaretOffset - ScrollX > Area.Size.x - 2.0f )
 		{

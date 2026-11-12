@@ -458,7 +458,7 @@ void CUIScreen::Build()
 	// 同じく --memo-demo で、メモの欄に、欄より多い行を入れておく（複数行の表示の確認）
 	if ( NCommandLine::HasFlag( "memo-demo" ) )
 	{
-		ViewModel.Memo.Set( "Buy milk\nCall Hana at 3 pm\nFinish the level" );
+		ViewModel.Memo.Set( "Buy milk\nCall Hana at 3 pm and ask about the weekend trip\nFinish the level" );
 	}
 	// 同じく --open-dropdown で、画質のドロップダウンを開いた状態にする（レイアウトが決まってから開くので、最初の更新のあと）
 	bOpenDropdownPending = NCommandLine::HasFlag( "open-dropdown" );

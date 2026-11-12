@@ -1229,6 +1229,15 @@ struct FMarkupBuilder
 				Box.SetMultiline( bFlag );
 				return true;
 			}
+			if ( N == "WordWrap" )
+			{
+				if ( !ParseBool( A.Value, bFlag ) )
+				{
+					return BadValue( Node, A, "true or false" );
+				}
+				Box.SetWordWrap( bFlag );
+				return true;
+			}
 			if ( N == "Font" )
 			{
 				Box.SetFont( FindFont( Node, A.Value ) );

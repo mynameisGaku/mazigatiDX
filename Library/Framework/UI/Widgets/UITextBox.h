@@ -29,7 +29,8 @@
 //   - 文字列が欄より長いときは、カーソルが見える位置まで、横へずらして表示する（欄の矩形でクリップ）。
 //   - 複数行（SetMultiline( true )）: Enter で改行を入れる（確定の OnSubmitted は、起こらない。中身は OnTextChanged で受ける）。上下で、行を移る（Shift つきなら、範囲を広げる）。
 //     Home / End は、行の端。貼り付けは、改行を残す。行は、欄の上から並べ、カーソルが見える位置まで、縦にもずらす。ホイールでも、縦に動く。
-//     折り返しは、しない（長い行は、横へずれる）。フォーカス中は、上下の矢印を欄が使うので、フォーカスを移すには、Tab か、Escape（取り消し）を使う。
+//     SetWordWrap( true ) で、欄の幅で折り返す（空白の後ろか、日本語などの文字の間で折る。禁則は、しない。横へは、ずれない）。
+//     上下・クリック・3 回目のクリックは、折り返した見た目の行で働く。Home / End は、改行までの行の端。折り返さなければ、長い行は、横へずれる。フォーカス中は、上下の矢印を欄が使うので、フォーカスを移すには、Tab か、Escape（取り消し）を使う。
 //   - かな漢字変換の途中の文字列は、カーソルの位置に差し込んで、下線つきで表示する。
 //   - SetPasswordMode( true ) なら、文字を * で表示する（GetText は、本当の文字列）。
 //   - カーソルの点滅は、描いた回数で数える（SetCaretBlinkFrames。0 なら、点滅しない）。文字やカーソルが動いた直後は、必ず見える。
@@ -70,6 +71,11 @@ public:
 	// 複数行の欄にするか（上の説明）。1 行へ戻しても、入っている改行は、消さない
 	void SetMultiline( bool bInMultiline );
 	bool IsMultiline() const { return Buffer.IsMultiline(); }
+	// 複数行の欄で、欄の幅で折り返すか（既定は、折り返さない。1 行の欄では、何もしない）
+	void SetWordWrap( bool bInWordWrap );
+	bool IsWordWrap() const { return bWordWrap; }
+	// 見た目の行の数（折り返した分も数える。1 行の欄では 1。フォントと、置いたあとの矩形で決まる）
+	int32 GetNumVisualLines() const;
 	// ダブルクリックと見なす、クリックの間隔（秒。0 以下なら、ダブルクリックをしない）
 	void SetDoubleClickSeconds( float32 InSeconds ) { DoubleClickSeconds = InSeconds; }
 	float32 GetDoubleClickSeconds() const { return DoubleClickSeconds; }
@@ -121,7 +127,7 @@ private:
 		int32 Start = 0;
 		int32 End = 0;
 	};
-	// 文字列を、行に分ける（1 行の欄では、全体で 1 行）
+	// 文字列を、見た目の行に分ける（1 行の欄では、全体で 1 行。複数行の欄では、改行と、折り返しで分ける）
 	void BuildLines( TArray<FLine>& OutLines ) const;
 	// 実際の文字列の [Start, End) を、表示するときの文字列（パスワードなら *）と、その幅（画素）
 	FString GetShownRange( int32 Start, int32 End ) const;
@@ -159,6 +165,7 @@ private:
 	float32 ScrollX = 0.0f;
 	float32 ScrollY = 0.0f;
 	bool bScrollToCaret = false;       // 次に描くとき、カーソルが見える位置まで、縦にずらす
+	bool bWordWrap = false;
 	float32 DoubleClickSeconds = 0.4f;
 	float32 TimeSincePress = 0.0f;     // 最後に押してからの秒
 	FVector2 LastPressPosition = FVector2( 0.0f, 0.0f );
