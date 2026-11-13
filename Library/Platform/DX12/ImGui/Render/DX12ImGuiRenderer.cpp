@@ -18,6 +18,10 @@ bool CDX12ImGuiRenderer::Initialize( ID3D12Device* Device, ID3D12CommandQueue* Q
 	{
 		return false;
 	}
+	if ( !Completion.Initialize( Device, Queue ) )
+	{
+		return false;
+	}
 	Pool = &InPool;
 	DeviceRef = Device;
 	QueueRef = Queue;
@@ -48,14 +52,18 @@ bool CDX12ImGuiRenderer::Initialize( ID3D12Device* Device, ID3D12CommandQueue* Q
 	return true;
 }
 
-void CDX12ImGuiRenderer::Shutdown()
+bool CDX12ImGuiRenderer::TryShutdown( bool bGpuConfirmedIdleOrRemoved )
 {
 	if ( bInitialized )
 	{
 		ImGuiContext* Previous = ImGui::GetCurrentContext(); // 別の文脈を変更せず、接続した文脈を外す。
 		ImGui::SetCurrentContext( Context );
-		ImGui_ImplDX12_Shutdown();
+		const bool bDetached = ImGui_ImplDX12_TryShutdown( bGpuConfirmedIdleOrRemoved );
 		ImGui::SetCurrentContext( Previous );
+		if ( !bDetached )
+		{
+			return false;
+		}
 		bInitialized = false;
 	}
 	if ( Pool )
@@ -67,10 +75,34 @@ void CDX12ImGuiRenderer::Shutdown()
 	}
 	Descriptors.Reset();
 	Pool = nullptr;
+	Completion.ResetAfterGPUIdle();
 	DescriptorHeapRef.Reset();
 	QueueRef.Reset();
 	DeviceRef.Reset();
 	Context = nullptr;
+	return true;
+}
+
+bool CDX12ImGuiRenderer::WaitQueue( uint32 TimeoutMs )
+{
+	if ( DeviceRef && FAILED( DeviceRef->GetDeviceRemovedReason() ) )
+	{
+		return true;
+	}
+	return Completion.IsInitialized() ? Completion.Wait( TimeoutMs ) : !QueueRef;
+}
+
+ID3D12CommandQueue* CDX12ImGuiRenderer::GetQueue() const
+{
+	return QueueRef.Get();
+}
+
+void CDX12ImGuiRenderer::Shutdown()
+{
+	while ( !TryShutdown( WaitQueue( 1000 ) ) )
+	{
+		Sleep( 1 );
+	}
 }
 
 bool CDX12ImGuiRenderer::BeginFrame()

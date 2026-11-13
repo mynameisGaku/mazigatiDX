@@ -21,11 +21,31 @@ bool CDX12ImGuiFrameRenderer::Initialize( CDX12Device& InDevice )
 
 bool CDX12ImGuiFrameRenderer::TryShutdown( uint32 TimeoutMs )
 {
-	if ( TimeoutMs > 60000 || ( Device && Device->IsRecording() ) || ( Device && Device->IsInitialized() && !Device->Wait( TimeoutMs ) && !Device->IsDeviceRemoved() ) )
+	if ( TimeoutMs > 60000 || ( Device && Device->IsRecording() ) )
 	{
 		return false;
 	}
-	ImGuiRenderer.Shutdown();
+	bool bQueueIdleOrRemoved = false;
+	if ( Device && Device->IsInitialized() && Device->GetNativeQueue() == ImGuiRenderer.GetQueue() )
+	{
+		bQueueIdleOrRemoved = Device->Wait( TimeoutMs ) || Device->IsDeviceRemoved();
+		if ( !bQueueIdleOrRemoved )
+		{
+			return false;
+		}
+	}
+	else if ( ImGuiRenderer.GetQueue() )
+	{
+		bQueueIdleOrRemoved = ImGuiRenderer.WaitQueue( TimeoutMs );
+		if ( !bQueueIdleOrRemoved )
+		{
+			return false;
+		}
+	}
+	if ( !ImGuiRenderer.TryShutdown( bQueueIdleOrRemoved ) )
+	{
+		return false;
+	}
 	Context = nullptr;
 	Device = nullptr;
 	return true;

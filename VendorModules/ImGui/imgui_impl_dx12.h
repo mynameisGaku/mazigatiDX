@@ -57,6 +57,7 @@ struct ImGui_ImplDX12_InitInfo
 // Follow "Getting Started" link and check examples/ folder to learn about using backends!
 IMGUI_IMPL_API bool     ImGui_ImplDX12_Init(ImGui_ImplDX12_InitInfo* info);
 IMGUI_IMPL_API void     ImGui_ImplDX12_Shutdown();
+IMGUI_IMPL_API bool     ImGui_ImplDX12_TryShutdown(bool bGpuConfirmedIdleOrRemoved = false);
 IMGUI_IMPL_API void     ImGui_ImplDX12_NewFrame();
 IMGUI_IMPL_API void     ImGui_ImplDX12_RenderDrawData(ImDrawData* draw_data, ID3D12GraphicsCommandList* graphics_command_list);
 

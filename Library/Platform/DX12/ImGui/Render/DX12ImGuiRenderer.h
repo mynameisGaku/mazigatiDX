@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
+#include "Library/Platform/DX12/Device/DX12QueueCompletion.h"
 #include "Library/Platform/DX12/Resource/Descriptor/DX12DescriptorPool.h"
 #include "Library/Core/Collection/Map.h"
 #include "VendorModules/ImGui/imgui.h"
@@ -17,6 +18,12 @@ public:
 	~CDX12ImGuiRenderer();
 	// 現在のImGui文脈へ公式DX12実装を接続する。依存先はShutdownまで生存させる。
 	bool Initialize( ID3D12Device* Device, ID3D12CommandQueue* Queue, int32 FramesInFlight, DXGI_FORMAT Format, CDX12DescriptorPool& InPool );
+	// 初期化済みGPUと文脈を安全に外す。同期未確認・非喪失では資源を保持してfalse。
+	bool TryShutdown( bool bGpuConfirmedIdleOrRemoved = false );
+	// 自身が借りたGPUキューの完了またはデバイス喪失を待つ。
+	bool WaitQueue( uint32 TimeoutMs = 10000 );
+	// 自身が接続したGPUキューを返す。
+	ID3D12CommandQueue* GetQueue() const;
 	// GPU完了後に接続とUIの資源を外す。ゲーム画像には触れない。
 	void Shutdown();
 	// 所有文脈が現在の文脈ならフレームを準備する。
@@ -32,6 +39,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Device> DeviceRef; // 公式DX12実装が終了するまでdevice参照を保持する。
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> QueueRef; // 外部窓破棄時のSignal完了までqueue参照を保持する。
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DescriptorHeapRef; // UI終了まで記述子ヒープ参照を保持する。
+	CDX12QueueCompletion Completion; // 借用キュー自身の完了・喪失を独立して確認する。
 	ImGuiContext* Context = nullptr; // 接続した文脈。所有は呼び出し側。
 	TMap<uint64, CDX12DescriptorPool::FAllocation> Descriptors; // UIの貸出分だけを追跡する。
 	bool bInitialized = false; // 公式実装への接続済み印。

@@ -69,6 +69,16 @@
 // DirectX
 #include <d3d12.h>
 #include <dxgi1_5.h>
+
+#if defined(MAZIGATI_IMGUI_DX12_SYNC_HOOK)
+HRESULT ImGui_ImplDX12_TestSignalQueue(ID3D12CommandQueue* queue, ID3D12Fence* fence, UINT64 value);
+HRESULT ImGui_ImplDX12_TestSetFenceEvent(ID3D12Fence* fence, UINT64 value, HANDLE eventHandle);
+#define IMGUI_DX12_SIGNAL_QUEUE(queue, fence, value) ImGui_ImplDX12_TestSignalQueue(queue, fence, value)
+#define IMGUI_DX12_SET_FENCE_EVENT(fence, value, ev) ImGui_ImplDX12_TestSetFenceEvent(fence, value, ev)
+#else
+#define IMGUI_DX12_SIGNAL_QUEUE(queue, fence, value) ((queue)->Signal((fence), (value)))
+#define IMGUI_DX12_SET_FENCE_EVENT(fence, value, ev) ((fence)->SetEventOnCompletion((value), (ev)))
+#endif
 #include <d3dcompiler.h>
 #ifdef _MSC_VER
 #pragma comment(lib, "d3dcompiler") // Automatically link with d3dcompiler.lib as we are using D3DCompile() below.
@@ -95,6 +105,7 @@ struct ImGui_ImplDX12_Texture
     ImGui_ImplDX12_Texture()    { memset((void*)this, 0, sizeof(*this)); }
 };
 
+struct ImGui_ImplDX12_ViewportData;
 struct ImGui_ImplDX12_Data
 {
     ImGui_ImplDX12_InitInfo     InitInfo;
@@ -117,6 +128,9 @@ struct ImGui_ImplDX12_Data
     UINT                        numFramesInFlight;
     bool                        tearingSupport;
     bool                        LegacySingleDescriptorUsed;
+    bool                        gpuSyncFaulted;
+    bool                        gpuConfirmedIdleOrRemoved;
+    ImVector<ImGui_ImplDX12_ViewportData*> RetiredViewports;
 
     ID3D12CommandAllocator*     pTexCmdAllocator;
     ID3D12GraphicsCommandList*  pTexCmdList;
@@ -132,6 +146,32 @@ struct ImGui_ImplDX12_Data
 static ImGui_ImplDX12_Data* ImGui_ImplDX12_GetBackendData()
 {
     return ImGui::GetCurrentContext() ? (ImGui_ImplDX12_Data*)ImGui::GetIO().BackendRendererUserData : nullptr;
+}
+
+static bool ImGui_IsDeviceRemoved(ImGui_ImplDX12_Data* bd)
+{
+    return !bd || !bd->pd3dDevice || FAILED(bd->pd3dDevice->GetDeviceRemovedReason()) || (bd->Fence && bd->Fence->GetCompletedValue() == UINT64(-1));
+}
+
+static bool ImGui_WaitForFenceValue(ImGui_ImplDX12_Data* bd, UINT64 value)
+{
+    if (!bd || !bd->Fence)
+        return false;
+    if (ImGui_IsDeviceRemoved(bd) || bd->Fence->GetCompletedValue() >= value)
+        return true;
+    if (bd->FenceEvent && SUCCEEDED(IMGUI_DX12_SET_FENCE_EVENT(bd->Fence, value, bd->FenceEvent)))
+    {
+        if (::WaitForSingleObject(bd->FenceEvent, INFINITE) == WAIT_OBJECT_0)
+            return true;
+        return ImGui_IsDeviceRemoved(bd);
+    }
+    while (bd->Fence->GetCompletedValue() < value)
+    {
+        if (ImGui_IsDeviceRemoved(bd))
+            return true;
+        ::Sleep(1);
+    }
+    return true;
 }
 
 ImGui_ImplDX12_RenderState* ImGui_ImplDX12_GetRenderState()
@@ -309,8 +349,9 @@ static void ImGui_ImplDX12_DrawCallback_SetSamplerNearest(const ImDrawList*, con
 // Render function
 void ImGui_ImplDX12_RenderDrawData(ImDrawData* draw_data, ID3D12GraphicsCommandList* command_list)
 {
-    // Avoid rendering when minimized
-    if (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f)
+    ImGui_ImplDX12_Data* bd = ImGui_ImplDX12_GetBackendData();
+    // Avoid rendering when minimized or after GPU sync fault / device removal
+    if (!bd || bd->gpuSyncFaulted || ImGui_IsDeviceRemoved(bd) || draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f)
         return;
 
     // Catch up with texture updates. Most of the times, the list will have 1 element with an OK status, aka nothing to do.
@@ -320,8 +361,10 @@ void ImGui_ImplDX12_RenderDrawData(ImDrawData* draw_data, ID3D12GraphicsCommandL
             if (tex->Status != ImTextureStatus_OK)
                 ImGui_ImplDX12_UpdateTexture(tex);
 
+    if (bd->gpuSyncFaulted || ImGui_IsDeviceRemoved(bd))
+        return;
+
     // FIXME: We are assuming that this only gets called once per frame!
-    ImGui_ImplDX12_Data* bd = ImGui_ImplDX12_GetBackendData();
     ImGui_ImplDX12_ViewportData* vd = (ImGui_ImplDX12_ViewportData*)draw_data->OwnerViewport->RendererUserData;
     ImGui_ImplDX12_RenderBuffers* fr = &vd->FrameRenderBuffers[vd->FrameIndex % bd->numFramesInFlight];
     vd->FrameIndex++;
@@ -473,6 +516,8 @@ static void ImGui_ImplDX12_DestroyTexture(ImTextureData* tex)
 void ImGui_ImplDX12_UpdateTexture(ImTextureData* tex)
 {
     ImGui_ImplDX12_Data* bd = ImGui_ImplDX12_GetBackendData();
+    if (!bd || bd->gpuSyncFaulted || ImGui_IsDeviceRemoved(bd))
+        return;
     bool need_barrier_before_copy = true; // Do we need a resource barrier before we copy new data in?
 
     if (tex->Status == ImTextureStatus_WantCreate)
@@ -634,23 +679,29 @@ void ImGui_ImplDX12_UpdateTexture(ImTextureData* tex)
         }
 
         HRESULT hr = cmdList->Close();
-        IM_ASSERT(SUCCEEDED(hr));
+        if (FAILED(hr))
+            return;
         ID3D12CommandQueue* cmdQueue = bd->pCommandQueue;
         cmdQueue->ExecuteCommandLists(1, (ID3D12CommandList* const*)&cmdList);
-        hr = cmdQueue->Signal(bd->Fence, ++bd->FenceLastSignaledValue);
-        IM_ASSERT(SUCCEEDED(hr));
+        hr = IMGUI_DX12_SIGNAL_QUEUE(cmdQueue, bd->Fence, ++bd->FenceLastSignaledValue);
+        if (FAILED(hr))
+        {
+            if (!ImGui_IsDeviceRemoved(bd))
+                bd->gpuSyncFaulted = true;
+            return;
+        }
 
-        // FIXME-OPT: Suboptimal?
-        // - To remove this may need to create NumFramesInFlight x ImGui_ImplDX12_FrameContext in backend data (mimick docking version)
-        // - Store per-frame in flight: upload buffer?
-        // - Where do cmdList and cmdAlloc fit?
-        bd->Fence->SetEventOnCompletion(bd->FenceLastSignaledValue, bd->FenceEvent);
-        ::WaitForSingleObject(bd->FenceEvent, INFINITE);
+        if (!ImGui_WaitForFenceValue(bd, bd->FenceLastSignaledValue))
+        {
+            if (!ImGui_IsDeviceRemoved(bd))
+                bd->gpuSyncFaulted = true;
+            return;
+        }
 
         tex->SetStatus(ImTextureStatus_OK);
     }
 
-    if (tex->Status == ImTextureStatus_WantDestroy && tex->UnusedFrames >= (int)bd->numFramesInFlight)
+    if (!bd->gpuSyncFaulted && !ImGui_IsDeviceRemoved(bd) && tex->Status == ImTextureStatus_WantDestroy && tex->UnusedFrames >= (int)bd->numFramesInFlight)
         ImGui_ImplDX12_DestroyTexture(tex);
 }
 
@@ -1036,12 +1087,54 @@ bool ImGui_ImplDX12_Init(ImGui_ImplDX12_InitInfo* init_info)
     return true;
 }
 
-void ImGui_ImplDX12_Shutdown()
+static void ImGui_DestroyViewportData(ImGui_ImplDX12_Data* bd, ImGui_ImplDX12_ViewportData* vd)
+{
+    if (!vd)
+        return;
+    vd->CommandQueue = nullptr;
+    if (vd->SwapChainWaitableObject)
+    {
+        ::CloseHandle(vd->SwapChainWaitableObject);
+        vd->SwapChainWaitableObject = nullptr;
+    }
+    SafeRelease(vd->CommandList);
+    SafeRelease(vd->SwapChain);
+    SafeRelease(vd->RtvDescHeap);
+
+    for (UINT i = 0; i < bd->numFramesInFlight; i++)
+    {
+        SafeRelease(vd->FrameCtx[i].RenderTarget);
+        SafeRelease(vd->FrameCtx[i].CommandAllocator);
+        ImGui_ImplDX12_DestroyRenderBuffers(&vd->FrameRenderBuffers[i]);
+    }
+    IM_DELETE(vd);
+}
+
+bool ImGui_ImplDX12_TryShutdown(bool bGpuConfirmedIdleOrRemoved)
 {
     ImGui_ImplDX12_Data* bd = ImGui_ImplDX12_GetBackendData();
-    IM_ASSERT(bd != nullptr && "No renderer backend to shutdown, or already shutdown?");
+    if (!bd)
+        return true;
+    if (bGpuConfirmedIdleOrRemoved || ImGui_IsDeviceRemoved(bd))
+    {
+        bd->gpuConfirmedIdleOrRemoved = true;
+        bd->gpuSyncFaulted = false;
+    }
+    else if (bd->gpuSyncFaulted)
+    {
+        return false;
+    }
+
     ImGuiIO& io = ImGui::GetIO();
     ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
+
+    ImGui_ImplDX12_ShutdownMultiViewportSupport();
+    if (bd->gpuSyncFaulted && !bd->gpuConfirmedIdleOrRemoved && !ImGui_IsDeviceRemoved(bd))
+        return false;
+
+    for (ImGui_ImplDX12_ViewportData* retired : bd->RetiredViewports)
+        ImGui_DestroyViewportData(bd, retired);
+    bd->RetiredViewports.clear();
 
     // Manually delete main viewport render resources in-case we haven't initialized for viewports
     ImGuiViewport* main_viewport = ImGui::GetMainViewport();
@@ -1054,7 +1147,6 @@ void ImGui_ImplDX12_Shutdown()
         main_viewport->RendererUserData = nullptr;
     }
 
-    ImGui_ImplDX12_ShutdownMultiViewportSupport();
     ImGui_ImplDX12_InvalidateDeviceObjects();
 
     io.BackendRendererName = nullptr;
@@ -1062,12 +1154,22 @@ void ImGui_ImplDX12_Shutdown()
     io.BackendFlags &= ~(ImGuiBackendFlags_RendererHasVtxOffset | ImGuiBackendFlags_RendererHasTextures | ImGuiBackendFlags_RendererHasViewports);
     platform_io.ClearRendererHandlers();
     IM_DELETE(bd);
+    return true;
+}
+
+void ImGui_ImplDX12_Shutdown()
+{
+    ImGui_ImplDX12_Data* bd = ImGui_ImplDX12_GetBackendData();
+    IM_ASSERT(bd != nullptr && "No renderer backend to shutdown, or already shutdown?");
+    ImGui_ImplDX12_TryShutdown(false);
 }
 
 void ImGui_ImplDX12_NewFrame()
 {
     ImGui_ImplDX12_Data* bd = ImGui_ImplDX12_GetBackendData();
     IM_ASSERT(bd != nullptr && "Context or backend not initialized! Did you call ImGui_ImplDX12_Init()?");
+    if (bd->gpuSyncFaulted || ImGui_IsDeviceRemoved(bd))
+        return;
 
     if (!bd->pPipelineStateLinear)
         if (!ImGui_ImplDX12_CreateDeviceObjects())
@@ -1177,31 +1279,55 @@ static void ImGui_ImplDX12_CreateWindow(ImGuiViewport* viewport)
         ImGui_ImplDX12_DestroyRenderBuffers(&vd->FrameRenderBuffers[i]);
 }
 
-static void ImGui_WaitForPendingOperations(ImGui_ImplDX12_ViewportData* vd)
+static bool ImGui_WaitForPendingOperations(ImGui_ImplDX12_ViewportData* vd)
 {
     ImGui_ImplDX12_Data* bd = ImGui_ImplDX12_GetBackendData();
-    HRESULT hr = vd->CommandQueue->Signal(bd->Fence, ++bd->FenceLastSignaledValue);
-    IM_ASSERT(hr == S_OK);
-
-    hr = bd->Fence->SetEventOnCompletion(bd->FenceLastSignaledValue, bd->FenceEvent);
-    IM_ASSERT(hr == S_OK);
-    ::WaitForSingleObject(bd->FenceEvent, INFINITE);
+    if (!bd || !vd)
+        return true;
+    if (bd->gpuConfirmedIdleOrRemoved || ImGui_IsDeviceRemoved(bd))
+        return true;
+    ID3D12CommandQueue* queue = vd->CommandQueue ? vd->CommandQueue : bd->pCommandQueue;
+    if (bd->gpuSyncFaulted || !bd->Fence || !queue)
+    {
+        bd->gpuSyncFaulted = true;
+        return false;
+    }
+    HRESULT hr = IMGUI_DX12_SIGNAL_QUEUE(queue, bd->Fence, ++bd->FenceLastSignaledValue);
+    if (FAILED(hr))
+    {
+        if (ImGui_IsDeviceRemoved(bd))
+            return true;
+        bd->gpuSyncFaulted = true;
+        return false;
+    }
+    if (!ImGui_WaitForFenceValue(bd, bd->FenceLastSignaledValue))
+    {
+        if (ImGui_IsDeviceRemoved(bd))
+            return true;
+        bd->gpuSyncFaulted = true;
+        return false;
+    }
+    return true;
 }
 
 static ImGui_ImplDX12_FrameContext* ImGui_WaitForNextFrameContext(ImGui_ImplDX12_ViewportData* vd)
 {
     ImGui_ImplDX12_Data* bd = ImGui_ImplDX12_GetBackendData();
+    if (!bd || !vd || !bd->Fence || bd->gpuSyncFaulted || ImGui_IsDeviceRemoved(bd))
+        return nullptr;
     ImGui_ImplDX12_FrameContext* frame_context = &vd->FrameCtx[vd->FrameIndex % vd->NumFramesInFlight];
     if (bd->Fence->GetCompletedValue() < frame_context->FenceValue)
     {
-        HRESULT hr = bd->Fence->SetEventOnCompletion(frame_context->FenceValue, bd->FenceEvent);
-        IM_ASSERT(hr == S_OK);
+        if (!bd->FenceEvent || FAILED(IMGUI_DX12_SET_FENCE_EVENT(bd->Fence, frame_context->FenceValue, bd->FenceEvent)))
+            return nullptr;
         HANDLE waitableObjects[] = { vd->SwapChainWaitableObject, bd->FenceEvent };
-        ::WaitForMultipleObjects(2, waitableObjects, TRUE, INFINITE);
+        if (::WaitForMultipleObjects(2, waitableObjects, TRUE, INFINITE) != WAIT_OBJECT_0 || ImGui_IsDeviceRemoved(bd))
+            return nullptr;
     }
     else
     {
-        ::WaitForSingleObject(vd->SwapChainWaitableObject, INFINITE);
+        if (::WaitForSingleObject(vd->SwapChainWaitableObject, INFINITE) != WAIT_OBJECT_0 || ImGui_IsDeviceRemoved(bd))
+            return nullptr;
     }
     return frame_context;
 }
@@ -1212,22 +1338,15 @@ static void ImGui_ImplDX12_DestroyWindow(ImGuiViewport* viewport)
     ImGui_ImplDX12_Data* bd = ImGui_ImplDX12_GetBackendData();
     if (ImGui_ImplDX12_ViewportData* vd = (ImGui_ImplDX12_ViewportData*)viewport->RendererUserData)
     {
-        ImGui_WaitForPendingOperations(vd);
-
-        vd->CommandQueue = nullptr;
-        ::CloseHandle(vd->SwapChainWaitableObject);
-        vd->SwapChainWaitableObject = nullptr;
-        SafeRelease(vd->CommandList);
-        SafeRelease(vd->SwapChain);
-        SafeRelease(vd->RtvDescHeap);
-
-        for (UINT i = 0; i < bd->numFramesInFlight; i++)
+        if (ImGui_WaitForPendingOperations(vd))
         {
-            SafeRelease(vd->FrameCtx[i].RenderTarget);
-            SafeRelease(vd->FrameCtx[i].CommandAllocator);
-            ImGui_ImplDX12_DestroyRenderBuffers(&vd->FrameRenderBuffers[i]);
+            ImGui_DestroyViewportData(bd, vd);
         }
-        IM_DELETE(vd);
+        else
+        {
+            vd->CommandQueue = nullptr;
+            bd->RetiredViewports.push_back(vd);
+        }
     }
     viewport->RendererUserData = nullptr;
 }
@@ -1236,8 +1355,8 @@ static void ImGui_ImplDX12_SetWindowSize(ImGuiViewport* viewport, ImVec2 size)
 {
     ImGui_ImplDX12_Data* bd = ImGui_ImplDX12_GetBackendData();
     ImGui_ImplDX12_ViewportData* vd = (ImGui_ImplDX12_ViewportData*)viewport->RendererUserData;
-
-    ImGui_WaitForPendingOperations(vd);
+    if (!bd || !vd || bd->gpuSyncFaulted || ImGui_IsDeviceRemoved(bd) || !ImGui_WaitForPendingOperations(vd))
+        return;
 
     for (UINT i = 0; i < bd->numFramesInFlight; i++)
         SafeRelease(vd->FrameCtx[i].RenderTarget);
@@ -1261,10 +1380,12 @@ static void ImGui_ImplDX12_RenderWindow(ImGuiViewport* viewport, void*)
 {
     ImGui_ImplDX12_Data* bd = ImGui_ImplDX12_GetBackendData();
     ImGui_ImplDX12_ViewportData* vd = (ImGui_ImplDX12_ViewportData*)viewport->RendererUserData;
-    if (vd->SwapChain == nullptr)
+    if (!bd || !vd || vd->SwapChain == nullptr || bd->gpuSyncFaulted || ImGui_IsDeviceRemoved(bd))
         return;
 
     ImGui_ImplDX12_FrameContext* frame_context = ImGui_WaitForNextFrameContext(vd);
+    if (frame_context == nullptr)
+        return;
     UINT back_buffer_idx = vd->SwapChain->GetCurrentBackBufferIndex();
 
     const ImVec4 clear_color = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -1279,8 +1400,8 @@ static void ImGui_ImplDX12_RenderWindow(ImGuiViewport* viewport, void*)
     // Draw
     ID3D12GraphicsCommandList* cmd_list = vd->CommandList;
 
-    frame_context->CommandAllocator->Reset();
-    cmd_list->Reset(frame_context->CommandAllocator, nullptr);
+    if (FAILED(frame_context->CommandAllocator->Reset()) || FAILED(cmd_list->Reset(frame_context->CommandAllocator, nullptr)))
+        return;
     cmd_list->ResourceBarrier(1, &barrier);
     cmd_list->OMSetRenderTargets(1, &vd->FrameCtx[back_buffer_idx].RenderTargetCpuDescriptors, FALSE, nullptr);
     if (!(viewport->Flags & ImGuiViewportFlags_NoRendererClear))
@@ -1292,19 +1413,23 @@ static void ImGui_ImplDX12_RenderWindow(ImGuiViewport* viewport, void*)
     barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
     barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
     cmd_list->ResourceBarrier(1, &barrier);
-    cmd_list->Close();
+    if (FAILED(cmd_list->Close()))
+        return;
 
     vd->CommandQueue->ExecuteCommandLists(1, (ID3D12CommandList* const*)&cmd_list);
 
-    HRESULT hr = vd->CommandQueue->Signal(bd->Fence, ++bd->FenceLastSignaledValue);
-    IM_ASSERT(hr == S_OK);
+    HRESULT hr = IMGUI_DX12_SIGNAL_QUEUE(vd->CommandQueue, bd->Fence, ++bd->FenceLastSignaledValue);
     frame_context->FenceValue = bd->FenceLastSignaledValue;
+    if (FAILED(hr) && !ImGui_IsDeviceRemoved(bd))
+        bd->gpuSyncFaulted = true;
 }
 
 static void ImGui_ImplDX12_SwapBuffers(ImGuiViewport* viewport, void*)
 {
     ImGui_ImplDX12_Data* bd = ImGui_ImplDX12_GetBackendData();
     ImGui_ImplDX12_ViewportData* vd = (ImGui_ImplDX12_ViewportData*)viewport->RendererUserData;
+    if (!bd || !vd || vd->SwapChain == nullptr || bd->gpuSyncFaulted || ImGui_IsDeviceRemoved(bd))
+        return;
 
     vd->SwapChain->Present(0, bd->tearingSupport ? DXGI_PRESENT_ALLOW_TEARING : 0);
 }
