@@ -35,7 +35,14 @@ DX12はゲームとUIが使うグラフィックス実装です。GPUデバイ�
 - 描画命令ではconst FRenderCommandContext&のCanvas／Geometryだけを実行中に借ります。窓・UI文脈・ゲームの可変状態へ触れません。フレーム外は両方nullptrです。
 - 複数フレームの同時進行、複数native command listの並列記録、DXC／SM6は未対応です。
 
-## 現在の作業: フレーム転送領域とresize（2026-11-13）
+## 現在の作業: Phase B `RGBA16F`と画像コピー・readback（2026-11-13）
+
+- 今回の実装基点: 本体`f7c4eef`、検査`725b8be`。設計調査は`Saved/ArgonCoordination/phase-b-design-review.md`に記録しています。
+- 既存の`IRenderTextureResources`、`CDX12TextureStore`、`CDX12ComputePipelineStore`、`CDX12ComputeQueue`、`CDX12GraphicsPipelineStore`、`CDX12RenderTargetPass`、`CDX12GeometryRenderer`、`CDX12GameRenderer`、`CDX12PlatformSubsystem`を拡張し、`CreateComputeTextureRGBA16F`、`CreateRenderTargetRGBA16F`、`CopyTexture`、`ReadTextureRGBA8`、`ReadTextureRGBA16F`、および`RGBA16F`＋`RGBA8`混合MRTを接続しました。
+- 失敗時（不正寸法・非有限値・異形式・自己コピー・アクティブ描画ターゲット・デバイス喪失・非ゲームスレッド）は出力引数（`OutPixels`/`OutWidth`/`OutHeight`等）を変更せず`false`/無効ハンドルを返します。固定2D/3DのSDR経路は非`RGBA8`ターゲットへの描画を拒否し、`ColorClearPipeline16F`で`RGBA16F`クリアに対応します。
+- 検査: `RunHdrTextureCopyTests.ps1 -Platform`（`cpu`/`default`/`warp`/`remove` + アプリ起動6モード `dx12`/`warp`/`dx12-no-ui`/`warp-no-ui`/`dxlib`/`null`）、および`Tools/RunAllChecks.ps1 -SkipBuild -Quick`で確認します。
+
+## 先行の作業: フレーム転送領域とresize（2026-11-13）
 
 `CDX12UploadArena`を既存デバイスへ所有させ、主画面・描画先パス・撮影の一時頂点を共有ページへ書き込みます。記録中の予約とGPUフェンス完了まで先頭を再利用せず、主画面の途中提出後に失敗した場合も未提出として取り消しません。窓の寸法変更はCPU命令を完了させて窓側へ排他的に貸し、GPU完了後に交換先を更新してから描画側で深度を再作成します。詳細は[転送領域と寸法変更](R1_FRAME_UPLOAD_RESIZE.md)を参照します。
 

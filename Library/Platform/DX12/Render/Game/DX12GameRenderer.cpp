@@ -32,14 +32,14 @@ bool CDX12GameRenderer::BeginFrame( ID3D12GraphicsCommandList *Commands, D3D12_C
 	return BeginFrame( Commands, TArrayView<const D3D12_CPU_DESCRIPTOR_HANDLE>( Views, 1 ), Images, Scale, bClearDepth, ClearDepth, ForbiddenTextureBinding != 0 ? TArrayView<const uint64>( Forbidden, 1 ) : TArrayView<const uint64>() );
 }
 
-bool CDX12GameRenderer::BeginFrame( ID3D12GraphicsCommandList *Commands, TArrayView<const D3D12_CPU_DESCRIPTOR_HANDLE> ColorViews, ID3D12DescriptorHeap *Images, float32 Scale, bool bClearDepth, float32 ClearDepth, TArrayView<const uint64> ForbiddenTextureBindings )
+bool CDX12GameRenderer::BeginFrame( ID3D12GraphicsCommandList *Commands, TArrayView<const D3D12_CPU_DESCRIPTOR_HANDLE> ColorViews, ID3D12DescriptorHeap *Images, float32 Scale, bool bClearDepth, float32 ClearDepth, TArrayView<const uint64> ForbiddenTextureBindings, TArrayView<const ERenderTargetColorFormat> ColorFormats )
 {
-	if ( bActive || !Textures || !Text || !NMath::IsFinite( Scale ) || Scale <= 0 || Scale > 16384 || ColorViews.Num() <= 0 || !Geometry.BeginFrame( Commands, ColorViews, Images, &Clip, bClearDepth, ClearDepth, ForbiddenTextureBindings ) )
+	if ( bActive || !Textures || !Text || !NMath::IsFinite( Scale ) || Scale <= 0 || Scale > 16384 || ColorViews.Num() <= 0 || !Geometry.BeginFrame( Commands, ColorViews, Images, &Clip, bClearDepth, ClearDepth, ForbiddenTextureBindings, ColorFormats ) )
 	{
 		return false;
 	}
 	Clip = { 0, 0, Geometry.GetWidth(), Geometry.GetHeight() }; // MRTでCanvasが無効なパスでも描画先全体の切り取りを初期化する。
-	bAllowCanvas = ColorViews.Num() == 1;
+	bAllowCanvas = ColorViews.Num() == 1 && ( ColorFormats.IsEmpty() || ColorFormats[0] == ERenderTargetColorFormat::RGBA8 );
 	if ( bAllowCanvas && !Canvas.BeginFrame( Geometry, *Textures, *Text, Clip, Scale ) )
 	{
 		Geometry.EndFrame();

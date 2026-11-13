@@ -216,8 +216,8 @@ bool CDX12ComputeQueue::Record( TArrayView<const FComputeDispatch> Dispatches, F
 			const bool bWrite = Dispatch.Pipeline.TextureSlots[Index].Access == EComputeTextureAccess::ReadWrite; // 書き込みだけUAV状態へ移す。
 			if ( bWrite )
 			{
-				D3D12_UNORDERED_ACCESS_VIEW_DESC View = {}; // RGBA8の二次元UAV。
-				View.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+				D3D12_UNORDERED_ACCESS_VIEW_DESC View = {}; // RGBA8またはRGBA16Fの二次元UAV。
+				View.Format = Texture.Format == EComputeTextureFormat::RGBA16F ? DXGI_FORMAT_R16G16B16A16_FLOAT : DXGI_FORMAT_R8G8B8A8_UNORM;
 				View.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 				Device->CreateUnorderedAccessView( Texture.Resource.Get(), nullptr, &View, Cpu );
 				D3D12_RESOURCE_BARRIER Barrier = {}; // 描画とcompute読み取りを許す共通の状態から入る。
@@ -231,7 +231,7 @@ bool CDX12ComputeQueue::Record( TArrayView<const FComputeDispatch> Dispatches, F
 			else
 			{
 				D3D12_SHADER_RESOURCE_VIEW_DESC View = {}; // 通常描画用とは独立した、この提出専用のSRV。
-				View.Format = Texture.Format == EComputeTextureFormat::R32Float ? DXGI_FORMAT_R32_FLOAT : DXGI_FORMAT_R8G8B8A8_UNORM;
+				View.Format = Texture.Format == EComputeTextureFormat::R32Float ? DXGI_FORMAT_R32_FLOAT : ( Texture.Format == EComputeTextureFormat::RGBA16F ? DXGI_FORMAT_R16G16B16A16_FLOAT : DXGI_FORMAT_R8G8B8A8_UNORM );
 				View.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 				View.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 				View.Texture2D.MipLevels = 1;

@@ -7,6 +7,7 @@
 enum class ERenderTargetColorFormat : uint8
 {
 	RGBA8, // R8G8B8A8_UNORM。通常描画・compute・撮影でそのまま共用できる形式。
+	RGBA16F, // R16G16B16A16_FLOAT。1.0超や負値を保持できるHDR描画先・compute入力共用形式。
 };
 
 // オフスクリーン描画パス（MRT含む）に束縛する1枚の色描画先と開始時消去設定。

@@ -10,4 +10,8 @@ struct FComputeTextureCapabilities
 	bool bRGBA8ReadWrite = false;
 	// 2DのR32Float（読み取れる深度など）をTexture2D<float>のLoadから読めるか。
 	bool bR32FloatRead = false;
+	// 2DのRGBA16FをTexture2D<float4>のLoadから読めるか。
+	bool bRGBA16FRead = false;
+	// 2DのRGBA16FをRWTexture2D<float4>から読み書きできるか。
+	bool bRGBA16FReadWrite = false;
 };

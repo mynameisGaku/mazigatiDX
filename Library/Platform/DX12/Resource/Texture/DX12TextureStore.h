@@ -32,12 +32,22 @@ class CDX12TextureStore : public IRenderTextureResources
 	bool GetComputeTextureCapabilities( FComputeTextureCapabilities &Out ) const override;
 	// computeから読み書きできるRGBA8画像を作る。未対応・不正な入力は無効値。
 	FTextureResourceHandle CreateComputeTextureRGBA8( int32 Width, int32 Height, const FColor32 *Pixels ) override;
+	// computeから読み書きできるRGBA16F画像を作る。未対応・不正・非有限入力は無効値。
+	FTextureResourceHandle CreateComputeTextureRGBA16F( int32 Width, int32 Height, const FColor *Pixels ) override;
 	// 描画先画像と読み取れる深度の対応能力を返す。未初期化・照会失敗時はOutを保ってfalse。
 	bool GetRenderTargetCapabilities( FRenderTargetCapabilities &Out ) const override;
 	// 初期色で消去したRGBA8描画先画像を作る。通常描画やcomputeのRead入力にも使える。
 	FTextureResourceHandle CreateRenderTargetRGBA8( int32 Width, int32 Height, FColor32 ClearColor = FColor32( 0, 0, 0, 255 ) ) override;
+	// 初期色で消去したRGBA16F HDR描画先画像を作る。カスタム描画やcomputeのRead入力にも使える。
+	FTextureResourceHandle CreateRenderTargetRGBA16F( int32 Width, int32 Height, FColor ClearColor = FColor( 0.0f, 0.0f, 0.0f, 1.0f ) ) override;
 	// 初期深度で消去した読み取れるD32深度を作る。描画パスの深度とcomputeのR32Float Read入力に使える。
 	FTextureResourceHandle CreateDepthTextureD32( int32 Width, int32 Height, float32 ClearDepth = 1.0f ) override;
+	// 同一寸法・同色グループ形式の画像全領域を同じDIRECTキューでコピーする。
+	bool CopyTexture( FTextureResourceHandle Source, FTextureResourceHandle Destination ) override;
+	// RGBA8画像の全画素をCPUへ読み戻す。失敗時は出力を変更しない。
+	bool ReadTextureRGBA8( FTextureResourceHandle Texture, TArray<FColor32> &OutPixels, int32 &OutWidth, int32 &OutHeight ) override;
+	// RGBA16F画像の全画素をFColor配列へ読み戻す。失敗時は出力を変更しない。
+	bool ReadTextureRGBA16F( FTextureResourceHandle Texture, TArray<FColor> &OutPixels, int32 &OutWidth, int32 &OutHeight ) override;
 	// 同じGPU・提出先への接続が有効か確認する。
 	bool UsesDeviceAndQueue( ID3D12Device *InDevice, ID3D12CommandQueue *InQueue ) const;
 	// 提出が保持する画像実体を返す。用途・形式違い・パス記録中の競合・無効な番号はOutを保ってfalse。
@@ -68,6 +78,8 @@ class CDX12TextureStore : public IRenderTextureResources
 		StandardRGBA8, // CPUから転送した読み取り用のRGBA8画像。
 		ComputeRGBA8, // UAV書き込みも許可するRGBA8画像。
 		RenderTargetRGBA8, // オフスクリーン描画先として使えるRGBA8画像。
+		ComputeRGBA16F, // UAV読み書きも許可するRGBA16F HDR画像。
+		RenderTargetRGBA16F, // オフスクリーン描画先として使えるRGBA16F HDR画像。
 		DepthD32, // 描画パスとcompute R32Float読み取りで使える深度画像。
 	};
 	// COM参照を値へ包み、コンテナからoperator&を呼ばせない。
@@ -78,11 +90,16 @@ class CDX12TextureStore : public IRenderTextureResources
 		CDX12DescriptorPool::FAllocation Descriptor; // GPU完了まで保持するSRV（深度では未使用）。
 		int32 Width = 0, Height = 0; // 画像の寸法。
 		FColor32 InitialClearColor = FColor32( 0, 0, 0, 255 ); // 作成時に設定した初期消去色。
+		FColor InitialClearColorF = FColor( 0.0f, 0.0f, 0.0f, 1.0f ); // RGBA16F作成時に設定したHDR初期消去色。
 		float32 InitialClearDepth = 1.0f; // 作成時に設定した初期深度。
 		ETextureKind Kind = ETextureKind::StandardRGBA8; // 用途の区別。
 	};
 	// 完了を待った新規画像を作る。失敗時はOutを変えない。
 	bool Upload( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable, FTextureRecord &Out );
+	// 完了を待った新規RGBA16F compute画像を作る。失敗時はOutを変えない。
+	bool UploadRGBA16F( int32 Width, int32 Height, const FColor *Pixels, FTextureRecord &Out );
+	// 指定資源からREADBACKヒープへ同期転送して1行ずつ一時配列へ読み出す共通処理。
+	bool ReadbackTextureBytes( const FTextureRecord &Record, DXGI_FORMAT ExpectedFormat, UINT BytesPerPixel, TArray<uint8> &OutRows, UINT &OutRowBytes );
 	// 用途を固定して新規画像を登録する。失敗時は無効値。
 	FTextureResourceHandle Create( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable );
 	// 指定番号が現在アクティブなオフスクリーン描画パスの色・深度に含まれているか。

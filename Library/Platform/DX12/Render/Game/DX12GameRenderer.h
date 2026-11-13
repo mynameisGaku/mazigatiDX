@@ -22,8 +22,8 @@ class CDX12GameRenderer
 	bool Resize( int32 Width, int32 Height );
 	// GPU完了後に記録先を借りる。撮影・描画先パスではScaleや深度消去設定を適用する。不正設定はfalse。
 	bool BeginFrame( ID3D12GraphicsCommandList *Commands, D3D12_CPU_DESCRIPTOR_HANDLE ColorView, ID3D12DescriptorHeap *Images, float32 Scale = 1, bool bClearDepth = true, float32 ClearDepth = 1.0f, uint64 ForbiddenTextureBinding = 0 );
-	// GPU完了後に1〜8枚の色描画先と自己参照禁止SRV群を借りる。MRT時は2Dキャンバスを無効化する。
-	bool BeginFrame( ID3D12GraphicsCommandList *Commands, TArrayView<const D3D12_CPU_DESCRIPTOR_HANDLE> ColorViews, ID3D12DescriptorHeap *Images, float32 Scale = 1, bool bClearDepth = true, float32 ClearDepth = 1.0f, TArrayView<const uint64> ForbiddenTextureBindings = {} );
+	// GPU完了後に1〜8枚の色描画先と自己参照禁止SRV群を借りる。MRT時または非RGBA8時は2Dキャンバスを無効化する。
+	bool BeginFrame( ID3D12GraphicsCommandList *Commands, TArrayView<const D3D12_CPU_DESCRIPTOR_HANDLE> ColorViews, ID3D12DescriptorHeap *Images, float32 Scale = 1, bool bClearDepth = true, float32 ClearDepth = 1.0f, TArrayView<const uint64> ForbiddenTextureBindings = {}, TArrayView<const ERenderTargetColorFormat> ColorFormats = {} );
 	// 一時画像の番号を返し、記録先を外す。文字・頂点・消去の記録失敗や自己参照競合はfalse。GPU実体は保持する。
 	bool EndFrame();
 	// フレーム外で、記録した頂点とGPUバッファ参照を提出レコードへ移動する。

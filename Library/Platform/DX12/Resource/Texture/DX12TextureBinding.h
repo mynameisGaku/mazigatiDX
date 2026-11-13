@@ -20,6 +20,8 @@ struct FDX12TextureBinding
 	int32 Width = 0, Height = 0;
 	// 作成時に指定した初期消去色（色描画先の場合）。
 	FColor32 InitialClearColor = FColor32( 0, 0, 0, 255 );
+	// 作成時に指定したHDR初期消去色（RGBA16F描画先の場合）。
+	FColor InitialClearColorF = FColor( 0.0f, 0.0f, 0.0f, 1.0f );
 	// 作成時に指定した初期深度（読み取れる深度の場合）。
 	float32 InitialClearDepth = 1.0f;
 	// computeシェーダーと照合する画像の形式。

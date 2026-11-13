@@ -2,6 +2,10 @@
 
 最終整理: 2026-11-09（日本時間）。作業ブランチは `backend-dx12`、取り込み元devの基点は `c1d2143262d246c73bffd55c60ef2d84ac4773ba`。実装の直近コミットは `3344e8f` です。最新版のHEADはGitHubのbackend-dx12または `git rev-parse HEAD` で確認してください。別途作成したオフライン配布物では、同梱の `DELIVERY.md` に配布時のHEADを記録します。
 
+## Phase B `RGBA16F`と画像コピー・readback（2026-11-13 追記）
+
+`IRenderTextureResources`へ`CreateComputeTextureRGBA16F`・`CreateRenderTargetRGBA16F`・`CopyTexture`・`ReadTextureRGBA8`・`ReadTextureRGBA16F`を追加し、RGBA16Fのcompute/描画先、RGBA16F+RGBA8混合MRT、同形式同寸法の画像コピーとCPU readback、失敗時の出力非破壊を`CDX12TextureStore`等で接続しました。検証は`Source/SelfTest/RunHdrTextureCopyTests.ps1`で行います。互換台帳は486項目（`UpdateBackendCompatibility.ps1 -Check`通過）です。
+
 ## Windows での再開記録（2026-11-09 追記）
 
 Windows の全体ビルドで見つかった画面消去の定義漏れと警告を修正しました。Debug／Release の4 project と、DX12／WARP／DxLib／Null の起動確認は [Windows 検証記録](DX12_WINDOWS_VALIDATION.md) を参照してください。自己検査の対応版と残る制限も同記録へ分けています。以下の未確認一覧は引き継ぎ時点の記録です。

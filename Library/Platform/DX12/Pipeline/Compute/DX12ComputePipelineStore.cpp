@@ -74,10 +74,12 @@ bool CDX12ComputePipelineStore::Build( TArrayView<const uint8> Bytecode, TArrayV
 	for ( int32 Index = 0; Index < TextureSlots.Num(); ++Index )
 	{
 		const FComputeTextureSlot &Slot = TextureSlots[Index]; // バッファと共有するt／uの場所。
-		const bool bValidFormat = Slot.Format == EComputeTextureFormat::RGBA8 || Slot.Format == EComputeTextureFormat::R32Float; // 定義済みの画像形式だけを受け付ける。
+		const bool bValidFormat = Slot.Format == EComputeTextureFormat::RGBA8 || Slot.Format == EComputeTextureFormat::R32Float || Slot.Format == EComputeTextureFormat::RGBA16F; // 定義済みの画像形式だけを受け付ける。
 		const bool bFormatSupported = Slot.Format == EComputeTextureFormat::R32Float
 			? ( Slot.Access == EComputeTextureAccess::Read && Capabilities.bR32FloatRead )
-			: ( Slot.Access == EComputeTextureAccess::Read ? Capabilities.bRGBA8Read : Capabilities.bRGBA8ReadWrite ); // 形式と用途に応じた能力照合。
+			: ( Slot.Format == EComputeTextureFormat::RGBA16F
+				? ( Slot.Access == EComputeTextureAccess::Read ? Capabilities.bRGBA16FRead : Capabilities.bRGBA16FReadWrite )
+				: ( Slot.Access == EComputeTextureAccess::Read ? Capabilities.bRGBA8Read : Capabilities.bRGBA8ReadWrite ) ); // 形式と用途に応じた能力照合。
 		if ( !bValidFormat || ( Slot.Access != EComputeTextureAccess::Read && Slot.Access != EComputeTextureAccess::ReadWrite ) || Slot.Binding >= ( Slot.Access == EComputeTextureAccess::Read ? 128u : 64u ) || !bFormatSupported )
 		{
 			return false;
@@ -130,16 +132,16 @@ bool CDX12ComputePipelineStore::Build( TArrayView<const uint8> Bytecode, TArrayV
 			{
 				return false;
 			}
-			const EComputeTextureFormat Format = bOneComponent ? EComputeTextureFormat::R32Float : EComputeTextureFormat::RGBA8; // 成分数から画像形式を決める。
-			if ( Format == EComputeTextureFormat::R32Float && ( bTextureWrite || Binding.ReturnType != D3D_RETURN_TYPE_FLOAT ) )
+			if ( bOneComponent && ( bTextureWrite || Binding.ReturnType != D3D_RETURN_TYPE_FLOAT ) )
 			{
 				return false;
 			}
 			const EComputeTextureAccess Access = bTextureWrite ? EComputeTextureAccess::ReadWrite : EComputeTextureAccess::Read; // 画像の用途を宣言と照合する。
-			bool bMatched = false; // 列挙順でなく、種類と場所で照合する。
+			bool bMatched = false; // 列挙順でなく、種類と場所・成分数適合で照合する。
 			for ( const FComputeTextureSlot &Slot : TextureSlots )
 			{
-				bMatched |= Slot.Access == Access && Slot.Format == Format && Slot.Binding == Binding.BindPoint;
+				const bool bFormatMatches = bOneComponent ? ( Slot.Format == EComputeTextureFormat::R32Float ) : ( Slot.Format == EComputeTextureFormat::RGBA8 || Slot.Format == EComputeTextureFormat::RGBA16F );
+				bMatched |= Slot.Access == Access && bFormatMatches && Slot.Binding == Binding.BindPoint;
 			}
 			if ( !bMatched )
 			{

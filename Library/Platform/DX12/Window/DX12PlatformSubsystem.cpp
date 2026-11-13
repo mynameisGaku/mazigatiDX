@@ -712,6 +712,19 @@ FTextureResourceHandle CDX12PlatformSubsystem::CreateComputeTextureRGBA8( int32 
 	return ExecuteRender( MoveTemp( Work ) ) ? Result : FTextureResourceHandle();
 }
 
+FTextureResourceHandle CDX12PlatformSubsystem::CreateComputeTextureRGBA16F( int32 Width, int32 Height, const FColor *Pixels )
+{
+	GAME_THREAD_ONLY( FTextureResourceHandle() );
+	if ( !bInitialized || !Device )
+	{
+		return {};
+	}
+	FTextureResourceHandle Result; // 描画所有側でRGBA16F転送を完了させる。
+	auto Work = [&]()
+	{ Result = Device->GetTextureResources()->CreateComputeTextureRGBA16F( Width, Height, Pixels ); };
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : FTextureResourceHandle();
+}
+
 bool CDX12PlatformSubsystem::GetRenderTargetCapabilities( FRenderTargetCapabilities &Out ) const
 {
 	GAME_THREAD_ONLY( false );
@@ -738,6 +751,19 @@ FTextureResourceHandle CDX12PlatformSubsystem::CreateRenderTargetRGBA8( int32 Wi
 	return ExecuteRender( MoveTemp( Work ) ) ? Result : FTextureResourceHandle();
 }
 
+FTextureResourceHandle CDX12PlatformSubsystem::CreateRenderTargetRGBA16F( int32 Width, int32 Height, FColor ClearColor )
+{
+	GAME_THREAD_ONLY( FTextureResourceHandle() );
+	if ( !bInitialized || !Device )
+	{
+		return {};
+	}
+	FTextureResourceHandle Result; // 描画所有側でRGBA16F描画先の初期消去とSRV登録を完了させる。
+	auto Work = [&]()
+	{ Result = Device->GetTextureResources()->CreateRenderTargetRGBA16F( Width, Height, ClearColor ); };
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : FTextureResourceHandle();
+}
+
 FTextureResourceHandle CDX12PlatformSubsystem::CreateDepthTextureD32( int32 Width, int32 Height, float32 ClearDepth )
 {
 	GAME_THREAD_ONLY( FTextureResourceHandle() );
@@ -749,6 +775,45 @@ FTextureResourceHandle CDX12PlatformSubsystem::CreateDepthTextureD32( int32 Widt
 	auto Work = [&]()
 	{ Result = Device->GetTextureResources()->CreateDepthTextureD32( Width, Height, ClearDepth ); };
 	return ExecuteRender( MoveTemp( Work ) ) ? Result : FTextureResourceHandle();
+}
+
+bool CDX12PlatformSubsystem::CopyTexture( FTextureResourceHandle Source, FTextureResourceHandle Destination )
+{
+	GAME_THREAD_ONLY( false );
+	if ( !bInitialized || !Device )
+	{
+		return false;
+	}
+	bool bResult = false; // 専用描画スレッド上で同じDIRECTキューのコピーを完了させる。
+	auto Work = [&]()
+	{ bResult = Device->GetTextureResources()->CopyTexture( Source, Destination ); };
+	return ExecuteRender( MoveTemp( Work ) ) && bResult;
+}
+
+bool CDX12PlatformSubsystem::ReadTextureRGBA8( FTextureResourceHandle Texture, TArray<FColor32> &OutPixels, int32 &OutWidth, int32 &OutHeight )
+{
+	GAME_THREAD_ONLY( false );
+	if ( !bInitialized || !Device )
+	{
+		return false;
+	}
+	bool bResult = false; // 専用描画スレッド上でREADBACK同期読み戻しを完了させる。
+	auto Work = [&]()
+	{ bResult = Device->GetTextureResources()->ReadTextureRGBA8( Texture, OutPixels, OutWidth, OutHeight ); };
+	return ExecuteRender( MoveTemp( Work ) ) && bResult;
+}
+
+bool CDX12PlatformSubsystem::ReadTextureRGBA16F( FTextureResourceHandle Texture, TArray<FColor> &OutPixels, int32 &OutWidth, int32 &OutHeight )
+{
+	GAME_THREAD_ONLY( false );
+	if ( !bInitialized || !Device )
+	{
+		return false;
+	}
+	bool bResult = false; // 専用描画スレッド上でRGBA16F READBACK同期読み戻しを完了させる。
+	auto Work = [&]()
+	{ bResult = Device->GetTextureResources()->ReadTextureRGBA16F( Texture, OutPixels, OutWidth, OutHeight ); };
+	return ExecuteRender( MoveTemp( Work ) ) && bResult;
 }
 
 bool CDX12PlatformSubsystem::UpdateTextureRGBA8( FTextureResourceHandle Texture, int32 Width, int32 Height, const FColor32 *Pixels )

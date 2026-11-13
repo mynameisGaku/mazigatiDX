@@ -202,11 +202,18 @@ bool CDX12GeometryRenderer::BeginFrame( ID3D12GraphicsCommandList *InCommands, D
 	return BeginFrame( InCommands, TArrayView<const D3D12_CPU_DESCRIPTOR_HANDLE>( Views, 1 ), InSrvHeap, InClip, bInClearDepth, InClearDepth, InForbiddenTextureBinding != 0 ? TArrayView<const uint64>( Forbidden, 1 ) : TArrayView<const uint64>() );
 }
 
-bool CDX12GeometryRenderer::BeginFrame( ID3D12GraphicsCommandList *InCommands, TArrayView<const D3D12_CPU_DESCRIPTOR_HANDLE> InColorViews, ID3D12DescriptorHeap *InSrvHeap, const FRenderClipRect *InClip, bool bInClearDepth, float32 InClearDepth, TArrayView<const uint64> InForbiddenTextureBindings )
+bool CDX12GeometryRenderer::BeginFrame( ID3D12GraphicsCommandList *InCommands, TArrayView<const D3D12_CPU_DESCRIPTOR_HANDLE> InColorViews, ID3D12DescriptorHeap *InSrvHeap, const FRenderClipRect *InClip, bool bInClearDepth, float32 InClearDepth, TArrayView<const uint64> InForbiddenTextureBindings, TArrayView<const ERenderTargetColorFormat> InColorFormats )
 {
-	if ( !Device || !Depth || !DsvHeap || Commands || !InCommands || InCommands->GetType() != D3D12_COMMAND_LIST_TYPE_DIRECT || !InColorViews.GetData() || InColorViews.Num() <= 0 || InColorViews.Num() > static_cast<int32>( FRenderTargetPassDesc::MaxColorTargets ) || InForbiddenTextureBindings.Num() < 0 || InForbiddenTextureBindings.Num() > static_cast<int32>( FRenderTargetPassDesc::MaxColorTargets ) + 1 || ( InForbiddenTextureBindings.Num() > 0 && !InForbiddenTextureBindings.GetData() ) || ( bInClearDepth && ( !NMath::IsFinite( InClearDepth ) || InClearDepth < 0.0f || InClearDepth > 1.0f ) ) )
+	if ( !Device || !Depth || !DsvHeap || Commands || !InCommands || InCommands->GetType() != D3D12_COMMAND_LIST_TYPE_DIRECT || !InColorViews.GetData() || InColorViews.Num() <= 0 || InColorViews.Num() > static_cast<int32>( FRenderTargetPassDesc::MaxColorTargets ) || ( !InColorFormats.IsEmpty() && ( !InColorFormats.GetData() || InColorFormats.Num() != InColorViews.Num() ) ) || InForbiddenTextureBindings.Num() < 0 || InForbiddenTextureBindings.Num() > static_cast<int32>( FRenderTargetPassDesc::MaxColorTargets ) + 1 || ( InForbiddenTextureBindings.Num() > 0 && !InForbiddenTextureBindings.GetData() ) || ( bInClearDepth && ( !NMath::IsFinite( InClearDepth ) || InClearDepth < 0.0f || InClearDepth > 1.0f ) ) )
 	{
 		return false;
+	}
+	for ( int32 i = 0; i < InColorFormats.Num(); ++i )
+	{
+		if ( InColorFormats[i] != ERenderTargetColorFormat::RGBA8 && InColorFormats[i] != ERenderTargetColorFormat::RGBA16F )
+		{
+			return false;
+		}
 	}
 	for ( const D3D12_CPU_DESCRIPTOR_HANDLE View : InColorViews )
 	{
@@ -251,6 +258,7 @@ bool CDX12GeometryRenderer::BeginFrame( ID3D12GraphicsCommandList *InCommands, T
 	for ( uint32 i = 0; i < ColorViewCount; ++i )
 	{
 		Rtvs[i] = InColorViews[static_cast<int32>( i )];
+		ColorFormats[i] = InColorFormats.IsEmpty() ? ERenderTargetColorFormat::RGBA8 : InColorFormats[static_cast<int32>( i )];
 	}
 	ForbiddenBindingCount = 0;
 	for ( const uint64 Forbidden : InForbiddenTextureBindings )
@@ -524,7 +532,7 @@ bool CDX12GeometryRenderer::CommitGraphicsAssetPins( TArrayView<const FDX12Textu
 
 bool CDX12GeometryRenderer::ValidateDrawState( const FGeometryDrawState &State, const FTextureDrawView *Texture ) const
 {
-	if ( !Commands || ColorViewCount != 1 || State.Topology > EGeometryTopology::Triangles || State.Compare > EGeometryCompare::Always || State.Culling > EGeometryCulling::FrontFaces || State.AddressU > EGeometryTextureAddress::Border || State.AddressV > EGeometryTextureAddress::Border || ( Texture && ( !SrvHeap || Texture->Binding == 0 || Texture->Width <= 0 || Texture->Height <= 0 ) ) )
+	if ( !Commands || ColorViewCount != 1 || ColorFormats[0] != ERenderTargetColorFormat::RGBA8 || State.Topology > EGeometryTopology::Triangles || State.Compare > EGeometryCompare::Always || State.Culling > EGeometryCulling::FrontFaces || State.AddressU > EGeometryTextureAddress::Border || State.AddressV > EGeometryTextureAddress::Border || ( Texture && ( !SrvHeap || Texture->Binding == 0 || Texture->Width <= 0 || Texture->Height <= 0 ) ) )
 	{
 		return false;
 	}
@@ -757,6 +765,13 @@ bool CDX12GeometryRenderer::DrawGraphicsPipeline( const FGraphicsPipelineDraw &D
 	if ( !GraphicsPipelines->AcquirePipeline( Draw.Pipeline, Pipeline ) || !Pipeline.Pipeline || !Pipeline.Root || Pipeline.NumRenderTargets != ColorViewCount || ( Pipeline.DepthFormat == EGraphicsDepthFormat::D32Float && ( !Depth || !DsvHeap ) ) )
 	{
 		return false;
+	}
+	for ( uint32 i = 0; i < ColorViewCount; ++i )
+	{
+		if ( Pipeline.RenderTargetFormats[i] != ColorFormats[i] )
+		{
+			return false;
+		}
 	}
 	const bool bIndexed = Draw.IndexBuffer.IsValid(); // index付き描画の有無。
 	const uint32 Group = Pipeline.Topology == EGeometryTopology::Points ? 1u : Pipeline.Topology == EGeometryTopology::Lines ? 2u

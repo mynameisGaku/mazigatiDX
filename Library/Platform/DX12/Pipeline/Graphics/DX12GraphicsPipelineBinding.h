@@ -19,6 +19,11 @@ struct FDX12GraphicsPipelineBinding
 	TArray<uint32> MinimumBytes; // BufferSlotsに対応。Constantのみシェーダー宣言の最小バイト数、他は0。
 	uint32 VertexStride = 0; // 頂点バッファの1頂点バイト幅。
 	uint32 NumRenderTargets = 1; // 同時色描画先の必須数（1〜8）。
+	ERenderTargetColorFormat RenderTargetFormats[FGraphicsPipelineDesc::MaxRenderTargets] =
+	{
+		ERenderTargetColorFormat::RGBA8, ERenderTargetColorFormat::RGBA8, ERenderTargetColorFormat::RGBA8, ERenderTargetColorFormat::RGBA8,
+		ERenderTargetColorFormat::RGBA8, ERenderTargetColorFormat::RGBA8, ERenderTargetColorFormat::RGBA8, ERenderTargetColorFormat::RGBA8
+	}; // 各色描画先の必須画素形式。
 	EGraphicsDepthFormat DepthFormat = EGraphicsDepthFormat::D32Float; // 結合すべきDSV形式の有無。
 	EGeometryTopology Topology = EGeometryTopology::Triangles; // IASetPrimitiveTopologyへ渡す接続形式。
 };

@@ -37,7 +37,7 @@ class CDX12GeometryRenderer : public IRenderGeometry3D
 	// GPU待ち後だけ呼ぶ。前フレームの頂点を解放し、指定時は深度を消す。
 	bool BeginFrame( ID3D12GraphicsCommandList *InCommands, D3D12_CPU_DESCRIPTOR_HANDLE InRtv, ID3D12DescriptorHeap *InSrvHeap = nullptr, const FRenderClipRect *InClip = nullptr, bool bInClearDepth = true, float32 InClearDepth = 1.0f, uint64 InForbiddenTextureBinding = 0 );
 	// GPU待ち後だけ呼ぶ。1〜8枚の色描画先と書き込み中画像への自己参照禁止を同時に設定する。
-	bool BeginFrame( ID3D12GraphicsCommandList *InCommands, TArrayView<const D3D12_CPU_DESCRIPTOR_HANDLE> InColorViews, ID3D12DescriptorHeap *InSrvHeap = nullptr, const FRenderClipRect *InClip = nullptr, bool bInClearDepth = true, float32 InClearDepth = 1.0f, TArrayView<const uint64> InForbiddenTextureBindings = {} );
+	bool BeginFrame( ID3D12GraphicsCommandList *InCommands, TArrayView<const D3D12_CPU_DESCRIPTOR_HANDLE> InColorViews, ID3D12DescriptorHeap *InSrvHeap = nullptr, const FRenderClipRect *InClip = nullptr, bool bInClearDepth = true, float32 InClearDepth = 1.0f, TArrayView<const uint64> InForbiddenTextureBindings = {}, TArrayView<const ERenderTargetColorFormat> InColorFormats = {} );
 	// 記録先を外す。GPU上で使用中の頂点は保持する。
 	void EndFrame();
 	// 書き込み先を入力へ束縛する競合が起きなかったか。
@@ -131,6 +131,7 @@ class CDX12GeometryRenderer : public IRenderGeometry3D
 	ID3D12GraphicsCommandList *Commands = nullptr; // 今フレームだけ借用する記録先。
 	const FRenderClipRect *Clip = nullptr; // 呼出位置の切り取り範囲。フレーム中だけ借用する。
 	D3D12_CPU_DESCRIPTOR_HANDLE Rtvs[FRenderTargetPassDesc::MaxColorTargets] = {}; // 今フレームだけ借用する1〜8枚の色描画先。
+	ERenderTargetColorFormat ColorFormats[FRenderTargetPassDesc::MaxColorTargets] = {}; // 各色描画先の画素形式（既定RGBA8）。
 	uint32 ColorViewCount = 0; // 現在束縛中の色描画先数。
 	uint64 ForbiddenTextureBindings[FRenderTargetPassDesc::MaxColorTargets + 1] = {}; // 書き込み先のSRVを同時に入力へ束縛させない番号。
 	uint32 ForbiddenBindingCount = 0; // 書き込み禁止中のSRV番号数。

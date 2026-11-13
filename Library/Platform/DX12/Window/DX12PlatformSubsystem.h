@@ -102,12 +102,22 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
 	bool GetComputeTextureCapabilities( FComputeTextureCapabilities &Out ) const override;
 	// ゲームスレッドから、computeで読み書き可能な画像を描画所有側へ作成する。
 	FTextureResourceHandle CreateComputeTextureRGBA8( int32 Width, int32 Height, const FColor32 *Pixels ) override;
+	// ゲームスレッドから、computeで読み書き可能なRGBA16F画像を描画所有側へ作成する。
+	FTextureResourceHandle CreateComputeTextureRGBA16F( int32 Width, int32 Height, const FColor *Pixels ) override;
 	// ゲームスレッドから描画先画像と読み取れる深度の能力を照会する。
 	bool GetRenderTargetCapabilities( FRenderTargetCapabilities &Out ) const override;
 	// ゲームスレッドからRGBA8の色描画先画像を描画所有側へ作成する。
 	FTextureResourceHandle CreateRenderTargetRGBA8( int32 Width, int32 Height, FColor32 ClearColor = FColor32( 0, 0, 0, 255 ) ) override;
+	// ゲームスレッドからRGBA16FのHDR色描画先画像を描画所有側へ作成する。
+	FTextureResourceHandle CreateRenderTargetRGBA16F( int32 Width, int32 Height, FColor ClearColor = FColor( 0.0f, 0.0f, 0.0f, 1.0f ) ) override;
 	// ゲームスレッドから読み取れるD32深度を描画所有側へ作成する。
 	FTextureResourceHandle CreateDepthTextureD32( int32 Width, int32 Height, float32 ClearDepth = 1.0f ) override;
+	// ゲームスレッドから同一寸法・同色グループの画像をコピーする。
+	bool CopyTexture( FTextureResourceHandle Source, FTextureResourceHandle Destination ) override;
+	// ゲームスレッドからRGBA8画像をCPUへ読み戻す。
+	bool ReadTextureRGBA8( FTextureResourceHandle Texture, TArray<FColor32> &OutPixels, int32 &OutWidth, int32 &OutHeight ) override;
+	// ゲームスレッドからRGBA16F画像をCPUへ読み戻す。
+	bool ReadTextureRGBA16F( FTextureResourceHandle Texture, TArray<FColor> &OutPixels, int32 &OutWidth, int32 &OutHeight ) override;
 	// 記録済みの画像を保ったまま更新する。
 	bool UpdateTextureRGBA8( FTextureResourceHandle Texture, int32 Width, int32 Height, const FColor32 *Pixels ) override;
 	// GPU完了後に画像資源を解放する。
