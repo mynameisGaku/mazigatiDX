@@ -4,7 +4,7 @@
 
 ## Phase B `RGBA16F`と画像コピー・readback（2026-11-13 追記）
 
-`IRenderTextureResources`へ`CreateComputeTextureRGBA16F`・`CreateRenderTargetRGBA16F`・`CopyTexture`・`ReadTextureRGBA8`・`ReadTextureRGBA16F`を追加し、RGBA16Fのcompute/描画先、RGBA16F+RGBA8混合MRT、同形式同寸法の画像コピーとCPU readback、失敗時の出力非破壊を`CDX12TextureStore`等で接続しました。検証は`Source/SelfTest/RunHdrTextureCopyTests.ps1`で行います。互換台帳は486項目（`UpdateBackendCompatibility.ps1 -Check`通過）です。
+`IRenderTextureResources`へ`CreateComputeTextureRGBA16F`・`CreateRenderTargetRGBA16F`・`CopyTexture`・`ReadTextureRGBA8`・`ReadTextureRGBA16F`を追加し、RGBA16Fのcompute/描画先、RGBA16F+RGBA8混合MRT、主画面の未提出コマンド提出（`SubmitPendingMainCommands`）を伴う同形式同寸法の画像コピーとCPU readback、撮影/パス/未閉鎖timestamp時の拒否と出力非破壊を`CDX12PlatformSubsystem`・`CDX12TextureStore`等で接続しました。検証は`Source/SelfTest/RunHdrTextureCopyTests.ps1`で行います。互換台帳は486項目（`UpdateBackendCompatibility.ps1 -Check`通過）です。
 
 ## Windows での再開記録（2026-11-09 追記）
 

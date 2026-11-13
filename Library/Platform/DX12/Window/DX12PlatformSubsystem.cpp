@@ -784,9 +784,14 @@ bool CDX12PlatformSubsystem::CopyTexture( FTextureResourceHandle Source, FTextur
 	{
 		return false;
 	}
-	bool bResult = false; // 専用描画スレッド上で同じDIRECTキューのコピーを完了させる。
+	bool bResult = false; // 専用描画スレッド上で主画面の未提出描画を確定してから同じDIRECTキューのコピーを完了させる。
 	auto Work = [&]()
-	{ bResult = Device->GetTextureResources()->CopyTexture( Source, Destination ); };
+	{
+		if ( NativeSurface && NativeSurface->SubmitPendingMainCommands() )
+		{
+			bResult = Device->GetTextureResources()->CopyTexture( Source, Destination );
+		}
+	};
 	return ExecuteRender( MoveTemp( Work ) ) && bResult;
 }
 
@@ -797,9 +802,14 @@ bool CDX12PlatformSubsystem::ReadTextureRGBA8( FTextureResourceHandle Texture, T
 	{
 		return false;
 	}
-	bool bResult = false; // 専用描画スレッド上でREADBACK同期読み戻しを完了させる。
+	bool bResult = false; // 専用描画スレッド上で主画面の未提出描画を確定してからREADBACK同期読み戻しを完了させる。
 	auto Work = [&]()
-	{ bResult = Device->GetTextureResources()->ReadTextureRGBA8( Texture, OutPixels, OutWidth, OutHeight ); };
+	{
+		if ( NativeSurface && NativeSurface->SubmitPendingMainCommands() )
+		{
+			bResult = Device->GetTextureResources()->ReadTextureRGBA8( Texture, OutPixels, OutWidth, OutHeight );
+		}
+	};
 	return ExecuteRender( MoveTemp( Work ) ) && bResult;
 }
 
@@ -810,9 +820,14 @@ bool CDX12PlatformSubsystem::ReadTextureRGBA16F( FTextureResourceHandle Texture,
 	{
 		return false;
 	}
-	bool bResult = false; // 専用描画スレッド上でRGBA16F READBACK同期読み戻しを完了させる。
+	bool bResult = false; // 専用描画スレッド上で主画面の未提出描画を確定してからRGBA16F READBACK同期読み戻しを完了させる。
 	auto Work = [&]()
-	{ bResult = Device->GetTextureResources()->ReadTextureRGBA16F( Texture, OutPixels, OutWidth, OutHeight ); };
+	{
+		if ( NativeSurface && NativeSurface->SubmitPendingMainCommands() )
+		{
+			bResult = Device->GetTextureResources()->ReadTextureRGBA16F( Texture, OutPixels, OutWidth, OutHeight );
+		}
+	};
 	return ExecuteRender( MoveTemp( Work ) ) && bResult;
 }
 

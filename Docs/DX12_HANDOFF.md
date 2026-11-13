@@ -39,8 +39,8 @@ DX12はゲームとUIが使うグラフィックス実装です。GPUデバイ�
 
 - 今回の実装基点: 本体`f7c4eef`、検査`725b8be`。設計調査は`Saved/ArgonCoordination/phase-b-design-review.md`に記録しています。
 - 既存の`IRenderTextureResources`、`CDX12TextureStore`、`CDX12ComputePipelineStore`、`CDX12ComputeQueue`、`CDX12GraphicsPipelineStore`、`CDX12RenderTargetPass`、`CDX12GeometryRenderer`、`CDX12GameRenderer`、`CDX12PlatformSubsystem`を拡張し、`CreateComputeTextureRGBA16F`、`CreateRenderTargetRGBA16F`、`CopyTexture`、`ReadTextureRGBA8`、`ReadTextureRGBA16F`、および`RGBA16F`＋`RGBA8`混合MRTを接続しました。
-- 失敗時（不正寸法・非有限値・異形式・自己コピー・アクティブ描画ターゲット・デバイス喪失・非ゲームスレッド）は出力引数（`OutPixels`/`OutWidth`/`OutHeight`等）を変更せず`false`/無効ハンドルを返します。固定2D/3DのSDR経路は非`RGBA8`ターゲットへの描画を拒否し、`ColorClearPipeline16F`で`RGBA16F`クリアに対応します。
-- 検査: `RunHdrTextureCopyTests.ps1 -Platform`（`cpu`/`default`/`warp`/`remove` + アプリ起動6モード `dx12`/`warp`/`dx12-no-ui`/`warp-no-ui`/`dxlib`/`null`）、および`Tools/RunAllChecks.ps1 -SkipBuild -Quick`で確認します。
+- `CDX12PlatformSubsystem::CopyTexture`／`ReadTextureRGBA8`／`ReadTextureRGBA16F`は`ExecuteRender`内で`NativeSurface->SubmitPendingMainCommands()`を呼び、主画面の未提出描画を確定してから同一`DIRECT`キューへコピー／readbackを積みます。撮影中・描画先パス中・未閉鎖`BeginGpuTimestamp`・非フレーム中・不正寸法・非有限値・異形式・自己コピー・デバイス喪失・非ゲームスレッドでは出力引数（`OutPixels`/`OutWidth`/`OutHeight`等）を変更せず`false`/無効ハンドルを返します。固定2D/3DのSDR経路は非`RGBA8`ターゲットへの描画を拒否し、`ColorClearPipeline16F`で`RGBA16F`クリアに対応します。
+- 検査: `RunHdrTextureCopyTests.ps1 -Platform`（`cpu`/`default`/`warp`/`remove` + アプリ起動6モード `dx12`/`warp`/`dx12-no-ui`/`warp-no-ui`/`dxlib`/`null`、主画面描画→`CopyTexture`上書き→再描画の旧画素/新画素回帰および撮影/パス/未閉鎖timestamp拒否を含む）、および`Tools/RunAllChecks.ps1 -SkipBuild -Quick`で確認します。
 
 ## 先行の作業: フレーム転送領域とresize（2026-11-13）
 
