@@ -502,9 +502,9 @@ FTextureResourceHandle CDX12TextureStore::CreateRenderTargetRGBA8( int32 Width, 
 	return Handle;
 }
 
-FTextureResourceHandle CDX12TextureStore::CreateRenderTargetRGBA16F( int32 Width, int32 Height, FColor ClearColor )
+FTextureResourceHandle CDX12TextureStore::CreateFloatColorRenderTarget( int32 Width, int32 Height, DXGI_FORMAT Format, const float32 ClearValues[4], ETextureKind Kind )
 {
-	if ( !bHealthy || !Device || !Pool || FAILED( Device->GetDeviceRemovedReason() ) || Width <= 0 || Height <= 0 || Width > 16384 || Height > 16384 || static_cast<int64>( Width ) * Height > 64 * 1024 * 1024 || !IsFiniteColor( ClearColor ) || Textures.Num() + Retired.Num() >= MaxResources || !bRenderTargetCapabilitiesAvailable || !RenderTargetCapabilities.bRGBA16FRenderTarget )
+	if ( !bHealthy || !Device || !Pool || FAILED( Device->GetDeviceRemovedReason() ) || Width <= 0 || Height <= 0 || Width > 16384 || Height > 16384 || static_cast<int64>( Width ) * Height > 64 * 1024 * 1024 || Textures.Num() + Retired.Num() >= MaxResources )
 	{
 		return FTextureResourceHandle();
 	}
@@ -516,14 +516,14 @@ FTextureResourceHandle CDX12TextureStore::CreateRenderTargetRGBA16F( int32 Width
 	Desc.Width = Width;
 	Desc.Height = Height;
 	Desc.DepthOrArraySize = Desc.MipLevels = Desc.SampleDesc.Count = 1;
-	Desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	Desc.Format = Format;
 	Desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 	D3D12_CLEAR_VALUE ClearValue = {};
 	ClearValue.Format = Desc.Format;
-	ClearValue.Color[0] = ClearColor.r;
-	ClearValue.Color[1] = ClearColor.g;
-	ClearValue.Color[2] = ClearColor.b;
-	ClearValue.Color[3] = ClearColor.a;
+	ClearValue.Color[0] = ClearValues[0];
+	ClearValue.Color[1] = ClearValues[1];
+	ClearValue.Color[2] = ClearValues[2];
+	ClearValue.Color[3] = ClearValues[3];
 	D3D12_DESCRIPTOR_HEAP_DESC RtvHeapDesc = {};
 	RtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	RtvHeapDesc.NumDescriptors = 1;
@@ -572,8 +572,8 @@ FTextureResourceHandle CDX12TextureStore::CreateRenderTargetRGBA16F( int32 Width
 	Device->CreateShaderResourceView( Created.Resource.Get(), &View, Created.Descriptor.Cpu );
 	Created.Width = Width;
 	Created.Height = Height;
-	Created.InitialClearColorF = ClearColor;
-	Created.Kind = ETextureKind::RenderTargetRGBA16F;
+	Created.InitialClearColorF = FColor( ClearValues[0], ClearValues[1], ClearValues[2], ClearValues[3] );
+	Created.Kind = Kind;
 	const FTextureResourceHandle Handle( NRenderResourceSerial::Allocate() );
 	if ( !Handle.IsValid() )
 	{
@@ -582,6 +582,26 @@ FTextureResourceHandle CDX12TextureStore::CreateRenderTargetRGBA16F( int32 Width
 	}
 	Textures.Add( Handle.Value, MoveTemp( Created ) );
 	return Handle;
+}
+
+FTextureResourceHandle CDX12TextureStore::CreateRenderTargetRGBA16F( int32 Width, int32 Height, FColor ClearColor )
+{
+	if ( !IsFiniteColor( ClearColor ) || !bRenderTargetCapabilitiesAvailable || !RenderTargetCapabilities.bRGBA16FRenderTarget )
+	{
+		return FTextureResourceHandle();
+	}
+	const float32 ClearValues[4] = { ClearColor.r, ClearColor.g, ClearColor.b, ClearColor.a };
+	return CreateFloatColorRenderTarget( Width, Height, DXGI_FORMAT_R16G16B16A16_FLOAT, ClearValues, ETextureKind::RenderTargetRGBA16F );
+}
+
+FTextureResourceHandle CDX12TextureStore::CreateRenderTargetR32Float( int32 Width, int32 Height, float32 ClearValue )
+{
+	if ( !NMath::IsFinite( ClearValue ) || !bRenderTargetCapabilitiesAvailable || !RenderTargetCapabilities.bR32FloatRenderTarget )
+	{
+		return FTextureResourceHandle();
+	}
+	const float32 ClearValues[4] = { ClearValue, ClearValue, ClearValue, ClearValue };
+	return CreateFloatColorRenderTarget( Width, Height, DXGI_FORMAT_R32_FLOAT, ClearValues, ETextureKind::RenderTargetR32Float );
 }
 
 FTextureResourceHandle CDX12TextureStore::CreateDepthTextureD32( int32 Width, int32 Height, float32 ClearDepth )
@@ -716,7 +736,8 @@ bool CDX12TextureStore::AcquireComputeTexture( FTextureResourceHandle Texture, E
 	}
 	else if ( Format == EComputeTextureFormat::R32Float )
 	{
-		if ( Found->Kind != ETextureKind::DepthD32 || Access != EComputeTextureAccess::Read || !Capabilities.bR32FloatRead )
+		const bool bIsR32Float = Found->Kind == ETextureKind::DepthD32 || Found->Kind == ETextureKind::RenderTargetR32Float;
+		if ( !bIsR32Float || Access != EComputeTextureAccess::Read || !Capabilities.bR32FloatRead )
 		{
 			return false;
 		}
@@ -764,7 +785,8 @@ bool CDX12TextureStore::AcquireGraphicsTexture( FTextureResourceHandle Texture, 
 	}
 	else if ( Format == EComputeTextureFormat::R32Float )
 	{
-		if ( Found->Kind != ETextureKind::DepthD32 || !bCapabilitiesAvailable || !Capabilities.bR32FloatRead )
+		const bool bIsR32Float = Found->Kind == ETextureKind::DepthD32 || Found->Kind == ETextureKind::RenderTargetR32Float;
+		if ( !bIsR32Float || !bCapabilitiesAvailable || !Capabilities.bR32FloatRead )
 		{
 			return false;
 		}
@@ -811,10 +833,11 @@ bool CDX12TextureStore::BeginRenderTargetPass( TArrayView<const FTextureResource
 				return false;
 			}
 		}
-		const FTextureRecord *Color = Textures.Find( Handle.Value ); // 所有するRGBA8またはRGBA16F描画先か検査する。
+		const FTextureRecord *Color = Textures.Find( Handle.Value ); // 所有するRGBA8・RGBA16F・R32Floatカラー描画先か検査する（DepthD32は不可）。
 		const bool bIsRGBA8 = Color && Color->Kind == ETextureKind::RenderTargetRGBA8 && RenderTargetCapabilities.bRGBA8RenderTarget;
 		const bool bIsRGBA16F = Color && Color->Kind == ETextureKind::RenderTargetRGBA16F && RenderTargetCapabilities.bRGBA16FRenderTarget;
-		if ( !Color || ( !bIsRGBA8 && !bIsRGBA16F ) || !Color->Resource || !Color->TargetHeap )
+		const bool bIsR32Float = Color && Color->Kind == ETextureKind::RenderTargetR32Float && RenderTargetCapabilities.bR32FloatRenderTarget;
+		if ( !Color || ( !bIsRGBA8 && !bIsRGBA16F && !bIsR32Float ) || !Color->Resource || !Color->TargetHeap )
 		{
 			return false;
 		}
@@ -834,7 +857,7 @@ bool CDX12TextureStore::BeginRenderTargetPass( TArrayView<const FTextureResource
 		ColorBindings[i].Height = Color->Height;
 		ColorBindings[i].InitialClearColor = Color->InitialClearColor;
 		ColorBindings[i].InitialClearColorF = Color->InitialClearColorF;
-		ColorBindings[i].Format = bIsRGBA16F ? EComputeTextureFormat::RGBA16F : EComputeTextureFormat::RGBA8;
+		ColorBindings[i].Format = bIsRGBA16F ? EComputeTextureFormat::RGBA16F : ( bIsR32Float ? EComputeTextureFormat::R32Float : EComputeTextureFormat::RGBA8 );
 	}
 	FDX12TextureBinding DepthBinding; // 任意の読み取れる深度。
 	if ( DepthTarget.IsValid() )
@@ -965,7 +988,9 @@ bool CDX12TextureStore::CopyTexture( FTextureResourceHandle Source, FTextureReso
 	const bool bDstRGBA8 = Dst->Kind == ETextureKind::StandardRGBA8 || Dst->Kind == ETextureKind::ComputeRGBA8 || Dst->Kind == ETextureKind::RenderTargetRGBA8;
 	const bool bSrcRGBA16F = Src->Kind == ETextureKind::ComputeRGBA16F || Src->Kind == ETextureKind::RenderTargetRGBA16F;
 	const bool bDstRGBA16F = Dst->Kind == ETextureKind::ComputeRGBA16F || Dst->Kind == ETextureKind::RenderTargetRGBA16F;
-	if ( !( ( bSrcRGBA8 && bDstRGBA8 ) || ( bSrcRGBA16F && bDstRGBA16F ) ) )
+	const bool bSrcR32Float = Src->Kind == ETextureKind::RenderTargetR32Float;
+	const bool bDstR32Float = Dst->Kind == ETextureKind::RenderTargetR32Float;
+	if ( !( ( bSrcRGBA8 && bDstRGBA8 ) || ( bSrcRGBA16F && bDstRGBA16F ) || ( bSrcR32Float && bDstR32Float ) ) )
 	{
 		return false;
 	}
@@ -1173,6 +1198,32 @@ bool CDX12TextureStore::ReadTextureRGBA16F( FTextureResourceHandle Texture, TArr
 		Pixels[i].a = HalfToFloat32( HalfWords[i * 4 + 3] );
 	}
 	OutPixels = MoveTemp( Pixels );
+	OutWidth = Found->Width;
+	OutHeight = Found->Height;
+	return true;
+}
+
+bool CDX12TextureStore::ReadTextureR32Float( FTextureResourceHandle Texture, TArray<float32> &OutValues, int32 &OutWidth, int32 &OutHeight )
+{
+	if ( !bHealthy || !Device || FAILED( Device->GetDeviceRemovedReason() ) || !Texture.IsValid() || IsActiveTarget( Texture.Value ) )
+	{
+		return false;
+	}
+	const FTextureRecord *Found = Textures.Find( Texture.Value );
+	if ( !Found || Found->Kind != ETextureKind::RenderTargetR32Float )
+	{
+		return false;
+	}
+	TArray<uint8> Rows;
+	UINT RowBytes = 0;
+	if ( !ReadbackTextureBytes( *Found, DXGI_FORMAT_R32_FLOAT, 4, Rows, RowBytes ) )
+	{
+		return false;
+	}
+	TArray<float32> Values;
+	Values.SetNum( Found->Width * Found->Height );
+	FMemory::Memcpy( Values.GetData(), Rows.GetData(), static_cast<usize>( Values.Num() ) * sizeof( float32 ) );
+	OutValues = MoveTemp( Values );
 	OutWidth = Found->Width;
 	OutHeight = Found->Height;
 	return true;

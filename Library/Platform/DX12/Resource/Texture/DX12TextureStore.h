@@ -40,6 +40,8 @@ class CDX12TextureStore : public IRenderTextureResources
 	FTextureResourceHandle CreateRenderTargetRGBA8( int32 Width, int32 Height, FColor32 ClearColor = FColor32( 0, 0, 0, 255 ) ) override;
 	// 初期色で消去したRGBA16F HDR描画先画像を作る。カスタム描画やcomputeのRead入力にも使える。
 	FTextureResourceHandle CreateRenderTargetRGBA16F( int32 Width, int32 Height, FColor ClearColor = FColor( 0.0f, 0.0f, 0.0f, 1.0f ) ) override;
+	// 初期値で消去したR32Float単一成分カラー描画先を作る。カスタム描画・compute/graphicsのR32Float Read入力にも使える。
+	FTextureResourceHandle CreateRenderTargetR32Float( int32 Width, int32 Height, float32 ClearValue = 1.0f ) override;
 	// 初期深度で消去した読み取れるD32深度を作る。描画パスの深度とcomputeのR32Float Read入力に使える。
 	FTextureResourceHandle CreateDepthTextureD32( int32 Width, int32 Height, float32 ClearDepth = 1.0f ) override;
 	// 同一寸法・同色グループ形式の画像全領域を同じDIRECTキューでコピーする。
@@ -48,6 +50,8 @@ class CDX12TextureStore : public IRenderTextureResources
 	bool ReadTextureRGBA8( FTextureResourceHandle Texture, TArray<FColor32> &OutPixels, int32 &OutWidth, int32 &OutHeight ) override;
 	// RGBA16F画像の全画素をFColor配列へ読み戻す。失敗時は出力を変更しない。
 	bool ReadTextureRGBA16F( FTextureResourceHandle Texture, TArray<FColor> &OutPixels, int32 &OutWidth, int32 &OutHeight ) override;
+	// R32Floatカラー画像の全画素をfloat32配列へ読み戻す。深度画像や別形式では出力を変更せずfalse。
+	bool ReadTextureR32Float( FTextureResourceHandle Texture, TArray<float32> &OutValues, int32 &OutWidth, int32 &OutHeight ) override;
 	// 同じGPU・提出先への接続が有効か確認する。
 	bool UsesDeviceAndQueue( ID3D12Device *InDevice, ID3D12CommandQueue *InQueue ) const;
 	// 提出が保持する画像実体を返す。用途・形式違い・パス記録中の競合・無効な番号はOutを保ってfalse。
@@ -80,6 +84,7 @@ class CDX12TextureStore : public IRenderTextureResources
 		RenderTargetRGBA8, // オフスクリーン描画先として使えるRGBA8画像。
 		ComputeRGBA16F, // UAV読み書きも許可するRGBA16F HDR画像。
 		RenderTargetRGBA16F, // オフスクリーン描画先として使えるRGBA16F HDR画像。
+		RenderTargetR32Float, // オフスクリーン描画先として使えるR32Float単一成分カラー画像。
 		DepthD32, // 描画パスとcompute R32Float読み取りで使える深度画像。
 	};
 	// COM参照を値へ包み、コンテナからoperator&を呼ばせない。
@@ -98,6 +103,8 @@ class CDX12TextureStore : public IRenderTextureResources
 	bool Upload( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable, FTextureRecord &Out );
 	// 完了を待った新規RGBA16F compute画像を作る。失敗時はOutを変えない。
 	bool UploadRGBA16F( int32 Width, int32 Height, const FColor *Pixels, FTextureRecord &Out );
+	// 浮動小数点カラー描画先（RGBA16F / R32Float）を作成する共通処理。
+	FTextureResourceHandle CreateFloatColorRenderTarget( int32 Width, int32 Height, DXGI_FORMAT Format, const float32 ClearValues[4], ETextureKind Kind );
 	// 指定資源からREADBACKヒープへ同期転送して1行ずつ一時配列へ読み出す共通処理。
 	bool ReadbackTextureBytes( const FTextureRecord &Record, DXGI_FORMAT ExpectedFormat, UINT BytesPerPixel, TArray<uint8> &OutRows, UINT &OutRowBytes );
 	// 用途を固定して新規画像を登録する。失敗時は無効値。

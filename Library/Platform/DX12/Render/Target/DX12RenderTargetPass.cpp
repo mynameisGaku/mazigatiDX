@@ -6,6 +6,7 @@
 #include "Library/Platform/DX12/Resource/Upload/DX12UploadArena.h"
 #include "Library/Core/Types/Numeric.h"
 #include <d3dcompiler.h>
+#include <memory>
 
 CDX12RenderTargetPass::~CDX12RenderTargetPass()
 {
@@ -95,6 +96,7 @@ void CDX12RenderTargetPass::ResetAfterGPUIdle()
 	DepthClearRoot.Reset();
 	ColorClearPipeline.Reset();
 	ColorClearPipeline16F.Reset();
+	ColorClearPipelineR32F.Reset();
 	ColorClearRoot.Reset();
 	Fence.Reset();
 	Completion.ResetAfterGPUIdle();
@@ -226,24 +228,44 @@ bool CDX12RenderTargetPass::ClearDepthWithShader( int32 Width, int32 Height, D3D
 	return true;
 }
 
-bool CDX12RenderTargetPass::PrepareColorClearPipeline()
+bool CDX12RenderTargetPass::PrepareColorClearPipeline( ERenderTargetColorFormat Format )
 {
-	if ( ColorClearPipeline && ColorClearPipeline16F )
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> *TargetPipeline = std::addressof( ColorClearPipeline );
+	DXGI_FORMAT DxgiFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+	if ( Format == ERenderTargetColorFormat::RGBA16F )
+	{
+		TargetPipeline = std::addressof( ColorClearPipeline16F );
+		DxgiFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	}
+	else if ( Format == ERenderTargetColorFormat::R32Float )
+	{
+		TargetPipeline = std::addressof( ColorClearPipelineR32F );
+		DxgiFormat = DXGI_FORMAT_R32_FLOAT;
+	}
+	if ( ColorClearRoot && *TargetPipeline )
 	{
 		return true;
 	}
 	const char Shader[] = "cbuffer C:register(b0){float4 clearColor;} float4 VS(uint id:SV_VertexID):SV_POSITION{return float4(id==2?3:-1,id==1?3:-1,0,1);} float4 PS():SV_TARGET{return clearColor;}"; // 最適化消去色と異なっても警告なしで全画面を塗る。
-	Microsoft::WRL::ComPtr<ID3DBlob> VS, PS, Root; // 任意色クリア専用の小さなプログラム。
-	D3D12_ROOT_PARAMETER Parameter = {}; // RGBAの4つの32bit定数。
-	Parameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-	Parameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-	Parameter.Constants.Num32BitValues = 4;
-	D3D12_ROOT_SIGNATURE_DESC Signature = {}; // 記述子ヒープを使わない最小構成。
-	Signature.NumParameters = 1;
-	Signature.pParameters = &Parameter;
-	if ( FAILED( D3DCompile( Shader, sizeof( Shader ) - 1, "ColorClear", nullptr, nullptr, "VS", "vs_5_0", 0, 0, &VS, nullptr ) ) || FAILED( D3DCompile( Shader, sizeof( Shader ) - 1, "ColorClear", nullptr, nullptr, "PS", "ps_5_0", 0, 0, &PS, nullptr ) ) || FAILED( D3D12SerializeRootSignature( &Signature, D3D_ROOT_SIGNATURE_VERSION_1, &Root, nullptr ) ) || FAILED( Device->CreateRootSignature( 0, Root->GetBufferPointer(), Root->GetBufferSize(), IID_PPV_ARGS( &ColorClearRoot ) ) ) )
+	Microsoft::WRL::ComPtr<ID3DBlob> VS, PS; // 任意色クリア専用の小さなプログラム。
+	if ( FAILED( D3DCompile( Shader, sizeof( Shader ) - 1, "ColorClear", nullptr, nullptr, "VS", "vs_5_0", 0, 0, &VS, nullptr ) ) || FAILED( D3DCompile( Shader, sizeof( Shader ) - 1, "ColorClear", nullptr, nullptr, "PS", "ps_5_0", 0, 0, &PS, nullptr ) ) )
 	{
 		return false;
+	}
+	if ( !ColorClearRoot )
+	{
+		Microsoft::WRL::ComPtr<ID3DBlob> Root;
+		D3D12_ROOT_PARAMETER Parameter = {}; // RGBAの4つの32bit定数。
+		Parameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+		Parameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		Parameter.Constants.Num32BitValues = 4;
+		D3D12_ROOT_SIGNATURE_DESC Signature = {}; // 記述子ヒープを使わない最小構成。
+		Signature.NumParameters = 1;
+		Signature.pParameters = &Parameter;
+		if ( FAILED( D3D12SerializeRootSignature( &Signature, D3D_ROOT_SIGNATURE_VERSION_1, &Root, nullptr ) ) || FAILED( Device->CreateRootSignature( 0, Root->GetBufferPointer(), Root->GetBufferSize(), IID_PPV_ARGS( &ColorClearRoot ) ) ) )
+		{
+			return false;
+		}
 	}
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC State = {}; // 深度へ触れず1枚のRTVだけを上書きするPSO。
 	State.pRootSignature = ColorClearRoot.Get();
@@ -258,32 +280,36 @@ bool CDX12RenderTargetPass::PrepareColorClearPipeline()
 	State.SampleMask = UINT_MAX;
 	State.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	State.NumRenderTargets = 1;
-	State.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	State.RTVFormats[0] = DxgiFormat;
 	State.DSVFormat = DXGI_FORMAT_UNKNOWN;
 	State.SampleDesc.Count = 1;
-	if ( FAILED( Device->CreateGraphicsPipelineState( &State, IID_PPV_ARGS( &ColorClearPipeline ) ) ) )
-	{
-		return false;
-	}
-	State.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
-	return SUCCEEDED( Device->CreateGraphicsPipelineState( &State, IID_PPV_ARGS( &ColorClearPipeline16F ) ) );
+	return SUCCEEDED( Device->CreateGraphicsPipelineState( &State, IID_PPV_ARGS( TargetPipeline->GetAddressOf() ) ) );
 }
 
-bool CDX12RenderTargetPass::ClearColorWithShader( int32 Width, int32 Height, D3D12_CPU_DESCRIPTOR_HANDLE Rtv, FColor32 Color, bool bFloat16 )
+bool CDX12RenderTargetPass::ClearColorWithShader( int32 Width, int32 Height, D3D12_CPU_DESCRIPTOR_HANDLE Rtv, FColor32 Color, ERenderTargetColorFormat Format )
 {
-	if ( !CurrentCommands || !PrepareColorClearPipeline() )
+	if ( !CurrentCommands || !PrepareColorClearPipeline( Format ) )
 	{
 		return false;
 	}
 	const float Values[4] = { Color.r / 255.0f, Color.g / 255.0f, Color.b / 255.0f, Color.a / 255.0f };
 	const D3D12_VIEWPORT Viewport = { 0, 0, static_cast<float>( Width ), static_cast<float>( Height ), 0, 1 };
 	const D3D12_RECT Scissor = { 0, 0, Width, Height };
+	ID3D12PipelineState *Pipeline = ColorClearPipeline.Get();
+	if ( Format == ERenderTargetColorFormat::RGBA16F )
+	{
+		Pipeline = ColorClearPipeline16F.Get();
+	}
+	else if ( Format == ERenderTargetColorFormat::R32Float )
+	{
+		Pipeline = ColorClearPipelineR32F.Get();
+	}
 	CurrentCommands->OMSetRenderTargets( 1, &Rtv, FALSE, nullptr );
 	CurrentCommands->RSSetViewports( 1, &Viewport );
 	CurrentCommands->RSSetScissorRects( 1, &Scissor );
 	CurrentCommands->SetGraphicsRootSignature( ColorClearRoot.Get() );
 	CurrentCommands->SetGraphicsRoot32BitConstants( 0, 4, Values, 0 );
-	CurrentCommands->SetPipelineState( bFloat16 ? ColorClearPipeline16F.Get() : ColorClearPipeline.Get() );
+	CurrentCommands->SetPipelineState( Pipeline );
 	CurrentCommands->IASetPrimitiveTopology( D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 	CurrentCommands->DrawInstanced( 3, 1, 0, 0 );
 	return true;
@@ -296,17 +322,19 @@ bool CDX12RenderTargetPass::ClearColorAttachment( const FDX12TextureBinding &Tar
 		return false;
 	}
 	const D3D12_CPU_DESCRIPTOR_HANDLE Rtv = Target.TargetHeap->GetCPUDescriptorHandleForHeapStart();
-	const bool bFloat16 = Target.Format == EComputeTextureFormat::RGBA16F;
+	const ERenderTargetColorFormat Format = Target.Format == EComputeTextureFormat::RGBA16F
+		? ERenderTargetColorFormat::RGBA16F
+		: ( Target.Format == EComputeTextureFormat::R32Float ? ERenderTargetColorFormat::R32Float : ERenderTargetColorFormat::RGBA8 );
 	const float Values[4] = { Color.r / 255.0f, Color.g / 255.0f, Color.b / 255.0f, Color.a / 255.0f };
-	const bool bMatchesInitial = bFloat16
-		? ( Values[0] == Target.InitialClearColorF.r && Values[1] == Target.InitialClearColorF.g && Values[2] == Target.InitialClearColorF.b && Values[3] == Target.InitialClearColorF.a )
-		: ( Color.r == Target.InitialClearColor.r && Color.g == Target.InitialClearColor.g && Color.b == Target.InitialClearColor.b && Color.a == Target.InitialClearColor.a );
+	const bool bMatchesInitial = Format == ERenderTargetColorFormat::RGBA8
+		? ( Color.r == Target.InitialClearColor.r && Color.g == Target.InitialClearColor.g && Color.b == Target.InitialClearColor.b && Color.a == Target.InitialClearColor.a )
+		: ( Values[0] == Target.InitialClearColorF.r && Values[1] == Target.InitialClearColorF.g && Values[2] == Target.InitialClearColorF.b && Values[3] == Target.InitialClearColorF.a );
 	if ( bMatchesInitial )
 	{
 		CurrentCommands->ClearRenderTargetView( Rtv, Values, 0, nullptr );
 		return true;
 	}
-	return ClearColorWithShader( Target.Width, Target.Height, Rtv, Color, bFloat16 );
+	return ClearColorWithShader( Target.Width, Target.Height, Rtv, Color, Format );
 }
 
 bool CDX12RenderTargetPass::Begin( const FRenderTargetPassDesc &Desc )
@@ -421,7 +449,9 @@ bool CDX12RenderTargetPass::Begin( const FRenderTargetPassDesc &Desc )
 	for ( int32 i = 0; i < ColorBindings.Num(); ++i )
 	{
 		ColorRtvs[i] = ColorBindings[i].TargetHeap->GetCPUDescriptorHandleForHeapStart();
-		ColorFormats[i] = ColorBindings[i].Format == EComputeTextureFormat::RGBA16F ? ERenderTargetColorFormat::RGBA16F : ERenderTargetColorFormat::RGBA8;
+		ColorFormats[i] = ColorBindings[i].Format == EComputeTextureFormat::RGBA16F
+			? ERenderTargetColorFormat::RGBA16F
+			: ( ColorBindings[i].Format == EComputeTextureFormat::R32Float ? ERenderTargetColorFormat::R32Float : ERenderTargetColorFormat::RGBA8 );
 		if ( ColorBindings[i].SrvGpuDescriptor != 0 )
 		{
 			ForbiddenBindings.Add( ColorBindings[i].SrvGpuDescriptor );

@@ -13,6 +13,10 @@ struct FRenderTargetCapabilities
 	uint32 MaxColorTargets = 0;
 	// 2DのRGBA16F（HDR）を描画先として描き、描画やcomputeの入力として読めるか。
 	bool bRGBA16FRenderTarget = false;
+	// 2DのR32Float単一成分を描画先として描き、描画やcomputeの入力として読めるか。
+	bool bR32FloatRenderTarget = false;
+	// 2DのR32Float描画先でアルファブレンド（OMブレンド）が有効か。
+	bool bR32FloatBlendable = false;
 
 	// 両方の能力が揃っているか。
 	constexpr bool IsSupported() const noexcept

@@ -579,21 +579,26 @@ FGraphicsPipelineHandle CDX12GraphicsPipelineStore::CreateGraphicsPipeline( cons
 		return {};
 	}
 	bool bNeedsRGBA16F = false; // RGBA16Fを含む場合はデバイス能力を照会する。
+	bool bNeedsR32Float = false; // R32Floatを含む場合はデバイス能力を照会する。
 	for ( uint32 Target = 0; Target < Desc.NumRenderTargets; ++Target )
 	{
 		if ( Desc.RenderTargetFormats[Target] == ERenderTargetColorFormat::RGBA16F )
 		{
 			bNeedsRGBA16F = true;
 		}
+		else if ( Desc.RenderTargetFormats[Target] == ERenderTargetColorFormat::R32Float )
+		{
+			bNeedsR32Float = true;
+		}
 		else if ( Desc.RenderTargetFormats[Target] != ERenderTargetColorFormat::RGBA8 )
 		{
 			return {};
 		}
 	}
-	if ( bNeedsRGBA16F )
+	if ( bNeedsRGBA16F || bNeedsR32Float )
 	{
 		FRenderTargetCapabilities RtCaps;
-		if ( !NDX12TextureFormat::GetRenderTargetCapabilities( Device.Get(), RtCaps ) || !RtCaps.bRGBA16FRenderTarget )
+		if ( !NDX12TextureFormat::GetRenderTargetCapabilities( Device.Get(), RtCaps ) || ( bNeedsRGBA16F && !RtCaps.bRGBA16FRenderTarget ) || ( bNeedsR32Float && ( !RtCaps.bR32FloatRenderTarget || ( Desc.bAlphaBlend && !RtCaps.bR32FloatBlendable ) ) ) )
 		{
 			return {};
 		}
@@ -722,7 +727,9 @@ FGraphicsPipelineHandle CDX12GraphicsPipelineStore::CreateGraphicsPipeline( cons
 	PsoDesc.NumRenderTargets = Desc.NumRenderTargets;
 	for ( uint32 Target = 0; Target < Desc.NumRenderTargets; ++Target )
 	{
-		PsoDesc.RTVFormats[Target] = Desc.RenderTargetFormats[Target] == ERenderTargetColorFormat::RGBA16F ? DXGI_FORMAT_R16G16B16A16_FLOAT : DXGI_FORMAT_R8G8B8A8_UNORM;
+		PsoDesc.RTVFormats[Target] = Desc.RenderTargetFormats[Target] == ERenderTargetColorFormat::RGBA16F
+			? DXGI_FORMAT_R16G16B16A16_FLOAT
+			: ( Desc.RenderTargetFormats[Target] == ERenderTargetColorFormat::R32Float ? DXGI_FORMAT_R32_FLOAT : DXGI_FORMAT_R8G8B8A8_UNORM );
 		Created.RenderTargetFormats[Target] = Desc.RenderTargetFormats[Target];
 	}
 	PsoDesc.DSVFormat = Desc.DepthFormat == EGraphicsDepthFormat::D32Float ? DXGI_FORMAT_D32_FLOAT : DXGI_FORMAT_UNKNOWN;

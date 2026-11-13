@@ -42,11 +42,14 @@ bool NDX12TextureFormat::GetRenderTargetCapabilities( ID3D12Device *Device, FRen
 		return false;
 	}
 	const UINT RequiredColor = D3D12_FORMAT_SUPPORT1_TEXTURE2D | D3D12_FORMAT_SUPPORT1_RENDER_TARGET | D3D12_FORMAT_SUPPORT1_SHADER_LOAD | D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE | D3D12_FORMAT_SUPPORT1_BLENDABLE; // 描画先と2D/3D/compute入力の共用条件。
+	const UINT RequiredColorR32F = D3D12_FORMAT_SUPPORT1_TEXTURE2D | D3D12_FORMAT_SUPPORT1_RENDER_TARGET | D3D12_FORMAT_SUPPORT1_SHADER_LOAD | D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE; // R32_FLOAT単一成分カラー描画先の共用条件（ブレンドは任意）。
 	const UINT RequiredDepthWrite = D3D12_FORMAT_SUPPORT1_TEXTURE2D | D3D12_FORMAT_SUPPORT1_DEPTH_STENCIL; // 深度描画先の条件。
 	const UINT RequiredDepthRead = D3D12_FORMAT_SUPPORT1_TEXTURE2D | D3D12_FORMAT_SUPPORT1_SHADER_LOAD; // 深度SRV読み取りの条件。
 	FRenderTargetCapabilities Result; // 照会が全て成功した場合だけ返す。
 	Result.bRGBA8RenderTarget = ( Color.Support1 & RequiredColor ) == RequiredColor;
 	Result.bRGBA16FRenderTarget = ( Color16F.Support1 & RequiredColor ) == RequiredColor;
+	Result.bR32FloatRenderTarget = ( DepthRead.Support1 & RequiredColorR32F ) == RequiredColorR32F;
+	Result.bR32FloatBlendable = Result.bR32FloatRenderTarget && ( DepthRead.Support1 & D3D12_FORMAT_SUPPORT1_BLENDABLE ) != 0;
 	Result.bReadableDepthD32 = ( Depth.Support1 & RequiredDepthWrite ) == RequiredDepthWrite && ( DepthRead.Support1 & RequiredDepthRead ) == RequiredDepthRead;
 	Result.MaxColorTargets = Result.bRGBA8RenderTarget ? D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT : 0;
 	Out = Result;

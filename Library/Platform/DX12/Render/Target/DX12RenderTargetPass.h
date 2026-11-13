@@ -70,10 +70,10 @@ class CDX12RenderTargetPass : public IRenderSurface
 	bool PrepareDepthClearPipeline();
 	// 現在の描画先の深度だけを指定値で塗りつぶす。
 	bool ClearDepthWithShader( int32 Width, int32 Height, D3D12_CPU_DESCRIPTOR_HANDLE Dsv, float32 ClearDepth );
-	// 作成時と異なる消去色でも警告を出さずに単一RTVを塗りつぶすパイプラインを用意する。
-	bool PrepareColorClearPipeline();
+	// 作成時と異なる消去色でも警告を出さずに単一RTVを塗りつぶす指定形式のパイプラインを用意する。
+	bool PrepareColorClearPipeline( ERenderTargetColorFormat Format );
 	// 任意の色で1枚の色RTVを塗りつぶす（MRT時の個別クリア／RecordClear用）。
-	bool ClearColorWithShader( int32 Width, int32 Height, D3D12_CPU_DESCRIPTOR_HANDLE Rtv, FColor32 Color, bool bFloat16 );
+	bool ClearColorWithShader( int32 Width, int32 Height, D3D12_CPU_DESCRIPTOR_HANDLE Rtv, FColor32 Color, ERenderTargetColorFormat Format );
 	// 作成時消去色と一致すればClearRenderTargetViewを、不一致なら警告なしの全画面クリアを選ぶ。
 	bool ClearColorAttachment( const FDX12TextureBinding &Target, FColor32 Color );
 	Microsoft::WRL::ComPtr<ID3D12Device> Device; // 所有GPUへの参照。
@@ -88,6 +88,7 @@ class CDX12RenderTargetPass : public IRenderSurface
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> ColorClearRoot; // 任意色消去用のルート署名。
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> ColorClearPipeline; // RGBA8任意色消去用のPSO。
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> ColorClearPipeline16F; // RGBA16F任意色消去用のPSO。
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> ColorClearPipelineR32F; // R32Float任意色消去用のPSO。
 	CDX12QueueCompletion Completion; // 終了・明示待機用の完了確認。
 	CDX12TextureStore *Textures = nullptr; // 色描画先と深度を所有するストア。
 	IRenderTextRasterizer *Text = nullptr; // 2D文字描画用のラスタライザー。

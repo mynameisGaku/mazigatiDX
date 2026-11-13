@@ -682,7 +682,12 @@ FTextureResourceHandle CDX12PlatformSubsystem::CreateTextureRGBA8( int32 Width, 
 	// 呼出し元は同期処理の完了まで、入力と出力の寿命を保持する。
 	FTextureResourceHandle Result = FTextureResourceHandle();
 	auto Work = [&]()
-	{ Result = Device->GetTextureResources()->CreateTextureRGBA8( Width, Height, Pixels ); };
+	{
+		if ( auto *Resources = Device->GetTextureResources() )
+		{
+			Result = Resources->CreateTextureRGBA8( Width, Height, Pixels );
+		}
+	};
 	return ExecuteRender( MoveTemp( Work ) ) ? Result : FTextureResourceHandle();
 }
 
@@ -695,7 +700,12 @@ bool CDX12PlatformSubsystem::GetComputeTextureCapabilities( FComputeTextureCapab
 	}
 	bool bResult = false; // 出力は同期実行が完了するまで呼び出し元が保持する。
 	auto Work = [&]()
-	{ bResult = Device->GetTextureResources()->GetComputeTextureCapabilities( Out ); };
+	{
+		if ( auto *Resources = Device->GetTextureResources() )
+		{
+			bResult = Resources->GetComputeTextureCapabilities( Out );
+		}
+	};
 	return ExecuteRender( MoveTemp( Work ) ) && bResult;
 }
 
@@ -708,7 +718,12 @@ FTextureResourceHandle CDX12PlatformSubsystem::CreateComputeTextureRGBA8( int32 
 	}
 	FTextureResourceHandle Result; // 入力画素の借用は同期実行から戻るまでに終える。
 	auto Work = [&]()
-	{ Result = Device->GetTextureResources()->CreateComputeTextureRGBA8( Width, Height, Pixels ); };
+	{
+		if ( auto *Resources = Device->GetTextureResources() )
+		{
+			Result = Resources->CreateComputeTextureRGBA8( Width, Height, Pixels );
+		}
+	};
 	return ExecuteRender( MoveTemp( Work ) ) ? Result : FTextureResourceHandle();
 }
 
@@ -721,7 +736,12 @@ FTextureResourceHandle CDX12PlatformSubsystem::CreateComputeTextureRGBA16F( int3
 	}
 	FTextureResourceHandle Result; // 描画所有側でRGBA16F転送を完了させる。
 	auto Work = [&]()
-	{ Result = Device->GetTextureResources()->CreateComputeTextureRGBA16F( Width, Height, Pixels ); };
+	{
+		if ( auto *Resources = Device->GetTextureResources() )
+		{
+			Result = Resources->CreateComputeTextureRGBA16F( Width, Height, Pixels );
+		}
+	};
 	return ExecuteRender( MoveTemp( Work ) ) ? Result : FTextureResourceHandle();
 }
 
@@ -734,7 +754,12 @@ bool CDX12PlatformSubsystem::GetRenderTargetCapabilities( FRenderTargetCapabilit
 	}
 	bool bResult = false; // 出力は同期実行が完了するまで呼び出し元が保持する。
 	auto Work = [&]()
-	{ bResult = Device->GetTextureResources()->GetRenderTargetCapabilities( Out ); };
+	{
+		if ( auto *Resources = Device->GetTextureResources() )
+		{
+			bResult = Resources->GetRenderTargetCapabilities( Out );
+		}
+	};
 	return ExecuteRender( MoveTemp( Work ) ) && bResult;
 }
 
@@ -747,7 +772,12 @@ FTextureResourceHandle CDX12PlatformSubsystem::CreateRenderTargetRGBA8( int32 Wi
 	}
 	FTextureResourceHandle Result; // 描画所有側で初期消去とSRV登録を完了させる。
 	auto Work = [&]()
-	{ Result = Device->GetTextureResources()->CreateRenderTargetRGBA8( Width, Height, ClearColor ); };
+	{
+		if ( auto *Resources = Device->GetTextureResources() )
+		{
+			Result = Resources->CreateRenderTargetRGBA8( Width, Height, ClearColor );
+		}
+	};
 	return ExecuteRender( MoveTemp( Work ) ) ? Result : FTextureResourceHandle();
 }
 
@@ -760,7 +790,30 @@ FTextureResourceHandle CDX12PlatformSubsystem::CreateRenderTargetRGBA16F( int32 
 	}
 	FTextureResourceHandle Result; // 描画所有側でRGBA16F描画先の初期消去とSRV登録を完了させる。
 	auto Work = [&]()
-	{ Result = Device->GetTextureResources()->CreateRenderTargetRGBA16F( Width, Height, ClearColor ); };
+	{
+		if ( auto *Resources = Device->GetTextureResources() )
+		{
+			Result = Resources->CreateRenderTargetRGBA16F( Width, Height, ClearColor );
+		}
+	};
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : FTextureResourceHandle();
+}
+
+FTextureResourceHandle CDX12PlatformSubsystem::CreateRenderTargetR32Float( int32 Width, int32 Height, float32 ClearValue )
+{
+	GAME_THREAD_ONLY( FTextureResourceHandle() );
+	if ( !bInitialized || !Device )
+	{
+		return {};
+	}
+	FTextureResourceHandle Result; // 描画所有側でR32Floatカラー描画先の初期消去とSRV登録を完了させる。
+	auto Work = [&]()
+	{
+		if ( auto *Resources = Device->GetTextureResources() )
+		{
+			Result = Resources->CreateRenderTargetR32Float( Width, Height, ClearValue );
+		}
+	};
 	return ExecuteRender( MoveTemp( Work ) ) ? Result : FTextureResourceHandle();
 }
 
@@ -773,7 +826,12 @@ FTextureResourceHandle CDX12PlatformSubsystem::CreateDepthTextureD32( int32 Widt
 	}
 	FTextureResourceHandle Result; // 描画所有側で初期深度消去と登録を完了させる。
 	auto Work = [&]()
-	{ Result = Device->GetTextureResources()->CreateDepthTextureD32( Width, Height, ClearDepth ); };
+	{
+		if ( auto *Resources = Device->GetTextureResources() )
+		{
+			Result = Resources->CreateDepthTextureD32( Width, Height, ClearDepth );
+		}
+	};
 	return ExecuteRender( MoveTemp( Work ) ) ? Result : FTextureResourceHandle();
 }
 
@@ -787,9 +845,9 @@ bool CDX12PlatformSubsystem::CopyTexture( FTextureResourceHandle Source, FTextur
 	bool bResult = false; // 専用描画スレッド上で主画面の未提出描画を確定してから同じDIRECTキューのコピーを完了させる。
 	auto Work = [&]()
 	{
-		if ( NativeSurface && NativeSurface->SubmitPendingMainCommands() )
+		if ( auto *Resources = Device->GetTextureResources(); Resources && NativeSurface && NativeSurface->SubmitPendingMainCommands() )
 		{
-			bResult = Device->GetTextureResources()->CopyTexture( Source, Destination );
+			bResult = Resources->CopyTexture( Source, Destination );
 		}
 	};
 	return ExecuteRender( MoveTemp( Work ) ) && bResult;
@@ -805,9 +863,9 @@ bool CDX12PlatformSubsystem::ReadTextureRGBA8( FTextureResourceHandle Texture, T
 	bool bResult = false; // 専用描画スレッド上で主画面の未提出描画を確定してからREADBACK同期読み戻しを完了させる。
 	auto Work = [&]()
 	{
-		if ( NativeSurface && NativeSurface->SubmitPendingMainCommands() )
+		if ( auto *Resources = Device->GetTextureResources(); Resources && NativeSurface && NativeSurface->SubmitPendingMainCommands() )
 		{
-			bResult = Device->GetTextureResources()->ReadTextureRGBA8( Texture, OutPixels, OutWidth, OutHeight );
+			bResult = Resources->ReadTextureRGBA8( Texture, OutPixels, OutWidth, OutHeight );
 		}
 	};
 	return ExecuteRender( MoveTemp( Work ) ) && bResult;
@@ -823,9 +881,27 @@ bool CDX12PlatformSubsystem::ReadTextureRGBA16F( FTextureResourceHandle Texture,
 	bool bResult = false; // 専用描画スレッド上で主画面の未提出描画を確定してからRGBA16F READBACK同期読み戻しを完了させる。
 	auto Work = [&]()
 	{
-		if ( NativeSurface && NativeSurface->SubmitPendingMainCommands() )
+		if ( auto *Resources = Device->GetTextureResources(); Resources && NativeSurface && NativeSurface->SubmitPendingMainCommands() )
 		{
-			bResult = Device->GetTextureResources()->ReadTextureRGBA16F( Texture, OutPixels, OutWidth, OutHeight );
+			bResult = Resources->ReadTextureRGBA16F( Texture, OutPixels, OutWidth, OutHeight );
+		}
+	};
+	return ExecuteRender( MoveTemp( Work ) ) && bResult;
+}
+
+bool CDX12PlatformSubsystem::ReadTextureR32Float( FTextureResourceHandle Texture, TArray<float32> &OutValues, int32 &OutWidth, int32 &OutHeight )
+{
+	GAME_THREAD_ONLY( false );
+	if ( !bInitialized || !Device )
+	{
+		return false;
+	}
+	bool bResult = false; // 専用描画スレッド上で主画面の未提出描画を確定してからR32Float READBACK同期読み戻しを完了させる。
+	auto Work = [&]()
+	{
+		if ( auto *Resources = Device->GetTextureResources(); Resources && NativeSurface && NativeSurface->SubmitPendingMainCommands() )
+		{
+			bResult = Resources->ReadTextureR32Float( Texture, OutValues, OutWidth, OutHeight );
 		}
 	};
 	return ExecuteRender( MoveTemp( Work ) ) && bResult;
@@ -841,7 +917,12 @@ bool CDX12PlatformSubsystem::UpdateTextureRGBA8( FTextureResourceHandle Texture,
 	// 呼出し元は同期処理の完了まで、入力と出力の寿命を保持する。
 	bool Result = false;
 	auto Work = [&]()
-	{ Result = Device->GetTextureResources()->UpdateTextureRGBA8( Texture, Width, Height, Pixels ); };
+	{
+		if ( auto *Resources = Device->GetTextureResources() )
+		{
+			Result = Resources->UpdateTextureRGBA8( Texture, Width, Height, Pixels );
+		}
+	};
 	return ExecuteRender( MoveTemp( Work ) ) ? Result : false;
 }
 
@@ -867,7 +948,12 @@ bool CDX12PlatformSubsystem::GetTextureResourceView( FTextureResourceHandle Text
 	// 呼出し元は同期処理の完了まで、入力と出力の寿命を保持する。
 	bool Result = false;
 	auto Work = [&]()
-	{ Result = Device->GetTextureResources()->GetTextureResourceView( Texture, Out ); };
+	{
+		if ( auto *Resources = Device->GetTextureResources() )
+		{
+			Result = Resources->GetTextureResourceView( Texture, Out );
+		}
+	};
 	return ExecuteRender( MoveTemp( Work ) ) ? Result : false;
 }
 

@@ -110,6 +110,8 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
 	FTextureResourceHandle CreateRenderTargetRGBA8( int32 Width, int32 Height, FColor32 ClearColor = FColor32( 0, 0, 0, 255 ) ) override;
 	// ゲームスレッドからRGBA16FのHDR色描画先画像を描画所有側へ作成する。
 	FTextureResourceHandle CreateRenderTargetRGBA16F( int32 Width, int32 Height, FColor ClearColor = FColor( 0.0f, 0.0f, 0.0f, 1.0f ) ) override;
+	// ゲームスレッドからR32Float単一成分カラー描画先画像を描画所有側へ作成する。
+	FTextureResourceHandle CreateRenderTargetR32Float( int32 Width, int32 Height, float32 ClearValue = 1.0f ) override;
 	// ゲームスレッドから読み取れるD32深度を描画所有側へ作成する。
 	FTextureResourceHandle CreateDepthTextureD32( int32 Width, int32 Height, float32 ClearDepth = 1.0f ) override;
 	// ゲームスレッドから同一寸法・同色グループの画像をコピーする。
@@ -118,6 +120,8 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
 	bool ReadTextureRGBA8( FTextureResourceHandle Texture, TArray<FColor32> &OutPixels, int32 &OutWidth, int32 &OutHeight ) override;
 	// ゲームスレッドからRGBA16F画像をCPUへ読み戻す。
 	bool ReadTextureRGBA16F( FTextureResourceHandle Texture, TArray<FColor> &OutPixels, int32 &OutWidth, int32 &OutHeight ) override;
+	// ゲームスレッドからR32Floatカラー画像をCPUへ読み戻す。
+	bool ReadTextureR32Float( FTextureResourceHandle Texture, TArray<float32> &OutValues, int32 &OutWidth, int32 &OutHeight ) override;
 	// 記録済みの画像を保ったまま更新する。
 	bool UpdateTextureRGBA8( FTextureResourceHandle Texture, int32 Width, int32 Height, const FColor32 *Pixels ) override;
 	// GPU完了後に画像資源を解放する。

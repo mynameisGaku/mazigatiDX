@@ -210,7 +210,7 @@ bool CDX12GeometryRenderer::BeginFrame( ID3D12GraphicsCommandList *InCommands, T
 	}
 	for ( int32 i = 0; i < InColorFormats.Num(); ++i )
 	{
-		if ( InColorFormats[i] != ERenderTargetColorFormat::RGBA8 && InColorFormats[i] != ERenderTargetColorFormat::RGBA16F )
+		if ( InColorFormats[i] != ERenderTargetColorFormat::RGBA8 && InColorFormats[i] != ERenderTargetColorFormat::RGBA16F && InColorFormats[i] != ERenderTargetColorFormat::R32Float )
 		{
 			return false;
 		}

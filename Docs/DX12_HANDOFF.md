@@ -182,3 +182,20 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
   - 検査側の公開コミットは[a2ec253](https://github.com/mynameisGaku/framework-test/commit/a2ec25380653e44f62bea15909fa24b7f203b9b4)。Claude側の自動生成HLSLそのもの、88Bの描画命令用頂点によるGPU描画、影用R32単一成分カラー描画先は未検証。
   - `framework-dx12-verify` の製品コードおよび保護 7 ファイルは変更なし（共通 `Library/Framework/Material` も DX12/ImGui 非依存のまま）。
   - `framework-dx12-selftests/GraphicsPipelineContractMain.cpp` に実型 `FShaderVertex3D`（112B）を用いた Substrate Surface 互換の縦経路検査（検証用 HLSL、`b4`/`b5`/`b6`、`t0`/`t1`/`s0`、`RGBA16F` + `D32Float`、HDR readback）を追加し、`RunGraphicsPipelineTests.ps1` の Debug / Release 双方で `--cpu`（3 checks, 0 failures）・`--default`（71 checks, 0 failures）・`--warp`（71 checks, 0 failures）が全件成功した。
+
+---
+
+## R32Float カラー描画先の設計・検証結果と後続課題（2026-11-13）
+
+- **設計と実装（DX12 / Core 側）**:
+  - `ERenderTargetColorFormat::R32Float`、`FRenderTargetCapabilities`（`bR32FloatRenderTarget` / `bR32FloatBlendable`）、`IRenderTextureResources::CreateRenderTargetR32Float` / `ReadTextureR32Float` を追加。
+  - `CDX12TextureFormat` で `DXGI_FORMAT_R32_FLOAT` の `TEXTURE2D | RENDER_TARGET | SHADER_LOAD | SHADER_SAMPLE` および任意の `BLENDABLE` を照会し、`bAlphaBlend` 指定時のみ `bR32FloatBlendable` を要求。
+  - `CDX12TextureStore` に `ETextureKind::RenderTargetR32Float` を追加し、`DepthD32`（深度専用・DSV）とは厳格に分離（`CopyTexture` は `R32Float` 同士のみ許可、`GetTextureResourceView` / 固定2D/3D SDR経路は拒否、MRT ターゲット順の形式照合を実施）。
+  - `CDX12RenderTargetPass::PrepareColorClearPipeline(ERenderTargetColorFormat)` は要求された形式のクリア PSO のみを遅延生成し、非対応デバイスで既存の `RGBA8` / `RGBA16F` クリアが連鎖失敗しないように分離（`ComPtr` のアドレス取得には `std::addressof` を使用）。
+  - `CDX12PlatformSubsystem` のゲームスレッド転送窓口（`CreateRenderTargetR32Float` / `ReadTextureR32Float` 等）において、`ReadTexture*` 前に `SubmitPendingMainCommands()` を実行し、`Device->GetTextureResources()` の `nullptr` 返却時（未初期化・終了中・リサイズ失敗等）に出力引数を保持して安全に `false` / 無効ハンドルを返すようにした。
+- **Claude 側 `MaterialShadowMap` / `Texture2D g_ShadowMap` との互換性（未統合）**:
+  - `R32Float` カラー描画先に対する DX12 側の Graphics / Compute 読み取りは **スカラー `Texture2D<float>` のみ許可** される。
+  - Claude 側 `MaterialHlsl.cpp` が出力する `Texture2D g_ShadowMap : register(tN);`（`Texture2D<float4>`）は、DX12 側の形式・成分数検査により **意図通り拒否される**（`GraphicsPipelineContractMain.cpp` で拒否を実測実証済み）。本件は R2 統合課題として未統合のまま区別して管理する。
+- **後続課題（急ぎではない・今スコープ外）: 埋め込みシェーダーの `.hlsl` 外部化／単位分割**:
+  - 現在 `DX12RenderTargetPass.cpp` やテスト等に文字列埋め込みされているシェーダーについて、将来的に `.hlsl` ファイル外部化またはシェーダー単位のソース分割を検討する。
+  - 検討時は **ビルド統合・配布同梱・作業ディレクトリ非依存の探索経路・実行時更新／キャッシュ・ImGui/DX12 の責務分離・既存の `ShaderCompile` 仕組みとの整合** を考慮すること。
