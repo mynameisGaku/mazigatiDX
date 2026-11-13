@@ -859,10 +859,28 @@
     <ClCompile Include="Library\Framework\UI\Core\UIWidget.cpp">
       <Filter>Library\Framework\UI\Core</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\UI\Markup\UIMarkupBindings.cpp">
+      <Filter>Library\Framework\UI\Markup</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\UI\Markup\UIMarkupBuilder.cpp">
+      <Filter>Library\Framework\UI\Markup</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\UI\Markup\UIMarkupCommonAttributes.cpp">
+      <Filter>Library\Framework\UI\Markup</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\UI\Markup\UIMarkupDocument.cpp">
       <Filter>Library\Framework\UI\Markup</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\UI\Markup\UIMarkupElementAttributes.cpp">
+      <Filter>Library\Framework\UI\Markup</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\UI\Markup\UIMarkupLoader.cpp">
+      <Filter>Library\Framework\UI\Markup</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\UI\Markup\UIMarkupMotion.cpp">
+      <Filter>Library\Framework\UI\Markup</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\UI\Markup\UIMarkupValues.cpp">
       <Filter>Library\Framework\UI\Markup</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\UI\Markup\UIXml.cpp">
@@ -2994,10 +3012,16 @@
     <ClInclude Include="Library\Framework\UI\Core\UIWidget.h">
       <Filter>Library\Framework\UI\Core</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\UI\Markup\UIMarkupBuilder.h">
+      <Filter>Library\Framework\UI\Markup</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\UI\Markup\UIMarkupDocument.h">
       <Filter>Library\Framework\UI\Markup</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\UI\Markup\UIMarkupLoader.h">
+      <Filter>Library\Framework\UI\Markup</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\UI\Markup\UIMarkupValues.h">
       <Filter>Library\Framework\UI\Markup</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\UI\Markup\UIXml.h">

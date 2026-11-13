@@ -101,7 +101,7 @@ public:
 
 private:
 	friend class CUIMarkupLoader;
-	friend struct FMarkupBuilder;
+	friend struct FUIMarkupBuilder;
 
 	TMap<FString, TSharedPtr<CFont>> Fonts;
 	TMap<FString, FUIBrush> Brushes;

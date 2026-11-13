@@ -353,8 +353,14 @@
     <ClCompile Include="Library\Framework\UI\Core\UIPanels.cpp" />
     <ClCompile Include="Library\Framework\UI\Core\UIScreenStack.cpp" />
     <ClCompile Include="Library\Framework\UI\Core\UIWidget.cpp" />
+    <ClCompile Include="Library\Framework\UI\Markup\UIMarkupBindings.cpp" />
+    <ClCompile Include="Library\Framework\UI\Markup\UIMarkupBuilder.cpp" />
+    <ClCompile Include="Library\Framework\UI\Markup\UIMarkupCommonAttributes.cpp" />
     <ClCompile Include="Library\Framework\UI\Markup\UIMarkupDocument.cpp" />
+    <ClCompile Include="Library\Framework\UI\Markup\UIMarkupElementAttributes.cpp" />
     <ClCompile Include="Library\Framework\UI\Markup\UIMarkupLoader.cpp" />
+    <ClCompile Include="Library\Framework\UI\Markup\UIMarkupMotion.cpp" />
+    <ClCompile Include="Library\Framework\UI\Markup\UIMarkupValues.cpp" />
     <ClCompile Include="Library\Framework\UI\Markup\UIXml.cpp" />
     <ClCompile Include="Library\Framework\UI\Style\UIDefaultStyle.cpp" />
     <ClCompile Include="Library\Framework\UI\Style\UITheme.cpp" />
@@ -1066,8 +1072,10 @@
     <ClInclude Include="Library\Framework\UI\Core\UIScrollBar.h" />
     <ClInclude Include="Library\Framework\UI\Core\UITypes.h" />
     <ClInclude Include="Library\Framework\UI\Core\UIWidget.h" />
+    <ClInclude Include="Library\Framework\UI\Markup\UIMarkupBuilder.h" />
     <ClInclude Include="Library\Framework\UI\Markup\UIMarkupDocument.h" />
     <ClInclude Include="Library\Framework\UI\Markup\UIMarkupLoader.h" />
+    <ClInclude Include="Library\Framework\UI\Markup\UIMarkupValues.h" />
     <ClInclude Include="Library\Framework\UI\Markup\UIXml.h" />
     <ClInclude Include="Library\Framework\UI\Style\UIDefaultStyle.h" />
     <ClInclude Include="Library\Framework\UI\Style\UITheme.h" />

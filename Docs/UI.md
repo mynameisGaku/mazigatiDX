@@ -13,7 +13,7 @@
 |画面のスタック|`CUIScreenStack`: 画面を積み重ねて、描く順と入力の行き先を決める（HUD・メニュー・ダイアログ）|`Core`|
 |結び付け|`TObservable` / `TObservableArray` / `FUICommand`（ビューモデルの値・配列・操作）と、`CUIBindingSet`（部品との結び付け）|`Binding`|
 |テーマ|`FUITheme`（名前つきの色・数・ブラシ・フォント・スタイル。親を持てる）。`FUIDefaultStyle::MakeTheme` が基本のテーマを作る|`Style`|
-|マークアップ|`NUIXml`（XML の読み取り）・`CUIMarkupLoader`（XML から部品の木を作る）・`CUIMarkupDocument`（`.gxui` ファイルの読み込みとホットリロード）|`Markup`|
+|マークアップ|`NUIXml`（XML の読み取り）・`CUIMarkupLoader`（XML から部品の木を作る。中身は、役割ごとのファイルに分けてある: 値の読み取り `UIMarkupValues`、組み立て `UIMarkupBuilder`、共通の属性 `UIMarkupCommonAttributes`、要素ごとの属性 `UIMarkupElementAttributes`、結び付けとイベント `UIMarkupBindings`、動き `UIMarkupMotion`）・`CUIMarkupDocument`（`.gxui` ファイルの読み込みとホットリロード）|`Markup`|
 |既定のスタイル|`FUIDefaultStyle`: `EngineContent` の画像から作る、部品の既定の見た目|`Style`|
 
 ## 使い方
