@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 
+#include "Library/Framework/GameFeel/ScreenShake.h"
 #include "Library/Framework/Render/Camera/Camera.h"
 #include "Library/Math/Math.h"
 #include "Source/Common/PlatformerStatus.h"
@@ -22,6 +23,10 @@ struct FPlatformer3DState
 	// カメラ（主人公が毎フレーム決める）と、カメラの向き（ラジアン。0 で +Z を向く）
 	FCamera Camera;
 	float32 CameraYaw = 0.0f;
+	// カメラが見る高さ。主人公の高さを、ゆっくり追う（ジャンプしても、画面がすぐには付いていかないので、高さが分かる）。負は、まだ決めていない
+	float32 CameraFocusY = -1.0f;
+	// 手応え: 画面の揺れ（カメラに足す。シーンが、毎フレーム進める）
+	FScreenShake Shake;
 
 	// 主人公の足元の位置と、いまの高さ（敵が、近づいてきたかを見るため）
 	FVector3 PlayerPosition;

@@ -53,6 +53,8 @@ void CPlatformer3DSample::OnEnter()
 
 void CPlatformer3DSample::OnSampleTick( float32 DeltaTime )
 {
+	// 画面の揺れは、ヒットストップで時間が止まっている間も、実時間で進める
+	State->Shake.Advance( GetUnscaledDeltaTime() );
 	const IInput* Input = GetAppSubsystem<IInput>();
 	if ( Input != nullptr && ( State->bGoalReached || State->bGameOver ) && Input->IsKeyPressed( EKey::Enter ) )
 	{

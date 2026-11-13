@@ -11,6 +11,7 @@
 #include "Library/Framework/Ecs/EcsWorld.h"
 #include "Library/Framework/Ecs/System.h"
 #include "Library/Framework/Ecs/TransformWorld.h"
+#include "Library/Framework/GameFeel/HitStop.h"
 #include "Library/Framework/Object/GameObject.h"
 #include "Library/Framework/Object/Object.h"
 #include "Library/Framework/Scene/ISceneManager.h"
@@ -256,8 +257,25 @@ public:
 	template<typename T>
 	FORCEINLINE T* GetSubsystem() const { return Subsystems.Get<T>(); }
 	FORCEINLINE const FSubsystemCollection& GetSubsystems() const { return Subsystems; }
-	// シーン開始からの経過秒（このシーンが Tick された時間の合計）
+	// シーン開始からの経過秒（このシーンの時間の合計。ヒットストップの間は進まず、時間の倍率が掛かる）
 	FORCEINLINE float64 GetElapsedTime() const { return ElapsedTime; }
+
+	//-------------------------------------------------------------------------
+	// このシーンの時間（ヒットストップ・スローモーション）
+	//   OnTick・シーンのサブシステム・システム・オブジェクト（とコンポーネント）に渡る経過時間が、まとめて変わる。
+	//   描画は、止まらない。止まっている間も動かしたいもの（画面の揺れ・ヒットマーク・UI）は、GetUnscaledDeltaTime で進める。
+	//-------------------------------------------------------------------------
+	// ヒットストップ: Seconds 秒（実時間）の間、このシーンの時間を止める（攻撃が当たった瞬間など。長さは FHitStop::SecondsFromPower で決められる）。
+	// 効くのは、次のフレームから。止まっている間に呼ぶと、残りと比べて、長いほうになる
+	void StartHitStop( float32 Seconds ) { HitStop.Start( Seconds ); }
+	FORCEINLINE const FHitStop& GetHitStop() const { return HitStop; }
+	FORCEINLINE bool IsInHitStop() const { return HitStop.IsActive(); }
+	// 時間の倍率（1 がふつう。0.3 でスローモーション、0 で止まる）。0〜MaxTimeScale に収める。有限でない数は 1
+	static constexpr float32 MaxTimeScale = 100.0f;
+	void SetTimeScale( float32 Scale );
+	FORCEINLINE float32 GetTimeScale() const { return TimeScale; }
+	// このフレームの、止める・倍率を掛ける前の経過時間（秒）
+	FORCEINLINE float32 GetUnscaledDeltaTime() const { return UnscaledDeltaTime; }
 
 protected:
 	//-------------------------------------------------------------------------
@@ -320,4 +338,7 @@ private:
 
 	uint64 NextObjectId = 1;
 	float64 ElapsedTime = 0.0;
+	FHitStop HitStop;
+	float32 TimeScale = 1.0f;
+	float32 UnscaledDeltaTime = 0.0f;
 };

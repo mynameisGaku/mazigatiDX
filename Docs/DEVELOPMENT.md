@@ -531,6 +531,30 @@ if ( Field.ConsumeSubmitted() )
 
 バックエンドを作るときは、`FUtf8ByteAssembler`（1バイトずつ届く文字のまとめ）と`FTouchTracker`（いまの指の一覧から触れ始め・離れたを求める）を使えます。`--backend=null`の`CNullInputSubsystem`は、`AddTypedText`・`AddTextCommand`・`SetImeComposition`・`SetTouches`で入力を決められます。IMEの変換中の状態は、本物のIMEでは未確認です（検査は決めた値の受け渡しだけ）。
 
+## 手応え（ヒットストップ・画面の揺れ・シーンの時間）
+
+攻撃が当たった・踏んだ・やられた、といった瞬間の手応えを作る部品です（`Library/Framework/GameFeel`）。有る・無しで、遊んだ感じが大きく変わります。
+
+```cpp
+// 当たった瞬間に、このシーンの時間を一瞬止める（ヒットストップ）。長さは、攻撃力から決められる（とどめは、係数を大きく）
+GetScene()->StartHitStop( FHitStop::SecondsFromPower( Damage, bDefeated ? 2.0f : 1.0f ) );
+
+// 画面を揺らす（大・中・小。小は縦だけ、中と大は横も）。ずれを、カメラやスクロールに足す
+Shake.Start( EScreenShakeStrength::Medium );
+Shake.Advance( GetUnscaledDeltaTime() );        // シーンの OnTick で、毎フレーム。時間が止まっている間も、実時間で進める
+const FVector2 Offset = Shake.GetOffset();      // 画素。3D では、ワールドの長さに直して、カメラの位置と注視点の両方に足す
+
+// 止まっている間の、見た目の震え（-1〜1。大きく始まって、0 へ収まる）。斬られた側を大きく、斬った側を小さく、横にずらして描く
+const float32 Shiver = GetScene()->GetHitStop().GetShiver();
+```
+
+- **シーンの時間**（`CScene`）: `StartHitStop( 秒 )`は、その秒（実時間）だけ、`OnTick`・シーンのサブシステム・システム・オブジェクト（とコンポーネント。ステートマシンも）に渡る経過時間を 0 にします。`Tick`は呼ばれ続け、描画も止まりません。効くのは、次のフレームからです。止まっている間に、また呼ぶと、長いほうになります。`SetTimeScale( 0.3f )`は、スローモーションです。止める・倍率を掛ける前の経過時間は、`GetUnscaledDeltaTime()`で読めます（止まっている間も動かしたいもの: 画面の揺れ・ヒットマーク・UI）。
+- **`FHitStop`**: 時間の計算だけのクラスです（シーンを使わない所でも使えます）。`SecondsFromPower( 力, 係数 )`は、`( 2 + 力 x 0.35 )`フレーム x 係数を、1 フレーム〜0.5 秒に収めます。
+- **`FScreenShake`**: 最初が強く、だんだん収まる揺れです。揺れている間に、弱い揺れを始めても、強い揺れは消えません。`Start( 強さ, 倍率 )`の倍率で、カメラの遠さに合わせたり、設定で弱めたりできます。
+- **震えは、見た目だけ**に使います（当たり判定の位置は動かさない。当たるはずの攻撃が、外れないように）。地面に立つものは、横だけに震わせます（縦だと、足が地面にめり込む）。
+- 見本: サンプル`Adventure`（斬ったとき・斬られたとき・とどめ・やられたとき）、`Platformer2D`・`Platformer3D`（踏んだとき・ダメージ）。`Platformer3D`のカメラは、見る高さを主人公にくっつけず、空中ではゆっくり追います（ジャンプの高さが、画面の中の位置で分かる）。
+- 検査: `AssetSelfTestGameFeel.cpp`。
+
 ## ゲームスレッドと AsyncTask
 
 描画・アセット・音・ウィンドウなど、DxLibを触る仕事は**ゲームスレッド**（起動したスレッド。`NGameMain`と`CEngine::Run`が覚える）だけで行います。DxLibはスレッドセーフではないためです。

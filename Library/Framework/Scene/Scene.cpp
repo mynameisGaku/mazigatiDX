@@ -9,6 +9,7 @@
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Scene/SceneManager.h"
 #include "Library/Framework/Subsystem/SceneSubsystem.h"
+#include "Library/Math/MathUtils.h"
 
 CScene::CScene()
 {
@@ -199,8 +200,16 @@ void CScene::Exit()
 	SceneManager = nullptr;
 }
 
-void CScene::TickScene( float32 DeltaTime )
+void CScene::SetTimeScale( float32 Scale )
 {
+	TimeScale = NMath::IsFinite( Scale ) ? NMath::Clamp( Scale, 0.0f, MaxTimeScale ) : 1.0f;
+}
+
+void CScene::TickScene( float32 UnscaledDelta )
+{
+	// このシーンの時間: ヒットストップの間は止まり、時間の倍率が掛かる。OnTick・サブシステム・システム・オブジェクトは、この時間で進む
+	UnscaledDeltaTime = UnscaledDelta;
+	const float32 DeltaTime = HitStop.Advance( UnscaledDelta ) * TimeScale;
 	ElapsedTime += DeltaTime;
 
 	// 記録中なら、シーン名を ID にしておく（以降の計測区間の Owner になる）

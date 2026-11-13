@@ -5,6 +5,7 @@
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Framework/Effect/EffectBackend.h"
+#include "Library/Framework/GameFeel/ScreenShake.h"
 #include "Library/Framework/Object/GameObject.h"
 #include "Library/Framework/Render/Camera/Camera.h"
 #include "Library/Framework/World/Runtime/WorldSpawner.h"
@@ -39,6 +40,12 @@ struct FAdventureState
 	FCamera Camera;
 	float32 CameraYaw = 0.0f;
 	float32 Time = 0.0f;
+
+	// 手応え: 画面の揺れ（カメラに足す）と、ヒットストップの間の震え（-1〜1。シーンが、毎フレーム入れる。斬られた側が、見た目だけ震える）
+	FScreenShake Shake;
+	float32 HitShiver = 0.0f;
+	// 震える向き（カメラから見て横。地面に立つものは、縦に震えると、足がめり込むので、横だけ）
+	FVector3 GetShiverOffset( float32 Amount ) const { return FVector3( NMath::Cos( CameraYaw ), 0.0f, -NMath::Sin( CameraYaw ) ) * ( HitShiver * Amount ); }
 
 	// 主人公
 	TWeakPtr<CGameObject> Player;

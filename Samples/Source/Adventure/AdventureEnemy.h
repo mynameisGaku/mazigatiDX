@@ -42,6 +42,8 @@ public:
 	void Record3D( FDrawContext& CommandList ) override;
 
 	bool IsAlive() const { return !bDead; }
+	// 倒された（倒れる動きの途中も含む）
+	bool IsDefeated() const { return bDead; }
 	FVector3 GetPosition() const { return Position; }
 	float32 GetRadius() const { return Kind->Radius; }
 
@@ -92,6 +94,8 @@ private:
 	float32 StrikeTime = 0.0f;
 	bool bStruckPlayer = false;
 	float32 FlashTime = 0.0f;
+	// ヒットストップの間の、見た目の震えの大きさ（斬られたときに入る）
+	float32 ShiverAmount = 0.0f;
 	float32 DeadTime = 0.0f;
 	uint32 RandomState = 12345u;
 };

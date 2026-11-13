@@ -81,5 +81,7 @@ private:
 	FVector3 KnockDirection;
 	float32 InvulnerableTime = 0.0f;
 	float32 FlashTime = 0.0f;
+	// ヒットストップの間の、見た目の震えの大きさ（斬ったときは小さく、斬られたときは大きく）
+	float32 ShiverAmount = 0.0f;
 	float32 DeadTime = 0.0f;
 };

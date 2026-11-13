@@ -34,6 +34,13 @@ namespace
 	constexpr float32 HoldGravity = 28.0f;
 	constexpr float32 FallGravity = 48.0f;
 	constexpr float32 MaxFallSpeed = 30.0f;
+	// 手応え: 敵を踏んだとき・ダメージを受けたときに、時間を止める長さ（秒）と、画面の揺れ（画素）をワールドの長さに直す倍率
+	constexpr float32 StompHitStop = 0.07f;
+	constexpr float32 HurtHitStop = 0.14f;
+	constexpr float32 ShakeWorldScale = 0.012f;
+	// カメラが見る高さが、主人公の高さを追う速さ（1 秒あたりの割合。地面の上では速く、空中では遅く）
+	constexpr float32 FocusFollowGround = 8.0f;
+	constexpr float32 FocusFollowAir = 1.5f;
 	constexpr float32 StompBounce = 6.0f;
 	constexpr float32 StompBounceHeld = 10.0f;
 
@@ -307,7 +314,18 @@ void CPlatformer3DPlayer::UpdateCamera()
 {
 	const float32 Yaw = State->CameraYaw;
 	const FVector3 Forward( NMath::Sin( Yaw ), 0.0f, NMath::Cos( Yaw ) );
-	const FVector3 Look = Position + FVector3( 0.0f, 1.0f, 0.0f );
+	// カメラが見る高さは、主人公にくっつけない: 空中では、ゆっくり追う（ジャンプの高さが、画面の中の位置で分かる）。地面に立つと、すぐ追いつく
+	const float32 FrameTime = GetScene() != nullptr ? GetScene()->GetUnscaledDeltaTime() : 0.0f;
+	if ( State->CameraFocusY < 0.0f )
+	{
+		State->CameraFocusY = Position.y;
+	}
+	State->CameraFocusY += ( Position.y - State->CameraFocusY ) * NMath::Min( 1.0f, ( bOnGround ? FocusFollowGround : FocusFollowAir ) * FrameTime );
+	// 画面の揺れ（画素）を、ワールドの長さに直して、カメラの位置と注視点の両方に足す
+	const FVector2 ShakeOffset = State->Shake.GetOffset();
+	const FVector3 Right( NMath::Cos( Yaw ), 0.0f, -NMath::Sin( Yaw ) );
+	const FVector3 Shake = Right * ( ShakeOffset.x * ShakeWorldScale ) + FVector3( 0.0f, ShakeOffset.y * ShakeWorldScale, 0.0f );
+	const FVector3 Look = FVector3( Position.x, State->CameraFocusY + 1.0f, Position.z ) + Shake;
 	FCamera Camera = FCamera::MakePerspective( Look - Forward * CameraDistance + FVector3( 0.0f, CameraHeight, 0.0f ), Look, NMath::PI / 3.0f );
 	Camera.Near = 0.3f;
 	Camera.Far = 400.0f;
@@ -421,6 +439,9 @@ void CPlatformer3DPlayer::HandleEnemies( bool bJumpHeld )
 			const bool bWasStill = Enemy->IsStill();
 			Enemy->OnStomped( Position );
 			Velocity.y = bJumpHeld ? StompBounceHeld : StompBounce;
+			// 手応え: 踏んだ瞬間に、時間を一瞬止めて、画面を小さく揺らす
+			GetScene()->StartHitStop( StompHitStop );
+			State->Shake.Start( EScreenShakeStrength::Small );
 			Status.AddScore( bWasStill ? 400 : 100 );
 			continue;
 		}
@@ -435,6 +456,8 @@ void CPlatformer3DPlayer::HandleEnemies( bool bJumpHeld )
 		{
 			// ダメージ: 小さくなるか、やられるかは、ステートマシン（いまの姿）が決める
 			PostEvent( "Hurt" );
+			GetScene()->StartHitStop( HurtHitStop );
+			State->Shake.Start( EScreenShakeStrength::Medium );
 		}
 	}
 }

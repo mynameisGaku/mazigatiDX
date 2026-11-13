@@ -309,6 +309,9 @@ void CAdventureSample::QuickLoad()
 
 void CAdventureSample::OnSampleTick( float32 DeltaTime )
 {
+	// 手応え: 画面の揺れは、ヒットストップで時間が止まっている間も、実時間で進める。止まっている間の震えを、オブジェクトへ渡す
+	State->Shake.Advance( GetUnscaledDeltaTime() );
+	State->HitShiver = GetHitStop().GetShiver();
 	if ( State->bSaveRequested )
 	{
 		State->bSaveRequested = false;

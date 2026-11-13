@@ -4,6 +4,7 @@
 #include "Library/Framework/AI/Blackboard/Blackboard.h"
 #include "Library/Framework/AI/StateMachineComponent.h"
 #include "Library/Framework/Engine/Engine.h"
+#include "Library/Framework/GameFeel/HitStop.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
 #include "Library/Framework/Scene/Scene.h"
 #include "Source/Adventure/AdventureCollision.h"
@@ -12,6 +13,9 @@
 
 namespace
 {
+	// 手応え: 画面の揺れ（画素）を、ワールドの長さに直す倍率と、やられたときに時間を止める長さ（秒）
+	constexpr float32 ShakeWorldScale = 0.012f;
+	constexpr float32 DefeatedHitStop = 0.3f;
 	constexpr float32 Radius = 0.4f;
 	constexpr float32 RunSpeed = 5.5f;
 	constexpr float32 RollSpeed = 9.0f;
@@ -178,7 +182,11 @@ void CAdventurePlayer::UpdateCameraTarget()
 	// カメラは、主人公の斜め後ろの上から、見下ろす
 	const float32 Yaw = State->CameraYaw;
 	const FVector3 Forward( NMath::Sin( Yaw ), 0.0f, NMath::Cos( Yaw ) );
-	const FVector3 Look = Position + FVector3( 0.0f, 0.8f, 0.0f );
+	// 画面の揺れ（画素）を、ワールドの長さに直して、カメラの位置と注視点の両方に足す（向きは変えずに、画面ごと揺らす）
+	const FVector2 ShakeOffset = State->Shake.GetOffset();
+	const FVector3 Right( NMath::Cos( Yaw ), 0.0f, -NMath::Sin( Yaw ) );
+	const FVector3 Shake = Right * ( ShakeOffset.x * ShakeWorldScale ) + FVector3( 0.0f, ShakeOffset.y * ShakeWorldScale, 0.0f );
+	const FVector3 Look = Position + FVector3( 0.0f, 0.8f, 0.0f ) + Shake;
 	FCamera Camera = FCamera::MakePerspective( Look - Forward * 5.0f + FVector3( 0.0f, 11.0f, 0.0f ), Look, NMath::PI / 3.2f );
 	Camera.Near = 0.3f;
 	Camera.Far = 200.0f;
@@ -240,6 +248,8 @@ void CAdventurePlayer::StepAttack( float32 DeltaTime )
 void CAdventurePlayer::StrikeEnemies()
 {
 	const FVector3 Facing( NMath::Sin( FacingYaw ), 0.0f, NMath::Cos( FacingYaw ) );
+	int32 NumHit = 0;
+	int32 NumDefeated = 0;
 	for ( const TSharedPtr<CAdventureEnemy>& Enemy : GetScene()->FindObjects<CAdventureEnemy>() )
 	{
 		if ( !Enemy->IsAlive() )
@@ -260,8 +270,18 @@ void CAdventurePlayer::StrikeEnemies()
 			continue;
 		}
 		Enemy->ApplyDamage( StrikeDamage, Position );
+		++NumHit;
+		NumDefeated += Enemy->IsDefeated() ? 1 : 0;
 		State->PlaySound( State->HurtSound, 1.2f, 0.25f );
 		State->PlayEffect( "Effects/sparks.gxeffect", Enemy->GetPosition() + FVector3( 0.0f, 0.8f, 0.0f ), 0.8f );
+	}
+	if ( NumHit > 0 )
+	{
+		// 手応え: 当たった瞬間に、時間を一瞬止める（攻撃力から長さを決め、とどめは 2 倍）。画面も揺らす（とどめは、横にも揺れる、中くらいの揺れ）。
+		// 斬った側は、ごく小さく震える（斬られた側は、大きく震える）
+		GetScene()->StartHitStop( FHitStop::SecondsFromPower( static_cast<float32>( StrikeDamage ), NumDefeated > 0 ? 2.0f : 1.0f ) );
+		State->Shake.Start( NumDefeated > 0 ? EScreenShakeStrength::Medium : EScreenShakeStrength::Small );
+		ShiverAmount = 0.03f;
 	}
 }
 
@@ -311,6 +331,11 @@ void CAdventurePlayer::ApplyDamage( int32 Damage, const FVector3& From )
 	KnockDirection = Away.LengthSquared() > 0.0001f ? Away.Normalized() : FVector3( 0.0f, 0.0f, -1.0f );
 	State->PlaySound( State->HurtSound, 0.7f, 0.4f );
 	State->PlayEffect( "Effects/sparks.gxeffect", Position + FVector3( 0.0f, 0.9f, 0.0f ), 0.7f );
+	// 手応え: 受けたときも、時間を止めて、画面を揺らす（やられたときは、長く止めて、大きく揺らす）
+	const bool bDefeated = State->Hp <= 0;
+	GetScene()->StartHitStop( bDefeated ? DefeatedHitStop : FHitStop::SecondsFromPower( static_cast<float32>( Damage ) ) );
+	State->Shake.Start( bDefeated ? EScreenShakeStrength::Large : EScreenShakeStrength::Medium );
+	ShiverAmount = 0.1f;
 	if ( Machine != nullptr )
 	{
 		Machine->SendEvent( State->Hp <= 0 ? "Died" : "Damaged" );
@@ -328,48 +353,50 @@ void CAdventurePlayer::Record3D( FDrawContext& CommandList )
 	const bool bDead = StateMachine != nullptr && StateMachine->IsInState( "Dead" );
 	const FVector3 Facing( NMath::Sin( FacingYaw ), 0.0f, NMath::Cos( FacingYaw ) );
 	const FVector3 Right( Facing.z, 0.0f, -Facing.x );
+	// ヒットストップの間は、見た目だけ、横に震える（当たり判定の位置は、動かさない）
+	const FVector3 Base = Position + State->GetShiverOffset( ShiverAmount );
 	// 傷を受けた直後は、無敵の間、点滅する
 	if ( InvulnerableTime > 0.0f && !bDead && ( static_cast<int32>( InvulnerableTime * 16.0f ) % 2 ) == 0 )
 	{
 		return;
 	}
-	CommandList.Cone3D( Position + FVector3( 0.0f, 0.03f, 0.0f ), Position + FVector3( 0.0f, 0.005f, 0.0f ), 0.5f, 16, FColor32( 24, 28, 24 ) );
+	CommandList.Cone3D( Base + FVector3( 0.0f, 0.03f, 0.0f ), Base + FVector3( 0.0f, 0.005f, 0.0f ), 0.5f, 16, FColor32( 24, 28, 24 ) );
 	const FColor32 Tunic = FlashTime > 0.0f ? FColor32( 240, 90, 80 ) : FColor32( 60, 110, 210 );
 	if ( bDead )
 	{
 		// 倒れている（横になる）
-		CommandList.Capsule3D( Position + FVector3( -0.5f, 0.3f, 0.0f ), Position + FVector3( 0.5f, 0.3f, 0.0f ), 0.3f, 8, Tunic );
-		CommandList.Sphere3D( Position + FVector3( 0.75f, 0.3f, 0.0f ), 0.22f, 10, FColor32( 250, 208, 160 ) );
+		CommandList.Capsule3D( Base + FVector3( -0.5f, 0.3f, 0.0f ), Base + FVector3( 0.5f, 0.3f, 0.0f ), 0.3f, 8, Tunic );
+		CommandList.Sphere3D( Base + FVector3( 0.75f, 0.3f, 0.0f ), 0.22f, 10, FColor32( 250, 208, 160 ) );
 		return;
 	}
 	if ( bRolling )
 	{
 		// 丸くなって、転がる
 		const float32 Spin = State->Time * 18.0f;
-		CommandList.Sphere3D( Position + FVector3( 0.0f, 0.45f, 0.0f ), 0.45f, 12, Tunic );
-		CommandList.Sphere3D( Position + FVector3( NMath::Cos( Spin ) * 0.3f, 0.45f + NMath::Sin( Spin ) * 0.3f, 0.0f ) + Facing * 0.2f, 0.12f, 6, FColor32( 250, 208, 160 ) );
+		CommandList.Sphere3D( Base + FVector3( 0.0f, 0.45f, 0.0f ), 0.45f, 12, Tunic );
+		CommandList.Sphere3D( Base + FVector3( NMath::Cos( Spin ) * 0.3f, 0.45f + NMath::Sin( Spin ) * 0.3f, 0.0f ) + Facing * 0.2f, 0.12f, 6, FColor32( 250, 208, 160 ) );
 		return;
 	}
 	const bool bWalking = MoveDirection.LengthSquared() > 0.01f;
 	const float32 Stride = bWalking ? 0.2f * NMath::Sin( State->Time * 14.0f ) : 0.0f;
-	CommandList.Sphere3D( Position + Right * 0.16f + Facing * Stride + FVector3( 0.0f, 0.14f, 0.0f ), 0.15f, 8, FColor32( 90, 60, 30 ) );
-	CommandList.Sphere3D( Position - Right * 0.16f - Facing * Stride + FVector3( 0.0f, 0.14f, 0.0f ), 0.15f, 8, FColor32( 90, 60, 30 ) );
-	CommandList.Capsule3D( Position + FVector3( 0.0f, 0.4f, 0.0f ), Position + FVector3( 0.0f, 0.95f, 0.0f ), 0.3f, 8, Tunic );
-	const FVector3 Head = Position + FVector3( 0.0f, 1.45f, 0.0f );
+	CommandList.Sphere3D( Base + Right * 0.16f + Facing * Stride + FVector3( 0.0f, 0.14f, 0.0f ), 0.15f, 8, FColor32( 90, 60, 30 ) );
+	CommandList.Sphere3D( Base - Right * 0.16f - Facing * Stride + FVector3( 0.0f, 0.14f, 0.0f ), 0.15f, 8, FColor32( 90, 60, 30 ) );
+	CommandList.Capsule3D( Base + FVector3( 0.0f, 0.4f, 0.0f ), Base + FVector3( 0.0f, 0.95f, 0.0f ), 0.3f, 8, Tunic );
+	const FVector3 Head = Base + FVector3( 0.0f, 1.45f, 0.0f );
 	CommandList.Sphere3D( Head, 0.26f, 12, FColor32( 250, 208, 160 ) );
 	CommandList.Cone3D( Head + FVector3( 0.0f, 0.38f, 0.0f ), Head + FVector3( 0.0f, 0.1f, 0.0f ), 0.28f, 10, FColor32( 120, 70, 40 ) );
 	CommandList.Sphere3D( Head + Facing * 0.24f + Right * 0.1f, 0.04f, 6, FColor32::Black );
 	CommandList.Sphere3D( Head + Facing * 0.24f - Right * 0.1f, 0.04f, 6, FColor32::Black );
 	// 剣: ふだんは、体の横。斬るときは、前を大きく振る
-	FVector3 Hilt = Position + Right * 0.4f + FVector3( 0.0f, 0.8f, 0.0f );
+	FVector3 Hilt = Base + Right * 0.4f + FVector3( 0.0f, 0.8f, 0.0f );
 	FVector3 Tip = Hilt + Facing * 0.1f + FVector3( 0.0f, 0.6f, 0.0f );
 	if ( bAttacking )
 	{
 		const float32 T = NMath::Clamp( AttackTime / 0.3f, 0.0f, 1.0f );
 		const float32 Angle = NMath::Lerp( -1.2f, 1.2f, T );
 		const FVector3 Swing = Right * NMath::Sin( Angle ) + Facing * NMath::Cos( Angle );
-		Tip = Position + FVector3( 0.0f, 0.95f, 0.0f ) + Swing * 1.5f;
-		Hilt = Position + FVector3( 0.0f, 0.95f, 0.0f ) + Swing * 0.4f;
+		Tip = Base + FVector3( 0.0f, 0.95f, 0.0f ) + Swing * 1.5f;
+		Hilt = Base + FVector3( 0.0f, 0.95f, 0.0f ) + Swing * 0.4f;
 	}
 	CommandList.Capsule3D( Hilt, Tip, 0.07f, 6, FColor32( 210, 220, 235 ) );
 }
