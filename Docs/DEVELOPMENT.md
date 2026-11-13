@@ -790,6 +790,33 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\NewProject.ps1 -Name M
 
 `C:\dev\MyGame`に、ソリューション・プロジェクト・`Source`（入口・ゲームインスタンス・タイトルとプレイのシーン・プレイヤー）・`Config/ScreenConfig.json`・`Assets`・`README.md`ができます。プロジェクトは、フレームワークのフォルダーを相対パスで指し（`.vcxproj`の`<MazigatiDXRoot>`と`.sln`）、`Build/mazigatiDX.props`と静的ライブラリ`mazigatiDX`を使います。DxLibは`C:\DxLib`を探します（別の場所なら、環境変数`MazigatiDxLibDir`と`MazigatiDxLibVcDir`）。ファイルを足したり消したりしたら、新しいプロジェクトの`GenerateProjectFiles.bat`で、ファイル一覧を作り直します。テンプレートの確認（作る・ビルド・起動・画面の確認）は、検査側の`RunTemplateTest.ps1`が行います。
 
+## 配布物を作る（パッケージング）
+
+`Tools/PackageGame.ps1`が、ビルドしたゲームを、人に渡せるフォルダー（と zip）にまとめます。先に、Release でビルドしておきます（このスクリプトは、ビルドしません）。
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File Tools\PackageGame.ps1 -ProjectRoot C:\dev\MyGame -Version 1.0.0 -Zip
+```
+
+`C:\dev\MyGame\Packages\MyGame-1.0.0`（と、同じ名前の`.zip`）ができます。
+
+|入るもの|元|
+|---|---|
+|`MyGame.exe`と、隣の DLL（`SDL3.dll`）|`<ProjectRoot>\x64\Release`（`-Configuration`・`-Executable`で変えられる。名前は`-Name`）|
+|`Config`|`<ProjectRoot>\Config`（`autoexec.cfg`は、Debug ビルド用なので、入れない）|
+|`Assets`|`<ProjectRoot>\Assets`|
+|`EngineContent`|フレームワークの`EngineContent`（エンジン組み込みの素材）|
+|`Licenses`|フレームワークの`LICENSE`・`THIRD_PARTY_NOTICES.md`（DxLib の著作権表示を含む）・`VendorModules`の各ライセンス文・ゲームの`LICENSE`（あれば）|
+|`README.txt`|起動のしかたと、ライセンスの場所|
+
+- **確認**: 集めたあと、配布物のフォルダーだけで、画面を出さずに 30 フレーム動かします（`--backend=null`。素材や DLL の入れ忘れで起動できない、を見つける）。確認で出来た`Saved`などは、消します。`-NoVerify`で省けます。
+- **`-ProjectRoot`**: ゲームのプロジェクトのフォルダー（`Config`・`Assets`・`x64`がある所。`Tools/NewProject.ps1`で作ったフォルダー）。省くと、このリポジトリ（`project.exe`）。サンプル集は`-ProjectRoot Samples`です。
+- 同じ名前の配布物があれば、止まります（`-Force`で、消して作り直す）。出力先は`-Destination`（既定は`<ProjectRoot>\Packages`）。
+- **実行に要るもの**: Windows 10 / 11（64 ビット）と、DirectX 11 が動くグラフィックス。Visual C++ のランタイムは、実行ファイルに入っています（別に配らなくてよい）。
+- **セーブデータなど**: ゲームは、実行ファイルのあるフォルダーに`Saved`を作って書きます。`Program Files`のような、書き込めない場所へ置くと、保存できません。
+- **制限**: 素材は、ファイルのまま入ります（1 つのアーカイブに束ねる・暗号化する機能は、ありません）。インストーラーは作りません。
+- 検査: `Source\SelfTest\RunPackageTest.ps1`（中身・上書きの拒否・名前とバージョンと zip・サンプル集・別のプロジェクトのフォルダー）。
+
 ## サンプル集
 
 `Samples`は、機能を1つずつ動かして見られるサンプル集です。起動すると一覧が出て（サンプルが増えても収まるように2列。左の列を上から順に、続けて右の列）、上下キーで選び（左右キーで列を移り）、Enterで動かし、サンプルの中からEscで一覧へ戻ります。`--sample=Hello`のように名前を付けて起動すると、一覧を飛ばしてそのサンプルから始まります（`NCommandLine::GetValue( "sample" )`で読みます）。

@@ -75,6 +75,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\NewProject.ps1 -Name M
 
 作ったプロジェクトの `README.md` に、構成と、シーン・オブジェクトの足し方があります。
 
+ゲームを人に渡すときは、Release でビルドしてから、`Tools\PackageGame.ps1` で、配布物（実行ファイル・DLL・`Config`・`Assets`・`EngineContent`・ライセンス文をまとめたフォルダーと zip）を作ります。
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File Tools\PackageGame.ps1 -ProjectRoot C:\dev\MyGame -Version 1.0.0 -Zip
+```
+
 ## 文書
 
 |文書|内容|

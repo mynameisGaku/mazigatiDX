@@ -7,6 +7,7 @@
 #     2. 書式の検査（CheckSourceFormat.ps1）と、その検査自身の確認、掃除（Clean.bat）の確認
 #     3. 自己確認（RunSelfTests.ps1）: 構成ごとに ecs / assets / world
 #     4. サンプル集の確認（RunSamplesTest.ps1）と、テンプレートの確認（RunTemplateTest.ps1）。どちらも、自分でビルドして動かす（時間がかかる）。-Quick で飛ばせる
+#     5. 配布物の確認（RunPackageTest.ps1。Release のビルドを使う。-Quick・Release を含まない -Configurations では、飛ばす）
 #   結果は、1 行ずつ出して、最後に PASS / FAIL をまとめる（失敗があれば、終了コード 1）。各ステップのログは、一時フォルダーに残す。
 #   -Retries: 自己確認が失敗したとき、最大この回数まで、やり直す。環境によっては、グラフィックスドライバーのクラッシュで、まれに（assets で
 #   2 回に 1 回ほど）失敗する（アプリのコードの問題ではない）。やり直しても通らなければ、失敗として数える。
@@ -95,6 +96,10 @@ if (-not $Quick) {
     Write-Host '== samples and template (they build and run by themselves; this takes a while)'
     Invoke-Step 'samples' (Join-Path $selfTest 'RunSamplesTest.ps1')
     Invoke-Step 'template project' (Join-Path $selfTest 'RunTemplateTest.ps1')
+    if ($Configurations -contains 'Release') {
+        Write-Host '== package (Tools\PackageGame.ps1)'
+        Invoke-Step 'package' (Join-Path $selfTest 'RunPackageTest.ps1')
+    }
 }
 
 $failed = @($results | Where-Object { -not $_.Passed })

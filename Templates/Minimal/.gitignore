@@ -1,6 +1,7 @@
 /x64/
 /__NAME__/
 /Saved/
+/Packages/
 /.vs/
 *.user
 imgui.ini

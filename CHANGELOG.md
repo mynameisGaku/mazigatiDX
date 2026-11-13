@@ -15,6 +15,7 @@
 - UI のテーマのファイル（`.gxuitheme`。`CUIThemeLoader`。色・数・ブラシ・部品のスタイルと、スタイルの `Extends`）、そのホットリロード（`CUIThemeDocument`）、状態のブラシのなめらかな切り替え（スタイルの `TransitionDuration`。`CUIWidget::AdvanceTime`）、色の文字の読み取り（`FColor32::TryParseHex`）。
 - エフェクトの粒子を、Particle ドメインのマテリアルで描く（エミッターの `MaterialAsset`。`CMaterial::BeginParticles`・描画命令 `ShaderQuad3D`・組み込みの `Engine:/Materials/Particle`）。
 - マテリアルエディタ（`Editor.exe`。ノードのグラフ・プレビュー・診断・保存）と、サンプル `Materials`。
+- 配布物を作るスクリプト（`Tools/PackageGame.ps1`。実行ファイル・DLL・`Config`・`Assets`・`EngineContent`・ライセンス文を、フォルダーと zip にまとめて、起動を確かめる）。
 
 ### 変更
 - 内部のバージョンの数字を 4.1 から、セマンティック バージョニングの `0.9.0` に改めた。

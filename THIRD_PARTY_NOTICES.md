@@ -62,4 +62,4 @@ SOFTWARE.
 
 ## ゲームを配布するとき
 
-配布物には、このリポジトリの `LICENSE` と、`VendorModules` の各ライセンス文、上の pixelfx のライセンス文と DxLib の著作権表示を同梱してください。
+配布物には、このリポジトリの `LICENSE` と、`VendorModules` の各ライセンス文、上の pixelfx のライセンス文と DxLib の著作権表示を同梱してください。`Tools/PackageGame.ps1` で配布物を作ると、これらを `Licenses` フォルダーへ入れます（pixelfx のライセンス文と DxLib の著作権表示は、この文書に書いてあるので、この文書ごと入ります）。

@@ -8,6 +8,8 @@
 /mazigatiDX/
 /Samples/x64/
 /Editor/x64/
+/Packages/
+/Samples/Packages/
 **/__pycache__/
 *.pdb
 *.obj
