@@ -458,8 +458,9 @@ namespace
 				{
 					return false;
 				}
-				const bool bScalar = ( Bind.uFlags & D3D_SIF_TEXTURE_COMPONENTS ) == 0; // Texture2D<float>はスカラー、Texture2D<float4>は4成分。
-				if ( ( TextureSlots[SlotIndex].Format == EComputeTextureFormat::R32Float ) != bScalar || ( bScalar && Bind.ReturnType != D3D_RETURN_TYPE_FLOAT ) )
+				const bool bScalar = ( Bind.uFlags & D3D_SIF_TEXTURE_COMPONENTS ) == 0; // スカラー宣言は単一成分の読み取りに限る。
+				const bool bR32Float = TextureSlots[SlotIndex].Format == EComputeTextureFormat::R32Float; // 単一成分は浮動小数点のベクトル宣言でも読める。
+				if ( ( bScalar && !bR32Float ) || ( bR32Float && Bind.ReturnType != D3D_RETURN_TYPE_FLOAT ) )
 				{
 					return false;
 				}

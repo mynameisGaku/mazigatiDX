@@ -7,6 +7,6 @@ struct FGraphicsTextureSlot
 {
 	// シェーダーのt番号（0〜127）。bufferのtスロットと番号を重複させない。
 	uint32 Binding = 0;
-	// RGBA8／RGBA16F（Texture2D<float4>）かR32Float（Texture2D<float>、読み取れる深度など）の区別。
+	// RGBA8／RGBA16FまたはR32Float（単一成分カラー・読み取れる深度）の資源形式。DX12ではR32Floatをfloat型のスカラー・ベクトルから読める。
 	EComputeTextureFormat Format = EComputeTextureFormat::RGBA8;
 };

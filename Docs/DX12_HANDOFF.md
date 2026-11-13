@@ -177,7 +177,7 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **実測で判明した事実**:
   - `FShaderVertex3D`（`Library/Framework/Render/Types/ShaderVertex.h`）は `alignas(16)` の `FVector3`/`FVector4` を持つため **`sizeof == 112`、`alignof == 16`**（`Position 0 / SubPosition 16 / Normal 32 / Tangent 48 / Binormal 64 / Diffuse 80 / Specular 84 / U 88 / SubU 96`）であり、Claude 側 `DrawCommand.h` のパック済み `FDrawShaderVertex3D`（`sizeof == 88`）とはレイアウトが異なる。
   - `D3DCompile` (`vs_5_0`) の DXBC 反射では `VertexInput` 内の未使用属性が落ちず全 9 属性が `VsDesc.InputParameters` に残るため、`CDX12GraphicsPipelineStore::ValidateVertexInputs` には 9 要素すべてを渡す必要がある（`ps_5_0` の未使用 `cbObject : b5` は `PsDesc.BoundResources` から除去されるが、VS 側で参照されるため `b4`/`b5`/`b6` 宣言は通る）。
-  - `MaterialShadowMap.cpp` は `ERenderTargetFormat::Float32`・`Channels = 1` のカラー描画先＋`bDepth = true` で深度を色へ出力しており、`NumRenderTargets == 0` 必須とは読めない。この調査時点では DX12 の `R32Float` カラー描画先は未対応だったが、後述の対応を実装した。`Texture2D g_ShadowMap`（`Texture2D<float4>`）との制約は統合課題として残る。
+  - `MaterialShadowMap.cpp` は `ERenderTargetFormat::Float32`・`Channels = 1` のカラー描画先＋`bDepth = true` で深度を色へ出力しており、`NumRenderTargets == 0` 必須とは読めない。この調査時点では DX12 の `R32Float` カラー描画先は未対応だったが、後述の対応を実装した。`Texture2D g_ShadowMap` のグラフィックス読み取りも後述のとおり対応したが、材質全体の統合は未完了。
 - **検証結果**:
   - この調査時点の検査側公開コミットは[a2ec253](https://github.com/mynameisGaku/framework-test/commit/a2ec25380653e44f62bea15909fa24b7f203b9b4)。Claude側の自動生成HLSLそのもの、88Bの描画命令用頂点によるGPU描画、影用R32単一成分カラー描画先はこの時点では未検証。後者のDX12基盤については後述の検査を参照。
   - `framework-dx12-verify` の製品コードおよび保護 7 ファイルは変更なし（共通 `Library/Framework/Material` も DX12/ImGui 非依存のまま）。
@@ -198,8 +198,7 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
   - `GraphicsPipelineContractMain.cpp` および `HdrTextureCopyPlatformSelfTest.cpp` は `FRenderTargetCapabilities::bR32FloatRenderTarget` に応じて分岐し、`true` の場合は `R32Float` 検査を実施、`false` の場合は `CreateRenderTargetR32Float` の拒否を確認したうえで既存の `RGBA8` / `RGBA16F` 検査を継続し、未対応スキップであることを明示表示する。
   - **未実施**: 手元の実機 GPU / WARP 環境ではいずれも `bR32FloatRenderTarget == true` であるため、`bR32FloatRenderTarget == false` 環境および偽能力による実機・製品経路の未対応分岐検証は未実施（テスト専用 API は製品側へ追加しない方針を維持）。
 - **Claude 側 `MaterialShadowMap` / `Texture2D g_ShadowMap` との互換性（未統合）**:
-  - `R32Float` カラー描画先に対する DX12 側の Graphics / Compute 読み取りは **スカラー `Texture2D<float>` のみ許可** される。
-  - Claude 側 `MaterialHlsl.cpp` が出力する `Texture2D g_ShadowMap : register(tN);`（`Texture2D<float4>`）は、DX12 側の形式・成分数検査により **意図通り拒否される**（`GraphicsPipelineContractMain.cpp` で拒否を実測実証済み）。本件は R2 統合課題として未統合のまま区別して管理する。
+  - この時点の DX12 側 Graphics / Compute 読み取りはスカラー `Texture2D<float>` のみ許可し、Claude 側の `Texture2D g_ShadowMap` を拒否していた。後述の変更で Graphics 側の浮動小数点ベクトル読み取りを許可した。Compute 側は従来どおりスカラーのみ。
 - **後続課題（急ぎではない・今スコープ外）: 埋め込みシェーダーの `.hlsl` 外部化／単位分割**:
   - 現在 `DX12RenderTargetPass.cpp` やテスト等に文字列埋め込みされているシェーダーについて、将来的に `.hlsl` ファイル外部化またはシェーダー単位のソース分割を検討する。
   - 検討時は **ビルド統合・配布同梱・作業ディレクトリ非依存の探索経路・実行時更新／キャッシュ・ImGui/DX12 の責務分離・既存の `ShaderCompile` 仕組みとの整合** を考慮すること。
@@ -210,3 +209,10 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - Debug / Release とも CPU 615、既定GPU 1314、WARP 1314、デバイス喪失 6 条件が成功。SDK debug layer は有効。検査側の公開コミットは[16203c5](https://github.com/mynameisGaku/framework-test/commit/16203c5e354c2ae6437dc4f3c2548bdd6578ca84)。
 - この検査は `ResizeBuffers` 呼び出し前のGPU待機期限切れを対象とする。`ResizeBuffers` 自体や `GetBuffer` の単独失敗、および複数GPUベンダーでの実測は引き続き未検証。Quick全体やアプリ6起動の再実行は今回行っていない。
 - 参考: [MicrosoftのResizeBuffers契約](https://learn.microsoft.com/en-us/windows/win32/api/dxgi/nf-dxgi-idxgiswapchain-resizebuffers)（旧バッファへの参照を解放してからサイズ変更）、[Unreal Engineの描画スレッド](https://dev.epicgames.com/documentation/en-us/unreal-engine/threaded-rendering-in-unreal-engine)（スレッド間の所有と完了同期）。
+
+## R32Floatのグラフィックス読み取りと材質統合の準備（2026-11-14）
+
+- Claude側のローカル作業では、影画像を `Texture2D g_ShadowMap` として宣言し、`Load(...).r` を使っている。DX12のグラフィックスパイプラインの照合を拡張し、`R32Float` の単一成分カラーまたはD32深度を、浮動小数点のスカラーだけでなく `Texture2D<float4>` 等でも読めるようにした。整数型やRGBA資源のスカラー宣言は従来どおり拒否する。Compute側の契約は変更していない。
+- Direct3Dでは欠けた成分はG/Bが0、Aが1となる。[MicrosoftのTexture Object仕様](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-to-type)を参照。資源とシェーダーの所有・提出・寿命は既存の仕組みを使用し、[Unreal Engineの描画スレッドの説明](https://dev.epicgames.com/documentation/en-us/unreal-engine/threaded-rendering-in-unreal-engine)も参照した。
+- Debug / Releaseのソリューションビルド、および両構成のGraphicsPipeline検査が成功。CPU各3、既定GPU・WARP各107条件で、R32FloatカラーとD32深度の `Load` / `SampleLevel` を実画素で確認し、整数型の拒否と既存のスカラー経路も検査した。SDK debug layer は有効。アプリの `dx12` / `warp` / 各no-ui / `dxlib` / `null` も両構成で成功した。検査側コミットは[e25fb91](https://github.com/mynameisGaku/framework-test/commit/e25fb9123b1a56f68c60b26461ca224a2e402db1)。
+- これは影画像の読み取り基盤までの対応であり、Claude側の生成HLSL全体、影パス、材質のDX12統合や複数GPUベンダーでの検証は完了していない。

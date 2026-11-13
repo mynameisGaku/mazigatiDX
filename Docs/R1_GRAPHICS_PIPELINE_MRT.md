@@ -46,7 +46,7 @@
 4. **バッファ・画像・静的サンプラスロット照合とRootSignature**:
    - `BufferSlots.Num() + TextureSlots.Num() <= 16`、スロット番号重複や `t` スロット間でのバッファ／画像番号衝突を禁止。
    - `Constant`（`b0..b15`、Root CBV）は定数バッファ最小サイズ `MinimumBytes` をreflectionから取得します。`Raw`（`t0..t127`）は4byteアライン、`Structured`（`t0..t127`）は `ElementStride`（4〜2048の4の倍数）とreflectionの `NumSamples` 一致を要求します。
-   - `TextureSlots`（`t0..t127`、各1記述子のSRV DescriptorTable）は `EComputeTextureFormat::RGBA8`（4成分 `Texture2D<float4>`）または `R32Float`（1成分スカラー `Texture2D<float>`）を `D3D_SIF_TEXTURE_COMPONENTS` と `ReturnType` で照合します。
+   - `TextureSlots`（`t0..t127`、各1記述子のSRV DescriptorTable）は資源形式とシェーダー宣言を照合します。DX12の `R32Float` は浮動小数点の `Texture2D<float>` またはベクトル宣言から読め、足りない成分は Direct3D の既定値（G/Bは0、Aは1）になります。整数型は拒否し、RGBA8／RGBA16Fのスカラー宣言も従来どおり拒否します。compute側の読み取り契約は変更していません。
    - サンプラは `register(s0)` の静的サンプラ1本（Linear/Point・AddressMode設定）のみを許可し、動的サンプラ記述子ヒープを増やしません。
 5. **深度とBlend／Rasterizer状態・遅延解放**:
    - `DepthFormat == None` のとき `bDepthTest == false && bDepthWrite == false` が必須、また `!bDepthTest && bDepthWrite` は拒否。
