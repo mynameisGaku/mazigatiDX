@@ -29,6 +29,9 @@ private:
 	// UIが借りた区画だけを戻す。ゲーム画像の区画は受け付けない。
 	static void FreeDescriptor( ImGui_ImplDX12_InitInfo* Info, D3D12_CPU_DESCRIPTOR_HANDLE Cpu, D3D12_GPU_DESCRIPTOR_HANDLE Gpu );
 	CDX12DescriptorPool* Pool = nullptr; // device所有者から借りる記述子のpool。
+	Microsoft::WRL::ComPtr<ID3D12Device> DeviceRef; // 公式DX12実装が終了するまでdevice参照を保持する。
+	Microsoft::WRL::ComPtr<ID3D12CommandQueue> QueueRef; // 外部窓破棄時のSignal完了までqueue参照を保持する。
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DescriptorHeapRef; // UI終了まで記述子ヒープ参照を保持する。
 	ImGuiContext* Context = nullptr; // 接続した文脈。所有は呼び出し側。
 	TMap<uint64, CDX12DescriptorPool::FAllocation> Descriptors; // UIの貸出分だけを追跡する。
 	bool bInitialized = false; // 公式実装への接続済み印。

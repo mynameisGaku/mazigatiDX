@@ -21,7 +21,7 @@ bool CDX12ImGuiFrameRenderer::Initialize( CDX12Device& InDevice )
 
 bool CDX12ImGuiFrameRenderer::TryShutdown( uint32 TimeoutMs )
 {
-	if ( TimeoutMs > 60000 || ( Device && Device->IsRecording() ) || ( Device && !Device->Wait( TimeoutMs ) && !Device->IsDeviceRemoved() ) )
+	if ( TimeoutMs > 60000 || ( Device && Device->IsRecording() ) || ( Device && Device->IsInitialized() && !Device->Wait( TimeoutMs ) && !Device->IsDeviceRemoved() ) )
 	{
 		return false;
 	}

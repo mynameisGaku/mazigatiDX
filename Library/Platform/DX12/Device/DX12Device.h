@@ -87,6 +87,8 @@ class CDX12Device
 	bool IsDeviceRemoved() const;
 	// 通常フレームへのGPU記録中だけtrue。
 	bool IsRecording() const;
+	// 初期化が完了し、まだGPU資源の解放を終えていない間だけtrue。
+	bool IsInitialized() const;
 	// 呼出側の描画が完了した位置で、ゲーム画面をコピーする。
 	void RecordGameFrameCopy();
 	// 現在のGPU記録位置で色を消す。描画順の管理は呼出側が行う。

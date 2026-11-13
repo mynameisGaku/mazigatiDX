@@ -19,6 +19,9 @@ bool CDX12ImGuiRenderer::Initialize( ID3D12Device* Device, ID3D12CommandQueue* Q
 		return false;
 	}
 	Pool = &InPool;
+	DeviceRef = Device;
+	QueueRef = Queue;
+	DescriptorHeapRef = InPool.GetHeap();
 	Context = ImGui::GetCurrentContext();
 	ImGui_ImplDX12_InitInfo Info; // 公式実装にだけAPI固有の型を渡す。
 	Info.Device = Device;
@@ -64,6 +67,9 @@ void CDX12ImGuiRenderer::Shutdown()
 	}
 	Descriptors.Reset();
 	Pool = nullptr;
+	DescriptorHeapRef.Reset();
+	QueueRef.Reset();
+	DeviceRef.Reset();
 	Context = nullptr;
 }
 

@@ -490,6 +490,8 @@ bool CDX12Device::IsDeviceRemoved() const { return Device && FAILED( Device->Get
 
 bool CDX12Device::IsRecording() const { return bInitialized && !bClosing && bRecording; }
 
+bool CDX12Device::IsInitialized() const { return bInitialized; }
+
 CDX12TextureStore *CDX12Device::GetTextureResources()
 {
 	return bInitialized && !bClosing ? &Textures : nullptr;
