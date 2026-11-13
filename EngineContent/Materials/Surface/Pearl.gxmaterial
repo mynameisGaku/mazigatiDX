@@ -1,0 +1,95 @@
+{
+    "Format":  "gxmaterial",
+    "Version":  1,
+    "Name":  "Pearl",
+    "Domain":  "Surface",
+    "Shading":  "Substrate",
+    "Nodes":  [
+                  {
+                      "Id":  1,
+                      "Kind":  "VectorParameter",
+                      "Name":  "Base",
+                      "Value":  [
+                                    0.86,
+                                    0.83,
+                                    0.8,
+                                    1
+                                ],
+                      "Components":  4,
+                      "Color":  true,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  2,
+                      "Kind":  "Mask",
+                      "Name":  "xyz",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     1
+                                 ]
+                  },
+                  {
+                      "Id":  3,
+                      "Kind":  "ScalarParameter",
+                      "Name":  "Roughness",
+                      "Value":  [
+                                    0.3
+                                ],
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  4,
+                      "Kind":  "ScalarParameter",
+                      "Name":  "ThinFilm",
+                      "Value":  [
+                                    0.5
+                                ],
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  5,
+                      "Kind":  "SubstrateSlab",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     2,
+                                     -1,
+                                     3,
+                                     -1,
+                                     -1,
+                                     -1,
+                                     -1,
+                                     -1,
+                                     -1,
+                                     -1,
+                                     4
+                                 ]
+                  }
+              ],
+    "Outputs":  {
+                    "Surface":  5
+                }
+}

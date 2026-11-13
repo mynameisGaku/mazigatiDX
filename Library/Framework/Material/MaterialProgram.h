@@ -132,6 +132,36 @@ struct FMaterialOutputValue
 	int32 Value = -1;              // 命令の番号
 };
 
+// Substrate の層（SubstrateSlab のピン）の並び。FMaterialSubstrateSlab::Fields の番号
+namespace NMaterialSlabField
+{
+	enum : int32
+	{
+		BaseColor,
+		F0,
+		Roughness,
+		Metallic,
+		Emissive,
+		Opacity,
+		ClearCoat,
+		ClearCoatRoughness,
+		Subsurface,
+		Anisotropy,
+		ThinFilm,
+		Num
+	};
+
+	// 出力の名前（"BaseColor" など）。範囲の外は、空
+	const char* GetName( int32 Field );
+}
+
+// 陰影を、別々に計算する層 1 つ（フルの評価）。値は、命令の番号
+struct FMaterialSubstrateSlab
+{
+	int32 Fields[NMaterialSlabField::Num] = {};
+	int32 Weight = -1;             // 混ぜるときの重み（Float。全部の層で、足して 1）
+};
+
 struct FMaterialProgram
 {
 	EMaterialDomain Domain = EMaterialDomain::UI;
@@ -145,6 +175,10 @@ struct FMaterialProgram
 	bool bValid = false;                       // エラーなく作れた
 	bool bCustomHlsl = false;                  // HLSL の直指定（Code は空。パラメーター・画像の置き場だけがある）
 	bool bUsesSceneDepth = false;
+	// Substrate を、フルに評価する（バックエンドの能力から。false なら、簡略版で、Outputs の 11 の値だけを使う）
+	bool bFullSubstrate = false;
+	// フルの評価で、陰影を別々に計算する層（1〜NMaterialSubstrate::MaxSlabs。Surface・Substrate のときだけ）
+	TArray<FMaterialSubstrateSlab> SubstrateSlabs;
 
 	const FMaterialOutputValue* FindOutput( const FString& Pin ) const
 	{

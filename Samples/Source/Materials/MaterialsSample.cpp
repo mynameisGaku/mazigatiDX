@@ -53,12 +53,19 @@ void CMaterialsSample::OnEnter()
 	State->Marble = Load( *Materials, "Surface/Marble" );
 	State->CarPaint = Load( *Materials, "Surface/CarPaint" );
 	State->RimGlow = Load( *Materials, "Surface/RimGlow" );
+	const char* SubstrateNames[FMaterialsDemoState::NumSubstrateSpheres] = { "Surface/BrushedMetal", "Surface/Pearl", "Surface/Wax", "Surface/RustedMetal" };
+	bool bSubstrateLoaded = true;
+	for ( int32 Index = 0; Index < FMaterialsDemoState::NumSubstrateSpheres; ++Index )
+	{
+		State->SubstrateSpheres[Index] = Load( *Materials, SubstrateNames[Index] );
+		bSubstrateLoaded = bSubstrateLoaded && State->SubstrateSpheres[Index].IsValid();
+	}
 	State->GlowButton = Load( *Materials, "UI/GlowButton" );
 	State->Shimmer = Load( *Materials, "UI/Shimmer" );
 	const TSharedPtr<CMaterial> Grayscale = Load( *Materials, "PostProcess/Grayscale" );
 	const TSharedPtr<CMaterial> Vignette = Load( *Materials, "PostProcess/Vignette" );
 	const TSharedPtr<CMaterial> Pixelate = Load( *Materials, "PostProcess/Pixelate" );
-	if ( !State->SceneTarget.IsValid() || !State->Checker || !State->Marble || !State->CarPaint || !State->RimGlow || !State->GlowButton || !State->Shimmer || !Grayscale || !Vignette || !Pixelate )
+	if ( !bSubstrateLoaded || !State->SceneTarget.IsValid() || !State->Checker || !State->Marble || !State->CarPaint || !State->RimGlow || !State->GlowButton || !State->Shimmer || !Grayscale || !Vignette || !Pixelate )
 	{
 		State.Reset();
 		return;

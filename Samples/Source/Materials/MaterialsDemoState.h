@@ -47,6 +47,9 @@ struct FMaterialsDemoState
 	TSharedPtr<CMaterial> Marble;
 	TSharedPtr<CMaterial> CarPaint;
 	TSharedPtr<CMaterial> RimGlow;
+	// Substrate 風（フルの評価）の、手前の小さな球 4 つ: 磨いた金属（異方性）・真珠（薄膜）・ろう（サブサーフェス）・さびた金属（層を混ぜる）
+	static constexpr int32 NumSubstrateSpheres = 4;
+	TSharedPtr<CMaterial> SubstrateSpheres[NumSubstrateSpheres];
 	// UI のマテリアル
 	TSharedPtr<CMaterial> GlowButton;
 	TSharedPtr<CMaterial> Shimmer;

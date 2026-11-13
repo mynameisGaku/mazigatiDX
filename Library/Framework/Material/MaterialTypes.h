@@ -70,7 +70,7 @@ struct FMaterialCapabilities
 {
 	bool bPixelShaders = true;        // ピクセルシェーダー（HLSL）を実行できる（false なら、マテリアルは描けない。コンパイルと CPU での評価はできる）
 	bool bSceneDepthRead = true;      // ポストプロセスで、シーンの深度を読める
-	bool bFullSubstrate = false;      // Substrate をフルに評価できる（false なら、簡略版: 拡散・鏡面・発光・クリアコートの近似。サブサーフェス・異方性・薄膜は、無視）
+	bool bFullSubstrate = true;       // Substrate をフルに評価できる（MaterialSubstrate.h。false なら、簡略版: 拡散・鏡面・発光・クリアコートの近似。サブサーフェス・異方性・薄膜は、無視）
 	int32 MaxTextures = 8;            // 1 つのマテリアルが使える画像の数
 	int32 MaxParameterVectors = 64;   // パラメーター（4 つ組）の数の上限
 };

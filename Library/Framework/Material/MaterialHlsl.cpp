@@ -1,6 +1,8 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "MaterialHlsl.h"
 
+#include "Library/Framework/Material/MaterialSubstrate.h"
+
 namespace
 {
 	const char* TypeName( EMaterialValueType Type )
@@ -240,9 +242,40 @@ struct VertexOutput
 };
 )HLSL";
 
-	// Surface の陰影の本文（標準の光。Substrate は、簡略版: 拡散・鏡面・クリアコート・発光）
+	// Substrate のフルの評価: 層ごとに、SubstrateShadeSlab（MaterialSubstrate.cpp の HLSL）で陰影を計算して、重みで足す
+	FString SubstrateFullShading( const FMaterialProgram& Program )
+	{
+		FString Text;
+		Text += "\tfloat3 N = normalize( i.Normal );\n";
+		Text += "\tfloat3 L = -normalize( g_LightDirection.xyz );\n";
+		Text += "\tfloat3 V = normalize( g_CameraPosition.xyz - i.World );\n";
+		Text += "\tfloat3 T = SubstrateTangent( N, i.World, i.Uv );\n";
+		Text += "\tfloat3 color = ( float3 )0.0;\n";
+		Text += "\tfloat opacity = 0.0;\n";
+		for ( int32 Index = 0; Index < Program.SubstrateSlabs.Num(); ++Index )
+		{
+			const FMaterialSubstrateSlab& Slab = Program.SubstrateSlabs[Index];
+			auto Field = [&]( int32 FieldIndex )
+			{
+				return Name( Slab.Fields[FieldIndex] );
+			};
+			const FString Weight = Name( Slab.Weight );
+			Text += "\tcolor += " + Weight + " * SubstrateShadeSlab( " + Field( NMaterialSlabField::BaseColor ) + ", " + Field( NMaterialSlabField::F0 ) + ", " + Field( NMaterialSlabField::Roughness ) + ", " + Field( NMaterialSlabField::Metallic )
+					+ ", " + Field( NMaterialSlabField::Emissive ) + ", " + Field( NMaterialSlabField::ClearCoat ) + ", " + Field( NMaterialSlabField::ClearCoatRoughness ) + ", " + Field( NMaterialSlabField::Subsurface ) + ", "
+					+ Field( NMaterialSlabField::Anisotropy ) + ", " + Field( NMaterialSlabField::ThinFilm ) + ", N, T, L, V );\n";
+			Text += "\topacity += " + Weight + " * " + Field( NMaterialSlabField::Opacity ) + ";\n";
+		}
+		Text += "\treturn float4( color, opacity );\n";
+		return Text;
+	}
+
+	// Surface の陰影の本文（標準の光。Substrate は、フルの評価か、簡略版: 拡散・鏡面・クリアコート・発光）
 	FString SurfaceShading( const FMaterialProgram& Program )
 	{
+		if ( Program.Shading == EMaterialShading::Substrate && Program.bFullSubstrate && !Program.SubstrateSlabs.IsEmpty() )
+		{
+			return SubstrateFullShading( Program );
+		}
 		auto Out = [&]( const char* Pin ) -> FString
 		{
 			const FMaterialOutputValue* Output = Program.FindOutput( Pin );
@@ -337,6 +370,10 @@ FString NMaterialHlsl::Generate( const FMaterialProgram& Program, const FString&
 	Source += FString::Printf( "cbuffer cbMaterialParams : register( b%d )\n{\n\tfloat4 g_Params[%d];\n};\n", bSurface ? 6 : 4, Program.Params.Num() > 0 ? Program.Params.Num() : 1 );
 	Source += bSurface ? SurfaceDeclarations : FrameDeclarations;
 	Source += Helpers;
+	if ( bSurface && Program.Shading == EMaterialShading::Substrate && Program.bFullSubstrate && !Program.bCustomHlsl )
+	{
+		Source += NMaterialSubstrate::GetHlslFunctions();
+	}
 	if ( Program.Domain == EMaterialDomain::PostProcess )
 	{
 		Source += DepthHelper;

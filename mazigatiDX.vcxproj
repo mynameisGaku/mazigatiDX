@@ -275,6 +275,7 @@
     <ClCompile Include="Library\Framework\Material\MaterialInstance.cpp" />
     <ClCompile Include="Library\Framework\Material\MaterialParameterCollection.cpp" />
     <ClCompile Include="Library\Framework\Material\MaterialPreviewMesh.cpp" />
+    <ClCompile Include="Library\Framework\Material\MaterialSubstrate.cpp" />
     <ClCompile Include="Library\Framework\Material\MaterialSubsystem.cpp" />
     <ClCompile Include="Library\Framework\Material\MaterialTypes.cpp" />
     <ClCompile Include="Library\Framework\Material\PostProcessStack.cpp" />
@@ -943,6 +944,7 @@
     <ClInclude Include="Library\Framework\Material\MaterialParameterCollection.h" />
     <ClInclude Include="Library\Framework\Material\MaterialPreviewMesh.h" />
     <ClInclude Include="Library\Framework\Material\MaterialProgram.h" />
+    <ClInclude Include="Library\Framework\Material\MaterialSubstrate.h" />
     <ClInclude Include="Library\Framework\Material\MaterialSubsystem.h" />
     <ClInclude Include="Library\Framework\Material\MaterialTypes.h" />
     <ClInclude Include="Library\Framework\Material\PostProcessStack.h" />

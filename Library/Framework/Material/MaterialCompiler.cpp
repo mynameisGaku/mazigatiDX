@@ -2,13 +2,19 @@
 #include "MaterialCompiler.h"
 
 #include "Library/Core/Types/Numeric.h"
+#include "Library/Framework/Material/MaterialSubstrate.h"
+
+const char* NMaterialSlabField::GetName( int32 Field )
+{
+	// SubstrateSlab のピンの並びと同じ
+	static const char* const Names[NMaterialSlabField::Num] = { "BaseColor", "F0", "Roughness", "Metallic", "Emissive", "Opacity", "ClearCoat", "ClearCoatRoughness", "Subsurface", "Anisotropy", "ThinFilm" };
+	return Field >= 0 && Field < NMaterialSlabField::Num ? Names[Field] : "";
+}
 
 namespace
 {
-	constexpr int32 NumSlabFields = 11;
-
-	// Slab（層）のフィールドの名前と型。SubstrateSlab のピンの並びと同じ
-	const char* SlabFieldNames[NumSlabFields] = { "BaseColor", "F0", "Roughness", "Metallic", "Emissive", "Opacity", "ClearCoat", "ClearCoatRoughness", "Subsurface", "Anisotropy", "ThinFilm" };
+	constexpr int32 NumSlabFields = NMaterialSlabField::Num;
+	constexpr int32 MaxSlabLeaves = NMaterialSubstrate::MaxSlabs;
 
 	EMaterialValueType SlabFieldType( int32 Field )
 	{
@@ -21,7 +27,11 @@ namespace
 		int32 Value = -1;                      // 命令の番号（Slab のときは -1）
 		EMaterialValueType Type = EMaterialValueType::Float;
 		bool bSlab = false;
-		int32 Fields[NumSlabFields];
+		int32 Fields[NumSlabFields];           // 値を混ぜた、1 つの層（簡略版と、出力の 11 の値）
+		// 陰影を別々に計算する層（フルの評価）。SubstrateMix は、値を混ぜずに、層を並べて、重みを掛ける
+		int32 NumLeaves = 0;
+		int32 LeafFields[MaxSlabLeaves][NumSlabFields];
+		int32 LeafWeights[MaxSlabLeaves];
 		bool bDone = false;
 		bool bVisiting = false;
 
@@ -30,6 +40,25 @@ namespace
 			for ( int32 Index = 0; Index < NumSlabFields; ++Index )
 			{
 				Fields[Index] = -1;
+			}
+			for ( int32 Leaf = 0; Leaf < MaxSlabLeaves; ++Leaf )
+			{
+				LeafWeights[Leaf] = -1;
+				for ( int32 Index = 0; Index < NumSlabFields; ++Index )
+				{
+					LeafFields[Leaf][Index] = -1;
+				}
+			}
+		}
+
+		// Fields を、重み Weight の、ただ 1 つの層にする
+		void SetSingleLeaf( int32 Weight )
+		{
+			NumLeaves = 1;
+			LeafWeights[0] = Weight;
+			for ( int32 Index = 0; Index < NumSlabFields; ++Index )
+			{
+				LeafFields[0][Index] = Fields[Index];
 			}
 		}
 	};
@@ -44,6 +73,7 @@ namespace
 		{
 			Program.Domain = InDefinition.Domain;
 			Program.Shading = InDefinition.Shading;
+			Program.bFullSubstrate = InCapabilities.bFullSubstrate && InDefinition.Domain == EMaterialDomain::Surface && InDefinition.Shading == EMaterialShading::Substrate;
 		}
 
 		FMaterialProgram Run()
@@ -860,6 +890,7 @@ namespace
 						Report( EMaterialSeverity::Info, FString::Printf( "this backend uses a simplified Substrate: '%s' is ignored", NMaterialNodes::GetInfo( Node.Kind ).Pins[Field].Name ), Id );
 					}
 				}
+				Result.SetSingleLeaf( EmitScalar( 1.0f, Id ) );
 				return Result;
 			}
 			case K::SubstrateMix:
@@ -873,6 +904,32 @@ namespace
 				for ( int32 Field = 0; Field < NumSlabFields; ++Field )
 				{
 					Result.Fields[Field] = Emit( EMaterialOp::Ternary, SlabFieldType( Field ), Id, A.Fields[Field], B.Fields[Field], SlabFieldType( Field ) == EMaterialValueType::Float3 ? Splat( Mix, 3, Id ) : Mix, static_cast<uint8>( EMaterialTernary::Lerp ) );
+				}
+				if ( A.NumLeaves + B.NumLeaves > MaxSlabLeaves || A.NumLeaves <= 0 || B.NumLeaves <= 0 )
+				{
+					// 層が多すぎる: A の下・B の下を、それぞれ、値を混ぜた 1 つの層にまとめてから、並べる
+					A.SetSingleLeaf( EmitScalar( 1.0f, Id ) );
+					B.SetSingleLeaf( EmitScalar( 1.0f, Id ) );
+					if ( Capabilities.bFullSubstrate )
+					{
+						Report( EMaterialSeverity::Info, FString::Printf( "more than %d slabs are mixed: the slabs under each input of this node are blended by their values and shaded as one", MaxSlabLeaves ), Id );
+					}
+				}
+				// フルの評価: 値は混ぜず、両方の層を並べて、重みを掛ける（A は 1 - Mix、B は Mix）
+				const int32 WeightB = EmitUnary( EMaterialUnary::Saturate, Mix, Id );
+				const int32 WeightA = EmitUnary( EMaterialUnary::OneMinus, WeightB, Id );
+				for ( int32 Side = 0; Side < 2; ++Side )
+				{
+					const FResult& Source = Side == 0 ? A : B;
+					for ( int32 Leaf = 0; Leaf < Source.NumLeaves; ++Leaf )
+					{
+						const int32 Target = Result.NumLeaves++;
+						Result.LeafWeights[Target] = EmitBinary( EMaterialBinary::Multiply, Source.LeafWeights[Leaf], Side == 0 ? WeightA : WeightB, Id );
+						for ( int32 Field = 0; Field < NumSlabFields; ++Field )
+						{
+							Result.LeafFields[Target][Field] = Source.LeafFields[Leaf][Field];
+						}
+					}
 				}
 				return Result;
 			}
@@ -894,6 +951,7 @@ namespace
 			{
 				Fallbacks.Fields[Field] = Fallback( Node.Id, SlabFieldType( Field ) );
 			}
+			Fallbacks.SetSingleLeaf( EmitScalar( 1.0f, Node.Id ) );
 			if ( Source < 0 )
 			{
 				Report( EMaterialSeverity::Error, FString::Printf( "the pin '%s' needs a Substrate slab", NMaterialNodes::GetInfo( Node.Kind ).Pins[Pin].Name ), Node.Id );
@@ -975,14 +1033,29 @@ namespace
 					const int32 Scalar = EmitScalar( Info.Pins[Field].Default, -1 );
 					Slab.Fields[Field] = Components == 1 ? Scalar : Splat( Scalar, Components, -1 );
 				}
+				Slab.SetSingleLeaf( EmitScalar( 1.0f, -1 ) );
 			}
 			for ( int32 Field = 0; Field < NumSlabFields; ++Field )
 			{
 				FMaterialOutputValue Output;
-				Output.Pin = SlabFieldNames[Field];
+				Output.Pin = NMaterialSlabField::GetName( Field );
 				Output.Type = SlabFieldType( Field );
 				Output.Value = Slab.Fields[Field];
 				Program.Outputs.Add( Output );
+			}
+			// フルの評価では、層ごとに、陰影を計算する
+			if ( Program.bFullSubstrate )
+			{
+				for ( int32 Leaf = 0; Leaf < Slab.NumLeaves; ++Leaf )
+				{
+					FMaterialSubstrateSlab Entry;
+					Entry.Weight = Slab.LeafWeights[Leaf];
+					for ( int32 Field = 0; Field < NumSlabFields; ++Field )
+					{
+						Entry.Fields[Field] = Slab.LeafFields[Leaf][Field];
+					}
+					Program.SubstrateSlabs.Add( Entry );
+				}
 			}
 		}
 

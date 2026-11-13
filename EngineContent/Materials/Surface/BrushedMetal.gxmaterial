@@ -1,0 +1,110 @@
+{
+    "Format":  "gxmaterial",
+    "Version":  1,
+    "Name":  "BrushedMetal",
+    "Domain":  "Surface",
+    "Shading":  "Substrate",
+    "Nodes":  [
+                  {
+                      "Id":  1,
+                      "Kind":  "VectorParameter",
+                      "Name":  "Metal",
+                      "Value":  [
+                                    0.8,
+                                    0.8,
+                                    0.83,
+                                    1
+                                ],
+                      "Components":  4,
+                      "Color":  true,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  2,
+                      "Kind":  "Mask",
+                      "Name":  "xyz",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     1
+                                 ]
+                  },
+                  {
+                      "Id":  3,
+                      "Kind":  "ScalarParameter",
+                      "Name":  "Roughness",
+                      "Value":  [
+                                    0.35
+                                ],
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  4,
+                      "Kind":  "ScalarParameter",
+                      "Name":  "Metallic",
+                      "Value":  [
+                                    1
+                                ],
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  5,
+                      "Kind":  "ScalarParameter",
+                      "Name":  "Anisotropy",
+                      "Value":  [
+                                    0.8
+                                ],
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  6,
+                      "Kind":  "SubstrateSlab",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     2,
+                                     -1,
+                                     3,
+                                     4,
+                                     -1,
+                                     -1,
+                                     -1,
+                                     -1,
+                                     -1,
+                                     5,
+                                     -1
+                                 ]
+                  }
+              ],
+    "Outputs":  {
+                    "Surface":  6
+                }
+}

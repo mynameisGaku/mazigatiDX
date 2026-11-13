@@ -625,6 +625,9 @@
     <ClCompile Include="Library\Framework\Material\MaterialPreviewMesh.cpp">
       <Filter>Library\Framework\Material</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Material\MaterialSubstrate.cpp">
+      <Filter>Library\Framework\Material</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Material\MaterialSubsystem.cpp">
       <Filter>Library\Framework\Material</Filter>
     </ClCompile>
@@ -2623,6 +2626,9 @@
       <Filter>Library\Framework\Material</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Material\MaterialProgram.h">
+      <Filter>Library\Framework\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Material\MaterialSubstrate.h">
       <Filter>Library\Framework\Material</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Material\MaterialSubsystem.h">

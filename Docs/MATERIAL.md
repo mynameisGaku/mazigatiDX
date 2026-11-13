@@ -13,7 +13,7 @@
 |`PostProcess`|画面全体|`TexCoord`・`SceneColor`・`SceneDepth`・`Size`（画面の大きさ）・`Time`|`Color`（つながないと、シーンの色のまま）|
 |`Surface`|メッシュの表面|`TexCoord`・`WorldPosition`・`WorldNormal`・`CameraVector`・`VertexColor`・`Time`|陰影で変わる（下）|
 
-Surface の陰影（`EMaterialShading`）: **Unlit**（`Emissive`・`Opacity`）/ **DefaultLit**（`BaseColor`・`Emissive`・`Opacity`・`Roughness`・`Metallic`・`Specular`。標準の光: 拡散 + 鏡面）/ **Substrate**（`Surface` 1 つ。`SubstrateSlab` ノードの層）。
+Surface の陰影（`EMaterialShading`）: **Unlit**（`Emissive`・`Opacity`）/ **DefaultLit**（`BaseColor`・`Emissive`・`Opacity`・`Roughness`・`Metallic`・`Specular`。標準の光: 拡散 + 鏡面）/ **Substrate**（`Surface` 1 つ。`SubstrateSlab` ノードの層。下の「Substrate 風の万能モデル」）。
 
 ## グラフ（`FMaterialGraph`）
 
@@ -52,7 +52,39 @@ G.SetOutput( "Color", Lit );
 
 `NMaterialCompiler::Compile` が、型の検査・ドメインの検査・輪の検出・出力の検査・パラメーターと画像の置き場の割り当てをして、中間表現（`FMaterialProgram`）を作ります。問題は、止まらずにすべて `Diagnostics`（重さ: Info・Warning・Error。問題のあるノードの番号つき。エディタが、そのノードへジャンプできる）に入ります。Error が 1 つでもあれば、`bValid` は false です。
 
-バックエンドの能力は `FMaterialCapabilities`（ピクセルシェーダーの有無・深度を読めるか・Substrate をフルに評価できるか・画像とパラメーターの数の上限）で宣言します。足りない機能は、簡略版へ落とし、Info の診断で知らせます（例: 既定の DxLib 相当では、Substrate は拡散・鏡面・発光・クリアコートの近似で、`Subsurface`・`Anisotropy`・`ThinFilm` は無視）。
+バックエンドの能力は `FMaterialCapabilities`（ピクセルシェーダーの有無・深度を読めるか・Substrate をフルに評価できるか・画像とパラメーターの数の上限）で宣言します。足りない機能は、簡略版へ落とし、Info の診断で知らせます（例: `bFullSubstrate` が false のバックエンドでは、Substrate は拡散・鏡面・発光・クリアコートの近似で、`Subsurface`・`Anisotropy`・`ThinFilm` は無視）。既定（DxLib 相当）は、Substrate をフルに評価します。
+
+## Substrate 風の万能モデル
+
+陰影を `Substrate` にした Surface のマテリアルは、**層（スラブ）**を出力します。層 1 つ（`SubstrateSlab`）が、表面の性質のすべてを持ち、`SubstrateMix` で、2 つの層を混ぜられます。
+
+|ピン|意味|
+|---|---|
+|`DiffuseColor`|色（非金属では、拡散の色。金属では、鏡面の色）|
+|`F0`|正面から見たときの、鏡面の反射の色（非金属。既定は 4%）|
+|`Roughness`・`Metallic`|粗さ（0 = 鏡、1 = つや消し）・金属か（0〜1）|
+|`Emissive`・`Opacity`|発光（そのまま足される）・不透明度|
+|`ClearCoat`・`ClearCoatRoughness`|上に重ねる、透明な塗膜の強さと、その粗さ|
+|`Subsurface`|光が中へ回り込む色（ろう・肌・葉）。影の境目がやわらぎ、逆光で透ける|
+|`Anisotropy`|光沢の伸び（-1〜1）。正なら、接線（UV の U）の向きに伸び、負なら、V の向きに伸びる（磨いた金属・髪）|
+|`ThinFilm`|薄い膜の干渉の色（0〜1）。見る角度で、色相が変わる（真珠・シャボン玉・油膜）|
+
+- **フルの評価**（既定。`FMaterialCapabilities::bFullSubstrate`）: 鏡面は GGX のマイクロファセット（フレネル・異方性の分布・遮蔽）。拡散は、鏡面が反射した残り。クリアコートは、もう 1 枚の鏡面で、下の層を、反射した分だけ暗くします。鏡面には、上（+Y）が明るく、下が暗い、ぼんやりした映り込みが入ります（金属が、真っ黒にならない）。
+- **層を混ぜる**（`SubstrateMix`）: フルの評価では、値を混ぜずに、**層ごとに陰影を計算してから、重み（`Mix`。0〜1 に収める）で足します**。金属と、さび（非金属）を混ぜても、境目が「半分だけ金属」の、ありえない材質になりません。いちどに計算する層は、4 つまでです（`NMaterialSubstrate::MaxSlabs`）。それより多く混ぜると、その `SubstrateMix` の、それぞれの入力の下を、値を混ぜた 1 つの層にまとめ、Info の診断で知らせます。
+- **簡略版**（`bFullSubstrate` が false のバックエンド）: 拡散・鏡面（Blinn-Phong 風）・発光・クリアコートの近似。`Subsurface`・`Anisotropy`・`ThinFilm` は無視し、つないでいれば、Info の診断で知らせます。`SubstrateMix` は、値を混ぜた 1 つの層になります。
+- **光**: 平行光 1 つ（`FMaterialSceneState::LightDirection`）と、環境の明るさです。影は、落ちません。
+- **計算の置き場**: `Library/Framework/Material/MaterialSubstrate.h`。同じ計算を、C++（`NMaterialSubstrate::ShadeSlab`）と、HLSL の関数（`GetHlslFunctions`。`SubstrateShadeSlab`）の両方で持ちます。HLSL の関数は、定数バッファもレジスタも使わない、ただの関数なので、どのバックエンドでも、同じ文字列を使えます。検査が、本物の画面の画素と、C++ の結果を比べています（片方を変えたら、もう片方も変えます）。
+- **新しいバックエンドを足すとき**: フルに評価できるなら、`CMaterialSubsystem::SetCapabilities` で `bFullSubstrate` を true のままにし、生成された HLSL（`CMaterial::GetHlsl`）を、そのまま使います。できないなら false にすると、簡略版の HLSL が生成されます。
+
+```cpp
+// CPU で、Substrate のマテリアルの色を計算する（検査や、ピクセルシェーダーの無いバックエンド用）
+TArray<FVector4> Values;
+Material->EvaluateCpu( Input, Values );
+TArray<FSubstrateSlab> Slabs;
+NMaterialSubstrate::ReadSlabs( Material->GetProgram(), Values, Slabs );
+FSubstrateGeometry Geometry;   // Normal・Tangent・ToLight・ToCamera
+const FVector3 Color = NMaterialSubstrate::Shade( Slabs, Geometry, Material->GetProgram().bFullSubstrate );
+```
 
 ## 動かす（`CMaterial`）
 
@@ -132,6 +164,10 @@ FUIBrush Glow = FUIBrush::MakeMaterial( GlowMaterial );                 // UI �
 |`Surface/Marble`|ノイズの大理石（DefaultLit。`Light`・`Dark`・`Scale`）|
 |`Surface/RimGlow`|縁が光る（Unlit。`Color`・`Exponent`）|
 |`Surface/CarPaint`|赤い塗装 + クリアコート（Substrate。`Paint`・`Roughness`・`ClearCoat`・`ClearCoatRoughness`）|
+|`Surface/BrushedMetal`|一方向に磨いた金属。光沢が伸びる（Substrate。`Metal`・`Roughness`・`Metallic`・`Anisotropy`）|
+|`Surface/Pearl`|真珠。見る角度で色が変わる（Substrate。`Base`・`Roughness`・`ThinFilm`）|
+|`Surface/Wax`|ろう。光が回り込む（Substrate。`Base`・`Scatter`・`Roughness`）|
+|`Surface/RustedMetal`|さびた金属。金属と、さびの層を、ノイズで混ぜる（Substrate。`Metal`・`Rust`・`MetalRoughness`・`Scale`・`Amount`）|
 
 ## プレビュー用のメッシュ
 
@@ -175,4 +211,4 @@ FUIBrush Glow = FUIBrush::MakeMaterial( GlowMaterial );                 // UI �
 
 ## これから
 
-Substrate のフル評価（フルに評価できるバックエンドの追加）。
+Substrate の、層を縦に重ねる演算（クリアコート以外の、上下の層）、環境マップの映り込み、影。

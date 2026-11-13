@@ -169,3 +169,32 @@ Reset-Graph
 $paint = Mask (ColorParam 'Paint' 0.70 0.06 0.06) 'xyz'
 $slab = Add-Node -Kind 'SubstrateSlab' -Inputs @($paint, -1, (Scalar 'Roughness' 0.55), -1, -1, -1, (Scalar 'ClearCoat' 1.0), (Scalar 'ClearCoatRoughness' 0.12), -1, -1, -1)
 Save-Material 'Surface\CarPaint.gxmaterial' 'CarPaint' 'Surface' 'Substrate' @{ Surface = $slab }
+
+# Substrate 風（フルの評価）: 一方向に磨いた金属。光沢が、接線（UV の U）の向きに、長く伸びる（Anisotropy。負なら、V の向き）
+Reset-Graph
+$metal = Mask (ColorParam 'Metal' 0.80 0.80 0.83) 'xyz'
+$slab = Add-Node -Kind 'SubstrateSlab' -Inputs @($metal, -1, (Scalar 'Roughness' 0.35), (Scalar 'Metallic' 1.0), -1, -1, -1, -1, -1, (Scalar 'Anisotropy' 0.8), -1)
+Save-Material 'Surface\BrushedMetal.gxmaterial' 'BrushedMetal' 'Surface' 'Substrate' @{ Surface = $slab }
+
+# 真珠: 見る角度で色の変わる、薄い膜の色（ThinFilm）
+Reset-Graph
+$base = Mask (ColorParam 'Base' 0.86 0.83 0.80) 'xyz'
+$slab = Add-Node -Kind 'SubstrateSlab' -Inputs @($base, -1, (Scalar 'Roughness' 0.3), -1, -1, -1, -1, -1, -1, -1, (Scalar 'ThinFilm' 0.5))
+Save-Material 'Surface\Pearl.gxmaterial' 'Pearl' 'Surface' 'Substrate' @{ Surface = $slab }
+
+# ろう: 光が中へ回り込んで、影の境目がやわらぎ、逆光で透ける（Subsurface）
+Reset-Graph
+$base = Mask (ColorParam 'Base' 0.80 0.62 0.45) 'xyz'
+$scatter = Mask (ColorParam 'Scatter' 0.90 0.35 0.20) 'xyz'
+$slab = Add-Node -Kind 'SubstrateSlab' -Inputs @($base, -1, (Scalar 'Roughness' 0.6), -1, -1, -1, -1, -1, $scatter, -1, -1)
+Save-Material 'Surface\Wax.gxmaterial' 'Wax' 'Surface' 'Substrate' @{ Surface = $slab }
+
+# さびた金属: 金属の層と、さびの層を、ノイズで混ぜる（SubstrateMix。層ごとに陰影を計算するので、境目が、半分だけ金属の、ありえない材質にならない）
+Reset-Graph
+$metal = Add-Node -Kind 'SubstrateSlab' -Inputs @((Mask (ColorParam 'Metal' 0.76 0.76 0.80) 'xyz'), -1, (Scalar 'MetalRoughness' 0.3), (Num 1.0), -1, -1, -1, -1, -1, -1, -1)
+$rust = Add-Node -Kind 'SubstrateSlab' -Inputs @((Mask (ColorParam 'Rust' 0.45 0.20 0.08) 'xyz'), -1, (Num 0.9), (Num 0.0), -1, -1, -1, -1, -1, -1, -1)
+$noise = Add-Node -Kind 'Noise' -Inputs @(-1, (Scalar 'Scale' 6.0))
+$amount = Scalar 'Amount' 0.5
+$mask = Add-Node -Kind 'SmoothStep' -Inputs @((Op2 'Subtract' (Op1 'OneMinus' $amount) (Num 0.08)), (Op2 'Add' (Op1 'OneMinus' $amount) (Num 0.08)), $noise)
+$mixed = Add-Node -Kind 'SubstrateMix' -Inputs @($metal, $rust, $mask)
+Save-Material 'Surface\RustedMetal.gxmaterial' 'RustedMetal' 'Surface' 'Substrate' @{ Surface = $mixed }

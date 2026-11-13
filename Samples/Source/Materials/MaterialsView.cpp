@@ -28,6 +28,10 @@ namespace
 		{ true, FVector3( -1.0f, 3.0f, -8.0f ), FVector3( 3.0f, 6.0f, 3.0f ), true },
 	};
 
+	// 手前に並べる、Substrate 風の小さな球（左から、磨いた金属・真珠・ろう・さびた金属）
+	const FVector3 SubstratePositions[FMaterialsDemoState::NumSubstrateSpheres] = { FVector3( 2.0f, 1.0f, -6.5f ), FVector3( 4.6f, 1.0f, -6.5f ), FVector3( 7.2f, 1.0f, -6.5f ), FVector3( 9.8f, 1.0f, -6.5f ) };
+	constexpr float32 SubstrateRadius = 1.0f;
+
 	// 文字の行の高さと、説明の位置
 	constexpr int32 LegendMargin = 16;
 	constexpr int32 LegendLineHeight = 22;
@@ -93,6 +97,17 @@ void CMaterialsView::RecordScene( FDrawContext& CommandList ) const
 			Material.EndSurface( CommandList );
 		}
 	}
+	// 手前の小さな球: Substrate 風のマテリアル（ゆっくり回して、光沢の動きを見せる）
+	for ( int32 Index = 0; Index < FMaterialsDemoState::NumSubstrateSpheres; ++Index )
+	{
+		CMaterial& Material = *State->SubstrateSpheres[Index];
+		if ( Material.BeginSurface( CommandList, Scene ) )
+		{
+			const FMatrix4x4 World = FMatrix4x4::Scale( FVector3( SubstrateRadius, SubstrateRadius, SubstrateRadius ) ) * FMatrix4x4::RotateY( State->Time * 0.3f ) * FMatrix4x4::Translate( SubstratePositions[Index] );
+			RecordMesh( CommandList, Material, NShaderMeshes::GetSphere(), World );
+			Material.EndSurface( CommandList );
+		}
+	}
 }
 
 void CMaterialsView::RecordUi( FDrawContext& CommandList ) const
@@ -129,14 +144,15 @@ void CMaterialsView::RecordLegend( FDrawContext& CommandList ) const
 	const char* PassNames[FMaterialsDemoState::NumPostPasses] = { "Grayscale", "Vignette", "Pixelate" };
 	const int32 Left = FMaterialsDemoState::ViewLeft + LegendMargin;
 	const int32 Top = FMaterialsDemoState::ViewTop + LegendMargin;
-	FString Lines[FMaterialsDemoState::NumPostPasses + 2];
+	FString Lines[FMaterialsDemoState::NumPostPasses + 3];
 	for ( int32 Index = 0; Index < FMaterialsDemoState::NumPostPasses && Index < State->PostStack.Num(); ++Index )
 	{
 		Lines[Index] = FString::Printf( "%d  Post process: %-10s %s", Index + 1, PassNames[Index], State->PostStack.GetEntry( Index ).bEnabled ? "on" : "off" );
 	}
 	Lines[FMaterialsDemoState::NumPostPasses] = FString::Printf( "4  Time: %s (%.1f s)", State->bTimeRunning ? "running" : "stopped", State->Time );
 	Lines[FMaterialsDemoState::NumPostPasses + 1] = "Marble, CarPaint, RimGlow, Checker: node-graph materials (EngineContent/Materials)";
-	for ( int32 Index = 0; Index < FMaterialsDemoState::NumPostPasses + 2; ++Index )
+	Lines[FMaterialsDemoState::NumPostPasses + 2] = "Front row (Substrate): BrushedMetal, Pearl, Wax, RustedMetal";
+	for ( int32 Index = 0; Index < FMaterialsDemoState::NumPostPasses + 3; ++Index )
 	{
 		const FColor32 Color = Index >= FMaterialsDemoState::NumPostPasses + 1 ? FColor32( 170, 176, 192 ) : FColor32( 226, 232, 246 );
 		Font->RecordStyled( CommandList, static_cast<float32>( Left ), static_cast<float32>( Top + Index * LegendLineHeight ), *Lines[Index], Color, Shadow );

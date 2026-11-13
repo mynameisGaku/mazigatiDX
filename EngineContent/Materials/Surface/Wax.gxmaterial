@@ -1,0 +1,112 @@
+{
+    "Format":  "gxmaterial",
+    "Version":  1,
+    "Name":  "Wax",
+    "Domain":  "Surface",
+    "Shading":  "Substrate",
+    "Nodes":  [
+                  {
+                      "Id":  1,
+                      "Kind":  "VectorParameter",
+                      "Name":  "Base",
+                      "Value":  [
+                                    0.8,
+                                    0.62,
+                                    0.45,
+                                    1
+                                ],
+                      "Components":  4,
+                      "Color":  true,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  2,
+                      "Kind":  "Mask",
+                      "Name":  "xyz",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     1
+                                 ]
+                  },
+                  {
+                      "Id":  3,
+                      "Kind":  "VectorParameter",
+                      "Name":  "Scatter",
+                      "Value":  [
+                                    0.9,
+                                    0.35,
+                                    0.2,
+                                    1
+                                ],
+                      "Components":  4,
+                      "Color":  true,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  4,
+                      "Kind":  "Mask",
+                      "Name":  "xyz",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     3
+                                 ]
+                  },
+                  {
+                      "Id":  5,
+                      "Kind":  "ScalarParameter",
+                      "Name":  "Roughness",
+                      "Value":  [
+                                    0.6
+                                ],
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  6,
+                      "Kind":  "SubstrateSlab",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     2,
+                                     -1,
+                                     5,
+                                     -1,
+                                     -1,
+                                     -1,
+                                     -1,
+                                     -1,
+                                     4,
+                                     -1,
+                                     -1
+                                 ]
+                  }
+              ],
+    "Outputs":  {
+                    "Surface":  6
+                }
+}
