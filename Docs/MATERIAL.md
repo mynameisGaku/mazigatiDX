@@ -11,9 +11,9 @@
 |`UI`|部品のブラシ（矩形）|`TexCoord`・`Size`・`HoverAmount`・`PressAmount`・`Value01`・`Enabled`・`VertexColor`・`Time`|`Color`（Float3）・`Opacity`（Float）|
 |`Particle`|エフェクトの粒子（ワールドの四角形）・矩形|`TexCoord`・`VertexColor`（粒子の色）・`Time`・`ParticleLife`・`ParticleAge`・`ParticleRandom`・`ParticleSpeed`|`Color`・`Opacity`（粒子の色が、出力に掛かる）|
 |`PostProcess`|画面全体|`TexCoord`・`SceneColor`・`SceneDepth`・`Size`（画面の大きさ）・`Time`|`Color`（つながないと、シーンの色のまま）|
-|`Surface`|メッシュの表面|`TexCoord`・`WorldPosition`・`WorldNormal`・`CameraVector`・`VertexColor`・`Time`|陰影で変わる（下）|
+|`Surface`|メッシュの表面|`TexCoord`・`WorldPosition`・`WorldNormal`・`WorldTangent`・`WorldBitangent`・`CameraVector`・`VertexColor`・`Time`|陰影で変わる（下）|
 
-Surface の陰影（`EMaterialShading`）: **Unlit**（`Emissive`・`Opacity`）/ **DefaultLit**（`BaseColor`・`Emissive`・`Opacity`・`Roughness`・`Metallic`・`Specular`。標準の光: 拡散 + 鏡面）/ **Substrate**（`Surface` 1 つ。`SubstrateSlab` ノードの層。下の「Substrate 風の万能モデル」）。
+Surface の陰影（`EMaterialShading`）: **Unlit**（`Emissive`・`Opacity`）/ **DefaultLit**（`BaseColor`・`Emissive`・`Opacity`・`Roughness`・`Metallic`・`Specular`・`Normal`。標準の光: 拡散 + 鏡面。下の万能モデルの、層 1 つとして計算される）/ **Substrate**（`Surface` 1 つ。`SubstrateSlab` ノードの層。下の「Substrate 風の万能モデル」）。光を計算する 2 つは、場面の光（下の「場面の光」）を受けます。
 
 ## グラフ（`FMaterialGraph`）
 
@@ -22,12 +22,12 @@ Surface の陰影（`EMaterialShading`）: **Unlit**（`Emissive`・`Opacity`）
 |分類|ノード|
 |---|---|
 |値|`Constant`・`ScalarParameter`・`VectorParameter`・`ParameterCollectionScalar`・`ParameterCollectionVector`・`TextureSample`|
-|入力|`TexCoord`・`Time`・`Size`・`HoverAmount`・`PressAmount`・`Value01`・`Enabled`・`VertexColor`・`WorldPosition`・`WorldNormal`・`CameraVector`・`SceneColor`・`SceneDepth`|
+|入力|`TexCoord`・`Time`・`Size`・`HoverAmount`・`PressAmount`・`Value01`・`Enabled`・`VertexColor`・`WorldPosition`・`WorldNormal`・`WorldTangent`・`WorldBitangent`・`CameraVector`・`SceneColor`・`SceneDepth`|
 |算術|`Add`・`Subtract`・`Multiply`・`Divide`・`Min`・`Max`・`Power`・`Mod`・`Step`・`Dot`・`Distance`|
 |3 つ|`Lerp`・`Clamp`・`SmoothStep`|
 |1 つ|`Abs`・`Saturate`・`OneMinus`・`Negate`・`Sin`・`Cos`・`Frac`・`Floor`・`Ceil`・`Sqrt`・`Length`・`Normalize`|
-|便利|`Append`・`Mask`（`"xyz"`・`"rgb"`・`"a"`）・`Panner`・`Tiling`・`Noise`・`Checker`・`Fresnel`|
-|Substrate|`SubstrateSlab`（`DiffuseColor`・`F0`・`Roughness`・`Metallic`・`Emissive`・`Opacity`・`ClearCoat`・`ClearCoatRoughness`・`Subsurface`・`Anisotropy`・`ThinFilm`）・`SubstrateMix`（2 つの層を混ぜる）|
+|便利|`Append`・`Mask`（`"xyz"`・`"rgb"`・`"a"`）・`Panner`・`Tiling`・`Noise`・`Checker`・`Fresnel`・`NormalMap`（法線マップの色を、ワールドの法線にする）|
+|Substrate|`SubstrateSlab`（`DiffuseColor`・`F0`・`Roughness`・`Metallic`・`Emissive`・`Opacity`・`ClearCoat`・`ClearCoatRoughness`・`Subsurface`・`Anisotropy`・`ThinFilm`・`Normal`）・`SubstrateMix`（2 つの層を、横に並べて混ぜる）・`SubstrateLayer`（2 つの層を、縦に重ねる）|
 
 型: 算術は、同じ型どうし、または Float と、ほかの型（Float が広がる）。成分の数が違うベクトルどうし（Float2 と Float3 など）は、エラーです。ピンに求められる型より大きいベクトルは、切り詰めます（Float4 から Float3 へは、知らせなし。ほかは、注意）。
 
@@ -56,7 +56,7 @@ G.SetOutput( "Color", Lit );
 
 ## Substrate 風の万能モデル
 
-陰影を `Substrate` にした Surface のマテリアルは、**層（スラブ）**を出力します。層 1 つ（`SubstrateSlab`）が、表面の性質のすべてを持ち、`SubstrateMix` で、2 つの層を混ぜられます。
+陰影を `Substrate` にした Surface のマテリアルは、**層（スラブ）**を出力します。層 1 つ（`SubstrateSlab`）が、表面の性質のすべてを持ち、`SubstrateMix` で、2 つの層を横に並べて混ぜ、`SubstrateLayer` で、縦に重ねられます。
 
 |ピン|意味|
 |---|---|
@@ -68,13 +68,16 @@ G.SetOutput( "Color", Lit );
 |`Subsurface`|光が中へ回り込む色（ろう・肌・葉）。影の境目がやわらぎ、逆光で透ける|
 |`Anisotropy`|光沢の伸び（-1〜1）。正なら、接線（UV の U）の向きに伸び、負なら、V の向きに伸びる（磨いた金属・髪）|
 |`ThinFilm`|薄い膜の干渉の色（0〜1）。見る角度で、色相が変わる（真珠・シャボン玉・油膜）|
+|`Normal`|この層の法線（ワールドの向き。`NormalMap` ノードの出力をつなぐ）。つながなければ、面の法線。層ごとに別の法線にできる（でこぼこの下地に、平らな塗膜、など）|
 
 - **フルの評価**（既定。`FMaterialCapabilities::bFullSubstrate`）: 鏡面は GGX のマイクロファセット（フレネル・異方性の分布・遮蔽）。拡散は、鏡面が反射した残り。クリアコートは、もう 1 枚の鏡面で、下の層を、反射した分だけ暗くします。鏡面には、上（+Y）が明るく、下が暗い、ぼんやりした映り込みが入ります（金属が、真っ黒にならない）。
 - **層を混ぜる**（`SubstrateMix`）: フルの評価では、値を混ぜずに、**層ごとに陰影を計算してから、重み（`Mix`。0〜1 に収める）で足します**。金属と、さび（非金属）を混ぜても、境目が「半分だけ金属」の、ありえない材質になりません。いちどに計算する層は、4 つまでです（`NMaterialSubstrate::MaxSlabs`）。それより多く混ぜると、その `SubstrateMix` の、それぞれの入力の下を、値を混ぜた 1 つの層にまとめ、Info の診断で知らせます。
-- **簡略版**（`bFullSubstrate` が false のバックエンド）: 拡散・鏡面（Blinn-Phong 風）・発光・クリアコートの近似。`Subsurface`・`Anisotropy`・`ThinFilm` は無視し、つないでいれば、Info の診断で知らせます。`SubstrateMix` は、値を混ぜた 1 つの層になります。
-- **光**: 平行光 1 つ（`FMaterialSceneState::LightDirection`）と、環境の明るさです。影は、落ちません。
+- **層を重ねる**（`SubstrateLayer`。`Top`・`Bottom`・`Transmittance`・`Coverage`）: 上の層（`Top`）の下に、下の層（`Bottom`）が透けて見えます。下の層は、**上の層が反射しなかった光**（斜めから見るほど、少ない。金属は、通さない）**に、通り抜ける色（`Transmittance`。白 = 無色透明、色つき = 色ガラス・色つきのニス、黒 = 通さない）を掛けた分**だけ見えます。上の層の中で散らばる光（拡散・サブサーフェス）は、下へ抜ける分だけ減ります（光が増えない）。`Coverage`（0〜1）は、上の層が覆っている割合です（水たまり・はげた塗装・ほこり）。重ねたものを、さらに重ねたり、混ぜたりできます（合わせて 4 層まで。超えたら、その入力の下を 1 つの層にまとめ、Info で知らせます）。
+- **法線マップ**（`NormalMap`。`Color`・`Strength`）: 法線マップの色（0〜1。DirectX の形式: 赤は U の向き、緑は V の向き、青は面の外向き）を、ワールドの法線にします。画像なら `TextureSample` の色を、手続きなら、ノイズなどから作った色をつなぎます。OpenGL の形式（緑が逆）の画像は、緑を `OneMinus` で反転してからつなぎます。接線と従接線は、画素ごとに、位置と UV の変化から作るので、メッシュに接線が無くても使えます（`WorldTangent`・`WorldBitangent` ノードでも読めます）。
+- **簡略版**（`bFullSubstrate` が false のバックエンド）: 拡散・鏡面（Blinn-Phong 風）・発光・クリアコートの近似。`Subsurface`・`Anisotropy`・`ThinFilm` は無視し、つないでいれば、Info の診断で知らせます。`SubstrateMix` と `SubstrateLayer` は、値を混ぜた 1 つの層になります（透き通った上の層は、クリアコートになる）。光は、平行光の向きだけを使います（色・点光源・環境マップ・影は、無し）。
+- **DefaultLit**: フルの評価のバックエンドでは、DefaultLit のマテリアルも、この計算の、層 1 つ（`F0` は `Specular` の 8%）として描きます。光・影・映り込みが、どのマテリアルでも揃います。
 - **計算の置き場**: `Library/Framework/Material/MaterialSubstrate.h`。同じ計算を、C++（`NMaterialSubstrate::ShadeSlab`）と、HLSL の関数（`GetHlslFunctions`。`SubstrateShadeSlab`）の両方で持ちます。HLSL の関数は、定数バッファもレジスタも使わない、ただの関数なので、どのバックエンドでも、同じ文字列を使えます。検査が、本物の画面の画素と、C++ の結果を比べています（片方を変えたら、もう片方も変えます）。
-- **新しいバックエンドを足すとき**: フルに評価できるなら、`CMaterialSubsystem::SetCapabilities` で `bFullSubstrate` を true のままにし、生成された HLSL（`CMaterial::GetHlsl`）を、そのまま使います。できないなら false にすると、簡略版の HLSL が生成されます。
+- **新しいバックエンドを足すとき**: フルに評価できるなら、`CMaterialSubsystem::SetCapabilities` で `bFullSubstrate` を true のままにし、生成された HLSL（`CMaterial::GetHlsl`。環境マップ・影を読む版は `GetHlsl( Features )`）を、そのまま使います。できないなら false にすると、簡略版の HLSL が生成されます。場面の定数（`cbScene`）の並びは `MaterialSceneConstants.h`、画像を置く段は `NMaterialHlsl::GetEnvironmentRegister`・`GetShadowRegister` です。
 
 ```cpp
 // CPU で、Substrate のマテリアルの色を計算する（検査や、ピクセルシェーダーの無いバックエンド用）
@@ -82,9 +85,51 @@ TArray<FVector4> Values;
 Material->EvaluateCpu( Input, Values );
 TArray<FSubstrateSlab> Slabs;
 NMaterialSubstrate::ReadSlabs( Material->GetProgram(), Values, Slabs );
-FSubstrateGeometry Geometry;   // Normal・Tangent・ToLight・ToCamera
-const FVector3 Color = NMaterialSubstrate::Shade( Slabs, Geometry, Material->GetProgram().bFullSubstrate );
+FSubstrateGeometry Geometry;   // Normal・Tangent・ToLight・ToCamera・Position
+const FSubstrateLighting Lighting = Scene.MakeSubstrateLighting();   // 場面の光（FMaterialSceneState）と同じもの。影の中なら、Lighting.Shadow を 0 に
+const FVector3 Color = NMaterialSubstrate::Shade( Slabs, Geometry, Material->GetProgram().bFullSubstrate, nullptr, Lighting );
 ```
+
+## 場面の光（`FMaterialSceneState`）
+
+光を計算する Surface のマテリアル（DefaultLit・Substrate）は、`BeginSurface` に渡す場面の状態から、光を受けます。
+
+|項目|意味|
+|---|---|
+|`LightDirection`・`LightColor`|平行光（太陽）が進む向きと、色 x 強さ（既定は、白の 0.85）|
+|`PointLights`・`NumPointLights`|点光源（4 つまで。`FSubstratePointLight`: 位置・色 x 強さ・半径）。光は、半径で 0 になるように、なめらかに弱まる|
+|`SkyColor`・`GroundColor`・`AmbientColor`|環境マップが無いときの環境。鏡面には、上（+Y）が空の色、下が地面の色の、ぼんやりした映り込み。粗い面と拡散は、`AmbientColor`|
+|`EnvironmentMap`・`EnvironmentIntensity`|環境マップ（`CMaterialEnvironmentMap`）と、明るさの倍率。あれば、上の 3 つの色の代わりに、これが映り込み、まわりからの光にもなる|
+|`ShadowMap`|平行光の影（`CMaterialShadowMap`）。無ければ、影は落ちない|
+
+```cpp
+// 読み込みのとき（メインスレッド）
+TSharedPtr<CMaterialEnvironmentMap> Environment = CMaterialEnvironmentMap::Load( *Assets, "Engine:/Environments/Sky.png" );
+TSharedPtr<CMaterialShadowMap> Shadow = CMaterialShadowMap::Create( *Assets, "SceneShadow", 2048 );
+FMaterialHlslFeatures Features;
+Features.bEnvironmentMap = true;
+Features.bShadowMap = true;
+Material->PrepareShaders( Features );   // 環境マップ・影を読む版のシェーダーを、先に作っておく
+
+// 毎フレーム（オブジェクトの Draw の中で）: ① 影を落とす形を、影のマップへ描く
+Shadow->SetLight( Scene.LightDirection, Center, Radius );   // 影を落とす範囲（中心と半径）
+if ( Shadow->Begin( Draw ) )
+{
+    Shadow->DrawMesh( Draw, Vertices, NumVertices, Indices, NumIndices, World );
+    Shadow->End( Draw );
+}
+// ② 場面を描く
+Scene.EnvironmentMap = Environment;
+Scene.ShadowMap = Shadow;
+Scene.NumPointLights = 1;
+Scene.PointLights[0].Position = FVector3( 0.0f, 3.0f, 0.0f );
+Material->BeginSurface( Draw, Scene );
+```
+
+- **環境マップ**: 横長の全周の絵（正距円筒図法。幅が高さの 2 倍。上端が真上、絵の中央が +Z の向き）から作ります。作るときに、粗さごとにぼかした絵を用意するので（`FSubstrateEnvironment`。CPU だけで作れる）、粗い面には、ぼけた映り込みが出ます。いちばんぼかした絵は、まわりからの光（拡散）になります。色は 0〜1（8 ビット）で、明るさは `EnvironmentIntensity` で調整します。組み込みの空は `Engine:/Environments/Sky.png` です。
+- **影**: 光から見た深度を、画像（影のマップ）に描いておき、マテリアルが、それと比べます。境目は、まわりの画素をならして、ぼかします。影を落とす範囲（中心から半径の球）の外には、影が落ちません。範囲が広いほど、影は粗くなります。面に縞が出るときは `DepthBias`・`NormalOffsetTexels` を大きくします。DxLib の影（`CShadowMap`）とは別の仕組みで、マテリアルのシェーダーだけで完結します。
+- **スレッド**: 環境マップ・影を読む版のシェーダーは、メインスレッドでしか作れません。`BeginSurface` は、メインスレッドなら自分で作りますが、ほかのスレッドで記録する描画（描画システムが、オブジェクトの `Draw` を並列に記録するとき）では、作ってあるものだけを使います。先に `PrepareShaders( Features )` を呼んでおいてください（作っていなければ、その画像を使わずに描きます）。
+- **制限**: 影は、平行光だけです（点光源の影は、落ちません）。影を落とすのは、形の全体です（マテリアルの不透明度は、見ません）。環境マップは、場面に 1 つです（場所ごとの映り込みや、動く物の映り込みは、ありません）。
 
 ## 動かす（`CMaterial`）
 
@@ -103,7 +148,7 @@ if ( Material->BeginParticles( Draw, FrameState ) )
 }
 // PostProcess: シーンの絵（と深度）を読んで、矩形に描く
 Material->DrawPostProcess( Draw, X, Y, Width, Height, SceneImage, DepthImage, FrameState );
-// Surface: 標準の頂点シェーダーで、メッシュ（FShaderVertex3D）を描く
+// Surface: 標準の頂点シェーダーで、メッシュ（FShaderVertex3D）を描く。SceneState は、カメラと光（上の「場面の光」）
 Material->BeginSurface( Draw, SceneState );
 Material->DrawSurfaceMesh( Draw, Vertices, NumVertices, Indices, NumIndices, World, Tint );
 Material->EndSurface( Draw );
@@ -168,6 +213,8 @@ FUIBrush Glow = FUIBrush::MakeMaterial( GlowMaterial );                 // UI �
 |`Surface/Pearl`|真珠。見る角度で色が変わる（Substrate。`Base`・`Roughness`・`ThinFilm`）|
 |`Surface/Wax`|ろう。光が回り込む（Substrate。`Base`・`Scatter`・`Roughness`）|
 |`Surface/RustedMetal`|さびた金属。金属と、さびの層を、ノイズで混ぜる（Substrate。`Metal`・`Rust`・`MetalRoughness`・`Scale`・`Amount`）|
+|`Surface/CandyPaint`|キャンディ塗装。金属の上に、色のついた透明な層を重ねる（Substrate の `SubstrateLayer`。`Metal`・`MetalRoughness`・`Tint`・`CoatRoughness`・`Coverage`）|
+|`Surface/HammeredMetal`|槌目の金属。ノイズから、でこぼこの法線を作る（Substrate の `NormalMap`。`Metal`・`Roughness`・`Scale`・`Strength`）|
 
 ## プレビュー用のメッシュ
 
@@ -211,4 +258,4 @@ FUIBrush Glow = FUIBrush::MakeMaterial( GlowMaterial );                 // UI �
 
 ## これから
 
-Substrate の、層を縦に重ねる演算（クリアコート以外の、上下の層）、環境マップの映り込み、影。
+点光源の影、場所ごとの環境マップ（反射プローブ）、1 を超える明るさを持つ環境マップ（HDR）。

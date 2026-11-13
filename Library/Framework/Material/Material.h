@@ -8,7 +8,11 @@
 #include "Library/Framework/Asset/Gpu/Shader.h"
 #include "Library/Framework/Material/MaterialParameterCollection.h"
 #include "Library/Framework/Material/MaterialCompiler.h"
+#include "Library/Framework/Material/MaterialEnvironmentMap.h"
 #include "Library/Framework/Material/MaterialEval.h"
+#include "Library/Framework/Material/MaterialHlsl.h"
+#include "Library/Framework/Material/MaterialShadowMap.h"
+#include "Library/Framework/Material/MaterialSubstrate.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
 #include "Library/Framework/Render/Types/ShaderVertex.h"
 #include "Library/Math/Color.h"
@@ -37,12 +41,15 @@ class CAssetSubsystem;
 //   Material->BeginSurface( Draw, SceneState );
 //   Material->DrawSurfaceMesh( Draw, Vertices, NumVertices, Indices, NumIndices, World, Tint );
 //   Material->EndSurface( Draw );
+//   // Surface の光（FMaterialSceneState）: 平行光（向き・色）、点光源（4 つまで）、環境（空と地面の色、または環境マップ CMaterialEnvironmentMap）、
+//   // 影（CMaterialShadowMap）。光を計算するマテリアル（DefaultLit・Substrate）が受ける
 //
 //   - インスタンス: CMaterial::CreateInstance( 親 ）は、親のコンパイル結果を共有して、パラメーターだけを上書きする（コンパイルし直さない）。上書きしていない値は、親の値に従う。
 //   - コレクション（MPC）: BindParameterCollection で結ぶ（または、SetParameterCollectionResolver で、名前から探す関数を渡す。CMaterialSubsystem は、これを自動で行う）。
 //   - シェーダーは、最初に描くとき（または PrepareShaders）に、実行のときにコンパイルする（メインスレッドだけ）。コンパイルが失敗したら、描かず false を返し、
 //     GetDiagnostics() に、理由が足される。ピクセルシェーダーを実行できないバックエンド（FMaterialCapabilities）では、描かない。
 //   - Reload( 新しい定義 ): 同じ名前・同じ型のパラメーターの値を引き継いで、作り直す（ホットリロード）。このマテリアルを使っているブラシなどは、そのまま使える。
+//     シェーダーを作ってあったなら、メインスレッドで呼ばれたときに、同じ版（場面の画像を読む版も）を作り直す。
 //   - 描いたあとの描画の状態（フィルター・テクスチャの端の扱い・使うシェーダー）は、シェーダーを止める以外は、元に戻さない（PostProcess は、フィルターを Bilinear、端を Clamp にする）。
 //=============================================================================
 
@@ -68,15 +75,34 @@ struct FMaterialParticleState
 	float32 Speed = 0.0f;    // 速さ（ワールドの長さ / 秒）
 };
 
-// Surface の場面の状態。HLSL の cbScene
+// Surface の場面の状態（カメラと光）。HLSL の cbScene
 struct FMaterialSceneState
 {
 	FMatrix4x4 ViewProjection = FMatrix4x4::Identity;
-	FVector3 LightDirection = FVector3( -0.4969f, -0.7951f, -0.3478f );   // 光が進む向き（長さ 1）
+	FVector3 LightDirection = FVector3( -0.4969f, -0.7951f, -0.3478f );   // 平行光が進む向き
 	FVector3 CameraPosition = FVector3( 0.0f, 0.0f, 0.0f );
 	float32 Time = 0.0f;
 	float32 NearPlane = 0.1f;
 	float32 FarPlane = 1000.0f;
+
+	// ---- ここから下は、光を計算するマテリアル（DefaultLit・Substrate）の、フルの評価だけが使う（簡略版のバックエンドは、平行光の向きだけ）----
+	FVector3 LightColor = FVector3( 0.85f, 0.85f, 0.85f );    // 平行光の色 x 強さ
+	// 環境マップが無いときの環境: 鏡面には、上（+Y）が空の色、下が地面の色の、ぼんやりした映り込み。粗い面と拡散は、環境の明るさ
+	FVector3 SkyColor = FVector3( 0.40f, 0.40f, 0.40f );
+	FVector3 GroundColor = FVector3( 0.05f, 0.05f, 0.05f );
+	FVector3 AmbientColor = FVector3( 0.15f, 0.15f, 0.15f );
+	// 点光源（NumPointLights 個。FSubstrateLighting::MaxPointLights まで）
+	int32 NumPointLights = 0;
+	FSubstratePointLight PointLights[FSubstrateLighting::MaxPointLights];
+	// 環境マップ（null なら、上の 3 つの色）と、その明るさの倍率
+	TSharedPtr<CMaterialEnvironmentMap> EnvironmentMap;
+	float32 EnvironmentIntensity = 1.0f;
+	// 平行光の影（null なら、影は落ちない）。先に、影を落とす形を描いておく（CMaterialShadowMap）
+	TSharedPtr<CMaterialShadowMap> ShadowMap;
+
+	// CPU で陰影を計算するための、同じ光（NMaterialSubstrate::ShadeSlab へ渡す。Shadow は 1 = 影の外。平行光の向きは、FSubstrateGeometry::ToLight に、-LightDirection を入れる）。
+	// 環境マップは、この FMaterialSceneState が持つものを指すので、使い終わるまで、手放さないこと
+	FSubstrateLighting MakeSubstrateLighting() const;
 };
 
 // コンパイルの結果（マテリアルとインスタンスで共有する）
@@ -91,6 +117,9 @@ struct FMaterialCompiled
 	TSharedPtr<CShader> Vertex;                      // Surface だけ
 	bool bShadersTried = false;
 	bool bShadersOk = false;
+	// 場面の画像（環境マップ・影のマップ）を読む版のピクセルシェーダー（番号は、環境マップ = 1、影 = 2 の和。0 は Pixel。初めて使うときに作る）
+	TSharedPtr<CShader> LitPixels[4];
+	bool bLitPixelsTried[4] = { false, false, false, false };
 };
 
 class CMaterial
@@ -111,8 +140,10 @@ public:
 	const FMaterialDefinition& GetDefinition() const { return GetCompiled().Definition; }
 	const FMaterialProgram& GetProgram() const { return GetCompiled().Program; }
 	EMaterialDomain GetDomain() const { return GetCompiled().Program.Domain; }
-	// 生成した HLSL（エディタ・確認用。HLSL の直指定は、宣言のあとに本文が付いたもの）
+	// 生成した HLSL（エディタ・確認用。HLSL の直指定は、宣言のあとに本文が付いたもの）。場面の画像（環境マップ・影）を読まない版
 	const FString& GetHlsl() const { return GetCompiled().Hlsl; }
+	// 場面の画像を読む版の HLSL（ほかのバックエンドが、自分でシェーダーを作るとき用）
+	FString GetHlsl( const FMaterialHlslFeatures& Features ) const;
 	// コンパイル（と、シェーダーの作成）の診断
 	TArray<FMaterialDiagnostic> GetDiagnostics() const;
 	// エラーなくコンパイルできたか
@@ -146,6 +177,9 @@ public:
 	// ---- GPU ----
 	// シェーダーを作る（描くとき、自動でも呼ばれる）。メインスレッドだけ。作れなければ false（理由は GetDiagnostics）
 	bool PrepareShaders();
+	// 場面の画像（環境マップ・影のマップ）を読む版のシェーダーも、作っておく。BeginSurface は、メインスレッドなら、初めて使うときに自分で作るが、
+	// ほかのスレッドで記録する描画（描画システムが、オブジェクトの Draw を並列に記録するとき）では作れないので、先に、これを呼んでおく（作っていなければ、その画像を使わずに描く）
+	bool PrepareShaders( const FMaterialHlslFeatures& Features );
 	bool IsReady() const { return GetCompiled().bShadersOk; }
 
 	// UI・Particle: 矩形に描く。ドメインが違う・シェーダーが作れないなら、何も記録せず false
@@ -193,6 +227,8 @@ private:
 	// g_Params の中身（パラメーターごとに 4 つ組 1 つ。コレクションの値は、いま読む）
 	void BuildParamBlock( TArray<FVector4>& OutBlock ) const;
 	void BindTextures( FDrawContext& Draw, const TSharedPtr<IImage>& Scene, const TSharedPtr<IImage>& Depth ) const;
+	// 場面の画像を読む版のピクセルシェーダー（初めてなら作る。作れなければ null）
+	TSharedPtr<CShader> FindLitPixel( const FMaterialHlslFeatures& Features );
 	void UnbindTextures( FDrawContext& Draw ) const;
 	bool Fail( const FString& Message );
 	FValue* FindValue( TArray<FValue>& Values, const FString& Name );

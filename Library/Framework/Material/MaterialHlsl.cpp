@@ -93,6 +93,10 @@ namespace
 			return "i.Particle.z";
 		case EMaterialInput::ParticleSpeed:
 			return "i.Particle.w";
+		case EMaterialInput::WorldTangent:
+			return "SubstrateTangent( normalize( i.Normal ), i.World, i.Uv )";
+		case EMaterialInput::WorldBitangent:
+			return "SubstrateBitangent( normalize( i.Normal ), i.World, i.Uv )";
 		default:
 			( void ) Domain;
 			return "normalize( g_CameraPosition.xyz - i.World )";
@@ -221,6 +225,15 @@ cbuffer cbScene : register( b4 )
 	float4 g_LightDirection;
 	float4 g_CameraPosition;
 	float4 g_Time;
+	float4 g_LightColor;
+	float4 g_SkyColor;
+	float4 g_GroundColor;
+	float4 g_AmbientColor;
+	float4 g_Environment;
+	float4 g_PointLightPositions[4];
+	float4 g_PointLightColors[4];
+	row_major float4x4 g_ShadowViewProjection;
+	float4 g_ShadowOptions;
 };
 
 cbuffer cbObject : register( b5 )
@@ -242,37 +255,113 @@ struct VertexOutput
 };
 )HLSL";
 
-	// Substrate のフルの評価: 層ごとに、SubstrateShadeSlab（MaterialSubstrate.cpp の HLSL）で陰影を計算して、重みで足す
-	FString SubstrateFullShading( const FMaterialProgram& Program )
+	// 場面の光を、Substrate の関数へ渡す形にする関数（cbScene から。影のマップがあれば、影も読む）
+	FString LightingFunctions( const FMaterialHlslFeatures& Features )
 	{
 		FString Text;
-		Text += "\tfloat3 N = normalize( i.Normal );\n";
-		Text += "\tfloat3 L = -normalize( g_LightDirection.xyz );\n";
-		Text += "\tfloat3 V = normalize( g_CameraPosition.xyz - i.World );\n";
-		Text += "\tfloat3 T = SubstrateTangent( N, i.World, i.Uv );\n";
-		Text += "\tfloat3 color = ( float3 )0.0;\n";
-		Text += "\tfloat opacity = 0.0;\n";
-		for ( int32 Index = 0; Index < Program.SubstrateSlabs.Num(); ++Index )
+		if ( Features.bShadowMap )
 		{
-			const FMaterialSubstrateSlab& Slab = Program.SubstrateSlabs[Index];
-			auto Field = [&]( int32 FieldIndex )
+			// 影: 光から見た深度（影のマップ）と比べる。まわりの 4 x 4 個を、なめらかに重み付けして、境目をぼかす。マップの外は、光が届く
+			Text += R"HLSL(
+float MatShadow( float3 world, float3 normal )
+{
+	float4 clip = mul( float4( world + normal * g_ShadowOptions.z, 1.0 ), g_ShadowViewProjection );
+	float3 position = clip.xyz / clip.w;
+	if ( position.z <= 0.0 || position.z >= 1.0 )
+	{
+		return 1.0;
+	}
+	float size = g_ShadowOptions.x;
+	float2 texel = float2( position.x * 0.5 + 0.5, 0.5 - position.y * 0.5 ) * size - 0.5;
+	float2 base = floor( texel );
+	float2 fraction = texel - base;
+	float sum = 0.0;
+	for ( int y = -1; y <= 2; ++y )
+	{
+		for ( int x = -1; x <= 2; ++x )
+		{
+			float2 tap = base + float2( x, y );
+			float lit = 1.0;
+			if ( tap.x >= 0.0 && tap.y >= 0.0 && tap.x < size && tap.y < size )
 			{
-				return Name( Slab.Fields[FieldIndex] );
-			};
-			const FString Weight = Name( Slab.Weight );
-			Text += "\tcolor += " + Weight + " * SubstrateShadeSlab( " + Field( NMaterialSlabField::BaseColor ) + ", " + Field( NMaterialSlabField::F0 ) + ", " + Field( NMaterialSlabField::Roughness ) + ", " + Field( NMaterialSlabField::Metallic )
-					+ ", " + Field( NMaterialSlabField::Emissive ) + ", " + Field( NMaterialSlabField::ClearCoat ) + ", " + Field( NMaterialSlabField::ClearCoatRoughness ) + ", " + Field( NMaterialSlabField::Subsurface ) + ", "
-					+ Field( NMaterialSlabField::Anisotropy ) + ", " + Field( NMaterialSlabField::ThinFilm ) + ", N, T, L, V );\n";
-			Text += "\topacity += " + Weight + " * " + Field( NMaterialSlabField::Opacity ) + ";\n";
+				lit = position.z - g_ShadowOptions.y <= g_ShadowMap.Load( int3( ( int )tap.x, ( int )tap.y, 0 ) ).r ? 1.0 : 0.0;
+			}
+			float weightX = x == -1 ? 1.0 - fraction.x : ( x == 2 ? fraction.x : 1.0 );
+			float weightY = y == -1 ? 1.0 - fraction.y : ( y == 2 ? fraction.y : 1.0 );
+			sum += lit * weightX * weightY;
 		}
-		Text += "\treturn float4( color, opacity );\n";
+	}
+	return sum / 9.0;
+}
+)HLSL";
+		}
+		Text += R"HLSL(
+SubstrateLighting MatLighting( float3 world, float3 normal )
+{
+	SubstrateLighting lighting;
+	lighting.LightColor = g_LightColor.rgb;
+)HLSL";
+		Text += Features.bShadowMap ? "\tlighting.Shadow = MatShadow( world, normal );\n" : "\tlighting.Shadow = 1.0;\n";
+		Text += R"HLSL(	lighting.SkyColor = g_SkyColor.rgb;
+	lighting.GroundColor = g_GroundColor.rgb;
+	lighting.AmbientColor = g_AmbientColor.rgb;
+	lighting.NumPointLights = ( int )g_LightColor.w;
+	for ( int index = 0; index < 4; ++index )
+	{
+		lighting.PointLightPositions[index] = g_PointLightPositions[index];
+		lighting.PointLightColors[index] = g_PointLightColors[index];
+	}
+	lighting.Environment = g_Environment;
+	return lighting;
+}
+)HLSL";
 		return Text;
 	}
 
-	// Surface の陰影の本文（標準の光。Substrate は、フルの評価か、簡略版: 拡散・鏡面・クリアコート・発光）
+	// フルの評価: 層ごとに、SubstrateShadeSlab（MaterialSubstrate.cpp の HLSL）で陰影を計算して、重みで足す（DefaultLit は、層 1 つ）
+	FString SubstrateFullShading( const FMaterialProgram& Program )
+	{
+		FString Text;
+		Text += "\tSubstrateGeometry geometry;\n";
+		Text += "\tgeometry.Normal = normalize( i.Normal );\n";
+		Text += "\tgeometry.Tangent = SubstrateTangent( geometry.Normal, i.World, i.Uv );\n";
+		Text += "\tgeometry.ToLight = -g_LightDirection.xyz;\n";
+		Text += "\tgeometry.ToCamera = g_CameraPosition.xyz - i.World;\n";
+		Text += "\tgeometry.Position = i.World;\n";
+		Text += "\tSubstrateLighting lighting = MatLighting( i.World, geometry.Normal );\n";
+		Text += "\tSubstrateSlab slab;\n";
+		Text += "\tfloat3 color = ( float3 )0.0;\n";
+		for ( int32 Index = 0; Index < Program.SubstrateSlabs.Num(); ++Index )
+		{
+			const FMaterialSubstrateSlab& Slab = Program.SubstrateSlabs[Index];
+			auto Set = [&]( const char* Member, int32 FieldIndex )
+			{
+				Text += FString( "\tslab." ) + Member + " = " + Name( Slab.Fields[FieldIndex] ) + ";\n";
+			};
+			Set( "BaseColor", NMaterialSlabField::BaseColor );
+			Set( "F0", NMaterialSlabField::F0 );
+			Set( "Roughness", NMaterialSlabField::Roughness );
+			Set( "Metallic", NMaterialSlabField::Metallic );
+			Set( "Emissive", NMaterialSlabField::Emissive );
+			Set( "ClearCoat", NMaterialSlabField::ClearCoat );
+			Set( "ClearCoatRoughness", NMaterialSlabField::ClearCoatRoughness );
+			Set( "Subsurface", NMaterialSlabField::Subsurface );
+			Set( "Anisotropy", NMaterialSlabField::Anisotropy );
+			Set( "ThinFilm", NMaterialSlabField::ThinFilm );
+			Set( "Normal", NMaterialSlabField::Normal );
+			Text += "\tslab.Throughput = " + ( Slab.Throughput >= 0 ? Name( Slab.Throughput ) : FString( "( float3 )1.0" ) ) + ";\n";
+			Text += "\tslab.DiffuseScale = " + ( Slab.DiffuseScale >= 0 ? Name( Slab.DiffuseScale ) : FString( "( float3 )1.0" ) ) + ";\n";
+			Text += "\tcolor += " + Name( Slab.Weight ) + " * SubstrateShadeSlab( slab, geometry, lighting );\n";
+		}
+		const FMaterialOutputValue* Opacity = Program.FindOutput( "Opacity" );
+		Text += "\treturn float4( color, " + ( Opacity != nullptr ? Name( Opacity->Value ) : FString( "1.0" ) ) + " );\n";
+		return Text;
+	}
+
+	// Surface の陰影の本文（フルの評価か、簡略版: 平行光 1 つの、拡散・鏡面・クリアコート・発光）
 	FString SurfaceShading( const FMaterialProgram& Program )
 	{
-		if ( Program.Shading == EMaterialShading::Substrate && Program.bFullSubstrate && !Program.SubstrateSlabs.IsEmpty() )
+		if ( NMaterialHlsl::UsesSceneLighting( Program ) )
 		{
 			return SubstrateFullShading( Program );
 		}
@@ -303,7 +392,8 @@ struct VertexOutput
 		{
 			Text += "\tfloat3 f0Color = ( float3 )( 0.08 * " + Out( "Specular" ) + " );\n";
 		}
-		Text += "\tfloat3 N = normalize( i.Normal );\n";
+		Text += "\tfloat3 ownNormal = " + Out( "Normal" ) + ";\n";
+		Text += "\tfloat3 N = normalize( dot( ownNormal, ownNormal ) > 1.0e-12 ? ownNormal : i.Normal );\n";
 		Text += "\tfloat3 L = -normalize( g_LightDirection.xyz );\n";
 		Text += "\tfloat3 V = normalize( g_CameraPosition.xyz - i.World );\n";
 		Text += "\tfloat3 H = normalize( L + V );\n";
@@ -355,7 +445,32 @@ VertexOutput main( VertexInput i )
 )HLSL";
 }
 
-FString NMaterialHlsl::Generate( const FMaterialProgram& Program, const FString& CustomBody )
+FString NMaterialHlsl::GetSurfaceDepthPixelSource()
+{
+	return FString( SurfaceDeclarations ) + R"HLSL(
+float4 main( VertexOutput i ) : SV_Target
+{
+	return float4( i.Position.z, 0.0, 0.0, 1.0 );
+}
+)HLSL";
+}
+
+bool NMaterialHlsl::UsesSceneLighting( const FMaterialProgram& Program )
+{
+	return Program.Domain == EMaterialDomain::Surface && Program.Shading != EMaterialShading::Unlit && Program.bFullSubstrate && !Program.SubstrateSlabs.IsEmpty() && !Program.bCustomHlsl;
+}
+
+int32 NMaterialHlsl::GetEnvironmentRegister( const FMaterialProgram& Program )
+{
+	return Program.Textures.Num();
+}
+
+int32 NMaterialHlsl::GetShadowRegister( const FMaterialProgram& Program, const FMaterialHlslFeatures& Features )
+{
+	return Program.Textures.Num() + ( Features.bEnvironmentMap ? 1 : 0 );
+}
+
+FString NMaterialHlsl::Generate( const FMaterialProgram& Program, const FString& CustomBody, const FMaterialHlslFeatures& Features )
 {
 	FString Source = "// Generated by the material system. Domain: ";
 	Source += NMaterial::ToString( Program.Domain );
@@ -370,9 +485,33 @@ FString NMaterialHlsl::Generate( const FMaterialProgram& Program, const FString&
 	Source += FString::Printf( "cbuffer cbMaterialParams : register( b%d )\n{\n\tfloat4 g_Params[%d];\n};\n", bSurface ? 6 : 4, Program.Params.Num() > 0 ? Program.Params.Num() : 1 );
 	Source += bSurface ? SurfaceDeclarations : FrameDeclarations;
 	Source += Helpers;
-	if ( bSurface && Program.Shading == EMaterialShading::Substrate && Program.bFullSubstrate && !Program.bCustomHlsl )
+	const bool bLit = UsesSceneLighting( Program );
+	// 接線・従接線を読むマテリアルも、Substrate の関数（画素の接線を作る関数）を使う
+	bool bUsesTangent = false;
+	for ( int32 Index = 0; Index < Program.Code.Num(); ++Index )
+	{
+		const FMaterialInstruction& Instruction = Program.Code[Index];
+		bUsesTangent = bUsesTangent || ( Instruction.Op == EMaterialOp::Input && ( Instruction.Sub == static_cast<uint8>( EMaterialInput::WorldTangent ) || Instruction.Sub == static_cast<uint8>( EMaterialInput::WorldBitangent ) ) );
+	}
+	if ( bLit )
+	{
+		// 場面の画像は、マテリアルの画像のすぐあとの段に、環境マップ・影のマップの順で置く
+		if ( Features.bEnvironmentMap )
+		{
+			Source += FString::Printf( "Texture2D g_EnvironmentMap : register( t%d );\n#define SUBSTRATE_ENVIRONMENT_MAP g_EnvironmentMap\n", GetEnvironmentRegister( Program ) );
+		}
+		if ( Features.bShadowMap )
+		{
+			Source += FString::Printf( "Texture2D g_ShadowMap : register( t%d );\n", GetShadowRegister( Program, Features ) );
+		}
+	}
+	if ( bLit || ( bSurface && bUsesTangent && !Program.bCustomHlsl ) )
 	{
 		Source += NMaterialSubstrate::GetHlslFunctions();
+	}
+	if ( bLit )
+	{
+		Source += LightingFunctions( Features );
 	}
 	if ( Program.Domain == EMaterialDomain::PostProcess )
 	{

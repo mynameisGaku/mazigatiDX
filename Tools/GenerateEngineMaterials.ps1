@@ -198,3 +198,22 @@ $amount = Scalar 'Amount' 0.5
 $mask = Add-Node -Kind 'SmoothStep' -Inputs @((Op2 'Subtract' (Op1 'OneMinus' $amount) (Num 0.08)), (Op2 'Add' (Op1 'OneMinus' $amount) (Num 0.08)), $noise)
 $mixed = Add-Node -Kind 'SubstrateMix' -Inputs @($metal, $rust, $mask)
 Save-Material 'Surface\RustedMetal.gxmaterial' 'RustedMetal' 'Surface' 'Substrate' @{ Surface = $mixed }
+
+# キャンディ塗装: 金属の層の上に、色のついた透明な層を重ねる（SubstrateLayer。下の金属の光沢が、上の層の色に染まって見え、いちばん上に、色のない鋭い光沢が乗る）
+Reset-Graph
+$flakes = Add-Node -Kind 'SubstrateSlab' -Inputs @((Mask (ColorParam 'Metal' 0.85 0.85 0.88) 'xyz'), -1, (Scalar 'MetalRoughness' 0.4), (Num 1.0))
+$clear = Add-Node -Kind 'SubstrateSlab' -Inputs @((Vec3 0.0 0.0 0.0), -1, (Scalar 'CoatRoughness' 0.08), (Num 0.0))
+$tint = Mask (ColorParam 'Tint' 0.90 0.06 0.12) 'xyz'
+$layered = Add-Node -Kind 'SubstrateLayer' -Inputs @($clear, $flakes, $tint, (Scalar 'Coverage' 1.0))
+Save-Material 'Surface\CandyPaint.gxmaterial' 'CandyPaint' 'Surface' 'Substrate' @{ Surface = $layered }
+
+# 槌目（つちめ）の金属: ノイズから、でこぼこの法線を作る（NormalMap。画像の法線マップなら、TextureSample の色を、Color へつなぐ）
+Reset-Graph
+$uv = Add-Node -Kind 'TexCoord'
+$scale = Scalar 'Scale' 14.0
+$bumpX = Add-Node -Kind 'Noise' -Inputs @($uv, $scale)
+$bumpY = Add-Node -Kind 'Noise' -Inputs @((Op2 'Add' $uv (Add-Node -Kind 'Constant' -Value @(5.3, 1.7) -Components 2)), $scale)
+$bump = Add-Node -Kind 'Append' -Inputs @($bumpX, $bumpY, (Num 1.0), -1)
+$normal = Add-Node -Kind 'NormalMap' -Inputs @($bump, (Scalar 'Strength' 0.35))
+$slab = Add-Node -Kind 'SubstrateSlab' -Inputs @((Mask (ColorParam 'Metal' 0.86 0.56 0.36) 'xyz'), -1, (Scalar 'Roughness' 0.3), (Num 1.0), -1, -1, -1, -1, -1, -1, -1, $normal)
+Save-Material 'Surface\HammeredMetal.gxmaterial' 'HammeredMetal' 'Surface' 'Substrate' @{ Surface = $slab }

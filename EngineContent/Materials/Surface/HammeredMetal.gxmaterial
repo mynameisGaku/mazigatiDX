@@ -1,0 +1,230 @@
+{
+    "Format":  "gxmaterial",
+    "Version":  1,
+    "Name":  "HammeredMetal",
+    "Domain":  "Surface",
+    "Shading":  "Substrate",
+    "Nodes":  [
+                  {
+                      "Id":  1,
+                      "Kind":  "TexCoord",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  2,
+                      "Kind":  "ScalarParameter",
+                      "Name":  "Scale",
+                      "Value":  [
+                                    14
+                                ],
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  3,
+                      "Kind":  "Noise",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     1,
+                                     2
+                                 ]
+                  },
+                  {
+                      "Id":  4,
+                      "Kind":  "Constant",
+                      "Value":  [
+                                    5.3,
+                                    1.7
+                                ],
+                      "Components":  2,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  5,
+                      "Kind":  "Add",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     1,
+                                     4
+                                 ]
+                  },
+                  {
+                      "Id":  6,
+                      "Kind":  "Noise",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     5,
+                                     2
+                                 ]
+                  },
+                  {
+                      "Id":  7,
+                      "Kind":  "Constant",
+                      "Value":  [
+                                    1
+                                ],
+                      "Components":  1,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  8,
+                      "Kind":  "Append",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     3,
+                                     6,
+                                     7,
+                                     -1
+                                 ]
+                  },
+                  {
+                      "Id":  9,
+                      "Kind":  "ScalarParameter",
+                      "Name":  "Strength",
+                      "Value":  [
+                                    0.35
+                                ],
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  10,
+                      "Kind":  "NormalMap",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     8,
+                                     9
+                                 ]
+                  },
+                  {
+                      "Id":  11,
+                      "Kind":  "VectorParameter",
+                      "Name":  "Metal",
+                      "Value":  [
+                                    0.86,
+                                    0.56,
+                                    0.36,
+                                    1
+                                ],
+                      "Components":  4,
+                      "Color":  true,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  12,
+                      "Kind":  "Mask",
+                      "Name":  "xyz",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     11
+                                 ]
+                  },
+                  {
+                      "Id":  13,
+                      "Kind":  "ScalarParameter",
+                      "Name":  "Roughness",
+                      "Value":  [
+                                    0.3
+                                ],
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  14,
+                      "Kind":  "Constant",
+                      "Value":  [
+                                    1
+                                ],
+                      "Components":  1,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  15,
+                      "Kind":  "SubstrateSlab",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     12,
+                                     -1,
+                                     13,
+                                     14,
+                                     -1,
+                                     -1,
+                                     -1,
+                                     -1,
+                                     -1,
+                                     -1,
+                                     -1,
+                                     10
+                                 ]
+                  }
+              ],
+    "Outputs":  {
+                    "Surface":  15
+                }
+}

@@ -52,7 +52,7 @@ namespace
 		Info.Name = Name;
 		Info.Category = Category;
 		Info.DomainMask = DomainMask;
-		const int32 Count = NMath::Min( Pins.Num(), 11 );
+		const int32 Count = NMath::Min( Pins.Num(), 12 );
 		for ( int32 Index = 0; Index < Count; ++Index )
 		{
 			Info.Pins[Index] = Pins[Index];
@@ -85,6 +85,8 @@ namespace
 		Set( Make( K::WorldPosition, "WorldPosition", "Inputs", DomainSurface ) );
 		Set( Make( K::WorldNormal, "WorldNormal", "Inputs", DomainSurface ) );
 		Set( Make( K::CameraVector, "CameraVector", "Inputs", DomainSurface ) );
+		Set( Make( K::WorldTangent, "WorldTangent", "Inputs", DomainSurface ) );
+		Set( Make( K::WorldBitangent, "WorldBitangent", "Inputs", DomainSurface ) );
 		Set( Make( K::SceneColor, "SceneColor", "Inputs", DomainPost, { UvPin() } ) );
 		Set( Make( K::SceneDepth, "SceneDepth", "Inputs", DomainPost, { UvPin() } ) );
 		Set( Make( K::ParticleLife, "ParticleLife", "Inputs", DomainParticle ) );
@@ -128,13 +130,16 @@ namespace
 		Set( Make( K::Noise, "Noise", "Utility", DomainAll, { UvPin(), Typed( "Scale", EMaterialPinExpect::Float, 8.0f ) } ) );
 		Set( Make( K::Checker, "Checker", "Utility", DomainAll, { UvPin(), Typed( "Count", EMaterialPinExpect::Float, 8.0f ) } ) );
 		Set( Make( K::Fresnel, "Fresnel", "Utility", DomainSurface, { Typed( "Exponent", EMaterialPinExpect::Float, 3.0f ) } ) );
+		Set( Make( K::NormalMap, "NormalMap", "Utility", DomainSurface, { Typed( "Color", EMaterialPinExpect::Float3, 0.5f ), Typed( "Strength", EMaterialPinExpect::Float, 1.0f ) } ) );
 
 		Set( Make( K::SubstrateSlab, "SubstrateSlab", "Substrate", DomainSurface,
 				   { Typed( "DiffuseColor", EMaterialPinExpect::Float3, 0.8f ), Typed( "F0", EMaterialPinExpect::Float3, 0.04f ), Typed( "Roughness", EMaterialPinExpect::Float, 0.5f ),
 					 Typed( "Metallic", EMaterialPinExpect::Float, 0.0f ), Typed( "Emissive", EMaterialPinExpect::Float3, 0.0f ), Typed( "Opacity", EMaterialPinExpect::Float, 1.0f ),
 					 Typed( "ClearCoat", EMaterialPinExpect::Float, 0.0f ), Typed( "ClearCoatRoughness", EMaterialPinExpect::Float, 0.1f ), Typed( "Subsurface", EMaterialPinExpect::Float3, 0.0f ),
-					 Typed( "Anisotropy", EMaterialPinExpect::Float, 0.0f ), Typed( "ThinFilm", EMaterialPinExpect::Float, 0.0f ) } ) );
+					 Typed( "Anisotropy", EMaterialPinExpect::Float, 0.0f ), Typed( "ThinFilm", EMaterialPinExpect::Float, 0.0f ), Typed( "Normal", EMaterialPinExpect::Float3, 0.0f ) } ) );
 		Set( Make( K::SubstrateMix, "SubstrateMix", "Substrate", DomainSurface, { Typed( "A", EMaterialPinExpect::Slab ), Typed( "B", EMaterialPinExpect::Slab ), Typed( "Mix", EMaterialPinExpect::Float, 0.5f ) } ) );
+		Set( Make( K::SubstrateLayer, "SubstrateLayer", "Substrate", DomainSurface,
+				   { Typed( "Top", EMaterialPinExpect::Slab ), Typed( "Bottom", EMaterialPinExpect::Slab ), Typed( "Transmittance", EMaterialPinExpect::Float3, 1.0f ), Typed( "Coverage", EMaterialPinExpect::Float, 1.0f ) } ) );
 		return Table;
 	}
 }
@@ -201,6 +206,7 @@ TArray<FMaterialOutputPin> NMaterialNodes::GetOutputPins( EMaterialDomain Domain
 			Pins.Add( MakePin( "Roughness", EMaterialValueType::Float, 0.5f ) );
 			Pins.Add( MakePin( "Metallic", EMaterialValueType::Float, 0.0f ) );
 			Pins.Add( MakePin( "Specular", EMaterialValueType::Float, 0.5f ) );
+			Pins.Add( MakePin( "Normal", EMaterialValueType::Float3, 0.0f ) );
 		}
 		else
 		{

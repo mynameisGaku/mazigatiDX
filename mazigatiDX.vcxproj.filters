@@ -607,6 +607,9 @@
     <ClCompile Include="Library\Framework\Material\MaterialDefinition.cpp">
       <Filter>Library\Framework\Material</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Material\MaterialEnvironmentMap.cpp">
+      <Filter>Library\Framework\Material</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Material\MaterialEval.cpp">
       <Filter>Library\Framework\Material</Filter>
     </ClCompile>
@@ -623,6 +626,9 @@
       <Filter>Library\Framework\Material</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Material\MaterialPreviewMesh.cpp">
+      <Filter>Library\Framework\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Material\MaterialShadowMap.cpp">
       <Filter>Library\Framework\Material</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Material\MaterialSubstrate.cpp">
@@ -2607,6 +2613,9 @@
     <ClInclude Include="Library\Framework\Material\MaterialDefinition.h">
       <Filter>Library\Framework\Material</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Material\MaterialEnvironmentMap.h">
+      <Filter>Library\Framework\Material</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Material\MaterialEval.h">
       <Filter>Library\Framework\Material</Filter>
     </ClInclude>
@@ -2626,6 +2635,12 @@
       <Filter>Library\Framework\Material</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Material\MaterialProgram.h">
+      <Filter>Library\Framework\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Material\MaterialSceneConstants.h">
+      <Filter>Library\Framework\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Material\MaterialShadowMap.h">
       <Filter>Library\Framework\Material</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Material\MaterialSubstrate.h">

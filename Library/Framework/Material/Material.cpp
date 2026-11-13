@@ -1,9 +1,11 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "Library/Framework/Material/Material.h"
 
+#include "Library/Core/Thread/GameThread.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Material/MaterialHlsl.h"
+#include "Library/Framework/Material/MaterialSceneConstants.h"
 #include "Library/Framework/Render/State/RenderState3D.h"
 
 namespace
@@ -16,27 +18,65 @@ namespace
 		FVector4 State;
 	};
 
-	// HLSL の cbScene（Surface）
-	struct FMaterialSceneConstants
-	{
-		FMatrix4x4 ViewProjection;
-		FVector4 LightDirection;
-		FVector4 CameraPosition;
-		FVector4 Time;
-	};
-
-	// HLSL の cbObject（Surface）
-	struct FMaterialObjectConstants
-	{
-		FMatrix4x4 World;
-		FVector4 Color;
-		FVector4 Options;
-	};
-
 	FVector4 ToVector( const FColor32& Color )
 	{
 		return FVector4( static_cast<float32>( Color.r ) / 255.0f, static_cast<float32>( Color.g ) / 255.0f, static_cast<float32>( Color.b ) / 255.0f, static_cast<float32>( Color.a ) / 255.0f );
 	}
+}
+
+FSubstrateLighting FMaterialSceneState::MakeSubstrateLighting() const
+{
+	FSubstrateLighting Lighting;
+	Lighting.LightColor = LightColor;
+	Lighting.SkyColor = SkyColor;
+	Lighting.GroundColor = GroundColor;
+	Lighting.AmbientColor = AmbientColor;
+	Lighting.NumPointLights = NMath::Clamp( NumPointLights, 0, FSubstrateLighting::MaxPointLights );
+	for ( int32 Index = 0; Index < Lighting.NumPointLights; ++Index )
+	{
+		Lighting.PointLights[Index] = PointLights[Index];
+	}
+	if ( EnvironmentMap && EnvironmentMap->GetEnvironment().IsValid() )
+	{
+		Lighting.Environment = &EnvironmentMap->GetEnvironment();
+		Lighting.EnvironmentIntensity = EnvironmentIntensity;
+	}
+	return Lighting;
+}
+
+FString CMaterial::GetHlsl( const FMaterialHlslFeatures& Features ) const
+{
+	const FMaterialCompiled& Data = GetCompiled();
+	return Data.Program.bValid ? NMaterialHlsl::Generate( Data.Program, Data.Definition.CustomHlsl, Features ) : FString();
+}
+
+TSharedPtr<CShader> CMaterial::FindLitPixel( const FMaterialHlslFeatures& Features )
+{
+	FMaterialCompiled& Data = GetCompiled();
+	const int32 Index = ( Features.bEnvironmentMap ? 1 : 0 ) + ( Features.bShadowMap ? 2 : 0 );
+	if ( Index == 0 )
+	{
+		return Data.Pixel;
+	}
+	if ( !Data.bLitPixelsTried[Index] )
+	{
+		// シェーダーを作れるのは、メインスレッドだけ（ほかのスレッドでは、作ってあるものだけを使う）
+		if ( !IsInGameThread() )
+		{
+			return TSharedPtr<CShader>();
+		}
+		Data.bLitPixelsTried[Index] = true;
+		FString Message;
+		Data.LitPixels[Index] = CShader::Compile( EShaderStage::Pixel, NMaterialHlsl::Generate( Data.Program, Data.Definition.CustomHlsl, Features ), "main", &Message );
+		if ( !Data.LitPixels[Index] )
+		{
+			FMaterialDiagnostic Diagnostic;
+			Diagnostic.Severity = EMaterialSeverity::Error;
+			Diagnostic.Message = FString( "the pixel shader that reads the environment map or the shadow map could not be compiled: " ) + Message;
+			Data.ShaderDiagnostics.Add( Diagnostic );
+		}
+	}
+	return Data.LitPixels[Index];
 }
 
 void CMaterial::Compile( const FMaterialDefinition& Definition, const FMaterialCapabilities& Capabilities )
@@ -89,7 +129,29 @@ bool CMaterial::Reload( const FMaterialDefinition& Definition )
 	const FMaterialProgram OldProgram = Compiled->Program;
 	const TArray<FValue> OldValues = Values;
 	const FMaterialCapabilities Capabilities = Compiled->Capabilities;
+	// 作ってあったシェーダーの版（場面の画像を読む版も）を、覚えておく
+	const bool bHadShaders = Compiled->bShadersOk;
+	bool bHadLitPixels[4];
+	for ( int32 Index = 0; Index < 4; ++Index )
+	{
+		bHadLitPixels[Index] = Compiled->LitPixels[Index].IsValid();
+	}
 	Compile( Definition, Capabilities );
+	// 作り直す前に、シェーダーを作ってあったなら、同じ版を、ここ（メインスレッド）で作り直す。
+	// ほかのスレッドで記録する描画は、シェーダーを作れないので、ここで作らないと、環境マップ・影を読まなくなる
+	if ( bHadShaders && IsInGameThread() && PrepareShaders() )
+	{
+		for ( int32 Index = 1; Index < 4; ++Index )
+		{
+			if ( bHadLitPixels[Index] )
+			{
+				FMaterialHlslFeatures Features;
+				Features.bEnvironmentMap = ( Index & 1 ) != 0;
+				Features.bShadowMap = ( Index & 2 ) != 0;
+				PrepareShaders( Features );
+			}
+		}
+	}
 	// 同じ名前・同じ型の値を、引き継ぐ
 	Values.Empty();
 	const FMaterialProgram& Program = Compiled->Program;
@@ -460,6 +522,19 @@ bool CMaterial::PrepareShaders()
 	return true;
 }
 
+bool CMaterial::PrepareShaders( const FMaterialHlslFeatures& Features )
+{
+	if ( !PrepareShaders() )
+	{
+		return false;
+	}
+	if ( !NMaterialHlsl::UsesSceneLighting( GetProgram() ) )
+	{
+		return true;
+	}
+	return FindLitPixel( Features ).IsValid();
+}
+
 void CMaterial::BindTextures( FDrawContext& Draw, const TSharedPtr<IImage>& Scene, const TSharedPtr<IImage>& Depth ) const
 {
 	const TArray<FMaterialTextureSlot>& Slots = GetProgram().Textures;
@@ -612,18 +687,61 @@ bool CMaterial::BeginSurface( FDrawContext& Draw, const FMaterialSceneState& Sce
 	}
 	TArray<FVector4> Block;
 	BuildParamBlock( Block );
+	FMaterialCompiled& Data = GetCompiled();
 	FMaterialSceneConstants Constants;
 	Constants.ViewProjection = Scene.ViewProjection;
 	Constants.LightDirection = FVector4( Scene.LightDirection, 0.0f );
 	Constants.CameraPosition = FVector4( Scene.CameraPosition, 1.0f );
 	Constants.Time = FVector4( Scene.Time, Scene.NearPlane, Scene.FarPlane, 0.0f );
-	FMaterialCompiled& Data = GetCompiled();
+	const int32 NumPointLights = NMath::Clamp( Scene.NumPointLights, 0, FSubstrateLighting::MaxPointLights );
+	Constants.LightColor = FVector4( Scene.LightColor, static_cast<float32>( NumPointLights ) );
+	Constants.SkyColor = FVector4( Scene.SkyColor, 0.0f );
+	Constants.GroundColor = FVector4( Scene.GroundColor, 0.0f );
+	Constants.AmbientColor = FVector4( Scene.AmbientColor, 0.0f );
+	for ( int32 Index = 0; Index < FSubstrateLighting::MaxPointLights; ++Index )
+	{
+		const bool bUsed = Index < NumPointLights;
+		Constants.PointLightPositions[Index] = bUsed ? FVector4( Scene.PointLights[Index].Position, Scene.PointLights[Index].Radius ) : FVector4( 0.0f, 0.0f, 0.0f, 0.0f );
+		Constants.PointLightColors[Index] = bUsed ? FVector4( Scene.PointLights[Index].Color, 0.0f ) : FVector4( 0.0f, 0.0f, 0.0f, 0.0f );
+	}
+
+	// 場面の画像（環境マップ・影のマップ）: 光を計算するマテリアルだけが読む。読む組み合わせごとの、ピクセルシェーダーを使う
+	FMaterialHlslFeatures Features;
+	if ( NMaterialHlsl::UsesSceneLighting( Data.Program ) )
+	{
+		Features.bEnvironmentMap = Scene.EnvironmentMap && Scene.EnvironmentMap->GetTexture() && Scene.EnvironmentMap->GetEnvironment().IsValid();
+		Features.bShadowMap = Scene.ShadowMap && Scene.ShadowMap->GetTarget();
+	}
+	TSharedPtr<CShader> Pixel = FindLitPixel( Features );
+	if ( !Pixel )
+	{
+		// 作れなければ、場面の画像を読まない版で描く
+		Features = FMaterialHlslFeatures();
+		Pixel = Data.Pixel;
+	}
+	if ( Features.bEnvironmentMap )
+	{
+		Constants.Environment = FVector4( static_cast<float32>( FSubstrateEnvironment::LevelWidth ), static_cast<float32>( FSubstrateEnvironment::LevelHeight ), static_cast<float32>( FSubstrateEnvironment::NumLevels ), Scene.EnvironmentIntensity );
+	}
+	if ( Features.bShadowMap )
+	{
+		Constants.ShadowViewProjection = Scene.ShadowMap->GetViewProjection();
+		Constants.ShadowOptions = FVector4( static_cast<float32>( Scene.ShadowMap->GetSize() ), Scene.ShadowMap->DepthBias, Scene.ShadowMap->GetNormalOffset(), 0.0f );
+	}
 	Draw.ShaderConstants( EShaderStage::Vertex, 4, Constants );
 	Draw.ShaderConstants( EShaderStage::Pixel, 4, Constants );
 	Draw.ShaderConstants( EShaderStage::Pixel, 6, Block.GetData(), Block.Num() * static_cast<int32>( sizeof( FVector4 ) ) );
 	BindTextures( Draw, TSharedPtr<IImage>(), TSharedPtr<IImage>() );
+	if ( Features.bEnvironmentMap )
+	{
+		Draw.ShaderTexture( NMaterialHlsl::GetEnvironmentRegister( Data.Program ), Scene.EnvironmentMap->GetTexture()->GetImageHandle() );
+	}
+	if ( Features.bShadowMap )
+	{
+		Draw.ShaderTexture( NMaterialHlsl::GetShadowRegister( Data.Program, Features ), Scene.ShadowMap->GetTarget()->GetImageHandle() );
+	}
 	Draw.UseVertexShader( Data.Vertex );
-	Draw.UsePixelShader( Data.Pixel );
+	Draw.UsePixelShader( Pixel );
 	LastError.Empty();
 	return true;
 }
@@ -644,4 +762,11 @@ void CMaterial::EndSurface( FDrawContext& Draw )
 	Draw.StopUsingVertexShader();
 	Draw.StopUsingPixelShader();
 	UnbindTextures( Draw );
+	// 場面の画像（環境マップ・影のマップ）を置いたかもしれない段も、外す（マテリアルの画像の、すぐあとの 2 つ）
+	const FMaterialProgram& Program = GetProgram();
+	if ( NMaterialHlsl::UsesSceneLighting( Program ) )
+	{
+		Draw.StopUsingShaderTexture( Program.Textures.Num() );
+		Draw.StopUsingShaderTexture( Program.Textures.Num() + 1 );
+	}
 }

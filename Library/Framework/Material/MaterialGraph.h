@@ -41,6 +41,8 @@ enum class EMaterialNodeKind : uint8
 	WorldPosition,      // Surface（Float3）
 	WorldNormal,        // Surface（Float3）
 	CameraVector,       // Surface: 表面からカメラへの向き（長さ 1）（Float3）
+	WorldTangent,       // Surface: 面に沿った向き（UV の U が増える向き。長さ 1）（Float3）
+	WorldBitangent,     // Surface: 面に沿った向き（UV の V が増える向き。長さ 1）（Float3）
 	SceneColor,         // PostProcess: シーンの色（Float4）。入力: UV（つながなければ、画面の UV）
 	SceneDepth,         // PostProcess: シーンの深度（カメラからの距離に直したもの。Float）。入力: UV
 	ParticleLife,       // Particle: 粒子の寿命の位置（生まれたときが 0、消えるときが 1）（Float）
@@ -88,10 +90,12 @@ enum class EMaterialNodeKind : uint8
 	Noise,              // 値のノイズ（0〜1）。入力: UV, Scale
 	Checker,            // 市松模様（0 か 1）。入力: UV, Count
 	Fresnel,            // 縁ほど 1 に近い（Surface）。入力: Exponent
+	NormalMap,          // 法線マップの色（0〜1）を、ワールドの法線にする（Surface）。入力: Color, Strength。出力は Float3（層の Normal や、出力の Normal へつなぐ）
 
 	// Substrate 風の万能モデル（Surface の陰影が Substrate のとき）
 	SubstrateSlab,      // 1 つの層。入力: DiffuseColor ほか。出力は Slab
-	SubstrateMix,       // 2 つの層を、Mix で混ぜる。入力: A, B（Slab）, Mix
+	SubstrateMix,       // 2 つの層を、Mix で混ぜる（横に並べる）。入力: A, B（Slab）, Mix
+	SubstrateLayer,     // 層を、縦に重ねる（Top が上）。入力: Top, Bottom（Slab）, Transmittance（上の層を通り抜ける光の色）, Coverage（上の層が覆う割合）
 
 	Count
 };
@@ -121,7 +125,7 @@ struct FMaterialNodeInfo
 	const char* Name = "";                     // JSON・エディタの名前
 	const char* Category = "";                 // エディタの一覧の分類
 	int32 NumPins = 0;
-	FMaterialPinInfo Pins[11];
+	FMaterialPinInfo Pins[12];
 	uint32 DomainMask = 0xF;                   // 使えるドメイン（1 << EMaterialDomain）
 };
 

@@ -13,17 +13,24 @@ namespace
 {
 	// サンプル集への登録（一覧に出す名前・説明・順番）
 	const TSampleRegistrar<CMaterialsSample> Registrar( FSampleInfo { "Materials", "Materials: node graphs, post process, UI",
-																	   "Materials made from node graphs (EngineContent/Materials): marble, car paint, rim glow and a checker on 3D shapes, a chain of post-process materials (grayscale, vignette, pixelate) on the scene, and UI materials (a glowing button that reacts to the mouse, a shimmering band). Number keys toggle the post-process passes; drag to orbit, wheel to zoom",
+																	   "Materials made from node graphs (EngineContent/Materials): marble, car paint, rim glow, a checker and six Substrate materials on 3D shapes, lit by a sun with shadows, a point light and a sky environment map; a chain of post-process materials (grayscale, vignette, pixelate) on the scene, and UI materials (a glowing button that reacts to the mouse, a shimmering band). Number keys toggle the post-process passes; drag to orbit, wheel to zoom",
 																	   51 } );
 
 	// 文字の大きさ
 	constexpr int32 LabelFontSize = 16;
 
-	// 組み込みのマテリアルを読む。無い・作れないときは null
+	// 影のマップの大きさ（画素）
+	constexpr int32 ShadowMapSize = 2048;
+
+	// 組み込みのマテリアルを読む。無い・作れないときは null。
+	// 環境マップと影を読む版のシェーダーも、ここ（メインスレッド）で作っておく（描く命令は、ほかのスレッドで記録されることがある）
 	TSharedPtr<CMaterial> Load( CMaterialSubsystem& Materials, const char* Name )
 	{
 		const TSharedPtr<CMaterial> Material = Materials.LoadMaterial( FString::Printf( "Engine:/Materials/%s.gxmaterial", Name ) );
-		if ( Material.IsValid() && Material->IsValid() && Material->PrepareShaders() )
+		FMaterialHlslFeatures Features;
+		Features.bEnvironmentMap = true;
+		Features.bShadowMap = true;
+		if ( Material.IsValid() && Material->IsValid() && Material->PrepareShaders( Features ) )
 		{
 			return Material;
 		}
@@ -53,7 +60,7 @@ void CMaterialsSample::OnEnter()
 	State->Marble = Load( *Materials, "Surface/Marble" );
 	State->CarPaint = Load( *Materials, "Surface/CarPaint" );
 	State->RimGlow = Load( *Materials, "Surface/RimGlow" );
-	const char* SubstrateNames[FMaterialsDemoState::NumSubstrateSpheres] = { "Surface/BrushedMetal", "Surface/Pearl", "Surface/Wax", "Surface/RustedMetal" };
+	const char* SubstrateNames[FMaterialsDemoState::NumSubstrateSpheres] = { "Surface/BrushedMetal", "Surface/Pearl", "Surface/Wax", "Surface/RustedMetal", "Surface/CandyPaint", "Surface/HammeredMetal" };
 	bool bSubstrateLoaded = true;
 	for ( int32 Index = 0; Index < FMaterialsDemoState::NumSubstrateSpheres; ++Index )
 	{
@@ -65,6 +72,9 @@ void CMaterialsSample::OnEnter()
 	const TSharedPtr<CMaterial> Grayscale = Load( *Materials, "PostProcess/Grayscale" );
 	const TSharedPtr<CMaterial> Vignette = Load( *Materials, "PostProcess/Vignette" );
 	const TSharedPtr<CMaterial> Pixelate = Load( *Materials, "PostProcess/Pixelate" );
+	// 場面の光: 空の絵から作る環境マップと、太陽の影。無くても、場面は描ける（空と地面の色の映り込みになり、影は落ちない）
+	State->Environment = CMaterialEnvironmentMap::Load( *Assets, "Engine:/Environments/Sky.png" );
+	State->Shadow = CMaterialShadowMap::Create( *Assets, "materials-shadow", ShadowMapSize );
 	if ( !bSubstrateLoaded || !State->SceneTarget.IsValid() || !State->Checker || !State->Marble || !State->CarPaint || !State->RimGlow || !State->GlowButton || !State->Shimmer || !Grayscale || !Vignette || !Pixelate )
 	{
 		State.Reset();

@@ -269,12 +269,14 @@
     <ClCompile Include="Library\Framework\Material\Material.cpp" />
     <ClCompile Include="Library\Framework\Material\MaterialCompiler.cpp" />
     <ClCompile Include="Library\Framework\Material\MaterialDefinition.cpp" />
+    <ClCompile Include="Library\Framework\Material\MaterialEnvironmentMap.cpp" />
     <ClCompile Include="Library\Framework\Material\MaterialEval.cpp" />
     <ClCompile Include="Library\Framework\Material\MaterialGraph.cpp" />
     <ClCompile Include="Library\Framework\Material\MaterialHlsl.cpp" />
     <ClCompile Include="Library\Framework\Material\MaterialInstance.cpp" />
     <ClCompile Include="Library\Framework\Material\MaterialParameterCollection.cpp" />
     <ClCompile Include="Library\Framework\Material\MaterialPreviewMesh.cpp" />
+    <ClCompile Include="Library\Framework\Material\MaterialShadowMap.cpp" />
     <ClCompile Include="Library\Framework\Material\MaterialSubstrate.cpp" />
     <ClCompile Include="Library\Framework\Material\MaterialSubsystem.cpp" />
     <ClCompile Include="Library\Framework\Material\MaterialTypes.cpp" />
@@ -937,6 +939,7 @@
     <ClInclude Include="Library\Framework\Material\Material.h" />
     <ClInclude Include="Library\Framework\Material\MaterialCompiler.h" />
     <ClInclude Include="Library\Framework\Material\MaterialDefinition.h" />
+    <ClInclude Include="Library\Framework\Material\MaterialEnvironmentMap.h" />
     <ClInclude Include="Library\Framework\Material\MaterialEval.h" />
     <ClInclude Include="Library\Framework\Material\MaterialGraph.h" />
     <ClInclude Include="Library\Framework\Material\MaterialHlsl.h" />
@@ -944,6 +947,8 @@
     <ClInclude Include="Library\Framework\Material\MaterialParameterCollection.h" />
     <ClInclude Include="Library\Framework\Material\MaterialPreviewMesh.h" />
     <ClInclude Include="Library\Framework\Material\MaterialProgram.h" />
+    <ClInclude Include="Library\Framework\Material\MaterialSceneConstants.h" />
+    <ClInclude Include="Library\Framework\Material\MaterialShadowMap.h" />
     <ClInclude Include="Library\Framework\Material\MaterialSubstrate.h" />
     <ClInclude Include="Library\Framework\Material\MaterialSubsystem.h" />
     <ClInclude Include="Library\Framework\Material\MaterialTypes.h" />

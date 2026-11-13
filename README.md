@@ -81,6 +81,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\NewProject.ps1 -Name M
 |---|---|
 |[開発手順](Docs/DEVELOPMENT.md)|構成と依存、各機能の使い方、コードの書き方の決まり、プロジェクトの生成と確認、変更の統合|
 |[UI](Docs/UI.md)|UI（ウィジェット）の構成・使い方・レイアウト・ブラシ・入力・描画先の表示|
+|[マテリアル](Docs/MATERIAL.md)|マテリアル（ノードのグラフ・ドメイン・Substrate 風の万能モデル・場面の光・ポストプロセス・エディタ）|
 |[エフェクトの使い方](Docs/EFFECTS.md)|エフェクトエディタの使い方と、見本のエフェクト|
 |[バージョン方針](Docs/VERSIONING.md)・[変更履歴](CHANGELOG.md)|バージョンの付け方、互換を約束する範囲、対象環境、ブランチとタグ、変更の記録|
 |[Samples/README.md](Samples/README.md)|サンプル集の構成と、サンプルの足し方|

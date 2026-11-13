@@ -1,0 +1,210 @@
+{
+    "Format":  "gxmaterial",
+    "Version":  1,
+    "Name":  "CandyPaint",
+    "Domain":  "Surface",
+    "Shading":  "Substrate",
+    "Nodes":  [
+                  {
+                      "Id":  1,
+                      "Kind":  "VectorParameter",
+                      "Name":  "Metal",
+                      "Value":  [
+                                    0.85,
+                                    0.85,
+                                    0.88,
+                                    1
+                                ],
+                      "Components":  4,
+                      "Color":  true,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  2,
+                      "Kind":  "Mask",
+                      "Name":  "xyz",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     1
+                                 ]
+                  },
+                  {
+                      "Id":  3,
+                      "Kind":  "ScalarParameter",
+                      "Name":  "MetalRoughness",
+                      "Value":  [
+                                    0.4
+                                ],
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  4,
+                      "Kind":  "Constant",
+                      "Value":  [
+                                    1
+                                ],
+                      "Components":  1,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  5,
+                      "Kind":  "SubstrateSlab",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     2,
+                                     -1,
+                                     3,
+                                     4
+                                 ]
+                  },
+                  {
+                      "Id":  6,
+                      "Kind":  "Constant",
+                      "Value":  [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                      "Components":  3,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  7,
+                      "Kind":  "ScalarParameter",
+                      "Name":  "CoatRoughness",
+                      "Value":  [
+                                    0.08
+                                ],
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  8,
+                      "Kind":  "Constant",
+                      "Value":  [
+                                    0
+                                ],
+                      "Components":  1,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  9,
+                      "Kind":  "SubstrateSlab",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     6,
+                                     -1,
+                                     7,
+                                     8
+                                 ]
+                  },
+                  {
+                      "Id":  10,
+                      "Kind":  "VectorParameter",
+                      "Name":  "Tint",
+                      "Value":  [
+                                    0.9,
+                                    0.06,
+                                    0.12,
+                                    1
+                                ],
+                      "Components":  4,
+                      "Color":  true,
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  11,
+                      "Kind":  "Mask",
+                      "Name":  "xyz",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     10
+                                 ]
+                  },
+                  {
+                      "Id":  12,
+                      "Kind":  "ScalarParameter",
+                      "Name":  "Coverage",
+                      "Value":  [
+                                    1
+                                ],
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+
+                                 ]
+                  },
+                  {
+                      "Id":  13,
+                      "Kind":  "SubstrateLayer",
+                      "Position":  [
+                                       0,
+                                       0
+                                   ],
+                      "Inputs":  [
+                                     9,
+                                     5,
+                                     11,
+                                     12
+                                 ]
+                  }
+              ],
+    "Outputs":  {
+                    "Surface":  13
+                }
+}

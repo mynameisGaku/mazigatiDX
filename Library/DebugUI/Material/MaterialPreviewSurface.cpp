@@ -59,6 +59,8 @@ void FMaterialPreviewSurface::Release()
 {
 	Target.Reset();
 	SceneTarget.Reset();
+	Environment.Reset();
+	bEnvironmentTried = false;
 }
 
 int32 FMaterialPreviewSurface::GetHandle() const
@@ -91,6 +93,11 @@ bool FMaterialPreviewSurface::EnsureTargets()
 	}
 	Target = NewTarget;
 	SceneTarget = NewScene;
+	if ( !bEnvironmentTried )
+	{
+		bEnvironmentTried = true;
+		Environment = CMaterialEnvironmentMap::Load( *Assets, "Engine:/Environments/Sky.png" );
+	}
 	return true;
 }
 
@@ -169,6 +176,8 @@ bool FMaterialPreviewSurface::Render( CMaterial& Material, EMaterialPreviewShape
 			Scene.Time = Frame.Time;
 			Scene.NearPlane = Camera.Near;
 			Scene.FarPlane = Camera.Far;
+			Scene.EnvironmentMap = Environment;
+			Scene.EnvironmentIntensity = 0.55f;
 			FDepthState DepthState;
 			DepthState.bTestDepth = true;
 			DepthState.bWriteDepth = true;

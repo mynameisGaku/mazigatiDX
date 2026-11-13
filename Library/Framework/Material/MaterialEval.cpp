@@ -160,6 +160,12 @@ bool NMaterialEval::Evaluate( const FMaterialProgram& Program, const FMaterialEv
 			case EMaterialInput::ParticleSpeed:
 				Result.x = Context.ParticleSpeed;
 				break;
+			case EMaterialInput::WorldTangent:
+				Result = FVector4( Context.WorldTangent.x, Context.WorldTangent.y, Context.WorldTangent.z, 0.0f );
+				break;
+			case EMaterialInput::WorldBitangent:
+				Result = FVector4( Context.WorldBitangent.x, Context.WorldBitangent.y, Context.WorldBitangent.z, 0.0f );
+				break;
 			default:
 				Result = FVector4( Context.CameraVector.x, Context.CameraVector.y, Context.CameraVector.z, 0.0f );
 				break;

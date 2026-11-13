@@ -20,7 +20,7 @@ enum class EMaterialPreviewShape : uint8
 //=============================================================================
 // FMaterialPreviewSurface
 //   マテリアルエディタのプレビュー。ツール用の描画先（CRenderTarget）を持ち、マテリアルを、ドメインに合わせて描く。メインスレッドだけで使う。
-//     Surface      球・立方体・板（NMaterialPreview）を、軌道カメラと、決まった光で
+//     Surface      球・立方体・板（NMaterialPreview）を、軌道カメラと、決まった光で（組み込みの空 Engine:/Environments/Sky.png があれば、それが映り込む）
 //     UI・Particle 描画先いっぱいの矩形（後ろに市松模様。半透明が見える）
 //     PostProcess  決まった場面（色の帯と勾配）を、別の描画先へ描いて、それを読んで描く
 //   描くのは、フレームワークの描画先とコマンドリストだけ。DxLib を直接は呼ばない。
@@ -46,6 +46,9 @@ private:
 
 	TSharedPtr<CRenderTarget> Target;
 	TSharedPtr<CRenderTarget> SceneTarget;
+	// 映り込む空（組み込みの素材。無ければ null のまま、空と地面の色になる）
+	TSharedPtr<CMaterialEnvironmentMap> Environment;
+	bool bEnvironmentTried = false;
 	FMaterialPreviewMesh Sphere;
 	FMaterialPreviewMesh Cube;
 	FMaterialPreviewMesh Plane;

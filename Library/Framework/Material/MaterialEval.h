@@ -29,6 +29,8 @@ struct FMaterialEvalContext
 	FVector3 WorldPosition = FVector3( 0.0f, 0.0f, 0.0f );
 	FVector3 WorldNormal = FVector3( 0.0f, 1.0f, 0.0f );
 	FVector3 CameraVector = FVector3( 0.0f, 0.0f, 1.0f );
+	FVector3 WorldTangent = FVector3( 1.0f, 0.0f, 0.0f );     // Surface: UV の U が増える向き
+	FVector3 WorldBitangent = FVector3( 0.0f, 0.0f, 1.0f );   // Surface: UV の V が増える向き
 	float32 ParticleLife = 0.0f;     // Particle: 寿命の位置（0〜1）
 	float32 ParticleAge = 0.0f;      // Particle: 生まれてからの秒
 	float32 ParticleRandom = 0.0f;   // Particle: 粒子ごとの 0〜1 の数

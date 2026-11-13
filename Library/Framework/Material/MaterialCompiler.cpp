@@ -7,7 +7,7 @@
 const char* NMaterialSlabField::GetName( int32 Field )
 {
 	// SubstrateSlab のピンの並びと同じ
-	static const char* const Names[NMaterialSlabField::Num] = { "BaseColor", "F0", "Roughness", "Metallic", "Emissive", "Opacity", "ClearCoat", "ClearCoatRoughness", "Subsurface", "Anisotropy", "ThinFilm" };
+	static const char* const Names[NMaterialSlabField::Num] = { "BaseColor", "F0", "Roughness", "Metallic", "Emissive", "Opacity", "ClearCoat", "ClearCoatRoughness", "Subsurface", "Anisotropy", "ThinFilm", "Normal" };
 	return Field >= 0 && Field < NMaterialSlabField::Num ? Names[Field] : "";
 }
 
@@ -18,7 +18,7 @@ namespace
 
 	EMaterialValueType SlabFieldType( int32 Field )
 	{
-		return ( Field == 0 || Field == 1 || Field == 4 || Field == 8 ) ? EMaterialValueType::Float3 : EMaterialValueType::Float;
+		return ( Field == 0 || Field == 1 || Field == 4 || Field == 8 || Field == 11 ) ? EMaterialValueType::Float3 : EMaterialValueType::Float;
 	}
 
 	// 1 つのノードの、コンパイルの結果
@@ -27,11 +27,14 @@ namespace
 		int32 Value = -1;                      // 命令の番号（Slab のときは -1）
 		EMaterialValueType Type = EMaterialValueType::Float;
 		bool bSlab = false;
-		int32 Fields[NumSlabFields];           // 値を混ぜた、1 つの層（簡略版と、出力の 11 の値）
-		// 陰影を別々に計算する層（フルの評価）。SubstrateMix は、値を混ぜずに、層を並べて、重みを掛ける
+		int32 Fields[NumSlabFields];           // 値を混ぜた、1 つの層（簡略版と、出力の値）
+		// 陰影を別々に計算する層（フルの評価）。SubstrateMix は、値を混ぜずに、層を並べて、重みを掛ける。SubstrateLayer は、下の層に、上の層を通り抜ける割合を掛ける
 		int32 NumLeaves = 0;
 		int32 LeafFields[MaxSlabLeaves][NumSlabFields];
 		int32 LeafWeights[MaxSlabLeaves];
+		int32 LeafThroughputs[MaxSlabLeaves];    // 上に重なった層を通り抜ける割合（Float3。-1 は、1）
+		int32 LeafDiffuseScales[MaxSlabLeaves];  // 層の中で散らばる割合（Float3。-1 は、1）
+		int32 Pass = -1;                         // この層（の束）の全体を、光が通り抜ける割合（Float3。-1 は、まだ計算していない）
 		bool bDone = false;
 		bool bVisiting = false;
 
@@ -44,6 +47,8 @@ namespace
 			for ( int32 Leaf = 0; Leaf < MaxSlabLeaves; ++Leaf )
 			{
 				LeafWeights[Leaf] = -1;
+				LeafThroughputs[Leaf] = -1;
+				LeafDiffuseScales[Leaf] = -1;
 				for ( int32 Index = 0; Index < NumSlabFields; ++Index )
 				{
 					LeafFields[Leaf][Index] = -1;
@@ -56,6 +61,8 @@ namespace
 		{
 			NumLeaves = 1;
 			LeafWeights[0] = Weight;
+			LeafThroughputs[0] = -1;
+			LeafDiffuseScales[0] = -1;
 			for ( int32 Index = 0; Index < NumSlabFields; ++Index )
 			{
 				LeafFields[0][Index] = Fields[Index];
@@ -73,7 +80,7 @@ namespace
 		{
 			Program.Domain = InDefinition.Domain;
 			Program.Shading = InDefinition.Shading;
-			Program.bFullSubstrate = InCapabilities.bFullSubstrate && InDefinition.Domain == EMaterialDomain::Surface && InDefinition.Shading == EMaterialShading::Substrate;
+			Program.bFullSubstrate = InCapabilities.bFullSubstrate && InDefinition.Domain == EMaterialDomain::Surface && InDefinition.Shading != EMaterialShading::Unlit;
 		}
 
 		FMaterialProgram Run()
@@ -104,6 +111,10 @@ namespace
 			for ( int32 Index = 0; Index < Pins.Num(); ++Index )
 			{
 				CompileOutput( Pins[Index] );
+			}
+			if ( Program.bFullSubstrate && Definition.Shading == EMaterialShading::DefaultLit )
+			{
+				AddDefaultLitSlab();
 			}
 			Finish();
 			return Program;
@@ -559,6 +570,10 @@ namespace
 				return ScalarResult( EmitInput( EMaterialInput::WorldNormal, EMaterialValueType::Float3, Id ) );
 			case K::CameraVector:
 				return ScalarResult( EmitInput( EMaterialInput::CameraVector, EMaterialValueType::Float3, Id ) );
+			case K::WorldTangent:
+				return ScalarResult( EmitInput( EMaterialInput::WorldTangent, EMaterialValueType::Float3, Id ) );
+			case K::WorldBitangent:
+				return ScalarResult( EmitInput( EMaterialInput::WorldBitangent, EMaterialValueType::Float3, Id ) );
 			case K::ParticleLife:
 				return ScalarResult( EmitInput( EMaterialInput::ParticleLife, EMaterialValueType::Float, Id ) );
 			case K::ParticleAge:
@@ -875,6 +890,32 @@ namespace
 				return ScalarResult( EmitBinary( EMaterialBinary::Power, EmitUnary( EMaterialUnary::OneMinus, Facing, Id ), Exponent, Id ) );
 			}
 
+			case K::NormalMap:
+			{
+				// 色（0〜1）を -1〜1 に直して、X は U の向き、Y は V の向き（DirectX の形式の法線マップ）、Z は面の法線の向きに積む。
+				// 平らな色（0.5, 0.5, 1）は、面の法線そのまま。Z は、0 より少し上に収める（つないでいない・こわれた色でも、長さ 0 にならない）
+				const int32 Color = PinValue( Node, 0 );
+				const int32 Strength = PinValue( Node, 1 );
+				const int32 Signed = EmitBinary( EMaterialBinary::Subtract, EmitBinary( EMaterialBinary::Multiply, Color, Splat( EmitScalar( 2.0f, Id ), 3, Id ), Id ), Splat( EmitScalar( 1.0f, Id ), 3, Id ), Id );
+				auto Component = [&]( int32 Index )
+				{
+					const int32 Mask = Emit( EMaterialOp::Mask, EMaterialValueType::Float, Id, Signed );
+					Program.Code[Mask].NumSwizzle = 1;
+					Program.Code[Mask].Swizzle[0] = static_cast<uint8>( Index );
+					return Mask;
+				};
+				const int32 X = EmitBinary( EMaterialBinary::Multiply, Component( 0 ), Strength, Id );
+				const int32 Y = EmitBinary( EMaterialBinary::Multiply, Component( 1 ), Strength, Id );
+				const int32 Z = EmitBinary( EMaterialBinary::Max, Component( 2 ), EmitScalar( 0.05f, Id ), Id );
+				const int32 Tangent = EmitInput( EMaterialInput::WorldTangent, EMaterialValueType::Float3, Id );
+				const int32 Bitangent = EmitInput( EMaterialInput::WorldBitangent, EMaterialValueType::Float3, Id );
+				const int32 Normal = EmitInput( EMaterialInput::WorldNormal, EMaterialValueType::Float3, Id );
+				int32 Sum = EmitBinary( EMaterialBinary::Multiply, Tangent, Splat( X, 3, Id ), Id );
+				Sum = EmitBinary( EMaterialBinary::Add, Sum, EmitBinary( EMaterialBinary::Multiply, Bitangent, Splat( Y, 3, Id ), Id ), Id );
+				Sum = EmitBinary( EMaterialBinary::Add, Sum, EmitBinary( EMaterialBinary::Multiply, Normal, Splat( Z, 3, Id ), Id ), Id );
+				return ScalarResult( EmitUnary( EMaterialUnary::Normalize, Sum, Id ) );
+			}
+
 			case K::SubstrateSlab:
 			{
 				FResult Result;
@@ -925,6 +966,8 @@ namespace
 					{
 						const int32 Target = Result.NumLeaves++;
 						Result.LeafWeights[Target] = EmitBinary( EMaterialBinary::Multiply, Source.LeafWeights[Leaf], Side == 0 ? WeightA : WeightB, Id );
+						Result.LeafThroughputs[Target] = Source.LeafThroughputs[Leaf];
+						Result.LeafDiffuseScales[Target] = Source.LeafDiffuseScales[Leaf];
 						for ( int32 Field = 0; Field < NumSlabFields; ++Field )
 						{
 							Result.LeafFields[Target][Field] = Source.LeafFields[Leaf][Field];
@@ -933,11 +976,130 @@ namespace
 				}
 				return Result;
 			}
+			case K::SubstrateLayer:
+			{
+				FResult Top = SlabInput( Node, 0 );
+				FResult Bottom = SlabInput( Node, 1 );
+				const int32 Transmittance = EmitUnary( EMaterialUnary::Saturate, PinValue( Node, 2 ), Id );
+				const int32 Coverage = EmitUnary( EMaterialUnary::Saturate, PinValue( Node, 3 ), Id );
+				FResult Result;
+				Result.bSlab = true;
+				Result.Type = EMaterialValueType::Slab;
+				if ( !Capabilities.bFullSubstrate )
+				{
+					Report( EMaterialSeverity::Info, "this backend uses a simplified Substrate: the layers of SubstrateLayer are blended into one (a clear top becomes a clear coat)", Id );
+				}
+
+				// 値を混ぜた 1 つの層（簡略版と、出力の値）: 上の層が、下を隠す分（Opaque）だけ、上の値へ寄せる。透き通る分（Clear）は、クリアコートにする
+				const int32 Third = EmitConst( FVector4( 1.0f / 3.0f, 1.0f / 3.0f, 1.0f / 3.0f, 0.0f ), 3, Id );
+				const int32 AverageTransmittance = EmitBinary( EMaterialBinary::Dot, Transmittance, Third, Id );
+				const int32 Opaque = EmitBinary( EMaterialBinary::Multiply, Coverage, EmitUnary( EMaterialUnary::OneMinus, AverageTransmittance, Id ), Id );
+				const int32 Clear = EmitBinary( EMaterialBinary::Multiply, Coverage, AverageTransmittance, Id );
+				for ( int32 Field = 0; Field < NumSlabFields; ++Field )
+				{
+					Result.Fields[Field] = EmitLerp( Bottom.Fields[Field], Top.Fields[Field], Opaque, Id );
+				}
+				Result.Fields[NMaterialSlabField::ClearCoat] = EmitUnary( EMaterialUnary::Saturate, EmitBinary( EMaterialBinary::Add, Result.Fields[NMaterialSlabField::ClearCoat], Clear, Id ), Id );
+				Result.Fields[NMaterialSlabField::ClearCoatRoughness] = EmitLerp( Result.Fields[NMaterialSlabField::ClearCoatRoughness], Top.Fields[NMaterialSlabField::Roughness], Clear, Id );
+
+				if ( Top.NumLeaves + Bottom.NumLeaves > MaxSlabLeaves || Top.NumLeaves <= 0 || Bottom.NumLeaves <= 0 )
+				{
+					// 層が多すぎる: 上・下を、それぞれ、値を混ぜた 1 つの層にまとめてから、重ねる
+					Top.SetSingleLeaf( EmitScalar( 1.0f, Id ) );
+					Bottom.SetSingleLeaf( EmitScalar( 1.0f, Id ) );
+					if ( Capabilities.bFullSubstrate )
+					{
+						Report( EMaterialSeverity::Info, FString::Printf( "more than %d slabs are layered: the slabs under each input of this node are blended by their values and shaded as one", MaxSlabLeaves ), Id );
+					}
+				}
+				// フルの評価: 上の層は、覆う割合だけ見える。下の層は、上の層を通り抜けた分だけ見える（覆われていない所は、そのまま）。
+				// 上の層の中で散らばる光は、下へ抜ける分（Transmittance）だけ減る
+				const int32 One = Splat( EmitScalar( 1.0f, Id ), 3, Id );
+				const int32 Through = EmitBinary( EMaterialBinary::Multiply, EnsurePass( Top, Id ), Transmittance, Id );
+				const int32 Cover = EmitLerp( One, Through, Coverage, Id );
+				const int32 Scattered = EmitUnary( EMaterialUnary::OneMinus, Transmittance, Id );
+				for ( int32 Side = 0; Side < 2; ++Side )
+				{
+					const FResult& Source = Side == 0 ? Top : Bottom;
+					for ( int32 Leaf = 0; Leaf < Source.NumLeaves; ++Leaf )
+					{
+						const int32 Target = Result.NumLeaves++;
+						Result.LeafWeights[Target] = Side == 0 ? EmitBinary( EMaterialBinary::Multiply, Source.LeafWeights[Leaf], Coverage, Id ) : Source.LeafWeights[Leaf];
+						Result.LeafThroughputs[Target] = Side == 0 ? Source.LeafThroughputs[Leaf] : MultiplyOptional( Source.LeafThroughputs[Leaf], Cover, Id );
+						Result.LeafDiffuseScales[Target] = Side == 0 ? MultiplyOptional( Source.LeafDiffuseScales[Leaf], Scattered, Id ) : Source.LeafDiffuseScales[Leaf];
+						for ( int32 Field = 0; Field < NumSlabFields; ++Field )
+						{
+							Result.LeafFields[Target][Field] = Source.LeafFields[Leaf][Field];
+						}
+					}
+				}
+				Result.Pass = EmitBinary( EMaterialBinary::Multiply, Cover, EnsurePass( Bottom, Id ), Id );
+				return Result;
+			}
 			default:
 				break;
 			}
 			Report( EMaterialSeverity::Error, "this node kind is not supported", Id );
 			return ScalarResult( Fallback( Id ) );
+		}
+
+		// A と B の間（Alpha は Float。A・B がベクトルなら、広げる）
+		int32 EmitLerp( int32 A, int32 B, int32 Alpha, int32 Node )
+		{
+			const int32 Components = NumOf( A );
+			return Emit( EMaterialOp::Ternary, TypeOf( A ), Node, A, B, Components > 1 ? Splat( Alpha, Components, Node ) : Alpha, static_cast<uint8>( EMaterialTernary::Lerp ) );
+		}
+
+		// 掛け算。Value が -1（= 1）なら、Factor そのまま
+		int32 MultiplyOptional( int32 Value, int32 Factor, int32 Node )
+		{
+			return Value < 0 ? Factor : EmitBinary( EMaterialBinary::Multiply, Value, Factor, Node );
+		}
+
+		// 層（の束）を、光が通り抜ける割合（Float3）: 表面で反射しなかった分（1 - フレネル）で、金属は通さない。
+		// 見る向きで決まるので、面の法線とカメラの向きから、命令にする（MaterialSubstrate の、環境の映り込みのフレネルと同じ式）
+		int32 EnsurePass( FResult& Slab, int32 Node )
+		{
+			if ( Slab.Pass >= 0 )
+			{
+				return Slab.Pass;
+			}
+			const int32 Normal = EmitInput( EMaterialInput::WorldNormal, EMaterialValueType::Float3, Node );
+			const int32 View = EmitInput( EMaterialInput::CameraVector, EMaterialValueType::Float3, Node );
+			const int32 Facing = EmitUnary( EMaterialUnary::Saturate, EmitBinary( EMaterialBinary::Dot, Normal, View, Node ), Node );
+			const int32 Grazing = EmitBinary( EMaterialBinary::Power, EmitUnary( EMaterialUnary::OneMinus, Facing, Node ), EmitScalar( 5.0f, Node ), Node );
+			const int32 Metallic = EmitUnary( EMaterialUnary::Saturate, Slab.Fields[NMaterialSlabField::Metallic], Node );
+			const int32 Roughness = EmitUnary( EMaterialUnary::Saturate, Slab.Fields[NMaterialSlabField::Roughness], Node );
+			const int32 SpecularColor = EmitLerp( Slab.Fields[NMaterialSlabField::F0], Slab.Fields[NMaterialSlabField::BaseColor], Metallic, Node );
+			const int32 Amount = EmitBinary( EMaterialBinary::Multiply, Grazing, EmitUnary( EMaterialUnary::OneMinus, Roughness, Node ), Node );
+			const int32 Fresnel = EmitUnary( EMaterialUnary::Saturate, EmitLerp( SpecularColor, Splat( EmitScalar( 1.0f, Node ), 3, Node ), Amount, Node ), Node );
+			Slab.Pass = EmitBinary( EMaterialBinary::Multiply, EmitUnary( EMaterialUnary::OneMinus, Fresnel, Node ), Splat( EmitUnary( EMaterialUnary::OneMinus, Metallic, Node ), 3, Node ), Node );
+			return Slab.Pass;
+		}
+
+		// DefaultLit を、フルのモデルの、層 1 つにする（出力の値から。F0 は、Specular の 8%）
+		void AddDefaultLitSlab()
+		{
+			auto Out = [&]( const char* Pin )
+			{
+				const FMaterialOutputValue* Output = Program.FindOutput( Pin );
+				return Output != nullptr ? Output->Value : -1;
+			};
+			FMaterialSubstrateSlab Entry;
+			Entry.Fields[NMaterialSlabField::BaseColor] = Out( "BaseColor" );
+			Entry.Fields[NMaterialSlabField::F0] = Splat( EmitBinary( EMaterialBinary::Multiply, Out( "Specular" ), EmitScalar( 0.08f, -1 ), -1 ), 3, -1 );
+			Entry.Fields[NMaterialSlabField::Roughness] = Out( "Roughness" );
+			Entry.Fields[NMaterialSlabField::Metallic] = Out( "Metallic" );
+			Entry.Fields[NMaterialSlabField::Emissive] = Out( "Emissive" );
+			Entry.Fields[NMaterialSlabField::Opacity] = Out( "Opacity" );
+			Entry.Fields[NMaterialSlabField::ClearCoat] = EmitScalar( 0.0f, -1 );
+			Entry.Fields[NMaterialSlabField::ClearCoatRoughness] = EmitScalar( 0.1f, -1 );
+			Entry.Fields[NMaterialSlabField::Subsurface] = Fallback( -1, EMaterialValueType::Float3 );
+			Entry.Fields[NMaterialSlabField::Anisotropy] = EmitScalar( 0.0f, -1 );
+			Entry.Fields[NMaterialSlabField::ThinFilm] = EmitScalar( 0.0f, -1 );
+			Entry.Fields[NMaterialSlabField::Normal] = Out( "Normal" );
+			Entry.Weight = EmitScalar( 1.0f, -1 );
+			Program.SubstrateSlabs.Add( Entry );
 		}
 
 		// Slab のピン（A・B）の層
@@ -1020,7 +1182,7 @@ namespace
 				Slab = CompileNode( Link );
 				if ( !Slab.bSlab )
 				{
-					Report( EMaterialSeverity::Error, "the output 'Surface' needs a Substrate slab (SubstrateSlab or SubstrateMix)", Link );
+					Report( EMaterialSeverity::Error, "the output 'Surface' needs a Substrate slab (SubstrateSlab, SubstrateMix or SubstrateLayer)", Link );
 				}
 			}
 			if ( !Slab.bSlab )
@@ -1050,6 +1212,8 @@ namespace
 				{
 					FMaterialSubstrateSlab Entry;
 					Entry.Weight = Slab.LeafWeights[Leaf];
+					Entry.Throughput = Slab.LeafThroughputs[Leaf];
+					Entry.DiffuseScale = Slab.LeafDiffuseScales[Leaf];
 					for ( int32 Field = 0; Field < NumSlabFields; ++Field )
 					{
 						Entry.Fields[Field] = Slab.LeafFields[Leaf][Field];

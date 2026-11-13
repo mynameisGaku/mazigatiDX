@@ -42,7 +42,9 @@ enum class EMaterialInput : uint8
 	ParticleLife,
 	ParticleAge,
 	ParticleRandom,
-	ParticleSpeed
+	ParticleSpeed,
+	WorldTangent,    // Surface: 面に沿った向き（UV の U が増える向き。法線に垂直）
+	WorldBitangent   // Surface: 面に沿った向き（UV の V が増える向き。法線に垂直）
 };
 
 enum class EMaterialUnary : uint8
@@ -148,6 +150,7 @@ namespace NMaterialSlabField
 		Subsurface,
 		Anisotropy,
 		ThinFilm,
+		Normal,
 		Num
 	};
 
@@ -159,7 +162,9 @@ namespace NMaterialSlabField
 struct FMaterialSubstrateSlab
 {
 	int32 Fields[NMaterialSlabField::Num] = {};
-	int32 Weight = -1;             // 混ぜるときの重み（Float。全部の層で、足して 1）
+	int32 Weight = -1;             // 混ぜるときの重み（Float。SubstrateMix だけなら、全部の層で、足して 1。SubstrateLayer の上下の層は、それぞれが 1 まで）
+	int32 Throughput = -1;         // 上に重なった層を通り抜けて、この層が見える割合（Float3。-1 は、1 = 上に何も無い）
+	int32 DiffuseScale = -1;       // この層の中で散らばる光の割合（Float3。-1 は、1。下の層へ抜ける分だけ、減る）
 };
 
 struct FMaterialProgram
@@ -175,9 +180,9 @@ struct FMaterialProgram
 	bool bValid = false;                       // エラーなく作れた
 	bool bCustomHlsl = false;                  // HLSL の直指定（Code は空。パラメーター・画像の置き場だけがある）
 	bool bUsesSceneDepth = false;
-	// Substrate を、フルに評価する（バックエンドの能力から。false なら、簡略版で、Outputs の 11 の値だけを使う）
+	// 光を、フルのモデル（MaterialSubstrate.h）で計算する（バックエンドの能力から。Surface の DefaultLit と Substrate。false なら、簡略版で、Outputs の値だけを使う）
 	bool bFullSubstrate = false;
-	// フルの評価で、陰影を別々に計算する層（1〜NMaterialSubstrate::MaxSlabs。Surface・Substrate のときだけ）
+	// フルの評価で、陰影を別々に計算する層（1〜NMaterialSubstrate::MaxSlabs。DefaultLit は、いつも 1 つ）
 	TArray<FMaterialSubstrateSlab> SubstrateSlabs;
 
 	const FMaterialOutputValue* FindOutput( const FString& Pin ) const
