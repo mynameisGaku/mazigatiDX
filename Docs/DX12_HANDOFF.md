@@ -154,7 +154,8 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 
 ## Substrate並行開発（`framework-stl` `19e7170`）との統合引き継ぎメモ（時点限定）
 
-- **調査対象**: `C:/Users/g0190/.claude/worktrees/framework-stl`（`Asset` ブランチ、`19e7170`、読み取り専用で確認）。
+- **調査対象**: `C:/Users/g0190/.claude/worktrees/framework-stl`（`Asset` ブランチ、HEAD `19e7170`）。Claude側はpushできておらず、コミット済み履歴だけでなく、このローカル作業コピーの未コミット変更・未追跡ファイルを読み取り専用で参照する。作業中のため、統合時に必ず再確認する。
+- **ローカル進行中の内容（2026-11-13確認）**: `MaterialCompiler`・`MaterialEval`・`MaterialGraph`・`MaterialHlsl`・`MaterialProgram`・`MaterialSubstrate`に未コミット変更があり、`MaterialEnvironmentMap`・`MaterialShadowMap`・`MaterialSceneConstants`に未追跡ファイルがある。シーン定数、環境画像、影用描画先・深度の契約も統合時に確認する。これらの変更やClaude側の`project.sln`を編集・破棄しない。
 - **能力・バックエンド前提の差異（要注意）**:
   - Claude 側の `Docs/MATERIAL.md` では `FMaterialCapabilities` の既定値が DxLib 相当で `bFullSubstrate = true` となっており、生成 HLSL も現時点で DxLib / D3D11 向けである。
   - **DX12 バックエンドが同等に評価できると仮定して能力フラグ（`bFullSubstrate = true` 等）を宣言してはならない。** 既存 DX12 側は DXBC SM5 グラフィックスパイプライン・専用描画スレッド・GPU 完了までの資源保持を提供するが、共通マテリアルの DX12 描画接続は未検証である。
