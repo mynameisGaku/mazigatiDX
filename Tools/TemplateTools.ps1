@@ -17,7 +17,7 @@ function Get-RelativeFolder([string]$from, [string]$to) {
 #   A line is written for each file.
 function Copy-TemplateTree([string]$TemplateDir, [string]$Target, $Replacements) {
     # Files with these extensions get their placeholders replaced
-    $textExtensions = @('.sln', '.vcxproj', '.cpp', '.h', '.json', '.md', '.bat', '.gitignore', '.ps1', '.txt')
+    $textExtensions = @('.sln', '.vcxproj', '.cpp', '.h', '.json', '.md', '.bat', '.gitignore', '.ps1', '.txt', '.location')
 
     $templateBase = $TemplateDir.TrimEnd('\')
     foreach ($file in (Get-ChildItem -LiteralPath $TemplateDir -Recurse -Force -File)) {

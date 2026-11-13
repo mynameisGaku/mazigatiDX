@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "AssetPathResolver.h"
 
+#include "Library/Core/File/File.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Framework/Asset/Loading/AssetLog.h"
 #include "Library/Platform/System/FileSystem.h"
@@ -33,6 +34,44 @@ FString CAssetPathResolver::GetEngineContentDirectory() const
 	if ( !ResolvedEngineContent.IsSet() )
 	{
 		TOptional<FString> Found = NFileSystem::FindDirectory( EngineContentDirectoryName );
+		if ( !Found.IsSet() )
+		{
+			// フォルダが近くに無いとき（フレームワークとは別の場所に作った、ゲームのプロジェクト）: 場所を書いたファイル（EngineContent.location）を読む。
+			// 中身は、フォルダへのパス 1 行（絶対パスか、そのファイルのあるフォルダからの相対パス）
+			const TOptional<FString> LocationFile = NFileSystem::FindFile( EngineContentDirectoryName + ".location" );
+			TArray<uint8> Bytes;
+			if ( LocationFile.IsSet() && NFile::ReadAllBytes( LocationFile.Get( FString() ), Bytes ) )
+			{
+				// 先頭の BOM と、最初の改行（13・10）より後ろは、読まない
+				int32 Begin = Bytes.Num() >= 3 && Bytes[0] == 0xEF && Bytes[1] == 0xBB && Bytes[2] == 0xBF ? 3 : 0;
+				int32 End = Begin;
+				while ( End < Bytes.Num() && Bytes[End] != 13 && Bytes[End] != 10 && Bytes[End] != 0 )
+				{
+					++End;
+				}
+				const FString Written = FString( reinterpret_cast<const char*>( Bytes.GetData() ) + Begin, End - Begin ).TrimStartAndEnd();
+				if ( !Written.IsEmpty() )
+				{
+					// 相対パスは、ファイルのあるフォルダから
+					const FString FilePath = NFileSystem::GetFullPath( LocationFile.Get( FString() ) ).Replace( "\\", "/" );
+					int32 Slash = -1;
+					for ( int32 Index = 0; Index < FilePath.Len(); ++Index )
+					{
+						Slash = FilePath[Index] == '/' ? Index : Slash;
+					}
+					const bool bAbsolute = Written.Len() >= 2 && ( Written[1] == ':' || Written.StartsWith( "\\\\" ) || Written.StartsWith( "//" ) );
+					const FString Candidate = bAbsolute || Slash < 0 ? Written : FilePath.Left( Slash ) / Written;
+					if ( NFileSystem::DirectoryExists( Candidate ) )
+					{
+						Found = Candidate;
+					}
+					else
+					{
+						LOG( LogAsset, Warning, "%s.location points to a folder that does not exist: %s", *EngineContentDirectoryName, *Candidate );
+					}
+				}
+			}
+		}
 		ResolvedEngineContent = Found.IsSet() ? NFileSystem::GetFullPath( Found.Get( FString() ) ) : FString();
 	}
 	const FString Root = ResolvedEngineContent.Get( FString() );

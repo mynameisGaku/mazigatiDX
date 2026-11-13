@@ -27,7 +27,9 @@ public:
 	void SetRootDirectory( const FString& Directory );
 	FString GetRootDirectory() const;
 
-	// エンジン組み込みの素材のフォルダ（既定は "EngineContent"）。読み取り専用
+	// エンジン組み込みの素材のフォルダ（既定は "EngineContent"）。読み取り専用。
+	// 作業フォルダ・実行ファイルの近く（親のフォルダも）から探す。無ければ、場所を書いたファイル（"EngineContent.location"。フォルダへのパス 1 行。
+	// 絶対パスか、そのファイルのあるフォルダからの相対パス）を、同じ探し方で探して、そこを使う（フレームワークとは別の場所に作ったゲームのプロジェクト用）
 	void SetEngineContentDirectory( const FString& Directory );
 	FString GetEngineContentDirectory() const;
 

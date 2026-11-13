@@ -73,7 +73,7 @@ msbuild .\project.sln /p:Configuration=Release /p:Platform=x64 /m
 powershell -NoProfile -ExecutionPolicy Bypass -File Tools\NewProject.ps1 -Name MyGame -Destination C:\dev
 ```
 
-作ったプロジェクトの `README.md` に、構成と、シーン・オブジェクトの足し方があります。
+作ったプロジェクトの `README.md` に、構成と、シーン・オブジェクトの足し方があります。順に作っていく手引きは、[チュートリアル](Docs/TUTORIAL.md)です。
 
 ゲームを人に渡すときは、Release でビルドしてから、`Tools\PackageGame.ps1` で、配布物（実行ファイル・DLL・`Config`・`Assets`・`EngineContent`・ライセンス文をまとめたフォルダーと zip）を作ります。
 
@@ -85,7 +85,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\PackageGame.ps1 -Proje
 
 |文書|内容|
 |---|---|
+|[チュートリアル](Docs/TUTORIAL.md)|最初のゲームを作る（プロジェクトを作る → オブジェクトとシーンを書く → 人に渡す形にまとめる）|
 |[開発手順](Docs/DEVELOPMENT.md)|構成と依存、各機能の使い方、コードの書き方の決まり、プロジェクトの生成と確認、変更の統合|
+|[設計の決まり](Docs/WRAPPER_GUIDE.md)|層と依存の向き、型と単位、資源とハンドル、スレッド、エラーの扱い、文字コード、新しい機能を足す手順|
 |[UI](Docs/UI.md)|UI（ウィジェット）の構成・使い方・レイアウト・ブラシ・入力・描画先の表示|
 |[マテリアル](Docs/MATERIAL.md)|マテリアル（ノードのグラフ・ドメイン・Substrate 風の万能モデル・場面の光・ポストプロセス・エディタ）|
 |[エフェクトの使い方](Docs/EFFECTS.md)|エフェクトエディタの使い方と、見本のエフェクト|

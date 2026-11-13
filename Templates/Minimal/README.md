@@ -24,6 +24,7 @@ mazigatiDX（DxLib を使う C++ のフレームワーク）で作った、最�
 |`Source/Object/`|オブジェクト（`CPlayer`）。シーンに置いて、毎フレーム Tick / Draw されます|
 |`Config/ScreenConfig.json`|窓の大きさ・タイトル・窓の種類|
 |`Assets/`|画像・音・モデルなどの置き場|
+|`EngineContent.location`|エンジン組み込みの素材（`Engine:/UI/Window.png` のように読む、UI の基本画像・アイコン・マテリアルなど）の場所。フレームワークの `EngineContent` フォルダーを、このフォルダーからの相対パスで指しています。フレームワークを動かしたら、書き直します|
 
 ## 次にすること
 
@@ -34,7 +35,7 @@ mazigatiDX（DxLib を使う C++ のフレームワーク）で作った、最�
 - **ファイルを足したり消したりしたとき**: `GenerateProjectFiles.bat` を実行して、プロジェクトのファイル一覧を作り直します。
 - **画像・音・モデル**: `Assets/` に置いて、アセット管理（`CAssetSubsystem`）から読み込みます。
 
-詳しくは、フレームワークの文書（`Docs/DEVELOPMENT.md`、`Docs/WRAPPER_GUIDE.md`）を参照してください。
+詳しくは、フレームワークの文書（`Docs/TUTORIAL.md`: このテンプレートから、コインを拾うゲームを作る手引き、`Docs/DEVELOPMENT.md`、`Docs/WRAPPER_GUIDE.md`）を参照してください。
 
 ## ライセンス
 
