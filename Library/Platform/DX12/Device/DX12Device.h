@@ -29,7 +29,7 @@ class CDX12Device
 	~CDX12Device();
 	// Windowへ表示するデバイスを作る。WARP指定はGPUなしの確認用。
 	bool Initialize( HWND Window, int32 Width, int32 Height, bool bWarp );
-	// 既存のDIRECTキューとそのデバイスを共有してWindowへ表示する。参照は完了まで保持する。
+	// 既存のDIRECTキューとそのデバイスを共有してWindowへ表示する。初期化途中の失敗では確保した資源を戻し、再試行できる。
 	// 終了中は呼出側も新しい命令を提出しない。無効な窓・寸法・種類・二重初期化ではfalse。
 	bool InitializeOnQueue( HWND Window, int32 Width, int32 Height, ID3D12CommandQueue *InQueue );
 	// 新しい利用を止め、最大60000msの範囲で終了を試す。タイムアウト・待機失敗では全資源を保持してfalse。
@@ -117,8 +117,8 @@ class CDX12Device
 	bool Wait( uint32 TimeoutMs = 10000 );
 
   private:
-	// GPU完了またはデバイス喪失を確認してから資源を解放する。
-	void ReleaseAfterGPUStopped();
+	// この所有者のGPU処理が未提出、完了済み、またはデバイス喪失のときに所有資源を解放する。
+	void ReleaseOwnedResources();
 	static constexpr int32 BufferCount = 2; // 交換用画面の枚数。
 	static constexpr int32 DescriptorCount = 2048; // 同時に持てる画像の上限。
 	Microsoft::WRL::ComPtr<ID3D12Device> Device; // 描画デバイス。

@@ -61,10 +61,12 @@ bool CDX12Device::InitializeOnQueue( HWND Window, int32 Width, int32 Height, ID3
 	}
 	Device = QueueDevice;
 	Queue = InQueue;
+	// 初期化中はこの所有者のGPU命令を提出しないため、失敗時は他のキュー利用者を待たずに新規資源だけを戻せる。
+	auto FailInitialization = [this]() { ReleaseOwnedResources(); return false; };
 	Microsoft::WRL::ComPtr<IDXGIFactory4> Factory; // このキューへ交換用画面を接続する列挙元。
 	if ( FAILED( CreateDXGIFactory1( IID_PPV_ARGS( &Factory ) ) ) || FAILED( Device->CreateCommandAllocator( D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS( &Allocator ) ) ) || FAILED( Device->CreateCommandList( 0, D3D12_COMMAND_LIST_TYPE_DIRECT, Allocator.Get(), nullptr, IID_PPV_ARGS( &Commands ) ) ) || FAILED( Commands->Close() ) || !Completion.Initialize( Device.Get(), Queue.Get() ) )
 	{
-		return false;
+		return FailInitialization();
 	}
 	DXGI_SWAP_CHAIN_DESC1 Desc = {}; // 論理解像度を固定して表示先へ拡大する。
 	Desc.Width = Width;
@@ -78,14 +80,14 @@ bool CDX12Device::InitializeOnQueue( HWND Window, int32 Width, int32 Height, ID3
 	Microsoft::WRL::ComPtr<IDXGISwapChain1> InitialSwapChain; // 交換先の作成結果。
 	if ( FAILED( Factory->CreateSwapChainForHwnd( Queue.Get(), Window, &Desc, nullptr, nullptr, &InitialSwapChain ) ) || FAILED( InitialSwapChain.As( &SwapChain ) ) || FAILED( Factory->MakeWindowAssociation( Window, DXGI_MWA_NO_ALT_ENTER ) ) )
 	{
-		return false;
+		return FailInitialization();
 	}
 	D3D12_DESCRIPTOR_HEAP_DESC HeapDesc = {}; // 画面用の記述子。
 	HeapDesc.NumDescriptors = BufferCount;
 	HeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	if ( FAILED( Device->CreateDescriptorHeap( &HeapDesc, IID_PPV_ARGS( &RtvHeap ) ) ) )
 	{
-		return false;
+		return FailInitialization();
 	}
 	RtvStride = Device->GetDescriptorHandleIncrementSize( D3D12_DESCRIPTOR_HEAP_TYPE_RTV );
 	D3D12_CPU_DESCRIPTOR_HANDLE Rtv = RtvHeap->GetCPUDescriptorHandleForHeapStart(); // 順に画面を登録する。
@@ -93,18 +95,18 @@ bool CDX12Device::InitializeOnQueue( HWND Window, int32 Width, int32 Height, ID3
 	{
 		if ( FAILED( SwapChain->GetBuffer( Index, IID_PPV_ARGS( &Buffers[Index] ) ) ) )
 		{
-			return false;
+			return FailInitialization();
 		}
 		Device->CreateRenderTargetView( Buffers[Index].Get(), nullptr, Rtv );
 		Rtv.ptr += RtvStride;
 	}
 	if ( !Descriptors.Initialize( Device.Get(), DescriptorCount ) || !Textures.Initialize( Device.Get(), Queue.Get(), Descriptors ) || !BufferResources.Initialize( Device.Get(), Queue.Get() ) )
 	{
-		return false;
+		return FailInitialization();
 	}
 	if ( !ComputePipelines.Initialize( Device.Get() ) || !GraphicsPipelines.Initialize( Device.Get() ) || !Timestamps.Initialize( Device.Get(), Queue.Get() ) || !UploadArena.Initialize( Device.Get(), Queue.Get() ) || !ComputeQueue.Initialize( Device.Get(), Queue.Get(), BufferResources, ComputePipelines, &Textures, &Timestamps ) )
 	{
-		return false;
+		return FailInitialization();
 	}
 	this->Width = Width;
 	this->Height = Height;
@@ -145,7 +147,7 @@ bool CDX12Device::TryShutdown( uint32 TimeoutMs )
 	{
 		return false;
 	}
-	ReleaseAfterGPUStopped();
+	ReleaseOwnedResources();
 	return true;
 }
 
@@ -162,7 +164,7 @@ void CDX12Device::Shutdown()
 	}
 }
 
-void CDX12Device::ReleaseAfterGPUStopped()
+void CDX12Device::ReleaseOwnedResources()
 {
 	GameReadback.ResetAfterGPUIdle();
 	UIReadback.ResetAfterGPUIdle();
@@ -191,6 +193,7 @@ void CDX12Device::ReleaseAfterGPUStopped()
 	bRecording = false;
 	bSegmentSubmittedThisFrame = false;
 	bPresentPending = false;
+	bCaptureGame = bCaptureUI = bGameCopied = bUICopied = bFrameSubmitted = false;
 	bInitialized = false;
 	bClosing = false;
 	bGPUStopped = false;
@@ -334,7 +337,7 @@ bool CDX12Device::Resize( int32 NewWidth, int32 NewHeight )
 	{
 		bClosing = true;
 		bGPUStopped = true;
-		ReleaseAfterGPUStopped();
+		ReleaseOwnedResources();
 		return false;
 	}
 	D3D12_CPU_DESCRIPTOR_HANDLE Rtv = RtvHeap->GetCPUDescriptorHandleForHeapStart(); // 新しい寸法のバックバッファRTVを貼り直す。
@@ -344,7 +347,7 @@ bool CDX12Device::Resize( int32 NewWidth, int32 NewHeight )
 		{
 			bClosing = true;
 			bGPUStopped = true;
-			ReleaseAfterGPUStopped();
+			ReleaseOwnedResources();
 			return false;
 		}
 		Device->CreateRenderTargetView( Buffers[Index].Get(), nullptr, Rtv );
