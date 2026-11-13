@@ -154,7 +154,7 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 
 ## Substrate並行開発（`framework-stl` `19e7170`）との統合引き継ぎメモ（時点限定）
 
-- **調査対象**: `C:/Users/g0190/.claude/worktrees/framework-stl`（`Asset` ブランチ、HEAD `19e7170`）。Claude側はpushできておらず、コミット済み履歴だけでなく、このローカル作業コピーの未コミット変更・未追跡ファイルを読み取り専用で参照する。作業中のため、統合時に必ず再確認する。
+- **調査対象（2026-11-13時点）**: `C:/Users/g0190/.claude/worktrees/framework-stl`（`Asset` ブランチ、当時のHEAD `19e7170`）。後の公開・追加コミットと検証状況は本書末尾を参照する。Claude側は作業中のため、統合時にローカルの状態を再確認する。
 - **ローカル進行中の内容（2026-11-13確認）**: `MaterialCompiler`・`MaterialEval`・`MaterialGraph`・`MaterialHlsl`・`MaterialProgram`・`MaterialSubstrate`に未コミット変更があり、`MaterialEnvironmentMap`・`MaterialShadowMap`・`MaterialSceneConstants`に未追跡ファイルがある。シーン定数、環境画像、影用描画先・深度の契約も統合時に確認する。これらの変更やClaude側の`project.sln`を編集・破棄しない。
 - **能力・バックエンド前提の差異（要注意）**:
   - Claude 側の `Docs/MATERIAL.md` では `FMaterialCapabilities` の既定値が DxLib 相当で `bFullSubstrate = true` となっており、生成 HLSL も現時点で DxLib / D3D11 向けである。
@@ -217,3 +217,12 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - Debug / Releaseのソリューションビルド、および両構成のGraphicsPipeline検査が成功。CPU各3、既定GPU・WARP各107条件で、R32FloatカラーとD32深度の `Load` / `SampleLevel` を実画素で確認し、整数型の拒否と既存のスカラー経路も検査した。SDK debug layer は有効。アプリの `dx12` / `warp` / 各no-ui / `dxlib` / `null` も両構成で成功した。検査側コミットは[e25fb91](https://github.com/mynameisGaku/framework-test/commit/e25fb9123b1a56f68c60b26461ca224a2e402db1)。
 - `Tools/RunAllChecks.ps1 -SkipBuild -Quick` はDebug / Release合計42項目すべて成功。Quickではサンプル集とテンプレートの全検査を省略する。
 - これは影画像の読み取り基盤までの対応であり、Claude側の生成HLSL全体、影パス、材質のDX12統合や複数GPUベンダーでの検証は完了していない。
+
+## 実材質の生成HLSLと一時統合の検査（2026-11-14）
+
+- 固定した比較対象はDX12 `a39ebfc`、Claude側ローカル `d0433ab`（`19e7170`からの追加は材質拡張 `1f53c58` と配布スクリプト `d0433ab`）。検査中にClaude側へ権利表記の文書コミット `ece4df6` が追加されたため、統合時には最新のローカル状態を再確認する。この検査は両ブランチを実際にマージ・公開したことを意味しない。
+- この時点の `git merge-tree` の内容競合は `mazigatiDX.vcxproj` / `.filters` の2件。別の一時作業コピーでDX12側の一覧を基に `Tools/GenerateProjectFiles.ps1 -Root .` を実行し、Claude側の材質とDX12側の描画・スレッド関連の両方を含めた。自動統合された他のファイルについても、テキスト上の競合がないことだけでは動作互換を保証しない。
+- 一時統合コピーのライブラリはDebug / Releaseでビルド成功。検査側の[363fc4a](https://github.com/mynameisGaku/framework-test/commit/363fc4aba976a79656695167aa3e8affdbc19210)に `RunSubstrateIntegrationTests.ps1 -FrameworkRoot <統合コピー> -Configuration Debug|Release` を追加した。実際のCandyPaint / HammeredMetal材質からフル評価用HLSLを生成し、環境・影の4組合せを、両構成・既定GPU / WARPでコンパイルしDX12パイプライン作成まで確認した。両GPUでSDKデバッグ層は有効だった。必要な材質またはDX12のファイルがない場合は不足を表示してスキップする。
+- ここでの `bFullSubstrate = true` は検査用設定であり、DX12製品の能力宣言ではない。実描画画素、影・照明の正しさ、88バイト描画命令頂点との接続、材質や画像の更新・解放寿命は未検証。検査は現在 `RunAllChecks.ps1` に自動登録していない。
+- Claude側 `d0433ab` のDebugソリューションビルドと `PackageGame.ps1` による配布フォルダー・ZIP生成、Nullバックエンド30フレーム起動も別途成功。Gitの対話なし認証ではClaude側の追加履歴をpushできず、GitHubの `dev` はこの確認時点で `19e7170` のまま。元のコミット履歴とClaude側作業を維持するため、別の履歴を作って置き換えていない。
+- 実材質のHLSL変換は [Microsoftのコンパイラ関数](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-d3dcompiler-reference-functions)、材質の層と能力の考え方は [Unreal EngineのSubstrate概要](https://dev.epicgames.com/documentation/en-us/unreal-engine/overview-of-substrate-materials-in-unreal-engine) を参照した。
