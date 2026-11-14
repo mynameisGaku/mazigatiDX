@@ -15,7 +15,7 @@ REGISTER_SUBSYSTEM( CDxLibAudioBackendSubsystem )
 
 bool CDxLibAudioBackendSubsystem::ShouldCreateSubsystem( CEngine& Engine ) const
 {
-	return !NBackendSelection::IsNullRequested();
+	return NBackendSelection::GetRequested() == EPlatformBackend::DxLib;
 }
 
 void CDxLibAudioBackendSubsystem::Initialize( FSubsystemCollection& Collection )

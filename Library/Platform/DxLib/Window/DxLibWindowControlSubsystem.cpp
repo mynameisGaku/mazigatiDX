@@ -24,7 +24,7 @@ namespace
 
 bool CDxLibWindowControlSubsystem::ShouldCreateSubsystem( CEngine& Engine ) const
 {
-	return !NBackendSelection::IsNullRequested();
+	return NBackendSelection::GetRequested() == EPlatformBackend::DxLib;
 }
 
 void CDxLibWindowControlSubsystem::Initialize( FSubsystemCollection& Collection )

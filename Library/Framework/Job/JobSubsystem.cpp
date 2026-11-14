@@ -26,6 +26,8 @@ namespace
 {
 	// 0 = ワーカーではないスレッド、1.. = ワーカー
 	thread_local int32 GThreadIndex = 0;
+	// 終了中も実行中の仕事から派生する子を受け付けるための発行元。
+	thread_local CJobSubsystem* GExecutingScheduler = nullptr;
 
 	constexpr int32 MaxWorkers = 31;
 	constexpr int32 MaxBatchesPerCall = 64;   // 1 回の ParallelFor を、最大でこの数のバッチに分ける（ワーカーの数には依存しない）
@@ -47,6 +49,8 @@ int32 IJobSystem::GetCurrentThreadIndex()
 
 void CJobSubsystem::Initialize( FSubsystemCollection& Collection )
 {
+	// 初期化と終了は所有スレッドで行い、外部からの呼出しと競合させない。
+	bStopping = false;
 	// プロファイラーより後に初期化させる（終了はその逆なので、ワーカーが止まってからプロファイラーが片付く）
 	Collection.InitializeDependency<IProfiler>();
 
@@ -74,6 +78,8 @@ void CJobSubsystem::Deinitialize()
 		bStopping = true;
 	}
 	WorkAvailable.NotifyAll();
+	// 依存待ちと実行中の子も含め、受け付けた仕事を破棄せず終える。
+	WaitIdle();
 	for ( FThread& Worker : Workers )
 	{
 		Worker.Join();
@@ -99,8 +105,8 @@ void CJobSubsystem::WorkerMain( int32 Index )
 	FUniqueLock Lock( Mutex );
 	for ( ;; )
 	{
-		WorkAvailable.Wait( Lock, [this] { return bStopping || HasWorkLocked(); } );
-		if ( bStopping )
+		WorkAvailable.Wait( Lock, [this] { return HasWorkLocked() || ( bStopping && OutstandingJobs == 0 ); } );
+		if ( bStopping && OutstandingJobs == 0 )
 		{
 			return;
 		}
@@ -245,7 +251,21 @@ void CJobSubsystem::RunParallelRange( int32 Count, int32 MinBatchSize, FRangeFun
 
 FJobHandle CJobSubsystem::Schedule( TCallable<void()> Function, const char* Name, const FJobHandle& Dependency )
 {
+	if ( !Function || ( Dependency.State && Dependency.State->Owner != this ) )
+	{
+		return {};
+	}
+	{
+		FScopedLock Lock( Mutex );
+		if ( bStopping && GExecutingScheduler != this )
+		{
+			return {};
+		}
+		++OutstandingJobs;
+	}
+	// 受付数を確保してから依存先へ登録し、終了側が途中で停止しないようにする。
 	TSharedPtr<FJobState> Job = MakeShared<FJobState>();
+	Job->Owner = this;
 	Job->Function = MoveTemp( Function );
 	Job->Name = Name;
 	Job->NumPending.Store( 1, EMemoryOrder::Relaxed );   // 登録が終わるまで実行されないよう、自分の分を 1 つ持っておく
@@ -290,6 +310,9 @@ void CJobSubsystem::Enqueue( const TSharedPtr<FJobState>& Job )
 
 void CJobSubsystem::RunJob( const TSharedPtr<FJobState>& Job )
 {
+	// 入れ子の待機で別ジョブを実行しても、外側の発行元へ戻す。
+	CJobSubsystem* PreviousScheduler = GExecutingScheduler;
+	GExecutingScheduler = this;
 	{
 		PROFILE_SCOPE_CAT( NProfileCategory::Job, Job->Name );
 		Job->Function();
@@ -306,6 +329,12 @@ void CJobSubsystem::RunJob( const TSharedPtr<FJobState>& Job )
 	{
 		ReleaseJob( Dependent );
 	}
+	GExecutingScheduler = PreviousScheduler;
+	{
+		FScopedLock Lock( Mutex );
+		--OutstandingJobs;
+	}
+	WorkAvailable.NotifyAll();
 }
 
 void CJobSubsystem::Wait( const FJobHandle& Handle )
@@ -320,6 +349,17 @@ void CJobSubsystem::Wait( const FJobHandle& Handle )
 			NThread::YieldToOthers();
 		}
 	}
+}
+
+bool CJobSubsystem::WaitIdle()
+{
+	if ( GExecutingScheduler == this )
+	{
+		return false;
+	}
+	FUniqueLock Lock( Mutex );
+	WorkAvailable.Wait( Lock, [this] { return OutstandingJobs == 0; } );
+	return true;
 }
 
 #pragma endregion

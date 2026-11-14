@@ -4,7 +4,7 @@
 #   先に、Tools\SetupSelfTests.ps1 で、検査のリポジトリ（framework-test）を、Source\SelfTest へ取り付けておく（DxLib は、FetchDxLib.bat で）。
 #   順番:
 #     1. ビルド（構成ごとに project.sln。警告・エラーが 0）。-SkipBuild で飛ばせる
-#     2. 書式の検査（CheckSourceFormat.ps1）と、その検査自身の確認、掃除（Clean.bat）の確認
+#     2. バックエンド互換台帳の確認、書式の検査（CheckSourceFormat.ps1）と、その検査自身の確認、掃除（Clean.bat）の確認
 #     3. 自己確認（RunSelfTests.ps1）: 構成ごとに ecs / assets / world
 #     4. サンプル集の確認（RunSamplesTest.ps1）と、テンプレートの確認（RunTemplateTest.ps1）。どちらも、自分でビルドして動かす（時間がかかる）。-Quick で飛ばせる
 #     5. 配布物の確認（RunPackageTest.ps1。Release のビルドを使う。-Quick・Release を含まない -Configurations では、飛ばす）
@@ -80,6 +80,12 @@ if (-not $SkipBuild) {
     }
 }
 
+# 公開機能の追加・削除を、互換台帳へ反映し忘れていないか。
+Invoke-Step 'backend compatibility inventory' (Join-Path $frameworkRoot 'Tools\UpdateBackendCompatibility.ps1') @('-Check')
+
+Invoke-Step 'DX12 architecture' (Join-Path $frameworkRoot 'Tools\CheckDX12Architecture.ps1')
+Invoke-Step 'DX12 architecture check (self)' (Join-Path $selfTest 'RunDX12ArchitectureCheckTest.ps1') @('-FrameworkRoot', $frameworkRoot)
+
 Write-Host '== source format and clean'
 Invoke-Step 'source format' (Join-Path $selfTest 'CheckSourceFormat.ps1')
 Invoke-Step 'source format check (self)' (Join-Path $selfTest 'RunSourceFormatCheckTest.ps1')
@@ -90,6 +96,21 @@ foreach ($configuration in $Configurations) {
     foreach ($suite in 'ecs', 'assets', 'world') {
         Invoke-Step "self test $suite $configuration" (Join-Path $selfTest 'RunSelfTests.ps1') @('-Suite', $suite, '-Configuration', $configuration) $Retries
     }
+    Invoke-Step "thread execution contracts $configuration" (Join-Path $selfTest 'RunThreadExecutionTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
+    Invoke-Step "render thread contracts $configuration" (Join-Path $selfTest 'RunRenderThreadTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
+    Invoke-Step "render buffer contracts $configuration" (Join-Path $selfTest 'RunRenderBufferTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
+    Invoke-Step "geometry pipeline contracts $configuration" (Join-Path $selfTest 'RunGeometryPipelineTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration)
+    Invoke-Step "GPU buffer geometry $configuration" (Join-Path $selfTest 'RunBufferGeometryTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
+    Invoke-Step "compute buffer layouts $configuration" (Join-Path $selfTest 'RunComputeBufferLayoutsTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
+    Invoke-Step "compute texture contracts $configuration" (Join-Path $selfTest 'RunComputeTextureTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
+    Invoke-Step "render target contracts $configuration" (Join-Path $selfTest 'RunRenderTargetTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
+    Invoke-Step "graphics pipeline contracts $configuration" (Join-Path $selfTest 'RunGraphicsPipelineTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
+    Invoke-Step "compute contracts $configuration" (Join-Path $selfTest 'RunComputeTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
+    Invoke-Step "gpu timestamp contracts $configuration" (Join-Path $selfTest 'RunTimestampTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
+    Invoke-Step "upload resize contracts $configuration" (Join-Path $selfTest 'RunUploadResizeTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
+    Invoke-Step "hdr texture copy contracts $configuration" (Join-Path $selfTest 'RunHdrTextureCopyTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
+    Invoke-Step "DX12 window contracts $configuration" (Join-Path $selfTest 'RunDX12WindowTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
+    Invoke-Step "DX12 capture contracts $configuration" (Join-Path $selfTest 'RunCaptureTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
 }
 
 if (-not $Quick) {

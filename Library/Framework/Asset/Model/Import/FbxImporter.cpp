@@ -1,4 +1,5 @@
-﻿#include "FbxImporter.h"
+﻿// SPDX-License-Identifier: MIT
+#include "FbxImporter.h"
 
 #include <cstdint>
 
@@ -45,6 +46,43 @@ namespace
 		// TMap のキーにするためのハッシュ（位置・法線・UV の番号を混ぜる）。
 		friend uint32 GetTypeHash( const FCornerKey& Key ) { return HashCombine( HashCombine( GetTypeHash( Key.Position ), GetTypeHash( Key.Normal ) ), GetTypeHash( Key.UV ) ); }
 	};
+
+	// 全ノードを採取しても行列の合計が64 MiBを超えないよう、取り込み前に仕事量を検査する。
+	bool CheckAnimationSampling( const ufbx_scene& Scene, float32 RequestedFps, FString& OutError )
+	{
+		static constexpr uint64 MaxSampleMatrices = 1048576; // 16要素のfloat行列を最大64 MiB分まで採取する。
+		const float64 Fps = static_cast<float64>( NMath::Max( RequestedFps, 1.0f ) ); // 従来の1 fps未満の扱いを保つ。
+		uint64 Nodes = 0; // 実際にサンプリングするルート以外のノード数。
+		for ( size_t Index = 0; Index < Scene.nodes.count; ++Index )
+		{
+			if ( !Scene.nodes.data[Index]->is_root ) { ++Nodes; }
+		}
+		uint64 Remaining = MaxSampleMatrices; // 全クリップを合計した残りの採取回数。
+		for ( size_t Index = 0; Index < Scene.anim_stacks.count; ++Index )
+		{
+			const ufbx_anim_stack* Stack = Scene.anim_stacks.data[Index]; // 採取する時間範囲。
+			if ( !NMath::IsFinite( Stack->time_begin ) || !NMath::IsFinite( Stack->time_end ) )
+			{
+				OutError = "Animation has a non-finite time range";
+				return false;
+			}
+			if ( !( Stack->time_end > Stack->time_begin ) || !Stack->anim ) { continue; }
+			const float64 Samples = NMath::Max( NMath::Floor( ( Stack->time_end - Stack->time_begin ) * Fps + 0.5 ) + 1.0, 2.0 ); // 整数変換より先に上限と桁あふれを確認する。
+			if ( !NMath::IsFinite( Samples ) || Samples > static_cast<float64>( TNumericLimits<int32>::Max() ) || Samples > static_cast<float64>( MaxSampleMatrices ) )
+			{
+				OutError = "Animation sampling exceeds the limit";
+				return false;
+			}
+			const uint64 Count = static_cast<uint64>( Samples ); // 検査済みのキー数。
+			if ( Nodes != 0 && Count > Remaining / Nodes )
+			{
+				OutError = "Animation sampling exceeds the limit";
+				return false;
+			}
+			Remaining -= Count * Nodes;
+		}
+		return true;
+	}
 
 	class FSceneBuilder
 	{
@@ -164,6 +202,14 @@ namespace
 					Imported.Diffuse[2] = static_cast<float32>( Base.value_vec4.z );
 					Imported.Diffuse[3] = 1.0f;
 				}
+				if ( Material->pbr.opacity.has_value )
+				{
+					Imported.Diffuse[3] = NMath::Clamp( static_cast<float32>( Material->pbr.opacity.value_real ), 0.0f, 1.0f );
+				}
+				else if ( Material->fbx.transparency_factor.has_value )
+				{
+					Imported.Diffuse[3] = NMath::Clamp( 1.0f - static_cast<float32>( Material->fbx.transparency_factor.value_real ), 0.0f, 1.0f );
+				}
 				Imported.Texture = AddTexture( Base.texture );
 
 				if ( Material->fbx.specular_color.has_value )
@@ -211,8 +257,11 @@ namespace
 			FImportedMesh Imported;
 			Imported.Name = ToFString( Node.name );
 			Imported.Node = ImportedNode;
+			Imported.bHasBlendShapes = Mesh.blend_deformers.count > 0;
+			Imported.bHasVertexCache = Mesh.cache_deformers.count > 0;
 
 			const ufbx_skin_deformer* Skin = Mesh.skin_deformers.count > 0 ? Mesh.skin_deformers.data[0] : nullptr;
+			Imported.bHasUnsupportedSkinning = Mesh.skin_deformers.count > 1 || ( Skin != nullptr && Skin->skinning_method != UFBX_SKINNING_METHOD_LINEAR && Skin->skinning_method != UFBX_SKINNING_METHOD_RIGID );
 			const bool bHasUV = Mesh.vertex_uv.exists;
 			const bool bHasNormal = Mesh.vertex_normal.exists;
 
@@ -224,12 +273,26 @@ namespace
 				for ( size_t Vertex = 0; Vertex < Mesh.num_vertices && Vertex < Skin->vertices.count; ++Vertex )
 				{
 					const ufbx_skin_vertex& SkinVertex = Skin->vertices.data[Vertex];
+					int64 NumPositiveInfluences = 0; // 切り捨て前の正の影響数。
 					for ( uint32_t k = 0; k < SkinVertex.num_weights; ++k )
 					{
 						const ufbx_skin_weight& Weight = Skin->weights.data[SkinVertex.weight_begin + k];
-						Influences[static_cast<int32>( Vertex )].Add( FImportInfluence { static_cast<int32>( Weight.cluster_index ), static_cast<float32>( Weight.weight ) } );
+						const float32 ImportedWeight = static_cast<float32>( Weight.weight ); // 中間形式で保持する重み。
+						if ( Weight.weight > 0.0 )
+						{
+							++NumPositiveInfluences;
+						}
+						if ( !NMath::IsFinite( ImportedWeight ) )
+						{
+							Imported.bHasUnsupportedSkinning = true;
+							continue;
+						}
+						Influences[static_cast<int32>( Vertex )].Add( FImportInfluence { static_cast<int32>( Weight.cluster_index ), ImportedWeight } );
 					}
-					NImportedScene::LimitInfluences( Influences[static_cast<int32>( Vertex )] );
+					NImportedScene::LimitInfluences( Influences[static_cast<int32>( Vertex )], Options.MaxSkinInfluences == 0 ? TNumericLimits<int32>::Max() : Options.MaxSkinInfluences );
+					// 正規化後にfloat32で0になった影響も欠落として数える。
+					Influences[static_cast<int32>( Vertex )].RemoveAll( []( const FImportInfluence& Influence ) { return !( Influence.Weight > 0.0f ); } );
+					Imported.NumDiscardedSkinInfluences += NumPositiveInfluences - Influences[static_cast<int32>( Vertex )].Num();
 				}
 			}
 
@@ -325,10 +388,18 @@ namespace
 					{
 						if ( !Imported.Clusters.IsValidIndex( Influence.Cluster ) )
 						{
+							Imported.bHasUnsupportedSkinning = true;
 							continue;
 						}
 						Imported.Clusters[Influence.Cluster].Vertices.Add( Vertex );
 						Imported.Clusters[Influence.Cluster].Weights.Add( Influence.Weight );
+					}
+				}
+				for ( const FImportedCluster& Cluster : Imported.Clusters )
+				{
+					if ( Cluster.BoneNode < 0 && !Cluster.Vertices.IsEmpty() )
+					{
+						Imported.bHasUnsupportedSkinning = true;
 					}
 				}
 				// 骨が見つからなかった・頂点が 1 つもないクラスターは捨てる
@@ -404,7 +475,24 @@ bool NModelImport::ImportFromMemory( const void* Data, usize Size, const FString
 		return false;
 	}
 
+	if ( Options.bImportAnimations && !NMath::IsFinite( Options.AnimFps ) )
+	{
+		OutError = "AnimFps must be finite";
+		return false;
+	}
+
+	if ( Options.MaxSkinInfluences < 0 )
+	{
+		OutError = "MaxSkinInfluences must be zero or greater";
+		return false;
+	}
+
 	ufbx_load_opts LoadOptions = {};
+	if ( Options.bRequireStatic )
+	{
+		LoadOptions.temp_allocator.memory_limit = 256 * 1024 * 1024;
+		LoadOptions.result_allocator.memory_limit = 256 * 1024 * 1024;
+	}
 	// Y が上の右手系に回す（FBX の上の軸が Z の場合など）。単位は変えない
 	LoadOptions.target_axes = ufbx_axes_right_handed_y_up;
 	LoadOptions.space_conversion = UFBX_SPACE_CONVERSION_ADJUST_TRANSFORMS;
@@ -415,7 +503,7 @@ bool NModelImport::ImportFromMemory( const void* Data, usize Size, const FString
 	LoadOptions.generate_missing_normals = true;
 	// OBJ が参照する .mtl を読む（無くても失敗にしない）
 	LoadOptions.load_external_files = true;
-	LoadOptions.ignore_missing_external_files = true;
+	LoadOptions.ignore_missing_external_files = !Options.bRequireStatic; // 静的取り込みではMTL欠落も失敗にする。
 	LoadOptions.filename.data = *FileName;
 	LoadOptions.filename.length = SIZE_MAX;
 
@@ -429,6 +517,17 @@ bool NModelImport::ImportFromMemory( const void* Data, usize Size, const FString
 		return false;
 	}
 
+	if ( Options.bRequireStatic && ( Scene->skin_deformers.count > 0 || Scene->blend_deformers.count > 0 || Scene->cache_deformers.count > 0 || Scene->anim_curves.count > 0 ) )
+	{
+		OutError = "Static import does not support skinning, morphs, vertex caches or animation curves";
+		ufbx_free_scene( Scene );
+		return false;
+	}
+	if ( Options.bImportAnimations && !CheckAnimationSampling( *Scene, Options.AnimFps, OutError ) )
+	{
+		ufbx_free_scene( Scene );
+		return false;
+	}
 	FSceneBuilder Builder( *Scene, Options, OutScene );
 	Builder.Build();
 	ufbx_free_scene( Scene );

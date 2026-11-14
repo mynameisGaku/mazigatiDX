@@ -86,6 +86,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\PackageGame.ps1 -Proje
 |文書|内容|
 |---|---|
 |[チュートリアル](Docs/TUTORIAL.md)|最初のゲームを作る（プロジェクトを作る → オブジェクトとシーンを書く → 人に渡す形にまとめる）|
+|[バックエンド互換表](Docs/BACKEND_COMPATIBILITY.md)・[初期調査](Docs/BACKEND_AUDIT.md)|公開機能の対応状況と検査計画、形式・サービス・GPU基盤の課題|
+|[DX12開発の引き継ぎ](Docs/HANDOFF.md)|確定要件・現在地・責務・検査の限界・再開手順と次の作業|
+|[v1.0.0までのロードマップ](Docs/ROADMAP.md)|DX12の四描画方式・既存機能互換・高品質描画、開発順序と完了条件、Vulkan／OpenGL以降の計画|
 |[開発手順](Docs/DEVELOPMENT.md)|構成と依存、各機能の使い方、コードの書き方の決まり、プロジェクトの生成と確認、変更の統合|
 |[設計の決まり](Docs/WRAPPER_GUIDE.md)|層と依存の向き、型と単位、資源とハンドル、スレッド、エラーの扱い、文字コード、新しい機能を足す手順|
 |[UI](Docs/UI.md)|UI（ウィジェット）の構成・使い方・レイアウト・ブラシ・入力・描画先の表示|
@@ -122,3 +125,8 @@ mazigatiDX のコードは [MIT ライセンス](LICENSE)です。使ってい�
 |`Core`|基盤・共通インターフェースの開発|
 
 機能ブランチから `dev` へ統合し、必要な確認を終えた区切りを `main` へ反映します。
+
+
+DX12による2D・基本3Dバックエンドは`--backend=dx12`で選べます。`Samples.exe --backend=dx12 --sample=Canvas2D`で図形と画像の見本を起動できます。`--sample=Geometry3D`ではカメラ・箱・球・カプセル・ビルボード・深度・画像付きメッシュと頂点／indexバッファの見本を起動できます。`--sample=StaticModel`では静的OBJから作る複数個体の見本を起動できます。現段階ではアニメーションモデル・照明・音声等は未対応です。設計・対応範囲・確認手順は[開発手順](Docs/DEVELOPMENT.md#dx12バックエンド)を参照してください。
+
+DX12でもImGuiのウィンドウを主画面から切り離せます。既定の`bEnableImGui`／`bImGuiViewports`設定で有効です。更新頻度の設定と確認結果は[マルチビューポートの記録](Docs/DX12_IMGUI_VIEWPORTS.md)にあります。

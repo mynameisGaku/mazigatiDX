@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// SPDX-License-Identifier: MIT
+#pragma once
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
 #include "Library/Math/Vector2.h"
@@ -18,7 +19,7 @@ struct FImportMatrix
 {
 	float32 M[16] = { 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
 
-	// 全要素の差が Tolerance 以下か
+	// 有限な行列同士の全要素の差が許容値以下ならtrue。不正な許容値や非有限値はfalse。
 	bool NearlyEquals( const FImportMatrix& Other, float32 Tolerance = 1.0e-5f ) const;
 };
 
@@ -49,7 +50,11 @@ struct FImportedMesh
 	TArray<FVector2> UVs;                  // 無ければ空。あれば Positions と同じ数（V は上が 0 に直してある）
 	TArray<int32> Indices;                 // 3 つで 1 つの三角形
 	TArray<int32> TriangleMaterials;       // 三角形ごとの FImportedScene::Materials の番号（-1 で既定）
+	bool bHasVertexCache = false; // 頂点キャッシュによる変形の存在。
+	bool bHasBlendShapes = false; // モーフの存在。静的描画で変形を黙って落とさないため保持する。
 	TArray<FImportedCluster> Clusters;     // 空ならスキンなし
+	bool bHasUnsupportedSkinning = false; // 線形スキンへ保持できない方式・複数deformer・無効な骨や重みの存在。
+	int64 NumDiscardedSkinInfluences = 0; // 取り込みで落とした正の影響数。頂点の分割前に数える。
 
 	FORCEINLINE bool IsSkinned() const { return !Clusters.IsEmpty(); }
 	FORCEINLINE int32 GetNumTriangles() const { return Indices.Num() / 3; }
@@ -106,7 +111,7 @@ struct FImportInfluence
 
 namespace NImportedScene
 {
-	// DxLib（DirectX 形式）が 1 頂点で使える骨の数
+	// 取り込みの既定の上限。ファイル形式や描画APIの上限とは分ける
 	constexpr int32 MaxInfluencesPerVertex = 4;
 
 	// Z を反転した座標系に変換する行列（S * M * S。S = diag( 1, 1, -1, 1 )）

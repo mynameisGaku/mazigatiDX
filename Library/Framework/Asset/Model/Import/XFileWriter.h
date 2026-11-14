@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// SPDX-License-Identifier: MIT
+#pragma once
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
 #include "Library/Framework/Asset/Model/Import/ImportedScene.h"
@@ -17,6 +18,9 @@
 //=============================================================================
 namespace NXFile
 {
+	// この書式へ保持できない変形と、取り込み時に失った影響をメッシュごとの理由で返す。空でも材質等の完全互換は保証しない。
+	TArray<FString> GetUnsupportedDeformations( const FImportedScene& Scene );
+
 	// TexturePaths: Scene.Textures と同じ並びの、TextureFilename に書くパス（.x のあるフォルダからの相対がよい）。足りなければ Scene.Textures[i].File
 	FString Write( const FImportedScene& Scene, const TArray<FString>& TexturePaths );
 }

@@ -19,7 +19,19 @@
     <ClCompile Include="Library\Core\Log\LogVerbosity.cpp">
       <Filter>Library\Core\Log</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Core\Render\BufferResourceHandle.cpp">
+      <Filter>Library\Core\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Core\Render\RenderResourceSerial.cpp">
+      <Filter>Library\Core\Render</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Core\Thread\GameThread.cpp">
+      <Filter>Library\Core\Thread</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Core\Thread\RenderThread.cpp">
+      <Filter>Library\Core\Thread</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Core\Thread\TaskFence.cpp">
       <Filter>Library\Core\Thread</Filter>
     </ClCompile>
     <ClCompile Include="Library\Core\Time\DateTime.cpp">
@@ -436,6 +448,9 @@
     <ClCompile Include="Library\Framework\Asset\Model\Import\ModelImporter.cpp">
       <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Model\Import\StaticModelBuilder.cpp">
+      <Filter>Library\Framework\Asset\Model\Import</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Model\Import\XFileWriter.cpp">
       <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClCompile>
@@ -691,6 +706,9 @@
     <ClCompile Include="Library\Framework\Job\AsyncTask.cpp">
       <Filter>Library\Framework\Job</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Job\JobPipe.cpp">
+      <Filter>Library\Framework\Job</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Job\JobSubsystem.cpp">
       <Filter>Library\Framework\Job</Filter>
     </ClCompile>
@@ -913,6 +931,12 @@
     <ClCompile Include="Library\Framework\Render\State\ShadowMapView.cpp">
       <Filter>Library\Framework\Render\State</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Render\Thread\RenderCommandThread.cpp">
+      <Filter>Library\Framework\Render\Thread</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Render\Thread\ThreadedRenderSurface.cpp">
+      <Filter>Library\Framework\Render\Thread</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\SaveGame\SaveGameStorage.cpp">
       <Filter>Library\Framework\SaveGame</Filter>
     </ClCompile>
@@ -930,6 +954,12 @@
     </ClCompile>
     <ClCompile Include="Library\Framework\Text\TextLayout.cpp">
       <Filter>Library\Framework\Text</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Thread\CommandThread.cpp">
+      <Filter>Library\Framework\Thread</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Thread\Private\OrderedTaskQueue.cpp">
+      <Filter>Library\Framework\Thread\Private</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\UI\Animation\UIAnimator.cpp">
       <Filter>Library\Framework\UI\Animation</Filter>
@@ -1168,6 +1198,78 @@
     <ClCompile Include="Library\Platform\BackendSelection.cpp">
       <Filter>Library\Platform</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Asset\DX12AssetBackendSubsystem.cpp">
+      <Filter>Library\Platform\DX12\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Command\Compute\DX12ComputeQueue.cpp">
+      <Filter>Library\Platform\DX12\Command\Compute</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Device\DX12Device.cpp">
+      <Filter>Library\Platform\DX12\Device</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Device\DX12QueueCompletion.cpp">
+      <Filter>Library\Platform\DX12\Device</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\ImGui\Frame\DX12ImGuiFrameRenderer.cpp">
+      <Filter>Library\Platform\DX12\ImGui\Frame</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\ImGui\Render\DX12ImGuiRenderer.cpp">
+      <Filter>Library\Platform\DX12\ImGui\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Pipeline\Compute\DX12ComputePipelineStore.cpp">
+      <Filter>Library\Platform\DX12\Pipeline\Compute</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Pipeline\Geometry\DX12GeometryPipelineStore.cpp">
+      <Filter>Library\Platform\DX12\Pipeline\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Pipeline\Graphics\DX12GraphicsPipelineStore.cpp">
+      <Filter>Library\Platform\DX12\Pipeline\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\Capture\DX12CaptureTarget.cpp">
+      <Filter>Library\Platform\DX12\Render\Capture</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\Draw\DX12DrawExecutorSubsystem.cpp">
+      <Filter>Library\Platform\DX12\Render\Draw</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\Game\DX12GameCapture.cpp">
+      <Filter>Library\Platform\DX12\Render\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\Game\DX12GameRenderer.cpp">
+      <Filter>Library\Platform\DX12\Render\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\Game\DX12GameSurface.cpp">
+      <Filter>Library\Platform\DX12\Render\Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\Geometry\DX12GeometryRenderer.cpp">
+      <Filter>Library\Platform\DX12\Render\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\Target\DX12RenderTargetPass.cpp">
+      <Filter>Library\Platform\DX12\Render\Target</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Resource\Buffer\DX12BufferStore.cpp">
+      <Filter>Library\Platform\DX12\Resource\Buffer</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Resource\Descriptor\DX12DescriptorPool.cpp">
+      <Filter>Library\Platform\DX12\Resource\Descriptor</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Resource\Readback\DX12TextureReadback.cpp">
+      <Filter>Library\Platform\DX12\Resource\Readback</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureFormat.cpp">
+      <Filter>Library\Platform\DX12\Resource\Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureStore.cpp">
+      <Filter>Library\Platform\DX12\Resource\Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Resource\Timestamp\DX12TimestampStore.cpp">
+      <Filter>Library\Platform\DX12\Resource\Timestamp</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Resource\Upload\DX12UploadArena.cpp">
+      <Filter>Library\Platform\DX12\Resource\Upload</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Window\DX12PlatformSubsystem.cpp">
+      <Filter>Library\Platform\DX12\Window</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DxLib\DxLibBackendSubsystem.cpp">
       <Filter>Library\Platform\DxLib</Filter>
     </ClCompile>
@@ -1261,6 +1363,12 @@
     <ClCompile Include="Library\Platform\DxLib\Window\DxLibWindowControlSubsystem.cpp">
       <Filter>Library\Platform\DxLib\Window</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\ImGui\Render\ImGuiCanvas2D.cpp">
+      <Filter>Library\Platform\ImGui\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\ImGui\Render\ImGuiViewportScheduler.cpp">
+      <Filter>Library\Platform\ImGui\Render</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\Null\NullAssetBackendSubsystem.cpp">
       <Filter>Library\Platform\Null</Filter>
     </ClCompile>
@@ -1287,6 +1395,30 @@
     </ClCompile>
     <ClCompile Include="Library\Platform\Null\NullWindowControlSubsystem.cpp">
       <Filter>Library\Platform\Null</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Canvas\CanvasDrawExecutor.cpp">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Canvas\GeometryCanvas2D.cpp">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryBufferStore.cpp">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryCommandExecutor.cpp">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryQuadBuilder.cpp">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryShapeBuilder.cpp">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Model\StaticModelStore.cpp">
+      <Filter>Library\Platform\Render\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Texture\TextureAssetStore.cpp">
+      <Filter>Library\Platform\Render\Texture</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\SDL\SdlGamepadInputSubsystem.cpp">
       <Filter>Library\Platform\SDL</Filter>
@@ -1318,6 +1450,18 @@
     <ClCompile Include="Library\Platform\System\ProjectPaths.cpp">
       <Filter>Library\Platform\System</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\Windows\Image\WicImageDecoder.cpp">
+      <Filter>Library\Platform\Windows\Image</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Windows\Image\WicImageEncoder.cpp">
+      <Filter>Library\Platform\Windows\Image</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Windows\Input\WindowsInputSubsystem.cpp">
+      <Filter>Library\Platform\Windows\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Windows\Text\WindowsTextRasterizer.cpp">
+      <Filter>Library\Platform\Windows\Text</Filter>
+    </ClCompile>
     <ClCompile Include="VendorModules\ImGui\imgui.cpp">
       <Filter>VendorModules\ImGui</Filter>
     </ClCompile>
@@ -1325,6 +1469,9 @@
       <Filter>VendorModules\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="VendorModules\ImGui\imgui_impl_dx11.cpp">
+      <Filter>VendorModules\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="VendorModules\ImGui\imgui_impl_dx12.cpp">
       <Filter>VendorModules\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="VendorModules\ImGui\imgui_impl_dx9.cpp">
@@ -1977,6 +2124,9 @@
     <ClInclude Include="Library\Core\Interfaces\Platform\IDisplayInfo.h">
       <Filter>Library\Core\Interfaces\Platform</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Platform\INativeWindow.h">
+      <Filter>Library\Core\Interfaces\Platform</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Platform\IPlatform.h">
       <Filter>Library\Core\Interfaces\Platform</Filter>
     </ClInclude>
@@ -1986,7 +2136,22 @@
     <ClInclude Include="Library\Core\Interfaces\Profiler\IProfiler.h">
       <Filter>Library\Core\Interfaces\Profiler</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IComputePipelineResources.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IComputeQueue.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IDrawExecutor.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IGeometryBufferSource.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IGpuTimestampResources.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IGraphicsPipelineResources.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IImage.h">
@@ -1995,10 +2160,37 @@
     <ClInclude Include="Library\Core\Interfaces\Render\IIndexBuffer.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IRenderBufferResources.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IRenderCanvas2D.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IRenderCommandQueue.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IRenderGeometry3D.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IRenderSurface.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IRenderTextRasterizer.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IRenderTextureResources.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IShader.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IShadowMap.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IStaticModelSource.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\ITextureDrawSource.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IVertexBuffer.h">
@@ -2052,10 +2244,121 @@
     <ClInclude Include="Library\Core\Profiler\ProfilerTypes.h">
       <Filter>Library\Core\Profiler</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Render\BufferResourceHandle.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\ComputeBufferLayout.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\ComputeBufferSlot.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\ComputeDispatch.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\ComputePipelineHandle.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\ComputeSubmission.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\ComputeTextureAccess.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\ComputeTextureCapabilities.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\ComputeTextureFormat.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\ComputeTextureSlot.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Render\DrawSpan.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Render\DrawVertex3D.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GeometryBufferDraw.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GeometryBufferView.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GeometryDrawState.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GeometryIndexFormat.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GeometryVertex.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GpuTimestampCapabilities.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GpuTimestampHandle.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GpuTimestampResult.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GraphicsBufferLayout.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GraphicsBufferSlot.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GraphicsInputElement.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GraphicsPipelineDesc.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GraphicsPipelineDraw.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GraphicsPipelineHandle.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GraphicsTextureSlot.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\GraphicsVertexAttributeFormat.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Render\OffscreenCaptureDesc.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\RenderBufferShaderAccess.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\RenderClipRect.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\RenderCommandContext.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\RenderResourceSerial.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\RenderTargetCapabilities.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\RenderTargetFormat.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\RenderTargetPassDesc.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\StaticModelDrawView.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\TextureDrawView.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\TextureResourceHandle.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Thread\Atomic.h">
@@ -2071,6 +2374,15 @@
       <Filter>Library\Core\Thread</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Thread\Mutex.h">
+      <Filter>Library\Core\Thread</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Thread\RenderThread.h">
+      <Filter>Library\Core\Thread</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Thread\TaskFence.h">
+      <Filter>Library\Core\Thread</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Thread\TaskFenceState.h">
       <Filter>Library\Core\Thread</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Thread\Thread.h">
@@ -2484,6 +2796,12 @@
     <ClInclude Include="Library\Framework\Asset\Model\Import\ModelImporter.h">
       <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Model\Import\StaticModelBuilder.h">
+      <Filter>Library\Framework\Asset\Model\Import</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Model\Import\StaticModelDefinition.h">
+      <Filter>Library\Framework\Asset\Model\Import</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Model\Import\XFileWriter.h">
       <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClInclude>
@@ -2749,6 +3067,9 @@
       <Filter>Library\Framework\Input\Touch</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Job\AsyncTask.h">
+      <Filter>Library\Framework\Job</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Job\JobPipe.h">
       <Filter>Library\Framework\Job</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Job\JobSubsystem.h">
@@ -3036,6 +3357,12 @@
     <ClInclude Include="Library\Framework\Render\State\TextStyle.h">
       <Filter>Library\Framework\Render\State</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Render\Thread\RenderCommandThread.h">
+      <Filter>Library\Framework\Render\Thread</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\Thread\ThreadedRenderSurface.h">
+      <Filter>Library\Framework\Render\Thread</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Render\Types\BufferRange.h">
       <Filter>Library\Framework\Render\Types</Filter>
     </ClInclude>
@@ -3095,6 +3422,12 @@
     </ClInclude>
     <ClInclude Include="Library\Framework\Text\TextLayout.h">
       <Filter>Library\Framework\Text</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Thread\CommandThread.h">
+      <Filter>Library\Framework\Thread</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Thread\Private\OrderedTaskQueue.h">
+      <Filter>Library\Framework\Thread\Private</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\UI\Animation\UIAnimator.h">
       <Filter>Library\Framework\UI\Animation</Filter>
@@ -3375,6 +3708,93 @@
     <ClInclude Include="Library\Platform\BackendSelection.h">
       <Filter>Library\Platform</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\DX12Log.h">
+      <Filter>Library\Platform\DX12</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Asset\DX12AssetBackendSubsystem.h">
+      <Filter>Library\Platform\DX12\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Command\Compute\DX12ComputeQueue.h">
+      <Filter>Library\Platform\DX12\Command\Compute</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Device\DX12Device.h">
+      <Filter>Library\Platform\DX12\Device</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Device\DX12QueueCompletion.h">
+      <Filter>Library\Platform\DX12\Device</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\ImGui\Frame\DX12ImGuiFrameRenderer.h">
+      <Filter>Library\Platform\DX12\ImGui\Frame</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\ImGui\Render\DX12ImGuiRenderer.h">
+      <Filter>Library\Platform\DX12\ImGui\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Pipeline\Compute\DX12ComputePipelineBinding.h">
+      <Filter>Library\Platform\DX12\Pipeline\Compute</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Pipeline\Compute\DX12ComputePipelineStore.h">
+      <Filter>Library\Platform\DX12\Pipeline\Compute</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Pipeline\Geometry\DX12GeometryPipelineStore.h">
+      <Filter>Library\Platform\DX12\Pipeline\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Pipeline\Graphics\DX12GraphicsPipelineBinding.h">
+      <Filter>Library\Platform\DX12\Pipeline\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Pipeline\Graphics\DX12GraphicsPipelineStore.h">
+      <Filter>Library\Platform\DX12\Pipeline\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\Capture\DX12CaptureTarget.h">
+      <Filter>Library\Platform\DX12\Render\Capture</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\Draw\DX12DrawExecutorSubsystem.h">
+      <Filter>Library\Platform\DX12\Render\Draw</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\Game\DX12GameCapture.h">
+      <Filter>Library\Platform\DX12\Render\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\Game\DX12GameRenderer.h">
+      <Filter>Library\Platform\DX12\Render\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\Game\DX12GameSurface.h">
+      <Filter>Library\Platform\DX12\Render\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\Geometry\DX12GeometryRenderer.h">
+      <Filter>Library\Platform\DX12\Render\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\Target\DX12RenderTargetPass.h">
+      <Filter>Library\Platform\DX12\Render\Target</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Resource\Buffer\DX12BufferBinding.h">
+      <Filter>Library\Platform\DX12\Resource\Buffer</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Resource\Buffer\DX12BufferStore.h">
+      <Filter>Library\Platform\DX12\Resource\Buffer</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Resource\Descriptor\DX12DescriptorPool.h">
+      <Filter>Library\Platform\DX12\Resource\Descriptor</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Resource\Readback\DX12TextureReadback.h">
+      <Filter>Library\Platform\DX12\Resource\Readback</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureBinding.h">
+      <Filter>Library\Platform\DX12\Resource\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureFormat.h">
+      <Filter>Library\Platform\DX12\Resource\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureStore.h">
+      <Filter>Library\Platform\DX12\Resource\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Resource\Timestamp\DX12TimestampStore.h">
+      <Filter>Library\Platform\DX12\Resource\Timestamp</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Resource\Upload\DX12UploadArena.h">
+      <Filter>Library\Platform\DX12\Resource\Upload</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Window\DX12PlatformSubsystem.h">
+      <Filter>Library\Platform\DX12\Window</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Platform\DxLib\DxLibBackendSubsystem.h">
       <Filter>Library\Platform\DxLib</Filter>
     </ClInclude>
@@ -3447,6 +3867,12 @@
     <ClInclude Include="Library\Platform\DxLib\Window\DxLibWindowControlSubsystem.h">
       <Filter>Library\Platform\DxLib\Window</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Platform\ImGui\Render\ImGuiCanvas2D.h">
+      <Filter>Library\Platform\ImGui\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\ImGui\Render\ImGuiViewportScheduler.h">
+      <Filter>Library\Platform\ImGui\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Platform\Null\NullAssetBackendSubsystem.h">
       <Filter>Library\Platform\Null</Filter>
     </ClInclude>
@@ -3476,6 +3902,30 @@
     </ClInclude>
     <ClInclude Include="Library\Platform\Null\NullWindowControlSubsystem.h">
       <Filter>Library\Platform\Null</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Canvas\CanvasDrawExecutor.h">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Canvas\GeometryCanvas2D.h">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryBufferStore.h">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryCommandExecutor.h">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryQuadBuilder.h">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryShapeBuilder.h">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Model\StaticModelStore.h">
+      <Filter>Library\Platform\Render\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Texture\TextureAssetStore.h">
+      <Filter>Library\Platform\Render\Texture</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\SDL\SdlGamepadInputSubsystem.h">
       <Filter>Library\Platform\SDL</Filter>
@@ -3513,6 +3963,18 @@
     <ClInclude Include="Library\Platform\System\WindowsInclude.h">
       <Filter>Library\Platform\System</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Platform\Windows\Image\WicImageDecoder.h">
+      <Filter>Library\Platform\Windows\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Windows\Image\WicImageEncoder.h">
+      <Filter>Library\Platform\Windows\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Windows\Input\WindowsInputSubsystem.h">
+      <Filter>Library\Platform\Windows\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Windows\Text\WindowsTextRasterizer.h">
+      <Filter>Library\Platform\Windows\Text</Filter>
+    </ClInclude>
     <ClInclude Include="VendorModules\ImGui\imconfig.h">
       <Filter>VendorModules\ImGui</Filter>
     </ClInclude>
@@ -3520,6 +3982,9 @@
       <Filter>VendorModules\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\ImGui\imgui_impl_dx11.h">
+      <Filter>VendorModules\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="VendorModules\ImGui\imgui_impl_dx12.h">
       <Filter>VendorModules\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="VendorModules\ImGui\imgui_impl_dx9.h">
@@ -5210,6 +5675,9 @@
     <Filter Include="Library\Framework\Render\State">
       <UniqueIdentifier>{D42D37FC-96AB-A9C8-F858-712F6D0F3AB5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Library\Framework\Render\Thread">
+      <UniqueIdentifier>{D417DBED-1130-B1FB-F600-41F41111F86B}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Library\Framework\Render\Types">
       <UniqueIdentifier>{5E0DB47E-4796-0897-9328-6B5A5A865181}</UniqueIdentifier>
     </Filter>
@@ -5224,6 +5692,12 @@
     </Filter>
     <Filter Include="Library\Framework\Text">
       <UniqueIdentifier>{EDEBE803-9A86-DA1F-7EC2-C3911AB2DD0D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Thread">
+      <UniqueIdentifier>{E46F1CE3-FB76-023A-7265-73B20DA817ED}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Framework\Thread\Private">
+      <UniqueIdentifier>{3524CE9B-4079-3759-1E8F-5E83DF3C50B0}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\UI">
       <UniqueIdentifier>{B48D1ABF-C151-C6CA-11D0-7E60B20F1D52}</UniqueIdentifier>
@@ -5297,6 +5771,84 @@
     <Filter Include="Library\Platform">
       <UniqueIdentifier>{ADB500FA-0E39-4833-EAC0-DB5B2ED96559}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Library\Platform\DX12">
+      <UniqueIdentifier>{0633C785-490F-A126-FE21-66DC0128DFAE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Asset">
+      <UniqueIdentifier>{F7292C24-3E33-6BC1-EBAF-15BF5E5C7A76}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Command">
+      <UniqueIdentifier>{E90AA1E6-E510-DF6E-F73F-DE791BE52E28}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Command\Compute">
+      <UniqueIdentifier>{D3514ECD-7D79-A762-F854-5F28E80AC181}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Device">
+      <UniqueIdentifier>{AC10740C-9A7C-F8C4-22A0-32EE37C11515}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\ImGui">
+      <UniqueIdentifier>{534E2C7E-4D6F-EBA8-3B64-5213E7FBCE15}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\ImGui\Frame">
+      <UniqueIdentifier>{5B41250F-A860-1294-42F4-5510152517E6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\ImGui\Render">
+      <UniqueIdentifier>{4742E26E-0A3E-F0F9-7647-52EDCDD08CDE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Pipeline">
+      <UniqueIdentifier>{C6066978-F864-9F52-482C-D38E05C28CD8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Pipeline\Compute">
+      <UniqueIdentifier>{78013B49-38FD-EFB9-DBBE-AF19B0913255}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Pipeline\Geometry">
+      <UniqueIdentifier>{CE26363D-DDC4-2FFE-A657-D93320111E59}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Pipeline\Graphics">
+      <UniqueIdentifier>{E5644E71-EBBA-08F3-593A-5DCA3E32B834}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Render">
+      <UniqueIdentifier>{B97C14A7-3033-B05E-0F5F-78BC1E644601}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Render\Capture">
+      <UniqueIdentifier>{E9BDE515-0ABE-83B6-3551-85A2B4DC1188}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Render\Draw">
+      <UniqueIdentifier>{1FB6D691-C9E9-0B86-E54E-BBC250A9731C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Render\Game">
+      <UniqueIdentifier>{7B070C52-2686-D7F6-BCDC-ECBCE759CF76}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Render\Geometry">
+      <UniqueIdentifier>{66992AD4-2DFF-89A2-82FE-C87488EB6B27}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Render\Target">
+      <UniqueIdentifier>{34E46017-57EA-6738-DEB0-A9917A212B2F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Resource">
+      <UniqueIdentifier>{9A7691AC-C7B9-2910-03C0-8AEA5D25BC91}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Resource\Buffer">
+      <UniqueIdentifier>{1CDB96DD-0682-3E1D-6F56-E4E9BC5EE869}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Resource\Descriptor">
+      <UniqueIdentifier>{EEFFFD28-D305-C5BC-9BEC-E435CCC99213}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Resource\Readback">
+      <UniqueIdentifier>{F36CAFE0-BAC0-38F4-5191-DB20B7985730}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Resource\Texture">
+      <UniqueIdentifier>{79C43A66-DCFC-4FF5-AB23-22A1618707FE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Resource\Timestamp">
+      <UniqueIdentifier>{4328B0F9-32ED-1FE4-67AA-8C3036CE25A6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Resource\Upload">
+      <UniqueIdentifier>{F59DF3E6-C624-47DE-750B-53BC34F8A85A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Window">
+      <UniqueIdentifier>{37D65420-DC1F-A8F9-F304-85E799095E27}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Library\Platform\DxLib">
       <UniqueIdentifier>{F933E44F-D2AA-43FC-A5C7-40704577771B}</UniqueIdentifier>
     </Filter>
@@ -5318,14 +5870,47 @@
     <Filter Include="Library\Platform\DxLib\Window">
       <UniqueIdentifier>{37409DE1-352B-CC5F-CFF7-B96539B867EF}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Library\Platform\ImGui">
+      <UniqueIdentifier>{6AD4EEA6-B4FD-89ED-1BC7-1ECF7606DA55}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\ImGui\Render">
+      <UniqueIdentifier>{C56018E6-DA79-EF33-6D9E-9166CA99376F}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Library\Platform\Null">
       <UniqueIdentifier>{F9C9031B-B8BD-65C1-0F4D-AB507CBB3645}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Render">
+      <UniqueIdentifier>{7A8807D1-B70C-8DCE-8982-7DE2478B2F3B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Render\Canvas">
+      <UniqueIdentifier>{02D34393-6C89-60D2-88D3-867CACDF59A2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Render\Geometry">
+      <UniqueIdentifier>{818CECE2-C56F-495C-14B9-C481213FA1D0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Render\Model">
+      <UniqueIdentifier>{06B78CD1-FC94-9503-F5B5-C1546C1F5231}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Render\Texture">
+      <UniqueIdentifier>{BADFE362-9748-2B0F-1F6A-2876BA6BDFB6}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Platform\SDL">
       <UniqueIdentifier>{3D8D195C-3E36-1F77-B84D-0F6497285B86}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Platform\System">
       <UniqueIdentifier>{99AE29AE-4656-AB5F-AEF1-248A133899D5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Windows">
+      <UniqueIdentifier>{FBD14D2B-5D0F-DFFE-6E69-7F18B3BA4B9B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Windows\Image">
+      <UniqueIdentifier>{45AF11BB-2AA2-AD60-CA54-B28594AAE7AA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Windows\Input">
+      <UniqueIdentifier>{C0168D10-FA87-AC91-1B48-2031C516A4A2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Windows\Text">
+      <UniqueIdentifier>{C7F573A0-13C0-7E2D-781B-C05CFEBFCA51}</UniqueIdentifier>
     </Filter>
     <Filter Include="VendorModules">
       <UniqueIdentifier>{B1A1C350-5AF7-E473-B7EF-0832BEC4D313}</UniqueIdentifier>

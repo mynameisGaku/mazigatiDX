@@ -78,7 +78,7 @@ namespace
 
 bool CDxLibDisplayInfoSubsystem::ShouldCreateSubsystem( CEngine& Engine ) const
 {
-	return !NBackendSelection::IsNullRequested();
+	return NBackendSelection::GetRequested() == EPlatformBackend::DxLib;
 }
 
 void CDxLibDisplayInfoSubsystem::Initialize( FSubsystemCollection& Collection )

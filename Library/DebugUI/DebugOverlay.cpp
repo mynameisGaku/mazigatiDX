@@ -169,6 +169,11 @@ void CDebugOverlay::ToggleProfiler()
 
 void CDebugOverlay::Draw( CGameInstance& Game )
 {
+	// UI無効時はゲーム描画の状態や資源へ触れない。
+	if ( !ImGui::GetCurrentContext() )
+	{
+		return;
+	}
 	const IPlatform* Platform = GetAppSubsystem<IPlatform>();
 	if ( Platform == nullptr ) return;
 

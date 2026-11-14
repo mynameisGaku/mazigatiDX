@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// SPDX-License-Identifier: MIT
+#pragma once
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
 #include "Library/Core/Interfaces/Asset/AssetBackend.h"
@@ -30,6 +31,8 @@ struct FModelExportOptions
 	bool bForce = false;
 	// FBX / OBJ のアニメーションを、毎秒何コマでサンプリングするか（DxLib での時間の単位 = コマ）
 	float32 AnimFps = 30.0f;
+	// FBX / OBJから保持できない変形を警告付きで省く。falseなら変換を失敗させる。
+	bool bAllowUnsupportedDeformations = false;
 };
 
 struct FModelExportResult

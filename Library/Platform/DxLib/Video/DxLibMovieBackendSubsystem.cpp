@@ -14,7 +14,7 @@ REGISTER_SUBSYSTEM( CDxLibMovieBackendSubsystem )
 
 bool CDxLibMovieBackendSubsystem::ShouldCreateSubsystem( CEngine& Engine ) const
 {
-	return !NBackendSelection::IsNullRequested();
+	return NBackendSelection::GetRequested() == EPlatformBackend::DxLib;
 }
 
 void CDxLibMovieBackendSubsystem::Initialize( FSubsystemCollection& Collection )

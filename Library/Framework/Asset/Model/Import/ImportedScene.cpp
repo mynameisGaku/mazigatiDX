@@ -1,15 +1,32 @@
-﻿#include "ImportedScene.h"
-
-
+﻿// SPDX-License-Identifier: MIT
+#include "ImportedScene.h"
 #include "Library/Core/Collection/Set.h"
 #include "Library/Core/Collection/Sort.h"
 #include "Library/Core/Types/Numeric.h"
 
+namespace
+{
+	// 変換行列にNaNや無限大が含まれる場合は、静的な姿勢や書き出し用の値として扱えない。
+	bool IsFiniteMatrix( const FImportMatrix& Matrix )
+	{
+		for ( float32 Value : Matrix.M )
+		{
+			if ( !NMath::IsFinite( Value ) ) { return false; }
+		}
+		return true;
+	}
+}
+
 bool FImportMatrix::NearlyEquals( const FImportMatrix& Other, float32 Tolerance ) const
 {
+	if ( !NMath::IsFinite( Tolerance ) || Tolerance < 0.0f || !IsFiniteMatrix( *this ) || !IsFiniteMatrix( Other ) )
+	{
+		return false;
+	}
 	for ( int32 i = 0; i < 16; ++i )
 	{
-		if ( NMath::Abs( M[i] - Other.M[i] ) > Tolerance )
+		// 有限なfloat同士でも差がfloatの範囲を超えるため、比較はdoubleで行う。
+		if ( NMath::Abs( static_cast<float64>( M[i] ) - static_cast<float64>( Other.M[i] ) ) > static_cast<float64>( Tolerance ) )
 		{
 			return false;
 		}
@@ -135,6 +152,10 @@ TArray<FString> NImportedScene::Validate( const FImportedScene& Scene )
 	for ( int32 Index = 0; Index < NumNodes; ++Index )
 	{
 		const int32 Parent = Scene.Nodes[Index].Parent;
+		if ( !IsFiniteMatrix( Scene.Nodes[Index].Local ) )
+		{
+			Problems.Add( FString::Printf( "node %d has a non-finite local matrix", Index ) );
+		}
 		if ( Parent < -1 || Parent >= NumNodes || Parent == Index )
 		{
 			Problems.Add( FString::Printf( "node %d has the invalid parent %d", Index, Parent ) );
@@ -182,6 +203,10 @@ TArray<FString> NImportedScene::Validate( const FImportedScene& Scene )
 		}
 		for ( const FImportedCluster& Cluster : Mesh.Clusters )
 		{
+			if ( !IsFiniteMatrix( Cluster.Offset ) )
+			{
+				Problems.Add( FString::Printf( "mesh %d has a non-finite cluster offset", MeshIndex ) );
+			}
 			if ( Cluster.BoneNode < 0 || Cluster.BoneNode >= NumNodes )
 			{
 				Problems.Add( FString::Printf( "mesh %d has a cluster with the invalid bone %d", MeshIndex, Cluster.BoneNode ) );
@@ -210,12 +235,20 @@ TArray<FString> NImportedScene::Validate( const FImportedScene& Scene )
 	}
 	for ( const FImportedAnimation& Animation : Scene.Animations )
 	{
-		if ( Animation.NumKeys <= 0 || !( Animation.Fps > 0.0f ) )
+		if ( Animation.NumKeys <= 0 || !NMath::IsFinite( Animation.Fps ) || !( Animation.Fps > 0.0f ) )
 		{
 			Problems.Add( FString::Printf( "animation '%s' has %d key(s) at %.2f fps", *Animation.Name, Animation.NumKeys, Animation.Fps ) );
 		}
 		for ( const FImportedTrack& Track : Animation.Tracks )
 		{
+			for ( const FImportMatrix& Key : Track.Keys )
+			{
+				if ( !IsFiniteMatrix( Key ) )
+				{
+					Problems.Add( FString::Printf( "animation '%s' has a non-finite key matrix", *Animation.Name ) );
+					break;
+				}
+			}
 			if ( Track.Node < 0 || Track.Node >= NumNodes )
 			{
 				Problems.Add( FString::Printf( "animation '%s' has a track for the invalid node %d", *Animation.Name, Track.Node ) );

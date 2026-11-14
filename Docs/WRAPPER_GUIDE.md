@@ -35,7 +35,7 @@ Library/Platform/Null   … DxLib を使わない実装（NullPlatform / NullAss
 
 | 対象 | 規約 |
 |---|---|
-| 名前 | 第三者でない名前空間は `N` で始める。型の接頭辞は `F`（値・構造体）、`C`（クラス）、`I`（インターフェース）、`E`（`enum class`）、`T`（テンプレート） |
+| 名前 | 第三者でない名前空間は `N` で始める。型の接頭辞は `F`（データ・値・ハンドル・効率的なデータ保持）、`C`（機能・実行・登録・外部資源管理を担う型。class／structの構文では決めない）、`I`（インターフェース）、`E`（`enum class`）、`T`（テンプレート） |
 | 整数・実数 | `int32` / `uint32` / `float32` / `float64` など、`Library/Core/Types` の型。素の `int` / `long` を窓口に出さない |
 | 色 | `FColor32`（`r g b a`、0..255）。DxLib の色（`unsigned int`）への変換は実装の中だけ |
 | ベクトル・行列 | `FVector2/3` `FMatrix4x4` `FQuaternion`（左手系・Y 上・行ベクトル）。DxLib の `VECTOR` / `MATRIX` への変換は実装の中だけ（`Platform/DxLib/DxLibTypes.h` の `NDxLibTypes::ToDxLib` / `FromDxLib`。数学の型には、DxLib の型への暗黙の変換はない） |
@@ -53,6 +53,8 @@ Library/Platform/Null   … DxLib を使わない実装（NullPlatform / NullAss
 - 無効なハンドルを表す値（`-1`）は実装の中の都合で、利用者に見せない。
 
 ## 4. スレッドと状態
+
+- 並列計算には既存のIJobSystemを使います。資源への直列操作にはCJobPipe、スレッド自体の固定が必要な所有者にはCCommandThreadを使い分けます。新しい処理の前にローカル文書と公式オンライン文書を参照し、CPU完了とGPU完了を区別します。[所有・受付・終了の契約](THREADING.md) に従ってください。
 
 - DxLib はスレッドセーフではない。**DxLib を呼ぶ関数は、メインスレッドからだけ呼ぶ**。窓口のコメントに明記する。
 - 描画は「記録 → 実行」に分ける。記録（`FDrawContext`）は並行にできるが、実行（`IDrawExecutor`）はメインスレッドで、記録された順に DxLib を呼ぶ。新しい描画を足すときは、命令（`EDrawCommand`）・データ・記録・実行をそろえる。旧命令の番号と形式は変えない。オブジェクトの描画は、DX12 のコマンドリストと同じ方式にする: `CGameObject::Draw( FDrawContext& CommandList )` は、シーンが渡すコマンドリストへ記録するだけで、DxLib も実行先も知らない（シーンがオブジェクトごとにコマンドリストを空にして渡し、記録されたものを描画順に実行する）。オブジェクトの外（シーンの `OnDraw` など、メインスレッド）から描くときは、`FImmediateDraw Draw( GetDrawExecutor() );` で同じ書き方のまま、その場で実行できる。

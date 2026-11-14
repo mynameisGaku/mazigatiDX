@@ -1,4 +1,5 @@
-﻿#include "ModelExporter.h"
+﻿// SPDX-License-Identifier: MIT
+#include "ModelExporter.h"
 #include "Library/Framework/Asset/Loading/AssetLog.h"
 
 
@@ -238,6 +239,7 @@ FModelExportResult NModelExport::Export( IModelBackend& Backend, const FString& 
 
 		FImportOptions ImportOptions;
 		ImportOptions.AnimFps = Options.AnimFps;
+		ImportOptions.MaxSkinInfluences = 8; // MV1変換先で扱える影響数。汎用取り込みの既定値とは分ける。
 		FImportedScene Scene;
 		FString ImportError;
 		if ( !NModelImport::ImportFromMemory( Bytes.GetData(), Bytes.Num(), Result.SourcePath, ImportOptions, Scene, ImportError ) )
@@ -256,6 +258,16 @@ FModelExportResult NModelExport::Export( IModelBackend& Backend, const FString& 
 		if ( !Scene.HasMesh() && Scene.Animations.IsEmpty() )
 		{
 			AddWarning( Result, "the file has neither a mesh nor an animation" );
+		}
+
+		const TArray<FString> UnsupportedDeformations = NXFile::GetUnsupportedDeformations( Scene ); // 画像の抽出・一時ファイルの書き込み前に確認する。
+		for ( const FString& Reason : UnsupportedDeformations )
+		{
+			if ( !Options.bAllowUnsupportedDeformations )
+			{
+				return Fail( Result, "the conversion cannot preserve model deformation: " + Reason );
+			}
+			AddWarning( Result, Reason );
 		}
 
 		NImportedScene::ConvertToLeftHanded( Scene );

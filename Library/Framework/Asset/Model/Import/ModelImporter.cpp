@@ -41,6 +41,13 @@ bool CModelImporter::ResolveRequest( const FString& Path, FString& OutFullPath )
 bool CModelImporter::ResolveLoadPath( const FString& FullPath, FString& OutLoadPath ) const
 {
 	OutLoadPath = FullPath;
+	if ( const IModelBackend* Backend = Context.GetModelBackend() )
+	{
+		if ( Backend->CanLoadModelSource( FullPath ) )
+		{
+			return true;
+		}
+	}
 	const EModelFileKind Kind = NModelFormat::Classify( FullPath );
 	if ( Kind != EModelFileKind::Imported && !( Kind == EModelFileKind::DxLibNative && bPreferConverted ) )
 	{

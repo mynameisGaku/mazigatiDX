@@ -86,6 +86,8 @@
     <ClCompile Include="Source\Camera\MainView.cpp" />
     <ClCompile Include="Source\Camera\Scenery.cpp" />
     <ClCompile Include="Source\Camera\TopView.cpp" />
+    <ClCompile Include="Source\Canvas2D\Canvas2DGallery.cpp" />
+    <ClCompile Include="Source\Canvas2D\Canvas2DSample.cpp" />
     <ClCompile Include="Source\Catalog\SampleCatalog.cpp" />
     <ClCompile Include="Source\Catalog\SampleScene.cpp" />
     <ClCompile Include="Source\Common\PhysicsView.cpp" />
@@ -105,6 +107,8 @@
     <ClCompile Include="Source\Filters\FilterImages.cpp" />
     <ClCompile Include="Source\Filters\FiltersSample.cpp" />
     <ClCompile Include="Source\Filters\SpotlightView.cpp" />
+    <ClCompile Include="Source\Geometry3D\Geometry3DGallery.cpp" />
+    <ClCompile Include="Source\Geometry3D\Geometry3DSample.cpp" />
     <ClCompile Include="Source\Hello\BouncingBox.cpp" />
     <ClCompile Include="Source\Hello\HelloSample.cpp" />
     <ClCompile Include="Source\Hello\ShapeGallery.cpp" />
@@ -202,6 +206,8 @@
     <ClCompile Include="Source\Shapes3D\Shapes3DSample.cpp" />
     <ClCompile Include="Source\Shapes3D\Shapes3DScenery.cpp" />
     <ClCompile Include="Source\Shapes3D\Shapes3DView.cpp" />
+    <ClCompile Include="Source\StaticModel\StaticModelGallery.cpp" />
+    <ClCompile Include="Source\StaticModel\StaticModelSample.cpp" />
     <ClCompile Include="Source\Text\FontShowcase.cpp" />
     <ClCompile Include="Source\Text\StyledShowcase.cpp" />
     <ClCompile Include="Source\Text\TextSample.cpp" />
@@ -259,6 +265,8 @@
     <ClInclude Include="Source\Camera\MainView.h" />
     <ClInclude Include="Source\Camera\Scenery.h" />
     <ClInclude Include="Source\Camera\TopView.h" />
+    <ClInclude Include="Source\Canvas2D\Canvas2DGallery.h" />
+    <ClInclude Include="Source\Canvas2D\Canvas2DSample.h" />
     <ClInclude Include="Source\Catalog\SampleCatalog.h" />
     <ClInclude Include="Source\Catalog\SampleInfo.h" />
     <ClInclude Include="Source\Catalog\SampleScene.h" />
@@ -282,6 +290,8 @@
     <ClInclude Include="Source\Filters\FilterImages.h" />
     <ClInclude Include="Source\Filters\FiltersSample.h" />
     <ClInclude Include="Source\Filters\SpotlightView.h" />
+    <ClInclude Include="Source\Geometry3D\Geometry3DGallery.h" />
+    <ClInclude Include="Source\Geometry3D\Geometry3DSample.h" />
     <ClInclude Include="Source\Hello\BouncingBox.h" />
     <ClInclude Include="Source\Hello\HelloSample.h" />
     <ClInclude Include="Source\Hello\ShapeGallery.h" />
@@ -390,6 +400,8 @@
     <ClInclude Include="Source\Shapes3D\Shapes3DSample.h" />
     <ClInclude Include="Source\Shapes3D\Shapes3DScenery.h" />
     <ClInclude Include="Source\Shapes3D\Shapes3DView.h" />
+    <ClInclude Include="Source\StaticModel\StaticModelGallery.h" />
+    <ClInclude Include="Source\StaticModel\StaticModelSample.h" />
     <ClInclude Include="Source\Text\FontShowcase.h" />
     <ClInclude Include="Source\Text\StyledShowcase.h" />
     <ClInclude Include="Source\Text\TextSample.h" />

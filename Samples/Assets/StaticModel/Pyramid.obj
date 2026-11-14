@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MIT
+mtllib Pyramid.mtl
+o Pyramid
+v -1 0 -1
+v 1 0 -1
+v 1 0 1
+v -1 0 1
+v 0 2 0
+usemtl Gold
+f 1 5 2
+f 2 5 3
+usemtl Blue
+f 3 5 4
+f 4 5 1
+usemtl Gold
+f 4 1 2 3

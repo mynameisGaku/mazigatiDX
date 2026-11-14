@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 
+#include <chrono>
 #include <condition_variable>   // 中身は std の mutex / condition_variable。標準ライブラリに触れるのは、Core/Thread の三つのヘッダーだけに閉じ込める
 #include <mutex>
 
@@ -107,6 +108,10 @@ public:
 	// Predicate（引数なしで bool を返す）が true になるまで待つ。Lock は取っていること。
 	template<typename PredicateType>
 	FORCEINLINE void Wait( FUniqueLock& Lock, PredicateType Predicate ) { Native.wait( Lock.NativeLock, Predicate ); }
+
+	// 指定ミリ秒まで条件を待つ。期限内にPredicateがtrueならtrue。Lockは取っていること。
+	template<typename PredicateType>
+	FORCEINLINE bool WaitFor( FUniqueLock& Lock, uint32 Milliseconds, PredicateType Predicate ) { return Native.wait_for( Lock.NativeLock, std::chrono::milliseconds( Milliseconds ), Predicate ); }
 
 private:
 	// 中身。

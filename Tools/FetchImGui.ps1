@@ -15,7 +15,7 @@ $versionFile = Join-Path $destination 'VERSION.txt'
 $coreFiles = @('imgui.h', 'imgui.cpp', 'imgui_internal.h', 'imgui_draw.cpp', 'imgui_tables.cpp', 'imgui_widgets.cpp',
                'imstb_rectpack.h', 'imstb_textedit.h', 'imstb_truetype.h', 'imconfig.h', 'LICENSE.txt')
 $backendFiles = @('imgui_impl_win32.h', 'imgui_impl_win32.cpp', 'imgui_impl_dx11.h', 'imgui_impl_dx11.cpp',
-                  'imgui_impl_dx9.h', 'imgui_impl_dx9.cpp')
+                  'imgui_impl_dx9.h', 'imgui_impl_dx9.cpp', 'imgui_impl_dx12.h', 'imgui_impl_dx12.cpp')
 
 if ((Test-Path -LiteralPath $versionFile) -and ((Get-Content -LiteralPath $versionFile -Raw).Trim() -eq $imguiTag)) {
     $missing = @($coreFiles + $backendFiles | Where-Object { -not (Test-Path -LiteralPath (Join-Path $destination $_)) })

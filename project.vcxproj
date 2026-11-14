@@ -62,6 +62,11 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(MSBuildThisFileDirectory)Build\mazigatiDX.props" />
   </ImportGroup>
+  <!-- ソリューションからのx64起動で使う共有のデバッグ設定。 -->
+  <PropertyGroup Condition="'$(Platform)'=='x64'">
+    <LocalDebuggerCommandArguments>--backend=dx12</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
   <ItemGroup>
@@ -174,9 +179,41 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestUIScreens.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestUIScreens.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestUITextBox.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestUITextBox.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestUIWidgets.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestUIWidgets.cpp')" />
+    <ClCompile Include="Source\SelfTest\BufferGeometryContractMain.cpp" Condition="Exists('Source\SelfTest\BufferGeometryContractMain.cpp')" />
+    <ClCompile Include="Source\SelfTest\BufferGeometryPlatformSelfTest.cpp" Condition="Exists('Source\SelfTest\BufferGeometryPlatformSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\CaptureContractMain.cpp" Condition="Exists('Source\SelfTest\CaptureContractMain.cpp')" />
+    <ClCompile Include="Source\SelfTest\CapturePlatformSelfTest.cpp" Condition="Exists('Source\SelfTest\CapturePlatformSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\CaptureTargetContractMain.cpp" Condition="Exists('Source\SelfTest\CaptureTargetContractMain.cpp')" />
+    <ClCompile Include="Source\SelfTest\ComputeBufferLayoutsContractMain.cpp" Condition="Exists('Source\SelfTest\ComputeBufferLayoutsContractMain.cpp')" />
+    <ClCompile Include="Source\SelfTest\ComputeContractMain.cpp" Condition="Exists('Source\SelfTest\ComputeContractMain.cpp')" />
+    <ClCompile Include="Source\SelfTest\ComputePlatformSelfTest.cpp" Condition="Exists('Source\SelfTest\ComputePlatformSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\ComputeTextureContractMain.cpp" Condition="Exists('Source\SelfTest\ComputeTextureContractMain.cpp')" />
+    <ClCompile Include="Source\SelfTest\ComputeTexturePlatformSelfTest.cpp" Condition="Exists('Source\SelfTest\ComputeTexturePlatformSelfTest.cpp')" />
     <ClCompile Include="Source\SelfTest\ConsoleSelfTest.cpp" Condition="Exists('Source\SelfTest\ConsoleSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\DeviceLifecycleMain.cpp" Condition="Exists('Source\SelfTest\DeviceLifecycleMain.cpp')" />
     <ClCompile Include="Source\SelfTest\EcsSelfTestScene.cpp" Condition="Exists('Source\SelfTest\EcsSelfTestScene.cpp')" />
+    <ClCompile Include="Source\SelfTest\GeometryPipelineContractMain.cpp" Condition="Exists('Source\SelfTest\GeometryPipelineContractMain.cpp')" />
+    <ClCompile Include="Source\SelfTest\GraphicsPipelineContractMain.cpp" Condition="Exists('Source\SelfTest\GraphicsPipelineContractMain.cpp')" />
+    <ClCompile Include="Source\SelfTest\GraphicsPipelinePlatformSelfTest.cpp" Condition="Exists('Source\SelfTest\GraphicsPipelinePlatformSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\HdrTextureCopyContractMain.cpp" Condition="Exists('Source\SelfTest\HdrTextureCopyContractMain.cpp')" />
+    <ClCompile Include="Source\SelfTest\HdrTextureCopyPlatformSelfTest.cpp" Condition="Exists('Source\SelfTest\HdrTextureCopyPlatformSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\RenderBufferContractMain.cpp" Condition="Exists('Source\SelfTest\RenderBufferContractMain.cpp')" />
+    <ClCompile Include="Source\SelfTest\RenderBufferPlatformSelfTest.cpp" Condition="Exists('Source\SelfTest\RenderBufferPlatformSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\RenderTargetContractMain.cpp" Condition="Exists('Source\SelfTest\RenderTargetContractMain.cpp')" />
+    <ClCompile Include="Source\SelfTest\RenderTargetPlatformSelfTest.cpp" Condition="Exists('Source\SelfTest\RenderTargetPlatformSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\RenderThreadContractMain.cpp" Condition="Exists('Source\SelfTest\RenderThreadContractMain.cpp')" />
+    <ClCompile Include="Source\SelfTest\RenderThreadPlatformSelfTest.cpp" Condition="Exists('Source\SelfTest\RenderThreadPlatformSelfTest.cpp')" />
     <ClCompile Include="Source\SelfTest\SelfTestEntry.cpp" Condition="Exists('Source\SelfTest\SelfTestEntry.cpp')" />
+    <ClCompile Include="Source\SelfTest\SubstrateIntegrationMain.cpp" Condition="Exists('Source\SelfTest\SubstrateIntegrationMain.cpp')" />
+    <ClCompile Include="Source\SelfTest\ThreadExecutionContractMain.cpp" Condition="Exists('Source\SelfTest\ThreadExecutionContractMain.cpp')" />
+    <ClCompile Include="Source\SelfTest\ThreadShutdownPlatformSelfTest.cpp" Condition="Exists('Source\SelfTest\ThreadShutdownPlatformSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\TimestampContractMain.cpp" Condition="Exists('Source\SelfTest\TimestampContractMain.cpp')" />
+    <ClCompile Include="Source\SelfTest\TimestampPlatformSelfTest.cpp" Condition="Exists('Source\SelfTest\TimestampPlatformSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\UploadResizeContractMain.cpp" Condition="Exists('Source\SelfTest\UploadResizeContractMain.cpp')" />
+    <ClCompile Include="Source\SelfTest\ViewportContractMain.cpp" Condition="Exists('Source\SelfTest\ViewportContractMain.cpp')" />
+    <ClCompile Include="Source\SelfTest\ViewportPlatformSelfTest.cpp" Condition="Exists('Source\SelfTest\ViewportPlatformSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\ViewportWindowLifecycleSelfTest.cpp" Condition="Exists('Source\SelfTest\ViewportWindowLifecycleSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WindowResizePlatformSelfTest.cpp" Condition="Exists('Source\SelfTest\WindowResizePlatformSelfTest.cpp')" />
     <ClCompile Include="Source\SelfTest\WorldEditorSelfTestInput.cpp" Condition="Exists('Source\SelfTest\WorldEditorSelfTestInput.cpp')" />
     <ClCompile Include="Source\SelfTest\WorldEditorSelfTestMath.cpp" Condition="Exists('Source\SelfTest\WorldEditorSelfTestMath.cpp')" />
     <ClCompile Include="Source\SelfTest\WorldEditorSelfTestReal.cpp" Condition="Exists('Source\SelfTest\WorldEditorSelfTestReal.cpp')" />
@@ -308,7 +345,12 @@
     <ClInclude Include="Source\SelfTest\AssetSelfTestUIScreens.h" Condition="Exists('Source\SelfTest\AssetSelfTestUIScreens.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestUITextBox.h" Condition="Exists('Source\SelfTest\AssetSelfTestUITextBox.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestUIWidgets.h" Condition="Exists('Source\SelfTest\AssetSelfTestUIWidgets.h')" />
+    <ClInclude Include="Source\SelfTest\BufferGeometryTestData.h" Condition="Exists('Source\SelfTest\BufferGeometryTestData.h')" />
+    <ClInclude Include="Source\SelfTest\ComputeBufferLayoutsTestData.h" Condition="Exists('Source\SelfTest\ComputeBufferLayoutsTestData.h')" />
+    <ClInclude Include="Source\SelfTest\ComputeTextureTestData.h" Condition="Exists('Source\SelfTest\ComputeTextureTestData.h')" />
     <ClInclude Include="Source\SelfTest\EcsSelfTestScene.h" Condition="Exists('Source\SelfTest\EcsSelfTestScene.h')" />
+    <ClInclude Include="Source\SelfTest\GraphicsPipelineTestData.h" Condition="Exists('Source\SelfTest\GraphicsPipelineTestData.h')" />
+    <ClInclude Include="Source\SelfTest\RenderTargetTestData.h" Condition="Exists('Source\SelfTest\RenderTargetTestData.h')" />
     <ClInclude Include="Source\SelfTest\WorldEditorSelfTestSupport.h" Condition="Exists('Source\SelfTest\WorldEditorSelfTestSupport.h')" />
     <ClInclude Include="Source\SelfTest\WorldEffectForceFieldEditorGeometrySelfTest.h" Condition="Exists('Source\SelfTest\WorldEffectForceFieldEditorGeometrySelfTest.h')" />
     <ClInclude Include="Source\SelfTest\WorldEffectForceFieldEditorSelfTest.h" Condition="Exists('Source\SelfTest\WorldEffectForceFieldEditorSelfTest.h')" />

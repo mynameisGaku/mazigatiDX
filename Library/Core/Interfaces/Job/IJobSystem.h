@@ -48,6 +48,8 @@ public:
 
 	virtual FJobHandle Schedule( TCallable<void()> Function, const char* Name, const FJobHandle& Dependency = FJobHandle() ) = 0;
 	virtual void Wait( const FJobHandle& Handle ) = 0;
+	// 受付済みの全ジョブとその子が終わるまで眠って待つ。自分のジョブ内ではfalse。終了前は外部の要求元を止める。
+	virtual bool WaitIdle() = 0;
 
 	// 今のスレッドの番号。0 = ワーカーではないスレッド（メインスレッドなど）、1.. = ワーカー
 	static int32 GetCurrentThreadIndex();

@@ -32,8 +32,10 @@ public:
 	//-------------------------------------------------------------------------
 	FORCEINLINE int32 GetNumWorkers() const override { return Workers.Num(); }
 	void RunParallelRange( int32 Count, int32 MinBatchSize, FRangeFunction Body, const char* Name ) override;
-	FJobHandle Schedule( TCallable<void()> Function, const char* Name, const FJobHandle& Dependency ) override;
+	FJobHandle Schedule( TCallable<void()> Function, const char* Name, const FJobHandle& Dependency = FJobHandle() ) override;
 	void Wait( const FJobHandle& Handle ) override;
+	// 所有する仕事がなくなるまで待つ。仕事本体からは呼べない。
+	bool WaitIdle() override;
 
 private:
 	// ParallelFor 1 回分。呼び出したスレッドの上にあり、全員が使い終わるまで呼び出し側が待つ
@@ -64,5 +66,8 @@ private:
 	FConditionVariable WorkAvailable;
 	TArray<FGroup*> Groups;                    // 実行中の ParallelFor
 	TQueue<TSharedPtr<FJobState>> ReadyJobs;   // 実行できる単発のジョブ
+	// 受付済みで、依存待ち・実行待ち・実行中のジョブ総数。Mutexで保護する。
+	uint64 OutstandingJobs = 0;
+	// 終了中は外部からの新規受付を拒否し、実行済みジョブからの子だけ受け付ける。
 	bool bStopping = false;
 };

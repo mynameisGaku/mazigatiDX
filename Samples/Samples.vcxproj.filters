@@ -100,6 +100,12 @@
     <ClCompile Include="Source\Camera\TopView.cpp">
       <Filter>Source\Camera</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Canvas2D\Canvas2DGallery.cpp">
+      <Filter>Source\Canvas2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Canvas2D\Canvas2DSample.cpp">
+      <Filter>Source\Canvas2D</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Catalog\SampleCatalog.cpp">
       <Filter>Source\Catalog</Filter>
     </ClCompile>
@@ -156,6 +162,12 @@
     </ClCompile>
     <ClCompile Include="Source\Filters\SpotlightView.cpp">
       <Filter>Source\Filters</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Geometry3D\Geometry3DGallery.cpp">
+      <Filter>Source\Geometry3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Geometry3D\Geometry3DSample.cpp">
+      <Filter>Source\Geometry3D</Filter>
     </ClCompile>
     <ClCompile Include="Source\Hello\BouncingBox.cpp">
       <Filter>Source\Hello</Filter>
@@ -448,6 +460,12 @@
     <ClCompile Include="Source\Shapes3D\Shapes3DView.cpp">
       <Filter>Source\Shapes3D</Filter>
     </ClCompile>
+    <ClCompile Include="Source\StaticModel\StaticModelGallery.cpp">
+      <Filter>Source\StaticModel</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\StaticModel\StaticModelSample.cpp">
+      <Filter>Source\StaticModel</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Text\FontShowcase.cpp">
       <Filter>Source\Text</Filter>
     </ClCompile>
@@ -612,6 +630,12 @@
     <ClInclude Include="Source\Camera\TopView.h">
       <Filter>Source\Camera</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Canvas2D\Canvas2DGallery.h">
+      <Filter>Source\Canvas2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Canvas2D\Canvas2DSample.h">
+      <Filter>Source\Canvas2D</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Catalog\SampleCatalog.h">
       <Filter>Source\Catalog</Filter>
     </ClInclude>
@@ -680,6 +704,12 @@
     </ClInclude>
     <ClInclude Include="Source\Filters\SpotlightView.h">
       <Filter>Source\Filters</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Geometry3D\Geometry3DGallery.h">
+      <Filter>Source\Geometry3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Geometry3D\Geometry3DSample.h">
+      <Filter>Source\Geometry3D</Filter>
     </ClInclude>
     <ClInclude Include="Source\Hello\BouncingBox.h">
       <Filter>Source\Hello</Filter>
@@ -1005,6 +1035,12 @@
     <ClInclude Include="Source\Shapes3D\Shapes3DView.h">
       <Filter>Source\Shapes3D</Filter>
     </ClInclude>
+    <ClInclude Include="Source\StaticModel\StaticModelGallery.h">
+      <Filter>Source\StaticModel</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\StaticModel\StaticModelSample.h">
+      <Filter>Source\StaticModel</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Text\FontShowcase.h">
       <Filter>Source\Text</Filter>
     </ClInclude>
@@ -1103,6 +1139,9 @@
     <Filter Include="Source\Camera">
       <UniqueIdentifier>{D238EC28-8D81-BFB8-03E5-491BE1DB2C2C}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Canvas2D">
+      <UniqueIdentifier>{AA96DA13-7774-FF6C-285E-617DA72FD7A3}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source\Catalog">
       <UniqueIdentifier>{7C63368C-8999-EB5C-EB62-68FC90B68A1C}</UniqueIdentifier>
     </Filter>
@@ -1117,6 +1156,9 @@
     </Filter>
     <Filter Include="Source\Filters">
       <UniqueIdentifier>{5A1BC48D-C648-F4E9-C883-1FD6805EF4D2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Geometry3D">
+      <UniqueIdentifier>{B9AEED1D-2FB4-552A-F1AE-3B993EF6D334}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Hello">
       <UniqueIdentifier>{D7CAE878-E116-AB34-3B7B-F14582C1F4DE}</UniqueIdentifier>
@@ -1174,6 +1216,9 @@
     </Filter>
     <Filter Include="Source\Shapes3D">
       <UniqueIdentifier>{8B761D80-707C-F26F-7E4E-77E1529F639D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\StaticModel">
+      <UniqueIdentifier>{6498C3E9-465A-0682-E103-2841367261CE}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Text">
       <UniqueIdentifier>{E16AE2E4-2C5F-54A3-6946-41A12BC58602}</UniqueIdentifier>

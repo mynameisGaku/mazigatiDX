@@ -1,6 +1,7 @@
 ﻿#include "Engine.h"
 
 #include "Library/Core/Thread/GameThread.h"
+#include "Library/Core/Interfaces/Job/IJobSystem.h"
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
 #include "Library/Core/Interfaces/Profiler/IProfiler.h"
 #include "Library/Core/Log/Log.h"
@@ -121,7 +122,19 @@ int32 CEngine::Run( TUniquePtr<CGameInstance> InGameInstance, const FWindowSetti
 		 ElapsedSeconds, ElapsedSeconds > 0.0 ? static_cast<float64>( NumFrames ) / ElapsedSeconds : 0.0 );
 
 	// 残っている仕事は、ゲームとサブシステムを片付ける前に済ませる（仕事が使うものが、まだ生きているうちに）
-	const int32 NumLateTasks = NGameThread::RunPendingTasks();
+	// ワーカーがゲームの状態へ結果を返し終わってから、ゲーム側の所有物を破棄する。
+	IJobSystem* Jobs = Subsystems.Get<IJobSystem>();
+	int32 NumLateTasks = 0;
+	int32 NumReturnedTasks = 0;
+	do
+	{
+		if ( Jobs )
+		{
+			Jobs->WaitIdle();
+		}
+		NumReturnedTasks = NGameThread::RunPendingTasks();
+		NumLateTasks += NumReturnedTasks;
+	} while ( NumReturnedTasks > 0 );
 	if ( NumLateTasks > 0 )
 	{
 		LOG( LogEngine, Log, "Ran %d game thread task(s) left at the end of the main loop", NumLateTasks );

@@ -1,4 +1,5 @@
-﻿#include "XFileWriter.h"
+﻿// SPDX-License-Identifier: MIT
+#include "XFileWriter.h"
 
 #include "Library/Core/Collection/Set.h"
 #include "Library/Core/Types/CString.h"
@@ -392,4 +393,31 @@ FString NXFile::Write( const FImportedScene& Scene, const TArray<FString>& Textu
 	(void)SkinIndex;
 
 	return MoveTemp( T.Out );
+}
+
+TArray<FString> NXFile::GetUnsupportedDeformations( const FImportedScene& Scene )
+{
+	TArray<FString> Problems; // 変形を保持できない理由。
+	for ( int32 MeshIndex = 0; MeshIndex < Scene.Meshes.Num(); ++MeshIndex )
+	{
+		const FImportedMesh& Mesh = Scene.Meshes[MeshIndex]; // 確認するメッシュ。
+		const FString Prefix = FString::Printf( "mesh %d '%s': ", MeshIndex, *Mesh.Name ); // 診断対象を特定する名前。
+		if ( Mesh.bHasBlendShapes )
+		{
+			Problems.Add( Prefix + "blend shapes cannot be preserved in the X conversion" );
+		}
+		if ( Mesh.bHasVertexCache )
+		{
+			Problems.Add( Prefix + "vertex caches cannot be preserved in the X conversion" );
+		}
+		if ( Mesh.bHasUnsupportedSkinning )
+		{
+			Problems.Add( Prefix + "the skinning method, deformer count, bone references or weights cannot be preserved" );
+		}
+		if ( Mesh.NumDiscardedSkinInfluences > 0 )
+		{
+			Problems.Add( Prefix + "positive skin influences were discarded during import" );
+		}
+	}
+	return Problems;
 }
