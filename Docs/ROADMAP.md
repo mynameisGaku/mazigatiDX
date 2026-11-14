@@ -136,7 +136,7 @@ R0から順に進めます。依存する段階を、仮のハンドルや定数
 |---|---|
 |v1.0.0の範囲|DX12の四方式、MV1形式を除く既存DxLib公開機能の互換、Vulkan／OpenGL実装は次版とする方針を決定|
 |初期DX12経路|基本描画・画像・静的モデルを実装。検査内容と制限は開発手順に記録|
-|R0|進行中。481項目の台帳・更新と確認ツール・形式とサービスの初期調査を作成。既存シェーダーのPSOとcompute／readbackを補助環境で確認。完全な形式互換、最低能力と性能参照環境、Windowsの包括的な互換確認が残る|
+|R0|進行中。488項目の台帳・更新と確認ツール・形式とサービスの初期調査を作成。モデル中間データの非有限な変換を診断し、アニメーションの過大な採取を事前に拒否。既存シェーダーのPSOとcompute／readbackを補助環境で確認。完全な形式互換、最低能力と性能参照環境、Windowsの包括的な互換確認が残る|
 |R1〜R10|未完了。R1の画像資源境界として、登録・GPU所有・記述子・UI接続を分離。バッファの4操作と同期転送／readback、RAWのSRV／UAV・compute提出／完了確認を追加。画像の作成・転送・寿命管理はImGuiを必要としない。GPUバッファを頂点・indexとして読む描画、computeの定数・構造体配列、RGBA8/RGBA16F画像のcompute能力照会と読み取り／読み書き・描画連携、単一／複数（MRT最大8枚）のRGBA8/RGBA16F混合オフスクリーン描画先と読み取れるD32深度（`R32Float` compute・グラフィックス読み取り）、画像コピー（`CopyTexture`）とCPU readback（`ReadTextureRGBA8`/`ReadTextureRGBA16F`）、カスタムグラフィックスパイプライン契約（`IGraphicsPipelineResources`・`DrawGraphicsPipeline`）、GPUタイムスタンプ計測（`IGpuTimestampResources`・`BeginGpuTimestamp`／`EndGpuTimestamp`・`SubmitComputeWithTimestamp`）も接続。フレームの転送ページ管理と窓のresize・最小化復帰も接続。MSAA・終了/失敗と障害回復全体等は残る|
 
 次はR0の台帳を基に、MV1以外のモデル形式の取り込みと変形データの保持、既存シェーダーのWindows互換、音声／動画の実装経路を実証します。GPU資源→compute→描画の基礎経路を保ち、R1に残る描画先・フレーム領域・resize/終了と、R2の共有メッシュ・材質へ必要な契約を整えます。R0で見つかった重大な制約は、後段の機能追加より先に解消します。

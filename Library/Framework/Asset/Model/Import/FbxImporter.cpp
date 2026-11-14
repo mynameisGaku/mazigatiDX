@@ -47,6 +47,43 @@ namespace
 		friend uint32 GetTypeHash( const FCornerKey& Key ) { return HashCombine( HashCombine( GetTypeHash( Key.Position ), GetTypeHash( Key.Normal ) ), GetTypeHash( Key.UV ) ); }
 	};
 
+	// 全ノードを採取しても行列の合計が64 MiBを超えないよう、取り込み前に仕事量を検査する。
+	bool CheckAnimationSampling( const ufbx_scene& Scene, float32 RequestedFps, FString& OutError )
+	{
+		static constexpr uint64 MaxSampleMatrices = 1048576; // 16要素のfloat行列を最大64 MiB分まで採取する。
+		const float64 Fps = static_cast<float64>( NMath::Max( RequestedFps, 1.0f ) ); // 従来の1 fps未満の扱いを保つ。
+		uint64 Nodes = 0; // 実際にサンプリングするルート以外のノード数。
+		for ( size_t Index = 0; Index < Scene.nodes.count; ++Index )
+		{
+			if ( !Scene.nodes.data[Index]->is_root ) { ++Nodes; }
+		}
+		uint64 Remaining = MaxSampleMatrices; // 全クリップを合計した残りの採取回数。
+		for ( size_t Index = 0; Index < Scene.anim_stacks.count; ++Index )
+		{
+			const ufbx_anim_stack* Stack = Scene.anim_stacks.data[Index]; // 採取する時間範囲。
+			if ( !NMath::IsFinite( Stack->time_begin ) || !NMath::IsFinite( Stack->time_end ) )
+			{
+				OutError = "Animation has a non-finite time range";
+				return false;
+			}
+			if ( !( Stack->time_end > Stack->time_begin ) || !Stack->anim ) { continue; }
+			const float64 Samples = NMath::Max( NMath::Floor( ( Stack->time_end - Stack->time_begin ) * Fps + 0.5 ) + 1.0, 2.0 ); // 整数変換より先に上限と桁あふれを確認する。
+			if ( !NMath::IsFinite( Samples ) || Samples > static_cast<float64>( TNumericLimits<int32>::Max() ) || Samples > static_cast<float64>( MaxSampleMatrices ) )
+			{
+				OutError = "Animation sampling exceeds the limit";
+				return false;
+			}
+			const uint64 Count = static_cast<uint64>( Samples ); // 検査済みのキー数。
+			if ( Nodes != 0 && Count > Remaining / Nodes )
+			{
+				OutError = "Animation sampling exceeds the limit";
+				return false;
+			}
+			Remaining -= Count * Nodes;
+		}
+		return true;
+	}
+
 	class FSceneBuilder
 	{
 	public:
@@ -438,6 +475,12 @@ bool NModelImport::ImportFromMemory( const void* Data, usize Size, const FString
 		return false;
 	}
 
+	if ( Options.bImportAnimations && !NMath::IsFinite( Options.AnimFps ) )
+	{
+		OutError = "AnimFps must be finite";
+		return false;
+	}
+
 	if ( Options.MaxSkinInfluences < 0 )
 	{
 		OutError = "MaxSkinInfluences must be zero or greater";
@@ -477,6 +520,11 @@ bool NModelImport::ImportFromMemory( const void* Data, usize Size, const FString
 	if ( Options.bRequireStatic && ( Scene->skin_deformers.count > 0 || Scene->blend_deformers.count > 0 || Scene->cache_deformers.count > 0 || Scene->anim_curves.count > 0 ) )
 	{
 		OutError = "Static import does not support skinning, morphs, vertex caches or animation curves";
+		ufbx_free_scene( Scene );
+		return false;
+	}
+	if ( Options.bImportAnimations && !CheckAnimationSampling( *Scene, Options.AnimFps, OutError ) )
+	{
 		ufbx_free_scene( Scene );
 		return false;
 	}

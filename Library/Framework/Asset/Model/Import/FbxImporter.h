@@ -18,7 +18,7 @@
 //=============================================================================
 struct FImportOptions
 {
-	float32 AnimFps = 30.0f;           // アニメーションをサンプリングする、毎秒のコマ数
+	float32 AnimFps = 30.0f; // アニメーションをサンプリングする毎秒のコマ数。有限値のみ、1未満は1として扱う。
 	bool bImportAnimations = true;
 	bool bRequireStatic = false; // スキン・モーフ・アニメーション曲線を変換前に拒否し、解析メモリを制限する。
 	int32 MaxSkinInfluences = NImportedScene::MaxInfluencesPerVertex; // 頂点ごとの骨の上限。0なら全て保持し、負数は失敗する。

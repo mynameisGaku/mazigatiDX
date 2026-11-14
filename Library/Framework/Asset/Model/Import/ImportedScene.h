@@ -19,7 +19,7 @@ struct FImportMatrix
 {
 	float32 M[16] = { 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
 
-	// 全要素の差が Tolerance 以下か
+	// 有限な行列同士の全要素の差が許容値以下ならtrue。不正な許容値や非有限値はfalse。
 	bool NearlyEquals( const FImportMatrix& Other, float32 Tolerance = 1.0e-5f ) const;
 };
 

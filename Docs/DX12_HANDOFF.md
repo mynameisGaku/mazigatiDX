@@ -1,6 +1,6 @@
 # DX12開発の引き継ぎ
 
-最終更新: 2026-11-13（日本時間）。この文書は作業中も更新します。実装済み、未接続、検証済みを分け、予定を完了扱いにしません。
+最終更新: 2026-11-15（日本時間）。この文書は作業中も更新します。実装済み、未接続、検証済みを分け、予定を完了扱いにしません。
 
 ## 目的と公開の基点
 
@@ -256,3 +256,11 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - Debug／Release、既定GPU／WARP、GPU単独／ImGui利用者の組合せで通常終了とデバイス喪失の計16起動が成功し、SDKデバッグ層も有効だった。両検査のReleaseリンクを既存の他検査と同じLTCG・増分リンク無効に揃え、警告なくリビルドした。`CheckSourceFormat.ps1` は1831ファイル成功。
 - 別の一時比較では、通常版と提出記録をプロセス終了まで追加保持する版を2プロセスで交互の起動順に実行し、既定GPU各200回・WARP各100回は両版とも警告なし。比較中に上記の検査ビルドも行っており、実行条件は完全には一定でない。警告が再現しなかったため、追加保持の効果や根本原因は判断できず、SDK警告921は未解決のまま。
 - 資源保持と喪失通知は [Microsoftのコマンドリスト仕様](https://learn.microsoft.com/en-us/windows/win32/direct3d12/recording-command-lists-and-bundles) と [fence仕様](https://learn.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-id3d12fence-getcompletedvalue)、CPU側の所有と完了は [Unreal Engineの描画スレッド](https://dev.epicgames.com/documentation/en-us/unreal-engine/threaded-rendering-in-unreal-engine)を参照した。
+
+
+## R0 モデル取り込みの数値と採取量（2026-11-15）
+
+- `FImportMatrix::NearlyEquals` はNaNを含む行列を同じ姿勢と誤認し、アニメーションのtrackを落とし得た。非有限な行列や許容値は一致しないとし、有限floatの差はfloat64で比較する。`NImportedScene::Validate` はノード行列、スキンのオフセット、アニメーションキーとフレームレートの非有限値も診断する。ModelExporterは従来どおりこの検証に失敗すると書き出し前に中断する。全ての値・変形方式の検証を実装したわけではない。
+- `FImportOptions::AnimFps` が非有限の場合、および全クリップ・全ノードの見積もりが1048576行列を超える場合は採取前に失敗理由を返す。1未満の有限値は従来どおり1 fpsとして扱い、アニメーションを取り込まない場合は頻度を参照しない。静止ノードも見積もりに含むため、実際に保持するtrackが少ないモデルでも上限を超える場合がある。詳細は[開発手順](DEVELOPMENT.md#モデル変換での変形データの診断)を参照する。
+- 検査側[726d2e2](https://github.com/mynameisGaku/framework-test/commit/726d2e2d53afdc80d4cfc53e2e84b94859a85a2a)で有限値・NaN・無限大・不正な許容値・過大なサンプリング・無効な出力と正常FBXの維持を検査。分離した作業コピーでDebug／Releaseソリューションをビルドし、アセット検査はDebugのワーカー0本で9960条件・4省略、Releaseのワーカー4本で9961条件・4省略が成功した。`StaticModel` OBJサンプルは両構成のDX12既定GPU／WARPで30フレーム正常終了、取り込みエラーなし。画素比較や全形式の検査ではない。
+- `CheckSourceFormat.ps1` は1831ファイル成功し、`UpdateBackendCompatibility.ps1 -Check` は488項目で成功。参考: [Microsoftの有限値判定](https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/finite-finitef?view=msvc-170)、[Unreal Engineの描画スレッドと所有](https://dev.epicgames.com/documentation/en-us/unreal-engine/threaded-rendering-in-unreal-engine)。
