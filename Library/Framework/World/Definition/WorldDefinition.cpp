@@ -1,4 +1,5 @@
 ﻿#include "WorldDefinition.h"
+#include "WorldDefinitionJson.h"
 
 
 #include "Library/Core/Types/Numeric.h"
@@ -47,655 +48,6 @@
 //
 //   既定値と同じ項目は書き出さない（ファイルを小さく、差分を読みやすく保つ）。
 //=============================================================================
-
-namespace
-{
-	constexpr const char* KnownWorldKeys[] = { "Version", "Name", "NextId", "Settings", "Objects" };
-	constexpr const char* KnownObjectKeys[] = { "Id", "Name", "Parent", "Enabled", "Tags", "Props", "Transform", "Collision", "Components" };
-	constexpr const char* KnownComponentTypes[] = { "Model", "Billboard", "Sound", "Effect", "Collider", "Mesh", "Prefab" };
-
-	template<size_t N>
-	bool IsKnownKey( const char* const ( &Keys )[N], const NJson::FJsonString& Key )
-	{
-		for ( const char* Known : Keys )
-		{
-			if ( Key == Known )
-			{
-				return true;
-			}
-		}
-		return false;
-	}
-
-	void Warn( TArray<FString>* Warnings, const FString& Message )
-	{
-		if ( Warnings != nullptr )
-		{
-			Warnings->Add( Message );
-		}
-	}
-
-	float64 Round6( float64 Value )
-	{
-		return NMath::Round( Value * 1000000.0 ) / 1000000.0;
-	}
-
-	bool IsNearlyEqual( const FVector3& A, const FVector3& B )
-	{
-		return A.x == B.x && A.y == B.y && A.z == B.z;
-	}
-
-	NlohmannJson Vector2ToJson( const FVector2& V )
-	{
-		return NlohmannJson::array( { NJson::Round4( V.x ), NJson::Round4( V.y ) } );
-	}
-
-	FVector2 ReadVector2( const NlohmannJson& Object, const char* Key, const FVector2& Default )
-	{
-		if ( !Object.is_object() )
-		{
-			return Default;
-		}
-		const auto It = Object.find( Key );
-		if ( It == Object.end() || !It->is_array() || It->size() < 2 )
-		{
-			return Default;
-		}
-		try
-		{
-			return FVector2( ( *It )[0].get<float32>(), ( *It )[1].get<float32>() );
-		}
-		catch ( const nlohmann::json::exception& )
-		{
-			return Default;
-		}
-	}
-
-	bool EqualsIgnoreCase( const FString& A, const char* B )
-	{
-		return A.Equals( B, ESearchCase::IgnoreCase );
-	}
-
-	// 非 null の数の配列か
-	bool IsNumberArray( const NlohmannJson& Json, size_t Count )
-	{
-		if ( !Json.is_array() || Json.size() != Count )
-		{
-			return false;
-		}
-		for ( const NlohmannJson& Item : Json )
-		{
-			if ( !Item.is_number() )
-			{
-				return false;
-			}
-		}
-		return true;
-	}
-
-	//-------------------------------------------------------------------------
-	// 部品
-	//-------------------------------------------------------------------------
-	NlohmannJson ModelToJson( const FWorldModel& Model )
-	{
-		NlohmannJson Json = NlohmannJson::object();
-		Json["Path"] = Model.Path;
-		if ( !Model.Animations.IsEmpty() )
-		{
-			Json["Animations"] = Model.Animations;
-		}
-		if ( !Model.Clip.IsEmpty() )
-		{
-			Json["Clip"] = Model.Clip;
-		}
-		if ( Model.Speed != 1.0f )
-		{
-			Json["Speed"] = NJson::Round4( Model.Speed );
-		}
-		if ( Model.MaterialEffect.IsSet() )
-		{
-			Json["MaterialEffect"] = Model.MaterialEffect.GetValue().ToJson();
-		}
-		return Json;
-	}
-
-	FWorldModel ModelFromJson( const NlohmannJson& Json )
-	{
-		FWorldModel Model;
-		Model.Path = NJson::GetOr<FString>( Json, "Path", FString() );
-		Model.Animations = NJson::GetOr<FString>( Json, "Animations", FString() );
-		Model.Clip = NJson::GetOr<FString>( Json, "Clip", FString() );
-		Model.Speed = NJson::GetOr<float32>( Json, "Speed", 1.0f );
-		if ( Json.contains( "MaterialEffect" ) )
-		{
-			// nullや配列も設定済みbindingとして残し、Validateへ渡す。
-			FWorldModelMaterialEffect MaterialEffect;
-			FWorldModelMaterialEffect::FromJson( Json["MaterialEffect"], MaterialEffect );
-			Model.MaterialEffect = MoveTemp( MaterialEffect );
-		}
-		return Model;
-	}
-
-	NlohmannJson PrefabToJson( const FWorldPrefab& Prefab )
-	{
-		NlohmannJson Json = NlohmannJson::object();
-		Json["Path"] = Prefab.Path;
-		return Json;
-	}
-
-	FWorldPrefab PrefabFromJson( const NlohmannJson& Json )
-	{
-		FWorldPrefab Prefab;
-		Prefab.Path = NJson::GetOr<FString>( Json, "Path", FString() );
-		return Prefab;
-	}
-
-	NlohmannJson BillboardToJson( const FWorldBillboard& Board )
-	{
-		NlohmannJson Json = NlohmannJson::object();
-		Json["Texture"] = Board.Texture;
-		if ( Board.Size.x != 1.0f || Board.Size.y != 1.0f )
-		{
-			Json["Size"] = Vector2ToJson( Board.Size );
-		}
-		if ( Board.Pivot.x != 0.5f || Board.Pivot.y != 0.5f )
-		{
-			Json["Pivot"] = Vector2ToJson( Board.Pivot );
-		}
-		if ( Board.Mode != EWorldBillboardMode::Camera )
-		{
-			Json["Mode"] = ToString( Board.Mode );
-		}
-		const FColor32 White( 255, 255, 255, 255 );
-		if ( Board.Tint.r != White.r || Board.Tint.g != White.g || Board.Tint.b != White.b || Board.Tint.a != White.a )
-		{
-			Json["Tint"] = NWorld::FormatColor( Board.Tint );
-		}
-		if ( Board.bUseRect )
-		{
-			Json["Rect"] = NlohmannJson::array( { Board.RectX, Board.RectY, Board.RectWidth, Board.RectHeight } );
-		}
-		if ( Board.bFlipX )
-		{
-			Json["FlipX"] = true;
-		}
-		if ( Board.bFlipY )
-		{
-			Json["FlipY"] = true;
-		}
-		return Json;
-	}
-
-	FWorldBillboard BillboardFromJson( const NlohmannJson& Json, TArray<FString>* Warnings, const FString& Where )
-	{
-		FWorldBillboard Board;
-		Board.Texture = NJson::GetOr<FString>( Json, "Texture", FString() );
-		Board.Size = ReadVector2( Json, "Size", Board.Size );
-		Board.Pivot = ReadVector2( Json, "Pivot", Board.Pivot );
-		if ( Json.contains( "Mode" ) )
-		{
-			const FString Text = NJson::GetOr<FString>( Json, "Mode", FString() );
-			if ( !TryParse( Text, Board.Mode ) )
-			{
-				Warn( Warnings, Where + ": unknown billboard mode '" + Text + "' (using Camera)" );
-			}
-		}
-		if ( Json.contains( "Tint" ) )
-		{
-			const FString Text = NJson::GetOr<FString>( Json, "Tint", FString() );
-			if ( !NWorld::TryParseColor( Text, Board.Tint ) )
-			{
-				Warn( Warnings, Where + ": bad tint color '" + Text + "' (using white)" );
-			}
-		}
-		if ( Json.contains( "Rect" ) && IsNumberArray( Json["Rect"], 4 ) )
-		{
-			Board.bUseRect = true;
-			Board.RectX = Json["Rect"][0].get<int32>();
-			Board.RectY = Json["Rect"][1].get<int32>();
-			Board.RectWidth = Json["Rect"][2].get<int32>();
-			Board.RectHeight = Json["Rect"][3].get<int32>();
-		}
-		Board.bFlipX = NJson::GetOr<bool>( Json, "FlipX", false );
-		Board.bFlipY = NJson::GetOr<bool>( Json, "FlipY", false );
-		return Board;
-	}
-
-	NlohmannJson SoundToJson( const FWorldSound& Sound )
-	{
-		const FWorldSound Default;
-		NlohmannJson Json = NlohmannJson::object();
-		Json["Path"] = Sound.Path;
-		if ( Sound.Bus != Default.Bus )
-		{
-			Json["Bus"] = Sound.Bus;
-		}
-		if ( Sound.Volume != Default.Volume )
-		{
-			Json["Volume"] = NJson::Round4( Sound.Volume );
-		}
-		if ( Sound.Pitch != Default.Pitch )
-		{
-			Json["Pitch"] = NJson::Round4( Sound.Pitch );
-		}
-		if ( Sound.bLoop != Default.bLoop )
-		{
-			Json["Loop"] = Sound.bLoop;
-		}
-		if ( Sound.bAutoPlay != Default.bAutoPlay )
-		{
-			Json["AutoPlay"] = Sound.bAutoPlay;
-		}
-		if ( Sound.MinDistance != Default.MinDistance )
-		{
-			Json["MinDistance"] = NJson::Round4( Sound.MinDistance );
-		}
-		if ( Sound.MaxDistance != Default.MaxDistance )
-		{
-			Json["MaxDistance"] = NJson::Round4( Sound.MaxDistance );
-		}
-		return Json;
-	}
-
-	NlohmannJson EffectToJson( const FWorldEffect& Effect )
-	{
-		const FWorldEffect Default;
-		NlohmannJson Json = NlohmannJson::object();
-		Json["Path"] = Effect.Path;
-		if ( Effect.bAutoPlay != Default.bAutoPlay )
-		{
-			Json["AutoPlay"] = Effect.bAutoPlay;
-		}
-		if ( Effect.Scale != Default.Scale )
-		{
-			Json["Scale"] = NJson::Round4( Effect.Scale );
-		}
-		if ( Effect.Speed != Default.Speed )
-		{
-			Json["Speed"] = NJson::Round4( Effect.Speed );
-		}
-		if ( Effect.Seed != Default.Seed )
-		{
-			Json["Seed"] = Effect.Seed;
-		}
-		if ( Effect.Loop >= 0 )
-		{
-			Json["Loop"] = Effect.Loop != 0;
-		}
-		if ( Effect.Target != WorldNoId )
-		{
-			Json["Target"] = Effect.Target;
-		}
-		if ( Effect.TargetOffset != FVector3::Zero )
-		{
-			Json["TargetOffset"] = NJson::ToJson( Effect.TargetOffset );
-		}
-		return Json;
-	}
-
-	FWorldEffect EffectFromJson( const NlohmannJson& Json )
-	{
-		FWorldEffect Effect;
-		Effect.Path = NJson::GetOr<FString>( Json, "Path", FString() );
-		Effect.bAutoPlay = NJson::GetOr<bool>( Json, "AutoPlay", Effect.bAutoPlay );
-		Effect.Scale = NJson::GetOr<float32>( Json, "Scale", Effect.Scale );
-		Effect.Speed = NJson::GetOr<float32>( Json, "Speed", Effect.Speed );
-		Effect.Seed = NJson::GetOr<int32>( Json, "Seed", Effect.Seed );
-		if ( Json.contains( "Loop" ) && Json["Loop"].is_boolean() )
-		{
-			Effect.Loop = Json["Loop"].get<bool>() ? 1 : 0;
-		}
-		if ( Json.contains( "Target" ) )
-		{
-			const NlohmannJson& Target = Json["Target"];
-			if ( Target.is_number_unsigned() )
-			{
-				Effect.Target = Target.get<uint64>() <= static_cast<uint64>( TNumericLimits<int32>::Max() ) ? static_cast<int32>( Target.get<uint64>() ) : -1;
-			}
-			else if ( Target.is_number_integer() && Target.get<int64>() >= TNumericLimits<int32>::Min() && Target.get<int64>() <= TNumericLimits<int32>::Max() )
-			{
-				Effect.Target = static_cast<int32>( Target.get<int64>() );
-			}
-			else
-			{
-				Effect.Target = -1;
-			}
-		}
-		if ( Json.contains( "TargetOffset" ) )
-		{
-			const NlohmannJson& Offset = Json["TargetOffset"];
-			if ( Offset.is_array() && Offset.size() == 3 && Offset[0].is_number() && Offset[1].is_number() && Offset[2].is_number() )
-			{
-				Effect.TargetOffset = FVector3( Offset[0].get<float32>(), Offset[1].get<float32>(), Offset[2].get<float32>() );
-			}
-			else
-			{
-				Effect.TargetOffset = FVector3( TNumericLimits<float32>::QuietNaN(), 0.0f, 0.0f );
-			}
-		}
-		return Effect;
-	}
-
-	FWorldSound SoundFromJson( const NlohmannJson& Json )
-	{
-		FWorldSound Sound;
-		Sound.Path = NJson::GetOr<FString>( Json, "Path", FString() );
-		Sound.Bus = NJson::GetOr<FString>( Json, "Bus", Sound.Bus );
-		Sound.Volume = NJson::GetOr<float32>( Json, "Volume", Sound.Volume );
-		Sound.Pitch = NJson::GetOr<float32>( Json, "Pitch", Sound.Pitch );
-		Sound.bLoop = NJson::GetOr<bool>( Json, "Loop", Sound.bLoop );
-		Sound.bAutoPlay = NJson::GetOr<bool>( Json, "AutoPlay", Sound.bAutoPlay );
-		Sound.MinDistance = NJson::GetOr<float32>( Json, "MinDistance", Sound.MinDistance );
-		Sound.MaxDistance = NJson::GetOr<float32>( Json, "MaxDistance", Sound.MaxDistance );
-		return Sound;
-	}
-
-	NlohmannJson ColliderToJson( const FWorldCollider& Collider )
-	{
-		const FWorldCollider Default;
-		NlohmannJson Json = NlohmannJson::object();
-		Json["Shape"] = ToString( Collider.Shape );
-		// 使う項目だけ書く（形に関係のない項目は、既定値のまま）
-		if ( Collider.Shape == EWorldColliderShape::Box )
-		{
-			Json["Size"] = NJson::ToJson( Collider.Size );
-		}
-		else if ( Collider.Shape != EWorldColliderShape::Mesh )
-		{
-			Json["Radius"] = NJson::Round4( Collider.Radius );
-		}
-		if ( Collider.Shape == EWorldColliderShape::Capsule )
-		{
-			Json["Height"] = NJson::Round4( Collider.Height );
-		}
-		if ( Collider.Shape == EWorldColliderShape::Mesh && !Collider.Mesh.IsEmpty() )
-		{
-			Json["Mesh"] = Collider.Mesh;
-		}
-		if ( Collider.Shape != EWorldColliderShape::Mesh && !IsNearlyEqual( Collider.Offset, Default.Offset ) )
-		{
-			Json["Offset"] = NJson::ToJson( Collider.Offset );
-		}
-		if ( Collider.bTrigger )
-		{
-			Json["Trigger"] = true;
-		}
-		return Json;
-	}
-
-	FWorldCollider ColliderFromJson( const NlohmannJson& Json, TArray<FString>* Warnings, const FString& Where )
-	{
-		FWorldCollider Collider;
-		if ( Json.contains( "Shape" ) )
-		{
-			const FString Text = NJson::GetOr<FString>( Json, "Shape", FString() );
-			if ( !TryParse( Text, Collider.Shape ) )
-			{
-				Warn( Warnings, Where + ": unknown collider shape '" + Text + "' (using Box)" );
-			}
-		}
-		Collider.Size = NJson::ReadVector3( Json, "Size", Collider.Size );
-		Collider.Radius = NJson::GetOr<float32>( Json, "Radius", Collider.Radius );
-		Collider.Height = NJson::GetOr<float32>( Json, "Height", Collider.Height );
-		Collider.Offset = NJson::ReadVector3( Json, "Offset", Collider.Offset );
-		Collider.Mesh = NJson::GetOr<FString>( Json, "Mesh", FString() );
-		Collider.bTrigger = NJson::GetOr<bool>( Json, "Trigger", false );
-		return Collider;
-	}
-
-	//-------------------------------------------------------------------------
-	// オブジェクト
-	//-------------------------------------------------------------------------
-	NlohmannJson TransformToJson( const FWorldTransform& Transform )
-	{
-		NlohmannJson Json = NlohmannJson::object();
-		if ( !IsNearlyEqual( Transform.Position, FVector3::Zero ) )
-		{
-			Json["Position"] = NJson::ToJson( Transform.Position );
-		}
-		if ( !IsNearlyEqual( Transform.RotationDegrees, FVector3::Zero ) )
-		{
-			Json["Rotation"] = NJson::ToJson( Transform.RotationDegrees );
-		}
-		if ( !IsNearlyEqual( Transform.Scale, FVector3::One ) )
-		{
-			Json["Scale"] = NJson::ToJson( Transform.Scale );
-		}
-		return Json;
-	}
-
-	FWorldTransform TransformFromJson( const NlohmannJson& Json )
-	{
-		FWorldTransform Transform;
-		Transform.Position = NJson::ReadVector3( Json, "Position", Transform.Position );
-		Transform.RotationDegrees = NJson::ReadVector3( Json, "Rotation", Transform.RotationDegrees );
-		Transform.Scale = NJson::ReadVector3( Json, "Scale", Transform.Scale );
-		return Transform;
-	}
-
-	NlohmannJson ObjectToJson( const FWorldObject& Object )
-	{
-		NlohmannJson Json = NlohmannJson::object();
-		// 知らない項目を先に入れて、知っている項目で上書きする（知らない項目が、知っている項目を壊さない）
-		if ( Object.Extra.is_object() )
-		{
-			for ( auto It = Object.Extra.begin(); It != Object.Extra.end(); ++It )
-			{
-				Json[It.key()] = It.value();
-			}
-		}
-		Json["Id"] = Object.Id;
-		if ( !Object.Name.IsEmpty() )
-		{
-			Json["Name"] = Object.Name;
-		}
-		if ( Object.Parent != WorldNoId )
-		{
-			Json["Parent"] = Object.Parent;
-		}
-		if ( !Object.bEnabled )
-		{
-			Json["Enabled"] = false;
-		}
-		if ( !Object.Tags.IsEmpty() )
-		{
-			NlohmannJson Tags = NlohmannJson::array();
-			for ( const FString& Tag : Object.Tags )
-			{
-				Tags.push_back( Tag );
-			}
-			Json["Tags"] = Tags;
-		}
-		if ( !Object.Props.IsEmpty() )
-		{
-			NlohmannJson Props = NlohmannJson::object();
-			for ( const FWorldProp& Prop : Object.Props )
-			{
-				Props[NJson::ToJsonString( Prop.Name )] = Prop.ValueToJson();
-			}
-			Json["Props"] = Props;
-		}
-		const NlohmannJson Transform = TransformToJson( Object.Transform );
-		if ( !Transform.empty() )
-		{
-			Json["Transform"] = Transform;
-		}
-		if ( Object.Collision != EWorldCollisionMode::Auto )
-		{
-			Json["Collision"] = ToString( Object.Collision );
-		}
-
-		NlohmannJson Components = NlohmannJson::object();
-		for ( const FWorldRawComponent& Raw : Object.RawComponents )
-		{
-			Components[NJson::ToJsonString( Raw.Type )] = Raw.Data;
-		}
-		if ( Object.Model.IsSet() )
-		{
-			Components["Model"] = ModelToJson( Object.Model.GetValue() );
-		}
-		if ( Object.Billboard.IsSet() )
-		{
-			Components["Billboard"] = BillboardToJson( Object.Billboard.GetValue() );
-		}
-		if ( Object.Sound.IsSet() )
-		{
-			Components["Sound"] = SoundToJson( Object.Sound.GetValue() );
-		}
-		if ( Object.Effect.IsSet() )
-		{
-			Components["Effect"] = EffectToJson( Object.Effect.GetValue() );
-		}
-		if ( Object.Collider.IsSet() )
-		{
-			Components["Collider"] = ColliderToJson( Object.Collider.GetValue() );
-		}
-		if ( Object.Mesh.IsSet() )
-		{
-			Components["Mesh"] = Object.Mesh.GetValue().ToJson();
-		}
-		if ( Object.Prefab.IsSet() )
-		{
-			Components["Prefab"] = PrefabToJson( Object.Prefab.GetValue() );
-		}
-		if ( !Components.empty() )
-		{
-			Json["Components"] = Components;
-		}
-		return Json;
-	}
-
-	FWorldObject ObjectFromJson( const NlohmannJson& Json, TArray<FString>* Warnings, int32 Index )
-	{
-		FWorldObject Object;
-		Object.Id = NJson::GetOr<int32>( Json, "Id", WorldNoId );
-		Object.Name = NJson::GetOr<FString>( Json, "Name", FString() );
-		Object.Parent = NJson::GetOr<int32>( Json, "Parent", WorldNoId );
-		if ( Object.Parent < 0 )
-		{
-			Object.Parent = WorldNoId;
-		}
-		Object.bEnabled = NJson::GetOr<bool>( Json, "Enabled", true );
-		const FString Where = FString::Printf( "object #%d ('%s')", Index, *Object.Name );
-
-		if ( Json.contains( "Tags" ) && Json["Tags"].is_array() )
-		{
-			for ( const NlohmannJson& Item : Json["Tags"] )
-			{
-				if ( !Item.is_string() )
-				{
-					Warn( Warnings, Where + ": a tag that is not a string was skipped" );
-					continue;
-				}
-				const FString Tag = NJson::FromJsonString( Item.get<NJson::FJsonString>() ).TrimStartAndEnd();
-				if ( Tag.IsEmpty() || !Object.AddTag( Tag ) )
-				{
-					Warn( Warnings, Where + ": an empty or duplicate tag '" + Tag + "' was skipped" );
-				}
-			}
-		}
-
-		if ( Json.contains( "Props" ) && Json["Props"].is_object() )
-		{
-			for ( auto It = Json["Props"].begin(); It != Json["Props"].end(); ++It )
-			{
-				FWorldProp Prop;
-				const FString PropName = NJson::FromJsonString( It.key() );
-				if ( PropName.IsEmpty() || !FWorldProp::FromJsonValue( PropName, It.value(), Prop ) )
-				{
-					Warn( Warnings, Where + ": the property '" + PropName + "' has a value of an unsupported form and was skipped" );
-					continue;
-				}
-				Object.SetProp( Prop );
-			}
-		}
-
-		if ( Json.contains( "Transform" ) )
-		{
-			Object.Transform = TransformFromJson( Json["Transform"] );
-		}
-		if ( Json.contains( "Collision" ) )
-		{
-			const FString Text = NJson::GetOr<FString>( Json, "Collision", FString() );
-			if ( !TryParse( Text, Object.Collision ) )
-			{
-				Warn( Warnings, Where + ": unknown collision mode '" + Text + "' (using Auto)" );
-			}
-		}
-
-		if ( Json.contains( "Components" ) && Json["Components"].is_object() )
-		{
-			for ( auto It = Json["Components"].begin(); It != Json["Components"].end(); ++It )
-			{
-				const NJson::FJsonString Key = It.key();
-				const NlohmannJson& Value = It.value();
-				if ( Key == "Model" && Value.is_object() )
-				{
-					Object.Model = ModelFromJson( Value );
-				}
-				else if ( Key == "Billboard" && Value.is_object() )
-				{
-					Object.Billboard = BillboardFromJson( Value, Warnings, Where );
-				}
-				else if ( Key == "Sound" && Value.is_object() )
-				{
-					Object.Sound = SoundFromJson( Value );
-				}
-				else if ( Key == "Effect" && Value.is_object() )
-				{
-					Object.Effect = EffectFromJson( Value );
-				}
-				else if ( Key == "Collider" && Value.is_object() )
-				{
-					Object.Collider = ColliderFromJson( Value, Warnings, Where );
-				}
-				else if ( Key == "Mesh" && Value.is_object() )
-				{
-					FEditMesh Mesh;
-					TArray<FString> MeshWarnings;
-					FEditMesh::FromJson( Value, Mesh, &MeshWarnings );
-					for ( const FString& Message : MeshWarnings )
-					{
-						Warn( Warnings, Where + ": " + Message );
-					}
-					Object.Mesh = Mesh;
-				}
-				else if ( Key == "Prefab" && Value.is_object() )
-				{
-					Object.Prefab = PrefabFromJson( Value );
-				}
-				else
-				{
-					// 知らない種類（と、形が壊れた既知の種類）は、そのまま残す
-					FWorldRawComponent Raw;
-					Raw.Type = NJson::FromJsonString( Key );
-					Raw.Data = Value;
-					Object.RawComponents.Add( Raw );
-					if ( IsKnownKey( KnownComponentTypes, Key ) )
-					{
-						Warn( Warnings, Where + ": the " + Raw.Type + " component is not an object and was kept as it is" );
-					}
-				}
-			}
-		}
-
-		if ( Json.is_object() )
-		{
-			for ( auto It = Json.begin(); It != Json.end(); ++It )
-			{
-				if ( !IsKnownKey( KnownObjectKeys, It.key() ) )
-				{
-					if ( !Object.Extra.is_object() )
-					{
-						Object.Extra = NlohmannJson::object();
-					}
-					Object.Extra[It.key()] = It.value();
-				}
-			}
-		}
-		return Object;
-	}
-}
 
 //=============================================================================
 // 種類の名前
@@ -753,7 +105,7 @@ bool TryParse( const FString& Text, EWorldBillboardMode& Out )
 {
 	for ( const EWorldBillboardMode Mode : { EWorldBillboardMode::Camera, EWorldBillboardMode::CameraY, EWorldBillboardMode::World } )
 	{
-		if ( EqualsIgnoreCase( Text, ToString( Mode ) ) )
+		if ( NWorldDefinitionJson::EqualsIgnoreCase( Text, ToString( Mode ) ) )
 		{
 			Out = Mode;
 			return true;
@@ -766,7 +118,7 @@ bool TryParse( const FString& Text, EWorldColliderShape& Out )
 {
 	for ( const EWorldColliderShape Shape : { EWorldColliderShape::Box, EWorldColliderShape::Sphere, EWorldColliderShape::Capsule, EWorldColliderShape::Mesh } )
 	{
-		if ( EqualsIgnoreCase( Text, ToString( Shape ) ) )
+		if ( NWorldDefinitionJson::EqualsIgnoreCase( Text, ToString( Shape ) ) )
 		{
 			Out = Shape;
 			return true;
@@ -779,7 +131,7 @@ bool TryParse( const FString& Text, EWorldCollisionMode& Out )
 {
 	for ( const EWorldCollisionMode Mode : { EWorldCollisionMode::Auto, EWorldCollisionMode::On, EWorldCollisionMode::Off } )
 	{
-		if ( EqualsIgnoreCase( Text, ToString( Mode ) ) )
+		if ( NWorldDefinitionJson::EqualsIgnoreCase( Text, ToString( Mode ) ) )
 		{
 			Out = Mode;
 			return true;
@@ -916,7 +268,7 @@ NlohmannJson FWorldProp::ValueToJson() const
 	{
 	case EWorldPropType::Bool: return NlohmannJson( bValue );
 	case EWorldPropType::Int: return NlohmannJson( static_cast<int64>( IntValue ) );
-	case EWorldPropType::Float: return NlohmannJson( Round6( FloatValue ) );
+	case EWorldPropType::Float: return NlohmannJson( NWorldDefinitionJson::Round6( FloatValue ) );
 	case EWorldPropType::String: return NlohmannJson( NJson::ToJsonString( StringValue ) );
 	case EWorldPropType::Vector3: return NJson::ToJson( VectorValue );
 	case EWorldPropType::Asset:
@@ -959,7 +311,7 @@ bool FWorldProp::FromJsonValue( const FString& InName, const NlohmannJson& Json,
 		Prop.Type = EWorldPropType::String;
 		Prop.StringValue = NJson::FromJsonString( Json.get<NJson::FJsonString>() );
 	}
-	else if ( IsNumberArray( Json, 3 ) )
+	else if ( NWorldDefinitionJson::IsNumberArray( Json, 3 ) )
 	{
 		Prop.Type = EWorldPropType::Vector3;
 		Prop.VectorValue = FVector3( Json[0].get<float32>(), Json[1].get<float32>(), Json[2].get<float32>() );
@@ -1020,7 +372,7 @@ FWorldTransform FWorldTransform::FromTransform( const FTransform& Transform )
 
 bool FWorldTransform::IsIdentity() const
 {
-	return IsNearlyEqual( Position, FVector3::Zero ) && IsNearlyEqual( RotationDegrees, FVector3::Zero ) && IsNearlyEqual( Scale, FVector3::One );
+	return NWorldDefinitionJson::IsNearlyEqual( Position, FVector3::Zero ) && NWorldDefinitionJson::IsNearlyEqual( RotationDegrees, FVector3::Zero ) && NWorldDefinitionJson::IsNearlyEqual( Scale, FVector3::One );
 }
 
 //=============================================================================
@@ -1222,7 +574,7 @@ NlohmannJson FWorldDefinition::ToJson() const
 	NlohmannJson ObjectsJson = NlohmannJson::array();
 	for ( const FWorldObject& Object : Objects )
 	{
-		ObjectsJson.push_back( ObjectToJson( Object ) );
+		ObjectsJson.push_back( NWorldDefinitionJson::ObjectToJson( Object ) );
 	}
 	Json["Objects"] = ObjectsJson;
 	return Json;
@@ -1239,7 +591,7 @@ bool FWorldDefinition::FromJson( const NlohmannJson& Json, FWorldDefinition& Out
 	World.Version = NJson::GetOr<int32>( Json, "Version", WorldFormatVersion );
 	if ( World.Version > WorldFormatVersion )
 	{
-		Warn( OutWarnings, FString::Printf( "the file is version %d, newer than this program's version %d; some data may be lost when it is saved", World.Version, WorldFormatVersion ) );
+		NWorldDefinitionJson::Warn( OutWarnings, FString::Printf( "the file is version %d, newer than this program's version %d; some data may be lost when it is saved", World.Version, WorldFormatVersion ) );
 	}
 	World.Name = NJson::GetOr<FString>( Json, "Name", FString() );
 
@@ -1253,13 +605,13 @@ bool FWorldDefinition::FromJson( const NlohmannJson& Json, FWorldDefinition& Out
 			EWorldCollisionMode Mode = EWorldCollisionMode::Off;
 			if ( !TryParse( Text, Mode ) || Mode == EWorldCollisionMode::Auto )
 			{
-				Warn( OutWarnings, "collision rule for tag '" + Rule.Tag + "': '" + Text + "' is not On or Off (using Off)" );
+				NWorldDefinitionJson::Warn( OutWarnings, "collision rule for tag '" + Rule.Tag + "': '" + Text + "' is not On or Off (using Off)" );
 				Mode = EWorldCollisionMode::Off;
 			}
 			Rule.bCollide = Mode == EWorldCollisionMode::On;
 			if ( Rule.Tag.IsEmpty() )
 			{
-				Warn( OutWarnings, "a collision rule without a tag was skipped" );
+				NWorldDefinitionJson::Warn( OutWarnings, "a collision rule without a tag was skipped" );
 				continue;
 			}
 			World.Settings.CollisionRules.Add( Rule );
@@ -1275,11 +627,11 @@ bool FWorldDefinition::FromJson( const NlohmannJson& Json, FWorldDefinition& Out
 		{
 			if ( !ObjectJson.is_object() )
 			{
-				Warn( OutWarnings, FString::Printf( "object #%d is not an object and was skipped", Index ) );
+				NWorldDefinitionJson::Warn( OutWarnings, FString::Printf( "object #%d is not an object and was skipped", Index ) );
 				++Index;
 				continue;
 			}
-			FWorldObject Object = ObjectFromJson( ObjectJson, OutWarnings, Index );
+			FWorldObject Object = NWorldDefinitionJson::ObjectFromJson( ObjectJson, OutWarnings, Index );
 			++Index;
 			if ( Object.Id <= WorldNoId || World.FindIndexById( Object.Id ) != INDEX_NONE )
 			{
@@ -1304,14 +656,14 @@ bool FWorldDefinition::FromJson( const NlohmannJson& Json, FWorldDefinition& Out
 		FWorldObject& Object = World.Objects[ObjectIndex];
 		const int32 OldId = Object.Id;
 		Object.Id = World.AllocateId();
-		Warn( OutWarnings, FString::Printf( "object #%d ('%s') had %s; it was given the id %d", ObjectIndex, *Object.Name, OldId <= WorldNoId ? "no valid id" : *FString::Printf( "the duplicate id %d", OldId ), Object.Id ) );
+		NWorldDefinitionJson::Warn( OutWarnings, FString::Printf( "object #%d ('%s') had %s; it was given the id %d", ObjectIndex, *Object.Name, OldId <= WorldNoId ? "no valid id" : *FString::Printf( "the duplicate id %d", OldId ), Object.Id ) );
 	}
 
 	if ( Json.is_object() )
 	{
 		for ( auto It = Json.begin(); It != Json.end(); ++It )
 		{
-			if ( IsKnownKey( KnownWorldKeys, It.key() ) )
+			if ( NWorldDefinitionJson::IsKnownKey( NWorldDefinitionJson::KnownWorldKeys, It.key() ) )
 			{
 				continue;
 			}

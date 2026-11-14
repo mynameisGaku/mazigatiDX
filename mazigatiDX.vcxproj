@@ -284,6 +284,9 @@
     <ClCompile Include="Library\Framework\Material\MaterialEnvironmentMap.cpp" />
     <ClCompile Include="Library\Framework\Material\MaterialEval.cpp" />
     <ClCompile Include="Library\Framework\Material\MaterialGraph.cpp" />
+    <ClCompile Include="Library\Framework\Material\MaterialGraphCompiler.cpp" />
+    <ClCompile Include="Library\Framework\Material\MaterialGraphCompilerNodes.cpp" />
+    <ClCompile Include="Library\Framework\Material\MaterialGraphCompilerSubstrate.cpp" />
     <ClCompile Include="Library\Framework\Material\MaterialHlsl.cpp" />
     <ClCompile Include="Library\Framework\Material\MaterialInstance.cpp" />
     <ClCompile Include="Library\Framework\Material\MaterialParameterCollection.cpp" />
@@ -385,7 +388,9 @@
     <ClCompile Include="Library\Framework\UI\Widgets\UIScrollBox.cpp" />
     <ClCompile Include="Library\Framework\UI\Widgets\UITextBox.cpp" />
     <ClCompile Include="Library\Framework\World\Definition\WorldAssetUse.cpp" />
+    <ClCompile Include="Library\Framework\World\Definition\WorldComponentJson.cpp" />
     <ClCompile Include="Library\Framework\World\Definition\WorldDefinition.cpp" />
+    <ClCompile Include="Library\Framework\World\Definition\WorldDefinitionJson.cpp" />
     <ClCompile Include="Library\Framework\World\Definition\WorldEdit.cpp" />
     <ClCompile Include="Library\Framework\World\Definition\WorldHierarchy.cpp" />
     <ClCompile Include="Library\Framework\World\Definition\WorldValidate.cpp" />
@@ -961,6 +966,7 @@
     <ClInclude Include="Library\Framework\Material\MaterialEnvironmentMap.h" />
     <ClInclude Include="Library\Framework\Material\MaterialEval.h" />
     <ClInclude Include="Library\Framework\Material\MaterialGraph.h" />
+    <ClInclude Include="Library\Framework\Material\MaterialGraphCompiler.h" />
     <ClInclude Include="Library\Framework\Material\MaterialHlsl.h" />
     <ClInclude Include="Library\Framework\Material\MaterialInstance.h" />
     <ClInclude Include="Library\Framework\Material\MaterialParameterCollection.h" />
@@ -1100,6 +1106,7 @@
     <ClInclude Include="Library\Framework\UI\Widgets\UITextBox.h" />
     <ClInclude Include="Library\Framework\World\Definition\WorldAssetUse.h" />
     <ClInclude Include="Library\Framework\World\Definition\WorldDefinition.h" />
+    <ClInclude Include="Library\Framework\World\Definition\WorldDefinitionJson.h" />
     <ClInclude Include="Library\Framework\World\Definition\WorldEdit.h" />
     <ClInclude Include="Library\Framework\World\Definition\WorldHierarchy.h" />
     <ClInclude Include="Library\Framework\World\Definition\WorldValidate.h" />

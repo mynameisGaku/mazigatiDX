@@ -652,6 +652,15 @@
     <ClCompile Include="Library\Framework\Material\MaterialGraph.cpp">
       <Filter>Library\Framework\Material</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Material\MaterialGraphCompiler.cpp">
+      <Filter>Library\Framework\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Material\MaterialGraphCompilerNodes.cpp">
+      <Filter>Library\Framework\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Material\MaterialGraphCompilerSubstrate.cpp">
+      <Filter>Library\Framework\Material</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Material\MaterialHlsl.cpp">
       <Filter>Library\Framework\Material</Filter>
     </ClCompile>
@@ -955,7 +964,13 @@
     <ClCompile Include="Library\Framework\World\Definition\WorldAssetUse.cpp">
       <Filter>Library\Framework\World\Definition</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\World\Definition\WorldComponentJson.cpp">
+      <Filter>Library\Framework\World\Definition</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\World\Definition\WorldDefinition.cpp">
+      <Filter>Library\Framework\World\Definition</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\World\Definition\WorldDefinitionJson.cpp">
       <Filter>Library\Framework\World\Definition</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\World\Definition\WorldEdit.cpp">
@@ -2679,6 +2694,9 @@
     <ClInclude Include="Library\Framework\Material\MaterialGraph.h">
       <Filter>Library\Framework\Material</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Material\MaterialGraphCompiler.h">
+      <Filter>Library\Framework\Material</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Material\MaterialHlsl.h">
       <Filter>Library\Framework\Material</Filter>
     </ClInclude>
@@ -3094,6 +3112,9 @@
       <Filter>Library\Framework\World\Definition</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\World\Definition\WorldDefinition.h">
+      <Filter>Library\Framework\World\Definition</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\World\Definition\WorldDefinitionJson.h">
       <Filter>Library\Framework\World\Definition</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\World\Definition\WorldEdit.h">
