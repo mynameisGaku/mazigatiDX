@@ -111,7 +111,6 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestEngineContent.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestEngineContent.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestFilter.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestFilter.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestFilterReal.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestFilterReal.cpp')" />
-    <ClCompile Include="Source\SelfTest\AssetSelfTestGameFeel.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestGameFeel.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestGameThread.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestGameThread.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestImages.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestImages.cpp')" />
     <ClCompile Include="Source\SelfTest\AssetSelfTestImagesReal.cpp" Condition="Exists('Source\SelfTest\AssetSelfTestImagesReal.cpp')" />
@@ -265,7 +264,6 @@
     <ClInclude Include="Source\SelfTest\AssetSelfTestEngineContent.h" Condition="Exists('Source\SelfTest\AssetSelfTestEngineContent.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestFbx.h" Condition="Exists('Source\SelfTest\AssetSelfTestFbx.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestFilter.h" Condition="Exists('Source\SelfTest\AssetSelfTestFilter.h')" />
-    <ClInclude Include="Source\SelfTest\AssetSelfTestGameFeel.h" Condition="Exists('Source\SelfTest\AssetSelfTestGameFeel.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestGameThread.h" Condition="Exists('Source\SelfTest\AssetSelfTestGameThread.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestImages.h" Condition="Exists('Source\SelfTest\AssetSelfTestImages.h')" />
     <ClInclude Include="Source\SelfTest\AssetSelfTestLighting.h" Condition="Exists('Source\SelfTest\AssetSelfTestLighting.h')" />

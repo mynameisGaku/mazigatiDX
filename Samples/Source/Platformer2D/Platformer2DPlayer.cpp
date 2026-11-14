@@ -35,9 +35,6 @@ namespace
 	constexpr float32 HoldGravity = 1900.0f;
 	constexpr float32 FallGravity = 3100.0f;
 	constexpr float32 MaxFallSpeed = 900.0f;
-	// 手応え: 敵を踏んだとき・ダメージを受けたときに、時間を止める長さ（秒）
-	constexpr float32 StompHitStop = 0.07f;
-	constexpr float32 HurtHitStop = 0.14f;
 	constexpr float32 StompBounce = 420.0f;
 	constexpr float32 StompBounceHeld = 700.0f;
 
@@ -382,8 +379,6 @@ void CPlatformer2DPlayer::HandleEnemies( bool bJumpHeld )
 			const bool bWasStill = Enemy->IsStill();
 			Enemy->OnStomped( Position.x );
 			Velocity.y = -( bJumpHeld ? StompBounceHeld : StompBounce );
-			// 手応え: 踏んだ瞬間に、時間を一瞬止める
-			GetScene()->StartHitStop( StompHitStop );
 			Status.AddScore( bWasStill ? 400 : 100 );
 			continue;
 		}
@@ -398,7 +393,6 @@ void CPlatformer2DPlayer::HandleEnemies( bool bJumpHeld )
 		{
 			// ダメージ: 小さくなるか、やられるかは、ステートマシン（いまの姿）が決める
 			PostEvent( "Hurt" );
-			GetScene()->StartHitStop( HurtHitStop );
 		}
 	}
 }

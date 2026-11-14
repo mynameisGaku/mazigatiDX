@@ -259,8 +259,6 @@
     <ClCompile Include="Library\Framework\Engine\GameMain.cpp" />
     <ClCompile Include="Library\Framework\Engine\ScreenConfig.cpp" />
     <ClCompile Include="Library\Framework\Engine\TimeControl.cpp" />
-    <ClCompile Include="Library\Framework\GameFeel\HitStop.cpp" />
-    <ClCompile Include="Library\Framework\GameFeel\ScreenShake.cpp" />
     <ClCompile Include="Library\Framework\GameInstance\GameInstance.cpp" />
     <ClCompile Include="Library\Framework\Input\GamepadState.cpp" />
     <ClCompile Include="Library\Framework\Input\Text\TextEditBuffer.cpp" />
@@ -926,8 +924,6 @@
     <ClInclude Include="Library\Framework\Engine\GameMain.h" />
     <ClInclude Include="Library\Framework\Engine\ScreenConfig.h" />
     <ClInclude Include="Library\Framework\Engine\TimeControl.h" />
-    <ClInclude Include="Library\Framework\GameFeel\HitStop.h" />
-    <ClInclude Include="Library\Framework\GameFeel\ScreenShake.h" />
     <ClInclude Include="Library\Framework\GameInstance\GameInstance.h" />
     <ClInclude Include="Library\Framework\Input\EGamepadAxis.h" />
     <ClInclude Include="Library\Framework\Input\EGamepadButton.h" />

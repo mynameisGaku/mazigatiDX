@@ -118,9 +118,6 @@
     <ClCompile Include="Source\SelfTest\AssetSelfTestFilterReal.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
-    <ClCompile Include="Source\SelfTest\AssetSelfTestGameFeel.cpp">
-      <Filter>Source\SelfTest</Filter>
-    </ClCompile>
     <ClCompile Include="Source\SelfTest\AssetSelfTestGameThread.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
@@ -571,9 +568,6 @@
       <Filter>Source\SelfTest</Filter>
     </ClInclude>
     <ClInclude Include="Source\SelfTest\AssetSelfTestFilter.h">
-      <Filter>Source\SelfTest</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\SelfTest\AssetSelfTestGameFeel.h">
       <Filter>Source\SelfTest</Filter>
     </ClInclude>
     <ClInclude Include="Source\SelfTest\AssetSelfTestGameThread.h">

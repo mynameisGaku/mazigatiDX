@@ -15,7 +15,6 @@
 - UI のテーマのファイル（`.gxuitheme`。`CUIThemeLoader`。色・数・ブラシ・部品のスタイルと、スタイルの `Extends`）、そのホットリロード（`CUIThemeDocument`）、状態のブラシのなめらかな切り替え（スタイルの `TransitionDuration`。`CUIWidget::AdvanceTime`）、色の文字の読み取り（`FColor32::TryParseHex`）。
 - エフェクトの粒子を、Particle ドメインのマテリアルで描く（エミッターの `MaterialAsset`。`CMaterial::BeginParticles`・描画命令 `ShaderQuad3D`・組み込みの `Engine:/Materials/Particle`）。
 - マテリアルエディタ（`Editor.exe`。ノードのグラフ・プレビュー・診断・保存）と、サンプル `Materials`。
-- 手応えの部品（`Library/Framework/GameFeel`）: ヒットストップ（`CScene::StartHitStop`・`FHitStop`）、シーンごとの時間の倍率（`CScene::SetTimeScale`）、画面の揺れ（`FScreenShake`）。サンプル `Adventure`・`Platformer2D`・`Platformer3D` に入れた。
 - チュートリアル（[Docs/TUTORIAL.md](Docs/TUTORIAL.md)。最初のゲームを作る）。
 - エンジン組み込みの素材の場所を書くファイル（`EngineContent.location`）。フレームワークとは別の場所に作ったゲームのプロジェクトから、`Engine:/` の素材を読める（`Tools/NewProject.ps1` が作る）。
 - 配布物を作るスクリプト（`Tools/PackageGame.ps1`。実行ファイル・DLL・`Config`・`Assets`・`EngineContent`・ライセンス文を、フォルダーと zip にまとめて、起動を確かめる）。

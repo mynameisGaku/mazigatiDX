@@ -577,12 +577,6 @@
     <ClCompile Include="Library\Framework\Engine\TimeControl.cpp">
       <Filter>Library\Framework\Engine</Filter>
     </ClCompile>
-    <ClCompile Include="Library\Framework\GameFeel\HitStop.cpp">
-      <Filter>Library\Framework\GameFeel</Filter>
-    </ClCompile>
-    <ClCompile Include="Library\Framework\GameFeel\ScreenShake.cpp">
-      <Filter>Library\Framework\GameFeel</Filter>
-    </ClCompile>
     <ClCompile Include="Library\Framework\GameInstance\GameInstance.cpp">
       <Filter>Library\Framework\GameInstance</Filter>
     </ClCompile>
@@ -2573,12 +2567,6 @@
     </ClInclude>
     <ClInclude Include="Library\Framework\Engine\TimeControl.h">
       <Filter>Library\Framework\Engine</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\GameFeel\HitStop.h">
-      <Filter>Library\Framework\GameFeel</Filter>
-    </ClInclude>
-    <ClInclude Include="Library\Framework\GameFeel\ScreenShake.h">
-      <Filter>Library\Framework\GameFeel</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\GameInstance\GameInstance.h">
       <Filter>Library\Framework\GameInstance</Filter>
@@ -5023,9 +5011,6 @@
     </Filter>
     <Filter Include="Library\Framework\Engine">
       <UniqueIdentifier>{D88B6A6C-F74E-49BB-09F7-B15A88EA5D42}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Library\Framework\GameFeel">
-      <UniqueIdentifier>{4D4134CC-9D4C-5171-B76D-3EF9531F0AF7}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Framework\GameInstance">
       <UniqueIdentifier>{ED8C557B-EC8F-AADF-DA4B-E81717A006CC}</UniqueIdentifier>

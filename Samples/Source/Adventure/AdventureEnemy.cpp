@@ -186,8 +186,6 @@ void CAdventureEnemy::ApplyDamage( int32 Damage, const FVector3& From )
 	}
 	Hp -= Damage;
 	FlashTime = 0.25f;
-	// 斬られた側は、ヒットストップの間、大きく震える
-	ShiverAmount = 0.16f;
 	FVector3 Away( Position.x - From.x, 0.0f, Position.z - From.z );
 	KnockDirection = Away.LengthSquared() > 0.0001f ? Away.Normalized() : FVector3( 0.0f, 0.0f, 1.0f );
 	if ( Hp <= 0 )
@@ -244,42 +242,40 @@ void CAdventureEnemy::Record3D( FDrawContext& CommandList )
 	}
 	const FVector3 Facing( NMath::Sin( FacingYaw ), 0.0f, NMath::Cos( FacingYaw ) );
 	const FVector3 Right( Facing.z, 0.0f, -Facing.x );
-	// ヒットストップの間は、見た目だけ、横に震える（当たり判定の位置は、動かさない）
-	const FVector3 Base = Position + State->GetShiverOffset( ShiverAmount );
 	const bool bSlime = Kind == &Kinds[0];
 	// 倒れたあとは、縮んで消える
 	const float32 Shrink = bDead ? NMath::Clamp( 1.0f - DeadTime / 0.9f, 0.05f, 1.0f ) : 1.0f;
-	CommandList.Cone3D( Base + FVector3( 0.0f, 0.03f, 0.0f ), Base + FVector3( 0.0f, 0.005f, 0.0f ), Kind->Radius * 1.1f * Shrink, 16, FColor32( 24, 28, 24 ) );
+	CommandList.Cone3D( Position + FVector3( 0.0f, 0.03f, 0.0f ), Position + FVector3( 0.0f, 0.005f, 0.0f ), Kind->Radius * 1.1f * Shrink, 16, FColor32( 24, 28, 24 ) );
 	const bool bFlash = FlashTime > 0.0f;
 	// 構えている間は、足元が赤く光る（殴るよ、の合図）
 	if ( !bDead && StrikeTime > 0.0f && StrikeTime < StrikeWindup && Machine != nullptr && Machine->GetStateMachine() != nullptr && Machine->GetStateMachine()->IsInState( "Alive" ) )
 	{
-		CommandList.Cone3D( Base + FVector3( 0.0f, 0.06f, 0.0f ), Base + FVector3( 0.0f, 0.04f, 0.0f ), Kind->AttackRange, 20, FColor32( 230, 60, 50 ) );
+		CommandList.Cone3D( Position + FVector3( 0.0f, 0.06f, 0.0f ), Position + FVector3( 0.0f, 0.04f, 0.0f ), Kind->AttackRange, 20, FColor32( 230, 60, 50 ) );
 	}
 	if ( bSlime )
 	{
 		const float32 Bob = 0.08f * NMath::Sin( State->Time * 6.0f + static_cast<float32>( PlaceholderId ) );
 		const FColor32 Body = bFlash ? FColor32( 250, 220, 220 ) : FColor32( 90, 200, 100 );
-		CommandList.Sphere3D( Base + FVector3( 0.0f, 0.5f * Shrink + Bob, 0.0f ), 0.55f * Shrink, 14, Body );
-		CommandList.Sphere3D( Base + FVector3( 0.0f, 0.62f * Shrink, 0.0f ) + Facing * 0.38f * Shrink + Right * 0.17f, 0.1f * Shrink, 8, FColor32::White );
-		CommandList.Sphere3D( Base + FVector3( 0.0f, 0.62f * Shrink, 0.0f ) + Facing * 0.38f * Shrink - Right * 0.17f, 0.1f * Shrink, 8, FColor32::White );
-		CommandList.Sphere3D( Base + FVector3( 0.0f, 0.62f * Shrink, 0.0f ) + Facing * 0.46f * Shrink + Right * 0.17f, 0.05f * Shrink, 6, FColor32::Black );
-		CommandList.Sphere3D( Base + FVector3( 0.0f, 0.62f * Shrink, 0.0f ) + Facing * 0.46f * Shrink - Right * 0.17f, 0.05f * Shrink, 6, FColor32::Black );
+		CommandList.Sphere3D( Position + FVector3( 0.0f, 0.5f * Shrink + Bob, 0.0f ), 0.55f * Shrink, 14, Body );
+		CommandList.Sphere3D( Position + FVector3( 0.0f, 0.62f * Shrink, 0.0f ) + Facing * 0.38f * Shrink + Right * 0.17f, 0.1f * Shrink, 8, FColor32::White );
+		CommandList.Sphere3D( Position + FVector3( 0.0f, 0.62f * Shrink, 0.0f ) + Facing * 0.38f * Shrink - Right * 0.17f, 0.1f * Shrink, 8, FColor32::White );
+		CommandList.Sphere3D( Position + FVector3( 0.0f, 0.62f * Shrink, 0.0f ) + Facing * 0.46f * Shrink + Right * 0.17f, 0.05f * Shrink, 6, FColor32::Black );
+		CommandList.Sphere3D( Position + FVector3( 0.0f, 0.62f * Shrink, 0.0f ) + Facing * 0.46f * Shrink - Right * 0.17f, 0.05f * Shrink, 6, FColor32::Black );
 		return;
 	}
 	// スケルトン: 骨の体・頭蓋骨・剣
 	const FColor32 Bone = bFlash ? FColor32( 250, 190, 190 ) : FColor32( 230, 228, 214 );
 	const float32 Stride = NMath::Sin( State->Time * 9.0f ) * 0.12f;
-	CommandList.Capsule3D( Base + Right * 0.14f + Facing * Stride + FVector3( 0.0f, 0.1f * Shrink, 0.0f ), Base + Right * 0.14f + Facing * Stride + FVector3( 0.0f, 0.5f * Shrink, 0.0f ), 0.07f * Shrink, 6, Bone );
-	CommandList.Capsule3D( Base - Right * 0.14f - Facing * Stride + FVector3( 0.0f, 0.1f * Shrink, 0.0f ), Base - Right * 0.14f - Facing * Stride + FVector3( 0.0f, 0.5f * Shrink, 0.0f ), 0.07f * Shrink, 6, Bone );
-	CommandList.Capsule3D( Base + FVector3( 0.0f, 0.6f * Shrink, 0.0f ), Base + FVector3( 0.0f, 1.15f * Shrink, 0.0f ), 0.22f * Shrink, 8, Bone );
-	const FVector3 Head = Base + FVector3( 0.0f, 1.5f * Shrink, 0.0f );
+	CommandList.Capsule3D( Position + Right * 0.14f + Facing * Stride + FVector3( 0.0f, 0.1f * Shrink, 0.0f ), Position + Right * 0.14f + Facing * Stride + FVector3( 0.0f, 0.5f * Shrink, 0.0f ), 0.07f * Shrink, 6, Bone );
+	CommandList.Capsule3D( Position - Right * 0.14f - Facing * Stride + FVector3( 0.0f, 0.1f * Shrink, 0.0f ), Position - Right * 0.14f - Facing * Stride + FVector3( 0.0f, 0.5f * Shrink, 0.0f ), 0.07f * Shrink, 6, Bone );
+	CommandList.Capsule3D( Position + FVector3( 0.0f, 0.6f * Shrink, 0.0f ), Position + FVector3( 0.0f, 1.15f * Shrink, 0.0f ), 0.22f * Shrink, 8, Bone );
+	const FVector3 Head = Position + FVector3( 0.0f, 1.5f * Shrink, 0.0f );
 	CommandList.Sphere3D( Head, 0.26f * Shrink, 10, Bone );
 	CommandList.Sphere3D( Head + Facing * 0.2f * Shrink + Right * 0.1f, 0.06f * Shrink, 6, FColor32( 200, 40, 40 ) );
 	CommandList.Sphere3D( Head + Facing * 0.2f * Shrink - Right * 0.1f, 0.06f * Shrink, 6, FColor32( 200, 40, 40 ) );
 	// 剣: 構えの間は、振りかぶる
 	const bool bWinding = StrikeTime > 0.0f && StrikeTime < StrikeWindup;
-	const FVector3 Hilt = Base + Right * 0.35f + FVector3( 0.0f, 0.9f * Shrink, 0.0f );
+	const FVector3 Hilt = Position + Right * 0.35f + FVector3( 0.0f, 0.9f * Shrink, 0.0f );
 	const FVector3 Tip = bWinding ? Hilt + FVector3( 0.0f, 0.9f, 0.0f ) : Hilt + Facing * 0.8f * Shrink + FVector3( 0.0f, 0.1f, 0.0f );
 	CommandList.Capsule3D( Hilt, Tip, 0.06f * Shrink, 6, FColor32( 180, 190, 205 ) );
 }
