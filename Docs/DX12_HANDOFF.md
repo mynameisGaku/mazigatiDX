@@ -247,3 +247,12 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - `RemoveDevice` は待機用fenceを `UINT64_MAX` にする。検査側の[3e871f9](https://github.com/mynameisGaku/framework-test/commit/3e871f98e5936d87007fd1bc21faa50052f823f4)で、実際に待機していたfenceの最大値と、未完了computeの `GetComputeCompletion` / `WaitCompute` が喪失を完了と誤認せず、出力も保持することを追加検査した。Debug / Releaseの既定GPU / WARPでDeviceLifecycleおよびImGuiFrameLifecycle、ViewportContractが成功し、SDKデバッグ層も有効だった。
 - SDKメッセージ921の原因を切り分けるため、別の一時コピーだけで提出記録の資源参照をプロセス終了まで追加保持し、通常版と比較した。直列80回と同時起動80回の各160回は両方とも警告なし。喪失で待機fenceが最大値になることは確認できたが、警告は前回から低頻度であり、この結果だけで追加保持の有効性や原因を証明できない。追加保持や検査用のアクセス変更は製品に入れておらず、メッセージ921は未解決のまま。通常の完了番号と喪失値の区別については [Microsoftのfence仕様](https://learn.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-id3d12fence-getcompletedvalue) を参照。
 - 以前30秒タイムアウトしたDebugの `NativeGameContract --default` について、新しい実行先で30回反復し全件成功。前回の停止ログは異なる検査箇所で途切れており、原因の特定には至っていない。タイムアウトを延長したり失敗を無視したりしていない。
+
+
+## 喪失時のSDK診断の観測点（2026-11-14）
+
+- 検査側の[b933cbb](https://github.com/mynameisGaku/framework-test/commit/b933cbbba3363572b2cc010498fbc17900c6544d)は、DeviceLifecycle／ImGuiFrameLifecycleでSDKの警告以上を最初に観測した確認点を表示する。`RemoveDevice` の前後、完了照会後、終了後、所有者破棄後を区別する。SDKによる非同期の記録時刻を示すもので、警告の原因となった命令の実行時刻を証明するものではない。警告921などの扱いを緩めていない。
+- 別の一時検査で、各確認点の直前に意図的な警告を1件ずつ追加すると、それぞれ期待した確認点で表示され、検査自体は5件の警告により意図どおり失敗した。製品・公開検査へ人工的な警告は入れていない。
+- Debug／Release、既定GPU／WARP、GPU単独／ImGui利用者の組合せで通常終了とデバイス喪失の計16起動が成功し、SDKデバッグ層も有効だった。両検査のReleaseリンクを既存の他検査と同じLTCG・増分リンク無効に揃え、警告なくリビルドした。`CheckSourceFormat.ps1` は1831ファイル成功。
+- 別の一時比較では、通常版と提出記録をプロセス終了まで追加保持する版を2プロセスで交互の起動順に実行し、既定GPU各200回・WARP各100回は両版とも警告なし。比較中に上記の検査ビルドも行っており、実行条件は完全には一定でない。警告が再現しなかったため、追加保持の効果や根本原因は判断できず、SDK警告921は未解決のまま。
+- 資源保持と喪失通知は [Microsoftのコマンドリスト仕様](https://learn.microsoft.com/en-us/windows/win32/direct3d12/recording-command-lists-and-bundles) と [fence仕様](https://learn.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-id3d12fence-getcompletedvalue)、CPU側の所有と完了は [Unreal Engineの描画スレッド](https://dev.epicgames.com/documentation/en-us/unreal-engine/threaded-rendering-in-unreal-engine)を参照した。
