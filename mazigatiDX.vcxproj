@@ -538,6 +538,7 @@
     <ClCompile Include="Library\Platform\Render\Geometry\GeometryCommandExecutor.cpp" />
     <ClCompile Include="Library\Platform\Render\Geometry\GeometryQuadBuilder.cpp" />
     <ClCompile Include="Library\Platform\Render\Geometry\GeometryShapeBuilder.cpp" />
+    <ClCompile Include="Library\Platform\Render\Geometry\VertexLighting.cpp" />
     <ClCompile Include="Library\Platform\Render\Model\StaticModelStore.cpp" />
     <ClCompile Include="Library\Platform\Render\Texture\TextureAssetStore.cpp" />
     <ClCompile Include="Library\Platform\SDL\SdlGamepadInputSubsystem.cpp" />
@@ -1375,6 +1376,7 @@
     <ClInclude Include="Library\Platform\Render\Geometry\GeometryCommandExecutor.h" />
     <ClInclude Include="Library\Platform\Render\Geometry\GeometryQuadBuilder.h" />
     <ClInclude Include="Library\Platform\Render\Geometry\GeometryShapeBuilder.h" />
+    <ClInclude Include="Library\Platform\Render\Geometry\VertexLighting.h" />
     <ClInclude Include="Library\Platform\Render\Model\StaticModelStore.h" />
     <ClInclude Include="Library\Platform\Render\Texture\TextureAssetStore.h" />
     <ClInclude Include="Library\Platform\SDL\SdlGamepadInputSubsystem.h" />

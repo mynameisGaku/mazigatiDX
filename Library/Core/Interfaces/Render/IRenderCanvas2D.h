@@ -2,6 +2,7 @@
 #pragma once
 #include "Library/Math/Color.h"
 #include "Library/Core/Interfaces/Render/ITextureDrawSource.h"
+#include "Library/Core/Render/GeometryDrawState.h"
 
 // APIに依存しない2D実行先。フロント側はゲームスレッド・フレーム内で使用する。
 // 記録した値を別の実行先へ渡す場合、その実行先は定めた所有スレッドだけで操作する。
@@ -21,6 +22,8 @@ public:
 	virtual void Triangle( const float32 ( &Points )[6], FColor32 Color, bool bFill, float32 Thickness ) = 0;
 	// 凸四角形を描く。座標はXYの順で4点。
 	virtual void Quad( const float32 ( &Points )[8], FColor32 Color, bool bFill, float32 Thickness ) = 0;
+	// 凸な点列（XYの順でCount点。3〜512点）を描く。未対応の実行先は何も描かない。
+	virtual void Polygon( const float32* /*Points*/, int32 /*Count*/, FColor32 /*Color*/, bool /*bFill*/, float32 /*Thickness*/ ) {}
 	// 既定フォントでUTF-8の範囲を描く。
 	virtual void Text( float32 X, float32 Y, FColor32 Color, const char* Begin, const char* End ) = 0;
 	// 借用画像を凸四角形に貼る。UVは左上と右下。
@@ -33,4 +36,6 @@ public:
 	virtual bool SetTextureFilter( bool /*bLinear*/ ) { return false; }
 	// 図形の端の補間を指定する。
 	virtual void SetAntiAlias( bool bEnabled ) = 0;
+	// 以降の図形・画像・文字の、描画先との混ぜ方を指定する。未対応の実行先は通常の合成のまま。
+	virtual void SetBlend( EGeometryBlend /*Blend*/ ) {}
 };

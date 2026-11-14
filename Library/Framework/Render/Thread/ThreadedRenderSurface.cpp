@@ -364,6 +364,16 @@ void CThreadedRenderSurface::PopClip()
 	Queue( MoveTemp( Command ) );
 }
 
+void CThreadedRenderSurface::SetBlend( EGeometryBlend Blend )
+{
+	GAME_THREAD_ONLY();
+	// この操作だけの値を保持し、呼出し元の変数を参照しない。
+	FCommand Command;
+	Command.Type = ECommand::Blend;
+	Command.Integers[0] = static_cast<int32>( Blend );
+	Queue( MoveTemp( Command ) );
+}
+
 void CThreadedRenderSurface::SetAntiAlias( bool bEnabled )
 {
 	GAME_THREAD_ONLY();
@@ -420,6 +430,23 @@ void CThreadedRenderSurface::Quad( const float32 ( &Points )[8], FColor32 Color,
 		Command.Values[Index] = Points[Index];
 	}
 	Command.Values[8] = Thickness;
+	Command.Color = Color;
+	Command.bEnabled = bFill;
+	Queue( MoveTemp( Command ) );
+}
+
+void CThreadedRenderSurface::Polygon( const float32 *Points, int32 Count, FColor32 Color, bool bFill, float32 Thickness )
+{
+	GAME_THREAD_ONLY();
+	if ( !Points || Count < 3 || Count > 512 )
+	{
+		return;
+	}
+	// 参照された点列を、命令が所有する配列へコピーする。
+	FCommand Command;
+	Command.Type = ECommand::Polygon;
+	Command.Points.Append( Points, Count * 2 );
+	Command.Values[0] = Thickness;
 	Command.Color = Color;
 	Command.bEnabled = bFill;
 	Queue( MoveTemp( Command ) );
@@ -553,6 +580,9 @@ void CThreadedRenderSurface::ExecuteBatch( const TArray<FCommand> &Commands )
 			Canvas->Quad( Points, Command.Color, Command.bEnabled, Command.Values[8] );
 			break;
 		}
+		case ECommand::Polygon:
+			Canvas->Polygon( Command.Points.GetData(), Command.Points.Num() / 2, Command.Color, Command.bEnabled, Command.Values[0] );
+			break;
 		case ECommand::Text:
 			Canvas->Text( Command.Values[0], Command.Values[1], Command.Color, *Command.String, *Command.String + Command.String.Len() );
 			break;
@@ -571,6 +601,9 @@ void CThreadedRenderSurface::ExecuteBatch( const TArray<FCommand> &Commands )
 			break;
 		case ECommand::AntiAlias:
 			Canvas->SetAntiAlias( Command.bEnabled );
+			break;
+		case ECommand::Blend:
+			Canvas->SetBlend( static_cast<EGeometryBlend>( Command.Integers[0] ) );
 			break;
 		default:
 			bFailed.Store( true );

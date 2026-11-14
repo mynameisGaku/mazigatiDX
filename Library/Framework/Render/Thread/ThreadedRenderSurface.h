@@ -6,6 +6,7 @@
 #include "Library/Core/Interfaces/Render/IRenderGeometry3D.h"
 #include "Library/Core/Thread/Atomic.h"
 #include "Library/Core/Types/Callable.h"
+#include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
 
 class CRenderCommandThread;
@@ -58,11 +59,13 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 		Circle, // 円。
 		Triangle, // 三角形。
 		Quad, // 凸四角形。
+		Polygon, // 凸な点列。
 		Text, // 所有したUTF-8文字列。
 		Image, // 借用画像の点列とUV。
 		PushClip, // クリップの追加。
 		PopClip, // クリップの復元。
 		AntiAlias, // 輪郭の補間設定。
+		Blend, // 描画先との混ぜ方。
 		ClearColor, // 色の消去。
 		ClearDepth, // 深度の消去。
 	};
@@ -83,6 +86,8 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 		FTextureDrawView Texture;
 		// 文字列は終端を含めて所有する。
 		FString String;
+		// 凸な点列（XYの順）。点の数が決まっていない操作だけが使う。
+		TArray<float32> Points;
 	};
 	// 描画スレッドだけで、所有する操作値を順に実行する。
 	void ExecuteBatch( const TArray<FCommand> &Commands );
@@ -114,6 +119,8 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 	void Triangle( const float32 ( &Points )[6], FColor32 Color, bool bFill, float32 Thickness ) override;
 	// 四角形の点列を呼出し中に複写する。
 	void Quad( const float32 ( &Points )[8], FColor32 Color, bool bFill, float32 Thickness ) override;
+	// 凸な点列を呼出し中に複写する。3〜512点でなければ記録しない。
+	void Polygon( const float32 *Points, int32 Count, FColor32 Color, bool bFill, float32 Thickness ) override;
 	// UTF-8を最大64KiBまで所有コピーする。Endがnullptrなら終端まで読む。1フレーム8MiBを越すと失敗。
 	void Text( float32 X, float32 Y, FColor32 Color, const char *Begin, const char *End ) override;
 	// 画像のbindingと点列を値で渡す。画像のGPU寿命は既存の所有者が管理する。
@@ -126,6 +133,8 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 	bool SetTextureFilter( bool bLinear ) override;
 	// 輪郭の補間設定を後続の描画と同じ順序へ積む。
 	void SetAntiAlias( bool bEnabled ) override;
+	// 描画先との混ぜ方を後続の描画と同じ順序へ積む。
+	void SetBlend( EGeometryBlend Blend ) override;
 	// API側の実行先。内容には描画スレッドだけが触る。
 	IRenderSurface &Target;
 	// CPU命令と同期処理を同じ順序へ集める既存の専用スレッド。

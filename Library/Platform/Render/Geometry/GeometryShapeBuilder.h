@@ -14,4 +14,6 @@ public:
 	static bool BuildSphere( const FVector3& Center, float32 Radius, int32 Div, bool bFill, FColor32 Color, TArray<FDrawVertex3D>& Out );
 	// AとBを半球の中心とするカプセル。同じ点なら球。失敗の規約は球と同じ。
 	static bool BuildCapsule( const FVector3& A, const FVector3& B, float32 Radius, int32 Div, bool bFill, FColor32 Color, TArray<FDrawVertex3D>& Out );
+	// Topを頂点、Bottomを底面の中心とする円錐（側面と底面）。失敗の規約は球と同じ。高さ0・半径0なら空の形状で成功。
+	static bool BuildCone( const FVector3& Top, const FVector3& Bottom, float32 Radius, int32 Div, bool bFill, FColor32 Color, TArray<FDrawVertex3D>& Out );
 };

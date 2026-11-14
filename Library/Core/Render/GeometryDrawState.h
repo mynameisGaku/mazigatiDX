@@ -40,6 +40,18 @@ enum class EGeometryTextureAddress : uint8
 	Border, // 外側は透明な黒。
 };
 
+// 描く色と、描画先にある色の混ぜ方（bAlphaBlendがtrueのときに使う）。色は非乗算済み（Premultiplied以外）。
+enum class EGeometryBlend : uint8
+{
+	Alpha, // 描く色 x アルファ ＋ 描画先 x ( 1 - アルファ )。
+	Add, // 描画先 ＋ 描く色 x アルファ。
+	Subtract, // 描画先 － 描く色 x アルファ。
+	Multiply, // 描画先 x 描く色。
+	PremultipliedAlpha, // 描く色 ＋ 描画先 x ( 1 - アルファ )。
+	PremultipliedAdd, // 描画先 ＋ 描く色。
+	PremultipliedSubtract, // 描画先 － 描く色。
+};
+
 // 1回の描画に閉じたGPU状態。ほかの命令へ持ち越さない。
 struct FGeometryDrawState
 {
@@ -48,7 +60,8 @@ struct FGeometryDrawState
 	EGeometryCulling Culling = EGeometryCulling::None; // 除去する面。
 	bool bTestDepth = true; // 深度を比べるか。
 	bool bWriteDepth = true; // 通過した深度を書くか。
-	bool bAlphaBlend = false; // 通常の非乗算済みアルファ合成か。
+	bool bAlphaBlend = false; // 描画先の色と混ぜるか（falseなら上書き）。
+	EGeometryBlend Blend = EGeometryBlend::Alpha; // 混ぜ方。bAlphaBlendがtrueのときだけ使う。
 	EGeometryTextureAddress AddressU = EGeometryTextureAddress::Wrap; // 横方向の画像の外側。
 	EGeometryTextureAddress AddressV = EGeometryTextureAddress::Wrap; // 縦方向の画像の外側。
 	bool bLinearFilter = false; // falseなら最近傍、trueなら線形補間。

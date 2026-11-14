@@ -137,3 +137,79 @@ bool CGeometryShapeBuilder::BuildCapsule( const FVector3& A, const FVector3& B, 
 {
 	return BuildRounded( A, B, Radius, Div, bFill, Color, Out );
 }
+
+bool CGeometryShapeBuilder::BuildCone( const FVector3& Top, const FVector3& Bottom, float32 Radius, int32 Div, bool bFill, FColor32 Color, TArray<FDrawVertex3D>& Out )
+{
+	if ( !Finite( Top ) || !Finite( Bottom ) || !NMath::IsFinite( Radius ) || Radius < 0 || Div < 3 || Div > 128 )
+	{
+		return false;
+	}
+	TArray<FDrawVertex3D> Output; // 全座標を検査してから出力へ渡す。
+	const FVector3 Offset = Top - Bottom; // 底面の中心から頂点への軸。
+	const float32 Height = Offset.Length(); // 正規化前に有限性を調べる。
+	if ( !Finite( Offset ) || !NMath::IsFinite( Height ) )
+	{
+		return false;
+	}
+	if ( Radius == 0 || Height <= NMath::SmallNumber )
+	{
+		Out = MoveTemp( Output );
+		return true;
+	}
+	const FVector3 Axis = Offset / Height; // 底面から頂点への向き。
+	const FVector3 Reference = NMath::Abs( Axis.y ) < 0.9f ? FVector3::Up : FVector3::Right; // 軸と平行でない基準。
+	const FVector3 Right = FVector3::Cross( Reference, Axis ).Normalized(); // 底面の円の1つ目の軸。
+	const FVector3 Tangent = FVector3::Cross( Axis, Right ); // 底面の円の2つ目の軸。
+	const float32 Slant = NMath::Sqrt( Height * Height + Radius * Radius ); // 側面の母線の長さ。
+	const auto Make = [&]( const FVector3& Position, const FVector3& Normal ) // 位置・法線・色を共通頂点へ移す。
+	{
+		FDrawVertex3D Result;
+		Result.Position[0] = Position.x;
+		Result.Position[1] = Position.y;
+		Result.Position[2] = Position.z;
+		Result.Normal[0] = Normal.x;
+		Result.Normal[1] = Normal.y;
+		Result.Normal[2] = Normal.z;
+		Result.Diffuse[0] = Color.r;
+		Result.Diffuse[1] = Color.g;
+		Result.Diffuse[2] = Color.b;
+		Result.Diffuse[3] = Color.a;
+		return Result;
+	};
+	const auto Radial = [&]( int32 Index ) // 円周上の、外向きの単位ベクトル。最後の点を最初の点へ正確に重ねる。
+	{
+		const float32 Angle = Index == Div ? 0 : 2 * NMath::PI * Index / Div;
+		return Right * NMath::Cos( Angle ) + Tangent * NMath::Sin( Angle );
+	};
+	for ( int32 Index = 0; Index < Div; ++Index )
+	{
+		const FVector3 Radial0 = Radial( Index ), Radial1 = Radial( Index + 1 ); // この分割の両端の向き。
+		const FVector3 Point0 = Bottom + Radial0 * Radius, Point1 = Bottom + Radial1 * Radius; // 底面の円周上の2点。
+		if ( !Finite( Point0 ) || !Finite( Point1 ) )
+		{
+			return false;
+		}
+		if ( bFill )
+		{
+			const FVector3 Normal0 = ( Radial0 * Height + Axis * Radius ) / Slant, Normal1 = ( Radial1 * Height + Axis * Radius ) / Slant; // 側面の外向きの法線。
+			const FVector3 NormalTop = ( Normal0 + Normal1 ).Normalized(); // 頂点は、両隣の法線の中間。
+			// 側面（外から見て時計回り）。
+			Output.Add( Make( Top, NormalTop ) );
+			Output.Add( Make( Point1, Normal1 ) );
+			Output.Add( Make( Point0, Normal0 ) );
+			// 底面（下から見て時計回り）。
+			Output.Add( Make( Bottom, Axis * -1.0f ) );
+			Output.Add( Make( Point0, Axis * -1.0f ) );
+			Output.Add( Make( Point1, Axis * -1.0f ) );
+		}
+		else
+		{
+			Output.Add( Make( Point0, Axis ) );
+			Output.Add( Make( Point1, Axis ) );
+			Output.Add( Make( Top, Axis ) );
+			Output.Add( Make( Point0, Axis ) );
+		}
+	}
+	Out = MoveTemp( Output );
+	return true;
+}

@@ -1414,6 +1414,9 @@
     <ClCompile Include="Library\Platform\Render\Geometry\GeometryShapeBuilder.cpp">
       <Filter>Library\Platform\Render\Geometry</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Geometry\VertexLighting.cpp">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\Render\Model\StaticModelStore.cpp">
       <Filter>Library\Platform\Render\Model</Filter>
     </ClCompile>
@@ -3919,6 +3922,9 @@
       <Filter>Library\Platform\Render\Geometry</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\Render\Geometry\GeometryShapeBuilder.h">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Geometry\VertexLighting.h">
       <Filter>Library\Platform\Render\Geometry</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\Render\Model\StaticModelStore.h">

@@ -23,6 +23,7 @@ bool CGeometryCanvas2D::BeginFrame( IRenderGeometry3D &InGeometry, IRenderTextur
 	bFailed = false;
 	bLinear = false;
 	bAntiAlias = true;
+	Blend = EGeometryBlend::Alpha;
 	return true;
 }
 
@@ -58,6 +59,7 @@ void CGeometryCanvas2D::Draw( const TArray<FGeometryVertex> &Vertices, const FTe
 	FGeometryDrawState State; // 2Dは基本3Dの深度を読まず、書き換えない。
 	State.bTestDepth = State.bWriteDepth = false;
 	State.bAlphaBlend = true;
+	State.Blend = Blend;
 	State.bLinearFilter = bLinear;
 	State.AddressU = State.AddressV = EGeometryTextureAddress::Clamp;
 	if ( Texture )
@@ -296,5 +298,6 @@ bool CGeometryCanvas2D::SetTextureFilter( bool bInLinear )
 	return Geometry != nullptr;
 }
 void CGeometryCanvas2D::SetAntiAlias( bool bEnabled ) { bAntiAlias = bEnabled; }
+void CGeometryCanvas2D::SetBlend( EGeometryBlend InBlend ) { Blend = InBlend <= EGeometryBlend::PremultipliedSubtract ? InBlend : EGeometryBlend::Alpha; }
 
 bool CGeometryCanvas2D::DidFrameSucceed() const { return !bFailed; }

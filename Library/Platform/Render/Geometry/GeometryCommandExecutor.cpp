@@ -4,6 +4,7 @@
 #include "GeometryQuadBuilder.h"
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Types/Numeric.h"
+#include "Library/Platform/System/BackendSupport.h"
 
 namespace
 {
@@ -43,13 +44,33 @@ namespace
 		Result.Diffuse[2] = Color.B;
 		return Result;
 	}
+	// 図形の鏡面色を、全頂点へ付ける（光の計算で使う）。
+	void SetSpecular( TArray<FDrawVertex3D>& Vertices, FDrawRgb Specular )
+	{
+		for ( FDrawVertex3D& Value : Vertices )
+		{
+			Value.Specular[0] = Specular.R;
+			Value.Specular[1] = Specular.G;
+			Value.Specular[2] = Specular.B;
+		}
+	}
+	// 3成分の色の命令の値を、色にする。
+	FColor ToColor( const float32 ( &Values )[3] )
+	{
+		return FColor( Values[0], Values[1], Values[2], 1.0f );
+	}
+	// 0..1 の色の成分を、0..255 に丸める（範囲の外は端へ）。
+	int32 ToByte( float32 Value )
+	{
+		return NMath::IsFinite( Value ) ? static_cast<int32>( NMath::Clamp( Value, 0.0f, 1.0f ) * 255.0f + 0.5f ) : 0;
+	}
 }
 
 CGeometryCommandExecutor::CGeometryCommandExecutor( IRenderGeometry3D* InGeometry, ITextureDrawSource* InTextures, IGeometryBufferSource* InBuffers, IStaticModelSource* InModels ) : Textures( InTextures ), Models( InModels ), Buffers( InBuffers ), Geometry( InGeometry )
 {
 }
 
-bool CGeometryCommandExecutor::Submit( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend, int32 Texture )
+bool CGeometryCommandExecutor::Submit( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend, int32 Texture, bool bLit )
 {
 	if ( !Geometry || Vertices.IsEmpty() || Vertices.Num() > 65536 || Geometry->GetWidth() <= 0 || Geometry->GetHeight() <= 0 || !Camera.IsValid() )
 	{
@@ -62,6 +83,12 @@ bool CGeometryCommandExecutor::Submit( const TArray<FDrawVertex3D>& Vertices, EG
 	}
 	const FCameraViewport Viewport = { Geometry->GetWidth(), Geometry->GetHeight() }; // 同じ論理画面で射影する。
 	const FMatrix4x4 Transform = World * Camera.GetViewMatrix() * Camera.GetProjectionMatrix( Viewport ); // ローカルからクリップへの変換。
+	FMatrix4x4 NormalMatrix = World; // 法線は、逆行列の転置で変換する（一様でない拡大でも、面に垂直なまま）。
+	FMatrix4x4 InverseWorld; // 逆行列が無い（つぶれた変換）ときは、そのままの変換を使う。
+	if ( bLit && World.TryInverse( InverseWorld ) )
+	{
+		NormalMatrix = InverseWorld.Transposed();
+	}
 	TArray<FGeometryVertex> Output; // 全頂点が正しい場合だけ送る所有コピー。
 	Output.Reserve( Vertices.Num() );
 	for ( const auto& Input : Vertices )
@@ -82,9 +109,27 @@ bool CGeometryCommandExecutor::Submit( const TArray<FDrawVertex3D>& Vertices, EG
 		{
 			return false;
 		}
-		Value.Color = FColor32( static_cast<uint8>( NMath::Min( 255, Input.Diffuse[0] + Input.Specular[0] ) * Bright.R / 255 ),
-			static_cast<uint8>( NMath::Min( 255, Input.Diffuse[1] + Input.Specular[1] ) * Bright.G / 255 ),
-			static_cast<uint8>( NMath::Min( 255, Input.Diffuse[2] + Input.Specular[2] ) * Bright.B / 255 ), static_cast<uint8>( Input.Diffuse[3] * Alpha / 255 ) );
+		if ( bLit )
+		{
+			if ( !Finite( Input.Normal ) )
+			{
+				return false;
+			}
+			const FVector3 Point = World.TransformPoint( FVector3( Input.Position[0], Input.Position[1], Input.Position[2] ) ); // 光を受ける世界の点。
+			FVector3 Normal = NormalMatrix.TransformVector( FVector3( Input.Normal[0], Input.Normal[1], Input.Normal[2] ) ); // 世界での面の向き。
+			const float32 NormalLength = Normal.Length(); // 長さ0の法線は、上向きとして扱う。
+			Normal = NormalLength > NMath::SmallNumber ? Normal / NormalLength : FVector3::Up;
+			const FColor Lit = Lighting.Evaluate( Point, Normal, Camera.Position, FColor( Input.Diffuse[0] / 255.0f, Input.Diffuse[1] / 255.0f, Input.Diffuse[2] / 255.0f, 1.0f ),
+				FColor( Input.Specular[0] / 255.0f, Input.Specular[1] / 255.0f, Input.Specular[2] / 255.0f, 1.0f ) ); // 頂点ごとの光の計算。
+			Value.Color = FColor32( static_cast<uint8>( ToByte( Lit.r ) * Bright.R / 255 ), static_cast<uint8>( ToByte( Lit.g ) * Bright.G / 255 ),
+				static_cast<uint8>( ToByte( Lit.b ) * Bright.B / 255 ), static_cast<uint8>( Input.Diffuse[3] * Alpha / 255 ) );
+		}
+		else
+		{
+			Value.Color = FColor32( static_cast<uint8>( NMath::Min( 255, Input.Diffuse[0] + Input.Specular[0] ) * Bright.R / 255 ),
+				static_cast<uint8>( NMath::Min( 255, Input.Diffuse[1] + Input.Specular[1] ) * Bright.G / 255 ),
+				static_cast<uint8>( NMath::Min( 255, Input.Diffuse[2] + Input.Specular[2] ) * Bright.B / 255 ), static_cast<uint8>( Input.Diffuse[3] * Alpha / 255 ) );
+		}
 		Value.U = Input.U;
 		Value.V = Input.V;
 		Output.Add( Value );
@@ -234,7 +279,142 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::Execute( const FDraw
 			return EResult::Rejected;
 		}
 		const auto Data = View.Read<FDrawUseLightingData>(); // 検査後の固定部。
-		return Data.Enabled == 0 ? EResult::Executed : EResult::Rejected; // 現段階は頂点色だけ。照明を要求されたら描かない。
+		Lighting.SetEnabled( Data.Enabled != 0 );
+		return EResult::Executed;
+	}
+	case EDrawCommand::DefaultLight:
+	{
+		if ( !View.CanRead<FDrawDefaultLightData>() )
+		{
+			return EResult::Rejected;
+		}
+		const auto Data = View.Read<FDrawDefaultLightData>(); // 検査後の固定部。
+		Lighting.SetDefaultLight( Data.Enabled != 0 );
+		return EResult::Executed;
+	}
+	case EDrawCommand::AmbientLight:
+	{
+		if ( !View.CanRead<FDrawAmbientLightData>() )
+		{
+			return EResult::Rejected;
+		}
+		const auto Data = View.Read<FDrawAmbientLightData>(); // 検査後の固定部。
+		if ( !Finite( Data.Color ) )
+		{
+			return EResult::Rejected;
+		}
+		Lighting.SetAmbient( ToColor( Data.Color ) );
+		return EResult::Executed;
+	}
+	case EDrawCommand::SurfaceMaterial:
+	{
+		if ( !View.CanRead<FDrawSurfaceMaterialData>() )
+		{
+			return EResult::Rejected;
+		}
+		const auto Data = View.Read<FDrawSurfaceMaterialData>(); // 検査後の固定部。
+		FSurfaceMaterial Material; // 検査が済むまで、現在の材質を保つ。
+		Material.Diffuse = ToColor( Data.Diffuse );
+		Material.Ambient = ToColor( Data.Ambient );
+		Material.Specular = ToColor( Data.Specular );
+		Material.Emissive = ToColor( Data.Emissive );
+		Material.Shininess = Data.Shininess;
+		Material.bUseVertexDiffuse = Data.UseVertexDiffuse != 0;
+		Material.bUseVertexSpecular = Data.UseVertexSpecular != 0;
+		return Lighting.SetMaterial( Material ) ? EResult::Executed : EResult::Rejected;
+	}
+	case EDrawCommand::LightingOptions:
+	{
+		if ( !View.CanRead<FDrawLightingOptionsData>() )
+		{
+			return EResult::Rejected;
+		}
+		const auto Data = View.Read<FDrawLightingOptionsData>(); // 検査後の固定部。
+		FLightingOptions Options; // 画素ごとの光は、この経路では頂点ごとになる。
+		Options.bUseSpecular = Data.UseSpecular != 0;
+		Options.bPixelLighting = Data.PixelLighting != 0;
+		Options.bWrapLighting = Data.WrapLighting != 0;
+		Options.bIgnoreSurfaceAngle = Data.IgnoreSurfaceAngle != 0;
+		Lighting.SetOptions( Options );
+		return EResult::Executed;
+	}
+	case EDrawCommand::PushLight:
+	{
+		if ( !View.CanRead<FDrawLightData>() )
+		{
+			return EResult::Rejected;
+		}
+		const auto Data = View.Read<FDrawLightData>(); // 検査後の固定部。
+		if ( Data.Type < 0 || Data.Type > static_cast<int32>( EDrawLightType::Spot ) )
+		{
+			return EResult::Rejected;
+		}
+		FLight Light; // 命令の値を、計算用の値へ移す。
+		Light.Type = static_cast<EDrawLightType>( Data.Type );
+		Light.Position = FVector3( Data.Position[0], Data.Position[1], Data.Position[2] );
+		Light.Direction = FVector3( Data.Direction[0], Data.Direction[1], Data.Direction[2] );
+		Light.Diffuse = ToColor( Data.Diffuse );
+		Light.Specular = ToColor( Data.Specular );
+		Light.Ambient = ToColor( Data.Ambient );
+		Light.Range = Data.Range;
+		Light.ConstantAttenuation = Data.ConstantAttenuation;
+		Light.LinearAttenuation = Data.LinearAttenuation;
+		Light.QuadraticAttenuation = Data.QuadraticAttenuation;
+		Light.OuterAngle = Data.OuterAngle;
+		Light.InnerAngle = Data.InnerAngle;
+		Light.ShadowMapSlots = Data.ShadowMapSlots & NDrawShadowMap::AllSlots;
+		if ( !Lighting.PushLight( Light ) )
+		{
+			// 外すときの数を合わせるため、使えないライトも、光らないライトとして積む。
+			FLight Dark = FLight::MakeDirectional( FVector3( 0.0f, -1.0f, 0.0f ), FColor( 0.0f, 0.0f, 0.0f, 0.0f ) );
+			Lighting.PushLight( Dark );
+		}
+		return EResult::Executed;
+	}
+	case EDrawCommand::PopLight:
+	{
+		if ( !View.CanRead<FDrawPopLightData>() )
+		{
+			return EResult::Rejected;
+		}
+		Lighting.PopLight();
+		return EResult::Executed;
+	}
+	case EDrawCommand::Fog:
+	case EDrawCommand::HeightFog:
+	case EDrawCommand::Anisotropy:
+	case EDrawCommand::TextureTransform:
+	{
+		// まだ描画に反映しない状態。図形は、この状態なしで描く。
+		NBackendSupport::ReportUnsupported( "DrawCommands", View.Type == EDrawCommand::Fog ? "Fog" : View.Type == EDrawCommand::HeightFog ? "HeightFog" : View.Type == EDrawCommand::Anisotropy ? "Anisotropy" : "TextureTransform", "The state is ignored" );
+		return EResult::Executed;
+	}
+	case EDrawCommand::Pixel3D:
+	{
+		if ( !View.CanRead<FDrawPixel3DData>() )
+		{
+			return EResult::Rejected;
+		}
+		const auto Data = View.Read<FDrawPixel3DData>(); // 検査後の固定部。
+		TArray<FDrawVertex3D> Vertices; // 点 1 つ。
+		Vertices.Add( Vertex( Data.Pos, Data.Color ) );
+		return Submit( Vertices, EGeometryTopology::Points, Bright, Alpha, bAlphaBlend ) ? EResult::Executed : EResult::Rejected;
+	}
+	case EDrawCommand::Cone3D:
+	{
+		if ( !View.CanRead<FDrawCone3DData>() )
+		{
+			return EResult::Rejected;
+		}
+		const auto Data = View.Read<FDrawCone3DData>(); // 頂点と、底面の中心。
+		TArray<FDrawVertex3D> Vertices; // 面または線。
+		const bool bFill = View.Has( FDrawFlag::Fill ); // 塗りつぶしを選ぶ。
+		if ( !CGeometryShapeBuilder::BuildCone( FVector3( Data.Top[0], Data.Top[1], Data.Top[2] ), FVector3( Data.Bottom[0], Data.Bottom[1], Data.Bottom[2] ), Data.Radius, Data.Div, bFill, FColor32( Data.Diffuse.R, Data.Diffuse.G, Data.Diffuse.B ), Vertices ) )
+		{
+			return EResult::Rejected;
+		}
+		SetSpecular( Vertices, Data.Specular );
+		return Vertices.IsEmpty() || Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, Alpha, bAlphaBlend, -1, bFill ) ? EResult::Executed : EResult::Rejected;
 	}
 	case EDrawCommand::Line3D:
 	{
@@ -292,14 +472,21 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::Execute( const FDraw
 		}
 		const int32 Faces[] = { 0,2,1, 1,2,3, 4,5,6, 5,7,6, 0,4,2, 2,4,6, 1,3,5, 3,7,5, 0,1,4, 1,5,4, 2,6,3, 3,6,7 }; // 外側を向く各面。
 		const int32 Edges[] = { 0,1, 0,2, 0,4, 1,3, 1,5, 2,3, 2,6, 3,7, 4,5, 4,6, 5,7, 6,7 }; // 重複しない12辺。
+		const float32 FaceNormals[6][3] = { { 0, 0, -1 }, { 0, 0, 1 }, { -1, 0, 0 }, { 1, 0, 0 }, { 0, -1, 0 }, { 0, 1, 0 } }; // Faces の面の順（6頂点ずつ）の、外向きの法線。
 		TArray<FDrawVertex3D> Vertices; // 展開済みの頂点列。
 		const bool bFill = View.Has( FDrawFlag::Fill ); // 面または辺。
 		const int32* Indices = bFill ? Faces : Edges; // 同じ角を再利用する順序。
 		for ( int32 Index = 0; Index < ( bFill ? 36 : 24 ); ++Index )
 		{
-			Vertices.Add( Corners[Indices[Index]] );
+			FDrawVertex3D Corner = Corners[Indices[Index]]; // 面ごとに法線が違うので、角を複写する。
+			if ( bFill )
+			{
+				FMemory::Memcpy( Corner.Normal, FaceNormals[Index / 6], sizeof( Corner.Normal ) );
+			}
+			Vertices.Add( Corner );
 		}
-		return Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, Alpha, bAlphaBlend ) ? EResult::Executed : EResult::Rejected;
+		SetSpecular( Vertices, Data.Specular );
+		return Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, Alpha, bAlphaBlend, -1, bFill ) ? EResult::Executed : EResult::Rejected;
 	}
 	case EDrawCommand::Sphere3D:
 	{
@@ -314,7 +501,8 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::Execute( const FDraw
 		{
 			return EResult::Rejected;
 		}
-		return Vertices.IsEmpty() || Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, Alpha, bAlphaBlend ) ? EResult::Executed : EResult::Rejected;
+		SetSpecular( Vertices, Data.Specular );
+		return Vertices.IsEmpty() || Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, Alpha, bAlphaBlend, -1, bFill ) ? EResult::Executed : EResult::Rejected;
 	}
 	case EDrawCommand::Capsule3D:
 	{
@@ -329,7 +517,8 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::Execute( const FDraw
 		{
 			return EResult::Rejected;
 		}
-		return Vertices.IsEmpty() || Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, Alpha, bAlphaBlend ) ? EResult::Executed : EResult::Rejected;
+		SetSpecular( Vertices, Data.Specular );
+		return Vertices.IsEmpty() || Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, Alpha, bAlphaBlend, -1, bFill ) ? EResult::Executed : EResult::Rejected;
 	}
 	case EDrawCommand::Quad3D:
 	{
@@ -339,7 +528,7 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::Execute( const FDraw
 		}
 		const auto Data = View.Read<FDrawQuad3DData>(); // 向きと基準点を持つ画像。
 		TArray<FDrawVertex3D> Vertices; // 表とUVを共通処理で作る。
-		return CGeometryQuadBuilder::Build( Data, Camera, Vertices ) && SubmitQuad( Vertices, Data.Handle, Bright, Alpha ) ? EResult::Executed : EResult::Rejected;
+		return CGeometryQuadBuilder::Build( Data, Camera, Vertices ) && SubmitQuad( Vertices, Data.Handle, Bright, Alpha, true ) ? EResult::Executed : EResult::Rejected; // Quad3Dは光を受ける。
 	}
 	case EDrawCommand::Billboard3D:
 	case EDrawCommand::BillboardPivot3D:
@@ -644,7 +833,7 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::Execute( const FDraw
 					Ordered.Add( Vertex );
 					bUseAlpha = bUseAlpha || Vertex.Diffuse[3] < 255;
 				}
-				bSuccess = Submit( Ordered, EGeometryTopology::Triangles, FDrawRgb(), ModelAlpha, bUseAlpha, Section.Texture );
+				bSuccess = Submit( Ordered, EGeometryTopology::Triangles, FDrawRgb(), ModelAlpha, bUseAlpha, Section.Texture, true );
 				Offset += Count;
 			}
 		}
@@ -687,7 +876,7 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::Execute( const FDraw
 			State.Culling = EGeometryCulling::None;
 		}
 		// Mesh3Dは既存の契約に合わせBrightを重ねず、頂点色を使う。
-		const bool bResult = Submit( Ordered, EGeometryTopology::Triangles, FDrawRgb(), Alpha, bAlphaBlend, Data.Texture ); // 失敗時も状態を戻す。
+		const bool bResult = Submit( Ordered, EGeometryTopology::Triangles, FDrawRgb(), Alpha, bAlphaBlend, Data.Texture, true ); // 失敗時も状態を戻す。
 		World = OldWorld;
 		State.Culling = OldCulling;
 		return bResult ? EResult::Executed : EResult::Rejected;
@@ -709,7 +898,7 @@ bool CGeometryCommandExecutor::SubmitPrimitive( const TArray<FDrawVertex3D>& Ord
 	if ( Type == EDrawPrimitive::Points || Type == EDrawPrimitive::Lines || Type == EDrawPrimitive::Triangles )
 	{
 		Topology = Type == EDrawPrimitive::Points ? EGeometryTopology::Points : Type == EDrawPrimitive::Lines ? EGeometryTopology::Lines : EGeometryTopology::Triangles;
-		return Submit( Ordered, Topology, Bright, Alpha, bAlphaBlend, Texture );
+		return Submit( Ordered, Topology, Bright, Alpha, bAlphaBlend, Texture, Topology == EGeometryTopology::Triangles );
 	}
 	else if ( Type == EDrawPrimitive::LineStrip )
 	{
@@ -737,11 +926,11 @@ bool CGeometryCommandExecutor::SubmitPrimitive( const TArray<FDrawVertex3D>& Ord
 			Output.Add( Ordered[Index] );
 		}
 	}
-	return Submit( Output, Topology, Bright, Alpha, bAlphaBlend, Texture );
+	return Submit( Output, Topology, Bright, Alpha, bAlphaBlend, Texture, Topology == EGeometryTopology::Triangles );
 }
 
 // 画像の四角形は両面を描き、完全な透明画素はGPU側で深度も含めて捨てる。
-bool CGeometryCommandExecutor::SubmitQuad( const TArray<FDrawVertex3D>& Vertices, int32 Texture, FDrawRgb Bright, int32 Alpha )
+bool CGeometryCommandExecutor::SubmitQuad( const TArray<FDrawVertex3D>& Vertices, int32 Texture, FDrawRgb Bright, int32 Alpha, bool bLit )
 {
 	FTextureDrawView Image; // 大きさ0でも無効な画像の要求を見逃さない。
 	if ( Texture < 0 || !Textures || !Textures->GetTextureDrawView( Texture, Image ) || Image.Width <= 0 || Image.Height <= 0 || Image.Binding == 0 )
@@ -754,7 +943,7 @@ bool CGeometryCommandExecutor::SubmitQuad( const TArray<FDrawVertex3D>& Vertices
 	}
 	const EGeometryCulling OldCulling = State.Culling; // 成功・失敗のどちらでも元に戻す。
 	State.Culling = EGeometryCulling::None;
-	const bool bSuccess = Submit( Vertices, EGeometryTopology::Triangles, Bright, Alpha, true, Texture ); // 画像と頂点のAlphaを通常合成する。
+	const bool bSuccess = Submit( Vertices, EGeometryTopology::Triangles, Bright, Alpha, true, Texture, bLit ); // 画像と頂点のAlphaを通常合成する。
 	State.Culling = OldCulling;
 	return bSuccess;
 }

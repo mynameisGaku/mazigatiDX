@@ -58,11 +58,11 @@ void CDX12GeometryPipelineStore::ResetAfterGPUIdle()
 
 ID3D12PipelineState *CDX12GeometryPipelineStore::GetOrCreatePipeline( const FGeometryDrawState &State, bool bTextured )
 {
-	if ( !Device || FAILED( Device->GetDeviceRemovedReason() ) || State.Topology > EGeometryTopology::Triangles || State.Compare > EGeometryCompare::Always || State.Culling > EGeometryCulling::FrontFaces || State.AddressU > EGeometryTextureAddress::Border || State.AddressV > EGeometryTextureAddress::Border )
+	if ( !Device || FAILED( Device->GetDeviceRemovedReason() ) || State.Topology > EGeometryTopology::Triangles || State.Compare > EGeometryCompare::Always || State.Culling > EGeometryCulling::FrontFaces || State.AddressU > EGeometryTextureAddress::Border || State.AddressV > EGeometryTextureAddress::Border || State.Blend > EGeometryBlend::PremultipliedSubtract )
 	{
 		return nullptr;
 	}
-	const uint64 Key = ( static_cast<uint64>( static_cast<uint32>( State.DepthBias ) ) << 32 ) | static_cast<uint64>( State.Topology ) | ( static_cast<uint64>( State.Compare ) << 2 ) | ( static_cast<uint64>( State.Culling ) << 5 ) | ( static_cast<uint64>( State.bTestDepth ) << 7 ) | ( static_cast<uint64>( State.bWriteDepth ) << 8 ) | ( static_cast<uint64>( State.bAlphaBlend ) << 9 ) | ( static_cast<uint64>( bTextured ) << 10 ); // PSOを決める全要素を含める。補間はsamplerで指定する。
+	const uint64 Key = ( static_cast<uint64>( static_cast<uint32>( State.DepthBias ) ) << 32 ) | static_cast<uint64>( State.Topology ) | ( static_cast<uint64>( State.Compare ) << 2 ) | ( static_cast<uint64>( State.Culling ) << 5 ) | ( static_cast<uint64>( State.bTestDepth ) << 7 ) | ( static_cast<uint64>( State.bWriteDepth ) << 8 ) | ( static_cast<uint64>( State.bAlphaBlend ) << 9 ) | ( static_cast<uint64>( bTextured ) << 10 ) | ( static_cast<uint64>( State.bAlphaBlend ? State.Blend : EGeometryBlend::Alpha ) << 11 ); // PSOを決める全要素を含める。補間はsamplerで指定する。
 	if ( const auto *Found = Pipelines.Find( Key ) )
 	{
 		return Found->Resource.Get();
@@ -95,7 +95,7 @@ ID3D12PipelineState *CDX12GeometryPipelineStore::GetOrCreatePipeline( const FGeo
 	Desc.DepthStencilState.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
 	Desc.DepthStencilState.FrontFace = { D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS };
 	Desc.DepthStencilState.BackFace = Desc.DepthStencilState.FrontFace;
-	auto &Blend = Desc.BlendState.RenderTarget[0]; // 通常のアルファ合成。
+	auto &Blend = Desc.BlendState.RenderTarget[0]; // 既定は通常のアルファ合成。
 	Blend.BlendEnable = State.bAlphaBlend;
 	Blend.SrcBlend = D3D12_BLEND_SRC_ALPHA;
 	Blend.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
@@ -103,6 +103,41 @@ ID3D12PipelineState *CDX12GeometryPipelineStore::GetOrCreatePipeline( const FGeo
 	Blend.SrcBlendAlpha = D3D12_BLEND_ONE;
 	Blend.DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
 	Blend.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	if ( State.bAlphaBlend )
+	{
+		// 加算・減算・乗算は、描画先のアルファを変えない（色だけを混ぜる）。
+		switch ( State.Blend )
+		{
+		case EGeometryBlend::Add:
+		case EGeometryBlend::Subtract:
+			Blend.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+			Blend.DestBlend = D3D12_BLEND_ONE;
+			Blend.BlendOp = State.Blend == EGeometryBlend::Add ? D3D12_BLEND_OP_ADD : D3D12_BLEND_OP_REV_SUBTRACT;
+			Blend.SrcBlendAlpha = D3D12_BLEND_ZERO;
+			Blend.DestBlendAlpha = D3D12_BLEND_ONE;
+			break;
+		case EGeometryBlend::Multiply:
+			Blend.SrcBlend = D3D12_BLEND_ZERO;
+			Blend.DestBlend = D3D12_BLEND_SRC_COLOR;
+			Blend.SrcBlendAlpha = D3D12_BLEND_ZERO;
+			Blend.DestBlendAlpha = D3D12_BLEND_ONE;
+			break;
+		case EGeometryBlend::PremultipliedAlpha:
+			Blend.SrcBlend = D3D12_BLEND_ONE;
+			Blend.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+			break;
+		case EGeometryBlend::PremultipliedAdd:
+		case EGeometryBlend::PremultipliedSubtract:
+			Blend.SrcBlend = D3D12_BLEND_ONE;
+			Blend.DestBlend = D3D12_BLEND_ONE;
+			Blend.BlendOp = State.Blend == EGeometryBlend::PremultipliedAdd ? D3D12_BLEND_OP_ADD : D3D12_BLEND_OP_REV_SUBTRACT;
+			Blend.SrcBlendAlpha = D3D12_BLEND_ZERO;
+			Blend.DestBlendAlpha = D3D12_BLEND_ONE;
+			break;
+		default:
+			break;
+		}
+	}
 	Blend.LogicOp = D3D12_LOGIC_OP_NOOP;
 	Blend.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 	Desc.NumRenderTargets = 1;
