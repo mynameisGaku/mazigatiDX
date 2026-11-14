@@ -13,7 +13,7 @@
 //
 //   分類: Console / Variables / Engine / Window / Scene / Objects / ECS / Assets / Audio / Profiler / Log / Info
 //
-//   一覧は、コンソールで help と入力するか、BuiltinCommands.cpp を見る。
+//   一覧は、コンソールで help と入力するか、分類ごとのファイル（Builtin*Commands.cpp。一覧は BuiltinCommandHelpers.h）を見る。
 //=============================================================================
 namespace NConsole
 {

@@ -466,7 +466,43 @@
     <ClCompile Include="Library\Framework\Component\TransformComponent.cpp">
       <Filter>Library\Framework\Component</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Console\BuiltinAICommands.cpp">
+      <Filter>Library\Framework\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Console\BuiltinAssetCommands.cpp">
+      <Filter>Library\Framework\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Console\BuiltinAudioCommands.cpp">
+      <Filter>Library\Framework\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Console\BuiltinCommandHelpers.cpp">
+      <Filter>Library\Framework\Console</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Console\BuiltinCommands.cpp">
+      <Filter>Library\Framework\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Console\BuiltinConsoleCommands.cpp">
+      <Filter>Library\Framework\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Console\BuiltinDebugViewCommands.cpp">
+      <Filter>Library\Framework\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Console\BuiltinEngineCommands.cpp">
+      <Filter>Library\Framework\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Console\BuiltinInfoCommands.cpp">
+      <Filter>Library\Framework\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Console\BuiltinLogCommands.cpp">
+      <Filter>Library\Framework\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Console\BuiltinProfilerCommands.cpp">
+      <Filter>Library\Framework\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Console\BuiltinSceneCommands.cpp">
+      <Filter>Library\Framework\Console</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Console\BuiltinVariableCommands.cpp">
       <Filter>Library\Framework\Console</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Console\ConsoleArgs.cpp">
@@ -2450,6 +2486,9 @@
     </ClInclude>
     <ClInclude Include="Library\Framework\Component\TransformComponent.h">
       <Filter>Library\Framework\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Console\BuiltinCommandHelpers.h">
+      <Filter>Library\Framework\Console</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Console\BuiltinCommands.h">
       <Filter>Library\Framework\Console</Filter>

@@ -222,7 +222,19 @@
     <ClCompile Include="Library\Framework\Capture\Encoding\PaletteMapper.cpp" />
     <ClCompile Include="Library\Framework\Component\Component.cpp" />
     <ClCompile Include="Library\Framework\Component\TransformComponent.cpp" />
+    <ClCompile Include="Library\Framework\Console\BuiltinAICommands.cpp" />
+    <ClCompile Include="Library\Framework\Console\BuiltinAssetCommands.cpp" />
+    <ClCompile Include="Library\Framework\Console\BuiltinAudioCommands.cpp" />
+    <ClCompile Include="Library\Framework\Console\BuiltinCommandHelpers.cpp" />
     <ClCompile Include="Library\Framework\Console\BuiltinCommands.cpp" />
+    <ClCompile Include="Library\Framework\Console\BuiltinConsoleCommands.cpp" />
+    <ClCompile Include="Library\Framework\Console\BuiltinDebugViewCommands.cpp" />
+    <ClCompile Include="Library\Framework\Console\BuiltinEngineCommands.cpp" />
+    <ClCompile Include="Library\Framework\Console\BuiltinInfoCommands.cpp" />
+    <ClCompile Include="Library\Framework\Console\BuiltinLogCommands.cpp" />
+    <ClCompile Include="Library\Framework\Console\BuiltinProfilerCommands.cpp" />
+    <ClCompile Include="Library\Framework\Console\BuiltinSceneCommands.cpp" />
+    <ClCompile Include="Library\Framework\Console\BuiltinVariableCommands.cpp" />
     <ClCompile Include="Library\Framework\Console\ConsoleArgs.cpp" />
     <ClCompile Include="Library\Framework\Console\ConsoleHistory.cpp" />
     <ClCompile Include="Library\Framework\Console\ConsoleParse.cpp" />
@@ -885,6 +897,7 @@
     <ClInclude Include="Library\Framework\Capture\Encoding\PaletteMapper.h" />
     <ClInclude Include="Library\Framework\Component\Component.h" />
     <ClInclude Include="Library\Framework\Component\TransformComponent.h" />
+    <ClInclude Include="Library\Framework\Console\BuiltinCommandHelpers.h" />
     <ClInclude Include="Library\Framework\Console\BuiltinCommands.h" />
     <ClInclude Include="Library\Framework\Console\ConsoleArgs.h" />
     <ClInclude Include="Library\Framework\Console\ConsoleConfig.h" />
