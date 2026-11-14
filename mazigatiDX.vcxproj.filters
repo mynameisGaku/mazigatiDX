@@ -52,6 +52,12 @@
     <ClCompile Include="Library\DebugUI\AI\AIEditorStateMachine.cpp">
       <Filter>Library\DebugUI\AI</Filter>
     </ClCompile>
+    <ClCompile Include="Library\DebugUI\AI\AIEditorStateMachineGraph.cpp">
+      <Filter>Library\DebugUI\AI</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\AI\AIEditorStateMachineInspector.cpp">
+      <Filter>Library\DebugUI\AI</Filter>
+    </ClCompile>
     <ClCompile Include="Library\DebugUI\AI\AIGraphLayout.cpp">
       <Filter>Library\DebugUI\AI</Filter>
     </ClCompile>
@@ -76,10 +82,43 @@
     <ClCompile Include="Library\DebugUI\Asset\ModelAnimationEditor.cpp">
       <Filter>Library\DebugUI\Asset</Filter>
     </ClCompile>
+    <ClCompile Include="Library\DebugUI\Asset\ModelAnimationEditorMenu.cpp">
+      <Filter>Library\DebugUI\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\Asset\ModelAnimationEditorPreview.cpp">
+      <Filter>Library\DebugUI\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\Asset\ModelAnimationEditorTabs.cpp">
+      <Filter>Library\DebugUI\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\Asset\ModelAnimationEditorTimeline.cpp">
+      <Filter>Library\DebugUI\Asset</Filter>
+    </ClCompile>
     <ClCompile Include="Library\DebugUI\Asset\SoundEditor.cpp">
       <Filter>Library\DebugUI\Asset</Filter>
     </ClCompile>
+    <ClCompile Include="Library\DebugUI\Asset\SoundEditorOperations.cpp">
+      <Filter>Library\DebugUI\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\Asset\SoundEditorWaveform.cpp">
+      <Filter>Library\DebugUI\Asset</Filter>
+    </ClCompile>
     <ClCompile Include="Library\DebugUI\Asset\SpriteSheetEditor.cpp">
+      <Filter>Library\DebugUI\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\Asset\SpriteSheetEditorCanvas.cpp">
+      <Filter>Library\DebugUI\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\Asset\SpriteSheetEditorMenu.cpp">
+      <Filter>Library\DebugUI\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\Asset\SpriteSheetEditorPreview.cpp">
+      <Filter>Library\DebugUI\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\Asset\SpriteSheetEditorTabs.cpp">
+      <Filter>Library\DebugUI\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\Asset\SpriteSheetEditorTimeline.cpp">
       <Filter>Library\DebugUI\Asset</Filter>
     </ClCompile>
     <ClCompile Include="Library\DebugUI\Common\DebugViewPanel.cpp">
@@ -139,6 +178,18 @@
     <ClCompile Include="Library\DebugUI\Profiler\ProfilerTimeline.cpp">
       <Filter>Library\DebugUI\Profiler</Filter>
     </ClCompile>
+    <ClCompile Include="Library\DebugUI\Profiler\ProfilerTimelineContinuous.cpp">
+      <Filter>Library\DebugUI\Profiler</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\Profiler\ProfilerTimelineStacked.cpp">
+      <Filter>Library\DebugUI\Profiler</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\Profiler\ProfilerTimelineView.cpp">
+      <Filter>Library\DebugUI\Profiler</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\Profiler\ProfilerTimelineWidgets.cpp">
+      <Filter>Library\DebugUI\Profiler</Filter>
+    </ClCompile>
     <ClCompile Include="Library\DebugUI\Profiler\ProfilerWindow.cpp">
       <Filter>Library\DebugUI\Profiler</Filter>
     </ClCompile>
@@ -146,6 +197,9 @@
       <Filter>Library\DebugUI\World</Filter>
     </ClCompile>
     <ClCompile Include="Library\DebugUI\World\WorldEditorEffects.cpp">
+      <Filter>Library\DebugUI\World</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\World\WorldEditorInspector.cpp">
       <Filter>Library\DebugUI\World</Filter>
     </ClCompile>
     <ClCompile Include="Library\DebugUI\World\WorldEditorMesh.cpp">
@@ -161,6 +215,9 @@
       <Filter>Library\DebugUI\World</Filter>
     </ClCompile>
     <ClCompile Include="Library\DebugUI\World\WorldEditorModels.cpp">
+      <Filter>Library\DebugUI\World</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\DebugUI\World\WorldEditorOutliner.cpp">
       <Filter>Library\DebugUI\World</Filter>
     </ClCompile>
     <ClCompile Include="Library\DebugUI\World\WorldEditorPanels.cpp">
@@ -239,6 +296,9 @@
       <Filter>Library\Framework\Animation</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Animation\ModelAnimator.cpp">
+      <Filter>Library\Framework\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Animation\ModelRootMotionTracker.cpp">
       <Filter>Library\Framework\Animation</Filter>
     </ClCompile>
     <ClCompile Include="Library\Framework\Animation\RootMotion.cpp">
@@ -2064,6 +2124,9 @@
     <ClInclude Include="Library\DebugUI\AI\AIEditorInternal.h">
       <Filter>Library\DebugUI\AI</Filter>
     </ClInclude>
+    <ClInclude Include="Library\DebugUI\AI\AIEditorStateMachineInternal.h">
+      <Filter>Library\DebugUI\AI</Filter>
+    </ClInclude>
     <ClInclude Include="Library\DebugUI\AI\AIGraphLayout.h">
       <Filter>Library\DebugUI\AI</Filter>
     </ClInclude>
@@ -2088,10 +2151,19 @@
     <ClInclude Include="Library\DebugUI\Asset\ModelAnimationEditor.h">
       <Filter>Library\DebugUI\Asset</Filter>
     </ClInclude>
+    <ClInclude Include="Library\DebugUI\Asset\ModelAnimationEditorInternal.h">
+      <Filter>Library\DebugUI\Asset</Filter>
+    </ClInclude>
     <ClInclude Include="Library\DebugUI\Asset\SoundEditor.h">
       <Filter>Library\DebugUI\Asset</Filter>
     </ClInclude>
+    <ClInclude Include="Library\DebugUI\Asset\SoundEditorInternal.h">
+      <Filter>Library\DebugUI\Asset</Filter>
+    </ClInclude>
     <ClInclude Include="Library\DebugUI\Asset\SpriteSheetEditor.h">
+      <Filter>Library\DebugUI\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\DebugUI\Asset\SpriteSheetEditorInternal.h">
       <Filter>Library\DebugUI\Asset</Filter>
     </ClInclude>
     <ClInclude Include="Library\DebugUI\Common\DebugViewPanel.h">
@@ -2134,6 +2206,9 @@
       <Filter>Library\DebugUI\Material</Filter>
     </ClInclude>
     <ClInclude Include="Library\DebugUI\Profiler\ProfilerTimeline.h">
+      <Filter>Library\DebugUI\Profiler</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\DebugUI\Profiler\ProfilerTimelineInternal.h">
       <Filter>Library\DebugUI\Profiler</Filter>
     </ClInclude>
     <ClInclude Include="Library\DebugUI\Profiler\ProfilerWindow.h">
@@ -2236,6 +2311,9 @@
       <Filter>Library\Framework\Animation</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Animation\ModelAnimator.h">
+      <Filter>Library\Framework\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Animation\ModelRootMotionTracker.h">
       <Filter>Library\Framework\Animation</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Animation\RootMotion.h">

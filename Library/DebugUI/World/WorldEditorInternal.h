@@ -18,6 +18,12 @@ namespace NWorldEditorUI
 
 	// 次のウィンドウの最初の位置と大きさを、アプリの画面に対する割合で決める（FirstUseEver。ユーザーが動かした位置は、ImGui が覚える）
 	void SetNextWindowRect( float32 X, float32 Y, float32 Width, float32 Height );
+	// パネルのウィンドウを始める（最初の位置と大きさは、アプリの画面に対する割合）。閉じていれば false（End は呼ばなくてよい）
+	bool BeginPanel( FWorldEditorState& S, const char* Title, bool* pOpen, float32 X, float32 Y, float32 Width, float32 Height );
+	// 一覧やメニューに出す、オブジェクトの名前（名前と Id）
+	FString ObjectLabel( const FWorldObject& Object );
+	// パネルの中の、節の見出し
+	void SectionTitle( const char* Text );
 	void SetStatus( FWorldEditorState& S, const FString& Text, bool bError = false );
 
 	// アセットのルートの下のファイルを数え直す（3 秒に 1 回まで。bForce なら必ず）

@@ -7,6 +7,7 @@
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Core/Types/Callable.h"
 #include "Library/Framework/Animation/AnimationTimeline.h"
+#include "Library/Framework/Animation/ModelRootMotionTracker.h"
 #include "Library/Framework/Asset/Model/Model.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
 #include "Library/Framework/Render/MaterialEffect/ModelMaterialEffectRenderer.h"
@@ -223,22 +224,6 @@ private:
 		TWeakPtr<CModelInstance> AttachedInstance; // 添付先。公開Instance差し替えを検出する。
 		int32 PartFrame = -1;           // 体の一部だけに効かせる骨の番号（-1 なら体全体）
 	};
-	// root-motion計算へ渡す、連続した全身再生区間の値。
-	struct FRootMotionInterval
-	{
-		bool bValid = false; // 同じFrom/Toでも未消費区間として扱う。
-		float64 From = 0.0; // 連続区間の開始時刻。
-		float64 To = 0.0; // 最後に記録した終了時刻。
-		int32 ClipSlot = INDEX_NONE; // 区間を作った全身クリップ。
-		TSharedPtr<CModel> Source; // クリップ資源の寿命を保つ。
-		int32 AnimIndex = INDEX_NONE; // Source内のアニメーション番号。
-		float32 LengthUnits = 0.0f; // native時間の長さ。
-		float32 LengthSeconds = 0.0f; // Updateと同じ秒単位の長さ。
-		float32 UnitsPerSecond = 0.0f; // Play時に使った時間換算率。
-		EAnimLoopMode Loop = EAnimLoopMode::Loop; // 区間を進めた再生方式。
-		int32 Frame = INDEX_NONE; // 親基準姿勢を読む骨番号。
-		TWeakPtr<CModelInstance> Instance; // 再生を開始したModel instance。
-	};
 
 	FClip* FindClip( const FString& Name );
 	const FClip* FindClip( const FString& Name ) const;
@@ -260,16 +245,10 @@ private:
 	void CrossFadeTo( FLayer& Layer, float32 Fade );
 	void DetachLayer( FLayer& Layer );
 	int32 FindPrimaryLayer() const;
-	// 未消費区間の値だけを消す。samplerの寿命には触れない。
-	void ClearPendingRootMotion();
-	// 不連続を記録し、必要なら新しい再生までroot取得を止める。
-	void InvalidateRootMotion( bool bRequireRestart );
+	// 体全体を再生している層の状態を、ルートモーションの係へ渡す形にする
+	FModelRootMotionPlayback MakeRootMotionPlayback() const;
 	// worker Updateから、一次全身層の連続区間だけを値として蓄積する。
 	void AccumulateRootMotion( const FLayer& Layer, float64 From, float64 To );
-	// 選択骨・添付先・単位などのroot取得条件を検査する。
-	bool IsRootMotionIdentityValid() const;
-	// pending区間を検証・sampleし、消費前のfull affine差分だけを返す。
-	bool TryExtractPendingRootMotion( FMatrix4x4& OutDelta );
 
 	TArray<FClip> Clips;
 	TArray<FLayer> Layers;
@@ -285,16 +264,5 @@ private:
 	bool bFinished = false;
 	bool bFinishedThisUpdate = false;
 	TArray<FString> Events;
-	int32 RootMotionFrame = INDEX_NONE; // 選択した骨番号。
-	FRootMotionInterval PendingRootMotion; // Updateでまとめた未消費区間。
-	TWeakPtr<CModelInstance> RootMotionConfiguredInstance; // 骨選択時のinstance。
-	TWeakPtr<CModelInstance> PlaybackInstance; // 最初のanimation添付先。
-	bool bHasPlaybackInstance = false; // PlaybackInstanceの有効性。
-	bool bRootMotionRequiresRestart = false; // 単位変更後は新規Playまで取得を止める。
-	bool bRootMotionClipReplacementRequiresClear = false; // active clip置換後はClearClipsまで取得を止める。
-	bool bRootMotionInstanceMismatch = false; // Instance差し替え後は新Animatorを要求する。
-	TSharedPtr<CModelAnimationSampler> RootMotionSampler; // main-thread Consume用の再利用sampler。
-	TSharedPtr<CModel> RootMotionSamplerTarget; // sampler作成時の対象Model。
-	TSharedPtr<CModel> RootMotionSamplerSource; // sampler作成時のanimation source。
-	int32 RootMotionSamplerAnimIndex = INDEX_NONE; // sampler作成時のclip番号。
+	FModelRootMotionTracker RootMotion;   // ルートモーションの係（選んだ骨・まだ受け取っていない区間）
 };
