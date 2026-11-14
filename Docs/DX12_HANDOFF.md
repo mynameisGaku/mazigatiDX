@@ -264,3 +264,13 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - `FImportOptions::AnimFps` が非有限の場合、および全クリップ・全ノードの見積もりが1048576行列を超える場合は採取前に失敗理由を返す。1未満の有限値は従来どおり1 fpsとして扱い、アニメーションを取り込まない場合は頻度を参照しない。静止ノードも見積もりに含むため、実際に保持するtrackが少ないモデルでも上限を超える場合がある。詳細は[開発手順](DEVELOPMENT.md#モデル変換での変形データの診断)を参照する。
 - 検査側[726d2e2](https://github.com/mynameisGaku/framework-test/commit/726d2e2d53afdc80d4cfc53e2e84b94859a85a2a)で有限値・NaN・無限大・不正な許容値・過大なサンプリング・無効な出力と正常FBXの維持を検査。分離した作業コピーでDebug／Releaseソリューションをビルドし、アセット検査はDebugのワーカー0本で9960条件・4省略、Releaseのワーカー4本で9961条件・4省略が成功した。`StaticModel` OBJサンプルは両構成のDX12既定GPU／WARPで30フレーム正常終了、取り込みエラーなし。画素比較や全形式の検査ではない。
 - `CheckSourceFormat.ps1` は1831ファイル成功し、`UpdateBackendCompatibility.ps1 -Check` は488項目で成功。参考: [Microsoftの有限値判定](https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/finite-finitef?view=msvc-170)、[Unreal Engineの描画スレッドと所有](https://dev.epicgames.com/documentation/en-us/unreal-engine/threaded-rendering-in-unreal-engine)。
+
+
+## 静的モデルの階層鏡映と面の向き（2026-11-15）
+
+- `FStaticModelBuilder` はフレーム階層を頂点へ焼き込むが、負の行列式を持つ変換では三角形の表裏だけが反転し、逆転置で求めた法線と逆を向いていた。親を含む線形変換の行列式をfloat64で求め、鏡映の場合のみ各三角形の後ろ2頂点を入れ替える。UV・頂点色は頂点と共に移動し、三角形・材質範囲の順序は保持する。非有限・特異な変換は理由を返し、出力を保持する。
+- これは取り込み時の静的フレームに限る。描画時のモデル個体の負の拡大や、スキン・モーフ・R2全体の完成を意味しない。[Unreal Engineの座標系](https://dev.epicgames.com/documentation/en-us/unreal-engine/coordinate-space-terminology?application_version=4.27)と[Microsoftのカリング説明](https://learn.microsoft.com/en-us/windows/win32/direct3d9/culling-state)を参照。
+- 検査側[9d9c183](https://github.com/mynameisGaku/framework-test/commit/9d9c1839b768d64b4c222c882ada24f239fbfaf7)は、親子それぞれの負の拡大・二重鏡映・回転と非一様拡大・正負混在・材質範囲とUV・特異行列・FBX取り込みを検査する。独立した同一検査では修正前に19条件中6失敗し、修正後は追加した混在を含む21条件がDebug／Releaseで成功。続く[f482f34](https://github.com/mynameisGaku/framework-test/commit/f482f3435c187d91b286ef78cc06df79f5744571)では各三角形の材質色も検査する。
+- 同じ検査側のGraphicsPipelineは、モデルの通常・鏡映三角形に表面／裏面除去を適用し、GPUから画素を読み戻す。修正前の既定GPUは対応する条件で失敗し、修正後はDebug／Releaseの既定GPU・WARP各110条件、CPU各3条件が成功。SDKデバッグ層は有効。独立コピーでライブラリとprojectを両構成ビルドし、アセット検査は最終的にDebug（ワーカー0）9989条件・4省略、Release（ワーカー4）9986条件・4省略が成功した。全ソリューション・全サンプルや実モデルの全画素比較は今回の検査範囲に含まない。
+- Debugアセット検査は最初の2回、`text-input-real` で6件のイベントの並びと編集結果（期待`ba`、実際`b`）が不一致になった。修正前のモデル実装では成功し、その後、診断を外した最終版でも成功したため、原因とモデル変更との関係は未確定。入力実装はShiftの状態を参照するが、その影響と断定していない。比較ログは検証コピーの `Saved/StaticModelMirror-20261115/` に保持する。書式監査は1831ファイル、互換台帳は488項目が成功。
+- Claude側は確認時点でローカル `Dx12` の `d057f7e`、描画・ライティングに未コミット変更がある。今回そのファイルは変更していない。後の統合では静的形状の表裏と描画時の法線・カリング処理が重複しないか確認する。

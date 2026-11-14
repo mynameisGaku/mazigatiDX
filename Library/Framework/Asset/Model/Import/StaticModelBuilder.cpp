@@ -10,6 +10,14 @@ namespace
 	{
 		return NMath::IsFinite( Value.x ) && NMath::IsFinite( Value.y ) && NMath::IsFinite( Value.z );
 	}
+	// アフィン変換の向きをdoubleで求め、floatでの中間積の桁あふれを避ける。
+	float64 LinearDeterminant( const FMatrix4x4& Matrix )
+	{
+		const float64 M00 = Matrix.m[0][0], M01 = Matrix.m[0][1], M02 = Matrix.m[0][2]; // 線形変換の先頭行。
+		const float64 M10 = Matrix.m[1][0], M11 = Matrix.m[1][1], M12 = Matrix.m[1][2]; // 線形変換の2行目。
+		const float64 M20 = Matrix.m[2][0], M21 = Matrix.m[2][1], M22 = Matrix.m[2][2]; // 線形変換の3行目。
+		return M00 * ( M11 * M22 - M12 * M21 ) - M01 * ( M10 * M22 - M12 * M20 ) + M02 * ( M10 * M21 - M11 * M20 );
+	}
 	// 範囲を保ってRGBA8へ変換する。
 	uint8 ColorByte( float32 Value )
 	{
@@ -162,12 +170,14 @@ bool FStaticModelBuilder::Build( const FImportedScene& Scene, FStaticModelDefini
 			Result.Structure.Frames[Mesh.Node].Meshes.Add( MeshIndex );
 		}
 		const FMatrix4x4 Transform = Mesh.Node < 0 ? FMatrix4x4() : Global[Mesh.Node]; // メッシュのフレームを適用する。
+		const float64 Determinant = LinearDeterminant( Transform ); // 親を含む変換が鏡映なら面の向きを戻す。
 		FMatrix4x4 Inverse; // 非一様な拡大でも法線を逆転置で変換する。
-		if ( !Transform.TryInverse( Inverse ) )
+		if ( !NMath::IsFinite( Determinant ) || Determinant == 0.0 || !Transform.TryInverse( Inverse ) )
 		{
 			Error = "Singular static mesh transform";
 			return false;
 		}
+		const bool bMirrored = Determinant < 0.0; // 右手・左手の向きが入れ替わる変換。
 		const int32 BaseVertex = Result.Surface.Vertices.Num(); // 全体の頂点列での開始。
 		for ( int32 Vertex = 0; Vertex < Mesh.Positions.Num(); ++Vertex )
 		{
@@ -225,7 +235,8 @@ bool FStaticModelBuilder::Build( const FImportedScene& Scene, FStaticModelDefini
 			}
 			for ( int32 Corner = 0; Corner < 3; ++Corner )
 			{
-				const int32 Index = Mesh.Indices[Triangle * 3 + Corner]; // 元メッシュ内の頂点参照。
+				const int32 SourceCorner = bMirrored && Corner != 0 ? 3 - Corner : Corner; // 鏡映した場合だけ2頂点を入れ替える。
+				const int32 Index = Mesh.Indices[Triangle * 3 + SourceCorner]; // 元メッシュ内の頂点参照。
 				if ( Index < 0 || Index >= Mesh.Positions.Num() )
 				{
 					Error = "Invalid static triangle index";
