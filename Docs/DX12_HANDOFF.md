@@ -235,3 +235,9 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - 他のVisual Studio作業と分離したクリーンな作業コピーでDebug / Releaseソリューションをビルドし、`RunDX12WindowTests.ps1 -Platform` と `RunCaptureTests.ps1 -Platform` が両構成で成功。新しいデバイス所有者の正常系は既定GPU / WARP各41条件。`CheckSourceFormat.ps1`、DX12構成・依存の静的検査、コミット書式も成功した。全42項目のQuick回帰は今回実行していない。
 - **未解決の診断**: Debugのデバイス喪失検査で、待機中のcompute提出のdescriptor heap / PSO / root signature / resourceについてSDKメッセージ921（実行前に解放済み）が断続的に発生した。新実装の喪失検査でも発生し、修正前の `DX12Device.cpp` を同じ残りのライブラリにリンクした比較でも60回中2回発生した。別の比較30回では新実装1回・修正前0回。原因は未確定で、警告を抑制していない。喪失検査を繰り返し、完了通知と資源・キューの寿命を調べること。[D3D12コマンドリストの資源寿命](https://learn.microsoft.com/en-us/windows/win32/direct3d12/recording-command-lists-and-bundles) と [RemoveDevice時のfence](https://learn.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-id3d12device5-removedevice) を参照。
 - **未解決の検査タイムアウト**: Debugの撮影スイートは `NativeGameContract --default` で30秒のタイムアウトが2回発生。その後の単独起動とスイート再実行は成功したが、原因は特定できていない。Releaseの撮影スイートは成功。ユーザーが起動しているVisual Studio / アプリを停止せず、別の作業コピーで検査した。
+
+## デバイス喪失と撮影の追加調査（2026-11-14）
+
+- `RemoveDevice` は待機用fenceを `UINT64_MAX` にする。検査側の[3e871f9](https://github.com/mynameisGaku/framework-test/commit/3e871f98e5936d87007fd1bc21faa50052f823f4)で、実際に待機していたfenceの最大値と、未完了computeの `GetComputeCompletion` / `WaitCompute` が喪失を完了と誤認せず、出力も保持することを追加検査した。Debug / Releaseの既定GPU / WARPでDeviceLifecycleおよびImGuiFrameLifecycle、ViewportContractが成功し、SDKデバッグ層も有効だった。
+- SDKメッセージ921の原因を切り分けるため、別の一時コピーだけで提出記録の資源参照をプロセス終了まで追加保持し、通常版と比較した。直列80回と同時起動80回の各160回は両方とも警告なし。喪失で待機fenceが最大値になることは確認できたが、警告は前回から低頻度であり、この結果だけで追加保持の有効性や原因を証明できない。追加保持や検査用のアクセス変更は製品に入れておらず、メッセージ921は未解決のまま。通常の完了番号と喪失値の区別については [Microsoftのfence仕様](https://learn.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-id3d12fence-getcompletedvalue) を参照。
+- 以前30秒タイムアウトしたDebugの `NativeGameContract --default` について、新しい実行先で30回反復し全件成功。前回の停止ログは異なる検査箇所で途切れており、原因の特定には至っていない。タイムアウトを延長したり失敗を無視したりしていない。
