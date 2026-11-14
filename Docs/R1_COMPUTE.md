@@ -14,13 +14,13 @@
 |FComputeDispatch|プログラム番号、バッファ番号の借用配列、XYZのグループ数|
 |FComputeSubmission|提出先の識別番号と、その提出の完了番号。再初期化後の番号や別の提出先と混同しない|
 
-共通の値はCore/Render、3つの窓口はCore/Interfaces/Renderに置きます。CDX12Deviceが既存のデバイスとDIRECTキューを使い、CDX12BufferStore・CDX12ComputePipelineStore・CDX12ComputeQueueを所有します。既存のCDX12PlatformSubsystemが窓口を提供し、新しいSubsystemは追加しません。操作はゲームスレッドから行い、並行呼出しには対応しません。
+共通の値はCore/Render、3つの窓口はCore/Interfaces/Renderに置きます。CDX12Deviceが既存のデバイスとDIRECTキューを使い、CDX12BufferStore・CDX12ComputePipelineStore・CDX12ComputeQueueを所有します。既存のCDX12PlatformSubsystemが窓口を提供し、新しいSubsystemは追加しません。公開窓口はゲームスレッドから呼び出し、GPU操作は専用描画スレッドへ同期転送します。窓処理への排他的な貸出中は窓側で実行します。任意のワーカーから公開窓口を並行して呼ぶ契約ではありません。詳細は[スレッド設計](THREADING.md)を参照してください。
 
 バッファ・プログラム・提出先の番号は、既存のTAtomicを使うRenderResourceSerialから発行します。同じプロセス内で再利用せず、番号枯渇では失敗します。バッファの公開型は従来のFBufferResourceHandleを保ちます。DxLib／Nullは3つのGPU窓口を生成しません。
 
 ## 受け入れる入力
 
-- DX12はDXBCのCS5.0／5.1で、RAWに加え [定数と構造体配列](R1_COMPUTE_BUFFER_LAYOUTS.md) を受け付けます。reflection情報が必要で、段・形式・コンテナ全長・実際の資源宣言を検査します。Pixel、reflectionを取り除いたデータ、切断・末尾余剰、不一致の配置は拒否します。DXIL／SM6、型付きバッファ、画像、sampler、counter付きの構造体配列は未対応です。
+- DX12はDXBCのCS5.0／5.1で、RAWに加え [定数と構造体配列](R1_COMPUTE_BUFFER_LAYOUTS.md) を受け付けます。reflection情報が必要で、段・形式・コンテナ全長・実際の資源宣言を検査します。Pixel、reflectionを取り除いたデータ、切断・末尾余剰、不一致の配置は拒否します。画像は後続の[compute画像](R1_COMPUTE_TEXTURE_RESOURCES.md)でRGBA8／RGBA16Fの読み書きとR32Floatの読み取りに対応しています。DXIL／SM6、型付きバッファ、sampler、counter付きの構造体配列は未対応です。
 - Raw／StructuredのReadはt、ReadWriteはu、ConstantのReadはb0〜13のspace 0へ対応します。読み取りの場所は0〜127、読み書きは0〜63。種類と番号が重なる配置は拒否し、shaderで実際に使う資源と一致させます。同じ数のtとuは別の場所です。
 - シェーダー用途のバッファ長は4の倍数です。ReadWriteだけにGPU書き込みを許可し、ReadWriteをReadの入力にも使えます。NoneからのSRV／UAV利用、ReadからのUAV利用は拒否します。
 - 命令列全体のプログラム、用途、バッファ番号、グループ数を検査してから記録・提出します。後ろに不正な命令があっても前の命令だけを実行しません。同じdispatchで同じバッファを複数箇所に置くことは、読み取り同士を含めて拒否します。

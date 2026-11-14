@@ -236,6 +236,12 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **未解決の診断**: Debugのデバイス喪失検査で、待機中のcompute提出のdescriptor heap / PSO / root signature / resourceについてSDKメッセージ921（実行前に解放済み）が断続的に発生した。新実装の喪失検査でも発生し、修正前の `DX12Device.cpp` を同じ残りのライブラリにリンクした比較でも60回中2回発生した。別の比較30回では新実装1回・修正前0回。原因は未確定で、警告を抑制していない。喪失検査を繰り返し、完了通知と資源・キューの寿命を調べること。[D3D12コマンドリストの資源寿命](https://learn.microsoft.com/en-us/windows/win32/direct3d12/recording-command-lists-and-bundles) と [RemoveDevice時のfence](https://learn.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-id3d12device5-removedevice) を参照。
 - **未解決の検査タイムアウト**: Debugの撮影スイートは `NativeGameContract --default` で30秒のタイムアウトが2回発生。その後の単独起動とスイート再実行は成功したが、原因は特定できていない。Releaseの撮影スイートは成功。ユーザーが起動しているVisual Studio / アプリを停止せず、別の作業コピーで検査した。
 
+## Claude側との最新比較と文書の整合（2026-11-14）
+
+- Claude側のローカル `Asset` は確認時点で `c82402e` まで進み、未コミットの `project.sln` を保持していた。DX12 `9ed4ad6` との作業ツリーを変更しない `git merge-tree` では、従来の `mazigatiDX.vcxproj` と `.filters` に加えて `README.md` も内容競合となった。この結果は両HEADが進むと変わる。マージ・編集は行っていない。
+- computeと描画先の文書に残っていた画像形式・スレッド・後続機能の古い記述を、現在の実装と当時の検査記録を区別して更新した。製品コードや動作は変更していない。
+- デバイス喪失時、共有キュー上の提出資源をいつ解放できるかは引き続き未解決。Microsoftの[デバイス喪失サンプル](https://github.com/microsoft/DirectX-Graphics-Samples/blob/master/Samples/Desktop/D3D12xGPU/src/D3D12xGPU.cpp)は待機を試みた後に資源を解放・再作成するが、外部所有者が保持する共有キュー上の未完了提出について警告921を解消する解放順序を保証するものではない。[破棄通知](https://learn.microsoft.com/en-us/windows/win32/api/d3dcommon/nn-d3dcommon-id3ddestructionotifier)も破棄対象へのコールバック中のアクセスを禁じており、これだけで安全なGPU完了を証明できない。
+
 ## デバイス喪失と撮影の追加調査（2026-11-14）
 
 - `RemoveDevice` は待機用fenceを `UINT64_MAX` にする。検査側の[3e871f9](https://github.com/mynameisGaku/framework-test/commit/3e871f98e5936d87007fd1bc21faa50052f823f4)で、実際に待機していたfenceの最大値と、未完了computeの `GetComputeCompletion` / `WaitCompute` が喪失を完了と誤認せず、出力も保持することを追加検査した。Debug / Releaseの既定GPU / WARPでDeviceLifecycleおよびImGuiFrameLifecycle、ViewportContractが成功し、SDKデバッグ層も有効だった。

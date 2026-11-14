@@ -1,14 +1,20 @@
-# compute画像の能力照会とRGBA8読み書き・描画連携
+# compute画像の能力照会と読み書き・描画連携
 
 2026-11-11（日本時間）。R1の既存buffer・compute・描画経路へ、RGBA8画像のcompute能力照会、読み取り／読み書き作成、プログラムへの画像slot宣言、compute提出と状態遷移、2D／3D描画への直接受け渡しを追加しました。画像所有・プログラム作成・compute提出はそれぞれ既存の `CDX12TextureStore`・`CDX12ComputePipelineStore`・`CDX12ComputeQueue` へ接続し、新しいSubsystemやImGui・アセット・ファイル入出力への依存は追加しません。
+
+## 現在の対応（2026-11-14）
+
+以下の初期実装記録に加え、現在はRGBA16Fの読み取り・読み書き、およびR32Floatの読み取りに対応しています。`FComputeTextureCapabilities` の対応する能力を形式と用途ごとに確認してください。R32Floatはカラー描画先またはD32深度を `Texture2D<float>` で読み取り、computeからの書き込みには対応しません。RGBA8／RGBA16Fは4成分として照合します。検査と制限は[描画先と深度](R1_RENDER_TARGET_RESOURCES.md)、[引き継ぎ](DX12_HANDOFF.md)も参照してください。
+
+以下の能力条件と検査結果は、記載当時のRGBA8対応の記録です。
 
 ## 共通の値と窓口
 
 |配置・型|役割|
 |---|---|
 |`Library/Core/Render/ComputeTextureAccess.h`|`EComputeTextureAccess::Read`（SRV、初期DX12の `t0`〜`t127`）と `ReadWrite`（UAV、初期DX12の `u0`〜`u63`）|
-|`Library/Core/Render/ComputeTextureCapabilities.h`|`FComputeTextureCapabilities`（`bRGBA8Read`、`bRGBA8ReadWrite`）|
-|`Library/Core/Render/ComputeTextureSlot.h`|`FComputeTextureSlot`（`Binding`、`Access`）|
+|`Library/Core/Render/ComputeTextureCapabilities.h`|`FComputeTextureCapabilities`（RGBA8／RGBA16FのRead・ReadWriteとR32FloatのRead）|
+|`Library/Core/Render/ComputeTextureSlot.h`|`FComputeTextureSlot`（`Binding`、`Access`、`Format`）|
 |`Library/Core/Interfaces/Render/IRenderTextureResources.h`|`GetComputeTextureCapabilities` と `CreateComputeTextureRGBA8` を追加。既定実装は出力を保持して `false`／無効ハンドルを返す|
 |`Library/Core/Interfaces/Render/IComputePipelineResources.h`|`CreateComputePipelineWithTextures` を追加。既定実装は無効ハンドルを返す|
 |`Library/Core/Render/ComputeDispatch.h`|`FComputeDispatch` の末尾へ `Textures` を追加し、既存の5項目初期化とのソース互換を維持|
@@ -27,8 +33,8 @@
 
 `CDX12ComputePipelineStore::CreateComputePipelineWithTextures` は、バッファと画像のslot合計が1〜16個であること、同じ `t` または `u` レジスターをバッファと画像、あるいは画像同士で重複宣言していないこと、そしてコンパイル済みCS5.0／5.1のreflectionが宣言と過不足なく一致することを検査します。
 
-- 画像のReadは `D3D_SIT_TEXTURE`、ReadWriteは `D3D_SIT_UAV_RWTYPED`、次元は `D3D_SRV_DIMENSION_TEXTURE2D`、`ReturnType` は `D3D_RETURN_TYPE_FLOAT` または `D3D_RETURN_TYPE_UNORM`、要素数は4成分（`(Binding.uFlags & D3D_SIF_TEXTURE_COMPONENTS) == D3D_SIF_TEXTURE_COMPONENTS`）、`BindCount == 1`、`Space == 0` を要求します。
-- 1D／2D配列／3D、整数要素、1〜3成分、sampler（`s` レジスター）を含むシェーダーは拒否します。
+- 画像のReadは `D3D_SIT_TEXTURE`、ReadWriteは `D3D_SIT_UAV_RWTYPED`、次元は `D3D_SRV_DIMENSION_TEXTURE2D`、`ReturnType` は `D3D_RETURN_TYPE_FLOAT` または `D3D_RETURN_TYPE_UNORM`、要素数はRGBA8／RGBA16Fでは4成分、R32Float Readでは `FLOAT` の1成分、`BindCount == 1`、`Space == 0` を要求します。
+- 1D／2D配列／3D、整数要素、2〜3成分、sampler（`s` レジスター）を含むシェーダーは拒否します。1成分はR32FloatのReadだけに対応します。
 - 画像だけのプログラム（バッファslot 0個）も作成できます。
 
 ## 提出・状態遷移・寿命・スレッド契約
@@ -59,4 +65,4 @@ Debug／Releaseの4プロジェクトは警告・エラー0件でビルドでき
 
 ## 残る範囲
 
-今回はRGBA8 2D画像の1 mipに対するcompute読み取り・読み書きと描画連携です。複数mip、配列・3D・キューブ画像、RGBA8以外のcompute画像形式、compute内のsampler、DXC／SM6、複数キュー、GPU障害回復全体、R2の永続GPUメッシュ・材質・Forward描画は残ります。
+初期実装はRGBA8 2D画像の1 mipを対象とし、その後RGBA16FとR32Float Readを追加しました。複数mip、配列・3D・キューブ画像、R32Floatのcompute書き込み、compute内のsampler、DXC／SM6、複数キュー、GPU障害回復全体、R2の永続GPUメッシュ・材質・Forward描画は残ります。

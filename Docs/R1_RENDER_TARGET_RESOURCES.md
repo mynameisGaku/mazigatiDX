@@ -110,7 +110,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Source\SelfTest\RunRenderTar
 
 ## 残る範囲
 
-今回は単一のRGBA8色描画先と読み取れるD32スカラー深度の垂直スライスです。複数描画先（MRT）と複数 `SV_Target` を出力する描画PSO・シェーダー経路、HDR浮動小数描画先（RGBA16F等）、ステンシル併用形式、MSAA、複数mip／配列描画先、GPU timestamp計測、複数キュー間の非同期実行、R2の永続GPUメッシュ・材質・Forward、R3のフレームグラフとG-buffer／Deferredは後続段階で実装します。
+当初の検査は単一のRGBA8色描画先と読み取れるD32スカラー深度を対象としました。その後MRT、RGBA16F／R32Floatカラー描画先およびGPU timestamp計測を追加しています。ステンシル併用形式、MSAA、複数mip／配列描画先、複数キュー間の非同期実行、R2の永続GPUメッシュ・材質・Forward、R3のフレームグラフとG-buffer／Deferredは残ります。現在の状態は[ロードマップ](ROADMAP.md)と[引き継ぎ](DX12_HANDOFF.md)を参照してください。
 
 
 ## 公開前レビューの継続

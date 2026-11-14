@@ -97,7 +97,9 @@
   - `project.sln` Debug／Release x64 ビルド：各警告0件・エラー0件。
   - `Tools/RunAllChecks.ps1 -SkipBuild -Quick`：全36ステップ合格（`Saved/ArgonCoordination/run_all_checks_r1_mrt.log`）。互換台帳は472項目（API 328、Draw 100、Sample 33、Editor 11；Implemented 186、Verified 0、Unreviewed 0 新規レビュー待ちなし）。
 
-## 今回含めない範囲（明示的境界）
+## 初期実装で含めなかった範囲（当時の記録）
+
+この一覧は初期実装時点のもので、現在の未対応一覧ではありません。その後RGBA16F／R32Float描画先、混在形式およびGPUタイムスタンプを追加しています。現在の状態と未解決事項は[ロードマップ](ROADMAP.md)と[引き継ぎ](DX12_HANDOFF.md)を参照してください。
 
 本段階はR1の汎用カスタムグラフィックスパイプライン契約と `RGBA8` MRT（最大8枚）＋ `D32_FLOAT` 深度の縦経路であり、以下は意図的にスコープ外としています。
 
