@@ -226,3 +226,12 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - ここでの `bFullSubstrate = true` は検査用設定であり、DX12製品の能力宣言ではない。実描画画素、影・照明の正しさ、88バイト描画命令頂点との接続、材質や画像の更新・解放寿命は未検証。検査は現在 `RunAllChecks.ps1` に自動登録していない。
 - Claude側 `d0433ab` のDebugソリューションビルドと `PackageGame.ps1` による配布フォルダー・ZIP生成、Nullバックエンド30フレーム起動も別途成功。Gitの対話なし認証ではClaude側の追加履歴をpushできず、GitHubの `dev` はこの確認時点で `19e7170` のまま。元のコミット履歴とClaude側作業を維持するため、別の履歴を作って置き換えていない。
 - 実材質のHLSL変換は [Microsoftのコンパイラ関数](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-d3dcompiler-reference-functions)、材質の層と能力の考え方は [Unreal EngineのSubstrate概要](https://dev.epicgames.com/documentation/en-us/unreal-engine/overview-of-substrate-materials-in-unreal-engine) を参照した。
+
+## DX12初期化失敗の回復と終了状態（2026-11-14）
+
+- `CDX12Device::InitializeOnQueue` はGPU資源の確保後に失敗すると途中の `Device` / `Queue` 等が残り、明示的な終了を挟まなければ再初期化できなかった。同じ窓で2個目のフリップ方式交換先を作る実DXGI失敗で再現。初期化中はこの所有者からGPU命令を提出しないため、失敗時は新規資源を戻し、同じキューを使う別の所有者のGPU処理を待たずに再試行できるようにした。入力拒否や、既存の初期化済み所有者に対する二重初期化では既存状態を保つ。
+- `ReleaseOwnedResources` では未提出・完了済み・デバイス喪失のいずれかを前提として資源を戻し、撮影要求・コピー済み・提出済みの状態も消去する。修正前は終了後の再初期化直後に旧撮影要求が無関係なGPU処理を待ち得たことを、キュー待機を使う検査で再現した。失敗時の呼出側の画素配列も保持する。
+- 前回追加した `SubstrateIntegrationMain.cpp` が通常アプリのワイルドカードに含まれ、検査専用の `main` と文字コードにより通常ビルドを壊した問題も修正した。専用マクロとBOM / CRLFで分離し、専用マクロを有効にした検査コードのDebug / Releaseコンパイルも確認。検査側の対応コミットは[4954a6b](https://github.com/mynameisGaku/framework-test/commit/4954a6b6a3f5429d5cf9eeea1352c6dcdae52f95)。
+- 他のVisual Studio作業と分離したクリーンな作業コピーでDebug / Releaseソリューションをビルドし、`RunDX12WindowTests.ps1 -Platform` と `RunCaptureTests.ps1 -Platform` が両構成で成功。新しいデバイス所有者の正常系は既定GPU / WARP各41条件。`CheckSourceFormat.ps1`、DX12構成・依存の静的検査、コミット書式も成功した。全42項目のQuick回帰は今回実行していない。
+- **未解決の診断**: Debugのデバイス喪失検査で、待機中のcompute提出のdescriptor heap / PSO / root signature / resourceについてSDKメッセージ921（実行前に解放済み）が断続的に発生した。新実装の喪失検査でも発生し、修正前の `DX12Device.cpp` を同じ残りのライブラリにリンクした比較でも60回中2回発生した。別の比較30回では新実装1回・修正前0回。原因は未確定で、警告を抑制していない。喪失検査を繰り返し、完了通知と資源・キューの寿命を調べること。[D3D12コマンドリストの資源寿命](https://learn.microsoft.com/en-us/windows/win32/direct3d12/recording-command-lists-and-bundles) と [RemoveDevice時のfence](https://learn.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-id3d12device5-removedevice) を参照。
+- **未解決の検査タイムアウト**: Debugの撮影スイートは `NativeGameContract --default` で30秒のタイムアウトが2回発生。その後の単独起動とスイート再実行は成功したが、原因は特定できていない。Releaseの撮影スイートは成功。ユーザーが起動しているVisual Studio / アプリを停止せず、別の作業コピーで検査した。
