@@ -11,4 +11,6 @@ public:
 	virtual ~IRenderTargetDrawSource() = default;
 	// 描画先として作った画像だけ返す。ふつうの画像・無効な番号は false（出力を保つ）。
 	virtual bool GetRenderTargetDrawView( int32 Handle, FRenderTargetDrawView& Out ) = 0;
+	// 画像の処理（元と先が同じ画像のとき）の、一時の描画先（RGBA8の色だけ。大きさごとに 1 つを持ち続ける）の番号を返す。作れなければ false。非対応の実行先は false
+	virtual bool AcquireScratchTarget( int32 /*Width*/, int32 /*Height*/, int32& /*OutHandle*/ ) { return false; }
 };

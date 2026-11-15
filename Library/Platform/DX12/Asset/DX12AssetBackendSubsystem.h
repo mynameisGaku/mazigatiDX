@@ -53,6 +53,8 @@ public:
 	bool SaveRenderTarget( int32 Target, int32 X, int32 Y, int32 Width, int32 Height, const FString& Path, const FImageSaveOptions& Options ) override;
 	// 描画先として作った画像だけ、色と深度の資源を描画側へ貸す。
 	bool GetRenderTargetDrawView( int32 Handle, FRenderTargetDrawView& Out ) override;
+	// 画像の処理の一時の描画先（元と先が同じ画像のときに使う）。
+	bool AcquireScratchTarget( int32 Width, int32 Height, int32& OutHandle ) override;
 	// 編集メッシュを共通の形状保管へ変換する。失敗時は両出力を保つ。
 	bool CreateMeshBuffers( const FMeshVertex* Vertices, int32 NumVertices, const uint32* Indices, int32 NumIndices, int32& OutVertexBuffer, int32& OutIndexBuffer ) override;
 	// ゼロ頂点を登録する。不正な数・保持上限超過は-1。
@@ -155,6 +157,10 @@ public:
 	void RemoveFontFile( const FString& Path ) override;
 	// 描画の命令を解釈する側へ、フォントの値と大きさを渡す。
 	bool GetFontDrawView( int32 Font, FRenderTextFont& Out ) override;
+	// 文字の代わりに画像を入れる／やめる（DxLibのAddFontImageToHandle）。
+	bool AddFontCharImage( int32 Font, const char* Character, int32 Image, int32 DrawX, int32 DrawY, int32 Advance ) override;
+	void RemoveFontCharImage( int32 Font, const char* Character ) override;
+	bool GetFontImagePlacements( int32 Font, const char* Text, int32 Length, TArray<FFontImagePlacement>& Out ) override;
 	bool MeasureFontText( int32 Font, const char* Text, int32 Length, FTextSize& Out ) override;
 	// LoadSoundの未対応時の既定値。出力引数と外部状態は変更しない。
 	int32 LoadSound( const FString& Path, ESoundLoadMode Mode, bool bAsync ) override;

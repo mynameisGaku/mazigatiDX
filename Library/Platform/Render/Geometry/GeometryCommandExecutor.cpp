@@ -795,8 +795,12 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::Execute( const FDraw
 	}
 	case EDrawCommand::Anisotropy:
 	{
-		// まだ描画に反映しない状態。図形は、この状態なしで描く。
-		NBackendSupport::ReportUnsupported( "DrawCommands", View.Type == EDrawCommand::HeightFog ? "HeightFog" : View.Type == EDrawCommand::Anisotropy ? "Anisotropy" : "TextureTransform", "The state is ignored" );
+		if ( !View.CanRead<FDrawAnisotropyData>() )
+		{
+			return EResult::Rejected;
+		}
+		AnisotropyLevel = NMath::Clamp( View.Read<FDrawAnisotropyData>().Level, 1, 16 ); // 異方性の最大の強さ。Filter が異方性のときだけ効く。
+		State.MaxAnisotropy = bAnisotropicFilter ? static_cast<uint8>( AnisotropyLevel ) : 1;
 		return EResult::Executed;
 	}
 	case EDrawCommand::Pixel3D:
@@ -1147,12 +1151,14 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::Execute( const FDraw
 		{
 			return EResult::Rejected;
 		}
-		const auto Data = View.Read<FDrawFilterData>(); // 最近傍または線形補間。
-		if ( Data.Mode < 0 || Data.Mode > 1 )
+		const auto Data = View.Read<FDrawFilterData>(); // 最近傍・線形補間・異方性（線形のうえで、異方性の強さを使う）。
+		if ( Data.Mode < 0 || Data.Mode > 2 )
 		{
 			return EResult::Rejected;
 		}
-		State.bLinearFilter = Data.Mode == 1;
+		State.bLinearFilter = Data.Mode >= 1;
+		bAnisotropicFilter = Data.Mode == 2;
+		State.MaxAnisotropy = bAnisotropicFilter ? static_cast<uint8>( AnisotropyLevel ) : 1;
 		return EResult::Executed;
 	}
 	case EDrawCommand::TextureAddress:

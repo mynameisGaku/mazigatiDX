@@ -251,6 +251,15 @@ bool CWindowsGdiText::Arrange( const FRenderTextFont& Font, TArrayView<const cha
 				return false;
 			}
 			Character.Width = Extent.cx + GetBoldAdvance( Font ) + Font.LetterSpacing + Edge * 2;
+			for ( const FRenderCharImage& Image : Font.CharImages )
+			{
+				if ( Image.CodePoint == CodePoint )
+				{
+					Character.NumUnits = 0; // 文字は描かない（画像は、描画の命令を解釈する側が置く）。
+					Character.Width = Image.Advance + Font.LetterSpacing + Edge * 2;
+					break;
+				}
+			}
 		}
 		Character.Width = NMath::Max( 0, Character.Width );
 		X += Character.Width;

@@ -70,6 +70,8 @@ private:
 	FDrawFogData Fog; // このSpanだけの距離フォグ（Modeが0なら、なし）。
 	FDrawFogData HeightFog; // このSpanだけの高さフォグ（Modeが0なら、なし）。
 	FDrawTextureTransformData TextureTransform; // このSpanだけの画像の変換（Enabledが0なら、なし）。
+	bool bAnisotropicFilter = false; // 画像の補間が、異方性か。
+	int32 AnisotropyLevel = 16; // 異方性の最大の強さ（1 〜 16）。
 	IShaderDrawSource* ShaderSource = nullptr; // 影の描画に使うシェーダーの実行先（借用）。
 	bool bShadowCasting = false; // 影の絵を描いているか。
 	FMatrix4x4 LightViewProjection; // 影の絵を描くときの、光から見た行列。

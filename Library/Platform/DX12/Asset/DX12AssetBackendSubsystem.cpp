@@ -116,6 +116,11 @@ bool CDX12AssetBackendSubsystem::GetRenderTargetDrawView( int32 Handle, FRenderT
 	return Textures.GetRenderTargetDrawView( Handle, Out );
 }
 
+bool CDX12AssetBackendSubsystem::AcquireScratchTarget( int32 Width, int32 Height, int32& OutHandle )
+{
+	return Textures.AcquireScratchTarget( Width, Height, OutHandle );
+}
+
 bool CDX12AssetBackendSubsystem::UpdateTexturePixels( int32 Texture, int32 Width, int32 Height, const FColor32* Pixels )
 {
 	return Textures.Update( Texture, Width, Height, Pixels );
@@ -396,6 +401,22 @@ bool CDX12AssetBackendSubsystem::AddFontFile( const FString& Path )
 void CDX12AssetBackendSubsystem::RemoveFontFile( const FString& Path )
 {
 	Fonts.RemoveFontFile( Path );
+}
+
+bool CDX12AssetBackendSubsystem::AddFontCharImage( int32 Font, const char* Character, int32 Image, int32 DrawX, int32 DrawY, int32 Advance )
+{
+	int32 Width = 0, Height = 0;
+	return Textures.GetSize( Image, Width, Height ) && Fonts.AddCharImage( Font, Character, Image, DrawX, DrawY, Advance );
+}
+
+void CDX12AssetBackendSubsystem::RemoveFontCharImage( int32 Font, const char* Character )
+{
+	Fonts.RemoveCharImage( Font, Character );
+}
+
+bool CDX12AssetBackendSubsystem::GetFontImagePlacements( int32 Font, const char* Text, int32 Length, TArray<FFontImagePlacement>& Out )
+{
+	return Fonts.GetFontImagePlacements( Font, Text, Length, Out );
 }
 
 bool CDX12AssetBackendSubsystem::GetFontDrawView( int32 Font, FRenderTextFont& Out )

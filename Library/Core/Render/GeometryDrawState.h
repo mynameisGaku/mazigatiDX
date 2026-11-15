@@ -129,4 +129,5 @@ struct FGeometryDrawState
 	bool bLinearFilter = false; // falseなら最近傍、trueなら線形補間。
 	int32 DepthBias = 0; // GPUの整数深度偏り。
 	FGeometryMask Mask; // 2Dの描画を薄めるマスク。3Dは使わない。
+	uint8 MaxAnisotropy = 1; // 異方性補間の最大の強さ（1 〜 16。1 はなし）。画像の補間を線形で使うときだけ効く。
 };

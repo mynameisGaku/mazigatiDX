@@ -344,3 +344,11 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **字の送り**: DxLibは、標準のなめらかさの文字を、普通の太さの送りに、大きさに応じた分を足して並べる（実測: 大きさ16で+0、22で+1、32で+3 ≒ 0.19 × ( 大きさ − 16 ) 画素 / 文字。`Text`サンプルの横幅・見出しの幅・縦書きの間隔で確かめた）。DX12は、標準のとき、普通の太さのフォントで送りを測り、この分を足す（`GetBoldAdvance`）。2階調（太さ6 = 600の太字）は、OSの太字の送りが、DxLibと合う（大きさ22で確認）ので、足さない。4／8／16は、普通の太さの送りのまま。見出し・行の幅は、DxLibと±1画素（標準の行 412 = 412、太字斜体 414 / 417）。
 - **確認**: Debug／Releaseの警告0、台帳は505項目で整合、書式検査成功、デバッグレイヤーは`Text`・`UI`・`Village`で警告・エラー0件、`RunAllChecks.ps1 -SkipBuild -Quick`の42項目すべて成功。
 - **次の作業**: 異方性（画像の縮小の段（mip）が要るため、まず、DxLibの画像にmipがあるかの確認）→`Text`のアイコン入りの文字（`AddFontCharImage`）→`MaterialRibbon3D`・アニメーションつきのモデル（どのサンプルも使わない）→その場のフィルター。
+
+## 2026-11-16 追記: アイコン入りの文字・その場のフィルター・異方性・画素の回帰検査
+- **文字へのアイコンの差し込み（`AddFontCharImage`）**: `FRenderTextFont::CharImages`（文字のコードポイント・画像の番号・ずれ・次の文字までの幅）をフォントの値に持たせた（比較・キャッシュの鍵に含む）。`CWindowsGdiText::Arrange`は、その文字の幅を`Advance`にして、文字は描かない（`NumUnits = 0`）。画像は、`IFontDrawSource::GetFontImagePlacements`（文字ごとの位置。`CWindowsFontStore`が、レイアウトの位置 + 縁取り + ずれで返す）で取り、`CCanvasDrawExecutor`が、文字と同じ拡大・回転・移動で`DrawImage`する。`Text`サンプルの「Icon in text」が、DxLibと同じ位置で出る。
+- **その場のフィルター・混ぜ合わせ**: 元（か混ぜる画像）が変換先と同じなら、`IRenderTargetDrawSource::AcquireScratchTarget`（大きさごとに1つの、RGBA8の一時の描画先。`CTextureAssetStore`が、8種類まで持ち続ける）へ処理してから、種類99（そのまま写す）で変換先へ写す（`RunImageOperationBuffered`）。矩形つきも同じ。DxLibと同じく、その場の処理は、変換先を置き換える。`Filters`を一時的に書き換えて、Invertを2回掛けると、元の画像の色に戻ることを確かめた（書き換えは戻した）。
+- **異方性**: `FGeometryDrawState::MaxAnisotropy`（1〜16）を足し、`Filter`が異方性のとき、`Anisotropy`の強さを入れる（`CGeometryCommandExecutor`）。`CDX12GeometryRenderer`のサンプラーの表を160個（32 x 5段）にして、異方性のサンプラーを選ぶ。DX12の画像には縮小の段（mip）が無いので、見た目は、線形補間とほぼ同じ（遠くの地面で、DxLibと差が見えなかった）。mipを作ると効くが、画像の更新（`UpdateTexture`）でmipを作り直す必要があり、まだ。
+- **画素の回帰検査（新）**: 検査用リポジトリの`RunDX12SampleImageTests.ps1`（`RunAllChecks.ps1`の「DX12 sample images」。Debug／Release）。`Filters`の、時間に依らないタイル（Mono・Invert・Level・TwoColor・GradientMap・乗算・加算・スクリーン・差）を、画像の生成式から求めた期待値と、4点ずつ比べ、マスクの絵（光から離れた角が暗い部屋の色、光の中が明るい）、`Pixels`の分割した画像、`Text`の縦書き（2列）とアイコン（赤い画素）、どのサンプルも「未対応」を出さないこと、を確かめる（45項目）。
+- **確認**: Debug／Releaseの警告0（Release初回は、Editorのコンパイラ内部エラーC1001で失敗し、再実行で成功。他の検査を並行して回していたため）、台帳は507項目で整合、書式検査成功、`RunAllChecks.ps1 -SkipBuild -Quick`は、新しい検査を含めて成功。
+- **次の作業**: `MaterialRibbon3D`・`DistortedMaterialRibbon3D`・アニメーションつきのモデル（どのサンプルも使わない）→画像のmip（異方性が効く）→`Invert`系の合成（画像・文字・3D）。

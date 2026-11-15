@@ -10,7 +10,7 @@
 
 |分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|
 |---|---:|---:|---:|---:|---:|---:|---:|
-|API|360|4|95|98|162|0|1|
+|API|362|4|93|102|162|0|1|
 |Draw|101|0|10|51|40|0|0|
 |Sample|33|30|0|3|0|0|0|
 |Editor|11|11|0|0|0|0|0|
@@ -74,20 +74,21 @@
 |[API.IDrawExecutor.SupportsEffectUVDistortion](../Library/Core/Interfaces/Render/IDrawExecutor.h#L31)|Missing|R6|全命令、能力応答、空clip・不正命令、Span終了と撮影終了の状態復元を比較|共通Canvasへ接続。材質効果・pose能力とoffscreen撮影は未対応||
 |[API.IDrawExecutor.SupportsModelFrameOverrides](../Library/Core/Interfaces/Render/IDrawExecutor.h#L39)|Missing|R6|全命令、能力応答、空clip・不正命令、Span終了と撮影終了の状態復元を比較|共通Canvasへ接続。材質効果・pose能力とoffscreen撮影は未対応||
 |[API.IDrawExecutor.SupportsModelMaterialEffects](../Library/Core/Interfaces/Render/IDrawExecutor.h#L37)|Missing|R6|全命令、能力応答、空clip・不正命令、Span終了と撮影終了の状態復元を比較|共通Canvasへ接続。材質効果・pose能力とoffscreen撮影は未対応||
-|[API.IFontBackend.AddFontCharImage](../Library/Core/Interfaces/Asset/FontBackend.h#L35)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.IFontBackend.AddFontCharImage](../Library/Core/Interfaces/Asset/FontBackend.h#L35)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|フォントごとに、文字（コードポイント1つ）を画像（アセットの番号）に置き換える。次の文字までの幅は指定どおり、画像は、文字の左上からのずれで置く（文字と同じ拡大・回転・移動に従う）。Textサンプルで、DxLibと同じ位置・大きさで出る。画像が消えると、描かれない||
 |[API.IFontBackend.AddFontFile](../Library/Core/Interfaces/Asset/FontBackend.h#L38)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|AddFontResourceEx（このアプリの間だけ）で足す||
 |[API.IFontBackend.DeleteFont](../Library/Core/Interfaces/Asset/FontBackend.h#L20)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|OSの文字（GDI）で測り・画像にする。DxLibの文字との寸法・字形の差が残る（実測の比較が必要）||
 |[API.IFontBackend.GetFontMetrics](../Library/Core/Interfaces/Asset/FontBackend.h#L24)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|OSの文字（GDI）で測り・画像にする。DxLibの文字との寸法・字形の差が残る（実測の比較が必要）||
 |[API.IFontBackend.GetFontNames](../Library/Core/Interfaces/Asset/FontBackend.h#L32)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|OSの文字の一覧を返す||
 |[API.IFontBackend.GetTextGlyphs](../Library/Core/Interfaces/Asset/FontBackend.h#L28)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|OSの文字（GDI）で測り・画像にする。DxLibの文字との寸法・字形の差が残る（実測の比較が必要）||
 |[API.IFontBackend.IsFontAvailable](../Library/Core/Interfaces/Asset/FontBackend.h#L30)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|OSの文字の一覧で調べる||
-|[API.IFontBackend.MakeFont](../Library/Core/Interfaces/Asset/FontBackend.h#L19)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|OSの文字（GDI）で測り・画像にする。太さ・なめらかさ・字の送りは、Textサンプルの実測で、DxLibに合わせた（インク量: 2階調は一致、標準・縮小版は±5%。標準の送りは、普通の太さ＋約0.19×（大きさ−16）画素で、見出し・行の幅が±1画素）。字形の細かい差と、アイコンの差し込み（AddFontCharImage）は残る||
+|[API.IFontBackend.MakeFont](../Library/Core/Interfaces/Asset/FontBackend.h#L19)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|OSの文字（GDI）で測り・画像にする。太さ・なめらかさ・字の送りは、Textサンプルの実測で、DxLibに合わせた（インク量: 2階調は一致、標準・縮小版は±5%。標準の送りは、普通の太さ＋約0.19×（大きさ−16）画素で、見出し・行の幅が±1画素）。字形の細かい差が残る（アイコンの差し込みは、AddFontCharImageで対応）||
 |[API.IFontBackend.MeasureText](../Library/Core/Interfaces/Asset/FontBackend.h#L22)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|OSの文字（GDI）で測り・画像にする。DxLibの文字との寸法・字形の差が残る（実測の比較が必要）||
 |[API.IFontBackend.MeasureTextSize](../Library/Core/Interfaces/Asset/FontBackend.h#L26)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|OSの文字（GDI）で測り・画像にする。DxLibの文字との寸法・字形の差が残る（実測の比較が必要）||
-|[API.IFontBackend.RemoveFontCharImage](../Library/Core/Interfaces/Asset/FontBackend.h#L36)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.IFontBackend.RemoveFontCharImage](../Library/Core/Interfaces/Asset/FontBackend.h#L36)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|置き換えを外す（無い文字は何もしない）||
 |[API.IFontBackend.RemoveFontFile](../Library/Core/Interfaces/Asset/FontBackend.h#L39)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|足したフォントファイルを外す||
-|[API.IFontDrawSource.GetFontDrawView](../Library/Core/Interfaces/Render/IFontDrawSource.h#L14)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|フォントの番号を、文字を画像にするための値にする||
-|[API.IFontDrawSource.MeasureFontText](../Library/Core/Interfaces/Render/IFontDrawSource.h#L16)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|位置揃え・基準点に使う文字列の大きさを測る||
+|[API.IFontDrawSource.GetFontDrawView](../Library/Core/Interfaces/Render/IFontDrawSource.h#L22)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|フォントの番号を、文字を画像にするための値にする||
+|[API.IFontDrawSource.GetFontImagePlacements](../Library/Core/Interfaces/Render/IFontDrawSource.h#L26)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|AddFontCharImageで置き換えた文字の、画像の置き場所（文字列の左上からの画素）を返す。置き換えが無ければfalse||
+|[API.IFontDrawSource.MeasureFontText](../Library/Core/Interfaces/Render/IFontDrawSource.h#L24)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|位置揃え・基準点に使う文字列の大きさを測る||
 |[API.IFrameCaptureSink.OnFrame](../Library/Core/Interfaces/Platform/FrameCapture.h#L44)|Implemented|R8|撮影開始・受信・停止、画素寸法と順序、終了時の寿命を比較|主画面のゲーム描画とUI込みをRGBA8で通知。段階の順序・番号と通知中の解除、PNG/GIF保存を検査|Docs/DX12_CAPTURE.md; dx12-capture|
 |[API.IFrameCaptureSink.WantsFrame](../Library/Core/Interfaces/Platform/FrameCapture.h#L41)|Implemented|R8|撮影開始・受信・停止、画素寸法と順序、終了時の寿命を比較|主画面のゲーム描画とUI込みをRGBA8で通知。段階の順序・番号と通知中の解除、PNG/GIF保存を検査|Docs/DX12_CAPTURE.md; dx12-capture|
 |[API.IGamepadInput.AddMappingsFromFile](../Library/Core/Interfaces/Input/IGamepadInput.h#L32)|Implemented|R8|ゲームパッド実機の接続／切断、ボタン・軸、sensor、rumble、無効番号を比較|非Null選択で共通SDL実装を作る。実機での接続・切断・sensor・rumble比較前||
@@ -313,6 +314,7 @@
 |[API.IRenderSurface.GetGeometry3D](../Library/Core/Interfaces/Render/IRenderSurface.h#L21)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
 |[API.IRenderSurface.RecordClear](../Library/Core/Interfaces/Render/IRenderSurface.h#L23)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
 |[API.IRenderSurface.WaitForGPU](../Library/Core/Interfaces/Render/IRenderSurface.h#L25)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
+|[API.IRenderTargetDrawSource.AcquireScratchTarget](../Library/Core/Interfaces/Render/IRenderTargetDrawSource.h#L15)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|元と先が同じ画像の処理（ApplyFilter・BlendImages）のための、一時のRGBA8の描画先を、大きさごとに1つ（8種類まで）持ち続けて貸す。非対応の実行先はfalse||
 |[API.IRenderTargetDrawSource.GetRenderTargetDrawView](../Library/Core/Interfaces/Render/IRenderTargetDrawSource.h#L13)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|描画先として作った画像だけ、色と深度の資源を貸す||
 |[API.IRenderTextRasterizer.RasterizeFontText](../Library/Core/Interfaces/Render/IRenderTextRasterizer.h#L18)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|OSの文字（GDI）でフォント指定の文字列を画像にする。縁取りは、被覆率を太らせて作る。標準のなめらかさは、OSの65階調の被覆率（GGO_GRAY8）、4／8／16は、その倍の大きさで描いて縮める||
 |[API.IRenderTextRasterizer.RasterizeText](../Library/Core/Interfaces/Render/IRenderTextRasterizer.h#L15)|Implemented|R1|UIなしでUTF-8の範囲・改行・文字画像と拒否時の出力保持を確認|WindowsのCPU文字画像。既定13画素、各辺4096・4M画素まで。Fontアセット全体の対応ではない|Docs/DX12_GAME_RENDER.md; CaptureContractMain.cpp|
@@ -387,7 +389,7 @@
 |[Draw.AddColor](../Library/Framework/Render/Draw/DrawCommand.h#L88)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|平らな図形（箱・線・円・三角形・四角形・多角形・点）に、明るさのあとで色を足す。画像・文字・3Dには効かない（報告する）||
 |[Draw.AlphaTest](../Library/Framework/Render/Draw/DrawCommand.h#L89)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|平らな図形は、アルファが1つに決まるので、通らなければ丸ごと飛ばす。画像・文字は、通りうる画素が無いときだけ飛ばす（画素ごとの比べはまだ無い）。3Dには効かない||
 |[Draw.AmbientLight](../Library/Framework/Render/Draw/DrawCommand.h#L123)|Partial|R2|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|頂点ごとのCPU計算（CVertexLighting。DxLibの固定の光と同じ式）で対応。画素ごとの光（LightingOptionsのPixelLighting）は、同じ式を組み込みのシェーダー（PixelLit。定数b6）で画素ごとに計算する（画像つきも。フォグ・影を受ける描画と重なるときは、頂点ごと）。Lightingサンプルで、スポットライトの円・ランプの光だまりがDxLibと同じ形で出る（細かい画素の比較は未実施）||
-|[Draw.Anisotropy](../Library/Framework/Render/Draw/DrawCommand.h#L116)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|指定は無視して、通常の線形補間で描く（斜めから見た地面の鮮明さだけが違う）。初回に報告する||
+|[Draw.Anisotropy](../Library/Framework/Render/Draw/DrawCommand.h#L116)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|Filterが異方性のとき、サンプラーを異方性（最大の強さ 1〜16）にする。画像に縮小の段（mip）が無いので、見た目は線形補間とほぼ同じ（RenderStateサンプルの遠くの地面で、DxLibと差が見えない）||
 |[Draw.BeginShadowMap](../Library/Framework/Render/Draw/DrawCommand.h#L140)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|影の絵へ、図形（三角形・不透明）を、光から見た深度として描く。範囲は、箱か、カメラの視錐台。入れ子は不可（飛ばす）||
 |[Draw.Billboard3D](../Library/Framework/Render/Draw/DrawCommand.h#L47)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.BillboardPivot3D](../Library/Framework/Render/Draw/DrawCommand.h#L131)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
@@ -417,7 +419,7 @@
 |[Draw.HeightFog](../Library/Framework/Render/Draw/DrawCommand.h#L115)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|Start より下を、低いほど濃くする（Exponential / ExponentialSquared）。Linear は、Start で濃さ0、End で1。頂点ごとのCPU計算で、距離フォグのあとに混ぜる。DxLibの式との細かい差は未確認||
 |[Draw.Image](../Library/Framework/Render/Draw/DrawCommand.h#L77)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.ImageBlend](../Library/Framework/Render/Draw/DrawCommand.h#L101)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|組み込みのピクセルシェーダーで、2枚を混ぜて変換先（RGBA8の描画先）へ置き換える。通常・出力成分の選択・乗算・減算（差）・加算・スクリーン・オーバーレイ・覆い焼き・焼き込み・比較（暗／明）・ソフト／ハードライト・除外・アルファ付きの通常／加算・アルファの乗算・マスク。DxLibと画素を比べたもの: 乗算・加算（強さ160）・スクリーン・差（一致）。それ以外は標準の式で、未比較。乗算済みアルファ版は、色をアルファで割って混ぜてから掛け直す||
-|[Draw.ImageFilter](../Library/Framework/Render/Draw/DrawCommand.h#L100)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|組み込みのピクセルシェーダーで、変換先（RGBA8の描画先）の矩形へ描く。Mono・Gauss・DownScale・BrightClip・BrightScale・Hsb・Invert・Level・TwoColor・GradientMap・Replacement・PremulAlpha・InterpAlpha・BicubicScale・Lanczos3Scale・FloatColorScale。DxLibと画素を比べたもの: Mono・Invert・Level・TwoColor・GradientMap（一致）、Gauss（核をDxLibの画素から実測して合わせた。誤差0.5以下）、Hsb（相対色相）。未比較: 色差つきMono・絶対色相・縮小系・BrightClip/Scale・Replacement。その場の変換（元と先が同じ画像）と、RGBA8でない変換先は、飛ばして報告する||
+|[Draw.ImageFilter](../Library/Framework/Render/Draw/DrawCommand.h#L100)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|組み込みのピクセルシェーダーで、変換先（RGBA8の描画先）の矩形へ描く。Mono・Gauss・DownScale・BrightClip・BrightScale・Hsb・Invert・Level・TwoColor・GradientMap・Replacement・PremulAlpha・InterpAlpha・BicubicScale・Lanczos3Scale・FloatColorScale。DxLibと画素を比べたもの: Mono・Invert・Level・TwoColor・GradientMap（一致）、Gauss（核をDxLibの画素から実測して合わせた。誤差0.5以下）、Hsb（相対色相）。未比較: 色差つきMono・絶対色相・縮小系・BrightClip/Scale・Replacement。その場の変換（元と先が同じ画像）は、一時の描画先へ処理してから写す（置き換える）。RGBA8でない変換先は、飛ばして報告する||
 |[Draw.ImagePart](../Library/Framework/Render/Draw/DrawCommand.h#L80)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.ImagePartQuad](../Library/Framework/Render/Draw/DrawCommand.h#L82)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.ImagePartStretch](../Library/Framework/Render/Draw/DrawCommand.h#L81)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||

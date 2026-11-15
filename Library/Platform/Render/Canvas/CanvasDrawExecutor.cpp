@@ -602,6 +602,28 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 		return bDrawn;
 	};
 
+	// 画像の処理。元の画像（か、混ぜる画像）が変換先と同じなら、読みながら書けないので、一時の描画先へ処理してから、変換先へ写す（DxLibと同じく、その場の処理は、置き換える）。
+	const auto RunImageOperationBuffered = [&]( EBuiltInPixelShader Pixel, int32 DestHandle, int32 BaseHandle, int32 AuxHandle, bool bBlendToDest, bool bUseRect, int32 SrcX, int32 SrcY, int32 SrcW, int32 SrcH, int32 DestX, int32 DestY,
+												 int32 ( &Constants )[16] ) -> bool
+	{
+		if ( BaseHandle != DestHandle && AuxHandle != DestHandle )
+		{
+			return RunImageOperation( Pixel, DestHandle, BaseHandle, AuxHandle, bBlendToDest, bUseRect, SrcX, SrcY, SrcW, SrcH, DestX, DestY, Constants );
+		}
+		FRenderTargetDrawView Destination; // 変換先と同じ大きさの、一時の描画先を使う。
+		int32 Scratch = -1;
+		if ( !Targets || !Targets->GetRenderTargetDrawView( DestHandle, Destination ) || !Targets->AcquireScratchTarget( Destination.Width, Destination.Height, Scratch ) || Scratch == BaseHandle || Scratch == AuxHandle )
+		{
+			return false;
+		}
+		if ( !RunImageOperation( Pixel, Scratch, BaseHandle, AuxHandle, false, bUseRect, SrcX, SrcY, SrcW, SrcH, DestX, DestY, Constants ) )
+		{
+			return false;
+		}
+		int32 Copy[16] = { 99, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; // 種類 99 は、そのまま写す（シェーダーは、どの種類にも当たらず、元の色を返す）。
+		return RunImageOperation( EBuiltInPixelShader::ImageFilter, DestHandle, Scratch, -1, false, bUseRect, bUseRect ? DestX : 0, bUseRect ? DestY : 0, SrcW, SrcH, DestX, DestY, Copy );
+	};
+
 	int32 Offset = 0; // 読み終えたword数。
 	while ( Offset < Span.NumWords && !bStopped )
 	{
@@ -963,8 +985,8 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			}
 			bLinearFilter = Data.Mode >= 1; // 異方性は、線形として扱う。
 			bExplicitFilter = true;
-			FDrawFilterData Simple = Data; // 3D側は、最近傍か線形だけを受け取る。
-			Simple.Mode = bLinearFilter ? 1 : 0;
+			FDrawFilterData Simple = Data; // 3D側は、異方性も受け取る。
+			Simple.Mode = Data.Mode;
 			FDrawCommandView SimpleView = View; // 値を差し替えた命令。
 			SimpleView.Data = reinterpret_cast<const uint32*>( &Simple );
 			Geometry.Execute( SimpleView, Bright, Alpha, bAlphaBlend );
@@ -1389,6 +1411,31 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 				A4 * Transform.XX + A5 * Transform.YX + Transform.TX, A4 * Transform.XY + A5 * Transform.YY + Transform.TY };
 			const FColor32 EdgeColor = Color( Edge ); // 縁取りにも、明るさと不透明度を掛ける。
 			Canvas->TextFont( FontValue, Matrix, Color( Value ), EdgeColor, Text, Text + Length );
+			if ( !FontValue.CharImages.IsEmpty() ) // 文字の代わりに入れる画像（文字と同じ変換で置く）。
+			{
+				TArray<FFontImagePlacement> Placements;
+				if ( Fonts->GetFontImagePlacements( Font, Text, Length, Placements ) )
+				{
+					for ( const FFontImagePlacement& Placement : Placements )
+					{
+						FTextureDrawView Icon;
+						if ( !GetImage( Placement.Image, Icon ) )
+						{
+							continue;
+						}
+						const float32 Left = static_cast<float32>( Placement.X ), Top = static_cast<float32>( Placement.Y ), Right = Left + static_cast<float32>( Icon.Width ), Bottom = Top + static_cast<float32>( Icon.Height );
+						const float32 Local[8] = { Left, Top, Right, Top, Right, Bottom, Left, Bottom };
+						float32 Points[8]; // 文字の中の点を、拡大・回転・移動した 4 点（2D の変換は、DrawImage が掛ける）。
+						for ( int32 Index = 0; Index < 4; ++Index )
+						{
+							Points[Index * 2] = Local[Index * 2] * A0 + Local[Index * 2 + 1] * A2 + A4;
+							Points[Index * 2 + 1] = Local[Index * 2] * A1 + Local[Index * 2 + 1] * A3 + A5;
+						}
+						const float32 FullUV[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
+						DrawImage( Icon, Points, FullUV );
+					}
+				}
+			}
 			break;
 		}
 		case EDrawCommand::Image:
@@ -1759,10 +1806,10 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 				break;
 			}
 			int32 Constants[16] = { Data.Type, Data.Premultiplied, 0, 0, 0, 0, 0, 0, Data.Params[0], Data.Params[1], Data.Params[2], Data.Params[3], Data.Params[4], Data.Params[5], Data.Params[6], Data.Params[7] };
-			if ( !RunImageOperation( EBuiltInPixelShader::ImageFilter, Data.Dest, Data.Source, Data.Type == static_cast<int32>( EDrawGraphFilter::GradientMap ) ? Data.Map : -1, Data.Blend != 0, Data.HasRect != 0, Data.SrcX, Data.SrcY, Data.SrcW, Data.SrcH,
+			if ( !RunImageOperationBuffered( EBuiltInPixelShader::ImageFilter, Data.Dest, Data.Source, Data.Type == static_cast<int32>( EDrawGraphFilter::GradientMap ) ? Data.Map : -1, Data.Blend != 0, Data.HasRect != 0, Data.SrcX, Data.SrcY, Data.SrcW, Data.SrcH,
 					Data.DestX, Data.DestY, Constants ) )
 			{
-				Unsupported( View, "The image filter failed (the destination is not an RGBA8 render target, or the source is the destination) and is skipped" );
+				Unsupported( View, "The image filter failed (the destination is not an RGBA8 render target) and is skipped" );
 			}
 			break;
 		}
@@ -1779,9 +1826,9 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 				break;
 			}
 			int32 Constants[16] = { Data.Type, Data.Premultiplied, NMath::Clamp( Data.Ratio, 0, 255 ), 0, 0, 0, 0, 0, Data.Select[0], Data.Select[1], Data.Select[2], Data.Select[3], 0, 0, 0, 0 };
-			if ( !RunImageOperation( EBuiltInPixelShader::ImageBlend, Data.Dest, Data.Base, Data.Blend, false, false, 0, 0, 0, 0, 0, 0, Constants ) )
+			if ( !RunImageOperationBuffered( EBuiltInPixelShader::ImageBlend, Data.Dest, Data.Base, Data.Blend, false, false, 0, 0, 0, 0, 0, 0, Constants ) )
 			{
-				Unsupported( View, "The image blend failed (the destination is not an RGBA8 render target, or an image is the destination) and is skipped" );
+				Unsupported( View, "The image blend failed (the destination is not an RGBA8 render target) and is skipped" );
 			}
 			break;
 		}

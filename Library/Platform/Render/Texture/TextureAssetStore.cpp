@@ -81,6 +81,32 @@ bool CTextureAssetStore::GetRegionUvBounds( int32 Handle, float32 ( &OutUV )[4] 
 	return true;
 }
 
+bool CTextureAssetStore::AcquireScratchTarget( int32 Width, int32 Height, int32& OutHandle )
+{
+	const int64 Key = ( static_cast<int64>( Width ) << 32 ) | static_cast<int64>( Height );
+	if ( const int32* Found = ScratchTargets.Find( Key ) )
+	{
+		if ( Textures.Find( *Found ) )
+		{
+			OutHandle = *Found;
+			return true;
+		}
+		ScratchTargets.Remove( Key );
+	}
+	if ( ScratchTargets.Num() >= 8 )
+	{
+		return false;
+	}
+	const int32 Handle = CreateRenderTarget( Width, Height, false, ERenderTargetColorFormat::RGBA8, FColor32( 0, 0, 0, 0 ) );
+	if ( Handle < 0 )
+	{
+		return false;
+	}
+	ScratchTargets.Add( Key, Handle );
+	OutHandle = Handle;
+	return true;
+}
+
 int32 CTextureAssetStore::CreateRenderTarget( int32 Width, int32 Height, bool bDepth, ERenderTargetColorFormat Format, FColor32 ClearColor )
 {
 	if ( !Resources || Width <= 0 || Height <= 0 || Width > 16384 || Height > 16384 || Textures.Num() >= MaxHandles || NextHandle == TNumericLimits<int32>::Max() )
@@ -255,6 +281,7 @@ void CTextureAssetStore::Reset()
 	TargetFormats.Reset();
 	TargetSizes.Reset();
 	Regions.Reset();
+	ScratchTargets.Reset();
 	Textures.Reset();
 }
 

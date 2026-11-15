@@ -52,6 +52,8 @@ public:
 	bool GetTextureDrawView( int32 Handle, FTextureDrawView& Out ) override;
 	// 描画先として登録した番号だけを、色と深度の資源へ解決する。失敗時はOutを保つ。
 	bool GetRenderTargetDrawView( int32 Handle, FRenderTargetDrawView& Out ) override;
+	// 画像の処理の一時の描画先（大きさごとに 1 つ。8 種類まで）。
+	bool AcquireScratchTarget( int32 Width, int32 Height, int32& OutHandle ) override;
 private:
 	IRenderTextureResources* Resources = nullptr; // GPU資源の作成・更新・寿命の窓口。
 	TMap<int32, FTextureResourceHandle> Textures; // 異なる名前空間の番号を対応させる。
@@ -66,6 +68,7 @@ private:
 		int32 X = 0, Y = 0, Width = 0, Height = 0;
 	};
 	TMap<int32, FRegion> Regions;
+	TMap<int64, int32> ScratchTargets; // 大きさ（幅 << 32 | 高さ）ごとの、一時の描画先の番号。
 	int32 NextHandle = 0; // 解放後も使い回さないアセット番号。
 	static constexpr int32 MaxHandles = 1024; // この窓口で同時に登録する上限。
 };

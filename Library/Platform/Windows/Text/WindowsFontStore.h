@@ -34,7 +34,11 @@ public:
 	// 登録してあるフォントの数
 	int32 GetNumFonts() const;
 
+	// 文字（コードポイント 1 つ）の代わりに、画像（アセットの番号）を入れる。同じ文字は、置き換える。無効な番号・文字・大きさは false
+	bool AddCharImage( int32 Font, const char* Character, int32 Image, int32 DrawX, int32 DrawY, int32 Advance );
+	void RemoveCharImage( int32 Font, const char* Character );
 	bool GetFontDrawView( int32 Font, FRenderTextFont& Out ) override;
+	bool GetFontImagePlacements( int32 Font, const char* Text, int32 Length, TArray<FFontImagePlacement>& Out ) override;
 	bool MeasureFontText( int32 Font, const char* Text, int32 Length, FTextSize& Out ) override;
 
 private:

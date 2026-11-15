@@ -111,6 +111,7 @@ foreach ($configuration in $Configurations) {
     Invoke-Step "hdr texture copy contracts $configuration" (Join-Path $selfTest 'RunHdrTextureCopyTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
     Invoke-Step "DX12 window contracts $configuration" (Join-Path $selfTest 'RunDX12WindowTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
     Invoke-Step "DX12 capture contracts $configuration" (Join-Path $selfTest 'RunCaptureTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
+    Invoke-Step "DX12 sample images $configuration" (Join-Path $selfTest 'RunDX12SampleImageTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
 }
 
 if (-not $Quick) {

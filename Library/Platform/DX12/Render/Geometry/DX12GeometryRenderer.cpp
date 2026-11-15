@@ -117,20 +117,21 @@ bool CDX12GeometryRenderer::Initialize( ID3D12Device *InDevice, int32 InWidth, i
 	D3D12_DESCRIPTOR_HEAP_DESC SamplerDesc = {}; // 各設定を一度だけ作る。
 	SamplerDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
 	SamplerDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	SamplerDesc.NumDescriptors = 32;
+	SamplerDesc.NumDescriptors = 160; // 32（補間・外側）x 5（異方性: なし・2・4・8・16）。
 	if ( FAILED( Device->CreateDescriptorHeap( &SamplerDesc, IID_PPV_ARGS( &SamplerHeap ) ) ) )
 	{
 		return false;
 	}
 	SamplerStride = Device->GetDescriptorHandleIncrementSize( D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER );
-	for ( UINT Index = 0; Index < 32; ++Index )
+	for ( UINT Index = 0; Index < 160; ++Index )
 	{
 		D3D12_SAMPLER_DESC Sampler = {}; // 参照方法の組み合わせ。
-		Sampler.Filter = Index & 16 ? D3D12_FILTER_MIN_MAG_MIP_LINEAR : D3D12_FILTER_MIN_MAG_MIP_POINT;
+		const UINT AnisotropyCode = Index >> 5; // 0 = なし、1〜4 = 2・4・8・16。
+		Sampler.Filter = AnisotropyCode > 0 ? D3D12_FILTER_ANISOTROPIC : ( Index & 16 ? D3D12_FILTER_MIN_MAG_MIP_LINEAR : D3D12_FILTER_MIN_MAG_MIP_POINT );
 		Sampler.AddressU = static_cast<D3D12_TEXTURE_ADDRESS_MODE>( ( Index & 3 ) + 1 );
 		Sampler.AddressV = static_cast<D3D12_TEXTURE_ADDRESS_MODE>( ( ( Index >> 2 ) & 3 ) + 1 );
 		Sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-		Sampler.MaxAnisotropy = 1;
+		Sampler.MaxAnisotropy = AnisotropyCode > 0 ? ( 1u << AnisotropyCode ) : 1u;
 		Sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
 		Sampler.MaxLOD = D3D12_FLOAT32_MAX;
 		auto Handle = SamplerHeap->GetCPUDescriptorHandleForHeapStart(); // この設定の保存先。
@@ -657,7 +658,8 @@ bool CDX12GeometryRenderer::DrawInternal( const FGeometryVertex *Vertices, int32
 	}
 	FPendingDraw Pending; // 検査済みのGPU参照を、この位置で命令列へ渡す。
 	Pending.TextureBinding = Texture ? Texture->Binding : 0;
-	Pending.SamplerIndex = static_cast<UINT>( State.AddressU ) | ( static_cast<UINT>( State.AddressV ) << 2 ) | ( State.bLinearFilter ? 16 : 0 );
+	Pending.SamplerIndex = static_cast<UINT>( State.AddressU ) | ( static_cast<UINT>( State.AddressV ) << 2 ) | ( State.bLinearFilter ? 16 : 0 )
+		| ( ( State.bLinearFilter && State.MaxAnisotropy >= 16 ? 4u : State.bLinearFilter && State.MaxAnisotropy >= 8 ? 3u : State.bLinearFilter && State.MaxAnisotropy >= 4 ? 2u : State.bLinearFilter && State.MaxAnisotropy >= 2 ? 1u : 0u ) << 5 );
 	if ( State.Mask.IsActive() )
 	{
 		Pending.MaskBinding = State.Mask.Texture.Binding;
@@ -779,7 +781,8 @@ bool CDX12GeometryRenderer::DrawBufferGeometry( const FGeometryBufferDraw &Draw,
 	Pending.Vertices = { Vertices.Resource->GetGPUVirtualAddress() + Draw.VertexOffset, static_cast<UINT>( VertexBytes ), sizeof( FGeometryVertex ) };
 	Pending.NumVertices = static_cast<UINT>( Draw.VertexCount );
 	Pending.TextureBinding = Texture ? Texture->Binding : 0;
-	Pending.SamplerIndex = static_cast<UINT>( State.AddressU ) | ( static_cast<UINT>( State.AddressV ) << 2 ) | ( State.bLinearFilter ? 16 : 0 );
+	Pending.SamplerIndex = static_cast<UINT>( State.AddressU ) | ( static_cast<UINT>( State.AddressV ) << 2 ) | ( State.bLinearFilter ? 16 : 0 )
+		| ( ( State.bLinearFilter && State.MaxAnisotropy >= 16 ? 4u : State.bLinearFilter && State.MaxAnisotropy >= 8 ? 3u : State.bLinearFilter && State.MaxAnisotropy >= 4 ? 2u : State.bLinearFilter && State.MaxAnisotropy >= 2 ? 1u : 0u ) << 5 );
 	if ( State.Mask.IsActive() )
 	{
 		Pending.MaskBinding = State.Mask.Texture.Binding;
