@@ -10,8 +10,8 @@
 
 |分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|
 |---|---:|---:|---:|---:|---:|---:|---:|
-|API|351|4|107|77|162|0|1|
-|Draw|101|0|34|27|40|0|0|
+|API|353|4|101|85|162|0|1|
+|Draw|101|0|27|34|40|0|0|
 |Sample|33|30|0|3|0|0|0|
 |Editor|11|11|0|0|0|0|0|
 
@@ -285,15 +285,15 @@
 |[API.IRenderGeometry3D.DrawTexturedGeometry](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L26)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
 |[API.IRenderGeometry3D.GetHeight](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L19)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
 |[API.IRenderGeometry3D.GetWidth](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L17)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderResourceBackend.CompileShader](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L52)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.IRenderResourceBackend.CompileShader](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L52)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|D3DCompileで、4_0・4_1・5_0のソースを5_0としてコンパイルする||
 |[API.IRenderResourceBackend.CreateMeshBuffers](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L20)|Implemented|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|FGeometryBufferStoreへ接続。CPU保管の作成・更新・範囲検査あり。Windows互換比較前||
 |[API.IRenderResourceBackend.DeleteIndexBuffer](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L22)|Implemented|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|FGeometryBufferStoreへ接続。CPU保管の作成・更新・範囲検査あり。Windows互換比較前||
-|[API.IRenderResourceBackend.DeleteShader](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L49)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.IRenderResourceBackend.DeleteShader](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L49)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|番号を空け、そのシェーダーを使ったパイプラインも手放す||
 |[API.IRenderResourceBackend.DeleteShadowMap](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L39)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IRenderResourceBackend.DeleteVertexBuffer](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L21)|Implemented|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|FGeometryBufferStoreへ接続。CPU保管の作成・更新・範囲検査あり。Windows互換比較前||
 |[API.IRenderResourceBackend.GetShadowMapViewProjection](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L42)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IRenderResourceBackend.MakeIndexBuffer](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L30)|Implemented|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|FGeometryBufferStoreへ接続。CPU保管の作成・更新・範囲検査あり。Windows互換比較前||
-|[API.IRenderResourceBackend.MakeShader](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L48)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.IRenderResourceBackend.MakeShader](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L48)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DXBC（Shader Model 5）を調べて登録する（4_0のバイト列は受け付けない）||
 |[API.IRenderResourceBackend.MakeShadowMap](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L38)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IRenderResourceBackend.MakeVertexBuffer](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L26)|Implemented|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|FGeometryBufferStoreへ接続。CPU保管の作成・更新・範囲検査あり。Windows互換比較前||
 |[API.IRenderResourceBackend.WriteIndexBuffer](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L32)|Implemented|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|FGeometryBufferStoreへ接続。CPU保管の作成・更新・範囲検査あり。Windows互換比較前||
@@ -327,7 +327,9 @@
 |[API.IRenderTextureResources.ReadTextureRGBA8](../Library/Core/Interfaces/Render/IRenderTextureResources.h#L39)|Implemented|R1|CPU参照・既定GPU・WARP・アプリ起動で、RGBA8画像の読み戻し、異形式(RGBA16F/D32)/描画中/非ゲームスレッド時の出力保持を確認|DIRECTキュー上でREADBACKバッファへCopyTextureRegionしRGBA8画素を読み戻す。失敗時はOutPixels/OutWidth/OutHeightを変更しない|Library/Platform/DX12/Resource/Texture/DX12TextureStore.cpp; Source/SelfTest/RunHdrTextureCopyTests.ps1|
 |[API.IRenderTextureResources.ReleaseTexture](../Library/Core/Interfaces/Render/IRenderTextureResources.h#L49)|Implemented|R1|ImGuiなしの作成・更新・解放、入力不正、旧viewのGPU完了までの保持、失敗と再初期化を検査|DX12画像所有者へ接続。アセット登録とUIの所有から分離。Windowsの外部ImGui窓との共有画像・表示画素を確認。全更新・失敗経路の互換は未網羅|補助検証: NativeStoreのcompute readbackと共通登録の偽物。Windowsの外部窓共有: Docs/DX12_IMGUI_VIEWPORTS.md|
 |[API.IRenderTextureResources.UpdateTextureRGBA8](../Library/Core/Interfaces/Render/IRenderTextureResources.h#L46)|Implemented|R1|ImGuiなしの作成・更新・解放、入力不正、旧viewのGPU完了までの保持、失敗と再初期化を検査|DX12画像所有者へ接続。アセット登録とUIの所有から分離。Windowsの外部ImGui窓との共有画像・表示画素を確認。全更新・失敗経路の互換は未網羅|補助検証: NativeStoreのcompute readbackと共通登録の偽物。Windowsの外部窓共有: Docs/DX12_IMGUI_VIEWPORTS.md|
-|[API.IShader.GetShaderHandle](../Library/Core/Interfaces/Render/IShader.h#L55)|Missing|R6|作成前・作成後・破棄後のhandle、型の違い、描画までの寿命を確認|Frameworkの型付き借用handle。DX12資源の作成／解放と組み合わせて確認する||
+|[API.IShader.GetShaderHandle](../Library/Core/Interfaces/Render/IShader.h#L55)|Partial|R6|作成前・作成後・破棄後のhandle、型の違い、描画までの寿命を確認|番号は、DX12のシェーダーの表の番号||
+|[API.IShaderDrawSource.DrawShader](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L64)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|描画の値（シェーダー・定数・画像・頂点・描画先の形式）から、パイプラインを作って描く。描けなければfalse||
+|[API.IShaderDrawSource.IsShaderValid](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L62)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|番号が、その種類の、作ってあるシェーダーか||
 |[API.IShadowMap.GetShadowMapHandle](../Library/Core/Interfaces/Render/IShadowMap.h#L47)|Missing|R6|作成前・作成後・破棄後のhandle、型の違い、描画までの寿命を確認|Frameworkの型付き借用handle。DX12資源の作成／解放と組み合わせて確認する||
 |[API.ISoundBackend.CreateSoundFromPcm](../Library/Core/Interfaces/Asset/SoundBackend.h#L28)|Missing|R8|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.ISoundBackend.DecodeSoundFile](../Library/Core/Interfaces/Asset/SoundBackend.h#L31)|Missing|R8|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
@@ -352,9 +354,9 @@
 |[API.ITextureBackend.GetTextureSize](../Library/Core/Interfaces/Asset/TextureBackend.h#L27)|Implemented|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|登録画像の処理あり。GPU完了まで遅延解放。Windows互換比較前||
 |[API.ITextureBackend.GetTextureUvBounds](../Library/Core/Interfaces/Asset/TextureBackend.h#L25)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.ITextureBackend.LoadTexture](../Library/Core/Interfaces/Asset/TextureBackend.h#L19)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|WIC画像経路あり。対応形式の同等性と非同期処理が未完了||
-|[API.ITextureBackend.ReadRenderTargetPixels](../Library/Core/Interfaces/Asset/TextureBackend.h#L37)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.ITextureBackend.ReadRenderTargetPixels](../Library/Core/Interfaces/Asset/TextureBackend.h#L37)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|描画先（8ビット・16ビット浮動小数点・32ビット浮動小数点1チャンネル）の矩形を読む。浮動小数点は0〜1に収める||
 |[API.ITextureBackend.SavePixels](../Library/Core/Interfaces/Asset/TextureBackend.h#L53)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|WICでPNG/BMP/JPEG保存。PNG透明度・JPEG品質・Unicode名に対応。PNG圧縮率の個別指定は副作用なく拒否|Docs/DX12_CAPTURE.md; CaptureContractMain.cpp|
-|[API.ITextureBackend.SaveRenderTarget](../Library/Core/Interfaces/Asset/TextureBackend.h#L39)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.ITextureBackend.SaveRenderTarget](../Library/Core/Interfaces/Asset/TextureBackend.h#L39)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|矩形を読んで、画像として保存する||
 |[API.ITextureBackend.UpdateTexturePixels](../Library/Core/Interfaces/Asset/TextureBackend.h#L47)|Implemented|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|登録画像の処理あり。GPU完了まで遅延解放。Windows互換比較前||
 |[API.ITextureDrawSource.GetTextureDrawView](../Library/Core/Interfaces/Render/ITextureDrawSource.h#L12)|Implemented|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
 |[API.ITickable.GetTickGroup](../Library/Core/Interfaces/Tickable/ITickable.h#L33)|Implemented|R9|既存の自己確認とDxLib／DX12／Nullの起動・呼出・通知・終了を比較|GPUを所有しない共通実装／callback契約。DX12構成の回帰検査は未完了||
@@ -439,7 +441,7 @@
 |[Draw.PreviewShadowMap](../Library/Framework/Render/Draw/DrawCommand.h#L143)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
 |[Draw.Primitive3D](../Library/Framework/Render/Draw/DrawCommand.h#L136)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|非照明の色と画像。材質・追加UV等は未対応||
 |[Draw.PrimitiveBuffer3D](../Library/Framework/Render/Draw/DrawCommand.h#L138)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|CPU保管の非照明形状。永続GPUバッファではない||
-|[Draw.PrimitiveShader3D](../Library/Framework/Render/Draw/DrawCommand.h#L148)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
+|[Draw.PrimitiveShader3D](../Library/Framework/Render/Draw/DrawCommand.h#L148)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|利用者のシェーダー（Shader Model 5）を、カスタムグラフィックスパイプラインで描く。定数・画像（t0〜）・描画先の形式ごとにパイプラインを作って使い回す。DxLibとの画素比較が残る。頂点の入力は、セマンティックの名前で、FDrawShaderVertex3Dの中の位置へ割り当てる||
 |[Draw.PushCamera](../Library/Framework/Render/Draw/DrawCommand.h#L107)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.PushClip](../Library/Framework/Render/Draw/DrawCommand.h#L91)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.PushLight](../Library/Framework/Render/Draw/DrawCommand.h#L126)|Partial|R2|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|頂点ごとのCPU計算（CVertexLighting。DxLibの固定の光と同じ式）で対応。画素ごとの光・影は頂点ごとの計算になる。DxLibとの画素比較が残る||
@@ -450,11 +452,11 @@
 |[Draw.Quad3D](../Library/Framework/Render/Draw/DrawCommand.h#L55)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.Ribbon3D](../Library/Framework/Render/Draw/DrawCommand.h#L57)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
 |[Draw.RoundBox](../Library/Framework/Render/Draw/DrawCommand.h#L72)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバスで点列にして描く。DxLibとの境界画素の比較が残る||
-|[Draw.ShaderConstants](../Library/Framework/Render/Draw/DrawCommand.h#L146)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
-|[Draw.ShaderOutputTarget](../Library/Framework/Render/Draw/DrawCommand.h#L151)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
-|[Draw.ShaderQuad3D](../Library/Framework/Render/Draw/DrawCommand.h#L157)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く||
-|[Draw.ShaderRect](../Library/Framework/Render/Draw/DrawCommand.h#L149)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
-|[Draw.ShaderTexture](../Library/Framework/Render/Draw/DrawCommand.h#L147)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
+|[Draw.ShaderConstants](../Library/Framework/Render/Draw/DrawCommand.h#L146)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|段・番号ごとに置く。頂点シェーダーが読む番号は頂点側の中身、読まない番号はピクセル側の中身を使う||
+|[Draw.ShaderOutputTarget](../Library/Framework/Render/Draw/DrawCommand.h#L151)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|出力1〜7の描画先を、描くときに束ねて、複数の描画先（MRT）のパスで描く。主画面は不可||
+|[Draw.ShaderQuad3D](../Library/Framework/Render/Draw/DrawCommand.h#L157)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|組み込みの頂点シェーダー（SubPositionのクリップ座標を渡す）で、両面を描く||
+|[Draw.ShaderRect](../Library/Framework/Render/Draw/DrawCommand.h#L149)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|組み込みの頂点シェーダー（クリップ座標をそのまま渡す）で、矩形を2枚の三角形で描く||
+|[Draw.ShaderTexture](../Library/Framework/Render/Draw/DrawCommand.h#L147)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|t0〜t15。浮動小数点の描画先も読める。置いていない段は、空（0）の画像||
 |[Draw.Sphere3D](../Library/Framework/Render/Draw/DrawCommand.h#L44)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.Sprite](../Library/Framework/Render/Draw/DrawCommand.h#L39)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|中心・拡大・回転・反転に対応。DxLibとの画素比較が残る||
 |[Draw.Sprite3D](../Library/Framework/Render/Draw/DrawCommand.h#L133)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
@@ -473,7 +475,7 @@
 |[Draw.Triangle](../Library/Framework/Render/Draw/DrawCommand.h#L43)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.Triangle3D](../Library/Framework/Render/Draw/DrawCommand.h#L43)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.UseLighting](../Library/Framework/Render/Draw/DrawCommand.h#L121)|Partial|R2|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|頂点ごとのCPU計算（CVertexLighting。DxLibの固定の光と同じ式）で対応。画素ごとの光・影は頂点ごとの計算になる。DxLibとの画素比較が残る||
-|[Draw.UseShader](../Library/Framework/Render/Draw/DrawCommand.h#L145)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
+|[Draw.UseShader](../Library/Framework/Render/Draw/DrawCommand.h#L145)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|利用者のシェーダー（Shader Model 5）を、カスタムグラフィックスパイプラインで描く。定数・画像（t0〜）・描画先の形式ごとにパイプラインを作って使い回す。DxLibとの画素比較が残る||
 |[Draw.UseShadowMap](../Library/Framework/Render/Draw/DrawCommand.h#L142)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
 |[Draw.WorldMatrix](../Library/Framework/Render/Draw/DrawCommand.h#L48)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 

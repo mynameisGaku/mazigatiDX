@@ -26,10 +26,12 @@ void CDX12AssetBackendSubsystem::Initialize( FSubsystemCollection& Collection )
 	{
 		Textures.Initialize( *Resources );
 	}
+	ShaderService.Initialize( Collection.InitializeDependency<IGraphicsPipelineResources>(), Collection.InitializeDependency<IRenderBufferResources>(), &Textures );
 }
 
 void CDX12AssetBackendSubsystem::Deinitialize()
 {
+	ShaderService.Shutdown(); // パイプラインと空の画像を、先に手放す。
 	Models.Reset(); // 共有モデルが所有する画像を、先に登録から外す。
 	Textures.Shutdown(); // 資源の所有者がGPUの完了と解放を行う。
 	Buffers.Reset();
@@ -59,9 +61,19 @@ int32 CDX12AssetBackendSubsystem::CreateRenderTarget( const FRenderTargetDesc& D
 	{
 		return NAsset::InvalidHandle;
 	}
-	if ( Desc.Format != ERenderTargetFormat::Color8 )
+	// 8ビットのRGBA、16ビット浮動小数点のRGBA（HDR）、32ビット浮動小数点の1チャンネルだけ作れる。
+	ERenderTargetColorFormat Format = ERenderTargetColorFormat::RGBA8;
+	if ( Desc.Format == ERenderTargetFormat::Float16 && Desc.Channels == 4 )
 	{
-		NBackendSupport::ReportUnsupported( "DX12", "CreateRenderTarget (floating point formats)" );
+		Format = ERenderTargetColorFormat::RGBA16F;
+	}
+	else if ( Desc.Format == ERenderTargetFormat::Float32 && Desc.Channels == 1 )
+	{
+		Format = ERenderTargetColorFormat::R32Float;
+	}
+	else if ( Desc.Format != ERenderTargetFormat::Color8 )
+	{
+		NBackendSupport::ReportUnsupported( "DX12", "CreateRenderTarget (this floating point format)", "Only Float16 x 4 channels and Float32 x 1 channel are supported" );
 		return NAsset::InvalidHandle;
 	}
 	if ( Desc.MultiSamples > 0 )
@@ -69,7 +81,7 @@ int32 CDX12AssetBackendSubsystem::CreateRenderTarget( const FRenderTargetDesc& D
 		NBackendSupport::ReportUnsupported( "DX12", "CreateRenderTarget (multisampling)", "The render target is created without multisampling" );
 	}
 	// 透明度を持たない描画先は、不透明な黒から始める（描いていない所も、不透明）。
-	return Textures.CreateRenderTarget( Desc.Width, Desc.Height, Desc.bDepth, Desc.bAlpha ? FColor32( 0, 0, 0, 0 ) : FColor32( 0, 0, 0, 255 ) );
+	return Textures.CreateRenderTarget( Desc.Width, Desc.Height, Desc.bDepth, Format, Desc.bAlpha ? FColor32( 0, 0, 0, 0 ) : FColor32( 0, 0, 0, 255 ) );
 }
 
 bool CDX12AssetBackendSubsystem::ReadRenderTargetPixels( int32 Target, int32 X, int32 Y, int32 Width, int32 Height, TArray<FColor32>& OutPixels )
@@ -254,6 +266,31 @@ bool CDX12AssetBackendSubsystem::SaveModelToMV1( int32 /*Model*/, const FString&
 {
 	NBackendSupport::ReportUnsupported( "DX12", "SaveModelToMV1" );
 	return false;
+}
+
+int32 CDX12AssetBackendSubsystem::MakeShader( EShaderStage Stage, const void* Code, int32 NumBytes )
+{
+	return ShaderService.Make( Stage, Code, NumBytes );
+}
+
+void CDX12AssetBackendSubsystem::DeleteShader( int32 Shader )
+{
+	ShaderService.Delete( Shader );
+}
+
+bool CDX12AssetBackendSubsystem::CompileShader( EShaderStage Stage, const char* Source, int32 NumBytes, const char* SourceName, const char* EntryPoint, const char* ShaderModel, TArray<uint8>& OutCode, FString& OutMessage )
+{
+	return ShaderService.Compile( Stage, Source, NumBytes, SourceName, EntryPoint, ShaderModel, OutCode, OutMessage );
+}
+
+bool CDX12AssetBackendSubsystem::IsShaderValid( int32 Shader, EShaderStage Stage ) const
+{
+	return ShaderService.IsShaderValid( Shader, Stage );
+}
+
+bool CDX12AssetBackendSubsystem::DrawShader( const FShaderDrawRequest& Request, IRenderGeometry3D& Geometry )
+{
+	return ShaderService.DrawShader( Request, Geometry );
 }
 
 int32 CDX12AssetBackendSubsystem::MakeFont( const FFontDesc& Desc )

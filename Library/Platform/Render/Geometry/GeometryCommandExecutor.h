@@ -21,6 +21,12 @@ public:
 	};
 	// Geometryは借用。nullptrでも状態命令は読めるが、描画は失敗する。
 	explicit CGeometryCommandExecutor( IRenderGeometry3D* InGeometry, ITextureDrawSource* InTextures = nullptr, IGeometryBufferSource* InBuffers = nullptr, IStaticModelSource* InModels = nullptr );
+	// いまの3Dの実行先（描画先）。
+	IRenderGeometry3D* GetGeometry() const { return Geometry; }
+	// いまの深度・表裏などの状態。
+	const FGeometryDrawState& GetState() const { return State; }
+	// ShaderQuad3Dの四角形を、クリップ座標つきの頂点（三角形のリスト）にする。カメラ・ワールド行列・向きの決め方は、Quad3Dと同じ。失敗はfalse（Outを保つ）。
+	bool BuildShaderQuad( const FDrawShaderQuad3DData& Data, TArray<FDrawShaderVertex3D>& Out );
 	// 描画先が替わったとき、3Dの実行先を差し替える（状態・カメラ・ライトは保つ）。nullptrなら、描画は失敗する。
 	void SetGeometry( IRenderGeometry3D* InGeometry ) { Geometry = InGeometry; }
 	// 以降の描画の、描画先との混ぜ方（合成するときだけ使う）。

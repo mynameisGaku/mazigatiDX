@@ -19,6 +19,7 @@ void CDX12DrawExecutorSubsystem::Initialize( FSubsystemCollection& Collection )
 	Models = Collection.InitializeDependency<IStaticModelSource>();
 	Fonts = Collection.InitializeDependency<IFontDrawSource>();
 	Targets = Collection.InitializeDependency<IRenderTargetDrawSource>();
+	Shaders = Collection.InitializeDependency<IShaderDrawSource>();
 }
 
 void CDX12DrawExecutorSubsystem::Deinitialize()
@@ -29,13 +30,14 @@ void CDX12DrawExecutorSubsystem::Deinitialize()
 	Models = nullptr;
 	Fonts = nullptr;
 	Targets = nullptr;
+	Shaders = nullptr;
 }
 
 void CDX12DrawExecutorSubsystem::Execute( const FDrawSpan& Span )
 {
 	if ( Surface )
 	{
-		CCanvasDrawExecutor Executor( *Surface, Textures, Buffers, Models, Fonts, Targets ); // 状態を呼び出し単位で分離する。
+		CCanvasDrawExecutor Executor( *Surface, Textures, Buffers, Models, Fonts, Targets, Shaders ); // 状態を呼び出し単位で分離する。
 		Executor.Execute( Span );
 	}
 }

@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "CanvasDrawExecutor.h"
 #include "Library/Platform/Render/Geometry/GeometryCommandExecutor.h"
+#include "Library/Platform/Render/Shader/ShaderCommandExecutor.h"
 #include "Library/Framework/Render/Draw/DrawCommand.h"
 #include "Library/Platform/System/BackendSupport.h"
 #include "Library/Core/Types/Numeric.h"
@@ -51,6 +52,22 @@ namespace
 		return Requested > 0 ? NMath::Clamp( Requested, 3, 512 ) : NMath::Clamp( static_cast<int32>( NMath::Ceil( NMath::Sqrt( NMath::Max( Radius, 0.0f ) ) * 6 ) ), 12, 512 );
 	}
 
+	// 2Dを描けない描画先（浮動小数点の描画先・複数の出力のパス）で使う、何も描かないキャンバス。
+	class CNullCanvas2D : public IRenderCanvas2D
+	{
+	public:
+		void Box( float32, float32, float32, float32, FColor32, bool, float32 ) override {}
+		void Line( float32, float32, float32, float32, FColor32, float32 ) override {}
+		void Circle( float32, float32, float32, FColor32, bool, float32, int32 ) override {}
+		void Triangle( const float32 ( & )[6], FColor32, bool, float32 ) override {}
+		void Quad( const float32 ( & )[8], FColor32, bool, float32 ) override {}
+		void Text( float32, float32, FColor32, const char*, const char* ) override {}
+		void Image( const FTextureDrawView&, const float32 ( & )[8], const float32 ( & )[4], FColor32 ) override {}
+		void PushClip( int32, int32, int32, int32 ) override {}
+		void PopClip() override {}
+		void SetAntiAlias( bool ) override {}
+	};
+
 	// 未対応の命令の名前（警告に出す）。
 	FString CommandName( EDrawCommand Type )
 	{
@@ -58,8 +75,8 @@ namespace
 	}
 }
 
-CCanvasDrawExecutor::CCanvasDrawExecutor( IRenderSurface& InSurface, ITextureDrawSource* InTextures, IGeometryBufferSource* InBuffers, IStaticModelSource* InModels, IFontDrawSource* InFonts, IRenderTargetDrawSource* InTargets )
-	: Surface( InSurface ), Models( InModels ), Buffers( InBuffers ), Textures( InTextures ), Fonts( InFonts ), Targets( InTargets )
+CCanvasDrawExecutor::CCanvasDrawExecutor( IRenderSurface& InSurface, ITextureDrawSource* InTextures, IGeometryBufferSource* InBuffers, IStaticModelSource* InModels, IFontDrawSource* InFonts, IRenderTargetDrawSource* InTargets, IShaderDrawSource* InShaders )
+	: Surface( InSurface ), Models( InModels ), Buffers( InBuffers ), Textures( InTextures ), Fonts( InFonts ), Targets( InTargets ), Shaders( InShaders )
 {
 }
 
@@ -71,6 +88,8 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 		return;
 	}
 	CGeometryCommandExecutor Geometry( Surface.GetGeometry3D(), Textures, Buffers, Models ); // このSpanだけの3D状態。
+	CShaderCommandExecutor ShaderExecutor( Geometry, Shaders ); // このSpanだけのシェーダーの状態。
+	CNullCanvas2D NullCanvas; // 2Dを描けない描画先では、これを使う（何も描かない）。
 	bool bLinearFilter = false; // 画像の既定は最近傍。
 	bool bExplicitFilter = false; // 明示した補間を使えない実行先では画像を省略する。
 	bool bAlphaBlend = false; // 3Dへ渡す合成方式。
@@ -104,9 +123,117 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			bEntered = Surface.BeginRenderTargetPass( Desc );
 		}
 		Canvas = Surface.GetCanvas2D();
+		if ( !Canvas )
+		{
+			Canvas = &NullCanvas; // 浮動小数点の描画先などは、2Dを描けない（3Dとシェーダーだけ）。
+		}
 		Geometry.SetGeometry( Surface.GetGeometry3D() );
-		return bEntered && Canvas != nullptr;
+		return bEntered;
 	};
+	// 複数の出力（MRT）のパスの中か。ShaderOutputTarget で出力を置いて、シェーダーで描くときに、パスを開き直す。
+	bool bMrtActive = false;
+	TArray<uint64> MrtSignature; // いまのMRTのパスの、色の描画先の並び。
+	// MRTのパスから、1つの出力のパスへ戻る（描いてある内容は保つ）。
+	const auto LeaveMrt = [&]()
+	{
+		if ( !bMrtActive )
+		{
+			return;
+		}
+		bMrtActive = false;
+		Surface.EndRenderTargetPass();
+		EnterTarget( CurrentTarget );
+	};
+	// シェーダーで描く前に、描画先のパスを整える。書く描画先の数と形式を、Request に入れる。
+	const auto PrepareTargets = [&]( FShaderDrawRequest& Request ) -> bool
+	{
+		FRenderTargetDrawView Outputs[NDrawShader::NumOutputTargets]; // 出力 1〜7 の描画先。
+		int32 Highest = 0; // 置いてある、いちばん大きい出力の番号。
+		for ( int32 Index = 1; Index < NDrawShader::NumOutputTargets; ++Index )
+		{
+			const int32 Handle = ShaderExecutor.GetOutputTarget( Index );
+			if ( Handle < 0 )
+			{
+				continue;
+			}
+			if ( !Targets || !Targets->GetRenderTargetDrawView( Handle, Outputs[Index] ) )
+			{
+				NBackendSupport::ReportUnsupported( "DrawCommands", "ShaderOutputTarget (not a render target)", "The output target is skipped" );
+				return false; // 描画先として読めない番号は、描かない。
+			}
+			Highest = Index;
+		}
+		Request.NumTargets = 1;
+		Request.TargetFormats[0] = CurrentTarget.Color.IsValid() ? CurrentTarget.Format : ERenderTargetColorFormat::RGBA8;
+		if ( Highest == 0 )
+		{
+			LeaveMrt();
+			return true;
+		}
+		if ( !CurrentTarget.Color.IsValid() )
+		{
+			NBackendSupport::ReportUnsupported( "DrawCommands", "ShaderOutputTarget", "The screen cannot have multiple outputs; draw into a render target (PushTarget)" );
+			return false;
+		}
+		TArray<uint64> Signature;
+		Signature.Add( CurrentTarget.Color.Value );
+		for ( int32 Index = 1; Index <= Highest; ++Index )
+		{
+			if ( !Outputs[Index].Color.IsValid() )
+			{
+				return false; // 出力の番号は、抜けなく置く。
+			}
+			Signature.Add( Outputs[Index].Color.Value );
+		}
+		bool bSame = bMrtActive && Signature.Num() == MrtSignature.Num();
+		for ( int32 Index = 0; bSame && Index < Signature.Num(); ++Index )
+		{
+			bSame = Signature[Index] == MrtSignature[Index];
+		}
+		if ( !bSame )
+		{
+			Surface.EndRenderTargetPass(); // いまのパスを閉じて、すべての出力を束ねたパスを開く（描いてある内容は保つ）。
+			TArray<FRenderTargetColorAttachment> Attachments;
+			FRenderTargetColorAttachment First;
+			First.Target = CurrentTarget.Color;
+			First.bClear = false;
+			Attachments.Add( First );
+			for ( int32 Index = 1; Index <= Highest; ++Index )
+			{
+				FRenderTargetColorAttachment Attachment;
+				Attachment.Target = Outputs[Index].Color;
+				Attachment.bClear = false;
+				Attachments.Add( Attachment );
+			}
+			FRenderTargetPassDesc Desc;
+			Desc.ColorTargets = TArrayView<const FRenderTargetColorAttachment>( Attachments.GetData(), Attachments.Num() );
+			Desc.DepthTarget = CurrentTarget.Depth;
+			Desc.bClearColor = false;
+			Desc.bClearDepth = false;
+			if ( !Surface.BeginRenderTargetPass( Desc ) )
+			{
+				NBackendSupport::ReportUnsupported( "DrawCommands", "ShaderOutputTarget (pass)", "The pass with multiple render targets could not be started" );
+				bMrtActive = false;
+				EnterTarget( CurrentTarget );
+				return false;
+			}
+			bMrtActive = true;
+			MrtSignature = Signature;
+			Canvas = Surface.GetCanvas2D();
+			if ( !Canvas )
+			{
+				Canvas = &NullCanvas;
+			}
+			Geometry.SetGeometry( Surface.GetGeometry3D() );
+		}
+		Request.NumTargets = Highest + 1;
+		for ( int32 Index = 1; Index <= Highest; ++Index )
+		{
+			Request.TargetFormats[Index] = Outputs[Index].Format;
+		}
+		return true;
+	};
+	ShaderExecutor.SetPrepare( PrepareTargets );
 	const auto Color = [&]( FDrawRgb Value ) // 色と現在の描画状態を合成する。
 	{
 		return FColor32( static_cast<uint8>( Value.R * Bright.R / 255 ), static_cast<uint8>( Value.G * Bright.G / 255 ),
@@ -280,6 +407,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			if ( CurrentTarget.Color.IsValid() )
 			{
 				Surface.EndRenderTargetPass();
+				bMrtActive = false;
 			}
 			FTargetScope Scope; // 戻すときの状態。
 			Scope.Target = CurrentTarget;
@@ -320,6 +448,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 				--ClipDepth;
 			}
 			Surface.EndRenderTargetPass();
+			bMrtActive = false;
 			const FTargetScope Scope = TargetStack.Pop(); // 替える前の状態。
 			CurrentTarget = Scope.Target;
 			Transform = Scope.Transform;
@@ -1014,16 +1143,25 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 		case EDrawCommand::PushMask:
 		case EDrawCommand::PopMask:
 		case EDrawCommand::UseShadowMap:
-		case EDrawCommand::UseShader:
-		case EDrawCommand::ShaderConstants:
-		case EDrawCommand::ShaderTexture:
-		case EDrawCommand::ShaderOutputTarget:
 		case EDrawCommand::ModelAnim:
 		case EDrawCommand::ModelAnimFrame:
 			Unsupported( View, "The state is ignored" );
 			break;
 		default:
 		{
+			if ( CShaderCommandExecutor::IsShaderCommand( View.Type ) )
+			{
+				// シェーダーの命令。描けなかった命令だけを飛ばして、続きを描く。
+				if ( ShaderExecutor.Execute( View, bAlphaBlend ) != CShaderCommandExecutor::EResult::Executed )
+				{
+					Unsupported( View, "The shader command was rejected (no shader, an unsupported shader or a failed draw) and skipped" );
+				}
+				if ( View.Type == EDrawCommand::ShaderOutputTarget && !ShaderExecutor.HasOutputTargets() )
+				{
+					LeaveMrt(); // 出力を外したら、1つの出力のパスへ戻る（そのあとの描画・読み出しのため）。
+				}
+				break;
+			}
 			const auto Result = Geometry.Execute( View, Bright, Alpha, bAlphaBlend ); // 同じ順序で3Dへ渡す。
 			if ( Result == CGeometryCommandExecutor::EResult::Executed )
 			{
@@ -1044,6 +1182,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			--ClipDepth;
 		}
 		Surface.EndRenderTargetPass();
+		bMrtActive = false;
 		const FTargetScope Scope = TargetStack.Pop(); // 替える前の状態。
 		CurrentTarget = Scope.Target;
 		ClipDepth = Scope.ClipDepth;

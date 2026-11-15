@@ -168,6 +168,54 @@ bool CGeometryCommandExecutor::Submit( const TArray<FDrawVertex3D>& Vertices, EG
 	return Texture >= 0 ? Geometry->DrawTexturedGeometry( Output.GetData(), Output.Num(), State, Image ) : Geometry->DrawGeometry( Output.GetData(), Output.Num(), State );
 }
 
+bool CGeometryCommandExecutor::BuildShaderQuad( const FDrawShaderQuad3DData& Data, TArray<FDrawShaderVertex3D>& Out )
+{
+	if ( !Geometry || Geometry->GetWidth() <= 0 || Geometry->GetHeight() <= 0 || !Camera.IsValid() )
+	{
+		return false;
+	}
+	TArray<FDrawVertex3D> Vertices; // 表とUVを、共通処理で作る。
+	if ( !CGeometryQuadBuilder::Build( Data.Quad, Camera, Vertices ) )
+	{
+		return false;
+	}
+	const FCameraViewport Viewport = { Geometry->GetWidth(), Geometry->GetHeight() }; // 同じ論理画面で射影する。
+	const FMatrix4x4 Transform = World * Camera.GetViewMatrix() * Camera.GetProjectionMatrix( Viewport ); // ローカルからクリップへの変換。
+	TArray<FDrawShaderVertex3D> Result; // 全頂点が正しい場合だけ渡す。
+	Result.Reserve( Vertices.Num() );
+	for ( const FDrawVertex3D& Input : Vertices )
+	{
+		if ( !Finite( Input.Position ) || !NMath::IsFinite( Input.U ) || !NMath::IsFinite( Input.V ) )
+		{
+			return false;
+		}
+		FVector4 Clip = Transform.Transform( FVector4( Input.Position[0], Input.Position[1], Input.Position[2], 1 ) ); // 透視除算しない（wを渡す）。
+		Clip.x += 2 * Camera.ScreenOffset.x / Viewport.Width * Clip.w;
+		Clip.y -= 2 * Camera.ScreenOffset.y / Viewport.Height * Clip.w;
+		FDrawShaderVertex3D Vertex; // 法線などは使わない（0）。
+		FMemory::Memzero( &Vertex, sizeof( Vertex ) );
+		FMemory::Memcpy( Vertex.Position, Input.Position, sizeof( Vertex.Position ) );
+		Vertex.SubPosition[0] = Clip.x;
+		Vertex.SubPosition[1] = Clip.y;
+		Vertex.SubPosition[2] = Clip.z;
+		Vertex.SubPosition[3] = Clip.w;
+		FMemory::Memcpy( Vertex.Diffuse, Input.Diffuse, sizeof( Vertex.Diffuse ) );
+		Vertex.U = Input.U;
+		Vertex.V = Input.V;
+		Vertex.SubU = Data.Extra[0]; // 四角形ごとの4つの数（ピクセルシェーダーのTEXCOORD1）。
+		Vertex.SubV = Data.Extra[1];
+		Vertex.Tangent[0] = Data.Extra[2];
+		Vertex.Tangent[1] = Data.Extra[3];
+		if ( !Finite( Vertex.SubPosition ) )
+		{
+			return false;
+		}
+		Result.Add( Vertex );
+	}
+	Out = MoveTemp( Result );
+	return true;
+}
+
 CGeometryCommandExecutor::EResult CGeometryCommandExecutor::Execute( const FDrawCommandView& View, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend )
 {
 	switch ( View.Type )

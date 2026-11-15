@@ -9,6 +9,7 @@ class IGeometryBufferSource;
 class IStaticModelSource;
 class IFontDrawSource;
 class IRenderTargetDrawSource;
+class IShaderDrawSource;
 
 // DX12の描画先を共通のキャンバス命令実行側へ接続する。
 class CDX12DrawExecutorSubsystem : public CAppSubsystem, public IDrawExecutor
@@ -33,4 +34,5 @@ private:
 	ITextureDrawSource* Textures = nullptr; // 借用する画像窓口。
 	IFontDrawSource* Fonts = nullptr; // 借用するフォントの表。
 	IRenderTargetDrawSource* Targets = nullptr; // 借用する描画先の表。
+	IShaderDrawSource* Shaders = nullptr; // 借用するシェーダーの実行先。
 };

@@ -8,10 +8,11 @@
 #include "Library/Platform/Render/Geometry/GeometryBufferStore.h"
 #include "Library/Platform/Render/Model/StaticModelStore.h"
 #include "Library/Platform/Windows/Text/WindowsFontStore.h"
+#include "Library/Platform/DX12/Pipeline/Shader/DX12ShaderService.h"
 
 
 // 画像と静的モデルを登録する。音声・GPUの独自シェーダーは未対応として返す。
-class CDX12AssetBackendSubsystem : public CAppSubsystem, public IAssetBackend, public ITextureDrawSource, public IGeometryBufferSource, public IStaticModelSource, public IFontDrawSource, public IRenderTargetDrawSource
+class CDX12AssetBackendSubsystem : public CAppSubsystem, public IAssetBackend, public ITextureDrawSource, public IGeometryBufferSource, public IStaticModelSource, public IFontDrawSource, public IRenderTargetDrawSource, public IShaderDrawSource
 {
 public:
 	// DX12が選ばれた場合だけ作る。
@@ -120,6 +121,12 @@ public:
 	FString GetModelFrameName( int32 Model, int32 FrameIndex ) override;
 	// SaveModelToMV1の未対応時の既定値。出力引数と外部状態は変更しない。
 	bool SaveModelToMV1( int32 Model, const FString& Path, const FModelSaveOptions& Options, FString& OutWarning ) override;
+	// シェーダーを登録する・コンパイルする・手放す（DX12はShader Model 5だけ）。描くときは、DrawShaderが、パイプラインを作って使う。
+	int32 MakeShader( EShaderStage Stage, const void* Code, int32 NumBytes ) override;
+	void DeleteShader( int32 Shader ) override;
+	bool CompileShader( EShaderStage Stage, const char* Source, int32 NumBytes, const char* SourceName, const char* EntryPoint, const char* ShaderModel, TArray<uint8>& OutCode, FString& OutMessage ) override;
+	bool IsShaderValid( int32 Shader, EShaderStage Stage ) const override;
+	bool DrawShader( const FShaderDrawRequest& Request, IRenderGeometry3D& Geometry ) override;
 	// フォントを登録する（OSの文字で描く。番号と指定は、共通のフォントの表が持つ）。使えない指定は-1。
 	int32 MakeFont( const FFontDesc& Desc ) override;
 	// フォントの番号を空ける。
@@ -152,4 +159,5 @@ private:
 	CTextureAssetStore Textures; // API共通の画像登録。所有先の寿命までに解放する。
 	CStaticModelStore Models; // 画像の所有先より先に解放する共有モデル。
 	CWindowsFontStore Fonts; // フォントの番号の表（GPUを使わない）。
+	CDX12ShaderService ShaderService; // シェーダーの登録・パイプラインの作成・描画（画像の登録より後に作り、先に手放す）。
 };

@@ -3,6 +3,7 @@
 #include "Library/Core/Interfaces/Render/IRenderTextureResources.h"
 #include "Library/Core/Interfaces/Render/ITextureDrawSource.h"
 #include "Library/Core/Interfaces/Render/IRenderTargetDrawSource.h"
+#include "Library/Core/Render/ComputeTextureFormat.h"
 #include "Library/Core/Collection/Map.h"
 
 // アセット番号と画像資源番号の対応を所有する。codec・GPU・ImGuiを知らない。
@@ -25,8 +26,11 @@ public:
 	// RGBA8を複写して登録する。失敗時は-1。番号を再利用しない。
 	int32 Create( int32 Width, int32 Height, const FColor32* Pixels );
 	// 描き込める画像（描画先）を登録する。bDepthなら専用の深度も作る。ClearColorで塗って始める。失敗時は-1。
-	int32 CreateRenderTarget( int32 Width, int32 Height, bool bDepth, FColor32 ClearColor );
-	// 描画先の画素を読む。描画先でない・読めないときはfalse（出力を保つ）。
+	// Formatは、色の画素形式（RGBA8・RGBA16F・R32Float）。ClearColorは、R32Floatでは赤だけを使う（0〜255を0〜1にする）。
+	int32 CreateRenderTarget( int32 Width, int32 Height, bool bDepth, ERenderTargetColorFormat Format, FColor32 ClearColor );
+	// 画像を、シェーダーが読むときの形式。描画先は作った形式、ふつうの画像はRGBA8。登録が無ければfalse。
+	bool GetShaderFormat( int32 Handle, EComputeTextureFormat& Out ) const;
+	// 描画先の画素を読む（浮動小数点の形式は、0〜1に収めて8ビットにする）。描画先でない・読めないときはfalse（出力を保つ）。
 	bool ReadRenderTarget( int32 Handle, TArray<FColor32>& OutPixels, int32& OutWidth, int32& OutHeight );
 	// 同じ寸法の画像を更新する。失敗時は内容を保つ。
 	bool Update( int32 Handle, int32 Width, int32 Height, const FColor32* Pixels );
@@ -38,6 +42,8 @@ public:
 	int32 Num() const;
 	// 有効な画像の寸法。失敗時は両出力を保つ。
 	bool GetSize( int32 Handle, int32& OutWidth, int32& OutHeight ) const;
+	// 自分の登録番号の、GPU資源の番号。失敗時はOutを保つ（シェーダーへ渡すときに使う）。
+	bool GetResource( int32 Handle, FTextureResourceHandle& Out ) const;
 	// 自分の登録番号だけを資源のviewへ解決する。失敗時はOutを保つ。
 	bool GetTextureDrawView( int32 Handle, FTextureDrawView& Out ) override;
 	// 描画先として登録した番号だけを、色と深度の資源へ解決する。失敗時はOutを保つ。
@@ -47,6 +53,8 @@ private:
 	TMap<int32, FTextureResourceHandle> Textures; // 異なる名前空間の番号を対応させる。
 	// 描画先として作った登録の、深度（無ければ無効）。鍵があれば描画先。
 	TMap<int32, FTextureResourceHandle> TargetDepths;
+	TMap<int32, ERenderTargetColorFormat> TargetFormats; // 描画先の色の形式。
+	TMap<int32, int64> TargetSizes; // 描画先の大きさ（幅 << 32 | 高さ）。浮動小数点の描画先は、資源のviewを借りられないので、ここで持つ。
 	int32 NextHandle = 0; // 解放後も使い回さないアセット番号。
 	static constexpr int32 MaxHandles = 1024; // この窓口で同時に登録する上限。
 };
