@@ -95,6 +95,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 	bool bLinearFilter = false; // 画像の既定は最近傍。
 	bool bExplicitFilter = false; // 明示した補間を使えない実行先では画像を省略する。
 	bool bAlphaBlend = false; // 3Dへ渡す合成方式。
+	bool bInvertBlend = false; // 描く色を反転して混ぜるか（DX_BLENDMODE_INVSRC。平らな図形だけに効く）。
 	FDrawRgb Bright; // このSpanだけの乗算色。
 	int32 Alpha = 255; // このSpanだけの不透明度。
 	int32 AddColorValue[3] = { 0, 0, 0 }; // このSpanだけの、描く色へ足す値（赤・緑・青）。平らな図形だけに効く。
@@ -279,8 +280,15 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 	const auto ShapeColor = [&]( FDrawRgb Value )
 	{
 		const FColor32 Base = Color( Value );
-		return FColor32( static_cast<uint8>( NMath::Clamp( static_cast<int32>( Base.r ) + AddColorValue[0], 0, 255 ) ), static_cast<uint8>( NMath::Clamp( static_cast<int32>( Base.g ) + AddColorValue[1], 0, 255 ) ),
+		FColor32 Result( static_cast<uint8>( NMath::Clamp( static_cast<int32>( Base.r ) + AddColorValue[0], 0, 255 ) ), static_cast<uint8>( NMath::Clamp( static_cast<int32>( Base.g ) + AddColorValue[1], 0, 255 ) ),
 			static_cast<uint8>( NMath::Clamp( static_cast<int32>( Base.b ) + AddColorValue[2], 0, 255 ) ), Base.a );
+		if ( bInvertBlend ) // 反転は、明るさと AddColor のあとの色を、反転する。
+		{
+			Result.r = static_cast<uint8>( 255 - Result.r );
+			Result.g = static_cast<uint8>( 255 - Result.g );
+			Result.b = static_cast<uint8>( 255 - Result.b );
+		}
+		return Result;
 	};
 	// アルファテストを、あるアルファが通るか。
 	const auto AlphaTestPasses = [&]( int32 Value )
@@ -431,6 +439,10 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 		if ( AddColorValue[0] != 0 || AddColorValue[1] != 0 || AddColorValue[2] != 0 )
 		{
 			NBackendSupport::ReportUnsupported( "DrawCommands", "AddColor (image / text)", "AddColor is applied to flat shapes only; images and text are drawn without it" );
+		}
+		if ( bInvertBlend )
+		{
+			NBackendSupport::ReportUnsupported( "DrawCommands", "Invert blend (image / text)", "Invert is applied to flat shapes only; images and text are drawn with Alpha" );
 		}
 		// 派生画像は、画像の中のUVを、元の画像のUVへ写す（ふつうの画像は 0, 0, 1, 1 で、そのまま）。
 		const float32 Mapped[4] = { Image.UvRect[0] + UV[0] * ( Image.UvRect[2] - Image.UvRect[0] ), Image.UvRect[1] + UV[1] * ( Image.UvRect[3] - Image.UvRect[1] ),
@@ -873,6 +885,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			}
 			const auto Data = View.Read<FDrawBlendData>(); // 固定部を所有コピーする。
 			EGeometryBlend Mode = EGeometryBlend::Alpha; // 実行先の混ぜ方。
+			bInvertBlend = static_cast<EDrawBlend>( Data.Mode ) == EDrawBlend::Invert; // 平らな図形は、色を反転する。
 			switch ( static_cast<EDrawBlend>( Data.Mode ) )
 			{
 			case EDrawBlend::Opaque:
@@ -887,6 +900,8 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			case EDrawBlend::Multiply:
 				Mode = EGeometryBlend::Multiply;
 				break;
+			case EDrawBlend::Invert:
+				break; // 平らな図形は、描く色を反転して、アルファブレンドする（ここでは、混ぜ方は通常）。
 			case EDrawBlend::PmaAlpha:
 				Mode = EGeometryBlend::PremultipliedAlpha;
 				break;
@@ -898,7 +913,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 				break;
 			default:
 				// 反転などは、まだ無い。通常の合成で描く（色は変わるが、形は出る）。
-				NBackendSupport::ReportUnsupported( "DrawCommands", "Blend mode", "Invert / MultiplyAlpha / PmaInvert are drawn with Alpha" );
+				NBackendSupport::ReportUnsupported( "DrawCommands", "Blend mode", "MultiplyAlpha / PmaInvert are drawn with Alpha" );
 				break;
 			}
 			bAlphaBlend = Data.Mode != static_cast<int32>( EDrawBlend::Opaque );
@@ -927,6 +942,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			Custom.AlphaOp = Op( Data.AlphaOp );
 			bAlphaBlend = true;
 			Alpha = NMath::Clamp( Data.Param, 0, 255 );
+			bInvertBlend = false;
 			Canvas->SetCustomBlend( Custom );
 			Geometry.SetCustomBlend( Custom );
 			Geometry.SetBlend( EGeometryBlend::Custom );

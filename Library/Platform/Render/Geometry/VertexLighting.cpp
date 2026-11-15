@@ -76,6 +76,26 @@ void CVertexLighting::PopLight()
 	}
 }
 
+int32 CVertexLighting::CollectActiveLights( FLight ( &OutLights )[FLight::MaxActiveLights] ) const
+{
+	int32 NumActive = 0;
+	if ( bDefaultLight )
+	{
+		OutLights[NumActive] = MakeBuiltInLight();
+		OutLights[NumActive].ShadowMapSlots = DefaultLightShadowSlots;
+		++NumActive;
+	}
+	for ( const FLight& Light : Lights )
+	{
+		if ( NumActive >= FLight::MaxActiveLights )
+		{
+			break;
+		}
+		OutLights[NumActive++] = Light;
+	}
+	return NumActive;
+}
+
 FColor CVertexLighting::Evaluate( const FVector3& Point, const FVector3& Normal, const FVector3& Eye, const FColor& VertexDiffuse, const FColor& VertexSpecular, int32 ShadowMask, FColor* OutShadowed ) const
 {
 	const FColor DiffuseColor = Material.bUseVertexDiffuse ? VertexDiffuse : Material.Diffuse;

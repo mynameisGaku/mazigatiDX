@@ -331,3 +331,10 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **確認**（Textサンプルの、行ごとのインク量。DxLib → DX12）: 標準 936 → 886、なし 651 → 651、16x16 860 → 860、斜体の太字 903 → 868、縁取り 923 → 947。字形の細かい差と、`AddCharImage`（文字の代わりに画像を入れる）は、未対応のまま。Debug／Releaseの警告0、デバッグレイヤーは`Pixels`・`Text`・`Village`・`Effects`・`UI`で警告・エラー0件、台帳は505項目で整合、`RunAllChecks.ps1 -SkipBuild -Quick`の42項目すべて成功。
 - **確認の道具（追加）**: `Docs/AI_WORKFLOW/tools/png_crop.py`（矩形を切り出して、整数倍に拡大する）。画素の行の比較は、`png_compare.py`と、作業用の`png_row.py`相当を、その場で書く。
 - **次の作業**: `Lighting`の画素ごとの光（DxLibは画素ごと、DX12は頂点ごと）→ 反転系の合成 → 異方性 → `Text`のアイコン入りの文字・縦書き → `MaterialRibbon3D` → アニメーションつきのモデル。
+
+## 2026-11-16 追記: 画素ごとの光・反転の合成
+- **画素ごとの光（`LightingOptions`の`PixelLighting`）**: 頂点ごとのCPU計算（`CVertexLighting`）と同じ式を、組み込みのシェーダーで画素ごとに計算する。`EBuiltInVertexShader::PixelLit`（世界の位置`Position`・世界の法線`Normal`・色・画像の座標を渡す）と、`EBuiltInPixelShader::PixelLit` / `PixelLitTextured`（HLSLは`DX12ShaderService.cpp`の組み込みの文字列。`PixelLightColor`）。定数b6は、カメラ・材質・光の一覧（先頭7つのfloat4 + ライトごとに7つ。`cbPixelLight`）。実行側（`CGeometryCommandExecutor::Submit`）が、`bPixelLighting`・光の計算が有効・フォグと影を受ける描画でない・三角形のときに、この経路で描く（そうでなければ、これまでどおり頂点ごと）。`CVertexLighting`に`GetOptions` / `GetAmbient` / `CollectActiveLights`（効くライトを、最初からあるライトが先の順に取り出す）を足した。
+- **確認**: `Lighting`サンプルで、奥の壁のスポットライトの円・床のランプの光だまり・球のハイライトが、DxLibと同じ形で出る（ランプなどは時間で動くので、位置の厳密な比較はしていない）。デバッグレイヤーは`Lighting`・`Island`・`Shadows`で警告・エラー0件。
+- **反転の合成（`Invert`）**: 平らな図形だけ、明るさと`AddColor`のあとの色を反転して、アルファブレンドする（`DrawState`サンプルの円の色がDxLibと一致）。画像・文字・3Dは通常の合成で描いて、報告する。`MultiplyAlpha`・`PmaInvert`は、通常の合成のまま。
+- **確認**: Debug／Releaseの警告0、台帳は505項目で整合、`CheckSourceFormat.ps1`成功、`RunAllChecks.ps1 -SkipBuild -Quick`の42項目すべて成功。
+- **次の作業**: 異方性→`Text`のアイコン入りの文字・縦書き→`MaterialRibbon3D`→アニメーションつきのモデル→その場のフィルター。

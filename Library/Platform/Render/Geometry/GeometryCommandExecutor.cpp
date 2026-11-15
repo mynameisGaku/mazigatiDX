@@ -146,6 +146,8 @@ bool CGeometryCommandExecutor::Submit( const TArray<FDrawVertex3D>& Vertices, EG
 	const bool bFog = bAnyFog && Texture < 0; // 頂点の色へ混ぜる（画像つきは、画像の色を掛けたあとに混ぜるので、下のシェーダーで混ぜる）。
 	const bool bFogTextured = bAnyFog && Texture >= 0 && !bReceive && Topology == EGeometryTopology::Triangles && ShaderSource != nullptr; // 画像つきの三角形のフォグ。
 	TArray<FDrawShaderVertex3D> FogVertices; // 画像つきのフォグの頂点。
+	const bool bPixelLit = bLit && Lighting.IsEnabled() && Lighting.GetOptions().bPixelLighting && !bReceive && !bAnyFog && Topology == EGeometryTopology::Triangles && ShaderSource != nullptr; // 画素ごとの光（フォグと重なるときは、頂点ごと）。
+	TArray<FDrawShaderVertex3D> PixelLitVertices; // 画素ごとの光の頂点。
 	const FMatrix4x4 ViewMatrix = Camera.GetViewMatrix(); // フォグの距離（カメラから見た奥行き）に使う。
 	TArray<FGeometryVertex> Output; // 全頂点が正しい場合だけ送る所有コピー。
 	Output.Reserve( Vertices.Num() );
@@ -222,6 +224,31 @@ bool CGeometryCommandExecutor::Submit( const TArray<FDrawVertex3D>& Vertices, EG
 			FVector3 Normal = NormalMatrix.TransformVector( FVector3( Input.Normal[0], Input.Normal[1], Input.Normal[2] ) ); // 世界での面の向き。
 			const float32 NormalLength = Normal.Length(); // 長さ0の法線は、上向きとして扱う。
 			Normal = NormalLength > NMath::SmallNumber ? Normal / NormalLength : FVector3::Up;
+			if ( bPixelLit )
+			{
+				FDrawShaderVertex3D Vertex; // 世界の位置と法線を渡して、光を画素ごとに計算する。
+				FMemory::Memzero( &Vertex, sizeof( Vertex ) );
+				Vertex.Position[0] = Point.x;
+				Vertex.Position[1] = Point.y;
+				Vertex.Position[2] = Point.z;
+				Vertex.SubPosition[0] = Value.Position[0];
+				Vertex.SubPosition[1] = Value.Position[1];
+				Vertex.SubPosition[2] = Value.Position[2];
+				Vertex.SubPosition[3] = Value.Position[3];
+				Vertex.Normal[0] = Normal.x;
+				Vertex.Normal[1] = Normal.y;
+				Vertex.Normal[2] = Normal.z;
+				for ( int32 Channel = 0; Channel < 3; ++Channel )
+				{
+					Vertex.Diffuse[Channel] = Input.Diffuse[Channel];
+					Vertex.Specular[Channel] = Input.Specular[Channel];
+				}
+				Vertex.Diffuse[3] = static_cast<uint8>( Input.Diffuse[3] * Alpha / 255 );
+				Vertex.U = Input.U;
+				Vertex.V = Input.V;
+				PixelLitVertices.Add( Vertex );
+				continue;
+			}
 			const FColor Lit = Lighting.Evaluate( Point, Normal, Camera.Position, FColor( Input.Diffuse[0] / 255.0f, Input.Diffuse[1] / 255.0f, Input.Diffuse[2] / 255.0f, 1.0f ),
 				FColor( Input.Specular[0] / 255.0f, Input.Specular[1] / 255.0f, Input.Specular[2] / 255.0f, 1.0f ) ); // 頂点ごとの光の計算。
 			Value.Color = FColor32( static_cast<uint8>( ToByte( Lit.r ) * Bright.R / 255 ), static_cast<uint8>( ToByte( Lit.g ) * Bright.G / 255 ),
@@ -284,6 +311,58 @@ bool CGeometryCommandExecutor::Submit( const TArray<FDrawVertex3D>& Vertices, EG
 	}
 	State.Topology = Topology;
 	State.bAlphaBlend = bAlphaBlend;
+	if ( bPixelLit )
+	{
+		// 光・材質・カメラ（b6）。並びは、シェーダーの cbPixelLight と同じ（先頭の 7 つ + ライトごとに 7 つの float4）。
+		float32 Constants[( 7 + FLight::MaxActiveLights * 7 ) * 4] = {};
+		FLight Active[FLight::MaxActiveLights];
+		const int32 NumLights = Lighting.CollectActiveLights( Active );
+		const FSurfaceMaterial& Material = Lighting.GetMaterial();
+		const FLightingOptions& Options = Lighting.GetOptions();
+		const FColor GlobalAmbient = Lighting.GetAmbient();
+		const auto Set = [&]( int32 Index, float32 X, float32 Y, float32 Z, float32 W )
+		{
+			Constants[Index * 4] = X;
+			Constants[Index * 4 + 1] = Y;
+			Constants[Index * 4 + 2] = Z;
+			Constants[Index * 4 + 3] = W;
+		};
+		Set( 0, Camera.Position.x, Camera.Position.y, Camera.Position.z, static_cast<float32>( NumLights ) );
+		Set( 1, Material.Emissive.r + Material.Ambient.r * GlobalAmbient.r, Material.Emissive.g + Material.Ambient.g * GlobalAmbient.g, Material.Emissive.b + Material.Ambient.b * GlobalAmbient.b, 0.0f );
+		Set( 2, Material.Diffuse.r, Material.Diffuse.g, Material.Diffuse.b, Material.bUseVertexDiffuse ? 1.0f : 0.0f );
+		Set( 3, Material.Specular.r, Material.Specular.g, Material.Specular.b, Material.bUseVertexSpecular ? 1.0f : 0.0f );
+		Set( 4, Material.Ambient.r, Material.Ambient.g, Material.Ambient.b, Material.Shininess );
+		Set( 5, Options.bUseSpecular ? 1.0f : 0.0f, Options.bWrapLighting ? 1.0f : 0.0f, Options.bIgnoreSurfaceAngle ? 1.0f : 0.0f, 0.0f );
+		Set( 6, Bright.R / 255.0f, Bright.G / 255.0f, Bright.B / 255.0f, 1.0f );
+		for ( int32 Index = 0; Index < NumLights; ++Index )
+		{
+			const FLight& Light = Active[Index];
+			const FVector3 Direction = Light.Direction.Normalized(); // 向きは、長さを問わない値なので、正規化して渡す。
+			const int32 Base = 7 + Index * 7;
+			Set( Base, Light.Position.x, Light.Position.y, Light.Position.z, Light.Type == EDrawLightType::Directional ? 0.0f : Light.Type == EDrawLightType::Point ? 1.0f : 2.0f );
+			Set( Base + 1, Direction.x, Direction.y, Direction.z, Light.Range );
+			Set( Base + 2, Light.ConstantAttenuation, Light.LinearAttenuation, Light.QuadraticAttenuation, NMath::Cos( Light.OuterAngle * 0.5f ) );
+			Set( Base + 3, NMath::Cos( Light.InnerAngle * 0.5f ), 0.0f, 0.0f, 0.0f );
+			Set( Base + 4, Light.Diffuse.r, Light.Diffuse.g, Light.Diffuse.b, 0.0f );
+			Set( Base + 5, Light.Specular.r, Light.Specular.g, Light.Specular.b, 0.0f );
+			Set( Base + 6, Light.Ambient.r, Light.Ambient.g, Light.Ambient.b, 0.0f );
+		}
+		FShaderConstantData Constant;
+		Constant.Stage = static_cast<int32>( EShaderStage::Pixel );
+		Constant.Slot = 6;
+		Constant.Bytes = TArrayView<const uint8>( reinterpret_cast<const uint8*>( Constants ), sizeof( Constants ) );
+		FShaderDrawRequest Request;
+		Request.Builtin = EBuiltInVertexShader::PixelLit;
+		Request.BuiltinPixel = Texture >= 0 ? EBuiltInPixelShader::PixelLitTextured : EBuiltInPixelShader::PixelLit;
+		Request.State = State;
+		Request.Topology = EGeometryTopology::Triangles;
+		Request.bUseDepth = true;
+		Request.Vertices = reinterpret_cast<const uint8*>( PixelLitVertices.GetData() );
+		Request.NumVertices = PixelLitVertices.Num();
+		Request.Constants = TArrayView<const FShaderConstantData>( &Constant, 1 );
+		Request.Textures[0] = Texture;
+		return ShaderSource->DrawShader( Request, *Geometry );
+	}
 	if ( bFogTextured )
 	{
 		FShaderDrawRequest FogRequest; // 画像つきの三角形を、フォグへ混ぜて描く。

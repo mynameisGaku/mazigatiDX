@@ -37,6 +37,11 @@ public:
 	const FSurfaceMaterial& GetMaterial() const { return Material; }
 	// 光の計算の仕方
 	void SetOptions( const FLightingOptions& InOptions ) { Options = InOptions; }
+	const FLightingOptions& GetOptions() const { return Options; }
+	// 全体の環境光
+	const FColor& GetAmbient() const { return Ambient; }
+	// いま効くライトを、効く順（最初からあるライトが先）に、OutLights（FLight::MaxActiveLights 個分）へ入れて、その数を返す。画素ごとの光（GPU）へ渡すときに使う
+	int32 CollectActiveLights( FLight ( &OutLights )[FLight::MaxActiveLights] ) const;
 	// ライトを 1 つ足す。使えない値なら false（足さない）
 	bool PushLight( const FLight& Light );
 	// いちばん新しく足したライトを外す。無ければ何もしない

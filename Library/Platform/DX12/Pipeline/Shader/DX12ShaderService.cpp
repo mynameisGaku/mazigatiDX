@@ -320,7 +320,78 @@ namespace
 		"	}\n"
 		"	if ( g_Op.y != 0 ) { o.rgb *= o.a; }\n"
 		"	return o;\n"
-		"}\n";
+		"}\n"
+		// 画素ごとの光: 頂点シェーダー（PixelLitVS）と、ピクセルシェーダー（PixelLitMain / PixelLitTexturedMain）。b6 = 光・材質・カメラ。式は CVertexLighting と同じ
+		"struct PLO { float4 Position : SV_POSITION; float4 Diffuse : COLOR0; float4 Specular : COLOR1; float2 Uv : TEXCOORD0; float3 World : TEXCOORD1; float3 Normal : TEXCOORD2; };\n"
+		"PLO PixelLitVS( VI i ) { PLO o; o.Position = i.SubPosition; o.Diffuse = i.Diffuse; o.Specular = i.Specular; o.Uv = i.Uv; o.World = i.Position; o.Normal = i.Normal; return o; }\n"
+		"cbuffer cbPixelLight : register( b6 )\n"
+		"{\n"
+		"	float4 g_LightEye;\n"
+		"	float4 g_LightBase;\n"
+		"	float4 g_LightMaterialDiffuse;\n"
+		"	float4 g_LightMaterialSpecular;\n"
+		"	float4 g_LightMaterialAmbient;\n"
+		"	float4 g_LightOptions;\n"
+		"	float4 g_LightBright;\n"
+		"	float4 g_Lights[42];\n"
+		"};\n"
+		"float3 PixelLightColor( PLO i )\n"
+		"{\n"
+		"	float3 n = normalize( i.Normal );\n"
+		"	float3 toEye = normalize( g_LightEye.xyz - i.World );\n"
+		"	float3 diffuseColor = g_LightMaterialDiffuse.a > 0.5 ? i.Diffuse.rgb : g_LightMaterialDiffuse.rgb;\n"
+		"	float3 specularColor = g_LightMaterialSpecular.a > 0.5 ? i.Specular.rgb : g_LightMaterialSpecular.rgb;\n"
+		"	float3 materialAmbient = g_LightMaterialAmbient.rgb;\n"
+		"	float3 sum = g_LightBase.rgb;\n"
+		"	int count = int( g_LightEye.w );\n"
+		"	[loop] for ( int k = 0; k < count; ++k )\n"
+		"	{\n"
+		"		float4 position = g_Lights[k * 7];\n"
+		"		float4 direction = g_Lights[k * 7 + 1];\n"
+		"		float4 attenuation = g_Lights[k * 7 + 2];\n"
+		"		float4 spot = g_Lights[k * 7 + 3];\n"
+		"		float3 lightDiffuse = g_Lights[k * 7 + 4].rgb;\n"
+		"		float3 lightSpecular = g_Lights[k * 7 + 5].rgb;\n"
+		"		float3 lightAmbient = g_Lights[k * 7 + 6].rgb;\n"
+		"		int type = int( position.w );\n"
+		"		float3 toLight = normalize( -direction.xyz );\n"
+		"		float reach = 1.0;\n"
+		"		if ( type != 0 )\n"
+		"		{\n"
+		"			float3 offset = i.World - position.xyz;\n"
+		"			float dist = length( offset );\n"
+		"			toLight = normalize( -offset );\n"
+		"			if ( dist > direction.w )\n"
+		"			{\n"
+		"				reach = 0.0;\n"
+		"			}\n"
+		"			else\n"
+		"			{\n"
+		"				reach = 1.0 / ( attenuation.x + attenuation.y * dist + attenuation.z * dist * dist );\n"
+		"				if ( type == 2 )\n"
+		"				{\n"
+		"					float cosAngle = dot( direction.xyz, offset ) / max( dist, 1.0e-6 );\n"
+		"					reach *= cosAngle <= attenuation.w ? 0.0 : ( cosAngle >= spot.x ? 1.0 : ( cosAngle - attenuation.w ) / ( spot.x - attenuation.w ) );\n"
+		"				}\n"
+		"			}\n"
+		"		}\n"
+		"		if ( reach == 0.0 ) { continue; }\n"
+		"		float d = dot( n, toLight );\n"
+		"		float angle = max( d, 0.0 );\n"
+		"		if ( g_LightOptions.z > 0.5 ) { angle = 1.0; }\n"
+		"		else if ( g_LightOptions.y > 0.5 ) { float w = d * 0.5 + 0.5; angle = w * w; }\n"
+		"		float highlight = 0.0;\n"
+		"		if ( g_LightOptions.x > 0.5 && d > 0.0 )\n"
+		"		{\n"
+		"			float b = dot( n, normalize( toLight + toEye ) );\n"
+		"			if ( b > 0.0 ) { highlight = pow( b, g_LightMaterialAmbient.a ); }\n"
+		"		}\n"
+		"		sum += reach * ( diffuseColor * lightDiffuse * angle + materialAmbient * lightAmbient + specularColor * lightSpecular * highlight );\n"
+		"	}\n"
+		"	return saturate( sum ) * g_LightBright.rgb;\n"
+		"}\n"
+		"float4 PixelLitMain( PLO i ) : SV_Target { return float4( PixelLightColor( i ), i.Diffuse.a ); }\n"
+		"float4 PixelLitTexturedMain( PLO i ) : SV_Target { float4 c = float4( PixelLightColor( i ), i.Diffuse.a ) * g_Base.Sample( g_Sampler, i.Uv ); if ( c.a <= 0.0 ) { discard; } return c; }\n";
 
 	uint32 RoundUp( uint32 Value, uint32 Unit )
 	{
@@ -372,6 +443,9 @@ void CDX12ShaderService::Shutdown()
 	BuiltInFogTextured = FShaderRecord();
 	BuiltInImageFilter = FShaderRecord();
 	BuiltInImageBlend = FShaderRecord();
+	BuiltInPixelLitVertex = FShaderRecord();
+	BuiltInPixelLit = FShaderRecord();
+	BuiltInPixelLitTextured = FShaderRecord();
 	ShadowPasses.Reset();
 	bBuiltInTried = false;
 	Pipelines = nullptr;
@@ -567,19 +641,22 @@ void CDX12ShaderService::BuildBuiltIns()
 	Build( EShaderStage::Pixel, "FogTexturedMain", BuiltInFogTextured );
 	Build( EShaderStage::Pixel, "ImageFilterMain", BuiltInImageFilter );
 	Build( EShaderStage::Pixel, "ImageBlendMain", BuiltInImageBlend );
+	Build( EShaderStage::Vertex, "PixelLitVS", BuiltInPixelLitVertex );
+	Build( EShaderStage::Pixel, "PixelLitMain", BuiltInPixelLit );
+	Build( EShaderStage::Pixel, "PixelLitTexturedMain", BuiltInPixelLitTextured );
 }
 
 const CDX12ShaderService::FShaderRecord* CDX12ShaderService::GetBuiltIn( EBuiltInVertexShader Kind )
 {
 	BuildBuiltIns();
-	const FShaderRecord* Record = Kind == EBuiltInVertexShader::Rect ? &BuiltInRect : Kind == EBuiltInVertexShader::Quad3D ? &BuiltInQuad : Kind == EBuiltInVertexShader::ShadowLit ? &BuiltInLit : nullptr;
+	const FShaderRecord* Record = Kind == EBuiltInVertexShader::Rect ? &BuiltInRect : Kind == EBuiltInVertexShader::Quad3D ? &BuiltInQuad : Kind == EBuiltInVertexShader::ShadowLit ? &BuiltInLit : Kind == EBuiltInVertexShader::PixelLit ? &BuiltInPixelLitVertex : nullptr;
 	return Record && !Record->Code.IsEmpty() ? Record : nullptr;
 }
 
 const CDX12ShaderService::FShaderRecord* CDX12ShaderService::GetBuiltInPixel( EBuiltInPixelShader Kind )
 {
 	BuildBuiltIns();
-	const FShaderRecord* Record = Kind == EBuiltInPixelShader::ShadowDepth ? &BuiltInShadowDepth : Kind == EBuiltInPixelShader::ShadowLit ? &BuiltInShadowLit : Kind == EBuiltInPixelShader::ShadowLitTextured ? &BuiltInShadowLitTextured : Kind == EBuiltInPixelShader::FogTextured ? &BuiltInFogTextured : Kind == EBuiltInPixelShader::ImageFilter ? &BuiltInImageFilter : Kind == EBuiltInPixelShader::ImageBlend ? &BuiltInImageBlend : nullptr;
+	const FShaderRecord* Record = Kind == EBuiltInPixelShader::ShadowDepth ? &BuiltInShadowDepth : Kind == EBuiltInPixelShader::ShadowLit ? &BuiltInShadowLit : Kind == EBuiltInPixelShader::ShadowLitTextured ? &BuiltInShadowLitTextured : Kind == EBuiltInPixelShader::FogTextured ? &BuiltInFogTextured : Kind == EBuiltInPixelShader::ImageFilter ? &BuiltInImageFilter : Kind == EBuiltInPixelShader::ImageBlend ? &BuiltInImageBlend : Kind == EBuiltInPixelShader::PixelLit ? &BuiltInPixelLit : Kind == EBuiltInPixelShader::PixelLitTextured ? &BuiltInPixelLitTextured : nullptr;
 	return Record && !Record->Code.IsEmpty() ? Record : nullptr;
 }
 
