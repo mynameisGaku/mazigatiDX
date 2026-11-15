@@ -65,7 +65,7 @@ int32 CWindowsFontStore::MakeFont( const FFontDesc& Desc )
 	Entry.Font.LetterSpacing = Desc.LetterSpacing;
 	Entry.Font.LineHeight = Desc.LineHeight;
 	Entry.Font.bItalic = Desc.bItalic;
-	Entry.Font.bAntialias = Desc.Antialias != EFontAntialias::None;
+	Entry.Font.Antialias = Desc.Antialias == EFontAntialias::None ? 0 : Desc.Antialias == EFontAntialias::High4x4 ? 4 : Desc.Antialias == EFontAntialias::High8x8 ? 8 : Desc.Antialias == EFontAntialias::High16x16 ? 16 : 1;
 	Entry.bUsed = true;
 	FFontMetrics Metrics;
 	if ( !Text.GetMetrics( Entry.Font, Metrics ) )

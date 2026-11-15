@@ -14,6 +14,13 @@ namespace
 	constexpr int32 MaxCachedFonts = 64;        // これを超えたら、作ったフォントを全部作り直す
 	constexpr int32 LinePadding = 1;            // 1 行の文字の上下に足す余白（DxLib のフォントは、1 行の高さが、大きさより 2 大きい）
 
+	// 太さ（0..9）を、OS の太さにする。2 階調の文字は、DxLib と同じく 100 倍する（標準の 6 は 600 で、太字になる）。
+	// なめらかな文字は、OS の太字にすると、DxLib より、およそ 1 画素太くなる（DxLib の見た目に合うのは、標準の太さ）ので、4 までに収める。
+	int32 ToGdiWeight( int32 Thickness, bool bSmooth )
+	{
+		return NMath::Clamp( bSmooth ? NMath::Min( Thickness, 4 ) : Thickness, 0, 9 ) * 100;
+	}
+
 	// UTF-8 の 1 文字を読む。壊れていれば false。OutBytes は、その文字のバイト数
 	bool DecodeUtf8( const char* Text, int32 Remaining, uint32& OutCodePoint, int32& OutBytes )
 	{
@@ -124,8 +131,8 @@ bool CWindowsGdiText::SelectFont( const FRenderTextFont& Font )
 		}
 		const TArray<wchar_t> Face = Font.Face.ToWide();
 		const wchar_t* FaceName = Font.Face.IsEmpty() ? L"MS Gothic" : Face.GetData();   // 既定は、DxLib の既定と同じフォント
-		Handle = CreateFontW( NMath::Clamp( Font.Size, 1, 1024 ), 0, 0, 0, Font.Thickness <= 6 ? FW_NORMAL : FW_NORMAL + ( NMath::Min( Font.Thickness, 9 ) - 6 ) * 100, Font.bItalic ? TRUE : FALSE, FALSE, FALSE, DEFAULT_CHARSET,
-			OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, Font.bAntialias ? ANTIALIASED_QUALITY : NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, FaceName );
+		Handle = CreateFontW( NMath::Clamp( Font.Size, 1, 1024 ), 0, 0, 0, ToGdiWeight( Font.Thickness, Font.Antialias != 0 ), Font.bItalic ? TRUE : FALSE, FALSE, FALSE, DEFAULT_CHARSET,
+			OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, Font.Antialias != 0 ? ANTIALIASED_QUALITY : NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, FaceName );
 		if ( !Handle )
 		{
 			return false;
@@ -277,6 +284,165 @@ bool CWindowsGdiText::Layout( const FRenderTextFont& Font, TArrayView<const char
 	return true;
 }
 
+void CWindowsGdiText::DrawGrayGlyphs( const TArray<FCharacter>& Characters, int32 Edge, int32 Width, int32 Height, TArray<uint8>& Coverage )
+{
+	TEXTMETRICW Metrics = {};
+	if ( !GetTextMetricsW( Context, &Metrics ) )
+	{
+		return;
+	}
+	const MAT2 Identity = { { 0, 1 }, { 0, 0 }, { 0, 0 }, { 0, 1 } }; // 変形なし。
+	TArray<uint8> Buffer;
+	for ( const FCharacter& Character : Characters )
+	{
+		if ( Character.NumUnits != 1 )
+		{
+			continue;
+		}
+		GLYPHMETRICS Glyph = {};
+		const DWORD Size = GetGlyphOutlineW( Context, Character.Units[0], GGO_GRAY8_BITMAP, &Glyph, 0, nullptr, &Identity );
+		if ( Size == GDI_ERROR || Size == 0 )
+		{
+			continue; // 空白などは、描くものが無い。
+		}
+		Buffer.SetNum( static_cast<int32>( Size ) );
+		if ( GetGlyphOutlineW( Context, Character.Units[0], GGO_GRAY8_BITMAP, &Glyph, Size, Buffer.GetData(), &Identity ) == GDI_ERROR )
+		{
+			continue;
+		}
+		const int32 Pitch = static_cast<int32>( ( Glyph.gmBlackBoxX + 3 ) & ~3u ); // 1 行は 4 バイトの境界。
+		const int32 OriginX = Character.X + Edge + Glyph.gmptGlyphOrigin.x;
+		const int32 OriginY = Character.Y + Edge + LinePadding + Metrics.tmAscent - Glyph.gmptGlyphOrigin.y;
+		for ( int32 Row = 0; Row < static_cast<int32>( Glyph.gmBlackBoxY ); ++Row )
+		{
+			const int32 Y = OriginY + Row;
+			if ( Y < 0 || Y >= Height )
+			{
+				continue;
+			}
+			for ( int32 Column = 0; Column < static_cast<int32>( Glyph.gmBlackBoxX ); ++Column )
+			{
+				const int32 X = OriginX + Column;
+				const int32 Level = Buffer[Row * Pitch + Column]; // 0..64
+				if ( Level == 0 || X < 0 || X >= Width )
+				{
+					continue;
+				}
+				const uint8 Value = static_cast<uint8>( NMath::Min( 255, ( Level * 255 + 32 ) / 64 ) );
+				uint8& Target = Coverage[Y * Width + X];
+				Target = NMath::Max( Target, Value );
+			}
+		}
+	}
+}
+
+void CWindowsGdiText::DrawSampledGlyphs( const FRenderTextFont& Font, const TArray<FCharacter>& Characters, int32 Scale, int32 Edge, int32 Width, int32 Height, TArray<uint8>& Coverage )
+{
+	Scale = NMath::Clamp( NMath::Min( Scale, 1024 / NMath::Max( 1, Font.Size ) ), 1, 16 ); // 作れるフォントの大きさの範囲で。
+	FRenderTextFont Big = Font; // 大きな 2 階調のフォント。
+	Big.Size = Font.Size * Scale;
+	Big.Antialias = 0;
+	Big.EdgeSize = 0;
+	Big.LetterSpacing = 0;
+	Big.LineHeight = -1;
+	Big.Thickness = NMath::Min( Font.Thickness, 4 ); // 縮めるので、2 階調でも、なめらかな文字の太さにする。
+	TEXTMETRICW Metrics = {};
+	if ( !SelectFont( Big ) || !GetTextMetricsW( Context, &Metrics ) )
+	{
+		return;
+	}
+	int32 CellWidth = Scale * 4; // 1 文字を大きく描く範囲（はみ出しの余白つき）。
+	for ( const FCharacter& Character : Characters )
+	{
+		SIZE Extent = {};
+		if ( Character.NumUnits == 1 && GetTextExtentPoint32W( Context, Character.Units, 1, &Extent ) )
+		{
+			CellWidth = NMath::Max( CellWidth, static_cast<int32>( Extent.cx ) + Scale * 4 );
+		}
+	}
+	const int32 CellHeight = Metrics.tmHeight + Scale * 2;
+	if ( static_cast<int64>( CellWidth ) * CellHeight > 64 * 1024 * 1024 )
+	{
+		return;
+	}
+	BITMAPINFO Info = {};
+	Info.bmiHeader.biSize = sizeof( BITMAPINFOHEADER );
+	Info.bmiHeader.biWidth = CellWidth;
+	Info.bmiHeader.biHeight = -CellHeight;
+	Info.bmiHeader.biPlanes = 1;
+	Info.bmiHeader.biBitCount = 32;
+	Info.bmiHeader.biCompression = BI_RGB;
+	void* Bytes = nullptr;
+	const HBITMAP Bitmap = CreateDIBSection( Context, &Info, DIB_RGB_COLORS, &Bytes, nullptr, 0 );
+	if ( !Bitmap || !Bytes )
+	{
+		if ( Bitmap )
+		{
+			DeleteObject( Bitmap );
+		}
+		return;
+	}
+	const HGDIOBJ PreviousBitmap = SelectObject( Context, Bitmap );
+	if ( !PreviousBitmap || PreviousBitmap == HGDI_ERROR )
+	{
+		DeleteObject( Bitmap );
+		return;
+	}
+	SetTextColor( Context, RGB( 255, 255, 255 ) );
+	SetBkMode( Context, TRANSPARENT );
+	SetTextAlign( Context, TA_LEFT | TA_TOP );
+	const int32 OutWidth = ( CellWidth + Scale - 1 ) / Scale, OutHeight = ( CellHeight + Scale - 1 ) / Scale; // 縮めたあとの範囲。
+	const uint8* Source = static_cast<const uint8*>( Bytes );
+	for ( const FCharacter& Character : Characters )
+	{
+		if ( Character.NumUnits != 1 )
+		{
+			continue;
+		}
+		FMemory::Memzero( Bytes, static_cast<usize>( CellWidth ) * CellHeight * 4 );
+		if ( !TextOutW( Context, 0, 0, Character.Units, 1 ) || !GdiFlush() )
+		{
+			continue;
+		}
+		for ( int32 OutY = 0; OutY < OutHeight; ++OutY )
+		{
+			const int32 Y = Character.Y + Edge + LinePadding + OutY;
+			if ( Y < 0 || Y >= Height )
+			{
+				continue;
+			}
+			for ( int32 OutX = 0; OutX < OutWidth; ++OutX )
+			{
+				const int32 X = Character.X + Edge + OutX;
+				if ( X < 0 || X >= Width )
+				{
+					continue;
+				}
+				int32 Count = 0; // 大きく描いた画素のうち、文字が載っている数。
+				for ( int32 SubY = 0; SubY < Scale && OutY * Scale + SubY < CellHeight; ++SubY )
+				{
+					for ( int32 SubX = 0; SubX < Scale && OutX * Scale + SubX < CellWidth; ++SubX )
+					{
+						if ( Source[( ( OutY * Scale + SubY ) * CellWidth + OutX * Scale + SubX ) * 4 + 1] >= 128 )
+						{
+							++Count;
+						}
+					}
+				}
+				if ( Count == 0 )
+				{
+					continue;
+				}
+				const uint8 Value = static_cast<uint8>( ( Count * 255 + Scale * Scale / 2 ) / ( Scale * Scale ) );
+				uint8& Target = Coverage[Y * Width + X];
+				Target = NMath::Max( Target, Value );
+			}
+		}
+	}
+	SelectObject( Context, PreviousBitmap );
+	DeleteObject( Bitmap );
+}
+
 bool CWindowsGdiText::Rasterize( const FRenderTextFont& Font, TArrayView<const char> Text, TArray<uint8>& OutCoverage, TArray<uint8>& OutEdge, int32& OutWidth, int32& OutHeight )
 {
 	TArray<FCharacter> Characters;
@@ -321,7 +487,7 @@ bool CWindowsGdiText::Rasterize( const FRenderTextFont& Font, TArrayView<const c
 	bool bDrawn = true;
 	for ( const FCharacter& Character : Characters )
 	{
-		if ( Character.NumUnits > 0 )
+		if ( Character.NumUnits > 0 && ( Font.Antialias == 0 || Character.NumUnits != 1 ) ) // 2 つの UTF-16 の文字は、OS の描き方で描く
 		{
 			bDrawn = TextOutW( Context, Character.X + Edge, Character.Y + Edge + LinePadding, Character.Units, Character.NumUnits ) != FALSE && bDrawn;
 		}
@@ -342,6 +508,15 @@ bool CWindowsGdiText::Rasterize( const FRenderTextFont& Font, TArrayView<const c
 	if ( !bDrawn )
 	{
 		return false;
+	}
+	if ( Font.Antialias == 1 )
+	{
+		DrawGrayGlyphs( Characters, Edge, Width, Height, Coverage );
+	}
+	else if ( Font.Antialias > 1 )
+	{
+		DrawSampledGlyphs( Font, Characters, Font.Antialias, Edge, Width, Height, Coverage );
+		SelectFont( Font ); // 大きなフォントを選んだので、戻す。
 	}
 	TArray<uint8> EdgeCoverage;
 	if ( Edge > 0 )

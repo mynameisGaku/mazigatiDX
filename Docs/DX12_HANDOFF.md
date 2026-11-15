@@ -322,3 +322,12 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **確認**: Debug／Releaseの警告0、全サンプル（33個）の未対応の報告は、`DrawState`（反転系の合成）・`RenderState`（異方性）・`Text`（縦書き）の3つだけ、デバッグレイヤーは`Filters`・`Images`・`Text`・`PostEffects`で警告・エラー0件、台帳は505項目で整合、`CheckSourceFormat.ps1`成功、`RunAllChecks.ps1 -SkipBuild -Quick`の42項目すべて成功。
 - **確認の道具（追加）**: `Docs/AI_WORKFLOW/tools/png_compare.py`（2枚のPNGの矩形ごとの差・矩形の色の数え上げ）。時間で動く絵（ぼかし・色相）は、`Hsb`のタイルの色相（`int( 時間 × 60 )`度）から時刻を逆算して、強さ・位置を決める。
 - **次の作業**: 異方性→`MaterialRibbon3D`→アニメーションつきのモデル→文字の太さ・縦書き→`Invert`系の合成→その場のフィルター（一時の画像の確保）。
+
+## 2026-11-16 追記: 派生画像（SplitTexture）・文字の太さとなめらかさ
+- **全サンプルの並べた比較**（DxLib と DX12 を、33個ぜんぶ撮って、並べた）で、時間で動く絵（物理・エフェクトなど）を除いた本物の差を洗い出した。直したのは、`Pixels`の分割画像（`SplitTexture`）と、文字の太さ。残るのは、`Lighting`の画素ごとの光、`Text`のアイコン入りの文字・縦書き、異方性、反転系の合成。
+- **派生画像（`CreateTextureRegion` / `GetTextureUvBounds`）**: `SplitTexture`・エフェクトの連番画像が使う、元の画像の矩形を共有する画像を、DX12のアセットが作れず、空の画像だった。`CTextureAssetStore::CreateRegion`で、GPU資源を持たない登録（元の番号と矩形）として作る。`FTextureDrawView`に`UvRect`（元の画像の中の矩形。ふつうの画像は0, 0, 1, 1）を足し、2Dの描画（`DrawImage` / `DrawImagePolygon`）が、画像の中のUVを元の画像のUVへ写す。3Dは、`GetTextureUvBounds`（半texel内側）を呼ぶ側が使う。シェーダー・画像フィルターの入力には使えない（空の画像）。
+- **文字の太さ**: DxLibの標準の太さ（6）は、太さ×100（600）で、OSの太字になる（2階調の文字は、線が2画素）。DX12は、6以下を普通にしていて、細かった。2階調（`EFontAntialias::None`）は、太さ×100にして、Textサンプルの文字のインク量がDxLibと一致した。なめらかな文字（標準・4／8／16）は、OSの太字にするとDxLibより約1画素太いので、太さを4までに収めた。
+- **文字のなめらかさ**（`WindowsGdiText.cpp`）: 標準は、OSの描き方（`TextOutW`のなめらか）が、DxLibより重かった（+11%〜）ので、`GetGlyphOutlineW( GGO_GRAY8_BITMAP )`の65階調の被覆率をそのまま使う（DxLibの画素の値247・175が、65階調の62・44に当たることから）。4／8／16は、その倍の大きさ（2階調）で文字ごとに描いて、倍×倍の平均へ縮める。`FRenderTextFont::bAntialias`は、`Antialias`（0 = なし、1 = 標準、4／8／16）になった。
+- **確認**（Textサンプルの、行ごとのインク量。DxLib → DX12）: 標準 936 → 886、なし 651 → 651、16x16 860 → 860、斜体の太字 903 → 868、縁取り 923 → 947。字形の細かい差と、`AddCharImage`（文字の代わりに画像を入れる）は、未対応のまま。Debug／Releaseの警告0、デバッグレイヤーは`Pixels`・`Text`・`Village`・`Effects`・`UI`で警告・エラー0件、台帳は505項目で整合、`RunAllChecks.ps1 -SkipBuild -Quick`の42項目すべて成功。
+- **確認の道具（追加）**: `Docs/AI_WORKFLOW/tools/png_crop.py`（矩形を切り出して、整数倍に拡大する）。画素の行の比較は、`png_compare.py`と、作業用の`png_row.py`相当を、その場で書く。
+- **次の作業**: `Lighting`の画素ごとの光（DxLibは画素ごと、DX12は頂点ごと）→ 反転系の合成 → 異方性 → `Text`のアイコン入りの文字・縦書き → `MaterialRibbon3D` → アニメーションつきのモデル。

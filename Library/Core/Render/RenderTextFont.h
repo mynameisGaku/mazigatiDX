@@ -13,18 +13,18 @@ struct FRenderTextFont
 	int32 LetterSpacing = 0;  // 字間（画素。全部の文字の幅に足す）。
 	int32 LineHeight = -1;    // 行の送り幅（画素）。-1ならフォントの既定。
 	bool bItalic = false;     // 斜体。
-	bool bAntialias = true;   // 縁をなめらかにするか。
+	int32 Antialias = 1;      // 縁のなめらかさ。0 = なし、1 = 標準（OS が数える65階調の被覆率）、4 / 8 / 16 = その倍の大きさで描いて、縮める。
 
 	bool operator==( const FRenderTextFont& Other ) const
 	{
 		return Face == Other.Face && Size == Other.Size && Thickness == Other.Thickness && EdgeSize == Other.EdgeSize && LetterSpacing == Other.LetterSpacing
-			&& LineHeight == Other.LineHeight && bItalic == Other.bItalic && bAntialias == Other.bAntialias;
+			&& LineHeight == Other.LineHeight && bItalic == Other.bItalic && Antialias == Other.Antialias;
 	}
 	bool operator!=( const FRenderTextFont& Other ) const { return !( *this == Other ); }
 
 	// 同じ指定を見分ける文字列（キャッシュの鍵に使う）。
 	FString ToKey() const
 	{
-		return FString::Printf( "%s|%d|%d|%d|%d|%d|%d|%d", *Face, Size, Thickness, EdgeSize, LetterSpacing, LineHeight, bItalic ? 1 : 0, bAntialias ? 1 : 0 );
+		return FString::Printf( "%s|%d|%d|%d|%d|%d|%d|%d", *Face, Size, Thickness, EdgeSize, LetterSpacing, LineHeight, bItalic ? 1 : 0, Antialias );
 	}
 };

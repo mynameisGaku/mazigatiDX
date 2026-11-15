@@ -432,7 +432,10 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 		{
 			NBackendSupport::ReportUnsupported( "DrawCommands", "AddColor (image / text)", "AddColor is applied to flat shapes only; images and text are drawn without it" );
 		}
-		Canvas->Image( Image, Moved, UV, Color( FDrawRgb() ) );
+		// 派生画像は、画像の中のUVを、元の画像のUVへ写す（ふつうの画像は 0, 0, 1, 1 で、そのまま）。
+		const float32 Mapped[4] = { Image.UvRect[0] + UV[0] * ( Image.UvRect[2] - Image.UvRect[0] ), Image.UvRect[1] + UV[1] * ( Image.UvRect[3] - Image.UvRect[1] ),
+			Image.UvRect[0] + UV[2] * ( Image.UvRect[2] - Image.UvRect[0] ), Image.UvRect[1] + UV[3] * ( Image.UvRect[3] - Image.UvRect[1] ) };
+		Canvas->Image( Image, Moved, Mapped, Color( FDrawRgb() ) );
 	};
 	// 画像を、凸な多角形（x, y, u, v の頂点列）へ、変換してから貼る。
 	const auto DrawImagePolygon = [&]( const FTextureDrawView& Image, TArray<float32>& Vertices )
@@ -453,6 +456,11 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 		if ( !Canvas->SetTextureFilter( bLinearFilter ) && bExplicitFilter )
 		{
 			return;
+		}
+		for ( int32 Index = 0; Index < Count; ++Index ) // 派生画像は、画像の中のUVを、元の画像のUVへ写す。
+		{
+			Vertices[Index * 4 + 2] = Image.UvRect[0] + Vertices[Index * 4 + 2] * ( Image.UvRect[2] - Image.UvRect[0] );
+			Vertices[Index * 4 + 3] = Image.UvRect[1] + Vertices[Index * 4 + 3] * ( Image.UvRect[3] - Image.UvRect[1] );
 		}
 		Canvas->ImagePolygon( Image, Vertices.GetData(), Count, Color( FDrawRgb() ) );
 	};

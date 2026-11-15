@@ -25,6 +25,10 @@ public:
 	int32 LoadTexture( const FString& Path, bool bAsync ) override;
 	// WICが対応するファイル内容を展開して登録する。失敗時は-1。
 	int32 CreateTextureFromMemory( const void* FileImage, usize Size ) override;
+	// 元の画像の矩形を共有する派生画像を登録する（SplitTexture など）。GPU資源は元の画像と同じ。
+	int32 CreateTextureRegion( int32 Source, int32 X, int32 Y, int32 Width, int32 Height ) override;
+	// 派生画像の、元の画像の中の矩形（半 texel 内側のUV）。3Dの面へ渡す。
+	bool GetTextureUvBounds( int32 Texture, float32 ( &OutUV )[4] ) override;
 	// 有効な登録画像だけ大きさを返す。
 	bool GetTextureSize( int32 Texture, int32& OutWidth, int32& OutHeight ) override;
 	// このフレームの描画が終わるまで実画像の解放を延期する。

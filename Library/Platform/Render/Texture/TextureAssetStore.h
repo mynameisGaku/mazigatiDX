@@ -34,6 +34,10 @@ public:
 	bool ReadRenderTarget( int32 Handle, TArray<FColor32>& OutPixels, int32& OutWidth, int32& OutHeight );
 	// 同じ寸法の画像を更新する。失敗時は内容を保つ。
 	bool Update( int32 Handle, int32 Width, int32 Height, const FColor32* Pixels );
+	// 元の画像（ふつうの画像だけ。描画先・派生画像は不可）の矩形 (X, Y, Width, Height) を共有する、派生画像を登録する。GPU資源は元の画像と同じ。失敗時は-1。
+	int32 CreateRegion( int32 Source, int32 X, int32 Y, int32 Width, int32 Height );
+	// 派生画像の矩形を、元の画像の UV（両端を、半 texel だけ内側へ寄せたもの。3Dの面へ渡す）にする。派生画像でない・元が無いときは false。
+	bool GetRegionUvBounds( int32 Handle, float32 ( &OutUV )[4] );
 	// 登録を外す。GPU完了待ちと実体の解放は資源の所有者が行う。
 	void Delete( int32 Handle );
 	// すべて登録から外す。次の番号は巻き戻さない。
@@ -55,6 +59,13 @@ private:
 	TMap<int32, FTextureResourceHandle> TargetDepths;
 	TMap<int32, ERenderTargetColorFormat> TargetFormats; // 描画先の色の形式。
 	TMap<int32, int64> TargetSizes; // 描画先の大きさ（幅 << 32 | 高さ）。浮動小数点の描画先は、資源のviewを借りられないので、ここで持つ。
+	// 派生画像（CreateRegion）。元の画像の番号と、その中の矩形。GPU資源は持たない（元の画像が消えると、使えなくなる）。
+	struct FRegion
+	{
+		int32 Source = -1;
+		int32 X = 0, Y = 0, Width = 0, Height = 0;
+	};
+	TMap<int32, FRegion> Regions;
 	int32 NextHandle = 0; // 解放後も使い回さないアセット番号。
 	static constexpr int32 MaxHandles = 1024; // この窓口で同時に登録する上限。
 };

@@ -126,6 +126,16 @@ bool CDX12AssetBackendSubsystem::GetTextureDrawView( int32 Handle, FTextureDrawV
 	return Textures.GetTextureDrawView( Handle, Out );
 }
 
+int32 CDX12AssetBackendSubsystem::CreateTextureRegion( int32 Source, int32 X, int32 Y, int32 Width, int32 Height )
+{
+	return Textures.CreateRegion( Source, X, Y, Width, Height );
+}
+
+bool CDX12AssetBackendSubsystem::GetTextureUvBounds( int32 Texture, float32 ( &OutUV )[4] )
+{
+	return Textures.GetRegionUvBounds( Texture, OutUV );
+}
+
 bool CDX12AssetBackendSubsystem::GetTextureSize( int32 Texture, int32& OutWidth, int32& OutHeight )
 {
 	return Textures.GetSize( Texture, OutWidth, OutHeight );

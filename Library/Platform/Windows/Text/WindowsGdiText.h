@@ -14,7 +14,8 @@
 //   1 つの実体は、1 つのスレッドだけから使う（測る側と、画像にする側は、別々の実体を持つ。どちらも同じ計算なので、大きさが合う）。
 //
 //   並べ方: 文字（UTF-8 のコードポイント）を 1 つずつ左から置く。1 文字の幅 ＝ OS の送り幅 ＋ 字間 ＋ 縁取り x 2。改行で、次の行の左端へ。
-//           1 行の文字の高さ ＝ フォントの高さ ＋ 2（上下の余白）＋ 縁取り x 2。太さは、6 以下が標準、7〜9 で太くなる。行の送り幅は、指定が無ければ、1 行の文字の高さ。
+//           1 行の文字の高さ ＝ フォントの高さ ＋ 2（上下の余白）＋ 縁取り x 2。太さ（0..9）は、2 階調の文字では、DxLib と同じく 100 倍して OS の太さにする（標準の 6 は、太字になる）。なめらかな文字では、4 までに収める（OS の太字だと、DxLib より太くなるため）。
+//           行の送り幅は、指定が無ければ、1 行の文字の高さ。なめらかさ: なしは OS の 2 階調、標準は OS が数える 65 階調（GGO_GRAY8_BITMAP）、4 / 8 / 16 は、その倍の大きさの 2 階調を縮めた値。
 //=============================================================================
 class CWindowsGdiText
 {
@@ -51,6 +52,10 @@ private:
 	bool EnsureContext();
 	// 指定のフォントを作って（作ってあれば、それを）文脈へ選ぶ。作れなければ false
 	bool SelectFont( const FRenderTextFont& Font );
+	// 標準のなめらかさ: 文字ごとに、OS が数える 65 階調の被覆率を、Coverage へ重ねる（大きいほうを残す）。フォントは選んであること。UTF-16 で 2 つの文字は、描かない
+	void DrawGrayGlyphs( const TArray<FCharacter>& Characters, int32 Edge, int32 Width, int32 Height, TArray<uint8>& Coverage );
+	// 4 / 8 / 16 のなめらかさ: 文字ごとに、Scale 倍の大きさで描いて、Scale x Scale の画素の平均へ縮めて、Coverage へ重ねる。終わると、選んだフォントが替わる（呼ぶ側が選び直す）
+	void DrawSampledGlyphs( const FRenderTextFont& Font, const TArray<FCharacter>& Characters, int32 Scale, int32 Edge, int32 Width, int32 Height, TArray<uint8>& Coverage );
 	// 文字を 1 つずつに分けて、置く位置を決める。フォントは選んであること
 	bool Arrange( const FRenderTextFont& Font, TArrayView<const char> Text, TArray<FCharacter>& OutCharacters, FTextSize& OutSize );
 

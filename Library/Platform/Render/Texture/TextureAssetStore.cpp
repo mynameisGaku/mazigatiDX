@@ -45,6 +45,42 @@ int32 CTextureAssetStore::Create( int32 Width, int32 Height, const FColor32* Pix
 	return Handle;
 }
 
+int32 CTextureAssetStore::CreateRegion( int32 Source, int32 X, int32 Y, int32 Width, int32 Height )
+{
+	int32 BaseWidth = 0, BaseHeight = 0; // 元の画像の大きさ。
+	if ( !Resources || Source < 0 || TargetDepths.Find( Source ) || Regions.Find( Source ) || !GetSize( Source, BaseWidth, BaseHeight ) || X < 0 || Y < 0 || Width <= 0 || Height <= 0
+		|| static_cast<int64>( X ) + Width > BaseWidth || static_cast<int64>( Y ) + Height > BaseHeight || Textures.Num() + Regions.Num() >= MaxHandles || NextHandle == TNumericLimits<int32>::Max() )
+	{
+		return -1;
+	}
+	FRegion Region;
+	Region.Source = Source;
+	Region.X = X;
+	Region.Y = Y;
+	Region.Width = Width;
+	Region.Height = Height;
+	const int32 Handle = NextHandle++; // 元の画像の番号は流用しない。
+	Regions.Add( Handle, Region );
+	return Handle;
+}
+
+bool CTextureAssetStore::GetRegionUvBounds( int32 Handle, float32 ( &OutUV )[4] )
+{
+	const auto* Region = Regions.Find( Handle );
+	const auto* Resource = Region ? Textures.Find( Region->Source ) : nullptr;
+	FTextureDrawView Base; // 元の画像。
+	if ( !Resource || !Resources || !Resources->GetTextureResourceView( *Resource, Base ) || Base.Width <= 0 || Base.Height <= 0 )
+	{
+		return false;
+	}
+	const float32 Width = static_cast<float32>( Base.Width ), Height = static_cast<float32>( Base.Height ); // 1画素の領域でも、1点を正しく読めるよう、半画素だけ内側へ寄せる。
+	OutUV[0] = ( static_cast<float32>( Region->X ) + 0.5f ) / Width;
+	OutUV[1] = ( static_cast<float32>( Region->Y ) + 0.5f ) / Height;
+	OutUV[2] = ( static_cast<float32>( Region->X + Region->Width ) - 0.5f ) / Width;
+	OutUV[3] = ( static_cast<float32>( Region->Y + Region->Height ) - 0.5f ) / Height;
+	return true;
+}
+
 int32 CTextureAssetStore::CreateRenderTarget( int32 Width, int32 Height, bool bDepth, ERenderTargetColorFormat Format, FColor32 ClearColor )
 {
 	if ( !Resources || Width <= 0 || Height <= 0 || Width > 16384 || Height > 16384 || Textures.Num() >= MaxHandles || NextHandle == TNumericLimits<int32>::Max() )
@@ -175,6 +211,10 @@ bool CTextureAssetStore::Update( int32 Handle, int32 Width, int32 Height, const 
 
 void CTextureAssetStore::Delete( int32 Handle )
 {
+	if ( Regions.Remove( Handle ) )
+	{
+		return; // 派生画像は、GPU資源を持たない。
+	}
 	if ( const auto* Resource = Textures.Find( Handle ) )
 	{
 		if ( Resources )
@@ -214,6 +254,7 @@ void CTextureAssetStore::Reset()
 	TargetDepths.Reset();
 	TargetFormats.Reset();
 	TargetSizes.Reset();
+	Regions.Reset();
 	Textures.Reset();
 }
 
@@ -224,6 +265,16 @@ int32 CTextureAssetStore::Num() const
 
 bool CTextureAssetStore::GetSize( int32 Handle, int32& OutWidth, int32& OutHeight ) const
 {
+	if ( const auto* Region = Regions.Find( Handle ) ) // 派生画像は、矩形の大きさ（元の画像が生きているあいだだけ）。
+	{
+		if ( !Textures.Find( Region->Source ) )
+		{
+			return false;
+		}
+		OutWidth = Region->Width;
+		OutHeight = Region->Height;
+		return true;
+	}
 	if ( const auto* TargetSize = TargetSizes.Find( Handle ) ) // 描画先は、作ったときの大きさを返す。
 	{
 		OutWidth = static_cast<int32>( *TargetSize >> 32 );
@@ -254,6 +305,23 @@ bool CTextureAssetStore::GetResource( int32 Handle, FTextureResourceHandle& Out 
 
 bool CTextureAssetStore::GetTextureDrawView( int32 Handle, FTextureDrawView& Out )
 {
+	if ( const auto* Region = Regions.Find( Handle ) ) // 派生画像は、元の画像の資源に、矩形のUVを添える。
+	{
+		const auto* SourceResource = Textures.Find( Region->Source );
+		FTextureDrawView Base;
+		if ( !SourceResource || !Resources || !Resources->GetTextureResourceView( *SourceResource, Base ) || Base.Width <= 0 || Base.Height <= 0 )
+		{
+			return false;
+		}
+		Out = Base;
+		Out.Width = Region->Width;
+		Out.Height = Region->Height;
+		Out.UvRect[0] = static_cast<float32>( Region->X ) / static_cast<float32>( Base.Width );
+		Out.UvRect[1] = static_cast<float32>( Region->Y ) / static_cast<float32>( Base.Height );
+		Out.UvRect[2] = static_cast<float32>( Region->X + Region->Width ) / static_cast<float32>( Base.Width );
+		Out.UvRect[3] = static_cast<float32>( Region->Y + Region->Height ) / static_cast<float32>( Base.Height );
+		return true;
+	}
 	const auto* Resource = Textures.Find( Handle ); // 解放した番号を実行先へ渡さない。
 	return Resource && Resources && Resources->GetTextureResourceView( *Resource, Out );
 }

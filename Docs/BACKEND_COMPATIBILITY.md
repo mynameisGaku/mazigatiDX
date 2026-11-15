@@ -10,7 +10,7 @@
 
 |分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|
 |---|---:|---:|---:|---:|---:|---:|---:|
-|API|360|4|97|96|162|0|1|
+|API|360|4|95|98|162|0|1|
 |Draw|101|0|10|51|40|0|0|
 |Sample|33|30|0|3|0|0|0|
 |Editor|11|11|0|0|0|0|0|
@@ -81,7 +81,7 @@
 |[API.IFontBackend.GetFontNames](../Library/Core/Interfaces/Asset/FontBackend.h#L32)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|OSの文字の一覧を返す||
 |[API.IFontBackend.GetTextGlyphs](../Library/Core/Interfaces/Asset/FontBackend.h#L28)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|OSの文字（GDI）で測り・画像にする。DxLibの文字との寸法・字形の差が残る（実測の比較が必要）||
 |[API.IFontBackend.IsFontAvailable](../Library/Core/Interfaces/Asset/FontBackend.h#L30)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|OSの文字の一覧で調べる||
-|[API.IFontBackend.MakeFont](../Library/Core/Interfaces/Asset/FontBackend.h#L19)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|OSの文字（GDI）で測り・画像にする。DxLibの文字との寸法・字形の差が残る（実測の比較が必要）||
+|[API.IFontBackend.MakeFont](../Library/Core/Interfaces/Asset/FontBackend.h#L19)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|OSの文字（GDI）で測り・画像にする。太さ・なめらかさは、Textサンプルの文字のインク量で、DxLibに合わせた（2階調は一致、標準・縮小版は±5%）。字形・幅の細かい差と、アイコンの差し込み（AddFontCharImage）は残る||
 |[API.IFontBackend.MeasureText](../Library/Core/Interfaces/Asset/FontBackend.h#L22)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|OSの文字（GDI）で測り・画像にする。DxLibの文字との寸法・字形の差が残る（実測の比較が必要）||
 |[API.IFontBackend.MeasureTextSize](../Library/Core/Interfaces/Asset/FontBackend.h#L26)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|OSの文字（GDI）で測り・画像にする。DxLibの文字との寸法・字形の差が残る（実測の比較が必要）||
 |[API.IFontBackend.RemoveFontCharImage](../Library/Core/Interfaces/Asset/FontBackend.h#L36)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
@@ -314,7 +314,7 @@
 |[API.IRenderSurface.RecordClear](../Library/Core/Interfaces/Render/IRenderSurface.h#L23)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
 |[API.IRenderSurface.WaitForGPU](../Library/Core/Interfaces/Render/IRenderSurface.h#L25)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
 |[API.IRenderTargetDrawSource.GetRenderTargetDrawView](../Library/Core/Interfaces/Render/IRenderTargetDrawSource.h#L13)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|描画先として作った画像だけ、色と深度の資源を貸す||
-|[API.IRenderTextRasterizer.RasterizeFontText](../Library/Core/Interfaces/Render/IRenderTextRasterizer.h#L18)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|OSの文字（GDI）でフォント指定の文字列を画像にする。縁取りは、被覆率を太らせて作る||
+|[API.IRenderTextRasterizer.RasterizeFontText](../Library/Core/Interfaces/Render/IRenderTextRasterizer.h#L18)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|OSの文字（GDI）でフォント指定の文字列を画像にする。縁取りは、被覆率を太らせて作る。標準のなめらかさは、OSの65階調の被覆率（GGO_GRAY8）、4／8／16は、その倍の大きさで描いて縮める||
 |[API.IRenderTextRasterizer.RasterizeText](../Library/Core/Interfaces/Render/IRenderTextRasterizer.h#L15)|Implemented|R1|UIなしでUTF-8の範囲・改行・文字画像と拒否時の出力保持を確認|WindowsのCPU文字画像。既定13画素、各辺4096・4M画素まで。Fontアセット全体の対応ではない|Docs/DX12_GAME_RENDER.md; CaptureContractMain.cpp|
 |[API.IRenderTextureResources.CopyTexture](../Library/Core/Interfaces/Render/IRenderTextureResources.h#L37)|Implemented|R1|CPU参照・既定GPU・WARP・アプリ起動で、同形式/同寸法画像コピー、自己コピー/異形式/異寸法/描画中ターゲット/デバイス喪失の拒否と非ゲームスレッド拒否を確認|DIRECTキュー上でSRV_ALLとCOPY_SOURCE/COPY_DESTを遷移してCopyResourceし完了待機。異形式・異寸法・自己コピー・描画中はfalse|Library/Platform/DX12/Resource/Texture/DX12TextureStore.cpp; Source/SelfTest/RunHdrTextureCopyTests.ps1|
 |[API.IRenderTextureResources.CreateComputeTextureRGBA16F](../Library/Core/Interfaces/Render/IRenderTextureResources.h#L25)|Implemented|R1|CPU参照・既定GPU・WARP・アプリ起動で、HDR値初期転送、UAV読み書き、Graphics SRV読み取り、異形式拒否と非有限/不正寸法拒否を確認|UAV許可のRGBA16F画像を作成し、computeのRead/ReadWriteとグラフィックスSRV読み取りで共用。非有限色・未対応・不正寸法は拒否|Library/Platform/DX12/Resource/Texture/DX12TextureStore.cpp; Source/SelfTest/RunHdrTextureCopyTests.ps1|
@@ -354,12 +354,12 @@
 |[API.ITextureBackend.CreateRenderTarget](../Library/Core/Interfaces/Asset/TextureBackend.h#L34)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|8ビットのRGBAだけ（浮動小数点は未対応）。マルチサンプルはなしで作る||
 |[API.ITextureBackend.CreateTextureFromMemory](../Library/Core/Interfaces/Asset/TextureBackend.h#L21)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|WIC画像経路あり。対応形式の同等性と非同期処理が未完了||
 |[API.ITextureBackend.CreateTextureFromPixels](../Library/Core/Interfaces/Asset/TextureBackend.h#L45)|Implemented|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|登録画像の処理あり。GPU完了まで遅延解放。Windows互換比較前||
-|[API.ITextureBackend.CreateTextureRegion](../Library/Core/Interfaces/Asset/TextureBackend.h#L23)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.ITextureBackend.CreateTextureRegion](../Library/Core/Interfaces/Asset/TextureBackend.h#L23)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|元の画像（ふつうの画像だけ）の矩形を共有する派生画像を、GPU資源を持たない登録として作る（SplitTextureなど）。2Dの描画は、画像の中のUVを元の画像のUVへ写して描く。3Dは、GetTextureUvBoundsのUVを呼ぶ側が使う。シェーダー・画像フィルターの入力には使えない（空の画像になる）。元の画像が消えると、使えなくなる||
 |[API.ITextureBackend.DecodeImage](../Library/Core/Interfaces/Asset/TextureBackend.h#L49)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|WIC画像経路あり。対応形式の同等性と非同期処理が未完了||
 |[API.ITextureBackend.DecodeImageFile](../Library/Core/Interfaces/Asset/TextureBackend.h#L51)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|WIC画像経路あり。対応形式の同等性と非同期処理が未完了||
 |[API.ITextureBackend.DeleteTexture](../Library/Core/Interfaces/Asset/TextureBackend.h#L28)|Implemented|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|登録画像の処理あり。GPU完了まで遅延解放。Windows互換比較前||
 |[API.ITextureBackend.GetTextureSize](../Library/Core/Interfaces/Asset/TextureBackend.h#L27)|Implemented|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|登録画像の処理あり。GPU完了まで遅延解放。Windows互換比較前||
-|[API.ITextureBackend.GetTextureUvBounds](../Library/Core/Interfaces/Asset/TextureBackend.h#L25)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.ITextureBackend.GetTextureUvBounds](../Library/Core/Interfaces/Asset/TextureBackend.h#L25)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|派生画像の矩形を、元の画像のUV（両端を半texel内側へ寄せたもの）で返す。派生画像でなければfalse||
 |[API.ITextureBackend.LoadTexture](../Library/Core/Interfaces/Asset/TextureBackend.h#L19)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|WIC画像経路あり。対応形式の同等性と非同期処理が未完了||
 |[API.ITextureBackend.ReadRenderTargetPixels](../Library/Core/Interfaces/Asset/TextureBackend.h#L37)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|描画先（8ビット・16ビット浮動小数点・32ビット浮動小数点1チャンネル）の矩形を読む。浮動小数点は0〜1に収める||
 |[API.ITextureBackend.SavePixels](../Library/Core/Interfaces/Asset/TextureBackend.h#L53)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|WICでPNG/BMP/JPEG保存。PNG透明度・JPEG品質・Unicode名に対応。PNG圧縮率の個別指定は副作用なく拒否|Docs/DX12_CAPTURE.md; CaptureContractMain.cpp|
