@@ -1426,6 +1426,9 @@
     <ClCompile Include="Library\Platform\Render\Shader\ShaderCommandExecutor.cpp">
       <Filter>Library\Platform\Render\Shader</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Shadow\ShadowMapMath.cpp">
+      <Filter>Library\Platform\Render\Shadow</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\Render\Texture\TextureAssetStore.cpp">
       <Filter>Library\Platform\Render\Texture</Filter>
     </ClCompile>
@@ -3966,6 +3969,9 @@
     <ClInclude Include="Library\Platform\Render\Shader\ShaderCommandExecutor.h">
       <Filter>Library\Platform\Render\Shader</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Shadow\ShadowMapMath.h">
+      <Filter>Library\Platform\Render\Shadow</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Platform\Render\Texture\TextureAssetStore.h">
       <Filter>Library\Platform\Render\Texture</Filter>
     </ClInclude>
@@ -5947,6 +5953,9 @@
     </Filter>
     <Filter Include="Library\Platform\Render\Shader">
       <UniqueIdentifier>{CDC46C4C-DC5C-0139-E431-71CC2D7DB0D9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Render\Shadow">
+      <UniqueIdentifier>{00A5CF7A-3097-72F3-83B1-830AF17FF288}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Platform\Render\Texture">
       <UniqueIdentifier>{BADFE362-9748-2B0F-1F6A-2876BA6BDFB6}</UniqueIdentifier>

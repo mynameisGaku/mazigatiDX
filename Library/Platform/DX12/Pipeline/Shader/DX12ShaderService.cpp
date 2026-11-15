@@ -61,7 +61,39 @@ namespace
 		"            float4 Diffuse : COLOR0; float4 Specular : COLOR1; float2 Uv : TEXCOORD0; float2 SubUv : TEXCOORD1; };\n"
 		"struct VO { float4 Position : SV_POSITION; float4 Color : COLOR0; float2 Uv : TEXCOORD0; float4 Extra : TEXCOORD1; };\n"
 		"VO RectMain( VI i ) { VO o; o.Position = float4( i.Position, 1 ); o.Color = i.Diffuse; o.Uv = i.Uv; o.Extra = float4( i.SubUv, i.Tangent.xy ); return o; }\n"
-		"VO QuadMain( VI i ) { VO o; o.Position = i.SubPosition; o.Color = i.Diffuse; o.Uv = i.Uv; o.Extra = float4( i.SubUv, i.Tangent.xy ); return o; }\n";
+		"VO QuadMain( VI i ) { VO o; o.Position = i.SubPosition; o.Color = i.Diffuse; o.Uv = i.Uv; o.Extra = float4( i.SubUv, i.Tangent.xy ); return o; }\n"
+		// 影: 影の絵へ、光から見た深度を書く
+		"float4 ShadowDepthMain( VO i ) : SV_Target { return float4( i.Position.z, 0, 0, 1 ); }\n"
+		// 影: 影を受ける光の計算（頂点の Diffuse = 影の外の色、Specular = 影の中で消える色、Normal = 光から見た位置）
+		"struct LitOutput { float4 Position : SV_POSITION; float4 Color : COLOR0; float4 Shadowed : COLOR1; float2 Uv : TEXCOORD0; float4 LightPosition : TEXCOORD1; };\n"
+		"LitOutput LitMain( VI i ) { LitOutput o; o.Position = i.SubPosition; o.Color = i.Diffuse; o.Shadowed = i.Specular; o.Uv = i.Uv; o.LightPosition = float4( i.Normal, 1 ); return o; }\n"
+		"cbuffer cbShadow : register( b4 ) { float4 g_Shadow; };\n"
+		"Texture2D g_Base : register( t0 );\n"
+		"Texture2D g_ShadowMap : register( t1 );\n"
+		"SamplerState g_Sampler : register( s0 );\n"
+		// 3 x 3 の画素で、影の絵と比べて、光の当たる割合を返す（影を計算する範囲の外は、光が当たる）
+		"float ShadowFactor( float3 p )\n"
+		"{\n"
+		"	if ( p.z < 0.0 || p.z > 1.0 || abs( p.x ) > 1.0 || abs( p.y ) > 1.0 ) { return 1.0; }\n"
+		"	float2 size = g_Shadow.xy;\n"
+		"	float2 texel = float2( p.x * 0.5 + 0.5, 0.5 - p.y * 0.5 ) * size;\n"
+		"	int2 center = int2( floor( texel ) );\n"
+		"	int2 last = int2( size ) - 1;\n"
+		"	float lit = 0.0;\n"
+		"	for ( int y = -1; y <= 1; ++y )\n"
+		"	{\n"
+		"		for ( int x = -1; x <= 1; ++x )\n"
+		"		{\n"
+		"			int2 t = clamp( center + int2( x, y ), int2( 0, 0 ), last );\n"
+		"			float stored = g_ShadowMap.Load( int3( t, 0 ) ).r;\n"
+		"			lit += ( p.z - g_Shadow.z <= stored ) ? 1.0 : 0.0;\n"
+		"		}\n"
+		"	}\n"
+		"	return lit / 9.0;\n"
+		"}\n"
+		"float4 LitColor( LitOutput i, float4 baseColor ) { float s = ShadowFactor( i.LightPosition.xyz ); return float4( i.Color.rgb + i.Shadowed.rgb * s, i.Color.a ) * baseColor; }\n"
+		"float4 ShadowLitMain( LitOutput i ) : SV_Target { float4 c = LitColor( i, float4( 1, 1, 1, 1 ) ); if ( c.a <= 0.0 ) { discard; } return c; }\n"
+		"float4 ShadowLitTexturedMain( LitOutput i ) : SV_Target { float4 c = LitColor( i, g_Base.Sample( g_Sampler, i.Uv ) ); if ( c.a <= 0.0 ) { discard; } return c; }\n";
 
 	uint32 RoundUp( uint32 Value, uint32 Unit )
 	{
@@ -106,6 +138,11 @@ void CDX12ShaderService::Shutdown()
 	Shaders.Reset();
 	BuiltInRect = FShaderRecord();
 	BuiltInQuad = FShaderRecord();
+	BuiltInLit = FShaderRecord();
+	BuiltInShadowDepth = FShaderRecord();
+	BuiltInShadowLit = FShaderRecord();
+	BuiltInShadowLitTextured = FShaderRecord();
+	ShadowPasses.Reset();
 	bBuiltInTried = false;
 	Pipelines = nullptr;
 	Buffers = nullptr;
@@ -274,26 +311,67 @@ bool CDX12ShaderService::IsShaderValid( int32 Shader, EShaderStage Stage ) const
 	return Record && Record->Stage == Stage;
 }
 
+void CDX12ShaderService::BuildBuiltIns()
+{
+	if ( bBuiltInTried )
+	{
+		return;
+	}
+	bBuiltInTried = true;
+	const int32 Length = static_cast<int32>( NCString::Length( BuiltInSource ) );
+	const auto Build = [&]( EShaderStage Stage, const char* Entry, FShaderRecord& Out )
+	{
+		TArray<uint8> Code;
+		FString Message;
+		if ( !Compile( Stage, BuiltInSource, Length, "BuiltInShader", Entry, "5_0", Code, Message ) || !Reflect( Stage, Code.GetData(), Code.Num(), Out ) )
+		{
+			LOG( LogDX12, Warning, "CDX12ShaderService: the built-in shader '%s' cannot be built: %s", Entry, *Message );
+		}
+	};
+	Build( EShaderStage::Vertex, "RectMain", BuiltInRect );
+	Build( EShaderStage::Vertex, "QuadMain", BuiltInQuad );
+	Build( EShaderStage::Vertex, "LitMain", BuiltInLit );
+	Build( EShaderStage::Pixel, "ShadowDepthMain", BuiltInShadowDepth );
+	Build( EShaderStage::Pixel, "ShadowLitMain", BuiltInShadowLit );
+	Build( EShaderStage::Pixel, "ShadowLitTexturedMain", BuiltInShadowLitTextured );
+}
+
 const CDX12ShaderService::FShaderRecord* CDX12ShaderService::GetBuiltIn( EBuiltInVertexShader Kind )
 {
-	if ( !bBuiltInTried )
-	{
-		bBuiltInTried = true;
-		const int32 Length = static_cast<int32>( NCString::Length( BuiltInSource ) );
-		const auto Build = [&]( const char* Entry, FShaderRecord& Out )
-		{
-			TArray<uint8> Code;
-			FString Message;
-			if ( !Compile( EShaderStage::Vertex, BuiltInSource, Length, "BuiltInVertexShader", Entry, "5_0", Code, Message ) || !Reflect( EShaderStage::Vertex, Code.GetData(), Code.Num(), Out ) )
-			{
-				LOG( LogDX12, Warning, "CDX12ShaderService: the built-in vertex shader '%s' cannot be built: %s", Entry, *Message );
-			}
-		};
-		Build( "RectMain", BuiltInRect );
-		Build( "QuadMain", BuiltInQuad );
-	}
-	const FShaderRecord* Record = Kind == EBuiltInVertexShader::Rect ? &BuiltInRect : Kind == EBuiltInVertexShader::Quad3D ? &BuiltInQuad : nullptr;
+	BuildBuiltIns();
+	const FShaderRecord* Record = Kind == EBuiltInVertexShader::Rect ? &BuiltInRect : Kind == EBuiltInVertexShader::Quad3D ? &BuiltInQuad : Kind == EBuiltInVertexShader::ShadowLit ? &BuiltInLit : nullptr;
 	return Record && !Record->Code.IsEmpty() ? Record : nullptr;
+}
+
+const CDX12ShaderService::FShaderRecord* CDX12ShaderService::GetBuiltInPixel( EBuiltInPixelShader Kind )
+{
+	BuildBuiltIns();
+	const FShaderRecord* Record = Kind == EBuiltInPixelShader::ShadowDepth ? &BuiltInShadowDepth : Kind == EBuiltInPixelShader::ShadowLit ? &BuiltInShadowLit : Kind == EBuiltInPixelShader::ShadowLitTextured ? &BuiltInShadowLitTextured : nullptr;
+	return Record && !Record->Code.IsEmpty() ? Record : nullptr;
+}
+
+void CDX12ShaderService::SetShadowPass( int32 ShadowMap, const FMatrix4x4& LightViewProjection, float32 AdjustDepth, int32 Width, int32 Height )
+{
+	FShadowPass Pass;
+	Pass.LightViewProjection = LightViewProjection;
+	Pass.AdjustDepth = AdjustDepth;
+	Pass.Width = Width;
+	Pass.Height = Height;
+	ShadowPasses.Add( ShadowMap, Pass );
+}
+
+bool CDX12ShaderService::GetShadowPass( int32 ShadowMap, FMatrix4x4& OutLightViewProjection, float32& OutAdjustDepth, int32& OutWidth, int32& OutHeight ) const
+{
+	const FShadowPass* Pass = ShadowPasses.Find( ShadowMap );
+	if ( !Pass )
+	{
+		return false;
+	}
+	OutLightViewProjection = Pass->LightViewProjection;
+	OutAdjustDepth = Pass->AdjustDepth;
+	OutWidth = Pass->Width;
+	OutHeight = Pass->Height;
+	return true;
 }
 
 bool CDX12ShaderService::GetEmptyTexture( FTextureResourceHandle& Out )
@@ -314,6 +392,7 @@ FGraphicsPipelineHandle CDX12ShaderService::GetPipeline( const FShaderDrawReques
 {
 	const FGeometryDrawState& State = Request.State;
 	const int32 VertexId = Request.Builtin == EBuiltInVertexShader::None ? Request.VertexShader : -2 - static_cast<int32>( Request.Builtin );
+	const int32 PixelId = Request.BuiltinPixel == EBuiltInPixelShader::None ? Request.PixelShader : -2 - static_cast<int32>( Request.BuiltinPixel );
 	FString Formats; // 書き込み先と読む画像の形式（パイプラインの形を決める）。
 	for ( int32 Target = 0; Target < Request.NumTargets; ++Target )
 	{
@@ -324,7 +403,7 @@ FGraphicsPipelineHandle CDX12ShaderService::GetPipeline( const FShaderDrawReques
 	{
 		Formats += static_cast<char>( '0' + static_cast<int32>( Slot.Format ) );
 	}
-	const FString Key = Formats + FString::Printf( "|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d", VertexId, Request.PixelShader, static_cast<int32>( Request.Topology ), Request.bUseDepth ? 1 : 0,
+	const FString Key = Formats + FString::Printf( "|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d", VertexId, PixelId, static_cast<int32>( Request.Topology ), Request.bUseDepth ? 1 : 0,
 		State.bTestDepth ? 1 : 0, State.bWriteDepth ? 1 : 0, static_cast<int32>( State.Compare ), State.DepthBias, static_cast<int32>( State.Culling ), State.bAlphaBlend ? 1 : 0,
 		State.bLinearFilter ? 1 : 0, static_cast<int32>( State.AddressU ), static_cast<int32>( State.AddressV ) );
 	if ( const FPipelineEntry* Found = PipelineCache.Find( Key ) )
@@ -369,11 +448,11 @@ FGraphicsPipelineHandle CDX12ShaderService::GetPipeline( const FShaderDrawReques
 	Desc.bLinearSampler = State.bLinearFilter;
 	FPipelineEntry Entry;
 	Entry.VertexShader = Request.Builtin == EBuiltInVertexShader::None ? Request.VertexShader : -1;
-	Entry.PixelShader = Request.PixelShader;
+	Entry.PixelShader = Request.BuiltinPixel == EBuiltInPixelShader::None ? Request.PixelShader : -1;
 	Entry.Handle = Pipelines->CreateGraphicsPipeline( Desc );
 	if ( !Entry.Handle.IsValid() )
 	{
-		LOG( LogDX12, Warning, "CDX12ShaderService: the pipeline of the shaders (vertex %d, pixel %d) cannot be created (the shaders must be Shader Model 5, the vertex inputs must be readable, and the outputs of the vertex shader must cover the inputs of the pixel shader)", VertexId, Request.PixelShader );
+		LOG( LogDX12, Warning, "CDX12ShaderService: the pipeline of the shaders (vertex %d, pixel %d) cannot be created (the shaders must be Shader Model 5, the vertex inputs must be readable, and the outputs of the vertex shader must cover the inputs of the pixel shader)", VertexId, PixelId );
 	}
 	PipelineCache.Add( Key, Entry );
 	return Entry.Handle;
@@ -386,7 +465,7 @@ bool CDX12ShaderService::DrawShader( const FShaderDrawRequest& Request, IRenderG
 		return false;
 	}
 	const FShaderRecord* Vertex = Request.Builtin == EBuiltInVertexShader::None ? Shaders.Find( Request.VertexShader ) : GetBuiltIn( Request.Builtin );
-	const FShaderRecord* Pixel = Shaders.Find( Request.PixelShader );
+	const FShaderRecord* Pixel = Request.BuiltinPixel == EBuiltInPixelShader::None ? Shaders.Find( Request.PixelShader ) : GetBuiltInPixel( Request.BuiltinPixel );
 	if ( !Vertex || !Pixel || Vertex->Stage != EShaderStage::Vertex || Pixel->Stage != EShaderStage::Pixel )
 	{
 		return false;
@@ -463,107 +542,57 @@ bool CDX12ShaderService::DrawShader( const FShaderDrawRequest& Request, IRenderG
 		}
 		SlotTextures.Add( Resource );
 	}
-	// GPU のバッファ（描いたあと、すぐに手放す。使用中の実体は、GPU の完了まで残る）
-	TArray<FBufferResourceHandle> Created;
-	const auto Cleanup = [&]()
-	{
-		for ( const FBufferResourceHandle& Handle : Created )
-		{
-			Buffers->ReleaseBuffer( Handle );
-		}
-	};
-	const FBufferResourceHandle VertexBuffer = Buffers->CreateBuffer( TArrayView<const uint8>( Request.Vertices, Request.NumVertices * FShaderDrawRequest::VertexStride ), ERenderBufferShaderAccess::None );
-	if ( !VertexBuffer.IsValid() )
-	{
-		NBackendSupport::ReportUnsupported( "DX12", "Shader draw (vertex buffer)", "The GPU buffer could not be created" );
-		return false;
-	}
-	Created.Add( VertexBuffer );
-	FBufferResourceHandle IndexBuffer;
-	if ( Request.Indices )
-	{
-		IndexBuffer = Buffers->CreateBuffer( TArrayView<const uint8>( reinterpret_cast<const uint8*>( Request.Indices ), Request.NumIndices * 4 ), ERenderBufferShaderAccess::None );
-		if ( !IndexBuffer.IsValid() )
-		{
-			Cleanup();
-			return false;
-		}
-		Created.Add( IndexBuffer );
-	}
-	TArray<FBufferResourceHandle> SlotBuffers;
+	// 定数: 置いてある中身を 256 の倍数へ切り上げ、余りは 0（転送領域へ載せる側が揃えるので、読まれる大きさ以上の中身を渡す）。
+	TArray<TArray<uint8>> ConstantBytes;
+	TArray<FGraphicsConstantBytes> Constants;
 	for ( int32 Index = 0; Index < BufferSlots.Num(); ++Index )
 	{
 		// 置いてある中身。その番号を、頂点シェーダーが読むなら頂点側、読まないならピクセル側（別の段に置いた古い中身を、読んでしまわないように）。
-		// 両方が読む番号で、中身が違うときは、頂点側が使われる。大きさは 256 の倍数に切り上げ、余りは 0
-		const FShaderConstantData* Found = nullptr;
+		// 両方が読む番号で、中身が違うときは、頂点側が使われる。
 		const int32 WantedStage = static_cast<int32>( BufferReadByVertex[Index] ? EShaderStage::Vertex : EShaderStage::Pixel );
+		const FShaderConstantData* Found = nullptr;
 		for ( const FShaderConstantData& Data : Request.Constants )
 		{
-			if ( static_cast<uint32>( Data.Slot ) == BufferSlots[Index].Binding && ( !Found || Data.Stage == WantedStage ) )
+			if ( static_cast<uint32>( Data.Slot ) == BufferSlots[Index].Binding && ( !Found || ( Data.Stage == WantedStage && Found->Stage != WantedStage ) ) )
 			{
 				Found = &Data;
 			}
 		}
-		if ( Found && Found->Stage != WantedStage )
-		{
-			// 読む段の中身が無いときだけ、別の段の中身で代える（同じ番号に置いてあるものを、そのまま渡す）。
-			bool bHasWanted = false;
-			for ( const FShaderConstantData& Data : Request.Constants )
-			{
-				bHasWanted = bHasWanted || ( static_cast<uint32>( Data.Slot ) == BufferSlots[Index].Binding && Data.Stage == WantedStage );
-			}
-			if ( bHasWanted )
-			{
-				for ( const FShaderConstantData& Data : Request.Constants )
-				{
-					if ( static_cast<uint32>( Data.Slot ) == BufferSlots[Index].Binding && Data.Stage == WantedStage )
-					{
-						Found = &Data;
-					}
-				}
-			}
-		}
-		const uint32 Size = RoundUp( NMath::Max( 1u, NMath::Max( BufferSizes[Index], Found ? static_cast<uint32>( Found->Bytes.Num() ) : 0u ) ), 256 );
+		const uint32 Size = NMath::Max( 1u, NMath::Max( BufferSizes[Index], Found ? static_cast<uint32>( Found->Bytes.Num() ) : 0u ) );
 		if ( Size > 65536 )
 		{
-			Cleanup();
 			return false;
 		}
 		TArray<uint8> Bytes;
 		Bytes.SetNum( static_cast<int32>( Size ), 0 );
-		if ( Found && Found->Bytes.Num() > 0 )
+		if ( Found )
 		{
 			for ( int32 Byte = 0; Byte < Found->Bytes.Num(); ++Byte )
 			{
 				Bytes[Byte] = Found->Bytes[Byte];
 			}
 		}
-		const FBufferResourceHandle Constant = Buffers->CreateBuffer( TArrayView<const uint8>( Bytes.GetData(), Bytes.Num() ), ERenderBufferShaderAccess::Read );
-		if ( !Constant.IsValid() )
-		{
-			Cleanup();
-			return false;
-		}
-		Created.Add( Constant );
-		SlotBuffers.Add( Constant );
+		ConstantBytes.Add( MoveTemp( Bytes ) );
 	}
-	FGraphicsPipelineDraw Draw;
-	Draw.Pipeline = Pipeline;
-	Draw.VertexBuffer = VertexBuffer;
-	Draw.VertexCount = static_cast<uint32>( Request.NumVertices );
-	if ( Request.Indices )
+	for ( const TArray<uint8>& Bytes : ConstantBytes )
 	{
-		Draw.IndexBuffer = IndexBuffer;
-		Draw.IndexCount = static_cast<uint32>( Request.NumIndices );
-		Draw.IndexFormat = EGeometryIndexFormat::UInt32;
+		FGraphicsConstantBytes Constant;
+		Constant.Data = Bytes.GetData();
+		Constant.Size = static_cast<uint32>( Bytes.Num() );
+		Constants.Add( Constant );
 	}
-	Draw.Buffers = TArrayView<const FBufferResourceHandle>( SlotBuffers.GetData(), SlotBuffers.Num() );
+	FGraphicsPipelineTransientDraw Draw;
+	Draw.Pipeline = Pipeline;
+	Draw.Vertices = Request.Vertices;
+	Draw.VertexCount = static_cast<uint32>( Request.NumVertices );
+	Draw.Indices = Request.Indices;
+	Draw.IndexCount = Request.Indices ? static_cast<uint32>( Request.NumIndices ) : 0u;
+	Draw.Constants = TArrayView<const FGraphicsConstantBytes>( Constants.GetData(), Constants.Num() );
 	Draw.Textures = TArrayView<const FTextureResourceHandle>( SlotTextures.GetData(), SlotTextures.Num() );
-	const bool bDrawn = Geometry.DrawGraphicsPipeline( Draw );
+	const bool bDrawn = Geometry.DrawGraphicsPipelineTransient( Draw );
 	if ( !bDrawn )
 	{
-		NBackendSupport::ReportUnsupported( "DX12", "Shader draw (rejected by the GPU path)", "DrawGraphicsPipeline rejected the draw (check the pass, formats, buffers and textures)" );
+		NBackendSupport::ReportUnsupported( "DX12", "Shader draw (rejected by the GPU path)", "DrawGraphicsPipelineTransient rejected the draw (check the pass, formats, constants and textures)" );
 	}
-	Cleanup();
 	return bDrawn;
 }

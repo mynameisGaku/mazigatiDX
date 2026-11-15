@@ -101,6 +101,17 @@ bool CGeometryCommandExecutor::Submit( const TArray<FDrawVertex3D>& Vertices, EG
 	{
 		return false;
 	}
+	if ( bShadowCasting )
+	{
+		return SubmitShadowCaster( Vertices, Topology, Alpha, Texture ); // 影の絵へ、光から見た深度として描く。
+	}
+	// 影を受ける三角形: 影の外の色と影の中で消える色を、頂点ごとに計算し、画素ごとに影の絵と比べる（組み込みのシェーダー）。
+	FMatrix4x4 ReceiverViewProjection;
+	float32 ReceiverAdjust = 0.0f;
+	int32 ReceiverWidth = 0, ReceiverHeight = 0;
+	const bool bReceive = bLit && Topology == EGeometryTopology::Triangles && ReceiverSlot >= 0 && ShaderSource
+		&& ShaderSource->GetShadowPass( ShadowSlotMaps[ReceiverSlot], ReceiverViewProjection, ReceiverAdjust, ReceiverWidth, ReceiverHeight );
+	TArray<FDrawShaderVertex3D> ShadowVertices; // 影を受ける描画の頂点。
 	const FCameraViewport Viewport = { Geometry->GetWidth(), Geometry->GetHeight() }; // 同じ論理画面で射影する。
 	const FMatrix4x4 Transform = World * Camera.GetViewMatrix() * Camera.GetProjectionMatrix( Viewport ); // ローカルからクリップへの変換。
 	FMatrix4x4 NormalMatrix = World; // 法線は、逆行列の転置で変換する（一様でない拡大でも、面に垂直なまま）。
@@ -130,6 +141,42 @@ bool CGeometryCommandExecutor::Submit( const TArray<FDrawVertex3D>& Vertices, EG
 		if ( !Finite( Value.Position ) )
 		{
 			return false;
+		}
+		if ( bReceive )
+		{
+			if ( !Finite( Input.Normal ) )
+			{
+				return false;
+			}
+			const FVector3 Point = World.TransformPoint( FVector3( Input.Position[0], Input.Position[1], Input.Position[2] ) ); // 光を受ける世界の点。
+			FVector3 Normal = NormalMatrix.TransformVector( FVector3( Input.Normal[0], Input.Normal[1], Input.Normal[2] ) ); // 世界での面の向き。
+			const float32 NormalLength = Normal.Length();
+			Normal = NormalLength > NMath::SmallNumber ? Normal / NormalLength : FVector3::Up;
+			FColor Shadowed; // 影の中で消える分。
+			const FColor Lit = Lighting.Evaluate( Point, Normal, Camera.Position, FColor( Input.Diffuse[0] / 255.0f, Input.Diffuse[1] / 255.0f, Input.Diffuse[2] / 255.0f, 1.0f ),
+				FColor( Input.Specular[0] / 255.0f, Input.Specular[1] / 255.0f, Input.Specular[2] / 255.0f, 1.0f ), 1 << ReceiverSlot, &Shadowed );
+			const FVector4 LightClip = ReceiverViewProjection.Transform( FVector4( Point.x, Point.y, Point.z, 1.0f ) ); // 光から見た位置。
+			FDrawShaderVertex3D Vertex;
+			FMemory::Memzero( &Vertex, sizeof( Vertex ) );
+			FMemory::Memcpy( Vertex.Position, Input.Position, sizeof( Vertex.Position ) );
+			Vertex.SubPosition[0] = Value.Position[0];
+			Vertex.SubPosition[1] = Value.Position[1];
+			Vertex.SubPosition[2] = Value.Position[2];
+			Vertex.SubPosition[3] = Value.Position[3];
+			Vertex.Normal[0] = LightClip.x;
+			Vertex.Normal[1] = LightClip.y;
+			Vertex.Normal[2] = LightClip.z;
+			Vertex.Diffuse[0] = static_cast<uint8>( ToByte( Lit.r ) * Bright.R / 255 );
+			Vertex.Diffuse[1] = static_cast<uint8>( ToByte( Lit.g ) * Bright.G / 255 );
+			Vertex.Diffuse[2] = static_cast<uint8>( ToByte( Lit.b ) * Bright.B / 255 );
+			Vertex.Diffuse[3] = static_cast<uint8>( Input.Diffuse[3] * Alpha / 255 );
+			Vertex.Specular[0] = static_cast<uint8>( ToByte( Shadowed.r ) * Bright.R / 255 );
+			Vertex.Specular[1] = static_cast<uint8>( ToByte( Shadowed.g ) * Bright.G / 255 );
+			Vertex.Specular[2] = static_cast<uint8>( ToByte( Shadowed.b ) * Bright.B / 255 );
+			Vertex.U = Input.U;
+			Vertex.V = Input.V;
+			ShadowVertices.Add( Vertex );
+			continue;
 		}
 		if ( bLit )
 		{
@@ -165,7 +212,89 @@ bool CGeometryCommandExecutor::Submit( const TArray<FDrawVertex3D>& Vertices, EG
 	}
 	State.Topology = Topology;
 	State.bAlphaBlend = bAlphaBlend;
+	if ( bReceive )
+	{
+		const float32 Constants[4] = { static_cast<float32>( ReceiverWidth ), static_cast<float32>( ReceiverHeight ), ReceiverAdjust, 0.0f }; // 影の絵の大きさと、補正の深さ。
+		FShaderConstantData Constant;
+		Constant.Stage = static_cast<int32>( EShaderStage::Pixel );
+		Constant.Slot = 4;
+		Constant.Bytes = TArrayView<const uint8>( reinterpret_cast<const uint8*>( Constants ), sizeof( Constants ) );
+		FShaderDrawRequest Request;
+		Request.Builtin = EBuiltInVertexShader::ShadowLit;
+		Request.BuiltinPixel = Texture >= 0 ? EBuiltInPixelShader::ShadowLitTextured : EBuiltInPixelShader::ShadowLit;
+		Request.State = State;
+		Request.Topology = EGeometryTopology::Triangles;
+		Request.bUseDepth = true;
+		Request.Vertices = reinterpret_cast<const uint8*>( ShadowVertices.GetData() );
+		Request.NumVertices = ShadowVertices.Num();
+		Request.Constants = TArrayView<const FShaderConstantData>( &Constant, 1 );
+		Request.Textures[0] = Texture;
+		Request.Textures[1] = ShadowSlotMaps[ReceiverSlot];
+		return ShaderSource->DrawShader( Request, *Geometry );
+	}
 	return Texture >= 0 ? Geometry->DrawTexturedGeometry( Output.GetData(), Output.Num(), State, Image ) : Geometry->DrawGeometry( Output.GetData(), Output.Num(), State );
+}
+
+void CGeometryCommandExecutor::SetShadowReceiver( int32 Slot, int32 ShadowMap )
+{
+	if ( Slot < 0 || Slot >= 3 )
+	{
+		return;
+	}
+	ShadowSlotMaps[Slot] = ShadowMap < 0 ? -1 : ShadowMap;
+	ReceiverSlot = -1;
+	for ( int32 Index = 0; Index < 3 && ReceiverSlot < 0; ++Index )
+	{
+		ReceiverSlot = ShadowSlotMaps[Index] >= 0 ? Index : -1;
+	}
+}
+
+bool CGeometryCommandExecutor::SubmitShadowCaster( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, int32 Alpha, int32 Texture )
+{
+	if ( Topology != EGeometryTopology::Triangles || Texture >= 0 || Alpha < 250 )
+	{
+		return true; // 影を落とさない図形。
+	}
+	if ( !ShaderSource || !Geometry )
+	{
+		return false;
+	}
+	const FMatrix4x4 Transform = World * LightViewProjection; // ローカルから、光のクリップ座標への変換。
+	TArray<FDrawShaderVertex3D> Output;
+	Output.Reserve( Vertices.Num() );
+	for ( const FDrawVertex3D& Input : Vertices )
+	{
+		if ( !Finite( Input.Position ) )
+		{
+			return false;
+		}
+		const FVector4 Clip = Transform.Transform( FVector4( Input.Position[0], Input.Position[1], Input.Position[2], 1 ) );
+		FDrawShaderVertex3D Vertex;
+		FMemory::Memzero( &Vertex, sizeof( Vertex ) );
+		Vertex.SubPosition[0] = Clip.x;
+		Vertex.SubPosition[1] = Clip.y;
+		Vertex.SubPosition[2] = Clip.z;
+		Vertex.SubPosition[3] = Clip.w;
+		if ( !Finite( Vertex.SubPosition ) )
+		{
+			return false;
+		}
+		Output.Add( Vertex );
+	}
+	FShaderDrawRequest Request;
+	Request.Builtin = EBuiltInVertexShader::Quad3D;
+	Request.BuiltinPixel = EBuiltInPixelShader::ShadowDepth;
+	Request.State.bTestDepth = true;
+	Request.State.bWriteDepth = true;
+	Request.State.Compare = EGeometryCompare::LessEqual;
+	Request.State.Culling = EGeometryCulling::None; // 裏表に関係なく、影を落とす。
+	Request.State.bAlphaBlend = false;
+	Request.Topology = EGeometryTopology::Triangles;
+	Request.bUseDepth = true;
+	Request.TargetFormats[0] = ERenderTargetColorFormat::R32Float;
+	Request.Vertices = reinterpret_cast<const uint8*>( Output.GetData() );
+	Request.NumVertices = Output.Num();
+	return ShaderSource->DrawShader( Request, *Geometry );
 }
 
 bool CGeometryCommandExecutor::BuildShaderQuad( const FDrawShaderQuad3DData& Data, TArray<FDrawShaderVertex3D>& Out )
@@ -366,7 +495,7 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::Execute( const FDraw
 			return EResult::Rejected;
 		}
 		const auto Data = View.Read<FDrawDefaultLightData>(); // 検査後の固定部。
-		Lighting.SetDefaultLight( Data.Enabled != 0 );
+		Lighting.SetDefaultLight( Data.Enabled != 0, Data.ShadowMapSlots & NDrawShadowMap::AllSlots );
 		return EResult::Executed;
 	}
 	case EDrawCommand::AmbientLight:

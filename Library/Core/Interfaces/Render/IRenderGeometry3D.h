@@ -31,6 +31,9 @@ public:
 	// 登録済みカスタムパイプラインとGPUバッファ・画像で描く。複数描画先（MRT）パスにも対応する。
 	// パスや状態と一致しないパイプライン、範囲外バッファ、書き込み中ターゲットとの競合時はfalseで記録しない。
 	virtual bool DrawGraphicsPipeline( const FGraphicsPipelineDraw& Draw ) { (void)Draw; return false; }
+	// 登録済みカスタムパイプラインで、頂点・添字・定数を、バッファとして登録せずに渡して描く（1回限りの描画）。条件はDrawGraphicsPipelineと同じ。
+	// 未対応・フレーム外・不正な入力はfalseで記録しない。
+	virtual bool DrawGraphicsPipelineTransient( const FGraphicsPipelineTransientDraw& Draw ) { (void)Draw; return false; }
 	// 既存の描画より後に深度を1へ消す。クリップに関係なく全体を対象にする。
 	virtual void ClearDepth() = 0;
 };

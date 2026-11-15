@@ -24,8 +24,12 @@ public:
 	// 光の計算をするか（既定は、する）
 	void SetEnabled( bool bInEnabled ) { bEnabled = bInEnabled; }
 	bool IsEnabled() const { return bEnabled; }
-	// 最初からある 1 つのライトの入り切り
-	void SetDefaultLight( bool bInEnabled ) { bDefaultLight = bInEnabled; }
+	// 最初からある 1 つのライトの入り切りと、そのライトが影を受けるスロットのビットの和
+	void SetDefaultLight( bool bInEnabled, int32 InShadowSlots = 7 )
+	{
+		bDefaultLight = bInEnabled;
+		DefaultLightShadowSlots = InShadowSlots;
+	}
 	// 全体の環境光
 	void SetAmbient( const FColor& Color ) { Ambient = Color; }
 	// 面の材質。使えない値なら false（変えない）
@@ -40,7 +44,8 @@ public:
 
 	// 世界の点 Point（単位の法線 Normal）の色（0..1 を超えることがある）。Eye はカメラの位置。
 	// VertexDiffuse / VertexSpecular は、図形に付けた色（材質の設定で、使うかどうかが決まる）
-	FColor Evaluate( const FVector3& Point, const FVector3& Normal, const FVector3& Eye, const FColor& VertexDiffuse, const FColor& VertexSpecular ) const;
+	// ShadowMask が 0 でないとき、ライトが影を受けるスロット（FLight::ShadowMapSlots）と重なるライトの分は、戻り値でなく OutShadowed へ足す（影の中で消える分）。
+	FColor Evaluate( const FVector3& Point, const FVector3& Normal, const FVector3& Eye, const FColor& VertexDiffuse, const FColor& VertexSpecular, int32 ShadowMask = 0, FColor* OutShadowed = nullptr ) const;
 
 private:
 	FSurfaceMaterial Material;
@@ -49,4 +54,5 @@ private:
 	TArray<FLight> Lights;   // 足した順
 	bool bEnabled = true;
 	bool bDefaultLight = true;
+	int32 DefaultLightShadowSlots = 7;   // 最初からあるライトが、影を受けるスロット
 };

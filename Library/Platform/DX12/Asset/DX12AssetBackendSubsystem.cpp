@@ -293,6 +293,51 @@ bool CDX12AssetBackendSubsystem::DrawShader( const FShaderDrawRequest& Request, 
 	return ShaderService.DrawShader( Request, Geometry );
 }
 
+void CDX12AssetBackendSubsystem::SetShadowPass( int32 ShadowMap, const FMatrix4x4& LightViewProjection, float32 AdjustDepth, int32 Width, int32 Height )
+{
+	ShaderService.SetShadowPass( ShadowMap, LightViewProjection, AdjustDepth, Width, Height );
+}
+
+bool CDX12AssetBackendSubsystem::GetShadowPass( int32 ShadowMap, FMatrix4x4& OutLightViewProjection, float32& OutAdjustDepth, int32& OutWidth, int32& OutHeight ) const
+{
+	return ShaderService.GetShadowPass( ShadowMap, OutLightViewProjection, OutAdjustDepth, OutWidth, OutHeight );
+}
+
+int32 CDX12AssetBackendSubsystem::MakeShadowMap( int32 Width, int32 Height )
+{
+	if ( Width < 1 || Height < 1 || Width > NDrawShadowMap::MaxSize || Height > NDrawShadowMap::MaxSize )
+	{
+		return NAsset::InvalidHandle;
+	}
+	// 深度（光から見た距離）を、R32Floatの色として書く。いちばん遠い（1）で始める。
+	return Textures.CreateRenderTarget( Width, Height, true, ERenderTargetColorFormat::R32Float, FColor32( 255, 255, 255, 255 ) );
+}
+
+void CDX12AssetBackendSubsystem::DeleteShadowMap( int32 ShadowMap )
+{
+	ShaderService.ForgetShadowMap( ShadowMap );
+	Textures.Delete( ShadowMap );
+}
+
+bool CDX12AssetBackendSubsystem::GetShadowMapViewProjection( int32 ShadowMap, float32 ( &OutMatrix )[16] )
+{
+	FMatrix4x4 Matrix;
+	float32 Adjust = 0.0f;
+	int32 Width = 0, Height = 0;
+	if ( !ShaderService.GetShadowPass( ShadowMap, Matrix, Adjust, Width, Height ) )
+	{
+		return false;
+	}
+	for ( int32 Row = 0; Row < 4; ++Row )
+	{
+		for ( int32 Column = 0; Column < 4; ++Column )
+		{
+			OutMatrix[Row * 4 + Column] = Matrix.m[Row][Column];
+		}
+	}
+	return true;
+}
+
 int32 CDX12AssetBackendSubsystem::MakeFont( const FFontDesc& Desc )
 {
 	return Fonts.MakeFont( Desc );

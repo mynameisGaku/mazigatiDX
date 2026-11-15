@@ -127,6 +127,12 @@ public:
 	bool CompileShader( EShaderStage Stage, const char* Source, int32 NumBytes, const char* SourceName, const char* EntryPoint, const char* ShaderModel, TArray<uint8>& OutCode, FString& OutMessage ) override;
 	bool IsShaderValid( int32 Shader, EShaderStage Stage ) const override;
 	bool DrawShader( const FShaderDrawRequest& Request, IRenderGeometry3D& Geometry ) override;
+	void SetShadowPass( int32 ShadowMap, const FMatrix4x4& LightViewProjection, float32 AdjustDepth, int32 Width, int32 Height ) override;
+	bool GetShadowPass( int32 ShadowMap, FMatrix4x4& OutLightViewProjection, float32& OutAdjustDepth, int32& OutWidth, int32& OutHeight ) const override;
+	// シャドウマップ（影の絵）。光から見た深度を書く、R32Floatの描画先（と深度）として作る。
+	int32 MakeShadowMap( int32 Width, int32 Height ) override;
+	void DeleteShadowMap( int32 ShadowMap ) override;
+	bool GetShadowMapViewProjection( int32 ShadowMap, float32 ( &OutMatrix )[16] ) override;
 	// フォントを登録する（OSの文字で描く。番号と指定は、共通のフォントの表が持つ）。使えない指定は-1。
 	int32 MakeFont( const FFontDesc& Desc ) override;
 	// フォントの番号を空ける。

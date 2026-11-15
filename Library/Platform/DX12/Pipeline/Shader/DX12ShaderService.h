@@ -43,9 +43,13 @@ public:
 	bool Compile( EShaderStage Stage, const char* Source, int32 NumBytes, const char* SourceName, const char* EntryPoint, const char* ShaderModel, TArray<uint8>& OutCode, FString& OutMessage );
 	// 登録してあるシェーダーの数
 	int32 Num() const { return Shaders.Num(); }
+	// 影の絵を手放したとき、覚えてある値を消す
+	void ForgetShadowMap( int32 ShadowMap ) { ShadowPasses.Remove( ShadowMap ); }
 
 	bool IsShaderValid( int32 Shader, EShaderStage Stage ) const override;
 	bool DrawShader( const FShaderDrawRequest& Request, IRenderGeometry3D& Geometry ) override;
+	void SetShadowPass( int32 ShadowMap, const FMatrix4x4& LightViewProjection, float32 AdjustDepth, int32 Width, int32 Height ) override;
+	bool GetShadowPass( int32 ShadowMap, FMatrix4x4& OutLightViewProjection, float32& OutAdjustDepth, int32& OutWidth, int32& OutHeight ) const override;
 
 private:
 	struct FInput
@@ -79,8 +83,10 @@ private:
 
 	// DXBC を調べて Record を埋める。種類・Shader Model が合わなければ false
 	bool Reflect( EShaderStage Stage, const uint8* Code, int32 NumBytes, FShaderRecord& Record ) const;
-	// 組み込みの頂点シェーダーを用意する
+	// 組み込みのシェーダー（頂点・ピクセル）を、初めて使うときに作る
+	void BuildBuiltIns();
 	const FShaderRecord* GetBuiltIn( EBuiltInVertexShader Kind );
+	const FShaderRecord* GetBuiltInPixel( EBuiltInPixelShader Kind );
 	// 空の画像（段に何も置いていないとき、読むと 0 になる）の資源を返す
 	bool GetEmptyTexture( FTextureResourceHandle& Out );
 	// 状態に合うパイプラインを、作って（あれば使い回して）返す。作れなければ無効
@@ -94,6 +100,19 @@ private:
 	TMap<FString, FPipelineEntry> PipelineCache;   // 鍵は、シェーダーと状態
 	FShaderRecord BuiltInRect;
 	FShaderRecord BuiltInQuad;
+	FShaderRecord BuiltInLit;
+	FShaderRecord BuiltInShadowDepth;
+	FShaderRecord BuiltInShadowLit;
+	FShaderRecord BuiltInShadowLitTextured;
+	// 影の絵ごとの、最後に描いたときの値
+	struct FShadowPass
+	{
+		FMatrix4x4 LightViewProjection;
+		float32 AdjustDepth = 0.0f;
+		int32 Width = 0;
+		int32 Height = 0;
+	};
+	TMap<int32, FShadowPass> ShadowPasses;
 	bool bBuiltInTried = false;
 	int32 EmptyTexture = -1;                       // 空の画像のアセット番号
 };

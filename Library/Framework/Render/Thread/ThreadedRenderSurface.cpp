@@ -295,6 +295,19 @@ bool CThreadedRenderSurface::DrawGraphicsPipeline( const FGraphicsPipelineDraw &
 	return Execute( MoveTemp( Work ) ) && bResult;
 }
 
+bool CThreadedRenderSurface::DrawGraphicsPipelineTransient( const FGraphicsPipelineTransientDraw &Draw )
+{
+	GAME_THREAD_ONLY( false );
+	if ( !bActive )
+	{
+		return false;
+	}
+	bool bResult = false;
+	auto Work = [&]()
+	{ if ( IRenderGeometry3D *Geometry = Target.GetGeometry3D() ) { bResult = Geometry->DrawGraphicsPipelineTransient( Draw ); } };
+	return Execute( MoveTemp( Work ) ) && bResult;
+}
+
 void CThreadedRenderSurface::Box( float32 X0, float32 Y0, float32 X1, float32 Y1, FColor32 Color, bool bFill, float32 Thickness )
 {
 	GAME_THREAD_ONLY();

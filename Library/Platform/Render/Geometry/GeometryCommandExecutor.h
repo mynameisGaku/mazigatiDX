@@ -6,6 +6,7 @@
 #include "Library/Core/Interfaces/Render/IStaticModelSource.h"
 #include "Library/Framework/Render/Camera/Camera.h"
 #include "Library/Framework/Render/Draw/DrawCommand.h"
+#include "Library/Core/Interfaces/Render/IShaderDrawSource.h"
 #include "Library/Platform/Render/Geometry/VertexLighting.h"
 
 // カメラ・ワールド・深度を共通命令から解釈する。GPUやImGuiには依存しない。
@@ -21,6 +22,19 @@ public:
 	};
 	// Geometryは借用。nullptrでも状態命令は読めるが、描画は失敗する。
 	explicit CGeometryCommandExecutor( IRenderGeometry3D* InGeometry, ITextureDrawSource* InTextures = nullptr, IGeometryBufferSource* InBuffers = nullptr, IStaticModelSource* InModels = nullptr );
+	// 影の描画に使う、シェーダーの実行先（nullptrなら、影の絵を描けず、影も受けられない）。
+	void SetShaderSource( IShaderDrawSource* InSource ) { ShaderSource = InSource; }
+	// 影の絵を描く間だけ呼ぶ。以降の3D図形は、画面でなく、光から見た深度として、いまの描画先（影の絵）へ描く。
+	void BeginShadowCasting( const FMatrix4x4& InLightViewProjection )
+	{
+		bShadowCasting = true;
+		LightViewProjection = InLightViewProjection;
+	}
+	void EndShadowCasting() { bShadowCasting = false; }
+	// 影を受ける: スロット Slot（0〜2）に、影の絵 ShadowMap を使う。ShadowMap が負なら、そのスロットを外す。使うのは、使っているスロットのうち、いちばん小さいもの。
+	void SetShadowReceiver( int32 Slot, int32 ShadowMap );
+	// いまのカメラ。
+	const FCamera& GetCamera() const { return Camera; }
 	// いまの3Dの実行先（描画先）。
 	IRenderGeometry3D* GetGeometry() const { return Geometry; }
 	// いまの深度・表裏などの状態。
@@ -34,6 +48,8 @@ public:
 	// 1命令を検査して実行する。Stateはこのインスタンス内だけに閉じる。
 	EResult Execute( const FDrawCommandView& View, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend );
 private:
+	// 影の絵を描いているとき、図形を光から見た深度として描く。影を落とさない図形（線・点・画像つき・半透明）は、何もせず成功。
+	bool SubmitShadowCaster( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, int32 Alpha, int32 Texture );
 	// ワールド座標を同次クリップ座標にして記録する。全入力を検査してからGPUへ渡す。
 	// bLit なら、頂点の法線と現在のライティングから、頂点ごとに色を計算する（光の計算を切っているときは、拡散色＋鏡面色）。
 	bool Submit( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend, int32 Texture = -1, bool bLit = false );
@@ -50,6 +66,11 @@ private:
 	FGeometryDrawState State; // 現在の深度と表裏。
 	CVertexLighting Lighting; // このSpanだけのライティング（光）の状態。
 	FDrawFogData Fog; // このSpanだけの距離フォグ（Modeが0なら、なし）。
+	IShaderDrawSource* ShaderSource = nullptr; // 影の描画に使うシェーダーの実行先（借用）。
+	bool bShadowCasting = false; // 影の絵を描いているか。
+	FMatrix4x4 LightViewProjection; // 影の絵を描くときの、光から見た行列。
+	int32 ShadowSlotMaps[3] = { -1, -1, -1 }; // スロットごとの、使っている影の絵。
+	int32 ReceiverSlot = -1; // 影を受けるスロット（-1 は、受けない）。
 	TArray<FMatrix4x4> WorldStack; // このSpanだけの変換の積み重ね。
 	TArray<FCamera> CameraStack; // このSpanだけのカメラの積み重ね。
 };

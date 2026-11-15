@@ -755,6 +755,160 @@ bool CDX12GeometryRenderer::DrawBufferGeometry( const FGeometryBufferDraw &Draw,
 	return true;
 }
 
+bool CDX12GeometryRenderer::DrawGraphicsPipelineTransient( const FGraphicsPipelineTransientDraw &Draw )
+{
+	if ( !Commands || ColorViewCount == 0 || !GraphicsPipelines || !UploadArena || UploadTicket == 0 || GraphicsDrawCount >= 1024 || !Draw.Vertices )
+	{
+		return false;
+	}
+	FDX12GraphicsPipelineBinding Pipeline; // PSOとスロット宣言を取得する。
+	if ( !GraphicsPipelines->AcquirePipeline( Draw.Pipeline, Pipeline ) || !Pipeline.Pipeline || !Pipeline.Root || Pipeline.NumRenderTargets != ColorViewCount || ( Pipeline.DepthFormat == EGraphicsDepthFormat::D32Float && ( !Depth || !DsvHeap ) ) )
+	{
+		return false;
+	}
+	for ( uint32 i = 0; i < ColorViewCount; ++i )
+	{
+		if ( Pipeline.RenderTargetFormats[i] != ColorFormats[i] )
+		{
+			return false;
+		}
+	}
+	const bool bIndexed = Draw.Indices != nullptr; // index付き描画の有無。
+	const uint32 Group = Pipeline.Topology == EGeometryTopology::Points ? 1u : Pipeline.Topology == EGeometryTopology::Lines ? 2u : 3u;
+	if ( Draw.VertexCount == 0 || Draw.VertexCount > 65536 || ( bIndexed ? Draw.IndexCount == 0 || Draw.IndexCount > 196608 || ( Draw.IndexCount % Group ) != 0 : ( Draw.IndexCount != 0 || ( Draw.VertexCount % Group ) != 0 ) ) )
+	{
+		return false;
+	}
+	if ( Draw.Constants.Num() != Pipeline.BufferSlots.Num() || ( Draw.Constants.Num() > 0 && !Draw.Constants.GetData() ) || Draw.Textures.Num() != Pipeline.TextureSlots.Num() || ( Draw.Textures.Num() > 0 && !Draw.Textures.GetData() ) )
+	{
+		return false;
+	}
+	for ( int32 i = 0; i < Draw.Constants.Num(); ++i )
+	{
+		const FGraphicsConstantBytes &Bytes = Draw.Constants[i]; // 一時の転送では、定数だけを受け取る（読み取りバッファは、登録したものを使う）。
+		if ( Pipeline.BufferSlots[i].Layout != EGraphicsBufferLayout::Constant || !Bytes.Data || Bytes.Size == 0 || Bytes.Size > 65536 || Bytes.Size < Pipeline.MinimumBytes[i] )
+		{
+			return false;
+		}
+	}
+	TArray<FDX12TextureBinding> SlotTextures; // DescriptorTableへ渡す画像・読み取り深度。
+	if ( !Pipeline.TextureSlots.IsEmpty() )
+	{
+		if ( !TextureStore || !SrvHeap )
+		{
+			return false;
+		}
+		SlotTextures.SetNum( Pipeline.TextureSlots.Num() );
+		for ( int32 i = 0; i < Pipeline.TextureSlots.Num(); ++i )
+		{
+			const FTextureResourceHandle TexHandle = Draw.Textures[i];
+			if ( !TextureStore->AcquireGraphicsTexture( TexHandle, Pipeline.TextureSlots[i].Format, SlotTextures[i] ) )
+			{
+				if ( TextureStore->IsActiveTarget( TexHandle ) )
+				{
+					bHazardRejected = true;
+				}
+				return false;
+			}
+			if ( !IsValidSrvHandle( SlotTextures[i].SrvGpuDescriptor ) )
+			{
+				return false;
+			}
+			if ( IsForbiddenTextureBinding( SlotTextures[i].SrvGpuDescriptor ) )
+			{
+				bHazardRejected = true;
+				return false;
+			}
+		}
+	}
+	D3D12_VIEWPORT Viewport = {};
+	D3D12_RECT Scissor = {};
+	if ( !ResolveViewportAndScissor( Viewport, Scissor ) )
+	{
+		return true;
+	}
+	int32 NewBufferPinCount = 0;
+	uint64 AddedBufferBytes = 0;
+	const TArrayView<const FDX12BufferBinding> NoBuffers; // 一時の転送は、バッファの登録を使わない。
+	if ( !CanCommitBufferPins( NoBuffers, NewBufferPinCount, AddedBufferBytes ) || !CommitGraphicsAssetPins( TArrayView<const FDX12TextureBinding>( SlotTextures.GetData(), SlotTextures.Num() ), Pipeline ) )
+	{
+		return false;
+	}
+	// 頂点・添字・定数を、フレームの転送領域へ載せる（定数は、256 の境界へ揃える）。
+	const uint64 VertexBytes = static_cast<uint64>( Draw.VertexCount ) * Pipeline.VertexStride;
+	const uint64 IndexBytes = bIndexed ? static_cast<uint64>( Draw.IndexCount ) * 4ull : 0ull;
+	uint64 TotalBytes = VertexBytes + IndexBytes;
+	for ( const FGraphicsConstantBytes &Bytes : Draw.Constants )
+	{
+		TotalBytes += ( static_cast<uint64>( Bytes.Size ) + 255ull ) / 256ull * 256ull + 256ull;
+	}
+	if ( UploadBytes + TotalBytes > 64ull * 1024ull * 1024ull )
+	{
+		return false;
+	}
+	CDX12UploadArena::FAllocation VertexAlloc = {}, IndexAlloc = {};
+	TArray<CDX12UploadArena::FAllocation> ConstantAllocs;
+	if ( !UploadArena->Allocate( UploadTicket, VertexBytes, 16, VertexAlloc ) || ( bIndexed && !UploadArena->Allocate( UploadTicket, IndexBytes, 4, IndexAlloc ) ) )
+	{
+		return false;
+	}
+	FMemory::Memcpy( VertexAlloc.CpuAddress, Draw.Vertices, static_cast<usize>( VertexBytes ) );
+	if ( bIndexed )
+	{
+		FMemory::Memcpy( IndexAlloc.CpuAddress, Draw.Indices, static_cast<usize>( IndexBytes ) );
+	}
+	for ( const FGraphicsConstantBytes &Bytes : Draw.Constants )
+	{
+		const uint64 Size = ( static_cast<uint64>( Bytes.Size ) + 255ull ) / 256ull * 256ull;
+		CDX12UploadArena::FAllocation Alloc = {};
+		if ( !UploadArena->Allocate( UploadTicket, Size, 256, Alloc ) )
+		{
+			return false;
+		}
+		FMemory::Memzero( Alloc.CpuAddress, static_cast<usize>( Size ) ); // 余りは0。
+		FMemory::Memcpy( Alloc.CpuAddress, Bytes.Data, static_cast<usize>( Bytes.Size ) );
+		ConstantAllocs.Add( Alloc );
+	}
+	UploadBytes += TotalBytes;
+	++GraphicsDrawCount;
+
+	if ( SrvHeap )
+	{
+		ID3D12DescriptorHeap *Heaps[] = { SrvHeap };
+		Commands->SetDescriptorHeaps( 1, Heaps );
+	}
+	Commands->SetGraphicsRootSignature( Pipeline.Root.Get() );
+	Commands->SetPipelineState( Pipeline.Pipeline.Get() );
+	for ( int32 i = 0; i < ConstantAllocs.Num(); ++i )
+	{
+		Commands->SetGraphicsRootConstantBufferView( static_cast<UINT>( i ), ConstantAllocs[i].GpuAddress );
+	}
+	for ( int32 i = 0; i < SlotTextures.Num(); ++i )
+	{
+		Commands->SetGraphicsRootDescriptorTable( static_cast<UINT>( ConstantAllocs.Num() + i ), D3D12_GPU_DESCRIPTOR_HANDLE{ SlotTextures[i].SrvGpuDescriptor } );
+	}
+	const D3D12_CPU_DESCRIPTOR_HANDLE Dsv = DsvHeap ? DsvHeap->GetCPUDescriptorHandleForHeapStart() : D3D12_CPU_DESCRIPTOR_HANDLE{};
+	Commands->OMSetRenderTargets( ColorViewCount, Rtvs, FALSE, Pipeline.DepthFormat == EGraphicsDepthFormat::D32Float ? &Dsv : nullptr );
+	Commands->RSSetViewports( 1, &Viewport );
+	Commands->RSSetScissorRects( 1, &Scissor );
+	Commands->IASetPrimitiveTopology( ToD3DTopology( Pipeline.Topology ) );
+	const D3D12_VERTEX_BUFFER_VIEW Vbv = { VertexAlloc.GpuAddress, static_cast<UINT>( VertexBytes ), Pipeline.VertexStride };
+	Commands->IASetVertexBuffers( 0, 1, &Vbv );
+	if ( bIndexed )
+	{
+		const D3D12_INDEX_BUFFER_VIEW Ibv = { IndexAlloc.GpuAddress, static_cast<UINT>( IndexBytes ), DXGI_FORMAT_R32_UINT };
+		Commands->IASetIndexBuffer( &Ibv );
+		Commands->DrawIndexedInstanced( Draw.IndexCount, 1, 0, 0, 0 );
+	}
+	else
+	{
+		Commands->IASetIndexBuffer( nullptr );
+		Commands->DrawInstanced( Draw.VertexCount, 1, 0, 0 );
+	}
+	Commands->OMSetRenderTargets( ColorViewCount, Rtvs, FALSE, nullptr );
+	return true;
+}
+
 bool CDX12GeometryRenderer::DrawGraphicsPipeline( const FGraphicsPipelineDraw &Draw )
 {
 	if ( !Commands || ColorViewCount == 0 || !GraphicsPipelines || !Buffers || !Buffers->UsesDeviceAndQueue( Device.Get(), BufferQueue.Get() ) || GraphicsDrawCount >= 1024 )

@@ -76,7 +76,7 @@ void CVertexLighting::PopLight()
 	}
 }
 
-FColor CVertexLighting::Evaluate( const FVector3& Point, const FVector3& Normal, const FVector3& Eye, const FColor& VertexDiffuse, const FColor& VertexSpecular ) const
+FColor CVertexLighting::Evaluate( const FVector3& Point, const FVector3& Normal, const FVector3& Eye, const FColor& VertexDiffuse, const FColor& VertexSpecular, int32 ShadowMask, FColor* OutShadowed ) const
 {
 	const FColor DiffuseColor = Material.bUseVertexDiffuse ? VertexDiffuse : Material.Diffuse;
 	const FColor SpecularColor = Material.bUseVertexSpecular ? VertexSpecular : Material.Specular;
@@ -87,9 +87,17 @@ FColor CVertexLighting::Evaluate( const FVector3& Point, const FVector3& Normal,
 	FColor Out( Material.Emissive.r + Material.Ambient.r * Ambient.r, Material.Emissive.g + Material.Ambient.g * Ambient.g, Material.Emissive.b + Material.Ambient.b * Ambient.b, 1.0f );
 	const FVector3 ToEye = ( Eye - Point ).Normalized();
 	int32 NumActive = 0;   // 効いたライトの数（最初からあるライトが先）
+	if ( OutShadowed )
+	{
+		*OutShadowed = FColor( 0.0f, 0.0f, 0.0f, 0.0f );
+	}
+	// 影を受けるライトの分は、OutShadowed へ。それ以外（と、環境光・自己発光）は、戻り値へ。
+	const auto Target = [&]( const FLight& Light ) -> FColor& { return OutShadowed && ( ShadowMask & Light.ShadowMapSlots ) != 0 ? *OutShadowed : Out; };
 	if ( bDefaultLight )
 	{
-		AddLight( MakeBuiltInLight(), Material, Options, Point, Normal, ToEye, DiffuseColor, SpecularColor, Out );
+		FLight Built = MakeBuiltInLight();
+		Built.ShadowMapSlots = DefaultLightShadowSlots;
+		AddLight( Built, Material, Options, Point, Normal, ToEye, DiffuseColor, SpecularColor, Target( Built ) );
 		++NumActive;
 	}
 	for ( const FLight& Light : Lights )
@@ -98,7 +106,7 @@ FColor CVertexLighting::Evaluate( const FVector3& Point, const FVector3& Normal,
 		{
 			break;
 		}
-		AddLight( Light, Material, Options, Point, Normal, ToEye, DiffuseColor, SpecularColor, Out );
+		AddLight( Light, Material, Options, Point, Normal, ToEye, DiffuseColor, SpecularColor, Target( Light ) );
 		++NumActive;
 	}
 	return Out;

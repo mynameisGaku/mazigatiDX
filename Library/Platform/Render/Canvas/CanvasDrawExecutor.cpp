@@ -2,6 +2,7 @@
 #include "CanvasDrawExecutor.h"
 #include "Library/Platform/Render/Geometry/GeometryCommandExecutor.h"
 #include "Library/Platform/Render/Shader/ShaderCommandExecutor.h"
+#include "Library/Platform/Render/Shadow/ShadowMapMath.h"
 #include "Library/Framework/Render/Draw/DrawCommand.h"
 #include "Library/Platform/System/BackendSupport.h"
 #include "Library/Core/Types/Numeric.h"
@@ -89,6 +90,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 	}
 	CGeometryCommandExecutor Geometry( Surface.GetGeometry3D(), Textures, Buffers, Models ); // このSpanだけの3D状態。
 	CShaderCommandExecutor ShaderExecutor( Geometry, Shaders ); // このSpanだけのシェーダーの状態。
+	Geometry.SetShaderSource( Shaders ); // 影の描画にも、同じ実行先を使う。
 	CNullCanvas2D NullCanvas; // 2Dを描けない描画先では、これを使う（何も描かない）。
 	bool bLinearFilter = false; // 画像の既定は最近傍。
 	bool bExplicitFilter = false; // 明示した補間を使えない実行先では画像を省略する。
@@ -97,7 +99,8 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 	int32 Alpha = 255; // このSpanだけの不透明度。
 	int32 ClipDepth = 0; // 終了時に必ず戻すクリップ段数。
 	int32 SkipTargetDepth = 0; // 未対応の描画先（レンダーターゲット）へ描く範囲の深さ。この中は描かない。
-	int32 SkipShadowDepth = 0; // シャドウマップへ描く範囲の深さ。この中は描かない（画面へ描いてしまわないように）。
+	int32 SkipShadowDepth = 0; // 描けないシャドウマップへ描く範囲の深さ。この中は描かない（画面へ描いてしまわないように）。
+	bool bShadowPassActive = false; // 影の絵へ描いているか（BeginShadowMap〜EndShadowMap）。
 	bool bStopped = false; // 壊れた命令以降を描かない印。
 	FCanvasTransform Transform; // このSpanだけの2Dの変換。
 	// 描画先（レンダーターゲット）を替える前の状態。戻すときに使う。
@@ -106,6 +109,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 		FRenderTargetDrawView Target; // この段の描画先（主画面なら無効）。
 		FCanvasTransform Transform; // 替える前の2Dの変換。
 		int32 ClipDepth = 0; // 替える前のクリップの段数。
+		bool bShadow = false; // 影の絵への描画か（終わるとき、影を落とす状態を戻す）。
 	};
 	TArray<FTargetScope> TargetStack; // 積んだ描画先。最後が、いまの描画先。
 	FRenderTargetDrawView CurrentTarget; // いまの描画先（主画面なら無効）。
@@ -461,14 +465,115 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 		}
 		if ( View.Type == EDrawCommand::BeginShadowMap )
 		{
-			++SkipShadowDepth;
-			Unsupported( View, "Drawing into a shadow map is skipped" );
+			// 描けない（入れ子・使えない値・影の絵でない・カメラが無い）ときは、対の EndShadowMap まで、描く命令を飛ばす（画面へ描いてしまわないように）。
+			FRenderTargetDrawView Map; // 影の絵（R32Float の色と深度）。
+			FMatrix4x4 LightViewProjection;
+			FDrawBeginShadowMapData Data;
+			IRenderGeometry3D* Target = Geometry.GetGeometry();
+			bool bReady = SkipTargetDepth == 0 && SkipShadowDepth == 0 && !bShadowPassActive && View.CanRead<FDrawBeginShadowMapData>() && Shaders && Targets && Target;
+			if ( bReady )
+			{
+				Data = View.Read<FDrawBeginShadowMapData>();
+				const FCameraViewport Viewport = { Target->GetWidth(), Target->GetHeight() };
+				bReady = Data.Handle >= 0 && Targets->GetRenderTargetDrawView( Data.Handle, Map ) && Map.Format == ERenderTargetColorFormat::R32Float && Map.Depth.IsValid()
+					&& NMath::IsFinite( Data.AdjustDepth ) && Data.AdjustDepth >= 0.0f && Data.AdjustDepth < 1.0f
+					&& NShadowMapMath::ComputeLightViewProjection( Data, Geometry.GetCamera(), Viewport, LightViewProjection );
+			}
+			if ( bReady && CurrentTarget.Color.IsValid() )
+			{
+				Surface.EndRenderTargetPass(); // いまの描画先のパスを閉じてから、影の絵のパスを始める。
+				bMrtActive = false;
+			}
+			if ( bReady )
+			{
+				FRenderTargetPassDesc Desc; // 影の絵は、いちばん遠い（1）の深度で始める。
+				Desc.ColorTarget = Map.Color;
+				Desc.DepthTarget = Map.Depth;
+				Desc.ClearColor = FColor32( 255, 255, 255, 255 );
+				Desc.bClearColor = true;
+				Desc.ClearDepth = 1.0f;
+				Desc.bClearDepth = true;
+				if ( !Surface.BeginRenderTargetPass( Desc ) )
+				{
+					EnterTarget( CurrentTarget ); // 元の描画先のパスへ戻す。
+					bReady = false;
+				}
+			}
+			if ( !bReady )
+			{
+				++SkipShadowDepth;
+				Unsupported( View, "The shadow map pass could not be started; drawing into it is skipped" );
+				continue;
+			}
+			FTargetScope Scope; // 終わったときに戻す状態。
+			Scope.Target = CurrentTarget;
+			Scope.Transform = Transform;
+			Scope.ClipDepth = ClipDepth;
+			Scope.bShadow = true;
+			TargetStack.Add( Scope );
+			CurrentTarget = Map;
+			Transform = FCanvasTransform();
+			ClipDepth = 0;
+			Canvas = Surface.GetCanvas2D();
+			if ( !Canvas )
+			{
+				Canvas = &NullCanvas;
+			}
+			Geometry.SetGeometry( Surface.GetGeometry3D() );
+			Geometry.BeginShadowCasting( LightViewProjection );
+			Shaders->SetShadowPass( Data.Handle, LightViewProjection, Data.AdjustDepth, Map.Width, Map.Height );
+			bShadowPassActive = true;
 			continue;
 		}
 		if ( View.Type == EDrawCommand::EndShadowMap )
 		{
-			SkipShadowDepth = NMath::Max( 0, SkipShadowDepth - 1 );
+			if ( SkipShadowDepth > 0 )
+			{
+				--SkipShadowDepth;
+				continue;
+			}
+			if ( bShadowPassActive && !TargetStack.IsEmpty() )
+			{
+				Surface.EndRenderTargetPass();
+				bMrtActive = false;
+				Geometry.EndShadowCasting();
+				bShadowPassActive = false;
+				const FTargetScope Scope = TargetStack.Pop(); // 始める前の状態。
+				CurrentTarget = Scope.Target;
+				Transform = Scope.Transform;
+				ClipDepth = Scope.ClipDepth;
+				if ( !EnterTarget( CurrentTarget ) )
+				{
+					bStopped = true;
+				}
+			}
 			continue;
+		}
+		// 影の絵へ描いている間は、描画先・カメラ・クリップ・消去などの命令は、使えない（DxLib と同じ。無視する）。
+		if ( bShadowPassActive )
+		{
+			switch ( View.Type )
+			{
+			case EDrawCommand::PushTarget:
+			case EDrawCommand::PopTarget:
+			case EDrawCommand::PushCamera:
+			case EDrawCommand::PopCamera:
+			case EDrawCommand::PushClip:
+			case EDrawCommand::PopClip:
+			case EDrawCommand::PushMask:
+			case EDrawCommand::PopMask:
+			case EDrawCommand::Clear:
+			case EDrawCommand::ClearDepth:
+			case EDrawCommand::CopyScreen:
+			case EDrawCommand::ImageFilter:
+			case EDrawCommand::ImageBlend:
+			case EDrawCommand::UseShadowMap:
+			case EDrawCommand::PreviewShadowMap:
+			case EDrawCommand::ShaderOutputTarget:
+				continue;
+			default:
+				break;
+			}
 		}
 		if ( SkipTargetDepth > 0 || SkipShadowDepth > 0 )
 		{
@@ -1137,12 +1242,28 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			}
 			break;
 		}
+		case EDrawCommand::UseShadowMap:
+		{
+			if ( !View.CanRead<FDrawUseShadowMapData>() )
+			{
+				bStopped = true;
+				break;
+			}
+			const auto Data = View.Read<FDrawUseShadowMapData>(); // 固定部を所有コピーする。
+			if ( Data.Slot < 0 || Data.Slot >= NDrawShadowMap::NumSlots )
+			{
+				break;
+			}
+			FRenderTargetDrawView Map;
+			const bool bUsable = Data.Handle >= 0 && Targets && Targets->GetRenderTargetDrawView( Data.Handle, Map ) && Map.Format == ERenderTargetColorFormat::R32Float;
+			Geometry.SetShadowReceiver( Data.Slot, bUsable ? Data.Handle : -1 ); // 使えない番号は、そのスロットを外す。
+			break;
+		}
 		// まだ描画に反映しない状態。図形は、この状態なしで描く。
 		case EDrawCommand::AddColor:
 		case EDrawCommand::AlphaTest:
 		case EDrawCommand::PushMask:
 		case EDrawCommand::PopMask:
-		case EDrawCommand::UseShadowMap:
 		case EDrawCommand::ModelAnim:
 		case EDrawCommand::ModelAnimFrame:
 			Unsupported( View, "The state is ignored" );
@@ -1184,6 +1305,11 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 		Surface.EndRenderTargetPass();
 		bMrtActive = false;
 		const FTargetScope Scope = TargetStack.Pop(); // 替える前の状態。
+		if ( Scope.bShadow )
+		{
+			Geometry.EndShadowCasting();
+			bShadowPassActive = false;
+		}
 		CurrentTarget = Scope.Target;
 		ClipDepth = Scope.ClipDepth;
 		EnterTarget( CurrentTarget );

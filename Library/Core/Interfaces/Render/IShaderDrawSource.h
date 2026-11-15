@@ -5,6 +5,7 @@
 #include "Library/Core/Interfaces/Render/IShader.h"
 #include "Library/Core/Render/GeometryDrawState.h"
 #include "Library/Core/Render/RenderTargetFormat.h"
+#include "Library/Math/Matrix4x4.h"
 
 //=============================================================================
 // 利用者のシェーダーで描く、1 回の描画の値と、それを実行する窓口
@@ -18,6 +19,16 @@ enum class EBuiltInVertexShader : uint8
 	None,    // 利用者の頂点シェーダーを使う。
 	Rect,    // ShaderRect: 頂点の位置（クリップ座標）をそのまま渡し、色・画像の座標・Extra をピクセルシェーダーへ渡す。
 	Quad3D,  // ShaderQuad3D: 頂点の SubPosition（クリップ座標 x, y, z, w）を位置にして、同じものを渡す。
+	ShadowLit, // 影を受ける光の計算: SubPosition を位置にして、色（Diffuse = 影の外の色、Specular = 影の中で消える色）・画像の座標・光から見た位置（Normal）を渡す。
+};
+
+// 組み込みのピクセルシェーダー（影のための描画。利用者のピクセルシェーダーの代わり）
+enum class EBuiltInPixelShader : uint8
+{
+	None,               // 利用者のピクセルシェーダーを使う。
+	ShadowDepth,        // 影の絵へ、光から見た深度を書く（Quad3D の頂点シェーダーと組み合わせる。出力は R32Float の 1 つ）。
+	ShadowLit,          // 影を受けて色を決める（ShadowLit の頂点シェーダーと組み合わせる。t1 = 影の絵、定数 b4 = ( 影の絵の幅, 高さ, 補正の深さ, 0 )）。
+	ShadowLitTextured,  // 同じ。さらに、t0 の画像の色を掛ける（画像と頂点の色の積のアルファが 0 なら、描かない）。
 };
 
 // 定数バッファの中身（シェーダーの cbuffer register( bN ) の N = Slot）
@@ -37,7 +48,8 @@ struct FShaderDrawRequest
 	static constexpr int32 NumTextureStages = 16;
 
 	int32 VertexShader = -1;                          // 利用者の頂点シェーダーの番号（Builtin が None のとき）。
-	int32 PixelShader = -1;                           // 利用者のピクセルシェーダーの番号。
+	int32 PixelShader = -1;                           // 利用者のピクセルシェーダーの番号（BuiltinPixel が None のとき）。
+	EBuiltInPixelShader BuiltinPixel = EBuiltInPixelShader::None;
 	EBuiltInVertexShader Builtin = EBuiltInVertexShader::None;
 	FGeometryDrawState State;                         // 深度・表裏・合成・補間・画像の外側。Topology は、下の Topology を使う。
 	EGeometryTopology Topology = EGeometryTopology::Triangles;
@@ -62,4 +74,8 @@ public:
 	virtual bool IsShaderValid( int32 Shader, EShaderStage Stage ) const = 0;
 	// 描く。シェーダーの組み合わせが合わない・パイプラインを作れない・GPU に渡せないときは false（何も描かない）。
 	virtual bool DrawShader( const FShaderDrawRequest& Request, IRenderGeometry3D& Geometry ) = 0;
+	// 影の絵（シャドウマップ）を描いたときの、光から見た行列・補正の深さ・大きさを覚える（影を受ける描画が、あとで引く）。
+	virtual void SetShadowPass( int32 /*ShadowMap*/, const FMatrix4x4& /*LightViewProjection*/, float32 /*AdjustDepth*/, int32 /*Width*/, int32 /*Height*/ ) {}
+	// 覚えてある、最後の影の絵の値。まだ描いていないときは false。
+	virtual bool GetShadowPass( int32 /*ShadowMap*/, FMatrix4x4& /*OutLightViewProjection*/, float32& /*OutAdjustDepth*/, int32& /*OutWidth*/, int32& /*OutHeight*/ ) const { return false; }
 };
