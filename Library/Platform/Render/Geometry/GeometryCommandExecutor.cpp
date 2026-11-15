@@ -4,6 +4,7 @@
 #include "GeometryQuadBuilder.h"
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Types/Numeric.h"
+#include "Library/Framework/Render/Draw/DrawRibbonMesh.h"
 #include "Library/Platform/System/BackendSupport.h"
 
 namespace
@@ -866,6 +867,48 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::Execute( const FDraw
 		const auto Data = View.Read<FDrawBillboardQuad3DData>(); // 四隅を自由に動かした画像。
 		TArray<FDrawVertex3D> Vertices; // つぶれていない三角形だけを描く。
 		return CGeometryQuadBuilder::BuildCorners( FVector3( Data.Pos[0], Data.Pos[1], Data.Pos[2] ), Data.Corner, Camera, Vertices ) && SubmitQuad( Vertices, Data.Handle, Bright, Alpha ) ? EResult::Executed : EResult::Rejected;
+	}
+	case EDrawCommand::Ribbon3D:
+	{
+		// 経路の点（ワールド座標）を、カメラへ面を向けた帯の三角形にして描く。ワールド行列は使わず、表裏の区別もしない。
+		constexpr int32 DataWords = sizeof( FDrawRibbonData ) / 4; // 固定部の長さ（ワード）。
+		constexpr int32 PointWords = sizeof( FDrawRibbonData::FPoint ) / 4; // 点1つの長さ（ワード）。
+		if ( View.NumDataWords < DataWords || !Camera.IsValid() )
+		{
+			return EResult::Rejected;
+		}
+		const auto Data = View.Read<FDrawRibbonData>(); // 検査前の固定部。
+		if ( Data.NumPoints < 2 || Data.NumPoints > FDrawRibbonData::MaxPoints || View.NumDataWords != DataWords + Data.NumPoints * PointWords )
+		{
+			return EResult::Rejected;
+		}
+		TArray<FDrawRibbonData::FPoint> Points; // 借用メモリのalignmentに頼らず、所有コピーを作る。
+		Points.SetNum( Data.NumPoints );
+		FMemory::Memcpy( Points.GetData(), View.Data + DataWords, static_cast<usize>( Data.NumPoints ) * sizeof( FDrawRibbonData::FPoint ) );
+		FDrawRibbonCamera RibbonCamera; // 帯の幅を向けるカメラ。
+		RibbonCamera.Position = Camera.Position;
+		RibbonCamera.Right = Camera.GetRight();
+		RibbonCamera.Up = Camera.GetUpVector();
+		RibbonCamera.Front = Camera.GetForward();
+		FDrawRibbonMesh Mesh; // 画像の繰り返しは、整数のUの境界で分ける（DxLibの描画と同じ）。
+		if ( !NDrawRibbonMesh::Build( Data, Points.GetData(), RibbonCamera, true, Mesh ) )
+		{
+			return EResult::Rejected;
+		}
+		TArray<FDrawVertex3D> Triangles; // 番号を解決した三角形のリスト。
+		Triangles.Reserve( Mesh.Indices.Num() );
+		for ( const uint16 Index : Mesh.Indices )
+		{
+			Triangles.Add( Mesh.Vertices[Index] );
+		}
+		const FMatrix4x4 OldWorld = World; // 成功・失敗のどちらでも元に戻す。
+		const EGeometryCulling OldCulling = State.Culling;
+		World = FMatrix4x4::Identity;
+		State.Culling = EGeometryCulling::None;
+		const bool bSuccess = Submit( Triangles, EGeometryTopology::Triangles, Bright, bAlphaBlend ? Alpha : 255, true, Data.Texture, true ); // 上書きのときも、通常のアルファで描く。
+		World = OldWorld;
+		State.Culling = OldCulling;
+		return bSuccess ? EResult::Executed : EResult::Rejected;
 	}
 	case EDrawCommand::Primitive3D:
 	{

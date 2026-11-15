@@ -370,6 +370,7 @@
     <ClCompile Include="Library\Framework\Render\Draw\DrawModelFrameOverrideData.cpp" />
     <ClCompile Include="Library\Framework\Render\Draw\DrawModelFrameOverrideScope.cpp" />
     <ClCompile Include="Library\Framework\Render\Draw\DrawModelFramePoseData.cpp" />
+    <ClCompile Include="Library\Framework\Render\Draw\DrawRibbonMesh.cpp" />
     <ClCompile Include="Library\Framework\Render\Draw\ImmediateDraw.cpp" />
     <ClCompile Include="Library\Framework\Render\MaterialEffect\MeshMaterialEffectPlayback.cpp" />
     <ClCompile Include="Library\Framework\Render\MaterialEffect\ModelMaterialEffectRenderer.cpp" />
@@ -1186,6 +1187,7 @@
     <ClInclude Include="Library\Framework\Render\Draw\DrawModelFramePoseData.h" />
     <ClInclude Include="Library\Framework\Render\Draw\DrawModelMaterial.h" />
     <ClInclude Include="Library\Framework\Render\Draw\DrawRibbon.h" />
+    <ClInclude Include="Library\Framework\Render\Draw\DrawRibbonMesh.h" />
     <ClInclude Include="Library\Framework\Render\Draw\DrawScopes.h" />
     <ClInclude Include="Library\Framework\Render\Draw\ImmediateDraw.h" />
     <ClInclude Include="Library\Framework\Render\MaterialEffect\MeshMaterialEffectPlayback.h" />
@@ -1323,6 +1325,7 @@
     <ClInclude Include="Library\Platform\DX12\Device\DX12QueueCompletion.h" />
     <ClInclude Include="Library\Platform\DX12\ImGui\Frame\DX12ImGuiFrameRenderer.h" />
     <ClInclude Include="Library\Platform\DX12\ImGui\Render\DX12ImGuiRenderer.h" />
+    <ClInclude Include="Library\Platform\DX12\Pipeline\DX12BlendState.h" />
     <ClInclude Include="Library\Platform\DX12\Pipeline\Compute\DX12ComputePipelineBinding.h" />
     <ClInclude Include="Library\Platform\DX12\Pipeline\Compute\DX12ComputePipelineStore.h" />
     <ClInclude Include="Library\Platform\DX12\Pipeline\Geometry\DX12GeometryPipelineStore.h" />

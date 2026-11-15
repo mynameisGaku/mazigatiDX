@@ -286,3 +286,10 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **確認の道具（追加）**: `--dx12-debug-layer=true`でSDKのデバッグレイヤーを有効にし、警告以上のメッセージを`LogDX12`へ出す（`DX12Device.cpp`）。`Docs/AI_WORKFLOW/tools/dx12_layer_check.ps1`（Claude側の私的な道具。サンプルを、このオプションつきで動かして、メッセージを集める）で、`Hello`・`Shaders`・`PostEffects`・`Shadows`・`Island`・`UI`・`Text`・`RenderTarget`・`Materials`・`Effects`を確認し、メッセージは0件だった（有効なことは、ログの1行で確かめた）。
 - **速度**（Release、300フレーム、窓あり）: `Island` 76 fps・`Shaders` 217 fps・`PostEffects` 151 fps・`Effects` 213 fps・`Shadows` 219 fps（DX12）。一時データの描画へ替える前は、`CreateBuffer`の同期と保持数の上限（256）で、`Island`が描けなかった。
 - **検査**: 影・一時データ・デバッグレイヤーの追加後も、Debug／Releaseのビルド警告0、`RunAllChecks.ps1 -SkipBuild -Quick`の42項目すべて成功、サンプル集の検査（`RunSamplesTest.ps1`）は、影の前の時点で成功（影の後は未実施）。
+
+## 2026-11-15 追記: Ribbon3D と、シェーダー描画の合成
+- **`Ribbon3D`**: 帯の展開（miter・端の補助点・UV）を、DxLib専用の`NDxLibRibbonMesh`から、共通の`NDrawRibbonMesh`（`Library/Framework/Render/Draw/DrawRibbonMesh.{h,cpp}`。`FDrawVertex3D`と`uint16`の番号）へ切り出した。DxLib側（`DxLibRibbonMesh.cpp`）は、DxLibのカメラの値を渡して、結果を`VERTEX3D`へ写すだけ（材質の帯・自己テストの呼び出しは、そのまま）。DX12は、`CGeometryCommandExecutor`の`Ribbon3D`で、同じ展開を使い、ワールド行列なし・両面・光の計算ありで描く（DxLibの`DrawPolygonIndexed3D`と同じ）。`MaterialRibbon3D`・`DistortedMaterialRibbon3D`は未対応。
+- **合成**: 利用者のシェーダー（カスタムパイプライン）は、通常のアルファ合成しか持たず、`Add`などを黙って無視していた（炎の芯が暗かった）。`FGraphicsPipelineDesc::Blend`を足し、`DX12BlendState.h`の表（組み込みの図形と共通）で、PSOへ写す。パイプラインの保管キーにも、混ぜ方を入れた。
+- **確認**: Effectsの`Material flame`の芯が、DxLibと同じ白黄色になった。帯は、頭の明るさ・白青の芯・細くなる尾が、DxLibと同じ（位相は、実時間の差で違う）。Debug／Releaseの警告0、`RunAllChecks.ps1 -SkipBuild -Quick`の42項目すべて成功（ワールドの自己テストの帯の実描画テストを含む）。
+- **撮影の注意**: Effectsは実時間で動く。DX12は速い（約200 fps）ので、DxLib（60 fps）の`--capture-frame=90`と同じ時間は、DX12の約330フレーム。
+- **次の作業**: `Tile`・`CircleGauge`・`AddColor`・`AlphaTest`・マスク→`CopyScreen`・`ImageFilter`・`ImageBlend`→高さフォグ・異方性・`TextureTransform`→`MaterialRibbon3D`→アニメーションつきのモデル。

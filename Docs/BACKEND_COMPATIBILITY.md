@@ -11,7 +11,7 @@
 |分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|
 |---|---:|---:|---:|---:|---:|---:|---:|
 |API|356|4|97|92|162|0|1|
-|Draw|101|0|24|37|40|0|0|
+|Draw|101|0|23|38|40|0|0|
 |Sample|33|30|0|3|0|0|0|
 |Editor|11|11|0|0|0|0|0|
 
@@ -388,7 +388,7 @@
 |[Draw.Billboard3D](../Library/Framework/Render/Draw/DrawCommand.h#L47)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.BillboardPivot3D](../Library/Framework/Render/Draw/DrawCommand.h#L131)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.BillboardQuad3D](../Library/Framework/Render/Draw/DrawCommand.h#L132)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
-|[Draw.Blend](../Library/Framework/Render/Draw/DrawCommand.h#L40)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|Opaque・Alpha・Add・Subtract・Multiply・Pma系（反転を除く）に対応。Invert・MultiplyAlpha・PmaInvertは通常の合成で描く||
+|[Draw.Blend](../Library/Framework/Render/Draw/DrawCommand.h#L40)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|Opaque・Alpha・Add・Subtract・Multiply・Pma系（反転を除く）に対応。利用者のシェーダー（カスタムパイプライン）の描画にも同じ混ぜ方を使う。Invert・MultiplyAlpha・PmaInvertは通常の合成で描く||
 |[Draw.Box](../Library/Framework/Render/Draw/DrawCommand.h#L35)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.BoxAA](../Library/Framework/Render/Draw/DrawCommand.h#L73)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.Bright](../Library/Framework/Render/Draw/DrawCommand.h#L52)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
@@ -453,7 +453,7 @@
 |[Draw.PushWorldMatrix](../Library/Framework/Render/Draw/DrawCommand.h#L118)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.Quad](../Library/Framework/Render/Draw/DrawCommand.h#L70)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.Quad3D](../Library/Framework/Render/Draw/DrawCommand.h#L55)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
-|[Draw.Ribbon3D](../Library/Framework/Render/Draw/DrawCommand.h#L57)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
+|[Draw.Ribbon3D](../Library/Framework/Render/Draw/DrawCommand.h#L57)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|カメラへ面を向けた帯を、共通の展開（NDrawRibbonMesh。DxLibと同じ）で三角形にして描く。ワールド行列は使わず、両面、光の計算あり。画像の繰り返しは整数Uの境界で分ける。MaterialRibbon3D・DistortedMaterialRibbon3Dは未対応||
 |[Draw.RoundBox](../Library/Framework/Render/Draw/DrawCommand.h#L72)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバスで点列にして描く。DxLibとの境界画素の比較が残る||
 |[Draw.ShaderConstants](../Library/Framework/Render/Draw/DrawCommand.h#L146)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|段・番号ごとに置く。頂点シェーダーが読む番号は頂点側の中身、読まない番号はピクセル側の中身を使う||
 |[Draw.ShaderOutputTarget](../Library/Framework/Render/Draw/DrawCommand.h#L151)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|出力1〜7の描画先を、描くときに束ねて、複数の描画先（MRT）のパスで描く。主画面は不可||

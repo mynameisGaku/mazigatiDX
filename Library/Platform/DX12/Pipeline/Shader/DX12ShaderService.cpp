@@ -403,9 +403,9 @@ FGraphicsPipelineHandle CDX12ShaderService::GetPipeline( const FShaderDrawReques
 	{
 		Formats += static_cast<char>( '0' + static_cast<int32>( Slot.Format ) );
 	}
-	const FString Key = Formats + FString::Printf( "|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d", VertexId, PixelId, static_cast<int32>( Request.Topology ), Request.bUseDepth ? 1 : 0,
+	const FString Key = Formats + FString::Printf( "|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d", VertexId, PixelId, static_cast<int32>( Request.Topology ), Request.bUseDepth ? 1 : 0,
 		State.bTestDepth ? 1 : 0, State.bWriteDepth ? 1 : 0, static_cast<int32>( State.Compare ), State.DepthBias, static_cast<int32>( State.Culling ), State.bAlphaBlend ? 1 : 0,
-		State.bLinearFilter ? 1 : 0, static_cast<int32>( State.AddressU ), static_cast<int32>( State.AddressV ) );
+		State.bLinearFilter ? 1 : 0, static_cast<int32>( State.AddressU ), static_cast<int32>( State.AddressV ), State.bAlphaBlend ? static_cast<int32>( State.Blend ) : 0 );
 	if ( const FPipelineEntry* Found = PipelineCache.Find( Key ) )
 	{
 		return Found->Handle;   // 作れなかった組み合わせは、無効なまま覚えて、毎回作り直さない。
@@ -445,6 +445,7 @@ FGraphicsPipelineHandle CDX12ShaderService::GetPipeline( const FShaderDrawReques
 	Desc.bDepthTest = Request.bUseDepth && State.bTestDepth;
 	Desc.bDepthWrite = Request.bUseDepth && State.bTestDepth && State.bWriteDepth;
 	Desc.bAlphaBlend = State.bAlphaBlend;
+	Desc.Blend = State.Blend;
 	Desc.bLinearSampler = State.bLinearFilter;
 	FPipelineEntry Entry;
 	Entry.VertexShader = Request.Builtin == EBuiltInVertexShader::None ? Request.VertexShader : -1;

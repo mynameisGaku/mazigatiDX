@@ -4,6 +4,7 @@
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Render/RenderResourceSerial.h"
 #include "Library/Core/Types/CString.h"
+#include "Library/Platform/DX12/Pipeline/DX12BlendState.h"
 #include "Library/Platform/DX12/Resource/Texture/DX12TextureFormat.h"
 #include <d3d12shader.h>
 #include <d3dcompiler.h>
@@ -705,17 +706,7 @@ FGraphicsPipelineHandle CDX12GraphicsPipelineStore::CreateGraphicsPipeline( cons
 	PsoDesc.pRootSignature = Created.Root.Get();
 	PsoDesc.VS = { Desc.VertexShaderBytecode.GetData(), static_cast<SIZE_T>( Desc.VertexShaderBytecode.Num() ) };
 	PsoDesc.PS = { Desc.PixelShaderBytecode.GetData(), static_cast<SIZE_T>( Desc.PixelShaderBytecode.Num() ) };
-	PsoDesc.BlendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-	if ( Desc.bAlphaBlend )
-	{
-		PsoDesc.BlendState.RenderTarget[0].BlendEnable = TRUE;
-		PsoDesc.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
-		PsoDesc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
-		PsoDesc.BlendState.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
-		PsoDesc.BlendState.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
-		PsoDesc.BlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
-		PsoDesc.BlendState.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
-	}
+	NDX12BlendState::Configure( PsoDesc.BlendState.RenderTarget[0], Desc.bAlphaBlend, Desc.Blend ); // 全描画先に同じ混ぜ方を使う（IndependentBlendEnableは使わない）。
 	PsoDesc.SampleMask = UINT_MAX;
 	PsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
 	PsoDesc.RasterizerState.CullMode = CullMode;

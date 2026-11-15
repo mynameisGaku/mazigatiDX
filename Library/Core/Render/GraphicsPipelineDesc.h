@@ -54,8 +54,10 @@ struct FGraphicsPipelineDesc
 	bool bDepthTest = true;
 	// 深度値を書き込むか（DepthFormatがD32FloatかつbDepthTestがtrueのときのみ許可）。
 	bool bDepthWrite = true;
-	// 全描画先に対して標準アルファブレンド（SrcAlpha / InvSrcAlpha）を有効にするか。
+	// 全描画先に対して、描画先の色と混ぜるか（falseなら上書き）。
 	bool bAlphaBlend = false;
+	// 混ぜ方（bAlphaBlendがtrueのときだけ使う。既定は標準アルファブレンド＝SrcAlpha / InvSrcAlpha）。
+	EGeometryBlend Blend = EGeometryBlend::Alpha;
 	// register(s0)サンプラに線形補間を使うか（falseはPoint）。
 	bool bLinearSampler = false;
 };

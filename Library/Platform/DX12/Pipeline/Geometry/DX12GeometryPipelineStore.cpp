@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DX12GeometryPipelineStore.h"
 #include "Library/Core/Types/Utility.h"
+#include "Library/Platform/DX12/Pipeline/DX12BlendState.h"
 
 bool CDX12GeometryPipelineStore::Initialize( ID3D12Device *InDevice )
 {
@@ -95,51 +96,7 @@ ID3D12PipelineState *CDX12GeometryPipelineStore::GetOrCreatePipeline( const FGeo
 	Desc.DepthStencilState.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
 	Desc.DepthStencilState.FrontFace = { D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS };
 	Desc.DepthStencilState.BackFace = Desc.DepthStencilState.FrontFace;
-	auto &Blend = Desc.BlendState.RenderTarget[0]; // 既定は通常のアルファ合成。
-	Blend.BlendEnable = State.bAlphaBlend;
-	Blend.SrcBlend = D3D12_BLEND_SRC_ALPHA;
-	Blend.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
-	Blend.BlendOp = D3D12_BLEND_OP_ADD;
-	Blend.SrcBlendAlpha = D3D12_BLEND_ONE;
-	Blend.DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
-	Blend.BlendOpAlpha = D3D12_BLEND_OP_ADD;
-	if ( State.bAlphaBlend )
-	{
-		// 加算・減算・乗算は、描画先のアルファを変えない（色だけを混ぜる）。
-		switch ( State.Blend )
-		{
-		case EGeometryBlend::Add:
-		case EGeometryBlend::Subtract:
-			Blend.SrcBlend = D3D12_BLEND_SRC_ALPHA;
-			Blend.DestBlend = D3D12_BLEND_ONE;
-			Blend.BlendOp = State.Blend == EGeometryBlend::Add ? D3D12_BLEND_OP_ADD : D3D12_BLEND_OP_REV_SUBTRACT;
-			Blend.SrcBlendAlpha = D3D12_BLEND_ZERO;
-			Blend.DestBlendAlpha = D3D12_BLEND_ONE;
-			break;
-		case EGeometryBlend::Multiply:
-			Blend.SrcBlend = D3D12_BLEND_ZERO;
-			Blend.DestBlend = D3D12_BLEND_SRC_COLOR;
-			Blend.SrcBlendAlpha = D3D12_BLEND_ZERO;
-			Blend.DestBlendAlpha = D3D12_BLEND_ONE;
-			break;
-		case EGeometryBlend::PremultipliedAlpha:
-			Blend.SrcBlend = D3D12_BLEND_ONE;
-			Blend.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
-			break;
-		case EGeometryBlend::PremultipliedAdd:
-		case EGeometryBlend::PremultipliedSubtract:
-			Blend.SrcBlend = D3D12_BLEND_ONE;
-			Blend.DestBlend = D3D12_BLEND_ONE;
-			Blend.BlendOp = State.Blend == EGeometryBlend::PremultipliedAdd ? D3D12_BLEND_OP_ADD : D3D12_BLEND_OP_REV_SUBTRACT;
-			Blend.SrcBlendAlpha = D3D12_BLEND_ZERO;
-			Blend.DestBlendAlpha = D3D12_BLEND_ONE;
-			break;
-		default:
-			break;
-		}
-	}
-	Blend.LogicOp = D3D12_LOGIC_OP_NOOP;
-	Blend.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+	NDX12BlendState::Configure( Desc.BlendState.RenderTarget[0], State.bAlphaBlend, State.Blend ); // 混ぜ方は、利用者のシェーダーと同じ表。
 	Desc.NumRenderTargets = 1;
 	Desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	Desc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
