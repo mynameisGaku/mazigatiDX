@@ -15,11 +15,17 @@ namespace
 	constexpr int32 LinePadding = 1;            // 1 行の文字の上下に足す余白（DxLib のフォントは、1 行の高さが、大きさより 2 大きい）
 
 	// 太さ（0..9）を、OS の太さにする。2 階調の文字は、DxLib と同じく 100 倍する（標準の 6 は 600 で、太字になる）。
-	// 4 / 8 / 16 のなめらかな文字は、OS の太字にすると、DxLib より、およそ 1 画素太くなり、字の送りも広がる（DxLib は広がらない）ので、4 までに収める。
-	// 標準のなめらかさは、字の送りだけ、太字の値で測る（DxLib は、太字の送りで並べる）。字形は、普通の太さで描く（Rasterize）。
+	// なめらかな文字は、OS の太字にすると、DxLib より、およそ 1 画素太くなり、字の送りも合わなくなるので、4 までに収める（字の送りは、GetBoldAdvance で足す）。
 	int32 ToGdiWeight( int32 Thickness, bool bSmooth )
 	{
 		return NMath::Clamp( bSmooth ? NMath::Min( Thickness, 4 ) : Thickness, 0, 9 ) * 100;
+	}
+
+	// 標準のなめらかさで、太さが標準（6）以上のとき、DxLib が 1 文字ごとに足す送り（画素）。DxLib の実測: 大きさ 16 で 0、22 で 1、32 で 3（およそ 0.19 x ( 大きさ - 16 )）。
+	// 2 階調の文字は、OS の太字の送りが DxLib と合う（大きさ 22 で確かめた）ので、足さない
+	int32 GetBoldAdvance( const FRenderTextFont& Font )
+	{
+		return Font.Antialias == 1 && Font.Thickness >= 6 ? NMath::Max( 0, NMath::RoundToInt( 0.19f * static_cast<float32>( Font.Size - 16 ) ) ) : 0;
 	}
 
 	// UTF-8 の 1 文字を読む。壊れていれば false。OutBytes は、その文字のバイト数
@@ -132,7 +138,7 @@ bool CWindowsGdiText::SelectFont( const FRenderTextFont& Font )
 		}
 		const TArray<wchar_t> Face = Font.Face.ToWide();
 		const wchar_t* FaceName = Font.Face.IsEmpty() ? L"MS Gothic" : Face.GetData();   // 既定は、DxLib の既定と同じフォント
-		Handle = CreateFontW( NMath::Clamp( Font.Size, 1, 1024 ), 0, 0, 0, ToGdiWeight( Font.Thickness, Font.Antialias >= 2 ), Font.bItalic ? TRUE : FALSE, FALSE, FALSE, DEFAULT_CHARSET,
+		Handle = CreateFontW( NMath::Clamp( Font.Size, 1, 1024 ), 0, 0, 0, ToGdiWeight( Font.Thickness, Font.Antialias >= 1 ), Font.bItalic ? TRUE : FALSE, FALSE, FALSE, DEFAULT_CHARSET,
 			OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, Font.Antialias != 0 ? ANTIALIASED_QUALITY : NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, FaceName );
 		if ( !Handle )
 		{
@@ -244,7 +250,7 @@ bool CWindowsGdiText::Arrange( const FRenderTextFont& Font, TArrayView<const cha
 			{
 				return false;
 			}
-			Character.Width = Extent.cx + Font.LetterSpacing + Edge * 2;
+			Character.Width = Extent.cx + GetBoldAdvance( Font ) + Font.LetterSpacing + Edge * 2;
 		}
 		Character.Width = NMath::Max( 0, Character.Width );
 		X += Character.Width;
@@ -512,13 +518,7 @@ bool CWindowsGdiText::Rasterize( const FRenderTextFont& Font, TArrayView<const c
 	}
 	if ( Font.Antialias == 1 )
 	{
-		FRenderTextFont Regular = Font; // 送りは太字で測ったので、字形は、普通の太さで描く。
-		Regular.Thickness = NMath::Min( Font.Thickness, 4 );
-		if ( SelectFont( Regular ) )
-		{
-			DrawGrayGlyphs( Characters, Edge, Width, Height, Coverage );
-		}
-		SelectFont( Font );
+		DrawGrayGlyphs( Characters, Edge, Width, Height, Coverage );
 	}
 	else if ( Font.Antialias > 1 )
 	{
