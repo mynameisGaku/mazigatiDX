@@ -15,7 +15,8 @@ namespace
 	constexpr int32 LinePadding = 1;            // 1 行の文字の上下に足す余白（DxLib のフォントは、1 行の高さが、大きさより 2 大きい）
 
 	// 太さ（0..9）を、OS の太さにする。2 階調の文字は、DxLib と同じく 100 倍する（標準の 6 は 600 で、太字になる）。
-	// なめらかな文字は、OS の太字にすると、DxLib より、およそ 1 画素太くなる（DxLib の見た目に合うのは、標準の太さ）ので、4 までに収める。
+	// 4 / 8 / 16 のなめらかな文字は、OS の太字にすると、DxLib より、およそ 1 画素太くなり、字の送りも広がる（DxLib は広がらない）ので、4 までに収める。
+	// 標準のなめらかさは、字の送りだけ、太字の値で測る（DxLib は、太字の送りで並べる）。字形は、普通の太さで描く（Rasterize）。
 	int32 ToGdiWeight( int32 Thickness, bool bSmooth )
 	{
 		return NMath::Clamp( bSmooth ? NMath::Min( Thickness, 4 ) : Thickness, 0, 9 ) * 100;
@@ -131,7 +132,7 @@ bool CWindowsGdiText::SelectFont( const FRenderTextFont& Font )
 		}
 		const TArray<wchar_t> Face = Font.Face.ToWide();
 		const wchar_t* FaceName = Font.Face.IsEmpty() ? L"MS Gothic" : Face.GetData();   // 既定は、DxLib の既定と同じフォント
-		Handle = CreateFontW( NMath::Clamp( Font.Size, 1, 1024 ), 0, 0, 0, ToGdiWeight( Font.Thickness, Font.Antialias != 0 ), Font.bItalic ? TRUE : FALSE, FALSE, FALSE, DEFAULT_CHARSET,
+		Handle = CreateFontW( NMath::Clamp( Font.Size, 1, 1024 ), 0, 0, 0, ToGdiWeight( Font.Thickness, Font.Antialias >= 2 ), Font.bItalic ? TRUE : FALSE, FALSE, FALSE, DEFAULT_CHARSET,
 			OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, Font.Antialias != 0 ? ANTIALIASED_QUALITY : NONANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, FaceName );
 		if ( !Handle )
 		{
@@ -511,7 +512,13 @@ bool CWindowsGdiText::Rasterize( const FRenderTextFont& Font, TArrayView<const c
 	}
 	if ( Font.Antialias == 1 )
 	{
-		DrawGrayGlyphs( Characters, Edge, Width, Height, Coverage );
+		FRenderTextFont Regular = Font; // 送りは太字で測ったので、字形は、普通の太さで描く。
+		Regular.Thickness = NMath::Min( Font.Thickness, 4 );
+		if ( SelectFont( Regular ) )
+		{
+			DrawGrayGlyphs( Characters, Edge, Width, Height, Coverage );
+		}
+		SelectFont( Font );
 	}
 	else if ( Font.Antialias > 1 )
 	{

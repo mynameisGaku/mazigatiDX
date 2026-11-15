@@ -338,3 +338,9 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **反転の合成（`Invert`）**: 平らな図形だけ、明るさと`AddColor`のあとの色を反転して、アルファブレンドする（`DrawState`サンプルの円の色がDxLibと一致）。画像・文字・3Dは通常の合成で描いて、報告する。`MultiplyAlpha`・`PmaInvert`は、通常の合成のまま。
 - **確認**: Debug／Releaseの警告0、台帳は505項目で整合、`CheckSourceFormat.ps1`成功、`RunAllChecks.ps1 -SkipBuild -Quick`の42項目すべて成功。
 - **次の作業**: 異方性→`Text`のアイコン入りの文字・縦書き→`MaterialRibbon3D`→アニメーションつきのモデル→その場のフィルター。
+
+## 2026-11-16 追記: 縦書き・字の送り
+- **縦書き（`TextStyled`の`Vertical`）**: DxLibの縦書きは、実測すると、横書きを時計回りに90度回した見た目（字形も横倒し。1行目が右の列で、行が進むと左の列）だった。DX12も、横書きを`Angle + π/2`で描く（`CCanvasDrawExecutor`の`bVertical`）。基準点は、縦書きの割合（`AnchorY`が読む向き、`AnchorX`が列の並ぶ向き）を、回す前の横書きの割合へ入れ替え、拡大率も、画面の横が`ScaleX`・縦が`ScaleY`のままになるよう入れ替える（`DxLibDrawExecutorSubsystem`と同じ解釈）。
+- **字の送り**: DxLibは、標準のなめらかさ（と2階調）の文字を、太字（太さ6 = 600）の送りで並べる（`Textサンプル`の1行の幅が、DxLib 412・DX12 398だった）。4／8／16のなめらかさは、普通の太さの送り。DX12は、標準のとき、送りを太字の値で測り（`SelectFont`）、字形は、普通の太さ（太さ4まで）で描く（`Rasterize`が、字形を描く間だけ、フォントを替える）。標準の行は412で一致、太字斜体は414（DxLibは417）。大きな文字（32画素）の縦書きの文字の間隔は、DxLibより約6%狭い（DxLibの太字の送りが、大きいほど広がる）。
+- **確認**: Debug／Releaseの警告0、台帳は505項目で整合、書式検査成功、デバッグレイヤーは`Text`・`UI`・`Village`で警告・エラー0件、`RunAllChecks.ps1 -SkipBuild -Quick`の42項目すべて成功。
+- **次の作業**: 異方性（画像の縮小の段（mip）が要るため、まず、DxLibの画像にmipがあるかの確認）→`Text`のアイコン入りの文字（`AddFontCharImage`）→`MaterialRibbon3D`・アニメーションつきのモデル（どのサンプルも使わない）→その場のフィルター。

@@ -449,7 +449,7 @@
 "Draw.SurfaceMaterial","Partial","R2","有効・不正payload、順序、状態復元、DxLibとの画素／深度比較","頂点ごとのCPU計算（CVertexLighting。DxLibの固定の光と同じ式）で対応。画素ごとの光（LightingOptionsのPixelLighting）は、同じ式を組み込みのシェーダー（PixelLit。定数b6）で画素ごとに計算する（画像つきも。フォグ・影を受ける描画と重なるときは、頂点ごと）。Lightingサンプルで、スポットライトの円・ランプの光だまりがDxLibと同じ形で出る（細かい画素の比較は未実施）","","EDrawCommand[75]: SurfaceMaterial"
 "Draw.Text","Partial","R6","有効・不正payload、順序、状態復元、DxLibとの画素／深度比較","ImGui既定フォント。個別フォントと日本語表示の互換は未確認","","EDrawCommand[3]: Text"
 "Draw.TextFont","Partial","R6","有効・不正payload、順序、状態復元、DxLibとの画素／深度比較","フォント・縁取り・位置揃え（左・中央・右）に対応","","EDrawCommand[16]: TextFont"
-"Draw.TextStyled","Partial","R6","有効・不正payload、順序、状態復元、DxLibとの画素／深度比較","拡大・回転・基準点・縁取り対応。縦書きは横書きで描く","","EDrawCommand[59]: TextStyled"
+"Draw.TextStyled","Partial","R6","有効・不正payload、順序、状態復元、DxLibとの画素／深度比較","拡大・回転・基準点・縁取り対応。縦書きは、DxLibと同じく、横書きを時計回りに90度回した見た目（字形も横倒し。1行目が右の列）で、基準点・拡大率も同じ解釈。文字の縦の間隔は、大きな文字（32画素）でDxLibより約6%狭い（DxLibの太字の送りが広がる分）","","EDrawCommand[59]: TextStyled"
 "Draw.TextureAddress","Implemented","R6","有効・不正payload、順序、状態復元、DxLibとの画素／深度比較","共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了","","EDrawCommand[64]: TextureAddress"
 "Draw.TextureTransform","Partial","R6","有効・不正payload、順序、状態復元、DxLibとの画素／深度比較","頂点のUVに、中心を軸にした拡大・回転と、移動を掛ける（CPU。拡大・回転の順序のDxLibとの一致は、移動だけの使い方でしか確認していない）","","EDrawCommand[65]: TextureTransform"
 "Draw.Tile","Partial","R6","有効・不正payload、順序、状態復元、DxLibとの画素／深度比較","角度なしのタイルを、DxLibと同じ並べ方（中心の整数のずれ）で、矩形で切った画像の並びとして描く。角度つき・4096枚を超える並びは飛ばす","","EDrawCommand[42]: Tile"

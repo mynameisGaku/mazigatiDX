@@ -1282,6 +1282,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			float32 ScaleX = 1, ScaleY = 1, Angle = 0, AnchorX = 0, AnchorY = 0; // TextStyled の拡大・回転・基準点。
 			int32 Length = 0, Capacity = 0, Font = -1; // 文字数、命令に含まれる文字の範囲、フォントの番号（負は既定）。
 			FDrawRgb Value, Edge; // 文字と縁取りの色。
+			bool bVertical = false; // 縦書きか（TextStyled だけ）。
 			const char* Text = nullptr; // 命令の中の文字列。
 			if ( View.Type == EDrawCommand::Text )
 			{
@@ -1338,7 +1339,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 				Text = View.GetStyledTextChars();
 				if ( Data.Vertical != 0 )
 				{
-					Unsupported( View, "Vertical writing is drawn horizontally" );
+					bVertical = true;
 				}
 			}
 			if ( Length <= 0 || Length >= Capacity || Text[Length] != '\0' )
@@ -1362,6 +1363,18 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 					Canvas->Text( X, Y, Color( Value ), Text, Text + Length );
 				}
 				break;
+			}
+			if ( bVertical )
+			{
+				// DxLib の縦書きは、横書きを、時計回りに 90 度回した見た目になる（文字も横倒しになる。1 行目が右の列で、行が進むと、左の列）。
+				// 基準点は、縦書きの割合（AnchorY が、読む向き（下）、AnchorX が、列の並ぶ向き（左））を、回す前の横書きの割合に直す。拡大率は、画面の横が ScaleX、縦が ScaleY のまま。
+				const float32 Across = AnchorX;
+				AnchorX = AnchorY;
+				AnchorY = Across;
+				const float32 Along = ScaleX;
+				ScaleX = ScaleY;
+				ScaleY = Along;
+				Angle += 1.57079632679f;
 			}
 			if ( View.Type == EDrawCommand::TextFont && ( View.Has( FDrawFlag::AlignCenter ) || View.Has( FDrawFlag::AlignRight ) ) )
 			{
