@@ -42,6 +42,7 @@ class CGeometryCanvas2D : public IRenderCanvas2D
 	void TextFont( const FRenderTextFont &Font, const float32 ( &Transform )[6], FColor32 Color, FColor32 EdgeColor, const char *Begin, const char *End ) override;
 	// 借用画像を凸四角形に貼る。UVは左上と右下。
 	void Image( const FTextureDrawView &Texture, const float32 ( &Points )[8], const float32 ( &UV )[4], FColor32 Color ) override;
+	void ImagePolygon( const FTextureDrawView &Texture, const float32 *Vertices, int32 Count, FColor32 Color ) override;
 	// 現在の範囲との共通部分を積む。空なら描かない。
 	void PushClip( int32 X0, int32 Y0, int32 X1, int32 Y1 ) override;
 	// 直前のクリップ範囲へ戻す。Pushと対にする。
@@ -52,6 +53,7 @@ class CGeometryCanvas2D : public IRenderCanvas2D
 	void SetAntiAlias( bool bEnabled ) override;
 	// 以降の描画の、描画先との混ぜ方を指定する。フレームの始めに通常の合成へ戻る。
 	void SetBlend( EGeometryBlend InBlend ) override;
+	void SetCustomBlend( const FGeometryCustomBlend &InBlend ) override;
 
   private:
 	// 2D座標から共通の同次座標を作る。倍率は描画先の画素へだけ適用する。
@@ -86,4 +88,5 @@ class CGeometryCanvas2D : public IRenderCanvas2D
 	bool bAntiAlias = true; // 図形の端に被覆率を付けるか。
 	bool bLinear = false; // 後続の画像へ適用する補間。
 	EGeometryBlend Blend = EGeometryBlend::Alpha; // 後続の描画の、描画先との混ぜ方。
+	FGeometryCustomBlend CustomBlend; // Blendが Custom のときの係数。
 };

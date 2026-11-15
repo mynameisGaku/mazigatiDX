@@ -58,6 +58,8 @@ struct FGraphicsPipelineDesc
 	bool bAlphaBlend = false;
 	// 混ぜ方（bAlphaBlendがtrueのときだけ使う。既定は標準アルファブレンド＝SrcAlpha / InvSrcAlpha）。
 	EGeometryBlend Blend = EGeometryBlend::Alpha;
+	// Blendが Custom のときの係数。
+	FGeometryCustomBlend CustomBlend;
 	// register(s0)サンプラに線形補間を使うか（falseはPoint）。
 	bool bLinearSampler = false;
 };

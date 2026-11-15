@@ -293,3 +293,13 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **確認**: Effectsの`Material flame`の芯が、DxLibと同じ白黄色になった。帯は、頭の明るさ・白青の芯・細くなる尾が、DxLibと同じ（位相は、実時間の差で違う）。Debug／Releaseの警告0、`RunAllChecks.ps1 -SkipBuild -Quick`の42項目すべて成功（ワールドの自己テストの帯の実描画テストを含む）。
 - **撮影の注意**: Effectsは実時間で動く。DX12は速い（約200 fps）ので、DxLib（60 fps）の`--capture-frame=90`と同じ時間は、DX12の約330フレーム。
 - **次の作業**: `Tile`・`CircleGauge`・`AddColor`・`AlphaTest`・マスク→`CopyScreen`・`ImageFilter`・`ImageBlend`→高さフォグ・異方性・`TextureTransform`→`MaterialRibbon3D`→アニメーションつきのモデル。
+
+## 2026-11-15 追記: Tile / CircleGauge / AddColor / AlphaTest / CustomBlend
+- **`Tile`**: 角度なしだけ。DxLibのDrawTileと同じ並べ方（拡大した画像の中心を、矩形の中心から整数のずれ分動かす）で、矩形で切った画像（UVを切る）を並べて描く。角度つき・4096枚を超える並びは、飛ばして報告する。
+- **`CircleGauge`**: キャンバスに`IRenderCanvas2D::ImagePolygon`（凸な多角形へ画像を貼る。頂点はx, y, u, v）を足し、真上から時計回りの扇を、画像の縁までの多角形で貼る。描き始め・描く量・100を超える回り込みはDxLibと同じ解釈。反転の指定は飛ばす。DxLibは縁が1画素ほど長い。
+- **`AddColor`**: 平らな図形（箱・線・円・三角形・四角形・多角形・点）だけ。明るさのあとで、色を足す。画像・文字・3Dには効かない（初めて描くときに報告する）。
+- **`AlphaTest`**: 平らな図形は、アルファが1つに決まるので、通らなければ丸ごと飛ばす（`Never`は何も描かない）。画像・文字は、0〜いまの不透明度のどれも通らないときだけ飛ばす（画素ごとの比べは、まだ無い）。3Dには効かない。
+- **`CustomBlend`**: `EGeometryBlend::Custom`と`FGeometryCustomBlend`（色・アルファの係数と演算。`FGeometryDrawState::CustomBlend`）を足し、`DX12BlendState.h`でD3D12のブレンドへそのまま写す（2D・3D・利用者のシェーダー）。アルファの係数に色の係数を使うときは、同じ種類のアルファへ読み替える。幾何パイプラインの保管の見出しは、`FGeometryPipelineKey`（状態＋カスタムの係数）になった。Villageの灯り（スクリーン合成）が、DxLibと同じになった。`Invert`・`MultiplyAlpha`・`PmaInvert`は、まだ通常の合成で描く（送る色を変える必要があり、固定のブレンドでは表せない）。
+- **確認**: Images・DrawState・Villageを、DxLibと並べて確認した。Debug／Releaseの警告0、`RunAllChecks.ps1 -SkipBuild -Quick`の42項目すべて成功。
+- **気づいた差（未対応）**: Villageの会話の文字が、DxLibは太く、DX12は細い（文字の太さ・スタイルの扱い）。
+- **次の作業**: マスク（`PushMask`/`PopMask`）→`CopyScreen`・`ImageFilter`・`ImageBlend`→高さフォグ・異方性・`TextureTransform`→`MaterialRibbon3D`→アニメーションつきのモデル→文字の太さ。

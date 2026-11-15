@@ -63,10 +63,12 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 		Text, // 所有したUTF-8文字列。
 		TextFont, // フォントを指定した、所有したUTF-8文字列。
 		Image, // 借用画像の点列とUV。
+		ImagePolygon, // 借用画像を貼る凸な多角形（点列は x, y, u, v）。
 		PushClip, // クリップの追加。
 		PopClip, // クリップの復元。
 		AntiAlias, // 輪郭の補間設定。
 		Blend, // 描画先との混ぜ方。
+		CustomBlend, // 利用者が決めた混ぜ方の係数。
 		ClearColor, // 色の消去。
 		ClearDepth, // 深度の消去。
 	};
@@ -92,6 +94,8 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 		// フォントを指定した文字列の、フォントの値と縁取りの色。
 		FRenderTextFont Font;
 		FColor32 EdgeColor;
+		// 利用者が決めた混ぜ方の係数。
+		FGeometryCustomBlend CustomBlend;
 	};
 	// 描画スレッドだけで、所有する操作値を順に実行する。
 	void ExecuteBatch( const TArray<FCommand> &Commands );
@@ -133,6 +137,7 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 	void TextFont( const FRenderTextFont &Font, const float32 ( &Transform )[6], FColor32 Color, FColor32 EdgeColor, const char *Begin, const char *End ) override;
 	// 画像のbindingと点列を値で渡す。画像のGPU寿命は既存の所有者が管理する。
 	void Image( const FTextureDrawView &Texture, const float32 ( &Points )[8], const float32 ( &UV )[4], FColor32 Color ) override;
+	void ImagePolygon( const FTextureDrawView &Texture, const float32 *Vertices, int32 Count, FColor32 Color ) override;
 	// 切り取りと描画状態も、描画と同じ順序で実行する。
 	void PushClip( int32 X0, int32 Y0, int32 X1, int32 Y1 ) override;
 	// 先行する描画の後で、直前の切り取り範囲へ戻す。
@@ -143,6 +148,7 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 	void SetAntiAlias( bool bEnabled ) override;
 	// 描画先との混ぜ方を後続の描画と同じ順序へ積む。
 	void SetBlend( EGeometryBlend Blend ) override;
+	void SetCustomBlend( const FGeometryCustomBlend &Blend ) override;
 	// API側の実行先。内容には描画スレッドだけが触る。
 	IRenderSurface &Target;
 	// CPU命令と同期処理を同じ順序へ集める既存の専用スレッド。

@@ -34,6 +34,8 @@ public:
 	// 借用画像を凸四角形に貼る。UVは左上と右下。
 	virtual void Image( const FTextureDrawView& Texture, const float32 ( &Points )[8], const float32 ( &UV )[4], FColor32 Color ) = 0;
 	// 現在の範囲との共通部分を積む。空なら描かない。
+	// 凸な多角形に、画像を貼る。頂点は、1つにつき x, y, u, v の4つの値（Count 個）。三角形の扇に分けて描く。未対応の実行先では、何も描かない。
+	virtual void ImagePolygon( const FTextureDrawView& /*Texture*/, const float32* /*Vertices*/, int32 /*Count*/, FColor32 /*Color*/ ) {}
 	virtual void PushClip( int32 X0, int32 Y0, int32 X1, int32 Y1 ) = 0;
 	// 直前のクリップ範囲へ戻す。Pushと対にする。
 	virtual void PopClip() = 0;
@@ -43,4 +45,6 @@ public:
 	virtual void SetAntiAlias( bool bEnabled ) = 0;
 	// 以降の図形・画像・文字の、描画先との混ぜ方を指定する。未対応の実行先は通常の合成のまま。
 	virtual void SetBlend( EGeometryBlend /*Blend*/ ) {}
+	// 以降の描画の混ぜ方を、利用者が決めた係数にする。未対応の実行先では、何もしない。
+	virtual void SetCustomBlend( const FGeometryCustomBlend& /*Blend*/ ) {}
 };

@@ -50,6 +50,57 @@ enum class EGeometryBlend : uint8
 	PremultipliedAlpha, // 描く色 ＋ 描画先 x ( 1 - アルファ )。
 	PremultipliedAdd, // 描画先 ＋ 描く色。
 	PremultipliedSubtract, // 描画先 － 描く色。
+	Custom, // 利用者が決めた係数（FGeometryDrawState::CustomBlend）。
+};
+
+// 混ぜ方の係数（描く色・描画先の色に掛ける値）。
+enum class EGeometryBlendFactor : uint8
+{
+	Zero, // 0。
+	One, // 1。
+	SrcColor, // 描く色。
+	InvSrcColor, // 1 － 描く色。
+	SrcAlpha, // 描く色のアルファ。
+	InvSrcAlpha, // 1 － 描く色のアルファ。
+	DestColor, // 描画先の色。
+	InvDestColor, // 1 － 描画先の色。
+	DestAlpha, // 描画先のアルファ。
+	InvDestAlpha, // 1 － 描画先のアルファ。
+	SrcAlphaSaturate, // min( 描く色のアルファ, 1 － 描画先のアルファ )。
+};
+
+// 係数をどう組み合わせるか。
+enum class EGeometryBlendOp : uint8
+{
+	Add, // 描く色 x 係数 ＋ 描画先 x 係数。
+	Subtract, // 描く色 x 係数 － 描画先 x 係数。
+	ReverseSubtract, // 描画先 x 係数 － 描く色 x 係数。
+	Min, // 小さいほう。
+	Max, // 大きいほう。
+};
+
+// 利用者が決める混ぜ方（Blend が Custom のとき使う）。色とアルファを別々に決める。
+struct FGeometryCustomBlend
+{
+	EGeometryBlendFactor SrcColor = EGeometryBlendFactor::One;
+	EGeometryBlendFactor DestColor = EGeometryBlendFactor::Zero;
+	EGeometryBlendOp ColorOp = EGeometryBlendOp::Add;
+	EGeometryBlendFactor SrcAlpha = EGeometryBlendFactor::One;
+	EGeometryBlendFactor DestAlpha = EGeometryBlendFactor::Zero;
+	EGeometryBlendOp AlphaOp = EGeometryBlendOp::Add;
+
+	// 値が、決められた範囲に収まっているか。
+	bool IsValid() const
+	{
+		return SrcColor <= EGeometryBlendFactor::SrcAlphaSaturate && DestColor <= EGeometryBlendFactor::SrcAlphaSaturate && SrcAlpha <= EGeometryBlendFactor::SrcAlphaSaturate
+			&& DestAlpha <= EGeometryBlendFactor::SrcAlphaSaturate && ColorOp <= EGeometryBlendOp::Max && AlphaOp <= EGeometryBlendOp::Max;
+	}
+	// 6つの値を1つの整数にまとめる（保管のキーに使う）。
+	uint32 Pack() const
+	{
+		return static_cast<uint32>( SrcColor ) | ( static_cast<uint32>( DestColor ) << 4 ) | ( static_cast<uint32>( ColorOp ) << 8 ) | ( static_cast<uint32>( SrcAlpha ) << 12 ) | ( static_cast<uint32>( DestAlpha ) << 16 )
+			| ( static_cast<uint32>( AlphaOp ) << 20 );
+	}
 };
 
 // 1回の描画に閉じたGPU状態。ほかの命令へ持ち越さない。
@@ -62,6 +113,7 @@ struct FGeometryDrawState
 	bool bWriteDepth = true; // 通過した深度を書くか。
 	bool bAlphaBlend = false; // 描画先の色と混ぜるか（falseなら上書き）。
 	EGeometryBlend Blend = EGeometryBlend::Alpha; // 混ぜ方。bAlphaBlendがtrueのときだけ使う。
+	FGeometryCustomBlend CustomBlend; // Blendが Custom のときの係数。
 	EGeometryTextureAddress AddressU = EGeometryTextureAddress::Wrap; // 横方向の画像の外側。
 	EGeometryTextureAddress AddressV = EGeometryTextureAddress::Wrap; // 縦方向の画像の外側。
 	bool bLinearFilter = false; // falseなら最近傍、trueなら線形補間。

@@ -24,6 +24,7 @@ bool CGeometryCanvas2D::BeginFrame( IRenderGeometry3D &InGeometry, IRenderTextur
 	bLinear = false;
 	bAntiAlias = true;
 	Blend = EGeometryBlend::Alpha;
+	CustomBlend = FGeometryCustomBlend();
 	++FrameNumber;
 	NumTextCreatedThisFrame = 0;
 	return true;
@@ -66,6 +67,7 @@ void CGeometryCanvas2D::Draw( const TArray<FGeometryVertex> &Vertices, const FTe
 	State.bTestDepth = State.bWriteDepth = false;
 	State.bAlphaBlend = true;
 	State.Blend = Blend;
+	State.CustomBlend = CustomBlend;
 	State.bLinearFilter = bLinear;
 	State.AddressU = State.AddressV = EGeometryTextureAddress::Clamp;
 	if ( Texture )
@@ -206,6 +208,25 @@ void CGeometryCanvas2D::Image( const FTextureDrawView &Texture, const float32 ( 
 	const FGeometryVertex A = Vertex( Points[0], Points[1], Color, UV[0], UV[1] ), B = Vertex( Points[2], Points[3], Color, UV[2], UV[1] ), C = Vertex( Points[4], Points[5], Color, UV[2], UV[3] ), D = Vertex( Points[6], Points[7], Color, UV[0], UV[3] ); // 色とUVを持つ四隅。
 	const TArray<FGeometryVertex> Vertices = { A, B, C, A, C, D }; // 凸四角形を二枚に分ける。
 	Draw( Vertices, &Texture );
+}
+
+void CGeometryCanvas2D::ImagePolygon( const FTextureDrawView &Texture, const float32 *Vertices, int32 Count, FColor32 Color )
+{
+	if ( !Geometry || !Vertices || Count < 3 || Count > 128 || !Texture.Binding || Texture.Width <= 0 || Texture.Height <= 0 )
+	{
+		return;
+	}
+	TArray<FGeometryVertex> Fan; // 凸な多角形を、先頭の頂点を共有する三角形に分ける。
+	Fan.Reserve( ( Count - 2 ) * 3 );
+	for ( int32 Index = 1; Index + 1 < Count; ++Index )
+	{
+		const int32 Corners[3] = { 0, Index, Index + 1 }; // 三角形の3つの頂点。
+		for ( const int32 Corner : Corners )
+		{
+			Fan.Add( Vertex( Vertices[Corner * 4], Vertices[Corner * 4 + 1], Color, Vertices[Corner * 4 + 2], Vertices[Corner * 4 + 3] ) );
+		}
+	}
+	Draw( Fan, &Texture );
 }
 
 void CGeometryCanvas2D::Text( float32 X, float32 Y, FColor32 Color, const char *Begin, const char *End )
@@ -409,6 +430,12 @@ bool CGeometryCanvas2D::SetTextureFilter( bool bInLinear )
 	return Geometry != nullptr;
 }
 void CGeometryCanvas2D::SetAntiAlias( bool bEnabled ) { bAntiAlias = bEnabled; }
-void CGeometryCanvas2D::SetBlend( EGeometryBlend InBlend ) { Blend = InBlend <= EGeometryBlend::PremultipliedSubtract ? InBlend : EGeometryBlend::Alpha; }
+void CGeometryCanvas2D::SetBlend( EGeometryBlend InBlend ) { Blend = InBlend < EGeometryBlend::Custom ? InBlend : EGeometryBlend::Alpha; }
+
+void CGeometryCanvas2D::SetCustomBlend( const FGeometryCustomBlend &InBlend )
+{
+	CustomBlend = InBlend;
+	Blend = InBlend.IsValid() ? EGeometryBlend::Custom : EGeometryBlend::Alpha;
+}
 
 bool CGeometryCanvas2D::DidFrameSucceed() const { return !bFailed; }

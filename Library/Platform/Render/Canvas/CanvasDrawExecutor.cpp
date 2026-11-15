@@ -97,6 +97,10 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 	bool bAlphaBlend = false; // 3Dへ渡す合成方式。
 	FDrawRgb Bright; // このSpanだけの乗算色。
 	int32 Alpha = 255; // このSpanだけの不透明度。
+	int32 AddColorValue[3] = { 0, 0, 0 }; // このSpanだけの、描く色へ足す値（赤・緑・青）。平らな図形だけに効く。
+	bool bAlphaTest = false; // アルファテストをするか。
+	EDrawCompare AlphaTestMode = EDrawCompare::Always; // アルファテストの比べ方。
+	int32 AlphaTestReference = 0; // アルファテストの基準値。
 	int32 ClipDepth = 0; // 終了時に必ず戻すクリップ段数。
 	int32 SkipTargetDepth = 0; // 未対応の描画先（レンダーターゲット）へ描く範囲の深さ。この中は描かない。
 	int32 SkipShadowDepth = 0; // 描けないシャドウマップへ描く範囲の深さ。この中は描かない（画面へ描いてしまわないように）。
@@ -243,6 +247,48 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 		return FColor32( static_cast<uint8>( Value.R * Bright.R / 255 ), static_cast<uint8>( Value.G * Bright.G / 255 ),
 			static_cast<uint8>( Value.B * Bright.B / 255 ), static_cast<uint8>( Alpha ) );
 	};
+	// 平らな図形の色（描く色に、AddColor の値を足す。DxLibと同じく、明るさの乗算のあとに足す）。
+	const auto ShapeColor = [&]( FDrawRgb Value )
+	{
+		const FColor32 Base = Color( Value );
+		return FColor32( static_cast<uint8>( NMath::Clamp( static_cast<int32>( Base.r ) + AddColorValue[0], 0, 255 ) ), static_cast<uint8>( NMath::Clamp( static_cast<int32>( Base.g ) + AddColorValue[1], 0, 255 ) ),
+			static_cast<uint8>( NMath::Clamp( static_cast<int32>( Base.b ) + AddColorValue[2], 0, 255 ) ), Base.a );
+	};
+	// アルファテストを、あるアルファが通るか。
+	const auto AlphaTestPasses = [&]( int32 Value )
+	{
+		switch ( AlphaTestMode )
+		{
+		case EDrawCompare::Never:
+			return false;
+		case EDrawCompare::Less:
+			return Value < AlphaTestReference;
+		case EDrawCompare::Equal:
+			return Value == AlphaTestReference;
+		case EDrawCompare::LessEqual:
+			return Value <= AlphaTestReference;
+		case EDrawCompare::Greater:
+			return Value > AlphaTestReference;
+		case EDrawCompare::NotEqual:
+			return Value != AlphaTestReference;
+		case EDrawCompare::GreaterEqual:
+			return Value >= AlphaTestReference;
+		default:
+			return true;
+		}
+	};
+	// 画素ごとにアルファが違う図（画像・文字）が、1画素でも通りうるか（0から、いまの不透明度まで）。
+	const auto AlphaTestMayPass = [&]()
+	{
+		for ( int32 Value = 0; Value <= Alpha; ++Value )
+		{
+			if ( AlphaTestPasses( Value ) )
+			{
+				return true;
+			}
+		}
+		return false;
+	};
 	const auto Unsupported = [&]( const FDrawCommandView& View, const char* Reason ) // 対応していない命令は、その命令だけを飛ばして、続きを描く。
 	{
 		NBackendSupport::ReportUnsupported( "DrawCommands", *CommandName( View.Type ), Reason );
@@ -354,7 +400,33 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 		{
 			return;
 		}
+		if ( AddColorValue[0] != 0 || AddColorValue[1] != 0 || AddColorValue[2] != 0 )
+		{
+			NBackendSupport::ReportUnsupported( "DrawCommands", "AddColor (image / text)", "AddColor is applied to flat shapes only; images and text are drawn without it" );
+		}
 		Canvas->Image( Image, Moved, UV, Color( FDrawRgb() ) );
+	};
+	// 画像を、凸な多角形（x, y, u, v の頂点列）へ、変換してから貼る。
+	const auto DrawImagePolygon = [&]( const FTextureDrawView& Image, TArray<float32>& Vertices )
+	{
+		const int32 Count = Vertices.Num() / 4; // 頂点の数。
+		if ( Count < 3 || !ValidPoints( Vertices.GetData(), Vertices.Num() ) )
+		{
+			return;
+		}
+		for ( int32 Index = 0; Index < Count; ++Index )
+		{
+			Transform.Apply( Vertices[Index * 4], Vertices[Index * 4 + 1] );
+		}
+		if ( !ValidPoints( Vertices.GetData(), Vertices.Num() ) )
+		{
+			return;
+		}
+		if ( !Canvas->SetTextureFilter( bLinearFilter ) && bExplicitFilter )
+		{
+			return;
+		}
+		Canvas->ImagePolygon( Image, Vertices.GetData(), Count, Color( FDrawRgb() ) );
 	};
 	// 画像の中の矩形を、基準点まわりに拡大・回転して描く（Sprite / SpriteRect / SpritePivot の共通）。
 	// 反転は、基準点を軸にする（反転しても、基準点は (X, Y) のまま）。
@@ -580,6 +652,58 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			continue;
 		}
 
+		if ( bAlphaTest )
+		{
+			// アルファテスト: 平らな図形は、アルファが1つに決まるので、通らなければ丸ごと飛ばす。画像・文字は、通りうる画素が無いときだけ飛ばす（画素ごとの比べは、まだ無い）。
+			bool bFlatShape = false;
+			bool bImageLike = false;
+			switch ( View.Type )
+			{
+			case EDrawCommand::Box:
+			case EDrawCommand::BoxAA:
+			case EDrawCommand::Line:
+			case EDrawCommand::LineAA:
+			case EDrawCommand::Circle:
+			case EDrawCommand::CircleAA:
+			case EDrawCommand::Oval:
+			case EDrawCommand::RoundBox:
+			case EDrawCommand::Pixel:
+			case EDrawCommand::Triangle:
+			case EDrawCommand::Quad:
+				bFlatShape = true;
+				break;
+			case EDrawCommand::Text:
+			case EDrawCommand::TextFont:
+			case EDrawCommand::TextStyled:
+			case EDrawCommand::Image:
+			case EDrawCommand::ImageStretch:
+			case EDrawCommand::ImageQuad:
+			case EDrawCommand::ImagePart:
+			case EDrawCommand::ImagePartStretch:
+			case EDrawCommand::ImagePartQuad:
+			case EDrawCommand::Sprite:
+			case EDrawCommand::SpriteRect:
+			case EDrawCommand::SpritePivot:
+			case EDrawCommand::Tile:
+			case EDrawCommand::CircleGauge:
+				bImageLike = true;
+				break;
+			default:
+				break;
+			}
+			if ( bFlatShape && !AlphaTestPasses( Alpha ) )
+			{
+				continue;
+			}
+			if ( bImageLike )
+			{
+				if ( !AlphaTestMayPass() )
+				{
+					continue;
+				}
+				NBackendSupport::ReportUnsupported( "DrawCommands", "AlphaTest (image / text)", "AlphaTest is applied to flat shapes only; images and text are drawn without a per-pixel test" );
+			}
+		}
 		const bool bFill = View.Has( FDrawFlag::Fill ); // 塗りつぶしか輪郭か。
 		Canvas->SetAntiAlias( View.Has( FDrawFlag::AntiAlias ) || View.Type == EDrawCommand::BoxAA || View.Type == EDrawCommand::CircleAA || View.Type == EDrawCommand::LineAA );
 		switch ( View.Type )
@@ -646,11 +770,21 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 				break;
 			}
 			const auto Data = View.Read<FDrawCustomBlendData>(); // 固定部を所有コピーする。
-			Unsupported( View, "Custom blend is drawn with Alpha" );
+			// 係数の番号は、EDrawBlendFactor / EDrawBlendOp と同じ並び。範囲の外は、通常の合成で描く。
+			const auto Factor = [&]( int32 Value ) { return static_cast<EGeometryBlendFactor>( NMath::Clamp( Value, 0, static_cast<int32>( EGeometryBlendFactor::SrcAlphaSaturate ) ) ); };
+			const auto Op = [&]( int32 Value ) { return static_cast<EGeometryBlendOp>( NMath::Clamp( Value, 0, static_cast<int32>( EGeometryBlendOp::Max ) ) ); };
+			FGeometryCustomBlend Custom; // 利用者が決めた混ぜ方。
+			Custom.SrcColor = Factor( Data.SrcColor );
+			Custom.DestColor = Factor( Data.DestColor );
+			Custom.ColorOp = Op( Data.ColorOp );
+			Custom.SrcAlpha = Factor( Data.SrcAlpha );
+			Custom.DestAlpha = Factor( Data.DestAlpha );
+			Custom.AlphaOp = Op( Data.AlphaOp );
 			bAlphaBlend = true;
 			Alpha = NMath::Clamp( Data.Param, 0, 255 );
-			Canvas->SetBlend( EGeometryBlend::Alpha );
-			Geometry.SetBlend( EGeometryBlend::Alpha );
+			Canvas->SetCustomBlend( Custom );
+			Geometry.SetCustomBlend( Custom );
+			Geometry.SetBlend( EGeometryBlend::Custom );
 			break;
 		}
 		case EDrawCommand::Filter:
@@ -781,17 +915,17 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 				Transform.Apply( LineX1, LineY1 );
 				if ( Valid( LineX0 ) && Valid( LineY0 ) && Valid( LineX1 ) && Valid( LineY1 ) )
 				{
-					Canvas->Line( LineX0, LineY0, LineX1, LineY1, Color( Value ), Thickness * Transform.GetScale() );
+					Canvas->Line( LineX0, LineY0, LineX1, LineY1, ShapeColor( Value ), Thickness * Transform.GetScale() );
 				}
 			}
 			else if ( Transform.bIdentity )
 			{
-				Canvas->Box( X0, Y0, X1, Y1, Color( Value ), bFill, Thickness );
+				Canvas->Box( X0, Y0, X1, Y1, ShapeColor( Value ), bFill, Thickness );
 			}
 			else
 			{
 				const float32 Points[8] = { X0, Y0, X1, Y0, X1, Y1, X0, Y1 }; // 変換すると、矩形でなくなる。
-				DrawPolygon( Points, 4, Color( Value ), bFill, Thickness );
+				DrawPolygon( Points, 4, ShapeColor( Value ), bFill, Thickness );
 			}
 			break;
 		}
@@ -838,7 +972,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			Transform.Apply( X1, Y1 );
 			if ( Valid( X0 ) && Valid( Y0 ) && Valid( X1 ) && Valid( Y1 ) )
 			{
-				Canvas->Line( X0, Y0, X1, Y1, Color( Value ), Thickness * Transform.GetScale() );
+				Canvas->Line( X0, Y0, X1, Y1, ShapeColor( Value ), Thickness * Transform.GetScale() );
 			}
 			break;
 		}
@@ -883,11 +1017,11 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			}
 			if ( Transform.bIdentity )
 			{
-				Canvas->Circle( X, Y, Radius, Color( Value ), bFill, Thickness, Segments );
+				Canvas->Circle( X, Y, Radius, ShapeColor( Value ), bFill, Thickness, Segments );
 			}
 			else
 			{
-				DrawEllipse( X, Y, Radius, Radius, Color( Value ), bFill, Thickness, Segments );
+				DrawEllipse( X, Y, Radius, Radius, ShapeColor( Value ), bFill, Thickness, Segments );
 			}
 			break;
 		}
@@ -899,7 +1033,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 				break;
 			}
 			const auto Data = View.Read<FDrawOvalData>(); // 固定部を所有コピーする。
-			DrawEllipse( Data.X, Data.Y, Data.Rx, Data.Ry, Color( Data.Color ), bFill, Data.Thickness, NMath::Clamp( Data.NumSegments, 0, 4096 ) );
+			DrawEllipse( Data.X, Data.Y, Data.Rx, Data.Ry, ShapeColor( Data.Color ), bFill, Data.Thickness, NMath::Clamp( Data.NumSegments, 0, 4096 ) );
 			break;
 		}
 		case EDrawCommand::RoundBox:
@@ -924,7 +1058,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			if ( Rx <= 0 || Ry <= 0 )
 			{
 				const float32 Points[8] = { Left, Top, Right, Top, Right, Bottom, Left, Bottom }; // 丸みなしは、矩形。
-				DrawPolygon( Points, 4, Color( Data.Color ), bFill, Data.Thickness );
+				DrawPolygon( Points, 4, ShapeColor( Data.Color ), bFill, Data.Thickness );
 				break;
 			}
 			const int32 PerCorner = NMath::Clamp( GetSegments( NMath::Max( Rx, Ry ), NMath::Clamp( Data.NumSegments, 0, 4096 ) ) / 4, 2, 120 ); // 角 1 つの分割。
@@ -939,7 +1073,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 					Points.Add( CenterY[Corner] + Ry * NMath::Sin( Angle ) );
 				}
 			}
-			DrawPolygon( Points.GetData(), Points.Num() / 2, Color( Data.Color ), bFill, Data.Thickness );
+			DrawPolygon( Points.GetData(), Points.Num() / 2, ShapeColor( Data.Color ), bFill, Data.Thickness );
 			break;
 		}
 		case EDrawCommand::Pixel:
@@ -952,7 +1086,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			const auto Data = View.Read<FDrawPixelData>(); // 固定部を所有コピーする。
 			const float32 X = static_cast<float32>( Data.X ), Y = static_cast<float32>( Data.Y ); // 1画素の矩形の左上。
 			const float32 Points[8] = { X, Y, X + 1, Y, X + 1, Y + 1, X, Y + 1 }; // 1画素の矩形。
-			DrawPolygon( Points, 4, Color( Data.Color ), true, 1 );
+			DrawPolygon( Points, 4, ShapeColor( Data.Color ), true, 1 );
 			break;
 		}
 		case EDrawCommand::Triangle:
@@ -964,7 +1098,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			}
 			const auto Data = View.Read<FDrawTriangleData>(); // 固定部を所有コピーする。
 			const float32 Points[6] = { Data.X0, Data.Y0, Data.X1, Data.Y1, Data.X2, Data.Y2 }; // XYの並び。
-			DrawPolygon( Points, 3, Color( Data.Color ), bFill, Data.Thickness );
+			DrawPolygon( Points, 3, ShapeColor( Data.Color ), bFill, Data.Thickness );
 			break;
 		}
 		case EDrawCommand::Quad:
@@ -976,7 +1110,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			}
 			const auto Data = View.Read<FDrawQuadData>(); // 固定部を所有コピーする。
 			const float32 Points[8] = { Data.X0, Data.Y0, Data.X1, Data.Y1, Data.X2, Data.Y2, Data.X3, Data.Y3 }; // XYの並び。
-			DrawPolygon( Points, 4, Color( Data.Color ), bFill, Data.Thickness );
+			DrawPolygon( Points, 4, ShapeColor( Data.Color ), bFill, Data.Thickness );
 			break;
 		}
 		case EDrawCommand::Text:
@@ -1259,9 +1393,165 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			Geometry.SetShadowReceiver( Data.Slot, bUsable ? Data.Handle : -1 ); // 使えない番号は、そのスロットを外す。
 			break;
 		}
-		// まだ描画に反映しない状態。図形は、この状態なしで描く。
 		case EDrawCommand::AddColor:
+		{
+			if ( !View.CanRead<FDrawAddColorData>() )
+			{
+				bStopped = true;
+				break;
+			}
+			const auto Data = View.Read<FDrawAddColorData>(); // 固定部を所有コピーする。
+			AddColorValue[0] = NMath::Clamp( Data.R, -255, 255 );
+			AddColorValue[1] = NMath::Clamp( Data.G, -255, 255 );
+			AddColorValue[2] = NMath::Clamp( Data.B, -255, 255 );
+			break;
+		}
 		case EDrawCommand::AlphaTest:
+		{
+			if ( !View.CanRead<FDrawAlphaTestData>() )
+			{
+				bStopped = true;
+				break;
+			}
+			const auto Data = View.Read<FDrawAlphaTestData>(); // 固定部を所有コピーする。
+			bAlphaTest = Data.Enabled != 0;
+			AlphaTestMode = static_cast<EDrawCompare>( NMath::Clamp( Data.Mode, 0, static_cast<int32>( EDrawCompare::Always ) ) );
+			AlphaTestReference = NMath::Clamp( Data.Reference, 0, 255 );
+			break;
+		}
+		case EDrawCommand::Tile:
+		{
+			if ( !View.CanRead<FDrawTileData>() )
+			{
+				bStopped = true;
+				break;
+			}
+			const auto Data = View.Read<FDrawTileData>(); // 固定部を所有コピーする。
+			FTextureDrawView Image; // 所有者から借りた描画用画像。
+			if ( !GetImage( Data.Handle, Image ) || !Valid( Data.Scale ) || Data.Scale <= 0 || !Valid( Data.Angle ) || Data.X1 <= Data.X0 || Data.Y1 <= Data.Y0 )
+			{
+				break;
+			}
+			if ( Data.Angle != 0.0f )
+			{
+				Unsupported( View, "A tile with an angle is skipped" );
+				break;
+			}
+			// DxLibのDrawTileと同じ並べ方: 拡大した画像の中心を「矩形の中心 - 拡大率 x (Tx, Ty)」に置く。(Tx, Ty) は整数。
+			const float32 TileWidth = static_cast<float32>( Image.Width ) * Data.Scale, TileHeight = static_cast<float32>( Image.Height ) * Data.Scale; // 1枚の大きさ。
+			const int32 ShiftX = NMath::RoundToInt( ( ( static_cast<float32>( Data.X1 - Data.X0 ) - TileWidth ) * 0.5f - static_cast<float32>( Data.OffsetX ) ) / Data.Scale );
+			const int32 ShiftY = NMath::RoundToInt( ( ( static_cast<float32>( Data.Y1 - Data.Y0 ) - TileHeight ) * 0.5f - static_cast<float32>( Data.OffsetY ) ) / Data.Scale );
+			const float32 Left = static_cast<float32>( Data.X0 + Data.X1 ) * 0.5f - Data.Scale * static_cast<float32>( ShiftX ) - TileWidth * 0.5f; // 基準になる1枚の左端。
+			const float32 Top = static_cast<float32>( Data.Y0 + Data.Y1 ) * 0.5f - Data.Scale * static_cast<float32>( ShiftY ) - TileHeight * 0.5f; // 基準になる1枚の上端。
+			const int32 FirstX = static_cast<int32>( NMath::Floor( ( static_cast<float32>( Data.X0 ) - Left ) / TileWidth ) ), LastX = static_cast<int32>( NMath::Ceil( ( static_cast<float32>( Data.X1 ) - Left ) / TileWidth ) );
+			const int32 FirstY = static_cast<int32>( NMath::Floor( ( static_cast<float32>( Data.Y0 ) - Top ) / TileHeight ) ), LastY = static_cast<int32>( NMath::Ceil( ( static_cast<float32>( Data.Y1 ) - Top ) / TileHeight ) );
+			if ( static_cast<int64>( LastX - FirstX ) * ( LastY - FirstY ) > 4096 )
+			{
+				Unsupported( View, "A tile with more than 4096 pieces is skipped" );
+				break;
+			}
+			for ( int32 Row = FirstY; Row < LastY; ++Row )
+			{
+				for ( int32 Column = FirstX; Column < LastX; ++Column )
+				{
+					const float32 TileX = Left + static_cast<float32>( Column ) * TileWidth, TileY = Top + static_cast<float32>( Row ) * TileHeight; // この1枚の左上。
+					const float32 X0 = NMath::Max( TileX, static_cast<float32>( Data.X0 ) ), X1 = NMath::Min( TileX + TileWidth, static_cast<float32>( Data.X1 ) ); // 矩形で切った範囲。
+					const float32 Y0 = NMath::Max( TileY, static_cast<float32>( Data.Y0 ) ), Y1 = NMath::Min( TileY + TileHeight, static_cast<float32>( Data.Y1 ) );
+					if ( X1 <= X0 || Y1 <= Y0 )
+					{
+						continue;
+					}
+					const float32 UV[4] = { ( X0 - TileX ) / TileWidth, ( Y0 - TileY ) / TileHeight, ( X1 - TileX ) / TileWidth, ( Y1 - TileY ) / TileHeight }; // 切った範囲に当たる画像の範囲。
+					const float32 Points[8] = { X0, Y0, X1, Y0, X1, Y1, X0, Y1 };
+					DrawImage( Image, Points, UV );
+				}
+			}
+			break;
+		}
+		case EDrawCommand::CircleGauge:
+		{
+			if ( !View.CanRead<FDrawCircleGaugeData>() )
+			{
+				bStopped = true;
+				break;
+			}
+			const auto Data = View.Read<FDrawCircleGaugeData>(); // 固定部を所有コピーする。
+			FTextureDrawView Image; // 所有者から借りた描画用画像。
+			if ( !GetImage( Data.Handle, Image ) || !Valid( Data.X ) || !Valid( Data.Y ) || !Valid( Data.Percent ) || !Valid( Data.StartPercent ) || !Valid( Data.Scale ) || Data.Scale <= 0 || Data.Percent <= 0.0f )
+			{
+				break;
+			}
+			if ( View.Has( FDrawFlag::FlipX ) || View.Has( FDrawFlag::FlipY ) )
+			{
+				Unsupported( View, "A flipped circle gauge is skipped" );
+				break;
+			}
+			const float64 Half[2] = { Image.Width * static_cast<float64>( Data.Scale ) * 0.5, Image.Height * static_cast<float64>( Data.Scale ) * 0.5 }; // 画像の半分の幅と高さ（拡大後）。
+			// 真上から時計回りの割合 From〜To（0〜1）の扇を、画像の縁までの多角形にして貼る。
+			const auto DrawSector = [&]( float64 From, float64 To )
+			{
+				if ( To <= From )
+				{
+					return;
+				}
+				constexpr float64 TwoPi = 6.283185307179586;
+				TArray<float32> Vertices; // x, y, u, v の頂点列。
+				// 中心から、真上を0として時計回りに Angle だけ進んだ向きが、画像の縁に当たる点。
+				const auto AddVertex = [&]( float64 OffsetX, float64 OffsetY )
+				{
+					Vertices.Add( static_cast<float32>( Data.X + OffsetX ) );
+					Vertices.Add( static_cast<float32>( Data.Y + OffsetY ) );
+					Vertices.Add( static_cast<float32>( 0.5 + OffsetX / ( Half[0] * 2.0 ) ) );
+					Vertices.Add( static_cast<float32>( 0.5 + OffsetY / ( Half[1] * 2.0 ) ) );
+				};
+				const auto AddEdge = [&]( float64 Fraction )
+				{
+					const float64 Angle = Fraction * TwoPi; // 真上から時計回りの角度。
+					const float64 DirectionX = NMath::Sin( Angle ), DirectionY = -NMath::Cos( Angle ); // 画面の向き（Yは下が正）。
+					float64 Length = 1.0e30;
+					if ( NMath::Abs( DirectionX ) > 1.0e-12 )
+					{
+						Length = NMath::Min( Length, Half[0] / NMath::Abs( DirectionX ) );
+					}
+					if ( NMath::Abs( DirectionY ) > 1.0e-12 )
+					{
+						Length = NMath::Min( Length, Half[1] / NMath::Abs( DirectionY ) );
+					}
+					AddVertex( DirectionX * Length, DirectionY * Length );
+				};
+				AddVertex( 0.0, 0.0 );
+				AddEdge( From );
+				// 間にある、画像の4つの角（右上・右下・左下・左上の順）。
+				const float64 CornerAngle = NMath::Atan2( Half[0], Half[1] ); // 真上から右上の角までの角度。
+				const float64 Corners[4][3] = { { CornerAngle, Half[0], -Half[1] }, { 3.141592653589793 - CornerAngle, Half[0], Half[1] }, { 3.141592653589793 + CornerAngle, -Half[0], Half[1] }, { TwoPi - CornerAngle, -Half[0], -Half[1] } };
+				for ( const auto& Corner : Corners )
+				{
+					if ( Corner[0] > From * TwoPi && Corner[0] < To * TwoPi )
+					{
+						AddVertex( Corner[1], Corner[2] );
+					}
+				}
+				AddEdge( To );
+				DrawImagePolygon( Image, Vertices );
+			};
+			// DxLibと同じ解釈: 描く量が100以上なら全体、描き終わりが100を超えるなら、先頭へ回り込む。
+			const float64 Start = NMath::Clamp( static_cast<float64>( Data.StartPercent ), 0.0, 100.0 ), End = Start + static_cast<float64>( Data.Percent );
+			if ( Data.Percent >= 100.0f )
+			{
+				DrawSector( 0.0, 1.0 ); // 全体は、描き始めの位置に関係ない（1回で描く）。
+			}
+			else if ( End <= 100.0 )
+			{
+				DrawSector( Start / 100.0, End / 100.0 );
+			}
+			else
+			{
+				DrawSector( Start / 100.0, 1.0 );
+				DrawSector( 0.0, ( End - 100.0 ) / 100.0 );
+			}
+			break;
+		}
+		// まだ描画に反映しない状態。図形は、この状態なしで描く。
 		case EDrawCommand::PushMask:
 		case EDrawCommand::PopMask:
 		case EDrawCommand::ModelAnim:

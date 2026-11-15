@@ -706,7 +706,7 @@ FGraphicsPipelineHandle CDX12GraphicsPipelineStore::CreateGraphicsPipeline( cons
 	PsoDesc.pRootSignature = Created.Root.Get();
 	PsoDesc.VS = { Desc.VertexShaderBytecode.GetData(), static_cast<SIZE_T>( Desc.VertexShaderBytecode.Num() ) };
 	PsoDesc.PS = { Desc.PixelShaderBytecode.GetData(), static_cast<SIZE_T>( Desc.PixelShaderBytecode.Num() ) };
-	NDX12BlendState::Configure( PsoDesc.BlendState.RenderTarget[0], Desc.bAlphaBlend, Desc.Blend ); // 全描画先に同じ混ぜ方を使う（IndependentBlendEnableは使わない）。
+	NDX12BlendState::Configure( PsoDesc.BlendState.RenderTarget[0], Desc.bAlphaBlend, Desc.Blend, Desc.CustomBlend ); // 全描画先に同じ混ぜ方を使う（IndependentBlendEnableは使わない）。
 	PsoDesc.SampleMask = UINT_MAX;
 	PsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
 	PsoDesc.RasterizerState.CullMode = CullMode;

@@ -45,6 +45,8 @@ public:
 	void SetGeometry( IRenderGeometry3D* InGeometry ) { Geometry = InGeometry; }
 	// 以降の描画の、描画先との混ぜ方（合成するときだけ使う）。
 	void SetBlend( EGeometryBlend Blend ) { State.Blend = Blend; }
+	// 以降の描画の、利用者が決めた混ぜ方の係数（Blend が Custom のときに使う）。
+	void SetCustomBlend( const FGeometryCustomBlend& Blend ) { State.CustomBlend = Blend; }
 	// 1命令を検査して実行する。Stateはこのインスタンス内だけに閉じる。
 	EResult Execute( const FDrawCommandView& View, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend );
 private:

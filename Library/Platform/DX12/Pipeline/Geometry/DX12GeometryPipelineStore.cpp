@@ -59,11 +59,13 @@ void CDX12GeometryPipelineStore::ResetAfterGPUIdle()
 
 ID3D12PipelineState *CDX12GeometryPipelineStore::GetOrCreatePipeline( const FGeometryDrawState &State, bool bTextured )
 {
-	if ( !Device || FAILED( Device->GetDeviceRemovedReason() ) || State.Topology > EGeometryTopology::Triangles || State.Compare > EGeometryCompare::Always || State.Culling > EGeometryCulling::FrontFaces || State.AddressU > EGeometryTextureAddress::Border || State.AddressV > EGeometryTextureAddress::Border || State.Blend > EGeometryBlend::PremultipliedSubtract )
+	if ( !Device || FAILED( Device->GetDeviceRemovedReason() ) || State.Topology > EGeometryTopology::Triangles || State.Compare > EGeometryCompare::Always || State.Culling > EGeometryCulling::FrontFaces || State.AddressU > EGeometryTextureAddress::Border || State.AddressV > EGeometryTextureAddress::Border || State.Blend > EGeometryBlend::Custom || ( State.bAlphaBlend && State.Blend == EGeometryBlend::Custom && !State.CustomBlend.IsValid() ) )
 	{
 		return nullptr;
 	}
-	const uint64 Key = ( static_cast<uint64>( static_cast<uint32>( State.DepthBias ) ) << 32 ) | static_cast<uint64>( State.Topology ) | ( static_cast<uint64>( State.Compare ) << 2 ) | ( static_cast<uint64>( State.Culling ) << 5 ) | ( static_cast<uint64>( State.bTestDepth ) << 7 ) | ( static_cast<uint64>( State.bWriteDepth ) << 8 ) | ( static_cast<uint64>( State.bAlphaBlend ) << 9 ) | ( static_cast<uint64>( bTextured ) << 10 ) | ( static_cast<uint64>( State.bAlphaBlend ? State.Blend : EGeometryBlend::Alpha ) << 11 ); // PSOを決める全要素を含める。補間はsamplerで指定する。
+	FGeometryPipelineKey Key; // PSOを決める全要素を含める。補間はsamplerで指定するためPSOに入れない。
+	Key.State = ( static_cast<uint64>( static_cast<uint32>( State.DepthBias ) ) << 32 ) | static_cast<uint64>( State.Topology ) | ( static_cast<uint64>( State.Compare ) << 2 ) | ( static_cast<uint64>( State.Culling ) << 5 ) | ( static_cast<uint64>( State.bTestDepth ) << 7 ) | ( static_cast<uint64>( State.bWriteDepth ) << 8 ) | ( static_cast<uint64>( State.bAlphaBlend ) << 9 ) | ( static_cast<uint64>( bTextured ) << 10 ) | ( static_cast<uint64>( State.bAlphaBlend ? State.Blend : EGeometryBlend::Alpha ) << 11 );
+	Key.Custom = State.bAlphaBlend && State.Blend == EGeometryBlend::Custom ? State.CustomBlend.Pack() : 0;
 	if ( const auto *Found = Pipelines.Find( Key ) )
 	{
 		return Found->Resource.Get();
@@ -96,7 +98,7 @@ ID3D12PipelineState *CDX12GeometryPipelineStore::GetOrCreatePipeline( const FGeo
 	Desc.DepthStencilState.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
 	Desc.DepthStencilState.FrontFace = { D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS };
 	Desc.DepthStencilState.BackFace = Desc.DepthStencilState.FrontFace;
-	NDX12BlendState::Configure( Desc.BlendState.RenderTarget[0], State.bAlphaBlend, State.Blend ); // 混ぜ方は、利用者のシェーダーと同じ表。
+	NDX12BlendState::Configure( Desc.BlendState.RenderTarget[0], State.bAlphaBlend, State.Blend, State.CustomBlend ); // 混ぜ方は、利用者のシェーダーと同じ表。
 	Desc.NumRenderTargets = 1;
 	Desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	Desc.DSVFormat = DXGI_FORMAT_D32_FLOAT;

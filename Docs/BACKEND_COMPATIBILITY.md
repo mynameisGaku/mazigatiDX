@@ -10,8 +10,8 @@
 
 |分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|
 |---|---:|---:|---:|---:|---:|---:|---:|
-|API|356|4|97|92|162|0|1|
-|Draw|101|0|23|38|40|0|0|
+|API|358|4|97|94|162|0|1|
+|Draw|101|0|18|43|40|0|0|
 |Sample|33|30|0|3|0|0|0|
 |Editor|11|11|0|0|0|0|0|
 
@@ -266,14 +266,16 @@
 |[API.IRenderCanvas2D.Box](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L17)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
 |[API.IRenderCanvas2D.Circle](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L21)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
 |[API.IRenderCanvas2D.Image](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L35)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.ImagePolygon](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L38)|Partial|R6|入力不正、出力保持、GPU失敗と状態復元を確認|凸な多角形へ画像を貼る（頂点は x, y, u, v）。三角形の扇で描く。CircleGaugeが使う。未対応の実行先は何も描かない||
 |[API.IRenderCanvas2D.Line](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L19)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
 |[API.IRenderCanvas2D.Polygon](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L27)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|共通キャンバスと描画スレッドの接続を実装。3〜512点の凸な点列||
-|[API.IRenderCanvas2D.PopClip](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L39)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderCanvas2D.PushClip](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L37)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.PopClip](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L41)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.PushClip](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L39)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
 |[API.IRenderCanvas2D.Quad](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L25)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderCanvas2D.SetAntiAlias](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L43)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderCanvas2D.SetBlend](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L45)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|共通キャンバスと描画スレッドの接続、DX12のPSOを実装。フレームの始めと命令列の終わりに通常の合成へ戻る||
-|[API.IRenderCanvas2D.SetTextureFilter](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L41)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.SetAntiAlias](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L45)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.SetBlend](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L47)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|共通キャンバスと描画スレッドの接続、DX12のPSOを実装。フレームの始めと命令列の終わりに通常の合成へ戻る||
+|[API.IRenderCanvas2D.SetCustomBlend](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L49)|Partial|R6|入力不正、出力保持、GPU失敗と状態復元を確認|利用者が決めた混ぜ方の係数を、以降の2D描画へ使う。未対応の実行先は何もしない||
+|[API.IRenderCanvas2D.SetTextureFilter](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L43)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
 |[API.IRenderCanvas2D.Text](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L29)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
 |[API.IRenderCanvas2D.TextFont](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L33)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|フォントを指定した文字列を画像にして、位置・拡大・回転つきで描く。縁取り対応。同じ文字列の画像は持ち続ける||
 |[API.IRenderCanvas2D.Triangle](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L23)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
@@ -380,8 +382,8 @@
 
 |項目|判定|段階|検査計画|現在の制限・根拠|確認結果|
 |---|---|---|---|---|---|
-|[Draw.AddColor](../Library/Framework/Render/Draw/DrawCommand.h#L88)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
-|[Draw.AlphaTest](../Library/Framework/Render/Draw/DrawCommand.h#L89)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
+|[Draw.AddColor](../Library/Framework/Render/Draw/DrawCommand.h#L88)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|平らな図形（箱・線・円・三角形・四角形・多角形・点）に、明るさのあとで色を足す。画像・文字・3Dには効かない（報告する）||
+|[Draw.AlphaTest](../Library/Framework/Render/Draw/DrawCommand.h#L89)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|平らな図形は、アルファが1つに決まるので、通らなければ丸ごと飛ばす。画像・文字は、通りうる画素が無いときだけ飛ばす（画素ごとの比べはまだ無い）。3Dには効かない||
 |[Draw.AmbientLight](../Library/Framework/Render/Draw/DrawCommand.h#L123)|Partial|R2|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|頂点ごとのCPU計算（CVertexLighting。DxLibの固定の光と同じ式）で対応。画素ごとの光・影は頂点ごとの計算になる。DxLibとの画素比較が残る||
 |[Draw.Anisotropy](../Library/Framework/Render/Draw/DrawCommand.h#L116)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
 |[Draw.BeginShadowMap](../Library/Framework/Render/Draw/DrawCommand.h#L140)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|影の絵へ、図形（三角形・不透明）を、光から見た深度として描く。範囲は、箱か、カメラの視錐台。入れ子は不可（飛ばす）||
@@ -395,14 +397,14 @@
 |[Draw.Capsule3D](../Library/Framework/Render/Draw/DrawCommand.h#L45)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.Circle](../Library/Framework/Render/Draw/DrawCommand.h#L36)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.CircleAA](../Library/Framework/Render/Draw/DrawCommand.h#L74)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
-|[Draw.CircleGauge](../Library/Framework/Render/Draw/DrawCommand.h#L85)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
+|[Draw.CircleGauge](../Library/Framework/Render/Draw/DrawCommand.h#L85)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|真上から時計回りの扇を、画像の縁までの多角形として貼る。描き始め・描く量・100超えの回り込みに対応。反転の指定は飛ばす。DxLibより縁が1画素ほど短い||
 |[Draw.Clear](../Library/Framework/Render/Draw/DrawCommand.h#L97)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.ClearDepth](../Library/Framework/Render/Draw/DrawCommand.h#L117)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.Cone3D](../Library/Framework/Render/Draw/DrawCommand.h#L130)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|側面と底面を展開して描く（光を受ける）。DxLibとの画素比較が残る||
 |[Draw.CopyScreen](../Library/Framework/Render/Draw/DrawCommand.h#L98)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
 |[Draw.Cube3D](../Library/Framework/Render/Draw/DrawCommand.h#L46)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.Culling](../Library/Framework/Render/Draw/DrawCommand.h#L111)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
-|[Draw.CustomBlend](../Library/Framework/Render/Draw/DrawCommand.h#L87)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
+|[Draw.CustomBlend](../Library/Framework/Render/Draw/DrawCommand.h#L87)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|色とアルファの係数・演算を、そのままD3D12のブレンドへ写す（2D・3D・シェーダー描画）。色の係数をアルファへ使うときは、同じ種類のアルファへ読み替える||
 |[Draw.DefaultLight](../Library/Framework/Render/Draw/DrawCommand.h#L122)|Partial|R2|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|頂点ごとのCPU計算（CVertexLighting。DxLibの固定の光と同じ式）で対応。画素ごとの光・影は頂点ごとの計算になる。DxLibとの画素比較が残る||
 |[Draw.Depth](../Library/Framework/Render/Draw/DrawCommand.h#L110)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.DistortedMaterialQuad3D](../Library/Framework/Render/Draw/DrawCommand.h#L60)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
@@ -473,7 +475,7 @@
 |[Draw.TextStyled](../Library/Framework/Render/Draw/DrawCommand.h#L105)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|拡大・回転・基準点・縁取り対応。縦書きは横書きで描く||
 |[Draw.TextureAddress](../Library/Framework/Render/Draw/DrawCommand.h#L112)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.TextureTransform](../Library/Framework/Render/Draw/DrawCommand.h#L113)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
-|[Draw.Tile](../Library/Framework/Render/Draw/DrawCommand.h#L84)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
+|[Draw.Tile](../Library/Framework/Render/Draw/DrawCommand.h#L84)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|角度なしのタイルを、DxLibと同じ並べ方（中心の整数のずれ）で、矩形で切った画像の並びとして描く。角度つき・4096枚を超える並びは飛ばす||
 |[Draw.Transform2D](../Library/Framework/Render/Draw/DrawCommand.h#L93)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|図形・画像の点へ変換を掛ける。文字は位置だけ（拡大・回転なし）||
 |[Draw.Triangle](../Library/Framework/Render/Draw/DrawCommand.h#L43)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.Triangle3D](../Library/Framework/Render/Draw/DrawCommand.h#L43)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||

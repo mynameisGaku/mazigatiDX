@@ -7,6 +7,15 @@
 #include <d3dcompiler.h>
 #include <wrl/client.h>
 
+// 描画状態から決まる、保管の見出し。利用者が決めた混ぜ方（Custom）の係数は、別の整数に入れる（0 なら、使っていない）。
+struct FGeometryPipelineKey
+{
+	uint64 State = 0;
+	uint32 Custom = 0;
+	bool operator==( const FGeometryPipelineKey &Other ) const { return State == Other.State && Custom == Other.Custom; }
+};
+inline uint32 GetTypeHash( const FGeometryPipelineKey &Key ) { return HashCombine( GetTypeHash( Key.State ), GetTypeHash( Key.Custom ) ); }
+
 // 固定の同次頂点用シェーダー・資源配置・描画状態を作成し、GPU完了まで所有する。
 class CDX12GeometryPipelineStore
 {
@@ -35,5 +44,5 @@ class CDX12GeometryPipelineStore
 	Microsoft::WRL::ComPtr<ID3D12Device> Device; // 作成先のGPU。
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> RootSignature; // t0画像とs0補間の配置。
 	Microsoft::WRL::ComPtr<ID3DBlob> VertexShader, PixelShader, TexturedPixelShader; // 固定の28byte頂点を読む三つのバイナリ。
-	TMap<uint64, FPipelineRecord> Pipelines; // 深度・表裏・合成・画像・つなぎ方ごとのキャッシュ。
+	TMap<FGeometryPipelineKey, FPipelineRecord> Pipelines; // 深度・表裏・合成・画像・つなぎ方ごとのキャッシュ。
 };

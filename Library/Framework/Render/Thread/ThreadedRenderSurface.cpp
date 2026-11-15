@@ -387,6 +387,15 @@ void CThreadedRenderSurface::SetBlend( EGeometryBlend Blend )
 	Queue( MoveTemp( Command ) );
 }
 
+void CThreadedRenderSurface::SetCustomBlend( const FGeometryCustomBlend &Blend )
+{
+	GAME_THREAD_ONLY();
+	FCommand Command;
+	Command.Type = ECommand::CustomBlend;
+	Command.CustomBlend = Blend;
+	Queue( MoveTemp( Command ) );
+}
+
 void CThreadedRenderSurface::SetAntiAlias( bool bEnabled )
 {
 	GAME_THREAD_ONLY();
@@ -556,6 +565,22 @@ void CThreadedRenderSurface::Image( const FTextureDrawView &Texture, const float
 	Queue( MoveTemp( Command ) );
 }
 
+void CThreadedRenderSurface::ImagePolygon( const FTextureDrawView &Texture, const float32 *Vertices, int32 Count, FColor32 Color )
+{
+	GAME_THREAD_ONLY();
+	if ( !Vertices || Count < 3 || Count > 128 )
+	{
+		return;
+	}
+	// 頂点列を、命令が所有する配列へコピーする（画像の借用値は、そのまま持つ）。
+	FCommand Command;
+	Command.Type = ECommand::ImagePolygon;
+	Command.Texture = Texture;
+	Command.Color = Color;
+	Command.Points.Append( Vertices, Count * 4 );
+	Queue( MoveTemp( Command ) );
+}
+
 bool CThreadedRenderSurface::SetTextureFilter( bool bLinear )
 {
 	GAME_THREAD_ONLY( false );
@@ -640,6 +665,9 @@ void CThreadedRenderSurface::ExecuteBatch( const TArray<FCommand> &Commands )
 			Canvas->Image( Command.Texture, Points, UV, Command.Color );
 			break;
 		}
+		case ECommand::ImagePolygon:
+			Canvas->ImagePolygon( Command.Texture, Command.Points.GetData(), Command.Points.Num() / 4, Command.Color );
+			break;
 		case ECommand::PushClip:
 			Canvas->PushClip( Command.Integers[0], Command.Integers[1], Command.Integers[2], Command.Integers[3] );
 			break;
@@ -651,6 +679,9 @@ void CThreadedRenderSurface::ExecuteBatch( const TArray<FCommand> &Commands )
 			break;
 		case ECommand::Blend:
 			Canvas->SetBlend( static_cast<EGeometryBlend>( Command.Integers[0] ) );
+			break;
+		case ECommand::CustomBlend:
+			Canvas->SetCustomBlend( Command.CustomBlend );
 			break;
 		default:
 			bFailed.Store( true );
