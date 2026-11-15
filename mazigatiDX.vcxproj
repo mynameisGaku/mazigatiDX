@@ -541,6 +541,7 @@
     <ClCompile Include="Library\Platform\Render\Geometry\VertexLighting.cpp" />
     <ClCompile Include="Library\Platform\Render\Model\StaticModelStore.cpp" />
     <ClCompile Include="Library\Platform\Render\Texture\TextureAssetStore.cpp" />
+    <ClCompile Include="Library\Platform\Render\Texture\TgaDecoder.cpp" />
     <ClCompile Include="Library\Platform\SDL\SdlGamepadInputSubsystem.cpp" />
     <ClCompile Include="Library\Platform\System\BackendSupport.cpp" />
     <ClCompile Include="Library\Platform\System\CommandLine.cpp" />
@@ -554,6 +555,8 @@
     <ClCompile Include="Library\Platform\Windows\Image\WicImageDecoder.cpp" />
     <ClCompile Include="Library\Platform\Windows\Image\WicImageEncoder.cpp" />
     <ClCompile Include="Library\Platform\Windows\Input\WindowsInputSubsystem.cpp" />
+    <ClCompile Include="Library\Platform\Windows\Text\WindowsFontStore.cpp" />
+    <ClCompile Include="Library\Platform\Windows\Text\WindowsGdiText.cpp" />
     <ClCompile Include="Library\Platform\Windows\Text\WindowsTextRasterizer.cpp" />
     <ClCompile Include="VendorModules\ImGui\imgui.cpp" />
     <ClCompile Include="VendorModules\ImGui\imgui_draw.cpp" />
@@ -784,6 +787,7 @@
     <ClInclude Include="Library\Core\Interfaces\Render\IComputePipelineResources.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IComputeQueue.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IDrawExecutor.h" />
+    <ClInclude Include="Library\Core\Interfaces\Render\IFontDrawSource.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IGeometryBufferSource.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IGpuTimestampResources.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IGraphicsPipelineResources.h" />
@@ -794,6 +798,7 @@
     <ClInclude Include="Library\Core\Interfaces\Render\IRenderCommandQueue.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IRenderGeometry3D.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IRenderSurface.h" />
+    <ClInclude Include="Library\Core\Interfaces\Render\IRenderTargetDrawSource.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IRenderTextRasterizer.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IRenderTextureResources.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IShader.h" />
@@ -851,8 +856,10 @@
     <ClInclude Include="Library\Core\Render\RenderCommandContext.h" />
     <ClInclude Include="Library\Core\Render\RenderResourceSerial.h" />
     <ClInclude Include="Library\Core\Render\RenderTargetCapabilities.h" />
+    <ClInclude Include="Library\Core\Render\RenderTargetDrawView.h" />
     <ClInclude Include="Library\Core\Render\RenderTargetFormat.h" />
     <ClInclude Include="Library\Core\Render\RenderTargetPassDesc.h" />
+    <ClInclude Include="Library\Core\Render\RenderTextFont.h" />
     <ClInclude Include="Library\Core\Render\StaticModelDrawView.h" />
     <ClInclude Include="Library\Core\Render\TextureDrawView.h" />
     <ClInclude Include="Library\Core\Render\TextureResourceHandle.h" />
@@ -1379,6 +1386,7 @@
     <ClInclude Include="Library\Platform\Render\Geometry\VertexLighting.h" />
     <ClInclude Include="Library\Platform\Render\Model\StaticModelStore.h" />
     <ClInclude Include="Library\Platform\Render\Texture\TextureAssetStore.h" />
+    <ClInclude Include="Library\Platform\Render\Texture\TgaDecoder.h" />
     <ClInclude Include="Library\Platform\SDL\SdlGamepadInputSubsystem.h" />
     <ClInclude Include="Library\Platform\System\BackendSupport.h" />
     <ClInclude Include="Library\Platform\System\CommandLine.h" />
@@ -1394,6 +1402,8 @@
     <ClInclude Include="Library\Platform\Windows\Image\WicImageDecoder.h" />
     <ClInclude Include="Library\Platform\Windows\Image\WicImageEncoder.h" />
     <ClInclude Include="Library\Platform\Windows\Input\WindowsInputSubsystem.h" />
+    <ClInclude Include="Library\Platform\Windows\Text\WindowsFontStore.h" />
+    <ClInclude Include="Library\Platform\Windows\Text\WindowsGdiText.h" />
     <ClInclude Include="Library\Platform\Windows\Text\WindowsTextRasterizer.h" />
     <ClInclude Include="VendorModules\ImGui\imconfig.h" />
     <ClInclude Include="VendorModules\ImGui\imgui.h" />

@@ -1423,6 +1423,9 @@
     <ClCompile Include="Library\Platform\Render\Texture\TextureAssetStore.cpp">
       <Filter>Library\Platform\Render\Texture</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Texture\TgaDecoder.cpp">
+      <Filter>Library\Platform\Render\Texture</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\SDL\SdlGamepadInputSubsystem.cpp">
       <Filter>Library\Platform\SDL</Filter>
     </ClCompile>
@@ -1461,6 +1464,12 @@
     </ClCompile>
     <ClCompile Include="Library\Platform\Windows\Input\WindowsInputSubsystem.cpp">
       <Filter>Library\Platform\Windows\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Windows\Text\WindowsFontStore.cpp">
+      <Filter>Library\Platform\Windows\Text</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Windows\Text\WindowsGdiText.cpp">
+      <Filter>Library\Platform\Windows\Text</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\Windows\Text\WindowsTextRasterizer.cpp">
       <Filter>Library\Platform\Windows\Text</Filter>
@@ -2148,6 +2157,9 @@
     <ClInclude Include="Library\Core\Interfaces\Render\IDrawExecutor.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IFontDrawSource.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IGeometryBufferSource.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
@@ -2176,6 +2188,9 @@
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IRenderSurface.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IRenderTargetDrawSource.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IRenderTextRasterizer.h">
@@ -2349,10 +2364,16 @@
     <ClInclude Include="Library\Core\Render\RenderTargetCapabilities.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Render\RenderTargetDrawView.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Render\RenderTargetFormat.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Render\RenderTargetPassDesc.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\RenderTextFont.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Render\StaticModelDrawView.h">
@@ -3933,6 +3954,9 @@
     <ClInclude Include="Library\Platform\Render\Texture\TextureAssetStore.h">
       <Filter>Library\Platform\Render\Texture</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Texture\TgaDecoder.h">
+      <Filter>Library\Platform\Render\Texture</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Platform\SDL\SdlGamepadInputSubsystem.h">
       <Filter>Library\Platform\SDL</Filter>
     </ClInclude>
@@ -3977,6 +4001,12 @@
     </ClInclude>
     <ClInclude Include="Library\Platform\Windows\Input\WindowsInputSubsystem.h">
       <Filter>Library\Platform\Windows\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Windows\Text\WindowsFontStore.h">
+      <Filter>Library\Platform\Windows\Text</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Windows\Text\WindowsGdiText.h">
+      <Filter>Library\Platform\Windows\Text</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\Windows\Text\WindowsTextRasterizer.h">
       <Filter>Library\Platform\Windows\Text</Filter>

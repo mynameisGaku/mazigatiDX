@@ -2,6 +2,7 @@
 #pragma once
 #include "Library/Core/Interfaces/Render/IRenderTextRasterizer.h"
 #include "Library/Platform/System/WindowsInclude.h"
+#include "Library/Platform/Windows/Text/WindowsGdiText.h"
 
 // Windowsの既定ゲーム文字をCPU画像へ変換する。GPUとImGuiは所有しない。
 class CWindowsTextRasterizer : public IRenderTextRasterizer
@@ -17,8 +18,11 @@ class CWindowsTextRasterizer : public IRenderTextRasterizer
 	bool Initialize();
 	// UTF-8を白いRGBAへ変換する。空・不正・64KiB超・4096辺超は全出力を保ってfalse。
 	bool RasterizeText( TArrayView<const char> Text, TArray<FColor32> &OutPixels, int32 &OutWidth, int32 &OutHeight ) override;
+	// フォントを指定した文字列を、白いRGBA（と、縁取りがあればその画像）へ変換する。失敗時は全出力を保ってfalse。
+	bool RasterizeFontText( const FRenderTextFont &InFont, TArrayView<const char> Text, TArray<FColor32> &OutPixels, TArray<FColor32> &OutEdgePixels, int32 &OutWidth, int32 &OutHeight ) override;
 
   private:
+	CWindowsGdiText FontText; // フォントを指定した文字の画像化。この実体を使うスレッドだけが触る。
 	HDC Context = nullptr; // CPU上の文字画像を作るOSの文脈。
 	HFONT Font = nullptr; // UIに依存しない既定のゲームフォント。
 	HGDIOBJ PreviousFont = nullptr; // 破棄時に戻す元の選択。

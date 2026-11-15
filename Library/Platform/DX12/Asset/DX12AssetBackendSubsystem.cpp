@@ -1,4 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
+#include "Library/Platform/Render/Texture/TgaDecoder.h"
 #include "DX12AssetBackendSubsystem.h"
 #include "Library/Platform/BackendSelection.h"
 #include "Library/Platform/System/BackendSupport.h"
@@ -52,6 +53,57 @@ int32 CDX12AssetBackendSubsystem::CreateTextureFromPixels( int32 Width, int32 He
 	return Textures.Create( Width, Height, Pixels );
 }
 
+int32 CDX12AssetBackendSubsystem::CreateRenderTarget( const FRenderTargetDesc& Desc )
+{
+	if ( !Desc.IsValid() )
+	{
+		return NAsset::InvalidHandle;
+	}
+	if ( Desc.Format != ERenderTargetFormat::Color8 )
+	{
+		NBackendSupport::ReportUnsupported( "DX12", "CreateRenderTarget (floating point formats)" );
+		return NAsset::InvalidHandle;
+	}
+	if ( Desc.MultiSamples > 0 )
+	{
+		NBackendSupport::ReportUnsupported( "DX12", "CreateRenderTarget (multisampling)", "The render target is created without multisampling" );
+	}
+	// 透明度を持たない描画先は、不透明な黒から始める（描いていない所も、不透明）。
+	return Textures.CreateRenderTarget( Desc.Width, Desc.Height, Desc.bDepth, Desc.bAlpha ? FColor32( 0, 0, 0, 0 ) : FColor32( 0, 0, 0, 255 ) );
+}
+
+bool CDX12AssetBackendSubsystem::ReadRenderTargetPixels( int32 Target, int32 X, int32 Y, int32 Width, int32 Height, TArray<FColor32>& OutPixels )
+{
+	TArray<FColor32> All; // 描画先の全体。
+	int32 FullWidth = 0, FullHeight = 0; // 描画先の大きさ。
+	if ( X < 0 || Y < 0 || Width <= 0 || Height <= 0 || !Textures.ReadRenderTarget( Target, All, FullWidth, FullHeight ) || static_cast<int64>( X ) + Width > FullWidth || static_cast<int64>( Y ) + Height > FullHeight )
+	{
+		return false;
+	}
+	TArray<FColor32> Pixels; // 矩形の中だけ。
+	Pixels.SetNum( Width * Height );
+	for ( int32 Row = 0; Row < Height; ++Row )
+	{
+		for ( int32 Column = 0; Column < Width; ++Column )
+		{
+			Pixels[Row * Width + Column] = All[( Y + Row ) * FullWidth + X + Column];
+		}
+	}
+	OutPixels = MoveTemp( Pixels );
+	return true;
+}
+
+bool CDX12AssetBackendSubsystem::SaveRenderTarget( int32 Target, int32 X, int32 Y, int32 Width, int32 Height, const FString& Path, const FImageSaveOptions& Options )
+{
+	TArray<FColor32> Pixels; // 保存する矩形。
+	return ReadRenderTargetPixels( Target, X, Y, Width, Height, Pixels ) && SavePixels( Width, Height, Pixels.GetData(), Path, Options );
+}
+
+bool CDX12AssetBackendSubsystem::GetRenderTargetDrawView( int32 Handle, FRenderTargetDrawView& Out )
+{
+	return Textures.GetRenderTargetDrawView( Handle, Out );
+}
+
 bool CDX12AssetBackendSubsystem::UpdateTexturePixels( int32 Texture, int32 Width, int32 Height, const FColor32* Pixels )
 {
 	return Textures.Update( Texture, Width, Height, Pixels );
@@ -80,7 +132,8 @@ bool CDX12AssetBackendSubsystem::DecodeImageFile( const FString& Path, int32& Ou
 
 bool CDX12AssetBackendSubsystem::DecodeImage( const void* FileImage, usize Size, int32& OutWidth, int32& OutHeight, TArray<FColor32>& OutPixels )
 {
-	return FWicImageDecoder::Decode( FileImage, Size, OutWidth, OutHeight, OutPixels );
+	// WICはTGAを読めないので、WICで読めなかったときだけ、TGAとして読む（エフェクトの組み込みの丸など）。
+	return FWicImageDecoder::Decode( FileImage, Size, OutWidth, OutHeight, OutPixels ) || NTgaDecoder::Decode( FileImage, Size, OutWidth, OutHeight, OutPixels );
 }
 
 FBackendMemoryInfo CDX12AssetBackendSubsystem::GetMemoryInfo()
@@ -203,29 +256,64 @@ bool CDX12AssetBackendSubsystem::SaveModelToMV1( int32 /*Model*/, const FString&
 	return false;
 }
 
-int32 CDX12AssetBackendSubsystem::MakeFont( const FFontDesc& /*Desc*/ )
+int32 CDX12AssetBackendSubsystem::MakeFont( const FFontDesc& Desc )
 {
-	NBackendSupport::ReportUnsupported( "DX12", "MakeFont" );
-	return NAsset::InvalidHandle;
+	return Fonts.MakeFont( Desc );
 }
 
-void CDX12AssetBackendSubsystem::DeleteFont( int32 /*Font*/ )
+void CDX12AssetBackendSubsystem::DeleteFont( int32 Font )
 {
+	Fonts.DeleteFont( Font );
 }
 
-int32 CDX12AssetBackendSubsystem::MeasureText( int32 /*Font*/, const char* /*Text*/ )
+int32 CDX12AssetBackendSubsystem::MeasureText( int32 Font, const char* Text )
 {
-	return 0;
+	return Fonts.MeasureText( Font, Text );
 }
 
-bool CDX12AssetBackendSubsystem::AddFontFile( const FString& /*Path*/ )
+bool CDX12AssetBackendSubsystem::GetFontMetrics( int32 Font, FFontMetrics& OutMetrics )
 {
-	NBackendSupport::ReportUnsupported( "DX12", "AddFontFile" );
-	return false;
+	return Fonts.GetFontMetrics( Font, OutMetrics );
 }
 
-void CDX12AssetBackendSubsystem::RemoveFontFile( const FString& /*Path*/ )
+bool CDX12AssetBackendSubsystem::MeasureTextSize( int32 Font, const char* Text, FTextSize& OutSize )
 {
+	return Fonts.MeasureTextSize( Font, Text, OutSize );
+}
+
+bool CDX12AssetBackendSubsystem::GetTextGlyphs( int32 Font, const char* Text, TArray<FTextGlyph>& OutGlyphs )
+{
+	return Fonts.GetTextGlyphs( Font, Text, OutGlyphs );
+}
+
+bool CDX12AssetBackendSubsystem::IsFontAvailable( const FString& Face )
+{
+	return Fonts.IsFontAvailable( Face );
+}
+
+void CDX12AssetBackendSubsystem::GetFontNames( TArray<FString>& OutNames )
+{
+	Fonts.GetFontNames( OutNames );
+}
+
+bool CDX12AssetBackendSubsystem::AddFontFile( const FString& Path )
+{
+	return Fonts.AddFontFile( Path );
+}
+
+void CDX12AssetBackendSubsystem::RemoveFontFile( const FString& Path )
+{
+	Fonts.RemoveFontFile( Path );
+}
+
+bool CDX12AssetBackendSubsystem::GetFontDrawView( int32 Font, FRenderTextFont& Out )
+{
+	return Fonts.GetFontDrawView( Font, Out );
+}
+
+bool CDX12AssetBackendSubsystem::MeasureFontText( int32 Font, const char* Text, int32 Length, FTextSize& Out )
+{
+	return Fonts.MeasureFontText( Font, Text, Length, Out );
 }
 
 int32 CDX12AssetBackendSubsystem::LoadSound( const FString& /*Path*/, ESoundLoadMode /*Mode*/, bool /*bAsync*/ )

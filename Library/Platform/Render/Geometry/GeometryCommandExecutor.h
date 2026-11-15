@@ -21,6 +21,8 @@ public:
 	};
 	// Geometryは借用。nullptrでも状態命令は読めるが、描画は失敗する。
 	explicit CGeometryCommandExecutor( IRenderGeometry3D* InGeometry, ITextureDrawSource* InTextures = nullptr, IGeometryBufferSource* InBuffers = nullptr, IStaticModelSource* InModels = nullptr );
+	// 描画先が替わったとき、3Dの実行先を差し替える（状態・カメラ・ライトは保つ）。nullptrなら、描画は失敗する。
+	void SetGeometry( IRenderGeometry3D* InGeometry ) { Geometry = InGeometry; }
 	// 以降の描画の、描画先との混ぜ方（合成するときだけ使う）。
 	void SetBlend( EGeometryBlend Blend ) { State.Blend = Blend; }
 	// 1命令を検査して実行する。Stateはこのインスタンス内だけに閉じる。
@@ -41,6 +43,7 @@ private:
 	FCamera Camera; // 現在のカメラ。
 	FGeometryDrawState State; // 現在の深度と表裏。
 	CVertexLighting Lighting; // このSpanだけのライティング（光）の状態。
+	FDrawFogData Fog; // このSpanだけの距離フォグ（Modeが0なら、なし）。
 	TArray<FMatrix4x4> WorldStack; // このSpanだけの変換の積み重ね。
 	TArray<FCamera> CameraStack; // このSpanだけのカメラの積み重ね。
 };

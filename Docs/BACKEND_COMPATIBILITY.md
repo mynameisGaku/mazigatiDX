@@ -10,8 +10,8 @@
 
 |分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|
 |---|---:|---:|---:|---:|---:|---:|---:|
-|API|346|4|118|61|162|0|1|
-|Draw|101|0|38|23|40|0|0|
+|API|351|4|107|77|162|0|1|
+|Draw|101|0|34|27|40|0|0|
 |Sample|33|30|0|3|0|0|0|
 |Editor|11|11|0|0|0|0|0|
 
@@ -75,17 +75,19 @@
 |[API.IDrawExecutor.SupportsModelFrameOverrides](../Library/Core/Interfaces/Render/IDrawExecutor.h#L39)|Missing|R6|全命令、能力応答、空clip・不正命令、Span終了と撮影終了の状態復元を比較|共通Canvasへ接続。材質効果・pose能力とoffscreen撮影は未対応||
 |[API.IDrawExecutor.SupportsModelMaterialEffects](../Library/Core/Interfaces/Render/IDrawExecutor.h#L37)|Missing|R6|全命令、能力応答、空clip・不正命令、Span終了と撮影終了の状態復元を比較|共通Canvasへ接続。材質効果・pose能力とoffscreen撮影は未対応||
 |[API.IFontBackend.AddFontCharImage](../Library/Core/Interfaces/Asset/FontBackend.h#L35)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IFontBackend.AddFontFile](../Library/Core/Interfaces/Asset/FontBackend.h#L38)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IFontBackend.DeleteFont](../Library/Core/Interfaces/Asset/FontBackend.h#L20)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IFontBackend.GetFontMetrics](../Library/Core/Interfaces/Asset/FontBackend.h#L24)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IFontBackend.GetFontNames](../Library/Core/Interfaces/Asset/FontBackend.h#L32)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IFontBackend.GetTextGlyphs](../Library/Core/Interfaces/Asset/FontBackend.h#L28)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IFontBackend.IsFontAvailable](../Library/Core/Interfaces/Asset/FontBackend.h#L30)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IFontBackend.MakeFont](../Library/Core/Interfaces/Asset/FontBackend.h#L19)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IFontBackend.MeasureText](../Library/Core/Interfaces/Asset/FontBackend.h#L22)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IFontBackend.MeasureTextSize](../Library/Core/Interfaces/Asset/FontBackend.h#L26)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.IFontBackend.AddFontFile](../Library/Core/Interfaces/Asset/FontBackend.h#L38)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|AddFontResourceEx（このアプリの間だけ）で足す||
+|[API.IFontBackend.DeleteFont](../Library/Core/Interfaces/Asset/FontBackend.h#L20)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|OSの文字（GDI）で測り・画像にする。DxLibの文字との寸法・字形の差が残る（実測の比較が必要）||
+|[API.IFontBackend.GetFontMetrics](../Library/Core/Interfaces/Asset/FontBackend.h#L24)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|OSの文字（GDI）で測り・画像にする。DxLibの文字との寸法・字形の差が残る（実測の比較が必要）||
+|[API.IFontBackend.GetFontNames](../Library/Core/Interfaces/Asset/FontBackend.h#L32)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|OSの文字の一覧を返す||
+|[API.IFontBackend.GetTextGlyphs](../Library/Core/Interfaces/Asset/FontBackend.h#L28)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|OSの文字（GDI）で測り・画像にする。DxLibの文字との寸法・字形の差が残る（実測の比較が必要）||
+|[API.IFontBackend.IsFontAvailable](../Library/Core/Interfaces/Asset/FontBackend.h#L30)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|OSの文字の一覧で調べる||
+|[API.IFontBackend.MakeFont](../Library/Core/Interfaces/Asset/FontBackend.h#L19)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|OSの文字（GDI）で測り・画像にする。DxLibの文字との寸法・字形の差が残る（実測の比較が必要）||
+|[API.IFontBackend.MeasureText](../Library/Core/Interfaces/Asset/FontBackend.h#L22)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|OSの文字（GDI）で測り・画像にする。DxLibの文字との寸法・字形の差が残る（実測の比較が必要）||
+|[API.IFontBackend.MeasureTextSize](../Library/Core/Interfaces/Asset/FontBackend.h#L26)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|OSの文字（GDI）で測り・画像にする。DxLibの文字との寸法・字形の差が残る（実測の比較が必要）||
 |[API.IFontBackend.RemoveFontCharImage](../Library/Core/Interfaces/Asset/FontBackend.h#L36)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IFontBackend.RemoveFontFile](../Library/Core/Interfaces/Asset/FontBackend.h#L39)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.IFontBackend.RemoveFontFile](../Library/Core/Interfaces/Asset/FontBackend.h#L39)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|足したフォントファイルを外す||
+|[API.IFontDrawSource.GetFontDrawView](../Library/Core/Interfaces/Render/IFontDrawSource.h#L14)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|フォントの番号を、文字を画像にするための値にする||
+|[API.IFontDrawSource.MeasureFontText](../Library/Core/Interfaces/Render/IFontDrawSource.h#L16)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|位置揃え・基準点に使う文字列の大きさを測る||
 |[API.IFrameCaptureSink.OnFrame](../Library/Core/Interfaces/Platform/FrameCapture.h#L44)|Implemented|R8|撮影開始・受信・停止、画素寸法と順序、終了時の寿命を比較|主画面のゲーム描画とUI込みをRGBA8で通知。段階の順序・番号と通知中の解除、PNG/GIF保存を検査|Docs/DX12_CAPTURE.md; dx12-capture|
 |[API.IFrameCaptureSink.WantsFrame](../Library/Core/Interfaces/Platform/FrameCapture.h#L41)|Implemented|R8|撮影開始・受信・停止、画素寸法と順序、終了時の寿命を比較|主画面のゲーム描画とUI込みをRGBA8で通知。段階の順序・番号と通知中の解除、PNG/GIF保存を検査|Docs/DX12_CAPTURE.md; dx12-capture|
 |[API.IGamepadInput.AddMappingsFromFile](../Library/Core/Interfaces/Input/IGamepadInput.h#L32)|Implemented|R8|ゲームパッド実機の接続／切断、ボタン・軸、sensor、rumble、無効番号を比較|非Null選択で共通SDL実装を作る。実機での接続・切断・sensor・rumble比較前||
@@ -261,19 +263,20 @@
 |[API.IRenderBufferResources.GetBufferSize](../Library/Core/Interfaces/Render/IRenderBufferResources.h#L20)|Implemented|R1|CPU参照とDX12の共通契約、既定GPU/WARP、Debug/Release、SDK診断、範囲・所有・解放・待機失敗を確認|同期の初期転送・サイズ照会・readback・解放。描画/compute/SRV/UAV/更新/非同期提出は未接続|Docs/R1_BUFFER_RESOURCES.md|
 |[API.IRenderBufferResources.ReadBuffer](../Library/Core/Interfaces/Render/IRenderBufferResources.h#L23)|Implemented|R1|CPU参照とDX12の共通契約、既定GPU/WARP、Debug/Release、SDK診断、範囲・所有・解放・待機失敗を確認|同期の初期転送・サイズ照会・readback・解放。描画/compute/SRV/UAV/更新/非同期提出は未接続|Docs/R1_BUFFER_RESOURCES.md|
 |[API.IRenderBufferResources.ReleaseBuffer](../Library/Core/Interfaces/Render/IRenderBufferResources.h#L18)|Implemented|R1|CPU参照とDX12の共通契約、既定GPU/WARP、Debug/Release、SDK診断、範囲・所有・解放・待機失敗を確認|同期の初期転送・サイズ照会・readback・解放。描画/compute/SRV/UAV/更新/非同期提出は未接続|Docs/R1_BUFFER_RESOURCES.md|
-|[API.IRenderCanvas2D.Box](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L16)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderCanvas2D.Circle](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L20)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderCanvas2D.Image](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L30)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderCanvas2D.Line](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L18)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderCanvas2D.Polygon](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L26)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|共通キャンバスと描画スレッドの接続を実装。3〜512点の凸な点列||
-|[API.IRenderCanvas2D.PopClip](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L34)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderCanvas2D.PushClip](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L32)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderCanvas2D.Quad](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L24)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderCanvas2D.SetAntiAlias](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L38)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderCanvas2D.SetBlend](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L40)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|共通キャンバスと描画スレッドの接続、DX12のPSOを実装。フレームの始めと命令列の終わりに通常の合成へ戻る||
-|[API.IRenderCanvas2D.SetTextureFilter](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L36)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderCanvas2D.Text](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L28)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
-|[API.IRenderCanvas2D.Triangle](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L22)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.Box](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L17)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.Circle](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L21)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.Image](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L35)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.Line](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L19)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.Polygon](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L27)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|共通キャンバスと描画スレッドの接続を実装。3〜512点の凸な点列||
+|[API.IRenderCanvas2D.PopClip](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L39)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.PushClip](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L37)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.Quad](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L25)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.SetAntiAlias](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L43)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.SetBlend](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L45)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|共通キャンバスと描画スレッドの接続、DX12のPSOを実装。フレームの始めと命令列の終わりに通常の合成へ戻る||
+|[API.IRenderCanvas2D.SetTextureFilter](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L41)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.Text](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L29)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderCanvas2D.TextFont](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L33)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|フォントを指定した文字列を画像にして、位置・拡大・回転つきで描く。縁取り対応。同じ文字列の画像は持ち続ける||
+|[API.IRenderCanvas2D.Triangle](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L23)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
 |[API.IRenderCommandQueue.EnqueueRenderCommand](../Library/Core/Interfaces/Render/IRenderCommandQueue.h#L17)|Implemented|R1|ゲーム側で受付順を決め、専用側の識別・命令所有・GPU画素・UI記録と終了をDebug／Release・既定GPU／WARPで確認|DX12の専用描画窓口。実行中だけの2D／3Dコンテキストを借り、CPU完了とGPU完了を分ける。窓側の貸出中は拒否。DxLib／Nullでは提供しない|Docs/THREADING.md; Library/Platform/DX12/Window/DX12PlatformSubsystem.cpp; Source/SelfTest/RunRenderThreadTests.ps1|
 |[API.IRenderGeometry3D.ClearDepth](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L35)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
 |[API.IRenderGeometry3D.DrawBufferGeometry](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L30)|Implemented|R1|既定GPU／WARPでcompute→GPU頂点・index描画をCPU式の画素と比較。範囲・所有・保持上限とUIなし起動を検査|28byte同次頂点と16／32bit index。描画記録後の解除に耐える。内容の有限性とindex範囲は呼出側保証。R1／R2全体の完了ではない|Docs/R1_BUFFER_GEOMETRY.md; Library/Platform/DX12/Render/Geometry/DX12GeometryRenderer.cpp; Source/SelfTest/RunBufferGeometryTests.ps1|
@@ -305,7 +308,9 @@
 |[API.IRenderSurface.GetGeometry3D](../Library/Core/Interfaces/Render/IRenderSurface.h#L20)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
 |[API.IRenderSurface.RecordClear](../Library/Core/Interfaces/Render/IRenderSurface.h#L22)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
 |[API.IRenderSurface.WaitForGPU](../Library/Core/Interfaces/Render/IRenderSurface.h#L24)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
-|[API.IRenderTextRasterizer.RasterizeText](../Library/Core/Interfaces/Render/IRenderTextRasterizer.h#L14)|Implemented|R1|UIなしでUTF-8の範囲・改行・文字画像と拒否時の出力保持を確認|WindowsのCPU文字画像。既定13画素、各辺4096・4M画素まで。Fontアセット全体の対応ではない|Docs/DX12_GAME_RENDER.md; CaptureContractMain.cpp|
+|[API.IRenderTargetDrawSource.GetRenderTargetDrawView](../Library/Core/Interfaces/Render/IRenderTargetDrawSource.h#L13)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|描画先として作った画像だけ、色と深度の資源を貸す||
+|[API.IRenderTextRasterizer.RasterizeFontText](../Library/Core/Interfaces/Render/IRenderTextRasterizer.h#L18)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|OSの文字（GDI）でフォント指定の文字列を画像にする。縁取りは、被覆率を太らせて作る||
+|[API.IRenderTextRasterizer.RasterizeText](../Library/Core/Interfaces/Render/IRenderTextRasterizer.h#L15)|Implemented|R1|UIなしでUTF-8の範囲・改行・文字画像と拒否時の出力保持を確認|WindowsのCPU文字画像。既定13画素、各辺4096・4M画素まで。Fontアセット全体の対応ではない|Docs/DX12_GAME_RENDER.md; CaptureContractMain.cpp|
 |[API.IRenderTextureResources.CopyTexture](../Library/Core/Interfaces/Render/IRenderTextureResources.h#L37)|Implemented|R1|CPU参照・既定GPU・WARP・アプリ起動で、同形式/同寸法画像コピー、自己コピー/異形式/異寸法/描画中ターゲット/デバイス喪失の拒否と非ゲームスレッド拒否を確認|DIRECTキュー上でSRV_ALLとCOPY_SOURCE/COPY_DESTを遷移してCopyResourceし完了待機。異形式・異寸法・自己コピー・描画中はfalse|Library/Platform/DX12/Resource/Texture/DX12TextureStore.cpp; Source/SelfTest/RunHdrTextureCopyTests.ps1|
 |[API.IRenderTextureResources.CreateComputeTextureRGBA16F](../Library/Core/Interfaces/Render/IRenderTextureResources.h#L25)|Implemented|R1|CPU参照・既定GPU・WARP・アプリ起動で、HDR値初期転送、UAV読み書き、Graphics SRV読み取り、異形式拒否と非有限/不正寸法拒否を確認|UAV許可のRGBA16F画像を作成し、computeのRead/ReadWriteとグラフィックスSRV読み取りで共用。非有限色・未対応・不正寸法は拒否|Library/Platform/DX12/Resource/Texture/DX12TextureStore.cpp; Source/SelfTest/RunHdrTextureCopyTests.ps1|
 |[API.IRenderTextureResources.CreateComputeTextureRGBA8](../Library/Core/Interfaces/Render/IRenderTextureResources.h#L23)|Implemented|R1|CPU参照・既定GPU・WARP・アプリ起動で、初期転送、UAV読み書き、2D/3D描画連携、UpdateTextureRGBA8での属性維持、即時解放後のGPU保持を確認|UAV許可のRGBA8画像を作成し、computeのRead/ReadWriteと通常描画の双方で使用。未対応・不正寸法は拒否|Docs/R1_COMPUTE_TEXTURE_RESOURCES.md; Library/Platform/DX12/Resource/Texture/DX12TextureStore.cpp; Source/SelfTest/RunComputeTextureTests.ps1|
@@ -337,7 +342,7 @@
 |[API.ITextInput.GetTextInputEvents](../Library/Core/Interfaces/Input/ITextInput.h#L28)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
 |[API.ITextInput.IsTextInputActive](../Library/Core/Interfaces/Input/ITextInput.h#L25)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
 |[API.ITextInput.SetTextInputActive](../Library/Core/Interfaces/Input/ITextInput.h#L24)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
-|[API.ITextureBackend.CreateRenderTarget](../Library/Core/Interfaces/Asset/TextureBackend.h#L34)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.ITextureBackend.CreateRenderTarget](../Library/Core/Interfaces/Asset/TextureBackend.h#L34)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|8ビットのRGBAだけ（浮動小数点は未対応）。マルチサンプルはなしで作る||
 |[API.ITextureBackend.CreateTextureFromMemory](../Library/Core/Interfaces/Asset/TextureBackend.h#L21)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|WIC画像経路あり。対応形式の同等性と非同期処理が未完了||
 |[API.ITextureBackend.CreateTextureFromPixels](../Library/Core/Interfaces/Asset/TextureBackend.h#L45)|Implemented|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|登録画像の処理あり。GPU完了まで遅延解放。Windows互換比較前||
 |[API.ITextureBackend.CreateTextureRegion](../Library/Core/Interfaces/Asset/TextureBackend.h#L23)|Missing|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
@@ -399,7 +404,7 @@
 |[Draw.DistortedMaterialRibbon3D](../Library/Framework/Render/Draw/DrawCommand.h#L62)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
 |[Draw.EndShadowMap](../Library/Framework/Render/Draw/DrawCommand.h#L141)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
 |[Draw.Filter](../Library/Framework/Render/Draw/DrawCommand.h#L90)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|Nearest／Bilinearのみ。異方性は未対応||
-|[Draw.Fog](../Library/Framework/Render/Draw/DrawCommand.h#L114)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
+|[Draw.Fog](../Library/Framework/Render/Draw/DrawCommand.h#L114)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|画像なしの3D図形に、頂点ごとのCPU計算で距離フォグを掛ける（画像つきには掛からない。高さのフォグは未対応）||
 |[Draw.HeightFog](../Library/Framework/Render/Draw/DrawCommand.h#L115)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
 |[Draw.Image](../Library/Framework/Render/Draw/DrawCommand.h#L77)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.ImageBlend](../Library/Framework/Render/Draw/DrawCommand.h#L101)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
@@ -429,7 +434,7 @@
 |[Draw.PopClip](../Library/Framework/Render/Draw/DrawCommand.h#L92)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.PopLight](../Library/Framework/Render/Draw/DrawCommand.h#L127)|Partial|R2|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|頂点ごとのCPU計算（CVertexLighting。DxLibの固定の光と同じ式）で対応。画素ごとの光・影は頂点ごとの計算になる。DxLibとの画素比較が残る||
 |[Draw.PopMask](../Library/Framework/Render/Draw/DrawCommand.h#L103)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
-|[Draw.PopTarget](../Library/Framework/Render/Draw/DrawCommand.h#L96)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
+|[Draw.PopTarget](../Library/Framework/Render/Draw/DrawCommand.h#L96)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|元の描画先へ戻す。クリップ・2Dの変換も戻る||
 |[Draw.PopWorldMatrix](../Library/Framework/Render/Draw/DrawCommand.h#L119)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.PreviewShadowMap](../Library/Framework/Render/Draw/DrawCommand.h#L143)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
 |[Draw.Primitive3D](../Library/Framework/Render/Draw/DrawCommand.h#L136)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|非照明の色と画像。材質・追加UV等は未対応||
@@ -439,7 +444,7 @@
 |[Draw.PushClip](../Library/Framework/Render/Draw/DrawCommand.h#L91)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.PushLight](../Library/Framework/Render/Draw/DrawCommand.h#L126)|Partial|R2|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|頂点ごとのCPU計算（CVertexLighting。DxLibの固定の光と同じ式）で対応。画素ごとの光・影は頂点ごとの計算になる。DxLibとの画素比較が残る||
 |[Draw.PushMask](../Library/Framework/Render/Draw/DrawCommand.h#L102)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
-|[Draw.PushTarget](../Library/Framework/Render/Draw/DrawCommand.h#L95)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
+|[Draw.PushTarget](../Library/Framework/Render/Draw/DrawCommand.h#L95)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|8ビットのRGBAの描画先へ描く（入れ子可）。浮動小数点の描画先は飛ばす||
 |[Draw.PushWorldMatrix](../Library/Framework/Render/Draw/DrawCommand.h#L118)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.Quad](../Library/Framework/Render/Draw/DrawCommand.h#L70)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.Quad3D](../Library/Framework/Render/Draw/DrawCommand.h#L55)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
@@ -459,8 +464,8 @@
 |[Draw.SpriteStretch3D](../Library/Framework/Render/Draw/DrawCommand.h#L134)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.SurfaceMaterial](../Library/Framework/Render/Draw/DrawCommand.h#L124)|Partial|R2|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|頂点ごとのCPU計算（CVertexLighting。DxLibの固定の光と同じ式）で対応。画素ごとの光・影は頂点ごとの計算になる。DxLibとの画素比較が残る||
 |[Draw.Text](../Library/Framework/Render/Draw/DrawCommand.h#L38)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|ImGui既定フォント。個別フォントと日本語表示の互換は未確認||
-|[Draw.TextFont](../Library/Framework/Render/Draw/DrawCommand.h#L53)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|既定の文字で左端から描く。フォント・縁取り・位置揃えは未対応||
-|[Draw.TextStyled](../Library/Framework/Render/Draw/DrawCommand.h#L105)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
+|[Draw.TextFont](../Library/Framework/Render/Draw/DrawCommand.h#L53)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|フォント・縁取り・位置揃え（左・中央・右）に対応||
+|[Draw.TextStyled](../Library/Framework/Render/Draw/DrawCommand.h#L105)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|拡大・回転・基準点・縁取り対応。縦書きは横書きで描く||
 |[Draw.TextureAddress](../Library/Framework/Render/Draw/DrawCommand.h#L112)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.TextureTransform](../Library/Framework/Render/Draw/DrawCommand.h#L113)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
 |[Draw.Tile](../Library/Framework/Render/Draw/DrawCommand.h#L84)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||

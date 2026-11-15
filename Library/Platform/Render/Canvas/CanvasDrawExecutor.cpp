@@ -58,8 +58,8 @@ namespace
 	}
 }
 
-CCanvasDrawExecutor::CCanvasDrawExecutor( IRenderSurface& InSurface, ITextureDrawSource* InTextures, IGeometryBufferSource* InBuffers, IStaticModelSource* InModels )
-	: Surface( InSurface ), Models( InModels ), Buffers( InBuffers ), Textures( InTextures )
+CCanvasDrawExecutor::CCanvasDrawExecutor( IRenderSurface& InSurface, ITextureDrawSource* InTextures, IGeometryBufferSource* InBuffers, IStaticModelSource* InModels, IFontDrawSource* InFonts, IRenderTargetDrawSource* InTargets )
+	: Surface( InSurface ), Models( InModels ), Buffers( InBuffers ), Textures( InTextures ), Fonts( InFonts ), Targets( InTargets )
 {
 }
 
@@ -81,6 +81,32 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 	int32 SkipShadowDepth = 0; // シャドウマップへ描く範囲の深さ。この中は描かない（画面へ描いてしまわないように）。
 	bool bStopped = false; // 壊れた命令以降を描かない印。
 	FCanvasTransform Transform; // このSpanだけの2Dの変換。
+	// 描画先（レンダーターゲット）を替える前の状態。戻すときに使う。
+	struct FTargetScope
+	{
+		FRenderTargetDrawView Target; // この段の描画先（主画面なら無効）。
+		FCanvasTransform Transform; // 替える前の2Dの変換。
+		int32 ClipDepth = 0; // 替える前のクリップの段数。
+	};
+	TArray<FTargetScope> TargetStack; // 積んだ描画先。最後が、いまの描画先。
+	FRenderTargetDrawView CurrentTarget; // いまの描画先（主画面なら無効）。
+	// いまの描画先のパスを始める（主画面なら何もしない）。キャンバスと3Dの実行先を取り直す。
+	const auto EnterTarget = [&]( const FRenderTargetDrawView& Target )
+	{
+		bool bEntered = true; // 主画面は、常に成功。
+		if ( Target.Color.IsValid() )
+		{
+			FRenderTargetPassDesc Desc; // すでに描いてある内容を保って、続きを描く。
+			Desc.ColorTarget = Target.Color;
+			Desc.DepthTarget = Target.Depth;
+			Desc.bClearColor = false;
+			Desc.bClearDepth = false;
+			bEntered = Surface.BeginRenderTargetPass( Desc );
+		}
+		Canvas = Surface.GetCanvas2D();
+		Geometry.SetGeometry( Surface.GetGeometry3D() );
+		return bEntered && Canvas != nullptr;
+	};
 	const auto Color = [&]( FDrawRgb Value ) // 色と現在の描画状態を合成する。
 	{
 		return FColor32( static_cast<uint8>( Value.R * Bright.R / 255 ), static_cast<uint8>( Value.G * Bright.G / 255 ),
@@ -243,13 +269,65 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 		// 描けない描画先・シャドウマップへ描く範囲は、対になる終わりまで、まとめて飛ばす（画面へ描いてしまわないように）。
 		if ( View.Type == EDrawCommand::PushTarget )
 		{
-			++SkipTargetDepth;
-			Unsupported( View, "Drawing into a render target is skipped" );
+			FRenderTargetDrawView Next; // 替える先の描画先。
+			if ( SkipTargetDepth > 0 || SkipShadowDepth > 0 || !View.CanRead<FDrawTargetData>() || !Targets || !Targets->GetRenderTargetDrawView( View.Read<FDrawTargetData>().Handle, Next ) )
+			{
+				++SkipTargetDepth;
+				Unsupported( View, "Drawing into this render target is skipped" );
+				continue;
+			}
+			// いまの描画先のパスを閉じてから、次の描画先のパスを始める（パスは入れ子にできない）。
+			if ( CurrentTarget.Color.IsValid() )
+			{
+				Surface.EndRenderTargetPass();
+			}
+			FTargetScope Scope; // 戻すときの状態。
+			Scope.Target = CurrentTarget;
+			Scope.Transform = Transform;
+			Scope.ClipDepth = ClipDepth;
+			if ( !EnterTarget( Next ) )
+			{
+				// 始められなかったら、元の描画先へ戻して、この範囲を飛ばす。
+				EnterTarget( CurrentTarget );
+				++SkipTargetDepth;
+				Unsupported( View, "The render target pass could not be started; drawing into it is skipped" );
+				if ( !Canvas )
+				{
+					bStopped = true;
+				}
+				continue;
+			}
+			TargetStack.Add( Scope );
+			CurrentTarget = Next;
+			Transform = FCanvasTransform(); // 替えた先は、クリップなし・2Dの変換なしから始まる。
+			ClipDepth = 0;
 			continue;
 		}
 		if ( View.Type == EDrawCommand::PopTarget )
 		{
-			SkipTargetDepth = NMath::Max( 0, SkipTargetDepth - 1 );
+			if ( SkipTargetDepth > 0 )
+			{
+				--SkipTargetDepth;
+				continue;
+			}
+			if ( SkipShadowDepth > 0 || TargetStack.IsEmpty() )
+			{
+				continue;
+			}
+			while ( ClipDepth > 0 )
+			{
+				Canvas->PopClip();
+				--ClipDepth;
+			}
+			Surface.EndRenderTargetPass();
+			const FTargetScope Scope = TargetStack.Pop(); // 替える前の状態。
+			CurrentTarget = Scope.Target;
+			Transform = Scope.Transform;
+			ClipDepth = Scope.ClipDepth;
+			if ( !EnterTarget( CurrentTarget ) )
+			{
+				bStopped = true; // 元の描画先へ戻れない。これ以上は描けない。
+			}
 			continue;
 		}
 		if ( View.Type == EDrawCommand::BeginShadowMap )
@@ -461,7 +539,18 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			{
 				break;
 			}
-			if ( Transform.bIdentity )
+			if ( !bFill && ( X0 == X1 || Y0 == Y1 ) )
+			{
+				// 幅か高さが0の輪郭は、線として描く（DxLibの DrawBox と同じ。格子の線などに使われる）。
+				float32 LineX0 = X0, LineY0 = Y0, LineX1 = X1, LineY1 = Y1; // 変換する端点。
+				Transform.Apply( LineX0, LineY0 );
+				Transform.Apply( LineX1, LineY1 );
+				if ( Valid( LineX0 ) && Valid( LineY0 ) && Valid( LineX1 ) && Valid( LineY1 ) )
+				{
+					Canvas->Line( LineX0, LineY0, LineX1, LineY1, Color( Value ), Thickness * Transform.GetScale() );
+				}
+			}
+			else if ( Transform.bIdentity )
 			{
 				Canvas->Box( X0, Y0, X1, Y1, Color( Value ), bFill, Thickness );
 			}
@@ -658,10 +747,12 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 		}
 		case EDrawCommand::Text:
 		case EDrawCommand::TextFont:
+		case EDrawCommand::TextStyled:
 		{
-			float32 X = 0, Y = 0; // 文字列の左上。
-			int32 Length = 0, Capacity = 0; // 文字数と、命令に含まれる文字の範囲。
-			FDrawRgb Value; // 文字の色。
+			float32 X = 0, Y = 0; // 文字列の位置（Text / TextFont は左上。TextStyled は基準点）。
+			float32 ScaleX = 1, ScaleY = 1, Angle = 0, AnchorX = 0, AnchorY = 0; // TextStyled の拡大・回転・基準点。
+			int32 Length = 0, Capacity = 0, Font = -1; // 文字数、命令に含まれる文字の範囲、フォントの番号（負は既定）。
+			FDrawRgb Value, Edge; // 文字と縁取りの色。
 			const char* Text = nullptr; // 命令の中の文字列。
 			if ( View.Type == EDrawCommand::Text )
 			{
@@ -678,7 +769,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 				Capacity = ( View.NumDataWords - static_cast<int32>( sizeof( Data ) / 4 ) ) * 4;
 				Text = View.GetTextChars();
 			}
-			else
+			else if ( View.Type == EDrawCommand::TextFont )
 			{
 				if ( !View.CanRead<FDrawTextFontData>() )
 				{
@@ -690,19 +781,72 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 				Y = static_cast<float32>( Data.Y );
 				Length = Data.Length;
 				Value = Data.Color;
+				Edge = Data.EdgeColor;
+				Font = Data.Font;
 				Capacity = ( View.NumDataWords - static_cast<int32>( sizeof( Data ) / 4 ) ) * 4;
 				Text = View.GetFontTextChars();
-				// フォントの指定・縁取り・位置揃えは、まだ無い。既定の文字で、左端から描く。
-				Unsupported( View, "Fonts, edges and alignment are not supported; the default font is used" );
 			}
-			if ( Length >= 0 && Length < Capacity && Text[Length] == '\0' )
+			else
 			{
-				Transform.Apply( X, Y ); // 文字は、位置だけを変換する（拡大・回転はしない）。
+				if ( !View.CanRead<FDrawTextStyledData>() )
+				{
+					bStopped = true;
+					break;
+				}
+				const auto Data = View.Read<FDrawTextStyledData>(); // 固定部を所有コピーする。
+				X = Data.X;
+				Y = Data.Y;
+				ScaleX = Data.ScaleX;
+				ScaleY = Data.ScaleY;
+				Angle = Data.Angle;
+				AnchorX = Data.AnchorX;
+				AnchorY = Data.AnchorY;
+				Length = Data.Length;
+				Value = Data.Color;
+				Edge = Data.EdgeColor;
+				Font = Data.Font;
+				Capacity = ( View.NumDataWords - static_cast<int32>( sizeof( Data ) / 4 ) ) * 4;
+				Text = View.GetStyledTextChars();
+				if ( Data.Vertical != 0 )
+				{
+					Unsupported( View, "Vertical writing is drawn horizontally" );
+				}
+			}
+			if ( Length <= 0 || Length >= Capacity || Text[Length] != '\0' )
+			{
+				break;
+			}
+			const float32 Raw[7] = { X, Y, ScaleX, ScaleY, Angle, AnchorX, AnchorY }; // まとめて検査する値。
+			if ( !ValidPoints( Raw, 7 ) )
+			{
+				break;
+			}
+			FRenderTextFont FontValue; // 文字を画像にするための、フォントの値。
+			FTextSize Size; // 位置揃えと基準点に使う、文字列の大きさ。
+			if ( !Fonts || !Fonts->GetFontDrawView( Font, FontValue ) || !Fonts->MeasureFontText( Font, Text, Length, Size ) )
+			{
+				// フォントの表が無い実行先・無効なフォントは、既定の文字で、位置だけを合わせて描く。
+				Unsupported( View, "Fonts are not available; the default text is used" );
+				Transform.Apply( X, Y );
 				if ( Valid( X ) && Valid( Y ) )
 				{
 					Canvas->Text( X, Y, Color( Value ), Text, Text + Length );
 				}
+				break;
 			}
+			if ( View.Type == EDrawCommand::TextFont && ( View.Has( FDrawFlag::AlignCenter ) || View.Has( FDrawFlag::AlignRight ) ) )
+			{
+				X -= static_cast<float32>( View.Has( FDrawFlag::AlignCenter ) ? Size.Width / 2 : Size.Width ); // X が、文字列の中央 / 右端。
+			}
+			// 文字の画像の中の点を、基準点まわりに拡大・回転して (X, Y) へ動かし、最後に 2D の変換を掛ける。
+			const float32 Cos = NMath::Cos( Angle ), Sin = NMath::Sin( Angle ); // 画面（Y が下）での回転。正は時計回り。
+			const float32 PivotX = AnchorX * Size.Width, PivotY = AnchorY * Size.Height; // 基準点（文字列の中の位置）。
+			const float32 A0 = ScaleX * Cos, A1 = ScaleX * Sin, A2 = -ScaleY * Sin, A3 = ScaleY * Cos; // 拡大と回転。
+			const float32 A4 = X - PivotX * A0 - PivotY * A2, A5 = Y - PivotX * A1 - PivotY * A3; // 基準点が (X, Y) に来る移動。
+			const float32 Matrix[6] = { A0 * Transform.XX + A1 * Transform.YX, A0 * Transform.XY + A1 * Transform.YY, A2 * Transform.XX + A3 * Transform.YX, A2 * Transform.XY + A3 * Transform.YY,
+				A4 * Transform.XX + A5 * Transform.YX + Transform.TX, A4 * Transform.XY + A5 * Transform.YY + Transform.TY };
+			const FColor32 EdgeColor = Color( Edge ); // 縁取りにも、明るさと不透明度を掛ける。
+			Canvas->TextFont( FontValue, Matrix, Color( Value ), EdgeColor, Text, Text + Length );
 			break;
 		}
 		case EDrawCommand::Image:
@@ -890,6 +1034,24 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			break;
 		}
 		}
+	}
+	// 戻し忘れた描画先を、主画面まで戻す。
+	while ( !TargetStack.IsEmpty() && Canvas )
+	{
+		while ( ClipDepth > 0 )
+		{
+			Canvas->PopClip();
+			--ClipDepth;
+		}
+		Surface.EndRenderTargetPass();
+		const FTargetScope Scope = TargetStack.Pop(); // 替える前の状態。
+		CurrentTarget = Scope.Target;
+		ClipDepth = Scope.ClipDepth;
+		EnterTarget( CurrentTarget );
+	}
+	if ( !Canvas )
+	{
+		return;
 	}
 	while ( ClipDepth > 0 )
 	{

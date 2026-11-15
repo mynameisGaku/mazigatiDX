@@ -24,6 +24,8 @@ bool CGeometryCanvas2D::BeginFrame( IRenderGeometry3D &InGeometry, IRenderTextur
 	bLinear = false;
 	bAntiAlias = true;
 	Blend = EGeometryBlend::Alpha;
+	++FrameNumber;
+	NumTextCreatedThisFrame = 0;
 	return true;
 }
 
@@ -38,6 +40,10 @@ void CGeometryCanvas2D::EndFrame()
 	}
 	TextImages.Reset();
 	TextBytes = 0;
+	if ( Textures )
+	{
+		TrimTextCache( TextCache.Num() > 2048 || TextCacheBytes > 128ull * 1024 * 1024 );
+	}
 	ClipStack.Reset();
 	Geometry = nullptr;
 	Textures = nullptr;
@@ -268,6 +274,111 @@ void CGeometryCanvas2D::Text( float32 X, float32 Y, FColor32 Color, const char *
 	const bool bPreviousFilter = bLinear; // 文字の補間を後続の画像へ持ち越さない。
 	bLinear = true;
 	Image( View, Points, UV, Color );
+	bLinear = bPreviousFilter;
+}
+
+void CGeometryCanvas2D::TrimTextCache( bool bAll )
+{
+	TArray<FString> Stale; // 走査中に表を変えないよう、先に鍵を集める。
+	for ( const auto &Pair : TextCache )
+	{
+		if ( Pair.Value.LastFrame != FrameNumber && ( bAll || Pair.Value.LastFrame + 120 < FrameNumber ) )
+		{
+			Stale.Add( Pair.Key );
+		}
+	}
+	for ( const FString &Key : Stale )
+	{
+		if ( const FCachedText *Entry = TextCache.Find( Key ) )
+		{
+			Textures->ReleaseTexture( Entry->Text );
+			if ( Entry->Edge.IsValid() )
+			{
+				Textures->ReleaseTexture( Entry->Edge );
+			}
+			TextCacheBytes -= NMath::Min( TextCacheBytes, Entry->Bytes );
+		}
+		TextCache.Remove( Key );
+	}
+}
+
+void CGeometryCanvas2D::TextFont( const FRenderTextFont &Font, const float32 ( &Transform )[6], FColor32 Color, FColor32 EdgeColor, const char *Begin, const char *End )
+{
+	if ( !Geometry || !Begin || !End || End <= Begin || End - Begin > 65536 || Color.a == 0 || !Clip || Clip->Left >= Clip->Right || Clip->Top >= Clip->Bottom )
+	{
+		return;
+	}
+	for ( float32 Value : Transform )
+	{
+		if ( !NMath::IsFinite( Value ) || NMath::Abs( Value ) > 1000000 )
+		{
+			return;
+		}
+	}
+	const int32 Length = static_cast<int32>( End - Begin ); // 指定範囲のバイト数。
+	const FString Key = Font.ToKey() + "\n" + FString( Begin, Length ); // 同じフォント・同じ文字列を見分ける鍵。
+	FCachedText *Entry = TextCache.Find( Key );
+	if ( !Entry )
+	{
+		if ( NumTextCreatedThisFrame >= 512 )
+		{
+			bFailed = true;
+			return;
+		}
+		TArray<FColor32> Pixels, EdgePixels; // GPUを知らない文字実装が作る画像。
+		FCachedText Created; // 画像を両方登録できてから、表へ入れる。
+		if ( !TextRasterizer->RasterizeFontText( Font, TArrayView<const char>( Begin, Length ), Pixels, EdgePixels, Created.Width, Created.Height ) || Created.Width <= 0 || Created.Height <= 0
+			|| static_cast<int64>( Created.Width ) * Created.Height != Pixels.Num() || ( EdgePixels.Num() != 0 && EdgePixels.Num() != Pixels.Num() ) )
+		{
+			bFailed = true;
+			return;
+		}
+		Created.Text = Textures->CreateTextureRGBA8( Created.Width, Created.Height, Pixels.GetData() );
+		if ( !Created.Text.IsValid() )
+		{
+			bFailed = true;
+			return;
+		}
+		if ( EdgePixels.Num() != 0 )
+		{
+			Created.Edge = Textures->CreateTextureRGBA8( Created.Width, Created.Height, EdgePixels.GetData() );
+			if ( !Created.Edge.IsValid() )
+			{
+				Textures->ReleaseTexture( Created.Text );
+				bFailed = true;
+				return;
+			}
+		}
+		Created.Bytes = static_cast<uint64>( Pixels.Num() + EdgePixels.Num() ) * sizeof( FColor32 );
+		TextCacheBytes += Created.Bytes;
+		++NumTextCreatedThisFrame;
+		Entry = &TextCache.Add( Key, Created );
+	}
+	Entry->LastFrame = FrameNumber;
+	const float32 Width = static_cast<float32>( Entry->Width ), Height = static_cast<float32>( Entry->Height ); // 画像の右下。
+	const float32 Local[8] = { 0, 0, Width, 0, Width, Height, 0, Height }; // 画像の左上・右上・右下・左下。
+	float32 Points[8]; // 画面での4点。
+	for ( int32 Index = 0; Index < 4; ++Index )
+	{
+		Points[Index * 2] = Local[Index * 2] * Transform[0] + Local[Index * 2 + 1] * Transform[2] + Transform[4];
+		Points[Index * 2 + 1] = Local[Index * 2] * Transform[1] + Local[Index * 2 + 1] * Transform[3] + Transform[5];
+	}
+	const float32 UV[4] = { 0, 0, 1, 1 }; // 画像の全体。
+	const bool bPreviousFilter = bLinear; // 文字の補間を後続の画像へ持ち越さない。
+	bLinear = true;
+	FTextureDrawView View; // この描画の間だけ借りるGPUの番号。
+	if ( Entry->Edge.IsValid() && Textures->GetTextureResourceView( Entry->Edge, View ) )
+	{
+		Image( View, Points, UV, FColor32( EdgeColor.r, EdgeColor.g, EdgeColor.b, Color.a ) );
+	}
+	if ( Textures->GetTextureResourceView( Entry->Text, View ) )
+	{
+		Image( View, Points, UV, Color );
+	}
+	else
+	{
+		bFailed = true;
+	}
 	bLinear = bPreviousFilter;
 }
 

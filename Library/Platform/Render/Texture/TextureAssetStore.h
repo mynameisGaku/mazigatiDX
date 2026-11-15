@@ -2,10 +2,11 @@
 #pragma once
 #include "Library/Core/Interfaces/Render/IRenderTextureResources.h"
 #include "Library/Core/Interfaces/Render/ITextureDrawSource.h"
+#include "Library/Core/Interfaces/Render/IRenderTargetDrawSource.h"
 #include "Library/Core/Collection/Map.h"
 
 // アセット番号と画像資源番号の対応を所有する。codec・GPU・ImGuiを知らない。
-class CTextureAssetStore : public ITextureDrawSource
+class CTextureAssetStore : public ITextureDrawSource, public IRenderTargetDrawSource
 {
 public:
 	// 未接続で作る。Initializeまで作成・参照は失敗する。
@@ -23,6 +24,10 @@ public:
 	void Shutdown();
 	// RGBA8を複写して登録する。失敗時は-1。番号を再利用しない。
 	int32 Create( int32 Width, int32 Height, const FColor32* Pixels );
+	// 描き込める画像（描画先）を登録する。bDepthなら専用の深度も作る。ClearColorで塗って始める。失敗時は-1。
+	int32 CreateRenderTarget( int32 Width, int32 Height, bool bDepth, FColor32 ClearColor );
+	// 描画先の画素を読む。描画先でない・読めないときはfalse（出力を保つ）。
+	bool ReadRenderTarget( int32 Handle, TArray<FColor32>& OutPixels, int32& OutWidth, int32& OutHeight );
 	// 同じ寸法の画像を更新する。失敗時は内容を保つ。
 	bool Update( int32 Handle, int32 Width, int32 Height, const FColor32* Pixels );
 	// 登録を外す。GPU完了待ちと実体の解放は資源の所有者が行う。
@@ -35,9 +40,13 @@ public:
 	bool GetSize( int32 Handle, int32& OutWidth, int32& OutHeight ) const;
 	// 自分の登録番号だけを資源のviewへ解決する。失敗時はOutを保つ。
 	bool GetTextureDrawView( int32 Handle, FTextureDrawView& Out ) override;
+	// 描画先として登録した番号だけを、色と深度の資源へ解決する。失敗時はOutを保つ。
+	bool GetRenderTargetDrawView( int32 Handle, FRenderTargetDrawView& Out ) override;
 private:
 	IRenderTextureResources* Resources = nullptr; // GPU資源の作成・更新・寿命の窓口。
 	TMap<int32, FTextureResourceHandle> Textures; // 異なる名前空間の番号を対応させる。
+	// 描画先として作った登録の、深度（無ければ無効）。鍵があれば描画先。
+	TMap<int32, FTextureResourceHandle> TargetDepths;
 	int32 NextHandle = 0; // 解放後も使い回さないアセット番号。
 	static constexpr int32 MaxHandles = 1024; // この窓口で同時に登録する上限。
 };

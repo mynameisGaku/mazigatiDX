@@ -7,10 +7,11 @@
 #include "Library/Core/Interfaces/Render/ITextureDrawSource.h"
 #include "Library/Platform/Render/Geometry/GeometryBufferStore.h"
 #include "Library/Platform/Render/Model/StaticModelStore.h"
+#include "Library/Platform/Windows/Text/WindowsFontStore.h"
 
 
 // 画像と静的モデルを登録する。音声・GPUの独自シェーダーは未対応として返す。
-class CDX12AssetBackendSubsystem : public CAppSubsystem, public IAssetBackend, public ITextureDrawSource, public IGeometryBufferSource, public IStaticModelSource
+class CDX12AssetBackendSubsystem : public CAppSubsystem, public IAssetBackend, public ITextureDrawSource, public IGeometryBufferSource, public IStaticModelSource, public IFontDrawSource, public IRenderTargetDrawSource
 {
 public:
 	// DX12が選ばれた場合だけ作る。
@@ -39,6 +40,14 @@ public:
 	bool SavePixels( int32 Width, int32 Height, const FColor32* Pixels, const FString& Path, const FImageSaveOptions& Options ) override;
 	// 有効な画像だけ描画側へ貸す。
 	bool GetTextureDrawView( int32 Handle, FTextureDrawView& Out ) override;
+	// 描き込める画像（描画先）を作る。8ビットのRGBAだけ（浮動小数点の形式は-1）。マルチサンプルの指定は使わない（なしで作る）。
+	int32 CreateRenderTarget( const FRenderTargetDesc& Desc ) override;
+	// 描画先の矩形の画素を読む。フレームの外・描画先でない番号はfalse。
+	bool ReadRenderTargetPixels( int32 Target, int32 X, int32 Y, int32 Width, int32 Height, TArray<FColor32>& OutPixels ) override;
+	// 描画先の矩形を、ファイルに保存する。
+	bool SaveRenderTarget( int32 Target, int32 X, int32 Y, int32 Width, int32 Height, const FString& Path, const FImageSaveOptions& Options ) override;
+	// 描画先として作った画像だけ、色と深度の資源を描画側へ貸す。
+	bool GetRenderTargetDrawView( int32 Handle, FRenderTargetDrawView& Out ) override;
 	// 編集メッシュを共通の形状保管へ変換する。失敗時は両出力を保つ。
 	bool CreateMeshBuffers( const FMeshVertex* Vertices, int32 NumVertices, const uint32* Indices, int32 NumIndices, int32& OutVertexBuffer, int32& OutIndexBuffer ) override;
 	// ゼロ頂点を登録する。不正な数・保持上限超過は-1。
@@ -111,16 +120,25 @@ public:
 	FString GetModelFrameName( int32 Model, int32 FrameIndex ) override;
 	// SaveModelToMV1の未対応時の既定値。出力引数と外部状態は変更しない。
 	bool SaveModelToMV1( int32 Model, const FString& Path, const FModelSaveOptions& Options, FString& OutWarning ) override;
-	// MakeFontの未対応時の既定値。出力引数と外部状態は変更しない。
+	// フォントを登録する（OSの文字で描く。番号と指定は、共通のフォントの表が持つ）。使えない指定は-1。
 	int32 MakeFont( const FFontDesc& Desc ) override;
-	// DeleteFontの未対応時の既定値。出力引数と外部状態は変更しない。
+	// フォントの番号を空ける。
 	void DeleteFont( int32 Font ) override;
-	// MeasureTextの未対応時の既定値。出力引数と外部状態は変更しない。
+	// 文字列の幅を測る。無効な番号は0。
 	int32 MeasureText( int32 Font, const char* Text ) override;
-	// AddFontFileの未対応時の既定値。出力引数と外部状態は変更しない。
+	// フォントの寸法・文字列の大きさ・文字ごとの位置。無効な番号はfalse。
+	bool GetFontMetrics( int32 Font, FFontMetrics& OutMetrics ) override;
+	bool MeasureTextSize( int32 Font, const char* Text, FTextSize& OutSize ) override;
+	bool GetTextGlyphs( int32 Font, const char* Text, TArray<FTextGlyph>& OutGlyphs ) override;
+	// 環境にあるフォントを調べる。
+	bool IsFontAvailable( const FString& Face ) override;
+	void GetFontNames( TArray<FString>& OutNames ) override;
+	// フォントファイルを、このアプリの間だけ使えるようにする／やめる。
 	bool AddFontFile( const FString& Path ) override;
-	// RemoveFontFileの未対応時の既定値。出力引数と外部状態は変更しない。
 	void RemoveFontFile( const FString& Path ) override;
+	// 描画の命令を解釈する側へ、フォントの値と大きさを渡す。
+	bool GetFontDrawView( int32 Font, FRenderTextFont& Out ) override;
+	bool MeasureFontText( int32 Font, const char* Text, int32 Length, FTextSize& Out ) override;
 	// LoadSoundの未対応時の既定値。出力引数と外部状態は変更しない。
 	int32 LoadSound( const FString& Path, ESoundLoadMode Mode, bool bAsync ) override;
 	// DuplicateSoundの未対応時の既定値。出力引数と外部状態は変更しない。
@@ -133,4 +151,5 @@ private:
 	CGeometryBufferStore Buffers; // APIに依存しない登録形状。
 	CTextureAssetStore Textures; // API共通の画像登録。所有先の寿命までに解放する。
 	CStaticModelStore Models; // 画像の所有先より先に解放する共有モデル。
+	CWindowsFontStore Fonts; // フォントの番号の表（GPUを使わない）。
 };

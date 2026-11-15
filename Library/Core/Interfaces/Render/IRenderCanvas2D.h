@@ -3,6 +3,7 @@
 #include "Library/Math/Color.h"
 #include "Library/Core/Interfaces/Render/ITextureDrawSource.h"
 #include "Library/Core/Render/GeometryDrawState.h"
+#include "Library/Core/Render/RenderTextFont.h"
 
 // APIに依存しない2D実行先。フロント側はゲームスレッド・フレーム内で使用する。
 // 記録した値を別の実行先へ渡す場合、その実行先は定めた所有スレッドだけで操作する。
@@ -26,6 +27,10 @@ public:
 	virtual void Polygon( const float32* /*Points*/, int32 /*Count*/, FColor32 /*Color*/, bool /*bFill*/, float32 /*Thickness*/ ) {}
 	// 既定フォントでUTF-8の範囲を描く。
 	virtual void Text( float32 X, float32 Y, FColor32 Color, const char* Begin, const char* End ) = 0;
+	// フォントを指定して、UTF-8の範囲を描く。Transformは、文字の画像の中の点 (x, y)（画素。左上が原点）を、画面の点
+	// ( x * T[0] + y * T[2] + T[4], x * T[1] + y * T[3] + T[5] ) へ移す（位置・拡大・回転）。縁取りのあるフォントでは、縁取りをEdgeColorで先に描く。
+	// 未対応の実行先は何も描かない。
+	virtual void TextFont( const FRenderTextFont& /*Font*/, const float32 ( & /*Transform*/ )[6], FColor32 /*Color*/, FColor32 /*EdgeColor*/, const char* /*Begin*/, const char* /*End*/ ) {}
 	// 借用画像を凸四角形に貼る。UVは左上と右下。
 	virtual void Image( const FTextureDrawView& Texture, const float32 ( &Points )[8], const float32 ( &UV )[4], FColor32 Color ) = 0;
 	// 現在の範囲との共通部分を積む。空なら描かない。

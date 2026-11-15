@@ -6,6 +6,7 @@
 #include "Library/Core/Interfaces/Render/IRenderTextureResources.h"
 #include "Library/Core/Interfaces/Render/IRenderTextRasterizer.h"
 #include "Library/Core/Render/RenderClipRect.h"
+#include "Library/Core/Collection/Map.h"
 
 // APIとUIに依存せず、2Dの形状を共通の頂点へ展開する。文字画像の作成先とGPU画像は借用する。
 class CGeometryCanvas2D : public IRenderCanvas2D
@@ -37,6 +38,8 @@ class CGeometryCanvas2D : public IRenderCanvas2D
 	void Polygon( const float32 *Points, int32 Count, FColor32 Color, bool bFill, float32 Thickness ) override;
 	// 独立した文字画像を作り、現在のクリップと倍率で描く。
 	void Text( float32 X, float32 Y, FColor32 Color, const char *Begin, const char *End ) override;
+	// フォントを指定した文字列を、画像にして描く。同じフォント・同じ文字列の画像は、使われているあいだ持ち続けて、作り直さない。
+	void TextFont( const FRenderTextFont &Font, const float32 ( &Transform )[6], FColor32 Color, FColor32 EdgeColor, const char *Begin, const char *End ) override;
 	// 借用画像を凸四角形に貼る。UVは左上と右下。
 	void Image( const FTextureDrawView &Texture, const float32 ( &Points )[8], const float32 ( &UV )[4], FColor32 Color ) override;
 	// 現在の範囲との共通部分を積む。空なら描かない。
@@ -55,6 +58,21 @@ class CGeometryCanvas2D : public IRenderCanvas2D
 	FGeometryVertex Vertex( float32 X, float32 Y, FColor32 Color, float32 U = 0, float32 V = 0 ) const;
 	// 2D専用の深度なし・通常合成の状態で頂点を渡す。
 	void Draw( const TArray<FGeometryVertex> &Vertices, const FTextureDrawView *Texture = nullptr );
+	// フォントを指定した文字列の画像（フレームをまたいで持つ）。
+	struct FCachedText
+	{
+		FTextureResourceHandle Text; // 文字の画像。
+		FTextureResourceHandle Edge; // 縁取りの画像（縁取りが無ければ無効）。
+		int32 Width = 0, Height = 0; // 画像の大きさ。
+		uint64 LastFrame = 0; // 最後に使ったフレーム。
+		uint64 Bytes = 0; // 画像の大きさ（バイト）。
+	};
+	// 使われなくなった文字列の画像を返す。bAllなら、このフレームで使っていないものを全部。
+	void TrimTextCache( bool bAll );
+	TMap<FString, FCachedText> TextCache; // 鍵は、フォントの指定と文字列。
+	uint64 TextCacheBytes = 0; // 持っている画像の合計。
+	uint64 FrameNumber = 0; // BeginFrameごとに進む。
+	int32 NumTextCreatedThisFrame = 0; // このフレームで新しく画像にした文字列の数。
 	IRenderGeometry3D *Geometry = nullptr; // ゲーム描画の頂点の実行先。
 	IRenderTextureResources *Textures = nullptr; // 一時的な文字画像を登録する既存の所有先。
 	IRenderTextRasterizer *TextRasterizer = nullptr; // CPUの文字画像だけを作る借用先。

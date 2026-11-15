@@ -61,6 +61,7 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 		Quad, // 凸四角形。
 		Polygon, // 凸な点列。
 		Text, // 所有したUTF-8文字列。
+		TextFont, // フォントを指定した、所有したUTF-8文字列。
 		Image, // 借用画像の点列とUV。
 		PushClip, // クリップの追加。
 		PopClip, // クリップの復元。
@@ -88,6 +89,9 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 		FString String;
 		// 凸な点列（XYの順）。点の数が決まっていない操作だけが使う。
 		TArray<float32> Points;
+		// フォントを指定した文字列の、フォントの値と縁取りの色。
+		FRenderTextFont Font;
+		FColor32 EdgeColor;
 	};
 	// 描画スレッドだけで、所有する操作値を順に実行する。
 	void ExecuteBatch( const TArray<FCommand> &Commands );
@@ -123,6 +127,8 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 	void Polygon( const float32 *Points, int32 Count, FColor32 Color, bool bFill, float32 Thickness ) override;
 	// UTF-8を最大64KiBまで所有コピーする。Endがnullptrなら終端まで読む。1フレーム8MiBを越すと失敗。
 	void Text( float32 X, float32 Y, FColor32 Color, const char *Begin, const char *End ) override;
+	// フォントの値・変換・UTF-8（最大64KiB）を所有コピーする。文字列の合計は、Textと同じ1フレーム8MiBまで。
+	void TextFont( const FRenderTextFont &Font, const float32 ( &Transform )[6], FColor32 Color, FColor32 EdgeColor, const char *Begin, const char *End ) override;
 	// 画像のbindingと点列を値で渡す。画像のGPU寿命は既存の所有者が管理する。
 	void Image( const FTextureDrawView &Texture, const float32 ( &Points )[8], const float32 ( &UV )[4], FColor32 Color ) override;
 	// 切り取りと描画状態も、描画と同じ順序で実行する。

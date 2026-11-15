@@ -59,6 +59,26 @@ namespace
 	{
 		return FColor( Values[0], Values[1], Values[2], 1.0f );
 	}
+	// 距離 Depth（カメラから見た奥行き）での、フォグに隠れない割合（1 = 隠れない、0 = 完全にフォグの色）。
+	float32 GetFogVisibility( const FDrawFogData& Fog, float32 Depth )
+	{
+		float32 Visibility = 1.0f; // 通常の（フォグなしの）見え方。
+		switch ( static_cast<EDrawFogMode>( Fog.Mode ) )
+		{
+		case EDrawFogMode::Exponential:
+			Visibility = NMath::Exp( -Fog.Density * Depth );
+			break;
+		case EDrawFogMode::ExponentialSquared:
+			Visibility = NMath::Exp( -( Fog.Density * Depth ) * ( Fog.Density * Depth ) );
+			break;
+		case EDrawFogMode::Linear:
+			Visibility = Fog.End > Fog.Start ? ( Fog.End - Depth ) / ( Fog.End - Fog.Start ) : ( Depth < Fog.End ? 1.0f : 0.0f );
+			break;
+		default:
+			break;
+		}
+		return NMath::IsFinite( Visibility ) ? NMath::Clamp( Visibility, 0.0f, 1.0f ) : 1.0f;
+	}
 	// 0..1 の色の成分を、0..255 に丸める（範囲の外は端へ）。
 	int32 ToByte( float32 Value )
 	{
@@ -89,6 +109,8 @@ bool CGeometryCommandExecutor::Submit( const TArray<FDrawVertex3D>& Vertices, EG
 	{
 		NormalMatrix = InverseWorld.Transposed();
 	}
+	const bool bFog = Fog.Mode != 0 && Texture < 0; // 画像の色は頂点色との積なので、画像つきの描画には、フォグを混ぜられない。
+	const FMatrix4x4 ViewMatrix = Camera.GetViewMatrix(); // フォグの距離（カメラから見た奥行き）に使う。
 	TArray<FGeometryVertex> Output; // 全頂点が正しい場合だけ送る所有コピー。
 	Output.Reserve( Vertices.Num() );
 	for ( const auto& Input : Vertices )
@@ -129,6 +151,13 @@ bool CGeometryCommandExecutor::Submit( const TArray<FDrawVertex3D>& Vertices, EG
 			Value.Color = FColor32( static_cast<uint8>( NMath::Min( 255, Input.Diffuse[0] + Input.Specular[0] ) * Bright.R / 255 ),
 				static_cast<uint8>( NMath::Min( 255, Input.Diffuse[1] + Input.Specular[1] ) * Bright.G / 255 ),
 				static_cast<uint8>( NMath::Min( 255, Input.Diffuse[2] + Input.Specular[2] ) * Bright.B / 255 ), static_cast<uint8>( Input.Diffuse[3] * Alpha / 255 ) );
+		}
+		if ( bFog )
+		{
+			const FVector3 WorldPoint = World.TransformPoint( FVector3( Input.Position[0], Input.Position[1], Input.Position[2] ) ); // 世界の点。
+			const float32 Visibility = GetFogVisibility( Fog, NMath::Max( 0.0f, ViewMatrix.TransformPoint( WorldPoint ).z ) ); // 隠れない割合。
+			const auto Mix = [&]( uint8 Channel, uint8 FogChannel ) { return static_cast<uint8>( FogChannel + ( Channel - FogChannel ) * Visibility + 0.5f ); }; // フォグの色へ寄せる。
+			Value.Color = FColor32( Mix( Value.Color.r, Fog.Color.R ), Mix( Value.Color.g, Fog.Color.G ), Mix( Value.Color.b, Fog.Color.B ), Value.Color.a );
 		}
 		Value.U = Input.U;
 		Value.V = Input.V;
@@ -381,12 +410,25 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::Execute( const FDraw
 		return EResult::Executed;
 	}
 	case EDrawCommand::Fog:
+	{
+		if ( !View.CanRead<FDrawFogData>() )
+		{
+			return EResult::Rejected;
+		}
+		const auto Data = View.Read<FDrawFogData>(); // 検査後の固定部。
+		if ( Data.Mode < 0 || Data.Mode > static_cast<int32>( EDrawFogMode::Linear ) || !NMath::IsFinite( Data.Start ) || !NMath::IsFinite( Data.End ) || !NMath::IsFinite( Data.Density ) )
+		{
+			return EResult::Rejected;
+		}
+		Fog = Data;
+		return EResult::Executed;
+	}
 	case EDrawCommand::HeightFog:
 	case EDrawCommand::Anisotropy:
 	case EDrawCommand::TextureTransform:
 	{
 		// まだ描画に反映しない状態。図形は、この状態なしで描く。
-		NBackendSupport::ReportUnsupported( "DrawCommands", View.Type == EDrawCommand::Fog ? "Fog" : View.Type == EDrawCommand::HeightFog ? "HeightFog" : View.Type == EDrawCommand::Anisotropy ? "Anisotropy" : "TextureTransform", "The state is ignored" );
+		NBackendSupport::ReportUnsupported( "DrawCommands", View.Type == EDrawCommand::HeightFog ? "HeightFog" : View.Type == EDrawCommand::Anisotropy ? "Anisotropy" : "TextureTransform", "The state is ignored" );
 		return EResult::Executed;
 	}
 	case EDrawCommand::Pixel3D:

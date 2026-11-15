@@ -128,3 +128,29 @@ bool CWindowsTextRasterizer::RasterizeText( TArrayView<const char> Text, TArray<
 	OutHeight = Bounds.bottom;
 	return true;
 }
+
+bool CWindowsTextRasterizer::RasterizeFontText( const FRenderTextFont &InFont, TArrayView<const char> Text, TArray<FColor32> &OutPixels, TArray<FColor32> &OutEdgePixels, int32 &OutWidth, int32 &OutHeight )
+{
+	TArray<uint8> Coverage, Edge; // 文字と、縁取りを含む被覆率。
+	int32 Width = 0, Height = 0; // 成功するまで、呼出側の出力へ触らない。
+	if ( !FontText.Rasterize( InFont, Text, Coverage, Edge, Width, Height ) )
+	{
+		return false;
+	}
+	TArray<FColor32> Pixels, EdgePixels; // 白と被覆率の画像。
+	Pixels.SetNum( Coverage.Num() );
+	for ( int32 Index = 0; Index < Coverage.Num(); ++Index )
+	{
+		Pixels[Index] = FColor32( 255, 255, 255, Coverage[Index] );
+	}
+	EdgePixels.SetNum( Edge.Num() );
+	for ( int32 Index = 0; Index < Edge.Num(); ++Index )
+	{
+		EdgePixels[Index] = FColor32( 255, 255, 255, Edge[Index] );
+	}
+	OutPixels = MoveTemp( Pixels );
+	OutEdgePixels = MoveTemp( EdgePixels );
+	OutWidth = Width;
+	OutHeight = Height;
+	return true;
+}

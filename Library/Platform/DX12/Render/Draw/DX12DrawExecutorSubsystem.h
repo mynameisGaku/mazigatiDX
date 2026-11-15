@@ -7,6 +7,8 @@ class IRenderSurface;
 class ITextureDrawSource;
 class IGeometryBufferSource;
 class IStaticModelSource;
+class IFontDrawSource;
+class IRenderTargetDrawSource;
 
 // DX12の描画先を共通のキャンバス命令実行側へ接続する。
 class CDX12DrawExecutorSubsystem : public CAppSubsystem, public IDrawExecutor
@@ -29,4 +31,6 @@ private:
 	IStaticModelSource* Models = nullptr; // 借用する静的モデル。
 	IGeometryBufferSource* Buffers = nullptr; // 借用する登録形状。
 	ITextureDrawSource* Textures = nullptr; // 借用する画像窓口。
+	IFontDrawSource* Fonts = nullptr; // 借用するフォントの表。
+	IRenderTargetDrawSource* Targets = nullptr; // 借用する描画先の表。
 };

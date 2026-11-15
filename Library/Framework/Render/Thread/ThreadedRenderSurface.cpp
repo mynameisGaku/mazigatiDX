@@ -496,6 +496,34 @@ void CThreadedRenderSurface::Text( float32 X, float32 Y, FColor32 Color, const c
 	Queue( MoveTemp( Command ) );
 }
 
+void CThreadedRenderSurface::TextFont( const FRenderTextFont &Font, const float32 ( &Transform )[6], FColor32 Color, FColor32 EdgeColor, const char *Begin, const char *End )
+{
+	GAME_THREAD_ONLY();
+	if ( !bActive || !Begin || !End || End <= Begin || End - Begin > 65536 || Color.a == 0 )
+	{
+		return;
+	}
+	const int32 Length = static_cast<int32>( End - Begin );
+	if ( Length > 8 * 1024 * 1024 - TextBytes )
+	{
+		bFailed.Store( true );
+		return;
+	}
+	// フォントの値・変換・範囲の内容を、この操作だけが所有する。
+	FCommand Command;
+	Command.Type = ECommand::TextFont;
+	for ( int32 Index = 0; Index < 6; ++Index )
+	{
+		Command.Values[Index] = Transform[Index];
+	}
+	Command.Color = Color;
+	Command.EdgeColor = EdgeColor;
+	Command.Font = Font;
+	Command.String = FString( Begin, Length );
+	TextBytes += Length;
+	Queue( MoveTemp( Command ) );
+}
+
 void CThreadedRenderSurface::Image( const FTextureDrawView &Texture, const float32 ( &Points )[8], const float32 ( &UV )[4], FColor32 Color )
 {
 	GAME_THREAD_ONLY();
@@ -586,6 +614,12 @@ void CThreadedRenderSurface::ExecuteBatch( const TArray<FCommand> &Commands )
 		case ECommand::Text:
 			Canvas->Text( Command.Values[0], Command.Values[1], Command.Color, *Command.String, *Command.String + Command.String.Len() );
 			break;
+		case ECommand::TextFont:
+		{
+			const float32 Transform[6] = { Command.Values[0], Command.Values[1], Command.Values[2], Command.Values[3], Command.Values[4], Command.Values[5] };
+			Canvas->TextFont( Command.Font, Transform, Command.Color, Command.EdgeColor, *Command.String, *Command.String + Command.String.Len() );
+			break;
+		}
 		case ECommand::Image:
 		{
 			const float32 Points[8] = { Command.Values[0], Command.Values[1], Command.Values[2], Command.Values[3], Command.Values[4], Command.Values[5], Command.Values[6], Command.Values[7] };
