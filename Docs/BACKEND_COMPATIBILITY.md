@@ -10,8 +10,8 @@
 
 |分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|
 |---|---:|---:|---:|---:|---:|---:|---:|
-|API|359|4|97|95|162|0|1|
-|Draw|101|0|14|47|40|0|0|
+|API|360|4|97|96|162|0|1|
+|Draw|101|0|10|51|40|0|0|
 |Sample|33|30|0|3|0|0|0|
 |Editor|11|11|0|0|0|0|0|
 
@@ -275,6 +275,7 @@
 |[API.IRenderCanvas2D.SetAntiAlias](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L45)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
 |[API.IRenderCanvas2D.SetBlend](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L47)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|共通キャンバスと描画スレッドの接続、DX12のPSOを実装。フレームの始めと命令列の終わりに通常の合成へ戻る||
 |[API.IRenderCanvas2D.SetCustomBlend](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L49)|Partial|R6|入力不正、出力保持、GPU失敗と状態復元を確認|利用者が決めた混ぜ方の係数を、以降の2D描画へ使う。未対応の実行先は何もしない||
+|[API.IRenderCanvas2D.SetMask](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L52)|Partial|R6|入力不正、出力保持、GPU失敗と状態復元を確認|以降の2D描画を、画像の値で画素ごとに薄める（描画先の左上に合わせる。画像の外は薄めない）。描画スレッドへ順序どおり積み、フレームの始めにマスクなしへ戻る。3D・シェーダー描画には効かない。未対応の実行先はfalse||
 |[API.IRenderCanvas2D.SetTextureFilter](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L43)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
 |[API.IRenderCanvas2D.Text](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L29)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
 |[API.IRenderCanvas2D.TextFont](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L33)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|フォントを指定した文字列を画像にして、位置・拡大・回転つきで描く。縁取り対応。同じ文字列の画像は持ち続ける||
@@ -332,10 +333,10 @@
 |[API.IRenderTextureResources.ReleaseTexture](../Library/Core/Interfaces/Render/IRenderTextureResources.h#L49)|Implemented|R1|ImGuiなしの作成・更新・解放、入力不正、旧viewのGPU完了までの保持、失敗と再初期化を検査|DX12画像所有者へ接続。アセット登録とUIの所有から分離。Windowsの外部ImGui窓との共有画像・表示画素を確認。全更新・失敗経路の互換は未網羅|補助検証: NativeStoreのcompute readbackと共通登録の偽物。Windowsの外部窓共有: Docs/DX12_IMGUI_VIEWPORTS.md|
 |[API.IRenderTextureResources.UpdateTextureRGBA8](../Library/Core/Interfaces/Render/IRenderTextureResources.h#L46)|Implemented|R1|ImGuiなしの作成・更新・解放、入力不正、旧viewのGPU完了までの保持、失敗と再初期化を検査|DX12画像所有者へ接続。アセット登録とUIの所有から分離。Windowsの外部ImGui窓との共有画像・表示画素を確認。全更新・失敗経路の互換は未網羅|補助検証: NativeStoreのcompute readbackと共通登録の偽物。Windowsの外部窓共有: Docs/DX12_IMGUI_VIEWPORTS.md|
 |[API.IShader.GetShaderHandle](../Library/Core/Interfaces/Render/IShader.h#L55)|Partial|R6|作成前・作成後・破棄後のhandle、型の違い、描画までの寿命を確認|番号は、DX12のシェーダーの表の番号||
-|[API.IShaderDrawSource.DrawShader](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L77)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|描画の値（シェーダー・定数・画像・頂点・描画先の形式）から、パイプラインを作って描く。描けなければfalse||
-|[API.IShaderDrawSource.GetShadowPass](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L81)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|最後に影の絵を描いたときの、光から見た行列・補正の深さ・大きさ||
-|[API.IShaderDrawSource.IsShaderValid](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L75)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|番号が、その種類の、作ってあるシェーダーか||
-|[API.IShaderDrawSource.SetShadowPass](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L79)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|BeginShadowMapを実行したときに覚える||
+|[API.IShaderDrawSource.DrawShader](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L79)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|描画の値（シェーダー・定数・画像・頂点・描画先の形式）から、パイプラインを作って描く。描けなければfalse||
+|[API.IShaderDrawSource.GetShadowPass](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L83)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|最後に影の絵を描いたときの、光から見た行列・補正の深さ・大きさ||
+|[API.IShaderDrawSource.IsShaderValid](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L77)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|番号が、その種類の、作ってあるシェーダーか||
+|[API.IShaderDrawSource.SetShadowPass](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L81)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|BeginShadowMapを実行したときに覚える||
 |[API.IShadowMap.GetShadowMapHandle](../Library/Core/Interfaces/Render/IShadowMap.h#L47)|Partial|R6|作成前・作成後・破棄後のhandle、型の違い、描画までの寿命を確認|番号は、描画先の番号と同じ||
 |[API.ISoundBackend.CreateSoundFromPcm](../Library/Core/Interfaces/Asset/SoundBackend.h#L28)|Missing|R8|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.ISoundBackend.DecodeSoundFile](../Library/Core/Interfaces/Asset/SoundBackend.h#L31)|Missing|R8|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
@@ -415,8 +416,8 @@
 |[Draw.Fog](../Library/Framework/Render/Draw/DrawCommand.h#L114)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|距離フォグを、画像なしの図形は頂点ごとのCPU計算で、画像つきの三角形は専用のシェーダー（FogTextured）で掛ける。画像つきの線・点と、影を受ける描画には掛からない||
 |[Draw.HeightFog](../Library/Framework/Render/Draw/DrawCommand.h#L115)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|Start より下を、低いほど濃くする（Exponential / ExponentialSquared）。Linear は、Start で濃さ0、End で1。頂点ごとのCPU計算で、距離フォグのあとに混ぜる。DxLibの式との細かい差は未確認||
 |[Draw.Image](../Library/Framework/Render/Draw/DrawCommand.h#L77)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
-|[Draw.ImageBlend](../Library/Framework/Render/Draw/DrawCommand.h#L101)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
-|[Draw.ImageFilter](../Library/Framework/Render/Draw/DrawCommand.h#L100)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
+|[Draw.ImageBlend](../Library/Framework/Render/Draw/DrawCommand.h#L101)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|組み込みのピクセルシェーダーで、2枚を混ぜて変換先（RGBA8の描画先）へ置き換える。通常・出力成分の選択・乗算・減算（差）・加算・スクリーン・オーバーレイ・覆い焼き・焼き込み・比較（暗／明）・ソフト／ハードライト・除外・アルファ付きの通常／加算・アルファの乗算・マスク。DxLibと画素を比べたもの: 乗算・加算（強さ160）・スクリーン・差（一致）。それ以外は標準の式で、未比較。乗算済みアルファ版は、色をアルファで割って混ぜてから掛け直す||
+|[Draw.ImageFilter](../Library/Framework/Render/Draw/DrawCommand.h#L100)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|組み込みのピクセルシェーダーで、変換先（RGBA8の描画先）の矩形へ描く。Mono・Gauss・DownScale・BrightClip・BrightScale・Hsb・Invert・Level・TwoColor・GradientMap・Replacement・PremulAlpha・InterpAlpha・BicubicScale・Lanczos3Scale・FloatColorScale。DxLibと画素を比べたもの: Mono・Invert・Level・TwoColor・GradientMap（一致）、Gauss（核をDxLibの画素から実測して合わせた。誤差0.5以下）、Hsb（相対色相）。未比較: 色差つきMono・絶対色相・縮小系・BrightClip/Scale・Replacement。その場の変換（元と先が同じ画像）と、RGBA8でない変換先は、飛ばして報告する||
 |[Draw.ImagePart](../Library/Framework/Render/Draw/DrawCommand.h#L80)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.ImagePartQuad](../Library/Framework/Render/Draw/DrawCommand.h#L82)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.ImagePartStretch](../Library/Framework/Render/Draw/DrawCommand.h#L81)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
@@ -441,7 +442,7 @@
 |[Draw.PopCamera](../Library/Framework/Render/Draw/DrawCommand.h#L108)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.PopClip](../Library/Framework/Render/Draw/DrawCommand.h#L92)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.PopLight](../Library/Framework/Render/Draw/DrawCommand.h#L127)|Partial|R2|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|頂点ごとのCPU計算（CVertexLighting。DxLibの固定の光と同じ式）で対応。画素ごとの光・影は頂点ごとの計算になる。DxLibとの画素比較が残る||
-|[Draw.PopMask](../Library/Framework/Render/Draw/DrawCommand.h#L103)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
+|[Draw.PopMask](../Library/Framework/Render/Draw/DrawCommand.h#L103)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|1つ前のマスクへ戻す（無ければマスクなし）。PushMaskと対||
 |[Draw.PopTarget](../Library/Framework/Render/Draw/DrawCommand.h#L96)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|元の描画先へ戻す。クリップ・2Dの変換も戻る||
 |[Draw.PopWorldMatrix](../Library/Framework/Render/Draw/DrawCommand.h#L119)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.PreviewShadowMap](../Library/Framework/Render/Draw/DrawCommand.h#L143)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
@@ -451,7 +452,7 @@
 |[Draw.PushCamera](../Library/Framework/Render/Draw/DrawCommand.h#L107)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.PushClip](../Library/Framework/Render/Draw/DrawCommand.h#L91)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.PushLight](../Library/Framework/Render/Draw/DrawCommand.h#L126)|Partial|R2|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|頂点ごとのCPU計算（CVertexLighting。DxLibの固定の光と同じ式）で対応。画素ごとの光・影は頂点ごとの計算になる。DxLibとの画素比較が残る||
-|[Draw.PushMask](../Library/Framework/Render/Draw/DrawCommand.h#L102)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
+|[Draw.PushMask](../Library/Framework/Render/Draw/DrawCommand.h#L102)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|2Dの描画（図形・画像・文字）が、マスクの画像（アルファ・赤・緑・青のどれか、反転つき）の値で薄まる。画素の座標で読み、画像の外は薄めない。入れ子は内側が替わる（重ねない）。描画先を替えるとマスクなしから始まり、戻ると復元する。3D・シェーダー描画には効かない。Filtersサンプルで、DxLibと画素が一致（誤差0.5以下）||
 |[Draw.PushTarget](../Library/Framework/Render/Draw/DrawCommand.h#L95)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|8ビットのRGBAの描画先へ描く（入れ子可）。浮動小数点の描画先は飛ばす||
 |[Draw.PushWorldMatrix](../Library/Framework/Render/Draw/DrawCommand.h#L118)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.Quad](../Library/Framework/Render/Draw/DrawCommand.h#L70)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||

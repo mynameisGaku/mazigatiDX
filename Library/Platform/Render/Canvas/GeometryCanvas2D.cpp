@@ -25,6 +25,7 @@ bool CGeometryCanvas2D::BeginFrame( IRenderGeometry3D &InGeometry, IRenderTextur
 	bAntiAlias = true;
 	Blend = EGeometryBlend::Alpha;
 	CustomBlend = FGeometryCustomBlend();
+	MaskState = FGeometryMask();
 	++FrameNumber;
 	NumTextCreatedThisFrame = 0;
 	return true;
@@ -68,6 +69,7 @@ void CGeometryCanvas2D::Draw( const TArray<FGeometryVertex> &Vertices, const FTe
 	State.bAlphaBlend = true;
 	State.Blend = Blend;
 	State.CustomBlend = CustomBlend;
+	State.Mask = MaskState;
 	State.bLinearFilter = bLinear;
 	State.AddressU = State.AddressV = EGeometryTextureAddress::Clamp;
 	if ( Texture )
@@ -431,6 +433,18 @@ bool CGeometryCanvas2D::SetTextureFilter( bool bInLinear )
 }
 void CGeometryCanvas2D::SetAntiAlias( bool bEnabled ) { bAntiAlias = bEnabled; }
 void CGeometryCanvas2D::SetBlend( EGeometryBlend InBlend ) { Blend = InBlend < EGeometryBlend::Custom ? InBlend : EGeometryBlend::Alpha; }
+
+bool CGeometryCanvas2D::SetMask( const FTextureDrawView *InMask, int32 Channel, bool bInvert )
+{
+	MaskState = FGeometryMask();
+	if ( InMask )
+	{
+		MaskState.Texture = *InMask;
+		MaskState.Channel = NMath::Clamp( Channel, 0, 3 );
+		MaskState.bInvert = bInvert;
+	}
+	return Geometry != nullptr;
+}
 
 void CGeometryCanvas2D::SetCustomBlend( const FGeometryCustomBlend &InBlend )
 {

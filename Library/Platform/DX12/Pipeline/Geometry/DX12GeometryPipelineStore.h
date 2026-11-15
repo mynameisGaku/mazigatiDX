@@ -42,7 +42,8 @@ class CDX12GeometryPipelineStore
 		Microsoft::WRL::ComPtr<ID3D12PipelineState> Resource; // 状態ごとの作成済みPSO。
 	};
 	Microsoft::WRL::ComPtr<ID3D12Device> Device; // 作成先のGPU。
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> RootSignature; // t0画像とs0補間の配置。
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> RootSignature; // t0画像とs0補間、マスクのt1とb0の配置。
 	Microsoft::WRL::ComPtr<ID3DBlob> VertexShader, PixelShader, TexturedPixelShader; // 固定の28byte頂点を読む三つのバイナリ。
+	Microsoft::WRL::ComPtr<ID3DBlob> MaskedPixelShader, MaskedTexturedPixelShader; // 2Dのマスク（t1の画像の値で薄める）つきの二つ。
 	TMap<FGeometryPipelineKey, FPipelineRecord> Pipelines; // 深度・表裏・合成・画像・つなぎ方ごとのキャッシュ。
 };

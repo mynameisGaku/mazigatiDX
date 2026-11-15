@@ -71,6 +71,7 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 		AntiAlias, // 輪郭の補間設定。
 		Blend, // 描画先との混ぜ方。
 		CustomBlend, // 利用者が決めた混ぜ方の係数。
+		Mask, // 2Dの描画を薄めるマスクの画像。
 		ClearColor, // 色の消去。
 		ClearDepth, // 深度の消去。
 	};
@@ -151,6 +152,8 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 	// 描画先との混ぜ方を後続の描画と同じ順序へ積む。
 	void SetBlend( EGeometryBlend Blend ) override;
 	void SetCustomBlend( const FGeometryCustomBlend &Blend ) override;
+	// マスクを後続の描画と同じ順序へ積む。実行先が2Dを持たなければfalse。
+	bool SetMask( const FTextureDrawView *Mask, int32 Channel, bool bInvert ) override;
 	// API側の実行先。内容には描画スレッドだけが触る。
 	IRenderSurface &Target;
 	// CPU命令と同期処理を同じ順序へ集める既存の専用スレッド。

@@ -98,6 +98,8 @@ class CDX12GeometryRenderer : public IRenderGeometry3D
 		D3D_PRIMITIVE_TOPOLOGY Topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST; // 頂点のつなぎ方。
 		UINT64 TextureBinding = 0; // 借用画像のGPU記述子。0なら頂点色だけ。
 		UINT SamplerIndex = 0; // 補間と外側の参照設定。
+		UINT64 MaskBinding = 0; // マスクの画像のGPU記述子。0ならマスクなし。
+		UINT MaskChannel = 0, MaskInvert = 0; // マスクの値にする成分と、反転。
 		D3D12_INDEX_BUFFER_VIEW Indices = {}; // 省略可能なGPU上の頂点番号列。
 		UINT NumIndices = 0; // 0なら番号を使わない。
 		UINT NumVertices = 0; // 描く数。

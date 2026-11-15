@@ -54,6 +54,8 @@ class CGeometryCanvas2D : public IRenderCanvas2D
 	// 以降の描画の、描画先との混ぜ方を指定する。フレームの始めに通常の合成へ戻る。
 	void SetBlend( EGeometryBlend InBlend ) override;
 	void SetCustomBlend( const FGeometryCustomBlend &InBlend ) override;
+	// 以降の描画を、画像の値で画素ごとに薄める。nullptrならマスクなし。フレームの始めにマスクなしへ戻る。
+	bool SetMask( const FTextureDrawView *InMask, int32 Channel, bool bInvert ) override;
 
   private:
 	// 2D座標から共通の同次座標を作る。倍率は描画先の画素へだけ適用する。
@@ -89,4 +91,5 @@ class CGeometryCanvas2D : public IRenderCanvas2D
 	bool bLinear = false; // 後続の画像へ適用する補間。
 	EGeometryBlend Blend = EGeometryBlend::Alpha; // 後続の描画の、描画先との混ぜ方。
 	FGeometryCustomBlend CustomBlend; // Blendが Custom のときの係数。
+	FGeometryMask MaskState; // 後続の描画を薄めるマスク。
 };

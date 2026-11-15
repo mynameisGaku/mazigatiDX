@@ -569,6 +569,22 @@ bool CDX12GeometryRenderer::ValidateDrawState( const FGeometryDrawState &State, 
 			return false;
 		}
 	}
+	if ( State.Mask.IsActive() )
+	{
+		if ( !SrvHeap || State.Mask.Texture.Width <= 0 || State.Mask.Texture.Height <= 0 || State.Mask.Channel < 0 || State.Mask.Channel > 3 )
+		{
+			return false;
+		}
+		if ( IsForbiddenTextureBinding( State.Mask.Texture.Binding ) )
+		{
+			bHazardRejected = true; // 描いている最中の描画先を、マスクとして読まない。
+			return false;
+		}
+		if ( !IsValidSrvHandle( State.Mask.Texture.Binding ) )
+		{
+			return false;
+		}
+	}
 	return true;
 }
 
@@ -642,6 +658,12 @@ bool CDX12GeometryRenderer::DrawInternal( const FGeometryVertex *Vertices, int32
 	FPendingDraw Pending; // 検査済みのGPU参照を、この位置で命令列へ渡す。
 	Pending.TextureBinding = Texture ? Texture->Binding : 0;
 	Pending.SamplerIndex = static_cast<UINT>( State.AddressU ) | ( static_cast<UINT>( State.AddressV ) << 2 ) | ( State.bLinearFilter ? 16 : 0 );
+	if ( State.Mask.IsActive() )
+	{
+		Pending.MaskBinding = State.Mask.Texture.Binding;
+		Pending.MaskChannel = static_cast<UINT>( State.Mask.Channel );
+		Pending.MaskInvert = State.Mask.bInvert ? 1 : 0;
+	}
 	Pending.Pipeline = Pipeline;
 	Pending.Vertices = { VertexGpuAddress, static_cast<UINT>( ByteWidth ), sizeof( FGeometryVertex ) };
 	Pending.NumVertices = static_cast<UINT>( NumVertices );
@@ -674,6 +696,12 @@ void CDX12GeometryRenderer::DrawPrepared( const FPendingDraw &Pending )
 		auto Sampler = SamplerHeap->GetGPUDescriptorHandleForHeapStart(); // この命令に固定した補間。
 		Sampler.ptr += Pending.SamplerIndex * SamplerStride;
 		Commands->SetGraphicsRootDescriptorTable( 1, Sampler );
+	}
+	if ( Pending.MaskBinding != 0 )
+	{
+		Commands->SetGraphicsRootDescriptorTable( 2, D3D12_GPU_DESCRIPTOR_HANDLE{ Pending.MaskBinding } );
+		const UINT MaskValues[4] = { Pending.MaskChannel, Pending.MaskInvert, 0, 0 }; // マスクの成分と反転。
+		Commands->SetGraphicsRoot32BitConstants( 3, 4, MaskValues, 0 );
 	}
 	Commands->SetPipelineState( Pending.Pipeline );
 	Commands->IASetPrimitiveTopology( Pending.Topology );
@@ -752,6 +780,12 @@ bool CDX12GeometryRenderer::DrawBufferGeometry( const FGeometryBufferDraw &Draw,
 	Pending.NumVertices = static_cast<UINT>( Draw.VertexCount );
 	Pending.TextureBinding = Texture ? Texture->Binding : 0;
 	Pending.SamplerIndex = static_cast<UINT>( State.AddressU ) | ( static_cast<UINT>( State.AddressV ) << 2 ) | ( State.bLinearFilter ? 16 : 0 );
+	if ( State.Mask.IsActive() )
+	{
+		Pending.MaskBinding = State.Mask.Texture.Binding;
+		Pending.MaskChannel = static_cast<UINT>( State.Mask.Channel );
+		Pending.MaskInvert = State.Mask.bInvert ? 1 : 0;
+	}
 	Pending.Topology = ToD3DTopology( State.Topology );
 	if ( bIndexed )
 	{

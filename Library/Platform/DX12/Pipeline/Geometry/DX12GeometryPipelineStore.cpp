@@ -10,17 +10,24 @@ bool CDX12GeometryPipelineStore::Initialize( ID3D12Device *InDevice )
 		return false;
 	}
 	Device = InDevice;
-	const char Source[] = "struct V { float4 p:POSITION; float4 c:COLOR; float2 uv:TEXCOORD; }; struct P { float4 p:SV_POSITION; float4 c:COLOR; float2 uv:TEXCOORD; }; P VS(V v) { P p; p.p=v.p; p.c=v.c; p.uv=v.uv; return p; } float4 PS(P p):SV_TARGET { return p.c; } Texture2D image:register(t0); SamplerState sampling:register(s0); float4 TexturePS(P p):SV_TARGET { float4 color=image.Sample(sampling,p.uv)*p.c; if(color.a<=0) discard; return color; }"; // 透視補間はGPUが行う。完全な透明画素は色・深度のどちらも書かない。
-	if ( FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", nullptr, nullptr, "VS", "vs_5_0", 0, 0, &VertexShader, nullptr ) ) || FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", nullptr, nullptr, "PS", "ps_5_0", 0, 0, &PixelShader, nullptr ) ) || FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", nullptr, nullptr, "TexturePS", "ps_5_0", 0, 0, &TexturedPixelShader, nullptr ) ) )
+	const char Source[] = "struct V { float4 p:POSITION; float4 c:COLOR; float2 uv:TEXCOORD; }; struct P { float4 p:SV_POSITION; float4 c:COLOR; float2 uv:TEXCOORD; }; P VS(V v) { P p; p.p=v.p; p.c=v.c; p.uv=v.uv; return p; } float4 PS(P p):SV_TARGET { return p.c; } Texture2D image:register(t0); SamplerState sampling:register(s0); float4 TexturePS(P p):SV_TARGET { float4 color=image.Sample(sampling,p.uv)*p.c; if(color.a<=0) discard; return color; }"
+		"Texture2D maskImage:register(t1); cbuffer cbMask:register(b0) { uint4 maskInfo; }; "
+		"float MaskValue(float4 position) { uint w,h; maskImage.GetDimensions(w,h); uint2 q=uint2(position.xy); if(q.x>=w||q.y>=h) { return 1.0; } float4 t=maskImage.Load(int3(q,0)); float m=maskInfo.x==0?t.a:(maskInfo.x==1?t.r:(maskInfo.x==2?t.g:t.b)); return maskInfo.y!=0?1.0-m:m; } "
+		"float4 MaskedPS(P p):SV_TARGET { float4 color=p.c; color.a*=MaskValue(p.p); return color; } "
+		"float4 MaskedTexturePS(P p):SV_TARGET { float4 color=image.Sample(sampling,p.uv)*p.c; color.a*=MaskValue(p.p); if(color.a<=0) discard; return color; }"; // 透視補間はGPUが行う。完全な透明画素は色・深度のどちらも書かない。マスクは、描画先の画素の座標で読む（画像の外は薄めない）。
+	if ( FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", nullptr, nullptr, "VS", "vs_5_0", 0, 0, &VertexShader, nullptr ) ) || FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", nullptr, nullptr, "PS", "ps_5_0", 0, 0, &PixelShader, nullptr ) ) || FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", nullptr, nullptr, "TexturePS", "ps_5_0", 0, 0, &TexturedPixelShader, nullptr ) )
+		|| FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", nullptr, nullptr, "MaskedPS", "ps_5_0", 0, 0, &MaskedPixelShader, nullptr ) ) || FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", nullptr, nullptr, "MaskedTexturePS", "ps_5_0", 0, 0, &MaskedTexturedPixelShader, nullptr ) ) )
 	{
 		ResetAfterGPUIdle();
 		return false;
 	}
-	D3D12_DESCRIPTOR_RANGE Ranges[2] = {}; // 画像と補間を独立したheapから参照する。
+	D3D12_DESCRIPTOR_RANGE Ranges[3] = {}; // 画像と補間を独立したheapから参照する。3つ目は、マスクの画像（t1）。
 	Ranges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	Ranges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
-	D3D12_ROOT_PARAMETER Parameters[2] = {}; // t0とs0をピクセルシェーダーへ渡す。
-	for ( int32 Index = 0; Index < 2; ++Index )
+	Ranges[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	Ranges[2].BaseShaderRegister = 1;
+	D3D12_ROOT_PARAMETER Parameters[4] = {}; // t0・s0・t1をピクセルシェーダーへ渡し、4つ目は、マスクの値（b0）。
+	for ( int32 Index = 0; Index < 3; ++Index )
 	{
 		Ranges[Index].NumDescriptors = 1;
 		Parameters[Index].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
@@ -28,8 +35,11 @@ bool CDX12GeometryPipelineStore::Initialize( ID3D12Device *InDevice )
 		Parameters[Index].DescriptorTable.NumDescriptorRanges = 1;
 		Parameters[Index].DescriptorTable.pDescriptorRanges = &Ranges[Index];
 	}
+	Parameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+	Parameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	Parameters[3].Constants.Num32BitValues = 4;
 	D3D12_ROOT_SIGNATURE_DESC RootDesc = {}; // 画像なしのPSではdescriptorを参照しない。
-	RootDesc.NumParameters = 2;
+	RootDesc.NumParameters = 4;
 	RootDesc.pParameters = Parameters;
 	RootDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 	Microsoft::WRL::ComPtr<ID3DBlob> Serialized; // GPUへ渡す設定。
@@ -50,6 +60,8 @@ ID3D12RootSignature *CDX12GeometryPipelineStore::GetRootSignature() const
 void CDX12GeometryPipelineStore::ResetAfterGPUIdle()
 {
 	Pipelines.Reset();
+	MaskedTexturedPixelShader.Reset();
+	MaskedPixelShader.Reset();
 	TexturedPixelShader.Reset();
 	PixelShader.Reset();
 	VertexShader.Reset();
@@ -64,7 +76,7 @@ ID3D12PipelineState *CDX12GeometryPipelineStore::GetOrCreatePipeline( const FGeo
 		return nullptr;
 	}
 	FGeometryPipelineKey Key; // PSOを決める全要素を含める。補間はsamplerで指定するためPSOに入れない。
-	Key.State = ( static_cast<uint64>( static_cast<uint32>( State.DepthBias ) ) << 32 ) | static_cast<uint64>( State.Topology ) | ( static_cast<uint64>( State.Compare ) << 2 ) | ( static_cast<uint64>( State.Culling ) << 5 ) | ( static_cast<uint64>( State.bTestDepth ) << 7 ) | ( static_cast<uint64>( State.bWriteDepth ) << 8 ) | ( static_cast<uint64>( State.bAlphaBlend ) << 9 ) | ( static_cast<uint64>( bTextured ) << 10 ) | ( static_cast<uint64>( State.bAlphaBlend ? State.Blend : EGeometryBlend::Alpha ) << 11 );
+	Key.State = ( static_cast<uint64>( static_cast<uint32>( State.DepthBias ) ) << 32 ) | static_cast<uint64>( State.Topology ) | ( static_cast<uint64>( State.Compare ) << 2 ) | ( static_cast<uint64>( State.Culling ) << 5 ) | ( static_cast<uint64>( State.bTestDepth ) << 7 ) | ( static_cast<uint64>( State.bWriteDepth ) << 8 ) | ( static_cast<uint64>( State.bAlphaBlend ) << 9 ) | ( static_cast<uint64>( bTextured ) << 10 ) | ( static_cast<uint64>( State.bAlphaBlend ? State.Blend : EGeometryBlend::Alpha ) << 11 ) | ( static_cast<uint64>( State.Mask.IsActive() ) << 15 );
 	Key.Custom = State.bAlphaBlend && State.Blend == EGeometryBlend::Custom ? State.CustomBlend.Pack() : 0;
 	if ( const auto *Found = Pipelines.Find( Key ) )
 	{
@@ -78,7 +90,8 @@ ID3D12PipelineState *CDX12GeometryPipelineStore::GetOrCreatePipeline( const FGeo
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC Desc = {}; // 状態を呼び出し単位で固定する。
 	Desc.pRootSignature = RootSignature.Get();
 	Desc.VS = { VertexShader->GetBufferPointer(), VertexShader->GetBufferSize() };
-	ID3DBlob *Pixel = bTextured ? TexturedPixelShader.Get() : PixelShader.Get(); // 画像の有無でPSを固定する。
+	const bool bMasked = State.Mask.IsActive(); // マスクの有無でもPSを分ける。
+	ID3DBlob *Pixel = bMasked ? ( bTextured ? MaskedTexturedPixelShader.Get() : MaskedPixelShader.Get() ) : ( bTextured ? TexturedPixelShader.Get() : PixelShader.Get() ); // 画像の有無でPSを固定する。
 	Desc.PS = { Pixel->GetBufferPointer(), Pixel->GetBufferSize() };
 	Desc.InputLayout = { Elements, 3 };
 	Desc.SampleMask = UINT_MAX;

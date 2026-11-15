@@ -107,6 +107,29 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 	bool bShadowPassActive = false; // 影の絵へ描いているか（BeginShadowMap〜EndShadowMap）。
 	bool bStopped = false; // 壊れた命令以降を描かない印。
 	FCanvasTransform Transform; // このSpanだけの2Dの変換。
+	// マスク（PushMask）の 1 つ分。マスクにできない画像（描画先でない）のときは、View.Binding が 0 で、マスクなしと同じ。
+	struct FMaskState
+	{
+		FTextureDrawView View; // マスクの画像。
+		int32 Channel = 0; // 値にする成分（EDrawMaskChannel と同じ並び）。
+		bool bInvert = false; // 値が小さいところほど濃く描くか。
+	};
+	TArray<FMaskState> MaskStack; // 積んだマスク。最後が、いまのマスク（外側のマスクに重ねず、替わる）。
+	// いまのマスクを、キャンバスへ反映する（無ければ、マスクなしに）。実行先が使えなければ、マスクなしで描く。
+	const auto ApplyMask = [&]()
+	{
+		if ( !Canvas )
+		{
+			return;
+		}
+		if ( MaskStack.IsEmpty() || MaskStack[MaskStack.Num() - 1].View.Binding == 0 )
+		{
+			Canvas->SetMask( nullptr, 0, false );
+			return;
+		}
+		const FMaskState& Top = MaskStack[MaskStack.Num() - 1];
+		Canvas->SetMask( &Top.View, Top.Channel, Top.bInvert );
+	};
 	// 描画先（レンダーターゲット）を替える前の状態。戻すときに使う。
 	struct FTargetScope
 	{
@@ -114,6 +137,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 		FCanvasTransform Transform; // 替える前の2Dの変換。
 		int32 ClipDepth = 0; // 替える前のクリップの段数。
 		bool bShadow = false; // 影の絵への描画か（終わるとき、影を落とす状態を戻す）。
+		TArray<FMaskState> MaskStack; // 替える前のマスクの並び（替えた先は、マスクなしから始まる）。
 	};
 	TArray<FTargetScope> TargetStack; // 積んだ描画先。最後が、いまの描画先。
 	FRenderTargetDrawView CurrentTarget; // いまの描画先（主画面なら無効）。
@@ -136,6 +160,10 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			Canvas = &NullCanvas; // 浮動小数点の描画先などは、2Dを描けない（3Dとシェーダーだけ）。
 		}
 		Geometry.SetGeometry( Surface.GetGeometry3D() );
+		if ( !MaskStack.IsEmpty() )
+		{
+			ApplyMask();
+		}
 		return bEntered;
 	};
 	// 複数の出力（MRT）のパスの中か。ShaderOutputTarget で出力を置いて、シェーダーで描くときに、パスを開き直す。
@@ -452,6 +480,108 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 		DrawImage( Image, Points, UV );
 	};
 
+	// 画像の処理（フィルター・混ぜ合わせ）。変換先の画像のパスを開き、その矩形へ、組み込みのピクセルシェーダーで描いて、元の描画先へ戻る。描けなければ false。
+	// Constants は、シェーダーの定数（int4 を 4 つ。[0..1] = 種類・乗算済みか、[2] = 混ぜる強さ、[8..15] = 引数）。矩形の大きさと、元・先の左上は、ここで入れる。
+	const auto RunImageOperation = [&]( EBuiltInPixelShader Pixel, int32 DestHandle, int32 BaseHandle, int32 AuxHandle, bool bBlendToDest, bool bUseRect, int32 SrcX, int32 SrcY, int32 SrcW, int32 SrcH, int32 DestX, int32 DestY, int32 ( &Constants )[16] ) -> bool
+	{
+		FRenderTargetDrawView Destination; // 変換先の描画先。
+		FTextureDrawView BaseImage, AuxImage; // 元の画像と、混ぜる画像（グラデーションマップ）。
+		// 読みながら同じ画像へは書けない。変換先は、色だけの RGBA8 の描画先に限る。
+		if ( !Shaders || !Targets || BaseHandle == DestHandle || AuxHandle == DestHandle || !Targets->GetRenderTargetDrawView( DestHandle, Destination ) || Destination.Format != ERenderTargetColorFormat::RGBA8 || !GetImage( BaseHandle, BaseImage )
+			|| ( AuxHandle >= 0 && !GetImage( AuxHandle, AuxImage ) ) )
+		{
+			return false;
+		}
+		int32 X0 = 0, Y0 = 0, X1 = Destination.Width, Y1 = Destination.Height; // 描く矩形（変換先の中）。
+		if ( bUseRect )
+		{
+			if ( SrcX < 0 || SrcY < 0 || SrcW <= 0 || SrcH <= 0 || static_cast<int64>( SrcX ) + SrcW > BaseImage.Width || static_cast<int64>( SrcY ) + SrcH > BaseImage.Height )
+			{
+				return false;
+			}
+			X0 = NMath::Max( DestX, 0 );
+			Y0 = NMath::Max( DestY, 0 );
+			X1 = static_cast<int32>( NMath::Min( static_cast<int64>( DestX ) + SrcW, static_cast<int64>( Destination.Width ) ) );
+			Y1 = static_cast<int32>( NMath::Min( static_cast<int64>( DestY ) + SrcH, static_cast<int64>( Destination.Height ) ) );
+			if ( X1 <= X0 || Y1 <= Y0 )
+			{
+				return true; // 変換先の外へ出る矩形は、何も描かない。
+			}
+		}
+		if ( Pixel == EBuiltInPixelShader::ImageFilter )
+		{
+			Constants[2] = bUseRect ? SrcW : Destination.Width; // 拡大・縮小の変換先の大きさ。
+			Constants[3] = bUseRect ? SrcH : Destination.Height;
+		}
+		Constants[4] = bUseRect ? SrcX : 0; // 元の矩形の左上。
+		Constants[5] = bUseRect ? SrcY : 0;
+		Constants[6] = bUseRect ? DestX : 0; // 変換先の矩形の左上。
+		Constants[7] = bUseRect ? DestY : 0;
+		const FRenderTargetDrawView Previous = CurrentTarget; // 戻す先。
+		const TArray<FMaskState> SavedMask = MaskStack; // 変換先のパスには、マスクを掛けない。
+		MaskStack.Reset();
+		if ( Previous.Color.IsValid() )
+		{
+			Surface.EndRenderTargetPass(); // 入れ子にできないので、いまの描画先のパスを閉じてから、変換先のパスを始める。
+		}
+		bMrtActive = false;
+		if ( !EnterTarget( Destination ) )
+		{
+			MaskStack = SavedMask;
+			EnterTarget( Previous );
+			return false;
+		}
+		bool bDrawn = false; // 描けたか。
+		IRenderGeometry3D* Target = Geometry.GetGeometry();
+		if ( Target && Target->GetWidth() == Destination.Width && Target->GetHeight() == Destination.Height )
+		{
+			const float32 Width = static_cast<float32>( Destination.Width ), Height = static_cast<float32>( Destination.Height );
+			const float32 Left = static_cast<float32>( X0 ) / Width * 2.0f - 1.0f, Right = static_cast<float32>( X1 ) / Width * 2.0f - 1.0f; // 画素の座標をクリップ座標へ。
+			const float32 Top = 1.0f - static_cast<float32>( Y0 ) / Height * 2.0f, Bottom = 1.0f - static_cast<float32>( Y1 ) / Height * 2.0f;
+			const float32 PositionsX[4] = { Left, Right, Left, Right }, PositionsY[4] = { Top, Top, Bottom, Bottom };
+			FDrawShaderVertex3D Vertices[4];
+			for ( int32 Index = 0; Index < 4; ++Index )
+			{
+				FMemory::Memzero( &Vertices[Index], sizeof( FDrawShaderVertex3D ) );
+				Vertices[Index].Position[0] = PositionsX[Index];
+				Vertices[Index].Position[1] = PositionsY[Index];
+				for ( uint8& Channel : Vertices[Index].Diffuse )
+				{
+					Channel = 255;
+				}
+			}
+			const uint32 Indices[6] = { 0, 1, 2, 2, 1, 3 };
+			FShaderConstantData Constant; // b5 へ置く定数。
+			Constant.Stage = static_cast<int32>( EShaderStage::Pixel );
+			Constant.Slot = 5;
+			Constant.Bytes = TArrayView<const uint8>( reinterpret_cast<const uint8*>( Constants ), sizeof( int32 ) * 16 );
+			FShaderDrawRequest Request;
+			Request.Builtin = EBuiltInVertexShader::Rect;
+			Request.BuiltinPixel = Pixel;
+			Request.Topology = EGeometryTopology::Triangles;
+			Request.bUseDepth = false;
+			Request.State.Culling = EGeometryCulling::None;
+			Request.State.bAlphaBlend = bBlendToDest; // false なら、変換先を置き換える。
+			Request.NumTargets = 1;
+			Request.TargetFormats[0] = ERenderTargetColorFormat::RGBA8;
+			Request.Vertices = reinterpret_cast<const uint8*>( Vertices );
+			Request.NumVertices = 4;
+			Request.Indices = Indices;
+			Request.NumIndices = 6;
+			Request.Constants = TArrayView<const FShaderConstantData>( &Constant, 1 );
+			Request.Textures[0] = BaseHandle;
+			Request.Textures[2] = AuxHandle;
+			bDrawn = Shaders->DrawShader( Request, *Target );
+		}
+		Surface.EndRenderTargetPass();
+		MaskStack = SavedMask;
+		if ( !EnterTarget( Previous ) )
+		{
+			bStopped = true; // 元の描画先へ戻れない。これ以上は描けない。
+		}
+		return bDrawn;
+	};
+
 	int32 Offset = 0; // 読み終えたword数。
 	while ( Offset < Span.NumWords && !bStopped )
 	{
@@ -489,9 +619,12 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			Scope.Target = CurrentTarget;
 			Scope.Transform = Transform;
 			Scope.ClipDepth = ClipDepth;
+			Scope.MaskStack = MaskStack;
+			MaskStack.Reset(); // 替えた先は、マスクなしから始まる。
 			if ( !EnterTarget( Next ) )
 			{
 				// 始められなかったら、元の描画先へ戻して、この範囲を飛ばす。
+				MaskStack = Scope.MaskStack;
 				EnterTarget( CurrentTarget );
 				++SkipTargetDepth;
 				Unsupported( View, "The render target pass could not be started; drawing into it is skipped" );
@@ -529,6 +662,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			CurrentTarget = Scope.Target;
 			Transform = Scope.Transform;
 			ClipDepth = Scope.ClipDepth;
+			MaskStack = Scope.MaskStack;
 			if ( !EnterTarget( CurrentTarget ) )
 			{
 				bStopped = true; // 元の描画先へ戻れない。これ以上は描けない。
@@ -582,6 +716,8 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			Scope.Transform = Transform;
 			Scope.ClipDepth = ClipDepth;
 			Scope.bShadow = true;
+			Scope.MaskStack = MaskStack;
+			MaskStack.Reset();
 			TargetStack.Add( Scope );
 			CurrentTarget = Map;
 			Transform = FCanvasTransform();
@@ -614,6 +750,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 				CurrentTarget = Scope.Target;
 				Transform = Scope.Transform;
 				ClipDepth = Scope.ClipDepth;
+				MaskStack = Scope.MaskStack;
 				if ( !EnterTarget( CurrentTarget ) )
 				{
 					bStopped = true;
@@ -1571,9 +1708,78 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			}
 			break;
 		}
-		// まだ描画に反映しない状態。図形は、この状態なしで描く。
+		case EDrawCommand::ImageFilter:
+		{
+			if ( !View.CanRead<FDrawImageFilterData>() )
+			{
+				bStopped = true;
+				break;
+			}
+			const auto Data = View.Read<FDrawImageFilterData>(); // 固定部を所有コピーする。
+			// DxLibと同じく、使えない種類・画像の番号は、何もしない。
+			if ( Data.Type < 0 || Data.Type > static_cast<int32>( EDrawGraphFilter::FloatColorScale ) || Data.Source < 0 || Data.Dest < 0 || ( Data.Type == static_cast<int32>( EDrawGraphFilter::GradientMap ) && Data.Map < 0 ) )
+			{
+				break;
+			}
+			int32 Constants[16] = { Data.Type, Data.Premultiplied, 0, 0, 0, 0, 0, 0, Data.Params[0], Data.Params[1], Data.Params[2], Data.Params[3], Data.Params[4], Data.Params[5], Data.Params[6], Data.Params[7] };
+			if ( !RunImageOperation( EBuiltInPixelShader::ImageFilter, Data.Dest, Data.Source, Data.Type == static_cast<int32>( EDrawGraphFilter::GradientMap ) ? Data.Map : -1, Data.Blend != 0, Data.HasRect != 0, Data.SrcX, Data.SrcY, Data.SrcW, Data.SrcH,
+					Data.DestX, Data.DestY, Constants ) )
+			{
+				Unsupported( View, "The image filter failed (the destination is not an RGBA8 render target, or the source is the destination) and is skipped" );
+			}
+			break;
+		}
+		case EDrawCommand::ImageBlend:
+		{
+			if ( !View.CanRead<FDrawImageBlendData>() )
+			{
+				bStopped = true;
+				break;
+			}
+			const auto Data = View.Read<FDrawImageBlendData>(); // 固定部を所有コピーする。
+			if ( Data.Type < 0 || Data.Type > static_cast<int32>( EDrawGraphBlend::Mask ) || Data.Base < 0 || Data.Blend < 0 || Data.Dest < 0 )
+			{
+				break;
+			}
+			int32 Constants[16] = { Data.Type, Data.Premultiplied, NMath::Clamp( Data.Ratio, 0, 255 ), 0, 0, 0, 0, 0, Data.Select[0], Data.Select[1], Data.Select[2], Data.Select[3], 0, 0, 0, 0 };
+			if ( !RunImageOperation( EBuiltInPixelShader::ImageBlend, Data.Dest, Data.Base, Data.Blend, false, false, 0, 0, 0, 0, 0, 0, Constants ) )
+			{
+				Unsupported( View, "The image blend failed (the destination is not an RGBA8 render target, or an image is the destination) and is skipped" );
+			}
+			break;
+		}
 		case EDrawCommand::PushMask:
+		{
+			if ( !View.CanRead<FDrawMaskData>() )
+			{
+				bStopped = true;
+				break;
+			}
+			const auto Data = View.Read<FDrawMaskData>(); // 固定部を所有コピーする。
+			FMaskState Mask;
+			FTextureDrawView Image; // マスクの画像。
+			// DxLibと同じく、マスクにできない画像は、マスクなしで描く（そのマスクも、1 つに数える）。2Dの描画だけが、マスクで薄まる。
+			if ( GetImage( Data.Handle, Image ) )
+			{
+				Mask.View = Image;
+			}
+			Mask.Channel = NMath::Clamp( Data.Channel, 0, 3 );
+			Mask.bInvert = Data.Invert != 0;
+			MaskStack.Add( Mask );
+			ApplyMask();
+			break;
+		}
 		case EDrawCommand::PopMask:
+		{
+			if ( MaskStack.IsEmpty() )
+			{
+				break;
+			}
+			MaskStack.Pop();
+			ApplyMask();
+			break;
+		}
+		// まだ描画に反映しない状態。図形は、この状態なしで描く。
 		case EDrawCommand::ModelAnim:
 		case EDrawCommand::ModelAnimFrame:
 			Unsupported( View, "The state is ignored" );

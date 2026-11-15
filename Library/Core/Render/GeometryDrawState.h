@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
+#include "Library/Core/Render/TextureDrawView.h"
 #include "Library/Core/Types/TypeDefinition.h"
 
 // 頂点をリスト形式でつなぐ方法。帯・扇は共通処理でリストへ展開する。
@@ -103,6 +104,15 @@ struct FGeometryCustomBlend
 	}
 };
 
+// 2Dの描画を、画素ごとに、画像の値で薄める設定（PushMask）。画像は、描画先の左上に合わせて読む（画像の外は、薄めない）。
+struct FGeometryMask
+{
+	FTextureDrawView Texture; // マスクの画像。Binding が 0 なら、マスクを使わない。
+	int32 Channel = 0; // 値にする成分（0 = アルファ、1 = 赤、2 = 緑、3 = 青）。
+	bool bInvert = false; // true なら、値が小さいところほど濃く描く。
+	bool IsActive() const { return Texture.Binding != 0; }
+};
+
 // 1回の描画に閉じたGPU状態。ほかの命令へ持ち越さない。
 struct FGeometryDrawState
 {
@@ -118,4 +128,5 @@ struct FGeometryDrawState
 	EGeometryTextureAddress AddressV = EGeometryTextureAddress::Wrap; // 縦方向の画像の外側。
 	bool bLinearFilter = false; // falseなら最近傍、trueなら線形補間。
 	int32 DepthBias = 0; // GPUの整数深度偏り。
+	FGeometryMask Mask; // 2Dの描画を薄めるマスク。3Dは使わない。
 };

@@ -30,6 +30,8 @@ enum class EBuiltInPixelShader : uint8
 	ShadowLit,          // 影を受けて色を決める（ShadowLit の頂点シェーダーと組み合わせる。t1 = 影の絵、定数 b4 = ( 影の絵の幅, 高さ, 補正の深さ, 0 )）。
 	ShadowLitTextured,  // 同じ。さらに、t0 の画像の色を掛ける（画像と頂点の色の積のアルファが 0 なら、描かない）。
 	FogTextured,        // t0 の画像に頂点の色（Diffuse）を掛け、フォグへ混ぜる（ShadowLit の頂点シェーダーと組み合わせる。Specular の RGB = フォグの色、A = 隠れない割合）。
+	ImageFilter,        // 画像のフィルター（Rect の頂点シェーダーと組み合わせる。t0 = 元の画像、t1 = グラデーションマップ、定数 b5 = 種類と引数）。画素の座標で、元の画像を読む。
+	ImageBlend,         // 2 枚の画像の混ぜ合わせ（Rect の頂点シェーダーと組み合わせる。t0 = 元の画像、t1 = 混ぜる画像、定数 b5 = 種類と引数）。
 };
 
 // 定数バッファの中身（シェーダーの cbuffer register( bN ) の N = Slot）

@@ -408,6 +408,26 @@ void CThreadedRenderSurface::SetCustomBlend( const FGeometryCustomBlend &Blend )
 	Queue( MoveTemp( Command ) );
 }
 
+bool CThreadedRenderSurface::SetMask( const FTextureDrawView *Mask, int32 Channel, bool bInvert )
+{
+	GAME_THREAD_ONLY( false );
+	if ( !bActive || !bHasCanvas )
+	{
+		return false;
+	}
+	FCommand Command;
+	Command.Type = ECommand::Mask;
+	Command.bEnabled = Mask != nullptr;
+	if ( Mask )
+	{
+		Command.Texture = *Mask;
+	}
+	Command.Integers[0] = Channel;
+	Command.Integers[1] = bInvert ? 1 : 0;
+	Queue( MoveTemp( Command ) );
+	return true;
+}
+
 void CThreadedRenderSurface::SetAntiAlias( bool bEnabled )
 {
 	GAME_THREAD_ONLY();
@@ -694,6 +714,9 @@ void CThreadedRenderSurface::ExecuteBatch( const TArray<FCommand> &Commands )
 			break;
 		case ECommand::CustomBlend:
 			Canvas->SetCustomBlend( Command.CustomBlend );
+			break;
+		case ECommand::Mask:
+			Canvas->SetMask( Command.bEnabled ? &Command.Texture : nullptr, Command.Integers[0], Command.Integers[1] != 0 );
 			break;
 		default:
 			bFailed.Store( true );

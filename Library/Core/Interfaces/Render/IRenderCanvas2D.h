@@ -47,4 +47,7 @@ public:
 	virtual void SetBlend( EGeometryBlend /*Blend*/ ) {}
 	// 以降の描画の混ぜ方を、利用者が決めた係数にする。未対応の実行先では、何もしない。
 	virtual void SetCustomBlend( const FGeometryCustomBlend& /*Blend*/ ) {}
+	// 以降の描画を、画像（描画先の左上に合わせる）の値で、画素ごとに薄める。Mask が nullptr ならマスクなし。Channel は 0 = アルファ、1 = 赤、2 = 緑、3 = 青。
+	// 未対応の実行先は false（マスクなしで描く）。フレームの始めには、マスクなしに戻る。
+	virtual bool SetMask( const FTextureDrawView* /*Mask*/, int32 /*Channel*/, bool /*bInvert*/ ) { return false; }
 };
