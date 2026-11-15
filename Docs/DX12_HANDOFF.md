@@ -352,3 +352,13 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **画素の回帰検査（新）**: 検査用リポジトリの`RunDX12SampleImageTests.ps1`（`RunAllChecks.ps1`の「DX12 sample images」。Debug／Release）。`Filters`の、時間に依らないタイル（Mono・Invert・Level・TwoColor・GradientMap・乗算・加算・スクリーン・差）を、画像の生成式から求めた期待値と、4点ずつ比べ、マスクの絵（光から離れた角が暗い部屋の色、光の中が明るい）、`Pixels`の分割した画像、`Text`の縦書き（2列）とアイコン（赤い画素）、どのサンプルも「未対応」を出さないこと、を確かめる（45項目）。
 - **確認**: Debug／Releaseの警告0（Release初回は、Editorのコンパイラ内部エラーC1001で失敗し、再実行で成功。他の検査を並行して回していたため）、台帳は507項目で整合、書式検査成功、`RunAllChecks.ps1 -SkipBuild -Quick`は、新しい検査を含めて成功。
 - **次の作業**: `MaterialRibbon3D`・`DistortedMaterialRibbon3D`・アニメーションつきのモデル（どのサンプルも使わない）→画像のmip（異方性が効く）→`Invert`系の合成（画像・文字・3D）。
+
+## 2026-11-16 追記: エディタ（Editor.exe）を DX12 で動かす
+- **全 11 ツール**（assets・audio・sprite・sound・model・world・effect・material・ai・aieditor・project）を、`--backend=dx12 --capture-ui` で動かし、DxLib と並べて絵を見比べた。「未対応」の報告は 0。Debug レイヤー付きの Debug でも、レイヤーのエラーは 0。
+- **直した不具合 1: UI が真っ黒（3D のプレビューを持つツール全部）**: `CDX12ImGuiFrameRenderer::Render` は、ImGui を描く前に、描画先を画面へ戻していなかった。画像（描画先）へ描いたあと、最後に結ばれていた描画先が、そのプレビューの画像のままで、UI が、そこへ描かれていた。`Device->GetFrameColorView()` で、画面（バックバッファ）へ必ず結び直す。
+- **直した不具合 2: ImGui に画像が出ない**: DX12 は、`NDebugUI::SetImGuiTextureCallbacks` を差し込んでいなかった（DxLib だけ）。`CDX12AssetBackendSubsystem` が、画像の番号 → GPU 記述子（`FTextureDrawView::Binding`。ImGui の描画と同じ heap）を返す `GetTexture` を差し込む（終了時に外す）。無効な番号は 0 を返し、`imgui_impl_dx12.cpp`（取り込んだ公式実装。変更はこの 2 行だけ）は、0 の画像の描画を、飛ばす（以前は、レイヤーが「記述子が無い」と報告）。
+- **足したログ**: DX12 がフレームを捨てたとき、`DX12 frame dropped: game commands ok/failed, renderer ..., UI ...` を警告で出す（以前は、無言で真っ黒になった）。
+- **足した情報**: `GetMemoryInfo` に、このプロセスの物理メモリ（Assets ツールの「Process memory」）。ビデオメモリは、まだ 0（DX12 の資源の窓口にアダプターの問い合わせが無い）。
+- **検査**: `RunDX12SampleImageTests.ps1` に、Editor の material / model / world / effect を足した（UI の灰色の面が、画面の 2 割以上、material の球が描かれている、フレームを捨てない、未対応を出さない。58 項目）。描画先を戻す 1 行を消す変異で、5 項目が失敗することを確かめた。
+- **見た目の差**: DxLib の撮影は、何も描かない場所が透明で、`flatten_png.py` が暗い青で埋めるだけ（実際の窓は、どちらも黒）。material の球は、時間（`DeltaTime` で回る）で見た目が変わるため、フレーム番号が同じでも、2 つのバックエンドで揃わない（どちらも、明るい／半分暗い／地平線の帯、の見た目を巡る）。
+- **次の作業**: ビデオメモリの実測 → `MaterialRibbon3D`・アニメーションつきのモデル（どのサンプルも使わない）→ 画像の mip → `Invert` 系の合成。

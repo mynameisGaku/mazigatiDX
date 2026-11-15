@@ -12,8 +12,24 @@
 #include "Library/Platform/System/FileSystem.h"
 #include "Library/Platform/DX12/DX12Log.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/DebugUI/Common/ImGuiTexture.h"
+
+#include <windows.h>
+#include <psapi.h>
 
 REGISTER_SUBSYSTEM( CDX12AssetBackendSubsystem )
+
+namespace
+{
+	CDX12AssetBackendSubsystem* GImGuiTextureOwner = nullptr; // ImGui の画像の番号を作るときに、画像の登録を引く所有先。
+
+	// 画像の番号を、ImGui::Image / AddImage に渡せる値（画像のGPU記述子。ImGuiの描画と同じheapにある）にする。無効な番号は 0
+	ImTextureID GetDX12ImGuiTexture( int32 GraphHandle )
+	{
+		FTextureDrawView View;
+		return GImGuiTextureOwner && GImGuiTextureOwner->GetTextureDrawView( GraphHandle, View ) && View.Binding != 0 ? static_cast<ImTextureID>( View.Binding ) : static_cast<ImTextureID>( 0 );
+	}
+}
 
 bool CDX12AssetBackendSubsystem::ShouldCreateSubsystem( CEngine& ) const
 {
@@ -27,10 +43,16 @@ void CDX12AssetBackendSubsystem::Initialize( FSubsystemCollection& Collection )
 		Textures.Initialize( *Resources );
 	}
 	ShaderService.Initialize( Collection.InitializeDependency<IGraphicsPipelineResources>(), Collection.InitializeDependency<IRenderBufferResources>(), &Textures );
+	GImGuiTextureOwner = this; // エディタのプレビューなどが、画像を ImGui へ表示できるようにする。
+	NDebugUI::FImGuiTextureCallbacks Callbacks;
+	Callbacks.GetTexture = &GetDX12ImGuiTexture;
+	NDebugUI::SetImGuiTextureCallbacks( Callbacks );
 }
 
 void CDX12AssetBackendSubsystem::Deinitialize()
 {
+	NDebugUI::SetImGuiTextureCallbacks( NDebugUI::FImGuiTextureCallbacks() );
+	GImGuiTextureOwner = nullptr;
 	ShaderService.Shutdown(); // パイプラインと空の画像を、先に手放す。
 	Models.Reset(); // 共有モデルが所有する画像を、先に登録から外す。
 	Textures.Shutdown(); // 資源の所有者がGPUの完了と解放を行う。
@@ -165,7 +187,13 @@ bool CDX12AssetBackendSubsystem::DecodeImage( const void* FileImage, usize Size,
 
 FBackendMemoryInfo CDX12AssetBackendSubsystem::GetMemoryInfo()
 {
-	FBackendMemoryInfo Info; // GPU容量は不明、登録数だけ正確に返す。
+	FBackendMemoryInfo Info; // GPU容量は不明（0）。このプロセスの物理メモリと登録数は、実測して返す。
+	PROCESS_MEMORY_COUNTERS Counters = {};
+	Counters.cb = sizeof( Counters );
+	if ( GetProcessMemoryInfo( GetCurrentProcess(), &Counters, sizeof( Counters ) ) )
+	{
+		Info.ProcessWorkingSet = static_cast<int64>( Counters.WorkingSetSize );
+	}
 	Info.NumTextureHandles = Textures.Num();
 	Info.NumModelHandles = Models.Num();
 	return Info;

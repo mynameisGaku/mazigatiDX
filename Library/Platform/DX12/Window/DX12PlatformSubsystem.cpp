@@ -362,11 +362,18 @@ void CDX12PlatformSubsystem::EndFrame()
 		{
 			Device->RecordGameFrameCopy();
 		}
-		bool bRendered = GameRenderer->EndFrame() && bGameCommands;
+		const bool bGameRendered = GameRenderer->EndFrame();
+		bool bRendered = bGameRendered && bGameCommands;
 		const uint64 UploadTicket = GameRenderer->TakeUploadTicket(); // 提出成否に応じてアリーナ予約を確定または解放する。
+		bool bUIRendered = true;
 		if ( ImGuiFrameRenderer )
 		{
-			bRendered = ImGuiFrameRenderer->Render( UIData ) && bRendered;
+			bUIRendered = ImGuiFrameRenderer->Render( UIData );
+			bRendered = bUIRendered && bRendered;
+		}
+		if ( !bRendered )
+		{
+			LOG( LogDX12, Warning, "DX12 frame dropped: game commands %s, renderer %s, UI %s", bGameCommands ? "ok" : "failed", bGameRendered ? "ok" : "failed", bUIRendered ? "ok" : "failed" );
 		}
 		if ( bRendered )
 		{

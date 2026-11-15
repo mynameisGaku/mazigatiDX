@@ -78,7 +78,15 @@ bool CDX12ImGuiFrameRenderer::Render( ImDrawData* Data )
 	{
 		Data->FramebufferScale = ImVec2( Device->GetWidth() / Data->DisplaySize.x, Device->GetHeight() / Data->DisplaySize.y );
 	}
-	if ( !ImGuiRenderer.Render( Data, Device->GetFrameCommands() ) )
+	ID3D12GraphicsCommandList* Commands = Device->GetFrameCommands();
+	const D3D12_CPU_DESCRIPTOR_HANDLE BackBuffer = Device->GetFrameColorView();
+	if ( !Commands || BackBuffer.ptr == 0 )
+	{
+		return false;
+	}
+	// ゲームの描画が、描画先（画像への描画など）を切り替えたままでも、UIは必ず画面へ描く。
+	Commands->OMSetRenderTargets( 1, &BackBuffer, FALSE, nullptr );
+	if ( !ImGuiRenderer.Render( Data, Commands ) )
 	{
 		return false;
 	}
