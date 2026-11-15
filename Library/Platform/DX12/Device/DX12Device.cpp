@@ -4,11 +4,29 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Platform/DX12/DX12Log.h"
 #include "Library/Core/Memory/Memory.h"
+#include "Library/Platform/System/CommandLine.h"
+#include <d3d12sdklayers.h>
 
 #pragma comment( lib, "d3d12.lib" )
 #pragma comment( lib, "dxgi.lib" )
 #pragma comment( lib, "d3dcompiler.lib" )
 DEFINE_LOG_CATEGORY( LogDX12 )
+
+namespace
+{
+	// SDKのデバッグレイヤーのメッセージを、ログへ出す（--dx12-debug-layer=true のとき）。警告以上だけ。
+	void __stdcall LogDebugLayerMessage( D3D12_MESSAGE_CATEGORY, D3D12_MESSAGE_SEVERITY Severity, D3D12_MESSAGE_ID Id, LPCSTR Description, void* )
+	{
+		if ( Severity == D3D12_MESSAGE_SEVERITY_CORRUPTION || Severity == D3D12_MESSAGE_SEVERITY_ERROR )
+		{
+			LOG( LogDX12, Error, "D3D12 debug layer (%d): %s", static_cast<int>( Id ), Description );
+		}
+		else if ( Severity == D3D12_MESSAGE_SEVERITY_WARNING )
+		{
+			LOG( LogDX12, Warning, "D3D12 debug layer (%d): %s", static_cast<int>( Id ), Description );
+		}
+	}
+}
 
 CDX12Device::~CDX12Device()
 {
@@ -34,10 +52,35 @@ bool CDX12Device::Initialize( HWND Window, int32 Width, int32 Height, bool bWarp
 	{
 		return false;
 	}
+	// 確認用: --dx12-debug-layer=true で、SDKのデバッグレイヤーを有効にして、警告以上のメッセージをログへ出す。
+	const auto DebugLayerOption = NCommandLine::GetValue( "dx12-debug-layer" );
+	const bool bDebugLayer = DebugLayerOption.IsSet() && DebugLayerOption.GetValue().Equals( "true", ESearchCase::IgnoreCase );
+	if ( bDebugLayer )
+	{
+		ComPtr<ID3D12Debug> DebugInterface;
+		if ( SUCCEEDED( D3D12GetDebugInterface( IID_PPV_ARGS( &DebugInterface ) ) ) )
+		{
+			DebugInterface->EnableDebugLayer();
+			LOG( LogDX12, Log, "The D3D12 debug layer is enabled" );
+		}
+		else
+		{
+			LOG( LogDX12, Warning, "The D3D12 debug layer is not available (install the Graphics Tools feature)" );
+		}
+	}
 	if ( FAILED( D3D12CreateDevice( Adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS( &CreatedDevice ) ) ) )
 	{
 		LOG( LogDX12, Error, "Direct3D 12 device creation failed" );
 		return false;
+	}
+	if ( bDebugLayer )
+	{
+		ComPtr<ID3D12InfoQueue1> InfoQueue;
+		DWORD Cookie = 0;
+		if ( SUCCEEDED( CreatedDevice.As( &InfoQueue ) ) )
+		{
+			InfoQueue->RegisterMessageCallback( LogDebugLayerMessage, D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &Cookie );
+		}
 	}
 	D3D12_COMMAND_QUEUE_DESC QueueDesc = {}; // 通常の描画キュー。
 	QueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
