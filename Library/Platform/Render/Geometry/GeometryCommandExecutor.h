@@ -68,6 +68,8 @@ private:
 	FGeometryDrawState State; // 現在の深度と表裏。
 	CVertexLighting Lighting; // このSpanだけのライティング（光）の状態。
 	FDrawFogData Fog; // このSpanだけの距離フォグ（Modeが0なら、なし）。
+	FDrawFogData HeightFog; // このSpanだけの高さフォグ（Modeが0なら、なし）。
+	FDrawTextureTransformData TextureTransform; // このSpanだけの画像の変換（Enabledが0なら、なし）。
 	IShaderDrawSource* ShaderSource = nullptr; // 影の描画に使うシェーダーの実行先（借用）。
 	bool bShadowCasting = false; // 影の絵を描いているか。
 	FMatrix4x4 LightViewProjection; // 影の絵を描くときの、光から見た行列。

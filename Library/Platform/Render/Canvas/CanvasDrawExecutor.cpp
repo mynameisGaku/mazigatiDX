@@ -1376,6 +1376,26 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			}
 			break;
 		}
+		case EDrawCommand::CopyScreen:
+		{
+			if ( !View.CanRead<FDrawCopyScreenData>() )
+			{
+				bStopped = true;
+				break;
+			}
+			const auto Data = View.Read<FDrawCopyScreenData>(); // 固定部を所有コピーする。
+			FRenderTargetDrawView Destination; // 写し先の描画先（画像）。
+			// DxLibと同じく、画像と矩形の大きさが同じでないと、何もしない。
+			if ( !Targets || !Targets->GetRenderTargetDrawView( Data.Handle, Destination ) || Destination.Width != Data.X1 - Data.X0 || Destination.Height != Data.Y1 - Data.Y0 )
+			{
+				break;
+			}
+			if ( !Surface.CopyColorRegion( Data.X0, Data.Y0, Data.X1, Data.Y1, Destination.Color ) )
+			{
+				Unsupported( View, "The screen copy failed (the destination has another pixel format, or the region is outside the screen) and is skipped" );
+			}
+			break;
+		}
 		case EDrawCommand::UseShadowMap:
 		{
 			if ( !View.CanRead<FDrawUseShadowMapData>() )

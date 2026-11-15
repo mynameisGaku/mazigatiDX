@@ -93,7 +93,9 @@ namespace
 		"}\n"
 		"float4 LitColor( LitOutput i, float4 baseColor ) { float s = ShadowFactor( i.LightPosition.xyz ); return float4( i.Color.rgb + i.Shadowed.rgb * s, i.Color.a ) * baseColor; }\n"
 		"float4 ShadowLitMain( LitOutput i ) : SV_Target { float4 c = LitColor( i, float4( 1, 1, 1, 1 ) ); if ( c.a <= 0.0 ) { discard; } return c; }\n"
-		"float4 ShadowLitTexturedMain( LitOutput i ) : SV_Target { float4 c = LitColor( i, g_Base.Sample( g_Sampler, i.Uv ) ); if ( c.a <= 0.0 ) { discard; } return c; }\n";
+		"float4 ShadowLitTexturedMain( LitOutput i ) : SV_Target { float4 c = LitColor( i, g_Base.Sample( g_Sampler, i.Uv ) ); if ( c.a <= 0.0 ) { discard; } return c; }\n"
+		// フォグ: 画像と頂点の色の積を、フォグの色へ混ぜる（頂点の Specular の RGB = フォグの色、A = 隠れない割合）
+		"float4 FogTexturedMain( LitOutput i ) : SV_Target { float4 c = g_Base.Sample( g_Sampler, i.Uv ) * i.Color; if ( c.a <= 0.0 ) { discard; } c.rgb = lerp( i.Shadowed.rgb, c.rgb, i.Shadowed.a ); return c; }\n";
 
 	uint32 RoundUp( uint32 Value, uint32 Unit )
 	{
@@ -142,6 +144,7 @@ void CDX12ShaderService::Shutdown()
 	BuiltInShadowDepth = FShaderRecord();
 	BuiltInShadowLit = FShaderRecord();
 	BuiltInShadowLitTextured = FShaderRecord();
+	BuiltInFogTextured = FShaderRecord();
 	ShadowPasses.Reset();
 	bBuiltInTried = false;
 	Pipelines = nullptr;
@@ -334,6 +337,7 @@ void CDX12ShaderService::BuildBuiltIns()
 	Build( EShaderStage::Pixel, "ShadowDepthMain", BuiltInShadowDepth );
 	Build( EShaderStage::Pixel, "ShadowLitMain", BuiltInShadowLit );
 	Build( EShaderStage::Pixel, "ShadowLitTexturedMain", BuiltInShadowLitTextured );
+	Build( EShaderStage::Pixel, "FogTexturedMain", BuiltInFogTextured );
 }
 
 const CDX12ShaderService::FShaderRecord* CDX12ShaderService::GetBuiltIn( EBuiltInVertexShader Kind )
@@ -346,7 +350,7 @@ const CDX12ShaderService::FShaderRecord* CDX12ShaderService::GetBuiltIn( EBuiltI
 const CDX12ShaderService::FShaderRecord* CDX12ShaderService::GetBuiltInPixel( EBuiltInPixelShader Kind )
 {
 	BuildBuiltIns();
-	const FShaderRecord* Record = Kind == EBuiltInPixelShader::ShadowDepth ? &BuiltInShadowDepth : Kind == EBuiltInPixelShader::ShadowLit ? &BuiltInShadowLit : Kind == EBuiltInPixelShader::ShadowLitTextured ? &BuiltInShadowLitTextured : nullptr;
+	const FShaderRecord* Record = Kind == EBuiltInPixelShader::ShadowDepth ? &BuiltInShadowDepth : Kind == EBuiltInPixelShader::ShadowLit ? &BuiltInShadowLit : Kind == EBuiltInPixelShader::ShadowLitTextured ? &BuiltInShadowLitTextured : Kind == EBuiltInPixelShader::FogTextured ? &BuiltInFogTextured : nullptr;
 	return Record && !Record->Code.IsEmpty() ? Record : nullptr;
 }
 

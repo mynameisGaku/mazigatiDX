@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DX12Device.h"
 #include "Library/Platform/DX12/Render/Capture/DX12CaptureTarget.h"
+#include "Library/Platform/DX12/Resource/Texture/DX12TextureCopy.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Platform/DX12/DX12Log.h"
 #include "Library/Core/Memory/Memory.h"
@@ -503,6 +504,11 @@ void CDX12Device::RecordGameFrameCopy()
 	{
 		bGameCopied = GameReadback.RecordCopy( Commands.Get(), Buffers[BufferIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET );
 	}
+}
+
+bool CDX12Device::RecordFrameColorCopy( int32 X0, int32 Y0, int32 X1, int32 Y1, ID3D12Resource *Dest )
+{
+	return bInitialized && !bClosing && bRecording && Buffers[BufferIndex] && NDX12TextureCopy::RecordRegionCopy( Commands.Get(), Buffers[BufferIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, Dest, X0, Y0, X1, Y1 );
 }
 
 bool CDX12Device::ReadFrameCapture( EFrameCaptureStage Stage, TArray<FColor32> &Out )

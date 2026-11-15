@@ -91,6 +91,8 @@ class CDX12Device
 	bool IsInitialized() const;
 	// 呼出側の描画が完了した位置で、ゲーム画面をコピーする。
 	void RecordGameFrameCopy();
+	// 記録中の主画面の矩形 [X0, X1) x [Y0, Y1) を、同じ形式・同じ大きさの画像 Dest（定常のSRV状態）へ写す命令を、現在の記録位置へ積む。記録外・範囲外・形式や大きさの違いはfalse。
+	bool RecordFrameColorCopy( int32 X0, int32 Y0, int32 X1, int32 Y1, ID3D12Resource *Dest );
 	// 現在のGPU記録位置で色を消す。描画順の管理は呼出側が行う。
 	void ClearFrameColor( FColor32 Color );
 	// ファイルやUIを介さず、画像資源の所有先を貸す。

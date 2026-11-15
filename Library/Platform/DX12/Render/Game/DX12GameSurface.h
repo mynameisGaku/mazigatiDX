@@ -30,6 +30,8 @@ class CDX12GameSurface : public IRenderSurface
 	bool BeginRenderTargetPass( const FRenderTargetPassDesc &Desc ) override;
 	// 描画先パスの命令を同じGPUキューへ提出し、通常画面へ戻す。
 	bool EndRenderTargetPass() override;
+	// 記録中の色（主画面または描画先パス）の矩形を、同じ形式・同じ大きさの画像へ写す。撮影中はfalse。
+	bool CopyColorRegion( int32 X0, int32 Y0, int32 X1, int32 Y1, FTextureResourceHandle Dest ) override;
 	// 現在の記録先（主画面または描画先パス）へGPUタイムスタンプの開始点を積む。
 	bool BeginGpuTimestamp( FGpuTimestampHandle Query ) override;
 	// 開始済みのGPUタイムスタンプを閉じ、同じコマンド列へ解決を記録する。

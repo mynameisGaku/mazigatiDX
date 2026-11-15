@@ -63,6 +63,21 @@ bool CDX12GameSurface::BeginRenderTargetPass( const FRenderTargetPassDesc &Desc 
 {
 	return TargetPass && !TargetPass->IsActive() && !Capture.IsActive() && Device.IsRecording() && SubmitPendingMainCommands() && TargetPass->Begin( Desc );
 }
+bool CDX12GameSurface::CopyColorRegion( int32 X0, int32 Y0, int32 X1, int32 Y1, FTextureResourceHandle Dest )
+{
+	CDX12TextureStore *Store = Device.GetTextureResources(); // 写し先の画像を調べる所有先。
+	FDX12TextureBinding Binding; // 描画中の描画先・深度・形式違いの画像は、ここで外れる。
+	if ( !Device.IsRecording() || Capture.IsActive() || !Store || !Store->AcquireGraphicsTexture( Dest, EComputeTextureFormat::RGBA8, Binding ) )
+	{
+		return false;
+	}
+	if ( TargetPass && TargetPass->IsActive() )
+	{
+		return TargetPass->CopyColorRegion( X0, Y0, X1, Y1, Binding );
+	}
+	return Device.RecordFrameColorCopy( X0, Y0, X1, Y1, Binding.Resource.Get() ) && Renderer.PinTexture( Binding );
+}
+
 bool CDX12GameSurface::SubmitPendingMainCommands()
 {
 	return !Capture.IsActive() && ( !TargetPass || !TargetPass->IsActive() ) && ( !Renderer.GetCanvas2D() || Device.SubmitFrameSegment() );

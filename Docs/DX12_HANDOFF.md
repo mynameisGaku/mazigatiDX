@@ -303,3 +303,13 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **確認**: Images・DrawState・Villageを、DxLibと並べて確認した。Debug／Releaseの警告0、`RunAllChecks.ps1 -SkipBuild -Quick`の42項目すべて成功。
 - **気づいた差（未対応）**: Villageの会話の文字が、DxLibは太く、DX12は細い（文字の太さ・スタイルの扱い）。
 - **次の作業**: マスク（`PushMask`/`PopMask`）→`CopyScreen`・`ImageFilter`・`ImageBlend`→高さフォグ・異方性・`TextureTransform`→`MaterialRibbon3D`→アニメーションつきのモデル→文字の太さ。
+
+## 2026-11-15 追記: CopyScreen・高さフォグ・TextureTransform・画像つきのフォグ
+- **`CopyScreen`**: `IRenderSurface::CopyColorRegion( X0, Y0, X1, Y1, 描き先 )`を足した（既定は`false`＝未対応）。主画面と描画先パスの両方で、いまの色の矩形を、同じ大きさのRGBA8の描画先画像へ写す。`DX12TextureCopy.{h,cpp}`の`RecordRegionCopy`が、コマンドリストへ、バリア（描画先↔コピー元、画像↔コピー先）つきの箱のコピーを記録し、`DX12Device::RecordFrameColorCopy`が主画面の画像を渡す。コピー先の画像は、`TexturePins`（上限256）へ載せて、描き終わるまで解放されないようにする。主画面の区間は、描画先パスより先に順に出るので、記録したコピーの順序は保たれる。大きさが違うと、DxLibと同じく何もしない。HDR・R32Floatの描画先は、失敗として報告する。
+- **経路の落とし穴**: `CDX12PlatformSubsystem`も`IRenderSurface`なので、`CopyColorRegion`を`ThreadedSurface`へ転送しないと、ログに何も出ないまま「失敗」になる（転送を足して直した）。
+- **高さフォグ（`HeightFog`）**: `GeometryCommandExecutor`の状態へ持ち、頂点ごとのCPU計算で、距離フォグのあとに混ぜる（`GetHeightFogVisibility`。Start より下を、低いほど濃く）。DxLibの式との細かい差は、未確認。
+- **`TextureTransform`**: 頂点のUVへ、中心を軸にした拡大・回転と移動を掛ける（CPU）。移動だけの使い方で、DxLibと一致を確認。
+- **画像つきの三角形のフォグ**: 組み込みのピクセルシェーダー`EBuiltInPixelShader::FogTextured`を足した（`DX12ShaderService`。頂点の`Specular`のrgb＝いまのフォグの色、a＝残る割合で、`lerp`する）。画像のない図形は、従来どおり頂点ごと。画像つきの線・点と、影を受ける面には、フォグを掛けない。
+- **未対応のまま**: 異方性（`Anisotropy`）は、報告して飛ばす。台帳（504項目）は、`CopyScreen`・`HeightFog`・`TextureTransform`・`Fog`・`Anisotropy`を`Partial`に分類し、`API.IRenderSurface.CopyColorRegion`を足した。
+- **確認**: RenderTarget（`CopyScreen`）・RenderState（フォグ・水）・Islandを、DxLibと並べて確認し、見た目はほぼ同じ。デバッグレイヤーは、RenderTarget・RenderState・Images・DrawStateで、警告・エラー0件。Debug／Releaseの警告0、`CheckSourceFormat.ps1`成功、台帳の整合の検査成功（504項目）、`RunAllChecks.ps1 -SkipBuild -Quick`の42項目すべて成功。
+- **次の作業**: マスク（`PushMask`/`PopMask`）→`ImageFilter`・`ImageBlend`（Filtersサンプルの全項目が空白）→異方性→`MaterialRibbon3D`→アニメーションつきのモデル→文字の太さ・縦書き→`Invert`系の合成。

@@ -29,6 +29,7 @@ enum class EBuiltInPixelShader : uint8
 	ShadowDepth,        // 影の絵へ、光から見た深度を書く（Quad3D の頂点シェーダーと組み合わせる。出力は R32Float の 1 つ）。
 	ShadowLit,          // 影を受けて色を決める（ShadowLit の頂点シェーダーと組み合わせる。t1 = 影の絵、定数 b4 = ( 影の絵の幅, 高さ, 補正の深さ, 0 )）。
 	ShadowLitTextured,  // 同じ。さらに、t0 の画像の色を掛ける（画像と頂点の色の積のアルファが 0 なら、描かない）。
+	FogTextured,        // t0 の画像に頂点の色（Diffuse）を掛け、フォグへ混ぜる（ShadowLit の頂点シェーダーと組み合わせる。Specular の RGB = フォグの色、A = 隠れない割合）。
 };
 
 // 定数バッファの中身（シェーダーの cbuffer register( bN ) の N = Slot）

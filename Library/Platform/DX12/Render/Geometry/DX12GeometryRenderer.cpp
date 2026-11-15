@@ -467,6 +467,27 @@ bool CDX12GeometryRenderer::CommitBufferPins( TArrayView<const FDX12BufferBindin
 	return true;
 }
 
+bool CDX12GeometryRenderer::PinTexture( const FDX12TextureBinding &Texture )
+{
+	if ( !Texture.Resource )
+	{
+		return false;
+	}
+	for ( const FDX12TextureBinding &Existing : TexturePins )
+	{
+		if ( Existing.Resource.Get() == Texture.Resource.Get() )
+		{
+			return true;
+		}
+	}
+	if ( TexturePins.Num() >= 256 )
+	{
+		return false;
+	}
+	TexturePins.Add( Texture );
+	return true;
+}
+
 bool CDX12GeometryRenderer::CommitGraphicsAssetPins( TArrayView<const FDX12TextureBinding> Textures, const FDX12GraphicsPipelineBinding &Pipeline )
 {
 	int32 NewTextures = 0; // 未保持の新規画像実体数。

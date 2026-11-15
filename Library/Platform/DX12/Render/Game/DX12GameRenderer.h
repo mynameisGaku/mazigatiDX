@@ -34,6 +34,8 @@ class CDX12GameRenderer
 	uint64 TakeUploadTicket();
 	// 提出前に記録を中断した場合に、開いているアップロード予約を取り消す。
 	void AbortUploadTicket();
+	// 記録中だけ、記録した命令が参照する画像を、提出の完了まで保持する。
+	bool PinTexture( const FDX12TextureBinding &Texture ) { return bActive && Geometry.PinTexture( Texture ); }
 	// 記録中だけ2Dの窓口を貸す。
 	IRenderCanvas2D *GetCanvas2D();
 	// 記録中だけ基本3Dの窓口を貸す。

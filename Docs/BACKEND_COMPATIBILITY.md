@@ -10,8 +10,8 @@
 
 |分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|
 |---|---:|---:|---:|---:|---:|---:|---:|
-|API|358|4|97|94|162|0|1|
-|Draw|101|0|18|43|40|0|0|
+|API|359|4|97|95|162|0|1|
+|Draw|101|0|14|47|40|0|0|
 |Sample|33|30|0|3|0|0|0|
 |Editor|11|11|0|0|0|0|0|
 
@@ -301,16 +301,17 @@
 |[API.IRenderResourceBackend.MakeVertexBuffer](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L26)|Implemented|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|FGeometryBufferStoreへ接続。CPU保管の作成・更新・範囲検査あり。Windows互換比較前||
 |[API.IRenderResourceBackend.WriteIndexBuffer](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L32)|Implemented|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|FGeometryBufferStoreへ接続。CPU保管の作成・更新・範囲検査あり。Windows互換比較前||
 |[API.IRenderResourceBackend.WriteVertexBuffer](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L28)|Implemented|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|FGeometryBufferStoreへ接続。CPU保管の作成・更新・範囲検査あり。Windows互換比較前||
-|[API.IRenderSurface.BeginGpuTimestamp](../Library/Core/Interfaces/Render/IRenderSurface.h#L34)|Implemented|R1|CPU参照・既定GPU・WARP・アプリ起動で、主画面・MRT/D32描画先パス内の範囲計測開始、撮影中・二重開始・パス外・別スレッド拒否を確認|記録中コマンドリストとバッチへ開始EndQueryを積み、主画面で未閉じのまま区切り提出へ進む場合や撮影中はfalseを返す|Docs/R1_GPU_TIMESTAMPS.md; Library/Platform/DX12/Resource/Timestamp/DX12TimestampStore.cpp; Library/Platform/DX12/Render/Game/DX12GameSurface.cpp; Source/SelfTest/RunTimestampTests.ps1|
-|[API.IRenderSurface.BeginOffscreenCapture](../Library/Core/Interfaces/Render/IRenderSurface.h#L26)|Implemented|R1|指定寸法・倍率、2D/基本3D/画像/文字、失敗時の出力保持、通常描画への復帰と終了時の保持を比較|GPUの描画先と共通ImGui記録を分離し、接続層から同期の描き直しを実行。全描画命令の互換はR6で継続|Docs/DX12_CAPTURE.md; CaptureTargetContract/CaptureContract; dx12-capture|
-|[API.IRenderSurface.BeginRenderTargetPass](../Library/Core/Interfaces/Render/IRenderSurface.h#L30)|Implemented|R1|CPU参照・既定GPU・WARP・アプリ起動で、単一/MRT(1..8枚)RGBA8色描画先と任意のD32深度への2D/3D/GraphicsPipeline描画、消去・保持、自己参照と二重開始の拒否を確認|所有済みの単一色描画先またはColorTargets(1..8枚MRT)と任意のD32深度へ描くパスを開始。撮影中・二重開始・重複指定・寸法不一致・不正設定は拒否|Docs/R1_RENDER_TARGET_RESOURCES.md; Docs/R1_GRAPHICS_PIPELINE_MRT.md; Library/Platform/DX12/Render/Target/DX12RenderTargetPass.cpp; Source/SelfTest/RunRenderTargetTests.ps1; Source/SelfTest/RunGraphicsPipelineTests.ps1|
-|[API.IRenderSurface.EndGpuTimestamp](../Library/Core/Interfaces/Render/IRenderSurface.h#L36)|Implemented|R1|CPU参照・既定GPU・WARP・アプリ起動で、ネスト/連続閉じ・ResolveQueryData・未閉じ時パス拒否と主画面安全破棄を確認|同一コマンドリスト・同一バッチ上のスコープを閉じてReadbackバッファへResolveQueryDataを積む|Docs/R1_GPU_TIMESTAMPS.md; Library/Platform/DX12/Resource/Timestamp/DX12TimestampStore.cpp; Library/Platform/DX12/Render/Target/DX12RenderTargetPass.cpp; Source/SelfTest/RunTimestampTests.ps1|
-|[API.IRenderSurface.EndOffscreenCapture](../Library/Core/Interfaces/Render/IRenderSurface.h#L28)|Implemented|R1|指定寸法・倍率、2D/基本3D/画像/文字、失敗時の出力保持、通常描画への復帰と終了時の保持を比較|GPUの描画先と共通ImGui記録を分離し、接続層から同期の描き直しを実行。全描画命令の互換はR6で継続|Docs/DX12_CAPTURE.md; CaptureTargetContract/CaptureContract; dx12-capture|
-|[API.IRenderSurface.EndRenderTargetPass](../Library/Core/Interfaces/Render/IRenderSurface.h#L32)|Implemented|R1|CPU参照・既定GPU・WARP・アプリ起動で、同じDIRECTキューへのGPU提出順序、後続compute読み取り、通常描画・撮影への受け渡しを確認|記録した描画先パスをshader resource状態へ遷移して同じDIRECTキューへ提出し、未完了提出の資源寿命をfenceで保持|Docs/R1_RENDER_TARGET_RESOURCES.md; Library/Platform/DX12/Render/Target/DX12RenderTargetPass.cpp; Source/SelfTest/RunRenderTargetTests.ps1|
-|[API.IRenderSurface.GetCanvas2D](../Library/Core/Interfaces/Render/IRenderSurface.h#L18)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
-|[API.IRenderSurface.GetGeometry3D](../Library/Core/Interfaces/Render/IRenderSurface.h#L20)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
-|[API.IRenderSurface.RecordClear](../Library/Core/Interfaces/Render/IRenderSurface.h#L22)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
-|[API.IRenderSurface.WaitForGPU](../Library/Core/Interfaces/Render/IRenderSurface.h#L24)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
+|[API.IRenderSurface.BeginGpuTimestamp](../Library/Core/Interfaces/Render/IRenderSurface.h#L37)|Implemented|R1|CPU参照・既定GPU・WARP・アプリ起動で、主画面・MRT/D32描画先パス内の範囲計測開始、撮影中・二重開始・パス外・別スレッド拒否を確認|記録中コマンドリストとバッチへ開始EndQueryを積み、主画面で未閉じのまま区切り提出へ進む場合や撮影中はfalseを返す|Docs/R1_GPU_TIMESTAMPS.md; Library/Platform/DX12/Resource/Timestamp/DX12TimestampStore.cpp; Library/Platform/DX12/Render/Game/DX12GameSurface.cpp; Source/SelfTest/RunTimestampTests.ps1|
+|[API.IRenderSurface.BeginOffscreenCapture](../Library/Core/Interfaces/Render/IRenderSurface.h#L27)|Implemented|R1|指定寸法・倍率、2D/基本3D/画像/文字、失敗時の出力保持、通常描画への復帰と終了時の保持を比較|GPUの描画先と共通ImGui記録を分離し、接続層から同期の描き直しを実行。全描画命令の互換はR6で継続|Docs/DX12_CAPTURE.md; CaptureTargetContract/CaptureContract; dx12-capture|
+|[API.IRenderSurface.BeginRenderTargetPass](../Library/Core/Interfaces/Render/IRenderSurface.h#L31)|Implemented|R1|CPU参照・既定GPU・WARP・アプリ起動で、単一/MRT(1..8枚)RGBA8色描画先と任意のD32深度への2D/3D/GraphicsPipeline描画、消去・保持、自己参照と二重開始の拒否を確認|所有済みの単一色描画先またはColorTargets(1..8枚MRT)と任意のD32深度へ描くパスを開始。撮影中・二重開始・重複指定・寸法不一致・不正設定は拒否|Docs/R1_RENDER_TARGET_RESOURCES.md; Docs/R1_GRAPHICS_PIPELINE_MRT.md; Library/Platform/DX12/Render/Target/DX12RenderTargetPass.cpp; Source/SelfTest/RunRenderTargetTests.ps1; Source/SelfTest/RunGraphicsPipelineTests.ps1|
+|[API.IRenderSurface.CopyColorRegion](../Library/Core/Interfaces/Render/IRenderSurface.h#L35)|Partial|R6|入力不正、出力保持、GPU失敗と状態復元を確認|いま描いている色（主画面または描画先パスの最初の色）の矩形を、同じ形式・同じ大きさの画像へ写す。これまでの描画が写る。撮影中・形式違い・範囲外はfalse||
+|[API.IRenderSurface.EndGpuTimestamp](../Library/Core/Interfaces/Render/IRenderSurface.h#L39)|Implemented|R1|CPU参照・既定GPU・WARP・アプリ起動で、ネスト/連続閉じ・ResolveQueryData・未閉じ時パス拒否と主画面安全破棄を確認|同一コマンドリスト・同一バッチ上のスコープを閉じてReadbackバッファへResolveQueryDataを積む|Docs/R1_GPU_TIMESTAMPS.md; Library/Platform/DX12/Resource/Timestamp/DX12TimestampStore.cpp; Library/Platform/DX12/Render/Target/DX12RenderTargetPass.cpp; Source/SelfTest/RunTimestampTests.ps1|
+|[API.IRenderSurface.EndOffscreenCapture](../Library/Core/Interfaces/Render/IRenderSurface.h#L29)|Implemented|R1|指定寸法・倍率、2D/基本3D/画像/文字、失敗時の出力保持、通常描画への復帰と終了時の保持を比較|GPUの描画先と共通ImGui記録を分離し、接続層から同期の描き直しを実行。全描画命令の互換はR6で継続|Docs/DX12_CAPTURE.md; CaptureTargetContract/CaptureContract; dx12-capture|
+|[API.IRenderSurface.EndRenderTargetPass](../Library/Core/Interfaces/Render/IRenderSurface.h#L33)|Implemented|R1|CPU参照・既定GPU・WARP・アプリ起動で、同じDIRECTキューへのGPU提出順序、後続compute読み取り、通常描画・撮影への受け渡しを確認|記録した描画先パスをshader resource状態へ遷移して同じDIRECTキューへ提出し、未完了提出の資源寿命をfenceで保持|Docs/R1_RENDER_TARGET_RESOURCES.md; Library/Platform/DX12/Render/Target/DX12RenderTargetPass.cpp; Source/SelfTest/RunRenderTargetTests.ps1|
+|[API.IRenderSurface.GetCanvas2D](../Library/Core/Interfaces/Render/IRenderSurface.h#L19)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
+|[API.IRenderSurface.GetGeometry3D](../Library/Core/Interfaces/Render/IRenderSurface.h#L21)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
+|[API.IRenderSurface.RecordClear](../Library/Core/Interfaces/Render/IRenderSurface.h#L23)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
+|[API.IRenderSurface.WaitForGPU](../Library/Core/Interfaces/Render/IRenderSurface.h#L25)|Implemented|R1|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
 |[API.IRenderTargetDrawSource.GetRenderTargetDrawView](../Library/Core/Interfaces/Render/IRenderTargetDrawSource.h#L13)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|描画先として作った画像だけ、色と深度の資源を貸す||
 |[API.IRenderTextRasterizer.RasterizeFontText](../Library/Core/Interfaces/Render/IRenderTextRasterizer.h#L18)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|OSの文字（GDI）でフォント指定の文字列を画像にする。縁取りは、被覆率を太らせて作る||
 |[API.IRenderTextRasterizer.RasterizeText](../Library/Core/Interfaces/Render/IRenderTextRasterizer.h#L15)|Implemented|R1|UIなしでUTF-8の範囲・改行・文字画像と拒否時の出力保持を確認|WindowsのCPU文字画像。既定13画素、各辺4096・4M画素まで。Fontアセット全体の対応ではない|Docs/DX12_GAME_RENDER.md; CaptureContractMain.cpp|
@@ -331,10 +332,10 @@
 |[API.IRenderTextureResources.ReleaseTexture](../Library/Core/Interfaces/Render/IRenderTextureResources.h#L49)|Implemented|R1|ImGuiなしの作成・更新・解放、入力不正、旧viewのGPU完了までの保持、失敗と再初期化を検査|DX12画像所有者へ接続。アセット登録とUIの所有から分離。Windowsの外部ImGui窓との共有画像・表示画素を確認。全更新・失敗経路の互換は未網羅|補助検証: NativeStoreのcompute readbackと共通登録の偽物。Windowsの外部窓共有: Docs/DX12_IMGUI_VIEWPORTS.md|
 |[API.IRenderTextureResources.UpdateTextureRGBA8](../Library/Core/Interfaces/Render/IRenderTextureResources.h#L46)|Implemented|R1|ImGuiなしの作成・更新・解放、入力不正、旧viewのGPU完了までの保持、失敗と再初期化を検査|DX12画像所有者へ接続。アセット登録とUIの所有から分離。Windowsの外部ImGui窓との共有画像・表示画素を確認。全更新・失敗経路の互換は未網羅|補助検証: NativeStoreのcompute readbackと共通登録の偽物。Windowsの外部窓共有: Docs/DX12_IMGUI_VIEWPORTS.md|
 |[API.IShader.GetShaderHandle](../Library/Core/Interfaces/Render/IShader.h#L55)|Partial|R6|作成前・作成後・破棄後のhandle、型の違い、描画までの寿命を確認|番号は、DX12のシェーダーの表の番号||
-|[API.IShaderDrawSource.DrawShader](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L76)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|描画の値（シェーダー・定数・画像・頂点・描画先の形式）から、パイプラインを作って描く。描けなければfalse||
-|[API.IShaderDrawSource.GetShadowPass](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L80)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|最後に影の絵を描いたときの、光から見た行列・補正の深さ・大きさ||
-|[API.IShaderDrawSource.IsShaderValid](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L74)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|番号が、その種類の、作ってあるシェーダーか||
-|[API.IShaderDrawSource.SetShadowPass](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L78)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|BeginShadowMapを実行したときに覚える||
+|[API.IShaderDrawSource.DrawShader](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L77)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|描画の値（シェーダー・定数・画像・頂点・描画先の形式）から、パイプラインを作って描く。描けなければfalse||
+|[API.IShaderDrawSource.GetShadowPass](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L81)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|最後に影の絵を描いたときの、光から見た行列・補正の深さ・大きさ||
+|[API.IShaderDrawSource.IsShaderValid](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L75)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|番号が、その種類の、作ってあるシェーダーか||
+|[API.IShaderDrawSource.SetShadowPass](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L79)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|BeginShadowMapを実行したときに覚える||
 |[API.IShadowMap.GetShadowMapHandle](../Library/Core/Interfaces/Render/IShadowMap.h#L47)|Partial|R6|作成前・作成後・破棄後のhandle、型の違い、描画までの寿命を確認|番号は、描画先の番号と同じ||
 |[API.ISoundBackend.CreateSoundFromPcm](../Library/Core/Interfaces/Asset/SoundBackend.h#L28)|Missing|R8|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.ISoundBackend.DecodeSoundFile](../Library/Core/Interfaces/Asset/SoundBackend.h#L31)|Missing|R8|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
@@ -385,7 +386,7 @@
 |[Draw.AddColor](../Library/Framework/Render/Draw/DrawCommand.h#L88)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|平らな図形（箱・線・円・三角形・四角形・多角形・点）に、明るさのあとで色を足す。画像・文字・3Dには効かない（報告する）||
 |[Draw.AlphaTest](../Library/Framework/Render/Draw/DrawCommand.h#L89)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|平らな図形は、アルファが1つに決まるので、通らなければ丸ごと飛ばす。画像・文字は、通りうる画素が無いときだけ飛ばす（画素ごとの比べはまだ無い）。3Dには効かない||
 |[Draw.AmbientLight](../Library/Framework/Render/Draw/DrawCommand.h#L123)|Partial|R2|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|頂点ごとのCPU計算（CVertexLighting。DxLibの固定の光と同じ式）で対応。画素ごとの光・影は頂点ごとの計算になる。DxLibとの画素比較が残る||
-|[Draw.Anisotropy](../Library/Framework/Render/Draw/DrawCommand.h#L116)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
+|[Draw.Anisotropy](../Library/Framework/Render/Draw/DrawCommand.h#L116)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|指定は無視して、通常の線形補間で描く（斜めから見た地面の鮮明さだけが違う）。初回に報告する||
 |[Draw.BeginShadowMap](../Library/Framework/Render/Draw/DrawCommand.h#L140)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|影の絵へ、図形（三角形・不透明）を、光から見た深度として描く。範囲は、箱か、カメラの視錐台。入れ子は不可（飛ばす）||
 |[Draw.Billboard3D](../Library/Framework/Render/Draw/DrawCommand.h#L47)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.BillboardPivot3D](../Library/Framework/Render/Draw/DrawCommand.h#L131)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
@@ -401,7 +402,7 @@
 |[Draw.Clear](../Library/Framework/Render/Draw/DrawCommand.h#L97)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.ClearDepth](../Library/Framework/Render/Draw/DrawCommand.h#L117)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.Cone3D](../Library/Framework/Render/Draw/DrawCommand.h#L130)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|側面と底面を展開して描く（光を受ける）。DxLibとの画素比較が残る||
-|[Draw.CopyScreen](../Library/Framework/Render/Draw/DrawCommand.h#L98)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
+|[Draw.CopyScreen](../Library/Framework/Render/Draw/DrawCommand.h#L98)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|主画面または描画先パスの色の矩形を、同じ大きさのRGBA8の描画先画像へ写す（DxLibと同じく、大きさが違うと何もしない）。HDR・R32Floatの描画先は未対応（失敗として報告）||
 |[Draw.Cube3D](../Library/Framework/Render/Draw/DrawCommand.h#L46)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.Culling](../Library/Framework/Render/Draw/DrawCommand.h#L111)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.CustomBlend](../Library/Framework/Render/Draw/DrawCommand.h#L87)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|色とアルファの係数・演算を、そのままD3D12のブレンドへ写す（2D・3D・シェーダー描画）。色の係数をアルファへ使うときは、同じ種類のアルファへ読み替える||
@@ -411,8 +412,8 @@
 |[Draw.DistortedMaterialRibbon3D](../Library/Framework/Render/Draw/DrawCommand.h#L62)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
 |[Draw.EndShadowMap](../Library/Framework/Render/Draw/DrawCommand.h#L141)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|元の描画先へ戻す。パスの中では、描画先・カメラ・クリップ・消去の命令は無視する||
 |[Draw.Filter](../Library/Framework/Render/Draw/DrawCommand.h#L90)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|Nearest／Bilinearのみ。異方性は未対応||
-|[Draw.Fog](../Library/Framework/Render/Draw/DrawCommand.h#L114)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|画像なしの3D図形に、頂点ごとのCPU計算で距離フォグを掛ける（画像つきには掛からない。高さのフォグは未対応）||
-|[Draw.HeightFog](../Library/Framework/Render/Draw/DrawCommand.h#L115)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
+|[Draw.Fog](../Library/Framework/Render/Draw/DrawCommand.h#L114)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|距離フォグを、画像なしの図形は頂点ごとのCPU計算で、画像つきの三角形は専用のシェーダー（FogTextured）で掛ける。画像つきの線・点と、影を受ける描画には掛からない||
+|[Draw.HeightFog](../Library/Framework/Render/Draw/DrawCommand.h#L115)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|Start より下を、低いほど濃くする（Exponential / ExponentialSquared）。Linear は、Start で濃さ0、End で1。頂点ごとのCPU計算で、距離フォグのあとに混ぜる。DxLibの式との細かい差は未確認||
 |[Draw.Image](../Library/Framework/Render/Draw/DrawCommand.h#L77)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.ImageBlend](../Library/Framework/Render/Draw/DrawCommand.h#L101)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
 |[Draw.ImageFilter](../Library/Framework/Render/Draw/DrawCommand.h#L100)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
@@ -474,7 +475,7 @@
 |[Draw.TextFont](../Library/Framework/Render/Draw/DrawCommand.h#L53)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|フォント・縁取り・位置揃え（左・中央・右）に対応||
 |[Draw.TextStyled](../Library/Framework/Render/Draw/DrawCommand.h#L105)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|拡大・回転・基準点・縁取り対応。縦書きは横書きで描く||
 |[Draw.TextureAddress](../Library/Framework/Render/Draw/DrawCommand.h#L112)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
-|[Draw.TextureTransform](../Library/Framework/Render/Draw/DrawCommand.h#L113)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
+|[Draw.TextureTransform](../Library/Framework/Render/Draw/DrawCommand.h#L113)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|頂点のUVに、中心を軸にした拡大・回転と、移動を掛ける（CPU。拡大・回転の順序のDxLibとの一致は、移動だけの使い方でしか確認していない）||
 |[Draw.Tile](../Library/Framework/Render/Draw/DrawCommand.h#L84)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|角度なしのタイルを、DxLibと同じ並べ方（中心の整数のずれ）で、矩形で切った画像の並びとして描く。角度つき・4096枚を超える並びは飛ばす||
 |[Draw.Transform2D](../Library/Framework/Render/Draw/DrawCommand.h#L93)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|図形・画像の点へ変換を掛ける。文字は位置だけ（拡大・回転なし）||
 |[Draw.Triangle](../Library/Framework/Render/Draw/DrawCommand.h#L43)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||

@@ -193,6 +193,18 @@ bool CThreadedRenderSurface::BeginRenderTargetPass( const FRenderTargetPassDesc 
 	return true;
 }
 
+bool CThreadedRenderSurface::CopyColorRegion( int32 X0, int32 Y0, int32 X1, int32 Y1, FTextureResourceHandle Dest )
+{
+	GAME_THREAD_ONLY( false );
+	if ( !bActive || bCapture )
+	{
+		return false;
+	}
+	bool bResult = false;
+	auto Copy = [&]() { bResult = Target.CopyColorRegion( X0, Y0, X1, Y1, Dest ); };
+	return Execute( MoveTemp( Copy ) ) && bResult;
+}
+
 bool CThreadedRenderSurface::EndRenderTargetPass()
 {
 	GAME_THREAD_ONLY( false );

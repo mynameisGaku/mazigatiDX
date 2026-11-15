@@ -62,6 +62,8 @@ class CDX12GeometryRenderer : public IRenderGeometry3D
 	bool DrawBufferGeometry( const FGeometryBufferDraw &Draw, const FGeometryDrawState &State, const FTextureDrawView *Texture = nullptr ) override;
 	// 登録済みカスタムパイプラインとバッファ・画像スロットでMRT／深度を含むGPU描画を記録する。
 	bool DrawGraphicsPipeline( const FGraphicsPipelineDraw &Draw ) override;
+	// 記録した命令が参照する画像を、フレームの提出が完了するまで保持する（既に保持していれば何もしない）。256枚を超えるとfalse。
+	bool PinTexture( const FDX12TextureBinding &Texture );
 	// 頂点・添字・定数を、フレームの転送領域へ載せて、登録済みカスタムパイプラインで描く（バッファを登録しない）。
 	bool DrawGraphicsPipelineTransient( const FGraphicsPipelineTransientDraw &Draw ) override;
 	// 現在の命令位置で描画先全体の深度を消す。

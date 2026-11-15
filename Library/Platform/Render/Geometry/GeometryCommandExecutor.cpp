@@ -80,6 +80,27 @@ namespace
 		}
 		return NMath::IsFinite( Visibility ) ? NMath::Clamp( Visibility, 0.0f, 1.0f ) : 1.0f;
 	}
+	// 高さ Height（ワールドの Y）での、フォグに隠れない割合。Exponential / ExponentialSquared は、Start より下だけ、低いほど濃い。Linear は、Start で 0、End で 1 の濃さ。
+	float32 GetHeightFogVisibility( const FDrawFogData& Fog, float32 Height )
+	{
+		float32 Visibility = 1.0f; // 通常の（フォグなしの）見え方。
+		const float32 Below = NMath::Max( 0.0f, Fog.Start - Height ); // Start より下の深さ。
+		switch ( static_cast<EDrawFogMode>( Fog.Mode ) )
+		{
+		case EDrawFogMode::Exponential:
+			Visibility = NMath::Exp( -Fog.Density * Below );
+			break;
+		case EDrawFogMode::ExponentialSquared:
+			Visibility = NMath::Exp( -( Fog.Density * Below ) * ( Fog.Density * Below ) );
+			break;
+		case EDrawFogMode::Linear:
+			Visibility = 1.0f - NMath::Clamp( Fog.End != Fog.Start ? ( Height - Fog.Start ) / ( Fog.End - Fog.Start ) : ( Height < Fog.End ? 1.0f : 0.0f ), 0.0f, 1.0f );
+			break;
+		default:
+			break;
+		}
+		return NMath::IsFinite( Visibility ) ? NMath::Clamp( Visibility, 0.0f, 1.0f ) : 1.0f;
+	}
 	// 0..1 の色の成分を、0..255 に丸める（範囲の外は端へ）。
 	int32 ToByte( float32 Value )
 	{
@@ -121,12 +142,24 @@ bool CGeometryCommandExecutor::Submit( const TArray<FDrawVertex3D>& Vertices, EG
 	{
 		NormalMatrix = InverseWorld.Transposed();
 	}
-	const bool bFog = Fog.Mode != 0 && Texture < 0; // 画像の色は頂点色との積なので、画像つきの描画には、フォグを混ぜられない。
+	const bool bAnyFog = Fog.Mode != 0 || HeightFog.Mode != 0; // 距離か高さのフォグがあるか。
+	const bool bFog = bAnyFog && Texture < 0; // 頂点の色へ混ぜる（画像つきは、画像の色を掛けたあとに混ぜるので、下のシェーダーで混ぜる）。
+	const bool bFogTextured = bAnyFog && Texture >= 0 && !bReceive && Topology == EGeometryTopology::Triangles && ShaderSource != nullptr; // 画像つきの三角形のフォグ。
+	TArray<FDrawShaderVertex3D> FogVertices; // 画像つきのフォグの頂点。
 	const FMatrix4x4 ViewMatrix = Camera.GetViewMatrix(); // フォグの距離（カメラから見た奥行き）に使う。
 	TArray<FGeometryVertex> Output; // 全頂点が正しい場合だけ送る所有コピー。
 	Output.Reserve( Vertices.Num() );
-	for ( const auto& Input : Vertices )
+	for ( const auto& Original : Vertices )
 	{
+		FDrawVertex3D Input = Original; // 画像の変換を掛けた頂点。
+		if ( TextureTransform.Enabled != 0 && NMath::IsFinite( Input.U ) && NMath::IsFinite( Input.V ) )
+		{
+			// 中心を軸に、拡大・回転してから、移動する（UV に足す）。
+			const float32 CenteredU = ( Input.U - TextureTransform.CenterU ) * TextureTransform.ScaleU, CenteredV = ( Input.V - TextureTransform.CenterV ) * TextureTransform.ScaleV;
+			const float32 Cosine = NMath::Cos( TextureTransform.Rotation ), Sine = NMath::Sin( TextureTransform.Rotation );
+			Input.U = CenteredU * Cosine - CenteredV * Sine + TextureTransform.CenterU + TextureTransform.TranslationU;
+			Input.V = CenteredU * Sine + CenteredV * Cosine + TextureTransform.CenterV + TextureTransform.TranslationV;
+		}
 		if ( !Finite( Input.Position ) || !NMath::IsFinite( Input.U ) || !NMath::IsFinite( Input.V ) )
 		{
 			return false;
@@ -200,12 +233,50 @@ bool CGeometryCommandExecutor::Submit( const TArray<FDrawVertex3D>& Vertices, EG
 				static_cast<uint8>( NMath::Min( 255, Input.Diffuse[1] + Input.Specular[1] ) * Bright.G / 255 ),
 				static_cast<uint8>( NMath::Min( 255, Input.Diffuse[2] + Input.Specular[2] ) * Bright.B / 255 ), static_cast<uint8>( Input.Diffuse[3] * Alpha / 255 ) );
 		}
-		if ( bFog )
+		if ( bFog || bFogTextured )
 		{
 			const FVector3 WorldPoint = World.TransformPoint( FVector3( Input.Position[0], Input.Position[1], Input.Position[2] ) ); // 世界の点。
-			const float32 Visibility = GetFogVisibility( Fog, NMath::Max( 0.0f, ViewMatrix.TransformPoint( WorldPoint ).z ) ); // 隠れない割合。
-			const auto Mix = [&]( uint8 Channel, uint8 FogChannel ) { return static_cast<uint8>( FogChannel + ( Channel - FogChannel ) * Visibility + 0.5f ); }; // フォグの色へ寄せる。
-			Value.Color = FColor32( Mix( Value.Color.r, Fog.Color.R ), Mix( Value.Color.g, Fog.Color.G ), Mix( Value.Color.b, Fog.Color.B ), Value.Color.a );
+			const float32 VisibilityDistance = Fog.Mode != 0 ? GetFogVisibility( Fog, NMath::Max( 0.0f, ViewMatrix.TransformPoint( WorldPoint ).z ) ) : 1.0f; // 距離のフォグに隠れない割合。
+			const float32 VisibilityHeight = HeightFog.Mode != 0 ? GetHeightFogVisibility( HeightFog, WorldPoint.y ) : 1.0f; // 高さのフォグに隠れない割合。
+			if ( bFog )
+			{
+				const auto Mix = [&]( uint8 Channel, uint8 FogChannel, float32 Visibility ) { return static_cast<uint8>( FogChannel + ( Channel - FogChannel ) * Visibility + 0.5f ); }; // フォグの色へ寄せる。
+				if ( Fog.Mode != 0 )
+				{
+					Value.Color = FColor32( Mix( Value.Color.r, Fog.Color.R, VisibilityDistance ), Mix( Value.Color.g, Fog.Color.G, VisibilityDistance ), Mix( Value.Color.b, Fog.Color.B, VisibilityDistance ), Value.Color.a );
+				}
+				if ( HeightFog.Mode != 0 )
+				{
+					Value.Color = FColor32( Mix( Value.Color.r, HeightFog.Color.R, VisibilityHeight ), Mix( Value.Color.g, HeightFog.Color.G, VisibilityHeight ), Mix( Value.Color.b, HeightFog.Color.B, VisibilityHeight ), Value.Color.a );
+				}
+			}
+			else
+			{
+				// 画像つき: 距離 → 高さの順に混ぜたのと同じ結果を、1つの色と1つの割合で表す。
+				const float32 Total = VisibilityDistance * VisibilityHeight; // 全体で隠れない割合。
+				const float32 Weight = 1.0f - Total; // フォグの色の割合。
+				const float32 DistanceWeight = Weight > 1.0e-6f ? VisibilityHeight * ( 1.0f - VisibilityDistance ) / Weight : 0.0f; // フォグの色のうち、距離のフォグの分。
+				const float32 HeightWeight = Weight > 1.0e-6f ? ( 1.0f - VisibilityHeight ) / Weight : 0.0f;
+				FDrawShaderVertex3D FogVertex;
+				FMemory::Memzero( &FogVertex, sizeof( FogVertex ) );
+				FMemory::Memcpy( FogVertex.Position, Input.Position, sizeof( FogVertex.Position ) );
+				FogVertex.SubPosition[0] = Value.Position[0];
+				FogVertex.SubPosition[1] = Value.Position[1];
+				FogVertex.SubPosition[2] = Value.Position[2];
+				FogVertex.SubPosition[3] = Value.Position[3];
+				FogVertex.Diffuse[0] = Value.Color.r;
+				FogVertex.Diffuse[1] = Value.Color.g;
+				FogVertex.Diffuse[2] = Value.Color.b;
+				FogVertex.Diffuse[3] = Value.Color.a;
+				FogVertex.Specular[0] = static_cast<uint8>( NMath::Clamp( DistanceWeight * Fog.Color.R + HeightWeight * HeightFog.Color.R + 0.5f, 0.0f, 255.0f ) );
+				FogVertex.Specular[1] = static_cast<uint8>( NMath::Clamp( DistanceWeight * Fog.Color.G + HeightWeight * HeightFog.Color.G + 0.5f, 0.0f, 255.0f ) );
+				FogVertex.Specular[2] = static_cast<uint8>( NMath::Clamp( DistanceWeight * Fog.Color.B + HeightWeight * HeightFog.Color.B + 0.5f, 0.0f, 255.0f ) );
+				FogVertex.Specular[3] = static_cast<uint8>( NMath::Clamp( Total * 255.0f + 0.5f, 0.0f, 255.0f ) );
+				FogVertex.U = Input.U;
+				FogVertex.V = Input.V;
+				FogVertices.Add( FogVertex );
+				continue;
+			}
 		}
 		Value.U = Input.U;
 		Value.V = Input.V;
@@ -213,6 +284,19 @@ bool CGeometryCommandExecutor::Submit( const TArray<FDrawVertex3D>& Vertices, EG
 	}
 	State.Topology = Topology;
 	State.bAlphaBlend = bAlphaBlend;
+	if ( bFogTextured )
+	{
+		FShaderDrawRequest FogRequest; // 画像つきの三角形を、フォグへ混ぜて描く。
+		FogRequest.Builtin = EBuiltInVertexShader::ShadowLit;
+		FogRequest.BuiltinPixel = EBuiltInPixelShader::FogTextured;
+		FogRequest.State = State;
+		FogRequest.Topology = EGeometryTopology::Triangles;
+		FogRequest.bUseDepth = true;
+		FogRequest.Vertices = reinterpret_cast<const uint8*>( FogVertices.GetData() );
+		FogRequest.NumVertices = FogVertices.Num();
+		FogRequest.Textures[0] = Texture;
+		return ShaderSource->DrawShader( FogRequest, *Geometry );
+	}
 	if ( bReceive )
 	{
 		const float32 Constants[4] = { static_cast<float32>( ReceiverWidth ), static_cast<float32>( ReceiverHeight ), ReceiverAdjust, 0.0f }; // 影の絵の大きさと、補正の深さ。
@@ -602,8 +686,35 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::Execute( const FDraw
 		return EResult::Executed;
 	}
 	case EDrawCommand::HeightFog:
-	case EDrawCommand::Anisotropy:
+	{
+		if ( !View.CanRead<FDrawFogData>() )
+		{
+			return EResult::Rejected;
+		}
+		const auto Data = View.Read<FDrawFogData>(); // 検査後の固定部。
+		if ( Data.Mode < 0 || Data.Mode > static_cast<int32>( EDrawFogMode::Linear ) || !NMath::IsFinite( Data.Start ) || !NMath::IsFinite( Data.End ) || !NMath::IsFinite( Data.Density ) )
+		{
+			return EResult::Rejected;
+		}
+		HeightFog = Data;
+		return EResult::Executed;
+	}
 	case EDrawCommand::TextureTransform:
+	{
+		if ( !View.CanRead<FDrawTextureTransformData>() )
+		{
+			return EResult::Rejected;
+		}
+		const auto Data = View.Read<FDrawTextureTransformData>(); // 検査後の固定部。
+		if ( Data.Enabled != 0 && !( NMath::IsFinite( Data.TranslationU ) && NMath::IsFinite( Data.TranslationV ) && NMath::IsFinite( Data.ScaleU ) && NMath::IsFinite( Data.ScaleV ) && NMath::IsFinite( Data.CenterU )
+			&& NMath::IsFinite( Data.CenterV ) && NMath::IsFinite( Data.Rotation ) ) )
+		{
+			return EResult::Rejected;
+		}
+		TextureTransform = Data;
+		return EResult::Executed;
+	}
+	case EDrawCommand::Anisotropy:
 	{
 		// まだ描画に反映しない状態。図形は、この状態なしで描く。
 		NBackendSupport::ReportUnsupported( "DrawCommands", View.Type == EDrawCommand::HeightFog ? "HeightFog" : View.Type == EDrawCommand::Anisotropy ? "Anisotropy" : "TextureTransform", "The state is ignored" );

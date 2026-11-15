@@ -487,6 +487,7 @@
     <ClCompile Include="Library\Platform\DX12\Resource\Buffer\DX12BufferStore.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Descriptor\DX12DescriptorPool.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Readback\DX12TextureReadback.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureCopy.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureFormat.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureStore.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Timestamp\DX12TimestampStore.cpp" />
@@ -1344,6 +1345,7 @@
     <ClInclude Include="Library\Platform\DX12\Resource\Descriptor\DX12DescriptorPool.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Readback\DX12TextureReadback.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureBinding.h" />
+    <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureCopy.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureFormat.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureStore.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Timestamp\DX12TimestampStore.h" />

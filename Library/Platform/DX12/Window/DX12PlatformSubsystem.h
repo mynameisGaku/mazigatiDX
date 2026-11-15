@@ -52,6 +52,8 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
 	bool BeginRenderTargetPass( const FRenderTargetPassDesc &Desc ) override;
 	// 描画先パスの命令を同じDIRECTキューへ提出し、通常のフレーム記録へ戻す。
 	bool EndRenderTargetPass() override;
+	// 記録中の色（主画面または描画先パス）の矩形を、同じ形式・同じ大きさの画像へ写す。
+	bool CopyColorRegion( int32 X0, int32 Y0, int32 X1, int32 Y1, FTextureResourceHandle Dest ) override;
 	// 現在の記録先（主画面または描画先パス）へGPUタイムスタンプの開始点を積む。
 	bool BeginGpuTimestamp( FGpuTimestampHandle Query ) override;
 	// 開始済みのGPUタイムスタンプを閉じ、解決を記録する。

@@ -1261,6 +1261,9 @@
     <ClCompile Include="Library\Platform\DX12\Resource\Readback\DX12TextureReadback.cpp">
       <Filter>Library\Platform\DX12\Resource\Readback</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureCopy.cpp">
+      <Filter>Library\Platform\DX12\Resource\Texture</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureFormat.cpp">
       <Filter>Library\Platform\DX12\Resource\Texture</Filter>
     </ClCompile>
@@ -3826,6 +3829,9 @@
       <Filter>Library\Platform\DX12\Resource\Readback</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureBinding.h">
+      <Filter>Library\Platform\DX12\Resource\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureCopy.h">
       <Filter>Library\Platform\DX12\Resource\Texture</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureFormat.h">

@@ -39,6 +39,8 @@ class CDX12RenderTargetPass : public IRenderSurface
 	void RecordClear( FColor32 Color ) override;
 	// 接続したDIRECTキューのGPU完了を待つ。
 	bool WaitForGPU() override;
+	// 記録中の最初の色の描画先の矩形を、同じ形式・同じ大きさの画像 Dest へ写す。記録外・範囲外・形式や大きさの違いはfalse。
+	bool CopyColorRegion( int32 X0, int32 Y0, int32 X1, int32 Y1, const FDX12TextureBinding &Dest );
 	// IRenderSurface経由で描画先パスを開始する。
 	bool BeginRenderTargetPass( const FRenderTargetPassDesc &Desc ) override;
 	// IRenderSurface経由で描画先パスを終了・提出する。

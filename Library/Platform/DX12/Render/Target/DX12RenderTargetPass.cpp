@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DX12RenderTargetPass.h"
+#include "Library/Platform/DX12/Resource/Texture/DX12TextureCopy.h"
 #include "Library/Platform/DX12/Pipeline/Graphics/DX12GraphicsPipelineStore.h"
 #include "Library/Platform/DX12/Resource/Buffer/DX12BufferStore.h"
 #include "Library/Platform/DX12/Resource/Timestamp/DX12TimestampStore.h"
@@ -667,6 +668,15 @@ bool CDX12RenderTargetPass::WaitForGPU()
 bool CDX12RenderTargetPass::BeginRenderTargetPass( const FRenderTargetPassDesc &Desc )
 {
 	return Begin( Desc );
+}
+
+bool CDX12RenderTargetPass::CopyColorRegion( int32 X0, int32 Y0, int32 X1, int32 Y1, const FDX12TextureBinding &Dest )
+{
+	if ( !bActive || !bHealthy || !CurrentCommands || !Renderer || ActiveColors.IsEmpty() || !ActiveColors[0].Resource || !Dest.Resource )
+	{
+		return false;
+	}
+	return NDX12TextureCopy::RecordRegionCopy( CurrentCommands.Get(), ActiveColors[0].Resource.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, Dest.Resource.Get(), X0, Y0, X1, Y1 ) && Renderer->PinTexture( Dest );
 }
 
 bool CDX12RenderTargetPass::EndRenderTargetPass()

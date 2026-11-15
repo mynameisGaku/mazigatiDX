@@ -104,6 +104,7 @@ private:
 	FShaderRecord BuiltInShadowDepth;
 	FShaderRecord BuiltInShadowLit;
 	FShaderRecord BuiltInShadowLitTextured;
+	FShaderRecord BuiltInFogTextured;
 	// 影の絵ごとの、最後に描いたときの値
 	struct FShadowPass
 	{
