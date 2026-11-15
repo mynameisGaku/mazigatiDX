@@ -172,6 +172,11 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
 	FTaskFence EnqueueRenderCommand( TCallable<void( const FRenderCommandContext & )> Task, const char *Name = nullptr ) override;
 	// 今フレームのホイールを返す。
 	void GetWheel( float32 &X, float32 &Y ) const override;
+	// 窓に届いたメッセージの受け取り手を足す／外す。
+	void AddMessageObserver( INativeWindowMessageObserver *Observer ) override;
+	void RemoveMessageObserver( INativeWindowMessageObserver *Observer ) override;
+	// 受け取り手へ、メッセージを順に渡す。どれかが処理を引き受けたら true（OutResultを返す）。ウィンドウ手続きからのみ呼ぶ。
+	bool DispatchNativeMessage( void *WindowHandle, uint32 Message, uint64 WParam, int64 LParam, int64 &OutResult );
 	// OSのホイール通知を貯める。ウィンドウ手続きからのみ呼ぶ。
 	void AddWheel( float32 X, float32 Y );
 	// OSのWM_SIZE通知を受けて最小化状態と次フレームのサイズ追従を記録する。ウィンドウ手続きからのみ呼ぶ。
@@ -212,6 +217,7 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
 	float64 TotalTime = 0; // 累積秒数。
 	uint64 FrameCount = 0; // 表示した回数。
 	float32 PendingWheelX = 0, PendingWheelY = 0; // OSから貯めた回転量。
+	TArray<INativeWindowMessageObserver *> MessageObservers; // 窓のメッセージの受け取り手（借用）。
 	float32 WheelX = 0, WheelY = 0; // フレームに固定した回転量。
 	int32 SavedRect[4] = {}; // 通常ウィンドウへ戻す位置と大きさ。
 };

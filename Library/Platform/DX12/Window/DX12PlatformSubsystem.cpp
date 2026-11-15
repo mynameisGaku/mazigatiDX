@@ -51,6 +51,11 @@ namespace
 				const float32 Amount = static_cast<float32>( GET_WHEEL_DELTA_WPARAM( WParam ) ) / WHEEL_DELTA; // 1段を1とする。
 				Owner->AddWheel( Message == WM_MOUSEHWHEEL ? Amount : 0, Message == WM_MOUSEWHEEL ? Amount : 0 );
 			}
+			int64 ObserverResult = 0; // 受け取り手が返す値。
+			if ( Owner->DispatchNativeMessage( Window, Message, static_cast<uint64>( WParam ), static_cast<int64>( LParam ), ObserverResult ) )
+			{
+				return static_cast<LRESULT>( ObserverResult );
+			}
 			if ( Message == WM_SETCURSOR && LOWORD( LParam ) == HTCLIENT && !Owner->IsMouseCursorVisible() )
 			{
 				SetCursor( nullptr );
@@ -591,6 +596,32 @@ void CDX12PlatformSubsystem::GetWheel( float32 &X, float32 &Y ) const
 {
 	X = WheelX;
 	Y = WheelY;
+}
+
+void CDX12PlatformSubsystem::AddMessageObserver( INativeWindowMessageObserver *Observer )
+{
+	if ( Observer )
+	{
+		MessageObservers.AddUnique( Observer );
+	}
+}
+
+void CDX12PlatformSubsystem::RemoveMessageObserver( INativeWindowMessageObserver *Observer )
+{
+	MessageObservers.RemoveSingle( Observer );
+}
+
+bool CDX12PlatformSubsystem::DispatchNativeMessage( void *WindowHandle, uint32 Message, uint64 WParam, int64 LParam, int64 &OutResult )
+{
+	const TArray<INativeWindowMessageObserver *> Observers = MessageObservers; // 処理の途中で外されても、安全に回れるように写す。
+	for ( INativeWindowMessageObserver *Observer : Observers )
+	{
+		if ( MessageObservers.Contains( Observer ) && Observer->OnNativeWindowMessage( WindowHandle, Message, WParam, LParam, OutResult ) )
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 void CDX12PlatformSubsystem::AddWheel( float32 X, float32 Y )

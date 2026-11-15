@@ -362,3 +362,14 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **検査**: `RunDX12SampleImageTests.ps1` に、Editor の material / model / world / effect を足した（UI の灰色の面が、画面の 2 割以上、material の球が描かれている、フレームを捨てない、未対応を出さない。58 項目）。描画先を戻す 1 行を消す変異で、5 項目が失敗することを確かめた。
 - **見た目の差**: DxLib の撮影は、何も描かない場所が透明で、`flatten_png.py` が暗い青で埋めるだけ（実際の窓は、どちらも黒）。material の球は、時間（`DeltaTime` で回る）で見た目が変わるため、フレーム番号が同じでも、2 つのバックエンドで揃わない（どちらも、明るい／半分暗い／地平線の帯、の見た目を巡る）。
 - **次の作業**: ビデオメモリの実測 → `MaterialRibbon3D`・アニメーションつきのモデル（どのサンプルも使わない）→ 画像の mip → `Invert` 系の合成。
+
+## 2026-11-16 追記: DX12 の文字入力・クリップボード・カーソル（Windows の入力層）
+- **目的**: DX12 では、UI の入力欄（`UITextBox`）が使う `ITextInput`・`IClipboard`・`ICursorControl` の実装が無く、文字を打てなかった。描画 API を知らない Windows の層（`Library/Platform/Windows/Input`）に、役割ごとのクラスで足した（DxLib の入力は、DxLib の層のまま）。
+- **窓のメッセージ**: `INativeWindow` に `AddMessageObserver` / `RemoveMessageObserver` と、受け取り手 `INativeWindowMessageObserver::OnNativeWindowMessage`（OS の値だけ。Core は windows.h を読まない）を足した。`CDX12PlatformSubsystem` のウィンドウ手続きが、ImGui より前に、足した順に渡す。true を返すと、OS の既定の処理（と ImGui）へ進まない。
+- **`CWindowsTextInputSubsystem`（`ITextInput`）**: `SetTextInputActive( true )` の間だけ受ける（false の間は、すべて素通し。ゲーム操作に変換が割り込まない）。`WM_CHAR` → 文字（UTF-16 → UTF-8、サロゲートペアは 2 つで 1 文字、制御文字と前半の無い後半は捨てる。ImGui にも渡す）。`WM_KEYDOWN` → 編集の操作（Backspace / Delete / Enter / Tab / Escape / 矢印・Home・End・PageUp / PageDown、Shift で範囲を広げる、Ctrl + C / X / V / A。AltGr は文字を打つ操作なので除く。キーの自動反復は、`WM_KEYDOWN` がそのまま繰り返し届く）。IME は、`WM_IME_SETCONTEXT` で OS の変換の窓・候補の窓を出さず、`WM_IME_COMPOSITION`（確定した文字 / 途中の文字列とカーソル）と `WM_IME_NOTIFY`（候補。窓が見せている 1 ページぶんと、選んでいる番号）を、`FImeComposition` にする。`Tick`（PreUpdate）で、このフレームの入力に確定する（メッセージは、`BeginFrame` で処理済み）。
+- **`CWindowsClipboardSubsystem`（`IClipboard`）**: `CF_UNICODETEXT`。別のアプリが開いている間は、少し待って開き直す。文字列でない中身は false。
+- **`CWindowsCursorControlSubsystem`（`ICursorControl`）**: 表示は `IPlatform`（窓の `WM_SETCURSOR`）、位置は論理座標 → クライアント座標 → `SetCursorPos`（窓がフォーカスを持たない間は false。他のアプリのカーソルを動かさない）。
+- **検査**: 検査用リポジトリの `RunWindowsInputTests.ps1`（独立した実行ファイル `WindowsInputContract`。`RunAllChecks` の「Windows input contracts」。Debug／Release）。窓なしで、合成したメッセージを渡す 40 項目（受けていない間の素通し・文字の順序・全角・サロゲートペア・制御文字・13 種類のキー・自動反復・IME のメッセージ・切り替えでの破棄・クリップボードの往復（ユーザーのクリップボードが文字列か空のときだけ行い、元に戻す）・カーソル）。制御文字の除外とサロゲートの除外を外す変異で、失敗することを確かめた。
+- **未確認（実機）**: Microsoft IME の変換中の見た目（途中の文字列・候補の位置は、UI が描く）、モダンな IME が `ISC_SHOWUI*` を守るか。マウスを使う入力欄の操作は、このツールからは動かせない（DX12 の入力は OS の実カーソルを読むため、PostMessage では動かない）。`IDisplayInfo`・`IWindowControl`・`ITouchInput` は、まだ無い。
+- **確認**: Debug／Release の警告 0、台帳は 510 項目（新しい 3 項目を分類）で整合、書式検査成功、`RunAllChecks -SkipBuild -Quick` は 46 ステップ成功。UI サンプルを DX12 で起動すると、3 つのサブシステムが生成される。
+- **次の作業**: `IDisplayInfo`・`IWindowControl`（ウィンドウモード・解像度・タイトル）→ ビデオメモリの実測 → `MaterialRibbon3D`・アニメーションつきのモデル → 画像の mip → `Invert` 系の合成。

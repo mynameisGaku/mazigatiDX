@@ -10,7 +10,7 @@
 
 |分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|
 |---|---:|---:|---:|---:|---:|---:|---:|
-|API|362|4|93|102|162|0|1|
+|API|365|4|84|112|164|0|1|
 |Draw|101|0|10|51|40|0|0|
 |Sample|33|30|0|3|0|0|0|
 |Editor|11|11|0|0|0|0|0|
@@ -41,8 +41,8 @@
 |[API.ICharacterControllers.DestroyAllCharacters](../Library/Core/Interfaces/Physics/ICharacterControllers.h#L37)|Implemented|R9|既存の自己確認とDxLib／DX12／Nullの起動・呼出・通知・終了を比較|GPUを所有しない共通実装／callback契約。DX12構成の回帰検査は未完了||
 |[API.ICharacterControllers.DestroyCharacter](../Library/Core/Interfaces/Physics/ICharacterControllers.h#L36)|Implemented|R9|既存の自己確認とDxLib／DX12／Nullの起動・呼出・通知・終了を比較|GPUを所有しない共通実装／callback契約。DX12構成の回帰検査は未完了||
 |[API.ICharacterControllers.GetCharacterCount](../Library/Core/Interfaces/Physics/ICharacterControllers.h#L40)|Implemented|R9|既存の自己確認とDxLib／DX12／Nullの起動・呼出・通知・終了を比較|GPUを所有しない共通実装／callback契約。DX12構成の回帰検査は未完了||
-|[API.IClipboard.GetText](../Library/Core/Interfaces/Input/IClipboard.h#L18)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
-|[API.IClipboard.SetText](../Library/Core/Interfaces/Input/IClipboard.h#L20)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
+|[API.IClipboard.GetText](../Library/Core/Interfaces/Input/IClipboard.h#L18)|Partial|R8|作成、入出力、時系列、focusの変化、失敗と終了を比較|Windowsの文字列（CF_UNICODETEXT）を、CWindowsClipboardSubsystemが貸す。日本語・サロゲートペアの往復を、契約検査（RunWindowsInputTests）で確認。文字列でない中身（画像など）はfalse||
+|[API.IClipboard.SetText](../Library/Core/Interfaces/Input/IClipboard.h#L20)|Partial|R8|作成、入出力、時系列、focusの変化、失敗と終了を比較|Windowsの文字列（CF_UNICODETEXT）を、CWindowsClipboardSubsystemが貸す。日本語・サロゲートペアの往復を、契約検査（RunWindowsInputTests）で確認。文字列でない中身（画像など）はfalse||
 |[API.ICollisionLayers.GetLayerCollision](../Library/Core/Interfaces/Physics/ICollisionLayers.h#L27)|Implemented|R9|既存の自己確認とDxLib／DX12／Nullの起動・呼出・通知・終了を比較|GPUを所有しない共通実装／callback契約。DX12構成の回帰検査は未完了||
 |[API.ICollisionLayers.GetLayerCollisionMask](../Library/Core/Interfaces/Physics/ICollisionLayers.h#L32)|Implemented|R9|既存の自己確認とDxLib／DX12／Nullの起動・呼出・通知・終了を比較|GPUを所有しない共通実装／callback契約。DX12構成の回帰検査は未完了||
 |[API.ICollisionLayers.ResetLayerCollision](../Library/Core/Interfaces/Physics/ICollisionLayers.h#L35)|Implemented|R9|既存の自己確認とDxLib／DX12／Nullの起動・呼出・通知・終了を比較|GPUを所有しない共通実装／callback契約。DX12構成の回帰検査は未完了||
@@ -55,9 +55,9 @@
 |[API.IComputeQueue.SubmitCompute](../Library/Core/Interfaces/Render/IComputeQueue.h#L16)|Implemented|R1|CPU参照とDX12の共通契約、SM5/5.1、既定GPU/WARP、Debug/Release、SDK診断、全入力拒否・順序・番号解放・未完了寿命・再待機を確認|RAW／構造体／定数とRGBA8画像の全範囲を検査後に提出。CBV／SRV／UAVの遷移と完了までの実体保持|Docs/R1_COMPUTE.md; Docs/R1_COMPUTE_BUFFER_LAYOUTS.md; Docs/R1_COMPUTE_TEXTURE_RESOURCES.md; Library/Platform/DX12/Command/Compute/DX12ComputeQueue.cpp|
 |[API.IComputeQueue.SubmitComputeWithTimestamp](../Library/Core/Interfaces/Render/IComputeQueue.h#L18)|Implemented|R1|CPU参照・既定GPU・WARP・デバイス喪失・アプリ起動で、同一DIRECTキューcompute前後のGPUタイムスタンプ記録と不正ハンドル拒否を確認|Dispatches全検証後にのみQueryHeap Begin/End・ResolveQueryData・専用Fenceを結合し、GPU完了後の遅延解放と非ゲームスレッド拒否を実施|Docs/R1_GPU_TIMESTAMPS.md; Library/Platform/DX12/Command/Compute/DX12ComputeQueue.cpp; Source/SelfTest/RunTimestampTests.ps1|
 |[API.IComputeQueue.WaitCompute](../Library/Core/Interfaces/Render/IComputeQueue.h#L23)|Implemented|R1|CPU参照とDX12の共通契約、SM5/5.1、既定GPU/WARP、Debug/Release、SDK診断、全入力拒否・順序・番号解放・未完了寿命・再待機を確認|RAWバッファのSRV/UAVと同じDIRECTキューへの非同期提出・完了照会・期限付き待機。SM6/DXC、描画との資源共有と複数キューは未接続|Docs/R1_COMPUTE.md|
-|[API.ICursorControl.IsCursorVisible](../Library/Core/Interfaces/Input/ICursorControl.h#L20)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
-|[API.ICursorControl.SetCursorPosition](../Library/Core/Interfaces/Input/ICursorControl.h#L23)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
-|[API.ICursorControl.SetCursorVisible](../Library/Core/Interfaces/Input/ICursorControl.h#L18)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
+|[API.ICursorControl.IsCursorVisible](../Library/Core/Interfaces/Input/ICursorControl.h#L20)|Partial|R8|作成、入出力、時系列、focusの変化、失敗と終了を比較|表示の状態はIPlatform（窓のWM_SETCURSOR）が持ち、CWindowsCursorControlSubsystemが貸す。実機の見た目の比較は未完了||
+|[API.ICursorControl.SetCursorPosition](../Library/Core/Interfaces/Input/ICursorControl.h#L23)|Partial|R8|作成、入出力、時系列、focusの変化、失敗と終了を比較|論理解像度の座標をクライアント座標へ直し、OSのカーソルを動かす。窓がフォーカスを持たない間・窓の大きさが0のときはfalse。実機での位置の比較は未完了||
+|[API.ICursorControl.SetCursorVisible](../Library/Core/Interfaces/Input/ICursorControl.h#L18)|Partial|R8|作成、入出力、時系列、focusの変化、失敗と終了を比較|表示の状態はIPlatform（窓のWM_SETCURSOR）が持ち、CWindowsCursorControlSubsystemが貸す。実機の見た目の比較は未完了||
 |[API.IDisplayInfo.GetDisplay](../Library/Core/Interfaces/Platform/IDisplayInfo.h#L27)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
 |[API.IDisplayInfo.GetDisplayCount](../Library/Core/Interfaces/Platform/IDisplayInfo.h#L21)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
 |[API.IDisplayInfo.GetDisplayModes](../Library/Core/Interfaces/Platform/IDisplayInfo.h#L30)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
@@ -177,8 +177,11 @@
 |[API.IMovieBackend.SeekMovie](../Library/Core/Interfaces/Video/MovieBackend.h#L43)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
 |[API.IMovieBackend.SetMovieSpeed](../Library/Core/Interfaces/Video/MovieBackend.h#L48)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
 |[API.IMovieBackend.SetMovieVolume](../Library/Core/Interfaces/Video/MovieBackend.h#L46)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
-|[API.INativeWindow.GetNativeWindow](../Library/Core/Interfaces/Platform/INativeWindow.h#L12)|Implemented|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
-|[API.INativeWindow.GetWheel](../Library/Core/Interfaces/Platform/INativeWindow.h#L14)|Implemented|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
+|[API.INativeWindow.AddMessageObserver](../Library/Core/Interfaces/Platform/INativeWindow.h#L31)|Implemented|R8|登録・解除・二重登録・処理の途中の解除・寿命を確認|DX12の窓が、窓のメッセージの受け取り手を足した順に持つ（同じものは二重に足さない）。文字入力（CWindowsTextInputSubsystem）が使う。窓の終了前に、受け取り手が外す||
+|[API.INativeWindow.GetNativeWindow](../Library/Core/Interfaces/Platform/INativeWindow.h#L27)|Implemented|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
+|[API.INativeWindow.GetWheel](../Library/Core/Interfaces/Platform/INativeWindow.h#L29)|Implemented|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
+|[API.INativeWindow.RemoveMessageObserver](../Library/Core/Interfaces/Platform/INativeWindow.h#L32)|Implemented|R8|登録・解除・二重登録・処理の途中の解除・寿命を確認|DX12の窓から、受け取り手を外す。無いものを外しても何もしない。処理の途中に外しても、安全に回れる（受け取り手の一覧を写して回す）||
+|[API.INativeWindowMessageObserver.OnNativeWindowMessage](../Library/Core/Interfaces/Platform/INativeWindow.h#L17)|Partial|R8|メッセージごとの処理・返り値・OS既定処理への受け渡しを確認|文字入力が、受けていない間はfalse（OS・ImGuiへ渡す）、WM_CHAR・WM_KEYDOWNはfalse（ImGuiも受ける）、IMEのメッセージはtrue（OSの変換の窓を出さない）。IMEは実機との比較が未完了||
 |[API.IPcmStreamBackend.CreatePcmStream](../Library/Core/Interfaces/Audio/PcmStreamBackend.h#L23)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
 |[API.IPcmStreamBackend.DeletePcmStream](../Library/Core/Interfaces/Audio/PcmStreamBackend.h#L24)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
 |[API.IPcmStreamBackend.GetPcmStreamQueuedFrames](../Library/Core/Interfaces/Audio/PcmStreamBackend.h#L29)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
@@ -349,10 +352,10 @@
 |[API.ISoundBackend.GetSoundLength](../Library/Core/Interfaces/Asset/SoundBackend.h#L23)|Missing|R8|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.ISoundBackend.LoadSound](../Library/Core/Interfaces/Asset/SoundBackend.h#L18)|Missing|R8|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IStaticModelSource.GetStaticModelDrawView](../Library/Core/Interfaces/Render/IStaticModelSource.h#L12)|Implemented|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
-|[API.ITextInput.GetImeComposition](../Library/Core/Interfaces/Input/ITextInput.h#L31)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
-|[API.ITextInput.GetTextInputEvents](../Library/Core/Interfaces/Input/ITextInput.h#L28)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
-|[API.ITextInput.IsTextInputActive](../Library/Core/Interfaces/Input/ITextInput.h#L25)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
-|[API.ITextInput.SetTextInputActive](../Library/Core/Interfaces/Input/ITextInput.h#L24)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
+|[API.ITextInput.GetImeComposition](../Library/Core/Interfaces/Input/ITextInput.h#L31)|Partial|R8|作成、入出力、時系列、focusの変化、失敗と終了を比較|窓のメッセージ（WM_CHAR・WM_KEYDOWN・IME）をCWindowsTextInputSubsystemが受ける。WM_CHAR・編集のキー・サロゲートペアは契約検査で確認。IMEの途中の文字列・候補は、実機のIMEとの比較が未完了||
+|[API.ITextInput.GetTextInputEvents](../Library/Core/Interfaces/Input/ITextInput.h#L28)|Partial|R8|作成、入出力、時系列、focusの変化、失敗と終了を比較|窓のメッセージ（WM_CHAR・WM_KEYDOWN・IME）をCWindowsTextInputSubsystemが受ける。WM_CHAR・編集のキー・サロゲートペアは契約検査で確認。IMEの途中の文字列・候補は、実機のIMEとの比較が未完了||
+|[API.ITextInput.IsTextInputActive](../Library/Core/Interfaces/Input/ITextInput.h#L25)|Partial|R8|作成、入出力、時系列、focusの変化、失敗と終了を比較|窓のメッセージ（WM_CHAR・WM_KEYDOWN・IME）をCWindowsTextInputSubsystemが受ける。WM_CHAR・編集のキー・サロゲートペアは契約検査で確認。IMEの途中の文字列・候補は、実機のIMEとの比較が未完了||
+|[API.ITextInput.SetTextInputActive](../Library/Core/Interfaces/Input/ITextInput.h#L24)|Partial|R8|作成、入出力、時系列、focusの変化、失敗と終了を比較|窓のメッセージ（WM_CHAR・WM_KEYDOWN・IME）をCWindowsTextInputSubsystemが受ける。WM_CHAR・編集のキー・サロゲートペアは契約検査で確認。IMEの途中の文字列・候補は、実機のIMEとの比較が未完了||
 |[API.ITextureBackend.CreateRenderTarget](../Library/Core/Interfaces/Asset/TextureBackend.h#L34)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|8ビットのRGBAだけ（浮動小数点は未対応）。マルチサンプルはなしで作る||
 |[API.ITextureBackend.CreateTextureFromMemory](../Library/Core/Interfaces/Asset/TextureBackend.h#L21)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|WIC画像経路あり。対応形式の同等性と非同期処理が未完了||
 |[API.ITextureBackend.CreateTextureFromPixels](../Library/Core/Interfaces/Asset/TextureBackend.h#L45)|Implemented|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|登録画像の処理あり。GPU完了まで遅延解放。Windows互換比較前||

@@ -1477,7 +1477,16 @@
     <ClCompile Include="Library\Platform\Windows\Image\WicImageEncoder.cpp">
       <Filter>Library\Platform\Windows\Image</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\Windows\Input\WindowsClipboardSubsystem.cpp">
+      <Filter>Library\Platform\Windows\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Windows\Input\WindowsCursorControlSubsystem.cpp">
+      <Filter>Library\Platform\Windows\Input</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\Windows\Input\WindowsInputSubsystem.cpp">
+      <Filter>Library\Platform\Windows\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Windows\Input\WindowsTextInputSubsystem.cpp">
       <Filter>Library\Platform\Windows\Input</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\Windows\Text\WindowsFontStore.cpp">
@@ -4035,7 +4044,16 @@
     <ClInclude Include="Library\Platform\Windows\Image\WicImageEncoder.h">
       <Filter>Library\Platform\Windows\Image</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Platform\Windows\Input\WindowsClipboardSubsystem.h">
+      <Filter>Library\Platform\Windows\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Windows\Input\WindowsCursorControlSubsystem.h">
+      <Filter>Library\Platform\Windows\Input</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Platform\Windows\Input\WindowsInputSubsystem.h">
+      <Filter>Library\Platform\Windows\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Windows\Input\WindowsTextInputSubsystem.h">
       <Filter>Library\Platform\Windows\Input</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\Windows\Text\WindowsFontStore.h">
