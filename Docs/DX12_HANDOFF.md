@@ -1,4 +1,4 @@
-# DX12開発の引き継ぎ
+﻿# DX12開発の引き継ぎ
 
 最終更新: 2026-11-15（日本時間）。この文書は作業中も更新します。実装済み、未接続、検証済みを分け、予定を完了扱いにしません。
 
@@ -264,3 +264,19 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - `FImportOptions::AnimFps` が非有限の場合、および全クリップ・全ノードの見積もりが1048576行列を超える場合は採取前に失敗理由を返す。1未満の有限値は従来どおり1 fpsとして扱い、アニメーションを取り込まない場合は頻度を参照しない。静止ノードも見積もりに含むため、実際に保持するtrackが少ないモデルでも上限を超える場合がある。詳細は[開発手順](DEVELOPMENT.md#モデル変換での変形データの診断)を参照する。
 - 検査側[726d2e2](https://github.com/mynameisGaku/framework-test/commit/726d2e2d53afdc80d4cfc53e2e84b94859a85a2a)で有限値・NaN・無限大・不正な許容値・過大なサンプリング・無効な出力と正常FBXの維持を検査。分離した作業コピーでDebug／Releaseソリューションをビルドし、アセット検査はDebugのワーカー0本で9960条件・4省略、Releaseのワーカー4本で9961条件・4省略が成功した。`StaticModel` OBJサンプルは両構成のDX12既定GPU／WARPで30フレーム正常終了、取り込みエラーなし。画素比較や全形式の検査ではない。
 - `CheckSourceFormat.ps1` は1831ファイル成功し、`UpdateBackendCompatibility.ps1 -Check` は488項目で成功。参考: [Microsoftの有限値判定](https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/finite-finitef?view=msvc-170)、[Unreal Engineの描画スレッドと所有](https://dev.epicgames.com/documentation/en-us/unreal-engine/threaded-rendering-in-unreal-engine)。
+
+## Claude側との統合と、サンプルを描ける範囲の拡大（2026-11-15）
+
+- **統合**: `framework-stl`（`C:/Users/g0190/.claude/worktrees/framework-stl`）の新しいブランチ`Dx12`で、`Asset`（Claude側の作業）へ`backend-dx12`を取り込んだ（コミット`d057f7e`）。競合は`README.md`・`mazigatiDX.vcxproj`・`.filters`だけで、`GenerateProjectFiles.bat`で作り直した。検査リポジトリ（`framework-test`）にも同じ名前のブランチ`Dx12`を作り、`codex/dx12-windows-validation`を取り込んだ（`6a25382`）。どちらも**未push**。`Asset`と`backend-dx12`は元のまま。
+- **方針**: ロードマップのR2へ進み、「既存のサンプルがDX12でも同じ絵になること」を目標にする。確認は、`Docs/AI_WORKFLOW/tools/shot_dx12.ps1`（サンプルをDX12で動かして絵と未対応の報告を集める。`-Backend dxlib`で比べる絵も撮れる）と`contact_sheet.py`（並べて見る）で行う。
+- **描けるようになったもの**（共通の実行側`Platform/Render`に実装。DxLibと同じ式・同じ意味）:
+  - 未対応の命令で、残りを丸ごと飛ばさず、その命令だけを飛ばす（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）。
+  - ライティング（`CVertexLighting`。頂点ごとにCPUで計算。ライト6つ・既定のライト・環境光・材質・光の計算の仕方）。`Cone3D`・`Pixel3D`、法線つきの`Cube3D`。
+  - 2D: `Oval`・`RoundBox`・`Sprite`・`SpriteRect`・`SpritePivot`・`Transform2D`・幅0の`Box`（線）、合成（Add・Subtract・Multiply・Pma系。PSOの混ぜ方）。
+  - 文字: フォント指定（`CWindowsGdiText`・`CWindowsFontStore`・`IFontDrawSource`。縁取り・字間・行の高さ・太さ・斜体・位置揃え・`TextStyled`の拡大・回転・基準点）。`IFontBackend`の全関数。
+  - 描画先（`PushTarget`/`PopTarget`。8ビットRGBA＋深度。`CreateRenderTarget`・`ReadRenderTargetPixels`・`SaveRenderTarget`）。
+  - 距離フォグ（頂点ごとのCPU計算。画像つきの図形には掛からない）。
+  - TGAの画像（`NTgaDecoder`。WICはTGAを読めない。エフェクトの組み込みの丸などが使う）。
+- **まだ描けない・未実装**（サンプルで確認済み）: 影（`BeginShadowMap`/`UseShadowMap`）、シェーダー（`UseShader`・`PrimitiveShader3D`・`ShaderRect`・`ShaderQuad3D`・`ShaderConstants`・`ShaderTexture`・`ShaderOutputTarget`。`IShaderBackend`のDX12実装も無い）、浮動小数点の描画先、材質（Materials）、`CopyScreen`・`ImageFilter`・`ImageBlend`、`Tile`・`CircleGauge`、高さフォグ・異方性・`TextureTransform`、`AddColor`・`AlphaTest`・マスク、アニメーションつきのモデル（`Model3D`の`AnimIndex`）、音声・動画。`Shadows`・`Shaders`・`PostEffects`・`Materials`のサンプルは、見出しだけで3Dが出ない。
+- **次の作業**: シェーダー（既存の`FGraphicsPipelineDesc`・`DrawGraphicsPipeline`へ、`IShaderBackend`と`PrimitiveShader3D`等をつなぐ。88バイトの`FDrawShaderVertex3D`は、112バイトの`FShaderVertex3D`へ変換して渡す）→ 浮動小数点の描画先と`CopyScreen` → 影 → 材質。
+- **検査**: Debug／Release各4プロジェクトの警告・エラー0、`RunAllChecks.ps1 -SkipBuild -Quick`の42項目すべて成功、`CheckSourceFormat.ps1`成功、互換台帳496項目で成功。サンプル集とテンプレートの全検査（`RunSamplesTest.ps1`）は、統合後まだ回していない。互換台帳は、実装した項目を`Partial`にした（DxLibとの画素比較が済んだものは無いので`Verified`は0のまま）。
