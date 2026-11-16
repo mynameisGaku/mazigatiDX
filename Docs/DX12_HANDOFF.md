@@ -459,4 +459,5 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 ## 2026-11-16 追記: 固定バックエンドのビルド
 - ライブラリ（`mazigatiDX.vcxproj`、Debug）を、実装を固定して、別の出力先（`/p:OutDir` / `/p:IntDir`）で、それぞれ作った: `MazigatiBackend=dx12` + `MazigatiWithoutDxLib=true`、`MazigatiBackend=dxlib` + `MazigatiWithoutDX12=true`、`MazigatiBackend=null` + 両方なし。3 通りとも、エラー 0・警告 0（`MAZIGATI_BACKEND` のマクロで、実装を切り分けたコードも通る）。
 - DxLib を外した DX12 のライブラリへ、`MaterialEffectContract`（80 項目）と `ModelRigContract`（115 項目）をリンクして実行し、どちらも合格（DX12 だけで、リンクもできる）。確かめ方: 一時のルートに、`Library` と `x64\Debug`（外したライブラリの場所）への junction を作り、`-FrameworkRoot` へ渡す（終わったら、junction は `rmdir` で外す）。
-- まだ: Samples / Editor の実行ファイルを、固定した実装で作って起動すること（ライブラリの単体でしか確かめていない）。
+- **Samples / Editor も、`MazigatiBackend=dx12` + `MazigatiWithoutDxLib=true` で作れた**（エラー 0）。作業コピーの外で確かめた: ソース（`Library` / `Build` / `Samples`（`x64` と `Assets` を除く）/ `Editor` / `Source`（`SelfTest` を除く）/ `Tools` / `VendorModules` / `EngineContent` とプロジェクトファイル）を、別のフォルダへ複写して、そこでビルドする（出力が重ならず、通常のビルドを壊さない。約 37 MB の複写 + ビルドで数 GB。ディスクの空きに注意）。`Samples.exe` は、`x64\Debug` へ置き直して `shot_dx12.ps1 -Root <複写先>` で撮影できる。
+- **起動も確かめた**: DxLib を含まない `Samples.exe` が、Shapes / Geometry3D / StaticModel（FBX・OBJ の取り込みも通る）を、DX12 で正しく描いた。DxLib のみ・Null の固定は、ライブラリのビルドまで（実行ファイルは未確認）。
