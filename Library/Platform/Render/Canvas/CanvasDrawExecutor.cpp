@@ -911,7 +911,11 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 				Mode = EGeometryBlend::Multiply;
 				break;
 			case EDrawBlend::Invert:
+			case EDrawBlend::PmaInvert: // 乗算済みアルファの反転は、DxLib では、通常の反転と同じ結果（実測）。
 				Mode = EGeometryBlend::Invert; // 描く色を反転して、アルファブレンドする（図形・画像・文字・3D のすべて）。
+				break;
+			case EDrawBlend::MultiplyAlpha:
+				Mode = EGeometryBlend::MultiplyAlpha; // 描画先 x ( 1 ＋ ( 描く色 － 1 ) x アルファ )。
 				break;
 			case EDrawBlend::PmaAlpha:
 				Mode = EGeometryBlend::PremultipliedAlpha;
@@ -924,7 +928,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 				break;
 			default:
 				// 反転などは、まだ無い。通常の合成で描く（色は変わるが、形は出る）。
-				NBackendSupport::ReportUnsupported( "DrawCommands", "Blend mode", "MultiplyAlpha / PmaInvert are drawn with Alpha" );
+				NBackendSupport::ReportUnsupported( "DrawCommands", "Blend mode", "An unknown blend mode is drawn with Alpha" );
 				break;
 			}
 			bAlphaBlend = Data.Mode != static_cast<int32>( EDrawBlend::Opaque );

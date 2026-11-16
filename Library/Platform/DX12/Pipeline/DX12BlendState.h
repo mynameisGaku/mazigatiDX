@@ -77,6 +77,7 @@ namespace NDX12BlendState
 				Blend.DestBlendAlpha = D3D12_BLEND_ONE;
 				break;
 			case EGeometryBlend::Multiply:
+			case EGeometryBlend::MultiplyAlpha: // 色の側で、アルファを掛けてある（ピクセルシェーダー）。混ぜ方は、乗算と同じ。
 				Blend.SrcBlend = D3D12_BLEND_ZERO;
 				Blend.DestBlend = D3D12_BLEND_SRC_COLOR;
 				Blend.SrcBlendAlpha = D3D12_BLEND_ZERO;

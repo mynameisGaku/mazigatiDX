@@ -10,7 +10,7 @@ bool CDX12GeometryPipelineStore::Initialize( ID3D12Device *InDevice )
 		return false;
 	}
 	Device = InDevice;
-	const char Source[] = "#ifdef INVERT\n#define FIN(c) float4(1.0-(c).rgb,(c).a)\n#else\n#define FIN(c) (c)\n#endif\n"
+	const char Source[] = "#if defined(INVERT)\n#define FIN(c) float4(1.0-(c).rgb,(c).a)\n#elif defined(MULA)\n#define FIN(c) float4(lerp(float3(1.0,1.0,1.0),(c).rgb,(c).a),(c).a)\n#else\n#define FIN(c) (c)\n#endif\n"
 		"struct V { float4 p:POSITION; float4 c:COLOR; float2 uv:TEXCOORD; }; struct P { float4 p:SV_POSITION; float4 c:COLOR; float2 uv:TEXCOORD; }; P VS(V v) { P p; p.p=v.p; p.c=v.c; p.uv=v.uv; return p; } float4 PS(P p):SV_TARGET { return FIN(p.c); } Texture2D image:register(t0); SamplerState sampling:register(s0); float4 TexturePS(P p):SV_TARGET { float4 color=image.Sample(sampling,p.uv)*p.c; if(color.a<=0) discard; return FIN(color); }"
 		"Texture2D maskImage:register(t1); cbuffer cbMask:register(b0) { uint4 maskInfo; }; "
 		"float MaskValue(float4 position) { uint w,h; maskImage.GetDimensions(w,h); uint2 q=uint2(position.xy); if(q.x>=w||q.y>=h) { return 1.0; } float4 t=maskImage.Load(int3(q,0)); float m=maskInfo.x==0?t.a:(maskInfo.x==1?t.r:(maskInfo.x==2?t.g:t.b)); return maskInfo.y!=0?1.0-m:m; } "
@@ -25,6 +25,13 @@ bool CDX12GeometryPipelineStore::Initialize( ID3D12Device *InDevice )
 	const D3D_SHADER_MACRO Invert[] = { { "INVERT", "1" }, { nullptr, nullptr } }; // 描く色を反転する版。
 	if ( FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", Invert, nullptr, "PS", "ps_5_0", 0, 0, &InvertedPixelShader, nullptr ) ) || FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", Invert, nullptr, "TexturePS", "ps_5_0", 0, 0, &InvertedTexturedPixelShader, nullptr ) )
 		|| FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", Invert, nullptr, "MaskedPS", "ps_5_0", 0, 0, &InvertedMaskedPixelShader, nullptr ) ) || FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", Invert, nullptr, "MaskedTexturePS", "ps_5_0", 0, 0, &InvertedMaskedTexturedPixelShader, nullptr ) ) )
+	{
+		ResetAfterGPUIdle();
+		return false;
+	}
+	const D3D_SHADER_MACRO MultiplyAlpha[] = { { "MULA", "1" }, { nullptr, nullptr } }; // 色へアルファを掛けて乗算する版。
+	if ( FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", MultiplyAlpha, nullptr, "PS", "ps_5_0", 0, 0, &MultiplyAlphaPixelShader, nullptr ) ) || FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", MultiplyAlpha, nullptr, "TexturePS", "ps_5_0", 0, 0, &MultiplyAlphaTexturedPixelShader, nullptr ) )
+		|| FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", MultiplyAlpha, nullptr, "MaskedPS", "ps_5_0", 0, 0, &MultiplyAlphaMaskedPixelShader, nullptr ) ) || FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", MultiplyAlpha, nullptr, "MaskedTexturePS", "ps_5_0", 0, 0, &MultiplyAlphaMaskedTexturedPixelShader, nullptr ) ) )
 	{
 		ResetAfterGPUIdle();
 		return false;
@@ -68,6 +75,10 @@ ID3D12RootSignature *CDX12GeometryPipelineStore::GetRootSignature() const
 void CDX12GeometryPipelineStore::ResetAfterGPUIdle()
 {
 	Pipelines.Reset();
+	MultiplyAlphaMaskedTexturedPixelShader.Reset();
+	MultiplyAlphaMaskedPixelShader.Reset();
+	MultiplyAlphaTexturedPixelShader.Reset();
+	MultiplyAlphaPixelShader.Reset();
 	InvertedMaskedTexturedPixelShader.Reset();
 	InvertedMaskedPixelShader.Reset();
 	InvertedTexturedPixelShader.Reset();
@@ -103,8 +114,10 @@ ID3D12PipelineState *CDX12GeometryPipelineStore::GetOrCreatePipeline( const FGeo
 	Desc.pRootSignature = RootSignature.Get();
 	Desc.VS = { VertexShader->GetBufferPointer(), VertexShader->GetBufferSize() };
 	const bool bMasked = State.Mask.IsActive(); // マスクの有無でもPSを分ける。
-	const bool bInverted = State.bAlphaBlend && State.Blend == EGeometryBlend::Invert; // 色の反転の有無でもPSを分ける（Blend は鍵に入っているので、PSOも分かれる）。
-	ID3DBlob *Pixel = bInverted ? ( bMasked ? ( bTextured ? InvertedMaskedTexturedPixelShader.Get() : InvertedMaskedPixelShader.Get() ) : ( bTextured ? InvertedTexturedPixelShader.Get() : InvertedPixelShader.Get() ) )
+	const bool bInverted = State.bAlphaBlend && State.Blend == EGeometryBlend::Invert;
+	const bool bMultiplyAlpha = State.bAlphaBlend && State.Blend == EGeometryBlend::MultiplyAlpha; // 色の側でアルファを掛ける版。 // 色の反転の有無でもPSを分ける（Blend は鍵に入っているので、PSOも分かれる）。
+	ID3DBlob *Pixel = bMultiplyAlpha ? ( bMasked ? ( bTextured ? MultiplyAlphaMaskedTexturedPixelShader.Get() : MultiplyAlphaMaskedPixelShader.Get() ) : ( bTextured ? MultiplyAlphaTexturedPixelShader.Get() : MultiplyAlphaPixelShader.Get() ) )
+		: bInverted ? ( bMasked ? ( bTextured ? InvertedMaskedTexturedPixelShader.Get() : InvertedMaskedPixelShader.Get() ) : ( bTextured ? InvertedTexturedPixelShader.Get() : InvertedPixelShader.Get() ) )
 		: ( bMasked ? ( bTextured ? MaskedTexturedPixelShader.Get() : MaskedPixelShader.Get() ) : ( bTextured ? TexturedPixelShader.Get() : PixelShader.Get() ) ); // 画像の有無でPSを固定する。
 	Desc.PS = { Pixel->GetBufferPointer(), Pixel->GetBufferSize() };
 	Desc.InputLayout = { Elements, 3 };

@@ -51,6 +51,7 @@ enum class EGeometryBlend : uint8
 	PremultipliedAlpha, // 描く色 ＋ 描画先 x ( 1 - アルファ )。
 	PremultipliedAdd, // 描画先 ＋ 描く色。
 	PremultipliedSubtract, // 描画先 － 描く色。
+	MultiplyAlpha, // 描画先 x ( 1 ＋ ( 描く色 － 1 ) x アルファ )。アルファが 0 なら描画先のまま、1 なら Multiply と同じ（DxLib の DX_BLENDMODE_MULA）。
 	Invert, // 描く色を反転（1 － 色。アルファは、そのまま）して、通常のアルファ合成で描く（DxLib の DX_BLENDMODE_INVSRC）。
 	Custom, // 利用者が決めた係数（FGeometryDrawState::CustomBlend）。
 };
