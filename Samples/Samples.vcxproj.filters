@@ -112,6 +112,12 @@
     <ClCompile Include="Source\Catalog\SampleScene.cpp">
       <Filter>Source\Catalog</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Character\CharacterSample.cpp">
+      <Filter>Source\Character</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Character\CharacterStage.cpp">
+      <Filter>Source\Character</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Common\PhysicsView.cpp">
       <Filter>Source\Common</Filter>
     </ClCompile>
@@ -645,6 +651,12 @@
     <ClInclude Include="Source\Catalog\SampleScene.h">
       <Filter>Source\Catalog</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Character\CharacterSample.h">
+      <Filter>Source\Character</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Character\CharacterStage.h">
+      <Filter>Source\Character</Filter>
+    </ClInclude>
     <ClInclude Include="Source\Common\PhysicsView.h">
       <Filter>Source\Common</Filter>
     </ClInclude>
@@ -1144,6 +1156,9 @@
     </Filter>
     <Filter Include="Source\Catalog">
       <UniqueIdentifier>{7C63368C-8999-EB5C-EB62-68FC90B68A1C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Character">
+      <UniqueIdentifier>{1974CDDB-BCC3-FEEA-AD8D-BD0F6B22656C}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Common">
       <UniqueIdentifier>{3C5FA6DE-6483-89C2-5511-8B0F6BAAB7AD}</UniqueIdentifier>

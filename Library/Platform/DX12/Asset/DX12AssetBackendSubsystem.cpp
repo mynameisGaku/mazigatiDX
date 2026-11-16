@@ -676,7 +676,7 @@ bool CDX12AssetBackendSubsystem::GetIndexBufferView( int32 Handle, FGeometryInde
 
 bool CDX12AssetBackendSubsystem::CanLoadModelSource( const FString& Path ) const
 {
-	return NModelFormat::Classify( Path ) == EModelFileKind::Imported;
+	return NModelFormat::Classify( Path ) == EModelFileKind::Imported || Path.EndsWith( ".pmx", ESearchCase::IgnoreCase ); // PMX は、DxLib が直接読める形式だが、DX12 は取り込んで読む。
 }
 
 bool CDX12AssetBackendSubsystem::GetStaticModelDrawView( int32 Handle, FStaticModelDrawView& Out )

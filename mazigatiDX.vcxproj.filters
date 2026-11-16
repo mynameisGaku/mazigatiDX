@@ -448,6 +448,9 @@
     <ClCompile Include="Library\Framework\Asset\Model\Import\ModelImporter.cpp">
       <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Asset\Model\Import\PmxImporter.cpp">
+      <Filter>Library\Framework\Asset\Model\Import</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Asset\Model\Import\StaticModelBuilder.cpp">
       <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClCompile>
@@ -2890,6 +2893,9 @@
       <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Model\Import\ModelImporter.h">
+      <Filter>Library\Framework\Asset\Model\Import</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Asset\Model\Import\PmxImporter.h">
       <Filter>Library\Framework\Asset\Model\Import</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Asset\Model\Import\StaticModelBuilder.h">

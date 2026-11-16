@@ -22,3 +22,5 @@ Assets/Content/
 Assets/SaveCourse/
 # 自己確認は別のリポジトリ（framework-test）で管理し、ここには置かない
 /Source/SelfTest/
+# 利用者が置く 3D モデル（Character サンプル用。配布元のライセンスのため、リポジトリには入れない）
+/Samples/Assets/Models/

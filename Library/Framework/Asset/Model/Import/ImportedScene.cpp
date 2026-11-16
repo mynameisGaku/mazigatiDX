@@ -51,6 +51,10 @@ FImportMatrix NImportedScene::MirrorZ( const FImportMatrix& Matrix )
 
 void NImportedScene::ConvertToLeftHanded( FImportedScene& Scene )
 {
+	if ( Scene.bLeftHanded )
+	{
+		return; // PMX のように、最初から左手系のものは、変えない。
+	}
 	for ( FImportedNode& Node : Scene.Nodes )
 	{
 		Node.Local = MirrorZ( Node.Local );

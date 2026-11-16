@@ -98,6 +98,8 @@ struct FImportedScene
 	TArray<FImportedMaterial> Materials;
 	TArray<FImportedTexture> Textures;
 	TArray<FImportedAnimation> Animations;
+	// すでに左手系か（PMX は、最初から左手系。true なら、ConvertToLeftHanded は、何もしない）。
+	bool bLeftHanded = false;
 
 	FORCEINLINE bool HasMesh() const { return !Meshes.IsEmpty(); }
 };
@@ -117,7 +119,7 @@ namespace NImportedScene
 	// Z を反転した座標系に変換する行列（S * M * S。S = diag( 1, 1, -1, 1 )）
 	FImportMatrix MirrorZ( const FImportMatrix& Matrix );
 
-	// 右手系 -> 左手系（DxLib）。座標・法線の Z、三角形の向き、ノードとアニメーションの行列、スキンのオフセットをまとめて変換する。
+	// 右手系 -> 左手系（DxLib）。すでに左手系（bLeftHanded）なら、何もしない。座標・法線の Z、三角形の向き、ノードとアニメーションの行列、スキンのオフセットをまとめて変換する。
 	// 二度呼ぶと元に戻らない（呼ぶのは 1 回だけ）
 	void ConvertToLeftHanded( FImportedScene& Scene );
 

@@ -90,6 +90,8 @@
     <ClCompile Include="Source\Canvas2D\Canvas2DSample.cpp" />
     <ClCompile Include="Source\Catalog\SampleCatalog.cpp" />
     <ClCompile Include="Source\Catalog\SampleScene.cpp" />
+    <ClCompile Include="Source\Character\CharacterSample.cpp" />
+    <ClCompile Include="Source\Character\CharacterStage.cpp" />
     <ClCompile Include="Source\Common\PhysicsView.cpp" />
     <ClCompile Include="Source\Common\PlatformerHud.cpp" />
     <ClCompile Include="Source\Common\PlatformerOptions.cpp" />
@@ -270,6 +272,8 @@
     <ClInclude Include="Source\Catalog\SampleCatalog.h" />
     <ClInclude Include="Source\Catalog\SampleInfo.h" />
     <ClInclude Include="Source\Catalog\SampleScene.h" />
+    <ClInclude Include="Source\Character\CharacterSample.h" />
+    <ClInclude Include="Source\Character\CharacterStage.h" />
     <ClInclude Include="Source\Common\PhysicsView.h" />
     <ClInclude Include="Source\Common\PlatformerBody.h" />
     <ClInclude Include="Source\Common\PlatformerHud.h" />

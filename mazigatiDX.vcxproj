@@ -216,6 +216,7 @@
     <ClCompile Include="Library\Framework\Asset\Model\Import\ModelExporter.cpp" />
     <ClCompile Include="Library\Framework\Asset\Model\Import\ModelFormats.cpp" />
     <ClCompile Include="Library\Framework\Asset\Model\Import\ModelImporter.cpp" />
+    <ClCompile Include="Library\Framework\Asset\Model\Import\PmxImporter.cpp" />
     <ClCompile Include="Library\Framework\Asset\Model\Import\StaticModelBuilder.cpp" />
     <ClCompile Include="Library\Framework\Asset\Model\Import\XFileWriter.cpp" />
     <ClCompile Include="Library\Framework\Asset\Sound\PcmEdit.cpp" />
@@ -1032,6 +1033,7 @@
     <ClInclude Include="Library\Framework\Asset\Model\Import\ModelExporter.h" />
     <ClInclude Include="Library\Framework\Asset\Model\Import\ModelFormats.h" />
     <ClInclude Include="Library\Framework\Asset\Model\Import\ModelImporter.h" />
+    <ClInclude Include="Library\Framework\Asset\Model\Import\PmxImporter.h" />
     <ClInclude Include="Library\Framework\Asset\Model\Import\StaticModelBuilder.h" />
     <ClInclude Include="Library\Framework\Asset\Model\Import\StaticModelDefinition.h" />
     <ClInclude Include="Library\Framework\Asset\Model\Import\XFileWriter.h" />

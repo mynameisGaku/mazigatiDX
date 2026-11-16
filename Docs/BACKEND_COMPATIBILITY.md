@@ -11,8 +11,8 @@
 |分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|
 |---|---:|---:|---:|---:|---:|---:|---:|
 |API|373|9|3|196|164|0|1|
-|Draw|101|0|1|60|40|0|0|
-|Sample|33|30|0|3|0|0|0|
+|Draw|101|0|0|61|40|0|0|
+|Sample|34|30|0|4|0|0|0|
 |Editor|11|11|0|0|0|0|0|
 
 ## API
@@ -339,10 +339,10 @@
 |[API.IRenderTextureResources.ReleaseTexture](../Library/Core/Interfaces/Render/IRenderTextureResources.h#L49)|Implemented|R1|ImGuiなしの作成・更新・解放、入力不正、旧viewのGPU完了までの保持、失敗と再初期化を検査|DX12画像所有者へ接続。アセット登録とUIの所有から分離。Windowsの外部ImGui窓との共有画像・表示画素を確認。全更新・失敗経路の互換は未網羅|補助検証: NativeStoreのcompute readbackと共通登録の偽物。Windowsの外部窓共有: Docs/DX12_IMGUI_VIEWPORTS.md|
 |[API.IRenderTextureResources.UpdateTextureRGBA8](../Library/Core/Interfaces/Render/IRenderTextureResources.h#L46)|Implemented|R1|ImGuiなしの作成・更新・解放、入力不正、旧viewのGPU完了までの保持、失敗と再初期化を検査|DX12画像所有者へ接続。アセット登録とUIの所有から分離。Windowsの外部ImGui窓との共有画像・表示画素を確認。全更新・失敗経路の互換は未網羅|補助検証: NativeStoreのcompute readbackと共通登録の偽物。Windowsの外部窓共有: Docs/DX12_IMGUI_VIEWPORTS.md|
 |[API.IShader.GetShaderHandle](../Library/Core/Interfaces/Render/IShader.h#L55)|Partial|R6|作成前・作成後・破棄後のhandle、型の違い、描画までの寿命を確認|番号は、DX12のシェーダーの表の番号||
-|[API.IShaderDrawSource.DrawShader](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L84)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|描画の値（シェーダー・定数・画像・頂点・描画先の形式）から、パイプラインを作って描く。描けなければfalse||
-|[API.IShaderDrawSource.GetShadowPass](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L88)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|最後に影の絵を描いたときの、光から見た行列・補正の深さ・大きさ||
-|[API.IShaderDrawSource.IsShaderValid](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L82)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|番号が、その種類の、作ってあるシェーダーか||
-|[API.IShaderDrawSource.SetShadowPass](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L86)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|BeginShadowMapを実行したときに覚える||
+|[API.IShaderDrawSource.DrawShader](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L85)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|描画の値（シェーダー・定数・画像・頂点・描画先の形式）から、パイプラインを作って描く。描けなければfalse||
+|[API.IShaderDrawSource.GetShadowPass](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L89)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|最後に影の絵を描いたときの、光から見た行列・補正の深さ・大きさ||
+|[API.IShaderDrawSource.IsShaderValid](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L83)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|番号が、その種類の、作ってあるシェーダーか||
+|[API.IShaderDrawSource.SetShadowPass](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L87)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|BeginShadowMapを実行したときに覚える||
 |[API.IShadowMap.GetShadowMapHandle](../Library/Core/Interfaces/Render/IShadowMap.h#L47)|Partial|R6|作成前・作成後・破棄後のhandle、型の違い、描画までの寿命を確認|番号は、描画先の番号と同じ||
 |[API.ISoundBackend.CreateSoundFromPcm](../Library/Core/Interfaces/Asset/SoundBackend.h#L28)|Partial|R8|作成、入出力、時系列、聞こえない音量での実再生、機器なしの失敗、終了を比較|Windowsの音の登録（CWindowsSoundStoreSubsystem）。WAVはNWavFile、mp3・m4a・flac等はMedia Foundationで、同期でデコードしてメモリに持つ（Streamも全部展開）。3チャンネル以上はステレオにする。oggは未対応（OSのデコーダー次第）。契約検査でWAVとMedia Foundationの読みが一致することを確認||
 |[API.ISoundBackend.DecodeSoundFile](../Library/Core/Interfaces/Asset/SoundBackend.h#L31)|Partial|R8|作成、入出力、時系列、聞こえない音量での実再生、機器なしの失敗、終了を比較|Windowsの音の登録（CWindowsSoundStoreSubsystem）。WAVはNWavFile、mp3・m4a・flac等はMedia Foundationで、同期でデコードしてメモリに持つ（Streamも全部展開）。3チャンネル以上はステレオにする。oggは未対応（OSのデコーダー次第）。契約検査でWAVとMedia Foundationの読みが一致することを確認||
@@ -458,7 +458,7 @@
 |[Draw.PopMask](../Library/Framework/Render/Draw/DrawCommand.h#L103)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|1つ前のマスクへ戻す（無ければマスクなし）。PushMaskと対||
 |[Draw.PopTarget](../Library/Framework/Render/Draw/DrawCommand.h#L96)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|元の描画先へ戻す。クリップ・2Dの変換も戻る||
 |[Draw.PopWorldMatrix](../Library/Framework/Render/Draw/DrawCommand.h#L119)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
-|[Draw.PreviewShadowMap](../Library/Framework/Render/Draw/DrawCommand.h#L143)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
+|[Draw.PreviewShadowMap](../Library/Framework/Render/Draw/DrawCommand.h#L143)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|組み込みの矩形と、深度（R32Float）を赤の濃さにするピクセルシェーダーで、画面の矩形へ貼る（深度 1 = 赤 255、最近傍）。Shadows サンプルの確認表示で、DxLib と並べて一致した（赤の平均差 2.3）。使えない影の絵・空の矩形は、何も描かない||
 |[Draw.Primitive3D](../Library/Framework/Render/Draw/DrawCommand.h#L136)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|非照明の色と画像。材質・追加UV等は未対応||
 |[Draw.PrimitiveBuffer3D](../Library/Framework/Render/Draw/DrawCommand.h#L138)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|CPU保管の非照明形状。永続GPUバッファではない||
 |[Draw.PrimitiveShader3D](../Library/Framework/Render/Draw/DrawCommand.h#L148)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|利用者のシェーダー（Shader Model 5）を、カスタムグラフィックスパイプラインで描く。定数・画像（t0〜）・描画先の形式ごとにパイプラインを作って使い回す。DxLibとの画素比較が残る。頂点の入力は、セマンティックの名前で、FDrawShaderVertex3Dの中の位置へ割り当てる||
@@ -508,6 +508,7 @@
 |[Sample.Audio](../Samples/Source/Audio/AudioSample.cpp#L15)|Unreviewed|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|必要な描画・アセット・入力等の依存機能と操作手順を照合する||
 |[Sample.Camera](../Samples/Source/Camera/CameraSample.cpp#L16)|Unreviewed|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|必要な描画・アセット・入力等の依存機能と操作手順を照合する||
 |[Sample.Canvas2D](../Samples/Source/Canvas2D/Canvas2DSample.cpp#L9)|Partial|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|DX12基本経路の見本。Windows上の全frameと終了までの確認前||
+|[Sample.Character](../Samples/Source/Character/CharacterSample.cpp#L9)|Partial|R5|DxLib（PMX を直接読む）と DX12（取り込む）で、同じ姿勢（時計を固定）の絵を並べる。モデルは、利用者が置く（リポジトリには入れない）|PMX の Faputa を、骨をコードで動かして描く。DxLib と DX12 で、形・色・画像・腕・頭・耳・しっぽが一致。差: 口の歯が DX12 に出ない（未調査）。モデルが無い環境では、置き場所を画面に出す||
 |[Sample.DrawState](../Samples/Source/DrawState/DrawStateSample.cpp#L14)|Unreviewed|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|必要な描画・アセット・入力等の依存機能と操作手順を照合する||
 |[Sample.Effects](../Samples/Source/Effects/EffectsSample.cpp#L12)|Unreviewed|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|必要な描画・アセット・入力等の依存機能と操作手順を照合する||
 |[Sample.Filters](../Samples/Source/Filters/FiltersSample.cpp#L14)|Unreviewed|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|必要な描画・アセット・入力等の依存機能と操作手順を照合する||

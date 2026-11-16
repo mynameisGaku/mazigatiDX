@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "FbxImporter.h"
+#include "PmxImporter.h"
 
 #include <cstdint>
 
@@ -473,6 +474,10 @@ bool NModelImport::ImportFromMemory( const void* Data, usize Size, const FString
 	{
 		OutError = "the file is empty";
 		return false;
+	}
+	if ( FileName.EndsWith( ".pmx", ESearchCase::IgnoreCase ) ) // PMX は、FBX / OBJ と違う形式（ufbx は読めない）。
+	{
+		return ImportPmx( Data, Size, Options, OutScene, OutError );
 	}
 
 	if ( Options.bImportAnimations && !NMath::IsFinite( Options.AnimFps ) )
