@@ -673,6 +673,9 @@
     <ClCompile Include="Library\Framework\Effect\Particle\ParticleSimulation.cpp">
       <Filter>Library\Framework\Effect\Particle</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Engine\BackendInfo.cpp">
+      <Filter>Library\Framework\Engine</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Engine\Engine.cpp">
       <Filter>Library\Framework\Engine</Filter>
     </ClCompile>
@@ -1425,6 +1428,9 @@
     </ClCompile>
     <ClCompile Include="Library\Platform\Render\Geometry\VertexLighting.cpp">
       <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Model\ModelRig.cpp">
+      <Filter>Library\Platform\Render\Model</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\Render\Model\StaticModelStore.cpp">
       <Filter>Library\Platform\Render\Model</Filter>
@@ -3084,6 +3090,9 @@
     <ClInclude Include="Library\Framework\Effect\Particle\ParticleSimulation.h">
       <Filter>Library\Framework\Effect\Particle</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Framework\Engine\BackendInfo.h">
+      <Filter>Library\Framework\Engine</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Framework\Engine\Engine.h">
       <Filter>Library\Framework\Engine</Filter>
     </ClInclude>
@@ -4016,6 +4025,9 @@
     </ClInclude>
     <ClInclude Include="Library\Platform\Render\Geometry\VertexLighting.h">
       <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Model\ModelRig.h">
+      <Filter>Library\Platform\Render\Model</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\Render\Model\StaticModelStore.h">
       <Filter>Library\Platform\Render\Model</Filter>

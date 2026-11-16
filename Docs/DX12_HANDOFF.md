@@ -2,6 +2,8 @@
 
 最終更新: 2026-11-15（日本時間）。この文書は作業中も更新します。実装済み、未接続、検証済みを分け、予定を完了扱いにしません。
 
+**未対応・未確認の事項の一覧は [DX12_KNOWN_GAPS.md](DX12_KNOWN_GAPS.md)。push は ChatGPT（Codex）の `framework-dx12` の作業が行います（Claude は push しません）。**
+
 ## 目的と公開の基点
 
 作業ブランチは`backend-dx12`です。[ロードマップ](ROADMAP.md)のR1基盤を進めています。R1全体、四描画方式、完全互換は未完了です。
@@ -400,3 +402,9 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **検査**: `WindowsInputContract` に 28 項目を足し、139 項目に。動画は、Media Foundation で H.264 + AAC の mp4（128x96・30 コマ・1 秒。前半赤・後半青）を書いて、情報・画像の更新・RGBA の並び・一時停止・シーク・速さ・終わり・ループ・閉じるを確かめる（この機械が H.264 を書けなければ SKIP）。タッチは、指の動きの取り込み（`AddContact`）を確かめる（`WM_TOUCH` の読み取りは、タッチ機器が必要で未確認）。色の並び・シークの追いつき・離した指の報告を壊す変異で、失敗することを確かめた。
 - **未確認**: 動画と音声の同期のずれ、大きな映像（1080p など）のデコードの重さ（今は、主スレッドで読む）、タッチ機器での `WM_TOUCH`、複数 GPU のビデオメモリ。
 - **R8 の残り**: 排他的フルスクリーン（Borderless で代替の報告のまま）。非描画の窓口は、ひととおり DX12 にできた。次は R6 の残り（`MaterialRibbon3D`・アニメーションつきのモデル・`Invert` 系の合成・画像の mip）。
+
+## 2026-11-16 追記: 動いているバックエンドを調べる・マクロで分ける
+- `NBackendInfo`（`Library/Framework/Engine/BackendInfo.h`）: `Get()` / `GetName()` / `Is()` / `IsDX12()` / `IsDxLib()` / `IsNull()` / `TryParse()`。起動の直後から使える。起動のログに `Backend: DX12 (...)`、コンソールに `backend` コマンド。
+- マクロ（`Library/Core/Types/BackendMacros.h`）: `MAZIGATI_BACKEND`（0 = 実行時に選ぶ・1 = DxLib・2 = DX12・3 = Null）、`MAZIGATI_BACKEND_IS_FIXED` / `_IS_DXLIB` / `_IS_DX12` / `_IS_NULL`（固定したビルドだけ 1）、`MAZIGATI_HAS_BACKEND_*`（組み込まれているか）。ビルドの設定は `Build/mazigatiDX.props` の `/p:MazigatiBackend=dxlib|dx12|null`、`/p:MazigatiWithoutDxLib=true`、`/p:MazigatiWithoutDX12=true`（`MAZIGATI_WITHOUT_*` も渡す）。固定したビルドでは `--backend` を無視する。固定したビルドで、ライブラリとゲームを同じ設定でビルドすること（props を共有していればそろう）。
+- 検査: `WindowsInputContract` に、`NBackendInfo` と `NBackendSelection` の確認、固定した 5 通り（固定なし・DX12 なし・DxLib・DX12・Null）のマクロを `static_assert` と `#if` で確かめる翻訳単位（`BackendMacros*Check.cpp`）を足した。props の対応は `msbuild -getProperty:MazigatiBackendDefines` で確認した。固定したビルドの全体のビルドは、まだ通していない。
+- 分けるのは、窓口で埋められない違いに限る。能力の確認は、名前より先に、能力の窓口（`IDrawExecutor::Supports...`）を使う。

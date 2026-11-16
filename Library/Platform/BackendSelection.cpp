@@ -5,7 +5,15 @@
 
 EPlatformBackend NBackendSelection::GetRequested()
 {
+#if MAZIGATI_BACKEND == MAZIGATI_BACKEND_DXLIB
+	return EPlatformBackend::DxLib;
+#elif MAZIGATI_BACKEND == MAZIGATI_BACKEND_DX12
+	return EPlatformBackend::DX12;
+#elif MAZIGATI_BACKEND == MAZIGATI_BACKEND_NULL
+	return EPlatformBackend::Null;
+#else
 	return GetRequested( NCommandLine::Get() );
+#endif
 }
 
 EPlatformBackend NBackendSelection::GetRequested( const FString& CommandLine )

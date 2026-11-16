@@ -19,6 +19,17 @@
     <MazigatiDxLibVcDir Condition="'$(MazigatiDxLibVcDir)' == '' and '$(MazigatiWithoutDxLib)' != 'true'">C:\DxLib_VC\プロジェクトに追加すべきファイル_VC用</MazigatiDxLibVcDir>
   </PropertyGroup>
 
+  <!-- バックエンドを、プリプロセッサで切り分けるためのマクロ（Library/Core/Types/BackendMacros.h）。全プロジェクトに同じ値を渡す。
+         /p:MazigatiBackend=dxlib|dx12|null   このビルドは、その実装に固定する（指定なしは、実行時に起動の引数 backend で選ぶ）
+         /p:MazigatiWithoutDxLib=true / MazigatiWithoutDX12=true   組み込まない実装（コンパイル対象からも外す。下の Target） -->
+  <PropertyGroup>
+    <MazigatiBackendDefines Condition="'$(MazigatiBackend)' == 'dxlib'">MAZIGATI_BACKEND=1;$(MazigatiBackendDefines)</MazigatiBackendDefines>
+    <MazigatiBackendDefines Condition="'$(MazigatiBackend)' == 'dx12'">MAZIGATI_BACKEND=2;$(MazigatiBackendDefines)</MazigatiBackendDefines>
+    <MazigatiBackendDefines Condition="'$(MazigatiBackend)' == 'null'">MAZIGATI_BACKEND=3;$(MazigatiBackendDefines)</MazigatiBackendDefines>
+    <MazigatiBackendDefines Condition="'$(MazigatiWithoutDxLib)' == 'true'">MAZIGATI_WITHOUT_DXLIB;$(MazigatiBackendDefines)</MazigatiBackendDefines>
+    <MazigatiBackendDefines Condition="'$(MazigatiWithoutDX12)' == 'true'">MAZIGATI_WITHOUT_DX12;$(MazigatiBackendDefines)</MazigatiBackendDefines>
+  </PropertyGroup>
+
   <ItemDefinitionGroup>
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -26,6 +37,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PreprocessorDefinitions>$(MazigatiBackendDefines)%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <!-- 文字列リテラルを UTF-8 にする（FString は UTF-8）。ソースは BOM つき UTF-8 で書く（BOM のあるファイルは、自動で UTF-8 として読まれる）。
            /utf-8 にしないのは、BOM なしの Shift-JIS の DxLib のヘッダーを、UTF-8 として読んで壊さないため -->
       <AdditionalOptions>/execution-charset:utf-8 %(AdditionalOptions)</AdditionalOptions>

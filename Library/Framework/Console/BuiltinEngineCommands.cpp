@@ -178,6 +178,10 @@ void NConsole::NBuiltin::RegisterEngineCommands( FConsoleRegistry& Registry )
 		   { "subject", "Only objects whose name contains this text are drawn; the rest becomes transparent (PNG)." },
 		   { "name", "File name. Default: Screenshot_<number>.png" } }, CategoryEngine );
 
+	Add( "backend", "Show which backend is running (DxLib / DX12 / Null)",
+		 []() { return FString::Printf( "%s", *NBackendInfo::GetName() ); },
+		 {}, CategoryEngine );
+
 	Add( "window", "Show the window size, mode and title",
 		 []()
 		 {

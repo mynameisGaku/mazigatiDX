@@ -3,6 +3,7 @@
 
 #include "Library/Framework/Console/BuiltinCommands.h"
 #include "Library/Framework/Capture/ScreenCaptureSubsystem.h"
+#include "Library/Framework/Engine/BackendInfo.h"
 #include "Library/Core/File/File.h"
 #include "Library/Core/Interfaces/Job/IJobSystem.h"
 #include "Library/Core/Interfaces/Platform/IPlatform.h"

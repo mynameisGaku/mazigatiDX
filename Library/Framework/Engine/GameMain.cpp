@@ -4,6 +4,7 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Core/Version.h"
+#include "Library/Framework/Engine/BackendInfo.h"
 #include "Library/Framework/Engine/EngineCrashHandlers.h"
 #include "Library/Framework/Engine/ScreenConfig.h"
 #include "Library/Platform/System/CommandLine.h"
@@ -55,6 +56,11 @@ int32 NGameMain::Run( const FOptions& Options, const TCallable<int32( const FWin
 	const char* BuildConfiguration = "Release";
 #endif
 	LOG( LogMain, Log, "%s %s starting (%s, %s)", NVersion::ProductName, NVersion::String, BuildConfiguration, sizeof( void* ) == 8 ? "x64" : "x86" );
+	#if MAZIGATI_BACKEND_IS_FIXED
+	LOG( LogMain, Log, "Backend: %s (fixed at build time: --backend is ignored)", *NBackendInfo::GetName() );
+#else
+	LOG( LogMain, Log, "Backend: %s (--backend=dxlib / dx12 / null)", *NBackendInfo::GetName() );
+#endif
 	LOG( LogMain, Log, "Executable: %s", *NFileSystem::GetExecutableDirectory() );
 	LOG( LogMain, Log, "Working directory: %s", *NFileSystem::GetWorkingDirectory() );
 	if ( FileSink )
