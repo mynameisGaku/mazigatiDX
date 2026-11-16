@@ -639,6 +639,31 @@ bool CDX12AssetBackendSubsystem::GetStaticModelDrawView( int32 Handle, FStaticMo
 	return Models.GetStaticModelDrawView( Handle, Out );
 }
 
+IModelBackend* CDX12AssetBackendSubsystem::GetStaticModelBackend()
+{
+	return this;
+}
+
+bool CDX12AssetBackendSubsystem::SetStaticModelPlacement( int32 Handle, const float32 ( &Matrix )[12] )
+{
+	return Models.SetStaticModelPlacement( Handle, Matrix );
+}
+
+bool CDX12AssetBackendSubsystem::SetStaticModelAnimTime( int32 Handle, int32 AttachIndex, float32 Time )
+{
+	return Models.SetStaticModelAnimTime( Handle, AttachIndex, Time );
+}
+
+bool CDX12AssetBackendSubsystem::SetStaticModelAnimRate( int32 Handle, int32 AttachIndex, float32 Rate )
+{
+	return Models.SetStaticModelAnimRate( Handle, AttachIndex, Rate );
+}
+
+bool CDX12AssetBackendSubsystem::SetStaticModelAnimFrameRate( int32 Handle, int32 AttachIndex, int32 Frame, float32 Rate, bool bIncludeChildren )
+{
+	return Models.SetStaticModelAnimFrameRate( Handle, AttachIndex, Frame, Rate, bIncludeChildren );
+}
+
 bool CDX12AssetBackendSubsystem::GetStaticModelSurface( int32 Model, FStaticModelSurfaceData& Out )
 {
 	return Models.GetSurface( Model, Out );

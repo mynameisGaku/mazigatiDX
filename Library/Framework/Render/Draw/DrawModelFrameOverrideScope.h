@@ -5,14 +5,14 @@
 #include "Library/Framework/Render/Draw/DrawModelFrameOverrideData.h"
 #include "Library/Math/Matrix4x4.h"
 
-class IAssetBackend;
+class IModelBackend;
 
 // 描画1回だけframe poseを上書きし、描画前のbackend状態へ戻す。呼出側はbackendとmodel ownerをscope終了まで保持する。
 class FModelFrameOverrideScope
 {
 public:
 	// BackendでModelの全frame状態を保存し、全poseのquery/applyが成功したときだけ適用済みにする。失敗時は未適用とし、途中apply分は逆順に戻す。
-	FModelFrameOverrideScope( IAssetBackend& Backend, int32 Model, const FDrawModelFrameOverrideData* Overrides, int32 NumOverrides );
+	FModelFrameOverrideScope( IModelBackend& Backend, int32 Model, const FDrawModelFrameOverrideData* Overrides, int32 NumOverrides );
 	// 残る復元frameがあればscope終了時に逆順で最後の復元を試す。
 	~FModelFrameOverrideScope();
 	FModelFrameOverrideScope( const FModelFrameOverrideScope& ) = delete;
@@ -39,7 +39,7 @@ private:
 	// まだ復元を試す必要があるframeが残っているか調べる。
 	bool HasPendingRestore() const;
 
-	IAssetBackend* Backend = nullptr; // 復元先backendの借用参照。
+	IModelBackend* Backend = nullptr; // 復元先backendの借用参照。
 	int32 Model = -1; // 一時poseを適用するmodel handle。
 	TArray<FDrawModelFrameOverrideData> RequestedOverrides; // 呼出側から値snapshotした一時pose群。
 	TArray<FFrameState> PreviousStates; // apply前に全件取得した復元値。

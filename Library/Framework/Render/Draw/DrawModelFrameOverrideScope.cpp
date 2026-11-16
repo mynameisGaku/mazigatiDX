@@ -2,7 +2,7 @@
 #include "DrawModelFrameOverrideScope.h"
 #include "Library/Framework/Render/RenderLog.h"
 
-#include "Library/Core/Interfaces/Asset/AssetBackend.h"
+#include "Library/Core/Interfaces/Asset/ModelBackend.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Framework/Render/Draw/DrawModelFramePoseData.h"
 
@@ -25,7 +25,7 @@ namespace
 	}
 }
 
-FModelFrameOverrideScope::FModelFrameOverrideScope( IAssetBackend& InBackend, int32 InModel, const FDrawModelFrameOverrideData* Overrides, int32 InNumOverrides )
+FModelFrameOverrideScope::FModelFrameOverrideScope( IModelBackend& InBackend, int32 InModel, const FDrawModelFrameOverrideData* Overrides, int32 InNumOverrides )
 	: Backend( &InBackend )
 	, Model( InModel )
 {

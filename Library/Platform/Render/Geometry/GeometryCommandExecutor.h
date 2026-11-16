@@ -50,6 +50,8 @@ public:
 	// 1命令を検査して実行する。Stateはこのインスタンス内だけに閉じる。
 	EResult Execute( const FDrawCommandView& View, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend );
 private:
+	// 静的モデルを 1 つ描く（アニメーションの時間と配置を設定してから、いまの姿で描く）。Alpha・bAlphaBlend は、Execute へ渡された値。
+	EResult DrawModel( const FDrawModelData& Data, int32 Alpha, bool bAlphaBlend );
 	// 影の絵を描いているとき、図形を光から見た深度として描く。影を落とさない図形（線・点・画像つき・半透明）は、何もせず成功。
 	bool SubmitShadowCaster( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, int32 Alpha, int32 Texture );
 	// ワールド座標を同次クリップ座標にして記録する。全入力を検査してからGPUへ渡す。

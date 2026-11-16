@@ -27,6 +27,8 @@ public:
 	bool BeginOffscreenCapture( const FOffscreenCaptureDesc& Desc ) override;
 	// 撮影先の画素を読み、通常描画へ戻す。失敗時はOutを保つ。
 	bool EndOffscreenCapture( TArray<FColor32>& Out ) override;
+	// 描くときだけ骨を上書きする命令（ModelFramePose3D）に対応する。
+	bool SupportsModelFrameOverrides() const override { return true; }
 private:
 	IRenderSurface* Surface = nullptr; // 借用する描画先。
 	IStaticModelSource* Models = nullptr; // 借用する静的モデル。

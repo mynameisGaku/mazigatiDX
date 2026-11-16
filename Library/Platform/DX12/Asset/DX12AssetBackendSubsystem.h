@@ -89,6 +89,12 @@ public:
 	bool CanLoadModelSource( const FString& Path ) const override;
 	// 描画中だけ不変形状を借りる。
 	bool GetStaticModelDrawView( int32 Handle, FStaticModelDrawView& Out ) override;
+	// 描く命令からの、モデルの状態の設定（アニメーションの時間・割合・配置）と、骨の一時的な上書きに使う、モデルの窓口。
+	IModelBackend* GetStaticModelBackend() override;
+	bool SetStaticModelPlacement( int32 Handle, const float32 ( &Matrix )[12] ) override;
+	bool SetStaticModelAnimTime( int32 Handle, int32 AttachIndex, float32 Time ) override;
+	bool SetStaticModelAnimRate( int32 Handle, int32 AttachIndex, float32 Rate ) override;
+	bool SetStaticModelAnimFrameRate( int32 Handle, int32 AttachIndex, int32 Frame, float32 Rate, bool bIncludeChildren ) override;
 	// 借用画像を含む静的面データをコピーする。
 	bool GetStaticModelSurface( int32 Model, FStaticModelSurfaceData& Out ) override;
 	// モデル座標の外接箱。失敗時は両出力を保つ。

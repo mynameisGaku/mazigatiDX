@@ -1863,36 +1863,6 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			ApplyMask();
 			break;
 		}
-		// 次に描くモデルの、アニメーションの状態（DxLibのMV1SetAttachAnimTime / MV1SetAttachAnimBlendRate / MV1SetAttachAnimBlendRateToFrame）。
-		case EDrawCommand::ModelAnim:
-		{
-			if ( !View.CanRead<FDrawModelAnimData>() )
-			{
-				bStopped = true;
-				break;
-			}
-			const auto Data = View.Read<FDrawModelAnimData>();
-			if ( Models )
-			{
-				Models->SetStaticModelAnimTime( Data.Handle, Data.AttachIndex, Data.Time );
-				Models->SetStaticModelAnimRate( Data.Handle, Data.AttachIndex, Data.Rate );
-			}
-			break;
-		}
-		case EDrawCommand::ModelAnimFrame:
-		{
-			if ( !View.CanRead<FDrawModelAnimFrameData>() )
-			{
-				bStopped = true;
-				break;
-			}
-			const auto Data = View.Read<FDrawModelAnimFrameData>();
-			if ( Models && Data.Handle >= 0 && Data.AttachIndex >= 0 && Data.Frame >= 0 && NMath::IsFinite( Data.Rate ) )
-			{
-				Models->SetStaticModelAnimFrameRate( Data.Handle, Data.AttachIndex, Data.Frame, NMath::Clamp( Data.Rate, 0.0f, 1.0f ), Data.bIncludeChildren != 0 );
-			}
-			break;
-		}
 		default:
 		{
 			if ( CShaderCommandExecutor::IsShaderCommand( View.Type ) )

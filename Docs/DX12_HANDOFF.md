@@ -422,3 +422,10 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **当たり判定（`CStaticModelStore`）**: `PrepareCollision` で、いまのポーズの形（変形した頂点。非表示のメッシュも含む。モデルの手元の座標）を三角形の一覧に写し、`Raycast`（線分と三角形の交差。両面。最初に当たるもの）・`OverlapSphere`（三角形のいちばん近い点までの距離が半径以内のすべて。AABB で先に絞る）が、その形に問い合わせる。準備していなければ最初の問い合わせで準備し、準備し直すまで形は変わらない（DxLib と同じ）。当たった三角形の表の向きは、頂点の法線の側。`Frame` / `Material`（材質未指定は -1）/ フレームの中での三角形の番号を返す。
 - **材質の色**: `SetMaterialColors` / `GetMaterialColors`（個体ごとの上書き）。描画に反映するのは拡散色だけ（頂点は範囲ごとに専用なので、その材質の範囲の頂点の色を変える）。骨組みの無い（従来の）モデルは拒否。
 - **検査**: `ModelRigContract` を 90 項目に。四角形のモデルで、線の当たり・向き（巻き順が逆でも）・外れ・短い線分・球（半径が限界）・準備し直し・ポーズに追従・非表示に当たる、色の上書き（描いた頂点の色・別の個体は不変・不正な値）を確かめる。線分の端・法線の向き・球の半径・色の反映を壊す変異で、別々の項目が失敗することを確かめた。
+
+## 2026-11-16 追記: ModelFramePose3D と、命令から頂点までの検査
+- **`ModelFramePose3D`（描くときだけ骨を上書き）**: `CGeometryCommandExecutor` が、検証済みの命令（`NDrawModelFramePose`）から上書きを読み、`FModelFrameOverrideScope` で一時的に適用して、`DrawModel` で描き、元の上書き（あれば）へ戻す。`FModelFrameOverrideScope` は `IAssetBackend` でなく `IModelBackend` を取る形にした（DxLib 版は、そのまま使える）。`IStaticModelSource::GetStaticModelBackend` が、DX12 では `CDX12AssetBackendSubsystem` 自身を返す。`CDX12DrawExecutorSubsystem::SupportsModelFrameOverrides` は true。
+- **`Model3D` の整理**: 本体を `CGeometryCommandExecutor::DrawModel` に切り出した（`Model3D` と `ModelFramePose3D` が共有）。`ModelAnim` / `ModelAnimFrame` の処理は、`CCanvasDrawExecutor` から `CGeometryCommandExecutor` へ移した（モデルの命令を 1 か所に）。
+- **不具合の修正**: `CDX12AssetBackendSubsystem` が、`IStaticModelSource` の新しい窓口（配置・アニメーションの時間・割合・骨ごとの割合）を、ストアへ中継していなかった（基底の既定値 false のまま）。実行時にアニメーションが効かない状態だった。中継を足した。
+- **検査**: `ModelRigContract` を 101 項目に。偽の 3D 実行先（頂点を記録）と、ストアへ中継する偽のモデルの窓口で、`FDrawContext` が記録した命令（`PushCamera`・`Model`・`ModelAnimLayer`・`ModelAnimFrameRate`・`ModelWithFrameOverrides`）を、`CGeometryCommandExecutor` に流して、描かれた頂点を確かめる: 基準の姿・アニメーションの時間と割合・割合 0・骨ごとの割合（子も含める）・骨の一時的な上書き（90 度のクリップと同じ姿・描いたあとに消える・元からある上書きは元の値へ戻る）・不正なモデルは拒否して続きを描く・すべて非表示は何も描かず成功・配置の記憶。割合を設定する処理を壊す変異で失敗することを確かめた。
+- **未確認**: 実素材（アニメーションつき FBX）での、GPU を通した描画と DxLib との比較。
