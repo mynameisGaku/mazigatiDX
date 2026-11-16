@@ -412,6 +412,9 @@
     <ClCompile Include="Source\SelfTest\WindowResizePlatformSelfTest.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>
+    <ClCompile Include="Source\SelfTest\WindowsInputContractMain.cpp">
+      <Filter>Source\SelfTest</Filter>
+    </ClCompile>
     <ClCompile Include="Source\SelfTest\WorldEditorSelfTestInput.cpp">
       <Filter>Source\SelfTest</Filter>
     </ClCompile>

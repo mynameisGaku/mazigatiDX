@@ -214,6 +214,7 @@
     <ClCompile Include="Source\SelfTest\ViewportPlatformSelfTest.cpp" Condition="Exists('Source\SelfTest\ViewportPlatformSelfTest.cpp')" />
     <ClCompile Include="Source\SelfTest\ViewportWindowLifecycleSelfTest.cpp" Condition="Exists('Source\SelfTest\ViewportWindowLifecycleSelfTest.cpp')" />
     <ClCompile Include="Source\SelfTest\WindowResizePlatformSelfTest.cpp" Condition="Exists('Source\SelfTest\WindowResizePlatformSelfTest.cpp')" />
+    <ClCompile Include="Source\SelfTest\WindowsInputContractMain.cpp" Condition="Exists('Source\SelfTest\WindowsInputContractMain.cpp')" />
     <ClCompile Include="Source\SelfTest\WorldEditorSelfTestInput.cpp" Condition="Exists('Source\SelfTest\WorldEditorSelfTestInput.cpp')" />
     <ClCompile Include="Source\SelfTest\WorldEditorSelfTestMath.cpp" Condition="Exists('Source\SelfTest\WorldEditorSelfTestMath.cpp')" />
     <ClCompile Include="Source\SelfTest\WorldEditorSelfTestReal.cpp" Condition="Exists('Source\SelfTest\WorldEditorSelfTestReal.cpp')" />
