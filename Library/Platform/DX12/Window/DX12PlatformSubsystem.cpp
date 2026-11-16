@@ -598,6 +598,11 @@ void CDX12PlatformSubsystem::GetWheel( float32 &X, float32 &Y ) const
 	Y = WheelY;
 }
 
+bool CDX12PlatformSubsystem::QueryGpuMemory( int64 &OutUsedBytes, int64 &OutBudgetBytes ) const
+{
+	return Device && Device->QueryVideoMemory( OutUsedBytes, OutBudgetBytes );
+}
+
 void CDX12PlatformSubsystem::AddMessageObserver( INativeWindowMessageObserver *Observer )
 {
 	if ( Observer )

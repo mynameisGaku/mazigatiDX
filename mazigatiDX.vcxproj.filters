@@ -1504,6 +1504,9 @@
     <ClCompile Include="Library\Platform\Windows\Input\WindowsTextInputSubsystem.cpp">
       <Filter>Library\Platform\Windows\Input</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\Windows\Input\WindowsTouchInputSubsystem.cpp">
+      <Filter>Library\Platform\Windows\Input</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\Windows\Text\WindowsFontStore.cpp">
       <Filter>Library\Platform\Windows\Text</Filter>
     </ClCompile>
@@ -1512,6 +1515,9 @@
     </ClCompile>
     <ClCompile Include="Library\Platform\Windows\Text\WindowsTextRasterizer.cpp">
       <Filter>Library\Platform\Windows\Text</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Windows\Video\WindowsMovieBackendSubsystem.cpp">
+      <Filter>Library\Platform\Windows\Video</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\Windows\Window\WindowsDisplayInfoSubsystem.cpp">
       <Filter>Library\Platform\Windows\Window</Filter>
@@ -2206,6 +2212,9 @@
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IGeometryBufferSource.h">
+      <Filter>Library\Core\Interfaces\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Interfaces\Render\IGpuMemoryInfo.h">
       <Filter>Library\Core\Interfaces\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Interfaces\Render\IGpuTimestampResources.h">
@@ -4092,6 +4101,9 @@
     <ClInclude Include="Library\Platform\Windows\Input\WindowsTextInputSubsystem.h">
       <Filter>Library\Platform\Windows\Input</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Platform\Windows\Input\WindowsTouchInputSubsystem.h">
+      <Filter>Library\Platform\Windows\Input</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Platform\Windows\Text\WindowsFontStore.h">
       <Filter>Library\Platform\Windows\Text</Filter>
     </ClInclude>
@@ -4100,6 +4112,9 @@
     </ClInclude>
     <ClInclude Include="Library\Platform\Windows\Text\WindowsTextRasterizer.h">
       <Filter>Library\Platform\Windows\Text</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Windows\Video\WindowsMovieBackendSubsystem.h">
+      <Filter>Library\Platform\Windows\Video</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\Windows\Window\WindowsDisplayInfoSubsystem.h">
       <Filter>Library\Platform\Windows\Window</Filter>
@@ -6055,6 +6070,9 @@
     </Filter>
     <Filter Include="Library\Platform\Windows\Text">
       <UniqueIdentifier>{C7F573A0-13C0-7E2D-781B-C05CFEBFCA51}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Windows\Video">
+      <UniqueIdentifier>{1FFCFDD4-F684-D579-E7F8-9D117A717AA7}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Platform\Windows\Window">
       <UniqueIdentifier>{9D52824E-1DAE-78A6-2A20-5950A6C335E8}</UniqueIdentifier>

@@ -568,9 +568,11 @@
     <ClCompile Include="Library\Platform\Windows\Input\WindowsCursorControlSubsystem.cpp" />
     <ClCompile Include="Library\Platform\Windows\Input\WindowsInputSubsystem.cpp" />
     <ClCompile Include="Library\Platform\Windows\Input\WindowsTextInputSubsystem.cpp" />
+    <ClCompile Include="Library\Platform\Windows\Input\WindowsTouchInputSubsystem.cpp" />
     <ClCompile Include="Library\Platform\Windows\Text\WindowsFontStore.cpp" />
     <ClCompile Include="Library\Platform\Windows\Text\WindowsGdiText.cpp" />
     <ClCompile Include="Library\Platform\Windows\Text\WindowsTextRasterizer.cpp" />
+    <ClCompile Include="Library\Platform\Windows\Video\WindowsMovieBackendSubsystem.cpp" />
     <ClCompile Include="Library\Platform\Windows\Window\WindowsDisplayInfoSubsystem.cpp" />
     <ClCompile Include="Library\Platform\Windows\Window\WindowsWindowControlSubsystem.cpp" />
     <ClCompile Include="VendorModules\ImGui\imgui.cpp" />
@@ -804,6 +806,7 @@
     <ClInclude Include="Library\Core\Interfaces\Render\IDrawExecutor.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IFontDrawSource.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IGeometryBufferSource.h" />
+    <ClInclude Include="Library\Core\Interfaces\Render\IGpuMemoryInfo.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IGpuTimestampResources.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IGraphicsPipelineResources.h" />
     <ClInclude Include="Library\Core\Interfaces\Render\IImage.h" />
@@ -1432,9 +1435,11 @@
     <ClInclude Include="Library\Platform\Windows\Input\WindowsCursorControlSubsystem.h" />
     <ClInclude Include="Library\Platform\Windows\Input\WindowsInputSubsystem.h" />
     <ClInclude Include="Library\Platform\Windows\Input\WindowsTextInputSubsystem.h" />
+    <ClInclude Include="Library\Platform\Windows\Input\WindowsTouchInputSubsystem.h" />
     <ClInclude Include="Library\Platform\Windows\Text\WindowsFontStore.h" />
     <ClInclude Include="Library\Platform\Windows\Text\WindowsGdiText.h" />
     <ClInclude Include="Library\Platform\Windows\Text\WindowsTextRasterizer.h" />
+    <ClInclude Include="Library\Platform\Windows\Video\WindowsMovieBackendSubsystem.h" />
     <ClInclude Include="Library\Platform\Windows\Window\WindowsDisplayInfoSubsystem.h" />
     <ClInclude Include="Library\Platform\Windows\Window\WindowsWindowControlSubsystem.h" />
     <ClInclude Include="VendorModules\ImGui\imconfig.h" />

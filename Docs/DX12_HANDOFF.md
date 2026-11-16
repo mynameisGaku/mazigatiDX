@@ -392,3 +392,11 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **検査**: `WindowsInputContract`（`RunWindowsInputTests.ps1`）に 46 項目を足し、111 項目に。音量 0 の実再生（再生・停止・再開・位置・ループ・ループ区間・ピッチ・範囲外の値・削除）、PCM ストリーム、音の登録、Media Foundation と `NWavFile` で同じ WAV を読んで一致、を確かめる。機器が無い環境では、再生の項目は SKIP し、「失敗を返す」だけを確かめる。位置・ピッチ・積んだ数の取り違えの変異で、別々の項目が失敗することを確かめた。
 - **未確認（耳）**: パンの法則・ピッチの音質。実際の音の出方（DxLib との聞き比べ）。ogg。
 - **R8 の残り**: 動画（`IMovieBackend`）、タッチ（`ITouchInput`）、排他的フルスクリーン。
+
+## 2026-11-16 追記: DX12 の動画・タッチ・ビデオメモリ（R8 の仕上げ）
+- **動画 `CWindowsMovieBackendSubsystem`（`IMovieBackend`、`Library/Platform/Windows/Video`）**: ムービーごとに `IMFSourceReader`（映像を RGB32 に変換させる）。映像は、画像（`ITextureBackend::CreateTextureFromPixels` で作り、`UpdateTexturePixels` で更新）。音声は float で先読み（0.5 秒）して XAudio2 のソースボイスへ積む（機器が無ければ映像だけ）。時計は `Tick` の `DeltaTime` x 速さ（止めれば止まる。音声の機器の時計には合わせていない）。1 回の `Tick` で読むコマは 8 まで。シークは、手前のキーフレームから読み直されるので、位置に追いつくまで（最大 600 コマ）読む。終わりまで来ると止まり、位置は長さ。終わった動画の `PlayMovie` は頭から。`SetMovieSpeed` 対応（音声は周波数比）。`ITextureBackend` と音声の出力は `Bind` で借りる。
+- **タッチ `CWindowsTouchInputSubsystem`（`ITouchInput`）**: `RegisterTouchWindow` + `WM_TOUCH`（窓のメッセージの受け取り手）。画面座標 → クライアント → 論理座標。1 フレームの中で触れて離した指も、1 フレームは見える。`FTouchTracker` で、離された ID を出す。
+- **ビデオメモリ `IGpuMemoryInfo`（新しい窓口、Core/Interfaces/Render）**: `CDX12PlatformSubsystem` が実装（`CDX12Device::QueryVideoMemory` = LUID から `IDXGIAdapter3::QueryVideoMemoryInfo`）。`CDX12AssetBackendSubsystem::GetMemoryInfo` が、`VideoMemoryUsed` / `VideoMemoryTotal`（予算）に入れる。Editor の Assets ツールに「Video memory 31.39 MB / 10.97 GB」と出ることを、DX12 で確認した。
+- **検査**: `WindowsInputContract` に 28 項目を足し、139 項目に。動画は、Media Foundation で H.264 + AAC の mp4（128x96・30 コマ・1 秒。前半赤・後半青）を書いて、情報・画像の更新・RGBA の並び・一時停止・シーク・速さ・終わり・ループ・閉じるを確かめる（この機械が H.264 を書けなければ SKIP）。タッチは、指の動きの取り込み（`AddContact`）を確かめる（`WM_TOUCH` の読み取りは、タッチ機器が必要で未確認）。色の並び・シークの追いつき・離した指の報告を壊す変異で、失敗することを確かめた。
+- **未確認**: 動画と音声の同期のずれ、大きな映像（1080p など）のデコードの重さ（今は、主スレッドで読む）、タッチ機器での `WM_TOUCH`、複数 GPU のビデオメモリ。
+- **R8 の残り**: 排他的フルスクリーン（Borderless で代替の報告のまま）。非描画の窓口は、ひととおり DX12 にできた。次は R6 の残り（`MaterialRibbon3D`・アニメーションつきのモデル・`Invert` 系の合成・画像の mip）。

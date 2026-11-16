@@ -525,6 +525,24 @@ bool CDX12Device::InitializeCaptureTarget( CDX12CaptureTarget &Target )
 	return bInitialized && !bClosing && Target.Initialize( Device.Get(), Queue.Get() );
 }
 
+bool CDX12Device::QueryVideoMemory( int64 &OutUsedBytes, int64 &OutBudgetBytes ) const
+{
+	if ( !bInitialized || bClosing || !Device )
+	{
+		return false;
+	}
+	Microsoft::WRL::ComPtr<IDXGIFactory4> Factory; // このデバイスのアダプターを、LUIDで引く。
+	Microsoft::WRL::ComPtr<IDXGIAdapter3> Adapter;
+	DXGI_QUERY_VIDEO_MEMORY_INFO Info = {};
+	if ( FAILED( CreateDXGIFactory1( IID_PPV_ARGS( &Factory ) ) ) || FAILED( Factory->EnumAdapterByLuid( Device->GetAdapterLuid(), IID_PPV_ARGS( &Adapter ) ) ) || FAILED( Adapter->QueryVideoMemoryInfo( 0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &Info ) ) )
+	{
+		return false;
+	}
+	OutUsedBytes = static_cast<int64>( Info.CurrentUsage );
+	OutBudgetBytes = static_cast<int64>( Info.Budget );
+	return true;
+}
+
 ID3D12Device *CDX12Device::GetNativeDevice() { return bInitialized && !bClosing ? Device.Get() : nullptr; }
 ID3D12CommandQueue *CDX12Device::GetNativeQueue() { return bInitialized && !bClosing ? Queue.Get() : nullptr; }
 CDX12DescriptorPool *CDX12Device::GetDescriptorPool() { return bInitialized && !bClosing ? &Descriptors : nullptr; }

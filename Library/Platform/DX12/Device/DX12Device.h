@@ -67,6 +67,8 @@ class CDX12Device
 	bool InitializeCaptureTarget( CDX12CaptureTarget &Target );
 	// 外側の描画実装へGPUを貸す。終了中・未初期化はnullptr。
 	ID3D12Device *GetNativeDevice();
+	// このプロセスの、GPU専用メモリの使用量と予算（OSが割り当てる量）。調べられなければfalseでOutを保つ。
+	bool QueryVideoMemory( int64 &OutUsedBytes, int64 &OutBudgetBytes ) const;
 	// 同じデバイスのDIRECTキューを貸す。終了中・未初期化はnullptr。
 	ID3D12CommandQueue *GetNativeQueue();
 	// 画像と描画実装で共有する貸出表。終了中・未初期化はnullptr。

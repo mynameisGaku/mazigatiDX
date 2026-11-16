@@ -13,6 +13,7 @@
 #include "Library/Platform/DX12/DX12Log.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/DebugUI/Common/ImGuiTexture.h"
+#include "Library/Core/Interfaces/Render/IGpuMemoryInfo.h"
 #include "Library/Platform/Windows/Audio/WindowsSoundStoreSubsystem.h"
 
 #include <windows.h>
@@ -43,6 +44,7 @@ void CDX12AssetBackendSubsystem::Initialize( FSubsystemCollection& Collection )
 	{
 		Textures.Initialize( *Resources );
 	}
+	GpuMemory = Collection.InitializeDependency<IGpuMemoryInfo>();
 	SoundStore = Collection.InitializeDependency<CWindowsSoundStoreSubsystem>(); // 音の登録（DX12のとき作られる）。
 	ShaderService.Initialize( Collection.InitializeDependency<IGraphicsPipelineResources>(), Collection.InitializeDependency<IRenderBufferResources>(), &Textures );
 	GImGuiTextureOwner = this; // エディタのプレビューなどが、画像を ImGui へ表示できるようにする。
@@ -56,6 +58,7 @@ void CDX12AssetBackendSubsystem::Deinitialize()
 	NDebugUI::SetImGuiTextureCallbacks( NDebugUI::FImGuiTextureCallbacks() );
 	GImGuiTextureOwner = nullptr;
 	SoundStore = nullptr;
+	GpuMemory = nullptr;
 	ShaderService.Shutdown(); // パイプラインと空の画像を、先に手放す。
 	Models.Reset(); // 共有モデルが所有する画像を、先に登録から外す。
 	Textures.Shutdown(); // 資源の所有者がGPUの完了と解放を行う。
@@ -199,6 +202,13 @@ FBackendMemoryInfo CDX12AssetBackendSubsystem::GetMemoryInfo()
 	}
 	Info.NumTextureHandles = Textures.Num();
 	Info.NumModelHandles = Models.Num();
+	int64 Used = 0;
+	int64 Budget = 0;
+	if ( GpuMemory && GpuMemory->QueryGpuMemory( Used, Budget ) && Budget > 0 )
+	{
+		Info.VideoMemoryUsed = Used;
+		Info.VideoMemoryTotal = Budget;
+	}
 	Info.NumSoundHandles = SoundStore ? SoundStore->Num() : 0;
 	return Info;
 }

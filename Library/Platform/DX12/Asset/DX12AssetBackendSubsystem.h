@@ -173,6 +173,7 @@ public:
 	TArray<FString> GetReadableSoundExtensions() const override;
 private:
 	class CWindowsSoundStoreSubsystem* SoundStore = nullptr; // 音の登録（借用）。
+	class IGpuMemoryInfo* GpuMemory = nullptr; // GPUメモリの問い合わせ先（借用）。
 	CGeometryBufferStore Buffers; // APIに依存しない登録形状。
 	CTextureAssetStore Textures; // API共通の画像登録。所有先の寿命までに解放する。
 	CStaticModelStore Models; // 画像の所有先より先に解放する共有モデル。

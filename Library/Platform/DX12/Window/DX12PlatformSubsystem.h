@@ -2,6 +2,7 @@
 #pragma once
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
 #include "Library/Framework/Subsystem/AppSubsystem.h"
+#include "Library/Core/Interfaces/Render/IGpuMemoryInfo.h"
 #include "Library/Core/Interfaces/Render/IRenderSurface.h"
 #include "Library/Core/Interfaces/Render/IRenderTextureResources.h"
 #include "Library/Core/Interfaces/Render/IRenderBufferResources.h"
@@ -25,7 +26,7 @@ class CDX12GameCapture;
 class CDX12RenderTargetPass;
 
 // Windowsの窓とフレーム進行を所有する。GPUを所有し、ImGuiへは描画に必要な参照だけを貸す。
-class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IRenderSurface, public IRenderTextureResources, public IRenderBufferResources, public IComputePipelineResources, public IGraphicsPipelineResources, public IGpuTimestampResources, public IComputeQueue, public IRenderCommandQueue, public INativeWindow
+class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IRenderSurface, public IRenderTextureResources, public IRenderBufferResources, public IComputePipelineResources, public IGraphicsPipelineResources, public IGpuTimestampResources, public IComputeQueue, public IRenderCommandQueue, public INativeWindow, public IGpuMemoryInfo
 {
   public:
 	// 途中の初期化失敗時も資源を解放する。
@@ -98,6 +99,8 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
 	void RecordClear( FColor32 Color ) override;
 	// アセットの終了時にGPUを待つ。
 	bool WaitForGPU() override;
+	// GPU専用メモリの使用量と予算（DXGIの問い合わせ）。
+	bool QueryGpuMemory( int64 &OutUsedBytes, int64 &OutBudgetBytes ) const override;
 	// RGBA8の画像資源を、UIを介さず作る。
 	FTextureResourceHandle CreateTextureRGBA8( int32 Width, int32 Height, const FColor32 *Pixels ) override;
 	// ゲームスレッドから能力を照会する。未初期化・GPU失敗時はOutを保ってfalse。
