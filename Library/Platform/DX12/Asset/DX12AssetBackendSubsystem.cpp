@@ -244,24 +244,24 @@ int32 CDX12AssetBackendSubsystem::LoadModel( const FString& Path, bool /*bAsync*
 	TArray<uint8> Bytes; // 同期で読み取る元ファイル。
 	if ( !CanLoadModelSource( Path ) || Size <= 0 || Size > 64 * 1024 * 1024 || !NFile::ReadAllBytes( Path, Bytes ) || Bytes.Num() > 64 * 1024 * 1024 )
 	{
-		LOG( LogDX12, Error, "Cannot read static FBX/OBJ model '%s' (unsupported format or file size)", *Path );
+		LOG( LogDX12, Error, "Cannot read FBX/OBJ model '%s' (unsupported format or file size)", *Path );
 		return NAsset::InvalidHandle;
 	}
 	FImportedScene Scene; // 既存の中間形式を使い、GPUをインポーターへ渡さない。
 	FString Error; // 失敗理由を読み込み元と一緒に出す。
-	FImportOptions Options; // 動くモデルを静的な形へ誤変換しない。
-	Options.bRequireStatic = true;
-	Options.bImportAnimations = false;
+	FImportOptions Options; // スキンとアニメーションも取り込む（骨組みをCPUで変形して描く）。
+	Options.bRequireStatic = false;
+	Options.bImportAnimations = true;
 	if ( !NModelImport::ImportFromMemory( Bytes.GetData(), Bytes.Num(), Path, Options, Scene, Error ) )
 	{
-		LOG( LogDX12, Error, "Cannot import static model '%s': %s", *Path, *Error );
+		LOG( LogDX12, Error, "Cannot import model '%s': %s", *Path, *Error );
 		return NAsset::InvalidHandle;
 	}
 	NImportedScene::ConvertToLeftHanded( Scene );
-	const int32 Handle = Models.Create( Scene, Path, *this, Error ); // 失敗時は途中の画像も片付ける。
+	const int32 Handle = Models.Create( Scene, Path, *this, Error, true ); // 失敗時は途中の画像も片付ける。
 	if ( Handle < 0 )
 	{
-		LOG( LogDX12, Error, "Cannot prepare static model '%s': %s", *Path, *Error );
+		LOG( LogDX12, Error, "Cannot prepare model '%s': %s", *Path, *Error );
 	}
 	return Handle;
 }
@@ -276,29 +276,85 @@ void CDX12AssetBackendSubsystem::DeleteModel( int32 Model )
 	Models.Delete( Model );
 }
 
-int32 CDX12AssetBackendSubsystem::GetModelAnimCount( int32 /*Model*/ )
+int32 CDX12AssetBackendSubsystem::GetModelAnimCount( int32 Model )
 {
-	return 0;
+	return Models.GetAnimCount( Model );
 }
 
-FString CDX12AssetBackendSubsystem::GetModelAnimName( int32 /*Model*/, int32 /*AnimIndex*/ )
+FString CDX12AssetBackendSubsystem::GetModelAnimName( int32 Model, int32 AnimIndex )
 {
-	return {};
+	return Models.GetAnimName( Model, AnimIndex );
 }
 
-float32 CDX12AssetBackendSubsystem::GetModelAnimLength( int32 /*Model*/, int32 /*AnimIndex*/ )
+float32 CDX12AssetBackendSubsystem::GetModelAnimLength( int32 Model, int32 AnimIndex )
 {
-	return 0;
+	return Models.GetAnimLength( Model, AnimIndex );
 }
 
-int32 CDX12AssetBackendSubsystem::AttachModelAnim( int32 /*Model*/, int32 /*AnimIndex*/, int32 /*SourceModel*/ )
+int32 CDX12AssetBackendSubsystem::AttachModelAnim( int32 Model, int32 AnimIndex, int32 SourceModel )
 {
-	NBackendSupport::ReportUnsupported( "DX12", "AttachModelAnim" );
-	return NAsset::InvalidHandle;
+	return Models.AttachAnim( Model, AnimIndex, SourceModel );
 }
 
-void CDX12AssetBackendSubsystem::DetachModelAnim( int32 /*Model*/, int32 /*AttachIndex*/ )
+void CDX12AssetBackendSubsystem::DetachModelAnim( int32 Model, int32 AttachIndex )
 {
+	Models.DetachAnim( Model, AttachIndex );
+}
+
+float32 CDX12AssetBackendSubsystem::GetModelAnimUnitsPerSecond( int32 Model, int32 AnimIndex )
+{
+	// DxLibと同じく、モデルの時間は 30 = 1 秒。アニメーションの無い番号は、分からないので 0
+	return AnimIndex >= 0 && AnimIndex < Models.GetAnimCount( Model ) ? 30.0f : 0.0f;
+}
+
+bool CDX12AssetBackendSubsystem::SampleModelAnimFrameLocalMatrix( int32 Model, int32 AttachIndex, int32 Frame, float32 Time, FMatrix4x4& Out )
+{
+	return Models.SampleAnimFrameLocal( Model, AttachIndex, Frame, Time, Out );
+}
+
+bool CDX12AssetBackendSubsystem::GetModelFramePosition( int32 Model, int32 FrameIndex, float32 ( &OutPosition )[3] )
+{
+	return Models.GetFramePosition( Model, FrameIndex, OutPosition );
+}
+
+bool CDX12AssetBackendSubsystem::GetModelFrameMatrix( int32 Model, int32 Frame, EModelFrameSpace Space, FMatrix4x4& Out )
+{
+	return Models.GetFrameMatrix( Model, Frame, Space == EModelFrameSpace::World, Out );
+}
+
+bool CDX12AssetBackendSubsystem::GetModelFrameLocalMatrixOverride( int32 Model, int32 Frame, bool& bOutOverridden, FMatrix4x4& Out )
+{
+	return Models.GetFrameOverride( Model, Frame, bOutOverridden, Out );
+}
+
+bool CDX12AssetBackendSubsystem::SetModelFrameLocalMatrixOverride( int32 Model, int32 Frame, const FMatrix4x4& LocalToParent )
+{
+	return Models.SetFrameOverride( Model, Frame, LocalToParent );
+}
+
+bool CDX12AssetBackendSubsystem::ClearModelFrameLocalMatrixOverride( int32 Model, int32 Frame )
+{
+	return Models.ClearFrameOverride( Model, Frame );
+}
+
+bool CDX12AssetBackendSubsystem::GetModelFrameVisible( int32 Model, int32 Frame, bool& bOut )
+{
+	return Models.GetFrameVisible( Model, Frame, bOut );
+}
+
+bool CDX12AssetBackendSubsystem::SetModelFrameVisible( int32 Model, int32 Frame, bool bVisible )
+{
+	return Models.SetFrameVisible( Model, Frame, bVisible );
+}
+
+bool CDX12AssetBackendSubsystem::GetModelMeshVisible( int32 Model, int32 Mesh, bool& bOut )
+{
+	return Models.GetMeshVisible( Model, Mesh, bOut );
+}
+
+bool CDX12AssetBackendSubsystem::SetModelMeshVisible( int32 Model, int32 Mesh, bool bVisible )
+{
+	return Models.SetMeshVisible( Model, Mesh, bVisible );
 }
 
 int32 CDX12AssetBackendSubsystem::GetModelMeshCount( int32 Model )
@@ -633,17 +689,6 @@ bool CDX12AssetBackendSubsystem::GetModelOpacity( int32 Model, float32& Out )
 bool CDX12AssetBackendSubsystem::SetModelOpacity( int32 Model, float32 Opacity )
 {
 	return Models.SetOpacity( Model, Opacity );
-}
-
-bool CDX12AssetBackendSubsystem::GetModelFrameMatrix( int32 Model, int32 Frame, EModelFrameSpace Space, FMatrix4x4& Out )
-{
-	const auto* Definition = Models.GetDefinition( Model ); // 最後の描画配置を追跡しないためWorldは答えない。
-	if ( !Definition || Frame < 0 || Frame >= Definition->Nodes.Num() || Space != EModelFrameSpace::Local )
-	{
-		return false;
-	}
-	FMemory::Memcpy( Out.m, Definition->Nodes[Frame].Local.M, sizeof( Out.m ) );
-	return true;
 }
 
 bool CDX12AssetBackendSubsystem::GetModelStructure( int32 Model, FModelStructure& Out )

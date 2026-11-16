@@ -117,6 +117,16 @@ public:
 	float32 GetModelAnimLength( int32 Model, int32 AnimIndex ) override;
 	// AttachModelAnimの未対応時の既定値。出力引数と外部状態は変更しない。
 	int32 AttachModelAnim( int32 Model, int32 AnimIndex, int32 SourceModel ) override;
+	float32 GetModelAnimUnitsPerSecond( int32 Model, int32 AnimIndex ) override;
+	bool SampleModelAnimFrameLocalMatrix( int32 Model, int32 AttachIndex, int32 Frame, float32 Time, FMatrix4x4& Out ) override;
+	bool GetModelFramePosition( int32 Model, int32 FrameIndex, float32 ( &OutPosition )[3] ) override;
+	bool GetModelFrameLocalMatrixOverride( int32 Model, int32 Frame, bool& bOutOverridden, FMatrix4x4& Out ) override;
+	bool SetModelFrameLocalMatrixOverride( int32 Model, int32 Frame, const FMatrix4x4& LocalToParent ) override;
+	bool ClearModelFrameLocalMatrixOverride( int32 Model, int32 Frame ) override;
+	bool GetModelFrameVisible( int32 Model, int32 Frame, bool& bOut ) override;
+	bool SetModelFrameVisible( int32 Model, int32 Frame, bool bVisible ) override;
+	bool GetModelMeshVisible( int32 Model, int32 Mesh, bool& bOut ) override;
+	bool SetModelMeshVisible( int32 Model, int32 Mesh, bool bVisible ) override;
 	// DetachModelAnimの未対応時の既定値。出力引数と外部状態は変更しない。
 	void DetachModelAnim( int32 Model, int32 AttachIndex ) override;
 	// 静的モデルの元メッシュ数を返す。

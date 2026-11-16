@@ -4,9 +4,14 @@
 #include "Library/Core/Interfaces/Asset/TextureBackend.h"
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Core/Collection/Map.h"
+#include "Library/Core/Thread/Mutex.h"
 #include "Library/Framework/Asset/Model/Import/StaticModelDefinition.h"
+#include "Library/Platform/Render/Model/ModelRig.h"
 
-// 不変形状と画像を共有し、個体の状態と登録番号を所有する。GPUに依存しない。
+// 形状と画像を共有し、個体の状態（不透明度・アニメーション・骨の上書き・表示）と登録番号を所有する。GPUに依存しない。
+//   骨組み（FModelRig）を持つので、スキンつきのモデルと、アニメーションを付けたモデルは、描くときに CPU で変形した頂点を貸す。
+//   動かない個体（スキンも、アニメーションも、上書きも、非表示も無い）は、共有した形状をそのまま貸す。
+//   描画の実行スレッドと、ゲームのスレッドの両方から呼ばれるので、公開の関数は、すべて排他する（借りた頂点は、次の呼び出しまで有効）。
 class CStaticModelStore : public IStaticModelSource
 {
 public:
@@ -15,9 +20,10 @@ public:
 	CStaticModelStore( const CStaticModelStore& ) = delete;
 	CStaticModelStore& operator=( const CStaticModelStore& ) = delete;
 	// 左手系のSceneを登録する。Texturesは全個体の解放まで生存させる。
+	// bAllowRigがtrueなら、スキン・アニメーション・メッシュの無い（アニメーションだけの）シーンも受け付ける。
 	// 失敗時は-1と理由を返し、読み込み途中の画像を残さない。
-	int32 Create( const FImportedScene& Scene, const FString& SourcePath, ITextureBackend& Textures, FString& Error );
-	// 形状と画像を共有し、不透明度を値でコピーした個体を作る。
+	int32 Create( const FImportedScene& Scene, const FString& SourcePath, ITextureBackend& Textures, FString& Error, bool bAllowRig = false );
+	// 形状と画像を共有し、不透明度と骨の上書きを値でコピーした個体を作る（付けたアニメーションは引き継がない）。
 	int32 Duplicate( int32 Source );
 	// 最後の共有個体を削除したとき画像も解放する。
 	void Delete( int32 Handle );
@@ -25,8 +31,14 @@ public:
 	void Reset();
 	// 登録中の個体数。
 	int32 Num() const;
-	// 同期の命令解釈中だけ不変形状を貸す。
+	// 同期の命令解釈中だけ形状を貸す（動く個体は、いまのポーズで変形した頂点）。
 	bool GetStaticModelDrawView( int32 Handle, FStaticModelDrawView& Out ) override;
+	// 描くときの配置（3 x 4。FDrawModelData::M と同じ並び）を覚える（フレームのワールド行列・位置に使う）。
+	bool SetStaticModelPlacement( int32 Handle, const float32 ( &Matrix )[12] ) override;
+	// 付けたアニメーションの時間（30 = 1 秒）・割合・骨ごとの割合。付けていない番号は false。
+	bool SetStaticModelAnimTime( int32 Handle, int32 AttachIndex, float32 Time ) override;
+	bool SetStaticModelAnimRate( int32 Handle, int32 AttachIndex, float32 Rate ) override;
+	bool SetStaticModelAnimFrameRate( int32 Handle, int32 AttachIndex, int32 Frame, float32 Rate, bool bIncludeChildren ) override;
 	// 借用画像番号を含む面データをコピーする。失敗時は出力を保つ。
 	bool GetSurface( int32 Handle, FStaticModelSurfaceData& Out ) const;
 	// 準備済みの不変定義。登録の追加・変更・削除前に借用を終える。
@@ -37,6 +49,33 @@ public:
 	bool SetOpacity( int32 Handle, float32 Opacity );
 	// 個体が共有する形状のメモリ推定。画像は含めない。
 	int64 EstimateBytes( int32 Handle ) const;
+
+	//-------------------------------------------------------------------------
+	// アニメーション・骨（IModelBackend の対応する窓口が使う）
+	//-------------------------------------------------------------------------
+	int32 GetAnimCount( int32 Handle ) const;
+	FString GetAnimName( int32 Handle, int32 AnimIndex ) const;
+	// 長さ（30 = 1 秒の単位）。無ければ 0
+	float32 GetAnimLength( int32 Handle, int32 AnimIndex ) const;
+	// Source のクリップ AnimIndex を、Handle に付ける（骨は名前で結びつける）。付けられなければ -1
+	int32 AttachAnim( int32 Handle, int32 AnimIndex, int32 Source );
+	void DetachAnim( int32 Handle, int32 AttachIndex );
+	// アニメーションを付けずに、クリップ Source / AnimIndex の、骨 Frame（Handle のノードの番号）の Time（30 = 1 秒）の行列を、名前で結びつけて求める
+	bool SampleAnimFrameLocal( int32 Handle, int32 AttachIndex, int32 Frame, float32 Time, FMatrix4x4& Out ) const;
+	// 骨の行列（いまのポーズ）。ワールドは、描いたときの配置を掛けた値
+	bool GetFrameMatrix( int32 Handle, int32 Frame, bool bWorld, FMatrix4x4& Out );
+	bool GetFramePosition( int32 Handle, int32 Frame, float32 ( &Out )[3] );
+	// 骨の「親から見た行列」の上書き
+	bool GetFrameOverride( int32 Handle, int32 Frame, bool& bOutOverridden, FMatrix4x4& Out ) const;
+	bool SetFrameOverride( int32 Handle, int32 Frame, const FMatrix4x4& Local );
+	bool ClearFrameOverride( int32 Handle, int32 Frame );
+	// 骨（子も含めて）・メッシュの表示
+	bool GetFrameVisible( int32 Handle, int32 Frame, bool& bOut ) const;
+	bool SetFrameVisible( int32 Handle, int32 Frame, bool bVisible );
+	bool GetMeshVisible( int32 Handle, int32 Mesh, bool& bOut ) const;
+	bool SetMeshVisible( int32 Handle, int32 Mesh, bool bVisible );
+	// 骨組みのあるモデルか（形状の無い、アニメーションだけのモデルも）
+	bool HasRig( int32 Handle ) const;
 private:
 	// 形状は登録時に完成し、以降は書き換えない。
 	struct FResource
@@ -44,18 +83,43 @@ private:
 		// 途中の読み込み失敗でも、取得済みの画像を戻す。
 		~FResource();
 		FStaticModelDefinition Definition; // 面データとフレーム情報。
-		TArray<FDrawVertex3D> Vertices; // 共通描画向けの頂点。
+		TArray<FDrawVertex3D> Vertices; // 共通描画向けの頂点（基準の姿。スキンつきは、基準の姿に変形した値）。
 		TArray<FStaticModelDrawSection> Sections; // 共通描画向けの材質範囲。
 		TArray<int32> OwnedTextures; // 最後の個体まで所有する画像。
 		ITextureBackend* TextureBackend = nullptr; // 所有画像の解放先。
 		int64 Bytes = 0; // 形状のメモリ推定。
+		TSharedPtr<const FModelRig> Rig; // 骨組み（骨・スキン・クリップ）。
+		TArray<FModelVertexSource> VertexSources; // Vertices と同じ並びの、元のメッシュと頂点。
+		bool bHasSkin = false; // スキンつきのメッシュがある（必ず、変形した頂点で描く）。
+	};
+	// 個体ごとのポーズと、変形した頂点。
+	struct FInstanceRig
+	{
+		FModelPose Pose;
+		TArray<FDrawVertex3D> Vertices; // 変形した頂点。
+		TArray<uint32> Indices; // 非表示を除いた index。
+		TArray<FStaticModelDrawSection> Sections; // 非表示を除いた範囲。
+		TArray<FMatrix4x4> Local;
+		TArray<FMatrix4x4> Global;
+		uint64 PoseVersion = 0; // Local / Global を作ったときの Pose.Version。
+		uint64 BuiltVersion = 0; // Vertices / Indices / Sections を作ったときの Pose.Version。
 	};
 	// 形状の共有と個体別の値を分ける。
 	struct FInstance
 	{
 		TSharedPtr<FResource> Resource; // 個体間で共有する不変形状。
 		float32 Opacity = 1; // この個体だけの不透明度。
+		TSharedPtr<FInstanceRig> Rig; // この個体だけのポーズ（共有しない）。
 	};
+	// 以下は、排他を取った中でだけ呼ぶ。
+	FInstance* FindInstance( int32 Handle );
+	const FInstance* FindInstance( int32 Handle ) const;
+	void EnsurePose( FInstance& Instance );
+	bool IsHidden( const FInstance& Instance, int32 SourceMesh, int32 SourceFrame ) const;
+	bool NeedsDeform( const FInstance& Instance ) const;
+	void BuildDeformed( FInstance& Instance );
+
+	mutable FMutex Lock; // 描画の実行スレッドとゲームのスレッドの両方から呼ばれる。
 	TMap<int32, FInstance> Instances; // 登録番号から個体への表。
 	int32 NextHandle = 0; // 解放後も再利用しない登録番号。
 };

@@ -1223,7 +1223,21 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::Execute( const FDraw
 		}
 		const auto Data = View.Read<FDrawModelData>(); // 個体の配置と、静的モデルの登録番号。
 		FStaticModelDrawView Model; // 同期実行中だけ借りる不変形状。
-		if ( Data.AnimIndex >= 0 || !Finite( Data.M ) || !Models->GetStaticModelDrawView( Data.Handle, Model ) || !Model.Vertices || !Model.Indices || !Model.Sections
+		const bool bFiniteMatrix = Finite( Data.M );
+		if ( bFiniteMatrix )
+		{
+			if ( Data.AnimIndex >= 0 )
+			{
+				Models->SetStaticModelAnimTime( Data.Handle, Data.AnimIndex, Data.AnimTime ); // DxLibと同じく、付けていなくても、そのまま描く。
+			}
+			Models->SetStaticModelPlacement( Data.Handle, Data.M );
+		}
+		const bool bGotView = bFiniteMatrix && Models->GetStaticModelDrawView( Data.Handle, Model );
+		if ( bGotView && Model.NumIndices == 0 && Model.NumSections == 0 )
+		{
+			return EResult::Executed; // 描くものが無い（形の無いモデル・すべて非表示）。
+		}
+		if ( !bGotView || !Model.Vertices || !Model.Indices || !Model.Sections
 			|| Model.NumVertices <= 0 || Model.NumVertices > 786432 || Model.NumIndices <= 0 || Model.NumIndices > 786432 || Model.NumSections <= 0 || Model.NumSections > 4096
 			|| !NMath::IsFinite( Model.Opacity ) || Model.Opacity < 0 || Model.Opacity > 1 )
 		{

@@ -113,6 +113,7 @@ foreach ($configuration in $Configurations) {
     Invoke-Step "DX12 capture contracts $configuration" (Join-Path $selfTest 'RunCaptureTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
     Invoke-Step "DX12 sample images $configuration" (Join-Path $selfTest 'RunDX12SampleImageTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
     Invoke-Step "Windows input contracts $configuration" (Join-Path $selfTest 'RunWindowsInputTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration)
+    Invoke-Step "model rig contracts $configuration" (Join-Path $selfTest 'RunModelRigTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration)
 }
 
 if (-not $Quick) {

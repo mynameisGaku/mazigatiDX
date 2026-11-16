@@ -10,8 +10,8 @@
 
 |分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|
 |---|---:|---:|---:|---:|---:|---:|---:|
-|API|366|4|32|165|164|0|1|
-|Draw|101|0|10|51|40|0|0|
+|API|370|8|17|180|164|0|1|
+|Draw|101|0|8|53|40|0|0|
 |Sample|33|30|0|3|0|0|0|
 |Editor|11|11|0|0|0|0|0|
 
@@ -123,30 +123,30 @@
 |[API.IKeyboardInput.IsKeyDown](../Library/Core/Interfaces/Input/IKeyboardInput.h#L13)|Partial|R8|押下・保持・解放、focus喪失、座標拡大、wheel、連続frameでDxLibと比較|Windows入力へ接続。テンキーEnterの独立判定と実機の入力比較は未完了||
 |[API.IKeyboardInput.IsKeyPressed](../Library/Core/Interfaces/Input/IKeyboardInput.h#L15)|Partial|R8|押下・保持・解放、focus喪失、座標拡大、wheel、連続frameでDxLibと比較|Windows入力へ接続。テンキーEnterの独立判定と実機の入力比較は未完了||
 |[API.IKeyboardInput.IsKeyReleased](../Library/Core/Interfaces/Input/IKeyboardInput.h#L17)|Partial|R8|押下・保持・解放、focus喪失、座標拡大、wheel、連続frameでDxLibと比較|Windows入力へ接続。テンキーEnterの独立判定と実機の入力比較は未完了||
-|[API.IModelBackend.AttachModelAnim](../Library/Core/Interfaces/Asset/ModelBackend.h#L34)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.IModelBackend.AttachModelAnim](../Library/Core/Interfaces/Asset/ModelBackend.h#L34)|Partial|R5|作成、入出力、時系列、骨の階層・混合・上書き・表示、無効な番号、失敗を、合成した骨組みで比較|CPUスキニングの骨組み（ModelRig / CStaticModelStore）。合成した骨組みで契約検査（RunModelRigTests）。実際のアニメーションつきFBXでの描画（DxLibとの画の比較）は未完了。割合の混ぜ方は、フレームワークの割合の計算に合わせた仮定（DxLibで未確認）||
 |[API.IModelBackend.CanLoadModelSource](../Library/Core/Interfaces/Asset/ModelBackend.h#L20)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
-|[API.IModelBackend.ClearModelFrameLocalMatrixOverride](../Library/Core/Interfaces/Asset/ModelBackend.h#L94)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.IModelBackend.ClearModelFrameLocalMatrixOverride](../Library/Core/Interfaces/Asset/ModelBackend.h#L94)|Partial|R5|作成、入出力、時系列、骨の階層・混合・上書き・表示、無効な番号、失敗を、合成した骨組みで比較|CPUスキニングの骨組み（ModelRig / CStaticModelStore）。合成した骨組みで契約検査（RunModelRigTests）。実際のアニメーションつきFBXでの描画（DxLibとの画の比較）は未完了。割合の混ぜ方は、フレームワークの割合の計算に合わせた仮定（DxLibで未確認）||
 |[API.IModelBackend.CreateModelMaterialGeometry](../Library/Core/Interfaces/Asset/ModelBackend.h#L49)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IModelBackend.DeleteModel](../Library/Core/Interfaces/Asset/ModelBackend.h#L23)|Implemented|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
 |[API.IModelBackend.DeleteModelMaterialGeometry](../Library/Core/Interfaces/Asset/ModelBackend.h#L51)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IModelBackend.DetachModelAnim](../Library/Core/Interfaces/Asset/ModelBackend.h#L35)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.IModelBackend.DetachModelAnim](../Library/Core/Interfaces/Asset/ModelBackend.h#L35)|Partial|R5|作成、入出力、時系列、骨の階層・混合・上書き・表示、無効な番号、失敗を、合成した骨組みで比較|CPUスキニングの骨組み（ModelRig / CStaticModelStore）。合成した骨組みで契約検査（RunModelRigTests）。実際のアニメーションつきFBXでの描画（DxLibとの画の比較）は未完了。割合の混ぜ方は、フレームワークの割合の計算に合わせた仮定（DxLibで未確認）||
 |[API.IModelBackend.DuplicateModel](../Library/Core/Interfaces/Asset/ModelBackend.h#L22)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
-|[API.IModelBackend.GetModelAnimCount](../Library/Core/Interfaces/Asset/ModelBackend.h#L26)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IModelBackend.GetModelAnimLength](../Library/Core/Interfaces/Asset/ModelBackend.h#L29)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IModelBackend.GetModelAnimName](../Library/Core/Interfaces/Asset/ModelBackend.h#L27)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IModelBackend.GetModelAnimUnitsPerSecond](../Library/Core/Interfaces/Asset/ModelBackend.h#L32)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.IModelBackend.GetModelAnimCount](../Library/Core/Interfaces/Asset/ModelBackend.h#L26)|Partial|R5|作成、入出力、時系列、骨の階層・混合・上書き・表示、無効な番号、失敗を、合成した骨組みで比較|CPUスキニングの骨組み（ModelRig / CStaticModelStore）。合成した骨組みで契約検査（RunModelRigTests）。実際のアニメーションつきFBXでの描画（DxLibとの画の比較）は未完了。割合の混ぜ方は、フレームワークの割合の計算に合わせた仮定（DxLibで未確認）||
+|[API.IModelBackend.GetModelAnimLength](../Library/Core/Interfaces/Asset/ModelBackend.h#L29)|Partial|R5|作成、入出力、時系列、骨の階層・混合・上書き・表示、無効な番号、失敗を、合成した骨組みで比較|CPUスキニングの骨組み（ModelRig / CStaticModelStore）。合成した骨組みで契約検査（RunModelRigTests）。実際のアニメーションつきFBXでの描画（DxLibとの画の比較）は未完了。割合の混ぜ方は、フレームワークの割合の計算に合わせた仮定（DxLibで未確認）||
+|[API.IModelBackend.GetModelAnimName](../Library/Core/Interfaces/Asset/ModelBackend.h#L27)|Partial|R5|作成、入出力、時系列、骨の階層・混合・上書き・表示、無効な番号、失敗を、合成した骨組みで比較|CPUスキニングの骨組み（ModelRig / CStaticModelStore）。合成した骨組みで契約検査（RunModelRigTests）。実際のアニメーションつきFBXでの描画（DxLibとの画の比較）は未完了。割合の混ぜ方は、フレームワークの割合の計算に合わせた仮定（DxLibで未確認）||
+|[API.IModelBackend.GetModelAnimUnitsPerSecond](../Library/Core/Interfaces/Asset/ModelBackend.h#L32)|Partial|R5|作成、入出力、時系列、骨の階層・混合・上書き・表示、無効な番号、失敗を、合成した骨組みで比較|CPUスキニングの骨組み（ModelRig / CStaticModelStore）。合成した骨組みで契約検査（RunModelRigTests）。実際のアニメーションつきFBXでの描画（DxLibとの画の比較）は未完了。割合の混ぜ方は、フレームワークの割合の計算に合わせた仮定（DxLibで未確認）||
 |[API.IModelBackend.GetModelBounds](../Library/Core/Interfaces/Asset/ModelBackend.h#L53)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
 |[API.IModelBackend.GetModelCollisionMesh](../Library/Core/Interfaces/Asset/ModelBackend.h#L56)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
 |[API.IModelBackend.GetModelFrameCount](../Library/Core/Interfaces/Asset/ModelBackend.h#L58)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
-|[API.IModelBackend.GetModelFrameLocalMatrixOverride](../Library/Core/Interfaces/Asset/ModelBackend.h#L90)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IModelBackend.GetModelFrameMatrix](../Library/Core/Interfaces/Asset/ModelBackend.h#L88)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的フレームのLocalだけ対応。Worldはfalseで出力を保つ||
+|[API.IModelBackend.GetModelFrameLocalMatrixOverride](../Library/Core/Interfaces/Asset/ModelBackend.h#L90)|Partial|R5|作成、入出力、時系列、骨の階層・混合・上書き・表示、無効な番号、失敗を、合成した骨組みで比較|CPUスキニングの骨組み（ModelRig / CStaticModelStore）。合成した骨組みで契約検査（RunModelRigTests）。実際のアニメーションつきFBXでの描画（DxLibとの画の比較）は未完了。割合の混ぜ方は、フレームワークの割合の計算に合わせた仮定（DxLibで未確認）||
+|[API.IModelBackend.GetModelFrameMatrix](../Library/Core/Interfaces/Asset/ModelBackend.h#L88)|Partial|R5|作成、入出力、時系列、骨の階層・混合・上書き・表示、無効な番号、失敗を、合成した骨組みで比較|CPUスキニングの骨組み（ModelRig / CStaticModelStore）。合成した骨組みで契約検査（RunModelRigTests）。実際のアニメーションつきFBXでの描画（DxLibとの画の比較）は未完了。割合の混ぜ方は、フレームワークの割合の計算に合わせた仮定（DxLibで未確認）||
 |[API.IModelBackend.GetModelFrameName](../Library/Core/Interfaces/Asset/ModelBackend.h#L59)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
-|[API.IModelBackend.GetModelFramePosition](../Library/Core/Interfaces/Asset/ModelBackend.h#L61)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IModelBackend.GetModelFrameVisible](../Library/Core/Interfaces/Asset/ModelBackend.h#L82)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.IModelBackend.GetModelFramePosition](../Library/Core/Interfaces/Asset/ModelBackend.h#L61)|Partial|R5|作成、入出力、時系列、骨の階層・混合・上書き・表示、無効な番号、失敗を、合成した骨組みで比較|CPUスキニングの骨組み（ModelRig / CStaticModelStore）。合成した骨組みで契約検査（RunModelRigTests）。実際のアニメーションつきFBXでの描画（DxLibとの画の比較）は未完了。割合の混ぜ方は、フレームワークの割合の計算に合わせた仮定（DxLibで未確認）||
+|[API.IModelBackend.GetModelFrameVisible](../Library/Core/Interfaces/Asset/ModelBackend.h#L82)|Partial|R5|作成、入出力、時系列、骨の階層・混合・上書き・表示、無効な番号、失敗を、合成した骨組みで比較|CPUスキニングの骨組み（ModelRig / CStaticModelStore）。合成した骨組みで契約検査（RunModelRigTests）。実際のアニメーションつきFBXでの描画（DxLibとの画の比較）は未完了。割合の混ぜ方は、フレームワークの割合の計算に合わせた仮定（DxLibで未確認）||
 |[API.IModelBackend.GetModelMaterialColors](../Library/Core/Interfaces/Asset/ModelBackend.h#L77)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
 |[API.IModelBackend.GetModelMeshCount](../Library/Core/Interfaces/Asset/ModelBackend.h#L40)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
 |[API.IModelBackend.GetModelMeshData](../Library/Core/Interfaces/Asset/ModelBackend.h#L75)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IModelBackend.GetModelMeshVisible](../Library/Core/Interfaces/Asset/ModelBackend.h#L80)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.IModelBackend.GetModelMeshVisible](../Library/Core/Interfaces/Asset/ModelBackend.h#L80)|Partial|R5|作成、入出力、時系列、骨の階層・混合・上書き・表示、無効な番号、失敗を、合成した骨組みで比較|CPUスキニングの骨組み（ModelRig / CStaticModelStore）。合成した骨組みで契約検査（RunModelRigTests）。実際のアニメーションつきFBXでの描画（DxLibとの画の比較）は未完了。割合の混ぜ方は、フレームワークの割合の計算に合わせた仮定（DxLibで未確認）||
 |[API.IModelBackend.GetModelOpacity](../Library/Core/Interfaces/Asset/ModelBackend.h#L85)|Implemented|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
 |[API.IModelBackend.GetModelShapeRate](../Library/Core/Interfaces/Asset/ModelBackend.h#L96)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IModelBackend.GetModelStructure](../Library/Core/Interfaces/Asset/ModelBackend.h#L71)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
@@ -155,12 +155,12 @@
 |[API.IModelBackend.OverlapModelSphere](../Library/Core/Interfaces/Asset/ModelBackend.h#L105)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IModelBackend.PrepareModelCollision](../Library/Core/Interfaces/Asset/ModelBackend.h#L101)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IModelBackend.RaycastModel](../Library/Core/Interfaces/Asset/ModelBackend.h#L103)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IModelBackend.SampleModelAnimFrameLocalMatrix](../Library/Core/Interfaces/Asset/ModelBackend.h#L37)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.IModelBackend.SampleModelAnimFrameLocalMatrix](../Library/Core/Interfaces/Asset/ModelBackend.h#L37)|Partial|R5|作成、入出力、時系列、骨の階層・混合・上書き・表示、無効な番号、失敗を、合成した骨組みで比較|CPUスキニングの骨組み（ModelRig / CStaticModelStore）。合成した骨組みで契約検査（RunModelRigTests）。実際のアニメーションつきFBXでの描画（DxLibとの画の比較）は未完了。割合の混ぜ方は、フレームワークの割合の計算に合わせた仮定（DxLibで未確認）||
 |[API.IModelBackend.SaveModelToMV1](../Library/Core/Interfaces/Asset/ModelBackend.h#L64)|Excluded|R5|DX12で未対応を返し出力を作らないこと、DxLibの既存保存機能を維持することを確認|ROADMAPの対象外規定によりDX12のMV1保存互換はv1.0.0対象外。実装済み・検証済みとは扱わない||
-|[API.IModelBackend.SetModelFrameLocalMatrixOverride](../Library/Core/Interfaces/Asset/ModelBackend.h#L92)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IModelBackend.SetModelFrameVisible](../Library/Core/Interfaces/Asset/ModelBackend.h#L83)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.IModelBackend.SetModelFrameLocalMatrixOverride](../Library/Core/Interfaces/Asset/ModelBackend.h#L92)|Partial|R5|作成、入出力、時系列、骨の階層・混合・上書き・表示、無効な番号、失敗を、合成した骨組みで比較|CPUスキニングの骨組み（ModelRig / CStaticModelStore）。合成した骨組みで契約検査（RunModelRigTests）。実際のアニメーションつきFBXでの描画（DxLibとの画の比較）は未完了。割合の混ぜ方は、フレームワークの割合の計算に合わせた仮定（DxLibで未確認）||
+|[API.IModelBackend.SetModelFrameVisible](../Library/Core/Interfaces/Asset/ModelBackend.h#L83)|Partial|R5|作成、入出力、時系列、骨の階層・混合・上書き・表示、無効な番号、失敗を、合成した骨組みで比較|CPUスキニングの骨組み（ModelRig / CStaticModelStore）。合成した骨組みで契約検査（RunModelRigTests）。実際のアニメーションつきFBXでの描画（DxLibとの画の比較）は未完了。割合の混ぜ方は、フレームワークの割合の計算に合わせた仮定（DxLibで未確認）||
 |[API.IModelBackend.SetModelMaterialColors](../Library/Core/Interfaces/Asset/ModelBackend.h#L78)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
-|[API.IModelBackend.SetModelMeshVisible](../Library/Core/Interfaces/Asset/ModelBackend.h#L81)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.IModelBackend.SetModelMeshVisible](../Library/Core/Interfaces/Asset/ModelBackend.h#L81)|Partial|R5|作成、入出力、時系列、骨の階層・混合・上書き・表示、無効な番号、失敗を、合成した骨組みで比較|CPUスキニングの骨組み（ModelRig / CStaticModelStore）。合成した骨組みで契約検査（RunModelRigTests）。実際のアニメーションつきFBXでの描画（DxLibとの画の比較）は未完了。割合の混ぜ方は、フレームワークの割合の計算に合わせた仮定（DxLibで未確認）||
 |[API.IModelBackend.SetModelOpacity](../Library/Core/Interfaces/Asset/ModelBackend.h#L86)|Implemented|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
 |[API.IModelBackend.SetModelShapeRate](../Library/Core/Interfaces/Asset/ModelBackend.h#L97)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
 |[API.IMouseInput.GetMouseState](../Library/Core/Interfaces/Input/IMouseInput.h#L14)|Implemented|R8|押下・保持・解放、focus喪失、座標拡大、wheel、連続frameでDxLibと比較|Windows入力へ接続。論理座標・focus・wheel等の実機比較前||
@@ -353,6 +353,10 @@
 |[API.ISoundBackend.GetSoundLength](../Library/Core/Interfaces/Asset/SoundBackend.h#L23)|Partial|R8|作成、入出力、時系列、聞こえない音量での実再生、機器なしの失敗、終了を比較|Windowsの音の登録（CWindowsSoundStoreSubsystem）。WAVはNWavFile、mp3・m4a・flac等はMedia Foundationで、同期でデコードしてメモリに持つ（Streamも全部展開）。3チャンネル以上はステレオにする。oggは未対応（OSのデコーダー次第）。契約検査でWAVとMedia Foundationの読みが一致することを確認||
 |[API.ISoundBackend.LoadSound](../Library/Core/Interfaces/Asset/SoundBackend.h#L18)|Partial|R8|作成、入出力、時系列、聞こえない音量での実再生、機器なしの失敗、終了を比較|Windowsの音の登録（CWindowsSoundStoreSubsystem）。WAVはNWavFile、mp3・m4a・flac等はMedia Foundationで、同期でデコードしてメモリに持つ（Streamも全部展開）。3チャンネル以上はステレオにする。oggは未対応（OSのデコーダー次第）。契約検査でWAVとMedia Foundationの読みが一致することを確認||
 |[API.IStaticModelSource.GetStaticModelDrawView](../Library/Core/Interfaces/Render/IStaticModelSource.h#L12)|Implemented|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
+|[API.IStaticModelSource.SetStaticModelAnimFrameRate](../Library/Core/Interfaces/Render/IStaticModelSource.h#L18)|Unreviewed|R0|未分類。期待結果と比較方法を決める|追加された公開機能。ソース・実装・寿命を確認する||
+|[API.IStaticModelSource.SetStaticModelAnimRate](../Library/Core/Interfaces/Render/IStaticModelSource.h#L17)|Unreviewed|R0|未分類。期待結果と比較方法を決める|追加された公開機能。ソース・実装・寿命を確認する||
+|[API.IStaticModelSource.SetStaticModelAnimTime](../Library/Core/Interfaces/Render/IStaticModelSource.h#L16)|Unreviewed|R0|未分類。期待結果と比較方法を決める|追加された公開機能。ソース・実装・寿命を確認する||
+|[API.IStaticModelSource.SetStaticModelPlacement](../Library/Core/Interfaces/Render/IStaticModelSource.h#L15)|Unreviewed|R0|未分類。期待結果と比較方法を決める|追加された公開機能。ソース・実装・寿命を確認する||
 |[API.ITextInput.GetImeComposition](../Library/Core/Interfaces/Input/ITextInput.h#L31)|Partial|R8|作成、入出力、時系列、focusの変化、失敗と終了を比較|窓のメッセージ（WM_CHAR・WM_KEYDOWN・IME）をCWindowsTextInputSubsystemが受ける。WM_CHAR・編集のキー・サロゲートペアは契約検査で確認。IMEの途中の文字列・候補は、実機のIMEとの比較が未完了||
 |[API.ITextInput.GetTextInputEvents](../Library/Core/Interfaces/Input/ITextInput.h#L28)|Partial|R8|作成、入出力、時系列、focusの変化、失敗と終了を比較|窓のメッセージ（WM_CHAR・WM_KEYDOWN・IME）をCWindowsTextInputSubsystemが受ける。WM_CHAR・編集のキー・サロゲートペアは契約検査で確認。IMEの途中の文字列・候補は、実機のIMEとの比較が未完了||
 |[API.ITextInput.IsTextInputActive](../Library/Core/Interfaces/Input/ITextInput.h#L25)|Partial|R8|作成、入出力、時系列、focusの変化、失敗と終了を比較|窓のメッセージ（WM_CHAR・WM_KEYDOWN・IME）をCWindowsTextInputSubsystemが受ける。WM_CHAR・編集のキー・サロゲートペアは契約検査で確認。IMEの途中の文字列・候補は、実機のIMEとの比較が未完了||
@@ -438,8 +442,8 @@
 |[Draw.MaterialRibbon3D](../Library/Framework/Render/Draw/DrawCommand.h#L59)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
 |[Draw.Mesh3D](../Library/Framework/Render/Draw/DrawCommand.h#L56)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|CPU形状から毎回展開。照明と高度な材質は未対応||
 |[Draw.Model3D](../Library/Framework/Render/Draw/DrawCommand.h#L49)|Partial|R5|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|静的FBX／OBJのみ。アニメーションは未対応。MV1形式はv1.0.0対象外||
-|[Draw.ModelAnim](../Library/Framework/Render/Draw/DrawCommand.h#L54)|Missing|R5|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
-|[Draw.ModelAnimFrame](../Library/Framework/Render/Draw/DrawCommand.h#L153)|Missing|R5|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
+|[Draw.ModelAnim](../Library/Framework/Render/Draw/DrawCommand.h#L54)|Partial|R5|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|付けたアニメーションの時間と割合を、次のモデルの描画へ反映する（IStaticModelSource経由）。アニメーションつきのFBXの描画は、実素材での確認が未完了||
+|[Draw.ModelAnimFrame](../Library/Framework/Render/Draw/DrawCommand.h#L153)|Partial|R5|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|骨ごとの割合（子も含める指定に対応）を反映する。実素材での確認が未完了||
 |[Draw.ModelFramePose3D](../Library/Framework/Render/Draw/DrawCommand.h#L155)|Missing|R5|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
 |[Draw.ModelMaterial3D](../Library/Framework/Render/Draw/DrawCommand.h#L66)|Missing|R5|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
 |[Draw.Oval](../Library/Framework/Render/Draw/DrawCommand.h#L71)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバスで点列にして描く。DxLibとの境界画素の比較が残る||
