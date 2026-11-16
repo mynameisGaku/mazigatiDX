@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 #include "Library/Core/Render/DrawVertex3D.h"
+#include "Library/Core/Memory/SharedPtr.h"
 
 // 静的モデルの連続した材質範囲。画像の番号はモデルが所有する借用値。
 struct FStaticModelDrawSection
@@ -10,7 +11,7 @@ struct FStaticModelDrawSection
 	int32 Texture = -1; // 拡散画像。負なら画像なし。
 };
 
-// 同期の命令解釈中だけ借用する不変形状。個体の不透明度は値で固定する。
+// 不変形状と個体の不透明度。VertexOwner があればビューのコピーも形状の寿命を保持する。
 struct FStaticModelDrawView
 {
 	const FDrawVertex3D* Vertices = nullptr; // フレーム変換済み・モデル配置前の頂点。
@@ -22,4 +23,5 @@ struct FStaticModelDrawView
 	float32 Opacity = 1; // 個体ごとの不透明度。
 	uint64 MeshKey = 0; // 頂点の置き場（GPU の共有メッシュ）の識別。0 なら、GPU に置いて使い回さない。
 	uint64 MeshVersion = 0; // 頂点の中身の版（変わったら、置き直す）。
+	TSharedPtr<const FDrawVertex3D> VertexOwner; // 頂点へ別名参照し、形状と所有画像を描画中保持する。空なら従来の借用。
 };

@@ -404,6 +404,12 @@ void CStaticModelStore::BuildDeformed( FInstance& Instance )
 		}
 	}
 	Rig.BuiltVersion = Rig.Pose.Version;
+	auto Snapshot = MakeShared<FDrawSnapshot>(); // ロック内で完成させてから公開する。
+	Snapshot->Resource = Instance.Resource;
+	Snapshot->Vertices = Rig.Vertices;
+	Snapshot->Indices = Rig.Indices;
+	Snapshot->Sections = Rig.Sections;
+	Rig.DrawSnapshot = Snapshot;
 }
 
 bool CStaticModelStore::GetStaticModelDrawView( int32 Handle, FStaticModelDrawView& Out )
@@ -433,11 +439,14 @@ bool CStaticModelStore::GetStaticModelDrawView( int32 Handle, FStaticModelDrawVi
 			{
 				BuildDeformed( *Instance );
 			}
-			Out = { Rig.Vertices.GetData(), Rig.Vertices.Num(), Rig.Indices.GetData(), Rig.Indices.Num(), Rig.Sections.GetData(), Rig.Sections.Num(), Instance->Opacity, ( 1ull << 63 ) | static_cast<uint64>( Handle ), Rig.BuiltVersion + 1 }; // 変形したモデルは、個体ごとの鍵で、ポーズが変わるたびに置き直す。
+			const auto& Snapshot = *Rig.DrawSnapshot; // 保持中のビューは次のポーズの構築でも変わらない。
+			Out = { Snapshot.Vertices.GetData(), Snapshot.Vertices.Num(), Snapshot.Indices.GetData(), Snapshot.Indices.Num(), Snapshot.Sections.GetData(), Snapshot.Sections.Num(), Instance->Opacity, ( 1ull << 63 ) | static_cast<uint64>( Handle ), Rig.BuiltVersion + 1 };
+			Out.VertexOwner = TSharedPtr<const FDrawVertex3D>( Rig.DrawSnapshot, Out.Vertices );
 			return true;
 		}
 	}
 	Out = { Data.Vertices.GetData(), Data.Vertices.Num(), Data.Definition.Surface.Indices.GetData(), Data.Definition.Surface.Indices.Num(), Data.Sections.GetData(), Data.Sections.Num(), Instance->Opacity, Data.Id, 1 }; // 共有の形状は、変わらないので、GPU に置いて使い回せる。
+	Out.VertexOwner = TSharedPtr<const FDrawVertex3D>( Instance->Resource, Out.Vertices );
 	return true;
 }
 

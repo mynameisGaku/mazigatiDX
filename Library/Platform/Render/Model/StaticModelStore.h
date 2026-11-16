@@ -12,7 +12,8 @@
 // 形状と画像を共有し、個体の状態（不透明度・アニメーション・骨の上書き・表示）と登録番号を所有する。GPUに依存しない。
 //   骨組み（FModelRig）を持つので、スキンつきのモデルと、アニメーションを付けたモデルは、描くときに CPU で変形した頂点を貸す。
 //   動かない個体（スキンも、アニメーションも、上書きも、非表示も無い）は、共有した形状をそのまま貸す。
-//   描画の実行スレッドと、ゲームのスレッドの両方から呼ばれるので、公開の関数は、すべて排他する（借りた頂点は、次の呼び出しまで有効）。
+	//   公開の関数は排他する。描画ビューは不変形状と所有画像を保持し、更新や削除を越えて利用できる。
+	//   Textures の終了前に、取得した描画ビューをすべて破棄する。
 class CStaticModelStore : public IStaticModelSource
 {
 public:
@@ -32,7 +33,7 @@ public:
 	void Reset();
 	// 登録中の個体数。
 	int32 Num() const;
-	// 同期の命令解釈中だけ形状を貸す（動く個体は、いまのポーズで変形した頂点）。
+	// 所有付きの不変形状を返す（動く個体は、いまのポーズで変形した頂点）。
 	bool GetStaticModelDrawView( int32 Handle, FStaticModelDrawView& Out ) override;
 	// 描くときの配置（3 x 4。FDrawModelData::M と同じ並び）を覚える（フレームのワールド行列・位置に使う）。
 	bool SetStaticModelPlacement( int32 Handle, const float32 ( &Matrix )[12] ) override;
@@ -116,6 +117,14 @@ private:
 		bool bHasSkin = false; // スキンつきのメッシュがある（必ず、変形した頂点で描く）。
 		uint64 Id = 0; // 形状の識別（GPU の共有メッシュの鍵。解放後も再利用しない）。
 	};
+	// 公開後は変更しない描画用の形状。画像を所有する元の資源も保持する。
+	struct FDrawSnapshot
+	{
+		TSharedPtr<const FResource> Resource; // 所有画像の寿命を形状と揃える。
+		TArray<FDrawVertex3D> Vertices; // このポーズの頂点。
+		TArray<uint32> Indices; // このポーズの参照順。
+		TArray<FStaticModelDrawSection> Sections; // このポーズの材質範囲。
+	};
 	// 個体ごとのポーズと、変形した頂点。
 	struct FInstanceRig
 	{
@@ -127,6 +136,7 @@ private:
 		TArray<FMatrix4x4> Global;
 		uint64 PoseVersion = 0; // Local / Global を作ったときの Pose.Version。
 		uint64 BuiltVersion = 0; // Vertices / Indices / Sections を作ったときの Pose.Version。
+		TSharedPtr<const FDrawSnapshot> DrawSnapshot; // 次の構築まで共有する不変の描画用コピー。
 		TArray<FModelMaterialColors> MaterialColors; // 個体ごとの材質の色（上書きしたものだけ有効）。
 		TArray<uint8> bMaterialSet;
 	};

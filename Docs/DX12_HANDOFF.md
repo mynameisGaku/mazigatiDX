@@ -492,3 +492,9 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **R2 の次の前提**: 既存の `FDrawSpan` は状態変更、描画先、2D と 3D を記録順に実行する。透明物の並べ替えは、明示的に並べ替え可能とされたシーン内に限り、状態・カメラ・描画先・Clear の境界を越えない設計が必要。状態の取り込み、同じ深度の安定順、範囲が不正な場合の挙動、DxLib / Null の意味も決めてから公開する。現在はシーン範囲も透明ソートも未実装。
 - **並行実行で要確認**: `GetStaticModelDrawView` はロックを解放して借用ポインターを返し、実行側が後から読む。契約上は登録・更新・解放前に消費する必要があるため、ゲーム側が同時にモデルを変更・削除し得る場合の寿命は、このロックだけでは保証できない。シーンをフレームへ固定する前に、所有するスナップショットまたは完了までの寿命保証を設計し、更新・削除との競合を検査する。
 - **参照**: [Unreal Engine の Threaded Rendering](https://dev.epicgames.com/documentation/unreal-engine/threaded-rendering-in-unreal-engine) の描画側への値のコピーと寿命、[Microsoft の Fence-Based Resource Management](https://learn.microsoft.com/en-us/windows/win32/direct3d12/fence-based-resource-management) の GPU 完了後の再利用。
+
+## 2026-11-17 追記: モデル描画ビューの寿命
+- `FStaticModelDrawView::VertexOwner` は既存の `TSharedPtr` の別名参照。静的形状は元の資源、変形形状はポーズごとの不変コピーを保持する。ビューのコピーも所有を共有し、更新・Delete・Reset の後でも頂点・添字・材質範囲を保持する。元の資源も保持するので、モデル所有画像はビューの解放まで残る。バックエンド（画像の解放先）は全ビューより長く生存させる。
+- 変形コピーは同じポーズでは共有し、再構築時に一度だけ作る。古いビューを保持した分だけ旧ポーズのメモリも残るため、消費後はビューを手放す。従来の変形用配列に加えて公開用コピーを持つ分、メモリとコピーの費用が増える。
+- モデル契約検査は 160 項目。旧ビューを保持して次のポーズを構築し、全登録を削除してから旧形状を参照する場合を追加。Debug / Release のモデル・Forward・材質効果の契約検査で確認する。
+- これは取得した形状の寿命保証。配置・アニメーション設定・ビュー取得を一括のフレーム状態として固定する処理、明示的シーン範囲と透明ソートは引き続き R2 の未完了項目。
