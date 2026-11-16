@@ -13,6 +13,7 @@
 #include "Library/Platform/DX12/DX12Log.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/DebugUI/Common/ImGuiTexture.h"
+#include "Library/Platform/Windows/Audio/WindowsSoundStoreSubsystem.h"
 
 #include <windows.h>
 #include <psapi.h>
@@ -42,6 +43,7 @@ void CDX12AssetBackendSubsystem::Initialize( FSubsystemCollection& Collection )
 	{
 		Textures.Initialize( *Resources );
 	}
+	SoundStore = Collection.InitializeDependency<CWindowsSoundStoreSubsystem>(); // 音の登録（DX12のとき作られる）。
 	ShaderService.Initialize( Collection.InitializeDependency<IGraphicsPipelineResources>(), Collection.InitializeDependency<IRenderBufferResources>(), &Textures );
 	GImGuiTextureOwner = this; // エディタのプレビューなどが、画像を ImGui へ表示できるようにする。
 	NDebugUI::FImGuiTextureCallbacks Callbacks;
@@ -53,6 +55,7 @@ void CDX12AssetBackendSubsystem::Deinitialize()
 {
 	NDebugUI::SetImGuiTextureCallbacks( NDebugUI::FImGuiTextureCallbacks() );
 	GImGuiTextureOwner = nullptr;
+	SoundStore = nullptr;
 	ShaderService.Shutdown(); // パイプラインと空の画像を、先に手放す。
 	Models.Reset(); // 共有モデルが所有する画像を、先に登録から外す。
 	Textures.Shutdown(); // 資源の所有者がGPUの完了と解放を行う。
@@ -196,6 +199,7 @@ FBackendMemoryInfo CDX12AssetBackendSubsystem::GetMemoryInfo()
 	}
 	Info.NumTextureHandles = Textures.Num();
 	Info.NumModelHandles = Models.Num();
+	Info.NumSoundHandles = SoundStore ? SoundStore->Num() : 0;
 	return Info;
 }
 
@@ -209,9 +213,9 @@ int64 CDX12AssetBackendSubsystem::EstimateModelBytes( int32 Model )
 	return Models.EstimateBytes( Model );
 }
 
-int64 CDX12AssetBackendSubsystem::EstimateSoundBytes( int32 /*Sound*/, ESoundLoadMode /*Mode*/ )
+int64 CDX12AssetBackendSubsystem::EstimateSoundBytes( int32 Sound, ESoundLoadMode /*Mode*/ )
 {
-	return 0;
+	return SoundStore ? SoundStore->EstimateBytes( Sound ) : 0;
 }
 
 bool CDX12AssetBackendSubsystem::IsLoading( int32 /*Handle*/ )
@@ -457,26 +461,48 @@ bool CDX12AssetBackendSubsystem::MeasureFontText( int32 Font, const char* Text, 
 	return Fonts.MeasureFontText( Font, Text, Length, Out );
 }
 
-int32 CDX12AssetBackendSubsystem::LoadSound( const FString& /*Path*/, ESoundLoadMode /*Mode*/, bool /*bAsync*/ )
+int32 CDX12AssetBackendSubsystem::LoadSound( const FString& Path, ESoundLoadMode Mode, bool bAsync )
 {
-	NBackendSupport::ReportUnsupported( "DX12", "LoadSound" );
-	return NAsset::InvalidHandle;
+	return SoundStore ? SoundStore->LoadSound( Path, Mode, bAsync ) : NAsset::InvalidHandle;
 }
 
-int32 CDX12AssetBackendSubsystem::DuplicateSound( int32 /*Source*/ )
+int32 CDX12AssetBackendSubsystem::DuplicateSound( int32 Source )
 {
-	return NAsset::InvalidHandle;
+	return SoundStore ? SoundStore->DuplicateSound( Source ) : NAsset::InvalidHandle;
 }
 
-void CDX12AssetBackendSubsystem::DeleteSound( int32 /*Sound*/ )
+void CDX12AssetBackendSubsystem::DeleteSound( int32 Sound )
 {
+	if ( SoundStore )
+	{
+		SoundStore->DeleteSound( Sound );
+	}
 }
 
-float32 CDX12AssetBackendSubsystem::GetSoundLength( int32 /*Sound*/ )
+float32 CDX12AssetBackendSubsystem::GetSoundLength( int32 Sound )
 {
-	return 0;
+	return SoundStore ? SoundStore->GetSoundLength( Sound ) : -1.0f;
 }
 
+bool CDX12AssetBackendSubsystem::GetSoundInfo( int32 Sound, FSoundInfo& Out )
+{
+	return SoundStore && SoundStore->GetSoundInfo( Sound, Out );
+}
+
+int32 CDX12AssetBackendSubsystem::CreateSoundFromPcm( const FPcmBuffer& Pcm )
+{
+	return SoundStore ? SoundStore->CreateSoundFromPcm( Pcm ) : NAsset::InvalidHandle;
+}
+
+bool CDX12AssetBackendSubsystem::DecodeSoundFile( const FString& Path, FPcmBuffer& Out )
+{
+	return SoundStore && SoundStore->DecodeSoundFile( Path, Out );
+}
+
+TArray<FString> CDX12AssetBackendSubsystem::GetReadableSoundExtensions() const
+{
+	return SoundStore ? SoundStore->GetReadableSoundExtensions() : TArray<FString>();
+}
 
 bool CDX12AssetBackendSubsystem::CreateMeshBuffers( const FMeshVertex* Vertices, int32 NumVertices, const uint32* Indices, int32 NumIndices, int32& OutVertexBuffer, int32& OutIndexBuffer )
 {

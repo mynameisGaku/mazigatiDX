@@ -1471,6 +1471,21 @@
     <ClCompile Include="Library\Platform\System\ProjectPaths.cpp">
       <Filter>Library\Platform\System</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\Windows\Audio\WindowsAudioBackendSubsystem.cpp">
+      <Filter>Library\Platform\Windows\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Windows\Audio\WindowsAudioDeviceSubsystem.cpp">
+      <Filter>Library\Platform\Windows\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Windows\Audio\WindowsMediaDecoder.cpp">
+      <Filter>Library\Platform\Windows\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Windows\Audio\WindowsPcmStreamBackendSubsystem.cpp">
+      <Filter>Library\Platform\Windows\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Windows\Audio\WindowsSoundStoreSubsystem.cpp">
+      <Filter>Library\Platform\Windows\Audio</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\Windows\Image\WicImageDecoder.cpp">
       <Filter>Library\Platform\Windows\Image</Filter>
     </ClCompile>
@@ -4044,6 +4059,21 @@
     <ClInclude Include="Library\Platform\System\WindowsInclude.h">
       <Filter>Library\Platform\System</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Platform\Windows\Audio\WindowsAudioBackendSubsystem.h">
+      <Filter>Library\Platform\Windows\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Windows\Audio\WindowsAudioDeviceSubsystem.h">
+      <Filter>Library\Platform\Windows\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Windows\Audio\WindowsMediaDecoder.h">
+      <Filter>Library\Platform\Windows\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Windows\Audio\WindowsPcmStreamBackendSubsystem.h">
+      <Filter>Library\Platform\Windows\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Windows\Audio\WindowsSoundStoreSubsystem.h">
+      <Filter>Library\Platform\Windows\Audio</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Platform\Windows\Image\WicImageDecoder.h">
       <Filter>Library\Platform\Windows\Image</Filter>
     </ClInclude>
@@ -6013,6 +6043,9 @@
     </Filter>
     <Filter Include="Library\Platform\Windows">
       <UniqueIdentifier>{FBD14D2B-5D0F-DFFE-6E69-7F18B3BA4B9B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Windows\Audio">
+      <UniqueIdentifier>{DBD936D3-A648-627E-9373-7297C46FB272}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Platform\Windows\Image">
       <UniqueIdentifier>{45AF11BB-2AA2-AD60-CA54-B28594AAE7AA}</UniqueIdentifier>

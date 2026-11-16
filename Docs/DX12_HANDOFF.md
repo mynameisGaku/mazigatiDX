@@ -382,3 +382,13 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **検査**: `WindowsInputContract`（`RunWindowsInputTests.ps1`）に 25 項目を足し、65 項目に。見せない本物の窓で、位置・倍率 2.0 でクライアント 640x480・中央への移動・範囲外の番号・通常の窓以外・窓なし、を確かめる。倍率の計算の取り違えと、通常の窓の条件を外す変異で、別々の項目が失敗することを確かめた。
 - **未確認（実機）**: 拡大率の違う複数ディスプレイの間の移動。台帳は `IDisplayInfo` 6 項目・`IWindowControl` 6 項目を Partial に。
 - **R8 の残り**: 音声・PCM・ミキサー（`IAudioBackend` / `ISoundBackend` / `IPcmStreamBackend`）、動画（`IMovieBackend`）、タッチ（`ITouchInput`）、全画面（排他的フルスクリーンは、Borderless で代替の報告）。
+
+## 2026-11-16 追記: DX12 の音（R8）
+- DX12 は、これまで音のバックエンドが無く、全部無音だった（`CAudioSubsystem` が「バックエンドなし」）。`Library/Platform/Windows/Audio` に、描画 API も DxLib も知らない 5 つを足した。起動すると `Audio ready (max 48 voice(s), 6 bus(es))`、`XAudio2 ready (2 output channel(s), 48000 Hz)`。
+  - **`CWindowsAudioDeviceSubsystem`**: XAudio2 のエンジンと出力先（マスタリングボイス）を 1 つだけ持つ。出力の機器が無ければ作れず（`IsAvailable()` が false）、借りる側は失敗を返す。
+  - **`CWindowsSoundStoreSubsystem`（`ISoundBackend`）**: 音のハンドル ↔ デコード済みの音（`FPcmBuffer`）。WAV は `NWavFile`、mp3 / m4a / aac / wma / flac は Media Foundation（`NWindowsMediaDecoder`）。同期で読み、Stream も全部メモリに展開。3 チャンネル以上はステレオに。`DuplicateSound` はデータを共有。`CDX12AssetBackendSubsystem` の音の窓口は、これへ渡す。ogg は未対応。
+  - **`CWindowsAudioBackendSubsystem`（`IAudioBackend`）**: ボイスの番号 = 音のハンドル。再生のとき、音のデータをコピーせず XAudio2 のソースボイスへ渡す。音量・パン（反対側を弱める）・ピッチ（`SetFrequencyRatio`、0.001〜16 に収める）を覚えておき、反映する。位置は、ソースボイスの再生済みサンプル数から計算する（止めると覚える）。ループ区間は、最初の区間（今の位置から終わりまで）+ 無限ループの区間の 2 つの積み方。`Tick` で、音が消えたボイスを片づける。
+  - **`CWindowsPcmStreamBackendSubsystem`（`IPcmStreamBackend`）**: ストリームごとにソースボイス。積んだ波形（-1..1 に切り、数でない値は無音）の、鳴らし終わったぶんを引いて、残りのフレーム数を出す。`Reset` はソースボイスを作り直す。
+- **検査**: `WindowsInputContract`（`RunWindowsInputTests.ps1`）に 46 項目を足し、111 項目に。音量 0 の実再生（再生・停止・再開・位置・ループ・ループ区間・ピッチ・範囲外の値・削除）、PCM ストリーム、音の登録、Media Foundation と `NWavFile` で同じ WAV を読んで一致、を確かめる。機器が無い環境では、再生の項目は SKIP し、「失敗を返す」だけを確かめる。位置・ピッチ・積んだ数の取り違えの変異で、別々の項目が失敗することを確かめた。
+- **未確認（耳）**: パンの法則・ピッチの音質。実際の音の出方（DxLib との聞き比べ）。ogg。
+- **R8 の残り**: 動画（`IMovieBackend`）、タッチ（`ITouchInput`）、排他的フルスクリーン。

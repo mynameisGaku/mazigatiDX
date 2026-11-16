@@ -557,6 +557,11 @@
     <ClCompile Include="Library\Platform\System\LeakReport.cpp" />
     <ClCompile Include="Library\Platform\System\LogArchive.cpp" />
     <ClCompile Include="Library\Platform\System\ProjectPaths.cpp" />
+    <ClCompile Include="Library\Platform\Windows\Audio\WindowsAudioBackendSubsystem.cpp" />
+    <ClCompile Include="Library\Platform\Windows\Audio\WindowsAudioDeviceSubsystem.cpp" />
+    <ClCompile Include="Library\Platform\Windows\Audio\WindowsMediaDecoder.cpp" />
+    <ClCompile Include="Library\Platform\Windows\Audio\WindowsPcmStreamBackendSubsystem.cpp" />
+    <ClCompile Include="Library\Platform\Windows\Audio\WindowsSoundStoreSubsystem.cpp" />
     <ClCompile Include="Library\Platform\Windows\Image\WicImageDecoder.cpp" />
     <ClCompile Include="Library\Platform\Windows\Image\WicImageEncoder.cpp" />
     <ClCompile Include="Library\Platform\Windows\Input\WindowsClipboardSubsystem.cpp" />
@@ -1416,6 +1421,11 @@
     <ClInclude Include="Library\Platform\System\ProjectPaths.h" />
     <ClInclude Include="Library\Platform\System\WindowSettings.h" />
     <ClInclude Include="Library\Platform\System\WindowsInclude.h" />
+    <ClInclude Include="Library\Platform\Windows\Audio\WindowsAudioBackendSubsystem.h" />
+    <ClInclude Include="Library\Platform\Windows\Audio\WindowsAudioDeviceSubsystem.h" />
+    <ClInclude Include="Library\Platform\Windows\Audio\WindowsMediaDecoder.h" />
+    <ClInclude Include="Library\Platform\Windows\Audio\WindowsPcmStreamBackendSubsystem.h" />
+    <ClInclude Include="Library\Platform\Windows\Audio\WindowsSoundStoreSubsystem.h" />
     <ClInclude Include="Library\Platform\Windows\Image\WicImageDecoder.h" />
     <ClInclude Include="Library\Platform\Windows\Image\WicImageEncoder.h" />
     <ClInclude Include="Library\Platform\Windows\Input\WindowsClipboardSubsystem.h" />

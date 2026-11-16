@@ -162,15 +162,17 @@ public:
 	void RemoveFontCharImage( int32 Font, const char* Character ) override;
 	bool GetFontImagePlacements( int32 Font, const char* Text, int32 Length, TArray<FFontImagePlacement>& Out ) override;
 	bool MeasureFontText( int32 Font, const char* Text, int32 Length, FTextSize& Out ) override;
-	// LoadSoundの未対応時の既定値。出力引数と外部状態は変更しない。
+	// 音（ISoundBackend）は、Windowsの音の登録（CWindowsSoundStoreSubsystem）へ渡す。音の登録が無ければ、読み込みは失敗する。
 	int32 LoadSound( const FString& Path, ESoundLoadMode Mode, bool bAsync ) override;
-	// DuplicateSoundの未対応時の既定値。出力引数と外部状態は変更しない。
 	int32 DuplicateSound( int32 Source ) override;
-	// DeleteSoundの未対応時の既定値。出力引数と外部状態は変更しない。
 	void DeleteSound( int32 Sound ) override;
-	// GetSoundLengthの未対応時の既定値。出力引数と外部状態は変更しない。
 	float32 GetSoundLength( int32 Sound ) override;
+	bool GetSoundInfo( int32 Sound, FSoundInfo& Out ) override;
+	int32 CreateSoundFromPcm( const FPcmBuffer& Pcm ) override;
+	bool DecodeSoundFile( const FString& Path, FPcmBuffer& Out ) override;
+	TArray<FString> GetReadableSoundExtensions() const override;
 private:
+	class CWindowsSoundStoreSubsystem* SoundStore = nullptr; // 音の登録（借用）。
 	CGeometryBufferStore Buffers; // APIに依存しない登録形状。
 	CTextureAssetStore Textures; // API共通の画像登録。所有先の寿命までに解放する。
 	CStaticModelStore Models; // 画像の所有先より先に解放する共有モデル。
