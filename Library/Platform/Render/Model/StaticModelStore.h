@@ -129,13 +129,10 @@ private:
 	struct FInstanceRig
 	{
 		FModelPose Pose;
-		TArray<FDrawVertex3D> Vertices; // 変形した頂点。
-		TArray<uint32> Indices; // 非表示を除いた index。
-		TArray<FStaticModelDrawSection> Sections; // 非表示を除いた範囲。
 		TArray<FMatrix4x4> Local;
 		TArray<FMatrix4x4> Global;
 		uint64 PoseVersion = 0; // Local / Global を作ったときの Pose.Version。
-		uint64 BuiltVersion = 0; // Vertices / Indices / Sections を作ったときの Pose.Version。
+		uint64 BuiltVersion = 0; // 描画用の形状を作ったときの Pose.Version。
 		TSharedPtr<const FDrawSnapshot> DrawSnapshot; // 次の構築まで共有する不変の描画用コピー。
 		TArray<FModelMaterialColors> MaterialColors; // 個体ごとの材質の色（上書きしたものだけ有効）。
 		TArray<uint8> bMaterialSet;

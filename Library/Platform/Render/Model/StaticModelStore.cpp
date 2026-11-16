@@ -352,10 +352,10 @@ void CStaticModelStore::BuildDeformed( FInstance& Instance )
 	FInstanceRig& Rig = *Instance.Rig;
 	const FResource& Resource = *Instance.Resource;
 	EnsurePose( Instance );
-	Rig.Vertices = Resource.Vertices;
-	NModelRig::Deform( *Resource.Rig, Rig.Global, Resource.VertexSources, Rig.Vertices.GetData(), Rig.Vertices.Num() );
-	Rig.Indices.Reset();
-	Rig.Sections.Reset();
+	auto Snapshot = MakeShared<FDrawSnapshot>(); // ロック内で構築し、完成した形状だけを公開する。
+	Snapshot->Resource = Instance.Resource;
+	Snapshot->Vertices = Resource.Vertices;
+	NModelRig::Deform( *Resource.Rig, Rig.Global, Resource.VertexSources, Snapshot->Vertices.GetData(), Snapshot->Vertices.Num() );
 	const auto& SourceSections = Resource.Definition.Surface.Sections;
 	for ( int32 Index = 0; Index < Resource.Sections.Num() && Index < SourceSections.Num(); ++Index )
 	{
@@ -365,12 +365,12 @@ void CStaticModelStore::BuildDeformed( FInstance& Instance )
 		}
 		FStaticModelDrawSection Section = Resource.Sections[Index];
 		const int32 First = Section.FirstIndex;
-		Section.FirstIndex = Rig.Indices.Num();
+		Section.FirstIndex = Snapshot->Indices.Num();
 		for ( int32 Offset = 0; Offset < Section.NumIndices; ++Offset )
 		{
-			Rig.Indices.Add( Resource.Definition.Surface.Indices[First + Offset] );
+			Snapshot->Indices.Add( Resource.Definition.Surface.Indices[First + Offset] );
 		}
-		Rig.Sections.Add( Section );
+		Snapshot->Sections.Add( Section );
 	}
 	// 材質の色の上書きを、頂点の拡散色へ（頂点は、範囲ごとに専用なので、範囲の材質で決められる）
 	bool bAnyColor = false;
@@ -391,9 +391,9 @@ void CStaticModelStore::BuildDeformed( FInstance& Instance )
 			if ( Material >= 0 && Material < Rig.bMaterialSet.Num() && Rig.bMaterialSet[Material] )
 			{
 				const FColor& Diffuse = Rig.MaterialColors[Material].Diffuse;
-				for ( int32 Offset = 0; Offset < Rig.Sections[Cursor].NumIndices; ++Offset )
+				for ( int32 Offset = 0; Offset < Snapshot->Sections[Cursor].NumIndices; ++Offset )
 				{
-					FDrawVertex3D& Vertex = Rig.Vertices[Rig.Indices[Rig.Sections[Cursor].FirstIndex + Offset]];
+					FDrawVertex3D& Vertex = Snapshot->Vertices[Snapshot->Indices[Snapshot->Sections[Cursor].FirstIndex + Offset]];
 					Vertex.Diffuse[0] = ColorByte( Diffuse.r );
 					Vertex.Diffuse[1] = ColorByte( Diffuse.g );
 					Vertex.Diffuse[2] = ColorByte( Diffuse.b );
@@ -404,11 +404,6 @@ void CStaticModelStore::BuildDeformed( FInstance& Instance )
 		}
 	}
 	Rig.BuiltVersion = Rig.Pose.Version;
-	auto Snapshot = MakeShared<FDrawSnapshot>(); // ロック内で完成させてから公開する。
-	Snapshot->Resource = Instance.Resource;
-	Snapshot->Vertices = Rig.Vertices;
-	Snapshot->Indices = Rig.Indices;
-	Snapshot->Sections = Rig.Sections;
 	Rig.DrawSnapshot = Snapshot;
 }
 
@@ -435,7 +430,7 @@ bool CStaticModelStore::GetStaticModelDrawView( int32 Handle, FStaticModelDrawVi
 		if ( Data.bHasSkin || bAnyHidden || NeedsDeform( *Instance ) )
 		{
 			FInstanceRig& Rig = *Instance->Rig;
-			if ( Rig.BuiltVersion != Rig.Pose.Version || Rig.Vertices.IsEmpty() )
+			if ( Rig.BuiltVersion != Rig.Pose.Version || !Rig.DrawSnapshot )
 			{
 				BuildDeformed( *Instance );
 			}
