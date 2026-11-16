@@ -23,6 +23,8 @@ cbuffer cbObject : register( b0 )
 	row_major float4x4 g_World;
 	row_major float4x4 g_NormalMatrix;
 	float4 g_Params; // x = 光を計算するか、y = アルファに掛ける割合
+	float4 g_UvScaleCenter;
+	float4 g_UvTranslationRotation;
 };
 cbuffer cbLight : register( b6 )
 {
@@ -112,7 +114,8 @@ VO ForwardVS( VI i )
 		color = saturate( i.Diffuse.rgb + i.Specular.rgb ) * g_LightBright.rgb;
 	}
 	o.Color = float4( color, i.Diffuse.a * g_Params.y );
-	o.Uv = i.Uv;
+	float2 centered = ( i.Uv - g_UvScaleCenter.zw ) * g_UvScaleCenter.xy;
+	o.Uv = float2( centered.x * g_UvTranslationRotation.w - centered.y * g_UvTranslationRotation.z, centered.x * g_UvTranslationRotation.z + centered.y * g_UvTranslationRotation.w ) + g_UvScaleCenter.zw + g_UvTranslationRotation.xy;
 	return o;
 }
 float4 ForwardPS( VO i ) : SV_Target { return i.Color; }
@@ -157,6 +160,7 @@ float4 ForwardTexturedPS( VO i ) : SV_Target
 		float32 World[16];
 		float32 Normal[16];
 		float32 Params[4];
+		float32 UvTransform[8]; // HLSLの2つのfloat4と同じ並び。
 	};
 }
 
@@ -384,6 +388,13 @@ bool CDX12ForwardMeshRenderer::Draw( const FForwardMeshDraw& Draw, IRenderGeomet
 	{
 		return false;
 	}
+	for ( const float32 Value : Draw.UvTransform )
+	{
+		if ( !NMath::IsFinite( Value ) )
+		{
+			return false;
+		}
+	}
 	for ( int32 Index = 0; Index < FForwardMeshDraw::NumLightFloats; ++Index )
 	{
 		if ( !NMath::IsFinite( Draw.Lighting[Index] ) )
@@ -428,6 +439,7 @@ bool CDX12ForwardMeshRenderer::Draw( const FForwardMeshDraw& Draw, IRenderGeomet
 	FMemory::Memcpy( Object.Clip, Draw.ClipMatrix, sizeof( Object.Clip ) );
 	FMemory::Memcpy( Object.World, Draw.World, sizeof( Object.World ) );
 	FMemory::Memcpy( Object.Normal, Draw.NormalMatrix, sizeof( Object.Normal ) );
+	FMemory::Memcpy( Object.UvTransform, Draw.UvTransform, sizeof( Object.UvTransform ) );
 	Object.Params[0] = Draw.bLit ? 1.0f : 0.0f;
 	Object.Params[1] = Draw.AlphaScale;
 	Object.Params[2] = 0.0f;

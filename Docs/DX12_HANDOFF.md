@@ -518,3 +518,9 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - 補助関数を用途に合わせて `DrawMeshForward` へ改名した。CPU の図形生成は残っており、GPU で形状を生成する実装ではない。変形モデルの材質間で転送領域を共有する最適化、シーン範囲・透明ソート・PBR は未完了。
 - Forward 契約は 89 項目。登録なし・添字あり／なし・拒否、箱の GPU 選択、明るさ・合成、CPU へ一度だけ戻る動作を追加。Debug は契約とサンプル画像 74 項目が合格。Release の Samples は通常リンクで LNK1103（Forward モジュールのデバッグ情報が破損）を再現し、再コンパイルだけでは解消しなかった。
 - **最終確認**: Release はビルドする PowerShell の `$env:_LINK_ = '/LTCG /INCREMENTAL:NO'` で完全リンクを指定すると成功した。増分情報が原因かどうかは未確定で、プロジェクトの恒久設定は変更していない。Debug / Release とも Forward 89、モデル 161、材質効果 88、画像 74 項目、実 GPU / WARP のバッファ描画各 188 項目が合格。書式と互換台帳 522 項目も整合。Release のリンク再発時はこの復旧手順と [LNK1103 の公式説明](https://learn.microsoft.com/en-us/cpp/error-messages/tool-errors/linker-tools-error-lnk1103?view=msvc-170) を参照する。
+
+## 2026-11-17 追記: Forward の UV 変換
+- UV の移動・非一様拡大・中心付き回転を、既存の CPU 経路と同じ順序で頂点シェーダーへ接続した。`FForwardMeshDraw::UvTransform` に拡大・中心・移動・回転の sin/cos を格納する。無効時は恒等変換を毎回初期化し、前の描画へ状態を漏らさない。値は形状ではなく個体定数へ置くので、UV を変えてもメッシュのバッファを再登録しない。登録メッシュ・モデルと、基本図形のフレーム転送経路で共通に使う。
+- 個体定数 b0 は 208 から 240 バイト（転送時の 256 バイト整合は同じ）になった。非有限な UV 定数は GPU の登録・描画前に拒否する。影・フォグ・画素照明など、他の未対応状態における CPU 経路は維持する。シーン範囲・透明ソート・PBR は引き続き未完了。
+- `Geometry3D --geometry-time=1.7 --geometry-uv` で、Mesh3D と汎用バッファの三角形に同じ UV 変換を掛け、後続の描画前に解除する。画像検査では CPU / GPU を比べ、無変換の画像から模様が変わることも検査する。Debug / Release の Samples ビルド、Forward 93 項目、材質効果 88 項目、画像 78 項目、書式と台帳の確認が合格した。Release は前項の完全リンク指定で確認した。
+- 参照: [Unreal Engine の UV 座標・Panner・Rotator](https://dev.epicgames.com/documentation/en-us/unreal-engine/coordinates-material-expressions-in-unreal-engine)、[HLSL のベクトル・行列演算](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-mul)。変換順と回転の意味は既存のプロジェクトの契約を優先する。

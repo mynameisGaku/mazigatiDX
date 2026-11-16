@@ -536,7 +536,7 @@ bool CGeometryCommandExecutor::CanDrawForward( const FStaticModelDrawView& Model
 {
 	static const bool bEnabledByCommandLine = !NCommandLine::HasFlag( "no-gpu-forward" ); // 比べるための切り替え（--no-gpu-forward で、従来の CPU の経路にする）。
 	return bEnabledByCommandLine && ShaderSource != nullptr && Geometry != nullptr && Model.MeshKey != 0 && Model.NumVertices <= 65536 && !bShadowCasting && ReceiverSlot < 0 && Fog.Mode == 0 && HeightFog.Mode == 0
-		&& TextureTransform.Enabled == 0 && !( Lighting.IsEnabled() && Lighting.GetOptions().bPixelLighting ) && Camera.IsValid() && Geometry->GetWidth() > 0 && Geometry->GetHeight() > 0 && bUseForwardPath;
+		&& !( Lighting.IsEnabled() && Lighting.GetOptions().bPixelLighting ) && Camera.IsValid() && Geometry->GetWidth() > 0 && Geometry->GetHeight() > 0 && bUseForwardPath;
 }
 
 int32 CGeometryCommandExecutor::DrawMeshForward( const FStaticModelDrawView& Model, int32 ModelAlpha, bool bAlphaBlend, bool bInferAlpha, FDrawRgb Bright, bool bLit, bool bTransient )
@@ -562,6 +562,17 @@ int32 CGeometryCommandExecutor::DrawMeshForward( const FStaticModelDrawView& Mod
 	FMemory::Memcpy( Draw.NormalMatrix, NormalMatrix.m, sizeof( Draw.NormalMatrix ) );
 	static_assert( sizeof( FMatrix4x4 ) == sizeof( Draw.ClipMatrix ), "FMatrix4x4 must be 16 floats" );
 	FillLightConstants( Draw.Lighting, Bright ); // 呼び出し側の描画規約に合わせた明るさ。
+	if ( TextureTransform.Enabled != 0 )
+	{
+		Draw.UvTransform[0] = TextureTransform.ScaleU;
+		Draw.UvTransform[1] = TextureTransform.ScaleV;
+		Draw.UvTransform[2] = TextureTransform.CenterU;
+		Draw.UvTransform[3] = TextureTransform.CenterV;
+		Draw.UvTransform[4] = TextureTransform.TranslationU;
+		Draw.UvTransform[5] = TextureTransform.TranslationV;
+		Draw.UvTransform[6] = NMath::Sin( TextureTransform.Rotation );
+		Draw.UvTransform[7] = NMath::Cos( TextureTransform.Rotation );
+	}
 	Draw.bTransient = bTransient;
 	Draw.MeshKey = bTransient ? 0 : Model.MeshKey;
 	Draw.MeshVersion = Model.MeshVersion;

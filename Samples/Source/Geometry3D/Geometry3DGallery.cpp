@@ -68,6 +68,15 @@ void CGeometry3DGallery::Draw( FDrawContext& Draw )
 	Draw.Triangle3D( FVector3( -4.3f, -1.3f, 1 ), FVector3( -3, 1.3f, 1 ), FVector3( -1.7f, -1.3f, 1 ), FColor32( 80, 190, 80 ) );
 	Draw.TextureAddress( EDrawTextureAddress::Clamp, EDrawTextureAddress::Clamp );
 	Draw.Filter( EDrawFilter::Nearest );
+	if ( NCommandLine::HasFlag( "geometry-uv" ) )
+	{
+		FTextureTransform Uv; // 比較撮影用。中心付きの回転・非一様拡大・移動。
+		Uv.Translation = FVector2( 0.125f, -0.25f );
+		Uv.Scale = FVector2( 1.5f, 0.75f );
+		Uv.RotationCenter = FVector2( 0.5f, 0.5f );
+		Uv.Rotation = 0.3f;
+		Draw.TextureTransform( Uv );
+	}
 	if ( Mesh.IsValid() && Texture.IsValid() )
 	{
 		Draw.Mesh3D( Mesh->GetVertexBuffer(), Mesh->GetIndexBuffer(), Mesh->GetNumVertices(), 0, Mesh->GetNumIndices(), Texture->GetHandle(), FMatrix4x4(), true );
@@ -75,6 +84,7 @@ void CGeometry3DGallery::Draw( FDrawContext& Draw )
 	Draw.Filter( EDrawFilter::Bilinear );
 	Draw.WorldMatrix( FMatrix4x4::Translate( FVector3( 0, 2.5f, 0 ) ) );
 	Draw.PrimitiveIndexedBuffer3D( Vertices, Indices, EDrawPrimitive::Triangles, Texture );
+	Draw.ResetTextureTransform();
 	Draw.WorldMatrix( FMatrix4x4() );
 	Draw.Sphere3D( FVector3( -3, 0.2f, 3 ), 1.0f, 24, FColor32( 220, 140, 40 ) );
 	Draw.Sphere3D( FVector3( -3, 0.2f, 3 ), 1.03f, 12, FColor32( 255, 255, 255 ), FColor32::Black, false );
