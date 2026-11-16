@@ -30,7 +30,7 @@ public:
 	void Initialize( IGraphicsPipelineResources* InPipelines, IRenderBufferResources* InBuffers, CTextureAssetStore* InTextures );
 	// 置いたメッシュとパイプラインを手放す（GPU の完了を待つのは、所有者）。
 	void Shutdown();
-	// 1 回描く。使えない条件・GPU が受け取らなかったときは false（何も描かない）。
+	// 共有メッシュまたはフレームの転送領域から1回描く。使えない条件・GPU拒否時はfalse（何も描かない）。
 	bool Draw( const FForwardMeshDraw& Draw, IRenderGeometry3D& Geometry );
 	// GPU に置いてあるメッシュの数。
 	int32 GetNumMeshes() const { return Meshes.Num(); }

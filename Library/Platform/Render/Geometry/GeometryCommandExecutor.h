@@ -60,13 +60,14 @@ private:
 	void FillLightConstants( float32* Constants, FDrawRgb Bright ) const;
 	// 共有のメッシュを GPU で描けるか。
 	bool CanDrawForward( const FStaticModelDrawView& Model ) const;
-	// 共有のメッシュを、材質ごとの範囲で GPU に描かせる。描けた範囲の数を返す（先頭から数える。描けなかった範囲から先は、呼び出し側が描く）。
-	int32 DrawModelForward( const FStaticModelDrawView& Model, int32 ModelAlpha, bool bAlphaBlend, bool bInferAlpha = true );
+	// 頂点と添字を材質範囲ごとにGPUへ渡す。bTransientなら登録を省き、Bright・bLitは呼出側の規約を使う。
+	// 描けた範囲の数を返す。描けなかった範囲から先は呼び出し側が描く。
+	int32 DrawMeshForward( const FStaticModelDrawView& Model, int32 ModelAlpha, bool bAlphaBlend, bool bInferAlpha = true, FDrawRgb Bright = FDrawRgb(), bool bLit = true, bool bTransient = false );
 	// 影の絵を描いているとき、図形を光から見た深度として描く。影を落とさない図形（線・点・画像つき・半透明）は、何もせず成功。
 	bool SubmitShadowCaster( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, int32 Alpha, int32 Texture );
 	// ワールド座標を同次クリップ座標にして記録する。全入力を検査してからGPUへ渡す。
 	// bLit なら、頂点の法線と現在のライティングから、頂点ごとに色を計算する（光の計算を切っているときは、拡散色＋鏡面色）。
-	bool Submit( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend, int32 Texture = -1, bool bLit = false );
+	bool Submit( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend, int32 Texture = -1, bool bLit = false, bool bAllowTransient = true );
 	// 両面・画像の透明度を一命令だけ適用する。カリングは失敗時も戻す。
 	bool SubmitQuad( const TArray<FDrawVertex3D>& Vertices, int32 Texture, FDrawRgb Bright, int32 Alpha, bool bLit = false );
 	// indexを解決した点列をリストへ展開する。GPU・画像に依存しない。

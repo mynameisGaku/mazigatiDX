@@ -15,7 +15,8 @@ struct FForwardMeshDraw
 	// 光の定数の float の数（先頭の 7 つの float4 + ライト 6 つぶんの 7 つの float4。並びは、画素ごとの光の定数 b6 と同じ）。
 	static constexpr int32 NumLightFloats = ( 7 + 6 * 7 ) * 4;
 
-	uint64 MeshKey = 0;                      // 共有メッシュの識別（0 以外）。
+	bool bTransient = false; // trueならメッシュを登録せずフレームの転送領域から描く。
+	uint64 MeshKey = 0;                      // 登録する共有メッシュの識別（0以外）。bTransientなら使わない。
 	uint64 MeshVersion = 0;                  // 頂点の中身の版。変わったら、GPU の頂点を置き直す。
 	const FDrawVertex3D* Vertices = nullptr; // メッシュの頂点（変換前）。
 	int32 NumVertices = 0;                   // 頂点の数（1〜65536）。

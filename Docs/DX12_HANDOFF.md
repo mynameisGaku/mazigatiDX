@@ -511,3 +511,10 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - Forward 契約は 81 項目。Mesh3D の振り分け・部分範囲・非一様拡大・合成・更新版・所有者間の鍵・不正入力・CPU へ一度だけ戻る動作を追加。Geometry3D に `--geometry-time=<秒>` を追加し、サンプル画像検査で GPU / CPU を同じ時刻で比較する。
 - R2 のシーン範囲・透明ソート・PBR、他の基本図形の GPU 変換は未完了。
 - **確認結果**: Debug / Release のライブラリと Samples のビルド成功。Forward 81 項目、モデル 161 項目、バッファ描画は実 GPU / WARP で各 188 項目、サンプル画像は各構成 74 項目（Geometry3D の固定時刻の GPU / CPU 比較を含む）に合格。互換台帳は 522 項目で整合し、書式検査も合格。性能の時間計測、完全なシーン収集、透明ソートの確認を完了したという意味ではない。
+
+## 2026-11-17 追記: 基本図形のフレーム転送 Forward
+- `FForwardMeshDraw::bTransient` で共有メッシュの登録を省き、既存の `DrawGraphicsPipelineTransient` からフレームの転送領域へ頂点・添字・定数を渡す。添字なしの連続した三角形にも対応した。GPU の完了と転送領域の再利用は既存基盤が担当する（[Microsoft のフェンス管理](https://learn.microsoft.com/en-us/windows/win32/direct3d12/fence-based-resource-management)）。メッシュキャッシュの登録・同期転送を基本図形の描画ごとに行わない。
+- 共通実行側の三角形をこの経路へ接続した。塗りつぶした箱・球・円錐・カプセル・三角形、画像付き四角形や三角形の列などが対象。ワールド・カメラ・逆転置法線・明るさ・合成を同じ命令位置で渡す。線・点、影・フォグ・画素照明など未対応状態は既存経路。GPU が受け取らなかった場合も CPU で一度だけ描く。モデル・Mesh3D の既存キャッシュ経路が失敗した際に、さらにこの経路へ再提出することはしない。
+- 補助関数を用途に合わせて `DrawMeshForward` へ改名した。CPU の図形生成は残っており、GPU で形状を生成する実装ではない。変形モデルの材質間で転送領域を共有する最適化、シーン範囲・透明ソート・PBR は未完了。
+- Forward 契約は 89 項目。登録なし・添字あり／なし・拒否、箱の GPU 選択、明るさ・合成、CPU へ一度だけ戻る動作を追加。Debug は契約とサンプル画像 74 項目が合格。Release の Samples は通常リンクで LNK1103（Forward モジュールのデバッグ情報が破損）を再現し、再コンパイルだけでは解消しなかった。
+- **最終確認**: Release はビルドする PowerShell の `$env:_LINK_ = '/LTCG /INCREMENTAL:NO'` で完全リンクを指定すると成功した。増分情報が原因かどうかは未確定で、プロジェクトの恒久設定は変更していない。Debug / Release とも Forward 89、モデル 161、材質効果 88、画像 74 項目、実 GPU / WARP のバッファ描画各 188 項目が合格。書式と互換台帳 522 項目も整合。Release のリンク再発時はこの復旧手順と [LNK1103 の公式説明](https://learn.microsoft.com/en-us/cpp/error-messages/tool-errors/linker-tools-error-lnk1103?view=msvc-170) を参照する。

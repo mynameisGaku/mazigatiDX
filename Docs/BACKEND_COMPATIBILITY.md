@@ -412,15 +412,15 @@
 |[Draw.Box](../Library/Framework/Render/Draw/DrawCommand.h#L35)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.BoxAA](../Library/Framework/Render/Draw/DrawCommand.h#L73)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.Bright](../Library/Framework/Render/Draw/DrawCommand.h#L52)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
-|[Draw.Capsule3D](../Library/Framework/Render/Draw/DrawCommand.h#L45)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
+|[Draw.Capsule3D](../Library/Framework/Render/Draw/DrawCommand.h#L45)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了 通常の三角形はフレーム転送のGPU Forwardで変換・頂点照明を処理。未対応状態やGPU拒否時は既存経路。線と点はCPU経路。||
 |[Draw.Circle](../Library/Framework/Render/Draw/DrawCommand.h#L36)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.CircleAA](../Library/Framework/Render/Draw/DrawCommand.h#L74)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.CircleGauge](../Library/Framework/Render/Draw/DrawCommand.h#L85)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|真上から時計回りの扇を、画像の縁までの多角形として貼る。描き始め・描く量・100超えの回り込みに対応。反転の指定は飛ばす。DxLibより縁が1画素ほど短い||
 |[Draw.Clear](../Library/Framework/Render/Draw/DrawCommand.h#L97)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.ClearDepth](../Library/Framework/Render/Draw/DrawCommand.h#L117)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
-|[Draw.Cone3D](../Library/Framework/Render/Draw/DrawCommand.h#L130)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|側面と底面を展開して描く（光を受ける）。DxLibとの画素比較が残る||
+|[Draw.Cone3D](../Library/Framework/Render/Draw/DrawCommand.h#L130)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|側面と底面を展開して描く（光を受ける）。DxLibとの画素比較が残る 通常の三角形はフレーム転送のGPU Forwardで変換・頂点照明を処理。未対応状態やGPU拒否時は既存経路。線と点はCPU経路。||
 |[Draw.CopyScreen](../Library/Framework/Render/Draw/DrawCommand.h#L98)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|主画面または描画先パスの色の矩形を、同じ大きさのRGBA8の描画先画像へ写す（DxLibと同じく、大きさが違うと何もしない）。HDR・R32Floatの描画先は未対応（失敗として報告）||
-|[Draw.Cube3D](../Library/Framework/Render/Draw/DrawCommand.h#L46)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
+|[Draw.Cube3D](../Library/Framework/Render/Draw/DrawCommand.h#L46)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了 通常の三角形はフレーム転送のGPU Forwardで変換・頂点照明を処理。未対応状態やGPU拒否時は既存経路。線と点はCPU経路。||
 |[Draw.Culling](../Library/Framework/Render/Draw/DrawCommand.h#L111)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.CustomBlend](../Library/Framework/Render/Draw/DrawCommand.h#L87)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|色とアルファの係数・演算を、そのままD3D12のブレンドへ写す（2D・3D・シェーダー描画）。色の係数をアルファへ使うときは、同じ種類のアルファへ読み替える||
 |[Draw.DefaultLight](../Library/Framework/Render/Draw/DrawCommand.h#L122)|Partial|R2|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|頂点ごとのCPU計算（CVertexLighting。DxLibの固定の光と同じ式）で対応。画素ごとの光（LightingOptionsのPixelLighting）は、同じ式を組み込みのシェーダー（PixelLit。定数b6）で画素ごとに計算する（画像つきも。フォグ・影を受ける描画と重なるときは、頂点ごと）。Lightingサンプルで、スポットライトの円・ランプの光だまりがDxLibと同じ形で出る（細かい画素の比較は未実施）。共有のモデル（Model3D）は、GPU が変換と光（頂点ごと、同じ式）を計算する Forward 経路で描く（CDX12ForwardMeshRenderer。従来の CPU の経路と、光あり・なしで画素が一致。影・フォグ・画素ごとの光・画像の変換は、CPU の経路）||
@@ -462,8 +462,8 @@
 |[Draw.PopTarget](../Library/Framework/Render/Draw/DrawCommand.h#L96)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|元の描画先へ戻す。クリップ・2Dの変換も戻る||
 |[Draw.PopWorldMatrix](../Library/Framework/Render/Draw/DrawCommand.h#L119)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.PreviewShadowMap](../Library/Framework/Render/Draw/DrawCommand.h#L143)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|組み込みの矩形と、深度（R32Float）を赤の濃さにするピクセルシェーダーで、画面の矩形へ貼る（深度 1 = 赤 255、最近傍）。Shadows サンプルの確認表示で、DxLib と並べて一致した（赤の平均差 2.3）。使えない影の絵・空の矩形は、何も描かない||
-|[Draw.Primitive3D](../Library/Framework/Render/Draw/DrawCommand.h#L136)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|非照明の色と画像。材質・追加UV等は未対応||
-|[Draw.PrimitiveBuffer3D](../Library/Framework/Render/Draw/DrawCommand.h#L138)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|CPU保管の非照明形状。永続GPUバッファではない||
+|[Draw.Primitive3D](../Library/Framework/Render/Draw/DrawCommand.h#L136)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|非照明の色と画像。材質・追加UV等は未対応 通常の三角形はフレーム転送のGPU Forwardで変換・頂点照明を処理。未対応状態やGPU拒否時は既存経路。線と点はCPU経路。||
+|[Draw.PrimitiveBuffer3D](../Library/Framework/Render/Draw/DrawCommand.h#L138)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|CPU保管の非照明形状。永続GPUバッファではない 通常の三角形はフレーム転送のGPU Forwardで変換・頂点照明を処理。未対応状態やGPU拒否時は既存経路。線と点はCPU経路。||
 |[Draw.PrimitiveShader3D](../Library/Framework/Render/Draw/DrawCommand.h#L148)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|利用者のシェーダー（Shader Model 5）を、カスタムグラフィックスパイプラインで描く。定数・画像（t0〜）・描画先の形式ごとにパイプラインを作って使い回す。DxLibとの画素比較が残る。頂点の入力は、セマンティックの名前で、FDrawShaderVertex3Dの中の位置へ割り当てる||
 |[Draw.PushCamera](../Library/Framework/Render/Draw/DrawCommand.h#L107)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.PushClip](../Library/Framework/Render/Draw/DrawCommand.h#L91)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
@@ -472,15 +472,15 @@
 |[Draw.PushTarget](../Library/Framework/Render/Draw/DrawCommand.h#L95)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|8ビットのRGBAの描画先へ描く（入れ子可）。浮動小数点の描画先は飛ばす||
 |[Draw.PushWorldMatrix](../Library/Framework/Render/Draw/DrawCommand.h#L118)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.Quad](../Library/Framework/Render/Draw/DrawCommand.h#L70)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
-|[Draw.Quad3D](../Library/Framework/Render/Draw/DrawCommand.h#L55)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
-|[Draw.Ribbon3D](../Library/Framework/Render/Draw/DrawCommand.h#L57)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|カメラへ面を向けた帯を、共通の展開（NDrawRibbonMesh。DxLibと同じ）で三角形にして描く。ワールド行列は使わず、両面、光の計算あり。画像の繰り返しは整数Uの境界で分ける。MaterialRibbon3D・DistortedMaterialRibbon3Dは未対応||
+|[Draw.Quad3D](../Library/Framework/Render/Draw/DrawCommand.h#L55)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了 通常の三角形はフレーム転送のGPU Forwardで変換・頂点照明を処理。未対応状態やGPU拒否時は既存経路。線と点はCPU経路。||
+|[Draw.Ribbon3D](../Library/Framework/Render/Draw/DrawCommand.h#L57)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|カメラへ面を向けた帯を、共通の展開（NDrawRibbonMesh。DxLibと同じ）で三角形にして描く。ワールド行列は使わず、両面、光の計算あり。画像の繰り返しは整数Uの境界で分ける。MaterialRibbon3D・DistortedMaterialRibbon3Dは未対応 通常の三角形はフレーム転送のGPU Forwardで変換・頂点照明を処理。未対応状態やGPU拒否時は既存経路。線と点はCPU経路。||
 |[Draw.RoundBox](../Library/Framework/Render/Draw/DrawCommand.h#L72)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバスで点列にして描く。DxLibとの境界画素の比較が残る||
 |[Draw.ShaderConstants](../Library/Framework/Render/Draw/DrawCommand.h#L146)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|段・番号ごとに置く。頂点シェーダーが読む番号は頂点側の中身、読まない番号はピクセル側の中身を使う||
 |[Draw.ShaderOutputTarget](../Library/Framework/Render/Draw/DrawCommand.h#L151)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|出力1〜7の描画先を、描くときに束ねて、複数の描画先（MRT）のパスで描く。主画面は不可||
 |[Draw.ShaderQuad3D](../Library/Framework/Render/Draw/DrawCommand.h#L157)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|組み込みの頂点シェーダー（SubPositionのクリップ座標を渡す）で、両面を描く||
 |[Draw.ShaderRect](../Library/Framework/Render/Draw/DrawCommand.h#L149)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|組み込みの頂点シェーダー（クリップ座標をそのまま渡す）で、矩形を2枚の三角形で描く||
 |[Draw.ShaderTexture](../Library/Framework/Render/Draw/DrawCommand.h#L147)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|t0〜t15。浮動小数点の描画先も読める。置いていない段は、空（0）の画像||
-|[Draw.Sphere3D](../Library/Framework/Render/Draw/DrawCommand.h#L44)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
+|[Draw.Sphere3D](../Library/Framework/Render/Draw/DrawCommand.h#L44)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了 通常の三角形はフレーム転送のGPU Forwardで変換・頂点照明を処理。未対応状態やGPU拒否時は既存経路。線と点はCPU経路。||
 |[Draw.Sprite](../Library/Framework/Render/Draw/DrawCommand.h#L39)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|中心・拡大・回転・反転に対応。DxLibとの画素比較が残る||
 |[Draw.Sprite3D](../Library/Framework/Render/Draw/DrawCommand.h#L133)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.SpritePivot](../Library/Framework/Render/Draw/DrawCommand.h#L83)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|基準点・拡大・回転・反転に対応。DxLibとの画素比較が残る||
@@ -496,7 +496,7 @@
 |[Draw.Tile](../Library/Framework/Render/Draw/DrawCommand.h#L84)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|角度なしのタイルを、DxLibと同じ並べ方（中心の整数のずれ）で、矩形で切った画像の並びとして描く。角度つき・4096枚を超える並びは飛ばす||
 |[Draw.Transform2D](../Library/Framework/Render/Draw/DrawCommand.h#L93)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|図形・画像の点へ変換を掛ける。文字は位置だけ（拡大・回転なし）||
 |[Draw.Triangle](../Library/Framework/Render/Draw/DrawCommand.h#L43)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
-|[Draw.Triangle3D](../Library/Framework/Render/Draw/DrawCommand.h#L43)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
+|[Draw.Triangle3D](../Library/Framework/Render/Draw/DrawCommand.h#L43)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了 通常の三角形はフレーム転送のGPU Forwardで変換・頂点照明を処理。未対応状態やGPU拒否時は既存経路。線と点はCPU経路。||
 |[Draw.UseLighting](../Library/Framework/Render/Draw/DrawCommand.h#L121)|Partial|R2|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|頂点ごとのCPU計算（CVertexLighting。DxLibの固定の光と同じ式）で対応。画素ごとの光（LightingOptionsのPixelLighting）は、同じ式を組み込みのシェーダー（PixelLit。定数b6）で画素ごとに計算する（画像つきも。フォグ・影を受ける描画と重なるときは、頂点ごと）。Lightingサンプルで、スポットライトの円・ランプの光だまりがDxLibと同じ形で出る（細かい画素の比較は未実施）。共有のモデル（Model3D）は、GPU が変換と光（頂点ごと、同じ式）を計算する Forward 経路で描く（CDX12ForwardMeshRenderer。従来の CPU の経路と、光あり・なしで画素が一致。影・フォグ・画素ごとの光・画像の変換は、CPU の経路）||
 |[Draw.UseShader](../Library/Framework/Render/Draw/DrawCommand.h#L145)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|利用者のシェーダー（Shader Model 5）を、カスタムグラフィックスパイプラインで描く。定数・画像（t0〜）・描画先の形式ごとにパイプラインを作って使い回す。DxLibとの画素比較が残る||
 |[Draw.UseShadowMap](../Library/Framework/Render/Draw/DrawCommand.h#L142)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|スロット0〜2のうち、使っている最小のスロットだけを使う。画素ごとに3x3で比べる。影を受けるのは、ライトのShadowMapSlotsが重なる分だけ（環境光・自己発光は影の外）||

@@ -153,7 +153,7 @@ void CGeometryCommandExecutor::FillLightConstants( float32* Constants, FDrawRgb 
 	}
 }
 
-bool CGeometryCommandExecutor::Submit( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend, int32 Texture, bool bLit )
+bool CGeometryCommandExecutor::Submit( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend, int32 Texture, bool bLit, bool bAllowTransient )
 {
 	if ( !Geometry || Vertices.IsEmpty() || Vertices.Num() > 65536 || Geometry->GetWidth() <= 0 || Geometry->GetHeight() <= 0 || !Camera.IsValid() )
 	{
@@ -167,6 +167,20 @@ bool CGeometryCommandExecutor::Submit( const TArray<FDrawVertex3D>& Vertices, EG
 	if ( bShadowCasting )
 	{
 		return SubmitShadowCaster( Vertices, Topology, Alpha, Texture ); // 影の絵へ、光から見た深度として描く。
+	}
+	if ( bAllowTransient && Topology == EGeometryTopology::Triangles && Vertices.Num() % 3 == 0 )
+	{
+		FStaticModelDrawSection Section = { 0, Vertices.Num(), Texture }; // 一度だけ描く三角形の範囲。
+		FStaticModelDrawView Mesh = { Vertices.GetData(), Vertices.Num(), nullptr, Vertices.Num(), &Section, 1, 1.0f, 1, 1 }; // 鍵は判定用。実行先には登録しない。
+		bool bFinite = true; // GPUへ渡す前に全頂点を検査する。
+		for ( const auto& Vertex : Vertices )
+		{
+			bFinite = bFinite && Finite( Vertex.Position ) && Finite( Vertex.Normal ) && NMath::IsFinite( Vertex.U ) && NMath::IsFinite( Vertex.V );
+		}
+		if ( bFinite && CanDrawForward( Mesh ) && DrawMeshForward( Mesh, Alpha, bAlphaBlend, false, Bright, bLit, true ) == 1 )
+		{
+			return true;
+		}
 	}
 	// 影を受ける三角形: 影の外の色と影の中で消える色を、頂点ごとに計算し、画素ごとに影の絵と比べる（組み込みのシェーダー）。
 	FMatrix4x4 ReceiverViewProjection;
@@ -525,7 +539,7 @@ bool CGeometryCommandExecutor::CanDrawForward( const FStaticModelDrawView& Model
 		&& TextureTransform.Enabled == 0 && !( Lighting.IsEnabled() && Lighting.GetOptions().bPixelLighting ) && Camera.IsValid() && Geometry->GetWidth() > 0 && Geometry->GetHeight() > 0 && bUseForwardPath;
 }
 
-int32 CGeometryCommandExecutor::DrawModelForward( const FStaticModelDrawView& Model, int32 ModelAlpha, bool bAlphaBlend, bool bInferAlpha )
+int32 CGeometryCommandExecutor::DrawMeshForward( const FStaticModelDrawView& Model, int32 ModelAlpha, bool bAlphaBlend, bool bInferAlpha, FDrawRgb Bright, bool bLit, bool bTransient )
 {
 	const FCameraViewport Viewport = { Geometry->GetWidth(), Geometry->GetHeight() };
 	const FMatrix4x4 Transform = World * Camera.GetViewMatrix() * Camera.GetProjectionMatrix( Viewport ); // ローカルからクリップへの変換。
@@ -547,15 +561,16 @@ int32 CGeometryCommandExecutor::DrawModelForward( const FStaticModelDrawView& Mo
 	FMemory::Memcpy( Draw.World, World.m, sizeof( Draw.World ) );
 	FMemory::Memcpy( Draw.NormalMatrix, NormalMatrix.m, sizeof( Draw.NormalMatrix ) );
 	static_assert( sizeof( FMatrix4x4 ) == sizeof( Draw.ClipMatrix ), "FMatrix4x4 must be 16 floats" );
-	FillLightConstants( Draw.Lighting, FDrawRgb() ); // モデルは、描画の明るさ（Bright）を使わない（従来の経路と同じ）。
-	Draw.MeshKey = Model.MeshKey;
+	FillLightConstants( Draw.Lighting, Bright ); // 呼び出し側の描画規約に合わせた明るさ。
+	Draw.bTransient = bTransient;
+	Draw.MeshKey = bTransient ? 0 : Model.MeshKey;
 	Draw.MeshVersion = Model.MeshVersion;
 	Draw.Vertices = Model.Vertices;
 	Draw.NumVertices = Model.NumVertices;
 	Draw.Indices = Model.Indices;
 	Draw.NumIndices = Model.NumIndices;
 	Draw.AlphaScale = static_cast<float32>( ModelAlpha ) / 255.0f;
-	Draw.bLit = Lighting.IsEnabled();
+	Draw.bLit = bLit && Lighting.IsEnabled();
 	bool bAnyTranslucent = false; // 頂点のアルファが 1 未満のものがあれば、合成して描く（画像の透明画素と同じ）。
 	for ( int32 Index = 0; Index < Model.NumVertices && !bAnyTranslucent; ++Index )
 	{
@@ -649,7 +664,7 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::DrawModel( const FDr
 	FMemory::Memcpy( Matrix.M, Data.M, sizeof( Data.M ) );
 	World = ToMatrix( Matrix );
 	const int32 ModelAlpha = NMath::Clamp( static_cast<int32>( Alpha * Model.Opacity + 0.5f ), 0, 255 ); // 個体の不透明度を一度だけ掛ける。
-	const int32 NumForward = CanDrawForward( Model ) ? DrawModelForward( Model, ModelAlpha, bAlphaBlend ) : 0; // GPU が変換と光を計算できる範囲は、共有のメッシュで描く。
+	const int32 NumForward = CanDrawForward( Model ) ? DrawMeshForward( Model, ModelAlpha, bAlphaBlend ) : 0; // GPU が変換と光を計算できる範囲は、共有のメッシュで描く。
 	bool bSuccess = true; // GPU作成失敗時も配置は復元する。
 	for ( int32 SectionIndex = NumForward; SectionIndex < Model.NumSections && bSuccess; ++SectionIndex )
 	{
@@ -666,7 +681,7 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::DrawModel( const FDr
 				Ordered.Add( Vertex );
 				bUseAlpha = bUseAlpha || Vertex.Diffuse[3] < 255;
 			}
-			bSuccess = Submit( Ordered, EGeometryTopology::Triangles, FDrawRgb(), ModelAlpha, bUseAlpha, Section.Texture, true );
+			bSuccess = Submit( Ordered, EGeometryTopology::Triangles, FDrawRgb(), ModelAlpha, bUseAlpha, Section.Texture, true, false );
 			Offset += Count;
 		}
 	}
@@ -1505,7 +1520,7 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::Execute( const FDraw
 		{
 			Mesh.MeshKey = MeshKey;
 			Mesh.MeshVersion = MeshVersion;
-			bForward = CanDrawForward( Mesh ) && DrawModelForward( Mesh, Alpha, bAlphaBlend, false ) == 1;
+			bForward = CanDrawForward( Mesh ) && DrawMeshForward( Mesh, Alpha, bAlphaBlend, false ) == 1;
 		}
 		if ( !bForward )
 		{
@@ -1515,7 +1530,7 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::Execute( const FDraw
 				Ordered.Add( Vertices.Vertices[Indices.Indices[Data.StartIndex + Index]] );
 			}
 		}
-		const bool bResult = bForward || Submit( Ordered, EGeometryTopology::Triangles, FDrawRgb(), Alpha, bAlphaBlend, Data.Texture, true ); // 失敗時も状態を戻す。
+		const bool bResult = bForward || Submit( Ordered, EGeometryTopology::Triangles, FDrawRgb(), Alpha, bAlphaBlend, Data.Texture, true, false ); // 失敗時も状態を戻す。
 		World = OldWorld;
 		State.Culling = OldCulling;
 		return bResult ? EResult::Executed : EResult::Rejected;

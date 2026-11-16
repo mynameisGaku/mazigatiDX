@@ -370,7 +370,7 @@ FGraphicsPipelineHandle CDX12ForwardMeshRenderer::GetPipeline( const FForwardMes
 bool CDX12ForwardMeshRenderer::Draw( const FForwardMeshDraw& Draw, IRenderGeometry3D& Geometry )
 {
 	const FGeometryDrawState& State = Draw.State;
-	if ( !Pipelines || !Buffers || !Textures || Draw.MeshKey == 0 || !Draw.Vertices || !Draw.Indices || Draw.NumVertices <= 0 || Draw.NumVertices > MaxVertices || Draw.NumIndices <= 0 || Draw.NumIndices % 3 != 0
+	if ( !Pipelines || !Buffers || !Textures || ( !Draw.bTransient && Draw.MeshKey == 0 ) || !Draw.Vertices || ( !Draw.Indices && !Draw.bTransient ) || Draw.NumVertices <= 0 || Draw.NumVertices > MaxVertices || Draw.NumIndices <= 0 || Draw.NumIndices % 3 != 0
 		|| Draw.FirstIndex < 0 || Draw.IndexCount <= 0 || Draw.IndexCount > MaxIndices || Draw.IndexCount % 3 != 0 || Draw.FirstIndex % 3 != 0 || static_cast<int64>( Draw.FirstIndex ) + Draw.IndexCount > Draw.NumIndices )
 	{
 		return false;
@@ -391,7 +391,11 @@ bool CDX12ForwardMeshRenderer::Draw( const FForwardMeshDraw& Draw, IRenderGeomet
 			return false;
 		}
 	}
-	for ( int32 Index = 0; Index < Draw.NumIndices; ++Index )
+	if ( !Draw.Indices && ( Draw.FirstIndex != 0 || Draw.IndexCount != Draw.NumVertices || Draw.NumIndices != Draw.NumVertices ) )
+	{
+		return false; // 添字なしは頂点全体を順番に描く場合だけ。
+	}
+	for ( int32 Index = 0; Draw.Indices && Index < Draw.NumIndices; ++Index )
 	{
 		if ( Draw.Indices[Index] >= static_cast<uint32>( Draw.NumVertices ) )
 		{
@@ -415,8 +419,8 @@ bool CDX12ForwardMeshRenderer::Draw( const FForwardMeshDraw& Draw, IRenderGeomet
 	{
 		return false;
 	}
-	const FMesh* Mesh = AcquireMesh( Draw );
-	if ( !Mesh )
+	const FMesh* Mesh = Draw.bTransient ? nullptr : AcquireMesh( Draw );
+	if ( !Draw.bTransient && !Mesh )
 	{
 		return false;
 	}
@@ -433,6 +437,18 @@ bool CDX12ForwardMeshRenderer::Draw( const FForwardMeshDraw& Draw, IRenderGeomet
 	Constants[0].Size = sizeof( Object );
 	Constants[1].Data = reinterpret_cast<const uint8*>( Draw.Lighting );
 	Constants[1].Size = sizeof( Draw.Lighting );
+	if ( Draw.bTransient )
+	{
+		FGraphicsPipelineTransientDraw Transient; // 借用値は既存のフレーム転送領域へコピーされる。
+		Transient.Pipeline = Pipeline;
+		Transient.Vertices = Draw.Vertices;
+		Transient.VertexCount = Draw.NumVertices;
+		Transient.Indices = Draw.Indices ? Draw.Indices + Draw.FirstIndex : nullptr;
+		Transient.IndexCount = Draw.Indices ? Draw.IndexCount : 0;
+		Transient.Constants = TArrayView<const FGraphicsConstantBytes>( Constants, 2 );
+		Transient.Textures = bTextured ? TArrayView<const FTextureResourceHandle>( &Texture, 1 ) : TArrayView<const FTextureResourceHandle>();
+		return Geometry.DrawGraphicsPipelineTransient( Transient );
+	}
 	FGraphicsPipelineDraw Command;
 	Command.Pipeline = Pipeline;
 	Command.VertexBuffer = Mesh->Vertices;
