@@ -237,6 +237,16 @@ void CDX12ForwardMeshRenderer::Purge( uint64 Keep )
 			Remove.Add( Pair.Key );
 		}
 	}
+	// 期限切れの解放を先に反映してから、上限の超過を判定する。
+	for ( const uint64 Key : Remove )
+	{
+		if ( FMesh* Mesh = Meshes.Find( Key ) )
+		{
+			ReleaseMesh( *Mesh );
+			Meshes.Remove( Key );
+		}
+	}
+	Remove.Reset();
 	while ( TotalBytes > MaxMeshBytes ) // 上限を超えたら、使っていないものから先に手放す（描いているメッシュは、残す）。
 	{
 		uint64 Oldest = 0;
