@@ -403,7 +403,7 @@
 |[Draw.Billboard3D](../Library/Framework/Render/Draw/DrawCommand.h#L47)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.BillboardPivot3D](../Library/Framework/Render/Draw/DrawCommand.h#L131)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.BillboardQuad3D](../Library/Framework/Render/Draw/DrawCommand.h#L132)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
-|[Draw.Blend](../Library/Framework/Render/Draw/DrawCommand.h#L40)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|Opaque・Alpha・Add・Subtract・Multiply・Pma系に対応。利用者のシェーダー（カスタムパイプライン）の描画にも同じ混ぜ方を使う。Invertは、平らな図形だけ、描く色を反転してアルファブレンドする（DrawStateサンプルの円の色がDxLibと一致）。画像・文字・3DのInvert、MultiplyAlpha、PmaInvertは通常の合成で描く||
+|[Draw.Blend](../Library/Framework/Render/Draw/DrawCommand.h#L40)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|Opaque・Alpha・Add・Subtract・Multiply・Invert（描く色を反転。図形・画像・文字・3D）・Pma系・CustomBlendに対応。MultiplyAlpha・PmaInvertは通常のアルファ合成で描き、初回に報告する。利用者のシェーダーの描画は、反転しない（通常のアルファ）||
 |[Draw.Box](../Library/Framework/Render/Draw/DrawCommand.h#L35)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.BoxAA](../Library/Framework/Render/Draw/DrawCommand.h#L73)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.Bright](../Library/Framework/Render/Draw/DrawCommand.h#L52)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||

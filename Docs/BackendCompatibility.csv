@@ -378,7 +378,7 @@
 "Draw.Billboard3D","Implemented","R6","有効・不正payload、順序、状態復元、DxLibとの画素／深度比較","共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了","","EDrawCommand[11]: Billboard3D"
 "Draw.BillboardPivot3D","Implemented","R6","有効・不正payload、順序、状態復元、DxLibとの画素／深度比較","共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了","","EDrawCommand[81]: BillboardPivot3D"
 "Draw.BillboardQuad3D","Implemented","R6","有効・不正payload、順序、状態復元、DxLibとの画素／深度比較","共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了","","EDrawCommand[82]: BillboardQuad3D"
-"Draw.Blend","Partial","R6","有効・不正payload、順序、状態復元、DxLibとの画素／深度比較","Opaque・Alpha・Add・Subtract・Multiply・Pma系に対応。利用者のシェーダー（カスタムパイプライン）の描画にも同じ混ぜ方を使う。Invertは、平らな図形だけ、描く色を反転してアルファブレンドする（DrawStateサンプルの円の色がDxLibと一致）。画像・文字・3DのInvert、MultiplyAlpha、PmaInvertは通常の合成で描く","","EDrawCommand[5]: Blend"
+"Draw.Blend","Partial","R6","有効・不正payload、順序、状態復元、DxLibとの画素／深度比較","Opaque・Alpha・Add・Subtract・Multiply・Invert（描く色を反転。図形・画像・文字・3D）・Pma系・CustomBlendに対応。MultiplyAlpha・PmaInvertは通常のアルファ合成で描き、初回に報告する。利用者のシェーダーの描画は、反転しない（通常のアルファ）","","EDrawCommand[5]: Blend"
 "Draw.Box","Implemented","R6","有効・不正payload、順序、状態復元、DxLibとの画素／深度比較","共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了","","EDrawCommand[0]: Box"
 "Draw.BoxAA","Implemented","R6","有効・不正payload、順序、状態復元、DxLibとの画素／深度比較","共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了","","EDrawCommand[32]: BoxAA"
 "Draw.Bright","Implemented","R6","有効・不正payload、順序、状態復元、DxLibとの画素／深度比較","共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了","","EDrawCommand[15]: Bright"

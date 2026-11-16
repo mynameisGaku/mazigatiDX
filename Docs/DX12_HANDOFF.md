@@ -429,3 +429,9 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **不具合の修正**: `CDX12AssetBackendSubsystem` が、`IStaticModelSource` の新しい窓口（配置・アニメーションの時間・割合・骨ごとの割合）を、ストアへ中継していなかった（基底の既定値 false のまま）。実行時にアニメーションが効かない状態だった。中継を足した。
 - **検査**: `ModelRigContract` を 101 項目に。偽の 3D 実行先（頂点を記録）と、ストアへ中継する偽のモデルの窓口で、`FDrawContext` が記録した命令（`PushCamera`・`Model`・`ModelAnimLayer`・`ModelAnimFrameRate`・`ModelWithFrameOverrides`）を、`CGeometryCommandExecutor` に流して、描かれた頂点を確かめる: 基準の姿・アニメーションの時間と割合・割合 0・骨ごとの割合（子も含める）・骨の一時的な上書き（90 度のクリップと同じ姿・描いたあとに消える・元からある上書きは元の値へ戻る）・不正なモデルは拒否して続きを描く・すべて非表示は何も描かず成功・配置の記憶。割合を設定する処理を壊す変異で失敗することを確かめた。
 - **未確認**: 実素材（アニメーションつき FBX）での、GPU を通した描画と DxLib との比較。
+
+## 2026-11-16 追記: Invert を、混ぜ方として、全部の描画に
+- **`EGeometryBlend::Invert`**（新）: 描く色を反転（1 - 色。アルファはそのまま）して、通常のアルファ合成で描く。`CCanvasDrawExecutor` が `EDrawBlend::Invert` をこれに写す。以前は、平らな図形だけ、CPU で色を反転していた（`bInvertBlend`。削除）。いまは、画像・文字・3D・図形のすべてが、同じ経路。
+- **DX12**: `CDX12GeometryPipelineStore` が、ピクセルシェーダーを `INVERT` マクロつきでもう一度コンパイルした 4 つ（平ら・画像つき・マスクつき・マスク + 画像つき）を持ち、`Blend` が `Invert` のときに使う（`Blend` は PSO の鍵に入っているので、PSO も分かれる）。ブレンドの設定は、アルファと同じ。
+- **確認**: DrawState の Invert の絵が、変更の前後で同じ（円は、時間でわずかに動くだけ）。一時的にサンプルへ「Invert Text」を足して、DxLib と並べた: 白い文字が黒く反転するところは一致（DX12 は、文字の縁のなめらかさが違う）。サンプルは元に戻した。
+- **検査**: `RunDX12SampleImageTests.ps1` に、DrawState の Invert の円の中心（円の色 (230, 90, 60) の反転 (25, 165, 195)）の画素と、Multiply が反転でないことを足した（61 項目）。反転のシェーダーを使わない変異で失敗することを確かめた。画像の反転の画素は、サンプルが使わないので、検査していない（文字で確認）。
