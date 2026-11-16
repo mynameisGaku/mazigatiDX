@@ -455,3 +455,8 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **ModelMaterial3D**: 選んだ材質の形状（`FModelMaterialGeometry`。`NModelMaterialGeometry::Build` に、DxLib のバックエンドの作り方をそのまま出した。DxLib 側も、これを使うようにした）を、DX12 のバックエンドが番号で持つ（`CreateModelMaterialGeometry` / `DeleteModelMaterialGeometry` / `IStaticModelSource::FindStaticModelMaterialGeometry`）。描くときは、選んだメッシュを `SetModelMeshVisible` で隠して、残りを `CGeometryCommandExecutor::DrawModel` で描き、戻してから、選んだ面（フレームまで含めて「いま描かれる」メッシュだけ。`GetStaticModelMeshDrawn`）を命令の混ぜ方（Alpha / Add）・配置・不透明度で描く。骨組みの無いモデル（メッシュを隠せない）や、形状が無いときは、モデルだけを通常に描く。World サンプルの mesh_surface_showcase は、DxLib が最初の描画までシェーダーを作らない（`SupportsEffectMaterialMesh` が、生成時に false になる）ので、DxLib 側が描かず、比べられなかった。
 - **GetModelMeshData**: `CStaticModelStore::GetMeshData`。三角形ごとに展開された頂点は、中身と変形元が同じものを共有に戻す。`DominantFrame` は、スキンの影響の重みが最大の骨（同じなら先のもの）。`bCurrentPose` は、いまの姿勢（アニメーション・骨の上書き）。モーフは含まない（取り込みが形状を読まない: `FImportedScene::bHasBlendShapes` だけ）。
 - **検査**: `RunMaterialEffectTests.ps1` を 80 項目へ（メッシュ・モデル材質効果。偽のモデル窓口で、隠す・戻す・描かれないメッシュ・形状なし・隠せない・混ぜ方の復元・命令長・壊れた値）、`RunModelRigTests.ps1` を 115 項目へ（メッシュデータ）。変異で確かめた（生き残ったのは、等価な変異だけ）。
+
+## 2026-11-16 追記: 固定バックエンドのビルド
+- ライブラリ（`mazigatiDX.vcxproj`、Debug）を、実装を固定して、別の出力先（`/p:OutDir` / `/p:IntDir`）で、それぞれ作った: `MazigatiBackend=dx12` + `MazigatiWithoutDxLib=true`、`MazigatiBackend=dxlib` + `MazigatiWithoutDX12=true`、`MazigatiBackend=null` + 両方なし。3 通りとも、エラー 0・警告 0（`MAZIGATI_BACKEND` のマクロで、実装を切り分けたコードも通る）。
+- DxLib を外した DX12 のライブラリへ、`MaterialEffectContract`（80 項目）と `ModelRigContract`（115 項目）をリンクして実行し、どちらも合格（DX12 だけで、リンクもできる）。確かめ方: 一時のルートに、`Library` と `x64\Debug`（外したライブラリの場所）への junction を作り、`-FrameworkRoot` へ渡す（終わったら、junction は `rmdir` で外す）。
+- まだ: Samples / Editor の実行ファイルを、固定した実装で作って起動すること（ライブラリの単体でしか確かめていない）。
