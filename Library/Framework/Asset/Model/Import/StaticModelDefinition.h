@@ -5,6 +5,13 @@
 #include "Library/Math/Matrix4x4.h"
 #include "Library/Framework/Asset/Model/ModelStructureTypes.h"
 
+// 描画用の頂点 1 つが、取り込んだメッシュ（FImportedScene::Meshes）のどの頂点から来たか（骨組みの変形に使う）
+struct FModelVertexSource
+{
+	int32 Mesh = 0;
+	int32 Vertex = 0;
+};
+
 // 取り込んだ静的モデルの不変値。GPUや画像の所有を持たない。
 struct FStaticModelDefinition
 {

@@ -17,16 +17,16 @@ namespace
 	}
 }
 
-bool FStaticModelBuilder::Build( const FImportedScene& Scene, FStaticModelDefinition& Out, FString& Error )
+bool FStaticModelBuilder::Build( const FImportedScene& Scene, FStaticModelDefinition& Out, FString& Error, bool bAllowRig, TArray<FModelVertexSource>* OutSources )
 {
-	if ( Scene.Nodes.Num() > 65536 || Scene.Meshes.IsEmpty() || Scene.Meshes.Num() > 4096 || Scene.Materials.Num() > 4096 )
+	if ( Scene.Nodes.Num() > 65536 || ( Scene.Meshes.IsEmpty() && !bAllowRig ) || Scene.Meshes.Num() > 4096 || Scene.Materials.Num() > 4096 )
 	{
 		Error = "Unsupported animated scene or invalid static scene size";
 		return false;
 	}
 	for ( const auto& Animation : Scene.Animations )
 	{
-		if ( !Animation.Tracks.IsEmpty() )
+		if ( !bAllowRig && !Animation.Tracks.IsEmpty() )
 		{
 			Error = "Animated frame tracks are not supported by static models";
 			return false;
@@ -141,11 +141,12 @@ bool FStaticModelBuilder::Build( const FImportedScene& Scene, FStaticModelDefini
 			Result.Surface.Materials[Material].Diffuse[Channel] = Value;
 		}
 	}
+	TArray<FModelVertexSource> RawSources; // 展開前の頂点ごとの、元のメッシュと頂点。
 	bool bHasBounds = false; // 最初の頂点を外接箱の基準にする。
 	for ( int32 MeshIndex = 0; MeshIndex < Scene.Meshes.Num(); ++MeshIndex )
 	{
 		const auto& Mesh = Scene.Meshes[MeshIndex]; // 元の三角形順を保つ。
-		if ( Mesh.IsSkinned() || Mesh.bHasUnsupportedSkinning || Mesh.NumDiscardedSkinInfluences > 0 || Mesh.bHasBlendShapes || Mesh.bHasVertexCache || Mesh.Node < -1 || Mesh.Node >= Global.Num() || Mesh.Positions.IsEmpty() || Mesh.Normals.Num() != Mesh.Positions.Num()
+		if ( ( Mesh.IsSkinned() && !bAllowRig ) || Mesh.bHasUnsupportedSkinning || ( Mesh.NumDiscardedSkinInfluences > 0 && !bAllowRig ) || Mesh.bHasBlendShapes || Mesh.bHasVertexCache || Mesh.Node < -1 || Mesh.Node >= Global.Num() || Mesh.Positions.IsEmpty() || Mesh.Normals.Num() != Mesh.Positions.Num()
 			|| ( !Mesh.UVs.IsEmpty() && Mesh.UVs.Num() != Mesh.Positions.Num() ) || Mesh.Indices.IsEmpty() || Mesh.Indices.Num() % 3 != 0
 			|| ( !Mesh.TriangleMaterials.IsEmpty() && Mesh.TriangleMaterials.Num() != Mesh.Indices.Num() / 3 )
 			|| static_cast<int64>( Result.Surface.Vertices.Num() ) + Mesh.Positions.Num() > 262144 || static_cast<int64>( Result.Surface.Indices.Num() ) + Mesh.Indices.Num() > 786432 )
@@ -161,7 +162,7 @@ bool FStaticModelBuilder::Build( const FImportedScene& Scene, FStaticModelDefini
 		{
 			Result.Structure.Frames[Mesh.Node].Meshes.Add( MeshIndex );
 		}
-		const FMatrix4x4 Transform = Mesh.Node < 0 ? FMatrix4x4() : Global[Mesh.Node]; // メッシュのフレームを適用する。
+		const FMatrix4x4 Transform = Mesh.Node < 0 || Mesh.IsSkinned() ? FMatrix4x4() : Global[Mesh.Node]; // メッシュのフレームを適用する（スキンつきは、骨の変形で位置が決まるので、メッシュの座標のまま）。
 		FMatrix4x4 Inverse; // 非一様な拡大でも法線を逆転置で変換する。
 		if ( !Transform.TryInverse( Inverse ) )
 		{
@@ -193,6 +194,7 @@ bool FStaticModelBuilder::Build( const FImportedScene& Scene, FStaticModelDefini
 			Value.U = UV.x;
 			Value.V = UV.y;
 			Result.Surface.Vertices.Add( Value );
+			RawSources.Add( FModelVertexSource { MeshIndex, Vertex } );
 			MeshInfo.BoundsMin = Vertex == 0 ? Position : FVector3( NMath::Min( MeshInfo.BoundsMin.x, Position.x ), NMath::Min( MeshInfo.BoundsMin.y, Position.y ), NMath::Min( MeshInfo.BoundsMin.z, Position.z ) );
 			MeshInfo.BoundsMax = Vertex == 0 ? Position : FVector3( NMath::Max( MeshInfo.BoundsMax.x, Position.x ), NMath::Max( MeshInfo.BoundsMax.y, Position.y ), NMath::Max( MeshInfo.BoundsMax.z, Position.z ) );
 			Result.BoundsMin = bHasBounds ? FVector3( NMath::Min( Result.BoundsMin.x, Position.x ), NMath::Min( Result.BoundsMin.y, Position.y ), NMath::Min( Result.BoundsMin.z, Position.z ) ) : Position;
@@ -238,6 +240,7 @@ bool FStaticModelBuilder::Build( const FImportedScene& Scene, FStaticModelDefini
 	}
 	// 材質ごとに頂点を分け、reference色に拡散色を一度だけ含める。
 	TArray<FMeshVertex> Colored; // 三角形順に展開した頂点。
+	TArray<FModelVertexSource> ColoredSources;
 	Colored.Reserve( Result.Surface.Indices.Num() );
 	for ( const auto& Section : Result.Surface.Sections )
 	{
@@ -254,11 +257,16 @@ bool FStaticModelBuilder::Build( const FImportedScene& Scene, FStaticModelDefini
 			{
 				Value.Color[Channel] = ColorByte( Material.Diffuse[Channel] );
 			}
+			ColoredSources.Add( RawSources[Result.Surface.Indices[Index]] );
 			Result.Surface.Indices[Index] = static_cast<uint32>( Colored.Add( Value ) );
 		}
 	}
 	Result.Surface.Vertices = MoveTemp( Colored );
 	Out = MoveTemp( Result );
+	if ( OutSources )
+	{
+		*OutSources = MoveTemp( ColoredSources );
+	}
 	Error = FString();
 	return true;
 }
