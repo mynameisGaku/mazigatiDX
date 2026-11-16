@@ -6231,4 +6231,30 @@
       <UniqueIdentifier>{5E68477B-35AD-1B27-5707-256C98B10A94}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <Filter Include="EngineContent"><UniqueIdentifier>{47C625D3-E2A3-894B-8318-F046C88E9B2D}</UniqueIdentifier></Filter>
+    <Filter Include="EngineContent\Shaders"><UniqueIdentifier>{DAFFAF9C-F7FD-8BF6-818D-D953411687FC}</UniqueIdentifier></Filter>
+    <Filter Include="EngineContent\Shaders\DX12"><UniqueIdentifier>{A6169E75-D063-DEA8-29B2-797544F8BE35}</UniqueIdentifier></Filter>
+    <Filter Include="EngineContent\Shaders\DxLib"><UniqueIdentifier>{68D37D4C-ECDB-5E52-694D-992C04F499CA}</UniqueIdentifier></Filter>
+    <Filter Include="EngineContent\Shaders\Material"><UniqueIdentifier>{C25D9D1B-69D2-C170-6590-480D0E3CEA65}</UniqueIdentifier></Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="EngineContent\Shaders\DX12\BuiltIn.hlsl"><Filter>EngineContent\Shaders\DX12</Filter></None>
+    <None Include="EngineContent\Shaders\DX12\CaptureClear.hlsl"><Filter>EngineContent\Shaders\DX12</Filter></None>
+    <None Include="EngineContent\Shaders\DX12\ColorClear.hlsl"><Filter>EngineContent\Shaders\DX12</Filter></None>
+    <None Include="EngineContent\Shaders\DX12\DepthClear.hlsl"><Filter>EngineContent\Shaders\DX12</Filter></None>
+    <None Include="EngineContent\Shaders\DX12\ForwardMesh.hlsl"><Filter>EngineContent\Shaders\DX12</Filter></None>
+    <None Include="EngineContent\Shaders\DX12\Geometry.hlsl"><Filter>EngineContent\Shaders\DX12</Filter></None>
+    <None Include="EngineContent\Shaders\DxLib\EffectMaterial.hlsl"><Filter>EngineContent\Shaders\DxLib</Filter></None>
+    <None Include="EngineContent\Shaders\Material\DepthHelper.hlsli"><Filter>EngineContent\Shaders\Material</Filter></None>
+    <None Include="EngineContent\Shaders\Material\FrameDeclarations.hlsli"><Filter>EngineContent\Shaders\Material</Filter></None>
+    <None Include="EngineContent\Shaders\Material\Helpers.hlsli"><Filter>EngineContent\Shaders\Material</Filter></None>
+    <None Include="EngineContent\Shaders\Material\LightingEnd.hlsli"><Filter>EngineContent\Shaders\Material</Filter></None>
+    <None Include="EngineContent\Shaders\Material\LightingStart.hlsli"><Filter>EngineContent\Shaders\Material</Filter></None>
+    <None Include="EngineContent\Shaders\Material\ShadowFunction.hlsli"><Filter>EngineContent\Shaders\Material</Filter></None>
+    <None Include="EngineContent\Shaders\Material\SubstrateFunctions.hlsli"><Filter>EngineContent\Shaders\Material</Filter></None>
+    <None Include="EngineContent\Shaders\Material\SurfaceDeclarations.hlsli"><Filter>EngineContent\Shaders\Material</Filter></None>
+    <None Include="EngineContent\Shaders\Material\SurfaceDepthPixel.hlsli"><Filter>EngineContent\Shaders\Material</Filter></None>
+    <None Include="EngineContent\Shaders\Material\SurfaceVertex.hlsli"><Filter>EngineContent\Shaders\Material</Filter></None>
+  </ItemGroup>
 </Project>

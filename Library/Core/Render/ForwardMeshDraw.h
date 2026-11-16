@@ -33,5 +33,7 @@ struct FForwardMeshDraw
 	float32 AlphaScale = 1.0f;               // 頂点のアルファに掛ける割合（不透明度）。
 	bool bLit = false;                       // 光を計算するか（false なら、拡散色 + 鏡面色）。
 	float32 UvTransform[8] = { 1, 1, 0, 0, 0, 0, 0, 1 }; // 拡大UV・中心UV・移動UV・回転のsin/cos。既定は変換なし。
+	bool bPixelLighting = false; // trueなら補間した世界の位置と法線から画素ごとに照明する。
+	float32 Fog[20] = {}; // 奥行きの平面、距離の設定と色、高さの設定と色（各float4）。
 	FGeometryDrawState State;                // 深度・表裏・合成・画像の外側。
 };

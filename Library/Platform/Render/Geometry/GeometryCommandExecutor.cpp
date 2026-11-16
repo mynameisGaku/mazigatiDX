@@ -535,8 +535,8 @@ bool CGeometryCommandExecutor::BuildShaderQuad( const FDrawShaderQuad3DData& Dat
 bool CGeometryCommandExecutor::CanDrawForward( const FStaticModelDrawView& Model ) const
 {
 	static const bool bEnabledByCommandLine = !NCommandLine::HasFlag( "no-gpu-forward" ); // 比べるための切り替え（--no-gpu-forward で、従来の CPU の経路にする）。
-	return bEnabledByCommandLine && ShaderSource != nullptr && Geometry != nullptr && Model.MeshKey != 0 && Model.NumVertices <= 65536 && !bShadowCasting && ReceiverSlot < 0 && Fog.Mode == 0 && HeightFog.Mode == 0
-		&& !( Lighting.IsEnabled() && Lighting.GetOptions().bPixelLighting ) && Camera.IsValid() && Geometry->GetWidth() > 0 && Geometry->GetHeight() > 0 && bUseForwardPath;
+	return bEnabledByCommandLine && ShaderSource != nullptr && Geometry != nullptr && Model.MeshKey != 0 && Model.NumVertices <= 65536 && !bShadowCasting && ReceiverSlot < 0
+		&& Camera.IsValid() && Geometry->GetWidth() > 0 && Geometry->GetHeight() > 0 && bUseForwardPath;
 }
 
 int32 CGeometryCommandExecutor::DrawMeshForward( const FStaticModelDrawView& Model, int32 ModelAlpha, bool bAlphaBlend, bool bInferAlpha, FDrawRgb Bright, bool bLit, bool bTransient )
@@ -573,6 +573,25 @@ int32 CGeometryCommandExecutor::DrawMeshForward( const FStaticModelDrawView& Mod
 		Draw.UvTransform[6] = NMath::Sin( TextureTransform.Rotation );
 		Draw.UvTransform[7] = NMath::Cos( TextureTransform.Rotation );
 	}
+	const FMatrix4x4 FogView = Camera.GetViewMatrix(); // 距離フォグの基準となるカメラの奥行き。
+	for ( int32 Row = 0; Row < 4; ++Row )
+	{
+		Draw.Fog[Row] = FogView.m[Row][2];
+	}
+	const auto SetFog = [&]( int32 Offset, const FDrawFogData& Value )
+	{
+		Draw.Fog[Offset] = Value.Start;
+		Draw.Fog[Offset + 1] = Value.End;
+		Draw.Fog[Offset + 2] = Value.Density;
+		Draw.Fog[Offset + 3] = static_cast<float32>( Value.Mode );
+		Draw.Fog[Offset + 4] = Value.Color.R / 255.0f;
+		Draw.Fog[Offset + 5] = Value.Color.G / 255.0f;
+		Draw.Fog[Offset + 6] = Value.Color.B / 255.0f;
+	};
+	SetFog( 4, Fog );
+	SetFog( 12, HeightFog );
+	// 従来の経路と同じく、フォグ併用時は頂点照明を選ぶ。
+	Draw.bPixelLighting = bLit && Lighting.IsEnabled() && Lighting.GetOptions().bPixelLighting && Fog.Mode == 0 && HeightFog.Mode == 0;
 	Draw.bTransient = bTransient;
 	Draw.MeshKey = bTransient ? 0 : Model.MeshKey;
 	Draw.MeshVersion = Model.MeshVersion;

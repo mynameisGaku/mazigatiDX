@@ -44,6 +44,7 @@ function Should-Exclude([string]$relPath) {
     return $false
 }
 
+$shaderExtensions = @('.hlsl', '.hlsli', '.fx', '.fxh', '.glsl', '.vert', '.frag', '.geom', '.comp', '.tesc', '.tese', '.metal', '.wgsl', '.usf', '.ush') # 編集するシェーダー。自動のFxCompileにはしない。
 $ns  = 'http://schemas.microsoft.com/developer/msbuild/2003'
 $xws = New-Object System.Xml.XmlWriterSettings
 $xws.Indent      = $true
@@ -78,6 +79,7 @@ function Update-Project([IO.FileInfo]$vcxprojFile) {
     # ---- Scan the source files under the roots ----
     $compileItems = [System.Collections.Generic.List[hashtable]]::new()
     $includeItems  = [System.Collections.Generic.List[hashtable]]::new()
+    $shaderItems = [System.Collections.Generic.List[hashtable]]::new()
     $allFilters    = [System.Collections.Generic.SortedSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
 
     $sourceFiles = @()
@@ -85,7 +87,7 @@ function Update-Project([IO.FileInfo]$vcxprojFile) {
         $rootPath = Join-Path $root $r
         if (Test-Path -LiteralPath $rootPath) {
             $sourceFiles += @(Get-ChildItem -LiteralPath $rootPath -Recurse -File |
-                              Where-Object { $_.Extension -in @('.cpp', '.c', '.h', '.hpp', '.inl') })
+                              Where-Object { $_.Extension -in (@('.cpp', '.c', '.h', '.hpp', '.inl') + $shaderExtensions) })
         }
     }
 
@@ -116,6 +118,8 @@ function Update-Project([IO.FileInfo]$vcxprojFile) {
 
         if ($file.Extension -in @('.cpp', '.c')) {
             $compileItems.Add(@{ RelPath = $relPath; Filter = $filter })
+        } elseif ($file.Extension -in $shaderExtensions) {
+            $shaderItems.Add(@{ RelPath = $relPath; Filter = $filter })
         } else {
             $includeItems.Add(@{ RelPath = $relPath; Filter = $filter })
         }
@@ -156,6 +160,9 @@ function Update-Project([IO.FileInfo]$vcxprojFile) {
         [void]$g.ParentNode.RemoveChild($g)
     }
 
+    foreach ($g in @($vcx.SelectNodes('//ms:ItemGroup[@Label="EngineShaderSources"]', $nsm))) {
+        [void]$g.ParentNode.RemoveChild($g)
+    }
     $proj = $vcx.DocumentElement
 
     $cg = $vcx.CreateElement('ItemGroup', $ns)
@@ -198,6 +205,14 @@ function Update-Project([IO.FileInfo]$vcxprojFile) {
     }
     [void]$proj.AppendChild($ig)
 
+    $sg = $vcx.CreateElement('ItemGroup', $ns)
+    $sg.SetAttribute('Label', 'EngineShaderSources')
+    foreach ($item in $shaderItems) {
+        $el = $vcx.CreateElement('None', $ns)
+        $el.SetAttribute('Include', $item.RelPath)
+        [void]$sg.AppendChild($el)
+    }
+    [void]$proj.AppendChild($sg)
     $xw = [System.Xml.XmlWriter]::Create($vcxprojPath, $xws)
     $vcx.Save($xw)
     $xw.Dispose()
@@ -253,6 +268,16 @@ function Update-Project([IO.FileInfo]$vcxprojFile) {
     }
     [void]$fp.AppendChild($fg2)
 
+    $fgShaders = $fxml.CreateElement('ItemGroup', $ns)
+    foreach ($item in $shaderItems) {
+        $el = $fxml.CreateElement('None', $ns)
+        $el.SetAttribute('Include', $item.RelPath)
+        $fe = $fxml.CreateElement('Filter', $ns)
+        $fe.InnerText = $item.Filter
+        [void]$el.AppendChild($fe)
+        [void]$fgShaders.AppendChild($el)
+    }
+    [void]$fp.AppendChild($fgShaders)
     # Filter declarations with deterministic GUIDs
     $fg3 = $fxml.CreateElement('ItemGroup', $ns)
     $md5 = [Security.Cryptography.MD5]::Create()

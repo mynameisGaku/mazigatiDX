@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MazigatiShaderRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..'))</MazigatiShaderRoot>
+    <MazigatiShaderHeader>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(IntDir)EngineShaders\MazigatiEngineShaderSources.generated.h'))</MazigatiShaderHeader>
+    <CustomBuildBeforeTargets>ClCompile;$(CustomBuildBeforeTargets)</CustomBuildBeforeTargets>
+  </PropertyGroup>
+  <ItemGroup>
+    <_MazigatiShaderInput Include="$(MazigatiShaderRoot)\EngineContent\Shaders\**\*.hlsl;$(MazigatiShaderRoot)\EngineContent\Shaders\**\*.hlsli;$(MazigatiShaderRoot)\Tools\GenerateEmbeddedShaders.ps1;$(MSBuildThisFileFullPath)" />
+  </ItemGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(IntDir)EngineShaders;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <!-- Native C++ の tlog へ登録し、IDE からの変更検出にも含める。 -->
+    <CustomBuildStep Update="$(ProjectName)">
+      <Command>powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MazigatiShaderRoot)\Tools\GenerateEmbeddedShaders.ps1&quot; -SourceRoot &quot;$(MazigatiShaderRoot)\EngineContent\Shaders&quot; -OutputHeader &quot;$(MazigatiShaderHeader)&quot;</Command>
+      <Inputs>@(_MazigatiShaderInput)</Inputs>
+      <Outputs>$(MazigatiShaderHeader)</Outputs>
+      <Message>Generating engine shader sources</Message>
+    </CustomBuildStep>
+  </ItemGroup>
+</Project>

@@ -1,4 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
+#include "MazigatiEngineShaderSources.generated.h"
 #include "DX12GeometryPipelineStore.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Platform/DX12/Pipeline/DX12BlendState.h"
@@ -10,12 +11,7 @@ bool CDX12GeometryPipelineStore::Initialize( ID3D12Device *InDevice )
 		return false;
 	}
 	Device = InDevice;
-	const char Source[] = "#if defined(INVERT)\n#define FIN(c) float4(1.0-(c).rgb,(c).a)\n#elif defined(MULA)\n#define FIN(c) float4(lerp(float3(1.0,1.0,1.0),(c).rgb,(c).a),(c).a)\n#else\n#define FIN(c) (c)\n#endif\n"
-		"struct V { float4 p:POSITION; float4 c:COLOR; float2 uv:TEXCOORD; }; struct P { float4 p:SV_POSITION; float4 c:COLOR; float2 uv:TEXCOORD; }; P VS(V v) { P p; p.p=v.p; p.c=v.c; p.uv=v.uv; return p; } float4 PS(P p):SV_TARGET { return FIN(p.c); } Texture2D image:register(t0); SamplerState sampling:register(s0); float4 TexturePS(P p):SV_TARGET { float4 color=image.Sample(sampling,p.uv)*p.c; if(color.a<=0) discard; return FIN(color); }"
-		"Texture2D maskImage:register(t1); cbuffer cbMask:register(b0) { uint4 maskInfo; }; "
-		"float MaskValue(float4 position) { uint w,h; maskImage.GetDimensions(w,h); uint2 q=uint2(position.xy); if(q.x>=w||q.y>=h) { return 1.0; } float4 t=maskImage.Load(int3(q,0)); float m=maskInfo.x==0?t.a:(maskInfo.x==1?t.r:(maskInfo.x==2?t.g:t.b)); return maskInfo.y!=0?1.0-m:m; } "
-		"float4 MaskedPS(P p):SV_TARGET { float4 color=p.c; color.a*=MaskValue(p.p); return FIN(color); } "
-		"float4 MaskedTexturePS(P p):SV_TARGET { float4 color=image.Sample(sampling,p.uv)*p.c; color.a*=MaskValue(p.p); if(color.a<=0) discard; return FIN(color); }"; // 透視補間はGPUが行う。完全な透明画素は色・深度のどちらも書かない。マスクは、描画先の画素の座標で読む（画像の外は薄めない）。
+	const auto& Source = NEngineShaderSources::DX12_Geometry; // 透視補間はGPUが行う。完全な透明画素は色・深度のどちらも書かない。マスクは、描画先の画素の座標で読む（画像の外は薄めない）。
 	if ( FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", nullptr, nullptr, "VS", "vs_5_0", 0, 0, &VertexShader, nullptr ) ) || FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", nullptr, nullptr, "PS", "ps_5_0", 0, 0, &PixelShader, nullptr ) ) || FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", nullptr, nullptr, "TexturePS", "ps_5_0", 0, 0, &TexturedPixelShader, nullptr ) )
 		|| FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", nullptr, nullptr, "MaskedPS", "ps_5_0", 0, 0, &MaskedPixelShader, nullptr ) ) || FAILED( D3DCompile( Source, sizeof( Source ) - 1, "Geometry", nullptr, nullptr, "MaskedTexturePS", "ps_5_0", 0, 0, &MaskedTexturedPixelShader, nullptr ) ) )
 	{

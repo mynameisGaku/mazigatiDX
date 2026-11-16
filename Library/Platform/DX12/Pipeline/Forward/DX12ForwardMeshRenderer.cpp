@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DX12ForwardMeshRenderer.h"
+#include "MazigatiEngineShaderSources.generated.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Platform/DX12/DX12Log.h"
@@ -15,122 +16,11 @@ namespace
 	constexpr int32 MaxVertices = 65536;
 	constexpr int32 MaxIndices = 196608;
 
-	// 変換と、頂点ごとの光（式は、画素ごとの光（PixelLightColor）と同じ）。b0 = 個体の値、b6 = 光・材質・カメラ。
-	const char* ForwardSource = R"hlsl(
-cbuffer cbObject : register( b0 )
-{
-	row_major float4x4 g_Clip;
-	row_major float4x4 g_World;
-	row_major float4x4 g_NormalMatrix;
-	float4 g_Params; // x = 光を計算するか、y = アルファに掛ける割合
-	float4 g_UvScaleCenter;
-	float4 g_UvTranslationRotation;
-};
-cbuffer cbLight : register( b6 )
-{
-	float4 g_LightEye;
-	float4 g_LightBase;
-	float4 g_LightMaterialDiffuse;
-	float4 g_LightMaterialSpecular;
-	float4 g_LightMaterialAmbient;
-	float4 g_LightOptions;
-	float4 g_LightBright;
-	float4 g_Lights[42];
-};
-Texture2D g_Base : register( t0 );
-SamplerState g_Sampler : register( s0 );
-struct VI { float3 Position : POSITION; float3 Normal : NORMAL; float4 Diffuse : COLOR0; float4 Specular : COLOR1; float2 Uv : TEXCOORD0; };
-struct VO { float4 Position : SV_POSITION; float4 Color : COLOR0; float2 Uv : TEXCOORD0; };
-float3 ForwardLight( float3 world, float3 n, float3 vertexDiffuse, float3 vertexSpecular )
-{
-	float3 toEye = normalize( g_LightEye.xyz - world );
-	float3 diffuseColor = g_LightMaterialDiffuse.a > 0.5 ? vertexDiffuse : g_LightMaterialDiffuse.rgb;
-	float3 specularColor = g_LightMaterialSpecular.a > 0.5 ? vertexSpecular : g_LightMaterialSpecular.rgb;
-	float3 materialAmbient = g_LightMaterialAmbient.rgb;
-	float3 sum = g_LightBase.rgb;
-	int count = int( g_LightEye.w );
-	[loop] for ( int k = 0; k < count; ++k )
-	{
-		float4 position = g_Lights[k * 7];
-		float4 direction = g_Lights[k * 7 + 1];
-		float4 attenuation = g_Lights[k * 7 + 2];
-		float4 spot = g_Lights[k * 7 + 3];
-		float3 lightDiffuse = g_Lights[k * 7 + 4].rgb;
-		float3 lightSpecular = g_Lights[k * 7 + 5].rgb;
-		float3 lightAmbient = g_Lights[k * 7 + 6].rgb;
-		int type = int( position.w );
-		float3 toLight = normalize( -direction.xyz );
-		float reach = 1.0;
-		if ( type != 0 )
-		{
-			float3 offset = world - position.xyz;
-			float dist = length( offset );
-			toLight = normalize( -offset );
-			if ( dist > direction.w )
-			{
-				reach = 0.0;
-			}
-			else
-			{
-				reach = 1.0 / ( attenuation.x + attenuation.y * dist + attenuation.z * dist * dist );
-				if ( type == 2 )
-				{
-					float cosAngle = dot( direction.xyz, offset ) / max( dist, 1.0e-6 );
-					reach *= cosAngle <= attenuation.w ? 0.0 : ( cosAngle >= spot.x ? 1.0 : ( cosAngle - attenuation.w ) / ( spot.x - attenuation.w ) );
-				}
-			}
-		}
-		if ( reach == 0.0 ) { continue; }
-		float d = dot( n, toLight );
-		float angle = max( d, 0.0 );
-		if ( g_LightOptions.z > 0.5 ) { angle = 1.0; }
-		else if ( g_LightOptions.y > 0.5 ) { float w = d * 0.5 + 0.5; angle = w * w; }
-		float highlight = 0.0;
-		if ( g_LightOptions.x > 0.5 && d > 0.0 )
-		{
-			float b = dot( n, normalize( toLight + toEye ) );
-			if ( b > 0.0 ) { highlight = pow( b, g_LightMaterialAmbient.a ); }
-		}
-		sum += reach * ( diffuseColor * lightDiffuse * angle + materialAmbient * lightAmbient + specularColor * lightSpecular * highlight );
-	}
-	return saturate( sum ) * g_LightBright.rgb;
-}
-VO ForwardVS( VI i )
-{
-	VO o;
-	float4 local = float4( i.Position, 1.0 );
-	o.Position = mul( local, g_Clip );
-	float3 color;
-	if ( g_Params.x > 0.5 )
-	{
-		float3 world = mul( local, g_World ).xyz;
-		float3 n = mul( float4( i.Normal, 0.0 ), g_NormalMatrix ).xyz;
-		float len = length( n );
-		n = len > 1.0e-4 ? n / len : float3( 0.0, 1.0, 0.0 );
-		color = ForwardLight( world, n, i.Diffuse.rgb, i.Specular.rgb );
-	}
-	else
-	{
-		color = saturate( i.Diffuse.rgb + i.Specular.rgb ) * g_LightBright.rgb;
-	}
-	o.Color = float4( color, i.Diffuse.a * g_Params.y );
-	float2 centered = ( i.Uv - g_UvScaleCenter.zw ) * g_UvScaleCenter.xy;
-	o.Uv = float2( centered.x * g_UvTranslationRotation.w - centered.y * g_UvTranslationRotation.z, centered.x * g_UvTranslationRotation.z + centered.y * g_UvTranslationRotation.w ) + g_UvScaleCenter.zw + g_UvTranslationRotation.xy;
-	return o;
-}
-float4 ForwardPS( VO i ) : SV_Target { return i.Color; }
-float4 ForwardTexturedPS( VO i ) : SV_Target
-{
-	float4 c = i.Color * g_Base.Sample( g_Sampler, i.Uv );
-	if ( c.a <= 0.0 ) { discard; }
-	return c;
-}
-)hlsl";
-
 	bool CompileEntry( const char* Entry, const char* Target, TArray<uint8>& Out )
 	{
+		const char* Source = NEngineShaderSources::DX12_ForwardMesh; // 資源管理とシェーダーの式を分離する。
 		Microsoft::WRL::ComPtr<ID3DBlob> Code, Errors;
-		const HRESULT Result = D3DCompile( ForwardSource, NCString::Length( ForwardSource ), "ForwardMesh", nullptr, nullptr, Entry, Target, 0, 0, &Code, &Errors );
+		const HRESULT Result = D3DCompile( Source, NCString::Length( Source ), "ForwardMesh", nullptr, nullptr, Entry, Target, 0, 0, &Code, &Errors );
 		if ( FAILED( Result ) || !Code )
 		{
 			LOG( LogDX12, Error, "CDX12ForwardMeshRenderer: the forward shader '%s' cannot be compiled: %s", Entry, Errors ? static_cast<const char*>( Errors->GetBufferPointer() ) : "unknown error" );
@@ -161,6 +51,7 @@ float4 ForwardTexturedPS( VO i ) : SV_Target
 		float32 Normal[16];
 		float32 Params[4];
 		float32 UvTransform[8]; // HLSLの2つのfloat4と同じ並び。
+		float32 Fog[20]; // カメラの奥行きと距離・高さフォグ。
 	};
 }
 
@@ -388,6 +279,18 @@ bool CDX12ForwardMeshRenderer::Draw( const FForwardMeshDraw& Draw, IRenderGeomet
 	{
 		return false;
 	}
+	for ( const float32 Value : Draw.Fog )
+	{
+		if ( !NMath::IsFinite( Value ) ) { return false; }
+	}
+	for ( const int32 Offset : { 7, 15 } )
+	{
+		const float32 Mode = Draw.Fog[Offset]; // 命令で定義された4つの方式だけ受け付ける。
+		if ( Mode != 0.0f && Mode != 1.0f && Mode != 2.0f && Mode != 3.0f )
+		{
+			return false;
+		}
+	}
 	for ( const float32 Value : Draw.UvTransform )
 	{
 		if ( !NMath::IsFinite( Value ) )
@@ -442,8 +345,9 @@ bool CDX12ForwardMeshRenderer::Draw( const FForwardMeshDraw& Draw, IRenderGeomet
 	FMemory::Memcpy( Object.UvTransform, Draw.UvTransform, sizeof( Object.UvTransform ) );
 	Object.Params[0] = Draw.bLit ? 1.0f : 0.0f;
 	Object.Params[1] = Draw.AlphaScale;
-	Object.Params[2] = 0.0f;
-	Object.Params[3] = 0.0f;
+	Object.Params[2] = Draw.bPixelLighting && Draw.bLit && Draw.Fog[7] == 0 && Draw.Fog[15] == 0 ? 1.0f : 0.0f;
+	Object.Params[3] = bTextured ? 1.0f : 0.0f;
+	FMemory::Memcpy( Object.Fog, Draw.Fog, sizeof( Object.Fog ) );
 	FGraphicsConstantBytes Constants[2];
 	Constants[0].Data = reinterpret_cast<const uint8*>( &Object );
 	Constants[0].Size = sizeof( Object );

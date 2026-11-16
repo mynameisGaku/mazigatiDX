@@ -26,7 +26,7 @@
     <!-- 64 ビット版のコンパイラ・リンカーを使う（32 ビット版は、Release のコード生成で、ヒープが足りなくなる: C1002） -->
     <PreferredToolArchitecture>x64</PreferredToolArchitecture>
     <!-- GenerateProjectFiles.bat が、このフォルダー（; 区切り）の下のファイルを ClCompile / ClInclude に書き出す -->
-    <MazigatiSourceRoots>Library;VendorModules</MazigatiSourceRoots>
+    <MazigatiSourceRoots>Library;VendorModules;EngineContent</MazigatiSourceRoots>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -64,6 +64,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
+  <Import Project="$(MSBuildThisFileDirectory)Build\EngineShaders.targets" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets"></ImportGroup>
   <ItemGroup>
@@ -1938,5 +1939,24 @@
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_video.h" />
     <ClInclude Include="VendorModules\SDL3\include\SDL3\SDL_vulkan.h" />
     <ClInclude Include="VendorModules\ufbx\ufbx.h" />
+  </ItemGroup>
+  <ItemGroup Label="EngineShaderSources">
+    <None Include="EngineContent\Shaders\DX12\BuiltIn.hlsl" />
+    <None Include="EngineContent\Shaders\DX12\CaptureClear.hlsl" />
+    <None Include="EngineContent\Shaders\DX12\ColorClear.hlsl" />
+    <None Include="EngineContent\Shaders\DX12\DepthClear.hlsl" />
+    <None Include="EngineContent\Shaders\DX12\ForwardMesh.hlsl" />
+    <None Include="EngineContent\Shaders\DX12\Geometry.hlsl" />
+    <None Include="EngineContent\Shaders\DxLib\EffectMaterial.hlsl" />
+    <None Include="EngineContent\Shaders\Material\DepthHelper.hlsli" />
+    <None Include="EngineContent\Shaders\Material\FrameDeclarations.hlsli" />
+    <None Include="EngineContent\Shaders\Material\Helpers.hlsli" />
+    <None Include="EngineContent\Shaders\Material\LightingEnd.hlsli" />
+    <None Include="EngineContent\Shaders\Material\LightingStart.hlsli" />
+    <None Include="EngineContent\Shaders\Material\ShadowFunction.hlsli" />
+    <None Include="EngineContent\Shaders\Material\SubstrateFunctions.hlsli" />
+    <None Include="EngineContent\Shaders\Material\SurfaceDeclarations.hlsli" />
+    <None Include="EngineContent\Shaders\Material\SurfaceDepthPixel.hlsli" />
+    <None Include="EngineContent\Shaders\Material\SurfaceVertex.hlsli" />
   </ItemGroup>
 </Project>

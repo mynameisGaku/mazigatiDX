@@ -865,7 +865,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\VerifyCleanBuild.ps1 -
 
 ## プロジェクト生成と確認
 
-cpp・header・inlを追加・削除・移動したら、次でプロジェクトを再生成します（本体は`Tools/GenerateProjectFiles.ps1`で、`-Root`にプロジェクトのフォルダーを渡します。ルートの`.bat`はそれを呼びます）。
+cpp・header・inl・シェーダー言語のファイルを追加・削除・移動したら、次でプロジェクトを再生成します（本体は`Tools/GenerateProjectFiles.ps1`で、`-Root`にプロジェクトのフォルダーを渡します。ルートの`.bat`はそれを呼びます）。固定 HLSL と共通テンプレートの正本は `EngineContent/Shaders` です。[シェーダーの管理](SHADERS.md) に、ビルド時の取り込みとソリューション上の扱いを記載しています。
 
 ```powershell
 cmd /c "GenerateProjectFiles.bat < nul"

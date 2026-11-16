@@ -1,4 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
+#include "MazigatiEngineShaderSources.generated.h"
 #include "DX12CaptureTarget.h"
 #include "Library/Platform/DX12/Resource/Upload/DX12UploadArena.h"
 #include <d3dcompiler.h>
@@ -93,7 +94,7 @@ bool CDX12CaptureTarget::PrepareClearPipeline()
 	{
 		return true;
 	}
-	const char Shader[] = "cbuffer C:register(b0){float4 color;} float4 VS(uint id:SV_VertexID):SV_POSITION{ return float4(id==2?3:-1,id==1?3:-1,0,1); } float4 PS():SV_TARGET{return color;}"; // 全画面を一枚の三角形で塗る。
+	const auto& Shader = NEngineShaderSources::DX12_CaptureClear; // 全画面を一枚の三角形で塗る。
 	Microsoft::WRL::ComPtr<ID3DBlob> VS, PS, Root; // 消去だけに使う小さなGPUプログラム。
 	D3D12_ROOT_PARAMETER Parameter = {}; // 四成分の消去色。
 	Parameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;

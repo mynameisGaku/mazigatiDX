@@ -85,6 +85,7 @@ Invoke-Step 'backend compatibility inventory' (Join-Path $frameworkRoot 'Tools\U
 
 Invoke-Step 'DX12 architecture' (Join-Path $frameworkRoot 'Tools\CheckDX12Architecture.ps1')
 Invoke-Step 'DX12 architecture check (self)' (Join-Path $selfTest 'RunDX12ArchitectureCheckTest.ps1') @('-FrameworkRoot', $frameworkRoot)
+Invoke-Step 'engine shader source files' (Join-Path $selfTest 'RunEngineShaderSourceTests.ps1') @('-FrameworkRoot', $frameworkRoot)
 
 Write-Host '== source format and clean'
 Invoke-Step 'source format' (Join-Path $selfTest 'CheckSourceFormat.ps1')

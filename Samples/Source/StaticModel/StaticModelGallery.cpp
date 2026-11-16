@@ -43,6 +43,24 @@ void CStaticModelGallery::Draw( FDrawContext& Draw )
 	{
 		static const bool bLit = NCommandLine::HasFlag( "model-lit" ); // 検査用: 光を使う（既定は、光なし）。
 		Draw.UseLighting( bLit );
+
+		const TOptional<FString> ForwardOption = NCommandLine::GetValue( "forward-case" ); // 組み合わせの比較撮影用。
+		if ( ForwardOption.IsSet() )
+		{
+			const FString Case = ForwardOption.GetValue(); // CPUとGPUへ同じ描画命令を記録する。
+			Draw.UseLighting( true );
+			FLightingOptions Options;
+			Options.bPixelLighting = Case == "pixel" || Case == "combined";
+			Draw.LightingOptions( Options );
+			const FColor32 DistanceColor( 70, 100, 160 ); // 距離フォグの比較色。
+			const FColor32 HeightColor( 130, 90, 50 ); // 高さフォグの比較色。
+			if ( Case == "distance-linear" || Case == "combined" ) { Draw.Fog( FFogSettings::MakeLinear( DistanceColor, 4.0f, 20.0f ) ); }
+			if ( Case == "distance-exp" ) { Draw.Fog( FFogSettings::MakeExponential( DistanceColor, 0.08f ) ); }
+			if ( Case == "distance-exp2" ) { Draw.Fog( FFogSettings::MakeExponentialSquared( DistanceColor, 0.08f ) ); }
+			if ( Case == "height-linear" ) { Draw.HeightFog( FFogSettings::MakeLinear( HeightColor, -1.0f, 3.0f ) ); }
+			if ( Case == "height-exp" || Case == "combined" ) { Draw.HeightFog( FFogSettings::MakeExponential( HeightColor, 0.3f, 2.0f ) ); }
+			if ( Case == "height-exp2" ) { Draw.HeightFog( FFogSettings::MakeExponentialSquared( HeightColor, 0.3f, 2.0f ) ); }
+		}
 		if ( Solid.IsValid() )
 		{
 			Draw.Model( Solid->GetHandle(), FMatrix4x4::RotateY( Time * 0.5f ) * FMatrix4x4::Translate( FVector3( -1.5f, 0, 0 ) ) );

@@ -1,4 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
+#include "MazigatiEngineShaderSources.generated.h"
 #include "MaterialHlsl.h"
 
 #include "Library/Framework/Material/MaterialSubstrate.h"
@@ -169,91 +170,13 @@ namespace
 	}
 
 	// 補助の関数（ノイズなど）。CPU の MaterialEval と、同じ計算
-	const char* Helpers = R"HLSL(
-#define MatMod( a, b ) ( ( a ) - ( b ) * floor( ( a ) / ( b ) ) )
+	const char* Helpers = NEngineShaderSources::Material_Helpers;
 
-float MatHash( float2 p )
-{
-	p = frac( p * float2( 123.34, 456.21 ) );
-	p += dot( p, p + 45.32 );
-	return frac( p.x * p.y );
-}
+	const char* FrameDeclarations = NEngineShaderSources::Material_FrameDeclarations;
 
-float MatNoise( float2 p )
-{
-	float2 i = floor( p );
-	float2 f = frac( p );
-	float a = MatHash( i );
-	float b = MatHash( i + float2( 1.0, 0.0 ) );
-	float c = MatHash( i + float2( 0.0, 1.0 ) );
-	float d = MatHash( i + float2( 1.0, 1.0 ) );
-	float2 u = f * f * ( 3.0 - 2.0 * f );
-	return lerp( lerp( a, b, u.x ), lerp( c, d, u.x ), u.y );
-}
-)HLSL";
+	const char* DepthHelper = NEngineShaderSources::Material_DepthHelper;
 
-	const char* FrameDeclarations = R"HLSL(
-cbuffer cbMaterialFrame : register( b5 )
-{
-	float4 g_Time;
-	float4 g_Rect;
-	float4 g_State;
-};
-
-SamplerState g_Sampler : register( s0 );
-
-struct PixelInput
-{
-	float4 Position : SV_POSITION;
-	float4 Color : COLOR0;
-	float2 Uv : TEXCOORD0;
-	float4 Particle : TEXCOORD1;   // 粒子ごとの数（x = 寿命の位置、y = 生まれてからの秒、z = 粒子ごとの 0〜1 の数、w = 速さ）。矩形に描くときは 0
-};
-)HLSL";
-
-	const char* DepthHelper = R"HLSL(
-float MatLinearDepth( float d )
-{
-	return g_Time.z * g_Time.w / ( g_Time.w - d * ( g_Time.w - g_Time.z ) );
-}
-)HLSL";
-
-	const char* SurfaceDeclarations = R"HLSL(
-cbuffer cbScene : register( b4 )
-{
-	row_major float4x4 g_ViewProjection;
-	float4 g_LightDirection;
-	float4 g_CameraPosition;
-	float4 g_Time;
-	float4 g_LightColor;
-	float4 g_SkyColor;
-	float4 g_GroundColor;
-	float4 g_AmbientColor;
-	float4 g_Environment;
-	float4 g_PointLightPositions[4];
-	float4 g_PointLightColors[4];
-	row_major float4x4 g_ShadowViewProjection;
-	float4 g_ShadowOptions;
-};
-
-cbuffer cbObject : register( b5 )
-{
-	row_major float4x4 g_World;
-	float4 g_Color;
-	float4 g_Options;
-};
-
-SamplerState g_Sampler : register( s0 );
-
-struct VertexOutput
-{
-	float4 Position : SV_POSITION;
-	float3 Normal : TEXCOORD0;
-	float3 World : TEXCOORD1;
-	float2 Uv : TEXCOORD2;
-	float4 Color : TEXCOORD3;
-};
-)HLSL";
+	const char* SurfaceDeclarations = NEngineShaderSources::Material_SurfaceDeclarations;
 
 	// 場面の光を、Substrate の関数へ渡す形にする関数（cbScene から。影のマップがあれば、影も読む）
 	FString LightingFunctions( const FMaterialHlslFeatures& Features )
@@ -262,59 +185,11 @@ struct VertexOutput
 		if ( Features.bShadowMap )
 		{
 			// 影: 光から見た深度（影のマップ）と比べる。まわりの 4 x 4 個を、なめらかに重み付けして、境目をぼかす。マップの外は、光が届く
-			Text += R"HLSL(
-float MatShadow( float3 world, float3 normal )
-{
-	float4 clip = mul( float4( world + normal * g_ShadowOptions.z, 1.0 ), g_ShadowViewProjection );
-	float3 position = clip.xyz / clip.w;
-	if ( position.z <= 0.0 || position.z >= 1.0 )
-	{
-		return 1.0;
-	}
-	float size = g_ShadowOptions.x;
-	float2 texel = float2( position.x * 0.5 + 0.5, 0.5 - position.y * 0.5 ) * size - 0.5;
-	float2 base = floor( texel );
-	float2 fraction = texel - base;
-	float sum = 0.0;
-	for ( int y = -1; y <= 2; ++y )
-	{
-		for ( int x = -1; x <= 2; ++x )
-		{
-			float2 tap = base + float2( x, y );
-			float lit = 1.0;
-			if ( tap.x >= 0.0 && tap.y >= 0.0 && tap.x < size && tap.y < size )
-			{
-				lit = position.z - g_ShadowOptions.y <= g_ShadowMap.Load( int3( ( int )tap.x, ( int )tap.y, 0 ) ).r ? 1.0 : 0.0;
-			}
-			float weightX = x == -1 ? 1.0 - fraction.x : ( x == 2 ? fraction.x : 1.0 );
-			float weightY = y == -1 ? 1.0 - fraction.y : ( y == 2 ? fraction.y : 1.0 );
-			sum += lit * weightX * weightY;
+			Text += NEngineShaderSources::Material_ShadowFunction;
 		}
-	}
-	return sum / 9.0;
-}
-)HLSL";
-		}
-		Text += R"HLSL(
-SubstrateLighting MatLighting( float3 world, float3 normal )
-{
-	SubstrateLighting lighting;
-	lighting.LightColor = g_LightColor.rgb;
-)HLSL";
+		Text += NEngineShaderSources::Material_LightingStart;
 		Text += Features.bShadowMap ? "\tlighting.Shadow = MatShadow( world, normal );\n" : "\tlighting.Shadow = 1.0;\n";
-		Text += R"HLSL(	lighting.SkyColor = g_SkyColor.rgb;
-	lighting.GroundColor = g_GroundColor.rgb;
-	lighting.AmbientColor = g_AmbientColor.rgb;
-	lighting.NumPointLights = ( int )g_LightColor.w;
-	for ( int index = 0; index < 4; ++index )
-	{
-		lighting.PointLightPositions[index] = g_PointLightPositions[index];
-		lighting.PointLightColors[index] = g_PointLightColors[index];
-	}
-	lighting.Environment = g_Environment;
-	return lighting;
-}
-)HLSL";
+		Text += NEngineShaderSources::Material_LightingEnd;
 		return Text;
 	}
 
@@ -417,42 +292,12 @@ SubstrateLighting MatLighting( float3 world, float3 normal )
 
 FString NMaterialHlsl::GetSurfaceVertexSource()
 {
-	return FString( SurfaceDeclarations ) + R"HLSL(
-struct VertexInput
-{
-	float3 Position : POSITION;
-	float4 SubPosition : POSITION1;
-	float3 Normal : NORMAL;
-	float3 Tangent : TANGENT;
-	float3 Binormal : BINORMAL;
-	float4 Diffuse : COLOR0;
-	float4 Specular : COLOR1;
-	float2 Uv : TEXCOORD0;
-	float2 SubUv : TEXCOORD1;
-};
-
-VertexOutput main( VertexInput i )
-{
-	VertexOutput o;
-	float4 world = mul( float4( i.Position, 1 ), g_World );
-	o.Position = mul( world, g_ViewProjection );
-	o.Normal = mul( i.Normal, ( float3x3 )g_World );
-	o.World = world.xyz;
-	o.Uv = i.Uv;
-	o.Color = i.Diffuse * g_Color;
-	return o;
-}
-)HLSL";
+	return FString( SurfaceDeclarations ) + NEngineShaderSources::Material_SurfaceVertex;
 }
 
 FString NMaterialHlsl::GetSurfaceDepthPixelSource()
 {
-	return FString( SurfaceDeclarations ) + R"HLSL(
-float4 main( VertexOutput i ) : SV_Target
-{
-	return float4( i.Position.z, 0.0, 0.0, 1.0 );
-}
-)HLSL";
+	return FString( SurfaceDeclarations ) + NEngineShaderSources::Material_SurfaceDepthPixel;
 }
 
 bool NMaterialHlsl::UsesSceneLighting( const FMaterialProgram& Program )

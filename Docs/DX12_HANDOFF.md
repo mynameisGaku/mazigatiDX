@@ -524,3 +524,12 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - 個体定数 b0 は 208 から 240 バイト（転送時の 256 バイト整合は同じ）になった。非有限な UV 定数は GPU の登録・描画前に拒否する。影・フォグ・画素照明など、他の未対応状態における CPU 経路は維持する。シーン範囲・透明ソート・PBR は引き続き未完了。
 - `Geometry3D --geometry-time=1.7 --geometry-uv` で、Mesh3D と汎用バッファの三角形に同じ UV 変換を掛け、後続の描画前に解除する。画像検査では CPU / GPU を比べ、無変換の画像から模様が変わることも検査する。Debug / Release の Samples ビルド、Forward 93 項目、材質効果 88 項目、画像 78 項目、書式と台帳の確認が合格した。Release は前項の完全リンク指定で確認した。
 - 参照: [Unreal Engine の UV 座標・Panner・Rotator](https://dev.epicgames.com/documentation/en-us/unreal-engine/coordinates-material-expressions-in-unreal-engine)、[HLSL のベクトル・行列演算](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-mul)。変換順と回転の意味は既存のプロジェクトの契約を優先する。
+
+## 2026-11-17 追記: 画素照明・距離／高さフォグとシェーダーの正本
+- Forward の共有モデル・編集メッシュ・基本図形へ、画素照明と距離／高さフォグ（線形・指数・指数二乗）をまとめて接続した。世界の位置と法線を補間して画素照明を行う。フォグは既存の頂点評価と合成順を保ち、無画像は頂点色へ、画像つきは係数を補間して画像のサンプル後に混ぜる。UV 変換も併用できる。画素照明とフォグを同時に指定したときは、従来と同じく頂点照明を使うが、GPU Forward は維持する。影など未対応状態と GPU 拒否時は既存経路。
+- 個体定数 b0 は 320 バイト（転送時は 512 バイト整合）になった。光の b6 は従来と同じ。距離の計算にカメラの奥行きを渡し、距離・高さの設定と色を描画ごとに固定する。非有限値や範囲外のフォグ方式は GPU の記録前に拒否する。
+- シェーダーの正本は `EngineContent/Shaders` に集約した。DX12 の Forward・図形・組み込み・クリア／撮影、DxLib の材質効果、共通の材質／Substrate テンプレートの計17個。`Build/EngineShaders.targets` で構成別の中間ヘッダーへ取り込み、実行時のファイル検索は増やさない。生成したヘッダーはコミットしない。以前の Forward 専用 cpp への分離は、今回の HLSL への移動で置き換えた。
+- ソリューションは HLSL/HLSLI などを `None` 項目とフォルダーフィルターで表示する。生成器・ビルドへの接続・配布対象と17個の配置は [シェーダーの管理](SHADERS.md) を参照する。素材用の `EngineContent` にバックエンド専用シェーダーを置く方針を README に反映した。
+- Forward 契約は105項目。フォグ各方式、解除後の画素照明への復帰、定数、拒否を追加。画像検査は126項目で、共有モデルと Geometry3D の各8条件（画素照明、距離3方式、高さ3方式、両フォグ＋画素照明指定）を、時刻を固定して GPU/CPU で比較する。Geometry3D は UV 変換とも併用する。`--forward-case=pixel|distance-linear|distance-exp|distance-exp2|height-linear|height-exp|height-exp2|combined` で再現できる。
+- **確認結果**: Debug/Release のライブラリと Samples のビルドは警告・エラー0。移動後も画像126項目と Forward105項目が両構成で合格。描画先・撮影の実GPU/WARP/UIなし経路と、DxLib/Null の描画先検査も合格。シェーダー生成・一覧の検査36項目は Windows PowerShell でも合格し、全体検査へ追加した。HLSL だけを編集した再ビルドで実行結果が変わり、IDE が参照する tlog に入力が記録されることも確認した。assets は Debug 10,384 件／Release 10,381 件がワーカー0／1／4／15で一致して合格。配布物検査も合格し、17個すべてのシェーダーが元ファイルと同じハッシュで含まれることを確認した。Release は既存の完全リンク指定で確認した。
+- `GraphBuilder.AddPass` 型の API と資源の読み書きから依存を検査するフレームグラフは、ロードマップ R3 の未実装項目。R2 のシーン範囲・透明ソート・共通 PBR も未完了であり、この変更では完了扱いにしない。

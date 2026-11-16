@@ -1,4 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
+#include "MazigatiEngineShaderSources.generated.h"
 #include "DX12RenderTargetPass.h"
 #include "Library/Platform/DX12/Resource/Texture/DX12TextureCopy.h"
 #include "Library/Platform/DX12/Pipeline/Graphics/DX12GraphicsPipelineStore.h"
@@ -180,7 +181,7 @@ bool CDX12RenderTargetPass::PrepareDepthClearPipeline()
 	{
 		return true;
 	}
-	const char Shader[] = "cbuffer C:register(b0){float depthValue;} float4 VS(uint id:SV_VertexID):SV_POSITION{ return float4(id==2?3:-1,id==1?3:-1,depthValue,1); }"; // 色描画先を変更せず深度だけを塗る。
+	const auto& Shader = NEngineShaderSources::DX12_DepthClear; // 色描画先を変更せず深度だけを塗る。
 	Microsoft::WRL::ComPtr<ID3DBlob> VS, Root; // 深度消去専用の小さなプログラム。
 	D3D12_ROOT_PARAMETER Parameter = {}; // 1個の32bit浮動小数点深度。
 	Parameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
@@ -247,7 +248,7 @@ bool CDX12RenderTargetPass::PrepareColorClearPipeline( ERenderTargetColorFormat 
 	{
 		return true;
 	}
-	const char Shader[] = "cbuffer C:register(b0){float4 clearColor;} float4 VS(uint id:SV_VertexID):SV_POSITION{return float4(id==2?3:-1,id==1?3:-1,0,1);} float4 PS():SV_TARGET{return clearColor;}"; // 最適化消去色と異なっても警告なしで全画面を塗る。
+	const auto& Shader = NEngineShaderSources::DX12_ColorClear; // 最適化消去色と異なっても警告なしで全画面を塗る。
 	Microsoft::WRL::ComPtr<ID3DBlob> VS, PS; // 任意色クリア専用の小さなプログラム。
 	if ( FAILED( D3DCompile( Shader, sizeof( Shader ) - 1, "ColorClear", nullptr, nullptr, "VS", "vs_5_0", 0, 0, &VS, nullptr ) ) || FAILED( D3DCompile( Shader, sizeof( Shader ) - 1, "ColorClear", nullptr, nullptr, "PS", "ps_5_0", 0, 0, &PS, nullptr ) ) )
 	{
