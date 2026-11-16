@@ -51,9 +51,17 @@ public:
 	EResult Execute( const FDrawCommandView& View, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend );
 	// 静的モデルを 1 つ描く（アニメーションの時間と配置を設定してから、いまの姿で描く）。Alpha・bAlphaBlend は、Execute へ渡された値。
 	EResult DrawModel( const FDrawModelData& Data, int32 Alpha, bool bAlphaBlend );
+	// GPU が変換と光を計算する経路（共有のメッシュを GPU に置く）を、使ってよいか（影・フォグ・画素ごとの光などは、CPU の経路で描く）。
+	void SetForwardPath( bool bEnable ) { bUseForwardPath = bEnable; }
 	// 借用している静的モデルの窓口（無ければ nullptr）。
 	IStaticModelSource* GetModels() const { return Models; }
 private:
+	// 光・材質・カメラの定数（b6 と同じ並び。FForwardMeshDraw::NumLightFloats 個）を、いまのライトの状態から作る。
+	void FillLightConstants( float32* Constants, FDrawRgb Bright ) const;
+	// 共有のメッシュを GPU で描けるか。
+	bool CanDrawForward( const FStaticModelDrawView& Model ) const;
+	// 共有のメッシュを、材質ごとの範囲で GPU に描かせる。描けた範囲の数を返す（先頭から数える。描けなかった範囲から先は、呼び出し側が描く）。
+	int32 DrawModelForward( const FStaticModelDrawView& Model, int32 ModelAlpha, bool bAlphaBlend );
 	// 影の絵を描いているとき、図形を光から見た深度として描く。影を落とさない図形（線・点・画像つき・半透明）は、何もせず成功。
 	bool SubmitShadowCaster( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, int32 Alpha, int32 Texture );
 	// ワールド座標を同次クリップ座標にして記録する。全入力を検査してからGPUへ渡す。
@@ -77,6 +85,7 @@ private:
 	bool bAnisotropicFilter = false; // 画像の補間が、異方性か。
 	int32 AnisotropyLevel = 16; // 異方性の最大の強さ（1 〜 16）。
 	IShaderDrawSource* ShaderSource = nullptr; // 影の描画に使うシェーダーの実行先（借用）。
+	bool bUseForwardPath = true; // GPU が変換と光を計算する経路を使うか（比べるためと、検査のために切れる）。
 	bool bShadowCasting = false; // 影の絵を描いているか。
 	FMatrix4x4 LightViewProjection; // 影の絵を描くときの、光から見た行列。
 	int32 ShadowSlotMaps[3] = { -1, -1, -1 }; // スロットごとの、使っている影の絵。

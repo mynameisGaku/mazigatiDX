@@ -468,3 +468,13 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **Character サンプル**（`Samples/Source/Character`）: `Assets/Models/Faputa/Faputa.pmx` を読み、骨を**コードで**動かす（`CModelInstance::SetFrameLocalMatrixOverride`。基準の姿を `GetFrameMatrix( Local )` で読んで、回転を掛ける）。頭・首・体の呼吸・右腕（手を振る）・左腕・耳・しっぽ。骨は名前（`センター` / `頭` / `右腕` ...）で探すので、DxLib と DX12 で番号が違っても動く。**モデルは、リポジトリに入れない**（`.gitignore` の `/Samples/Assets/Models/`。無ければ、置き場所を画面に出す）。
 - **確認**: 同じ姿勢（時計を固定）で、DxLib（PMX を直接読む）と DX12（取り込み）を並べた。形・色・画像・手を振る腕・頭の向き・耳・しっぽが一致。差: DxLib には口の歯が出て、DX12 には出ない（重ね材質の扱いか、モーフ。未確認）。
 - **検査**: `ModelRigContract` に `TestPmxImport`（小さな PMX をメモリの上で作る。骨・頂点・重み 4 種・材質・画像・左手系・壊れたファイルの拒否・骨組みとして曲がること）。144 項目。変異で確かめた。
+
+## 2026-11-16 追記: R2 の最初の縦の経路 — GPU が変換と光を計算する Forward（共有メッシュ）
+- **目的**（ロードマップ R2: 「GPU の永続頂点／index、変換と逆転置法線、材質・ライトのバッファ」）: 共有モデル（`Model3D`）を、CPU で射影・照明して毎回頂点を送る代わりに、頂点と添字を **GPU に 1 度だけ置いて**（`MeshKey`）、個体ごとの行列・光・不透明度（定数）だけを替えて描く。同じメッシュの複数の個体は、バッファを共有する。
+- **型**: `Core/Render/ForwardMeshDraw.h`（`FForwardMeshDraw`）、`IShaderDrawSource::DrawForwardMesh`（DxLib / Null は false）、`IRenderGeometry3D::GetColorFormat`（パイプラインを、描画先の形式に合わせる）、`FStaticModelDrawView::MeshKey / MeshVersion`（`CStaticModelStore` が、共有の形状の識別（`FResource::Id`、再利用しない）と版を渡す。**変形するモデル（スキン・骨の上書き・非表示）は、鍵 0 = CPU の経路**）、`FGraphicsPipelineDraw::Constants`（登録した頂点・添字のまま、描くたびに変わる定数だけを、転送領域から渡す。DX12 の `DrawGraphicsPipeline` を拡張）。
+- **DX12**: `CDX12ForwardMeshRenderer`（`Platform/DX12/Pipeline/Forward/`）が、メッシュのキャッシュ（鍵と版。版が変わったら置き直す。使われない（8192 描画）か、512 MB を超えたら古いものから手放す）と、組み込みの HLSL（`ForwardVS`: クリップ座標への変換と、頂点ごとの光（画素ごとの光と同じ式。法線は、ワールドの逆行列の転置）、`ForwardPS` / `ForwardTexturedPS`）、状態（深度・表裏・合成・画像の外側・線形補間・描画先の形式）ごとのパイプラインを持つ。b0 = 個体（クリップ・ワールド・法線の行列と、光るか・不透明度）、b6 = 光・材質・カメラ（画素ごとの光と同じ並び）。
+- **実行側**: `CGeometryCommandExecutor::DrawModel` が、`CanDrawForward`（影の絵への描画・影を受ける・フォグ・画像の変換・画素ごとの光・頂点が 65536 超・鍵なしは、不可）なら、材質の範囲ごとに `DrawForwardMesh` を呼ぶ。GPU が受け取らなかった範囲から先は、従来の CPU の経路で描く（二重に描かない）。光の定数は、`FillLightConstants`（画素ごとの光の経路と共通）。`--no-gpu-forward` で、従来の経路に切り替えられる（比べるため）。
+- **GPU の経路で表せない状態**（`false` → CPU の経路）: マスク・異方性・深度の偏り・縦横で違う画像の外側・反転 / 乗算アルファの合成。
+- **確認**: StaticModel を、時計を固定して（新しい `--model-time=<秒>`、`--model-lit`）、光なし・光ありで、GPU と CPU の経路で撮って比べた: 光なしは完全に一致（差 0）、光ありは最大 1（バイトの丸め）。Character（PMX・スキン）は、変形するので、CPU の経路のまま。
+- **検査**: 契約 `ForwardMeshContract`（`RunForwardMeshTests.ps1`、64 項目: 実行側の振り分け・行列・光・不透明度・画面のずれ・フォールバック、レンダラーのキャッシュ・パイプライン・拒否・上限・定数の中身）。画像 `RunDX12SampleImageTests.ps1` に、GPU と CPU の経路の比較（光なし・光あり）を足した（67 項目）。変異（実行側 19、レンダラー 22）で確かめた。GPU の光の式を壊すと、画像の比較が失敗することも確かめた。
+- **まだ（R2 の残り）**: 変形するモデル（GPU スキニングは R5。それまでは、毎フレーム、頂点を置く（同期の作成になるので、転送領域から渡す経路が要る））、基本図形・画像つき四角形・`Mesh3D` の GPU 経路、影・フォグ・画素ごとの光・画像の変換の GPU 経路、材質・ライトのバッファ（定数でなくバッファ）、不透明 / 切り抜き / 半透明の分類と透明の並べ替え（Span の順序を保つ契約の中で）、PBR（Unlit / DefaultLit のあと）。

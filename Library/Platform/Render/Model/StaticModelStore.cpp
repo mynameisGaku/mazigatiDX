@@ -78,6 +78,7 @@ int32 CStaticModelStore::Create( const FImportedScene& Scene, const FString& Sou
 		return -1;
 	}
 	auto Resource = MakeShared<FResource>(); // 読み込み途中の所有も局所化する。
+	Resource->Id = NextResourceId++; // 解放後も再利用しない識別（GPU の共有メッシュの鍵）。
 	Resource->TextureBackend = &Textures;
 	if ( !FStaticModelBuilder::Build( Scene, Resource->Definition, Error, bAllowRig, bAllowRig ? &Resource->VertexSources : nullptr ) )
 	{
@@ -436,7 +437,7 @@ bool CStaticModelStore::GetStaticModelDrawView( int32 Handle, FStaticModelDrawVi
 			return true;
 		}
 	}
-	Out = { Data.Vertices.GetData(), Data.Vertices.Num(), Data.Definition.Surface.Indices.GetData(), Data.Definition.Surface.Indices.Num(), Data.Sections.GetData(), Data.Sections.Num(), Instance->Opacity };
+	Out = { Data.Vertices.GetData(), Data.Vertices.Num(), Data.Definition.Surface.Indices.GetData(), Data.Definition.Surface.Indices.Num(), Data.Sections.GetData(), Data.Sections.Num(), Instance->Opacity, Data.Id, 1 }; // 共有の形状は、変わらないので、GPU に置いて使い回せる。
 	return true;
 }
 

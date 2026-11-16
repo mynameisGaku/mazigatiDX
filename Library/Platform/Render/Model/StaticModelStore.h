@@ -114,6 +114,7 @@ private:
 		TSharedPtr<const FModelRig> Rig; // 骨組み（骨・スキン・クリップ）。
 		TArray<FModelVertexSource> VertexSources; // Vertices と同じ並びの、元のメッシュと頂点。
 		bool bHasSkin = false; // スキンつきのメッシュがある（必ず、変形した頂点で描く）。
+		uint64 Id = 0; // 形状の識別（GPU の共有メッシュの鍵。解放後も再利用しない）。
 	};
 	// 個体ごとのポーズと、変形した頂点。
 	struct FInstanceRig
@@ -165,4 +166,5 @@ private:
 	mutable FMutex Lock; // 描画の実行スレッドとゲームのスレッドの両方から呼ばれる。
 	TMap<int32, FInstance> Instances; // 登録番号から個体への表。
 	int32 NextHandle = 0; // 解放後も再利用しない登録番号。
+	uint64 NextResourceId = 1; // 解放後も再利用しない形状の識別。
 };

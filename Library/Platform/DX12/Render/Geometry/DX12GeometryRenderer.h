@@ -61,6 +61,7 @@ class CDX12GeometryRenderer : public IRenderGeometry3D
 	// GPU頂点・indexの範囲を検査して直接描く。実体は登録解除後もフレーム完了まで保持する。
 	bool DrawBufferGeometry( const FGeometryBufferDraw &Draw, const FGeometryDrawState &State, const FTextureDrawView *Texture = nullptr ) override;
 	// 登録済みカスタムパイプラインとバッファ・画像スロットでMRT／深度を含むGPU描画を記録する。
+	ERenderTargetColorFormat GetColorFormat() const override { return ColorViewCount > 0 ? ColorFormats[0] : ERenderTargetColorFormat::RGBA8; }
 	bool DrawGraphicsPipeline( const FGraphicsPipelineDraw &Draw ) override;
 	// 記録した命令が参照する画像を、フレームの提出が完了するまで保持する（既に保持していれば何もしない）。256枚を超えるとfalse。
 	bool PinTexture( const FDX12TextureBinding &Texture );

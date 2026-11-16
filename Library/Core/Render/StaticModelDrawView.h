@@ -20,4 +20,6 @@ struct FStaticModelDrawView
 	const FStaticModelDrawSection* Sections = nullptr; // 全indexを隙間なく覆う材質範囲。
 	int32 NumSections = 0; // 範囲の数。
 	float32 Opacity = 1; // 個体ごとの不透明度。
+	uint64 MeshKey = 0; // 頂点の置き場（GPU の共有メッシュ）の識別。0 なら、GPU に置いて使い回さない。
+	uint64 MeshVersion = 0; // 頂点の中身の版（変わったら、置き直す）。
 };

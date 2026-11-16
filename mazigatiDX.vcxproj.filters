@@ -1231,6 +1231,9 @@
     <ClCompile Include="Library\Platform\DX12\Pipeline\Compute\DX12ComputePipelineStore.cpp">
       <Filter>Library\Platform\DX12\Pipeline\Compute</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Pipeline\Forward\DX12ForwardMeshRenderer.cpp">
+      <Filter>Library\Platform\DX12\Pipeline\Forward</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Pipeline\Geometry\DX12GeometryPipelineStore.cpp">
       <Filter>Library\Platform\DX12\Pipeline\Geometry</Filter>
     </ClCompile>
@@ -2368,6 +2371,9 @@
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Render\DrawVertex3D.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\ForwardMeshDraw.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Render\GeometryBufferDraw.h">
@@ -3848,6 +3854,9 @@
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Pipeline\Compute\DX12ComputePipelineStore.h">
       <Filter>Library\Platform\DX12\Pipeline\Compute</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Pipeline\Forward\DX12ForwardMeshRenderer.h">
+      <Filter>Library\Platform\DX12\Pipeline\Forward</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Pipeline\Geometry\DX12GeometryPipelineStore.h">
       <Filter>Library\Platform\DX12\Pipeline\Geometry</Filter>
@@ -5980,6 +5989,9 @@
     </Filter>
     <Filter Include="Library\Platform\DX12\Pipeline\Compute">
       <UniqueIdentifier>{78013B49-38FD-EFB9-DBBE-AF19B0913255}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\DX12\Pipeline\Forward">
+      <UniqueIdentifier>{BB509B24-4152-5766-3A8F-2691B0F301AE}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Platform\DX12\Pipeline\Geometry">
       <UniqueIdentifier>{CE26363D-DDC4-2FFE-A657-D93320111E59}</UniqueIdentifier>

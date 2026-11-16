@@ -9,6 +9,7 @@
 #include "Library/Framework/Render/Mesh/ModelMaterialGeometry.h"
 #include "Library/Platform/Render/Model/StaticModelStore.h"
 #include "Library/Platform/Windows/Text/WindowsFontStore.h"
+#include "Library/Platform/DX12/Pipeline/Forward/DX12ForwardMeshRenderer.h"
 #include "Library/Platform/DX12/Pipeline/Shader/DX12ShaderService.h"
 
 
@@ -160,6 +161,8 @@ public:
 	bool CompileShader( EShaderStage Stage, const char* Source, int32 NumBytes, const char* SourceName, const char* EntryPoint, const char* ShaderModel, TArray<uint8>& OutCode, FString& OutMessage ) override;
 	bool IsShaderValid( int32 Shader, EShaderStage Stage ) const override;
 	bool DrawShader( const FShaderDrawRequest& Request, IRenderGeometry3D& Geometry ) override;
+	// 共有のメッシュを GPU に置いて、変換と光を GPU で計算して描く（Forward。R2）。
+	bool DrawForwardMesh( const FForwardMeshDraw& Draw, IRenderGeometry3D& Geometry ) override;
 	void SetShadowPass( int32 ShadowMap, const FMatrix4x4& LightViewProjection, float32 AdjustDepth, int32 Width, int32 Height ) override;
 	bool GetShadowPass( int32 ShadowMap, FMatrix4x4& OutLightViewProjection, float32& OutAdjustDepth, int32& OutWidth, int32& OutHeight ) const override;
 	// シャドウマップ（影の絵）。光から見た深度を書く、R32Floatの描画先（と深度）として作る。
@@ -208,5 +211,6 @@ private:
 	TMap<int32, TSharedPtr<const FModelMaterialGeometry>> ModelMaterialGeometries; // モデル材質効果の形状（番号から）。
 	int32 NextModelMaterialGeometry = 1; // 解放後も再利用しない形状の番号。
 	CWindowsFontStore Fonts; // フォントの番号の表（GPUを使わない）。
+	CDX12ForwardMeshRenderer ForwardMeshes; // GPU の共有メッシュ（画像の登録より後に作り、先に手放す）。
 	CDX12ShaderService ShaderService; // シェーダーの登録・パイプラインの作成・描画（画像の登録より後に作り、先に手放す）。
 };

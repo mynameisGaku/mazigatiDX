@@ -47,7 +47,10 @@ void CDX12AssetBackendSubsystem::Initialize( FSubsystemCollection& Collection )
 	}
 	GpuMemory = Collection.InitializeDependency<IGpuMemoryInfo>();
 	SoundStore = Collection.InitializeDependency<CWindowsSoundStoreSubsystem>(); // 音の登録（DX12のとき作られる）。
-	ShaderService.Initialize( Collection.InitializeDependency<IGraphicsPipelineResources>(), Collection.InitializeDependency<IRenderBufferResources>(), &Textures );
+	IGraphicsPipelineResources* GraphicsPipelines = Collection.InitializeDependency<IGraphicsPipelineResources>();
+	IRenderBufferResources* BufferResources = Collection.InitializeDependency<IRenderBufferResources>();
+	ShaderService.Initialize( GraphicsPipelines, BufferResources, &Textures );
+	ForwardMeshes.Initialize( GraphicsPipelines, BufferResources, &Textures );
 	GImGuiTextureOwner = this; // エディタのプレビューなどが、画像を ImGui へ表示できるようにする。
 	NDebugUI::FImGuiTextureCallbacks Callbacks;
 	Callbacks.GetTexture = &GetDX12ImGuiTexture;
@@ -60,6 +63,7 @@ void CDX12AssetBackendSubsystem::Deinitialize()
 	GImGuiTextureOwner = nullptr;
 	SoundStore = nullptr;
 	GpuMemory = nullptr;
+	ForwardMeshes.Shutdown(); // 置いたメッシュとパイプラインを、先に手放す。
 	ShaderService.Shutdown(); // パイプラインと空の画像を、先に手放す。
 	Models.Reset(); // 共有モデルが所有する画像を、先に登録から外す。
 	{
@@ -449,6 +453,11 @@ bool CDX12AssetBackendSubsystem::IsShaderValid( int32 Shader, EShaderStage Stage
 bool CDX12AssetBackendSubsystem::DrawShader( const FShaderDrawRequest& Request, IRenderGeometry3D& Geometry )
 {
 	return ShaderService.DrawShader( Request, Geometry );
+}
+
+bool CDX12AssetBackendSubsystem::DrawForwardMesh( const FForwardMeshDraw& Draw, IRenderGeometry3D& Geometry )
+{
+	return ForwardMeshes.Draw( Draw, Geometry );
 }
 
 void CDX12AssetBackendSubsystem::SetShadowPass( int32 ShadowMap, const FMatrix4x4& LightViewProjection, float32 AdjustDepth, int32 Width, int32 Height )

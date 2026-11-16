@@ -477,6 +477,7 @@
     <ClCompile Include="Library\Platform\DX12\ImGui\Frame\DX12ImGuiFrameRenderer.cpp" />
     <ClCompile Include="Library\Platform\DX12\ImGui\Render\DX12ImGuiRenderer.cpp" />
     <ClCompile Include="Library\Platform\DX12\Pipeline\Compute\DX12ComputePipelineStore.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Pipeline\Forward\DX12ForwardMeshRenderer.cpp" />
     <ClCompile Include="Library\Platform\DX12\Pipeline\Geometry\DX12GeometryPipelineStore.cpp" />
     <ClCompile Include="Library\Platform\DX12\Pipeline\Graphics\DX12GraphicsPipelineStore.cpp" />
     <ClCompile Include="Library\Platform\DX12\Pipeline\Shader\DX12ShaderService.cpp" />
@@ -858,6 +859,7 @@
     <ClInclude Include="Library\Core\Render\ComputeTextureSlot.h" />
     <ClInclude Include="Library\Core\Render\DrawSpan.h" />
     <ClInclude Include="Library\Core\Render\DrawVertex3D.h" />
+    <ClInclude Include="Library\Core\Render\ForwardMeshDraw.h" />
     <ClInclude Include="Library\Core\Render\GeometryBufferDraw.h" />
     <ClInclude Include="Library\Core\Render\GeometryBufferView.h" />
     <ClInclude Include="Library\Core\Render\GeometryDrawState.h" />
@@ -1351,6 +1353,7 @@
     <ClInclude Include="Library\Platform\DX12\Pipeline\DX12BlendState.h" />
     <ClInclude Include="Library\Platform\DX12\Pipeline\Compute\DX12ComputePipelineBinding.h" />
     <ClInclude Include="Library\Platform\DX12\Pipeline\Compute\DX12ComputePipelineStore.h" />
+    <ClInclude Include="Library\Platform\DX12\Pipeline\Forward\DX12ForwardMeshRenderer.h" />
     <ClInclude Include="Library\Platform\DX12\Pipeline\Geometry\DX12GeometryPipelineStore.h" />
     <ClInclude Include="Library\Platform\DX12\Pipeline\Graphics\DX12GraphicsPipelineBinding.h" />
     <ClInclude Include="Library\Platform\DX12\Pipeline\Graphics\DX12GraphicsPipelineStore.h" />

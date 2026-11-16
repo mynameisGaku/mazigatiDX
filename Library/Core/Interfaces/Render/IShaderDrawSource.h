@@ -3,6 +3,7 @@
 #include "Library/Core/Collection/ArrayView.h"
 #include "Library/Core/Interfaces/Render/IRenderGeometry3D.h"
 #include "Library/Core/Interfaces/Render/IShader.h"
+#include "Library/Core/Render/ForwardMeshDraw.h"
 #include "Library/Core/Render/GeometryDrawState.h"
 #include "Library/Core/Render/RenderTargetFormat.h"
 #include "Library/Math/Matrix4x4.h"
@@ -83,6 +84,8 @@ public:
 	virtual bool IsShaderValid( int32 Shader, EShaderStage Stage ) const = 0;
 	// 描く。シェーダーの組み合わせが合わない・パイプラインを作れない・GPU に渡せないときは false（何も描かない）。
 	virtual bool DrawShader( const FShaderDrawRequest& Request, IRenderGeometry3D& Geometry ) = 0;
+	// 共有のメッシュを GPU に置いて、個体ごとの行列・光で描く（GPU が変換と光を計算する Forward。FForwardMeshDraw）。使えない実行先・条件に合わない描画は false（何も描かない。呼び出し側が、CPU の経路で描く）
+	virtual bool DrawForwardMesh( const FForwardMeshDraw& /*Draw*/, IRenderGeometry3D& /*Geometry*/ ) { return false; }
 	// 影の絵（シャドウマップ）を描いたときの、光から見た行列・補正の深さ・大きさを覚える（影を受ける描画が、あとで引く）。
 	virtual void SetShadowPass( int32 /*ShadowMap*/, const FMatrix4x4& /*LightViewProjection*/, float32 /*AdjustDepth*/, int32 /*Width*/, int32 /*Height*/ ) {}
 	// 覚えてある、最後の影の絵の値。まだ描いていないときは false。

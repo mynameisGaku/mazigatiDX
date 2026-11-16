@@ -992,9 +992,18 @@ bool CDX12GeometryRenderer::DrawGraphicsPipeline( const FGraphicsPipelineDraw &D
 	{
 		return false;
 	}
-	if ( Draw.Buffers.Num() != Pipeline.BufferSlots.Num() || ( Draw.Buffers.Num() > 0 && !Draw.Buffers.GetData() ) || Draw.Textures.Num() != Pipeline.TextureSlots.Num() || ( Draw.Textures.Num() > 0 && !Draw.Textures.GetData() ) )
+	const int32 NumConstants = Draw.Constants.Num(); // 先頭の枠は、登録せずに渡す定数（描くたびに変わる値）。
+	if ( NumConstants > Pipeline.BufferSlots.Num() || Draw.Buffers.Num() != Pipeline.BufferSlots.Num() - NumConstants || ( Draw.Buffers.Num() > 0 && !Draw.Buffers.GetData() ) || ( NumConstants > 0 && !Draw.Constants.GetData() ) || Draw.Textures.Num() != Pipeline.TextureSlots.Num() || ( Draw.Textures.Num() > 0 && !Draw.Textures.GetData() ) )
 	{
 		return false;
+	}
+	for ( int32 i = 0; i < NumConstants; ++i )
+	{
+		const FGraphicsConstantBytes &Bytes = Draw.Constants[i];
+		if ( Pipeline.BufferSlots[i].Layout != EGraphicsBufferLayout::Constant || !Bytes.Data || Bytes.Size == 0 || Bytes.Size > 65536 || Bytes.Size < Pipeline.MinimumBytes[i] )
+		{
+			return false;
+		}
 	}
 	FDX12BufferBinding Vertices, Indices; // 全範囲が有効な場合だけ描画を記録する。
 	if ( !Buffers->AcquireGeometryBuffer( Draw.VertexBuffer, Vertices ) || ( bIndexed && !Buffers->AcquireGeometryBuffer( Draw.IndexBuffer, Indices ) ) )
@@ -1008,11 +1017,11 @@ bool CDX12GeometryRenderer::DrawGraphicsPipeline( const FGraphicsPipelineDraw &D
 	{
 		return false;
 	}
-	TArray<FDX12BufferBinding> SlotBuffers; // Root CBV／Root SRVとして結合するバッファ。
-	SlotBuffers.SetNum( Pipeline.BufferSlots.Num() );
-	for ( int32 i = 0; i < Pipeline.BufferSlots.Num(); ++i )
+	TArray<FDX12BufferBinding> SlotBuffers; // Root CBV／Root SRVとして結合するバッファ（定数を渡した枠の続き）。
+	SlotBuffers.SetNum( Draw.Buffers.Num() );
+	for ( int32 i = 0; i < Draw.Buffers.Num(); ++i )
 	{
-		const FGraphicsBufferSlot &Slot = Pipeline.BufferSlots[i];
+		const FGraphicsBufferSlot &Slot = Pipeline.BufferSlots[NumConstants + i];
 		if ( !Buffers->AcquireComputeBuffer( Draw.Buffers[i], ERenderBufferShaderAccess::Read, SlotBuffers[i] ) )
 		{
 			return false;
@@ -1020,7 +1029,7 @@ bool CDX12GeometryRenderer::DrawGraphicsPipeline( const FGraphicsPipelineDraw &D
 		const uint64 Size = SlotBuffers[i].Size;
 		if ( Slot.Layout == EGraphicsBufferLayout::Constant )
 		{
-			if ( Size == 0 || ( Size % 256 ) != 0 || Size > 65536 || Size < Pipeline.MinimumBytes[i] )
+			if ( Size == 0 || ( Size % 256 ) != 0 || Size > 65536 || Size < Pipeline.MinimumBytes[NumConstants + i] )
 			{
 				return false;
 			}
@@ -1094,6 +1103,36 @@ bool CDX12GeometryRenderer::DrawGraphicsPipeline( const FGraphicsPipelineDraw &D
 	{
 		return false;
 	}
+	TArray<CDX12UploadArena::FAllocation> ConstantAllocs; // 登録せずに渡された定数は、フレームの転送領域へ載せる（256の境界へ揃える）。
+	if ( NumConstants > 0 )
+	{
+		if ( !UploadArena || UploadTicket == 0 )
+		{
+			return false;
+		}
+		uint64 ConstantBytes = 0;
+		for ( const FGraphicsConstantBytes &Bytes : Draw.Constants )
+		{
+			ConstantBytes += ( static_cast<uint64>( Bytes.Size ) + 255ull ) / 256ull * 256ull + 256ull;
+		}
+		if ( UploadBytes + ConstantBytes > 64ull * 1024ull * 1024ull )
+		{
+			return false;
+		}
+		for ( const FGraphicsConstantBytes &Bytes : Draw.Constants )
+		{
+			const uint64 Size = ( static_cast<uint64>( Bytes.Size ) + 255ull ) / 256ull * 256ull;
+			CDX12UploadArena::FAllocation Alloc = {};
+			if ( !UploadArena->Allocate( UploadTicket, Size, 256, Alloc ) )
+			{
+				return false;
+			}
+			FMemory::Memzero( Alloc.CpuAddress, static_cast<usize>( Size ) ); // 余りは0。
+			FMemory::Memcpy( Alloc.CpuAddress, Bytes.Data, static_cast<usize>( Bytes.Size ) );
+			ConstantAllocs.Add( Alloc );
+		}
+		UploadBytes += ConstantBytes;
+	}
 	CommitBufferPins( TArrayView<const FDX12BufferBinding>( BufferCandidates.GetData(), BufferCandidates.Num() ) );
 	++GraphicsDrawCount;
 
@@ -1105,7 +1144,7 @@ bool CDX12GeometryRenderer::DrawGraphicsPipeline( const FGraphicsPipelineDraw &D
 	}
 	for ( int32 i = 0; i < SlotBuffers.Num(); ++i )
 	{
-		const D3D12_RESOURCE_STATES RoleState = Pipeline.BufferSlots[i].Layout == EGraphicsBufferLayout::Constant ? D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER : ( D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE );
+		const D3D12_RESOURCE_STATES RoleState = Pipeline.BufferSlots[NumConstants + i].Layout == EGraphicsBufferLayout::Constant ? D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER : ( D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE );
 		AccumulateBufferReadState( Barriers, SlotBuffers[i].Resource.Get(), RoleState );
 	}
 	Commands->ResourceBarrier( static_cast<UINT>( Barriers.Num() ), Barriers.GetData() );
@@ -1117,11 +1156,15 @@ bool CDX12GeometryRenderer::DrawGraphicsPipeline( const FGraphicsPipelineDraw &D
 	}
 	Commands->SetGraphicsRootSignature( Pipeline.Root.Get() );
 	Commands->SetPipelineState( Pipeline.Pipeline.Get() );
+	for ( int32 i = 0; i < ConstantAllocs.Num(); ++i )
+	{
+		Commands->SetGraphicsRootConstantBufferView( static_cast<UINT>( i ), ConstantAllocs[i].GpuAddress );
+	}
 	for ( int32 i = 0; i < SlotBuffers.Num(); ++i )
 	{
-		const UINT RootIndex = static_cast<UINT>( i );
+		const UINT RootIndex = static_cast<UINT>( NumConstants + i );
 		const D3D12_GPU_VIRTUAL_ADDRESS GpuAddress = SlotBuffers[i].Resource->GetGPUVirtualAddress();
-		if ( Pipeline.BufferSlots[i].Layout == EGraphicsBufferLayout::Constant )
+		if ( Pipeline.BufferSlots[NumConstants + i].Layout == EGraphicsBufferLayout::Constant )
 		{
 			Commands->SetGraphicsRootConstantBufferView( RootIndex, GpuAddress );
 		}
@@ -1132,7 +1175,7 @@ bool CDX12GeometryRenderer::DrawGraphicsPipeline( const FGraphicsPipelineDraw &D
 	}
 	for ( int32 i = 0; i < SlotTextures.Num(); ++i )
 	{
-		const UINT RootIndex = static_cast<UINT>( SlotBuffers.Num() + i );
+		const UINT RootIndex = static_cast<UINT>( NumConstants + SlotBuffers.Num() + i );
 		Commands->SetGraphicsRootDescriptorTable( RootIndex, D3D12_GPU_DESCRIPTOR_HANDLE{ SlotTextures[i].SrvGpuDescriptor } );
 	}
 	const D3D12_CPU_DESCRIPTOR_HANDLE Dsv = DsvHeap ? DsvHeap->GetCPUDescriptorHandleForHeapStart() : D3D12_CPU_DESCRIPTOR_HANDLE{};

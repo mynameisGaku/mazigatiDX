@@ -4,6 +4,7 @@
 #include "Library/Core/Render/GeometryBufferDraw.h"
 #include "Library/Core/Render/GeometryDrawState.h"
 #include "Library/Core/Render/GraphicsPipelineDraw.h"
+#include "Library/Core/Render/RenderTargetFormat.h"
 #include "Library/Core/Render/TextureDrawView.h"
 
 // APIに依存しない頂点色・画像の3D実行先。公開のフロント側はゲームスレッド・フレーム内で呼ぶ。
@@ -17,6 +18,8 @@ public:
 	virtual int32 GetWidth() const = 0;
 	// 論理画面の高さ。
 	virtual int32 GetHeight() const = 0;
+	// いま描いている先（1 番目の色の描画先）の画素形式。パイプラインを、描画先に合わせて作るために使う。
+	virtual ERenderTargetColorFormat GetColorFormat() const { return ERenderTargetColorFormat::RGBA8; }
 	// 頂点と状態を呼び出し中に複写し、前の命令より後に描く。
 	// VerticesはNumVertices個の有限な同次座標。失敗時はfalseで描画を記録しない。
 	virtual bool DrawGeometry( const FGeometryVertex* Vertices, int32 NumVertices, const FGeometryDrawState& State ) = 0;

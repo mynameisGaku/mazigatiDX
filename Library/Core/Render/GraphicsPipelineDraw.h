@@ -6,6 +6,13 @@
 #include "Library/Core/Render/GraphicsPipelineHandle.h"
 #include "Library/Core/Render/TextureResourceHandle.h"
 
+// 定数バッファ 1 つの中身（呼び出しの間だけ借りる）。
+struct FGraphicsConstantBytes
+{
+	const uint8* Data = nullptr;
+	uint32 Size = 0;
+};
+
 // カスタムグラフィックスパイプラインを使った1回のGPUバッファ描画命令。
 // 配列はDrawGraphicsPipelineの呼び出し中だけ借り、実体の寿命は実行先がGPU完了まで保持する。
 struct FGraphicsPipelineDraw
@@ -26,17 +33,13 @@ struct FGraphicsPipelineDraw
 	uint32 IndexCount = 0;
 	// index値のビット幅。
 	EGeometryIndexFormat IndexFormat = EGeometryIndexFormat::UInt16;
-	// パイプラインのBufferSlots順に並べるバッファ。
+	// パイプラインのBufferSlots順に並べるバッファ。先頭のConstants.Num()個の枠は、下のConstantsが受け持つので、ここには、その続きの枠だけを並べる。
 	TArrayView<const FBufferResourceHandle> Buffers;
 	// パイプラインのTextureSlots順に並べる画像（パス書き込み中のターゲットは禁止）。
 	TArrayView<const FTextureResourceHandle> Textures;
-};
-
-// 定数バッファ 1 つの中身（呼び出しの間だけ借りる）。
-struct FGraphicsConstantBytes
-{
-	const uint8* Data = nullptr;
-	uint32 Size = 0;
+	// 任意。BufferSlotsの先頭から順に、定数バッファの中身を、登録せずに渡す（描くたびに変わる値。頂点・添字は、登録したバッファのまま使える）。
+	// 受け持つ枠は、すべてConstantで、大きさはシェーダーの宣言以上（256の倍数へ切り上げて転送する）。
+	TArrayView<const FGraphicsConstantBytes> Constants;
 };
 
 // カスタムグラフィックスパイプラインを使った、1 回限りの描画。頂点・添字・定数を、GPU のバッファとして登録せず、フレームごとの転送領域へ載せて渡す

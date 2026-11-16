@@ -9,6 +9,7 @@
 #include "Library/Framework/Render/Draw/DrawModelFramePoseData.h"
 #include "Library/Framework/Render/Draw/DrawRibbonMesh.h"
 #include "Library/Platform/System/BackendSupport.h"
+#include "Library/Platform/System/CommandLine.h"
 
 namespace
 {
@@ -113,6 +114,43 @@ namespace
 
 CGeometryCommandExecutor::CGeometryCommandExecutor( IRenderGeometry3D* InGeometry, ITextureDrawSource* InTextures, IGeometryBufferSource* InBuffers, IStaticModelSource* InModels ) : Textures( InTextures ), Models( InModels ), Buffers( InBuffers ), Geometry( InGeometry )
 {
+}
+
+void CGeometryCommandExecutor::FillLightConstants( float32* Constants, FDrawRgb Bright ) const
+{
+	// 光・材質・カメラ（b6）。並びは、シェーダーの cbPixelLight と同じ（先頭の 7 つ + ライトごとに 7 つの float4）。
+	FLight Active[FLight::MaxActiveLights];
+	const int32 NumLights = Lighting.CollectActiveLights( Active );
+	const FSurfaceMaterial& Material = Lighting.GetMaterial();
+	const FLightingOptions& Options = Lighting.GetOptions();
+	const FColor GlobalAmbient = Lighting.GetAmbient();
+	const auto Set = [&]( int32 Index, float32 X, float32 Y, float32 Z, float32 W )
+	{
+		Constants[Index * 4] = X;
+		Constants[Index * 4 + 1] = Y;
+		Constants[Index * 4 + 2] = Z;
+		Constants[Index * 4 + 3] = W;
+	};
+	Set( 0, Camera.Position.x, Camera.Position.y, Camera.Position.z, static_cast<float32>( NumLights ) );
+	Set( 1, Material.Emissive.r + Material.Ambient.r * GlobalAmbient.r, Material.Emissive.g + Material.Ambient.g * GlobalAmbient.g, Material.Emissive.b + Material.Ambient.b * GlobalAmbient.b, 0.0f );
+	Set( 2, Material.Diffuse.r, Material.Diffuse.g, Material.Diffuse.b, Material.bUseVertexDiffuse ? 1.0f : 0.0f );
+	Set( 3, Material.Specular.r, Material.Specular.g, Material.Specular.b, Material.bUseVertexSpecular ? 1.0f : 0.0f );
+	Set( 4, Material.Ambient.r, Material.Ambient.g, Material.Ambient.b, Material.Shininess );
+	Set( 5, Options.bUseSpecular ? 1.0f : 0.0f, Options.bWrapLighting ? 1.0f : 0.0f, Options.bIgnoreSurfaceAngle ? 1.0f : 0.0f, 0.0f );
+	Set( 6, Bright.R / 255.0f, Bright.G / 255.0f, Bright.B / 255.0f, 1.0f );
+	for ( int32 Index = 0; Index < NumLights; ++Index )
+	{
+		const FLight& Light = Active[Index];
+		const FVector3 Direction = Light.Direction.Normalized(); // 向きは、長さを問わない値なので、正規化して渡す。
+		const int32 Base = 7 + Index * 7;
+		Set( Base, Light.Position.x, Light.Position.y, Light.Position.z, Light.Type == EDrawLightType::Directional ? 0.0f : Light.Type == EDrawLightType::Point ? 1.0f : 2.0f );
+		Set( Base + 1, Direction.x, Direction.y, Direction.z, Light.Range );
+		Set( Base + 2, Light.ConstantAttenuation, Light.LinearAttenuation, Light.QuadraticAttenuation, NMath::Cos( Light.OuterAngle * 0.5f ) );
+		Set( Base + 3, NMath::Cos( Light.InnerAngle * 0.5f ), 0.0f, 0.0f, 0.0f );
+		Set( Base + 4, Light.Diffuse.r, Light.Diffuse.g, Light.Diffuse.b, 0.0f );
+		Set( Base + 5, Light.Specular.r, Light.Specular.g, Light.Specular.b, 0.0f );
+		Set( Base + 6, Light.Ambient.r, Light.Ambient.g, Light.Ambient.b, 0.0f );
+	}
 }
 
 bool CGeometryCommandExecutor::Submit( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend, int32 Texture, bool bLit )
@@ -316,40 +354,8 @@ bool CGeometryCommandExecutor::Submit( const TArray<FDrawVertex3D>& Vertices, EG
 	State.bAlphaBlend = bAlphaBlend;
 	if ( bPixelLit )
 	{
-		// 光・材質・カメラ（b6）。並びは、シェーダーの cbPixelLight と同じ（先頭の 7 つ + ライトごとに 7 つの float4）。
 		float32 Constants[( 7 + FLight::MaxActiveLights * 7 ) * 4] = {};
-		FLight Active[FLight::MaxActiveLights];
-		const int32 NumLights = Lighting.CollectActiveLights( Active );
-		const FSurfaceMaterial& Material = Lighting.GetMaterial();
-		const FLightingOptions& Options = Lighting.GetOptions();
-		const FColor GlobalAmbient = Lighting.GetAmbient();
-		const auto Set = [&]( int32 Index, float32 X, float32 Y, float32 Z, float32 W )
-		{
-			Constants[Index * 4] = X;
-			Constants[Index * 4 + 1] = Y;
-			Constants[Index * 4 + 2] = Z;
-			Constants[Index * 4 + 3] = W;
-		};
-		Set( 0, Camera.Position.x, Camera.Position.y, Camera.Position.z, static_cast<float32>( NumLights ) );
-		Set( 1, Material.Emissive.r + Material.Ambient.r * GlobalAmbient.r, Material.Emissive.g + Material.Ambient.g * GlobalAmbient.g, Material.Emissive.b + Material.Ambient.b * GlobalAmbient.b, 0.0f );
-		Set( 2, Material.Diffuse.r, Material.Diffuse.g, Material.Diffuse.b, Material.bUseVertexDiffuse ? 1.0f : 0.0f );
-		Set( 3, Material.Specular.r, Material.Specular.g, Material.Specular.b, Material.bUseVertexSpecular ? 1.0f : 0.0f );
-		Set( 4, Material.Ambient.r, Material.Ambient.g, Material.Ambient.b, Material.Shininess );
-		Set( 5, Options.bUseSpecular ? 1.0f : 0.0f, Options.bWrapLighting ? 1.0f : 0.0f, Options.bIgnoreSurfaceAngle ? 1.0f : 0.0f, 0.0f );
-		Set( 6, Bright.R / 255.0f, Bright.G / 255.0f, Bright.B / 255.0f, 1.0f );
-		for ( int32 Index = 0; Index < NumLights; ++Index )
-		{
-			const FLight& Light = Active[Index];
-			const FVector3 Direction = Light.Direction.Normalized(); // 向きは、長さを問わない値なので、正規化して渡す。
-			const int32 Base = 7 + Index * 7;
-			Set( Base, Light.Position.x, Light.Position.y, Light.Position.z, Light.Type == EDrawLightType::Directional ? 0.0f : Light.Type == EDrawLightType::Point ? 1.0f : 2.0f );
-			Set( Base + 1, Direction.x, Direction.y, Direction.z, Light.Range );
-			Set( Base + 2, Light.ConstantAttenuation, Light.LinearAttenuation, Light.QuadraticAttenuation, NMath::Cos( Light.OuterAngle * 0.5f ) );
-			Set( Base + 3, NMath::Cos( Light.InnerAngle * 0.5f ), 0.0f, 0.0f, 0.0f );
-			Set( Base + 4, Light.Diffuse.r, Light.Diffuse.g, Light.Diffuse.b, 0.0f );
-			Set( Base + 5, Light.Specular.r, Light.Specular.g, Light.Specular.b, 0.0f );
-			Set( Base + 6, Light.Ambient.r, Light.Ambient.g, Light.Ambient.b, 0.0f );
-		}
+		FillLightConstants( Constants, Bright );
 		FShaderConstantData Constant;
 		Constant.Stage = static_cast<int32>( EShaderStage::Pixel );
 		Constant.Slot = 6;
@@ -512,6 +518,68 @@ bool CGeometryCommandExecutor::BuildShaderQuad( const FDrawShaderQuad3DData& Dat
 	return true;
 }
 
+bool CGeometryCommandExecutor::CanDrawForward( const FStaticModelDrawView& Model ) const
+{
+	static const bool bEnabledByCommandLine = !NCommandLine::HasFlag( "no-gpu-forward" ); // 比べるための切り替え（--no-gpu-forward で、従来の CPU の経路にする）。
+	return bEnabledByCommandLine && ShaderSource != nullptr && Geometry != nullptr && Model.MeshKey != 0 && Model.NumVertices <= 65536 && Model.NumIndices <= 196608 && !bShadowCasting && ReceiverSlot < 0 && Fog.Mode == 0 && HeightFog.Mode == 0
+		&& TextureTransform.Enabled == 0 && !( Lighting.IsEnabled() && Lighting.GetOptions().bPixelLighting ) && Camera.IsValid() && Geometry->GetWidth() > 0 && Geometry->GetHeight() > 0 && bUseForwardPath;
+}
+
+int32 CGeometryCommandExecutor::DrawModelForward( const FStaticModelDrawView& Model, int32 ModelAlpha, bool bAlphaBlend )
+{
+	const FCameraViewport Viewport = { Geometry->GetWidth(), Geometry->GetHeight() };
+	const FMatrix4x4 Transform = World * Camera.GetViewMatrix() * Camera.GetProjectionMatrix( Viewport ); // ローカルからクリップへの変換。
+	FForwardMeshDraw Draw;
+	const float32 ShiftX = 2.0f * Camera.ScreenOffset.x / Viewport.Width, ShiftY = 2.0f * Camera.ScreenOffset.y / Viewport.Height; // 画面のずれ（クリップ座標の x・y に w の倍数を足す）。
+	FMatrix4x4 Clip = Transform;
+	for ( int32 Row = 0; Row < 4; ++Row )
+	{
+		Clip.m[Row][0] = Transform.m[Row][0] + ShiftX * Transform.m[Row][3];
+		Clip.m[Row][1] = Transform.m[Row][1] - ShiftY * Transform.m[Row][3];
+	}
+	FMatrix4x4 NormalMatrix = World; // 法線は、逆行列の転置で変換する（一様でない拡大でも、面に垂直なまま）。逆行列が無いときは、そのままの変換。
+	FMatrix4x4 InverseWorld;
+	if ( World.TryInverse( InverseWorld ) )
+	{
+		NormalMatrix = InverseWorld.Transposed();
+	}
+	FMemory::Memcpy( Draw.ClipMatrix, Clip.m, sizeof( Draw.ClipMatrix ) );
+	FMemory::Memcpy( Draw.World, World.m, sizeof( Draw.World ) );
+	FMemory::Memcpy( Draw.NormalMatrix, NormalMatrix.m, sizeof( Draw.NormalMatrix ) );
+	static_assert( sizeof( FMatrix4x4 ) == sizeof( Draw.ClipMatrix ), "FMatrix4x4 must be 16 floats" );
+	FillLightConstants( Draw.Lighting, FDrawRgb() ); // モデルは、描画の明るさ（Bright）を使わない（従来の経路と同じ）。
+	Draw.MeshKey = Model.MeshKey;
+	Draw.MeshVersion = Model.MeshVersion;
+	Draw.Vertices = Model.Vertices;
+	Draw.NumVertices = Model.NumVertices;
+	Draw.Indices = Model.Indices;
+	Draw.NumIndices = Model.NumIndices;
+	Draw.AlphaScale = static_cast<float32>( ModelAlpha ) / 255.0f;
+	Draw.bLit = Lighting.IsEnabled();
+	bool bAnyTranslucent = false; // 頂点のアルファが 1 未満のものがあれば、合成して描く（画像の透明画素と同じ）。
+	for ( int32 Index = 0; Index < Model.NumVertices && !bAnyTranslucent; ++Index )
+	{
+		bAnyTranslucent = Model.Vertices[Index].Diffuse[3] < 255;
+	}
+	int32 NumDrawn = 0;
+	for ( int32 SectionIndex = 0; SectionIndex < Model.NumSections; ++SectionIndex )
+	{
+		const FStaticModelDrawSection& Section = Model.Sections[SectionIndex];
+		Draw.FirstIndex = Section.FirstIndex;
+		Draw.IndexCount = Section.NumIndices;
+		Draw.Texture = Section.Texture;
+		Draw.State = State;
+		Draw.State.Topology = EGeometryTopology::Triangles;
+		Draw.State.bAlphaBlend = bAlphaBlend || ModelAlpha < 255 || Section.Texture >= 0 || bAnyTranslucent;
+		if ( !ShaderSource->DrawForwardMesh( Draw, *Geometry ) )
+		{
+			break; // 描けなかった範囲から先は、CPU の経路で描く。
+		}
+		++NumDrawn;
+	}
+	return NumDrawn;
+}
+
 CGeometryCommandExecutor::EResult CGeometryCommandExecutor::DrawModel( const FDrawModelData& Data, int32 Alpha, bool bAlphaBlend )
 {
 	FStaticModelDrawView Model; // 同期実行中だけ借りる不変形状。
@@ -581,8 +649,9 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::DrawModel( const FDr
 	FMemory::Memcpy( Matrix.M, Data.M, sizeof( Data.M ) );
 	World = ToMatrix( Matrix );
 	const int32 ModelAlpha = NMath::Clamp( static_cast<int32>( Alpha * Model.Opacity + 0.5f ), 0, 255 ); // 個体の不透明度を一度だけ掛ける。
+	const int32 NumForward = CanDrawForward( Model ) ? DrawModelForward( Model, ModelAlpha, bAlphaBlend ) : 0; // GPU が変換と光を計算できる範囲は、共有のメッシュで描く。
 	bool bSuccess = true; // GPU作成失敗時も配置は復元する。
-	for ( int32 SectionIndex = 0; SectionIndex < Model.NumSections && bSuccess; ++SectionIndex )
+	for ( int32 SectionIndex = NumForward; SectionIndex < Model.NumSections && bSuccess; ++SectionIndex )
 	{
 		const auto& Section = Model.Sections[SectionIndex]; // 三角形順を保つ範囲。
 		for ( int32 Offset = 0; Offset < Section.NumIndices && bSuccess; )
