@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "StaticModelBuilder.h"
+#include "Library/Core/Collection/Map.h"
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Types/Numeric.h"
 
@@ -239,9 +240,10 @@ bool FStaticModelBuilder::Build( const FImportedScene& Scene, FStaticModelDefini
 		}
 	}
 	// 材質ごとに頂点を分け、reference色に拡散色を一度だけ含める。
-	TArray<FMeshVertex> Colored; // 三角形順に展開した頂点。
+	TArray<FMeshVertex> Colored; // 材質ごとの色を含めた頂点（同じ元の頂点を同じ材質で使うものは、1 つにまとめる）。
 	TArray<FModelVertexSource> ColoredSources;
-	Colored.Reserve( Result.Surface.Indices.Num() );
+	TMap<uint64, uint32> Welded; // （元の頂点の番号, 材質）-> 頂点列の番号。
+	Colored.Reserve( Result.Surface.Vertices.Num() );
 	for ( const auto& Section : Result.Surface.Sections )
 	{
 		FModelTriangleListInfo List; // 連続した描画範囲を構造にも記録する。
@@ -252,13 +254,22 @@ bool FStaticModelBuilder::Build( const FImportedScene& Scene, FStaticModelDefini
 		const auto& Material = Result.Surface.Materials[Section.MaterialIndex]; // 同じ範囲の拡散色。
 		for ( int32 Index = Section.FirstIndex; Index < Section.FirstIndex + Section.NumIndices; ++Index )
 		{
-			FMeshVertex Value = Result.Surface.Vertices[Result.Surface.Indices[Index]]; // 色を確定した頂点。
+			const uint32 Raw = Result.Surface.Indices[Index]; // 元の頂点（全メッシュを通した番号）。
+			const uint64 Key = ( static_cast<uint64>( Raw ) << 32 ) | static_cast<uint32>( Section.MaterialIndex ); // 色は、材質だけで決まる。
+			if ( const uint32* Found = Welded.Find( Key ) )
+			{
+				Result.Surface.Indices[Index] = *Found;
+				continue;
+			}
+			FMeshVertex Value = Result.Surface.Vertices[Raw]; // 色を確定した頂点。
 			for ( int32 Channel = 0; Channel < 4; ++Channel )
 			{
 				Value.Color[Channel] = ColorByte( Material.Diffuse[Channel] );
 			}
-			ColoredSources.Add( RawSources[Result.Surface.Indices[Index]] );
-			Result.Surface.Indices[Index] = static_cast<uint32>( Colored.Add( Value ) );
+			ColoredSources.Add( RawSources[Raw] );
+			const uint32 Added = static_cast<uint32>( Colored.Add( Value ) );
+			Welded.Add( Key, Added );
+			Result.Surface.Indices[Index] = Added;
 		}
 	}
 	Result.Surface.Vertices = MoveTemp( Colored );

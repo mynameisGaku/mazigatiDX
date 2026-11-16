@@ -521,7 +521,7 @@ bool CGeometryCommandExecutor::BuildShaderQuad( const FDrawShaderQuad3DData& Dat
 bool CGeometryCommandExecutor::CanDrawForward( const FStaticModelDrawView& Model ) const
 {
 	static const bool bEnabledByCommandLine = !NCommandLine::HasFlag( "no-gpu-forward" ); // 比べるための切り替え（--no-gpu-forward で、従来の CPU の経路にする）。
-	return bEnabledByCommandLine && ShaderSource != nullptr && Geometry != nullptr && Model.MeshKey != 0 && Model.NumVertices <= 65536 && Model.NumIndices <= 196608 && !bShadowCasting && ReceiverSlot < 0 && Fog.Mode == 0 && HeightFog.Mode == 0
+	return bEnabledByCommandLine && ShaderSource != nullptr && Geometry != nullptr && Model.MeshKey != 0 && Model.NumVertices <= 65536 && !bShadowCasting && ReceiverSlot < 0 && Fog.Mode == 0 && HeightFog.Mode == 0
 		&& TextureTransform.Enabled == 0 && !( Lighting.IsEnabled() && Lighting.GetOptions().bPixelLighting ) && Camera.IsValid() && Geometry->GetWidth() > 0 && Geometry->GetHeight() > 0 && bUseForwardPath;
 }
 

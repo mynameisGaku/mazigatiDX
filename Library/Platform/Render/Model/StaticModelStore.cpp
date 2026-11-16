@@ -433,7 +433,7 @@ bool CStaticModelStore::GetStaticModelDrawView( int32 Handle, FStaticModelDrawVi
 			{
 				BuildDeformed( *Instance );
 			}
-			Out = { Rig.Vertices.GetData(), Rig.Vertices.Num(), Rig.Indices.GetData(), Rig.Indices.Num(), Rig.Sections.GetData(), Rig.Sections.Num(), Instance->Opacity };
+			Out = { Rig.Vertices.GetData(), Rig.Vertices.Num(), Rig.Indices.GetData(), Rig.Indices.Num(), Rig.Sections.GetData(), Rig.Sections.Num(), Instance->Opacity, ( 1ull << 63 ) | static_cast<uint64>( Handle ), Rig.BuiltVersion + 1 }; // 変形したモデルは、個体ごとの鍵で、ポーズが変わるたびに置き直す。
 			return true;
 		}
 	}

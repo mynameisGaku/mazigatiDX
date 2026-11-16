@@ -5,6 +5,7 @@
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Render/Camera/Camera.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
+#include "Library/Platform/System/CommandLine.h"
 
 namespace
 {
@@ -78,7 +79,9 @@ void CCharacterStage::Move( EBone Bone, const FVector3& Offset )
 
 void CCharacterStage::Tick( float32 DeltaTime )
 {
-	Time += DeltaTime;
+	// 絵を比べる検査のために、--model-time=<秒> で、時計を固定できる。
+	static const TOptional<FString> FixedTime = NCommandLine::GetValue( "model-time" );
+	Time = FixedTime.IsSet() ? static_cast<float32>( FixedTime.GetValue().ToFloat( 0.0 ) ) : Time + DeltaTime;
 	if ( !Instance.IsValid() || ( !bBindReady && !( bBindReady = CaptureBindPose() ) ) )
 	{
 		return;
