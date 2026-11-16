@@ -10,7 +10,7 @@
 
 |分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|
 |---|---:|---:|---:|---:|---:|---:|---:|
-|API|365|4|84|112|164|0|1|
+|API|365|4|72|124|164|0|1|
 |Draw|101|0|10|51|40|0|0|
 |Sample|33|30|0|3|0|0|0|
 |Editor|11|11|0|0|0|0|0|
@@ -58,12 +58,12 @@
 |[API.ICursorControl.IsCursorVisible](../Library/Core/Interfaces/Input/ICursorControl.h#L20)|Partial|R8|作成、入出力、時系列、focusの変化、失敗と終了を比較|表示の状態はIPlatform（窓のWM_SETCURSOR）が持ち、CWindowsCursorControlSubsystemが貸す。実機の見た目の比較は未完了||
 |[API.ICursorControl.SetCursorPosition](../Library/Core/Interfaces/Input/ICursorControl.h#L23)|Partial|R8|作成、入出力、時系列、focusの変化、失敗と終了を比較|論理解像度の座標をクライアント座標へ直し、OSのカーソルを動かす。窓がフォーカスを持たない間・窓の大きさが0のときはfalse。実機での位置の比較は未完了||
 |[API.ICursorControl.SetCursorVisible](../Library/Core/Interfaces/Input/ICursorControl.h#L18)|Partial|R8|作成、入出力、時系列、focusの変化、失敗と終了を比較|表示の状態はIPlatform（窓のWM_SETCURSOR）が持ち、CWindowsCursorControlSubsystemが貸す。実機の見た目の比較は未完了||
-|[API.IDisplayInfo.GetDisplay](../Library/Core/Interfaces/Platform/IDisplayInfo.h#L27)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
-|[API.IDisplayInfo.GetDisplayCount](../Library/Core/Interfaces/Platform/IDisplayInfo.h#L21)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
-|[API.IDisplayInfo.GetDisplayModes](../Library/Core/Interfaces/Platform/IDisplayInfo.h#L30)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
-|[API.IDisplayInfo.GetPrimaryDisplayIndex](../Library/Core/Interfaces/Platform/IDisplayInfo.h#L24)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
-|[API.IDisplayInfo.GetWindowDisplayIndex](../Library/Core/Interfaces/Platform/IDisplayInfo.h#L33)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
-|[API.IDisplayInfo.GetWindowDpiScale](../Library/Core/Interfaces/Platform/IDisplayInfo.h#L36)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
+|[API.IDisplayInfo.GetDisplay](../Library/Core/Interfaces/Platform/IDisplayInfo.h#L27)|Partial|R8|作成、入出力、値の範囲、窓の有無、モードの違い、失敗と終了を比較|Windowsの API（EnumDisplayMonitors / EnumDisplaySettings / GetDpiForMonitor）だけで調べる（CWindowsDisplayInfoSubsystem）。契約検査（RunWindowsInputTests）で、主ディスプレイ・範囲外の番号・解像度の一覧・窓のいるディスプレイを確認。複数のディスプレイ・拡大率の違う構成の実機の比較は未完了||
+|[API.IDisplayInfo.GetDisplayCount](../Library/Core/Interfaces/Platform/IDisplayInfo.h#L21)|Partial|R8|作成、入出力、値の範囲、窓の有無、モードの違い、失敗と終了を比較|Windowsの API（EnumDisplayMonitors / EnumDisplaySettings / GetDpiForMonitor）だけで調べる（CWindowsDisplayInfoSubsystem）。契約検査（RunWindowsInputTests）で、主ディスプレイ・範囲外の番号・解像度の一覧・窓のいるディスプレイを確認。複数のディスプレイ・拡大率の違う構成の実機の比較は未完了||
+|[API.IDisplayInfo.GetDisplayModes](../Library/Core/Interfaces/Platform/IDisplayInfo.h#L30)|Partial|R8|作成、入出力、値の範囲、窓の有無、モードの違い、失敗と終了を比較|Windowsの API（EnumDisplayMonitors / EnumDisplaySettings / GetDpiForMonitor）だけで調べる（CWindowsDisplayInfoSubsystem）。契約検査（RunWindowsInputTests）で、主ディスプレイ・範囲外の番号・解像度の一覧・窓のいるディスプレイを確認。複数のディスプレイ・拡大率の違う構成の実機の比較は未完了||
+|[API.IDisplayInfo.GetPrimaryDisplayIndex](../Library/Core/Interfaces/Platform/IDisplayInfo.h#L24)|Partial|R8|作成、入出力、値の範囲、窓の有無、モードの違い、失敗と終了を比較|Windowsの API（EnumDisplayMonitors / EnumDisplaySettings / GetDpiForMonitor）だけで調べる（CWindowsDisplayInfoSubsystem）。契約検査（RunWindowsInputTests）で、主ディスプレイ・範囲外の番号・解像度の一覧・窓のいるディスプレイを確認。複数のディスプレイ・拡大率の違う構成の実機の比較は未完了||
+|[API.IDisplayInfo.GetWindowDisplayIndex](../Library/Core/Interfaces/Platform/IDisplayInfo.h#L33)|Partial|R8|作成、入出力、値の範囲、窓の有無、モードの違い、失敗と終了を比較|Windowsの API（EnumDisplayMonitors / EnumDisplaySettings / GetDpiForMonitor）だけで調べる（CWindowsDisplayInfoSubsystem）。契約検査（RunWindowsInputTests）で、主ディスプレイ・範囲外の番号・解像度の一覧・窓のいるディスプレイを確認。複数のディスプレイ・拡大率の違う構成の実機の比較は未完了||
+|[API.IDisplayInfo.GetWindowDpiScale](../Library/Core/Interfaces/Platform/IDisplayInfo.h#L36)|Partial|R8|作成、入出力、値の範囲、窓の有無、モードの違い、失敗と終了を比較|Windowsの API（EnumDisplayMonitors / EnumDisplaySettings / GetDpiForMonitor）だけで調べる（CWindowsDisplayInfoSubsystem）。契約検査（RunWindowsInputTests）で、主ディスプレイ・範囲外の番号・解像度の一覧・窓のいるディスプレイを確認。複数のディスプレイ・拡大率の違う構成の実機の比較は未完了||
 |[API.IDrawExecutor.BeginOffscreenCapture](../Library/Core/Interfaces/Render/IDrawExecutor.h#L43)|Implemented|R1|指定寸法・倍率、2D/基本3D/画像/文字、失敗時の出力保持、通常描画への復帰と終了時の保持を比較|GPUの描画先と共通ImGui記録を分離し、接続層から同期の描き直しを実行。全描画命令の互換はR6で継続|Docs/DX12_CAPTURE.md; CaptureTargetContract/CaptureContract; dx12-capture|
 |[API.IDrawExecutor.EndOffscreenCapture](../Library/Core/Interfaces/Render/IDrawExecutor.h#L45)|Implemented|R1|指定寸法・倍率、2D/基本3D/画像/文字、失敗時の出力保持、通常描画への復帰と終了時の保持を比較|GPUの描画先と共通ImGui記録を分離し、接続層から同期の描き直しを実行。全描画命令の互換はR6で継続|Docs/DX12_CAPTURE.md; CaptureTargetContract/CaptureContract; dx12-capture|
 |[API.IDrawExecutor.Execute](../Library/Core/Interfaces/Render/IDrawExecutor.h#L25)|Partial|R6|全命令、能力応答、空clip・不正命令、Span終了と撮影終了の状態復元を比較|共通Canvasへ接続。材質効果・pose能力とoffscreen撮影は未対応||
@@ -378,12 +378,12 @@
 |[API.ITouchInput.GetTouches](../Library/Core/Interfaces/Input/ITouchInput.h#L21)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
 |[API.ITouchInput.IsTouchAvailable](../Library/Core/Interfaces/Input/ITouchInput.h#L19)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
 |[API.IVertexBuffer.GetVertexBufferHandle](../Library/Core/Interfaces/Render/IVertexBuffer.h#L46)|Implemented|R6|作成前・作成後・破棄後のhandle、型の違い、描画までの寿命を確認|Frameworkの型付き借用handle。DX12資源の作成／解放と組み合わせて確認する||
-|[API.IWindowControl.GetWindowPosition](../Library/Core/Interfaces/Platform/IWindowControl.h#L20)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
-|[API.IWindowControl.GetWindowScale](../Library/Core/Interfaces/Platform/IWindowControl.h#L29)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
-|[API.IWindowControl.IsWindowFocused](../Library/Core/Interfaces/Platform/IWindowControl.h#L35)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
-|[API.IWindowControl.MoveWindowToDisplay](../Library/Core/Interfaces/Platform/IWindowControl.h#L26)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
-|[API.IWindowControl.SetWindowPosition](../Library/Core/Interfaces/Platform/IWindowControl.h#L23)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
-|[API.IWindowControl.SetWindowScale](../Library/Core/Interfaces/Platform/IWindowControl.h#L32)|Missing|R8|サービスの作成、入出力、時系列、デバイス／focusの変化、失敗と終了を比較|DX12選択時にこのサービスの実装を作る経路がない。Null／DxLibを混ぜて補わない||
+|[API.IWindowControl.GetWindowPosition](../Library/Core/Interfaces/Platform/IWindowControl.h#L20)|Partial|R8|作成、入出力、値の範囲、窓の有無、モードの違い、失敗と終了を比較|Windowsの APIだけで操作する（CWindowsWindowControlSubsystem）。契約検査で、位置・倍率（クライアント領域 / ゲーム画面）・ディスプレイの中央への移動・通常の窓以外では失敗・窓なしで安全に失敗、を確認。DPIの違う複数ディスプレイ間の移動は未完了||
+|[API.IWindowControl.GetWindowScale](../Library/Core/Interfaces/Platform/IWindowControl.h#L29)|Partial|R8|作成、入出力、値の範囲、窓の有無、モードの違い、失敗と終了を比較|Windowsの APIだけで操作する（CWindowsWindowControlSubsystem）。契約検査で、位置・倍率（クライアント領域 / ゲーム画面）・ディスプレイの中央への移動・通常の窓以外では失敗・窓なしで安全に失敗、を確認。DPIの違う複数ディスプレイ間の移動は未完了||
+|[API.IWindowControl.IsWindowFocused](../Library/Core/Interfaces/Platform/IWindowControl.h#L35)|Partial|R8|作成、入出力、値の範囲、窓の有無、モードの違い、失敗と終了を比較|Windowsの APIだけで操作する（CWindowsWindowControlSubsystem）。契約検査で、位置・倍率（クライアント領域 / ゲーム画面）・ディスプレイの中央への移動・通常の窓以外では失敗・窓なしで安全に失敗、を確認。DPIの違う複数ディスプレイ間の移動は未完了||
+|[API.IWindowControl.MoveWindowToDisplay](../Library/Core/Interfaces/Platform/IWindowControl.h#L26)|Partial|R8|作成、入出力、値の範囲、窓の有無、モードの違い、失敗と終了を比較|Windowsの APIだけで操作する（CWindowsWindowControlSubsystem）。契約検査で、位置・倍率（クライアント領域 / ゲーム画面）・ディスプレイの中央への移動・通常の窓以外では失敗・窓なしで安全に失敗、を確認。DPIの違う複数ディスプレイ間の移動は未完了||
+|[API.IWindowControl.SetWindowPosition](../Library/Core/Interfaces/Platform/IWindowControl.h#L23)|Partial|R8|作成、入出力、値の範囲、窓の有無、モードの違い、失敗と終了を比較|Windowsの APIだけで操作する（CWindowsWindowControlSubsystem）。契約検査で、位置・倍率（クライアント領域 / ゲーム画面）・ディスプレイの中央への移動・通常の窓以外では失敗・窓なしで安全に失敗、を確認。DPIの違う複数ディスプレイ間の移動は未完了||
+|[API.IWindowControl.SetWindowScale](../Library/Core/Interfaces/Platform/IWindowControl.h#L32)|Partial|R8|作成、入出力、値の範囲、窓の有無、モードの違い、失敗と終了を比較|Windowsの APIだけで操作する（CWindowsWindowControlSubsystem）。契約検査で、位置・倍率（クライアント領域 / ゲーム画面）・ディスプレイの中央への移動・通常の窓以外では失敗・窓なしで安全に失敗、を確認。DPIの違う複数ディスプレイ間の移動は未完了||
 
 ## Draw
 

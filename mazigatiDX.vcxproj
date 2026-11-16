@@ -566,6 +566,8 @@
     <ClCompile Include="Library\Platform\Windows\Text\WindowsFontStore.cpp" />
     <ClCompile Include="Library\Platform\Windows\Text\WindowsGdiText.cpp" />
     <ClCompile Include="Library\Platform\Windows\Text\WindowsTextRasterizer.cpp" />
+    <ClCompile Include="Library\Platform\Windows\Window\WindowsDisplayInfoSubsystem.cpp" />
+    <ClCompile Include="Library\Platform\Windows\Window\WindowsWindowControlSubsystem.cpp" />
     <ClCompile Include="VendorModules\ImGui\imgui.cpp" />
     <ClCompile Include="VendorModules\ImGui\imgui_draw.cpp" />
     <ClCompile Include="VendorModules\ImGui\imgui_impl_dx11.cpp" />
@@ -1423,6 +1425,8 @@
     <ClInclude Include="Library\Platform\Windows\Text\WindowsFontStore.h" />
     <ClInclude Include="Library\Platform\Windows\Text\WindowsGdiText.h" />
     <ClInclude Include="Library\Platform\Windows\Text\WindowsTextRasterizer.h" />
+    <ClInclude Include="Library\Platform\Windows\Window\WindowsDisplayInfoSubsystem.h" />
+    <ClInclude Include="Library\Platform\Windows\Window\WindowsWindowControlSubsystem.h" />
     <ClInclude Include="VendorModules\ImGui\imconfig.h" />
     <ClInclude Include="VendorModules\ImGui\imgui.h" />
     <ClInclude Include="VendorModules\ImGui\imgui_impl_dx11.h" />

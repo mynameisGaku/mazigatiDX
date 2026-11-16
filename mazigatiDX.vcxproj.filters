@@ -1498,6 +1498,12 @@
     <ClCompile Include="Library\Platform\Windows\Text\WindowsTextRasterizer.cpp">
       <Filter>Library\Platform\Windows\Text</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\Windows\Window\WindowsDisplayInfoSubsystem.cpp">
+      <Filter>Library\Platform\Windows\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Windows\Window\WindowsWindowControlSubsystem.cpp">
+      <Filter>Library\Platform\Windows\Window</Filter>
+    </ClCompile>
     <ClCompile Include="VendorModules\ImGui\imgui.cpp">
       <Filter>VendorModules\ImGui</Filter>
     </ClCompile>
@@ -4065,6 +4071,12 @@
     <ClInclude Include="Library\Platform\Windows\Text\WindowsTextRasterizer.h">
       <Filter>Library\Platform\Windows\Text</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Platform\Windows\Window\WindowsDisplayInfoSubsystem.h">
+      <Filter>Library\Platform\Windows\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Windows\Window\WindowsWindowControlSubsystem.h">
+      <Filter>Library\Platform\Windows\Window</Filter>
+    </ClInclude>
     <ClInclude Include="VendorModules\ImGui\imconfig.h">
       <Filter>VendorModules\ImGui</Filter>
     </ClInclude>
@@ -6010,6 +6022,9 @@
     </Filter>
     <Filter Include="Library\Platform\Windows\Text">
       <UniqueIdentifier>{C7F573A0-13C0-7E2D-781B-C05CFEBFCA51}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Platform\Windows\Window">
+      <UniqueIdentifier>{9D52824E-1DAE-78A6-2A20-5950A6C335E8}</UniqueIdentifier>
     </Filter>
     <Filter Include="VendorModules">
       <UniqueIdentifier>{B1A1C350-5AF7-E473-B7EF-0832BEC4D313}</UniqueIdentifier>

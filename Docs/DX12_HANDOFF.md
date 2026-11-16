@@ -373,3 +373,12 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **未確認（実機）**: Microsoft IME の変換中の見た目（途中の文字列・候補の位置は、UI が描く）、モダンな IME が `ISC_SHOWUI*` を守るか。マウスを使う入力欄の操作は、このツールからは動かせない（DX12 の入力は OS の実カーソルを読むため、PostMessage では動かない）。`IDisplayInfo`・`IWindowControl`・`ITouchInput` は、まだ無い。
 - **確認**: Debug／Release の警告 0、台帳は 510 項目（新しい 3 項目を分類）で整合、書式検査成功、`RunAllChecks -SkipBuild -Quick` は 46 ステップ成功。UI サンプルを DX12 で起動すると、3 つのサブシステムが生成される。
 - **次の作業**: `IDisplayInfo`・`IWindowControl`（ウィンドウモード・解像度・タイトル）→ ビデオメモリの実測 → `MaterialRibbon3D`・アニメーションつきのモデル → 画像の mip → `Invert` 系の合成。
+
+## 2026-11-16 追記: DX12 のディスプレイ情報と窓の操作（R8）
+- ロードマップ（`Docs/ROADMAP.md` の R8「非描画の完全互換」: 音声・動画・ゲームパッド・文字入力／IME・タッチ・クリップボード・窓制御・モニター・フルスクリーン）の続き。`Library/Platform/Windows/Window` に、描画 API も DxLib も知らない 2 クラスを足した。
+- **`CWindowsDisplayInfoSubsystem`（`IDisplayInfo`）**: `EnumDisplayMonitors` / `EnumDisplaySettings` / `GetDpiForMonitor`（Shcore を実行時に読む）/ `GetDpiForWindow`。解像度の一覧は、色数違いの重複を 1 つにする。ゲームの窓は `INativeWindow` から借りる。
+- **`CWindowsWindowControlSubsystem`（`IWindowControl`）**: 位置は `GetWindowRect` / `SetWindowPos`。倍率は、クライアント領域の幅 / ゲーム画面（論理解像度）の幅。倍率を変えるときは、枠を足した大きさへ（左上は動かさない）。ディスプレイの中央へは、`FDisplayLayout`（DxLib 版と同じ計算）。通常の窓（Windowed）以外では、位置・倍率・移動は false。
+- 両クラスは `Bind(...)` で、窓・プラットフォーム・ディスプレイの情報を借りる（`Initialize` が呼ぶ。検査が、自分で作った窓と偽のプラットフォームを渡すのにも使う）。
+- **検査**: `WindowsInputContract`（`RunWindowsInputTests.ps1`）に 25 項目を足し、65 項目に。見せない本物の窓で、位置・倍率 2.0 でクライアント 640x480・中央への移動・範囲外の番号・通常の窓以外・窓なし、を確かめる。倍率の計算の取り違えと、通常の窓の条件を外す変異で、別々の項目が失敗することを確かめた。
+- **未確認（実機）**: 拡大率の違う複数ディスプレイの間の移動。台帳は `IDisplayInfo` 6 項目・`IWindowControl` 6 項目を Partial に。
+- **R8 の残り**: 音声・PCM・ミキサー（`IAudioBackend` / `ISoundBackend` / `IPcmStreamBackend`）、動画（`IMovieBackend`）、タッチ（`ITouchInput`）、全画面（排他的フルスクリーンは、Borderless で代替の報告）。
