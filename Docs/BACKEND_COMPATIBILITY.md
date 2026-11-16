@@ -10,8 +10,8 @@
 
 |分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|
 |---|---:|---:|---:|---:|---:|---:|---:|
-|API|371|9|12|185|164|0|1|
-|Draw|101|0|7|54|40|0|0|
+|API|371|9|8|189|164|0|1|
+|Draw|101|0|3|58|40|0|0|
 |Sample|33|30|0|3|0|0|0|
 |Editor|11|11|0|0|0|0|0|
 
@@ -68,10 +68,10 @@
 |[API.IDrawExecutor.EndOffscreenCapture](../Library/Core/Interfaces/Render/IDrawExecutor.h#L45)|Implemented|R1|指定寸法・倍率、2D/基本3D/画像/文字、失敗時の出力保持、通常描画への復帰と終了時の保持を比較|GPUの描画先と共通ImGui記録を分離し、接続層から同期の描き直しを実行。全描画命令の互換はR6で継続|Docs/DX12_CAPTURE.md; CaptureTargetContract/CaptureContract; dx12-capture|
 |[API.IDrawExecutor.Execute](../Library/Core/Interfaces/Render/IDrawExecutor.h#L25)|Partial|R6|全命令、能力応答、空clip・不正命令、Span終了と撮影終了の状態復元を比較|共通Canvasへ接続。材質効果・pose能力とoffscreen撮影は未対応||
 |[API.IDrawExecutor.SupportsEffectMaterialMesh](../Library/Core/Interfaces/Render/IDrawExecutor.h#L35)|Missing|R6|全命令、能力応答、空clip・不正命令、Span終了と撮影終了の状態復元を比較|共通Canvasへ接続。材質効果・pose能力とoffscreen撮影は未対応||
-|[API.IDrawExecutor.SupportsEffectMaterialRibbons](../Library/Core/Interfaces/Render/IDrawExecutor.h#L29)|Missing|R6|全命令、能力応答、空clip・不正命令、Span終了と撮影終了の状態復元を比較|共通Canvasへ接続。材質効果・pose能力とoffscreen撮影は未対応||
-|[API.IDrawExecutor.SupportsEffectMaterials](../Library/Core/Interfaces/Render/IDrawExecutor.h#L27)|Missing|R6|全命令、能力応答、空clip・不正命令、Span終了と撮影終了の状態復元を比較|共通Canvasへ接続。材質効果・pose能力とoffscreen撮影は未対応||
-|[API.IDrawExecutor.SupportsEffectRibbonUVDistortion](../Library/Core/Interfaces/Render/IDrawExecutor.h#L33)|Missing|R6|全命令、能力応答、空clip・不正命令、Span終了と撮影終了の状態復元を比較|共通Canvasへ接続。材質効果・pose能力とoffscreen撮影は未対応||
-|[API.IDrawExecutor.SupportsEffectUVDistortion](../Library/Core/Interfaces/Render/IDrawExecutor.h#L31)|Missing|R6|全命令、能力応答、空clip・不正命令、Span終了と撮影終了の状態復元を比較|共通Canvasへ接続。材質効果・pose能力とoffscreen撮影は未対応||
+|[API.IDrawExecutor.SupportsEffectMaterialRibbons](../Library/Core/Interfaces/Render/IDrawExecutor.h#L29)|Partial|R6|全命令、能力応答、空clip・不正命令、Span終了と撮影終了の状態復元を比較|DX12は true（共通の材質実行側 CMaterialEffectCommandExecutor が、組み込みのシェーダーで描く）。メッシュ・モデルへの材質効果は未対応||
+|[API.IDrawExecutor.SupportsEffectMaterials](../Library/Core/Interfaces/Render/IDrawExecutor.h#L27)|Partial|R6|全命令、能力応答、空clip・不正命令、Span終了と撮影終了の状態復元を比較|DX12は true（共通の材質実行側 CMaterialEffectCommandExecutor が、組み込みのシェーダーで描く）。メッシュ・モデルへの材質効果は未対応||
+|[API.IDrawExecutor.SupportsEffectRibbonUVDistortion](../Library/Core/Interfaces/Render/IDrawExecutor.h#L33)|Partial|R6|全命令、能力応答、空clip・不正命令、Span終了と撮影終了の状態復元を比較|DX12は true（共通の材質実行側 CMaterialEffectCommandExecutor が、組み込みのシェーダーで描く）。メッシュ・モデルへの材質効果は未対応||
+|[API.IDrawExecutor.SupportsEffectUVDistortion](../Library/Core/Interfaces/Render/IDrawExecutor.h#L31)|Partial|R6|全命令、能力応答、空clip・不正命令、Span終了と撮影終了の状態復元を比較|DX12は true（共通の材質実行側 CMaterialEffectCommandExecutor が、組み込みのシェーダーで描く）。メッシュ・モデルへの材質効果は未対応||
 |[API.IDrawExecutor.SupportsModelFrameOverrides](../Library/Core/Interfaces/Render/IDrawExecutor.h#L39)|Partial|R5|全命令、能力応答、空clip・不正命令、Span終了と撮影終了の状態復元を比較|DX12の実行側はtrueを返す。命令から頂点までは検査済み。GPUを通した確認は未完了||
 |[API.IDrawExecutor.SupportsModelMaterialEffects](../Library/Core/Interfaces/Render/IDrawExecutor.h#L37)|Missing|R6|全命令、能力応答、空clip・不正命令、Span終了と撮影終了の状態復元を比較|共通Canvasへ接続。材質効果・pose能力とoffscreen撮影は未対応||
 |[API.IFontBackend.AddFontCharImage](../Library/Core/Interfaces/Asset/FontBackend.h#L35)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|フォントごとに、文字（コードポイント1つ）を画像（アセットの番号）に置き換える。次の文字までの幅は指定どおり、画像は、文字の左上からのずれで置く（文字と同じ拡大・回転・移動に従う）。Textサンプルで、DxLibと同じ位置・大きさで出る。画像が消えると、描かれない||
@@ -339,10 +339,10 @@
 |[API.IRenderTextureResources.ReleaseTexture](../Library/Core/Interfaces/Render/IRenderTextureResources.h#L49)|Implemented|R1|ImGuiなしの作成・更新・解放、入力不正、旧viewのGPU完了までの保持、失敗と再初期化を検査|DX12画像所有者へ接続。アセット登録とUIの所有から分離。Windowsの外部ImGui窓との共有画像・表示画素を確認。全更新・失敗経路の互換は未網羅|補助検証: NativeStoreのcompute readbackと共通登録の偽物。Windowsの外部窓共有: Docs/DX12_IMGUI_VIEWPORTS.md|
 |[API.IRenderTextureResources.UpdateTextureRGBA8](../Library/Core/Interfaces/Render/IRenderTextureResources.h#L46)|Implemented|R1|ImGuiなしの作成・更新・解放、入力不正、旧viewのGPU完了までの保持、失敗と再初期化を検査|DX12画像所有者へ接続。アセット登録とUIの所有から分離。Windowsの外部ImGui窓との共有画像・表示画素を確認。全更新・失敗経路の互換は未網羅|補助検証: NativeStoreのcompute readbackと共通登録の偽物。Windowsの外部窓共有: Docs/DX12_IMGUI_VIEWPORTS.md|
 |[API.IShader.GetShaderHandle](../Library/Core/Interfaces/Render/IShader.h#L55)|Partial|R6|作成前・作成後・破棄後のhandle、型の違い、描画までの寿命を確認|番号は、DX12のシェーダーの表の番号||
-|[API.IShaderDrawSource.DrawShader](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L82)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|描画の値（シェーダー・定数・画像・頂点・描画先の形式）から、パイプラインを作って描く。描けなければfalse||
-|[API.IShaderDrawSource.GetShadowPass](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L86)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|最後に影の絵を描いたときの、光から見た行列・補正の深さ・大きさ||
-|[API.IShaderDrawSource.IsShaderValid](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L80)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|番号が、その種類の、作ってあるシェーダーか||
-|[API.IShaderDrawSource.SetShadowPass](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L84)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|BeginShadowMapを実行したときに覚える||
+|[API.IShaderDrawSource.DrawShader](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L84)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|描画の値（シェーダー・定数・画像・頂点・描画先の形式）から、パイプラインを作って描く。描けなければfalse||
+|[API.IShaderDrawSource.GetShadowPass](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L88)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|最後に影の絵を描いたときの、光から見た行列・補正の深さ・大きさ||
+|[API.IShaderDrawSource.IsShaderValid](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L82)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|番号が、その種類の、作ってあるシェーダーか||
+|[API.IShaderDrawSource.SetShadowPass](../Library/Core/Interfaces/Render/IShaderDrawSource.h#L86)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|BeginShadowMapを実行したときに覚える||
 |[API.IShadowMap.GetShadowMapHandle](../Library/Core/Interfaces/Render/IShadowMap.h#L47)|Partial|R6|作成前・作成後・破棄後のhandle、型の違い、描画までの寿命を確認|番号は、描画先の番号と同じ||
 |[API.ISoundBackend.CreateSoundFromPcm](../Library/Core/Interfaces/Asset/SoundBackend.h#L28)|Partial|R8|作成、入出力、時系列、聞こえない音量での実再生、機器なしの失敗、終了を比較|Windowsの音の登録（CWindowsSoundStoreSubsystem）。WAVはNWavFile、mp3・m4a・flac等はMedia Foundationで、同期でデコードしてメモリに持つ（Streamも全部展開）。3チャンネル以上はステレオにする。oggは未対応（OSのデコーダー次第）。契約検査でWAVとMedia Foundationの読みが一致することを確認||
 |[API.ISoundBackend.DecodeSoundFile](../Library/Core/Interfaces/Asset/SoundBackend.h#L31)|Partial|R8|作成、入出力、時系列、聞こえない音量での実再生、機器なしの失敗、終了を比較|Windowsの音の登録（CWindowsSoundStoreSubsystem）。WAVはNWavFile、mp3・m4a・flac等はMedia Foundationで、同期でデコードしてメモリに持つ（Streamも全部展開）。3チャンネル以上はステレオにする。oggは未対応（OSのデコーダー次第）。契約検査でWAVとMedia Foundationの読みが一致することを確認||
@@ -420,8 +420,8 @@
 |[Draw.CustomBlend](../Library/Framework/Render/Draw/DrawCommand.h#L87)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|色とアルファの係数・演算を、そのままD3D12のブレンドへ写す（2D・3D・シェーダー描画）。色の係数をアルファへ使うときは、同じ種類のアルファへ読み替える||
 |[Draw.DefaultLight](../Library/Framework/Render/Draw/DrawCommand.h#L122)|Partial|R2|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|頂点ごとのCPU計算（CVertexLighting。DxLibの固定の光と同じ式）で対応。画素ごとの光（LightingOptionsのPixelLighting）は、同じ式を組み込みのシェーダー（PixelLit。定数b6）で画素ごとに計算する（画像つきも。フォグ・影を受ける描画と重なるときは、頂点ごと）。Lightingサンプルで、スポットライトの円・ランプの光だまりがDxLibと同じ形で出る（細かい画素の比較は未実施）||
 |[Draw.Depth](../Library/Framework/Render/Draw/DrawCommand.h#L110)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
-|[Draw.DistortedMaterialQuad3D](../Library/Framework/Render/Draw/DrawCommand.h#L60)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
-|[Draw.DistortedMaterialRibbon3D](../Library/Framework/Render/Draw/DrawCommand.h#L62)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
+|[Draw.DistortedMaterialQuad3D](../Library/Framework/Render/Draw/DrawCommand.h#L60)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|組み込みの材質シェーダー（EffectMaterial）で描く。消失・境界の発光・UVのゆがみ・帯の点ごとの値は、DxLibと並べて画素が一致した。合成は Alpha と Add だけ（DxLib と同じ。ほかは描かない）。画像の一部（派生画像）は、元の画像全体として読む||
+|[Draw.DistortedMaterialRibbon3D](../Library/Framework/Render/Draw/DrawCommand.h#L62)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|組み込みの材質シェーダー（EffectMaterial）で描く。消失・境界の発光・UVのゆがみ・帯の点ごとの値は、DxLibと並べて画素が一致した。合成は Alpha と Add だけ（DxLib と同じ。ほかは描かない）。画像の一部（派生画像）は、元の画像全体として読む||
 |[Draw.EndShadowMap](../Library/Framework/Render/Draw/DrawCommand.h#L141)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|元の描画先へ戻す。パスの中では、描画先・カメラ・クリップ・消去の命令は無視する||
 |[Draw.Filter](../Library/Framework/Render/Draw/DrawCommand.h#L90)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|Nearest／Bilinearのみ。異方性は未対応||
 |[Draw.Fog](../Library/Framework/Render/Draw/DrawCommand.h#L114)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|距離フォグを、画像なしの図形は頂点ごとのCPU計算で、画像つきの三角形は専用のシェーダー（FogTextured）で掛ける。画像つきの線・点と、影を受ける描画には掛からない||
@@ -439,8 +439,8 @@
 |[Draw.Line3D](../Library/Framework/Render/Draw/DrawCommand.h#L42)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.LineAA](../Library/Framework/Render/Draw/DrawCommand.h#L75)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.MaterialMesh3D](../Library/Framework/Render/Draw/DrawCommand.h#L64)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
-|[Draw.MaterialQuad3D](../Library/Framework/Render/Draw/DrawCommand.h#L58)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
-|[Draw.MaterialRibbon3D](../Library/Framework/Render/Draw/DrawCommand.h#L59)|Missing|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバス／形状実行側に処理がなく、その命令だけを飛ばして続きを描く（描画先・シャドウマップへ描く範囲は、対になる終わりまで飛ばす）||
+|[Draw.MaterialQuad3D](../Library/Framework/Render/Draw/DrawCommand.h#L58)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|組み込みの材質シェーダー（EffectMaterial）で描く。消失・境界の発光・UVのゆがみ・帯の点ごとの値は、DxLibと並べて画素が一致した。合成は Alpha と Add だけ（DxLib と同じ。ほかは描かない）。画像の一部（派生画像）は、元の画像全体として読む||
+|[Draw.MaterialRibbon3D](../Library/Framework/Render/Draw/DrawCommand.h#L59)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|組み込みの材質シェーダー（EffectMaterial）で描く。消失・境界の発光・UVのゆがみ・帯の点ごとの値は、DxLibと並べて画素が一致した。合成は Alpha と Add だけ（DxLib と同じ。ほかは描かない）。画像の一部（派生画像）は、元の画像全体として読む||
 |[Draw.Mesh3D](../Library/Framework/Render/Draw/DrawCommand.h#L56)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|CPU形状から毎回展開。照明と高度な材質は未対応||
 |[Draw.Model3D](../Library/Framework/Render/Draw/DrawCommand.h#L49)|Partial|R5|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|静的FBX／OBJのみ。アニメーションは未対応。MV1形式はv1.0.0対象外||
 |[Draw.ModelAnim](../Library/Framework/Render/Draw/DrawCommand.h#L54)|Partial|R5|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|付けたアニメーションの時間と割合を、次のモデルの描画へ反映する（IStaticModelSource経由）。アニメーションつきのFBXの描画は、実素材での確認が未完了||

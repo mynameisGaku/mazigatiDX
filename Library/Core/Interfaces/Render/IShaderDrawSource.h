@@ -20,6 +20,7 @@ enum class EBuiltInVertexShader : uint8
 	Rect,    // ShaderRect: 頂点の位置（クリップ座標）をそのまま渡し、色・画像の座標・Extra をピクセルシェーダーへ渡す。
 	Quad3D,  // ShaderQuad3D: 頂点の SubPosition（クリップ座標 x, y, z, w）を位置にして、同じものを渡す。
 	ShadowLit, // 影を受ける光の計算: SubPosition を位置にして、色（Diffuse = 影の外の色、Specular = 影の中で消える色）・画像の座標・光から見た位置（Normal）を渡す。
+	EffectMaterial, // 材質付き 3D 描画: SubPosition を位置にして、色（Diffuse）・画像の座標・点ごとの材質の値（Normal = 消失・発光・ゆがみの強さ、Tangent.xy = 画像の移動、Binormal.xy = ゆがみ画像の移動）を渡す。
 	PixelLit, // 画素ごとの光: SubPosition を位置にして、図形の色（Diffuse / Specular）・画像の座標・世界の位置（Position）・世界の法線（Normal）を渡す。
 };
 
@@ -34,6 +35,7 @@ enum class EBuiltInPixelShader : uint8
 	ImageFilter,        // 画像のフィルター（Rect の頂点シェーダーと組み合わせる。t0 = 元の画像、t1 = グラデーションマップ、定数 b5 = 種類と引数）。画素の座標で、元の画像を読む。
 	PixelLit,           // 画素ごとの光（PixelLit の頂点シェーダーと組み合わせる。定数 b6 = 光・材質・カメラ）。光の式は、CVertexLighting と同じ。
 	PixelLitTextured,   // 同じ。さらに、t0 の画像の色を掛ける（アルファが 0 なら、描かない）。
+	EffectMaterial,     // 材質付き 3D 描画（EffectMaterial の頂点シェーダーと組み合わせる。t0 = 表示画像、t1 = 消失のマスク、t2 = ゆがみの画像、定数 b7 = 材質の設定）。画像・消失・境界の発光・UV のゆがみ。
 	ImageBlend,         // 2 枚の画像の混ぜ合わせ（Rect の頂点シェーダーと組み合わせる。t0 = 元の画像、t1 = 混ぜる画像、定数 b5 = 種類と引数）。
 };
 

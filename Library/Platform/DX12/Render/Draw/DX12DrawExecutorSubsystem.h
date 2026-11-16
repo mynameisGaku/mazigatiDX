@@ -29,6 +29,11 @@ public:
 	bool EndOffscreenCapture( TArray<FColor32>& Out ) override;
 	// 描くときだけ骨を上書きする命令（ModelFramePose3D）に対応する。
 	bool SupportsModelFrameOverrides() const override { return true; }
+	// 材質付きの3D四角形・帯（消失・境界の発光・UVのゆがみ）に対応する。
+	bool SupportsEffectMaterials() const override { return true; }
+	bool SupportsEffectMaterialRibbons() const override { return true; }
+	bool SupportsEffectUVDistortion() const override { return true; }
+	bool SupportsEffectRibbonUVDistortion() const override { return true; }
 private:
 	IRenderSurface* Surface = nullptr; // 借用する描画先。
 	IStaticModelSource* Models = nullptr; // 借用する静的モデル。

@@ -440,3 +440,12 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **DxLib の式を実測した**: 一時的に DrawState の 4 つの絵を `MultiplyAlpha`（128・255）と `PmaInvert`（128・255）に替え、円（230, 90, 60）を下地（230, 170, 60）に重ねた画素を読んだ（DxLib の撮影は、アルファが残るので、暗い地に合成した値から逆算）。`MultiplyAlpha` = 描画先 x (1 + (描く色 - 1) x アルファ)（アルファ 255 は Multiply と同じ）。`PmaInvert` は、描く色を乗算済みとして扱わず、通常の `Invert` と同じ結果。
 - **実装**: `EGeometryBlend::MultiplyAlpha`（新）。ブレンドの設定は Multiply と同じで、ピクセルシェーダーの色を `lerp(1, 色, アルファ)` にする（`MULA` マクロでコンパイルした 4 つの版）。`PmaInvert` は `Invert` に写す。
 - **確認**: DX12 で、同じ 4 つの絵の画素が、DxLib の式の値と 1 以内で一致（(218,115,37) / (207,60,14) / (127,167,128) / (25,165,195)）。確認のあと、サンプルは元に戻した。サンプルがこれらを使わないので、常設の画素検査は無い。
+
+## 2026-11-16 追記: 材質付きの 3D 四角形・帯
+- **新しい実行側**: `CMaterialEffectCommandExecutor`（`Library/Platform/Render/Shader/`）が、`MaterialQuad3D` / `DistortedMaterialQuad3D` / `MaterialRibbon3D` / `DistortedMaterialRibbon3D` を解釈する。四角形は `CGeometryCommandExecutor::BuildShaderQuad`（ShaderQuad3D と同じ向きの決め方）、帯は共通の展開（`NDrawRibbonMesh::Build`、画像の U はつなげたまま）でクリップ座標つきの頂点にして、組み込みのシェーダー（`EBuiltInVertexShader::EffectMaterial` / `EBuiltInPixelShader::EffectMaterial`）へ渡す。`CanvasDrawExecutor` が、シェーダーの命令と同じ並びで振り分ける。
+- **頂点の詰め方**: `Diffuse` = 色（四角形は色、帯は点の色）、`Normal` = ( 消失, 発光, ゆがみの強さ )、`Tangent.xy` = 画像の移動、`Binormal.xy` = ゆがみ画像の移動。設定は、ピクセル側の定数 b7（80 バイト）。画像は、t0 = 表示、t1 = マスク（`g_ShadowMap` の名前を流用）、t2 = ゆがみ（`g_Aux`）。
+- **シェーダー**: DxLib の `EffectMaterialRenderer`（HLSL）を、そのまま移した（組み込みの消失模様・消失の境界・ゆがみ・半テクセルの内側への制限）。DX12 は、画像ごとに別の資源なので、画像の矩形は全体（派生画像は未対応）。深度は、深度を比べない設定でも「いつも通す」で、書くだけにできる。両面描画、線形補間は固定。
+- **合成**: Alpha と Add だけ（DxLib と同じ）。それ以外と、合成なし（Opaque）は、`ReportUnsupported` して、その命令だけ飛ばす。`DrawBuiltIn`（`CShaderCommandExecutor`）は、利用者のシェーダー・定数を使わず、描く前の準備（描画先のパス）は行う。
+- **対応フラグ**: `CDX12DrawExecutorSubsystem` が `SupportsEffectMaterials` / `MaterialRibbons` / `UVDistortion` / `RibbonUVDistortion` を true にした（エディタの材質パネルが有効になる）。`MaterialMesh3D` / `ModelMaterial3D` は、まだ（`DX12_KNOWN_GAPS.md`）。
+- **確認**: 一時的に Geometry3D サンプルへ、消失 0 / 0.25 / 0.5 / 0.75 の四角形、ゆがみ付き、4 点の帯を足して、DxLib と並べた。消失の模様・縁・ゆがみ・帯の継ぎ目が一致（四角形の中の平均差は 0.5〜2）。サンプルは元に戻した。
+- **検査**: `Source/SelfTest/RunMaterialEffectTests.ps1`（`MaterialEffectContract`、42 項目）。偽のシェーダー実行先で、要求の中身（組み込みの種類・頂点・定数・画像の段・深度・合成）と、壊れた命令（記録のあとで書き換えた値）の拒否を調べる。変異で確かめた（`Saved` 下のログは消した）。

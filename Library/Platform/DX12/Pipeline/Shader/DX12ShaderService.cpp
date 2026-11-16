@@ -391,7 +391,51 @@ namespace
 		"	return saturate( sum ) * g_LightBright.rgb;\n"
 		"}\n"
 		"float4 PixelLitMain( PLO i ) : SV_Target { return float4( PixelLightColor( i ), i.Diffuse.a ); }\n"
-		"float4 PixelLitTexturedMain( PLO i ) : SV_Target { float4 c = float4( PixelLightColor( i ), i.Diffuse.a ) * g_Base.Sample( g_Sampler, i.Uv ); if ( c.a <= 0.0 ) { discard; } return c; }\n";
+		"float4 PixelLitTexturedMain( PLO i ) : SV_Target { float4 c = float4( PixelLightColor( i ), i.Diffuse.a ) * g_Base.Sample( g_Sampler, i.Uv ); if ( c.a <= 0.0 ) { discard; } return c; }\n"
+		"struct MEO { float4 Position : SV_POSITION; float4 Color : COLOR0; float2 Uv : TEXCOORD0; float3 Params : TEXCOORD1; float4 Offsets : TEXCOORD2; };\n"
+		"MEO EffectMaterialVS( VI i ) { MEO o; o.Position = i.SubPosition; o.Color = i.Diffuse; o.Uv = i.Uv; o.Params = i.Normal; o.Offsets = float4( i.Tangent.xy, i.Binormal.xy ); return o; }\n"
+		"cbuffer cbEffectMaterial : register( b7 ) { float4 g_EffectA; float4 g_EffectB; float4 g_EffectEdge; float4 g_EffectBright; float4 g_EffectDistortion; };\n"
+		"float EffHash( float2 p ) { return frac( sin( dot( p, float2( 127.1, 311.7 ) ) ) * 43758.5453 ); }\n"
+		"float EffNoise( float2 p ) { float2 i = floor( p ); float2 f = frac( p ); f = f * f * ( 3.0 - 2.0 * f ); return lerp( lerp( EffHash( i ), EffHash( i + float2( 1, 0 ) ), f.x ), lerp( EffHash( i + float2( 0, 1 ) ), EffHash( i + 1.0 ), f.x ), f.y ); }\n"
+		"float4 EffectMaterialPS( MEO i ) : SV_Target\n"
+		"{\n"
+		"\tuint w, h; g_Base.GetDimensions( w, h );\n"
+		"\tfloat2 inset = 0.5 / float2( w, h );\n"
+		"\tfloat2 uv = i.Uv * g_EffectA.xy + i.Offsets.xy;\n"
+		"\tif ( g_EffectB.z > 0.5 )\n"
+		"\t{\n"
+		"\t\tuint dw, dh; g_Aux.GetDimensions( dw, dh );\n"
+		"\t\tfloat2 dinset = 0.5 / float2( dw, dh );\n"
+		"\t\tfloat2 duv = clamp( frac( i.Uv * g_EffectDistortion.xy + i.Offsets.zw ), dinset, 1.0 - dinset );\n"
+		"\t\tuv += ( g_Aux.SampleLevel( g_Sampler, duv, 0 ).rg * 2.0 - 1.0 ) * i.Params.z;\n"
+		"\t}\n"
+		"\tuv = clamp( frac( uv ), inset, 1.0 - inset );\n"
+		"\tfloat2 muv = frac( i.Uv * g_EffectA.z );\n"
+		"\tfloat mask;\n"
+		"\tif ( g_EffectA.w > 0.5 )\n"
+		"\t{\n"
+		"\t\tuint mw, mh; g_ShadowMap.GetDimensions( mw, mh );\n"
+		"\t\tfloat2 minset = 0.5 / float2( mw, mh );\n"
+		"\t\tmask = g_ShadowMap.SampleLevel( g_Sampler, clamp( muv, minset, 1.0 - minset ), 0 ).r;\n"
+		"\t}\n"
+		"\telse\n"
+		"\t{\n"
+		"\t\tmask = saturate( EffNoise( muv * 4.0 ) * 0.5 + EffNoise( muv * 16.0 ) * 0.35 + EffNoise( muv * 64.0 ) * 0.15 );\n"
+		"\t}\n"
+		"\tfloat dissolve = i.Params.x;\n"
+		"\tfloat edge = 0.0;\n"
+		"\tif ( g_EffectB.x > 0.5 )\n"
+		"\t{\n"
+		"\t\tif ( dissolve >= 1.0 ) { discard; }\n"
+		"\t\tclip( mask - dissolve );\n"
+		"\t\tif ( dissolve > 0.0 && g_EffectB.w > 0.0 ) { edge = 1.0 - smoothstep( 0.0, g_EffectB.w, mask - dissolve ); }\n"
+		"\t}\n"
+		"\tfloat4 src = g_Base.SampleLevel( g_Sampler, uv, 0 );\n"
+		"\tfloat alpha = src.a * i.Color.a * g_EffectB.y;\n"
+		"\tif ( alpha <= 0.0 ) { discard; }\n"
+		"\tfloat3 emissive = src.rgb * i.Color.rgb * i.Params.y + g_EffectEdge.rgb * edge;\n"
+		"\treturn float4( min( emissive * g_EffectBright.rgb, 1.0 ), alpha );\n"
+		"}\n";
 
 	uint32 RoundUp( uint32 Value, uint32 Unit )
 	{
@@ -446,6 +490,8 @@ void CDX12ShaderService::Shutdown()
 	BuiltInPixelLitVertex = FShaderRecord();
 	BuiltInPixelLit = FShaderRecord();
 	BuiltInPixelLitTextured = FShaderRecord();
+	BuiltInEffectMaterialVertex = FShaderRecord();
+	BuiltInEffectMaterial = FShaderRecord();
 	ShadowPasses.Reset();
 	bBuiltInTried = false;
 	Pipelines = nullptr;
@@ -644,19 +690,21 @@ void CDX12ShaderService::BuildBuiltIns()
 	Build( EShaderStage::Vertex, "PixelLitVS", BuiltInPixelLitVertex );
 	Build( EShaderStage::Pixel, "PixelLitMain", BuiltInPixelLit );
 	Build( EShaderStage::Pixel, "PixelLitTexturedMain", BuiltInPixelLitTextured );
+	Build( EShaderStage::Vertex, "EffectMaterialVS", BuiltInEffectMaterialVertex );
+	Build( EShaderStage::Pixel, "EffectMaterialPS", BuiltInEffectMaterial );
 }
 
 const CDX12ShaderService::FShaderRecord* CDX12ShaderService::GetBuiltIn( EBuiltInVertexShader Kind )
 {
 	BuildBuiltIns();
-	const FShaderRecord* Record = Kind == EBuiltInVertexShader::Rect ? &BuiltInRect : Kind == EBuiltInVertexShader::Quad3D ? &BuiltInQuad : Kind == EBuiltInVertexShader::ShadowLit ? &BuiltInLit : Kind == EBuiltInVertexShader::PixelLit ? &BuiltInPixelLitVertex : nullptr;
+	const FShaderRecord* Record = Kind == EBuiltInVertexShader::Rect ? &BuiltInRect : Kind == EBuiltInVertexShader::Quad3D ? &BuiltInQuad : Kind == EBuiltInVertexShader::ShadowLit ? &BuiltInLit : Kind == EBuiltInVertexShader::PixelLit ? &BuiltInPixelLitVertex : Kind == EBuiltInVertexShader::EffectMaterial ? &BuiltInEffectMaterialVertex : nullptr;
 	return Record && !Record->Code.IsEmpty() ? Record : nullptr;
 }
 
 const CDX12ShaderService::FShaderRecord* CDX12ShaderService::GetBuiltInPixel( EBuiltInPixelShader Kind )
 {
 	BuildBuiltIns();
-	const FShaderRecord* Record = Kind == EBuiltInPixelShader::ShadowDepth ? &BuiltInShadowDepth : Kind == EBuiltInPixelShader::ShadowLit ? &BuiltInShadowLit : Kind == EBuiltInPixelShader::ShadowLitTextured ? &BuiltInShadowLitTextured : Kind == EBuiltInPixelShader::FogTextured ? &BuiltInFogTextured : Kind == EBuiltInPixelShader::ImageFilter ? &BuiltInImageFilter : Kind == EBuiltInPixelShader::ImageBlend ? &BuiltInImageBlend : Kind == EBuiltInPixelShader::PixelLit ? &BuiltInPixelLit : Kind == EBuiltInPixelShader::PixelLitTextured ? &BuiltInPixelLitTextured : nullptr;
+	const FShaderRecord* Record = Kind == EBuiltInPixelShader::ShadowDepth ? &BuiltInShadowDepth : Kind == EBuiltInPixelShader::ShadowLit ? &BuiltInShadowLit : Kind == EBuiltInPixelShader::ShadowLitTextured ? &BuiltInShadowLitTextured : Kind == EBuiltInPixelShader::FogTextured ? &BuiltInFogTextured : Kind == EBuiltInPixelShader::ImageFilter ? &BuiltInImageFilter : Kind == EBuiltInPixelShader::ImageBlend ? &BuiltInImageBlend : Kind == EBuiltInPixelShader::PixelLit ? &BuiltInPixelLit : Kind == EBuiltInPixelShader::PixelLitTextured ? &BuiltInPixelLitTextured : Kind == EBuiltInPixelShader::EffectMaterial ? &BuiltInEffectMaterial : nullptr;
 	return Record && !Record->Code.IsEmpty() ? Record : nullptr;
 }
 

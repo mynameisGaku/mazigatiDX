@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "CanvasDrawExecutor.h"
 #include "Library/Platform/Render/Geometry/GeometryCommandExecutor.h"
+#include "Library/Platform/Render/Shader/MaterialEffectCommandExecutor.h"
 #include "Library/Platform/Render/Shader/ShaderCommandExecutor.h"
 #include "Library/Platform/Render/Shadow/ShadowMapMath.h"
 #include "Library/Framework/Render/Draw/DrawCommand.h"
@@ -90,6 +91,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 	}
 	CGeometryCommandExecutor Geometry( Surface.GetGeometry3D(), Textures, Buffers, Models ); // このSpanだけの3D状態。
 	CShaderCommandExecutor ShaderExecutor( Geometry, Shaders ); // このSpanだけのシェーダーの状態。
+	CMaterialEffectCommandExecutor MaterialExecutor( Geometry, ShaderExecutor ); // 材質付きの3D描画（組み込みのシェーダーで描く）。
 	Geometry.SetShaderSource( Shaders ); // 影の描画にも、同じ実行先を使う。
 	CNullCanvas2D NullCanvas; // 2Dを描けない描画先では、これを使う（何も描かない）。
 	bool bLinearFilter = false; // 画像の既定は最近傍。
@@ -1867,6 +1869,15 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 				if ( View.Type == EDrawCommand::ShaderOutputTarget && !ShaderExecutor.HasOutputTargets() )
 				{
 					LeaveMrt(); // 出力を外したら、1つの出力のパスへ戻る（そのあとの描画・読み出しのため）。
+				}
+				break;
+			}
+			if ( CMaterialEffectCommandExecutor::IsMaterialEffectCommand( View.Type ) )
+			{
+				// 材質付きの3D描画。描けなかった命令だけを飛ばして、続きを描く。
+				if ( MaterialExecutor.Execute( View, Bright, Alpha, bAlphaBlend ) != CShaderCommandExecutor::EResult::Executed )
+				{
+					Unsupported( View, "The material effect command was rejected (invalid input, an unsupported blend mode or a failed draw) and skipped" );
 				}
 				break;
 			}

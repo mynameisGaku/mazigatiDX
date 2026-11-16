@@ -73,6 +73,25 @@ bool CShaderCommandExecutor::Draw( FShaderDrawRequest& Request, bool bAlphaBlend
 	return Target && Source->DrawShader( Request, *Target );
 }
 
+bool CShaderCommandExecutor::DrawBuiltIn( FShaderDrawRequest& Request, bool bTwoSided )
+{
+	IRenderGeometry3D* Target = Geometry.GetGeometry();
+	if ( !Source || !Target )
+	{
+		return false;
+	}
+	if ( bTwoSided )
+	{
+		Request.State.Culling = EGeometryCulling::None;
+	}
+	if ( Prepare && !Prepare( Request ) )
+	{
+		return false;
+	}
+	Target = Geometry.GetGeometry(); // 準備で、描画先のパスが替わることがある。
+	return Target && Source->DrawShader( Request, *Target );
+}
+
 CShaderCommandExecutor::EResult CShaderCommandExecutor::Execute( const FDrawCommandView& View, bool bAlphaBlend )
 {
 	switch ( View.Type )

@@ -37,6 +37,8 @@ public:
 	static bool IsShaderCommand( EDrawCommand Type );
 	// 1 命令を検査して実行する。bAlphaBlend は、いまの合成（通常のアルファか、上書きか）。
 	EResult Execute( const FDrawCommandView& View, bool bAlphaBlend );
+	// 組み込みのシェーダー（Builtin / BuiltinPixel）で描く。置いてある利用者のシェーダー・定数・画像は使わない（Request に、State・頂点・定数・画像を入れておく）。bTwoSided なら、両面を描く。描く前の準備（SetPrepare）は行う。
+	bool DrawBuiltIn( FShaderDrawRequest& Request, bool bTwoSided );
 
 private:
 	struct FStoredConstants

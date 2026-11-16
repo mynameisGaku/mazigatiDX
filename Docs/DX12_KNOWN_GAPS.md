@@ -11,7 +11,7 @@ DX12 で動いているかどうかを、コードで分けたいときは `NBac
 | 領域 | 内容 | 影響 | 備考 |
 |---|---|---|---|
 | アニメーションつきモデル（残り） | 実素材での描画の確認（アニメーションつき FBX を DX12 で描いて、DxLib と比べる）。`ModelAnim` / `ModelAnimFrame` / `Model3D` のアニメーション時間 / `ModelFramePose3D`（描くときだけ骨を上書き）は、実行側（`CGeometryCommandExecutor`）まで接続して、合成した骨組みで、命令から描かれた頂点までを検査してある（GPU は通していない）。`MV1` ファイルの読み込みは、DX12 では FBX / OBJ だけ | アニメーションつきの FBX は、読み込める（CPU でスキニング）。見た目は、実素材で未確認 | サンプルには、アニメーションつきの素材が無い。割合の混ぜ方（付けたアニメーションごとの割合の重み。足りないぶんは元の姿へ）は、DxLib の `MV1SetAttachAnimBlendRate` の挙動を、フレームワークの割合の計算（`NAnimationBlend`。骨ごとに合計 1）に合わせて仮定したもの。DxLib のモデルで比べて確かめること |
-| 材質効果の 3D 描画 | `MaterialQuad3D` / `DistortedMaterialQuad3D` / `MaterialRibbon3D` / `DistortedMaterialRibbon3D` / `MaterialMesh3D` / `ModelMaterial3D`、`IDrawExecutor::SupportsEffect*` / `SupportsModelMaterialEffects`（すべて false） | 材質を使うエフェクトのリボン・メッシュ、モデルへの材質効果は出ない（その命令だけ飛ばす）。パーティクルの材質（`ShaderQuad3D` 経由）は出る | どのサンプルも使わない |
+| 材質効果の 3D 描画（残り） | `MaterialMesh3D` / `ModelMaterial3D`、`IDrawExecutor::SupportsEffectMaterialMesh` / `SupportsModelMaterialEffects`（false） | 材質を使うエフェクトのメッシュ・モデルへの材質効果は出ない（その命令だけ飛ばす）。四角形・帯の材質（消失・境界の発光・UVのゆがみ）は出る。画像の一部（派生画像）は、元の画像全体として読む。パーティクルの材質（`ShaderQuad3D` 経由）も出る | どのサンプルも使わない |
 | モデルのメッシュデータ・モーフ | `GetModelMeshData`（現在の姿勢の頂点データ）/ モーフ（`ShapeRate`）/ `SaveModelToMV1` / 材質の環境光・鏡面・自己発光の描画への反映（拡散色だけ反映） | 失敗を返す（材質の色は、拡散色だけ描画に出る） | 当たり判定（`RaycastModel` / `OverlapModelSphere` / `PrepareModelCollision`）と材質色の上書きは、ある（DxLib との辺・頂点ぎりぎりの比較は未確認） |
 | 合成モード（残り） | 利用者のシェーダーの描画は、`Invert` / `MultiplyAlpha` でも、通常のアルファで描く | 色が違う | どのサンプルも使わない |
 | シャドウマップの確認表示 | `PreviewShadowMap` | 出ない | |
