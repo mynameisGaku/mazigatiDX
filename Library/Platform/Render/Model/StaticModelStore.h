@@ -6,6 +6,7 @@
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Thread/Mutex.h"
 #include "Library/Framework/Asset/Model/Import/StaticModelDefinition.h"
+#include "Library/Framework/Asset/Model/ModelCollisionTypes.h"
 #include "Library/Platform/Render/Model/ModelRig.h"
 
 // 形状と画像を共有し、個体の状態（不透明度・アニメーション・骨の上書き・表示）と登録番号を所有する。GPUに依存しない。
@@ -76,6 +77,23 @@ public:
 	bool SetMeshVisible( int32 Handle, int32 Mesh, bool bVisible );
 	// 骨組みのあるモデルか（形状の無い、アニメーションだけのモデルも）
 	bool HasRig( int32 Handle ) const;
+
+	//-------------------------------------------------------------------------
+	// 当たり判定（モデルの手元の座標。置き場所を含まない）
+	//   準備したときの形（いまのポーズで変形した頂点。非表示のメッシュも含む）を写しておき、それに問い合わせる。
+	//   準備していなければ、最初の問い合わせのときに準備する。準備し直すまで、形は変わらない。
+	//-------------------------------------------------------------------------
+	bool PrepareCollision( int32 Handle );
+	// From から To への線分が、最初に当たる三角形。当たらなければ false
+	bool Raycast( int32 Handle, const FVector3& From, const FVector3& To, FModelHit& Out );
+	// 球と重なる三角形をすべて（Distance は、球の中心から三角形のいちばん近い点まで）
+	bool OverlapSphere( int32 Handle, const FVector3& Center, float32 Radius, TArray<FModelHit>& Out );
+
+	//-------------------------------------------------------------------------
+	// 材質の色（個体ごとに上書きできる。描画に反映するのは拡散色（Diffuse）だけ）
+	//-------------------------------------------------------------------------
+	bool GetMaterialColors( int32 Handle, int32 Material, FModelMaterialColors& Out ) const;
+	bool SetMaterialColors( int32 Handle, int32 Material, const FModelMaterialColors& Colors );
 private:
 	// 形状は登録時に完成し、以降は書き換えない。
 	struct FResource
@@ -103,6 +121,22 @@ private:
 		TArray<FMatrix4x4> Global;
 		uint64 PoseVersion = 0; // Local / Global を作ったときの Pose.Version。
 		uint64 BuiltVersion = 0; // Vertices / Indices / Sections を作ったときの Pose.Version。
+		TArray<FModelMaterialColors> MaterialColors; // 個体ごとの材質の色（上書きしたものだけ有効）。
+		TArray<uint8> bMaterialSet;
+	};
+	// 準備したときの形の三角形。
+	struct FCollisionTriangle
+	{
+		FVector3 P[3];
+		FVector3 Normal; // 頂点の法線の向きに揃えた、三角形の向き。
+		FVector3 Min, Max;
+		int32 Frame = -1;
+		int32 Material = -1;
+		int32 Triangle = -1; // フレームの中での三角形の番号。
+	};
+	struct FCollision
+	{
+		TArray<FCollisionTriangle> Triangles;
 	};
 	// 形状の共有と個体別の値を分ける。
 	struct FInstance
@@ -110,6 +144,7 @@ private:
 		TSharedPtr<FResource> Resource; // 個体間で共有する不変形状。
 		float32 Opacity = 1; // この個体だけの不透明度。
 		TSharedPtr<FInstanceRig> Rig; // この個体だけのポーズ（共有しない）。
+		TSharedPtr<FCollision> Collision; // 準備した当たり判定（共有しない）。
 	};
 	// 以下は、排他を取った中でだけ呼ぶ。
 	FInstance* FindInstance( int32 Handle );
@@ -118,6 +153,9 @@ private:
 	bool IsHidden( const FInstance& Instance, int32 SourceMesh, int32 SourceFrame ) const;
 	bool NeedsDeform( const FInstance& Instance ) const;
 	void BuildDeformed( FInstance& Instance );
+	// 非表示を除かない、いまの姿の頂点（当たり判定の準備に使う）。
+	void GetFullVertices( FInstance& Instance, TArray<FDrawVertex3D>& Out );
+	bool EnsureCollision( FInstance& Instance );
 
 	mutable FMutex Lock; // 描画の実行スレッドとゲームのスレッドの両方から呼ばれる。
 	TMap<int32, FInstance> Instances; // 登録番号から個体への表。

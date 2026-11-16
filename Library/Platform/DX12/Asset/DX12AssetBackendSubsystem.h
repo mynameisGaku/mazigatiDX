@@ -99,6 +99,10 @@ public:
 	bool GetModelStructure( int32 Model, FModelStructure& Out ) override;
 	// 現在は読み込んだ材質色だけを答える。
 	bool GetModelMaterialColors( int32 Model, int32 Material, FModelMaterialColors& Out ) override;
+	bool SetModelMaterialColors( int32 Model, int32 Material, const FModelMaterialColors& Colors ) override;
+	bool PrepareModelCollision( int32 Model ) override;
+	bool RaycastModel( int32 Model, const FVector3& From, const FVector3& To, FModelHit& Out ) override;
+	bool OverlapModelSphere( int32 Model, const FVector3& Center, float32 Radius, TArray<FModelHit>& Out ) override;
 	// 個体別の不透明度を取得する。
 	bool GetModelOpacity( int32 Model, float32& Out ) override;
 	// 個体別の不透明度を設定する。0〜1の有限値のみ。

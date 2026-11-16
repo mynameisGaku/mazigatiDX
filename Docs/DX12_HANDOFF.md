@@ -417,3 +417,8 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **バックエンド窓口（`CDX12AssetBackendSubsystem`）**: `GetModelAnimCount` / `Name` / `Length` / `UnitsPerSecond`（30）、`AttachModelAnim` / `DetachModelAnim`、`SampleModelAnimFrameLocalMatrix`、`GetModelFramePosition`（描いた配置を掛けたワールド位置）、`GetModelFrameMatrix`（Local / World。以前は Local の基準値だけ）、骨の上書き（Get / Set / Clear）、骨・メッシュの表示（Get / Set）。
 - **検査**: 検査用リポジトリの `RunModelRigTests.ps1`（独立した実行ファイル `ModelRigContract`。窓・描画なし）65 項目。骨 3 本 + スキンの帯 + 90 度に曲げるクリップを合成して、基準の姿・曲げ（剛体のまま・関節が動かない・2 本の骨の頂点）・補間・割合・2 つ付ける・骨ごとの割合（子も含める）・外す・上書き・複製・表示（祖先も）・配置を掛けた位置・別のモデルのクリップ・不正なシーン・混ぜ方を確かめる。スキンの掛け順・割合の元の姿への寄せ・祖先の非表示・子へ広げる割合・配置を壊す変異で、別々の項目が失敗することを確かめた。回転の向きを揃える処理は、`FromBasis` が符号をそろえるため、行列からは検査できない（防御）。
 - **未確認**: 実素材（アニメーションつき FBX）での描画と DxLib との比較、割合の混ぜ方（DxLib の `MV1SetAttachAnimBlendRate` の仮定）、`ModelFramePose3D`・`ModelMaterial3D`・当たり判定・材質色・モーフ。
+
+## 2026-11-16 追記: モデルの当たり判定と材質の色
+- **当たり判定（`CStaticModelStore`）**: `PrepareCollision` で、いまのポーズの形（変形した頂点。非表示のメッシュも含む。モデルの手元の座標）を三角形の一覧に写し、`Raycast`（線分と三角形の交差。両面。最初に当たるもの）・`OverlapSphere`（三角形のいちばん近い点までの距離が半径以内のすべて。AABB で先に絞る）が、その形に問い合わせる。準備していなければ最初の問い合わせで準備し、準備し直すまで形は変わらない（DxLib と同じ）。当たった三角形の表の向きは、頂点の法線の側。`Frame` / `Material`（材質未指定は -1）/ フレームの中での三角形の番号を返す。
+- **材質の色**: `SetMaterialColors` / `GetMaterialColors`（個体ごとの上書き）。描画に反映するのは拡散色だけ（頂点は範囲ごとに専用なので、その材質の範囲の頂点の色を変える）。骨組みの無い（従来の）モデルは拒否。
+- **検査**: `ModelRigContract` を 90 項目に。四角形のモデルで、線の当たり・向き（巻き順が逆でも）・外れ・短い線分・球（半径が限界）・準備し直し・ポーズに追従・非表示に当たる、色の上書き（描いた頂点の色・別の個体は不変・不正な値）を確かめる。線分の端・法線の向き・球の半径・色の反映を壊す変異で、別々の項目が失敗することを確かめた。

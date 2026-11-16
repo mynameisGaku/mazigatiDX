@@ -5,6 +5,59 @@
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Types/Numeric.h"
 
+namespace
+{
+	uint8 ColorByte( float32 Value )
+	{
+		return static_cast<uint8>( NMath::Clamp( Value, 0.0f, 1.0f ) * 255 + 0.5f );
+	}
+
+	// 三角形 ABC の上の、点 P にいちばん近い点（Ericson, Real-Time Collision Detection）
+	FVector3 ClosestPointOnTriangle( const FVector3& P, const FVector3& A, const FVector3& B, const FVector3& C )
+	{
+		const FVector3 AB = B - A;
+		const FVector3 AC = C - A;
+		const FVector3 AP = P - A;
+		const float32 D1 = FVector3::Dot( AB, AP );
+		const float32 D2 = FVector3::Dot( AC, AP );
+		if ( D1 <= 0.0f && D2 <= 0.0f )
+		{
+			return A;
+		}
+		const FVector3 BP = P - B;
+		const float32 D3 = FVector3::Dot( AB, BP );
+		const float32 D4 = FVector3::Dot( AC, BP );
+		if ( D3 >= 0.0f && D4 <= D3 )
+		{
+			return B;
+		}
+		const float32 VC = D1 * D4 - D3 * D2;
+		if ( VC <= 0.0f && D1 >= 0.0f && D3 <= 0.0f )
+		{
+			return A + AB * ( D1 / ( D1 - D3 ) );
+		}
+		const FVector3 CP = P - C;
+		const float32 D5 = FVector3::Dot( AB, CP );
+		const float32 D6 = FVector3::Dot( AC, CP );
+		if ( D6 >= 0.0f && D5 <= D6 )
+		{
+			return C;
+		}
+		const float32 VB = D5 * D2 - D1 * D6;
+		if ( VB <= 0.0f && D2 >= 0.0f && D6 <= 0.0f )
+		{
+			return A + AC * ( D2 / ( D2 - D6 ) );
+		}
+		const float32 VA = D3 * D6 - D5 * D4;
+		if ( VA <= 0.0f && ( D4 - D3 ) >= 0.0f && ( D5 - D6 ) >= 0.0f )
+		{
+			return B + ( C - B ) * ( ( D4 - D3 ) / ( ( D4 - D3 ) + ( D5 - D6 ) ) );
+		}
+		const float32 Denominator = 1.0f / ( VA + VB + VC );
+		return A + AB * ( VB * Denominator ) + AC * ( VC * Denominator );
+	}
+}
+
 CStaticModelStore::FResource::~FResource()
 {
 	if ( TextureBackend )
@@ -231,6 +284,13 @@ bool CStaticModelStore::NeedsDeform( const FInstance& Instance ) const
 			return true;
 		}
 	}
+	for ( uint8 Flag : Instance.Rig->bMaterialSet )
+	{
+		if ( Flag )
+		{
+			return true;
+		}
+	}
 	for ( const FModelAttach& Attach : Pose.Attaches )
 	{
 		if ( !Attach.bUsed )
@@ -310,6 +370,37 @@ void CStaticModelStore::BuildDeformed( FInstance& Instance )
 			Rig.Indices.Add( Resource.Definition.Surface.Indices[First + Offset] );
 		}
 		Rig.Sections.Add( Section );
+	}
+	// 材質の色の上書きを、頂点の拡散色へ（頂点は、範囲ごとに専用なので、範囲の材質で決められる）
+	bool bAnyColor = false;
+	for ( uint8 Flag : Rig.bMaterialSet )
+	{
+		bAnyColor = bAnyColor || Flag != 0;
+	}
+	if ( bAnyColor )
+	{
+		int32 Cursor = 0;
+		for ( int32 Index = 0; Index < Resource.Sections.Num() && Index < SourceSections.Num(); ++Index )
+		{
+			if ( IsHidden( Instance, SourceSections[Index].SourceMeshIndex, SourceSections[Index].SourceFrameIndex ) )
+			{
+				continue;
+			}
+			const int32 Material = SourceSections[Index].MaterialIndex;
+			if ( Material >= 0 && Material < Rig.bMaterialSet.Num() && Rig.bMaterialSet[Material] )
+			{
+				const FColor& Diffuse = Rig.MaterialColors[Material].Diffuse;
+				for ( int32 Offset = 0; Offset < Rig.Sections[Cursor].NumIndices; ++Offset )
+				{
+					FDrawVertex3D& Vertex = Rig.Vertices[Rig.Indices[Rig.Sections[Cursor].FirstIndex + Offset]];
+					Vertex.Diffuse[0] = ColorByte( Diffuse.r );
+					Vertex.Diffuse[1] = ColorByte( Diffuse.g );
+					Vertex.Diffuse[2] = ColorByte( Diffuse.b );
+					Vertex.Diffuse[3] = ColorByte( Diffuse.a );
+				}
+			}
+			++Cursor;
+		}
 	}
 	Rig.BuiltVersion = Rig.Pose.Version;
 }
@@ -714,5 +805,223 @@ bool CStaticModelStore::SetMeshVisible( int32 Handle, int32 Mesh, bool bVisible 
 	}
 	Instance->Rig->Pose.MeshHidden[Mesh] = bVisible ? 0 : 1;
 	++Instance->Rig->Pose.Version;
+	return true;
+}
+
+void CStaticModelStore::GetFullVertices( FInstance& Instance, TArray<FDrawVertex3D>& Out )
+{
+	const FResource& Resource = *Instance.Resource;
+	Out = Resource.Vertices;
+	if ( Instance.Rig && Resource.Rig && ( Resource.bHasSkin || NeedsDeform( Instance ) ) )
+	{
+		EnsurePose( Instance );
+		NModelRig::Deform( *Resource.Rig, Instance.Rig->Global, Resource.VertexSources, Out.GetData(), Out.Num() );
+	}
+}
+
+bool CStaticModelStore::EnsureCollision( FInstance& Instance )
+{
+	if ( Instance.Collision.IsValid() )
+	{
+		return true;
+	}
+	const FResource& Resource = *Instance.Resource;
+	TArray<FDrawVertex3D> Vertices;
+	GetFullVertices( Instance, Vertices );
+	auto Collision = MakeShared<FCollision>();
+	const FStaticModelSurfaceData& Surface = Resource.Definition.Surface;
+	const int32 DefaultMaterial = Resource.Definition.Structure.Materials.Num() - 1; // 最後は、材質未指定用
+	TMap<int32, int32> FrameTriangles; // フレームごとの、これまでの三角形の数。
+	for ( const FStaticModelSurfaceSection& Section : Surface.Sections )
+	{
+		int32& Count = FrameTriangles.FindOrAdd( Section.SourceFrameIndex );
+		for ( int32 Offset = 0; Offset + 2 < Section.NumIndices; Offset += 3 )
+		{
+			FCollisionTriangle Triangle;
+			FVector3 VertexNormal( 0.0f, 0.0f, 0.0f );
+			for ( int32 Corner = 0; Corner < 3; ++Corner )
+			{
+				const FDrawVertex3D& Vertex = Vertices[Surface.Indices[Section.FirstIndex + Offset + Corner]];
+				Triangle.P[Corner] = FVector3( Vertex.Position[0], Vertex.Position[1], Vertex.Position[2] );
+				VertexNormal = VertexNormal + FVector3( Vertex.Normal[0], Vertex.Normal[1], Vertex.Normal[2] );
+			}
+			FVector3 Normal = FVector3::Cross( Triangle.P[1] - Triangle.P[0], Triangle.P[2] - Triangle.P[0] );
+			if ( Normal.LengthSquared() < 1.0e-20f )
+			{
+				++Count;
+				continue; // 面積の無い三角形は、当たらない
+			}
+			Normal = Normal.Normalized();
+			Triangle.Normal = FVector3::Dot( Normal, VertexNormal ) < 0.0f ? Normal * -1.0f : Normal; // 頂点の法線の側を表にする
+			Triangle.Min = FVector3( NMath::Min( Triangle.P[0].x, NMath::Min( Triangle.P[1].x, Triangle.P[2].x ) ), NMath::Min( Triangle.P[0].y, NMath::Min( Triangle.P[1].y, Triangle.P[2].y ) ), NMath::Min( Triangle.P[0].z, NMath::Min( Triangle.P[1].z, Triangle.P[2].z ) ) );
+			Triangle.Max = FVector3( NMath::Max( Triangle.P[0].x, NMath::Max( Triangle.P[1].x, Triangle.P[2].x ) ), NMath::Max( Triangle.P[0].y, NMath::Max( Triangle.P[1].y, Triangle.P[2].y ) ), NMath::Max( Triangle.P[0].z, NMath::Max( Triangle.P[1].z, Triangle.P[2].z ) ) );
+			Triangle.Frame = Section.SourceFrameIndex;
+			Triangle.Material = Section.MaterialIndex == DefaultMaterial ? -1 : Section.MaterialIndex;
+			Triangle.Triangle = Count++;
+			Collision->Triangles.Add( Triangle );
+		}
+	}
+	Instance.Collision = Collision;
+	return true;
+}
+
+bool CStaticModelStore::PrepareCollision( int32 Handle )
+{
+	FScopedLock Guard( Lock );
+	FInstance* Instance = FindInstance( Handle );
+	if ( !Instance )
+	{
+		return false;
+	}
+	Instance->Collision.Reset(); // 写し直す。
+	return EnsureCollision( *Instance );
+}
+
+bool CStaticModelStore::Raycast( int32 Handle, const FVector3& From, const FVector3& To, FModelHit& Out )
+{
+	FScopedLock Guard( Lock );
+	FInstance* Instance = FindInstance( Handle );
+	if ( !Instance || !EnsureCollision( *Instance ) )
+	{
+		return false;
+	}
+	const FVector3 Direction = To - From;
+	const float32 Length = Direction.Length();
+	if ( !( Length > 0.0f ) || !NMath::IsFinite( Length ) )
+	{
+		return false;
+	}
+	float32 BestT = 2.0f;
+	const FCollisionTriangle* Best = nullptr;
+	for ( const FCollisionTriangle& Triangle : Instance->Collision->Triangles )
+	{
+		// 両面に当たる、線分と三角形の交差（Moller-Trumbore）
+		const FVector3 Edge1 = Triangle.P[1] - Triangle.P[0];
+		const FVector3 Edge2 = Triangle.P[2] - Triangle.P[0];
+		const FVector3 P = FVector3::Cross( Direction, Edge2 );
+		const float32 Determinant = FVector3::Dot( Edge1, P );
+		if ( NMath::Abs( Determinant ) < 1.0e-12f )
+		{
+			continue;
+		}
+		const float32 InverseDeterminant = 1.0f / Determinant;
+		const FVector3 T = From - Triangle.P[0];
+		const float32 U = FVector3::Dot( T, P ) * InverseDeterminant;
+		if ( U < 0.0f || U > 1.0f )
+		{
+			continue;
+		}
+		const FVector3 Q = FVector3::Cross( T, Edge1 );
+		const float32 V = FVector3::Dot( Direction, Q ) * InverseDeterminant;
+		if ( V < 0.0f || U + V > 1.0f )
+		{
+			continue;
+		}
+		const float32 Distance = FVector3::Dot( Edge2, Q ) * InverseDeterminant; // 線分の割合
+		if ( Distance >= 0.0f && Distance <= 1.0f && Distance < BestT )
+		{
+			BestT = Distance;
+			Best = &Triangle;
+		}
+	}
+	if ( !Best )
+	{
+		return false;
+	}
+	Out.Position = From + Direction * BestT;
+	Out.Normal = Best->Normal;
+	Out.Distance = BestT * Length;
+	Out.Frame = Best->Frame;
+	Out.Material = Best->Material;
+	Out.Triangle = Best->Triangle;
+	return true;
+}
+
+bool CStaticModelStore::OverlapSphere( int32 Handle, const FVector3& Center, float32 Radius, TArray<FModelHit>& Out )
+{
+	FScopedLock Guard( Lock );
+	FInstance* Instance = FindInstance( Handle );
+	if ( !Instance || !( Radius > 0.0f ) || !NMath::IsFinite( Radius ) || !EnsureCollision( *Instance ) )
+	{
+		return false;
+	}
+	Out.Reset();
+	for ( const FCollisionTriangle& Triangle : Instance->Collision->Triangles )
+	{
+		if ( Center.x + Radius < Triangle.Min.x || Center.x - Radius > Triangle.Max.x || Center.y + Radius < Triangle.Min.y || Center.y - Radius > Triangle.Max.y || Center.z + Radius < Triangle.Min.z || Center.z - Radius > Triangle.Max.z )
+		{
+			continue;
+		}
+		const FVector3 Closest = ClosestPointOnTriangle( Center, Triangle.P[0], Triangle.P[1], Triangle.P[2] );
+		const float32 Distance = ( Closest - Center ).Length();
+		if ( Distance <= Radius )
+		{
+			FModelHit Hit;
+			Hit.Position = Closest;
+			Hit.Normal = Triangle.Normal;
+			Hit.Distance = Distance;
+			Hit.Frame = Triangle.Frame;
+			Hit.Material = Triangle.Material;
+			Hit.Triangle = Triangle.Triangle;
+			Out.Add( Hit );
+		}
+	}
+	return true;
+}
+
+bool CStaticModelStore::GetMaterialColors( int32 Handle, int32 Material, FModelMaterialColors& Out ) const
+{
+	FScopedLock Guard( Lock );
+	const FInstance* Instance = FindInstance( Handle );
+	if ( !Instance )
+	{
+		return false;
+	}
+	const auto& Materials = Instance->Resource->Definition.Structure.Materials;
+	if ( Material < 0 || Material >= Materials.Num() )
+	{
+		return false;
+	}
+	if ( Instance->Rig && Material < Instance->Rig->bMaterialSet.Num() && Instance->Rig->bMaterialSet[Material] )
+	{
+		Out = Instance->Rig->MaterialColors[Material];
+	}
+	else
+	{
+		Out = Materials[Material].Colors;
+	}
+	return true;
+}
+
+bool CStaticModelStore::SetMaterialColors( int32 Handle, int32 Material, const FModelMaterialColors& Colors )
+{
+	FScopedLock Guard( Lock );
+	FInstance* Instance = FindInstance( Handle );
+	if ( !Instance || !Instance->Rig )
+	{
+		return false; // 骨組みの無い（従来の）モデルは、共有した形状の色を変えられない
+	}
+	const auto& Materials = Instance->Resource->Definition.Structure.Materials;
+	if ( Material < 0 || Material >= Materials.Num() )
+	{
+		return false;
+	}
+	const FColor Parts[4] = { Colors.Diffuse, Colors.Ambient, Colors.Specular, Colors.Emissive };
+	for ( const FColor& Part : Parts )
+	{
+		if ( !NMath::IsFinite( Part.r ) || !NMath::IsFinite( Part.g ) || !NMath::IsFinite( Part.b ) || !NMath::IsFinite( Part.a ) )
+		{
+			return false;
+		}
+	}
+	FInstanceRig& Rig = *Instance->Rig;
+	if ( Rig.bMaterialSet.IsEmpty() )
+	{
+		Rig.bMaterialSet.SetNum( Materials.Num(), 0 );
+		Rig.MaterialColors.SetNum( Materials.Num() );
+	}
+	Rig.bMaterialSet[Material] = 1;
+	Rig.MaterialColors[Material] = Colors;
+	++Rig.Pose.Version;
 	return true;
 }

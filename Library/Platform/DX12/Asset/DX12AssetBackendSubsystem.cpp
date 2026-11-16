@@ -704,11 +704,25 @@ bool CDX12AssetBackendSubsystem::GetModelStructure( int32 Model, FModelStructure
 
 bool CDX12AssetBackendSubsystem::GetModelMaterialColors( int32 Model, int32 Material, FModelMaterialColors& Out )
 {
-	const auto* Definition = Models.GetDefinition( Model ); // 形状へ色を反映済みの材質。
-	if ( !Definition || Material < 0 || Material >= Definition->Structure.Materials.Num() )
-	{
-		return false;
-	}
-	Out = Definition->Structure.Materials[Material].Colors;
-	return true;
+	return Models.GetMaterialColors( Model, Material, Out );
+}
+
+bool CDX12AssetBackendSubsystem::SetModelMaterialColors( int32 Model, int32 Material, const FModelMaterialColors& Colors )
+{
+	return Models.SetMaterialColors( Model, Material, Colors );
+}
+
+bool CDX12AssetBackendSubsystem::PrepareModelCollision( int32 Model )
+{
+	return Models.PrepareCollision( Model );
+}
+
+bool CDX12AssetBackendSubsystem::RaycastModel( int32 Model, const FVector3& From, const FVector3& To, FModelHit& Out )
+{
+	return Models.Raycast( Model, From, To, Out );
+}
+
+bool CDX12AssetBackendSubsystem::OverlapModelSphere( int32 Model, const FVector3& Center, float32 Radius, TArray<FModelHit>& Out )
+{
+	return Models.OverlapSphere( Model, Center, Radius, Out );
 }
