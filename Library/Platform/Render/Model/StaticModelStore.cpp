@@ -72,7 +72,7 @@ CStaticModelStore::FResource::~FResource()
 int32 CStaticModelStore::Create( const FImportedScene& Scene, const FString& SourcePath, ITextureBackend& Textures, FString& Error, bool bAllowRig )
 {
 	FScopedLock Guard( Lock );
-	if ( Instances.Num() >= 128 || NextHandle == TNumericLimits<int32>::Max() )
+	if ( Instances.Num() >= 128 || NextHandle == TNumericLimits<int32>::Max() || NextResourceId >= ( 1ull << 62 ) )
 	{
 		Error = "Static model instance limit exceeded";
 		return -1;

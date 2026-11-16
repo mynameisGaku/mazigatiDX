@@ -525,7 +525,7 @@ bool CGeometryCommandExecutor::CanDrawForward( const FStaticModelDrawView& Model
 		&& TextureTransform.Enabled == 0 && !( Lighting.IsEnabled() && Lighting.GetOptions().bPixelLighting ) && Camera.IsValid() && Geometry->GetWidth() > 0 && Geometry->GetHeight() > 0 && bUseForwardPath;
 }
 
-int32 CGeometryCommandExecutor::DrawModelForward( const FStaticModelDrawView& Model, int32 ModelAlpha, bool bAlphaBlend )
+int32 CGeometryCommandExecutor::DrawModelForward( const FStaticModelDrawView& Model, int32 ModelAlpha, bool bAlphaBlend, bool bInferAlpha )
 {
 	const FCameraViewport Viewport = { Geometry->GetWidth(), Geometry->GetHeight() };
 	const FMatrix4x4 Transform = World * Camera.GetViewMatrix() * Camera.GetProjectionMatrix( Viewport ); // ローカルからクリップへの変換。
@@ -570,7 +570,7 @@ int32 CGeometryCommandExecutor::DrawModelForward( const FStaticModelDrawView& Mo
 		Draw.Texture = Section.Texture;
 		Draw.State = State;
 		Draw.State.Topology = EGeometryTopology::Triangles;
-		Draw.State.bAlphaBlend = bAlphaBlend || ModelAlpha < 255 || Section.Texture >= 0 || bAnyTranslucent;
+		Draw.State.bAlphaBlend = bAlphaBlend || ( bInferAlpha && ( ModelAlpha < 255 || Section.Texture >= 0 || bAnyTranslucent ) );
 		if ( !ShaderSource->DrawForwardMesh( Draw, *Geometry ) )
 		{
 			break; // 描けなかった範囲から先は、CPU の経路で描く。
@@ -1474,7 +1474,6 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::Execute( const FDraw
 			return EResult::Rejected;
 		}
 		TArray<FDrawVertex3D> Ordered; // 全indexを検査してから記録する。
-		Ordered.Reserve( Data.NumIndices );
 		for ( int32 Index = 0; Index < Data.NumIndices; ++Index )
 		{
 			const uint32 VertexIndex = Indices.Indices[Data.StartIndex + Index]; // この面が参照する頂点。
@@ -1482,7 +1481,11 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::Execute( const FDraw
 			{
 				return EResult::Rejected;
 			}
-			Ordered.Add( Vertices.Vertices[VertexIndex] );
+			const auto& Vertex = Vertices.Vertices[VertexIndex]; // GPUへ渡す前にも数値を検査する。
+			if ( !Finite( Vertex.Position ) || !Finite( Vertex.Normal ) || !NMath::IsFinite( Vertex.U ) || !NMath::IsFinite( Vertex.V ) )
+			{
+				return EResult::Rejected;
+			}
 		}
 		const FMatrix4x4 OldWorld = World; // この1命令の後で必ず復元する。
 		const EGeometryCulling OldCulling = State.Culling; // 両面指定はこのメッシュに限る。
@@ -1494,7 +1497,25 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::Execute( const FDraw
 			State.Culling = EGeometryCulling::None;
 		}
 		// Mesh3Dは既存の契約に合わせBrightを重ねず、頂点色を使う。
-		const bool bResult = Submit( Ordered, EGeometryTopology::Triangles, FDrawRgb(), Alpha, bAlphaBlend, Data.Texture, true ); // 失敗時も状態を戻す。
+		uint64 MeshKey = 0, MeshVersion = 0; // GPU側で共有する頂点と添字の組。
+		FStaticModelDrawSection Section = { Data.StartIndex, Data.NumIndices, Data.Texture }; // 指定された範囲だけ描く。
+		FStaticModelDrawView Mesh = { Vertices.Vertices, Data.NumVertices, Indices.Indices, Indices.NumIndices, &Section, 1 };
+		bool bForward = false; // GPUが受け取らなければ一度だけCPUで描く。
+		if ( Buffers->GetMeshCacheIdentity( Data.VertexBuffer, Data.IndexBuffer, MeshKey, MeshVersion ) )
+		{
+			Mesh.MeshKey = MeshKey;
+			Mesh.MeshVersion = MeshVersion;
+			bForward = CanDrawForward( Mesh ) && DrawModelForward( Mesh, Alpha, bAlphaBlend, false ) == 1;
+		}
+		if ( !bForward )
+		{
+			Ordered.Reserve( Data.NumIndices );
+			for ( int32 Index = 0; Index < Data.NumIndices; ++Index )
+			{
+				Ordered.Add( Vertices.Vertices[Indices.Indices[Data.StartIndex + Index]] );
+			}
+		}
+		const bool bResult = bForward || Submit( Ordered, EGeometryTopology::Triangles, FDrawRgb(), Alpha, bAlphaBlend, Data.Texture, true ); // 失敗時も状態を戻す。
 		World = OldWorld;
 		State.Culling = OldCulling;
 		return bResult ? EResult::Executed : EResult::Rejected;

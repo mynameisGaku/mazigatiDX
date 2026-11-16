@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "Geometry3DGallery.h"
+#include "Library/Platform/System/CommandLine.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
 #include "Library/Framework/Render/Camera/Camera.h"
 #include "Library/Framework/Engine/Engine.h"
@@ -41,6 +42,12 @@ void CGeometry3DGallery::OnSpawn()
 
 void CGeometry3DGallery::Tick( float32 DeltaTime )
 {
+	static const TOptional<FString> FixedTime = NCommandLine::GetValue( "geometry-time" ); // 比較撮影用の固定時刻。
+	if ( FixedTime.IsSet() )
+	{
+		Time = static_cast<float32>( FixedTime.GetValue().ToFloat( 0.0 ) );
+		return;
+	}
 	Time += DeltaTime;
 }
 

@@ -61,7 +61,7 @@ private:
 	// 共有のメッシュを GPU で描けるか。
 	bool CanDrawForward( const FStaticModelDrawView& Model ) const;
 	// 共有のメッシュを、材質ごとの範囲で GPU に描かせる。描けた範囲の数を返す（先頭から数える。描けなかった範囲から先は、呼び出し側が描く）。
-	int32 DrawModelForward( const FStaticModelDrawView& Model, int32 ModelAlpha, bool bAlphaBlend );
+	int32 DrawModelForward( const FStaticModelDrawView& Model, int32 ModelAlpha, bool bAlphaBlend, bool bInferAlpha = true );
 	// 影の絵を描いているとき、図形を光から見た深度として描く。影を落とさない図形（線・点・画像つき・半透明）は、何もせず成功。
 	bool SubmitShadowCaster( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, int32 Alpha, int32 Texture );
 	// ワールド座標を同次クリップ座標にして記録する。全入力を検査してからGPUへ渡す。

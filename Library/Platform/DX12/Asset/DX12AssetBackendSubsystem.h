@@ -75,6 +75,8 @@ public:
 	bool GetVertexBufferView( int32 Handle, FGeometryVertexBufferView& Out ) override;
 	// 同期の命令解釈にだけindexを貸す。
 	bool GetIndexBufferView( int32 Handle, FGeometryIndexBufferView& Out ) override;
+	// 編集メッシュのキャッシュ識別を共通の形状所有者から取得する。
+	bool GetMeshCacheIdentity( int32 VertexBuffer, int32 IndexBuffer, uint64& Key, uint64& Version ) override;
 	// 有効な画像・モデルの登録数を返す。GPU容量は不明。
 	FBackendMemoryInfo GetMemoryInfo() override;
 	// 共有している静的形状のメモリを推定する。

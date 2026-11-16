@@ -683,6 +683,11 @@ bool CDX12AssetBackendSubsystem::GetIndexBufferView( int32 Handle, FGeometryInde
 	return Buffers.GetIndexBufferView( Handle, Out );
 }
 
+bool CDX12AssetBackendSubsystem::GetMeshCacheIdentity( int32 VertexBuffer, int32 IndexBuffer, uint64& Key, uint64& Version )
+{
+	return Buffers.GetMeshCacheIdentity( VertexBuffer, IndexBuffer, Key, Version );
+}
+
 bool CDX12AssetBackendSubsystem::CanLoadModelSource( const FString& Path ) const
 {
 	return NModelFormat::Classify( Path ) == EModelFileKind::Imported || Path.EndsWith( ".pmx", ESearchCase::IgnoreCase ); // PMX は、DxLib が直接読める形式だが、DX12 は取り込んで読む。

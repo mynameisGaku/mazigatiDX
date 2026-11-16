@@ -26,6 +26,8 @@ public:
 	bool GetVertexBufferView( int32 Handle, FGeometryVertexBufferView& Out ) override;
 	// 有効な登録だけを貸す。書き換え・削除・追加前に借用を終える。
 	bool GetIndexBufferView( int32 Handle, FGeometryIndexBufferView& Out ) override;
+	// モデルとは別の鍵の領域を使い、書き込み後は更新版を替える。
+	bool GetMeshCacheIdentity( int32 VertexBuffer, int32 IndexBuffer, uint64& Key, uint64& Version ) override;
 	// 登録を全て消す。番号は再利用しない。
 	void Reset();
 private:
@@ -40,6 +42,8 @@ private:
 	TMap<int32, TArray<FDrawVertex3D>> Vertices; // 登録頂点。
 	TMap<int32, FIndexRecord> Indices; // 登録index。
 	uint64 Bytes = 0; // 保持中の総バイト数。
+	TMap<uint64, uint64> MeshKeys; // 頂点と添字の組から再利用しない識別への表。
+	uint64 Revision = 1; // この所有者の書き込みごとに増える版。全メッシュへ保守的に反映する。
 	int32 NextHandle = 0; // 解放後も再利用しない番号。
 	static constexpr uint64 MaxBytes = 64 * 1024 * 1024; // 全バッファの保持上限。
 };

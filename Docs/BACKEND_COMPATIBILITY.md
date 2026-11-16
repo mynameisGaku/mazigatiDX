@@ -10,7 +10,7 @@
 
 |分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|
 |---|---:|---:|---:|---:|---:|---:|---:|
-|API|375|9|3|197|165|0|1|
+|API|376|9|3|198|165|0|1|
 |Draw|101|0|0|61|40|0|0|
 |Sample|34|30|0|4|0|0|0|
 |Editor|11|11|0|0|0|0|0|
@@ -103,6 +103,7 @@
 |[API.IGamepadInput.SetBackgroundInputEnabled](../Library/Core/Interfaces/Input/IGamepadInput.h#L34)|Implemented|R8|ゲームパッド実機の接続／切断、ボタン・軸、sensor、rumble、無効番号を比較|非Null選択で共通SDL実装を作る。実機での接続・切断・sensor・rumble比較前||
 |[API.IGamepadInput.SetLed](../Library/Core/Interfaces/Input/IGamepadInput.h#L30)|Implemented|R8|ゲームパッド実機の接続／切断、ボタン・軸、sensor、rumble、無効番号を比較|非Null選択で共通SDL実装を作る。実機での接続・切断・sensor・rumble比較前||
 |[API.IGeometryBufferSource.GetIndexBufferView](../Library/Core/Interfaces/Render/IGeometryBufferSource.h#L14)|Implemented|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
+|[API.IGeometryBufferSource.GetMeshCacheIdentity](../Library/Core/Interfaces/Render/IGeometryBufferSource.h#L16)|Partial|R2|同じ組の鍵・成功と失敗の更新版・所有者間の識別・削除をForwardMesh契約で検査|共通の形状所有者で対応。未対応はfalseでCPU経路。借用中の変更は禁止||
 |[API.IGeometryBufferSource.GetVertexBufferView](../Library/Core/Interfaces/Render/IGeometryBufferSource.h#L12)|Implemented|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
 |[API.IGpuMemoryInfo.QueryGpuMemory](../Library/Core/Interfaces/Render/IGpuMemoryInfo.h#L16)|Partial|R8|frame内外、デバイス喪失、出力保持を確認|調べられた値を返す（DXGIのQueryVideoMemoryInfo）。Assetsツールの「Video memory」に出る。複数GPUの比較は未完了||
 |[API.IGpuTimestampResources.CreateGpuTimestampQuery](../Library/Core/Interfaces/Render/IGpuTimestampResources.h#L17)|Implemented|R1|CPU参照・既定GPU・WARP・デバイス喪失・アプリ起動で、上限256到達・解放後再取得・番号非再利用・非ゲームスレッド拒否を確認|NRenderResourceSerialの一意番号を発行し、空き物理スロットがない場合または異常時は無効ハンドルを返す|Docs/R1_GPU_TIMESTAMPS.md; Library/Platform/DX12/Resource/Timestamp/DX12TimestampStore.cpp; Source/SelfTest/RunTimestampTests.ps1|
@@ -354,14 +355,14 @@
 |[API.ISoundBackend.GetSoundInfo](../Library/Core/Interfaces/Asset/SoundBackend.h#L25)|Partial|R8|作成、入出力、時系列、聞こえない音量での実再生、機器なしの失敗、終了を比較|Windowsの音の登録（CWindowsSoundStoreSubsystem）。WAVはNWavFile、mp3・m4a・flac等はMedia Foundationで、同期でデコードしてメモリに持つ（Streamも全部展開）。3チャンネル以上はステレオにする。oggは未対応（OSのデコーダー次第）。契約検査でWAVとMedia Foundationの読みが一致することを確認||
 |[API.ISoundBackend.GetSoundLength](../Library/Core/Interfaces/Asset/SoundBackend.h#L23)|Partial|R8|作成、入出力、時系列、聞こえない音量での実再生、機器なしの失敗、終了を比較|Windowsの音の登録（CWindowsSoundStoreSubsystem）。WAVはNWavFile、mp3・m4a・flac等はMedia Foundationで、同期でデコードしてメモリに持つ（Streamも全部展開）。3チャンネル以上はステレオにする。oggは未対応（OSのデコーダー次第）。契約検査でWAVとMedia Foundationの読みが一致することを確認||
 |[API.ISoundBackend.LoadSound](../Library/Core/Interfaces/Asset/SoundBackend.h#L18)|Partial|R8|作成、入出力、時系列、聞こえない音量での実再生、機器なしの失敗、終了を比較|Windowsの音の登録（CWindowsSoundStoreSubsystem）。WAVはNWavFile、mp3・m4a・flac等はMedia Foundationで、同期でデコードしてメモリに持つ（Streamも全部展開）。3チャンネル以上はステレオにする。oggは未対応（OSのデコーダー次第）。契約検査でWAVとMedia Foundationの読みが一致することを確認||
-|[API.IStaticModelSource.FindStaticModelMaterialGeometry](../Library/Core/Interfaces/Render/IStaticModelSource.h#L22)|Partial|R6|有効・無効・解放後の番号、描いている間の削除、契約検査（偽のモデル窓口）で比較|モデル材質効果が選んだ材質の面を、共有で返す。DX12は実装（表は排他つき）、DxLibは自分の形状を直接引く（この窓口は使わない）||
-|[API.IStaticModelSource.GetStaticModelBackend](../Library/Core/Interfaces/Render/IStaticModelSource.h#L20)|Unreviewed|R0|未分類。期待結果と比較方法を決める|追加された公開機能。ソース・実装・寿命を確認する||
-|[API.IStaticModelSource.GetStaticModelDrawView](../Library/Core/Interfaces/Render/IStaticModelSource.h#L16)|Implemented|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
-|[API.IStaticModelSource.GetStaticModelMeshDrawn](../Library/Core/Interfaces/Render/IStaticModelSource.h#L24)|Partial|R6|メッシュの非表示・親フレームの非表示・骨組みの無いモデルで、いま描かれるかを比較|メッシュと親までのフレームの表示を合わせた結果を返す。DX12は実装、DxLibは使わない（自分で調べる）||
-|[API.IStaticModelSource.SetStaticModelAnimFrameRate](../Library/Core/Interfaces/Render/IStaticModelSource.h#L28)|Unreviewed|R0|未分類。期待結果と比較方法を決める|追加された公開機能。ソース・実装・寿命を確認する||
-|[API.IStaticModelSource.SetStaticModelAnimRate](../Library/Core/Interfaces/Render/IStaticModelSource.h#L27)|Unreviewed|R0|未分類。期待結果と比較方法を決める|追加された公開機能。ソース・実装・寿命を確認する||
-|[API.IStaticModelSource.SetStaticModelAnimTime](../Library/Core/Interfaces/Render/IStaticModelSource.h#L26)|Unreviewed|R0|未分類。期待結果と比較方法を決める|追加された公開機能。ソース・実装・寿命を確認する||
-|[API.IStaticModelSource.SetStaticModelPlacement](../Library/Core/Interfaces/Render/IStaticModelSource.h#L25)|Unreviewed|R0|未分類。期待結果と比較方法を決める|追加された公開機能。ソース・実装・寿命を確認する||
+|[API.IStaticModelSource.FindStaticModelMaterialGeometry](../Library/Core/Interfaces/Render/IStaticModelSource.h#L23)|Partial|R6|有効・無効・解放後の番号、描いている間の削除、契約検査（偽のモデル窓口）で比較|モデル材質効果が選んだ材質の面を、共有で返す。DX12は実装（表は排他つき）、DxLibは自分の形状を直接引く（この窓口は使わない）||
+|[API.IStaticModelSource.GetStaticModelBackend](../Library/Core/Interfaces/Render/IStaticModelSource.h#L21)|Unreviewed|R0|未分類。期待結果と比較方法を決める|追加された公開機能。ソース・実装・寿命を確認する||
+|[API.IStaticModelSource.GetStaticModelDrawView](../Library/Core/Interfaces/Render/IStaticModelSource.h#L17)|Implemented|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
+|[API.IStaticModelSource.GetStaticModelMeshDrawn](../Library/Core/Interfaces/Render/IStaticModelSource.h#L25)|Partial|R6|メッシュの非表示・親フレームの非表示・骨組みの無いモデルで、いま描かれるかを比較|メッシュと親までのフレームの表示を合わせた結果を返す。DX12は実装、DxLibは使わない（自分で調べる）||
+|[API.IStaticModelSource.SetStaticModelAnimFrameRate](../Library/Core/Interfaces/Render/IStaticModelSource.h#L29)|Unreviewed|R0|未分類。期待結果と比較方法を決める|追加された公開機能。ソース・実装・寿命を確認する||
+|[API.IStaticModelSource.SetStaticModelAnimRate](../Library/Core/Interfaces/Render/IStaticModelSource.h#L28)|Unreviewed|R0|未分類。期待結果と比較方法を決める|追加された公開機能。ソース・実装・寿命を確認する||
+|[API.IStaticModelSource.SetStaticModelAnimTime](../Library/Core/Interfaces/Render/IStaticModelSource.h#L27)|Unreviewed|R0|未分類。期待結果と比較方法を決める|追加された公開機能。ソース・実装・寿命を確認する||
+|[API.IStaticModelSource.SetStaticModelPlacement](../Library/Core/Interfaces/Render/IStaticModelSource.h#L26)|Unreviewed|R0|未分類。期待結果と比較方法を決める|追加された公開機能。ソース・実装・寿命を確認する||
 |[API.ITextInput.GetImeComposition](../Library/Core/Interfaces/Input/ITextInput.h#L31)|Partial|R8|作成、入出力、時系列、focusの変化、失敗と終了を比較|窓のメッセージ（WM_CHAR・WM_KEYDOWN・IME）をCWindowsTextInputSubsystemが受ける。WM_CHAR・編集のキー・サロゲートペアは契約検査で確認。IMEの途中の文字列・候補は、実機のIMEとの比較が未完了||
 |[API.ITextInput.GetTextInputEvents](../Library/Core/Interfaces/Input/ITextInput.h#L28)|Partial|R8|作成、入出力、時系列、focusの変化、失敗と終了を比較|窓のメッセージ（WM_CHAR・WM_KEYDOWN・IME）をCWindowsTextInputSubsystemが受ける。WM_CHAR・編集のキー・サロゲートペアは契約検査で確認。IMEの途中の文字列・候補は、実機のIMEとの比較が未完了||
 |[API.ITextInput.IsTextInputActive](../Library/Core/Interfaces/Input/ITextInput.h#L25)|Partial|R8|作成、入出力、時系列、focusの変化、失敗と終了を比較|窓のメッセージ（WM_CHAR・WM_KEYDOWN・IME）をCWindowsTextInputSubsystemが受ける。WM_CHAR・編集のキー・サロゲートペアは契約検査で確認。IMEの途中の文字列・候補は、実機のIMEとの比較が未完了||
@@ -445,7 +446,7 @@
 |[Draw.MaterialMesh3D](../Library/Framework/Render/Draw/DrawCommand.h#L64)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|組み込みの材質シェーダー（EffectMaterial）で描く。頂点を index 順に展開し、消失・ゆがみ・不透明度を点ごとに渡す。DxLib と並べて画素が一致した。合成は Alpha と Add だけ。bTwoSided が 0 のときは、いまの表裏の設定を使う||
 |[Draw.MaterialQuad3D](../Library/Framework/Render/Draw/DrawCommand.h#L58)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|組み込みの材質シェーダー（EffectMaterial）で描く。消失・境界の発光・UVのゆがみ・帯の点ごとの値は、DxLibと並べて画素が一致した。合成は Alpha と Add だけ（DxLib と同じ。ほかは描かない）。画像の一部（派生画像）は、元の画像全体として読む||
 |[Draw.MaterialRibbon3D](../Library/Framework/Render/Draw/DrawCommand.h#L59)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|組み込みの材質シェーダー（EffectMaterial）で描く。消失・境界の発光・UVのゆがみ・帯の点ごとの値は、DxLibと並べて画素が一致した。合成は Alpha と Add だけ（DxLib と同じ。ほかは描かない）。画像の一部（派生画像）は、元の画像全体として読む||
-|[Draw.Mesh3D](../Library/Framework/Render/Draw/DrawCommand.h#L56)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|CPU形状から毎回展開。照明と高度な材質は未対応||
+|[Draw.Mesh3D](../Library/Framework/Render/Draw/DrawCommand.h#L56)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|登録頂点と添字を共有するGPU Forwardで変換と頂点照明を計算。更新版で再登録。対応できない状態とGPU拒否時はCPU経路||
 |[Draw.Model3D](../Library/Framework/Render/Draw/DrawCommand.h#L49)|Partial|R5|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|静的FBX／OBJのみ。アニメーションは未対応。MV1形式はv1.0.0対象外||
 |[Draw.ModelAnim](../Library/Framework/Render/Draw/DrawCommand.h#L54)|Partial|R5|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|付けたアニメーションの時間と割合を、次のモデルの描画へ反映する（IStaticModelSource経由）。アニメーションつきのFBXの描画は、実素材での確認が未完了||
 |[Draw.ModelAnimFrame](../Library/Framework/Render/Draw/DrawCommand.h#L153)|Partial|R5|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|骨ごとの割合（子も含める指定に対応）を反映する。実素材での確認が未完了||
