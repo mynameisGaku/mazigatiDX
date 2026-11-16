@@ -378,6 +378,7 @@
     <ClCompile Include="Library\Framework\Render\MaterialEffect\ModelMaterialEffectResources.cpp" />
     <ClCompile Include="Library\Framework\Render\Mesh\MeshGeometryChunk.cpp" />
     <ClCompile Include="Library\Framework\Render\Mesh\MeshRender.cpp" />
+    <ClCompile Include="Library\Framework\Render\Mesh\ModelMaterialGeometry.cpp" />
     <ClCompile Include="Library\Framework\Render\State\ShadowMapView.cpp" />
     <ClCompile Include="Library\Framework\Render\Thread\RenderCommandThread.cpp" />
     <ClCompile Include="Library\Framework\Render\Thread\ThreadedRenderSurface.cpp" />
@@ -1215,6 +1216,7 @@
     <ClInclude Include="Library\Framework\Render\MaterialEffect\ModelMaterialEffectResources.h" />
     <ClInclude Include="Library\Framework\Render\Mesh\MeshGeometryChunk.h" />
     <ClInclude Include="Library\Framework\Render\Mesh\MeshRender.h" />
+    <ClInclude Include="Library\Framework\Render\Mesh\ModelMaterialGeometry.h" />
     <ClInclude Include="Library\Framework\Render\State\GraphFilter.h" />
     <ClInclude Include="Library\Framework\Render\State\Lighting.h" />
     <ClInclude Include="Library\Framework\Render\State\RenderState3D.h" />

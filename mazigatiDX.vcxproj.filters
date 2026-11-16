@@ -934,6 +934,9 @@
     <ClCompile Include="Library\Framework\Render\Mesh\MeshRender.cpp">
       <Filter>Library\Framework\Render\Mesh</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Render\Mesh\ModelMaterialGeometry.cpp">
+      <Filter>Library\Framework\Render\Mesh</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Render\State\ShadowMapView.cpp">
       <Filter>Library\Framework\Render\State</Filter>
     </ClCompile>
@@ -3439,6 +3442,9 @@
       <Filter>Library\Framework\Render\Mesh</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\Mesh\MeshRender.h">
+      <Filter>Library\Framework\Render\Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\Mesh\ModelMaterialGeometry.h">
       <Filter>Library\Framework\Render\Mesh</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\State\GraphFilter.h">

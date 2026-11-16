@@ -5,7 +5,10 @@
 #include "Library/Framework/Render/Draw/DrawDistortedMaterialQuad.h"
 #include "Library/Framework/Render/Draw/DrawMaterialQuad.h"
 #include "Library/Framework/Render/Draw/DrawRibbonMesh.h"
+#include "Library/Framework/Render/Mesh/ModelMaterialGeometry.h"
 #include "Library/Platform/Render/Geometry/GeometryCommandExecutor.h"
+#include "Library/Core/Interfaces/Asset/ModelBackend.h"
+#include "Library/Core/Interfaces/Render/IStaticModelSource.h"
 #include "Library/Platform/System/BackendSupport.h"
 
 namespace
@@ -37,7 +40,7 @@ CMaterialEffectCommandExecutor::CMaterialEffectCommandExecutor( CGeometryCommand
 
 bool CMaterialEffectCommandExecutor::IsMaterialEffectCommand( EDrawCommand Type )
 {
-	return Type == EDrawCommand::MaterialQuad3D || Type == EDrawCommand::DistortedMaterialQuad3D || Type == EDrawCommand::MaterialRibbon3D || Type == EDrawCommand::DistortedMaterialRibbon3D;
+	return Type == EDrawCommand::MaterialQuad3D || Type == EDrawCommand::DistortedMaterialQuad3D || Type == EDrawCommand::MaterialRibbon3D || Type == EDrawCommand::DistortedMaterialRibbon3D || Type == EDrawCommand::MaterialMesh3D || Type == EDrawCommand::ModelMaterial3D;
 }
 
 void CMaterialEffectCommandExecutor::SetVertexValues( FDrawShaderVertex3D& Vertex, float32 Dissolve, float32 Emission, float32 Strength, const float32* UVOffset, const float32* DistortionOffset )
@@ -118,9 +121,196 @@ CShaderCommandExecutor::EResult CMaterialEffectCommandExecutor::Execute( const F
 		}
 		return DrawRibbon( Data.Material, nullptr, &Data, Points.GetData(), Bright, Alpha, bAlphaBlend ) ? CShaderCommandExecutor::EResult::Executed : CShaderCommandExecutor::EResult::Rejected;
 	}
+	case EDrawCommand::MaterialMesh3D:
+	{
+		constexpr int32 DataWords = sizeof( FDrawMaterialMeshData ) / 4; // 固定部の長さ（ワード）。
+		if ( View.NumDataWords < DataWords )
+		{
+			return CShaderCommandExecutor::EResult::Rejected;
+		}
+		FDrawMaterialMeshData Data; // 頂点の数を読む前に、固定部を所有コピーする。
+		FMemory::Memcpy( &Data, View.Data, sizeof( Data ) );
+		if ( !NDrawMaterialMesh::IsValidHeader( Data ) )
+		{
+			return CShaderCommandExecutor::EResult::Rejected;
+		}
+		const usize VertexWords = static_cast<usize>( Data.NumVertices ) * sizeof( FMeshVertex ) / 4;
+		const usize IndexWords = static_cast<usize>( Data.NumIndices );
+		if ( View.NumDataWords != static_cast<int32>( static_cast<usize>( DataWords ) + VertexWords + IndexWords ) )
+		{
+			return CShaderCommandExecutor::EResult::Rejected;
+		}
+		TArray<FMeshVertex> Vertices; // 所有コピー（借用メモリのalignmentに頼らない）。
+		Vertices.SetNum( Data.NumVertices );
+		FMemory::Memcpy( Vertices.GetData(), View.Data + DataWords, static_cast<usize>( Data.NumVertices ) * sizeof( FMeshVertex ) );
+		TArray<uint32> Indices;
+		Indices.SetNum( Data.NumIndices );
+		FMemory::Memcpy( Indices.GetData(), View.Data + DataWords + VertexWords, static_cast<usize>( Data.NumIndices ) * sizeof( uint32 ) );
+		return DrawMesh( Data, Vertices.GetData(), Indices.GetData(), Bright, Alpha, bAlphaBlend, nullptr, 1.0f ) ? CShaderCommandExecutor::EResult::Executed : CShaderCommandExecutor::EResult::Rejected;
+	}
+	case EDrawCommand::ModelMaterial3D:
+	{
+		if ( View.NumDataWords != static_cast<int32>( sizeof( FDrawModelMaterialData ) / 4 ) )
+		{
+			return CShaderCommandExecutor::EResult::Rejected;
+		}
+		const auto Data = View.Read<FDrawModelMaterialData>(); // 検査前の固定部。
+		if ( !NDrawModelMaterial::IsValid( Data ) )
+		{
+			return CShaderCommandExecutor::EResult::Rejected;
+		}
+		return DrawModelMaterial( Data, Bright, Alpha, bAlphaBlend ) ? CShaderCommandExecutor::EResult::Executed : CShaderCommandExecutor::EResult::Rejected;
+	}
 	default:
 		return CShaderCommandExecutor::EResult::NotHandled;
 	}
+}
+
+bool CMaterialEffectCommandExecutor::DrawModelMaterial( const FDrawModelMaterialData& Data, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend )
+{
+	IStaticModelSource* Models = Geometry.GetModels();
+	if ( !Models )
+	{
+		return false;
+	}
+	FDrawModelData Model; // 通常の描画（選んだ材質のメッシュを隠した、残りのモデル）。
+	Model.Handle = Data.Handle;
+	FMemory::Memcpy( Model.M, Data.M, sizeof( Model.M ) );
+	const auto DrawPlain = [&]() { return Geometry.DrawModel( Model, Alpha, bAlphaBlend ) == CGeometryCommandExecutor::EResult::Executed; };
+	const TSharedPtr<const FModelMaterialGeometry> Shape = Models->FindStaticModelMaterialGeometry( Data.Geometry );
+	IModelBackend* Backend = Models->GetStaticModelBackend();
+	if ( !Shape.IsValid() || Shape->Meshes.IsEmpty() || !Backend )
+	{
+		return DrawPlain(); // 材質効果を使えないときは、モデルだけを通常に描く（DxLib と同じ）。
+	}
+	TArray<int32> HiddenMeshes; // 一時的に隠して、あとで戻すメッシュ。
+	TArray<uint8> bDrawn; // 選んだ面ごとに、いま描かれる（メッシュと親までのフレームが表示）か。
+	bool bCanHide = true;
+	for ( const FModelMaterialGeometry::FMesh& Mesh : Shape->Meshes )
+	{
+		bool bDrawnNow = true;
+		Models->GetStaticModelMeshDrawn( Data.Handle, Mesh.SourceMeshIndex, Mesh.SourceFrameIndex, bDrawnNow );
+		bDrawn.Add( bDrawnNow ? 1 : 0 );
+		bool bVisible = false;
+		if ( !Backend->GetModelMeshVisible( Data.Handle, Mesh.SourceMeshIndex, bVisible ) )
+		{
+			bCanHide = false; // 骨組みの無いモデルは、メッシュを隠せない。
+			break;
+		}
+		if ( bVisible )
+		{
+			if ( !Backend->SetModelMeshVisible( Data.Handle, Mesh.SourceMeshIndex, false ) )
+			{
+				bCanHide = false;
+				break;
+			}
+			HiddenMeshes.AddUnique( Mesh.SourceMeshIndex );
+		}
+	}
+	const auto RestoreMeshes = [&]()
+	{
+		for ( const int32 MeshIndex : HiddenMeshes )
+		{
+			Backend->SetModelMeshVisible( Data.Handle, MeshIndex, true );
+		}
+	};
+	if ( !bCanHide )
+	{
+		RestoreMeshes();
+		return DrawPlain();
+	}
+	const bool bPlainDrawn = DrawPlain();
+	RestoreMeshes();
+	FMatrix4x4 World; // モデルの配置（最終列は (0, 0, 0, 1)）。
+	for ( int32 Row = 0; Row < 4; ++Row )
+	{
+		for ( int32 Column = 0; Column < 3; ++Column )
+		{
+			World.m[Row][Column] = Data.M[Row * 3 + Column];
+		}
+	}
+	const EGeometryBlend OldBlend = Geometry.GetState().Blend; // 選んだ面だけ、指定の混ぜ方（Alpha か Add）で描く。
+	Geometry.SetBlend( Data.BlendMode == static_cast<int32>( EDrawBlend::Add ) ? EGeometryBlend::Add : EGeometryBlend::Alpha );
+	for ( int32 MeshIndex = 0; MeshIndex < Shape->Meshes.Num(); ++MeshIndex )
+	{
+		if ( !bDrawn[MeshIndex] )
+		{
+			continue;
+		}
+		for ( const FMeshGeometryChunk& Chunk : Shape->Meshes[MeshIndex].Chunks )
+		{
+			FDrawMaterialMeshData MeshData = Data.Material; // 材質は命令のまま、頂点と index の数だけ分けた部分に合わせる。
+			MeshData.NumVertices = Chunk.Vertices.Num();
+			MeshData.NumIndices = Chunk.Indices.Num();
+			DrawMesh( MeshData, Chunk.Vertices.GetData(), Chunk.Indices.GetData(), Bright, 255, true, &World, Data.Opacity );
+		}
+	}
+	Geometry.SetBlend( OldBlend );
+	return bPlainDrawn;
+}
+
+bool CMaterialEffectCommandExecutor::DrawMesh( const FDrawMaterialMeshData& Data, const FMeshVertex* SourceVertices, const uint32* Indices, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend, const FMatrix4x4* World, float32 Opacity )
+{
+	const FCamera& Camera = Geometry.GetCamera();
+	const IRenderGeometry3D* Target = Geometry.GetGeometry();
+	if ( !NDrawMaterialMesh::IsValid( Data, SourceVertices, Indices ) || !Target || Target->GetWidth() <= 0 || Target->GetHeight() <= 0 || !Camera.IsValid() )
+	{
+		return false;
+	}
+	const bool bUseDistortion = Data.DistortionStrength > 0.0f; // 強さが 0 なら、ゆがみの画像は使わない。
+	const FCameraViewport Viewport = { Target->GetWidth(), Target->GetHeight() }; // 同じ論理画面で射影する。
+	FMatrix4x4 Transform = Camera.GetViewMatrix() * Camera.GetProjectionMatrix( Viewport );
+	if ( World != nullptr )
+	{
+		Transform = *World * Transform;
+	}
+	TArray<FDrawShaderVertex3D> Vertices; // 番号を解決した三角形のリスト。
+	Vertices.Reserve( Data.NumIndices );
+	for ( int32 Index = 0; Index < Data.NumIndices; ++Index )
+	{
+		const FMeshVertex& Source = SourceVertices[Indices[Index]];
+		FVector4 Clip = Transform.Transform( FVector4( Source.Position[0], Source.Position[1], Source.Position[2], 1 ) ); // 透視除算しない（wを渡す）。
+		Clip.x += 2 * Camera.ScreenOffset.x / Viewport.Width * Clip.w;
+		Clip.y -= 2 * Camera.ScreenOffset.y / Viewport.Height * Clip.w;
+		FDrawShaderVertex3D Vertex;
+		FMemory::Memzero( &Vertex, sizeof( Vertex ) );
+		FMemory::Memcpy( Vertex.Position, Source.Position, sizeof( Vertex.Position ) );
+		Vertex.SubPosition[0] = Clip.x;
+		Vertex.SubPosition[1] = Clip.y;
+		Vertex.SubPosition[2] = Clip.z;
+		Vertex.SubPosition[3] = Clip.w;
+		for ( const float32 Number : Vertex.SubPosition )
+		{
+			if ( !NMath::IsFinite( Number ) )
+			{
+				return false;
+			}
+		}
+		Vertex.Diffuse[0] = Source.Color[0];
+		Vertex.Diffuse[1] = Source.Color[1];
+		Vertex.Diffuse[2] = Source.Color[2];
+		Vertex.Diffuse[3] = static_cast<uint8>( NMath::Clamp( static_cast<int32>( static_cast<float32>( Source.Color[3] ) * Opacity + 0.5f ), 0, 255 ) );
+		Vertex.U = Source.U;
+		Vertex.V = Source.V;
+		SetVertexValues( Vertex, Data.Dissolve, Data.Emission, bUseDistortion ? Data.DistortionStrength : 0.0f, Data.UVOffset, Data.DistortionUVOffset );
+		Vertices.Add( Vertex );
+	}
+	FEffectSettings Settings;
+	Settings.SourceTexture = Data.Texture;
+	Settings.MaskTexture = Data.Material.MaskTexture;
+	Settings.DistortionTexture = bUseDistortion ? Data.DistortionTexture : -1;
+	Settings.UVScale[0] = Data.Material.UVScale[0];
+	Settings.UVScale[1] = Data.Material.UVScale[1];
+	Settings.MaskScale = Data.Material.MaskScale;
+	Settings.EdgeWidth = Data.Material.EdgeWidth;
+	Settings.EdgeEmission = Data.Material.EdgeEmission;
+	Settings.EdgeColor = Data.Material.EdgeColor;
+	Settings.bDissolve = Data.Material.bDissolve != 0;
+	Settings.bDepthTest = Data.Material.DepthTest != 0;
+	Settings.bDepthWrite = Data.Material.DepthWrite != 0;
+	Settings.DistortionScale[0] = Data.DistortionUVScale[0];
+	Settings.DistortionScale[1] = Data.DistortionUVScale[1];
+	return DrawVertices( Settings, Vertices, Bright, Alpha, bAlphaBlend, Data.bTwoSided != 0 );
 }
 
 bool CMaterialEffectCommandExecutor::DrawQuad( const FDrawMaterialQuadData& Data, const FDrawDistortedMaterialQuadData* Distortion, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend )
@@ -250,7 +440,7 @@ bool CMaterialEffectCommandExecutor::DrawRibbon( const FDrawMaterialRibbonData& 
 	return DrawVertices( Settings, Vertices, Bright, Alpha, bAlphaBlend );
 }
 
-bool CMaterialEffectCommandExecutor::DrawVertices( const FEffectSettings& Settings, const TArray<FDrawShaderVertex3D>& Vertices, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend )
+bool CMaterialEffectCommandExecutor::DrawVertices( const FEffectSettings& Settings, const TArray<FDrawShaderVertex3D>& Vertices, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend, bool bTwoSided )
 {
 	const FGeometryDrawState& Current = Geometry.GetState();
 	if ( !bAlphaBlend || ( Current.Blend != EGeometryBlend::Alpha && Current.Blend != EGeometryBlend::Add ) )
@@ -302,5 +492,5 @@ bool CMaterialEffectCommandExecutor::DrawVertices( const FEffectSettings& Settin
 	Request.Textures[0] = Settings.SourceTexture;
 	Request.Textures[1] = Settings.MaskTexture;
 	Request.Textures[2] = Settings.DistortionTexture;
-	return Shader.DrawBuiltIn( Request, true );
+	return Shader.DrawBuiltIn( Request, bTwoSided );
 }

@@ -14,6 +14,7 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/DebugUI/Common/ImGuiTexture.h"
 #include "Library/Core/Interfaces/Render/IGpuMemoryInfo.h"
+#include "Library/Framework/Render/Mesh/ModelMaterialGeometry.h"
 #include "Library/Platform/Windows/Audio/WindowsSoundStoreSubsystem.h"
 
 #include <windows.h>
@@ -61,6 +62,11 @@ void CDX12AssetBackendSubsystem::Deinitialize()
 	GpuMemory = nullptr;
 	ShaderService.Shutdown(); // パイプラインと空の画像を、先に手放す。
 	Models.Reset(); // 共有モデルが所有する画像を、先に登録から外す。
+	{
+		FScopedLock Guard( ModelMaterialLock );
+		ModelMaterialGeometries.Empty();
+		NextModelMaterialGeometry = 1;
+	}
 	Textures.Shutdown(); // 資源の所有者がGPUの完了と解放を行う。
 	Buffers.Reset();
 }
@@ -355,6 +361,45 @@ bool CDX12AssetBackendSubsystem::GetModelMeshVisible( int32 Model, int32 Mesh, b
 bool CDX12AssetBackendSubsystem::SetModelMeshVisible( int32 Model, int32 Mesh, bool bVisible )
 {
 	return Models.SetMeshVisible( Model, Mesh, bVisible );
+}
+
+int32 CDX12AssetBackendSubsystem::CreateModelMaterialGeometry( const FStaticModelSurfaceData& Surface, int32 MaterialIndex )
+{
+	TSharedPtr<FModelMaterialGeometry> Geometry = MakeShared<FModelMaterialGeometry>(); // 登録前に完成させ、失敗したら表を変えない。
+	if ( !NModelMaterialGeometry::Build( Surface, MaterialIndex, *Geometry ) )
+	{
+		return -1;
+	}
+	FScopedLock Guard( ModelMaterialLock );
+	if ( NextModelMaterialGeometry <= 0 || ModelMaterialGeometries.Contains( NextModelMaterialGeometry ) )
+	{
+		return -1;
+	}
+	const int32 Handle = NextModelMaterialGeometry;
+	ModelMaterialGeometries.Add( Handle, TSharedPtr<const FModelMaterialGeometry>( Geometry ) );
+	NextModelMaterialGeometry = Handle == TNumericLimits<int32>::Max() ? -1 : Handle + 1;
+	return Handle;
+}
+
+void CDX12AssetBackendSubsystem::DeleteModelMaterialGeometry( int32 Geometry )
+{
+	if ( Geometry >= 0 )
+	{
+		FScopedLock Guard( ModelMaterialLock );
+		ModelMaterialGeometries.Remove( Geometry );
+	}
+}
+
+TSharedPtr<const FModelMaterialGeometry> CDX12AssetBackendSubsystem::FindStaticModelMaterialGeometry( int32 Geometry )
+{
+	FScopedLock Guard( ModelMaterialLock );
+	const TSharedPtr<const FModelMaterialGeometry>* Found = ModelMaterialGeometries.Find( Geometry );
+	return Found != nullptr ? *Found : TSharedPtr<const FModelMaterialGeometry>();
+}
+
+bool CDX12AssetBackendSubsystem::GetStaticModelMeshDrawn( int32 Handle, int32 SourceMesh, int32 SourceFrame, bool& bOut )
+{
+	return Models.GetMeshDrawn( Handle, SourceMesh, SourceFrame, bOut );
 }
 
 int32 CDX12AssetBackendSubsystem::GetModelMeshCount( int32 Model )
@@ -725,6 +770,11 @@ bool CDX12AssetBackendSubsystem::GetModelStructure( int32 Model, FModelStructure
 	}
 	Out = Definition->Structure;
 	return true;
+}
+
+bool CDX12AssetBackendSubsystem::GetModelMeshData( int32 Model, int32 Mesh, bool bCurrentPose, FModelMeshData& Out )
+{
+	return Models.GetMeshData( Model, Mesh, bCurrentPose, Out );
 }
 
 bool CDX12AssetBackendSubsystem::GetModelMaterialColors( int32 Model, int32 Material, FModelMaterialColors& Out )

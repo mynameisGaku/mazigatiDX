@@ -34,6 +34,9 @@ public:
 	bool SupportsEffectMaterialRibbons() const override { return true; }
 	bool SupportsEffectUVDistortion() const override { return true; }
 	bool SupportsEffectRibbonUVDistortion() const override { return true; }
+	bool SupportsEffectMaterialMesh() const override { return true; }
+	// モデルの一材質だけに材質効果をかける（ModelMaterial3D）。
+	bool SupportsModelMaterialEffects() const override { return true; }
 private:
 	IRenderSurface* Surface = nullptr; // 借用する描画先。
 	IStaticModelSource* Models = nullptr; // 借用する静的モデル。

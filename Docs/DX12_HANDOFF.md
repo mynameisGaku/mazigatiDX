@@ -449,3 +449,9 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **対応フラグ**: `CDX12DrawExecutorSubsystem` が `SupportsEffectMaterials` / `MaterialRibbons` / `UVDistortion` / `RibbonUVDistortion` を true にした（エディタの材質パネルが有効になる）。`MaterialMesh3D` / `ModelMaterial3D` は、まだ（`DX12_KNOWN_GAPS.md`）。
 - **確認**: 一時的に Geometry3D サンプルへ、消失 0 / 0.25 / 0.5 / 0.75 の四角形、ゆがみ付き、4 点の帯を足して、DxLib と並べた。消失の模様・縁・ゆがみ・帯の継ぎ目が一致（四角形の中の平均差は 0.5〜2）。サンプルは元に戻した。
 - **検査**: `Source/SelfTest/RunMaterialEffectTests.ps1`（`MaterialEffectContract`、42 項目）。偽のシェーダー実行先で、要求の中身（組み込みの種類・頂点・定数・画像の段・深度・合成）と、壊れた命令（記録のあとで書き換えた値）の拒否を調べる。変異で確かめた（`Saved` 下のログは消した）。
+
+## 2026-11-16 追記: 材質付きメッシュ・モデル材質効果・メッシュデータ
+- **MaterialMesh3D**: `CMaterialEffectCommandExecutor::DrawMesh`（命令の頂点を index 順に展開し、クリップ座標つきの頂点にして、組み込みの材質シェーダーへ）。World 行列を渡すと（モデル材質効果が使う）、頂点へ掛けて描く。`bTwoSided` が 0 のときは、いまの表裏の設定を使う。ゆがみは、強さが 0 のとき画像を使わない（DxLib と同じ）。Geometry3D サンプルへ一時的に足して、DxLib と並べた（消失・ゆがみ・半透明が一致）。
+- **ModelMaterial3D**: 選んだ材質の形状（`FModelMaterialGeometry`。`NModelMaterialGeometry::Build` に、DxLib のバックエンドの作り方をそのまま出した。DxLib 側も、これを使うようにした）を、DX12 のバックエンドが番号で持つ（`CreateModelMaterialGeometry` / `DeleteModelMaterialGeometry` / `IStaticModelSource::FindStaticModelMaterialGeometry`）。描くときは、選んだメッシュを `SetModelMeshVisible` で隠して、残りを `CGeometryCommandExecutor::DrawModel` で描き、戻してから、選んだ面（フレームまで含めて「いま描かれる」メッシュだけ。`GetStaticModelMeshDrawn`）を命令の混ぜ方（Alpha / Add）・配置・不透明度で描く。骨組みの無いモデル（メッシュを隠せない）や、形状が無いときは、モデルだけを通常に描く。World サンプルの mesh_surface_showcase は、DxLib が最初の描画までシェーダーを作らない（`SupportsEffectMaterialMesh` が、生成時に false になる）ので、DxLib 側が描かず、比べられなかった。
+- **GetModelMeshData**: `CStaticModelStore::GetMeshData`。三角形ごとに展開された頂点は、中身と変形元が同じものを共有に戻す。`DominantFrame` は、スキンの影響の重みが最大の骨（同じなら先のもの）。`bCurrentPose` は、いまの姿勢（アニメーション・骨の上書き）。モーフは含まない（取り込みが形状を読まない: `FImportedScene::bHasBlendShapes` だけ）。
+- **検査**: `RunMaterialEffectTests.ps1` を 80 項目へ（メッシュ・モデル材質効果。偽のモデル窓口で、隠す・戻す・描かれないメッシュ・形状なし・隠せない・混ぜ方の復元・命令長・壊れた値）、`RunModelRigTests.ps1` を 115 項目へ（メッシュデータ）。変異で確かめた（生き残ったのは、等価な変異だけ）。

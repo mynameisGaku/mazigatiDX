@@ -6,6 +6,7 @@
 #include "Library/Framework/Subsystem/AppSubsystem.h"
 #include "Library/Core/Interfaces/Render/ITextureDrawSource.h"
 #include "Library/Platform/Render/Geometry/GeometryBufferStore.h"
+#include "Library/Framework/Render/Mesh/ModelMaterialGeometry.h"
 #include "Library/Platform/Render/Model/StaticModelStore.h"
 #include "Library/Platform/Windows/Text/WindowsFontStore.h"
 #include "Library/Platform/DX12/Pipeline/Shader/DX12ShaderService.h"
@@ -103,6 +104,7 @@ public:
 	bool GetModelCollisionMesh( int32 Model, TArray<float32>& OutPositions, TArray<uint32>& OutIndices ) override;
 	// 静的なフレーム・メッシュ・材質・画像の構造をコピーする。
 	bool GetModelStructure( int32 Model, FModelStructure& Out ) override;
+	bool GetModelMeshData( int32 Model, int32 Mesh, bool bCurrentPose, FModelMeshData& Out ) override;
 	// 現在は読み込んだ材質色だけを答える。
 	bool GetModelMaterialColors( int32 Model, int32 Material, FModelMaterialColors& Out ) override;
 	bool SetModelMaterialColors( int32 Model, int32 Material, const FModelMaterialColors& Colors ) override;
@@ -137,6 +139,11 @@ public:
 	bool SetModelFrameVisible( int32 Model, int32 Frame, bool bVisible ) override;
 	bool GetModelMeshVisible( int32 Model, int32 Mesh, bool& bOut ) override;
 	bool SetModelMeshVisible( int32 Model, int32 Mesh, bool bVisible ) override;
+	// モデル材質効果が選んだ材質の面（バックエンドに依らない共通の形状を、番号で持つ）。
+	int32 CreateModelMaterialGeometry( const FStaticModelSurfaceData& Surface, int32 MaterialIndex ) override;
+	void DeleteModelMaterialGeometry( int32 Geometry ) override;
+	TSharedPtr<const FModelMaterialGeometry> FindStaticModelMaterialGeometry( int32 Geometry ) override;
+	bool GetStaticModelMeshDrawn( int32 Handle, int32 SourceMesh, int32 SourceFrame, bool& bOut ) override;
 	// DetachModelAnimの未対応時の既定値。出力引数と外部状態は変更しない。
 	void DetachModelAnim( int32 Model, int32 AttachIndex ) override;
 	// 静的モデルの元メッシュ数を返す。
@@ -197,6 +204,9 @@ private:
 	CGeometryBufferStore Buffers; // APIに依存しない登録形状。
 	CTextureAssetStore Textures; // API共通の画像登録。所有先の寿命までに解放する。
 	CStaticModelStore Models; // 画像の所有先より先に解放する共有モデル。
+	FMutex ModelMaterialLock; // 形状の表は、ゲームのスレッドと描画の実行スレッドの両方から使う。
+	TMap<int32, TSharedPtr<const FModelMaterialGeometry>> ModelMaterialGeometries; // モデル材質効果の形状（番号から）。
+	int32 NextModelMaterialGeometry = 1; // 解放後も再利用しない形状の番号。
 	CWindowsFontStore Fonts; // フォントの番号の表（GPUを使わない）。
 	CDX12ShaderService ShaderService; // シェーダーの登録・パイプラインの作成・描画（画像の登録より後に作り、先に手放す）。
 };

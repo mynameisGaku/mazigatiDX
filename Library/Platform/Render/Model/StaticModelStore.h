@@ -75,6 +75,11 @@ public:
 	bool SetFrameVisible( int32 Handle, int32 Frame, bool bVisible );
 	bool GetMeshVisible( int32 Handle, int32 Mesh, bool& bOut ) const;
 	bool SetMeshVisible( int32 Handle, int32 Mesh, bool bVisible );
+	// 元のメッシュ Mesh（フレーム Frame の中）が、いま描かれるか（メッシュ自身と、親までのフレームの表示を合わせる）。
+	bool GetMeshDrawn( int32 Handle, int32 Mesh, int32 Frame, bool& bOut ) const;
+	// メッシュの中身（頂点と三角形）。Mesh は元のメッシュの番号で、-1 なら全部。bCurrentPose が true なら、いまの姿勢（アニメーション・骨の上書きを含む）の位置、false なら読み込んだままの位置。
+	// 番号が範囲の外・メッシュが無いときは false（Out は変えない）。頂点は、使う頂点だけを、元の並びで入れる。
+	bool GetMeshData( int32 Handle, int32 Mesh, bool bCurrentPose, FModelMeshData& Out );
 	// 骨組みのあるモデルか（形状の無い、アニメーションだけのモデルも）
 	bool HasRig( int32 Handle ) const;
 

@@ -795,6 +795,147 @@ bool CStaticModelStore::GetMeshVisible( int32 Handle, int32 Mesh, bool& bOut ) c
 	return true;
 }
 
+bool CStaticModelStore::GetMeshDrawn( int32 Handle, int32 Mesh, int32 Frame, bool& bOut ) const
+{
+	FScopedLock Guard( Lock );
+	const auto* Instance = FindInstance( Handle );
+	if ( !Instance )
+	{
+		return false;
+	}
+	bOut = !IsHidden( *Instance, Mesh, Frame ); // 骨組みの無いモデルは、隠せないので、いつも描かれる。
+	return true;
+}
+
+bool CStaticModelStore::GetMeshData( int32 Handle, int32 Mesh, bool bCurrentPose, FModelMeshData& Out )
+{
+	FScopedLock Guard( Lock );
+	FInstance* Instance = FindInstance( Handle );
+	if ( !Instance )
+	{
+		return false;
+	}
+	const FResource& Resource = *Instance->Resource;
+	const FStaticModelSurfaceData& Surface = Resource.Definition.Surface;
+	if ( Mesh < -1 || Mesh >= Resource.Definition.NumMeshes )
+	{
+		return false;
+	}
+	TArray<FDrawVertex3D> Pose; // いまの姿勢のときだけ、変形した頂点（非表示のメッシュも含む）。
+	if ( bCurrentPose )
+	{
+		GetFullVertices( *Instance, Pose );
+	}
+	const TArray<FDrawVertex3D>& Source = bCurrentPose ? Pose : Resource.Vertices;
+	const int32 DefaultMaterial = Resource.Definition.Structure.Materials.Num() - 1; // 最後は、材質未指定用
+	FModelMeshData Result;
+	TMap<int32, int32> NewIndex; // 元の頂点 -> 出力の頂点
+	TMap<uint64, TArray<int32>> Buckets; // 同じ中身の頂点を探す（三角形ごとに展開された頂点を、共有に戻す）。元の頂点の番号を、中身の hash でまとめる。
+	const auto Same = [&]( int32 First, int32 Second ) -> bool
+	{
+		if ( FMemory::Memcmp( &Source[First], &Source[Second], sizeof( FDrawVertex3D ) ) != 0 )
+		{
+			return false;
+		}
+		if ( First < Resource.VertexSources.Num() && Second < Resource.VertexSources.Num() ) // 変形元が違う頂点は、別の頂点（同じ位置でも、別の骨に付くことがある）。
+		{
+			return Resource.VertexSources[First].Mesh == Resource.VertexSources[Second].Mesh && Resource.VertexSources[First].Vertex == Resource.VertexSources[Second].Vertex;
+		}
+		return true;
+	};
+	const auto AddVertex = [&]( int32 Old ) -> int32
+	{
+		if ( const int32* Found = NewIndex.Find( Old ) )
+		{
+			return *Found;
+		}
+		uint64 Hash = 1469598103934665603ull; // 中身の hash（FNV-1a）。
+		const uint8* Bytes = reinterpret_cast<const uint8*>( &Source[Old] );
+		for ( usize Byte = 0; Byte < sizeof( FDrawVertex3D ); ++Byte )
+		{
+			Hash = ( Hash ^ Bytes[Byte] ) * 1099511628211ull;
+		}
+		TArray<int32>& Bucket = Buckets.FindOrAdd( Hash );
+		for ( const int32 Candidate : Bucket )
+		{
+			if ( Same( Old, Candidate ) )
+			{
+				const int32 Shared = NewIndex[Candidate];
+				NewIndex.Add( Old, Shared );
+				return Shared;
+			}
+		}
+		Bucket.Add( Old );
+		const FDrawVertex3D& Vertex = Source[Old];
+		FModelMeshVertex Output;
+		Output.Position = FVector3( Vertex.Position[0], Vertex.Position[1], Vertex.Position[2] );
+		Output.Normal = FVector3( Vertex.Normal[0], Vertex.Normal[1], Vertex.Normal[2] );
+		Output.UV = FVector2( Vertex.U, Vertex.V );
+		Output.Color = FColor( Vertex.Diffuse[0] / 255.0f, Vertex.Diffuse[1] / 255.0f, Vertex.Diffuse[2] / 255.0f, Vertex.Diffuse[3] / 255.0f );
+		if ( Resource.Rig && Old < Resource.VertexSources.Num() ) // いちばん強く影響する骨（同じ重みなら、先の影響）。
+		{
+			const FModelVertexSource& From = Resource.VertexSources[Old];
+			if ( From.Mesh >= 0 && From.Mesh < Resource.Rig->Meshes.Num() )
+			{
+				const FRigMesh& RigMesh = Resource.Rig->Meshes[From.Mesh];
+				if ( RigMesh.bSkinned && From.Vertex >= 0 && From.Vertex + 1 < RigMesh.Influences.Start.Num() )
+				{
+					float32 BestWeight = 0.0f;
+					for ( int32 Influence = RigMesh.Influences.Start[From.Vertex]; Influence < RigMesh.Influences.Start[From.Vertex + 1]; ++Influence )
+					{
+						const int32 Cluster = RigMesh.Influences.Cluster[Influence];
+						if ( RigMesh.Influences.Weight[Influence] > BestWeight && Cluster >= 0 && Cluster < RigMesh.ClusterBone.Num() )
+						{
+							BestWeight = RigMesh.Influences.Weight[Influence];
+							Output.DominantFrame = RigMesh.ClusterBone[Cluster];
+						}
+					}
+				}
+			}
+		}
+		const int32 Added = Result.Vertices.Add( Output );
+		NewIndex.Add( Old, Added );
+		return Added;
+	};
+	for ( const FStaticModelSurfaceSection& Section : Surface.Sections )
+	{
+		if ( Mesh >= 0 && Section.SourceMeshIndex != Mesh )
+		{
+			continue;
+		}
+		for ( int32 Offset = 0; Offset + 2 < Section.NumIndices; Offset += 3 )
+		{
+			FModelMeshTriangle Triangle;
+			for ( int32 Corner = 0; Corner < 3; ++Corner )
+			{
+				const int32 Old = static_cast<int32>( Surface.Indices[Section.FirstIndex + Offset + Corner] );
+				if ( Old < 0 || Old >= Source.Num() )
+				{
+					return false;
+				}
+				Triangle.Vertices[Corner] = AddVertex( Old );
+			}
+			Triangle.Mesh = Section.SourceMeshIndex;
+			Triangle.Material = Section.MaterialIndex == DefaultMaterial ? -1 : Section.MaterialIndex;
+			Triangle.Frame = Section.SourceFrameIndex;
+			Result.Triangles.Add( Triangle );
+		}
+	}
+	if ( Result.Triangles.IsEmpty() )
+	{
+		return false; // メッシュが無い（番号が合わない）。
+	}
+	Result.BoundsMin = Result.Vertices[0].Position;
+	Result.BoundsMax = Result.Vertices[0].Position;
+	for ( const FModelMeshVertex& Vertex : Result.Vertices )
+	{
+		Result.BoundsMin = FVector3( NMath::Min( Result.BoundsMin.x, Vertex.Position.x ), NMath::Min( Result.BoundsMin.y, Vertex.Position.y ), NMath::Min( Result.BoundsMin.z, Vertex.Position.z ) );
+		Result.BoundsMax = FVector3( NMath::Max( Result.BoundsMax.x, Vertex.Position.x ), NMath::Max( Result.BoundsMax.y, Vertex.Position.y ), NMath::Max( Result.BoundsMax.z, Vertex.Position.z ) );
+	}
+	Out = MoveTemp( Result );
+	return true;
+}
+
 bool CStaticModelStore::SetMeshVisible( int32 Handle, int32 Mesh, bool bVisible )
 {
 	FScopedLock Guard( Lock );
