@@ -391,6 +391,8 @@ namespace
 		"	return saturate( sum ) * g_LightBright.rgb;\n"
 		"}\n"
 		"float4 PixelLitMain( PLO i ) : SV_Target { return float4( PixelLightColor( i ), i.Diffuse.a ); }\n"
+		// 影の絵の中身: 深度（R32Float）を、赤の濃さにする（最近傍。深度 1 = 赤 255）
+		"float4 ShadowPreviewMain( VO i ) : SV_Target { uint w, h; g_ShadowMap.GetDimensions( w, h ); int2 p = clamp( int2( i.Uv * float2( w, h ) ), int2( 0, 0 ), int2( w, h ) - 1 ); return float4( saturate( g_ShadowMap.Load( int3( p, 0 ) ).r ), 0, 0, 1 ); }\n"
 		"float4 PixelLitTexturedMain( PLO i ) : SV_Target { float4 c = float4( PixelLightColor( i ), i.Diffuse.a ) * g_Base.Sample( g_Sampler, i.Uv ); if ( c.a <= 0.0 ) { discard; } return c; }\n"
 		"struct MEO { float4 Position : SV_POSITION; float4 Color : COLOR0; float2 Uv : TEXCOORD0; float3 Params : TEXCOORD1; float4 Offsets : TEXCOORD2; };\n"
 		"MEO EffectMaterialVS( VI i ) { MEO o; o.Position = i.SubPosition; o.Color = i.Diffuse; o.Uv = i.Uv; o.Params = i.Normal; o.Offsets = float4( i.Tangent.xy, i.Binormal.xy ); return o; }\n"
@@ -492,6 +494,7 @@ void CDX12ShaderService::Shutdown()
 	BuiltInPixelLitTextured = FShaderRecord();
 	BuiltInEffectMaterialVertex = FShaderRecord();
 	BuiltInEffectMaterial = FShaderRecord();
+	BuiltInShadowPreview = FShaderRecord();
 	ShadowPasses.Reset();
 	bBuiltInTried = false;
 	Pipelines = nullptr;
@@ -692,6 +695,7 @@ void CDX12ShaderService::BuildBuiltIns()
 	Build( EShaderStage::Pixel, "PixelLitTexturedMain", BuiltInPixelLitTextured );
 	Build( EShaderStage::Vertex, "EffectMaterialVS", BuiltInEffectMaterialVertex );
 	Build( EShaderStage::Pixel, "EffectMaterialPS", BuiltInEffectMaterial );
+	Build( EShaderStage::Pixel, "ShadowPreviewMain", BuiltInShadowPreview );
 }
 
 const CDX12ShaderService::FShaderRecord* CDX12ShaderService::GetBuiltIn( EBuiltInVertexShader Kind )
@@ -704,7 +708,7 @@ const CDX12ShaderService::FShaderRecord* CDX12ShaderService::GetBuiltIn( EBuiltI
 const CDX12ShaderService::FShaderRecord* CDX12ShaderService::GetBuiltInPixel( EBuiltInPixelShader Kind )
 {
 	BuildBuiltIns();
-	const FShaderRecord* Record = Kind == EBuiltInPixelShader::ShadowDepth ? &BuiltInShadowDepth : Kind == EBuiltInPixelShader::ShadowLit ? &BuiltInShadowLit : Kind == EBuiltInPixelShader::ShadowLitTextured ? &BuiltInShadowLitTextured : Kind == EBuiltInPixelShader::FogTextured ? &BuiltInFogTextured : Kind == EBuiltInPixelShader::ImageFilter ? &BuiltInImageFilter : Kind == EBuiltInPixelShader::ImageBlend ? &BuiltInImageBlend : Kind == EBuiltInPixelShader::PixelLit ? &BuiltInPixelLit : Kind == EBuiltInPixelShader::PixelLitTextured ? &BuiltInPixelLitTextured : Kind == EBuiltInPixelShader::EffectMaterial ? &BuiltInEffectMaterial : nullptr;
+	const FShaderRecord* Record = Kind == EBuiltInPixelShader::ShadowDepth ? &BuiltInShadowDepth : Kind == EBuiltInPixelShader::ShadowLit ? &BuiltInShadowLit : Kind == EBuiltInPixelShader::ShadowLitTextured ? &BuiltInShadowLitTextured : Kind == EBuiltInPixelShader::FogTextured ? &BuiltInFogTextured : Kind == EBuiltInPixelShader::ImageFilter ? &BuiltInImageFilter : Kind == EBuiltInPixelShader::ImageBlend ? &BuiltInImageBlend : Kind == EBuiltInPixelShader::PixelLit ? &BuiltInPixelLit : Kind == EBuiltInPixelShader::PixelLitTextured ? &BuiltInPixelLitTextured : Kind == EBuiltInPixelShader::EffectMaterial ? &BuiltInEffectMaterial : Kind == EBuiltInPixelShader::ShadowPreview ? &BuiltInShadowPreview : nullptr;
 	return Record && !Record->Code.IsEmpty() ? Record : nullptr;
 }
 

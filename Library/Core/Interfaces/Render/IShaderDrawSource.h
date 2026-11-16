@@ -36,6 +36,7 @@ enum class EBuiltInPixelShader : uint8
 	PixelLit,           // 画素ごとの光（PixelLit の頂点シェーダーと組み合わせる。定数 b6 = 光・材質・カメラ）。光の式は、CVertexLighting と同じ。
 	PixelLitTextured,   // 同じ。さらに、t0 の画像の色を掛ける（アルファが 0 なら、描かない）。
 	EffectMaterial,     // 材質付き 3D 描画（EffectMaterial の頂点シェーダーと組み合わせる。t0 = 表示画像、t1 = 消失のマスク、t2 = ゆがみの画像、定数 b7 = 材質の設定）。画像・消失・境界の発光・UV のゆがみ。
+	ShadowPreview,      // 影の絵の中身（深度）を、赤の濃さで見せる（Rect の頂点シェーダーと組み合わせる。t1 = 影の絵）。深度 1 = 赤 255、近いほど暗い赤。
 	ImageBlend,         // 2 枚の画像の混ぜ合わせ（Rect の頂点シェーダーと組み合わせる。t0 = 元の画像、t1 = 混ぜる画像、定数 b5 = 種類と引数）。
 };
 

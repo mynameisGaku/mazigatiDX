@@ -1611,6 +1611,23 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 			}
 			break;
 		}
+		case EDrawCommand::PreviewShadowMap:
+		{
+			if ( !View.CanRead<FDrawPreviewShadowMapData>() )
+			{
+				bStopped = true;
+				break;
+			}
+			const auto Data = View.Read<FDrawPreviewShadowMapData>(); // 固定部を所有コピーする。
+			FRenderTargetDrawView Map;
+			// DxLibと同じく、使えない影の絵・空の矩形は、何も描かない。
+			if ( Data.Handle >= 0 && Data.X1 > Data.X0 && Data.Y1 > Data.Y0 && Targets && Shaders && Targets->GetRenderTargetDrawView( Data.Handle, Map ) && Map.Format == ERenderTargetColorFormat::R32Float
+				&& !ShaderExecutor.DrawShadowPreview( Data, bAlphaBlend ) )
+			{
+				Unsupported( View, "The shadow map preview failed (the target cannot take a shader draw) and is skipped" );
+			}
+			break;
+		}
 		case EDrawCommand::UseShadowMap:
 		{
 			if ( !View.CanRead<FDrawUseShadowMapData>() )

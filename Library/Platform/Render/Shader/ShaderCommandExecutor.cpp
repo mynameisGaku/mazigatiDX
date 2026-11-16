@@ -38,7 +38,7 @@ bool CShaderCommandExecutor::HasOutputTargets() const
 bool CShaderCommandExecutor::Draw( FShaderDrawRequest& Request, bool bAlphaBlend, bool bTwoSided )
 {
 	IRenderGeometry3D* Target = Geometry.GetGeometry();
-	if ( !Source || !Target || PixelShader < 0 || ( Request.Builtin == EBuiltInVertexShader::None && VertexShader < 0 ) )
+	if ( !Source || !Target || ( Request.BuiltinPixel == EBuiltInPixelShader::None && PixelShader < 0 ) || ( Request.Builtin == EBuiltInVertexShader::None && VertexShader < 0 ) )
 	{
 		return false; // シェーダーが決まっていないと、何も描かない（DxLib と同じ）。
 	}
@@ -90,6 +90,71 @@ bool CShaderCommandExecutor::DrawBuiltIn( FShaderDrawRequest& Request, bool bTwo
 	}
 	Target = Geometry.GetGeometry(); // 準備で、描画先のパスが替わることがある。
 	return Target && Source->DrawShader( Request, *Target );
+}
+
+CShaderCommandExecutor::EResult CShaderCommandExecutor::DrawRect( const FDrawShaderRectData& Data, EBuiltInPixelShader Pixel, bool bAlphaBlend )
+{
+	const float32 Numbers[] = { Data.X, Data.Y, Data.Width, Data.Height, Data.U0, Data.V0, Data.U1, Data.V1 };
+	for ( const float32 Number : Numbers )
+	{
+		if ( !NMath::IsFinite( Number ) )
+		{
+			return EResult::Rejected;
+		}
+	}
+	const IRenderGeometry3D* Target = Geometry.GetGeometry();
+	if ( Data.Width <= 0.0f || Data.Height <= 0.0f || !Target || Target->GetWidth() < 1 || Target->GetHeight() < 1 )
+	{
+		return EResult::Rejected;
+	}
+	const float32 ScreenWidth = static_cast<float32>( Target->GetWidth() ), ScreenHeight = static_cast<float32>( Target->GetHeight() );
+	// 画素の座標を、クリップ座標（x は -1〜1、y は上が +1）に直す。左上が (0, 0)。奥行きは 0（いちばん手前）。
+	const float32 Left = Data.X / ScreenWidth * 2.0f - 1.0f, Right = ( Data.X + Data.Width ) / ScreenWidth * 2.0f - 1.0f;
+	const float32 Top = 1.0f - Data.Y / ScreenHeight * 2.0f, Bottom = 1.0f - ( Data.Y + Data.Height ) / ScreenHeight * 2.0f;
+	const float32 PositionsX[4] = { Left, Right, Left, Right }, PositionsY[4] = { Top, Top, Bottom, Bottom };
+	const float32 Us[4] = { Data.U0, Data.U1, Data.U0, Data.U1 }, Vs[4] = { Data.V0, Data.V0, Data.V1, Data.V1 };
+	FDrawShaderVertex3D Vertices[4];
+	for ( int32 Index = 0; Index < 4; ++Index )
+	{
+		FMemory::Memzero( &Vertices[Index], sizeof( FDrawShaderVertex3D ) );
+		Vertices[Index].Position[0] = PositionsX[Index];
+		Vertices[Index].Position[1] = PositionsY[Index];
+		Vertices[Index].Diffuse[0] = Data.Color[0];
+		Vertices[Index].Diffuse[1] = Data.Color[1];
+		Vertices[Index].Diffuse[2] = Data.Color[2];
+		Vertices[Index].Diffuse[3] = Data.Color[3];
+		Vertices[Index].U = Us[Index];
+		Vertices[Index].V = Vs[Index];
+	}
+	const uint32 Indices[6] = { 0, 1, 2, 2, 1, 3 }; // 三角形の帯を、2 枚の三角形にする。
+	FShaderDrawRequest Request;
+	Request.Builtin = EBuiltInVertexShader::Rect;
+	Request.BuiltinPixel = Pixel;
+	Request.Topology = EGeometryTopology::Triangles;
+	Request.bUseDepth = false;
+	Request.Vertices = reinterpret_cast<const uint8*>( Vertices );
+	Request.NumVertices = 4;
+	Request.Indices = Indices;
+	Request.NumIndices = 6;
+	return Draw( Request, bAlphaBlend ) ? EResult::Executed : EResult::Rejected;
+}
+
+bool CShaderCommandExecutor::DrawShadowPreview( const FDrawPreviewShadowMapData& Data, bool bAlphaBlend )
+{
+	FDrawShaderRectData Rect; // 画面の矩形へ、影の絵の全体を貼る。
+	Rect.X = static_cast<float32>( Data.X0 );
+	Rect.Y = static_cast<float32>( Data.Y0 );
+	Rect.Width = static_cast<float32>( Data.X1 - Data.X0 );
+	Rect.Height = static_cast<float32>( Data.Y1 - Data.Y0 );
+	Rect.U0 = 0.0f;
+	Rect.V0 = 0.0f;
+	Rect.U1 = 1.0f;
+	Rect.V1 = 1.0f;
+	const int32 OldTexture = Textures[1]; // 影の絵は t1（組み込みのシェーダーの置き場）。利用者の画像の置き場は、元に戻す。
+	Textures[1] = Data.Handle;
+	const EResult Result = DrawRect( Rect, EBuiltInPixelShader::ShadowPreview, bAlphaBlend );
+	Textures[1] = OldTexture;
+	return Result == EResult::Executed;
 }
 
 CShaderCommandExecutor::EResult CShaderCommandExecutor::Execute( const FDrawCommandView& View, bool bAlphaBlend )
@@ -282,49 +347,7 @@ CShaderCommandExecutor::EResult CShaderCommandExecutor::Execute( const FDrawComm
 		{
 			return EResult::Rejected;
 		}
-		const auto Data = View.Read<FDrawShaderRectData>(); // 検査後の固定部。
-		const float32 Numbers[] = { Data.X, Data.Y, Data.Width, Data.Height, Data.U0, Data.V0, Data.U1, Data.V1 };
-		for ( const float32 Number : Numbers )
-		{
-			if ( !NMath::IsFinite( Number ) )
-			{
-				return EResult::Rejected;
-			}
-		}
-		const IRenderGeometry3D* Target = Geometry.GetGeometry();
-		if ( Data.Width <= 0.0f || Data.Height <= 0.0f || !Target || Target->GetWidth() < 1 || Target->GetHeight() < 1 )
-		{
-			return EResult::Rejected;
-		}
-		const float32 ScreenWidth = static_cast<float32>( Target->GetWidth() ), ScreenHeight = static_cast<float32>( Target->GetHeight() );
-		// 画素の座標を、クリップ座標（x は -1〜1、y は上が +1）に直す。左上が (0, 0)。奥行きは 0（いちばん手前）。
-		const float32 Left = Data.X / ScreenWidth * 2.0f - 1.0f, Right = ( Data.X + Data.Width ) / ScreenWidth * 2.0f - 1.0f;
-		const float32 Top = 1.0f - Data.Y / ScreenHeight * 2.0f, Bottom = 1.0f - ( Data.Y + Data.Height ) / ScreenHeight * 2.0f;
-		const float32 PositionsX[4] = { Left, Right, Left, Right }, PositionsY[4] = { Top, Top, Bottom, Bottom };
-		const float32 Us[4] = { Data.U0, Data.U1, Data.U0, Data.U1 }, Vs[4] = { Data.V0, Data.V0, Data.V1, Data.V1 };
-		FDrawShaderVertex3D Vertices[4];
-		for ( int32 Index = 0; Index < 4; ++Index )
-		{
-			FMemory::Memzero( &Vertices[Index], sizeof( FDrawShaderVertex3D ) );
-			Vertices[Index].Position[0] = PositionsX[Index];
-			Vertices[Index].Position[1] = PositionsY[Index];
-			Vertices[Index].Diffuse[0] = Data.Color[0];
-			Vertices[Index].Diffuse[1] = Data.Color[1];
-			Vertices[Index].Diffuse[2] = Data.Color[2];
-			Vertices[Index].Diffuse[3] = Data.Color[3];
-			Vertices[Index].U = Us[Index];
-			Vertices[Index].V = Vs[Index];
-		}
-		const uint32 Indices[6] = { 0, 1, 2, 2, 1, 3 }; // 三角形の帯を、2 枚の三角形にする。
-		FShaderDrawRequest Request;
-		Request.Builtin = EBuiltInVertexShader::Rect;
-		Request.Topology = EGeometryTopology::Triangles;
-		Request.bUseDepth = false;
-		Request.Vertices = reinterpret_cast<const uint8*>( Vertices );
-		Request.NumVertices = 4;
-		Request.Indices = Indices;
-		Request.NumIndices = 6;
-		return Draw( Request, bAlphaBlend ) ? EResult::Executed : EResult::Rejected;
+		return DrawRect( View.Read<FDrawShaderRectData>(), EBuiltInPixelShader::None, bAlphaBlend ); // 検査後の固定部。
 	}
 	case EDrawCommand::ShaderQuad3D:
 	{

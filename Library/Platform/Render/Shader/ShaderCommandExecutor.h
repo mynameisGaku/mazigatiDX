@@ -37,6 +37,8 @@ public:
 	static bool IsShaderCommand( EDrawCommand Type );
 	// 1 命令を検査して実行する。bAlphaBlend は、いまの合成（通常のアルファか、上書きか）。
 	EResult Execute( const FDrawCommandView& View, bool bAlphaBlend );
+	// 影の絵（Data.Handle。R32Float の描画先）の中身（深度）を、画面の矩形 Data.X0..X1 / Y0..Y1 へ、赤の濃さで見せる。描けなければ false。
+	bool DrawShadowPreview( const FDrawPreviewShadowMapData& Data, bool bAlphaBlend );
 	// 組み込みのシェーダー（Builtin / BuiltinPixel）で描く。置いてある利用者のシェーダー・定数・画像は使わない（Request に、State・頂点・定数・画像を入れておく）。bTwoSided なら、両面を描く。描く前の準備（SetPrepare）は行う。
 	bool DrawBuiltIn( FShaderDrawRequest& Request, bool bTwoSided );
 
@@ -47,6 +49,8 @@ private:
 		int32 Slot = 0;
 		TArray<uint8> Bytes;
 	};
+	// 画面の矩形（ShaderRect）を描く。Pixel が None なら、置いた利用者のピクセルシェーダーを使う。
+	EResult DrawRect( const FDrawShaderRectData& Data, EBuiltInPixelShader Pixel, bool bAlphaBlend );
 	// 置いてある状態を、描画の値に入れて、描く
 	bool Draw( FShaderDrawRequest& Request, bool bAlphaBlend, bool bTwoSided = false );
 

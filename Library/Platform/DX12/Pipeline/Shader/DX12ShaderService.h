@@ -112,6 +112,7 @@ private:
 	FShaderRecord BuiltInPixelLitTextured;
 	FShaderRecord BuiltInEffectMaterialVertex;
 	FShaderRecord BuiltInEffectMaterial;
+	FShaderRecord BuiltInShadowPreview;
 	// 影の絵ごとの、最後に描いたときの値
 	struct FShadowPass
 	{
