@@ -5,6 +5,8 @@
 #include "Source/Catalog/SampleScene.h"
 #include "Source/Materials/MaterialsDemoState.h"
 
+class CMaterialSnapshotScene;
+
 //=============================================================================
 // CMaterialsSample
 //   マテリアル（ノードのグラフで作る見た目。Docs/MATERIAL.md）の見本。EngineContent/Materials の組み込みのマテリアルを読んで使う:
@@ -20,5 +22,6 @@ protected:
 	void OnSampleDraw( FImmediateDraw& Screen ) override;
 
 private:
+	TSharedPtr<CMaterialSnapshotScene> SnapshotScene; // 固定した材質をジョブから記録する比較モード。
 	TSharedPtr<FMaterialsDemoState> State;
 };

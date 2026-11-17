@@ -88,6 +88,7 @@ Invoke-Step 'DX12 architecture check (self)' (Join-Path $selfTest 'RunDX12Archit
 Invoke-Step 'engine shader source files' (Join-Path $selfTest 'RunEngineShaderSourceTests.ps1') @('-FrameworkRoot', $frameworkRoot)
 Invoke-Step 'scene draw order mutations' (Join-Path $selfTest 'RunSceneDrawOrderMutationTests.ps1') @('-FrameworkRoot', $frameworkRoot)
 Invoke-Step 'scene draw snapshot mutations' (Join-Path $selfTest 'RunSceneDrawSnapshotMutationTests.ps1') @('-FrameworkRoot', $frameworkRoot)
+Invoke-Step 'scene shader validation mutations' (Join-Path $selfTest 'RunSceneShaderValidationMutationTests.ps1') @('-FrameworkRoot', $frameworkRoot)
 
 Write-Host '== source format and clean'
 Invoke-Step 'source format' (Join-Path $selfTest 'CheckSourceFormat.ps1')
@@ -121,6 +122,7 @@ foreach ($configuration in $Configurations) {
     Invoke-Step "forward mesh contracts $configuration" (Join-Path $selfTest 'RunForwardMeshTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration)
     Invoke-Step "scene draw order contracts $configuration" (Join-Path $selfTest 'RunSceneDrawOrderTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
     Invoke-Step "scene draw snapshot contracts $configuration" (Join-Path $selfTest 'RunSceneDrawSnapshotTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
+    Invoke-Step "material surface snapshots $configuration" (Join-Path $selfTest 'RunMaterialSurfaceSnapshotTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
 }
 
 if (-not $Quick) {

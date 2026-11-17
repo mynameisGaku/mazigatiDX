@@ -1,0 +1,48 @@
+﻿# Surface材質の固定と並列記録
+
+`CMaterial::CreateSurfaceSnapshot` は、ゲームスレッドで既存のSurface材質のシェーダーを準備し、場面とパラメーターの定数、画像の番号、開始・終了命令と、それらの資源の共有所有を `FMaterialSurfaceSnapshot` へ固定する。
+
+Unlit、DefaultLit、Substrateは既存の `FMaterialProgram`、コンパイラ、`EngineContent/Shaders/Material` のHLSLを再利用する。DX12側へ材質の定義やSubstrateの計算を複製しない。新しいsubsystem・常駐スレッド・GPU資源Storeは追加しない。
+
+```cpp
+// ゲームスレッドで固定する。
+const FMaterialSurfaceSnapshot MaterialFrame = Material->CreateSurfaceSnapshot( SceneState );
+// 各ジョブは別の一覧へ、固定した値だけを使って記録する。
+CSceneDrawList Batch( Camera );
+const bool bAccepted = MaterialFrame.AddMesh( Batch, ESceneDrawClass::Translucent, Center, Vertices, NumVertices, Indices, NumIndices, World );
+```
+
+準備失敗、Surface以外、ゲームスレッド以外では未作成の値を返す。別スレッドで呼ばれた場合は、元の材質の可変状態やLastErrorへ触れる前に戻る。初期化の前にゲームスレッドが未登録の場合は、既存のIsInGameThreadの契約に従う。
+
+## 公開後に参照するもの
+
+- 固定後のメッシュ記録は、元のCMaterial、親、パラメーターコレクション、シェーダーの準備処理へアクセスしない。不変値のコピーを別々のジョブで読める。
+- 元の材質でパラメーターや画像を差し替えたり、Reloadしたり、材質自体を解放したりしても、固定値は記録時の定数とシェーダー・画像を保持する。インスタンスの画像解決は既存のFindEffectiveTextureを使う。
+- 環境マップと影を指定した場合も、その画像の共有参照を保持する。**画像の画素やGPU資源の内容を複製する機能ではない**。同じ画像・影・更新可能な資源の内容を変える場合は、従来どおり更新と描画の順序・寿命を管理する。
+- BuildMeshCommandsの結果は命令の所有コピー。資源の所有は固定値が保持するので、再生まで固定値も保持する。AddMeshを使えば、その所有もCSceneDrawListへ一緒に渡す。
+
+BuildMeshCommandsは既存のcbObjectと88バイトのシェーダー頂点を使い、World・Tintと頂点・添字を所有する。非有限な行列、不正な頂点・添字、記録上限ではfalseを返し、出力を変更しない。メッシュをGPUへ永続登録する経路ではなく、既存のシェーダー描画とフレーム転送を使う。
+
+AddMeshは不透明なら深度書き込みと上書き、半透明なら読み取り深度と通常アルファ合成を項目内へ記録する。切り抜きはこの補助関数では未対応でfalseを返す。これはCSceneDrawListの分類だけを変更する機能とは別で、材質用の標準的な描画状態も選ぶ補助関数である。
+
+## 所有と命令の検査
+
+CSceneDrawListに、命令と既存共有所有を一緒に受け付けるAddのoverloadを追加した。分類・命令・空き容量・所有参照数のどれかが不正なら、項目も参照も追加しない。固定材質のAddMeshはこの窓口を使う。
+
+項目には、UseShader、ShaderConstants、ShaderTexture、PrimitiveShader3Dを追加で受け付ける。両シェーダーを項目内で明示し、定数の段・スロット・16バイト整合・正確な長さ、画像の段、頂点と添字の個数・正確な長さ・予約値、全浮動小数点成分の有限値、全添字の範囲を所有コピー前に検査する。定数の中身は任意の整数やビット列もあるため、floatとして解釈しない。
+
+描画先の変更、ShaderOutputTarget、Clear、コピー、影生成、2DやShaderRectは引き続き拒否する。R3のパスや資源依存を暗黙に作る機能にはしない。[描画一覧の所有と合流](R2_SCENE_DRAW_SNAPSHOT.md)と[スレッドの契約](THREADING.md)も参照する。
+
+## 検証
+
+`Materials --material-snapshot=reference|sorted|reverse|mutated|live-mutated` が比較用の入口。既存コンパイラで三種類の陰影を作り、球を不透明・半透明で重ねる。固定後に元の色・画像を差し替え、Reloadし、場面の光も変更する。固定経路の画像が手動基準と一致し、固定しない変更後の画像は異なることを調べる。
+
+`RunMaterialSurfaceSnapshotTests.ps1 -Platform` は、実GPU / WARP / UIなし / CPU変換指定 / DxLibで、ワーカー0 / 1 / 4 / 15も変えて比較する。ここでのCPU変換指定は既存Forwardの診断フラグであり、材質の陰影をCPUで評価する機能ではない。
+
+共通のSceneDrawSnapshot契約には、可変長シェーダー命令の不正入力、20成分のNaN、整数定数の保持、所有付き受付の成功と拒否、ワーカーからの材質固定の拒否を追加した。RunSceneShaderValidationMutationTestsは、定数長・頂点列長・有限値・添字の検査をコピー上で一つずつ壊して検出を確認する。製品ソースは変更しない。
+
+残件は材質からの自動分類、切り抜き、共有GPUメッシュとの統合、より広いPBR材質の互換確認、モデル姿勢と更新資源の版の固定。R2全体と、R3のフレームグラフ・AddPassは引き続き未完了。
+
+参照: [Epicの描画スレッドと描画用データの所有](https://dev.epicgames.com/documentation/en-us/unreal-engine/threaded-rendering-in-unreal-engine)、[HLSLの定数バッファ](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-constants)、[定数の配置規則](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-packing-rules)。
+
+- **確認結果**: Debug / Releaseの契約93項目と、実GPU / WARP / UIなし / CPU変換指定 / DxLibの材質画像20項目が合格。固定経路は手動基準に対し各成分1を超える差のある画素0、固定しない変更後は12,628点の差を検出。ワーカー数0 / 1 / 4 / 15、元のパラメーター・画像の差し替えとReload、元の材質の解放を含む。長さ・頂点有限値・添字の4変異、所有・合流の6変異を、無変更の対照が合格する状態で検査の失敗として検出した。既存サンプル画像126項目も両構成で合格。最終ビルドは警告・エラー0、互換台帳525項目・役割54型・書式2023ファイルが整合した。全体検査の一括実行は行っていない。

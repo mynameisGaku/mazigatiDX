@@ -27,6 +27,12 @@ public:
 	// 状態と3D命令を所有コピーする。奥行きは固定カメラの前方向へWorldCenterを射影する。
 	// 2D・カメラ・描画先・消去・姿勢変更・不正な長さ・不均衡な状態範囲・上限超過は拒否し、元を保つ。
 	bool Add( const FDrawSpan& Commands, ESceneDrawClass Class, const FVector3& WorldCenter );
+	// 命令と既存の共有所有を一緒に受け付ける。拒否時は項目も所有参照も追加しない。
+	template<typename TObject>
+	bool Add( const FDrawSpan& Commands, ESceneDrawClass Class, const FVector3& WorldCenter, const TSharedPtr<TObject>& Owner )
+	{
+		return Owner && AddOwned( Commands, Class, WorldCenter, TSharedPtr<const uint8>( Owner, reinterpret_cast<const uint8*>( Owner.Get() ) ) );
+	}
 	// 同じカメラの確定一覧を末尾へ複写する。不一致・未作成・上限超過では両方を変更しない。
 	bool Append( const FSceneDrawSnapshot& Batch );
 	// 分類と奥行きを安定して並べ、所有を確定値へ渡す。この一覧はResetまで受付を終える。
@@ -40,6 +46,8 @@ public:
 	}
 
 private:
+	// 所有参照の上限を確認してから項目と参照を一緒に追加する。
+	bool AddOwned( const FDrawSpan& Commands, ESceneDrawClass Class, const FVector3& WorldCenter, const TSharedPtr<const uint8>& Owner );
 	// 型を参照せず、既存の所有者の制御部分だけを共有して保持する。
 	bool KeepAliveAlias( const TSharedPtr<const uint8>& Owner );
 	TSharedPtr<FSceneDrawSnapshotData> Data; // この記録元だけが変更できる未確定の一覧。

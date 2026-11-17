@@ -150,3 +150,7 @@ BeginScene3D / EndScene3Dと分類・奥行きキーを追加し、状態・2D�
 ## 2026-11-17 R2の所有する描画一覧
 
 カメラ・状態・独立した3D命令を所有する `CSceneDrawList` と不変の `FSceneDrawSnapshot` を追加した。ジョブごとの記録を一定の順で合流し、状態の異なる透明物を項目ごとに並べられる。詳細は [描画一覧の収集と確定](R2_SCENE_DRAW_SNAPSHOT.md)。モデル姿勢や更新可能な資源の版を含めた全体の固定、自動分類、共通PBRは残る。
+
+## 2026-11-17 R2の固定材質
+
+既存FMaterialProgramのUnlit / DefaultLit / Substrateを不変のSurface値へ固定し、ジョブからのメッシュ記録と、所有する描画一覧へ接続した。詳細は [Surface材質の固定](R2_MATERIAL_SURFACE_SNAPSHOT.md)。共有GPUメッシュ、自動分類、切り抜きと広い材質互換は残るため、R2全体の完了とはしない。

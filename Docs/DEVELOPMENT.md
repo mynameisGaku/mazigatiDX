@@ -1115,3 +1115,5 @@ FComputeBufferSlotのLayoutでRaw／Structured／Constantを指定します。�
 3Dの明示的な並べ替えは [3Dシーンと描画順](R2_SCENE_DRAW_ORDER.md) を参照してください。通常のSpanを自動で並べず、状態・2D・描画先の境界を保ちます。
 
 異なる描画状態を含む3D項目を並べる場合は [描画一覧の収集と確定](R2_SCENE_DRAW_SNAPSHOT.md) を参照してください。可変の収集と確定後の不変データを分け、既存のジョブ・共有所有・Executeの状態復元を使います。
+
+材質をジョブから記録する場合は [Surface材質の固定](R2_MATERIAL_SURFACE_SNAPSHOT.md) を使い、準備・可変値の取得と、不変値からの記録を分けます。

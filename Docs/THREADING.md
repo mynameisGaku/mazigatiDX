@@ -93,3 +93,5 @@ Source/SelfTestのRunThreadExecutionTests.ps1は、本物のCJobSubsystemを使�
 ## 独立したシーン描画の確定
 
 `CSceneDrawList` は各記録元だけが変更し、`Freeze` 後は不変の `FSceneDrawSnapshot` を渡します。既存の共有ジョブで別の一覧を作り、完了後に所有者が決めた順で合流します。カメラと命令はコピーしますが、ハンドルが指す画像・モデル・GPUバッファの内容まではコピーしません。KeepAliveで既存の共有所有を保持する場合も、その資源の更新と破棄スレッドの契約を守ります。再生先のスレッド、フレーム、GPU完了は既存の実行先とGPU所有者が管理します。詳細は [描画一覧の収集と確定](R2_SCENE_DRAW_SNAPSHOT.md) を参照してください。
+
+Surface材質はゲームスレッドでCreateSurfaceSnapshotし、公開後はFMaterialSurfaceSnapshotだけをジョブへ渡せます。元のCMaterialやパラメーターコレクションはジョブから読みません。画像・影の内容を複製する機能ではなく、資源の更新とGPU完了の契約は維持します。[Surface材質の固定](R2_MATERIAL_SURFACE_SNAPSHOT.md) を参照してください。

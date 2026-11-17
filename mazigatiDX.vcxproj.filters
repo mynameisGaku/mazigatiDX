@@ -6281,4 +6281,17 @@
     <ClInclude Include="Library\Framework\Render\Scene\SceneDrawSnapshot.h"><Filter>Library\Framework\Render\Scene</Filter></ClInclude>
     <ClInclude Include="Library\Framework\Render\Scene\Private\SceneDrawSnapshotData.h"><Filter>Library\Framework\Render\Scene\Private</Filter></ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Library\Framework\Material\Surface"><UniqueIdentifier>{391D16E0-2259-DEF3-D314-40C07280B655}</UniqueIdentifier></Filter>
+    <Filter Include="Library\Framework\Material\Surface\Private"><UniqueIdentifier>{E317FF87-E8D4-116B-2221-7626DEFE74DD}</UniqueIdentifier></Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Library\Framework\Render\Scene\Private\SceneShaderCommandValidation.cpp"><Filter>Library\Framework\Render\Scene\Private</Filter></ClCompile>
+    <ClCompile Include="Library\Framework\Material\Surface\MaterialSurfaceSnapshot.cpp"><Filter>Library\Framework\Material\Surface</Filter></ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Library\Framework\Render\Scene\Private\SceneShaderCommandValidation.h"><Filter>Library\Framework\Render\Scene\Private</Filter></ClInclude>
+    <ClInclude Include="Library\Framework\Material\Surface\MaterialSurfaceSnapshot.h"><Filter>Library\Framework\Material\Surface</Filter></ClInclude>
+    <ClInclude Include="Library\Framework\Material\Surface\Private\MaterialSurfaceSnapshotData.h"><Filter>Library\Framework\Material\Surface\Private</Filter></ClInclude>
+  </ItemGroup>
 </Project>

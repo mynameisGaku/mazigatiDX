@@ -3,6 +3,7 @@
 #include "Library/Framework/Render/Scene/Private/SceneDrawSnapshotData.h"
 #include "Library/Framework/Render/Scene/SceneDrawOrder.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
+#include "Library/Framework/Render/Scene/Private/SceneShaderCommandValidation.h"
 
 namespace
 {
@@ -49,6 +50,7 @@ namespace
 		int32 WorldDepth = 0; // 項目内で閉じるワールド行列の範囲。
 		int32 LightDepth = 0; // 項目内で閉じるライトの範囲。
 		bool bHasDraw = false; // 状態だけの項目は記録しない。
+		bool ShaderBound[2] = {}; // 頂点と画素のシェーダーは項目内で明示する。
 		for ( int32 Offset = 0; Offset < Commands.NumWords; )
 		{
 			const uint32 Header = Commands.Words[Offset]; // 残り長を調べるヘッダー。
@@ -56,6 +58,15 @@ namespace
 			if ( Count < 1 || Count > Commands.NumWords - Offset ) { return false; }
 			const FDrawCommandView Command{ static_cast<EDrawCommand>( Header & 0xff ), static_cast<uint8>( Header >> 8 ), Commands.Words + Offset + 1, Count - 1 }; // 範囲検査済みの参照。
 			if ( NSceneDrawOrder::IsIndependent( Command ) ) { bHasDraw = true; }
+			else if ( NSceneShaderCommand::IsState( Command ) )
+			{
+				if ( Command.Type == EDrawCommand::UseShader )
+				{
+					const FDrawUseShaderData Shader = Command.Read<FDrawUseShaderData>(); // 段と番号を検査済みの指定。
+					ShaderBound[Shader.Stage] = Shader.Handle >= 0;
+				}
+			}
+			else if ( NSceneShaderCommand::IsDraw( Command ) ) { if ( !ShaderBound[0] || !ShaderBound[1] ) { return false; } bHasDraw = true; }
 			else if ( StateWords( Command.Type ) != Command.NumDataWords || StateWords( Command.Type ) < 0 ) { return false; }
 			if ( Command.Type == EDrawCommand::PushWorldMatrix ) { ++WorldDepth; }
 			if ( Command.Type == EDrawCommand::PopWorldMatrix && --WorldDepth < 0 ) { return false; }
@@ -107,6 +118,13 @@ bool CSceneDrawList::Add( const FDrawSpan& Commands, ESceneDrawClass Class, cons
 bool CSceneDrawList::KeepAliveAlias( const TSharedPtr<const uint8>& Owner )
 {
 	if ( !Data || !Owner || Data->Owners.Num() >= MaxOwners ) { return false; }
+	Data->Owners.Add( Owner );
+	return true;
+}
+
+bool CSceneDrawList::AddOwned( const FDrawSpan& Commands, ESceneDrawClass Class, const FVector3& WorldCenter, const TSharedPtr<const uint8>& Owner )
+{
+	if ( !Data || !Owner || Data->Owners.Num() >= MaxOwners || !Add( Commands, Class, WorldCenter ) ) { return false; }
 	Data->Owners.Add( Owner );
 	return true;
 }

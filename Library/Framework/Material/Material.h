@@ -13,6 +13,7 @@
 #include "Library/Framework/Material/MaterialHlsl.h"
 #include "Library/Framework/Material/MaterialShadowMap.h"
 #include "Library/Framework/Material/MaterialSubstrate.h"
+#include "Library/Framework/Material/Surface/MaterialSurfaceSnapshot.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
 #include "Library/Framework/Render/Types/ShaderVertex.h"
 #include "Library/Math/Color.h"
@@ -196,6 +197,9 @@ public:
 	bool DrawPostProcess( FDrawContext& Draw, float32 X, float32 Y, float32 Width, float32 Height, const TSharedPtr<IImage>& Scene, const TSharedPtr<IImage>& Depth, const FMaterialFrameState& State );
 	// Surface: 使うシェーダー・場面の定数・パラメーター・画像を決める → メッシュを描く（何度でも）→ 止める
 	bool BeginSurface( FDrawContext& Draw, const FMaterialSceneState& Scene );
+	// ゲームスレッドでSurfaceの定数と資源を固定する。準備失敗や他のドメインでは未作成の値を返す。
+	// 公開後のメッシュ記録は、元の材質を変更・再読み込み・解放しても別スレッドから行える。
+	FMaterialSurfaceSnapshot CreateSurfaceSnapshot( const FMaterialSceneState& Scene );
 	bool DrawSurfaceMesh( FDrawContext& Draw, const FShaderVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, const FMatrix4x4& World, const FColor32& Tint );
 	void EndSurface( FDrawContext& Draw );
 

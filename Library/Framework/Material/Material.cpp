@@ -6,6 +6,7 @@
 #include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Material/MaterialHlsl.h"
 #include "Library/Framework/Material/MaterialSceneConstants.h"
+#include "Library/Framework/Material/Surface/Private/MaterialSurfaceSnapshotData.h"
 #include "Library/Framework/Render/State/RenderState3D.h"
 
 namespace
@@ -769,4 +770,33 @@ void CMaterial::EndSurface( FDrawContext& Draw )
 		Draw.StopUsingShaderTexture( Program.Textures.Num() );
 		Draw.StopUsingShaderTexture( Program.Textures.Num() + 1 );
 	}
+}
+
+FMaterialSurfaceSnapshot CMaterial::CreateSurfaceSnapshot( const FMaterialSceneState& Scene )
+{
+	FMaterialSurfaceSnapshot Snapshot; // 失敗時は元の材質へ参照しない未作成の値。
+	if ( !IsInGameThread() ) { return Snapshot; }
+	FDrawBuffer Begin; // 既存のSurface記録から全定数と画像の番号を固定する。
+	FDrawContext BeginDraw( Begin ); // HLSLや定数の別実装を作らない。
+	if ( !BeginSurface( BeginDraw, Scene ) ) { return Snapshot; }
+	FDrawBuffer End; // 同じ材質の解除命令を固定する。
+	FDrawContext EndDraw( End ); // 確定後に元のProgramを参照しないための解除値。
+	EndSurface( EndDraw );
+	TSharedPtr<FMaterialSurfaceSnapshotData> Data = MakeShared<FMaterialSurfaceSnapshotData>(); // 完成後だけ公開する所有データ。
+	Data->BeginWords = MoveTemp( Begin.Words );
+	Data->EndWords = MoveTemp( End.Words );
+	const FMaterialCompiled& Ready = GetCompiled(); // この時点の完成済みシェーダーを保持する。
+	if ( Ready.Vertex ) { Data->Shaders.Add( Ready.Vertex ); }
+	if ( Ready.Pixel ) { Data->Shaders.Add( Ready.Pixel ); }
+	for ( const TSharedPtr<CShader>& Variant : Ready.LitPixels ) { if ( Variant ) { Data->Shaders.Add( Variant ); } }
+	for ( const FMaterialTextureSlot& Slot : Ready.Program.Textures )
+	{
+		if ( Slot.Source != EMaterialTextureSource::Parameter ) { continue; }
+		const TSharedPtr<IImage> Image = FindEffectiveTexture( Slot.Name ); // インスタンスの上書きと親を既存規約で解決する。
+		if ( Image ) { Data->Images.Add( Image ); }
+	}
+	if ( Scene.EnvironmentMap && Scene.EnvironmentMap->GetTexture() ) { Data->Images.Add( Scene.EnvironmentMap->GetTexture() ); }
+	if ( Scene.ShadowMap && Scene.ShadowMap->GetTarget() ) { Data->Images.Add( Scene.ShadowMap->GetTarget() ); }
+	Snapshot.Data = MoveTemp( Data );
+	return Snapshot;
 }

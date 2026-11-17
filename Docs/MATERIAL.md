@@ -259,3 +259,7 @@ FUIBrush Glow = FUIBrush::MakeMaterial( GlowMaterial );                 // UI �
 ## これから
 
 点光源の影、場所ごとの環境マップ（反射プローブ）、1 を超える明るさを持つ環境マップ（HDR）。
+
+## Surfaceの不変値からの並列記録
+
+CMaterial::CreateSurfaceSnapshotで定数と資源の参照をゲームスレッドで固定し、FMaterialSurfaceSnapshot::AddMeshからジョブごとの描画一覧へ記録できます。元の材質のパラメーター変更やReloadと、確定済みの記録を分離します。制限と検査は [Surface材質の固定](R2_MATERIAL_SURFACE_SNAPSHOT.md) を参照してください。

@@ -1248,4 +1248,10 @@
       <UniqueIdentifier>{9545843A-BF34-331E-0E76-B7FB4D10CB13}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Source\Materials\MaterialSnapshotScene.cpp"><Filter>Source\Materials</Filter></ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Source\Materials\MaterialSnapshotScene.h"><Filter>Source\Materials</Filter></ClInclude>
+  </ItemGroup>
 </Project>

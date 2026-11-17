@@ -82,6 +82,15 @@
     <ClInclude Include="Library\Framework\Render\Scene\SceneDrawSnapshot.h" />
     <ClInclude Include="Library\Framework\Render\Scene\Private\SceneDrawSnapshotData.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Library\Framework\Render\Scene\Private\SceneShaderCommandValidation.cpp" />
+    <ClCompile Include="Library\Framework\Material\Surface\MaterialSurfaceSnapshot.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Library\Framework\Render\Scene\Private\SceneShaderCommandValidation.h" />
+    <ClInclude Include="Library\Framework\Material\Surface\MaterialSurfaceSnapshot.h" />
+    <ClInclude Include="Library\Framework\Material\Surface\Private\MaterialSurfaceSnapshotData.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets"></ImportGroup>
   <ItemGroup>

@@ -17,11 +17,11 @@ Snapshot.Replay( Executor );
 - カメラの値と命令を記録時にコピーする。項目の命令も所有コピーするので、元のバッファを空にしたり、元のカメラを変更したりしても確定値は変わらない。射影に使う画面の大きさは既存のカメラ命令どおり再生先で決まるため、画面サイズごとに射影行列を固定する仕組みとは区別する。
 - 各項目は、カメラ開始、項目固有の状態と描画、カメラ終了を含む一つのSpan。既存Executeの状態保存・復元を使い、別の項目へ状態を漏らさない。項目内の命令順は変更しない。
 - 不透明、切り抜き、半透明の順に並べる。不透明と切り抜きはそれぞれの受付順、半透明は固定したカメラの前方向へ中心点を射影した奥行きの大きい順。同深度は受付順を保つ。分類は呼出し側が明示し、合成や切り抜きの設定そのものを自動で変更しない。
-- 一つの項目に複数の固定長3D描画を含められる。その項目全体を一つの中心点と分類で扱うので、異なる透明物は別項目として登録する。
+- 一つの項目に複数の独立した3D描画を含められる。その項目全体を一つの中心点と分類で扱うので、異なる透明物は別項目として登録する。
 
-受け付ける描画は [既存の明示的シーン順序](R2_SCENE_DRAW_ORDER.md) と同じ独立した固定長3D命令。共有判定 `NSceneDrawOrder::IsIndependent` を使う。状態命令は合成・色・World行列・深度・カリング・画像座標・フォグ・ライト・材質設定等に限る。World行列とライトのPush/Popは項目内で閉じる。
+固定長3D描画は [既存の明示的シーン順序](R2_SCENE_DRAW_ORDER.md) と同じ共有判定 `NSceneDrawOrder::IsIndependent` を使う。加えて、項目内で両シェーダーと定数・画像を明示したPrimitiveShader3Dにも対応する。可変長の長さ・値・添字は別の共通検査で確認する。状態命令は合成・色・World行列・深度・カリング・画像座標・フォグ・ライト・材質設定等に限る。World行列とライトのPush/Popは項目内で閉じる。
 
-2D、カメラ変更、描画先変更、Clear、コピー、影生成、シーン範囲、アニメーション時刻の変更、独自シェーダーや可変長の描画は受け付けない。これらを含む場合はAddがfalseを返し、それ以前の記録は変更しない。既存Spanは引き続き同じ意味で使える。
+2D、カメラ変更、描画先変更、Clear、コピー、影生成、シーン範囲、アニメーション時刻の変更、Primitive3Dや帯など未対応の可変長描画は受け付けない。これらを含む場合はAddがfalseを返し、それ以前の記録は変更しない。既存Spanは引き続き同じ意味で使える。
 
 ## 合流と所有
 
@@ -50,3 +50,5 @@ Replayのtrueは有効な一覧をExecuteへ渡したことを表し、GPUの完
 設計時の参照: [Epicの描画スレッドと不変の描画用データ](https://dev.epicgames.com/documentation/en-us/unreal-engine/threaded-rendering-in-unreal-engine)、[並列化と提出順](https://dev.epicgames.com/documentation/en-us/unreal-engine/parallel-rendering-overview-for-unreal-engine)、[材質の共通入力](https://dev.epicgames.com/documentation/en-us/unreal-engine/physically-based-materials-in-unreal-engine)。既存のジョブ・共有所有・実行先を再利用し、新しいsubsystemや常駐スレッドは追加しない。
 
 - **最終確認**: Debug / ReleaseのライブラリとSamplesの最終ビルドは警告・エラー0。契約50項目、実GPU / WARP / UIなし / CPU変換 / DxLibの画像15項目が両構成で合格し、手動基準との差は0。ワーカー数は0 / 1 / 4 / 15で確認した。無変更の対照が合格し、6種類の所有・コピー・ビュー・順序の変異を検査の失敗としてすべて検出。従来のシーン順序50、Forward105、既存サンプル画像126項目も両構成で合格。互換台帳525項目、DX12の役割54型、ソース書式2014ファイルが整合した。全体検査の一括実行は行っていない。Releaseの出力と画像検査の一時領域は、容量を確保したD:/CodexVerification/framework-scene-snapshotへ分けた。
+
+Surface材質は [固定材質の記録](R2_MATERIAL_SURFACE_SNAPSHOT.md) に対応した。UseShader・ShaderConstants・ShaderTextureと可変長のPrimitiveShader3Dを項目内で検査し、両シェーダーを明示した描画を受け付ける。描画先・消去・ShaderOutputTarget等は引き続き境界として拒否する。

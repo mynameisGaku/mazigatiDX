@@ -8,6 +8,8 @@
 #include "Source/Catalog/SampleCatalog.h"
 #include "Source/Materials/MaterialsRig.h"
 #include "Source/Materials/MaterialsView.h"
+#include "Source/Materials/MaterialSnapshotScene.h"
+#include "Library/Platform/System/CommandLine.h"
 
 namespace
 {
@@ -40,6 +42,13 @@ namespace
 
 void CMaterialsSample::OnEnter()
 {
+	const TOptional<FString> SnapshotMode = NCommandLine::GetValue( "material-snapshot" ); // 材質の固定と並列記録の比較。
+	if ( SnapshotMode.IsSet() )
+	{
+		SnapshotScene = MakeShared<CMaterialSnapshotScene>();
+		if ( !SnapshotScene->Initialize( SnapshotMode.GetValue() ) ) { SnapshotScene.Reset(); }
+		return;
+	}
 	CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
 	CMaterialSubsystem* Materials = GetAppSubsystem<CMaterialSubsystem>();
 	if ( Assets == nullptr || Materials == nullptr )
@@ -94,5 +103,11 @@ void CMaterialsSample::OnEnter()
 
 void CMaterialsSample::OnSampleDraw( FImmediateDraw& Screen )
 {
+	if ( SnapshotScene )
+	{
+		Screen.Flush();
+		if ( IDrawExecutor* Executor = GetDrawExecutor() ) { SnapshotScene->Draw( *Executor ); }
+		return;
+	}
 	Screen.Text( 16, 56, "Materials: keys 1-3 toggle post-process passes, 4 = time, drag = orbit, wheel = zoom, R = auto orbit.", FColor32::Gray );
 }

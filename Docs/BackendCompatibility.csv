@@ -506,7 +506,7 @@
 "Sample.Inventory","Unreviewed","R9","DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない","必要な描画・アセット・入力等の依存機能と操作手順を照合する","","Inventory"
 "Sample.Island","Unreviewed","R9","DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない","必要な描画・アセット・入力等の依存機能と操作手順を照合する","","Island"
 "Sample.Lighting","Unreviewed","R9","DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない","必要な描画・アセット・入力等の依存機能と操作手順を照合する","","Lighting"
-"Sample.Materials","Unreviewed","R9","DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない","必要な描画・アセット・入力等の依存機能と操作手順を照合する","","Materials"
+"Sample.Materials","Partial","R9","DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない","既存の材質・ポスト処理・UIに加え、Unlit/DefaultLit/Substrateの固定値と並列記録を接続。パラメーターと画像の変更・Reload後の保持を画像比較。全操作の互換確認は未完了","Source/SelfTest/RunDX12SampleImageTests.ps1; Source/SelfTest/RunMaterialSurfaceSnapshotTests.ps1; Docs/R2_MATERIAL_SURFACE_SNAPSHOT.md","Materials"
 "Sample.Physics","Unreviewed","R9","DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない","必要な描画・アセット・入力等の依存機能と操作手順を照合する","","Physics"
 "Sample.PixelEffects","Unreviewed","R9","DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない","必要な描画・アセット・入力等の依存機能と操作手順を照合する","","PixelEffects"
 "Sample.Pixels","Unreviewed","R9","DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない","必要な描画・アセット・入力等の依存機能と操作手順を照合する","","Pixels"

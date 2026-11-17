@@ -50,6 +50,12 @@
       <Project>{0A3D6F51-8C2E-4B7A-9D14-5E6F7081A2B3}</Project>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Source\Materials\MaterialSnapshotScene.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Source\Materials\MaterialSnapshotScene.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets"></ImportGroup>
   <ItemGroup>

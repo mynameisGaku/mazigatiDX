@@ -12,7 +12,7 @@
 |---|---:|---:|---:|---:|---:|---:|---:|
 |API|376|9|3|198|165|0|1|
 |Draw|104|0|0|61|40|3|0|
-|Sample|34|30|0|4|0|0|0|
+|Sample|34|29|0|5|0|0|0|
 |Editor|11|11|0|0|0|0|0|
 
 ## API
@@ -525,7 +525,7 @@
 |[Sample.Inventory](../Samples/Source/Inventory/InventorySample.cpp#L16)|Unreviewed|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|必要な描画・アセット・入力等の依存機能と操作手順を照合する||
 |[Sample.Island](../Samples/Source/Island/IslandSample.cpp#L19)|Unreviewed|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|必要な描画・アセット・入力等の依存機能と操作手順を照合する||
 |[Sample.Lighting](../Samples/Source/Lighting/LightingSample.cpp#L15)|Unreviewed|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|必要な描画・アセット・入力等の依存機能と操作手順を照合する||
-|[Sample.Materials](../Samples/Source/Materials/MaterialsSample.cpp#L15)|Unreviewed|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|必要な描画・アセット・入力等の依存機能と操作手順を照合する||
+|[Sample.Materials](../Samples/Source/Materials/MaterialsSample.cpp#L17)|Partial|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|既存の材質・ポスト処理・UIに加え、Unlit/DefaultLit/Substrateの固定値と並列記録を接続。パラメーターと画像の変更・Reload後の保持を画像比較。全操作の互換確認は未完了|Source/SelfTest/RunDX12SampleImageTests.ps1; Source/SelfTest/RunMaterialSurfaceSnapshotTests.ps1; Docs/R2_MATERIAL_SURFACE_SNAPSHOT.md|
 |[Sample.Physics](../Samples/Source/Physics/PhysicsSample.cpp#L18)|Unreviewed|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|必要な描画・アセット・入力等の依存機能と操作手順を照合する||
 |[Sample.PixelEffects](../Samples/Source/PixelEffects/PixelEffectsSample.cpp#L34)|Unreviewed|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|必要な描画・アセット・入力等の依存機能と操作手順を照合する||
 |[Sample.Pixels](../Samples/Source/Pixels/PixelsSample.cpp#L14)|Unreviewed|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|必要な描画・アセット・入力等の依存機能と操作手順を照合する||
