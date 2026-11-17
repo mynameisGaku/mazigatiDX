@@ -518,7 +518,7 @@
 |[Sample.DrawState](../Samples/Source/DrawState/DrawStateSample.cpp#L14)|Unreviewed|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|必要な描画・アセット・入力等の依存機能と操作手順を照合する||
 |[Sample.Effects](../Samples/Source/Effects/EffectsSample.cpp#L12)|Unreviewed|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|必要な描画・アセット・入力等の依存機能と操作手順を照合する||
 |[Sample.Filters](../Samples/Source/Filters/FiltersSample.cpp#L14)|Unreviewed|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|必要な描画・アセット・入力等の依存機能と操作手順を照合する||
-|[Sample.Geometry3D](../Samples/Source/Geometry3D/Geometry3DSample.cpp#L9)|Partial|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|DX12基本経路の見本。Windows上の全frameと終了までの確認前||
+|[Sample.Geometry3D](../Samples/Source/Geometry3D/Geometry3DSample.cpp#L15)|Partial|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|基本図形・メッシュ・汎用バッファ・UV・照明・フォグのGPU経路。明示的シーン順序と不変の描画一覧を追加し、既存ジョブの0/1/4/15ワーカーで画像比較。全操作の互換確認は未完了|Source/SelfTest/RunDX12SampleImageTests.ps1; Source/SelfTest/RunSceneDrawOrderTests.ps1; Source/SelfTest/RunSceneDrawSnapshotTests.ps1|
 |[Sample.Hello](../Samples/Source/Hello/HelloSample.cpp#L11)|Unreviewed|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|必要な描画・アセット・入力等の依存機能と操作手順を照合する||
 |[Sample.Images](../Samples/Source/Images/ImagesSample.cpp#L13)|Unreviewed|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|必要な描画・アセット・入力等の依存機能と操作手順を照合する||
 |[Sample.Input](../Samples/Source/Input/InputSample.cpp#L11)|Unreviewed|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|必要な描画・アセット・入力等の依存機能と操作手順を照合する||

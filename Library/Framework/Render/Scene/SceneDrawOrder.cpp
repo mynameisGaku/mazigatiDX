@@ -25,7 +25,7 @@ namespace
 		{
 			if ( Count != 1 + sizeof( FDrawModelData ) / 4 ) { return false; }
 			FDrawModelData Model; // 姿勢を書き換える描画は後続の同じモデルへ影響するため並べない。
-			FMemory::Memcpy( &Model, Words + 1, sizeof( Model ) );
+			FMemory::Memcpy( &Model, Words, sizeof( Model ) );
 			return Model.AnimIndex < 0;
 		}
 		default: return false;
@@ -40,6 +40,11 @@ namespace
 		FDrawSceneKeyData Key; // この描画だけの分類と奥行き。
 		int32 Ordinal = 0; // 同じ分類・深度の元の順序。
 	};
+}
+
+bool NSceneDrawOrder::IsIndependent( const FDrawCommandView& Command )
+{
+	return Command.Data && Command.NumDataWords >= 0 && Command.NumDataWords < NDrawCommand::MaxWords && IsIndependentDraw( Command.Type, Command.NumDataWords + 1, Command.Data );
 }
 
 FDrawSpan NSceneDrawOrder::Prepare( const FDrawSpan& Input, TArray<uint32>& Storage, bool& bValid )
@@ -109,7 +114,7 @@ FDrawSpan NSceneDrawOrder::Prepare( const FDrawSpan& Input, TArray<uint32>& Stor
 		{
 			const uint32 Next = Input.Words[Offset + Count]; // キーの直後の描画候補。
 			const int32 DrawWords = static_cast<int32>( Next >> 16 ); // 検査済みの次命令長。
-			if ( IsIndependentDraw( static_cast<EDrawCommand>( Next & 0xff ), DrawWords, Input.Words + Offset + Count ) )
+			if ( IsIndependentDraw( static_cast<EDrawCommand>( Next & 0xff ), DrawWords, Input.Words + Offset + Count + 1 ) )
 			{
 				FSceneItem Item; // キーと描画を一緒に移動して対応を維持する。
 				Item.Offset = Offset;

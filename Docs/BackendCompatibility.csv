@@ -499,7 +499,7 @@
 "Sample.DrawState","Unreviewed","R9","DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない","必要な描画・アセット・入力等の依存機能と操作手順を照合する","","DrawState"
 "Sample.Effects","Unreviewed","R9","DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない","必要な描画・アセット・入力等の依存機能と操作手順を照合する","","Effects"
 "Sample.Filters","Unreviewed","R9","DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない","必要な描画・アセット・入力等の依存機能と操作手順を照合する","","Filters"
-"Sample.Geometry3D","Partial","R9","DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない","DX12基本経路の見本。Windows上の全frameと終了までの確認前","","Geometry3D"
+"Sample.Geometry3D","Partial","R9","DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない","基本図形・メッシュ・汎用バッファ・UV・照明・フォグのGPU経路。明示的シーン順序と不変の描画一覧を追加し、既存ジョブの0/1/4/15ワーカーで画像比較。全操作の互換確認は未完了","Source/SelfTest/RunDX12SampleImageTests.ps1; Source/SelfTest/RunSceneDrawOrderTests.ps1; Source/SelfTest/RunSceneDrawSnapshotTests.ps1","Geometry3D"
 "Sample.Hello","Unreviewed","R9","DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない","必要な描画・アセット・入力等の依存機能と操作手順を照合する","","Hello"
 "Sample.Images","Unreviewed","R9","DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない","必要な描画・アセット・入力等の依存機能と操作手順を照合する","","Images"
 "Sample.Input","Unreviewed","R9","DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない","必要な描画・アセット・入力等の依存機能と操作手順を照合する","","Input"
