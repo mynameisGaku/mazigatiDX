@@ -6257,4 +6257,16 @@
     <None Include="EngineContent\Shaders\Material\SurfaceDepthPixel.hlsli"><Filter>EngineContent\Shaders\Material</Filter></None>
     <None Include="EngineContent\Shaders\Material\SurfaceVertex.hlsli"><Filter>EngineContent\Shaders\Material</Filter></None>
   </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Library\Core\Render\Scene"><UniqueIdentifier>{301ECDC9-0204-00E4-CBFE-82DDDD52F77C}</UniqueIdentifier></Filter>
+    <Filter Include="Library\Framework\Render\Scene"><UniqueIdentifier>{D357CDBC-952B-2EE4-4FEE-19EF99AF1074}</UniqueIdentifier></Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Library\Framework\Render\Scene\SceneDrawOrder.cpp"><Filter>Library\Framework\Render\Scene</Filter></ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Library\Core\Render\Scene\SceneDrawClass.h"><Filter>Library\Core\Render\Scene</Filter></ClInclude>
+    <ClInclude Include="Library\Framework\Render\Scene\DrawSceneKeyData.h"><Filter>Library\Framework\Render\Scene</Filter></ClInclude>
+    <ClInclude Include="Library\Framework\Render\Scene\SceneDrawOrder.h"><Filter>Library\Framework\Render\Scene</Filter></ClInclude>
+  </ItemGroup>
 </Project>

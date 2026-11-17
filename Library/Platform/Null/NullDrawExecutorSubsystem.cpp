@@ -13,6 +13,8 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 #include "Library/Platform/BackendSelection.h"
+#include "Library/Framework/Render/Scene/SceneDrawOrder.h"
+#include "Library/Framework/Render/Scene/DrawSceneKeyData.h"
 
 REGISTER_SUBSYSTEM( CNullDrawExecutorSubsystem )
 
@@ -28,6 +30,7 @@ namespace
 		WorldMatrix,
 		Light,
 		ShadowMap,
+		Scene, // 同じSpan内で閉じる明示的な3D範囲。
 		Count,
 	};
 
@@ -43,6 +46,9 @@ namespace
 	{
 		switch ( Type )
 		{
+		case EDrawCommand::BeginScene3D: return 0;
+		case EDrawCommand::EndScene3D: return 0;
+		case EDrawCommand::SceneDrawKey3D: return WordsOf<FDrawSceneKeyData>();
 		case EDrawCommand::Box: return WordsOf<FDrawBoxData>();
 		case EDrawCommand::Circle: return WordsOf<FDrawCircleData>();
 		case EDrawCommand::Line: return WordsOf<FDrawLineData>();
@@ -167,6 +173,8 @@ namespace
 		case EDrawCommand::PopLight: OutPair = EPair::Light; OutStep = -1; return true;
 		case EDrawCommand::BeginShadowMap: OutPair = EPair::ShadowMap; OutStep = 1; return true;
 		case EDrawCommand::EndShadowMap: OutPair = EPair::ShadowMap; OutStep = -1; return true;
+		case EDrawCommand::BeginScene3D: OutPair = EPair::Scene; OutStep = 1; return true;
+		case EDrawCommand::EndScene3D: OutPair = EPair::Scene; OutStep = -1; return true;
 		default: break;
 		}
 		return false;
@@ -186,8 +194,12 @@ void CNullDrawExecutorSubsystem::Deinitialize()
 		 static_cast<long long>( Stats.NumExtraPops ) );
 }
 
-void CNullDrawExecutorSubsystem::Execute( const FDrawSpan& Span )
+void CNullDrawExecutorSubsystem::Execute( const FDrawSpan& Input )
 {
+	TArray<uint32> OrderedWords; // 描画しない実行先でも同じ順序検査を使う。
+	bool bSceneValid = true; // 長さ・範囲・分類キーの検査結果。
+	const FDrawSpan Span = NSceneDrawOrder::Prepare( Input, OrderedWords, bSceneValid ); // 入力の所有者は変更しない。
+	bool bSceneErrorCounted = false; // 不正なシーンは既存の命令長の集計とは別に一回だけ数える。
 	++Stats.NumSpans;
 
 	int32 Depth[static_cast<int32>( EPair::Count )] = {};
@@ -196,6 +208,11 @@ void CNullDrawExecutorSubsystem::Execute( const FDrawSpan& Span )
 
 	ForEachDrawCommand( Span, [&]( const FDrawCommandView& Command )
 	{
+		if ( !bSceneValid && !bSceneErrorCounted && ( Command.Type == EDrawCommand::BeginScene3D || Command.Type == EDrawCommand::EndScene3D || Command.Type == EDrawCommand::SceneDrawKey3D ) )
+		{
+			++Stats.NumBrokenCommands;
+			bSceneErrorCounted = true;
+		}
 		++Stats.NumCommands;
 		++Stats.CommandCounts[static_cast<int32>( Command.Type )];
 		ConsumedWords += 1 + Command.NumDataWords;

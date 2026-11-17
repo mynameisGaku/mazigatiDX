@@ -5,6 +5,7 @@
 #include "Library/Platform/Render/Shader/ShaderCommandExecutor.h"
 #include "Library/Platform/Render/Shadow/ShadowMapMath.h"
 #include "Library/Framework/Render/Draw/DrawCommand.h"
+#include "Library/Framework/Render/Scene/SceneDrawOrder.h"
 #include "Library/Platform/System/BackendSupport.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Math/MathUtils.h"
@@ -82,8 +83,11 @@ CCanvasDrawExecutor::CCanvasDrawExecutor( IRenderSurface& InSurface, ITextureDra
 {
 }
 
-void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
+void CCanvasDrawExecutor::Execute( const FDrawSpan& Input )
 {
+	TArray<uint32> OrderedWords; // 今回の実行だけが所有する並べ替え済み命令。
+	bool bSceneValid = true; // 不正なシーンは元の順序のまま処理する。
+	const FDrawSpan Span = NSceneDrawOrder::Prepare( Input, OrderedWords, bSceneValid ); // 呼出し中は入力と所有コピーを保持する。
 	IRenderCanvas2D* Canvas = Surface.GetCanvas2D(); // フレーム内だけ借りる。
 	if ( !Canvas || !Span.Words || Span.NumWords <= 0 )
 	{
@@ -631,6 +635,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Span )
 		View.Data = Span.Words + Offset + 1;
 		View.NumDataWords = Count - 1;
 		Offset += Count;
+		if ( View.Type == EDrawCommand::BeginScene3D || View.Type == EDrawCommand::EndScene3D || View.Type == EDrawCommand::SceneDrawKey3D ) { continue; }
 
 		// 描けない描画先・シャドウマップへ描く範囲は、対になる終わりまで、まとめて飛ばす（画面へ描いてしまわないように）。
 		if ( View.Type == EDrawCommand::PushTarget )

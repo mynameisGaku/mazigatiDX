@@ -11,7 +11,7 @@
 |分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|
 |---|---:|---:|---:|---:|---:|---:|---:|
 |API|376|9|3|198|165|0|1|
-|Draw|101|0|0|61|40|0|0|
+|Draw|104|0|0|61|40|3|0|
 |Sample|34|30|0|4|0|0|0|
 |Editor|11|11|0|0|0|0|0|
 
@@ -404,6 +404,7 @@
 |[Draw.AlphaTest](../Library/Framework/Render/Draw/DrawCommand.h#L89)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|平らな図形は、アルファが1つに決まるので、通らなければ丸ごと飛ばす。画像・文字は、通りうる画素が無いときだけ飛ばす（画素ごとの比べはまだ無い）。3Dには効かない||
 |[Draw.AmbientLight](../Library/Framework/Render/Draw/DrawCommand.h#L123)|Partial|R2|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|頂点ごとのCPU計算（CVertexLighting。DxLibの固定の光と同じ式）で対応。画素ごとの光（LightingOptionsのPixelLighting）は、同じ式を組み込みのシェーダー（PixelLit。定数b6）で画素ごとに計算する（画像つきも。フォグ・影を受ける描画と重なるときは、頂点ごと）。Lightingサンプルで、スポットライトの円・ランプの光だまりがDxLibと同じ形で出る（細かい画素の比較は未実施）。共有のモデル（Model3D）は、GPU が変換と光（頂点ごと、同じ式）を計算する Forward 経路で描く（CDX12ForwardMeshRenderer。従来の CPU の経路と、光あり・なしで画素が一致。GPU Forwardでも画素照明・距離／高さフォグ・UV変換に対応。影はCPU経路）||
 |[Draw.Anisotropy](../Library/Framework/Render/Draw/DrawCommand.h#L116)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|Filterが異方性のとき、サンプラーを異方性（最大の強さ 1〜16）にする。画像に縮小の段（mip）が無いので、見た目は線形補間とほぼ同じ（RenderStateサンプルの遠くの地面で、DxLibと差が見えない）||
+|[Draw.BeginScene3D](../Library/Framework/Render/Draw/DrawCommand.h#L158)|Verified|R2|明示的シーン内の分類・透明順序、状態と2Dの境界、不正入力時の記録順維持、両構成と実行先を比較|DX12 / DxLib / Nullで共通の順序処理。キーは直後の独立した固定長3D描画だけに適用し、姿勢変更や状態境界を越えない。R2全体は未完了|Source/SelfTest/RunSceneDrawOrderTests.ps1; Source/SelfTest/RunSceneDrawOrderMutationTests.ps1; Docs/R2_SCENE_DRAW_ORDER.md|
 |[Draw.BeginShadowMap](../Library/Framework/Render/Draw/DrawCommand.h#L140)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|影の絵へ、図形（三角形・不透明）を、光から見た深度として描く。範囲は、箱か、カメラの視錐台。入れ子は不可（飛ばす）||
 |[Draw.Billboard3D](../Library/Framework/Render/Draw/DrawCommand.h#L47)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.BillboardPivot3D](../Library/Framework/Render/Draw/DrawCommand.h#L131)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
@@ -427,6 +428,7 @@
 |[Draw.Depth](../Library/Framework/Render/Draw/DrawCommand.h#L110)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.DistortedMaterialQuad3D](../Library/Framework/Render/Draw/DrawCommand.h#L60)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|組み込みの材質シェーダー（EffectMaterial）で描く。消失・境界の発光・UVのゆがみ・帯の点ごとの値は、DxLibと並べて画素が一致した。合成は Alpha と Add だけ（DxLib と同じ。ほかは描かない）。画像の一部（派生画像）は、元の画像全体として読む||
 |[Draw.DistortedMaterialRibbon3D](../Library/Framework/Render/Draw/DrawCommand.h#L62)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|組み込みの材質シェーダー（EffectMaterial）で描く。消失・境界の発光・UVのゆがみ・帯の点ごとの値は、DxLibと並べて画素が一致した。合成は Alpha と Add だけ（DxLib と同じ。ほかは描かない）。画像の一部（派生画像）は、元の画像全体として読む||
+|[Draw.EndScene3D](../Library/Framework/Render/Draw/DrawCommand.h#L159)|Verified|R2|明示的シーン内の分類・透明順序、状態と2Dの境界、不正入力時の記録順維持、両構成と実行先を比較|DX12 / DxLib / Nullで共通の順序処理。キーは直後の独立した固定長3D描画だけに適用し、姿勢変更や状態境界を越えない。R2全体は未完了|Source/SelfTest/RunSceneDrawOrderTests.ps1; Source/SelfTest/RunSceneDrawOrderMutationTests.ps1; Docs/R2_SCENE_DRAW_ORDER.md|
 |[Draw.EndShadowMap](../Library/Framework/Render/Draw/DrawCommand.h#L141)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|元の描画先へ戻す。パスの中では、描画先・カメラ・クリップ・消去の命令は無視する||
 |[Draw.Filter](../Library/Framework/Render/Draw/DrawCommand.h#L90)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|Nearest／Bilinearのみ。異方性は未対応||
 |[Draw.Fog](../Library/Framework/Render/Draw/DrawCommand.h#L114)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|距離の線形・指数・指数二乗フォグを頂点で評価する。GPU ForwardではGPUで計算し、画像なしは頂点色へ、画像つきは補間した係数で画像のサンプル後に混ぜる。CPU経路との画像比較が合格。線・点と影の経路は従来実装。||
@@ -475,6 +477,7 @@
 |[Draw.Quad3D](../Library/Framework/Render/Draw/DrawCommand.h#L55)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了 通常の三角形はフレーム転送のGPU Forwardで変換・頂点照明を処理。未対応状態やGPU拒否時は既存経路。線と点はCPU経路。 UVの移動・非一様拡大・中心付き回転は描画定数でGPU Forwardにも反映する。形状は再登録しない。||
 |[Draw.Ribbon3D](../Library/Framework/Render/Draw/DrawCommand.h#L57)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|カメラへ面を向けた帯を、共通の展開（NDrawRibbonMesh。DxLibと同じ）で三角形にして描く。ワールド行列は使わず、両面、光の計算あり。画像の繰り返しは整数Uの境界で分ける。MaterialRibbon3D・DistortedMaterialRibbon3Dは未対応 通常の三角形はフレーム転送のGPU Forwardで変換・頂点照明を処理。未対応状態やGPU拒否時は既存経路。線と点はCPU経路。||
 |[Draw.RoundBox](../Library/Framework/Render/Draw/DrawCommand.h#L72)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバスで点列にして描く。DxLibとの境界画素の比較が残る||
+|[Draw.SceneDrawKey3D](../Library/Framework/Render/Draw/DrawCommand.h#L160)|Verified|R2|明示的シーン内の分類・透明順序、状態と2Dの境界、不正入力時の記録順維持、両構成と実行先を比較|DX12 / DxLib / Nullで共通の順序処理。キーは直後の独立した固定長3D描画だけに適用し、姿勢変更や状態境界を越えない。R2全体は未完了|Source/SelfTest/RunSceneDrawOrderTests.ps1; Source/SelfTest/RunSceneDrawOrderMutationTests.ps1; Docs/R2_SCENE_DRAW_ORDER.md|
 |[Draw.ShaderConstants](../Library/Framework/Render/Draw/DrawCommand.h#L146)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|段・番号ごとに置く。頂点シェーダーが読む番号は頂点側の中身、読まない番号はピクセル側の中身を使う||
 |[Draw.ShaderOutputTarget](../Library/Framework/Render/Draw/DrawCommand.h#L151)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|出力1〜7の描画先を、描くときに束ねて、複数の描画先（MRT）のパスで描く。主画面は不可||
 |[Draw.ShaderQuad3D](../Library/Framework/Render/Draw/DrawCommand.h#L157)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|組み込みの頂点シェーダー（SubPositionのクリップ座標を渡す）で、両面を描く||

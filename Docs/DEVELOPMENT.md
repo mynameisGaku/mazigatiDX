@@ -1111,3 +1111,5 @@ FComputeBufferSlotのLayoutでRaw／Structured／Constantを指定します。�
 ## DX12の責務・命名・配置
 
 描画用PSOの作成と所有はCDX12GeometryPipelineStore、描画命令の記録はCDX12GeometryRendererへ分けます。GPU基盤をDevice／Resource／Pipeline／Command、利用側をRender／ImGuiへ分け、役割ごとの下位フォルダーへ配置します。CとFの適用範囲・配置と参照の更新・再発防止検査は [DX12の構成](DX12_ARCHITECTURE.md) を参照してください。
+
+3Dの明示的な並べ替えは [3Dシーンと描画順](R2_SCENE_DRAW_ORDER.md) を参照してください。通常のSpanを自動で並べず、状態・2D・描画先の境界を保ちます。

@@ -53,6 +53,33 @@ void CGeometry3DGallery::Tick( float32 DeltaTime )
 
 void CGeometry3DGallery::Draw( FDrawContext& Draw )
 {
+	const TOptional<FString> SceneOrder = NCommandLine::GetValue( "scene-order" ); // 透明描画の順序を検査する固定シーン。
+	if ( SceneOrder.IsSet() && Texture.IsValid() )
+	{
+		const FString Mode = SceneOrder.GetValue(); // referenceは正しい記録順、unsortedは逆順の比較用。
+		const bool bSort = Mode != "reference" && Mode != "unsorted"; // 明示した範囲だけを並べ替える。
+		const bool bReverse = Mode == "reverse" || Mode == "unsorted"; // 記録順の違いを画像で比較する。
+		Draw.PushCamera( FCamera::MakePerspective( FVector3( 0, 0, -9 ), FVector3( 0, 0, 0 ) ) );
+		Draw.UseLighting( false );
+		Draw.Depth( FDepthState::ReadOnly() );
+		Draw.Blend( EDrawBlend::Alpha );
+		if ( bSort ) { Draw.BeginScene3D(); }
+		for ( int32 Step = 0; Step < 3; ++Step )
+		{
+			const int32 Index = bReverse ? 2 - Step : Step; // 不透明の奥、青の奥、赤の手前の順が基準。
+			FDrawQuad3DData Quad; // 重なりが見える同じ大きさの板。
+			Quad.Pos[2] = static_cast<float32>( 2 - Index );
+			Quad.Width = 4;
+			Quad.Height = 4;
+			Quad.Handle = Texture->GetHandle();
+			Quad.Color = Index == 0 ? FDrawRgba{ 40, 230, 60, 255 } : Index == 1 ? FDrawRgba{ 50, 70, 240, 128 } : FDrawRgba{ 240, 50, 60, 128 };
+			if ( bSort ) { Draw.SceneDrawKey3D( Index == 0 ? ESceneDrawClass::Opaque : ESceneDrawClass::Translucent, Quad.Pos[2] + 9 ); }
+			Draw.Quad3D( Quad );
+		}
+		if ( bSort ) { Draw.EndScene3D(); }
+		Draw.PopCamera();
+		return;
+	}
 	const FCamera Camera = FCamera::MakePerspective( FVector3( 5, 4, -9 ), FVector3( 0, 0, 0 ) ); // 箱全体を見るカメラ。
 	if ( !Draw.PushCamera( Camera ) )
 	{

@@ -25,6 +25,7 @@
 #include "Library/Platform/DxLib/Render/DxLibShadowMap.h"
 #include "Library/Platform/DxLib/Render/DxLibShapes3D.h"
 #include "Library/Platform/BackendSelection.h"
+#include "Library/Framework/Render/Scene/SceneDrawOrder.h"
 
 DEFINE_LOG_CATEGORY( LogDxLibDraw )
 
@@ -439,8 +440,11 @@ bool CDxLibDrawExecutorSubsystem::SupportsModelFrameOverrides() const
 	return AssetBackend != nullptr;
 }
 
-void CDxLibDrawExecutorSubsystem::Execute( const FDrawSpan& Span )
+void CDxLibDrawExecutorSubsystem::Execute( const FDrawSpan& Input )
 {
+	TArray<uint32> OrderedWords; // 実行終了まで保持する共通側の描画順。
+	bool bSceneValid = true; // 不正な範囲では従来の記録順を使う。
+	const FDrawSpan Span = NSceneDrawOrder::Prepare( Input, OrderedWords, bSceneValid ); // GPU固有の並べ替えは行わない。
 	// このオブジェクトの分で変えた状態。終わりで、元に戻す（変える前の値は、最初に変えるときに覚える）
 	// ブレンド・3D 図形の変換・明るさは、最初に変えるときに、変える前の値を DxLib から読んで覚え、終わりにその値へ戻す（実行の前の値に戻す）
 	bool bBlendChanged = false;
@@ -595,6 +599,7 @@ void CDxLibDrawExecutorSubsystem::Execute( const FDrawSpan& Span )
 
 	ForEachDrawCommand( Span, [&]( const FDrawCommandView& Command )
 	{
+		if ( Command.Type == EDrawCommand::BeginScene3D || Command.Type == EDrawCommand::EndScene3D || Command.Type == EDrawCommand::SceneDrawKey3D ) { return; }
 		const int Fill = Command.Has( FDrawFlag::Fill ) ? TRUE : FALSE;
 
 		// 影の絵を描いている間は、描画先・カメラ・クリップなど、影の絵を壊す命令を実行しない

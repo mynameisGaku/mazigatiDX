@@ -65,6 +65,14 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
   <Import Project="$(MSBuildThisFileDirectory)Build\EngineShaders.targets" />
+  <ItemGroup>
+    <ClCompile Include="Library\Framework\Render\Scene\SceneDrawOrder.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Library\Core\Render\Scene\SceneDrawClass.h" />
+    <ClInclude Include="Library\Framework\Render\Scene\DrawSceneKeyData.h" />
+    <ClInclude Include="Library\Framework\Render\Scene\SceneDrawOrder.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets"></ImportGroup>
   <ItemGroup>

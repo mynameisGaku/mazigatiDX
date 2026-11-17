@@ -155,6 +155,9 @@ enum class EDrawCommand : uint8
 	ModelFramePose3D,
 	// シェーダーで描く 3D の四角形の追加（上のコマンドの形式は変えていない）
 	ShaderQuad3D,       // FDrawShaderQuad3DData。ワールドの四角形（Quad3D と同じ向きの決め方）を、利用者のピクセルシェーダーで描く（組み込みの頂点シェーダーが、色・画像の座標・四角形ごとの 4 つの数を渡す。Handle は使わない）
+	BeginScene3D, // payloadなし。明示的な並べ替え範囲を開始する。入れ子は不可。
+	EndScene3D, // payloadなし。現在の並べ替え範囲を閉じる。
+	SceneDrawKey3D, // FDrawSceneKeyData。直後の固定長3D描画の分類と奥行き。
 };
 
 // Primitive3D の頂点のつなぎ方（DxLib の DX_PRIMTYPE_*）

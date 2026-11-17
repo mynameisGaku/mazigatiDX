@@ -7,6 +7,26 @@
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Render/Draw/DrawModelFramePoseData.h"
 
+void FDrawContext::BeginScene3D()
+{
+	Buffer->Words.Add( NDrawCommand::MakeHeader( EDrawCommand::BeginScene3D, 0, 1 ) );
+}
+
+void FDrawContext::EndScene3D()
+{
+	Buffer->Words.Add( NDrawCommand::MakeHeader( EDrawCommand::EndScene3D, 0, 1 ) );
+}
+
+bool FDrawContext::SceneDrawKey3D( ESceneDrawClass Class, float32 Depth )
+{
+	if ( Class > ESceneDrawClass::Translucent || !NMath::IsFinite( Depth ) ) { return false; }
+	FDrawSceneKeyData Data; // 直後の描画と一緒に並べ替える値。
+	Data.Class = Class;
+	Data.Depth = Depth;
+	Push( EDrawCommand::SceneDrawKey3D, 0, Data );
+	return true;
+}
+
 void FDrawContext::MaterialQuad3D( const FDrawMaterialQuadData& Data )
 {
 	if ( !NDrawMaterialQuad::IsValid( Data ) )

@@ -17,6 +17,7 @@
 #include "Library/Framework/Render/Draw/DrawMaterialQuad.h"
 #include "Library/Framework/Render/Draw/DrawMaterialRibbon.h"
 #include "Library/Framework/Render/Draw/DrawRibbon.h"
+#include "Library/Framework/Render/Scene/DrawSceneKeyData.h"
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Render/Types/BufferRange.h"
@@ -90,6 +91,14 @@ public:
 
 	// これまでに記録したワード数（システムの実行機構が、オブジェクトごとの範囲を決めるのに使う）
 	FORCEINLINE int32 GetNumWords() const { return Buffer->Words.Num(); }
+
+	// 並べ替え可能な3D範囲を開始する。同じSpan内で閉じる。入れ子や影生成内は実行時に並べ替えを無効にする。
+	void BeginScene3D();
+	// 現在の3D範囲を閉じる。カメラ・状態・描画先は変更しない。
+	void EndScene3D();
+	// 直後の単独3D描画へ分類と奥行きを付ける。非有限値・無効分類は記録しない。
+	// 間に状態変更・2D・未対応描画が入るとキーは失効し、その境界を越えて並べない。
+	bool SceneDrawKey3D( ESceneDrawClass Class, float32 Depth );
 
 	//-------------------------------------------------------------------------
 	// 2D（画面座標）
