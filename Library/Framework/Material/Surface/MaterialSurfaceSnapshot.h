@@ -8,6 +8,7 @@
 
 class CMaterial;
 class CSceneDrawList;
+class FShaderMeshSnapshot;
 struct FDrawBuffer;
 struct FShaderVertex3D;
 struct FMaterialSurfaceSnapshotData;
@@ -25,6 +26,8 @@ public:
 	// 不透明は深度書き込み、半透明は通常アルファ合成と読み取り深度で追加する。切り抜きは未対応。
 	// 命令と固定資源の所有を一緒に受け付け、失敗時は一覧を変更しない。
 	bool AddMesh( CSceneDrawList& List, ESceneDrawClass Class, const FVector3& WorldCenter, const FShaderVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, const FMatrix4x4& World, const FColor32& Tint = FColor32::White ) const;
+	// 固定した形状を参照して個体定数だけを記録する。不正な値では一覧を変更しない。
+	bool AddMesh( CSceneDrawList& List, ESceneDrawClass Class, const FVector3& WorldCenter, const FShaderMeshSnapshot& Mesh, const FMatrix4x4& World, const FColor32& Tint = FColor32::White ) const;
 private:
 	friend class CMaterial;
 	TSharedPtr<const FMaterialSurfaceSnapshotData> Data; // 元の材質から独立した定数と資源参照。

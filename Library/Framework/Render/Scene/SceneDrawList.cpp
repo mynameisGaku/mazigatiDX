@@ -44,7 +44,7 @@ namespace
 	}
 
 	// 全命令の長さと、範囲外へ状態を漏らさない構成を確認してから所有コピーする。
-	bool ValidCommands( const FDrawSpan& Commands )
+	bool ValidCommands( const FDrawSpan& Commands, bool& bUsesMesh )
 	{
 		if ( !Commands.Words || Commands.NumWords <= 0 || Commands.NumWords > MaxWords ) { return false; }
 		int32 WorldDepth = 0; // 項目内で閉じるワールド行列の範囲。
@@ -65,6 +65,13 @@ namespace
 					const FDrawUseShaderData Shader = Command.Read<FDrawUseShaderData>(); // 段と番号を検査済みの指定。
 					ShaderBound[Shader.Stage] = Shader.Handle >= 0;
 				}
+			}
+			else if ( Command.Type == EDrawCommand::SharedShaderMesh3D )
+			{
+				FDrawCommandView Mesh = Command; // 形状は作成時に検査済み。ここでは参照と描画状態を確認する。
+				if ( !ShaderBound[0] || !ShaderBound[1] || !FShaderMeshSnapshot::Resolve( Commands, Mesh ) ) { return false; }
+				bUsesMesh = true;
+				bHasDraw = true;
 			}
 			else if ( NSceneShaderCommand::IsDraw( Command ) ) { if ( !ShaderBound[0] || !ShaderBound[1] ) { return false; } bHasDraw = true; }
 			else if ( StateWords( Command.Type ) != Command.NumDataWords || StateWords( Command.Type ) < 0 ) { return false; }
@@ -96,7 +103,8 @@ bool CSceneDrawList::Reset( const FCamera& Camera )
 
 bool CSceneDrawList::Add( const FDrawSpan& Commands, ESceneDrawClass Class, const FVector3& WorldCenter )
 {
-	if ( !Data || Class > ESceneDrawClass::Translucent || Data->Items.Num() >= MaxItems || !ValidCommands( Commands ) ) { return false; }
+	bool bUsesMesh = false; // 項目が実際に参照する場合だけ形状を保持する。
+	if ( !Data || Class > ESceneDrawClass::Translucent || Data->Items.Num() >= MaxItems || !ValidCommands( Commands, bUsesMesh ) ) { return false; }
 	const float32 Depth = FVector3::Dot( WorldCenter - Data->Camera.Position, Data->Camera.GetForward() ); // ビューに固定した奥行き。
 	if ( !NMath::IsFinite( Depth ) ) { return false; }
 	constexpr int32 PopWords = 1 + sizeof( FDrawPopCameraData ) / 4; // 各項目でカメラを必ず閉じる長さ。
@@ -105,6 +113,7 @@ bool CSceneDrawList::Add( const FDrawSpan& Commands, ESceneDrawClass Class, cons
 	FSceneDrawSnapshotData::FItem Item; // ここから追加完了まで入力を所有コピーする。
 	Item.Words = Data->CameraWords;
 	Item.Words.Append( Commands.Words, Commands.NumWords );
+	if ( bUsesMesh ) { Item.ShaderMesh = *Commands.ShaderMesh; }
 	Item.Words.Add( NDrawCommand::MakeHeader( EDrawCommand::PopCamera, 0, PopWords ) );
 	Item.Words.Add( 0 );
 	Item.Class = Class;

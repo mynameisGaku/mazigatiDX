@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "CanvasDrawExecutor.h"
+#include "Library/Framework/Render/Mesh/ShaderMeshSnapshot.h"
 #include "Library/Platform/Render/Geometry/GeometryCommandExecutor.h"
 #include "Library/Platform/Render/Shader/MaterialEffectCommandExecutor.h"
 #include "Library/Platform/Render/Shader/ShaderCommandExecutor.h"
@@ -635,6 +636,11 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Input )
 		View.Data = Span.Words + Offset + 1;
 		View.NumDataWords = Count - 1;
 		Offset += Count;
+		if ( View.Type == EDrawCommand::SharedShaderMesh3D && !FShaderMeshSnapshot::Resolve( Span, View ) )
+		{
+			Unsupported( View, "Invalid shared shader mesh" );
+			continue;
+		}
 		if ( View.Type == EDrawCommand::BeginScene3D || View.Type == EDrawCommand::EndScene3D || View.Type == EDrawCommand::SceneDrawKey3D ) { continue; }
 
 		// 描けない描画先・シャドウマップへ描く範囲は、対になる終わりまで、まとめて飛ばす（画面へ描いてしまわないように）。

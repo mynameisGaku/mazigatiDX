@@ -1,4 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
+#include "Library/Framework/Render/Mesh/ShaderMeshSnapshot.h"
 #include "MaterialSnapshotScene.h"
 #include "Library/Framework/Material/Material.h"
 #include "Library/Framework/Render/Scene/SceneDrawList.h"
@@ -56,6 +57,8 @@ bool CMaterialSnapshotScene::Initialize( const FString& Mode )
 	TSharedPtr<CMaterial> Materials[3]; // 固定後に変更・解放する元の材質。
 	FMaterialSurfaceSnapshot Captured[3]; // ワーカーはこの不変値だけを読む。
 	const NShaderMeshes::FMesh& Mesh = NShaderMeshes::GetSphere(); // 静的な形の初期化もゲームスレッドで済ませる。
+	const FShaderMeshSnapshot Shape = FShaderMeshSnapshot::Create( Mesh.Vertices.GetData(), Mesh.Vertices.Num(), Mesh.Indices.GetData(), Mesh.Indices.Num() ); // 三つの材質と並列記録が同じ形状を使う。
+	if ( !Shape.IsValid() ) { return false; }
 	Reference.SetNum( 3 );
 	for ( int32 Index = 0; Index < 3; ++Index )
 	{
@@ -80,7 +83,7 @@ bool CMaterialSnapshotScene::Initialize( const FString& Mode )
 		const int32 Index = Mode == "reverse" ? 2 - Step : Step; // 完了順でなく、明示した合流順を使う。
 		const FVector3 Center( 0, 0, static_cast<float32>( 2 - Index ) ); // 固定ビュー方向の奥行き。
 		CSceneDrawList Batch( Camera ); // 同じ可変の一覧を共有しない。
-		Accepted[Step] = Captured[Index].AddMesh( Batch, Index == 0 ? ESceneDrawClass::Opaque : ESceneDrawClass::Translucent, Center, Mesh.Vertices.GetData(), Mesh.Vertices.Num(), Mesh.Indices.GetData(), Mesh.Indices.Num(), FMatrix4x4::Scale( 1.8f ) * FMatrix4x4::Translate( Center ) );
+		Accepted[Step] = Captured[Index].AddMesh( Batch, Index == 0 ? ESceneDrawClass::Opaque : ESceneDrawClass::Translucent, Center, Shape, FMatrix4x4::Scale( 1.8f ) * FMatrix4x4::Translate( Center ) );
 		Batches[Step] = Batch.Freeze();
 	}; // ここからはCMaterialやアセット窓口へアクセスしない。
 	if ( IJobSystem* Jobs = GetAppSubsystem<IJobSystem>() ) { Jobs->ParallelFor( 3, 1, "Materials.RecordSnapshot", Record ); }

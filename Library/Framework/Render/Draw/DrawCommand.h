@@ -158,6 +158,7 @@ enum class EDrawCommand : uint8
 	BeginScene3D, // payloadなし。明示的な並べ替え範囲を開始する。入れ子は不可。
 	EndScene3D, // payloadなし。現在の並べ替え範囲を閉じる。
 	SceneDrawKey3D, // FDrawSceneKeyData。直後の固定長3D描画の分類と奥行き。
+	SharedShaderMesh3D, // 固定データなし。実行範囲が借りる不変のシェーダー形状を描く。
 };
 
 // Primitive3D の頂点のつなぎ方（DxLib の DX_PRIMTYPE_*）

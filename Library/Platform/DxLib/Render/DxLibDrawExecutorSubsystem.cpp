@@ -1,4 +1,5 @@
 ﻿#include "DxLibDrawExecutorSubsystem.h"
+#include "Library/Framework/Render/Mesh/ShaderMeshSnapshot.h"
 #include "Library/Platform/DxLib/Render/DxLibRenderLog.h"
 
 
@@ -597,8 +598,9 @@ void CDxLibDrawExecutorSubsystem::Execute( const FDrawSpan& Input )
 		}
 	};
 
-	ForEachDrawCommand( Span, [&]( const FDrawCommandView& Command )
+	ForEachDrawCommand( Span, [&]( FDrawCommandView Command )
 	{
+		if ( Command.Type == EDrawCommand::SharedShaderMesh3D && !FShaderMeshSnapshot::Resolve( Span, Command ) ) { return; }
 		if ( Command.Type == EDrawCommand::BeginScene3D || Command.Type == EDrawCommand::EndScene3D || Command.Type == EDrawCommand::SceneDrawKey3D ) { return; }
 		const int Fill = Command.Has( FDrawFlag::Fill ) ? TRUE : FALSE;
 

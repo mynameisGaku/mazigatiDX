@@ -25,6 +25,10 @@ BuildMeshCommandsは既存のcbObjectと88バイトのシェーダー頂点を�
 
 AddMeshは不透明なら深度書き込みと上書き、半透明なら読み取り深度と通常アルファ合成を項目内へ記録する。切り抜きはこの補助関数では未対応でfalseを返す。これはCSceneDrawListの分類だけを変更する機能とは別で、材質用の標準的な描画状態も選ぶ補助関数である。
 
+同じ形状を複数の材質や個体で使う場合は、`FShaderMeshSnapshot::Create( Vertices, NumVertices, Indices, NumIndices )` で添字付き三角形を一度検査して固定し、その値を受け取る `AddMesh( List, Class, Center, Shape, World )` を使う。各項目の形状命令は1 wordで、頂点・添字は不変の領域を共有する。ジョブへ公開した後は形状を読み取り専用で扱い、各ジョブが別の一覧へ記録する。受付済みの一覧は形状と固定材質を保持するため、呼び出し元の値や元の配列は再生前に手放せる。
+
+再生時は一回のExecuteが一つの形状を借り、既存のシェーダー描画命令へ解決する。Nullは参照と命令長を検査する。形状は既存の命令と同じ頂点・添字の上限に従う。GPUバッファの再利用はDX12の既存キャッシュが担当し、再生時の頂点変換・照合は引き続き行う。[Epicのメッシュ描画パイプライン](https://dev.epicgames.com/documentation/en-us/unreal-engine/mesh-drawing-pipeline-in-unreal-engine)
+
 ## 所有と命令の検査
 
 CSceneDrawListに、命令と既存共有所有を一緒に受け付けるAddのoverloadを追加した。分類・命令・空き容量・所有参照数のどれかが不正なら、項目も参照も追加しない。固定材質のAddMeshはこの窓口を使う。
@@ -45,11 +49,11 @@ CSceneDrawListに、命令と既存共有所有を一緒に受け付けるAddの
 
 32頂点以上のシェーダー三角形では、初回はフレーム転送で描き、比較用に頂点・添字を所有コピーする。同じバイト列がもう一度現れると既存のGPUバッファ資源へ登録し、その後は材質や個体定数が異なっても同じバッファを使う。部分的なハッシュで候補を絞り、長さと全バイトを比較する。変更された形状や異なる添字範囲は別の項目となる。登録が失敗した場合や共有描画が拒否された場合は、その一回をフレーム転送で描く。
 
-キャッシュはDX12シェーダーサービスが所有し、既存の資源所有先と同じ実行スレッドで操作する。比較用コピーは32 MiB・32件を上限とし、長く使われていない項目から解放する。GPUが使用中の資源は既存の完了管理が保持する。二度目の登録時は同期転送が発生する。キャッシュが有効でも記録時のコピーと再生時の比較が必要で、CPU時間の改善は未計測。従来経路との比較には `--no-shader-mesh-cache` を使う。参考 [MicrosoftのGPU資源の寿命管理](https://learn.microsoft.com/en-us/windows/win32/direct3d12/fence-based-resource-management)。
+キャッシュはDX12シェーダーサービスが所有し、既存の資源所有先と同じ実行スレッドで操作する。比較用コピーは32 MiB・32件を上限とし、長く使われていない項目から解放する。GPUが使用中の資源は既存の完了管理が保持する。二度目の登録時は同期転送が発生する。再生時の比較は必要で、CPU時間の改善は未計測。従来経路との比較には `--no-shader-mesh-cache` を使う。参考 [MicrosoftのGPU資源の寿命管理](https://learn.microsoft.com/en-us/windows/win32/direct3d12/fence-based-resource-management)。
 
 `RunShaderMeshCacheTests.ps1` は製品のシェーダーサービスを通し、使い回す登録番号、材質定数の再送、部分登録の取り消し、従来経路への復帰、容量と解放を確認する。材質画像の基準はキャッシュ無効で撮影する。
 
-残件は材質からの自動分類、切り抜き、資源IDでメッシュを参照して記録時の複製を省く経路、より広いPBR材質の互換確認、モデル姿勢と更新資源の版の固定。R2全体と、R3のフレームグラフ・AddPassは引き続き未完了。
+残件は材質からの自動分類、切り抜き、既存の命令上限を超える形状、より広いPBR材質の互換確認、モデル姿勢と更新資源の版の固定。R2全体と、R3のフレームグラフ・AddPassは引き続き未完了。
 
 参照: [Epicの描画スレッドと描画用データの所有](https://dev.epicgames.com/documentation/en-us/unreal-engine/threaded-rendering-in-unreal-engine)、[HLSLの定数バッファ](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-constants)、[定数の配置規則](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-packing-rules)。
 

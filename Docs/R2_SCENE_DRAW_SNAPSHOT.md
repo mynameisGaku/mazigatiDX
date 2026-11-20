@@ -52,3 +52,5 @@ Replayのtrueは有効な一覧をExecuteへ渡したことを表し、GPUの完
 - **最終確認**: Debug / ReleaseのライブラリとSamplesの最終ビルドは警告・エラー0。契約50項目、実GPU / WARP / UIなし / CPU変換 / DxLibの画像15項目が両構成で合格し、手動基準との差は0。ワーカー数は0 / 1 / 4 / 15で確認した。無変更の対照が合格し、6種類の所有・コピー・ビュー・順序の変異を検査の失敗としてすべて検出。従来のシーン順序50、Forward105、既存サンプル画像126項目も両構成で合格。互換台帳525項目、DX12の役割54型、ソース書式2014ファイルが整合した。全体検査の一括実行は行っていない。Releaseの出力と画像検査の一時領域は、容量を確保したD:/CodexVerification/framework-scene-snapshotへ分けた。
 
 Surface材質は [固定材質の記録](R2_MATERIAL_SURFACE_SNAPSHOT.md) に対応した。UseShader・ShaderConstants・ShaderTextureと可変長のPrimitiveShader3Dを項目内で検査し、両シェーダーを明示した描画を受け付ける。描画先・消去・ShaderOutputTarget等は引き続き境界として拒否する。
+
+`FShaderMeshSnapshot` を渡すSurface描画では、各項目が不変形状を共有所有する。上限と `GetNumWords()` は、カメラ・状態・1 wordの形状参照を含む項目の命令を数える。参照先で共有する頂点・添字は含めない。直接 `FDrawSpan` を渡す場合、添付する形状は1個までで、Executeの呼び出し中だけ借りる。C++のバイナリ配置が変わるため、既存の呼び出し側も合わせて再ビルドする。
