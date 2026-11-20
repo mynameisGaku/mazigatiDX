@@ -4,6 +4,7 @@
 #include "Library/Core/Types/TypeDefinition.h"
 
 class FShaderMeshSnapshot;
+class FModelPoseSnapshot;
 
 // 描画バッファを所有せずに参照する。呼び出し側は使用が終わるまで元バッファを保持する。
 struct FDrawSpan
@@ -14,4 +15,6 @@ struct FDrawSpan
 	int32 NumWords = 0;
 	// この範囲のSharedShaderMesh3Dが参照する不変形状。呼び出し中だけ借りる。
 	const FShaderMeshSnapshot* ShaderMesh = nullptr;
+	// この範囲のModelPoseSnapshot3Dが参照する不変姿勢。呼び出し中だけ借りる。
+	const FModelPoseSnapshot* ModelPose = nullptr;
 };

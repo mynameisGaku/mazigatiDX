@@ -45,7 +45,7 @@ Replayのtrueは有効な一覧をExecuteへ渡したことを表し、GPUの完
 
 `RunSceneDrawSnapshotMutationTests.ps1` は製品ソースを変更せず、検査用のコピーから命令のコピー、ビューのコピー、所有参照、ビュー不一致の拒否、深度順、同深度の合流順を一つずつ壊し、契約検査が失敗することを調べる。
 
-自動分類、FMaterialProgramと結ぶ共通PBR、モデル・更新資源の版を含めたシーン全体の固定は引き続きR2の残件。R3のフレームグラフやAddPassは未実装。
+FMaterialProgramと結ぶ共通PBRと更新資源の版の固定は引き続きR2の残件。パスの登録には [R3の描画グラフ](R3_RENDER_GRAPH.md) を使う。
 
 設計時の参照: [Epicの描画スレッドと不変の描画用データ](https://dev.epicgames.com/documentation/en-us/unreal-engine/threaded-rendering-in-unreal-engine)、[並列化と提出順](https://dev.epicgames.com/documentation/en-us/unreal-engine/parallel-rendering-overview-for-unreal-engine)、[材質の共通入力](https://dev.epicgames.com/documentation/en-us/unreal-engine/physically-based-materials-in-unreal-engine)。既存のジョブ・共有所有・実行先を再利用し、新しいsubsystemや常駐スレッドは追加しない。
 
@@ -54,3 +54,17 @@ Replayのtrueは有効な一覧をExecuteへ渡したことを表し、GPUの完
 Surface材質は [固定材質の記録](R2_MATERIAL_SURFACE_SNAPSHOT.md) に対応した。UseShader・ShaderConstants・ShaderTextureと可変長のPrimitiveShader3Dを項目内で検査し、両シェーダーを明示した描画を受け付ける。描画先・消去・ShaderOutputTarget等は引き続き境界として拒否する。
 
 `FShaderMeshSnapshot` を渡すSurface描画では、各項目が不変形状を共有所有する。上限と `GetNumWords()` は、カメラ・状態・1 wordの形状参照を含む項目の命令を数える。参照先で共有する頂点・添字は含めない。直接 `FDrawSpan` を渡す場合、添付する形状は1個までで、Executeの呼び出し中だけ借りる。C++のバイナリ配置が変わるため、既存の呼び出し側も合わせて再ビルドする。
+
+## モデルの姿勢と配置を固定する
+
+ゲームスレッドで個体のアニメーションと骨の上書きを更新してから `FModelPoseSnapshot::Capture( *Instance )` を呼ぶ。評価済みの頂点・添字・材質範囲、所有画像、個体の不透明度とメッシュの版を共有する。`AddModel( Pose, Class, Center, World )` は、その姿勢と呼び出し側が指定する配置・分類を一つの描画項目へ固定する。通常の照明は最後の引数で切り替えられる。未対応の実行先や無効な個体では捕捉に失敗する。
+
+```cpp
+const FModelPoseSnapshot Pose = FModelPoseSnapshot::Capture( *Instance );
+CSceneDrawList Batch( Camera );
+const bool bAdded = Batch.AddModel( Pose, ESceneDrawClass::Opaque, Center, World );
+```
+
+捕捉後は別々の一覧へ並列に記録できる。合流・確定済みの一覧が姿勢を保持するため、元の個体を更新・解放してから再生できる。DX12は既存のモデル描画へ固定値を渡し、再生時に個体の状態を読み直さない。GPUとCPUの変換経路は従来と同じものを使う。資源を発行したバックエンドを再生まで保持し、最後の参照の解放はゲームスレッドで行う。描画パスの構成は呼び出し側が選べる。[Epicの描画スレッドとデータ所有](https://dev.epicgames.com/documentation/en-us/unreal-engine/threaded-rendering-in-unreal-engine)
+
+捕捉の対象は呼び出し時に個体へ反映済みの状態。まだ実行していないアニメーション命令や、一時的な描画命令の骨上書きは取り込まない。画像の画素・GPU資源の内容は版として固定しない。対応はDX12の所有付きモデルビューで、Nullは参照を検査できる。DxLibのネイティブモデルはこの入口では未対応。材質の切り抜きはSurface経路を使う。

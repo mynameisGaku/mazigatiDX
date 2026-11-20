@@ -149,10 +149,10 @@ BeginScene3D / EndScene3Dと分類・奥行きキーを追加し、状態・2D�
 
 ## 2026-11-17 R2の所有する描画一覧
 
-カメラ・状態・独立した3D命令を所有する `CSceneDrawList` と不変の `FSceneDrawSnapshot` を追加した。ジョブごとの記録を一定の順で合流し、状態の異なる透明物を項目ごとに並べられる。詳細は [描画一覧の収集と確定](R2_SCENE_DRAW_SNAPSHOT.md)。モデル姿勢や更新可能な資源の版を含めた全体の固定、自動分類、共通PBRは残る。
+カメラ・状態・独立した3D命令を所有する `CSceneDrawList` と不変の `FSceneDrawSnapshot` を追加した。ジョブごとの記録を一定の順で合流し、状態の異なる透明物を項目ごとに並べられる。DX12はモデルの評価済み姿勢と個体の不透明度を捕捉し、元の個体から独立して再生できる。更新可能な資源の版の固定と広い材質互換は引き続き残る。[描画一覧の収集と確定](R2_SCENE_DRAW_SNAPSHOT.md)
 
 ## 2026-11-17 R2の固定材質
 
-既存FMaterialProgramのUnlit / DefaultLit / Substrateを不変のSurface値へ固定し、ジョブからのメッシュ記録と、所有する描画一覧へ接続した。`FShaderMeshSnapshot`を渡すと記録項目は頂点・添字を共有し、一命令の容量を超える32bit添字の形状は複数の描画に分けて再生する。DX12では同じシェーダー頂点・添字を上限付きのGPUバッファキャッシュで共有する。固定材質は定義の`SurfaceBlend`から不透明・切り抜き・半透明に分類できる。Surfaceの切り抜きは色と影の描画で同じ判定を使える。残件は、広い材質互換、モデル姿勢と更新資源の版の固定。詳細は [Surface材質の固定](R2_MATERIAL_SURFACE_SNAPSHOT.md)。
+既存FMaterialProgramのUnlit / DefaultLit / Substrateを不変のSurface値へ固定し、ジョブからのメッシュ記録と、所有する描画一覧へ接続した。`FShaderMeshSnapshot`を渡すと記録項目は頂点・添字を共有し、一命令の容量を超える32bit添字の形状は複数の描画に分けて再生する。DX12では同じシェーダー頂点・添字を上限付きのGPUバッファキャッシュで共有する。固定材質は定義の`SurfaceBlend`から不透明・切り抜き・半透明に分類できる。Surfaceの切り抜きは色と影の描画で同じ判定を使える。残件は広い材質互換と更新資源の版の固定。[Surface材質の固定](R2_MATERIAL_SURFACE_SNAPSHOT.md)
 
 R3の入口として、既存画像を読み書きするオフスクリーン描画パスを `CRenderGraphBuilder` へ登録できる。名前を使った追加・前後への挿入・差し替えと、実行前の画像依存の検査に対応する。R2の残件を継続し、R3ではこの入口に深度パス、G-bufferとDeferred照明、Forward透明合成を接続する。[R3 描画パスの登録と依存検査](R3_RENDER_GRAPH.md)

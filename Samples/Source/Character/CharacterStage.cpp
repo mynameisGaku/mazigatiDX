@@ -5,10 +5,18 @@
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Render/Camera/Camera.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
+#include "Library/Framework/Render/Mesh/ModelPoseSnapshot.h"
+#include "Library/Framework/Render/Scene/SceneDrawList.h"
 #include "Library/Platform/System/CommandLine.h"
 
 namespace
 {
+	// 通常の描画と姿勢の固定で同じカメラを使う。
+	FCamera CharacterCamera()
+	{
+		return FCamera::MakePerspective( FVector3( 0.0f, 9.0f, -28.0f ), FVector3( 0.0f, 8.0f, 0.0f ) );
+	}
+
 	// モデルの置き場所（Assets からの相対）。
 	const char* ModelPath = "Models/Faputa/Faputa.pmx";
 
@@ -110,13 +118,31 @@ void CCharacterStage::Tick( float32 DeltaTime )
 	Rotate( EBone::TailLeft2, 0.0f, NMath::Sin( T * 2.2f - 1.0f ) * 0.4f, 0.0f );
 	Rotate( EBone::TailRight1, 0.0f, NMath::Sin( T * 2.2f - 0.5f ) * 0.3f, 0.0f );
 	Rotate( EBone::TailRight2, 0.0f, NMath::Sin( T * 2.2f - 1.2f ) * 0.4f, 0.0f );
+
+	const TOptional<FString> PoseMode = NCommandLine::GetValue( "character-pose" ); // 画像検査で固定時と変更後を比較する。
+	if ( !PoseMode.IsSet() ) { return; }
+	if ( PoseMode.GetValue() == "frozen" )
+	{
+		const FModelPoseSnapshot Pose = FModelPoseSnapshot::Capture( *Instance ); // 変更前の姿勢を借りずに保持する。
+		CSceneDrawList List( CharacterCamera() ); // 通常描画と同じカメラを固定する。
+		if ( !List.AddModel( Pose, ESceneDrawClass::Opaque, FVector3::Zero, FMatrix4x4::Identity, false ) ) { return; }
+		Frozen = List.Freeze();
+		Move( EBone::Center, FVector3( 4, 0, 0 ) );
+		Instance.Reset();
+		Source.Reset();
+	}
+	else if ( PoseMode.GetValue() == "moved" )
+	{
+		Move( EBone::Center, FVector3( 4, 0, 0 ) );
+	}
 }
 
 void CCharacterStage::Draw( FDrawContext& Draw )
 {
+	if ( Frozen.IsValid() ) { return; }
 	if ( Instance.IsValid() )
 	{
-		const FCamera Camera = FCamera::MakePerspective( FVector3( 0.0f, 9.0f, -28.0f ), FVector3( 0.0f, 8.0f, 0.0f ) );
+		const FCamera Camera = CharacterCamera(); // 固定経路と同じビュー。
 		if ( Draw.PushCamera( Camera ) )
 		{
 			Draw.UseLighting( false );
@@ -129,4 +155,9 @@ void CCharacterStage::Draw( FDrawContext& Draw )
 	{
 		Draw.Text( 20, 80, "Put the model at Assets/Models/Faputa/Faputa.pmx (it is not in the repository)", FColor32( 255, 255, 255 ) );
 	}
+}
+
+void CCharacterStage::DrawFrozen( IDrawExecutor& Executor ) const
+{
+	if ( Frozen.IsValid() ) { Frozen.Replay( Executor ); }
 }

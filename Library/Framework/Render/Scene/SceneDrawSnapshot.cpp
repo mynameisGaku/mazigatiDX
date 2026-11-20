@@ -14,7 +14,7 @@ bool FSceneDrawSnapshot::Replay( IDrawExecutor& Executor ) const
 	if ( !Playing ) { return false; }
 	for ( const FSceneDrawSnapshotData::FItem& Item : Playing->Items )
 	{
-		Executor.Execute( { Item.Words.GetData(), Item.Words.Num(), Item.ShaderMesh.IsValid() ? &Item.ShaderMesh : nullptr } );
+		Executor.Execute( { Item.Words.GetData(), Item.Words.Num(), Item.ShaderMesh.IsValid() ? &Item.ShaderMesh : nullptr, Item.ModelPose.IsValid() ? &Item.ModelPose : nullptr } );
 	}
 	return true;
 }

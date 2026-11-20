@@ -429,6 +429,7 @@
 "Draw.ModelAnimFrame","Partial","R5","有効・不正payload、順序、状態復元、DxLibとの画素／深度比較","骨ごとの割合（子も含める指定に対応）を反映する。実素材での確認が未完了","","EDrawCommand[98]: ModelAnimFrame"
 "Draw.ModelFramePose3D","Partial","R5","有効・不正payload、順序、状態復元、DxLibとの画素／深度比較","描く間だけ骨を上書きして、元へ戻す（IModelBackendの上書きを一時的に適用）。合成した骨組みで、命令から描かれた頂点までを検査。実素材での確認は未完了","","EDrawCommand[99]: ModelFramePose3D"
 "Draw.ModelMaterial3D","Partial","R5","有効・不正payload、順序、状態復元、DxLibとの画素／深度比較","選んだ材質のメッシュを一時的に隠して、残りを通常に描き、そのあと選んだ面を材質つきで描く（メッシュを隠せない・形状が無いときは、モデルだけを通常に描く）。形状は、バックエンドに依らない共通の FModelMaterialGeometry（DxLib と同じ作り方）。メッシュごとの元の表裏の設定は読まず、命令の bTwoSided とカリングの設定を使う","","EDrawCommand[26]: ModelMaterial3D"
+"Draw.ModelPoseSnapshot3D","Partial","R2","個体変更と削除の後に姿勢・配置・不透明度を照合し、変更前と画像を比較","DX12の所有付きモデルビューを再生。Nullは参照を検査し、DxLibネイティブモデルの捕捉は未対応","Source/SelfTest/RunModelRigTests.ps1; Source/SelfTest/RunSceneDrawSnapshotTests.ps1; Docs/R2_SCENE_DRAW_SNAPSHOT.md","EDrawCommand[105]: ModelPoseSnapshot3D"
 "Draw.Oval","Partial","R6","有効・不正payload、順序、状態復元、DxLibとの画素／深度比較","共通キャンバスで点列にして描く。DxLibとの境界画素の比較が残る","","EDrawCommand[30]: Oval"
 "Draw.Pixel","Implemented","R6","有効・不正payload、順序、状態復元、DxLibとの画素／深度比較","共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了","","EDrawCommand[27]: Pixel"
 "Draw.Pixel3D","Partial","R6","有効・不正payload、順序、状態復元、DxLibとの画素／深度比較","点として描く。DxLibとの画素比較が残る","","EDrawCommand[79]: Pixel3D"

@@ -6274,11 +6274,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Library\Framework\Render\Scene\SceneDrawList.cpp"><Filter>Library\Framework\Render\Scene</Filter></ClCompile>
+    <ClCompile Include="Library\Framework\Render\Mesh\ModelPoseSnapshot.cpp"><Filter>Library\Framework\Render\Mesh</Filter></ClCompile>
     <ClCompile Include="Library\Framework\Render\Mesh\ShaderMeshSnapshot.cpp"><Filter>Library\Framework\Render\Mesh</Filter></ClCompile>
     <ClCompile Include="Library\Framework\Render\Scene\SceneDrawSnapshot.cpp"><Filter>Library\Framework\Render\Scene</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Library\Framework\Render\Scene\SceneDrawList.h"><Filter>Library\Framework\Render\Scene</Filter></ClInclude>
+    <ClInclude Include="Library\Framework\Render\Mesh\ModelPoseSnapshot.h"><Filter>Library\Framework\Render\Mesh</Filter></ClInclude>
     <ClInclude Include="Library\Framework\Render\Mesh\ShaderMeshSnapshot.h"><Filter>Library\Framework\Render\Mesh</Filter></ClInclude>
     <ClInclude Include="Library\Framework\Render\Scene\SceneDrawSnapshot.h"><Filter>Library\Framework\Render\Scene</Filter></ClInclude>
     <ClInclude Include="Library\Framework\Render\Scene\Private\SceneDrawSnapshotData.h"><Filter>Library\Framework\Render\Scene\Private</Filter></ClInclude>

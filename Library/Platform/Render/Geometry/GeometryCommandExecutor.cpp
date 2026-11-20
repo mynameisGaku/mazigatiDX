@@ -637,12 +637,23 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::DrawModel( const FDr
 		}
 		Models->SetStaticModelPlacement( Data.Handle, Data.M );
 	}
-	const bool bGotView = bFiniteMatrix && Models->GetStaticModelDrawView( Data.Handle, Model );
-	if ( bGotView && Model.NumIndices == 0 && Model.NumSections == 0 )
+	if ( !bFiniteMatrix || !Models->GetStaticModelDrawView( Data.Handle, Model ) ) { return EResult::Rejected; }
+	const FMatrix4x4 OldWorld = World; // 従来命令では個体の配置を使い、後続へ漏らさない。
+	FDrawMatrixData Matrix; // 個体の配置の12要素を読む。
+	FMemory::Memcpy( Matrix.M, Data.M, sizeof( Data.M ) );
+	World = ToMatrix( Matrix );
+	const EResult Result = DrawModelView( Model, Alpha, bAlphaBlend ); // 固定姿勢と同じ検査と描画経路を使う。
+	World = OldWorld;
+	return Result;
+}
+
+CGeometryCommandExecutor::EResult CGeometryCommandExecutor::DrawModelView( const FStaticModelDrawView& Model, int32 Alpha, bool bAlphaBlend )
+{
+	if ( Model.NumIndices == 0 && Model.NumSections == 0 )
 	{
 		return EResult::Executed; // 描くものが無い（形の無いモデル・すべて非表示）。
 	}
-	if ( !bGotView || !Model.Vertices || !Model.Indices || !Model.Sections
+	if ( !Model.Vertices || !Model.Indices || !Model.Sections
 		|| Model.NumVertices <= 0 || Model.NumVertices > 786432 || Model.NumIndices <= 0 || Model.NumIndices > 786432 || Model.NumSections <= 0 || Model.NumSections > 4096
 		|| !NMath::IsFinite( Model.Opacity ) || Model.Opacity < 0 || Model.Opacity > 1 )
 	{
@@ -689,10 +700,6 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::DrawModel( const FDr
 	{
 		return EResult::Executed;
 	}
-	const FMatrix4x4 OldWorld = World; // モデルの配置をほかの命令へ漏らさない。
-	FDrawMatrixData Matrix; // モデル個体の配置。
-	FMemory::Memcpy( Matrix.M, Data.M, sizeof( Data.M ) );
-	World = ToMatrix( Matrix );
 	const int32 ModelAlpha = NMath::Clamp( static_cast<int32>( Alpha * Model.Opacity + 0.5f ), 0, 255 ); // 個体の不透明度を一度だけ掛ける。
 	const int32 NumForward = CanDrawForward( Model ) ? DrawMeshForward( Model, ModelAlpha, bAlphaBlend ) : 0; // GPU が変換と光を計算できる範囲は、共有のメッシュで描く。
 	bool bSuccess = true; // GPU作成失敗時も配置は復元する。
@@ -715,9 +722,7 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::DrawModel( const FDr
 			Offset += Count;
 		}
 	}
-	World = OldWorld;
 	return bSuccess ? EResult::Executed : EResult::Rejected;
-
 }
 
 CGeometryCommandExecutor::EResult CGeometryCommandExecutor::Execute( const FDrawCommandView& View, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend )

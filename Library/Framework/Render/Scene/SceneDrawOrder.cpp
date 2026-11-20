@@ -131,5 +131,5 @@ FDrawSpan NSceneDrawOrder::Prepare( const FDrawSpan& Input, TArray<uint32>& Stor
 		Offset += Count;
 	}
 	Flush();
-	return { Storage.GetData(), Storage.Num(), Input.ShaderMesh };
+	return { Storage.GetData(), Storage.Num(), Input.ShaderMesh, Input.ModelPose };
 }

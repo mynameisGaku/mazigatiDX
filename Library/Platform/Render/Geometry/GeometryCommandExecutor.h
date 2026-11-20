@@ -51,6 +51,8 @@ public:
 	EResult Execute( const FDrawCommandView& View, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend );
 	// 静的モデルを 1 つ描く（アニメーションの時間と配置を設定してから、いまの姿で描く）。Alpha・bAlphaBlend は、Execute へ渡された値。
 	EResult DrawModel( const FDrawModelData& Data, int32 Alpha, bool bAlphaBlend );
+	// 現在の配置で固定姿勢を描く。モデル登録へのアクセスや更新は行わない。
+	EResult DrawModelView( const FStaticModelDrawView& Model, int32 Alpha, bool bAlphaBlend );
 	// GPU が変換と光を計算する経路（共有のメッシュを GPU に置く）を、使ってよいか（影・フォグ・画素ごとの光などは、CPU の経路で描く）。
 	void SetForwardPath( bool bEnable ) { bUseForwardPath = bEnable; }
 	// 借用している静的モデルの窓口（無ければ nullptr）。

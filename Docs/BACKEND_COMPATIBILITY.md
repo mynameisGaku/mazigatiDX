@@ -11,7 +11,7 @@
 |分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|
 |---|---:|---:|---:|---:|---:|---:|---:|
 |API|376|9|3|198|165|0|1|
-|Draw|105|0|0|61|40|4|0|
+|Draw|106|0|0|62|40|4|0|
 |Sample|34|29|0|5|0|0|0|
 |Editor|11|11|0|0|0|0|0|
 
@@ -454,6 +454,7 @@
 |[Draw.ModelAnimFrame](../Library/Framework/Render/Draw/DrawCommand.h#L153)|Partial|R5|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|骨ごとの割合（子も含める指定に対応）を反映する。実素材での確認が未完了||
 |[Draw.ModelFramePose3D](../Library/Framework/Render/Draw/DrawCommand.h#L155)|Partial|R5|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|描く間だけ骨を上書きして、元へ戻す（IModelBackendの上書きを一時的に適用）。合成した骨組みで、命令から描かれた頂点までを検査。実素材での確認は未完了||
 |[Draw.ModelMaterial3D](../Library/Framework/Render/Draw/DrawCommand.h#L66)|Partial|R5|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|選んだ材質のメッシュを一時的に隠して、残りを通常に描き、そのあと選んだ面を材質つきで描く（メッシュを隠せない・形状が無いときは、モデルだけを通常に描く）。形状は、バックエンドに依らない共通の FModelMaterialGeometry（DxLib と同じ作り方）。メッシュごとの元の表裏の設定は読まず、命令の bTwoSided とカリングの設定を使う||
+|[Draw.ModelPoseSnapshot3D](../Library/Framework/Render/Draw/DrawCommand.h#L162)|Partial|R2|個体変更と削除の後に姿勢・配置・不透明度を照合し、変更前と画像を比較|DX12の所有付きモデルビューを再生。Nullは参照を検査し、DxLibネイティブモデルの捕捉は未対応|Source/SelfTest/RunModelRigTests.ps1; Source/SelfTest/RunSceneDrawSnapshotTests.ps1; Docs/R2_SCENE_DRAW_SNAPSHOT.md|
 |[Draw.Oval](../Library/Framework/Render/Draw/DrawCommand.h#L71)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通キャンバスで点列にして描く。DxLibとの境界画素の比較が残る||
 |[Draw.Pixel](../Library/Framework/Render/Draw/DrawCommand.h#L68)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||
 |[Draw.Pixel3D](../Library/Framework/Render/Draw/DrawCommand.h#L129)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|点として描く。DxLibとの画素比較が残る||
@@ -515,7 +516,7 @@
 |[Sample.Audio](../Samples/Source/Audio/AudioSample.cpp#L15)|Unreviewed|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|必要な描画・アセット・入力等の依存機能と操作手順を照合する||
 |[Sample.Camera](../Samples/Source/Camera/CameraSample.cpp#L16)|Unreviewed|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|必要な描画・アセット・入力等の依存機能と操作手順を照合する||
 |[Sample.Canvas2D](../Samples/Source/Canvas2D/Canvas2DSample.cpp#L9)|Partial|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|DX12基本経路の見本。Windows上の全frameと終了までの確認前||
-|[Sample.Character](../Samples/Source/Character/CharacterSample.cpp#L9)|Partial|R5|DxLib（PMX を直接読む）と DX12（取り込む）で、同じ姿勢（時計を固定）の絵を並べる。モデルは、利用者が置く（リポジトリには入れない）|PMX の Faputa を、骨をコードで動かして描く。DxLib と DX12 で、形・色・画像・腕・頭・耳・しっぽが一致。差: 口の歯が DX12 に出ない（未調査）。モデルが無い環境では、置き場所を画面に出す||
+|[Sample.Character](../Samples/Source/Character/CharacterSample.cpp#L10)|Partial|R5|DxLib（PMX を直接読む）と DX12（取り込む）で、同じ姿勢（時計を固定）の絵を並べる。モデルは、利用者が置く（リポジトリには入れない）|PMX の Faputa を、骨をコードで動かして描く。DxLib と DX12 で、形・色・画像・腕・頭・耳・しっぽが一致。差: 口の歯が DX12 に出ない（未調査）。モデルが無い環境では、置き場所を画面に出す||
 |[Sample.DrawState](../Samples/Source/DrawState/DrawStateSample.cpp#L14)|Unreviewed|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|必要な描画・アセット・入力等の依存機能と操作手順を照合する||
 |[Sample.Effects](../Samples/Source/Effects/EffectsSample.cpp#L12)|Unreviewed|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|必要な描画・アセット・入力等の依存機能と操作手順を照合する||
 |[Sample.Filters](../Samples/Source/Filters/FiltersSample.cpp#L14)|Unreviewed|R9|DxLib／DX12で起動・規定frame・操作・撮影・終了を確認。機能の未対応を起動成功と数えない|必要な描画・アセット・入力等の依存機能と操作手順を照合する||

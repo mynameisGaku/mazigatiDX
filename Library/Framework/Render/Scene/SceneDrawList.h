@@ -7,6 +7,7 @@
 #include "Library/Math/Vector3.h"
 
 struct FCamera;
+struct FMatrix4x4;
 
 // 一つの記録元がカメラと独立した3D項目を集め、確定後は不変の一覧へ所有を渡す。
 // ワーカーごとに別の一覧を作り、呼出し側が決めた順でAppendする。同じ一覧へ同時に書き込まない。
@@ -27,6 +28,8 @@ public:
 	// 状態と3D命令を所有コピーする。奥行きは固定カメラの前方向へWorldCenterを射影する。
 	// 2D・カメラ・描画先・消去・姿勢変更・不正な長さ・不均衡な状態範囲・上限超過は拒否し、元を保つ。
 	bool Add( const FDrawSpan& Commands, ESceneDrawClass Class, const FVector3& WorldCenter );
+	// 固定したモデル姿勢と配置を一つの項目として記録する。切り抜き・不正な配置ではfalse。
+	bool AddModel( const FModelPoseSnapshot& Pose, ESceneDrawClass Class, const FVector3& WorldCenter, const FMatrix4x4& World, bool bLit = true );
 	// 命令と既存の共有所有を一緒に受け付ける。拒否時は項目も所有参照も追加しない。
 	template<typename TObject>
 	bool Add( const FDrawSpan& Commands, ESceneDrawClass Class, const FVector3& WorldCenter, const TSharedPtr<TObject>& Owner )

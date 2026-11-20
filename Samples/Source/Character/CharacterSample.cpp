@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "CharacterSample.h"
+#include "Library/Framework/Render/Draw/ImmediateDraw.h"
 #include "Source/Character/CharacterStage.h"
 #include "Source/Catalog/SampleCatalog.h"
 
@@ -11,5 +12,14 @@ namespace
 
 void CCharacterSample::OnEnter()
 {
-	SpawnObject<CCharacterStage>();
+	Stage = SpawnObject<CCharacterStage>();
+}
+
+void CCharacterSample::OnSampleDraw( FImmediateDraw& Screen )
+{
+	if ( Stage && Stage->HasFrozenPose() )
+	{
+		Screen.Flush();
+		if ( IDrawExecutor* Executor = GetDrawExecutor() ) { Stage->DrawFrozen( *Executor ); }
+	}
 }

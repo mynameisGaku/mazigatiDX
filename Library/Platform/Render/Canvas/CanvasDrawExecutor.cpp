@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "CanvasDrawExecutor.h"
 #include "Library/Framework/Render/Mesh/ShaderMeshSnapshot.h"
+#include "Library/Framework/Render/Mesh/ModelPoseSnapshot.h"
 #include "Library/Platform/Render/Geometry/GeometryCommandExecutor.h"
 #include "Library/Platform/Render/Shader/MaterialEffectCommandExecutor.h"
 #include "Library/Platform/Render/Shader/ShaderCommandExecutor.h"
@@ -1916,6 +1917,15 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Input )
 				if ( MaterialExecutor.Execute( View, Bright, Alpha, bAlphaBlend ) != CShaderCommandExecutor::EResult::Executed )
 				{
 					Unsupported( View, "The material effect command was rejected (invalid input, an unsupported blend mode or a failed draw) and skipped" );
+				}
+				break;
+			}
+			if ( View.Type == EDrawCommand::ModelPoseSnapshot3D )
+			{
+				const FStaticModelDrawView* Pose = Models ? FModelPoseSnapshot::Resolve( Span, View, Models ) : nullptr; // 同じ資源所有先の形状だけを描く。
+				if ( !Pose || Geometry.DrawModelView( *Pose, Alpha, bAlphaBlend ) != CGeometryCommandExecutor::EResult::Executed )
+				{
+					Unsupported( View, "Invalid or unsupported model pose snapshot" );
 				}
 				break;
 			}

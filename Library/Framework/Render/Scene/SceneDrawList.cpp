@@ -44,7 +44,7 @@ namespace
 	}
 
 	// 全命令の長さと、範囲外へ状態を漏らさない構成を確認してから所有コピーする。
-	bool ValidCommands( const FDrawSpan& Commands, bool& bUsesMesh )
+	bool ValidCommands( const FDrawSpan& Commands, bool& bUsesMesh, bool& bUsesPose )
 	{
 		if ( !Commands.Words || Commands.NumWords <= 0 || Commands.NumWords > MaxWords ) { return false; }
 		int32 WorldDepth = 0; // 項目内で閉じるワールド行列の範囲。
@@ -71,6 +71,12 @@ namespace
 				FDrawCommandView Mesh = Command; // 形状は作成時に検査済み。ここでは参照と描画状態を確認する。
 				if ( !ShaderBound[0] || !ShaderBound[1] || !FShaderMeshSnapshot::Resolve( Commands, Mesh ) ) { return false; }
 				bUsesMesh = true;
+				bHasDraw = true;
+			}
+			else if ( Command.Type == EDrawCommand::ModelPoseSnapshot3D )
+			{
+				if ( !FModelPoseSnapshot::Resolve( Commands, Command ) ) { return false; }
+				bUsesPose = true;
 				bHasDraw = true;
 			}
 			else if ( NSceneShaderCommand::IsDraw( Command ) ) { if ( !ShaderBound[0] || !ShaderBound[1] ) { return false; } bHasDraw = true; }
@@ -104,7 +110,8 @@ bool CSceneDrawList::Reset( const FCamera& Camera )
 bool CSceneDrawList::Add( const FDrawSpan& Commands, ESceneDrawClass Class, const FVector3& WorldCenter )
 {
 	bool bUsesMesh = false; // 項目が実際に参照する場合だけ形状を保持する。
-	if ( !Data || Class > ESceneDrawClass::Translucent || Data->Items.Num() >= MaxItems || !ValidCommands( Commands, bUsesMesh ) ) { return false; }
+	bool bUsesPose = false; // 項目が実際に参照する場合だけモデル姿勢を保持する。
+	if ( !Data || Class > ESceneDrawClass::Translucent || Data->Items.Num() >= MaxItems || !ValidCommands( Commands, bUsesMesh, bUsesPose ) ) { return false; }
 	const float32 Depth = FVector3::Dot( WorldCenter - Data->Camera.Position, Data->Camera.GetForward() ); // ビューに固定した奥行き。
 	if ( !NMath::IsFinite( Depth ) ) { return false; }
 	constexpr int32 PopWords = 1 + sizeof( FDrawPopCameraData ) / 4; // 各項目でカメラを必ず閉じる長さ。
@@ -114,6 +121,7 @@ bool CSceneDrawList::Add( const FDrawSpan& Commands, ESceneDrawClass Class, cons
 	Item.Words = Data->CameraWords;
 	Item.Words.Append( Commands.Words, Commands.NumWords );
 	if ( bUsesMesh ) { Item.ShaderMesh = *Commands.ShaderMesh; }
+	if ( bUsesPose ) { Item.ModelPose = *Commands.ModelPose; }
 	Item.Words.Add( NDrawCommand::MakeHeader( EDrawCommand::PopCamera, 0, PopWords ) );
 	Item.Words.Add( 0 );
 	Item.Class = Class;
@@ -122,6 +130,20 @@ bool CSceneDrawList::Add( const FDrawSpan& Commands, ESceneDrawClass Class, cons
 	Data->NumWords += Item.Words.Num();
 	Data->Items.Add( MoveTemp( Item ) );
 	return true;
+}
+
+bool CSceneDrawList::AddModel( const FModelPoseSnapshot& Pose, ESceneDrawClass Class, const FVector3& WorldCenter, const FMatrix4x4& World, bool bLit )
+{
+	if ( !Pose.IsValid() || ( Class != ESceneDrawClass::Opaque && Class != ESceneDrawClass::Translucent ) ) { return false; }
+	FDrawBuffer Item; // 配置と状態だけを記録し、頂点は複製しない。
+	FDrawContext Draw( Item ); // 配置は既存の検査付き命令で記録する。
+	if ( !Draw.PushWorldMatrix( World ) ) { return false; }
+	Draw.UseLighting( bLit );
+	Draw.Depth( Class == ESceneDrawClass::Translucent ? FDepthState::ReadOnly() : FDepthState::Normal() );
+	Draw.Blend( Class == ESceneDrawClass::Translucent ? EDrawBlend::Alpha : EDrawBlend::Opaque );
+	Item.Words.Add( NDrawCommand::MakeHeader( EDrawCommand::ModelPoseSnapshot3D, 0, 1 ) );
+	Draw.PopWorldMatrix();
+	return Add( { Item.Words.GetData(), Item.Words.Num(), nullptr, &Pose }, Class, WorldCenter );
 }
 
 bool CSceneDrawList::KeepAliveAlias( const TSharedPtr<const uint8>& Owner )

@@ -6,6 +6,7 @@
 #include "Library/Framework/Render/Camera/Camera.h"
 #include "Library/Core/Render/Scene/SceneDrawClass.h"
 #include "Library/Framework/Render/Mesh/ShaderMeshSnapshot.h"
+#include "Library/Framework/Render/Mesh/ModelPoseSnapshot.h"
 
 // 記録中だけ変更でき、確定後は読み取りだけにする内部データ。
 struct FSceneDrawSnapshotData
@@ -15,6 +16,7 @@ struct FSceneDrawSnapshotData
 	{
 		TArray<uint32> Words; // カメラ・状態・描画の所有コピー。
 		FShaderMeshSnapshot ShaderMesh; // 参照命令が使う形状の共有所有。
+		FModelPoseSnapshot ModelPose; // 参照命令が使う姿勢とモデル画像の共有所有。
 		ESceneDrawClass Class = ESceneDrawClass::Opaque; // この項目の分類。
 		float32 Depth = 0; // カメラの前方向に測った奥行き。
 		int32 Ordinal = 0; // 合流した順序を含む元の順序。

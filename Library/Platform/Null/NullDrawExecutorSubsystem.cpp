@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "NullDrawExecutorSubsystem.h"
 #include "Library/Framework/Render/Mesh/ShaderMeshSnapshot.h"
+#include "Library/Framework/Render/Mesh/ModelPoseSnapshot.h"
 #include "Library/Platform/Null/NullLog.h"
 
 #include "Library/Framework/Render/Draw/DrawDistortedMaterialQuad.h"
@@ -222,6 +223,12 @@ void CNullDrawExecutorSubsystem::Execute( const FDrawSpan& Input )
 		{
 			FDrawCommandView Mesh = Command; // 参照先のバイトはSpanの長さに加えない。
 			if ( !FShaderMeshSnapshot::Resolve( Span, Mesh ) ) { ++Stats.NumBrokenCommands; }
+			return;
+		}
+
+		if ( Command.Type == EDrawCommand::ModelPoseSnapshot3D )
+		{
+			if ( !FModelPoseSnapshot::Resolve( Span, Command ) ) { ++Stats.NumBrokenCommands; }
 			return;
 		}
 
