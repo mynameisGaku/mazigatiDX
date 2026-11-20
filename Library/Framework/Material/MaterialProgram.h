@@ -179,6 +179,8 @@ struct FMaterialProgram
 	TArray<FMaterialDiagnostic> Diagnostics;
 	bool bValid = false;                       // エラーなく作れた
 	bool bCustomHlsl = false;                  // HLSL の直指定（Code は空。パラメーター・画像の置き場だけがある）
+	// 負なら通常の出力。0以上なら画素シェーダーで不透明度を検査する。
+	float32 OpacityCutoff = -1.0f;
 	bool bUsesSceneDepth = false;
 	// 光を、フルのモデル（MaterialSubstrate.h）で計算する（バックエンドの能力から。Surface の DefaultLit と Substrate。false なら、簡略版で、Outputs の値だけを使う）
 	bool bFullSubstrate = false;

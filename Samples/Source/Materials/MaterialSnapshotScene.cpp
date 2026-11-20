@@ -16,6 +16,7 @@ namespace
 		FMaterialDefinition Result; // 外部の材質資産を変更しない検査用の定義。
 		Result.Name = FString::Printf( "Snapshot%d", Index );
 		Result.Domain = EMaterialDomain::Surface;
+		Result.SurfaceBlend = Index == 0 ? EMaterialSurfaceBlend::Opaque : EMaterialSurfaceBlend::Translucent;
 		Result.Shading = Index == 0 ? EMaterialShading::Unlit : Index == 1 ? EMaterialShading::DefaultLit : EMaterialShading::Substrate;
 		FMaterialGraph& Graph = Result.Graph; // 全陰影方式で共有する入力。
 		const int32 Tint = Graph.AddNode( EMaterialNodeKind::VectorParameter, "Tint", Index == 0 ? FVector4( 0.1f, 0.8f, 0.2f, 1 ) : Index == 1 ? FVector4( 0.1f, 0.2f, 0.9f, 1 ) : FVector4( 0.9f, 0.15f, 0.1f, 1 ) ); // 元の材質を変更したときの比較対象。
@@ -43,6 +44,7 @@ namespace
 
 bool CMaterialSnapshotScene::Initialize( const FString& Mode )
 {
+	if ( Mode == "masked" ) { return InitializeMasked(); }
 	CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>(); // 資源の作成はジョブへ渡す前に済ませる。
 	if ( !Assets ) { return false; }
 	const TSharedPtr<CDynamicTexture> BaseImage = Assets->CreateDynamicTexture( "Snapshot.Base", FPixelImage( 2, 2, FColor32( 190, 220, 170 ) ) ); // 固定する画像。
@@ -83,7 +85,7 @@ bool CMaterialSnapshotScene::Initialize( const FString& Mode )
 		const int32 Index = Mode == "reverse" ? 2 - Step : Step; // 完了順でなく、明示した合流順を使う。
 		const FVector3 Center( 0, 0, static_cast<float32>( 2 - Index ) ); // 固定ビュー方向の奥行き。
 		CSceneDrawList Batch( Camera ); // 同じ可変の一覧を共有しない。
-		Accepted[Step] = Captured[Index].AddMesh( Batch, Index == 0 ? ESceneDrawClass::Opaque : ESceneDrawClass::Translucent, Center, Shape, FMatrix4x4::Scale( 1.8f ) * FMatrix4x4::Translate( Center ) );
+		Accepted[Step] = Captured[Index].AddMesh( Batch, Center, Shape, FMatrix4x4::Scale( 1.8f ) * FMatrix4x4::Translate( Center ) );
 		Batches[Step] = Batch.Freeze();
 	}; // ここからはCMaterialやアセット窓口へアクセスしない。
 	if ( IJobSystem* Jobs = GetAppSubsystem<IJobSystem>() ) { Jobs->ParallelFor( 3, 1, "Materials.RecordSnapshot", Record ); }
@@ -100,7 +102,11 @@ bool CMaterialSnapshotScene::Initialize( const FString& Mode )
 		{
 			Materials[Index]->SetVector( "Tint", FVector4( 0.1f, 0.9f, 0.9f, 1 ) );
 			Materials[Index]->SetTexture( "Albedo", Changed );
-			if ( !Materials[Index]->Reload( Definition( Index ) ) ) { return false; }
+			FMaterialDefinition ChangedDefinition = Definition( Index ); // 元の定義の分類も変えて固定値を検査する。
+			ChangedDefinition.SurfaceBlend = EMaterialSurfaceBlend::Manual;
+			if ( !Materials[Index]->Reload( ChangedDefinition ) ) { return false; }
+			ESceneDrawClass FrozenClass; // 再読み込み後も固定時の分類を返す。
+			if ( !Captured[Index].TryGetDrawClass( FrozenClass ) || FrozenClass != ( Index == 0 ? ESceneDrawClass::Opaque : ESceneDrawClass::Translucent ) ) { return false; }
 			if ( Mode == "live-mutated" )
 			{
 				Reference[Index].Clear();
@@ -114,6 +120,37 @@ bool CMaterialSnapshotScene::Initialize( const FString& Mode )
 		}
 	}
 	return Snapshot.IsValid();
+}
+
+bool CMaterialSnapshotScene::InitializeMasked()
+{
+	CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>(); // 一色の試験画像を作成する窓口。
+	if ( !Assets ) { return false; }
+	const TSharedPtr<CDynamicTexture> White = Assets->CreateDynamicTexture( "Snapshot.MaskWhite", FPixelImage( 1, 1, FColor32::White ) ); // グラフへ白を渡す。
+	if ( !White ) { return false; }
+	const FCamera Camera = FCamera::MakePerspective( FVector3( 0, 0, -9 ), FVector3::Zero ); // 左右の画素を対称に検査する。
+	FMaterialSceneState Scene; // Unlitの平面が使う固定ビュー。
+	Scene.ViewProjection = Camera.GetViewMatrix() * Camera.GetProjectionMatrix( { 1280, 720 } );
+	const FShaderVertex3D Vertices[4] = { FShaderVertex3D::Make( FVector3( -1, -1, 0 ), FVector3::Up, FColor32::White ), FShaderVertex3D::Make( FVector3( -1, 1, 0 ), FVector3::Up, FColor32::White ), FShaderVertex3D::Make( FVector3( 1, 1, 0 ), FVector3::Up, FColor32::White ), FShaderVertex3D::Make( FVector3( 1, -1, 0 ), FVector3::Up, FColor32::White ) }; // 左右と背面で同じ四角形を使う。
+	const uint16 Indices[6] = { 0, 1, 2, 0, 2, 3 }; // 四角形の二枚の三角形。
+	const FShaderMeshSnapshot Mesh = FShaderMeshSnapshot::Create( Vertices, 4, Indices, 6 ); // 再生まで一覧が保持する。
+	CSceneDrawList Batch( Camera ); // 半透明を先に受付し、分類による描画順も使う。
+	for ( int32 Index = 0; Index < 3; ++Index )
+	{
+		FMaterialDefinition Def = Definition( 0 ); // 共通のUnlitグラフ。
+		Def.SurfaceBlend = Index == 0 ? EMaterialSurfaceBlend::Translucent : EMaterialSurfaceBlend::Masked;
+		const TSharedPtr<CMaterial> Material = CMaterial::Create( Def ); // 左右は同じグラフへ別の不透明度を渡す。
+		if ( !Material || !Material->SetTexture( "Albedo", White ) ) { return false; }
+		Material->SetVector( "Tint", Index == 0 ? FVector4( 1, 0, 0, 1 ) : FVector4( 0, 1, 0, 1 ) );
+		if ( !Material->SetScalar( "Opacity", Index == 1 ? 0.5f : 0.75f ) ) { return false; }
+		const FMaterialSurfaceSnapshot Frozen = Material->CreateSurfaceSnapshot( Scene ); // 完成したシェーダーと分類を共有する。
+		const FVector3 Center( Index == 0 ? 0.0f : Index == 1 ? -1.1f : 1.1f, 0, Index == 0 ? 0.5f : 0.0f ); // 奥の赤を手前の緑の穴から見る。
+		const FMatrix4x4 World = FMatrix4x4::Scale( Index == 0 ? 2.5f : 1.0f ) * FMatrix4x4::Translate( Center ); // 奥の平面が左右を覆う。
+		if ( Index != 0 && Frozen.AddMesh( Batch, ESceneDrawClass::Opaque, Center, Mesh, World ) ) { return false; }
+		if ( !Frozen.AddMesh( Batch, Center, Mesh, World ) ) { return false; }
+	}
+	Snapshot = Batch.Freeze();
+	return Snapshot.IsValid() && Snapshot.GetNumItems() == 3;
 }
 
 void CMaterialSnapshotScene::Draw( IDrawExecutor& Executor ) const

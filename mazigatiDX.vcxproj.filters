@@ -6293,6 +6293,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Library\Framework\Render\Scene\Private\SceneShaderCommandValidation.h"><Filter>Library\Framework\Render\Scene\Private</Filter></ClInclude>
+    <ClInclude Include="Library\Framework\Material\Surface\MaterialSurfaceBlend.h"><Filter>Library\Framework\Material\Surface</Filter></ClInclude>
     <ClInclude Include="Library\Framework\Material\Surface\MaterialSurfaceSnapshot.h"><Filter>Library\Framework\Material\Surface</Filter></ClInclude>
     <ClInclude Include="Library\Framework\Material\Surface\Private\MaterialSurfaceSnapshotData.h"><Filter>Library\Framework\Material\Surface\Private</Filter></ClInclude>
   </ItemGroup>

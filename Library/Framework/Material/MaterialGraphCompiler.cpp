@@ -22,6 +22,12 @@ namespace NMaterialGraphCompiler
 
 	FMaterialProgram FCompiler::Run()
 	{
+		if ( !Definition.HasValidSurfaceBlend() )
+		{
+			Report( EMaterialSeverity::Error, "invalid SurfaceBlend or OpacityCutoff" );
+			return Program;
+		}
+		if ( Definition.SurfaceBlend == EMaterialSurfaceBlend::Masked ) { Program.OpacityCutoff = Definition.OpacityCutoff; }
 		if ( !Definition.CustomHlsl.IsEmpty() )
 		{
 			return RunCustom();

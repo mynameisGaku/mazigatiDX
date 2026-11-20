@@ -34,3 +34,12 @@ struct VertexOutput
 	float2 Uv : TEXCOORD2;
 	float4 Color : TEXCOORD3;
 };
+
+#ifdef MATERIAL_MASKED
+// 不透明度がしきい値以下の画素は色・深度を更新しない。
+float4 MatMaskedOutput( float4 Color, float Cutoff )
+{
+	clip( Color.a > Cutoff ? 1.0 : -1.0 );
+	return float4( Color.rgb, 1.0 );
+}
+#endif

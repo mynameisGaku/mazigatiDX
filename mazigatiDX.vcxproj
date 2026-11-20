@@ -90,6 +90,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Library\Framework\Render\Scene\Private\SceneShaderCommandValidation.h" />
+    <ClInclude Include="Library\Framework\Material\Surface\MaterialSurfaceBlend.h" />
     <ClInclude Include="Library\Framework\Material\Surface\MaterialSurfaceSnapshot.h" />
     <ClInclude Include="Library\Framework\Material\Surface\Private\MaterialSurfaceSnapshotData.h" />
   </ItemGroup>

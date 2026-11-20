@@ -785,6 +785,7 @@ FMaterialSurfaceSnapshot CMaterial::CreateSurfaceSnapshot( const FMaterialSceneS
 	TSharedPtr<FMaterialSurfaceSnapshotData> Data = MakeShared<FMaterialSurfaceSnapshotData>(); // 完成後だけ公開する所有データ。
 	Data->BeginWords = MoveTemp( Begin.Words );
 	Data->EndWords = MoveTemp( End.Words );
+	Data->Blend = GetDefinition().SurfaceBlend;
 	const FMaterialCompiled& Ready = GetCompiled(); // この時点の完成済みシェーダーを保持する。
 	if ( Ready.Vertex ) { Data->Shaders.Add( Ready.Vertex ); }
 	if ( Ready.Pixel ) { Data->Shaders.Add( Ready.Pixel ); }

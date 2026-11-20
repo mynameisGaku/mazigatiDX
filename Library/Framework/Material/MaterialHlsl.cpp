@@ -328,6 +328,8 @@ FString NMaterialHlsl::Generate( const FMaterialProgram& Program, const FString&
 		Source += FString::Printf( "Texture2D g_Tex%d : register( t%d );\n", Program.Textures[Index].Register, Program.Textures[Index].Register );
 	}
 	Source += FString::Printf( "cbuffer cbMaterialParams : register( b%d )\n{\n\tfloat4 g_Params[%d];\n};\n", bSurface ? 6 : 4, Program.Params.Num() > 0 ? Program.Params.Num() : 1 );
+	const bool bMasked = bSurface && Program.OpacityCutoff >= 0.0f; // 切り抜き材質だけ専用の入口を生成する。
+	if ( bMasked ) { Source += "#define MATERIAL_MASKED\n"; }
 	Source += bSurface ? SurfaceDeclarations : FrameDeclarations;
 	Source += Helpers;
 	const bool bLit = UsesSceneLighting( Program );
@@ -371,7 +373,8 @@ FString NMaterialHlsl::Generate( const FMaterialProgram& Program, const FString&
 	}
 
 	// 本文: 命令を、1 つずつ、変数にする
-	Source += bSurface ? "\nfloat4 main( VertexOutput i ) : SV_Target\n{\n" : "\nfloat4 main( PixelInput i ) : SV_Target\n{\n";
+	if ( bMasked ) { Source += "\nfloat4 EvaluateMaskedSurface( VertexOutput i )\n{\n"; }
+	else { Source += bSurface ? "\nfloat4 main( VertexOutput i ) : SV_Target\n{\n" : "\nfloat4 main( PixelInput i ) : SV_Target\n{\n"; }
 	for ( int32 Index = 0; Index < Program.Code.Num(); ++Index )
 	{
 		const FMaterialInstruction& Instruction = Program.Code[Index];
@@ -463,5 +466,6 @@ FString NMaterialHlsl::Generate( const FMaterialProgram& Program, const FString&
 		}
 	}
 	Source += "}\n";
+	if ( bMasked ) { Source += "\nfloat4 main( VertexOutput i ) : SV_Target { return MatMaskedOutput( EvaluateMaskedSurface( i ), " + Literal( Program.OpacityCutoff ) + " ); }\n"; }
 	return Source;
 }

@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Library/Framework/Material/MaterialGraph.h"
+#include "Library/Framework/Material/Surface/MaterialSurfaceBlend.h"
 
 //=============================================================================
 // FMaterialDefinition（.gxmaterial）
@@ -34,7 +35,13 @@ public:
 	FString Name;
 	EMaterialDomain Domain = EMaterialDomain::UI;
 	EMaterialShading Shading = EMaterialShading::Unlit;    // Surface だけ
+	// 自動分類しない既存定義はManualのまま読み込む。
+	EMaterialSurfaceBlend SurfaceBlend = EMaterialSurfaceBlend::Manual;
+	// Maskedで画素を残すための不透明度の下限。
+	float32 OpacityCutoff = 0.5f;
 	FMaterialGraph Graph;
+	// 分類がSurface用か、切り抜きの値と実装が対応範囲内かを返す。
+	bool HasValidSurfaceBlend() const;
 
 	// HLSL の直指定（空でなければ、グラフの代わりに使う）
 	FString CustomHlsl;

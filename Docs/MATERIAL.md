@@ -262,4 +262,4 @@ FUIBrush Glow = FUIBrush::MakeMaterial( GlowMaterial );                 // UI �
 
 ## Surfaceの不変値からの並列記録
 
-CMaterial::CreateSurfaceSnapshotで定数と資源の参照をゲームスレッドで固定し、FMaterialSurfaceSnapshot::AddMeshからジョブごとの描画一覧へ記録できます。元の材質のパラメーター変更やReloadと、確定済みの記録を分離します。制限と検査は [Surface材質の固定](R2_MATERIAL_SURFACE_SNAPSHOT.md) を参照してください。
+CMaterial::CreateSurfaceSnapshotで定数と資源の参照をゲームスレッドで固定し、FMaterialSurfaceSnapshot::AddMeshからジョブごとの描画一覧へ記録できます。Surface定義で `SurfaceBlend` を指定すると、固定材質が不透明・切り抜き・半透明の描画状態と順序を選びます。切り抜きは `OpacityCutoff` を超えた画素を残します。元の材質のパラメーター変更やReloadは、確定済みの記録へ反映されません。詳細は [Surface材質の固定](R2_MATERIAL_SURFACE_SNAPSHOT.md) を参照してください。

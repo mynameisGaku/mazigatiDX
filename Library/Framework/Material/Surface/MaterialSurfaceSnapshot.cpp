@@ -8,14 +8,11 @@
 
 namespace
 {
-	// 材質の標準設定で記録できる分類かを返す。
-	bool IsSupportedClass( ESceneDrawClass Class ) { return Class == ESceneDrawClass::Opaque || Class == ESceneDrawClass::Translucent; }
-
 	// 深度と合成を記録する。分類は呼び出し側で検査する。
 	void RecordClass( FDrawContext& Draw, ESceneDrawClass Class )
 	{
-		Draw.Depth( Class == ESceneDrawClass::Opaque ? FDepthState::Normal() : FDepthState::ReadOnly() );
-		Draw.Blend( Class == ESceneDrawClass::Opaque ? EDrawBlend::Opaque : EDrawBlend::Alpha );
+		Draw.Depth( Class == ESceneDrawClass::Translucent ? FDepthState::ReadOnly() : FDepthState::Normal() );
+		Draw.Blend( Class == ESceneDrawClass::Translucent ? EDrawBlend::Alpha : EDrawBlend::Opaque );
 	}
 
 	// 有限な行列と色を両シェーダー段に記録する。不正な行列では追記しない。
@@ -39,6 +36,25 @@ namespace
 
 bool FMaterialSurfaceSnapshot::IsValid() const { return Data.IsValid(); }
 
+bool FMaterialSurfaceSnapshot::TryGetDrawClass( ESceneDrawClass& Out ) const
+{
+	if ( !Data ) { return false; }
+	switch ( Data->Blend )
+	{
+	case EMaterialSurfaceBlend::Opaque: Out = ESceneDrawClass::Opaque; return true;
+	case EMaterialSurfaceBlend::Masked: Out = ESceneDrawClass::Masked; return true;
+	case EMaterialSurfaceBlend::Translucent: Out = ESceneDrawClass::Translucent; return true;
+	default: return false;
+	}
+}
+
+bool FMaterialSurfaceSnapshot::AcceptsDrawClass( ESceneDrawClass Class ) const
+{
+	ESceneDrawClass Fixed = ESceneDrawClass::Opaque; // 定義で分類が指定されている場合だけ参照する。
+	if ( TryGetDrawClass( Fixed ) ) { return Fixed == Class; }
+	return Data && ( Class == ESceneDrawClass::Opaque || Class == ESceneDrawClass::Translucent );
+}
+
 bool FMaterialSurfaceSnapshot::BuildMeshCommands( FDrawBuffer& Out, const FShaderVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, const FMatrix4x4& World, const FColor32& Tint ) const
 {
 	// 32bit環境でも個数からの長さ計算があふれない範囲へ先に制限する。
@@ -58,7 +74,7 @@ bool FMaterialSurfaceSnapshot::BuildMeshCommands( FDrawBuffer& Out, const FShade
 bool FMaterialSurfaceSnapshot::AddMesh( CSceneDrawList& List, ESceneDrawClass Class, const FVector3& WorldCenter, const FShaderVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, const FMatrix4x4& World, const FColor32& Tint ) const
 {
 	FDrawBuffer Commands; // この呼出しだけの個体定数と形状。
-	if ( !IsSupportedClass( Class ) || !BuildMeshCommands( Commands, Vertices, NumVertices, Indices, NumIndices, World, Tint ) ) { return false; }
+	if ( !AcceptsDrawClass( Class ) || !BuildMeshCommands( Commands, Vertices, NumVertices, Indices, NumIndices, World, Tint ) ) { return false; }
 	FDrawBuffer Item; // 材質の標準的な合成と深度も項目内で固定する。
 	FDrawContext Draw( Item ); // 既存の状態設定を使う。
 	RecordClass( Draw, Class );
@@ -68,7 +84,7 @@ bool FMaterialSurfaceSnapshot::AddMesh( CSceneDrawList& List, ESceneDrawClass Cl
 
 bool FMaterialSurfaceSnapshot::AddMesh( CSceneDrawList& List, ESceneDrawClass Class, const FVector3& WorldCenter, const FShaderMeshSnapshot& Mesh, const FMatrix4x4& World, const FColor32& Tint ) const
 {
-	if ( !Data || !Mesh.IsValid() || !IsSupportedClass( Class ) ) { return false; }
+	if ( !Data || !Mesh.IsValid() || !AcceptsDrawClass( Class ) ) { return false; }
 	FDrawBuffer Item; // 形状以外の個体と材質の命令を所有する。
 	FDrawContext Draw( Item ); // 既存の状態設定を使う。
 	RecordClass( Draw, Class );
@@ -77,4 +93,16 @@ bool FMaterialSurfaceSnapshot::AddMesh( CSceneDrawList& List, ESceneDrawClass Cl
 	Item.Words.Add( NDrawCommand::MakeHeader( EDrawCommand::SharedShaderMesh3D, 0, 1 ) );
 	Item.Words.Append( Data->EndWords );
 	return List.Add( { Item.Words.GetData(), Item.Words.Num(), &Mesh }, Class, WorldCenter, Data );
+}
+
+bool FMaterialSurfaceSnapshot::AddMesh( CSceneDrawList& List, const FVector3& WorldCenter, const FShaderVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, const FMatrix4x4& World, const FColor32& Tint ) const
+{
+	ESceneDrawClass Class; // 固定材質に分類があれば記録する。
+	return TryGetDrawClass( Class ) && AddMesh( List, Class, WorldCenter, Vertices, NumVertices, Indices, NumIndices, World, Tint );
+}
+
+bool FMaterialSurfaceSnapshot::AddMesh( CSceneDrawList& List, const FVector3& WorldCenter, const FShaderMeshSnapshot& Mesh, const FMatrix4x4& World, const FColor32& Tint ) const
+{
+	ESceneDrawClass Class; // 固定材質に分類があれば記録する。
+	return TryGetDrawClass( Class ) && AddMesh( List, Class, WorldCenter, Mesh, World, Tint );
 }

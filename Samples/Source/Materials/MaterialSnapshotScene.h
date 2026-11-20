@@ -16,6 +16,8 @@ public:
 	// 確定した一覧か手動の命令列を、通常のシーン描画位置で再生する。
 	void Draw( IDrawExecutor& Executor ) const;
 private:
+	// しきい値の両側の画素と、奥にある半透明の深度判定を検査する。
+	bool InitializeMasked();
 	FSceneDrawSnapshot Snapshot; // パラメーターと資源が固定された描画。
 	TArray<FDrawBuffer> Reference; // 並べ替えを使わない正しい手動順。
 	TArray<TSharedPtr<CMaterial>> LiveMaterials; // 比較用の変更後の材質だけを保持する。

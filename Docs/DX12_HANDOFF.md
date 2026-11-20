@@ -568,3 +568,9 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - `FShaderMeshSnapshot::Create` で既存頂点形式の添字付き三角形を一度検査して所有する。`FMaterialSurfaceSnapshot::AddMesh` に渡すと、一覧の各項目には1 wordの参照命令と材質・個体の設定が入り、形状のバイト列を共有する。合流・確定後は元の形状と材質を手放せる。
 - DX12とDxLibは参照を既存のシェーダー描画へ解決し、Nullは参照を検査する。DX12では前項のGPUキャッシュも使う。1つの実行範囲が持てる形状は1個で、従来の頂点・添字の命令上限を適用する。自動分類、切り抜き、上限を超える形状はR2の残件。手順は [Surface材質の固定](R2_MATERIAL_SURFACE_SNAPSHOT.md) を参照する。
 - Debug / ReleaseともSamplesビルド、描画一覧105項目、材質画像20項目が合格。実GPU・WARP・UIなし・CPU変換指定・DxLibの固定材質は基準に対する許容差超えが0画素。Debugの既存シーン順序50項目とGPUキャッシュ57項目、ソース書式2030ファイル、互換台帳526項目も確認した。
+
+## 2026-11-21 追記: Surface材質の分類と切り抜き
+
+- `.gxmaterial` の `SurfaceBlend` を固定材質に保持し、分類省略のAddMeshで順序・深度・合成を設定する。省略時の定義はManualで、従来の不透明・半透明の明示指定を受け付ける。定義と異なる明示指定は拒否する。
+- MaskedのSurfaceグラフは `OpacityCutoff` を超える画素だけを色・深度へ書く。グラフの陰影を使い回し、切り抜き処理はEngineContentのSurface用HLSLで共通化した。HLSL直指定のMaskedと、独立した影生成パスでの切り抜きは未対応。詳細は [Surface材質の固定](R2_MATERIAL_SURFACE_SNAPSHOT.md)。
+- Debug / ReleaseのSamplesビルド、描画一覧115項目、材質画像25項目、材質効果88項目が合格。実GPU・WARP・UIなし・CPU変換指定・DxLibで、しきい値と同値の画素では奥の赤が見え、しきい値を超えた画素では手前の緑が奥を遮った。互換台帳526項目とソース書式2031ファイルも確認した。

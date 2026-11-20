@@ -200,6 +200,18 @@ struct FMaterialJson
 	}
 };
 
+bool FMaterialDefinition::HasValidSurfaceBlend() const
+{
+	switch ( SurfaceBlend )
+	{
+	case EMaterialSurfaceBlend::Manual: return true;
+	case EMaterialSurfaceBlend::Opaque:
+	case EMaterialSurfaceBlend::Translucent: return Domain == EMaterialDomain::Surface;
+	case EMaterialSurfaceBlend::Masked: return Domain == EMaterialDomain::Surface && CustomHlsl.IsEmpty() && NMath::IsFinite( OpacityCutoff ) && OpacityCutoff >= 0.0f && OpacityCutoff <= 1.0f;
+	default: return false;
+	}
+}
+
 FString FMaterialDefinition::ToJson() const
 {
 	NlohmannJson Json = NlohmannJson::object();
@@ -210,6 +222,13 @@ FString FMaterialDefinition::ToJson() const
 	if ( Domain == EMaterialDomain::Surface )
 	{
 		Json["Shading"] = NMaterial::ToString( Shading );
+		switch ( SurfaceBlend )
+		{
+		case EMaterialSurfaceBlend::Opaque: Json["SurfaceBlend"] = "Opaque"; break;
+		case EMaterialSurfaceBlend::Masked: Json["SurfaceBlend"] = "Masked"; Json["OpacityCutoff"] = OpacityCutoff; break;
+		case EMaterialSurfaceBlend::Translucent: Json["SurfaceBlend"] = "Translucent"; break;
+		default: break;
+		}
 	}
 	if ( !CustomHlsl.IsEmpty() )
 	{
@@ -285,6 +304,22 @@ bool FMaterialDefinition::FromJson( const FString& Text, FMaterialDefinition& Ou
 		return Fail( FString::Printf( "the Shading '%s' is not known (Unlit, DefaultLit, Substrate)", *ReadString( Json, "Shading" ) ) );
 	}
 	Result.CustomHlsl = ReadString( Json, "CustomHlsl" );
+	if ( Json.contains( "SurfaceBlend" ) )
+	{
+		const FString Blend = ReadString( Json, "SurfaceBlend" ); // 既存JSONに項目がなければManualを保つ。
+		if ( Blend == "Opaque" ) { Result.SurfaceBlend = EMaterialSurfaceBlend::Opaque; }
+		else if ( Blend == "Masked" ) { Result.SurfaceBlend = EMaterialSurfaceBlend::Masked; }
+		else if ( Blend == "Translucent" ) { Result.SurfaceBlend = EMaterialSurfaceBlend::Translucent; }
+		else if ( Blend != "Manual" ) { return Fail( "SurfaceBlend must be Manual, Opaque, Masked or Translucent" ); }
+	}
+	if ( Json.contains( "OpacityCutoff" ) )
+	{
+		if ( Result.SurfaceBlend != EMaterialSurfaceBlend::Masked || !Json["OpacityCutoff"].is_number() ) { return Fail( "OpacityCutoff requires a numeric cutoff on a Masked Surface" ); }
+		const double Cutoff = Json["OpacityCutoff"].get<double>(); // floatへ丸める前に元の範囲を検査する。
+		if ( !NMath::IsFinite( Cutoff ) || Cutoff < 0.0 || Cutoff > 1.0 ) { return Fail( "OpacityCutoff must be between 0 and 1" ); }
+		Result.OpacityCutoff = static_cast<float32>( Cutoff );
+	}
+	if ( !Result.HasValidSurfaceBlend() ) { return Fail( "SurfaceBlend is only available on Surface and Masked requires a material graph" ); }
 	if ( Json.contains( "Parameters" ) && Json["Parameters"].is_array() )
 	{
 		for ( size_t Index = 0; Index < Json["Parameters"].size(); ++Index )
