@@ -204,6 +204,8 @@ public:
 	// ゲームスレッドでSurfaceの定数と資源を固定する。準備失敗や他のドメインでは未作成の値を返す。
 	// 公開後のメッシュ記録は、元の材質を変更・再読み込み・解放しても別スレッドから行える。
 	FMaterialSurfaceSnapshot CreateSurfaceSnapshot( const FMaterialSceneState& Scene );
+	// 固定材質の動的画像には、最後にCPUから反映した画素の版を使う。版作成の失敗時は無効値。
+	FMaterialSurfaceSnapshot CreateSurfaceSnapshotWithCpuImageVersions( const FMaterialSceneState& Scene );
 	bool DrawSurfaceMesh( FDrawContext& Draw, const FShaderVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, const FMatrix4x4& World, const FColor32& Tint );
 	void EndSurface( FDrawContext& Draw );
 
@@ -235,7 +237,12 @@ private:
 	TSharedPtr<CMaterialParameterCollection> FindParameterCollection( const FString& ParameterCollectionName ) const;
 	// g_Params の中身（パラメーターごとに 4 つ組 1 つ。コレクションの値は、いま読む）
 	void BuildParamBlock( TArray<FVector4>& OutBlock ) const;
-	void BindTextures( FDrawContext& Draw, const TSharedPtr<IImage>& Scene, const TSharedPtr<IImage>& Depth ) const;
+	// 各画像を描画へ渡す。捕捉時は動的画像の版を保持し、作成できなければfalse。
+	bool BindTextures( FDrawContext& Draw, const TSharedPtr<IImage>& Scene, const TSharedPtr<IImage>& Depth, FMaterialSurfaceSnapshotData* Capture = nullptr, bool bCaptureCpuImages = false ) const;
+	// 既存のSurface記録を使い、指定された場合は画像の版も捕捉する。
+	bool RecordSurface( FDrawContext& Draw, const FMaterialSceneState& Scene, FMaterialSurfaceSnapshotData* Capture, bool bCaptureCpuImages );
+	// 画像の参照を固定する経路と、CPU画素の版を取得する経路の共通処理。
+	FMaterialSurfaceSnapshot CaptureSurface( const FMaterialSceneState& Scene, bool bCaptureCpuImages );
 	// 場面の画像を読む版のピクセルシェーダー（初めてなら作る。作れなければ null）
 	TSharedPtr<CShader> FindLitPixel( const FMaterialHlslFeatures& Features );
 	void UnbindTextures( FDrawContext& Draw ) const;

@@ -86,6 +86,7 @@ NaN・無限大・絶対値が1e7を超える値、範囲の外の列挙型の�
 
 CPU側の画像（`FPixelImage`）は、画素の並びを持つ値です（DxLibに依存しません）。`FPixelImage Canvas( 64, 64, FColor32( 0, 0, 0, 255 ) );`で作り、`Get / Set`（範囲の外を読むと透明な黒、書くと何もしません）、`Fill / FillRect`、`Blit`（別の画像の矩形を重ねます。`EPixelBlend::Copy`は置き換え、`Alpha`は乗算されていないアルファの`over`で半透明を混ぜます。はみ出す分は切り、自分自身から重ねてもかまいません）、`Crop`、`FlipHorizontal / FlipVertical`が使えます。大きさは1〜16384（画素の総数は64Mまで）で、範囲の外の大きさは空の画像（`IsValid()`が`false`）になります。
 - 画像にする: `Assets->CreateDynamicTexture( "Canvas", Canvas )`で`CDynamicTexture`（`CTexture`でもあるので、そのまま貼れます）を作り、`Update( Canvas )`で中身を替えます（同じ大きさだけ。ハンドルは変わらないので、貼ってある場所は全部、新しい絵になります）。毎フレームの更新は、数百ピクセル四方までの画像に向きます。透明な画素の色も、そのまま入ります。
+- CPUで作った画像を記録時の内容で使うには、ゲームスレッドで `CaptureCpuImageVersion()` を呼び、返った画像を描画完了まで保持します。最後に作成または更新に成功したCPU画素の独立画像です。GPUフィルターで更新した画素を固定する場合は別途描画パスの順序を管理してください。[固定材質と画像の版](R2_MATERIAL_SURFACE_SNAPSHOT.md)
 - ファイルとの行き来: `LoadPixelImage( パス )` / `DecodePixelImage( バイト列, 大きさ )`（PNG・BMP・JPEGなど。透明度を持たない形式は不透明。読めなければ空の画像）と、`SavePixelImage( 画像, パス, FImageSaveOptions )`があります。DxLibは、途中で切れたPNG・BMP・JPEGを渡すと範囲外を読んで落ちるので、渡す前に、構造が最後まであるかを確かめ、壊れたものは空の画像にします。
 - 描画先から: `CRenderTarget::ReadPixelImage()`で、描画先の全体をCPU側の画像にできます。
 - 分ける（`LoadDivGraph`相当）: `Assets->SplitTexture( 画像, Grid )` / `LoadTextureGrid( パス, Grid )`は、格子（`FSpriteSheetGrid`。余白・隙間・コマの大きさ・並べ方）で分けた、1コマずつの画像の並びを返します。元の画像を共有する派生画像なのでメモリは増えず、元の画像は、派生画像が残るあいだ保たれます。画像の外へはみ出すコマは`nullptr`です。

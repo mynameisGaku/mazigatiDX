@@ -145,7 +145,7 @@ TSharedPtr<CDynamicTexture> CTextureLoader::CreateDynamic( const FString& Name, 
 		Context.GetRecorder().RecordFailure();
 		return nullptr;
 	}
-	TSharedPtr<CDynamicTexture> Texture = MakeShared<CDynamicTexture>( Name, Handle, Image.GetWidth(), Image.GetHeight() );
+	TSharedPtr<CDynamicTexture> Texture = MakeShared<CDynamicTexture>( Name, Handle, Image );
 	Context.GetRecorder().RecordLoad( *Texture, FString(), StartTick );
 	Cache.Add( Key, Texture );
 	return Texture;

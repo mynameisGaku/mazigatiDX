@@ -598,3 +598,9 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - `FModelPoseSnapshot::Capture` でDX12の個体が持つ所有付きモデルビューを捕捉し、`CSceneDrawList::AddModel` で配置とともに記録する。合流・確定後は個体の更新や解放から独立する。再生は既存のGPU ForwardとCPU変換の経路を使う。
 - ゲームスレッドで反映済みの骨・アニメーションと個体不透明度が対象。画像の内容や未実行のアニメーション命令までは固定しない。DxLibネイティブモデルでの捕捉は未対応。手順は [描画一覧](R2_SCENE_DRAW_SNAPSHOT.md)。
 - Debug / ReleaseともSamplesビルド、モデル契約170項目、描画一覧120項目、Forward105項目、画像18項目が合格。実GPU・WARP・CPU変換で、元の個体を移動・解放した後に固定姿勢と変更前の基準を比較し、許容差超えは0画素。移動を反映した対照では17,143点の差を検出した。
+
+## R2: CPUから登録した動的画像の固定
+
+- `CDynamicTexture::CaptureCpuImageVersion` は作成・更新に成功したCPU画素を独立画像として保持する。同じ版は生存中だけ共有し、GPUの読み戻しは行わない。更新後も元のハンドルは維持する。
+- `CMaterial::CreateSurfaceSnapshotWithCpuImageVersions` を選ぶと、固定材質は束縛する動的画像のCPU版を保持する。通常の固定材質は画像を共有参照し、描画先・フィルター・computeの結果を扱える。GPUで更新する資源の版管理は残る。[固定材質と画像の版](R2_MATERIAL_SURFACE_SNAPSHOT.md)
+- Debug / ReleaseともSamplesビルド、固定記録の契約128項目、材質画像45項目が合格。実GPU・WARP・UIなし・CPU変換指定・DxLibで、元画像を同じハンドルのまま更新した後も固定版の許容差超えは0画素。通常の参照方式で更新を反映した対照は12,628点に差が出た。

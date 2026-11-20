@@ -79,12 +79,13 @@ bool CMaterialSnapshotScene::Initialize( const FString& Mode )
 	const NShaderMeshes::FMesh& Mesh = NShaderMeshes::GetSphere(); // 静的な形の初期化もゲームスレッドで済ませる。
 	const FShaderMeshSnapshot Shape = Mode == "large" ? MakeLargeShape( Mesh ) : FShaderMeshSnapshot::Create( Mesh.Vertices.GetData(), Mesh.Vertices.Num(), Mesh.Indices.GetData(), Mesh.Indices.Num() ); // 三つの材質と並列記録が同じ形状を使う。
 	if ( !Shape.IsValid() || ( Mode == "large" && Shape.GetNumParts() <= 1 ) ) { return false; }
+	const bool bVersionPixels = Mode == "pixels-frozen"; // 版を明示した場合だけCPU画素の固定を選ぶ。
 	Reference.SetNum( 3 );
 	for ( int32 Index = 0; Index < 3; ++Index )
 	{
 		Materials[Index] = CMaterial::Create( Definition( Index ) );
 		if ( !Materials[Index] || !Materials[Index]->SetTexture( "Albedo", BaseImage ) ) { return false; }
-		Captured[Index] = Materials[Index]->CreateSurfaceSnapshot( Scene );
+		Captured[Index] = bVersionPixels ? Materials[Index]->CreateSurfaceSnapshotWithCpuImageVersions( Scene ) : Materials[Index]->CreateSurfaceSnapshot( Scene );
 		if ( !Captured[Index].IsValid() ) { return false; }
 		FDrawBuffer Probe; // 有効な固定材質でも不正な個数は入力を読まず、以前の出力を保つ。
 		Probe.Words.Add( 0x12345678 );
@@ -113,6 +114,15 @@ bool CMaterialSnapshotScene::Initialize( const FString& Mode )
 	for ( const FSceneDrawSnapshot& Batch : Batches ) { if ( !List.Append( Batch ) ) { return false; } }
 	Snapshot = List.Freeze();
 	bManual = Mode == "reference" || Mode == "live-mutated";
+	if ( bVersionPixels || Mode == "pixels-live" )
+	{
+		const FImageHandle LiveHandle = BaseImage->GetImageHandle(); // 通常の画像の番号は更新後も維持する。
+		const TSharedPtr<CTexture> Old = BaseImage->CaptureCpuImageVersion(); // 三材質が使った版をもう一度取得する。
+		if ( !Old || Old != BaseImage->CaptureCpuImageVersion() || Old->GetImageHandle() == LiveHandle ) { return false; }
+		if ( !BaseImage->Update( FPixelImage( 2, 2, FColor32( 240, 30, 240 ) ) ) || BaseImage->GetImageHandle() != LiveHandle ) { return false; }
+		const TSharedPtr<CTexture> New = BaseImage->CaptureCpuImageVersion(); // 更新後からは別の版を得る。
+		if ( !New || New->GetImageHandle() == Old->GetImageHandle() || New->GetImageHandle() == LiveHandle ) { return false; }
+	}
 	if ( Mode == "mutated" || Mode == "live-mutated" )
 	{
 		Scene.LightColor = FVector3::Zero;
@@ -133,9 +143,13 @@ bool CMaterialSnapshotScene::Initialize( const FString& Mode )
 				Draw.Blend( Index == 0 ? EDrawBlend::Opaque : EDrawBlend::Alpha );
 				if ( !Materials[Index]->BeginSurface( Draw, Scene ) || !Materials[Index]->DrawSurfaceMesh( Draw, Mesh.Vertices.GetData(), Mesh.Vertices.Num(), Mesh.Indices.GetData(), Mesh.Indices.Num(), FMatrix4x4::Scale( 1.8f ) * FMatrix4x4::Translate( FVector3( 0, 0, static_cast<float32>( 2 - Index ) ) ), FColor32::White ) ) { return false; }
 				Materials[Index]->EndSurface( Draw );
-				LiveMaterials.Add( Materials[Index] );
 			}
 		}
+	}
+	// 手動記録は元の画像を借りるため、材質も再生まで保持する。
+	if ( bManual )
+	{
+		for ( const TSharedPtr<CMaterial>& Material : Materials ) { LiveMaterials.Add( Material ); }
 	}
 	return Snapshot.IsValid();
 }

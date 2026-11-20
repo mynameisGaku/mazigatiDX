@@ -4,6 +4,7 @@
 #include "Library/Core/Thread/GameThread.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Asset/AssetSubsystem.h"
+#include "Library/Framework/Asset/Texture/DynamicTexture.h"
 #include "Library/Framework/Material/MaterialHlsl.h"
 #include "Library/Framework/Material/MaterialSceneConstants.h"
 #include "Library/Framework/Material/Surface/Private/MaterialSurfaceSnapshotData.h"
@@ -18,6 +19,23 @@ namespace
 		FVector4 Rect;
 		FVector4 State;
 	};
+
+	// 確定時に実際に束縛する画像を選び、その寿命を描画と一緒に保持する。
+	bool BindImage( FDrawContext& Draw, int32 Slot, TSharedPtr<IImage> Image, FMaterialSurfaceSnapshotData* Capture, bool bCaptureCpuImages )
+	{
+		if ( !Image ) { return true; }
+		if ( Capture )
+		{
+			if ( const auto* Dynamic = bCaptureCpuImages ? dynamic_cast<const CDynamicTexture*>( Image.Get() ) : nullptr )
+			{
+				Image = Dynamic->CaptureCpuImageVersion();
+				if ( !Image ) { return false; }
+			}
+			Capture->Images.Add( Image );
+		}
+		Draw.ShaderTexture( Slot, Image->GetImageHandle() );
+		return true;
+	}
 
 	FVector4 ToVector( const FColor32& Color )
 	{
@@ -554,7 +572,7 @@ bool CMaterial::PrepareShaders( const FMaterialHlslFeatures& Features )
 	return FindLitPixel( Features ).IsValid();
 }
 
-void CMaterial::BindTextures( FDrawContext& Draw, const TSharedPtr<IImage>& Scene, const TSharedPtr<IImage>& Depth ) const
+bool CMaterial::BindTextures( FDrawContext& Draw, const TSharedPtr<IImage>& Scene, const TSharedPtr<IImage>& Depth, FMaterialSurfaceSnapshotData* Capture, bool bCaptureCpuImages ) const
 {
 	const TArray<FMaterialTextureSlot>& Slots = GetProgram().Textures;
 	for ( int32 Index = 0; Index < Slots.Num(); ++Index )
@@ -573,11 +591,9 @@ void CMaterial::BindTextures( FDrawContext& Draw, const TSharedPtr<IImage>& Scen
 			Image = FindEffectiveTexture( Slot.Name );
 			break;
 		}
-		if ( Image )
-		{
-			Draw.ShaderTexture( Slot.Register, Image->GetImageHandle() );
-		}
+		if ( !BindImage( Draw, Slot.Register, MoveTemp( Image ), Capture, bCaptureCpuImages ) ) { return false; }
 	}
+	return true;
 }
 
 void CMaterial::UnbindTextures( FDrawContext& Draw ) const
@@ -696,6 +712,11 @@ bool CMaterial::DrawPostProcess( FDrawContext& Draw, float32 X, float32 Y, float
 
 bool CMaterial::BeginSurface( FDrawContext& Draw, const FMaterialSceneState& Scene )
 {
+	return RecordSurface( Draw, Scene, nullptr, false );
+}
+
+bool CMaterial::RecordSurface( FDrawContext& Draw, const FMaterialSceneState& Scene, FMaterialSurfaceSnapshotData* Capture, bool bCaptureCpuImages )
+{
 	if ( GetDomain() != EMaterialDomain::Surface )
 	{
 		return Fail( "BeginSurface is for Surface materials" );
@@ -750,14 +771,14 @@ bool CMaterial::BeginSurface( FDrawContext& Draw, const FMaterialSceneState& Sce
 	Draw.ShaderConstants( EShaderStage::Vertex, 4, Constants );
 	Draw.ShaderConstants( EShaderStage::Pixel, 4, Constants );
 	Draw.ShaderConstants( EShaderStage::Pixel, 6, Block.GetData(), Block.Num() * static_cast<int32>( sizeof( FVector4 ) ) );
-	BindTextures( Draw, TSharedPtr<IImage>(), TSharedPtr<IImage>() );
-	if ( Features.bEnvironmentMap )
+	if ( !BindTextures( Draw, TSharedPtr<IImage>(), TSharedPtr<IImage>(), Capture, bCaptureCpuImages ) ) { return Fail( "could not capture a Surface texture version" ); }
+	if ( Features.bEnvironmentMap && !BindImage( Draw, NMaterialHlsl::GetEnvironmentRegister( Data.Program ), Scene.EnvironmentMap->GetTexture(), Capture, bCaptureCpuImages ) )
 	{
-		Draw.ShaderTexture( NMaterialHlsl::GetEnvironmentRegister( Data.Program ), Scene.EnvironmentMap->GetTexture()->GetImageHandle() );
+		return Fail( "could not capture the environment texture version" );
 	}
 	if ( Features.bShadowMap )
 	{
-		Draw.ShaderTexture( NMaterialHlsl::GetShadowRegister( Data.Program, Features ), Scene.ShadowMap->GetTarget()->GetImageHandle() );
+		BindImage( Draw, NMaterialHlsl::GetShadowRegister( Data.Program, Features ), Scene.ShadowMap->GetTarget(), Capture, false );
 	}
 	Draw.UseVertexShader( Data.Vertex );
 	Draw.UsePixelShader( Pixel );
@@ -792,15 +813,25 @@ void CMaterial::EndSurface( FDrawContext& Draw )
 
 FMaterialSurfaceSnapshot CMaterial::CreateSurfaceSnapshot( const FMaterialSceneState& Scene )
 {
+	return CaptureSurface( Scene, false );
+}
+
+FMaterialSurfaceSnapshot CMaterial::CreateSurfaceSnapshotWithCpuImageVersions( const FMaterialSceneState& Scene )
+{
+	return CaptureSurface( Scene, true );
+}
+
+FMaterialSurfaceSnapshot CMaterial::CaptureSurface( const FMaterialSceneState& Scene, bool bCaptureCpuImages )
+{
 	FMaterialSurfaceSnapshot Snapshot; // 失敗時は元の材質へ参照しない未作成の値。
 	if ( !IsInGameThread() ) { return Snapshot; }
 	FDrawBuffer Begin; // 既存のSurface記録から全定数と画像の番号を固定する。
 	FDrawContext BeginDraw( Begin ); // HLSLや定数の別実装を作らない。
-	if ( !BeginSurface( BeginDraw, Scene ) ) { return Snapshot; }
+	TSharedPtr<FMaterialSurfaceSnapshotData> Data = MakeShared<FMaterialSurfaceSnapshotData>(); // 捕捉に成功した所有だけを公開する。
+	if ( !RecordSurface( BeginDraw, Scene, Data.Get(), bCaptureCpuImages ) ) { return Snapshot; }
 	FDrawBuffer End; // 同じ材質の解除命令を固定する。
 	FDrawContext EndDraw( End ); // 確定後に元のProgramを参照しないための解除値。
 	EndSurface( EndDraw );
-	TSharedPtr<FMaterialSurfaceSnapshotData> Data = MakeShared<FMaterialSurfaceSnapshotData>(); // 完成後だけ公開する所有データ。
 	Data->BeginWords = MoveTemp( Begin.Words );
 	Data->EndWords = MoveTemp( End.Words );
 	Data->Blend = GetDefinition().SurfaceBlend;
@@ -808,14 +839,6 @@ FMaterialSurfaceSnapshot CMaterial::CreateSurfaceSnapshot( const FMaterialSceneS
 	if ( Ready.Vertex ) { Data->Shaders.Add( Ready.Vertex ); }
 	if ( Ready.Pixel ) { Data->Shaders.Add( Ready.Pixel ); }
 	for ( const TSharedPtr<CShader>& Variant : Ready.LitPixels ) { if ( Variant ) { Data->Shaders.Add( Variant ); } }
-	for ( const FMaterialTextureSlot& Slot : Ready.Program.Textures )
-	{
-		if ( Slot.Source != EMaterialTextureSource::Parameter ) { continue; }
-		const TSharedPtr<IImage> Image = FindEffectiveTexture( Slot.Name ); // インスタンスの上書きと親を既存規約で解決する。
-		if ( Image ) { Data->Images.Add( Image ); }
-	}
-	if ( Scene.EnvironmentMap && Scene.EnvironmentMap->GetTexture() ) { Data->Images.Add( Scene.EnvironmentMap->GetTexture() ); }
-	if ( Scene.ShadowMap && Scene.ShadowMap->GetTarget() ) { Data->Images.Add( Scene.ShadowMap->GetTarget() ); }
 	Snapshot.Data = MoveTemp( Data );
 	return Snapshot;
 }
