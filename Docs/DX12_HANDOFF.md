@@ -1,6 +1,6 @@
 ﻿# DX12開発の引き継ぎ
 
-最終更新: 2026-11-15（日本時間）。この文書は作業中も更新します。実装済み、未接続、検証済みを分け、予定を完了扱いにしません。
+最終更新: 2026-11-21（日本時間）。この文書は作業中も更新します。実装済み、未接続、検証済みを分け、予定を完了扱いにしません。
 
 **未対応・未確認の事項の一覧は [DX12_KNOWN_GAPS.md](DX12_KNOWN_GAPS.md)。push は ChatGPT（Codex）の `framework-dx12` の作業が行います（Claude は push しません）。**
 
@@ -602,5 +602,11 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 ## R2: CPUから登録した動的画像の固定
 
 - `CDynamicTexture::CaptureCpuImageVersion` は作成・更新に成功したCPU画素を独立画像として保持する。同じ版は生存中だけ共有し、GPUの読み戻しは行わない。更新後も元のハンドルは維持する。
-- `CMaterial::CreateSurfaceSnapshotWithCpuImageVersions` を選ぶと、固定材質は束縛する動的画像のCPU版を保持する。通常の固定材質は画像を共有参照し、描画先・フィルター・computeの結果を扱える。GPUで更新する資源の版管理は残る。[固定材質と画像の版](R2_MATERIAL_SURFACE_SNAPSHOT.md)
+- `CMaterial::CreateSurfaceSnapshotWithCpuImageVersions` を選ぶと、固定材質は束縛する動的画像のCPU版を保持する。通常の固定材質は画像を共有参照し、描画先・フィルター・computeの結果を扱える。[固定材質と画像の版](R2_MATERIAL_SURFACE_SNAPSHOT.md)
 - Debug / ReleaseともSamplesビルド、固定記録の契約128項目、材質画像45項目が合格。実GPU・WARP・UIなし・CPU変換指定・DxLibで、元画像を同じハンドルのまま更新した後も固定版の許容差超えは0画素。通常の参照方式で更新を反映した対照は12,628点に差が出た。
+
+## R2: GPUで書いた描画先の色の固定
+
+- `CRenderTarget::CaptureGpuColorVersion` はゲームスレッドでパス終了後に呼ぶ。既存のGPUコピーを使い、RGBA8、RGBA16F、対応GPUのR32Floatカラーを、元と同じ形式・寸法の独立画像へ複写する。材質や描画一覧は通常の画像参照と同じ所有方法で保持できる。
+- コピーは完了待ちを伴う。深度・マルチサンプル・描画先以外のGPU更新資源、およびR3のグラフにコピーを予約する経路は今後の課題。[固定材質と画像の版](R2_MATERIAL_SURFACE_SNAPSHOT.md)
+- Debug / Releaseでアプリをビルドし、描画先・描画グラフの検査を実GPU・WARPのUIあり／なしとDxLib・Nullで確認した。描画先の独立検査はCPU 45項目・実GPUとWARP各55項目、描画一覧の契約は128項目が合格。アプリ検査ではRGBA8の二つの版、HDRの範囲外の値、対応GPUのR32Float値、パスが開いている間の拒否を確認した。

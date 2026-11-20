@@ -46,6 +46,10 @@ public:
 	// 作ったときの設定
 	FORCEINLINE const FRenderTargetDesc& GetDesc() const { return Desc; }
 
+	// 描画パスを閉じた後、GPU上の色だけを別の画像に複写する。元の更新や解放後も使える。
+	// ゲームスレッド用。複写は完了を待つ。未対応・マルチサンプル・複写失敗時は空の参照を返す。
+	TSharedPtr<CTexture> CaptureGpuColorVersion() const;
+
 	// 矩形 (X, Y, Width, Height) の画素を、左上から右へ、上から下へ、OutPixels（Width x Height 個）に読む（浮動小数点の描画先は、0〜255 に収めて読む）。
 	// 矩形が描画先の外にはみ出していたり、大きさが 0 以下なら、何もせず false。透明度を持たない描画先の A は 255。メインスレッドだけ
 	bool ReadPixels( int32 X, int32 Y, int32 Width, int32 Height, TArray<FColor32>& OutPixels ) const;

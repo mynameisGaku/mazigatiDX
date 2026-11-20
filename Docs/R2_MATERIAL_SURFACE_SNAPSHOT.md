@@ -26,10 +26,27 @@ const bool bAccepted = MaterialFrame.AddMesh( Batch, ESceneDrawClass::Translucen
 
 CPU画素は動的画像ごとに一組保持する。版を初めて取得すると既存の画像登録を使って独立画像を作り、その版が生存中は複数の材質で共有する。通常の画像番号は `Update` で変わらない。GPU資源の解放は既存の所有者と完了管理が担当する。[MicrosoftのGPU資源の寿命管理](https://learn.microsoft.com/en-us/windows/win32/direct3d12/fence-based-resource-management)
 
-描画先、影マップ、派生画像、GPUのフィルターやcomputeで書いた画素は、このCPU版固定の対象外。GPUで書いた結果を使う場合は通常の参照方式を選び、描画パスの依存で更新順を管理する。
+描画先、影マップ、派生画像、GPUのフィルターやcomputeで書いた画素は、このCPU版固定の対象外。
 - BuildMeshCommandsの結果は命令の所有コピー。資源の所有は固定値が保持するので、再生まで固定値も保持する。AddMeshを使えば、その所有もCSceneDrawListへ一緒に渡す。
 
 BuildMeshCommandsは既存のcbObjectと88バイトのシェーダー頂点を使い、World・Tintと頂点・添字を所有する。非有限な行列、不正な頂点・添字、記録上限ではfalseを返し、出力を変更しない。記録時は既存の命令形式で頂点・添字をコピーする。DX12でのGPUバッファ共有は再生時に行う。
+
+## GPUで書いた描画先の色を固定する
+
+ゲームスレッドで描画先への書き込みを実行し、描画パスを閉じてから `CRenderTarget::CaptureGpuColorVersion()` を呼ぶ。描画命令を記録するだけの場面では、記録の再生後に呼ぶ。取得した `CTexture` は通常の画像として既存の材質へ渡せる。元の描画先を上書き・解放した後も、材質スナップショットがコピー先を保持する。
+
+```cpp
+const TSharedPtr<CTexture> ColorVersion = Target->CaptureGpuColorVersion();
+if ( ColorVersion && Material->SetTexture( "Albedo", ColorVersion ) )
+{
+	const FMaterialSurfaceSnapshot FrameMaterial = Material->CreateSurfaceSnapshot( SceneState );
+	// FrameMaterial を使って描画一覧を記録する。
+}
+```
+
+DX12ではRGBA8、RGBA16F、対応GPUのR32Floatカラーを、同じ形式と寸法の独立した画像へGPUで複写する。コピーは既存の描画キューに順序付け、完了を待ってから返る。GPU上で色だけを複写する。描画パスや撮影中、マルチサンプル指定、未対応バックエンド、確保・コピー失敗時は空の参照を返す。素材側で同じ版を共有する場合は、取得した参照を使い回す。[MicrosoftのCopyTextureRegion](https://learn.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-id3d12graphicscommandlist-copytextureregion)
+
+`RunRenderTargetTests.ps1 -Platform` で色を二度書き、元を解放した後に各版の色とアルファを確認する。HDRの1を超える値と負値、対応GPUの単一成分の値も検査する。
 
 ## 材質定義による分類
 
@@ -69,7 +86,7 @@ CSceneDrawListに、命令と既存共有所有を一緒に受け付けるAddの
 
 `RunShaderMeshCacheTests.ps1` は製品のシェーダーサービスを通し、使い回す登録番号、材質定数の再送、部分登録の取り消し、従来経路への復帰、容量と解放を確認する。材質画像の基準はキャッシュ無効で撮影する。
 
-残件はより広いPBR材質の互換確認とGPUで更新する資源の版の固定。DX12の既存モデル姿勢の捕捉は[描画一覧](R2_SCENE_DRAW_SNAPSHOT.md)を、パスの組み立ては [R3の描画グラフ](R3_RENDER_GRAPH.md) を参照する。
+残件はより広いPBR材質の互換確認と、深度・描画先以外のGPU更新資源の版管理。描画グラフで完了待ちなしにコピーを予約する入口も今後の課題。DX12の既存モデル姿勢の捕捉は[描画一覧](R2_SCENE_DRAW_SNAPSHOT.md)を、パスの組み立ては [R3の描画グラフ](R3_RENDER_GRAPH.md) を参照する。
 
 参照: [Epicの描画スレッドと描画用データの所有](https://dev.epicgames.com/documentation/en-us/unreal-engine/threaded-rendering-in-unreal-engine)、[HLSLの定数バッファ](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-constants)、[定数の配置規則](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-packing-rules)。
 

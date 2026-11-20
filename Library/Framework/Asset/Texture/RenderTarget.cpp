@@ -1,6 +1,11 @@
 ﻿#include "RenderTarget.h"
 #include "Library/Framework/Asset/Loading/AssetLog.h"
 
+#include "Library/Core/Interfaces/Render/IRenderTargetDrawSource.h"
+#include "Library/Core/Interfaces/Render/IRenderTextureResources.h"
+#include "Library/Core/Thread/GameThread.h"
+#include "Library/Framework/Engine/Engine.h"
+
 #include "Library/Core/Log/Log.h"
 #include "Library/Platform/System/FileSystem.h"
 
@@ -9,6 +14,38 @@ CRenderTarget::CRenderTarget( const FString& InName, int32 InHandle, const FRend
 	, Desc( InDesc )
 {
 	SetKnownSize( InDesc.Width, InDesc.Height );
+}
+
+TSharedPtr<CTexture> CRenderTarget::CaptureGpuColorVersion() const
+{
+	if ( !IsInGameThread() || GetHandle() < 0 || Desc.MultiSamples > 0 )
+	{
+		return {};
+	}
+
+	IAssetBackend* Backend = NAssetService::GetBackend(); // 独立した画像をアセットとして登録する窓口。
+	IRenderTargetDrawSource* Targets = GetAppSubsystem<IRenderTargetDrawSource>(); // アセット番号からGPU上の色画像を取得する。
+	IRenderTextureResources* Textures = GetAppSubsystem<IRenderTextureResources>(); // GPU上で色画像を複写する。
+	FRenderTargetDrawView Source; // 元の描画先の色と形式。
+	if ( !Backend || !Targets || !Textures || !Targets->GetRenderTargetDrawView( GetHandle(), Source ) || !Source.Color.IsValid() )
+	{
+		return {};
+	}
+
+	FRenderTargetDesc ColorDesc = Desc; // 元の色形式と寸法で、深度を持たない画像を作る。
+	ColorDesc.bDepth = false;
+	const int32 Handle = Backend->CreateRenderTarget( ColorDesc ); // 名前による画像の共有を使わず、毎回独立して所有する。
+	if ( Handle < 0 )
+	{
+		return {};
+	}
+	TSharedPtr<CTexture> Version = MakeShared<CRenderTarget>( GetPath(), Handle, ColorDesc ); // 失敗時にも既存の解放経路へ返す。
+	FRenderTargetDrawView Destination; // 画像全体を複写する先。
+	if ( !Targets->GetRenderTargetDrawView( Handle, Destination ) || Destination.Format != Source.Format || !Textures->CopyTexture( Source.Color, Destination.Color ) )
+	{
+		return {};
+	}
+	return Version;
 }
 
 bool CRenderTarget::IsInside( int32 X, int32 Y, int32 Width, int32 Height ) const
