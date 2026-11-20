@@ -10,6 +10,8 @@
 #include "Library/Math/Matrix4x4.h"
 
 class CAssetSubsystem;
+class CMaterial;
+struct FMaterialSceneState;
 
 //=============================================================================
 // CMaterialShadowMap: マテリアルの面に落ちる、平行光の影
@@ -32,7 +34,7 @@ class CAssetSubsystem;
 //
 //   - 範囲（中心から半径の球）の外は、影が落ちない（光が届く）。範囲が広いほど、影は粗くなる（大きさ Size の画像を、範囲の全体に使う）。
 //   - Begin は、描画先を替え、奥行きの比較と書き込みを有効に、ブレンドを Opaque にする（End で、描画先は戻る。奥行きとブレンドは、戻さない）。
-//   - 影を落とすのは、形の全体（マテリアルの不透明度は、見ない）。
+//   - DrawMeshは形全体、DrawMaskedMeshは材質の不透明度を使って影を落とす。
 //   - 作るのは、メインスレッドだけ（画像とシェーダーを作る）。Begin・DrawMesh・End は、記録するだけなので、どのスレッドでもよい。
 //=============================================================================
 class CMaterialShadowMap
@@ -59,6 +61,9 @@ public:
 	bool Begin( FDrawContext& Draw );
 	// 影を落とす形を描く（マテリアルの DrawSurfaceMesh と同じ頂点）
 	bool DrawMesh( FDrawContext& Draw, const FShaderVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, const FMatrix4x4& World );
+	// 準備済みの切り抜き材質で影を描く。Sceneは色パスと同じ時刻とカメラを渡す。
+	// BeginとEndの間で使い、材質と画像を再生まで保持する。他のスレッドから更新しない。
+	bool DrawMaskedMesh( FDrawContext& Draw, const CMaterial& Material, const FMaterialSceneState& Scene, const FShaderVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, const FMatrix4x4& World, const FColor32& Tint = FColor32::White ) const;
 	void End( FDrawContext& Draw );
 
 private:

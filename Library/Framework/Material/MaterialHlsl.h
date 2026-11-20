@@ -57,4 +57,6 @@ namespace NMaterialHlsl
 	FString GetSurfaceVertexSource();
 	// 深度だけを書くピクセルシェーダー（影のマップ用。標準の頂点シェーダーと組み合わせて、R に、0〜1 の深度を書く）
 	FString GetSurfaceDepthPixelSource();
+	// 切り抜きのSurfaceグラフの不透明度だけを使って深度を書く。未対応のProgramでは空を返す。
+	FString GetMaskedSurfaceDepthPixelSource( const FMaterialProgram& Program );
 }

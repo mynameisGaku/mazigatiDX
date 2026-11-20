@@ -29,7 +29,7 @@ Surfaceの `.gxmaterial` で `"SurfaceBlend": "Opaque"`、`"Masked"`、`"Translu
 
 分類を省略する `AddMesh( List, Center, Shape, World )` は固定材質の分類から描画順と状態を選ぶ。頂点・添字を直接渡す形式でも使える。明示指定と定義の分類が一致しない場合や、手動材質で分類を省略した場合は受付を拒否する。不透明と切り抜きは上書きと深度書き込み、半透明は通常アルファ合成と読み取り深度になる。直接 `BeginSurface` と `DrawSurfaceMesh` を使う経路では、呼び出し側が深度と合成を設定する。
 
-`Masked` はSurfaceグラフの出力不透明度が `OpacityCutoff` を超えた画素だけ色と深度を書く。しきい値は0〜1、既定は0.5。残る画素の出力アルファは1。HLSLの直指定、独立した影生成パスでの切り抜きは対象外。参考 [Epicの材質プロパティ](https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-engine-material-properties)、[MicrosoftのHLSL clip](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-clip)。
+`Masked` はSurfaceグラフの出力不透明度が `OpacityCutoff` を超えた画素だけ色と深度を書く。しきい値は0〜1、既定は0.5。残る画素の出力アルファは1。HLSLの直指定は対象外。影生成への適用は [Surfaceの影](MATERIAL.md) を参照する。参考 [Epicの材質プロパティ](https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-engine-material-properties)、[MicrosoftのHLSL clip](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-clip)。
 
 同じ形状を複数の材質や個体で使う場合は、`FShaderMeshSnapshot::Create( Vertices, NumVertices, Indices, NumIndices )` で添字付き三角形を一度検査して固定し、その値を受け取る `AddMesh( List, Class, Center, Shape, World )` を使う。各項目の形状命令は1 wordで、頂点・添字は不変の領域を共有する。ジョブへ公開した後は形状を読み取り専用で扱い、各ジョブが別の一覧へ記録する。受付済みの一覧は形状と固定材質を保持するため、呼び出し元の値や元の配列は再生前に手放せる。
 
@@ -59,7 +59,7 @@ CSceneDrawListに、命令と既存共有所有を一緒に受け付けるAddの
 
 `RunShaderMeshCacheTests.ps1` は製品のシェーダーサービスを通し、使い回す登録番号、材質定数の再送、部分登録の取り消し、従来経路への復帰、容量と解放を確認する。材質画像の基準はキャッシュ無効で撮影する。
 
-残件は影生成パスの切り抜き、既存の命令上限を超える形状、より広いPBR材質の互換確認、モデル姿勢と更新資源の版の固定。パスを組み立てる入口は [R3の描画グラフ](R3_RENDER_GRAPH.md) を参照する。
+残件は既存の命令上限を超える形状、より広いPBR材質の互換確認、モデル姿勢と更新資源の版の固定。パスを組み立てる入口は [R3の描画グラフ](R3_RENDER_GRAPH.md) を参照する。
 
 参照: [Epicの描画スレッドと描画用データの所有](https://dev.epicgames.com/documentation/en-us/unreal-engine/threaded-rendering-in-unreal-engine)、[HLSLの定数バッファ](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-constants)、[定数の配置規則](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-packing-rules)。
 

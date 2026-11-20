@@ -132,6 +132,7 @@ bool CMaterial::Reload( const FMaterialDefinition& Definition )
 	const FMaterialCapabilities Capabilities = Compiled->Capabilities;
 	// 作ってあったシェーダーの版（場面の画像を読む版も）を、覚えておく
 	const bool bHadShaders = Compiled->bShadersOk;
+	const bool bHadMaskedShadow = Compiled->MaskedShadowPixel.IsValid(); // Reload前に準備済みだった影の版。
 	bool bHadLitPixels[4];
 	for ( int32 Index = 0; Index < 4; ++Index )
 	{
@@ -176,6 +177,7 @@ bool CMaterial::Reload( const FMaterialDefinition& Definition )
 	}
 	++Revision;
 	LastError.Empty();
+	if ( bHadMaskedShadow && IsInGameThread() && Program.OpacityCutoff >= 0.0f ) { PrepareMaskedShadowShader(); }
 	return true;
 }
 
@@ -520,6 +522,22 @@ bool CMaterial::PrepareShaders()
 		}
 	}
 	Data.bShadersOk = true;
+	return true;
+}
+
+bool CMaterial::PrepareMaskedShadowShader()
+{
+	if ( !IsInGameThread() ) { return false; }
+	FMaterialCompiled& Data = GetCompiled(); // インスタンス同士でシェーダーだけを共有する。
+	if ( Data.bMaskedShadowTried ) { return Data.MaskedShadowPixel.IsValid(); }
+	if ( !Data.Capabilities.bPixelShaders ) { return false; }
+	const FString Source = NMaterialHlsl::GetMaskedSurfaceDepthPixelSource( Data.Program ); // 切り抜きグラフ以外は空。
+	if ( Source.IsEmpty() ) { return false; }
+	Data.bMaskedShadowTried = true;
+	FString Message; // コンパイルの失敗理由を既存の診断に残す。
+	Data.MaskedShadowPixel = CShader::Compile( EShaderStage::Pixel, Source, "main", &Message );
+	if ( !Data.MaskedShadowPixel ) { return Fail( FString( "the masked shadow shader could not be compiled: " ) + Message ); }
+	LastError.Empty();
 	return true;
 }
 

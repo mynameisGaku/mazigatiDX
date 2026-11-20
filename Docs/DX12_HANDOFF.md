@@ -580,3 +580,9 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - `CRenderGraphBuilder` は既存画像の初期状態、パスの読み取り、色・深度の描画先を受け取る。全件を検査してから既存の描画先パスへ登録順で渡す。名前を指定してパスを前後に追加したり、同じ位置で差し替えたりできる。
 - GPU検査ではMRTと深度の生成、挿入した追加描画、差し替えた合成パスを実行し、色と深度を読み戻す。使用法と次の接続先は [R3 描画パスの登録と依存検査](R3_RENDER_GRAPH.md)。
 - Debug / ReleaseともCPU契約19項目、実GPU・WARP各107項目が合格。公開描画先を使うアプリ検査は実GPU・WARPのUIあり／なしで合格し、DxLib・Nullでは未対応の描画先を使わない既存経路も確認した。R2は未完了で、影の切り抜き・大きな形状・材質互換とフレーム固定の残作業を継続する。
+
+## R2: Surfaceの切り抜きを影生成へ接続
+
+- `PrepareMaskedShadowShader` と `CMaterialShadowMap::DrawMaskedMesh` を追加した。色と影が同じSurfaceグラフの不透明度と共通のしきい値判定を使う。影側の入口はEngineContentの既存深度用HLSLに置き、R3のパスからも再利用できるようにした。
+- 色と同じ入力を呼び出し側が渡し、影の記録から再生まで材質・画像を保持する。従来の全形状の影も同じ影マップ内で使える。使用法は [Surfaceの影](MATERIAL.md)。
+- Debug / ReleaseのSamplesビルド、描画一覧116項目、材質画像30項目が合格。実GPU・WARP・UIなし・CPU変換指定・DxLibで、同値と透明画像の穴は奥の深度0.7、残った手前の形状は深度0.5となった。

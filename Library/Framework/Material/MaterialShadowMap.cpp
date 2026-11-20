@@ -3,6 +3,7 @@
 
 #include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Material/MaterialHlsl.h"
+#include "Library/Framework/Material/Material.h"
 #include "Library/Framework/Material/MaterialSceneConstants.h"
 #include "Library/Framework/Render/State/RenderState3D.h"
 #include "Library/Math/MathUtils.h"
@@ -77,6 +78,38 @@ bool CMaterialShadowMap::DrawMesh( FDrawContext& Draw, const FShaderVertex3D* Ve
 	Draw.ShaderConstants( EShaderStage::Vertex, 5, Object );
 	Draw.ShaderConstants( EShaderStage::Pixel, 5, Object );
 	return Draw.PrimitiveIndexedShader3D( Vertices, NumVertices, Indices, NumIndices, EDrawPrimitive::Triangles );
+}
+
+bool CMaterialShadowMap::DrawMaskedMesh( FDrawContext& Draw, const CMaterial& Material, const FMaterialSceneState& Scene, const FShaderVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, const FMatrix4x4& World, const FColor32& Tint ) const
+{
+	const FMaterialCompiled& Data = Material.GetCompiled(); // 準備済みのシェーダーだけを使う。
+	if ( !Target || !Pixel || !Data.MaskedShadowPixel || !NMath::IsFinite( Scene.Time ) || !NMath::IsFinite( Scene.CameraPosition.x ) || !NMath::IsFinite( Scene.CameraPosition.y ) || !NMath::IsFinite( Scene.CameraPosition.z ) ) { return false; }
+	for ( const FMaterialTextureSlot& Slot : Data.Program.Textures )
+	{
+		const TSharedPtr<IImage> Image = Material.FindEffectiveTexture( Slot.Name ); // 親と個体の入力を色パスと同じ規則で解決する。
+		if ( Image && Image->GetImageHandle() == Target->GetImageHandle() ) { return false; }
+	}
+	FMaterialSceneConstants Constants; // 射影だけ光を使い、不透明度の入力は色パスの値を保つ。
+	Constants.ViewProjection = ViewProjection;
+	Constants.CameraPosition = FVector4( Scene.CameraPosition, 1.0f );
+	Constants.Time = FVector4( Scene.Time, Scene.NearPlane, Scene.FarPlane, 0.0f );
+	TArray<FVector4> Parameters; // 既存の個体上書きとコレクションを読み取る。
+	Material.BuildParamBlock( Parameters );
+	Draw.ShaderConstants( EShaderStage::Vertex, 4, Constants );
+	Draw.ShaderConstants( EShaderStage::Pixel, 4, Constants );
+	Draw.ShaderConstants( EShaderStage::Pixel, 6, Parameters.GetData(), Parameters.Num() * static_cast<int32>( sizeof( FVector4 ) ) );
+	Material.UnbindTextures( Draw );
+	Material.BindTextures( Draw, TSharedPtr<IImage>(), TSharedPtr<IImage>() );
+	Draw.UsePixelShader( Data.MaskedShadowPixel );
+	FMaterialObjectConstants Object; // 色パスと同じ配置と頂点色の設定。
+	Object.World = World;
+	Object.Color = FVector4( Tint.r / 255.0f, Tint.g / 255.0f, Tint.b / 255.0f, Tint.a / 255.0f );
+	Draw.ShaderConstants( EShaderStage::Vertex, 5, Object );
+	Draw.ShaderConstants( EShaderStage::Pixel, 5, Object );
+	const bool bRecorded = Draw.PrimitiveIndexedShader3D( Vertices, NumVertices, Indices, NumIndices, EDrawPrimitive::Triangles ); // 既存の長さと頂点の検査を通す。
+	Material.UnbindTextures( Draw );
+	Draw.UsePixelShader( Pixel );
+	return bRecorded;
 }
 
 void CMaterialShadowMap::End( FDrawContext& Draw )

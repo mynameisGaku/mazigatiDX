@@ -37,9 +37,13 @@ struct VertexOutput
 
 #ifdef MATERIAL_MASKED
 // 不透明度がしきい値以下の画素は色・深度を更新しない。
+void MatClipOpacity( float Opacity, float Cutoff )
+{
+	clip( Opacity > Cutoff ? 1.0 : -1.0 );
+}
 float4 MatMaskedOutput( float4 Color, float Cutoff )
 {
-	clip( Color.a > Cutoff ? 1.0 : -1.0 );
+	MatClipOpacity( Color.a, Cutoff );
 	return float4( Color.rgb, 1.0 );
 }
 #endif

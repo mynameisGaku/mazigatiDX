@@ -45,6 +45,7 @@ namespace
 bool CMaterialSnapshotScene::Initialize( const FString& Mode )
 {
 	if ( Mode == "masked" ) { return InitializeMasked(); }
+	if ( Mode == "masked-shadow" ) { return InitializeMaskedShadow(); }
 	CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>(); // 資源の作成はジョブへ渡す前に済ませる。
 	if ( !Assets ) { return false; }
 	const TSharedPtr<CDynamicTexture> BaseImage = Assets->CreateDynamicTexture( "Snapshot.Base", FPixelImage( 2, 2, FColor32( 190, 220, 170 ) ) ); // 固定する画像。
@@ -151,6 +152,49 @@ bool CMaterialSnapshotScene::InitializeMasked()
 	}
 	Snapshot = Batch.Freeze();
 	return Snapshot.IsValid() && Snapshot.GetNumItems() == 3;
+}
+
+bool CMaterialSnapshotScene::InitializeMaskedShadow()
+{
+	CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>(); // 影とマスク画像を所有する窓口。
+	if ( !Assets ) { return false; }
+	MaskShadow = CMaterialShadowMap::Create( *Assets, "Snapshot.MaskShadow", 256 );
+	if ( !MaskShadow ) { return false; }
+	MaskShadow->SetLight( FVector3( 0, 0, 1 ), FVector3::Zero, 2.5f );
+	FMaterialDefinition Def = Definition( 0 ); // 色と同じグラフに画像のアルファを掛ける。
+	Def.SurfaceBlend = EMaterialSurfaceBlend::Masked;
+	const int32 Image = Def.Graph.AddNode( EMaterialNodeKind::TextureSample, "Cutout" ); // 材質インスタンスで差し替える入力。
+	const int32 Alpha = Def.Graph.AddNode( EMaterialNodeKind::Mask, "w" ); // 画像のアルファ成分。
+	Def.Graph.Connect( Alpha, 0, Image );
+	const int32 Opacity = Def.Graph.AddNode( EMaterialNodeKind::ScalarParameter, "ShadowOpacity", FVector4( 0.5f, 0, 0, 0 ) ); // しきい値と同じ値を含める。
+	const int32 Product = Def.Graph.AddNode( EMaterialNodeKind::Multiply ); // 色と影で同じ不透明度を評価する。
+	Def.Graph.Connect( Product, 0, Alpha );
+	Def.Graph.Connect( Product, 1, Opacity );
+	Def.Graph.SetOutput( "Opacity", Product );
+	const TSharedPtr<CMaterial> Parent = CMaterial::Create( Def ); // 共通の影シェーダーを持つ親材質。
+	const TSharedPtr<CDynamicTexture> White = Assets->CreateDynamicTexture( "Snapshot.ShadowWhite", FPixelImage( 1, 1, FColor32::White ) ); // 有効な不透明度を持つ画像。
+	const TSharedPtr<CDynamicTexture> Empty = Assets->CreateDynamicTexture( "Snapshot.ShadowEmpty", FPixelImage( 1, 1, FColor32( 255, 255, 255, 0 ) ) ); // RGBは同じで透明な画像。
+	if ( !Parent || !White || !Empty || !Parent->SetTexture( "Cutout", White ) || !Parent->PrepareMaskedShadowShader() ) { return false; }
+	const TSharedPtr<CMaterial> Solid = CMaterial::CreateInstance( Parent ); // 親の白画像と上書きの不透明度を使う。
+	const TSharedPtr<CMaterial> Hole = CMaterial::CreateInstance( Parent ); // 透明な画像を個体で上書きする。
+	if ( !Solid || !Hole || !Solid->SetScalar( "ShadowOpacity", 0.75f ) || !Hole->SetScalar( "ShadowOpacity", 0.75f ) || !Hole->SetTexture( "Cutout", Empty ) ) { return false; }
+	const FShaderVertex3D Verts[4] = { FShaderVertex3D::Make( FVector3( -0.6f, -0.6f, 0 ), FVector3::Up, FColor32::White ), FShaderVertex3D::Make( FVector3( -0.6f, 0.6f, 0 ), FVector3::Up, FColor32::White ), FShaderVertex3D::Make( FVector3( 0.6f, 0.6f, 0 ), FVector3::Up, FColor32::White ), FShaderVertex3D::Make( FVector3( 0.6f, -0.6f, 0 ), FVector3::Up, FColor32::White ) }; // 等値・残る画素・透明の三領域。
+	const uint16 Indices[6] = { 0, 1, 2, 0, 2, 3 }; // 四角形の添字。
+	Reference.SetNum( 1 );
+	FDrawContext Draw( Reference[0] ); // 影生成と結果の表示を同じ実行範囲に記録する。
+	FMaterialSceneState Scene; // 色パスと共通に渡せる不透明度の入力。
+	if ( !MaskShadow->Begin( Draw ) ) { return false; }
+	const bool bEqual = MaskShadow->DrawMaskedMesh( Draw, *Parent, Scene, Verts, 4, Indices, 6, FMatrix4x4::Translate( FVector3( -1.4f, 0, 0 ) ) ); // 0.5と同値で穴。
+	const bool bSolid = MaskShadow->DrawMaskedMesh( Draw, *Solid, Scene, Verts, 4, Indices, 6, FMatrix4x4::Identity ); // 0.75かつ白なので深度を書く。
+	const bool bHole = MaskShadow->DrawMaskedMesh( Draw, *Hole, Scene, Verts, 4, Indices, 6, FMatrix4x4::Translate( FVector3( 1.4f, 0, 0 ) ) ); // 個体の画像で穴。
+	const bool bRear = MaskShadow->DrawMesh( Draw, Verts, 4, Indices, 6, FMatrix4x4::Scale( 4.0f ) * FMatrix4x4::Translate( FVector3( 0, 0, 2.0f ) ) ); // 前の穴から見える通常の奥の影。
+	MaskShadow->End( Draw );
+	Draw.Image( 512.0f, 232.0f, MaskShadow->GetTarget()->GetImageHandle() );
+	LiveMaterials.Add( Parent );
+	LiveMaterials.Add( Solid );
+	LiveMaterials.Add( Hole );
+	bManual = true;
+	return bEqual && bSolid && bHole && bRear;
 }
 
 void CMaterialSnapshotScene::Draw( IDrawExecutor& Executor ) const

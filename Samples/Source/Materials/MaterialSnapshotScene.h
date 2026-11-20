@@ -5,6 +5,7 @@
 #include "Library/Framework/Render/Draw/DrawContext.h"
 
 class CMaterial;
+class CMaterialShadowMap;
 class IDrawExecutor;
 
 // 既存の三種類の材質を固定し、ジョブで記録した一覧を手動基準と比較する見本。
@@ -18,6 +19,9 @@ public:
 private:
 	// しきい値の両側の画素と、奥にある半透明の深度判定を検査する。
 	bool InitializeMasked();
+	// 影の深度画像で穴と奥の形、影シェーダーの切り替えを確認する。
+	bool InitializeMaskedShadow();
+	TSharedPtr<CMaterialShadowMap> MaskShadow; // 深度画像と通常の影シェーダーを再生まで所有する。
 	FSceneDrawSnapshot Snapshot; // パラメーターと資源が固定された描画。
 	TArray<FDrawBuffer> Reference; // 並べ替えを使わない正しい手動順。
 	TArray<TSharedPtr<CMaterial>> LiveMaterials; // 比較用の変更後の材質だけを保持する。

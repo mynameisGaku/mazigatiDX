@@ -116,6 +116,8 @@ struct FMaterialCompiled
 	TArray<FMaterialDiagnostic> ShaderDiagnostics;   // シェーダーのコンパイルの失敗など（実行のときに足される）
 	TSharedPtr<CShader> Pixel;
 	TSharedPtr<CShader> Vertex;                      // Surface だけ
+	TSharedPtr<CShader> MaskedShadowPixel; // この版の不透明度で深度を書くシェーダー。
+	bool bMaskedShadowTried = false; // 同じ版で失敗したコンパイルの再試行を防ぐ。
 	bool bShadersTried = false;
 	bool bShadersOk = false;
 	// 場面の画像（環境マップ・影のマップ）を読む版のピクセルシェーダー（番号は、環境マップ = 1、影 = 2 の和。0 は Pixel。初めて使うときに作る）
@@ -178,6 +180,8 @@ public:
 	// ---- GPU ----
 	// シェーダーを作る（描くとき、自動でも呼ばれる）。メインスレッドだけ。作れなければ false（理由は GetDiagnostics）
 	bool PrepareShaders();
+	// ゲームスレッドでSurfaceグラフの切り抜き影を準備する。対象外や作成失敗ではfalse。
+	bool PrepareMaskedShadowShader();
 	// 場面の画像（環境マップ・影のマップ）を読む版のシェーダーも、作っておく。BeginSurface は、メインスレッドなら、初めて使うときに自分で作るが、
 	// ほかのスレッドで記録する描画（描画システムが、オブジェクトの Draw を並列に記録するとき）では作れないので、先に、これを呼んでおく（作っていなければ、その画像を使わずに描く）
 	bool PrepareShaders( const FMaterialHlslFeatures& Features );
@@ -207,6 +211,7 @@ public:
 	const FString& GetLastError() const { return LastError; }
 
 private:
+	friend class CMaterialShadowMap;
 	struct FValue
 	{
 		FString Name;
