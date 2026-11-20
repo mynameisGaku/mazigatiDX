@@ -598,14 +598,14 @@ void CDxLibDrawExecutorSubsystem::Execute( const FDrawSpan& Input )
 		}
 	};
 
-	ForEachDrawCommand( Span, [&]( FDrawCommandView Command )
+	ForEachDrawCommand( Span, [&]( const FDrawCommandView& Command )
 	{
-		if ( Command.Type == EDrawCommand::SharedShaderMesh3D && !FShaderMeshSnapshot::Resolve( Span, Command ) ) { return; }
+		const bool bSharedMesh = Command.Type == EDrawCommand::SharedShaderMesh3D; // 状態命令と分けて全ての部分を描く。
 		if ( Command.Type == EDrawCommand::BeginScene3D || Command.Type == EDrawCommand::EndScene3D || Command.Type == EDrawCommand::SceneDrawKey3D ) { return; }
 		const int Fill = Command.Has( FDrawFlag::Fill ) ? TRUE : FALSE;
 
 		// 影の絵を描いている間は、描画先・カメラ・クリップなど、影の絵を壊す命令を実行しない
-		if ( ShadowMap.IsInPass() && ( FDxLibShadowMap::IsBlockedInPass( Command.Type ) || FDxLibShader::IsBlockedInPass( Command.Type ) ) )
+		if ( ShadowMap.IsInPass() && ( FDxLibShadowMap::IsBlockedInPass( Command.Type ) || FDxLibShader::IsBlockedInPass( bSharedMesh ? EDrawCommand::PrimitiveShader3D : Command.Type ) ) )
 		{
 			return;
 		}
@@ -634,6 +634,18 @@ void CDxLibDrawExecutorSubsystem::Execute( const FDrawSpan& Input )
 			return;
 		}
 
+		// 同じシェーダーと状態で、元の三角形順のまま全部分を描く。
+		if ( bSharedMesh )
+		{
+			const int32 NumParts = Span.ShaderMesh ? Span.ShaderMesh->GetNumParts() : 0; // 未添付の参照は描かない。
+			for ( int32 PartIndex = 0; PartIndex < NumParts; ++PartIndex )
+			{
+				FDrawCommandView Part = Command; // 既存の頂点付き描画へ解決する。
+				if ( !FShaderMeshSnapshot::Resolve( Span, Part, PartIndex ) ) { break; }
+				ShaderState.Apply( Part );
+			}
+			return;
+		}
 		// シェーダーの命令
 		if ( ShaderState.Apply( Command ) )
 		{

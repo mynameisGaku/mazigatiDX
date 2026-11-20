@@ -483,7 +483,7 @@
 |[Draw.ShaderQuad3D](../Library/Framework/Render/Draw/DrawCommand.h#L157)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|組み込みの頂点シェーダー（SubPositionのクリップ座標を渡す）で、両面を描く||
 |[Draw.ShaderRect](../Library/Framework/Render/Draw/DrawCommand.h#L149)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|組み込みの頂点シェーダー（クリップ座標をそのまま渡す）で、矩形を2枚の三角形で描く||
 |[Draw.ShaderTexture](../Library/Framework/Render/Draw/DrawCommand.h#L147)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|t0〜t15。浮動小数点の描画先も読める。置いていない段は、空（0）の画像||
-|[Draw.SharedShaderMesh3D](../Library/Framework/Render/Draw/DrawCommand.h#L161)|Verified|R2|不変形状の所有・合流・不正参照を検査し、既存の頂点付き描画と画像を比較|DX12 / DxLibは既存シェーダー命令に解決し、Nullは参照を検査。1範囲につき1形状で、従来の頂点・添字上限を適用する|Source/SelfTest/RunMaterialSurfaceSnapshotTests.ps1; Source/SelfTest/RunSceneDrawSnapshotTests.ps1; Docs/R2_MATERIAL_SURFACE_SNAPSHOT.md|
+|[Draw.SharedShaderMesh3D](../Library/Framework/Render/Draw/DrawCommand.h#L161)|Verified|R2|形状の共有と合流、32bit添字の分割順、不正参照を検査し、従来描画と画像を比較|DX12 / DxLibは元の順の頂点付き描画に解決し、Nullは参照を検査。1範囲につき1形状、各部分は従来の命令上限内|Source/SelfTest/RunMaterialSurfaceSnapshotTests.ps1; Source/SelfTest/RunSceneDrawSnapshotTests.ps1; Docs/R2_MATERIAL_SURFACE_SNAPSHOT.md|
 |[Draw.Sphere3D](../Library/Framework/Render/Draw/DrawCommand.h#L44)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了 通常の三角形はフレーム転送のGPU Forwardで変換・頂点照明を処理。未対応状態やGPU拒否時は既存経路。線と点はCPU経路。||
 |[Draw.Sprite](../Library/Framework/Render/Draw/DrawCommand.h#L39)|Partial|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|中心・拡大・回転・反転に対応。DxLibとの画素比較が残る||
 |[Draw.Sprite3D](../Library/Framework/Render/Draw/DrawCommand.h#L133)|Implemented|R6|有効・不正payload、順序、状態復元、DxLibとの画素／深度比較|共通実行側の処理あり。Windows実機でのDxLib互換比較は未完了||

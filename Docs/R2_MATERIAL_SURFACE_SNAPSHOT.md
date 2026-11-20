@@ -33,7 +33,9 @@ Surfaceの `.gxmaterial` で `"SurfaceBlend": "Opaque"`、`"Masked"`、`"Translu
 
 同じ形状を複数の材質や個体で使う場合は、`FShaderMeshSnapshot::Create( Vertices, NumVertices, Indices, NumIndices )` で添字付き三角形を一度検査して固定し、その値を受け取る `AddMesh( List, Class, Center, Shape, World )` を使う。各項目の形状命令は1 wordで、頂点・添字は不変の領域を共有する。ジョブへ公開した後は形状を読み取り専用で扱い、各ジョブが別の一覧へ記録する。受付済みの一覧は形状と固定材質を保持するため、呼び出し元の値や元の配列は再生前に手放せる。
 
-再生時は一回のExecuteが一つの形状を借り、既存のシェーダー描画命令へ解決する。Nullは参照と命令長を検査する。形状は既存の命令と同じ頂点・添字の上限に従う。GPUバッファの再利用はDX12の既存キャッシュが担当し、再生時の頂点変換・照合は引き続き行う。[Epicのメッシュ描画パイプライン](https://dev.epicgames.com/documentation/en-us/unreal-engine/mesh-drawing-pipeline-in-unreal-engine)
+再生時は一回のExecuteが一つの形状を借り、既存のシェーダー描画命令へ解決する。Nullは参照と命令長を検査する。GPUバッファの再利用はDX12の既存キャッシュが担当し、再生時の頂点変換・照合は引き続き行う。[Epicのメッシュ描画パイプライン](https://dev.epicgames.com/documentation/en-us/unreal-engine/mesh-drawing-pipeline-in-unreal-engine)
+
+`FShaderMeshSnapshot::Create( VertexView, Index32View )` は最大262,144頂点と786,432添字の三角形を受け取る。従来の16bit入口も、頂点番号の範囲内で一命令を超える形状に使える。作成時に元の三角形順を保って分割し、各部分が使う頂点を16bit添字へ置き直す。各部分は既存の命令上限内に収まり、一つの材質・深度・合成の状態で連続して実行する。項目のソートや所有の単位は形状全体で、分割境界で頂点を重複して保持する場合がある。後半に不正な頂点・添字があっても作成済みの部分は公開しない。頂点を直接埋め込む `BuildMeshCommands` と `AddMesh` の旧形式には従来の命令上限を適用する。
 
 ## 所有と命令の検査
 
@@ -59,7 +61,7 @@ CSceneDrawListに、命令と既存共有所有を一緒に受け付けるAddの
 
 `RunShaderMeshCacheTests.ps1` は製品のシェーダーサービスを通し、使い回す登録番号、材質定数の再送、部分登録の取り消し、従来経路への復帰、容量と解放を確認する。材質画像の基準はキャッシュ無効で撮影する。
 
-残件は既存の命令上限を超える形状、より広いPBR材質の互換確認、モデル姿勢と更新資源の版の固定。パスを組み立てる入口は [R3の描画グラフ](R3_RENDER_GRAPH.md) を参照する。
+残件はより広いPBR材質の互換確認、モデル姿勢と更新資源の版の固定。パスを組み立てる入口は [R3の描画グラフ](R3_RENDER_GRAPH.md) を参照する。
 
 参照: [Epicの描画スレッドと描画用データの所有](https://dev.epicgames.com/documentation/en-us/unreal-engine/threaded-rendering-in-unreal-engine)、[HLSLの定数バッファ](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-constants)、[定数の配置規則](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-packing-rules)。
 

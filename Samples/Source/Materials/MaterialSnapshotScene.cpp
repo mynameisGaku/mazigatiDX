@@ -10,6 +10,23 @@
 
 namespace
 {
+	// 可視の前半・後半の間に画面外の三角形を置き、複数部分と32bit添字を通す。
+	FShaderMeshSnapshot MakeLargeShape( const NShaderMeshes::FMesh& Source )
+	{
+		TArray<FShaderVertex3D> Vertices; // 三角形ごとの頂点を持つ、大きい形状。
+		TArray<uint32> Indices; // 65535より大きい頂点番号も保持する。
+		const auto Append = [&]( const FShaderVertex3D& Vertex ) // 正しい三角形順に頂点を追加する。
+		{
+			Indices.Add( Vertices.Add( Vertex ) );
+		};
+		const int32 Split = Source.Indices.Num() / 6 * 3; // 三角形を途中で切らず、可視部分を前後に分ける。
+		for ( int32 Index = 0; Index < Split; ++Index ) { Append( Source.Vertices[Source.Indices[Index]] ); }
+		const FShaderVertex3D Hidden = FShaderVertex3D::Make( FVector3( 1000, 1000, 0 ), FVector3::Up, FColor32::White ); // 画面外の面積0の三角形。
+		for ( int32 Index = 0; Index < 65538; ++Index ) { Append( Hidden ); }
+		for ( int32 Index = Split; Index < Source.Indices.Num(); ++Index ) { Append( Source.Vertices[Source.Indices[Index]] ); }
+		return FShaderMeshSnapshot::Create( Vertices, Indices );
+	}
+
 	// 同じグラフ入力からUnlit、DefaultLit、Substrateの既存コンパイラへ渡す定義。
 	FMaterialDefinition Definition( int32 Index )
 	{
@@ -60,8 +77,8 @@ bool CMaterialSnapshotScene::Initialize( const FString& Mode )
 	TSharedPtr<CMaterial> Materials[3]; // 固定後に変更・解放する元の材質。
 	FMaterialSurfaceSnapshot Captured[3]; // ワーカーはこの不変値だけを読む。
 	const NShaderMeshes::FMesh& Mesh = NShaderMeshes::GetSphere(); // 静的な形の初期化もゲームスレッドで済ませる。
-	const FShaderMeshSnapshot Shape = FShaderMeshSnapshot::Create( Mesh.Vertices.GetData(), Mesh.Vertices.Num(), Mesh.Indices.GetData(), Mesh.Indices.Num() ); // 三つの材質と並列記録が同じ形状を使う。
-	if ( !Shape.IsValid() ) { return false; }
+	const FShaderMeshSnapshot Shape = Mode == "large" ? MakeLargeShape( Mesh ) : FShaderMeshSnapshot::Create( Mesh.Vertices.GetData(), Mesh.Vertices.Num(), Mesh.Indices.GetData(), Mesh.Indices.Num() ); // 三つの材質と並列記録が同じ形状を使う。
+	if ( !Shape.IsValid() || ( Mode == "large" && Shape.GetNumParts() <= 1 ) ) { return false; }
 	Reference.SetNum( 3 );
 	for ( int32 Index = 0; Index < 3; ++Index )
 	{

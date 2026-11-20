@@ -636,11 +636,6 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Input )
 		View.Data = Span.Words + Offset + 1;
 		View.NumDataWords = Count - 1;
 		Offset += Count;
-		if ( View.Type == EDrawCommand::SharedShaderMesh3D && !FShaderMeshSnapshot::Resolve( Span, View ) )
-		{
-			Unsupported( View, "Invalid shared shader mesh" );
-			continue;
-		}
 		if ( View.Type == EDrawCommand::BeginScene3D || View.Type == EDrawCommand::EndScene3D || View.Type == EDrawCommand::SceneDrawKey3D ) { continue; }
 
 		// 描けない描画先・シャドウマップへ描く範囲は、対になる終わりまで、まとめて飛ばす（画面へ描いてしまわないように）。
@@ -1887,6 +1882,21 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Input )
 		}
 		default:
 		{
+			if ( View.Type == EDrawCommand::SharedShaderMesh3D )
+			{
+				const int32 NumParts = Span.ShaderMesh ? Span.ShaderMesh->GetNumParts() : 0; // 一つの描画項目の中で全ての部分を再生する。
+				if ( NumParts == 0 ) { Unsupported( View, "Invalid shared shader mesh" ); }
+				for ( int32 PartIndex = 0; PartIndex < NumParts; ++PartIndex )
+				{
+					FDrawCommandView Part = View; // 同じ材質状態を使う既存の三角形描画に解決する。
+					if ( !FShaderMeshSnapshot::Resolve( Span, Part, PartIndex ) || ShaderExecutor.Execute( Part, bAlphaBlend ) != CShaderCommandExecutor::EResult::Executed )
+					{
+						Unsupported( View, "A shared shader mesh part was rejected" );
+						break;
+					}
+				}
+				break;
+			}
 			if ( CShaderCommandExecutor::IsShaderCommand( View.Type ) )
 			{
 				// シェーダーの命令。描けなかった命令だけを飛ばして、続きを描く。

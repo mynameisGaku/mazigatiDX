@@ -586,3 +586,9 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - `PrepareMaskedShadowShader` と `CMaterialShadowMap::DrawMaskedMesh` を追加した。色と影が同じSurfaceグラフの不透明度と共通のしきい値判定を使う。影側の入口はEngineContentの既存深度用HLSLに置き、R3のパスからも再利用できるようにした。
 - 色と同じ入力を呼び出し側が渡し、影の記録から再生まで材質・画像を保持する。従来の全形状の影も同じ影マップ内で使える。使用法は [Surfaceの影](MATERIAL.md)。
 - Debug / ReleaseのSamplesビルド、描画一覧116項目、材質画像30項目が合格。実GPU・WARP・UIなし・CPU変換指定・DxLibで、同値と透明画像の穴は奥の深度0.7、残った手前の形状は深度0.5となった。
+
+## R2: 一命令の上限を超えるSurface共有形状
+
+- `FShaderMeshSnapshot::Create` に32bitの添字入力を追加し、最大262,144頂点・786,432添字に対応した。三角形の順序を保って一命令に収まる単位へ分け、各部分の頂点を16bitの添字へ置き直す。
+- DX12とDxLibは材質状態を保って順に全部分を描く。ソートと所有は形状全体で、描画一覧の参照は1 wordのまま。先頭と末尾に可視三角形を持つ67,842頂点のサンプルを従来の球と画像比較する。
+- Debug / ReleaseともSamplesビルド、契約検査120項目、材質画像35項目が合格。分割をまたいで元の全添字を復元し、末尾の不正な添字では形状全体を拒否した。実GPU・WARP・UIなし・CPU変換指定・DxLibで、大きい形状と従来の基準画像の許容差超えは0画素。
