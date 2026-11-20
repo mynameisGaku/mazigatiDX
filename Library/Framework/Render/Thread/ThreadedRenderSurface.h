@@ -43,6 +43,8 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 	bool EndRenderTargetPass() override;
 	// 先行する2D命令のあとに、同期して色の矩形を画像へ写す。
 	bool CopyColorRegion( int32 X0, int32 Y0, int32 X1, int32 Y1, FTextureResourceHandle Dest ) override;
+	// パス間の画像コピーを、先行する命令に続けて描画スレッドに記録する。
+	bool RecordTextureCopy( FTextureResourceHandle Source, FTextureResourceHandle Destination ) override;
 	// 先行する2D命令を確定し、現在の記録先（主画面または描画先パス）へGPUタイムスタンプの開始点を積む。
 	bool BeginGpuTimestamp( FGpuTimestampHandle Query ) override;
 	// 先行する2D命令を確定し、開始済みのGPUタイムスタンプを閉じて解決を記録する。

@@ -205,6 +205,18 @@ bool CThreadedRenderSurface::CopyColorRegion( int32 X0, int32 Y0, int32 X1, int3
 	return Execute( MoveTemp( Copy ) ) && bResult;
 }
 
+bool CThreadedRenderSurface::RecordTextureCopy( FTextureResourceHandle Source, FTextureResourceHandle Destination )
+{
+	GAME_THREAD_ONLY( false );
+	if ( !bActive || bCapture || bRenderTargetPass )
+	{
+		return false;
+	}
+	bool bRecorded = false; // GPUの完了ではなく、描画スレッドでの記録結果。
+	auto Copy = [&]() { bRecorded = Target.RecordTextureCopy( Source, Destination ); };
+	return Execute( MoveTemp( Copy ) ) && bRecorded;
+}
+
 bool CThreadedRenderSurface::EndRenderTargetPass()
 {
 	GAME_THREAD_ONLY( false );

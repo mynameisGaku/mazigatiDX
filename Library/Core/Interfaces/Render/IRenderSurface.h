@@ -33,6 +33,9 @@ public:
 	virtual bool EndRenderTargetPass() { return false; }
 	// いま描いている色（画面または描画先パスの最初の色）の矩形 [X0, X1) x [Y0, Y1) を、同じ形式・同じ大きさの画像 Dest へ写す。いままでの描画が、写される。未対応・範囲外・形式や大きさの違いはfalse。
 	virtual bool CopyColorRegion( int32 X0, int32 Y0, int32 X1, int32 Y1, FTextureResourceHandle Dest ) { (void)X0; (void)Y0; (void)X1; (void)Y1; (void)Dest; return false; }
+	// フレーム内のパス間で、同じ寸法・色形式の画像全体を複写する命令を記録する。未対応・不正な資源はfalse。
+	// 呼び出しの成功は記録を示す。後続の処理は同じGPUキューで結果を使える。
+	virtual bool RecordTextureCopy( FTextureResourceHandle, FTextureResourceHandle ) { return false; }
 	// 現在の記録先（主画面または描画先パス）へGPUタイムスタンプの開始点を積む。未対応・フレーム外・不正番号はfalse。
 	virtual bool BeginGpuTimestamp( FGpuTimestampHandle Query ) { (void)Query; return false; }
 	// 開始済みのGPUタイムスタンプを閉じ、同じコマンド列へ解決を記録する。未開始・別ターゲットへ跨ぐ呼び出しはfalse。

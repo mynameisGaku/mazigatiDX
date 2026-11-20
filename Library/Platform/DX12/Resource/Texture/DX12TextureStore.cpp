@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DX12TextureStore.h"
+#include "DX12TextureCopy.h"
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Render/RenderResourceSerial.h"
 #include "Library/Core/Types/Numeric.h"
@@ -972,25 +973,34 @@ bool CDX12TextureStore::GetTextureResourceView( FTextureResourceHandle Texture, 
 	return true;
 }
 
+bool CDX12TextureStore::FindTextureCopyPair( FTextureResourceHandle Source, FTextureResourceHandle Destination, const FTextureRecord *&OutSource, const FTextureRecord *&OutDestination ) const
+{
+	if ( !bHealthy || !Device || FAILED( Device->GetDeviceRemovedReason() ) || !Source.IsValid() || !Destination.IsValid() || Source == Destination || IsActiveTarget( Source ) || IsActiveTarget( Destination ) )
+	{
+		return false;
+	}
+	const FTextureRecord *Src = Textures.Find( Source.Value ); // コピー元の定常状態の画像。
+	const FTextureRecord *Dst = Textures.Find( Destination.Value ); // 同じ寸法と色形式の書き込み先。
+	if ( !Src || !Dst || !Src->Resource || !Dst->Resource || Src->Kind == ETextureKind::DepthD32 || Dst->Kind == ETextureKind::DepthD32 || Src->Width != Dst->Width || Src->Height != Dst->Height || Src->Resource->GetDesc().Format != Dst->Resource->GetDesc().Format )
+	{
+		return false;
+	}
+	OutSource = Src;
+	OutDestination = Dst;
+	return true;
+}
+
+bool CDX12TextureStore::RecordTextureCopy( ID3D12GraphicsCommandList *FrameCommands, FTextureResourceHandle Source, FTextureResourceHandle Destination ) const
+{
+	const FTextureRecord *Src = nullptr, *Dst = nullptr; // 解除された後もフレーム完了まではStoreの遅延解放が保持する。
+	constexpr D3D12_RESOURCE_STATES ShaderResource = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE; // パス間の定常状態。
+	return FrameCommands && FindTextureCopyPair( Source, Destination, Src, Dst ) && NDX12TextureCopy::RecordRegionCopy( FrameCommands, Src->Resource.Get(), ShaderResource, Dst->Resource.Get(), 0, 0, Src->Width, Src->Height );
+}
+
 bool CDX12TextureStore::CopyTexture( FTextureResourceHandle Source, FTextureResourceHandle Destination )
 {
-	if ( !bHealthy || !Device || !Queue || !Allocator || !Commands || FAILED( Device->GetDeviceRemovedReason() ) || !Source.IsValid() || !Destination.IsValid() || Source.Value == Destination.Value || IsActiveTarget( Source.Value ) || IsActiveTarget( Destination.Value ) )
-	{
-		return false;
-	}
-	const FTextureRecord *Src = Textures.Find( Source.Value );
-	const FTextureRecord *Dst = Textures.Find( Destination.Value );
-	if ( !Src || !Dst || !Src->Resource || !Dst->Resource || Src->Width != Dst->Width || Src->Height != Dst->Height )
-	{
-		return false;
-	}
-	const bool bSrcRGBA8 = Src->Kind == ETextureKind::StandardRGBA8 || Src->Kind == ETextureKind::ComputeRGBA8 || Src->Kind == ETextureKind::RenderTargetRGBA8;
-	const bool bDstRGBA8 = Dst->Kind == ETextureKind::StandardRGBA8 || Dst->Kind == ETextureKind::ComputeRGBA8 || Dst->Kind == ETextureKind::RenderTargetRGBA8;
-	const bool bSrcRGBA16F = Src->Kind == ETextureKind::ComputeRGBA16F || Src->Kind == ETextureKind::RenderTargetRGBA16F;
-	const bool bDstRGBA16F = Dst->Kind == ETextureKind::ComputeRGBA16F || Dst->Kind == ETextureKind::RenderTargetRGBA16F;
-	const bool bSrcR32Float = Src->Kind == ETextureKind::RenderTargetR32Float;
-	const bool bDstR32Float = Dst->Kind == ETextureKind::RenderTargetR32Float;
-	if ( !( ( bSrcRGBA8 && bDstRGBA8 ) || ( bSrcRGBA16F && bDstRGBA16F ) || ( bSrcR32Float && bDstR32Float ) ) )
+	const FTextureRecord *Src = nullptr, *Dst = nullptr; // 同期提出が終わるまで保持する組。
+	if ( !Queue || !Allocator || !Commands || !FindTextureCopyPair( Source, Destination, Src, Dst ) )
 	{
 		return false;
 	}
@@ -999,35 +1009,12 @@ bool CDX12TextureStore::CopyTexture( FTextureResourceHandle Source, FTextureReso
 		bHealthy = false;
 		return false;
 	}
-	D3D12_RESOURCE_BARRIER EnterBarriers[2] = {}; // 定常のSRV状態からコピー状態へ移す。
-	EnterBarriers[0].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	EnterBarriers[0].Transition.pResource = Src->Resource.Get();
-	EnterBarriers[0].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-	EnterBarriers[0].Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-	EnterBarriers[0].Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
-	EnterBarriers[1].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	EnterBarriers[1].Transition.pResource = Dst->Resource.Get();
-	EnterBarriers[1].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-	EnterBarriers[1].Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-	EnterBarriers[1].Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
-	Commands->ResourceBarrier( 2, EnterBarriers );
-
-	D3D12_TEXTURE_COPY_LOCATION DstLoc = {};
-	DstLoc.pResource = Dst->Resource.Get();
-	DstLoc.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-	D3D12_TEXTURE_COPY_LOCATION SrcLoc = {};
-	SrcLoc.pResource = Src->Resource.Get();
-	SrcLoc.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-	Commands->CopyTextureRegion( &DstLoc, 0, 0, 0, &SrcLoc, nullptr );
-
-	D3D12_RESOURCE_BARRIER ExitBarriers[2] = {}; // 定常のSRV状態へ戻して後続描画・computeへ渡す。
-	ExitBarriers[0] = EnterBarriers[0];
-	ExitBarriers[0].Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_SOURCE;
-	ExitBarriers[0].Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-	ExitBarriers[1] = EnterBarriers[1];
-	ExitBarriers[1].Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-	ExitBarriers[1].Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-	Commands->ResourceBarrier( 2, ExitBarriers );
+	constexpr D3D12_RESOURCE_STATES ShaderResource = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE; // パス間の定常状態。
+	if ( !NDX12TextureCopy::RecordRegionCopy( Commands.Get(), Src->Resource.Get(), ShaderResource, Dst->Resource.Get(), 0, 0, Src->Width, Src->Height ) )
+	{
+		bHealthy = SUCCEEDED( Commands->Close() );
+		return false;
+	}
 	if ( FAILED( Commands->Close() ) )
 	{
 		bHealthy = false;

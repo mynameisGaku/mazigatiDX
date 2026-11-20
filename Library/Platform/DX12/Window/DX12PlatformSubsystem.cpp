@@ -542,6 +542,12 @@ bool CDX12PlatformSubsystem::CopyColorRegion( int32 X0, int32 Y0, int32 X1, int3
 	return bInFrame && ThreadedSurface && ThreadedSurface->CopyColorRegion( X0, Y0, X1, Y1, Dest );
 }
 
+bool CDX12PlatformSubsystem::RecordTextureCopy( FTextureResourceHandle Source, FTextureResourceHandle Destination )
+{
+	GAME_THREAD_ONLY( false );
+	return bInFrame && ThreadedSurface && ThreadedSurface->RecordTextureCopy( Source, Destination );
+}
+
 bool CDX12PlatformSubsystem::BeginGpuTimestamp( FGpuTimestampHandle Query )
 {
 	GAME_THREAD_ONLY( false );

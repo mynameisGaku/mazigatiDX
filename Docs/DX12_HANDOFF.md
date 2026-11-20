@@ -608,5 +608,16 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 ## R2: GPUで書いた描画先の色の固定
 
 - `CRenderTarget::CaptureGpuColorVersion` はゲームスレッドでパス終了後に呼ぶ。既存のGPUコピーを使い、RGBA8、RGBA16F、対応GPUのR32Floatカラーを、元と同じ形式・寸法の独立画像へ複写する。材質や描画一覧は通常の画像参照と同じ所有方法で保持できる。
-- コピーは完了待ちを伴う。深度・マルチサンプル・描画先以外のGPU更新資源、およびR3のグラフにコピーを予約する経路は今後の課題。[固定材質と画像の版](R2_MATERIAL_SURFACE_SNAPSHOT.md)
+- コピーは完了待ちを伴う。深度・マルチサンプル・描画先以外のGPU更新資源、は今後の課題。描画グラフ上のコピー予約は次の「R3: 描画パス間の画像コピー」に記録した。[固定材質と画像の版](R2_MATERIAL_SURFACE_SNAPSHOT.md)
 - Debug / Releaseでアプリをビルドし、描画先・描画グラフの検査を実GPU・WARPのUIあり／なしとDxLib・Nullで確認した。描画先の独立検査はCPU 45項目・実GPUとWARP各55項目、描画一覧の契約は128項目が合格。アプリ検査ではRGBA8の二つの版、HDRの範囲外の値、対応GPUのR32Float値、パスが開いている間の拒否を確認した。
+
+## R3: 描画パス間の画像コピー
+
+- `CRenderGraphBuilder::AddTextureCopyPass` / `InsertTextureCopyPassAfter` で、同じ寸法・色形式の画像全体を複写する名前付きのパスを登録できる。検査はコピー元が初期化済みか取り込み済みであること、コピー先が取り込み済みであることで、コピー後のコピー先は後続が読める。元と先が同じ、無効な画像、存在しない対象の名前、描画パスの処理の差し替えは拒否する。[描画グラフ](R3_RENDER_GRAPH.md)
+- `IRenderSurface::RecordTextureCopy` を追加した。DX12では `CThreadedRenderSurface` が描画スレッドの先行する命令の後に記録し、`CDX12GameSurface` が `CDX12TextureStore::RecordTextureCopy` を通じて主画面と同じコマンド列へ積む。パスの外側（主画面や描画先パスの記録中を除く）で、パス間の定常状態（シェーダー資源）から複写し、定常状態へ戻す。GPUの完了は待たない。DxLibとNullは既定どおり未対応でfalse。
+- `CDX12TextureStore::CopyTexture`（完了待ちあり）と共通の `FindTextureCopyPair` で、記録中の画像・寸法・色形式（深度は除外）を検査する。コピーの記録は `NDX12TextureCopy::RecordRegionCopy` に集約した。記録後に利用者が画像を解放しても、Storeの遅延解放がフレーム完了まで保持する。
+- 失敗した場合はグラフがコピーの名前を付けて失敗を返し、後続のパスは実行しない。深度のコピー、マルチサンプル、描画先以外のGPU更新資源は今後の課題。
+- 検査は、描画グラフの契約（CPU 27項目）に、コピーの元と先の向き・設定付きの差し替えの拒否・失敗後に後続を実行しないことを加え、アプリ経路（実GPU・WARP・UIなし）で、MRTの色をコピーして元を上書きしても合成が退避した色を読むこと、記録できない組（形式違い・同じ画像・無効な画像）がfalseになることを確かめる。深度同士のコピーの拒否は、HDRコピーの契約で確かめる。
+- 変異検査は17件を実施した。生き残ったのは2件で、どちらも同じ結果になる変異だった（元と先が同じ資源・形式の違いは、`NDX12TextureCopy::RecordRegionCopy` も自分で拒否するため、`FindTextureCopyPair` の同じ条件を外しても観測できない）。残りは、検査を足して検出した。注意点として、契約の実行ファイルはソースではなく `x64/<構成>/mazigatiDX.lib` にリンクするので、変異ごとにライブラリを作り直さないと、変異が反映されずにすべて生き残ったように見える。
+- 検査の落とし穴が2つあった。(1) シーン描画一覧・材質の画像検査は `Samples/x64/<構成>/Samples.exe` を読むが、`project.sln` 経由のビルドは `x64/<構成>/Samples.exe` へ出力する。前者は古いまま残るので、`Samples/Samples.vcxproj` を直接ビルドしてから走らせる（Releaseは `_LINK_=/LTCG /INCREMENTAL:NO` を付ける）。古い実行ファイルのままだと、Releaseだけ「元の基準と違う」と失敗し、差の数値が毎回変わる。(2) `ComputeContract.vcxproj` はDX12のソースを直接コンパイルするので、`DX12TextureStore.cpp` が新しい `DX12TextureCopy.cpp` を参照した時点で、一覧へ追加が必要だった。
+- `RunAllChecks.ps1 -SkipBuild -Quick` は64ステップすべて合格（Debug / Release）。

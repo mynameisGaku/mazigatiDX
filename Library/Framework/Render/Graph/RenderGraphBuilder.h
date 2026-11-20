@@ -26,7 +26,11 @@ public:
 	// 一意の名前で、対象パスの直前または直後に挿入する。
 	bool InsertPassBefore( const FString& Anchor, const FRenderGraphPassDesc& Desc, PassCallback Callback );
 	bool InsertPassAfter( const FString& Anchor, const FRenderGraphPassDesc& Desc, PassCallback Callback );
-	// 依存する画像と順序を保ち、名前で処理だけを差し替える。
+	// 同じ寸法・色形式の画像全体を複写するパスを末尾、または指定したパスの直後に登録する。
+	// コピー元と先を取り込み、直前までにコピー元へ有効な内容を用意する。
+	bool AddTextureCopyPass( const FString& Name, FTextureResourceHandle Source, FTextureResourceHandle Destination );
+	bool InsertTextureCopyPassAfter( const FString& Anchor, const FString& Name, FTextureResourceHandle Source, FTextureResourceHandle Destination );
+	// 描画パスの依存と順序を保ち、名前で処理だけを差し替える。
 	bool ReplacePass( const FString& Name, PassCallback Callback );
 	// 同じ名前と順序の位置で設定と処理を差し替える。存在しない名前は拒否。
 	bool ReplacePass( const FRenderGraphPassDesc& Desc, PassCallback Callback );
@@ -40,12 +44,16 @@ private:
 	struct FPass
 	{
 		FRenderGraphPassDesc Desc; // 登録時に複写した画像参照と描画先。
-		PassCallback Callback; // 実行まで値を所有する処理。
+		PassCallback Callback; // 描画パスの処理。コピーでは空。
+		FTextureResourceHandle CopySource; // 有効ならコピー専用パス。
+		FTextureResourceHandle CopyDestination; // コピー先。
 	};
 	// 名前に対応する位置かINDEX_NONEを返す。
 	int32 FindPass( const FString& Name ) const;
 	// 位置・名前・登録上限を確認してから挿入する。
-	bool InsertAt( int32 Position, const FRenderGraphPassDesc& Desc, PassCallback Callback );
+	bool InsertAt( int32 Position, FPass Pass );
+	// コピーの宣言を検査して指定位置へ入れる。元と先が同じ場合は拒否する。
+	bool InsertCopyAt( int32 Position, const FString& Name, FTextureResourceHandle Source, FTextureResourceHandle Destination );
 	TArray<FPass> Passes; // 外部から指定した安定した順序。
 	TMap<uint64, bool> Textures; // 取り込んだ画像と、実行前から有効な内容の有無。
 	bool bExecuting = false; // 実行中の再入と変更を拒否する。

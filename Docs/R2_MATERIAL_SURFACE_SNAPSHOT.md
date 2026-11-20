@@ -86,7 +86,7 @@ CSceneDrawListに、命令と既存共有所有を一緒に受け付けるAddの
 
 `RunShaderMeshCacheTests.ps1` は製品のシェーダーサービスを通し、使い回す登録番号、材質定数の再送、部分登録の取り消し、従来経路への復帰、容量と解放を確認する。材質画像の基準はキャッシュ無効で撮影する。
 
-残件はより広いPBR材質の互換確認と、深度・描画先以外のGPU更新資源の版管理。描画グラフで完了待ちなしにコピーを予約する入口も今後の課題。DX12の既存モデル姿勢の捕捉は[描画一覧](R2_SCENE_DRAW_SNAPSHOT.md)を、パスの組み立ては [R3の描画グラフ](R3_RENDER_GRAPH.md) を参照する。
+残件はより広いPBR材質の互換確認と、深度・描画先以外のGPU更新資源の版管理。描画グラフでの完了待ちなしのコピーは、`AddTextureCopyPass` で予約できる（コピー先は材質へ固定せず、後続のパスで読む）。DX12の既存モデル姿勢の捕捉は[描画一覧](R2_SCENE_DRAW_SNAPSHOT.md)を、パスの組み立ては [R3の描画グラフ](R3_RENDER_GRAPH.md) を参照する。
 
 参照: [Epicの描画スレッドと描画用データの所有](https://dev.epicgames.com/documentation/en-us/unreal-engine/threaded-rendering-in-unreal-engine)、[HLSLの定数バッファ](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-constants)、[定数の配置規則](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-packing-rules)。
 

@@ -46,6 +46,8 @@ class CDX12TextureStore : public IRenderTextureResources
 	FTextureResourceHandle CreateDepthTextureD32( int32 Width, int32 Height, float32 ClearDepth = 1.0f ) override;
 	// 同一寸法・同色グループ形式の画像全領域を同じDIRECTキューでコピーする。
 	bool CopyTexture( FTextureResourceHandle Source, FTextureResourceHandle Destination ) override;
+	// 検査済みの色画像全体を、同じGPUのフレームコマンド列へ複写する。フレーム完了まではStoreが元と先を保持する。
+	bool RecordTextureCopy( ID3D12GraphicsCommandList *FrameCommands, FTextureResourceHandle Source, FTextureResourceHandle Destination ) const;
 	// RGBA8画像の全画素をCPUへ読み戻す。失敗時は出力を変更しない。
 	bool ReadTextureRGBA8( FTextureResourceHandle Texture, TArray<FColor32> &OutPixels, int32 &OutWidth, int32 &OutHeight ) override;
 	// RGBA16F画像の全画素をFColor配列へ読み戻す。失敗時は出力を変更しない。
@@ -99,6 +101,8 @@ class CDX12TextureStore : public IRenderTextureResources
 		float32 InitialClearDepth = 1.0f; // 作成時に設定した初期深度。
 		ETextureKind Kind = ETextureKind::StandardRGBA8; // 用途の区別。
 	};
+	// コピー可能な組を貸す。寸法・色形式の相違、書き込み中、解放済みの画像はfalse。
+	bool FindTextureCopyPair( FTextureResourceHandle Source, FTextureResourceHandle Destination, const FTextureRecord *&OutSource, const FTextureRecord *&OutDestination ) const;
 	// 完了を待った新規画像を作る。失敗時はOutを変えない。
 	bool Upload( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable, FTextureRecord &Out );
 	// 完了を待った新規RGBA16F compute画像を作る。失敗時はOutを変えない。

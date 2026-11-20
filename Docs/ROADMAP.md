@@ -157,4 +157,4 @@ BeginScene3D / EndScene3Dと分類・奥行きキーを追加し、状態・2D�
 
 R2の固定材質には、CPUから登録した動的画像の版を選んで保持できる入口がある。`CRenderTarget::CaptureGpuColorVersion` で、描画パス終了後に描画先の色をGPU上で独立した材質用画像へ固定できる。深度や描画先以外のGPUによる更新資源の版管理は残る。[Surface材質の固定](R2_MATERIAL_SURFACE_SNAPSHOT.md)
 
-R3の入口として、既存画像を読み書きするオフスクリーン描画パスを `CRenderGraphBuilder` へ登録できる。名前を使った追加・前後への挿入・差し替えと、実行前の画像依存の検査に対応する。R2の残件を継続し、R3ではこの入口に深度パス、G-bufferとDeferred照明、Forward透明合成を接続する。[R3 描画パスの登録と依存検査](R3_RENDER_GRAPH.md)
+R3の入口として、既存画像を読み書きするオフスクリーン描画パスを `CRenderGraphBuilder` へ登録できる。名前を使った追加・前後への挿入・差し替えと、実行前の画像依存の検査に対応する。パス間の画像コピーも名前付きのパスとして登録でき、完了待ちなしで後続へ渡せる。R2の残件を継続し、R3ではこの入口に深度パス、G-bufferとDeferred照明、Forward透明合成を接続する。[R3 描画パスの登録と依存検査](R3_RENDER_GRAPH.md)

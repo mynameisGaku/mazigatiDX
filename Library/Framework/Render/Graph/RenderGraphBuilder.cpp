@@ -38,34 +38,55 @@ int32 CRenderGraphBuilder::FindPass( const FString& Name ) const
 	return INDEX_NONE;
 }
 
-bool CRenderGraphBuilder::InsertAt( int32 Position, const FRenderGraphPassDesc& Desc, PassCallback Callback )
+bool CRenderGraphBuilder::InsertAt( int32 Position, FPass Pass )
 {
-	if ( bExecuting || Position < 0 || Position > Passes.Num() || Passes.Num() >= MaxPasses || !Callback || !ValidDesc( Desc ) || FindPass( Desc.Name ) != INDEX_NONE ) { return false; }
-	Passes.Insert( FPass{ Desc, MoveTemp( Callback ) }, Position );
+	if ( bExecuting || Position < 0 || Position > Passes.Num() || Passes.Num() >= MaxPasses || FindPass( Pass.Desc.Name ) != INDEX_NONE ) { return false; }
+	Passes.Insert( MoveTemp( Pass ), Position );
 	return true;
+}
+
+bool CRenderGraphBuilder::InsertCopyAt( int32 Position, const FString& Name, FTextureResourceHandle Source, FTextureResourceHandle Destination )
+{
+	if ( Name.IsEmpty() || !Source.IsValid() || !Destination.IsValid() || Source == Destination ) { return false; }
+	FPass Pass; // コピーは色描画先を開かず、元と先を命令に渡す。
+	Pass.Desc.Name = Name;
+	Pass.CopySource = Source;
+	Pass.CopyDestination = Destination;
+	return InsertAt( Position, MoveTemp( Pass ) );
+}
+
+bool CRenderGraphBuilder::AddTextureCopyPass( const FString& Name, FTextureResourceHandle Source, FTextureResourceHandle Destination )
+{
+	return InsertCopyAt( Passes.Num(), Name, Source, Destination );
+}
+
+bool CRenderGraphBuilder::InsertTextureCopyPassAfter( const FString& Anchor, const FString& Name, FTextureResourceHandle Source, FTextureResourceHandle Destination )
+{
+	const int32 Position = FindPass( Anchor ); // コピーは生成パスとその使用側の間に差し込める。
+	return Position != INDEX_NONE && InsertCopyAt( Position + 1, Name, Source, Destination );
 }
 
 bool CRenderGraphBuilder::AddPass( const FRenderGraphPassDesc& Desc, PassCallback Callback )
 {
-	return InsertAt( Passes.Num(), Desc, MoveTemp( Callback ) );
+	return Callback && ValidDesc( Desc ) && InsertAt( Passes.Num(), FPass{ Desc, MoveTemp( Callback ), {}, {} } );
 }
 
 bool CRenderGraphBuilder::InsertPassBefore( const FString& Anchor, const FRenderGraphPassDesc& Desc, PassCallback Callback )
 {
-	return InsertAt( FindPass( Anchor ), Desc, MoveTemp( Callback ) );
+	return Callback && ValidDesc( Desc ) && InsertAt( FindPass( Anchor ), FPass{ Desc, MoveTemp( Callback ), {}, {} } );
 }
 
 bool CRenderGraphBuilder::InsertPassAfter( const FString& Anchor, const FRenderGraphPassDesc& Desc, PassCallback Callback )
 {
 	const int32 Position = FindPass( Anchor ); // 名前がない場合は位置を推測しない。
-	return Position != INDEX_NONE && InsertAt( Position + 1, Desc, MoveTemp( Callback ) );
+	return Position != INDEX_NONE && Callback && ValidDesc( Desc ) && InsertAt( Position + 1, FPass{ Desc, MoveTemp( Callback ), {}, {} } );
 }
 
 bool CRenderGraphBuilder::ReplacePass( const FString& Name, PassCallback Callback )
 {
 	if ( bExecuting || !Callback ) { return false; }
 	const int32 Position = FindPass( Name ); // 登録時の画像と位置を保ち、実行処理だけを更新する。
-	if ( Position == INDEX_NONE ) { return false; }
+	if ( Position == INDEX_NONE || Passes[Position].CopySource.IsValid() ) { return false; }
 	Passes[Position].Callback = MoveTemp( Callback );
 	return true;
 }
@@ -74,8 +95,8 @@ bool CRenderGraphBuilder::ReplacePass( const FRenderGraphPassDesc& Desc, PassCal
 {
 	if ( bExecuting || !Callback || !ValidDesc( Desc ) ) { return false; }
 	const int32 Position = FindPass( Desc.Name ); // 元の前後関係を維持する。
-	if ( Position == INDEX_NONE ) { return false; }
-	Passes[Position] = FPass{ Desc, MoveTemp( Callback ) };
+	if ( Position == INDEX_NONE || Passes[Position].CopySource.IsValid() ) { return false; }
+	Passes[Position] = FPass{ Desc, MoveTemp( Callback ), {}, {} };
 	return true;
 }
 
@@ -85,6 +106,15 @@ bool CRenderGraphBuilder::Validate( FString* OutError ) const
 	for ( const FPass& Pass : Passes )
 	{
 		const FRenderGraphPassDesc& Desc = Pass.Desc; // 同じパスの読み書きを照合する。
+		if ( Pass.CopySource.IsValid() )
+		{
+			const bool* Contents = Ready.Find( Pass.CopySource.Value ); // コピー元には先行パスまたは外部の内容が必要。
+			if ( !Contents || !*Contents ) { return Fail( OutError, Desc.Name, "copy source is not initialized or imported" ); }
+			bool* Destination = Ready.Find( Pass.CopyDestination.Value ); // 全面を複写するので先の初期値は不要。
+			if ( !Destination ) { return Fail( OutError, Desc.Name, "copy destination is not imported" ); }
+			*Destination = true;
+			continue;
+		}
 		TArray<FTextureResourceHandle> Writes; // 色と明示的な深度の両方を調べる。
 		const auto AddWrite = [&]( FTextureResourceHandle Handle, bool bClear )
 		{
@@ -118,6 +148,15 @@ bool CRenderGraphBuilder::Execute( IRenderSurface& Surface, FString* OutError )
 	for ( const FPass& Pass : Passes )
 	{
 		const FRenderGraphPassDesc& Desc = Pass.Desc; // 既存の描画先パスへ宣言を渡す。
+		if ( Pass.CopySource.IsValid() )
+		{
+			if ( !Surface.RecordTextureCopy( Pass.CopySource, Pass.CopyDestination ) )
+			{
+				bSuccess = Fail( OutError, Desc.Name, "texture copy recording failed" );
+				break;
+			}
+			continue;
+		}
 		FRenderTargetPassDesc Target; // GPU固有の状態遷移は描画先の実装が担当する。
 		Target.ColorTargets = Desc.Colors;
 		Target.DepthTarget = Desc.Depth;

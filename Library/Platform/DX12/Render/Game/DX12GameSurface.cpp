@@ -78,6 +78,12 @@ bool CDX12GameSurface::CopyColorRegion( int32 X0, int32 Y0, int32 X1, int32 Y1, 
 	return Device.RecordFrameColorCopy( X0, Y0, X1, Y1, Binding.Resource.Get() ) && Renderer.PinTexture( Binding );
 }
 
+bool CDX12GameSurface::RecordTextureCopy( FTextureResourceHandle Source, FTextureResourceHandle Destination )
+{
+	CDX12TextureStore *Store = Device.GetTextureResources(); // フレームと同じGPUで画像を保持する所有者。
+	return Store && !Capture.IsActive() && ( !TargetPass || !TargetPass->IsActive() ) && Store->RecordTextureCopy( Device.GetFrameCommands(), Source, Destination );
+}
+
 bool CDX12GameSurface::SubmitPendingMainCommands()
 {
 	return !Capture.IsActive() && ( !TargetPass || !TargetPass->IsActive() ) && ( !Renderer.GetCanvas2D() || Device.SubmitFrameSegment() );
