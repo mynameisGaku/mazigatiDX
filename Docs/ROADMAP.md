@@ -153,4 +153,4 @@ BeginScene3D / EndScene3Dと分類・奥行きキーを追加し、状態・2D�
 
 ## 2026-11-17 R2の固定材質
 
-既存FMaterialProgramのUnlit / DefaultLit / Substrateを不変のSurface値へ固定し、ジョブからのメッシュ記録と、所有する描画一覧へ接続した。詳細は [Surface材質の固定](R2_MATERIAL_SURFACE_SNAPSHOT.md)。共有GPUメッシュ、自動分類、切り抜きと広い材質互換は残るため、R2全体の完了とはしない。
+既存FMaterialProgramのUnlit / DefaultLit / Substrateを不変のSurface値へ固定し、ジョブからのメッシュ記録と、所有する描画一覧へ接続した。DX12の再生時は、同じシェーダー頂点・添字を上限付きのGPUバッファキャッシュで共有する。残件は、資源IDでメッシュを参照して記録時の複製を省く経路、自動分類、切り抜き、広い材質互換。詳細は [Surface材質の固定](R2_MATERIAL_SURFACE_SNAPSHOT.md)。

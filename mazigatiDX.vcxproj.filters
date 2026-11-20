@@ -6294,4 +6294,8 @@
     <ClInclude Include="Library\Framework\Material\Surface\MaterialSurfaceSnapshot.h"><Filter>Library\Framework\Material\Surface</Filter></ClInclude>
     <ClInclude Include="Library\Framework\Material\Surface\Private\MaterialSurfaceSnapshotData.h"><Filter>Library\Framework\Material\Surface\Private</Filter></ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Library\Platform\Render\Shader\ShaderMeshBufferCache.h"><Filter>Library\Platform\Render\Shader</Filter></ClInclude>
+    <ClCompile Include="Library\Platform\Render\Shader\ShaderMeshBufferCache.cpp"><Filter>Library\Platform\Render\Shader</Filter></ClCompile>
+  </ItemGroup>
 </Project>

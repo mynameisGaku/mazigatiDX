@@ -119,6 +119,7 @@ foreach ($configuration in $Configurations) {
     Invoke-Step "Windows input contracts $configuration" (Join-Path $selfTest 'RunWindowsInputTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration)
     Invoke-Step "model rig contracts $configuration" (Join-Path $selfTest 'RunModelRigTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration)
     Invoke-Step "material effect contracts $configuration" (Join-Path $selfTest 'RunMaterialEffectTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration)
+    Invoke-Step "shader mesh cache contracts $configuration" (Join-Path $selfTest 'RunShaderMeshCacheTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration)
     Invoke-Step "forward mesh contracts $configuration" (Join-Path $selfTest 'RunForwardMeshTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration)
     Invoke-Step "scene draw order contracts $configuration" (Join-Path $selfTest 'RunSceneDrawOrderTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
     Invoke-Step "scene draw snapshot contracts $configuration" (Join-Path $selfTest 'RunSceneDrawSnapshotTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')

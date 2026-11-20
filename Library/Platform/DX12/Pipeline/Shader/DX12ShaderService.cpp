@@ -6,6 +6,7 @@
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Platform/DX12/DX12Log.h"
 #include "Library/Platform/System/BackendSupport.h"
+#include "Library/Platform/System/CommandLine.h"
 #include "Library/Platform/System/WindowsInclude.h"
 #include <d3d12shader.h>
 #include <d3dcompiler.h>
@@ -79,10 +80,12 @@ void CDX12ShaderService::Initialize( IGraphicsPipelineResources* InPipelines, IR
 	Pipelines = InPipelines;
 	Buffers = InBuffers;
 	Textures = InTextures;
+	MeshBuffers.Initialize( Buffers );
 }
 
 void CDX12ShaderService::Shutdown()
 {
+	MeshBuffers.Shutdown();
 	if ( Pipelines )
 	{
 		for ( const auto& Pair : PipelineCache )
@@ -565,7 +568,24 @@ bool CDX12ShaderService::DrawShader( const FShaderDrawRequest& Request, IRenderG
 		Constant.Size = static_cast<uint32>( Bytes.Num() );
 		Constants.Add( Constant );
 	}
-	FGraphicsPipelineTransientDraw Draw;
+	static const bool bUseMeshCache = !NCommandLine::HasFlag( "no-shader-mesh-cache" ); // 同じ描画を従来の転送経路と比較する診断用指定。
+	if ( bUseMeshCache && Request.NumVertices >= 32 && Request.Topology == EGeometryTopology::Triangles )
+	{
+		FGraphicsPipelineDraw Shared; // パイプラインと個体定数は毎回選び、形状だけ共有する。
+		const TArrayView<const uint8> VertexBytes( Request.Vertices, Request.NumVertices * FShaderDrawRequest::VertexStride ); // 検査済み個数からの有限な範囲。
+		const TArrayView<const uint8> IndexBytes( reinterpret_cast<const uint8*>( Request.Indices ), Request.Indices ? Request.NumIndices * static_cast<int32>( sizeof( uint32 ) ) : 0 ); // 添字なしも別形状として扱う。
+		if ( MeshBuffers.Acquire( VertexBytes, IndexBytes, Shared.VertexBuffer, Shared.IndexBuffer ) )
+		{
+			Shared.Pipeline = Pipeline;
+			Shared.VertexCount = static_cast<uint32>( Request.NumVertices );
+			Shared.IndexCount = Request.Indices ? static_cast<uint32>( Request.NumIndices ) : 0u;
+			Shared.IndexFormat = EGeometryIndexFormat::UInt32;
+			Shared.Constants = TArrayView<const FGraphicsConstantBytes>( Constants.GetData(), Constants.Num() );
+			Shared.Textures = TArrayView<const FTextureResourceHandle>( SlotTextures.GetData(), SlotTextures.Num() );
+			if ( Geometry.DrawGraphicsPipeline( Shared ) ) { return true; }
+		}
+	}
+	FGraphicsPipelineTransientDraw Draw; // 初回・登録失敗・共有描画の拒否では、何も描く前に従来の経路へ戻る。
 	Draw.Pipeline = Pipeline;
 	Draw.Vertices = Request.Vertices;
 	Draw.VertexCount = static_cast<uint32>( Request.NumVertices );

@@ -31,6 +31,7 @@ $types = @(
     @{ Path = 'Library/Platform/ImGui/Render/ImGuiViewportScheduler.h'; Type = 'CImGuiViewportScheduler'; Role = '機能' },
     @{ Path = 'Library/Platform/Render/Canvas/CanvasDrawExecutor.h'; Type = 'CCanvasDrawExecutor'; Role = '機能' },
     @{ Path = 'Library/Platform/Render/Canvas/GeometryCanvas2D.h'; Type = 'CGeometryCanvas2D'; Role = '機能' },
+    @{ Path = 'Library/Platform/Render/Shader/ShaderMeshBufferCache.h'; Type = 'CShaderMeshBufferCache'; Role = '機能' },
     @{ Path = 'Library/Platform/Render/Geometry/GeometryBufferStore.h'; Type = 'CGeometryBufferStore'; Role = '機能' },
     @{ Path = 'Library/Platform/Render/Geometry/GeometryCommandExecutor.h'; Type = 'CGeometryCommandExecutor'; Role = '機能' },
     @{ Path = 'Library/Platform/Render/Geometry/GeometryQuadBuilder.h'; Type = 'CGeometryQuadBuilder'; Role = '機能' },

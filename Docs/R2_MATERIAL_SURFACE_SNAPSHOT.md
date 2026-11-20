@@ -21,7 +21,7 @@ const bool bAccepted = MaterialFrame.AddMesh( Batch, ESceneDrawClass::Translucen
 - 環境マップと影を指定した場合も、その画像の共有参照を保持する。**画像の画素やGPU資源の内容を複製する機能ではない**。同じ画像・影・更新可能な資源の内容を変える場合は、従来どおり更新と描画の順序・寿命を管理する。
 - BuildMeshCommandsの結果は命令の所有コピー。資源の所有は固定値が保持するので、再生まで固定値も保持する。AddMeshを使えば、その所有もCSceneDrawListへ一緒に渡す。
 
-BuildMeshCommandsは既存のcbObjectと88バイトのシェーダー頂点を使い、World・Tintと頂点・添字を所有する。非有限な行列、不正な頂点・添字、記録上限ではfalseを返し、出力を変更しない。メッシュをGPUへ永続登録する経路ではなく、既存のシェーダー描画とフレーム転送を使う。
+BuildMeshCommandsは既存のcbObjectと88バイトのシェーダー頂点を使い、World・Tintと頂点・添字を所有する。非有限な行列、不正な頂点・添字、記録上限ではfalseを返し、出力を変更しない。記録時は既存の命令形式で頂点・添字をコピーする。DX12でのGPUバッファ共有は再生時に行う。
 
 AddMeshは不透明なら深度書き込みと上書き、半透明なら読み取り深度と通常アルファ合成を項目内へ記録する。切り抜きはこの補助関数では未対応でfalseを返す。これはCSceneDrawListの分類だけを変更する機能とは別で、材質用の標準的な描画状態も選ぶ補助関数である。
 
@@ -41,7 +41,15 @@ CSceneDrawListに、命令と既存共有所有を一緒に受け付けるAddの
 
 共通のSceneDrawSnapshot契約には、可変長シェーダー命令の不正入力、20成分のNaN、整数定数の保持、所有付き受付の成功と拒否、ワーカーからの材質固定の拒否を追加した。RunSceneShaderValidationMutationTestsは、定数長・頂点列長・有限値・添字の検査をコピー上で一つずつ壊して検出を確認する。製品ソースは変更しない。
 
-残件は材質からの自動分類、切り抜き、共有GPUメッシュとの統合、より広いPBR材質の互換確認、モデル姿勢と更新資源の版の固定。R2全体と、R3のフレームグラフ・AddPassは引き続き未完了。
+## DX12での形状の再利用
+
+32頂点以上のシェーダー三角形では、初回はフレーム転送で描き、比較用に頂点・添字を所有コピーする。同じバイト列がもう一度現れると既存のGPUバッファ資源へ登録し、その後は材質や個体定数が異なっても同じバッファを使う。部分的なハッシュで候補を絞り、長さと全バイトを比較する。変更された形状や異なる添字範囲は別の項目となる。登録が失敗した場合や共有描画が拒否された場合は、その一回をフレーム転送で描く。
+
+キャッシュはDX12シェーダーサービスが所有し、既存の資源所有先と同じ実行スレッドで操作する。比較用コピーは32 MiB・32件を上限とし、長く使われていない項目から解放する。GPUが使用中の資源は既存の完了管理が保持する。二度目の登録時は同期転送が発生する。キャッシュが有効でも記録時のコピーと再生時の比較が必要で、CPU時間の改善は未計測。従来経路との比較には `--no-shader-mesh-cache` を使う。参考 [MicrosoftのGPU資源の寿命管理](https://learn.microsoft.com/en-us/windows/win32/direct3d12/fence-based-resource-management)。
+
+`RunShaderMeshCacheTests.ps1` は製品のシェーダーサービスを通し、使い回す登録番号、材質定数の再送、部分登録の取り消し、従来経路への復帰、容量と解放を確認する。材質画像の基準はキャッシュ無効で撮影する。
+
+残件は材質からの自動分類、切り抜き、資源IDでメッシュを参照して記録時の複製を省く経路、より広いPBR材質の互換確認、モデル姿勢と更新資源の版の固定。R2全体と、R3のフレームグラフ・AddPassは引き続き未完了。
 
 参照: [Epicの描画スレッドと描画用データの所有](https://dev.epicgames.com/documentation/en-us/unreal-engine/threaded-rendering-in-unreal-engine)、[HLSLの定数バッファ](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-constants)、[定数の配置規則](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-packing-rules)。
 

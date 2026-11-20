@@ -1985,4 +1985,8 @@
     <None Include="EngineContent\Shaders\Material\SurfaceDepthPixel.hlsli" />
     <None Include="EngineContent\Shaders\Material\SurfaceVertex.hlsli" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Library\Platform\Render\Shader\ShaderMeshBufferCache.h" />
+    <ClCompile Include="Library\Platform\Render\Shader\ShaderMeshBufferCache.cpp" />
+  </ItemGroup>
 </Project>

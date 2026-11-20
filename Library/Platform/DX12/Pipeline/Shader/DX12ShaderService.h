@@ -7,6 +7,7 @@
 #include "Library/Core/Interfaces/Render/IRenderBufferResources.h"
 #include "Library/Core/Interfaces/Render/IShaderDrawSource.h"
 #include "Library/Platform/Render/Texture/TextureAssetStore.h"
+#include "Library/Platform/Render/Shader/ShaderMeshBufferCache.h"
 
 //=============================================================================
 // CDX12ShaderService
@@ -16,7 +17,7 @@
 //   2. 描画のたびに、シェーダーの組み合わせと描画の状態から、カスタムグラフィックスパイプライン（IGraphicsPipelineResources）を作って使い回す。
 //      頂点の並びは FDrawShaderVertex3D（88 バイト）で、頂点シェーダーの入力は、セマンティックの名前から、頂点の中の位置を決める
 //      （POSITION / POSITION1 / NORMAL / TANGENT / BINORMAL / COLOR0 / COLOR1 / TEXCOORD0 / TEXCOORD1）。
-//   3. 頂点・添字・定数の GPU バッファを、描くたびに作り（IRenderBufferResources）、描いたあとすぐに手放す（GPU の完了までは実体が残る）。
+	//   3. 繰り返す形状は上限付きの共有バッファを使い、初回・動く形状と個体定数はフレームの転送領域へ渡す。
 //   ゲームスレッドから使う。GPU の型は、このクラスの中に閉じる（窓口は IShaderDrawSource）。
 //
 //   できないこと: ピクセルシェーダーの複数出力（SV_Target1〜）、頂点シェーダーが読む画像、画像の外側・補間が段ごとに違う読み方（s0 の 1 つだけ）、
@@ -95,6 +96,7 @@ private:
 	IGraphicsPipelineResources* Pipelines = nullptr;
 	IRenderBufferResources* Buffers = nullptr;
 	CTextureAssetStore* Textures = nullptr;
+	CShaderMeshBufferCache MeshBuffers; // 材質の定数や画像を含めず、同じ形状だけを共有する。
 	TMap<int32, FShaderRecord> Shaders;
 	int32 NextShader = 0;
 	TMap<FString, FPipelineEntry> PipelineCache;   // 鍵は、シェーダーと状態
