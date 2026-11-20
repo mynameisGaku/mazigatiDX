@@ -574,3 +574,9 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - `.gxmaterial` の `SurfaceBlend` を固定材質に保持し、分類省略のAddMeshで順序・深度・合成を設定する。省略時の定義はManualで、従来の不透明・半透明の明示指定を受け付ける。定義と異なる明示指定は拒否する。
 - MaskedのSurfaceグラフは `OpacityCutoff` を超える画素だけを色・深度へ書く。グラフの陰影を使い回し、切り抜き処理はEngineContentのSurface用HLSLで共通化した。HLSL直指定のMaskedと、独立した影生成パスでの切り抜きは未対応。詳細は [Surface材質の固定](R2_MATERIAL_SURFACE_SNAPSHOT.md)。
 - Debug / ReleaseのSamplesビルド、描画一覧115項目、材質画像25項目、材質効果88項目が合格。実GPU・WARP・UIなし・CPU変換指定・DxLibで、しきい値と同値の画素では奥の赤が見え、しきい値を超えた画素では手前の緑が奥を遮った。互換台帳526項目とソース書式2031ファイルも確認した。
+
+## R3の入口: 名前付きの描画パス
+
+- `CRenderGraphBuilder` は既存画像の初期状態、パスの読み取り、色・深度の描画先を受け取る。全件を検査してから既存の描画先パスへ登録順で渡す。名前を指定してパスを前後に追加したり、同じ位置で差し替えたりできる。
+- GPU検査ではMRTと深度の生成、挿入した追加描画、差し替えた合成パスを実行し、色と深度を読み戻す。使用法と次の接続先は [R3 描画パスの登録と依存検査](R3_RENDER_GRAPH.md)。
+- Debug / ReleaseともCPU契約19項目、実GPU・WARP各107項目が合格。公開描画先を使うアプリ検査は実GPU・WARPのUIあり／なしで合格し、DxLib・Nullでは未対応の描画先を使わない既存経路も確認した。R2は未完了で、影の切り抜き・大きな形状・材質互換とフレーム固定の残作業を継続する。

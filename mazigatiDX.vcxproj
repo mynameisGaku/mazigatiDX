@@ -1992,4 +1992,9 @@
     <ClInclude Include="Library\Platform\Render\Shader\ShaderMeshBufferCache.h" />
     <ClCompile Include="Library\Platform\Render\Shader\ShaderMeshBufferCache.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Library\Framework\Render\Graph\RenderGraphPassDesc.h" />
+    <ClInclude Include="Library\Framework\Render\Graph\RenderGraphBuilder.h" />
+    <ClCompile Include="Library\Framework\Render\Graph\RenderGraphBuilder.cpp" />
+  </ItemGroup>
 </Project>

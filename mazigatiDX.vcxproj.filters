@@ -6301,4 +6301,10 @@
     <ClInclude Include="Library\Platform\Render\Shader\ShaderMeshBufferCache.h"><Filter>Library\Platform\Render\Shader</Filter></ClInclude>
     <ClCompile Include="Library\Platform\Render\Shader\ShaderMeshBufferCache.cpp"><Filter>Library\Platform\Render\Shader</Filter></ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Library\Framework\Render\Graph"><UniqueIdentifier>{8CA6394E-AC22-4677-91AB-CF4079C2B962}</UniqueIdentifier></Filter>
+    <ClInclude Include="Library\Framework\Render\Graph\RenderGraphPassDesc.h"><Filter>Library\Framework\Render\Graph</Filter></ClInclude>
+    <ClInclude Include="Library\Framework\Render\Graph\RenderGraphBuilder.h"><Filter>Library\Framework\Render\Graph</Filter></ClInclude>
+    <ClCompile Include="Library\Framework\Render\Graph\RenderGraphBuilder.cpp"><Filter>Library\Framework\Render\Graph</Filter></ClCompile>
+  </ItemGroup>
 </Project>
