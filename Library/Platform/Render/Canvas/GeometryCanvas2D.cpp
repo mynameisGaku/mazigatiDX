@@ -33,14 +33,6 @@ bool CGeometryCanvas2D::BeginFrame( IRenderGeometry3D &InGeometry, IRenderTextur
 
 void CGeometryCanvas2D::EndFrame()
 {
-	if ( Textures )
-	{
-		for ( FTextureResourceHandle Image : TextImages )
-		{
-			Textures->ReleaseTexture( Image );
-		}
-	}
-	TextImages.Reset();
 	TextBytes = 0;
 	if ( Textures )
 	{
@@ -237,11 +229,6 @@ void CGeometryCanvas2D::Text( float32 X, float32 Y, FColor32 Color, const char *
 	{
 		return;
 	}
-	if ( TextImages.Num() >= 128 )
-	{
-		bFailed = true;
-		return;
-	}
 	int32 Length = 0; // 最大64KiBまでの指定範囲だけを読む。
 	if ( End )
 	{
@@ -262,37 +249,52 @@ void CGeometryCanvas2D::Text( float32 X, float32 Y, FColor32 Color, const char *
 			return;
 		}
 	}
-	TArray<FColor32> Pixels; // GPUを知らない文字実装が作る画像。
-	int32 TextWidth = 0, TextHeight = 0; // 論理画素の文字寸法。
 	if ( Length <= 0 )
 	{
 		return;
 	}
-	if ( !TextRasterizer->RasterizeText( TArrayView<const char>( Begin, Length ), Pixels, TextWidth, TextHeight ) || TextWidth <= 0 || TextHeight <= 0 || static_cast<int64>( TextWidth ) * TextHeight != Pixels.Num() )
+	// 同じ文字列は、フレームをまたいで画像を使い回す（フォントを指定した文字と同じ表。鍵の先頭の 0x01 は、フォントの指定の鍵と区別する）。1 フレームに新しく作れる画像は、合計 32MiB・512 個まで
+	const FString Key = FString( "\x01" ) + FString( Begin, Length );
+	FCachedText *Entry = TextCache.Find( Key );
+	if ( !Entry )
 	{
-		bFailed = true;
-		return;
+		if ( NumTextCreatedThisFrame >= 512 )
+		{
+			bFailed = true;
+			return;
+		}
+		TArray<FColor32> Pixels; // GPUを知らない文字実装が作る画像。
+		FCachedText Created; // 画像を登録できてから、表へ入れる。
+		if ( !TextRasterizer->RasterizeText( TArrayView<const char>( Begin, Length ), Pixels, Created.Width, Created.Height ) || Created.Width <= 0 || Created.Height <= 0 || static_cast<int64>( Created.Width ) * Created.Height != Pixels.Num() )
+		{
+			bFailed = true;
+			return;
+		}
+		if ( TextBytes + static_cast<uint64>( Pixels.Num() ) * sizeof( FColor32 ) > 32 * 1024 * 1024 )
+		{
+			bFailed = true;
+			return;
+		}
+		Created.Text = Textures->CreateTextureRGBA8( Created.Width, Created.Height, Pixels.GetData() ); // 所有は既存の画像サービスへ渡す。
+		if ( !Created.Text.IsValid() )
+		{
+			bFailed = true;
+			return;
+		}
+		Created.Bytes = static_cast<uint64>( Pixels.Num() ) * sizeof( FColor32 );
+		TextBytes += Created.Bytes;
+		TextCacheBytes += Created.Bytes;
+		++NumTextCreatedThisFrame;
+		Entry = &TextCache.Add( Key, Created );
 	}
-	if ( TextBytes + static_cast<uint64>( Pixels.Num() ) * sizeof( FColor32 ) > 32 * 1024 * 1024 )
-	{
-		bFailed = true;
-		return;
-	}
-	const FTextureResourceHandle Handle = Textures->CreateTextureRGBA8( TextWidth, TextHeight, Pixels.GetData() ); // 所有は既存の画像サービスへ渡す。
+	Entry->LastFrame = FrameNumber;
 	FTextureDrawView View; // この描画の間だけ借りるGPUの番号。
-	if ( !Handle.IsValid() )
+	if ( !Textures->GetTextureResourceView( Entry->Text, View ) )
 	{
 		bFailed = true;
 		return;
 	}
-	if ( !Textures->GetTextureResourceView( Handle, View ) )
-	{
-		Textures->ReleaseTexture( Handle );
-		bFailed = true;
-		return;
-	}
-	TextImages.Add( Handle );
-	TextBytes += static_cast<uint64>( Pixels.Num() ) * sizeof( FColor32 );
+	const float32 TextWidth = static_cast<float32>( Entry->Width ), TextHeight = static_cast<float32>( Entry->Height ); // 論理画素の文字寸法。
 	const float32 Points[8] = { X, Y, X + TextWidth, Y, X + TextWidth, Y + TextHeight, X, Y + TextHeight }, UV[4] = { 0, 0, 1, 1 }; // 文字も通常の画像と同じ切り取りと倍率で描く。
 	const bool bPreviousFilter = bLinear; // 文字の補間を後続の画像へ持ち越さない。
 	bLinear = true;

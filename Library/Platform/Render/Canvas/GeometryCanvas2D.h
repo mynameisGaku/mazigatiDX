@@ -82,8 +82,7 @@ class CGeometryCanvas2D : public IRenderCanvas2D
 	IRenderTextRasterizer *TextRasterizer = nullptr; // CPUの文字画像だけを作る借用先。
 	FRenderClipRect *Clip = nullptr; // 基本3Dと共有する描画先画素の範囲。
 	TArray<FRenderClipRect> ClipStack; // 復元する範囲。描画命令列ごとに呼出側が対を保つ。
-	TArray<FTextureResourceHandle> TextImages; // このフレームの文字画像。GPU完了まで実体は所有先に残る。
-	uint64 TextBytes = 0; // 一フレームに登録する文字画像は合計32MiBまで。
+	uint64 TextBytes = 0; // 一フレームに新しく画像にする文字は合計32MiBまで。
 	int32 Width = 0, Height = 0; // 固定の描画先画素数。
 	float32 Scale = 1; // 撮影用の論理座標から描画先への倍率。
 	bool bFailed = false; // 呼出側が保存や表示の失敗を確認するための累積結果。

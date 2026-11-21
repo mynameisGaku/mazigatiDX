@@ -74,11 +74,19 @@ bool CWindowsTextRasterizer::RasterizeText( TArrayView<const char> Text, TArray<
 	}
 	RECT Bounds = { 0, 0, 0, 0 }; // 改行を含む文字列全体の寸法。
 	const UINT Flags = DT_NOPREFIX | DT_EXPANDTABS | DT_LEFT | DT_TOP; // &を文字として扱い、改行は保持する。
-	if ( DrawTextW( Context, Wide.GetData(), Count, &Bounds, Flags | DT_CALCRECT ) <= 0 || Bounds.right < 0 || Bounds.bottom <= 0 || Bounds.right > 4096 || Bounds.bottom > 4096 || static_cast<int64>( Bounds.right ) * Bounds.bottom > 4 * 1024 * 1024 )
+	if ( DrawTextW( Context, Wide.GetData(), Count, &Bounds, Flags | DT_CALCRECT ) <= 0 || Bounds.right < 0 || Bounds.bottom <= 0 )
 	{
 		return false;
 	}
 	Bounds.right = NMath::Max( 1L, Bounds.right ); // 改行だけの有効な文字列も、透明な一列として保持する。
+	// 画像の大きさの上限（各辺 4096・4M 画素）を超える文字列は、はみ出す右・下を切った画像にする（DxLib が、はみ出す文字を切って描くのと同じ。失敗にして、フレームごと落とさない）。
+	// 描くときは、この小さな範囲へ描くので、OS が範囲の外を切る
+	Bounds.right = NMath::Min( Bounds.right, 4096L );
+	Bounds.bottom = NMath::Min( Bounds.bottom, 4096L );
+	if ( static_cast<int64>( Bounds.right ) * Bounds.bottom > 4 * 1024 * 1024 )
+	{
+		Bounds.bottom = static_cast<LONG>( 4 * 1024 * 1024 / Bounds.right );
+	}
 	BITMAPINFO Info = {}; // 左上から行順の32bit画像。
 	Info.bmiHeader.biSize = sizeof( BITMAPINFOHEADER );
 	Info.bmiHeader.biWidth = Bounds.right;

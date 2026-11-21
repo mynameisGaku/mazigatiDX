@@ -467,10 +467,17 @@ bool CWindowsGdiText::Rasterize( const FRenderTextFont& Font, TArrayView<const c
 	{
 		return false;
 	}
-	const int32 Width = NMath::Max( 1, Size.Width ), Height = Size.Height;   // 改行だけの文字列も、透明な 1 列として持つ
-	if ( Height <= 0 || Width > MaxImageSide || Height > MaxImageSide || static_cast<int64>( Width ) * Height > MaxImagePixels )
+	if ( Size.Height <= 0 )
 	{
 		return false;
+	}
+	// 画像の大きさの上限（各辺 4096・4M 画素）を超える文字列は、はみ出す右・下を切った画像にする（DxLib が、はみ出す文字を切って描くのと同じ）。
+	// 文字を描く処理は、画像の外の画素を書かない（Layout の大きさより小さくなる）
+	const int32 Width = NMath::Min( NMath::Max( 1, Size.Width ), MaxImageSide );   // 改行だけの文字列も、透明な 1 列として持つ
+	int32 Height = NMath::Min( Size.Height, MaxImageSide );
+	if ( static_cast<int64>( Width ) * Height > MaxImagePixels )
+	{
+		Height = MaxImagePixels / Width;
 	}
 	BITMAPINFO Info = {};   // 左上から行の順の 32bit 画像
 	Info.bmiHeader.biSize = sizeof( BITMAPINFOHEADER );

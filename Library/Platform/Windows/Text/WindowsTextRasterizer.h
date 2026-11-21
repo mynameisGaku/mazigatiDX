@@ -16,7 +16,7 @@ class CWindowsTextRasterizer : public IRenderTextRasterizer
 	~CWindowsTextRasterizer();
 	// UI設定から独立した13画素の等幅文字を用意する。OS資源不足ではfalse。
 	bool Initialize();
-	// UTF-8を白いRGBAへ変換する。空・不正・64KiB超・4096辺超は全出力を保ってfalse。
+	// UTF-8を白いRGBAへ変換する。空・不正・64KiB超は全出力を保ってfalse。各辺4096・4M画素を超える文字列は、はみ出す右・下を切った画像にする（DxLibが画面の端で切るのと同じ）。
 	bool RasterizeText( TArrayView<const char> Text, TArray<FColor32> &OutPixels, int32 &OutWidth, int32 &OutHeight ) override;
 	// フォントを指定した文字列を、白いRGBA（と、縁取りがあればその画像）へ変換する。失敗時は全出力を保ってfalse。
 	bool RasterizeFontText( const FRenderTextFont &InFont, TArrayView<const char> Text, TArray<FColor32> &OutPixels, TArray<FColor32> &OutEdgePixels, int32 &OutWidth, int32 &OutHeight ) override;

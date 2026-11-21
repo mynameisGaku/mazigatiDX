@@ -11,7 +11,7 @@ class IRenderTextRasterizer
   public:
 	// 借用先からの破棄を許可する。
 	virtual ~IRenderTextRasterizer() = default;
-	// UTF-8の指定範囲を画像化する。Alphaが文字の被覆率。不正入力・上限超過は全出力を保ってfalse。
+	// UTF-8の指定範囲を画像化する。Alphaが文字の被覆率。不正入力は全出力を保ってfalse。実装の画像の大きさの上限を超える文字列は、はみ出す右・下を切った画像にする（失敗にしない）。
 	virtual bool RasterizeText( TArrayView<const char> Text, TArray<FColor32> &OutPixels, int32 &OutWidth, int32 &OutHeight ) = 0;
 	// フォントを指定して、UTF-8の指定範囲を画像化する。Alphaが文字の被覆率。縁取りのあるフォントでは、OutEdgePixelsに縁取りを含む被覆率も返す（無ければ空）。
 	// 未対応の実装・不正入力・上限超過は全出力を保ってfalse。

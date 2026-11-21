@@ -32,7 +32,7 @@ public:
 	// 文字列の大きさと、文字ごとの位置（OutGlyphs は省略できる）。壊れた UTF-8・64KiB 超は false（出力は変えない）。空の文字列は、大きさ 0 で成功
 	bool Layout( const FRenderTextFont& Font, TArrayView<const char> Text, FTextSize& OutSize, TArray<FTextGlyph>* OutGlyphs = nullptr );
 	// 文字列を、被覆率（0..255）の画像にする。大きさは Layout と同じ。縁取りがあれば、OutEdge に、縁取りを含む被覆率も返す（無ければ空）。
-	// 空・壊れた UTF-8・各辺 4096 超・4M 画素超は false（出力は変えない）
+	// 空・壊れた UTF-8 は false（出力は変えない）。各辺 4096・4M 画素を超えるときは、はみ出す右・下を切った画像にする（Layout の大きさより小さくなる）
 	bool Rasterize( const FRenderTextFont& Font, TArrayView<const char> Text, TArray<uint8>& OutCoverage, TArray<uint8>& OutEdge, int32& OutWidth, int32& OutHeight );
 
 private:
