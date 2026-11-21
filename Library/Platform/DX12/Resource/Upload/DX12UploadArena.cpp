@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DX12UploadArena.h"
 #include "Library/Core/Types/Numeric.h"
+#include <cassert>
 
 namespace
 {
@@ -82,6 +83,9 @@ void CDX12UploadArena::CollectCompleted()
 
 void CDX12UploadArena::ResetAfterGPUIdle()
 {
+	// Debug だけの確認: 提出済みの仕事（アップロードページを GPU が読む）が、まだ終わっていないのに解放すると、GPU が解放済みのメモリを読む。
+	// デバイス喪失（完了値が最大・DeviceRemoved）は、終わったものとして扱う。Release では何もしない。
+	assert( ( !Fence || !Device || FAILED( Device->GetDeviceRemovedReason() ) || Fence->GetCompletedValue() >= FenceValue ) && "CDX12UploadArena::ResetAfterGPUIdle: the GPU has not finished the work that reads the upload pages" );
 	for ( FPage &Page : Pages )
 	{
 		ReleasePageResource( Page );

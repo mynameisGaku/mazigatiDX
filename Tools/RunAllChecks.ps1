@@ -47,9 +47,15 @@ function Invoke-Step([string]$Name, [string]$ScriptPath, [string[]]$Arguments = 
     $started = Get-Date
     $attempt = 0
     $code = 1
+    $log = Join-Path $logDirectory "$safeName.log"
+    $failedAttemptLogs = @() # 失敗した試行のログ（やり直して通ったとき、原因を調べられるように、上書きせず残す）
     while ($attempt -lt $MaxAttempts -and $code -ne 0) {
+        if ($attempt -gt 0) {
+            $failedAttemptLog = Join-Path $logDirectory "$safeName.attempt$attempt.log"
+            Move-Item -LiteralPath $log -Destination $failedAttemptLog -Force
+            $failedAttemptLogs += $failedAttemptLog
+        }
         ++$attempt
-        $log = Join-Path $logDirectory "$safeName.log"
         & powershell -NoProfile -ExecutionPolicy Bypass -File $ScriptPath @Arguments *> $log
         $code = $LASTEXITCODE
     }
@@ -57,11 +63,14 @@ function Invoke-Step([string]$Name, [string]$ScriptPath, [string[]]$Arguments = 
     $note = if ($attempt -gt 1) { " (attempt $attempt of $MaxAttempts)" } else { '' }
     if ($code -eq 0) {
         Write-Host ("  ok   {0}  {1} s{2}" -f $Name, $seconds, $note)
+        if ($attempt -gt 1) {
+            Write-Host ("       passed only after a retry; the failed attempt's log: {0}" -f ($failedAttemptLogs -join ', ')) -ForegroundColor Yellow
+        }
     } else {
         Write-Host ("  FAIL {0}  {1} s{2}  (log: {3})" -f $Name, $seconds, $note, $log) -ForegroundColor Red
         Get-Content -LiteralPath $log -Tail 8 -ErrorAction SilentlyContinue | ForEach-Object { Write-Host ('       ' + $_) }
     }
-    $results.Add([pscustomobject]@{ Name = $Name; Passed = ($code -eq 0) })
+    $results.Add([pscustomobject]@{ Name = $Name; Passed = ($code -eq 0); Attempts = $attempt; FailedAttemptLogs = $failedAttemptLogs })
 }
 
 $msbuild = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -find MSBuild\**\Bin\MSBuild.exe | Select-Object -First 1
@@ -72,16 +81,24 @@ if (-not $SkipBuild) {
         $arguments = @((Join-Path $frameworkRoot 'project.sln'), "/p:Configuration=$configuration", '/p:Platform=x64', '/nologo', '/v:minimal')
         & $msbuild @arguments '/m' *> $log
         $code = $LASTEXITCODE
+        $buildAttempts = 1
+        $firstBuildLog = $null
         if ($code -ne 0) {
             # リンクが、まれに、デバッグ情報の食い違い（LNK1103 / LNK1236）で失敗する（再試行で通る）。1 回だけ、順番に作り直す
+            $firstBuildLog = Join-Path $logDirectory "build_$configuration.attempt1.log"
+            Move-Item -LiteralPath $log -Destination $firstBuildLog -Force # 最初の失敗の出力を、上書きせず残す
             & $msbuild @arguments '/m:1' *> $log
             $code = $LASTEXITCODE
+            $buildAttempts = 2
         }
         # MSB8029（一時フォルダーの下で作ると出る警告）は、確認用の clone でだけ出る既知のものなので、数えない
         $problems = @(Select-String -Path $log -Pattern 'error|warning' | ForEach-Object { $_.Line } | Where-Object { $_ -notmatch 'MSB8029' } | Sort-Object -Unique)
         $ok = $code -eq 0 -and $problems.Count -eq 0
         if ($ok) { Write-Host "  ok   build $configuration (0 warnings, 0 errors)" } else { Write-Host "  FAIL build $configuration (exit $code, $($problems.Count) warning/error line(s); log: $log)" -ForegroundColor Red }
-        $results.Add([pscustomobject]@{ Name = "build $configuration"; Passed = $ok })
+        if ($ok -and $buildAttempts -gt 1) {
+            Write-Host "       passed only after a retry (/m:1); the failed attempt's log: $firstBuildLog" -ForegroundColor Yellow
+        }
+        $results.Add([pscustomobject]@{ Name = "build $configuration"; Passed = $ok; Attempts = $buildAttempts; FailedAttemptLogs = @($firstBuildLog | Where-Object { $_ }) })
     }
 }
 
@@ -153,8 +170,15 @@ if ($Filter.Count -gt 0 -and $results.Count -eq 0) {
     exit 1
 }
 $failed = @($results | Where-Object { -not $_.Passed })
+$retried = @($results | Where-Object { $_.Passed -and $_.Attempts -gt 1 }) # やり直して、やっと通った手順（まれな失敗が、隠れないように、最後に挙げる）
 Write-Host ''
 Write-Host "Logs: $logDirectory"
+if ($retried.Count -gt 0) {
+    Write-Host "PASSED ONLY AFTER A RETRY ($($retried.Count) steps; look at the failed attempts' logs, they may be a real flaky failure):" -ForegroundColor Yellow
+    foreach ($step in $retried) {
+        Write-Host ("  {0}  (attempts: {1}; failed logs: {2})" -f $step.Name, $step.Attempts, ($step.FailedAttemptLogs -join ', ')) -ForegroundColor Yellow
+    }
+}
 if ($failed.Count -eq 0) {
     Write-Host "ALL CHECKS PASS ($($results.Count) steps)" -ForegroundColor Green
     exit 0
