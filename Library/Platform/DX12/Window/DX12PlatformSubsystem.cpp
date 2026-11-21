@@ -193,6 +193,10 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection &Collection )
 		Deinitialize();
 		return;
 	}
+	if ( NCommandLine::HasFlag( "dx12-frame-timings" ) ) // 確認用: 描画スレッドの仕事量の内訳も、ログへ出す
+	{
+		RenderCommands->EnableTimings();
+	}
 	ThreadedSurface = new CThreadedRenderSurface( *NativeSurface, *RenderCommands );
 	Settings.WindowMode = EWindowMode::Windowed;
 	SetWindowMode( InitialMode );

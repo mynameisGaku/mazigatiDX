@@ -3,7 +3,11 @@
 
 #include <exception>
 
+#include "Library/Core/Log/Log.h"
 #include "Library/Core/Thread/RenderThread.h"
+#include "Library/Core/Time/PlatformTime.h"
+
+DEFINE_LOG_CATEGORY_STATIC( LogRenderThread, Log )
 
 CRenderCommandThread::CRenderCommandThread() : Thread( "Render Thread" )
 {
@@ -33,9 +37,46 @@ CRenderCommandThread::~CRenderCommandThread()
 bool CRenderCommandThread::IsReady() const { return bReady; }
 FTaskFence CRenderCommandThread::GetFence() const { return bReady ? Thread.GetFence() : FTaskFence(); }
 
+void CRenderCommandThread::EnableTimings()
+{
+	bTimings = true;
+}
+
+TCallable<void()> CRenderCommandThread::MakeTimed( TCallable<void()> Task )
+{
+	if ( !bTimings || !Task )
+	{
+		return Task;
+	}
+	// 実行時間を数える包み。描画スレッドが、仕事の前後で時刻を取る。
+	return [this, Inner = MoveTemp( Task )]() mutable
+	{
+		const int64 Start = NPlatformTime::GetTicks();
+		Inner();
+		BusyTicks.FetchAdd( NPlatformTime::GetTicks() - Start, EMemoryOrder::Relaxed );
+		Tasks.FetchAdd( 1, EMemoryOrder::Relaxed );
+	};
+}
+
+void CRenderCommandThread::NotifyFrameEnd()
+{
+	constexpr int32 LogFrames = 120; // DX12 のフレーム時間の内訳（--dx12-frame-timings）と同じ間隔
+	if ( !bTimings || ++TimingFrames < LogFrames )
+	{
+		return;
+	}
+	const float64 Frames = static_cast<float64>( TimingFrames );
+	const float64 BusyMs = NPlatformTime::TicksToMs( BusyTicks.Exchange( 0, EMemoryOrder::Relaxed ) );
+	const float64 WaitMs = NPlatformTime::TicksToMs( SyncWaitTicks.Exchange( 0, EMemoryOrder::Relaxed ) );
+	const int64 Calls = SyncCalls.Exchange( 0, EMemoryOrder::Relaxed );
+	const int64 NumTasks = Tasks.Exchange( 0, EMemoryOrder::Relaxed );
+	LOG( LogRenderThread, Log, "render thread (per frame, %d frames): busy %.2f ms, tasks %.0f, sync calls %.0f, caller blocked in sync calls %.2f ms", TimingFrames, BusyMs / Frames, static_cast<float64>( NumTasks ) / Frames, static_cast<float64>( Calls ) / Frames, WaitMs / Frames );
+	TimingFrames = 0;
+}
+
 FTaskFence CRenderCommandThread::Enqueue( TCallable<void()> Task, const char *Name )
 {
-	return bReady ? Thread.Enqueue( MoveTemp( Task ), Name ) : FTaskFence();
+	return bReady ? Thread.Enqueue( MakeTimed( MoveTemp( Task ) ), Name ) : FTaskFence();
 }
 
 bool CRenderCommandThread::Execute( TCallable<void()> Task, const char *Name )
@@ -49,13 +90,21 @@ bool CRenderCommandThread::Execute( TCallable<void()> Task, const char *Name )
 		Task();
 		return true;
 	}
+	const int64 CallStart = bTimings ? NPlatformTime::GetTicks() : 0; // 呼び出し側が待つ時間の計測
+	const TCallable<void()> Timed = MakeTimed( Task );
 	for ( ;; )
 	{
 		// 同期呼出しは受付を落とさない。拒否された場合も元の関数を再登録できるよう保持する。
-		const FTaskFence Accepted = Thread.Enqueue( Task, Name );
+		const FTaskFence Accepted = Thread.Enqueue( Timed, Name );
 		if ( Accepted.IsValid() )
 		{
-			return WaitAccepted( Accepted );
+			const bool bDone = WaitAccepted( Accepted );
+			if ( bTimings )
+			{
+				SyncWaitTicks.FetchAdd( NPlatformTime::GetTicks() - CallStart, EMemoryOrder::Relaxed );
+				SyncCalls.FetchAdd( 1, EMemoryOrder::Relaxed );
+			}
+			return bDone;
 		}
 		if ( !WaitAccepted( Thread.GetFence() ) )
 		{

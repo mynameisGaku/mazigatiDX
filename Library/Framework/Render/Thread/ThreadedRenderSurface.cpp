@@ -47,6 +47,7 @@ bool CThreadedRenderSurface::EndFrame()
 	// 空の区切りも同じ実行列へ積み、既に渡した全件が終わるまで所有者を生存させる。
 	const bool bFlushed = Flush();
 	const bool bDone = Thread.WaitForCommands();
+	Thread.NotifyFrameEnd();
 	bActive = false;
 	return bFlushed && bDone && !bFailed.Load();
 }
