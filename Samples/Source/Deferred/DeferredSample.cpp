@@ -12,7 +12,7 @@
 namespace
 {
 	// サンプル集への登録（一覧に出す名前・説明・順番）
-	const TSampleRegistrar<CDeferredSample> Registrar( FSampleInfo { "Deferred", "Deferred: G-buffer and deferred lighting", "Deferred rendering. A night square with 64 moving lights, neon grooves, spheres, pillars and glass is drawn in two ways that give the same picture. Forward lights every object while it is drawn. Deferred writes color, normal, depth and emission into a G-buffer of four render targets with one draw, then a lighting pass rebuilds the world position from the depth and lights each pixel once. The lights are culled per screen tile and depth slice into a light list (Forward+ and Deferred+). Keys switch the view, the path, the light culling and the exposure; drag to orbit, wheel to zoom", 51 } );
+	const TSampleRegistrar<CDeferredSample> Registrar( FSampleInfo { "Deferred", "Deferred: G-buffer and deferred lighting", "Deferred rendering. A night square with 64 moving point and spot lights, neon grooves, spheres, pillars and glass is drawn in two ways that give the same picture. Forward lights every object while it is drawn. Deferred writes color, normal, depth and emission into a G-buffer of four render targets with one draw, then a lighting pass rebuilds the world position from the depth and lights each pixel once. The lights are culled per screen tile and depth slice into a light list (Forward+ and Deferred+). Keys switch the view, path, light culling and exposure; drag to orbit, wheel to zoom", 51 } );
 
 	// 場面の色の描画先の名前
 	constexpr const char* SceneColorName = "deferred-scene-color";
@@ -78,6 +78,6 @@ void CDeferredSample::OnSampleDraw( FImmediateDraw& Screen )
 	if ( NumTiles > 0 && !State->bLogTileStats )
 	{
 		const float64 Average = State->bTiles ? static_cast<float64>( State->TileGrid.GetTotalEntries() ) / static_cast<float64>( NumTiles ) : static_cast<float64>( FDeferredDemoState::NumLights );
-		Screen.Text( 16, 88, *FString::Printf( "%d lights, %d x %d tiles of %d px x %d depth slices, light culling %s: %.1f lights per cluster, %d overflowed clusters (capacity %d)", FDeferredDemoState::NumLights, State->TileGrid.GetNumTilesX(), State->TileGrid.GetNumTilesY(), FDeferredDemoState::TileSize, State->TileGrid.GetNumSlices(), State->bTiles ? "on" : "off", Average, State->TileGrid.GetNumOverflowedTiles(), State->TileCapacity ), FColor32( 200, 210, 230 ) );
+		Screen.Text( 16, 88, *FString::Printf( "%d lights (%d spot), %d x %d tiles of %d px x %d depth slices, light culling %s: %.1f lights per cluster, %d overflowed clusters (capacity %d)", FDeferredDemoState::NumLights, FDeferredDemoState::NumSpotLights, State->TileGrid.GetNumTilesX(), State->TileGrid.GetNumTilesY(), FDeferredDemoState::TileSize, State->TileGrid.GetNumSlices(), State->bTiles ? "on" : "off", Average, State->TileGrid.GetNumOverflowedTiles(), State->TileCapacity ), FColor32( 200, 210, 230 ) );
 	}
 }

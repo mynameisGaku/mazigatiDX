@@ -24,8 +24,9 @@ struct FDeferredDemoState
 	static constexpr int32 ViewWidth = 1280;
 	static constexpr int32 ViewHeight = 640;
 
-	// 動く光の数（場面の定数の配列の大きさと同じ）
+	// 動く光の数（場面の定数の配列の大きさと同じ）。いちばん後ろの NumSpotLights 個は、スポットライト（残りは、点の光）
 	static constexpr int32 NumLights = 64;
+	static constexpr int32 NumSpotLights = 18;
 
 	// ライトカリングのタイル 1 枚の大きさ（ピクセル）。画面を、この大きさの格子に分けて、タイルごとに、届く光の一覧を作る
 	static constexpr int32 TileSize = 32;
@@ -44,8 +45,10 @@ struct FDeferredDemoState
 	bool bTimeRunning = true;
 	// タイルごとの光の一覧（Forward+ / Deferred+）を使うか。false なら、画素ごとに、全部の光を評価する（基準の経路）
 	bool bTiles = true;
+	// スポットライトを点けるか。検査用に、消せる（--deferred-no-spots）。消すと、スポットライトは、光らず、一覧にも入らない（絵に、スポットライトが効いていることを確かめる）
+	bool bSpotLights = true;
 	// クラスタ（タイル x 奥行きの層）1 つの一覧に入る光の数の上限（3 の倍数。溢れたクラスタは、全部の光を評価する）。--deferred-tile-capacity で変えられる
-	int32 TileCapacity = 24;
+	int32 TileCapacity = 36;
 	// 奥行きの層の数（1 は、画面だけを分けるタイル）。一覧の画像の大きさが変わるので、始めに決める（--deferred-slices）
 	int32 NumSlices = 16;
 	// 検査用: 一覧の統計を、ログに出す（--deferred-tile-stats）

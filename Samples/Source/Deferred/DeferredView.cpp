@@ -16,9 +16,14 @@ namespace
 	// 夜空の色（Forward の描画先を消す色）。ライティングのシェーダーの SkyColor と同じ値
 	const FColor32 SkyColor( 6, 8, 18, 255 );
 
-	// 動く光: 届く半径・明るさ・光る玉の大きさ・玉が自分で光る明るさ
+	// 動く光: 点の光は、届く半径・明るさ。スポットライトは、高い所から内側の地面を照らすので、遠くまで届く半径と、円錐の外側・内側の角（半角。ラジアン）を持つ。光る玉の大きさ・玉が自分で光る明るさ
 	constexpr float32 LightRadius = 7.0f;
 	constexpr float32 LightIntensity = 2.6f;
+	constexpr float32 SpotRadius = 22.0f;
+	constexpr float32 SpotIntensity = 8.0f;
+	constexpr float32 SpotOuterAngle = 0.28f;
+	constexpr float32 SpotInnerAngle = 0.15f;
+	constexpr float32 SpotHeight = 6.0f;
 	constexpr float32 OrbSize = 0.3f;
 	constexpr float32 OrbGlow = 6.0f;
 	const FVector3 LightColors[6] = {
@@ -70,11 +75,26 @@ namespace
 	};
 	constexpr int32 NumGlassObjects = static_cast<int32>( sizeof( GlassObjects ) / sizeof( GlassObjects[0] ) );
 
-	// 光の輪: 半径・輪ごとの光の数。光の番号は、内側の輪から順に付ける。輪の半径は、半透明の物（ガラス）と食い込まない値にしてある
+	// 光の輪: 半径・輪ごとの光の数。光の番号は、内側の輪から順に付ける。輪の半径は、半透明の物（ガラス）と食い込まない値にしてある。
+	// 内側の 3 つの輪は点の光、いちばん外の輪は、スポットライト（高い所から内側の地面を照らす）
 	constexpr int32 NumRings = 4;
 	constexpr float32 RingRadii[NumRings] = { 5.5f, 11.0f, 16.5f, 21.0f };
 	constexpr int32 RingCounts[NumRings] = { 10, 16, 20, 18 };
 	static_assert( RingCounts[0] + RingCounts[1] + RingCounts[2] + RingCounts[3] == FDeferredDemoState::NumLights, "the rings hold all the lights" );
+	constexpr int32 FirstSpotLight = RingCounts[0] + RingCounts[1] + RingCounts[2];
+	static_assert( FirstSpotLight + FDeferredDemoState::NumSpotLights == FDeferredDemoState::NumLights, "the outermost ring holds the spot lights" );
+
+	// 動く光 1 つ
+	struct FMovingLight
+	{
+		FVector3 Position;
+		float32 Radius = 0.0f;
+		// スポットライトの向き（単位ベクトル）と、円錐の外側・内側の角（半角）。点の光は、外側の角が π（全方向）
+		FVector3 Direction;
+		float32 OuterAngle = NMath::PI;
+		float32 InnerAngle = NMath::PI;
+		float32 Intensity = 0.0f;
+	};
 
 	// 光 Index の位置（4 つの輪の上を、輪ごとに違う向きと速さで回り、上下に揺れる）
 	FVector3 GetLightPosition( int32 Index, float32 Time )
@@ -88,8 +108,32 @@ namespace
 		}
 		const float32 Direction = Ring % 2 == 0 ? 1.0f : -1.0f;
 		const float32 Angle = Direction * Time * ( 0.45f - 0.08f * static_cast<float32>( Ring ) ) + static_cast<float32>( InRing ) * NMath::TWO_PI / static_cast<float32>( RingCounts[Ring] ) + static_cast<float32>( Ring ) * 0.7f;
-		const float32 Height = 1.4f + 0.6f * NMath::Sin( Time * 1.1f + static_cast<float32>( Index ) );
+		const bool bSpot = Index >= FirstSpotLight;
+		const float32 Height = bSpot ? SpotHeight + 0.8f * NMath::Sin( Time * 0.9f + static_cast<float32>( Index ) ) : 1.4f + 0.6f * NMath::Sin( Time * 1.1f + static_cast<float32>( Index ) );
 		return FVector3( NMath::Cos( Angle ) * RingRadii[Ring], Height, NMath::Sin( Angle ) * RingRadii[Ring] );
+	}
+
+	// 動く光 Index（点の光、または、内側の地面の動く点へ向くスポットライト）
+	FMovingLight GetMovingLight( int32 Index, float32 Time )
+	{
+		FMovingLight Light;
+		Light.Position = GetLightPosition( Index, Time );
+		if ( Index < FirstSpotLight )
+		{
+			Light.Radius = LightRadius;
+			Light.Intensity = LightIntensity;
+			return Light;
+		}
+		// 狙う地面の点: 光の真下の方向（輪の中心へ）を中心に、横へ揺れ、中心からの距離（3〜9）も変わる
+		const float32 TargetAngle = NMath::Atan2( Light.Position.z, Light.Position.x ) + 0.5f * NMath::Sin( Time * 0.7f + static_cast<float32>( Index ) );
+		const float32 TargetRadius = 6.0f + 3.0f * NMath::Sin( Time * 0.5f + static_cast<float32>( Index ) * 2.0f );
+		const FVector3 Target( NMath::Cos( TargetAngle ) * TargetRadius, 0.0f, NMath::Sin( TargetAngle ) * TargetRadius );
+		Light.Radius = SpotRadius;
+		Light.Intensity = SpotIntensity;
+		Light.Direction = ( Target - Light.Position ).Normalized();
+		Light.OuterAngle = SpotOuterAngle;
+		Light.InnerAngle = SpotInnerAngle;
+		return Light;
 	}
 
 	// 形を 1 つ描く（物の定数を、頂点側とピクセル側に置いて、インデックスつきで描く）。Opacity は、半透明の物の不透明度（不透明の物は 1）
@@ -115,8 +159,14 @@ namespace
 		Scene.ClusterInfo = FVector4( static_cast<float32>( State.TileGrid.GetNumSlices() ), static_cast<float32>( State.TileGrid.GetNumTilesY() ), State.Camera.Near, State.Camera.Far );
 		for ( int32 Index = 0; Index < FDeferredDemoState::NumLights; ++Index )
 		{
-			Scene.LightPositions[Index] = FVector4( GetLightPosition( Index, State.Time ), LightRadius );
-			Scene.LightColors[Index] = FVector4( LightColors[Index % 6] * LightIntensity, 0.0f );
+			const FMovingLight Light = GetMovingLight( Index, State.Time );
+			const bool bSpot = Index >= FirstSpotLight;
+			Scene.LightPositions[Index] = FVector4( Light.Position, Light.Radius );
+			// 消したスポットライト（--deferred-no-spots）は、色を 0 にする（光らない）
+			const float32 Intensity = bSpot && !State.bSpotLights ? 0.0f : Light.Intensity;
+			Scene.LightColors[Index] = FVector4( LightColors[Index % 6] * Intensity, bSpot ? NMath::Cos( Light.InnerAngle ) : 0.0f );
+			// 点の光は、外側の角の cos を -2（-1 以下）にして、全方向の印にする
+			Scene.LightSpots[Index] = FVector4( Light.Direction, bSpot ? NMath::Cos( Light.OuterAngle ) : -2.0f );
 		}
 		return Scene;
 	}
@@ -132,9 +182,12 @@ bool CDeferredView::UpdateTileLights()
 	TArray<FCullLight> Lights;
 	for ( int32 Index = 0; Index < FDeferredDemoState::NumLights; ++Index )
 	{
+		const FMovingLight Moving = GetMovingLight( Index, State->Time );
 		FCullLight Light;
-		Light.Position = GetLightPosition( Index, State->Time );
-		Light.Radius = LightRadius;
+		Light.Position = Moving.Position;
+		Light.Radius = Index >= FirstSpotLight && !State->bSpotLights ? 0.0f : Moving.Radius; // 消したスポットライトは、半径 0（どのクラスタにも入らない）
+		Light.Direction = Moving.Direction;
+		Light.ConeHalfAngle = Moving.OuterAngle;
 		Lights.Add( Light );
 	}
 	FTileLightGridDesc Desc;

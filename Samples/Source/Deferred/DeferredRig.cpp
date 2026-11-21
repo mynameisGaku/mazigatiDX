@@ -47,6 +47,10 @@ CDeferredRig::CDeferredRig( const TSharedPtr<FDeferredDemoState>& InState )
 		{
 			State->bTiles = false;
 		}
+		if ( NCommandLine::HasFlag( "deferred-no-spots" ) )
+		{
+			State->bSpotLights = false;
+		}
 		if ( NCommandLine::HasFlag( "deferred-tile-stats" ) )
 		{
 			State->bLogTileStats = true;
@@ -55,7 +59,7 @@ CDeferredRig::CDeferredRig( const TSharedPtr<FDeferredDemoState>& InState )
 		if ( Capacity.IsSet() )
 		{
 			// 3 の倍数（画素 1 つに光 3 つ）に切り下げて、3〜96 に収める
-			const int32 Requested = static_cast<int32>( Capacity.GetValue().ToFloat( 24.0 ) );
+			const int32 Requested = static_cast<int32>( Capacity.GetValue().ToFloat( 36.0 ) );
 			State->TileCapacity = NMath::Clamp( Requested / 3 * 3, 3, 96 );
 		}
 		const TOptional<FString> Slices = NCommandLine::GetValue( "deferred-slices" );

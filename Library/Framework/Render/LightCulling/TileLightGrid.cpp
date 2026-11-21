@@ -1,6 +1,7 @@
 ﻿#include "TileLightGrid.h"
 
 #include "Library/Framework/Render/Deferred/GBufferView.h"
+#include "Library/Framework/Render/State/Lighting.h"
 
 namespace
 {
@@ -31,6 +32,75 @@ namespace
 	{
 		return Near * NMath::Pow( Far / Near, static_cast<float32>( Boundary ) / static_cast<float32>( NumSlices ) );
 	}
+
+	// 光ごとに、先に求めておく値
+	struct FLocalLight
+	{
+		FVector3 Offset;         // カメラから光の位置へのベクトル
+		FVector3 Axis;           // スポットライトの円錐の軸（単位ベクトル）
+		float32 Radius = 0.0f;
+		float32 CosHalf = -1.0f; // 円錐の半角の cos・sin
+		float32 SinHalf = 0.0f;
+		float32 Depth = 0.0f;    // 光の位置の、カメラの前向きの奥行き
+		float32 DepthMin = 0.0f; // 光が届く範囲の、奥行きの範囲
+		float32 DepthMax = 0.0f;
+		bool bSpot = false;
+		bool bUsed = false;
+	};
+
+	// 光が届く範囲が、単位ベクトル Direction の向きへ、光の位置からどこまで広がるか（範囲の内側の点 p の、dot( Direction, p - 光の位置 ) の最大値。0 以上）。
+	// 点の光は球なので、いつも半径。スポットライトは、頂点から半径までの、軸から半角以内の向きの点なので、Direction が軸から半角以内なら半径、外なら、円錐の縁の向きへの広がり（半径 x cos( 軸との角 - 半角 )）。それが負なら、頂点（0）
+	float32 GetExtent( const FLocalLight& Local, const FVector3& Direction )
+	{
+		if ( !Local.bSpot )
+		{
+			return Local.Radius;
+		}
+		const float32 CosToAxis = FVector3::Dot( Direction, Local.Axis );
+		if ( CosToAxis >= Local.CosHalf )
+		{
+			return Local.Radius;
+		}
+		const float32 SinToAxis = NMath::Sqrt( NMath::Max( 0.0f, 1.0f - CosToAxis * CosToAxis ) );
+		return Local.Radius * NMath::Max( 0.0f, CosToAxis * Local.CosHalf + SinToAxis * Local.SinHalf );
+	}
+}
+
+bool FCullLight::CanReach( const FVector3& Point ) const
+{
+	const FVector3 Offset = Point - Position;
+	const float32 Distance = Offset.Length();
+	if ( Distance > Radius )
+	{
+		return false;
+	}
+	if ( !IsSpot() )
+	{
+		return true;
+	}
+	if ( Distance <= 0.0f )
+	{
+		return ConeHalfAngle > 0.0f; // 頂点は、円錐の内側とみなす
+	}
+	return FVector3::Dot( Offset / Distance, Direction.Normalized() ) >= NMath::Cos( ConeHalfAngle );
+}
+
+bool FCullLight::FromLight( const FLight& Light, FCullLight& OutLight )
+{
+	if ( !Light.IsValid() || Light.Type == EDrawLightType::Directional )
+	{
+		return false;
+	}
+	FCullLight Result;
+	Result.Position = Light.Position;
+	Result.Radius = Light.Range;
+	if ( Light.Type == EDrawLightType::Spot )
+	{
+		Result.Direction = Light.Direction;
+		Result.ConeHalfAngle = Light.OuterAngle * 0.5f; // FLight の角度は全角
+	}
+	OutLight = Result;
+	return true;
 }
 
 int32 CTileLightGrid::GetSliceOfDepth( float32 Depth, float32 Near, float32 Far, int32 InNumSlices )
@@ -65,7 +135,12 @@ bool CTileLightGrid::Build( const FCamera& Camera, const FCameraViewport& Viewpo
 	}
 	for ( int32 Index = 0; Index < InNumLights; ++Index )
 	{
-		if ( !IsFinite( Lights[Index].Position ) || !NMath::IsFinite( Lights[Index].Radius ) )
+		if ( !IsFinite( Lights[Index].Position ) || !NMath::IsFinite( Lights[Index].Radius ) || !NMath::IsFinite( Lights[Index].ConeHalfAngle ) )
+		{
+			return false;
+		}
+		// スポットライトは、向きが決まらないと困る（有限で、長さが 0 でない）
+		if ( Lights[Index].IsSpot() && ( !IsFinite( Lights[Index].Direction ) || Lights[Index].Direction.LengthSquared() <= 0.0f ) )
 		{
 			return false;
 		}
@@ -77,15 +152,9 @@ bool CTileLightGrid::Build( const FCamera& Camera, const FCameraViewport& Viewpo
 		return false;
 	}
 
-	// 光ごとに、カメラからの位置と、カメラの前向きの奥行きを、先に求める。Near・Far の範囲の外の光（奥行きの範囲が、重ならない光）は、どのクラスタにも入れない
+	// 光ごとに、カメラからの位置と、光が届く範囲の奥行きの範囲を、先に求める。Near・Far の範囲の外の光（奥行きの範囲が、重ならない光）は、どのクラスタにも入れない
 	const FVector3 Forward = Camera.GetForward();
-	struct FLocalLight
-	{
-		FVector3 Offset;
-		float32 Radius;
-		float32 Depth;
-		bool bUsed;
-	};
+	const FVector3 Backward = Forward * -1.0f;
 	TArray<FLocalLight> Locals;
 	Locals.SetNum( InNumLights );
 	for ( int32 Index = 0; Index < InNumLights; ++Index )
@@ -93,8 +162,18 @@ bool CTileLightGrid::Build( const FCamera& Camera, const FCameraViewport& Viewpo
 		FLocalLight& Local = Locals[Index];
 		Local.Offset = Lights[Index].Position - Camera.Position;
 		Local.Radius = Lights[Index].Radius;
+		Local.bSpot = Lights[Index].IsSpot();
+		if ( Local.bSpot )
+		{
+			Local.Axis = Lights[Index].Direction.Normalized();
+			Local.CosHalf = NMath::Cos( Lights[Index].ConeHalfAngle );
+			Local.SinHalf = NMath::Sin( Lights[Index].ConeHalfAngle );
+		}
 		Local.Depth = FVector3::Dot( Local.Offset, Forward );
-		Local.bUsed = Local.Radius > 0.0f && Local.Depth + Local.Radius >= Camera.Near && Local.Depth - Local.Radius <= Camera.Far;
+		// 奥行きの範囲: 前向きへの広がりと、後ろ向きへの広がり（点の光は、どちらも半径）
+		Local.DepthMax = Local.Depth + GetExtent( Local, Forward );
+		Local.DepthMin = Local.Depth - GetExtent( Local, Backward );
+		Local.bUsed = Local.Radius > 0.0f && ( !Local.bSpot || Lights[Index].ConeHalfAngle > 0.0f ) && Local.DepthMax >= Camera.Near && Local.DepthMin <= Camera.Far;
 	}
 
 	Desc = InDesc;
@@ -158,11 +237,11 @@ bool CTileLightGrid::Build( const FCamera& Camera, const FCameraViewport& Viewpo
 				{
 					continue;
 				}
-				// 球が、4 つの側面の内側に、少しでもかかっているか
+				// 光が届く範囲（球・扇形）が、4 つの側面の内側に、少しでもかかっているか（面の内側への広がりが、中心から面までの距離以上）
 				bool bInside = true;
 				for ( int32 Plane = 0; Plane < 4 && bInside; ++Plane )
 				{
-					bInside = FVector3::Dot( Planes.Normals[Plane], Local.Offset ) >= -Local.Radius;
+					bInside = FVector3::Dot( Planes.Normals[Plane], Local.Offset ) >= -GetExtent( Local, Planes.Normals[Plane] );
 				}
 				if ( bInside )
 				{
@@ -170,7 +249,7 @@ bool CTileLightGrid::Build( const FCamera& Camera, const FCameraViewport& Viewpo
 				}
 			}
 
-			// 層ごとに、球の奥行きの範囲（中心の奥行き ± 半径）が重なる光だけを入れる
+			// 層ごとに、光が届く範囲の奥行きの範囲（球は、中心の奥行き ± 半径）が重なる光だけを入れる
 			for ( int32 Slice = 0; Slice < NumSlices; ++Slice )
 			{
 				const int32 Cluster = GetClusterIndex( TileX, TileY, Slice );
@@ -178,7 +257,7 @@ bool CTileLightGrid::Build( const FCamera& Camera, const FCameraViewport& Viewpo
 				for ( const int32 LightIndex : TileLights )
 				{
 					const FLocalLight& Local = Locals[LightIndex];
-					if ( Local.Depth + Local.Radius < SliceLow[Slice] || Local.Depth - Local.Radius > SliceHigh[Slice] )
+					if ( Local.DepthMax < SliceLow[Slice] || Local.DepthMin > SliceHigh[Slice] )
 					{
 						continue;
 					}

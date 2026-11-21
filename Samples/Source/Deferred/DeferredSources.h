@@ -23,7 +23,8 @@ namespace NDeferredSources
 		FVector4 TileInfo;                                              // x: タイル 1 枚の大きさ（ピクセル）、y: クラスタ 1 つの横の画素の数、z: タイルの一覧を使うか（1 / 0）
 		FVector4 ClusterInfo;                                           // x: 奥行きの層の数、y: タイルの行の数、z: Near、w: Far
 		FVector4 LightPositions[FDeferredDemoState::NumLights];        // xyz: 位置、w: 光の届く半径
-		FVector4 LightColors[FDeferredDemoState::NumLights];           // rgb: 色 x 明るさ
+		FVector4 LightColors[FDeferredDemoState::NumLights];           // rgb: 色 x 明るさ、w: スポットライトの内側の角（半角）の cos
+		FVector4 LightSpots[FDeferredDemoState::NumLights];            // xyz: スポットライトの向き（単位ベクトル）、w: 外側の角（半角）の cos（-1 以下なら、全方向の点の光）
 	};
 
 	// 物 1 つの定数（b5。頂点・ピクセルの両方に置く）

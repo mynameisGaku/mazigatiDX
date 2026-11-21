@@ -12,23 +12,33 @@ cbuffer cbScene : register( b4 )
 	float4 g_TileInfo;              // x: タイル 1 枚の大きさ（ピクセル）、y: クラスタ 1 つの横の画素の数、z: タイルの一覧を使うか（0 なら、全部の光を評価する）
 	float4 g_ClusterInfo;           // x: 奥行きの層の数、y: タイルの行の数、z: Near、w: Far
 	float4 g_LightPositions[NUM_LIGHTS];    // xyz: 位置、w: 光の届く半径
-	float4 g_LightColors[NUM_LIGHTS];       // rgb: 色 x 明るさ
+	float4 g_LightColors[NUM_LIGHTS];       // rgb: 色 x 明るさ、w: スポットライトの内側の角（半角）の cos
+	float4 g_LightSpots[NUM_LIGHTS];        // xyz: スポットライトの向き（単位ベクトル）、w: 外側の角（半角）の cos（-1 以下なら、全方向に光る点の光）
 };
 
 // 何も描かれていない所の色（Forward の描画先を消す色と同じ）
 static const float3 SkyColor = float3( 6.0, 8.0, 18.0 ) / 255.0;
 
-// 点の光 1 つぶんの明るさ（届く半径の端で 0 になる）
-float3 PointLight( int k, float3 normal, float3 world )
+// 動く光 1 つぶんの明るさ（届く半径の端で 0 になる）。スポットライト（g_LightSpots[k].w が -1 より大きい光）は、さらに、向きの軸から外側の角までの円錐の内側だけを照らし、
+// 内側の角から外側の角へ、滑らかに 0 になる（円錐の縁で 0 なので、ライトカリングが円錐の外のクラスタの一覧から外しても、同じ結果になる）。遠くまで届くので、距離による暗くなり方は、点の光より緩い
+float3 EvaluateLight( int k, float3 normal, float3 world )
 {
 	float3 toLight = g_LightPositions[k].xyz - world;
 	float distanceSquared = max( dot( toLight, toLight ), 1e-4 );
 	float radius = g_LightPositions[k].w;
 	float window = saturate( 1.0 - distanceSquared / ( radius * radius ) );
-	return g_LightColors[k].rgb * saturate( dot( normal, toLight * rsqrt( distanceSquared ) ) ) * window * window / ( 1.0 + distanceSquared * 0.3 );
+	float3 direction = toLight * rsqrt( distanceSquared );
+	float cone = 1.0;
+	float falloff = 0.3;
+	if ( g_LightSpots[k].w > -1.0 )
+	{
+		cone = smoothstep( g_LightSpots[k].w, g_LightColors[k].w, dot( -direction, g_LightSpots[k].xyz ) );
+		falloff = 0.02;
+	}
+	return g_LightColors[k].rgb * saturate( dot( normal, direction ) ) * window * window * cone / ( 1.0 + distanceSquared * falloff );
 }
 
-// 夜の光: 空の明るさ + 月の光（裏側も真っ黒にしないよう回り込ませる）+ 動く光（点の光）。
+// 夜の光: 空の明るさ + 月の光（裏側も真っ黒にしないよう回り込ませる）+ 動く光（点の光とスポットライト）。
 // 動く光は、一覧を使うとき（Forward+ / Deferred+）は、画素が属するクラスタ（タイル x 奥行きの層）に届く光だけを（光の番号の昇順に）足す。使わないときは、全部の光を足す。
 // 一覧に入らない光は、その画素には届かない（光が 0）ので、どちらも同じ結果になる。クラスタが溢れていたら、全部の光を足す（欠落させない）。
 // pixel は、描画先の画素の座標（SV_Position の xy）、normalizedDepth は、画素の奥行き / Far（カメラの前向きの距離。奥行きの層を決める）
@@ -47,24 +57,24 @@ float3 Lighting( float3 normal, float3 world, float2 pixel, float normalizedDept
 			{
 				break;
 			}
-			light += PointLight( ids.x, normal, world );
+			light += EvaluateLight( ids.x, normal, world );
 			if ( ids.y < 0 )
 			{
 				break;
 			}
-			light += PointLight( ids.y, normal, world );
+			light += EvaluateLight( ids.y, normal, world );
 			if ( ids.z < 0 )
 			{
 				break;
 			}
-			light += PointLight( ids.z, normal, world );
+			light += EvaluateLight( ids.z, normal, world );
 		}
 	}
 	else
 	{
 		for ( int k = 0; k < NUM_LIGHTS; ++k )
 		{
-			light += PointLight( k, normal, world );
+			light += EvaluateLight( k, normal, world );
 		}
 	}
 	return light;
