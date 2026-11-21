@@ -246,11 +246,8 @@ bool CDX12GeometryRenderer::BeginFrame( ID3D12GraphicsCommandList *InCommands, T
 			return false;
 		}
 	}
-	BufferPins.Reset();
-	PinnedBytes = 0;
+	Pins.Reset();
 	BufferDrawCount = 0;
-	TexturePins.Reset();
-	PipelinePins.Reset();
 	GraphicsDrawCount = 0;
 	Uploads.Reset();
 	UploadBytes = 0;
@@ -316,12 +313,7 @@ bool CDX12GeometryRenderer::DidFrameSucceed() const
 
 void CDX12GeometryRenderer::MoveFrameResources( TArray<FDX12BufferBinding> &OutBuffers, TArray<Microsoft::WRL::ComPtr<ID3D12Resource>> &OutUploads )
 {
-	for ( FDX12BufferBinding &Pin : BufferPins )
-	{
-		OutBuffers.Add( MoveTemp( Pin ) );
-	}
-	BufferPins.Reset();
-	PinnedBytes = 0;
+	Pins.MoveTo( OutBuffers );
 	for ( FUploadRecord &Record : Uploads )
 	{
 		OutUploads.Add( MoveTemp( Record.Resource ) );
@@ -333,16 +325,7 @@ void CDX12GeometryRenderer::MoveFrameResources( TArray<FDX12BufferBinding> &OutB
 void CDX12GeometryRenderer::MoveFrameResources( TArray<FDX12BufferBinding> &OutBuffers, TArray<Microsoft::WRL::ComPtr<ID3D12Resource>> &OutUploads, TArray<FDX12TextureBinding> &OutTextures, TArray<FDX12GraphicsPipelineBinding> &OutPipelines )
 {
 	MoveFrameResources( OutBuffers, OutUploads );
-	for ( FDX12TextureBinding &Pin : TexturePins )
-	{
-		OutTextures.Add( MoveTemp( Pin ) );
-	}
-	TexturePins.Reset();
-	for ( FDX12GraphicsPipelineBinding &Pin : PipelinePins )
-	{
-		OutPipelines.Add( MoveTemp( Pin ) );
-	}
-	PipelinePins.Reset();
+	Pins.MoveTo( OutTextures, OutPipelines );
 }
 
 int32 CDX12GeometryRenderer::GetWidth() const
@@ -404,152 +387,9 @@ bool CDX12GeometryRenderer::ResolveViewportAndScissor( D3D12_VIEWPORT &OutViewpo
 	return true;
 }
 
-bool CDX12GeometryRenderer::CanCommitBufferPins( TArrayView<const FDX12BufferBinding> Candidates, int32 &OutNewCount, uint64 &OutAddedBytes ) const
-{
-	OutNewCount = 0;
-	OutAddedBytes = 0;
-	for ( int32 i = 0; i < Candidates.Num(); ++i )
-	{
-		ID3D12Resource *Resource = Candidates[i].Resource.Get(); // 重複した資源は参照数と保持量を増やさない。
-		bool bSeen = false;
-		for ( const FDX12BufferBinding &Existing : BufferPins )
-		{
-			if ( Existing.Resource.Get() == Resource )
-			{
-				bSeen = true;
-				break;
-			}
-		}
-		for ( int32 Earlier = 0; !bSeen && Earlier < i; ++Earlier )
-		{
-			if ( Candidates[Earlier].Resource.Get() == Resource )
-			{
-				bSeen = true;
-			}
-		}
-		if ( !bSeen )
-		{
-			++OutNewCount;
-			if ( Candidates[i].Size > 256ull * 1024 * 1024 - PinnedBytes - OutAddedBytes )
-			{
-				return false;
-			}
-			OutAddedBytes += Candidates[i].Size;
-		}
-	}
-	return BufferPins.Num() + OutNewCount <= 256;
-}
-
-bool CDX12GeometryRenderer::CommitBufferPins( TArrayView<const FDX12BufferBinding> Candidates )
-{
-	int32 NewCount = 0;
-	uint64 AddedBytes = 0;
-	if ( !CanCommitBufferPins( Candidates, NewCount, AddedBytes ) )
-	{
-		return false;
-	}
-	for ( const FDX12BufferBinding &Candidate : Candidates )
-	{
-		bool bPinned = false;
-		for ( const FDX12BufferBinding &Existing : BufferPins )
-		{
-			if ( Existing.Resource.Get() == Candidate.Resource.Get() )
-			{
-				bPinned = true;
-				break;
-			}
-		}
-		if ( !bPinned )
-		{
-			BufferPins.Add( Candidate );
-		}
-	}
-	PinnedBytes += AddedBytes;
-	return true;
-}
-
 bool CDX12GeometryRenderer::PinTexture( const FDX12TextureBinding &Texture )
 {
-	if ( !Texture.Resource )
-	{
-		return false;
-	}
-	for ( const FDX12TextureBinding &Existing : TexturePins )
-	{
-		if ( Existing.Resource.Get() == Texture.Resource.Get() )
-		{
-			return true;
-		}
-	}
-	if ( TexturePins.Num() >= 256 )
-	{
-		return false;
-	}
-	TexturePins.Add( Texture );
-	return true;
-}
-
-bool CDX12GeometryRenderer::CommitGraphicsAssetPins( TArrayView<const FDX12TextureBinding> Textures, const FDX12GraphicsPipelineBinding &Pipeline )
-{
-	int32 NewTextures = 0; // 未保持の新規画像実体数。
-	for ( int32 i = 0; i < Textures.Num(); ++i )
-	{
-		ID3D12Resource *Resource = Textures[i].Resource.Get();
-		bool bSeen = false;
-		for ( const FDX12TextureBinding &Existing : TexturePins )
-		{
-			if ( Existing.Resource.Get() == Resource )
-			{
-				bSeen = true;
-				break;
-			}
-		}
-		for ( int32 Earlier = 0; !bSeen && Earlier < i; ++Earlier )
-		{
-			if ( Textures[Earlier].Resource.Get() == Resource )
-			{
-				bSeen = true;
-			}
-		}
-		if ( !bSeen )
-		{
-			++NewTextures;
-		}
-	}
-	bool bPipelinePinned = false; // 同じPSOの再描画では保持数を増やさない。
-	for ( const FDX12GraphicsPipelineBinding &Existing : PipelinePins )
-	{
-		if ( Existing.Pipeline.Get() == Pipeline.Pipeline.Get() )
-		{
-			bPipelinePinned = true;
-			break;
-		}
-	}
-	if ( TexturePins.Num() + NewTextures > 256 || PipelinePins.Num() + ( bPipelinePinned ? 0 : 1 ) > 256 )
-	{
-		return false;
-	}
-	for ( const FDX12TextureBinding &Candidate : Textures )
-	{
-		bool bPinned = false;
-		for ( const FDX12TextureBinding &Existing : TexturePins )
-		{
-			if ( Existing.Resource.Get() == Candidate.Resource.Get() )
-			{
-				bPinned = true;
-				break;
-			}
-		}
-		if ( !bPinned )
-		{
-			TexturePins.Add( Candidate );
-		}
-	}
-	if ( !bPipelinePinned )
-	{
-		PipelinePins.Add( Pipeline );
-	}
-	return true;
+	return Pins.PinTexture( Texture );
 }
 
 bool CDX12GeometryRenderer::ValidateDrawState( const FGeometryDrawState &State, const FTextureDrawView *Texture ) const
@@ -772,7 +612,7 @@ bool CDX12GeometryRenderer::DrawBufferGeometry( const FGeometryBufferDraw &Draw,
 	}
 	const FDX12BufferBinding Candidates[2] = { Vertices, Indices };
 	ID3D12PipelineState *Pipeline = Pipelines.GetOrCreatePipeline( State, Texture != nullptr ); // すべての検査後に描画状態を用意する。
-	if ( !Pipeline || !CommitBufferPins( TArrayView<const FDX12BufferBinding>( Candidates, bIndexed ? 2 : 1 ) ) )
+	if ( !Pipeline || !Pins.CommitBuffers( TArrayView<const FDX12BufferBinding>( Candidates, bIndexed ? 2 : 1 ) ) )
 	{
 		return false;
 	}
@@ -888,7 +728,7 @@ bool CDX12GeometryRenderer::DrawGraphicsPipelineTransient( const FGraphicsPipeli
 	int32 NewBufferPinCount = 0;
 	uint64 AddedBufferBytes = 0;
 	const TArrayView<const FDX12BufferBinding> NoBuffers; // 一時の転送は、バッファの登録を使わない。
-	if ( !CanCommitBufferPins( NoBuffers, NewBufferPinCount, AddedBufferBytes ) || !CommitGraphicsAssetPins( TArrayView<const FDX12TextureBinding>( SlotTextures.GetData(), SlotTextures.Num() ), Pipeline ) )
+	if ( !Pins.CanCommitBuffers( NoBuffers, NewBufferPinCount, AddedBufferBytes ) || !Pins.CommitGraphicsAssets( TArrayView<const FDX12TextureBinding>( SlotTextures.GetData(), SlotTextures.Num() ), Pipeline ) )
 	{
 		return false;
 	}
@@ -1099,7 +939,7 @@ bool CDX12GeometryRenderer::DrawGraphicsPipeline( const FGraphicsPipelineDraw &D
 	}
 	int32 NewBufferPinCount = 0;
 	uint64 AddedBufferBytes = 0;
-	if ( !CanCommitBufferPins( TArrayView<const FDX12BufferBinding>( BufferCandidates.GetData(), BufferCandidates.Num() ), NewBufferPinCount, AddedBufferBytes ) || !CommitGraphicsAssetPins( TArrayView<const FDX12TextureBinding>( SlotTextures.GetData(), SlotTextures.Num() ), Pipeline ) )
+	if ( !Pins.CanCommitBuffers( TArrayView<const FDX12BufferBinding>( BufferCandidates.GetData(), BufferCandidates.Num() ), NewBufferPinCount, AddedBufferBytes ) || !Pins.CommitGraphicsAssets( TArrayView<const FDX12TextureBinding>( SlotTextures.GetData(), SlotTextures.Num() ), Pipeline ) )
 	{
 		return false;
 	}
@@ -1133,7 +973,7 @@ bool CDX12GeometryRenderer::DrawGraphicsPipeline( const FGraphicsPipelineDraw &D
 		}
 		UploadBytes += ConstantBytes;
 	}
-	CommitBufferPins( TArrayView<const FDX12BufferBinding>( BufferCandidates.GetData(), BufferCandidates.Num() ) );
+	Pins.CommitBuffers( TArrayView<const FDX12BufferBinding>( BufferCandidates.GetData(), BufferCandidates.Num() ) );
 	++GraphicsDrawCount;
 
 	TArray<D3D12_RESOURCE_BARRIER> Barriers; // 同一バッファが多用途で重複しても1回の遷移へまとめる。

@@ -20,6 +20,7 @@ $types = @(
     @{ Path = 'Library/Platform/DX12/Render/Game/DX12GameCapture.h'; Type = 'CDX12GameCapture'; Role = '機能' },
     @{ Path = 'Library/Platform/DX12/Render/Game/DX12GameRenderer.h'; Type = 'CDX12GameRenderer'; Role = '機能' },
     @{ Path = 'Library/Platform/DX12/Render/Geometry/DX12GeometryRenderer.h'; Type = 'CDX12GeometryRenderer'; Role = '機能' },
+    @{ Path = 'Library/Platform/DX12/Render/Geometry/DX12FramePins.h'; Type = 'CDX12FramePins'; Role = '機能' },
     @{ Path = 'Library/Platform/DX12/Render/Target/DX12RenderTargetPass.h'; Type = 'CDX12RenderTargetPass'; Role = '機能' },
     @{ Path = 'Library/Platform/DX12/Resource/Buffer/DX12BufferStore.h'; Type = 'CDX12BufferStore'; Role = '機能' },
     @{ Path = 'Library/Platform/DX12/Resource/Descriptor/DX12DescriptorPool.h'; Type = 'CDX12DescriptorPool'; Role = '機能' },

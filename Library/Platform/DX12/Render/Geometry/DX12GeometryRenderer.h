@@ -5,6 +5,7 @@
 #include "Library/Core/Collection/ArrayView.h"
 #include "Library/Core/Render/RenderTargetPassDesc.h"
 #include "Library/Platform/DX12/Pipeline/Geometry/DX12GeometryPipelineStore.h"
+#include "DX12FramePins.h"
 #include "Library/Platform/DX12/Pipeline/Graphics/DX12GraphicsPipelineBinding.h"
 #include "Library/Platform/System/WindowsInclude.h"
 #include "Library/Core/Render/RenderClipRect.h"
@@ -85,12 +86,6 @@ class CDX12GeometryRenderer : public IRenderGeometry3D
 	bool IsValidSrvHandle( UINT64 Binding ) const;
 	// 論理解像度とクリップ範囲からViewportとScissorを求める。空範囲ならfalse。
 	bool ResolveViewportAndScissor( D3D12_VIEWPORT &OutViewport, D3D12_RECT &OutScissor ) const;
-	// 提出まで保持するバッファ群が上限内に収まるか、状態を汚さずに件数と容量だけを計算する。
-	bool CanCommitBufferPins( TArrayView<const FDX12BufferBinding> Candidates, int32 &OutNewCount, uint64 &OutAddedBytes ) const;
-	// 提出まで保持するバッファ群が上限内に収まるか検証し、成功時だけ登録する。
-	bool CommitBufferPins( TArrayView<const FDX12BufferBinding> Candidates );
-	// カスタムパイプラインが使う画像・パイプライン参照の上限を確認し、重複なく保持する。
-	bool CommitGraphicsAssetPins( TArrayView<const FDX12TextureBinding> Textures, const FDX12GraphicsPipelineBinding &Pipeline );
 	// GPUへ即時に記録する描画。頂点資源はGPU完了まで保持する。
 	struct FPendingDraw
 	{
@@ -128,10 +123,7 @@ class CDX12GeometryRenderer : public IRenderGeometry3D
 	uint64 UploadTicket = 0; // 現在フレームで開いているアップロードアリーナの予約番号。
 	bool bOwnsDepth = false; // 自身で作成したD32深度だけをResizeで再生成する。
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> BufferQueue; // 別キューへ再初期化された所有先を混在させない。
-	TArray<FDX12BufferBinding> BufferPins; // 記録後に登録解除されても残す、重複しないGPUバッファ参照。
-	TArray<FDX12TextureBinding> TexturePins; // 記録後に登録解除されても残す、重複しない画像参照。
-	TArray<FDX12GraphicsPipelineBinding> PipelinePins; // 記録後に登録解除されても残す、重複しないカスタムPSO。
-	uint64 PinnedBytes = 0; // 描画が保持するバッファ全体の合計。256MiBまで。
+	CDX12FramePins Pins; // 記録が参照するGPUバッファ・画像・カスタムPSOを、提出の完了まで、重複なく・上限内で保持する。
 	int32 BufferDrawCount = 0; // 一フレームの固定GPUバッファ描画は1024回まで。
 	int32 GraphicsDrawCount = 0; // 一フレームのカスタムグラフィックス描画は1024回まで。
 	TArray<FUploadRecord> Uploads; // GPU完了まで保持する頂点。

@@ -1264,6 +1264,9 @@
     <ClCompile Include="Library\Platform\DX12\Render\Game\DX12GameSurface.cpp">
       <Filter>Library\Platform\DX12\Render\Game</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\Geometry\DX12FramePins.cpp">
+      <Filter>Library\Platform\DX12\Render\Geometry</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Render\Geometry\DX12GeometryRenderer.cpp">
       <Filter>Library\Platform\DX12\Render\Geometry</Filter>
     </ClCompile>
@@ -3908,6 +3911,9 @@
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Render\Game\DX12GameSurface.h">
       <Filter>Library\Platform\DX12\Render\Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Render\Geometry\DX12FramePins.h">
+      <Filter>Library\Platform\DX12\Render\Geometry</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Render\Geometry\DX12GeometryRenderer.h">
       <Filter>Library\Platform\DX12\Render\Geometry</Filter>

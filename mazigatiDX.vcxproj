@@ -540,6 +540,7 @@
     <ClCompile Include="Library\Platform\DX12\Render\Game\DX12GameCapture.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\Game\DX12GameRenderer.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\Game\DX12GameSurface.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Render\Geometry\DX12FramePins.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\Geometry\DX12GeometryRenderer.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\Target\DX12RenderTargetPass.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Buffer\DX12BufferStore.cpp" />
@@ -1423,6 +1424,7 @@
     <ClInclude Include="Library\Platform\DX12\Render\Game\DX12GameCapture.h" />
     <ClInclude Include="Library\Platform\DX12\Render\Game\DX12GameRenderer.h" />
     <ClInclude Include="Library\Platform\DX12\Render\Game\DX12GameSurface.h" />
+    <ClInclude Include="Library\Platform\DX12\Render\Geometry\DX12FramePins.h" />
     <ClInclude Include="Library\Platform\DX12\Render\Geometry\DX12GeometryRenderer.h" />
     <ClInclude Include="Library\Platform\DX12\Render\Target\DX12RenderTargetPass.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Buffer\DX12BufferBinding.h" />
