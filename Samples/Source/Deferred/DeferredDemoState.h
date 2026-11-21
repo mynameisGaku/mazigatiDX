@@ -3,9 +3,12 @@
 
 #include "Library/Core/Memory/SharedPtr.h"
 #include "Library/Framework/Asset/Gpu/Shader.h"
+#include "Library/Framework/Asset/Texture/DynamicTexture.h"
+#include "Library/Framework/Asset/Texture/PixelImage.h"
 #include "Library/Framework/Asset/Texture/RenderTarget.h"
 #include "Library/Framework/Render/Camera/Camera.h"
 #include "Library/Framework/Render/Deferred/GBuffer.h"
+#include "Library/Framework/Render/LightCulling/TileLightGrid.h"
 #include "Library/Math/Math.h"
 
 //=============================================================================
@@ -22,7 +25,10 @@ struct FDeferredDemoState
 	static constexpr int32 ViewHeight = 640;
 
 	// 動く光の数（場面の定数の配列の大きさと同じ）
-	static constexpr int32 NumLights = 24;
+	static constexpr int32 NumLights = 64;
+
+	// ライトカリングのタイル 1 枚の大きさ（ピクセル）。画面を、この大きさの格子に分けて、タイルごとに、届く光の一覧を作る
+	static constexpr int32 TileSize = 32;
 
 	// 見せるもの（1 キー）: 仕上がり・地の色・法線・位置（深度から求めた位置を、模様にしたもの）・深度・自分で光る色
 	static constexpr int32 NumViewModes = 6;
@@ -36,6 +42,12 @@ struct FDeferredDemoState
 	int32 ViewMode = 0;
 	bool bDeferred = true;
 	bool bTimeRunning = true;
+	// タイルごとの光の一覧（Forward+ / Deferred+）を使うか。false なら、画素ごとに、全部の光を評価する（基準の経路）
+	bool bTiles = true;
+	// タイル 1 枚の一覧に入る光の数の上限（3 の倍数。溢れたタイルは、全部の光を評価する）。--deferred-tile-capacity で変えられる
+	int32 TileCapacity = 48;
+	// 検査用: 一覧の統計を、ログに出す（--deferred-tile-stats）
+	bool bLogTileStats = false;
 	float32 Exposure = 1.0f;
 
 	// メインのカメラ（場面の描画先の大きさ 1280 x 640 を映すものとして計算する）
@@ -60,6 +72,10 @@ struct FDeferredDemoState
 	//   GBuffer: 地の色・法線・深度・自分で光る色（Deferred のジオメトリのパスが書く）
 	//   SceneColor: 光を当てた場面の色（16 ビットの浮動小数点。1 を超える明るさが残る。Forward は、ここへ直接描くので、奥行きバッファを持つ）
 	CGBuffer GBuffer;
+	// タイルごとの光の一覧: CPU で作る一覧（TileGrid）を、8 ビット RGBA の画像（TileImage）へ詰めて、毎フレーム、動的な画像（TileTexture）へ反映する
+	CTileLightGrid TileGrid;
+	FPixelImage TileImage;
+	TSharedPtr<CDynamicTexture> TileTexture;
 	TSharedPtr<CRenderTarget> SceneColor;
 
 	// カメラが映す画面（場面の描画先）の大きさ

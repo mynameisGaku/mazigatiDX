@@ -1,10 +1,15 @@
 ﻿#include "DeferredView.h"
 
+#include "Library/Core/Log/Log.h"
+#include "Library/Framework/Asset/AssetSubsystem.h"
+#include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Render/Deferred/GBufferView.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
 #include "Library/Framework/Render/State/RenderState3D.h"
 #include "Source/Common/ShaderMeshes.h"
 #include "Source/Deferred/DeferredSources.h"
+
+DEFINE_LOG_CATEGORY_STATIC( LogDeferredView, Log )
 
 namespace
 {
@@ -12,8 +17,8 @@ namespace
 	const FColor32 SkyColor( 6, 8, 18, 255 );
 
 	// 動く光: 届く半径・明るさ・光る玉の大きさ・玉が自分で光る明るさ
-	constexpr float32 LightRadius = 11.0f;
-	constexpr float32 LightIntensity = 1.6f;
+	constexpr float32 LightRadius = 7.0f;
+	constexpr float32 LightIntensity = 2.6f;
 	constexpr float32 OrbSize = 0.3f;
 	constexpr float32 OrbGlow = 6.0f;
 	const FVector3 LightColors[6] = {
@@ -65,16 +70,26 @@ namespace
 	};
 	constexpr int32 NumGlassObjects = static_cast<int32>( sizeof( GlassObjects ) / sizeof( GlassObjects[0] ) );
 
-	// 光 Index の位置（3 つの輪の上を、輪ごとに違う向きと速さで回り、上下に揺れる）
+	// 光の輪: 半径・輪ごとの光の数。光の番号は、内側の輪から順に付ける。輪の半径は、半透明の物（ガラス）と食い込まない値にしてある
+	constexpr int32 NumRings = 4;
+	constexpr float32 RingRadii[NumRings] = { 5.5f, 11.0f, 16.5f, 21.0f };
+	constexpr int32 RingCounts[NumRings] = { 10, 16, 20, 18 };
+	static_assert( RingCounts[0] + RingCounts[1] + RingCounts[2] + RingCounts[3] == FDeferredDemoState::NumLights, "the rings hold all the lights" );
+
+	// 光 Index の位置（4 つの輪の上を、輪ごとに違う向きと速さで回り、上下に揺れる）
 	FVector3 GetLightPosition( int32 Index, float32 Time )
 	{
-		const int32 Ring = Index % 3;
-		const int32 InRing = Index / 3;
-		const float32 Radius = 5.0f + 5.5f * static_cast<float32>( Ring );
+		int32 Ring = 0;
+		int32 InRing = Index;
+		while ( Ring < NumRings - 1 && InRing >= RingCounts[Ring] )
+		{
+			InRing -= RingCounts[Ring];
+			++Ring;
+		}
 		const float32 Direction = Ring % 2 == 0 ? 1.0f : -1.0f;
-		const float32 Angle = Direction * Time * ( 0.45f - 0.1f * static_cast<float32>( Ring ) ) + static_cast<float32>( InRing ) * NMath::TWO_PI / 8.0f + static_cast<float32>( Ring ) * 0.7f;
+		const float32 Angle = Direction * Time * ( 0.45f - 0.08f * static_cast<float32>( Ring ) ) + static_cast<float32>( InRing ) * NMath::TWO_PI / static_cast<float32>( RingCounts[Ring] ) + static_cast<float32>( Ring ) * 0.7f;
 		const float32 Height = 1.4f + 0.6f * NMath::Sin( Time * 1.1f + static_cast<float32>( Index ) );
-		return FVector3( NMath::Cos( Angle ) * Radius, Height, NMath::Sin( Angle ) * Radius );
+		return FVector3( NMath::Cos( Angle ) * RingRadii[Ring], Height, NMath::Sin( Angle ) * RingRadii[Ring] );
 	}
 
 	// 形を 1 つ描く（物の定数を、頂点側とピクセル側に置いて、インデックスつきで描く）。Opacity は、半透明の物の不透明度（不透明の物は 1）
@@ -96,6 +111,7 @@ namespace
 		Scene.ViewProjection = State.Camera.GetViewMatrix() * State.Camera.GetProjectionMatrix( State.GetSceneViewport() );
 		Scene.CameraPosition = FVector4( State.Camera.Position, State.Camera.Far );
 		Scene.Parameters = FVector4( State.Time, static_cast<float32>( State.ViewMode ), static_cast<float32>( FDeferredDemoState::ViewWidth ), static_cast<float32>( FDeferredDemoState::ViewHeight ) );
+		Scene.TileInfo = FVector4( static_cast<float32>( FDeferredDemoState::TileSize ), static_cast<float32>( State.TileGrid.GetTexelsPerTile() ), State.bTiles ? 1.0f : 0.0f, 0.0f );
 		for ( int32 Index = 0; Index < FDeferredDemoState::NumLights; ++Index )
 		{
 			Scene.LightPositions[Index] = FVector4( GetLightPosition( Index, State.Time ), LightRadius );
@@ -110,6 +126,32 @@ CDeferredView::CDeferredView( const TSharedPtr<FDeferredDemoState>& InState )
 {
 }
 
+bool CDeferredView::UpdateTileLights()
+{
+	TArray<FCullLight> Lights;
+	for ( int32 Index = 0; Index < FDeferredDemoState::NumLights; ++Index )
+	{
+		FCullLight Light;
+		Light.Position = GetLightPosition( Index, State->Time );
+		Light.Radius = LightRadius;
+		Lights.Add( Light );
+	}
+	FTileLightGridDesc Desc;
+	Desc.TileSize = FDeferredDemoState::TileSize;
+	Desc.MaxLightsPerTile = State->TileCapacity;
+	if ( !State->TileGrid.Build( State->Camera, State->GetSceneViewport(), Lights.GetData(), Lights.Num(), Desc ) || !State->TileGrid.WriteImage( State->TileImage ) )
+	{
+		return false;
+	}
+	if ( !State->TileTexture.IsValid() )
+	{
+		CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
+		State->TileTexture = Assets != nullptr ? Assets->CreateDynamicTexture( "deferred-tile-lights", State->TileImage ) : TSharedPtr<CDynamicTexture>();
+		return State->TileTexture.IsValid();
+	}
+	return State->TileTexture->Update( State->TileImage );
+}
+
 void CDeferredView::RecordScene( FDrawContext& CommandList, bool bGeometryPass ) const
 {
 	const NDeferredSources::FSceneConstants Scene = MakeSceneConstants( *State );
@@ -117,6 +159,11 @@ void CDeferredView::RecordScene( FDrawContext& CommandList, bool bGeometryPass )
 	CommandList.ShaderConstants( EShaderStage::Pixel, 4, Scene );
 	CommandList.Culling( EDrawCulling::None );
 	CommandList.UseVertexShader( State->SceneVertex );
+	if ( !bGeometryPass )
+	{
+		// Forward（Forward+）: 光を計算する物のシェーダーが、タイルごとの光の一覧を t0 から読む
+		CommandList.ShaderTexture( 0, State->TileTexture );
+	}
 
 	// 地面
 	CommandList.UsePixelShader( bGeometryPass ? State->GeometryGroundPixel : State->ForwardGroundPixel );
@@ -187,6 +234,8 @@ void CDeferredView::RecordTransparent( FDrawContext& CommandList, bool bDeferred
 	CommandList.Culling( EDrawCulling::None );
 	CommandList.UseVertexShader( State->SceneVertex );
 	CommandList.UsePixelShader( bDeferred ? State->TransparentPixel : State->ForwardObjectPixel );
+	// タイルごとの光の一覧: Forward のシェーダーは t0、Deferred の半透明は G-buffer（t0〜t3）の次の t4
+	CommandList.ShaderTexture( bDeferred ? 4 : 0, State->TileTexture );
 	for ( int32 Index = 0; Index < NumGlassObjects; ++Index )
 	{
 		const FGlassObject& Glass = GlassObjects[Order[Index]];
@@ -208,6 +257,7 @@ void CDeferredView::RecordLighting( FDrawContext& CommandList ) const
 	const NDeferredSources::FSceneConstants Scene = MakeSceneConstants( *State );
 	CommandList.ShaderConstants( EShaderStage::Pixel, 4, Scene );
 	CommandList.ShaderConstants( EShaderStage::Pixel, CGBuffer::ViewConstantSlot, View );
+	CommandList.ShaderTexture( 4, State->TileTexture ); // タイルごとの光の一覧は、G-buffer（t0〜t3）の次
 	CommandList.UsePixelShader( State->LightingPixel );
 	if ( CommandList.PushTarget( State->SceneColor ) )
 	{
@@ -230,9 +280,19 @@ void CDeferredView::RecordComposite( FDrawContext& CommandList ) const
 
 void CDeferredView::Draw( FDrawContext& CommandList )
 {
-	if ( !State.IsValid() || !State->SceneColor.IsValid() || !State->GBuffer.IsValid() || !State->Camera.IsValid() )
+	if ( !State.IsValid() || !State->SceneColor.IsValid() || !State->GBuffer.IsValid() || !State->Camera.IsValid() || !UpdateTileLights() )
 	{
 		return;
+	}
+	if ( State->bLogTileStats )
+	{
+		// 検査用: 一覧の統計（画面に描いた絵の比べと一緒に、絞れていること・溢れを確かめる）
+		static int32 FrameCounter = 0;
+		if ( FrameCounter++ % 6 == 0 )
+		{
+			const int32 NumTiles = State->TileGrid.GetNumTilesX() * State->TileGrid.GetNumTilesY();
+			LOG( LogDeferredView, Log, "tile lights: tiles=%d entries=%d average=%.3f overflowed=%d culling=%d", NumTiles, State->TileGrid.GetTotalEntries(), static_cast<float64>( State->TileGrid.GetTotalEntries() ) / static_cast<float64>( NumTiles ), State->TileGrid.GetNumOverflowedTiles(), State->bTiles ? 1 : 0 );
+		}
 	}
 
 	if ( State->bDeferred )

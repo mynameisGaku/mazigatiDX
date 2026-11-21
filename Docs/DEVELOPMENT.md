@@ -710,7 +710,7 @@ Worldの`Components.Effect`には、任意の`Target`（追従先オブジェク
 |物理・AI・ワールド|`LogPhysics` `LogAI` `LogWorld`|
 |入力・OS|`LogInput` `LogGamepad` `LogPlatform`（DxLibの実装。アセット・音・ムービーのバックエンドを含む）`LogNull`（Nullバックエンド）`LogDX12`（DX12バックエンド）`LogBackendSupport`|
 |エディタ・デバッグ|`LogEditor`（Editor.exeのアプリ）`LogEditorUI`（各エディタの画面）`LogDebugOverlay` `LogProfiler`（記録・書き出し）`LogCrashReporter` `LogAssert`（CHECK / ENSURE）`LogImGuiAssert`|
-|ゲーム・サンプル・検査|`LogGame` `LogGameScene` `LogTitleScene` `LogPhysicsObjects`（ゲームのコード）、`LogSamples` `LogPostEffectsSample` `LogDeferredSample` `LogShadersSample`、`LogAssetSelfTest` `LogEcsSelfTest` `LogWorldSelfTest`（セルフテスト）、`LogTemp`（とりあえず出したいとき）|
+|ゲーム・サンプル・検査|`LogGame` `LogGameScene` `LogTitleScene` `LogPhysicsObjects`（ゲームのコード）、`LogSamples` `LogPostEffectsSample` `LogDeferredSample` `LogDeferredView` `LogShadersSample`、`LogAssetSelfTest` `LogEcsSelfTest` `LogWorldSelfTest`（セルフテスト）、`LogTemp`（とりあえず出したいとき）|
 
 **足すとき**: その`.cpp`だけで使うなら`DEFINE_LOG_CATEGORY_STATIC( LogXxx, Log )`。複数のファイルで使うなら、ヘッダーに`DECLARE_LOG_CATEGORY_EXTERN( LogXxx, Log )`、1つの`.cpp`に`DEFINE_LOG_CATEGORY( LogXxx )`（例: `AssetLog.h` `ProfilerLog.h` `RenderLog.h` `EditorLog.h` `NullLog.h` `DxLibRenderLog.h`）。新しい機能のために、まず、**上の既存のカテゴリで足りないか**を考えてください。定義だけして、`LOG( ... )`で1度も使っていない（その`.cpp`だけで使うカテゴリ）ものは、`CheckSourceFormat.ps1`が検出します。
 

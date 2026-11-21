@@ -4,5 +4,5 @@
 float4 main( VertexOutput i ) : SV_Target0
 {
 	float3 normal = normalize( i.Normal );
-	return float4( ShadeView( g_Albedo.rgb, normal, g_Emission.rgb, i.World, i.ViewDepth / g_CameraPosition.w ), g_Albedo.w );
+	return float4( ShadeView( g_Albedo.rgb, normal, g_Emission.rgb, i.World, i.ViewDepth / g_CameraPosition.w, i.Position.xy ), g_Albedo.w );
 }

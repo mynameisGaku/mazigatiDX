@@ -11,7 +11,7 @@
 |`Library/Framework/Render/Deferred/DeferredShaders.*`|`NDeferredShaders`: 製品の HLSL の正本（G-buffer の書き出し・読み出し）を文字列で渡す|
 |`EngineContent/Shaders/Deferred/GBufferWrite.hlsli`・`GBufferRead.hlsli`|G-buffer へ書く（`PackGBuffer`）部品と、読んで位置を再構成する（`LoadGBuffer`・`ReconstructWorldPosition`）部品|
 |`Samples/Assets/Deferred/Sample*.hlsl`・`Sample*.hlsli`|サンプルだけが使う 8 つのシェーダーと共通の部品。製品には含まれないので、`EngineContent` ではなく、サンプルの素材に置き、サンプルが実行時に読んで、製品の部品と連ねてコンパイルする（[シェーダーの管理](SHADERS.md)）|
-|`Samples/Source/Deferred`|サンプル `Deferred`: 夜の広場（動く光 24 個・光る溝・球と柱）を Forward と Deferred で描く|
+|`Samples/Source/Deferred`|サンプル `Deferred`: 夜の広場（動く光 64 個・光る溝・球と柱・半透明のガラス）を Forward と Deferred で描く。光は、タイルごとの一覧で絞れる（[R4 ライトカリング](R4_LIGHT_CULLING.md)）|
 
 ## G-buffer の中身
 

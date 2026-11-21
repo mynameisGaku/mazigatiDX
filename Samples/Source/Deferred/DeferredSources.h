@@ -20,6 +20,7 @@ namespace NDeferredSources
 		FMatrix4x4 ViewProjection;
 		FVector4 CameraPosition;                                        // xyz: カメラの位置、w: Far
 		FVector4 Parameters;                                            // x: 時間、y: 見せるもの（0〜5）、zw: 場面の描画先の大きさ（ピクセル）
+		FVector4 TileInfo;                                              // x: タイル 1 枚の大きさ（ピクセル）、y: タイル 1 枚の横の画素の数、z: タイルの一覧を使うか（1 / 0）
 		FVector4 LightPositions[FDeferredDemoState::NumLights];        // xyz: 位置、w: 光の届く半径
 		FVector4 LightColors[FDeferredDemoState::NumLights];           // rgb: 色 x 明るさ
 	};

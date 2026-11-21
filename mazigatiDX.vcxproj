@@ -106,6 +106,14 @@
     <ClInclude Include="Library\Framework\Render\Deferred\GBuffer.h" />
     <ClInclude Include="Library\Framework\Render\Deferred\GBufferView.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Library\Framework\Render\LightCulling\LightCullingShaders.cpp" />
+    <ClCompile Include="Library\Framework\Render\LightCulling\TileLightGrid.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Library\Framework\Render\LightCulling\LightCullingShaders.h" />
+    <ClInclude Include="Library\Framework\Render\LightCulling\TileLightGrid.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets"></ImportGroup>
   <ItemGroup>
@@ -1991,6 +1999,7 @@
     <None Include="EngineContent\Shaders\Deferred\GBufferRead.hlsli" />
     <None Include="EngineContent\Shaders\Deferred\GBufferWrite.hlsli" />
     <None Include="EngineContent\Shaders\DxLib\EffectMaterial.hlsl" />
+    <None Include="EngineContent\Shaders\LightCulling\TileLightList.hlsli" />
     <None Include="EngineContent\Shaders\Material\DepthHelper.hlsli" />
     <None Include="EngineContent\Shaders\Material\FrameDeclarations.hlsli" />
     <None Include="EngineContent\Shaders\Material\Helpers.hlsli" />

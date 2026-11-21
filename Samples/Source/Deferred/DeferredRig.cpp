@@ -43,6 +43,21 @@ CDeferredRig::CDeferredRig( const TSharedPtr<FDeferredDemoState>& InState )
 		{
 			State->bDeferred = false;
 		}
+		if ( NCommandLine::HasFlag( "deferred-no-tiles" ) )
+		{
+			State->bTiles = false;
+		}
+		if ( NCommandLine::HasFlag( "deferred-tile-stats" ) )
+		{
+			State->bLogTileStats = true;
+		}
+		const TOptional<FString> Capacity = NCommandLine::GetValue( "deferred-tile-capacity" );
+		if ( Capacity.IsSet() )
+		{
+			// 3 の倍数（画素 1 つに光 3 つ）に切り下げて、3〜96 に収める
+			const int32 Requested = static_cast<int32>( Capacity.GetValue().ToFloat( 24.0 ) );
+			State->TileCapacity = NMath::Clamp( Requested / 3 * 3, 3, 96 );
+		}
 		const TOptional<FString> FixedTime = NCommandLine::GetValue( "deferred-time" );
 		if ( FixedTime.IsSet() )
 		{
@@ -85,6 +100,10 @@ void CDeferredRig::HandleKeys()
 	if ( Input->IsKeyPressed( EKey::Num3 ) )
 	{
 		State->bTimeRunning = !State->bTimeRunning;
+	}
+	if ( Input->IsKeyPressed( EKey::Num4 ) )
+	{
+		State->bTiles = !State->bTiles;
 	}
 	if ( Input->IsKeyPressed( EKey::Q ) )
 	{

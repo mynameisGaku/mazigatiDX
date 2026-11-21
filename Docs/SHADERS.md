@@ -11,6 +11,7 @@
 |`DxLib/EffectMaterial.hlsl`|DxLib の材質効果|
 |`Material/*.hlsli`|材質の共通宣言、ノイズ、深度、表面の頂点、照明、影、Substrate の関数など10個のテンプレート|
 |`Deferred/GBufferWrite.hlsli`・`GBufferRead.hlsli`|G-buffer へ書く（`PackGBuffer`）部品と、読んで深度から世界の位置を求める（`LoadGBuffer`・`ReconstructWorldPosition`）部品。[R3 G-buffer と Deferred 照明](R3_DEFERRED.md)|
+|`LightCulling/TileLightList.hlsli`|タイルごとの光の一覧（`CTileLightGrid::WriteImage` が詰めた 8 ビット RGBA の画像）を読む部品。[R4 ライトカリング](R4_LIGHT_CULLING.md)|
 
 `Build/EngineShaders.targets` は C++ のコンパイル前に `Tools/GenerateEmbeddedShaders.ps1` を呼びます。Native C++ の `CustomBuildStep` に全シェーダーと生成器の入力、生成ヘッダーの出力を登録するため、Visual Studio の変更検出にも反映されます。生成器は構成ごとの `IntDir/EngineShaders/MazigatiEngineShaderSources.generated.h` へ文字列を出力します。同じ内容なら時刻を更新せず、無関係な再コンパイルを避けます。識別子の衝突、NUL、文字列の区切りとして扱えない入力はエラーにし、有効だった出力を途中の内容で置き換えません。
 

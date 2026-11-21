@@ -5,6 +5,7 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Render/Deferred/DeferredShaders.h"
+#include "Library/Framework/Render/LightCulling/LightCullingShaders.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogDeferredSample, Log )
 
@@ -67,17 +68,22 @@ bool NDeferredSources::CompileAll( FDeferredDemoState& State, CAssetSubsystem& A
 		return false;
 	}
 
-	// 必要な部品を、シェーダーごとに、この順で連ねる
-	const FString Scene = Common + Geometry;
-	const FString Write = FString( NDeferredShaders::GetGBufferWriteSource() ) + Scene;
+	// 必要な部品を、シェーダーごとに、この順で連ねる。光の数と、タイルごとの光の一覧の画像の段は、先頭で決める
+	//   Forward のシェーダーと、ジオメトリのパス: 一覧は t0（G-buffer を読まないので）。ライティングと、Deferred の半透明: G-buffer が t0〜t3 なので、一覧は t4
+	const FString Header = FString::Printf( "#define NUM_LIGHTS %d\n", FDeferredDemoState::NumLights );
+	const FString Tiles = FString( NLightCullingShaders::GetTileLightListSource() );
+	const FString ForwardScene = Header + "#define TILE_LIGHTS_REGISTER t0\n" + Tiles + Common + Geometry;
+	const FString DeferredScene = Header + "#define TILE_LIGHTS_REGISTER t4\n" + Tiles + Common + Geometry;
+	const FString Scene = ForwardScene;
+	const FString Write = FString( NDeferredShaders::GetGBufferWriteSource() ) + ForwardScene;
 	const FString Read = FString( NDeferredShaders::GetGBufferReadSource() );
 	State.SceneVertex = CompileOne( EShaderStage::Vertex, Scene + Vertex, "scene vertex" );
 	State.ForwardObjectPixel = CompileOne( EShaderStage::Pixel, Scene + ForwardObject, "forward object" );
 	State.ForwardGroundPixel = CompileOne( EShaderStage::Pixel, Scene + ForwardGround, "forward ground" );
 	State.GeometryObjectPixel = CompileOne( EShaderStage::Pixel, Write + GeometryObject, "geometry object" );
 	State.GeometryGroundPixel = CompileOne( EShaderStage::Pixel, Write + GeometryGround, "geometry ground" );
-	State.LightingPixel = CompileOne( EShaderStage::Pixel, Read + Common + Lighting, "lighting" );
+	State.LightingPixel = CompileOne( EShaderStage::Pixel, Read + Header + "#define TILE_LIGHTS_REGISTER t4\n" + Tiles + Common + Lighting, "lighting" );
 	State.CompositePixel = CompileOne( EShaderStage::Pixel, Composite, "composite" );
-	State.TransparentPixel = CompileOne( EShaderStage::Pixel, Read + Scene + Transparent, "transparent" );
+	State.TransparentPixel = CompileOne( EShaderStage::Pixel, Read + DeferredScene + Transparent, "transparent" );
 	return State.SceneVertex.IsValid() && State.ForwardObjectPixel.IsValid() && State.ForwardGroundPixel.IsValid() && State.GeometryObjectPixel.IsValid() && State.GeometryGroundPixel.IsValid() && State.LightingPixel.IsValid() && State.CompositePixel.IsValid() && State.TransparentPixel.IsValid();
 }

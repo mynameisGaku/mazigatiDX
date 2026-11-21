@@ -16,5 +16,5 @@ float4 main( PixelInput i ) : SV_Target
 		return float4( SkyColor, 1 );
 	}
 	float normalizedDepth = g_GBufferDepth.Sample( g_GBufferSampler, i.Uv ).r;
-	return float4( ShadeView( gbuffer.Albedo, gbuffer.Normal, gbuffer.Emission, gbuffer.World, normalizedDepth ), 1 );
+	return float4( ShadeView( gbuffer.Albedo, gbuffer.Normal, gbuffer.Emission, gbuffer.World, normalizedDepth, i.Position.xy ), 1 );
 }

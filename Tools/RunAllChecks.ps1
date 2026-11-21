@@ -95,6 +95,7 @@ Invoke-Step 'scene draw order mutations' (Join-Path $selfTest 'RunSceneDrawOrder
 Invoke-Step 'scene draw snapshot mutations' (Join-Path $selfTest 'RunSceneDrawSnapshotMutationTests.ps1') @('-FrameworkRoot', $frameworkRoot)
 Invoke-Step 'scene shader validation mutations' (Join-Path $selfTest 'RunSceneShaderValidationMutationTests.ps1') @('-FrameworkRoot', $frameworkRoot)
 Invoke-Step 'deferred mutations' (Join-Path $selfTest 'RunDeferredMutationTests.ps1') @('-FrameworkRoot', $frameworkRoot)
+Invoke-Step 'light culling mutations' (Join-Path $selfTest 'RunLightCullingMutationTests.ps1') @('-FrameworkRoot', $frameworkRoot)
 
 Write-Host '== source format and clean'
 Invoke-Step 'source format' (Join-Path $selfTest 'CheckSourceFormat.ps1')
@@ -131,6 +132,7 @@ foreach ($configuration in $Configurations) {
     Invoke-Step "scene draw snapshot contracts $configuration" (Join-Path $selfTest 'RunSceneDrawSnapshotTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
     Invoke-Step "material surface snapshots $configuration" (Join-Path $selfTest 'RunMaterialSurfaceSnapshotTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
     Invoke-Step "deferred contracts $configuration" (Join-Path $selfTest 'RunDeferredTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
+    Invoke-Step "light culling contracts $configuration" (Join-Path $selfTest 'RunLightCullingTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration)
 }
 
 if (-not $Quick) {

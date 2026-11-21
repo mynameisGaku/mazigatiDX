@@ -6237,6 +6237,7 @@
     <Filter Include="EngineContent\Shaders\DX12"><UniqueIdentifier>{A6169E75-D063-DEA8-29B2-797544F8BE35}</UniqueIdentifier></Filter>
     <Filter Include="EngineContent\Shaders\Deferred"><UniqueIdentifier>{B94A80D7-0C4D-481F-BD8E-9628688DAE27}</UniqueIdentifier></Filter>
     <Filter Include="EngineContent\Shaders\DxLib"><UniqueIdentifier>{68D37D4C-ECDB-5E52-694D-992C04F499CA}</UniqueIdentifier></Filter>
+    <Filter Include="EngineContent\Shaders\LightCulling"><UniqueIdentifier>{7858B0E3-8305-49F4-B527-719FF1DB046D}</UniqueIdentifier></Filter>
     <Filter Include="EngineContent\Shaders\Material"><UniqueIdentifier>{C25D9D1B-69D2-C170-6590-480D0E3CEA65}</UniqueIdentifier></Filter>
   </ItemGroup>
   <ItemGroup>
@@ -6249,6 +6250,7 @@
     <None Include="EngineContent\Shaders\Deferred\GBufferRead.hlsli"><Filter>EngineContent\Shaders\Deferred</Filter></None>
     <None Include="EngineContent\Shaders\Deferred\GBufferWrite.hlsli"><Filter>EngineContent\Shaders\Deferred</Filter></None>
     <None Include="EngineContent\Shaders\DxLib\EffectMaterial.hlsl"><Filter>EngineContent\Shaders\DxLib</Filter></None>
+    <None Include="EngineContent\Shaders\LightCulling\TileLightList.hlsli"><Filter>EngineContent\Shaders\LightCulling</Filter></None>
     <None Include="EngineContent\Shaders\Material\DepthHelper.hlsli"><Filter>EngineContent\Shaders\Material</Filter></None>
     <None Include="EngineContent\Shaders\Material\FrameDeclarations.hlsli"><Filter>EngineContent\Shaders\Material</Filter></None>
     <None Include="EngineContent\Shaders\Material\Helpers.hlsli"><Filter>EngineContent\Shaders\Material</Filter></None>
@@ -6320,5 +6322,12 @@
     <ClCompile Include="Library\Framework\Render\Deferred\DeferredShaders.cpp"><Filter>Library\Framework\Render\Deferred</Filter></ClCompile>
     <ClCompile Include="Library\Framework\Render\Deferred\GBuffer.cpp"><Filter>Library\Framework\Render\Deferred</Filter></ClCompile>
     <ClCompile Include="Library\Framework\Render\Deferred\GBufferView.cpp"><Filter>Library\Framework\Render\Deferred</Filter></ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Library\Framework\Render\LightCulling"><UniqueIdentifier>{42908607-F81C-4652-904F-1F93C6F23D75}</UniqueIdentifier></Filter>
+    <ClInclude Include="Library\Framework\Render\LightCulling\LightCullingShaders.h"><Filter>Library\Framework\Render\LightCulling</Filter></ClInclude>
+    <ClInclude Include="Library\Framework\Render\LightCulling\TileLightGrid.h"><Filter>Library\Framework\Render\LightCulling</Filter></ClInclude>
+    <ClCompile Include="Library\Framework\Render\LightCulling\LightCullingShaders.cpp"><Filter>Library\Framework\Render\LightCulling</Filter></ClCompile>
+    <ClCompile Include="Library\Framework\Render\LightCulling\TileLightGrid.cpp"><Filter>Library\Framework\Render\LightCulling</Filter></ClCompile>
   </ItemGroup>
 </Project>

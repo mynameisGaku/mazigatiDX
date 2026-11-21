@@ -632,3 +632,12 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **半透明（Forward 透明合成）**: 不透明の物だけ G-buffer へ書き、光を当てた場面の色へ、半透明の物を、奥から手前の順（物の中心で並べる簡単な方法）にアルファ合成で重ねる。Forward 経路はハードウェアの奥行きの比べ、Deferred 経路は G-buffer の深度をシェーダーで読んで `clip`（場面の色の描き先は、不透明の物の奥行きバッファを持たないため）。並べ替えの正しさは、両経路が同じ順を使うので、画像の比べでは確かめられない。
 - **残り**: 標準の材質（Surface）の G-buffer 出力、深度だけのパス、描画グラフの名前付きパスとしての接続、半透明の `BeginScene3D` 分類との接続、マルチサンプル、光のカリング（R4）。
 - **push はしていない**（Codex の利用上限が戻ったあと、または指示があったときに行う）。
+
+## R4: タイルごとのライトカリング（2026-11-21）
+
+- **何を作ったか**: `Library/Framework/Render/LightCulling`（`CTileLightGrid`・`NLightCullingShaders`）、`EngineContent/Shaders/LightCulling/TileLightList.hlsli`（製品の部品）、サンプル `Deferred` の動く光 64 個を、タイルごとの一覧で絞って足す（Forward+ / Deferred+）。詳細は [R4 ライトカリング](R4_LIGHT_CULLING.md)。一覧は CPU が作り、8 ビット RGBA の動的な画像（`CDynamicTexture::Update`）で毎フレーム渡す。DX12 の compute 版は、まだ（この実装が基準になる）。
+- **欠落させない取り決め**: タイルは、カメラから Far の面まで伸びる四角錐。光の球と 4 つの側面・Near/Far を比べる保守的な判定で、触れるタイルには必ず入る。一覧は光の番号の昇順（足し算の順が同じ）で、光は半径の端で 0 になるので、絞った絵が全部の光の絵と**ビットまで一致**する（Forward+・Deferred+ とも差 0）。上限を超えたタイルは先頭の画素の R を 255 にして、シェーダーが全部の光を評価する。
+- **検査**: `RunLightCullingTests.ps1`（契約。見落とし 0・近遠面・溢れ・画像の詰め方・作れない入力・WARP の D3D11 で HLSL の読み出しを C++ と比べる）、`RunLightCullingMutationTests.ps1`（C++ 側 12 件）、`RunDeferredTests.ps1 -Platform`（一覧を使った絵と全部の光の絵を、3 つの実行先で全画素比べる。溢れを起こす上限 3 の実行も）。`RunAllChecks.ps1` に 2 手順を足した。
+- **落とし穴**: (1) 画面の文字（統計）が、一覧を使う / 使わないで変わると、絵の比べに文字の違いが混ざる（最初の失敗の原因）。統計をログへ出す `--deferred-tile-stats` のときは、画面の文字を描かない。(2) 動的な画像は、同じ大きさでしか `Update` できない。一覧の上限は起動のときに決める（`--deferred-tile-capacity`）。(3) DxLib は、シェーダーが宣言した画像の段が t0 から連続している必要があるので、Forward のシェーダーは一覧を t0、G-buffer を読むシェーダーは G-buffer を t0〜t3、一覧を t4 に置く（段は、シェーダーの先頭の `#define TILE_LIGHTS_REGISTER` で決める）。(4) 契約の見落としの検査は、タイルの中の点（4 隅と中心）と奥行きで当てるので、変異を足すときは、半径 0 の光のような端を、Near の判定で先に落ちない位置に置く（最初の変異検査で、半径 0 を受け入れる変異が生き残った）。
+- **残り**: GPU の compute による一覧作成と交差判定、奥行き方向のクラスタ分割、スポットライト、Deferred の光の体積、GPU 時間の表示。
+- **push はしていない**。

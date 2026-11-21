@@ -9,7 +9,7 @@ class FDrawContext;
 
 //=============================================================================
 // CDeferredView
-//   夜の広場（動く光 24 個・光る溝・球と柱）を、2 つの経路で描いて、画面へ見せる。
+//   夜の広場（動く光 64 個・光る溝・球と柱）を、2 つの経路で描いて、画面へ見せる。光は、タイルごとの一覧（CTileLightGrid）で絞って足す（Forward+ / Deferred+。入り切りできる）。
 //   - Forward: 物を、光の計算つきで、場面の色（16 ビットの浮動小数点の描画先）へ直接描く。
 //   - Deferred: ジオメトリのパスで、物の面の情報（地の色・法線・深度・自分で光る色）を G-buffer へ書き、
 //     ライティングのパスで、G-buffer の画素ごとに、深度から世界の位置を求めて、光を当てる。光は、物の数ではなく、画素の数だけ計算する。
@@ -26,6 +26,9 @@ public:
 	void Draw( FDrawContext& CommandList ) override;
 
 private:
+	// 動く光から、タイルごとの光の一覧を作って、動的な画像へ反映する（毎フレーム。使うかどうかに関わらず作る）。作れなければ false
+	bool UpdateTileLights();
+
 	// 場面の物をすべて描く（bGeometryPass が true なら G-buffer へ書くピクセルシェーダー、false なら Forward のピクセルシェーダー）
 	void RecordScene( FDrawContext& CommandList, bool bGeometryPass ) const;
 
