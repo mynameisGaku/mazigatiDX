@@ -710,7 +710,7 @@ Worldの`Components.Effect`には、任意の`Target`（追従先オブジェク
 |物理・AI・ワールド|`LogPhysics` `LogAI` `LogWorld`|
 |入力・OS|`LogInput` `LogGamepad` `LogPlatform`（DxLibの実装。アセット・音・ムービーのバックエンドを含む）`LogNull`（Nullバックエンド）`LogDX12`（DX12バックエンド）`LogBackendSupport`|
 |エディタ・デバッグ|`LogEditor`（Editor.exeのアプリ）`LogEditorUI`（各エディタの画面）`LogDebugOverlay` `LogProfiler`（記録・書き出し）`LogCrashReporter` `LogAssert`（CHECK / ENSURE）`LogImGuiAssert`|
-|ゲーム・サンプル・検査|`LogGame` `LogGameScene` `LogTitleScene` `LogPhysicsObjects`（ゲームのコード）、`LogSamples` `LogPostEffectsSample` `LogShadersSample`、`LogAssetSelfTest` `LogEcsSelfTest` `LogWorldSelfTest`（セルフテスト）、`LogTemp`（とりあえず出したいとき）|
+|ゲーム・サンプル・検査|`LogGame` `LogGameScene` `LogTitleScene` `LogPhysicsObjects`（ゲームのコード）、`LogSamples` `LogPostEffectsSample` `LogDeferredSample` `LogShadersSample`、`LogAssetSelfTest` `LogEcsSelfTest` `LogWorldSelfTest`（セルフテスト）、`LogTemp`（とりあえず出したいとき）|
 
 **足すとき**: その`.cpp`だけで使うなら`DEFINE_LOG_CATEGORY_STATIC( LogXxx, Log )`。複数のファイルで使うなら、ヘッダーに`DECLARE_LOG_CATEGORY_EXTERN( LogXxx, Log )`、1つの`.cpp`に`DEFINE_LOG_CATEGORY( LogXxx )`（例: `AssetLog.h` `ProfilerLog.h` `RenderLog.h` `EditorLog.h` `NullLog.h` `DxLibRenderLog.h`）。新しい機能のために、まず、**上の既存のカテゴリで足りないか**を考えてください。定義だけして、`LOG( ... )`で1度も使っていない（その`.cpp`だけで使うカテゴリ）ものは、`CheckSourceFormat.ps1`が検出します。
 
@@ -894,6 +894,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File Tools\RunAllChecks.ps1      
 ```
 
 `Tools/RunAllChecks.ps1`は、ビルド（Debug・Release。警告・エラーが 0）→ 書式の検査と、その検査自身・掃除（`Clean.bat`）の確認 → 自己確認（構成ごとに ecs・assets・world）→ サンプル集の確認・テンプレートの確認、の順に実行して、1 行ずつ結果を出し、最後に PASS / FAIL をまとめます（失敗があれば、終了コード 1。各ステップのログは、一時フォルダーに残ります）。`-Configurations Debug`（片方だけ）、`-SkipBuild`、`-Quick`（時間のかかるサンプル集・テンプレートの確認を飛ばす）が使えます。自己確認は、環境によっては、グラフィックスドライバーのクラッシュで、まれに失敗する（アプリの問題ではない）ので、`-Retries`（既定 3）まで、やり直します。実行中に、`x64`の下の実行ファイル（`Samples.exe`など）が動いていると、リンクできないので、先に閉じてください（動いていれば、止まります）。
+
+### どこまで動かすか（絞るか、全部か）
+
+検査は、目的で使い分けます。
+
+- **作業の途中**は、触った所と、それに直接つながる所だけを動かします（新しい契約の実行ファイル、変異検査、書式・台帳・シェーダーの一覧など）。`RunAllChecks.ps1 -SkipBuild -Quick -Filter "deferred*","engine shader*","source format*"` のように、`-Filter`（手順名のワイルドカード）で絞れます。繰り返す作業に、全部の待ち時間を掛けません。
+- **コミットの前**は、共有の部分に触れたなら、絞らずに `-SkipBuild -Quick` の全部を動かします。共有の部分とは、`Library/Core` と、多くの所が読む見出し、プロジェクトの一覧（`*.vcxproj`）と検査の取り込み手順、`EngineContent/Shaders`（ライブラリの全体へ埋め込まれる）、検査の実行手順（`RunAllChecks.ps1`・`Run*.ps1`）です。新しい領域に足しただけで、これらに触れていないなら、その領域の検査と、書式・台帳で足ります。
+- 理由: 「触ったファイル」から見えない結びつきが、実際にあります。ほかの検査プロジェクトが、実装ファイルを手書きの一覧で直接コンパイルしている（新しいファイルを足すと、その一覧に無くてリンクが失敗する）、別の場所に残った古い実行ファイルを読む検査がある、共有の生成物を全体が読む、といった形です。2026-11-21 の描画グラフのコピーパスでは、全部を動かして、2 件の本物の不具合（検査プロジェクトの一覧の漏れと、古い実行ファイル）が見つかりました。全部を動かす費用は、ビルドを除いて約 17 分（67 手順、`-SkipBuild -Quick`）で、人の手間は掛かりません。
+- ビルドは、どちらの場合も、変えたソースの構成ぶん必要です（`-SkipBuild` は、すでに作ってある場合だけ）。
 
 ## 変更の統合
 

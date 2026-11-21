@@ -58,7 +58,7 @@ msbuild .\project.sln /p:Configuration=Release /p:Platform=x64 /m
 |分類|サンプル|
 |---|---|
 |描画の基礎|`Hello` `Shapes` `Images` `DrawState` `RenderTarget` `Filters` `Pixels` `Text` `PixelEffects`|
-|3D|`Camera` `RenderState` `Lighting` `Shapes3D` `Shadows` `Shaders` `PostEffects` `Island`|
+|3D|`Camera` `RenderState` `Lighting` `Shapes3D` `Shadows` `Shaders` `PostEffects` `Deferred` `Island`|
 |入力・音・物理|`Input` `Audio` `Physics`|
 |ワールド・エフェクト・AI|`World` `Effects` `AI`|
 |ゲーム|`Village`（2D の見下ろし）、`Platformer2D` / `Platformer3D`（横スクロール / 3D のアクション）、`Inventory`（UI とセーブ）、`Adventure`（3D 探索アクションの参照ゲーム）|

@@ -1,5 +1,7 @@
 ﻿# すべての検査（ビルド・書式・自己確認・サンプル・テンプレート・掃除）を、順に実行して、結果をまとめる。
-#   powershell -NoProfile -ExecutionPolicy Bypass -File Tools\RunAllChecks.ps1 [-Configurations Debug,Release] [-SkipBuild] [-Retries 3] [-Quick]
+#   powershell -NoProfile -ExecutionPolicy Bypass -File Tools\RunAllChecks.ps1 [-Configurations Debug,Release] [-SkipBuild] [-Retries 3] [-Quick] [-Filter <手順名のワイルドカード>,...]
+#   -Filter: 名前が合う手順だけを動かす（例: -Filter "deferred*","engine shader*","source format*"）。ビルドは -SkipBuild で別に決める。1 つも合わなければ失敗にする（打ち間違いを、通ったことにしない）。
+#     触った所と、それに直接つながる所だけを確かめたいときに使う。共有の部分（Core・共通の見出し・プロジェクトの一覧・EngineContent のシェーダー・検査の実行手順）に触れたら、絞らずに全部を動かす（Docs/DEVELOPMENT.md の「どこまで動かすか」）。
 #
 #   先に、Tools\SetupSelfTests.ps1 で、検査のリポジトリ（framework-test）を、Source\SelfTest へ取り付けておく（DxLib は、FetchDxLib.bat で）。
 #   順番:
@@ -16,9 +18,11 @@ param(
     [string[]]$Configurations = @('Debug', 'Release'),
     [switch]$SkipBuild,
     [int]$Retries = 3,
-    [switch]$Quick
+    [switch]$Quick,
+    [string[]]$Filter = @()
 )
 
+$Filter = @($Filter | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ }) # -File で渡すと、配列が 1 つの文字列（カンマ区切り）になるので、分ける
 $ErrorActionPreference = 'Continue'
 $frameworkRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $selfTest = Join-Path $frameworkRoot 'Source\SelfTest'
@@ -38,6 +42,7 @@ $results = New-Object System.Collections.Generic.List[object]
 
 # 1 つのステップを、子の PowerShell で実行する。出力は、ログへ。終了コードが 0 なら、成功
 function Invoke-Step([string]$Name, [string]$ScriptPath, [string[]]$Arguments = @(), [int]$MaxAttempts = 1) {
+    if ($Filter.Count -gt 0 -and -not ($Filter | Where-Object { $Name -like $_ })) { return } # -Filter に合わない手順は、動かさず、数えない
     $safeName = ($Name -replace '[^A-Za-z0-9_.-]', '_')
     $started = Get-Date
     $attempt = 0
@@ -89,6 +94,7 @@ Invoke-Step 'engine shader source files' (Join-Path $selfTest 'RunEngineShaderSo
 Invoke-Step 'scene draw order mutations' (Join-Path $selfTest 'RunSceneDrawOrderMutationTests.ps1') @('-FrameworkRoot', $frameworkRoot)
 Invoke-Step 'scene draw snapshot mutations' (Join-Path $selfTest 'RunSceneDrawSnapshotMutationTests.ps1') @('-FrameworkRoot', $frameworkRoot)
 Invoke-Step 'scene shader validation mutations' (Join-Path $selfTest 'RunSceneShaderValidationMutationTests.ps1') @('-FrameworkRoot', $frameworkRoot)
+Invoke-Step 'deferred mutations' (Join-Path $selfTest 'RunDeferredMutationTests.ps1') @('-FrameworkRoot', $frameworkRoot)
 
 Write-Host '== source format and clean'
 Invoke-Step 'source format' (Join-Path $selfTest 'CheckSourceFormat.ps1')
@@ -124,6 +130,7 @@ foreach ($configuration in $Configurations) {
     Invoke-Step "scene draw order contracts $configuration" (Join-Path $selfTest 'RunSceneDrawOrderTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
     Invoke-Step "scene draw snapshot contracts $configuration" (Join-Path $selfTest 'RunSceneDrawSnapshotTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
     Invoke-Step "material surface snapshots $configuration" (Join-Path $selfTest 'RunMaterialSurfaceSnapshotTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
+    Invoke-Step "deferred contracts $configuration" (Join-Path $selfTest 'RunDeferredTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
 }
 
 if (-not $Quick) {
@@ -136,6 +143,10 @@ if (-not $Quick) {
     }
 }
 
+if ($Filter.Count -gt 0 -and $results.Count -eq 0) {
+    Write-Host ("NO STEP MATCHED the filter: " + ($Filter -join ", ")) -ForegroundColor Red
+    exit 1
+}
 $failed = @($results | Where-Object { -not $_.Passed })
 Write-Host ''
 Write-Host "Logs: $logDirectory"

@@ -96,6 +96,16 @@
     <ClInclude Include="Library\Framework\Material\Surface\MaterialSurfaceSnapshot.h" />
     <ClInclude Include="Library\Framework\Material\Surface\Private\MaterialSurfaceSnapshotData.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Library\Framework\Render\Deferred\DeferredShaders.cpp" />
+    <ClCompile Include="Library\Framework\Render\Deferred\GBuffer.cpp" />
+    <ClCompile Include="Library\Framework\Render\Deferred\GBufferView.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Library\Framework\Render\Deferred\DeferredShaders.h" />
+    <ClInclude Include="Library\Framework\Render\Deferred\GBuffer.h" />
+    <ClInclude Include="Library\Framework\Render\Deferred\GBufferView.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets"></ImportGroup>
   <ItemGroup>
@@ -1978,6 +1988,17 @@
     <None Include="EngineContent\Shaders\DX12\DepthClear.hlsl" />
     <None Include="EngineContent\Shaders\DX12\ForwardMesh.hlsl" />
     <None Include="EngineContent\Shaders\DX12\Geometry.hlsl" />
+    <None Include="EngineContent\Shaders\Deferred\GBufferRead.hlsli" />
+    <None Include="EngineContent\Shaders\Deferred\GBufferWrite.hlsli" />
+    <None Include="EngineContent\Shaders\Deferred\SampleCommon.hlsli" />
+    <None Include="EngineContent\Shaders\Deferred\SampleComposite.hlsl" />
+    <None Include="EngineContent\Shaders\Deferred\SampleForwardGround.hlsl" />
+    <None Include="EngineContent\Shaders\Deferred\SampleForwardObject.hlsl" />
+    <None Include="EngineContent\Shaders\Deferred\SampleGeometry.hlsli" />
+    <None Include="EngineContent\Shaders\Deferred\SampleGeometryGround.hlsl" />
+    <None Include="EngineContent\Shaders\Deferred\SampleGeometryObject.hlsl" />
+    <None Include="EngineContent\Shaders\Deferred\SampleLighting.hlsl" />
+    <None Include="EngineContent\Shaders\Deferred\SampleVertex.hlsl" />
     <None Include="EngineContent\Shaders\DxLib\EffectMaterial.hlsl" />
     <None Include="EngineContent\Shaders\Material\DepthHelper.hlsli" />
     <None Include="EngineContent\Shaders\Material\FrameDeclarations.hlsli" />

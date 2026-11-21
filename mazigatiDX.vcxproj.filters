@@ -6235,6 +6235,7 @@
     <Filter Include="EngineContent"><UniqueIdentifier>{47C625D3-E2A3-894B-8318-F046C88E9B2D}</UniqueIdentifier></Filter>
     <Filter Include="EngineContent\Shaders"><UniqueIdentifier>{DAFFAF9C-F7FD-8BF6-818D-D953411687FC}</UniqueIdentifier></Filter>
     <Filter Include="EngineContent\Shaders\DX12"><UniqueIdentifier>{A6169E75-D063-DEA8-29B2-797544F8BE35}</UniqueIdentifier></Filter>
+    <Filter Include="EngineContent\Shaders\Deferred"><UniqueIdentifier>{B94A80D7-0C4D-481F-BD8E-9628688DAE27}</UniqueIdentifier></Filter>
     <Filter Include="EngineContent\Shaders\DxLib"><UniqueIdentifier>{68D37D4C-ECDB-5E52-694D-992C04F499CA}</UniqueIdentifier></Filter>
     <Filter Include="EngineContent\Shaders\Material"><UniqueIdentifier>{C25D9D1B-69D2-C170-6590-480D0E3CEA65}</UniqueIdentifier></Filter>
   </ItemGroup>
@@ -6245,6 +6246,17 @@
     <None Include="EngineContent\Shaders\DX12\DepthClear.hlsl"><Filter>EngineContent\Shaders\DX12</Filter></None>
     <None Include="EngineContent\Shaders\DX12\ForwardMesh.hlsl"><Filter>EngineContent\Shaders\DX12</Filter></None>
     <None Include="EngineContent\Shaders\DX12\Geometry.hlsl"><Filter>EngineContent\Shaders\DX12</Filter></None>
+    <None Include="EngineContent\Shaders\Deferred\GBufferRead.hlsli"><Filter>EngineContent\Shaders\Deferred</Filter></None>
+    <None Include="EngineContent\Shaders\Deferred\GBufferWrite.hlsli"><Filter>EngineContent\Shaders\Deferred</Filter></None>
+    <None Include="EngineContent\Shaders\Deferred\SampleCommon.hlsli"><Filter>EngineContent\Shaders\Deferred</Filter></None>
+    <None Include="EngineContent\Shaders\Deferred\SampleComposite.hlsl"><Filter>EngineContent\Shaders\Deferred</Filter></None>
+    <None Include="EngineContent\Shaders\Deferred\SampleForwardGround.hlsl"><Filter>EngineContent\Shaders\Deferred</Filter></None>
+    <None Include="EngineContent\Shaders\Deferred\SampleForwardObject.hlsl"><Filter>EngineContent\Shaders\Deferred</Filter></None>
+    <None Include="EngineContent\Shaders\Deferred\SampleGeometry.hlsli"><Filter>EngineContent\Shaders\Deferred</Filter></None>
+    <None Include="EngineContent\Shaders\Deferred\SampleGeometryGround.hlsl"><Filter>EngineContent\Shaders\Deferred</Filter></None>
+    <None Include="EngineContent\Shaders\Deferred\SampleGeometryObject.hlsl"><Filter>EngineContent\Shaders\Deferred</Filter></None>
+    <None Include="EngineContent\Shaders\Deferred\SampleLighting.hlsl"><Filter>EngineContent\Shaders\Deferred</Filter></None>
+    <None Include="EngineContent\Shaders\Deferred\SampleVertex.hlsl"><Filter>EngineContent\Shaders\Deferred</Filter></None>
     <None Include="EngineContent\Shaders\DxLib\EffectMaterial.hlsl"><Filter>EngineContent\Shaders\DxLib</Filter></None>
     <None Include="EngineContent\Shaders\Material\DepthHelper.hlsli"><Filter>EngineContent\Shaders\Material</Filter></None>
     <None Include="EngineContent\Shaders\Material\FrameDeclarations.hlsli"><Filter>EngineContent\Shaders\Material</Filter></None>
@@ -6308,5 +6320,14 @@
     <ClInclude Include="Library\Framework\Render\Graph\RenderGraphPassDesc.h"><Filter>Library\Framework\Render\Graph</Filter></ClInclude>
     <ClInclude Include="Library\Framework\Render\Graph\RenderGraphBuilder.h"><Filter>Library\Framework\Render\Graph</Filter></ClInclude>
     <ClCompile Include="Library\Framework\Render\Graph\RenderGraphBuilder.cpp"><Filter>Library\Framework\Render\Graph</Filter></ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Library\Framework\Render\Deferred"><UniqueIdentifier>{7B09FB25-0794-4971-8186-16F4A3FE16DF}</UniqueIdentifier></Filter>
+    <ClInclude Include="Library\Framework\Render\Deferred\DeferredShaders.h"><Filter>Library\Framework\Render\Deferred</Filter></ClInclude>
+    <ClInclude Include="Library\Framework\Render\Deferred\GBuffer.h"><Filter>Library\Framework\Render\Deferred</Filter></ClInclude>
+    <ClInclude Include="Library\Framework\Render\Deferred\GBufferView.h"><Filter>Library\Framework\Render\Deferred</Filter></ClInclude>
+    <ClCompile Include="Library\Framework\Render\Deferred\DeferredShaders.cpp"><Filter>Library\Framework\Render\Deferred</Filter></ClCompile>
+    <ClCompile Include="Library\Framework\Render\Deferred\GBuffer.cpp"><Filter>Library\Framework\Render\Deferred</Filter></ClCompile>
+    <ClCompile Include="Library\Framework\Render\Deferred\GBufferView.cpp"><Filter>Library\Framework\Render\Deferred</Filter></ClCompile>
   </ItemGroup>
 </Project>

@@ -43,6 +43,6 @@ Graph.InsertTextureCopyPassAfter( "Geometry", "SaveSceneColor", SceneColor, Save
 
 ## 現在の範囲
 
-現在の入口は既存画像を使うオフスクリーン描画パスと、画像のコピーパス。グラフによる資源生成、深度だけのパス、compute、パスの自動並べ替え、標準ForwardとDeferredの名前付きパス群は今後のR3で接続する。互換用の描画命令は従来の順序で動く。
+現在の入口は既存画像を使うオフスクリーン描画パスと、画像のコピーパス。グラフによる資源生成、深度だけのパス、compute、パスの自動並べ替え、標準ForwardとDeferredの名前付きパス群は今後のR3で接続する。G-bufferとDeferred照明は、公開のシェーダー窓口の上に作った部品とサンプルとして先に入っている（[R3 G-buffer と Deferred 照明](R3_DEFERRED.md)）。描画グラフのパスとしての接続は今後。互換用の描画命令は従来の順序で動く。
 
 設計の参照 [EpicのRender Dependency Graph](https://dev.epicgames.com/documentation/unreal-engine/render-dependency-graph-in-unreal-engine)。

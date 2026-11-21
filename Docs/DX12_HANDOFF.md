@@ -621,3 +621,13 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - 変異検査は17件を実施した。生き残ったのは2件で、どちらも同じ結果になる変異だった（元と先が同じ資源・形式の違いは、`NDX12TextureCopy::RecordRegionCopy` も自分で拒否するため、`FindTextureCopyPair` の同じ条件を外しても観測できない）。残りは、検査を足して検出した。注意点として、契約の実行ファイルはソースではなく `x64/<構成>/mazigatiDX.lib` にリンクするので、変異ごとにライブラリを作り直さないと、変異が反映されずにすべて生き残ったように見える。
 - 検査の落とし穴が2つあった。(1) シーン描画一覧・材質の画像検査は `Samples/x64/<構成>/Samples.exe` を読むが、`project.sln` 経由のビルドは `x64/<構成>/Samples.exe` へ出力する。前者は古いまま残るので、`Samples/Samples.vcxproj` を直接ビルドしてから走らせる（Releaseは `_LINK_=/LTCG /INCREMENTAL:NO` を付ける）。古い実行ファイルのままだと、Releaseだけ「元の基準と違う」と失敗し、差の数値が毎回変わる。(2) `ComputeContract.vcxproj` はDX12のソースを直接コンパイルするので、`DX12TextureStore.cpp` が新しい `DX12TextureCopy.cpp` を参照した時点で、一覧へ追加が必要だった。
 - `RunAllChecks.ps1 -SkipBuild -Quick` は64ステップすべて合格（Debug / Release）。
+
+## R3: G-buffer と Deferred 照明（2026-11-21）
+
+- **何を作ったか**: `Library/Framework/Render/Deferred`（`CGBuffer`・`FGBufferView`・`NDeferredShaders`）、`EngineContent/Shaders/Deferred`（`GBufferWrite.hlsli`・`GBufferRead.hlsli` と、サンプルの 7 つのシェーダー）、サンプル `Deferred`。公開のシェーダー窓口（複数出力・浮動小数点の描画先・`ShaderTexture`）だけで作ったので、DxLib・DX12 で同じコード・同じ HLSL が動く。詳細は [R3 G-buffer と Deferred 照明](R3_DEFERRED.md)。
+- **深度の取り決め**: 「カメラからの距離 / Far」ではなく「カメラの前向きの奥行き / Far」を、32 ビット浮動小数点の 1 チャンネルへ書く。距離だと Far の面の隅で 1 を超え（広角で Far の 4 倍）、何も描かれていない印（1）と区別できない。奥行きなら、再構成も `CameraPosition + (Far の面の点までのベクトル) * 深度` の正規化なしの一次式。頂点シェーダーがクリップ座標の w（= 奥行き）を渡して補間すれば、画素ごとの値になる。
+- **位置の基準 `FGBufferView::Make` は、`FCamera::ScreenToWorld`（逆行列）を使わない**: Far が大きい広角（Near 0.2・Far 1000）で、奥行き 0.999 付近の点が 0.2 ずれた（float の逆行列の精度）。射影行列と同じ規則（縦横比 ÷ 横の拡大、レンズのずらし）から、Far の面の画面の端を直接求める。検査の基準も、逆行列を使わない `WorldToScreen` で点を画面へ進めて戻す形にした（距離に対する割合の誤差が 5e-8〜4e-7）。
+- **検査**: `RunDeferredTests.ps1`（契約 64 項目 + `-Platform` で Forward と Deferred の画像比べ）、`RunDeferredMutationTests.ps1`（C++ 側 14 件）。HLSL の計算は、WARP の D3D11 コンピュートシェーダーで実際に走らせて、C++ の再構成と `PackGBuffer` の 4 つの出力と比べる（`FGBufferView` のメモリをそのまま定数にするので、構造体の並びの取り違えも見つかる）。画像比べは、DX12・WARP・DxLib の 3 つで、見せるもの 6 種類ずつ、差が 3 を超える画素が 0（実測の最大差は 1）。手元の変異検査は、契約 37 件と、画像でだけ見える HLSL の 7 件（DX12 のみ）のすべてを検出。`RunAllChecks.ps1` に 2 つの手順（変異と契約）を足した。
+- **落とし穴**: (1) HLSL を C++ の文字列でなくファイルにする方針（[シェーダーの管理](SHADERS.md)）なので、テスト専用の HLSL も `Source/SelfTest/DeferredContract.hlsl` のファイルにして、実行ファイルへパスを引数で渡す。ファイルをそのまま読むと先頭に UTF-8 の BOM が付き、HLSL に連ねると `Illegal character` になる（生成器は BOM を外して埋め込む）。(2) サンプルの画像検査は `x64/<構成>/Samples.exe` を使う（`project.sln` の `Samples` ターゲットの出力）。(3) 契約が `mazigatiDX.lib` にリンクするので、HLSL・ライブラリの変異は、変異ごとにライブラリを作り直す。(4) 撮影の部屋は `%TEMP%` に作る（`move_windows_off_main.ps1` が移すのは `%TEMP%` のプロセスだけ）。
+- **残り**: 標準の材質（Surface）の G-buffer 出力、深度だけのパス、描画グラフの名前付きパスとしての接続、半透明の合成、マルチサンプル、光のカリング（R4）。
+- **push はしていない**（Codex の利用上限が戻ったあと、または指示があったときに行う）。

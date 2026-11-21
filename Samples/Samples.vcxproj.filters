@@ -379,6 +379,18 @@
     <ClCompile Include="Source\Platformer3D\Platformer3DWalker.cpp">
       <Filter>Source\Platformer3D</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Deferred\DeferredRig.cpp">
+      <Filter>Source\Deferred</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Deferred\DeferredSample.cpp">
+      <Filter>Source\Deferred</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Deferred\DeferredSources.cpp">
+      <Filter>Source\Deferred</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Deferred\DeferredView.cpp">
+      <Filter>Source\Deferred</Filter>
+    </ClCompile>
     <ClCompile Include="Source\PostEffects\PostEffectsPanel.cpp">
       <Filter>Source\PostEffects</Filter>
     </ClCompile>
@@ -945,6 +957,21 @@
     <ClInclude Include="Source\Platformer3D\Platformer3DWalker.h">
       <Filter>Source\Platformer3D</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Deferred\DeferredDemoState.h">
+      <Filter>Source\Deferred</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Deferred\DeferredRig.h">
+      <Filter>Source\Deferred</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Deferred\DeferredSample.h">
+      <Filter>Source\Deferred</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Deferred\DeferredSources.h">
+      <Filter>Source\Deferred</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Deferred\DeferredView.h">
+      <Filter>Source\Deferred</Filter>
+    </ClInclude>
     <ClInclude Include="Source\PostEffects\PostEffectsDemoState.h">
       <Filter>Source\PostEffects</Filter>
     </ClInclude>
@@ -1147,6 +1174,9 @@
     </Filter>
     <Filter Include="Source\Browser">
       <UniqueIdentifier>{D8D78B2D-2923-6F91-261A-33237F267A69}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Deferred">
+      <UniqueIdentifier>{4BA11CEF-8720-44C8-9D32-73BAC24A1846}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source\Camera">
       <UniqueIdentifier>{D238EC28-8D81-BFB8-03E5-491BE1DB2C2C}</UniqueIdentifier>

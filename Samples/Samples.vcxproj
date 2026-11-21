@@ -185,6 +185,10 @@
     <ClCompile Include="Source\Platformer3D\Platformer3DShelled.cpp" />
     <ClCompile Include="Source\Platformer3D\Platformer3DView.cpp" />
     <ClCompile Include="Source\Platformer3D\Platformer3DWalker.cpp" />
+    <ClCompile Include="Source\Deferred\DeferredRig.cpp" />
+    <ClCompile Include="Source\Deferred\DeferredSample.cpp" />
+    <ClCompile Include="Source\Deferred\DeferredSources.cpp" />
+    <ClCompile Include="Source\Deferred\DeferredView.cpp" />
     <ClCompile Include="Source\PostEffects\PostEffectsPanel.cpp" />
     <ClCompile Include="Source\PostEffects\PostEffectsRig.cpp" />
     <ClCompile Include="Source\PostEffects\PostEffectsSample.cpp" />
@@ -376,6 +380,11 @@
     <ClInclude Include="Source\Platformer3D\Platformer3DState.h" />
     <ClInclude Include="Source\Platformer3D\Platformer3DView.h" />
     <ClInclude Include="Source\Platformer3D\Platformer3DWalker.h" />
+    <ClInclude Include="Source\Deferred\DeferredDemoState.h" />
+    <ClInclude Include="Source\Deferred\DeferredRig.h" />
+    <ClInclude Include="Source\Deferred\DeferredSample.h" />
+    <ClInclude Include="Source\Deferred\DeferredSources.h" />
+    <ClInclude Include="Source\Deferred\DeferredView.h" />
     <ClInclude Include="Source\PostEffects\PostEffectsDemoState.h" />
     <ClInclude Include="Source\PostEffects\PostEffectsPanel.h" />
     <ClInclude Include="Source\PostEffects\PostEffectsRig.h" />
