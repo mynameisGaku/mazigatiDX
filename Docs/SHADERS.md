@@ -1,6 +1,6 @@
 # シェーダーの管理
 
-固定のシェーダーと共通の生成テンプレートは `EngineContent/Shaders` が正本です。C++ に HLSL の本文を埋め込んで編集しません。新しい HLSL は、サンプルのものも含めて、最初から `EngineContent/Shaders` のファイルとして作ります（生成ヘッダーを読めるのはライブラリだけなので、サンプルはライブラリの窓口から全文を受け取ります）。検査だけが使う HLSL は、`EngineContent` ではなく、検査のリポジトリへファイルとして置きます。材質グラフから命令や値ごとの式を組み立てる部分は、引き続きマテリアルコンパイラが担当します。
+固定のシェーダーと共通の生成テンプレートは `EngineContent/Shaders` が正本です。C++ に HLSL の本文を埋め込んで編集しません。新しい HLSL は、最初から `EngineContent/Shaders` のファイルとして作ります（C++ の文字列には書きません）。ただし、`EngineContent` は製品に同梱され、ライブラリへ埋め込まれるので、**製品が使う部品だけ**を置きます。サンプルだけが使うシェーダーは、サンプルの素材（`Samples/Assets/<サンプル名>/`、例: `Samples/Assets/Deferred`）へファイルとして置き、サンプルが実行時に読んで、製品の部品（`NDeferredShaders` など）と連ねてコンパイルします。検査だけが使う HLSL は、検査のリポジトリ（`Source/SelfTest`）へファイルとして置きます。材質グラフから命令や値ごとの式を組み立てる部分は、引き続きマテリアルコンパイラが担当します。
 
 |場所|担当|
 |---|---|
@@ -11,7 +11,6 @@
 |`DxLib/EffectMaterial.hlsl`|DxLib の材質効果|
 |`Material/*.hlsli`|材質の共通宣言、ノイズ、深度、表面の頂点、照明、影、Substrate の関数など10個のテンプレート|
 |`Deferred/GBufferWrite.hlsli`・`GBufferRead.hlsli`|G-buffer へ書く（`PackGBuffer`）部品と、読んで深度から世界の位置を求める（`LoadGBuffer`・`ReconstructWorldPosition`）部品。[R3 G-buffer と Deferred 照明](R3_DEFERRED.md)|
-|`Deferred/Sample*.hlsl`・`SampleCommon.hlsli`・`SampleGeometry.hlsli`|サンプル Deferred の場面（頂点・Forward・ジオメトリのパス・ライティング・合成）。全文は `NDeferredShaders::GetSampleSource` が部品を連ねて返す|
 
 `Build/EngineShaders.targets` は C++ のコンパイル前に `Tools/GenerateEmbeddedShaders.ps1` を呼びます。Native C++ の `CustomBuildStep` に全シェーダーと生成器の入力、生成ヘッダーの出力を登録するため、Visual Studio の変更検出にも反映されます。生成器は構成ごとの `IntDir/EngineShaders/MazigatiEngineShaderSources.generated.h` へ文字列を出力します。同じ内容なら時刻を更新せず、無関係な再コンパイルを避けます。識別子の衝突、NUL、文字列の区切りとして扱えない入力はエラーにし、有効だった出力を途中の内容で置き換えません。
 

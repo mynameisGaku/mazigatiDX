@@ -5,7 +5,7 @@ cbuffer cbScene : register( b4 )
 {
 	row_major float4x4 g_ViewProjection;
 	float4 g_CameraPosition;        // xyz: カメラの位置、w: Far
-	float4 g_Parameters;            // x: 時間、y: 見せるもの（0〜5）
+	float4 g_Parameters;            // x: 時間、y: 見せるもの（0〜5）、zw: 場面の描画先の大きさ（ピクセル）
 	float4 g_LightPositions[24];    // xyz: 位置、w: 光の届く半径
 	float4 g_LightColors[24];       // rgb: 色 x 明るさ
 };

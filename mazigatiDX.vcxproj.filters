@@ -6248,15 +6248,6 @@
     <None Include="EngineContent\Shaders\DX12\Geometry.hlsl"><Filter>EngineContent\Shaders\DX12</Filter></None>
     <None Include="EngineContent\Shaders\Deferred\GBufferRead.hlsli"><Filter>EngineContent\Shaders\Deferred</Filter></None>
     <None Include="EngineContent\Shaders\Deferred\GBufferWrite.hlsli"><Filter>EngineContent\Shaders\Deferred</Filter></None>
-    <None Include="EngineContent\Shaders\Deferred\SampleCommon.hlsli"><Filter>EngineContent\Shaders\Deferred</Filter></None>
-    <None Include="EngineContent\Shaders\Deferred\SampleComposite.hlsl"><Filter>EngineContent\Shaders\Deferred</Filter></None>
-    <None Include="EngineContent\Shaders\Deferred\SampleForwardGround.hlsl"><Filter>EngineContent\Shaders\Deferred</Filter></None>
-    <None Include="EngineContent\Shaders\Deferred\SampleForwardObject.hlsl"><Filter>EngineContent\Shaders\Deferred</Filter></None>
-    <None Include="EngineContent\Shaders\Deferred\SampleGeometry.hlsli"><Filter>EngineContent\Shaders\Deferred</Filter></None>
-    <None Include="EngineContent\Shaders\Deferred\SampleGeometryGround.hlsl"><Filter>EngineContent\Shaders\Deferred</Filter></None>
-    <None Include="EngineContent\Shaders\Deferred\SampleGeometryObject.hlsl"><Filter>EngineContent\Shaders\Deferred</Filter></None>
-    <None Include="EngineContent\Shaders\Deferred\SampleLighting.hlsl"><Filter>EngineContent\Shaders\Deferred</Filter></None>
-    <None Include="EngineContent\Shaders\Deferred\SampleVertex.hlsl"><Filter>EngineContent\Shaders\Deferred</Filter></None>
     <None Include="EngineContent\Shaders\DxLib\EffectMaterial.hlsl"><Filter>EngineContent\Shaders\DxLib</Filter></None>
     <None Include="EngineContent\Shaders\Material\DepthHelper.hlsli"><Filter>EngineContent\Shaders\Material</Filter></None>
     <None Include="EngineContent\Shaders\Material\FrameDeclarations.hlsli"><Filter>EngineContent\Shaders\Material</Filter></None>

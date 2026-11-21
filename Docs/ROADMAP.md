@@ -161,5 +161,5 @@ R3の入口として、既存画像を読み書きするオフスクリーン描
 
 ## 2026-11-21 R3のG-bufferとDeferred照明
 
-`CGBuffer` が地の色・法線・深度・自分で光る色の4枚の描画先を持ち、ジオメトリのパスが1回の描画（MRT）で書き、ライティングのパスが深度から世界の位置を求めて光を当てる。深度は「カメラの前向きの奥行き / Far」で保存し、`FGBufferView` と同じ式のHLSLで再構成する。サンプル `Deferred` は、同じ光の式でForwardとDeferredを描き、見せるもの6種類を、DX12・WARP・DxLibの3つの実行先で画素ごとに比べる。標準の材質（Surface）のG-buffer出力、深度だけのパス、描画グラフの名前付きパス群への接続、透明物の合成、光のカリングは残る。[R3 G-buffer と Deferred 照明](R3_DEFERRED.md)
+`CGBuffer` が地の色・法線・深度・自分で光る色の4枚の描画先を持ち、ジオメトリのパスが1回の描画（MRT）で書き、ライティングのパスが深度から世界の位置を求めて光を当てる。深度は「カメラの前向きの奥行き / Far」で保存し、`FGBufferView` と同じ式のHLSLで再構成する。サンプル `Deferred` は、同じ光の式でForwardとDeferredを描き、見せるもの6種類を、DX12・WARP・DxLibの3つの実行先で画素ごとに比べる。半透明の物は、光を当てた場面の色へ、Forwardで奥から手前へアルファ合成で重ねる（Deferred経路はG-bufferの深度で奥の画素を省く）。標準の材質（Surface）のG-buffer出力、深度だけのパス、描画グラフの名前付きパス群への接続、光のカリングは残る。[R3 G-buffer と Deferred 照明](R3_DEFERRED.md)
 

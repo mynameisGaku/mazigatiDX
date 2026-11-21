@@ -56,7 +56,7 @@ void CDeferredSample::OnEnter()
 	SceneColorDesc.Format = ERenderTargetFormat::Float16;
 	SceneColorDesc.Channels = 4;
 	State->SceneColor = Assets->CreateRenderTarget( SceneColorName, SceneColorDesc );
-	if ( !State->SceneColor.IsValid() || !State->GBuffer.Create( *Assets, GBufferName, FDeferredDemoState::ViewWidth, FDeferredDemoState::ViewHeight ) || !NDeferredSources::CompileAll( *State ) )
+	if ( !State->SceneColor.IsValid() || !State->GBuffer.Create( *Assets, GBufferName, FDeferredDemoState::ViewWidth, FDeferredDemoState::ViewHeight ) || !NDeferredSources::CompileAll( *State, *Assets ) )
 	{
 		return;
 	}

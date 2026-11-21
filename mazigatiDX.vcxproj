@@ -1990,15 +1990,6 @@
     <None Include="EngineContent\Shaders\DX12\Geometry.hlsl" />
     <None Include="EngineContent\Shaders\Deferred\GBufferRead.hlsli" />
     <None Include="EngineContent\Shaders\Deferred\GBufferWrite.hlsli" />
-    <None Include="EngineContent\Shaders\Deferred\SampleCommon.hlsli" />
-    <None Include="EngineContent\Shaders\Deferred\SampleComposite.hlsl" />
-    <None Include="EngineContent\Shaders\Deferred\SampleForwardGround.hlsl" />
-    <None Include="EngineContent\Shaders\Deferred\SampleForwardObject.hlsl" />
-    <None Include="EngineContent\Shaders\Deferred\SampleGeometry.hlsli" />
-    <None Include="EngineContent\Shaders\Deferred\SampleGeometryGround.hlsl" />
-    <None Include="EngineContent\Shaders\Deferred\SampleGeometryObject.hlsl" />
-    <None Include="EngineContent\Shaders\Deferred\SampleLighting.hlsl" />
-    <None Include="EngineContent\Shaders\Deferred\SampleVertex.hlsl" />
     <None Include="EngineContent\Shaders\DxLib\EffectMaterial.hlsl" />
     <None Include="EngineContent\Shaders\Material\DepthHelper.hlsli" />
     <None Include="EngineContent\Shaders\Material\FrameDeclarations.hlsli" />

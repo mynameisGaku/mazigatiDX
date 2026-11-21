@@ -46,6 +46,25 @@ namespace
 		{ true, FVector3( -9.0f, 2.0f, 7.0f ), FVector3( 2.5f, 4.0f, 2.5f ), FVector3( 0.65f, 0.7f, 0.65f ) },
 	};
 
+	// 半透明の物 1 つ（ガラス）: 形・位置・大きさ・横の回転（ラジアン）・色・不透明度。地面や光る玉の輪から離して、不透明の物と食い込まないように置く
+	struct FGlassObject
+	{
+		bool bCube;
+		FVector3 Position;
+		FVector3 Scale;
+		float32 Yaw;
+		FVector3 Color;
+		float32 Opacity;
+	};
+
+	// 位置は、カメラの手前側（不透明の物と重なって見える）。地面から離し、光る玉の輪（半径 5・10.5・16）と、不透明の物の外にして、どれとも食い込まない
+	const FGlassObject GlassObjects[] = {
+		{ false, FVector3( 4.5f, 1.9f, -12.4f ), FVector3( 1.5f, 1.5f, 1.5f ), 0.0f, FVector3( 0.55f, 0.9f, 1.0f ), 0.4f },
+		{ false, FVector3( 5.5f, 1.5f, -6.5f ), FVector3( 1.0f, 1.0f, 1.0f ), 0.0f, FVector3( 1.0f, 0.55f, 0.8f ), 0.45f },
+		{ true, FVector3( -2.0f, 1.7f, 0.5f ), FVector3( 2.6f, 2.6f, 0.15f ), 2.55f, FVector3( 0.7f, 1.0f, 0.65f ), 0.35f },
+	};
+	constexpr int32 NumGlassObjects = static_cast<int32>( sizeof( GlassObjects ) / sizeof( GlassObjects[0] ) );
+
 	// 光 Index の位置（3 つの輪の上を、輪ごとに違う向きと速さで回り、上下に揺れる）
 	FVector3 GetLightPosition( int32 Index, float32 Time )
 	{
@@ -58,12 +77,12 @@ namespace
 		return FVector3( NMath::Cos( Angle ) * Radius, Height, NMath::Sin( Angle ) * Radius );
 	}
 
-	// 形を 1 つ描く（物の定数を、頂点側とピクセル側に置いて、インデックスつきで描く）
-	void RecordMesh( FDrawContext& CommandList, const NShaderMeshes::FMesh& Mesh, const FMatrix4x4& World, const FVector3& Albedo, const FVector3& Emission )
+	// 形を 1 つ描く（物の定数を、頂点側とピクセル側に置いて、インデックスつきで描く）。Opacity は、半透明の物の不透明度（不透明の物は 1）
+	void RecordMesh( FDrawContext& CommandList, const NShaderMeshes::FMesh& Mesh, const FMatrix4x4& World, const FVector3& Albedo, const FVector3& Emission, float32 Opacity = 1.0f )
 	{
 		NDeferredSources::FObjectConstants Object;
 		Object.World = World;
-		Object.Albedo = FVector4( Albedo, 1.0f );
+		Object.Albedo = FVector4( Albedo, Opacity );
 		Object.Emission = FVector4( Emission, 0.0f );
 		CommandList.ShaderConstants( EShaderStage::Vertex, 5, Object );
 		CommandList.ShaderConstants( EShaderStage::Pixel, 5, Object );
@@ -76,7 +95,7 @@ namespace
 		NDeferredSources::FSceneConstants Scene;
 		Scene.ViewProjection = State.Camera.GetViewMatrix() * State.Camera.GetProjectionMatrix( State.GetSceneViewport() );
 		Scene.CameraPosition = FVector4( State.Camera.Position, State.Camera.Far );
-		Scene.Parameters = FVector4( State.Time, static_cast<float32>( State.ViewMode ), 0.0f, 0.0f );
+		Scene.Parameters = FVector4( State.Time, static_cast<float32>( State.ViewMode ), static_cast<float32>( FDeferredDemoState::ViewWidth ), static_cast<float32>( FDeferredDemoState::ViewHeight ) );
 		for ( int32 Index = 0; Index < FDeferredDemoState::NumLights; ++Index )
 		{
 			Scene.LightPositions[Index] = FVector4( GetLightPosition( Index, State.Time ), LightRadius );
@@ -122,6 +141,61 @@ void CDeferredView::RecordScene( FDrawContext& CommandList, bool bGeometryPass )
 		const FMatrix4x4 World = FMatrix4x4::Scale( FVector3( OrbSize, OrbSize, OrbSize ) ) * FMatrix4x4::Translate( GetLightPosition( Index, State->Time ) );
 		RecordMesh( CommandList, NShaderMeshes::GetSphere(), World, FVector3( 0.0f, 0.0f, 0.0f ), LightColors[Index % 6] * OrbGlow );
 	}
+}
+
+void CDeferredView::RecordTransparent( FDrawContext& CommandList, bool bDeferred ) const
+{
+	// 奥から手前の順（カメラからの距離の 2 乗が大きい順）に並べる。物の中心で並べる簡単な方法（1 つの物の中の表裏の順は、メッシュの順）
+	int32 Order[NumGlassObjects];
+	float32 DistanceSquared[NumGlassObjects];
+	for ( int32 Index = 0; Index < NumGlassObjects; ++Index )
+	{
+		Order[Index] = Index;
+		DistanceSquared[Index] = ( GlassObjects[Index].Position - State->Camera.Position ).LengthSquared();
+	}
+	for ( int32 Index = 1; Index < NumGlassObjects; ++Index )
+	{
+		const int32 Moving = Order[Index];
+		int32 Position = Index;
+		while ( Position > 0 && DistanceSquared[Order[Position - 1]] < DistanceSquared[Moving] )
+		{
+			Order[Position] = Order[Position - 1];
+			--Position;
+		}
+		Order[Position] = Moving;
+	}
+
+	const NDeferredSources::FSceneConstants Scene = MakeSceneConstants( *State );
+	CommandList.ShaderConstants( EShaderStage::Vertex, 4, Scene );
+	CommandList.ShaderConstants( EShaderStage::Pixel, 4, Scene );
+	if ( bDeferred )
+	{
+		// Deferred 経路: 場面の色の描き先は、不透明の物の奥行きを持たない。G-buffer の深度をシェーダーが読んで、奥の画素を省く
+		FGBufferView View;
+		if ( !FGBufferView::Make( State->Camera, State->GetSceneViewport(), View ) || !State->GBuffer.UseForLighting( CommandList ) )
+		{
+			return;
+		}
+		CommandList.ShaderConstants( EShaderStage::Pixel, CGBuffer::ViewConstantSlot, View );
+	}
+	// Forward 経路: ハードウェアの奥行きバッファと比べる（不透明の物の奥行きを持っている）。半透明の物は、奥行きを書かない（あとの半透明の物の邪魔をしない）
+	FDepthState Depth;
+	Depth.bTestDepth = !bDeferred;
+	Depth.bWriteDepth = false;
+	CommandList.Depth( Depth );
+	CommandList.Blend( EDrawBlend::Alpha );
+	CommandList.Culling( EDrawCulling::None );
+	CommandList.UseVertexShader( State->SceneVertex );
+	CommandList.UsePixelShader( bDeferred ? State->TransparentPixel : State->ForwardObjectPixel );
+	for ( int32 Index = 0; Index < NumGlassObjects; ++Index )
+	{
+		const FGlassObject& Glass = GlassObjects[Order[Index]];
+		const FMatrix4x4 World = FMatrix4x4::Scale( Glass.Scale ) * FMatrix4x4::RotateY( Glass.Yaw ) * FMatrix4x4::Translate( Glass.Position );
+		RecordMesh( CommandList, Glass.bCube ? NShaderMeshes::GetCube() : NShaderMeshes::GetSphere(), World, Glass.Color, FVector3( 0.0f, 0.0f, 0.0f ), Glass.Opacity );
+	}
+	CommandList.Blend( EDrawBlend::Opaque );
+	CommandList.StopUsingVertexShader();
+	CommandList.StopUsingPixelShader();
 }
 
 void CDeferredView::RecordLighting( FDrawContext& CommandList ) const
@@ -181,6 +255,7 @@ void CDeferredView::Draw( FDrawContext& CommandList )
 		CommandList.Clear( SkyColor );
 		CommandList.ClearDepth();
 		RecordScene( CommandList, false );
+		RecordTransparent( CommandList, false );
 		CommandList.StopUsingVertexShader();
 		CommandList.StopUsingPixelShader();
 		CommandList.PopTarget();
@@ -198,7 +273,13 @@ void CDeferredView::Draw( FDrawContext& CommandList )
 	{
 		// ② ライティングのパス
 		RecordLighting( CommandList );
+		// ③ 半透明の物を、光を当てた場面の色へ重ねる
+		if ( CommandList.PushTarget( State->SceneColor ) )
+		{
+			RecordTransparent( CommandList, true );
+			CommandList.PopTarget();
+		}
 	}
-	// ③ 露出とトーンマップを掛けて、画面へ
+	// ④ 露出とトーンマップを掛けて、画面へ
 	RecordComposite( CommandList );
 }

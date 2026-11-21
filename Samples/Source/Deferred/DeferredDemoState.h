@@ -52,6 +52,8 @@ struct FDeferredDemoState
 	TSharedPtr<CShader> GeometryGroundPixel;
 	// Deferred のライティング（ShaderRect で描く）と、画面への合成（トーンマップ）
 	TSharedPtr<CShader> LightingPixel;
+	// Deferred 経路の半透明（ライティングのあとの場面の色へ、G-buffer の深度で奥の画素を捨てながら重ねる）。Forward 経路は、物のピクセルシェーダーに、不透明度を出させて重ねる
+	TSharedPtr<CShader> TransparentPixel;
 	TSharedPtr<CShader> CompositePixel;
 
 	// 描画先
