@@ -5,6 +5,7 @@
 #include "Library/Core/Collection/ArrayView.h"
 #include "Library/Core/Collection/Map.h"
 #include "Library/Core/Render/ComputeTextureAccess.h"
+#include "Library/Core/Render/RenderLook.h"
 #include "Library/Core/Render/RenderTargetPassDesc.h"
 #include "Library/Platform/DX12/Device/DX12QueueCompletion.h"
 #include "DX12TextureBinding.h"
@@ -28,6 +29,11 @@ class CDX12TextureStore : public IRenderTextureResources
 	void ResetAfterGPUIdle();
 	// 画像を同期で転送し、描画用の参照を作る。
 	FTextureResourceHandle CreateTextureRGBA8( int32 Width, int32 Height, const FColor32 *Pixels ) override;
+	// 標準見た目（ERenderLook::Standard）では、ミップマップつきで作る（CPUで段を作って、全部の段を転送する）。互換見た目では、CreateTextureRGBA8 と同じ。
+	FTextureResourceHandle CreateTextureRGBA8Mipped( int32 Width, int32 Height, const FColor32 *Pixels ) override;
+	// 見た目の水準を決める（画像を作る前に。作った画像は、作ったときの水準のまま）。
+	void SetLook( ERenderLook InLook ) { Look = InLook; }
+	ERenderLook GetLook() const { return Look; }
 	// 対応能力を返す。未初期化・転送失敗・能力照会失敗時はOutを保ってfalse。
 	bool GetComputeTextureCapabilities( FComputeTextureCapabilities &Out ) const override;
 	// computeから読み書きできるRGBA8画像を作る。未対応・不正な入力は無効値。
@@ -96,6 +102,7 @@ class CDX12TextureStore : public IRenderTextureResources
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> TargetHeap; // 描画先RTVまたは深度DSVのCPUヒープ。
 		CDX12DescriptorPool::FAllocation Descriptor; // GPU完了まで保持するSRV（深度では未使用）。
 		int32 Width = 0, Height = 0; // 画像の寸法。
+		int32 MipLevels = 1; // ミップマップの段の数（元の画像を含む）。
 		FColor32 InitialClearColor = FColor32( 0, 0, 0, 255 ); // 作成時に設定した初期消去色。
 		FColor InitialClearColorF = FColor( 0.0f, 0.0f, 0.0f, 1.0f ); // RGBA16F作成時に設定したHDR初期消去色。
 		float32 InitialClearDepth = 1.0f; // 作成時に設定した初期深度。
@@ -103,8 +110,8 @@ class CDX12TextureStore : public IRenderTextureResources
 	};
 	// コピー可能な組を貸す。寸法・色形式の相違、書き込み中、解放済みの画像はfalse。
 	bool FindTextureCopyPair( FTextureResourceHandle Source, FTextureResourceHandle Destination, const FTextureRecord *&OutSource, const FTextureRecord *&OutDestination ) const;
-	// 完了を待った新規画像を作る。失敗時はOutを変えない。
-	bool Upload( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable, FTextureRecord &Out );
+	// 完了を待った新規画像を作る。失敗時はOutを変えない。bMipsなら、ミップマップの全部の段も転送する（作れない大きさ・UAV書き込み可の画像は、段なし）。
+	bool Upload( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable, FTextureRecord &Out, bool bMips = false );
 	// 完了を待った新規RGBA16F compute画像を作る。失敗時はOutを変えない。
 	bool UploadRGBA16F( int32 Width, int32 Height, const FColor *Pixels, FTextureRecord &Out );
 	// 浮動小数点カラー描画先（RGBA16F / R32Float）を作成する共通処理。
@@ -112,7 +119,7 @@ class CDX12TextureStore : public IRenderTextureResources
 	// 指定資源からREADBACKヒープへ同期転送して1行ずつ一時配列へ読み出す共通処理。
 	bool ReadbackTextureBytes( const FTextureRecord &Record, DXGI_FORMAT ExpectedFormat, UINT BytesPerPixel, TArray<uint8> &OutRows, UINT &OutRowBytes );
 	// 用途を固定して新規画像を登録する。失敗時は無効値。
-	FTextureResourceHandle Create( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable );
+	FTextureResourceHandle Create( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable, bool bMips = false );
 	// 指定番号が現在アクティブなオフスクリーン描画パスの色・深度に含まれているか。
 	bool IsActiveTarget( uint64 TextureValue ) const;
 	// 解放できる画像と記述子を戻す。
@@ -134,5 +141,6 @@ class CDX12TextureStore : public IRenderTextureResources
 	bool bCapabilitiesAvailable = false; // 照会失敗を未対応の正常な回答と区別する。
 	bool bRenderTargetCapabilitiesAvailable = false; // 描画先能力の照会成否。
 	bool bHealthy = false; // 待機に失敗した場合は転送を再利用しない。
+	ERenderLook Look = ERenderLook::Compat; // 見た目の水準。
 	static constexpr int32 MaxResources = 1024; // 旧版を含む同時保持数。
 };

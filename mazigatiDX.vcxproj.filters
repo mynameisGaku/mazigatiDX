@@ -22,7 +22,13 @@
     <ClCompile Include="Library\Core\Render\BufferResourceHandle.cpp">
       <Filter>Library\Core\Render</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Core\Render\RenderLook.cpp">
+      <Filter>Library\Core\Render</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Core\Render\RenderResourceSerial.cpp">
+      <Filter>Library\Core\Render</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Core\Render\TextureMips.cpp">
       <Filter>Library\Core\Render</Filter>
     </ClCompile>
     <ClCompile Include="Library\Core\Thread\GameThread.cpp">
@@ -2436,7 +2442,13 @@
     <ClInclude Include="Library\Core\Render\RenderCommandContext.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Render\RenderLook.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Render\RenderResourceSerial.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Core\Render\TextureMips.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
     <ClInclude Include="Library\Core\Render\RenderTargetCapabilities.h">

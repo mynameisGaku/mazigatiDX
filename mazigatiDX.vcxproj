@@ -126,7 +126,9 @@
     <ClCompile Include="Library\Core\Log\LogSink.cpp" />
     <ClCompile Include="Library\Core\Log\LogVerbosity.cpp" />
     <ClCompile Include="Library\Core\Render\BufferResourceHandle.cpp" />
+    <ClCompile Include="Library\Core\Render\RenderLook.cpp" />
     <ClCompile Include="Library\Core\Render\RenderResourceSerial.cpp" />
+    <ClCompile Include="Library\Core\Render\TextureMips.cpp" />
     <ClCompile Include="Library\Core\Thread\GameThread.cpp" />
     <ClCompile Include="Library\Core\Thread\RenderThread.cpp" />
     <ClCompile Include="Library\Core\Thread\TaskFence.cpp" />
@@ -932,7 +934,9 @@
     <ClInclude Include="Library\Core\Render\RenderBufferShaderAccess.h" />
     <ClInclude Include="Library\Core\Render\RenderClipRect.h" />
     <ClInclude Include="Library\Core\Render\RenderCommandContext.h" />
+    <ClInclude Include="Library\Core\Render\RenderLook.h" />
     <ClInclude Include="Library\Core\Render\RenderResourceSerial.h" />
+    <ClInclude Include="Library\Core\Render\TextureMips.h" />
     <ClInclude Include="Library\Core\Render\RenderTargetCapabilities.h" />
     <ClInclude Include="Library\Core\Render\RenderTargetDrawView.h" />
     <ClInclude Include="Library\Core\Render\RenderTargetFormat.h" />

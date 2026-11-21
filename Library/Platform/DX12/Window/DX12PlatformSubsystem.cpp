@@ -131,6 +131,19 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection &Collection )
 		Deinitialize();
 		return;
 	}
+	// 見た目の水準（--dx12-look=compat | standard。既定は compat）。画像を作る前に決める
+	RenderLook = ERenderLook::Compat;
+	const auto LookOption = NCommandLine::GetValue( "dx12-look" );
+	if ( LookOption.IsSet() && !NRenderLook::TryParse( LookOption.GetValue().GetData(), RenderLook ) )
+	{
+		LOG( LogDX12, Warning, "--dx12-look must be compat or standard (it is '%s'), so compat is used", LookOption.GetValue().GetData() );
+		RenderLook = ERenderLook::Compat;
+	}
+	if ( CDX12TextureStore *Store = Device->GetTextureResources() )
+	{
+		Store->SetLook( RenderLook );
+	}
+	LOG( LogDX12, Log, "DX12 look: %s", NRenderLook::ToString( RenderLook ) );
 	GameRenderer = new CDX12GameRenderer();
 	if ( !GameRenderer->Initialize( Device->GetNativeDevice(), Settings.Width, Settings.Height, *Device->GetTextureResources(), GameText, nullptr, nullptr, Device->GetBufferResources(), Device->GetNativeQueue(), Device->GetTextureResources(), Device->GetGraphicsPipelineStore(), Device->GetUploadArena() ) )
 	{
@@ -741,6 +754,25 @@ FTextureResourceHandle CDX12PlatformSubsystem::CreateTextureRGBA8( int32 Width, 
 		if ( auto *Resources = Device->GetTextureResources() )
 		{
 			Result = Resources->CreateTextureRGBA8( Width, Height, Pixels );
+		}
+	};
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : FTextureResourceHandle();
+}
+
+FTextureResourceHandle CDX12PlatformSubsystem::CreateTextureRGBA8Mipped( int32 Width, int32 Height, const FColor32 *Pixels )
+{
+	GAME_THREAD_ONLY( FTextureResourceHandle() );
+	if ( !( bInitialized && Device ) )
+	{
+		return FTextureResourceHandle();
+	}
+	// 呼出し元は同期処理の完了まで、入力と出力の寿命を保持する。
+	FTextureResourceHandle Result = FTextureResourceHandle();
+	auto Work = [&]()
+	{
+		if ( auto *Resources = Device->GetTextureResources() )
+		{
+			Result = Resources->CreateTextureRGBA8Mipped( Width, Height, Pixels );
 		}
 	};
 	return ExecuteRender( MoveTemp( Work ) ) ? Result : FTextureResourceHandle();

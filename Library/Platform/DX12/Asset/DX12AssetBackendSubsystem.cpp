@@ -85,7 +85,8 @@ int32 CDX12AssetBackendSubsystem::CreateTextureFromMemory( const void* FileImage
 {
 	int32 Width = 0, Height = 0; // 展開した大きさ。
 	TArray<FColor32> Pixels; // 展開したRGBA。
-	return DecodeImage( FileImage, Size, Width, Height, Pixels ) ? CreateTextureFromPixels( Width, Height, Pixels.GetData() ) : NAsset::InvalidHandle;
+	// 画像のファイルから読んだ画像は、ミップマップつきで作る（標準見た目のとき。互換見た目では、ふつうの画像と同じ）
+	return DecodeImage( FileImage, Size, Width, Height, Pixels ) ? Textures.Create( Width, Height, Pixels.GetData(), true ) : NAsset::InvalidHandle;
 }
 
 int32 CDX12AssetBackendSubsystem::CreateTextureFromPixels( int32 Width, int32 Height, const FColor32* Pixels )

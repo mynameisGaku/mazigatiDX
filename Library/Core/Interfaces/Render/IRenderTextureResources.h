@@ -17,6 +17,9 @@ public:
 	// 左上から行順の非乗算済みRGBA8を呼び出し中に複写する。
 	// 不正な寸法・画素・作成失敗は無効値。既存資源へ影響しない。
 	virtual FTextureResourceHandle CreateTextureRGBA8( int32 Width, int32 Height, const FColor32* Pixels ) = 0;
+	// 同じ内容を、縮小して描いても綺麗に見えるよう、ミップマップ（半分ずつに縮めた画像の列）つきで作る（画像のファイルなど、作ったあと内容をほとんど変えない画像向け）。
+	// ミップマップを作らない実装・見た目の水準（ERenderLook::Compat）では、CreateTextureRGBA8 と同じ。UpdateTextureRGBA8 は、ミップマップも作り直す。
+	virtual FTextureResourceHandle CreateTextureRGBA8Mipped( int32 Width, int32 Height, const FColor32* Pixels ) { return CreateTextureRGBA8( Width, Height, Pixels ); }
 	// 実行先のcompute画像の能力を返す。未対応・照会失敗ではOutを保ってfalse。
 	virtual bool GetComputeTextureCapabilities( FComputeTextureCapabilities &Out ) const { return false; }
 	// 初期RGBA8を所有する読み書き可能なcompute画像を作る。描画でも使える。未対応・不正入力では無効値。

@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DX12TextureStore.h"
+#include "Library/Core/Render/TextureMips.h"
 #include "DX12TextureCopy.h"
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Render/RenderResourceSerial.h"
@@ -170,29 +171,37 @@ void CDX12TextureStore::ResetAfterGPUIdle()
 	bRenderTargetCapabilitiesAvailable = false;
 }
 
-bool CDX12TextureStore::Upload( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable, FTextureRecord &Out )
+bool CDX12TextureStore::Upload( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable, FTextureRecord &Out, bool bMips )
 {
 	if ( !bHealthy || !Device || !Pool || FAILED( Device->GetDeviceRemovedReason() ) || !Pixels || Width <= 0 || Height <= 0 || Width > 16384 || Height > 16384 || static_cast<int64>( Width ) * Height > 64 * 1024 * 1024 || Textures.Num() + Retired.Num() >= MaxResources || ( bWritable && ( !bCapabilitiesAvailable || !Capabilities.bRGBA8ReadWrite ) ) )
 	{
 		return false;
 	}
 	FTextureRecord Created; // 転送完了まで外へ公開しない画像。
+	// ミップマップ: CPU で、半分ずつに縮めた段を作る（作れない大きさ・UAV 書き込み可の画像・1 x 1 は、段なし）
+	TArray<NTextureMips::FLevel> MipLevels;
+	if ( bMips && !bWritable )
+	{
+		NTextureMips::GenerateChain( Width, Height, Pixels, MipLevels );
+	}
+	const UINT NumLevels = static_cast<UINT>( 1 + MipLevels.Num() );
 	D3D12_HEAP_PROPERTIES Heap = {}; // GPUが読む画像の置き場。
 	Heap.Type = D3D12_HEAP_TYPE_DEFAULT;
 	D3D12_RESOURCE_DESC Desc = {}; // RGBA8の二次元画像。
 	Desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 	Desc.Width = Width;
 	Desc.Height = Height;
-	Desc.DepthOrArraySize = Desc.MipLevels = Desc.SampleDesc.Count = 1;
+	Desc.DepthOrArraySize = Desc.SampleDesc.Count = 1;
+	Desc.MipLevels = static_cast<UINT16>( NumLevels );
 	Desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	Desc.Flags = bWritable ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE;
 	if ( FAILED( Device->CreateCommittedResource( &Heap, D3D12_HEAP_FLAG_NONE, &Desc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS( &Created.Resource ) ) ) )
 	{
 		return false;
 	}
-	D3D12_PLACED_SUBRESOURCE_FOOTPRINT Layout = {}; // GPUが必要とする行の境界と幅。
+	D3D12_PLACED_SUBRESOURCE_FOOTPRINT Layouts[16] = {}; // GPUが必要とする行の境界と幅（段ごと。16384 辺でも 15 段まで）。
 	UINT64 TotalBytes = 0; // paddingを含む転送領域の大きさ。
-	Device->GetCopyableFootprints( &Desc, 0, 1, 0, &Layout, nullptr, nullptr, &TotalBytes );
+	Device->GetCopyableFootprints( &Desc, 0, NumLevels, 0, Layouts, nullptr, nullptr, &TotalBytes );
 	D3D12_RESOURCE_DESC Buffer = {}; // CPUから書き込む転送領域。
 	Buffer.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
 	Buffer.Width = TotalBytes;
@@ -206,9 +215,15 @@ bool CDX12TextureStore::Upload( int32 Width, int32 Height, const FColor32 *Pixel
 	{
 		return false;
 	}
-	for ( int32 Row = 0; Row < Height; ++Row )
+	for ( UINT Level = 0; Level < NumLevels; ++Level )
 	{
-		FMemory::Memcpy( static_cast<uint8 *>( Mapped ) + Layout.Offset + static_cast<usize>( Row ) * Layout.Footprint.RowPitch, Pixels + static_cast<usize>( Row ) * Width, static_cast<usize>( Width ) * sizeof( FColor32 ) );
+		const int32 LevelWidth = Level == 0 ? Width : MipLevels[Level - 1].Width;
+		const int32 LevelHeight = Level == 0 ? Height : MipLevels[Level - 1].Height;
+		const FColor32 *LevelPixels = Level == 0 ? Pixels : MipLevels[Level - 1].Pixels.GetData();
+		for ( int32 Row = 0; Row < LevelHeight; ++Row )
+		{
+			FMemory::Memcpy( static_cast<uint8 *>( Mapped ) + Layouts[Level].Offset + static_cast<usize>( Row ) * Layouts[Level].Footprint.RowPitch, LevelPixels + static_cast<usize>( Row ) * LevelWidth, static_cast<usize>( LevelWidth ) * sizeof( FColor32 ) );
+		}
 	}
 	UploadBuffer->Unmap( 0, nullptr );
 	if ( FAILED( Allocator->Reset() ) || FAILED( Commands->Reset( Allocator.Get(), nullptr ) ) )
@@ -216,14 +231,18 @@ bool CDX12TextureStore::Upload( int32 Width, int32 Height, const FColor32 *Pixel
 		bHealthy = false;
 		return false;
 	}
-	D3D12_TEXTURE_COPY_LOCATION Source = {}; // paddingを含む転送元。
-	Source.pResource = UploadBuffer.Get();
-	Source.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-	Source.PlacedFootprint = Layout;
-	D3D12_TEXTURE_COPY_LOCATION Target = {}; // 画像の最初のmipへ送る。
-	Target.pResource = Created.Resource.Get();
-	Target.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-	Commands->CopyTextureRegion( &Target, 0, 0, 0, &Source, nullptr );
+	for ( UINT Level = 0; Level < NumLevels; ++Level )
+	{
+		D3D12_TEXTURE_COPY_LOCATION Source = {}; // paddingを含む転送元（段ごと）。
+		Source.pResource = UploadBuffer.Get();
+		Source.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+		Source.PlacedFootprint = Layouts[Level];
+		D3D12_TEXTURE_COPY_LOCATION Target = {}; // 画像の同じ段へ送る。
+		Target.pResource = Created.Resource.Get();
+		Target.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+		Target.SubresourceIndex = Level;
+		Commands->CopyTextureRegion( &Target, 0, 0, 0, &Source, nullptr );
+	}
 	D3D12_RESOURCE_BARRIER Barrier = {}; // 以後はshaderから読む。
 	Barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	Barrier.Transition.pResource = Created.Resource.Get();
@@ -255,10 +274,11 @@ bool CDX12TextureStore::Upload( int32 Width, int32 Height, const FColor32 *Pixel
 	View.Format = Desc.Format;
 	View.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	View.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	View.Texture2D.MipLevels = 1;
+	View.Texture2D.MipLevels = NumLevels;
 	Device->CreateShaderResourceView( Created.Resource.Get(), &View, Created.Descriptor.Cpu );
 	Created.Width = Width;
 	Created.Height = Height;
+	Created.MipLevels = static_cast<int32>( NumLevels );
 	Created.Kind = bWritable ? ETextureKind::ComputeRGBA8 : ETextureKind::StandardRGBA8;
 	Out = MoveTemp( Created );
 	return true;
@@ -377,6 +397,11 @@ bool CDX12TextureStore::UploadRGBA16F( int32 Width, int32 Height, const FColor *
 FTextureResourceHandle CDX12TextureStore::CreateTextureRGBA8( int32 Width, int32 Height, const FColor32 *Pixels )
 {
 	return Create( Width, Height, Pixels, false );
+}
+
+FTextureResourceHandle CDX12TextureStore::CreateTextureRGBA8Mipped( int32 Width, int32 Height, const FColor32 *Pixels )
+{
+	return Create( Width, Height, Pixels, false, Look == ERenderLook::Standard );
 }
 
 bool CDX12TextureStore::GetComputeTextureCapabilities( FComputeTextureCapabilities &Out ) const
@@ -919,10 +944,10 @@ bool CDX12TextureStore::IsActiveTarget( FTextureResourceHandle Texture ) const
 	return Texture.IsValid() && IsActiveTarget( Texture.Value );
 }
 
-FTextureResourceHandle CDX12TextureStore::Create( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable )
+FTextureResourceHandle CDX12TextureStore::Create( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable, bool bMips )
 {
 	FTextureRecord Created; // 完成した画像だけを登録する。
-	if ( !Upload( Width, Height, Pixels, bWritable, Created ) )
+	if ( !Upload( Width, Height, Pixels, bWritable, Created, bMips ) )
 	{
 		return FTextureResourceHandle();
 	}
@@ -944,7 +969,7 @@ bool CDX12TextureStore::UpdateTextureRGBA8( FTextureResourceHandle Texture, int3
 		return false;
 	}
 	FTextureRecord Created; // 失敗時は現在の内容とSRVを保つ。
-	if ( !Upload( Width, Height, Pixels, Current->Kind == ETextureKind::ComputeRGBA8, Created ) )
+	if ( !Upload( Width, Height, Pixels, Current->Kind == ETextureKind::ComputeRGBA8, Created, Current->MipLevels > 1 ) ) // ミップマップを持つ画像は、ミップマップも作り直す
 	{
 		return false;
 	}

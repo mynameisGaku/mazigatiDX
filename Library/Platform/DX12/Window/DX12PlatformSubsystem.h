@@ -5,6 +5,7 @@
 #include "Library/Core/Interfaces/Render/IGpuMemoryInfo.h"
 #include "Library/Core/Interfaces/Render/IRenderSurface.h"
 #include "Library/Core/Interfaces/Render/IRenderTextureResources.h"
+#include "Library/Core/Render/RenderLook.h"
 #include "Library/Core/Interfaces/Render/IRenderBufferResources.h"
 #include "Library/Core/Interfaces/Render/IComputePipelineResources.h"
 #include "Library/Core/Interfaces/Render/IGraphicsPipelineResources.h"
@@ -105,6 +106,9 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
 	bool QueryGpuMemory( int64 &OutUsedBytes, int64 &OutBudgetBytes ) const override;
 	// RGBA8の画像資源を、UIを介さず作る。
 	FTextureResourceHandle CreateTextureRGBA8( int32 Width, int32 Height, const FColor32 *Pixels ) override;
+	FTextureResourceHandle CreateTextureRGBA8Mipped( int32 Width, int32 Height, const FColor32 *Pixels ) override;
+	// 見た目の水準（起動オプション --dx12-look）。
+	ERenderLook GetRenderLook() const { return RenderLook; }
 	// ゲームスレッドから能力を照会する。未初期化・GPU失敗時はOutを保ってfalse。
 	bool GetComputeTextureCapabilities( FComputeTextureCapabilities &Out ) const override;
 	// ゲームスレッドから、computeで読み書き可能な画像を描画所有側へ作成する。
@@ -209,6 +213,7 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
 	bool bContext = false; // ImGui文脈の所有印。
 	bool bWin32 = false; // ImGuiのOS接続済み印。
 	bool bInitialized = false; // 全初期化の成功印。
+	ERenderLook RenderLook = ERenderLook::Compat; // 見た目の水準（--dx12-look）。
 	bool bWindowRenderPhase = false; // Presentと外部窓の間だけ、窓側がGPU接続を排他的に借りる。
 	bool bInFrame = false; // 描画記録中の印。
 	bool bExit = false; // 終了要求。
