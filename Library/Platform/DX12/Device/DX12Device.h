@@ -120,7 +120,20 @@ class CDX12Device
 	// 呼出前に提出したGPU処理を最大60000msまで待つ。0は待たず、失敗・喪失・タイムアウトはfalse。
 	bool Wait( uint32 TimeoutMs = 10000 );
 
+	// 1 フレームの時間の内訳（ミリ秒。直近の 1 フレーム）。フレームをまたいで GPU を進めてよいかを、実測で決めるための値。
+	struct FFrameTimings
+	{
+		float64 IntervalMs = 0; // 前のフレームの開始から、このフレームの開始まで（フレーム全体の時間）
+		float64 GPUWaitMs = 0; // フレームの開始で、前のフレームの GPU の完了を待った時間
+		float64 OpenMs = 0; // フレームの開始から提出まで（CPU の記録と、描画スレッドが命令を待つ時間を含む）
+		float64 PresentMs = 0; // 表示（Present）の呼び出しにかかった時間（垂直同期の待ちを含む）
+	};
+	// 直近のフレームの内訳。フレームがまだ無ければ 0。
+	FFrameTimings GetLastFrameTimings() const;
+
   private:
+	// 内訳を集計し、--dx12-frame-timings のときだけ、一定フレームごとに、平均と最大をログへ出す。
+	void AccumulateFrameTimings( const FFrameTimings &Frame );
 	// この所有者のGPU処理が未提出、完了済み、またはデバイス喪失のときに所有資源を解放する。
 	void ReleaseOwnedResources();
 	static constexpr int32 BufferCount = 2; // 交換用画面の枚数。
@@ -156,4 +169,12 @@ class CDX12Device
 	bool bGameCopied = false, bUICopied = false; // 実際にコピーを記録できた段階。
 	bool bPresentPending = false; // GPU提出後、窓側でまだ表示していないフレーム。
 	bool bFrameSubmitted = false; // 命令列の失敗で古いコピーを読み出さないための提出印。
+	// フレーム時間の計測（開始・提出・表示はどれも、所有権を順に渡して呼ばれるので、同時には触らない）
+	static constexpr int32 TimingLogFrames = 120; // 何フレームごとにログへ出すか
+	FFrameTimings CurrentTimings; // いま進行中のフレーム（次のフレームの開始で、間隔が決まって集計する）
+	FFrameTimings LastTimings; // 最後に集計し終えたフレーム
+	FFrameTimings SumTimings, MaxTimings; // ログ 1 回ぶんの合計と最大
+	int64 FrameBeginTicks = 0; // 進行中のフレームの開始時刻（0 は、まだ開始していない）
+	int32 TimingFrameCount = 0; // 集計中のフレーム数
+	bool bLogFrameTimings = false; // --dx12-frame-timings
 };

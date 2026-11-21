@@ -5,6 +5,8 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/Platform/DX12/DX12Log.h"
 #include "Library/Core/Memory/Memory.h"
+#include "Library/Core/Time/PlatformTime.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Platform/System/CommandLine.h"
 #include <d3d12sdklayers.h>
 
@@ -154,8 +156,39 @@ bool CDX12Device::InitializeOnQueue( HWND Window, int32 Width, int32 Height, ID3
 	}
 	this->Width = Width;
 	this->Height = Height;
+	bLogFrameTimings = NCommandLine::HasFlag( "dx12-frame-timings" ); // 確認用: フレーム時間の内訳を、一定フレームごとにログへ出す
 	bInitialized = true;
 	return true;
+}
+
+CDX12Device::FFrameTimings CDX12Device::GetLastFrameTimings() const
+{
+	return LastTimings;
+}
+
+void CDX12Device::AccumulateFrameTimings( const FFrameTimings &Frame )
+{
+	LastTimings = Frame;
+	if ( !bLogFrameTimings )
+	{
+		return;
+	}
+	SumTimings.IntervalMs += Frame.IntervalMs;
+	SumTimings.GPUWaitMs += Frame.GPUWaitMs;
+	SumTimings.OpenMs += Frame.OpenMs;
+	SumTimings.PresentMs += Frame.PresentMs;
+	MaxTimings.IntervalMs = NMath::Max( MaxTimings.IntervalMs, Frame.IntervalMs );
+	MaxTimings.GPUWaitMs = NMath::Max( MaxTimings.GPUWaitMs, Frame.GPUWaitMs );
+	MaxTimings.OpenMs = NMath::Max( MaxTimings.OpenMs, Frame.OpenMs );
+	MaxTimings.PresentMs = NMath::Max( MaxTimings.PresentMs, Frame.PresentMs );
+	if ( ++TimingFrameCount >= TimingLogFrames )
+	{
+		const float64 Count = static_cast<float64>( TimingFrameCount );
+		LOG( LogDX12, Log, "DX12 frame timings (%d frames, ms, average / max): interval %.2f / %.2f, gpu wait %.2f / %.2f, open %.2f / %.2f, present %.2f / %.2f", TimingFrameCount, SumTimings.IntervalMs / Count, MaxTimings.IntervalMs, SumTimings.GPUWaitMs / Count, MaxTimings.GPUWaitMs, SumTimings.OpenMs / Count, MaxTimings.OpenMs, SumTimings.PresentMs / Count, MaxTimings.PresentMs );
+		SumTimings = FFrameTimings();
+		MaxTimings = FFrameTimings();
+		TimingFrameCount = 0;
+	}
 }
 
 bool CDX12Device::Wait( uint32 TimeoutMs )
@@ -232,6 +265,10 @@ void CDX12Device::ReleaseOwnedResources()
 	Queue.Reset();
 	Device.Reset();
 	BufferIndex = RtvStride = 0;
+	CurrentTimings = LastTimings = SumTimings = MaxTimings = FFrameTimings();
+	FrameBeginTicks = 0;
+	TimingFrameCount = 0;
+	bLogFrameTimings = false;
 	MainTimestampBatchId = 0;
 	CurrentRtv = {};
 	bRecording = false;
@@ -256,10 +293,25 @@ bool CDX12Device::BeginFrame()
 
 bool CDX12Device::BeginFrameForBuffer( uint32 Index )
 {
-	if ( !bInitialized || bClosing || bRecording || bPresentPending || Index >= BufferCount || !Buffers[Index] || !Wait() || !Timestamps.CollectCompleted() || FAILED( Allocator->Reset() ) || FAILED( Commands->Reset( Allocator.Get(), nullptr ) ) )
+	if ( !bInitialized || bClosing || bRecording || bPresentPending || Index >= BufferCount || !Buffers[Index] )
 	{
 		return false;
 	}
+	const int64 BeginTicks = NPlatformTime::GetTicks(); // フレームの開始時刻（前のフレームの GPU を待つ前）
+	const bool bWaited = Wait();
+	const int64 WaitedTicks = NPlatformTime::GetTicks();
+	if ( !bWaited || !Timestamps.CollectCompleted() || FAILED( Allocator->Reset() ) || FAILED( Commands->Reset( Allocator.Get(), nullptr ) ) )
+	{
+		return false;
+	}
+	if ( FrameBeginTicks != 0 ) // 前のフレームが終わった（この開始で、間隔が決まる）
+	{
+		CurrentTimings.IntervalMs = NPlatformTime::TicksToMs( BeginTicks - FrameBeginTicks );
+		AccumulateFrameTimings( CurrentTimings );
+	}
+	CurrentTimings = FFrameTimings();
+	CurrentTimings.GPUWaitMs = NPlatformTime::TicksToMs( WaitedTicks - BeginTicks );
+	FrameBeginTicks = BeginTicks;
 	ComputeQueue.CollectAfterGPUIdle();
 	ComputePipelines.CollectAfterGPUIdle();
 	GraphicsPipelines.CollectAfterGPUIdle();
@@ -334,6 +386,10 @@ bool CDX12Device::SubmitFrame( uint64 UploadTicket )
 	}
 	ID3D12CommandList *Lists[] = { Commands.Get() }; // 今フレームを一度だけ送る。
 	Queue->ExecuteCommandLists( 1, Lists );
+	if ( FrameBeginTicks != 0 ) // 提出までの時間（GPU を待った時間は、別に数える）
+	{
+		CurrentTimings.OpenMs = NMath::Max( 0.0, NPlatformTime::TicksToMs( NPlatformTime::GetTicks() - FrameBeginTicks ) - CurrentTimings.GPUWaitMs );
+	}
 	const uint64 BatchToCommit = MainTimestampBatchId;
 	MainTimestampBatchId = 0;
 	const bool bTimestampsCommitted = BatchToCommit == 0 || Timestamps.CommitBatch( BatchToCommit );
@@ -471,7 +527,10 @@ bool CDX12Device::PresentFrame( bool bVSync )
 		return false;
 	}
 	bPresentPending = false;
-	return SUCCEEDED( SwapChain->Present( bVSync ? 1 : 0, 0 ) );
+	const int64 PresentTicks = NPlatformTime::GetTicks();
+	const bool bPresented = SUCCEEDED( SwapChain->Present( bVSync ? 1 : 0, 0 ) );
+	CurrentTimings.PresentMs = NPlatformTime::TicksToMs( NPlatformTime::GetTicks() - PresentTicks );
+	return bPresented;
 }
 
 void CDX12Device::ClearFrameColor( FColor32 Color )
