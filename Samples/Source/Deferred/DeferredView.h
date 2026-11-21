@@ -26,8 +26,12 @@ public:
 	void Draw( FDrawContext& CommandList ) override;
 
 private:
-	// 動く光から、タイルごとの光の一覧を作って、動的な画像へ反映する（毎フレーム。使うかどうかに関わらず作る）。作れなければ false
-	bool UpdateTileLights();
+	// 動く光から、タイルごとの光の一覧を作る（毎フレーム。使うかどうかに関わらず作る）。CPU の一覧は、統計のために、いつも作る。
+	// GPU の経路（既定）は、一覧を作る描画を CommandList の先頭に記録し、CPU の経路は、動的な画像へ反映する。作れなければ false
+	bool UpdateTileLights( FDrawContext& CommandList );
+
+	// タイルごとの光の一覧の画像を、シェーダーの画像の段 Stage に置く（GPU の経路は、一覧を描いた描画先、CPU の経路は、動的な画像）
+	void SetTileLightTexture( FDrawContext& CommandList, int32 Stage ) const;
 
 	// 場面の物をすべて描く（bGeometryPass が true なら G-buffer へ書くピクセルシェーダー、false なら Forward のピクセルシェーダー）
 	void RecordScene( FDrawContext& CommandList, bool bGeometryPass ) const;

@@ -114,9 +114,8 @@ int32 CTileLightGrid::GetSliceOfDepth( float32 Depth, float32 Near, float32 Far,
 	return NMath::Clamp( Slice, 0, InNumSlices - 1 );
 }
 
-bool CTileLightGrid::Build( const FCamera& Camera, const FCameraViewport& Viewport, const FCullLight* Lights, int32 InNumLights, const FTileLightGridDesc& InDesc )
+bool CTileLightGrid::CanBuild( const FCamera& Camera, const FCameraViewport& Viewport, const FCullLight* Lights, int32 InNumLights, const FTileLightGridDesc& InDesc )
 {
-	Reset();
 	if ( InDesc.TileSize < 8 || InDesc.TileSize > 512 || InDesc.MaxLightsPerTile < LightsPerTexel || InDesc.MaxLightsPerTile > 96 || InDesc.MaxLightsPerTile % LightsPerTexel != 0 ||
 		InDesc.NumDepthSlices < 1 || InDesc.NumDepthSlices > MaxDepthSlices ||
 		InNumLights < 0 || InNumLights > MaxLights || ( InNumLights > 0 && Lights == nullptr ) || !Viewport.IsValid() )
@@ -151,6 +150,20 @@ bool CTileLightGrid::Build( const FCamera& Camera, const FCameraViewport& Viewpo
 	{
 		return false;
 	}
+	return true;
+}
+
+bool CTileLightGrid::Build( const FCamera& Camera, const FCameraViewport& Viewport, const FCullLight* Lights, int32 InNumLights, const FTileLightGridDesc& InDesc )
+{
+	Reset();
+	if ( !CanBuild( Camera, Viewport, Lights, InNumLights, InDesc ) )
+	{
+		return false;
+	}
+	FGBufferView View;
+	FGBufferView::Make( Camera, Viewport, View );
+	const int32 TilesX = ( Viewport.Width + InDesc.TileSize - 1 ) / InDesc.TileSize;
+	const int32 TilesY = ( Viewport.Height + InDesc.TileSize - 1 ) / InDesc.TileSize;
 
 	// 光ごとに、カメラからの位置と、光が届く範囲の奥行きの範囲を、先に求める。Near・Far の範囲の外の光（奥行きの範囲が、重ならない光）は、どのクラスタにも入れない
 	const FVector3 Forward = Camera.GetForward();

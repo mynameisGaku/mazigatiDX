@@ -658,3 +658,12 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **落とし穴**: (1) 円錐を球で包むと簡単だが絞れない。面の法線の向きへの広がりを式で出す（`半径 x cos( 軸との角 - 半角 )`、負なら 0）と、過不足がなく、点の光とも同じ式で扱える。(2) `FLight` の `OuterAngle` / `InnerAngle` は**全角**。`FCullLight::ConeHalfAngle` は半角。(3) サンプルの上限を決めるときは、時間を変えて溢れを見る（`--deferred-time=<秒>` は、先に書いた引数が勝つ）。
 - **残り**: GPU の compute による一覧作成（公開の compute の窓口が必要）、Deferred の光の体積、GPU 時間の表示（描画命令に、タイムスタンプの窓口がまだない）、標準の材質（Surface）の G-buffer 出力。
 - **push はしていない**。
+
+## R4: GPU での光の一覧作成（2026-11-21）
+
+- **方針**: 新しい compute の窓口は作らず（描画命令の中で compute を呼ぶ窓口は大きな作業で、R9 の GPU カリングなどと一緒に設計したい）、CPU の `CTileLightGrid::Build` と同じ判定を、**ピクセルシェーダー**で、一覧の画像の画素ごとに行う（`CTileLightBuilder`。`EngineContent/Shaders/LightCulling/TileLightBuild.hlsli` の `BuildTileLightTexel`）。公開のシェーダー窓口（`ShaderRect`・`ShaderConstants`・描画先）だけで動くので、DxLib でも DX12 でも同じコード。GPU の一覧は、CPU の一覧と同じか、境目で少し多い（足りなくならない）。サンプル `Deferred` の既定を GPU にした（`--deferred-cpu-lights` で CPU の経路）。詳細は [R4 ライトカリング](R4_LIGHT_CULLING.md)。
+- **定数**: 1 つの定数バッファは 4096 バイトまで（`NDrawShader::MaxConstantBytes`）なので、3 つに分けた（b4: カメラ・クラスタ、b5: 光の位置と半径 254 個、b6: スポットライトの軸と半角の cos）。HLSL の cbuffer と C++ の `FTileLightBuildData` は同じ並びで、WARP の検査が構造体のメモリをそのまま定数にして確かめる。
+- **落とし穴（実際に起きた）**: (1) 最初の `Record` は、描画先の中で `Depth( 深度の判定なし )` などを呼んで、戻さなかった。続く場面の描画の深度判定が切れて、光る玉が柱の手前に見えた。**GPU の一覧の絵と、基準（一覧なし）の絵は、同じ誤りで一致してしまった**。Forward と Deferred の比べと、CPU の経路（`--deferred-cpu-lights`）との比べで見つかった。`FDrawContext` の状態は、スコープで戻らないので、描画を記録する部品は、状態を変えないこと（`ShaderRect` は深度を使わず、画像を読まず、アルファ 1 なら、呼び出し側の状態のままで書ける）。(2) 端のタイルの範囲を、画面の端までに切る処理（`min( ( tileX + 1 ) * tileSize, width )`）を外す変異は、最初の検査（ランダムな光）では生き残った。画面の端のすぐ外の光を入れ、端が割り切れない画面（1000 x 600）を足して検出した。(3) CPU と GPU の一覧が、ほとんど一致するだけの検査では、一部の誤りが隠れる。基準の実行は、変異検査で、壊した HLSL を 2 つ目の引数で渡して、ライブラリを作り直さずに試す。
+- **検査**: `RunLightCullingTests.ps1`（346 件。`BuildMain` を WARP で走らせ、4 種類の画面 x 5 通りの設定で、GPU の一覧が CPU と同じ）、`RunLightCullingMutationTests.ps1`（C++ 50 件と、GPU の HLSL 23 件。すべて検出）、`RunDeferredTests.ps1 -Platform`（GPU で作った一覧・CPU で作った一覧・全部の光の 3 つの絵が一致。`gpu=1/0` をログの統計で確かめる）。
+- **残り**: compute シェーダー版（公開の compute の窓口が要る。光が数百以上、またはクラスタが非常に多い場面で、画素ごとの全部の光の判定が重くなる場合）、GPU 時間の表示、Deferred の光の体積。
+- **push はしていない**。

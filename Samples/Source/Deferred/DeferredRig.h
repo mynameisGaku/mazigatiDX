@@ -13,7 +13,7 @@
 //   - 1: 見せるもの（仕上がり・地の色・法線・位置・深度・自分で光る色）  2: Forward / Deferred  3: 時間を止める  4: タイルごとの光の一覧（ライトカリング）を使う / 全部の光を評価する  Q / E: 露出を下げる / 上げる
 //   絵を比べる検査のために、コマンドラインで、設定を固定できる:
 //     --deferred-view=<0〜5>（見せるもの）、--deferred-forward（Forward で描く）、--deferred-time=<秒>（時間を止めて、ひとりで回るのもやめる）、
-//     --deferred-no-tiles（全部の光を評価する）、--deferred-no-spots（スポットライトを消す）、--deferred-tile-capacity=<3〜96>（タイル 1 枚の一覧の上限。小さくして、溢れを起こす）、--deferred-tile-stats（一覧の統計をログに出す）
+//     --deferred-no-tiles（全部の光を評価する）、--deferred-no-spots（スポットライトを消す）、--deferred-cpu-lights（光の一覧を、GPU でなく CPU で作る）、--deferred-tile-capacity=<3〜96>（タイル 1 枚の一覧の上限。小さくして、溢れを起こす）、--deferred-tile-stats（一覧の統計をログに出す）
 //=============================================================================
 class CDeferredRig : public CGameObject
 {

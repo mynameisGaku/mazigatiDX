@@ -47,6 +47,10 @@ CDeferredRig::CDeferredRig( const TSharedPtr<FDeferredDemoState>& InState )
 		{
 			State->bTiles = false;
 		}
+		if ( NCommandLine::HasFlag( "deferred-cpu-lights" ) )
+		{
+			State->bGpuLights = false;
+		}
 		if ( NCommandLine::HasFlag( "deferred-no-spots" ) )
 		{
 			State->bSpotLights = false;

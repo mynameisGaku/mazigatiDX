@@ -6250,6 +6250,7 @@
     <None Include="EngineContent\Shaders\Deferred\GBufferRead.hlsli"><Filter>EngineContent\Shaders\Deferred</Filter></None>
     <None Include="EngineContent\Shaders\Deferred\GBufferWrite.hlsli"><Filter>EngineContent\Shaders\Deferred</Filter></None>
     <None Include="EngineContent\Shaders\DxLib\EffectMaterial.hlsl"><Filter>EngineContent\Shaders\DxLib</Filter></None>
+    <None Include="EngineContent\Shaders\LightCulling\TileLightBuild.hlsli"><Filter>EngineContent\Shaders\LightCulling</Filter></None>
     <None Include="EngineContent\Shaders\LightCulling\TileLightList.hlsli"><Filter>EngineContent\Shaders\LightCulling</Filter></None>
     <None Include="EngineContent\Shaders\Material\DepthHelper.hlsli"><Filter>EngineContent\Shaders\Material</Filter></None>
     <None Include="EngineContent\Shaders\Material\FrameDeclarations.hlsli"><Filter>EngineContent\Shaders\Material</Filter></None>
@@ -6326,8 +6327,10 @@
   <ItemGroup>
     <Filter Include="Library\Framework\Render\LightCulling"><UniqueIdentifier>{42908607-F81C-4652-904F-1F93C6F23D75}</UniqueIdentifier></Filter>
     <ClInclude Include="Library\Framework\Render\LightCulling\LightCullingShaders.h"><Filter>Library\Framework\Render\LightCulling</Filter></ClInclude>
+    <ClInclude Include="Library\Framework\Render\LightCulling\TileLightBuilder.h"><Filter>Library\Framework\Render\LightCulling</Filter></ClInclude>
     <ClInclude Include="Library\Framework\Render\LightCulling\TileLightGrid.h"><Filter>Library\Framework\Render\LightCulling</Filter></ClInclude>
     <ClCompile Include="Library\Framework\Render\LightCulling\LightCullingShaders.cpp"><Filter>Library\Framework\Render\LightCulling</Filter></ClCompile>
+    <ClCompile Include="Library\Framework\Render\LightCulling\TileLightBuilder.cpp"><Filter>Library\Framework\Render\LightCulling</Filter></ClCompile>
     <ClCompile Include="Library\Framework\Render\LightCulling\TileLightGrid.cpp"><Filter>Library\Framework\Render\LightCulling</Filter></ClCompile>
   </ItemGroup>
 </Project>

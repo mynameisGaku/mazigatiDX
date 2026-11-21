@@ -78,6 +78,6 @@ void CDeferredSample::OnSampleDraw( FImmediateDraw& Screen )
 	if ( NumTiles > 0 && !State->bLogTileStats )
 	{
 		const float64 Average = State->bTiles ? static_cast<float64>( State->TileGrid.GetTotalEntries() ) / static_cast<float64>( NumTiles ) : static_cast<float64>( FDeferredDemoState::NumLights );
-		Screen.Text( 16, 88, *FString::Printf( "%d lights (%d spot), %d x %d tiles of %d px x %d depth slices, light culling %s: %.1f lights per cluster, %d overflowed clusters (capacity %d)", FDeferredDemoState::NumLights, FDeferredDemoState::NumSpotLights, State->TileGrid.GetNumTilesX(), State->TileGrid.GetNumTilesY(), FDeferredDemoState::TileSize, State->TileGrid.GetNumSlices(), State->bTiles ? "on" : "off", Average, State->TileGrid.GetNumOverflowedTiles(), State->TileCapacity ), FColor32( 200, 210, 230 ) );
+		Screen.Text( 16, 88, *FString::Printf( "%d lights (%d spot), %d x %d tiles of %d px x %d depth slices, light culling %s (%s): %.1f lights per cluster, %d overflowed clusters (capacity %d)", FDeferredDemoState::NumLights, FDeferredDemoState::NumSpotLights, State->TileGrid.GetNumTilesX(), State->TileGrid.GetNumTilesY(), FDeferredDemoState::TileSize, State->TileGrid.GetNumSlices(), State->bTiles ? "on" : "off", State->bGpuLights ? "built on the GPU" : "built on the CPU", Average, State->TileGrid.GetNumOverflowedTiles(), State->TileCapacity ), FColor32( 200, 210, 230 ) );
 	}
 }

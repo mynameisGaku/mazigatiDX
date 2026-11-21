@@ -8,6 +8,7 @@
 #include "Library/Framework/Asset/Texture/RenderTarget.h"
 #include "Library/Framework/Render/Camera/Camera.h"
 #include "Library/Framework/Render/Deferred/GBuffer.h"
+#include "Library/Framework/Render/LightCulling/TileLightBuilder.h"
 #include "Library/Framework/Render/LightCulling/TileLightGrid.h"
 #include "Library/Math/Math.h"
 
@@ -45,6 +46,8 @@ struct FDeferredDemoState
 	bool bTimeRunning = true;
 	// タイルごとの光の一覧（Forward+ / Deferred+）を使うか。false なら、画素ごとに、全部の光を評価する（基準の経路）
 	bool bTiles = true;
+	// 光の一覧を、GPU（CTileLightBuilder。ピクセルシェーダー）で作るか。false なら、CPU で作った一覧（CTileLightGrid）を、動的な画像で渡す（--deferred-cpu-lights。基準）
+	bool bGpuLights = true;
 	// スポットライトを点けるか。検査用に、消せる（--deferred-no-spots）。消すと、スポットライトは、光らず、一覧にも入らない（絵に、スポットライトが効いていることを確かめる）
 	bool bSpotLights = true;
 	// クラスタ（タイル x 奥行きの層）1 つの一覧に入る光の数の上限（3 の倍数。溢れたクラスタは、全部の光を評価する）。--deferred-tile-capacity で変えられる
@@ -77,8 +80,10 @@ struct FDeferredDemoState
 	//   GBuffer: 地の色・法線・深度・自分で光る色（Deferred のジオメトリのパスが書く）
 	//   SceneColor: 光を当てた場面の色（16 ビットの浮動小数点。1 を超える明るさが残る。Forward は、ここへ直接描くので、奥行きバッファを持つ）
 	CGBuffer GBuffer;
-	// タイルごとの光の一覧: CPU で作る一覧（TileGrid）を、8 ビット RGBA の画像（TileImage）へ詰めて、毎フレーム、動的な画像（TileTexture）へ反映する
+	// タイルごとの光の一覧: CPU で作る一覧（TileGrid。統計と、CPU の経路のため。毎フレーム作る）を、8 ビット RGBA の画像（TileImage）へ詰めて、動的な画像（TileTexture）へ反映する（CPU の経路）。
+	// GPU の経路は、TileBuilder が、ピクセルシェーダーで、同じ形式の画像（TileBuilder.GetTexture()）を描く
 	CTileLightGrid TileGrid;
+	CTileLightBuilder TileBuilder;
 	FPixelImage TileImage;
 	TSharedPtr<CDynamicTexture> TileTexture;
 	TSharedPtr<CRenderTarget> SceneColor;

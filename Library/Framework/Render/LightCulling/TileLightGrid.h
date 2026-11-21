@@ -81,6 +81,9 @@ public:
 	// 半径が 0 以下の光と、円錐の半角が 0 以下のスポットライトは、どのクラスタにも入らない
 	bool Build( const FCamera& Camera, const FCameraViewport& Viewport, const FCullLight* Lights, int32 NumLights, const FTileLightGridDesc& Desc = FTileLightGridDesc() );
 
+	// Build に渡せる入力か（Build が false を返す条件と同じ。作らずに調べるだけ）。GPU で一覧を作る CTileLightBuilder も、同じ検査を使う
+	static bool CanBuild( const FCamera& Camera, const FCameraViewport& Viewport, const FCullLight* Lights, int32 NumLights, const FTileLightGridDesc& Desc = FTileLightGridDesc() );
+
 	// 持っている一覧を捨てる
 	void Reset();
 

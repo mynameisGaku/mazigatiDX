@@ -177,7 +177,7 @@ CDeferredView::CDeferredView( const TSharedPtr<FDeferredDemoState>& InState )
 {
 }
 
-bool CDeferredView::UpdateTileLights()
+bool CDeferredView::UpdateTileLights( FDrawContext& CommandList )
 {
 	TArray<FCullLight> Lights;
 	for ( int32 Index = 0; Index < FDeferredDemoState::NumLights; ++Index )
@@ -198,6 +198,20 @@ bool CDeferredView::UpdateTileLights()
 	{
 		return false;
 	}
+	if ( State->bGpuLights )
+	{
+		// GPU の経路: ピクセルシェーダーで、同じ形式の一覧の画像を描く。作れなければ（シェーダーのコンパイルの失敗など）、CPU の経路へ切り替える（ログに出す）
+		CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
+		if ( !State->TileBuilder.IsValid() && ( Assets == nullptr || !State->TileBuilder.Create( *Assets, "deferred-tile-lights-gpu", State->GetSceneViewport(), Desc ) ) )
+		{
+			LOG( LogDeferredView, Warning, "The light list cannot be built on the GPU, so the CPU builds it" );
+			State->bGpuLights = false;
+		}
+		else
+		{
+			return State->TileBuilder.Record( CommandList, State->Camera, Lights.GetData(), Lights.Num() );
+		}
+	}
 	if ( !State->TileTexture.IsValid() )
 	{
 		CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
@@ -205,6 +219,18 @@ bool CDeferredView::UpdateTileLights()
 		return State->TileTexture.IsValid();
 	}
 	return State->TileTexture->Update( State->TileImage );
+}
+
+void CDeferredView::SetTileLightTexture( FDrawContext& CommandList, int32 Stage ) const
+{
+	if ( State->bGpuLights && State->TileBuilder.IsValid() )
+	{
+		CommandList.ShaderTexture( Stage, State->TileBuilder.GetTexture() );
+	}
+	else
+	{
+		CommandList.ShaderTexture( Stage, State->TileTexture );
+	}
 }
 
 void CDeferredView::RecordScene( FDrawContext& CommandList, bool bGeometryPass ) const
@@ -217,7 +243,7 @@ void CDeferredView::RecordScene( FDrawContext& CommandList, bool bGeometryPass )
 	if ( !bGeometryPass )
 	{
 		// Forward（Forward+）: 光を計算する物のシェーダーが、タイルごとの光の一覧を t0 から読む
-		CommandList.ShaderTexture( 0, State->TileTexture );
+		SetTileLightTexture( CommandList, 0 );
 	}
 
 	// 地面
@@ -290,7 +316,7 @@ void CDeferredView::RecordTransparent( FDrawContext& CommandList, bool bDeferred
 	CommandList.UseVertexShader( State->SceneVertex );
 	CommandList.UsePixelShader( bDeferred ? State->TransparentPixel : State->ForwardObjectPixel );
 	// タイルごとの光の一覧: Forward のシェーダーは t0、Deferred の半透明は G-buffer（t0〜t3）の次の t4
-	CommandList.ShaderTexture( bDeferred ? 4 : 0, State->TileTexture );
+	SetTileLightTexture( CommandList, bDeferred ? 4 : 0 );
 	for ( int32 Index = 0; Index < NumGlassObjects; ++Index )
 	{
 		const FGlassObject& Glass = GlassObjects[Order[Index]];
@@ -312,7 +338,7 @@ void CDeferredView::RecordLighting( FDrawContext& CommandList ) const
 	const NDeferredSources::FSceneConstants Scene = MakeSceneConstants( *State );
 	CommandList.ShaderConstants( EShaderStage::Pixel, 4, Scene );
 	CommandList.ShaderConstants( EShaderStage::Pixel, CGBuffer::ViewConstantSlot, View );
-	CommandList.ShaderTexture( 4, State->TileTexture ); // タイルごとの光の一覧は、G-buffer（t0〜t3）の次
+	SetTileLightTexture( CommandList, 4 ); // タイルごとの光の一覧は、G-buffer（t0〜t3）の次
 	CommandList.UsePixelShader( State->LightingPixel );
 	if ( CommandList.PushTarget( State->SceneColor ) )
 	{
@@ -335,7 +361,7 @@ void CDeferredView::RecordComposite( FDrawContext& CommandList ) const
 
 void CDeferredView::Draw( FDrawContext& CommandList )
 {
-	if ( !State.IsValid() || !State->SceneColor.IsValid() || !State->GBuffer.IsValid() || !State->Camera.IsValid() || !UpdateTileLights() )
+	if ( !State.IsValid() || !State->SceneColor.IsValid() || !State->GBuffer.IsValid() || !State->Camera.IsValid() || !UpdateTileLights( CommandList ) )
 	{
 		return;
 	}
@@ -346,7 +372,7 @@ void CDeferredView::Draw( FDrawContext& CommandList )
 		if ( FrameCounter++ % 6 == 0 )
 		{
 			const int32 NumClusters = State->TileGrid.GetNumClusters();
-			LOG( LogDeferredView, Log, "tile lights: clusters=%d slices=%d entries=%d average=%.3f overflowed=%d culling=%d", NumClusters, State->TileGrid.GetNumSlices(), State->TileGrid.GetTotalEntries(), static_cast<float64>( State->TileGrid.GetTotalEntries() ) / static_cast<float64>( NumClusters ), State->TileGrid.GetNumOverflowedTiles(), State->bTiles ? 1 : 0 );
+			LOG( LogDeferredView, Log, "tile lights: clusters=%d slices=%d entries=%d average=%.3f overflowed=%d culling=%d gpu=%d", NumClusters, State->TileGrid.GetNumSlices(), State->TileGrid.GetTotalEntries(), static_cast<float64>( State->TileGrid.GetTotalEntries() ) / static_cast<float64>( NumClusters ), State->TileGrid.GetNumOverflowedTiles(), State->bTiles ? 1 : 0, State->bGpuLights ? 1 : 0 );
 		}
 	}
 
