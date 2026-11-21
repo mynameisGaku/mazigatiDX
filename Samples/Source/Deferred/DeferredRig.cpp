@@ -58,6 +58,12 @@ CDeferredRig::CDeferredRig( const TSharedPtr<FDeferredDemoState>& InState )
 			const int32 Requested = static_cast<int32>( Capacity.GetValue().ToFloat( 24.0 ) );
 			State->TileCapacity = NMath::Clamp( Requested / 3 * 3, 3, 96 );
 		}
+		const TOptional<FString> Slices = NCommandLine::GetValue( "deferred-slices" );
+		if ( Slices.IsSet() )
+		{
+			// 奥行きの層の数（1 は、画面だけを分けるタイル）
+			State->NumSlices = NMath::Clamp( static_cast<int32>( Slices.GetValue().ToFloat( 16.0 ) ), 1, CTileLightGrid::MaxDepthSlices );
+		}
 		const TOptional<FString> FixedTime = NCommandLine::GetValue( "deferred-time" );
 		if ( FixedTime.IsSet() )
 		{

@@ -112,6 +112,7 @@ namespace
 		Scene.CameraPosition = FVector4( State.Camera.Position, State.Camera.Far );
 		Scene.Parameters = FVector4( State.Time, static_cast<float32>( State.ViewMode ), static_cast<float32>( FDeferredDemoState::ViewWidth ), static_cast<float32>( FDeferredDemoState::ViewHeight ) );
 		Scene.TileInfo = FVector4( static_cast<float32>( FDeferredDemoState::TileSize ), static_cast<float32>( State.TileGrid.GetTexelsPerTile() ), State.bTiles ? 1.0f : 0.0f, 0.0f );
+		Scene.ClusterInfo = FVector4( static_cast<float32>( State.TileGrid.GetNumSlices() ), static_cast<float32>( State.TileGrid.GetNumTilesY() ), State.Camera.Near, State.Camera.Far );
 		for ( int32 Index = 0; Index < FDeferredDemoState::NumLights; ++Index )
 		{
 			Scene.LightPositions[Index] = FVector4( GetLightPosition( Index, State.Time ), LightRadius );
@@ -139,6 +140,7 @@ bool CDeferredView::UpdateTileLights()
 	FTileLightGridDesc Desc;
 	Desc.TileSize = FDeferredDemoState::TileSize;
 	Desc.MaxLightsPerTile = State->TileCapacity;
+	Desc.NumDepthSlices = State->NumSlices;
 	if ( !State->TileGrid.Build( State->Camera, State->GetSceneViewport(), Lights.GetData(), Lights.Num(), Desc ) || !State->TileGrid.WriteImage( State->TileImage ) )
 	{
 		return false;
@@ -290,8 +292,8 @@ void CDeferredView::Draw( FDrawContext& CommandList )
 		static int32 FrameCounter = 0;
 		if ( FrameCounter++ % 6 == 0 )
 		{
-			const int32 NumTiles = State->TileGrid.GetNumTilesX() * State->TileGrid.GetNumTilesY();
-			LOG( LogDeferredView, Log, "tile lights: tiles=%d entries=%d average=%.3f overflowed=%d culling=%d", NumTiles, State->TileGrid.GetTotalEntries(), static_cast<float64>( State->TileGrid.GetTotalEntries() ) / static_cast<float64>( NumTiles ), State->TileGrid.GetNumOverflowedTiles(), State->bTiles ? 1 : 0 );
+			const int32 NumClusters = State->TileGrid.GetNumClusters();
+			LOG( LogDeferredView, Log, "tile lights: clusters=%d slices=%d entries=%d average=%.3f overflowed=%d culling=%d", NumClusters, State->TileGrid.GetNumSlices(), State->TileGrid.GetTotalEntries(), static_cast<float64>( State->TileGrid.GetTotalEntries() ) / static_cast<float64>( NumClusters ), State->TileGrid.GetNumOverflowedTiles(), State->bTiles ? 1 : 0 );
 		}
 	}
 

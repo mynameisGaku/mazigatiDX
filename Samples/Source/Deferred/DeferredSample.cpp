@@ -72,12 +72,12 @@ void CDeferredSample::OnSampleDraw( FImmediateDraw& Screen )
 		return;
 	}
 	Screen.Text( 16, 56, *FString::Printf( "Deferred: %s path, view = %s (1 view, 2 path, 3 time, 4 light culling, Q / E exposure, drag = orbit, wheel = zoom, R = auto orbit)", State->bDeferred ? "deferred" : "forward", ToViewText( State->ViewMode ) ), FColor32::Gray );
-	// ライトカリングの統計: 画面のタイルごとの光の一覧の長さの平均（使わないときは、全部の光）と、溢れたタイル（溢れたら、全部の光を評価する）
-	const int32 NumTiles = State->TileGrid.GetNumTilesX() * State->TileGrid.GetNumTilesY();
+	// ライトカリングの統計: クラスタ（画面のタイル x 奥行きの層）ごとの光の一覧の長さの平均（使わないときは、全部の光）と、溢れたクラスタ（溢れたら、全部の光を評価する）
+	const int32 NumTiles = State->TileGrid.GetNumClusters();
 	// 検査用に統計をログへ出すとき（--deferred-tile-stats）は、画面の文字は描かない（絵の比べに、文字の違いを混ぜない）
 	if ( NumTiles > 0 && !State->bLogTileStats )
 	{
 		const float64 Average = State->bTiles ? static_cast<float64>( State->TileGrid.GetTotalEntries() ) / static_cast<float64>( NumTiles ) : static_cast<float64>( FDeferredDemoState::NumLights );
-		Screen.Text( 16, 88, *FString::Printf( "%d lights, %d x %d tiles of %d px, light culling %s: %.1f lights per tile, %d overflowed tiles (capacity %d)", FDeferredDemoState::NumLights, State->TileGrid.GetNumTilesX(), State->TileGrid.GetNumTilesY(), FDeferredDemoState::TileSize, State->bTiles ? "on" : "off", Average, State->TileGrid.GetNumOverflowedTiles(), State->TileCapacity ), FColor32( 200, 210, 230 ) );
+		Screen.Text( 16, 88, *FString::Printf( "%d lights, %d x %d tiles of %d px x %d depth slices, light culling %s: %.1f lights per cluster, %d overflowed clusters (capacity %d)", FDeferredDemoState::NumLights, State->TileGrid.GetNumTilesX(), State->TileGrid.GetNumTilesY(), FDeferredDemoState::TileSize, State->TileGrid.GetNumSlices(), State->bTiles ? "on" : "off", Average, State->TileGrid.GetNumOverflowedTiles(), State->TileCapacity ), FColor32( 200, 210, 230 ) );
 	}
 }

@@ -44,8 +44,10 @@ struct FDeferredDemoState
 	bool bTimeRunning = true;
 	// タイルごとの光の一覧（Forward+ / Deferred+）を使うか。false なら、画素ごとに、全部の光を評価する（基準の経路）
 	bool bTiles = true;
-	// タイル 1 枚の一覧に入る光の数の上限（3 の倍数。溢れたタイルは、全部の光を評価する）。--deferred-tile-capacity で変えられる
-	int32 TileCapacity = 48;
+	// クラスタ（タイル x 奥行きの層）1 つの一覧に入る光の数の上限（3 の倍数。溢れたクラスタは、全部の光を評価する）。--deferred-tile-capacity で変えられる
+	int32 TileCapacity = 24;
+	// 奥行きの層の数（1 は、画面だけを分けるタイル）。一覧の画像の大きさが変わるので、始めに決める（--deferred-slices）
+	int32 NumSlices = 16;
 	// 検査用: 一覧の統計を、ログに出す（--deferred-tile-stats）
 	bool bLogTileStats = false;
 	float32 Exposure = 1.0f;

@@ -8,7 +8,7 @@
 //=============================================================================
 namespace NLightCullingShaders
 {
-	// タイルごとの光の一覧を読む（g_TileLights・TileOfPixel・IsTileOverflowed・LoadTileTexel）。
+	// クラスタ（タイル x 奥行きの層）ごとの光の一覧を読む（g_TileLights・TileOfPixel・SliceOfDepth・ClusterOfPixel・IsClusterOverflowed・LoadClusterTexel）。
 	// 使う側が、これの前に、画像の段を決める（#define TILE_LIGHTS_REGISTER t0 など）。CTileLightGrid::WriteImage が詰めた画像を読む
 	const char* GetTileLightListSource();
 }
