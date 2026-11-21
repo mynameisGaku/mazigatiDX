@@ -1279,6 +1279,18 @@
     <ClCompile Include="Library\Platform\DX12\Resource\Readback\DX12TextureReadback.cpp">
       <Filter>Library\Platform\DX12\Resource\Readback</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12HalfFloat.cpp">
+      <Filter>Library\Platform\DX12\Resource\Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12SyncSubmitter.cpp">
+      <Filter>Library\Platform\DX12\Resource\Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureCreator.cpp">
+      <Filter>Library\Platform\DX12\Resource\Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureReader.cpp">
+      <Filter>Library\Platform\DX12\Resource\Texture</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureCopy.cpp">
       <Filter>Library\Platform\DX12\Resource\Texture</Filter>
     </ClCompile>
@@ -3916,6 +3928,21 @@
       <Filter>Library\Platform\DX12\Resource\Readback</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureBinding.h">
+      <Filter>Library\Platform\DX12\Resource\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12HalfFloat.h">
+      <Filter>Library\Platform\DX12\Resource\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12SyncSubmitter.h">
+      <Filter>Library\Platform\DX12\Resource\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureCreator.h">
+      <Filter>Library\Platform\DX12\Resource\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureReader.h">
+      <Filter>Library\Platform\DX12\Resource\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureRecord.h">
       <Filter>Library\Platform\DX12\Resource\Texture</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureCopy.h">

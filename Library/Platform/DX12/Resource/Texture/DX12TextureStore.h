@@ -7,8 +7,11 @@
 #include "Library/Core/Render/ComputeTextureAccess.h"
 #include "Library/Core/Render/RenderLook.h"
 #include "Library/Core/Render/RenderTargetPassDesc.h"
-#include "Library/Platform/DX12/Device/DX12QueueCompletion.h"
+#include "DX12SyncSubmitter.h"
 #include "DX12TextureBinding.h"
+#include "DX12TextureCreator.h"
+#include "DX12TextureReader.h"
+#include "DX12TextureRecord.h"
 #include "Library/Platform/DX12/Resource/Descriptor/DX12DescriptorPool.h"
 
 // RGBA8画像のGPU資源・転送・遅延解放を所有する。ImGui文脈を必要としない。
@@ -84,55 +87,32 @@ class CDX12TextureStore : public IRenderTextureResources
 	bool GetTextureResourceView( FTextureResourceHandle Texture, FTextureDrawView &Out ) const override;
 
   private:
-	// 同じハンドル番号空間で所有する画像資源の用途。
-	enum class ETextureKind : uint8
-	{
-		StandardRGBA8, // CPUから転送した読み取り用のRGBA8画像。
-		ComputeRGBA8, // UAV書き込みも許可するRGBA8画像。
-		RenderTargetRGBA8, // オフスクリーン描画先として使えるRGBA8画像。
-		ComputeRGBA16F, // UAV読み書きも許可するRGBA16F HDR画像。
-		RenderTargetRGBA16F, // オフスクリーン描画先として使えるRGBA16F HDR画像。
-		RenderTargetR32Float, // オフスクリーン描画先として使えるR32Float単一成分カラー画像。
-		DepthD32, // 描画パスとcompute R32Float読み取りで使える深度画像。
-	};
-	// COM参照を値へ包み、コンテナからoperator&を呼ばせない。
-	struct FTextureRecord
-	{
-		Microsoft::WRL::ComPtr<ID3D12Resource> Resource; // GPUが読む・描く画像。
-		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> TargetHeap; // 描画先RTVまたは深度DSVのCPUヒープ。
-		CDX12DescriptorPool::FAllocation Descriptor; // GPU完了まで保持するSRV（深度では未使用）。
-		int32 Width = 0, Height = 0; // 画像の寸法。
-		int32 MipLevels = 1; // ミップマップの段の数（元の画像を含む）。
-		FColor32 InitialClearColor = FColor32( 0, 0, 0, 255 ); // 作成時に設定した初期消去色。
-		FColor InitialClearColorF = FColor( 0.0f, 0.0f, 0.0f, 1.0f ); // RGBA16F作成時に設定したHDR初期消去色。
-		float32 InitialClearDepth = 1.0f; // 作成時に設定した初期深度。
-		ETextureKind Kind = ETextureKind::StandardRGBA8; // 用途の区別。
-	};
+	// 画像・描画先・深度を新しく作れる状態か（健全・寸法・同時に持つ数の上限）。
+	bool CanCreate( int32 Width, int32 Height ) const;
 	// コピー可能な組を貸す。寸法・色形式の相違、書き込み中、解放済みの画像はfalse。
-	bool FindTextureCopyPair( FTextureResourceHandle Source, FTextureResourceHandle Destination, const FTextureRecord *&OutSource, const FTextureRecord *&OutDestination ) const;
+	bool FindTextureCopyPair( FTextureResourceHandle Source, FTextureResourceHandle Destination, const FDX12TextureRecord *&OutSource, const FDX12TextureRecord *&OutDestination ) const;
 	// 完了を待った新規画像を作る。失敗時はOutを変えない。bMipsなら、ミップマップの全部の段も転送する（作れない大きさ・UAV書き込み可の画像は、段なし）。
-	bool Upload( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable, FTextureRecord &Out, bool bMips = false );
+	bool Upload( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable, FDX12TextureRecord &Out, bool bMips = false );
 	// 完了を待った新規RGBA16F compute画像を作る。失敗時はOutを変えない。
-	bool UploadRGBA16F( int32 Width, int32 Height, const FColor *Pixels, FTextureRecord &Out );
+	bool UploadRGBA16F( int32 Width, int32 Height, const FColor *Pixels, FDX12TextureRecord &Out );
 	// 浮動小数点カラー描画先（RGBA16F / R32Float）を作成する共通処理。
-	FTextureResourceHandle CreateFloatColorRenderTarget( int32 Width, int32 Height, DXGI_FORMAT Format, const float32 ClearValues[4], ETextureKind Kind );
-	// 指定資源からREADBACKヒープへ同期転送して1行ずつ一時配列へ読み出す共通処理。
-	bool ReadbackTextureBytes( const FTextureRecord &Record, DXGI_FORMAT ExpectedFormat, UINT BytesPerPixel, TArray<uint8> &OutRows, UINT &OutRowBytes );
+	FTextureResourceHandle CreateFloatColorRenderTarget( int32 Width, int32 Height, DXGI_FORMAT Format, const float32 ClearValues[4], EDX12TextureKind Kind );
 	// 用途を固定して新規画像を登録する。失敗時は無効値。
 	FTextureResourceHandle Create( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable, bool bMips = false );
+	// 完成した実体へ通し番号を付けて登録する。番号が取れなければ実体を破棄して無効値。
+	FTextureResourceHandle Register( FDX12TextureRecord &Created );
 	// 指定番号が現在アクティブなオフスクリーン描画パスの色・深度に含まれているか。
 	bool IsActiveTarget( uint64 TextureValue ) const;
 	// 解放できる画像と記述子を戻す。
-	void Destroy( FTextureRecord &Texture );
+	void Destroy( FDX12TextureRecord &Texture );
 	Microsoft::WRL::ComPtr<ID3D12Device> Device; // 所有GPUの参照。
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> Queue; // 描画と同じキューの参照。
-	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> Allocator; // 同期転送だけに使う領域。
-	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> Commands; // 同期転送だけに使う記録先。
-	CDX12QueueCompletion Completion; // 古い通知を排除して同じキューの転送完了を待つ。
-	Microsoft::WRL::ComPtr<ID3D12Resource> PendingUpload, PendingTexture; // 待機失敗時もGPU参照を保持する。
+	CDX12SyncSubmitter Submitter; // 作成・消去・コピー・読み戻しを、提出して完了まで待つ。
+	CDX12TextureCreator Creator; // 画像・描画先・深度の GPU 資源を作る。
+	CDX12TextureReader Reader; // 画像の全画素を CPU へ読み戻す。
 	CDX12DescriptorPool *Pool = nullptr; // 所有者より長生きする記述子の貸出先。
-	TMap<uint64, FTextureRecord> Textures; // 型付き番号から所有画像への表。
-	TArray<FTextureRecord> Retired; // 記録済みの描画が終わるまで保持する旧版。
+	TMap<uint64, FDX12TextureRecord> Textures; // 型付き番号から所有画像への表。
+	TArray<FDX12TextureRecord> Retired; // 記録済みの描画が終わるまで保持する旧版。
 	FComputeTextureCapabilities Capabilities; // 接続したGPUのcompute画像対応能力。
 	FRenderTargetCapabilities RenderTargetCapabilities; // 接続したGPUの描画先・深度対応能力。
 	uint64 ActiveColorTargets[FRenderTargetPassDesc::MaxColorTargets] = {}; // 現在記録中のオフスクリーン色描画先群。
@@ -140,7 +120,6 @@ class CDX12TextureStore : public IRenderTextureResources
 	uint64 ActiveDepthTarget = 0; // 現在記録中のオフスクリーン描画パスの深度先。
 	bool bCapabilitiesAvailable = false; // 照会失敗を未対応の正常な回答と区別する。
 	bool bRenderTargetCapabilitiesAvailable = false; // 描画先能力の照会成否。
-	bool bHealthy = false; // 待機に失敗した場合は転送を再利用しない。
 	ERenderLook Look = ERenderLook::Compat; // 見た目の水準。
 	static constexpr int32 MaxResources = 1024; // 旧版を含む同時保持数。
 };

@@ -80,3 +80,18 @@ RunGeometryPipelineTests.ps1は既定GPU／WARPで、初期化前と二重初期
 Releaseでは既知のリンクキャッシュの不整合を避けるため、検証用コピーの既存iobj／ipdb六ファイルを退避し、元の最適化設定でビルドしています。VendorModulesの変更や最適化を下げる回避はありません。元の作業コピーのOptional.h／project.slnと、検証用コピーで見つかった実装外のproject.sln変更は保持し、コミットへ含めていません。
 
 検査側の対応コミットは [8a9291180c4a9dd8c7250e6e374bc47e9ca64869](https://github.com/mynameisGaku/framework-test/commit/8a9291180c4a9dd8c7250e6e374bc47e9ca64869) です。sample／templateの全検査、配布物のクリーンビルド、複数GPUベンダーと性能測定、R1／R2全体の完了は今回の結果に含めません。検証用コピーのSaved/RenderArchitectureにビルド・書式・一括検査のログを分け、各独立GPU検査の中間と実行物はSaved/GeometryPipelineContractなどの構成別フォルダーへ置きます。
+
+## 画像の所有を、役割ごとに分ける（2026-11-22）
+
+`CDX12TextureStore`（約1240行）は、画像の登録、GPU資源の作成、同期の提出と完了待ち、読み戻し、描画先パスの追跡を1つで持っていて、「記録 → 提出 → 完了待ち」の同じ手順が7か所に重なっていた。責務の分かれ目で、次のクラスへ分けた。公開窓口（`IRenderTextureResources`）と振る舞いは変えない。
+
+|所有者|担当するもの|
+|---|---|
+|CDX12TextureStore|画像の番号と登録・更新・遅延解放、能力の照会、compute・描画パスへ渡す参照、描画先パスの追跡、画像のコピー|
+|CDX12SyncSubmitter|資源の作成・転送・読み戻しのための短いGPU作業を、提出して完了まで待つ（専用の記録領域・命令列・完了待ち）。待機に失敗したら、GPUが参照しうる資源を保持して、以後を拒否する|
+|CDX12TextureCreator|読み取り画像（ミップマップつきを含む）・compute画像（RGBA8・RGBA16F）・色の描画先・読み取れる深度の、GPU資源の作成と初期内容の転送・消去、SRVの作成|
+|CDX12TextureReader|画像の全画素の、CPUへの読み戻し（形式ごとの変換は、Storeが行う）|
+|FDX12TextureRecord|登録した画像1枚の実体（資源・記述子・寸法・消去値・用途）。`MakeBinding`で、提出や描画パスが保持する参照を作る|
+|NDX12HalfFloat|半精度と単精度の変換|
+
+数・寸法・能力の検査と登録はStoreが行い、CreatorとReaderは、借りた同期提出器とデバイスだけで動く。契約（compute・描画先・HDR画像のコピー・撮影・ミップマップ）の検査と、全サンプルの絵の比べは、分ける前と同じ結果になる。
