@@ -123,6 +123,7 @@ foreach ($configuration in $Configurations) {
     Invoke-Step "DX12 window contracts $configuration" (Join-Path $selfTest 'RunDX12WindowTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
     Invoke-Step "DX12 capture contracts $configuration" (Join-Path $selfTest 'RunCaptureTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
     Invoke-Step "DX12 sample images $configuration" (Join-Path $selfTest 'RunDX12SampleImageTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration, '-Platform')
+    Invoke-Step "sample menu $configuration" (Join-Path $selfTest 'RunSampleBrowserTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration)
     Invoke-Step "Windows input contracts $configuration" (Join-Path $selfTest 'RunWindowsInputTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration)
     Invoke-Step "model rig contracts $configuration" (Join-Path $selfTest 'RunModelRigTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration)
     Invoke-Step "material effect contracts $configuration" (Join-Path $selfTest 'RunMaterialEffectTests.ps1') @('-FrameworkRoot', $frameworkRoot, '-Configuration', $configuration)

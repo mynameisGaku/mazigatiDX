@@ -4,6 +4,7 @@
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Render/Draw/ImmediateDraw.h"
 #include "Library/Math/Math.h"
+#include "Library/Platform/System/CommandLine.h"
 #include "Source/Catalog/SampleCatalog.h"
 
 namespace
@@ -17,8 +18,55 @@ namespace
 	constexpr int32 ColumnWidth = 600;
 	constexpr int32 FirstColumnX = 32;
 
-	// 選んでいるサンプルの説明の位置（画面の下に固定。サンプルが増えても動かない）
-	constexpr int32 DescriptionY = 660;
+		// 選んでいるサンプルの説明の位置（画面の下に固定。サンプルが増えても動かない）。長い説明は、画面の幅で折り返して、数行に分けて描く
+	constexpr int32 DescriptionY = 630;
+	constexpr int32 DescriptionLineHeight = 17;
+	// 1 行の文字数と、行数の上限。1 行が長すぎる文字列は、描画先によっては描けない（DX12 は、1 行が 4096 ピクセルを超える文字列を描けず、フレームごと失敗する）。画面の幅（1280。1 文字は約 9 ピクセル）にも収まる長さにする
+	constexpr int32 DescriptionMaxChars = 130;
+	constexpr int32 DescriptionMaxLines = 5;
+
+	// Text を、1 行が MaxChars 文字までになるよう、空白で折り返す（空白がなければ、その長さで切る。UTF-8 の文字の途中では切らない）。MaxLines に入り切らない分は、最後の行の終わりを「...」にする
+	TArray<FString> WrapText( const FString& Text, int32 MaxChars, int32 MaxLines )
+	{
+		TArray<FString> Lines;
+		const char* Data = *Text;
+		const int32 Length = Text.Len();
+		int32 Start = 0;
+		while ( Start < Length && Lines.Num() < MaxLines )
+		{
+			int32 End = NMath::Min( Start + MaxChars, Length );
+			if ( End < Length )
+			{
+				int32 Break = End;
+				while ( Break > Start && Data[Break] != ' ' )
+				{
+					--Break;
+				}
+				if ( Break > Start )
+				{
+					End = Break;
+				}
+				else
+				{
+					while ( End > Start + 1 && ( static_cast<uint8>( Data[End] ) & 0xC0 ) == 0x80 )
+					{
+						--End;
+					}
+				}
+			}
+			Lines.Add( FString( Data + Start, End - Start ) );
+			Start = End;
+			while ( Start < Length && Data[Start] == ' ' )
+			{
+				++Start;
+			}
+		}
+		if ( Start < Length && Lines.Num() > 0 )
+		{
+			Lines[Lines.Num() - 1] = Lines[Lines.Num() - 1] + "...";
+		}
+		return Lines;
+	}
 }
 
 void CBrowserScene::OnEnter()
@@ -32,6 +80,24 @@ void CBrowserScene::OnEnter()
 		if ( Entries[i].Name == CSampleCatalog::Get().GetLastSelected() )
 		{
 			SelectedIndex = i;
+		}
+	}
+
+	// 検査用: --browser-select=<サンプル名> で、最初に選んでいるサンプルを指定する（キー操作なしで、その項目を選んだときの画面を確かめる）。最初に入ったときだけ
+	static bool bApplied = false;
+	if ( !bApplied )
+	{
+		bApplied = true;
+		const TOptional<FString> Requested = NCommandLine::GetValue( "browser-select" );
+		if ( Requested.IsSet() )
+		{
+			for ( int32 i = 0; i < Entries.Num(); ++i )
+			{
+				if ( Entries[i].Name == Requested.GetValue() )
+				{
+					SelectedIndex = i;
+				}
+			}
 		}
 	}
 }
@@ -91,8 +157,12 @@ void CBrowserScene::OnDraw()
 		Screen.TextF( X, Y, bSelected ? FColor32::Yellow : FColor32::White, "%s %s", bSelected ? ">" : " ", *Entries[i].Title );
 	}
 
-	// 選んでいるサンプルの説明
-	Screen.Text( FirstColumnX, DescriptionY, *Entries[SelectedIndex].Description, FColor32::Gray );
+	// 選んでいるサンプルの説明（折り返して、数行で）
+	const TArray<FString> DescriptionLines = WrapText( Entries[SelectedIndex].Description, DescriptionMaxChars, DescriptionMaxLines );
+	for ( int32 i = 0; i < DescriptionLines.Num(); ++i )
+	{
+		Screen.Text( FirstColumnX, DescriptionY + i * DescriptionLineHeight, *DescriptionLines[i], FColor32::Gray );
+	}
 }
 
 int32 CBrowserScene::GetRowsPerColumn() const
