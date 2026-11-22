@@ -26,6 +26,7 @@ CGeometryForwardMesh::CGeometryForwardMesh( FGeometryExecution& InRun )
 	, ShaderSource( Run.ShaderSource )
 	, bUseForwardPath( Run.bUseForwardPath )
 	, bShadowCasting( Run.bShadowCasting )
+	, LightViewProjection( Run.LightViewProjection )
 	, ShadowSlotMaps( Run.ShadowSlotMaps )
 	, ReceiverSlot( Run.ReceiverSlot )
 {
@@ -71,12 +72,16 @@ void CGeometryForwardMesh::FillLightConstants( float32* Constants, FDrawRgb Brig
 bool CGeometryForwardMesh::CanDrawForward( const FStaticModelDrawView& Model ) const
 {
 	static const bool bEnabledByCommandLine = !NCommandLine::HasFlag( "no-gpu-forward" ); // 比べるための切り替え（--no-gpu-forward で、従来の CPU の経路にする）。
-	return bEnabledByCommandLine && ShaderSource != nullptr && Geometry != nullptr && Model.MeshKey != 0 && Model.NumVertices <= 65536 && !bShadowCasting
+	return bEnabledByCommandLine && ShaderSource != nullptr && Geometry != nullptr && Model.MeshKey != 0 && Model.NumVertices <= 65536
 		&& Camera.IsValid() && Geometry->GetWidth() > 0 && Geometry->GetHeight() > 0 && bUseForwardPath;
 }
 
 int32 CGeometryForwardMesh::DrawMeshForward( const FStaticModelDrawView& Model, int32 ModelAlpha, bool bAlphaBlend, bool bInferAlpha, FDrawRgb Bright, bool bLit, bool bTransient )
 {
+	if ( bShadowCasting )
+	{
+		return DrawShadowDepth( Model, ModelAlpha, bTransient );
+	}
 	PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "Draw", "Geometry.ForwardMesh" );
 	const FCameraViewport Viewport = { Geometry->GetWidth(), Geometry->GetHeight() };
 	const FMatrix4x4 Transform = World * Camera.GetViewMatrix() * Camera.GetProjectionMatrix( Viewport ); // ローカルからクリップへの変換。
@@ -169,6 +174,47 @@ int32 CGeometryForwardMesh::DrawMeshForward( const FStaticModelDrawView& Model, 
 		Draw.State = State;
 		Draw.State.Topology = EGeometryTopology::Triangles;
 		Draw.State.bAlphaBlend = bAlphaBlend || ( bInferAlpha && ( ModelAlpha < 255 || Section.Texture >= 0 || bAnyTranslucent ) );
+		if ( !ShaderSource->DrawForwardMesh( Draw, *Geometry ) )
+		{
+			break; // 描けなかった範囲から先は、CPU の経路で描く。
+		}
+		++NumDrawn;
+	}
+	return NumDrawn;
+}
+
+int32 CGeometryForwardMesh::DrawShadowDepth( const FStaticModelDrawView& Model, int32 ModelAlpha, bool bTransient )
+{
+	PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "Draw", "Geometry.ShadowCasterForward" );
+	const FMatrix4x4 Clip = World * LightViewProjection; // ローカルから、光のクリップ座標への変換（従来の CPU の経路と同じ。画面のずれは掛けない）。
+	FForwardMeshDraw Draw;
+	FMemory::Memcpy( Draw.ClipMatrix, Clip.m, sizeof( Draw.ClipMatrix ) );
+	FMemory::Memcpy( Draw.World, World.m, sizeof( Draw.World ) );
+	Draw.bDepthOnly = true;
+	Draw.bTransient = bTransient;
+	Draw.MeshKey = bTransient ? 0 : Model.MeshKey;
+	Draw.MeshVersion = Model.MeshVersion;
+	Draw.Vertices = Model.Vertices;
+	Draw.NumVertices = Model.NumVertices;
+	Draw.Indices = Model.Indices;
+	Draw.NumIndices = Model.NumIndices;
+	Draw.State.Topology = EGeometryTopology::Triangles;
+	Draw.State.bTestDepth = true;
+	Draw.State.bWriteDepth = true;
+	Draw.State.Compare = EGeometryCompare::LessEqual;
+	Draw.State.Culling = EGeometryCulling::None; // 裏表に関係なく、影を落とす。
+	Draw.State.bAlphaBlend = false;
+	int32 NumDrawn = 0;
+	for ( int32 SectionIndex = 0; SectionIndex < Model.NumSections; ++SectionIndex )
+	{
+		const FStaticModelDrawSection& Section = Model.Sections[SectionIndex];
+		if ( Section.Texture >= 0 || ModelAlpha < 250 )
+		{
+			++NumDrawn; // 影を落とさない範囲（画像つき・半透明）。
+			continue;
+		}
+		Draw.FirstIndex = Section.FirstIndex;
+		Draw.IndexCount = Section.NumIndices;
 		if ( !ShaderSource->DrawForwardMesh( Draw, *Geometry ) )
 		{
 			break; // 描けなかった範囲から先は、CPU の経路で描く。

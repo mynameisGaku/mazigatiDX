@@ -16,6 +16,7 @@ struct FForwardMeshDraw
 	static constexpr int32 NumLightFloats = ( 7 + 6 * 7 ) * 4;
 
 	bool bTransient = false; // trueならメッシュを登録せずフレームの転送領域から描く。
+	bool bDepthOnly = false; // 影の絵（R32Float）へ、光から見た深度だけを書く。ClipMatrix は、ローカルから光のクリップ座標へ。光・フォグ・影・画像は使わない。
 	uint64 MeshKey = 0;                      // 登録する共有メッシュの識別（0以外）。bTransientなら使わない。
 	uint64 MeshVersion = 0;                  // 頂点の中身の版。変わったら、GPU の頂点を置き直す。
 	const FDrawVertex3D* Vertices = nullptr; // メッシュの頂点（変換前）。

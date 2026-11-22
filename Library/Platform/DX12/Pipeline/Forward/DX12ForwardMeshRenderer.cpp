@@ -91,6 +91,8 @@ void CDX12ForwardMeshRenderer::Shutdown()
 	TexturedPixelCode.Reset();
 	ShadowPixelCode.Reset();
 	ShadowTexturedPixelCode.Reset();
+	DepthVertexCode.Reset();
+	DepthPixelCode.Reset();
 	bShadersTried = false;
 	bShadersReady = false;
 	TotalBytes = 0;
@@ -105,7 +107,8 @@ bool CDX12ForwardMeshRenderer::BuildShaders()
 	{
 		bShadersTried = true;
 		bShadersReady = CompileEntry( "ForwardVS", "vs_5_0", VertexCode ) && CompileEntry( "ForwardPS", "ps_5_0", PixelCode ) && CompileEntry( "ForwardTexturedPS", "ps_5_0", TexturedPixelCode )
-			&& CompileEntry( "ForwardShadowPS", "ps_5_0", ShadowPixelCode ) && CompileEntry( "ForwardShadowTexturedPS", "ps_5_0", ShadowTexturedPixelCode );
+			&& CompileEntry( "ForwardShadowPS", "ps_5_0", ShadowPixelCode ) && CompileEntry( "ForwardShadowTexturedPS", "ps_5_0", ShadowTexturedPixelCode )
+			&& CompileEntry( "ForwardDepthVS", "vs_5_0", DepthVertexCode ) && CompileEntry( "ForwardDepthPS", "ps_5_0", DepthPixelCode );
 	}
 	return bShadersReady;
 }
@@ -213,7 +216,7 @@ FGraphicsPipelineHandle CDX12ForwardMeshRenderer::GetPipeline( const FForwardMes
 	const FGeometryDrawState& State = Draw.State;
 	const FGeometryCustomBlend& Custom = State.CustomBlend;
 	const bool bCustom = State.bAlphaBlend && State.Blend == EGeometryBlend::Custom; // 自分で決めた係数のときだけ、係数も鍵に入れる。
-	const FString Key = FString::Printf( "%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d,%d,%d,%d,%d,%d", bReceive ? 1 : 0, bTextured ? 1 : 0, static_cast<int32>( TargetFormat ), static_cast<int32>( TextureFormat ), State.bTestDepth ? 1 : 0, State.bWriteDepth ? 1 : 0,
+	const FString Key = FString::Printf( "%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d,%d,%d,%d,%d,%d", Draw.bDepthOnly ? 2 : ( bReceive ? 1 : 0 ), bTextured ? 1 : 0, static_cast<int32>( TargetFormat ), static_cast<int32>( TextureFormat ), State.bTestDepth ? 1 : 0, State.bWriteDepth ? 1 : 0,
 		static_cast<int32>( State.Compare ), static_cast<int32>( State.Culling ), State.bAlphaBlend ? 1 : 0, State.bAlphaBlend ? static_cast<int32>( State.Blend ) : 0, static_cast<int32>( State.AddressU ), State.bLinearFilter ? 1 : 0,
 		bCustom ? static_cast<int32>( Custom.SrcColor ) : 0, bCustom ? static_cast<int32>( Custom.DestColor ) : 0, bCustom ? static_cast<int32>( Custom.ColorOp ) : 0, bCustom ? static_cast<int32>( Custom.SrcAlpha ) : 0, bCustom ? static_cast<int32>( Custom.DestAlpha ) : 0,
 		bCustom ? static_cast<int32>( Custom.AlphaOp ) : 0 );
@@ -234,6 +237,7 @@ FGraphicsPipelineHandle CDX12ForwardMeshRenderer::GetPipeline( const FForwardMes
 	BufferSlots[0].Layout = EGraphicsBufferLayout::Constant;
 	BufferSlots[1].Binding = 6;
 	BufferSlots[1].Layout = EGraphicsBufferLayout::Constant;
+	const int32 NumBufferSlots = Draw.bDepthOnly ? 1 : 2; // 深度だけの描画は、個体の定数（b0）だけを使う（宣言した枠は、すべて使われている必要がある）。
 	FGraphicsTextureSlot TextureSlots[2]; // 画像（t0）と、影の絵（t1）。ある分だけ、この順に並べる。
 	int32 NumTextureSlots = 0;
 	if ( bTextured )
@@ -248,13 +252,14 @@ FGraphicsPipelineHandle CDX12ForwardMeshRenderer::GetPipeline( const FForwardMes
 		TextureSlots[NumTextureSlots].Format = EComputeTextureFormat::R32Float;
 		++NumTextureSlots;
 	}
-	const TArray<uint8>& Pixel = bReceive ? ( bTextured ? ShadowTexturedPixelCode : ShadowPixelCode ) : ( bTextured ? TexturedPixelCode : PixelCode );
+	const TArray<uint8>& Pixel = Draw.bDepthOnly ? DepthPixelCode : bReceive ? ( bTextured ? ShadowTexturedPixelCode : ShadowPixelCode ) : ( bTextured ? TexturedPixelCode : PixelCode );
+	const TArray<uint8>& Vertex = Draw.bDepthOnly ? DepthVertexCode : VertexCode;
 	FGraphicsPipelineDesc Desc;
-	Desc.VertexShaderBytecode = TArrayView<const uint8>( VertexCode.GetData(), VertexCode.Num() );
+	Desc.VertexShaderBytecode = TArrayView<const uint8>( Vertex.GetData(), Vertex.Num() );
 	Desc.PixelShaderBytecode = TArrayView<const uint8>( Pixel.GetData(), Pixel.Num() );
 	Desc.VertexStride = sizeof( FDrawVertex3D );
 	Desc.InputElements = TArrayView<const FGraphicsInputElement>( Elements, 5 );
-	Desc.BufferSlots = TArrayView<const FGraphicsBufferSlot>( BufferSlots, 2 );
+	Desc.BufferSlots = TArrayView<const FGraphicsBufferSlot>( BufferSlots, NumBufferSlots );
 	Desc.TextureSlots = NumTextureSlots > 0 ? TArrayView<const FGraphicsTextureSlot>( TextureSlots, NumTextureSlots ) : TArrayView<const FGraphicsTextureSlot>();
 	Desc.NumRenderTargets = 1;
 	Desc.RenderTargetFormats[0] = TargetFormat;
@@ -314,7 +319,12 @@ bool CDX12ForwardMeshRenderer::Draw( const FForwardMeshDraw& Draw, IRenderGeomet
 			return false;
 		}
 	}
-	const bool bReceive = Draw.ShadowMap >= 0 && Draw.bLit; // 影を受ける（光を計算する描画だけ）。
+	const bool bDepth = Draw.bDepthOnly; // 影の絵へ、光から見た深度だけを書く。
+	if ( bDepth && Geometry.GetColorFormat() != ERenderTargetColorFormat::R32Float )
+	{
+		return false; // 影の絵（R32Float）以外へは、深度を書けない（呼び出し側が、CPU の経路で描く）。
+	}
+	const bool bReceive = !bDepth && Draw.ShadowMap >= 0 && Draw.bLit; // 影を受ける（光を計算する描画だけ）。
 	if ( bReceive )
 	{
 		if ( !IsFiniteMatrix( Draw.LightViewProjection ) || !NMath::IsFinite( Draw.ShadowParams[2] ) || !( Draw.ShadowParams[0] >= 1.0f ) || !( Draw.ShadowParams[1] >= 1.0f ) || Draw.ShadowMask == 0 )
@@ -347,7 +357,7 @@ bool CDX12ForwardMeshRenderer::Draw( const FForwardMeshDraw& Draw, IRenderGeomet
 	FTextureResourceHandle SlotTextures[2]; // 画像（あれば）→ 影の絵（あれば）の順。パイプラインの画像の枠と同じ並び。
 	int32 NumSlotTextures = 0;
 	EComputeTextureFormat TextureFormat = EComputeTextureFormat::RGBA8;
-	const bool bTextured = Draw.Texture >= 0;
+	const bool bTextured = !bDepth && Draw.Texture >= 0;
 	if ( bTextured )
 	{
 		if ( !Textures->GetResource( Draw.Texture, SlotTextures[NumSlotTextures] ) || !Textures->GetShaderFormat( Draw.Texture, TextureFormat ) )
@@ -405,7 +415,7 @@ bool CDX12ForwardMeshRenderer::Draw( const FForwardMeshDraw& Draw, IRenderGeomet
 		Transient.VertexStride = static_cast<uint32>( sizeof( FDrawVertex3D ) );
 		Transient.Indices = Draw.Indices ? Draw.Indices + Draw.FirstIndex : nullptr;
 		Transient.IndexCount = Draw.Indices ? Draw.IndexCount : 0;
-		Transient.Constants = TArrayView<const FGraphicsConstantBytes>( Constants, 2 );
+		Transient.Constants = TArrayView<const FGraphicsConstantBytes>( Constants, bDepth ? 1 : 2 );
 		Transient.Textures = TArrayView<const FTextureResourceHandle>( SlotTextures, NumSlotTextures );
 		return Geometry.QueueGraphicsPipelineTransient( Transient );
 	}
@@ -418,7 +428,7 @@ bool CDX12ForwardMeshRenderer::Draw( const FForwardMeshDraw& Draw, IRenderGeomet
 	Command.IndexOffset = static_cast<uint64>( Draw.FirstIndex ) * sizeof( uint32 );
 	Command.IndexCount = static_cast<uint32>( Draw.IndexCount );
 	Command.IndexFormat = EGeometryIndexFormat::UInt32;
-	Command.Constants = TArrayView<const FGraphicsConstantBytes>( Constants, 2 );
+	Command.Constants = TArrayView<const FGraphicsConstantBytes>( Constants, bDepth ? 1 : 2 );
 	Command.Textures = TArrayView<const FTextureResourceHandle>( SlotTextures, NumSlotTextures );
 	Command.PinnedBytes = Mesh->Bytes; // 結果を待たずに積むときの、保持量の見積もり。
 	const bool bDrawn = Geometry.QueueGraphicsPipeline( Command );

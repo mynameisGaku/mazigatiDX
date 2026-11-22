@@ -18,7 +18,7 @@ public:
 
 private:
 	// 影の絵を描いているとき、図形を光から見た深度として描く。影を落とさない図形（線・点・画像つき・半透明）は、何もせず成功。
-	bool SubmitShadowCaster( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, int32 Alpha, int32 Texture );
+	bool SubmitShadowCaster( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, int32 Alpha, int32 Texture, bool bAllowTransient );
 	FGeometryExecution& Run; // このSpanだけの3Dの状態と、借りた実行先。
 	CGeometryForwardMesh& Forward; // 連携する役割。
 	ITextureDrawSource*& Textures; // Run.Textures の別名。

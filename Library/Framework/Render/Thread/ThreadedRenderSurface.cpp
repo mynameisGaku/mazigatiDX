@@ -55,6 +55,7 @@ bool CThreadedRenderSurface::BeginFrame( int32 InWidth, int32 InHeight )
 	bFailed.Store( false );
 	bCapture = false;
 	bRenderTargetPass = false;
+	ColorFormat = ERenderTargetColorFormat::RGBA8;
 	bFilterSupportKnown = false;
 	Gate.BeginFrame();
 	bActive = true;
@@ -201,6 +202,7 @@ bool CThreadedRenderSurface::BeginRenderTargetPass( const FRenderTargetPassDesc 
 	bool bResult = false;
 	bool bPassCanvas = false, bPassGeometry = false; // パス開始後のMRT有無に応じて有効窓口を更新する。
 	int32 TargetWidth = 0, TargetHeight = 0; // 描画先の実寸を描画スレッド側で取得する。
+	ERenderTargetColorFormat PassFormat = ERenderTargetColorFormat::RGBA8; // 描画先の色の形式も、描画スレッド側で取得する。
 	auto Begin = [&]()
 	{
 		bResult = Target.BeginRenderTargetPass( Desc );
@@ -212,6 +214,7 @@ bool CThreadedRenderSurface::BeginRenderTargetPass( const FRenderTargetPassDesc 
 			{
 				TargetWidth = Geometry->GetWidth();
 				TargetHeight = Geometry->GetHeight();
+				PassFormat = Geometry->GetColorFormat();
 			}
 		}
 	};
@@ -221,6 +224,7 @@ bool CThreadedRenderSurface::BeginRenderTargetPass( const FRenderTargetPassDesc 
 	}
 	Width = TargetWidth;
 	Height = TargetHeight;
+	ColorFormat = PassFormat;
 	bHasCanvas = bPassCanvas;
 	bHasGeometry = bPassGeometry;
 	bRenderTargetPass = true;
@@ -276,6 +280,7 @@ bool CThreadedRenderSurface::EndRenderTargetPass()
 	bHasCanvas = bAfterCanvas;
 	bHasGeometry = bAfterGeometry;
 	bRenderTargetPass = false;
+	ColorFormat = ERenderTargetColorFormat::RGBA8;
 	bFilterSupportKnown = false;
 	Gate.SetTarget( 0, TArrayView<const FTextureResourceHandle>() );
 	return bExecuted && bResult;

@@ -692,3 +692,9 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - **注意**: 影用のシェーダーは、影の絵（t1）を使わないと、パイプラインの作成が断られ、CPU の経路へ落ちる。シェーダーを変異させて確かめるときは、t1 を使い続ける変異にすること（定数の色を返す変異は、何も検出できない）。
 - **検査**: 契約 `ForwardMeshContract`（影を受ける描画が Forward のまま・影の情報が渡る・影の絵として使えない番号は受けない・光なしは受けない・フォグなし・オブジェクト定数 400 バイト）。画像 `RunDX12SampleImageTests.ps1` に、Island（`--island-fixed`: 時計・昼夜・歩き・カメラを止める）の GPU と CPU の経路の比較を足した（40 画素まで許す）。シェーダーの変異 5 種（影の反転・補正の深さなし・上下の反転・影を受けるライトの印を無視・3x3 を 1 行に）で、1.6 万〜19 万画素が違うことを確かめた。
 - **残り**: 影を落とす描画（`Geometry.ShadowCaster` 1.2 ms / 99 回）は、まだ CPU の経路。
+
+## 2026-11-22 追記: 影を落とす描画も GPU の Forward へ（Island 3.9 ms → 3.1 ms）
+- **測定**: 影を受ける描画を GPU へ移したあと、Island で最も重かったのは、影の絵へ深度を書く 99 回の描画（`Geometry.ShadowCaster` 1.3 ms）だった。頂点を CPU で光のクリップ座標へ変換し、毎回、組み込みのシェーダー（`Quad3D` + `ShadowDepth`）を同期で呼んでいた。
+- **変更**: `FForwardMeshDraw::bDepthOnly` を足した。true の描画は、`ClipMatrix`（= ワールド × 光の射影。画面のずれは掛けない）だけを使い、深度だけを書く（`ForwardMesh.hlsl` の `ForwardDepthVS` / `ForwardDepthPS`。`ShadowDepthMain` と同じ式）。パイプラインは、鍵の先頭を 2 にして別にする。b0（個体の定数）だけを使うので、パイプラインの枠も b0 の 1 つだけにする（宣言した枠は、すべて使われている必要がある）。深度だけの描画は、描画先が R32Float のときだけ受け付ける。`CGeometryForwardMesh::DrawShadowDepth` が、共有のモデルの範囲ごとに呼ぶ。画像つきの範囲・半透明（不透明度 250 未満）は、従来どおり、影を落とさない（何も描かず、描けた数に数える）。`CGeometryVertexSubmitter::SubmitShadowCaster` は、一度だけ描く三角形（地形・木など）も、GPU が受け取れば、フレームの転送領域から描く。断られたら、従来の CPU の経路。
+- **不具合の修正**: 描画スレッドを使う面（`CThreadedRenderSurface`）は、`GetColorFormat()` を実装しておらず、いつも RGBA8 を返していた。そのため、Forward は、R32Float（影の絵）や RGBA16F（HDR）の描画先でも、RGBA8 のパイプラインを選び、断られて CPU の経路へ落ちていた。描画先のパスを始めるときに、描画スレッド側の実際の形式を覚えるようにした。
+- **検査**: 契約 `ForwardMeshContract`（影を落とす描画が深度だけで GPU の経路・クリップ行列・状態・画像つきの範囲は落とさない・半透明は落とさない・GPU が断ったら CPU の経路）。Island の GPU と CPU の画像の比較（影を落とす側の変換が違えば、影の位置が変わる）。C++ の変異 3 種（光の行列なし・深度の書き込みなし・比較を反転）で確かめた。

@@ -235,7 +235,7 @@ Deferredの残りは、描画先パスの切り替えと、書き込み中の画
 
 クラスタごとの光の一覧を、GPUで作れるようにした（`CTileLightBuilder`）。新しいcomputeの窓口は作らず、CPUの基準実装（`CTileLightGrid`）と同じ判定を、ピクセルシェーダーで、一覧の画像の画素ごとに行う。公開のシェーダー窓口（`ShaderRect`・`ShaderConstants`・描画先）だけで動くので、DxLibでもDX12でも同じコードで動く。GPUの一覧は、WARPのD3D11で、どのクラスタもCPUの一覧と同じことを確かめ、サンプルの絵は、GPUで作った一覧・CPUで作った一覧・全部の光を評価した絵が、DX12・WARP・DxLibで全画素一致する。サンプル`Deferred`の既定をGPUにした。残るR4は、computeシェーダー版（公開のcomputeの窓口が要る）とGPU時間の表示。[R4 ライトカリング](R4_LIGHT_CULLING.md)
 
-**影を受ける描画のGPU経路（Island 9.5 ms → 3.8 ms）**: `--profile-frames=240`の測定で、Islandの6割は、影を受ける164回の描画をCPUで頂点ごとに計算する経路だった。影を受ける光る描画も、GPUのForward（`ForwardShadowPS`: 影の絵と比べた割合を、影を受けるライトの分にだけ掛ける）で描くようにした。CPUの経路と、Islandを固定して比べ、40画素の範囲で一致する。残りは影を落とす描画（1.2 ms）。詳細は`DX12_HANDOFF.md`。
+**影を受ける描画のGPU経路（Island 9.5 ms → 3.8 ms）**: `--profile-frames=240`の測定で、Islandの6割は、影を受ける164回の描画をCPUで頂点ごとに計算する経路だった。影を受ける光る描画も、GPUのForward（`ForwardShadowPS`: 影の絵と比べた割合を、影を受けるライトの分にだけ掛ける）で描くようにした。CPUの経路と、Islandを固定して比べ、40画素の範囲で一致する。続けて、影を落とす描画（影の絵へ深度だけを書く99回）もGPUのForwardへ移し、Islandは3.9 ms → 3.1 msになった（描画スレッドの面が描画先の形式を返していなかった不具合も直した）。詳細は`DX12_HANDOFF.md`。
 
 ## 2026-11-21 R4のスポットライト
 

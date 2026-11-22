@@ -67,6 +67,8 @@ private:
 	TArray<uint8> TexturedPixelCode;
 	TArray<uint8> ShadowPixelCode;           // 影を受ける描画（画像なし）。
 	TArray<uint8> ShadowTexturedPixelCode;   // 影を受ける描画（画像あり）。
+	TArray<uint8> DepthVertexCode;           // 影の絵へ深度だけを書く描画の頂点シェーダー。
+	TArray<uint8> DepthPixelCode;            // 同じく、ピクセルシェーダー。
 	bool bShadersTried = false;
 	bool bShadersReady = false;
 	uint64 Clock = 0;        // 描いた回数。

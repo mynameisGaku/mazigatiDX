@@ -55,7 +55,7 @@ bool CGeometryVertexSubmitter::Submit( const TArray<FDrawVertex3D>& Vertices, EG
 	}
 	if ( bShadowCasting )
 	{
-		return SubmitShadowCaster( Vertices, Topology, Alpha, Texture ); // 影の絵へ、光から見た深度として描く。
+		return SubmitShadowCaster( Vertices, Topology, Alpha, Texture, bAllowTransient ); // 影の絵へ、光から見た深度として描く。
 	}
 	PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "Draw", "Geometry.SubmitMain" );
 	if ( bAllowTransient && Topology == EGeometryTopology::Triangles && Vertices.Num() % 3 == 0 )
@@ -312,7 +312,7 @@ bool CGeometryVertexSubmitter::Submit( const TArray<FDrawVertex3D>& Vertices, EG
 	return Texture >= 0 ? Geometry->DrawTexturedGeometry( Output.GetData(), Output.Num(), State, Image ) : Geometry->DrawGeometry( Output.GetData(), Output.Num(), State );
 }
 
-bool CGeometryVertexSubmitter::SubmitShadowCaster( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, int32 Alpha, int32 Texture )
+bool CGeometryVertexSubmitter::SubmitShadowCaster( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, int32 Alpha, int32 Texture, bool bAllowTransient )
 {
 	PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "Draw", "Geometry.ShadowCaster" );
 	if ( Topology != EGeometryTopology::Triangles || Texture >= 0 || Alpha < 250 )
@@ -322,6 +322,21 @@ bool CGeometryVertexSubmitter::SubmitShadowCaster( const TArray<FDrawVertex3D>& 
 	if ( !ShaderSource || !Geometry )
 	{
 		return false;
+	}
+	if ( bAllowTransient && Vertices.Num() % 3 == 0 )
+	{
+		// GPU が光のクリップ座標への変換をして、深度を書く（頂点は、フレームの転送領域へ）。描けなければ、下の CPU の経路で描く。
+		FStaticModelDrawSection Section = { 0, Vertices.Num(), -1 }; // 一度だけ描く三角形の範囲。
+		FStaticModelDrawView Mesh = { Vertices.GetData(), Vertices.Num(), nullptr, Vertices.Num(), &Section, 1, 1.0f, 1, 1 }; // 鍵は判定用。実行先には登録しない。
+		bool bFinite = true; // GPUへ渡す前に全頂点を検査する。
+		for ( const FDrawVertex3D& Vertex : Vertices )
+		{
+			bFinite = bFinite && Finite( Vertex.Position );
+		}
+		if ( bFinite && Forward.CanDrawForward( Mesh ) && Forward.DrawMeshForward( Mesh, Alpha, false, false, FDrawRgb(), false, true ) == 1 )
+		{
+			return true;
+		}
 	}
 	const FMatrix4x4 Transform = World * LightViewProjection; // ローカルから、光のクリップ座標への変換。
 	TArray<FDrawShaderVertex3D> Output;

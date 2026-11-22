@@ -194,3 +194,7 @@ float4 ForwardTexturedPS( VO i ) : SV_Target
 float4 ForwardShadowColor( VO i ) { float s = ShadowFactor( i.LightPos ); return float4( i.Color.rgb + i.Shadowed * s, i.Color.a ); }
 float4 ForwardShadowPS( VO i ) : SV_Target { float4 c = ForwardShadowColor( i ); if ( c.a <= 0.0 ) { discard; } return c; }
 float4 ForwardShadowTexturedPS( VO i ) : SV_Target { float4 c = ForwardShadowColor( i ) * g_Base.Sample( g_Sampler, i.Uv ); if ( c.a <= 0.0 ) { discard; } return c; }
+// 影の絵へ、光から見た深度だけを書く（BuiltIn.hlsl の ShadowDepthMain と同じ）。b0 の g_Clip だけを使う。
+struct DepthVO { float4 Position : SV_POSITION; };
+DepthVO ForwardDepthVS( VI i ) { DepthVO o; o.Position = mul( float4( i.Position, 1.0 ), g_Clip ); return o; }
+float4 ForwardDepthPS( DepthVO i ) : SV_Target { return float4( i.Position.z, 0.0, 0.0, 1.0 ); }

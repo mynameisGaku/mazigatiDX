@@ -123,6 +123,8 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 	int32 GetWidth() const override;
 	// 現在の描画先の物理高さを、記録側の値だけから返す。
 	int32 GetHeight() const override;
+	// 現在の描画先の色の形式。描画先のパスを始めたときの、実行先の値（それ以外は、RGBA8）。
+	ERenderTargetColorFormat GetColorFormat() const override { return ColorFormat; }
 	// 頂点の借用は同期実行が終わるまで保持し、既存の検査結果を返す。
 	bool DrawGeometry( const FGeometryVertex *Vertices, int32 Count, const FGeometryDrawState &State ) override;
 	// 画像の借用値と頂点を同期で渡し、実行側の成否を返す。
@@ -194,6 +196,7 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 	bool bFilterSupportKnown = false, bFilterSupported = false;
 	// 現在の描画先と、通常フレームへ復元する寸法。
 	int32 Width = 0, Height = 0, FrameWidth = 0, FrameHeight = 0;
+	ERenderTargetColorFormat ColorFormat = ERenderTargetColorFormat::RGBA8; // いまの描画先の色の形式（描画先のパスの間だけ、RGBA8 以外になりうる）。
 	// 1フレーム65536命令、文字列8MiBの受付を数える。
 	int32 NumCommands = 0, TextBytes = 0;
 };

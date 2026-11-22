@@ -16,6 +16,8 @@ public:
 	int32 DrawMeshForward( const FStaticModelDrawView& Model, int32 ModelAlpha, bool bAlphaBlend, bool bInferAlpha = true, FDrawRgb Bright = FDrawRgb(), bool bLit = true, bool bTransient = false );
 
 private:
+	// 影の絵を描いているとき、光から見た深度だけを GPU で書く。影を落とさない範囲（画像つき・半透明）は、何も描かず、描けた数に数える。
+	int32 DrawShadowDepth( const FStaticModelDrawView& Model, int32 ModelAlpha, bool bTransient );
 	FGeometryExecution& Run; // このSpanだけの3Dの状態と、借りた実行先。
 	IRenderGeometry3D*& Geometry; // Run.Geometry の別名。
 	FMatrix4x4& World; // Run.World の別名。
@@ -28,6 +30,7 @@ private:
 	IShaderDrawSource*& ShaderSource; // Run.ShaderSource の別名。
 	bool& bUseForwardPath; // Run.bUseForwardPath の別名。
 	bool& bShadowCasting; // Run.bShadowCasting の別名。
+	FMatrix4x4& LightViewProjection; // Run.LightViewProjection の別名。
 	int32 ( &ShadowSlotMaps )[3]; // Run.ShadowSlotMaps の別名。
 	int32& ReceiverSlot; // Run.ReceiverSlot の別名。
 };
