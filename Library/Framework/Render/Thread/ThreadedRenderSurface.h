@@ -76,6 +76,7 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 		Mask, // 2Dの描画を薄めるマスクの画像。
 		ClearColor, // 色の消去。
 		ClearDepth, // 深度の消去。
+		TextureFilter, // 画像の補間（bEnabled が線形）。
 	};
 	// 64件ずつ移動する操作値。文字列以外は固定長で持つ。
 	struct FCommand
@@ -147,7 +148,7 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 	void PushClip( int32 X0, int32 Y0, int32 X1, int32 Y1 ) override;
 	// 先行する描画の後で、直前の切り取り範囲へ戻す。
 	void PopClip() override;
-	// 先行する命令を確定し、補間設定に対応するか同期で返す。
+	// 補間設定に対応するかは、描画先が変わるたびの最初の 1 回だけ、先行する命令を確定して同期で確かめる。対応していれば、以降は他の2D命令と同じ順序に積むだけで、すぐ true を返す。
 	bool SetTextureFilter( bool bLinear ) override;
 	// 輪郭の補間設定を後続の描画と同じ順序へ積む。
 	void SetAntiAlias( bool bEnabled ) override;
@@ -168,6 +169,8 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 	bool bActive = false, bCapture = false, bRenderTargetPass = false;
 	// 現在の実行先が提供する窓口。描画スレッドで調べた結果だけを保持する。
 	bool bHasCanvas = false, bHasGeometry = false;
+	// 補間設定への対応を確かめた印と、その答え。フレーム・描画先パス・撮影の切り替えで確かめ直す。ゲームスレッドだけ。
+	bool bFilterSupportKnown = false, bFilterSupported = false;
 	// 現在の描画先と、通常フレームへ復元する寸法。
 	int32 Width = 0, Height = 0, FrameWidth = 0, FrameHeight = 0;
 	// 1フレーム65536命令、文字列8MiBの受付を数える。

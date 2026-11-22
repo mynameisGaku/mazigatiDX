@@ -28,6 +28,7 @@ bool CThreadedRenderSurface::BeginFrame( int32 InWidth, int32 InHeight )
 	bFailed.Store( false );
 	bCapture = false;
 	bRenderTargetPass = false;
+	bFilterSupportKnown = false;
 	bActive = true;
 	return true;
 }
@@ -138,6 +139,7 @@ bool CThreadedRenderSurface::BeginOffscreenCapture( const FOffscreenCaptureDesc 
 	Width = Desc.Width;
 	Height = Desc.Height;
 	bCapture = true;
+	bFilterSupportKnown = false;
 	return true;
 }
 
@@ -155,6 +157,7 @@ bool CThreadedRenderSurface::EndOffscreenCapture( TArray<FColor32> &Out )
 	Width = FrameWidth;
 	Height = FrameHeight;
 	bCapture = false;
+	bFilterSupportKnown = false;
 	return bExecuted && bResult;
 }
 
@@ -191,6 +194,7 @@ bool CThreadedRenderSurface::BeginRenderTargetPass( const FRenderTargetPassDesc 
 	bHasCanvas = bPassCanvas;
 	bHasGeometry = bPassGeometry;
 	bRenderTargetPass = true;
+	bFilterSupportKnown = false;
 	return true;
 }
 
@@ -239,6 +243,7 @@ bool CThreadedRenderSurface::EndRenderTargetPass()
 	bHasCanvas = bAfterCanvas;
 	bHasGeometry = bAfterGeometry;
 	bRenderTargetPass = false;
+	bFilterSupportKnown = false;
 	return bExecuted && bResult;
 }
 
@@ -633,10 +638,28 @@ bool CThreadedRenderSurface::SetTextureFilter( bool bLinear )
 	{
 		return false;
 	}
+	if ( bFilterSupportKnown )
+	{
+		if ( !bFilterSupported )
+		{
+			return false;
+		}
+		FCommand Command; // 対応は確かめ済み。往復せずに、後続の描画と同じ順序で設定する。
+		Command.Type = ECommand::TextureFilter;
+		Command.bEnabled = bLinear;
+		Queue( MoveTemp( Command ) );
+		return true;
+	}
 	bool bResult = false;
 	auto Set = [&]()
 	{ if ( IRenderCanvas2D* Canvas = Target.GetCanvas2D() ) { bResult = Canvas->SetTextureFilter( bLinear ); } };
-	return Execute( MoveTemp( Set ) ) && bResult;
+	if ( !Execute( MoveTemp( Set ) ) )
+	{
+		return false;
+	}
+	bFilterSupported = bResult; // 描画先が変わるまで、答えは同じ。
+	bFilterSupportKnown = true;
+	return bResult;
 }
 
 void CThreadedRenderSurface::ExecuteBatch( const TArray<FCommand> &Commands )
@@ -727,6 +750,9 @@ void CThreadedRenderSurface::ExecuteBatch( const TArray<FCommand> &Commands )
 			break;
 		case ECommand::CustomBlend:
 			Canvas->SetCustomBlend( Command.CustomBlend );
+			break;
+		case ECommand::TextureFilter:
+			Canvas->SetTextureFilter( Command.bEnabled );
 			break;
 		case ECommand::Mask:
 			Canvas->SetMask( Command.bEnabled ? &Command.Texture : nullptr, Command.Integers[0], Command.Integers[1] != 0 );
