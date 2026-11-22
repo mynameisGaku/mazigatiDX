@@ -60,6 +60,10 @@
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
+      <!-- Debug の速さ: /JMC（Just My Code。全関数の入口に、呼び出しを 1 つ足す）を切り、/Ob1（FORCEINLINE の関数だけをインライン展開する。/Od のままだと、FORCEINLINE も展開されない）にする。
+           ブレークポイントと変数の確認は、今までどおり使える（Debug の Deferred のゲームスレッドで、/JMC の呼び出しだけで約 24%） -->
+      <SupportJustMyCode>false</SupportJustMyCode>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PreprocessorDefinitions>JPH_ENABLE_ASSERTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
