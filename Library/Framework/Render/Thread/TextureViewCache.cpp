@@ -25,6 +25,11 @@ void CTextureViewCache::Add( FTextureResourceHandle Texture, const FTextureDrawV
 	Views.Add( Texture.Value, View );
 }
 
+void CTextureViewCache::Remove( FTextureResourceHandle Texture )
+{
+	Views.Remove( Texture.Value );
+}
+
 void CTextureViewCache::Invalidate()
 {
 	Views.Reset();

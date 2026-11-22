@@ -197,6 +197,8 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
 	// bMayChangeTextureViews が true（既定）なら、覚えておいた画像の view を捨てる（資源の作成・更新・解放など、view の答えを変えうる操作）。問い合わせだけなら false。
 	// Caller は、呼び出し元の関数名（確認用の集計に使う。呼び出し側は渡さない）。
 	bool ExecuteRender( TCallable<void()> Task, bool bMayChangeTextureViews = true, const char *Caller = __builtin_FUNCTION() ) const;
+	// 描画先パスが書く描画先・深度の view を、覚えから捨てる（パスの間は、view として貸さない）。ほかの画像の覚えは、そのまま使う。
+	void ForgetPassTargetViews( const FRenderTargetPassDesc &Desc ) const;
 	// 通常のcompute提出とタイムスタンプ付き提出を共有経路で実行する。
 	FComputeSubmission SubmitComputeInternal( TArrayView<const FComputeDispatch> Dispatches, const FGpuTimestampHandle *Timestamp );
 	CRenderCommandThread *RenderCommands = nullptr; // 描画の専用実行列。GPU利用者より先に終了する。

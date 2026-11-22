@@ -336,8 +336,7 @@ bool CDX12PlatformSubsystem::BeginFrame()
 			TargetPassRenderer->CollectAfterGPUIdle();
 		}
 	};
-	TextureViews.Invalidate();
-	// フレームの境目は、資源の作成・解放ではない（番号が使い回される前には、必ず作成・解放の呼び出しがあり、そこで捨てる）。待たずに積んでよい組み合わせの確かめ済みは、フレームをまたいで使う。
+	// フレームの境目は、資源の作成・解放ではない（番号が使い回される前には、必ず作成・解放の呼び出しがあり、そこで捨てる）。待たずに積んでよい組み合わせの確かめ済みと、画像の view の覚えは、フレームをまたいで使う。
 	if ( !ExecuteRender( MoveTemp( Start ), false ) || !bStarted || !ThreadedSurface->BeginFrame( Settings.Width, Settings.Height ) )
 	{
 		LOG( LogDX12, Error, "DX12 frame could not start (device lost or GPU wait failed)" );
@@ -378,7 +377,7 @@ void CDX12PlatformSubsystem::EndFrame()
 		ImGui::Render();
 	}
 	ImDrawData *UIData = bContext ? ImGui::GetDrawData() : nullptr; // 待機が戻るまでゲーム側は変更しない。
-	TextureViews.Invalidate(); // 終了時に、開いたままの描画先パスも閉じる。
+	// 開いたままの描画先パスは、ここで閉じる。書き込み中の画像の「ない」は覚えない（成功だけを覚える）ので、覚えは捨てなくてよい。
 	const bool bGameCommands = ThreadedSurface->EndFrame(); // ここでゲームの全命令のCPU記録を確定する。
 	bool bCapturePrepared = false, bSubmitted = false; // 描画スレッドが返すこのフレームの結果。
 	auto Submit = [&, this]()
@@ -411,7 +410,6 @@ void CDX12PlatformSubsystem::EndFrame()
 			bSubmitted = false;
 		}
 	};
-	TextureViews.Invalidate();
 	const bool bRecorded = ExecuteRender( MoveTemp( Submit ), false ); // フレームの提出も、資源の作成・解放ではない（確かめ済みは、捨てない）。
 	// PresentはOSからの通知を待つ場合があるため、窓のスレッドに残す。
 	bWindowRenderPhase = true;
@@ -548,17 +546,28 @@ bool CDX12PlatformSubsystem::EndOffscreenCapture( TArray<FColor32> &Out )
 	return bInFrame && ThreadedSurface && ThreadedSurface->EndOffscreenCapture( Out );
 }
 
+void CDX12PlatformSubsystem::ForgetPassTargetViews( const FRenderTargetPassDesc &Desc ) const
+{
+	TextureViews.Remove( Desc.ColorTarget );
+	TextureViews.Remove( Desc.DepthTarget );
+	for ( const FRenderTargetColorAttachment &Color : Desc.ColorTargets )
+	{
+		TextureViews.Remove( Color.Target );
+	}
+}
+
 bool CDX12PlatformSubsystem::BeginRenderTargetPass( const FRenderTargetPassDesc &Desc )
 {
 	GAME_THREAD_ONLY( false );
-	TextureViews.Invalidate(); // 書き込み中の画像は、view として貸さない。切り替えのたびに答えが変わる。
+	// 書き込み中の描画先・深度は、view として貸さない（答えが「ない」に変わる）。そのパスが書く画像の覚えだけを捨てる。ほかの画像の答えは、パスで変わらない。
+	// 書き込み中の画像の「ない」は覚えない（成功だけを覚える）ので、パスの終わりでは、何も捨てなくてよい。
+	ForgetPassTargetViews( Desc );
 	return bInFrame && ThreadedSurface && ThreadedSurface->BeginRenderTargetPass( Desc );
 }
 
 bool CDX12PlatformSubsystem::EndRenderTargetPass()
 {
 	GAME_THREAD_ONLY( false );
-	TextureViews.Invalidate();
 	return bInFrame && ThreadedSurface && ThreadedSurface->EndRenderTargetPass();
 }
 

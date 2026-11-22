@@ -6,7 +6,8 @@
 
 // 画像の描画 view（描画実装の識別子と寸法）を、ゲームスレッドで覚えておく。
 // 描画スレッドが持つ画像の登録表への問い合わせを、画像 1 枚を描くたびの往復にしないための置き場。
-// 覚えるのは、成功した問い合わせだけ。画像の作成・更新・解放、描画先のパス・撮影の切り替えなど、問い合わせの答えを変えうる操作のたびに、全部を捨てる。
+// 覚えるのは、成功した問い合わせだけ。画像の作成・更新・解放、撮影の切り替えなど、問い合わせの答えを変えうる操作のたびに、全部を捨てる。
+// 描画先のパスの始まりは、そのパスが書く描画先と深度の分だけを捨てる（Remove。ほかの画像の答えは、パスで変わらない）。フレームの境目・パスの終わりは、捨てない。
 // ゲームスレッドだけで使う。
 class CTextureViewCache
 {
@@ -15,6 +16,8 @@ class CTextureViewCache
 	bool Find( FTextureResourceHandle Texture, FTextureDrawView &OutView ) const;
 	// 成功した問い合わせの答えを覚える。上限に達していたら、全部を捨ててから覚える。
 	void Add( FTextureResourceHandle Texture, const FTextureDrawView &View );
+	// 1 枚の画像の view だけを捨てる（描画先のパスが書く間は、その画像を view として貸さないため）。覚えていなければ、何もしない。
+	void Remove( FTextureResourceHandle Texture );
 	// 覚えている view を、全部捨てる。
 	void Invalidate();
 	// 覚えている view の数。
