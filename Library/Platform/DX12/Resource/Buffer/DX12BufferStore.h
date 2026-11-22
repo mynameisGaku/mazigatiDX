@@ -6,6 +6,7 @@
 #include <d3d12.h>
 #include <wrl/client.h>
 #include "DX12BufferBinding.h"
+#include "Library/Platform/DX12/Resource/Upload/DX12CopyStaging.h"
 
 // GPU上のバイト列・転送領域・完了待ちと解放を所有する。画像・記述子・ImGuiは扱わない。
 class CDX12BufferStore : public IRenderBufferResources
@@ -47,6 +48,12 @@ private:
 	};
 	// 指定した置き場と初期状態でバッファを作る。失敗時はOutを保つ。
 	bool CreateResource( uint64 Size, D3D12_HEAP_TYPE HeapType, D3D12_RESOURCE_STATES State, Microsoft::WRL::ComPtr<ID3D12Resource>& Out, D3D12_RESOURCE_FLAGS Flags = D3D12_RESOURCE_FLAG_NONE );
+	// ジオメトリ用の（シェーダーから読み書きしない）バッファを、GPU完了を待たずに作る。使い終えた資源は使い回す。予算超過・失敗は無効値（呼び出し側が、完了を待つ経路を使う）。
+	FBufferResourceHandle CreateQueued( TArrayView<const uint8> Bytes );
+	// GPU完了後に、使い終えた（登録解除した）バッファを、次の作成での再利用のために預かる。預かれないものはfalse。
+	bool AdoptFree( FBufferRecord& Retired );
+	// 預かっているバッファを、上限に収まるまで古い順に手放す（Size はこれから足す大きさ）。
+	void TrimFree( uint64 Size );
 	// 前の提出が終わっている記録領域を開く。失敗後は再初期化まで提出しない。
 	bool BeginCopy();
 	// 記録を閉じて提出し、完了を待つ。失敗時もSourceとTargetを保持する。
@@ -59,6 +66,9 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> PendingSource, PendingTarget; // 待機に失敗しても回収しない転送資源。
 	TMap<uint64, FBufferRecord> Buffers; // 有効な登録番号と所有バッファ。
 	TArray<FBufferRecord> Retired; // 次のキュー完了確認まで残す登録解除済みバッファ。
+	TArray<FBufferRecord> FreeBuffers; // GPU完了後に再利用できるバッファ（古い順。ResidentBytes に含む）。
+	CDX12CopyStaging Staging; // 完了を待たない作成の、転送領域と命令列の使い回し。
+	uint64 FreeBufferBytes = 0; // 預かったバッファの大きさの合計。
 	HANDLE FenceEvent = nullptr; // 完了待ち用の自動解除イベント。
 	uint64 FenceValue = 0; // 次の提出に対応する通知番号。
 	uint64 ResidentBytes = 0; // 登録解除済みを含むデータ量。GPU側の確保単位による余白は含まない。
@@ -66,4 +76,7 @@ private:
 	static constexpr int32 MaxBuffers = 256; // 登録解除済みを含む保持数の上限。
 	static constexpr uint64 MaxBufferBytes = 64ull * 1024 * 1024; // 一つのバッファの上限。
 	static constexpr uint64 MaxResidentBytes = 256ull * 1024 * 1024; // 同時に保持するデータ量の上限。
+	static constexpr uint64 MaxQueuedBufferBytes = 16ull * 1024 * 1024; // 完了を待たずに作る・使い回すバッファの大きさの上限（これより大きいものは、完了を待つ経路）。
+	static constexpr int32 MaxFreeBuffers = 64; // 預かるバッファの数の上限。
+	static constexpr uint64 MaxFreeBufferBytes = 64ull * 1024 * 1024; // 預かるバッファの大きさの合計の上限。
 };

@@ -1354,6 +1354,9 @@
     <ClCompile Include="Library\Platform\DX12\Resource\Timestamp\DX12TimestampStore.cpp">
       <Filter>Library\Platform\DX12\Resource\Timestamp</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Resource\Upload\DX12CopyStaging.cpp">
+      <Filter>Library\Platform\DX12\Resource\Upload</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Resource\Upload\DX12UploadArena.cpp">
       <Filter>Library\Platform\DX12\Resource\Upload</Filter>
     </ClCompile>
@@ -4100,6 +4103,9 @@
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Resource\Timestamp\DX12TimestampStore.h">
       <Filter>Library\Platform\DX12\Resource\Timestamp</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Resource\Upload\DX12CopyStaging.h">
+      <Filter>Library\Platform\DX12\Resource\Upload</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Resource\Upload\DX12UploadArena.h">
       <Filter>Library\Platform\DX12\Resource\Upload</Filter>

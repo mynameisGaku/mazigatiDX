@@ -32,23 +32,61 @@ bool CDX12BufferStore::Initialize( ID3D12Device* InDevice, ID3D12CommandQueue* I
 	{
 		ResetAfterGPUIdle();
 	}
+	else
+	{
+		Staging.Connect( Device.Get(), Queue.Get() );
+	}
 	return bHealthy;
 }
 
 void CDX12BufferStore::CollectAfterGPUIdle()
 {
-	for ( const FBufferRecord& Buffer : Retired )
+	for ( FBufferRecord& Buffer : Retired )
 	{
-		ResidentBytes -= Buffer.Size;
+		if ( !AdoptFree( Buffer ) ) // 次の作成で使い回せるものは、資源を残す（大きさは、保持量に含めたまま）。
+		{
+			ResidentBytes -= Buffer.Size;
+		}
 	}
 	Retired.Reset();
+	Staging.CollectAfterGPUIdle();
 	PendingSource.Reset();
 	PendingTarget.Reset();
+}
+
+bool CDX12BufferStore::AdoptFree( FBufferRecord& Retired )
+{
+	if ( !bHealthy || Retired.Access != ERenderBufferShaderAccess::None || !Retired.Resource || Retired.Size == 0 || Retired.Size > MaxQueuedBufferBytes || Retired.Size > MaxFreeBufferBytes )
+	{
+		return false;
+	}
+	while ( !FreeBuffers.IsEmpty() && ( FreeBuffers.Num() >= MaxFreeBuffers || FreeBufferBytes + Retired.Size > MaxFreeBufferBytes ) )
+	{
+		FreeBufferBytes -= FreeBuffers[0].Size; // 一番古いものから手放す。
+		ResidentBytes -= FreeBuffers[0].Size;
+		FreeBuffers.RemoveAt( 0 );
+	}
+	FreeBufferBytes += Retired.Size;
+	FreeBuffers.Add( MoveTemp( Retired ) );
+	return true;
+}
+
+void CDX12BufferStore::TrimFree( uint64 Size )
+{
+	while ( !FreeBuffers.IsEmpty() && Size > MaxResidentBytes - ResidentBytes )
+	{
+		FreeBufferBytes -= FreeBuffers[0].Size;
+		ResidentBytes -= FreeBuffers[0].Size;
+		FreeBuffers.RemoveAt( 0 );
+	}
 }
 
 void CDX12BufferStore::ResetAfterGPUIdle()
 {
 	CollectAfterGPUIdle();
+	Staging.Disconnect();
+	FreeBuffers.Reset();
+	FreeBufferBytes = 0;
 	Buffers.Reset();
 	ResidentBytes = 0;
 	Commands.Reset();
@@ -127,11 +165,90 @@ bool CDX12BufferStore::SubmitCopy( ID3D12Resource* Source, ID3D12Resource* Targe
 	return bHealthy;
 }
 
+FBufferResourceHandle CDX12BufferStore::CreateQueued( TArrayView<const uint8> Bytes )
+{
+	const uint64 Size = static_cast<uint64>( Bytes.Num() ); // 作るバッファの大きさ。
+	FBufferRecord Created; // 作った（または再利用する）バッファ。
+	Created.Size = Size;
+	Created.Access = ERenderBufferShaderAccess::None;
+	bool bRecycled = false; // 預かっていたバッファを使ったか（保持量に、すでに含んでいる）。
+	for ( int32 Index = 0; Index < FreeBuffers.Num(); ++Index )
+	{
+		if ( FreeBuffers[Index].Size == Size )
+		{
+			Created = MoveTemp( FreeBuffers[Index] );
+			FreeBuffers.RemoveAt( Index );
+			FreeBufferBytes -= Size;
+			bRecycled = true;
+			break;
+		}
+	}
+	if ( !bRecycled && !CreateResource( Size, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_COMMON, Created.Resource ) )
+	{
+		return FBufferResourceHandle();
+	}
+	const auto GiveBack = [&]() // 使えなかったバッファを戻す（新しく作ったものは、そのまま破棄する）。
+	{
+		if ( bRecycled )
+		{
+			FreeBufferBytes += Size;
+			FreeBuffers.Add( MoveTemp( Created ) );
+		}
+	};
+	CDX12CopyStaging::FOpened Opened; // バイト列を書く転送領域と、コピーを記録する命令列。
+	if ( !Staging.Open( Size, Opened ) )
+	{
+		GiveBack();
+		return FBufferResourceHandle();
+	}
+	FMemory::Memcpy( Opened.Mapped, Bytes.GetData(), static_cast<usize>( Size ) );
+	D3D12_RESOURCE_BARRIER Barrier = {}; // 転送の間だけ、転送先の状態にする。
+	Barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	Barrier.Transition.pResource = Created.Resource.Get();
+	Barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	Barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+	Barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+	Opened.Commands->ResourceBarrier( 1, &Barrier );
+	Opened.Commands->CopyBufferRegion( Created.Resource.Get(), 0, Opened.Upload, 0, Size );
+	Barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+	Barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COMMON;
+	Opened.Commands->ResourceBarrier( 1, &Barrier );
+	if ( !Staging.Submit() ) // 閉じて、完了は待たずに提出する。
+	{
+		GiveBack();
+		return FBufferResourceHandle();
+	}
+	const FBufferResourceHandle Handle = FBufferResourceHandle::Allocate(); // 他の所有先や過去の初期化と重ならない番号。
+	if ( !Handle.IsValid() )
+	{
+		GiveBack(); // 転送は積んだが、使われない。次の作成で、上書きされる。
+		return FBufferResourceHandle();
+	}
+	if ( !bRecycled )
+	{
+		ResidentBytes += Size;
+	}
+	Buffers.Add( Handle.Value, MoveTemp( Created ) );
+	return Handle;
+}
+
 FBufferResourceHandle CDX12BufferStore::CreateBuffer( TArrayView<const uint8> Bytes, ERenderBufferShaderAccess Access )
 {
+	if ( bHealthy && Bytes.GetData() && Bytes.Num() > 0 )
+	{
+		TrimFree( static_cast<uint64>( Bytes.Num() ) ); // 預かったバッファが、保持量の上限を使い切らないように。
+	}
 	if ( !bHealthy || !Bytes.GetData() || Bytes.Num() <= 0 || static_cast<uint64>( Bytes.Num() ) > MaxBufferBytes || Buffers.Num() + Retired.Num() >= MaxBuffers || static_cast<uint64>( Bytes.Num() ) > MaxResidentBytes - ResidentBytes || ( Access != ERenderBufferShaderAccess::None && Access != ERenderBufferShaderAccess::Read && Access != ERenderBufferShaderAccess::ReadWrite ) || ( Access != ERenderBufferShaderAccess::None && Bytes.Num() % 4 != 0 ) )
 	{
 		return FBufferResourceHandle();
+	}
+	if ( Access == ERenderBufferShaderAccess::None && static_cast<uint64>( Bytes.Num() ) <= MaxQueuedBufferBytes )
+	{
+		const FBufferResourceHandle Queued = CreateQueued( Bytes ); // ジオメトリ用は、完了を待たずに積む（資源・転送領域・命令列を使い回す）。
+		if ( Queued.IsValid() )
+		{
+			return Queued;
+		}
 	}
 	FBufferRecord Created; // GPU転送が終わった資源だけを登録する。
 	Created.Size = static_cast<uint64>( Bytes.Num() );

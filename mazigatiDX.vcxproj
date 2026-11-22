@@ -570,6 +570,7 @@
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureStore.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Timestamp\DX12GpuSegmentTimer.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Timestamp\DX12TimestampStore.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Resource\Upload\DX12CopyStaging.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Upload\DX12UploadArena.cpp" />
     <ClCompile Include="Library\Platform\DX12\Window\DX12PlatformSubsystem.cpp" />
     <ClCompile Include="Library\Platform\DxLib\DxLibBackendSubsystem.cpp" />
@@ -1487,6 +1488,7 @@
     <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureStore.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Timestamp\DX12GpuSegmentTimer.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Timestamp\DX12TimestampStore.h" />
+    <ClInclude Include="Library\Platform\DX12\Resource\Upload\DX12CopyStaging.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Upload\DX12UploadArena.h" />
     <ClInclude Include="Library\Platform\DX12\Window\DX12PlatformSubsystem.h" />
     <ClInclude Include="Library\Platform\DxLib\DxLibBackendSubsystem.h" />

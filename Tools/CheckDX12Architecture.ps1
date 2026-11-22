@@ -33,6 +33,7 @@ $types = @(
     @{ Path = 'Library/Platform/DX12/Resource/Texture/DX12TextureUpdater.h'; Type = 'CDX12TextureUpdater'; Role = '機能' },
     @{ Path = 'Library/Platform/DX12/Resource/Timestamp/DX12TimestampStore.h'; Type = 'CDX12TimestampStore'; Role = '機能' },
     @{ Path = 'Library/Platform/DX12/Resource/Timestamp/DX12GpuSegmentTimer.h'; Type = 'CDX12GpuSegmentTimer'; Role = '機能' },
+    @{ Path = 'Library/Platform/DX12/Resource/Upload/DX12CopyStaging.h'; Type = 'CDX12CopyStaging'; Role = '機能' },
     @{ Path = 'Library/Platform/DX12/Resource/Upload/DX12UploadArena.h'; Type = 'CDX12UploadArena'; Role = '機能' },
     @{ Path = 'Library/Platform/ImGui/Render/ImGuiCanvas2D.h'; Type = 'CImGuiCanvas2D'; Role = '機能' },
     @{ Path = 'Library/Platform/ImGui/Render/ImGuiViewportScheduler.h'; Type = 'CImGuiViewportScheduler'; Role = '機能' },

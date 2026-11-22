@@ -31,6 +31,7 @@ void CDX12TextureUpdater::Connect( ID3D12Device *InDevice, ID3D12CommandQueue *I
 	Queue = InQueue;
 	Creator = InCreator;
 	Pool = InPool;
+	Staging.Connect( InDevice, InQueue );
 }
 
 void CDX12TextureUpdater::Disconnect()
@@ -40,13 +41,8 @@ void CDX12TextureUpdater::Disconnect()
 		Destroy( Version );
 	}
 	FreeVersions.Reset();
-	FreeUploads.Reset();
-	FreeRecordings.Reset();
-	UsedUploads.Reset();
-	UsedRecordings.Reset();
+	Staging.Disconnect();
 	FreeVersionBytes = 0;
-	FreeUploadBytes = 0;
-	UsedUploadBytes = 0;
 	Device = nullptr;
 	Queue = nullptr;
 	Creator = nullptr;
@@ -75,61 +71,9 @@ void CDX12TextureUpdater::GiveBack( FDX12TextureRecord &Version, bool bRecycled 
 	}
 }
 
-bool CDX12TextureUpdater::AcquireUpload( uint64 Size, FUploadBuffer &Out )
-{
-	for ( int32 Index = 0; Index < FreeUploads.Num(); ++Index )
-	{
-		if ( FreeUploads[Index].Size >= Size && FreeUploads[Index].Size <= Size * 2 )
-		{
-			Out = MoveTemp( FreeUploads[Index] );
-			FreeUploads.RemoveAt( Index );
-			FreeUploadBytes -= static_cast<int64>( Out.Size );
-			return true;
-		}
-	}
-	D3D12_HEAP_PROPERTIES Heap = {}; // CPUから書き込む転送領域の置き場。
-	Heap.Type = D3D12_HEAP_TYPE_UPLOAD;
-	D3D12_RESOURCE_DESC Buffer = {}; // CPUから書き込む転送領域。
-	Buffer.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	Buffer.Width = Size;
-	Buffer.Height = Buffer.DepthOrArraySize = Buffer.MipLevels = Buffer.SampleDesc.Count = 1;
-	Buffer.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-	FUploadBuffer Created; // 作った転送領域（開いたままマップする）。
-	const D3D12_RANGE NoRead = { 0, 0 }; // CPUからは読まない。
-	void *Mapped = nullptr; // CPUが書く先。
-	if ( FAILED( Device->CreateCommittedResource( &Heap, D3D12_HEAP_FLAG_NONE, &Buffer, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS( &Created.Resource ) ) ) || FAILED( Created.Resource->Map( 0, &NoRead, &Mapped ) ) )
-	{
-		return false;
-	}
-	Created.Mapped = static_cast<uint8 *>( Mapped );
-	Created.Size = Size;
-	Out = MoveTemp( Created );
-	return true;
-}
-
-bool CDX12TextureUpdater::AcquireRecording( FRecordingSet &Out )
-{
-	while ( !FreeRecordings.IsEmpty() )
-	{
-		FRecordingSet Free = FreeRecordings.Pop();
-		if ( SUCCEEDED( Free.Allocator->Reset() ) && SUCCEEDED( Free.Commands->Reset( Free.Allocator.Get(), nullptr ) ) )
-		{
-			Out = MoveTemp( Free );
-			return true;
-		}
-	}
-	FRecordingSet Created; // 新しく作る。作った命令列は、記録できる状態。
-	if ( FAILED( Device->CreateCommandAllocator( D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS( &Created.Allocator ) ) ) || FAILED( Device->CreateCommandList( 0, D3D12_COMMAND_LIST_TYPE_DIRECT, Created.Allocator.Get(), nullptr, IID_PPV_ARGS( &Created.Commands ) ) ) )
-	{
-		return false;
-	}
-	Out = MoveTemp( Created );
-	return true;
-}
-
 bool CDX12TextureUpdater::Update( int32 Width, int32 Height, const FColor32 *Pixels, FDX12TextureRecord &Out )
 {
-	if ( !Device || !Queue || !Creator || !Pixels || Width <= 0 || Height <= 0 || UsedRecordings.Num() >= MaxInFlight || UsedUploadBytes >= MaxInFlightBytes )
+	if ( !Device || !Queue || !Creator || !Pixels || Width <= 0 || Height <= 0 )
 	{
 		return false;
 	}
@@ -154,31 +98,23 @@ bool CDX12TextureUpdater::Update( int32 Width, int32 Height, const FColor32 *Pix
 	D3D12_PLACED_SUBRESOURCE_FOOTPRINT Layout = {};
 	UINT64 TotalBytes = 0; // paddingを含む転送領域の大きさ。
 	Device->GetCopyableFootprints( &Desc, 0, 1, 0, &Layout, nullptr, nullptr, &TotalBytes );
-	FUploadBuffer Upload; // 画素を書く転送領域。
-	if ( !AcquireUpload( TotalBytes, Upload ) )
+	CDX12CopyStaging::FOpened Opened; // 画素を書く転送領域と、コピーを記録する命令列。
+	if ( !Staging.Open( TotalBytes, Opened ) )
 	{
-		GiveBack( Version, bRecycled );
-		return false;
-	}
-	FRecordingSet Recording; // コピーを記録する領域と命令列。
-	if ( !AcquireRecording( Recording ) )
-	{
-		FreeUploadBytes += static_cast<int64>( Upload.Size );
-		FreeUploads.Add( MoveTemp( Upload ) );
 		GiveBack( Version, bRecycled );
 		return false;
 	}
 	for ( int32 Row = 0; Row < Height; ++Row )
 	{
-		FMemory::Memcpy( Upload.Mapped + Layout.Offset + static_cast<usize>( Row ) * Layout.Footprint.RowPitch, Pixels + static_cast<usize>( Row ) * Width, static_cast<usize>( Width ) * sizeof( FColor32 ) );
+		FMemory::Memcpy( Opened.Mapped + Layout.Offset + static_cast<usize>( Row ) * Layout.Footprint.RowPitch, Pixels + static_cast<usize>( Row ) * Width, static_cast<usize>( Width ) * sizeof( FColor32 ) );
 	}
-	ID3D12GraphicsCommandList *Commands = Recording.Commands.Get(); // このコピーだけを記録する命令列。
+	ID3D12GraphicsCommandList *Commands = Opened.Commands; // このコピーだけを記録する命令列。
 	if ( bRecycled )
 	{
 		RecordTransition( Commands, Version.Resource.Get(), ShaderResourceState, D3D12_RESOURCE_STATE_COPY_DEST );
 	}
 	D3D12_TEXTURE_COPY_LOCATION Source = {}; // paddingを含む転送元。
-	Source.pResource = Upload.Resource.Get();
+	Source.pResource = Opened.Upload;
 	Source.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
 	Source.PlacedFootprint = Layout;
 	D3D12_TEXTURE_COPY_LOCATION Target = {}; // 画像の最初の段へ送る。
@@ -187,18 +123,11 @@ bool CDX12TextureUpdater::Update( int32 Width, int32 Height, const FColor32 *Pix
 	Target.SubresourceIndex = 0;
 	Commands->CopyTextureRegion( &Target, 0, 0, 0, &Source, nullptr );
 	RecordTransition( Commands, Version.Resource.Get(), D3D12_RESOURCE_STATE_COPY_DEST, ShaderResourceState ); // 以後はshaderから読む。
-	if ( FAILED( Commands->Close() ) )
+	if ( !Staging.Submit() ) // 閉じて、完了は待たずに提出する。
 	{
-		FreeUploadBytes += static_cast<int64>( Upload.Size );
-		FreeUploads.Add( MoveTemp( Upload ) );
 		GiveBack( Version, bRecycled );
 		return false;
 	}
-	ID3D12CommandList *Lists[] = { Commands }; // 完了は待たず、描画の記録先とは別に提出する。
-	Queue->ExecuteCommandLists( 1, Lists );
-	UsedUploadBytes += static_cast<int64>( Upload.Size );
-	UsedUploads.Add( MoveTemp( Upload ) );
-	UsedRecordings.Add( MoveTemp( Recording ) );
 	Out = MoveTemp( Version );
 	return true;
 }
@@ -227,22 +156,5 @@ bool CDX12TextureUpdater::Adopt( FDX12TextureRecord &Retired )
 
 void CDX12TextureUpdater::CollectAfterGPUIdle()
 {
-	for ( FUploadBuffer &Upload : UsedUploads )
-	{
-		if ( FreeUploads.Num() < MaxFreeUploads && FreeUploadBytes + static_cast<int64>( Upload.Size ) <= MaxFreeUploadBytes )
-		{
-			FreeUploadBytes += static_cast<int64>( Upload.Size );
-			FreeUploads.Add( MoveTemp( Upload ) );
-		}
-	}
-	UsedUploads.Reset();
-	UsedUploadBytes = 0;
-	for ( FRecordingSet &Recording : UsedRecordings )
-	{
-		if ( FreeRecordings.Num() < MaxFreeRecordings )
-		{
-			FreeRecordings.Add( MoveTemp( Recording ) );
-		}
-	}
-	UsedRecordings.Reset();
+	Staging.CollectAfterGPUIdle();
 }
