@@ -6,6 +6,7 @@
 #include "Library/Core/Render/RenderTargetPassDesc.h"
 #include "Library/Platform/DX12/Pipeline/Geometry/DX12GeometryPipelineStore.h"
 #include "DX12FramePins.h"
+#include "DX12GraphicsPipelineDrawer.h"
 #include "Library/Platform/DX12/Pipeline/Graphics/DX12GraphicsPipelineBinding.h"
 #include "Library/Platform/System/WindowsInclude.h"
 #include "Library/Core/Render/RenderClipRect.h"
@@ -86,6 +87,8 @@ class CDX12GeometryRenderer : public IRenderGeometry3D
 	bool IsValidSrvHandle( UINT64 Binding ) const;
 	// 論理解像度とクリップ範囲からViewportとScissorを求める。空範囲ならfalse。
 	bool ResolveViewportAndScissor( D3D12_VIEWPORT &OutViewport, D3D12_RECT &OutScissor ) const;
+	// カスタムパイプラインの描画へ貸す、記録先の今の状態と数えを作る。
+	void MakeGraphicsDrawContext( FDX12GraphicsDrawTarget &OutTarget, FDX12GraphicsDrawLedger &OutLedger );
 	// GPUへ即時に記録する描画。頂点資源はGPU完了まで保持する。
 	struct FPendingDraw
 	{
@@ -123,6 +126,7 @@ class CDX12GeometryRenderer : public IRenderGeometry3D
 	uint64 UploadTicket = 0; // 現在フレームで開いているアップロードアリーナの予約番号。
 	bool bOwnsDepth = false; // 自身で作成したD32深度だけをResizeで再生成する。
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> BufferQueue; // 別キューへ再初期化された所有先を混在させない。
+	CDX12GraphicsPipelineDrawer GraphicsDrawer; // カスタムパイプラインの描画の検査と記録。記録先の状態は持たず、描画のたびに借りる。
 	CDX12FramePins Pins; // 記録が参照するGPUバッファ・画像・カスタムPSOを、提出の完了まで、重複なく・上限内で保持する。
 	int32 BufferDrawCount = 0; // 一フレームの固定GPUバッファ描画は1024回まで。
 	int32 GraphicsDrawCount = 0; // 一フレームのカスタムグラフィックス描画は1024回まで。

@@ -544,9 +544,11 @@
     <ClCompile Include="Library\Platform\DX12\Render\Game\DX12GameRenderer.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\Game\DX12GameSurface.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\Geometry\DX12FramePins.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Render\Geometry\DX12GraphicsPipelineDrawer.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\Geometry\DX12GeometryRenderer.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\Target\DX12RenderTargetPass.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Buffer\DX12BufferStore.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Resource\Buffer\DX12BufferBarriers.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Descriptor\DX12DescriptorPool.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Readback\DX12TextureReadback.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12HalfFloat.cpp" />
@@ -1431,10 +1433,13 @@
     <ClInclude Include="Library\Platform\DX12\Render\Game\DX12GameRenderer.h" />
     <ClInclude Include="Library\Platform\DX12\Render\Game\DX12GameSurface.h" />
     <ClInclude Include="Library\Platform\DX12\Render\Geometry\DX12FramePins.h" />
+    <ClInclude Include="Library\Platform\DX12\Render\Geometry\DX12GraphicsPipelineDrawer.h" />
+    <ClInclude Include="Library\Platform\DX12\Render\Geometry\DX12Topology.h" />
     <ClInclude Include="Library\Platform\DX12\Render\Geometry\DX12GeometryRenderer.h" />
     <ClInclude Include="Library\Platform\DX12\Render\Target\DX12RenderTargetPass.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Buffer\DX12BufferBinding.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Buffer\DX12BufferStore.h" />
+    <ClInclude Include="Library\Platform\DX12\Resource\Buffer\DX12BufferBarriers.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Descriptor\DX12DescriptorPool.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Readback\DX12TextureReadback.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureBinding.h" />
