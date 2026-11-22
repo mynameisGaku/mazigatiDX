@@ -1276,6 +1276,9 @@
     <ClCompile Include="Library\Platform\DX12\Render\Geometry\DX12FramePins.cpp">
       <Filter>Library\Platform\DX12\Render\Geometry</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Render\Geometry\DX12Topology.cpp">
+      <Filter>Library\Platform\DX12\Render\Geometry</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Render\Geometry\DX12GraphicsPipelineDrawer.cpp">
       <Filter>Library\Platform\DX12\Render\Geometry</Filter>
     </ClCompile>
@@ -1307,6 +1310,9 @@
       <Filter>Library\Platform\DX12\Resource\Texture</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureReader.cpp">
+      <Filter>Library\Platform\DX12\Resource\Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureRecord.cpp">
       <Filter>Library\Platform\DX12\Resource\Texture</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureCopy.cpp">
@@ -1487,6 +1493,27 @@
       <Filter>Library\Platform\Render\Geometry</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\Render\Geometry\GeometryCommandExecutor.cpp">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryExecution.cpp">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryCommandHelpers.cpp">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryVertexSubmitter.cpp">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryStateCommands.cpp">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryShapeCommands.cpp">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryModelCommands.cpp">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryForwardMesh.cpp">
       <Filter>Library\Platform\Render\Geometry</Filter>
     </ClCompile>
     <ClCompile Include="Library\Platform\Render\Geometry\GeometryQuadBuilder.cpp">
@@ -4168,6 +4195,27 @@
       <Filter>Library\Platform\Render\Geometry</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\Render\Geometry\GeometryCommandExecutor.h">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryVertexSubmitter.h">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryStateCommands.h">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryShapeCommands.h">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryModelCommands.h">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryForwardMesh.h">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryExecution.h">
+      <Filter>Library\Platform\Render\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryCommandHelpers.h">
       <Filter>Library\Platform\Render\Geometry</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\Render\Geometry\GeometryQuadBuilder.h">

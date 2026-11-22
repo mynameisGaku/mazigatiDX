@@ -544,6 +544,7 @@
     <ClCompile Include="Library\Platform\DX12\Render\Game\DX12GameRenderer.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\Game\DX12GameSurface.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\Geometry\DX12FramePins.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Render\Geometry\DX12Topology.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\Geometry\DX12GraphicsPipelineDrawer.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\Geometry\DX12GeometryRenderer.cpp" />
     <ClCompile Include="Library\Platform\DX12\Render\Target\DX12RenderTargetPass.cpp" />
@@ -555,6 +556,7 @@
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12SyncSubmitter.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureCreator.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureReader.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureRecord.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureCopy.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureFormat.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureStore.cpp" />
@@ -615,6 +617,13 @@
     <ClCompile Include="Library\Platform\Render\Canvas\GeometryCanvas2D.cpp" />
     <ClCompile Include="Library\Platform\Render\Geometry\GeometryBufferStore.cpp" />
     <ClCompile Include="Library\Platform\Render\Geometry\GeometryCommandExecutor.cpp" />
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryExecution.cpp" />
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryCommandHelpers.cpp" />
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryVertexSubmitter.cpp" />
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryStateCommands.cpp" />
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryShapeCommands.cpp" />
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryModelCommands.cpp" />
+    <ClCompile Include="Library\Platform\Render\Geometry\GeometryForwardMesh.cpp" />
     <ClCompile Include="Library\Platform\Render\Geometry\GeometryQuadBuilder.cpp" />
     <ClCompile Include="Library\Platform\Render\Geometry\GeometryShapeBuilder.cpp" />
     <ClCompile Include="Library\Platform\Render\Geometry\VertexLighting.cpp" />
@@ -1510,6 +1519,13 @@
     <ClInclude Include="Library\Platform\Render\Canvas\GeometryCanvas2D.h" />
     <ClInclude Include="Library\Platform\Render\Geometry\GeometryBufferStore.h" />
     <ClInclude Include="Library\Platform\Render\Geometry\GeometryCommandExecutor.h" />
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryVertexSubmitter.h" />
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryStateCommands.h" />
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryShapeCommands.h" />
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryModelCommands.h" />
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryForwardMesh.h" />
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryExecution.h" />
+    <ClInclude Include="Library\Platform\Render\Geometry\GeometryCommandHelpers.h" />
     <ClInclude Include="Library\Platform\Render\Geometry\GeometryQuadBuilder.h" />
     <ClInclude Include="Library\Platform\Render\Geometry\GeometryShapeBuilder.h" />
     <ClInclude Include="Library\Platform\Render\Geometry\VertexLighting.h" />

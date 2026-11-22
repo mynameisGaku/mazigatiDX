@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "CanvasExecution.h"
+#include "Library/Core/Types/Numeric.h"
 #include "Library/Platform/System/BackendSupport.h"
 
 namespace
@@ -10,6 +11,51 @@ namespace
 		return FString::Printf( "Draw command %u", static_cast<unsigned>( Type ) );
 	}
 }
+
+bool NCanvasValidation::Valid( float32 Value )
+{
+	return NMath::IsFinite( Value ) && NMath::Abs( Value ) <= 1000000.0f;
+}
+
+bool NCanvasValidation::ValidPoints( const float32* Points, int32 Count )
+{
+	for ( int32 Index = 0; Index < Count; ++Index )
+	{
+		if ( !Valid( Points[Index] ) )
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+int32 NCanvasValidation::GetSegments( float32 Radius, int32 Requested )
+{
+	return Requested > 0 ? NMath::Clamp( Requested, 3, 512 ) : NMath::Clamp( static_cast<int32>( NMath::Ceil( NMath::Sqrt( NMath::Max( Radius, 0.0f ) ) * 6 ) ), 12, 512 );
+}
+
+void FCanvasTransform::Apply( float32& X, float32& Y ) const
+{
+	const float32 OldX = X; // 両方の式で、変換前の値を使う。
+	X = OldX * XX + Y * YX + TX;
+	Y = OldX * XY + Y * YY + TY;
+}
+
+float32 FCanvasTransform::GetScale() const
+{
+	return bIdentity ? 1.0f : NMath::Sqrt( NMath::Abs( XX * YY - XY * YX ) );
+}
+
+void CCanvasNullCanvas2D::Box( float32, float32, float32, float32, FColor32, bool, float32 ) {}
+void CCanvasNullCanvas2D::Line( float32, float32, float32, float32, FColor32, float32 ) {}
+void CCanvasNullCanvas2D::Circle( float32, float32, float32, FColor32, bool, float32, int32 ) {}
+void CCanvasNullCanvas2D::Triangle( const float32 ( & )[6], FColor32, bool, float32 ) {}
+void CCanvasNullCanvas2D::Quad( const float32 ( & )[8], FColor32, bool, float32 ) {}
+void CCanvasNullCanvas2D::Text( float32, float32, FColor32, const char*, const char* ) {}
+void CCanvasNullCanvas2D::Image( const FTextureDrawView&, const float32 ( & )[8], const float32 ( & )[4], FColor32 ) {}
+void CCanvasNullCanvas2D::PushClip( int32, int32, int32, int32 ) {}
+void CCanvasNullCanvas2D::PopClip() {}
+void CCanvasNullCanvas2D::SetAntiAlias( bool ) {}
 
 FColor32 FCanvasDrawState::MakeColor( FDrawRgb Value ) const
 {

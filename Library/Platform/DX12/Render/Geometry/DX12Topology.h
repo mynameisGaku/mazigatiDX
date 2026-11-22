@@ -8,8 +8,5 @@
 namespace NDX12Topology
 {
 	// 点・線は、そのまま。それ以外は、三角形のリスト。
-	inline D3D_PRIMITIVE_TOPOLOGY ToD3D( EGeometryTopology Topology )
-	{
-		return Topology == EGeometryTopology::Points ? D3D_PRIMITIVE_TOPOLOGY_POINTLIST : Topology == EGeometryTopology::Lines ? D3D_PRIMITIVE_TOPOLOGY_LINELIST : D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	}
+	D3D_PRIMITIVE_TOPOLOGY ToD3D( EGeometryTopology Topology );
 }

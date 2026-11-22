@@ -25,20 +25,11 @@ enum class EDX12TextureKind : uint8
 namespace NDX12TextureKind
 {
 	// RGBA8 の色画像か（通常・compute・描画先）。
-	inline bool IsRGBA8( EDX12TextureKind Kind )
-	{
-		return Kind == EDX12TextureKind::StandardRGBA8 || Kind == EDX12TextureKind::ComputeRGBA8 || Kind == EDX12TextureKind::RenderTargetRGBA8;
-	}
+	bool IsRGBA8( EDX12TextureKind Kind );
 	// RGBA16F の色画像か（compute・描画先）。
-	inline bool IsRGBA16F( EDX12TextureKind Kind )
-	{
-		return Kind == EDX12TextureKind::ComputeRGBA16F || Kind == EDX12TextureKind::RenderTargetRGBA16F;
-	}
+	bool IsRGBA16F( EDX12TextureKind Kind );
 	// R32Float として読める画像か（R32Float 描画先・深度）。
-	inline bool IsR32Float( EDX12TextureKind Kind )
-	{
-		return Kind == EDX12TextureKind::DepthD32 || Kind == EDX12TextureKind::RenderTargetR32Float;
-	}
+	bool IsR32Float( EDX12TextureKind Kind );
 }
 
 // 登録した画像 1 枚の実体（GPU 資源・記述子・寸法・作成時の消去値）。COM参照を値へ包み、コンテナからoperator&を呼ばせない。
@@ -55,18 +46,5 @@ struct FDX12TextureRecord
 	EDX12TextureKind Kind = EDX12TextureKind::StandardRGBA8; // 用途の区別。
 
 	// 提出や描画先パスが、更新・登録解除のあとも保持する参照を作る（検査は呼び出し側が済ませる）。
-	FDX12TextureBinding MakeBinding( EComputeTextureFormat Format ) const
-	{
-		FDX12TextureBinding Binding;
-		Binding.Resource = Resource;
-		Binding.TargetHeap = TargetHeap;
-		Binding.SrvGpuDescriptor = Descriptor.Gpu.ptr;
-		Binding.Width = Width;
-		Binding.Height = Height;
-		Binding.InitialClearColor = InitialClearColor;
-		Binding.InitialClearColorF = InitialClearColorF;
-		Binding.InitialClearDepth = InitialClearDepth;
-		Binding.Format = Format;
-		return Binding;
-	}
+	FDX12TextureBinding MakeBinding( EComputeTextureFormat Format ) const;
 };

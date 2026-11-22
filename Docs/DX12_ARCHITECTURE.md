@@ -136,3 +136,19 @@ Releaseでは既知のリンクキャッシュの不整合を避けるため、�
 |CCanvasSceneCommands|2Dのどの役割にも当たらない命令（共有のシェーダーメッシュ・シェーダー・材質付きの3D・モデルの姿勢・基本の3D）|
 
 各役割は、`FCanvasExecution`を借りるだけで、ほかの役割を直接は持たない（出力を外す・描画先へ入る操作に限り、`CCanvasTargetScopes`を借りる。文字は絵文字の画像を貼るために`CCanvasImagePainter`を借りる）。命令ごとの本文は、分ける前のまま移した。全サンプルのDxLibとの画像比較、描画順・スナップショットの契約と変異検査が、分ける前と同じ結果で通ることを確かめている。
+
+## 3Dの命令の実行を、役割ごとに分ける（2026-11-22）
+
+`CGeometryCommandExecutor`（約1640行。約850行の`Execute`のswitchと、約270行の`Submit`）は、カメラ・ワールド・深度・ライト・フォグ・影の状態、3Dの図形、静的モデル、頂点の提出、GPUで描く共有メッシュを1つで持っていた。役割ごとに分けた（公開の窓口と、命令の順序・描画結果は同じ）。
+
+|所有者|担当するもの|
+|---|---|
+|CGeometryCommandExecutor|公開の窓口（`Execute`・`DrawModel`・`DrawModelView`・`BuildShaderQuad`・影の設定）と、役割への振り分け。状態の置き場（`FGeometryExecution`）を持つ|
+|FGeometryExecution|このSpanだけの3Dの状態（ワールド・カメラ・深度と表裏・ライト・フォグ・画像の変換・影のスロット）と、借りた実行先。役割が共有する|
+|CGeometryStateCommands|カメラ・ワールド行列・深度・表裏・消去・ライト・フォグ・画像の変換・補間・異方性の命令|
+|CGeometryShapeCommands|3Dの図形（点・線・円錐・三角形・立方体・球・カプセル・四角形・ビルボード・リボン・点列・GPUバッファの点列）の命令を頂点にして、提出役へ渡す。`BuildShaderQuad`|
+|CGeometryModelCommands|静的モデル（配置・アニメーション・固定姿勢・メッシュ）の命令。GPUで描ける共有メッシュは`CGeometryForwardMesh`、それ以外は頂点にして提出役へ|
+|CGeometryVertexSubmitter|頂点を、ワールドからクリップ座標へ移し、光・フォグ・影を計算して、3Dの実行先へ渡す|
+|CGeometryForwardMesh|GPUが変換と光を計算する共有メッシュの経路（光の定数・描けるかの判定・材質範囲ごとの描画）|
+
+依存は一方向（Forward ← Submitter ← Shape／Model、Forward ← Model、Stateは独立）。値の検査・行列の変換・フォグの見え方は、`NGeometryCommand`（`GeometryCommandHelpers.h`）へ集めた。命令ごとの本文は、分ける前のまま移した。全サンプルのDxLibとの画像比較、描画順・スナップショット・材質・Deferred・Forward meshの契約と変異検査が、分ける前と同じ結果で通ることを確かめている。

@@ -20,27 +20,11 @@
 namespace NCanvasValidation
 {
 	// 不正な座標で図形生成器へ過大な値を渡さない。
-	inline bool Valid( float32 Value )
-	{
-		return NMath::IsFinite( Value ) && NMath::Abs( Value ) <= 1000000.0f;
-	}
+	bool Valid( float32 Value );
 	// 頂点列を読む前に全座標を検査する。
-	inline bool ValidPoints( const float32* Points, int32 Count )
-	{
-		for ( int32 Index = 0; Index < Count; ++Index )
-		{
-			if ( !Valid( Points[Index] ) )
-			{
-				return false;
-			}
-		}
-		return true;
-	}
+	bool ValidPoints( const float32* Points, int32 Count );
 	// 円や角の丸みを、何分割で描くか（半径に応じた既定。指定があれば、それを使う）。
-	inline int32 GetSegments( float32 Radius, int32 Requested )
-	{
-		return Requested > 0 ? NMath::Clamp( Requested, 3, 512 ) : NMath::Clamp( static_cast<int32>( NMath::Ceil( NMath::Sqrt( NMath::Max( Radius, 0.0f ) ) * 6 ) ), 12, 512 );
-	}
+	int32 GetSegments( float32 Radius, int32 Requested );
 }
 
 // 2D の描画に掛かる変換（Transform2D）。点 (x, y) を (x * XX + y * YX + TX, x * XY + y * YY + TY) へ移す。
@@ -49,17 +33,10 @@ struct FCanvasTransform
 	float32 XX = 1, XY = 0, YX = 0, YY = 1, TX = 0, TY = 0;
 	bool bIdentity = true; // 変換なし。矩形や円を、そのままの形で描ける。
 
-	void Apply( float32& X, float32& Y ) const
-	{
-		const float32 OldX = X; // 両方の式で、変換前の値を使う。
-		X = OldX * XX + Y * YX + TX;
-		Y = OldX * XY + Y * YY + TY;
-	}
+	// 点 (X, Y) を変換する（両方の式で、変換前の値を使う）。
+	void Apply( float32& X, float32& Y ) const;
 	// 線の太さに掛ける倍率（面積の拡大率の平方根）。
-	float32 GetScale() const
-	{
-		return bIdentity ? 1.0f : NMath::Sqrt( NMath::Abs( XX * YY - XY * YX ) );
-	}
+	float32 GetScale() const;
 };
 
 // マスク（PushMask）の 1 つ分。マスクにできない画像（描画先でない）のときは、View.Binding が 0 で、マスクなしと同じ。
@@ -122,16 +99,16 @@ struct FCanvasTargetState
 class CCanvasNullCanvas2D : public IRenderCanvas2D
 {
 public:
-	void Box( float32, float32, float32, float32, FColor32, bool, float32 ) override {}
-	void Line( float32, float32, float32, float32, FColor32, float32 ) override {}
-	void Circle( float32, float32, float32, FColor32, bool, float32, int32 ) override {}
-	void Triangle( const float32 ( & )[6], FColor32, bool, float32 ) override {}
-	void Quad( const float32 ( & )[8], FColor32, bool, float32 ) override {}
-	void Text( float32, float32, FColor32, const char*, const char* ) override {}
-	void Image( const FTextureDrawView&, const float32 ( & )[8], const float32 ( & )[4], FColor32 ) override {}
-	void PushClip( int32, int32, int32, int32 ) override {}
-	void PopClip() override {}
-	void SetAntiAlias( bool ) override {}
+	void Box( float32, float32, float32, float32, FColor32, bool, float32 ) override;
+	void Line( float32, float32, float32, float32, FColor32, float32 ) override;
+	void Circle( float32, float32, float32, FColor32, bool, float32, int32 ) override;
+	void Triangle( const float32 ( & )[6], FColor32, bool, float32 ) override;
+	void Quad( const float32 ( & )[8], FColor32, bool, float32 ) override;
+	void Text( float32, float32, FColor32, const char*, const char* ) override;
+	void Image( const FTextureDrawView&, const float32 ( & )[8], const float32 ( & )[4], FColor32 ) override;
+	void PushClip( int32, int32, int32, int32 ) override;
+	void PopClip() override;
+	void SetAntiAlias( bool ) override;
 };
 
 // 1 回の Execute が持つ、借りた実行先と、描画の状態。役割ごとのクラス（描画先の積み・図形・画像・文字・画像の処理・状態の命令・3D の命令）が、これを共有する。
