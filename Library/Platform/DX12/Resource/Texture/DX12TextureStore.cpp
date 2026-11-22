@@ -448,7 +448,9 @@ bool CDX12TextureStore::IsActiveTarget( FTextureResourceHandle Texture ) const
 FTextureResourceHandle CDX12TextureStore::Create( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable, bool bMips )
 {
 	FDX12TextureRecord Created; // 完成した画像だけを登録する。
-	if ( !Upload( Width, Height, Pixels, bWritable, Created, bMips ) )
+	// 読み取り用の段なし画像は、完了を待たずに積む（毎フレーム新しい文字列の画像を作るような使い方を軽くする。使い終えた資源・記述子も使い回す）。待てない・予算超過なら、完了を待つ経路へ。
+	const bool bQueued = !bWritable && !bMips && Pixels && CanCreate( Width, Height ) && Updater.Update( Width, Height, Pixels, Created );
+	if ( !bQueued && !Upload( Width, Height, Pixels, bWritable, Created, bMips ) )
 	{
 		return FTextureResourceHandle();
 	}
@@ -478,7 +480,14 @@ void CDX12TextureStore::ReleaseTexture( FTextureResourceHandle Texture )
 {
 	if ( auto *Current = Textures.Find( Texture.Value ) )
 	{
-		Retired.Add( MoveTemp( *Current ) );
+		if ( Current->Kind == EDX12TextureKind::StandardRGBA8 && Current->MipLevels == 1 )
+		{
+			RetiredVersions.Add( MoveTemp( *Current ) ); // GPU完了後に、次の作成・更新で使い回せる。
+		}
+		else
+		{
+			Retired.Add( MoveTemp( *Current ) );
+		}
 		Textures.Remove( Texture.Value );
 	}
 }
