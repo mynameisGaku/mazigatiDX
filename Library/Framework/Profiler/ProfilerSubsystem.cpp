@@ -321,6 +321,70 @@ void CProfilerSubsystem::LogSummary() const
 			 Row.SelfMs / NumFrames, Stats.AverageMs > 0.0 ? 100.0 * Row.SelfMs / NumFrames / Stats.AverageMs : 0.0, Row.InclusiveMs / NumFrames,
 			 Row.Calls / NumFrames );
 	}
+	LogCounterSummary( FirstFrame );
+}
+
+void CProfilerSubsystem::LogCounterSummary( int32 FirstFrame ) const
+{
+	// GPU の時間（Gpu.Frame / Gpu.Main / Gpu.Passes。--dx12-gpu-timings のときだけ出る）の、記録した間の平均。CPU のサンプルの隣に並べて、どちらが足りないかを見るため。
+	// ほかのカウンター（メモリ・個数）は、数が多いので、ここには出さない（プロファイラーのウィンドウと Chrome トレースで見る）。値のあるフレームだけで平均する。
+	struct FCounterSum
+	{
+		uint32 Name = 0;
+		EProfileCounterUnit Unit = EProfileCounterUnit::Count;
+		float64 Sum = 0.0;
+		int32 NumFrames = 0;
+	};
+	TArray<FCounterSum> Sums;
+	for ( int32 FrameIndex = FirstFrame; FrameIndex < GetNumFrames(); ++FrameIndex )
+	{
+		for ( const FProfileCounter& Counter : GetFrame( FrameIndex ).Counters )
+		{
+			if ( !GetString( Counter.Name ).StartsWith( FString( "Gpu." ) ) )
+			{
+				continue;
+			}
+			FCounterSum* Found = nullptr;
+			for ( FCounterSum& Existing : Sums )
+			{
+				if ( Existing.Name == Counter.Name )
+				{
+					Found = &Existing;
+					break;
+				}
+			}
+			if ( !Found )
+			{
+				Found = &Sums.EmplaceGetRef();
+				Found->Name = Counter.Name;
+				Found->Unit = Counter.Unit;
+			}
+			Found->Sum += Counter.Value;
+			++Found->NumFrames;
+		}
+	}
+	for ( const FCounterSum& Sum : Sums )
+	{
+		const float64 Average = Sum.Sum / static_cast<float64>( Sum.NumFrames );
+		const char* UnitText = "";
+		float64 Shown = Average;
+		switch ( Sum.Unit )
+		{
+		case EProfileCounterUnit::Bytes:
+			Shown = Average / static_cast<float64>( BytesPerMegabyte );
+			UnitText = " MB";
+			break;
+		case EProfileCounterUnit::Milliseconds:
+			UnitText = " ms";
+			break;
+		case EProfileCounterUnit::Percent:
+			UnitText = " %";
+			break;
+		default:
+			break;
+		}
+		LOG( LogProfiler, Log, "  counter %s: average %.3f%s (%d frame(s))", *GetString( Sum.Name ), Shown, UnitText, Sum.NumFrames );
+	}
 }
 
 void CProfilerSubsystem::StartFrame()

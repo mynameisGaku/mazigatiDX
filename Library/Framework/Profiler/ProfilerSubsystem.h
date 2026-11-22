@@ -95,6 +95,8 @@ private:
 	void MeasureOverhead();
 	// 記録が止まったときに、全体の平均と処理時間の上位をログへ出す（画面を開かなくても概要が分かる）
 	void LogSummary() const;
+	// 要約の続き。GPU の時間のカウンター（Gpu.*）の、記録した間の平均を出す。
+	void LogCounterSummary( int32 FirstFrame ) const;
 	// 確認用の起動指定（--profile-frames=N [--profile-delay=D]）を読む。D フレーム待ってから N フレーム記録して、要約をログへ出す。
 	void ReadStartupOptions();
 	// 起動指定の記録を、始める頃になったら始める（BeginFrame から呼ぶ）。

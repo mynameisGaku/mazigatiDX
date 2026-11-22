@@ -5,6 +5,7 @@
 #include "Library/Platform/DX12/Render/Game/DX12GameRenderer.h"
 #include "Library/Platform/DX12/Resource/Texture/DX12TextureStore.h"
 class CDX12TimestampStore;
+class CDX12GpuSegmentTimer;
 class CDX12UploadArena;
 
 // オフスクリーン色描画先と読み取れる深度への2D/3D描画を記録し、同じDIRECTキューへ提出する。
@@ -18,7 +19,7 @@ class CDX12RenderTargetPass : public IRenderSurface
 	// 提出済みのGPU処理が完了するかデバイスが喪失するまで待って破棄する。
 	~CDX12RenderTargetPass() override;
 	// 同じGPUとDIRECTキューを共有する画像・バッファ所有先へ接続する。UIや窓を必要としない。
-	bool Initialize( ID3D12Device *InDevice, ID3D12CommandQueue *InQueue, CDX12TextureStore &InTextures, IRenderTextRasterizer &InText, ID3D12DescriptorHeap *InImageHeap = nullptr, CDX12BufferStore *InBuffers = nullptr, CDX12GraphicsPipelineStore *InGraphicsPipelines = nullptr, CDX12TimestampStore *InTimestamps = nullptr, CDX12UploadArena *InUploadArena = nullptr );
+	bool Initialize( ID3D12Device *InDevice, ID3D12CommandQueue *InQueue, CDX12TextureStore &InTextures, IRenderTextRasterizer &InText, ID3D12DescriptorHeap *InImageHeap = nullptr, CDX12BufferStore *InBuffers = nullptr, CDX12GraphicsPipelineStore *InGraphicsPipelines = nullptr, CDX12TimestampStore *InTimestamps = nullptr, CDX12UploadArena *InUploadArena = nullptr, CDX12GpuSegmentTimer *InSegmentTimer = nullptr );
 	// 同じキューのGPU完了後に、完了済みの提出参照を回収する。
 	void CollectAfterGPUIdle();
 	// GPU完了または喪失後に全資源を解放する。
@@ -103,6 +104,7 @@ class CDX12RenderTargetPass : public IRenderSurface
 	TArray<FSubmissionRecord> Pending; // GPU未完了の提出レコード列。
 	CDX12TimestampStore *Timestamps = nullptr; // 任意のGPUタイムスタンプ所有者。
 	CDX12UploadArena *UploadArena = nullptr; // 一時頂点転送を借りる任意の共有アリーナ。
+	CDX12GpuSegmentTimer *SegmentTimer = nullptr; // パスごとのGPU時間を測る任意の診断用計測器（--dx12-gpu-timings）。
 	uint64 ActiveTimestampBatchId = 0; // パス中のタイムスタンプ計測に使うバッチ番号。
 	uint64 NextFenceValue = 0; // 次に発行するフェンス番号。
 	float32 FallbackClearDepth = 1.0f; // 内部深度の作成時クリア値。

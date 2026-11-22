@@ -4,6 +4,7 @@
 #include "Library/Platform/DX12/Resource/Texture/DX12TextureCopy.h"
 #include "Library/Platform/DX12/Pipeline/Graphics/DX12GraphicsPipelineStore.h"
 #include "Library/Platform/DX12/Resource/Buffer/DX12BufferStore.h"
+#include "Library/Platform/DX12/Resource/Timestamp/DX12GpuSegmentTimer.h"
 #include "Library/Platform/DX12/Resource/Timestamp/DX12TimestampStore.h"
 #include "Library/Platform/DX12/Resource/Upload/DX12UploadArena.h"
 #include "Library/Core/Types/Numeric.h"
@@ -18,7 +19,7 @@ CDX12RenderTargetPass::~CDX12RenderTargetPass()
 	}
 }
 
-bool CDX12RenderTargetPass::Initialize( ID3D12Device *InDevice, ID3D12CommandQueue *InQueue, CDX12TextureStore &InTextures, IRenderTextRasterizer &InText, ID3D12DescriptorHeap *InImageHeap, CDX12BufferStore *InBuffers, CDX12GraphicsPipelineStore *InGraphicsPipelines, CDX12TimestampStore *InTimestamps, CDX12UploadArena *InUploadArena )
+bool CDX12RenderTargetPass::Initialize( ID3D12Device *InDevice, ID3D12CommandQueue *InQueue, CDX12TextureStore &InTextures, IRenderTextRasterizer &InText, ID3D12DescriptorHeap *InImageHeap, CDX12BufferStore *InBuffers, CDX12GraphicsPipelineStore *InGraphicsPipelines, CDX12TimestampStore *InTimestamps, CDX12UploadArena *InUploadArena, CDX12GpuSegmentTimer *InSegmentTimer )
 {
 	if ( Device || bClosing || !InDevice || !InQueue || InQueue->GetDesc().Type != D3D12_COMMAND_LIST_TYPE_DIRECT || !InTextures.UsesDeviceAndQueue( InDevice, InQueue ) || ( InBuffers && !InBuffers->UsesDeviceAndQueue( InDevice, InQueue ) ) || ( InGraphicsPipelines && !InGraphicsPipelines->UsesDevice( InDevice ) ) || ( InTimestamps && !InTimestamps->UsesDeviceAndQueue( InDevice, InQueue ) ) || ( InUploadArena && !InUploadArena->UsesDeviceAndQueue( InDevice, InQueue ) ) )
 	{
@@ -48,6 +49,7 @@ bool CDX12RenderTargetPass::Initialize( ID3D12Device *InDevice, ID3D12CommandQue
 	GraphicsPipelines = InGraphicsPipelines;
 	Timestamps = InTimestamps;
 	UploadArena = InUploadArena;
+	SegmentTimer = InSegmentTimer;
 	bHealthy = true;
 	return true;
 }
@@ -80,6 +82,10 @@ void CDX12RenderTargetPass::ResetAfterGPUIdle()
 	{
 		Textures->EndRenderTargetPass();
 	}
+	if ( SegmentTimer )
+	{
+		SegmentTimer->DiscardSegment( CDX12GpuSegmentTimer::ESegment::Pass );
+	}
 	if ( Timestamps && ActiveTimestampBatchId != 0 )
 	{
 		Timestamps->AbortBatch( ActiveTimestampBatchId );
@@ -111,6 +117,7 @@ void CDX12RenderTargetPass::ResetAfterGPUIdle()
 	GraphicsPipelines = nullptr;
 	Timestamps = nullptr;
 	UploadArena = nullptr;
+	SegmentTimer = nullptr;
 	ActiveTimestampBatchId = 0;
 	NextFenceValue = 0;
 	FallbackClearDepth = 1.0f;
@@ -515,6 +522,15 @@ bool CDX12RenderTargetPass::Begin( const FRenderTargetPassDesc &Desc )
 		bHealthy = false;
 		return false;
 	}
+	if ( SegmentTimer && SegmentTimer->IsEnabled() )
+	{
+		CDX12GpuSegmentTimer::FLabel Label; // ログに出す見出し（最初の色の描画先の寸法・枚数・深度の有無）。
+		Label.Width = ActiveColors.Num() > 0 ? ActiveColors[0].Width : 0;
+		Label.Height = ActiveColors.Num() > 0 ? ActiveColors[0].Height : 0;
+		Label.NumColors = ActiveColors.Num();
+		Label.bDepth = ActiveDepth.Resource != nullptr;
+		SegmentTimer->OpenSegment( CDX12GpuSegmentTimer::ESegment::Pass, CurrentCommands.Get(), ActiveTimestampBatchId, Label );
+	}
 	bActive = true;
 	return true;
 }
@@ -524,6 +540,10 @@ bool CDX12RenderTargetPass::End()
 	if ( !bActive || bClosing || !bHealthy || !Renderer || !Textures || !CurrentCommands )
 	{
 		return false;
+	}
+	if ( SegmentTimer )
+	{
+		SegmentTimer->CloseSegment( CDX12GpuSegmentTimer::ESegment::Pass, CurrentCommands.Get(), ActiveTimestampBatchId );
 	}
 	const bool bHasUnclosedTimestamps = Timestamps && ActiveTimestampBatchId != 0 && Timestamps->HasActiveRecording( ActiveTimestampBatchId );
 	const bool bRendered = Renderer->EndFrame() && !bRecordClearFailed && !bHasUnclosedTimestamps; // 文字失敗・任意クリア失敗・自己参照競合・未閉鎖タイムスタンプがあれば提出しない。

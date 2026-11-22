@@ -9,6 +9,7 @@
 #include "Library/Platform/DX12/Resource/Buffer/DX12BufferStore.h"
 #include "Library/Platform/DX12/Pipeline/Graphics/DX12GraphicsPipelineStore.h"
 #include "Library/Platform/DX12/Resource/Timestamp/DX12TimestampStore.h"
+#include "Library/Platform/DX12/Resource/Timestamp/DX12GpuSegmentTimer.h"
 #include "Library/Platform/DX12/Resource/Upload/DX12UploadArena.h"
 #include "Library/Platform/DX12/Command/Compute/DX12ComputeQueue.h"
 #include "Library/Platform/DX12/Resource/Readback/DX12TextureReadback.h"
@@ -113,6 +114,8 @@ class CDX12Device
 	IGpuTimestampResources *GetTimestampResources();
 	// 描画パスや記録器が共有するGPUタイムスタンプ所有者を貸す。
 	CDX12TimestampStore *GetTimestampStore();
+	// --dx12-gpu-timings のときだけ計測する、主画面の区間・描画先パスごとのGPU時間の計測器を貸す（付けないときも貸すが、何もしない）。
+	CDX12GpuSegmentTimer *GetSegmentTimer();
 	// 通常フレームのコマンド列へGPUタイムスタンプの開始点を積む。フレーム外はfalse。
 	bool BeginMainTimestamp( FGpuTimestampHandle Query );
 	// 通常フレームのコマンド列でGPUタイムスタンプを閉じ、解決を記録する。
@@ -150,6 +153,7 @@ class CDX12Device
 	CDX12ComputePipelineStore ComputePipelines; // プログラムとその配置の所有者。
 	CDX12GraphicsPipelineStore GraphicsPipelines; // カスタムグラフィックスPSOとルート署名の所有者。
 	CDX12TimestampStore Timestamps; // DIRECTキュー上のGPUタイムスタンプQueryHeap・Fenceの所有者。
+	CDX12GpuSegmentTimer SegmentTimer; // 上の所有者を借りて、主画面の区間とパスのGPU時間を自動で測る診断用の計測器。
 	CDX12UploadArena UploadArena; // フレームと撮影パスで共有する永続マップ済みUPLOADページの所有者。
 	CDX12ComputeQueue ComputeQueue; // 上の所有者より先に借用参照を戻す提出先。
 	uint64 MainTimestampBatchId = 0; // 通常フレーム記録中コマンド列のタイムスタンプバッチ番号。

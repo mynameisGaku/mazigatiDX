@@ -180,7 +180,7 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection &Collection )
 	const EWindowMode InitialMode = Settings.WindowMode; // 窓の作成後に起動モードへ移す。
 	CaptureRenderer = new CDX12GameCapture( *Device, GameText );
 	TargetPassRenderer = new CDX12RenderTargetPass();
-	if ( !TargetPassRenderer->Initialize( Device->GetNativeDevice(), Device->GetNativeQueue(), *Device->GetTextureResources(), GameText, Device->GetImageDescriptorHeap(), Device->GetBufferResources(), Device->GetGraphicsPipelineStore(), Device->GetTimestampStore(), Device->GetUploadArena() ) )
+	if ( !TargetPassRenderer->Initialize( Device->GetNativeDevice(), Device->GetNativeQueue(), *Device->GetTextureResources(), GameText, Device->GetImageDescriptorHeap(), Device->GetBufferResources(), Device->GetGraphicsPipelineStore(), Device->GetTimestampStore(), Device->GetUploadArena(), Device->GetSegmentTimer() ) )
 	{
 		Deinitialize();
 		return;

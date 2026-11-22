@@ -157,6 +157,7 @@ bool CDX12Device::InitializeOnQueue( HWND Window, int32 Width, int32 Height, ID3
 	this->Width = Width;
 	this->Height = Height;
 	bLogFrameTimings = NCommandLine::HasFlag( "dx12-frame-timings" ); // 確認用: フレーム時間の内訳を、一定フレームごとにログへ出す
+	SegmentTimer.Initialize( &Timestamps, NCommandLine::HasFlag( "dx12-gpu-timings" ) ); // 確認用: 主画面の区間と描画先パスごとのGPU時間を、ログとプロファイラーへ出す
 	bInitialized = true;
 	return true;
 }
@@ -255,6 +256,7 @@ void CDX12Device::ReleaseOwnedResources()
 	ComputeQueue.ResetAfterGPUIdle();
 	UploadArena.ResetAfterGPUIdle();
 	Timestamps.ResetAfterGPUIdle();
+	SegmentTimer.Reset();
 	ComputePipelines.ResetAfterGPUIdle();
 	GraphicsPipelines.ResetAfterGPUIdle();
 	Textures.ResetAfterGPUIdle();
@@ -324,6 +326,8 @@ bool CDX12Device::BeginFrameForBuffer( uint32 Index )
 		return false;
 	}
 	MainTimestampBatchId = CreatedBatch;
+	SegmentTimer.NotifyFrame();
+	SegmentTimer.OpenSegment( CDX12GpuSegmentTimer::ESegment::Main, Commands.Get(), CreatedBatch, CDX12GpuSegmentTimer::FLabel() );
 	bCaptureGame = bCaptureUI = bGameCopied = bUICopied = false;
 	bFrameSubmitted = false;
 	bSegmentSubmittedThisFrame = false;
@@ -358,6 +362,7 @@ bool CDX12Device::SubmitFrame( uint64 UploadTicket )
 		ResolvePendingUploadTicket( UploadTicket, false );
 		return false;
 	}
+	SegmentTimer.CloseSegment( CDX12GpuSegmentTimer::ESegment::Main, Commands.Get(), MainTimestampBatchId );
 	if ( MainTimestampBatchId != 0 )
 	{
 		Timestamps.AbortUnclosedInBatch( MainTimestampBatchId );
@@ -464,7 +469,12 @@ bool CDX12Device::Resize( int32 NewWidth, int32 NewHeight )
 
 bool CDX12Device::SubmitFrameSegment()
 {
-	if ( !IsRecording() || ( MainTimestampBatchId != 0 && Timestamps.HasActiveRecording( MainTimestampBatchId ) ) )
+	if ( !IsRecording() )
+	{
+		return false;
+	}
+	SegmentTimer.CloseSegment( CDX12GpuSegmentTimer::ESegment::Main, Commands.Get(), MainTimestampBatchId );
+	if ( MainTimestampBatchId != 0 && Timestamps.HasActiveRecording( MainTimestampBatchId ) )
 	{
 		return false;
 	}
@@ -494,6 +504,7 @@ bool CDX12Device::SubmitFrameSegment()
 		return false;
 	}
 	MainTimestampBatchId = NextBatch;
+	SegmentTimer.OpenSegment( CDX12GpuSegmentTimer::ESegment::Main, Commands.Get(), NextBatch, CDX12GpuSegmentTimer::FLabel() );
 	bRecording = true;
 	return true;
 }
@@ -659,6 +670,11 @@ IGpuTimestampResources *CDX12Device::GetTimestampResources()
 CDX12TimestampStore *CDX12Device::GetTimestampStore()
 {
 	return bInitialized && !bClosing ? &Timestamps : nullptr;
+}
+
+CDX12GpuSegmentTimer *CDX12Device::GetSegmentTimer()
+{
+	return bInitialized && !bClosing ? &SegmentTimer : nullptr;
 }
 
 bool CDX12Device::BeginMainTimestamp( FGpuTimestampHandle Query )

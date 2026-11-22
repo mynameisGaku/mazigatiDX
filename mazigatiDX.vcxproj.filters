@@ -1345,6 +1345,9 @@
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureStore.cpp">
       <Filter>Library\Platform\DX12\Resource\Texture</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Resource\Timestamp\DX12GpuSegmentTimer.cpp">
+      <Filter>Library\Platform\DX12\Resource\Timestamp</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Resource\Timestamp\DX12TimestampStore.cpp">
       <Filter>Library\Platform\DX12\Resource\Timestamp</Filter>
     </ClCompile>
@@ -4085,6 +4088,9 @@
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureStore.h">
       <Filter>Library\Platform\DX12\Resource\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Resource\Timestamp\DX12GpuSegmentTimer.h">
+      <Filter>Library\Platform\DX12\Resource\Timestamp</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Resource\Timestamp\DX12TimestampStore.h">
       <Filter>Library\Platform\DX12\Resource\Timestamp</Filter>

@@ -70,4 +70,6 @@ namespace NProfileCategory
 	constexpr const char* Handle = "Handle";
 	// プールの使用率
 	constexpr const char* Pool = "Pool";
+	// GPU が実際にかかった時間（ミリ秒。--dx12-gpu-timings のときだけ出る。Gpu.Frame / Gpu.Main / Gpu.Passes）
+	constexpr const char* Gpu = "Gpu";
 }
