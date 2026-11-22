@@ -15,6 +15,7 @@
 #include "Library/Core/Interfaces/Platform/INativeWindow.h"
 #include "Library/Platform/Windows/Text/WindowsTextRasterizer.h"
 #include "Library/Core/Types/Callable.h"
+#include "Library/Framework/Render/Thread/TextureViewCache.h"
 #include "Library/Platform/ImGui/Render/ImGuiViewportScheduler.h"
 
 class CRenderCommandThread;
@@ -193,11 +194,13 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
 
   private:
 	// 記録済みの2Dを同じ列へ渡し、借用値を使う処理が終わるまで待つ。初期化・解放時は所有スレッドで直接実行する。
-	bool ExecuteRender( TCallable<void()> Task ) const;
+	// bMayChangeTextureViews が true（既定）なら、覚えておいた画像の view を捨てる（資源の作成・更新・解放など、view の答えを変えうる操作）。問い合わせだけなら false。
+	bool ExecuteRender( TCallable<void()> Task, bool bMayChangeTextureViews = true ) const;
 	// 通常のcompute提出とタイムスタンプ付き提出を共有経路で実行する。
 	FComputeSubmission SubmitComputeInternal( TArrayView<const FComputeDispatch> Dispatches, const FGpuTimestampHandle *Timestamp );
 	CRenderCommandThread *RenderCommands = nullptr; // 描画の専用実行列。GPU利用者より先に終了する。
 	CThreadedRenderSurface *ThreadedSurface = nullptr; // ゲーム側の値を所有コピーする記録窓口。
+	mutable CTextureViewCache TextureViews; // 画像の描画 view の覚え。描くたびに描画スレッドへ問い合わせる往復をなくす（ゲームスレッドだけ）。
 	CWindowsTextRasterizer GameText; // UI設定とGPUから独立したゲーム文字の画像化。
 	CImGuiViewportScheduler Viewports; // 外部窓の更新頻度と表示順。
 	FWindowSettings Settings; // 起動設定と現在の表示設定。

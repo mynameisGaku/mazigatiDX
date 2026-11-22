@@ -335,6 +335,7 @@ bool CDX12PlatformSubsystem::BeginFrame()
 			TargetPassRenderer->CollectAfterGPUIdle();
 		}
 	};
+	TextureViews.Invalidate();
 	if ( !ExecuteRender( MoveTemp( Start ) ) || !bStarted || !ThreadedSurface->BeginFrame( Settings.Width, Settings.Height ) )
 	{
 		LOG( LogDX12, Error, "DX12 frame could not start (device lost or GPU wait failed)" );
@@ -375,6 +376,7 @@ void CDX12PlatformSubsystem::EndFrame()
 		ImGui::Render();
 	}
 	ImDrawData *UIData = bContext ? ImGui::GetDrawData() : nullptr; // 待機が戻るまでゲーム側は変更しない。
+	TextureViews.Invalidate(); // 終了時に、開いたままの描画先パスも閉じる。
 	const bool bGameCommands = ThreadedSurface->EndFrame(); // ここでゲームの全命令のCPU記録を確定する。
 	bool bCapturePrepared = false, bSubmitted = false; // 描画スレッドが返すこのフレームの結果。
 	auto Submit = [&, this]()
@@ -532,24 +534,28 @@ void CDX12PlatformSubsystem::SetFrameCaptureSink( IFrameCaptureSink *Sink )
 bool CDX12PlatformSubsystem::BeginOffscreenCapture( const FOffscreenCaptureDesc &Desc )
 {
 	GAME_THREAD_ONLY( false );
+	TextureViews.Invalidate(); // 書き込み中の画像は、view として貸さない。切り替えのたびに答えが変わる。
 	return bInFrame && ThreadedSurface && ThreadedSurface->BeginOffscreenCapture( Desc );
 }
 
 bool CDX12PlatformSubsystem::EndOffscreenCapture( TArray<FColor32> &Out )
 {
 	GAME_THREAD_ONLY( false );
+	TextureViews.Invalidate();
 	return bInFrame && ThreadedSurface && ThreadedSurface->EndOffscreenCapture( Out );
 }
 
 bool CDX12PlatformSubsystem::BeginRenderTargetPass( const FRenderTargetPassDesc &Desc )
 {
 	GAME_THREAD_ONLY( false );
+	TextureViews.Invalidate(); // 書き込み中の画像は、view として貸さない。切り替えのたびに答えが変わる。
 	return bInFrame && ThreadedSurface && ThreadedSurface->BeginRenderTargetPass( Desc );
 }
 
 bool CDX12PlatformSubsystem::EndRenderTargetPass()
 {
 	GAME_THREAD_ONLY( false );
+	TextureViews.Invalidate();
 	return bInFrame && ThreadedSurface && ThreadedSurface->EndRenderTargetPass();
 }
 
@@ -595,8 +601,12 @@ bool CDX12PlatformSubsystem::WaitForGPU()
 	return ExecuteRender( MoveTemp( Wait ) ) && bResult;
 }
 
-bool CDX12PlatformSubsystem::ExecuteRender( TCallable<void()> Task ) const
+bool CDX12PlatformSubsystem::ExecuteRender( TCallable<void()> Task, bool bMayChangeTextureViews ) const
 {
+	if ( bMayChangeTextureViews )
+	{
+		TextureViews.Invalidate();
+	}
 	if ( bWindowRenderPhase )
 	{
 		// 窓側へ貸している間の再入は、その所有側で完了させる。専用側には未完了命令がない。
@@ -1036,6 +1046,10 @@ bool CDX12PlatformSubsystem::GetTextureResourceView( FTextureResourceHandle Text
 	{
 		return false;
 	}
+	if ( TextureViews.Find( Texture, Out ) )
+	{
+		return true; // 資源や描画先の状態が変わるまで、答えは同じ。描画スレッドへの往復をしない。
+	}
 	// 呼出し元は同期処理の完了まで、入力と出力の寿命を保持する。
 	bool Result = false;
 	auto Work = [&]()
@@ -1045,7 +1059,12 @@ bool CDX12PlatformSubsystem::GetTextureResourceView( FTextureResourceHandle Text
 			Result = Resources->GetTextureResourceView( Texture, Out );
 		}
 	};
-	return ExecuteRender( MoveTemp( Work ) ) ? Result : false;
+	if ( !ExecuteRender( MoveTemp( Work ), false ) || !Result )
+	{
+		return false;
+	}
+	TextureViews.Add( Texture, Out ); // 成功だけを覚える（書き込み中・解放済みの答えは、あとで変わる）。
+	return true;
 }
 
 FBufferResourceHandle CDX12PlatformSubsystem::CreateBuffer( TArrayView<const uint8> Bytes, ERenderBufferShaderAccess Access )
