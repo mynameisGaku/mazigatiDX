@@ -36,4 +36,9 @@ struct FForwardMeshDraw
 	bool bPixelLighting = false; // trueなら補間した世界の位置と法線から画素ごとに照明する。
 	float32 Fog[20] = {}; // 奥行きの平面、距離の設定と色、高さの設定と色（各float4）。
 	FGeometryDrawState State;                // 深度・表裏・合成・画像の外側。
+	// 影を受ける（光を計算する描画だけ）。影を受けるライトの分は、影の絵と比べた割合を掛けて足す。距離・高さのフォグは、影を受けるときは掛けない。
+	int32 ShadowMap = -1;                    // 影の絵の画像の番号（負なら、影を受けない）。
+	int32 ShadowMask = 0;                    // 影を受けるスロットの印（ライトの ShadowMapSlots と重なるライトが、影を受ける）。
+	float32 LightViewProjection[16] = {};    // ワールドから、光のクリップ座標へ（FMatrix4x4 と同じ並び）。
+	float32 ShadowParams[4] = {};            // 影の絵の幅・高さ・補正の深さ・0。
 };

@@ -2,6 +2,7 @@
 
 #include "Library/Core/Interfaces/Input/IInput.h"
 #include "Library/Framework/Engine/Engine.h"
+#include "Library/Platform/System/CommandLine.h"
 #include "Source/Island/IslandTerrain.h"
 
 namespace
@@ -202,6 +203,12 @@ void CIslandExplorer::Tick( float32 DeltaTime )
 	if ( !State.IsValid() )
 	{
 		return;
+	}
+	// 絵を比べる検査のために、--island-fixed で、歩きとカメラを止める（時計は CIslandClock が止める）。
+	static const bool bFixed = NCommandLine::HasFlag( "island-fixed" );
+	if ( bFixed )
+	{
+		DeltaTime = 0.0f;
 	}
 	HandleCameraInput();
 	bool bRun = false;

@@ -26,6 +26,7 @@ CGeometryForwardMesh::CGeometryForwardMesh( FGeometryExecution& InRun )
 	, ShaderSource( Run.ShaderSource )
 	, bUseForwardPath( Run.bUseForwardPath )
 	, bShadowCasting( Run.bShadowCasting )
+	, ShadowSlotMaps( Run.ShadowSlotMaps )
 	, ReceiverSlot( Run.ReceiverSlot )
 {
 }
@@ -60,7 +61,7 @@ void CGeometryForwardMesh::FillLightConstants( float32* Constants, FDrawRgb Brig
 		Set( Base, Light.Position.x, Light.Position.y, Light.Position.z, Light.Type == EDrawLightType::Directional ? 0.0f : Light.Type == EDrawLightType::Point ? 1.0f : 2.0f );
 		Set( Base + 1, Direction.x, Direction.y, Direction.z, Light.Range );
 		Set( Base + 2, Light.ConstantAttenuation, Light.LinearAttenuation, Light.QuadraticAttenuation, NMath::Cos( Light.OuterAngle * 0.5f ) );
-		Set( Base + 3, NMath::Cos( Light.InnerAngle * 0.5f ), 0.0f, 0.0f, 0.0f );
+		Set( Base + 3, NMath::Cos( Light.InnerAngle * 0.5f ), static_cast<float32>( Light.ShadowMapSlots ), 0.0f, 0.0f );
 		Set( Base + 4, Light.Diffuse.r, Light.Diffuse.g, Light.Diffuse.b, 0.0f );
 		Set( Base + 5, Light.Specular.r, Light.Specular.g, Light.Specular.b, 0.0f );
 		Set( Base + 6, Light.Ambient.r, Light.Ambient.g, Light.Ambient.b, 0.0f );
@@ -70,7 +71,7 @@ void CGeometryForwardMesh::FillLightConstants( float32* Constants, FDrawRgb Brig
 bool CGeometryForwardMesh::CanDrawForward( const FStaticModelDrawView& Model ) const
 {
 	static const bool bEnabledByCommandLine = !NCommandLine::HasFlag( "no-gpu-forward" ); // 比べるための切り替え（--no-gpu-forward で、従来の CPU の経路にする）。
-	return bEnabledByCommandLine && ShaderSource != nullptr && Geometry != nullptr && Model.MeshKey != 0 && Model.NumVertices <= 65536 && !bShadowCasting && ReceiverSlot < 0
+	return bEnabledByCommandLine && ShaderSource != nullptr && Geometry != nullptr && Model.MeshKey != 0 && Model.NumVertices <= 65536 && !bShadowCasting
 		&& Camera.IsValid() && Geometry->GetWidth() > 0 && Geometry->GetHeight() > 0 && bUseForwardPath;
 }
 
@@ -126,8 +127,24 @@ int32 CGeometryForwardMesh::DrawMeshForward( const FStaticModelDrawView& Model, 
 	};
 	SetFog( 4, Fog );
 	SetFog( 12, HeightFog );
+	// 影を受ける描画は、影の絵と比べる（従来の CPU の経路と同じく、画素ごとの光とフォグは使わない）。
+	FMatrix4x4 ReceiverViewProjection;
+	float32 ReceiverAdjust = 0.0f;
+	int32 ReceiverWidth = 0, ReceiverHeight = 0;
+	const bool bReceive = bLit && Lighting.IsEnabled() && ReceiverSlot >= 0 && ShaderSource->GetShadowPass( ShadowSlotMaps[ReceiverSlot], ReceiverViewProjection, ReceiverAdjust, ReceiverWidth, ReceiverHeight ) && ReceiverWidth > 0 && ReceiverHeight > 0;
+	if ( bReceive )
+	{
+		Draw.ShadowMap = ShadowSlotMaps[ReceiverSlot];
+		Draw.ShadowMask = 1 << ReceiverSlot;
+		FMemory::Memcpy( Draw.LightViewProjection, ReceiverViewProjection.m, sizeof( Draw.LightViewProjection ) );
+		Draw.ShadowParams[0] = static_cast<float32>( ReceiverWidth );
+		Draw.ShadowParams[1] = static_cast<float32>( ReceiverHeight );
+		Draw.ShadowParams[2] = ReceiverAdjust;
+		Draw.Fog[7] = 0.0f; // 距離のフォグの方式（なし）。
+		Draw.Fog[15] = 0.0f; // 高さのフォグの方式（なし）。
+	}
 	// 従来の経路と同じく、フォグ併用時は頂点照明を選ぶ。
-	Draw.bPixelLighting = bLit && Lighting.IsEnabled() && Lighting.GetOptions().bPixelLighting && Fog.Mode == 0 && HeightFog.Mode == 0;
+	Draw.bPixelLighting = bLit && Lighting.IsEnabled() && Lighting.GetOptions().bPixelLighting && Fog.Mode == 0 && HeightFog.Mode == 0 && !bReceive;
 	Draw.bTransient = bTransient;
 	Draw.MeshKey = bTransient ? 0 : Model.MeshKey;
 	Draw.MeshVersion = Model.MeshVersion;

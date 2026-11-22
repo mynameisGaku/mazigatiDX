@@ -13,6 +13,8 @@ cbuffer cbObject : register( b0 )
 	float4 g_DistanceFogColor;
 	float4 g_HeightFog;
 	float4 g_HeightFogColor;
+	row_major float4x4 g_LightViewProjection;
+	float4 g_ShadowParams; // x = 影の絵の幅、y = 高さ、z = 補正の深さ、w = 影を受けるスロットの印（0 なら、影を受けない）
 };
 cbuffer cbLight : register( b6 )
 {
@@ -26,16 +28,20 @@ cbuffer cbLight : register( b6 )
 	float4 g_Lights[42];
 };
 Texture2D g_Base : register( t0 );
+Texture2D g_ShadowMap : register( t1 );
 SamplerState g_Sampler : register( s0 );
 struct VI { float3 Position : POSITION; float3 Normal : NORMAL; float4 Diffuse : COLOR0; float4 Specular : COLOR1; float2 Uv : TEXCOORD0; };
-struct VO { float4 Position : SV_POSITION; float4 Color : COLOR0; float2 Uv : TEXCOORD0; float3 World : TEXCOORD1; float3 Normal : TEXCOORD2; float3 Specular : COLOR1; float4 Fog : TEXCOORD3; };
-float3 ForwardLight( float3 world, float3 n, float3 vertexDiffuse, float3 vertexSpecular )
+struct VO { float4 Position : SV_POSITION; float4 Color : COLOR0; float2 Uv : TEXCOORD0; float3 World : TEXCOORD1; float3 Normal : TEXCOORD2; float3 Specular : COLOR1; float4 Fog : TEXCOORD3; float3 Shadowed : TEXCOORD4; float3 LightPos : TEXCOORD5; };
+// 影を受けるライト（印が g_ShadowParams.w と重なる）の分は、shadowed へ。それ以外（と、環境光・自己発光）は、戻り値へ。
+float3 ForwardLightSplit( float3 world, float3 n, float3 vertexDiffuse, float3 vertexSpecular, out float3 shadowed )
 {
 	float3 toEye = normalize( g_LightEye.xyz - world );
 	float3 diffuseColor = g_LightMaterialDiffuse.a > 0.5 ? vertexDiffuse : g_LightMaterialDiffuse.rgb;
 	float3 specularColor = g_LightMaterialSpecular.a > 0.5 ? vertexSpecular : g_LightMaterialSpecular.rgb;
 	float3 materialAmbient = g_LightMaterialAmbient.rgb;
 	float3 sum = g_LightBase.rgb;
+	float3 shadowedSum = float3( 0.0, 0.0, 0.0 );
+	int shadowMask = int( g_ShadowParams.w );
 	int count = int( g_LightEye.w );
 	[loop] for ( int k = 0; k < count; ++k )
 	{
@@ -79,9 +85,37 @@ float3 ForwardLight( float3 world, float3 n, float3 vertexDiffuse, float3 vertex
 			float b = dot( n, normalize( toLight + toEye ) );
 			if ( b > 0.0 ) { highlight = pow( b, g_LightMaterialAmbient.a ); }
 		}
-		sum += reach * ( diffuseColor * lightDiffuse * angle + materialAmbient * lightAmbient + specularColor * lightSpecular * highlight );
+		float3 contribution = reach * ( diffuseColor * lightDiffuse * angle + materialAmbient * lightAmbient + specularColor * lightSpecular * highlight );
+		if ( ( int( spot.y ) & shadowMask ) != 0 ) { shadowedSum += contribution; }
+		else { sum += contribution; }
 	}
+	shadowed = saturate( shadowedSum ) * g_LightBright.rgb;
 	return saturate( sum ) * g_LightBright.rgb;
+}
+float3 ForwardLight( float3 world, float3 n, float3 vertexDiffuse, float3 vertexSpecular )
+{
+	float3 shadowed;
+	return ForwardLightSplit( world, n, vertexDiffuse, vertexSpecular, shadowed );
+}
+// 影の絵と比べて、光が届く割合（3x3 の平均）。BuiltIn.hlsl の ShadowFactor と同じ。
+float ShadowFactor( float3 p )
+{
+	if ( p.z < 0.0 || p.z > 1.0 || abs( p.x ) > 1.0 || abs( p.y ) > 1.0 ) { return 1.0; }
+	float2 size = g_ShadowParams.xy;
+	float2 texel = float2( p.x * 0.5 + 0.5, 0.5 - p.y * 0.5 ) * size;
+	int2 center = int2( floor( texel ) );
+	int2 last = int2( size ) - 1;
+	float lit = 0.0;
+	for ( int y = -1; y <= 1; ++y )
+	{
+		for ( int x = -1; x <= 1; ++x )
+		{
+			int2 t = clamp( center + int2( x, y ), int2( 0, 0 ), last );
+			float stored = g_ShadowMap.Load( int3( t, 0 ) ).r;
+			lit += ( p.z - g_ShadowParams.z <= stored ) ? 1.0 : 0.0;
+		}
+	}
+	return lit / 9.0;
 }
 float FogVisibility( float4 settings, float value, bool height )
 {
@@ -109,10 +143,11 @@ VO ForwardVS( VI i )
 	o.Normal = normalLength > 1.0e-4 ? normal / normalLength : float3( 0.0, 1.0, 0.0 );
 	o.Specular = i.Specular.rgb;
 	float3 color;
+	float3 shadowed = float3( 0.0, 0.0, 0.0 );
 	if ( g_Params.z > 0.5 ) { color = i.Diffuse.rgb; }
 	else if ( g_Params.x > 0.5 )
 	{
-		color = ForwardLight( o.World, o.Normal, i.Diffuse.rgb, i.Specular.rgb );
+		color = ForwardLightSplit( o.World, o.Normal, i.Diffuse.rgb, i.Specular.rgb, shadowed );
 	}
 	else
 	{
@@ -138,6 +173,8 @@ VO ForwardVS( VI i )
 		}
 	}
 	o.Color = float4( color, i.Diffuse.a * g_Params.y );
+	o.Shadowed = shadowed;
+	o.LightPos = g_ShadowParams.w > 0.5 ? mul( float4( o.World, 1.0 ), g_LightViewProjection ).xyz : float3( 0.0, 0.0, 0.0 );
 	float2 centered = ( i.Uv - g_UvScaleCenter.zw ) * g_UvScaleCenter.xy;
 	o.Uv = float2( centered.x * g_UvTranslationRotation.w - centered.y * g_UvTranslationRotation.z, centered.x * g_UvTranslationRotation.z + centered.y * g_UvTranslationRotation.w ) + g_UvScaleCenter.zw + g_UvTranslationRotation.xy;
 	return o;
@@ -154,3 +191,6 @@ float4 ForwardTexturedPS( VO i ) : SV_Target
 	c.rgb = lerp( i.Fog.rgb, c.rgb, i.Fog.a );
 	return c;
 }
+float4 ForwardShadowColor( VO i ) { float s = ShadowFactor( i.LightPos ); return float4( i.Color.rgb + i.Shadowed * s, i.Color.a ); }
+float4 ForwardShadowPS( VO i ) : SV_Target { float4 c = ForwardShadowColor( i ); if ( c.a <= 0.0 ) { discard; } return c; }
+float4 ForwardShadowTexturedPS( VO i ) : SV_Target { float4 c = ForwardShadowColor( i ) * g_Base.Sample( g_Sampler, i.Uv ); if ( c.a <= 0.0 ) { discard; } return c; }

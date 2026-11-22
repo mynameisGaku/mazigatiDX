@@ -28,5 +28,6 @@ private:
 	IShaderDrawSource*& ShaderSource; // Run.ShaderSource の別名。
 	bool& bUseForwardPath; // Run.bUseForwardPath の別名。
 	bool& bShadowCasting; // Run.bShadowCasting の別名。
+	int32 ( &ShadowSlotMaps )[3]; // Run.ShadowSlotMaps の別名。
 	int32& ReceiverSlot; // Run.ReceiverSlot の別名。
 };

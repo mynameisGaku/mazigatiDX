@@ -55,7 +55,7 @@ private:
 	void ReleaseMesh( FMesh& Mesh );
 	// 使われていないメッシュと、上限を超えたぶんを手放す。
 	void Purge( uint64 Keep );
-	FGraphicsPipelineHandle GetPipeline( const FForwardMeshDraw& Draw, bool bTextured, ERenderTargetColorFormat TargetFormat, EComputeTextureFormat TextureFormat );
+	FGraphicsPipelineHandle GetPipeline( const FForwardMeshDraw& Draw, bool bTextured, bool bReceive, ERenderTargetColorFormat TargetFormat, EComputeTextureFormat TextureFormat );
 
 	IGraphicsPipelineResources* Pipelines = nullptr;
 	IRenderBufferResources* Buffers = nullptr;
@@ -65,6 +65,8 @@ private:
 	TArray<uint8> VertexCode;
 	TArray<uint8> PixelCode;
 	TArray<uint8> TexturedPixelCode;
+	TArray<uint8> ShadowPixelCode;           // 影を受ける描画（画像なし）。
+	TArray<uint8> ShadowTexturedPixelCode;   // 影を受ける描画（画像あり）。
 	bool bShadersTried = false;
 	bool bShadersReady = false;
 	uint64 Clock = 0;        // 描いた回数。
