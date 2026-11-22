@@ -14,6 +14,7 @@
 #include "Library/Core/Log/Log.h"
 #include "Library/DebugUI/Common/ImGuiTexture.h"
 #include "Library/Core/Interfaces/Render/IGpuMemoryInfo.h"
+#include "Library/Core/Interfaces/Job/IJobSystem.h"
 #include "Library/Framework/Render/Mesh/ModelMaterialGeometry.h"
 #include "Library/Platform/Windows/Audio/WindowsSoundStoreSubsystem.h"
 
@@ -46,6 +47,7 @@ void CDX12AssetBackendSubsystem::Initialize( FSubsystemCollection& Collection )
 		Textures.Initialize( *Resources );
 	}
 	GpuMemory = Collection.InitializeDependency<IGpuMemoryInfo>();
+	Models.SetJobSystem( Collection.InitializeDependency<IJobSystem>() ); // スキンつきモデルの頂点の変形を、並列にする。
 	SoundStore = Collection.InitializeDependency<CWindowsSoundStoreSubsystem>(); // 音の登録（DX12のとき作られる）。
 	IGraphicsPipelineResources* GraphicsPipelines = Collection.InitializeDependency<IGraphicsPipelineResources>();
 	IRenderBufferResources* BufferResources = Collection.InitializeDependency<IRenderBufferResources>();

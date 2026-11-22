@@ -17,6 +17,8 @@
 class CStaticModelStore : public IStaticModelSource
 {
 public:
+	// 頂点の変形を並列にするワーカーを借りる（所有しない。なければ、呼んだスレッドだけで変形する）。
+	void SetJobSystem( IJobSystem* InJobs ) { Jobs = InJobs; }
 	// 画像の解放先の寿命を変えないよう、所有者を複写しない。
 	CStaticModelStore() = default;
 	CStaticModelStore( const CStaticModelStore& ) = delete;
@@ -170,6 +172,7 @@ private:
 	void GetFullVertices( FInstance& Instance, TArray<FDrawVertex3D>& Out );
 	bool EnsureCollision( FInstance& Instance );
 
+	IJobSystem* Jobs = nullptr; // 多い頂点の変形を、並列にするためのワーカー（なければ、呼んだスレッドだけで変形する）。
 	mutable FMutex Lock; // 描画の実行スレッドとゲームのスレッドの両方から呼ばれる。
 	TMap<int32, FInstance> Instances; // 登録番号から個体への表。
 	int32 NextHandle = 0; // 解放後も再利用しない登録番号。

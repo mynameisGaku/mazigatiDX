@@ -192,7 +192,7 @@ int32 CStaticModelStore::Create( const FImportedScene& Scene, const FString& Sou
 		TArray<FMatrix4x4> Local = Resource->Rig->BaseLocal;
 		TArray<FMatrix4x4> Global;
 		NModelRig::ComputeGlobals( *Resource->Rig, Local, Global );
-		NModelRig::Deform( *Resource->Rig, Global, Resource->VertexSources, Resource->Vertices.GetData(), Resource->Vertices.Num() );
+		NModelRig::Deform( *Resource->Rig, Global, Resource->VertexSources, Resource->Vertices.GetData(), Resource->Vertices.Num(), Jobs );
 		bool bFirst = true;
 		for ( int32 Index = 0; Index < Resource->Vertices.Num(); ++Index )
 		{
@@ -355,7 +355,7 @@ void CStaticModelStore::BuildDeformed( FInstance& Instance )
 	auto Snapshot = MakeShared<FDrawSnapshot>(); // ロック内で構築し、完成した形状だけを公開する。
 	Snapshot->Resource = Instance.Resource;
 	Snapshot->Vertices = Resource.Vertices;
-	NModelRig::Deform( *Resource.Rig, Rig.Global, Resource.VertexSources, Snapshot->Vertices.GetData(), Snapshot->Vertices.Num() );
+	NModelRig::Deform( *Resource.Rig, Rig.Global, Resource.VertexSources, Snapshot->Vertices.GetData(), Snapshot->Vertices.Num(), Jobs );
 	const auto& SourceSections = Resource.Definition.Surface.Sections;
 	for ( int32 Index = 0; Index < Resource.Sections.Num() && Index < SourceSections.Num(); ++Index )
 	{
@@ -366,9 +366,9 @@ void CStaticModelStore::BuildDeformed( FInstance& Instance )
 		FStaticModelDrawSection Section = Resource.Sections[Index];
 		const int32 First = Section.FirstIndex;
 		Section.FirstIndex = Snapshot->Indices.Num();
-		for ( int32 Offset = 0; Offset < Section.NumIndices; ++Offset )
+		if ( Section.NumIndices > 0 )
 		{
-			Snapshot->Indices.Add( Resource.Definition.Surface.Indices[First + Offset] );
+			Snapshot->Indices.Append( Resource.Definition.Surface.Indices.GetData() + First, Section.NumIndices ); // 1 つずつ足さずに、まとめて複写する。
 		}
 		Snapshot->Sections.Add( Section );
 	}

@@ -9,6 +9,8 @@
 #include "Library/Framework/Asset/Model/Import/StaticModelDefinition.h"
 #include "Library/Math/Matrix4x4.h"
 
+class IJobSystem;
+
 //=============================================================================
 // モデルの骨組み（リグ）と、ポーズの計算。GPU・描画 API・DxLib を知らない（CPU でスキニングする）。
 //
@@ -111,5 +113,6 @@ namespace NModelRig
 	void ComputeGlobals( const FModelRig& Rig, const TArray<FMatrix4x4>& Local, TArray<FMatrix4x4>& OutGlobal );
 
 	// Vertices の位置と法線を、Globals で変形した値にする（それ以外の値は触らない）。Sources は Vertices と同じ並び
-	void Deform( const FModelRig& Rig, const TArray<FMatrix4x4>& Globals, const TArray<FRigVertexSource>& Sources, FDrawVertex3D* Vertices, int32 NumVertices );
+	// Jobs を渡すと、頂点の数が多いとき、頂点を範囲に分けて並列に変形する（各頂点は自分の出力だけを書くので、結果は、ワーカーの数によらず同じ）。
+	void Deform( const FModelRig& Rig, const TArray<FMatrix4x4>& Globals, const TArray<FRigVertexSource>& Sources, FDrawVertex3D* Vertices, int32 NumVertices, IJobSystem* Jobs = nullptr );
 }

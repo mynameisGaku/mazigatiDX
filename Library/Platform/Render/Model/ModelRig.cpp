@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "ModelRig.h"
+#include "Library/Core/Interfaces/Job/IJobSystem.h"
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Types/Numeric.h"
 
@@ -414,7 +415,7 @@ void NModelRig::ComputeGlobals( const FModelRig& Rig, const TArray<FMatrix4x4>& 
 	}
 }
 
-void NModelRig::Deform( const FModelRig& Rig, const TArray<FMatrix4x4>& Globals, const TArray<FRigVertexSource>& Sources, FDrawVertex3D* Vertices, int32 NumVertices )
+void NModelRig::Deform( const FModelRig& Rig, const TArray<FMatrix4x4>& Globals, const TArray<FRigVertexSource>& Sources, FDrawVertex3D* Vertices, int32 NumVertices, IJobSystem* Jobs )
 {
 	if ( NumVertices > Sources.Num() )
 	{
@@ -426,63 +427,78 @@ void NModelRig::Deform( const FModelRig& Rig, const TArray<FMatrix4x4>& Globals,
 	for ( int32 MeshIndex = 0; MeshIndex < Rig.Meshes.Num(); ++MeshIndex )
 	{
 		const FRigMesh& Mesh = Rig.Meshes[MeshIndex];
+		ClusterMatrices[MeshIndex].Reserve( Mesh.ClusterBone.Num() );
 		for ( int32 Cluster = 0; Cluster < Mesh.ClusterBone.Num(); ++Cluster )
 		{
 			ClusterMatrices[MeshIndex].Add( Mesh.ClusterOffset[Cluster] * Globals[Mesh.ClusterBone[Cluster]] );
 		}
 	}
-	for ( int32 Index = 0; Index < NumVertices; ++Index )
+	// 頂点の範囲を変形する。各頂点は自分の出力（Vertices[Index]）だけを書き、読むものは変えないので、範囲を分けて並列に呼べる。
+	const auto DeformRange = [&]( int32 Begin, int32 End )
 	{
-		const FRigVertexSource& Source = Sources[Index];
-		if ( Source.Mesh < 0 || Source.Mesh >= Rig.Meshes.Num() )
+		for ( int32 Index = Begin; Index < End; ++Index )
 		{
-			continue;
-		}
-		const FRigMesh& Mesh = Rig.Meshes[Source.Mesh];
-		if ( Source.Vertex < 0 || Source.Vertex >= Mesh.Positions.Num() )
-		{
-			continue;
-		}
-		const FVector3& Rest = Mesh.Positions[Source.Vertex];
-		const FVector3& RestNormal = Mesh.Normals[Source.Vertex];
-		FVector3 Position( 0.0f, 0.0f, 0.0f );
-		FVector3 Normal( 0.0f, 0.0f, 0.0f );
-		bool bDone = false;
-		if ( Mesh.bSkinned )
-		{
-			const int32 Begin = Mesh.Influences.Start[Source.Vertex];
-			const int32 End = Mesh.Influences.Start[Source.Vertex + 1];
-			float32 Total = 0.0f;
-			for ( int32 Slot = Begin; Slot < End; ++Slot )
+			const FRigVertexSource& Source = Sources[Index];
+			if ( Source.Mesh < 0 || Source.Mesh >= Rig.Meshes.Num() )
 			{
-				const float32 Weight = Mesh.Influences.Weight[Slot];
-				if ( !( Weight > 0.0f ) )
+				continue;
+			}
+			const FRigMesh& Mesh = Rig.Meshes[Source.Mesh];
+			if ( Source.Vertex < 0 || Source.Vertex >= Mesh.Positions.Num() )
+			{
+				continue;
+			}
+			const FVector3& Rest = Mesh.Positions[Source.Vertex];
+			const FVector3& RestNormal = Mesh.Normals[Source.Vertex];
+			FVector3 Position( 0.0f, 0.0f, 0.0f );
+			FVector3 Normal( 0.0f, 0.0f, 0.0f );
+			bool bDone = false;
+			if ( Mesh.bSkinned )
+			{
+				const int32 SlotBegin = Mesh.Influences.Start[Source.Vertex];
+				const int32 SlotEnd = Mesh.Influences.Start[Source.Vertex + 1];
+				const TArray<FMatrix4x4>& Clusters = ClusterMatrices[Source.Mesh]; // このメッシュのクラスターの行列。
+				float32 Total = 0.0f;
+				for ( int32 Slot = SlotBegin; Slot < SlotEnd; ++Slot )
 				{
-					continue;
+					const float32 Weight = Mesh.Influences.Weight[Slot];
+					if ( !( Weight > 0.0f ) )
+					{
+						continue;
+					}
+					const FMatrix4x4& Matrix = Clusters[Mesh.Influences.Cluster[Slot]];
+					Position = Position + Matrix.TransformPoint( Rest ) * Weight;
+					Normal = Normal + Matrix.TransformVector( RestNormal ) * Weight;
+					Total += Weight;
 				}
-				const FMatrix4x4& Matrix = ClusterMatrices[Source.Mesh][Mesh.Influences.Cluster[Slot]];
-				Position = Position + Matrix.TransformPoint( Rest ) * Weight;
-				Normal = Normal + Matrix.TransformVector( RestNormal ) * Weight;
-				Total += Weight;
+				if ( Total > 0.0f )
+				{
+					Position = Position / Total; // 重みの合計が 1 でなくても、位置がずれないように
+					bDone = true;
+				}
 			}
-			if ( Total > 0.0f )
+			if ( !bDone )
 			{
-				Position = Position / Total; // 重みの合計が 1 でなくても、位置がずれないように
-				bDone = true;
+				const FMatrix4x4 Matrix = Mesh.Node < 0 ? FMatrix4x4() : Globals[Mesh.Node];
+				Position = Matrix.TransformPoint( Rest );
+				Normal = Matrix.TransformVector( RestNormal );
 			}
+			Normal = Normal.Normalized();
+			Vertices[Index].Position[0] = Position.x;
+			Vertices[Index].Position[1] = Position.y;
+			Vertices[Index].Position[2] = Position.z;
+			Vertices[Index].Normal[0] = Normal.x;
+			Vertices[Index].Normal[1] = Normal.y;
+			Vertices[Index].Normal[2] = Normal.z;
 		}
-		if ( !bDone )
-		{
-			const FMatrix4x4 Matrix = Mesh.Node < 0 ? FMatrix4x4() : Globals[Mesh.Node];
-			Position = Matrix.TransformPoint( Rest );
-			Normal = Matrix.TransformVector( RestNormal );
-		}
-		Normal = Normal.Normalized();
-		Vertices[Index].Position[0] = Position.x;
-		Vertices[Index].Position[1] = Position.y;
-		Vertices[Index].Position[2] = Position.z;
-		Vertices[Index].Normal[0] = Normal.x;
-		Vertices[Index].Normal[1] = Normal.y;
-		Vertices[Index].Normal[2] = Normal.z;
+	};
+	constexpr int32 BatchSize = 4096; // 1 つの範囲の頂点の数の下限（小さいモデルは、ワーカーを起こさずに、呼んだスレッドだけで変形する）。
+	if ( Jobs && NumVertices > BatchSize )
+	{
+		Jobs->ParallelForRange( NumVertices, BatchSize, "Model.Deform", DeformRange );
+	}
+	else
+	{
+		DeformRange( 0, NumVertices );
 	}
 }
