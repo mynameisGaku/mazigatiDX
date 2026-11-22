@@ -630,6 +630,7 @@ Worldの`Components.Effect`には、任意の`Target`（追従先オブジェク
 - クラス名とファイル名は、「何をする人か」が分かる名前にします（`CAssetPathResolver`＝パスを解決する人、`CTextureLoader`＝画像を読み込む人、`CModelImporter`＝モデルを取り込む人）。`Manager`・`Helper`・`Utility`・`Subsystem` に分けたファイル名（`AssetSubsystemImages.cpp` など、クラスの一部を分けただけの名前）は付けません。分けたい処理は、その役割の名前のクラスにします。サブシステムの名前は、「役割 + `Subsystem`」の2つの要素だけ（`CAssetSubsystem`・`CAudioSubsystem`）にします。
 - サブシステム（`CAppSubsystem` / `CGameInstanceSubsystem` / `CSceneSubsystem` を継承するクラス）の名前には`Subsystem`を付けます（`CAssetSubsystem`・`CDxLibInputSubsystem` など）。ファイル名もクラス名に合わせます。
 - 公開する主要な型は原則一つのヘッダーに置き、実装は同名cppへ分けます。templateの実装は同名ヘッダーまたはinlに置きます。
+- 実装は、ヘッダーではなくcppに書きます（ヘッダーを変えたときの、全体のコンパイル時間を短くするため）。ヘッダーに置くのは、template・1文の取得関数・列挙・値の型だけです。ヘッダーでインラインにする必要があるときは、`inline`ではなく`FORCEINLINE`を使います。
 - 型は構文上のclass／structではなく責務で分類します。`C`は作成・実行・変換・登録・外部資源管理などの機能を担う型、`F`はデータ・値・ハンドルやデータを効率的に保持する型です。F型が操作関数や内部メモリを持つこともできます。サービスをFへ一律分類しません。`T`はtemplate、`E`はenum、`I`はインターフェース、`N`は名前空間です。既存の型は無関係な変更で一括改名しません。
 - ヘッダー冒頭は`// SPDX-License-Identifier: MIT`と`#pragma once`を置き、長い使い方は文書へ分けます。
 - 型や関数の宣言直前に、日本語で役割・入力・失敗条件を記述します。複数の引数を説明するときは引数ごとに改行します。

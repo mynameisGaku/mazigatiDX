@@ -7,24 +7,281 @@
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Framework/Render/Draw/DrawModelFramePoseData.h"
 
-void FDrawContext::BeginScene3D()
+void FDrawContext::Line3D( const FVector3& A, const FVector3& B, const FColor32& Color )
 {
-	Buffer->Words.Add( NDrawCommand::MakeHeader( EDrawCommand::BeginScene3D, 0, 1 ) );
+	FDrawLine3DData Data;
+	Set3( Data.P0, A );
+	Set3( Data.P1, B );
+	Data.Color = Rgb( Color );
+	Push( EDrawCommand::Line3D, 0, Data );
 }
 
-void FDrawContext::EndScene3D()
+void FDrawContext::Triangle3D( const FVector3& A, const FVector3& B, const FVector3& C, const FColor32& Color, bool bFill )
 {
-	Buffer->Words.Add( NDrawCommand::MakeHeader( EDrawCommand::EndScene3D, 0, 1 ) );
+	FDrawTriangle3DData Data;
+	Set3( Data.P0, A );
+	Set3( Data.P1, B );
+	Set3( Data.P2, C );
+	Data.Color = Rgb( Color );
+	Push( EDrawCommand::Triangle3D, bFill ? FDrawFlag::Fill : 0, Data );
 }
 
-bool FDrawContext::SceneDrawKey3D( ESceneDrawClass Class, float32 Depth )
+void FDrawContext::Sphere3D( const FVector3& Center, float32 Radius, int32 DivNum, const FColor32& Diffuse, const FColor32& Specular, bool bFill )
 {
-	if ( Class > ESceneDrawClass::Translucent || !NMath::IsFinite( Depth ) ) { return false; }
-	FDrawSceneKeyData Data; // 直後の描画と一緒に並べ替える値。
-	Data.Class = Class;
-	Data.Depth = Depth;
-	Push( EDrawCommand::SceneDrawKey3D, 0, Data );
-	return true;
+	FDrawSphere3DData Data;
+	Set3( Data.Center, Center );
+	Data.Radius = Radius;
+	Data.Div = DivNum;
+	Data.Diffuse = Rgb( Diffuse );
+	Data.Specular = Rgb( Specular );
+	Push( EDrawCommand::Sphere3D, bFill ? FDrawFlag::Fill : 0, Data );
+}
+
+void FDrawContext::Capsule3D( const FVector3& A, const FVector3& B, float32 Radius, int32 DivNum, const FColor32& Diffuse, const FColor32& Specular, bool bFill )
+{
+	FDrawCapsule3DData Data;
+	Set3( Data.P0, A );
+	Set3( Data.P1, B );
+	Data.Radius = Radius;
+	Data.Div = DivNum;
+	Data.Diffuse = Rgb( Diffuse );
+	Data.Specular = Rgb( Specular );
+	Push( EDrawCommand::Capsule3D, bFill ? FDrawFlag::Fill : 0, Data );
+}
+
+void FDrawContext::Cube3D( const FVector3& Min, const FVector3& Max, const FColor32& Diffuse, const FColor32& Specular, bool bFill )
+{
+	FDrawCube3DData Data;
+	Set3( Data.Min, Min );
+	Set3( Data.Max, Max );
+	Data.Diffuse = Rgb( Diffuse );
+	Data.Specular = Rgb( Specular );
+	Push( EDrawCommand::Cube3D, bFill ? FDrawFlag::Fill : 0, Data );
+}
+
+void FDrawContext::Billboard3D( const FVector3& Position, float32 Size, int32 GraphHandle, float32 AngleRadians, bool bFlipX, bool bFlipY )
+{
+	FDrawBillboard3DData Data;
+	Set3( Data.Pos, Position );
+	Data.Size = Size;
+	Data.Angle = AngleRadians;
+	Data.Handle = GraphHandle;
+	Push( EDrawCommand::Billboard3D, Flip( bFlipX, bFlipY ), Data );
+}
+
+void FDrawContext::Pixel3D( const FVector3& Position, const FColor32& Color )
+{
+	if ( !IsFiniteVector( Position ) )
+	{
+		return;
+	}
+	FDrawPixel3DData Data;
+	Set3( Data.Pos, Position );
+	Data.Color = Rgb( Color );
+	Push( EDrawCommand::Pixel3D, 0, Data );
+}
+
+void FDrawContext::Cone3D( const FVector3& Top, const FVector3& Bottom, float32 Radius, int32 DivNum, const FColor32& Diffuse, const FColor32& Specular, bool bFill )
+{
+	if ( !IsFiniteVector( Top ) || !IsFiniteVector( Bottom ) || !NMath::IsFinite( Radius ) )
+	{
+		return;
+	}
+	FDrawCone3DData Data;
+	Set3( Data.Top, Top );
+	Set3( Data.Bottom, Bottom );
+	Data.Radius = Radius;
+	Data.Div = DivNum;
+	Data.Diffuse = Rgb( Diffuse );
+	Data.Specular = Rgb( Specular );
+	Push( EDrawCommand::Cone3D, bFill ? FDrawFlag::Fill : 0, Data );
+}
+
+void FDrawContext::BillboardPivot3D( const FVector3& Position, float32 Size, FImageHandle Handle, float32 PivotX, float32 PivotY, float32 AngleRadians, bool bFlipX, bool bFlipY )
+{
+	if ( !Handle.IsValid() || !IsFiniteVector( Position ) || !AllFinite( Size, PivotX, PivotY, AngleRadians ) )
+	{
+		return;
+	}
+	FDrawBillboardPivot3DData Data;
+	Set3( Data.Pos, Position );
+	Data.Size = Size;
+	Data.PivotX = PivotX;
+	Data.PivotY = PivotY;
+	Data.Angle = AngleRadians;
+	Data.Handle = Handle.Value;
+	Push( EDrawCommand::BillboardPivot3D, Flip( bFlipX, bFlipY ), Data );
+}
+
+void FDrawContext::BillboardQuad3D( const FVector3& Position, float32 X0, float32 Y0, float32 X1, float32 Y1, float32 X2, float32 Y2, float32 X3, float32 Y3, FImageHandle Handle )
+{
+	if ( !Handle.IsValid() || !IsFiniteVector( Position ) || !AllFinite( X0, Y0, X1, Y1, X2, Y2, X3, Y3 ) )
+	{
+		return;
+	}
+	FDrawBillboardQuad3DData Data;
+	Set3( Data.Pos, Position );
+	Data.Corner[0] = X0;
+	Data.Corner[1] = Y0;
+	Data.Corner[2] = X1;
+	Data.Corner[3] = Y1;
+	Data.Corner[4] = X2;
+	Data.Corner[5] = Y2;
+	Data.Corner[6] = X3;
+	Data.Corner[7] = Y3;
+	Data.Handle = Handle.Value;
+	Push( EDrawCommand::BillboardQuad3D, 0, Data );
+}
+
+void FDrawContext::Sprite3D( const FVector3& Position, FImageHandle Handle, float32 Scale, float32 AngleRadians, bool bFlipX, bool bFlipY )
+{
+	if ( !Handle.IsValid() || !IsFiniteVector( Position ) || !AllFinite( Scale, AngleRadians ) )
+	{
+		return;
+	}
+	FDrawSprite3DData Data;
+	Set3( Data.Pos, Position );
+	Data.Scale = Scale;
+	Data.Angle = AngleRadians;
+	Data.Handle = Handle.Value;
+	Push( EDrawCommand::Sprite3D, Flip( bFlipX, bFlipY ), Data );
+}
+
+void FDrawContext::SpriteStretch3D( const FVector3& Position, FImageHandle Handle, float32 ScaleX, float32 ScaleY )
+{
+	if ( !Handle.IsValid() || !IsFiniteVector( Position ) || !AllFinite( ScaleX, ScaleY ) )
+	{
+		return;
+	}
+	FDrawSpriteStretch3DData Data;
+	Set3( Data.Pos, Position );
+	Data.ScaleX = ScaleX;
+	Data.ScaleY = ScaleY;
+	Data.Handle = Handle.Value;
+	Push( EDrawCommand::SpriteStretch3D, 0, Data );
+}
+
+void FDrawContext::SpritePivot3D( const FVector3& Position, FImageHandle Handle, float32 PivotX, float32 PivotY, float32 ScaleX, float32 ScaleY, float32 AngleRadians, bool bFlipX, bool bFlipY )
+{
+	if ( !Handle.IsValid() || !IsFiniteVector( Position ) || !AllFinite( PivotX, PivotY, ScaleX, ScaleY, AngleRadians ) )
+	{
+		return;
+	}
+	FDrawSpritePivot3DData Data;
+	Set3( Data.Pos, Position );
+	Data.PivotX = PivotX;
+	Data.PivotY = PivotY;
+	Data.ScaleX = ScaleX;
+	Data.ScaleY = ScaleY;
+	Data.Angle = AngleRadians;
+	Data.Handle = Handle.Value;
+	Push( EDrawCommand::SpritePivot3D, Flip( bFlipX, bFlipY ), Data );
+}
+
+bool FDrawContext::Primitive3D( const FVertex3D* Vertices, int32 NumVertices, EDrawPrimitive Type )
+{
+	return PushPrimitive3D( Vertices, NumVertices, nullptr, 0, Type, -1 );
+}
+
+bool FDrawContext::Primitive3D( const FVertex3D* Vertices, int32 NumVertices, EDrawPrimitive Type, FImageHandle Texture )
+{
+	return Texture.IsValid() && PushPrimitive3D( Vertices, NumVertices, nullptr, 0, Type, Texture.Value );
+}
+
+bool FDrawContext::PrimitiveIndexed3D( const FVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, EDrawPrimitive Type )
+{
+	return Indices != nullptr && PushPrimitive3D( Vertices, NumVertices, Indices, NumIndices, Type, -1 );
+}
+
+bool FDrawContext::PrimitiveIndexed3D( const FVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, EDrawPrimitive Type, FImageHandle Texture )
+{
+	return Indices != nullptr && Texture.IsValid() && PushPrimitive3D( Vertices, NumVertices, Indices, NumIndices, Type, Texture.Value );
+}
+
+bool FDrawContext::PrimitiveBuffer3D( FVertexBufferHandle Vertices, EDrawPrimitive Type, const FBufferRange& Range )
+{
+	return PushPrimitiveBuffer3D( Vertices, FIndexBufferHandle(), false, Type, -1, Range );
+}
+
+bool FDrawContext::PrimitiveBuffer3D( FVertexBufferHandle Vertices, EDrawPrimitive Type, FImageHandle Texture, const FBufferRange& Range )
+{
+	return Texture.IsValid() && PushPrimitiveBuffer3D( Vertices, FIndexBufferHandle(), false, Type, Texture.Value, Range );
+}
+
+bool FDrawContext::PrimitiveIndexedBuffer3D( FVertexBufferHandle Vertices, FIndexBufferHandle Indices, EDrawPrimitive Type, const FBufferRange& Range )
+{
+	return PushPrimitiveBuffer3D( Vertices, Indices, true, Type, -1, Range );
+}
+
+bool FDrawContext::PrimitiveIndexedBuffer3D( FVertexBufferHandle Vertices, FIndexBufferHandle Indices, EDrawPrimitive Type, FImageHandle Texture, const FBufferRange& Range )
+{
+	return Texture.IsValid() && PushPrimitiveBuffer3D( Vertices, Indices, true, Type, Texture.Value, Range );
+}
+
+void FDrawContext::Quad3D( const FDrawQuad3DData& Data )
+{
+	Push( EDrawCommand::Quad3D, 0, Data );
+}
+
+void FDrawContext::Mesh3D( int32 VertexBuffer, int32 IndexBuffer, int32 NumVertices, int32 StartIndex, int32 NumIndices, int32 Texture, const FMatrix4x4& World, bool bTwoSided )
+{
+	FDrawMeshData Data;
+	Data.VertexBuffer = VertexBuffer;
+	Data.IndexBuffer = IndexBuffer;
+	Data.NumVertices = NumVertices;
+	Data.StartIndex = StartIndex;
+	Data.NumIndices = NumIndices;
+	Data.Texture = Texture;
+	PackAffine( Data.M, World );
+	Push( EDrawCommand::Mesh3D, bTwoSided ? FDrawFlag::TwoSided : 0, Data );
+}
+
+void FDrawContext::ModelAnimLayer( int32 ModelHandle, int32 AttachIndex, float32 AnimTime, float32 BlendRate )
+{
+	FDrawModelAnimData Data;
+	Data.Handle = ModelHandle;
+	Data.AttachIndex = AttachIndex;
+	Data.Time = AnimTime;
+	Data.Rate = BlendRate;
+	Push( EDrawCommand::ModelAnim, 0, Data );
+}
+
+void FDrawContext::ModelAnimFrameRate( int32 ModelHandle, int32 AttachIndex, int32 Frame, float32 BlendRate, bool bIncludeChildren )
+{
+	if ( ModelHandle < 0 || AttachIndex < 0 || Frame < 0 || !NMath::IsFinite( BlendRate ) )
+	{
+		return;
+	}
+	FDrawModelAnimFrameData Data;
+	Data.Handle = ModelHandle;
+	Data.AttachIndex = AttachIndex;
+	Data.Frame = Frame;
+	Data.Rate = NMath::Clamp( BlendRate, 0.0f, 1.0f );
+	Data.bIncludeChildren = bIncludeChildren ? 1 : 0;
+	Push( EDrawCommand::ModelAnimFrame, 0, Data );
+}
+
+void FDrawContext::WorldMatrix( const FMatrix4x4& Matrix )
+{
+	FDrawMatrixData Data;
+	PackAffine( Data.M, Matrix );
+	Push( EDrawCommand::WorldMatrix, 0, Data );
+}
+
+void FDrawContext::PopWorldMatrix()
+{
+	const FDrawPopWorldMatrixData Data;
+	Push( EDrawCommand::PopWorldMatrix, 0, Data );
+}
+
+void FDrawContext::Model( int32 ModelHandle, const FMatrix4x4& World, int32 AnimAttachIndex, float32 AnimTime )
+{
+	FDrawModelData Data;
+	Data.Handle = ModelHandle;
+	PackAffine( Data.M, World );
+	Data.AnimIndex = AnimAttachIndex;
+	Data.AnimTime = AnimTime;
+	Push( EDrawCommand::Model3D, 0, Data );
 }
 
 void FDrawContext::MaterialQuad3D( const FDrawMaterialQuadData& Data )
@@ -243,71 +500,6 @@ void FDrawContext::MaterialMesh3D( const FDrawMaterialMeshData& Data, const FMes
 	FMemory::Memcpy( Out + 1 + DataWords + VertexWords, CopiedIndices.GetData(), static_cast<size_t>( Header.NumIndices ) * sizeof( uint32 ) );
 }
 
-void FDrawContext::Ribbon3D( const FDrawRibbonData::FPoint* Points, int32 NumPoints, int32 Texture, float32 UVRepeat, int32 JoinFlags )
-{
-	if ( Points == nullptr || NumPoints < 2 || NumPoints > FDrawRibbonData::MaxPoints || Texture < -1 || !NMath::IsFinite( UVRepeat ) || UVRepeat <= 0.0f || JoinFlags < 0 || ( JoinFlags & ~( FDrawRibbonData::PreviousPoint | FDrawRibbonData::NextPoint ) ) != 0 || NumPoints - static_cast<int32>( ( JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) - static_cast<int32>( ( JoinFlags & FDrawRibbonData::NextPoint ) != 0 ) < 2 )
-	{
-		return;
-	}
-	// テクスチャを反復する際に必要な、分割後の区間数。
-	int32 TextureSections = 0;
-	// 点列の途中だけを落として、不連続な経路へ変えてしまわないよう全点を先に確かめる。
-	for ( int32 Index = 0; Index < NumPoints; ++Index )
-	{
-		// 検査してから複写する、今回の経路の点。
-		const FDrawRibbonData::FPoint& Point = Points[Index];
-		if ( !NMath::IsFinite( Point.Pos[0] ) || !NMath::IsFinite( Point.Pos[1] ) || !NMath::IsFinite( Point.Pos[2] ) || !NMath::IsFinite( Point.Width ) || Point.Width < 0.0f || !NMath::IsFinite( Point.U ) || Point.U < 0.0f || !NMath::IsFinite( Point.U * UVRepeat ) )
-		{
-			return;
-		}
-		if ( Index > 0 && Point.U < Points[Index - 1].U )
-		{
-			return;
-		}
-		// 幅と接線には全点を使い、補助点が作る区間だけを除外する。
-		const bool bVisibleSegment = Index > 0 && !( Index == 1 && ( JoinFlags & FDrawRibbonData::PreviousPoint ) != 0 ) && !( Index + 1 == NumPoints && ( JoinFlags & FDrawRibbonData::NextPoint ) != 0 );
-		if ( Texture >= 0 && bVisibleSegment )
-		{
-			// 始点側で使い始める画像の反復番号。
-			const float64 First = NMath::Floor( static_cast<float64>( Points[Index - 1].U * UVRepeat ) );
-			// 終点までに必要な反復数。整数境界と一致する終点では余分な区間を作らない。
-			const float64 Sections = NMath::Max( 1.0, NMath::Ceil( static_cast<float64>( Point.U * UVRepeat ) ) - First );
-			if ( Sections > static_cast<float64>( FDrawRibbonData::MaxTextureSections - TextureSections ) )
-			{
-				return;
-			}
-			TextureSections += static_cast<int32>( Sections );
-		}
-	}
-	// 命令の固定部分のワード数。
-	constexpr size_t DataWords = sizeof( FDrawRibbonData ) / 4;
-	// 点列の可変部分のワード数。点数の上限を検査した後に計算する。
-	const size_t PointWords = static_cast<size_t>( NumPoints ) * sizeof( FDrawRibbonData::FPoint ) / 4;
-	// 命令ヘッダー自身を含む全体のワード数。
-	const size_t CommandWords = 1 + DataWords + PointWords;
-	if ( CommandWords > static_cast<size_t>( NDrawCommand::MaxWords ) || Buffer->Words.Num() > TNumericLimits<int32>::Max() - static_cast<int32>( CommandWords ) )
-	{
-		return;
-	}
-	// Pointsが既存の記録領域を参照する場合も、広げて失効する前に複写する。
-	TArray<FDrawRibbonData::FPoint> Copied;
-	Copied.Append( Points, NumPoints );
-	// 点列に先行する、固定長の描画設定。
-	FDrawRibbonData Data;
-	Data.Texture = Texture;
-	Data.NumPoints = NumPoints;
-	Data.UVRepeat = UVRepeat;
-	Data.JoinFlags = JoinFlags;
-	// 既存の描画命令が入っている、今回の追記先。
-	TArray<uint32>& Words = Buffer->Words;
-	// 追加する命令の先頭。
-	const int32 Begin = Words.AddZeroed( static_cast<int32>( CommandWords ) );
-	uint32* const Out = Words.GetData() + Begin;
-	Out[0] = NDrawCommand::MakeHeader( EDrawCommand::Ribbon3D, 0, static_cast<int32>( CommandWords ) );
-	FMemory::Memcpy( Out + 1, &Data, sizeof( Data ) );
-	FMemory::Memcpy( Out + 1 + DataWords, Copied.GetData(), static_cast<size_t>( NumPoints ) * sizeof( FDrawRibbonData::FPoint ) );
-}
-
 bool FDrawContext::PushPrimitive3D( const FVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, EDrawPrimitive Type, int32 Texture )
 {
 	if ( Vertices == nullptr )
@@ -408,550 +600,6 @@ bool FDrawContext::PushPrimitiveBuffer3D( FVertexBufferHandle Vertices, FIndexBu
 	return true;
 }
 
-void FDrawContext::Text( int32 X, int32 Y, const char* String, const FColor32& Color )
-{
-	constexpr size_t DataWords = sizeof( FDrawTextData ) / 4;
-	// ヘッダに収まる大きさまで（それより長い文字列は切る）
-	const size_t MaxChars = ( static_cast<size_t>( NDrawCommand::MaxWords ) - 1 - DataWords ) * 4 - 1;
-	size_t Length = String != nullptr ? NCString::Length( String ) : 0;
-	if ( Length > MaxChars )
-	{
-		Length = MaxChars;
-	}
-	const size_t CharWords = ( Length + 1 + 3 ) / 4;   // '\0' を含めて、4 バイト境界まで
-
-	FDrawTextData Data;
-	Data.X = X;
-	Data.Y = Y;
-	Data.Color = Rgb( Color );
-	Data.Length = static_cast<int32>( Length );
-
-	TArray<uint32>& Words = Buffer->Words;
-	const int32 Begin = Words.AddZeroed( static_cast<int32>( 1 + DataWords + CharWords ) );   // 0 で埋まる（終端の '\0' と、境界までの隙間）
-	uint32* const Out = Words.GetData() + Begin;
-	Out[0] = NDrawCommand::MakeHeader( EDrawCommand::Text, 0, static_cast<int32>( 1 + DataWords + CharWords ) );
-	FMemory::Memcpy( Out + 1, &Data, sizeof( Data ) );
-	if ( Length > 0 )
-	{
-		FMemory::Memcpy( Out + 1 + DataWords, String, Length );
-	}
-}
-
-void FDrawContext::TextWithFont( int32 FontHandle, int32 X, int32 Y, const char* String, const FColor32& Color, EDrawTextAlign Align, const FColor32& EdgeColor )
-{
-	constexpr size_t DataWords = sizeof( FDrawTextFontData ) / 4;
-	const size_t MaxChars = ( static_cast<size_t>( NDrawCommand::MaxWords ) - 1 - DataWords ) * 4 - 1;
-	size_t Length = String != nullptr ? NCString::Length( String ) : 0;
-	if ( Length > MaxChars )
-	{
-		Length = MaxChars;
-	}
-	const size_t CharWords = ( Length + 1 + 3 ) / 4;
-
-	FDrawTextFontData Data;
-	Data.X = X;
-	Data.Y = Y;
-	Data.Color = Rgb( Color );
-	Data.Length = static_cast<int32>( Length );
-	Data.Font = FontHandle;
-	Data.EdgeColor = Rgb( EdgeColor );
-
-	uint8 Flags = 0;
-	if ( Align == EDrawTextAlign::Center )
-	{
-		Flags = FDrawFlag::AlignCenter;
-	}
-	else if ( Align == EDrawTextAlign::Right )
-	{
-		Flags = FDrawFlag::AlignRight;
-	}
-
-	TArray<uint32>& Words = Buffer->Words;
-	const int32 Begin = Words.AddZeroed( static_cast<int32>( 1 + DataWords + CharWords ) );
-	uint32* const Out = Words.GetData() + Begin;
-	Out[0] = NDrawCommand::MakeHeader( EDrawCommand::TextFont, Flags, static_cast<int32>( 1 + DataWords + CharWords ) );
-	FMemory::Memcpy( Out + 1, &Data, sizeof( Data ) );
-	if ( Length > 0 )
-	{
-		FMemory::Memcpy( Out + 1 + DataWords, String, Length );
-	}
-}
-
-namespace
-{
-	// 文字列つきの命令を、Buffer の最後に足す（命令のヘッダ + データ + 文字列 + 終端、4 バイト境界まで 0）。文字列は、長すぎれば切る
-	void PushStyledText( FDrawBuffer& Buffer, const FDrawTextStyledData& Source, const char* String )
-	{
-		constexpr size_t DataWords = sizeof( FDrawTextStyledData ) / 4;
-		const size_t MaxChars = ( static_cast<size_t>( NDrawCommand::MaxWords ) - 1 - DataWords ) * 4 - 1;
-		size_t Length = NCString::Length( String );
-		if ( Length > MaxChars )
-		{
-			Length = MaxChars;
-		}
-		const size_t CharWords = ( Length + 1 + 3 ) / 4;
-
-		FDrawTextStyledData Data = Source;
-		Data.Length = static_cast<int32>( Length );
-
-		TArray<uint32>& Words = Buffer.Words;
-		const int32 Begin = Words.AddZeroed( static_cast<int32>( 1 + DataWords + CharWords ) );
-		uint32* const Out = Words.GetData() + Begin;
-		Out[0] = NDrawCommand::MakeHeader( EDrawCommand::TextStyled, 0, static_cast<int32>( 1 + DataWords + CharWords ) );
-		FMemory::Memcpy( Out + 1, &Data, sizeof( Data ) );
-		if ( Length > 0 )
-		{
-			FMemory::Memcpy( Out + 1 + DataWords, String, Length );
-		}
-	}
-}
-
-void FDrawContext::Depth( const FDepthState& State )
-{
-	if ( !State.IsValid() )
-	{
-		return;
-	}
-	FDrawDepthData Data;
-	Data.TestDepth = State.bTestDepth ? 1 : 0;
-	Data.WriteDepth = State.bWriteDepth ? 1 : 0;
-	Data.Compare = static_cast<int32>( State.Compare );
-	Data.Bias = NMath::Clamp( State.Bias, -FDepthState::MaxBias, FDepthState::MaxBias );
-	Push( EDrawCommand::Depth, 0, Data );
-}
-
-void FDrawContext::TextureAddress( EDrawTextureAddress U, EDrawTextureAddress V )
-{
-	const int32 Last = static_cast<int32>( EDrawTextureAddress::Border );
-	if ( !IsInEnumRange( static_cast<int32>( U ), Last ) || !IsInEnumRange( static_cast<int32>( V ), Last ) )
-	{
-		return;
-	}
-	FDrawTextureAddressData Data;
-	Data.U = static_cast<int32>( U );
-	Data.V = static_cast<int32>( V );
-	Push( EDrawCommand::TextureAddress, 0, Data );
-}
-
-void FDrawContext::TextureTransform( const FTextureTransform& Transform )
-{
-	if ( !Transform.IsValid() )
-	{
-		return;
-	}
-	FDrawTextureTransformData Data;
-	if ( !Transform.IsIdentity() )
-	{
-		Data.Enabled = 1;
-		Data.TranslationU = Transform.Translation.x;
-		Data.TranslationV = Transform.Translation.y;
-		Data.ScaleU = Transform.Scale.x;
-		Data.ScaleV = Transform.Scale.y;
-		Data.CenterU = Transform.RotationCenter.x;
-		Data.CenterV = Transform.RotationCenter.y;
-		Data.Rotation = Transform.Rotation;
-	}
-	Push( EDrawCommand::TextureTransform, 0, Data );
-}
-
-namespace
-{
-	// フォグの設定を命令のデータにする（Mode が None なら、色などは使われない）
-	FDrawFogData MakeFogData( const FFogSettings& Settings )
-	{
-		FDrawFogData Data;
-		Data.Mode = static_cast<int32>( Settings.Mode );
-		if ( Settings.Mode != EDrawFogMode::None )
-		{
-			Data.Color = FDrawRgb{ Settings.Color.r, Settings.Color.g, Settings.Color.b, 0 };
-			Data.Start = Settings.Start;
-			Data.End = Settings.End;
-			Data.Density = Settings.Density;
-		}
-		return Data;
-	}
-}
-
-void FDrawContext::Fog( const FFogSettings& Settings )
-{
-	if ( !Settings.IsValid() )
-	{
-		return;
-	}
-	Push( EDrawCommand::Fog, 0, MakeFogData( Settings ) );
-}
-
-void FDrawContext::HeightFog( const FFogSettings& Settings )
-{
-	if ( !Settings.IsValid() )
-	{
-		return;
-	}
-	Push( EDrawCommand::HeightFog, 0, MakeFogData( Settings ) );
-}
-
-namespace
-{
-	// 色の 3 成分（アルファは使わない）を、命令のデータに入れる
-	void SetColor3( float32 ( &Out )[3], const FColor& Color )
-	{
-		Out[0] = Color.r;
-		Out[1] = Color.g;
-		Out[2] = Color.b;
-	}
-}
-
-void FDrawContext::AmbientLight( const FColor& Color )
-{
-	if ( !NMath::IsFinite( Color.r ) || !NMath::IsFinite( Color.g ) || !NMath::IsFinite( Color.b ) )
-	{
-		return;
-	}
-	FDrawAmbientLightData Data;
-	SetColor3( Data.Color, Color );
-	Push( EDrawCommand::AmbientLight, 0, Data );
-}
-
-void FDrawContext::SurfaceMaterial( const FSurfaceMaterial& Material )
-{
-	if ( !Material.IsValid() )
-	{
-		return;
-	}
-	FDrawSurfaceMaterialData Data;
-	SetColor3( Data.Diffuse, Material.Diffuse );
-	SetColor3( Data.Ambient, Material.Ambient );
-	SetColor3( Data.Specular, Material.Specular );
-	SetColor3( Data.Emissive, Material.Emissive );
-	Data.Shininess = Material.Shininess;
-	Data.UseVertexDiffuse = Material.bUseVertexDiffuse ? 1 : 0;
-	Data.UseVertexSpecular = Material.bUseVertexSpecular ? 1 : 0;
-	Push( EDrawCommand::SurfaceMaterial, 0, Data );
-}
-
-bool FDrawContext::PushLight( const FLight& Light )
-{
-	if ( !Light.IsValid() )
-	{
-		return false;
-	}
-	FDrawLightData Data;
-	Data.Type = static_cast<int32>( Light.Type );
-	Set3( Data.Position, Light.Position );
-	Set3( Data.Direction, Light.Direction );
-	SetColor3( Data.Diffuse, Light.Diffuse );
-	SetColor3( Data.Specular, Light.Specular );
-	SetColor3( Data.Ambient, Light.Ambient );
-	Data.Range = Light.Range;
-	Data.ConstantAttenuation = Light.ConstantAttenuation;
-	Data.LinearAttenuation = Light.LinearAttenuation;
-	Data.QuadraticAttenuation = Light.QuadraticAttenuation;
-	Data.OuterAngle = Light.OuterAngle;
-	Data.InnerAngle = Light.InnerAngle;
-	Data.ShadowMapSlots = Light.ShadowMapSlots;
-	Push( EDrawCommand::PushLight, 0, Data );
-	return true;
-}
-
-bool FDrawContext::BeginShadowMap( FShadowMapHandle ShadowMap, const FShadowMapView& View )
-{
-	// 使えない値でも記録する（ハンドルを負にして）。記録しないと、影を落とすはずの図形が、画面にそのまま描かれてしまう
-	const bool bValid = ShadowMap.IsValid() && View.IsValid();
-	FDrawBeginShadowMapData Data;
-	if ( bValid )
-	{
-		Data.Handle = ShadowMap.Value;
-		Set3( Data.Direction, View.LightDirection );
-		Data.HasArea = View.bFitToCamera ? 0 : 1;
-		Set3( Data.AreaMin, View.AreaMin );
-		Set3( Data.AreaMax, View.AreaMax );
-		Data.AdjustDepth = View.AdjustDepth;
-	}
-	Push( EDrawCommand::BeginShadowMap, 0, Data );
-	return bValid;
-}
-
-bool FDrawContext::UseShadowMap( int32 Slot, FShadowMapHandle ShadowMap )
-{
-	if ( Slot < 0 || Slot >= NDrawShadowMap::NumSlots || !ShadowMap.IsValid() )
-	{
-		return false;
-	}
-	FDrawUseShadowMapData Data;
-	Data.Slot = Slot;
-	Data.Handle = ShadowMap.Value;
-	Push( EDrawCommand::UseShadowMap, 0, Data );
-	return true;
-}
-
-void FDrawContext::StopUsingShadowMap( int32 Slot )
-{
-	if ( Slot < 0 || Slot >= NDrawShadowMap::NumSlots )
-	{
-		return;
-	}
-	FDrawUseShadowMapData Data;
-	Data.Slot = Slot;
-	Data.Handle = -1;
-	Push( EDrawCommand::UseShadowMap, 0, Data );
-}
-
-bool FDrawContext::PreviewShadowMap( FShadowMapHandle ShadowMap, int32 X0, int32 Y0, int32 X1, int32 Y1 )
-{
-	if ( !ShadowMap.IsValid() || X1 <= X0 || Y1 <= Y0 )
-	{
-		return false;
-	}
-	FDrawPreviewShadowMapData Data;
-	Data.Handle = ShadowMap.Value;
-	Data.X0 = X0;
-	Data.Y0 = Y0;
-	Data.X1 = X1;
-	Data.Y1 = Y1;
-	Push( EDrawCommand::PreviewShadowMap, 0, Data );
-	return true;
-}
-
-bool FDrawContext::PushUseShader( EShaderStage Stage, FShaderHandle Shader )
-{
-	if ( !Shader.IsValid() || Shader.Stage != Stage )
-	{
-		return false;
-	}
-	FDrawUseShaderData Data;
-	Data.Stage = static_cast<int32>( Stage );
-	Data.Handle = Shader.Value;
-	Push( EDrawCommand::UseShader, 0, Data );
-	return true;
-}
-
-bool FDrawContext::UseVertexShader( FShaderHandle Shader )
-{
-	return PushUseShader( EShaderStage::Vertex, Shader );
-}
-
-bool FDrawContext::UsePixelShader( FShaderHandle Shader )
-{
-	return PushUseShader( EShaderStage::Pixel, Shader );
-}
-
-void FDrawContext::StopUsingVertexShader()
-{
-	FDrawUseShaderData Data;
-	Data.Stage = static_cast<int32>( EShaderStage::Vertex );
-	Data.Handle = -1;
-	Push( EDrawCommand::UseShader, 0, Data );
-}
-
-void FDrawContext::StopUsingPixelShader()
-{
-	FDrawUseShaderData Data;
-	Data.Stage = static_cast<int32>( EShaderStage::Pixel );
-	Data.Handle = -1;
-	Push( EDrawCommand::UseShader, 0, Data );
-}
-
-bool FDrawContext::ShaderConstants( EShaderStage Stage, int32 Slot, const void* Data, int32 NumBytes )
-{
-	if ( ( Stage != EShaderStage::Vertex && Stage != EShaderStage::Pixel ) || Slot < NDrawShader::FirstUserSlot || Slot > NDrawShader::LastUserSlot
-		|| Data == nullptr || NumBytes < 16 || NumBytes > NDrawShader::MaxConstantBytes || NumBytes % 16 != 0 )
-	{
-		return false;
-	}
-	constexpr int32 HeaderWords = static_cast<int32>( sizeof( FDrawShaderConstantsData ) / 4 );
-	const int32 CommandWords = 1 + HeaderWords + NumBytes / 4;
-	TArray<uint32>& Words = Buffer->Words;
-	if ( Words.Num() > TNumericLimits<int32>::Max() - CommandWords )
-	{
-		return false;
-	}
-	FDrawShaderConstantsData Header;
-	Header.Stage = static_cast<int32>( Stage );
-	Header.Slot = Slot;
-	Header.NumBytes = NumBytes;
-	const int32 Begin = Words.AddZeroed( CommandWords );
-	uint32* const Out = Words.GetData() + Begin;
-	Out[0] = NDrawCommand::MakeHeader( EDrawCommand::ShaderConstants, 0, CommandWords );
-	FMemory::Memcpy( Out + 1, &Header, sizeof( Header ) );
-	FMemory::Memcpy( Out + 1 + HeaderWords, Data, static_cast<size_t>( NumBytes ) );
-	return true;
-}
-
-bool FDrawContext::ShaderTexture( int32 Stage, FImageHandle Image )
-{
-	if ( Stage < 0 || Stage >= NDrawShader::NumTextureStages || !Image.IsValid() )
-	{
-		return false;
-	}
-	FDrawShaderTextureData Data;
-	Data.Stage = Stage;
-	Data.Handle = Image.Value;
-	Push( EDrawCommand::ShaderTexture, 0, Data );
-	return true;
-}
-
-void FDrawContext::StopUsingShaderTexture( int32 Stage )
-{
-	if ( Stage < 0 || Stage >= NDrawShader::NumTextureStages )
-	{
-		return;
-	}
-	FDrawShaderTextureData Data;
-	Data.Stage = Stage;
-	Data.Handle = -1;
-	Push( EDrawCommand::ShaderTexture, 0, Data );
-}
-
-bool FDrawContext::ShaderOutputTarget( int32 Index, FImageHandle Target )
-{
-	if ( Index < 1 || Index >= NDrawShader::NumOutputTargets || !Target.IsValid() )
-	{
-		return false;
-	}
-	FDrawShaderOutputTargetData Data;
-	Data.Index = Index;
-	Data.Handle = Target.Value;
-	Push( EDrawCommand::ShaderOutputTarget, 0, Data );
-	return true;
-}
-
-void FDrawContext::StopUsingShaderOutputTarget( int32 Index )
-{
-	if ( Index < 1 || Index >= NDrawShader::NumOutputTargets )
-	{
-		return;
-	}
-	FDrawShaderOutputTargetData Data;
-	Data.Index = Index;
-	Data.Handle = -1;
-	Push( EDrawCommand::ShaderOutputTarget, 0, Data );
-}
-
-bool FDrawContext::PrimitiveShader3D( const FShaderVertex3D* Vertices, int32 NumVertices, EDrawPrimitive Type )
-{
-	return PushPrimitiveShader3D( Vertices, NumVertices, nullptr, 0, Type );
-}
-
-bool FDrawContext::PrimitiveIndexedShader3D( const FShaderVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, EDrawPrimitive Type )
-{
-	return Indices != nullptr && PushPrimitiveShader3D( Vertices, NumVertices, Indices, NumIndices, Type );
-}
-
-bool FDrawContext::PushPrimitiveShader3D( const FShaderVertex3D* Vertices, int32 NumVertices, const uint16* Indices, int32 NumIndices, EDrawPrimitive Type )
-{
-	if ( Vertices == nullptr )
-	{
-		return false;
-	}
-	const bool bIndexed = Indices != nullptr;
-	if ( !bIndexed && NumIndices != 0 )
-	{
-		return false;
-	}
-	// つなぎ方に合う数か（インデックスがあればインデックスの数、なければ頂点の数）。範囲の外のつなぎ方と、0 以下の数は、使えない数なので、ここで弾かれる
-	if ( !NDrawPrimitive::IsValidCount( Type, bIndexed ? NumIndices : NumVertices ) )
-	{
-		return false;
-	}
-	// 1 つの命令に収まる大きさか
-	const size_t CommandWords = FDrawPrimitiveShader3DData::GetCommandWords( NumVertices, NumIndices );
-	if ( CommandWords == 0 || CommandWords > static_cast<size_t>( NDrawCommand::MaxWords ) || Buffer->Words.Num() > TNumericLimits<int32>::Max() - static_cast<int32>( CommandWords ) )
-	{
-		return false;
-	}
-	// 一部の頂点だけ捨てると、形が変わってしまうので、全部を先に確かめる
-	for ( int32 Index = 0; Index < NumVertices; ++Index )
-	{
-		if ( !Vertices[Index].IsValid() )
-		{
-			return false;
-		}
-	}
-	for ( int32 Index = 0; Index < NumIndices; ++Index )
-	{
-		if ( Indices[Index] >= NumVertices )
-		{
-			return false;
-		}
-	}
-
-	constexpr size_t DataWords = sizeof( FDrawPrimitiveShader3DData ) / 4;
-	constexpr size_t VertexWords = sizeof( FDrawShaderVertex3D ) / 4;
-	FDrawPrimitiveShader3DData Data;
-	Data.Type = static_cast<int32>( Type );
-	Data.NumVertices = NumVertices;
-	Data.NumIndices = NumIndices;
-	TArray<uint32>& Words = Buffer->Words;
-	const int32 Begin = Words.AddZeroed( static_cast<int32>( CommandWords ) );
-	uint32* const Out = Words.GetData() + Begin;
-	Out[0] = NDrawCommand::MakeHeader( EDrawCommand::PrimitiveShader3D, 0, static_cast<int32>( CommandWords ) );
-	FMemory::Memcpy( Out + 1, &Data, sizeof( Data ) );
-	for ( int32 Index = 0; Index < NumVertices; ++Index )
-	{
-		const FDrawShaderVertex3D Vertex = Vertices[Index].ToDrawData();
-		FMemory::Memcpy( Out + 1 + DataWords + static_cast<size_t>( Index ) * VertexWords, &Vertex, sizeof( Vertex ) );
-	}
-	if ( bIndexed )
-	{
-		// 2 個で 1 ワード。奇数個の最後の半分は、AddZeroed の 0 のまま
-		FMemory::Memcpy( Out + 1 + DataWords + static_cast<size_t>( NumVertices ) * VertexWords, Indices, static_cast<size_t>( NumIndices ) * sizeof( uint16 ) );
-	}
-	return true;
-}
-
-bool FDrawContext::ShaderRect( float32 X, float32 Y, float32 Width, float32 Height, const FColor32& Color )
-{
-	return ShaderRect( X, Y, Width, Height, 0.0f, 0.0f, 1.0f, 1.0f, Color );
-}
-
-bool FDrawContext::ShaderRect( float32 X, float32 Y, float32 Width, float32 Height, float32 U0, float32 V0, float32 U1, float32 V1, const FColor32& Color )
-{
-	if ( !AllDrawable( X, Y, Width, Height ) || Width <= 0.0f || Height <= 0.0f || !NMath::IsFinite( U0 ) || !NMath::IsFinite( V0 ) || !NMath::IsFinite( U1 ) || !NMath::IsFinite( V1 ) )
-	{
-		return false;
-	}
-	FDrawShaderRectData Data;
-	Data.X = X;
-	Data.Y = Y;
-	Data.Width = Width;
-	Data.Height = Height;
-	Data.U0 = U0;
-	Data.V0 = V0;
-	Data.U1 = U1;
-	Data.V1 = V1;
-	Data.Color[0] = Color.r;
-	Data.Color[1] = Color.g;
-	Data.Color[2] = Color.b;
-	Data.Color[3] = Color.a;
-	Push( EDrawCommand::ShaderRect, 0, Data );
-	return true;
-}
-
-bool FDrawContext::ShaderQuad3D( const FDrawQuad3DData& Data, const FVector4& Extra )
-{
-	const float32 Numbers[] = { Data.Pos[0], Data.Pos[1], Data.Pos[2], Data.Right[0], Data.Right[1], Data.Right[2], Data.Up[0], Data.Up[1], Data.Up[2], Data.Width, Data.Height, Data.PivotX, Data.PivotY, Data.Angle, Data.U0, Data.V0, Data.U1, Data.V1,
-								Extra.x, Extra.y, Extra.z, Extra.w };
-	for ( const float32 Number : Numbers )
-	{
-		if ( !NMath::IsFinite( Number ) )
-		{
-			return false;
-		}
-	}
-	if ( Data.Width <= 0.0f || Data.Height <= 0.0f )
-	{
-		return false;
-	}
-	FDrawShaderQuad3DData Command;
-	Command.Quad = Data;
-	Command.Extra[0] = Extra.x;
-	Command.Extra[1] = Extra.y;
-	Command.Extra[2] = Extra.z;
-	Command.Extra[3] = Extra.w;
-	Push( EDrawCommand::ShaderQuad3D, 0, Command );
-	return true;
-}
-
 bool FDrawContext::PushWorldMatrix( const FMatrix4x4& Local )
 {
 	FDrawMatrixData Data;
@@ -965,92 +613,4 @@ bool FDrawContext::PushWorldMatrix( const FMatrix4x4& Local )
 	}
 	Push( EDrawCommand::PushWorldMatrix, 0, Data );
 	return true;
-}
-
-bool FDrawContext::PushCamera( const FCamera& Camera )
-{
-	if ( !Camera.IsValid() )
-	{
-		return false;
-	}
-	FDrawCameraData Data;
-	Data.Position[0] = Camera.Position.x;
-	Data.Position[1] = Camera.Position.y;
-	Data.Position[2] = Camera.Position.z;
-	Data.Target[0] = Camera.Target.x;
-	Data.Target[1] = Camera.Target.y;
-	Data.Target[2] = Camera.Target.z;
-	Data.Up[0] = Camera.Up.x;
-	Data.Up[1] = Camera.Up.y;
-	Data.Up[2] = Camera.Up.z;
-	Data.Orthographic = Camera.Projection == ECameraProjection::Orthographic ? 1 : 0;
-	Data.FovY = Camera.FovY;
-	Data.OrthoHeight = Camera.OrthoHeight;
-	Data.Near = Camera.Near;
-	Data.Far = Camera.Far;
-	Data.HorizontalStretch = Camera.HorizontalStretch;
-	Data.ScreenOffsetX = Camera.ScreenOffset.x;
-	Data.ScreenOffsetY = Camera.ScreenOffset.y;
-	Push( EDrawCommand::PushCamera, 0, Data );
-	return true;
-}
-
-bool FDrawContext::TextStyled( int32 FontHandle, float32 X, float32 Y, const char* String, const FColor32& Color, const FTextStyle& Style )
-{
-	if ( String == nullptr || !AllDrawable( X, Y, Style.ScaleX, Style.ScaleY, Style.AngleRadians, Style.AnchorX, Style.AnchorY, Style.ShadowOffsetX, Style.ShadowOffsetY ) || Style.ScaleX <= 0.0f || Style.ScaleY <= 0.0f )
-	{
-		return false;
-	}
-	FDrawTextStyledData Data;
-	Data.X = X;
-	Data.Y = Y;
-	Data.ScaleX = Style.ScaleX;
-	Data.ScaleY = Style.ScaleY;
-	Data.Angle = Style.AngleRadians;
-	Data.AnchorX = Style.AnchorX;
-	Data.AnchorY = Style.AnchorY;
-	Data.Font = FontHandle;
-	Data.Vertical = Style.bVertical ? 1 : 0;
-	if ( Style.bShadow )
-	{
-		FDrawTextStyledData Shadow = Data;
-		Shadow.X = X + Style.ShadowOffsetX;
-		Shadow.Y = Y + Style.ShadowOffsetY;
-		Shadow.Color = Rgb( Style.ShadowColor );
-		Shadow.EdgeColor = Rgb( Style.ShadowColor );
-		PushStyledText( *Buffer, Shadow, String );
-	}
-	Data.Color = Rgb( Color );
-	Data.EdgeColor = Rgb( Style.EdgeColor );
-	PushStyledText( *Buffer, Data, String );
-	return true;
-}
-
-void FDrawContext::TextF( int32 X, int32 Y, const FColor32& Color, const char* Format, ... )
-{
-	char Small[256];
-
-	va_list Args;
-	va_start( Args, Format );
-	va_list ArgsCopy;
-	va_copy( ArgsCopy, Args );
-	const int Needed = NCString::FormatV( Small, sizeof( Small ), Format, Args );
-	va_end( Args );
-
-	if ( Needed < 0 )
-	{
-		Text( X, Y, "", Color );
-	}
-	else if ( Needed < static_cast<int>( sizeof( Small ) ) )
-	{
-		Text( X, Y, Small, Color );
-	}
-	else
-	{
-		TArray<char> Large;
-		Large.SetNum( Needed + 1 );
-		NCString::FormatV( Large.GetData(), static_cast<size_t>( Large.Num() ), Format, ArgsCopy );
-		Text( X, Y, Large.GetData(), Color );
-	}
-	va_end( ArgsCopy );
 }

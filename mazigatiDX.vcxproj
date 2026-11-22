@@ -422,6 +422,13 @@
     <ClCompile Include="Library\Framework\Profiler\ProfilerSubsystem.cpp" />
     <ClCompile Include="Library\Framework\Render\Camera\Billboard.cpp" />
     <ClCompile Include="Library\Framework\Render\Camera\Camera.cpp" />
+    <ClCompile Include="Library\Framework\Render\Draw\DrawContextCore.cpp" />
+    <ClCompile Include="Library\Framework\Render\Draw\DrawContext2DShapes.cpp" />
+    <ClCompile Include="Library\Framework\Render\Draw\DrawContext2DImages.cpp" />
+    <ClCompile Include="Library\Framework\Render\Draw\DrawContextTargets.cpp" />
+    <ClCompile Include="Library\Framework\Render\Draw\DrawContextCameraState.cpp" />
+    <ClCompile Include="Library\Framework\Render\Draw\DrawContextLighting.cpp" />
+    <ClCompile Include="Library\Framework\Render\Draw\DrawContextShaders.cpp" />
     <ClCompile Include="Library\Framework\Render\Draw\DrawContext.cpp" />
     <ClCompile Include="Library\Framework\Render\Draw\DrawModelFrameOverrideData.cpp" />
     <ClCompile Include="Library\Framework\Render\Draw\DrawModelFrameOverrideScope.cpp" />
@@ -1283,6 +1290,13 @@
     <ClInclude Include="Library\Framework\Render\Camera\Billboard.h" />
     <ClInclude Include="Library\Framework\Render\Camera\Camera.h" />
     <ClInclude Include="Library\Framework\Render\Draw\DrawCommand.h" />
+    <ClInclude Include="Library\Framework\Render\Draw\DrawContextCore.h" />
+    <ClInclude Include="Library\Framework\Render\Draw\DrawContext2DShapes.h" />
+    <ClInclude Include="Library\Framework\Render\Draw\DrawContext2DImages.h" />
+    <ClInclude Include="Library\Framework\Render\Draw\DrawContextTargets.h" />
+    <ClInclude Include="Library\Framework\Render\Draw\DrawContextCameraState.h" />
+    <ClInclude Include="Library\Framework\Render\Draw\DrawContextLighting.h" />
+    <ClInclude Include="Library\Framework\Render\Draw\DrawContextShaders.h" />
     <ClInclude Include="Library\Framework\Render\Draw\DrawContext.h" />
     <ClInclude Include="Library\Framework\Render\Draw\DrawDistortedMaterialQuad.h" />
     <ClInclude Include="Library\Framework\Render\Draw\DrawDistortedMaterialRibbon.h" />

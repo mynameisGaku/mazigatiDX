@@ -910,6 +910,27 @@
     <ClCompile Include="Library\Framework\Render\Camera\Camera.cpp">
       <Filter>Library\Framework\Render\Camera</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Render\Draw\DrawContextCore.cpp">
+      <Filter>Library\Framework\Render\Draw</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Render\Draw\DrawContext2DShapes.cpp">
+      <Filter>Library\Framework\Render\Draw</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Render\Draw\DrawContext2DImages.cpp">
+      <Filter>Library\Framework\Render\Draw</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Render\Draw\DrawContextTargets.cpp">
+      <Filter>Library\Framework\Render\Draw</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Render\Draw\DrawContextCameraState.cpp">
+      <Filter>Library\Framework\Render\Draw</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Render\Draw\DrawContextLighting.cpp">
+      <Filter>Library\Framework\Render\Draw</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Render\Draw\DrawContextShaders.cpp">
+      <Filter>Library\Framework\Render\Draw</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Render\Draw\DrawContext.cpp">
       <Filter>Library\Framework\Render\Draw</Filter>
     </ClCompile>
@@ -3487,6 +3508,27 @@
       <Filter>Library\Framework\Render\Camera</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\Draw\DrawCommand.h">
+      <Filter>Library\Framework\Render\Draw</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\Draw\DrawContextCore.h">
+      <Filter>Library\Framework\Render\Draw</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\Draw\DrawContext2DShapes.h">
+      <Filter>Library\Framework\Render\Draw</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\Draw\DrawContext2DImages.h">
+      <Filter>Library\Framework\Render\Draw</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\Draw\DrawContextTargets.h">
+      <Filter>Library\Framework\Render\Draw</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\Draw\DrawContextCameraState.h">
+      <Filter>Library\Framework\Render\Draw</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\Draw\DrawContextLighting.h">
+      <Filter>Library\Framework\Render\Draw</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\Draw\DrawContextShaders.h">
       <Filter>Library\Framework\Render\Draw</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\Draw\DrawContext.h">
