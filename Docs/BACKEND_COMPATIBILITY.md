@@ -10,7 +10,7 @@
 
 |分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|
 |---|---:|---:|---:|---:|---:|---:|---:|
-|API|378|9|3|198|167|0|1|
+|API|380|9|3|198|169|0|1|
 |Draw|106|0|0|62|40|4|0|
 |Sample|35|29|0|5|1|0|0|
 |Editor|11|11|0|0|0|0|0|
@@ -287,7 +287,7 @@
 |[API.IRenderCanvas2D.TextFont](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L33)|Partial|R6|frame内外、入力不正、出力保持、GPU失敗と状態復元を確認|フォントを指定した文字列を画像にして、位置・拡大・回転つきで描く。縁取り対応。同じ文字列の画像は持ち続ける||
 |[API.IRenderCanvas2D.Triangle](../Library/Core/Interfaces/Render/IRenderCanvas2D.h#L23)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
 |[API.IRenderCommandQueue.EnqueueRenderCommand](../Library/Core/Interfaces/Render/IRenderCommandQueue.h#L17)|Implemented|R1|ゲーム側で受付順を決め、専用側の識別・命令所有・GPU画素・UI記録と終了をDebug／Release・既定GPU／WARPで確認|DX12の専用描画窓口。実行中だけの2D／3Dコンテキストを借り、CPU完了とGPU完了を分ける。窓側の貸出中は拒否。DxLib／Nullでは提供しない|Docs/THREADING.md; Library/Platform/DX12/Window/DX12PlatformSubsystem.cpp; Source/SelfTest/RunRenderThreadTests.ps1|
-|[API.IRenderGeometry3D.ClearDepth](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L41)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderGeometry3D.ClearDepth](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L48)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
 |[API.IRenderGeometry3D.DrawBufferGeometry](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L33)|Implemented|R1|既定GPU／WARPでcompute→GPU頂点・index描画をCPU式の画素と比較。範囲・所有・保持上限とUIなし起動を検査|28byte同次頂点と16／32bit index。描画記録後の解除に耐える。内容の有限性とindex範囲は呼出側保証。R1／R2全体の完了ではない|Docs/R1_BUFFER_GEOMETRY.md; Library/Platform/DX12/Render/Geometry/DX12GeometryRenderer.cpp; Source/SelfTest/RunBufferGeometryTests.ps1|
 |[API.IRenderGeometry3D.DrawGeometry](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L25)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
 |[API.IRenderGeometry3D.DrawGraphicsPipeline](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L36)|Implemented|R1|CPU参照・既定GPU・WARP・アプリ起動で、単一/MRT(最大8色+D32深度)および主画面へのindex付き/非index描画、Compute連携と即時解放後生存を比較|束縛中描画先数・DepthFormat一致、バッファ/画像所有・書込先自己参照拒否、記録後の遅延解放保持を確認。R1の汎用描画契約でありR2の材質・Forwardは未実装|Docs/R1_GRAPHICS_PIPELINE_MRT.md; Library/Platform/DX12/Render/Geometry/DX12GeometryRenderer.cpp; Source/SelfTest/RunGraphicsPipelineTests.ps1|
@@ -296,6 +296,8 @@
 |[API.IRenderGeometry3D.GetColorFormat](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L22)|Implemented|R2|描画先ごとの画素形式の応答（RGBA8 / RGBA16F / R32Float）|描いている先（1 番目の色の描画先）の画素形式。DX12はパス中の形式、既定は RGBA8||
 |[API.IRenderGeometry3D.GetHeight](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L20)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
 |[API.IRenderGeometry3D.GetWidth](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L18)|Partial|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|共通2D／基本3Dの実装あり。入力範囲と実機描画の契約確認が残る||
+|[API.IRenderGeometry3D.QueueGraphicsPipeline](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L44)|Implemented|R1|結果を待たない描画の契約（確かめ済みの繰り返しだけを複写して積む・順序・複写・拒否の数え・上限での同期への戻り・書き込み先を読む描画の同期）と、実GPUの全サンプルのDxLibとの画像比較|DrawGraphicsPipelineの、結果を待たない版。既定は同期の呼び出しと同じ。スレッド前面（CThreadedRenderSurface）だけが、同期で一度成功した組み合わせの繰り返しを、複写して積む。trueは「受け付けた」。積んだあとの拒否はログと数で知らせる。--dx12-sync-drawsで全部同期にできる|Docs/THREADING.md; Library/Framework/Render/Thread/AsyncDrawGate.cpp; Source/SelfTest/RenderThreadContractMain.cpp|
+|[API.IRenderGeometry3D.QueueGraphicsPipelineTransient](../Library/Core/Interfaces/Render/IRenderGeometry3D.h#L46)|Implemented|R1|結果を待たない描画の契約（確かめ済みの繰り返しだけを複写して積む・順序・複写・拒否の数え・上限での同期への戻り・書き込み先を読む描画の同期）と、実GPUの全サンプルのDxLibとの画像比較|DrawGraphicsPipelineTransientの、結果を待たない版。条件はQueueGraphicsPipelineと同じ。頂点1つの大きさ（VertexStride）が必要|Docs/THREADING.md; Library/Framework/Render/Thread/AsyncDrawGate.cpp; Source/SelfTest/RenderThreadContractMain.cpp|
 |[API.IRenderResourceBackend.CompileShader](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L52)|Partial|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|D3DCompileで、4_0・4_1・5_0のソースを5_0としてコンパイルする||
 |[API.IRenderResourceBackend.CreateMeshBuffers](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L20)|Implemented|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|FGeometryBufferStoreへ接続。CPU保管の作成・更新・範囲検査あり。Windows互換比較前||
 |[API.IRenderResourceBackend.DeleteIndexBuffer](../Library/Core/Interfaces/Asset/RenderResourceBackend.h#L22)|Implemented|R6|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|FGeometryBufferStoreへ接続。CPU保管の作成・更新・範囲検査あり。Windows互換比較前||

@@ -40,6 +40,9 @@ struct FGraphicsPipelineDraw
 	// 任意。BufferSlotsの先頭から順に、定数バッファの中身を、登録せずに渡す（描くたびに変わる値。頂点・添字は、登録したバッファのまま使える）。
 	// 受け持つ枠は、すべてConstantで、大きさはシェーダーの宣言以上（256の倍数へ切り上げて転送する）。
 	TArrayView<const FGraphicsConstantBytes> Constants;
+	// 任意。この描画が参照する共有バッファ（頂点・添字・Buffers）の大きさの合計（バイト）。
+	// 結果を待たずに描画を積む実行先（QueueGraphicsPipeline）が、保持できる量の上限を超えないかを見積もるために使う。0 のときは、待たずには積まず、同期で実行する。
+	uint64 PinnedBytes = 0;
 };
 
 // カスタムグラフィックスパイプラインを使った、1 回限りの描画。頂点・添字・定数を、GPU のバッファとして登録せず、フレームごとの転送領域へ載せて渡す
@@ -52,6 +55,8 @@ struct FGraphicsPipelineTransientDraw
 	const void* Vertices = nullptr;
 	// 頂点の数（1〜65536）。
 	uint32 VertexCount = 0;
+	// 任意。頂点 1 つのバイト数（パイプラインの VertexStride と同じ）。結果を待たずに描画を積む実行先（QueueGraphicsPipelineTransient）が、頂点を複写するために使う。0 のときは、待たずには積まず、同期で実行する。
+	uint32 VertexStride = 0;
 	// 添字（32 ビット）。nullptr なら、頂点を順に使う。
 	const uint32* Indices = nullptr;
 	// 添字の数（Indices があるとき、1〜196608）。

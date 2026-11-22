@@ -952,6 +952,12 @@
     <ClCompile Include="Library\Framework\Render\Thread\RenderCommandThread.cpp">
       <Filter>Library\Framework\Render\Thread</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Framework\Render\Thread\AsyncDrawGate.cpp">
+      <Filter>Library\Framework\Render\Thread</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Framework\Render\Thread\QueuedGraphicsDraw.cpp">
+      <Filter>Library\Framework\Render\Thread</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Framework\Render\Thread\TextureViewCache.cpp">
       <Filter>Library\Framework\Render\Thread</Filter>
     </ClCompile>
@@ -3505,6 +3511,12 @@
       <Filter>Library\Framework\Render\State</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\Thread\RenderCommandThread.h">
+      <Filter>Library\Framework\Render\Thread</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\Thread\AsyncDrawGate.h">
+      <Filter>Library\Framework\Render\Thread</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Framework\Render\Thread\QueuedGraphicsDraw.h">
       <Filter>Library\Framework\Render\Thread</Filter>
     </ClInclude>
     <ClInclude Include="Library\Framework\Render\Thread\TextureViewCache.h">

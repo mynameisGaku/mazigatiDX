@@ -582,18 +582,20 @@ bool CDX12ShaderService::DrawShader( const FShaderDrawRequest& Request, IRenderG
 			Shared.IndexFormat = EGeometryIndexFormat::UInt32;
 			Shared.Constants = TArrayView<const FGraphicsConstantBytes>( Constants.GetData(), Constants.Num() );
 			Shared.Textures = TArrayView<const FTextureResourceHandle>( SlotTextures.GetData(), SlotTextures.Num() );
-			if ( Geometry.DrawGraphicsPipeline( Shared ) ) { return true; }
+			Shared.PinnedBytes = static_cast<uint64>( VertexBytes.Num() ) + static_cast<uint64>( IndexBytes.Num() ); // 結果を待たずに積むときの、保持量の見積もり。
+			if ( Geometry.QueueGraphicsPipeline( Shared ) ) { return true; }
 		}
 	}
 	FGraphicsPipelineTransientDraw Draw; // 初回・登録失敗・共有描画の拒否では、何も描く前に従来の経路へ戻る。
 	Draw.Pipeline = Pipeline;
 	Draw.Vertices = Request.Vertices;
 	Draw.VertexCount = static_cast<uint32>( Request.NumVertices );
+	Draw.VertexStride = static_cast<uint32>( FShaderDrawRequest::VertexStride );
 	Draw.Indices = Request.Indices;
 	Draw.IndexCount = Request.Indices ? static_cast<uint32>( Request.NumIndices ) : 0u;
 	Draw.Constants = TArrayView<const FGraphicsConstantBytes>( Constants.GetData(), Constants.Num() );
 	Draw.Textures = TArrayView<const FTextureResourceHandle>( SlotTextures.GetData(), SlotTextures.Num() );
-	const bool bDrawn = Geometry.DrawGraphicsPipelineTransient( Draw );
+	const bool bDrawn = Geometry.QueueGraphicsPipelineTransient( Draw );
 	if ( !bDrawn )
 	{
 		NBackendSupport::ReportUnsupported( "DX12", "Shader draw (rejected by the GPU path)", "DrawGraphicsPipelineTransient rejected the draw (check the pass, formats, constants and textures)" );

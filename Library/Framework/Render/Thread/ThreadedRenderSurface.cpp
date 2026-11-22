@@ -4,6 +4,33 @@
 #include "RenderCommandThread.h"
 #include "Library/Core/Thread/GameThread.h"
 #include "Library/Core/Thread/RenderThread.h"
+#include "Library/Core/Log/Log.h"
+
+DEFINE_LOG_CATEGORY_STATIC( LogThreadedSurface, Log )
+
+namespace
+{
+	// 描画先パスの組み合わせを表す値と、書き込み先の画像（確かめ済みの判定に使う）。
+	uint64 MakePassKey( const FRenderTargetPassDesc &Desc, TArray<FTextureResourceHandle> &OutWritten )
+	{
+		uint64 Key = 0x9E3779B97F4A7C15ull;
+		const auto Add = [&]( FTextureResourceHandle Texture )
+		{
+			Key = ( Key ^ Texture.Value ) * 0xFF51AFD7ED558CCDull;
+			OutWritten.Add( Texture );
+		};
+		if ( Desc.ColorTargets.IsEmpty() )
+		{
+			Add( Desc.ColorTarget );
+		}
+		for ( const FRenderTargetColorAttachment &Attachment : Desc.ColorTargets )
+		{
+			Add( Attachment.Target );
+		}
+		Add( Desc.DepthTarget );
+		return Key | 1ull; // 通常の画面（0）と区別する。
+	}
+}
 
 CThreadedRenderSurface::CThreadedRenderSurface( IRenderSurface &InTarget, CRenderCommandThread &InThread ) : Target( InTarget ), Thread( InThread ) {}
 CThreadedRenderSurface::~CThreadedRenderSurface() { EndFrame(); }
@@ -29,6 +56,7 @@ bool CThreadedRenderSurface::BeginFrame( int32 InWidth, int32 InHeight )
 	bCapture = false;
 	bRenderTargetPass = false;
 	bFilterSupportKnown = false;
+	Gate.BeginFrame();
 	bActive = true;
 	return true;
 }
@@ -140,6 +168,7 @@ bool CThreadedRenderSurface::BeginOffscreenCapture( const FOffscreenCaptureDesc 
 	Height = Desc.Height;
 	bCapture = true;
 	bFilterSupportKnown = false;
+	Gate.SetTarget( 0x8000000000000000ull ^ ( static_cast<uint64>( Desc.Width ) << 32 ) ^ static_cast<uint64>( Desc.Height ), TArrayView<const FTextureResourceHandle>() );
 	return true;
 }
 
@@ -158,6 +187,7 @@ bool CThreadedRenderSurface::EndOffscreenCapture( TArray<FColor32> &Out )
 	Height = FrameHeight;
 	bCapture = false;
 	bFilterSupportKnown = false;
+	Gate.SetTarget( 0, TArrayView<const FTextureResourceHandle>() );
 	return bExecuted && bResult;
 }
 
@@ -195,6 +225,9 @@ bool CThreadedRenderSurface::BeginRenderTargetPass( const FRenderTargetPassDesc 
 	bHasGeometry = bPassGeometry;
 	bRenderTargetPass = true;
 	bFilterSupportKnown = false;
+	TArray<FTextureResourceHandle> Written; // この描画先パスが書き込む画像。これらを読む描画は、いつも同期で確かめる。
+	const uint64 PassKey = MakePassKey( Desc, Written );
+	Gate.SetTarget( PassKey, TArrayView<const FTextureResourceHandle>( Written.GetData(), Written.Num() ) );
 	return true;
 }
 
@@ -244,6 +277,7 @@ bool CThreadedRenderSurface::EndRenderTargetPass()
 	bHasGeometry = bAfterGeometry;
 	bRenderTargetPass = false;
 	bFilterSupportKnown = false;
+	Gate.SetTarget( 0, TArrayView<const FTextureResourceHandle>() );
 	return bExecuted && bResult;
 }
 
@@ -336,6 +370,80 @@ bool CThreadedRenderSurface::DrawGraphicsPipelineTransient( const FGraphicsPipel
 	auto Work = [&]()
 	{ if ( IRenderGeometry3D *Geometry = Target.GetGeometry3D() ) { bResult = Geometry->DrawGraphicsPipelineTransient( Draw ); } };
 	return Execute( MoveTemp( Work ) ) && bResult;
+}
+
+void CThreadedRenderSurface::SetQueuedDrawsEnabled( bool bEnabled )
+{
+	GAME_THREAD_ONLY();
+	bQueuedDrawsEnabled = bEnabled;
+}
+
+void CThreadedRenderSurface::InvalidateDrawProofs()
+{
+	GAME_THREAD_ONLY();
+	Gate.InvalidateVerified();
+}
+
+bool CThreadedRenderSurface::EnqueueDraw( FQueuedGraphicsDraw Draw )
+{
+	GAME_THREAD_ONLY( false );
+	if ( !Flush() )
+	{
+		return false;
+	}
+	auto Work = [this, Owned = MoveTemp( Draw )]()
+	{
+		RENDER_THREAD_ONLY();
+		IRenderGeometry3D *Geometry = Target.GetGeometry3D();
+		if ( Geometry && Owned.Execute( *Geometry ) )
+		{
+			return;
+		}
+		const int32 Count = NumRejectedQueuedDraws.FetchAdd( 1 ) + 1;
+		if ( Count <= 8 || ( Count & ( Count - 1 ) ) == 0 ) // 繰り返しても、ログが溢れないように、最初の数件と、2 の冪乗の回だけ。
+		{
+			LOG( LogThreadedSurface, Warning, "a queued %s draw was rejected by the GPU path and dropped (pipeline %llu, %d rejected so far)", Owned.IsTransient() ? "transient" : "shared-buffer", static_cast<unsigned long long>( Owned.GetPipeline().Value ), Count );
+		}
+	};
+	return Thread.Enqueue( MoveTemp( Work ), "Render.QueuedDraw" ).IsValid();
+}
+
+bool CThreadedRenderSurface::QueueGraphicsPipeline( const FGraphicsPipelineDraw &Draw )
+{
+	GAME_THREAD_ONLY( false );
+	if ( !bActive )
+	{
+		return false;
+	}
+	if ( bQueuedDrawsEnabled && Gate.Admit( Draw ) == CAsyncDrawGate::EAdmission::Queue )
+	{
+		if ( EnqueueDraw( FQueuedGraphicsDraw::Copy( Draw ) ) )
+		{
+			return true;
+		}
+	}
+	const bool bAccepted = DrawGraphicsPipeline( Draw );
+	Gate.NoteExecuted( Draw, bAccepted );
+	return bAccepted;
+}
+
+bool CThreadedRenderSurface::QueueGraphicsPipelineTransient( const FGraphicsPipelineTransientDraw &Draw )
+{
+	GAME_THREAD_ONLY( false );
+	if ( !bActive )
+	{
+		return false;
+	}
+	if ( bQueuedDrawsEnabled && Gate.AdmitTransient( Draw ) == CAsyncDrawGate::EAdmission::Queue )
+	{
+		if ( EnqueueDraw( FQueuedGraphicsDraw::Copy( Draw ) ) )
+		{
+			return true;
+		}
+	}
+	const bool bAccepted = DrawGraphicsPipelineTransient( Draw );
+	Gate.NoteExecutedTransient( Draw, bAccepted );
+	return bAccepted;
 }
 
 void CThreadedRenderSurface::Box( float32 X0, float32 Y0, float32 X1, float32 Y1, FColor32 Color, bool bFill, float32 Thickness )

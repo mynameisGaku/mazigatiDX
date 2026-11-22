@@ -37,6 +37,13 @@ public:
 	// 登録済みカスタムパイプラインで、頂点・添字・定数を、バッファとして登録せずに渡して描く（1回限りの描画）。条件はDrawGraphicsPipelineと同じ。
 	// 未対応・フレーム外・不正な入力はfalseで記録しない。
 	virtual bool DrawGraphicsPipelineTransient( const FGraphicsPipelineTransientDraw& Draw ) { (void)Draw; return false; }
+	// 結果を待たなくてよい呼び出し元のための、DrawGraphicsPipeline。既定は、DrawGraphicsPipeline と同じ（同期）。
+	// 待たずに積める実行先では、true は「描いた」ではなく「受け付けた」。受け付けたあとに実行先が拒否した描画は、ログへ出して捨てる。
+	// 拒否になりうる条件（初めて使う組み合わせ・保持できる量の上限の近く・書き込み中の画像を読む描画）は、同期で実行して、本当の結果を返す。
+	// 引数の配列は、呼び出しの間だけ借りる（待たずに積むときは、呼び出しの中で複写する）。FGraphicsPipelineDraw::PinnedBytes が 0 のときは、同期で実行する。
+	virtual bool QueueGraphicsPipeline( const FGraphicsPipelineDraw& Draw ) { return DrawGraphicsPipeline( Draw ); }
+	// 結果を待たなくてよい呼び出し元のための、DrawGraphicsPipelineTransient。条件は QueueGraphicsPipeline と同じ。FGraphicsPipelineTransientDraw::VertexStride が 0 のときは、同期で実行する。
+	virtual bool QueueGraphicsPipelineTransient( const FGraphicsPipelineTransientDraw& Draw ) { return DrawGraphicsPipelineTransient( Draw ); }
 	// 既存の描画より後に深度を1へ消す。クリップに関係なく全体を対象にする。
 	virtual void ClearDepth() = 0;
 };

@@ -436,6 +436,8 @@
     <ClCompile Include="Library\Framework\Render\Mesh\ModelMaterialGeometry.cpp" />
     <ClCompile Include="Library\Framework\Render\State\ShadowMapView.cpp" />
     <ClCompile Include="Library\Framework\Render\Thread\RenderCommandThread.cpp" />
+    <ClCompile Include="Library\Framework\Render\Thread\AsyncDrawGate.cpp" />
+    <ClCompile Include="Library\Framework\Render\Thread\QueuedGraphicsDraw.cpp" />
     <ClCompile Include="Library\Framework\Render\Thread\TextureViewCache.cpp" />
     <ClCompile Include="Library\Framework\Render\Thread\ThreadedRenderSurface.cpp" />
     <ClCompile Include="Library\Framework\SaveGame\SaveGameStorage.cpp" />
@@ -1289,6 +1291,8 @@
     <ClInclude Include="Library\Framework\Render\State\ShadowMapView.h" />
     <ClInclude Include="Library\Framework\Render\State\TextStyle.h" />
     <ClInclude Include="Library\Framework\Render\Thread\RenderCommandThread.h" />
+    <ClInclude Include="Library\Framework\Render\Thread\AsyncDrawGate.h" />
+    <ClInclude Include="Library\Framework\Render\Thread\QueuedGraphicsDraw.h" />
     <ClInclude Include="Library\Framework\Render\Thread\TextureViewCache.h" />
     <ClInclude Include="Library\Framework\Render\Thread\ThreadedRenderSurface.h" />
     <ClInclude Include="Library\Framework\Render\Types\BufferRange.h" />

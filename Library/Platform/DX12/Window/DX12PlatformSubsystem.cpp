@@ -198,6 +198,7 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection &Collection )
 		RenderCommands->EnableTimings();
 	}
 	ThreadedSurface = new CThreadedRenderSurface( *NativeSurface, *RenderCommands );
+	ThreadedSurface->SetQueuedDrawsEnabled( !NCommandLine::HasFlag( "dx12-sync-draws" ) ); // 確認用: すべての 3D の描画を、同期で実行して比べる
 	Settings.WindowMode = EWindowMode::Windowed;
 	SetWindowMode( InitialMode );
 	ShowWindow( static_cast<HWND>( Window ), SW_SHOW );
@@ -606,6 +607,10 @@ bool CDX12PlatformSubsystem::ExecuteRender( TCallable<void()> Task, bool bMayCha
 	if ( bMayChangeTextureViews )
 	{
 		TextureViews.Invalidate();
+		if ( ThreadedSurface )
+		{
+			ThreadedSurface->InvalidateDrawProofs(); // 資源の番号が使い回されても、古い確認を使わない。
+		}
 	}
 	if ( bWindowRenderPhase )
 	{

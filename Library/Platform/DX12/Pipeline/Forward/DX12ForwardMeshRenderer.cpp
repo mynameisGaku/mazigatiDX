@@ -359,11 +359,12 @@ bool CDX12ForwardMeshRenderer::Draw( const FForwardMeshDraw& Draw, IRenderGeomet
 		Transient.Pipeline = Pipeline;
 		Transient.Vertices = Draw.Vertices;
 		Transient.VertexCount = Draw.NumVertices;
+		Transient.VertexStride = static_cast<uint32>( sizeof( FDrawVertex3D ) );
 		Transient.Indices = Draw.Indices ? Draw.Indices + Draw.FirstIndex : nullptr;
 		Transient.IndexCount = Draw.Indices ? Draw.IndexCount : 0;
 		Transient.Constants = TArrayView<const FGraphicsConstantBytes>( Constants, 2 );
 		Transient.Textures = bTextured ? TArrayView<const FTextureResourceHandle>( &Texture, 1 ) : TArrayView<const FTextureResourceHandle>();
-		return Geometry.DrawGraphicsPipelineTransient( Transient );
+		return Geometry.QueueGraphicsPipelineTransient( Transient );
 	}
 	FGraphicsPipelineDraw Command;
 	Command.Pipeline = Pipeline;
@@ -376,7 +377,8 @@ bool CDX12ForwardMeshRenderer::Draw( const FForwardMeshDraw& Draw, IRenderGeomet
 	Command.IndexFormat = EGeometryIndexFormat::UInt32;
 	Command.Constants = TArrayView<const FGraphicsConstantBytes>( Constants, 2 );
 	Command.Textures = bTextured ? TArrayView<const FTextureResourceHandle>( &Texture, 1 ) : TArrayView<const FTextureResourceHandle>();
-	const bool bDrawn = Geometry.DrawGraphicsPipeline( Command );
+	Command.PinnedBytes = Mesh->Bytes; // 結果を待たずに積むときの、保持量の見積もり。
+	const bool bDrawn = Geometry.QueueGraphicsPipeline( Command );
 	if ( !bDrawn )
 	{
 		LOG( LogDX12, Warning, "CDX12ForwardMeshRenderer: the draw is rejected by the GPU path (mesh %llu)", Draw.MeshKey );

@@ -53,6 +53,10 @@ DX12ではCRenderCommandThread（Framework/Render/Thread）が既存CCommandThre
 
 3Dの成否、画像の登録、buffer readback、compute提出の検査結果など、既存APIが即座に返す値は同期で返します。同期呼出しでは入力・出力の参照を実行終了まで保持します。CPU待機が60秒を過ぎたことを理由に、借用参照を残して戻りません。GPU処理側の既存の期限・喪失処理は維持します。同期呼出しの列が満杯なら先行CPU処理を待って再受付し、空の区切りを追加できない満杯状態でもGetFenceで全件完了を確認します。
 
+画像1枚を描くたびの往復は、ゲームスレッドで覚えて省きます。画像の描画用view（`GetTextureResourceView`の答え）は`CTextureViewCache`が覚え、資源の作成・更新・解放、描画先パス・撮影・フレームの切り替えのたびに捨てます（覚えるのは成功した答えだけ）。補間設定（`SetTextureFilter`）は、対応の有無が描画先ごとに変わらないので、描画先が変わるたびの最初の1回だけ同期で確かめ、対応していれば、以降は他の2D命令と同じ順序へ積むだけで、すぐtrueを返します。
+
+3Dのカスタムパイプライン描画だけは、内部の呼び出し元（`DX12ShaderService`・`DX12ForwardMeshRenderer`）が、結果を待たない窓口`IRenderGeometry3D::QueueGraphicsPipeline`／`QueueGraphicsPipelineTransient`で積めます。公開の`DrawGraphicsPipeline`／`DrawGraphicsPipelineTransient`は、これまでどおり同期で本当の結果を返します。`Queue…`の既定は同期の呼び出しと同じで、`CThreadedRenderSurface`だけが待たずに積みます。積むのは、**同期で一度成功した組み合わせの繰り返しで、実行先の上限に余裕があり、書き込み中の画像を読まない描画だけ**です（`CAsyncDrawGate`）。組み合わせは、描画先・パイプライン・バッファ・画像・頂点／添字の数と位置・定数の大きさで決めます。上限は、1フレームの描画1000回（実行先は1024回）、保持するバッファ・画像・パイプライン各240（256）、保持するバッファの大きさ224MiB（256MiB）、転送領域40MiB（64MiB）です。引数は呼び出しの中で全部複写して所有します（`FQueuedGraphicsDraw`）。それ以外（初めての組み合わせ・上限の近く・書き込み中の画像を読む描画・`FGraphicsPipelineDraw::PinnedBytes`や`FGraphicsPipelineTransientDraw::VertexStride`が0の呼び出し）は同期で実行して本当の結果を返すので、呼び出し元の「拒否されたら別の経路へ戻る」分岐は、そのまま働きます。trueは「描いた」ではなく「受け付けた」で、積んだあとに実行先が拒否した描画は、ログへ出して捨て、数を`GetNumRejectedQueuedDraws`で読めます（確かめ済みの条件を超えて状態が変わった場合に限られます）。資源の作成・更新・解放のたびに、確かめ済みは捨てます。`--dx12-sync-draws`を付けると、すべて同期で実行します（比較・診断用）。
+
 GPU提出と表示はCDX12Device::SubmitFrame／PresentFrameに分けました。従来のEndFrameはこの2つを連続して呼ぶ形で互換を保ちます。未表示の提出を残して次を開始したり、同じ提出を二度表示したりすることは拒否します。Presentと外部窓処理中は専用側に未完了CPU命令を残さず、新規の非同期描画命令は無効票で拒否します。その窓側の再入から必要な同期GPU操作は排他的な貸出中の所有側で実行します。窓側のメッセージ処理を止めたまま、別スレッドのDXGI処理を待つ構成を避けます。
 
 通常画面から描画先パス・撮影へ切り替える前、および通常画面の途中でcomputeを提出する前には、先行するCPUバッチだけでなく主画面のGPU命令もSubmitFrameSegmentで同じDIRECTキューへ提出します。この区切りではGPUを待たず、命令列だけをResetし、allocator・色・深度・クリップとフレーム資源の寿命を保ちます。allocatorのResetと資源回収はフレーム開始のGPU完了確認後です。ゲーム側のcompute提出は描画先パス・撮影を閉じてから行い、記録中の割り込みは拒否します。詳細と画素による回帰検査は[R1描画先と深度](R1_RENDER_TARGET_RESOURCES.md)に記録します。

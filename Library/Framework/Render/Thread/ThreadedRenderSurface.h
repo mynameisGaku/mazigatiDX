@@ -8,6 +8,8 @@
 #include "Library/Core/Types/Callable.h"
 #include "Library/Core/Collection/Array.h"
 #include "Library/Core/Collection/String.h"
+#include "Library/Framework/Render/Thread/AsyncDrawGate.h"
+#include "Library/Framework/Render/Thread/QueuedGraphicsDraw.h"
 
 class CRenderCommandThread;
 
@@ -25,6 +27,12 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 	bool EndFrame();
 	// 現在までの2D命令を描画スレッドへ渡す。CPU完了を待たない。
 	bool Flush();
+	// 結果を待たずに積む描画を、使うか（既定は使う）。false なら、すべて同期で実行する（診断・比較用）。ゲームスレッドから、フレームの外で呼ぶ。
+	void SetQueuedDrawsEnabled( bool bEnabled );
+	// 資源の作成・更新・解放があった。待たずに積んでよい組み合わせの「確かめ済み」を捨てる。ゲームスレッドから呼ぶ。
+	void InvalidateDrawProofs();
+	// 待たずに積んだあとで、実行先が拒否した描画の数（累計）。
+	int32 GetNumRejectedQueuedDraws() const { return NumRejectedQueuedDraws.Load(); }
 	// フレーム内だけゲーム側の記録窓口を貸す。
 	IRenderCanvas2D *GetCanvas2D() override;
 	// フレーム内だけゲーム側の3D窓口を貸す。
@@ -103,6 +111,8 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 		// 利用者が決めた混ぜ方の係数。
 		FGeometryCustomBlend CustomBlend;
 	};
+	// 複写した描画を、先行する2D命令のあとへ積む。積めなければ false（複写は捨てる）。
+	bool EnqueueDraw( FQueuedGraphicsDraw Draw );
 	// 描画スレッドだけで、所有する操作値を順に実行する。
 	void ExecuteBatch( const TArray<FCommand> &Commands );
 	// 受付上限を調べ、64件ごとにまとめて渡す。ゲーム側からだけ呼ぶ。
@@ -123,6 +133,11 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 	bool DrawGraphicsPipeline( const FGraphicsPipelineDraw &Draw ) override;
 	// 一時データの描画も、同じ順序で同期して実行する（借りた配列は、呼び出しの間だけ有効）。
 	bool DrawGraphicsPipelineTransient( const FGraphicsPipelineTransientDraw &Draw ) override;
+	// 結果を待たずに積む描画。確かめ済みの組み合わせの繰り返しで、実行先の上限に余裕があるものだけを、複写して積み、すぐ true を返す（true は「受け付けた」）。
+	// それ以外は、同期で実行して、本当の結果を返す。受け付けたあとに実行先が拒否した描画は、ログへ出して捨てる。
+	bool QueueGraphicsPipeline( const FGraphicsPipelineDraw &Draw ) override;
+	// 一時データの描画も、同じ条件で待たずに積む。
+	bool QueueGraphicsPipelineTransient( const FGraphicsPipelineTransientDraw &Draw ) override;
 	// 深度消去を同じ順序で渡す。
 	void ClearDepth() override;
 	// 図形の引数は所有コピーし、頂点への展開とGPU記録を描画スレッドで行う。
@@ -169,6 +184,12 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 	bool bActive = false, bCapture = false, bRenderTargetPass = false;
 	// 現在の実行先が提供する窓口。描画スレッドで調べた結果だけを保持する。
 	bool bHasCanvas = false, bHasGeometry = false;
+	// 待たずに積む描画の判定（確かめ済み・上限の数え）。ゲームスレッドだけ。
+	CAsyncDrawGate Gate;
+	// 結果を待たずに積む描画を使うか。
+	bool bQueuedDrawsEnabled = true;
+	// 待たずに積んだあとで、実行先が拒否した描画の数（累計）。描画スレッドが足す。
+	TAtomic<int32> NumRejectedQueuedDraws{ 0 };
 	// 補間設定への対応を確かめた印と、その答え。フレーム・描画先パス・撮影の切り替えで確かめ直す。ゲームスレッドだけ。
 	bool bFilterSupportKnown = false, bFilterSupported = false;
 	// 現在の描画先と、通常フレームへ復元する寸法。
