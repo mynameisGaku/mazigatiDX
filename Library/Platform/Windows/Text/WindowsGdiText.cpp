@@ -12,6 +12,8 @@ namespace
 	constexpr int32 MaxImageSide = 4096;        // 画像の各辺の上限
 	constexpr int32 MaxImagePixels = 4 * 1024 * 1024;
 	constexpr int32 MaxCachedFonts = 64;        // これを超えたら、作ったフォントを全部作り直す
+	constexpr int32 MaxCachedGlyphs = 16384;    // キャッシュする文字の数の上限（超えたら、全部捨てて、数え直す）
+	constexpr int64 MaxCachedGlyphBytes = 32ll * 1024 * 1024; // キャッシュする被覆率の大きさの上限
 	constexpr int32 LinePadding = 1;            // 1 行の文字の上下に足す余白（DxLib のフォントは、1 行の高さが、大きさより 2 大きい）
 
 	// 太さ（0..9）を、OS の太さにする。2 階調の文字は、DxLib と同じく 100 倍する（標準の 6 は 600 で、太字になる）。
@@ -94,6 +96,8 @@ CWindowsGdiText::~CWindowsGdiText()
 		DeleteObject( Pair.Value );
 	}
 	Fonts.Reset();
+	FontIds.Reset();
+	Glyphs.Reset();
 	if ( Context )
 	{
 		DeleteDC( Context );
@@ -120,6 +124,8 @@ bool CWindowsGdiText::SelectFont( const FRenderTextFont& Font )
 	if ( const HFONT* Found = Fonts.Find( Key ) )
 	{
 		Handle = *Found;
+		const int32* FoundId = FontIds.Find( Key );
+		CurrentFontId = FoundId ? *FoundId : 0;
 	}
 	else
 	{
@@ -135,6 +141,9 @@ bool CWindowsGdiText::SelectFont( const FRenderTextFont& Font )
 				DeleteObject( Pair.Value );
 			}
 			Fonts.Reset();
+			FontIds.Reset(); // 番号とキャッシュも、フォントと一緒に捨てる。
+			Glyphs.Reset();
+			GlyphBytes = 0;
 		}
 		const TArray<wchar_t> Face = Font.Face.ToWide();
 		const wchar_t* FaceName = Font.Face.IsEmpty() ? L"MS Gothic" : Face.GetData();   // 既定は、DxLib の既定と同じフォント
@@ -145,6 +154,8 @@ bool CWindowsGdiText::SelectFont( const FRenderTextFont& Font )
 			return false;
 		}
 		Fonts.Add( Key, Handle );
+		CurrentFontId = NextFontId++;
+		FontIds.Add( Key, CurrentFontId );
 	}
 	const HGDIOBJ Previous = SelectObject( Context, Handle );
 	if ( !Previous || Previous == HGDI_ERROR )
@@ -156,6 +167,21 @@ bool CWindowsGdiText::SelectFont( const FRenderTextFont& Font )
 		PreviousFont = Previous;   // 最初に選ばれていた、OS の既定のフォント
 	}
 	return true;
+}
+
+CWindowsGdiText::FCachedGlyph& CWindowsGdiText::GetGlyph( wchar_t Unit )
+{
+	if ( Glyphs.Num() >= MaxCachedGlyphs || GlyphBytes >= MaxCachedGlyphBytes )
+	{
+		Glyphs.Reset(); // 上限を超えたら、全部捨てて、使うものから数え直す。
+		GlyphBytes = 0;
+	}
+	const uint64 Key = ( static_cast<uint64>( static_cast<uint32>( CurrentFontId ) ) << 32 ) | static_cast<uint64>( static_cast<uint16>( Unit ) );
+	if ( FCachedGlyph* Found = Glyphs.Find( Key ) )
+	{
+		return *Found;
+	}
+	return Glyphs.Add( Key, FCachedGlyph() );
 }
 
 bool CWindowsGdiText::GetMetrics( const FRenderTextFont& Font, FFontMetrics& OutMetrics )
@@ -246,7 +272,21 @@ bool CWindowsGdiText::Arrange( const FRenderTextFont& Font, TArrayView<const cha
 				Character.NumUnits = 1;
 			}
 			SIZE Extent = {};
-			if ( !GetTextExtentPoint32W( Context, Character.Units, Character.NumUnits, &Extent ) )
+			if ( Character.NumUnits == 1 )
+			{
+				FCachedGlyph& Cached = GetGlyph( Character.Units[0] ); // 送り幅は、フォントごと・文字ごとに 1 回だけ OS に聞く。
+				if ( !Cached.bHasAdvance )
+				{
+					if ( !GetTextExtentPoint32W( Context, Character.Units, 1, &Extent ) )
+					{
+						return false;
+					}
+					Cached.Advance = Extent.cx;
+					Cached.bHasAdvance = true;
+				}
+				Extent.cx = Cached.Advance;
+			}
+			else if ( !GetTextExtentPoint32W( Context, Character.Units, Character.NumUnits, &Extent ) )
 			{
 				return false;
 			}
@@ -308,24 +348,38 @@ void CWindowsGdiText::DrawGrayGlyphs( const TArray<FCharacter>& Characters, int3
 		return;
 	}
 	const MAT2 Identity = { { 0, 1 }, { 0, 0 }, { 0, 0 }, { 0, 1 } }; // 変形なし。
-	TArray<uint8> Buffer;
 	for ( const FCharacter& Character : Characters )
 	{
 		if ( Character.NumUnits != 1 )
 		{
 			continue;
 		}
-		GLYPHMETRICS Glyph = {};
-		const DWORD Size = GetGlyphOutlineW( Context, Character.Units[0], GGO_GRAY8_BITMAP, &Glyph, 0, nullptr, &Identity );
-		if ( Size == GDI_ERROR || Size == 0 )
+		FCachedGlyph& Cached = GetGlyph( Character.Units[0] ); // 被覆率は、フォントごと・文字ごとに 1 回だけ OS に数えさせる。
+		if ( !Cached.bHasBitmap )
+		{
+			Cached.bHasBitmap = true;
+			GLYPHMETRICS Glyph = {};
+			const DWORD Size = GetGlyphOutlineW( Context, Character.Units[0], GGO_GRAY8_BITMAP, &Glyph, 0, nullptr, &Identity );
+			if ( Size != GDI_ERROR && Size != 0 )
+			{
+				Cached.Bitmap.SetNum( static_cast<int32>( Size ) );
+				if ( GetGlyphOutlineW( Context, Character.Units[0], GGO_GRAY8_BITMAP, &Glyph, Size, Cached.Bitmap.GetData(), &Identity ) == GDI_ERROR )
+				{
+					Cached.Bitmap.Reset();
+				}
+				else
+				{
+					Cached.Metrics = Glyph;
+					GlyphBytes += static_cast<int64>( Size );
+				}
+			}
+		}
+		if ( Cached.Bitmap.IsEmpty() )
 		{
 			continue; // 空白などは、描くものが無い。
 		}
-		Buffer.SetNum( static_cast<int32>( Size ) );
-		if ( GetGlyphOutlineW( Context, Character.Units[0], GGO_GRAY8_BITMAP, &Glyph, Size, Buffer.GetData(), &Identity ) == GDI_ERROR )
-		{
-			continue;
-		}
+		const GLYPHMETRICS& Glyph = Cached.Metrics;
+		const uint8* Buffer = Cached.Bitmap.GetData();
 		const int32 Pitch = static_cast<int32>( ( Glyph.gmBlackBoxX + 3 ) & ~3u ); // 1 行は 4 バイトの境界。
 		const int32 OriginX = Character.X + Edge + Glyph.gmptGlyphOrigin.x;
 		const int32 OriginY = Character.Y + Edge + LinePadding + Metrics.tmAscent - Glyph.gmptGlyphOrigin.y;
@@ -459,26 +513,20 @@ void CWindowsGdiText::DrawSampledGlyphs( const FRenderTextFont& Font, const TArr
 	DeleteObject( Bitmap );
 }
 
-bool CWindowsGdiText::Rasterize( const FRenderTextFont& Font, TArrayView<const char> Text, TArray<uint8>& OutCoverage, TArray<uint8>& OutEdge, int32& OutWidth, int32& OutHeight )
+bool CWindowsGdiText::NeedsSystemDraw( const FRenderTextFont& Font, const TArray<FCharacter>& Characters )
 {
-	TArray<FCharacter> Characters;
-	FTextSize Size;
-	if ( Text.Num() <= 0 || !SelectFont( Font ) || !Arrange( Font, Text, Characters, Size ) )
+	for ( const FCharacter& Character : Characters )
 	{
-		return false;
+		if ( Character.NumUnits > 0 && ( Font.Antialias == 0 || Character.NumUnits != 1 ) )
+		{
+			return true;
+		}
 	}
-	if ( Size.Height <= 0 )
-	{
-		return false;
-	}
-	// 画像の大きさの上限（各辺 4096・4M 画素）を超える文字列は、はみ出す右・下を切った画像にする（DxLib が、はみ出す文字を切って描くのと同じ）。
-	// 文字を描く処理は、画像の外の画素を書かない（Layout の大きさより小さくなる）
-	const int32 Width = NMath::Min( NMath::Max( 1, Size.Width ), MaxImageSide );   // 改行だけの文字列も、透明な 1 列として持つ
-	int32 Height = NMath::Min( Size.Height, MaxImageSide );
-	if ( static_cast<int64>( Width ) * Height > MaxImagePixels )
-	{
-		Height = MaxImagePixels / Width;
-	}
+	return false;
+}
+
+bool CWindowsGdiText::DrawSystemGlyphs( int32 Antialias, const TArray<FCharacter>& Characters, int32 Edge, int32 Width, int32 Height, TArray<uint8>& Coverage )
+{
 	BITMAPINFO Info = {};   // 左上から行の順の 32bit 画像
 	Info.bmiHeader.biSize = sizeof( BITMAPINFOHEADER );
 	Info.bmiHeader.biWidth = Width;
@@ -506,17 +554,15 @@ bool CWindowsGdiText::Rasterize( const FRenderTextFont& Font, TArrayView<const c
 	SetTextColor( Context, RGB( 255, 255, 255 ) );
 	SetBkMode( Context, TRANSPARENT );
 	SetTextAlign( Context, TA_LEFT | TA_TOP );
-	const int32 Edge = NMath::Clamp( Font.EdgeSize, 0, 64 );
 	bool bDrawn = true;
 	for ( const FCharacter& Character : Characters )
 	{
-		if ( Character.NumUnits > 0 && ( Font.Antialias == 0 || Character.NumUnits != 1 ) ) // 2 つの UTF-16 の文字は、OS の描き方で描く
+		if ( Character.NumUnits > 0 && ( Antialias == 0 || Character.NumUnits != 1 ) ) // 2 つの UTF-16 の文字は、OS の描き方で描く
 		{
 			bDrawn = TextOutW( Context, Character.X + Edge, Character.Y + Edge + LinePadding, Character.Units, Character.NumUnits ) != FALSE && bDrawn;
 		}
 	}
 	bDrawn = GdiFlush() != FALSE && bDrawn;   // CPU で画素を読む前に、OS 側の描画を終わらせる
-	TArray<uint8> Coverage;
 	if ( bDrawn )
 	{
 		Coverage.SetNum( Width * Height );
@@ -528,9 +574,41 @@ bool CWindowsGdiText::Rasterize( const FRenderTextFont& Font, TArrayView<const c
 	}
 	SelectObject( Context, PreviousBitmap );
 	DeleteObject( Bitmap );
-	if ( !bDrawn )
+	return bDrawn;
+}
+
+bool CWindowsGdiText::Rasterize( const FRenderTextFont& Font, TArrayView<const char> Text, TArray<uint8>& OutCoverage, TArray<uint8>& OutEdge, int32& OutWidth, int32& OutHeight )
+{
+	TArray<FCharacter> Characters;
+	FTextSize Size;
+	if ( Text.Num() <= 0 || !SelectFont( Font ) || !Arrange( Font, Text, Characters, Size ) )
 	{
 		return false;
+	}
+	if ( Size.Height <= 0 )
+	{
+		return false;
+	}
+	// 画像の大きさの上限（各辺 4096・4M 画素）を超える文字列は、はみ出す右・下を切った画像にする（DxLib が、はみ出す文字を切って描くのと同じ）。
+	// 文字を描く処理は、画像の外の画素を書かない（Layout の大きさより小さくなる）
+	const int32 Width = NMath::Min( NMath::Max( 1, Size.Width ), MaxImageSide );   // 改行だけの文字列も、透明な 1 列として持つ
+	int32 Height = NMath::Min( Size.Height, MaxImageSide );
+	if ( static_cast<int64>( Width ) * Height > MaxImagePixels )
+	{
+		Height = MaxImagePixels / Width;
+	}
+	const int32 Edge = NMath::Clamp( Font.EdgeSize, 0, 64 );
+	TArray<uint8> Coverage;
+	if ( NeedsSystemDraw( Font, Characters ) )
+	{
+		if ( !DrawSystemGlyphs( Font.Antialias, Characters, Edge, Width, Height, Coverage ) )
+		{
+			return false;
+		}
+	}
+	else
+	{
+		Coverage.SetNum( Width * Height, 0 ); // OS に描かせる文字が無いときは、OS の画像を作らずに、空の被覆率から始める。
 	}
 	if ( Font.Antialias == 1 )
 	{

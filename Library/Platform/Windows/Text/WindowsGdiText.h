@@ -58,8 +58,28 @@ private:
 	void DrawSampledGlyphs( const FRenderTextFont& Font, const TArray<FCharacter>& Characters, int32 Scale, int32 Edge, int32 Width, int32 Height, TArray<uint8>& Coverage );
 	// 文字を 1 つずつに分けて、置く位置を決める。フォントは選んであること
 	bool Arrange( const FRenderTextFont& Font, TArrayView<const char> Text, TArray<FCharacter>& OutCharacters, FTextSize& OutSize );
+	// OS に描かせる文字（2 階調のフォントの文字と、UTF-16 で 2 つの文字）が 1 つでもあるか。無ければ、OS の画像を作らなくてよい
+	static bool NeedsSystemDraw( const FRenderTextFont& Font, const TArray<FCharacter>& Characters );
+	// OS に描かせる文字だけを、CPU の画像へ描いて、被覆率（0..255）にする。描けなければ false
+	bool DrawSystemGlyphs( int32 Antialias, const TArray<FCharacter>& Characters, int32 Edge, int32 Width, int32 Height, TArray<uint8>& Coverage );
+	// 文字 1 つ分（UTF-16 の 1 つ）の、OS が数えた被覆率と送り幅。フォントごと・文字ごとに、1 回だけ数えて使い回す
+	struct FCachedGlyph
+	{
+		GLYPHMETRICS Metrics = {};   // 黒い範囲の大きさと原点（GGO_GRAY8_BITMAP の結果）
+		TArray<uint8> Bitmap;        // 65 階調の被覆率（空白などは空）
+		int32 Advance = 0;           // OS の送り幅（GetTextExtentPoint32W）
+		bool bHasAdvance = false;    // 送り幅を数えたか
+		bool bHasBitmap = false;     // 被覆率を数えたか（空白で空だったことも含む）
+	};
+	// 選んであるフォントの、UTF-16 の 1 つの文字のキャッシュを返す（なければ、空を作る）。次に GetGlyph を呼ぶまでの間だけ使う
+	FCachedGlyph& GetGlyph( wchar_t Unit );
 
 	HDC Context = nullptr;            // CPU 上の文字画像を作る OS の文脈
 	HGDIOBJ PreviousFont = nullptr;   // 破棄するときに戻す、元の選択
 	TMap<FString, HFONT> Fonts;       // 指定ごとに作ったフォント（鍵は FRenderTextFont::ToKey）
+	TMap<FString, int32> FontIds;     // 作ったフォントごとの番号（グリフのキャッシュの鍵に使う。Fonts と同じときに作り、同じときに捨てる）
+	TMap<uint64, FCachedGlyph> Glyphs; // フォントの番号と文字（UTF-16 の 1 つ）ごとのキャッシュ
+	int64 GlyphBytes = 0;             // キャッシュした被覆率の大きさの合計
+	int32 NextFontId = 1;             // 次に作るフォントの番号
+	int32 CurrentFontId = 0;          // 選んであるフォントの番号
 };
