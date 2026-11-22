@@ -989,6 +989,8 @@ Windowsの通常ビルド後、同じCanvas2Dサンプルを各実装で起動�
 
 `--dx12-gpu-timings`を付けると、主画面の区間と、描画先パス（`BeginRenderTargetPass`〜`EndRenderTargetPass`）ごとに、GPUが実際に働いた時間を、GPUのタイムスタンプで自動で測ります（`CDX12GpuSegmentTimer`。公開の窓口を通さず描画スレッドの中で測るので、付けても同期呼び出しは増えません。付けないときは何もしません）。120フレームごとに、ログへ、1フレームあたりの合計（平均と最大）・主画面・パスごと（寸法・色の枚数・深度の有無。パスはそのフレームでの順番）をミリ秒で出し、毎フレームの合計をプロファイラーのカウンター`Gpu.Frame`・`Gpu.Main`・`Gpu.Passes`へ出します（プロファイラーのウィンドウのCountersタブ・Chromeトレース・`--profile-frames`の要約の最後に出ます）。結果は数フレーム遅れて届きます。区間のあいだの空きや表示は含まないので、`--dx12-frame-timings`のフレームの間隔と比べて、CPUとGPUのどちらが足りないかを見ます（検査は`RunGpuTimingsTests.ps1`）。
 
+`--no-vsync`は、垂直同期を切る（`FWindowSettings::bVSync`をfalseにする。DxLib・DX12の両方）。実際の処理の速さを、ディスプレイの周期に隠さずに測る確認用です。ただし、この機械では、切っても、間隔が約2.9 ms（約340 FPS）より短くならなかった（DxLibでも同じ。DX12の実装の外側の下限。[DX12_HANDOFF.md](DX12_HANDOFF.md)の「フレームの間隔約3.1 msの正体」）。
+
 `--dx12-sync-draws`は、3Dのカスタムパイプライン描画の「結果を待たずに積む」を使わず、すべて同期で実行する（待たずに積む経路と画素を比べたり、拒否の原因を調べたりするとき用。[スレッドの契約](THREADING.md)）。
 
 `--dx12-warp=true`はWindowsのソフトウェアGPUを選ぶ確認用です。矩形・円・線、緑の矩形のクリップ、半透明の赤い矩形、市松模様の画像、文字、通常の窓と枠なしの切り替え、拡大時のマウス座標、終了時のGPU資源解放を確認します。撮影サービスによるPNG・GIF・高解像度撮影は [DX12の撮影](DX12_CAPTURE.md) を参照してください。旧IPlatform::RequestScreenshotは未接続です。

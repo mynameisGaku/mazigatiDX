@@ -100,6 +100,11 @@ int32 NGameMain::Run( const FOptions& Options, const TCallable<int32( const FWin
 	{
 		Settings.bEnableImGui = false;
 	}
+	// --no-vsync: 垂直同期を切る（実際の処理の速さを、ディスプレイの周期に隠さずに測る確認用）
+	if ( NCommandLine::HasFlag( "no-vsync" ) )
+	{
+		Settings.bVSync = false;
+	}
 	const int32 ExitCode = RunEngine( Settings );
 	LOG( LogMain, Log, "Exited with code %d", ExitCode );
 
