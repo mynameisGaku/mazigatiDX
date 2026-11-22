@@ -65,9 +65,28 @@ class CDX12RenderTargetPass : public IRenderSurface
 		TArray<FDX12GraphicsPipelineBinding> Pipelines; // カスタム描画で解放済みでも完了まで保つPSO。
 		uint64 Value = 0; // フェンス完了番号。
 	};
+	// 完了後に、作り直さずにResetして再利用するパス用の記録領域と命令列の組。
+	struct FRecordingSet
+	{
+		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> Allocator; // GPU完了後はResetできる命令領域。
+		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> Commands; // 閉じた状態の命令列。
+	};
+	// 寸法ごとに覚えておく内部D32深度（寸法の違うパスが続いても、作り直さない）。
+	struct FFallbackDepthEntry
+	{
+		int32 Width = 0; // 深度の幅。
+		int32 Height = 0; // 深度の高さ。
+		float32 ClearDepth = 1.0f; // 作成時の最適化消去値。
+		Microsoft::WRL::ComPtr<ID3D12Resource> Depth; // 内部D32深度。
+		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> Heap; // 内部深度用のCPU DSVヒープ。
+	};
 	// 完了済みの提出レコードを回収する。
 	bool CollectCompleted();
-	// 深度未指定時の内部D32深度を用意する。同じ寸法なら現在内容と最適化消去値を保つ。
+	// フェンス番号がCompleted以下の提出レコードから、記録領域と命令列を、再利用の置き場へ移す（GPUが完了した分だけを渡す）。
+	void RecycleRecordings( uint64 Completed );
+	// パスの記録領域と命令列を、再利用の置き場から取る（なければ作る）。記録できる状態で返す。
+	bool AcquireRecording( Microsoft::WRL::ComPtr<ID3D12CommandAllocator> &OutAllocator, Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> &OutCommands );
+	// 深度未指定時の内部D32深度を用意する。同じ寸法の続きなら現在内容と最適化消去値を保ち、寸法が変わったら、覚えた別の深度へ切り替える（なければ作る。切り替えた直後は、一度初期化する）。
 	bool PrepareFallbackDepth( int32 Width, int32 Height, float32 ClearDepth );
 	// 最適化深度と異なる値でも警告を出さずに深度だけを初期化するパイプラインを用意する。
 	bool PrepareDepthClearPipeline();
@@ -102,6 +121,8 @@ class CDX12RenderTargetPass : public IRenderSurface
 	TArray<FDX12TextureBinding> ActiveColors; // 現在記録中の1〜8枚の色描画先。
 	FDX12TextureBinding ActiveDepth; // 現在記録中の深度描画先。
 	TArray<FSubmissionRecord> Pending; // GPU未完了の提出レコード列。
+	TArray<FRecordingSet> FreeRecordings; // GPU完了後に再利用できる記録領域と命令列。
+	TArray<FFallbackDepthEntry> FallbackDepths; // 寸法ごとに覚えた内部D32深度（古い順）。
 	CDX12TimestampStore *Timestamps = nullptr; // 任意のGPUタイムスタンプ所有者。
 	CDX12UploadArena *UploadArena = nullptr; // 一時頂点転送を借りる任意の共有アリーナ。
 	CDX12GpuSegmentTimer *SegmentTimer = nullptr; // パスごとのGPU時間を測る任意の診断用計測器（--dx12-gpu-timings）。
@@ -116,4 +137,7 @@ class CDX12RenderTargetPass : public IRenderSurface
 	bool bHealthy = false; // GPU異常後の再利用を防ぐ印。
 	bool bClosing = false; // 終了処理中の印。
 	static constexpr int32 MaxPending = 16; // 同時保持する未完了パス提出の上限。
+	static constexpr int32 MaxFreeRecordings = 16; // 再利用のために持っておく記録領域と命令列の組の上限。
+	static constexpr int32 MaxFallbackDepths = 32; // 覚えておく内部深度の数の上限。
+	static constexpr int64 MaxFallbackDepthBytes = 128ll * 1024 * 1024; // 覚えておく内部深度の合計の大きさの上限。
 };

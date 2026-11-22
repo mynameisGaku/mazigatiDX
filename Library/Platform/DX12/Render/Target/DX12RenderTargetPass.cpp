@@ -66,12 +66,43 @@ bool CDX12RenderTargetPass::CollectCompleted()
 		bHealthy = false;
 		return false;
 	}
+	RecycleRecordings( Completed );
 	Pending.RemoveAll( [Completed]( const FSubmissionRecord& Record ) { return Record.Value <= Completed; } );
 	return true;
 }
 
+void CDX12RenderTargetPass::RecycleRecordings( uint64 Completed )
+{
+	for ( FSubmissionRecord &Record : Pending )
+	{
+		if ( Record.Value <= Completed && Record.Allocator && Record.Commands && FreeRecordings.Num() < MaxFreeRecordings )
+		{
+			FRecordingSet Free; // 完了したので、Resetして使い回せる。
+			Free.Allocator = MoveTemp( Record.Allocator );
+			Free.Commands = MoveTemp( Record.Commands );
+			FreeRecordings.Add( MoveTemp( Free ) );
+		}
+	}
+}
+
+bool CDX12RenderTargetPass::AcquireRecording( Microsoft::WRL::ComPtr<ID3D12CommandAllocator> &OutAllocator, Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> &OutCommands )
+{
+	while ( !FreeRecordings.IsEmpty() )
+	{
+		FRecordingSet Free = FreeRecordings.Pop();
+		if ( SUCCEEDED( Free.Allocator->Reset() ) && SUCCEEDED( Free.Commands->Reset( Free.Allocator.Get(), nullptr ) ) )
+		{
+			OutAllocator = MoveTemp( Free.Allocator );
+			OutCommands = MoveTemp( Free.Commands );
+			return true;
+		}
+	}
+	return SUCCEEDED( Device->CreateCommandAllocator( D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS( &OutAllocator ) ) ) && SUCCEEDED( Device->CreateCommandList( 0, D3D12_COMMAND_LIST_TYPE_DIRECT, OutAllocator.Get(), nullptr, IID_PPV_ARGS( &OutCommands ) ) );
+}
+
 void CDX12RenderTargetPass::CollectAfterGPUIdle()
 {
+	RecycleRecordings( TNumericLimits<uint64>::Max() ); // GPUが空なので、全部を再利用できる。
 	Pending.Reset();
 	bHealthy = Device && SUCCEEDED( Device->GetDeviceRemovedReason() );
 }
@@ -94,6 +125,8 @@ void CDX12RenderTargetPass::ResetAfterGPUIdle()
 	delete Renderer;
 	Renderer = nullptr;
 	Pending.Reset();
+	FreeRecordings.Reset();
+	FallbackDepths.Reset();
 	CurrentCommands.Reset();
 	CurrentAllocator.Reset();
 	ActiveColors.Reset();
@@ -151,6 +184,20 @@ bool CDX12RenderTargetPass::PrepareFallbackDepth( int32 Width, int32 Height, flo
 	{
 		return true;
 	}
+	for ( const FFallbackDepthEntry &Entry : FallbackDepths )
+	{
+		if ( Entry.Width == Width && Entry.Height == Height )
+		{
+			// 寸法の違うパスから戻ってきた。作り直さずに、前に作った深度を使う（内容は不定なので、新しく作ったときと同じく、一度初期化する）。
+			FallbackDepth = Entry.Depth;
+			FallbackDepthHeap = Entry.Heap;
+			FallbackWidth = Width;
+			FallbackHeight = Height;
+			FallbackClearDepth = Entry.ClearDepth;
+			bFallbackInitialized = false;
+			return true;
+		}
+	}
 	D3D12_DESCRIPTOR_HEAP_DESC HeapDesc = {}; // 内部深度用のCPU DSVヒープ。
 	HeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 	HeapDesc.NumDescriptors = 1;
@@ -173,6 +220,23 @@ bool CDX12RenderTargetPass::PrepareFallbackDepth( int32 Width, int32 Height, flo
 		return false;
 	}
 	Device->CreateDepthStencilView( NewDepth.Get(), nullptr, NewHeap->GetCPUDescriptorHandleForHeapStart() );
+	FFallbackDepthEntry Added; // 次に同じ寸法のパスが来たときのために覚える。
+	Added.Width = Width;
+	Added.Height = Height;
+	Added.ClearDepth = ClearDepth;
+	Added.Depth = NewDepth;
+	Added.Heap = NewHeap;
+	int64 TotalBytes = static_cast<int64>( Width ) * Height * 4; // D32は1画素4バイト。
+	for ( const FFallbackDepthEntry &Entry : FallbackDepths )
+	{
+		TotalBytes += static_cast<int64>( Entry.Width ) * Entry.Height * 4;
+	}
+	while ( !FallbackDepths.IsEmpty() && ( FallbackDepths.Num() >= MaxFallbackDepths || TotalBytes > MaxFallbackDepthBytes ) )
+	{
+		TotalBytes -= static_cast<int64>( FallbackDepths[0].Width ) * FallbackDepths[0].Height * 4; // 一番古いものを手放す（提出中のパスは、自分で参照を持つ）。
+		FallbackDepths.RemoveAt( 0 );
+	}
+	FallbackDepths.Add( MoveTemp( Added ) );
 	FallbackDepth = MoveTemp( NewDepth );
 	FallbackDepthHeap = MoveTemp( NewHeap );
 	FallbackWidth = Width;
@@ -403,7 +467,7 @@ bool CDX12RenderTargetPass::Begin( const FRenderTargetPassDesc &Desc )
 	}
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> Allocator; // このパス専用の記録領域。
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> Commands; // このパス専用の命令列。
-	if ( FAILED( Device->CreateCommandAllocator( D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS( &Allocator ) ) ) || FAILED( Device->CreateCommandList( 0, D3D12_COMMAND_LIST_TYPE_DIRECT, Allocator.Get(), nullptr, IID_PPV_ARGS( &Commands ) ) ) )
+	if ( !AcquireRecording( Allocator, Commands ) )
 	{
 		Textures->EndRenderTargetPass();
 		return false;

@@ -25,7 +25,7 @@ class CRenderCommandThread
 	FTaskFence GetFence() const;
 	// 今までに受け付けたCPU処理を全件待つ。満杯でも追加命令を必要としない。描画スレッド内はfalse。
 	bool WaitForCommands() const;
-	// 確認用: 描画スレッドの仕事量の内訳（働いている時間・同期呼び出しの回数と、呼び出し側が待った時間。待った時間の長い呼び出し元の名前も）を、120 フレームごとにログへ出す。
+	// 確認用: 描画スレッドの仕事量の内訳（働いている時間・同期呼び出しの回数と、呼び出し側が待った時間。待った時間の長い呼び出し元の名前と、実行に時間のかかった仕事の名前も）を、120 フレームごとにログへ出す。
 	// 作成直後（仕事を渡す前）に、所有者が 1 回だけ呼ぶ。
 	void EnableTimings();
 	// 1 フレームが終わったことを数える（ゲームスレッド）。EnableTimings を呼んでいなければ、何もしない。
@@ -36,10 +36,19 @@ class CRenderCommandThread
   private:
 	// 受け付けた仕事が終了するまで待つ。専用実行列は受付済みの仕事を破棄しない。
 	static bool WaitAccepted( const FTaskFence &Fence );
-	// EnableTimings のとき、仕事の実行時間を数える包みにする。そうでなければ、そのまま返す。
-	TCallable<void()> MakeTimed( TCallable<void()> Task );
-	// 同期呼び出し 1 回分（呼び出し元の名前と、呼び出し側が待った時間）を、名前ごとの集計へ足す。
-	void AddSyncCaller( const char *Name, int64 WaitTicks );
+	// 名前ごとの集計 1 件。Calls は回数、Ticks は時間（同期呼び出しの集計では呼び出し側が待った時間、仕事の集計では描画スレッドが実行した時間）。
+	struct FNamedTime
+	{
+		const char *Name = nullptr;
+		int64 Calls = 0;
+		int64 Ticks = 0;
+	};
+	// EnableTimings のとき、仕事の実行時間を数える包みにする。そうでなければ、そのまま返す。Name は仕事の名前（実行時間の集計に使う）。
+	TCallable<void()> MakeTimed( TCallable<void()> Task, const char *Name );
+	// 1 回分（名前と時間）を、名前ごとの集計へ足す。
+	void AddNamedTime( TArray<FNamedTime> &Times, const char *Name, int64 Ticks );
+	// 時間の長い名前を、上位から並べてログへ出す（bSyncCallers なら同期呼び出しの呼び出し元、でなければ描画スレッドで実行した仕事）。
+	static void LogLongest( TArray<FNamedTime> Sorted, float64 Frames, bool bSyncCallers );
 	// 作成後から終了まで使う既存の専用実行列。
 	CCommandThread Thread;
 	// 識別の登録結果。初期化と終了は作成スレッドが直列に担当する。
@@ -51,13 +60,8 @@ class CRenderCommandThread
 	TAtomic<int64> SyncCalls { 0 }; // 同期呼び出しの回数
 	TAtomic<int64> Tasks { 0 }; // 実行した仕事の数
 	int32 TimingFrames = 0; // 集計中のフレーム数（ゲームスレッドだけが触る）
-	// 同期呼び出しの、呼び出し元の名前ごとの集計（EnableTimings のとき。Execute は複数のスレッドから呼ばれうるので、排他する）。
-	struct FSyncCaller
-	{
-		const char *Name = nullptr;
-		int64 Calls = 0;
-		int64 WaitTicks = 0;
-	};
+	// 同期呼び出しの呼び出し元の名前ごとの集計と、描画スレッドで実行した仕事の名前ごとの集計（EnableTimings のとき。複数のスレッドから足されるので、排他する）。
 	FMutex CallerMutex;
-	TArray<FSyncCaller> Callers;
+	TArray<FNamedTime> Callers;
+	TArray<FNamedTime> TaskTimes;
 };
