@@ -70,6 +70,7 @@ void CDX12ForwardMeshRenderer::Initialize( IGraphicsPipelineResources* InPipelin
 
 void CDX12ForwardMeshRenderer::Shutdown()
 {
+	bLastPipelineValid = false;
 	for ( auto& Pair : Meshes )
 	{
 		ReleaseMesh( Pair.Value );
@@ -216,13 +217,37 @@ FGraphicsPipelineHandle CDX12ForwardMeshRenderer::GetPipeline( const FForwardMes
 	const FGeometryDrawState& State = Draw.State;
 	const FGeometryCustomBlend& Custom = State.CustomBlend;
 	const bool bCustom = State.bAlphaBlend && State.Blend == EGeometryBlend::Custom; // 自分で決めた係数のときだけ、係数も鍵に入れる。
-	const FString Key = FString::Printf( "%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d,%d,%d,%d,%d,%d", Draw.bDepthOnly ? 2 : ( bReceive ? 1 : 0 ), bTextured ? 1 : 0, static_cast<int32>( TargetFormat ), static_cast<int32>( TextureFormat ), State.bTestDepth ? 1 : 0, State.bWriteDepth ? 1 : 0,
+	const int32 Inputs[NumPipelineInputs] = { Draw.bDepthOnly ? 2 : ( bReceive ? 1 : 0 ), bTextured ? 1 : 0, static_cast<int32>( TargetFormat ), static_cast<int32>( TextureFormat ), State.bTestDepth ? 1 : 0, State.bWriteDepth ? 1 : 0,
 		static_cast<int32>( State.Compare ), static_cast<int32>( State.Culling ), State.bAlphaBlend ? 1 : 0, State.bAlphaBlend ? static_cast<int32>( State.Blend ) : 0, static_cast<int32>( State.AddressU ), State.bLinearFilter ? 1 : 0,
 		bCustom ? static_cast<int32>( Custom.SrcColor ) : 0, bCustom ? static_cast<int32>( Custom.DestColor ) : 0, bCustom ? static_cast<int32>( Custom.ColorOp ) : 0, bCustom ? static_cast<int32>( Custom.SrcAlpha ) : 0, bCustom ? static_cast<int32>( Custom.DestAlpha ) : 0,
-		bCustom ? static_cast<int32>( Custom.AlphaOp ) : 0 );
+		bCustom ? static_cast<int32>( Custom.AlphaOp ) : 0 };
+	// 直前の描画と、入力がすべて同じなら、鍵の文字列を作らずに、前回の答えを返す（同じ状態の描画が、続くことが多い）。
+	if ( bLastPipelineValid )
+	{
+		bool bSame = true;
+		for ( int32 Index = 0; Index < NumPipelineInputs && bSame; ++Index )
+		{
+			bSame = LastPipelineInputs[Index] == Inputs[Index];
+		}
+		if ( bSame )
+		{
+			return LastPipelineHandle;
+		}
+	}
+	const auto Remember = [&]( FGraphicsPipelineHandle Handle )
+	{
+		for ( int32 Index = 0; Index < NumPipelineInputs; ++Index )
+		{
+			LastPipelineInputs[Index] = Inputs[Index];
+		}
+		LastPipelineHandle = Handle;
+		bLastPipelineValid = true;
+		return Handle;
+	};
+	const FString Key = FString::Printf( "%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d,%d,%d,%d,%d,%d", Inputs[0], Inputs[1], Inputs[2], Inputs[3], Inputs[4], Inputs[5], Inputs[6], Inputs[7], Inputs[8], Inputs[9], Inputs[10], Inputs[11], Inputs[12], Inputs[13], Inputs[14], Inputs[15], Inputs[16], Inputs[17] );
 	if ( const FGraphicsPipelineHandle* Found = PipelineCache.Find( Key ) )
 	{
-		return *Found; // 作れなかった組み合わせは、無効なまま覚えて、毎回作り直さない。
+		return Remember( *Found ); // 作れなかった組み合わせは、無効なまま覚えて、毎回作り直さない。
 	}
 	// 頂点の並びは FDrawVertex3D（48 バイト）。
 	const FGraphicsInputElement Elements[5] = {
@@ -280,7 +305,7 @@ FGraphicsPipelineHandle CDX12ForwardMeshRenderer::GetPipeline( const FForwardMes
 		LOG( LogDX12, Warning, "CDX12ForwardMeshRenderer: the forward pipeline cannot be created" );
 	}
 	PipelineCache.Add( Key, Handle );
-	return Handle;
+	return Remember( Handle );
 }
 
 bool CDX12ForwardMeshRenderer::Draw( const FForwardMeshDraw& Draw, IRenderGeometry3D& Geometry )

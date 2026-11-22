@@ -62,6 +62,11 @@ private:
 	CTextureAssetStore* Textures = nullptr;
 	TMap<uint64, FMesh> Meshes;
 	TMap<FString, FGraphicsPipelineHandle> PipelineCache;   // 鍵は、状態と画像の有無
+	// 直前の GetPipeline の入力（鍵の文字列に入れる値と同じ並び）と答え。同じ入力が続くとき、描画のたびに文字列の鍵を作らずに答える。
+	static constexpr int32 NumPipelineInputs = 18;
+	int32 LastPipelineInputs[NumPipelineInputs] = {};
+	FGraphicsPipelineHandle LastPipelineHandle;
+	bool bLastPipelineValid = false;
 	TArray<uint8> VertexCode;
 	TArray<uint8> PixelCode;
 	TArray<uint8> TexturedPixelCode;
