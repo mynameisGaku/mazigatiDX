@@ -10,6 +10,7 @@
 #include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Profiler/ProfilerAnalyzer.h"
+#include "Library/Platform/System/CommandLine.h"
 
 DEFINE_LOG_CATEGORY( LogProfiler )
 REGISTER_SUBSYSTEM( CProfilerSubsystem )
@@ -51,6 +52,7 @@ void CProfilerSubsystem::Initialize( FSubsystemCollection& Collection )
 	NumStrings.Store( 1 );
 
 	MeasureOverhead();
+	ReadStartupOptions();
 	LOG( LogProfiler, Log, "Ready (history: kept, memory limit: %d MB, up to %d samples/frame, overhead: ~%.0f ns/sample). Off until SetEnabled( true )",
 		 MemoryLimitMB, MaxSamplesPerFrame, OverheadNsPerSample );
 }
@@ -228,8 +230,39 @@ void CProfilerSubsystem::EnforceLimits()
 
 #pragma region Frame
 
+void CProfilerSubsystem::ReadStartupOptions()
+{
+	if ( const TOptional<FString> Frames = NCommandLine::GetValue( "profile-frames" ) )
+	{
+		StartupCaptureFrames = static_cast<int32>( Frames.GetValue().ToInt( 0 ) );
+	}
+	if ( const TOptional<FString> Delay = NCommandLine::GetValue( "profile-delay" ) )
+	{
+		StartupDelayFrames = static_cast<int32>( Delay.GetValue().ToInt( StartupDelayFrames ) );
+	}
+	if ( StartupCaptureFrames > 0 )
+	{
+		NumSummaryRows = 30; // 確認用なので、上位を多めに出す
+		LOG( LogProfiler, Log, "Startup capture: %d frame(s) after %d frame(s)", StartupCaptureFrames, StartupDelayFrames );
+	}
+}
+
+void CProfilerSubsystem::UpdateStartupCapture()
+{
+	if ( StartupCaptureFrames <= 0 )
+	{
+		return;
+	}
+	if ( ++NumFramesSinceStart == StartupDelayFrames )
+	{
+		SetEnabled( true );
+		CaptureFrames( StartupCaptureFrames );
+	}
+}
+
 void CProfilerSubsystem::BeginFrame()
 {
+	UpdateStartupCapture();
 	const bool bWasRecording = bRecording;
 	if ( bRecording )
 	{
@@ -280,7 +313,7 @@ void CProfilerSubsystem::LogSummary() const
 	Rows.StableSort( []( const FProfileStatRow& A, const FProfileStatRow& B ) { return A.SelfMs > B.SelfMs; } );
 
 	const float64 NumFrames = static_cast<float64>( Stats.NumFrames );
-	const int32 NumTop = Rows.Num() < 8 ? Rows.Num() : 8;
+	const int32 NumTop = Rows.Num() < NumSummaryRows ? Rows.Num() : NumSummaryRows;
 	for ( int32 i = 0; i < NumTop; ++i )
 	{
 		const FProfileStatRow& Row = Rows[i];

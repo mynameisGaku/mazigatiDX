@@ -721,6 +721,8 @@ Worldの`Components.Effect`には、任意の`Target`（追従先オブジェク
 
 処理の時間は、`PROFILE_SCOPE`などのマクロで測り（`Library/Core/Profiler/ProfilerScope.h`）、F2で記録をオン/オフして、ウィンドウで見ます。記録は、コンソールの`profiler`・`profiler.capture`・`profiler.save`でも扱え、Chromeトレース形式（`chrome://tracing`で開ける）で`Saved/Profiler`に書けます。落ちたときは、直近の記録が、自動で`..._crash.json`に書かれます。
 
+確認用の起動指定: `--profile-frames=N`を付けて起動すると、120フレーム待ってからNフレーム記録し、止まったときに、処理時間の上位30行をログへ出します（`--profile-delay=D`で待つフレーム数を変えられます）。画面を開かずに、どこに時間が掛かっているかを調べるときに使います。描画の実行側（`Draw`の持ち主）には、`CanvasExecute`・`Canvas2D`・`Scene3D`・`Geometry.Submit`・`Geometry.ForwardMesh`・`Geometry.ShadowCaster`などの計測を置いてあります。
+
 計測は、4つの軸で分けます: **分類**（何の処理か）・**持ち主**（どの持ち主の下か。シーン名など）・**名前**（処理や型の名前）・**個体**（オブジェクトのID）。このうち分類が、画面の並び・色・絞り込み（Group by Category）の単位です。
 
 ```cpp

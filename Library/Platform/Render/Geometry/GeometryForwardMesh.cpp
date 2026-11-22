@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "GeometryForwardMesh.h"
+#include "Library/Core/Profiler/ProfilerScope.h"
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Interfaces/Asset/ModelBackend.h"
@@ -75,6 +76,7 @@ bool CGeometryForwardMesh::CanDrawForward( const FStaticModelDrawView& Model ) c
 
 int32 CGeometryForwardMesh::DrawMeshForward( const FStaticModelDrawView& Model, int32 ModelAlpha, bool bAlphaBlend, bool bInferAlpha, FDrawRgb Bright, bool bLit, bool bTransient )
 {
+	PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "Draw", "Geometry.ForwardMesh" );
 	const FCameraViewport Viewport = { Geometry->GetWidth(), Geometry->GetHeight() };
 	const FMatrix4x4 Transform = World * Camera.GetViewMatrix() * Camera.GetProjectionMatrix( Viewport ); // ローカルからクリップへの変換。
 	FForwardMeshDraw Draw;

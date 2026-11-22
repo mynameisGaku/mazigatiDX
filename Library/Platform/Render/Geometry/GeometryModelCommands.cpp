@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "GeometryModelCommands.h"
+#include "Library/Core/Profiler/ProfilerScope.h"
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Interfaces/Asset/ModelBackend.h"
@@ -202,6 +203,7 @@ EGeometryCommandResult CGeometryModelCommands::DrawModel( const FDrawModelData& 
 
 EGeometryCommandResult CGeometryModelCommands::DrawModelView( const FStaticModelDrawView& Model, int32 Alpha, bool bAlphaBlend )
 {
+	PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "Draw", "Geometry.ModelView" );
 	if ( Model.NumIndices == 0 && Model.NumSections == 0 )
 	{
 		return EGeometryCommandResult::Executed; // 描くものが無い（形の無いモデル・すべて非表示）。

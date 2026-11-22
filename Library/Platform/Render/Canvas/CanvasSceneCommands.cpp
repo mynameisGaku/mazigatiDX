@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "CanvasSceneCommands.h"
+#include "Library/Core/Profiler/ProfilerScope.h"
 #include "Library/Framework/Render/Mesh/ModelPoseSnapshot.h"
 #include "Library/Framework/Render/Mesh/ShaderMeshSnapshot.h"
 
@@ -11,6 +12,7 @@ CCanvasSceneCommands::CCanvasSceneCommands( FCanvasExecution& InRun, CCanvasTarg
 
 void CCanvasSceneCommands::Execute( const FDrawCommandView& View )
 {
+	PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "Draw", "Scene3D" );
 	const bool bAlphaBlend = Run.State.bAlphaBlend; // 3Dへ渡す合成方式。
 	if ( View.Type == EDrawCommand::SharedShaderMesh3D )
 	{

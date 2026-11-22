@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "CanvasDrawExecutor.h"
+#include "Library/Core/Profiler/ProfilerScope.h"
 #include "Library/Framework/Render/Scene/SceneDrawOrder.h"
 #include "Library/Platform/Render/Canvas/CanvasExecution.h"
 #include "Library/Platform/Render/Canvas/CanvasImageEffects.h"
@@ -26,6 +27,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Input )
 	{
 		return;
 	}
+	PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "Draw", "CanvasExecute" );
 	FCanvasExecution Run( Surface, Textures, Buffers, Models, Fonts, Targets, Shaders, Span, Canvas ); // このSpanだけの状態と、借りた実行先。
 	CCanvasTargetScopes TargetScopes( Run ); // 描画先（画像・影の絵・複数の出力）の積み。
 	CCanvasStateCommands StateCommands( Run ); // 合成・補間・明るさ・変換・クリップ・マスクなどの状態。
@@ -71,7 +73,12 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Input )
 			continue;
 		}
 		Run.Canvas->SetAntiAlias( View.Has( FDrawFlag::AntiAlias ) || View.Type == EDrawCommand::BoxAA || View.Type == EDrawCommand::CircleAA || View.Type == EDrawCommand::LineAA );
-		if ( StateCommands.Execute( View ) || Shapes.Execute( View ) || Text.Execute( View ) || Images.Execute( View ) || TargetScopes.ExecuteTargetCommand( View ) || ImageEffects.Execute( View ) )
+		bool bHandled2D = false;
+		{
+			PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "Draw", "Canvas2D" );
+			bHandled2D = StateCommands.Execute( View ) || Shapes.Execute( View ) || Text.Execute( View ) || Images.Execute( View ) || TargetScopes.ExecuteTargetCommand( View ) || ImageEffects.Execute( View );
+		}
+		if ( bHandled2D )
 		{
 			continue;
 		}

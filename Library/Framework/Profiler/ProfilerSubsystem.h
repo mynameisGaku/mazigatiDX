@@ -95,6 +95,10 @@ private:
 	void MeasureOverhead();
 	// 記録が止まったときに、全体の平均と処理時間の上位をログへ出す（画面を開かなくても概要が分かる）
 	void LogSummary() const;
+	// 確認用の起動指定（--profile-frames=N [--profile-delay=D]）を読む。D フレーム待ってから N フレーム記録して、要約をログへ出す。
+	void ReadStartupOptions();
+	// 起動指定の記録を、始める頃になったら始める（BeginFrame から呼ぶ）。
+	void UpdateStartupCapture();
 	// 一番古いフレームを捨てる（フレーム数 / サンプル数の上限を決めているときだけ使う）
 	void DropOldestFrame();
 	// 決めてある上限を超えている分を、古いフレームから捨てる
@@ -127,6 +131,10 @@ private:
 	FMutex CounterMutex;            // Current.Counters を守る（どのスレッドからも記録できる）
 	uint32 RecordingThreadId = 0;
 	uint64 NextFrameNumber = 1;
+	int32 StartupCaptureFrames = 0;     // 起動指定で記録するフレーム数（0 = 指定なし）
+	int32 StartupDelayFrames = 120;     // 起動指定の記録を始めるまでに待つフレーム数（起動直後の止まりを避ける）
+	int32 NumFramesSinceStart = 0;      // 起動してから数えたフレーム数
+	int32 NumSummaryRows = 8;           // 要約に出す、処理時間の上位の行数
 	float64 OverheadNsPerSample = 0.0;
 
 	FProfilerFrame Current;

@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "GeometryVertexSubmitter.h"
+#include "Library/Core/Profiler/ProfilerScope.h"
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Interfaces/Asset/ModelBackend.h"
@@ -42,6 +43,7 @@ CGeometryVertexSubmitter::CGeometryVertexSubmitter( FGeometryExecution& InRun, C
 
 bool CGeometryVertexSubmitter::Submit( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend, int32 Texture, bool bLit, bool bAllowTransient )
 {
+	PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "Draw", "Geometry.Submit" );
 	if ( !Geometry || Vertices.IsEmpty() || Vertices.Num() > 65536 || Geometry->GetWidth() <= 0 || Geometry->GetHeight() <= 0 || !Camera.IsValid() )
 	{
 		return false;
@@ -55,6 +57,7 @@ bool CGeometryVertexSubmitter::Submit( const TArray<FDrawVertex3D>& Vertices, EG
 	{
 		return SubmitShadowCaster( Vertices, Topology, Alpha, Texture ); // 影の絵へ、光から見た深度として描く。
 	}
+	PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "Draw", "Geometry.SubmitMain" );
 	if ( bAllowTransient && Topology == EGeometryTopology::Triangles && Vertices.Num() % 3 == 0 )
 	{
 		FStaticModelDrawSection Section = { 0, Vertices.Num(), Texture }; // 一度だけ描く三角形の範囲。
@@ -311,6 +314,7 @@ bool CGeometryVertexSubmitter::Submit( const TArray<FDrawVertex3D>& Vertices, EG
 
 bool CGeometryVertexSubmitter::SubmitShadowCaster( const TArray<FDrawVertex3D>& Vertices, EGeometryTopology Topology, int32 Alpha, int32 Texture )
 {
+	PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "Draw", "Geometry.ShadowCaster" );
 	if ( Topology != EGeometryTopology::Triangles || Texture >= 0 || Alpha < 250 )
 	{
 		return true; // 影を落とさない図形。
