@@ -85,6 +85,15 @@ bool CDX12Device::Initialize( HWND Window, int32 Width, int32 Height, bool bWarp
 			InfoQueue->RegisterMessageCallback( LogDebugLayerMessage, D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &Cookie );
 		}
 	}
+	// 使うGPUの名前と専用メモリを、ログへ出す（内蔵GPUと別のGPUがあるPCで、どちらで動いているかを見分ける）。
+	ComPtr<IDXGIAdapter1> UsedAdapter; // 作ったデバイスのアダプター。
+	DXGI_ADAPTER_DESC1 AdapterDesc = {};
+	if ( SUCCEEDED( Factory->EnumAdapterByLuid( CreatedDevice->GetAdapterLuid(), IID_PPV_ARGS( &UsedAdapter ) ) ) && SUCCEEDED( UsedAdapter->GetDesc1( &AdapterDesc ) ) )
+	{
+		char AdapterName[256] = {}; // UTF-8 のアダプター名。
+		WideCharToMultiByte( CP_UTF8, 0, AdapterDesc.Description, -1, AdapterName, static_cast<int>( sizeof( AdapterName ) ) - 1, nullptr, nullptr );
+		LOG( LogDX12, Log, "DX12 adapter: %s (%d MB dedicated video memory%s)", AdapterName, static_cast<int>( AdapterDesc.DedicatedVideoMemory / ( 1024 * 1024 ) ), bWarp ? ", WARP" : "" );
+	}
 	D3D12_COMMAND_QUEUE_DESC QueueDesc = {}; // 通常の描画キュー。
 	QueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 	if ( FAILED( CreatedDevice->CreateCommandQueue( &QueueDesc, IID_PPV_ARGS( &CreatedQueue ) ) ) )
