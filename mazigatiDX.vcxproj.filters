@@ -1456,6 +1456,30 @@
     <ClCompile Include="Library\Platform\Render\Canvas\CanvasDrawExecutor.cpp">
       <Filter>Library\Platform\Render\Canvas</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Canvas\CanvasTextPainter.cpp">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Canvas\CanvasTargetScopes.cpp">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Canvas\CanvasStateCommands.cpp">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Canvas\CanvasShapePainter.cpp">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Canvas\CanvasSceneCommands.cpp">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Canvas\CanvasImagePainter.cpp">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Canvas\CanvasImageEffects.cpp">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClCompile>
+    <ClCompile Include="Library\Platform\Render\Canvas\CanvasExecution.cpp">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\Render\Canvas\GeometryCanvas2D.cpp">
       <Filter>Library\Platform\Render\Canvas</Filter>
     </ClCompile>
@@ -4111,6 +4135,30 @@
       <Filter>Library\Platform\Null</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\Render\Canvas\CanvasDrawExecutor.h">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Canvas\CanvasTextPainter.h">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Canvas\CanvasTargetScopes.h">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Canvas\CanvasStateCommands.h">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Canvas\CanvasShapePainter.h">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Canvas\CanvasSceneCommands.h">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Canvas\CanvasImagePainter.h">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Canvas\CanvasImageEffects.h">
+      <Filter>Library\Platform\Render\Canvas</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\Render\Canvas\CanvasExecution.h">
       <Filter>Library\Platform\Render\Canvas</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\Render\Canvas\GeometryCanvas2D.h">
