@@ -2,6 +2,7 @@
 #include "MazigatiEngineShaderSources.generated.h"
 #include "DX12ShaderService.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Types/CString.h"
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Platform/DX12/DX12Log.h"
@@ -85,6 +86,7 @@ void CDX12ShaderService::Initialize( IGraphicsPipelineResources* InPipelines, IR
 
 void CDX12ShaderService::Shutdown()
 {
+	bLastPipelineValid = false;
 	MeshBuffers.Shutdown();
 	if ( Pipelines )
 	{
@@ -225,6 +227,7 @@ void CDX12ShaderService::Delete( int32 Shader )
 	{
 		return;
 	}
+	bLastPipelineValid = false; // 解放するパイプラインを、覚えたままにしない。
 	TArray<FString> Stale; // 走査中に表を変えないよう、先に鍵を集める。
 	for ( const auto& Pair : PipelineCache )
 	{
@@ -378,6 +381,51 @@ FGraphicsPipelineHandle CDX12ShaderService::GetPipeline( const FShaderDrawReques
 	const FGeometryDrawState& State = Request.State;
 	const int32 VertexId = Request.Builtin == EBuiltInVertexShader::None ? Request.VertexShader : -2 - static_cast<int32>( Request.Builtin );
 	const int32 PixelId = Request.BuiltinPixel == EBuiltInPixelShader::None ? Request.PixelShader : -2 - static_cast<int32>( Request.BuiltinPixel );
+	// 直前の描画と、入力がすべて同じなら、鍵の文字列を作らずに、前回の答えを返す（同じシェーダー・状態の描画が、続くことが多い）。
+	FPipelineInputs Inputs;
+	const bool bCanRemember = Request.NumTargets <= 8 && TextureSlots.Num() <= 16; // 入力の値に収まらないときは、覚えない。
+	if ( bCanRemember )
+	{
+		Inputs.VertexId = VertexId;
+		Inputs.PixelId = PixelId;
+		Inputs.NumTargets = Request.NumTargets;
+		for ( int32 Target = 0; Target < Request.NumTargets; ++Target )
+		{
+			Inputs.TargetFormats[Target] = static_cast<int32>( Request.TargetFormats[Target] );
+		}
+		Inputs.NumTextures = TextureSlots.Num();
+		for ( int32 Index = 0; Index < TextureSlots.Num(); ++Index )
+		{
+			Inputs.TextureFormats[Index] = static_cast<int32>( TextureSlots[Index].Format );
+		}
+		Inputs.Topology = static_cast<int32>( Request.Topology );
+		Inputs.Compare = static_cast<int32>( State.Compare );
+		Inputs.DepthBias = State.DepthBias;
+		Inputs.Culling = static_cast<int32>( State.Culling );
+		Inputs.AddressU = static_cast<int32>( State.AddressU );
+		Inputs.AddressV = static_cast<int32>( State.AddressV );
+		Inputs.Blend = State.bAlphaBlend ? static_cast<int32>( State.Blend ) : 0;
+		Inputs.CustomBlend = State.bAlphaBlend && State.Blend == EGeometryBlend::Custom ? State.CustomBlend.Pack() : 0u;
+		Inputs.bUseDepth = Request.bUseDepth;
+		Inputs.bTestDepth = State.bTestDepth;
+		Inputs.bWriteDepth = State.bWriteDepth;
+		Inputs.bAlphaBlend = State.bAlphaBlend;
+		Inputs.bLinearFilter = State.bLinearFilter;
+		if ( bLastPipelineValid && Inputs.Equals( LastPipelineInputs ) )
+		{
+			return LastPipelineHandle;
+		}
+	}
+	const auto Remember = [&]( FGraphicsPipelineHandle Handle )
+	{
+		if ( bCanRemember )
+		{
+			LastPipelineInputs = Inputs;
+			LastPipelineHandle = Handle;
+			bLastPipelineValid = true;
+		}
+		return Handle;
+	};
 	FString Formats; // 書き込み先と読む画像の形式（パイプラインの形を決める）。
 	for ( int32 Target = 0; Target < Request.NumTargets; ++Target )
 	{
@@ -393,7 +441,7 @@ FGraphicsPipelineHandle CDX12ShaderService::GetPipeline( const FShaderDrawReques
 		State.bLinearFilter ? 1 : 0, static_cast<int32>( State.AddressU ), static_cast<int32>( State.AddressV ), State.bAlphaBlend ? static_cast<int32>( State.Blend ) : 0 ) + ( State.bAlphaBlend && State.Blend == EGeometryBlend::Custom ? FString::Printf( "|%u", State.CustomBlend.Pack() ) : FString() );
 	if ( const FPipelineEntry* Found = PipelineCache.Find( Key ) )
 	{
-		return Found->Handle;   // 作れなかった組み合わせは、無効なまま覚えて、毎回作り直さない。
+		return Remember( Found->Handle );   // 作れなかった組み合わせは、無効なまま覚えて、毎回作り直さない。
 	}
 	// 頂点シェーダーの入力を、頂点の中の位置へ割り当てる。
 	TArray<FGraphicsInputElement> Elements;
@@ -404,7 +452,7 @@ FGraphicsPipelineHandle CDX12ShaderService::GetPipeline( const FShaderDrawReques
 		{
 			LOG( LogDX12, Warning, "CDX12ShaderService: the vertex shader input %s%u cannot be read from the vertex (declare the inputs of the shader vertex in order)", *Input.Semantic, Input.Index );
 			PipelineCache.Add( Key, FPipelineEntry() );
-			return FGraphicsPipelineHandle();
+			return Remember( FGraphicsPipelineHandle() );
 		}
 		Element.SemanticName = *Input.Semantic;
 		Element.SemanticIndex = Input.Index;
@@ -442,7 +490,32 @@ FGraphicsPipelineHandle CDX12ShaderService::GetPipeline( const FShaderDrawReques
 		LOG( LogDX12, Warning, "CDX12ShaderService: the pipeline of the shaders (vertex %d, pixel %d) cannot be created (the shaders must be Shader Model 5, the vertex inputs must be readable, and the outputs of the vertex shader must cover the inputs of the pixel shader)", VertexId, PixelId );
 	}
 	PipelineCache.Add( Key, Entry );
-	return Entry.Handle;
+	return Remember( Entry.Handle );
+}
+
+bool CDX12ShaderService::FPipelineInputs::Equals( const FPipelineInputs& Other ) const
+{
+	if ( VertexId != Other.VertexId || PixelId != Other.PixelId || NumTargets != Other.NumTargets || NumTextures != Other.NumTextures || Topology != Other.Topology || Compare != Other.Compare || DepthBias != Other.DepthBias || Culling != Other.Culling
+		|| AddressU != Other.AddressU || AddressV != Other.AddressV || Blend != Other.Blend || CustomBlend != Other.CustomBlend || bUseDepth != Other.bUseDepth || bTestDepth != Other.bTestDepth || bWriteDepth != Other.bWriteDepth
+		|| bAlphaBlend != Other.bAlphaBlend || bLinearFilter != Other.bLinearFilter )
+	{
+		return false;
+	}
+	for ( int32 Index = 0; Index < NumTargets; ++Index )
+	{
+		if ( TargetFormats[Index] != Other.TargetFormats[Index] )
+		{
+			return false;
+		}
+	}
+	for ( int32 Index = 0; Index < NumTextures; ++Index )
+	{
+		if ( TextureFormats[Index] != Other.TextureFormats[Index] )
+		{
+			return false;
+		}
+	}
+	return true;
 }
 
 bool CDX12ShaderService::DrawShader( const FShaderDrawRequest& Request, IRenderGeometry3D& Geometry )
@@ -530,8 +603,9 @@ bool CDX12ShaderService::DrawShader( const FShaderDrawRequest& Request, IRenderG
 		SlotTextures.Add( Resource );
 	}
 	// 定数: 置いてある中身を 256 の倍数へ切り上げ、余りは 0（転送領域へ載せる側が揃えるので、読まれる大きさ以上の中身を渡す）。
-	TArray<TArray<uint8>> ConstantBytes;
-	TArray<FGraphicsConstantBytes> Constants;
+	// 全部を 1 つの作業領域へ並べて、番号ごとに 1 回で複写する（毎回の確保と、1 バイトずつの複写をしない）。
+	ConstantPlans.Reset();
+	uint32 TotalConstantBytes = 0;
 	for ( int32 Index = 0; Index < BufferSlots.Num(); ++Index )
 	{
 		// 置いてある中身。その番号を、頂点シェーダーが読むなら頂点側、読まないならピクセル側（別の段に置いた古い中身を、読んでしまわないように）。
@@ -550,23 +624,31 @@ bool CDX12ShaderService::DrawShader( const FShaderDrawRequest& Request, IRenderG
 		{
 			return false;
 		}
-		TArray<uint8> Bytes;
-		Bytes.SetNum( static_cast<int32>( Size ), 0 );
-		if ( Found )
-		{
-			for ( int32 Byte = 0; Byte < Found->Bytes.Num(); ++Byte )
-			{
-				Bytes[Byte] = Found->Bytes[Byte];
-			}
-		}
-		ConstantBytes.Add( MoveTemp( Bytes ) );
+		FConstantPlan Plan;
+		Plan.Source = Found;
+		Plan.Size = Size;
+		ConstantPlans.Add( Plan );
+		TotalConstantBytes += Size;
 	}
-	for ( const TArray<uint8>& Bytes : ConstantBytes )
+	ConstantScratch.Reset();
+	if ( TotalConstantBytes > 0 )
 	{
+		ConstantScratch.AddZeroed( static_cast<int32>( TotalConstantBytes ) );
+	}
+	TArray<FGraphicsConstantBytes> Constants;
+	Constants.Reserve( ConstantPlans.Num() );
+	uint8* ConstantCursor = ConstantScratch.GetData(); // 次の番号の置き場。
+	for ( const FConstantPlan& Plan : ConstantPlans )
+	{
+		if ( Plan.Source && Plan.Source->Bytes.Num() > 0 )
+		{
+			FMemory::Memcpy( ConstantCursor, Plan.Source->Bytes.GetData(), static_cast<usize>( Plan.Source->Bytes.Num() ) );
+		}
 		FGraphicsConstantBytes Constant;
-		Constant.Data = Bytes.GetData();
-		Constant.Size = static_cast<uint32>( Bytes.Num() );
+		Constant.Data = ConstantCursor;
+		Constant.Size = Plan.Size;
 		Constants.Add( Constant );
+		ConstantCursor += Plan.Size;
 	}
 	static const bool bUseMeshCache = !NCommandLine::HasFlag( "no-shader-mesh-cache" ); // 同じ描画を従来の転送経路と比較する診断用指定。
 	if ( bUseMeshCache && Request.NumVertices >= 32 && Request.Topology == EGeometryTopology::Triangles )

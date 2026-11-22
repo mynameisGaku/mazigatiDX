@@ -100,6 +100,40 @@ private:
 	TMap<int32, FShaderRecord> Shaders;
 	int32 NextShader = 0;
 	TMap<FString, FPipelineEntry> PipelineCache;   // 鍵は、シェーダーと状態
+	// パイプラインを決める入力（直前の描画と同じかを、文字列の鍵を作らずに比べるための値。鍵の文字列に入れる値と同じものを持つ）。
+	struct FPipelineInputs
+	{
+		int32 VertexId = 0;
+		int32 PixelId = 0;
+		int32 NumTargets = 0;
+		int32 TargetFormats[8] = {};
+		int32 NumTextures = 0;
+		int32 TextureFormats[16] = {};
+		int32 Topology = 0;
+		int32 Compare = 0;
+		int32 DepthBias = 0;
+		int32 Culling = 0;
+		int32 AddressU = 0;
+		int32 AddressV = 0;
+		int32 Blend = 0;            // 合成するときだけの値（しないときは 0）
+		uint32 CustomBlend = 0;     // 係数を自分で決める合成のときだけの値（そうでないときは 0）
+		bool bUseDepth = false;
+		bool bTestDepth = false;
+		bool bWriteDepth = false;
+		bool bAlphaBlend = false;
+		bool bLinearFilter = false;
+		bool Equals( const FPipelineInputs& Other ) const;
+	};
+	FPipelineInputs LastPipelineInputs;          // 直前の GetPipeline の入力
+	FGraphicsPipelineHandle LastPipelineHandle;  // 直前の GetPipeline の答え
+	bool bLastPipelineValid = false;             // 直前の入力と答えを覚えているか（シェーダーの削除・終了で捨てる）
+	TArray<uint8> ConstantScratch;               // DrawShader が、定数の中身を並べる作業領域（毎回の確保を避ける）
+	struct FConstantPlan
+	{
+		const FShaderConstantData* Source = nullptr;   // 置いてある中身（なければ nullptr）
+		uint32 Size = 0;                               // 渡す大きさ
+	};
+	TArray<FConstantPlan> ConstantPlans;         // DrawShader が、番号ごとの中身と大きさを決める作業領域
 	FShaderRecord BuiltInRect;
 	FShaderRecord BuiltInQuad;
 	FShaderRecord BuiltInLit;

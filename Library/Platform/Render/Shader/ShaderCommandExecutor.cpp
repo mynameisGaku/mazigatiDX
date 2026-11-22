@@ -263,35 +263,42 @@ CShaderCommandExecutor::EResult CShaderCommandExecutor::Execute( const FDrawComm
 		constexpr usize DataWords = sizeof( FDrawPrimitiveShader3DData ) / 4;
 		constexpr usize VertexWords = sizeof( FDrawShaderVertex3D ) / 4;
 		const uint8* VertexBytes = reinterpret_cast<const uint8*>( View.Data + DataWords ); // 頂点の並び（4 バイトの境界）。
-		// 数値の検査（有限でない頂点は、GPU へ渡さない）。
+		// 数値の検査（有限でない頂点は、GPU へ渡さない）。位置・補助の位置・U・V の 9 個を、浮動小数点の指数部がすべて 1（NaN・無限大）でないかで確かめる（1 つずつ関数を呼ばない）。
+		static_assert( offsetof( FDrawShaderVertex3D, SubPosition ) == 3 * sizeof( uint32 ) && offsetof( FDrawShaderVertex3D, U ) == 18 * sizeof( uint32 ) && offsetof( FDrawShaderVertex3D, V ) == 19 * sizeof( uint32 ), "the finite check reads the vertex as 32-bit words" );
+		constexpr uint32 ExponentMask = 0x7F800000u; // 浮動小数点の指数部。すべて 1 なら NaN か無限大。
 		for ( int32 Index = 0; Index < Data.NumVertices; ++Index )
 		{
-			FDrawShaderVertex3D Vertex;
-			FMemory::Memcpy( &Vertex, VertexBytes + static_cast<usize>( Index ) * sizeof( FDrawShaderVertex3D ), sizeof( Vertex ) );
-			const float32 Numbers[] = { Vertex.Position[0], Vertex.Position[1], Vertex.Position[2], Vertex.SubPosition[0], Vertex.SubPosition[1], Vertex.SubPosition[2], Vertex.SubPosition[3], Vertex.U, Vertex.V };
-			for ( const float32 Number : Numbers )
+			const uint32* Words = View.Data + DataWords + static_cast<usize>( Index ) * VertexWords; // この頂点の先頭（4 バイトの境界）。
+			if ( ( Words[0] & ExponentMask ) == ExponentMask || ( Words[1] & ExponentMask ) == ExponentMask || ( Words[2] & ExponentMask ) == ExponentMask || ( Words[3] & ExponentMask ) == ExponentMask || ( Words[4] & ExponentMask ) == ExponentMask
+				|| ( Words[5] & ExponentMask ) == ExponentMask || ( Words[6] & ExponentMask ) == ExponentMask || ( Words[18] & ExponentMask ) == ExponentMask || ( Words[19] & ExponentMask ) == ExponentMask )
 			{
-				if ( !NMath::IsFinite( Number ) )
-				{
-					return EResult::Rejected;
-				}
+				return EResult::Rejected;
 			}
 		}
 		// つなぎ方を、リスト（点・線分・三角形）へ展開する。添字なしのリストは、頂点を順に使う。
 		TArray<uint32> Order; // 使う頂点の順。
-		Order.Reserve( Count );
-		for ( int32 Index = 0; Index < Count; ++Index )
+		Order.AddUninitialized( Count );
+		uint32* OrderData = Order.GetData();
+		if ( bIndexed )
 		{
-			uint16 Value = static_cast<uint16>( Index );
-			if ( bIndexed )
+			const uint16* IndexData = reinterpret_cast<const uint16*>( View.Data + DataWords + static_cast<usize>( Data.NumVertices ) * VertexWords ); // 添字の並び（4 バイトの境界）。
+			const uint32 NumVertices = static_cast<uint32>( Data.NumVertices );
+			for ( int32 Index = 0; Index < Count; ++Index )
 			{
-				FMemory::Memcpy( &Value, reinterpret_cast<const uint8*>( View.Data + DataWords + static_cast<usize>( Data.NumVertices ) * VertexWords ) + static_cast<usize>( Index ) * sizeof( uint16 ), sizeof( Value ) );
-				if ( Value >= Data.NumVertices )
+				const uint32 Value = IndexData[Index];
+				if ( Value >= NumVertices )
 				{
 					return EResult::Rejected;
 				}
+				OrderData[Index] = Value;
 			}
-			Order.Add( Value );
+		}
+		else
+		{
+			for ( int32 Index = 0; Index < Count; ++Index )
+			{
+				OrderData[Index] = static_cast<uint32>( Index );
+			}
 		}
 		TArray<uint32> Expanded; // リストに展開した順。
 		EGeometryTopology Topology = EGeometryTopology::Triangles;
@@ -299,7 +306,7 @@ CShaderCommandExecutor::EResult CShaderCommandExecutor::Execute( const FDrawComm
 		if ( Type == EDrawPrimitive::Points || Type == EDrawPrimitive::Lines || Type == EDrawPrimitive::Triangles )
 		{
 			Topology = Type == EDrawPrimitive::Points ? EGeometryTopology::Points : Type == EDrawPrimitive::Lines ? EGeometryTopology::Lines : EGeometryTopology::Triangles;
-			Expanded = Order;
+			Expanded = MoveTemp( Order ); // そのまま使う（複写しない）。
 		}
 		else if ( Type == EDrawPrimitive::LineStrip )
 		{
