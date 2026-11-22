@@ -12,6 +12,7 @@
 #include "DX12TextureCreator.h"
 #include "DX12TextureReader.h"
 #include "DX12TextureRecord.h"
+#include "DX12TextureUpdater.h"
 #include "Library/Platform/DX12/Resource/Descriptor/DX12DescriptorPool.h"
 
 // RGBA8画像のGPU資源・転送・遅延解放を所有する。ImGui文脈を必要としない。
@@ -110,9 +111,11 @@ class CDX12TextureStore : public IRenderTextureResources
 	CDX12SyncSubmitter Submitter; // 作成・消去・コピー・読み戻しを、提出して完了まで待つ。
 	CDX12TextureCreator Creator; // 画像・描画先・深度の GPU 資源を作る。
 	CDX12TextureReader Reader; // 画像の全画素を CPU へ読み戻す。
+	CDX12TextureUpdater Updater; // 読み取り用画像の全画素の更新を、完了を待たずに積む。
 	CDX12DescriptorPool *Pool = nullptr; // 所有者より長生きする記述子の貸出先。
 	TMap<uint64, FDX12TextureRecord> Textures; // 型付き番号から所有画像への表。
-	TArray<FDX12TextureRecord> Retired; // 記録済みの描画が終わるまで保持する旧版。
+	TArray<FDX12TextureRecord> Retired; // 記録済みの描画が終わるまで保持する、登録解除した画像。
+	TArray<FDX12TextureRecord> RetiredVersions; // 記録済みの描画が終わるまで保持する、更新で外れた旧版（GPU完了後は、更新の再利用へ預ける）。
 	FComputeTextureCapabilities Capabilities; // 接続したGPUのcompute画像対応能力。
 	FRenderTargetCapabilities RenderTargetCapabilities; // 接続したGPUの描画先・深度対応能力。
 	uint64 ActiveColorTargets[FRenderTargetPassDesc::MaxColorTargets] = {}; // 現在記録中のオフスクリーン色描画先群。

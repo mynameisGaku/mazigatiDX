@@ -1333,6 +1333,9 @@
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureReader.cpp">
       <Filter>Library\Platform\DX12\Resource\Texture</Filter>
     </ClCompile>
+    <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureUpdater.cpp">
+      <Filter>Library\Platform\DX12\Resource\Texture</Filter>
+    </ClCompile>
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureRecord.cpp">
       <Filter>Library\Platform\DX12\Resource\Texture</Filter>
     </ClCompile>
@@ -4075,6 +4078,9 @@
       <Filter>Library\Platform\DX12\Resource\Texture</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureReader.h">
+      <Filter>Library\Platform\DX12\Resource\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureUpdater.h">
       <Filter>Library\Platform\DX12\Resource\Texture</Filter>
     </ClInclude>
     <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureRecord.h">

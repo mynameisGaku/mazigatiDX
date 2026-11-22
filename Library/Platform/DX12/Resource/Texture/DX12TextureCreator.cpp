@@ -160,6 +160,26 @@ bool CDX12TextureCreator::CreateRGBA8( int32 Width, int32 Height, const FColor32
 	return true;
 }
 
+bool CDX12TextureCreator::CreateEmptyRGBA8( int32 Width, int32 Height, FDX12TextureRecord &Out )
+{
+	if ( !Device || !Pool )
+	{
+		return false;
+	}
+	FDX12TextureRecord Created; // 転送が積まれるまで、外へは使わせない画像。
+	const D3D12_RESOURCE_DESC Desc = MakeTexture2DDesc( Width, Height, 1, DXGI_FORMAT_R8G8B8A8_UNORM, D3D12_RESOURCE_FLAG_NONE );
+	if ( !CreateDefaultHeapResource( Device, Desc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, Created.Resource ) || !AttachShaderResourceView( Created, Desc.Format, 1 ) )
+	{
+		return false;
+	}
+	Created.Width = Width;
+	Created.Height = Height;
+	Created.MipLevels = 1;
+	Created.Kind = EDX12TextureKind::StandardRGBA8;
+	Out = MoveTemp( Created );
+	return true;
+}
+
 bool CDX12TextureCreator::CreateRGBA16F( int32 Width, int32 Height, const FColor *Pixels, FDX12TextureRecord &Out )
 {
 	if ( !Device || !Submitter || !Pool )

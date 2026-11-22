@@ -563,6 +563,7 @@
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12SyncSubmitter.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureCreator.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureReader.cpp" />
+    <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureUpdater.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureRecord.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureCopy.cpp" />
     <ClCompile Include="Library\Platform\DX12\Resource\Texture\DX12TextureFormat.cpp" />
@@ -1479,6 +1480,7 @@
     <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12SyncSubmitter.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureCreator.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureReader.h" />
+    <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureUpdater.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureRecord.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureCopy.h" />
     <ClInclude Include="Library\Platform\DX12\Resource\Texture\DX12TextureFormat.h" />

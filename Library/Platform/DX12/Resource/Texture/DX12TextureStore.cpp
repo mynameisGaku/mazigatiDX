@@ -42,6 +42,7 @@ bool CDX12TextureStore::Initialize( ID3D12Device *InDevice, ID3D12CommandQueue *
 		return false;
 	}
 	Creator.Connect( Device.Get(), &Submitter, Pool );
+	Updater.Connect( Device.Get(), Queue.Get(), &Creator, Pool );
 	Reader.Connect( Device.Get(), &Submitter );
 	bCapabilitiesAvailable = NDX12TextureFormat::GetComputeCapabilities( Device.Get(), Capabilities );
 	bRenderTargetCapabilitiesAvailable = NDX12TextureFormat::GetRenderTargetCapabilities( Device.Get(), RenderTargetCapabilities );
@@ -64,6 +65,15 @@ void CDX12TextureStore::CollectAfterGPUIdle()
 		Destroy( Texture );
 	}
 	Retired.Reset();
+	for ( auto &Version : RetiredVersions )
+	{
+		if ( !Updater.Adopt( Version ) ) // 次の更新で再利用できる旧版は、資源と記述子を残す。
+		{
+			Destroy( Version );
+		}
+	}
+	RetiredVersions.Reset();
+	Updater.CollectAfterGPUIdle();
 	Submitter.CollectAfterGPUIdle();
 }
 
@@ -75,6 +85,7 @@ void CDX12TextureStore::ResetAfterGPUIdle()
 		Destroy( Pair.Value );
 	}
 	Textures.Reset();
+	Updater.Disconnect();
 	Creator.Disconnect();
 	Reader.Disconnect();
 	Submitter.ResetAfterGPUIdle();
@@ -90,7 +101,7 @@ void CDX12TextureStore::ResetAfterGPUIdle()
 
 bool CDX12TextureStore::CanCreate( int32 Width, int32 Height ) const
 {
-	return Submitter.IsHealthy() && Device && Pool && SUCCEEDED( Device->GetDeviceRemovedReason() ) && Width > 0 && Height > 0 && Width <= 16384 && Height <= 16384 && static_cast<int64>( Width ) * Height <= 64 * 1024 * 1024 && Textures.Num() + Retired.Num() < MaxResources;
+	return Submitter.IsHealthy() && Device && Pool && SUCCEEDED( Device->GetDeviceRemovedReason() ) && Width > 0 && Height > 0 && Width <= 16384 && Height <= 16384 && static_cast<int64>( Width ) * Height <= 64 * 1024 * 1024 && Textures.Num() + Retired.Num() + RetiredVersions.Num() < MaxResources;
 }
 
 FTextureResourceHandle CDX12TextureStore::Register( FDX12TextureRecord &Created )
@@ -452,11 +463,13 @@ bool CDX12TextureStore::UpdateTextureRGBA8( FTextureResourceHandle Texture, int3
 		return false;
 	}
 	FDX12TextureRecord Created; // 失敗時は現在の内容とSRVを保つ。
-	if ( !Upload( Width, Height, Pixels, Current->Kind == EDX12TextureKind::ComputeRGBA8, Created, Current->MipLevels > 1 ) ) // ミップマップを持つ画像は、ミップマップも作り直す
+	// 読み取り用の段なし画像は、完了を待たずに積む（資源・記述子・転送領域を使い回す）。待てない・予算超過なら、完了を待つ経路へ。
+	const bool bQueued = Current->Kind == EDX12TextureKind::StandardRGBA8 && Current->MipLevels == 1 && CanCreate( Width, Height ) && Updater.Update( Width, Height, Pixels, Created );
+	if ( !bQueued && !Upload( Width, Height, Pixels, Current->Kind == EDX12TextureKind::ComputeRGBA8, Created, Current->MipLevels > 1 ) ) // ミップマップを持つ画像は、ミップマップも作り直す
 	{
 		return false;
 	}
-	Retired.Add( MoveTemp( *Current ) );
+	RetiredVersions.Add( MoveTemp( *Current ) );
 	*Current = MoveTemp( Created );
 	return true;
 }

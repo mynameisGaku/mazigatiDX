@@ -15,6 +15,8 @@ class CDX12TextureCreator
 	void Disconnect();
 	// CPU の画素から RGBA8 画像を作る。bWritable なら UAV 書き込みも許可する。bMips なら、半分ずつに縮めた段も作って全部転送する（作れない大きさ・書き込み可の画像は段なし）。
 	bool CreateRGBA8( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable, bool bMips, FDX12TextureRecord &Out );
+	// 中身が未定の、読み取り用 RGBA8 画像（段なし・SRV つき）を、転送先の状態で作る。転送は呼び出し側が積む（待たない）。
+	bool CreateEmptyRGBA8( int32 Width, int32 Height, FDX12TextureRecord &Out );
 	// CPU の画素から、UAV 読み書きできる RGBA16F 画像を作る（画素は有限値であること）。
 	bool CreateRGBA16F( int32 Width, int32 Height, const FColor *Pixels, FDX12TextureRecord &Out );
 	// 指定の色で消去した、色の描画先（RGBA8・RGBA16F・R32Float）を作る。作成時の消去値の記録（InitialClearColor 系）は、呼び出し側が行う。
