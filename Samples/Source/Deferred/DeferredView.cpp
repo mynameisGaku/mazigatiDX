@@ -194,9 +194,17 @@ bool CDeferredView::UpdateTileLights( FDrawContext& CommandList )
 	Desc.TileSize = FDeferredDemoState::TileSize;
 	Desc.MaxLightsPerTile = State->TileCapacity;
 	Desc.NumDepthSlices = State->NumSlices;
-	if ( !State->TileGrid.Build( State->Camera, State->GetSceneViewport(), Lights.GetData(), Lights.Num(), Desc ) || !State->TileGrid.WriteImage( State->TileImage ) )
+	// CPU で作る一覧は、CPU の経路（動的な画像で渡す）と、統計（画面の文字・検査のログ）に使う。GPU の経路では、統計だけなので、時々だけ作る（検査のログを出すときは、毎フレーム）
+	constexpr int32 StatsInterval = 30;
+	bool bBuilt = false;
+	if ( !State->bGpuLights || State->bLogTileStats || !State->TileGrid.IsValid() || ++State->NumFramesSinceGrid >= StatsInterval )
 	{
-		return false;
+		State->NumFramesSinceGrid = 0;
+		bBuilt = true;
+		if ( !State->TileGrid.Build( State->Camera, State->GetSceneViewport(), Lights.GetData(), Lights.Num(), Desc ) )
+		{
+			return false;
+		}
 	}
 	if ( State->bGpuLights )
 	{
@@ -211,6 +219,11 @@ bool CDeferredView::UpdateTileLights( FDrawContext& CommandList )
 		{
 			return State->TileBuilder.Record( CommandList, State->Camera, Lights.GetData(), Lights.Num() );
 		}
+	}
+	// CPU の経路: 一覧を、画像へ詰めて、動的な画像へ反映する（GPU から切り替えた直後は、このフレームの一覧を作る）
+	if ( ( !bBuilt && !State->TileGrid.Build( State->Camera, State->GetSceneViewport(), Lights.GetData(), Lights.Num(), Desc ) ) || !State->TileGrid.WriteImage( State->TileImage ) )
+	{
+		return false;
 	}
 	if ( !State->TileTexture.IsValid() )
 	{

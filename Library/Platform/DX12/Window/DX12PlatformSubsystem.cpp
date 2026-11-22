@@ -337,7 +337,8 @@ bool CDX12PlatformSubsystem::BeginFrame()
 		}
 	};
 	TextureViews.Invalidate();
-	if ( !ExecuteRender( MoveTemp( Start ) ) || !bStarted || !ThreadedSurface->BeginFrame( Settings.Width, Settings.Height ) )
+	// フレームの境目は、資源の作成・解放ではない（番号が使い回される前には、必ず作成・解放の呼び出しがあり、そこで捨てる）。待たずに積んでよい組み合わせの確かめ済みは、フレームをまたいで使う。
+	if ( !ExecuteRender( MoveTemp( Start ), false ) || !bStarted || !ThreadedSurface->BeginFrame( Settings.Width, Settings.Height ) )
 	{
 		LOG( LogDX12, Error, "DX12 frame could not start (device lost or GPU wait failed)" );
 		bExit = true;
@@ -410,7 +411,8 @@ void CDX12PlatformSubsystem::EndFrame()
 			bSubmitted = false;
 		}
 	};
-	const bool bRecorded = ExecuteRender( MoveTemp( Submit ) );
+	TextureViews.Invalidate();
+	const bool bRecorded = ExecuteRender( MoveTemp( Submit ), false ); // フレームの提出も、資源の作成・解放ではない（確かめ済みは、捨てない）。
 	// PresentはOSからの通知を待つ場合があるため、窓のスレッドに残す。
 	bWindowRenderPhase = true;
 	const bool bPresented = bRecorded && bSubmitted && Device->PresentFrame( Settings.bVSync );
@@ -602,7 +604,7 @@ bool CDX12PlatformSubsystem::WaitForGPU()
 	return ExecuteRender( MoveTemp( Wait ) ) && bResult;
 }
 
-bool CDX12PlatformSubsystem::ExecuteRender( TCallable<void()> Task, bool bMayChangeTextureViews ) const
+bool CDX12PlatformSubsystem::ExecuteRender( TCallable<void()> Task, bool bMayChangeTextureViews, const char *Caller ) const
 {
 	if ( bMayChangeTextureViews )
 	{
@@ -624,7 +626,7 @@ bool CDX12PlatformSubsystem::ExecuteRender( TCallable<void()> Task, bool bMayCha
 		{
 			return false;
 		}
-		return RenderCommands->Execute( MoveTemp( Task ) );
+		return RenderCommands->Execute( MoveTemp( Task ), Caller );
 	}
 	Task();
 	return true;

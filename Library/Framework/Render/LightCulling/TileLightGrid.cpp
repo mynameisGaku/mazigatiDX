@@ -1,5 +1,6 @@
 ﻿#include "TileLightGrid.h"
 
+#include "Library/Core/Profiler/ProfilerScope.h"
 #include "Library/Framework/Render/Deferred/GBufferView.h"
 #include "Library/Framework/Render/State/Lighting.h"
 
@@ -155,6 +156,7 @@ bool CTileLightGrid::CanBuild( const FCamera& Camera, const FCameraViewport& Vie
 
 bool CTileLightGrid::Build( const FCamera& Camera, const FCameraViewport& Viewport, const FCullLight* Lights, int32 InNumLights, const FTileLightGridDesc& InDesc )
 {
+	PROFILE_SCOPE_CAT( NProfileCategory::Platform, "LightCulling.GridBuild" );
 	Reset();
 	if ( !CanBuild( Camera, Viewport, Lights, InNumLights, InDesc ) )
 	{
@@ -348,6 +350,7 @@ bool CTileLightGrid::IsTileOverflowed( int32 TileX, int32 TileY, int32 Slice ) c
 
 bool CTileLightGrid::WriteImage( FPixelImage& Out ) const
 {
+	PROFILE_SCOPE_CAT( NProfileCategory::Platform, "LightCulling.GridWriteImage" );
 	if ( !IsValid() )
 	{
 		return false;

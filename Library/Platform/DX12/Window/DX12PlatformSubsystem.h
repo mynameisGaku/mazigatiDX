@@ -195,7 +195,8 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
   private:
 	// 記録済みの2Dを同じ列へ渡し、借用値を使う処理が終わるまで待つ。初期化・解放時は所有スレッドで直接実行する。
 	// bMayChangeTextureViews が true（既定）なら、覚えておいた画像の view を捨てる（資源の作成・更新・解放など、view の答えを変えうる操作）。問い合わせだけなら false。
-	bool ExecuteRender( TCallable<void()> Task, bool bMayChangeTextureViews = true ) const;
+	// Caller は、呼び出し元の関数名（確認用の集計に使う。呼び出し側は渡さない）。
+	bool ExecuteRender( TCallable<void()> Task, bool bMayChangeTextureViews = true, const char *Caller = __builtin_FUNCTION() ) const;
 	// 通常のcompute提出とタイムスタンプ付き提出を共有経路で実行する。
 	FComputeSubmission SubmitComputeInternal( TArrayView<const FComputeDispatch> Dispatches, const FGpuTimestampHandle *Timestamp );
 	CRenderCommandThread *RenderCommands = nullptr; // 描画の専用実行列。GPU利用者より先に終了する。

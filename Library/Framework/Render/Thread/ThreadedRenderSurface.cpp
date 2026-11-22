@@ -44,11 +44,13 @@ bool CThreadedRenderSurface::BeginFrame( int32 InWidth, int32 InHeight )
 	}
 	// 実行先の生きた状態をゲーム側から直接読まない。
 	auto Probe = [this]()
-	{ bHasCanvas = Target.GetCanvas2D() != nullptr; bHasGeometry = Target.GetGeometry3D() != nullptr; };
+	{ bRejectedPass = false; bHasCanvas = Target.GetCanvas2D() != nullptr; bHasGeometry = Target.GetGeometry3D() != nullptr; };
 	if ( !Thread.Execute( MoveTemp( Probe ), "Render.SurfaceBegin" ) )
 	{
 		return false;
 	}
+	bFrameHasCanvas = bHasCanvas;
+	bFrameHasGeometry = bHasGeometry;
 	Width = FrameWidth = InWidth;
 	Height = FrameHeight = InHeight;
 	NumCommands = TextBytes = 0;
@@ -57,6 +59,7 @@ bool CThreadedRenderSurface::BeginFrame( int32 InWidth, int32 InHeight )
 	bRenderTargetPass = false;
 	ColorFormat = ERenderTargetColorFormat::RGBA8;
 	bFilterSupportKnown = false;
+	FilterKey = 0;
 	Gate.BeginFrame();
 	bActive = true;
 	return true;
@@ -116,10 +119,10 @@ void CThreadedRenderSurface::Queue( FCommand Command )
 	}
 }
 
-bool CThreadedRenderSurface::Execute( TCallable<void()> Command )
+bool CThreadedRenderSurface::Execute( TCallable<void()> Command, const char *Caller )
 {
 	GAME_THREAD_ONLY( false );
-	return Flush() && Thread.Execute( MoveTemp( Command ) );
+	return Flush() && Thread.Execute( MoveTemp( Command ), Caller );
 }
 
 IRenderCanvas2D *CThreadedRenderSurface::GetCanvas2D()
@@ -169,7 +172,8 @@ bool CThreadedRenderSurface::BeginOffscreenCapture( const FOffscreenCaptureDesc 
 	Height = Desc.Height;
 	bCapture = true;
 	bFilterSupportKnown = false;
-	Gate.SetTarget( 0x8000000000000000ull ^ ( static_cast<uint64>( Desc.Width ) << 32 ) ^ static_cast<uint64>( Desc.Height ), TArrayView<const FTextureResourceHandle>() );
+	FilterKey = 0x8000000000000000ull ^ ( static_cast<uint64>( Desc.Width ) << 32 ) ^ static_cast<uint64>( Desc.Height );
+	Gate.SetTarget( FilterKey, TArrayView<const FTextureResourceHandle>() );
 	return true;
 }
 
@@ -188,6 +192,7 @@ bool CThreadedRenderSurface::EndOffscreenCapture( TArray<FColor32> &Out )
 	Height = FrameHeight;
 	bCapture = false;
 	bFilterSupportKnown = false;
+	FilterKey = 0;
 	Gate.SetTarget( 0, TArrayView<const FTextureResourceHandle>() );
 	return bExecuted && bResult;
 }
@@ -199,12 +204,28 @@ bool CThreadedRenderSurface::BeginRenderTargetPass( const FRenderTargetPassDesc 
 	{
 		return false;
 	}
+	TArray<FTextureResourceHandle> Written; // この描画先パスが書き込む画像。これらを読む描画は、いつも同期で確かめる。
+	const uint64 PassKey = MakePassKey( Desc, Written );
+	if ( bQueuedDrawsEnabled )
+	{
+		// 同期で成功した組み合わせの繰り返しは、結果を待たずに積む。描画スレッドが始めている間も、ゲーム側は記録を続けられる。
+		if ( const FPassProof *Found = FindPassProof( Desc, PassKey ) )
+		{
+			const FPassProof Proof = *Found;
+			if ( QueueRenderTargetPassBegin( Desc ) )
+			{
+				EnterRenderTargetPass( Proof, PassKey, Written );
+				return true;
+			}
+		}
+	}
 	bool bResult = false;
 	bool bPassCanvas = false, bPassGeometry = false; // パス開始後のMRT有無に応じて有効窓口を更新する。
 	int32 TargetWidth = 0, TargetHeight = 0; // 描画先の実寸を描画スレッド側で取得する。
 	ERenderTargetColorFormat PassFormat = ERenderTargetColorFormat::RGBA8; // 描画先の色の形式も、描画スレッド側で取得する。
 	auto Begin = [&]()
 	{
+		bRejectedPass = false;
 		bResult = Target.BeginRenderTargetPass( Desc );
 		if ( bResult )
 		{
@@ -222,17 +243,144 @@ bool CThreadedRenderSurface::BeginRenderTargetPass( const FRenderTargetPassDesc 
 	{
 		return false;
 	}
-	Width = TargetWidth;
-	Height = TargetHeight;
-	ColorFormat = PassFormat;
-	bHasCanvas = bPassCanvas;
-	bHasGeometry = bPassGeometry;
-	bRenderTargetPass = true;
-	bFilterSupportKnown = false;
-	TArray<FTextureResourceHandle> Written; // この描画先パスが書き込む画像。これらを読む描画は、いつも同期で確かめる。
-	const uint64 PassKey = MakePassKey( Desc, Written );
-	Gate.SetTarget( PassKey, TArrayView<const FTextureResourceHandle>( Written.GetData(), Written.Num() ) );
+	RememberPassProof( Desc, PassKey, TargetWidth, TargetHeight, PassFormat, bPassCanvas, bPassGeometry );
+	FPassProof Proof;
+	Proof.Width = TargetWidth;
+	Proof.Height = TargetHeight;
+	Proof.Format = PassFormat;
+	Proof.bCanvas = bPassCanvas;
+	Proof.bGeometry = bPassGeometry;
+	EnterRenderTargetPass( Proof, PassKey, Written );
 	return true;
+}
+
+const CThreadedRenderSurface::FPassProof *CThreadedRenderSurface::FindPassProof( const FRenderTargetPassDesc &Desc, uint64 PassKey ) const
+{
+	const float32 ClearDepth = Desc.bClearDepth ? Desc.ClearDepth : -1.0f;
+	for ( const FPassProof &Proof : PassProofs )
+	{
+		if ( Proof.PassKey == PassKey && Proof.ColorTarget == Desc.ColorTarget.Value && Proof.NumColorTargets == Desc.ColorTargets.Num() && Proof.Scale == Desc.Scale && Proof.ClearDepth == ClearDepth )
+		{
+			return &Proof;
+		}
+	}
+	return nullptr;
+}
+
+void CThreadedRenderSurface::RememberPassProof( const FRenderTargetPassDesc &Desc, uint64 PassKey, int32 InWidth, int32 InHeight, ERenderTargetColorFormat InFormat, bool bInCanvas, bool bInGeometry )
+{
+	constexpr int32 MaxProofs = 64; // 描画先の組み合わせは少ない。溢れたら、最初から捨てて覚え直す。
+	if ( PassProofs.Num() >= MaxProofs )
+	{
+		PassProofs.Empty();
+	}
+	FPassProof Proof;
+	Proof.PassKey = PassKey;
+	Proof.ColorTarget = Desc.ColorTarget.Value;
+	Proof.NumColorTargets = Desc.ColorTargets.Num();
+	Proof.Scale = Desc.Scale;
+	Proof.ClearDepth = Desc.bClearDepth ? Desc.ClearDepth : -1.0f;
+	Proof.Width = InWidth;
+	Proof.Height = InHeight;
+	Proof.Format = InFormat;
+	Proof.bCanvas = bInCanvas;
+	Proof.bGeometry = bInGeometry;
+	PassProofs.Add( Proof );
+}
+
+bool CThreadedRenderSurface::TrackPassResult( bool bSucceeded )
+{
+	if ( !bSucceeded && bRenderTargetPass )
+	{
+		bPassTainted = true; // 終わりが失敗しうる（自己参照の競合など）。終わりは、同期で実行して、本当の結果を返す。
+	}
+	return bSucceeded;
+}
+
+bool CThreadedRenderSurface::QueueRenderTargetPassBegin( const FRenderTargetPassDesc &Desc )
+{
+	GAME_THREAD_ONLY( false );
+	if ( !Flush() )
+	{
+		return false;
+	}
+	// 描画スレッドで始めるまで、記述が指す配列は残らない。複数指定の描画先は、複写して持つ。
+	FRenderTargetPassDesc Owned = Desc;
+	TArray<FRenderTargetColorAttachment> Colors;
+	for ( const FRenderTargetColorAttachment &Attachment : Desc.ColorTargets )
+	{
+		Colors.Add( Attachment );
+	}
+	Owned.ColorTargets = TArrayView<const FRenderTargetColorAttachment>();
+	auto Begin = [this, Owned, Colors = MoveTemp( Colors )]()
+	{
+		RENDER_THREAD_ONLY();
+		FRenderTargetPassDesc Pass = Owned;
+		Pass.ColorTargets = TArrayView<const FRenderTargetColorAttachment>( Colors.GetData(), Colors.Num() );
+		bRejectedPass = !Target.BeginRenderTargetPass( Pass );
+		if ( bRejectedPass )
+		{
+			const int32 Count = NumRejectedPasses.FetchAdd( 1 ) + 1;
+			if ( Count <= 8 || ( Count & ( Count - 1 ) ) == 0 ) // 繰り返しても、ログが溢れないように、最初の数件と、2 の冪乗の回だけ。
+			{
+				LOG( LogThreadedSurface, Warning, "a queued render target pass was rejected by the GPU path, so its draws are dropped (%d rejected so far)", Count );
+			}
+		}
+	};
+	return Thread.Enqueue( MoveTemp( Begin ), "Render.PassBegin" ).IsValid();
+}
+
+void CThreadedRenderSurface::EnterRenderTargetPass( const FPassProof &Proof, uint64 PassKey, const TArray<FTextureResourceHandle> &Written )
+{
+	Width = Proof.Width;
+	Height = Proof.Height;
+	ColorFormat = Proof.Format;
+	bHasCanvas = Proof.bCanvas;
+	bHasGeometry = Proof.bGeometry;
+	bRenderTargetPass = true;
+	bPassTainted = false;
+	NumOpenPassTimestamps = 0;
+	bFilterSupportKnown = false;
+	FilterKey = PassKey;
+	Gate.SetTarget( PassKey, TArrayView<const FTextureResourceHandle>( Written.GetData(), Written.Num() ) );
+}
+
+void CThreadedRenderSurface::RestoreFilterSupport()
+{
+	for ( const FFilterProof &Proof : FilterProofs )
+	{
+		if ( Proof.Key == FilterKey )
+		{
+			bFilterSupported = Proof.bSupported;
+			bFilterSupportKnown = true;
+			return;
+		}
+	}
+}
+
+void CThreadedRenderSurface::RememberFilterSupport( bool bSupported )
+{
+	constexpr int32 MaxProofs = 64; // 描画先の組み合わせは少ない。溢れたら、最初から捨てて覚え直す。
+	if ( FilterProofs.Num() >= MaxProofs )
+	{
+		FilterProofs.Empty();
+	}
+	FFilterProof Proof;
+	Proof.Key = FilterKey;
+	Proof.bSupported = bSupported;
+	FilterProofs.Add( Proof );
+}
+
+IRenderCanvas2D *CThreadedRenderSurface::GetTargetCanvas() const
+{
+	RENDER_THREAD_ONLY( nullptr );
+	return bRejectedPass ? nullptr : Target.GetCanvas2D();
+}
+
+IRenderGeometry3D *CThreadedRenderSurface::GetTargetGeometry() const
+{
+	RENDER_THREAD_ONLY( nullptr );
+	return bRejectedPass ? nullptr : Target.GetGeometry3D();
 }
 
 bool CThreadedRenderSurface::CopyColorRegion( int32 X0, int32 Y0, int32 X1, int32 Y1, FTextureResourceHandle Dest )
@@ -243,8 +391,8 @@ bool CThreadedRenderSurface::CopyColorRegion( int32 X0, int32 Y0, int32 X1, int3
 		return false;
 	}
 	bool bResult = false;
-	auto Copy = [&]() { bResult = Target.CopyColorRegion( X0, Y0, X1, Y1, Dest ); };
-	return Execute( MoveTemp( Copy ) ) && bResult;
+	auto Copy = [&]() { bResult = !bRejectedPass && Target.CopyColorRegion( X0, Y0, X1, Y1, Dest ); };
+	return TrackPassResult( Execute( MoveTemp( Copy ) ) && bResult );
 }
 
 bool CThreadedRenderSurface::RecordTextureCopy( FTextureResourceHandle Source, FTextureResourceHandle Destination )
@@ -266,11 +414,44 @@ bool CThreadedRenderSurface::EndRenderTargetPass()
 	{
 		return false;
 	}
+	if ( bQueuedDrawsEnabled && !bPassTainted && NumOpenPassTimestamps == 0 && Flush() )
+	{
+		// 待たずに積む。ゲーム側は、描画スレッドがパスの描画を終えるのを待たずに、次の記録へ進める。
+		auto End = [this]()
+		{
+			RENDER_THREAD_ONLY();
+			const bool bWasRejected = bRejectedPass; // 断られた描画先パスは、実行先で始まっていない（始まりを断ったときに、数えて、ログへ出した）。
+			bRejectedPass = false;
+			if ( bWasRejected || Target.EndRenderTargetPass() )
+			{
+				return;
+			}
+			const int32 Count = NumFailedPassEnds.FetchAdd( 1 ) + 1;
+			if ( Count <= 8 || ( Count & ( Count - 1 ) ) == 0 ) // 繰り返しても、ログが溢れないように、最初の数件と、2 の冪乗の回だけ。
+			{
+				LOG( LogThreadedSurface, Warning, "a queued render target pass failed to finish on the GPU path, so its result is dropped (%d failed so far)", Count );
+			}
+		};
+		if ( Thread.Enqueue( MoveTemp( End ), "Render.PassEnd" ).IsValid() )
+		{
+			Width = FrameWidth;
+			Height = FrameHeight;
+			bHasCanvas = bFrameHasCanvas;
+			bHasGeometry = bFrameHasGeometry;
+			bRenderTargetPass = false;
+			ColorFormat = ERenderTargetColorFormat::RGBA8;
+			bFilterSupportKnown = false;
+			FilterKey = 0;
+			Gate.SetTarget( 0, TArrayView<const FTextureResourceHandle>() );
+			return true;
+		}
+	}
 	bool bResult = false;
 	bool bAfterCanvas = false, bAfterGeometry = false; // 通常描画へ戻した後の窓口状態を復元する。
 	auto End = [&]()
 	{
-		bResult = Target.EndRenderTargetPass();
+		bResult = !bRejectedPass && Target.EndRenderTargetPass(); // 断られた描画先パスは、実行先で始まっていない。
+		bRejectedPass = false;
 		bAfterCanvas = Target.GetCanvas2D() != nullptr;
 		bAfterGeometry = Target.GetGeometry3D() != nullptr;
 	};
@@ -282,6 +463,7 @@ bool CThreadedRenderSurface::EndRenderTargetPass()
 	bRenderTargetPass = false;
 	ColorFormat = ERenderTargetColorFormat::RGBA8;
 	bFilterSupportKnown = false;
+	FilterKey = 0;
 	Gate.SetTarget( 0, TArrayView<const FTextureResourceHandle>() );
 	return bExecuted && bResult;
 }
@@ -295,8 +477,13 @@ bool CThreadedRenderSurface::BeginGpuTimestamp( FGpuTimestampHandle Query )
 	}
 	bool bResult = false;
 	auto Work = [&]()
-	{ bResult = Target.BeginGpuTimestamp( Query ); };
-	return Execute( MoveTemp( Work ) ) && bResult;
+	{ bResult = !bRejectedPass && Target.BeginGpuTimestamp( Query ); };
+	const bool bBegun = TrackPassResult( Execute( MoveTemp( Work ) ) && bResult );
+	if ( bBegun && bRenderTargetPass )
+	{
+		++NumOpenPassTimestamps;
+	}
+	return bBegun;
 }
 
 bool CThreadedRenderSurface::EndGpuTimestamp( FGpuTimestampHandle Query )
@@ -308,8 +495,13 @@ bool CThreadedRenderSurface::EndGpuTimestamp( FGpuTimestampHandle Query )
 	}
 	bool bResult = false;
 	auto Work = [&]()
-	{ bResult = Target.EndGpuTimestamp( Query ); };
-	return Execute( MoveTemp( Work ) ) && bResult;
+	{ bResult = !bRejectedPass && Target.EndGpuTimestamp( Query ); };
+	const bool bEnded = TrackPassResult( Execute( MoveTemp( Work ) ) && bResult );
+	if ( bEnded && bRenderTargetPass && NumOpenPassTimestamps > 0 )
+	{
+		--NumOpenPassTimestamps;
+	}
+	return bEnded;
 }
 
 bool CThreadedRenderSurface::DrawGeometry( const FGeometryVertex *Vertices, int32 Count, const FGeometryDrawState &State )
@@ -321,8 +513,8 @@ bool CThreadedRenderSurface::DrawGeometry( const FGeometryVertex *Vertices, int3
 	}
 	bool bResult = false;
 	auto Draw = [&]()
-	{ if ( IRenderGeometry3D* Geometry = Target.GetGeometry3D() ) { bResult = Geometry->DrawGeometry( Vertices, Count, State ); } };
-	return Execute( MoveTemp( Draw ) ) && bResult;
+	{ if ( IRenderGeometry3D* Geometry = GetTargetGeometry() ) { bResult = Geometry->DrawGeometry( Vertices, Count, State ); } };
+	return TrackPassResult( Execute( MoveTemp( Draw ) ) && bResult );
 }
 
 bool CThreadedRenderSurface::DrawTexturedGeometry( const FGeometryVertex *Vertices, int32 Count, const FGeometryDrawState &State, const FTextureDrawView &Texture )
@@ -334,8 +526,8 @@ bool CThreadedRenderSurface::DrawTexturedGeometry( const FGeometryVertex *Vertic
 	}
 	bool bResult = false;
 	auto Draw = [&]()
-	{ if ( IRenderGeometry3D* Geometry = Target.GetGeometry3D() ) { bResult = Geometry->DrawTexturedGeometry( Vertices, Count, State, Texture ); } };
-	return Execute( MoveTemp( Draw ) ) && bResult;
+	{ if ( IRenderGeometry3D* Geometry = GetTargetGeometry() ) { bResult = Geometry->DrawTexturedGeometry( Vertices, Count, State, Texture ); } };
+	return TrackPassResult( Execute( MoveTemp( Draw ) ) && bResult );
 }
 
 bool CThreadedRenderSurface::DrawBufferGeometry( const FGeometryBufferDraw &Draw, const FGeometryDrawState &State, const FTextureDrawView *Texture )
@@ -347,8 +539,8 @@ bool CThreadedRenderSurface::DrawBufferGeometry( const FGeometryBufferDraw &Draw
 	}
 	bool bResult = false;
 	auto Work = [&]()
-	{ if ( IRenderGeometry3D* Geometry = Target.GetGeometry3D() ) { bResult = Geometry->DrawBufferGeometry( Draw, State, Texture ); } };
-	return Execute( MoveTemp( Work ) ) && bResult;
+	{ if ( IRenderGeometry3D* Geometry = GetTargetGeometry() ) { bResult = Geometry->DrawBufferGeometry( Draw, State, Texture ); } };
+	return TrackPassResult( Execute( MoveTemp( Work ) ) && bResult );
 }
 
 bool CThreadedRenderSurface::DrawGraphicsPipeline( const FGraphicsPipelineDraw &Draw )
@@ -360,8 +552,8 @@ bool CThreadedRenderSurface::DrawGraphicsPipeline( const FGraphicsPipelineDraw &
 	}
 	bool bResult = false;
 	auto Work = [&]()
-	{ if ( IRenderGeometry3D *Geometry = Target.GetGeometry3D() ) { bResult = Geometry->DrawGraphicsPipeline( Draw ); } };
-	return Execute( MoveTemp( Work ) ) && bResult;
+	{ if ( IRenderGeometry3D *Geometry = GetTargetGeometry() ) { bResult = Geometry->DrawGraphicsPipeline( Draw ); } };
+	return TrackPassResult( Execute( MoveTemp( Work ) ) && bResult );
 }
 
 bool CThreadedRenderSurface::DrawGraphicsPipelineTransient( const FGraphicsPipelineTransientDraw &Draw )
@@ -373,8 +565,8 @@ bool CThreadedRenderSurface::DrawGraphicsPipelineTransient( const FGraphicsPipel
 	}
 	bool bResult = false;
 	auto Work = [&]()
-	{ if ( IRenderGeometry3D *Geometry = Target.GetGeometry3D() ) { bResult = Geometry->DrawGraphicsPipelineTransient( Draw ); } };
-	return Execute( MoveTemp( Work ) ) && bResult;
+	{ if ( IRenderGeometry3D *Geometry = GetTargetGeometry() ) { bResult = Geometry->DrawGraphicsPipelineTransient( Draw ); } };
+	return TrackPassResult( Execute( MoveTemp( Work ) ) && bResult );
 }
 
 void CThreadedRenderSurface::SetQueuedDrawsEnabled( bool bEnabled )
@@ -387,6 +579,8 @@ void CThreadedRenderSurface::InvalidateDrawProofs()
 {
 	GAME_THREAD_ONLY();
 	Gate.InvalidateVerified();
+	PassProofs.Empty();
+	FilterProofs.Empty();
 }
 
 bool CThreadedRenderSurface::EnqueueDraw( FQueuedGraphicsDraw Draw )
@@ -399,6 +593,10 @@ bool CThreadedRenderSurface::EnqueueDraw( FQueuedGraphicsDraw Draw )
 	auto Work = [this, Owned = MoveTemp( Draw )]()
 	{
 		RENDER_THREAD_ONLY();
+		if ( bRejectedPass )
+		{
+			return; // 断られた描画先パスの描画は、捨てる（主画面へ流さない）。
+		}
 		IRenderGeometry3D *Geometry = Target.GetGeometry3D();
 		if ( Geometry && Owned.Execute( *Geometry ) )
 		{
@@ -751,6 +949,10 @@ bool CThreadedRenderSurface::SetTextureFilter( bool bLinear )
 	{
 		return false;
 	}
+	if ( !bFilterSupportKnown )
+	{
+		RestoreFilterSupport(); // 同じ描画先で確かめ済みなら、往復しない。
+	}
 	if ( bFilterSupportKnown )
 	{
 		if ( !bFilterSupported )
@@ -765,19 +967,24 @@ bool CThreadedRenderSurface::SetTextureFilter( bool bLinear )
 	}
 	bool bResult = false;
 	auto Set = [&]()
-	{ if ( IRenderCanvas2D* Canvas = Target.GetCanvas2D() ) { bResult = Canvas->SetTextureFilter( bLinear ); } };
+	{ if ( IRenderCanvas2D* Canvas = GetTargetCanvas() ) { bResult = Canvas->SetTextureFilter( bLinear ); } };
 	if ( !Execute( MoveTemp( Set ) ) )
 	{
 		return false;
 	}
-	bFilterSupported = bResult; // 描画先が変わるまで、答えは同じ。
+	bFilterSupported = bResult; // 同じ描画先では、答えは同じ。
 	bFilterSupportKnown = true;
+	RememberFilterSupport( bResult );
 	return bResult;
 }
 
 void CThreadedRenderSurface::ExecuteBatch( const TArray<FCommand> &Commands )
 {
 	RENDER_THREAD_ONLY();
+	if ( bRejectedPass )
+	{
+		return; // 断られた描画先パスの描画は、捨てる（主画面へ流さない）。
+	}
 	for ( const FCommand &Command : Commands )
 	{
 		if ( Command.Type == ECommand::ClearColor )

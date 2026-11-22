@@ -83,6 +83,8 @@ struct FDeferredDemoState
 	// タイルごとの光の一覧: CPU で作る一覧（TileGrid。統計と、CPU の経路のため。毎フレーム作る）を、8 ビット RGBA の画像（TileImage）へ詰めて、動的な画像（TileTexture）へ反映する（CPU の経路）。
 	// GPU の経路は、TileBuilder が、ピクセルシェーダーで、同じ形式の画像（TileBuilder.GetTexture()）を描く
 	CTileLightGrid TileGrid;
+	// GPU の経路で、CPU の一覧（統計のため）を最後に作ってから数えたフレーム数
+	int32 NumFramesSinceGrid = 0;
 	CTileLightBuilder TileBuilder;
 	FPixelImage TileImage;
 	TSharedPtr<CDynamicTexture> TileTexture;

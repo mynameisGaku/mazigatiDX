@@ -1,7 +1,9 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 
+#include "Library/Core/Collection/Array.h"
 #include "Library/Core/Thread/Atomic.h"
+#include "Library/Core/Thread/Mutex.h"
 #include "Library/Framework/Thread/CommandThread.h"
 
 // 既存の専用実行列を描画スレッドとして起動し、識別の登録と解除まで所有する。作成スレッドが寿命を管理する。
@@ -23,7 +25,7 @@ class CRenderCommandThread
 	FTaskFence GetFence() const;
 	// 今までに受け付けたCPU処理を全件待つ。満杯でも追加命令を必要としない。描画スレッド内はfalse。
 	bool WaitForCommands() const;
-	// 確認用: 描画スレッドの仕事量の内訳（働いている時間・同期呼び出しの回数と、呼び出し側が待った時間）を、120 フレームごとにログへ出す。
+	// 確認用: 描画スレッドの仕事量の内訳（働いている時間・同期呼び出しの回数と、呼び出し側が待った時間。待った時間の長い呼び出し元の名前も）を、120 フレームごとにログへ出す。
 	// 作成直後（仕事を渡す前）に、所有者が 1 回だけ呼ぶ。
 	void EnableTimings();
 	// 1 フレームが終わったことを数える（ゲームスレッド）。EnableTimings を呼んでいなければ、何もしない。
@@ -36,6 +38,8 @@ class CRenderCommandThread
 	static bool WaitAccepted( const FTaskFence &Fence );
 	// EnableTimings のとき、仕事の実行時間を数える包みにする。そうでなければ、そのまま返す。
 	TCallable<void()> MakeTimed( TCallable<void()> Task );
+	// 同期呼び出し 1 回分（呼び出し元の名前と、呼び出し側が待った時間）を、名前ごとの集計へ足す。
+	void AddSyncCaller( const char *Name, int64 WaitTicks );
 	// 作成後から終了まで使う既存の専用実行列。
 	CCommandThread Thread;
 	// 識別の登録結果。初期化と終了は作成スレッドが直列に担当する。
@@ -47,4 +51,13 @@ class CRenderCommandThread
 	TAtomic<int64> SyncCalls { 0 }; // 同期呼び出しの回数
 	TAtomic<int64> Tasks { 0 }; // 実行した仕事の数
 	int32 TimingFrames = 0; // 集計中のフレーム数（ゲームスレッドだけが触る）
+	// 同期呼び出しの、呼び出し元の名前ごとの集計（EnableTimings のとき。Execute は複数のスレッドから呼ばれうるので、排他する）。
+	struct FSyncCaller
+	{
+		const char *Name = nullptr;
+		int64 Calls = 0;
+		int64 WaitTicks = 0;
+	};
+	FMutex CallerMutex;
+	TArray<FSyncCaller> Callers;
 };

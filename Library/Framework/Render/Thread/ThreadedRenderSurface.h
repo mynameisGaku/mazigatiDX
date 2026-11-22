@@ -33,6 +33,10 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 	void InvalidateDrawProofs();
 	// 待たずに積んだあとで、実行先が拒否した描画の数（累計）。
 	int32 GetNumRejectedQueuedDraws() const { return NumRejectedQueuedDraws.Load(); }
+	// 待たずに積んだ描画先パスの始まりを、実行先が断った回数（累計）。断られたパスの描画は、終わりまで捨てる。
+	int32 GetNumRejectedPasses() const { return NumRejectedPasses.Load(); }
+	// 待たずに積んだ描画先パスの終わりが、実行先で失敗した回数（累計）。
+	int32 GetNumFailedPassEnds() const { return NumFailedPassEnds.Load(); }
 	// フレーム内だけゲーム側の記録窓口を貸す。
 	IRenderCanvas2D *GetCanvas2D() override;
 	// フレーム内だけゲーム側の3D窓口を貸す。
@@ -45,9 +49,12 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 	bool BeginOffscreenCapture( const FOffscreenCaptureDesc &Desc ) override;
 	// 撮影の描画を確定し、画素を同期で返して通常寸法へ戻す。
 	bool EndOffscreenCapture( TArray<FColor32> &Out ) override;
-	// それ以前の描画を確定し、同期で所有済みの描画先パスへ切り替える。
+	// 描画先パスへ切り替える。初めての組み合わせ（描画先・倍率）は、それ以前の描画を確定し、同期で確かめる。
+	// 同期で成功した組み合わせの繰り返しは、結果を待たずに積んで、すぐ true を返す（実寸・形式は、確かめたときの値）。実行先が断ったときは、終わりまでの描画を捨てる。
 	bool BeginRenderTargetPass( const FRenderTargetPassDesc &Desc ) override;
 	// 描画先パスの描画を確定して同じGPUキューへ提出し、通常寸法へ戻す。
+	// パスの中で、同期の描画・コピーが false を返した、または GPU タイムスタンプが閉じていないときは、終わりが失敗しうるので、同期で実行して、本当の結果を返す（自己参照の競合など）。
+	// そうでなければ、結果を待たずに積んで、すぐ true を返す（描画スレッドが、パスの描画を終えるのを待たない）。実行先で終わりが失敗したときは、ログへ出して回数を数える（フレームは落とさない）。待てない・積めないときも同期。
 	bool EndRenderTargetPass() override;
 	// 先行する2D命令のあとに、同期して色の矩形を画像へ写す。
 	bool CopyColorRegion( int32 X0, int32 Y0, int32 X1, int32 Y1, FTextureResourceHandle Dest ) override;
@@ -111,6 +118,42 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 		// 利用者が決めた混ぜ方の係数。
 		FGeometryCustomBlend CustomBlend;
 	};
+	// 描画先パスの始まりの「確かめ済み」。同期で成功した描画先パスの値を覚えて、同じ組み合わせの繰り返しは、待たずに積む。
+	struct FPassProof
+	{
+		uint64 PassKey = 0; // 描画先・深度の画像の組み合わせ。
+		uint64 ColorTarget = 0; // 単一指定の描画先の番号。
+		int32 NumColorTargets = 0; // 複数指定の枚数。
+		float32 Scale = 1.0f; // 2D 描画の拡大率。
+		float32 ClearDepth = -1.0f; // 深度を塗る値（塗らないときは -1）。
+		int32 Width = 0, Height = 0; // 描画先の実寸。
+		ERenderTargetColorFormat Format = ERenderTargetColorFormat::RGBA8; // 描画先の色の形式。
+		bool bCanvas = false, bGeometry = false; // 描画先が提供する窓口。
+	};
+	// 同じ組み合わせの確かめ済みを探す。無ければ nullptr。
+	const FPassProof *FindPassProof( const FRenderTargetPassDesc &Desc, uint64 PassKey ) const;
+	// 同期で成功した描画先パスの値を覚える。
+	void RememberPassProof( const FRenderTargetPassDesc &Desc, uint64 PassKey, int32 InWidth, int32 InHeight, ERenderTargetColorFormat InFormat, bool bInCanvas, bool bInGeometry );
+	// 確かめ済みの描画先パスの始まりを、先行する2D命令のあとへ待たずに積む。積めなければ false。
+	bool QueueRenderTargetPassBegin( const FRenderTargetPassDesc &Desc );
+	// 描画先パスの中で、同期の結果が false なら、そのパスの終わりを同期にする印を付ける。結果をそのまま返す。
+	bool TrackPassResult( bool bSucceeded );
+	// 描画先パスに入ったあとの、ゲーム側の状態（寸法・形式・窓口・確かめ済みの判定の描画先）を設定する。
+	void EnterRenderTargetPass( const FPassProof &Proof, uint64 PassKey, const TArray<FTextureResourceHandle> &Written );
+	// 描画スレッドだけ: 実行先の2D窓口。断られた描画先パスの間は nullptr。
+	IRenderCanvas2D *GetTargetCanvas() const;
+	// 描画スレッドだけ: 実行先の3D窓口。断られた描画先パスの間は nullptr。
+	IRenderGeometry3D *GetTargetGeometry() const;
+	// 補間設定に対応するかの確かめ済み（描画先ごと）。
+	struct FFilterProof
+	{
+		uint64 Key = 0; // 描画先を表す値（通常の画面は 0）。
+		bool bSupported = false; // 対応するか。
+	};
+	// いまの描画先で確かめ済みなら、その答えを使う。
+	void RestoreFilterSupport();
+	// いまの描画先の答えを覚える。
+	void RememberFilterSupport( bool bSupported );
 	// 複写した描画を、先行する2D命令のあとへ積む。積めなければ false（複写は捨てる）。
 	bool EnqueueDraw( FQueuedGraphicsDraw Draw );
 	// 描画スレッドだけで、所有する操作値を順に実行する。
@@ -118,7 +161,8 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 	// 受付上限を調べ、64件ごとにまとめて渡す。ゲーム側からだけ呼ぶ。
 	void Queue( FCommand Command );
 	// 先行する2D命令を渡して、結果を返す処理を直列に実行する。
-	bool Execute( TCallable<void()> Command );
+	// Caller は、呼び出し元の関数名（確認用の集計に使う。呼び出し側は渡さない）。
+	bool Execute( TCallable<void()> Command, const char *Caller = __builtin_FUNCTION() );
 	// 描画先の現在の物理幅と高さを返す。
 	int32 GetWidth() const override;
 	// 現在の描画先の物理高さを、記録側の値だけから返す。
@@ -165,7 +209,7 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 	void PushClip( int32 X0, int32 Y0, int32 X1, int32 Y1 ) override;
 	// 先行する描画の後で、直前の切り取り範囲へ戻す。
 	void PopClip() override;
-	// 補間設定に対応するかは、描画先が変わるたびの最初の 1 回だけ、先行する命令を確定して同期で確かめる。対応していれば、以降は他の2D命令と同じ順序に積むだけで、すぐ true を返す。
+	// 補間設定に対応するかは、描画先ごとの最初の 1 回だけ、先行する命令を確定して同期で確かめる（答えは覚えて、同じ描画先へ切り替えるたびには確かめない）。対応していれば、以降は他の2D命令と同じ順序に積むだけで、すぐ true を返す。
 	bool SetTextureFilter( bool bLinear ) override;
 	// 輪郭の補間設定を後続の描画と同じ順序へ積む。
 	void SetAntiAlias( bool bEnabled ) override;
@@ -186,14 +230,30 @@ class CThreadedRenderSurface : public IRenderSurface, private IRenderCanvas2D, p
 	bool bActive = false, bCapture = false, bRenderTargetPass = false;
 	// 現在の実行先が提供する窓口。描画スレッドで調べた結果だけを保持する。
 	bool bHasCanvas = false, bHasGeometry = false;
+	// いまの描画先パスの中で、終わりが失敗しうる印（同期の描画・コピーが false だった）と、閉じていない GPU タイムスタンプの数。ゲームスレッドだけ。
+	bool bPassTainted = false;
+	int32 NumOpenPassTimestamps = 0;
+	// フレームの始まりに調べた、主画面の窓口（描画先パスを抜けたとき、これへ戻す）。
+	bool bFrameHasCanvas = false, bFrameHasGeometry = false;
 	// 待たずに積む描画の判定（確かめ済み・上限の数え）。ゲームスレッドだけ。
 	CAsyncDrawGate Gate;
 	// 結果を待たずに積む描画を使うか。
 	bool bQueuedDrawsEnabled = true;
 	// 待たずに積んだあとで、実行先が拒否した描画の数（累計）。描画スレッドが足す。
 	TAtomic<int32> NumRejectedQueuedDraws{ 0 };
-	// 補間設定への対応を確かめた印と、その答え。フレーム・描画先パス・撮影の切り替えで確かめ直す。ゲームスレッドだけ。
+	// 描画先パスの始まりの確かめ済み。資源の作成・更新・解放で捨てる。ゲームスレッドだけ。
+	TArray<FPassProof> PassProofs;
+	// 待たずに積んだ描画先パスの始まりを、実行先が断った回数（累計）。描画スレッドが足す。
+	TAtomic<int32> NumRejectedPasses{ 0 };
+	// 待たずに積んだ描画先パスの終わりが、実行先で失敗した回数（累計）。描画スレッドが足す。
+	TAtomic<int32> NumFailedPassEnds{ 0 };
+	// 実行先が始まりを断った描画先パスの中か（終わりまで描画を捨てる）。描画スレッドだけ。
+	bool bRejectedPass = false;
+	// 補間設定への対応を確かめた印と、その答え。フレーム・描画先パス・撮影の切り替えで、確かめ済み（FilterProofs）から取り直す。ゲームスレッドだけ。
 	bool bFilterSupportKnown = false, bFilterSupported = false;
+	// いまの描画先を表す値（確かめ済みの探し方）と、描画先ごとの確かめ済み。資源の作成・更新・解放で捨てる。ゲームスレッドだけ。
+	uint64 FilterKey = 0;
+	TArray<FFilterProof> FilterProofs;
 	// 現在の描画先と、通常フレームへ復元する寸法。
 	int32 Width = 0, Height = 0, FrameWidth = 0, FrameHeight = 0;
 	ERenderTargetColorFormat ColorFormat = ERenderTargetColorFormat::RGBA8; // いまの描画先の色の形式（描画先のパスの間だけ、RGBA8 以外になりうる）。
