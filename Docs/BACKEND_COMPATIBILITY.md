@@ -10,7 +10,7 @@
 
 |分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|
 |---|---:|---:|---:|---:|---:|---:|---:|
-|API|380|9|3|198|169|0|1|
+|API|381|9|3|199|169|0|1|
 |Draw|106|0|0|62|40|4|0|
 |Sample|35|29|0|5|1|0|0|
 |Editor|11|11|0|0|0|0|0|
@@ -104,6 +104,7 @@
 |[API.IGamepadInput.SetLed](../Library/Core/Interfaces/Input/IGamepadInput.h#L30)|Implemented|R8|ゲームパッド実機の接続／切断、ボタン・軸、sensor、rumble、無効番号を比較|非Null選択で共通SDL実装を作る。実機での接続・切断・sensor・rumble比較前||
 |[API.IGeometryBufferSource.GetIndexBufferView](../Library/Core/Interfaces/Render/IGeometryBufferSource.h#L14)|Implemented|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
 |[API.IGeometryBufferSource.GetMeshCacheIdentity](../Library/Core/Interfaces/Render/IGeometryBufferSource.h#L16)|Partial|R2|同じ組の鍵・成功と失敗の更新版・所有者間の識別・削除をForwardMesh契約で検査|共通の形状所有者で対応。未対応はfalseでCPU経路。借用中の変更は禁止||
+|[API.IGeometryBufferSource.GetStableMeshCacheIdentity](../Library/Core/Interfaces/Render/IGeometryBufferSource.h#L19)|Partial|R2|同じ版を8回描いたあとだけ成功・書き込みで数え直し・別の組への書き込みでは版が変わらない・描くたびに書くバッファはいつまでも失敗・小さい範囲は展開して描くことをForwardMesh契約で検査|共通の形状所有者で対応（DX12の窓口は転送する）。未対応はfalseで、頂点を展開して描く経路。借用中の変更は禁止||
 |[API.IGeometryBufferSource.GetVertexBufferView](../Library/Core/Interfaces/Render/IGeometryBufferSource.h#L12)|Implemented|R6|frame内外、入力不正、出力保持、借用と所有の寿命、GPU失敗と状態復元を確認|DX12または共通実装から借用する経路あり。内部契約のWindows確認前||
 |[API.IGpuMemoryInfo.QueryGpuMemory](../Library/Core/Interfaces/Render/IGpuMemoryInfo.h#L16)|Partial|R8|frame内外、デバイス喪失、出力保持を確認|調べられた値を返す（DXGIのQueryVideoMemoryInfo）。Assetsツールの「Video memory」に出る。複数GPUの比較は未完了||
 |[API.IGpuTimestampResources.CreateGpuTimestampQuery](../Library/Core/Interfaces/Render/IGpuTimestampResources.h#L17)|Implemented|R1|CPU参照・既定GPU・WARP・デバイス喪失・アプリ起動で、上限256到達・解放後再取得・番号非再利用・非ゲームスレッド拒否を確認|NRenderResourceSerialの一意番号を発行し、空き物理スロットがない場合または異常時は無効ハンドルを返す|Docs/R1_GPU_TIMESTAMPS.md; Library/Platform/DX12/Resource/Timestamp/DX12TimestampStore.cpp; Source/SelfTest/RunTimestampTests.ps1|
