@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "GeometryCanvas2D.h"
 #include "Library/Math/MathUtils.h"
+#include "Library/Core/Log/Log.h"
 #include "Library/Core/Types/Numeric.h"
 
 CGeometryCanvas2D::~CGeometryCanvas2D() { EndFrame(); }
@@ -28,11 +29,18 @@ bool CGeometryCanvas2D::BeginFrame( IRenderGeometry3D &InGeometry, IRenderTextur
 	MaskState = FGeometryMask();
 	++FrameNumber;
 	NumTextCreatedThisFrame = 0;
+	NumTextSkippedThisFrame = 0;
 	return true;
 }
 
 void CGeometryCanvas2D::EndFrame()
 {
+	if ( NumTextSkippedThisFrame > 0 && ( LastTextSkipLogFrame == 0 || FrameNumber - LastTextSkipLogFrame >= 120 ) )
+	{
+		LastTextSkipLogFrame = FrameNumber; // 描けなかった文字は、失敗にしない。作った画像はキャッシュに残るので、同じ文字列を描き続ければ、数フレームで全部出る。
+		LOG( LogTemp, Warning, "Canvas text: %d text strings were not drawn this frame: only %d new text images (or %d MiB) can be made in one frame. They appear over the next frames while the strings are kept drawn", NumTextSkippedThisFrame, MaxNewTextImagesPerFrame, static_cast<int32>( MaxNewTextBytesPerFrame / ( 1024 * 1024 ) ) );
+	}
+	NumTextSkippedThisFrame = 0;
 	TextBytes = 0;
 	if ( Textures )
 	{
@@ -258,9 +266,9 @@ void CGeometryCanvas2D::Text( float32 X, float32 Y, FColor32 Color, const char *
 	FCachedText *Entry = TextCache.Find( Key );
 	if ( !Entry )
 	{
-		if ( NumTextCreatedThisFrame >= 512 )
+		if ( NumTextCreatedThisFrame >= MaxNewTextImagesPerFrame )
 		{
-			bFailed = true;
+			++NumTextSkippedThisFrame; // 失敗にせず、このフレームは描かない。
 			return;
 		}
 		TArray<FColor32> Pixels; // GPUを知らない文字実装が作る画像。
@@ -270,9 +278,9 @@ void CGeometryCanvas2D::Text( float32 X, float32 Y, FColor32 Color, const char *
 			bFailed = true;
 			return;
 		}
-		if ( TextBytes + static_cast<uint64>( Pixels.Num() ) * sizeof( FColor32 ) > 32 * 1024 * 1024 )
+		if ( TextBytes + static_cast<uint64>( Pixels.Num() ) * sizeof( FColor32 ) > MaxNewTextBytesPerFrame )
 		{
-			bFailed = true;
+			++NumTextSkippedThisFrame; // 失敗にせず、このフレームは描かない（作っていない画像は、次のフレームに回す）。
 			return;
 		}
 		Created.Text = Textures->CreateTextureRGBA8( Created.Width, Created.Height, Pixels.GetData() ); // 所有は既存の画像サービスへ渡す。
@@ -345,9 +353,9 @@ void CGeometryCanvas2D::TextFont( const FRenderTextFont &Font, const float32 ( &
 	FCachedText *Entry = TextCache.Find( Key );
 	if ( !Entry )
 	{
-		if ( NumTextCreatedThisFrame >= 512 )
+		if ( NumTextCreatedThisFrame >= MaxNewTextImagesPerFrame )
 		{
-			bFailed = true;
+			++NumTextSkippedThisFrame; // 失敗にせず、このフレームは描かない。
 			return;
 		}
 		TArray<FColor32> Pixels, EdgePixels; // GPUを知らない文字実装が作る画像。

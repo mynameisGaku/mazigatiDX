@@ -73,10 +73,15 @@ class CGeometryCanvas2D : public IRenderCanvas2D
 	};
 	// 使われなくなった文字列の画像を返す。bAllなら、このフレームで使っていないものを全部。
 	void TrimTextCache( bool bAll );
+	// 1 フレームに新しく画像にできる文字列の数とバイト。超えた分は、そのフレームは描かず（失敗にしない）、次のフレームで続きを作る。
+	static constexpr int32 MaxNewTextImagesPerFrame = 512;
+	static constexpr uint64 MaxNewTextBytesPerFrame = 32ull * 1024 * 1024;
 	TMap<FString, FCachedText> TextCache; // 鍵は、フォントの指定と文字列。
 	uint64 TextCacheBytes = 0; // 持っている画像の合計。
 	uint64 FrameNumber = 0; // BeginFrameごとに進む。
 	int32 NumTextCreatedThisFrame = 0; // このフレームで新しく画像にした文字列の数。
+	int32 NumTextSkippedThisFrame = 0; // 1 フレームに新しく画像にできる上限（数・バイト）を超えて、このフレームは描かなかった文字列の数（画像は作らない。次のフレームで続きを作る）。
+	uint64 LastTextSkipLogFrame = 0; // 上限を超えた警告を最後に出したフレーム（毎フレームは出さない）。
 	IRenderGeometry3D *Geometry = nullptr; // ゲーム描画の頂点の実行先。
 	IRenderTextureResources *Textures = nullptr; // 一時的な文字画像を登録する既存の所有先。
 	IRenderTextRasterizer *TextRasterizer = nullptr; // CPUの文字画像だけを作る借用先。
