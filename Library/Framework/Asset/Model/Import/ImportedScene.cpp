@@ -81,6 +81,17 @@ void NImportedScene::ConvertToLeftHanded( FImportedScene& Scene )
 		}
 	}
 
+	for ( FImportedShape& Shape : Scene.Shapes )
+	{
+		for ( FImportedShapeMesh& Part : Shape.Meshes )
+		{
+			for ( FVector3& Offset : Part.Offsets )
+			{
+				Offset.z = -Offset.z; // 位置のずれも、鏡に映す
+			}
+		}
+	}
+
 	for ( FImportedAnimation& Animation : Scene.Animations )
 	{
 		for ( FImportedTrack& Track : Animation.Tracks )
@@ -260,6 +271,37 @@ TArray<FString> NImportedScene::Validate( const FImportedScene& Scene )
 			if ( Track.Keys.Num() != Animation.NumKeys )
 			{
 				Problems.Add( FString::Printf( "animation '%s' has a track with %d key(s) (expected %d)", *Animation.Name, Track.Keys.Num(), Animation.NumKeys ) );
+			}
+		}
+	}
+	for ( int32 ShapeIndex = 0; ShapeIndex < Scene.Shapes.Num(); ++ShapeIndex )
+	{
+		for ( const FImportedShapeMesh& Part : Scene.Shapes[ShapeIndex].Meshes )
+		{
+			if ( Part.Mesh < 0 || Part.Mesh >= Scene.Meshes.Num() )
+			{
+				Problems.Add( FString::Printf( "shape %d refers to the invalid mesh %d", ShapeIndex, Part.Mesh ) );
+				continue;
+			}
+			if ( Part.Vertices.Num() != Part.Offsets.Num() )
+			{
+				Problems.Add( FString::Printf( "shape %d has %d vertices and %d offsets", ShapeIndex, Part.Vertices.Num(), Part.Offsets.Num() ) );
+				continue;
+			}
+			const int32 NumVertices = Scene.Meshes[Part.Mesh].Positions.Num();
+			for ( int32 Index = 0; Index < Part.Vertices.Num(); ++Index )
+			{
+				const FVector3& Offset = Part.Offsets[Index];
+				if ( Part.Vertices[Index] < 0 || Part.Vertices[Index] >= NumVertices )
+				{
+					Problems.Add( FString::Printf( "shape %d has the vertex %d out of range (%d vertices)", ShapeIndex, Part.Vertices[Index], NumVertices ) );
+					break;
+				}
+				if ( !NMath::IsFinite( Offset.x ) || !NMath::IsFinite( Offset.y ) || !NMath::IsFinite( Offset.z ) )
+				{
+					Problems.Add( FString::Printf( "shape %d has a non-finite offset", ShapeIndex ) );
+					break;
+				}
 			}
 		}
 	}

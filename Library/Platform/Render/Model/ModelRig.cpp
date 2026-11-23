@@ -193,6 +193,35 @@ bool NModelRig::Build( const FImportedScene& Scene, FModelRig& Out, FString& Err
 			Mesh.bSkinned = true;
 		}
 	}
+	Rig.Shapes.Reserve( Scene.Shapes.Num() );
+	for ( const FImportedShape& Source : Scene.Shapes )
+	{
+		FRigShape Shape;
+		Shape.Name = Source.Name;
+		for ( const FImportedShapeMesh& Part : Source.Meshes )
+		{
+			if ( Part.Mesh < 0 || Part.Mesh >= Rig.Meshes.Num() || Part.Vertices.Num() != Part.Offsets.Num() )
+			{
+				Error = "Invalid shape";
+				return false;
+			}
+			const int32 NumVertices = Rig.Meshes[Part.Mesh].Positions.Num();
+			for ( const int32 Vertex : Part.Vertices )
+			{
+				if ( Vertex < 0 || Vertex >= NumVertices )
+				{
+					Error = "Invalid shape vertex";
+					return false;
+				}
+			}
+			FRigShapeMesh Mesh;
+			Mesh.Mesh = Part.Mesh;
+			Mesh.Vertices = Part.Vertices;
+			Mesh.Offsets = Part.Offsets;
+			Shape.Meshes.Add( MoveTemp( Mesh ) );
+		}
+		Rig.Shapes.Add( MoveTemp( Shape ) );
+	}
 	Rig.Clips = Scene.Animations;
 	for ( const FImportedAnimation& Clip : Rig.Clips )
 	{
@@ -221,6 +250,7 @@ void NModelRig::InitPose( const FModelRig& Rig, FModelPose& Pose )
 	Pose.Override.SetNum( Rig.GetNumNodes() );
 	Pose.FrameHidden.SetNum( Rig.GetNumNodes(), 0 );
 	Pose.MeshHidden.SetNum( Rig.Meshes.Num(), 0 );
+	Pose.ShapeRate.SetNum( Rig.Shapes.Num(), 0.0f );
 }
 
 float32 NModelRig::GetClipLength( const FModelRig& Rig, int32 Clip )
@@ -415,7 +445,38 @@ void NModelRig::ComputeGlobals( const FModelRig& Rig, const TArray<FMatrix4x4>& 
 	}
 }
 
-void NModelRig::Deform( const FModelRig& Rig, const TArray<FMatrix4x4>& Globals, const TArray<FRigVertexSource>& Sources, FDrawVertex3D* Vertices, int32 NumVertices, IJobSystem* Jobs )
+bool NModelRig::EvaluateShapes( const FModelRig& Rig, const FModelPose& Pose, TArray<TArray<FVector3>>& OutPositions )
+{
+	OutPositions.Reset();
+	OutPositions.SetNum( Rig.Meshes.Num() );
+	bool bAny = false;
+	const int32 NumShapes = NMath::Min( Rig.Shapes.Num(), Pose.ShapeRate.Num() );
+	for ( int32 ShapeIndex = 0; ShapeIndex < NumShapes; ++ShapeIndex )
+	{
+		const float32 Rate = Pose.ShapeRate[ShapeIndex];
+		if ( !( Rate != 0.0f ) ) // 0 と NaN は、効かない
+		{
+			continue;
+		}
+		for ( const FRigShapeMesh& Part : Rig.Shapes[ShapeIndex].Meshes )
+		{
+			TArray<FVector3>& Positions = OutPositions[Part.Mesh];
+			if ( Positions.IsEmpty() )
+			{
+				Positions = Rig.Meshes[Part.Mesh].Positions; // 最初に触れたとき、基準の位置を写す
+			}
+			for ( int32 Index = 0; Index < Part.Vertices.Num(); ++Index )
+			{
+				const int32 Vertex = Part.Vertices[Index];
+				Positions[Vertex] = Positions[Vertex] + Part.Offsets[Index] * Rate;
+				bAny = true;
+			}
+		}
+	}
+	return bAny;
+}
+
+void NModelRig::Deform( const FModelRig& Rig, const TArray<FMatrix4x4>& Globals, const TArray<FRigVertexSource>& Sources, FDrawVertex3D* Vertices, int32 NumVertices, IJobSystem* Jobs, const TArray<TArray<FVector3>>* Morphed )
 {
 	if ( NumVertices > Sources.Num() )
 	{
@@ -448,7 +509,8 @@ void NModelRig::Deform( const FModelRig& Rig, const TArray<FMatrix4x4>& Globals,
 			{
 				continue;
 			}
-			const FVector3& Rest = Mesh.Positions[Source.Vertex];
+			const bool bMorphed = Morphed != nullptr && Source.Mesh < Morphed->Num() && !( *Morphed )[Source.Mesh].IsEmpty();
+			const FVector3& Rest = bMorphed ? ( *Morphed )[Source.Mesh][Source.Vertex] : Mesh.Positions[Source.Vertex];
 			const FVector3& RestNormal = Mesh.Normals[Source.Vertex];
 			FVector3 Position( 0.0f, 0.0f, 0.0f );
 			FVector3 Normal( 0.0f, 0.0f, 0.0f );

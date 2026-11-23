@@ -370,6 +370,16 @@ bool CDX12AssetBackendSubsystem::SetModelMeshVisible( int32 Model, int32 Mesh, b
 	return Models.SetMeshVisible( Model, Mesh, bVisible );
 }
 
+bool CDX12AssetBackendSubsystem::GetModelShapeRate( int32 Model, int32 Shape, float32& Out )
+{
+	return Models.GetShapeRate( Model, Shape, Out );
+}
+
+bool CDX12AssetBackendSubsystem::SetModelShapeRate( int32 Model, int32 Shape, float32 Rate )
+{
+	return Models.SetShapeRate( Model, Shape, Rate );
+}
+
 int32 CDX12AssetBackendSubsystem::CreateModelMaterialGeometry( const FStaticModelSurfaceData& Surface, int32 MaterialIndex )
 {
 	TSharedPtr<FModelMaterialGeometry> Geometry = MakeShared<FModelMaterialGeometry>(); // 登録前に完成させ、失敗したら表を変えない。

@@ -91,6 +91,21 @@ struct FImportedAnimation
 	TArray<FImportedTrack> Tracks; // 動くノードだけ
 };
 
+// 形状（モーフ）の、メッシュ 1 つぶんの位置のずれ。頂点の位置に、割合を掛けて足す（法線は変えない）
+struct FImportedShapeMesh
+{
+	int32 Mesh = -1;                // FImportedScene::Meshes の番号
+	TArray<int32> Vertices;         // FImportedMesh の頂点の番号
+	TArray<FVector3> Offsets;       // 同じ並びの、位置のずれ（メッシュの座標）
+};
+
+// 形状（表情や体型の変形）。割合 0 で基準の姿、1 でずれを全部足した姿
+struct FImportedShape
+{
+	FString Name;
+	TArray<FImportedShapeMesh> Meshes;
+};
+
 struct FImportedScene
 {
 	TArray<FImportedNode> Nodes;
@@ -98,6 +113,7 @@ struct FImportedScene
 	TArray<FImportedMaterial> Materials;
 	TArray<FImportedTexture> Textures;
 	TArray<FImportedAnimation> Animations;
+	TArray<FImportedShape> Shapes;
 	// すでに左手系か（PMX は、最初から左手系。true なら、ConvertToLeftHanded は、何もしない）。
 	bool bLeftHanded = false;
 

@@ -17,6 +17,9 @@
 class CStaticModelStore : public IStaticModelSource
 {
 public:
+	// 形状の割合の上限。DxLib は上限なしで、極端な値では、形が壊れる（100 で画面いっぱいに飛ぶ）。壊れた頂点を作らないために、頭打ちにする
+	static constexpr float32 MaxShapeRate = 100.0f;
+
 	// 頂点の変形を並列にするワーカーを借りる（所有しない。なければ、呼んだスレッドだけで変形する）。
 	void SetJobSystem( IJobSystem* InJobs ) { Jobs = InJobs; }
 	// 画像の解放先の寿命を変えないよう、所有者を複写しない。
@@ -85,6 +88,11 @@ public:
 	bool GetMeshData( int32 Handle, int32 Mesh, bool bCurrentPose, FModelMeshData& Out );
 	// 骨組みのあるモデルか（形状の無い、アニメーションだけのモデルも）
 	bool HasRig( int32 Handle ) const;
+	// 形状（モーフ）の割合。形状の番号は FModelStructure::Shapes の番号。骨組みの無いモデル・範囲の外の番号・NaN の割合は false。
+	// 負の割合は 0 に、MaxShapeRate を超える割合は MaxShapeRate に寄せる。1 を超える割合は、位置のずれを延ばして足す（DxLib の MV1SetShapeRate と同じ）
+	// 同じ値を設定し直しても、ポーズは変わらない（毎フレーム設定しても、頂点を作り直さない）
+	bool GetShapeRate( int32 Handle, int32 Shape, float32& Out ) const;
+	bool SetShapeRate( int32 Handle, int32 Shape, float32 Rate );
 
 	//-------------------------------------------------------------------------
 	// 当たり判定（モデルの手元の座標。置き場所を含まない）
@@ -133,6 +141,7 @@ private:
 		FModelPose Pose;
 		TArray<FMatrix4x4> Local;
 		TArray<FMatrix4x4> Global;
+		TArray<TArray<FVector3>> Morphed; // 形状の割合を足した、メッシュごとの基準の位置（触られないメッシュは空）。PoseVersion のときの値。
 		uint64 PoseVersion = 0; // Local / Global を作ったときの Pose.Version。
 		uint64 BuiltVersion = 0; // 描画用の形状を作ったときの Pose.Version。
 		TSharedPtr<const FDrawSnapshot> DrawSnapshot; // 次の構築まで共有する不変の描画用コピー。

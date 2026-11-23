@@ -240,8 +240,11 @@ bool NModelImport::ImportPmx( const void* Data, usize Size, const FImportOptions
 	const int32 NumAdditionalUV = Globals[1];
 	const int32 VertexIndexSize = Globals[2];
 	const int32 TextureIndexSize = Globals[3];
+	const int32 MaterialIndexSize = Globals[4];
 	const int32 BoneIndexSize = Globals[5];
-	for ( const int32 IndexSize : { VertexIndexSize, TextureIndexSize, static_cast<int32>( Globals[4] ), BoneIndexSize } )
+	const int32 MorphIndexSize = Globals[6];
+	const int32 RigidIndexSize = Globals[7];
+	for ( const int32 IndexSize : { VertexIndexSize, TextureIndexSize, MaterialIndexSize, BoneIndexSize, MorphIndexSize, RigidIndexSize } )
 	{
 		if ( IndexSize != 1 && IndexSize != 2 && IndexSize != 4 )
 		{
@@ -500,6 +503,84 @@ bool NModelImport::ImportPmx( const void* Data, usize Size, const FImportOptions
 		Node.Parent = Parent;
 		BonePositions.Add( Position );
 		OutScene.Nodes.Add( Node );
+	}
+
+	// モーフ。頂点のモーフ（位置のずれ）だけを、形状として取り込む（DxLib も、頂点のモーフだけを形状にする。番号と名前は、ファイルの並びのまま）。
+	// グループ・骨・材質・UV・フリップ・インパルスのモーフは、読み飛ばす。
+	const int32 NumMorphs = Reader.ReadI32();
+	if ( Reader.IsFailed() || NumMorphs < 0 || NumMorphs > MaxCount )
+	{
+		OutError = "the PMX file has an invalid number of morphs";
+		return false;
+	}
+	for ( int32 Morph = 0; Morph < NumMorphs; ++Morph )
+	{
+		FImportedShape Shape;
+		Shape.Name = Reader.ReadText( bUtf16 );
+		Reader.ReadText( bUtf16 );
+		Reader.ReadU8(); // 操作のパネル
+		const uint8 MorphType = Reader.ReadU8();
+		const int32 NumOffsets = Reader.ReadI32();
+		if ( Reader.IsFailed() || NumOffsets < 0 || NumOffsets > MaxCount )
+		{
+			OutError = FString::Printf( "the PMX morph %d has an invalid number of offsets", Morph );
+			return false;
+		}
+		FImportedShapeMesh Part;
+		Part.Mesh = 0;
+		for ( int32 Offset = 0; Offset < NumOffsets; ++Offset )
+		{
+			if ( MorphType == 1 ) // 頂点
+			{
+				const int32 Vertex = Reader.ReadVertexIndex( VertexIndexSize );
+				const FVector3 Delta = Reader.ReadVector3();
+				if ( Reader.IsFailed() || Vertex < 0 || Vertex >= NumVertices || !IsFiniteVector( Delta ) )
+				{
+					OutError = FString::Printf( "the PMX morph %d has an invalid vertex offset", Morph );
+					return false;
+				}
+				Part.Vertices.Add( Vertex );
+				Part.Offsets.Add( Delta );
+			}
+			else if ( MorphType == 0 || MorphType == 9 ) // グループ・フリップ: モーフの番号と割合
+			{
+				Reader.Skip( static_cast<usize>( MorphIndexSize ) + 4 );
+			}
+			else if ( MorphType == 2 ) // 骨: 骨の番号・移動・回転
+			{
+				Reader.Skip( static_cast<usize>( BoneIndexSize ) + 28 );
+			}
+			else if ( MorphType >= 3 && MorphType <= 7 ) // UV・追加 UV: 頂点の番号と 4 つの値
+			{
+				Reader.Skip( static_cast<usize>( VertexIndexSize ) + 16 );
+			}
+			else if ( MorphType == 8 ) // 材質: 材質の番号と、操作・色・係数
+			{
+				Reader.Skip( static_cast<usize>( MaterialIndexSize ) + 113 );
+			}
+			else if ( MorphType == 10 ) // インパルス（2.1）: 剛体の番号・向き・速度・回転力
+			{
+				Reader.Skip( static_cast<usize>( RigidIndexSize ) + 25 );
+			}
+			else
+			{
+				OutError = FString::Printf( "the PMX morph %d has an unknown type %d", Morph, static_cast<int32>( MorphType ) );
+				return false;
+			}
+			if ( Reader.IsFailed() )
+			{
+				OutError = "the PMX file ends inside the morphs";
+				return false;
+			}
+		}
+		if ( MorphType == 1 )
+		{
+			if ( !Part.Vertices.IsEmpty() )
+			{
+				Shape.Meshes.Add( MoveTemp( Part ) );
+			}
+			OutScene.Shapes.Add( MoveTemp( Shape ) );
+		}
 	}
 	for ( int32 Index = 0; Index < NumBones; ++Index ) // 親から見た移動（親は、後ろにあってもよい）。
 	{

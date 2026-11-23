@@ -99,6 +99,10 @@ bool FStaticModelBuilder::Build( const FImportedScene& Scene, FStaticModelDefini
 		}
 	}
 	Result.Structure.Meshes.SetNum( Scene.Meshes.Num() );
+	for ( const FImportedShape& Shape : Scene.Shapes )
+	{
+		Result.Structure.Shapes.Add( Shape.Name ); // 形状の番号は、取り込みの並びのまま
+	}
 	Result.Structure.Materials.SetNum( Scene.Materials.Num() + 1 );
 	Result.Structure.Materials.Last().Name = "Default";
 	Result.Structure.Textures.SetNum( Scene.Textures.Num() );

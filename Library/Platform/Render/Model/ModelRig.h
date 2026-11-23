@@ -49,6 +49,20 @@ struct FRigMesh
 // 描画用の頂点 1 つが、どのメッシュのどの頂点から来たか
 using FRigVertexSource = FModelVertexSource;
 
+// 形状（モーフ）の、メッシュ 1 つぶんの位置のずれ（疎）
+struct FRigShapeMesh
+{
+	int32 Mesh = -1;
+	TArray<int32> Vertices;
+	TArray<FVector3> Offsets;
+};
+
+struct FRigShape
+{
+	FString Name;
+	TArray<FRigShapeMesh> Meshes;
+};
+
 struct FModelRig
 {
 	TArray<int32> Parent;                // ノードの親（-1 でルート）
@@ -58,6 +72,7 @@ struct FModelRig
 	TMap<FString, int32> NodeByName;     // 名前の重なりは、最初のノード
 	TArray<FRigMesh> Meshes;
 	TArray<FImportedAnimation> Clips;
+	TArray<FRigShape> Shapes;            // 形状（モーフ）。番号は、FModelStructure::Shapes と同じ
 
 	int32 GetNumNodes() const { return Parent.Num(); }
 };
@@ -82,6 +97,7 @@ struct FModelPose
 	TArray<FMatrix4x4> Override;
 	TArray<uint8> FrameHidden;           // ノードごとの「表示しない」
 	TArray<uint8> MeshHidden;            // メッシュごとの「表示しない」
+	TArray<float32> ShapeRate;           // 形状ごとの割合（0 〜 1）
 	FMatrix4x4 World;                    // 最後に描いたときの、モデルの配置
 	uint64 Version = 1;                  // ポーズに関わる状態を変えるたびに増やす（変形の作り直しの判断）
 };
@@ -112,7 +128,12 @@ namespace NModelRig
 	// モデルの座標での、ノードごとの行列（Order の順に、親の行列を掛ける）
 	void ComputeGlobals( const FModelRig& Rig, const TArray<FMatrix4x4>& Local, TArray<FMatrix4x4>& OutGlobal );
 
+	// 形状（モーフ）の割合（Pose.ShapeRate）を、基準の位置へ足した、メッシュごとの位置を作る（形状の番号の順に足すので、結果は決まる）。
+	// 割合が 0 でない形状に触られるメッシュだけ中身を作り、ほかは空（骨組みの位置のまま）。1 つでも作ったら true
+	bool EvaluateShapes( const FModelRig& Rig, const FModelPose& Pose, TArray<TArray<FVector3>>& OutPositions );
+
 	// Vertices の位置と法線を、Globals で変形した値にする（それ以外の値は触らない）。Sources は Vertices と同じ並び
 	// Jobs を渡すと、頂点の数が多いとき、頂点を範囲に分けて並列に変形する（各頂点は自分の出力だけを書くので、結果は、ワーカーの数によらず同じ）。
-	void Deform( const FModelRig& Rig, const TArray<FMatrix4x4>& Globals, const TArray<FRigVertexSource>& Sources, FDrawVertex3D* Vertices, int32 NumVertices, IJobSystem* Jobs = nullptr );
+	// Morphed は EvaluateShapes の結果。中身のあるメッシュは、骨組みの基準の位置の代わりに、その位置（形状を足したもの）から変形する（法線は、基準のまま）
+	void Deform( const FModelRig& Rig, const TArray<FMatrix4x4>& Globals, const TArray<FRigVertexSource>& Sources, FDrawVertex3D* Vertices, int32 NumVertices, IJobSystem* Jobs = nullptr, const TArray<TArray<FVector3>>* Morphed = nullptr );
 }

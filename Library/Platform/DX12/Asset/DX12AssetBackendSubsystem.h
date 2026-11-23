@@ -144,6 +144,8 @@ public:
 	bool SetModelFrameVisible( int32 Model, int32 Frame, bool bVisible ) override;
 	bool GetModelMeshVisible( int32 Model, int32 Mesh, bool& bOut ) override;
 	bool SetModelMeshVisible( int32 Model, int32 Mesh, bool bVisible ) override;
+	bool GetModelShapeRate( int32 Model, int32 Shape, float32& Out ) override;
+	bool SetModelShapeRate( int32 Model, int32 Shape, float32 Rate ) override;
 	// モデル材質効果が選んだ材質の面（バックエンドに依らない共通の形状を、番号で持つ）。
 	int32 CreateModelMaterialGeometry( const FStaticModelSurfaceData& Surface, int32 MaterialIndex ) override;
 	void DeleteModelMaterialGeometry( int32 Geometry ) override;

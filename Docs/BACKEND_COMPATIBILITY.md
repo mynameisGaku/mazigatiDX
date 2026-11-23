@@ -10,7 +10,7 @@
 
 |分類|項目数|Unreviewed|Missing|Partial|Implemented|Verified|Excluded|
 |---|---:|---:|---:|---:|---:|---:|---:|
-|API|381|9|3|199|169|0|1|
+|API|381|9|1|201|169|0|1|
 |Draw|106|0|0|62|40|4|0|
 |Sample|35|29|0|5|1|0|0|
 |Editor|11|11|0|0|0|0|0|
@@ -150,7 +150,7 @@
 |[API.IModelBackend.GetModelMeshData](../Library/Core/Interfaces/Asset/ModelBackend.h#L75)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|頂点（位置・法線・UV・色・いちばん強く影響する骨）と三角形（メッシュ・材質・フレーム）を返す。三角形ごとに展開された頂点は、共有に戻す。bCurrentPose はアニメーション・骨の上書きを含む。形状（モーフ）は含まない||
 |[API.IModelBackend.GetModelMeshVisible](../Library/Core/Interfaces/Asset/ModelBackend.h#L80)|Partial|R5|作成、入出力、時系列、骨の階層・混合・上書き・表示、無効な番号、失敗を、合成した骨組みで比較|CPUスキニングの骨組み（ModelRig / CStaticModelStore）。合成した骨組みで契約検査（RunModelRigTests）。実際のアニメーションつきFBXでの描画（DxLibとの画の比較）は未完了。割合の混ぜ方は、フレームワークの割合の計算に合わせた仮定（DxLibで未確認）||
 |[API.IModelBackend.GetModelOpacity](../Library/Core/Interfaces/Asset/ModelBackend.h#L85)|Implemented|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
-|[API.IModelBackend.GetModelShapeRate](../Library/Core/Interfaces/Asset/ModelBackend.h#L96)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.IModelBackend.GetModelShapeRate](../Library/Core/Interfaces/Asset/ModelBackend.h#L96)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|PMXの頂点モーフを形状として読み（番号と名前はDxLibと同じ。ファイルの並び）、割合を、骨の変形の前に位置へ足す（CStaticModelStore／ModelRig）。負の割合は0、1を超える割合は位置のずれを延ばして足す（DxLibと同じ）。上限は100（DxLibは上限なしで、極端な値では形が壊れる）。同じ割合の再設定では頂点を作り直さない。Characterサンプルの画像で、DxLibと、表情の変化の範囲が一致（IoU 0.92〜0.98。割合0.5・1・1.5・2・4、骨の違う3つの時刻）。FBXのブレンドシェイプ、PMXのグループ・骨・UV・材質・フリップ・インパルスのモーフは未対応|Library/Platform/Render/Model/ModelRig.cpp; Library/Platform/Render/Model/StaticModelStore.cpp; Library/Framework/Asset/Model/Import/PmxImporter.cpp; Source/SelfTest/RunModelRigTests.ps1|
 |[API.IModelBackend.GetModelStructure](../Library/Core/Interfaces/Asset/ModelBackend.h#L71)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
 |[API.IModelBackend.GetStaticModelSurface](../Library/Core/Interfaces/Asset/ModelBackend.h#L46)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
 |[API.IModelBackend.LoadModel](../Library/Core/Interfaces/Asset/ModelBackend.h#L18)|Partial|R5|MV1を除く対象形式で入出力・無効handle・共有・非同期・失敗・解放と終了時の寿命を比較。MV1は未対応を返す|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
@@ -164,7 +164,7 @@
 |[API.IModelBackend.SetModelMaterialColors](../Library/Core/Interfaces/Asset/ModelBackend.h#L78)|Partial|R5|作成、入出力、準備し直し、ポーズ・非表示との関係、無効な入力、失敗を、合成した形で比較|個体ごとの上書き。描画に反映するのは拡散色（Diffuse）だけ（頂点の色を変える）。環境光・鏡面・自己発光は保持するだけ。骨組みの無い（従来の）モデルは拒否||
 |[API.IModelBackend.SetModelMeshVisible](../Library/Core/Interfaces/Asset/ModelBackend.h#L81)|Partial|R5|作成、入出力、時系列、骨の階層・混合・上書き・表示、無効な番号、失敗を、合成した骨組みで比較|CPUスキニングの骨組み（ModelRig / CStaticModelStore）。合成した骨組みで契約検査（RunModelRigTests）。実際のアニメーションつきFBXでの描画（DxLibとの画の比較）は未完了。割合の混ぜ方は、フレームワークの割合の計算に合わせた仮定（DxLibで未確認）||
 |[API.IModelBackend.SetModelOpacity](../Library/Core/Interfaces/Asset/ModelBackend.h#L86)|Implemented|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|静的モデルの処理あり。スキン・モーフ・動的pose等の互換は未完了。MV1形式はv1.0.0対象外||
-|[API.IModelBackend.SetModelShapeRate](../Library/Core/Interfaces/Asset/ModelBackend.h#L97)|Missing|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|DX12アセット実装に処理がなく、基底の既定値または未対応の戻り値を使う||
+|[API.IModelBackend.SetModelShapeRate](../Library/Core/Interfaces/Asset/ModelBackend.h#L97)|Partial|R5|入出力の値・保存物、無効／解放済みhandle、複製・共有・失敗・終了時の寿命を比較|PMXの頂点モーフを形状として読み（番号と名前はDxLibと同じ。ファイルの並び）、割合を、骨の変形の前に位置へ足す（CStaticModelStore／ModelRig）。負の割合は0、1を超える割合は位置のずれを延ばして足す（DxLibと同じ）。上限は100（DxLibは上限なしで、極端な値では形が壊れる）。同じ割合の再設定では頂点を作り直さない。Characterサンプルの画像で、DxLibと、表情の変化の範囲が一致（IoU 0.92〜0.98。割合0.5・1・1.5・2・4、骨の違う3つの時刻）。FBXのブレンドシェイプ、PMXのグループ・骨・UV・材質・フリップ・インパルスのモーフは未対応|Library/Platform/Render/Model/ModelRig.cpp; Library/Platform/Render/Model/StaticModelStore.cpp; Library/Framework/Asset/Model/Import/PmxImporter.cpp; Source/SelfTest/RunModelRigTests.ps1|
 |[API.IMouseInput.GetMouseState](../Library/Core/Interfaces/Input/IMouseInput.h#L14)|Implemented|R8|押下・保持・解放、focus喪失、座標拡大、wheel、連続frameでDxLibと比較|Windows入力へ接続。論理座標・focus・wheel等の実機比較前||
 |[API.IMouseInput.IsMouseButtonDown](../Library/Core/Interfaces/Input/IMouseInput.h#L16)|Implemented|R8|押下・保持・解放、focus喪失、座標拡大、wheel、連続frameでDxLibと比較|Windows入力へ接続。論理座標・focus・wheel等の実機比較前||
 |[API.IMouseInput.IsMouseButtonPressed](../Library/Core/Interfaces/Input/IMouseInput.h#L18)|Implemented|R8|押下・保持・解放、focus喪失、座標拡大、wheel、連続frameでDxLibと比較|Windows入力へ接続。論理座標・focus・wheel等の実機比較前||

@@ -246,6 +246,7 @@ int32 CStaticModelStore::Duplicate( int32 Source )
 		Copy.Rig->Pose.Override = Instance->Rig->Pose.Override;
 		Copy.Rig->Pose.FrameHidden = Instance->Rig->Pose.FrameHidden;
 		Copy.Rig->Pose.MeshHidden = Instance->Rig->Pose.MeshHidden;
+		Copy.Rig->Pose.ShapeRate = Instance->Rig->Pose.ShapeRate;
 		Copy.Rig->Pose.World = Instance->Rig->Pose.World;
 	}
 	const int32 Handle = NextHandle++; // 別個体の番号。
@@ -281,6 +282,13 @@ bool CStaticModelStore::NeedsDeform( const FInstance& Instance ) const
 	for ( uint8 Flag : Pose.bOverride )
 	{
 		if ( Flag )
+		{
+			return true;
+		}
+	}
+	for ( float32 Rate : Pose.ShapeRate )
+	{
+		if ( Rate != 0.0f )
 		{
 			return true;
 		}
@@ -344,6 +352,7 @@ void CStaticModelStore::EnsurePose( FInstance& Instance )
 	}
 	NModelRig::EvaluateLocals( *Instance.Resource->Rig, Rig.Pose, Rig.Local );
 	NModelRig::ComputeGlobals( *Instance.Resource->Rig, Rig.Local, Rig.Global );
+	NModelRig::EvaluateShapes( *Instance.Resource->Rig, Rig.Pose, Rig.Morphed );
 	Rig.PoseVersion = Rig.Pose.Version;
 }
 
@@ -355,7 +364,7 @@ void CStaticModelStore::BuildDeformed( FInstance& Instance )
 	auto Snapshot = MakeShared<FDrawSnapshot>(); // ロック内で構築し、完成した形状だけを公開する。
 	Snapshot->Resource = Instance.Resource;
 	Snapshot->Vertices = Resource.Vertices;
-	NModelRig::Deform( *Resource.Rig, Rig.Global, Resource.VertexSources, Snapshot->Vertices.GetData(), Snapshot->Vertices.Num(), Jobs );
+	NModelRig::Deform( *Resource.Rig, Rig.Global, Resource.VertexSources, Snapshot->Vertices.GetData(), Snapshot->Vertices.Num(), Jobs, &Rig.Morphed );
 	const auto& SourceSections = Resource.Definition.Surface.Sections;
 	for ( int32 Index = 0; Index < Resource.Sections.Num() && Index < SourceSections.Num(); ++Index )
 	{
@@ -941,6 +950,36 @@ bool CStaticModelStore::GetMeshData( int32 Handle, int32 Mesh, bool bCurrentPose
 	return true;
 }
 
+bool CStaticModelStore::GetShapeRate( int32 Handle, int32 Shape, float32& Out ) const
+{
+	FScopedLock Guard( Lock );
+	const FInstance* Instance = FindInstance( Handle );
+	if ( !Instance || !Instance->Rig || Shape < 0 || Shape >= Instance->Rig->Pose.ShapeRate.Num() )
+	{
+		return false;
+	}
+	Out = Instance->Rig->Pose.ShapeRate[Shape];
+	return true;
+}
+
+bool CStaticModelStore::SetShapeRate( int32 Handle, int32 Shape, float32 Rate )
+{
+	FScopedLock Guard( Lock );
+	FInstance* Instance = FindInstance( Handle );
+	if ( !Instance || !Instance->Rig || Shape < 0 || Shape >= Instance->Rig->Pose.ShapeRate.Num() || !( Rate == Rate ) )
+	{
+		return false;
+	}
+	const float32 Clamped = NMath::Clamp( Rate, 0.0f, MaxShapeRate );
+	float32& Current = Instance->Rig->Pose.ShapeRate[Shape];
+	if ( Current != Clamped ) // 同じ値なら、ポーズを変えない（頂点を作り直さない）
+	{
+		Current = Clamped;
+		++Instance->Rig->Pose.Version;
+	}
+	return true;
+}
+
 bool CStaticModelStore::SetMeshVisible( int32 Handle, int32 Mesh, bool bVisible )
 {
 	FScopedLock Guard( Lock );
@@ -961,7 +1000,7 @@ void CStaticModelStore::GetFullVertices( FInstance& Instance, TArray<FDrawVertex
 	if ( Instance.Rig && Resource.Rig && ( Resource.bHasSkin || NeedsDeform( Instance ) ) )
 	{
 		EnsurePose( Instance );
-		NModelRig::Deform( *Resource.Rig, Instance.Rig->Global, Resource.VertexSources, Out.GetData(), Out.Num() );
+		NModelRig::Deform( *Resource.Rig, Instance.Rig->Global, Resource.VertexSources, Out.GetData(), Out.Num(), nullptr, &Instance.Rig->Morphed );
 	}
 }
 
