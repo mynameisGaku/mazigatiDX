@@ -4,6 +4,8 @@
 
 **未対応・未確認の事項の一覧は [DX12_KNOWN_GAPS.md](DX12_KNOWN_GAPS.md)。push は ChatGPT（Codex）の `framework-dx12` の作業が行います（Claude は push しません）。**
 
+**Codex への引き継ぎ（最新。最初に読む）: [CODEX_HANDOFF_2026-11-24.md](CODEX_HANDOFF_2026-11-24.md)。** 状態・取り込みと push の手順・次にやること・決まり・落とし穴を、1 つにまとめています。
+
 ## 目的と公開の基点
 
 作業ブランチは`backend-dx12`です。[ロードマップ](ROADMAP.md)のR1基盤を進めています。R1全体、四描画方式、完全互換は未完了です。
