@@ -7,7 +7,8 @@ mazigatiDX のコードは [MIT ライセンス](LICENSE)です。次の第三�
 | DxLib | 3.24f | 同梱しない（`FetchDxLib.bat` が、公式サイトから `C:\DxLib` へ取得） | DxLib 独自（使用料なし、商用可。下記の条件あり） | 山田 巧 |
 | Jolt Physics | 5.6.0 | `VendorModules/Jolt` | MIT | Jorrit Rouwe |
 | Dear ImGui | v1.93.0-docking | `VendorModules/ImGui` | MIT | Omar Cornut |
-| SDL | 3.4.18 | `VendorModules/SDL3` | zlib | Sam Lantinga |
+| SDL | 3.4.18 | `VendorModules/SDL3`（x64 の `SDL3.dll` は、公式のソースから、libusb 対応で作り直したもの。`VendorModules/SDL3/BUILD_NOTES.md`） | zlib | Sam Lantinga |
+| libusb | 1.0.30 | `VendorModules/SDL3/lib/x64/libusb-1.0.dll`（公式のソースを、変更せずにビルドしたもの。SDL が実行時に読み込む別のファイル） | LGPL 2.1 以降 | libusb の作者たち |
 | nlohmann/json | 3.12.0 | `VendorModules/nlohmann` | MIT | Niels Lohmann |
 | ufbx | 0.23.1 | `VendorModules/ufbx` | MIT または パブリックドメイン（選べる） | Samuli Raivio |
 | pixelfx | a841596（2026-11） | `Library/Framework/PixelEffect`（C++ へ移植。元のコードは同梱しない） | MIT | Patch, Hugo Duprez |
@@ -60,6 +61,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+## libusb
+
+`libusb-1.0.dll`（libusb 1.0.30、ソース: https://github.com/libusb/libusb の `v1.0.30`、変更なし）は、GNU Lesser General Public License 2.1 以降のもとで配布します。ライセンス文は `VendorModules/SDL3/LICENSE-libusb.txt` です。
+
+- SDL は、Nintendo Switch 2 のコントローラーを USB で読むときだけ、この DLL を実行時に読み込みます（`SDL3.dll` に埋め込まず、別のファイルとして、実行ファイルの隣へ置きます）。置き換えたいときは、同じ名前の別の libusb 1.0 の DLL に差し替えるだけです。
+- この DLL を使わない構成でも、ほかのコントローラーは、これまでどおり読めます。
+
 ## ゲームを配布するとき
 
-配布物には、このリポジトリの `LICENSE` と、`VendorModules` の各ライセンス文、上の pixelfx のライセンス文と DxLib の著作権表示を同梱してください。`Tools/PackageGame.ps1` で配布物を作ると、これらを `Licenses` フォルダーへ入れます（pixelfx のライセンス文と DxLib の著作権表示は、この文書に書いてあるので、この文書ごと入ります）。
+配布物には、このリポジトリの `LICENSE` と、`VendorModules` の各ライセンス文（libusb を含む）、上の pixelfx のライセンス文と DxLib の著作権表示を同梱してください。`Tools/PackageGame.ps1` で配布物を作ると、これらを `Licenses` フォルダーへ入れます（pixelfx のライセンス文と DxLib の著作権表示は、この文書に書いてあるので、この文書ごと入ります）。

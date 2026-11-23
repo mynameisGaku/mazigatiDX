@@ -5,7 +5,7 @@
 #   先に、ゲームをビルドしておく（既定は Release）。このスクリプトは、ビルドしない。
 #   <Destination>\<Name>[-<Version>] に、次を集める:
 #     <Name>.exe            ゲームの実行ファイル（<ProjectRoot>\x64\<Configuration> から。名前は -Name に変える）
-#     SDL3.dll              実行ファイルの隣にある DLL（すべて）
+#     SDL3.dll など         実行ファイルの隣にある DLL（すべて。libusb-1.0.dll は、Switch 2 のコントローラーを USB で読むのに要る）
 #     Config\               <ProjectRoot>\Config（autoexec.cfg は、Debug ビルド用なので、入れない）
 #     Assets\               <ProjectRoot>\Assets（.gitkeep は、入れない）
 #     EngineContent\        エンジン組み込みの素材（このリポジトリの EngineContent）
@@ -115,6 +115,7 @@ $licenseFiles = [ordered]@{
     'Jolt-LICENSE.txt'          = 'VendorModules\Jolt\LICENSE'
     'ImGui-LICENSE.txt'         = 'VendorModules\ImGui\LICENSE.txt'
     'SDL3-LICENSE.txt'          = 'VendorModules\SDL3\LICENSE.txt'
+    'libusb-LICENSE.txt'        = 'VendorModules\SDL3\LICENSE-libusb.txt'
     'nlohmann-json-LICENSE.txt' = 'VendorModules\nlohmann\LICENSE.MIT'
     'ufbx-LICENSE.txt'          = 'VendorModules\ufbx\LICENSE'
 }

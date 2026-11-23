@@ -109,8 +109,10 @@
     <MakeDir Directories="@(ClCompile->'$(IntDir)%(RelativeDir)')" />
   </Target>
 
-  <!-- SDL3.dll を実行ファイルの隣へコピーする（実行ファイルを作るプロジェクトだけ。静的ライブラリは Link を通らない） -->
+  <!-- SDL3.dll を実行ファイルの隣へコピーする（実行ファイルを作るプロジェクトだけ。静的ライブラリは Link を通らない）。
+       libusb-1.0.dll は、SDL が実行時に読み込む（Nintendo Switch 2 のコントローラーを USB で読むのに要る）。x64 だけにあり、無い構成では、コピーしない（SDL は、その機器だけを使わない） -->
   <Target Name="CopySdlDll" AfterTargets="Link">
     <Copy SourceFiles="$(MazigatiRoot)VendorModules\SDL3\lib\$(PlatformTarget)\SDL3.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" Condition="Exists('$(MazigatiRoot)VendorModules\SDL3\lib\$(PlatformTarget)\SDL3.dll')" />
+    <Copy SourceFiles="$(MazigatiRoot)VendorModules\SDL3\lib\$(PlatformTarget)\libusb-1.0.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" Condition="Exists('$(MazigatiRoot)VendorModules\SDL3\lib\$(PlatformTarget)\libusb-1.0.dll')" />
   </Target>
 </Project>
