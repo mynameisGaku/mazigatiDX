@@ -43,6 +43,8 @@ void CCharacterStage::OnSpawn()
 		{
 			Frames[Index] = Source->FindFrame( FString( BoneNames[Index] ) );
 		}
+		BlinkShape = Source->FindShape( FString( "まばたき" ) );
+		SmileShape = Source->FindShape( FString( "にこり" ) );
 	}
 }
 
@@ -119,6 +121,34 @@ void CCharacterStage::Tick( float32 DeltaTime )
 	Rotate( EBone::TailRight1, 0.0f, NMath::Sin( T * 2.2f - 0.5f ) * 0.3f, 0.0f );
 	Rotate( EBone::TailRight2, 0.0f, NMath::Sin( T * 2.2f - 1.2f ) * 0.4f, 0.0f );
 
+	// 表情（形状）: ときどきまばたきして、ゆっくり、にこりとする。--character-expression=<0 から 1> で、両方を、その値に固定できる（絵を比べる検査用）。
+	if ( BlinkShape >= 0 || SmileShape >= 0 )
+	{
+		static const TOptional<FString> FixedExpression = NCommandLine::GetValue( "character-expression" );
+		float32 Blink = 0.0f;
+		float32 Smile = 0.0f;
+		if ( FixedExpression.IsSet() )
+		{
+			Blink = static_cast<float32>( FixedExpression.GetValue().ToFloat( 0.0 ) );
+			Smile = Blink;
+		}
+		else
+		{
+			const float32 Phase = NMath::Fmod( T, 3.0f ); // 3 秒に 1 回、0.25 秒で、まばたきする。
+			Blink = Phase < 0.25f ? NMath::Sin( Phase / 0.25f * 3.14159265f ) : 0.0f;
+			Smile = 0.8f * ( 0.5f + 0.5f * NMath::Sin( T * 0.5f ) );
+		}
+		FModelAppearance Look = Instance->GetAppearance();
+		if ( BlinkShape >= 0 )
+		{
+			Look.SetShapeRate( BlinkShape, Blink );
+		}
+		if ( SmileShape >= 0 )
+		{
+			Look.SetShapeRate( SmileShape, Smile );
+		}
+	}
+
 	const TOptional<FString> PoseMode = NCommandLine::GetValue( "character-pose" ); // 画像検査で固定時と変更後を比較する。
 	if ( !PoseMode.IsSet() ) { return; }
 	if ( PoseMode.GetValue() == "frozen" )
@@ -149,7 +179,7 @@ void CCharacterStage::Draw( FDrawContext& Draw )
 			Draw.Model( Instance->GetHandle(), FMatrix4x4() );
 			Draw.PopCamera();
 		}
-		Draw.Text( 20, 80, "A PMX model, with the bones moved from code (no motion file)", FColor32( 255, 255, 255 ) );
+		Draw.Text( 20, 80, "A PMX model, with the bones and the facial shapes moved from code (no motion file)", FColor32( 255, 255, 255 ) );
 	}
 	else
 	{

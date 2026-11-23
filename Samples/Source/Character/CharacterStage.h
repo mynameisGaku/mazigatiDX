@@ -5,7 +5,7 @@
 #include "Library/Math/Matrix4x4.h"
 #include "Library/Framework/Render/Scene/SceneDrawSnapshot.h"
 
-// PMX のモデルを読み込み、骨をコードで動かして描く。動かし方は、時刻から決める（モーションのファイルは使わない）。
+// PMX のモデルを読み込み、骨と表情（形状）をコードで動かして描く。動かし方は、時刻から決める（モーションのファイルは使わない）。
 class CCharacterStage : public CGameObject
 {
 public:
@@ -58,5 +58,7 @@ private:
 	int32 Frames[NumBones]; // 骨の番号（無ければ -1）。
 	FMatrix4x4 Bind[NumBones]; // 基準の姿（親基準）。
 	bool bBindReady = false;
+	int32 BlinkShape = -1; // 表情（形状）の番号: まばたき（無ければ -1）。
+	int32 SmileShape = -1; // 表情（形状）の番号: にこり（無ければ -1）。
 	float32 Time = 0.0f; // 動きの時計（秒）。
 };
