@@ -4,6 +4,7 @@
 #include "Library/Core/Interfaces/Input/IMouseInput.h"
 #include "Library/Core/Interfaces/Platform/IPlatform.h"
 #include "Library/Core/Log/Log.h"
+#include "Library/Core/Time/PlatformTime.h"
 #include "Library/Framework/Subsystem/SubsystemCollection.h"
 #include "Library/Math/MathUtils.h"
 #include "Library/Platform/System/FileSystem.h"
@@ -18,6 +19,9 @@ REGISTER_SUBSYSTEM( CSdlGamepadInputSubsystem )
 
 namespace
 {
+	// SDL の初期化がこれ以上かかったら、起動が止まっている可能性として警告する（ミリ秒）。
+	constexpr float64 SlowInitializationMs = 500.0;
+
 	constexpr uint16 VendorNintendo = 0x057Eu;
 	constexpr uint16 ProductJoyCon2Left  = 0x2066u;
 	constexpr uint16 ProductJoyCon2Right = 0x2067u;
@@ -175,6 +179,7 @@ void CSdlGamepadInputSubsystem::Initialize( FSubsystemCollection& Collection )
 	SDL_SetHint( SDL_HINT_JOYSTICK_HIDAPI_STEAM, "1" );
 	SDL_SetHint( SDL_HINT_JOYSTICK_HIDAPI_STEAMDECK, "1" );
 
+	const int64 InitializeBeginTicks = NPlatformTime::GetTicks();
 	bool bSensorsAvailable = true;
 	if ( !SDL_InitSubSystem( SDL_INIT_GAMEPAD | SDL_INIT_JOYSTICK | SDL_INIT_SENSOR ) )
 	{
@@ -186,6 +191,14 @@ void CSdlGamepadInputSubsystem::Initialize( FSubsystemCollection& Collection )
 			bInitialized = false;
 			return;
 		}
+	}
+
+	// SDL は初期化の中で、接続中の HID 機器をすべて列挙する。応答しない機器があると、ここで起動が止まる（DirectInput の列挙で、約 10 秒止まった例がある）。
+	// 検出用のウィンドウは、初期化を呼んだスレッドが持つので、別スレッドへ逃がさず、遅いときは、原因を知らせるだけにする。
+	const float64 InitializeMs = NPlatformTime::TicksToMs( NPlatformTime::GetTicks() - InitializeBeginTicks );
+	if ( InitializeMs >= SlowInitializationMs )
+	{
+		LOG( LogGamepad, Warning, "SDL joystick initialization took %.0f ms. A connected HID device that does not answer (Bluetooth, virtual gamepad, adapter) can block startup here. Setting the environment variable SDL_JOYSTICK_DIRECTINPUT=0 skips the DirectInput enumeration (pads that only DirectInput can read are then not listed).", InitializeMs );
 	}
 
 	// イベントキューを使わず毎フレームポーリングするので、内部キューへの蓄積を止める
