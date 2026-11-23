@@ -18,7 +18,13 @@ FModelPoseSnapshot FModelPoseSnapshot::Capture( IStaticModelSource& Source, int3
 	FModelPoseSnapshot Result; // 有効な所有付きビューだけを公開する。
 	if ( !IsInGameThread() || Handle < 0 ) { return Result; }
 	FStaticModelDrawView View; // 個体の最新の評価済み姿勢を保持する。
-	if ( !Source.GetStaticModelDrawView( Handle, View ) ) { return Result; }
+	// GPU でスキニングできる個体は、基準の頂点（共有）と、骨と重み（共有）と、骨の行列（この姿勢のぶん。小さい）だけを保持する（変形済みの頂点のコピーを作らない）。
+	const bool bSkinned = Source.GetStaticModelSkinnedDrawView( Handle, View ) && View.SkinVertices && View.BoneMatrices && View.NumBones > 0 && View.SkinOwner && View.SkinOwner.Get() == View.BoneMatrices;
+	if ( !bSkinned )
+	{
+		View = {};
+		if ( !Source.GetStaticModelDrawView( Handle, View ) ) { return Result; }
+	}
 	if ( View.NumIndices == 0 && View.NumSections == 0 )
 	{
 		View = {}; // 空の形状は画像や頂点を借りない。

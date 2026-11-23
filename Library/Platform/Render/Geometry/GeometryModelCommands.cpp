@@ -255,22 +255,80 @@ EGeometryCommandResult CGeometryModelCommands::DrawSkinnedView( const FStaticMod
 		return EGeometryCommandResult::Executed;
 	}
 	const int32 ModelAlpha = NMath::Clamp( static_cast<int32>( Alpha * Model.Opacity + 0.5f ), 0, 255 ); // 個体の不透明度を一度だけ掛ける。
-	const int32 NumForward = Forward.DrawMeshForward( Model, ModelAlpha, bAlphaBlend );
+	const int32 NumForward = Forward.CanDrawForward( Model ) ? Forward.DrawMeshForward( Model, ModelAlpha, bAlphaBlend ) : 0; // 固定した姿勢では、GPU の経路が使えないこともある。
 	if ( NumForward >= Model.NumSections )
 	{
 		return EGeometryCommandResult::Executed;
 	}
 	// GPU が描けなかった範囲から先は、変形済みの頂点で、CPU の経路で描く（見えている範囲の並びは、同じ）。
 	FStaticModelDrawView Deformed;
-	if ( !Models->GetStaticModelDrawView( Handle, Deformed ) )
+	TArray<FDrawVertex3D> SkinnedVertices; // 個体を引けない（固定した姿勢）ときは、ビューの骨と重みで、CPU が変形する。
+	if ( Handle >= 0 && Models && Models->GetStaticModelDrawView( Handle, Deformed ) )
 	{
-		return EGeometryCommandResult::Rejected;
+		return DrawModelViewFrom( Deformed, Alpha, bAlphaBlend, false, NumForward );
 	}
+	SkinViewOnCpu( Model, SkinnedVertices );
+	Deformed = Model;
+	Deformed.Vertices = SkinnedVertices.GetData();
+	Deformed.NumVertices = SkinnedVertices.Num();
+	Deformed.SkinVertices = nullptr;
+	Deformed.BoneMatrices = nullptr;
+	Deformed.NumBones = 0;
+	Deformed.MeshKey = 0; // 変形済みの頂点は、共有しない。
+	Deformed.VertexOwner.Reset();
+	Deformed.SkinOwner.Reset();
 	return DrawModelViewFrom( Deformed, Alpha, bAlphaBlend, false, NumForward );
+}
+
+void CGeometryModelCommands::SkinViewOnCpu( const FStaticModelDrawView& Model, TArray<FDrawVertex3D>& OutVertices )
+{
+	OutVertices.Reset();
+	if ( !Model.Vertices || !Model.SkinVertices || !Model.BoneMatrices || Model.NumVertices <= 0 || Model.NumBones <= 0 )
+	{
+		return;
+	}
+	OutVertices.SetNum( Model.NumVertices );
+	for ( int32 Index = 0; Index < Model.NumVertices; ++Index )
+	{
+		FDrawVertex3D& Out = OutVertices[Index];
+		const FDrawVertex3D& Rest = Model.Vertices[Index];
+		const FStaticModelSkinVertex& Skin = Model.SkinVertices[Index];
+		Out = Rest; // 色・画像の座標は、そのまま。
+		FVector3 Position( 0.0f, 0.0f, 0.0f );
+		FVector3 Normal( 0.0f, 0.0f, 0.0f );
+		for ( int32 Slot = 0; Slot < 4; ++Slot )
+		{
+			const float32 Weight = Skin.Weights[Slot];
+			if ( !( Weight > 0.0f ) || Skin.Bones[Slot] >= Model.NumBones )
+			{
+				continue; // 重みが 0 の枠・範囲の外の骨は、効かない。
+			}
+			const float32* Matrix = Model.BoneMatrices + Skin.Bones[Slot] * 12; // 3 つの列（x・y・z 成分）。1 つの列は、(回転拡大の 3 つ、移動)。
+			const float32 X = Rest.Position[0], Y = Rest.Position[1], Z = Rest.Position[2];
+			Position.x += ( X * Matrix[0] + Y * Matrix[1] + Z * Matrix[2] + Matrix[3] ) * Weight;
+			Position.y += ( X * Matrix[4] + Y * Matrix[5] + Z * Matrix[6] + Matrix[7] ) * Weight;
+			Position.z += ( X * Matrix[8] + Y * Matrix[9] + Z * Matrix[10] + Matrix[11] ) * Weight;
+			const float32 NX = Rest.Normal[0], NY = Rest.Normal[1], NZ = Rest.Normal[2];
+			Normal.x += ( NX * Matrix[0] + NY * Matrix[1] + NZ * Matrix[2] ) * Weight;
+			Normal.y += ( NX * Matrix[4] + NY * Matrix[5] + NZ * Matrix[6] ) * Weight;
+			Normal.z += ( NX * Matrix[8] + NY * Matrix[9] + NZ * Matrix[10] ) * Weight;
+		}
+		Normal = Normal.Normalized();
+		Out.Position[0] = Position.x;
+		Out.Position[1] = Position.y;
+		Out.Position[2] = Position.z;
+		Out.Normal[0] = Normal.x;
+		Out.Normal[1] = Normal.y;
+		Out.Normal[2] = Normal.z;
+	}
 }
 
 EGeometryCommandResult CGeometryModelCommands::DrawModelView( const FStaticModelDrawView& Model, int32 Alpha, bool bAlphaBlend )
 {
+	if ( Model.SkinVertices )
+	{
+		return DrawSkinnedView( Model, -1, Alpha, bAlphaBlend ); // 固定した GPU スキニングの姿勢。
+	}
 	return DrawModelViewFrom( Model, Alpha, bAlphaBlend, true, 0 );
 }
 
