@@ -988,6 +988,7 @@
     <ClInclude Include="Library\Core\Thread\JobState.h" />
     <ClInclude Include="Library\Core\Thread\Mutex.h" />
     <ClInclude Include="Library\Core\Thread\RenderThread.h" />
+    <ClInclude Include="Library\Core\Thread\SpinWait.h" />
     <ClInclude Include="Library\Core\Thread\TaskFence.h" />
     <ClInclude Include="Library\Core\Thread\TaskFenceState.h" />
     <ClInclude Include="Library\Core\Thread\Thread.h" />

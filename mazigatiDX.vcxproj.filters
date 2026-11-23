@@ -2607,6 +2607,9 @@
     <ClInclude Include="Library\Core\Thread\TaskFence.h">
       <Filter>Library\Core\Thread</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Thread\SpinWait.h">
+      <Filter>Library\Core\Thread</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Thread\TaskFenceState.h">
       <Filter>Library\Core\Thread</Filter>
     </ClInclude>

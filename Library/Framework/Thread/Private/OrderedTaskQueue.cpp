@@ -2,6 +2,7 @@
 #include "OrderedTaskQueue.h"
 
 #include "Library/Core/Profiler/ProfilerScope.h"
+#include "Library/Core/Thread/SpinWait.h"
 #include "Library/Core/Thread/Thread.h"
 
 COrderedTaskQueue::COrderedTaskQueue() : State( MakeShared<FTaskFenceState>() ) {}
@@ -21,6 +22,7 @@ FTaskFence COrderedTaskQueue::Enqueue( TCallable<void()> Task, const char *Name,
 	// 受付番号を決める箇所が、複数の要求元を1つの順序へまとめる境界。
 	const uint64 Sequence = ++Issued;
 	Pending.Enqueue( FEntry{ MoveTemp( Task ), Name ? Name : "OrderedTask", Sequence } );
+	State->IssuedHint.Store( Sequence, EMemoryOrder::Release );
 	OutStart = !bRunning;
 	bRunning = true;
 	Lock.Unlock();
@@ -46,6 +48,12 @@ bool COrderedTaskQueue::ExecuteOne( bool bWait )
 {
 	// 仕事本体と取り込んだ値の破棄を、待ち行列のロックの外で行う。
 	FEntry Entry;
+	if ( bWait )
+	{
+		// 眠る前に、ごく短い間だけ、眠らずに次の仕事を待つ。呼び出し側が、結果を待って続けて積むときは、眠って起こされるより早く受け取れる。
+		const uint64 Done = State->CompletedHint.Load( EMemoryOrder::Acquire );
+		NSpinWait::Until( [this, Done]() { return State->IssuedHint.Load( EMemoryOrder::Acquire ) > Done; } );
+	}
 	{
 		FUniqueLock Lock( State->Mutex );
 		if ( bWait )
@@ -69,6 +77,7 @@ bool COrderedTaskQueue::ExecuteOne( bool bWait )
 	{
 		FScopedLock Lock( State->Mutex );
 		State->Completed = Entry.Sequence;
+		State->CompletedHint.Store( Entry.Sequence, EMemoryOrder::Release );
 		State->ExecutingThread = 0;
 	}
 	State->Changed.NotifyAll();

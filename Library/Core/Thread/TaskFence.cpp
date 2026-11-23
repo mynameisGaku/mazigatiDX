@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "TaskFence.h"
 
+#include "Library/Core/Thread/SpinWait.h"
 #include "Library/Core/Thread/TaskFenceState.h"
 #include "Library/Core/Thread/Thread.h"
 
@@ -35,6 +36,21 @@ bool FTaskFence::Wait( uint32 TimeoutMilliseconds ) const
 	if ( State->ExecutingThread == NThread::GetCurrentId() || State->bAborted )
 	{
 		return false;
+	}
+	if ( TimeoutMilliseconds > 0 )
+	{
+		// 眠る前に、ごく短い間だけ、眠らずに完了を待つ。実行側の仕事が短いと、眠って起こされるより早く受け取れる。
+		Lock.Unlock();
+		NSpinWait::Until( [this]() { return State->CompletedHint.Load( EMemoryOrder::Acquire ) >= Sequence; } );
+		Lock.Lock();
+		if ( State->Completed >= Sequence )
+		{
+			return true;
+		}
+		if ( State->ExecutingThread == NThread::GetCurrentId() || State->bAborted )
+		{
+			return false;
+		}
 	}
 	// 完了または実行不能を、同じ共有ロックの下で調べる。
 	const auto HasFinished = [this]() { return State->Completed >= Sequence || State->bAborted; };
