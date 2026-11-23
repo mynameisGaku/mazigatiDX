@@ -27,6 +27,37 @@ cbuffer cbLight : register( b6 )
 	float4 g_LightBright;
 	float4 g_Lights[42];
 };
+#ifdef SKINNED
+// GPU スキニング。骨の行列（3 つの float4 = 行列の 1〜3 列。v * M の行ベクトルの規約）。MaxStaticModelSkinBones（256）個ぶん。
+cbuffer cbBones : register( b1 )
+{
+	float4 g_Bones[3 * 256];
+};
+// 頂点ごとの骨と重み（FStaticModelSkinVertex と同じ 24 バイト。骨の番号は 16 ビットを 2 つずつ）。重みの合計は 1。
+struct SkinVertex { uint Bones01; uint Bones23; float4 Weights; };
+StructuredBuffer<SkinVertex> g_Skin : register( t2 );
+// 骨の変形の前の位置と法線を、骨と重みで変形する（NModelRig::Deform と同じ式）。
+void SkinVertexData( uint id, inout float3 position, inout float3 normal )
+{
+	SkinVertex skin = g_Skin[id];
+	uint4 bones = uint4( skin.Bones01 & 0xFFFFu, skin.Bones01 >> 16, skin.Bones23 & 0xFFFFu, skin.Bones23 >> 16 );
+	float4 p = float4( position, 1.0 );
+	float3 skinnedPosition = float3( 0.0, 0.0, 0.0 );
+	float3 skinnedNormal = float3( 0.0, 0.0, 0.0 );
+	[unroll] for ( int k = 0; k < 4; ++k )
+	{
+		float weight = skin.Weights[k];
+		uint b = bones[k] * 3;
+		float4 c0 = g_Bones[b];
+		float4 c1 = g_Bones[b + 1];
+		float4 c2 = g_Bones[b + 2];
+		skinnedPosition += float3( dot( p, c0 ), dot( p, c1 ), dot( p, c2 ) ) * weight;
+		skinnedNormal += float3( dot( normal, c0.xyz ), dot( normal, c1.xyz ), dot( normal, c2.xyz ) ) * weight;
+	}
+	position = skinnedPosition;
+	normal = skinnedNormal;
+}
+#endif
 Texture2D g_Base : register( t0 );
 Texture2D g_ShadowMap : register( t1 );
 SamplerState g_Sampler : register( s0 );
@@ -132,13 +163,22 @@ float FogVisibility( float4 settings, float value, bool height )
 	return isfinite( visibility ) ? saturate( visibility ) : 1.0;
 }
 float3 RoundFogColor( float3 value ) { return floor( saturate( value ) * 255.0 + 0.5 ) / 255.0; }
+#ifdef SKINNED
+VO ForwardVS( VI i, uint vertexId : SV_VertexID )
+#else
 VO ForwardVS( VI i )
+#endif
 {
 	VO o;
-	float4 local = float4( i.Position, 1.0 );
+	float3 modelPosition = i.Position;
+	float3 modelNormal = i.Normal;
+#ifdef SKINNED
+	SkinVertexData( vertexId, modelPosition, modelNormal );
+#endif
+	float4 local = float4( modelPosition, 1.0 );
 	o.Position = mul( local, g_Clip );
 	o.World = mul( local, g_World ).xyz;
-	float3 normal = mul( float4( i.Normal, 0.0 ), g_NormalMatrix ).xyz;
+	float3 normal = mul( float4( modelNormal, 0.0 ), g_NormalMatrix ).xyz;
 	float normalLength = length( normal );
 	o.Normal = normalLength > 1.0e-4 ? normal / normalLength : float3( 0.0, 1.0, 0.0 );
 	o.Specular = i.Specular.rgb;
@@ -196,5 +236,17 @@ float4 ForwardShadowPS( VO i ) : SV_Target { float4 c = ForwardShadowColor( i );
 float4 ForwardShadowTexturedPS( VO i ) : SV_Target { float4 c = ForwardShadowColor( i ) * g_Base.Sample( g_Sampler, i.Uv ); if ( c.a <= 0.0 ) { discard; } return c; }
 // 影の絵へ、光から見た深度だけを書く（BuiltIn.hlsl の ShadowDepthMain と同じ）。b0 の g_Clip だけを使う。
 struct DepthVO { float4 Position : SV_POSITION; };
+#ifdef SKINNED
+DepthVO ForwardDepthVS( VI i, uint vertexId : SV_VertexID )
+{
+	float3 modelPosition = i.Position;
+	float3 modelNormal = i.Normal;
+	SkinVertexData( vertexId, modelPosition, modelNormal );
+	DepthVO o;
+	o.Position = mul( float4( modelPosition, 1.0 ), g_Clip );
+	return o;
+}
+#else
 DepthVO ForwardDepthVS( VI i ) { DepthVO o; o.Position = mul( float4( i.Position, 1.0 ), g_Clip ); return o; }
+#endif
 float4 ForwardDepthPS( DepthVO i ) : SV_Target { return float4( i.Position.z, 0.0, 0.0, 1.0 ); }

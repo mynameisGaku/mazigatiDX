@@ -9,6 +9,8 @@ public:
 	explicit CGeometryForwardMesh( FGeometryExecution& InRun );
 	// 光・材質・カメラの定数（b6 と同じ並び。FForwardMeshDraw::NumLightFloats 個）を、いまのライトの状態から作る。
 	void FillLightConstants( float32* Constants, FDrawRgb Bright ) const;
+	// GPU が変換と光を計算する経路を、いま使えるか（メッシュによらない条件）。
+	bool CanDrawForward() const;
 	// 共有のメッシュを GPU で描けるか。
 	bool CanDrawForward( const FStaticModelDrawView& Model ) const;
 	// 頂点と添字を材質範囲ごとにGPUへ渡す。bTransientなら登録を省き、Bright・bLitは呼出側の規約を使う。

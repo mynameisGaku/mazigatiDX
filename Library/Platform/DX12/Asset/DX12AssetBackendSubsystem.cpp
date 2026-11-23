@@ -716,6 +716,11 @@ bool CDX12AssetBackendSubsystem::GetStaticModelDrawView( int32 Handle, FStaticMo
 	return Models.GetStaticModelDrawView( Handle, Out );
 }
 
+bool CDX12AssetBackendSubsystem::GetStaticModelSkinnedDrawView( int32 Handle, FStaticModelDrawView& Out )
+{
+	return Models.GetStaticModelSkinnedDrawView( Handle, Out );
+}
+
 IModelBackend* CDX12AssetBackendSubsystem::GetStaticModelBackend()
 {
 	return this;

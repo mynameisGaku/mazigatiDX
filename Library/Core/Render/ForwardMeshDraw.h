@@ -2,6 +2,7 @@
 #pragma once
 #include "Library/Core/Render/DrawVertex3D.h"
 #include "Library/Core/Render/GeometryDrawState.h"
+#include "Library/Core/Render/StaticModelDrawView.h"
 
 //=============================================================================
 // FForwardMeshDraw
@@ -25,6 +26,10 @@ struct FForwardMeshDraw
 	int32 NumIndices = 0;                    // 添字の数（3 の倍数）。
 	int32 FirstIndex = 0;                    // 描く範囲の先頭（3 の倍数）。
 	int32 IndexCount = 0;                    // 描く範囲の添字の数（3 の倍数。1〜196608）。
+	// GPU スキニング（SkinVertices があるとき）。Vertices は、骨の変形の前の頂点で、頂点シェーダーが、骨の行列で変形する。登録するメッシュ（bTransient でない）だけ。
+	const FStaticModelSkinVertex* SkinVertices = nullptr; // Vertices と同じ数の、骨と重み。
+	const float32* BoneMatrices = nullptr;                // NumBones 個の骨の行列（1 つは、3 つの float4: 行列の 1〜3 列）。
+	int32 NumBones = 0;                                   // 骨の行列の数（1 〜 MaxStaticModelSkinBones）。
 	int32 Texture = -1;                      // 画像の番号（負なら、なし）。
 	float32 ClipMatrix[16] = {};             // ローカルからクリップへ（ワールド * ビュー * 射影 + 画面のずれ）。
 	float32 World[16] = {};                  // ローカルからワールドへ。

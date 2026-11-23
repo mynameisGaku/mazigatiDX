@@ -17,6 +17,13 @@ public:
 	EGeometryCommandResult DrawModelView( const FStaticModelDrawView& Model, int32 Alpha, bool bAlphaBlend );
 
 private:
+	// GPU スキニングのビュー（骨の変形の前の頂点と骨の行列）を、GPU で描く。描けなかった範囲から先は、Handle の変形済みの頂点で、CPU の経路が描く。
+	EGeometryCommandResult DrawSkinnedView( const FStaticModelDrawView& Model, int32 Handle, int32 Alpha, bool bAlphaBlend );
+	// DrawModelView の本体。bTryForward が false なら、GPU の経路を試さず、FirstSection の範囲から、CPU の経路で描く。
+	EGeometryCommandResult DrawModelViewFrom( const FStaticModelDrawView& Model, int32 Alpha, bool bAlphaBlend, bool bTryForward, int32 FirstSection );
+	// 材質範囲が、添字を隙間なく覆い、画像が使えるか。
+	bool AreSectionsValid( const FStaticModelDrawView& Model ) const;
+
 	FGeometryExecution& Run; // このSpanだけの3Dの状態と、借りた実行先。
 	CGeometryVertexSubmitter& Submitter; // 連携する役割。
 	CGeometryForwardMesh& Forward; // 連携する役割。

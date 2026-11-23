@@ -16,6 +16,8 @@
 //   ・頂点シェーダーが、クリップ座標への変換と、頂点ごとの光（画素ごとの光と同じ式）を計算する（法線は、ワールドの逆行列の転置で変換する）。
 //   ・ピクセルシェーダーは、頂点の色（と、あれば画像）を出す。深度・表裏・合成・画像の外側は、描画の状態から、パイプラインを分けて作る。
 //   ・メッシュは、使われなくなったら（一定の描画のあいだ呼ばれない）、GPU の完了後に手放す。置いてある量の上限を超えたら、古いものから手放す。
+//   GPU スキニング（FForwardMeshDraw の SkinVertices があるとき）: 頂点は骨の変形の前の姿で置き（版は、骨の動きでは変わらない）、頂点ごとの骨と重みを構造化バッファ（t2）、
+//   骨の行列を定数（b1）で渡して、頂点シェーダーが変形する。パイプラインは、スキニングの有無で分ける。
 //   描画 API の型は、このクラスの中に閉じる（窓口は IShaderDrawSource::DrawForwardMesh）。ゲームスレッドから使う。
 //   できないこと（false を返して、呼び出し側が CPU の経路で描く）: マスク・異方性・深度の偏り・縦横で違う画像の外側・反転 / 乗算アルファの合成・頂点が 65536 を超えるメッシュ。
 //=============================================================================
@@ -42,9 +44,11 @@ private:
 	{
 		FBufferResourceHandle Vertices;
 		FBufferResourceHandle Indices;
+		FBufferResourceHandle Skin;   // GPU スキニングのメッシュだけ: 頂点ごとの骨と重み（構造化バッファ。Vertices と同じ並び）。
 		uint64 Version = 0;
 		int32 NumVertices = 0;
 		int32 NumIndices = 0;
+		int32 NumBones = 0;           // GPU スキニングのメッシュだけ: 骨の行列の数（骨の番号は、これより小さいと確かめてある）。
 		uint64 Bytes = 0;
 		uint64 LastUsed = 0;   // 最後に使った描画の通し番号。
 	};
@@ -63,7 +67,7 @@ private:
 	TMap<uint64, FMesh> Meshes;
 	TMap<FString, FGraphicsPipelineHandle> PipelineCache;   // 鍵は、状態と画像の有無
 	// 直前の GetPipeline の入力（鍵の文字列に入れる値と同じ並び）と答え。同じ入力が続くとき、描画のたびに文字列の鍵を作らずに答える。
-	static constexpr int32 NumPipelineInputs = 18;
+	static constexpr int32 NumPipelineInputs = 19;
 	int32 LastPipelineInputs[NumPipelineInputs] = {};
 	FGraphicsPipelineHandle LastPipelineHandle;
 	bool bLastPipelineValid = false;
@@ -74,6 +78,9 @@ private:
 	TArray<uint8> ShadowTexturedPixelCode;   // 影を受ける描画（画像あり）。
 	TArray<uint8> DepthVertexCode;           // 影の絵へ深度だけを書く描画の頂点シェーダー。
 	TArray<uint8> DepthPixelCode;            // 同じく、ピクセルシェーダー。
+	TArray<uint8> SkinnedVertexCode;         // GPU スキニングの頂点シェーダー（骨の行列で、頂点を変形してから、ForwardVS と同じ計算）。
+	TArray<uint8> SkinnedDepthVertexCode;    // GPU スキニングで、影の絵へ深度だけを書く頂点シェーダー。
+	TArray<float32> PaletteScratch;          // 骨の行列を、シェーダーの定数の大きさ（MaxStaticModelSkinBones 個）に揃えて渡すための作業領域。
 	bool bShadersTried = false;
 	bool bShadersReady = false;
 	uint64 Clock = 0;        // 描いた回数。

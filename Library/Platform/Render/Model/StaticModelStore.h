@@ -40,6 +40,8 @@ public:
 	int32 Num() const;
 	// 所有付きの不変形状を返す（動く個体は、いまのポーズで変形した頂点）。
 	bool GetStaticModelDrawView( int32 Handle, FStaticModelDrawView& Out ) override;
+	// GPU スキニングのビュー（骨の変形の前の頂点と、骨の行列）。GPU でスキニングできない個体は false（出力を保つ）。
+	bool GetStaticModelSkinnedDrawView( int32 Handle, FStaticModelDrawView& Out ) override;
 	// 描くときの配置（3 x 4。FDrawModelData::M と同じ並び）を覚える（フレームのワールド行列・位置に使う）。
 	bool SetStaticModelPlacement( int32 Handle, const float32 ( &Matrix )[12] ) override;
 	// 付けたアニメーションの時間（30 = 1 秒）・割合・骨ごとの割合。付けていない番号は false。
@@ -111,7 +113,16 @@ public:
 	bool GetMaterialColors( int32 Handle, int32 Material, FModelMaterialColors& Out ) const;
 	bool SetMaterialColors( int32 Handle, int32 Material, const FModelMaterialColors& Colors );
 private:
-	// 形状は登録時に完成し、以降は書き換えない。
+	struct FResource;
+	// GPU スキニングの共有メッシュ（骨の変形の前の頂点と、見えている範囲の添字・材質範囲）。公開後は変更しない。
+	struct FSkinGeometry
+	{
+		TSharedPtr<const FResource> Resource; // 骨と重み（Resource->SkinVertices）の寿命を、形状と揃える。
+		TArray<FDrawVertex3D> Vertices; // 骨の変形の前の頂点（形状を足したもの）。
+		TArray<uint32> Indices; // 見えている範囲の添字。
+		TArray<FStaticModelDrawSection> Sections; // 見えている範囲。
+	};
+	// 形状は登録時に完成し、以降は書き換えない（GPU スキニングの既定の形状だけ、最初に必要になったとき作る）。
 	struct FResource
 	{
 		// 途中の読み込み失敗でも、取得済みの画像を戻す。
@@ -125,6 +136,12 @@ private:
 		TSharedPtr<const FModelRig> Rig; // 骨組み（骨・スキン・クリップ）。
 		TArray<FModelVertexSource> VertexSources; // Vertices と同じ並びの、元のメッシュと頂点。
 		bool bHasSkin = false; // スキンつきのメッシュがある（必ず、変形した頂点で描く）。
+		TArray<FDrawVertex3D> RestVertices; // スキンつきのとき、骨の変形の前（メッシュの座標）の頂点。GPU スキニングの基準。
+		TArray<FStaticModelSkinVertex> SkinVertices; // RestVertices と同じ並びの、骨と重み。
+		TArray<int32> PaletteBase; // メッシュごとの、骨の行列の並びの先頭。
+		int32 NumPaletteBones = 0; // 骨の行列の数。
+		bool bGpuSkin = false; // GPU でスキニングできる（影響は 4 つまで・骨の行列は MaxStaticModelSkinBones 個まで）。
+		TSharedPtr<const FSkinGeometry> DefaultSkinGeometry; // 形状の割合も非表示も無い個体が共有する、GPU スキニングの形状（同じモデルの個体は、GPU のメッシュを共有する）。
 		uint64 Id = 0; // 形状の識別（GPU の共有メッシュの鍵。解放後も再利用しない）。
 	};
 	// 公開後は変更しない描画用の形状。画像を所有する元の資源も保持する。
@@ -141,6 +158,11 @@ private:
 		FModelPose Pose;
 		TArray<FMatrix4x4> Local;
 		TArray<FMatrix4x4> Global;
+		TSharedPtr<const FSkinGeometry> SkinGeometry; // この個体だけの GPU スキニングの形状（形状の割合・非表示が既定でないとき）。
+		uint64 SkinGeometryVersion = 0; // SkinGeometry を作ったときの Pose.GeometryVersion。
+		TSharedPtr<TArray<float32>> SkinPalette; // 骨の行列（3 つの float4 × 骨）。骨が動くたびに、作り直す。
+		uint64 SkinPaletteVersion = 0; // SkinPalette を作ったときの Pose.Version。
+		uint64 MorphedVersion = ~0ull; // Morphed を作ったときの Pose.ShapeVersion。
 		TArray<TArray<FVector3>> Morphed; // 形状の割合を足した、メッシュごとの基準の位置（触られないメッシュは空）。PoseVersion のときの値。
 		uint64 PoseVersion = 0; // Local / Global を作ったときの Pose.Version。
 		uint64 BuiltVersion = 0; // 描画用の形状を作ったときの Pose.Version。
@@ -176,6 +198,12 @@ private:
 	void EnsurePose( FInstance& Instance );
 	bool IsHidden( const FInstance& Instance, int32 SourceMesh, int32 SourceFrame ) const;
 	bool NeedsDeform( const FInstance& Instance ) const;
+	// 形状の割合も非表示も、どれも既定（0・表示）か。
+	bool IsDefaultGeometry( const FInstance& Instance ) const;
+	// 見えている材質範囲の添字と範囲を作る（非表示の範囲は、除く）。
+	void CollectVisibleSections( const FInstance& Instance, TArray<uint32>& OutIndices, TArray<FStaticModelDrawSection>& OutSections ) const;
+	// GPU スキニングの形状（基準の姿の頂点に、形状を足す）を作る。
+	TSharedPtr<const FSkinGeometry> MakeSkinGeometry( const FInstance& Instance ) const;
 	void BuildDeformed( FInstance& Instance );
 	// 非表示を除かない、いまの姿の頂点（当たり判定の準備に使う）。
 	void GetFullVertices( FInstance& Instance, TArray<FDrawVertex3D>& Out );

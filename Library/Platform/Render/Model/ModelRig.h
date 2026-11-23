@@ -97,7 +97,9 @@ struct FModelPose
 	TArray<FMatrix4x4> Override;
 	TArray<uint8> FrameHidden;           // ノードごとの「表示しない」
 	TArray<uint8> MeshHidden;            // メッシュごとの「表示しない」
-	TArray<float32> ShapeRate;           // 形状ごとの割合（0 〜 1）
+	TArray<float32> ShapeRate;           // 形状ごとの割合（0 〜 100）
+	uint64 ShapeVersion = 1;             // 形状の割合を変えるたびに増やす（形状を足した位置の作り直しの判断）
+	uint64 GeometryVersion = 1;          // 頂点・添字が変わる状態（形状の割合・メッシュと骨の表示）を変えるたびに増やす（GPU スキニングの共有メッシュを置き直す判断。骨の動きでは変えない）
 	FMatrix4x4 World;                    // 最後に描いたときの、モデルの配置
 	uint64 Version = 1;                  // ポーズに関わる状態を変えるたびに増やす（変形の作り直しの判断）
 };
@@ -131,6 +133,13 @@ namespace NModelRig
 	// 形状（モーフ）の割合（Pose.ShapeRate）を、基準の位置へ足した、メッシュごとの位置を作る（形状の番号の順に足すので、結果は決まる）。
 	// 割合が 0 でない形状に触られるメッシュだけ中身を作り、ほかは空（骨組みの位置のまま）。1 つでも作ったら true
 	bool EvaluateShapes( const FModelRig& Rig, const FModelPose& Pose, TArray<TArray<FVector3>>& OutPositions );
+
+	// GPU スキニング用の、頂点ごとの骨と重みを作る（Sources は、Deform と同じ並び）。骨の行列の並び: メッシュごとに、クラスターの行列、続けて、メッシュの骨（ノード）の行列。
+	// 重みは、頂点ごとに合計 1 にする（Deform と同じ結果になる）。影響する骨が無い頂点は、メッシュの骨に付ける。
+	// 影響が 4 つを超える頂点がある・骨の行列が MaxStaticModelSkinBones を超えるモデルは、false（GPU ではスキニングできない）
+	bool BuildSkinVertices( const FModelRig& Rig, const TArray<FRigVertexSource>& Sources, TArray<FStaticModelSkinVertex>& OutVertices, TArray<int32>& OutPaletteBase, int32& OutNumBones );
+	// 骨の行列（Globals から）を、BuildSkinVertices の並びで作る。1 つは 3 つの float4（行列の 1〜3 列。v * M の行ベクトルの規約で、x = dot( float4( v, 1 ), 列 0 )）
+	void EvaluatePalette( const FModelRig& Rig, const TArray<FMatrix4x4>& Globals, const TArray<int32>& PaletteBase, int32 NumBones, TArray<float32>& OutMatrices );
 
 	// Vertices の位置と法線を、Globals で変形した値にする（それ以外の値は触らない）。Sources は Vertices と同じ並び
 	// Jobs を渡すと、頂点の数が多いとき、頂点を範囲に分けて並列に変形する（各頂点は自分の出力だけを書くので、結果は、ワーカーの数によらず同じ）。

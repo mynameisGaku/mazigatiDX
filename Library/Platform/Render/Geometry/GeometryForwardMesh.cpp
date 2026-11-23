@@ -69,11 +69,16 @@ void CGeometryForwardMesh::FillLightConstants( float32* Constants, FDrawRgb Brig
 	}
 }
 
-bool CGeometryForwardMesh::CanDrawForward( const FStaticModelDrawView& Model ) const
+bool CGeometryForwardMesh::CanDrawForward() const
 {
 	static const bool bEnabledByCommandLine = !NCommandLine::HasFlag( "no-gpu-forward" ); // 比べるための切り替え（--no-gpu-forward で、従来の CPU の経路にする）。
-	return bEnabledByCommandLine && ShaderSource != nullptr && Geometry != nullptr && Model.MeshKey != 0 && Model.NumVertices <= 65536
+	return bEnabledByCommandLine && ShaderSource != nullptr && Geometry != nullptr
 		&& Camera.IsValid() && Geometry->GetWidth() > 0 && Geometry->GetHeight() > 0 && bUseForwardPath;
+}
+
+bool CGeometryForwardMesh::CanDrawForward( const FStaticModelDrawView& Model ) const
+{
+	return CanDrawForward() && Model.MeshKey != 0 && Model.NumVertices <= 65536;
 }
 
 int32 CGeometryForwardMesh::DrawMeshForward( const FStaticModelDrawView& Model, int32 ModelAlpha, bool bAlphaBlend, bool bInferAlpha, FDrawRgb Bright, bool bLit, bool bTransient )
@@ -157,6 +162,9 @@ int32 CGeometryForwardMesh::DrawMeshForward( const FStaticModelDrawView& Model, 
 	Draw.NumVertices = Model.NumVertices;
 	Draw.Indices = Model.Indices;
 	Draw.NumIndices = Model.NumIndices;
+	Draw.SkinVertices = Model.SkinVertices; // GPU スキニング（無ければ nullptr）
+	Draw.BoneMatrices = Model.BoneMatrices;
+	Draw.NumBones = Model.NumBones;
 	Draw.AlphaScale = static_cast<float32>( ModelAlpha ) / 255.0f;
 	Draw.bLit = bLit && Lighting.IsEnabled();
 	bool bAnyTranslucent = false; // 頂点のアルファが 1 未満のものがあれば、合成して描く（画像の透明画素と同じ）。
@@ -198,6 +206,9 @@ int32 CGeometryForwardMesh::DrawShadowDepth( const FStaticModelDrawView& Model, 
 	Draw.NumVertices = Model.NumVertices;
 	Draw.Indices = Model.Indices;
 	Draw.NumIndices = Model.NumIndices;
+	Draw.SkinVertices = Model.SkinVertices; // GPU スキニング（無ければ nullptr）
+	Draw.BoneMatrices = Model.BoneMatrices;
+	Draw.NumBones = Model.NumBones;
 	Draw.State.Topology = EGeometryTopology::Triangles;
 	Draw.State.bTestDepth = true;
 	Draw.State.bWriteDepth = true;

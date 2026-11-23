@@ -445,6 +445,102 @@ void NModelRig::ComputeGlobals( const FModelRig& Rig, const TArray<FMatrix4x4>& 
 	}
 }
 
+bool NModelRig::BuildSkinVertices( const FModelRig& Rig, const TArray<FRigVertexSource>& Sources, TArray<FStaticModelSkinVertex>& OutVertices, TArray<int32>& OutPaletteBase, int32& OutNumBones )
+{
+	OutVertices.Reset();
+	OutPaletteBase.Reset();
+	OutNumBones = 0;
+	int32 Total = 0;
+	for ( const FRigMesh& Mesh : Rig.Meshes )
+	{
+		OutPaletteBase.Add( Total );
+		Total += Mesh.ClusterBone.Num() + 1; // クラスターごとの行列と、メッシュの骨（ノード）の行列
+	}
+	if ( Total <= 0 || Total > MaxStaticModelSkinBones )
+	{
+		return false;
+	}
+	OutVertices.SetNum( Sources.Num() );
+	for ( int32 Index = 0; Index < Sources.Num(); ++Index )
+	{
+		const FRigVertexSource& Source = Sources[Index];
+		if ( Source.Mesh < 0 || Source.Mesh >= Rig.Meshes.Num() || Source.Vertex < 0 || Source.Vertex >= Rig.Meshes[Source.Mesh].Positions.Num() )
+		{
+			OutVertices.Reset();
+			return false;
+		}
+		const FRigMesh& Mesh = Rig.Meshes[Source.Mesh];
+		const int32 Base = OutPaletteBase[Source.Mesh];
+		FStaticModelSkinVertex& Skin = OutVertices[Index];
+		int32 Count = 0;
+		float32 Sum = 0.0f;
+		if ( Mesh.bSkinned )
+		{
+			for ( int32 Slot = Mesh.Influences.Start[Source.Vertex]; Slot < Mesh.Influences.Start[Source.Vertex + 1]; ++Slot )
+			{
+				const float32 Weight = Mesh.Influences.Weight[Slot];
+				if ( !( Weight > 0.0f ) ) // 0 以下と NaN は、効かない（Deform と同じ）
+				{
+					continue;
+				}
+				if ( Count == 4 )
+				{
+					OutVertices.Reset();
+					return false;
+				}
+				Skin.Bones[Count] = static_cast<uint16>( Base + Mesh.Influences.Cluster[Slot] );
+				Skin.Weights[Count] = Weight;
+				Sum += Weight;
+				++Count;
+			}
+		}
+		if ( Sum > 0.0f )
+		{
+			for ( int32 Slot = 0; Slot < Count; ++Slot )
+			{
+				Skin.Weights[Slot] /= Sum; // 重みの合計が 1 でなくても、位置がずれないように（Deform は、合計で割る）
+			}
+		}
+		else
+		{
+			Skin.Bones[0] = static_cast<uint16>( Base + Mesh.ClusterBone.Num() ); // 影響する骨が無い頂点は、メッシュの骨に付ける（Deform と同じ）
+			Skin.Weights[0] = 1.0f;
+		}
+	}
+	OutNumBones = Total;
+	return true;
+}
+
+void NModelRig::EvaluatePalette( const FModelRig& Rig, const TArray<FMatrix4x4>& Globals, const TArray<int32>& PaletteBase, int32 NumBones, TArray<float32>& OutMatrices )
+{
+	OutMatrices.Reset();
+	OutMatrices.SetNum( NumBones * 12, 0.0f );
+	const auto Put = [&]( int32 Bone, const FMatrix4x4& Matrix )
+	{
+		float32* Out = OutMatrices.GetData() + Bone * 12;
+		for ( int32 Column = 0; Column < 3; ++Column )
+		{
+			for ( int32 Row = 0; Row < 4; ++Row )
+			{
+				Out[Column * 4 + Row] = Matrix.m[Row][Column];
+			}
+		}
+	};
+	for ( int32 MeshIndex = 0; MeshIndex < Rig.Meshes.Num() && MeshIndex < PaletteBase.Num(); ++MeshIndex )
+	{
+		const FRigMesh& Mesh = Rig.Meshes[MeshIndex];
+		const int32 Base = PaletteBase[MeshIndex];
+		for ( int32 Cluster = 0; Cluster < Mesh.ClusterBone.Num() && Base + Cluster < NumBones; ++Cluster )
+		{
+			Put( Base + Cluster, Mesh.ClusterOffset[Cluster] * Globals[Mesh.ClusterBone[Cluster]] );
+		}
+		if ( Base + Mesh.ClusterBone.Num() < NumBones )
+		{
+			Put( Base + Mesh.ClusterBone.Num(), Mesh.Node < 0 ? FMatrix4x4() : Globals[Mesh.Node] );
+		}
+	}
+}
+
 bool NModelRig::EvaluateShapes( const FModelRig& Rig, const FModelPose& Pose, TArray<TArray<FVector3>>& OutPositions )
 {
 	OutPositions.Reset();

@@ -188,6 +188,33 @@ int32 CStaticModelStore::Create( const FImportedScene& Scene, const FString& Sou
 	}
 	if ( Resource->bHasSkin )
 	{
+		// 骨の変形の前の頂点と、頂点ごとの骨と重みを、GPU スキニングの基準として取っておく。
+		Resource->RestVertices = Resource->Vertices;
+		Resource->bGpuSkin = Resource->VertexSources.Num() == Resource->RestVertices.Num()
+			&& NModelRig::BuildSkinVertices( *Resource->Rig, Resource->VertexSources, Resource->SkinVertices, Resource->PaletteBase, Resource->NumPaletteBones );
+		if ( Resource->bGpuSkin )
+		{
+			// 変形（Deform）は、骨組みの元の位置と法線から計算する。ビルダーが作った頂点は、骨の影響が無いメッシュに、節（ノード）の行列がすでにかかっていることがあるので、そのまま使うと、GPU で二重にかかる。
+			for ( int32 Index = 0; Index < Resource->RestVertices.Num(); ++Index )
+			{
+				const FModelVertexSource& Source = Resource->VertexSources[Index]; // 範囲は、BuildSkinVertices が確かめた。
+				const FRigMesh& RigMesh = Resource->Rig->Meshes[Source.Mesh];
+				FDrawVertex3D& Rest = Resource->RestVertices[Index];
+				const FVector3& Position = RigMesh.Positions[Source.Vertex];
+				const FVector3& Normal = RigMesh.Normals[Source.Vertex];
+				Rest.Position[0] = Position.x;
+				Rest.Position[1] = Position.y;
+				Rest.Position[2] = Position.z;
+				Rest.Normal[0] = Normal.x;
+				Rest.Normal[1] = Normal.y;
+				Rest.Normal[2] = Normal.z;
+			}
+		}
+		else
+		{
+			Resource->RestVertices.Empty();
+			Resource->SkinVertices.Empty();
+		}
 		// スキンつきの頂点は、メッシュの座標のまま。基準の姿（アニメーション無し）に変形して、描画・面データ・外接箱の基準にする。
 		TArray<FMatrix4x4> Local = Resource->Rig->BaseLocal;
 		TArray<FMatrix4x4> Global;
@@ -352,8 +379,147 @@ void CStaticModelStore::EnsurePose( FInstance& Instance )
 	}
 	NModelRig::EvaluateLocals( *Instance.Resource->Rig, Rig.Pose, Rig.Local );
 	NModelRig::ComputeGlobals( *Instance.Resource->Rig, Rig.Local, Rig.Global );
-	NModelRig::EvaluateShapes( *Instance.Resource->Rig, Rig.Pose, Rig.Morphed );
+	if ( Rig.MorphedVersion != Rig.Pose.ShapeVersion ) // 形状を足した位置は、割合を変えたときだけ作り直す（骨の動きでは、作り直さない）
+	{
+		NModelRig::EvaluateShapes( *Instance.Resource->Rig, Rig.Pose, Rig.Morphed );
+		Rig.MorphedVersion = Rig.Pose.ShapeVersion;
+	}
 	Rig.PoseVersion = Rig.Pose.Version;
+}
+
+bool CStaticModelStore::IsDefaultGeometry( const FInstance& Instance ) const
+{
+	const FModelPose& Pose = Instance.Rig->Pose;
+	for ( const float32 Rate : Pose.ShapeRate )
+	{
+		if ( Rate != 0.0f )
+		{
+			return false;
+		}
+	}
+	for ( const uint8 Flag : Pose.MeshHidden )
+	{
+		if ( Flag )
+		{
+			return false;
+		}
+	}
+	for ( const uint8 Flag : Pose.FrameHidden )
+	{
+		if ( Flag )
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+void CStaticModelStore::CollectVisibleSections( const FInstance& Instance, TArray<uint32>& OutIndices, TArray<FStaticModelDrawSection>& OutSections ) const
+{
+	const FResource& Resource = *Instance.Resource;
+	const auto& SourceSections = Resource.Definition.Surface.Sections;
+	for ( int32 Index = 0; Index < Resource.Sections.Num() && Index < SourceSections.Num(); ++Index )
+	{
+		if ( IsHidden( Instance, SourceSections[Index].SourceMeshIndex, SourceSections[Index].SourceFrameIndex ) )
+		{
+			continue;
+		}
+		FStaticModelDrawSection Section = Resource.Sections[Index];
+		const int32 First = Section.FirstIndex;
+		Section.FirstIndex = OutIndices.Num();
+		if ( Section.NumIndices > 0 )
+		{
+			OutIndices.Append( Resource.Definition.Surface.Indices.GetData() + First, Section.NumIndices ); // 1 つずつ足さずに、まとめて複写する。
+		}
+		OutSections.Add( Section );
+	}
+}
+
+TSharedPtr<const CStaticModelStore::FSkinGeometry> CStaticModelStore::MakeSkinGeometry( const FInstance& Instance ) const
+{
+	const FResource& Resource = *Instance.Resource;
+	auto Geometry = MakeShared<FSkinGeometry>(); // 完成してから公開する。
+	Geometry->Resource = Instance.Resource;
+	Geometry->Vertices = Resource.RestVertices;
+	const TArray<TArray<FVector3>>& Morphed = Instance.Rig->Morphed;
+	bool bAnyShape = false;
+	for ( const TArray<FVector3>& Positions : Morphed )
+	{
+		bAnyShape = bAnyShape || !Positions.IsEmpty();
+	}
+	if ( bAnyShape ) // 形状を足した位置（骨の変形の前）を、頂点へ写す
+	{
+		for ( int32 Index = 0; Index < Geometry->Vertices.Num() && Index < Resource.VertexSources.Num(); ++Index )
+		{
+			const FModelVertexSource& Source = Resource.VertexSources[Index];
+			if ( Source.Mesh >= 0 && Source.Mesh < Morphed.Num() && !Morphed[Source.Mesh].IsEmpty() )
+			{
+				const FVector3& Position = Morphed[Source.Mesh][Source.Vertex];
+				Geometry->Vertices[Index].Position[0] = Position.x;
+				Geometry->Vertices[Index].Position[1] = Position.y;
+				Geometry->Vertices[Index].Position[2] = Position.z;
+			}
+		}
+	}
+	CollectVisibleSections( Instance, Geometry->Indices, Geometry->Sections );
+	return Geometry;
+}
+
+bool CStaticModelStore::GetStaticModelSkinnedDrawView( int32 Handle, FStaticModelDrawView& Out )
+{
+	FScopedLock Guard( Lock );
+	FInstance* Instance = FindInstance( Handle );
+	if ( !Instance || !Instance->Rig || !Instance->Resource->bGpuSkin )
+	{
+		return false;
+	}
+	FInstanceRig& Rig = *Instance->Rig;
+	FResource& Resource = *Instance->Resource;
+	for ( const uint8 Flag : Rig.bMaterialSet )
+	{
+		if ( Flag )
+		{
+			return false; // 材質の色を上書きした個体は、頂点の色を作り直すので、変形済みの頂点で描く。
+		}
+	}
+	EnsurePose( *Instance );
+	TSharedPtr<const FSkinGeometry> Geometry;
+	uint64 Key = 0;
+	uint64 Version = 1;
+	if ( IsDefaultGeometry( *Instance ) )
+	{
+		if ( !Resource.DefaultSkinGeometry )
+		{
+			Resource.DefaultSkinGeometry = MakeSkinGeometry( *Instance ); // 非表示も形状も無いので、同じモデルの個体は、同じ形状を共有する。
+		}
+		Geometry = Resource.DefaultSkinGeometry;
+		Key = ( 3ull << 62 ) | ( Resource.Id << 1 );
+	}
+	else
+	{
+		if ( !Rig.SkinGeometry || Rig.SkinGeometryVersion != Rig.Pose.GeometryVersion )
+		{
+			Rig.SkinGeometry = MakeSkinGeometry( *Instance );
+			Rig.SkinGeometryVersion = Rig.Pose.GeometryVersion;
+		}
+		Geometry = Rig.SkinGeometry;
+		Key = ( 3ull << 62 ) | ( static_cast<uint64>( Handle ) << 1 ) | 1ull;
+		Version = Rig.SkinGeometryVersion + 1;
+	}
+	if ( !Rig.SkinPalette || Rig.SkinPaletteVersion != Rig.Pose.Version )
+	{
+		auto Palette = MakeShared<TArray<float32>>();
+		NModelRig::EvaluatePalette( *Resource.Rig, Rig.Global, Resource.PaletteBase, Resource.NumPaletteBones, *Palette );
+		Rig.SkinPalette = Palette;
+		Rig.SkinPaletteVersion = Rig.Pose.Version;
+	}
+	Out = { Geometry->Vertices.GetData(), Geometry->Vertices.Num(), Geometry->Indices.GetData(), Geometry->Indices.Num(), Geometry->Sections.GetData(), Geometry->Sections.Num(), Instance->Opacity, Key, Version };
+	Out.VertexOwner = TSharedPtr<const FDrawVertex3D>( Geometry, Out.Vertices );
+	Out.SkinVertices = Resource.SkinVertices.GetData();
+	Out.BoneMatrices = Rig.SkinPalette->GetData();
+	Out.NumBones = Resource.NumPaletteBones;
+	Out.SkinOwner = TSharedPtr<const float32>( Rig.SkinPalette, Out.BoneMatrices );
+	return true;
 }
 
 void CStaticModelStore::BuildDeformed( FInstance& Instance )
@@ -366,21 +532,7 @@ void CStaticModelStore::BuildDeformed( FInstance& Instance )
 	Snapshot->Vertices = Resource.Vertices;
 	NModelRig::Deform( *Resource.Rig, Rig.Global, Resource.VertexSources, Snapshot->Vertices.GetData(), Snapshot->Vertices.Num(), Jobs, &Rig.Morphed );
 	const auto& SourceSections = Resource.Definition.Surface.Sections;
-	for ( int32 Index = 0; Index < Resource.Sections.Num() && Index < SourceSections.Num(); ++Index )
-	{
-		if ( IsHidden( Instance, SourceSections[Index].SourceMeshIndex, SourceSections[Index].SourceFrameIndex ) )
-		{
-			continue;
-		}
-		FStaticModelDrawSection Section = Resource.Sections[Index];
-		const int32 First = Section.FirstIndex;
-		Section.FirstIndex = Snapshot->Indices.Num();
-		if ( Section.NumIndices > 0 )
-		{
-			Snapshot->Indices.Append( Resource.Definition.Surface.Indices.GetData() + First, Section.NumIndices ); // 1 つずつ足さずに、まとめて複写する。
-		}
-		Snapshot->Sections.Add( Section );
-	}
+	CollectVisibleSections( Instance, Snapshot->Indices, Snapshot->Sections );
 	// 材質の色の上書きを、頂点の拡散色へ（頂点は、範囲ごとに専用なので、範囲の材質で決められる）
 	bool bAnyColor = false;
 	for ( uint8 Flag : Rig.bMaterialSet )
@@ -794,6 +946,7 @@ bool CStaticModelStore::SetFrameVisible( int32 Handle, int32 Frame, bool bVisibl
 	}
 	Instance->Rig->Pose.FrameHidden[Frame] = bVisible ? 0 : 1;
 	++Instance->Rig->Pose.Version;
+	++Instance->Rig->Pose.GeometryVersion;
 	return true;
 }
 
@@ -976,6 +1129,8 @@ bool CStaticModelStore::SetShapeRate( int32 Handle, int32 Shape, float32 Rate )
 	{
 		Current = Clamped;
 		++Instance->Rig->Pose.Version;
+		++Instance->Rig->Pose.ShapeVersion;
+		++Instance->Rig->Pose.GeometryVersion;
 	}
 	return true;
 }
@@ -990,6 +1145,7 @@ bool CStaticModelStore::SetMeshVisible( int32 Handle, int32 Mesh, bool bVisible 
 	}
 	Instance->Rig->Pose.MeshHidden[Mesh] = bVisible ? 0 : 1;
 	++Instance->Rig->Pose.Version;
+	++Instance->Rig->Pose.GeometryVersion;
 	return true;
 }
 

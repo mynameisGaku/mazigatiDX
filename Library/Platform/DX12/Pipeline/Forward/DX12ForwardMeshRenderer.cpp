@@ -16,11 +16,12 @@ namespace
 	constexpr int32 MaxVertices = 65536;
 	constexpr int32 MaxIndices = 196608;
 
-	bool CompileEntry( const char* Entry, const char* Target, TArray<uint8>& Out )
+	bool CompileEntry( const char* Entry, const char* Target, TArray<uint8>& Out, bool bSkinned = false )
 	{
 		const char* Source = NEngineShaderSources::DX12_ForwardMesh; // 資源管理とシェーダーの式を分離する。
+		const D3D_SHADER_MACRO Skinning[] = { { "SKINNED", "1" }, { nullptr, nullptr } }; // GPU スキニング（骨の行列で頂点を変形する）の頂点シェーダー。
 		Microsoft::WRL::ComPtr<ID3DBlob> Code, Errors;
-		const HRESULT Result = D3DCompile( Source, NCString::Length( Source ), "ForwardMesh", nullptr, nullptr, Entry, Target, 0, 0, &Code, &Errors );
+		const HRESULT Result = D3DCompile( Source, NCString::Length( Source ), "ForwardMesh", bSkinned ? Skinning : nullptr, nullptr, Entry, Target, 0, 0, &Code, &Errors );
 		if ( FAILED( Result ) || !Code )
 		{
 			LOG( LogDX12, Error, "CDX12ForwardMeshRenderer: the forward shader '%s' cannot be compiled: %s", Entry, Errors ? static_cast<const char*>( Errors->GetBufferPointer() ) : "unknown error" );
@@ -94,6 +95,8 @@ void CDX12ForwardMeshRenderer::Shutdown()
 	ShadowTexturedPixelCode.Reset();
 	DepthVertexCode.Reset();
 	DepthPixelCode.Reset();
+	SkinnedVertexCode.Reset();
+	SkinnedDepthVertexCode.Reset();
 	bShadersTried = false;
 	bShadersReady = false;
 	TotalBytes = 0;
@@ -109,7 +112,8 @@ bool CDX12ForwardMeshRenderer::BuildShaders()
 		bShadersTried = true;
 		bShadersReady = CompileEntry( "ForwardVS", "vs_5_0", VertexCode ) && CompileEntry( "ForwardPS", "ps_5_0", PixelCode ) && CompileEntry( "ForwardTexturedPS", "ps_5_0", TexturedPixelCode )
 			&& CompileEntry( "ForwardShadowPS", "ps_5_0", ShadowPixelCode ) && CompileEntry( "ForwardShadowTexturedPS", "ps_5_0", ShadowTexturedPixelCode )
-			&& CompileEntry( "ForwardDepthVS", "vs_5_0", DepthVertexCode ) && CompileEntry( "ForwardDepthPS", "ps_5_0", DepthPixelCode );
+			&& CompileEntry( "ForwardDepthVS", "vs_5_0", DepthVertexCode ) && CompileEntry( "ForwardDepthPS", "ps_5_0", DepthPixelCode )
+			&& CompileEntry( "ForwardVS", "vs_5_0", SkinnedVertexCode, true ) && CompileEntry( "ForwardDepthVS", "vs_5_0", SkinnedDepthVertexCode, true );
 	}
 	return bShadersReady;
 }
@@ -125,6 +129,10 @@ void CDX12ForwardMeshRenderer::ReleaseMesh( FMesh& Mesh )
 		if ( Mesh.Indices.IsValid() )
 		{
 			Buffers->ReleaseBuffer( Mesh.Indices );
+		}
+		if ( Mesh.Skin.IsValid() )
+		{
+			Buffers->ReleaseBuffer( Mesh.Skin );
 		}
 	}
 	TotalBytes -= NMath::Min( TotalBytes, Mesh.Bytes );
@@ -185,7 +193,7 @@ const CDX12ForwardMeshRenderer::FMesh* CDX12ForwardMeshRenderer::AcquireMesh( co
 {
 	if ( FMesh* Found = Meshes.Find( Draw.MeshKey ) )
 	{
-		if ( Found->Version == Draw.MeshVersion && Found->NumVertices == Draw.NumVertices && Found->NumIndices == Draw.NumIndices )
+		if ( Found->Version == Draw.MeshVersion && Found->NumVertices == Draw.NumVertices && Found->NumIndices == Draw.NumIndices && Found->Skin.IsValid() == ( Draw.SkinVertices != nullptr ) && Found->NumBones == Draw.NumBones )
 		{
 			Found->LastUsed = Clock;
 			return Found;
@@ -196,7 +204,23 @@ const CDX12ForwardMeshRenderer::FMesh* CDX12ForwardMeshRenderer::AcquireMesh( co
 	FMesh Mesh;
 	Mesh.Vertices = Buffers->CreateBuffer( TArrayView<const uint8>( reinterpret_cast<const uint8*>( Draw.Vertices ), static_cast<int32>( static_cast<usize>( Draw.NumVertices ) * sizeof( FDrawVertex3D ) ) ), ERenderBufferShaderAccess::None );
 	Mesh.Indices = Buffers->CreateBuffer( TArrayView<const uint8>( reinterpret_cast<const uint8*>( Draw.Indices ), static_cast<int32>( static_cast<usize>( Draw.NumIndices ) * sizeof( uint32 ) ) ), ERenderBufferShaderAccess::None );
-	if ( !Mesh.Vertices.IsValid() || !Mesh.Indices.IsValid() )
+	if ( Draw.SkinVertices )
+	{
+		for ( int32 Index = 0; Index < Draw.NumVertices; ++Index ) // 置く前に、全部の骨の番号が、骨の行列の中にあることを確かめる。
+		{
+			for ( int32 Slot = 0; Slot < 4; ++Slot )
+			{
+				if ( Draw.SkinVertices[Index].Bones[Slot] >= Draw.NumBones || !NMath::IsFinite( Draw.SkinVertices[Index].Weights[Slot] ) )
+				{
+					ReleaseMesh( Mesh );
+					return nullptr;
+				}
+			}
+		}
+		Mesh.Skin = Buffers->CreateBuffer( TArrayView<const uint8>( reinterpret_cast<const uint8*>( Draw.SkinVertices ), static_cast<int32>( static_cast<usize>( Draw.NumVertices ) * sizeof( FStaticModelSkinVertex ) ) ), ERenderBufferShaderAccess::Read );
+		Mesh.NumBones = Draw.NumBones;
+	}
+	if ( !Mesh.Vertices.IsValid() || !Mesh.Indices.IsValid() || ( Draw.SkinVertices && !Mesh.Skin.IsValid() ) )
 	{
 		ReleaseMesh( Mesh );
 		return nullptr;
@@ -205,6 +229,10 @@ const CDX12ForwardMeshRenderer::FMesh* CDX12ForwardMeshRenderer::AcquireMesh( co
 	Mesh.NumVertices = Draw.NumVertices;
 	Mesh.NumIndices = Draw.NumIndices;
 	Mesh.Bytes = static_cast<uint64>( Draw.NumVertices ) * sizeof( FDrawVertex3D ) + static_cast<uint64>( Draw.NumIndices ) * sizeof( uint32 );
+	if ( Draw.SkinVertices )
+	{
+		Mesh.Bytes += static_cast<uint64>( Draw.NumVertices ) * sizeof( FStaticModelSkinVertex );
+	}
 	Mesh.LastUsed = Clock;
 	TotalBytes += Mesh.Bytes;
 	Meshes.Add( Draw.MeshKey, Mesh );
@@ -220,7 +248,7 @@ FGraphicsPipelineHandle CDX12ForwardMeshRenderer::GetPipeline( const FForwardMes
 	const int32 Inputs[NumPipelineInputs] = { Draw.bDepthOnly ? 2 : ( bReceive ? 1 : 0 ), bTextured ? 1 : 0, static_cast<int32>( TargetFormat ), static_cast<int32>( TextureFormat ), State.bTestDepth ? 1 : 0, State.bWriteDepth ? 1 : 0,
 		static_cast<int32>( State.Compare ), static_cast<int32>( State.Culling ), State.bAlphaBlend ? 1 : 0, State.bAlphaBlend ? static_cast<int32>( State.Blend ) : 0, static_cast<int32>( State.AddressU ), State.bLinearFilter ? 1 : 0,
 		bCustom ? static_cast<int32>( Custom.SrcColor ) : 0, bCustom ? static_cast<int32>( Custom.DestColor ) : 0, bCustom ? static_cast<int32>( Custom.ColorOp ) : 0, bCustom ? static_cast<int32>( Custom.SrcAlpha ) : 0, bCustom ? static_cast<int32>( Custom.DestAlpha ) : 0,
-		bCustom ? static_cast<int32>( Custom.AlphaOp ) : 0 };
+		bCustom ? static_cast<int32>( Custom.AlphaOp ) : 0, Draw.SkinVertices ? 1 : 0 };
 	// 直前の描画と、入力がすべて同じなら、鍵の文字列を作らずに、前回の答えを返す（同じ状態の描画が、続くことが多い）。
 	if ( bLastPipelineValid )
 	{
@@ -244,7 +272,7 @@ FGraphicsPipelineHandle CDX12ForwardMeshRenderer::GetPipeline( const FForwardMes
 		bLastPipelineValid = true;
 		return Handle;
 	};
-	const FString Key = FString::Printf( "%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d,%d,%d,%d,%d,%d", Inputs[0], Inputs[1], Inputs[2], Inputs[3], Inputs[4], Inputs[5], Inputs[6], Inputs[7], Inputs[8], Inputs[9], Inputs[10], Inputs[11], Inputs[12], Inputs[13], Inputs[14], Inputs[15], Inputs[16], Inputs[17] );
+	const FString Key = FString::Printf( "%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d,%d,%d,%d,%d,%d|%d", Inputs[0], Inputs[1], Inputs[2], Inputs[3], Inputs[4], Inputs[5], Inputs[6], Inputs[7], Inputs[8], Inputs[9], Inputs[10], Inputs[11], Inputs[12], Inputs[13], Inputs[14], Inputs[15], Inputs[16], Inputs[17], Inputs[18] );
 	if ( const FGraphicsPipelineHandle* Found = PipelineCache.Find( Key ) )
 	{
 		return Remember( *Found ); // 作れなかった組み合わせは、無効なまま覚えて、毎回作り直さない。
@@ -257,12 +285,23 @@ FGraphicsPipelineHandle CDX12ForwardMeshRenderer::GetPipeline( const FForwardMes
 		{ "COLOR", 1, EGraphicsVertexAttributeFormat::UByte4Norm, 28 },
 		{ "TEXCOORD", 0, EGraphicsVertexAttributeFormat::Float2, 32 },
 	};
-	FGraphicsBufferSlot BufferSlots[2];
+	FGraphicsBufferSlot BufferSlots[4];
 	BufferSlots[0].Binding = 0;
 	BufferSlots[0].Layout = EGraphicsBufferLayout::Constant;
 	BufferSlots[1].Binding = 6;
 	BufferSlots[1].Layout = EGraphicsBufferLayout::Constant;
-	const int32 NumBufferSlots = Draw.bDepthOnly ? 1 : 2; // 深度だけの描画は、個体の定数（b0）だけを使う（宣言した枠は、すべて使われている必要がある）。
+	int32 NumBufferSlots = Draw.bDepthOnly ? 1 : 2; // 深度だけの描画は、個体の定数（b0）だけを使う（宣言した枠は、すべて使われている必要がある）。
+	const bool bSkinned = Draw.SkinVertices != nullptr;
+	if ( bSkinned ) // GPU スキニング: 骨の行列（定数 b1。個体の定数の続き）と、頂点ごとの骨と重み（構造化バッファ t2）。
+	{
+		BufferSlots[NumBufferSlots].Binding = 1;
+		BufferSlots[NumBufferSlots].Layout = EGraphicsBufferLayout::Constant;
+		++NumBufferSlots;
+		BufferSlots[NumBufferSlots].Binding = 2;
+		BufferSlots[NumBufferSlots].Layout = EGraphicsBufferLayout::Structured;
+		BufferSlots[NumBufferSlots].ElementStride = sizeof( FStaticModelSkinVertex );
+		++NumBufferSlots;
+	}
 	FGraphicsTextureSlot TextureSlots[2]; // 画像（t0）と、影の絵（t1）。ある分だけ、この順に並べる。
 	int32 NumTextureSlots = 0;
 	if ( bTextured )
@@ -278,7 +317,7 @@ FGraphicsPipelineHandle CDX12ForwardMeshRenderer::GetPipeline( const FForwardMes
 		++NumTextureSlots;
 	}
 	const TArray<uint8>& Pixel = Draw.bDepthOnly ? DepthPixelCode : bReceive ? ( bTextured ? ShadowTexturedPixelCode : ShadowPixelCode ) : ( bTextured ? TexturedPixelCode : PixelCode );
-	const TArray<uint8>& Vertex = Draw.bDepthOnly ? DepthVertexCode : VertexCode;
+	const TArray<uint8>& Vertex = Draw.bDepthOnly ? ( bSkinned ? SkinnedDepthVertexCode : DepthVertexCode ) : ( bSkinned ? SkinnedVertexCode : VertexCode );
 	FGraphicsPipelineDesc Desc;
 	Desc.VertexShaderBytecode = TArrayView<const uint8>( Vertex.GetData(), Vertex.Num() );
 	Desc.PixelShaderBytecode = TArrayView<const uint8>( Pixel.GetData(), Pixel.Num() );
@@ -320,6 +359,18 @@ bool CDX12ForwardMeshRenderer::Draw( const FForwardMeshDraw& Draw, IRenderGeomet
 		|| ( State.bAlphaBlend && ( State.Blend == EGeometryBlend::Invert || State.Blend == EGeometryBlend::MultiplyAlpha ) ) )
 	{
 		return false; // この経路で表せない状態（呼び出し側が、CPU の経路で描く）。
+	}
+	const bool bSkinnedDraw = Draw.SkinVertices != nullptr;
+	if ( bSkinnedDraw && ( Draw.bTransient || !Draw.BoneMatrices || Draw.NumBones <= 0 || Draw.NumBones > MaxStaticModelSkinBones ) )
+	{
+		return false; // GPU スキニングは、登録するメッシュだけ（骨の行列が要る）。
+	}
+	for ( int32 Index = 0; bSkinnedDraw && Index < Draw.NumBones * 12; ++Index )
+	{
+		if ( !NMath::IsFinite( Draw.BoneMatrices[Index] ) )
+		{
+			return false;
+		}
 	}
 	if ( !IsFiniteMatrix( Draw.ClipMatrix ) || !IsFiniteMatrix( Draw.World ) || !IsFiniteMatrix( Draw.NormalMatrix ) || !NMath::IsFinite( Draw.AlphaScale ) )
 	{
@@ -411,6 +462,10 @@ bool CDX12ForwardMeshRenderer::Draw( const FForwardMeshDraw& Draw, IRenderGeomet
 	{
 		return false;
 	}
+	if ( bSkinnedDraw && ( !Mesh->Skin.IsValid() || Mesh->NumBones != Draw.NumBones ) )
+	{
+		return false; // 置いてあるメッシュの骨の数と、いまの骨の行列の数が違う（骨の番号の範囲を保証できない）。
+	}
 	FObjectConstants Object;
 	FMemory::Memcpy( Object.Clip, Draw.ClipMatrix, sizeof( Object.Clip ) );
 	FMemory::Memcpy( Object.World, Draw.World, sizeof( Object.World ) );
@@ -426,11 +481,30 @@ bool CDX12ForwardMeshRenderer::Draw( const FForwardMeshDraw& Draw, IRenderGeomet
 	Object.ShadowParams[1] = bReceive ? Draw.ShadowParams[1] : 0.0f;
 	Object.ShadowParams[2] = bReceive ? Draw.ShadowParams[2] : 0.0f;
 	Object.ShadowParams[3] = bReceive ? static_cast<float32>( Draw.ShadowMask ) : 0.0f;
-	FGraphicsConstantBytes Constants[2];
-	Constants[0].Data = reinterpret_cast<const uint8*>( &Object );
-	Constants[0].Size = sizeof( Object );
-	Constants[1].Data = reinterpret_cast<const uint8*>( Draw.Lighting );
-	Constants[1].Size = sizeof( Draw.Lighting );
+	FGraphicsConstantBytes Constants[3]; // 個体（b0）→ 光（b6。深度だけの描画は無し）→ 骨の行列（b1。GPU スキニングだけ）の順。パイプラインの枠と同じ並び。
+	int32 NumConstants = 0;
+	Constants[NumConstants].Data = reinterpret_cast<const uint8*>( &Object );
+	Constants[NumConstants].Size = sizeof( Object );
+	++NumConstants;
+	if ( !bDepth )
+	{
+		Constants[NumConstants].Data = reinterpret_cast<const uint8*>( Draw.Lighting );
+		Constants[NumConstants].Size = sizeof( Draw.Lighting );
+		++NumConstants;
+	}
+	if ( bSkinnedDraw )
+	{
+		constexpr int32 PaletteFloats = 12 * MaxStaticModelSkinBones; // シェーダーの g_Bones の大きさ（定数は、宣言した大きさ以上で渡す）。
+		if ( PaletteScratch.Num() != PaletteFloats )
+		{
+			PaletteScratch.SetNum( PaletteFloats, 0.0f );
+		}
+		FMemory::Memcpy( PaletteScratch.GetData(), Draw.BoneMatrices, sizeof( float32 ) * 12 * Draw.NumBones );
+		FMemory::Memzero( PaletteScratch.GetData() + 12 * Draw.NumBones, sizeof( float32 ) * ( PaletteFloats - 12 * Draw.NumBones ) );
+		Constants[NumConstants].Data = reinterpret_cast<const uint8*>( PaletteScratch.GetData() );
+		Constants[NumConstants].Size = sizeof( float32 ) * PaletteFloats;
+		++NumConstants;
+	}
 	if ( Draw.bTransient )
 	{
 		FGraphicsPipelineTransientDraw Transient; // 借用値は既存のフレーム転送領域へコピーされる。
@@ -440,7 +514,7 @@ bool CDX12ForwardMeshRenderer::Draw( const FForwardMeshDraw& Draw, IRenderGeomet
 		Transient.VertexStride = static_cast<uint32>( sizeof( FDrawVertex3D ) );
 		Transient.Indices = Draw.Indices ? Draw.Indices + Draw.FirstIndex : nullptr;
 		Transient.IndexCount = Draw.Indices ? Draw.IndexCount : 0;
-		Transient.Constants = TArrayView<const FGraphicsConstantBytes>( Constants, bDepth ? 1 : 2 );
+		Transient.Constants = TArrayView<const FGraphicsConstantBytes>( Constants, NumConstants );
 		Transient.Textures = TArrayView<const FTextureResourceHandle>( SlotTextures, NumSlotTextures );
 		return Geometry.QueueGraphicsPipelineTransient( Transient );
 	}
@@ -453,7 +527,9 @@ bool CDX12ForwardMeshRenderer::Draw( const FForwardMeshDraw& Draw, IRenderGeomet
 	Command.IndexOffset = static_cast<uint64>( Draw.FirstIndex ) * sizeof( uint32 );
 	Command.IndexCount = static_cast<uint32>( Draw.IndexCount );
 	Command.IndexFormat = EGeometryIndexFormat::UInt32;
-	Command.Constants = TArrayView<const FGraphicsConstantBytes>( Constants, bDepth ? 1 : 2 );
+	Command.Constants = TArrayView<const FGraphicsConstantBytes>( Constants, NumConstants );
+	const FBufferResourceHandle SkinBuffers[1] = { Mesh->Skin }; // 構造化バッファ（t2）。GPU スキニングだけ。
+	Command.Buffers = TArrayView<const FBufferResourceHandle>( SkinBuffers, bSkinnedDraw ? 1 : 0 );
 	Command.Textures = TArrayView<const FTextureResourceHandle>( SlotTextures, NumSlotTextures );
 	Command.PinnedBytes = Mesh->Bytes; // 結果を待たずに積むときの、保持量の見積もり。
 	const bool bDrawn = Geometry.QueueGraphicsPipeline( Command );

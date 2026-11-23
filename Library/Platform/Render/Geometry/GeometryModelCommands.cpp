@@ -182,26 +182,99 @@ EGeometryCommandResult CGeometryModelCommands::Execute( const FDrawCommandView& 
 EGeometryCommandResult CGeometryModelCommands::DrawModel( const FDrawModelData& Data, int32 Alpha, bool bAlphaBlend )
 {
 	FStaticModelDrawView Model; // 同期実行中だけ借りる不変形状。
-	const bool bFiniteMatrix = Finite( Data.M );
-	if ( bFiniteMatrix )
+	if ( !Finite( Data.M ) )
 	{
-		if ( Data.AnimIndex >= 0 )
-		{
-			Models->SetStaticModelAnimTime( Data.Handle, Data.AnimIndex, Data.AnimTime ); // DxLibと同じく、付けていなくても、そのまま描く。
-		}
-		Models->SetStaticModelPlacement( Data.Handle, Data.M );
+		return EGeometryCommandResult::Rejected;
 	}
-	if ( !bFiniteMatrix || !Models->GetStaticModelDrawView( Data.Handle, Model ) ) { return EGeometryCommandResult::Rejected; }
+	if ( Data.AnimIndex >= 0 )
+	{
+		Models->SetStaticModelAnimTime( Data.Handle, Data.AnimIndex, Data.AnimTime ); // DxLibと同じく、付けていなくても、そのまま描く。
+	}
+	Models->SetStaticModelPlacement( Data.Handle, Data.M );
+	// GPU でスキニングできる個体は、頂点を作り直さず、骨の行列だけを渡して描く（描けなければ、変形済みの頂点で、CPU の経路が続きを描く）。
+	const bool bSkinned = Forward.CanDrawForward() && Models->GetStaticModelSkinnedDrawView( Data.Handle, Model ) && Forward.CanDrawForward( Model );
+	if ( !bSkinned && !Models->GetStaticModelDrawView( Data.Handle, Model ) )
+	{
+		return EGeometryCommandResult::Rejected;
+	}
 	const FMatrix4x4 OldWorld = World; // 従来命令では個体の配置を使い、後続へ漏らさない。
 	FDrawMatrixData Matrix; // 個体の配置の12要素を読む。
 	FMemory::Memcpy( Matrix.M, Data.M, sizeof( Data.M ) );
 	World = ToMatrix( Matrix );
-	const EGeometryCommandResult Result = DrawModelView( Model, Alpha, bAlphaBlend ); // 固定姿勢と同じ検査と描画経路を使う。
+	const EGeometryCommandResult Result = bSkinned ? DrawSkinnedView( Model, Data.Handle, Alpha, bAlphaBlend ) : DrawModelView( Model, Alpha, bAlphaBlend ); // 固定姿勢と同じ検査と描画経路を使う。
 	World = OldWorld;
 	return Result;
 }
 
+bool CGeometryModelCommands::AreSectionsValid( const FStaticModelDrawView& Model ) const
+{
+	int32 ExpectedIndex = 0; // すべての範囲を描く前に検査する。
+	for ( int32 Index = 0; Index < Model.NumSections; ++Index )
+	{
+		const auto& Section = Model.Sections[Index]; // 連続した材質範囲。
+		if ( Section.FirstIndex != ExpectedIndex || Section.NumIndices <= 0 || Section.NumIndices % 3 != 0 || static_cast<int64>( Section.FirstIndex ) + Section.NumIndices > Model.NumIndices )
+		{
+			return false;
+		}
+		if ( Section.Texture >= 0 )
+		{
+			FTextureDrawView Image; // 後の材質の画像が無い場合も先に失敗する。
+			if ( !Textures || !Textures->GetTextureDrawView( Section.Texture, Image ) || Image.Binding == 0 || Image.Width <= 0 || Image.Height <= 0 )
+			{
+				return false;
+			}
+		}
+		ExpectedIndex += Section.NumIndices;
+	}
+	return ExpectedIndex == Model.NumIndices;
+}
+
+EGeometryCommandResult CGeometryModelCommands::DrawSkinnedView( const FStaticModelDrawView& Model, int32 Handle, int32 Alpha, bool bAlphaBlend )
+{
+	PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "Draw", "Geometry.ModelSkinned" );
+	if ( Model.NumIndices == 0 && Model.NumSections == 0 )
+	{
+		return EGeometryCommandResult::Executed; // 描くものが無い（すべて非表示）。
+	}
+	// 頂点・添字・骨と重みの中身は、個体の所有先が、作るときに検査してある（有限・範囲の中）。ここでは、毎フレーム変わる骨の行列と、材質範囲だけを検査する。
+	if ( !Model.Vertices || !Model.Indices || !Model.Sections || !Model.SkinVertices || !Model.BoneMatrices || Model.NumBones <= 0 || Model.NumBones > MaxStaticModelSkinBones
+		|| Model.NumVertices <= 0 || Model.NumIndices <= 0 || Model.NumSections <= 0 || Model.NumSections > 4096
+		|| !NMath::IsFinite( Model.Opacity ) || Model.Opacity < 0 || Model.Opacity > 1 || !AreSectionsValid( Model ) )
+	{
+		return EGeometryCommandResult::Rejected;
+	}
+	for ( int32 Index = 0; Index < Model.NumBones * 12; ++Index )
+	{
+		if ( !NMath::IsFinite( Model.BoneMatrices[Index] ) )
+		{
+			return EGeometryCommandResult::Rejected;
+		}
+	}
+	if ( Model.Opacity == 0 )
+	{
+		return EGeometryCommandResult::Executed;
+	}
+	const int32 ModelAlpha = NMath::Clamp( static_cast<int32>( Alpha * Model.Opacity + 0.5f ), 0, 255 ); // 個体の不透明度を一度だけ掛ける。
+	const int32 NumForward = Forward.DrawMeshForward( Model, ModelAlpha, bAlphaBlend );
+	if ( NumForward >= Model.NumSections )
+	{
+		return EGeometryCommandResult::Executed;
+	}
+	// GPU が描けなかった範囲から先は、変形済みの頂点で、CPU の経路で描く（見えている範囲の並びは、同じ）。
+	FStaticModelDrawView Deformed;
+	if ( !Models->GetStaticModelDrawView( Handle, Deformed ) )
+	{
+		return EGeometryCommandResult::Rejected;
+	}
+	return DrawModelViewFrom( Deformed, Alpha, bAlphaBlend, false, NumForward );
+}
+
 EGeometryCommandResult CGeometryModelCommands::DrawModelView( const FStaticModelDrawView& Model, int32 Alpha, bool bAlphaBlend )
+{
+	return DrawModelViewFrom( Model, Alpha, bAlphaBlend, true, 0 );
+}
+
+EGeometryCommandResult CGeometryModelCommands::DrawModelViewFrom( const FStaticModelDrawView& Model, int32 Alpha, bool bAlphaBlend, bool bTryForward, int32 FirstSection )
 {
 	PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "Draw", "Geometry.ModelView" );
 	if ( Model.NumIndices == 0 && Model.NumSections == 0 )
@@ -214,25 +287,7 @@ EGeometryCommandResult CGeometryModelCommands::DrawModelView( const FStaticModel
 	{
 		return EGeometryCommandResult::Rejected;
 	}
-	int32 ExpectedIndex = 0; // すべての範囲を描く前に検査する。
-	for ( int32 Index = 0; Index < Model.NumSections; ++Index )
-	{
-		const auto& Section = Model.Sections[Index]; // 連続した材質範囲。
-		if ( Section.FirstIndex != ExpectedIndex || Section.NumIndices <= 0 || Section.NumIndices % 3 != 0 || static_cast<int64>( Section.FirstIndex ) + Section.NumIndices > Model.NumIndices )
-		{
-			return EGeometryCommandResult::Rejected;
-		}
-		if ( Section.Texture >= 0 )
-		{
-			FTextureDrawView Image; // 後の材質の画像が無い場合も先に失敗する。
-			if ( !Textures || !Textures->GetTextureDrawView( Section.Texture, Image ) || Image.Binding == 0 || Image.Width <= 0 || Image.Height <= 0 )
-			{
-				return EGeometryCommandResult::Rejected;
-			}
-		}
-		ExpectedIndex += Section.NumIndices;
-	}
-	if ( ExpectedIndex != Model.NumIndices )
+	if ( !AreSectionsValid( Model ) )
 	{
 		return EGeometryCommandResult::Rejected;
 	}
@@ -256,7 +311,11 @@ EGeometryCommandResult CGeometryModelCommands::DrawModelView( const FStaticModel
 		return EGeometryCommandResult::Executed;
 	}
 	const int32 ModelAlpha = NMath::Clamp( static_cast<int32>( Alpha * Model.Opacity + 0.5f ), 0, 255 ); // 個体の不透明度を一度だけ掛ける。
-	const int32 NumForward = Forward.CanDrawForward( Model ) ? Forward.DrawMeshForward( Model, ModelAlpha, bAlphaBlend ) : 0; // GPU が変換と光を計算できる範囲は、共有のメッシュで描く。
+	int32 NumForward = FirstSection; // すでに描けた範囲（GPU スキニングの途中から、続きを描くとき）。
+	if ( bTryForward )
+	{
+		NumForward = Forward.CanDrawForward( Model ) ? Forward.DrawMeshForward( Model, ModelAlpha, bAlphaBlend ) : 0; // GPU が変換と光を計算できる範囲は、共有のメッシュで描く。
+	}
 	bool bSuccess = true; // GPU作成失敗時も配置は復元する。
 	for ( int32 SectionIndex = NumForward; SectionIndex < Model.NumSections && bSuccess; ++SectionIndex )
 	{
