@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "GeometryShapeBuilder.h"
+#include "Library/Core/Log/Assert.h"
 #include "Library/Core/Types/Numeric.h"
 
 namespace
@@ -16,11 +17,24 @@ namespace
 	{
 		return NMath::IsFinite( Value.x ) && NMath::IsFinite( Value.y ) && NMath::IsFinite( Value.z );
 	}
-	// 円周上の一点を、継ぎ目が一致する頂点へ変える。
-	FDrawVertex3D MakeVertex( const FProfileRing& Ring, const FVector3& Axis, const FVector3& Right, const FVector3& Tangent, int32 Index, int32 Div, FColor32 Color )
+	// 円周を Div 分割したときの、Index 番目の境目での円の外向き。最後の点を最初の点へ正確に重ねる。
+	FVector3 MakeRadial( const FVector3& Right, const FVector3& Tangent, int32 Index, int32 Div )
 	{
-		const float32 Angle = Index == Div ? 0 : 2 * NMath::PI * Index / Div; // 最後の点を最初の点へ正確に重ねる。
-		const FVector3 Radial = Right * NMath::Cos( Angle ) + Tangent * NMath::Sin( Angle ); // 円の外向き。
+		const float32 Angle = Index == Div ? 0 : 2 * NMath::PI * Index / Div;
+		return Right * NMath::Cos( Angle ) + Tangent * NMath::Sin( Angle );
+	}
+	// 円周を Div 分割した全部の境目（最後の点は最初の点と重なる）の、円の外向きを、1 回ずつ作る。
+	void MakeRadials( const FVector3& Right, const FVector3& Tangent, int32 Div, TArray<FVector3>& Out )
+	{
+		Out.Reserve( Div + 1 );
+		for ( int32 Index = 0; Index <= Div; ++Index )
+		{
+			Out.Add( MakeRadial( Right, Tangent, Index, Div ) );
+		}
+	}
+	// 円周上の一点（Radial は MakeRadial の結果）を、頂点へ変える。
+	FDrawVertex3D MakeVertex( const FProfileRing& Ring, const FVector3& Axis, const FVector3& Radial, FColor32 Color )
+	{
 		const FVector3 Position = Ring.Center + Radial * Ring.Radius; // ローカル位置。
 		const FVector3 Normal = Axis * Ring.NormalAxis + Radial * Ring.NormalRadial; // 単位法線。
 		FDrawVertex3D Result; // 照明なしでは拡散色をそのまま使う。
@@ -35,6 +49,11 @@ namespace
 		Result.Diffuse[2] = Color.b;
 		Result.Diffuse[3] = Color.a;
 		return Result;
+	}
+	// 頂点の位置が、有限か。
+	bool FinitePosition( const FDrawVertex3D& Vertex )
+	{
+		return NMath::IsFinite( Vertex.Position[0] ) && NMath::IsFinite( Vertex.Position[1] ) && NMath::IsFinite( Vertex.Position[2] );
 	}
 	// 二つの半球と、必要なら円柱をつなぐ。最大分割でも1描画65536頂点以内。
 	bool BuildRounded( const FVector3& A, const FVector3& B, float32 Radius, int32 Div, bool bFill, FColor32 Color, TArray<FDrawVertex3D>& Out )
@@ -80,45 +99,71 @@ namespace
 				Rings.Add( Ring );
 			}
 		}
-		Output.Reserve( Div * ( Rings.Num() - 1 ) * ( bFill ? 6 : 4 ) );
+		// 隣り合う面は、同じ頂点を共有する。三角関数を使う頂点の計算は、円ごと・境目ごとに 1 回だけにする。
+		const int32 NumColumns = Div + 1; // 境目の数（最後の境目は、最初の境目と重なる）。
+		TArray<FVector3> Radials; // 境目ごとの円の外向き。
+		MakeRadials( Right, Tangent, Div, Radials );
+		TArray<FDrawVertex3D> Grid; // 円ごと・境目ごとの頂点（円の番号 * 境目の数 + 境目の番号）。
+		Grid.Reserve( Rings.Num() * NumColumns );
+		for ( const FProfileRing& Ring : Rings )
+		{
+			for ( int32 Column = 0; Column < NumColumns; ++Column )
+			{
+				Grid.Add( MakeVertex( Ring, Axis, Radials[Column], Color ) );
+			}
+		}
+		int32 NumOutputVertices = 0; // 出力する頂点の数。先に数えて、1 回で確保する。
 		for ( int32 Row = 0; Row + 1 < Rings.Num(); ++Row )
 		{
+			const bool bLowerHasArea = Rings[Row].Radius > 0; // 下の円が、半径を持つか。
+			const bool bUpperHasArea = Rings[Row + 1].Radius > 0; // 上の円が、半径を持つか。
+			NumOutputVertices += Div * ( bFill ? ( bLowerHasArea ? 3 : 0 ) + ( bUpperHasArea ? 3 : 0 ) : 2 + ( bLowerHasArea ? 2 : 0 ) );
+		}
+		const int32 FirstOutput = Output.AddUninitialized( NumOutputVertices );
+		FDrawVertex3D* Write = Output.GetData() + FirstOutput; // 出力の書き込み位置。
+		for ( int32 Row = 0; Row + 1 < Rings.Num(); ++Row )
+		{
+			const FDrawVertex3D* Lower = Grid.GetData() + Row * NumColumns; // 下の円の頂点。
+			const FDrawVertex3D* Upper = Lower + NumColumns; // 上の円の頂点。
+			const bool bLowerHasArea = Rings[Row].Radius > 0;
+			const bool bUpperHasArea = Rings[Row + 1].Radius > 0;
 			for ( int32 Column = 0; Column < Div; ++Column )
 			{
-				const FDrawVertex3D A0 = MakeVertex( Rings[Row], Axis, Right, Tangent, Column, Div, Color ); // 下の円の始点。
-				const FDrawVertex3D A1 = MakeVertex( Rings[Row], Axis, Right, Tangent, Column + 1, Div, Color ); // 下の円の終点。
-				const FDrawVertex3D B0 = MakeVertex( Rings[Row + 1], Axis, Right, Tangent, Column, Div, Color ); // 上の円の始点。
-				const FDrawVertex3D B1 = MakeVertex( Rings[Row + 1], Axis, Right, Tangent, Column + 1, Div, Color ); // 上の円の終点。
+				const FDrawVertex3D& A0 = Lower[Column]; // 下の円の始点。
+				const FDrawVertex3D& A1 = Lower[Column + 1]; // 下の円の終点。
+				const FDrawVertex3D& B0 = Upper[Column]; // 上の円の始点。
+				const FDrawVertex3D& B1 = Upper[Column + 1]; // 上の円の終点。
 				if ( bFill )
 				{
-					if ( Rings[Row].Radius > 0 )
+					if ( bLowerHasArea )
 					{
-						Output.Add( A0 );
-						Output.Add( A1 );
-						Output.Add( B0 );
+						*Write++ = A0;
+						*Write++ = A1;
+						*Write++ = B0;
 					}
-					if ( Rings[Row + 1].Radius > 0 )
+					if ( bUpperHasArea )
 					{
-						Output.Add( A1 );
-						Output.Add( B1 );
-						Output.Add( B0 );
+						*Write++ = A1;
+						*Write++ = B1;
+						*Write++ = B0;
 					}
 				}
 				else
 				{
-					Output.Add( A0 );
-					Output.Add( B0 );
-					if ( Rings[Row].Radius > 0 )
+					*Write++ = A0;
+					*Write++ = B0;
+					if ( bLowerHasArea )
 					{
-						Output.Add( A0 );
-						Output.Add( A1 );
+						*Write++ = A0;
+						*Write++ = A1;
 					}
 				}
 			}
 		}
-		for ( const auto& Vertex : Output )
+		DEBUG_CHECK( Write == Output.GetData() + FirstOutput + NumOutputVertices );
+		for ( const FDrawVertex3D& Vertex : Output )
 		{
-			if ( !Finite( FVector3( Vertex.Position[0], Vertex.Position[1], Vertex.Position[2] ) ) )
+			if ( !FinitePosition( Vertex ) )
 			{
 				return false;
 			}
@@ -176,14 +221,13 @@ bool CGeometryShapeBuilder::BuildCone( const FVector3& Top, const FVector3& Bott
 		Result.Diffuse[3] = Color.a;
 		return Result;
 	};
-	const auto Radial = [&]( int32 Index ) // 円周上の、外向きの単位ベクトル。最後の点を最初の点へ正確に重ねる。
-	{
-		const float32 Angle = Index == Div ? 0 : 2 * NMath::PI * Index / Div;
-		return Right * NMath::Cos( Angle ) + Tangent * NMath::Sin( Angle );
-	};
+	TArray<FVector3> Radials; // 円周上の、外向きの単位ベクトル（最後の点は、最初の点と正確に重なる）。隣り合う分割で共有するので、1 回ずつだけ作る。
+	MakeRadials( Right, Tangent, Div, Radials );
+	Output.Reserve( Div * ( bFill ? 6 : 4 ) );
 	for ( int32 Index = 0; Index < Div; ++Index )
 	{
-		const FVector3 Radial0 = Radial( Index ), Radial1 = Radial( Index + 1 ); // この分割の両端の向き。
+		const FVector3& Radial0 = Radials[Index]; // この分割の両端の向き。
+		const FVector3& Radial1 = Radials[Index + 1];
 		const FVector3 Point0 = Bottom + Radial0 * Radius, Point1 = Bottom + Radial1 * Radius; // 底面の円周上の2点。
 		if ( !Finite( Point0 ) || !Finite( Point1 ) )
 		{
