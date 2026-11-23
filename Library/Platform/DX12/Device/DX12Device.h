@@ -60,6 +60,8 @@ class CDX12Device
 	CDX12UploadArena *GetUploadArena();
 	// 提出済みのフレームを窓の所有スレッドで1回だけ表示する。GPU記録側と同時には呼ばない。
 	bool PresentFrame( bool bVSync );
+	// 提出したが、表示しないフレームを、表示待ちから外す（前の絵が残る）。描画の内容が失敗したフレームを、デバイスの失敗にしないための窓口。
+	void DiscardPendingPresent();
 	// 要求された段階のコピー先だけを用意する。描画順への挿入は接続層が行う。
 	bool PrepareFrameCapture( bool bGame, bool bWithUI );
 	// 表示の提出後に完了を待ち、要求した主画面の画素を読む。失敗時はOutを保つ。

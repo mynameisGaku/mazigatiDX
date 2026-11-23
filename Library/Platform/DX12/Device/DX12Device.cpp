@@ -553,6 +553,11 @@ bool CDX12Device::PresentFrame( bool bVSync )
 	return bPresented;
 }
 
+void CDX12Device::DiscardPendingPresent()
+{
+	bPresentPending = false; // 戻す色の遷移は、提出した命令の中で済んでいる。次のフレームを、そのまま始められる。
+}
+
 void CDX12Device::ClearFrameColor( FColor32 Color )
 {
 	if ( IsRecording() )

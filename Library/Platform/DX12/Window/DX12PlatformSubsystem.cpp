@@ -144,6 +144,12 @@ void CDX12PlatformSubsystem::Initialize( FSubsystemCollection &Collection )
 		Store->SetLook( RenderLook );
 	}
 	LOG( LogDX12, Log, "DX12 look: %s", NRenderLook::ToString( RenderLook ) );
+	const auto DropOption = NCommandLine::GetValue( "dx12-drop-frame" ); // 検査用の故障の注入（描画の内容の失敗の後始末を確かめる）。
+	DropFrameForTest = DropOption.IsSet() ? DropOption.GetValue().ToInt( -1 ) : -1;
+	const auto DropFromOption = NCommandLine::GetValue( "dx12-drop-frames-from" );
+	DropFramesFromForTest = DropFromOption.IsSet() ? DropFromOption.GetValue().ToInt( -1 ) : -1;
+	const auto DropEveryOption = NCommandLine::GetValue( "dx12-drop-frame-every" );
+	DropFrameEveryForTest = DropEveryOption.IsSet() ? NMath::Max( 0, DropEveryOption.GetValue().ToInt( 0 ) ) : 0;
 	GameRenderer = new CDX12GameRenderer();
 	if ( !GameRenderer->Initialize( Device->GetNativeDevice(), Settings.Width, Settings.Height, *Device->GetTextureResources(), GameText, nullptr, nullptr, Device->GetBufferResources(), Device->GetNativeQueue(), Device->GetTextureResources(), Device->GetGraphicsPipelineStore(), Device->GetUploadArena() ) )
 	{
@@ -268,6 +274,7 @@ void CDX12PlatformSubsystem::Deinitialize()
 	UnregisterClassW( L"MazigatiDX12", GetModuleHandleW( nullptr ) );
 	bInitialized = false;
 	bExit = false;
+	NumConsecutiveDroppedFrames = 0;
 	FrameCount = 0;
 	TotalTime = 0;
 	DeltaTime = 0;
@@ -379,7 +386,7 @@ void CDX12PlatformSubsystem::EndFrame()
 	ImDrawData *UIData = bContext ? ImGui::GetDrawData() : nullptr; // 待機が戻るまでゲーム側は変更しない。
 	// 開いたままの描画先パスは、ここで閉じる。書き込み中の画像の「ない」は覚えない（成功だけを覚える）ので、覚えは捨てなくてよい。
 	const bool bGameCommands = ThreadedSurface->EndFrame(); // ここでゲームの全命令のCPU記録を確定する。
-	bool bCapturePrepared = false, bSubmitted = false; // 描画スレッドが返すこのフレームの結果。
+	bool bCapturePrepared = false, bSubmitted = false, bContentDropped = false; // 描画スレッドが返すこのフレームの結果。bContentDropped は、描画の内容が失敗して、表示しないフレーム。
 	auto Submit = [&, this]()
 	{
 		bCapturePrepared = ( bGame || bUI ) && Device->PrepareFrameCapture( bGame, bUI );
@@ -396,26 +403,44 @@ void CDX12PlatformSubsystem::EndFrame()
 			bUIRendered = ImGuiFrameRenderer->Render( UIData );
 			bRendered = bUIRendered && bRendered;
 		}
+		const bool bInjected = bRendered && ( ( DropFrameForTest >= 0 && CaptureFrame == static_cast<uint64>( DropFrameForTest ) ) || ( DropFramesFromForTest >= 0 && CaptureFrame >= static_cast<uint64>( DropFramesFromForTest ) ) || ( DropFrameEveryForTest > 0 && CaptureFrame % static_cast<uint64>( DropFrameEveryForTest ) == 0 ) );
+		if ( bInjected )
+		{
+			bRendered = false; // 検査用: 描画の内容の失敗として扱う。
+		}
 		if ( !bRendered )
 		{
-			LOG( LogDX12, Warning, "DX12 frame dropped: game commands %s, renderer %s, UI %s", bGameCommands ? "ok" : "failed", bGameRendered ? "ok" : "failed", bUIRendered ? "ok" : "failed" );
+			LOG( LogDX12, Warning, "DX12 frame dropped: game commands %s, renderer %s, UI %s%s", bGameCommands ? "ok" : "failed", bGameRendered ? "ok" : "failed", bUIRendered ? "ok" : "failed", bInjected ? " (injected for a test)" : "" );
 		}
-		if ( bRendered )
-		{
-			bSubmitted = Device->SubmitFrame( UploadTicket );
-		}
-		else
-		{
-			Device->ResolvePendingUploadTicket( UploadTicket, false );
-			bSubmitted = false;
-		}
+		// 描画の内容が失敗したフレームも、記録した命令は提出する（資源の予約を確定し、記述子や画像の寿命を、通常のフレームと同じに保つ）。表示だけをしない。
+		bSubmitted = Device->SubmitFrame( UploadTicket );
+		bContentDropped = !bRendered;
 	};
 	const bool bRecorded = ExecuteRender( MoveTemp( Submit ), false ); // フレームの提出も、資源の作成・解放ではない（確かめ済みは、捨てない）。
 	// PresentはOSからの通知を待つ場合があるため、窓のスレッドに残す。
 	bWindowRenderPhase = true;
-	const bool bPresented = bRecorded && bSubmitted && Device->PresentFrame( Settings.bVSync );
+	bool bPresented = false;
+	bool bSkipped = false; // 描画の内容の失敗で表示しなかった（デバイスの失敗ではない）。
+	if ( bRecorded && bSubmitted )
+	{
+		if ( bContentDropped )
+		{
+			Device->DiscardPendingPresent(); // 前の絵が残る。次のフレームは、ふつうに始まる。
+			bSkipped = true;
+		}
+		else
+		{
+			bPresented = Device->PresentFrame( Settings.bVSync );
+		}
+	}
 	bWindowRenderPhase = false;
-	if ( !bPresented )
+	NumConsecutiveDroppedFrames = bSkipped ? NumConsecutiveDroppedFrames + 1 : 0;
+	if ( bSkipped && NumConsecutiveDroppedFrames > MaxConsecutiveDroppedFrames )
+	{
+		LOG( LogDX12, Error, "DX12 frames keep failing (%d in a row), so the application exits", NumConsecutiveDroppedFrames );
+		bExit = true; // 続けて失敗するのは、一時的な超過ではなく、描画の誤り。
+	}
+	else if ( !bPresented && !bSkipped )
 	{
 		LOG( LogDX12, Error, "DX12 present failed" );
 		bExit = true;

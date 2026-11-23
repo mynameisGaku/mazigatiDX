@@ -223,6 +223,11 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
 	bool bWindowRenderPhase = false; // Presentと外部窓の間だけ、窓側がGPU接続を排他的に借りる。
 	bool bInFrame = false; // 描画記録中の印。
 	bool bExit = false; // 終了要求。
+	int32 NumConsecutiveDroppedFrames = 0; // 描画の内容が失敗して、表示しなかったフレームの連続回数（表示できたら 0 へ戻る。上限を超えて続くと、終了する）。
+	static constexpr int32 MaxConsecutiveDroppedFrames = 120; // 連続して表示しなくてよいフレームの数（約 2 秒）。デバイスの失敗は、数えずに、すぐ終了する。
+	int32 DropFrameForTest = -1; // 検査用（--dx12-drop-frame=<番号>）: そのフレームを、描画の内容の失敗として扱う。負なら、なし。
+	int32 DropFramesFromForTest = -1; // 検査用（--dx12-drop-frames-from=<番号>）: そのフレームから先を、すべて失敗として扱う。負なら、なし。
+	int32 DropFrameEveryForTest = 0; // 検査用（--dx12-drop-frame-every=<N>）: N フレームに 1 回、失敗として扱う（飛び飛びの失敗は、積み重なっても終了しない）。0 なら、なし。
 	bool bMinimized = false; // 最小化中の0x0リサイズを避けて既存バックバッファを維持する印。
 	bool bPendingResize = false; // Resizable有効時に次フレーム冒頭でSwapChainと深度を再構築する印。
 	int32 PendingResizeWidth = 0; // WM_SIZEで受け取った保留幅。
