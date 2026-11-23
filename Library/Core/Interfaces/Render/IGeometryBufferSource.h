@@ -14,4 +14,7 @@ public:
 	virtual bool GetIndexBufferView( int32 Handle, FGeometryIndexBufferView& Out ) = 0;
 	// 頂点と添字の組の不変な鍵と更新版を返す。未対応はfalse。借用中の変更は禁止。
 	virtual bool GetMeshCacheIdentity( int32 /*Vertices*/, int32 /*Indices*/, uint64& /*Key*/, uint64& /*Version*/ ) { return false; }
+	// GetMeshCacheIdentity と同じ。ただし、同じ版を何度も描いたあとだけ true を返す（描くたびに中身を書き換えるデータは、いつまでも false）。
+	// GPU へ共有のメッシュを置く費用は、同じ中身を何度も描くときだけ、見合う。描くたびに呼ぶ。未対応はfalse。
+	virtual bool GetStableMeshCacheIdentity( int32 /*Vertices*/, int32 /*Indices*/, uint64& /*Key*/, uint64& /*Version*/ ) { return false; }
 };

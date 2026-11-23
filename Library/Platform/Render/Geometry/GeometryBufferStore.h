@@ -26,11 +26,19 @@ public:
 	bool GetVertexBufferView( int32 Handle, FGeometryVertexBufferView& Out ) override;
 	// 有効な登録だけを貸す。書き換え・削除・追加前に借用を終える。
 	bool GetIndexBufferView( int32 Handle, FGeometryIndexBufferView& Out ) override;
-	// モデルとは別の鍵の領域を使い、書き込み後は更新版を替える。
+	// モデルとは別の鍵の領域を使い、その組の頂点かindexへ書き込んだ後だけ、更新版を替える（ほかのバッファへの書き込みでは、替えない）。
 	bool GetMeshCacheIdentity( int32 VertexBuffer, int32 IndexBuffer, uint64& Key, uint64& Version ) override;
+	// 同じ版を、一定の回数、描いたあとだけ true（描くたびに書き換えるバッファは、GPU へ置き直す費用が見合わないので、いつまでも false）。
+	bool GetStableMeshCacheIdentity( int32 VertexBuffer, int32 IndexBuffer, uint64& Key, uint64& Version ) override;
 	// 登録を全て消す。番号は再利用しない。
 	void Reset();
 private:
+	// 組ごとの、同じ版を描いた回数。
+	struct FMeshUse
+	{
+		uint64 Version = 0; // 数えている版。
+		int32 Draws = 0; // この版で、描いた回数。
+	};
 	// 元の書き込み形式と、展開済みのindex。
 	struct FIndexRecord
 	{
@@ -43,7 +51,11 @@ private:
 	TMap<int32, FIndexRecord> Indices; // 登録index。
 	uint64 Bytes = 0; // 保持中の総バイト数。
 	TMap<uint64, uint64> MeshKeys; // 頂点と添字の組から再利用しない識別への表。
-	uint64 Revision = 1; // この所有者の書き込みごとに増える版。全メッシュへ保守的に反映する。
+	TMap<uint64, FMeshUse> MeshUses; // 組の識別から、同じ版を描いた回数への表。
+	static constexpr int32 MinDrawsBeforeSharing = 8; // この回数だけ、同じ版を描いたら、GPU の共有メッシュへ置く。
+	uint64 Revision = 1; // この所有者の書き込みごとに増える版（書き込みの通し番号）。
+	TMap<int32, uint64> VertexRevisions; // 頂点バッファごとの、最後に書いたときの Revision。ほかのバッファへの書き込みでは、変わらない。
+	TMap<int32, uint64> IndexRevisions; // indexバッファごとの、最後に書いたときの Revision。
 	int32 NextHandle = 0; // 解放後も再利用しない番号。
 	static constexpr uint64 MaxBytes = 64 * 1024 * 1024; // 全バッファの保持上限。
 };

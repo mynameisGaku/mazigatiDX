@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
+#include "Library/Core/Render/GeometryBufferView.h"
 #include "Library/Platform/Render/Geometry/GeometryExecution.h"
 #include "Library/Platform/Render/Geometry/GeometryForwardMesh.h"
 
@@ -15,6 +16,9 @@ public:
 	bool SubmitQuad( const TArray<FDrawVertex3D>& Vertices, int32 Texture, FDrawRgb Bright, int32 Alpha, bool bLit = false );
 	// indexを解決した点列をリストへ展開する。GPU・画像に依存しない。
 	bool SubmitPrimitive( const TArray<FDrawVertex3D>& Ordered, EDrawPrimitive Type, int32 Texture, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend );
+	// 登録済みの頂点・添字（登録のときに、全部検査済み）の三角形リストを、GPU の共有メッシュのまま描く（描くたびに、頂点を展開して送り直さない）。
+	// 描けなかったら false を返し、何も描かない（呼び出し側が、頂点を展開して描く）。MeshKey・MeshVersion は、バッファの組の識別と更新版。
+	bool SubmitCachedMesh( const FGeometryVertexBufferView& Vertices, const FGeometryIndexBufferView& Indices, uint64 MeshKey, uint64 MeshVersion, int32 FirstIndex, int32 NumIndices, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend, int32 Texture );
 
 private:
 	// 影の絵を描いているとき、図形を光から見た深度として描く。影を落とさない図形（線・点・画像つき・半透明）は、何もせず成功。

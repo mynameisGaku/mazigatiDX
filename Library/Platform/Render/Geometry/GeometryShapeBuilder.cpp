@@ -223,7 +223,9 @@ bool CGeometryShapeBuilder::BuildCone( const FVector3& Top, const FVector3& Bott
 	};
 	TArray<FVector3> Radials; // 円周上の、外向きの単位ベクトル（最後の点は、最初の点と正確に重なる）。隣り合う分割で共有するので、1 回ずつだけ作る。
 	MakeRadials( Right, Tangent, Div, Radials );
-	Output.Reserve( Div * ( bFill ? 6 : 4 ) );
+	const int32 NumOutputVertices = Div * ( bFill ? 6 : 4 ); // 分割ごとに、塗りつぶしは 6 つ、線は 4 つ。
+	Output.AddUninitialized( NumOutputVertices ); // 1 回で確保して、直接書く（足しながら広げると、頂点ごとに、容量の確かめと、再確保が入る）。
+	FDrawVertex3D* Write = Output.GetData(); // 出力の書き込み位置。
 	for ( int32 Index = 0; Index < Div; ++Index )
 	{
 		const FVector3& Radial0 = Radials[Index]; // この分割の両端の向き。
@@ -238,22 +240,23 @@ bool CGeometryShapeBuilder::BuildCone( const FVector3& Top, const FVector3& Bott
 			const FVector3 Normal0 = ( Radial0 * Height + Axis * Radius ) / Slant, Normal1 = ( Radial1 * Height + Axis * Radius ) / Slant; // 側面の外向きの法線。
 			const FVector3 NormalTop = ( Normal0 + Normal1 ).Normalized(); // 頂点は、両隣の法線の中間。
 			// 側面（外から見て時計回り）。
-			Output.Add( Make( Top, NormalTop ) );
-			Output.Add( Make( Point1, Normal1 ) );
-			Output.Add( Make( Point0, Normal0 ) );
+			*Write++ = Make( Top, NormalTop );
+			*Write++ = Make( Point1, Normal1 );
+			*Write++ = Make( Point0, Normal0 );
 			// 底面（下から見て時計回り）。
-			Output.Add( Make( Bottom, Axis * -1.0f ) );
-			Output.Add( Make( Point0, Axis * -1.0f ) );
-			Output.Add( Make( Point1, Axis * -1.0f ) );
+			*Write++ = Make( Bottom, Axis * -1.0f );
+			*Write++ = Make( Point0, Axis * -1.0f );
+			*Write++ = Make( Point1, Axis * -1.0f );
 		}
 		else
 		{
-			Output.Add( Make( Point0, Axis ) );
-			Output.Add( Make( Point1, Axis ) );
-			Output.Add( Make( Top, Axis ) );
-			Output.Add( Make( Point0, Axis ) );
+			*Write++ = Make( Point0, Axis );
+			*Write++ = Make( Point1, Axis );
+			*Write++ = Make( Top, Axis );
+			*Write++ = Make( Point0, Axis );
 		}
 	}
+	DEBUG_CHECK( Write == Output.GetData() + NumOutputVertices );
 	Out = MoveTemp( Output );
 	return true;
 }

@@ -28,6 +28,7 @@ int32 CGeometryBufferStore::MakeVertexBuffer( int32 NumVertices )
 	const int32 Handle = NextHandle++; // この資源だけに使う番号。
 	Bytes += static_cast<uint64>( NumVertices ) * sizeof( FDrawVertex3D );
 	Vertices.Add( Handle, MoveTemp( Values ) );
+	VertexRevisions.Add( Handle, Revision );
 	return Handle;
 }
 
@@ -46,6 +47,7 @@ bool CGeometryBufferStore::WriteVertexBuffer( int32 Handle, int32 Start, const F
 		}
 	}
 	++Revision; // 更新済みの頂点を以前のGPUキャッシュと区別する。
+	VertexRevisions.Add( Handle, Revision );
 	FMemory::Memmove( Values->GetData() + Start, Source, static_cast<usize>( Count ) * sizeof( FDrawVertex3D ) );
 	return true;
 }
@@ -56,6 +58,7 @@ void CGeometryBufferStore::DeleteVertexBuffer( int32 Handle )
 	{
 		Bytes -= static_cast<uint64>( Values->Num() ) * sizeof( FDrawVertex3D );
 		Vertices.Remove( Handle );
+		VertexRevisions.Remove( Handle );
 	}
 }
 
@@ -72,6 +75,7 @@ int32 CGeometryBufferStore::MakeIndexBuffer( int32 NumIndices, bool b32Bit )
 	const int32 Handle = NextHandle++; // この資源だけに使う番号。
 	Bytes += static_cast<uint64>( NumIndices ) * sizeof( uint32 );
 	Indices.Add( Handle, MoveTemp( Record ) );
+	IndexRevisions.Add( Handle, Revision );
 	return Handle;
 }
 
@@ -98,6 +102,7 @@ bool CGeometryBufferStore::WriteIndexBuffer( int32 Handle, int32 Start, const vo
 		}
 	}
 	++Revision; // 添字の更新もGPUキャッシュへ反映する。
+	IndexRevisions.Add( Handle, Revision );
 	FMemory::Memcpy( Record->Values.GetData() + Start, Values.GetData(), static_cast<usize>( Count ) * sizeof( uint32 ) );
 	return true;
 }
@@ -108,6 +113,7 @@ void CGeometryBufferStore::DeleteIndexBuffer( int32 Handle )
 	{
 		Bytes -= static_cast<uint64>( Record->Values.Num() ) * sizeof( uint32 );
 		Indices.Remove( Handle );
+		IndexRevisions.Remove( Handle );
 	}
 }
 
@@ -178,7 +184,9 @@ bool CGeometryBufferStore::GetIndexBufferView( int32 Handle, FGeometryIndexBuffe
 
 bool CGeometryBufferStore::GetMeshCacheIdentity( int32 VertexBuffer, int32 IndexBuffer, uint64& Key, uint64& Version )
 {
-	if ( !Vertices.Contains( VertexBuffer ) || !Indices.Contains( IndexBuffer ) || Revision == 0 )
+	const uint64* VertexRevision = VertexRevisions.Find( VertexBuffer ); // この組の頂点と添字が、最後に書かれた版。
+	const uint64* IndexRevision = IndexRevisions.Find( IndexBuffer );
+	if ( !Vertices.Contains( VertexBuffer ) || !Indices.Contains( IndexBuffer ) || !VertexRevision || !IndexRevision || Revision == 0 )
 	{
 		return false;
 	}
@@ -199,14 +207,40 @@ bool CGeometryBufferStore::GetMeshCacheIdentity( int32 VertexBuffer, int32 Index
 		Found = MeshKeys.Find( Pair );
 	}
 	Key = *Found;
-	Version = Revision;
+	Version = *VertexRevision > *IndexRevision ? *VertexRevision : *IndexRevision; // どちらかを書くたびに、書き込みの通し番号が増えるので、新しい方は必ず変わる。
+	return true;
+}
+
+bool CGeometryBufferStore::GetStableMeshCacheIdentity( int32 VertexBuffer, int32 IndexBuffer, uint64& Key, uint64& Version )
+{
+	uint64 FoundKey = 0, FoundVersion = 0;
+	if ( !GetMeshCacheIdentity( VertexBuffer, IndexBuffer, FoundKey, FoundVersion ) )
+	{
+		return false;
+	}
+	FMeshUse& Use = MeshUses.FindOrAdd( FoundKey );
+	if ( Use.Version != FoundVersion )
+	{
+		Use.Version = FoundVersion; // 中身が変わった。数え直す。
+		Use.Draws = 0;
+	}
+	if ( Use.Draws < MinDrawsBeforeSharing )
+	{
+		++Use.Draws;
+		return false;
+	}
+	Key = FoundKey;
+	Version = FoundVersion;
 	return true;
 }
 
 void CGeometryBufferStore::Reset()
 {
+	MeshUses.Reset();
 	MeshKeys.Reset();
 	Vertices.Reset();
 	Indices.Reset();
+	VertexRevisions.Reset();
+	IndexRevisions.Reset();
 	Bytes = 0;
 }

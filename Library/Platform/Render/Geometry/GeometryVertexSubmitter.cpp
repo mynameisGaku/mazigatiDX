@@ -397,6 +397,7 @@ bool CGeometryVertexSubmitter::SubmitPrimitive( const TArray<FDrawVertex3D>& Ord
 		{
 			return false;
 		}
+		Output.Reserve( ( Count - 1 ) * 2 ); // 1 回で確保する（足しながら広げると、何度も確保し直す）。
 		for ( int32 Index = 1; Index < Count; ++Index )
 		{
 			Output.Add( Ordered[Index - 1] );
@@ -409,6 +410,7 @@ bool CGeometryVertexSubmitter::SubmitPrimitive( const TArray<FDrawVertex3D>& Ord
 		{
 			return false;
 		}
+		Output.Reserve( ( Count - 2 ) * 3 ); // 1 回で確保する（足しながら広げると、何度も確保し直す）。
 		for ( int32 Index = 2; Index < Count; ++Index )
 		{
 			Output.Add( Ordered[Type == EDrawPrimitive::TriangleFan ? 0 : Index - ( Index % 2 ? 1 : 2 )] );
@@ -417,6 +419,25 @@ bool CGeometryVertexSubmitter::SubmitPrimitive( const TArray<FDrawVertex3D>& Ord
 		}
 	}
 	return Submit( Output, Topology, Bright, Alpha, bAlphaBlend, Texture, Topology == EGeometryTopology::Triangles );
+}
+
+bool CGeometryVertexSubmitter::SubmitCachedMesh( const FGeometryVertexBufferView& Vertices, const FGeometryIndexBufferView& Indices, uint64 MeshKey, uint64 MeshVersion, int32 FirstIndex, int32 NumIndices, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend, int32 Texture )
+{
+	PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "Draw", "Geometry.SubmitCachedMesh" );
+	if ( !Geometry || !Vertices.Vertices || !Indices.Indices || MeshKey == 0 )
+	{
+		return false;
+	}
+	FTextureDrawView Image; // 借用画像の有効性は、展開して描く経路（Submit）と同じ条件で確かめる。
+	if ( Texture >= 0 && ( !Textures || !Textures->GetTextureDrawView( Texture, Image ) || Image.Width <= 0 || Image.Height <= 0 || Image.Binding == 0 ) )
+	{
+		return false;
+	}
+	FStaticModelDrawSection Section = { FirstIndex, NumIndices, Texture }; // 指定された範囲だけ描く。
+	FStaticModelDrawView Mesh = { Vertices.Vertices, Vertices.NumVertices, Indices.Indices, Indices.NumIndices, &Section, 1 };
+	Mesh.MeshKey = MeshKey;
+	Mesh.MeshVersion = MeshVersion;
+	return Forward.CanDrawForward( Mesh ) && Forward.DrawMeshForward( Mesh, Alpha, bAlphaBlend, false, Bright, true, false ) == 1;
 }
 
 bool CGeometryVertexSubmitter::SubmitQuad( const TArray<FDrawVertex3D>& Vertices, int32 Texture, FDrawRgb Bright, int32 Alpha, bool bLit )

@@ -17,6 +17,9 @@ namespace
 	using NGeometryCommand::Finite;
 	using NGeometryCommand::Vertex;
 	using NGeometryCommand::SetSpecular;
+
+	// 登録したバッファの三角形を、GPU の共有メッシュとして描く、最小の添字の数（これより小さいと、頂点を展開して送るほうが、同じか速い）。
+	constexpr int32 MinIndicesForSharedMesh = 512;
 }
 
 CGeometryShapeCommands::CGeometryShapeCommands( FGeometryExecution& InRun, CGeometryVertexSubmitter& InSubmitter )
@@ -122,6 +125,7 @@ EGeometryCommandResult CGeometryShapeCommands::Execute( const FDrawCommandView& 
 		TArray<FDrawVertex3D> Vertices; // 展開済みの頂点列。
 		const bool bFill = View.Has( FDrawFlag::Fill ); // 面または辺。
 		const int32* Indices = bFill ? Faces : Edges; // 同じ角を再利用する順序。
+		Vertices.Reserve( bFill ? 36 : 24 ); // 1 回で確保する（足しながら広げると、何度も確保し直す）。
 		for ( int32 Index = 0; Index < ( bFill ? 36 : 24 ); ++Index )
 		{
 			FDrawVertex3D Corner = Corners[Indices[Index]]; // 面ごとに法線が違うので、角を複写する。
@@ -402,6 +406,16 @@ EGeometryCommandResult CGeometryShapeCommands::Execute( const FDrawCommandView& 
 		else if ( Data.BaseVertex != 0 || Data.NumBufferIndices != 0 || static_cast<int64>( Data.Start ) + Data.Num > Vertices.NumVertices )
 		{
 			return EGeometryCommandResult::Rejected;
+		}
+		// 三角形のリストで、基準頂点も使わないなら、登録したバッファのまま、GPU の共有メッシュとして描く（頂点の展開・検査・送り直しをしない）。
+		if ( Data.IndexBuffer >= 0 && Data.BaseVertex == 0 && Data.Type == static_cast<int32>( EDrawPrimitive::Triangles ) && Data.Num % 3 == 0 && Data.Num >= MinIndicesForSharedMesh )
+		{
+			uint64 MeshKey = 0, MeshVersion = 0; // GPU 側で共有する頂点と添字の組。
+			if ( Buffers->GetStableMeshCacheIdentity( Data.VertexBuffer, Data.IndexBuffer, MeshKey, MeshVersion )
+				&& Submitter.SubmitCachedMesh( Vertices, Indices, MeshKey, MeshVersion, Data.Start, Data.Num, Bright, Alpha, bAlphaBlend, Data.Texture ) )
+			{
+				return EGeometryCommandResult::Executed;
+			}
 		}
 		TArray<FDrawVertex3D> Ordered; // 基準頂点を含めて参照を解決した列。
 		Ordered.Reserve( Data.Num );
