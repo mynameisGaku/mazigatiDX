@@ -20,6 +20,15 @@
 | `LICENSE-libusb.txt` | libusb のライセンス（LGPL 2.1 以降） |
 | `lib/x86`、`lib/arm64` | 公式の配布物のまま。libusb を使わないので、Switch 2 のコントローラーは読めない |
 
+## 確認したこと（2026-11-23、Switch 2 Pro Controller、USB）
+
+Switch2Connect と Steam を終了し、HidHide で機器を隠していない状態で、次を実機で確認しました。
+
+- `CSdlGamepadInputSubsystem`が、`Gamepad connected: #1 Nintendo Switch Pro Controller (VID:0x057e PID:0x2069 Mapped:1)`と認識する（起動に遅れはない）。
+- ボタン 15 個・軸 6 本（スティック 2 本とトリガー 2 本）・ハット 1 個が読める。
+- 振動（`SDL_RumbleGamepad`）が動く。ジャイロと加速度が読める。
+- 次のどれかが動いていると、この機器の窓口を開けないか、入力が読めません。Switch2Connect、Steam（Steam Input）、HidHide でこの機器の HID を隠す設定（インターフェース 0 の入力が「アクセスが拒否されました」になり、接続の直後に切断される）。
+
 ## 作り直す手順
 
 libusb（`libusb/libusb` のタグ `v1.0.30`）
