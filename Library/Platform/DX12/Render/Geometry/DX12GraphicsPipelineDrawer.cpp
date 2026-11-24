@@ -10,7 +10,7 @@
 
 namespace
 {
-	constexpr int32 MaxGraphicsDrawsPerFrame = 1024; // 1 フレームのカスタム描画の上限。
+	constexpr int32 MaxGraphicsDrawsPerFrame = NGraphicsPipelineLimits::MaxDrawsPerFrame; // 1 フレームのカスタム描画の上限（命令を積む門と同じ値）。
 	constexpr uint64 MaxUploadBytesPerFrame = 64ull * 1024ull * 1024ull; // 1 フレームに転送領域へ載せられる量の上限。
 
 	// 定数 1 つを、256 の境界へ揃えた大きさ。

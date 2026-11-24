@@ -22,6 +22,9 @@ namespace NGraphicsPipelineLimits
 	// 登録したバッファの描画（頂点・添字は、GPU のバッファのまま使い回す）。バッファ 1 つの上限（64 MiB）に収まる大きさ: 頂点 48 バイトで 1M 個（48 MiB）、添字 4 バイトで 6M 個（24 MiB）。
 	constexpr uint32 MaxRegisteredVertices = 1u << 20;
 	constexpr uint32 MaxRegisteredIndices = 6u << 20;
+	// 1 フレームに記録できる、カスタムグラフィックスパイプラインの描画の回数（メッシュ・材質の範囲ごとに 1 回）。以前は 1024 で、これを超えるシーン（Faputa なら 146 体）は、GPU の経路から、遅い CPU の経路へ落ちた。
+	// 描画 1 回は、画像の常駐の記述子と、GPU の仮想アドレスだけを使い、描画ごとの領域は取らない。実際の制約は、1 フレームの転送領域の予算（門は 40 MiB・DX12 は 64 MiB）と、保持する資源の数・大きさ。
+	constexpr int32 MaxDrawsPerFrame = 16384;
 }
 
 // カスタムグラフィックスパイプラインを使った1回のGPUバッファ描画命令。

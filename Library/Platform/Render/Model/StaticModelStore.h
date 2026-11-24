@@ -30,6 +30,8 @@ public:
 	// bAllowRigがtrueなら、スキン・アニメーション・メッシュの無い（アニメーションだけの）シーンも受け付ける。
 	// 失敗時は-1と理由を返し、読み込み途中の画像を残さない。
 	int32 Create( const FImportedScene& Scene, const FString& SourcePath, ITextureBackend& Textures, FString& Error, bool bAllowRig = false );
+	// 登録できる個体の数の上限（作った個体と、複製の合計。超えると Create / Duplicate は -1）。群衆や多数の敵を置けるように大きく（以前は 128 だった）。個体は、形状と画像を共有するので、1 体のコストは、骨の姿勢と状態だけ。
+	static constexpr int32 MaxInstances = 4096;
 	// 形状と画像を共有し、不透明度と骨の上書きを値でコピーした個体を作る（付けたアニメーションは引き継がない）。
 	int32 Duplicate( int32 Source );
 	// 最後の共有個体を削除したとき画像も解放する。

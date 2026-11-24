@@ -23,7 +23,7 @@ class CAsyncDrawGate
 	};
 
 	// 実行先の上限に対して、手前で同期へ戻す余裕を持たせた、待たずに積める上限。
-	static constexpr int32 MaxDraws = 1000; // 実行先は 1 フレーム 1024 回まで。
+	static constexpr int32 MaxDraws = NGraphicsPipelineLimits::MaxDrawsPerFrame - 24; // 実行先は MaxDrawsPerFrame 回まで。手前で同期へ戻す余裕を持たせる。
 	static constexpr int32 MaxPinnedBuffers = 240; // 実行先は 256 個まで。
 	static constexpr int32 MaxPinnedTextures = 240; // 実行先は 256 枚まで。
 	static constexpr int32 MaxPinnedPipelines = 240; // 実行先は 256 個まで。
