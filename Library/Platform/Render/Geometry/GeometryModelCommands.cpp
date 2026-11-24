@@ -218,6 +218,28 @@ EGeometryCommandResult CGeometryModelCommands::DrawModelViewAt( const FStaticMod
 	return Result;
 }
 
+EGeometryCommandResult CGeometryModelCommands::DrawValidatedModelSectionAt( const FStaticModelDrawView& Model, int32 SectionIndex, const float32 ( &Matrix )[12], int32 Alpha, bool bAlphaBlend )
+{
+	if ( !Finite( Matrix ) || SectionIndex < 0 || SectionIndex >= Model.NumSections || !Model.Sections || !Model.Indices ) { return EGeometryCommandResult::Rejected; }
+	FStaticModelDrawSection Section = Model.Sections[SectionIndex]; // 添字配列の先頭を範囲に合わせる。
+	if ( Section.FirstIndex < 0 || Section.NumIndices <= 0 || static_cast<int64>( Section.FirstIndex ) + Section.NumIndices > Model.NumIndices ) { return EGeometryCommandResult::Rejected; }
+	FStaticModelDrawView Slice = Model;
+	Slice.Indices = Model.Indices + Section.FirstIndex;
+	Slice.NumIndices = Section.NumIndices;
+	Section.FirstIndex = 0;
+	Slice.Sections = &Section;
+	Slice.NumSections = 1;
+	Slice.MeshKey = 0;
+	Slice.MeshVersion = 0;
+	const FMatrix4x4 OldWorld = World;
+	FDrawMatrixData Data;
+	FMemory::Memcpy( Data.M, Matrix, sizeof( Data.M ) );
+	World = ToMatrix( Data );
+	const EGeometryCommandResult Result = DrawModelViewFrom( Slice, Alpha, bAlphaBlend, false, 0, true );
+	World = OldWorld;
+	return Result;
+}
+
 bool CGeometryModelCommands::AreSectionsValid( const FStaticModelDrawView& Model ) const
 {
 	int32 ExpectedIndex = 0; // すべての範囲を描く前に検査する。
@@ -344,38 +366,45 @@ EGeometryCommandResult CGeometryModelCommands::DrawModelView( const FStaticModel
 	return DrawModelViewFrom( Model, Alpha, bAlphaBlend, true, 0 );
 }
 
-EGeometryCommandResult CGeometryModelCommands::DrawModelViewFrom( const FStaticModelDrawView& Model, int32 Alpha, bool bAlphaBlend, bool bTryForward, int32 FirstSection )
+bool CGeometryModelCommands::ValidateModelView( const FStaticModelDrawView& Model ) const
 {
-	PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "Draw", "Geometry.ModelView" );
 	if ( Model.NumIndices == 0 && Model.NumSections == 0 )
 	{
-		return EGeometryCommandResult::Executed; // 描くものが無い（形の無いモデル・すべて非表示）。
+		return true;
 	}
 	if ( !Model.Vertices || !Model.Indices || !Model.Sections
 		|| Model.NumVertices <= 0 || Model.NumVertices > 786432 || Model.NumIndices <= 0 || Model.NumIndices > 786432 || Model.NumSections <= 0 || Model.NumSections > 4096
 		|| !NMath::IsFinite( Model.Opacity ) || Model.Opacity < 0 || Model.Opacity > 1 )
 	{
-		return EGeometryCommandResult::Rejected;
+		return false;
 	}
 	if ( !AreSectionsValid( Model ) )
 	{
-		return EGeometryCommandResult::Rejected;
+		return false;
 	}
 	for ( int32 Index = 0; Index < Model.NumVertices; ++Index )
 	{
 		const auto& Vertex = Model.Vertices[Index]; // 数値の検査も描画より前に済ませる。
 		if ( !Finite( Vertex.Position ) || !NMath::IsFinite( Vertex.U ) || !NMath::IsFinite( Vertex.V ) )
 		{
-			return EGeometryCommandResult::Rejected;
+			return false;
 		}
 	}
 	for ( int32 Index = 0; Index < Model.NumIndices; ++Index )
 	{
 		if ( Model.Indices[Index] >= static_cast<uint32>( Model.NumVertices ) )
 		{
-			return EGeometryCommandResult::Rejected;
+			return false;
 		}
 	}
+	return true;
+}
+
+EGeometryCommandResult CGeometryModelCommands::DrawModelViewFrom( const FStaticModelDrawView& Model, int32 Alpha, bool bAlphaBlend, bool bTryForward, int32 FirstSection, bool bValidated )
+{
+	PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "Draw", "Geometry.ModelView" );
+	if ( !bValidated && !ValidateModelView( Model ) ) { return EGeometryCommandResult::Rejected; }
+	if ( Model.NumIndices == 0 && Model.NumSections == 0 ) { return EGeometryCommandResult::Executed; }
 	if ( Model.Opacity == 0 )
 	{
 		return EGeometryCommandResult::Executed;

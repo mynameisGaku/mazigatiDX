@@ -60,6 +60,10 @@ public:
 	EResult DrawModelView( const FStaticModelDrawView& Model, int32 Alpha, bool bAlphaBlend );
 	// 変形済みモデルを指定した配置で描き、描画状態を戻す。
 	EResult DrawModelViewAt( const FStaticModelDrawView& Model, const float32 ( &Matrix )[12], int32 Alpha, bool bAlphaBlend );
+	// 変形済みビューと材質画像を描画前に検査する。
+	bool ValidateModelView( const FStaticModelDrawView& Model ) const { return ModelCommands.ValidateModelView( Model ); }
+	// 検査後に変更していないビューの一範囲を指定配置で描く。
+	EResult DrawValidatedModelSectionAt( const FStaticModelDrawView& Model, int32 SectionIndex, const float32 ( &Matrix )[12], int32 Alpha, bool bAlphaBlend ) { return ModelCommands.DrawValidatedModelSectionAt( Model, SectionIndex, Matrix, Alpha, bAlphaBlend ); }
 	// GPU が変換と光を計算する経路（共有のメッシュを GPU に置く）を、使ってよいか（影・フォグ・画素ごとの光などは、CPU の経路で描く）。
 	void SetForwardPath( bool bEnable ) { Run.bUseForwardPath = bEnable; }
 	// 画像番号から描画用の矩形を取得する窓口（無ければ nullptr）。
