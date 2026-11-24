@@ -55,6 +55,7 @@ private:
 	FSceneDrawSnapshot Frozen; // 個体を手放した後にも描ける記録。
 	TSharedPtr<CModel> Source; // 元の形状・骨・材質。
 	TSharedPtr<CModelInstance> Instance; // この場面の 1 体。
+	TArray<TSharedPtr<CModelInstance>> Crowd; // 計測用（--character-copies=<N>）: 基準の姿のまま、格子に並べる複製。同じモデルの個体は、GPU のメッシュを共有する。
 	int32 Frames[NumBones]; // 骨の番号（無ければ -1）。
 	FMatrix4x4 Bind[NumBones]; // 基準の姿（親基準）。
 	bool bBindReady = false;

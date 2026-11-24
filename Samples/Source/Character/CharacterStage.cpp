@@ -39,6 +39,15 @@ void CCharacterStage::OnSpawn()
 	if ( Source.IsValid() )
 	{
 		Instance = Source->CreateInstance();
+		const TOptional<FString> CopiesOption = NCommandLine::GetValue( "character-copies" ); // 計測用: 同じモデルを、基準の姿のまま、N 体にする（描画命令の数・骨の行列の転送の計測）。
+		const int32 NumCopies = CopiesOption.IsSet() ? NMath::Clamp( CopiesOption.GetValue().ToInt( 1 ), 1, 2000 ) : 1;
+		for ( int32 Copy = 1; Copy < NumCopies; ++Copy )
+		{
+			if ( TSharedPtr<CModelInstance> Extra = Source->CreateInstance() )
+			{
+				Crowd.Add( Extra );
+			}
+		}
 		for ( int32 Index = 0; Index < NumBones; ++Index )
 		{
 			Frames[Index] = Source->FindFrame( FString( BoneNames[Index] ) );
@@ -177,6 +186,13 @@ void CCharacterStage::Draw( FDrawContext& Draw )
 		{
 			Draw.UseLighting( false );
 			Draw.Model( Instance->GetHandle(), FMatrix4x4() );
+			const int32 Columns = NMath::Max( 1, static_cast<int32>( NMath::Sqrt( static_cast<float32>( Crowd.Num() ) ) ) + 1 );
+			for ( int32 Index = 0; Index < Crowd.Num(); ++Index )
+			{
+				const float32 X = ( static_cast<float32>( Index % Columns ) - 0.5f * static_cast<float32>( Columns ) ) * 2.5f;
+				const float32 Z = 3.0f + static_cast<float32>( Index / Columns ) * 2.5f; // カメラの奥へ並べる。
+				Draw.Model( Crowd[Index]->GetHandle(), FMatrix4x4::Translate( FVector3( X, 0.0f, Z ) ) );
+			}
 			Draw.PopCamera();
 		}
 		Draw.Text( 20, 80, "A PMX model, with the bones and the facial shapes moved from code (no motion file)", FColor32( 255, 255, 255 ) );
