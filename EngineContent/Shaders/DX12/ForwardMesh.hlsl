@@ -28,10 +28,13 @@ cbuffer cbLight : register( b6 )
 	float4 g_Lights[42];
 };
 #ifdef SKINNED
-// GPU スキニング。骨の行列（3 つの float4 = 行列の 1〜3 列。v * M の行ベクトルの規約）。MaxStaticModelSkinBones（256）個ぶん。
+// GPU スキニング。骨の行列（3 つの float4 = 行列の 1〜3 列。v * M の行ベクトルの規約）。MAX_SKIN_BONES 個ぶん（32 の倍数。32〜256。描画ごとに転送する量を、使う骨の数に合わせて小さくするため、段階ごとに別のシェーダーにする）。
+#ifndef MAX_SKIN_BONES
+#define MAX_SKIN_BONES 256
+#endif
 cbuffer cbBones : register( b1 )
 {
-	float4 g_Bones[3 * 256];
+	float4 g_Bones[3 * MAX_SKIN_BONES];
 };
 // 頂点ごとの骨と重み（FStaticModelSkinVertex と同じ 24 バイト。骨の番号は 16 ビットを 2 つずつ）。重みの合計は 1。
 struct SkinVertex { uint Bones01; uint Bones23; float4 Weights; };

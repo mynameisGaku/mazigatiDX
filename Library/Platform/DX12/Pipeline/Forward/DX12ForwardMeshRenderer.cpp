@@ -1,5 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "DX12ForwardMeshRenderer.h"
+#include "Library/Platform/System/BackendSupport.h"
 #include "MazigatiEngineShaderSources.generated.h"
 #include "Library/Core/Log/Log.h"
 #include "Library/Core/Types/Numeric.h"
@@ -14,12 +15,14 @@ namespace
 	constexpr uint64 MaxMeshBytes = 512ull * 1024ull * 1024ull;
 	constexpr uint64 IdleDraws = 8192;
 
-	bool CompileEntry( const char* Entry, const char* Target, TArray<uint8>& Out, bool bSkinned = false )
+	// SkinBones が 0 より大きければ、GPU スキニングの頂点シェーダー（骨の行列を SkinBones 個ぶん持つ）。
+	bool CompileEntry( const char* Entry, const char* Target, TArray<uint8>& Out, int32 SkinBones = 0 )
 	{
 		const char* Source = NEngineShaderSources::DX12_ForwardMesh; // 資源管理とシェーダーの式を分離する。
-		const D3D_SHADER_MACRO Skinning[] = { { "SKINNED", "1" }, { nullptr, nullptr } }; // GPU スキニング（骨の行列で頂点を変形する）の頂点シェーダー。
+		const FString BoneCount = FString::Printf( "%d", SkinBones );
+		const D3D_SHADER_MACRO Skinning[] = { { "SKINNED", "1" }, { "MAX_SKIN_BONES", BoneCount.GetData() }, { nullptr, nullptr } };
 		Microsoft::WRL::ComPtr<ID3DBlob> Code, Errors;
-		const HRESULT Result = D3DCompile( Source, NCString::Length( Source ), "ForwardMesh", bSkinned ? Skinning : nullptr, nullptr, Entry, Target, 0, 0, &Code, &Errors );
+		const HRESULT Result = D3DCompile( Source, NCString::Length( Source ), "ForwardMesh", SkinBones > 0 ? Skinning : nullptr, nullptr, Entry, Target, 0, 0, &Code, &Errors );
 		if ( FAILED( Result ) || !Code )
 		{
 			LOG( LogDX12, Error, "CDX12ForwardMeshRenderer: the forward shader '%s' cannot be compiled: %s", Entry, Errors ? static_cast<const char*>( Errors->GetBufferPointer() ) : "unknown error" );
@@ -93,8 +96,15 @@ void CDX12ForwardMeshRenderer::Shutdown()
 	ShadowTexturedPixelCode.Reset();
 	DepthVertexCode.Reset();
 	DepthPixelCode.Reset();
-	SkinnedVertexCode.Reset();
-	SkinnedDepthVertexCode.Reset();
+	for ( int32 Tier = 0; Tier < NumSkinBoneTiers; ++Tier )
+	{
+		SkinnedVertexCode[Tier].Reset();
+		SkinnedDepthVertexCode[Tier].Reset();
+		bSkinnedTried[Tier] = false;
+		bSkinnedReady[Tier] = false;
+		bSkinnedDepthTried[Tier] = false;
+		bSkinnedDepthReady[Tier] = false;
+	}
 	bShadersTried = false;
 	bShadersReady = false;
 	TotalBytes = 0;
@@ -110,10 +120,32 @@ bool CDX12ForwardMeshRenderer::BuildShaders()
 		bShadersTried = true;
 		bShadersReady = CompileEntry( "ForwardVS", "vs_5_0", VertexCode ) && CompileEntry( "ForwardPS", "ps_5_0", PixelCode ) && CompileEntry( "ForwardTexturedPS", "ps_5_0", TexturedPixelCode )
 			&& CompileEntry( "ForwardShadowPS", "ps_5_0", ShadowPixelCode ) && CompileEntry( "ForwardShadowTexturedPS", "ps_5_0", ShadowTexturedPixelCode )
-			&& CompileEntry( "ForwardDepthVS", "vs_5_0", DepthVertexCode ) && CompileEntry( "ForwardDepthPS", "ps_5_0", DepthPixelCode )
-			&& CompileEntry( "ForwardVS", "vs_5_0", SkinnedVertexCode, true ) && CompileEntry( "ForwardDepthVS", "vs_5_0", SkinnedDepthVertexCode, true );
+			&& CompileEntry( "ForwardDepthVS", "vs_5_0", DepthVertexCode ) && CompileEntry( "ForwardDepthPS", "ps_5_0", DepthPixelCode );
 	}
 	return bShadersReady;
+}
+
+int32 CDX12ForwardMeshRenderer::GetSkinBoneTier( int32 NumBones )
+{
+	return NumBones >= 1 && NumBones <= MaxStaticModelSkinBones ? ( NumBones + SkinBoneTierSize - 1 ) / SkinBoneTierSize : 0;
+}
+
+// GPU スキニングの頂点シェーダー（段階ごと。色の描画用と、影の絵用）を、初めて使うときに作る。
+bool CDX12ForwardMeshRenderer::BuildSkinnedShader( int32 Tier, bool bDepth )
+{
+	if ( Tier < 1 || Tier > NumSkinBoneTiers )
+	{
+		return false;
+	}
+	const int32 Index = Tier - 1;
+	bool& bTried = bDepth ? bSkinnedDepthTried[Index] : bSkinnedTried[Index];
+	bool& bReady = bDepth ? bSkinnedDepthReady[Index] : bSkinnedReady[Index];
+	if ( !bTried )
+	{
+		bTried = true;
+		bReady = bDepth ? CompileEntry( "ForwardDepthVS", "vs_5_0", SkinnedDepthVertexCode[Index], Tier * SkinBoneTierSize ) : CompileEntry( "ForwardVS", "vs_5_0", SkinnedVertexCode[Index], Tier * SkinBoneTierSize );
+	}
+	return bReady;
 }
 
 void CDX12ForwardMeshRenderer::ReleaseMesh( FMesh& Mesh )
@@ -199,6 +231,13 @@ const CDX12ForwardMeshRenderer::FMesh* CDX12ForwardMeshRenderer::AcquireMesh( co
 		ReleaseMesh( *Found ); // 中身が変わった。置き直す。
 		Meshes.Remove( Draw.MeshKey );
 	}
+	for ( int32 Index = 0; Index < Draw.NumIndices; ++Index ) // 置く前に、全部の添字が、頂点の中にあることを確かめる（置くときだけ）。
+	{
+		if ( Draw.Indices[Index] >= static_cast<uint32>( Draw.NumVertices ) )
+		{
+			return nullptr;
+		}
+	}
 	FMesh Mesh;
 	Mesh.Vertices = Buffers->CreateBuffer( TArrayView<const uint8>( reinterpret_cast<const uint8*>( Draw.Vertices ), static_cast<int32>( static_cast<usize>( Draw.NumVertices ) * sizeof( FDrawVertex3D ) ) ), ERenderBufferShaderAccess::None );
 	Mesh.Indices = Buffers->CreateBuffer( TArrayView<const uint8>( reinterpret_cast<const uint8*>( Draw.Indices ), static_cast<int32>( static_cast<usize>( Draw.NumIndices ) * sizeof( uint32 ) ) ), ERenderBufferShaderAccess::None );
@@ -246,7 +285,7 @@ FGraphicsPipelineHandle CDX12ForwardMeshRenderer::GetPipeline( const FForwardMes
 	const int32 Inputs[NumPipelineInputs] = { Draw.bDepthOnly ? 2 : ( bReceive ? 1 : 0 ), bTextured ? 1 : 0, static_cast<int32>( TargetFormat ), static_cast<int32>( TextureFormat ), State.bTestDepth ? 1 : 0, State.bWriteDepth ? 1 : 0,
 		static_cast<int32>( State.Compare ), static_cast<int32>( State.Culling ), State.bAlphaBlend ? 1 : 0, State.bAlphaBlend ? static_cast<int32>( State.Blend ) : 0, static_cast<int32>( State.AddressU ), State.bLinearFilter ? 1 : 0,
 		bCustom ? static_cast<int32>( Custom.SrcColor ) : 0, bCustom ? static_cast<int32>( Custom.DestColor ) : 0, bCustom ? static_cast<int32>( Custom.ColorOp ) : 0, bCustom ? static_cast<int32>( Custom.SrcAlpha ) : 0, bCustom ? static_cast<int32>( Custom.DestAlpha ) : 0,
-		bCustom ? static_cast<int32>( Custom.AlphaOp ) : 0, Draw.SkinVertices ? 1 : 0 };
+		bCustom ? static_cast<int32>( Custom.AlphaOp ) : 0, Draw.SkinVertices ? GetSkinBoneTier( Draw.NumBones ) : 0 };
 	// 直前の描画と、入力がすべて同じなら、鍵の文字列を作らずに、前回の答えを返す（同じ状態の描画が、続くことが多い）。
 	if ( bLastPipelineValid )
 	{
@@ -289,7 +328,12 @@ FGraphicsPipelineHandle CDX12ForwardMeshRenderer::GetPipeline( const FForwardMes
 	BufferSlots[1].Binding = 6;
 	BufferSlots[1].Layout = EGraphicsBufferLayout::Constant;
 	int32 NumBufferSlots = Draw.bDepthOnly ? 1 : 2; // 深度だけの描画は、個体の定数（b0）だけを使う（宣言した枠は、すべて使われている必要がある）。
-	const bool bSkinned = Draw.SkinVertices != nullptr;
+	const int32 SkinTier = Draw.SkinVertices ? GetSkinBoneTier( Draw.NumBones ) : 0; // 骨の行列の定数の大きさの段階。
+	const bool bSkinned = SkinTier > 0;
+	if ( Draw.SkinVertices && ( !bSkinned || !BuildSkinnedShader( SkinTier, Draw.bDepthOnly ) ) )
+	{
+		return FGraphicsPipelineHandle();
+	}
 	if ( bSkinned ) // GPU スキニング: 骨の行列（定数 b1。個体の定数の続き）と、頂点ごとの骨と重み（構造化バッファ t2）。
 	{
 		BufferSlots[NumBufferSlots].Binding = 1;
@@ -315,7 +359,7 @@ FGraphicsPipelineHandle CDX12ForwardMeshRenderer::GetPipeline( const FForwardMes
 		++NumTextureSlots;
 	}
 	const TArray<uint8>& Pixel = Draw.bDepthOnly ? DepthPixelCode : bReceive ? ( bTextured ? ShadowTexturedPixelCode : ShadowPixelCode ) : ( bTextured ? TexturedPixelCode : PixelCode );
-	const TArray<uint8>& Vertex = Draw.bDepthOnly ? ( bSkinned ? SkinnedDepthVertexCode : DepthVertexCode ) : ( bSkinned ? SkinnedVertexCode : VertexCode );
+	const TArray<uint8>& Vertex = Draw.bDepthOnly ? ( bSkinned ? SkinnedDepthVertexCode[SkinTier - 1] : DepthVertexCode ) : ( bSkinned ? SkinnedVertexCode[SkinTier - 1] : VertexCode );
 	FGraphicsPipelineDesc Desc;
 	Desc.VertexShaderBytecode = TArrayView<const uint8>( Vertex.GetData(), Vertex.Num() );
 	Desc.PixelShaderBytecode = TArrayView<const uint8>( Pixel.GetData(), Pixel.Num() );
@@ -419,11 +463,12 @@ bool CDX12ForwardMeshRenderer::Draw( const FForwardMeshDraw& Draw, IRenderGeomet
 	{
 		return false; // 添字なしは頂点全体を順番に描く場合だけ。
 	}
-	for ( int32 Index = 0; Draw.Indices && Index < Draw.NumIndices; ++Index )
+	// 登録しない描画は、毎回、中身が違うので、毎回、全部の添字を確かめる。登録するメッシュは、置くとき（AcquireMesh）に 1 回だけ確かめる（鍵と版が同じなら、中身は同じ。描くたびに、メッシュ全体の添字を調べ直すと、描画の数に比例して、ゲームスレッドが食われる）。
+	for ( int32 Index = 0; Draw.bTransient && Draw.Indices && Index < Draw.NumIndices; ++Index )
 	{
 		if ( Draw.Indices[Index] >= static_cast<uint32>( Draw.NumVertices ) )
 		{
-			return false; // 置く前に、全部の添字を確かめる。
+			return false;
 		}
 	}
 	if ( !BuildShaders() )
@@ -494,10 +539,10 @@ bool CDX12ForwardMeshRenderer::Draw( const FForwardMeshDraw& Draw, IRenderGeomet
 	}
 	if ( bSkinnedDraw )
 	{
-		constexpr int32 PaletteFloats = 12 * MaxStaticModelSkinBones; // シェーダーの g_Bones の大きさ（定数は、宣言した大きさ以上で渡す）。
-		if ( PaletteScratch.Num() != PaletteFloats )
+		const int32 PaletteFloats = 12 * GetSkinBoneTier( Draw.NumBones ) * SkinBoneTierSize; // シェーダーの g_Bones の大きさ（骨の数の段階。定数は、宣言した大きさ以上で渡す）。
+		if ( PaletteScratch.Num() < 12 * MaxStaticModelSkinBones )
 		{
-			PaletteScratch.SetNum( PaletteFloats, 0.0f );
+			PaletteScratch.SetNum( 12 * MaxStaticModelSkinBones, 0.0f );
 		}
 		FMemory::Memcpy( PaletteScratch.GetData(), Draw.BoneMatrices, sizeof( float32 ) * 12 * Draw.NumBones );
 		FMemory::Memzero( PaletteScratch.GetData() + 12 * Draw.NumBones, sizeof( float32 ) * ( PaletteFloats - 12 * Draw.NumBones ) );
@@ -535,7 +580,8 @@ bool CDX12ForwardMeshRenderer::Draw( const FForwardMeshDraw& Draw, IRenderGeomet
 	const bool bDrawn = Geometry.QueueGraphicsPipeline( Command );
 	if ( !bDrawn )
 	{
-		LOG( LogDX12, Warning, "CDX12ForwardMeshRenderer: the draw is rejected by the GPU path (mesh %llu)", Draw.MeshKey );
+		// 描画のたびにログを出すと、拒否が続くとき（転送領域の予算の超過など）に、1 フレームに数千行になり、それ自体が負荷になる。1 度だけ知らせる。
+		NBackendSupport::ReportUnsupported( "DX12", "A draw rejected by the GPU forward path", "the draws are drawn by the slower CPU path; this is reported once (possible causes: the per-frame upload budget is used up, for example by very many skinned draws, or the GPU refused the draw)" );
 	}
 	return bDrawn;
 }

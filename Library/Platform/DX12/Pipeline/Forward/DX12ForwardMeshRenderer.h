@@ -24,6 +24,12 @@
 class CDX12ForwardMeshRenderer
 {
 public:
+	// GPU スキニングの骨の行列の定数は、骨の数を SkinBoneTierSize 個ずつの段階に切り上げた大きさで渡す（Faputa の 79 個なら 96 個ぶん = 4.5 KB。以前は、いつも 256 個ぶん = 12 KB で、描画ごとの転送が、骨の少ないモデルの群衆の上限になっていた）。
+	static constexpr int32 SkinBoneTierSize = 32;
+	static constexpr int32 NumSkinBoneTiers = MaxStaticModelSkinBones / SkinBoneTierSize;
+	// 骨の数から、段階の番号（1〜NumSkinBoneTiers）。範囲の外は 0。
+	static int32 GetSkinBoneTier( int32 NumBones );
+
 	CDX12ForwardMeshRenderer() = default;
 	CDX12ForwardMeshRenderer( const CDX12ForwardMeshRenderer& ) = delete;
 	CDX12ForwardMeshRenderer& operator=( const CDX12ForwardMeshRenderer& ) = delete;
@@ -54,6 +60,8 @@ private:
 	};
 
 	bool BuildShaders();
+	// GPU スキニングの頂点シェーダー（骨の数の段階 Tier = 1〜NumSkinBoneTiers。bDepth なら、影の絵へ深度だけを書く方）を、初めて使うときに作る（作るのに時間がかかるので、使う分だけ）。
+	bool BuildSkinnedShader( int32 Tier, bool bDepth );
 	// 頂点・添字を GPU に置く（版が同じなら、置いてあるものを使う）。置けなければ nullptr。
 	const FMesh* AcquireMesh( const FForwardMeshDraw& Draw );
 	void ReleaseMesh( FMesh& Mesh );
@@ -78,9 +86,14 @@ private:
 	TArray<uint8> ShadowTexturedPixelCode;   // 影を受ける描画（画像あり）。
 	TArray<uint8> DepthVertexCode;           // 影の絵へ深度だけを書く描画の頂点シェーダー。
 	TArray<uint8> DepthPixelCode;            // 同じく、ピクセルシェーダー。
-	TArray<uint8> SkinnedVertexCode;         // GPU スキニングの頂点シェーダー（骨の行列で、頂点を変形してから、ForwardVS と同じ計算）。
-	TArray<uint8> SkinnedDepthVertexCode;    // GPU スキニングで、影の絵へ深度だけを書く頂点シェーダー。
-	TArray<float32> PaletteScratch;          // 骨の行列を、シェーダーの定数の大きさ（MaxStaticModelSkinBones 個）に揃えて渡すための作業領域。
+	// GPU スキニングの頂点シェーダー（骨の行列で、頂点を変形してから、ForwardVS と同じ計算）と、影の絵へ深度だけを書く頂点シェーダー。骨の数の段階（SkinBoneTierSize 個ずつ）ごとに 1 つ。使う段階だけ、初めて使うときに作る。
+	TArray<uint8> SkinnedVertexCode[NumSkinBoneTiers];
+	TArray<uint8> SkinnedDepthVertexCode[NumSkinBoneTiers];
+	bool bSkinnedTried[NumSkinBoneTiers] = {};
+	bool bSkinnedReady[NumSkinBoneTiers] = {};
+	bool bSkinnedDepthTried[NumSkinBoneTiers] = {};
+	bool bSkinnedDepthReady[NumSkinBoneTiers] = {};
+	TArray<float32> PaletteScratch;          // 骨の行列を、シェーダーの定数の大きさ（骨の数の段階に揃える）で渡すための作業領域。
 	bool bShadersTried = false;
 	bool bShadersReady = false;
 	uint64 Clock = 0;        // 描いた回数。
