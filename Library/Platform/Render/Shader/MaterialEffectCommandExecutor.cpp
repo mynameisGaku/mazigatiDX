@@ -234,6 +234,7 @@ bool CMaterialEffectCommandExecutor::DrawModelMaterial( const FDrawModelMaterial
 	}
 	const EGeometryBlend OldBlend = Geometry.GetState().Blend; // 選んだ面だけ、指定の混ぜ方（Alpha か Add）で描く。
 	Geometry.SetBlend( Data.BlendMode == static_cast<int32>( EDrawBlend::Add ) ? EGeometryBlend::Add : EGeometryBlend::Alpha );
+	bool bEffectsDrawn = true; // 一部の描画が失敗しても残りを試し、結果を呼び出し元へ伝える。
 	for ( int32 MeshIndex = 0; MeshIndex < Shape->Meshes.Num(); ++MeshIndex )
 	{
 		if ( !bDrawn[MeshIndex] )
@@ -245,11 +246,12 @@ bool CMaterialEffectCommandExecutor::DrawModelMaterial( const FDrawModelMaterial
 			FDrawMaterialMeshData MeshData = Data.Material; // 材質は命令のまま、頂点と index の数だけ分けた部分に合わせる。
 			MeshData.NumVertices = Chunk.Vertices.Num();
 			MeshData.NumIndices = Chunk.Indices.Num();
-			DrawMesh( MeshData, Chunk.Vertices.GetData(), Chunk.Indices.GetData(), Bright, 255, true, &World, Data.Opacity );
+			const bool bDrawn = DrawMesh( MeshData, Chunk.Vertices.GetData(), Chunk.Indices.GetData(), Bright, 255, true, &World, Data.Opacity ); // 前の部分が失敗していても後続を描く。
+			bEffectsDrawn = bDrawn && bEffectsDrawn;
 		}
 	}
 	Geometry.SetBlend( OldBlend );
-	return bPlainDrawn;
+	return bPlainDrawn && bEffectsDrawn;
 }
 
 bool CMaterialEffectCommandExecutor::DrawMesh( const FDrawMaterialMeshData& Data, const FMeshVertex* SourceVertices, const uint32* Indices, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend, const FMatrix4x4* World, float32 Opacity )
