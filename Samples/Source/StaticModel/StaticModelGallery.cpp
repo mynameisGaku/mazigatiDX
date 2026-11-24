@@ -1,7 +1,9 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "StaticModelGallery.h"
 #include "Library/Framework/Engine/Engine.h"
+#include "Library/Core/Interfaces/Render/IDrawExecutor.h"
 #include "Library/Framework/Asset/AssetSubsystem.h"
+#include "Library/Framework/Asset/Texture/DynamicTexture.h"
 #include "Library/Framework/Asset/Model/ModelAppearance.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
 #include "Library/Framework/Render/Camera/Camera.h"
@@ -17,6 +19,20 @@ void CStaticModelGallery::OnSpawn()
 	{
 		Solid = Source->CreateInstance();
 		Faded = Source->CreateInstance();
+		const TOptional<FString> EffectOption = NCommandLine::GetValue( "static-material-opacity" ); // 一材質の選択効果を比べる。
+		bMaterialEffectRequested = EffectOption.IsSet();
+		if ( bMaterialEffectRequested )
+		{
+			CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
+			IDrawExecutor* Executor = GetAppSubsystem<IDrawExecutor>();
+			FMeshMaterialEffectDefinition Definition;
+			Definition.Material.bEnabled = true;
+			Definition.Opacity = static_cast<float32>( EffectOption.GetValue().ToFloat( 1.0 ) );
+			if ( Assets && Executor && MaterialEffect.Prepare( Source, 0, Definition, [Assets]( const FString& Path ) -> TSharedPtr<CTexture> { return Path == "Effects/material_white.tga" ? TSharedPtr<CTexture>( Assets->CreateDynamicTexture( "static.effect.white", FPixelImage( 1, 1, FColor32::White ) ) ) : Assets->LoadTexture( Path ); }, *Executor ) )
+			{
+				MaterialEffect.Play();
+			}
+		}
 		if ( Faded.IsValid() )
 		{
 			Faded->GetAppearance().SetOpacity( 0.4f );
@@ -63,7 +79,15 @@ void CStaticModelGallery::Draw( FDrawContext& Draw )
 		}
 		if ( Solid.IsValid() )
 		{
-			Draw.Model( Solid->GetHandle(), FMatrix4x4::RotateY( Time * 0.5f ) * FMatrix4x4::Translate( FVector3( -1.5f, 0, 0 ) ) );
+			const FMatrix4x4 World = FMatrix4x4::RotateY( Time * 0.5f ) * FMatrix4x4::Translate( FVector3( -1.5f, 0, 0 ) ); // 通常描画と効果の配置を揃える。
+			if ( bMaterialEffectRequested )
+			{
+				MaterialEffect.Record( Draw, Solid, World ); // 準備に失敗した場合は比較で検出する。
+			}
+			else
+			{
+				Draw.Model( Solid->GetHandle(), World );
+			}
 		}
 		if ( Faded.IsValid() )
 		{

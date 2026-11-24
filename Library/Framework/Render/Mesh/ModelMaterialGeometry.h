@@ -27,8 +27,7 @@ struct FModelMaterialGeometry
 	TArray<FMesh> Meshes;
 	// 選択した元モデルの材質番号。
 	int32 MaterialIndex = -1;
-	// 同じ元メッシュに選択外の材質範囲があるか。
-	bool bMixedMaterials = false;
+
 };
 
 namespace NModelMaterialGeometry

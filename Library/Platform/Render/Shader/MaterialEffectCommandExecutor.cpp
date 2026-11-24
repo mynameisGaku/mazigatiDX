@@ -186,9 +186,9 @@ bool CMaterialEffectCommandExecutor::DrawModelMaterial( const FDrawModelMaterial
 	{
 		return DrawPlain(); // 材質効果を使えないときは、モデルだけを通常に描く（DxLib と同じ）。
 	}
-	if ( Shape->bMixedMaterials )
+	if ( Shape->MaterialIndex >= 0 )
 	{
-		return DrawMixedModelMaterial( Data, *Shape, Bright, Alpha, bAlphaBlend );
+		return DrawModelMaterialSections( Data, *Shape, Bright, Alpha, bAlphaBlend );
 	}
 	TArray<int32> HiddenMeshes; // 一時的に隠して、あとで戻すメッシュ。
 	TArray<uint8> bDrawn; // 選んだ面ごとに、いま描かれる（メッシュと親までのフレームが表示）か。
@@ -259,7 +259,7 @@ bool CMaterialEffectCommandExecutor::DrawModelMaterial( const FDrawModelMaterial
 	return bPlainDrawn && bEffectsDrawn;
 }
 
-bool CMaterialEffectCommandExecutor::DrawMixedModelMaterial( const FDrawModelMaterialData& Data, const FModelMaterialGeometry& Shape, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend )
+bool CMaterialEffectCommandExecutor::DrawModelMaterialSections( const FDrawModelMaterialData& Data, const FModelMaterialGeometry& Shape, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend )
 {
 	IStaticModelSource* Models = Geometry.GetModels(); // 現在の姿勢と表示状態を反映したビュー。
 	FStaticModelDrawView Model;

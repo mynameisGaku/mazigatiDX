@@ -59,8 +59,8 @@ private:
 	bool DrawRibbon( const FDrawMaterialRibbonData& Data, const FDrawMaterialRibbonData::FPoint* Points, const FDrawDistortedMaterialRibbonData* Distortion, const FDrawDistortedMaterialRibbonData::FPoint* DistortionPoints, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend );
 	// モデルの一材質だけに材質効果をかける。選んだ材質のメッシュを隠して、残りを通常に描き、そのあと、選んだ面を材質つきで描く。
 	bool DrawModelMaterial( const FDrawModelMaterialData& Data, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend );
-	// 複数材質を含むメッシュは、現在の姿勢の材質範囲ごとに通常描画と効果を分ける。
-	bool DrawMixedModelMaterial( const FDrawModelMaterialData& Data, const FModelMaterialGeometry& Shape, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend );
+	// 現在の姿勢の材質範囲ごとに通常描画と効果を分ける。
+	bool DrawModelMaterialSections( const FDrawModelMaterialData& Data, const FModelMaterialGeometry& Shape, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend );
 	// 頂点（クリップ座標つき、三角形のリスト）を、設定と定数をつけて描く。
 	bool DrawVertices( const FEffectSettings& Settings, const TArray<FDrawShaderVertex3D>& Vertices, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend, bool bTwoSided = true );
 
