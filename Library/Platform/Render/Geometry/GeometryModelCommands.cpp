@@ -206,6 +206,18 @@ EGeometryCommandResult CGeometryModelCommands::DrawModel( const FDrawModelData& 
 	return Result;
 }
 
+EGeometryCommandResult CGeometryModelCommands::DrawModelViewAt( const FStaticModelDrawView& Model, const float32 ( &Matrix )[12], int32 Alpha, bool bAlphaBlend )
+{
+	if ( !Finite( Matrix ) ) { return EGeometryCommandResult::Rejected; }
+	const FMatrix4x4 OldWorld = World; // 効果の描画後も呼び出し元の配置を保つ。
+	FDrawMatrixData Data;
+	FMemory::Memcpy( Data.M, Matrix, sizeof( Data.M ) );
+	World = ToMatrix( Data );
+	const EGeometryCommandResult Result = DrawModelView( Model, Alpha, bAlphaBlend );
+	World = OldWorld;
+	return Result;
+}
+
 bool CGeometryModelCommands::AreSectionsValid( const FStaticModelDrawView& Model ) const
 {
 	int32 ExpectedIndex = 0; // すべての範囲を描く前に検査する。

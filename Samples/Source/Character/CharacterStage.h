@@ -4,6 +4,7 @@
 #include "Library/Framework/Asset/Model/Model.h"
 #include "Library/Math/Matrix4x4.h"
 #include "Library/Framework/Render/Scene/SceneDrawSnapshot.h"
+#include "Library/Framework/Render/MaterialEffect/ModelMaterialEffectRenderer.h"
 
 // PMX のモデルを読み込み、骨と表情（形状）をコードで動かして描く。動かし方は、時刻から決める（モーションのファイルは使わない）。
 class CCharacterStage : public CGameObject
@@ -52,6 +53,8 @@ private:
 	// 基準の姿（親基準の行列）を、全部の骨で読めたか。読めるまで、毎回試す（モデルの準備が終わっていないことがある）。
 	bool CaptureBindPose();
 
+	FModelMaterialEffectRenderer MaterialEffect; // 材質ごとの比較を指定した場合に使う。
+	bool bMaterialEffectRequested = false; // 比較用に材質効果を指定されたか。
 	FSceneDrawSnapshot Frozen; // 個体を手放した後にも描ける記録。
 	TSharedPtr<CModel> Source; // 元の形状・骨・材質。
 	TSharedPtr<CModelInstance> Instance; // この場面の 1 体。

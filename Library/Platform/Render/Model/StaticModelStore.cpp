@@ -184,7 +184,7 @@ int32 CStaticModelStore::Create( const FImportedScene& Scene, const FString& Sou
 	}
 	for ( const auto& Section : Surface.Sections )
 	{
-		Resource->Sections.Add( { Section.FirstIndex, Section.NumIndices, Surface.Materials[Section.MaterialIndex].BorrowedDiffuseTexture } );
+		Resource->Sections.Add( { Section.FirstIndex, Section.NumIndices, Surface.Materials[Section.MaterialIndex].BorrowedDiffuseTexture, Section.MaterialIndex } );
 	}
 	if ( Resource->bHasSkin )
 	{

@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #include "CharacterStage.h"
 #include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Interfaces/Render/IDrawExecutor.h"
 #include "Library/Framework/Asset/AssetSubsystem.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Render/Camera/Camera.h"
@@ -51,6 +52,20 @@ void CCharacterStage::OnSpawn()
 		for ( int32 Index = 0; Index < NumBones; ++Index )
 		{
 			Frames[Index] = Source->FindFrame( FString( BoneNames[Index] ) );
+		}
+		const TOptional<FString> EffectOption = NCommandLine::GetValue( "character-material-opacity" ); // 同じ姿勢の選択材質を比較する。
+		bMaterialEffectRequested = EffectOption.IsSet();
+		if ( bMaterialEffectRequested )
+		{
+			CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>();
+			IDrawExecutor* Executor = GetAppSubsystem<IDrawExecutor>();
+			FMeshMaterialEffectDefinition Definition; // 指定した材質だけ透明にする比較。
+			Definition.Material.bEnabled = true;
+			Definition.Opacity = static_cast<float32>( EffectOption.GetValue().ToFloat( 1.0 ) );
+			if ( Assets && Executor && MaterialEffect.Prepare( Source, 0, Definition, [Assets]( const FString& Path ) { return Assets->LoadTexture( Path ); }, *Executor ) )
+			{
+				MaterialEffect.Play();
+			}
 		}
 		BlinkShape = Source->FindShape( FString( "まばたき" ) );
 		SmileShape = Source->FindShape( FString( "にこり" ) );
@@ -185,7 +200,14 @@ void CCharacterStage::Draw( FDrawContext& Draw )
 		if ( Draw.PushCamera( Camera ) )
 		{
 			Draw.UseLighting( false );
-			Draw.Model( Instance->GetHandle(), FMatrix4x4() );
+			if ( bMaterialEffectRequested )
+			{
+				MaterialEffect.Record( Draw, Instance, FMatrix4x4() ); // 準備失敗を通常描画で隠さず、比較で検出する。
+			}
+			else
+			{
+				Draw.Model( Instance->GetHandle(), FMatrix4x4() );
+			}
 			const int32 Columns = NMath::Max( 1, static_cast<int32>( NMath::Sqrt( static_cast<float32>( Crowd.Num() ) ) ) + 1 );
 			for ( int32 Index = 0; Index < Crowd.Num(); ++Index )
 			{

@@ -5,7 +5,7 @@
 #include "Library/Core/Types/Numeric.h"
 #include "Library/Core/Types/Utility.h"
 
-bool NModelMaterialGeometry::Build( const FStaticModelSurfaceData& Surface, int32 MaterialIndex, FModelMaterialGeometry& Out )
+bool NModelMaterialGeometry::Build( const FStaticModelSurfaceData& Surface, int32 MaterialIndex, FModelMaterialGeometry& Out, bool bAllowMixedMaterials )
 {
 	if ( MaterialIndex < 0 || MaterialIndex >= Surface.Materials.Num() || Surface.Vertices.IsEmpty() || Surface.Indices.IsEmpty() || Surface.Indices.Num() % 3 != 0 || Surface.Sections.IsEmpty() )
 	{
@@ -55,6 +55,7 @@ bool NModelMaterialGeometry::Build( const FStaticModelSurfaceData& Surface, int3
 	TMap<int32, FSourceMapping> SourceMappings;
 	// 選択材質を持つmeshをsource順で組み立てる配列。
 	TArray<FModelMaterialGeometry::FMesh> BuiltMeshes;
+	bool bMixedMaterials = false; // 一つのメッシュに複数材質がある場合、個別の範囲で描く必要がある。
 	for ( int32 SectionIndex = 0; SectionIndex < Surface.Sections.Num(); ++SectionIndex )
 	{
 		// 元のframe・mesh・材質を示す連続section。
@@ -69,9 +70,14 @@ bool NModelMaterialGeometry::Build( const FStaticModelSurfaceData& Surface, int3
 		// 既出meshが同じframe・材質を保つか調べる対応。
 		if ( FSourceMapping* ExistingMapping = SourceMappings.Find( Section.SourceMeshIndex ) )
 		{
-			if ( ExistingMapping->Frame != Section.SourceFrameIndex || ExistingMapping->Material != Section.MaterialIndex )
+			if ( ExistingMapping->Frame != Section.SourceFrameIndex )
 			{
 				return false;
+			}
+			if ( ExistingMapping->Material != Section.MaterialIndex )
+			{
+				if ( !bAllowMixedMaterials ) { return false; }
+				bMixedMaterials = true;
 			}
 		}
 		else
@@ -134,5 +140,7 @@ bool NModelMaterialGeometry::Build( const FStaticModelSurfaceData& Surface, int3
 		return false;
 	}
 	Out.Meshes = MoveTemp( BuiltMeshes );
+	Out.MaterialIndex = MaterialIndex;
+	Out.bMixedMaterials = bMixedMaterials;
 	return true;
 }

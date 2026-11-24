@@ -186,6 +186,10 @@ bool CMaterialEffectCommandExecutor::DrawModelMaterial( const FDrawModelMaterial
 	{
 		return DrawPlain(); // 材質効果を使えないときは、モデルだけを通常に描く（DxLib と同じ）。
 	}
+	if ( Shape->bMixedMaterials )
+	{
+		return DrawMixedModelMaterial( Data, *Shape, Bright, Alpha, bAlphaBlend );
+	}
 	TArray<int32> HiddenMeshes; // 一時的に隠して、あとで戻すメッシュ。
 	TArray<uint8> bDrawn; // 選んだ面ごとに、いま描かれる（メッシュと親までのフレームが表示）か。
 	bool bCanHide = true;
@@ -250,6 +254,83 @@ bool CMaterialEffectCommandExecutor::DrawModelMaterial( const FDrawModelMaterial
 			const bool bDrawn = DrawMesh( MeshData, Chunk.Vertices.GetData(), Chunk.Indices.GetData(), Bright, 255, true, &World, Data.Opacity ); // 前の部分が失敗していても後続を描く。
 			bEffectsDrawn = bDrawn && bEffectsDrawn;
 		}
+	}
+	Geometry.SetBlend( OldBlend );
+	return bPlainDrawn && bEffectsDrawn;
+}
+
+bool CMaterialEffectCommandExecutor::DrawMixedModelMaterial( const FDrawModelMaterialData& Data, const FModelMaterialGeometry& Shape, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend )
+{
+	IStaticModelSource* Models = Geometry.GetModels(); // 現在の姿勢と表示状態を反映したビュー。
+	FStaticModelDrawView Model;
+	if ( !Models || Shape.MaterialIndex < 0 || !Models->GetStaticModelDrawView( Data.Handle, Model ) || Model.NumVertices < 0 || Model.NumVertices > 786432 || Model.NumIndices < 0 || Model.NumIndices > 786432 || Model.NumSections < 0 || Model.NumSections > 4096 )
+	{
+		return false;
+	}
+	if ( Model.NumIndices == 0 && Model.NumSections == 0 ) { return true; }
+	if ( !Model.Vertices || !Model.Indices || !Model.Sections || Model.NumVertices <= 0 || Model.NumIndices <= 0 || Model.NumSections <= 0 ) { return false; }
+
+	TArray<uint32> PlainIndices; // 選択材質以外の参照順を保つ。
+	TArray<FStaticModelDrawSection> PlainSections; // 元の隙間を詰めた通常描画範囲。
+	TArray<FMeshGeometryChunk> Effects; // 選択範囲の現在の姿勢を、命令の上限に分ける。
+	int32 Expected = 0; // 元の範囲全体を重複や抜けなく検査する。
+	for ( int32 SectionIndex = 0; SectionIndex < Model.NumSections; ++SectionIndex )
+	{
+		const FStaticModelDrawSection& Section = Model.Sections[SectionIndex]; // 現在見えている材質範囲。
+		if ( Section.MaterialIndex < 0 || Section.FirstIndex != Expected || Section.NumIndices <= 0 || Section.NumIndices % 3 != 0 || static_cast<int64>( Section.FirstIndex ) + Section.NumIndices > Model.NumIndices ) { return false; }
+		Expected += Section.NumIndices;
+		if ( Section.MaterialIndex != Shape.MaterialIndex )
+		{
+			FStaticModelDrawSection Copy = Section;
+			Copy.FirstIndex = PlainIndices.Num();
+			for ( int32 Index = 0; Index < Section.NumIndices; ++Index )
+			{
+				const uint32 Vertex = Model.Indices[Section.FirstIndex + Index]; // 描画より前に全添字を検査する。
+				if ( Vertex >= static_cast<uint32>( Model.NumVertices ) ) { return false; }
+				PlainIndices.Add( Vertex );
+			}
+			PlainSections.Add( Copy );
+			continue;
+		}
+		for ( int32 Index = 0; Index < Section.NumIndices; ++Index )
+		{
+			const uint32 VertexIndex = Model.Indices[Section.FirstIndex + Index]; // 同じ姿勢の頂点を使う。
+			if ( VertexIndex >= static_cast<uint32>( Model.NumVertices ) ) { return false; }
+			if ( Effects.IsEmpty() || Effects.Last().Vertices.Num() == 1023 ) { Effects.AddDefaulted(); }
+			FMeshGeometryChunk& Chunk = Effects.Last(); // 三角形の途中で切らない。
+			const FDrawVertex3D& Source = Model.Vertices[VertexIndex];
+			FMeshVertex Vertex;
+			FMemory::Memcpy( Vertex.Position, Source.Position, sizeof( Vertex.Position ) );
+			FMemory::Memcpy( Vertex.Normal, Source.Normal, sizeof( Vertex.Normal ) );
+			FMemory::Memcpy( Vertex.Color, Source.Diffuse, sizeof( Vertex.Color ) );
+			Vertex.U = Source.U;
+			Vertex.V = Source.V;
+			Chunk.Indices.Add( static_cast<uint32>( Chunk.Vertices.Add( Vertex ) ) );
+		}
+	}
+	if ( Expected != Model.NumIndices ) { return false; }
+	FStaticModelDrawView Plain = Model; // 一時配列のため共有メッシュの鍵は使わない。
+	Plain.Indices = PlainIndices.GetData();
+	Plain.NumIndices = PlainIndices.Num();
+	Plain.Sections = PlainSections.GetData();
+	Plain.NumSections = PlainSections.Num();
+	Plain.MeshKey = 0;
+	Plain.MeshVersion = 0;
+	Models->SetStaticModelPlacement( Data.Handle, Data.M );
+	const bool bPlainDrawn = Geometry.DrawModelViewAt( Plain, Data.M, Alpha, bAlphaBlend ) == CGeometryCommandExecutor::EResult::Executed;
+	FMatrix4x4 World;
+	for ( int32 Row = 0; Row < 4; ++Row ) { for ( int32 Column = 0; Column < 3; ++Column ) { World.m[Row][Column] = Data.M[Row * 3 + Column]; } }
+	const EGeometryBlend OldBlend = Geometry.GetState().Blend;
+	Geometry.SetBlend( Data.BlendMode == static_cast<int32>( EDrawBlend::Add ) ? EGeometryBlend::Add : EGeometryBlend::Alpha );
+	bool bEffectsDrawn = true; // 失敗した部分があっても状態を戻し、残りを試す。
+	for ( const FMeshGeometryChunk& Chunk : Effects )
+	{
+		FDrawMaterialMeshData MeshData = Data.Material;
+		if ( Shape.Meshes[0].bDoubleSided ) { MeshData.bTwoSided = 1; }
+		MeshData.NumVertices = Chunk.Vertices.Num();
+		MeshData.NumIndices = Chunk.Indices.Num();
+		const bool bDrawn = DrawMesh( MeshData, Chunk.Vertices.GetData(), Chunk.Indices.GetData(), Bright, 255, true, &World, Data.Opacity );
+		bEffectsDrawn = bDrawn && bEffectsDrawn;
 	}
 	Geometry.SetBlend( OldBlend );
 	return bPlainDrawn && bEffectsDrawn;

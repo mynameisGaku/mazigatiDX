@@ -40,6 +40,11 @@ CGeometryCommandExecutor::EResult CGeometryCommandExecutor::DrawModelView( const
 	return ModelCommands.DrawModelView( Model, Alpha, bAlphaBlend );
 }
 
+CGeometryCommandExecutor::EResult CGeometryCommandExecutor::DrawModelViewAt( const FStaticModelDrawView& Model, const float32 ( &Matrix )[12], int32 Alpha, bool bAlphaBlend )
+{
+	return ModelCommands.DrawModelViewAt( Model, Matrix, Alpha, bAlphaBlend );
+}
+
 CGeometryCommandExecutor::EResult CGeometryCommandExecutor::Execute( const FDrawCommandView& View, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend )
 {
 	EResult Result = StateCommands.Execute( View ); // カメラ・ワールド・深度・ライト・フォグなどの状態。

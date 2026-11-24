@@ -25,11 +25,15 @@ struct FModelMaterialGeometry
 
 	// Surface 順を保った選択材質mesh。
 	TArray<FMesh> Meshes;
+	// 選択した元モデルの材質番号。
+	int32 MaterialIndex = -1;
+	// 同じ元メッシュに選択外の材質範囲があるか。
+	bool bMixedMaterials = false;
 };
 
 namespace NModelMaterialGeometry
 {
 	// Surface（頂点・index・材質範囲）から、MaterialIndex を使う面だけの形状を作る。値が不正（範囲・非有限値・section の抜け・meshの対応違い）や、
-	// 選択材質の面が無いときは false（Out は変えない）。
-	bool Build( const FStaticModelSurfaceData& Surface, int32 MaterialIndex, FModelMaterialGeometry& Out );
+	// 選択材質の面が無いときは false（Out は変えない）。複数材質を扱える実行先だけ bAllowMixedMaterials を指定する。
+	bool Build( const FStaticModelSurfaceData& Surface, int32 MaterialIndex, FModelMaterialGeometry& Out, bool bAllowMixedMaterials = false );
 }

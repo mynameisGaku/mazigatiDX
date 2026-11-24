@@ -9,6 +9,7 @@ struct FStaticModelDrawSection
 	int32 FirstIndex = 0; // index列の先頭。
 	int32 NumIndices = 0; // 三角形のindex数。
 	int32 Texture = -1; // 拡散画像。負なら画像なし。
+	int32 MaterialIndex = -1; // 元モデルの材質番号。不明な描画は負値。
 };
 
 // GPU スキニングで使える骨の行列の数の上限（EngineContent/Shaders/DX12/ForwardMesh.hlsl の g_Bones の大きさと同じ）。

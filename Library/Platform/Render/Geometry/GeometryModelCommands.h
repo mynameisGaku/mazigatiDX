@@ -16,6 +16,8 @@ public:
 	// 現在の配置で固定姿勢を描く。モデル登録へのアクセスや更新は行わない。
 	// GPU スキニングのビュー（SkinVertices がある）も渡せる（固定した姿勢を、骨の行列ごと保持して描く）。
 	EGeometryCommandResult DrawModelView( const FStaticModelDrawView& Model, int32 Alpha, bool bAlphaBlend );
+	// 一時的な配置で変形済みの描画範囲を描き、もとの配置を戻す。
+	EGeometryCommandResult DrawModelViewAt( const FStaticModelDrawView& Model, const float32 ( &Matrix )[12], int32 Alpha, bool bAlphaBlend );
 	// GPU スキニングのビューを、CPU で変形した頂点にする（シェーダーと同じ式。重みの合計で割り、法線は正規化する）。GPU で描けないときの続きに使う。
 	static void SkinViewOnCpu( const FStaticModelDrawView& Model, TArray<FDrawVertex3D>& OutVertices );
 
