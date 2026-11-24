@@ -9,4 +9,5 @@ struct FStaticModelSurfaceMaterial
 {
 	float32 Diffuse[4] = { 1.0f, 1.0f, 1.0f, 1.0f };  // 元材質の拡散色RGBA。頂点reference色へ重ねて掛けない
 	int32 BorrowedDiffuseTexture = -1;                 // 元モデルが所有する拡散画像handle。削除しない
+	bool bDoubleSided = false; // 元材質で両面を描く指定。
 };

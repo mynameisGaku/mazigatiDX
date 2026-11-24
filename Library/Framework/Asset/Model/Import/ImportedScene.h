@@ -74,6 +74,7 @@ struct FImportedMaterial
 	float32 Emissive[3] = { 0.0f, 0.0f, 0.0f };
 	float32 Power = 5.0f;
 	int32 Texture = -1;            // FImportedScene::Textures の番号（拡散色の画像）
+	bool bDoubleSided = false; // 元材質が表と裏の両方を描くよう指定しているか。
 };
 
 // ノードの動き。キーは時間順に 1 サンプルずつ（毎秒 FImportedAnimation::Fps コマ）

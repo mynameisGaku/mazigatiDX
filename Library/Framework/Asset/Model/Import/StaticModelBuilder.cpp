@@ -125,6 +125,7 @@ bool FStaticModelBuilder::Build( const FImportedScene& Scene, FStaticModelDefini
 		const auto& Input = Scene.Materials[Material]; // 元の材質メタデータ。
 		auto& Info = Result.Structure.Materials[Material]; // 値を変えずに写す。
 		Info.Name = Input.Name;
+		Result.Surface.Materials[Material].bDoubleSided = Input.bDoubleSided; // 材質効果が元材質の両面指定を保持する。
 		Info.DiffuseTexture = Input.Texture;
 		Info.Colors.Diffuse = FColor( Input.Diffuse[0], Input.Diffuse[1], Input.Diffuse[2], Input.Diffuse[3] );
 		Info.Colors.Specular = FColor( Input.Specular[0], Input.Specular[1], Input.Specular[2], 1 );

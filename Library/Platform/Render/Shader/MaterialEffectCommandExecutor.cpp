@@ -244,6 +244,7 @@ bool CMaterialEffectCommandExecutor::DrawModelMaterial( const FDrawModelMaterial
 		for ( const FMeshGeometryChunk& Chunk : Shape->Meshes[MeshIndex].Chunks )
 		{
 			FDrawMaterialMeshData MeshData = Data.Material; // 材質は命令のまま、頂点と index の数だけ分けた部分に合わせる。
+			if ( Shape->Meshes[MeshIndex].bDoubleSided ) { MeshData.bTwoSided = 1; } // 元材質または命令の両面指定を使う。
 			MeshData.NumVertices = Chunk.Vertices.Num();
 			MeshData.NumIndices = Chunk.Indices.Num();
 			const bool bDrawn = DrawMesh( MeshData, Chunk.Vertices.GetData(), Chunk.Indices.GetData(), Bright, 255, true, &World, Data.Opacity ); // 前の部分が失敗していても後続を描く。

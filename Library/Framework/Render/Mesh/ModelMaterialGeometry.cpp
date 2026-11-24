@@ -105,6 +105,7 @@ bool NModelMaterialGeometry::Build( const FStaticModelSurfaceData& Surface, int3
 			NewMesh.SourceMeshIndex = Section.SourceMeshIndex;
 			NewMesh.SourceFrameIndex = Section.SourceFrameIndex;
 			NewMesh.MaterialIndex = Section.MaterialIndex;
+			NewMesh.bDoubleSided = Surface.Materials[Section.MaterialIndex].bDoubleSided;
 			MeshPosition = BuiltMeshes.Add( MoveTemp( NewMesh ) );
 		}
 		// 同じsource meshの連続runを足す集約先。

@@ -17,6 +17,8 @@ struct FModelMaterialGeometry
 		int32 SourceFrameIndex = -1;
 		// 実行時に照合する元材質番号。
 		int32 MaterialIndex = -1;
+		// 元材質に両面描画が指定されているか。
+		bool bDoubleSided = false;
 		// 上限内へ分けた元meshの三角形。
 		TArray<FMeshGeometryChunk> Chunks;
 	};

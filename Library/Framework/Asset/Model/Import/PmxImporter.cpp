@@ -393,7 +393,7 @@ bool NModelImport::ImportPmx( const void* Data, usize Size, const FImportOptions
 		}
 		Material.Power = Reader.ReadFloat();
 		Reader.Skip( 12 ); // 環境色
-		Reader.ReadU8();   // 描画のフラグ（両面・影・輪郭）
+		Material.bDoubleSided = ( Reader.ReadU8() & 0x01u ) != 0; // PMX材質フラグのbit 0は両面描画。
 		Reader.Skip( 20 ); // 輪郭の色と太さ
 		const int32 Texture = Reader.ReadSignedIndex( TextureIndexSize );
 		Reader.ReadSignedIndex( TextureIndexSize ); // スフィア

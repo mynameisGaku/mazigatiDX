@@ -194,6 +194,7 @@ namespace
 				const ufbx_material* Material = Source.materials.data[i];
 				FImportedMaterial Imported;
 				Imported.Name = ToFString( Material->name );
+				Imported.bDoubleSided = Material->features.double_sided.enabled; // FBXが明示する両面描画の設定。
 
 				const ufbx_material_map& Base = Material->pbr.base_color.has_value || Material->pbr.base_color.texture != nullptr ? Material->pbr.base_color : Material->fbx.diffuse_color;
 				if ( Base.has_value )
