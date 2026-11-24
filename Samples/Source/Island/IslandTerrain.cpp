@@ -1,4 +1,20 @@
 ﻿#include "IslandTerrain.h"
+#include "Library/Platform/System/CommandLine.h"
+
+int32 FIslandState::GetTerrainCells()
+{
+	static const int32 Cells = []()
+	{
+		const TOptional<FString> Option = NCommandLine::GetValue( "island-cells" );
+		return Option.IsSet() ? NMath::Clamp( Option.GetValue().ToInt( 80 ), 16, 1024 ) : 80;
+	}();
+	return Cells;
+}
+
+float32 FIslandState::GetCellSize()
+{
+	return TerrainHalfSize * 2.0f / static_cast<float32>( GetTerrainCells() );
+}
 
 namespace
 {
@@ -68,7 +84,7 @@ namespace
 	// 格子点の高さ（範囲の外は、端の値）
 	float32 HeightAt( const FIslandState& State, int32 Column, int32 Row )
 	{
-		const int32 Points = FIslandState::TerrainCells + 1;
+		const int32 Points = FIslandState::GetTerrainCells() + 1;
 		Column = NMath::Clamp( Column, 0, Points - 1 );
 		Row = NMath::Clamp( Row, 0, Points - 1 );
 		return State.Heights[Row * Points + Column];
@@ -77,7 +93,7 @@ namespace
 	// 格子点の世界の座標
 	float32 ToWorld( int32 Index )
 	{
-		return -FIslandState::TerrainHalfSize + static_cast<float32>( Index ) * FIslandState::CellSize;
+		return -FIslandState::TerrainHalfSize + static_cast<float32>( Index ) * FIslandState::GetCellSize();
 	}
 
 	// 格子点の法線（隣の高さの差から）
@@ -85,7 +101,7 @@ namespace
 	{
 		const float32 DeltaX = HeightAt( State, Column + 1, Row ) - HeightAt( State, Column - 1, Row );
 		const float32 DeltaZ = HeightAt( State, Column, Row + 1 ) - HeightAt( State, Column, Row - 1 );
-		return FVector3( -DeltaX, 2.0f * FIslandState::CellSize, -DeltaZ ).Normalized();
+		return FVector3( -DeltaX, 2.0f * FIslandState::GetCellSize(), -DeltaZ ).Normalized();
 	}
 
 	// 乱数の場所を、歩ける所から選ぶ。高さが Low〜High で、Avoid のどれとも Spacing 以上離れた所。見つからなければ false
@@ -123,7 +139,7 @@ namespace
 
 void NIslandTerrain::Generate( FIslandState& State )
 {
-	const int32 Points = FIslandState::TerrainCells + 1;
+	const int32 Points = FIslandState::GetTerrainCells() + 1;
 	State.Heights.SetNum( Points * Points );
 	for ( int32 Row = 0; Row < Points; ++Row )
 	{
@@ -186,7 +202,7 @@ void NIslandTerrain::Generate( FIslandState& State )
 
 bool NIslandTerrain::MakeBuffers( FIslandState& State )
 {
-	const int32 Points = FIslandState::TerrainCells + 1;
+	const int32 Points = FIslandState::GetTerrainCells() + 1;
 	TArray<FVertex3D> Vertices;
 	Vertices.Reserve( Points * Points );
 	for ( int32 Row = 0; Row < Points; ++Row )
@@ -198,10 +214,10 @@ bool NIslandTerrain::MakeBuffers( FIslandState& State )
 		}
 	}
 	TArray<uint16> Indices;
-	Indices.Reserve( FIslandState::TerrainCells * FIslandState::TerrainCells * 6 );
-	for ( int32 Row = 0; Row < FIslandState::TerrainCells; ++Row )
+	Indices.Reserve( FIslandState::GetTerrainCells() * FIslandState::GetTerrainCells() * 6 );
+	for ( int32 Row = 0; Row < FIslandState::GetTerrainCells(); ++Row )
 	{
-		for ( int32 Column = 0; Column < FIslandState::TerrainCells; ++Column )
+		for ( int32 Column = 0; Column < FIslandState::GetTerrainCells(); ++Column )
 		{
 			const uint16 TopLeft = static_cast<uint16>( Row * Points + Column );
 			const uint16 TopRight = static_cast<uint16>( TopLeft + 1 );
@@ -222,7 +238,7 @@ bool NIslandTerrain::MakeBuffers( FIslandState& State )
 
 FPixelImage NIslandTerrain::MakeMapImage( const FIslandState& State )
 {
-	const int32 Points = FIslandState::TerrainCells + 1;
+	const int32 Points = FIslandState::GetTerrainCells() + 1;
 	FPixelImage Image( Points, Points );
 	for ( int32 Row = 0; Row < Points; ++Row )
 	{
@@ -245,9 +261,9 @@ FPixelImage NIslandTerrain::MakeMapImage( const FIslandState& State )
 
 float32 NIslandTerrain::GetHeight( const FIslandState& State, float32 X, float32 Z )
 {
-	const float32 GridX = ( X + FIslandState::TerrainHalfSize ) / FIslandState::CellSize;
-	const float32 GridZ = ( Z + FIslandState::TerrainHalfSize ) / FIslandState::CellSize;
-	if ( State.Heights.Num() == 0 || GridX < 0.0f || GridZ < 0.0f || GridX > static_cast<float32>( FIslandState::TerrainCells ) || GridZ > static_cast<float32>( FIslandState::TerrainCells ) )
+	const float32 GridX = ( X + FIslandState::TerrainHalfSize ) / FIslandState::GetCellSize();
+	const float32 GridZ = ( Z + FIslandState::TerrainHalfSize ) / FIslandState::GetCellSize();
+	if ( State.Heights.Num() == 0 || GridX < 0.0f || GridZ < 0.0f || GridX > static_cast<float32>( FIslandState::GetTerrainCells() ) || GridZ > static_cast<float32>( FIslandState::GetTerrainCells() ) )
 	{
 		return -3.0f;
 	}

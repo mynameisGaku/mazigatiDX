@@ -13,8 +13,6 @@ namespace
 	// 置いておくメッシュの上限（バイト）と、使われないまま置いておく描画の回数。
 	constexpr uint64 MaxMeshBytes = 512ull * 1024ull * 1024ull;
 	constexpr uint64 IdleDraws = 8192;
-	constexpr int32 MaxVertices = 65536;
-	constexpr int32 MaxIndices = 196608;
 
 	bool CompileEntry( const char* Entry, const char* Target, TArray<uint8>& Out, bool bSkinned = false )
 	{
@@ -350,8 +348,10 @@ FGraphicsPipelineHandle CDX12ForwardMeshRenderer::GetPipeline( const FForwardMes
 bool CDX12ForwardMeshRenderer::Draw( const FForwardMeshDraw& Draw, IRenderGeometry3D& Geometry )
 {
 	const FGeometryDrawState& State = Draw.State;
-	if ( !Pipelines || !Buffers || !Textures || ( !Draw.bTransient && Draw.MeshKey == 0 ) || !Draw.Vertices || ( !Draw.Indices && !Draw.bTransient ) || Draw.NumVertices <= 0 || Draw.NumVertices > MaxVertices || Draw.NumIndices <= 0 || Draw.NumIndices % 3 != 0
-		|| Draw.FirstIndex < 0 || Draw.IndexCount <= 0 || Draw.IndexCount > MaxIndices || Draw.IndexCount % 3 != 0 || Draw.FirstIndex % 3 != 0 || static_cast<int64>( Draw.FirstIndex ) + Draw.IndexCount > Draw.NumIndices )
+	const int32 VertexLimit = static_cast<int32>( Draw.bTransient ? NGraphicsPipelineLimits::MaxTransientVertices : NGraphicsPipelineLimits::MaxRegisteredVertices ); // 登録しない描画は、小さく抑える。
+	const int32 IndexLimit = static_cast<int32>( Draw.bTransient ? NGraphicsPipelineLimits::MaxTransientIndices : NGraphicsPipelineLimits::MaxRegisteredIndices );
+	if ( !Pipelines || !Buffers || !Textures || ( !Draw.bTransient && Draw.MeshKey == 0 ) || !Draw.Vertices || ( !Draw.Indices && !Draw.bTransient ) || Draw.NumVertices <= 0 || Draw.NumVertices > VertexLimit || Draw.NumIndices <= 0 || Draw.NumIndices % 3 != 0
+		|| Draw.FirstIndex < 0 || Draw.IndexCount <= 0 || Draw.IndexCount > IndexLimit || Draw.IndexCount % 3 != 0 || Draw.FirstIndex % 3 != 0 || static_cast<int64>( Draw.FirstIndex ) + Draw.IndexCount > Draw.NumIndices )
 	{
 		return false;
 	}

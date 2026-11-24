@@ -138,7 +138,7 @@ bool CDX12GraphicsPipelineDrawer::RecordTransient( const FGraphicsPipelineTransi
 	}
 	const bool bIndexed = Draw.Indices != nullptr; // index付き描画の有無。
 	const uint32 Group = Pipeline.Topology == EGeometryTopology::Points ? 1u : Pipeline.Topology == EGeometryTopology::Lines ? 2u : 3u;
-	if ( Draw.VertexCount == 0 || Draw.VertexCount > 65536 || ( bIndexed ? Draw.IndexCount == 0 || Draw.IndexCount > 196608 || ( Draw.IndexCount % Group ) != 0 : ( Draw.IndexCount != 0 || ( Draw.VertexCount % Group ) != 0 ) ) )
+	if ( Draw.VertexCount == 0 || Draw.VertexCount > NGraphicsPipelineLimits::MaxTransientVertices || ( bIndexed ? Draw.IndexCount == 0 || Draw.IndexCount > NGraphicsPipelineLimits::MaxTransientIndices || ( Draw.IndexCount % Group ) != 0 : ( Draw.IndexCount != 0 || ( Draw.VertexCount % Group ) != 0 ) ) )
 	{
 		return false;
 	}
@@ -251,7 +251,7 @@ bool CDX12GraphicsPipelineDrawer::Record( const FGraphicsPipelineDraw &Draw, con
 	}
 	const bool bIndexed = Draw.IndexBuffer.IsValid(); // index付き描画の有無。
 	const uint32 Group = Pipeline.Topology == EGeometryTopology::Points ? 1u : Pipeline.Topology == EGeometryTopology::Lines ? 2u : 3u;
-	if ( Draw.VertexCount == 0 || Draw.VertexCount > 65536 || ( Draw.VertexOffset % 4 ) != 0 || Draw.IndexFormat > EGeometryIndexFormat::UInt32 || ( bIndexed ? Draw.IndexCount == 0 || Draw.IndexCount > 196608 || ( Draw.IndexCount % Group ) != 0 : ( Draw.IndexCount != 0 || Draw.IndexOffset != 0 || ( Draw.VertexCount % Group ) != 0 ) ) )
+	if ( Draw.VertexCount == 0 || Draw.VertexCount > NGraphicsPipelineLimits::MaxRegisteredVertices || ( Draw.VertexOffset % 4 ) != 0 || Draw.IndexFormat > EGeometryIndexFormat::UInt32 || ( bIndexed ? Draw.IndexCount == 0 || Draw.IndexCount > NGraphicsPipelineLimits::MaxRegisteredIndices || ( Draw.IndexCount % Group ) != 0 : ( Draw.IndexCount != 0 || Draw.IndexOffset != 0 || ( Draw.VertexCount % Group ) != 0 ) ) )
 	{
 		return false;
 	}

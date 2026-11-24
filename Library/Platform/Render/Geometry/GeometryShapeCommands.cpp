@@ -389,7 +389,10 @@ EGeometryCommandResult CGeometryShapeCommands::Execute( const FDrawCommandView& 
 		}
 		const auto Data = View.Read<FDrawPrimitiveBuffer3DData>(); // 記録時の登録番号と範囲。
 		FGeometryVertexBufferView Vertices; // 同期の処理中だけ借用する。
-		if ( Data.Type < 0 || Data.Type > static_cast<int32>( EDrawPrimitive::TriangleFan ) || Data.Start < 0 || Data.Num <= 0 || Data.Num > 65536
+		// 三角形のリストで、基準頂点も使わないなら、登録したバッファのまま、GPU の共有メッシュとして描ける（その数の上限は、大きい）。それ以外は、頂点を展開して描くので、65536 まで。
+		const bool bSharedMeshCandidate = Data.IndexBuffer >= 0 && Data.BaseVertex == 0 && Data.Type == static_cast<int32>( EDrawPrimitive::Triangles ) && Data.Num % 3 == 0 && Data.Num >= MinIndicesForSharedMesh;
+		const int32 MaxNum = bSharedMeshCandidate ? static_cast<int32>( NGraphicsPipelineLimits::MaxRegisteredIndices ) : 65536;
+		if ( Data.Type < 0 || Data.Type > static_cast<int32>( EDrawPrimitive::TriangleFan ) || Data.Start < 0 || Data.Num <= 0 || Data.Num > MaxNum
 			|| !Buffers->GetVertexBufferView( Data.VertexBuffer, Vertices ) || !Vertices.Vertices || Data.NumBufferVertices != Vertices.NumVertices )
 		{
 			return EGeometryCommandResult::Rejected;
@@ -407,28 +410,45 @@ EGeometryCommandResult CGeometryShapeCommands::Execute( const FDrawCommandView& 
 		{
 			return EGeometryCommandResult::Rejected;
 		}
-		// 三角形のリストで、基準頂点も使わないなら、登録したバッファのまま、GPU の共有メッシュとして描く（頂点の展開・検査・送り直しをしない）。
-		if ( Data.IndexBuffer >= 0 && Data.BaseVertex == 0 && Data.Type == static_cast<int32>( EDrawPrimitive::Triangles ) && Data.Num % 3 == 0 && Data.Num >= MinIndicesForSharedMesh )
+		// 登録したバッファのまま、GPU の共有メッシュとして描く（頂点の展開・検査・送り直しをしない）。
+		if ( bSharedMeshCandidate )
 		{
 			uint64 MeshKey = 0, MeshVersion = 0; // GPU 側で共有する頂点と添字の組。
-			if ( Buffers->GetStableMeshCacheIdentity( Data.VertexBuffer, Data.IndexBuffer, MeshKey, MeshVersion )
-				&& Submitter.SubmitCachedMesh( Vertices, Indices, MeshKey, MeshVersion, Data.Start, Data.Num, Bright, Alpha, bAlphaBlend, Data.Texture ) )
+			if ( Buffers->GetStableMeshCacheIdentity( Data.VertexBuffer, Data.IndexBuffer, MeshKey, MeshVersion ) )
 			{
-				return EGeometryCommandResult::Executed;
+				if ( Submitter.SubmitCachedMesh( Vertices, Indices, MeshKey, MeshVersion, Data.Start, Data.Num, Bright, Alpha, bAlphaBlend, Data.Texture ) )
+				{
+					return EGeometryCommandResult::Executed;
+				}
+				if ( Data.Num > 65536 )
+				{
+					// 大きなメッシュが、GPU の共有メッシュで描けなかった（実行先が受け取らない・GPU が使えない）。次の経路は、毎フレーム頂点を展開して送るので、遅い。黙って遅くならないように、1 度だけ知らせる。
+					NBackendSupport::ReportUnsupported( "DX12", "A registered mesh of more than 65536 indices on the GPU shared-mesh path", "the GPU path did not take it, so it is drawn by the slow path that expands the vertices every frame" );
+				}
 			}
 		}
-		TArray<FDrawVertex3D> Ordered; // 基準頂点を含めて参照を解決した列。
-		Ordered.Reserve( Data.Num );
-		for ( int32 Index = 0; Index < Data.Num; ++Index )
+		// 頂点を展開して描く。GPU の共有メッシュで描けなかった大きな三角形のリスト（65536 を超える）は、頂点の上限以内の塊（65535 = 3 の倍数）へ分けて、続きを描く。
+		const int32 ChunkSize = Data.Num > 65536 ? 65535 : Data.Num;
+		for ( int32 ChunkStart = 0; ChunkStart < Data.Num; ChunkStart += ChunkSize )
 		{
-			const int64 VertexIndex = Data.IndexBuffer >= 0 ? static_cast<int64>( Indices.Indices[Data.Start + Index] ) + Data.BaseVertex : Data.Start + Index; // 加算は64bit。
-			if ( VertexIndex < 0 || VertexIndex >= Vertices.NumVertices )
+			const int32 ChunkCount = NMath::Min( ChunkSize, Data.Num - ChunkStart );
+			TArray<FDrawVertex3D> Ordered; // 基準頂点を含めて参照を解決した列（この塊だけ）。
+			Ordered.Reserve( ChunkCount );
+			for ( int32 Index = ChunkStart; Index < ChunkStart + ChunkCount; ++Index )
+			{
+				const int64 VertexIndex = Data.IndexBuffer >= 0 ? static_cast<int64>( Indices.Indices[Data.Start + Index] ) + Data.BaseVertex : Data.Start + Index; // 加算は64bit。
+				if ( VertexIndex < 0 || VertexIndex >= Vertices.NumVertices )
+				{
+					return EGeometryCommandResult::Rejected;
+				}
+				Ordered.Add( Vertices.Vertices[static_cast<int32>( VertexIndex )] );
+			}
+			if ( !Submitter.SubmitPrimitive( Ordered, static_cast<EDrawPrimitive>( Data.Type ), Data.Texture, Bright, Alpha, bAlphaBlend ) )
 			{
 				return EGeometryCommandResult::Rejected;
 			}
-			Ordered.Add( Vertices.Vertices[static_cast<int32>( VertexIndex )] );
 		}
-		return Submitter.SubmitPrimitive( Ordered, static_cast<EDrawPrimitive>( Data.Type ), Data.Texture, Bright, Alpha, bAlphaBlend ) ? EGeometryCommandResult::Executed : EGeometryCommandResult::Rejected;
+		return EGeometryCommandResult::Executed;
 	}
 	default:
 		return EGeometryCommandResult::NotHandled;

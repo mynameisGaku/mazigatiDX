@@ -13,6 +13,17 @@ struct FGraphicsConstantBytes
 	uint32 Size = 0;
 };
 
+// 1 回の描画の、頂点・添字の数の上限。実行先の各層（命令を積む門・実行側・Forward の描画部品）が、ここの値で検査する（層ごとに値を持たない）。
+namespace NGraphicsPipelineLimits
+{
+	// 登録しない描画（頂点・添字を、呼び出しごとに、フレームの転送領域へ複写する）。複写する量を抑えるため、小さい。
+	constexpr uint32 MaxTransientVertices = 65536;
+	constexpr uint32 MaxTransientIndices = 196608;
+	// 登録したバッファの描画（頂点・添字は、GPU のバッファのまま使い回す）。バッファ 1 つの上限（64 MiB）に収まる大きさ: 頂点 48 バイトで 1M 個（48 MiB）、添字 4 バイトで 6M 個（24 MiB）。
+	constexpr uint32 MaxRegisteredVertices = 1u << 20;
+	constexpr uint32 MaxRegisteredIndices = 6u << 20;
+}
+
 // カスタムグラフィックスパイプラインを使った1回のGPUバッファ描画命令。
 // 配列はDrawGraphicsPipelineの呼び出し中だけ借り、実体の寿命は実行先がGPU完了まで保持する。
 struct FGraphicsPipelineDraw
@@ -23,13 +34,13 @@ struct FGraphicsPipelineDraw
 	FBufferResourceHandle VertexBuffer;
 	// VertexBuffer先頭からのバイトオフセット（VertexStrideに整合するか4の倍数）。
 	uint64 VertexOffset = 0;
-	// 描画またはindex参照がアクセス可能な頂点数（1以上）。
+	// 描画またはindex参照がアクセス可能な頂点数（1〜NGraphicsPipelineLimits::MaxRegisteredVertices）。
 	uint32 VertexCount = 0;
 	// 任意。有効な場合はindex付き描画（DrawIndexedInstanced）を行う。
 	FBufferResourceHandle IndexBuffer;
 	// IndexBuffer先頭からのバイトオフセット（形式サイズの倍数）。
 	uint64 IndexOffset = 0;
-	// IndexBuffer有効時に描画するindex数。
+	// IndexBuffer有効時に描画するindex数（1〜NGraphicsPipelineLimits::MaxRegisteredIndices）。
 	uint32 IndexCount = 0;
 	// index値のビット幅。
 	EGeometryIndexFormat IndexFormat = EGeometryIndexFormat::UInt16;
@@ -53,13 +64,13 @@ struct FGraphicsPipelineTransientDraw
 	FGraphicsPipelineHandle Pipeline;
 	// 頂点（パイプラインの VertexStride バイトずつ）。
 	const void* Vertices = nullptr;
-	// 頂点の数（1〜65536）。
+	// 頂点の数（1〜NGraphicsPipelineLimits::MaxTransientVertices = 65536）。
 	uint32 VertexCount = 0;
 	// 任意。頂点 1 つのバイト数（パイプラインの VertexStride と同じ）。結果を待たずに描画を積む実行先（QueueGraphicsPipelineTransient）が、頂点を複写するために使う。0 のときは、待たずには積まず、同期で実行する。
 	uint32 VertexStride = 0;
 	// 添字（32 ビット）。nullptr なら、頂点を順に使う。
 	const uint32* Indices = nullptr;
-	// 添字の数（Indices があるとき、1〜196608）。
+	// 添字の数（Indices があるとき、1〜NGraphicsPipelineLimits::MaxTransientIndices = 196608）。
 	uint32 IndexCount = 0;
 	// パイプラインの BufferSlots の順の、定数バッファの中身（すべて Constant。大きさは、シェーダーの宣言以上。256 の倍数へ切り上げて渡す）。
 	TArrayView<const FGraphicsConstantBytes> Constants;

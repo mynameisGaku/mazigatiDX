@@ -23,10 +23,11 @@ struct FIslandState
 	static constexpr int32 ViewWidth = 1280;
 	static constexpr int32 ViewHeight = 640;
 
-	// 地形: 格子のマスの数（片側）と、1 マスの大きさ（ワールドの単位）。島は -60〜60 の正方形に収まる
-	static constexpr int32 TerrainCells = 80;
-	static constexpr float32 CellSize = 1.5f;
-	static constexpr float32 TerrainHalfSize = TerrainCells * CellSize * 0.5f;
+	// 地形: 島は -60〜60 の正方形に収まる。格子のマスの数（片側）は、既定で 80（1 マス 1.5）。
+	// 検査用に、--island-cells=<N>（16〜1024）で変えられる。256 以上にすると、頂点が 65536 個、添字が 196608 個を超える大きな登録メッシュになる（GPU の共有メッシュの上限の検査）。
+	static constexpr float32 TerrainHalfSize = 60.0f;
+	static int32 GetTerrainCells();
+	static float32 GetCellSize();
 
 	// 海面の高さ。これより低い所は歩けない（少し上まで、波打ち際として避ける）
 	static constexpr float32 SeaLevel = 0.0f;

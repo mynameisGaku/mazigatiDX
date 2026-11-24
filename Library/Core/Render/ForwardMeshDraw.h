@@ -21,11 +21,11 @@ struct FForwardMeshDraw
 	uint64 MeshKey = 0;                      // 登録する共有メッシュの識別（0以外）。bTransientなら使わない。
 	uint64 MeshVersion = 0;                  // 頂点の中身の版。変わったら、GPU の頂点を置き直す。
 	const FDrawVertex3D* Vertices = nullptr; // メッシュの頂点（変換前）。
-	int32 NumVertices = 0;                   // 頂点の数（1〜65536）。
+	int32 NumVertices = 0;                   // 頂点の数（登録するメッシュは 1〜NGraphicsPipelineLimits::MaxRegisteredVertices、登録しない描画は 1〜MaxTransientVertices = 65536）。
 	const uint32* Indices = nullptr;         // メッシュ全体の添字。
 	int32 NumIndices = 0;                    // 添字の数（3 の倍数）。
 	int32 FirstIndex = 0;                    // 描く範囲の先頭（3 の倍数）。
-	int32 IndexCount = 0;                    // 描く範囲の添字の数（3 の倍数。1〜196608）。
+	int32 IndexCount = 0;                    // 描く範囲の添字の数（3 の倍数。登録するメッシュは 1〜NGraphicsPipelineLimits::MaxRegisteredIndices、登録しない描画は 1〜MaxTransientIndices = 196608）。
 	// GPU スキニング（SkinVertices があるとき）。Vertices は、骨の変形の前の頂点で、頂点シェーダーが、骨の行列で変形する。登録するメッシュ（bTransient でない）だけ。
 	const FStaticModelSkinVertex* SkinVertices = nullptr; // Vertices と同じ数の、骨と重み。
 	const float32* BoneMatrices = nullptr;                // NumBones 個の骨の行列（1 つは、3 つの float4: 行列の 1〜3 列）。

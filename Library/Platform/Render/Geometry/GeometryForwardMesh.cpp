@@ -3,6 +3,7 @@
 #include "Library/Core/Profiler/ProfilerScope.h"
 #include "Library/Core/Memory/Memory.h"
 #include "Library/Core/Types/Numeric.h"
+#include "Library/Core/Render/GraphicsPipelineDraw.h"
 #include "Library/Core/Interfaces/Asset/ModelBackend.h"
 #include "Library/Framework/Render/Draw/DrawModelFrameOverrideScope.h"
 #include "Library/Framework/Render/Draw/DrawModelFramePoseData.h"
@@ -78,7 +79,7 @@ bool CGeometryForwardMesh::CanDrawForward() const
 
 bool CGeometryForwardMesh::CanDrawForward( const FStaticModelDrawView& Model ) const
 {
-	return CanDrawForward() && Model.MeshKey != 0 && Model.NumVertices <= 65536;
+	return CanDrawForward() && Model.MeshKey != 0 && Model.NumVertices <= static_cast<int32>( NGraphicsPipelineLimits::MaxRegisteredVertices ); // 共有メッシュ（登録するメッシュ）の上限。
 }
 
 int32 CGeometryForwardMesh::DrawMeshForward( const FStaticModelDrawView& Model, int32 ModelAlpha, bool bAlphaBlend, bool bInferAlpha, FDrawRgb Bright, bool bLit, bool bTransient )

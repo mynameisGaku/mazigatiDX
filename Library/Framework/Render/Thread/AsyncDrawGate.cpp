@@ -4,8 +4,6 @@
 namespace
 {
 	constexpr int32 MaxVerified = 16384; // 確かめ済みの数の上限。超えたら全部捨てて、確かめ直す。
-	constexpr uint32 MaxVertices = 65536; // 実行先が受け付ける頂点数。
-	constexpr uint32 MaxIndices = 196608; // 実行先が受け付ける添字数。
 	constexpr uint32 MaxConstantBytes = 65536; // 実行先が受け付ける定数 1 つの大きさ。
 	constexpr uint32 MaxVertexStride = 4096; // 頂点 1 つの大きさの上限（複写する量を抑える）。
 
@@ -61,8 +59,8 @@ CAsyncDrawGate::FUse CAsyncDrawGate::Inspect( const FGraphicsPipelineDraw &Draw 
 {
 	FUse Use;
 	const bool bIndexed = Draw.IndexBuffer.IsValid();
-	Use.bValid = Draw.Pipeline.IsValid() && Draw.VertexBuffer.IsValid() && Draw.PinnedBytes > 0 && Draw.VertexCount > 0 && Draw.VertexCount <= MaxVertices
-		&& ( bIndexed ? Draw.IndexCount > 0 && Draw.IndexCount <= MaxIndices : Draw.IndexCount == 0 )
+	Use.bValid = Draw.Pipeline.IsValid() && Draw.VertexBuffer.IsValid() && Draw.PinnedBytes > 0 && Draw.VertexCount > 0 && Draw.VertexCount <= NGraphicsPipelineLimits::MaxRegisteredVertices
+		&& ( bIndexed ? Draw.IndexCount > 0 && Draw.IndexCount <= NGraphicsPipelineLimits::MaxRegisteredIndices : Draw.IndexCount == 0 )
 		&& ( Draw.Buffers.Num() == 0 || Draw.Buffers.GetData() ) && ( Draw.Textures.Num() == 0 || Draw.Textures.GetData() ) && ( Draw.Constants.Num() == 0 || Draw.Constants.GetData() );
 	if ( !Use.bValid )
 	{
@@ -106,8 +104,8 @@ CAsyncDrawGate::FUse CAsyncDrawGate::InspectTransient( const FGraphicsPipelineTr
 {
 	FUse Use;
 	const bool bIndexed = Draw.Indices != nullptr;
-	Use.bValid = Draw.Pipeline.IsValid() && Draw.Vertices && Draw.VertexStride > 0 && Draw.VertexStride <= MaxVertexStride && Draw.VertexCount > 0 && Draw.VertexCount <= MaxVertices
-		&& ( bIndexed ? Draw.IndexCount > 0 && Draw.IndexCount <= MaxIndices : Draw.IndexCount == 0 )
+	Use.bValid = Draw.Pipeline.IsValid() && Draw.Vertices && Draw.VertexStride > 0 && Draw.VertexStride <= MaxVertexStride && Draw.VertexCount > 0 && Draw.VertexCount <= NGraphicsPipelineLimits::MaxTransientVertices
+		&& ( bIndexed ? Draw.IndexCount > 0 && Draw.IndexCount <= NGraphicsPipelineLimits::MaxTransientIndices : Draw.IndexCount == 0 )
 		&& ( Draw.Textures.Num() == 0 || Draw.Textures.GetData() ) && ( Draw.Constants.Num() == 0 || Draw.Constants.GetData() );
 	if ( !Use.bValid )
 	{
