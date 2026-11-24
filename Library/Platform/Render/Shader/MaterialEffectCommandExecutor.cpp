@@ -21,8 +21,11 @@ namespace
 		float32 Edge[4] = {};         // 境界の色（アルファと発光倍率を掛けた値）。
 		float32 Bright[4] = {};       // 描画の明るさ（RGB）。
 		float32 Distortion[4] = {};   // ゆがみ画像の倍率 xy。
+		float32 SourceRect[4] = { 0.0f, 0.0f, 1.0f, 1.0f }; // 元画像内の表示画像の矩形。
+		float32 MaskRect[4] = { 0.0f, 0.0f, 1.0f, 1.0f }; // 元画像内のマスクの矩形。
+		float32 DistortionRect[4] = { 0.0f, 0.0f, 1.0f, 1.0f }; // 元画像内のゆがみ画像の矩形。
 	};
-	static_assert( sizeof( FEffectConstants ) == 80, "FEffectConstants must match cbEffectMaterial" );
+	static_assert( sizeof( FEffectConstants ) == 128, "FEffectConstants must match cbEffectMaterial" );
 
 	// 帯の点の色（下位から赤・緑・青・不透明度）を、頂点の色にする。
 	void SetColor( FDrawShaderVertex3D& Vertex, uint32 Color )
@@ -471,6 +474,17 @@ bool CMaterialEffectCommandExecutor::DrawVertices( const FEffectSettings& Settin
 	Constants.Bright[3] = 1.0f;
 	Constants.Distortion[0] = Settings.DistortionScale[0];
 	Constants.Distortion[1] = Settings.DistortionScale[1];
+	ITextureDrawSource* Textures = Geometry.GetTextures(); // 派生画像の範囲を、登録された元画像の座標で取得する。
+	const int32 Handles[3] = { Settings.SourceTexture, Settings.MaskTexture, Settings.DistortionTexture }; // シェーダーが参照する順序。
+	float32* Rects[3] = { Constants.SourceRect, Constants.MaskRect, Constants.DistortionRect }; // 各画像の独立した矩形。
+	for ( int32 Index = 0; Index < 3; ++Index )
+	{
+		FTextureDrawView View; // 解決できない画像は、従来どおり描画先の処理に任せる。
+		if ( Textures && Handles[Index] >= 0 && Textures->GetTextureDrawView( Handles[Index], View ) )
+		{
+			for ( int32 Axis = 0; Axis < 4; ++Axis ) { Rects[Index][Axis] = View.UvRect[Axis]; }
+		}
+	}
 	FShaderConstantData ConstantView;
 	ConstantView.Stage = static_cast<int32>( EShaderStage::Pixel );
 	ConstantView.Slot = 7;

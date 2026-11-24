@@ -4,6 +4,8 @@
 #include "Library/Framework/Material/Material.h"
 #include "Library/Framework/Render/Scene/SceneDrawList.h"
 #include "Library/Framework/Asset/AssetSubsystem.h"
+#include "Library/Framework/Asset/Texture/DynamicTexture.h"
+#include "Library/Framework/Render/Draw/DrawDistortedMaterialQuad.h"
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Core/Interfaces/Job/IJobSystem.h"
 #include "Source/Common/ShaderMeshes.h"
@@ -61,6 +63,7 @@ namespace
 
 bool CMaterialSnapshotScene::Initialize( const FString& Mode )
 {
+	if ( Mode == "effect-region" || Mode == "effect-full" ) { return InitializeEffectRegion( Mode == "effect-region" ); }
 	if ( Mode == "masked" ) { return InitializeMasked(); }
 	if ( Mode == "masked-shadow" ) { return InitializeMaskedShadow(); }
 	CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>(); // 資源の作成はジョブへ渡す前に済ませる。
@@ -226,6 +229,45 @@ bool CMaterialSnapshotScene::InitializeMaskedShadow()
 	LiveMaterials.Add( Hole );
 	bManual = true;
 	return bEqual && bSolid && bHole && bRear;
+}
+
+bool CMaterialSnapshotScene::InitializeEffectRegion( bool bRegion )
+{
+	CAssetSubsystem* Assets = GetAppSubsystem<CAssetSubsystem>(); // 描画前に画像を所有する。
+	if ( !Assets ) { return false; }
+	const FColor32 Colors[3] = { FColor32( 210, 40, 30 ), FColor32( 255, 255, 255 ), FColor32( 128, 128, 0 ) }; // 色・マスク・ゆがみ。
+	for ( int32 Index = 0; Index < 3; ++Index )
+	{
+		const FColor32 Outside = Index == 1 ? FColor32( 0, 0, 0 ) : Index == 2 ? FColor32( 255, 0, 0 ) : FColor32( 0, 220, 0 ); // マスクもゆがみも矩形外で異なる結果を出す。
+		FPixelImage Image( 16, 16, Outside );
+		Image.FillRect( 4, 4, 8, 8, Colors[Index] );
+		if ( Index == 0 ) { Image.FillRect( 4, 4, 4, 4, FColor32( 150, 20, 20 ) ); } // 折り返しとゆがみによる模様の移動を見えるようにする。
+		TSharedPtr<CDynamicTexture> Full = Assets->CreateDynamicTexture( FString::Printf( "effect.region.%d", Index ), bRegion ? Image : Image.Crop( 4, 4, 8, 8 ) ); // 同じ部分の独立画像も用意する。
+		if ( !Full ) { return false; }
+		EffectImages.Add( Full );
+		TSharedPtr<CTexture> ImageToUse = bRegion ? Assets->CreateTextureRegion( Full, 4, 4, 8, 8 ) : Full; // 判定対象。
+		if ( !ImageToUse ) { return false; }
+		EffectImages.Add( ImageToUse );
+	}
+	Reference.SetNum( 1 );
+	FDrawContext Draw( Reference[0] ); // 毎フレーム同じ命令を再生する。
+	Draw.PushCamera( FCamera::MakePerspective( FVector3( 0, 0, -9 ), FVector3::Zero ) );
+	Draw.Blend( EDrawBlend::Alpha );
+	FDrawDistortedMaterialQuadData Quad; // マスクとゆがみを同時に通す。
+	Quad.Material.Quad.Handle = EffectImages[1]->GetHandle();
+	Quad.Material.Quad.Width = 4.0f;
+	Quad.Material.Quad.Height = 4.0f;
+	Quad.Material.MaskTexture = EffectImages[3]->GetHandle();
+	Quad.Material.bDissolve = 1;
+	Quad.Material.Dissolve = 0.5f;
+	Quad.Material.UVScale[0] = 2.0f;
+	Quad.Material.UVScale[1] = 2.0f;
+	Quad.DistortionTexture = EffectImages[5]->GetHandle();
+	Quad.Strength = 0.1f;
+	Draw.DistortedMaterialQuad3D( Quad );
+	Draw.PopCamera();
+	bManual = true;
+	return true;
 }
 
 void CMaterialSnapshotScene::Draw( IDrawExecutor& Executor ) const

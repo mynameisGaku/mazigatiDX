@@ -321,7 +321,8 @@ bool CTextureAssetStore::GetSize( int32 Handle, int32& OutWidth, int32& OutHeigh
 
 bool CTextureAssetStore::GetResource( int32 Handle, FTextureResourceHandle& Out ) const
 {
-	const auto* Resource = Textures.Find( Handle ); // 自分の登録だけを問い合わせる。
+	const auto* Region = Regions.Find( Handle ); // 派生画像も、元のGPU資源をシェーダーから借りる。
+	const auto* Resource = Textures.Find( Region ? Region->Source : Handle );
 	if ( !Resource )
 	{
 		return false;

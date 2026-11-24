@@ -331,20 +331,20 @@ float4 ShadowPreviewMain( VO i ) : SV_Target { uint w, h; g_ShadowMap.GetDimensi
 float4 PixelLitTexturedMain( PLO i ) : SV_Target { float4 c = float4( PixelLightColor( i ), i.Diffuse.a ) * g_Base.Sample( g_Sampler, i.Uv ); if ( c.a <= 0.0 ) { discard; } return c; }
 struct MEO { float4 Position : SV_POSITION; float4 Color : COLOR0; float2 Uv : TEXCOORD0; float3 Params : TEXCOORD1; float4 Offsets : TEXCOORD2; };
 MEO EffectMaterialVS( VI i ) { MEO o; o.Position = i.SubPosition; o.Color = i.Diffuse; o.Uv = i.Uv; o.Params = i.Normal; o.Offsets = float4( i.Tangent.xy, i.Binormal.xy ); return o; }
-cbuffer cbEffectMaterial : register( b7 ) { float4 g_EffectA; float4 g_EffectB; float4 g_EffectEdge; float4 g_EffectBright; float4 g_EffectDistortion; };
+cbuffer cbEffectMaterial : register( b7 ) { float4 g_EffectA; float4 g_EffectB; float4 g_EffectEdge; float4 g_EffectBright; float4 g_EffectDistortion; float4 g_EffectSourceRect; float4 g_EffectMaskRect; float4 g_EffectDistortionRect; };
 float EffHash( float2 p ) { return frac( sin( dot( p, float2( 127.1, 311.7 ) ) ) * 43758.5453 ); }
 float EffNoise( float2 p ) { float2 i = floor( p ); float2 f = frac( p ); f = f * f * ( 3.0 - 2.0 * f ); return lerp( lerp( EffHash( i ), EffHash( i + float2( 1, 0 ) ), f.x ), lerp( EffHash( i + float2( 0, 1 ) ), EffHash( i + 1.0 ), f.x ), f.y ); }
 float4 EffectMaterialPS( MEO i ) : SV_Target
 {
 	uint w, h; g_Base.GetDimensions( w, h );
-	float2 inset = 0.5 / float2( w, h );
+	float2 inset = 0.5 / ( float2( w, h ) * ( g_EffectSourceRect.zw - g_EffectSourceRect.xy ) );
 	float2 uv = i.Uv * g_EffectA.xy + i.Offsets.xy;
 	if ( g_EffectB.z > 0.5 )
 	{
 		uint dw, dh; g_Aux.GetDimensions( dw, dh );
-		float2 dinset = 0.5 / float2( dw, dh );
+		float2 dinset = 0.5 / ( float2( dw, dh ) * ( g_EffectDistortionRect.zw - g_EffectDistortionRect.xy ) );
 		float2 duv = clamp( frac( i.Uv * g_EffectDistortion.xy + i.Offsets.zw ), dinset, 1.0 - dinset );
-		uv += ( g_Aux.SampleLevel( g_Sampler, duv, 0 ).rg * 2.0 - 1.0 ) * i.Params.z;
+		uv += ( g_Aux.SampleLevel( g_Sampler, lerp( g_EffectDistortionRect.xy, g_EffectDistortionRect.zw, duv ), 0 ).rg * 2.0 - 1.0 ) * i.Params.z;
 	}
 	uv = clamp( frac( uv ), inset, 1.0 - inset );
 	float2 muv = frac( i.Uv * g_EffectA.z );
@@ -352,8 +352,8 @@ float4 EffectMaterialPS( MEO i ) : SV_Target
 	if ( g_EffectA.w > 0.5 )
 	{
 		uint mw, mh; g_ShadowMap.GetDimensions( mw, mh );
-		float2 minset = 0.5 / float2( mw, mh );
-		mask = g_ShadowMap.SampleLevel( g_Sampler, clamp( muv, minset, 1.0 - minset ), 0 ).r;
+		float2 minset = 0.5 / ( float2( mw, mh ) * ( g_EffectMaskRect.zw - g_EffectMaskRect.xy ) );
+		mask = g_ShadowMap.SampleLevel( g_Sampler, lerp( g_EffectMaskRect.xy, g_EffectMaskRect.zw, clamp( muv, minset, 1.0 - minset ) ), 0 ).r;
 	}
 	else
 	{
@@ -367,7 +367,7 @@ float4 EffectMaterialPS( MEO i ) : SV_Target
 		clip( mask - dissolve );
 		if ( dissolve > 0.0 && g_EffectB.w > 0.0 ) { edge = 1.0 - smoothstep( 0.0, g_EffectB.w, mask - dissolve ); }
 	}
-	float4 src = g_Base.SampleLevel( g_Sampler, uv, 0 );
+	float4 src = g_Base.SampleLevel( g_Sampler, lerp( g_EffectSourceRect.xy, g_EffectSourceRect.zw, uv ), 0 );
 	float alpha = src.a * i.Color.a * g_EffectB.y;
 	if ( alpha <= 0.0 ) { discard; }
 	float3 emissive = src.rgb * i.Color.rgb * i.Params.y + g_EffectEdge.rgb * edge;

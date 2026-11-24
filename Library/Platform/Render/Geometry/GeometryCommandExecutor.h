@@ -60,6 +60,8 @@ public:
 	EResult DrawModelView( const FStaticModelDrawView& Model, int32 Alpha, bool bAlphaBlend );
 	// GPU が変換と光を計算する経路（共有のメッシュを GPU に置く）を、使ってよいか（影・フォグ・画素ごとの光などは、CPU の経路で描く）。
 	void SetForwardPath( bool bEnable ) { Run.bUseForwardPath = bEnable; }
+	// 画像番号から描画用の矩形を取得する窓口（無ければ nullptr）。
+	ITextureDrawSource* GetTextures() const { return Run.Textures; }
 	// 借用している静的モデルの窓口（無ければ nullptr）。
 	IStaticModelSource* GetModels() const { return Run.Models; }
 
