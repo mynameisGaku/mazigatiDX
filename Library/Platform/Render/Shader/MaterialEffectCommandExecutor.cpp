@@ -263,7 +263,7 @@ bool CMaterialEffectCommandExecutor::DrawModelMaterialSections( const FDrawModel
 {
 	IStaticModelSource* Models = Geometry.GetModels(); // 現在の姿勢と表示状態を反映したビュー。
 	FStaticModelDrawView Model;
-	if ( !Models || Shape.MaterialIndex < 0 || !Models->GetStaticModelDrawView( Data.Handle, Model ) || Model.NumVertices < 0 || Model.NumVertices > 786432 || Model.NumIndices < 0 || Model.NumIndices > 786432 || Model.NumSections < 0 || Model.NumSections > 4096 )
+	if ( !Models || Shape.MaterialIndex < 0 || !Models->GetStaticModelDrawView( Data.Handle, Model ) || Model.NumVertices < 0 || Model.NumVertices > 786432 || Model.NumIndices < 0 || Model.NumIndices > 786432 || Model.NumSections < 0 || Model.NumSections > 4096 || !NMath::IsFinite( Model.Opacity ) || Model.Opacity < 0.0f || Model.Opacity > 1.0f )
 	{
 		return false;
 	}
@@ -317,6 +317,7 @@ bool CMaterialEffectCommandExecutor::DrawModelMaterialSections( const FDrawModel
 	Plain.MeshKey = 0;
 	Plain.MeshVersion = 0;
 	Models->SetStaticModelPlacement( Data.Handle, Data.M );
+	if ( Model.Opacity == 0.0f ) { return true; } // 完全に透明な個体は深度にも書き込まない。
 	const bool bPlainDrawn = Geometry.DrawModelViewAt( Plain, Data.M, Alpha, bAlphaBlend ) == CGeometryCommandExecutor::EResult::Executed;
 	FMatrix4x4 World;
 	for ( int32 Row = 0; Row < 4; ++Row ) { for ( int32 Column = 0; Column < 3; ++Column ) { World.m[Row][Column] = Data.M[Row * 3 + Column]; } }
@@ -329,7 +330,7 @@ bool CMaterialEffectCommandExecutor::DrawModelMaterialSections( const FDrawModel
 		if ( Shape.Meshes[0].bDoubleSided ) { MeshData.bTwoSided = 1; }
 		MeshData.NumVertices = Chunk.Vertices.Num();
 		MeshData.NumIndices = Chunk.Indices.Num();
-		const bool bDrawn = DrawMesh( MeshData, Chunk.Vertices.GetData(), Chunk.Indices.GetData(), Bright, 255, true, &World, Data.Opacity );
+		const bool bDrawn = DrawMesh( MeshData, Chunk.Vertices.GetData(), Chunk.Indices.GetData(), Bright, 255, true, &World, Data.Opacity * Model.Opacity );
 		bEffectsDrawn = bDrawn && bEffectsDrawn;
 	}
 	Geometry.SetBlend( OldBlend );

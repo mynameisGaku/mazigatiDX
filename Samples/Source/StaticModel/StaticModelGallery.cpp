@@ -19,6 +19,8 @@ void CStaticModelGallery::OnSpawn()
 	{
 		Solid = Source->CreateInstance();
 		Faded = Source->CreateInstance();
+		const TOptional<FString> ModelOpacity = NCommandLine::GetValue( "static-model-opacity" ); // 効果と個体の不透明度を比較する。
+		if ( Solid.IsValid() && ModelOpacity.IsSet() ) { Solid->GetAppearance().SetOpacity( static_cast<float32>( ModelOpacity.GetValue().ToFloat( 1.0 ) ) ); }
 		const TOptional<FString> EffectOption = NCommandLine::GetValue( "static-material-opacity" ); // 一材質の選択効果を比べる。
 		bMaterialEffectRequested = EffectOption.IsSet();
 		if ( bMaterialEffectRequested )

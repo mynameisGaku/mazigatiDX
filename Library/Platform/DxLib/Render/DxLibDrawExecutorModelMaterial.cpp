@@ -9,6 +9,7 @@
 #include "Library/Platform/DxLib/DxLibInclude.h"
 #include "Library/Platform/DxLib/DxLibTypes.h"
 #include "Library/Math/Matrix4x4.h"
+#include "Library/Math/Math.h"
 
 namespace
 {
@@ -135,6 +136,10 @@ void CDxLibDrawExecutorSubsystem::ExecuteModelMaterial( const FDrawCommandView& 
 	const int32 CategoryVisible = MV1GetMeshCategoryVisible( Data.Handle, DX_MV1_MESHCATEGORY_NORMAL );
 	if ( ( ModelVisible != FALSE && ModelVisible != TRUE ) || ( CategoryVisible != FALSE && CategoryVisible != TRUE ) ) { DrawNativeFallback(); return; }
 	if ( ModelVisible == FALSE ) return;
+	// 効果の部分にも個体の不透明度を適用する。
+	float32 ModelOpacity = 1.0f;
+	if ( !AssetBackend->GetModelOpacity( Data.Handle, ModelOpacity ) || !NMath::IsFinite( ModelOpacity ) || ModelOpacity < 0.0f || ModelOpacity > 1.0f ) { DrawNativeFallback(); return; }
+	if ( ModelOpacity == 0.0f ) { MV1SetMatrix( Data.Handle, WorldMatrix ); return; }
 	// 通常mesh分類が表示中かをcustom部分だけへ適用する値。
 	const bool bNormalCategoryVisible = CategoryVisible != FALSE;
 	// command個体行列をrenderer用の数値型へ変換した値。
@@ -213,7 +218,7 @@ void CDxLibDrawExecutorSubsystem::ExecuteModelMaterial( const FDrawCommandView& 
 			MeshData.NumVertices = Chunk.Vertices.Num();
 			MeshData.NumIndices = Chunk.Indices.Num();
 			// 現在chunkのGPU描画が成功したかを示す結果。
-			const bool bDrawSucceeded = EffectMaterialRenderer.DrawModelMesh( MeshData, Chunk.Vertices.GetData(), Chunk.Indices.GetData(), World, NativeCull, Data.Opacity );
+			const bool bDrawSucceeded = EffectMaterialRenderer.DrawModelMesh( MeshData, Chunk.Vertices.GetData(), Chunk.Indices.GetData(), World, NativeCull, Data.Opacity * ModelOpacity );
 			if ( !bDrawSucceeded && !bModelMaterialDrawFailedLogged )
 			{
 				LOG( LogDxLibDraw, Warning, "モデル材質効果のGPU描画に失敗しました (instance %d, geometry %d, mesh %d, source mesh %d)。このchunkは描画されません。", Data.Handle, Data.Geometry, MeshIndex, Mesh.SourceMeshIndex );
