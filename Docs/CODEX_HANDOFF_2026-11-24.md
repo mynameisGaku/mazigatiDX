@@ -12,8 +12,8 @@ Claude の作業を、Codex（ChatGPT）へ渡します。この文書だけで�
 
 |項目|場所|状態|
 |---|---|---|
-|本体の作業コピー|`C:\Users\g0190\.claude\worktrees\framework-stl`（ブランチ `Dx12`）|HEAD は、この文書を足したコミットの直前で `e3b737e`。**origin/Dx12 より 39 コミット先（未 push。この文書のコミットを加えると、1 つ増える）**。未コミットは、利用者の `project.sln` / `project.vcxproj` / `project.vcxproj.filters` だけ（コミットしない。取り決め）|
-|検査の作業コピー|`C:\Users\g0190\OneDrive\Desktop\framework-test`（ブランチ `Dx12`。本体の `Source/SelfTest` が、ここへのジャンクション）|HEAD は `d52543a`。**origin/Dx12 より 16 コミット先（未 push）**。未追跡の `.vs/` と `NativeGameContract.vcxproj.user` は、コミットしない|
+|本体の作業コピー|`C:\Users\g0190\.claude\worktrees\framework-stl`（ブランチ `Dx12`）|HEAD は、この文書を足したコミットの直前で `e3b737e`。**この文書を書いた時点では、origin/Dx12 より 39 コミット先（未 push）だった。その後、`879c664`（この文書の最初のコミット）まで push された**（利用者または Codex。最新の数は、`git rev-list --count origin/Dx12..Dx12` で確かめる）。未コミットは、利用者の `project.sln` / `project.vcxproj` / `project.vcxproj.filters` だけ（コミットしない。取り決め）|
+|検査の作業コピー|`C:\Users\g0190\OneDrive\Desktop\framework-test`（ブランチ `Dx12`。本体の `Source/SelfTest` が、ここへのジャンクション）|HEAD は `d52543a`。**この文書を書いた時点では、origin/Dx12 より 16 コミット先（未 push）だった。その後、`d52543a` まで push された**（最新の数は、検査のリポジトリで `git rev-list --count origin/Dx12..Dx12`）。未追跡の `.vs/` と `NativeGameContract.vcxproj.user` は、コミットしない|
 |Codex の作業コピー|`C:\Users\g0190\OneDrive\Desktop\framework-dx12`（`backend-dx12`、`6ebe9e0`）、検査は `framework-dx12-selftests`（`codex/dx12-windows-validation`）|**`Dx12` にまだ入っていないコミットがある**（次の節）|
 |利用者の原本|`C:\Users\g0190\OneDrive\Desktop\framework`（`dev`）|ゲームを動かす場所。変更・未追跡を残さない|
 
@@ -43,7 +43,7 @@ Codex の `backend-dx12`（`origin/backend-dx12`）は、`Dx12` より **1 コ�
 1. 上の取り込みを、`framework-stl` の `Dx12`（または、同じ内容の作業コピー）で行い、衝突を解く。検査のリポジトリでも同様に。
 2. 本体を `Dx12` のままビルド: `Docs/AI_WORKFLOW/tools/build_cfg.ps1 -Config Release -Target Samples`、`-Config Debug -Target Samples`（利用者の私用の道具。「7. 道具」）。
 3. 検査: `Tools\RunAllChecks.ps1 -SkipBuild -Quick`（約 55 分。窓が開く）。続けて、`-Quick` が飛ばす手順: `Tools\RunAllChecks.ps1 -SkipBuild -Filter '*samples*','*template*','*package*'`（約 25 分）。**`samples` の手順は、`Samples/Samples.vcxproj` と `.filters` を、並び替えだけで書き換える**ので、終わったら `git checkout -- Samples/Samples.vcxproj Samples/Samples.vcxproj.filters` で戻す（機能の差は無い）。
-4. 検査のリポジトリを push、続けて本体を push。**検査と本体の対応するコミットを、`DX12_HANDOFF.md` へ残す**（これまでの習慣）。対応は、いまの HEAD で、本体 `e3b737e` ↔ 検査 `d52543a`（取り込みで変わったら、書き直す）。
+4. 検査のリポジトリを push、続けて本体を push（**2026-11-24 09:00 の時点で、本体は `879c664`、検査は `d52543a` まで push 済み。それ以降の Claude のコミットが、未 push**）。**検査と本体の対応するコミットを、`DX12_HANDOFF.md` へ残す**（これまでの習慣）。対応は、いまの HEAD で、本体 `e3b737e` ↔ 検査 `d52543a`（取り込みで変わったら、書き直す）。
 
 ## 5. 2026-11-23 〜 24 の作業（本体のコミット。古い順）
 
@@ -197,3 +197,11 @@ Claude が、引き継ぎのあとも続けた作業の記録です。1 つの�
 - **検査**: `RunAllChecks.ps1 -SkipBuild -Quick -Filter` で、Debug・Release の 33 ステップ（Forward メッシュ・描画スレッド・描画バッファ・GPU バッファの描画・compute・描画先・グラフィックスパイプライン・GPU タイムスタンプ・DX12 の窓・撮影・サンプル画像・サンプルのメニュー・GPU パスの時間・モデルの骨組み・互換台帳・依存・ソース形式）が、すべて通った。
 - **文書**: `DX12_HANDOFF.md` の続き 3、互換台帳（`Draw.PrimitiveBuffer3D` / `Draw.Mesh3D` の注記。`UpdateBackendCompatibility.ps1` で作り直し、`-Check` が通る）、この引き継ぎ文書の「6」「9」（上限の引き上げを、完了へ）。
 - **次の予定**（優先の順）: ①骨の行列の定数の段階分け（骨の数 64 / 128 / 256。いまは、骨の数によらず 12 KB を、描画ごとに送る）。②DxLib の経路の、大きなメッシュの扱いの確認。③`-Quick` が飛ばす手順（`samples`・`template`・`package`）の再実行（Island のサンプルのコードを変えたので）。
+
+### 2026-11-24 09:05 origin/Dx12 が先に push されていた。文書の未 push の数を直した
+
+- **気づいたこと**: 2026-11-24 09:04 の時点で、**`origin/Dx12` が `879c664`（この文書の最初のコミット）まで進んでいた**（本体）。検査のリポジトリも `d52543a` まで。つまり、利用者または Codex が、私の知らないところで push した。Claude は push していない。
+- **やったこと**: 「2. いまの状態」と「4. push の手順」の、「未 push 39 / 16 コミット」を、「書いた時点の数」と「その後 push された」へ直した。最新の数は、`git rev-list --count origin/Dx12..Dx12` で確かめる。
+- **未 push の Claude のコミット**（この時点）: 本体 `1136e2f`（頂点・添字の上限）・`f9f9f2b`（文書）、検査 `a0b63ed`。これらは、まだ origin に無い。
+- **`backend-dx12` の取り込み（「3」）は、まだ**（`backend-dx12` は `Dx12` より 1 コミット（`6ebe9e0`）だけ多いまま。`origin/Dx12` に Codex の取り込みは見当たらない）。取り込む場合は、「3」の衝突の解き方に従うこと。
+- **次の予定**: 変わらず（骨の行列の定数の段階分け → DxLib の経路の確認 → `-Quick` が飛ばす手順の再実行）。
