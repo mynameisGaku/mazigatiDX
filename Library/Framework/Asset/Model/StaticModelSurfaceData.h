@@ -11,7 +11,7 @@
 struct FStaticModelSurfaceData
 {
 	TArray<FMeshVertex> Vertices;                 // 元modelのreference位置・法線・UV0・色(形式により材質色含む)
-	TArray<uint32> Indices;                       // 順序を保った三角形index列
+	TArray<uint32> Indices;                       // 三角形順を保ち、鏡映後も表の向きを維持する頂点番号。
 	TArray<FStaticModelSurfaceSection> Sections;  // index列を隙間なく覆う連続材質範囲
 	TArray<FStaticModelSurfaceMaterial> Materials; // sectionが参照する材質の写し
 };
