@@ -1224,6 +1224,56 @@
     },
     {
       "Id": 97,
+      "Kind": "Constant",
+      "Value": [
+        7.0
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 98,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        2,
+        97
+      ]
+    },
+    {
+      "Id": 99,
+      "Kind": "Constant",
+      "Value": [
+        24.0
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 100,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        2,
+        99
+      ]
+    },
+    {
+      "Id": 101,
       "Kind": "ScalarParameter",
       "Name": "RustBumpStrength",
       "Value": [
@@ -1236,7 +1286,7 @@
       "Inputs": []
     },
     {
-      "Id": 98,
+      "Id": 102,
       "Kind": "Noise3DNormal",
       "Position": [
         0,
@@ -1244,12 +1294,12 @@
       ],
       "Inputs": [
         1,
-        4,
-        97
+        98,
+        101
       ]
     },
     {
-      "Id": 99,
+      "Id": 103,
       "Kind": "ScalarParameter",
       "Name": "RustGrainStrength",
       "Value": [
@@ -1262,7 +1312,7 @@
       "Inputs": []
     },
     {
-      "Id": 100,
+      "Id": 104,
       "Kind": "Noise3DNormal",
       "Position": [
         0,
@@ -1270,24 +1320,24 @@
       ],
       "Inputs": [
         1,
-        6,
-        99
+        100,
+        103
       ]
     },
     {
-      "Id": 101,
+      "Id": 105,
       "Kind": "Add",
       "Position": [
         0,
         0
       ],
       "Inputs": [
-        98,
-        100
+        102,
+        104
       ]
     },
     {
-      "Id": 102,
+      "Id": 106,
       "Kind": "WorldNormal",
       "Position": [
         0,
@@ -1296,30 +1346,30 @@
       "Inputs": []
     },
     {
-      "Id": 103,
+      "Id": 107,
       "Kind": "Subtract",
       "Position": [
         0,
         0
       ],
       "Inputs": [
-        101,
-        102
+        105,
+        106
       ]
     },
     {
-      "Id": 104,
+      "Id": 108,
       "Kind": "Normalize",
       "Position": [
         0,
         0
       ],
       "Inputs": [
-        103
+        107
       ]
     },
     {
-      "Id": 105,
+      "Id": 109,
       "Kind": "Constant",
       "Value": [
         0.0
@@ -1332,7 +1382,7 @@
       "Inputs": []
     },
     {
-      "Id": 106,
+      "Id": 110,
       "Kind": "SubstrateSlab",
       "Position": [
         0,
@@ -1342,7 +1392,7 @@
         88,
         -1,
         96,
-        105,
+        109,
         -1,
         -1,
         -1,
@@ -1350,11 +1400,11 @@
         -1,
         -1,
         -1,
-        104
+        108
       ]
     },
     {
-      "Id": 107,
+      "Id": 111,
       "Kind": "SubstrateMix",
       "Position": [
         0,
@@ -1362,12 +1412,12 @@
       ],
       "Inputs": [
         73,
-        106,
+        110,
         48
       ]
     }
   ],
   "Outputs": {
-    "Surface": 107
+    "Surface": 111
   }
 }

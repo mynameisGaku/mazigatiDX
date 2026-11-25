@@ -33,7 +33,7 @@ Surface の陰影（`EMaterialShading`）: **Unlit**（`Emissive`・`Opacity`）
 
 `LocalPosition` はモデルの配置前の頂点位置です。`Noise3D(Position, Scale)` は連続する3次元の値を返し、`Noise3DNormal(Position, Scale, Strength)` は同じ値の勾配から表面の凹凸を作ってワールド法線を返します。局所位置を接続するとUVの切れ目に依存せず、個体の移動・回転・拡大にも模様が追従します。法線は非一様拡大と鏡映を逆転置で扱います。凹凸は陰影を変えるもので、輪郭や衝突形状は変えません。入力位置が変形前か後かは、描画に渡された頂点の座標に従います。
 
-CPU評価時は `FMaterialEvalContext::LocalPosition`、`LocalNormal` と `ObjectToWorld` を対象の頂点に合わせて設定します。`Strength` は法線の傾きの強さであり、物理的な高さではありません。3次元ノイズは1回につき格子点8個を評価するため、重ねる回数と凹凸の強さは見た目とGPU時間を測って選びます。高い周波数の模様には距離に応じたフィルタリングがまだなく、遠景でちらつく場合があります。
+CPU評価時は `FMaterialEvalContext::LocalPosition`、`LocalNormal` と `ObjectToWorld` を対象の頂点に合わせて設定します。`Strength` は法線の傾きの強さであり、物理的な高さではありません。3次元ノイズは1回につき格子点8個を評価するため、重ねる回数と凹凸の強さは見た目とGPU時間を測って選びます。GPUでは画素の覆う範囲に応じて細かなノイズと凹凸を弱めるため、CPUの点評価とは結果が異なる場合があります。この近似は細部を完全に積分するものではなく、ちらつきが残る場合があります。
 
 ```cpp
 FMaterialDefinition Definition;

@@ -50,12 +50,25 @@ float4 MatNoise3DGradient( float3 p )
 	return float4( lerp( z0, z1, u.z ), dx, dy, ( z1 - z0 ) * du.z );
 }
 
+// 1画素が覆う格子の大きさから、細部を表示できる割合を返す。
+float MatNoise3DVisibility( float3 position )
+{
+	float footprint = max( length( ddx( position ) ), length( ddy( position ) ) ); // 画面上の1画素に対応する座標の広がり。
+	return 1.0 - smoothstep( 0.25, 1.0, footprint );
+}
+
+// 画素より細かい模様は平均値へ近づけ、点状のちらつきを抑える。
+float MatNoise3DFiltered( float3 position )
+{
+	return lerp( 0.5, MatNoise3DGradient( position ).x, MatNoise3DVisibility( position ) );
+}
+
 // 凹凸の勾配を局所面へ投影し、逆転置でワールド法線へ変換する。
 float3 MatNoise3DNormal( float3 position, float3 localNormal, float strength, row_major float4x4 world, float3 fallback )
 {
 	float normalLength = dot( localNormal, localNormal ); // 入力法線の長さの二乗。
 	float3 n = normalLength > 1.0e-12 ? localNormal * rsqrt( normalLength ) : float3( 0, 1, 0 ); // 単位法線。
-	float3 gradient = MatNoise3DGradient( position ).yzw; // ノイズの局所勾配。
+	float3 gradient = MatNoise3DGradient( position ).yzw * MatNoise3DVisibility( position ); // 表示できる細かさに抑えた局所勾配。
 	float3 perturbed = n - strength * ( gradient - n * dot( gradient, n ) ); // 面に沿う勾配で傾けた法線。
 	float3 x = world[0].xyz, y = world[1].xyz, z = world[2].xyz; // 個体の変換後の局所軸。
 	float3 cx = cross( y, z ), cy = cross( z, x ), cz = cross( x, y ); // 逆転置の分子。

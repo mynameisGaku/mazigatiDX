@@ -445,7 +445,7 @@ static FString GeneratePixel( const FMaterialProgram& Program, const FString& Cu
 			Expression = "MatNoise( " + Name( Instruction.A ) + " )";
 			break;
 		case EMaterialOp::Noise3D:
-			Expression = "MatNoise3DGradient( " + Name( Instruction.A ) + " ).x";
+			Expression = "MatNoise3DFiltered( " + Name( Instruction.A ) + " )";
 			break;
 		case EMaterialOp::Noise3DNormal:
 			Expression = "MatNoise3DNormal( " + Name( Instruction.A ) + ", i.LocalNormal, " + Name( Instruction.B ) + ", g_World, i.Normal )";
