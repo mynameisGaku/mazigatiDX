@@ -25,7 +25,8 @@ enum class EMaterialOp : uint8
 	SceneDepth,  // シーンの深度（Slot = Textures の番号、A = UV）。カメラからの距離（Float）
 	Noise,       // 値のノイズ（A = UV）。Float
 	Noise3D,     // 3次元ノイズ（A = 位置）。Float
-	Noise3DNormal // 3次元ノイズの勾配からワールド法線を作る（A = 位置、B = 強さ）。
+	Noise3DNormal, // 3次元ノイズの勾配からワールド法線を作る（A = 位置、B = 強さ）。
+	LocalNormalToWorld // 局所法線をワールド法線へ変換する（A = 法線）。
 };
 
 enum class EMaterialInput : uint8
@@ -47,7 +48,8 @@ enum class EMaterialInput : uint8
 	ParticleSpeed,
 	WorldTangent,    // Surface: 面に沿った向き（UV の U が増える向き。法線に垂直）
 	WorldBitangent,  // Surface: 面に沿った向き（UV の V が増える向き。法線に垂直）
-	LocalPosition    // Surface: 個体の配置前の位置。
+	LocalPosition,   // Surface: 個体の配置前の位置。
+	LocalNormal      // Surface: 個体の配置前の法線。
 };
 
 enum class EMaterialUnary : uint8

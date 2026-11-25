@@ -47,6 +47,15 @@ function Op2([string]$Kind, [int]$A, [int]$B) { return Add-Node -Kind $Kind -Inp
 function Op1([string]$Kind, [int]$A) { return Add-Node -Kind $Kind -Inputs @($A) }
 function Lerp3([int]$A, [int]$B, [int]$Alpha) { return Add-Node -Kind 'Lerp' -Inputs @($A, $B, $Alpha) }
 
+# 同じ画像を局所座標の三方向から投影し、面の向きに応じて混ぜる。
+function TriplanarTexture([string]$Name, [string]$Path, [int]$Position, [int]$Weights)
+{
+    $x = Add-Node -Kind 'TextureSample' -Name $Name -TexturePath $Path -Inputs @((Op1 'Frac' (Mask $Position 'yz')))
+    $y = Add-Node -Kind 'TextureSample' -Name $Name -TexturePath $Path -Inputs @((Op1 'Frac' (Mask $Position 'xz')))
+    $z = Add-Node -Kind 'TextureSample' -Name $Name -TexturePath $Path -Inputs @((Op1 'Frac' (Mask $Position 'xy')))
+    return Op2 'Add' (Op2 'Add' (Op2 'Multiply' $x (Mask $Weights 'x')) (Op2 'Multiply' $y (Mask $Weights 'y'))) (Op2 'Multiply' $z (Mask $Weights 'z'))
+}
+
 function Save-Material([string]$RelativePath, [string]$Name, [string]$Domain, [string]$Shading, [hashtable]$Outputs)
 {
     $document = [ordered]@{ Format = 'gxmaterial'; Version = 1; Name = $Name; Domain = $Domain }
@@ -201,7 +210,7 @@ $fine = Add-Node -Kind 'Noise3D' -Inputs @($position, $detailScale)
 $grain = Add-Node -Kind 'Noise3D' -Inputs @($position, $grainScale)
 # 大きな腐食域の輪郭に細かな欠けを重ね、独立した小さな腐食点も作る。
 $noise = Op2 'Add' (Op2 'Add' (Op2 'Multiply' $coarse (Num 0.38)) (Op2 'Multiply' $medium (Num 0.34))) (Op2 'Add' (Op2 'Multiply' $fine (Num 0.20)) (Op2 'Multiply' $grain (Num 0.08)))
-$amount = Scalar 'Amount' 0.5
+$amount = Scalar 'Amount' 0.82
 $threshold = Op2 'Subtract' (Num 1.2) (Op2 'Multiply' $amount (Num 1.4))
 $edgeNoise = Op2 'Add' $noise (Op2 'Multiply' (Op2 'Subtract' $grain (Num 0.5)) (Num 0.13))
 $mask = Add-Node -Kind 'SmoothStep' -Inputs @((Op2 'Subtract' $threshold (Num 0.025)), (Op2 'Add' $threshold (Num 0.025)), $edgeNoise)
@@ -213,15 +222,34 @@ $metalColor = Lerp3 (Mask (ColorParam 'Metal' 0.76 0.76 0.80) 'xyz') (Vec3 0.31 
 $metalRoughness = Add-Node -Kind 'Clamp' -Inputs @((Op2 'Add' (Op2 'Add' (Scalar 'MetalRoughness' 0.4) (Op2 'Multiply' $weathered (Num 0.3))) (Op2 'Multiply' (Op2 'Subtract' $fine (Num 0.5)) (Num 0.16))), (Num 0.03), (Num 0.95))
 $metal = Add-Node -Kind 'SubstrateSlab' -Inputs @($metalColor, -1, $metalRoughness, (Num 1.0), -1, -1, -1, -1, -1, -1, -1)
 $rustColor = Mask (ColorParam 'Rust' 0.45 0.20 0.08) 'xyz'
-$rustVariation = Lerp3 (Op2 'Multiply' $rustColor (Num 0.5)) (Op2 'Multiply' $rustColor (Num 1.35)) (Op2 'Add' (Op2 'Add' (Op2 'Multiply' $medium (Num 0.50)) (Op2 'Multiply' $fine (Num 0.30))) (Op2 'Multiply' $grain (Num 0.20)))
-$rustRoughness = Lerp3 (Num 0.68) (Num 0.98) (Op2 'Add' (Op2 'Multiply' $fine (Num 0.55)) (Op2 'Multiply' $grain (Num 0.45)))
-# 腐食域の分布とは別の尺度で、細かな孔と粒子による法線の変化を重ねる。
-$reliefScale = Op2 'Multiply' $scale (Num 7.0)
+# 方向別の重みには配置前の法線を使い、回転しても画像の混ざり方を固定する。
+$localNormal = Add-Node -Kind 'LocalNormal'
+$normalWeights = Op2 'Power' (Op1 'Abs' $localNormal) (Num 4.0)
+$weightSum = Op2 'Add' (Op2 'Add' (Mask $normalWeights 'x') (Mask $normalWeights 'y')) (Mask $normalWeights 'z')
+$weights = Op2 'Divide' $normalWeights (Op2 'Max' $weightSum (Num 0.0001))
+$texturePosition = Op2 'Add' (Op2 'Multiply' $position (Scalar 'RustTextureScale' 0.45)) (Num 0.5)
+$surfaceColor = Mask (TriplanarTexture 'RustSurfaceColor' 'Engine:/Textures/Materials/Metal041C/Color.jpg' $texturePosition $weights) 'xyz'
+$surfaceRoughness = Mask (TriplanarTexture 'RustSurfaceRoughness' 'Engine:/Textures/Materials/Metal041C/Roughness.jpg' $texturePosition $weights) 'x'
+$surfaceMetallic = Mask (TriplanarTexture 'RustSurfaceMetallic' 'Engine:/Textures/Materials/Metal041C/Metalness.jpg' $texturePosition $weights) 'x'
+$rustVariation = Op2 'Multiply' $surfaceColor (Op2 'Divide' $rustColor (Vec3 0.45 0.20 0.08))
+$rustRoughness = Add-Node -Kind 'Clamp' -Inputs @($surfaceRoughness, (Num 0.1), (Num 1.0))
+# 三方向の法線画像を局所面の接線方向へ投影し、物体の配置に合わせる。
+$normalX = Op2 'Subtract' (Op2 'Multiply' (Mask (Add-Node -Kind 'TextureSample' -Name 'RustSurfaceNormal' -TexturePath 'Engine:/Textures/Materials/Metal041C/NormalDX.jpg' -Inputs @((Op1 'Frac' (Mask $texturePosition 'yz')))) 'xy') (Num 2.0)) (Num 1.0)
+$normalY = Op2 'Subtract' (Op2 'Multiply' (Mask (Add-Node -Kind 'TextureSample' -Name 'RustSurfaceNormal' -TexturePath 'Engine:/Textures/Materials/Metal041C/NormalDX.jpg' -Inputs @((Op1 'Frac' (Mask $texturePosition 'xz')))) 'xy') (Num 2.0)) (Num 1.0)
+$normalZ = Op2 'Subtract' (Op2 'Multiply' (Mask (Add-Node -Kind 'TextureSample' -Name 'RustSurfaceNormal' -TexturePath 'Engine:/Textures/Materials/Metal041C/NormalDX.jpg' -Inputs @((Op1 'Frac' (Mask $texturePosition 'xy')))) 'xy') (Num 2.0)) (Num 1.0)
+$deltaX = Add-Node -Kind 'Append' -Inputs @((Num 0.0), $normalX)
+$deltaY = Add-Node -Kind 'Append' -Inputs @((Add-Node -Kind 'Append' -Inputs @((Mask $normalY 'x'), (Num 0.0))), (Mask $normalY 'y'))
+$deltaZ = Add-Node -Kind 'Append' -Inputs @($normalZ, (Num 0.0))
+$signs = Op2 'Subtract' (Op2 'Multiply' (Op2 'Step' (Num 0.0) $localNormal) (Num 2.0)) (Num 1.0)
+$signedWeights = Op2 'Multiply' $weights $signs
+$delta = Op2 'Add' (Op2 'Add' (Op2 'Multiply' $deltaX (Mask $signedWeights 'x')) (Op2 'Multiply' $deltaY (Mask $signedWeights 'y'))) (Op2 'Multiply' $deltaZ (Mask $signedWeights 'z'))
+$surfaceDelta = Op2 'Subtract' $delta (Op2 'Multiply' $localNormal (Op2 'Dot' $localNormal $delta))
+$textureNormal = Add-Node -Kind 'LocalNormalToWorld' -Inputs @((Op1 'Normalize' (Op2 'Add' $localNormal (Op2 'Multiply' $surfaceDelta (Scalar 'RustBumpStrength' 0.8)))))
+# 素材画像の凹凸に細かい粒子を重ねる。
 $surfaceGrainScale = Op2 'Multiply' $scale (Num 24.0)
-$rustRelief = Add-Node -Kind 'Noise3DNormal' -Inputs @($position, $reliefScale, (Scalar 'RustBumpStrength' 0.8))
 $rustGrain = Add-Node -Kind 'Noise3DNormal' -Inputs @($position, $surfaceGrainScale, (Scalar 'RustGrainStrength' 0.3))
-$rustNormal = Op1 'Normalize' (Op2 'Subtract' (Op2 'Add' $rustRelief $rustGrain) (Add-Node -Kind 'WorldNormal'))
-$rust = Add-Node -Kind 'SubstrateSlab' -Inputs @($rustVariation, -1, $rustRoughness, (Num 0.0), -1, -1, -1, -1, -1, -1, -1, $rustNormal)
+$rustNormal = Op1 'Normalize' (Op2 'Subtract' (Op2 'Add' $textureNormal $rustGrain) (Add-Node -Kind 'WorldNormal'))
+$rust = Add-Node -Kind 'SubstrateSlab' -Inputs @($rustVariation, -1, $rustRoughness, $surfaceMetallic, -1, -1, -1, -1, -1, -1, -1, $rustNormal)
 $mixed = Add-Node -Kind 'SubstrateMix' -Inputs @($metal, $rust, $mask)
 Save-Material 'Surface\RustedMetal.gxmaterial' 'RustedMetal' 'Surface' 'Substrate' @{ Surface = $mixed }
 

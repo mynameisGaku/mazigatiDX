@@ -63,6 +63,19 @@ float MatNoise3DFiltered( float3 position )
 	return lerp( 0.5, MatNoise3DGradient( position ).x, MatNoise3DVisibility( position ) );
 }
 
+// 個体の非一様な拡大や鏡映を考慮して局所法線を変換する。
+float3 MatTransformLocalNormal( float3 localNormal, row_major float4x4 world, float3 fallback )
+{
+	float3 x = world[0].xyz, y = world[1].xyz, z = world[2].xyz; // 個体の変換後の局所軸。
+	float3 cx = cross( y, z ), cy = cross( z, x ), cz = cross( x, y ); // 逆転置の分子。
+	float determinant = dot( x, cx ); // 鏡映と特異変換の判定。
+	float3 transformed = ( localNormal.x * cx + localNormal.y * cy + localNormal.z * cz ) * ( determinant < 0.0 ? -1.0 : 1.0 ); // ワールド法線。
+	float lengthSquared = dot( transformed, transformed ); // 変換後の長さの二乗。
+	float fallbackLength = dot( fallback, fallback ); // 代替法線の長さの二乗。
+	float3 safeFallback = fallbackLength > 1.0e-12 ? fallback * rsqrt( fallbackLength ) : float3( 0, 1, 0 ); // 特異変換時の代替。
+	return abs( determinant ) > 1.0e-8 && lengthSquared > 1.0e-12 ? transformed * rsqrt( lengthSquared ) : safeFallback;
+}
+
 // 凹凸の勾配を局所面へ投影し、逆転置でワールド法線へ変換する。
 float3 MatNoise3DNormal( float3 position, float3 localNormal, float strength, row_major float4x4 world, float3 fallback )
 {
@@ -70,12 +83,5 @@ float3 MatNoise3DNormal( float3 position, float3 localNormal, float strength, ro
 	float3 n = normalLength > 1.0e-12 ? localNormal * rsqrt( normalLength ) : float3( 0, 1, 0 ); // 単位法線。
 	float3 gradient = MatNoise3DGradient( position ).yzw * MatNoise3DVisibility( position ); // 表示できる細かさに抑えた局所勾配。
 	float3 perturbed = n - strength * ( gradient - n * dot( gradient, n ) ); // 面に沿う勾配で傾けた法線。
-	float3 x = world[0].xyz, y = world[1].xyz, z = world[2].xyz; // 個体の変換後の局所軸。
-	float3 cx = cross( y, z ), cy = cross( z, x ), cz = cross( x, y ); // 逆転置の分子。
-	float determinant = dot( x, cx ); // 鏡映と特異変換の判定。
-	float3 transformed = ( perturbed.x * cx + perturbed.y * cy + perturbed.z * cz ) * ( determinant < 0.0 ? -1.0 : 1.0 ); // ワールド法線。
-	float lengthSquared = dot( transformed, transformed ); // 変換後の長さの二乗。
-	float fallbackLength = dot( fallback, fallback ); // 代替法線の長さの二乗。
-	float3 safeFallback = fallbackLength > 1.0e-12 ? fallback * rsqrt( fallbackLength ) : float3( 0, 1, 0 ); // 特異変換時の代替。
-	return abs( determinant ) > 1.0e-8 && lengthSquared > 1.0e-12 ? transformed * rsqrt( lengthSquared ) : safeFallback;
+	return MatTransformLocalNormal( perturbed, world, fallback );
 }

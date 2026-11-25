@@ -966,3 +966,11 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - 1画素より十分細かいノイズが平均値に近づく実描画検査を追加した。移動中のちらつき、超近距離での実写比較、細部を失わずに平均化する手法と高解像度表示の検証は残る。
 - 参考: [Microsoft HLSL fwidth](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-fwidth)、[NVIDIA GPU Gems: procedural filtering](https://developer.nvidia.com/gpugems/gpugems/part-iv-image-processing/chapter-25-fast-filter-width-estimates-texture-maps)。
 - 検証: Debug / Release の project と Samples をビルドし、`Tools/RunAllChecks.ps1 -SkipBuild -Quick` の全77ステップに合格。画素より細かいノイズの実描画検査と、DX12 のサンプル画像検査を含む。
+
+## 2026-11-25: 錆の実素材と局所法線
+
+- RustedMetal は [ambientCG Metal041C](https://ambientcg.com/view?id=Metal041C) の CC0 2K 色・粗さ・金属度・DirectX 法線画像を局所空間の三方向へ投影する。素材と出典は `EngineContent/Textures/Materials/Metal041C/ATTRIBUTION.md` に置いた。従来の金属との混合と `Amount` は保ち、既定値は腐食域が広く見える 0.82 とした。
+- `LocalNormal` と `LocalNormalToWorld` をマテリアルグラフへ追加した。配置前の法線を画像の投影に使い、非一様拡大・鏡映時は逆転置、特異変換時はワールド法線へ退避する。ノーマル画像の三方向合成は近似であり、三平面の境界、タイリングの境界、変形前後の座標、画像の色空間は今後も検証する。
+- 画像は JPEG 合計約 14 MB、RGBA8 へ展開した4枚の基本レベルだけで GPU 約64 MiB（ミップ・CPU側などは別）。3方向×4枚の画像参照があるため、大量使用時には画像圧縮、品質段階とプロファイルが必要。
+- Debug の assets と DX12 サンプル画像179項目が合格。画像テストでは色と法線をそれぞれ単色に置き換え、画面の変化も確認する。`Amount` の 0 と 1 で、それぞれ金属と全面の腐食素材になることも画像で確認した。RTX 4070 SUPER の固定した拡大画角・1280×640・Release で120フレームずつ測ったシーン描画パス全体の平均は、前の手続き材質が約0.16 ms、今回が約0.17 ms。単一画角・単一物体の参考値で、多数使用時の性能ではない。
+- 完了検証: Debug / Release ビルド、`Tools/RunAllChecks.ps1 -SkipBuild -Quick` 全77ステップ、配布検査 `RunPackageTest.ps1` に合格。配布検査は素材画像4枚と出典ファイルが一致することも確認した。

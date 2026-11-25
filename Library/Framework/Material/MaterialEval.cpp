@@ -48,6 +48,18 @@ namespace
 		return FVector4( Lerp( Z0, Z1, W ), DX, DY, ( Z1 - Z0 ) * 6.0f * FZ * ( 1.0f - FZ ) );
 	}
 
+	// 非一様な拡大や鏡映を含む変換で局所法線をワールド法線にする。
+	FVector3 TransformLocalNormal( const FVector3& LocalNormal, const FMaterialEvalContext& Context )
+	{
+		const FMatrix4x4& M = Context.ObjectToWorld; // 個体の配置。
+		const FVector3 X( M.m[0][0], M.m[0][1], M.m[0][2] ), Y( M.m[1][0], M.m[1][1], M.m[1][2] ), Z( M.m[2][0], M.m[2][1], M.m[2][2] ); // 変換後の局所軸。
+		const FVector3 CX = FVector3::Cross( Y, Z ), CY = FVector3::Cross( Z, X ), CZ = FVector3::Cross( X, Y ); // 逆転置の分子。
+		const float32 Determinant = FVector3::Dot( X, CX ); // 特異変換と鏡映を判定する値。
+		const FVector3 Transformed = ( CX * LocalNormal.x + CY * LocalNormal.y + CZ * LocalNormal.z ) * ( Determinant < 0.0f ? -1.0f : 1.0f ); // 鏡映も考慮した法線。
+		const FVector3 Fallback = Context.WorldNormal.LengthSquared() > 1.0e-12f ? Context.WorldNormal.Normalized() : FVector3( 0.0f, 1.0f, 0.0f ); // 特異変換時の代替法線。
+		return NMath::Abs( Determinant ) > 1.0e-8f && Transformed.LengthSquared() > 1.0e-12f ? Transformed.Normalized() : Fallback;
+	}
+
 	float32 Component( const FVector4& Value, int32 Index )
 	{
 		switch ( Index )
@@ -174,6 +186,12 @@ bool NMaterialEval::Evaluate( const FMaterialProgram& Program, const FMaterialEv
 			case EMaterialInput::LocalPosition:
 				Result = FVector4( Context.LocalPosition.x, Context.LocalPosition.y, Context.LocalPosition.z, 0.0f );
 				break;
+			case EMaterialInput::LocalNormal:
+			{
+				const FVector3 Normal = Context.LocalNormal.LengthSquared() > 1.0e-12f ? Context.LocalNormal.Normalized() : FVector3( 0.0f, 1.0f, 0.0f ); // 有効な配置前の単位法線。
+				Result = FVector4( Normal.x, Normal.y, Normal.z, 0.0f );
+				break;
+			}
 			case EMaterialInput::WorldNormal:
 				Result = FVector4( Context.WorldNormal.x, Context.WorldNormal.y, Context.WorldNormal.z, 0.0f );
 				break;
@@ -412,13 +430,14 @@ bool NMaterialEval::Evaluate( const FMaterialProgram& Program, const FMaterialEv
 			const FVector3 Gradient( ValueAndGradient.y, ValueAndGradient.z, ValueAndGradient.w ); // 凹凸を作る局所勾配。
 			const FVector3 N = Context.LocalNormal.LengthSquared() > 1.0e-12f ? Context.LocalNormal.Normalized() : FVector3( 0.0f, 1.0f, 0.0f ); // 面の局所法線。
 			const FVector3 Perturbed = N - ( Gradient - N * FVector3::Dot( Gradient, N ) ) * Value( Instruction.B ).x; // 面に沿う勾配で傾けた法線。
-			const FMatrix4x4& M = Context.ObjectToWorld; // 個体の配置。
-			const FVector3 X( M.m[0][0], M.m[0][1], M.m[0][2] ), Y( M.m[1][0], M.m[1][1], M.m[1][2] ), Z( M.m[2][0], M.m[2][1], M.m[2][2] ); // 変換後の局所軸。
-			const FVector3 CX = FVector3::Cross( Y, Z ), CY = FVector3::Cross( Z, X ), CZ = FVector3::Cross( X, Y ); // 逆転置の分子。
-			const float32 Determinant = FVector3::Dot( X, CX ); // 特異変換と鏡映を判定する値。
-			const FVector3 Transformed = ( CX * Perturbed.x + CY * Perturbed.y + CZ * Perturbed.z ) * ( Determinant < 0.0f ? -1.0f : 1.0f ); // 鏡映の向きも保つワールド法線。
-			const FVector3 Fallback = Context.WorldNormal.LengthSquared() > 1.0e-12f ? Context.WorldNormal.Normalized() : FVector3( 0.0f, 1.0f, 0.0f ); // 特異変換時の代替法線。
-			const FVector3 Normal = NMath::Abs( Determinant ) > 1.0e-8f && Transformed.LengthSquared() > 1.0e-12f ? Transformed.Normalized() : Fallback; // 有効な最終法線。
+			const FVector3 Normal = TransformLocalNormal( Perturbed, Context ); // 有効な最終法線。
+			Result = FVector4( Normal.x, Normal.y, Normal.z, 0.0f );
+			break;
+		}
+		case EMaterialOp::LocalNormalToWorld:
+		{
+			const FVector4 Local = Value( Instruction.A ); // 配置前の法線。
+			const FVector3 Normal = TransformLocalNormal( FVector3( Local.x, Local.y, Local.z ), Context ); // 配置後の法線。
 			Result = FVector4( Normal.x, Normal.y, Normal.z, 0.0f );
 			break;
 		}

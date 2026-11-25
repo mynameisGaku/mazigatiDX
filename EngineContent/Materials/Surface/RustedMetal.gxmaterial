@@ -291,7 +291,7 @@
       "Kind": "ScalarParameter",
       "Name": "Amount",
       "Value": [
-        0.5
+        0.82
       ],
       "Position": [
         0,
@@ -961,11 +961,7 @@
     },
     {
       "Id": 76,
-      "Kind": "Constant",
-      "Value": [
-        0.5
-      ],
-      "Components": 1,
+      "Kind": "LocalNormal",
       "Position": [
         0,
         0
@@ -974,13 +970,12 @@
     },
     {
       "Id": 77,
-      "Kind": "Multiply",
+      "Kind": "Abs",
       "Position": [
         0,
         0
       ],
       "Inputs": [
-        75,
         76
       ]
     },
@@ -988,7 +983,7 @@
       "Id": 78,
       "Kind": "Constant",
       "Value": [
-        1.35
+        4.0
       ],
       "Components": 1,
       "Position": [
@@ -999,18 +994,140 @@
     },
     {
       "Id": 79,
+      "Kind": "Power",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        77,
+        78
+      ]
+    },
+    {
+      "Id": 80,
+      "Kind": "Mask",
+      "Name": "x",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        79
+      ]
+    },
+    {
+      "Id": 81,
+      "Kind": "Mask",
+      "Name": "y",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        79
+      ]
+    },
+    {
+      "Id": 82,
+      "Kind": "Add",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        80,
+        81
+      ]
+    },
+    {
+      "Id": 83,
+      "Kind": "Mask",
+      "Name": "z",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        79
+      ]
+    },
+    {
+      "Id": 84,
+      "Kind": "Add",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        82,
+        83
+      ]
+    },
+    {
+      "Id": 85,
+      "Kind": "Constant",
+      "Value": [
+        0.0001
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 86,
+      "Kind": "Max",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        84,
+        85
+      ]
+    },
+    {
+      "Id": 87,
+      "Kind": "Divide",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        79,
+        86
+      ]
+    },
+    {
+      "Id": 88,
+      "Kind": "ScalarParameter",
+      "Name": "RustTextureScale",
+      "Value": [
+        0.45
+      ],
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 89,
       "Kind": "Multiply",
       "Position": [
         0,
         0
       ],
       "Inputs": [
-        75,
-        78
+        1,
+        88
       ]
     },
     {
-      "Id": 80,
+      "Id": 90,
       "Kind": "Constant",
       "Value": [
         0.5
@@ -1023,304 +1140,170 @@
       "Inputs": []
     },
     {
-      "Id": 81,
-      "Kind": "Multiply",
-      "Position": [
-        0,
-        0
-      ],
-      "Inputs": [
-        10,
-        80
-      ]
-    },
-    {
-      "Id": 82,
-      "Kind": "Constant",
-      "Value": [
-        0.3
-      ],
-      "Components": 1,
-      "Position": [
-        0,
-        0
-      ],
-      "Inputs": []
-    },
-    {
-      "Id": 83,
-      "Kind": "Multiply",
-      "Position": [
-        0,
-        0
-      ],
-      "Inputs": [
-        11,
-        82
-      ]
-    },
-    {
-      "Id": 84,
-      "Kind": "Add",
-      "Position": [
-        0,
-        0
-      ],
-      "Inputs": [
-        81,
-        83
-      ]
-    },
-    {
-      "Id": 85,
-      "Kind": "Constant",
-      "Value": [
-        0.2
-      ],
-      "Components": 1,
-      "Position": [
-        0,
-        0
-      ],
-      "Inputs": []
-    },
-    {
-      "Id": 86,
-      "Kind": "Multiply",
-      "Position": [
-        0,
-        0
-      ],
-      "Inputs": [
-        12,
-        85
-      ]
-    },
-    {
-      "Id": 87,
-      "Kind": "Add",
-      "Position": [
-        0,
-        0
-      ],
-      "Inputs": [
-        84,
-        86
-      ]
-    },
-    {
-      "Id": 88,
-      "Kind": "Lerp",
-      "Position": [
-        0,
-        0
-      ],
-      "Inputs": [
-        77,
-        79,
-        87
-      ]
-    },
-    {
-      "Id": 89,
-      "Kind": "Constant",
-      "Value": [
-        0.68
-      ],
-      "Components": 1,
-      "Position": [
-        0,
-        0
-      ],
-      "Inputs": []
-    },
-    {
-      "Id": 90,
-      "Kind": "Constant",
-      "Value": [
-        0.98
-      ],
-      "Components": 1,
-      "Position": [
-        0,
-        0
-      ],
-      "Inputs": []
-    },
-    {
       "Id": 91,
-      "Kind": "Constant",
-      "Value": [
-        0.55
-      ],
-      "Components": 1,
-      "Position": [
-        0,
-        0
-      ],
-      "Inputs": []
-    },
-    {
-      "Id": 92,
-      "Kind": "Multiply",
-      "Position": [
-        0,
-        0
-      ],
-      "Inputs": [
-        11,
-        91
-      ]
-    },
-    {
-      "Id": 93,
-      "Kind": "Constant",
-      "Value": [
-        0.45
-      ],
-      "Components": 1,
-      "Position": [
-        0,
-        0
-      ],
-      "Inputs": []
-    },
-    {
-      "Id": 94,
-      "Kind": "Multiply",
-      "Position": [
-        0,
-        0
-      ],
-      "Inputs": [
-        12,
-        93
-      ]
-    },
-    {
-      "Id": 95,
       "Kind": "Add",
-      "Position": [
-        0,
-        0
-      ],
-      "Inputs": [
-        92,
-        94
-      ]
-    },
-    {
-      "Id": 96,
-      "Kind": "Lerp",
       "Position": [
         0,
         0
       ],
       "Inputs": [
         89,
-        90,
+        90
+      ]
+    },
+    {
+      "Id": 92,
+      "Kind": "Mask",
+      "Name": "yz",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        91
+      ]
+    },
+    {
+      "Id": 93,
+      "Kind": "Frac",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        92
+      ]
+    },
+    {
+      "Id": 94,
+      "Kind": "TextureSample",
+      "Name": "RustSurfaceColor",
+      "TexturePath": "Engine:/Textures/Materials/Metal041C/Color.jpg",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        93
+      ]
+    },
+    {
+      "Id": 95,
+      "Kind": "Mask",
+      "Name": "xz",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        91
+      ]
+    },
+    {
+      "Id": 96,
+      "Kind": "Frac",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
         95
       ]
     },
     {
       "Id": 97,
-      "Kind": "Constant",
-      "Value": [
-        7.0
-      ],
-      "Components": 1,
-      "Position": [
-        0,
-        0
-      ],
-      "Inputs": []
-    },
-    {
-      "Id": 98,
-      "Kind": "Multiply",
+      "Kind": "TextureSample",
+      "Name": "RustSurfaceColor",
+      "TexturePath": "Engine:/Textures/Materials/Metal041C/Color.jpg",
       "Position": [
         0,
         0
       ],
       "Inputs": [
-        2,
-        97
+        96
+      ]
+    },
+    {
+      "Id": 98,
+      "Kind": "Mask",
+      "Name": "xy",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        91
       ]
     },
     {
       "Id": 99,
-      "Kind": "Constant",
-      "Value": [
-        24.0
-      ],
-      "Components": 1,
-      "Position": [
-        0,
-        0
-      ],
-      "Inputs": []
-    },
-    {
-      "Id": 100,
-      "Kind": "Multiply",
+      "Kind": "Frac",
       "Position": [
         0,
         0
       ],
       "Inputs": [
-        2,
+        98
+      ]
+    },
+    {
+      "Id": 100,
+      "Kind": "TextureSample",
+      "Name": "RustSurfaceColor",
+      "TexturePath": "Engine:/Textures/Materials/Metal041C/Color.jpg",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
         99
       ]
     },
     {
       "Id": 101,
-      "Kind": "ScalarParameter",
-      "Name": "RustBumpStrength",
-      "Value": [
-        0.8
-      ],
-      "Position": [
-        0,
-        0
-      ],
-      "Inputs": []
-    },
-    {
-      "Id": 102,
-      "Kind": "Noise3DNormal",
+      "Kind": "Mask",
+      "Name": "x",
       "Position": [
         0,
         0
       ],
       "Inputs": [
-        1,
-        98,
+        87
+      ]
+    },
+    {
+      "Id": 102,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        94,
         101
       ]
     },
     {
       "Id": 103,
-      "Kind": "ScalarParameter",
-      "Name": "RustGrainStrength",
-      "Value": [
-        0.3
-      ],
-      "Position": [
-        0,
-        0
-      ],
-      "Inputs": []
-    },
-    {
-      "Id": 104,
-      "Kind": "Noise3DNormal",
+      "Kind": "Mask",
+      "Name": "y",
       "Position": [
         0,
         0
       ],
       "Inputs": [
-        1,
-        100,
+        87
+      ]
+    },
+    {
+      "Id": 104,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        97,
         103
       ]
     },
@@ -1338,7 +1321,493 @@
     },
     {
       "Id": 106,
-      "Kind": "WorldNormal",
+      "Kind": "Mask",
+      "Name": "z",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        87
+      ]
+    },
+    {
+      "Id": 107,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        100,
+        106
+      ]
+    },
+    {
+      "Id": 108,
+      "Kind": "Add",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        105,
+        107
+      ]
+    },
+    {
+      "Id": 109,
+      "Kind": "Mask",
+      "Name": "xyz",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        108
+      ]
+    },
+    {
+      "Id": 110,
+      "Kind": "Mask",
+      "Name": "yz",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        91
+      ]
+    },
+    {
+      "Id": 111,
+      "Kind": "Frac",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        110
+      ]
+    },
+    {
+      "Id": 112,
+      "Kind": "TextureSample",
+      "Name": "RustSurfaceRoughness",
+      "TexturePath": "Engine:/Textures/Materials/Metal041C/Roughness.jpg",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        111
+      ]
+    },
+    {
+      "Id": 113,
+      "Kind": "Mask",
+      "Name": "xz",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        91
+      ]
+    },
+    {
+      "Id": 114,
+      "Kind": "Frac",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        113
+      ]
+    },
+    {
+      "Id": 115,
+      "Kind": "TextureSample",
+      "Name": "RustSurfaceRoughness",
+      "TexturePath": "Engine:/Textures/Materials/Metal041C/Roughness.jpg",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        114
+      ]
+    },
+    {
+      "Id": 116,
+      "Kind": "Mask",
+      "Name": "xy",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        91
+      ]
+    },
+    {
+      "Id": 117,
+      "Kind": "Frac",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        116
+      ]
+    },
+    {
+      "Id": 118,
+      "Kind": "TextureSample",
+      "Name": "RustSurfaceRoughness",
+      "TexturePath": "Engine:/Textures/Materials/Metal041C/Roughness.jpg",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        117
+      ]
+    },
+    {
+      "Id": 119,
+      "Kind": "Mask",
+      "Name": "x",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        87
+      ]
+    },
+    {
+      "Id": 120,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        112,
+        119
+      ]
+    },
+    {
+      "Id": 121,
+      "Kind": "Mask",
+      "Name": "y",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        87
+      ]
+    },
+    {
+      "Id": 122,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        115,
+        121
+      ]
+    },
+    {
+      "Id": 123,
+      "Kind": "Add",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        120,
+        122
+      ]
+    },
+    {
+      "Id": 124,
+      "Kind": "Mask",
+      "Name": "z",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        87
+      ]
+    },
+    {
+      "Id": 125,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        118,
+        124
+      ]
+    },
+    {
+      "Id": 126,
+      "Kind": "Add",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        123,
+        125
+      ]
+    },
+    {
+      "Id": 127,
+      "Kind": "Mask",
+      "Name": "x",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        126
+      ]
+    },
+    {
+      "Id": 128,
+      "Kind": "Mask",
+      "Name": "yz",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        91
+      ]
+    },
+    {
+      "Id": 129,
+      "Kind": "Frac",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        128
+      ]
+    },
+    {
+      "Id": 130,
+      "Kind": "TextureSample",
+      "Name": "RustSurfaceMetallic",
+      "TexturePath": "Engine:/Textures/Materials/Metal041C/Metalness.jpg",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        129
+      ]
+    },
+    {
+      "Id": 131,
+      "Kind": "Mask",
+      "Name": "xz",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        91
+      ]
+    },
+    {
+      "Id": 132,
+      "Kind": "Frac",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        131
+      ]
+    },
+    {
+      "Id": 133,
+      "Kind": "TextureSample",
+      "Name": "RustSurfaceMetallic",
+      "TexturePath": "Engine:/Textures/Materials/Metal041C/Metalness.jpg",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        132
+      ]
+    },
+    {
+      "Id": 134,
+      "Kind": "Mask",
+      "Name": "xy",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        91
+      ]
+    },
+    {
+      "Id": 135,
+      "Kind": "Frac",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        134
+      ]
+    },
+    {
+      "Id": 136,
+      "Kind": "TextureSample",
+      "Name": "RustSurfaceMetallic",
+      "TexturePath": "Engine:/Textures/Materials/Metal041C/Metalness.jpg",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        135
+      ]
+    },
+    {
+      "Id": 137,
+      "Kind": "Mask",
+      "Name": "x",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        87
+      ]
+    },
+    {
+      "Id": 138,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        130,
+        137
+      ]
+    },
+    {
+      "Id": 139,
+      "Kind": "Mask",
+      "Name": "y",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        87
+      ]
+    },
+    {
+      "Id": 140,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        133,
+        139
+      ]
+    },
+    {
+      "Id": 141,
+      "Kind": "Add",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        138,
+        140
+      ]
+    },
+    {
+      "Id": 142,
+      "Kind": "Mask",
+      "Name": "z",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        87
+      ]
+    },
+    {
+      "Id": 143,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        136,
+        142
+      ]
+    },
+    {
+      "Id": 144,
+      "Kind": "Add",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        141,
+        143
+      ]
+    },
+    {
+      "Id": 145,
+      "Kind": "Mask",
+      "Name": "x",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        144
+      ]
+    },
+    {
+      "Id": 146,
+      "Kind": "Constant",
+      "Value": [
+        0.45,
+        0.2,
+        0.08
+      ],
+      "Components": 3,
       "Position": [
         0,
         0
@@ -1346,30 +1815,364 @@
       "Inputs": []
     },
     {
-      "Id": 107,
+      "Id": 147,
+      "Kind": "Divide",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        75,
+        146
+      ]
+    },
+    {
+      "Id": 148,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        109,
+        147
+      ]
+    },
+    {
+      "Id": 149,
+      "Kind": "Constant",
+      "Value": [
+        0.1
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 150,
+      "Kind": "Constant",
+      "Value": [
+        1.0
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 151,
+      "Kind": "Clamp",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        127,
+        149,
+        150
+      ]
+    },
+    {
+      "Id": 152,
+      "Kind": "Mask",
+      "Name": "yz",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        91
+      ]
+    },
+    {
+      "Id": 153,
+      "Kind": "Frac",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        152
+      ]
+    },
+    {
+      "Id": 154,
+      "Kind": "TextureSample",
+      "Name": "RustSurfaceNormal",
+      "TexturePath": "Engine:/Textures/Materials/Metal041C/NormalDX.jpg",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        153
+      ]
+    },
+    {
+      "Id": 155,
+      "Kind": "Mask",
+      "Name": "xy",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        154
+      ]
+    },
+    {
+      "Id": 156,
+      "Kind": "Constant",
+      "Value": [
+        2.0
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 157,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        155,
+        156
+      ]
+    },
+    {
+      "Id": 158,
+      "Kind": "Constant",
+      "Value": [
+        1.0
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 159,
       "Kind": "Subtract",
       "Position": [
         0,
         0
       ],
       "Inputs": [
-        105,
-        106
+        157,
+        158
       ]
     },
     {
-      "Id": 108,
-      "Kind": "Normalize",
+      "Id": 160,
+      "Kind": "Mask",
+      "Name": "xz",
       "Position": [
         0,
         0
       ],
       "Inputs": [
-        107
+        91
       ]
     },
     {
-      "Id": 109,
+      "Id": 161,
+      "Kind": "Frac",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        160
+      ]
+    },
+    {
+      "Id": 162,
+      "Kind": "TextureSample",
+      "Name": "RustSurfaceNormal",
+      "TexturePath": "Engine:/Textures/Materials/Metal041C/NormalDX.jpg",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        161
+      ]
+    },
+    {
+      "Id": 163,
+      "Kind": "Mask",
+      "Name": "xy",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        162
+      ]
+    },
+    {
+      "Id": 164,
+      "Kind": "Constant",
+      "Value": [
+        2.0
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 165,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        163,
+        164
+      ]
+    },
+    {
+      "Id": 166,
+      "Kind": "Constant",
+      "Value": [
+        1.0
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 167,
+      "Kind": "Subtract",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        165,
+        166
+      ]
+    },
+    {
+      "Id": 168,
+      "Kind": "Mask",
+      "Name": "xy",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        91
+      ]
+    },
+    {
+      "Id": 169,
+      "Kind": "Frac",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        168
+      ]
+    },
+    {
+      "Id": 170,
+      "Kind": "TextureSample",
+      "Name": "RustSurfaceNormal",
+      "TexturePath": "Engine:/Textures/Materials/Metal041C/NormalDX.jpg",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        169
+      ]
+    },
+    {
+      "Id": 171,
+      "Kind": "Mask",
+      "Name": "xy",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        170
+      ]
+    },
+    {
+      "Id": 172,
+      "Kind": "Constant",
+      "Value": [
+        2.0
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 173,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        171,
+        172
+      ]
+    },
+    {
+      "Id": 174,
+      "Kind": "Constant",
+      "Value": [
+        1.0
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 175,
+      "Kind": "Subtract",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        173,
+        174
+      ]
+    },
+    {
+      "Id": 176,
       "Kind": "Constant",
       "Value": [
         0.0
@@ -1382,29 +2185,500 @@
       "Inputs": []
     },
     {
-      "Id": 110,
+      "Id": 177,
+      "Kind": "Append",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        176,
+        159
+      ]
+    },
+    {
+      "Id": 178,
+      "Kind": "Mask",
+      "Name": "x",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        167
+      ]
+    },
+    {
+      "Id": 179,
+      "Kind": "Constant",
+      "Value": [
+        0.0
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 180,
+      "Kind": "Append",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        178,
+        179
+      ]
+    },
+    {
+      "Id": 181,
+      "Kind": "Mask",
+      "Name": "y",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        167
+      ]
+    },
+    {
+      "Id": 182,
+      "Kind": "Append",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        180,
+        181
+      ]
+    },
+    {
+      "Id": 183,
+      "Kind": "Constant",
+      "Value": [
+        0.0
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 184,
+      "Kind": "Append",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        175,
+        183
+      ]
+    },
+    {
+      "Id": 185,
+      "Kind": "Constant",
+      "Value": [
+        0.0
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 186,
+      "Kind": "Step",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        185,
+        76
+      ]
+    },
+    {
+      "Id": 187,
+      "Kind": "Constant",
+      "Value": [
+        2.0
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 188,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        186,
+        187
+      ]
+    },
+    {
+      "Id": 189,
+      "Kind": "Constant",
+      "Value": [
+        1.0
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 190,
+      "Kind": "Subtract",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        188,
+        189
+      ]
+    },
+    {
+      "Id": 191,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        87,
+        190
+      ]
+    },
+    {
+      "Id": 192,
+      "Kind": "Mask",
+      "Name": "x",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        191
+      ]
+    },
+    {
+      "Id": 193,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        177,
+        192
+      ]
+    },
+    {
+      "Id": 194,
+      "Kind": "Mask",
+      "Name": "y",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        191
+      ]
+    },
+    {
+      "Id": 195,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        182,
+        194
+      ]
+    },
+    {
+      "Id": 196,
+      "Kind": "Add",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        193,
+        195
+      ]
+    },
+    {
+      "Id": 197,
+      "Kind": "Mask",
+      "Name": "z",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        191
+      ]
+    },
+    {
+      "Id": 198,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        184,
+        197
+      ]
+    },
+    {
+      "Id": 199,
+      "Kind": "Add",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        196,
+        198
+      ]
+    },
+    {
+      "Id": 200,
+      "Kind": "Dot",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        76,
+        199
+      ]
+    },
+    {
+      "Id": 201,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        76,
+        200
+      ]
+    },
+    {
+      "Id": 202,
+      "Kind": "Subtract",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        199,
+        201
+      ]
+    },
+    {
+      "Id": 203,
+      "Kind": "ScalarParameter",
+      "Name": "RustBumpStrength",
+      "Value": [
+        0.8
+      ],
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 204,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        202,
+        203
+      ]
+    },
+    {
+      "Id": 205,
+      "Kind": "Add",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        76,
+        204
+      ]
+    },
+    {
+      "Id": 206,
+      "Kind": "Normalize",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        205
+      ]
+    },
+    {
+      "Id": 207,
+      "Kind": "LocalNormalToWorld",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        206
+      ]
+    },
+    {
+      "Id": 208,
+      "Kind": "Constant",
+      "Value": [
+        24.0
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 209,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        2,
+        208
+      ]
+    },
+    {
+      "Id": 210,
+      "Kind": "ScalarParameter",
+      "Name": "RustGrainStrength",
+      "Value": [
+        0.3
+      ],
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 211,
+      "Kind": "Noise3DNormal",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        1,
+        209,
+        210
+      ]
+    },
+    {
+      "Id": 212,
+      "Kind": "Add",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        207,
+        211
+      ]
+    },
+    {
+      "Id": 213,
+      "Kind": "WorldNormal",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 214,
+      "Kind": "Subtract",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        212,
+        213
+      ]
+    },
+    {
+      "Id": 215,
+      "Kind": "Normalize",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        214
+      ]
+    },
+    {
+      "Id": 216,
       "Kind": "SubstrateSlab",
       "Position": [
         0,
         0
       ],
       "Inputs": [
-        88,
+        148,
         -1,
-        96,
-        109,
-        -1,
-        -1,
+        151,
+        145,
         -1,
         -1,
         -1,
         -1,
         -1,
-        108
+        -1,
+        -1,
+        215
       ]
     },
     {
-      "Id": 111,
+      "Id": 217,
       "Kind": "SubstrateMix",
       "Position": [
         0,
@@ -1412,12 +2686,12 @@
       ],
       "Inputs": [
         73,
-        110,
+        216,
         48
       ]
     }
   ],
   "Outputs": {
-    "Surface": 111
+    "Surface": 217
   }
 }

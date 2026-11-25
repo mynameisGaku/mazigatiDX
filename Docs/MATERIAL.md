@@ -22,16 +22,18 @@ Surface の陰影（`EMaterialShading`）: **Unlit**（`Emissive`・`Opacity`）
 |分類|ノード|
 |---|---|
 |値|`Constant`・`ScalarParameter`・`VectorParameter`・`ParameterCollectionScalar`・`ParameterCollectionVector`・`TextureSample`|
-|入力|`TexCoord`・`Time`・`Size`・`HoverAmount`・`PressAmount`・`Value01`・`Enabled`・`VertexColor`・`WorldPosition`・`WorldNormal`・`WorldTangent`・`WorldBitangent`・`CameraVector`・`SceneColor`・`SceneDepth`|
+|入力|`TexCoord`・`Time`・`Size`・`HoverAmount`・`PressAmount`・`Value01`・`Enabled`・`VertexColor`・`LocalPosition`・`LocalNormal`・`WorldPosition`・`WorldNormal`・`WorldTangent`・`WorldBitangent`・`CameraVector`・`SceneColor`・`SceneDepth`|
 |算術|`Add`・`Subtract`・`Multiply`・`Divide`・`Min`・`Max`・`Power`・`Mod`・`Step`・`Dot`・`Distance`|
 |3 つ|`Lerp`・`Clamp`・`SmoothStep`|
 |1 つ|`Abs`・`Saturate`・`OneMinus`・`Negate`・`Sin`・`Cos`・`Frac`・`Floor`・`Ceil`・`Sqrt`・`Length`・`Normalize`|
-|便利|`Append`・`Mask`（`"xyz"`・`"rgb"`・`"a"`）・`Panner`・`Tiling`・`Noise`・`Noise3D`・`Noise3DNormal`・`Checker`・`Fresnel`・`NormalMap`（法線マップの色を、ワールドの法線にする）|
+|便利|`Append`・`Mask`（`"xyz"`・`"rgb"`・`"a"`）・`Panner`・`Tiling`・`Noise`・`Noise3D`・`Noise3DNormal`・`Checker`・`Fresnel`・`NormalMap`（法線マップの色を、ワールドの法線にする）・`LocalNormalToWorld`|
 |Substrate|`SubstrateSlab`（`DiffuseColor`・`F0`・`Roughness`・`Metallic`・`Emissive`・`Opacity`・`ClearCoat`・`ClearCoatRoughness`・`Subsurface`・`Anisotropy`・`ThinFilm`・`Normal`）・`SubstrateMix`（2 つの層を、横に並べて混ぜる）・`SubstrateLayer`（2 つの層を、縦に重ねる）|
 
 型: 算術は、同じ型どうし、または Float と、ほかの型（Float が広がる）。成分の数が違うベクトルどうし（Float2 と Float3 など）は、エラーです。ピンに求められる型より大きいベクトルは、切り詰めます（Float4 から Float3 へは、知らせなし。ほかは、注意）。
 
 `LocalPosition` はモデルの配置前の頂点位置です。`Noise3D(Position, Scale)` は連続する3次元の値を返し、`Noise3DNormal(Position, Scale, Strength)` は同じ値の勾配から表面の凹凸を作ってワールド法線を返します。局所位置を接続するとUVの切れ目に依存せず、個体の移動・回転・拡大にも模様が追従します。法線は非一様拡大と鏡映を逆転置で扱います。凹凸は陰影を変えるもので、輪郭や衝突形状は変えません。入力位置が変形前か後かは、描画に渡された頂点の座標に従います。
+
+`LocalNormal` は配置前の単位法線、`LocalNormalToWorld(Normal)` は局所法線を個体の配置後の単位法線に変換します。非一様拡大と鏡映には逆転置を使い、変換できない場合は面のワールド法線を使います。CPU 評価には `LocalNormal` と `ObjectToWorld` を設定します。
 
 CPU評価時は `FMaterialEvalContext::LocalPosition`、`LocalNormal` と `ObjectToWorld` を対象の頂点に合わせて設定します。`Strength` は法線の傾きの強さであり、物理的な高さではありません。3次元ノイズは1回につき格子点8個を評価するため、重ねる回数と凹凸の強さは見た目とGPU時間を測って選びます。GPUでは画素の覆う範囲に応じて細かなノイズと凹凸を弱めるため、CPUの点評価とは結果が異なる場合があります。この近似は細部を完全に積分するものではなく、ちらつきが残る場合があります。
 
@@ -222,7 +224,7 @@ FUIBrush Glow = FUIBrush::MakeMaterial( GlowMaterial );                 // UI �
 |`Surface/BrushedMetal`|一方向に磨いた金属。光沢が伸びる（Substrate。`Metal`・`Roughness`・`Metallic`・`Anisotropy`）|
 |`Surface/Pearl`|真珠。見る角度で色が変わる（Substrate。`Base`・`Roughness`・`ThinFilm`）|
 |`Surface/Wax`|ろう。光が回り込む（Substrate。`Base`・`Scatter`・`Roughness`）|
-|`Surface/RustedMetal`|さびた金属。局所3次元ノイズの大小で金属と酸化した非金属を混ぜ、腐食の欠けや点、その周囲の変色、サビの色・粗さ・法線を変える。細かい粒子の強さは `RustGrainStrength` で調整する（Substrate。`Metal`・`Rust`・`MetalRoughness`・`Scale`・`Amount`・`RustBumpStrength`・`RustGrainStrength`）|
+|`Surface/RustedMetal`|さびた金属。局所3次元ノイズで金属と腐食域を混ぜ、腐食域には CC0 素材 Metal041C の色・粗さ・金属度・法線画像を局所座標の三方向から投影する。`RustTextureScale` は画像の密度、`RustBumpStrength` と `RustGrainStrength` は凹凸の強さを調整する（Substrate。`Metal`・`Rust`・`MetalRoughness`・`Scale`・`Amount`）|
 |`Surface/CandyPaint`|キャンディ塗装。金属の上に、色のついた透明な層を重ねる（Substrate の `SubstrateLayer`。`Metal`・`MetalRoughness`・`Tint`・`CoatRoughness`・`Coverage`）|
 |`Surface/HammeredMetal`|槌目の金属。局所3次元ノイズの勾配から、凹凸の法線を作る（Substrate。`Metal`・`Roughness`・`Scale`・`Strength`）|
 

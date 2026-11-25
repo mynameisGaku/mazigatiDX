@@ -64,6 +64,10 @@ namespace NMaterialGraphCompiler
 			return ScalarResult( EmitInput( EMaterialInput::WorldPosition, EMaterialValueType::Float3, Id ) );
 		case K::LocalPosition:
 			return ScalarResult( EmitInput( EMaterialInput::LocalPosition, EMaterialValueType::Float3, Id ) );
+		case K::LocalNormal:
+			return ScalarResult( EmitInput( EMaterialInput::LocalNormal, EMaterialValueType::Float3, Id ) );
+		case K::LocalNormalToWorld:
+			return ScalarResult( Emit( EMaterialOp::LocalNormalToWorld, EMaterialValueType::Float3, Id, PinValue( Node, 0 ) ) );
 		case K::WorldNormal:
 			return ScalarResult( EmitInput( EMaterialInput::WorldNormal, EMaterialValueType::Float3, Id ) );
 		case K::CameraVector:

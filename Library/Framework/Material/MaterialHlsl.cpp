@@ -86,6 +86,8 @@ namespace
 			return "i.World";
 		case EMaterialInput::LocalPosition:
 			return "i.LocalPosition";
+		case EMaterialInput::LocalNormal:
+			return "( dot( i.LocalNormal, i.LocalNormal ) > 1.0e-12 ? normalize( i.LocalNormal ) : float3( 0, 1, 0 ) )";
 		case EMaterialInput::WorldNormal:
 			return "normalize( i.Normal )";
 		case EMaterialInput::ParticleLife:
@@ -449,6 +451,9 @@ static FString GeneratePixel( const FMaterialProgram& Program, const FString& Cu
 			break;
 		case EMaterialOp::Noise3DNormal:
 			Expression = "MatNoise3DNormal( " + Name( Instruction.A ) + ", i.LocalNormal, " + Name( Instruction.B ) + ", g_World, i.Normal )";
+			break;
+		case EMaterialOp::LocalNormalToWorld:
+			Expression = "MatTransformLocalNormal( " + Name( Instruction.A ) + ", g_World, i.Normal )";
 			break;
 		}
 		// Splat は、( float3 )v のように、スカラーからの型の変換。式の中の優先順位が、まぎれないように、括弧で包む

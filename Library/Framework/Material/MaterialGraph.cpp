@@ -84,6 +84,8 @@ namespace
 		Set( Make( K::VertexColor, "VertexColor", "Inputs", DomainUI | DomainSurface | DomainParticle ) );
 		Set( Make( K::WorldPosition, "WorldPosition", "Inputs", DomainSurface ) );
 		Set( Make( K::LocalPosition, "LocalPosition", "Inputs", DomainSurface ) );
+		Set( Make( K::LocalNormal, "LocalNormal", "Inputs", DomainSurface ) );
+		Set( Make( K::LocalNormalToWorld, "LocalNormalToWorld", "Surface", DomainSurface, { Typed( "Normal", EMaterialPinExpect::Float3 ) } ) );
 		Set( Make( K::WorldNormal, "WorldNormal", "Inputs", DomainSurface ) );
 		Set( Make( K::CameraVector, "CameraVector", "Inputs", DomainSurface ) );
 		Set( Make( K::WorldTangent, "WorldTangent", "Inputs", DomainSurface ) );
