@@ -73,6 +73,7 @@ namespace
 		Set( Make( K::ParameterCollectionScalar, "ParameterCollectionScalar", "Values", DomainAll ) );
 		Set( Make( K::ParameterCollectionVector, "ParameterCollectionVector", "Values", DomainAll ) );
 		Set( Make( K::TextureSample, "TextureSample", "Values", DomainAll, { UvPin() } ) );
+		Set( Make( K::TextureSampleTiled, "TextureSampleTiled", "Values", DomainAll, { UvPin() } ) );
 
 		Set( Make( K::TexCoord, "TexCoord", "Inputs", DomainAll ) );
 		Set( Make( K::Time, "Time", "Inputs", DomainAll ) );

@@ -440,6 +440,9 @@ static FString GeneratePixel( const FMaterialProgram& Program, const FString& Cu
 		case EMaterialOp::Sample:
 			Expression = FString::Printf( "g_Tex%d.Sample( g_Sampler, %s )", Program.Textures[Instruction.Slot].Register, *Name( Instruction.A ) );
 			break;
+		case EMaterialOp::SampleTiled:
+			Expression = FString::Printf( "g_Tex%d.SampleGrad( g_Sampler, frac( %s ), ddx( %s ), ddy( %s ) )", Program.Textures[Instruction.Slot].Register, *Name( Instruction.A ), *Name( Instruction.A ), *Name( Instruction.A ) );
+			break;
 		case EMaterialOp::SceneDepth:
 			Expression = FString::Printf( "MatLinearDepth( g_Tex%d.Sample( g_Sampler, %s ).r )", Program.Textures[Instruction.Slot].Register, *Name( Instruction.A ) );
 			break;

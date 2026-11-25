@@ -101,6 +101,7 @@ enum class EMaterialNodeKind : uint8
 	Noise3DNormal,      // 3次元ノイズから表面の凹凸を作る。入力: Position, Scale, Strength。
 	LocalNormal,        // Surface: 個体の配置前の法線（Float3）。
 	LocalNormalToWorld, // Surface: 局所法線をワールド法線へ変換する。
+	TextureSampleTiled, // 画像を繰り返して読む。境界でも繰り返し前の座標からミップを選ぶ。
 
 	Count
 };

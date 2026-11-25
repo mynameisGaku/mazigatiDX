@@ -32,6 +32,7 @@ namespace NMaterialGraphCompiler
 			return ScalarResult( Index );
 		}
 		case K::TextureSample:
+		case K::TextureSampleTiled:
 		{
 			if ( Node.Name.IsEmpty() )
 			{
@@ -40,7 +41,7 @@ namespace NMaterialGraphCompiler
 			}
 			const int32 Uv = PinValue( Node, 0 );
 			const int32 Slot = TextureSlotFor( Node.Name, Node.TexturePath, Id );
-			const int32 Index = Emit( EMaterialOp::Sample, EMaterialValueType::Float4, Id, Uv );
+			const int32 Index = Emit( Node.Kind == K::TextureSampleTiled ? EMaterialOp::SampleTiled : EMaterialOp::Sample, EMaterialValueType::Float4, Id, Uv );
 			Program.Code[Index].Slot = Slot;
 			return ScalarResult( Index );
 		}

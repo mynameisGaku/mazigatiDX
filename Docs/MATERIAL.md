@@ -21,7 +21,7 @@ Surface の陰影（`EMaterialShading`）: **Unlit**（`Emissive`・`Opacity`）
 
 |分類|ノード|
 |---|---|
-|値|`Constant`・`ScalarParameter`・`VectorParameter`・`ParameterCollectionScalar`・`ParameterCollectionVector`・`TextureSample`|
+|値|`Constant`・`ScalarParameter`・`VectorParameter`・`ParameterCollectionScalar`・`ParameterCollectionVector`・`TextureSample`・`TextureSampleTiled`|
 |入力|`TexCoord`・`Time`・`Size`・`HoverAmount`・`PressAmount`・`Value01`・`Enabled`・`VertexColor`・`LocalPosition`・`LocalNormal`・`WorldPosition`・`WorldNormal`・`WorldTangent`・`WorldBitangent`・`CameraVector`・`SceneColor`・`SceneDepth`|
 |算術|`Add`・`Subtract`・`Multiply`・`Divide`・`Min`・`Max`・`Power`・`Mod`・`Step`・`Dot`・`Distance`|
 |3 つ|`Lerp`・`Clamp`・`SmoothStep`|
@@ -36,6 +36,8 @@ Surface の陰影（`EMaterialShading`）: **Unlit**（`Emissive`・`Opacity`）
 `LocalNormal` は配置前の単位法線、`LocalNormalToWorld(Normal)` は局所法線を個体の配置後の単位法線に変換します。非一様拡大と鏡映には逆転置を使い、変換できない場合は面のワールド法線を使います。CPU 評価には `LocalNormal` と `ObjectToWorld` を設定します。
 
 CPU評価時は `FMaterialEvalContext::LocalPosition`、`LocalNormal` と `ObjectToWorld` を対象の頂点に合わせて設定します。`Strength` は法線の傾きの強さであり、物理的な高さではありません。3次元ノイズは1回につき格子点8個を評価するため、重ねる回数と凹凸の強さは見た目とGPU時間を測って選びます。GPUでは画素の覆う範囲に応じて細かなノイズと凹凸を弱めるため、CPUの点評価とは結果が異なる場合があります。この近似は細部を完全に積分するものではなく、ちらつきが残る場合があります。
+
+`TextureSampleTiled` は入力座標を繰り返して画像を読みます。GPU は繰り返し前の座標の変化からミップを選ぶため、境界で突然ぼやけるのを抑えます。画像の両端を線形補間でつなぐには、描画側で `TextureAddress(Wrap)` と `Filter(Bilinear)` を指定します。CPU評価は繰り返し後の座標で点を読み、ミップや画像端の補間は評価側の画像読み取り関数に従います。
 
 ```cpp
 FMaterialDefinition Definition;

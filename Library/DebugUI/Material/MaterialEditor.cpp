@@ -332,6 +332,7 @@ int32 NMaterialEditorUI::AddNodeWithDefaults( FMaterialEditorState& State, EMate
 		Node->Name = "Value";
 		break;
 	case EMaterialNodeKind::TextureSample:
+	case EMaterialNodeKind::TextureSampleTiled:
 		Node->Name = UniqueName( State, "Texture" );
 		break;
 	case EMaterialNodeKind::Mask:
@@ -720,7 +721,7 @@ namespace
 		ImGui::Text( "%s  (id %d)", Info.Name, Node->Id );
 		ImGui::Separator();
 		const bool bHasName = Node->Kind == EMaterialNodeKind::ScalarParameter || Node->Kind == EMaterialNodeKind::VectorParameter || Node->Kind == EMaterialNodeKind::ParameterCollectionScalar
-							  || Node->Kind == EMaterialNodeKind::ParameterCollectionVector || Node->Kind == EMaterialNodeKind::TextureSample || Node->Kind == EMaterialNodeKind::Mask;
+							  || Node->Kind == EMaterialNodeKind::ParameterCollectionVector || Node->Kind == EMaterialNodeKind::TextureSample || Node->Kind == EMaterialNodeKind::TextureSampleTiled || Node->Kind == EMaterialNodeKind::Mask;
 		if ( bHasName )
 		{
 			const char* Label = Node->Kind == EMaterialNodeKind::Mask ? "Letters (xyzw / rgba)" : "Name";
@@ -730,7 +731,7 @@ namespace
 		{
 			bChanged = NDebugUI::InputString( "Parameter collection", Node->ParameterCollection ) || bChanged;
 		}
-		if ( Node->Kind == EMaterialNodeKind::TextureSample )
+		if ( Node->Kind == EMaterialNodeKind::TextureSample || Node->Kind == EMaterialNodeKind::TextureSampleTiled )
 		{
 			bChanged = NDebugUI::InputString( "Default texture", Node->TexturePath ) || bChanged;
 		}

@@ -140,6 +140,9 @@ void CMaterialsView::RecordScene( FDrawContext& CommandList ) const
 	DepthState.bWriteDepth = true;
 	CommandList.Depth( DepthState );
 	CommandList.Culling( EDrawCulling::None );
+	static const bool bNearestMaterialFilter = NCommandLine::HasFlag( "materials-nearest-filter" ); // 比較撮影でのみ最近傍を使う。
+	CommandList.Filter( bNearestMaterialFilter ? EDrawFilter::Nearest : EDrawFilter::Bilinear );
+	CommandList.TextureAddress( EDrawTextureAddress::Wrap );
 
 	VisitShapes( *State, [&]( CMaterial& Material, const NShaderMeshes::FMesh& Mesh, const FMatrix4x4& World )
 	{

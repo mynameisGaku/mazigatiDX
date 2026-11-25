@@ -407,9 +407,11 @@ bool NMaterialEval::Evaluate( const FMaterialProgram& Program, const FMaterialEv
 			}
 			break;
 		case EMaterialOp::Sample:
+		case EMaterialOp::SampleTiled:
 		{
 			const FVector4& Uv = Value( Instruction.A );
-			Result = Context.SampleTexture ? Context.SampleTexture( Instruction.Slot, FVector2( Uv.x, Uv.y ) ) : FVector4( 1.0f, 1.0f, 1.0f, 1.0f );
+			const FVector2 Coordinates = Instruction.Op == EMaterialOp::SampleTiled ? FVector2( Frac( Uv.x ), Frac( Uv.y ) ) : FVector2( Uv.x, Uv.y ); // 繰り返す場合は座標を0以上1未満に収める。
+			Result = Context.SampleTexture ? Context.SampleTexture( Instruction.Slot, Coordinates ) : FVector4( 1.0f, 1.0f, 1.0f, 1.0f );
 			break;
 		}
 		case EMaterialOp::SceneDepth:

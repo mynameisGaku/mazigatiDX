@@ -26,7 +26,8 @@ enum class EMaterialOp : uint8
 	Noise,       // 値のノイズ（A = UV）。Float
 	Noise3D,     // 3次元ノイズ（A = 位置）。Float
 	Noise3DNormal, // 3次元ノイズの勾配からワールド法線を作る（A = 位置、B = 強さ）。
-	LocalNormalToWorld // 局所法線をワールド法線へ変換する（A = 法線）。
+	LocalNormalToWorld, // 局所法線をワールド法線へ変換する（A = 法線）。
+	SampleTiled // 繰り返し前の座標からミップを選んで画像を読む（A = UV）。
 };
 
 enum class EMaterialInput : uint8

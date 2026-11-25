@@ -50,9 +50,9 @@ function Lerp3([int]$A, [int]$B, [int]$Alpha) { return Add-Node -Kind 'Lerp' -In
 # 同じ画像を局所座標の三方向から投影し、面の向きに応じて混ぜる。
 function TriplanarTexture([string]$Name, [string]$Path, [int]$Position, [int]$Weights)
 {
-    $x = Add-Node -Kind 'TextureSample' -Name $Name -TexturePath $Path -Inputs @((Op1 'Frac' (Mask $Position 'yz')))
-    $y = Add-Node -Kind 'TextureSample' -Name $Name -TexturePath $Path -Inputs @((Op1 'Frac' (Mask $Position 'xz')))
-    $z = Add-Node -Kind 'TextureSample' -Name $Name -TexturePath $Path -Inputs @((Op1 'Frac' (Mask $Position 'xy')))
+    $x = Add-Node -Kind 'TextureSampleTiled' -Name $Name -TexturePath $Path -Inputs @((Mask $Position 'yz'))
+    $y = Add-Node -Kind 'TextureSampleTiled' -Name $Name -TexturePath $Path -Inputs @((Mask $Position 'xz'))
+    $z = Add-Node -Kind 'TextureSampleTiled' -Name $Name -TexturePath $Path -Inputs @((Mask $Position 'xy'))
     return Op2 'Add' (Op2 'Add' (Op2 'Multiply' $x (Mask $Weights 'x')) (Op2 'Multiply' $y (Mask $Weights 'y'))) (Op2 'Multiply' $z (Mask $Weights 'z'))
 }
 
@@ -234,9 +234,9 @@ $surfaceMetallic = Mask (TriplanarTexture 'RustSurfaceMetallic' 'Engine:/Texture
 $rustVariation = Op2 'Multiply' $surfaceColor (Op2 'Divide' $rustColor (Vec3 0.45 0.20 0.08))
 $rustRoughness = Add-Node -Kind 'Clamp' -Inputs @($surfaceRoughness, (Num 0.1), (Num 1.0))
 # 三方向の法線画像を局所面の接線方向へ投影し、物体の配置に合わせる。
-$normalX = Op2 'Subtract' (Op2 'Multiply' (Mask (Add-Node -Kind 'TextureSample' -Name 'RustSurfaceNormal' -TexturePath 'Engine:/Textures/Materials/Metal041C/NormalDX.jpg' -Inputs @((Op1 'Frac' (Mask $texturePosition 'yz')))) 'xy') (Num 2.0)) (Num 1.0)
-$normalY = Op2 'Subtract' (Op2 'Multiply' (Mask (Add-Node -Kind 'TextureSample' -Name 'RustSurfaceNormal' -TexturePath 'Engine:/Textures/Materials/Metal041C/NormalDX.jpg' -Inputs @((Op1 'Frac' (Mask $texturePosition 'xz')))) 'xy') (Num 2.0)) (Num 1.0)
-$normalZ = Op2 'Subtract' (Op2 'Multiply' (Mask (Add-Node -Kind 'TextureSample' -Name 'RustSurfaceNormal' -TexturePath 'Engine:/Textures/Materials/Metal041C/NormalDX.jpg' -Inputs @((Op1 'Frac' (Mask $texturePosition 'xy')))) 'xy') (Num 2.0)) (Num 1.0)
+$normalX = Op2 'Subtract' (Op2 'Multiply' (Mask (Add-Node -Kind 'TextureSampleTiled' -Name 'RustSurfaceNormal' -TexturePath 'Engine:/Textures/Materials/Metal041C/NormalDX.jpg' -Inputs @((Mask $texturePosition 'yz'))) 'xy') (Num 2.0)) (Num 1.0)
+$normalY = Op2 'Subtract' (Op2 'Multiply' (Mask (Add-Node -Kind 'TextureSampleTiled' -Name 'RustSurfaceNormal' -TexturePath 'Engine:/Textures/Materials/Metal041C/NormalDX.jpg' -Inputs @((Mask $texturePosition 'xz'))) 'xy') (Num 2.0)) (Num 1.0)
+$normalZ = Op2 'Subtract' (Op2 'Multiply' (Mask (Add-Node -Kind 'TextureSampleTiled' -Name 'RustSurfaceNormal' -TexturePath 'Engine:/Textures/Materials/Metal041C/NormalDX.jpg' -Inputs @((Mask $texturePosition 'xy'))) 'xy') (Num 2.0)) (Num 1.0)
 $deltaX = Add-Node -Kind 'Append' -Inputs @((Num 0.0), $normalX)
 $deltaY = Add-Node -Kind 'Append' -Inputs @((Add-Node -Kind 'Append' -Inputs @((Mask $normalY 'x'), (Num 0.0))), (Mask $normalY 'y'))
 $deltaZ = Add-Node -Kind 'Append' -Inputs @($normalZ, (Num 0.0))
