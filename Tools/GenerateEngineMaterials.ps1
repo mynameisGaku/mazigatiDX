@@ -199,9 +199,18 @@ $coarse = Add-Node -Kind 'Noise3D' -Inputs @($position, (Op2 'Multiply' $scale (
 $medium = Add-Node -Kind 'Noise3D' -Inputs @($position, $scale)
 $fine = Add-Node -Kind 'Noise3D' -Inputs @($position, $detailScale)
 $grain = Add-Node -Kind 'Noise3D' -Inputs @($position, $grainScale)
-$noise = Op2 'Add' (Op2 'Add' (Op2 'Multiply' $coarse (Num 0.45)) (Op2 'Multiply' $medium (Num 0.38))) (Op2 'Multiply' $fine (Num 0.17))
-$metalColor = Mask (ColorParam 'Metal' 0.76 0.76 0.80) 'xyz'
-$metalRoughness = Add-Node -Kind 'Clamp' -Inputs @((Op2 'Add' (Scalar 'MetalRoughness' 0.3) (Op2 'Multiply' (Op2 'Subtract' $fine (Num 0.5)) (Num 0.16))), (Num 0.03), (Num 0.9))
+# 大きな腐食域の輪郭に細かな欠けを重ね、独立した小さな腐食点も作る。
+$noise = Op2 'Add' (Op2 'Add' (Op2 'Multiply' $coarse (Num 0.38)) (Op2 'Multiply' $medium (Num 0.34))) (Op2 'Add' (Op2 'Multiply' $fine (Num 0.20)) (Op2 'Multiply' $grain (Num 0.08)))
+$amount = Scalar 'Amount' 0.5
+$threshold = Op2 'Subtract' (Num 1.2) (Op2 'Multiply' $amount (Num 1.4))
+$edgeNoise = Op2 'Add' $noise (Op2 'Multiply' (Op2 'Subtract' $grain (Num 0.5)) (Num 0.13))
+$mask = Add-Node -Kind 'SmoothStep' -Inputs @((Op2 'Subtract' $threshold (Num 0.025)), (Op2 'Add' $threshold (Num 0.025)), $edgeNoise)
+$speckles = Op2 'Multiply' (Add-Node -Kind 'SmoothStep' -Inputs @((Num 0.66), (Num 0.78), $fine)) (Add-Node -Kind 'SmoothStep' -Inputs @((Op2 'Subtract' $threshold (Num 0.20)), $threshold, $medium))
+$mask = Op1 'Saturate' (Op2 'Add' $mask (Op2 'Multiply' $speckles $amount))
+# 腐食の周囲は、金属も変色して光沢が鈍くなる。
+$weathered = Add-Node -Kind 'SmoothStep' -Inputs @((Op2 'Subtract' $threshold (Num 0.16)), (Op2 'Add' $threshold (Num 0.02)), $edgeNoise)
+$metalColor = Lerp3 (Mask (ColorParam 'Metal' 0.76 0.76 0.80) 'xyz') (Vec3 0.31 0.24 0.19) (Op2 'Multiply' $weathered (Num 0.65))
+$metalRoughness = Add-Node -Kind 'Clamp' -Inputs @((Op2 'Add' (Op2 'Add' (Scalar 'MetalRoughness' 0.4) (Op2 'Multiply' $weathered (Num 0.3))) (Op2 'Multiply' (Op2 'Subtract' $fine (Num 0.5)) (Num 0.16))), (Num 0.03), (Num 0.95))
 $metal = Add-Node -Kind 'SubstrateSlab' -Inputs @($metalColor, -1, $metalRoughness, (Num 1.0), -1, -1, -1, -1, -1, -1, -1)
 $rustColor = Mask (ColorParam 'Rust' 0.45 0.20 0.08) 'xyz'
 $rustVariation = Lerp3 (Op2 'Multiply' $rustColor (Num 0.5)) (Op2 'Multiply' $rustColor (Num 1.35)) (Op2 'Add' (Op2 'Add' (Op2 'Multiply' $medium (Num 0.50)) (Op2 'Multiply' $fine (Num 0.30))) (Op2 'Multiply' $grain (Num 0.20)))
@@ -211,8 +220,6 @@ $rustRelief = Add-Node -Kind 'Noise3DNormal' -Inputs @($position, $detailScale, 
 $rustGrain = Add-Node -Kind 'Noise3DNormal' -Inputs @($position, $grainScale, (Scalar 'RustGrainStrength' 0.3))
 $rustNormal = Op1 'Normalize' (Op2 'Subtract' (Op2 'Add' $rustRelief $rustGrain) (Add-Node -Kind 'WorldNormal'))
 $rust = Add-Node -Kind 'SubstrateSlab' -Inputs @($rustVariation, -1, $rustRoughness, (Num 0.0), -1, -1, -1, -1, -1, -1, -1, $rustNormal)
-$amount = Scalar 'Amount' 0.5
-$mask = Add-Node -Kind 'SmoothStep' -Inputs @((Op2 'Subtract' (Op1 'OneMinus' $amount) (Num 0.08)), (Op2 'Add' (Op1 'OneMinus' $amount) (Num 0.08)), $noise)
 $mixed = Add-Node -Kind 'SubstrateMix' -Inputs @($metal, $rust, $mask)
 Save-Material 'Surface\RustedMetal.gxmaterial' 'RustedMetal' 'Surface' 'Substrate' @{ Surface = $mixed }
 

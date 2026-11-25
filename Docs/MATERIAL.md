@@ -222,7 +222,7 @@ FUIBrush Glow = FUIBrush::MakeMaterial( GlowMaterial );                 // UI �
 |`Surface/BrushedMetal`|一方向に磨いた金属。光沢が伸びる（Substrate。`Metal`・`Roughness`・`Metallic`・`Anisotropy`）|
 |`Surface/Pearl`|真珠。見る角度で色が変わる（Substrate。`Base`・`Roughness`・`ThinFilm`）|
 |`Surface/Wax`|ろう。光が回り込む（Substrate。`Base`・`Scatter`・`Roughness`）|
-|`Surface/RustedMetal`|さびた金属。局所3次元ノイズの大小で金属と酸化した非金属を混ぜ、サビの色・粗さ・法線を変える。細かい粒子の強さは `RustGrainStrength` で調整する（Substrate。`Metal`・`Rust`・`MetalRoughness`・`Scale`・`Amount`・`RustBumpStrength`・`RustGrainStrength`）|
+|`Surface/RustedMetal`|さびた金属。局所3次元ノイズの大小で金属と酸化した非金属を混ぜ、腐食の欠けや点、その周囲の変色、サビの色・粗さ・法線を変える。細かい粒子の強さは `RustGrainStrength` で調整する（Substrate。`Metal`・`Rust`・`MetalRoughness`・`Scale`・`Amount`・`RustBumpStrength`・`RustGrainStrength`）|
 |`Surface/CandyPaint`|キャンディ塗装。金属の上に、色のついた透明な層を重ねる（Substrate の `SubstrateLayer`。`Metal`・`MetalRoughness`・`Tint`・`CoatRoughness`・`Coverage`）|
 |`Surface/HammeredMetal`|槌目の金属。局所3次元ノイズの勾配から、凹凸の法線を作る（Substrate。`Metal`・`Roughness`・`Scale`・`Strength`）|
 
