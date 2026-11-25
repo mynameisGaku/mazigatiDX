@@ -39,6 +39,8 @@ CPU評価時は `FMaterialEvalContext::LocalPosition`、`LocalNormal` と `Objec
 
 `TextureSampleTiled` は入力座標を繰り返して画像を読みます。GPU は繰り返し前の座標の変化からミップを選ぶため、境界で突然ぼやけるのを抑えます。画像の両端を線形補間でつなぐには、描画側で `TextureAddress(Wrap)` と `Filter(Bilinear)` を指定します。CPU評価は繰り返し後の座標で点を読み、ミップや画像端の補間は評価側の画像読み取り関数に従います。
 
+法線・粗さ・金属度・マスクなどの線形データ画像は、画像ノードの `TextureMipMode` を `LinearData` にします。エディタでは `Linear data (normal / roughness / masks)` を選びます。省略時は従来どおり色画像として扱います。同名の画像パラメータを複数箇所で使う場合は用途を揃えてください。異なる用途はコンパイルエラーになります。`CustomHlsl` の画像パラメータにも同じ指定ができます。別途画像を読み込んで差し替える場合は `LoadTextureData` を使ってください。詳しい縮小方法と制約は [R7 ミップマップ](R7_MIPMAPS.md) を参照してください。
+
 ```cpp
 FMaterialDefinition Definition;
 Definition.Domain = EMaterialDomain::UI;

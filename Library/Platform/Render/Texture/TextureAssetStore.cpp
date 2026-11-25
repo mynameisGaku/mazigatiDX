@@ -28,14 +28,14 @@ void CTextureAssetStore::Shutdown()
 	Resources = nullptr;
 }
 
-int32 CTextureAssetStore::Create( int32 Width, int32 Height, const FColor32* Pixels, bool bMipmaps )
+int32 CTextureAssetStore::Create( int32 Width, int32 Height, const FColor32* Pixels, bool bMipmaps, ETextureMipMode MipMode )
 {
 	if ( !Resources || !Pixels || Width <= 0 || Height <= 0 || Width > 16384 || Height > 16384 || static_cast<int64>( Width ) * Height > 64 * 1024 * 1024
-		|| Textures.Num() >= MaxHandles || NextHandle == TNumericLimits<int32>::Max() )
+		|| ( MipMode != ETextureMipMode::Color && MipMode != ETextureMipMode::LinearData ) || Textures.Num() >= MaxHandles || NextHandle == TNumericLimits<int32>::Max() )
 	{
 		return -1;
 	}
-	const FTextureResourceHandle Resource = bMipmaps ? Resources->CreateTextureRGBA8Mipped( Width, Height, Pixels ) : Resources->CreateTextureRGBA8( Width, Height, Pixels ); // 番号の発行前に資源を完成させる。
+	const FTextureResourceHandle Resource = !bMipmaps ? Resources->CreateTextureRGBA8( Width, Height, Pixels ) : ( MipMode == ETextureMipMode::LinearData ? Resources->CreateTextureRGBA8DataMipped( Width, Height, Pixels ) : Resources->CreateTextureRGBA8Mipped( Width, Height, Pixels ) ); // 番号の発行前に資源を完成させる。
 	if ( !Resource.IsValid() )
 	{
 		return -1;

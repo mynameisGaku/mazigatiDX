@@ -28,6 +28,8 @@ public:
 	void Deinitialize() override;
 
 	int32 LoadTexture( const FString& Path, bool bAsync ) override;
+	// DxLibの通常画像として線形データを読む。
+	int32 LoadTextureData( const FString& Path, bool bAsync ) override { return LoadTexture( Path, bAsync ); }
 	int32 CreateTextureFromMemory( const void* FileImage, usize Size ) override;
 	// 元画像の指定矩形をDxLibの派生グラフとして作る。
 	int32 CreateTextureRegion( int32 Source, int32 X, int32 Y, int32 Width, int32 Height ) override;

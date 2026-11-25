@@ -250,6 +250,11 @@ TSharedPtr<CTexture> CAssetSubsystem::LoadTexture( const FString& Path, bool bAs
 	return TextureLoader.Load( Path, bAsync );
 }
 
+TSharedPtr<CTexture> CAssetSubsystem::LoadTextureData( const FString& Path, bool bAsync )
+{
+	return TextureLoader.Load( Path, bAsync, ETextureMipMode::LinearData );
+}
+
 TSharedPtr<CTexture> CAssetSubsystem::CreateTextureRegion( const TSharedPtr<CTexture>& Source, int32 X, int32 Y, int32 Width, int32 Height )
 {
 	return TextureLoader.CreateRegion( Source, X, Y, Width, Height );

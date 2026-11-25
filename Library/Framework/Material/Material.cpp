@@ -412,7 +412,7 @@ void CMaterial::LoadTextures( CAssetSubsystem& Assets )
 		}
 		if ( !Parent )
 		{
-			const TSharedPtr<CTexture> Texture = Assets.LoadTexture( Slot.DefaultPath );
+			const TSharedPtr<CTexture> Texture = Slot.MipMode == ETextureMipMode::LinearData ? Assets.LoadTextureData( Slot.DefaultPath ) : Assets.LoadTexture( Slot.DefaultPath );
 			if ( Texture )
 			{
 				SetTexture( Slot.Name, Texture );

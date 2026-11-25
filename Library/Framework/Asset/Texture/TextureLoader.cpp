@@ -16,9 +16,10 @@ CTextureLoader::CTextureLoader( CAssetLoadContext& InContext )
 {
 }
 
-TSharedPtr<CTexture> CTextureLoader::Load( const FString& Path, bool bAsync )
+TSharedPtr<CTexture> CTextureLoader::Load( const FString& Path, bool bAsync, ETextureMipMode MipMode )
 {
 	GAME_THREAD_ONLY( nullptr );
+	if ( MipMode != ETextureMipMode::Color && MipMode != ETextureMipMode::LinearData ) { return nullptr; }
 	const TOptional<FString> Full = Context.PrepareLoad( "texture", Path );
 	if ( !Full.IsSet() )
 	{
@@ -26,7 +27,7 @@ TSharedPtr<CTexture> CTextureLoader::Load( const FString& Path, bool bAsync )
 	}
 
 	const FString FullPath = Full.Get( FString() );
-	const FString Key = CAssetPathResolver::MakeKey( FullPath );
+	const FString Key = ( MipMode == ETextureMipMode::LinearData ? "data:" : "" ) + CAssetPathResolver::MakeKey( FullPath );
 	if ( TSharedPtr<CTexture> Existing = Cache.Find( Key ) )
 	{
 		Context.GetRecorder().RecordCacheHit();
@@ -35,7 +36,7 @@ TSharedPtr<CTexture> CTextureLoader::Load( const FString& Path, bool bAsync )
 
 	PROFILE_SCOPE_LAZY( LoadScope, CAssetLoadRecorder::MakeProfileScope( "LoadTexture", FullPath ) );
 	const int64 StartTick = NPlatformTime::GetTicks();
-	const int32 Handle = Context.GetTextureBackend()->LoadTexture( FullPath, bAsync );
+	const int32 Handle = MipMode == ETextureMipMode::LinearData ? Context.GetTextureBackend()->LoadTextureData( FullPath, bAsync ) : Context.GetTextureBackend()->LoadTexture( FullPath, bAsync );
 	if ( Handle < 0 )
 	{
 		LOG( LogAsset, Error, "Failed to load the texture '%s' (unsupported or broken image).", *FullPath );

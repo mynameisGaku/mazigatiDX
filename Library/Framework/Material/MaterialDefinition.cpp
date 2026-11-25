@@ -71,6 +71,10 @@ struct FMaterialJson
 			{
 				Json["TexturePath"] = NJson::ToJsonString( Node.TexturePath );
 			}
+			if ( Node.TextureMipMode == ETextureMipMode::LinearData )
+			{
+				Json["TextureMipMode"] = "LinearData";
+			}
 			if ( IsValueNode( Node.Kind ) )
 			{
 				const int32 Count = Node.Kind == EMaterialNodeKind::Panner ? 2 : ( Node.Kind == EMaterialNodeKind::Tiling ? 4 : Node.ValueComponents );
@@ -152,6 +156,13 @@ struct FMaterialJson
 				Node.Name = ReadString( Json, "Name" );
 				Node.ParameterCollection = ReadString( Json, "ParameterCollection" );
 				Node.TexturePath = ReadString( Json, "TexturePath" );
+				if ( Json.contains( "TextureMipMode" ) )
+				{
+					if ( Node.Kind != EMaterialNodeKind::TextureSample && Node.Kind != EMaterialNodeKind::TextureSampleTiled ) { if ( OutError != nullptr ) { *OutError = "TextureMipMode requires a texture node"; } return false; }
+					const FString Mode = ReadString( Json, "TextureMipMode" ); // 画像の縮小段に使う成分の扱い。
+					if ( Mode == "LinearData" ) { Node.TextureMipMode = ETextureMipMode::LinearData; }
+					else if ( Mode != "Color" ) { if ( OutError != nullptr ) { *OutError = "invalid TextureMipMode"; } return false; }
+				}
 				Node.Value = ReadVector( Json.contains( "Value" ) ? Json["Value"] : NlohmannJson(), FVector4( 0.0f, 0.0f, 0.0f, 0.0f ) );
 				const auto Components = Json.find( "Components" );
 				Node.ValueComponents = ( Components != Json.end() && Components->is_number_integer() ) ? NMath::Clamp( Components->get<int32>(), 1, 4 ) : ( Node.Kind == EMaterialNodeKind::VectorParameter || Node.Kind == EMaterialNodeKind::ParameterCollectionVector ? 4 : 1 );
@@ -243,6 +254,7 @@ FString FMaterialDefinition::ToJson() const
 			if ( Decl.Type == EMaterialValueType::Texture )
 			{
 				Entry["Path"] = NJson::ToJsonString( Decl.Path );
+				if ( Decl.TextureMipMode == ETextureMipMode::LinearData ) { Entry["TextureMipMode"] = "LinearData"; }
 			}
 			else
 			{
@@ -332,6 +344,13 @@ bool FMaterialDefinition::FromJson( const FString& Text, FMaterialDefinition& Ou
 				return Fail( FString::Printf( "parameter %d has no Name or a Type that is not known (Float, Float2, Float3, Float4, Texture)", static_cast<int32>( Index ) ) );
 			}
 			Decl.Path = ReadString( Entry, "Path" );
+			if ( Entry.contains( "TextureMipMode" ) )
+			{
+				const FString Mode = ReadString( Entry, "TextureMipMode" ); // 画像の縮小段の成分の扱い。
+				if ( Decl.Type != EMaterialValueType::Texture ) { return Fail( "TextureMipMode requires a texture parameter" ); }
+				if ( Mode == "LinearData" ) { Decl.TextureMipMode = ETextureMipMode::LinearData; }
+				else if ( Mode != "Color" ) { return Fail( "invalid TextureMipMode" ); }
+			}
 			Decl.Value = ReadVector( Entry.contains( "Value" ) ? Entry["Value"] : NlohmannJson(), FVector4( 0.0f, 0.0f, 0.0f, 0.0f ) );
 			Decl.bColor = Entry.contains( "Color" ) && Entry["Color"].is_boolean() && Entry["Color"].get<bool>();
 			Result.Parameters.Add( Decl );

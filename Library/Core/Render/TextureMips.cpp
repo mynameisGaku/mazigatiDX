@@ -58,6 +58,12 @@ namespace
 		return Result;
 	}
 
+	// 色変換やアルファによる重み付けをせず、データの各成分を独立して扱う。
+	FLinearPixel ToData( const FColor32& Pixel )
+	{
+		return FLinearPixel { Pixel.r / 255.0f, Pixel.g / 255.0f, Pixel.b / 255.0f, Pixel.a / 255.0f };
+	}
+
 	// 乗算済みの線形の光から、元の形式（非乗算済みの sRGB の 8 ビット）へ戻す。アルファが 0 の画素の色は 0
 	FColor32 ToColor32( const FLinearPixel& Pixel )
 	{
@@ -148,14 +154,14 @@ int32 NTextureMips::GetLevelSize( int32 Size, int32 Level )
 	return Level >= 31 ? 1 : NMath::Max( 1, Size >> Level );
 }
 
-bool NTextureMips::GenerateChain( int32 Width, int32 Height, const FColor32* Pixels, TArray<FLevel>& OutLevels )
+static bool GenerateMipChain( int32 Width, int32 Height, const FColor32* Pixels, TArray<NTextureMips::FLevel>& OutLevels, bool bLinearData )
 {
-	if ( Width <= 0 || Height <= 0 || !Pixels || static_cast<int64>( Width ) * Height > MaxSourcePixels )
+	if ( Width <= 0 || Height <= 0 || !Pixels || static_cast<int64>( Width ) * Height > NTextureMips::MaxSourcePixels )
 	{
 		return false;
 	}
-	const int32 NumLevels = GetNumLevels( Width, Height );
-	TArray<FLevel> Levels;
+	const int32 NumLevels = NTextureMips::GetNumLevels( Width, Height );
+	TArray<NTextureMips::FLevel> Levels;
 	Levels.SetNum( NumLevels - 1 );
 	const float32* SrgbToLinear = GetSrgbToLinear();
 	TArray<FLinearPixel> Previous; // 1 つ前の段（段 1 を作るときは、元の画像から直接読む）
@@ -163,24 +169,25 @@ bool NTextureMips::GenerateChain( int32 Width, int32 Height, const FColor32* Pix
 	int32 PreviousHeight = Height;
 	for ( int32 Level = 1; Level < NumLevels; ++Level )
 	{
-		const int32 LevelWidth = GetLevelSize( Width, Level );
-		const int32 LevelHeight = GetLevelSize( Height, Level );
+		const int32 LevelWidth = NTextureMips::GetLevelSize( Width, Level );
+		const int32 LevelHeight = NTextureMips::GetLevelSize( Height, Level );
 		TArray<FLinearPixel> Current;
 		if ( Level == 1 )
 		{
-			Downsample( [&]( int32 X, int32 Y ) { return ToLinear( Pixels[static_cast<usize>( Y ) * Width + X], SrgbToLinear ); }, PreviousWidth, PreviousHeight, LevelWidth, LevelHeight, Current );
+			Downsample( [&]( int32 X, int32 Y ) { return bLinearData ? ToData( Pixels[static_cast<usize>( Y ) * Width + X] ) : ToLinear( Pixels[static_cast<usize>( Y ) * Width + X], SrgbToLinear ); }, PreviousWidth, PreviousHeight, LevelWidth, LevelHeight, Current );
 		}
 		else
 		{
 			Downsample( [&]( int32 X, int32 Y ) { return Previous[static_cast<usize>( Y ) * PreviousWidth + X]; }, PreviousWidth, PreviousHeight, LevelWidth, LevelHeight, Current );
 		}
-		FLevel& Out = Levels[Level - 1];
+		NTextureMips::FLevel& Out = Levels[Level - 1];
 		Out.Width = LevelWidth;
 		Out.Height = LevelHeight;
 		Out.Pixels.SetNum( LevelWidth * LevelHeight );
 		for ( int32 Index = 0; Index < Current.Num(); ++Index )
 		{
-			Out.Pixels[Index] = ToColor32( Current[Index] );
+			const FLinearPixel& Pixel = Current[Index]; // 面積平均された成分。
+			Out.Pixels[Index] = bLinearData ? FColor32( ToByte( Pixel.R ), ToByte( Pixel.G ), ToByte( Pixel.B ), ToByte( Pixel.A ) ) : ToColor32( Pixel );
 		}
 		Previous = MoveTemp( Current );
 		PreviousWidth = LevelWidth;
@@ -188,4 +195,14 @@ bool NTextureMips::GenerateChain( int32 Width, int32 Height, const FColor32* Pix
 	}
 	OutLevels = MoveTemp( Levels );
 	return true;
+}
+
+bool NTextureMips::GenerateChain( int32 Width, int32 Height, const FColor32* Pixels, TArray<FLevel>& OutLevels )
+{
+	return GenerateMipChain( Width, Height, Pixels, OutLevels, false );
+}
+
+bool NTextureMips::GenerateDataChain( int32 Width, int32 Height, const FColor32* Pixels, TArray<FLevel>& OutLevels )
+{
+	return GenerateMipChain( Width, Height, Pixels, OutLevels, true );
 }

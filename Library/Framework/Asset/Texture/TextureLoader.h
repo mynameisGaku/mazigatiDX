@@ -8,6 +8,7 @@
 #include "Library/Framework/Asset/Texture/PixelImage.h"
 #include "Library/Framework/Asset/Texture/RenderTarget.h"
 #include "Library/Framework/Asset/Texture/Texture.h"
+#include "Library/Core/Render/TextureMipMode.h"
 
 //=============================================================================
 // CTextureLoader
@@ -21,7 +22,7 @@ public:
 	explicit CTextureLoader( CAssetLoadContext& InContext );
 
 	// ファイルから。同じファイルは共有する。bAsync なら、読み込みの完了を待たずに返す（IsReady が true になるまで使わない）。読めなければ nullptr
-	TSharedPtr<CTexture> Load( const FString& Path, bool bAsync );
+	TSharedPtr<CTexture> Load( const FString& Path, bool bAsync, ETextureMipMode MipMode = ETextureMipMode::Color );
 
 	// ファイルの中身（BMP / PNG など）から作る。Name が同じなら共有する
 	TSharedPtr<CTexture> CreateFromMemory( const FString& Name, const void* FileImage, usize Size );

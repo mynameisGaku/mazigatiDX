@@ -83,6 +83,14 @@ int32 CDX12AssetBackendSubsystem::LoadTexture( const FString& Path, bool )
 	return NFile::ReadAllBytes( Path, Bytes ) ? CreateTextureFromMemory( Bytes.GetData(), Bytes.Num() ) : NAsset::InvalidHandle;
 }
 
+int32 CDX12AssetBackendSubsystem::LoadTextureData( const FString& Path, bool )
+{
+	TArray<uint8> Bytes; // 元の画像ファイル。
+	int32 Width = 0, Height = 0; // 展開した画像の寸法。
+	TArray<FColor32> Pixels; // 展開した線形データ。
+	return NFile::ReadAllBytes( Path, Bytes ) && DecodeImage( Bytes.GetData(), Bytes.Num(), Width, Height, Pixels ) ? Textures.Create( Width, Height, Pixels.GetData(), true, ETextureMipMode::LinearData ) : NAsset::InvalidHandle;
+}
+
 int32 CDX12AssetBackendSubsystem::CreateTextureFromMemory( const void* FileImage, usize Size )
 {
 	int32 Width = 0, Height = 0; // 展開した大きさ。

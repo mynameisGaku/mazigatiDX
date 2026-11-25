@@ -116,13 +116,13 @@ FTextureResourceHandle CDX12TextureStore::Register( FDX12TextureRecord &Created 
 	return Handle;
 }
 
-bool CDX12TextureStore::Upload( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable, FDX12TextureRecord &Out, bool bMips )
+bool CDX12TextureStore::Upload( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable, FDX12TextureRecord &Out, bool bMips, ETextureMipMode MipMode )
 {
 	if ( !CanCreate( Width, Height ) || !Pixels || ( bWritable && ( !bCapabilitiesAvailable || !Capabilities.bRGBA8ReadWrite ) ) )
 	{
 		return false;
 	}
-	return Creator.CreateRGBA8( Width, Height, Pixels, bWritable, bMips, Out );
+	return Creator.CreateRGBA8( Width, Height, Pixels, bWritable, bMips, Out, MipMode );
 }
 
 bool CDX12TextureStore::UploadRGBA16F( int32 Width, int32 Height, const FColor *Pixels, FDX12TextureRecord &Out )
@@ -150,6 +150,11 @@ FTextureResourceHandle CDX12TextureStore::CreateTextureRGBA8( int32 Width, int32
 FTextureResourceHandle CDX12TextureStore::CreateTextureRGBA8Mipped( int32 Width, int32 Height, const FColor32 *Pixels )
 {
 	return Create( Width, Height, Pixels, false, Look == ERenderLook::Standard );
+}
+
+FTextureResourceHandle CDX12TextureStore::CreateTextureRGBA8DataMipped( int32 Width, int32 Height, const FColor32 *Pixels )
+{
+	return Create( Width, Height, Pixels, false, Look == ERenderLook::Standard, ETextureMipMode::LinearData );
 }
 
 bool CDX12TextureStore::GetComputeTextureCapabilities( FComputeTextureCapabilities &Out ) const
@@ -445,15 +450,16 @@ bool CDX12TextureStore::IsActiveTarget( FTextureResourceHandle Texture ) const
 	return Texture.IsValid() && IsActiveTarget( Texture.Value );
 }
 
-FTextureResourceHandle CDX12TextureStore::Create( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable, bool bMips )
+FTextureResourceHandle CDX12TextureStore::Create( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable, bool bMips, ETextureMipMode MipMode )
 {
 	FDX12TextureRecord Created; // 完成した画像だけを登録する。
 	// 読み取り用の段なし画像は、完了を待たずに積む（毎フレーム新しい文字列の画像を作るような使い方を軽くする。使い終えた資源・記述子も使い回す）。待てない・予算超過なら、完了を待つ経路へ。
 	const bool bQueued = !bWritable && !bMips && Pixels && CanCreate( Width, Height ) && Updater.Update( Width, Height, Pixels, Created );
-	if ( !bQueued && !Upload( Width, Height, Pixels, bWritable, Created, bMips ) )
+	if ( !bQueued && !Upload( Width, Height, Pixels, bWritable, Created, bMips, MipMode ) )
 	{
 		return FTextureResourceHandle();
 	}
+	Created.MipMode = MipMode;
 	return Register( Created );
 }
 
@@ -467,10 +473,11 @@ bool CDX12TextureStore::UpdateTextureRGBA8( FTextureResourceHandle Texture, int3
 	FDX12TextureRecord Created; // 失敗時は現在の内容とSRVを保つ。
 	// 読み取り用の段なし画像は、完了を待たずに積む（資源・記述子・転送領域を使い回す）。待てない・予算超過なら、完了を待つ経路へ。
 	const bool bQueued = Current->Kind == EDX12TextureKind::StandardRGBA8 && Current->MipLevels == 1 && CanCreate( Width, Height ) && Updater.Update( Width, Height, Pixels, Created );
-	if ( !bQueued && !Upload( Width, Height, Pixels, Current->Kind == EDX12TextureKind::ComputeRGBA8, Created, Current->MipLevels > 1 ) ) // ミップマップを持つ画像は、ミップマップも作り直す
+	if ( !bQueued && !Upload( Width, Height, Pixels, Current->Kind == EDX12TextureKind::ComputeRGBA8, Created, Current->MipLevels > 1, Current->MipMode ) ) // ミップマップを持つ画像は、同じ用途で作り直す
 	{
 		return false;
 	}
+	Created.MipMode = Current->MipMode;
 	RetiredVersions.Add( MoveTemp( *Current ) );
 	*Current = MoveTemp( Created );
 	return true;

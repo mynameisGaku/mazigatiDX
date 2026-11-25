@@ -131,6 +131,8 @@ public:
 	// 画像
 	//-------------------------------------------------------------------------
 	TSharedPtr<CTexture> LoadTexture( const FString& Path, bool bAsync = false );
+	// 法線・粗さなど、各成分が線形データの画像を読む。色画像とは別に共有する。
+	TSharedPtr<CTexture> LoadTextureData( const FString& Path, bool bAsync = false );
 	// 元画像の矩形を親と共有する派生テクスチャを返す。同じ親と矩形は再利用する。
 	TSharedPtr<CTexture> CreateTextureRegion( const TSharedPtr<CTexture>& Source, int32 X, int32 Y, int32 Width, int32 Height );
 	// ファイルの中身（BMP / PNG など）から作る。Name が同じなら共有する

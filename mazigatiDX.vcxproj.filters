@@ -2562,6 +2562,9 @@
     <ClInclude Include="Library\Core\Render\TextureMips.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>
+    <ClInclude Include="Library\Core\Render\TextureMipMode.h">
+      <Filter>Library\Core\Render</Filter>
+    </ClInclude>
     <ClInclude Include="Library\Core\Render\RenderTargetCapabilities.h">
       <Filter>Library\Core\Render</Filter>
     </ClInclude>

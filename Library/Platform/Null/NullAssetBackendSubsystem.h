@@ -37,6 +37,8 @@ public:
 	// 画像・描画先・CPU 側の画像
 	//-------------------------------------------------------------------------
 	int32 LoadTexture( const FString& Path, bool bAsync ) override;
+	// Nullでは描画せず、画像の寸法と寿命だけを通常画像と同様に扱う。
+	int32 LoadTextureData( const FString& Path, bool bAsync ) override { return LoadTexture( Path, bAsync ); }
 	int32 CreateTextureFromMemory( const void* FileImage, usize Size ) override;
 	int32 CreateTextureRegion( int32 Source, int32 X, int32 Y, int32 Width, int32 Height ) override;
 	bool GetTextureUvBounds( int32 Texture, float32 ( &OutUV )[4] ) override;

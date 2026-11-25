@@ -35,6 +35,8 @@ class CDX12TextureStore : public IRenderTextureResources
 	FTextureResourceHandle CreateTextureRGBA8( int32 Width, int32 Height, const FColor32 *Pixels ) override;
 	// 標準見た目（ERenderLook::Standard）では、ミップマップつきで作る（CPUで段を作って、全部の段を転送する）。互換見た目では、CreateTextureRGBA8 と同じ。
 	FTextureResourceHandle CreateTextureRGBA8Mipped( int32 Width, int32 Height, const FColor32 *Pixels ) override;
+	// 線形データ画像の各成分を独立して縮小する。
+	FTextureResourceHandle CreateTextureRGBA8DataMipped( int32 Width, int32 Height, const FColor32 *Pixels ) override;
 	// 見た目の水準を決める（画像を作る前に。作った画像は、作ったときの水準のまま）。
 	void SetLook( ERenderLook InLook ) { Look = InLook; }
 	ERenderLook GetLook() const { return Look; }
@@ -93,13 +95,13 @@ class CDX12TextureStore : public IRenderTextureResources
 	// コピー可能な組を貸す。寸法・色形式の相違、書き込み中、解放済みの画像はfalse。
 	bool FindTextureCopyPair( FTextureResourceHandle Source, FTextureResourceHandle Destination, const FDX12TextureRecord *&OutSource, const FDX12TextureRecord *&OutDestination ) const;
 	// 完了を待った新規画像を作る。失敗時はOutを変えない。bMipsなら、ミップマップの全部の段も転送する（作れない大きさ・UAV書き込み可の画像は、段なし）。
-	bool Upload( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable, FDX12TextureRecord &Out, bool bMips = false );
+	bool Upload( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable, FDX12TextureRecord &Out, bool bMips = false, ETextureMipMode MipMode = ETextureMipMode::Color );
 	// 完了を待った新規RGBA16F compute画像を作る。失敗時はOutを変えない。
 	bool UploadRGBA16F( int32 Width, int32 Height, const FColor *Pixels, FDX12TextureRecord &Out );
 	// 浮動小数点カラー描画先（RGBA16F / R32Float）を作成する共通処理。
 	FTextureResourceHandle CreateFloatColorRenderTarget( int32 Width, int32 Height, DXGI_FORMAT Format, const float32 ClearValues[4], EDX12TextureKind Kind );
 	// 用途を固定して新規画像を登録する。失敗時は無効値。
-	FTextureResourceHandle Create( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable, bool bMips = false );
+	FTextureResourceHandle Create( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable, bool bMips = false, ETextureMipMode MipMode = ETextureMipMode::Color );
 	// 完成した実体へ通し番号を付けて登録する。番号が取れなければ実体を破棄して無効値。
 	FTextureResourceHandle Register( FDX12TextureRecord &Created );
 	// 指定番号が現在アクティブなオフスクリーン描画パスの色・深度に含まれているか。

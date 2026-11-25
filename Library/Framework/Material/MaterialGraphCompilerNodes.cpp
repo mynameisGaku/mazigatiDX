@@ -40,7 +40,7 @@ namespace NMaterialGraphCompiler
 				return ScalarResult( Fallback( Id, EMaterialValueType::Float4 ) );
 			}
 			const int32 Uv = PinValue( Node, 0 );
-			const int32 Slot = TextureSlotFor( Node.Name, Node.TexturePath, Id );
+			const int32 Slot = TextureSlotFor( Node.Name, Node.TexturePath, Node.TextureMipMode, Id );
 			const int32 Index = Emit( Node.Kind == K::TextureSampleTiled ? EMaterialOp::SampleTiled : EMaterialOp::Sample, EMaterialValueType::Float4, Id, Uv );
 			Program.Code[Index].Slot = Slot;
 			return ScalarResult( Index );

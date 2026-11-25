@@ -25,6 +25,8 @@ public:
 	void Deinitialize() override;
 	// 画像を同期読み込みする。bAsyncでもその場で完了する。
 	int32 LoadTexture( const FString& Path, bool bAsync ) override;
+	// 線形データ画像を読み込み、用途に合ったミップで登録する。
+	int32 LoadTextureData( const FString& Path, bool bAsync ) override;
 	// WICが対応するファイル内容を展開して登録する。失敗時は-1。
 	int32 CreateTextureFromMemory( const void* FileImage, usize Size ) override;
 	// 元の画像の矩形を共有する派生画像を登録する（SplitTexture など）。GPU資源は元の画像と同じ。

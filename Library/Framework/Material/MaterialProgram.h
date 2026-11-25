@@ -131,6 +131,7 @@ struct FMaterialTextureSlot
 	FString DefaultPath;
 	EMaterialTextureSource Source = EMaterialTextureSource::Parameter;
 	int32 Register = 0;            // HLSL の t レジスタ（0 から連続）
+	ETextureMipMode MipMode = ETextureMipMode::Color; // 既定画像の縮小段の作り方。
 };
 
 struct FMaterialOutputValue

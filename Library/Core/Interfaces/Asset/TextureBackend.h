@@ -51,4 +51,6 @@ public:
 	virtual bool DecodeImageFile( const FString& /*Path*/, int32& /*OutWidth*/, int32& /*OutHeight*/, TArray<FColor32>& /*OutPixels*/ ) { return false; }
 	// 画素（Width x Height 個）を、Path のファイルに保存する。呼ぶ側が、大きさを 1 以上にしてある。失敗したら false
 	virtual bool SavePixels( int32 /*Width*/, int32 /*Height*/, const FColor32* /*Pixels*/, const FString& /*Path*/, const FImageSaveOptions& /*Options*/ ) { return false; }
+	// 法線・粗さ等の線形データ画像を読む。未対応の実装は InvalidHandle を返す。
+	virtual int32 LoadTextureData( const FString& /*Path*/, bool /*bAsync*/ ) { return NAsset::InvalidHandle; }
 };

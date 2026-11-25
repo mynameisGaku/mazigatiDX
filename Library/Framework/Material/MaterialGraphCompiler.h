@@ -97,7 +97,7 @@ namespace NMaterialGraphCompiler
 		// ---- パラメーター・画像の置き場 ----
 		int32 FindOrAddParam( const FString& Name, const FString& ParameterCollection, EMaterialValueType Type, const FVector4& Default, bool bColor, int32 Node );
 		int32 AddTextureSlot( const FString& Name, const FString& Path, EMaterialTextureSource Source );
-		int32 TextureSlotFor( const FString& Name, const FString& Path, int32 Node );
+		int32 TextureSlotFor( const FString& Name, const FString& Path, ETextureMipMode MipMode, int32 Node );
 
 		// ---- ピンの値 ----
 		float32 PinDefault( const FMaterialNode& Node, int32 Pin ) const;

@@ -974,6 +974,7 @@
     <ClInclude Include="Library\Core\Render\RenderLook.h" />
     <ClInclude Include="Library\Core\Render\RenderResourceSerial.h" />
     <ClInclude Include="Library\Core\Render\TextureMips.h" />
+    <ClInclude Include="Library\Core\Render\TextureMipMode.h" />
     <ClInclude Include="Library\Core\Render\RenderTargetCapabilities.h" />
     <ClInclude Include="Library\Core\Render\RenderTargetDrawView.h" />
     <ClInclude Include="Library\Core\Render\RenderTargetFormat.h" />

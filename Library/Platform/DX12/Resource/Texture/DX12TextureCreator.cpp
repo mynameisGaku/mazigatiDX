@@ -120,7 +120,7 @@ bool CDX12TextureCreator::AttachShaderResourceView( FDX12TextureRecord &Created,
 	return true;
 }
 
-bool CDX12TextureCreator::CreateRGBA8( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable, bool bMips, FDX12TextureRecord &Out )
+bool CDX12TextureCreator::CreateRGBA8( int32 Width, int32 Height, const FColor32 *Pixels, bool bWritable, bool bMips, FDX12TextureRecord &Out, ETextureMipMode MipMode )
 {
 	if ( !Device || !Submitter || !Pool )
 	{
@@ -131,7 +131,8 @@ bool CDX12TextureCreator::CreateRGBA8( int32 Width, int32 Height, const FColor32
 	TArray<NTextureMips::FLevel> MipLevels;
 	if ( bMips && !bWritable )
 	{
-		NTextureMips::GenerateChain( Width, Height, Pixels, MipLevels );
+		if ( MipMode == ETextureMipMode::LinearData ) { NTextureMips::GenerateDataChain( Width, Height, Pixels, MipLevels ); }
+		else { NTextureMips::GenerateChain( Width, Height, Pixels, MipLevels ); }
 	}
 	const UINT NumLevels = static_cast<UINT>( 1 + MipLevels.Num() );
 	const D3D12_RESOURCE_DESC Desc = MakeTexture2DDesc( Width, Height, NumLevels, DXGI_FORMAT_R8G8B8A8_UNORM, bWritable ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE );
@@ -155,6 +156,7 @@ bool CDX12TextureCreator::CreateRGBA8( int32 Width, int32 Height, const FColor32
 	Created.Width = Width;
 	Created.Height = Height;
 	Created.MipLevels = static_cast<int32>( NumLevels );
+	Created.MipMode = MipMode;
 	Created.Kind = bWritable ? EDX12TextureKind::ComputeRGBA8 : EDX12TextureKind::StandardRGBA8;
 	Out = MoveTemp( Created );
 	return true;

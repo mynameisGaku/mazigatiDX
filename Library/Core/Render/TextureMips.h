@@ -39,4 +39,7 @@ namespace NTextureMips
 	// 元の画像（左上から行の順の、非乗算済みの RGBA8）から、段 1 以降を作る。段 0 は含まない（段の数 - 1 個）。
 	// 元の画像が 1 x 1 なら、段は 0 個で成功。大きさが 0 以下・画素が無い・MaxSourcePixels を超える・メモリ不足は、OutLevels を変えずに false
 	bool GenerateChain( int32 Width, int32 Height, const FColor32* Pixels, TArray<FLevel>& OutLevels );
+
+	// 法線・粗さ・マスクなどの線形データを、RGBA各成分を独立して面積平均する。失敗時は出力を保つ。
+	bool GenerateDataChain( int32 Width, int32 Height, const FColor32* Pixels, TArray<FLevel>& OutLevels );
 }

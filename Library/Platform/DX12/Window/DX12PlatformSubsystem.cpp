@@ -833,6 +833,15 @@ FTextureResourceHandle CDX12PlatformSubsystem::CreateTextureRGBA8Mipped( int32 W
 	return ExecuteRender( MoveTemp( Work ) ) ? Result : FTextureResourceHandle();
 }
 
+FTextureResourceHandle CDX12PlatformSubsystem::CreateTextureRGBA8DataMipped( int32 Width, int32 Height, const FColor32 *Pixels )
+{
+	GAME_THREAD_ONLY( FTextureResourceHandle() );
+	if ( !( bInitialized && Device ) ) { return FTextureResourceHandle(); }
+	FTextureResourceHandle Result = FTextureResourceHandle(); // 同期処理の完了後に返す画像。
+	auto Work = [&]() { if ( auto *Resources = Device->GetTextureResources() ) { Result = Resources->CreateTextureRGBA8DataMipped( Width, Height, Pixels ); } };
+	return ExecuteRender( MoveTemp( Work ) ) ? Result : FTextureResourceHandle();
+}
+
 bool CDX12PlatformSubsystem::GetComputeTextureCapabilities( FComputeTextureCapabilities &Out ) const
 {
 	GAME_THREAD_ONLY( false );

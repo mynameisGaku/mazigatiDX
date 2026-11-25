@@ -108,6 +108,8 @@ class CDX12PlatformSubsystem : public CAppSubsystem, public IPlatform, public IR
 	// RGBA8の画像資源を、UIを介さず作る。
 	FTextureResourceHandle CreateTextureRGBA8( int32 Width, int32 Height, const FColor32 *Pixels ) override;
 	FTextureResourceHandle CreateTextureRGBA8Mipped( int32 Width, int32 Height, const FColor32 *Pixels ) override;
+	// 線形データ画像を、用途に合う縮小段付きで作る。
+	FTextureResourceHandle CreateTextureRGBA8DataMipped( int32 Width, int32 Height, const FColor32 *Pixels ) override;
 	// 見た目の水準（起動オプション --dx12-look）。
 	ERenderLook GetRenderLook() const { return RenderLook; }
 	// ゲームスレッドから能力を照会する。未初期化・GPU失敗時はOutを保ってfalse。

@@ -2,6 +2,7 @@
 #pragma once
 #include "DX12TextureBinding.h"
 #include "Library/Core/Render/ComputeTextureFormat.h"
+#include "Library/Core/Render/TextureMipMode.h"
 #include "Library/Core/Types/TypeDefinition.h"
 #include "Library/Math/Color.h"
 #include "Library/Platform/DX12/Resource/Descriptor/DX12DescriptorPool.h"
@@ -40,6 +41,7 @@ struct FDX12TextureRecord
 	CDX12DescriptorPool::FAllocation Descriptor; // GPU完了まで保持するSRV（深度では未使用）。
 	int32 Width = 0, Height = 0; // 画像の寸法。
 	int32 MipLevels = 1; // ミップマップの段の数（元の画像を含む）。
+	ETextureMipMode MipMode = ETextureMipMode::Color; // 更新時にも使う縮小段の作り方。
 	FColor32 InitialClearColor = FColor32( 0, 0, 0, 255 ); // 作成時に設定した初期消去色。
 	FColor InitialClearColorF = FColor( 0.0f, 0.0f, 0.0f, 1.0f ); // RGBA16F作成時に設定したHDR初期消去色。
 	float32 InitialClearDepth = 1.0f; // 作成時に設定した初期深度。

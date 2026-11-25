@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Library/Framework/Material/MaterialTypes.h"
+#include "Library/Core/Render/TextureMipMode.h"
 
 //=============================================================================
 // マテリアルのグラフ（ノードと線）
@@ -167,6 +168,7 @@ struct FMaterialNode
 	FVector2 Position = FVector2( 0.0f, 0.0f ); // エディタでの位置
 	TArray<int32> Inputs;                      // ピンごとの、つないだノードの番号（-1 は、つなぎなし）
 	TArray<float32> PinDefaults;               // ピンごとの、つないでいないときの数（空なら、ピンの既定）
+	ETextureMipMode TextureMipMode = ETextureMipMode::Color; // 画像の縮小段を作るときの成分の扱い。
 };
 
 struct FMaterialOutputLink

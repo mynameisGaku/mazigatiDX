@@ -4,6 +4,7 @@
 #include "Library/Core/Interfaces/Render/ITextureDrawSource.h"
 #include "Library/Core/Interfaces/Render/IRenderTargetDrawSource.h"
 #include "Library/Core/Render/ComputeTextureFormat.h"
+#include "Library/Core/Render/TextureMipMode.h"
 #include "Library/Core/Collection/Map.h"
 
 // アセット番号と画像資源番号の対応を所有する。codec・GPU・ImGuiを知らない。
@@ -25,7 +26,7 @@ public:
 	void Shutdown();
 	// RGBA8を複写して登録する。失敗時は-1。番号を再利用しない。
 	// bMipmapsなら、縮小して描いても綺麗に見えるよう、ミップマップつきで作る（画像のファイルなど、作ったあと内容をほとんど変えない画像向け。実行先が対応する見た目の水準だけ）
-	int32 Create( int32 Width, int32 Height, const FColor32* Pixels, bool bMipmaps = false );
+	int32 Create( int32 Width, int32 Height, const FColor32* Pixels, bool bMipmaps = false, ETextureMipMode MipMode = ETextureMipMode::Color );
 	// 描き込める画像（描画先）を登録する。bDepthなら専用の深度も作る。ClearColorで塗って始める。失敗時は-1。
 	// Formatは、色の画素形式（RGBA8・RGBA16F・R32Float）。ClearColorは、R32Floatでは赤だけを使う（0〜255を0〜1にする）。
 	int32 CreateRenderTarget( int32 Width, int32 Height, bool bDepth, ERenderTargetColorFormat Format, FColor32 ClearColor );

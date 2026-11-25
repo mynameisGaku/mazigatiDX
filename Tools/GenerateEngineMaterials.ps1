@@ -19,7 +19,7 @@ function Reset-Graph
 # ノードを足して、番号を返す。Value は 1〜4 個の数、Components は使う成分の数（Constant・VectorParameter）
 function Add-Node
 {
-    param([string]$Kind, [object[]]$Inputs = @(), [string]$Name = '', [double[]]$Value = @(), [int]$Components = 0, [switch]$Color, [double[]]$PinDefaults = @(), [string]$Collection = '', [string]$TexturePath = '')
+    param([string]$Kind, [object[]]$Inputs = @(), [string]$Name = '', [double[]]$Value = @(), [int]$Components = 0, [switch]$Color, [double[]]$PinDefaults = @(), [string]$Collection = '', [string]$TexturePath = '', [string]$TextureMipMode = '')
     $id = $script:NextId
     $script:NextId++
     $index = $script:Nodes.Count
@@ -27,6 +27,7 @@ function Add-Node
     if ($Name -ne '') { $node['Name'] = $Name }
     if ($Collection -ne '') { $node['ParameterCollection'] = $Collection }
     if ($TexturePath -ne '') { $node['TexturePath'] = $TexturePath }
+    if ($TextureMipMode -ne '') { $node['TextureMipMode'] = $TextureMipMode }
     if ($Value.Count -gt 0) { $node['Value'] = [object[]]$Value }
     if ($Components -gt 0) { $node['Components'] = $Components }
     if ($Color) { $node['Color'] = $true }
@@ -48,11 +49,11 @@ function Op1([string]$Kind, [int]$A) { return Add-Node -Kind $Kind -Inputs @($A)
 function Lerp3([int]$A, [int]$B, [int]$Alpha) { return Add-Node -Kind 'Lerp' -Inputs @($A, $B, $Alpha) }
 
 # 同じ画像を局所座標の三方向から投影し、面の向きに応じて混ぜる。
-function TriplanarTexture([string]$Name, [string]$Path, [int]$Position, [int]$Weights)
+function TriplanarTexture([string]$Name, [string]$Path, [int]$Position, [int]$Weights, [string]$MipMode = '')
 {
-    $x = Add-Node -Kind 'TextureSampleTiled' -Name $Name -TexturePath $Path -Inputs @((Mask $Position 'yz'))
-    $y = Add-Node -Kind 'TextureSampleTiled' -Name $Name -TexturePath $Path -Inputs @((Mask $Position 'xz'))
-    $z = Add-Node -Kind 'TextureSampleTiled' -Name $Name -TexturePath $Path -Inputs @((Mask $Position 'xy'))
+    $x = Add-Node -Kind 'TextureSampleTiled' -Name $Name -TexturePath $Path -TextureMipMode $MipMode -Inputs @((Mask $Position 'yz'))
+    $y = Add-Node -Kind 'TextureSampleTiled' -Name $Name -TexturePath $Path -TextureMipMode $MipMode -Inputs @((Mask $Position 'xz'))
+    $z = Add-Node -Kind 'TextureSampleTiled' -Name $Name -TexturePath $Path -TextureMipMode $MipMode -Inputs @((Mask $Position 'xy'))
     return Op2 'Add' (Op2 'Add' (Op2 'Multiply' $x (Mask $Weights 'x')) (Op2 'Multiply' $y (Mask $Weights 'y'))) (Op2 'Multiply' $z (Mask $Weights 'z'))
 }
 
@@ -229,14 +230,14 @@ $weightSum = Op2 'Add' (Op2 'Add' (Mask $normalWeights 'x') (Mask $normalWeights
 $weights = Op2 'Divide' $normalWeights (Op2 'Max' $weightSum (Num 0.0001))
 $texturePosition = Op2 'Add' (Op2 'Multiply' $position (Scalar 'RustTextureScale' 0.45)) (Num 0.5)
 $surfaceColor = Mask (TriplanarTexture 'RustSurfaceColor' 'Engine:/Textures/Materials/Metal041C/Color.jpg' $texturePosition $weights) 'xyz'
-$surfaceRoughness = Mask (TriplanarTexture 'RustSurfaceRoughness' 'Engine:/Textures/Materials/Metal041C/Roughness.jpg' $texturePosition $weights) 'x'
-$surfaceMetallic = Mask (TriplanarTexture 'RustSurfaceMetallic' 'Engine:/Textures/Materials/Metal041C/Metalness.jpg' $texturePosition $weights) 'x'
+$surfaceRoughness = Mask (TriplanarTexture 'RustSurfaceRoughness' 'Engine:/Textures/Materials/Metal041C/Roughness.jpg' $texturePosition $weights 'LinearData') 'x'
+$surfaceMetallic = Mask (TriplanarTexture 'RustSurfaceMetallic' 'Engine:/Textures/Materials/Metal041C/Metalness.jpg' $texturePosition $weights 'LinearData') 'x'
 $rustVariation = Op2 'Multiply' $surfaceColor (Op2 'Divide' $rustColor (Vec3 0.45 0.20 0.08))
 $rustRoughness = Add-Node -Kind 'Clamp' -Inputs @($surfaceRoughness, (Num 0.1), (Num 1.0))
 # 三方向の法線画像を局所面の接線方向へ投影し、物体の配置に合わせる。
-$normalX = Op2 'Subtract' (Op2 'Multiply' (Mask (Add-Node -Kind 'TextureSampleTiled' -Name 'RustSurfaceNormal' -TexturePath 'Engine:/Textures/Materials/Metal041C/NormalDX.jpg' -Inputs @((Mask $texturePosition 'yz'))) 'xy') (Num 2.0)) (Num 1.0)
-$normalY = Op2 'Subtract' (Op2 'Multiply' (Mask (Add-Node -Kind 'TextureSampleTiled' -Name 'RustSurfaceNormal' -TexturePath 'Engine:/Textures/Materials/Metal041C/NormalDX.jpg' -Inputs @((Mask $texturePosition 'xz'))) 'xy') (Num 2.0)) (Num 1.0)
-$normalZ = Op2 'Subtract' (Op2 'Multiply' (Mask (Add-Node -Kind 'TextureSampleTiled' -Name 'RustSurfaceNormal' -TexturePath 'Engine:/Textures/Materials/Metal041C/NormalDX.jpg' -Inputs @((Mask $texturePosition 'xy'))) 'xy') (Num 2.0)) (Num 1.0)
+$normalX = Op2 'Subtract' (Op2 'Multiply' (Mask (Add-Node -Kind 'TextureSampleTiled' -Name 'RustSurfaceNormal' -TexturePath 'Engine:/Textures/Materials/Metal041C/NormalDX.jpg' -TextureMipMode 'LinearData' -Inputs @((Mask $texturePosition 'yz'))) 'xy') (Num 2.0)) (Num 1.0)
+$normalY = Op2 'Subtract' (Op2 'Multiply' (Mask (Add-Node -Kind 'TextureSampleTiled' -Name 'RustSurfaceNormal' -TexturePath 'Engine:/Textures/Materials/Metal041C/NormalDX.jpg' -TextureMipMode 'LinearData' -Inputs @((Mask $texturePosition 'xz'))) 'xy') (Num 2.0)) (Num 1.0)
+$normalZ = Op2 'Subtract' (Op2 'Multiply' (Mask (Add-Node -Kind 'TextureSampleTiled' -Name 'RustSurfaceNormal' -TexturePath 'Engine:/Textures/Materials/Metal041C/NormalDX.jpg' -TextureMipMode 'LinearData' -Inputs @((Mask $texturePosition 'xy'))) 'xy') (Num 2.0)) (Num 1.0)
 $deltaX = Add-Node -Kind 'Append' -Inputs @((Num 0.0), $normalX)
 $deltaY = Add-Node -Kind 'Append' -Inputs @((Add-Node -Kind 'Append' -Inputs @((Mask $normalY 'x'), (Num 0.0))), (Mask $normalY 'y'))
 $deltaZ = Add-Node -Kind 'Append' -Inputs @($normalZ, (Num 0.0))

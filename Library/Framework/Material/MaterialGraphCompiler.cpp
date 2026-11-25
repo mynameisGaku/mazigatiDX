@@ -85,7 +85,7 @@ namespace NMaterialGraphCompiler
 			const FMaterialParameterDecl& Decl = Definition.Parameters[Index];
 			if ( Decl.Type == EMaterialValueType::Texture )
 			{
-				AddTextureSlot( Decl.Name, Decl.Path, EMaterialTextureSource::Parameter );
+				TextureSlotFor( Decl.Name, Decl.Path, Decl.TextureMipMode, -1 );
 			}
 			else
 			{
@@ -275,10 +275,13 @@ namespace NMaterialGraphCompiler
 		return Program.Textures.Num() - 1;
 	}
 
-	int32 FCompiler::TextureSlotFor( const FString& Name, const FString& Path, int32 Node )
+	int32 FCompiler::TextureSlotFor( const FString& Name, const FString& Path, ETextureMipMode MipMode, int32 Node )
 	{
+		if ( MipMode != ETextureMipMode::Color && MipMode != ETextureMipMode::LinearData ) { Report( EMaterialSeverity::Error, "invalid texture mip mode", Node ); return 0; }
 		const int32 Before = Program.Textures.Num();
 		const int32 Slot = AddTextureSlot( Name, Path, EMaterialTextureSource::Parameter );
+		if ( Program.Textures.Num() > Before ) { Program.Textures[Slot].MipMode = MipMode; }
+		else if ( Program.Textures[Slot].MipMode != MipMode ) { Report( EMaterialSeverity::Error, "the same texture parameter has conflicting mip modes", Node ); }
 		if ( Program.Textures.Num() > Before && Program.Textures.Num() > Capabilities.MaxTextures )
 		{
 			Report( EMaterialSeverity::Error, FString::Printf( "there are more than %d textures", Capabilities.MaxTextures ), Node );

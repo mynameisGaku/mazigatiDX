@@ -53,4 +53,6 @@ public:
 	// 描画中だけ使うviewを貸す。失敗時はOutを保つ。
 	// 更新・解放前のviewも記録済みの描画で使える。APIを跨いで共有しない。
 	virtual bool GetTextureResourceView( FTextureResourceHandle Texture, FTextureDrawView& Out ) const = 0;
+	// 線形データ画像の各成分を独立して平均したミップを作る。未対応の実装は段なしで作る。
+	virtual FTextureResourceHandle CreateTextureRGBA8DataMipped( int32 Width, int32 Height, const FColor32* Pixels ) { return CreateTextureRGBA8( Width, Height, Pixels ); }
 };

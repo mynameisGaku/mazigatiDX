@@ -27,6 +27,7 @@ struct FMaterialParameterDecl
 	FVector4 Value = FVector4( 0.0f, 0.0f, 0.0f, 0.0f );
 	FString Path;                                          // Texture: 既定の画像のパス
 	bool bColor = false;
+	ETextureMipMode TextureMipMode = ETextureMipMode::Color; // Texture: 既定画像の縮小段の作り方。
 };
 
 class FMaterialDefinition

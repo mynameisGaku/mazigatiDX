@@ -734,6 +734,12 @@ namespace
 		if ( Node->Kind == EMaterialNodeKind::TextureSample || Node->Kind == EMaterialNodeKind::TextureSampleTiled )
 		{
 			bChanged = NDebugUI::InputString( "Default texture", Node->TexturePath ) || bChanged;
+			bool bLinearData = Node->TextureMipMode == ETextureMipMode::LinearData; // 色変換しないデータ画像か。
+			if ( ImGui::Checkbox( "Linear data (normal / roughness / masks)", &bLinearData ) )
+			{
+				Node->TextureMipMode = bLinearData ? ETextureMipMode::LinearData : ETextureMipMode::Color;
+				bChanged = true;
+			}
 		}
 		const bool bVector = Node->Kind == EMaterialNodeKind::Constant || Node->Kind == EMaterialNodeKind::VectorParameter || Node->Kind == EMaterialNodeKind::ParameterCollectionVector;
 		if ( bVector )
