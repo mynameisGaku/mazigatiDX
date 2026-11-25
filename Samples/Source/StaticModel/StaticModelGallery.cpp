@@ -61,6 +61,13 @@ void CStaticModelGallery::Draw( FDrawContext& Draw )
 	{
 		static const bool bLit = NCommandLine::HasFlag( "model-lit" ); // 検査用: 光を使う（既定は、光なし）。
 		Draw.UseLighting( bLit );
+		if ( NCommandLine::HasFlag( "static-translucent-layers" ) )
+		{
+			FDepthState Translucent; // 重なる半透明面の合成順を比較する。
+			Translucent.bWriteDepth = false;
+			Draw.Depth( Translucent );
+			Draw.Culling( EDrawCulling::None );
+		}
 
 		const TOptional<FString> ForwardOption = NCommandLine::GetValue( "forward-case" ); // 組み合わせの比較撮影用。
 		if ( ForwardOption.IsSet() )

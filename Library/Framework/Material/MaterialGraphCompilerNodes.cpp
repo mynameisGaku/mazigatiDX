@@ -62,6 +62,8 @@ namespace NMaterialGraphCompiler
 			return ScalarResult( EmitInput( EMaterialInput::VertexColor, EMaterialValueType::Float4, Id ) );
 		case K::WorldPosition:
 			return ScalarResult( EmitInput( EMaterialInput::WorldPosition, EMaterialValueType::Float3, Id ) );
+		case K::LocalPosition:
+			return ScalarResult( EmitInput( EMaterialInput::LocalPosition, EMaterialValueType::Float3, Id ) );
 		case K::WorldNormal:
 			return ScalarResult( EmitInput( EMaterialInput::WorldNormal, EMaterialValueType::Float3, Id ) );
 		case K::CameraVector:
@@ -364,6 +366,15 @@ namespace NMaterialGraphCompiler
 			const int32 Scale = PinValue( Node, 1 );
 			const int32 Scaled = EmitBinary( EMaterialBinary::Multiply, Uv, Splat( Scale, 2, Id ), Id );
 			return ScalarResult( Emit( EMaterialOp::Noise, EMaterialValueType::Float, Id, Scaled ) );
+		}
+		case K::Noise3D:
+		case K::Noise3DNormal:
+		{
+			const int32 Position = PinValue( Node, 0 );
+			const int32 Scale = PinValue( Node, 1 );
+			const int32 Scaled = EmitBinary( EMaterialBinary::Multiply, Position, Splat( Scale, 3, Id ), Id );
+			if ( Node.Kind == K::Noise3D ) { return ScalarResult( Emit( EMaterialOp::Noise3D, EMaterialValueType::Float, Id, Scaled ) ); }
+			return ScalarResult( Emit( EMaterialOp::Noise3DNormal, EMaterialValueType::Float3, Id, Scaled, PinValue( Node, 2 ) ) );
 		}
 		case K::Checker:
 		{

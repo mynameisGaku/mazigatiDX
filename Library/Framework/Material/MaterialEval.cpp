@@ -22,6 +22,32 @@ namespace
 		return Frac( PX * PY );
 	}
 
+	// HLSL の3次元格子値と同じ値を返す。
+	float32 Hash3D( float32 X, float32 Y, float32 Z )
+	{
+		float32 PX = Frac( X * 0.1031f ); // 格子座標を周期ごとに混ぜるX成分。
+		float32 PY = Frac( Y * 0.1030f ); // 格子座標を周期ごとに混ぜるY成分。
+		float32 PZ = Frac( Z * 0.0973f ); // 格子座標を周期ごとに混ぜるZ成分。
+		const float32 D = PX * ( PY + 33.33f ) + PY * ( PX + 33.33f ) + PZ * ( PZ + 33.33f ); // 3成分を混ぜる値。
+		PX += D; PY += D; PZ += D;
+		return Frac( ( PX + PY ) * PZ );
+	}
+
+	// 値とXYZ方向の勾配を一度に計算する。
+	FVector4 Noise3DGradient( const FVector4& Position )
+	{
+		const float32 X = NMath::Floor( Position.x ), Y = NMath::Floor( Position.y ), Z = NMath::Floor( Position.z ); // 格子の原点。
+		const float32 FX = Position.x - X, FY = Position.y - Y, FZ = Position.z - Z; // 格子内の位置。
+		const float32 U = FX * FX * ( 3.0f - 2.0f * FX ), V = FY * FY * ( 3.0f - 2.0f * FY ), W = FZ * FZ * ( 3.0f - 2.0f * FZ ); // 境界で勾配が連続する補間率。
+		const auto Lerp = []( float32 A, float32 B, float32 T ) { return A + ( B - A ) * T; };
+		const float32 A = Hash3D( X, Y, Z ), B = Hash3D( X + 1, Y, Z ), C = Hash3D( X, Y + 1, Z ), D = Hash3D( X + 1, Y + 1, Z ); // 下側4頂点の値。
+		const float32 E = Hash3D( X, Y, Z + 1 ), G = Hash3D( X + 1, Y, Z + 1 ), H = Hash3D( X, Y + 1, Z + 1 ), J = Hash3D( X + 1, Y + 1, Z + 1 ); // 上側4頂点の値。
+		const float32 Z0 = Lerp( Lerp( A, B, U ), Lerp( C, D, U ), V ), Z1 = Lerp( Lerp( E, G, U ), Lerp( H, J, U ), V ); // 上下面の補間値。
+		const float32 DX = Lerp( Lerp( B - A, D - C, V ), Lerp( G - E, J - H, V ), W ) * 6.0f * FX * ( 1.0f - FX ); // X方向の勾配。
+		const float32 DY = Lerp( Lerp( C - A, D - B, U ), Lerp( H - E, J - G, U ), W ) * 6.0f * FY * ( 1.0f - FY ); // Y方向の勾配。
+		return FVector4( Lerp( Z0, Z1, W ), DX, DY, ( Z1 - Z0 ) * 6.0f * FZ * ( 1.0f - FZ ) );
+	}
+
 	float32 Component( const FVector4& Value, int32 Index )
 	{
 		switch ( Index )
@@ -144,6 +170,9 @@ bool NMaterialEval::Evaluate( const FMaterialProgram& Program, const FMaterialEv
 				break;
 			case EMaterialInput::WorldPosition:
 				Result = FVector4( Context.WorldPosition.x, Context.WorldPosition.y, Context.WorldPosition.z, 0.0f );
+				break;
+			case EMaterialInput::LocalPosition:
+				Result = FVector4( Context.LocalPosition.x, Context.LocalPosition.y, Context.LocalPosition.z, 0.0f );
 				break;
 			case EMaterialInput::WorldNormal:
 				Result = FVector4( Context.WorldNormal.x, Context.WorldNormal.y, Context.WorldNormal.z, 0.0f );
@@ -374,6 +403,25 @@ bool NMaterialEval::Evaluate( const FMaterialProgram& Program, const FMaterialEv
 		case EMaterialOp::Noise:
 			Result.x = Noise( Value( Instruction.A ).x, Value( Instruction.A ).y );
 			break;
+		case EMaterialOp::Noise3D:
+			Result.x = Noise3DGradient( Value( Instruction.A ) ).x;
+			break;
+		case EMaterialOp::Noise3DNormal:
+		{
+			const FVector4 ValueAndGradient = Noise3DGradient( Value( Instruction.A ) ); // 位置のノイズ値と勾配。
+			const FVector3 Gradient( ValueAndGradient.y, ValueAndGradient.z, ValueAndGradient.w ); // 凹凸を作る局所勾配。
+			const FVector3 N = Context.LocalNormal.LengthSquared() > 1.0e-12f ? Context.LocalNormal.Normalized() : FVector3( 0.0f, 1.0f, 0.0f ); // 面の局所法線。
+			const FVector3 Perturbed = N - ( Gradient - N * FVector3::Dot( Gradient, N ) ) * Value( Instruction.B ).x; // 面に沿う勾配で傾けた法線。
+			const FMatrix4x4& M = Context.ObjectToWorld; // 個体の配置。
+			const FVector3 X( M.m[0][0], M.m[0][1], M.m[0][2] ), Y( M.m[1][0], M.m[1][1], M.m[1][2] ), Z( M.m[2][0], M.m[2][1], M.m[2][2] ); // 変換後の局所軸。
+			const FVector3 CX = FVector3::Cross( Y, Z ), CY = FVector3::Cross( Z, X ), CZ = FVector3::Cross( X, Y ); // 逆転置の分子。
+			const float32 Determinant = FVector3::Dot( X, CX ); // 特異変換と鏡映を判定する値。
+			const FVector3 Transformed = ( CX * Perturbed.x + CY * Perturbed.y + CZ * Perturbed.z ) * ( Determinant < 0.0f ? -1.0f : 1.0f ); // 鏡映の向きも保つワールド法線。
+			const FVector3 Fallback = Context.WorldNormal.LengthSquared() > 1.0e-12f ? Context.WorldNormal.Normalized() : FVector3( 0.0f, 1.0f, 0.0f ); // 特異変換時の代替法線。
+			const FVector3 Normal = NMath::Abs( Determinant ) > 1.0e-8f && Transformed.LengthSquared() > 1.0e-12f ? Transformed.Normalized() : Fallback; // 有効な最終法線。
+			Result = FVector4( Normal.x, Normal.y, Normal.z, 0.0f );
+			break;
+		}
 		}
 		OutValues.Add( Result );
 	}

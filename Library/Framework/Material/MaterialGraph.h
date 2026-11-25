@@ -96,6 +96,9 @@ enum class EMaterialNodeKind : uint8
 	SubstrateSlab,      // 1 つの層。入力: DiffuseColor ほか。出力は Slab
 	SubstrateMix,       // 2 つの層を、Mix で混ぜる（横に並べる）。入力: A, B（Slab）, Mix
 	SubstrateLayer,     // 層を、縦に重ねる（Top が上）。入力: Top, Bottom（Slab）, Transmittance（上の層を通り抜ける光の色）, Coverage（上の層が覆う割合）
+	LocalPosition,      // Surface: 個体の配置前の位置（Float3）。
+	Noise3D,            // 3次元の値ノイズ。入力: Position, Scale。
+	Noise3DNormal,      // 3次元ノイズから表面の凹凸を作る。入力: Position, Scale, Strength。
 
 	Count
 };

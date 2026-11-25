@@ -25,14 +25,14 @@
 //                                         row_major float4x4 g_ShadowViewProjection; float4 g_ShadowOptions;（影のマップの大きさ・深度のずらし・法線の向きのずらし） }
 //     cbuffer cbObject : register( b5 ) { row_major float4x4 g_World; float4 g_Color; float4 g_Options; }
 //     cbuffer cbMaterialParams : register( b6 ) { float4 g_Params[N]; }
-//     struct VertexOutput { float4 Position : SV_POSITION; float3 Normal : TEXCOORD0; float3 World : TEXCOORD1; float2 Uv : TEXCOORD2; float4 Color : TEXCOORD3; };
+//     struct VertexOutput { float4 Position : SV_POSITION; float3 Normal : TEXCOORD0; float3 World : TEXCOORD1; float2 Uv : TEXCOORD2; float4 Color : TEXCOORD3; float3 LocalPosition : TEXCOORD4; float3 LocalNormal : TEXCOORD5; };
 //     光を計算するマテリアル（UsesSceneLighting）は、マテリアルの画像のあとに、環境マップ（g_EnvironmentMap）・影のマップ（g_ShadowMap）を、この順で置く
 //     （使うものだけ。FMaterialHlslFeatures。レジスタは、GetEnvironmentRegister・GetShadowRegister）。
 //
 //   HLSL の直指定（FMaterialDefinition::CustomHlsl）は、上の宣言（と、MatNoise などの補助関数）の「あと」に置かれる。PixelInput（Surface は VertexOutput）を受けて、
 //   SV_Target を返す関数 main を、書くこと。
 //
-//   補助関数: float MatNoise( float2 ) / MatHash( float2 ) / MatLinearDepth( float )（PostProcess）、マクロ MatMod( a, b )。
+//   補助関数: float MatNoise( float2 ) / MatHash( float2 )、3次元ノイズと勾配、MatLinearDepth( float )（PostProcess）、マクロ MatMod( a, b )。
 //=============================================================================
 // 場面から受け取る画像のうち、使うもの（使う組み合わせごとに、別のシェーダーになる。宣言した画像は、必ず置くこと）
 struct FMaterialHlslFeatures

@@ -83,6 +83,7 @@ namespace
 		Set( Make( K::Enabled, "Enabled", "Inputs", DomainUI ) );
 		Set( Make( K::VertexColor, "VertexColor", "Inputs", DomainUI | DomainSurface | DomainParticle ) );
 		Set( Make( K::WorldPosition, "WorldPosition", "Inputs", DomainSurface ) );
+		Set( Make( K::LocalPosition, "LocalPosition", "Inputs", DomainSurface ) );
 		Set( Make( K::WorldNormal, "WorldNormal", "Inputs", DomainSurface ) );
 		Set( Make( K::CameraVector, "CameraVector", "Inputs", DomainSurface ) );
 		Set( Make( K::WorldTangent, "WorldTangent", "Inputs", DomainSurface ) );
@@ -128,6 +129,8 @@ namespace
 		Set( Make( K::Panner, "Panner", "Utility", DomainAll, { UvPin() } ) );
 		Set( Make( K::Tiling, "Tiling", "Utility", DomainAll, { UvPin() } ) );
 		Set( Make( K::Noise, "Noise", "Utility", DomainAll, { UvPin(), Typed( "Scale", EMaterialPinExpect::Float, 8.0f ) } ) );
+		Set( Make( K::Noise3D, "Noise3D", "Utility", DomainSurface, { Typed( "Position", EMaterialPinExpect::Float3, 0.0f ), Typed( "Scale", EMaterialPinExpect::Float, 8.0f ) } ) );
+		Set( Make( K::Noise3DNormal, "Noise3DNormal", "Utility", DomainSurface, { Typed( "Position", EMaterialPinExpect::Float3, 0.0f ), Typed( "Scale", EMaterialPinExpect::Float, 8.0f ), Typed( "Strength", EMaterialPinExpect::Float, 0.25f ) } ) );
 		Set( Make( K::Checker, "Checker", "Utility", DomainAll, { UvPin(), Typed( "Count", EMaterialPinExpect::Float, 8.0f ) } ) );
 		Set( Make( K::Fresnel, "Fresnel", "Utility", DomainSurface, { Typed( "Exponent", EMaterialPinExpect::Float, 3.0f ) } ) );
 		Set( Make( K::NormalMap, "NormalMap", "Utility", DomainSurface, { Typed( "Color", EMaterialPinExpect::Float3, 0.5f ), Typed( "Strength", EMaterialPinExpect::Float, 1.0f ) } ) );

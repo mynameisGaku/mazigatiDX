@@ -1,4 +1,4 @@
-﻿# マテリアル
+# マテリアル
 
 マテリアルは、「見た目の計算」を、ノードのグラフ（または HLSL）で書いたものです。UI・描画・エフェクトのどれにも属さない、汎用の仕組みで（`Library/Framework/Material`）、ブラシ（UI）・メッシュの表面・ポストプロセスのどれにも使えます。グラフを、バックエンドに依らない中間表現にして、そこから HLSL を作ります（今の出力先は DxLib の Direct3D 11）。ほかのバックエンドは、同じ中間表現から自分の言語を出す設計です。
 
@@ -11,7 +11,7 @@
 |`UI`|部品のブラシ（矩形）|`TexCoord`・`Size`・`HoverAmount`・`PressAmount`・`Value01`・`Enabled`・`VertexColor`・`Time`|`Color`（Float3）・`Opacity`（Float）|
 |`Particle`|エフェクトの粒子（ワールドの四角形）・矩形|`TexCoord`・`VertexColor`（粒子の色）・`Time`・`ParticleLife`・`ParticleAge`・`ParticleRandom`・`ParticleSpeed`|`Color`・`Opacity`（粒子の色が、出力に掛かる）|
 |`PostProcess`|画面全体|`TexCoord`・`SceneColor`・`SceneDepth`・`Size`（画面の大きさ）・`Time`|`Color`（つながないと、シーンの色のまま）|
-|`Surface`|メッシュの表面|`TexCoord`・`WorldPosition`・`WorldNormal`・`WorldTangent`・`WorldBitangent`・`CameraVector`・`VertexColor`・`Time`|陰影で変わる（下）|
+|`Surface`|メッシュの表面|`TexCoord`・`LocalPosition`・`WorldPosition`・`WorldNormal`・`WorldTangent`・`WorldBitangent`・`CameraVector`・`VertexColor`・`Time`|陰影で変わる（下）|
 
 Surface の陰影（`EMaterialShading`）: **Unlit**（`Emissive`・`Opacity`）/ **DefaultLit**（`BaseColor`・`Emissive`・`Opacity`・`Roughness`・`Metallic`・`Specular`・`Normal`。標準の光: 拡散 + 鏡面。下の万能モデルの、層 1 つとして計算される）/ **Substrate**（`Surface` 1 つ。`SubstrateSlab` ノードの層。下の「Substrate 風の万能モデル」）。光を計算する 2 つは、場面の光（下の「場面の光」）を受けます。
 
@@ -26,10 +26,14 @@ Surface の陰影（`EMaterialShading`）: **Unlit**（`Emissive`・`Opacity`）
 |算術|`Add`・`Subtract`・`Multiply`・`Divide`・`Min`・`Max`・`Power`・`Mod`・`Step`・`Dot`・`Distance`|
 |3 つ|`Lerp`・`Clamp`・`SmoothStep`|
 |1 つ|`Abs`・`Saturate`・`OneMinus`・`Negate`・`Sin`・`Cos`・`Frac`・`Floor`・`Ceil`・`Sqrt`・`Length`・`Normalize`|
-|便利|`Append`・`Mask`（`"xyz"`・`"rgb"`・`"a"`）・`Panner`・`Tiling`・`Noise`・`Checker`・`Fresnel`・`NormalMap`（法線マップの色を、ワールドの法線にする）|
+|便利|`Append`・`Mask`（`"xyz"`・`"rgb"`・`"a"`）・`Panner`・`Tiling`・`Noise`・`Noise3D`・`Noise3DNormal`・`Checker`・`Fresnel`・`NormalMap`（法線マップの色を、ワールドの法線にする）|
 |Substrate|`SubstrateSlab`（`DiffuseColor`・`F0`・`Roughness`・`Metallic`・`Emissive`・`Opacity`・`ClearCoat`・`ClearCoatRoughness`・`Subsurface`・`Anisotropy`・`ThinFilm`・`Normal`）・`SubstrateMix`（2 つの層を、横に並べて混ぜる）・`SubstrateLayer`（2 つの層を、縦に重ねる）|
 
 型: 算術は、同じ型どうし、または Float と、ほかの型（Float が広がる）。成分の数が違うベクトルどうし（Float2 と Float3 など）は、エラーです。ピンに求められる型より大きいベクトルは、切り詰めます（Float4 から Float3 へは、知らせなし。ほかは、注意）。
+
+`LocalPosition` はモデルの配置前の頂点位置です。`Noise3D(Position, Scale)` は連続する3次元の値を返し、`Noise3DNormal(Position, Scale, Strength)` は同じ値の勾配から表面の凹凸を作ってワールド法線を返します。局所位置を接続するとUVの切れ目に依存せず、個体の移動・回転・拡大にも模様が追従します。法線は非一様拡大と鏡映を逆転置で扱います。凹凸は陰影を変えるもので、輪郭や衝突形状は変えません。入力位置が変形前か後かは、描画に渡された頂点の座標に従います。
+
+CPU評価時は `FMaterialEvalContext::LocalPosition`、`LocalNormal` と `ObjectToWorld` を対象の頂点に合わせて設定します。`Strength` は法線の傾きの強さであり、物理的な高さではありません。3次元ノイズは1回につき格子点8個を評価するため、重ねる回数と凹凸の強さは見た目とGPU時間を測って選びます。高い周波数の模様には距離に応じたフィルタリングがまだなく、遠景でちらつく場合があります。
 
 ```cpp
 FMaterialDefinition Definition;
@@ -218,9 +222,9 @@ FUIBrush Glow = FUIBrush::MakeMaterial( GlowMaterial );                 // UI �
 |`Surface/BrushedMetal`|一方向に磨いた金属。光沢が伸びる（Substrate。`Metal`・`Roughness`・`Metallic`・`Anisotropy`）|
 |`Surface/Pearl`|真珠。見る角度で色が変わる（Substrate。`Base`・`Roughness`・`ThinFilm`）|
 |`Surface/Wax`|ろう。光が回り込む（Substrate。`Base`・`Scatter`・`Roughness`）|
-|`Surface/RustedMetal`|さびた金属。金属と、さびの層を、ノイズで混ぜる（Substrate。`Metal`・`Rust`・`MetalRoughness`・`Scale`・`Amount`）|
+|`Surface/RustedMetal`|さびた金属。局所3次元ノイズの大小で金属と酸化した非金属を混ぜ、サビの色・粗さ・法線を変える。細かい粒子の強さは `RustGrainStrength` で調整する（Substrate。`Metal`・`Rust`・`MetalRoughness`・`Scale`・`Amount`・`RustBumpStrength`・`RustGrainStrength`）|
 |`Surface/CandyPaint`|キャンディ塗装。金属の上に、色のついた透明な層を重ねる（Substrate の `SubstrateLayer`。`Metal`・`MetalRoughness`・`Tint`・`CoatRoughness`・`Coverage`）|
-|`Surface/HammeredMetal`|槌目の金属。ノイズから、でこぼこの法線を作る（Substrate の `NormalMap`。`Metal`・`Roughness`・`Scale`・`Strength`）|
+|`Surface/HammeredMetal`|槌目の金属。局所3次元ノイズの勾配から、凹凸の法線を作る（Substrate。`Metal`・`Roughness`・`Scale`・`Strength`）|
 
 ## プレビュー用のメッシュ
 

@@ -3,6 +3,7 @@
 
 #include "Library/Core/Types/Callable.h"
 #include "Library/Framework/Material/MaterialProgram.h"
+#include "Library/Math/Matrix4x4.h"
 
 //=============================================================================
 // NMaterialEval: 中間表現を、CPU で評価する
@@ -43,6 +44,10 @@ struct FMaterialEvalContext
 	TCallable<FVector4( int32 Slot, const FVector2& Uv )> SampleTexture;
 	// シーンの深度（カメラからの距離）。無ければ 1
 	TCallable<float32( const FVector2& Uv )> SceneDepth;
+
+	FVector3 LocalPosition = FVector3( 0.0f, 0.0f, 0.0f ); // 個体の配置前の位置。
+	FVector3 LocalNormal = FVector3( 0.0f, 1.0f, 0.0f ); // 個体の配置前の法線。
+	FMatrix4x4 ObjectToWorld; // 局所法線をワールドへ変換する行列。
 };
 
 namespace NMaterialEval

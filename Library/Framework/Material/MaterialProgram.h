@@ -23,7 +23,9 @@ enum class EMaterialOp : uint8
 	Mask,        // A から、Swizzle の成分を取り出す
 	Sample,      // 画像を読む（Slot = Textures の番号、A = UV）。Float4
 	SceneDepth,  // シーンの深度（Slot = Textures の番号、A = UV）。カメラからの距離（Float）
-	Noise        // 値のノイズ（A = UV）。Float
+	Noise,       // 値のノイズ（A = UV）。Float
+	Noise3D,     // 3次元ノイズ（A = 位置）。Float
+	Noise3DNormal // 3次元ノイズの勾配からワールド法線を作る（A = 位置、B = 強さ）。
 };
 
 enum class EMaterialInput : uint8
@@ -44,7 +46,8 @@ enum class EMaterialInput : uint8
 	ParticleRandom,
 	ParticleSpeed,
 	WorldTangent,    // Surface: 面に沿った向き（UV の U が増える向き。法線に垂直）
-	WorldBitangent   // Surface: 面に沿った向き（UV の V が増える向き。法線に垂直）
+	WorldBitangent,  // Surface: 面に沿った向き（UV の V が増える向き。法線に垂直）
+	LocalPosition    // Surface: 個体の配置前の位置。
 };
 
 enum class EMaterialUnary : uint8

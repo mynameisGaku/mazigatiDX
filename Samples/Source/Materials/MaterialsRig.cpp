@@ -2,6 +2,7 @@
 
 #include "Library/Core/Interfaces/Input/IInput.h"
 #include "Library/Framework/Engine/Engine.h"
+#include "Library/Platform/System/CommandLine.h"
 
 namespace
 {
@@ -46,6 +47,11 @@ void CMaterialsRig::UpdateCamera()
 	}
 	const FVector3 Direction( NMath::Sin( Yaw ) * NMath::Cos( Pitch ), NMath::Sin( Pitch ), -NMath::Cos( Yaw ) * NMath::Cos( Pitch ) );
 	FCamera Camera = FCamera::MakePerspective( OrbitTarget + Direction * Distance, OrbitTarget, FovY );
+	static const bool bRustCloseup = NCommandLine::HasFlag( "materials-rust-closeup" ); // 表面の粒子を拡大して確認する。
+	if ( bRustCloseup )
+	{
+		Camera = FCamera::MakePerspective( FVector3( 11.0f, 2.0f, -9.6f ), FVector3( 9.8f, 1.0f, -6.5f ), FovY );
+	}
 	Camera.Near = NearDistance;
 	Camera.Far = FarDistance;
 	State->Camera = Camera;
@@ -78,7 +84,13 @@ void CMaterialsRig::Tick( float32 DeltaTime )
 	{
 		return;
 	}
-	if ( State->bTimeRunning )
+	static const TOptional<FString> FixedTime = NCommandLine::GetValue( "materials-fixed-time" ); // 比較撮影では姿勢と視点を固定する。
+	if ( FixedTime.IsSet() )
+	{
+		State->Time = static_cast<float32>( FixedTime.GetValue().ToFloat( 0.0 ) );
+		bAutoOrbit = false;
+	}
+	else if ( State->bTimeRunning )
 	{
 		State->Time += DeltaTime;
 	}

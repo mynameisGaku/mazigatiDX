@@ -189,11 +189,28 @@ $scatter = Mask (ColorParam 'Scatter' 0.90 0.35 0.20) 'xyz'
 $slab = Add-Node -Kind 'SubstrateSlab' -Inputs @($base, -1, (Scalar 'Roughness' 0.6), -1, -1, -1, -1, -1, $scatter, -1, -1)
 Save-Material 'Surface\Wax.gxmaterial' 'Wax' 'Surface' 'Substrate' @{ Surface = $slab }
 
-# さびた金属: 金属の層と、さびの層を、ノイズで混ぜる（SubstrateMix。層ごとに陰影を計算するので、境目が、半分だけ金属の、ありえない材質にならない）
+# さびた金属: 局所3次元ノイズで侵食の大小・色・粗さ・凹凸を分ける。
 Reset-Graph
-$metal = Add-Node -Kind 'SubstrateSlab' -Inputs @((Mask (ColorParam 'Metal' 0.76 0.76 0.80) 'xyz'), -1, (Scalar 'MetalRoughness' 0.3), (Num 1.0), -1, -1, -1, -1, -1, -1, -1)
-$rust = Add-Node -Kind 'SubstrateSlab' -Inputs @((Mask (ColorParam 'Rust' 0.45 0.20 0.08) 'xyz'), -1, (Num 0.9), (Num 0.0), -1, -1, -1, -1, -1, -1, -1)
-$noise = Add-Node -Kind 'Noise' -Inputs @(-1, (Scalar 'Scale' 6.0))
+$position = Add-Node -Kind 'LocalPosition'
+$scale = Scalar 'Scale' 6.0
+$detailScale = Op2 'Multiply' $scale (Num 2.4)
+$grainScale = Op2 'Multiply' $scale (Num 12.0)
+$coarse = Add-Node -Kind 'Noise3D' -Inputs @($position, (Op2 'Multiply' $scale (Num 0.45)))
+$medium = Add-Node -Kind 'Noise3D' -Inputs @($position, $scale)
+$fine = Add-Node -Kind 'Noise3D' -Inputs @($position, $detailScale)
+$grain = Add-Node -Kind 'Noise3D' -Inputs @($position, $grainScale)
+$noise = Op2 'Add' (Op2 'Add' (Op2 'Multiply' $coarse (Num 0.45)) (Op2 'Multiply' $medium (Num 0.38))) (Op2 'Multiply' $fine (Num 0.17))
+$metalColor = Mask (ColorParam 'Metal' 0.76 0.76 0.80) 'xyz'
+$metalRoughness = Add-Node -Kind 'Clamp' -Inputs @((Op2 'Add' (Scalar 'MetalRoughness' 0.3) (Op2 'Multiply' (Op2 'Subtract' $fine (Num 0.5)) (Num 0.16))), (Num 0.03), (Num 0.9))
+$metal = Add-Node -Kind 'SubstrateSlab' -Inputs @($metalColor, -1, $metalRoughness, (Num 1.0), -1, -1, -1, -1, -1, -1, -1)
+$rustColor = Mask (ColorParam 'Rust' 0.45 0.20 0.08) 'xyz'
+$rustVariation = Lerp3 (Op2 'Multiply' $rustColor (Num 0.5)) (Op2 'Multiply' $rustColor (Num 1.35)) (Op2 'Add' (Op2 'Add' (Op2 'Multiply' $medium (Num 0.50)) (Op2 'Multiply' $fine (Num 0.30))) (Op2 'Multiply' $grain (Num 0.20)))
+$rustRoughness = Lerp3 (Num 0.68) (Num 0.98) (Op2 'Add' (Op2 'Multiply' $fine (Num 0.55)) (Op2 'Multiply' $grain (Num 0.45)))
+# 大きな腐食の凹凸に、細かい粒子による法線の変化を重ねる。
+$rustRelief = Add-Node -Kind 'Noise3DNormal' -Inputs @($position, $detailScale, (Scalar 'RustBumpStrength' 0.8))
+$rustGrain = Add-Node -Kind 'Noise3DNormal' -Inputs @($position, $grainScale, (Scalar 'RustGrainStrength' 0.3))
+$rustNormal = Op1 'Normalize' (Op2 'Subtract' (Op2 'Add' $rustRelief $rustGrain) (Add-Node -Kind 'WorldNormal'))
+$rust = Add-Node -Kind 'SubstrateSlab' -Inputs @($rustVariation, -1, $rustRoughness, (Num 0.0), -1, -1, -1, -1, -1, -1, -1, $rustNormal)
 $amount = Scalar 'Amount' 0.5
 $mask = Add-Node -Kind 'SmoothStep' -Inputs @((Op2 'Subtract' (Op1 'OneMinus' $amount) (Num 0.08)), (Op2 'Add' (Op1 'OneMinus' $amount) (Num 0.08)), $noise)
 $mixed = Add-Node -Kind 'SubstrateMix' -Inputs @($metal, $rust, $mask)
@@ -207,13 +224,10 @@ $tint = Mask (ColorParam 'Tint' 0.90 0.06 0.12) 'xyz'
 $layered = Add-Node -Kind 'SubstrateLayer' -Inputs @($clear, $flakes, $tint, (Scalar 'Coverage' 1.0))
 Save-Material 'Surface\CandyPaint.gxmaterial' 'CandyPaint' 'Surface' 'Substrate' @{ Surface = $layered }
 
-# 槌目（つちめ）の金属: ノイズから、でこぼこの法線を作る（NormalMap。画像の法線マップなら、TextureSample の色を、Color へつなぐ）
+# 槌目（つちめ）の金属: 局所座標の勾配から、UVの継ぎ目に依存しない凹凸を作る。
 Reset-Graph
-$uv = Add-Node -Kind 'TexCoord'
+$position = Add-Node -Kind 'LocalPosition'
 $scale = Scalar 'Scale' 14.0
-$bumpX = Add-Node -Kind 'Noise' -Inputs @($uv, $scale)
-$bumpY = Add-Node -Kind 'Noise' -Inputs @((Op2 'Add' $uv (Add-Node -Kind 'Constant' -Value @(5.3, 1.7) -Components 2)), $scale)
-$bump = Add-Node -Kind 'Append' -Inputs @($bumpX, $bumpY, (Num 1.0), -1)
-$normal = Add-Node -Kind 'NormalMap' -Inputs @($bump, (Scalar 'Strength' 0.35))
+$normal = Add-Node -Kind 'Noise3DNormal' -Inputs @($position, $scale, (Scalar 'Strength' 0.35))
 $slab = Add-Node -Kind 'SubstrateSlab' -Inputs @((Mask (ColorParam 'Metal' 0.86 0.56 0.36) 'xyz'), -1, (Scalar 'Roughness' 0.3), (Num 1.0), -1, -1, -1, -1, -1, -1, -1, $normal)
 Save-Material 'Surface\HammeredMetal.gxmaterial' 'HammeredMetal' 'Surface' 'Substrate' @{ Surface = $slab }

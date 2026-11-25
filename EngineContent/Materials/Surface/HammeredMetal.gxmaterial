@@ -7,7 +7,7 @@
     "Nodes":  [
                   {
                       "Id":  1,
-                      "Kind":  "TexCoord",
+                      "Kind":  "LocalPosition",
                       "Position":  [
                                        0,
                                        0
@@ -33,87 +33,6 @@
                   },
                   {
                       "Id":  3,
-                      "Kind":  "Noise",
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-                                     1,
-                                     2
-                                 ]
-                  },
-                  {
-                      "Id":  4,
-                      "Kind":  "Constant",
-                      "Value":  [
-                                    5.3,
-                                    1.7
-                                ],
-                      "Components":  2,
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-
-                                 ]
-                  },
-                  {
-                      "Id":  5,
-                      "Kind":  "Add",
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-                                     1,
-                                     4
-                                 ]
-                  },
-                  {
-                      "Id":  6,
-                      "Kind":  "Noise",
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-                                     5,
-                                     2
-                                 ]
-                  },
-                  {
-                      "Id":  7,
-                      "Kind":  "Constant",
-                      "Value":  [
-                                    1
-                                ],
-                      "Components":  1,
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-
-                                 ]
-                  },
-                  {
-                      "Id":  8,
-                      "Kind":  "Append",
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-                                     3,
-                                     6,
-                                     7,
-                                     -1
-                                 ]
-                  },
-                  {
-                      "Id":  9,
                       "Kind":  "ScalarParameter",
                       "Name":  "Strength",
                       "Value":  [
@@ -128,19 +47,20 @@
                                  ]
                   },
                   {
-                      "Id":  10,
-                      "Kind":  "NormalMap",
+                      "Id":  4,
+                      "Kind":  "Noise3DNormal",
                       "Position":  [
                                        0,
                                        0
                                    ],
                       "Inputs":  [
-                                     8,
-                                     9
+                                     1,
+                                     2,
+                                     3
                                  ]
                   },
                   {
-                      "Id":  11,
+                      "Id":  5,
                       "Kind":  "VectorParameter",
                       "Name":  "Metal",
                       "Value":  [
@@ -160,7 +80,7 @@
                                  ]
                   },
                   {
-                      "Id":  12,
+                      "Id":  6,
                       "Kind":  "Mask",
                       "Name":  "xyz",
                       "Position":  [
@@ -168,11 +88,11 @@
                                        0
                                    ],
                       "Inputs":  [
-                                     11
+                                     5
                                  ]
                   },
                   {
-                      "Id":  13,
+                      "Id":  7,
                       "Kind":  "ScalarParameter",
                       "Name":  "Roughness",
                       "Value":  [
@@ -187,7 +107,7 @@
                                  ]
                   },
                   {
-                      "Id":  14,
+                      "Id":  8,
                       "Kind":  "Constant",
                       "Value":  [
                                     1
@@ -202,29 +122,29 @@
                                  ]
                   },
                   {
-                      "Id":  15,
+                      "Id":  9,
                       "Kind":  "SubstrateSlab",
                       "Position":  [
                                        0,
                                        0
                                    ],
                       "Inputs":  [
-                                     12,
+                                     6,
                                      -1,
-                                     13,
-                                     14,
-                                     -1,
-                                     -1,
+                                     7,
+                                     8,
                                      -1,
                                      -1,
                                      -1,
                                      -1,
                                      -1,
-                                     10
+                                     -1,
+                                     -1,
+                                     4
                                  ]
                   }
               ],
     "Outputs":  {
-                    "Surface":  15
+                    "Surface":  9
                 }
 }

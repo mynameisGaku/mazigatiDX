@@ -4,6 +4,7 @@
 #include "Library/Framework/Engine/Engine.h"
 #include "Library/Framework/Render/Draw/DrawContext.h"
 #include "Library/Framework/Render/State/RenderState3D.h"
+#include "Library/Platform/System/CommandLine.h"
 #include "Source/Common/ShaderMeshes.h"
 
 namespace
@@ -71,10 +72,21 @@ namespace
 			}
 		}
 		// 手前の小さな球: Substrate 風のマテリアル（ゆっくり回して、光沢の動きを見せる）
+		static const bool bRustUvVariant = NCommandLine::HasFlag( "materials-rust-uv-variant" ); // 比較撮影時だけUVを変更する。
 		for ( int32 Index = 0; Index < FMaterialsDemoState::NumSubstrateSpheres; ++Index )
 		{
 			const FMatrix4x4 World = FMatrix4x4::Scale( FVector3( SubstrateRadius, SubstrateRadius, SubstrateRadius ) ) * FMatrix4x4::RotateY( State.Time * 0.3f ) * FMatrix4x4::Translate( SubstratePositions[Index] );
-			Visit( *State.SubstrateSpheres[Index], NShaderMeshes::GetSphere(), World );
+			if ( Index == 3 && bRustUvVariant )
+			{
+				static const NShaderMeshes::FMesh Variant = []() // 局所座標の模様がUVに依存しないことを比較する。
+				{
+					NShaderMeshes::FMesh Mesh = NShaderMeshes::GetSphere();
+					for ( FShaderVertex3D& Vertex : Mesh.Vertices ) { Vertex.U += Vertex.Position.x >= 0.0f ? 0.47f : 0.91f; Vertex.V = Vertex.V * 7.0f + 0.13f; }
+					return Mesh;
+				}();
+				Visit( *State.SubstrateSpheres[Index], Variant, World );
+			}
+			else { Visit( *State.SubstrateSpheres[Index], NShaderMeshes::GetSphere(), World ); }
 		}
 	}
 }

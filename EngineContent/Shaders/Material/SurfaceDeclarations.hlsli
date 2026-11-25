@@ -33,6 +33,8 @@ struct VertexOutput
 	float3 World : TEXCOORD1;
 	float2 Uv : TEXCOORD2;
 	float4 Color : TEXCOORD3;
+	float3 LocalPosition : TEXCOORD4;
+	float3 LocalNormal : TEXCOORD5;
 };
 
 #ifdef MATERIAL_MASKED

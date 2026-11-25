@@ -1,322 +1,969 @@
 {
-    "Format":  "gxmaterial",
-    "Version":  1,
-    "Name":  "RustedMetal",
-    "Domain":  "Surface",
-    "Shading":  "Substrate",
-    "Nodes":  [
-                  {
-                      "Id":  1,
-                      "Kind":  "VectorParameter",
-                      "Name":  "Metal",
-                      "Value":  [
-                                    0.76,
-                                    0.76,
-                                    0.8,
-                                    1
-                                ],
-                      "Components":  4,
-                      "Color":  true,
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-
-                                 ]
-                  },
-                  {
-                      "Id":  2,
-                      "Kind":  "Mask",
-                      "Name":  "xyz",
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-                                     1
-                                 ]
-                  },
-                  {
-                      "Id":  3,
-                      "Kind":  "ScalarParameter",
-                      "Name":  "MetalRoughness",
-                      "Value":  [
-                                    0.3
-                                ],
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-
-                                 ]
-                  },
-                  {
-                      "Id":  4,
-                      "Kind":  "Constant",
-                      "Value":  [
-                                    1
-                                ],
-                      "Components":  1,
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-
-                                 ]
-                  },
-                  {
-                      "Id":  5,
-                      "Kind":  "SubstrateSlab",
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-                                     2,
-                                     -1,
-                                     3,
-                                     4,
-                                     -1,
-                                     -1,
-                                     -1,
-                                     -1,
-                                     -1,
-                                     -1,
-                                     -1
-                                 ]
-                  },
-                  {
-                      "Id":  6,
-                      "Kind":  "VectorParameter",
-                      "Name":  "Rust",
-                      "Value":  [
-                                    0.45,
-                                    0.2,
-                                    0.08,
-                                    1
-                                ],
-                      "Components":  4,
-                      "Color":  true,
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-
-                                 ]
-                  },
-                  {
-                      "Id":  7,
-                      "Kind":  "Mask",
-                      "Name":  "xyz",
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-                                     6
-                                 ]
-                  },
-                  {
-                      "Id":  8,
-                      "Kind":  "Constant",
-                      "Value":  [
-                                    0.9
-                                ],
-                      "Components":  1,
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-
-                                 ]
-                  },
-                  {
-                      "Id":  9,
-                      "Kind":  "Constant",
-                      "Value":  [
-                                    0
-                                ],
-                      "Components":  1,
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-
-                                 ]
-                  },
-                  {
-                      "Id":  10,
-                      "Kind":  "SubstrateSlab",
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-                                     7,
-                                     -1,
-                                     8,
-                                     9,
-                                     -1,
-                                     -1,
-                                     -1,
-                                     -1,
-                                     -1,
-                                     -1,
-                                     -1
-                                 ]
-                  },
-                  {
-                      "Id":  11,
-                      "Kind":  "ScalarParameter",
-                      "Name":  "Scale",
-                      "Value":  [
-                                    6
-                                ],
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-
-                                 ]
-                  },
-                  {
-                      "Id":  12,
-                      "Kind":  "Noise",
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-                                     -1,
-                                     11
-                                 ]
-                  },
-                  {
-                      "Id":  13,
-                      "Kind":  "ScalarParameter",
-                      "Name":  "Amount",
-                      "Value":  [
-                                    0.5
-                                ],
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-
-                                 ]
-                  },
-                  {
-                      "Id":  14,
-                      "Kind":  "OneMinus",
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-                                     13
-                                 ]
-                  },
-                  {
-                      "Id":  15,
-                      "Kind":  "Constant",
-                      "Value":  [
-                                    0.08
-                                ],
-                      "Components":  1,
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-
-                                 ]
-                  },
-                  {
-                      "Id":  16,
-                      "Kind":  "Subtract",
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-                                     14,
-                                     15
-                                 ]
-                  },
-                  {
-                      "Id":  17,
-                      "Kind":  "OneMinus",
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-                                     13
-                                 ]
-                  },
-                  {
-                      "Id":  18,
-                      "Kind":  "Constant",
-                      "Value":  [
-                                    0.08
-                                ],
-                      "Components":  1,
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-
-                                 ]
-                  },
-                  {
-                      "Id":  19,
-                      "Kind":  "Add",
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-                                     17,
-                                     18
-                                 ]
-                  },
-                  {
-                      "Id":  20,
-                      "Kind":  "SmoothStep",
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-                                     16,
-                                     19,
-                                     12
-                                 ]
-                  },
-                  {
-                      "Id":  21,
-                      "Kind":  "SubstrateMix",
-                      "Position":  [
-                                       0,
-                                       0
-                                   ],
-                      "Inputs":  [
-                                     5,
-                                     10,
-                                     20
-                                 ]
-                  }
-              ],
-    "Outputs":  {
-                    "Surface":  21
-                }
+  "Format": "gxmaterial",
+  "Version": 1,
+  "Name": "RustedMetal",
+  "Domain": "Surface",
+  "Shading": "Substrate",
+  "Nodes": [
+    {
+      "Id": 1,
+      "Kind": "LocalPosition",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 2,
+      "Kind": "ScalarParameter",
+      "Name": "Scale",
+      "Value": [
+        6.0
+      ],
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 3,
+      "Kind": "Constant",
+      "Value": [
+        2.4
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 4,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        2,
+        3
+      ]
+    },
+    {
+      "Id": 5,
+      "Kind": "Constant",
+      "Value": [
+        12.0
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 6,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        2,
+        5
+      ]
+    },
+    {
+      "Id": 7,
+      "Kind": "Constant",
+      "Value": [
+        0.45
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 8,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        2,
+        7
+      ]
+    },
+    {
+      "Id": 9,
+      "Kind": "Noise3D",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        1,
+        8
+      ]
+    },
+    {
+      "Id": 10,
+      "Kind": "Noise3D",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        1,
+        2
+      ]
+    },
+    {
+      "Id": 11,
+      "Kind": "Noise3D",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        1,
+        4
+      ]
+    },
+    {
+      "Id": 12,
+      "Kind": "Noise3D",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        1,
+        6
+      ]
+    },
+    {
+      "Id": 13,
+      "Kind": "Constant",
+      "Value": [
+        0.45
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 14,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        9,
+        13
+      ]
+    },
+    {
+      "Id": 15,
+      "Kind": "Constant",
+      "Value": [
+        0.38
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 16,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        10,
+        15
+      ]
+    },
+    {
+      "Id": 17,
+      "Kind": "Add",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        14,
+        16
+      ]
+    },
+    {
+      "Id": 18,
+      "Kind": "Constant",
+      "Value": [
+        0.17
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 19,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        11,
+        18
+      ]
+    },
+    {
+      "Id": 20,
+      "Kind": "Add",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        17,
+        19
+      ]
+    },
+    {
+      "Id": 21,
+      "Kind": "VectorParameter",
+      "Name": "Metal",
+      "Value": [
+        0.76,
+        0.76,
+        0.8,
+        1.0
+      ],
+      "Components": 4,
+      "Color": true,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 22,
+      "Kind": "Mask",
+      "Name": "xyz",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        21
+      ]
+    },
+    {
+      "Id": 23,
+      "Kind": "ScalarParameter",
+      "Name": "MetalRoughness",
+      "Value": [
+        0.3
+      ],
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 24,
+      "Kind": "Constant",
+      "Value": [
+        0.5
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 25,
+      "Kind": "Subtract",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        11,
+        24
+      ]
+    },
+    {
+      "Id": 26,
+      "Kind": "Constant",
+      "Value": [
+        0.16
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 27,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        25,
+        26
+      ]
+    },
+    {
+      "Id": 28,
+      "Kind": "Add",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        23,
+        27
+      ]
+    },
+    {
+      "Id": 29,
+      "Kind": "Constant",
+      "Value": [
+        0.03
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 30,
+      "Kind": "Constant",
+      "Value": [
+        0.9
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 31,
+      "Kind": "Clamp",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        28,
+        29,
+        30
+      ]
+    },
+    {
+      "Id": 32,
+      "Kind": "Constant",
+      "Value": [
+        1.0
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 33,
+      "Kind": "SubstrateSlab",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        22,
+        -1,
+        31,
+        32,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+      ]
+    },
+    {
+      "Id": 34,
+      "Kind": "VectorParameter",
+      "Name": "Rust",
+      "Value": [
+        0.45,
+        0.2,
+        0.08,
+        1.0
+      ],
+      "Components": 4,
+      "Color": true,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 35,
+      "Kind": "Mask",
+      "Name": "xyz",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        34
+      ]
+    },
+    {
+      "Id": 36,
+      "Kind": "Constant",
+      "Value": [
+        0.5
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 37,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        35,
+        36
+      ]
+    },
+    {
+      "Id": 38,
+      "Kind": "Constant",
+      "Value": [
+        1.35
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 39,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        35,
+        38
+      ]
+    },
+    {
+      "Id": 40,
+      "Kind": "Constant",
+      "Value": [
+        0.5
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 41,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        10,
+        40
+      ]
+    },
+    {
+      "Id": 42,
+      "Kind": "Constant",
+      "Value": [
+        0.3
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 43,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        11,
+        42
+      ]
+    },
+    {
+      "Id": 44,
+      "Kind": "Add",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        41,
+        43
+      ]
+    },
+    {
+      "Id": 45,
+      "Kind": "Constant",
+      "Value": [
+        0.2
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 46,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        12,
+        45
+      ]
+    },
+    {
+      "Id": 47,
+      "Kind": "Add",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        44,
+        46
+      ]
+    },
+    {
+      "Id": 48,
+      "Kind": "Lerp",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        37,
+        39,
+        47
+      ]
+    },
+    {
+      "Id": 49,
+      "Kind": "Constant",
+      "Value": [
+        0.68
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 50,
+      "Kind": "Constant",
+      "Value": [
+        0.98
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 51,
+      "Kind": "Constant",
+      "Value": [
+        0.55
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 52,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        11,
+        51
+      ]
+    },
+    {
+      "Id": 53,
+      "Kind": "Constant",
+      "Value": [
+        0.45
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 54,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        12,
+        53
+      ]
+    },
+    {
+      "Id": 55,
+      "Kind": "Add",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        52,
+        54
+      ]
+    },
+    {
+      "Id": 56,
+      "Kind": "Lerp",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        49,
+        50,
+        55
+      ]
+    },
+    {
+      "Id": 57,
+      "Kind": "ScalarParameter",
+      "Name": "RustBumpStrength",
+      "Value": [
+        0.8
+      ],
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 58,
+      "Kind": "Noise3DNormal",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        1,
+        4,
+        57
+      ]
+    },
+    {
+      "Id": 59,
+      "Kind": "ScalarParameter",
+      "Name": "RustGrainStrength",
+      "Value": [
+        0.3
+      ],
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 60,
+      "Kind": "Noise3DNormal",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        1,
+        6,
+        59
+      ]
+    },
+    {
+      "Id": 61,
+      "Kind": "Add",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        58,
+        60
+      ]
+    },
+    {
+      "Id": 62,
+      "Kind": "WorldNormal",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 63,
+      "Kind": "Subtract",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        61,
+        62
+      ]
+    },
+    {
+      "Id": 64,
+      "Kind": "Normalize",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        63
+      ]
+    },
+    {
+      "Id": 65,
+      "Kind": "Constant",
+      "Value": [
+        0.0
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 66,
+      "Kind": "SubstrateSlab",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        48,
+        -1,
+        56,
+        65,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        64
+      ]
+    },
+    {
+      "Id": 67,
+      "Kind": "ScalarParameter",
+      "Name": "Amount",
+      "Value": [
+        0.5
+      ],
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 68,
+      "Kind": "OneMinus",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        67
+      ]
+    },
+    {
+      "Id": 69,
+      "Kind": "Constant",
+      "Value": [
+        0.08
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 70,
+      "Kind": "Subtract",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        68,
+        69
+      ]
+    },
+    {
+      "Id": 71,
+      "Kind": "OneMinus",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        67
+      ]
+    },
+    {
+      "Id": 72,
+      "Kind": "Constant",
+      "Value": [
+        0.08
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 73,
+      "Kind": "Add",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        71,
+        72
+      ]
+    },
+    {
+      "Id": 74,
+      "Kind": "SmoothStep",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        70,
+        73,
+        20
+      ]
+    },
+    {
+      "Id": 75,
+      "Kind": "SubstrateMix",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        33,
+        66,
+        74
+      ]
+    }
+  ],
+  "Outputs": {
+    "Surface": 75
+  }
 }
