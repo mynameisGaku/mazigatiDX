@@ -1000,3 +1000,10 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - 固定画角の DX12 撮影を `Amount = 0`・既定・`1` で比較する検査を追加した。対象範囲で、両端の差が十分ある画素を基準に、既定で両方の領域が一定数見えることを確認する。従来の既定値へ戻した対照は未腐食側が 0 画素となり、この検査で失敗する。
 - 局所三方向の投影には、物体移動に追随する局所座標と局所法線を使う。参考: [Epic の局所法線](https://dev.epicgames.com/documentation/unreal-engine/vector-material-expressions-in-unreal-engine) と [NVIDIA の三方向投影](https://developer.nvidia.com/gpugems/gpugems3/part-i-geometry/chapter-1-generating-complex-procedural-terrains-using-gpu)。実物との比較、境界の形状と法線、距離による反射の変化は引き続き検討する。
 - 検証: Debug / Release の DX12 サンプル画像各 184 項目、Release の配布検査、`Tools/RunAllChecks.ps1 -SkipBuild -Quick` 全 77 手順に合格。既存のミップ比較は錆量を 1 に固定して、既定値に左右されず比較する。
+
+## 2026-11-26: 錆と金属の境界の細部
+
+- RustedMetal の腐食域を決める3Dノイズに、より細かい尺度のノイズを追加し、混ざり幅を 0.05 から 0.036 にした。`RustEdgeDetailStrength` で境界の細部の強さを変えられる。大きな腐食分布と別の金属の変色には細部を加えず、腐食マスクにだけ使う。
+- 使用する `Noise3D` は従来の画素幅によるフィルターを通る。遠景で表現できない細部は弱まるが、境界のしきい値そのものの厳密な面積積分ではなく、移動時のちらつきは未検証。サンプルの描画先は 1280×640 なので、画素より細かい輪郭は表示できない。参考: [Epic の画素幅とノイズ](https://dev.epicgames.com/documentation/en-us/unreal-engine/bump-mapping-without-tangent-space-in-unreal-engine)、[NVIDIA のフィルター幅](https://developer.nvidia.com/gpugems/gpugems/part-iv-image-processing/chapter-25-fast-filter-width-estimates-texture-maps)。
+- 近距離の固定画角で、細部を有効／無効にした比較を画像検査へ追加。RTX 4070 SUPER、Release、標準見た目、1280×640、単一の固定画角で120フレーム計測した全描画時間は、変更前後とも約 0.27 ms。表示精度と測定条件が限られるため、大量の材質や別GPUの性能は示さない。
+- 検証: Debug / Release の DX12 サンプル画像各 185 項目、Release の配布検査、`Tools/RunAllChecks.ps1 -SkipBuild -Quick` 全 77 手順に合格。

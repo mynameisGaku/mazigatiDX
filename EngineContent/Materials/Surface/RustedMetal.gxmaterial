@@ -415,7 +415,7 @@
       "Id": 34,
       "Kind": "Constant",
       "Value": [
-        0.025
+        0.018
       ],
       "Components": 1,
       "Position": [
@@ -440,7 +440,7 @@
       "Id": 36,
       "Kind": "Constant",
       "Value": [
-        0.025
+        0.018
       ],
       "Components": 1,
       "Position": [
@@ -471,7 +471,7 @@
       "Inputs": [
         35,
         37,
-        33
+        213
       ]
     },
     {
@@ -2565,6 +2565,105 @@
         73,
         204,
         48
+      ]
+    },
+    {
+      "Id": 206,
+      "Kind": "Constant",
+      "Value": [
+        16.0
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 207,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        2,
+        206
+      ]
+    },
+    {
+      "Id": 208,
+      "Kind": "Noise3D",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        1,
+        207
+      ]
+    },
+    {
+      "Id": 209,
+      "Kind": "Constant",
+      "Value": [
+        0.5
+      ],
+      "Components": 1,
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 210,
+      "Kind": "Subtract",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        208,
+        209
+      ]
+    },
+    {
+      "Id": 211,
+      "Kind": "ScalarParameter",
+      "Name": "RustEdgeDetailStrength",
+      "Value": [
+        0.1
+      ],
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": []
+    },
+    {
+      "Id": 212,
+      "Kind": "Multiply",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        210,
+        211
+      ]
+    },
+    {
+      "Id": 213,
+      "Kind": "Add",
+      "Position": [
+        0,
+        0
+      ],
+      "Inputs": [
+        33,
+        212
       ]
     }
   ],

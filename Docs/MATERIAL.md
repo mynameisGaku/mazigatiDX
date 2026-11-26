@@ -228,7 +228,7 @@ FUIBrush Glow = FUIBrush::MakeMaterial( GlowMaterial );                 // UI �
 |`Surface/BrushedMetal`|一方向に磨いた金属。光沢が伸びる（Substrate。`Metal`・`Roughness`・`Metallic`・`Anisotropy`）|
 |`Surface/Pearl`|真珠。見る角度で色が変わる（Substrate。`Base`・`Roughness`・`ThinFilm`）|
 |`Surface/Wax`|ろう。光が回り込む（Substrate。`Base`・`Scatter`・`Roughness`）|
-|`Surface/RustedMetal`|さびた金属。局所3次元ノイズで金属と腐食域を混ぜ、腐食域には CC0 素材 Metal041C の色・粗さ・金属度・法線画像を局所座標の三方向から投影する。`RustTextureScale` は画像の密度、`RustBumpStrength` と `RustGrainStrength` は凹凸の強さを調整する（Substrate。`Metal`・`Rust`・`MetalRoughness`・`Scale`・`Amount`）|
+|`Surface/RustedMetal`|さびた金属。局所3次元ノイズで金属と腐食域を混ぜ、腐食域には CC0 素材 Metal041C の色・粗さ・金属度・法線画像を局所座標の三方向から投影する。`RustTextureScale` は画像の密度、`RustBumpStrength` と `RustGrainStrength` は凹凸、`RustEdgeDetailStrength` は腐食境界の細部の強さを調整する（Substrate。`Metal`・`Rust`・`MetalRoughness`・`Scale`・`Amount`）|
 |`Surface/CandyPaint`|キャンディ塗装。金属の上に、色のついた透明な層を重ねる（Substrate の `SubstrateLayer`。`Metal`・`MetalRoughness`・`Tint`・`CoatRoughness`・`Coverage`）|
 |`Surface/HammeredMetal`|槌目の金属。局所3次元ノイズの勾配から、凹凸の法線を作る（Substrate。`Metal`・`Roughness`・`Scale`・`Strength`）|
 

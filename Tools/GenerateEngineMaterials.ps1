@@ -214,7 +214,8 @@ $noise = Op2 'Add' (Op2 'Add' (Op2 'Multiply' $coarse (Num 0.38)) (Op2 'Multiply
 $amount = Scalar 'Amount' 0.5
 $threshold = Op2 'Subtract' (Num 1.2) (Op2 'Multiply' $amount (Num 1.4))
 $edgeNoise = Op2 'Add' $noise (Op2 'Multiply' (Op2 'Subtract' $grain (Num 0.5)) (Num 0.13))
-$mask = Add-Node -Kind 'SmoothStep' -Inputs @((Op2 'Subtract' $threshold (Num 0.025)), (Op2 'Add' $threshold (Num 0.025)), $edgeNoise)
+$mask = Add-Node -Kind 'SmoothStep' -Inputs @((Op2 'Subtract' $threshold (Num 0.018)), (Op2 'Add' $threshold (Num 0.018)), $edgeNoise)
+$edgeMask = $mask # 腐食境界の入力を後から細かくする。
 $speckles = Op2 'Multiply' (Add-Node -Kind 'SmoothStep' -Inputs @((Num 0.66), (Num 0.78), $fine)) (Add-Node -Kind 'SmoothStep' -Inputs @((Op2 'Subtract' $threshold (Num 0.20)), $threshold, $medium))
 $mask = Op1 'Saturate' (Op2 'Add' $mask (Op2 'Multiply' $speckles $amount))
 # 腐食の周囲は、金属も変色して光沢が鈍くなる。
@@ -252,6 +253,10 @@ $rustGrain = Add-Node -Kind 'Noise3DNormal' -Inputs @($position, $surfaceGrainSc
 $rustNormal = Op1 'Normalize' (Op2 'Subtract' (Op2 'Add' $textureNormal $rustGrain) (Add-Node -Kind 'WorldNormal'))
 $rust = Add-Node -Kind 'SubstrateSlab' -Inputs @($rustVariation, -1, $rustRoughness, $surfaceMetallic, -1, -1, -1, -1, -1, -1, -1, $rustNormal)
 $mixed = Add-Node -Kind 'SubstrateMix' -Inputs @($metal, $rust, $mask)
+# 遠景では細部が消える既存のフィルターを使い、腐食の境界だけに細かな欠けを足す。
+$edgeDetail = Add-Node -Kind 'Noise3D' -Inputs @($position, (Op2 'Multiply' $scale (Num 16.0)))
+$detailedEdge = Op2 'Add' $edgeNoise (Op2 'Multiply' (Op2 'Subtract' $edgeDetail (Num 0.5)) (Scalar 'RustEdgeDetailStrength' 0.10))
+$script:Nodes[$edgeMask - 1]['Inputs'][2] = $detailedEdge
 Save-Material 'Surface\RustedMetal.gxmaterial' 'RustedMetal' 'Surface' 'Substrate' @{ Surface = $mixed }
 
 # キャンディ塗装: 金属の層の上に、色のついた透明な層を重ねる（SubstrateLayer。下の金属の光沢が、上の層の色に染まって見え、いちばん上に、色のない鋭い光沢が乗る）
