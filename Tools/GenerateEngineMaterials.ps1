@@ -211,7 +211,7 @@ $fine = Add-Node -Kind 'Noise3D' -Inputs @($position, $detailScale)
 $grain = Add-Node -Kind 'Noise3D' -Inputs @($position, $grainScale)
 # 大きな腐食域の輪郭に細かな欠けを重ね、独立した小さな腐食点も作る。
 $noise = Op2 'Add' (Op2 'Add' (Op2 'Multiply' $coarse (Num 0.38)) (Op2 'Multiply' $medium (Num 0.34))) (Op2 'Add' (Op2 'Multiply' $fine (Num 0.20)) (Op2 'Multiply' $grain (Num 0.08)))
-$amount = Scalar 'Amount' 0.82
+$amount = Scalar 'Amount' 0.5
 $threshold = Op2 'Subtract' (Num 1.2) (Op2 'Multiply' $amount (Num 1.4))
 $edgeNoise = Op2 'Add' $noise (Op2 'Multiply' (Op2 'Subtract' $grain (Num 0.5)) (Num 0.13))
 $mask = Add-Node -Kind 'SmoothStep' -Inputs @((Op2 'Subtract' $threshold (Num 0.025)), (Op2 'Add' $threshold (Num 0.025)), $edgeNoise)

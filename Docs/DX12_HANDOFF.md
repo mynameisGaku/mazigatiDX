@@ -993,3 +993,10 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - Release の増分リンクで複数のオブジェクトに `LNK1103` が発生し、個別の再コンパイルでは解消しなかった。共通ライブラリとサンプル・エディタの中間ファイルを通常の最適化設定で作り直したところ、project・Samples・Editor のリンクに成功した。エラーの根本原因は未特定。
 - 描画順序・描画スナップショット・マテリアル表面の画像検査は、既定で古い `Samples/x64` 側を見ていたため、ソリューションの出力先 `x64` を参照するよう変更した。独自の実行ファイルの場所を指定するオプションは維持する。
 - 全体検査は 77 手順中 74 手順に合格し、残る Release の 3 手順は旧出力先に実行ファイルがなく失敗。検査の参照先を修正後、影響する 3 手順を Debug / Release で再実行し、6 手順すべてに合格した。
+
+## 2026-11-26: 既定の錆の被覆
+
+- RustedMetal の `Amount` の既定値を 0.82 から 0.5 にした。前の値では腐食しきい値が約 0.052 となり、サンプルのほぼ全面が錆になって未腐食の金属と腐食境界を確認しづらかった。計算式とパラメーターの 0 / 1 の意味は変えていない。
+- 固定画角の DX12 撮影を `Amount = 0`・既定・`1` で比較する検査を追加した。対象範囲で、両端の差が十分ある画素を基準に、既定で両方の領域が一定数見えることを確認する。従来の既定値へ戻した対照は未腐食側が 0 画素となり、この検査で失敗する。
+- 局所三方向の投影には、物体移動に追随する局所座標と局所法線を使う。参考: [Epic の局所法線](https://dev.epicgames.com/documentation/unreal-engine/vector-material-expressions-in-unreal-engine) と [NVIDIA の三方向投影](https://developer.nvidia.com/gpugems/gpugems3/part-i-geometry/chapter-1-generating-complex-procedural-terrains-using-gpu)。実物との比較、境界の形状と法線、距離による反射の変化は引き続き検討する。
+- 検証: Debug / Release の DX12 サンプル画像各 184 項目、Release の配布検査、`Tools/RunAllChecks.ps1 -SkipBuild -Quick` 全 77 手順に合格。既存のミップ比較は錆量を 1 に固定して、既定値に左右されず比較する。
