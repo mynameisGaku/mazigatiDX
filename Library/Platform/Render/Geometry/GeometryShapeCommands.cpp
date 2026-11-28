@@ -22,22 +22,15 @@ namespace
 	class FScopedAlphaBlend
 	{
 	public:
-		FScopedAlphaBlend( FGeometryDrawState& InState, bool bInEnable )
+		explicit FScopedAlphaBlend( FGeometryDrawState& InState )
 			: State( InState )
 			, Saved( InState.Blend )
-			, bEnable( bInEnable )
 		{
-			if ( bEnable )
-			{
-				State.Blend = EGeometryBlend::Alpha;
-			}
+			State.Blend = EGeometryBlend::Alpha;
 		}
 		~FScopedAlphaBlend()
 		{
-			if ( bEnable )
-			{
-				State.Blend = Saved;
-			}
+			State.Blend = Saved;
 		}
 		FScopedAlphaBlend( const FScopedAlphaBlend& ) = delete;
 		FScopedAlphaBlend& operator=( const FScopedAlphaBlend& ) = delete;
@@ -45,7 +38,6 @@ namespace
 	private:
 		FGeometryDrawState& State; // 借用する描画の状態。
 		EGeometryBlend Saved; // 戻す合成の方式。
-		bool bEnable; // 切り替えるか。
 	};
 
 	// 登録したバッファの三角形を、GPU の共有メッシュとして描く、最小の添字の数（これより小さいと、頂点を展開して送るほうが、同じか速い）。
@@ -66,8 +58,8 @@ CGeometryShapeCommands::CGeometryShapeCommands( FGeometryExecution& InRun, CGeom
 
 EGeometryCommandResult CGeometryShapeCommands::Execute( const FDrawCommandView& View, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend )
 {
-	// DxLib の立体図形の面は、アルファが 2 乗で効く。互換の見た目のときだけ、同じにする（255 は 255 のまま）。
-	const int32 SolidAlpha = Run.bSolidShapeAlphaSquared ? ( Alpha * Alpha + 127 ) / 255 : Alpha;
+	// DxLib の立体図形（Cube3D / Sphere3D / Capsule3D / Cone3D）は、面も線も、アルファが 2 乗で効く（Add 合成でも）。Triangle3D・Line3D・Pixel3D は、2 乗にならない。互換の見た目のときだけ、同じにする（255 は 255 のまま）。
+	const int32 ShapeAlpha = Run.bSolidShapeAlphaSquared ? ( Alpha * Alpha + 127 ) / 255 : Alpha;
 	switch ( View.Type )
 	{
 	case EDrawCommand::Pixel3D:
@@ -95,7 +87,7 @@ EGeometryCommandResult CGeometryShapeCommands::Execute( const FDrawCommandView& 
 			return EGeometryCommandResult::Rejected;
 		}
 		SetSpecular( Vertices, Data.Specular );
-		return Vertices.IsEmpty() || Submitter.Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, bFill ? SolidAlpha : Alpha, bAlphaBlend, -1, bFill ) ? EGeometryCommandResult::Executed : EGeometryCommandResult::Rejected;
+		return Vertices.IsEmpty() || Submitter.Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, ShapeAlpha, bAlphaBlend, -1, bFill ) ? EGeometryCommandResult::Executed : EGeometryCommandResult::Rejected;
 	}
 	case EDrawCommand::Line3D:
 	{
@@ -168,7 +160,7 @@ EGeometryCommandResult CGeometryShapeCommands::Execute( const FDrawCommandView& 
 			Vertices.Add( Corner );
 		}
 		SetSpecular( Vertices, Data.Specular );
-		return Submitter.Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, bFill ? SolidAlpha : Alpha, bAlphaBlend, -1, bFill ) ? EGeometryCommandResult::Executed : EGeometryCommandResult::Rejected;
+		return Submitter.Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, ShapeAlpha, bAlphaBlend, -1, bFill ) ? EGeometryCommandResult::Executed : EGeometryCommandResult::Rejected;
 	}
 	case EDrawCommand::Sphere3D:
 	{
@@ -184,7 +176,7 @@ EGeometryCommandResult CGeometryShapeCommands::Execute( const FDrawCommandView& 
 			return EGeometryCommandResult::Rejected;
 		}
 		SetSpecular( Vertices, Data.Specular );
-		return Vertices.IsEmpty() || Submitter.Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, bFill ? SolidAlpha : Alpha, bAlphaBlend, -1, bFill ) ? EGeometryCommandResult::Executed : EGeometryCommandResult::Rejected;
+		return Vertices.IsEmpty() || Submitter.Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, ShapeAlpha, bAlphaBlend, -1, bFill ) ? EGeometryCommandResult::Executed : EGeometryCommandResult::Rejected;
 	}
 	case EDrawCommand::Capsule3D:
 	{
@@ -200,7 +192,7 @@ EGeometryCommandResult CGeometryShapeCommands::Execute( const FDrawCommandView& 
 			return EGeometryCommandResult::Rejected;
 		}
 		SetSpecular( Vertices, Data.Specular );
-		return Vertices.IsEmpty() || Submitter.Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, bFill ? SolidAlpha : Alpha, bAlphaBlend, -1, bFill ) ? EGeometryCommandResult::Executed : EGeometryCommandResult::Rejected;
+		return Vertices.IsEmpty() || Submitter.Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, ShapeAlpha, bAlphaBlend, -1, bFill ) ? EGeometryCommandResult::Executed : EGeometryCommandResult::Rejected;
 	}
 	case EDrawCommand::Quad3D:
 	{
@@ -411,9 +403,8 @@ EGeometryCommandResult CGeometryShapeCommands::Execute( const FDrawCommandView& 
 			}
 			Ordered.Add( Source[VertexIndex] );
 		}
-		// DxLib の Primitive3D は、Blend が不透明でも、頂点のアルファで半透明になる（Blend のアルファとは掛け合わさる。実測: 頂点 190 -> 0.745、頂点 190 x Blend 130 -> 0.377）。画像つきは、従来どおり。
-		const bool bBlendByVertexAlpha = bAlphaBlend || Data.Texture < 0;
-		return Submitter.SubmitPrimitive( Ordered, Type, Data.Texture, Bright, Alpha, bBlendByVertexAlpha ) ? EGeometryCommandResult::Executed : EGeometryCommandResult::Rejected;
+		// DxLib の Primitive3D は、画像の有無によらず、Blend が不透明でも、頂点のアルファ（と画像のアルファ）で半透明になる（Blend のアルファとは掛け合わさる。実測: 頂点 190 -> 0.745、頂点 190 と Blend 130 -> 0.374、画像のアルファ 128 -> 0.502）。
+		return Submitter.SubmitPrimitive( Ordered, Type, Data.Texture, Bright, Alpha, true ) ? EGeometryCommandResult::Executed : EGeometryCommandResult::Rejected;
 	}
 	case EDrawCommand::PrimitiveBuffer3D:
 	{
@@ -444,12 +435,11 @@ EGeometryCommandResult CGeometryShapeCommands::Execute( const FDrawCommandView& 
 		{
 			return EGeometryCommandResult::Rejected;
 		}
-		// DxLib の頂点バッファの描画は、画像なしのとき、Blend と Tint が効かず、頂点のアルファだけで、通常のアルファ合成になる（実測: 頂点 190 -> 0.744。Blend 130 を掛けても 0.744。頂点 255 は Blend 130 でも不透明）。画像つきは、従来どおり。
-		const bool bVertexAlphaOnly = Data.Texture < 0;
-		const FScopedAlphaBlend BlendScope( State, bVertexAlphaOnly );
-		const FDrawRgb BufferBright = bVertexAlphaOnly ? FDrawRgb() : Bright;
-		const int32 BufferAlpha = bVertexAlphaOnly ? 255 : Alpha;
-		const bool bBufferAlphaBlend = bVertexAlphaOnly ? true : bAlphaBlend;
+		// DxLib の頂点バッファの描画は、画像の有無によらず、Blend（アルファも混ぜ方も）と Tint が効かず、頂点のアルファ（と画像のアルファ）だけで、通常のアルファ合成になる（実測: 頂点 190 -> 0.744。Blend 130 を掛けても 0.744。頂点 255 は Blend 130 でも不透明。画像つきも同じで、Blend 130・Add 130・Tint は無視される）。
+		const FScopedAlphaBlend BlendScope( State );
+		const FDrawRgb BufferBright = FDrawRgb();
+		const int32 BufferAlpha = 255;
+		const bool bBufferAlphaBlend = true;
 		// 登録したバッファのまま、GPU の共有メッシュとして描く（頂点の展開・検査・送り直しをしない）。
 		if ( bSharedMeshCandidate )
 		{
