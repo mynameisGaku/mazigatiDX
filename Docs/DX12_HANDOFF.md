@@ -1042,3 +1042,19 @@ Debug／Releaseの生成物と検査はSaved/ArgonCoordination/codex-status.json
 - 影響: 全サンプルの比較で、悪化したものは無し。大きな差の画素の割合: Shapes3D 6.2% -> 4.6%（池）。ほかの改善（円錐・Box の直しを含む）: Inventory 4.5% -> 2.6%、Platformer2D 2.4% -> 1.1%、PixelEffects 2.1% -> 1.3%、AI 2.2% -> 1.9%。不透明な頂点バッファ（森・地形）も、いまは常に混ぜる描画になる（見た目は同じ。混ぜる分の負荷は、未計測）。
 - 検査: `ForwardMeshContract` 231 項目（+8: Primitive3D が Blend 不透明でも混ぜる・Blend のアルファと掛け合わさる、頂点バッファが Blend のアルファ・混ぜ方・Tint を無視する、混ぜ方が戻る、Blend 不透明でも混ぜる）、画像検査 192 項目（+1: 池が DxLib と一致）。Debug・Release とも合格。変異 6 件（頂点バッファの特例なし・Blend のアルファが効く・Tint が効く・混ぜ方を戻さない・Primitive3D が頂点のアルファで混ぜない・画像検査の池）は、すべて検出（池の変異の差は 35.39、閾値 6）。互換台帳（`Draw.Primitive3D` / `Draw.PrimitiveBuffer3D`）の注記を更新。
 - 未確認: 画像つきの `Primitive3D` / 頂点バッファの、頂点のアルファ・画像のアルファ・Blend の組み合わせ。ワイヤー表示（`Cube3D` などの線）・`Pixel3D`・`Line3D` の、DxLib でのアルファの効き方。
+
+## 2026-11-28: ワイヤー表示と、画像つきの頂点のアルファ（DxLib との差の続き）
+
+- 前の節の「未確認」に残した 2 つ（画像つきの `Primitive3D` / 頂点バッファ、ワイヤー表示・`Pixel3D`・`Line3D`）を、同じ方法で測った。実効アルファ = 画素ごとの（描かない絵 - 半透明の絵）/（描かない絵 - 不透明の絵）の中央値。RenderState に、一時的な分岐 `--probe=...` を足した（コミットしない）。背景は白（Add 合成は黒）、光を切り、Culling なし。画像は単色 (20, 40, 200) で、アルファだけ 255 / 128 に変える。
+- 実測（Blend 130 = 0.510 を頼んだとき。DX12 の「直す前」は、同じ条件の値）:
+  - **ワイヤー**: `Cube3D` / `Sphere3D` / `Capsule3D` / `Cone3D` の線は、面と同じく **2 乗**（0.259。Alpha・Add とも）。`Triangle3D` / `Line3D` / `Pixel3D` は指定どおり（0.510）。DX12 は、4 種の線も 0.510 だった。
+  - **画像つきの `Primitive3D`**: 頂点のアルファ 190・Blend 不透明 -> 0.745（DX12 は 1.0。画像つきは、Blend が Alpha のときだけ混ぜていた）。画像のアルファ 128 -> 0.502（DX12 は 1.0）。頂点 190 と画像 128 -> 0.374（1.0）。Blend 130 -> 0.511、画像 128 と Blend 130 -> 0.255、Add 130 -> 0.510、Tint は、DX12 も一致していた。
+  - **画像つきの頂点バッファ**: 画像なしと同じく、Blend（アルファ 130・Add 130）と Tint が**効かない**。頂点 190 -> 0.745、画像のアルファ 128 -> 0.502（Blend 130 を掛けても 0.502）。DX12 は、Blend と Tint が効いていた。
+- 直し（`GeometryShapeCommands.cpp`）: (1) アルファの 2 乗を、面だけでなく線にも掛ける（`ShapeAlpha`。互換の見た目のときだけ。立方体・球・カプセル・円錐）。(2) `Primitive3D` は、画像つきも、常に混ぜる（頂点と画像のアルファが効く）。(3) 頂点バッファは、画像つきも、Blend・Tint を使わず、通常のアルファ合成（`FScopedAlphaBlend` から、切り替えの引数を外した）。
+- 確認: 同じプローブを DX12 で撮り直し、全条件（ワイヤー 7 種、画像なし・画像つきの `Primitive3D`・頂点バッファ、Alpha・Add・Tint）が DxLib と一致した（差は 0.005 以内。頂点 190 と Blend 130 の 0.374 と 0.379 は、8 ビットの丸め）。
+- 検査: `ForwardMeshContract` 242 項目（+11: 4 種の線の 2 乗・既定は指定どおり・不透明のまま、三角形と線分は指定どおり、画像つきの `Primitive3D` が Blend 不透明でも混ぜる・Blend のアルファと掛け合わさる、画像つきの頂点バッファが Blend・Tint・混ぜ方を無視する・混ぜ方が戻る・Blend 不透明でも混ぜる）。画像検査は 192 項目のまま（ワイヤーや画像つきの頂点のアルファを使う、サンプルの場面がないので、契約検査で守る）。Debug・Release とも合格。変異 11 件（線 4 種が 2 乗でない、`Primitive3D` が画像つきで混ぜない・Blend のアルファを無視する、頂点バッファが画像つきで Blend のアルファ・Tint を使う・混ぜない、混ぜ方を Alpha にしない・戻さない）は、すべて検出。
+- 落とし穴: 変異の置換元の文字列が、別の場所にも 1 つあった（`Quad3D` の行）。最初の 2 件は、その行へ当たって、ビルド失敗と「生き残り」になった。置換元は、1 か所だけに合う長さにする（`SubmitPrimitive( Ordered, ...` まで含める）。
+- 影響: 全サンプルの比較（`--fixed-delta-time`）で、悪化したものは無し（大きな差の画素の割合 0.73〜6.38%。Shapes3D 4.56%・Inventory 2.61%・Platformer2D 1.13%・PixelEffects 1.28%・AI 1.88%）。互換台帳 6 行（`Draw.Cube3D` / `Sphere3D` / `Capsule3D` / `Cone3D` / `Primitive3D` / `PrimitiveBuffer3D`）を更新。
+- 負荷（未測定）: 不透明な `Primitive3D` と頂点バッファ（画像つきも）が、いまは常に混ぜる描画になる。見た目は同じ。混ぜる分の GPU の負荷は、測っていない。
+- 再測定の道具: `Docs/AI_WORKFLOW/tools/alpha_probe_inject.py`（RenderState へ一時的な分岐を入れる）、`alpha_probe_run1.ps1`（ワイヤー・画像つき）、`alpha_probe_run2.ps1`（カプセル・Add・Tint）。`-Backends dxlib,dx12`。終わったら、その `StageScenery.cpp` を `git checkout` で戻す。
+- 残る差（原因を特定できていない）: Lighting の床の光だまり、Shadows の影の縁、Island の砂と水の色（5 段階ほど）、文字の太さ。未測定: `BoxAA` の枠線の置き方。
