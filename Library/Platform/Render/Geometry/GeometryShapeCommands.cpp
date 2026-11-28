@@ -18,6 +18,36 @@ namespace
 	using NGeometryCommand::Vertex;
 	using NGeometryCommand::SetSpecular;
 
+	// 描く間だけ、合成の方式を通常のアルファ合成にして、抜けるときに元へ戻す（成功・失敗のどちらでも）。
+	class FScopedAlphaBlend
+	{
+	public:
+		FScopedAlphaBlend( FGeometryDrawState& InState, bool bInEnable )
+			: State( InState )
+			, Saved( InState.Blend )
+			, bEnable( bInEnable )
+		{
+			if ( bEnable )
+			{
+				State.Blend = EGeometryBlend::Alpha;
+			}
+		}
+		~FScopedAlphaBlend()
+		{
+			if ( bEnable )
+			{
+				State.Blend = Saved;
+			}
+		}
+		FScopedAlphaBlend( const FScopedAlphaBlend& ) = delete;
+		FScopedAlphaBlend& operator=( const FScopedAlphaBlend& ) = delete;
+
+	private:
+		FGeometryDrawState& State; // 借用する描画の状態。
+		EGeometryBlend Saved; // 戻す合成の方式。
+		bool bEnable; // 切り替えるか。
+	};
+
 	// 登録したバッファの三角形を、GPU の共有メッシュとして描く、最小の添字の数（これより小さいと、頂点を展開して送るほうが、同じか速い）。
 	constexpr int32 MinIndicesForSharedMesh = 512;
 }
@@ -381,7 +411,9 @@ EGeometryCommandResult CGeometryShapeCommands::Execute( const FDrawCommandView& 
 			}
 			Ordered.Add( Source[VertexIndex] );
 		}
-		return Submitter.SubmitPrimitive( Ordered, Type, Data.Texture, Bright, Alpha, bAlphaBlend ) ? EGeometryCommandResult::Executed : EGeometryCommandResult::Rejected;
+		// DxLib の Primitive3D は、Blend が不透明でも、頂点のアルファで半透明になる（Blend のアルファとは掛け合わさる。実測: 頂点 190 -> 0.745、頂点 190 x Blend 130 -> 0.377）。画像つきは、従来どおり。
+		const bool bBlendByVertexAlpha = bAlphaBlend || Data.Texture < 0;
+		return Submitter.SubmitPrimitive( Ordered, Type, Data.Texture, Bright, Alpha, bBlendByVertexAlpha ) ? EGeometryCommandResult::Executed : EGeometryCommandResult::Rejected;
 	}
 	case EDrawCommand::PrimitiveBuffer3D:
 	{
@@ -412,13 +444,19 @@ EGeometryCommandResult CGeometryShapeCommands::Execute( const FDrawCommandView& 
 		{
 			return EGeometryCommandResult::Rejected;
 		}
+		// DxLib の頂点バッファの描画は、画像なしのとき、Blend と Tint が効かず、頂点のアルファだけで、通常のアルファ合成になる（実測: 頂点 190 -> 0.744。Blend 130 を掛けても 0.744。頂点 255 は Blend 130 でも不透明）。画像つきは、従来どおり。
+		const bool bVertexAlphaOnly = Data.Texture < 0;
+		const FScopedAlphaBlend BlendScope( State, bVertexAlphaOnly );
+		const FDrawRgb BufferBright = bVertexAlphaOnly ? FDrawRgb() : Bright;
+		const int32 BufferAlpha = bVertexAlphaOnly ? 255 : Alpha;
+		const bool bBufferAlphaBlend = bVertexAlphaOnly ? true : bAlphaBlend;
 		// 登録したバッファのまま、GPU の共有メッシュとして描く（頂点の展開・検査・送り直しをしない）。
 		if ( bSharedMeshCandidate )
 		{
 			uint64 MeshKey = 0, MeshVersion = 0; // GPU 側で共有する頂点と添字の組。
 			if ( Buffers->GetStableMeshCacheIdentity( Data.VertexBuffer, Data.IndexBuffer, MeshKey, MeshVersion ) )
 			{
-				if ( Submitter.SubmitCachedMesh( Vertices, Indices, MeshKey, MeshVersion, Data.Start, Data.Num, Bright, Alpha, bAlphaBlend, Data.Texture ) )
+				if ( Submitter.SubmitCachedMesh( Vertices, Indices, MeshKey, MeshVersion, Data.Start, Data.Num, BufferBright, BufferAlpha, bBufferAlphaBlend, Data.Texture ) )
 				{
 					return EGeometryCommandResult::Executed;
 				}
@@ -445,7 +483,7 @@ EGeometryCommandResult CGeometryShapeCommands::Execute( const FDrawCommandView& 
 				}
 				Ordered.Add( Vertices.Vertices[static_cast<int32>( VertexIndex )] );
 			}
-			if ( !Submitter.SubmitPrimitive( Ordered, static_cast<EDrawPrimitive>( Data.Type ), Data.Texture, Bright, Alpha, bAlphaBlend ) )
+			if ( !Submitter.SubmitPrimitive( Ordered, static_cast<EDrawPrimitive>( Data.Type ), Data.Texture, BufferBright, BufferAlpha, bBufferAlphaBlend ) )
 			{
 				return EGeometryCommandResult::Rejected;
 			}
