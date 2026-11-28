@@ -9,6 +9,7 @@
 #include "Library/Core/Time/PlatformTime.h"
 #include "Library/Core/Types/Utility.h"
 #include "Library/Framework/Subsystem/AppSubsystem.h"
+#include "Library/Platform/System/CommandLine.h"
 
 DEFINE_LOG_CATEGORY_STATIC( LogEngine, Log )
 
@@ -62,6 +63,13 @@ int32 CEngine::Run( TUniquePtr<CGameInstance> InGameInstance, const FWindowSetti
 	if ( Profiler == nullptr )
 	{
 		LOG( LogEngine, Warning, "No profiler is available. Profiling is disabled." );
+	}
+
+	// --fixed-delta-time=<秒>: 経過時間を、実際の時間によらず毎フレーム同じ値にする（バックエンドを比べる撮影・検査用。無ければ、実際の時間）
+	if ( const TOptional<FString> FixedDeltaTime = NCommandLine::GetValue( "fixed-delta-time" ); FixedDeltaTime.IsSet() )
+	{
+		TimeControl.SetFixedDeltaTime( static_cast<float32>( FixedDeltaTime.GetValue().ToFloat( 0.0 ) ) );
+		LOG( LogEngine, Log, "Fixed delta time: %.6f s per frame (--fixed-delta-time)", TimeControl.GetFixedDeltaTime() );
 	}
 
 	GameInstance = MoveTemp( InGameInstance );

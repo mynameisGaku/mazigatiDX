@@ -13,10 +13,13 @@
 //   Control.SetScale( 0.5f );   // 半分の速さ
 //   Control.Pause();            // 経過時間が 0 になる（Tick は呼ばれ続ける）
 //   Control.Step( 3 );          // 一時停止中に、3 コマだけ進める（1 コマ = StepDeltaTime 秒）
+//   Control.SetFixedDeltaTime( 1.0f / 60.0f ); // 実際の経過時間によらず、毎フレーム 1/60 秒（検査・撮影用。起動引数 --fixed-delta-time=<秒>）
 //=============================================================================
 struct FEngineTimeControl
 {
 	static constexpr float32 MaxScale = 100.0f;
+	// 固定の刻みの上限（秒）
+	static constexpr float32 MaxFixedDeltaTime = 1.0f;
 
 	FORCEINLINE float32 GetScale() const { return Scale; }
 	// 0 以上 MaxScale 以下に収める
@@ -34,6 +37,11 @@ struct FEngineTimeControl
 	void Step( int32 Frames = 1 );
 	FORCEINLINE int32 GetStepsRemaining() const { return StepsRemaining; }
 
+	// 固定の刻み（秒）。0 のときは、プラットフォームの経過時間をそのまま使う。0 より大きいときは、毎フレームこの値（スケールは掛かる）
+	FORCEINLINE float32 GetFixedDeltaTime() const { return FixedDeltaTime; }
+	// 0 以下・NaN は 0（固定しない）。MaxFixedDeltaTime より大きい値は MaxFixedDeltaTime に収める
+	void SetFixedDeltaTime( float32 InSeconds );
+
 	// コマ送りの 1 コマの長さ（秒）
 	float32 StepDeltaTime = 1.0f / 60.0f;
 
@@ -42,6 +50,7 @@ struct FEngineTimeControl
 
 private:
 	float32 Scale = 1.0f;
+	float32 FixedDeltaTime = 0.0f;
 	bool bPaused = false;
 	int32 StepsRemaining = 0;
 };
