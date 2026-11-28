@@ -239,14 +239,14 @@ bool CGeometryShapeBuilder::BuildCone( const FVector3& Top, const FVector3& Bott
 		{
 			const FVector3 Normal0 = ( Radial0 * Height + Axis * Radius ) / Slant, Normal1 = ( Radial1 * Height + Axis * Radius ) / Slant; // 側面の外向きの法線。
 			const FVector3 NormalTop = ( Normal0 + Normal1 ).Normalized(); // 頂点は、両隣の法線の中間。
-			// 側面（外から見て時計回り）。
+			// 側面（外から見て時計回り。(B - A) x (C - A) が外を向く。立方体・球・カプセルと同じ向きで、Culling の「裏を描かない」で、外側が見える）。
 			*Write++ = Make( Top, NormalTop );
-			*Write++ = Make( Point1, Normal1 );
 			*Write++ = Make( Point0, Normal0 );
+			*Write++ = Make( Point1, Normal1 );
 			// 底面（下から見て時計回り）。
 			*Write++ = Make( Bottom, Axis * -1.0f );
-			*Write++ = Make( Point0, Axis * -1.0f );
 			*Write++ = Make( Point1, Axis * -1.0f );
+			*Write++ = Make( Point0, Axis * -1.0f );
 		}
 		else
 		{
