@@ -29,6 +29,7 @@ void CCanvasDrawExecutor::Execute( const FDrawSpan& Input )
 	}
 	PROFILE_SCOPE_OWNER( NProfileCategory::Platform, "Draw", "CanvasExecute" );
 	FCanvasExecution Run( Surface, Textures, Buffers, Models, Fonts, Targets, Shaders, Span, Canvas ); // このSpanだけの状態と、借りた実行先。
+	Run.Geometry.SetSolidShapeAlphaSquared( bSolidShapeAlphaSquared );
 	CCanvasTargetScopes TargetScopes( Run ); // 描画先（画像・影の絵・複数の出力）の積み。
 	CCanvasStateCommands StateCommands( Run ); // 合成・補間・明るさ・変換・クリップ・マスクなどの状態。
 	CCanvasShapePainter Shapes( Run ); // 平らな図形。

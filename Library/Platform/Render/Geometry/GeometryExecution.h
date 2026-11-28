@@ -37,6 +37,7 @@ struct FGeometryExecution
 	bool bAnisotropicFilter = false; // 画像の補間が、異方性か。
 	int32 AnisotropyLevel = 16; // 異方性の最大の強さ（1 〜 16）。
 	IShaderDrawSource* ShaderSource = nullptr; // 影の描画に使うシェーダーの実行先（借用）。
+	bool bSolidShapeAlphaSquared = false; // 立体図形（立方体・球・カプセル・円錐）の半透明のアルファを、2 乗で効かせるか（DxLib と同じ見た目にするとき）。
 	bool bUseForwardPath = true; // GPU が変換と光を計算する経路を使うか（比べるためと、検査のために切れる）。
 	bool bShadowCasting = false; // 影の絵を描いているか。
 	FMatrix4x4 LightViewProjection; // 影の絵を描くときの、光から見た行列。

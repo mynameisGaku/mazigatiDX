@@ -36,6 +36,8 @@ CGeometryShapeCommands::CGeometryShapeCommands( FGeometryExecution& InRun, CGeom
 
 EGeometryCommandResult CGeometryShapeCommands::Execute( const FDrawCommandView& View, FDrawRgb Bright, int32 Alpha, bool bAlphaBlend )
 {
+	// DxLib の立体図形の面は、アルファが 2 乗で効く。互換の見た目のときだけ、同じにする（255 は 255 のまま）。
+	const int32 SolidAlpha = Run.bSolidShapeAlphaSquared ? ( Alpha * Alpha + 127 ) / 255 : Alpha;
 	switch ( View.Type )
 	{
 	case EDrawCommand::Pixel3D:
@@ -63,7 +65,7 @@ EGeometryCommandResult CGeometryShapeCommands::Execute( const FDrawCommandView& 
 			return EGeometryCommandResult::Rejected;
 		}
 		SetSpecular( Vertices, Data.Specular );
-		return Vertices.IsEmpty() || Submitter.Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, Alpha, bAlphaBlend, -1, bFill ) ? EGeometryCommandResult::Executed : EGeometryCommandResult::Rejected;
+		return Vertices.IsEmpty() || Submitter.Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, bFill ? SolidAlpha : Alpha, bAlphaBlend, -1, bFill ) ? EGeometryCommandResult::Executed : EGeometryCommandResult::Rejected;
 	}
 	case EDrawCommand::Line3D:
 	{
@@ -136,7 +138,7 @@ EGeometryCommandResult CGeometryShapeCommands::Execute( const FDrawCommandView& 
 			Vertices.Add( Corner );
 		}
 		SetSpecular( Vertices, Data.Specular );
-		return Submitter.Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, Alpha, bAlphaBlend, -1, bFill ) ? EGeometryCommandResult::Executed : EGeometryCommandResult::Rejected;
+		return Submitter.Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, bFill ? SolidAlpha : Alpha, bAlphaBlend, -1, bFill ) ? EGeometryCommandResult::Executed : EGeometryCommandResult::Rejected;
 	}
 	case EDrawCommand::Sphere3D:
 	{
@@ -152,7 +154,7 @@ EGeometryCommandResult CGeometryShapeCommands::Execute( const FDrawCommandView& 
 			return EGeometryCommandResult::Rejected;
 		}
 		SetSpecular( Vertices, Data.Specular );
-		return Vertices.IsEmpty() || Submitter.Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, Alpha, bAlphaBlend, -1, bFill ) ? EGeometryCommandResult::Executed : EGeometryCommandResult::Rejected;
+		return Vertices.IsEmpty() || Submitter.Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, bFill ? SolidAlpha : Alpha, bAlphaBlend, -1, bFill ) ? EGeometryCommandResult::Executed : EGeometryCommandResult::Rejected;
 	}
 	case EDrawCommand::Capsule3D:
 	{
@@ -168,7 +170,7 @@ EGeometryCommandResult CGeometryShapeCommands::Execute( const FDrawCommandView& 
 			return EGeometryCommandResult::Rejected;
 		}
 		SetSpecular( Vertices, Data.Specular );
-		return Vertices.IsEmpty() || Submitter.Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, Alpha, bAlphaBlend, -1, bFill ) ? EGeometryCommandResult::Executed : EGeometryCommandResult::Rejected;
+		return Vertices.IsEmpty() || Submitter.Submit( Vertices, bFill ? EGeometryTopology::Triangles : EGeometryTopology::Lines, Bright, bFill ? SolidAlpha : Alpha, bAlphaBlend, -1, bFill ) ? EGeometryCommandResult::Executed : EGeometryCommandResult::Rejected;
 	}
 	case EDrawCommand::Quad3D:
 	{

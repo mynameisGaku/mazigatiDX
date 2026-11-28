@@ -19,7 +19,10 @@ public:
 	CCanvasDrawExecutor( IRenderSurface& InSurface, ITextureDrawSource* InTextures, IGeometryBufferSource* InBuffers = nullptr, IStaticModelSource* InModels = nullptr, IFontDrawSource* InFonts = nullptr, IRenderTargetDrawSource* InTargets = nullptr, IShaderDrawSource* InShaders = nullptr );
 	// 命令の長さを検査して実行する。未対応命令以降はそのSpan内で省略する。
 	void Execute( const FDrawSpan& Span );
+	// 立体図形（立方体・球・カプセル・円錐）の半透明を、DxLib と同じく、アルファの 2 乗で描くか（互換の見た目。既定は、指定どおり）。
+	void SetSolidShapeAlphaSquared( bool bEnable ) { bSolidShapeAlphaSquared = bEnable; }
 private:
+	bool bSolidShapeAlphaSquared = false; // 立体図形の半透明を、アルファの 2 乗で描くか。
 	IRenderSurface& Surface; // 借用する描画先。
 	IStaticModelSource* Models; // 同期実行中だけ借りる静的モデル。
 	IGeometryBufferSource* Buffers; // 同期の命令解釈にだけ借用する形状。

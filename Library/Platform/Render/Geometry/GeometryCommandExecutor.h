@@ -66,6 +66,8 @@ public:
 	EResult DrawValidatedModelSectionAt( const FStaticModelDrawView& Model, int32 SectionIndex, const float32 ( &Matrix )[12], int32 Alpha, bool bAlphaBlend ) { return ModelCommands.DrawValidatedModelSectionAt( Model, SectionIndex, Matrix, Alpha, bAlphaBlend ); }
 	// GPU が変換と光を計算する経路（共有のメッシュを GPU に置く）を、使ってよいか（影・フォグ・画素ごとの光などは、CPU の経路で描く）。
 	void SetForwardPath( bool bEnable ) { Run.bUseForwardPath = bEnable; }
+	// 立体図形（立方体・球・カプセル・円錐）の面の半透明を、DxLib と同じく、アルファの 2 乗で描くか。DxLib は、この 4 つだけ、指定したアルファを 2 乗で効かせる（実測: 64 -> 0.06、130 -> 0.26、200 -> 0.61）。三角形・線・点・画像・モデルは、指定どおり。
+	void SetSolidShapeAlphaSquared( bool bEnable ) { Run.bSolidShapeAlphaSquared = bEnable; }
 	// 画像番号から描画用の矩形を取得する窓口（無ければ nullptr）。
 	ITextureDrawSource* GetTextures() const { return Run.Textures; }
 	// 借用している静的モデルの窓口（無ければ nullptr）。

@@ -38,6 +38,7 @@ public:
 	// モデルの一材質だけに材質効果をかける（ModelMaterial3D）。
 	bool SupportsModelMaterialEffects() const override { return true; }
 private:
+	bool bSolidShapeAlphaSquared = true; // 見た目の水準が compat（DxLib に合わせる）なら、立体図形の半透明をアルファの 2 乗で描く。
 	IRenderSurface* Surface = nullptr; // 借用する描画先。
 	IStaticModelSource* Models = nullptr; // 借用する静的モデル。
 	IGeometryBufferSource* Buffers = nullptr; // 借用する登録形状。
