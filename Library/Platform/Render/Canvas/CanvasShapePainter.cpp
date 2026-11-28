@@ -135,14 +135,41 @@ bool CCanvasShapePainter::Execute( const FDrawCommandView& View )
 				Canvas->Line( LineX0, LineY0, LineX1, LineY1, ShapeColor( Value ), Thickness * Transform.GetScale() );
 			}
 		}
-		else if ( Transform.bIdentity )
-		{
-			Canvas->Box( X0, Y0, X1, Y1, ShapeColor( Value ), bFill, Thickness );
-		}
 		else
 		{
-			const float32 Points[8] = { X0, Y0, X1, Y0, X1, Y1, X0, Y1 }; // 変換すると、矩形でなくなる。
-			DrawPolygon( Points, 4, ShapeColor( Value ), bFill, Thickness );
+			float32 DrawX0 = X0, DrawY0 = Y0, DrawX1 = X1, DrawY1 = Y1; // 描く矩形。
+			bool bDrawFill = bFill;
+			if ( !bFill && View.Type == EDrawCommand::Box )
+			{
+				// DxLib の DrawBox は、太さのある輪郭を、矩形の内側（左・上は X0・Y0 から、右・下は X1・Y1 の手前まで）へ描く。辺の座標を中心にはしない。
+				// 帯の中心線を、辺から半分の太さだけ内側へ寄せる。太さが矩形に収まらないときは、矩形の全体が塗られる。
+				const float32 Left = NMath::Min( X0, X1 ), Right = NMath::Max( X0, X1 ), Top = NMath::Min( Y0, Y1 ), Bottom = NMath::Max( Y0, Y1 ); // 向きによらない矩形。
+				if ( Right - Left <= Thickness || Bottom - Top <= Thickness )
+				{
+					DrawX0 = Left;
+					DrawY0 = Top;
+					DrawX1 = Right;
+					DrawY1 = Bottom;
+					bDrawFill = true;
+				}
+				else
+				{
+					const float32 Half = Thickness * 0.5f; // 帯の中心線までの寄せ幅。
+					DrawX0 = Left + Half;
+					DrawY0 = Top + Half;
+					DrawX1 = Right - Half;
+					DrawY1 = Bottom - Half;
+				}
+			}
+			if ( Transform.bIdentity )
+			{
+				Canvas->Box( DrawX0, DrawY0, DrawX1, DrawY1, ShapeColor( Value ), bDrawFill, Thickness );
+			}
+			else
+			{
+				const float32 Points[8] = { DrawX0, DrawY0, DrawX1, DrawY0, DrawX1, DrawY1, DrawX0, DrawY1 }; // 変換すると、矩形でなくなる。
+				DrawPolygon( Points, 4, ShapeColor( Value ), bDrawFill, Thickness );
+			}
 		}
 		break;
 	}
